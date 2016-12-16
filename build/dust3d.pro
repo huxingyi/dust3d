@@ -8,7 +8,11 @@ INCLUDEPATH += ../src
 
 SOURCES += main.cpp \
 	mainwindow.cpp \
-	glwidget.cpp
+	glwidget.cpp \
+  drawcommon.c \
+  drawsphere.c
 
 HEADERS += mainwindow.h \
-	glwidget.h
+	glwidget.h \
+  drawcommon.h \
+  drawsphere.h
