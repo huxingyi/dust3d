@@ -1,6 +1,7 @@
 #include <QtGui>
 #include <QtOpenGL>
 #include <assert.h>
+#include <math.h>
 #include "glwidget.h"
 #include "drawcommon.h"
 #include "drawsphere.h"
@@ -16,8 +17,71 @@ void drawTriangle(triangle *poly) {
   glEnd();
 }
 
+int drawCylinder(int slices, float radius, float height) {
+  float theta = (2.0 * M_PI) / (float)slices;
+  float a = 0.0f;
+  int lv;
+  float halfHeight = height / 2;
+  float x, y, z;
+
+  if (slices <= 0) {
+    fprintf(stderr, "%s:Invalid parameter(slices:%d).\n", __FUNCTION__, slices);
+    return -1;
+  }
+
+  // bottom cap
+  z = -halfHeight;
+  glBegin(GL_TRIANGLE_FAN);
+  glNormal3f(0, 0, -1);
+  glVertex3f(0, 0, z);
+  for (a = 0, lv = 0; lv <= slices; ++lv) {
+    x = cos(a) * radius;
+    y = sin(a) * radius;
+    glNormal3f(0, 0, -1);
+    glVertex3f(x, y, z);
+    a += theta;
+  }
+  glEnd();
+
+  // top cap
+  z = halfHeight;
+  glBegin(GL_TRIANGLE_FAN);
+  glNormal3f(0, 0, 1);
+  glVertex3f(0, 0, z);
+  for (a = 0, lv = 0; lv <= slices; ++lv) {
+    x = cos(a) * radius;
+    y = sin(a) * radius;
+    glNormal3f(0, 0, 1);
+    glVertex3f(x, y, z);
+    a += theta;
+  }
+  glEnd();
+
+  // strips
+  glBegin(GL_TRIANGLE_STRIP);
+  for (a = 0, lv = 0; lv <= slices; ++lv) {
+    float cosa = cos(a);
+    float sina = sin(a);
+    x = cosa * radius;
+    y = sina * radius;
+    z = -halfHeight;
+    glNormal3f(cosa, sina, 0);
+    glVertex3f(x, y, z);
+    z = halfHeight;
+    glNormal3f(cosa, sina, 0);
+    glVertex3f(x, y, z);
+    a += theta;
+  }
+  glEnd();
+
+  return 0;
+}
+
 GLWidget::GLWidget(QWidget *parent)
-  : QGLWidget(QGLFormat(QGL::SampleBuffers), parent) {
+    : QGLWidget(QGLFormat(QGL::SampleBuffers), parent) {
+  QTimer *timer = new QTimer(this);
+  connect(timer, SIGNAL(timeout()), this, SLOT(update()));
+  timer->start(100);
 }
 
 GLWidget::~GLWidget() {
@@ -47,8 +111,14 @@ void GLWidget::initializeGL() {
 }
 
 void GLWidget::paintGL() {
+  static int angle = 0;
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  drawSphere(3);
+  //drawSphere(3);
+  glPushMatrix();
+  glRotatef(angle, 1, 0, 0);
+  angle = (angle + 1) % 360;
+  drawCylinder(50, 0.2, 2);
+  glPopMatrix();
 }
 
 void GLWidget::resizeGL(int w, int h) {

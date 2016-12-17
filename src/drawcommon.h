@@ -23,6 +23,7 @@ typedef struct {
 void normalize(point *p);
 void midpoint(point *a, point *b, point *mid);
 void drawTriangle(triangle *poly);
+int drawCylinder(int slices, float radius, float height);
 
 #ifdef __cplusplus
 }

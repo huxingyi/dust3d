@@ -11,7 +11,10 @@ From my initial thought, Dust3D should be a tool like [Makehuman](http://www.mak
 
 Progress
 ==============
-Drawing Sphere
+Drawing Primitives
 -----------
+*Sphere*  
 I don't want the whole project have any unnecessary dependent, like glu library.
-Let's start with [drawing a sphere without gluSphere]( http://stackoverflow.com/questions/7687148/drawing-sphere-in-opengl-without-using-glusphere), because I want implement the same balls which presented in the [B-Mesh paper](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.357.7134&rep=rep1&type=pdf).  
+Let's start with [drawing a sphere without gluSphere]( http://stackoverflow.com/questions/7687148/drawing-sphere-in-opengl-without-using-glusphere), because I want implement the same balls which presented in the [B-Mesh paper](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.357.7134&rep=rep1&type=pdf).   
+*Cylinder*  
+Two caps and many strips composites a cylinder.
