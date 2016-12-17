@@ -29,6 +29,23 @@ int drawCylinder(int slices, float radius, float height) {
     return -1;
   }
 
+  // strips
+  glBegin(GL_TRIANGLE_STRIP);
+  for (a = 0, lv = 0; lv <= slices; ++lv) {
+    float cosa = cos(a);
+    float sina = sin(a);
+    x = cosa * radius;
+    y = sina * radius;
+    z = -halfHeight;
+    glNormal3f(cosa, sina, 0);
+    glVertex3f(x, y, z);
+    z = halfHeight;
+    glNormal3f(cosa, sina, 0);
+    glVertex3f(x, y, z);
+    a += theta;
+  }
+  glEnd();
+
   // bottom cap
   z = -halfHeight;
   glBegin(GL_TRIANGLE_FAN);
@@ -57,23 +74,6 @@ int drawCylinder(int slices, float radius, float height) {
   }
   glEnd();
 
-  // strips
-  glBegin(GL_TRIANGLE_STRIP);
-  for (a = 0, lv = 0; lv <= slices; ++lv) {
-    float cosa = cos(a);
-    float sina = sin(a);
-    x = cosa * radius;
-    y = sina * radius;
-    z = -halfHeight;
-    glNormal3f(cosa, sina, 0);
-    glVertex3f(x, y, z);
-    z = halfHeight;
-    glNormal3f(cosa, sina, 0);
-    glVertex3f(x, y, z);
-    a += theta;
-  }
-  glEnd();
-
   return 0;
 }
 
@@ -88,22 +88,30 @@ GLWidget::~GLWidget() {
 }
 
 void GLWidget::initializeGL() {
-  GLfloat mat_specular[] = {1.0, 1.0, 1.0, 1.0};
-  GLfloat mat_shininess[] = {50.0};
-  GLfloat light_position[] = {1.0, 1.0, 1.0, 0.0};
-  GLfloat light[] = {1.0, 0.2, 0.2};
-  GLfloat lmodel_ambient[] = {0.1, 0.1, 0.1, 1.0};
+  GLfloat mat_ambient[] = { 0.0 , 0.0 , 0.0 , 1.0 };
+  GLfloat mat_diffuse[] = { 0.55 , 0.55 , 0.55 , 1.0 };
+  GLfloat mat_specular[] = {0.7 , 0.7 , 0.7, 1.0 };
+  GLfloat mat_shininess[] = { 32 };
+
+  GLfloat light_diffuse[] = { 1.0 , 1.0 , 1.0 , 1.0 };
+  GLfloat light_specular[] = { 1.0 , 1.0 , 1.0 , 1.0 };
+  GLfloat light_ambient[] = { 0.2 , 0.2 , 0.2 , 1.0 };
+  GLfloat light_position[] = { -1,1,1 , 0 };
 
   glClearColor(0.0, 0.0, 0.0, 0.0);
   glShadeModel(GL_SMOOTH);
 
+  glMaterialfv(GL_FRONT, GL_AMBIENT, mat_ambient);
+  glMaterialfv(GL_FRONT, GL_DIFFUSE, mat_diffuse);
   glMaterialfv(GL_FRONT, GL_SPECULAR, mat_specular);
   glMaterialfv(GL_FRONT, GL_SHININESS, mat_shininess);
 
-  glLightfv(GL_LIGHT0, GL_POSITION, light_position);
-  glLightfv(GL_LIGHT0, GL_DIFFUSE, light);
-  glLightfv(GL_LIGHT0, GL_SPECULAR, light);
-  glLightModelfv(GL_LIGHT_MODEL_AMBIENT, lmodel_ambient);
+  glLightfv(GL_LIGHT0 , GL_POSITION , light_position);
+  glLightfv(GL_LIGHT0 , GL_DIFFUSE , light_diffuse);
+  glLightfv(GL_LIGHT0 , GL_AMBIENT , light_ambient);
+  glLightfv(GL_LIGHT0 , GL_SPECULAR , light_specular);
+
+  glDepthFunc(GL_LESS);
 
   glEnable(GL_LIGHTING);
   glEnable(GL_LIGHT0);
@@ -113,27 +121,38 @@ void GLWidget::initializeGL() {
 void GLWidget::paintGL() {
   static int angle = 0;
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  //drawSphere(3);
+
+  glBegin(GL_LINES);
+  for (GLfloat i = -2.5; i <= 2.5; i += 0.25) {
+    glVertex3f(i, 0, 2.5); glVertex3f(i, 0, -2.5);
+    glVertex3f(2.5, 0, i); glVertex3f(-2.5, 0, i);
+  }
+  glEnd();
+
+  drawSphere(4);
+
   glPushMatrix();
-  glRotatef(angle, 1, 0, 0);
+  glRotatef(angle, 1, 1, 0);
   angle = (angle + 1) % 360;
-  drawCylinder(50, 0.2, 2);
+  drawCylinder(40, 0.2, 2.1);
   glPopMatrix();
 }
 
 void GLWidget::resizeGL(int w, int h) {
   glViewport(0, 0, (GLsizei)w, (GLsizei)h);
+
+  glClearColor(0.92, 0.92, 0.92, 1.0);
+  glColor3f(1.0, 1.0, 1.0);
+
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
-  if (w <= h) {
-    glOrtho(-1.5, 1.5, -1.5*(GLfloat)h/(GLfloat)w,
-       1.5*(GLfloat)h/(GLfloat)w, -10.0, 10.0);
-  } else {
-    glOrtho(-1.5*(GLfloat)w/(GLfloat)h,
-       1.5*(GLfloat)w/(GLfloat)h, -1.5, 1.5, -10.0, 10.0);
-  }
+  glFrustum(-2, 2, -1.5, 1.5, 1, 10);
+
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
+  glTranslatef(0, 0, -2);
+  glRotatef(50, 1, 0, 0);
+  glRotatef(70, 0, 1, 0);
 }
 
 void GLWidget::mousePressEvent(QMouseEvent *event) {
