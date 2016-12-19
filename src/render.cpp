@@ -10,7 +10,7 @@
 static int drawBmeshNode(bmesh *bm, bmeshNode *node) {
   float color1[3] = {1, 0, 0};
   glColor3fv(color1);
-  drawSphere(&node->position, node->radius, 3);
+  drawSphere(&node->position, node->radius, 36, 24);
   return 0;
 }
 
@@ -19,7 +19,7 @@ static int drawBmeshEdge(bmesh *bm, bmeshEdge *edge) {
   glColor3fv(color2);
   bmeshNode *firstNode = bmeshGetNode(bm, edge->firstNode);
   bmeshNode *secondNode = bmeshGetNode(bm, edge->secondNode);
-  drawCylinder(&firstNode->position, &secondNode->position, 0.04, 40);
+  drawCylinder(&firstNode->position, &secondNode->position, 0.1, 36, 24);
   return 0;
 }
 
@@ -31,8 +31,8 @@ Render::Render(QWidget *parent)
 
   mouseX = 0;
   mouseY = 0;
-  cameraAngleX = 50;
-  cameraAngleY = 70;
+  cameraAngleX = 45;
+  cameraAngleY = -45;
   cameraDistance = 3;
 }
 
@@ -74,6 +74,8 @@ void Render::initializeGL() {
 
   glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
   glEnable(GL_COLOR_MATERIAL);
+
+  drawInit();
 }
 
 void Render::paintGL() {
@@ -97,17 +99,17 @@ void Render::paintGL() {
     bm = bmeshCreate();
 
     memset(&node, 0, sizeof(node));
-    node.position.x = -1.0;
-    node.position.y = 0.3;
-    node.position.z = 1.0;
-    node.radius = 0.45;
+    node.position.x = 0;
+    node.position.y = 0;
+    node.position.z = 3;
+    node.radius = 0.5;
     bmeshAddNode(bm, &node);
 
     memset(&node, 0, sizeof(node));
-    node.position.x = -0.5;
-    node.position.y = 0.2;
-    node.position.z = 0.5;
-    node.radius = 0.1;
+    node.position.x = 1;
+    node.position.y = 0;
+    node.position.z = 2;
+    node.radius = 0.5;
     bmeshAddNode(bm, &node);
 
     memset(&edge, 0, sizeof(edge));
@@ -136,7 +138,7 @@ void Render::resizeGL(int w, int h) {
 
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
-  glFrustum(-2, 2, -1.5, 1.5, 1, 1000);
+  glFrustum(-2, 2, -1.5, 1.5, 1, 100);
 
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();

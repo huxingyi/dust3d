@@ -26,9 +26,10 @@ Now, for just beginning, I think it's a not bad start.
 Draw shape ball is easy, no need to rotate, I just need scale it along the ball's radius.
 Draw the cylinder which connects two shape balls is more difficult, I need do some math to rotate it. [Here](http://www.thjsmith.com/40/cylinder-between-two-points-opengl-c) described it.  
 *Camera Control*  
-Camera rotate/zoom implemented, [here](http://www.songho.ca/opengl/gl_transform.html) is a good article which explained the theory of OpenGL Transformation. Most important is the demo apps all are very beautiful.
-<img src="screenshot/dust3d_node_edge.png">
+Camera rotate/zoom implemented, [here](http://www.songho.ca/opengl/gl_transform.html) is a good article which explained the theory of OpenGL Transformation. Most important is that the demo app is very beautiful.  
 Added x,z axis, looks better than last screenshot.   
+I have to use the GLU library, the previous implementation of drawSphere and drawCylinder looks not good, and take too much time to debug.
+<img src="screenshot/dust3d_node_edge_with_glu.png">
 - [ ] Export Wavefront .obj  
 - [ ] Render B-Mesh result  
 - [ ] Design UI for monster parts configuration  

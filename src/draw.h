@@ -15,9 +15,11 @@ typedef struct {
   triangle *poly;
 } object;
 
-int drawSphere(vec3 *origin, float radius, int level);
+int drawInit(void);
+int drawSphere(vec3 *origin, float radius, int slices, int stacks);
 void drawTriangle(triangle *poly);
-int drawCylinder(vec3 *topOrigin, vec3 *bottomOrigin, float radius, int slices);
+int drawCylinder(vec3 *topOrigin, vec3 *bottomOrigin, float radius, int slices,
+    int stacks);
 int drawGrid(float size, float step);
 
 #ifdef __cplusplus
