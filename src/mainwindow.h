@@ -2,20 +2,20 @@
 #define MAINWINDOW_H
 
 #include <QWidget>
-#include "glwidget.h"
 
-class MainWindow : public QWidget 
-{
+class Render;
+
+class MainWindow : public QWidget {
 	Q_OBJECT
 
 public:
 	MainWindow(void);
 
 protected:
-    void keyPressEvent(QKeyEvent *event);
+  void keyPressEvent(QKeyEvent *event);
 
 private:
-	GLWidget *glWidget;
+	Render *render;
 };
 
 #endif
