@@ -8,11 +8,17 @@ INCLUDEPATH += ../src
 
 SOURCES += main.cpp \
 	mainwindow.cpp \
-	glwidget.cpp \
-  drawcommon.c \
-  drawsphere.c
+	render.cpp \
+  vector3d.c \
+  draw.cpp \
+  array.c \
+  bmesh.c \
+  matrix.c
 
 HEADERS += mainwindow.h \
-	glwidget.h \
-  drawcommon.h \
-  drawsphere.h
+	render.h \
+  vector3d.h \
+  draw.h \
+  array.h \
+  bmesh.h \
+  matrix.h
