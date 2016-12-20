@@ -29,12 +29,12 @@ Draw the cylinder which connects two shape balls is more difficult, I need do so
 Camera rotate/zoom implemented, [here](http://www.songho.ca/opengl/gl_transform.html) is a good article which explained the theory of OpenGL Transformation. Most important is that the demo app is very beautiful.  
 Added x,z axis, looks better than last screenshot.   
 I have to use the GLU library, the previous implementation of drawSphere and drawCylinder looks not good, and take too much time to debug.  
-<img src="screenshot/dust3d_node_edge_with_glu.png" style="width:170px; height:140px;">  
+<img src="screenshot/dust3d_node_edge_with_glu.png" width="170" height="140">  
 *B-Mesh data struct*  
 I created the test nodes's geometry information from Blender. Here is the render result of `data/bmesh_test_1.h`  
-<img src="screenshot/dust3d_bmesh_nodes.png" style="width:206px; height:164px;">  
+<img src="screenshot/dust3d_bmesh_nodes.png" width="206" height="164">  
 *Generate Inbetween Nodes*  
-<img src="screenshot/dust3d_bmesh_skeleton.png" style="width:124px; height:128px;">  <img src="screenshot/dust3d_bmesh_inbetween.png" style="width:124px; height:128px;">  
+<img src="screenshot/dust3d_bmesh_skeleton.png" width="124" height="128">  <img src="screenshot/dust3d_bmesh_inbetween.png" width="124" height="128">  
 - [ ] Export Wavefront .obj  
 - [ ] Render B-Mesh result  
 - [ ] Design UI for monster parts configuration  
