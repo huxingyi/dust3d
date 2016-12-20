@@ -3,11 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-#ifdef __APPLE__
-#include <OpenGL/glu.h>
-#else
-#include <GL/glu.h>
-#endif
+#include <stdarg.h>
 #include "draw.h"
 
 static GLUquadricObj *quadricId = 0;
@@ -91,4 +87,12 @@ int drawGrid(float size, float step) {
 
   glEnable(GL_LIGHTING);
   return 0;
+}
+
+int drawPrintf(int x, int y, const char *fmt, ...) {
+  va_list args;
+  char text[1024];
+  va_start(args, fmt);
+  vsnprintf(text, sizeof(text), fmt, args);
+  return drawText(x, y, text);
 }

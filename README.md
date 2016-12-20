@@ -30,6 +30,9 @@ Camera rotate/zoom implemented, [here](http://www.songho.ca/opengl/gl_transform.
 Added x,z axis, looks better than last screenshot.   
 I have to use the GLU library, the previous implementation of drawSphere and drawCylinder looks not good, and take too much time to debug.
 <img src="screenshot/dust3d_node_edge_with_glu.png">
+*B-Mesh data struct*  
+I created the test nodes's geometry information from Blender. Here is the render result of `data/bmesh_test_1.h`
+<img src="screenshot/dust3d_bmesh_nodes.png">
 - [ ] Export Wavefront .obj  
 - [ ] Render B-Mesh result  
 - [ ] Design UI for monster parts configuration  

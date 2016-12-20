@@ -7,6 +7,8 @@
 #include "bmesh.h"
 #include "matrix.h"
 
+static QGLWidget *_this = 0;
+
 static int drawBmeshNode(bmesh *bm, bmeshNode *node) {
   float color1[3] = {1, 0, 0};
   glColor3fv(color1);
@@ -15,11 +17,16 @@ static int drawBmeshNode(bmesh *bm, bmeshNode *node) {
 }
 
 static int drawBmeshEdge(bmesh *bm, bmeshEdge *edge) {
-  float color2[3] = {0, 0, 1};
+  float color2[3] = {1, 1, 0};
   glColor3fv(color2);
   bmeshNode *firstNode = bmeshGetNode(bm, edge->firstNode);
   bmeshNode *secondNode = bmeshGetNode(bm, edge->secondNode);
   drawCylinder(&firstNode->position, &secondNode->position, 0.1, 36, 24);
+  return 0;
+}
+
+int drawText(int x, int y, char *text) {
+  _this->renderText(x, y, QString(text));
   return 0;
 }
 
@@ -31,8 +38,8 @@ Render::Render(QWidget *parent)
 
   mouseX = 0;
   mouseY = 0;
-  cameraAngleX = 45;
-  cameraAngleY = -45;
+  cameraAngleX = 20;
+  cameraAngleY = -225;
   cameraDistance = 3;
 }
 
@@ -43,8 +50,14 @@ void Render::initializeGL() {
   glShadeModel(GL_SMOOTH);
   glEnable(GL_CULL_FACE);
   glEnable(GL_BLEND);
+  glDepthFunc(GL_LEQUAL);
+  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+  glEnable(GL_DEPTH_TEST);
+  glEnable(GL_LIGHTING);
+  glEnable(GL_CULL_FACE);
 
   qglClearColor(QWidget::palette().color(QWidget::backgroundRole()));
+  glClearStencil(0);
   glClearDepth(1.0f);
 
   GLfloat ambientLight[] = {0.0f, 0.0f, 0.0f, 1.0f};
@@ -61,16 +74,8 @@ void Render::initializeGL() {
 
   float shininess = 64.0f;
   float specularColor[] = {1.0, 1.0f, 1.0f, 1.0f};
-	glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, shininess); // range 0 ~ 128
+	glMaterialf(GL_FRONT_AND_BACK, GL_SHININESS, shininess);
 	glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, specularColor);
-
-  glClearStencil(0);
-  glClearDepth(1.0f);
-  glDepthFunc(GL_LEQUAL);
-  glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-  glEnable(GL_DEPTH_TEST);
-  glEnable(GL_LIGHTING);
-  glEnable(GL_CULL_FACE);
 
   glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
   glEnable(GL_COLOR_MATERIAL);
@@ -78,8 +83,12 @@ void Render::initializeGL() {
   drawInit();
 }
 
+#include "../data/bmesh_test_1.h"
+
 void Render::paintGL() {
   static bmesh *bm = 0;
+
+  _this = this;
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -89,6 +98,10 @@ void Render::paintGL() {
   glRotatef(cameraAngleX, 1, 0, 0);
   glRotatef(cameraAngleY, 0, 1, 0);
 
+  glColor3f(0, 0, 0);
+  drawPrintf(0, 10, "cameraAngleX:%f cameraAngleY:%f", cameraAngleX,
+    cameraAngleY);
+
   drawGrid(10, 1);
 
   glEnable(GL_LIGHTING);
@@ -96,26 +109,24 @@ void Render::paintGL() {
   if (0 == bm) {
     bmeshNode node;
     bmeshEdge edge;
+    int i;
     bm = bmeshCreate();
 
-    memset(&node, 0, sizeof(node));
-    node.position.x = 0;
-    node.position.y = 0;
-    node.position.z = 3;
-    node.radius = 0.5;
-    bmeshAddNode(bm, &node);
+    for (i = 0; i < sizeof(bmeshTest1Nodes) / sizeof(bmeshTest1Nodes[0]); ++i) {
+      memset(&node, 0, sizeof(node));
+      node.position.x = bmeshTest1Nodes[i][1];
+      node.position.y = bmeshTest1Nodes[i][2];
+      node.position.z = bmeshTest1Nodes[i][3];
+      node.radius = 0.35;
+      bmeshAddNode(bm, &node);
+    }
 
-    memset(&node, 0, sizeof(node));
-    node.position.x = 1;
-    node.position.y = 0;
-    node.position.z = 2;
-    node.radius = 0.5;
-    bmeshAddNode(bm, &node);
-
-    memset(&edge, 0, sizeof(edge));
-    edge.firstNode = 1;
-    edge.secondNode = 0;
-    bmeshAddEdge(bm, &edge);
+    for (i = 0; i < sizeof(bmeshTest1Edges) / sizeof(bmeshTest1Edges[0]); ++i) {
+      memset(&edge, 0, sizeof(edge));
+      edge.firstNode = bmeshTest1Edges[i][0];
+      edge.secondNode = bmeshTest1Edges[i][1];
+      bmeshAddEdge(bm, &edge);
+    }
   }
 
   {
@@ -138,7 +149,7 @@ void Render::resizeGL(int w, int h) {
 
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
-  glFrustum(-2, 2, -1.5, 1.5, 1, 100);
+  gluPerspective(60.0f, w/(h/2.0f), 1, 100);
 
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
