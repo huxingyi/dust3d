@@ -7,10 +7,10 @@ extern "C" {
 #endif
 
 typedef enum {
-  BMESH_NODE_FLAG_KEY = 0x00000001,
-  BMESH_NODE_FLAG_INBETWEEN = 0x00000002,
-  BMESH_NODE_FLAG_ROOT = 0x00000010,
-} bmeshNodeFlag;
+  BMESH_NODE_TYPE_KEY = 0,
+  BMESH_NODE_TYPE_ROOT = 1,
+  BMESH_NODE_TYPE_INBETWEEN = 2,
+} bmeshNodeType;
 
 typedef struct bmesh bmesh;
 
@@ -18,7 +18,7 @@ typedef struct {
   int index;
   vec3 position;
   float radius;
-  unsigned int flag;
+  int type;
 } bmeshNode;
 
 typedef struct {
@@ -35,6 +35,7 @@ bmeshNode *bmeshGetNode(bmesh *bm, int index);
 bmeshEdge *bmeshGetEdge(bmesh *bm, int index);
 int bmeshAddNode(bmesh *bm, bmeshNode *node);
 int bmeshAddEdge(bmesh *bm, bmeshEdge *edge);
+int bmeshGenerateInbetweenNodes(bmesh *bm);
 
 #ifdef __cplusplus
 }

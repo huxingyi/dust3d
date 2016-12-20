@@ -21,18 +21,20 @@ Two caps and many strips composites a cylinder.
 Almost all 3D editor have a infinite grid ground, I just made a finite one, in the future, I should expand the grid outside of the screen to make it infinite.  
 Now, for just beginning, I think it's a not bad start.
 <img src="screenshot/dust3d_sphere_cylinder.png">
-- [ ] Implement B-Mesh algorithm (Dec 18, 2016 ~ Dec 19, 2016)   
+- [ ] Implement B-Mesh algorithm (Dec 18, 2016 ~ Dec 20, 2016)   
 *Drawing Skeletal Shape Balls*  
 Draw shape ball is easy, no need to rotate, I just need scale it along the ball's radius.
 Draw the cylinder which connects two shape balls is more difficult, I need do some math to rotate it. [Here](http://www.thjsmith.com/40/cylinder-between-two-points-opengl-c) described it.  
 *Camera Control*  
 Camera rotate/zoom implemented, [here](http://www.songho.ca/opengl/gl_transform.html) is a good article which explained the theory of OpenGL Transformation. Most important is that the demo app is very beautiful.  
 Added x,z axis, looks better than last screenshot.   
-I have to use the GLU library, the previous implementation of drawSphere and drawCylinder looks not good, and take too much time to debug.
-<img src="screenshot/dust3d_node_edge_with_glu.png">
+I have to use the GLU library, the previous implementation of drawSphere and drawCylinder looks not good, and take too much time to debug.  
+<img src="screenshot/dust3d_node_edge_with_glu.png" style="width:170px; height:140px;">  
 *B-Mesh data struct*  
-I created the test nodes's geometry information from Blender. Here is the render result of `data/bmesh_test_1.h`
-<img src="screenshot/dust3d_bmesh_nodes.png">
+I created the test nodes's geometry information from Blender. Here is the render result of `data/bmesh_test_1.h`  
+<img src="screenshot/dust3d_bmesh_nodes.png" style="width:206px; height:164px;">  
+*Generate Inbetween Nodes*  
+<img src="screenshot/dust3d_bmesh_skeleton.png" style="width:124px; height:128px;">  <img src="screenshot/dust3d_bmesh_inbetween.png" style="width:124px; height:128px;">  
 - [ ] Export Wavefront .obj  
 - [ ] Render B-Mesh result  
 - [ ] Design UI for monster parts configuration  

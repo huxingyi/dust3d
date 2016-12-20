@@ -7,18 +7,24 @@
 #include "bmesh.h"
 #include "matrix.h"
 
+static const float bmeshNodeColors[][3] {
+  {0, 0.78, 1},
+  {1, 0, 0},
+  {1, 1, 1}
+};
+
+static const float bmeshEdgeColor[3] = {1, 1, 0};
+
 static QGLWidget *_this = 0;
 
 static int drawBmeshNode(bmesh *bm, bmeshNode *node) {
-  float color1[3] = {1, 0, 0};
-  glColor3fv(color1);
+  glColor3fv(bmeshNodeColors[node->type]);
   drawSphere(&node->position, node->radius, 36, 24);
   return 0;
 }
 
 static int drawBmeshEdge(bmesh *bm, bmeshEdge *edge) {
-  float color2[3] = {1, 1, 0};
-  glColor3fv(color2);
+  glColor3fv(bmeshEdgeColor);
   bmeshNode *firstNode = bmeshGetNode(bm, edge->firstNode);
   bmeshNode *secondNode = bmeshGetNode(bm, edge->secondNode);
   drawCylinder(&firstNode->position, &secondNode->position, 0.1, 36, 24);
@@ -26,7 +32,10 @@ static int drawBmeshEdge(bmesh *bm, bmeshEdge *edge) {
 }
 
 int drawText(int x, int y, char *text) {
-  _this->renderText(x, y, QString(text));
+  QFont font = QFont("Arial");
+  font.setPointSize(9);
+  font.setBold(false);
+  _this->renderText(x, y, QString(text), font);
   return 0;
 }
 
@@ -40,7 +49,7 @@ Render::Render(QWidget *parent)
   mouseY = 0;
   cameraAngleX = 20;
   cameraAngleY = -225;
-  cameraDistance = 3;
+  cameraDistance = 7;
 }
 
 Render::~Render(void) {
@@ -99,8 +108,8 @@ void Render::paintGL() {
   glRotatef(cameraAngleY, 0, 1, 0);
 
   glColor3f(0, 0, 0);
-  drawPrintf(0, 10, "cameraAngleX:%f cameraAngleY:%f", cameraAngleX,
-    cameraAngleY);
+  drawPrintf(0, 10, "cameraAngleX:%f cameraAngleY:%f cameraDistance:%f",
+    cameraAngleX, cameraAngleY, cameraDistance);
 
   drawGrid(10, 1);
 
@@ -117,7 +126,8 @@ void Render::paintGL() {
       node.position.x = bmeshTest1Nodes[i][1];
       node.position.y = bmeshTest1Nodes[i][2];
       node.position.z = bmeshTest1Nodes[i][3];
-      node.radius = 0.35;
+      node.radius = bmeshTest1Nodes[i][4];
+      node.type = bmeshTest1Nodes[i][5];
       bmeshAddNode(bm, &node);
     }
 
@@ -127,6 +137,8 @@ void Render::paintGL() {
       edge.secondNode = bmeshTest1Edges[i][1];
       bmeshAddEdge(bm, &edge);
     }
+
+    bmeshGenerateInbetweenNodes(bm);
   }
 
   {
@@ -149,7 +161,7 @@ void Render::resizeGL(int w, int h) {
 
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
-  gluPerspective(60.0f, w/(h/2.0f), 1, 100);
+  gluPerspective(60.0f, w/h, 1, 100);
 
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();

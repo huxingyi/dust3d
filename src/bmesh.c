@@ -73,3 +73,39 @@ int bmeshAddEdge(bmesh *bm, bmeshEdge *edge) {
   memcpy(arrayGetItem(bm->edgeArray, index), edge, sizeof(bmeshEdge));
   return index;
 }
+
+static int bmeshAddInbetweenNodeBetween(bmesh *bm,
+    bmeshNode *firstNode, bmeshNode *secondNode, float frac) {
+  bmeshNode newNode;
+  memset(&newNode, 0, sizeof(newNode));
+  newNode.type = BMESH_NODE_TYPE_INBETWEEN;
+  newNode.radius = firstNode->radius * (1 - frac) +
+    secondNode->radius * frac;
+  vec3Lerp(&firstNode->position, &secondNode->position, frac,
+    &newNode.position);
+  return bmeshAddNode(bm, &newNode);
+}
+
+int bmeshGenerateInbetweenNodes(bmesh *bm) {
+  int edgeIdx;
+  for (edgeIdx = 0; edgeIdx < bmeshGetEdgeNum(bm); ++edgeIdx) {
+    bmeshEdge *edge = bmeshGetEdge(bm, edgeIdx);
+    bmeshNode *firstNode = bmeshGetNode(bm, edge->firstNode);
+    bmeshNode *secondNode = bmeshGetNode(bm, edge->secondNode);
+    float step = 0.5;
+    float distance = vec3Distance(&firstNode->position, &secondNode->position);
+    if (distance > 0) {
+      float offset = step;
+      if (offset + step <= distance) {
+        while (offset + step <= distance) {
+          float frac = offset / distance;
+          bmeshAddInbetweenNodeBetween(bm, firstNode, secondNode, frac);
+          offset += step;
+        }
+      } else if (distance > step) {
+        bmeshAddInbetweenNodeBetween(bm, firstNode, secondNode, 0.5);
+      }
+    }
+  }
+  return 0;
+}

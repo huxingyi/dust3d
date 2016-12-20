@@ -1,3 +1,4 @@
+#include <math.h>
 #include "vector3d.h"
 
 float vec3Length(vec3 *p) {
@@ -18,9 +19,13 @@ void vec3Normalize(vec3 *p) {
 }
 
 void vec3Midpoint(vec3 *a, vec3 *b, vec3 *mid) {
-  mid->x = (a->x + b->x) * 0.5;
-  mid->y = (a->y + b->y) * 0.5;
-  mid->z = (a->z + b->z) * 0.5;
+  vec3Lerp(a, b, 0.5, mid);
+}
+
+void vec3Lerp(vec3 *a, vec3 *b, float frac, vec3 *result) {
+  result->x = a->x + (b->x - a->x) * frac;
+  result->y = a->y + (b->y - a->y) * frac;
+  result->z = a->z + (b->z - a->z) * frac;
 }
 
 void vec3Sub(vec3 *a, vec3 *b, vec3 *result) {
@@ -37,4 +42,10 @@ void vec3CrossProduct(vec3 *a, vec3 *b, vec3 *result) {
 
 float vec3DotProduct(vec3 *a, vec3 *b) {
   return a->x * b->x + a->y * b->y + a->z * b->z;
+}
+
+float vec3Distance(vec3 *a, vec3 *b) {
+  vec3 p;
+  vec3Sub(a, b, &p);
+  return vec3Length(&p);
 }

@@ -6,7 +6,8 @@
 
 MainWindow::MainWindow(void) {
 	render = new Render;
-  resize(QDesktopWidget().availableGeometry(this).size() * 0.7);
+	int size = QDesktopWidget().availableGeometry(this).size().height() * 0.7;
+  resize(QSize(size, size));
 	QHBoxLayout *mainLayout = new QHBoxLayout;
   mainLayout->addWidget(render);
   setLayout(mainLayout);
