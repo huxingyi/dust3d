@@ -19,12 +19,15 @@ typedef struct {
   vec3 position;
   float radius;
   int type;
+  int childrenIndices;
+  int firstChildIndex;
+  int roundColor;
 } bmeshNode;
 
 typedef struct {
   int index;
-  int firstNode;
-  int secondNode;
+  int firstNodeIndex;
+  int secondNodeIndex;
 } bmeshEdge;
 
 bmesh *bmeshCreate(void);
@@ -36,6 +39,8 @@ bmeshEdge *bmeshGetEdge(bmesh *bm, int index);
 int bmeshAddNode(bmesh *bm, bmeshNode *node);
 int bmeshAddEdge(bmesh *bm, bmeshEdge *edge);
 int bmeshGenerateInbetweenNodes(bmesh *bm);
+int bmeshGetNodeNextChild(bmesh *bm, bmeshNode *node, int *childIndex);
+bmeshNode *bmeshGetRootNode(bmesh *bm);
 
 #ifdef __cplusplus
 }

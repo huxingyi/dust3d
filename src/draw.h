@@ -16,6 +16,10 @@ typedef struct {
 } triangle;
 
 typedef struct {
+  vec3 pt[4];
+} quard;
+
+typedef struct {
   int npoly;
   triangle *poly;
 } object;

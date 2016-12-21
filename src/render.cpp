@@ -23,10 +23,24 @@ static int drawBmeshNode(bmesh *bm, bmeshNode *node) {
   return 0;
 }
 
+static void drawBmeshNodeRecursively(bmesh *bm, bmeshNode *node) {
+  int childIndex = node->firstChildIndex;
+  int childNodeIndex;
+
+  drawBmeshNode(bm, node);
+  while (-1 != childIndex) {
+    childNodeIndex = bmeshGetNodeNextChild(bm, node, &childIndex);
+    if (-1 == childNodeIndex) {
+      break;
+    }
+    drawBmeshNodeRecursively(bm, bmeshGetNode(bm, childNodeIndex));
+  }
+}
+
 static int drawBmeshEdge(bmesh *bm, bmeshEdge *edge) {
   glColor3fv(bmeshEdgeColor);
-  bmeshNode *firstNode = bmeshGetNode(bm, edge->firstNode);
-  bmeshNode *secondNode = bmeshGetNode(bm, edge->secondNode);
+  bmeshNode *firstNode = bmeshGetNode(bm, edge->firstNodeIndex);
+  bmeshNode *secondNode = bmeshGetNode(bm, edge->secondNodeIndex);
   drawCylinder(&firstNode->position, &secondNode->position, 0.1, 36, 24);
   return 0;
 }
@@ -133,20 +147,23 @@ void Render::paintGL() {
 
     for (i = 0; i < sizeof(bmeshTest1Edges) / sizeof(bmeshTest1Edges[0]); ++i) {
       memset(&edge, 0, sizeof(edge));
-      edge.firstNode = bmeshTest1Edges[i][0];
-      edge.secondNode = bmeshTest1Edges[i][1];
+      edge.firstNodeIndex = bmeshTest1Edges[i][0];
+      edge.secondNodeIndex = bmeshTest1Edges[i][1];
       bmeshAddEdge(bm, &edge);
     }
 
     bmeshGenerateInbetweenNodes(bm);
   }
 
+  drawBmeshNodeRecursively(bm, bmeshGetRootNode(bm));
+
   {
     int index;
+    /*
     for (index = 0; index < bmeshGetNodeNum(bm); ++index) {
       bmeshNode *node = bmeshGetNode(bm, index);
       drawBmeshNode(bm, node);
-    }
+    }*/
     for (index = 0; index < bmeshGetEdgeNum(bm); ++index) {
       bmeshEdge *edge = bmeshGetEdge(bm, index);
       drawBmeshEdge(bm, edge);
@@ -161,7 +178,7 @@ void Render::resizeGL(int w, int h) {
 
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
-  gluPerspective(60.0f, w/h, 1, 100);
+  gluPerspective(60.0f, w/h, 1, 1000);
 
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();

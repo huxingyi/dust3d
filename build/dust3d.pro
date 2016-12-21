@@ -2,6 +2,7 @@ TARGET = dust3d
 TEMPLATE = app
 
 QT += widgets opengl
+CONFIG += debug
 
 VPATH += ../src
 INCLUDEPATH += ../src
