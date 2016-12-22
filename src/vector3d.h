@@ -19,6 +19,7 @@ void vec3Sub(vec3 *a, vec3 *b, vec3 *result);
 float vec3DotProduct(vec3 *a, vec3 *b);
 float vec3Length(vec3 *p);
 float vec3Distance(vec3 *a, vec3 *b);
+void vec3Normal(vec3 *a, vec3 *b, vec3 *c, vec3 *normal);
 
 #ifdef __cplusplus
 }

@@ -2,8 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <math.h>
 #include "bmesh.h"
 #include "array.h"
+#include "matrix.h"
 
 typedef struct bmeshNodeIndex {
   int nodeIndex;
@@ -14,6 +16,7 @@ struct bmesh {
   array *nodeArray;
   array *edgeArray;
   array *indexArray;
+  array *quadArray;
   int rootNodeIndex;
   int roundColor;
 };
@@ -42,6 +45,12 @@ bmesh *bmeshCreate(void) {
     bmeshDestroy(bm);
     return 0;
   }
+  bm->quadArray = arrayCreate(sizeof(quad));
+  if (!bm->quadArray) {
+    fprintf(stderr, "%s:arrayCreate quad failed.\n", __FUNCTION__);
+    bmeshDestroy(bm);
+    return 0;
+  }
   bm->rootNodeIndex = -1;
   bm->roundColor = 0;
   return bm;
@@ -51,6 +60,7 @@ void bmeshDestroy(bmesh *bm) {
   arrayDestroy(bm->nodeArray);
   arrayDestroy(bm->edgeArray);
   arrayDestroy(bm->indexArray);
+  arrayDestroy(bm->quadArray);
   free(bm);
 }
 
@@ -145,19 +155,95 @@ static int bmeshAddInbetweenNodeBetween(bmesh *bm,
   return newNode.index;
 }
 
+static void floatsToQuad(float *floats, quad *q) {
+  int i;
+  int offset = 0;
+  for (i = 0; i < 4; ++i) {
+    q->pt[i].x = floats[offset++];
+    q->pt[i].y = floats[offset++];
+    q->pt[i].z = floats[offset++];
+  }
+}
+
+static int bmeshGenerateNodeQuad(bmesh *bm, bmeshNode *node,
+    matrix *matRotate, int connectWithQuad) {
+  quad q;
+  matrix matTranslate;
+  matrix matFinal;
+  int i;
+  float floats[4][3] = {
+    {-node->radius, +node->radius, 0},
+    {-node->radius, -node->radius, 0},
+    {+node->radius, -node->radius, 0},
+    {+node->radius, +node->radius, 0},
+  };
+  matrixTranslate(&matTranslate, node->position.x, node->position.y,
+    node->position.z);
+  matrixLoadIdentity(&matFinal);
+  matrixAppend(&matFinal, &matTranslate);
+  matrixAppend(&matFinal, matRotate);
+  matrixTransformVector(&matFinal, floats[0]);
+  matrixTransformVector(&matFinal, floats[1]);
+  matrixTransformVector(&matFinal, floats[2]);
+  matrixTransformVector(&matFinal, floats[3]);
+  floatsToQuad(&floats[0][0], &q);
+  if (-1 == bmeshAddQuad(bm, &q)) {
+    fprintf(stderr, "%s:meshAddQuad failed.\n", __FUNCTION__);
+    return -1;
+  }
+  if (connectWithQuad >= 0) {
+    for (i = 0; i < 4; ++i) {
+      quad face;
+      quad *lastQ = bmeshGetQuad(bm, connectWithQuad);
+      face.pt[0].x = lastQ->pt[(0 + i) % 4].x;
+      face.pt[0].y = lastQ->pt[(0 + i) % 4].y;
+      face.pt[0].z = lastQ->pt[(0 + i) % 4].z;
+      face.pt[1].x = q.pt[(0 + i) % 4].x;
+      face.pt[1].y = q.pt[(0 + i) % 4].y;
+      face.pt[1].z = q.pt[(0 + i) % 4].z;
+      face.pt[2].x = q.pt[(1 + i) % 4].x;
+      face.pt[2].y = q.pt[(1 + i) % 4].y;
+      face.pt[2].z = q.pt[(1 + i) % 4].z;
+      face.pt[3].x = lastQ->pt[(1 + i) % 4].x;
+      face.pt[3].y = lastQ->pt[(1 + i) % 4].y;
+      face.pt[3].z = lastQ->pt[(1 + i) % 4].z;
+      if (-1 == bmeshAddQuad(bm, &face)) {
+        fprintf(stderr, "%s:meshAddQuad failed.\n", __FUNCTION__);
+        return -1;
+      }
+    }
+  }
+  return 0;
+}
+
 static int bmeshGenerateInbetweenNodesBetween(bmesh *bm,
       int firstNodeIndex, int secondNodeIndex) {
   float step = 0.5;
   float distance;
   int parentNodeIndex = firstNodeIndex;
+  float rotateAngle = 0;
+  vec3 rotateAround = {0, 0, 0};
+  vec3 p;
+  vec3 zAxis = {0, 0, 1};
+  matrix matRotate;
+  int lastQuadIndex = -1;
+  
   bmeshNode *firstNode = bmeshGetNode(bm, firstNodeIndex);
   bmeshNode *secondNode = bmeshGetNode(bm, secondNodeIndex);
+  bmeshNode *newNode;
   if (secondNode->roundColor == bm->roundColor) {
     return 0;
   }
-  distance = vec3Distance(&firstNode->position, &secondNode->position);
+  vec3Sub(&firstNode->position, &secondNode->position, &p);
+  vec3CrossProduct(&zAxis, &p, &rotateAround);
+  vec3Normalize(&rotateAround);
+  
+  distance = vec3Length(&p);
   if (distance > 0) {
     float offset = step;
+    rotateAngle = 180 / M_PI * acos(vec3DotProduct(&zAxis, &p) / distance);
+    matrixRotate(&matRotate,
+      rotateAngle, rotateAround.x, rotateAround.y, rotateAround.z);
     if (offset + step <= distance) {
       while (offset + step <= distance) {
         float frac = offset / distance;
@@ -166,14 +252,23 @@ static int bmeshGenerateInbetweenNodesBetween(bmesh *bm,
         if (-1 == parentNodeIndex) {
           return -1;
         }
+        newNode = bmeshGetNode(bm, parentNodeIndex);
+        bmeshGenerateNodeQuad(bm, newNode, &matRotate,
+          lastQuadIndex);
+        lastQuadIndex = -1 == lastQuadIndex ? bmeshGetQuadNum(bm) - 1 :
+          bmeshGetQuadNum(bm) - 5;
         offset += step;
       }
     } else if (distance > step) {
-      parentNodeIndex = bmeshAddInbetweenNodeBetween(bm, firstNode, secondNode, 0.5,
-        parentNodeIndex);
+      parentNodeIndex = bmeshAddInbetweenNodeBetween(bm, firstNode, secondNode,
+        0.5, parentNodeIndex);
       if (-1 == parentNodeIndex) {
         return -1;
       }
+      newNode = bmeshGetNode(bm, parentNodeIndex);
+      bmeshGenerateNodeQuad(bm, newNode, &matRotate, lastQuadIndex);
+      lastQuadIndex = -1 == lastQuadIndex ? bmeshGetQuadNum(bm) - 1 :
+          bmeshGetQuadNum(bm) - 5;
     }
   }
   if (-1 == bmeshAddChildNodeRelation(bm, parentNodeIndex, secondNodeIndex)) {
@@ -256,3 +351,23 @@ int bmeshGenerateInbetweenNodes(bmesh *bm) {
   bm->roundColor++;
   return bmeshGenerateInbetweenNodesFrom(bm, bm->rootNodeIndex);
 }
+
+int bmeshGetQuadNum(bmesh *bm) {
+  return arrayGetLength(bm->quadArray);
+}
+
+quad *bmeshGetQuad(bmesh *bm, int index) {
+  return (quad *)arrayGetItem(bm->quadArray, index);
+}
+
+int bmeshAddQuad(bmesh *bm, quad *q) {
+  int index = arrayGetLength(bm->quadArray);
+  if (0 != arraySetLength(bm->quadArray, index + 1)) {
+    fprintf(stderr, "%s:arraySetLength failed.\n", __FUNCTION__);
+    return -1;
+  }
+  memcpy(arrayGetItem(bm->quadArray, index), q, sizeof(quad));
+  return index;
+}
+
+

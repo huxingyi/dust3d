@@ -17,7 +17,7 @@ typedef struct {
 
 typedef struct {
   vec3 pt[4];
-} quard;
+} quad;
 
 typedef struct {
   int npoly;

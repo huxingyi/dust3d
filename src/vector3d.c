@@ -49,3 +49,25 @@ float vec3Distance(vec3 *a, vec3 *b) {
   vec3Sub(a, b, &p);
   return vec3Length(&p);
 }
+
+void vec3Normal(vec3 *a, vec3 *b, vec3 *c, vec3 *normal) {
+  float v1[3], v2[3], vr[3], val;
+  
+  v1[0] = a->x - b->x;
+  v1[1] = a->y - b->y;
+  v1[2] = a->z - b->z;
+
+  v2[0] = a->x - c->x;
+  v2[1] = a->y - c->y;
+  v2[2] = a->z - c->z;
+
+  vr[0] = v1[1] * v2[2] - v2[1] * v1[2];
+  vr[1] = v2[0] * v1[2] - v1[0] * v2[2];
+  vr[2] = v1[0] * v2[1] - v2[0] * v1[1];
+
+  val = sqrt(vr[0]*vr[0] + vr[1]*vr[1] + vr[2]*vr[2]);
+
+  normal->x = vr[0]/val;
+  normal->y = vr[1]/val;
+  normal->z = vr[2]/val;
+}

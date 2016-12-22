@@ -1,6 +1,7 @@
 #ifndef B_MESH_H
 #define B_MESH_H
 #include "vector3d.h"
+#include "draw.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,6 +42,9 @@ int bmeshAddEdge(bmesh *bm, bmeshEdge *edge);
 int bmeshGenerateInbetweenNodes(bmesh *bm);
 int bmeshGetNodeNextChild(bmesh *bm, bmeshNode *node, int *childIndex);
 bmeshNode *bmeshGetRootNode(bmesh *bm);
+int bmeshGetQuadNum(bmesh *bm);
+quad *bmeshGetQuad(bmesh *bm, int index);
+int bmeshAddQuad(bmesh *bm, quad *q);
 
 #ifdef __cplusplus
 }

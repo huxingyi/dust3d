@@ -21,6 +21,42 @@ matrix *matrixTranslate(matrix *mat, float x, float y, float z) {
   return mat;
 }
 
+//
+// matrixRotate modified from http://www.gamedev.net/topic/600537-instead-of-glrotatef-build-a-matrix/
+//
+
+matrix *matrixRotate(matrix *mat, float degree, float x, float y, float z) {
+  float c;
+  float s;
+  float length;
+  
+  matrixLoadIdentity(mat);
+  
+  if (degree <= 0) {
+    return mat;
+  }
+  
+  length = sqrt(x * x + y * y + z * z);
+  
+  c = cos(degree * DEG2RAD);
+  s = sin(degree * DEG2RAD);
+  
+  mat->data[0] = x * x * (1 - c) + c;
+	mat->data[4] = x * y * (1 - c) - z * s;
+	mat->data[8] = x * z * (1 - c) + y * s;
+
+	mat->data[1] = y * x * (1 - c) + z * s;
+	mat->data[5] = y * y * (1 - c) + c;
+	mat->data[9] = y * z * (1 - c) - x * s;
+
+	mat->data[2] = x * z * (1 - c) - y * s;
+	mat->data[6] = y * z * (1 - c) + x * s;
+	mat->data[10] = z * z * (1 - c) + c;
+  
+  return mat;
+
+}
+
 matrix *matrixRotateX(matrix *mat, float degree) {
   float c;
   float s;

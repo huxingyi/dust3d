@@ -49,6 +49,7 @@ int drawCylinder(vec3 *topOrigin, vec3 *bottomOrigin, float radius, int slices,
 
   vec3Sub(topOrigin, bottomOrigin, &p);
   vec3CrossProduct(&zAxis, &p, &t);
+  vec3Normalize(&t);
   height = vec3Length(&p);
   if (height > 0) {
     angle = 180 / M_PI * acos(vec3DotProduct(&zAxis, &p) / height);

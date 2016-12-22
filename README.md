@@ -7,7 +7,18 @@ Idea
 I was inspired by Jimmy Gunawan's blogs of monster generation, here is the first one [INSPIRATION / Pixar Monster Factory Part One](http://blendersushi.blogspot.com.au/2013/06/inspiration-pixar-monster-factory-part.html), and by search the Skin Modifier of Blender, I found the theory of Skin Modifier:    
 [B-Mesh: A Fast Modeling System for Base Meshes
 of 3D Articulated Shapes](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.357.7134&rep=rep1&type=pdf)(Authors: Zhongping Ji, Ligang Liu, Yigang Wang). I started to think of monster model generation for game development from years ago, thanks for this paper, Dust3D is achievable now.  
-From my initial thought, Dust3D should be a tool like [Makehuman](http://www.makehuman.org), with more versatile features, not only can make human, but also be able to **generate monsters automatically**.
+From my initial thought, Dust3D should be a tool like [Makehuman](http://www.makehuman.org), with more versatile features, not only can make human, but also be able to **generate monsters automatically**.  
+
+Build
+============
+*Generate Xcode Project*  
+```
+$ qmake -spec macx-xcode
+```
+*Generate Makefile*
+```
+$ qmake
+```
 
 TODO & Progress
 ==============
@@ -35,6 +46,9 @@ I created the test nodes's geometry information from Blender. Here is the render
 <img src="screenshot/dust3d_bmesh_nodes.png" width="206" height="164">  
 *Generate Inbetween Nodes*  
 <img src="screenshot/dust3d_bmesh_skeleton.png" width="124" height="128">  <img src="screenshot/dust3d_bmesh_inbetween.png" width="124" height="128">  
+*Generate Mesh*  
+<img src="screenshot/dust3d_generate_quad.png" width="124" height="128">  
+When I am implementing the B-Mesh algorithm, I am also think in the future, how to create a library of bunch of initial base models. There is a paper [the Skeleton of a Closed 3D Shape](http://www1.idc.ac.il/icgf/GraphicsSeminar2006/DCGskeleton06.pdf) described how to generate skeleton from mesh, this is the reverse progress of what I am doing, I think it can resolve the problem of insufficient initial base models, I can generate from tons of existed models.
 - [ ] Export Wavefront .obj  
 - [ ] Render B-Mesh result  
 - [ ] Design UI for monster parts configuration  
@@ -43,3 +57,4 @@ I created the test nodes's geometry information from Blender. Here is the render
 - [ ] png exporter for isometric 2.5D game  
 - [ ] Version 0.01 release  
 - [ ] Materials merge of different parts     
+- [ ] Implement [the Skeleton of a Closed 3D Shape](http://www1.idc.ac.il/icgf/GraphicsSeminar2006/DCGskeleton06.pdf)  

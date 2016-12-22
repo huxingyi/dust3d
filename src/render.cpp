@@ -26,7 +26,6 @@ static int drawBmeshNode(bmesh *bm, bmeshNode *node) {
 static void drawBmeshNodeRecursively(bmesh *bm, bmeshNode *node) {
   int childIndex = node->firstChildIndex;
   int childNodeIndex;
-
   drawBmeshNode(bm, node);
   while (-1 != childIndex) {
     childNodeIndex = bmeshGetNodeNextChild(bm, node, &childIndex);
@@ -34,6 +33,62 @@ static void drawBmeshNodeRecursively(bmesh *bm, bmeshNode *node) {
       break;
     }
     drawBmeshNodeRecursively(bm, bmeshGetNode(bm, childNodeIndex));
+  }
+}
+
+static void drawBmeshNodeQuardRecursively(bmesh *bm, bmeshNode *node) {
+  int childIndex = node->firstChildIndex;
+  int childNodeIndex;
+  
+  /*
+  matrix matTmp;
+  matrix matCalc;
+  float quad[4][3] = {
+    {-node->radius, +node->radius, 0},
+    {-node->radius, -node->radius, 0},
+    {+node->radius, -node->radius, 0},
+    {+node->radius, +node->radius, 0},
+  };
+  matrixLoadIdentity(&matCalc);
+  matrixAppend(&matCalc,
+    matrixTranslate(&matTmp, node->position.x, node->position.y,
+      node->position.z));
+  matrixAppend(&matCalc,
+    matrixRotate(&matTmp,
+      node->rotateAngle, node->rotateAround.x, node->rotateAround.y,
+      node->rotateAround.z));
+  matrixTransformVector(&matCalc, quad[0]);
+  matrixTransformVector(&matCalc, quad[1]);
+  matrixTransformVector(&matCalc, quad[2]);
+  matrixTransformVector(&matCalc, quad[3]);
+  
+  glVertex3fv(quad[0]);
+  glVertex3fv(quad[1]);
+  glVertex3fv(quad[2]);
+  glVertex3fv(quad[3]);
+  */
+
+  /*
+  glPushMatrix();
+  glTranslatef(node->position.x, node->position.y,
+    node->position.z);
+  glRotatef(node->rotateAngle, node->rotateAround.x, node->rotateAround.y,
+    node->rotateAround.z);
+  glBegin(GL_QUADS);
+    glVertex3f(-node->radius, +node->radius, 0);
+    glVertex3f(-node->radius, -node->radius, 0);
+    glVertex3f(+node->radius, -node->radius, 0);
+    glVertex3f(+node->radius, +node->radius, 0);
+  glEnd();
+  glPopMatrix();
+  */
+  
+  while (-1 != childIndex) {
+    childNodeIndex = bmeshGetNodeNextChild(bm, node, &childIndex);
+    if (-1 == childNodeIndex) {
+      break;
+    }
+    drawBmeshNodeQuardRecursively(bm, bmeshGetNode(bm, childNodeIndex));
   }
 }
 
@@ -82,6 +137,8 @@ void Render::initializeGL() {
   qglClearColor(QWidget::palette().color(QWidget::backgroundRole()));
   glClearStencil(0);
   glClearDepth(1.0f);
+  
+  glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   GLfloat ambientLight[] = {0.0f, 0.0f, 0.0f, 1.0f};
   GLfloat diffuseLight[] = {0.9f, 0.9f, 0.9f, 1.0f};
@@ -156,6 +213,10 @@ void Render::paintGL() {
   }
 
   drawBmeshNodeRecursively(bm, bmeshGetRootNode(bm));
+  
+  //glBegin(GL_QUADS);
+  //drawBmeshNodeQuardRecursively(bm, bmeshGetRootNode(bm));
+  //glEnd();
 
   {
     int index;
@@ -167,6 +228,30 @@ void Render::paintGL() {
     for (index = 0; index < bmeshGetEdgeNum(bm); ++index) {
       bmeshEdge *edge = bmeshGetEdge(bm, index);
       drawBmeshEdge(bm, edge);
+    }
+    glColor4f(1.0f, 1.0f, 1.0f, 0.5);
+    glBegin(GL_QUADS);
+    for (index = 0; index < bmeshGetQuadNum(bm); ++index) {
+      quad *q = bmeshGetQuad(bm, index);
+      vec3 normal;
+      int j;
+      vec3Normal(&q->pt[0], &q->pt[1], &q->pt[2], &normal);
+      for (j = 0; j < 4; ++j) {
+        glNormal3f(normal.x, normal.y, normal.z);
+        glVertex3f(q->pt[j].x, q->pt[j].y, q->pt[j].z);
+      }
+    }
+    glEnd();
+    glColor3f(0.0f, 0.0f, 0.0f);
+    for (index = 0; index < bmeshGetQuadNum(bm); ++index) {
+      quad *q = bmeshGetQuad(bm, index);
+      int j;
+      glBegin(GL_LINE_STRIP);
+      for (j = 0; j < 4; ++j) {
+        glVertex3f(q->pt[j].x, q->pt[j].y, q->pt[j].z);
+      }
+      glVertex3f(q->pt[0].x, q->pt[0].y, q->pt[0].z);
+      glEnd();
     }
   }
 
