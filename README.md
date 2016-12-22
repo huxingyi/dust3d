@@ -1,6 +1,7 @@
 Dust3D
 =========
 Dust3D is aim to be a quick modeling tool for game development. Currently the development is in the very early stage.  
+Please join the discussion [reddit/r/gamedev]( https://www.reddit.com/r/gamedev/comments/5iuf3h/i_am_writting_a_3d_monster_model_generate_tool/)
 
 Idea
 ===========
@@ -13,11 +14,14 @@ Build
 ============
 *Generate Xcode Project*  
 ```
+$ cd build
 $ qmake -spec macx-xcode
 ```
 *Generate Makefile*
 ```
+$ cd build
 $ qmake
+$ make
 ```
 
 TODO & Progress
