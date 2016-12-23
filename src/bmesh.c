@@ -155,38 +155,21 @@ static int bmeshAddInbetweenNodeBetween(bmesh *bm,
   return newNode.index;
 }
 
-static void floatsToQuad(float *floats, quad *q) {
-  int i;
-  int offset = 0;
-  for (i = 0; i < 4; ++i) {
-    q->pt[i].x = floats[offset++];
-    q->pt[i].y = floats[offset++];
-    q->pt[i].z = floats[offset++];
-  }
-}
-
 static int bmeshGenerateNodeQuad(bmesh *bm, bmeshNode *node,
-    matrix *matRotate, int connectWithQuad) {
-  quad q;
-  matrix matTranslate;
-  matrix matFinal;
+    vec3 *localYaxis, vec3 *localZaxis, int connectWithQuad) {
   int i;
-  float floats[4][3] = {
-    {-node->radius, +node->radius, 0},
-    {-node->radius, -node->radius, 0},
-    {+node->radius, -node->radius, 0},
-    {+node->radius, +node->radius, 0},
-  };
-  matrixTranslate(&matTranslate, node->position.x, node->position.y,
-    node->position.z);
-  matrixLoadIdentity(&matFinal);
-  matrixAppend(&matFinal, &matTranslate);
-  matrixAppend(&matFinal, matRotate);
-  matrixTransformVector(&matFinal, floats[0]);
-  matrixTransformVector(&matFinal, floats[1]);
-  matrixTransformVector(&matFinal, floats[2]);
-  matrixTransformVector(&matFinal, floats[3]);
-  floatsToQuad(&floats[0][0], &q);
+  quad q;
+  vec3 z, y;
+  vec3Scale(localYaxis, node->radius, &y);
+  vec3Scale(localZaxis, node->radius, &z);
+  vec3Sub(&node->position, &y, &q.pt[0]);
+  vec3Add(&q.pt[0], &z, &q.pt[0]);
+  vec3Sub(&node->position, &y, &q.pt[1]);
+  vec3Sub(&q.pt[1], &z, &q.pt[1]);
+  vec3Add(&node->position, &y, &q.pt[2]);
+  vec3Sub(&q.pt[2], &z, &q.pt[2]);
+  vec3Add(&node->position, &y, &q.pt[3]);
+  vec3Add(&q.pt[3], &z, &q.pt[3]);
   if (-1 == bmeshAddQuad(bm, &q)) {
     fprintf(stderr, "%s:meshAddQuad failed.\n", __FUNCTION__);
     return -1;
@@ -221,11 +204,10 @@ static int bmeshGenerateInbetweenNodesBetween(bmesh *bm,
   float step = 0.5;
   float distance;
   int parentNodeIndex = firstNodeIndex;
-  float rotateAngle = 0;
-  vec3 rotateAround = {0, 0, 0};
-  vec3 p;
-  vec3 zAxis = {0, 0, 1};
-  matrix matRotate;
+  vec3 localZaxis;
+  vec3 localYaxis;
+  vec3 edgeDirection;
+  vec3 worldZaxis = {0, 0, 1};
   int lastQuadIndex = -1;
   
   bmeshNode *firstNode = bmeshGetNode(bm, firstNodeIndex);
@@ -234,16 +216,15 @@ static int bmeshGenerateInbetweenNodesBetween(bmesh *bm,
   if (secondNode->roundColor == bm->roundColor) {
     return 0;
   }
-  vec3Sub(&firstNode->position, &secondNode->position, &p);
-  vec3CrossProduct(&zAxis, &p, &rotateAround);
-  vec3Normalize(&rotateAround);
+  vec3Sub(&firstNode->position, &secondNode->position, &edgeDirection);
+  vec3CrossProduct(&worldZaxis, &edgeDirection, &localZaxis);
+  vec3Normalize(&localZaxis);
+  vec3CrossProduct(&localZaxis, &edgeDirection, &localYaxis);
+  vec3Normalize(&localYaxis);
   
-  distance = vec3Length(&p);
+  distance = vec3Length(&edgeDirection);
   if (distance > 0) {
     float offset = step;
-    rotateAngle = 180 / M_PI * acos(vec3DotProduct(&zAxis, &p) / distance);
-    matrixRotate(&matRotate,
-      rotateAngle, rotateAround.x, rotateAround.y, rotateAround.z);
     if (offset + step <= distance) {
       while (offset + step <= distance) {
         float frac = offset / distance;
@@ -253,7 +234,7 @@ static int bmeshGenerateInbetweenNodesBetween(bmesh *bm,
           return -1;
         }
         newNode = bmeshGetNode(bm, parentNodeIndex);
-        bmeshGenerateNodeQuad(bm, newNode, &matRotate,
+        bmeshGenerateNodeQuad(bm, newNode, &localYaxis, &localZaxis,
           lastQuadIndex);
         lastQuadIndex = -1 == lastQuadIndex ? bmeshGetQuadNum(bm) - 1 :
           bmeshGetQuadNum(bm) - 5;
@@ -266,7 +247,7 @@ static int bmeshGenerateInbetweenNodesBetween(bmesh *bm,
         return -1;
       }
       newNode = bmeshGetNode(bm, parentNodeIndex);
-      bmeshGenerateNodeQuad(bm, newNode, &matRotate, lastQuadIndex);
+      bmeshGenerateNodeQuad(bm, newNode, &localYaxis, &localZaxis, lastQuadIndex);
       lastQuadIndex = -1 == lastQuadIndex ? bmeshGetQuadNum(bm) - 1 :
           bmeshGetQuadNum(bm) - 5;
     }

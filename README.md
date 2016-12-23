@@ -36,7 +36,7 @@ Two caps and many strips composites a cylinder.
 Almost all 3D editor have a infinite grid ground, I just made a finite one, in the future, I should expand the grid outside of the screen to make it infinite.  
 Now, for just beginning, I think it's a not bad start.
 <img src="screenshot/dust3d_sphere_cylinder.png">
-- [ ] Implement B-Mesh algorithm (Dec 18, 2016 ~ Dec 20, 2016)   
+- [ ] Implement B-Mesh algorithm (Dec 18, 2016 ~ Dec 23, 2016)   
 *Drawing Skeletal Shape Balls*  
 Draw shape ball is easy, no need to rotate, I just need scale it along the ball's radius.
 Draw the cylinder which connects two shape balls is more difficult, I need do some math to rotate it. [Here](http://www.thjsmith.com/40/cylinder-between-two-points-opengl-c) described it.  

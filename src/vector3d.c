@@ -18,6 +18,12 @@ void vec3Normalize(vec3 *p) {
   }
 }
 
+void vec3Scale(vec3 *a, float scale, vec3 *result) {
+  result->x = a->x * scale;
+  result->y = a->y * scale;
+  result->z = a->z * scale;
+}
+
 void vec3Midpoint(vec3 *a, vec3 *b, vec3 *mid) {
   vec3Lerp(a, b, 0.5, mid);
 }
@@ -32,6 +38,12 @@ void vec3Sub(vec3 *a, vec3 *b, vec3 *result) {
   result->x = a->x - b->x;
   result->y = a->y - b->y;
   result->z = a->z - b->z;
+}
+
+void vec3Add(vec3 *a, vec3 *b, vec3 *result) {
+  result->x = a->x + b->x;
+  result->y = a->y + b->y;
+  result->z = a->z + b->z;
 }
 
 void vec3CrossProduct(vec3 *a, vec3 *b, vec3 *result) {
