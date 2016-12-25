@@ -32,6 +32,7 @@ int drawCylinder(vec3 *topOrigin, vec3 *bottomOrigin, float radius, int slices,
 int drawGrid(float size, float step);
 int drawText(int x, int y, char *text);
 int drawPrintf(int x, int y, const char *fmt, ...);
+int drawDebugPrintf(const char *fmt, ...);
 
 #ifdef __cplusplus
 }

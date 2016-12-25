@@ -6,62 +6,108 @@
 #include "draw.h"
 #include "bmesh.h"
 #include "matrix.h"
+#include "vector3d.h"
 
-static const float bmeshNodeColors[][3] {
+static const float bmeshBallColors[][3] {
   {0, 0.78, 1},
   {1, 0, 0},
   {1, 1, 1}
 };
 
-static const float bmeshEdgeColor[3] = {1, 1, 0};
+static const float bmeshBoneColor[3] = {1, 1, 0};
 
 static QGLWidget *_this = 0;
+static int debugOutputTop = 0;
 
-static int drawBmeshNode(bmesh *bm, bmeshNode *node) {
-  glColor3fv(bmeshNodeColors[node->type]);
-  drawSphere(&node->position, node->radius, 36, 24);
+int drawDebugPrintf(const char *fmt, ...) {
+  int x = 0;
+  int y = debugOutputTop + 10;
+  va_list args;
+  char text[1024];
+  va_start(args, fmt);
+  vsnprintf(text, sizeof(text), fmt, args);
+  debugOutputTop += 9;
+  return drawText(x, y, text);
+}
+
+static int drawBmeshBall(bmesh *bm, bmeshBall *ball) {
+  glColor3fv(bmeshBallColors[ball->type]);
+  drawSphere(&ball->position, ball->radius, 36, 24);
   return 0;
 }
 
-static void drawBmeshNodeRecursively(bmesh *bm, bmeshNode *node) {
-  int childIndex = node->firstChildIndex;
-  int childNodeIndex;
-  drawBmeshNode(bm, node);
-  while (-1 != childIndex) {
-    childNodeIndex = bmeshGetNodeNextChild(bm, node, &childIndex);
-    if (-1 == childNodeIndex) {
-      break;
-    }
-    drawBmeshNodeRecursively(bm, bmeshGetNode(bm, childNodeIndex));
+static void drawBmeshBallRecursively(bmesh *bm, bmeshBall *ball) {
+  bmeshBallIterator iterator;
+  bmeshBall *child;
+  drawBmeshBall(bm, ball);
+  for (child = bmeshGetBallFirstChild(bm, ball, &iterator);
+      child;
+      child = bmeshGetBallNextChild(bm, ball, &iterator)) {
+    drawBmeshBallRecursively(bm, child);
   }
 }
 
-static void drawBmeshNodeQuardRecursively(bmesh *bm, bmeshNode *node) {
-  int childIndex = node->firstChildIndex;
-  int childNodeIndex;
+static int drawBmeshBallQuad(bmeshBall *ball) {
+  vec3 normal;
+  int j;
+  vec3 z, y;
+  quad q;
   
+  vec3Scale(&ball->localYaxis, ball->radius, &y);
+  vec3Scale(&ball->localZaxis, ball->radius, &z);
+  vec3Sub(&ball->position, &y, &q.pt[0]);
+  vec3Add(&q.pt[0], &z, &q.pt[0]);
+  vec3Sub(&ball->position, &y, &q.pt[1]);
+  vec3Sub(&q.pt[1], &z, &q.pt[1]);
+  vec3Add(&ball->position, &y, &q.pt[2]);
+  vec3Sub(&q.pt[2], &z, &q.pt[2]);
+  vec3Add(&ball->position, &y, &q.pt[3]);
+  vec3Add(&q.pt[3], &z, &q.pt[3]);
+  
+  glColor4f(1.0f, 1.0f, 1.0f, 0.5);
+  glBegin(GL_QUADS);
+  vec3Normal(&q.pt[0], &q.pt[1], &q.pt[2], &normal);
+  for (j = 0; j < 4; ++j) {
+    glNormal3f(normal.x, normal.y, normal.z);
+    glVertex3f(q.pt[j].x, q.pt[j].y, q.pt[j].z);
+  }
+  glEnd();
+  
+  glColor3f(0.0f, 0.0f, 0.0f);
+  glBegin(GL_LINE_STRIP);
+  for (j = 0; j < 4; ++j) {
+    glVertex3f(q.pt[j].x, q.pt[j].y, q.pt[j].z);
+  }
+  glVertex3f(q.pt[0].x, q.pt[0].y, q.pt[0].z);
+  glEnd();
+}
+
+static void drawBmeshBallQuadRecursively(bmesh *bm, bmeshBall *ball) {
+  bmeshBallIterator iterator;
+  bmeshBall *child;
+
   /*
   matrix matTmp;
   matrix matCalc;
   float quad[4][3] = {
-    {-node->radius, +node->radius, 0},
-    {-node->radius, -node->radius, 0},
-    {+node->radius, -node->radius, 0},
-    {+node->radius, +node->radius, 0},
+    {-ball->radius, +ball->radius, 0},
+    {-ball->radius, -ball->radius, 0},
+    {+ball->radius, -ball->radius, 0},
+    {+ball->radius, +ball->radius, 0},
   };
   matrixLoadIdentity(&matCalc);
   matrixAppend(&matCalc,
-    matrixTranslate(&matTmp, node->position.x, node->position.y,
-      node->position.z));
+    matrixTranslate(&matTmp, ball->position.x, ball->position.y,
+      ball->position.z));
   matrixAppend(&matCalc,
     matrixRotate(&matTmp,
-      node->rotateAngle, node->rotateAround.x, node->rotateAround.y,
-      node->rotateAround.z));
+      ball->rotateAngle, ball->rotateAround.x, ball->rotateAround.y,
+      ball->rotateAround.z));
   matrixTransformVector(&matCalc, quad[0]);
   matrixTransformVector(&matCalc, quad[1]);
   matrixTransformVector(&matCalc, quad[2]);
   matrixTransformVector(&matCalc, quad[3]);
-  
+
   glVertex3fv(quad[0]);
   glVertex3fv(quad[1]);
   glVertex3fv(quad[2]);
@@ -70,33 +116,33 @@ static void drawBmeshNodeQuardRecursively(bmesh *bm, bmeshNode *node) {
 
   /*
   glPushMatrix();
-  glTranslatef(node->position.x, node->position.y,
-    node->position.z);
-  glRotatef(node->rotateAngle, node->rotateAround.x, node->rotateAround.y,
-    node->rotateAround.z);
+  glTranslatef(ball->position.x, ball->position.y,
+    ball->position.z);
+  glRotatef(ball->rotateAngle, ball->rotateAround.x, ball->rotateAround.y,
+    ball->rotateAround.z);
   glBegin(GL_QUADS);
-    glVertex3f(-node->radius, +node->radius, 0);
-    glVertex3f(-node->radius, -node->radius, 0);
-    glVertex3f(+node->radius, -node->radius, 0);
-    glVertex3f(+node->radius, +node->radius, 0);
+    glVertex3f(-ball->radius, +ball->radius, 0);
+    glVertex3f(-ball->radius, -ball->radius, 0);
+    glVertex3f(+ball->radius, -ball->radius, 0);
+    glVertex3f(+ball->radius, +ball->radius, 0);
   glEnd();
   glPopMatrix();
   */
   
-  while (-1 != childIndex) {
-    childNodeIndex = bmeshGetNodeNextChild(bm, node, &childIndex);
-    if (-1 == childNodeIndex) {
-      break;
-    }
-    drawBmeshNodeQuardRecursively(bm, bmeshGetNode(bm, childNodeIndex));
+  drawBmeshBallQuad(ball);
+
+  for (child = bmeshGetBallFirstChild(bm, ball, &iterator);
+      child;
+      child = bmeshGetBallNextChild(bm, ball, &iterator)) {
+    drawBmeshBallQuadRecursively(bm, child);
   }
 }
 
-static int drawBmeshEdge(bmesh *bm, bmeshEdge *edge) {
-  glColor3fv(bmeshEdgeColor);
-  bmeshNode *firstNode = bmeshGetNode(bm, edge->firstNodeIndex);
-  bmeshNode *secondNode = bmeshGetNode(bm, edge->secondNodeIndex);
-  drawCylinder(&firstNode->position, &secondNode->position, 0.1, 36, 24);
+static int drawBmeshBone(bmesh *bm, bmeshBone *bone) {
+  glColor3fv(bmeshBoneColor);
+  bmeshBall *firstBall = bmeshGetBall(bm, bone->firstBallIndex);
+  bmeshBall *secondBall = bmeshGetBall(bm, bone->secondBallIndex);
+  drawCylinder(&firstBall->position, &secondBall->position, 0.1, 36, 24);
   return 0;
 }
 
@@ -137,7 +183,7 @@ void Render::initializeGL() {
   qglClearColor(QWidget::palette().color(QWidget::backgroundRole()));
   glClearStencil(0);
   glClearDepth(1.0f);
-  
+
   glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
   GLfloat ambientLight[] = {0.0f, 0.0f, 0.0f, 1.0f};
@@ -166,9 +212,10 @@ void Render::initializeGL() {
 #include "../data/bmesh_test_1.h"
 
 void Render::paintGL() {
-  static bmesh *bm = 0;
+  bmesh *bm = 0;
 
   _this = this;
+  debugOutputTop = 0;
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -179,7 +226,7 @@ void Render::paintGL() {
   glRotatef(cameraAngleY, 0, 1, 0);
 
   glColor3f(0, 0, 0);
-  drawPrintf(0, 10, "cameraAngleX:%f cameraAngleY:%f cameraDistance:%f",
+  drawDebugPrintf("cameraAngleX:%f cameraAngleY:%f cameraDistance:%f",
     cameraAngleX, cameraAngleY, cameraDistance);
 
   drawGrid(10, 1);
@@ -187,47 +234,48 @@ void Render::paintGL() {
   glEnable(GL_LIGHTING);
 
   if (0 == bm) {
-    bmeshNode node;
-    bmeshEdge edge;
+    bmeshBall ball;
+    bmeshBone bone;
     int i;
     bm = bmeshCreate();
 
-    for (i = 0; i < sizeof(bmeshTest1Nodes) / sizeof(bmeshTest1Nodes[0]); ++i) {
-      memset(&node, 0, sizeof(node));
-      node.position.x = bmeshTest1Nodes[i][1];
-      node.position.y = bmeshTest1Nodes[i][2];
-      node.position.z = bmeshTest1Nodes[i][3];
-      node.radius = bmeshTest1Nodes[i][4];
-      node.type = bmeshTest1Nodes[i][5];
-      bmeshAddNode(bm, &node);
+    for (i = 0; i < sizeof(bmeshTest1Balls) / sizeof(bmeshTest1Balls[0]); ++i) {
+      memset(&ball, 0, sizeof(ball));
+      ball.position.x = bmeshTest1Balls[i][1];
+      ball.position.y = bmeshTest1Balls[i][2];
+      ball.position.z = bmeshTest1Balls[i][3];
+      ball.radius = bmeshTest1Balls[i][4];
+      ball.type = bmeshTest1Balls[i][5];
+      bmeshAddBall(bm, &ball);
     }
 
-    for (i = 0; i < sizeof(bmeshTest1Edges) / sizeof(bmeshTest1Edges[0]); ++i) {
-      memset(&edge, 0, sizeof(edge));
-      edge.firstNodeIndex = bmeshTest1Edges[i][0];
-      edge.secondNodeIndex = bmeshTest1Edges[i][1];
-      bmeshAddEdge(bm, &edge);
+    for (i = 0; i < sizeof(bmeshTest1Bones) / sizeof(bmeshTest1Bones[0]); ++i) {
+      memset(&bone, 0, sizeof(bone));
+      bone.firstBallIndex = bmeshTest1Bones[i][0];
+      bone.secondBallIndex = bmeshTest1Bones[i][1];
+      bmeshAddBone(bm, &bone);
     }
 
-    bmeshGenerateInbetweenNodes(bm);
+    bmeshGenerateInbetweenBalls(bm);
+    bmeshSweep(bm);
   }
 
-  drawBmeshNodeRecursively(bm, bmeshGetRootNode(bm));
-  
+  drawBmeshBallRecursively(bm, bmeshGetRootBall(bm));
+
   //glBegin(GL_QUADS);
-  //drawBmeshNodeQuardRecursively(bm, bmeshGetRootNode(bm));
+  drawBmeshBallQuadRecursively(bm, bmeshGetRootBall(bm));
   //glEnd();
 
   {
     int index;
     /*
-    for (index = 0; index < bmeshGetNodeNum(bm); ++index) {
-      bmeshNode *node = bmeshGetNode(bm, index);
-      drawBmeshNode(bm, node);
+    for (index = 0; index < bmeshGetBallNum(bm); ++index) {
+      bmeshBall *ball = bmeshGetBall(bm, index);
+      drawBmeshBall(bm, ball);
     }*/
-    for (index = 0; index < bmeshGetEdgeNum(bm); ++index) {
-      bmeshEdge *edge = bmeshGetEdge(bm, index);
-      drawBmeshEdge(bm, edge);
+    for (index = 0; index < bmeshGetBoneNum(bm); ++index) {
+      bmeshBone *bone = bmeshGetBone(bm, index);
+      drawBmeshBone(bm, bone);
     }
     glColor4f(1.0f, 1.0f, 1.0f, 0.5);
     glBegin(GL_QUADS);
@@ -256,6 +304,11 @@ void Render::paintGL() {
   }
 
   glPopMatrix();
+  
+  if (bm) {
+    bmeshDestroy(bm);
+    bm = 0;
+  }
 }
 
 void Render::resizeGL(int w, int h) {

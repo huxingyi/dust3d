@@ -97,3 +97,4 @@ int drawPrintf(int x, int y, const char *fmt, ...) {
   vsnprintf(text, sizeof(text), fmt, args);
   return drawText(x, y, text);
 }
+

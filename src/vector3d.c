@@ -1,5 +1,6 @@
 #include <math.h>
 #include "vector3d.h"
+#include "matrix.h"
 
 float vec3Length(vec3 *p) {
   double mag;
@@ -82,4 +83,45 @@ void vec3Normal(vec3 *a, vec3 *b, vec3 *c, vec3 *normal) {
   normal->x = vr[0]/val;
   normal->y = vr[1]/val;
   normal->z = vr[2]/val;
+}
+
+void vec3RotateAlong(vec3 *a, float angle, vec3 *axis, vec3 *result) {
+  float vec[3];
+  matrix matRotate;
+  matrix matFinal;
+  matrixLoadIdentity(&matFinal);
+  matrixAppend(&matFinal, matrixRotate(&matRotate, angle,
+    axis->x, axis->y, axis->z));
+  vec[0] = a->x;
+  vec[1] = a->y;
+  vec[2] = a->z;
+  matrixTransformVector(&matFinal, vec);
+  result->x = vec[0];
+  result->y = vec[1];
+  result->z = vec[2];
+}
+
+float vec3Angle(vec3 *a, vec3 *b) {
+  float angle;
+  vec3 p;
+  float distance;
+  float dot;
+  float acosParam;
+  float acosVal;
+  vec3Sub(a, b, &p);
+  distance = vec3Length(&p);
+  if (0 == distance) {
+    return 0;
+  }
+  dot = vec3DotProduct(a, b);
+  acosParam = dot / distance;
+  if (acosParam < -1) {
+    acosParam = -1;
+  }
+  if (acosParam > 1) {
+    acosParam = 1;
+  }
+  acosVal = acos(acosParam);
+  angle = 180 / M_PI * acosVal;
+  return angle;
 }

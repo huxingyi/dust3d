@@ -8,10 +8,10 @@ extern "C" {
 #endif
 
 typedef enum {
-  BMESH_NODE_TYPE_KEY = 0,
-  BMESH_NODE_TYPE_ROOT = 1,
-  BMESH_NODE_TYPE_INBETWEEN = 2,
-} bmeshNodeType;
+  BMESH_BALL_TYPE_KEY = 0,
+  BMESH_BALL_TYPE_ROOT = 1,
+  BMESH_BALL_TYPE_INBETWEEN = 2,
+} bmeshBallType;
 
 typedef struct bmesh bmesh;
 
@@ -22,29 +22,39 @@ typedef struct {
   int type;
   int childrenIndices;
   int firstChildIndex;
+  vec3 boneDirection;
+  vec3 localYaxis;
+  vec3 localZaxis;
   int roundColor;
-} bmeshNode;
+} bmeshBall;
+
+typedef int bmeshBallIterator;
 
 typedef struct {
   int index;
-  int firstNodeIndex;
-  int secondNodeIndex;
-} bmeshEdge;
+  int firstBallIndex;
+  int secondBallIndex;
+} bmeshBone;
 
 bmesh *bmeshCreate(void);
 void bmeshDestroy(bmesh *bm);
-int bmeshGetNodeNum(bmesh *bm);
-int bmeshGetEdgeNum(bmesh *bm);
-bmeshNode *bmeshGetNode(bmesh *bm, int index);
-bmeshEdge *bmeshGetEdge(bmesh *bm, int index);
-int bmeshAddNode(bmesh *bm, bmeshNode *node);
-int bmeshAddEdge(bmesh *bm, bmeshEdge *edge);
-int bmeshGenerateInbetweenNodes(bmesh *bm);
-int bmeshGetNodeNextChild(bmesh *bm, bmeshNode *node, int *childIndex);
-bmeshNode *bmeshGetRootNode(bmesh *bm);
+int bmeshGetBallNum(bmesh *bm);
+int bmeshGetBoneNum(bmesh *bm);
+bmeshBall *bmeshGetBall(bmesh *bm, int index);
+bmeshBone *bmeshGetBone(bmesh *bm, int index);
+int bmeshAddBall(bmesh *bm, bmeshBall *ball);
+int bmeshAddBone(bmesh *bm, bmeshBone *bone);
+int bmeshGenerateInbetweenBalls(bmesh *bm);
+bmeshBall *bmeshGetBallFirstChild(bmesh *bm, bmeshBall *node,
+  bmeshBallIterator *iterator);
+bmeshBall *bmeshGetBallNextChild(bmesh *bm, bmeshBall *node,
+  bmeshBallIterator *iterator);
+bmeshBall *bmeshGetRootBall(bmesh *bm);
 int bmeshGetQuadNum(bmesh *bm);
 quad *bmeshGetQuad(bmesh *bm, int index);
 int bmeshAddQuad(bmesh *bm, quad *q);
+int bmeshSweep(bmesh *bm);
+int bmeshStitch(bmesh *bm);
 
 #ifdef __cplusplus
 }

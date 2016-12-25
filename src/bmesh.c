@@ -6,18 +6,21 @@
 #include "bmesh.h"
 #include "array.h"
 #include "matrix.h"
+#include "draw.h"
 
-typedef struct bmeshNodeIndex {
-  int nodeIndex;
+#define BMESH_STEP_DISTANCE 0.4
+
+typedef struct bmeshBallIndex {
+  int ballIndex;
   int nextChildIndex;
-} bmeshNodeIndex;
+} bmeshBallIndex;
 
 struct bmesh {
-  array *nodeArray;
-  array *edgeArray;
+  array *ballArray;
+  array *boneArray;
   array *indexArray;
   array *quadArray;
-  int rootNodeIndex;
+  int rootBallIndex;
   int roundColor;
 };
 
@@ -27,21 +30,21 @@ bmesh *bmeshCreate(void) {
     fprintf(stderr, "%s:Insufficient memory.\n", __FUNCTION__);
     return 0;
   }
-  bm->nodeArray = arrayCreate(sizeof(bmeshNode));
-  if (!bm->nodeArray) {
-    fprintf(stderr, "%s:arrayCreate bmeshNode failed.\n", __FUNCTION__);
+  bm->ballArray = arrayCreate(sizeof(bmeshBall));
+  if (!bm->ballArray) {
+    fprintf(stderr, "%s:arrayCreate bmeshBall failed.\n", __FUNCTION__);
     bmeshDestroy(bm);
     return 0;
   }
-  bm->edgeArray = arrayCreate(sizeof(bmeshEdge));
-  if (!bm->edgeArray) {
-    fprintf(stderr, "%s:arrayCreate bmeshEdge failed.\n", __FUNCTION__);
+  bm->boneArray = arrayCreate(sizeof(bmeshBone));
+  if (!bm->boneArray) {
+    fprintf(stderr, "%s:arrayCreate bmeshBone failed.\n", __FUNCTION__);
     bmeshDestroy(bm);
     return 0;
   }
-  bm->indexArray = arrayCreate(sizeof(bmeshNodeIndex));
+  bm->indexArray = arrayCreate(sizeof(bmeshBallIndex));
   if (!bm->indexArray) {
-    fprintf(stderr, "%s:arrayCreate bmeshNodeIndex failed.\n", __FUNCTION__);
+    fprintf(stderr, "%s:arrayCreate bmeshBallIndex failed.\n", __FUNCTION__);
     bmeshDestroy(bm);
     return 0;
   }
@@ -51,125 +54,128 @@ bmesh *bmeshCreate(void) {
     bmeshDestroy(bm);
     return 0;
   }
-  bm->rootNodeIndex = -1;
+  bm->rootBallIndex = -1;
   bm->roundColor = 0;
   return bm;
 }
 
 void bmeshDestroy(bmesh *bm) {
-  arrayDestroy(bm->nodeArray);
-  arrayDestroy(bm->edgeArray);
+  arrayDestroy(bm->ballArray);
+  arrayDestroy(bm->boneArray);
   arrayDestroy(bm->indexArray);
   arrayDestroy(bm->quadArray);
   free(bm);
 }
 
-int bmeshGetNodeNum(bmesh *bm) {
-  return arrayGetLength(bm->nodeArray);
+int bmeshGetBallNum(bmesh *bm) {
+  return arrayGetLength(bm->ballArray);
 }
 
-int bmeshGetEdgeNum(bmesh *bm) {
-  return arrayGetLength(bm->edgeArray);
+int bmeshGetBoneNum(bmesh *bm) {
+  return arrayGetLength(bm->boneArray);
 }
 
-bmeshNode *bmeshGetNode(bmesh *bm, int index) {
-  return (bmeshNode *)arrayGetItem(bm->nodeArray, index);
+bmeshBall *bmeshGetBall(bmesh *bm, int index) {
+  return (bmeshBall *)arrayGetItem(bm->ballArray, index);
 }
 
-bmeshEdge *bmeshGetEdge(bmesh *bm, int index) {
-  return (bmeshEdge *)arrayGetItem(bm->edgeArray, index);
+bmeshBone *bmeshGetBone(bmesh *bm, int index) {
+  return (bmeshBone *)arrayGetItem(bm->boneArray, index);
 }
 
-int bmeshAddNode(bmesh *bm, bmeshNode *node) {
-  int index = arrayGetLength(bm->nodeArray);
-  node->index = index;
-  node->firstChildIndex = -1;
-  node->childrenIndices = 0;
-  if (0 != arraySetLength(bm->nodeArray, index + 1)) {
+int bmeshAddBall(bmesh *bm, bmeshBall *ball) {
+  int index = arrayGetLength(bm->ballArray);
+  ball->index = index;
+  ball->firstChildIndex = -1;
+  ball->childrenIndices = 0;
+  if (0 != arraySetLength(bm->ballArray, index + 1)) {
     fprintf(stderr, "%s:arraySetLength failed.\n", __FUNCTION__);
     return -1;
   }
-  memcpy(arrayGetItem(bm->nodeArray, index), node, sizeof(bmeshNode));
-  if (BMESH_NODE_TYPE_ROOT == node->type) {
-    bm->rootNodeIndex = index;
+  memcpy(arrayGetItem(bm->ballArray, index), ball, sizeof(bmeshBall));
+  if (BMESH_BALL_TYPE_ROOT == ball->type) {
+    bm->rootBallIndex = index;
   }
   return index;
 }
 
-static int bmeshAddChildNodeRelation(bmesh *bm, int parentNodeIndex,
-    int childNodeIndex) {
-  bmeshNode *parentNode = bmeshGetNode(bm, parentNodeIndex);
-  bmeshNodeIndex *indexItem;
+static int bmeshAddChildBallRelation(bmesh *bm, int parentBallIndex,
+    int childBallIndex) {
+  bmeshBall *parentBall = bmeshGetBall(bm, parentBallIndex);
+  bmeshBallIndex *indexItem;
   int newChildIndex = arrayGetLength(bm->indexArray);
   if (0 != arraySetLength(bm->indexArray, newChildIndex + 1)) {
     fprintf(stderr, "%s:arraySetLength failed.\n", __FUNCTION__);
     return -1;
   }
-  indexItem = (bmeshNodeIndex *)arrayGetItem(bm->indexArray, newChildIndex);
-  indexItem->nodeIndex = childNodeIndex;
-  indexItem->nextChildIndex = parentNode->firstChildIndex;
-  parentNode->firstChildIndex = newChildIndex;
-  parentNode->childrenIndices++;
+  indexItem = (bmeshBallIndex *)arrayGetItem(bm->indexArray, newChildIndex);
+  indexItem->ballIndex = childBallIndex;
+  indexItem->nextChildIndex = parentBall->firstChildIndex;
+  parentBall->firstChildIndex = newChildIndex;
+  parentBall->childrenIndices++;
   return 0;
 }
 
-int bmeshAddEdge(bmesh *bm, bmeshEdge *edge) {
-  int index = arrayGetLength(bm->edgeArray);
-  edge->index = index;
-  if (0 != arraySetLength(bm->edgeArray, index + 1)) {
+int bmeshAddBone(bmesh *bm, bmeshBone *bone) {
+  int index = arrayGetLength(bm->boneArray);
+  bone->index = index;
+  if (0 != arraySetLength(bm->boneArray, index + 1)) {
     fprintf(stderr, "%s:arraySetLength failed.\n", __FUNCTION__);
     return -1;
   }
-  memcpy(arrayGetItem(bm->edgeArray, index), edge, sizeof(bmeshEdge));
-  if (0 != bmeshAddChildNodeRelation(bm, edge->firstNodeIndex,
-      edge->secondNodeIndex)) {
-    fprintf(stderr, "%s:bmeshAddChildNodeRelation failed.\n", __FUNCTION__);
+  memcpy(arrayGetItem(bm->boneArray, index), bone, sizeof(bmeshBone));
+  if (0 != bmeshAddChildBallRelation(bm, bone->firstBallIndex,
+      bone->secondBallIndex)) {
+    fprintf(stderr, "%s:bmeshAddChildBallRelation failed.\n", __FUNCTION__);
     return -1;
   }
-  if (0 != bmeshAddChildNodeRelation(bm, edge->secondNodeIndex,
-      edge->firstNodeIndex)) {
-    fprintf(stderr, "%s:bmeshAddChildNodeRelation failed.\n", __FUNCTION__);
+  if (0 != bmeshAddChildBallRelation(bm, bone->secondBallIndex,
+      bone->firstBallIndex)) {
+    fprintf(stderr, "%s:bmeshAddChildBallRelation failed.\n", __FUNCTION__);
     return -1;
   }
   return index;
 }
 
-static int bmeshAddInbetweenNodeBetween(bmesh *bm,
-    bmeshNode *firstNode, bmeshNode *secondNode, float frac,
-    int parentNodeIndex) {
-  bmeshNode newNode;
-  memset(&newNode, 0, sizeof(newNode));
-  newNode.type = BMESH_NODE_TYPE_INBETWEEN;
-  newNode.radius = firstNode->radius * (1 - frac) +
-    secondNode->radius * frac;
-  vec3Lerp(&firstNode->position, &secondNode->position, frac,
-    &newNode.position);
-  if (-1 == bmeshAddNode(bm, &newNode)) {
-    fprintf(stderr, "%s:bmeshAddNode failed.\n", __FUNCTION__);
+static int bmeshAddInbetweenBallBetween(bmesh *bm,
+    bmeshBall *firstBall, bmeshBall *secondBall, float frac,
+    int parentBallIndex) {
+  bmeshBall newBall;
+  memset(&newBall, 0, sizeof(newBall));
+  newBall.type = BMESH_BALL_TYPE_INBETWEEN;
+  newBall.radius = firstBall->radius * (1 - frac) +
+    secondBall->radius * frac;
+  vec3Lerp(&firstBall->position, &secondBall->position, frac,
+    &newBall.position);
+  if (-1 == bmeshAddBall(bm, &newBall)) {
+    fprintf(stderr, "%s:bmeshAddBall failed.\n", __FUNCTION__);
     return -1;
   }
-  if (-1 == bmeshAddChildNodeRelation(bm, parentNodeIndex, newNode.index)) {
-    fprintf(stderr, "%s:bmeshAddChildNodeRelation failed.\n", __FUNCTION__);
+  if (-1 == bmeshAddChildBallRelation(bm, parentBallIndex, newBall.index)) {
+    fprintf(stderr, "%s:bmeshAddChildBallRelation failed.\n", __FUNCTION__);
     return -1;
   }
-  return newNode.index;
+  return newBall.index;
 }
 
-static int bmeshGenerateNodeQuad(bmesh *bm, bmeshNode *node,
-    vec3 *localYaxis, vec3 *localZaxis, int connectWithQuad) {
-  int i;
-  quad q;
+/*
+static int bmeshGenerateBallCrossSection(bmesh *bm, bmeshBall *ball,
+    vec3 *boneDirection, vec3 *localYaxis, vec3 *localZaxis) {
+  //int i;
+  //quad q;
   vec3 z, y;
-  vec3Scale(localYaxis, node->radius, &y);
-  vec3Scale(localZaxis, node->radius, &z);
-  vec3Sub(&node->position, &y, &q.pt[0]);
+  //vec3Scale(localYaxis, ball->radius, &y);
+  //vec3Scale(localZaxis, ball->radius, &z);
+  vec3Sub(&ball->position, &y, &q.pt[0]);
   vec3Add(&q.pt[0], &z, &q.pt[0]);
-  vec3Sub(&node->position, &y, &q.pt[1]);
+  vec3Sub(&ball->position, &y, &q.pt[1]);
   vec3Sub(&q.pt[1], &z, &q.pt[1]);
-  vec3Add(&node->position, &y, &q.pt[2]);
+  vec3Add(&ball->position, &y, &q.pt[2]);
   vec3Sub(&q.pt[2], &z, &q.pt[2]);
-  vec3Add(&node->position, &y, &q.pt[3]);
+  vec3Add(&ball->position, &y, &q.pt[3]);
   vec3Add(&q.pt[3], &z, &q.pt[3]);
+  ball->crossSection = q;
+  ball->boneDirection = *boneDirection;
   if (-1 == bmeshAddQuad(bm, &q)) {
     fprintf(stderr, "%s:meshAddQuad failed.\n", __FUNCTION__);
     return -1;
@@ -197,95 +203,110 @@ static int bmeshGenerateNodeQuad(bmesh *bm, bmeshNode *node,
     }
   }
   return 0;
-}
+}*/
 
-static int bmeshGenerateInbetweenNodesBetween(bmesh *bm,
-      int firstNodeIndex, int secondNodeIndex) {
-  float step = 0.5;
+static int bmeshGenerateInbetweenBallsBetween(bmesh *bm,
+      int firstBallIndex, int secondBallIndex) {
+  float step;
   float distance;
-  int parentNodeIndex = firstNodeIndex;
+  int parentBallIndex = firstBallIndex;
   vec3 localZaxis;
   vec3 localYaxis;
-  vec3 edgeDirection;
-  vec3 worldZaxis = {0, 0, 1};
-  int lastQuadIndex = -1;
-  
-  bmeshNode *firstNode = bmeshGetNode(bm, firstNodeIndex);
-  bmeshNode *secondNode = bmeshGetNode(bm, secondNodeIndex);
-  bmeshNode *newNode;
-  if (secondNode->roundColor == bm->roundColor) {
+  vec3 boneDirection;
+  vec3 normalizedBoneDirection;
+  vec3 worldYaxis = {0, 1, 0};
+  bmeshBall *firstBall = bmeshGetBall(bm, firstBallIndex);
+  bmeshBall *secondBall = bmeshGetBall(bm, secondBallIndex);
+  bmeshBall *newBall;
+  if (secondBall->roundColor == bm->roundColor) {
     return 0;
   }
-  vec3Sub(&firstNode->position, &secondNode->position, &edgeDirection);
-  vec3CrossProduct(&worldZaxis, &edgeDirection, &localZaxis);
-  vec3Normalize(&localZaxis);
-  vec3CrossProduct(&localZaxis, &edgeDirection, &localYaxis);
-  vec3Normalize(&localYaxis);
   
-  distance = vec3Length(&edgeDirection);
-  if (distance > 0) {
-    float offset = step;
-    if (offset + step <= distance) {
-      while (offset + step <= distance) {
+  step = BMESH_STEP_DISTANCE;
+  
+  vec3Sub(&firstBall->position, &secondBall->position, &boneDirection);
+  normalizedBoneDirection = boneDirection;
+  vec3Normalize(&normalizedBoneDirection);
+  vec3CrossProduct(&worldYaxis, &boneDirection, &localYaxis);
+  vec3Normalize(&localYaxis);
+  vec3CrossProduct(&localYaxis, &boneDirection, &localZaxis);
+  vec3Normalize(&localZaxis);
+
+  distance = vec3Length(&boneDirection);
+  if (distance > BMESH_STEP_DISTANCE) {
+    float offset;
+    int calculatedStepCount = (int)(distance / BMESH_STEP_DISTANCE);
+    float remaining = distance - BMESH_STEP_DISTANCE * calculatedStepCount;
+    step += remaining / calculatedStepCount;
+    offset = step;
+    if (offset < distance) {
+      while (offset < distance) {
         float frac = offset / distance;
-        parentNodeIndex = bmeshAddInbetweenNodeBetween(bm,
-          firstNode, secondNode, frac, parentNodeIndex);
-        if (-1 == parentNodeIndex) {
+        parentBallIndex = bmeshAddInbetweenBallBetween(bm,
+          firstBall, secondBall, frac, parentBallIndex);
+        if (-1 == parentBallIndex) {
           return -1;
         }
-        newNode = bmeshGetNode(bm, parentNodeIndex);
-        bmeshGenerateNodeQuad(bm, newNode, &localYaxis, &localZaxis,
-          lastQuadIndex);
-        lastQuadIndex = -1 == lastQuadIndex ? bmeshGetQuadNum(bm) - 1 :
-          bmeshGetQuadNum(bm) - 5;
+        newBall = bmeshGetBall(bm, parentBallIndex);
+        newBall->localYaxis = localYaxis;
+        newBall->localZaxis = localZaxis;
+        newBall->boneDirection = normalizedBoneDirection;
         offset += step;
       }
     } else if (distance > step) {
-      parentNodeIndex = bmeshAddInbetweenNodeBetween(bm, firstNode, secondNode,
-        0.5, parentNodeIndex);
-      if (-1 == parentNodeIndex) {
+      parentBallIndex = bmeshAddInbetweenBallBetween(bm, firstBall, secondBall,
+        0.5, parentBallIndex);
+      if (-1 == parentBallIndex) {
         return -1;
       }
-      newNode = bmeshGetNode(bm, parentNodeIndex);
-      bmeshGenerateNodeQuad(bm, newNode, &localYaxis, &localZaxis, lastQuadIndex);
-      lastQuadIndex = -1 == lastQuadIndex ? bmeshGetQuadNum(bm) - 1 :
-          bmeshGetQuadNum(bm) - 5;
+      newBall = bmeshGetBall(bm, parentBallIndex);
+      newBall->localYaxis = localYaxis;
+      newBall->localZaxis = localZaxis;
+      newBall->boneDirection = normalizedBoneDirection;
     }
   }
-  if (-1 == bmeshAddChildNodeRelation(bm, parentNodeIndex, secondNodeIndex)) {
-    fprintf(stderr, "%s:bmeshAddChildNodeRelation failed.\n", __FUNCTION__);
+  if (-1 == bmeshAddChildBallRelation(bm, parentBallIndex, secondBallIndex)) {
+    fprintf(stderr, "%s:bmeshAddChildBallRelation failed.\n", __FUNCTION__);
     return -1;
   }
   return 0;
 }
 
-int bmeshGetNodeNextChild(bmesh *bm, bmeshNode *node, int *childIndex) {
-  int currentChildIndex = *childIndex;
-  bmeshNodeIndex *indexItem;
-  if (-1 == currentChildIndex) {
-    if (-1 == node->firstChildIndex) {
-      return -1;
-    }
-    currentChildIndex = node->firstChildIndex;
-  }
-  indexItem = (bmeshNodeIndex *)arrayGetItem(bm->indexArray, currentChildIndex);
-  *childIndex = indexItem->nextChildIndex;
-  return indexItem->nodeIndex;
-}
-
-bmeshNode *bmeshGetRootNode(bmesh *bm) {
-  if (-1 == bm->rootNodeIndex) {
+bmeshBall *bmeshGetBallFirstChild(bmesh *bm, bmeshBall *ball,
+    bmeshBallIterator *iterator) {
+  if (-1 == ball->firstChildIndex) {
     return 0;
   }
-  return bmeshGetNode(bm, bm->rootNodeIndex);
+  *iterator = ball->firstChildIndex;
+  return bmeshGetBallNextChild(bm, ball, iterator);
 }
 
-static int bmeshGenerateInbetweenNodesFrom(bmesh *bm, int parentNodeIndex) {
-  int childIndex = -1;
-  int nodeIndex;
-  bmeshNode *parent;
+bmeshBall *bmeshGetBallNextChild(bmesh *bm, bmeshBall *ball,
+    bmeshBallIterator *iterator) {
+  bmeshBallIndex *indexItem;
+  if (-1 == *iterator) {
+    return 0;
+  }
+  indexItem = (bmeshBallIndex *)arrayGetItem(bm->indexArray, *iterator);
+  *iterator = indexItem->nextChildIndex;
+  return bmeshGetBall(bm, indexItem->ballIndex);
+}
 
-  parent = bmeshGetNode(bm, parentNodeIndex);
+bmeshBall *bmeshGetRootBall(bmesh *bm) {
+  if (-1 == bm->rootBallIndex) {
+    return 0;
+  }
+  return bmeshGetBall(bm, bm->rootBallIndex);
+}
+
+static int bmeshGenerateInbetweenBallsFrom(bmesh *bm, int parentBallIndex) {
+  bmeshBallIterator iterator;
+  int ballIndex;
+  bmeshBall *parent;
+  bmeshBall *ball;
+  int oldChildrenIndices;
+
+  parent = bmeshGetBall(bm, parentBallIndex);
   if (parent->roundColor == bm->roundColor) {
     return 0;
   }
@@ -293,30 +314,30 @@ static int bmeshGenerateInbetweenNodesFrom(bmesh *bm, int parentNodeIndex) {
 
   //
   // Old indices came from user's input will be removed
-  // after the inbetween nodes are genereated, though
+  // after the inbetween balls are genereated, though
   // the space occupied in indexArray will not been release.
   //
 
-  childIndex = parent->firstChildIndex;
+  ball = bmeshGetBallFirstChild(bm, parent, &iterator);
   parent->firstChildIndex = -1;
+  oldChildrenIndices = parent->childrenIndices;
   parent->childrenIndices = 0;
-
-  while (-1 != childIndex) {
-    nodeIndex = bmeshGetNodeNextChild(bm, parent, &childIndex);
-    if (-1 == nodeIndex) {
-      break;
-    }
-    if (0 != bmeshGenerateInbetweenNodesBetween(bm, parentNodeIndex,
-        nodeIndex)) {
+  
+  for (;
+      ball;
+      ball = bmeshGetBallNextChild(bm, parent, &iterator)) {
+    ballIndex = ball->index;
+    if (0 != bmeshGenerateInbetweenBallsBetween(bm, parentBallIndex,
+        ballIndex)) {
       fprintf(stderr,
-        "%s:bmeshGenerateInbetweenNodesBetween failed(parentNodeIndex:%d).\n",
-        __FUNCTION__, parentNodeIndex);
+        "%s:bmeshGenerateInbetweenBallsBetween failed(parentBallIndex:%d).\n",
+        __FUNCTION__, parentBallIndex);
       return -1;
     }
-    if (0 != bmeshGenerateInbetweenNodesFrom(bm, nodeIndex)) {
+    if (0 != bmeshGenerateInbetweenBallsFrom(bm, ballIndex)) {
       fprintf(stderr,
-        "%s:bmeshGenerateInbetweenNodesFrom failed(nodeIndex:%d).\n",
-        __FUNCTION__, nodeIndex);
+        "%s:bmeshGenerateInbetweenBallsFrom failed(ballIndex:%d).\n",
+        __FUNCTION__, ballIndex);
       return -1;
     }
   }
@@ -324,13 +345,13 @@ static int bmeshGenerateInbetweenNodesFrom(bmesh *bm, int parentNodeIndex) {
   return 0;
 }
 
-int bmeshGenerateInbetweenNodes(bmesh *bm) {
-  if (-1 == bm->rootNodeIndex) {
-    fprintf(stderr, "%s:No root node.\n", __FUNCTION__);
+int bmeshGenerateInbetweenBalls(bmesh *bm) {
+  if (-1 == bm->rootBallIndex) {
+    fprintf(stderr, "%s:No root ball.\n", __FUNCTION__);
     return -1;
   }
   bm->roundColor++;
-  return bmeshGenerateInbetweenNodesFrom(bm, bm->rootNodeIndex);
+  return bmeshGenerateInbetweenBallsFrom(bm, bm->rootBallIndex);
 }
 
 int bmeshGetQuadNum(bmesh *bm) {
@@ -351,4 +372,131 @@ int bmeshAddQuad(bmesh *bm, quad *q) {
   return index;
 }
 
+static int bmeshSweepFrom(bmesh *bm, bmeshBall *parent, bmeshBall *ball) {
+  int result = 0;
+  vec3 worldYaxis = {0, 1, 0};
+  bmeshBallIterator iterator;
+  bmeshBall *child = 0;
+  if (BMESH_BALL_TYPE_KEY == ball->type) {
+    child = bmeshGetBallFirstChild(bm, ball, &iterator);
+    if (child) {
+      if (parent) {
+        float rotateAngle;
+        vec3 rotateAxis;
+        vec3CrossProduct(&parent->boneDirection, &child->boneDirection,
+          &rotateAxis);
+        vec3Normalize(&rotateAxis);
+        vec3Add(&rotateAxis, &ball->position, &rotateAxis);
+        rotateAngle = vec3Angle(&parent->boneDirection, &child->boneDirection);
+        rotateAngle *= 0.5;
+        
+        /*
+        glColor3f(0.0, 0.0, 0.0);
+        drawDebugPrintf("<%f,%f,%f> <%f,%f,%f> rotateAngle:%f",
+          parent->boneDirection.x,
+          parent->boneDirection.y,
+          parent->boneDirection.z,
+          child->boneDirection.x,
+          child->boneDirection.y,
+          child->boneDirection.z,
+          rotateAngle);
+        
+        glPushMatrix();
+        glTranslatef(parent->position.x, parent->position.y, parent->position.z);
+        glColor3f(1.0, 0.0, 1.0);
+        glBegin(GL_LINES);
+        glVertex3f(0, 0, 0);
+        glVertex3f(parent->boneDirection.x, parent->boneDirection.y,
+          parent->boneDirection.z);
+        glEnd();
+        glPopMatrix();
+        
+        glPushMatrix();
+        glTranslatef(child->position.x, child->position.y, child->position.z);
+        glColor3f(0.0, 1.0, 1.0);
+        glBegin(GL_LINES);
+        glVertex3f(0, 0, 0);
+        glVertex3f(child->boneDirection.x, child->boneDirection.y,
+          child->boneDirection.z);
+        glEnd();
+        glPopMatrix();
+        */
+        
+        ball->boneDirection = parent->boneDirection;
+        vec3RotateAlong(&ball->boneDirection, rotateAngle, &rotateAxis,
+          &ball->boneDirection);
+        vec3CrossProduct(&worldYaxis, &ball->boneDirection, &ball->localYaxis);
+        vec3Normalize(&ball->localYaxis);
+        vec3CrossProduct(&ball->localYaxis, &ball->boneDirection,
+          &ball->localZaxis);
+        vec3Normalize(&ball->localZaxis);
+      } else {
+        // TODO:
+      }
+    } else {
+      ball->boneDirection = parent->boneDirection;
+      vec3CrossProduct(&worldYaxis, &ball->boneDirection, &ball->localYaxis);
+      vec3Normalize(&ball->localYaxis);
+      vec3CrossProduct(&ball->localYaxis, &ball->boneDirection,
+        &ball->localZaxis);
+      vec3Normalize(&ball->localZaxis);
+    }
+  }
+  for (child = bmeshGetBallFirstChild(bm, ball, &iterator);
+      child;
+      child = bmeshGetBallNextChild(bm, ball, &iterator)) {
+    result = bmeshSweepFrom(bm, ball, child);
+    if (0 != result) {
+      fprintf(stderr, "%s:bmeshSweepFrom failed.\n", __FUNCTION__);
+      return result;
+    }
+  }
+  return result;
+}
 
+int bmeshSweep(bmesh *bm) {
+  return bmeshSweepFrom(bm, 0, bmeshGetRootBall(bm));
+}
+
+static bmeshBall *bmeshFindBallForConvexHull(bmesh *bm, bmeshBall *root,
+      bmeshBall *ball) {
+  bmeshBallIterator iterator;
+  bmeshBall *child;
+  float distance = vec3Distance(&root->position, &ball->position);
+  if (distance >= root->radius) {
+    return ball;
+  }
+  child = bmeshGetBallFirstChild(bm, ball, &iterator);
+  if (!child) {
+    return ball;
+  }
+  return bmeshFindBallForConvexHull(bm, root, child);
+}
+
+static int bmeshStichFrom(bmesh *bm, bmeshBall *ball) {
+  int result = 0;
+  bmeshBallIterator iterator;
+  bmeshBall *child;
+  bmeshBall *ballForConvexHull;
+  if (BMESH_BALL_TYPE_ROOT == ball->type) {
+    for (child = bmeshGetBallFirstChild(bm, ball, &iterator);
+        child;
+        child = bmeshGetBallNextChild(bm, ball, &iterator)) {
+      ballForConvexHull = bmeshFindBallForConvexHull(bm, ball, child);
+    }
+  }
+  for (child = bmeshGetBallFirstChild(bm, ball, &iterator);
+      child;
+      child = bmeshGetBallNextChild(bm, ball, &iterator)) {
+    result = bmeshSweepFrom(bm, ball, child);
+    if (0 != result) {
+      fprintf(stderr, "%s:bmeshSweepFrom failed.\n", __FUNCTION__);
+      return result;
+    }
+  }
+  return result;
+}
+
+int bmeshStitch(bmesh *bm) {
+  return bmeshStichFrom(bm, bmeshGetRootBall(bm));
+}
