@@ -205,6 +205,20 @@ static int bmeshGenerateBallCrossSection(bmesh *bm, bmeshBall *ball,
   return 0;
 }*/
 
+static void generateYZfromBoneDirection(vec3 *boneDirection,
+    vec3 *localYaxis, vec3 *localZaxis) {
+  vec3 worldYaxis = {0, 1, 0};
+  vec3 worldXaxis = {1, 0, 0};
+  if (0 == vec3Angle(boneDirection, &worldYaxis)) {
+    vec3CrossProduct(&worldXaxis, boneDirection, localYaxis);
+  } else {
+    vec3CrossProduct(&worldYaxis, boneDirection, localYaxis);
+  }
+  vec3Normalize(localYaxis);
+  vec3CrossProduct(localYaxis, boneDirection, localZaxis);
+  vec3Normalize(localZaxis);
+}
+
 static int bmeshGenerateInbetweenBallsBetween(bmesh *bm,
       int firstBallIndex, int secondBallIndex) {
   float step;
@@ -215,6 +229,7 @@ static int bmeshGenerateInbetweenBallsBetween(bmesh *bm,
   vec3 boneDirection;
   vec3 normalizedBoneDirection;
   vec3 worldYaxis = {0, 1, 0};
+  vec3 worldXaxis = {1, 0, 0};
   bmeshBall *firstBall = bmeshGetBall(bm, firstBallIndex);
   bmeshBall *secondBall = bmeshGetBall(bm, secondBallIndex);
   bmeshBall *newBall;
@@ -227,10 +242,20 @@ static int bmeshGenerateInbetweenBallsBetween(bmesh *bm,
   vec3Sub(&firstBall->position, &secondBall->position, &boneDirection);
   normalizedBoneDirection = boneDirection;
   vec3Normalize(&normalizedBoneDirection);
-  vec3CrossProduct(&worldYaxis, &boneDirection, &localYaxis);
-  vec3Normalize(&localYaxis);
-  vec3CrossProduct(&localYaxis, &boneDirection, &localZaxis);
-  vec3Normalize(&localZaxis);
+  generateYZfromBoneDirection(&boneDirection,
+    &localYaxis, &localZaxis);
+  
+  glColor3f(0.0, 0.0, 0.0);
+  drawDebugPrintf("<%f,%f,%f> <%f,%f,%f> <%f,%f,%f>",
+    localYaxis.x,
+    localYaxis.y,
+    localYaxis.z,
+    localZaxis.x,
+    localZaxis.y,
+    localZaxis.z,
+    boneDirection.x,
+    boneDirection.y,
+    boneDirection.z);
 
   distance = vec3Length(&boneDirection);
   if (distance > BMESH_STEP_DISTANCE) {
@@ -425,11 +450,8 @@ static int bmeshSweepFrom(bmesh *bm, bmeshBall *parent, bmeshBall *ball) {
         ball->boneDirection = parent->boneDirection;
         vec3RotateAlong(&ball->boneDirection, rotateAngle, &rotateAxis,
           &ball->boneDirection);
-        vec3CrossProduct(&worldYaxis, &ball->boneDirection, &ball->localYaxis);
-        vec3Normalize(&ball->localYaxis);
-        vec3CrossProduct(&ball->localYaxis, &ball->boneDirection,
-          &ball->localZaxis);
-        vec3Normalize(&ball->localZaxis);
+        generateYZfromBoneDirection(&ball->boneDirection,
+          &ball->localYaxis, &ball->localZaxis);
       } else {
         // TODO:
       }
@@ -470,6 +492,7 @@ static bmeshBall *bmeshFindBallForConvexHull(bmesh *bm, bmeshBall *root,
   if (!child) {
     return ball;
   }
+  ball->radius = 0;
   return bmeshFindBallForConvexHull(bm, root, child);
 }
 

@@ -52,7 +52,10 @@ I created the test nodes's geometry information from Blender. Here is the render
 <img src="screenshot/dust3d_bmesh_skeleton.png" width="124" height="128">  <img src="screenshot/dust3d_bmesh_inbetween.png" width="124" height="128">  
 *Generate Mesh*  
 <img src="screenshot/dust3d_generate_quad.png" width="124" height="128">  
-When I am implementing the B-Mesh algorithm, I am also think in the future, how to create a library of bunch of initial base models. There is a paper [the Skeleton of a Closed 3D Shape](http://www1.idc.ac.il/icgf/GraphicsSeminar2006/DCGskeleton06.pdf) described how to generate skeleton from mesh, this is the reverse progress of what I am doing, I think it can resolve the problem of insufficient initial base models, I can generate from tons of existed models.
+When I am implementing the B-Mesh algorithm, I am also think in the future, how to create a library of bunch of initial base models. There is a paper [the Skeleton of a Closed 3D Shape](http://www1.idc.ac.il/icgf/GraphicsSeminar2006/DCGskeleton06.pdf) described how to generate skeleton from mesh, this is the reverse progress of what I am doing, I think it can resolve the problem of insufficient initial base models, I can generate from tons of existed models.  
+*Convex Hull*  
+After finish the rotation at the two connected bones, I need implement [3D Convex Hull](https://en.wikipedia.org/wiki/Convex_hull) algorithm at joint ball.
+
 - [ ] Export Wavefront .obj  
 - [ ] Render B-Mesh result  
 - [ ] Design UI for monster parts configuration  

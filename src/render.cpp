@@ -258,6 +258,7 @@ void Render::paintGL() {
 
     bmeshGenerateInbetweenBalls(bm);
     bmeshSweep(bm);
+    bmeshStitch(bm);
   }
 
   drawBmeshBallRecursively(bm, bmeshGetRootBall(bm));
