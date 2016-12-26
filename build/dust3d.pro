@@ -14,7 +14,8 @@ SOURCES += main.cpp \
   draw.cpp \
   array.c \
   bmesh.c \
-  matrix.c
+  matrix.c \
+  convexhull.c
 
 HEADERS += mainwindow.h \
 	render.h \
@@ -22,4 +23,5 @@ HEADERS += mainwindow.h \
   draw.h \
   array.h \
   bmesh.h \
-  matrix.h
+  matrix.h \
+  convexhull.h

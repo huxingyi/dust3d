@@ -105,23 +105,27 @@ float vec3Angle(vec3 *a, vec3 *b) {
   float angle;
   vec3 p;
   float distance;
-  float dot;
   float acosParam;
-  float acosVal;
   vec3Sub(a, b, &p);
   distance = vec3Length(&p);
   if (0 == distance) {
     return 0;
   }
-  dot = vec3DotProduct(a, b);
-  acosParam = dot / distance;
+  acosParam = vec3DotProduct(a, b) / distance;
   if (acosParam < -1) {
     acosParam = -1;
   }
   if (acosParam > 1) {
     acosParam = 1;
   }
-  acosVal = acos(acosParam);
-  angle = 180 / M_PI * acosVal;
+  angle = 180 / M_PI * acos(acosParam);
   return angle;
 }
+
+void vec3ProjectOver(vec3 *a, vec3 *over, vec3 *result) {
+  float length = vec3DotProduct(a, over);
+  result->x = length * over->x;
+  result->y = length * over->y;
+  result->z = length * over->z;
+}
+

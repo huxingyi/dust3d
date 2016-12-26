@@ -6,6 +6,7 @@
 #include "bmesh.h"
 #include "array.h"
 #include "matrix.h"
+#include "convexhull.h"
 #include "draw.h"
 
 #define BMESH_STEP_DISTANCE 0.4
@@ -245,6 +246,7 @@ static int bmeshGenerateInbetweenBallsBetween(bmesh *bm,
   generateYZfromBoneDirection(&boneDirection,
     &localYaxis, &localZaxis);
   
+  /*
   glColor3f(0.0, 0.0, 0.0);
   drawDebugPrintf("<%f,%f,%f> <%f,%f,%f> <%f,%f,%f>",
     localYaxis.x,
@@ -256,7 +258,8 @@ static int bmeshGenerateInbetweenBallsBetween(bmesh *bm,
     boneDirection.x,
     boneDirection.y,
     boneDirection.z);
-
+  */
+  
   distance = vec3Length(&boneDirection);
   if (distance > BMESH_STEP_DISTANCE) {
     float offset;
@@ -485,7 +488,7 @@ static bmeshBall *bmeshFindBallForConvexHull(bmesh *bm, bmeshBall *root,
   bmeshBallIterator iterator;
   bmeshBall *child;
   float distance = vec3Distance(&root->position, &ball->position);
-  if (distance >= root->radius) {
+  if (distance > root->radius) {
     return ball;
   }
   child = bmeshGetBallFirstChild(bm, ball, &iterator);
@@ -502,11 +505,51 @@ static int bmeshStichFrom(bmesh *bm, bmeshBall *ball) {
   bmeshBall *child;
   bmeshBall *ballForConvexHull;
   if (BMESH_BALL_TYPE_ROOT == ball->type) {
+    convexHull *hull = convexHullCreate();
+    if (!hull) {
+      fprintf(stderr, "%s:convexHullCreate failed.\n", __FUNCTION__);
+      return -1;
+    }
     for (child = bmeshGetBallFirstChild(bm, ball, &iterator);
         child;
         child = bmeshGetBallNextChild(bm, ball, &iterator)) {
+      vec3 z, y;
+      quad q;
+      int vertexIndices[4];
+      
       ballForConvexHull = bmeshFindBallForConvexHull(bm, ball, child);
+      
+      vec3Scale(&ballForConvexHull->localYaxis, ballForConvexHull->radius, &y);
+      vec3Scale(&ballForConvexHull->localZaxis, ballForConvexHull->radius, &z);
+      vec3Sub(&ballForConvexHull->position, &y, &q.pt[0]);
+      vec3Add(&q.pt[0], &z, &q.pt[0]);
+      vec3Sub(&ballForConvexHull->position, &y, &q.pt[1]);
+      vec3Sub(&q.pt[1], &z, &q.pt[1]);
+      vec3Add(&ballForConvexHull->position, &y, &q.pt[2]);
+      vec3Sub(&q.pt[2], &z, &q.pt[2]);
+      vec3Add(&ballForConvexHull->position, &y, &q.pt[3]);
+      vec3Add(&q.pt[3], &z, &q.pt[3]);
+      
+      vertexIndices[0] = convexHullAddVertex(hull, &q.pt[0]);
+      vertexIndices[1] = convexHullAddVertex(hull, &q.pt[1]);
+      vertexIndices[2] = convexHullAddVertex(hull, &q.pt[2]);
+      vertexIndices[3] = convexHullAddVertex(hull, &q.pt[3]);
     }
+    convexHullGenerate(hull);
+    
+    glPushMatrix();
+    {
+      int triIndex;
+      glColor3f(1.0, 1.0, 1.0);
+      for (triIndex = 0; triIndex < convexHullGetTriangleNum(hull);
+          ++triIndex) {
+        triangle *tri = (triangle *)convexHullGetTriangle(hull, triIndex);
+        drawTriangle(tri);
+      }
+    }
+    glPopMatrix();
+    
+    convexHullDestroy(hull);
   }
   for (child = bmeshGetBallFirstChild(bm, ball, &iterator);
       child;

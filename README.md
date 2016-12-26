@@ -36,7 +36,7 @@ Two caps and many strips composites a cylinder.
 Almost all 3D editor have a infinite grid ground, I just made a finite one, in the future, I should expand the grid outside of the screen to make it infinite.  
 Now, for just beginning, I think it's a not bad start.
 <img src="screenshot/dust3d_sphere_cylinder.png">
-- [ ] Implement B-Mesh algorithm (Dec 18, 2016 ~ Dec 25, 2016)   
+- [ ] Implement B-Mesh algorithm (Dec 18, 2016 ~ Dec 26, 2016)   
 *Drawing Skeletal Shape Balls*  
 Draw shape ball is easy, no need to rotate, I just need scale it along the ball's radius.
 Draw the cylinder which connects two shape balls is more difficult, I need do some math to rotate it. [Here](http://www.thjsmith.com/40/cylinder-between-two-points-opengl-c) described it.  
@@ -54,8 +54,8 @@ I created the test nodes's geometry information from Blender. Here is the render
 <img src="screenshot/dust3d_generate_quad.png" width="124" height="128">  
 When I am implementing the B-Mesh algorithm, I am also think in the future, how to create a library of bunch of initial base models. There is a paper [the Skeleton of a Closed 3D Shape](http://www1.idc.ac.il/icgf/GraphicsSeminar2006/DCGskeleton06.pdf) described how to generate skeleton from mesh, this is the reverse progress of what I am doing, I think it can resolve the problem of insufficient initial base models, I can generate from tons of existed models.  
 *Convex Hull*  
-After finish the rotation at the two connected bones, I need implement [3D Convex Hull](https://en.wikipedia.org/wiki/Convex_hull) algorithm at joint ball.
-
+After finish the rotation at the two connected bones, I need implement 3D Convex Hull algorithm at the joint ball, there are so many methods to get the convex hull, I found the [Gift wrapping](http://dccg.upc.edu/people/vera/wp-content/uploads/2014/11/GA2014-ConvexHulls3D-Roger-Hernando.pdf) is the most strait-forward one, though is not the most efficient one.  
+<img src="screenshot/dust3d_convex_hull.png" width="124" height="128">
 - [ ] Export Wavefront .obj  
 - [ ] Render B-Mesh result  
 - [ ] Design UI for monster parts configuration  
