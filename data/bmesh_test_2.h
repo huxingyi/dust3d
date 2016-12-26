@@ -5,7 +5,7 @@
 #define THIRD_BALL_SIZE   0.4
 
 const float bmeshTestBalls[][6] = {
-  /*Head*/        {0,  0.00000,  5.39143,  0.61970, BIG_BALL_SIZE},
+  /*Head*/        {0,  0.00000,  5.39143,  0.61970, BIG_BALL_SIZE, 1},
   /*Neck*/        {1,  0.00000,  4.39990, -0.21690, THIRD_BALL_SIZE},
   /*Under Neck*/  {2,  0.00000,  2.88163,  0.00000, THIRD_BALL_SIZE, 1},
   /*Chest*/       {3,  0.00000,  1.39434,  0.61970, SECOND_BALL_SIZE},
@@ -18,7 +18,7 @@ const float bmeshTestBalls[][6] = {
   /*LShoulder*/   {10,+1.42532,  2.72670, -0.44708, THIRD_BALL_SIZE},
   /*LElbow1*/     {11,+3.12951,  1.95207, -1.07872, THIRD_BALL_SIZE},
   /*LElbow2*/     {12,+2.91261,  1.08448, -0.68593, THIRD_BALL_SIZE},
-  /*LPalm1*/      {13,+1.76616,  0.53399,  0.09306, TINY_BALL_SIZE},
+  /*LPalm1*/      {13,+1.76616,  0.53399,  0.09306, TINY_BALL_SIZE, 1},
   /*LPalm2*/      {14,+1.27039,  0.49576,  0.53458, TINY_BALL_SIZE},
   /*LPalm3*/      {15,+1.48729,  0.03099,  0.34054, TINY_BALL_SIZE},
   /*RKnee*/       {16,-1.82813, -1.64222,  0.30091, THIRD_BALL_SIZE}, 
@@ -27,7 +27,7 @@ const float bmeshTestBalls[][6] = {
   /*RShoulder*/   {19,-1.42532,  2.72670, -0.44708, THIRD_BALL_SIZE},
   /*RElbow1*/     {20,-3.12951,  1.95207, -1.07872, THIRD_BALL_SIZE},
   /*RElbow2*/     {21,-2.91261,  1.08448, -0.68593, THIRD_BALL_SIZE},
-  /*RPalm1*/      {22,-1.76616,  0.53399,  0.09306, TINY_BALL_SIZE},
+  /*RPalm1*/      {22,-1.76616,  0.53399,  0.09306, TINY_BALL_SIZE, 1},
   /*RPalm2*/      {23,-1.27039,  0.49576,  0.53458, TINY_BALL_SIZE},
   /*RPalm3*/      {24,-1.48729,  0.03099,  0.34054, TINY_BALL_SIZE},
   /*Mouth*/       {25, 0.00000,  4.57765,  1.92032, TINY_BALL_SIZE},

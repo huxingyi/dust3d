@@ -57,7 +57,7 @@ When I am implementing the B-Mesh algorithm, I am also think in the future, how 
 After finish the rotation at the two connected bones, I need implement 3D Convex Hull algorithm at the joint ball, there are so many methods to get the convex hull, I found the [Gift wrapping](http://dccg.upc.edu/people/vera/wp-content/uploads/2014/11/GA2014-ConvexHulls3D-Roger-Hernando.pdf) is the most strait-forward one, though is not the most efficient one.  
 <img src="screenshot/dust3d_convex_hull.png" width="124" height="128">  
 *Stitching*  
-I follow the B-Mesh paper, made another test module inside Blender, and created a correspond `data/bmesh_test_2.h` manually.
+I follow the B-Mesh paper, made another test module inside Blender, and created a correspond `data/bmesh_test_2.h` manually.  
 <img src="screenshot/dust3d_bmesh_test_2.png" width="124" height="128">  
 - [ ] Export Wavefront .obj  
 - [ ] Render B-Mesh result  

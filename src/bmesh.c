@@ -229,8 +229,6 @@ static int bmeshGenerateInbetweenBallsBetween(bmesh *bm,
   vec3 localYaxis;
   vec3 boneDirection;
   vec3 normalizedBoneDirection;
-  vec3 worldYaxis = {0, 1, 0};
-  vec3 worldXaxis = {1, 0, 0};
   bmeshBall *firstBall = bmeshGetBall(bm, firstBallIndex);
   bmeshBall *secondBall = bmeshGetBall(bm, secondBallIndex);
   bmeshBall *newBall;
@@ -268,7 +266,7 @@ static int bmeshGenerateInbetweenBallsBetween(bmesh *bm,
     step += remaining / calculatedStepCount;
     offset = step;
     if (offset < distance) {
-      while (offset < distance) {
+      while (offset < distance && offset + BMESH_STEP_DISTANCE <= distance) {
         float frac = offset / distance;
         parentBallIndex = bmeshAddInbetweenBallBetween(bm,
           firstBall, secondBall, frac, parentBallIndex);
@@ -402,9 +400,12 @@ int bmeshAddQuad(bmesh *bm, quad *q) {
 
 static int bmeshSweepFrom(bmesh *bm, bmeshBall *parent, bmeshBall *ball) {
   int result = 0;
-  vec3 worldYaxis = {0, 1, 0};
   bmeshBallIterator iterator;
   bmeshBall *child = 0;
+  if (bm->roundColor == ball->roundColor) {
+    return 0;
+  }
+  ball->roundColor = bm->roundColor;
   if (BMESH_BALL_TYPE_KEY == ball->type) {
     child = bmeshGetBallFirstChild(bm, ball, &iterator);
     if (child) {
@@ -414,41 +415,55 @@ static int bmeshSweepFrom(bmesh *bm, bmeshBall *parent, bmeshBall *ball) {
         vec3CrossProduct(&parent->boneDirection, &child->boneDirection,
           &rotateAxis);
         vec3Normalize(&rotateAxis);
-        vec3Add(&rotateAxis, &ball->position, &rotateAxis);
         rotateAngle = vec3Angle(&parent->boneDirection, &child->boneDirection);
+        /*
+        if (1 || 11 == ball->index || 20 == ball->index) {
+          glColor3f(0.0, 0.0, 0.0);
+          drawDebugPrintf("<%f,%f,%f> <%f,%f,%f> <%f,%f,%f> rotateAngle:%f",
+            parent->boneDirection.x,
+            parent->boneDirection.y,
+            parent->boneDirection.z,
+            child->boneDirection.x,
+            child->boneDirection.y,
+            child->boneDirection.z,
+            rotateAxis.x,
+            rotateAxis.y,
+            rotateAxis.z,
+            rotateAngle);
+        }*/
         rotateAngle *= 0.5;
         
         /*
-        glColor3f(0.0, 0.0, 0.0);
-        drawDebugPrintf("<%f,%f,%f> <%f,%f,%f> rotateAngle:%f",
-          parent->boneDirection.x,
-          parent->boneDirection.y,
-          parent->boneDirection.z,
-          child->boneDirection.x,
-          child->boneDirection.y,
-          child->boneDirection.z,
-          rotateAngle);
-        
-        glPushMatrix();
-        glTranslatef(parent->position.x, parent->position.y, parent->position.z);
-        glColor3f(1.0, 0.0, 1.0);
-        glBegin(GL_LINES);
-        glVertex3f(0, 0, 0);
-        glVertex3f(parent->boneDirection.x, parent->boneDirection.y,
-          parent->boneDirection.z);
-        glEnd();
-        glPopMatrix();
-        
-        glPushMatrix();
-        glTranslatef(child->position.x, child->position.y, child->position.z);
-        glColor3f(0.0, 1.0, 1.0);
-        glBegin(GL_LINES);
-        glVertex3f(0, 0, 0);
-        glVertex3f(child->boneDirection.x, child->boneDirection.y,
-          child->boneDirection.z);
-        glEnd();
-        glPopMatrix();
-        */
+        if (11 == ball->index) {
+          glPushMatrix();
+          //glTranslatef(parent->position.x, parent->position.y, parent->position.z);
+          glColor3f(1.0, 0.0, 1.0);
+          glBegin(GL_LINES);
+          glVertex3f(0, 0, 0);
+          glVertex3f(parent->boneDirection.x, parent->boneDirection.y,
+            parent->boneDirection.z);
+          glEnd();
+          glPopMatrix();
+          
+          glPushMatrix();
+          //glTranslatef(child->position.x, child->position.y, child->position.z);
+          glColor3f(0.0, 1.0, 1.0);
+          glBegin(GL_LINES);
+          glVertex3f(0, 0, 0);
+          glVertex3f(child->boneDirection.x, child->boneDirection.y,
+            child->boneDirection.z);
+          glEnd();
+          glPopMatrix();
+          
+          glPushMatrix();
+          //glTranslatef(ball->position.x, ball->position.y, ball->position.z);
+          glColor3f(1.0, 0.0, 0.0);
+          glBegin(GL_LINES);
+          glVertex3f(0, 0, 0);
+          glVertex3f(rotateAxis.x, rotateAxis.y, rotateAxis.z);
+          glEnd();
+          glPopMatrix();
+        }*/
         
         ball->boneDirection = parent->boneDirection;
         vec3RotateAlong(&ball->boneDirection, rotateAngle, &rotateAxis,
@@ -460,11 +475,14 @@ static int bmeshSweepFrom(bmesh *bm, bmeshBall *parent, bmeshBall *ball) {
       }
     } else {
       ball->boneDirection = parent->boneDirection;
+      generateYZfromBoneDirection(&ball->boneDirection,
+        &ball->localYaxis, &ball->localZaxis);
+      /*
       vec3CrossProduct(&worldYaxis, &ball->boneDirection, &ball->localYaxis);
       vec3Normalize(&ball->localYaxis);
       vec3CrossProduct(&ball->localYaxis, &ball->boneDirection,
         &ball->localZaxis);
-      vec3Normalize(&ball->localZaxis);
+      vec3Normalize(&ball->localZaxis);*/
     }
   }
   for (child = bmeshGetBallFirstChild(bm, ball, &iterator);
@@ -480,6 +498,7 @@ static int bmeshSweepFrom(bmesh *bm, bmeshBall *parent, bmeshBall *ball) {
 }
 
 int bmeshSweep(bmesh *bm) {
+  bm->roundColor++;
   return bmeshSweepFrom(bm, 0, bmeshGetRootBall(bm));
 }
 
@@ -488,7 +507,7 @@ static bmeshBall *bmeshFindBallForConvexHull(bmesh *bm, bmeshBall *root,
   bmeshBallIterator iterator;
   bmeshBall *child;
   float distance = vec3Distance(&root->position, &ball->position);
-  if (distance > root->radius) {
+  if (distance >= root->radius) {
     return ball;
   }
   child = bmeshGetBallFirstChild(bm, ball, &iterator);
@@ -499,47 +518,59 @@ static bmeshBall *bmeshFindBallForConvexHull(bmesh *bm, bmeshBall *root,
   return bmeshFindBallForConvexHull(bm, root, child);
 }
 
-static int bmeshStichFrom(bmesh *bm, bmeshBall *ball) {
+static void addBallToHull(convexHull *hull, bmeshBall *ballForConvexHull) {
+  vec3 z, y;
+  quad q;
+  
+  vec3Scale(&ballForConvexHull->localYaxis, ballForConvexHull->radius, &y);
+  vec3Scale(&ballForConvexHull->localZaxis, ballForConvexHull->radius, &z);
+  vec3Sub(&ballForConvexHull->position, &y, &q.pt[0]);
+  vec3Add(&q.pt[0], &z, &q.pt[0]);
+  vec3Sub(&ballForConvexHull->position, &y, &q.pt[1]);
+  vec3Sub(&q.pt[1], &z, &q.pt[1]);
+  vec3Add(&ballForConvexHull->position, &y, &q.pt[2]);
+  vec3Sub(&q.pt[2], &z, &q.pt[2]);
+  vec3Add(&ballForConvexHull->position, &y, &q.pt[3]);
+  vec3Add(&q.pt[3], &z, &q.pt[3]);
+  
+  convexHullAddVertex(hull, &q.pt[0]);
+  convexHullAddVertex(hull, &q.pt[1]);
+  convexHullAddVertex(hull, &q.pt[2]);
+  convexHullAddVertex(hull, &q.pt[3]);
+}
+
+static int bmeshStichFrom(bmesh *bm, bmeshBall *parent, bmeshBall *ball) {
   int result = 0;
   bmeshBallIterator iterator;
   bmeshBall *child;
   bmeshBall *ballForConvexHull;
+  if (bm->roundColor == ball->roundColor) {
+    return 0;
+  }
+  ball->roundColor = bm->roundColor;
   if (BMESH_BALL_TYPE_ROOT == ball->type) {
     convexHull *hull = convexHullCreate();
     if (!hull) {
       fprintf(stderr, "%s:convexHullCreate failed.\n", __FUNCTION__);
       return -1;
     }
+    glColor3f(0.0, 0.0, 0.0);
+    drawDebugPrintf("root <%f,%f,%f>", ball->position.x,
+      ball->position.y, ball->position.z);
     for (child = bmeshGetBallFirstChild(bm, ball, &iterator);
         child;
         child = bmeshGetBallNextChild(bm, ball, &iterator)) {
-      vec3 z, y;
-      quad q;
-      int vertexIndices[4];
-      
       ballForConvexHull = bmeshFindBallForConvexHull(bm, ball, child);
-      
-      vec3Scale(&ballForConvexHull->localYaxis, ballForConvexHull->radius, &y);
-      vec3Scale(&ballForConvexHull->localZaxis, ballForConvexHull->radius, &z);
-      vec3Sub(&ballForConvexHull->position, &y, &q.pt[0]);
-      vec3Add(&q.pt[0], &z, &q.pt[0]);
-      vec3Sub(&ballForConvexHull->position, &y, &q.pt[1]);
-      vec3Sub(&q.pt[1], &z, &q.pt[1]);
-      vec3Add(&ballForConvexHull->position, &y, &q.pt[2]);
-      vec3Sub(&q.pt[2], &z, &q.pt[2]);
-      vec3Add(&ballForConvexHull->position, &y, &q.pt[3]);
-      vec3Add(&q.pt[3], &z, &q.pt[3]);
-      
-      vertexIndices[0] = convexHullAddVertex(hull, &q.pt[0]);
-      vertexIndices[1] = convexHullAddVertex(hull, &q.pt[1]);
-      vertexIndices[2] = convexHullAddVertex(hull, &q.pt[2]);
-      vertexIndices[3] = convexHullAddVertex(hull, &q.pt[3]);
+      addBallToHull(hull, ballForConvexHull);
+    }
+    if (parent) {
+      addBallToHull(hull, parent);
     }
     convexHullGenerate(hull);
     glPushMatrix();
     {
       int triIndex;
-      glColor4f(1.0f, 1.0f, 1.0f, 0.5);
+      glColor3f(1.0f, 1.0f, 1.0f);
       for (triIndex = 0; triIndex < convexHullGetTriangleNum(hull);
           ++triIndex) {
         triangle *tri = (triangle *)convexHullGetTriangle(hull, triIndex);
@@ -568,7 +599,7 @@ static int bmeshStichFrom(bmesh *bm, bmeshBall *ball) {
   for (child = bmeshGetBallFirstChild(bm, ball, &iterator);
       child;
       child = bmeshGetBallNextChild(bm, ball, &iterator)) {
-    result = bmeshSweepFrom(bm, ball, child);
+    result = bmeshStichFrom(bm, ball, child);
     if (0 != result) {
       fprintf(stderr, "%s:bmeshSweepFrom failed.\n", __FUNCTION__);
       return result;
@@ -578,5 +609,6 @@ static int bmeshStichFrom(bmesh *bm, bmeshBall *ball) {
 }
 
 int bmeshStitch(bmesh *bm) {
-  return bmeshStichFrom(bm, bmeshGetRootBall(bm));
+  bm->roundColor++;
+  return bmeshStichFrom(bm, 0, bmeshGetRootBall(bm));
 }

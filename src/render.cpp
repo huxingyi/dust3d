@@ -274,10 +274,12 @@ void Render::paintGL() {
       bmeshBall *ball = bmeshGetBall(bm, index);
       drawBmeshBall(bm, ball);
     }*/
+    
     for (index = 0; index < bmeshGetBoneNum(bm); ++index) {
       bmeshBone *bone = bmeshGetBone(bm, index);
       drawBmeshBone(bm, bone);
     }
+    /*
     glColor4f(1.0f, 1.0f, 1.0f, 0.5);
     glBegin(GL_QUADS);
     for (index = 0; index < bmeshGetQuadNum(bm); ++index) {
@@ -301,7 +303,7 @@ void Render::paintGL() {
       }
       glVertex3f(q->pt[0].x, q->pt[0].y, q->pt[0].z);
       glEnd();
-    }
+    }*/
   }
 
   glPopMatrix();
