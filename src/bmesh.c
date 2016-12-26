@@ -536,19 +536,33 @@ static int bmeshStichFrom(bmesh *bm, bmeshBall *ball) {
       vertexIndices[3] = convexHullAddVertex(hull, &q.pt[3]);
     }
     convexHullGenerate(hull);
-    
     glPushMatrix();
     {
       int triIndex;
-      glColor3f(1.0, 1.0, 1.0);
+      glColor4f(1.0f, 1.0f, 1.0f, 0.5);
       for (triIndex = 0; triIndex < convexHullGetTriangleNum(hull);
           ++triIndex) {
         triangle *tri = (triangle *)convexHullGetTriangle(hull, triIndex);
         drawTriangle(tri);
       }
     }
+    glColor3f(0.0f, 0.0f, 0.0f);
+    {
+      int triIndex;
+      int j;
+      glColor3f(1.0f, 1.0f, 1.0f);
+      for (triIndex = 0; triIndex < convexHullGetTriangleNum(hull);
+          ++triIndex) {
+        triangle *tri = (triangle *)convexHullGetTriangle(hull, triIndex);
+        glBegin(GL_LINE_STRIP);
+        for (j = 0; j < 3; ++j) {
+          glVertex3f(tri->pt[j].x, tri->pt[j].y, tri->pt[j].z);
+        }
+        glVertex3f(tri->pt[0].x, tri->pt[0].y, tri->pt[0].z);
+        glEnd();
+      }
+    }
     glPopMatrix();
-    
     convexHullDestroy(hull);
   }
   for (child = bmeshGetBallFirstChild(bm, ball, &iterator);

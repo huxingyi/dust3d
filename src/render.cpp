@@ -162,9 +162,9 @@ Render::Render(QWidget *parent)
 
   mouseX = 0;
   mouseY = 0;
-  cameraAngleX = 20;
-  cameraAngleY = -225;
-  cameraDistance = 7;
+  cameraAngleX = 30;
+  cameraAngleY = -312;
+  cameraDistance = 14.4;
 }
 
 Render::~Render(void) {
@@ -209,7 +209,7 @@ void Render::initializeGL() {
   drawInit();
 }
 
-#include "../data/bmesh_test_1.h"
+#include "../data/bmesh_test_2.h"
 
 void Render::paintGL() {
   bmesh *bm = 0;
@@ -239,20 +239,20 @@ void Render::paintGL() {
     int i;
     bm = bmeshCreate();
 
-    for (i = 0; i < sizeof(bmeshTest1Balls) / sizeof(bmeshTest1Balls[0]); ++i) {
+    for (i = 0; i < sizeof(bmeshTestBalls) / sizeof(bmeshTestBalls[0]); ++i) {
       memset(&ball, 0, sizeof(ball));
-      ball.position.x = bmeshTest1Balls[i][1];
-      ball.position.y = bmeshTest1Balls[i][2];
-      ball.position.z = bmeshTest1Balls[i][3];
-      ball.radius = bmeshTest1Balls[i][4];
-      ball.type = bmeshTest1Balls[i][5];
+      ball.position.x = bmeshTestBalls[i][1];
+      ball.position.y = bmeshTestBalls[i][2];
+      ball.position.z = bmeshTestBalls[i][3];
+      ball.radius = bmeshTestBalls[i][4];
+      ball.type = bmeshTestBalls[i][5];
       bmeshAddBall(bm, &ball);
     }
 
-    for (i = 0; i < sizeof(bmeshTest1Bones) / sizeof(bmeshTest1Bones[0]); ++i) {
+    for (i = 0; i < sizeof(bmeshTestBones) / sizeof(bmeshTestBones[0]); ++i) {
       memset(&bone, 0, sizeof(bone));
-      bone.firstBallIndex = bmeshTest1Bones[i][0];
-      bone.secondBallIndex = bmeshTest1Bones[i][1];
+      bone.firstBallIndex = bmeshTestBones[i][0];
+      bone.secondBallIndex = bmeshTestBones[i][1];
       bmeshAddBone(bm, &bone);
     }
 
