@@ -533,10 +533,10 @@ static void addBallToHull(convexHull *hull, bmeshBall *ballForConvexHull) {
   vec3Add(&ballForConvexHull->position, &y, &q.pt[3]);
   vec3Add(&q.pt[3], &z, &q.pt[3]);
   
-  convexHullAddVertex(hull, &q.pt[0]);
-  convexHullAddVertex(hull, &q.pt[1]);
-  convexHullAddVertex(hull, &q.pt[2]);
-  convexHullAddVertex(hull, &q.pt[3]);
+  convexHullAddVertex(hull, &q.pt[0], ballForConvexHull->index, 0);
+  convexHullAddVertex(hull, &q.pt[1], ballForConvexHull->index, 1);
+  convexHullAddVertex(hull, &q.pt[2], ballForConvexHull->index, 2);
+  convexHullAddVertex(hull, &q.pt[3], ballForConvexHull->index, 3);
 }
 
 static int bmeshStichFrom(bmesh *bm, bmeshBall *parent, bmeshBall *ball) {

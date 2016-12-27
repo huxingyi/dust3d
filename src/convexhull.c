@@ -12,6 +12,12 @@
 // Translate from Danielhst's lua version https://github.com/danielhst/3d-Hull-gift-wrap/blob/master/giftWrap.lua
 //
 
+typedef struct {
+  vec3 pt;
+  int plane;
+  int orderOnPlane;
+} converHullVertex;
+
 struct convexHull {
   array *vertexArray;
   array *openEdgeArray;
@@ -31,7 +37,7 @@ convexHull *convexHullCreate(void) {
     fprintf(stderr, "%s:Insufficient memory.\n", __FUNCTION__);
     return 0;
   }
-  hull->vertexArray = arrayCreate(sizeof(vec3));
+  hull->vertexArray = arrayCreate(sizeof(converHullVertex));
   if (!hull->vertexArray) {
     fprintf(stderr, "%s:arrayCreate failed.\n", __FUNCTION__);
     return 0;
@@ -65,13 +71,18 @@ int convexHullEdgeExsits(convexHull *hull, int firstVertex,
   return hull->openEdgeExistMap[unitIndex] & (0x00000001 << unitOffset);
 }
 
-int convexHullAddVertex(convexHull *hull, vec3 *vertex) {
+int convexHullAddVertex(convexHull *hull, vec3 *vertex, int plane,
+    int orderOnPlane) {
+  converHullVertex *vtx;
   int newVertex = arrayGetLength(hull->vertexArray);
   if (0 != arraySetLength(hull->vertexArray, newVertex + 1)) {
     fprintf(stderr, "%s:arraySetLength failed.\n", __FUNCTION__);
     return -1;
   }
-  *((vec3 *)arrayGetItem(hull->vertexArray, newVertex)) = *vertex;
+  vtx = (converHullVertex *)arrayGetItem(hull->vertexArray, newVertex);
+  vtx->plane = plane;
+  vtx->orderOnPlane = orderOnPlane;
+  vtx->pt = *vertex;
   return newVertex;
 }
 
@@ -103,19 +114,49 @@ int convexHullAddEdge(convexHull *hull, int p1, int p2) {
   return 0;
 }
 
+static int isInAdjacentOrder(int order1, int order2) {
+  return ((order1 + 1) % 4 == order2 ||
+    (order2 + 1) % 4 == order1);
+}
+
 int convexHullAddTriangle(convexHull *hull, int firstVertex, int secondVertex,
     int thirdVertex) {
   triangle *tri;
-  int newTri = arrayGetLength(hull->triangleArray);
+  converHullVertex *vtx1;
+  converHullVertex *vtx2;
+  converHullVertex *vtx3;
+  int newTri;
+  vtx1 = (converHullVertex *)arrayGetItem(hull->vertexArray, firstVertex);
+  vtx2 = (converHullVertex *)arrayGetItem(hull->vertexArray, secondVertex);
+  vtx3 = (converHullVertex *)arrayGetItem(hull->vertexArray, thirdVertex);
+  if (vtx1->plane == vtx2->plane && vtx1->plane == vtx3->plane) {
+    return 0;
+  }
+  if (vtx1->plane == vtx2->plane) {
+    if (!isInAdjacentOrder(vtx1->orderOnPlane, vtx2->orderOnPlane)) {
+      return 0;
+    }
+  }
+  if (vtx1->plane == vtx3->plane) {
+    if (!isInAdjacentOrder(vtx1->orderOnPlane, vtx3->orderOnPlane)) {
+      return 0;
+    }
+  }
+  if (vtx2->plane == vtx3->plane) {
+    if (!isInAdjacentOrder(vtx2->orderOnPlane, vtx3->orderOnPlane)) {
+      return 0;
+    }
+  }
+  newTri = arrayGetLength(hull->triangleArray);
   if (0 != arraySetLength(hull->triangleArray, newTri + 1)) {
     fprintf(stderr, "%s:arraySetLength failed.\n", __FUNCTION__);
     return -1;
   }
   tri = (triangle *)arrayGetItem(hull->triangleArray, newTri);
   memset(tri, 0, sizeof(triangle));
-  tri->pt[0] = *((vec3 *)arrayGetItem(hull->vertexArray, firstVertex));
-  tri->pt[1] = *((vec3 *)arrayGetItem(hull->vertexArray, secondVertex));
-  tri->pt[2] = *((vec3 *)arrayGetItem(hull->vertexArray, thirdVertex));
+  tri->pt[0] = vtx1->pt;
+  tri->pt[1] = vtx2->pt;
+  tri->pt[2] = vtx3->pt;
   return 0;
 }
 

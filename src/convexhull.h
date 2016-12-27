@@ -5,7 +5,8 @@
 
 typedef struct convexHull convexHull;
 convexHull *convexHullCreate(void);
-int convexHullAddVertex(convexHull *hull, vec3 *vertex);
+int convexHullAddVertex(convexHull *hull, vec3 *vertex, int plane,
+  int orderOnPlane);
 void convexHullDestroy(convexHull *hull);
 int convexHullGenerate(convexHull *hull);
 int convexHullGetTriangleNum(convexHull *hull);
