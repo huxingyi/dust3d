@@ -3,10 +3,12 @@
 #include <string.h>
 #include <assert.h>
 #include <math.h>
+#include <time.h>
 #include "bmesh.h"
 #include "array.h"
 #include "matrix.h"
 #include "convexhull.h"
+#include "tri2quad.h"
 #include "draw.h"
 
 #define BMESH_STEP_DISTANCE 0.4
@@ -518,9 +520,12 @@ static bmeshBall *bmeshFindBallForConvexHull(bmesh *bm, bmeshBall *root,
   return bmeshFindBallForConvexHull(bm, root, child);
 }
 
-static void addBallToHull(convexHull *hull, bmeshBall *ballForConvexHull) {
+static void addBallToHull(convexHull *hull, bmeshBall *ballForConvexHull,
+    bmeshBall **outmostBall, int *outmostBallFirstVertexIndex) {
   vec3 z, y;
   quad q;
+  int vertexIndex[4];
+  int needUpdateOutmost = 0;
   
   vec3Scale(&ballForConvexHull->localYaxis, ballForConvexHull->radius, &y);
   vec3Scale(&ballForConvexHull->localZaxis, ballForConvexHull->radius, &z);
@@ -533,10 +538,22 @@ static void addBallToHull(convexHull *hull, bmeshBall *ballForConvexHull) {
   vec3Add(&ballForConvexHull->position, &y, &q.pt[3]);
   vec3Add(&q.pt[3], &z, &q.pt[3]);
   
-  convexHullAddVertex(hull, &q.pt[0], ballForConvexHull->index, 0);
-  convexHullAddVertex(hull, &q.pt[1], ballForConvexHull->index, 1);
-  convexHullAddVertex(hull, &q.pt[2], ballForConvexHull->index, 2);
-  convexHullAddVertex(hull, &q.pt[3], ballForConvexHull->index, 3);
+  vertexIndex[0] = convexHullAddVertex(hull, &q.pt[0], ballForConvexHull->index, 0);
+  vertexIndex[1] = convexHullAddVertex(hull, &q.pt[1], ballForConvexHull->index, 1);
+  vertexIndex[2] = convexHullAddVertex(hull, &q.pt[2], ballForConvexHull->index, 2);
+  vertexIndex[3] = convexHullAddVertex(hull, &q.pt[3], ballForConvexHull->index, 3);
+  
+  if (*outmostBall) {
+    if (ballForConvexHull->radius > (*outmostBall)->radius) {
+      needUpdateOutmost = 1;
+    }
+  } else {
+    needUpdateOutmost = 1;
+  }
+  if (needUpdateOutmost) {
+    *outmostBall = ballForConvexHull;
+    *outmostBallFirstVertexIndex = vertexIndex[0];
+  }
 }
 
 static int bmeshStichFrom(bmesh *bm, bmeshBall *parent, bmeshBall *ball) {
@@ -548,10 +565,20 @@ static int bmeshStichFrom(bmesh *bm, bmeshBall *parent, bmeshBall *ball) {
     return 0;
   }
   ball->roundColor = bm->roundColor;
-  if (BMESH_BALL_TYPE_ROOT == ball->type) {
-    convexHull *hull = convexHullCreate();
+  if (BMESH_BALL_TYPE_ROOT == ball->type && 4 == ball->index) {
+    tri2QuadContext *t2q;
+    convexHull *hull;
+    bmeshBall *outmostBall = 0;
+    int outmostBallFirstVertexIndex = 0;
+    hull = convexHullCreate();
     if (!hull) {
       fprintf(stderr, "%s:convexHullCreate failed.\n", __FUNCTION__);
+      return -1;
+    }
+    t2q = tri2QuadContextCreate();
+    if (!t2q) {
+      fprintf(stderr, "%s:tri2QuadContextCreate failed.\n", __FUNCTION__);
+      convexHullDestroy(hull);
       return -1;
     }
     glColor3f(0.0, 0.0, 0.0);
@@ -561,19 +588,40 @@ static int bmeshStichFrom(bmesh *bm, bmeshBall *parent, bmeshBall *ball) {
         child;
         child = bmeshGetBallNextChild(bm, ball, &iterator)) {
       ballForConvexHull = bmeshFindBallForConvexHull(bm, ball, child);
-      addBallToHull(hull, ballForConvexHull);
+      addBallToHull(hull, ballForConvexHull,
+        &outmostBall, &outmostBallFirstVertexIndex);
     }
     if (parent) {
-      addBallToHull(hull, parent);
+      addBallToHull(hull, parent, &outmostBall, &outmostBallFirstVertexIndex);
+    }
+    if (outmostBall) {
+      convexHullAddTodo(hull, outmostBallFirstVertexIndex + 0,
+        outmostBallFirstVertexIndex + 1, outmostBallFirstVertexIndex + 2);
     }
     convexHullGenerate(hull);
-    glPushMatrix();
+    convexHullUnifyNormals(hull, &ball->position);
     {
       int triIndex;
-      glColor3f(1.0f, 1.0f, 1.0f);
       for (triIndex = 0; triIndex < convexHullGetTriangleNum(hull);
           ++triIndex) {
         triangle *tri = (triangle *)convexHullGetTriangle(hull, triIndex);
+        tri2QuadAddTriangle(t2q, tri);
+      }
+    }
+    tri2QuadConvert(t2q);
+    
+    glPushMatrix();
+    
+    /*
+    glColor3f(1.0f, 1.0f, 1.0f);
+    {
+      int triIndex;
+      for (triIndex = 0; triIndex < convexHullGetTriangleNum(hull);
+          ++triIndex) {
+        triangle *tri = (triangle *)convexHullGetTriangle(hull, triIndex);
+        //if (triIndex > displayTriangleFaceIndex) {
+        //  continue;
+        //}
         drawTriangle(tri);
       }
     }
@@ -593,8 +641,68 @@ static int bmeshStichFrom(bmesh *bm, bmeshBall *parent, bmeshBall *ball) {
         glEnd();
       }
     }
+    */
+    glColor3f(1.0f, 1.0f, 1.0f);
+    {
+      int triIndex;
+      for (triIndex = 0; triIndex < tri2QuadGetTriangleNum(t2q);
+          ++triIndex) {
+        triangle *tri = (triangle *)tri2QuadGetTriangle(t2q, triIndex);
+        drawTriangle(tri);
+      }
+    }
+    glColor3f(0.0f, 0.0f, 0.0f);
+    {
+      int triIndex;
+      int j;
+      for (triIndex = 0; triIndex < tri2QuadGetTriangleNum(t2q);
+          ++triIndex) {
+        triangle *tri = (triangle *)tri2QuadGetTriangle(t2q, triIndex);
+        glBegin(GL_LINE_STRIP);
+        for (j = 0; j < 3; ++j) {
+          glVertex3f(tri->pt[j].x, tri->pt[j].y, tri->pt[j].z);
+        }
+        glVertex3f(tri->pt[0].x, tri->pt[0].y, tri->pt[0].z);
+        glEnd();
+      }
+    }
+    
+    glColor3f(1.0f, 1.0f, 1.0f);
+    {
+      int quadIndex;
+      glBegin(GL_QUADS);
+      for (quadIndex = 0; quadIndex < tri2QuadGetQuadNum(t2q);
+          ++quadIndex) {
+        quad *q = (quad *)tri2QuadGetQuad(t2q, quadIndex);
+        vec3 normal;
+        int j;
+        vec3Normal(&q->pt[0], &q->pt[1], &q->pt[2], &normal);
+        for (j = 0; j < 4; ++j) {
+          glNormal3f(normal.x, normal.y, normal.z);
+          glVertex3f(q->pt[j].x, q->pt[j].y, q->pt[j].z);
+        }
+      }
+      glEnd();
+    }
+    glColor3f(0.0f, 0.0f, 0.0f);
+    {
+      int quadIndex;
+      int j;
+      for (quadIndex = 0; quadIndex < tri2QuadGetQuadNum(t2q);
+          ++quadIndex) {
+        quad *q = (quad *)tri2QuadGetQuad(t2q, quadIndex);
+        glBegin(GL_LINE_STRIP);
+        for (j = 0; j < 4; ++j) {
+          glVertex3f(q->pt[j].x, q->pt[j].y, q->pt[j].z);
+        }
+        glVertex3f(q->pt[0].x, q->pt[0].y, q->pt[0].z);
+        glEnd();
+      }
+    }
+    
     glPopMatrix();
     convexHullDestroy(hull);
+    tri2QuadContextDestroy(t2q);
   }
   for (child = bmeshGetBallFirstChild(bm, ball, &iterator);
       child;

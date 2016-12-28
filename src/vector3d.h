@@ -25,6 +25,7 @@ void vec3Normal(vec3 *a, vec3 *b, vec3 *c, vec3 *normal);
 void vec3RotateAlong(vec3 *a, float angle, vec3 *axis, vec3 *result);
 float vec3Angle(vec3 *a, vec3 *b);
 void vec3ProjectOver(vec3 *a, vec3 *over, vec3 *result);
+float vec3TriangleArea(vec3 *a, vec3 *b, vec3 *c);
 
 #ifdef __cplusplus
 }

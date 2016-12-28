@@ -129,3 +129,12 @@ void vec3ProjectOver(vec3 *a, vec3 *over, vec3 *result) {
   result->z = length * over->z;
 }
 
+float vec3TriangleArea(vec3 *a, vec3 *b, vec3 *c) {
+  vec3 ab;
+  vec3 ac;
+  vec3 cross;
+  vec3Sub(a, b, &ab);
+  vec3Sub(a, c, &ac);
+  vec3CrossProduct(&ab, &ac, &cross);
+  return vec3Length(&cross) * 0.5;
+}

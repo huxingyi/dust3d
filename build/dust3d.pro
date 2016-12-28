@@ -15,7 +15,9 @@ SOURCES += main.cpp \
   array.c \
   bmesh.c \
   matrix.c \
-  convexhull.c
+  convexhull.c \
+  tri2quad.c \
+  hashtable.c
 
 HEADERS += mainwindow.h \
 	render.h \
@@ -24,4 +26,6 @@ HEADERS += mainwindow.h \
   array.h \
   bmesh.h \
   matrix.h \
-  convexhull.h
+  convexhull.h \
+  tri2quad.h \
+  hashtable.h

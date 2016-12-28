@@ -23,11 +23,16 @@ array *arrayCreate(int nodeSize) {
 int arraySetLength(array *arr, int length) {
   if (length > arr->capacity) {
     int newCapacity = (arr->capacity + 1) * 2;
+    if (newCapacity < length) {
+      newCapacity = length;
+    }
     char *newNodes = (char *)realloc(arr->nodes, arr->nodeSize * newCapacity);
     if (!newNodes) {
       fprintf(stderr, "%s:Insufficient memory.\n", __FUNCTION__);
       return -1;
     }
+    memset(newNodes + arr->nodeSize * arr->capacity, 0,
+      arr->nodeSize * (newCapacity - arr->capacity));
     arr->capacity = newCapacity;
     arr->nodes = newNodes;
   }

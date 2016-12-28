@@ -8,10 +8,10 @@
 #include "matrix.h"
 #include "vector3d.h"
 
-static const float bmeshBallColors[][3] {
-  {0, 0.78, 1},
-  {1, 0, 0},
-  {1, 1, 1}
+static const float bmeshBallColors[][4] {
+  {0.00, 0.78, 1.00, 0.5},
+  {1.00, 0.00, 0.00, 0.5},
+  {1.00, 1.00, 1.00, 0.5}
 };
 
 static const float bmeshBoneColor[3] = {1, 1, 0};
@@ -27,11 +27,14 @@ int drawDebugPrintf(const char *fmt, ...) {
   va_start(args, fmt);
   vsnprintf(text, sizeof(text), fmt, args);
   debugOutputTop += 9;
+  if (debugOutputTop > 200) {
+    debugOutputTop = 0;
+  }
   return drawText(x, y, text);
 }
 
 static int drawBmeshBall(bmesh *bm, bmeshBall *ball) {
-  glColor3fv(bmeshBallColors[ball->type]);
+  glColor4fv(bmeshBallColors[ball->type]);
   drawSphere(&ball->position, ball->radius, 36, 24);
   return 0;
 }
@@ -129,7 +132,7 @@ static void drawBmeshBallQuadRecursively(bmesh *bm, bmeshBall *ball) {
   glPopMatrix();
   */
   
-  drawBmeshBallQuad(ball);
+  //drawBmeshBallQuad(ball);
 
   for (child = bmeshGetBallFirstChild(bm, ball, &iterator);
       child;
@@ -277,7 +280,7 @@ void Render::paintGL() {
     
     for (index = 0; index < bmeshGetBoneNum(bm); ++index) {
       bmeshBone *bone = bmeshGetBone(bm, index);
-      drawBmeshBone(bm, bone);
+      //drawBmeshBone(bm, bone);
     }
     /*
     glColor4f(1.0f, 1.0f, 1.0f, 0.5);
