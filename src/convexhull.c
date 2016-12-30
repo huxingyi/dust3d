@@ -4,7 +4,6 @@
 #include "convexhull.h"
 #include "array.h"
 #include "hashtable.h"
-#include "draw.h"
 
 //
 // Implement Gift wrapping method which describled in http://dccg.upc.edu/people/vera/wp-content/uploads/2014/11/GA2014-ConvexHulls3D-Roger-Hernando.pdf
@@ -18,19 +17,14 @@ typedef struct {
   int orderOnPlane;
 } converHullVertex;
 
-typedef struct face {
-  int indices[3];
-} face;
-
 struct convexHull {
   array *vertexArray;
   array *todoArray;
-  array *faceArray;
+  array *face3Array;
   int nextTodoIndex;
   unsigned int *openEdgeExistMap;
-  hashtable *faceHashtable;
-  face findFace;
-  triangle returnTriangle;
+  hashtable *face3Hashtable;
+  face3 findFace3;
 };
 
 typedef struct {
@@ -39,28 +33,33 @@ typedef struct {
   int thirdVertex;
 } todo;
 
-face *convexHullGetFaceByHashtableParam(convexHull *hull,
+static int cantorPair(int k1, int k2) {
+  return (k1 + k2) * (k1 + k2 + 1) / 2 + k2;
+}
+
+face3 *convexHullGetFaceByHashtableParam(convexHull *hull,
     const void *param) {
   int index = (char *)param - (char *)0;
   if (0 == index) {
-    return &hull->findFace;
+    return &hull->findFace3;
   }
-  return (face *)arrayGetItem(hull->faceArray, index - 1);
+  return (face3 *)arrayGetItem(hull->face3Array, index - 1);
 }
 
 static int faceHash(void *userData, const void *node) {
-  face *triIdx = convexHullGetFaceByHashtableParam(
+  face3 *triIdx = convexHullGetFaceByHashtableParam(
     (convexHull *)userData, node);
-  return triIdx->indices[0] * triIdx->indices[1] * triIdx->indices[2];
+  return cantorPair(cantorPair(triIdx->indices[0], triIdx->indices[1]),
+    triIdx->indices[2]);
 }
 
 static int faceCompare(void *userData, const void *node1,
     const void *node2) {
-  face *triIdx1 = convexHullGetFaceByHashtableParam(
+  face3 *triIdx1 = convexHullGetFaceByHashtableParam(
     (convexHull *)userData, node1);
-  face *triIdx2 = convexHullGetFaceByHashtableParam(
+  face3 *triIdx2 = convexHullGetFaceByHashtableParam(
     (convexHull *)userData, node2);
-  return memcmp(triIdx1, triIdx2, sizeof(face));
+  return memcmp(triIdx1, triIdx2, sizeof(face3));
 }
 
 convexHull *convexHullCreate(void) {
@@ -81,15 +80,15 @@ convexHull *convexHullCreate(void) {
     convexHullDestroy(hull);
     return 0;
   }
-  hull->faceArray = arrayCreate(sizeof(face));
-  if (!hull->faceArray) {
+  hull->face3Array = arrayCreate(sizeof(face3));
+  if (!hull->face3Array) {
     fprintf(stderr, "%s:arrayCreate failed.\n", __FUNCTION__);
     convexHullDestroy(hull);
     return 0;
   }
-  hull->faceHashtable = hashtableCreate(TRIANGLE_INDEX_HASHTABLE_SIZE,
+  hull->face3Hashtable = hashtableCreate(TRIANGLE_INDEX_HASHTABLE_SIZE,
     faceHash, faceCompare, hull);
-  if (!hull->faceHashtable) {
+  if (!hull->face3Hashtable) {
     fprintf(stderr, "%s:hashtableCreate failed.\n", __FUNCTION__);
     convexHullDestroy(hull);
     return 0;
@@ -163,9 +162,9 @@ static int sortface(const void *first, const void *second) {
   return *firstIndex - *secondIndex;
 }
 
-int convexHullAddFace(convexHull *hull, int firstVertex, int secondVertex,
+int convexHullAddFace3(convexHull *hull, int firstVertex, int secondVertex,
     int thirdVertex) {
-  face *tri;
+  face3 *tri;
   converHullVertex *vtx1;
   converHullVertex *vtx2;
   converHullVertex *vtx3;
@@ -191,21 +190,21 @@ int convexHullAddFace(convexHull *hull, int firstVertex, int secondVertex,
       return 0;
     }
   }
-  memset(&hull->findFace, 0, sizeof(hull->findFace));
-  hull->findFace.indices[0] = firstVertex;
-  hull->findFace.indices[1] = secondVertex;
-  hull->findFace.indices[2] = thirdVertex;
-  if (0 == hashtableGet(hull->faceHashtable, 0)) {
-    qsort(hull->findFace.indices, 3,
-      sizeof(hull->findFace.indices[0]), sortface);
-    newTri = arrayGetLength(hull->faceArray);
-    if (0 != arraySetLength(hull->faceArray, newTri + 1)) {
+  memset(&hull->findFace3, 0, sizeof(hull->findFace3));
+  hull->findFace3.indices[0] = firstVertex;
+  hull->findFace3.indices[1] = secondVertex;
+  hull->findFace3.indices[2] = thirdVertex;
+  qsort(hull->findFace3.indices, 3,
+    sizeof(hull->findFace3.indices[0]), sortface);
+  if (0 == hashtableGet(hull->face3Hashtable, 0)) {
+    newTri = arrayGetLength(hull->face3Array);
+    if (0 != arraySetLength(hull->face3Array, newTri + 1)) {
       fprintf(stderr, "%s:arraySetLength failed.\n", __FUNCTION__);
       return -1;
     }
-    tri = (face *)arrayGetItem(hull->faceArray, newTri);
-    *tri = hull->findFace;
-    if (0 != hashtableInsert(hull->faceHashtable,
+    tri = (face3 *)arrayGetItem(hull->face3Array, newTri);
+    *tri = hull->findFace3;
+    if (0 != hashtableInsert(hull->face3Hashtable,
         (char *)0 + newTri + 1)) {
       fprintf(stderr, "%s:hashtableInsert failed.\n", __FUNCTION__);
       return -1;
@@ -222,8 +221,8 @@ static void convexHullReleaseForGenerate(convexHull *hull) {
 void convexHullDestroy(convexHull *hull) {
   arrayDestroy(hull->vertexArray);
   arrayDestroy(hull->todoArray);
-  arrayDestroy(hull->faceArray);
-  hashtableDestroy(hull->faceHashtable);
+  arrayDestroy(hull->face3Array);
+  hashtableDestroy(hull->face3Hashtable);
   convexHullReleaseForGenerate(hull);
   free(hull);
 }
@@ -290,7 +289,8 @@ int convexHullGenerate(convexHull *hull) {
     todo *t = (todo *)arrayGetItem(hull->todoArray, hull->nextTodoIndex++);
     index1 = t->firstVertex;
     index2 = t->secondVertex;
-    if (convexHullEdgeExsits(hull, index1, index2)) {
+    if (convexHullEdgeExsits(hull, index1, index2) ||
+        convexHullEdgeExsits(hull, index2, index1)) {
       continue;
     }
     convexHullMarkEdgeAsExsits(hull, index1, index2);
@@ -298,8 +298,7 @@ int convexHullGenerate(convexHull *hull) {
     if (-1 == index3) {
       continue;
     }
-    convexHullAddFace(hull, index1, index2, index3);
-    convexHullAddTodo(hull, index1, index2, index3);
+    convexHullAddFace3(hull, index1, index2, index3);
     convexHullAddTodo(hull, index2, index3, index1);
     convexHullAddTodo(hull, index3, index1, index2);
   }
@@ -308,9 +307,9 @@ int convexHullGenerate(convexHull *hull) {
 
 int convexHullUnifyNormals(convexHull *hull, vec3 *origin) {
   int i;
-  for (i = 0; i < arrayGetLength(hull->faceArray); ++i) {
-    face *triIdx = (face *)arrayGetItem(
-      hull->faceArray, i);
+  for (i = 0; i < arrayGetLength(hull->face3Array); ++i) {
+    face3 *triIdx = (face3 *)arrayGetItem(
+      hull->face3Array, i);
     converHullVertex *p1 = (converHullVertex *)arrayGetItem(
       hull->vertexArray, triIdx->indices[0]);
     converHullVertex *p2 = (converHullVertex *)arrayGetItem(
@@ -330,19 +329,16 @@ int convexHullUnifyNormals(convexHull *hull, vec3 *origin) {
   return 0;
 }
 
-int convexHullGetTriangleNum(convexHull *hull) {
-  return arrayGetLength(hull->faceArray);
+face3 *convexHullGetFace3(convexHull *hull, int faceIndex) {
+  return (face3 *)arrayGetItem(hull->face3Array, faceIndex);
 }
 
-triangle *convexHullGetTriangle(convexHull *hull, int index) {
-  int i;
-  face *triIdx = (face *)arrayGetItem(
-    hull->faceArray, index);
-  memset(&hull->returnTriangle, 0, sizeof(hull->returnTriangle));
-  for (i = 0; i < 3; ++i) {
-    converHullVertex *vertex = (converHullVertex *)arrayGetItem(
-      hull->vertexArray, triIdx->indices[i]);
-    hull->returnTriangle.pt[i] = vertex->pt;
-  }
-  return &hull->returnTriangle;
+vec3 *convexHullGetVertex(convexHull *hull, int vertexIndex) {
+  converHullVertex *vertex = (converHullVertex *)arrayGetItem(
+    hull->vertexArray, vertexIndex);
+  return &vertex->pt;
+}
+
+int convexHullGetFace3Num(convexHull *hull) {
+  return arrayGetLength(hull->face3Array);
 }

@@ -16,8 +16,8 @@ SOURCES += main.cpp \
   bmesh.c \
   matrix.c \
   convexhull.c \
-  tri2quad.c \
-  hashtable.c
+  hashtable.c \
+  osutil.cpp
 
 HEADERS += mainwindow.h \
 	render.h \
@@ -27,5 +27,6 @@ HEADERS += mainwindow.h \
   bmesh.h \
   matrix.h \
   convexhull.h \
-  tri2quad.h \
-  hashtable.h
+  hashtable.h \
+  3dstruct.h \
+  osutil.h

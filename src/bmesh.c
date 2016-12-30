@@ -8,7 +8,6 @@
 #include "array.h"
 #include "matrix.h"
 #include "convexhull.h"
-#include "tri2quad.h"
 #include "draw.h"
 
 #define BMESH_STEP_DISTANCE 0.4
@@ -556,6 +555,10 @@ static void addBallToHull(convexHull *hull, bmeshBall *ballForConvexHull,
   }
 }
 
+#include "osutil.h"
+static int showFaceIndex = 0;
+static long long lastShowFaceIndexIncTime = 0;
+
 static int bmeshStichFrom(bmesh *bm, bmeshBall *parent, bmeshBall *ball) {
   int result = 0;
   bmeshBallIterator iterator;
@@ -566,19 +569,12 @@ static int bmeshStichFrom(bmesh *bm, bmeshBall *parent, bmeshBall *ball) {
   }
   ball->roundColor = bm->roundColor;
   if (BMESH_BALL_TYPE_ROOT == ball->type && 4 == ball->index) {
-    tri2QuadContext *t2q;
     convexHull *hull;
     bmeshBall *outmostBall = 0;
     int outmostBallFirstVertexIndex = 0;
     hull = convexHullCreate();
     if (!hull) {
       fprintf(stderr, "%s:convexHullCreate failed.\n", __FUNCTION__);
-      return -1;
-    }
-    t2q = tri2QuadContextCreate();
-    if (!t2q) {
-      fprintf(stderr, "%s:tri2QuadContextCreate failed.\n", __FUNCTION__);
-      convexHullDestroy(hull);
       return -1;
     }
     glColor3f(0.0, 0.0, 0.0);
@@ -600,48 +596,54 @@ static int bmeshStichFrom(bmesh *bm, bmeshBall *parent, bmeshBall *ball) {
     }
     convexHullGenerate(hull);
     convexHullUnifyNormals(hull, &ball->position);
-    {
-      int triIndex;
-      for (triIndex = 0; triIndex < convexHullGetTriangleNum(hull);
-          ++triIndex) {
-        triangle *tri = (triangle *)convexHullGetTriangle(hull, triIndex);
-        tri2QuadAddTriangle(t2q, tri);
-      }
-    }
-    tri2QuadConvert(t2q);
-    
     glPushMatrix();
     
-    /*
+    if (lastShowFaceIndexIncTime + 300 < osGetMilliseconds()) {
+      if (showFaceIndex > convexHullGetFace3Num(hull)) {
+        showFaceIndex = 0;
+      } else {
+        showFaceIndex++;
+      }
+      lastShowFaceIndexIncTime = osGetMilliseconds();
+    }
+    
     glColor3f(1.0f, 1.0f, 1.0f);
     {
       int triIndex;
-      for (triIndex = 0; triIndex < convexHullGetTriangleNum(hull);
+      for (triIndex = 0; triIndex < convexHullGetFace3Num(hull);
           ++triIndex) {
-        triangle *tri = (triangle *)convexHullGetTriangle(hull, triIndex);
-        //if (triIndex > displayTriangleFaceIndex) {
-        //  continue;
-        //}
-        drawTriangle(tri);
+        triangle tri;
+        face3 *face = (face3 *)convexHullGetFace3(hull, triIndex);
+        tri.pt[0] = *convexHullGetVertex(hull, face->indices[0]);
+        tri.pt[1] = *convexHullGetVertex(hull, face->indices[1]);
+        tri.pt[2] = *convexHullGetVertex(hull, face->indices[2]);
+        if (triIndex > showFaceIndex) {
+          break;
+        }
+        drawTriangle(&tri);
       }
     }
     glColor3f(0.0f, 0.0f, 0.0f);
     {
       int triIndex;
       int j;
-      glColor3f(1.0f, 1.0f, 1.0f);
-      for (triIndex = 0; triIndex < convexHullGetTriangleNum(hull);
+      for (triIndex = 0; triIndex < convexHullGetFace3Num(hull);
           ++triIndex) {
-        triangle *tri = (triangle *)convexHullGetTriangle(hull, triIndex);
+        triangle tri;
+        face3 *face = (face3 *)convexHullGetFace3(hull, triIndex);
+        tri.pt[0] = *convexHullGetVertex(hull, face->indices[0]);
+        tri.pt[1] = *convexHullGetVertex(hull, face->indices[1]);
+        tri.pt[2] = *convexHullGetVertex(hull, face->indices[2]);
         glBegin(GL_LINE_STRIP);
         for (j = 0; j < 3; ++j) {
-          glVertex3f(tri->pt[j].x, tri->pt[j].y, tri->pt[j].z);
+          glVertex3f(tri.pt[j].x, tri.pt[j].y, tri.pt[j].z);
         }
-        glVertex3f(tri->pt[0].x, tri->pt[0].y, tri->pt[0].z);
+        glVertex3f(tri.pt[0].x, tri.pt[0].y, tri.pt[0].z);
         glEnd();
       }
     }
-    */
+  
+    /*
     glColor3f(1.0f, 1.0f, 1.0f);
     {
       int triIndex;
@@ -698,11 +700,10 @@ static int bmeshStichFrom(bmesh *bm, bmeshBall *parent, bmeshBall *ball) {
         glVertex3f(q->pt[0].x, q->pt[0].y, q->pt[0].z);
         glEnd();
       }
-    }
+    }*/
     
     glPopMatrix();
     convexHullDestroy(hull);
-    tri2QuadContextDestroy(t2q);
   }
   for (child = bmeshGetBallFirstChild(bm, ball, &iterator);
       child;

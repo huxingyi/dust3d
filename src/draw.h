@@ -1,6 +1,6 @@
 #ifndef DRAW_SPHERE_H
 #define DRAW_SPHERE_H
-#include "vector3d.h"
+#include "3dstruct.h"
 #ifdef __APPLE__
 #include <OpenGL/glu.h>
 #else
@@ -10,19 +10,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-typedef struct {
-  vec3 pt[3];
-} triangle;
-
-typedef struct {
-  vec3 pt[4];
-} quad;
-
-typedef struct {
-  int npoly;
-  triangle *poly;
-} object;
 
 int drawInit(void);
 int drawSphere(vec3 *origin, float radius, int slices, int stacks);
