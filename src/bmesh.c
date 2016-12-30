@@ -556,7 +556,7 @@ static void addBallToHull(convexHull *hull, bmeshBall *ballForConvexHull,
 }
 
 #include "osutil.h"
-static int showFaceIndex = 0;
+int showFaceIndex = 10000000;
 static long long lastShowFaceIndexIncTime = 0;
 
 static int bmeshStichFrom(bmesh *bm, bmeshBall *parent, bmeshBall *ball) {
@@ -598,14 +598,26 @@ static int bmeshStichFrom(bmesh *bm, bmeshBall *parent, bmeshBall *ball) {
     convexHullUnifyNormals(hull, &ball->position);
     glPushMatrix();
     
-    if (lastShowFaceIndexIncTime + 300 < osGetMilliseconds()) {
-      if (showFaceIndex > convexHullGetFace3Num(hull)) {
-        showFaceIndex = 0;
+    /*
+    if (lastShowFaceIndexIncTime + 0 < osGetMilliseconds()) {
+      if (17 == showFaceIndex) {
+        if (lastShowFaceIndexIncTime + 0 < osGetMilliseconds()) {
+          if (showFaceIndex > convexHullGetFace3Num(hull)) {
+            showFaceIndex = 0;
+          } else {
+            showFaceIndex++;
+          }
+          lastShowFaceIndexIncTime = osGetMilliseconds();
+        }
       } else {
-        showFaceIndex++;
+        if (showFaceIndex > convexHullGetFace3Num(hull)) {
+          showFaceIndex = 0;
+        } else {
+          showFaceIndex++;
+        }
+        lastShowFaceIndexIncTime = osGetMilliseconds();
       }
-      lastShowFaceIndexIncTime = osGetMilliseconds();
-    }
+    }*/
     
     glColor3f(1.0f, 1.0f, 1.0f);
     {
@@ -617,7 +629,7 @@ static int bmeshStichFrom(bmesh *bm, bmeshBall *parent, bmeshBall *ball) {
         tri.pt[0] = *convexHullGetVertex(hull, face->indices[0]);
         tri.pt[1] = *convexHullGetVertex(hull, face->indices[1]);
         tri.pt[2] = *convexHullGetVertex(hull, face->indices[2]);
-        if (triIndex > showFaceIndex) {
+        if (triIndex >= showFaceIndex) {
           break;
         }
         drawTriangle(&tri);

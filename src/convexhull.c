@@ -1,15 +1,18 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 #include "convexhull.h"
 #include "array.h"
 #include "hashtable.h"
+#include "draw.h"
 
 //
 // Implement Gift wrapping method which describled in http://dccg.upc.edu/people/vera/wp-content/uploads/2014/11/GA2014-ConvexHulls3D-Roger-Hernando.pdf
 //
 
-#define TRIANGLE_INDEX_HASHTABLE_SIZE 100
+#define FACE3_HASHTABLE_SIZE  100
+#define EDGE_HASHTABLE_SIZE   100
 
 typedef struct {
   vec3 pt;
@@ -17,14 +20,25 @@ typedef struct {
   int orderOnPlane;
 } converHullVertex;
 
+typedef struct {
+  int p1;
+  int p2;
+  int hill1;
+  int hill2;
+  vec3 hill1Normal;
+} edge;
+
 struct convexHull {
   array *vertexArray;
   array *todoArray;
   array *face3Array;
   int nextTodoIndex;
-  unsigned int *openEdgeExistMap;
+  unsigned int *openEdgeProcessedMap;
   hashtable *face3Hashtable;
   face3 findFace3;
+  array *edgeArray;
+  hashtable *edgeHashtable;
+  edge findEdge;
 };
 
 typedef struct {
@@ -37,29 +51,51 @@ static int cantorPair(int k1, int k2) {
   return (k1 + k2) * (k1 + k2 + 1) / 2 + k2;
 }
 
-face3 *convexHullGetFaceByHashtableParam(convexHull *hull,
-    const void *param) {
-  int index = (char *)param - (char *)0;
+face3 *convexHullGetFaceByHashtableParam(void *userData, const void *node) {
+  convexHull *hull = (convexHull *)userData;
+  int index = (char *)node - (char *)0;
   if (0 == index) {
     return &hull->findFace3;
   }
   return (face3 *)arrayGetItem(hull->face3Array, index - 1);
 }
 
-static int faceHash(void *userData, const void *node) {
-  face3 *triIdx = convexHullGetFaceByHashtableParam(
-    (convexHull *)userData, node);
-  return cantorPair(cantorPair(triIdx->indices[0], triIdx->indices[1]),
-    triIdx->indices[2]);
+static int face3Hash(void *userData, const void *node) {
+  face3 *face = convexHullGetFaceByHashtableParam(userData, node);
+  return cantorPair(cantorPair(face->indices[0], face->indices[1]),
+    face->indices[2]);
 }
 
-static int faceCompare(void *userData, const void *node1,
+edge *convexHullGetEdgeByHashtableParam(void *userData, const void *node) {
+  convexHull *hull = (convexHull *)userData;
+  int index = (char *)node - (char *)0;
+  if (0 == index) {
+    return &hull->findEdge;
+  }
+  return (edge *)arrayGetItem(hull->edgeArray, index - 1);
+}
+
+static int edgeHash(void *userData, const void *node) {
+  edge *e = convexHullGetEdgeByHashtableParam(userData, node);
+  return e->p1 < e->p2 ? cantorPair(e->p1, e->p2) : cantorPair(e->p2, e->p1);
+}
+
+static int face3Compare(void *userData, const void *node1,
     const void *node2) {
-  face3 *triIdx1 = convexHullGetFaceByHashtableParam(
-    (convexHull *)userData, node1);
-  face3 *triIdx2 = convexHullGetFaceByHashtableParam(
-    (convexHull *)userData, node2);
-  return memcmp(triIdx1, triIdx2, sizeof(face3));
+  face3 *f1 = convexHullGetFaceByHashtableParam(userData, node1);
+  face3 *f2 = convexHullGetFaceByHashtableParam(userData, node2);
+  return memcmp(f1, f2, sizeof(face3));
+}
+
+static int edgeCompare(void *userData, const void *node1,
+    const void *node2) {
+  edge *e1 = convexHullGetEdgeByHashtableParam(userData, node1);
+  edge *e2 = convexHullGetEdgeByHashtableParam(userData, node2);
+  if ((e1->p1 == e2->p1 && e1->p2 == e2->p2) ||
+      (e1->p2 == e2->p1 && e1->p1 == e2->p2)) {
+    return 0;
+  }
+  return -1;
 }
 
 convexHull *convexHullCreate(void) {
@@ -86,9 +122,22 @@ convexHull *convexHullCreate(void) {
     convexHullDestroy(hull);
     return 0;
   }
-  hull->face3Hashtable = hashtableCreate(TRIANGLE_INDEX_HASHTABLE_SIZE,
-    faceHash, faceCompare, hull);
+  hull->face3Hashtable = hashtableCreate(FACE3_HASHTABLE_SIZE,
+    face3Hash, face3Compare, hull);
   if (!hull->face3Hashtable) {
+    fprintf(stderr, "%s:hashtableCreate failed.\n", __FUNCTION__);
+    convexHullDestroy(hull);
+    return 0;
+  }
+  hull->edgeArray = arrayCreate(sizeof(edge));
+  if (!hull->edgeArray) {
+    fprintf(stderr, "%s:arrayCreate failed.\n", __FUNCTION__);
+    convexHullDestroy(hull);
+    return 0;
+  }
+  hull->edgeHashtable = hashtableCreate(EDGE_HASHTABLE_SIZE,
+    edgeHash, edgeCompare, hull);
+  if (!hull->edgeHashtable) {
     fprintf(stderr, "%s:hashtableCreate failed.\n", __FUNCTION__);
     convexHullDestroy(hull);
     return 0;
@@ -96,21 +145,59 @@ convexHull *convexHullCreate(void) {
   return hull;
 }
 
-void convexHullMarkEdgeAsExsits(convexHull *hull, int firstVertex,
+edge *convexHullFindEdge(convexHull *hull, int p1, int p2) {
+  int index;
+  hull->findEdge.p1 = p1;
+  hull->findEdge.p2 = p2;
+  index = (char *)hashtableGet(hull->edgeHashtable, 0) - (char *)0;
+  if (0 == index) {
+    return 0;
+  }
+  return arrayGetItem(hull->edgeArray, index - 1);
+}
+
+int convexHullAddEdge(convexHull *hull, int p1, int p2, int hill) {
+  edge *e = convexHullFindEdge(hull, p1, p2);
+  if (!e) {
+    int newIndex = arrayGetLength(hull->edgeArray);
+    if (0 != arraySetLength(hull->edgeArray, newIndex + 1)) {
+      fprintf(stderr, "%s:arraySetLength failed.\n", __FUNCTION__);
+      return -1;
+    }
+    e = (edge *)arrayGetItem(hull->edgeArray, newIndex);
+    e->p1 = p1;
+    e->p2 = p2;
+    e->hill1 = hill;
+    e->hill2 = -1;
+    vec3Normal((vec3 *)arrayGetItem(hull->vertexArray, e->p1),
+      (vec3 *)arrayGetItem(hull->vertexArray, e->p2),
+      (vec3 *)arrayGetItem(hull->vertexArray, e->hill1), &e->hill1Normal);
+    if (0 != hashtableInsert(hull->edgeHashtable, (char *)0 + newIndex + 1)) {
+      fprintf(stderr, "%s:hashtableInsert failed.\n", __FUNCTION__);
+      return -1;
+    }
+    return 0;
+  }
+  assert(-1 == e->hill2);
+  e->hill2 = hill;
+  return 0;
+}
+
+void convexHullMarkEdgeAsProcessed(convexHull *hull, int firstVertex,
     int secondVertex) {
   int mapIndex = firstVertex * arrayGetLength(hull->vertexArray) + secondVertex;
   int unitIndex = mapIndex / (sizeof(unsigned int) * 8);
   int unitOffset = mapIndex % (sizeof(unsigned int) * 8);
-  hull->openEdgeExistMap[unitIndex] |= (0x00000001 << unitOffset);
+  hull->openEdgeProcessedMap[unitIndex] |= (0x00000001 << unitOffset);
 }
 
-int convexHullEdgeExsits(convexHull *hull, int firstVertex,
+int convexHullOpenEdgeProcessed(convexHull *hull, int firstVertex,
     int secondVertex) {
-  if (hull->openEdgeExistMap) {
+  if (hull->openEdgeProcessedMap) {
     int mapIndex = firstVertex * arrayGetLength(hull->vertexArray) + secondVertex;
     int unitIndex = mapIndex / (sizeof(unsigned int) * 8);
     int unitOffset = mapIndex % (sizeof(unsigned int) * 8);
-    return hull->openEdgeExistMap[unitIndex] & (0x00000001 << unitOffset);
+    return hull->openEdgeProcessedMap[unitIndex] & (0x00000001 << unitOffset);
   }
   return 0;
 }
@@ -214,26 +301,28 @@ int convexHullAddFace3(convexHull *hull, int firstVertex, int secondVertex,
 }
 
 static void convexHullReleaseForGenerate(convexHull *hull) {
-  free(hull->openEdgeExistMap);
-  hull->openEdgeExistMap = 0;
+  free(hull->openEdgeProcessedMap);
+  hull->openEdgeProcessedMap = 0;
 }
 
 void convexHullDestroy(convexHull *hull) {
   arrayDestroy(hull->vertexArray);
   arrayDestroy(hull->todoArray);
   arrayDestroy(hull->face3Array);
+  arrayDestroy(hull->edgeArray);
+  hashtableDestroy(hull->edgeHashtable);
   hashtableDestroy(hull->face3Hashtable);
   convexHullReleaseForGenerate(hull);
   free(hull);
 }
 
 static int convexHullPrepareForGenerate(convexHull *hull) {
-  free(hull->openEdgeExistMap);
-  hull->openEdgeExistMap = (unsigned int *)calloc(
+  free(hull->openEdgeProcessedMap);
+  hull->openEdgeProcessedMap = (unsigned int *)calloc(
     arrayGetLength(hull->vertexArray) * arrayGetLength(hull->vertexArray) /
       (sizeof(unsigned int) * 8) + 1,
     sizeof(unsigned int));
-  if (!hull->openEdgeExistMap) {
+  if (!hull->openEdgeProcessedMap) {
     fprintf(stderr, "%s:Insufficient memory.\n", __FUNCTION__);
     return -1;
   }
@@ -272,10 +361,55 @@ int convexHullGetNextVertex(convexHull *hull, int p1Index, int p2Index,
 
 int convexHullAddTodo(convexHull *hull, int vertex1, int vertex2,
     int vertex3) {
-  if (!convexHullEdgeExsits(hull, vertex1, vertex2)) {
+  if (!convexHullOpenEdgeProcessed(hull, vertex1, vertex2)) {
     return convexHullAddTodoNoCheck(hull, vertex1, vertex2, vertex3);
   }
   return 0;
+}
+
+extern int showFaceIndex;
+
+static int convexHullCanAddFace3(convexHull *hull, int index1, int index2,
+    int index3) {
+  int i;
+  int indices[] = {index1, index2, index3};
+  
+  if (showFaceIndex == arrayGetLength(hull->face3Array)) {
+    drawDebugPrintf("showFaceIndex:%d can add (%d,%d,%d)", showFaceIndex,
+      index1, index2, index3);
+  }
+  
+  for (i = 0; i < 3; ++i) {
+    int p1 = indices[i];
+    int p2 = indices[(i + 1) % 3];
+    int hill = indices[(i + 2) % 3];
+    float angle;
+    edge *e = convexHullFindEdge(hull, p1, p2);
+    if (e) {
+      vec3 normal;
+      if (-1 != e->hill2) {
+        return 0;
+      }
+      vec3Normal((vec3 *)arrayGetItem(hull->vertexArray, e->p1),
+        (vec3 *)arrayGetItem(hull->vertexArray, e->p2),
+        (vec3 *)arrayGetItem(hull->vertexArray, hill), &normal);
+      angle = vec3Angle(&e->hill1Normal, &normal);
+      
+      if (showFaceIndex == arrayGetLength(hull->face3Array)) {
+        drawDebugPrintf("showFaceIndex:%d angle:%f (%d,%d,%d)",
+          showFaceIndex, angle, e->p1, e->p2, e->hill1);
+        drawSphere((vec3 *)arrayGetItem(hull->vertexArray, 9),
+          0.1, 36, 24);
+        drawSphere((vec3 *)arrayGetItem(hull->vertexArray, 6),
+          0.1, 36, 24);
+      }
+      
+      if (angle < 1) {
+        return 0;
+      }
+    }
+  }
+  return 1;
 }
 
 int convexHullGenerate(convexHull *hull) {
@@ -289,15 +423,25 @@ int convexHullGenerate(convexHull *hull) {
     todo *t = (todo *)arrayGetItem(hull->todoArray, hull->nextTodoIndex++);
     index1 = t->firstVertex;
     index2 = t->secondVertex;
-    if (convexHullEdgeExsits(hull, index1, index2) ||
-        convexHullEdgeExsits(hull, index2, index1)) {
+    if (convexHullOpenEdgeProcessed(hull, index1, index2) ||
+        convexHullOpenEdgeProcessed(hull, index2, index1)) {
       continue;
     }
-    convexHullMarkEdgeAsExsits(hull, index1, index2);
+    convexHullMarkEdgeAsProcessed(hull, index1, index2);
     index3 = convexHullGetNextVertex(hull, index1, index2, t->thirdVertex);
     if (-1 == index3) {
       continue;
     }
+    if (!convexHullCanAddFace3(hull, index1, index2, index3)) {
+      continue;
+    }
+    if (showFaceIndex == arrayGetLength(hull->face3Array)) {
+      drawDebugPrintf("showFaceIndex:%d added face3 (%d,%d,%d)",
+        showFaceIndex, index1, index2, index3);
+    }
+    convexHullAddEdge(hull, index1, index2, index3);
+    convexHullAddEdge(hull, index2, index3, index1);
+    convexHullAddEdge(hull, index3, index1, index2);
     convexHullAddFace3(hull, index1, index2, index3);
     convexHullAddTodo(hull, index2, index3, index1);
     convexHullAddTodo(hull, index3, index1, index2);
