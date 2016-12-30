@@ -18,7 +18,7 @@ typedef struct {
   vec3 pt;
   int plane;
   int orderOnPlane;
-} converHullVertex;
+} convexHullVertex;
 
 typedef struct {
   int p1;
@@ -26,12 +26,15 @@ typedef struct {
   int hill1;
   int hill2;
   vec3 hill1Normal;
+  int score;
+  int face1;
+  int face2;
 } edge;
 
 struct convexHull {
   array *vertexArray;
   array *todoArray;
-  array *face3Array;
+  array *faceArray;
   int nextTodoIndex;
   unsigned int *openEdgeProcessedMap;
   hashtable *face3Hashtable;
@@ -57,7 +60,7 @@ face3 *convexHullGetFaceByHashtableParam(void *userData, const void *node) {
   if (0 == index) {
     return &hull->findFace3;
   }
-  return (face3 *)arrayGetItem(hull->face3Array, index - 1);
+  return (face3 *)arrayGetItem(hull->faceArray, index - 1);
 }
 
 static int face3Hash(void *userData, const void *node) {
@@ -104,7 +107,7 @@ convexHull *convexHullCreate(void) {
     fprintf(stderr, "%s:Insufficient memory.\n", __FUNCTION__);
     return 0;
   }
-  hull->vertexArray = arrayCreate(sizeof(converHullVertex));
+  hull->vertexArray = arrayCreate(sizeof(convexHullVertex));
   if (!hull->vertexArray) {
     fprintf(stderr, "%s:arrayCreate failed.\n", __FUNCTION__);
     convexHullDestroy(hull);
@@ -116,8 +119,8 @@ convexHull *convexHullCreate(void) {
     convexHullDestroy(hull);
     return 0;
   }
-  hull->face3Array = arrayCreate(sizeof(face3));
-  if (!hull->face3Array) {
+  hull->faceArray = arrayCreate(sizeof(convexHullFace));
+  if (!hull->faceArray) {
     fprintf(stderr, "%s:arrayCreate failed.\n", __FUNCTION__);
     convexHullDestroy(hull);
     return 0;
@@ -156,7 +159,8 @@ edge *convexHullFindEdge(convexHull *hull, int p1, int p2) {
   return arrayGetItem(hull->edgeArray, index - 1);
 }
 
-int convexHullAddEdge(convexHull *hull, int p1, int p2, int hill) {
+int convexHullAddEdge(convexHull *hull, int p1, int p2, int hill,
+    int face) {
   edge *e = convexHullFindEdge(hull, p1, p2);
   if (!e) {
     int newIndex = arrayGetLength(hull->edgeArray);
@@ -165,10 +169,13 @@ int convexHullAddEdge(convexHull *hull, int p1, int p2, int hill) {
       return -1;
     }
     e = (edge *)arrayGetItem(hull->edgeArray, newIndex);
+    memset(e, 0, sizeof(edge));
     e->p1 = p1;
     e->p2 = p2;
     e->hill1 = hill;
     e->hill2 = -1;
+    e->face1 = face;
+    e->face2 = -1;
     vec3Normal((vec3 *)arrayGetItem(hull->vertexArray, e->p1),
       (vec3 *)arrayGetItem(hull->vertexArray, e->p2),
       (vec3 *)arrayGetItem(hull->vertexArray, e->hill1), &e->hill1Normal);
@@ -179,7 +186,9 @@ int convexHullAddEdge(convexHull *hull, int p1, int p2, int hill) {
     return 0;
   }
   assert(-1 == e->hill2);
+  assert(-1 == e->face2);
   e->hill2 = hill;
+  e->face2 = face;
   return 0;
 }
 
@@ -204,13 +213,13 @@ int convexHullOpenEdgeProcessed(convexHull *hull, int firstVertex,
 
 int convexHullAddVertex(convexHull *hull, vec3 *vertex, int plane,
     int orderOnPlane) {
-  converHullVertex *vtx;
+  convexHullVertex *vtx;
   int newVertex = arrayGetLength(hull->vertexArray);
   if (0 != arraySetLength(hull->vertexArray, newVertex + 1)) {
     fprintf(stderr, "%s:arraySetLength failed.\n", __FUNCTION__);
     return -1;
   }
-  vtx = (converHullVertex *)arrayGetItem(hull->vertexArray, newVertex);
+  vtx = (convexHullVertex *)arrayGetItem(hull->vertexArray, newVertex);
   vtx->plane = plane;
   vtx->orderOnPlane = orderOnPlane;
   vtx->pt = *vertex;
@@ -252,13 +261,13 @@ static int sortface(const void *first, const void *second) {
 int convexHullAddFace3(convexHull *hull, int firstVertex, int secondVertex,
     int thirdVertex) {
   face3 *tri;
-  converHullVertex *vtx1;
-  converHullVertex *vtx2;
-  converHullVertex *vtx3;
+  convexHullVertex *vtx1;
+  convexHullVertex *vtx2;
+  convexHullVertex *vtx3;
   int newTri;
-  vtx1 = (converHullVertex *)arrayGetItem(hull->vertexArray, firstVertex);
-  vtx2 = (converHullVertex *)arrayGetItem(hull->vertexArray, secondVertex);
-  vtx3 = (converHullVertex *)arrayGetItem(hull->vertexArray, thirdVertex);
+  vtx1 = (convexHullVertex *)arrayGetItem(hull->vertexArray, firstVertex);
+  vtx2 = (convexHullVertex *)arrayGetItem(hull->vertexArray, secondVertex);
+  vtx3 = (convexHullVertex *)arrayGetItem(hull->vertexArray, thirdVertex);
   if (vtx1->plane == vtx2->plane && vtx1->plane == vtx3->plane) {
     return 0;
   }
@@ -284,18 +293,22 @@ int convexHullAddFace3(convexHull *hull, int firstVertex, int secondVertex,
   qsort(hull->findFace3.indices, 3,
     sizeof(hull->findFace3.indices[0]), sortface);
   if (0 == hashtableGet(hull->face3Hashtable, 0)) {
-    newTri = arrayGetLength(hull->face3Array);
-    if (0 != arraySetLength(hull->face3Array, newTri + 1)) {
+    newTri = arrayGetLength(hull->faceArray);
+    if (0 != arraySetLength(hull->faceArray, newTri + 1)) {
       fprintf(stderr, "%s:arraySetLength failed.\n", __FUNCTION__);
       return -1;
     }
-    tri = (face3 *)arrayGetItem(hull->face3Array, newTri);
+    tri = (face3 *)arrayGetItem(hull->faceArray, newTri);
+    ((convexHullFace *)tri)->vertexNum = 3;
     *tri = hull->findFace3;
     if (0 != hashtableInsert(hull->face3Hashtable,
         (char *)0 + newTri + 1)) {
       fprintf(stderr, "%s:hashtableInsert failed.\n", __FUNCTION__);
       return -1;
     }
+    convexHullAddEdge(hull, firstVertex, secondVertex, thirdVertex, newTri);
+    convexHullAddEdge(hull, secondVertex, thirdVertex, firstVertex, newTri);
+    convexHullAddEdge(hull, thirdVertex, firstVertex, secondVertex, newTri);
   }
   return 0;
 }
@@ -308,7 +321,7 @@ static void convexHullReleaseForGenerate(convexHull *hull) {
 void convexHullDestroy(convexHull *hull) {
   arrayDestroy(hull->vertexArray);
   arrayDestroy(hull->todoArray);
-  arrayDestroy(hull->face3Array);
+  arrayDestroy(hull->faceArray);
   arrayDestroy(hull->edgeArray);
   hashtableDestroy(hull->edgeHashtable);
   hashtableDestroy(hull->face3Hashtable);
@@ -374,7 +387,7 @@ static int convexHullCanAddFace3(convexHull *hull, int index1, int index2,
   int i;
   int indices[] = {index1, index2, index3};
   
-  if (showFaceIndex == arrayGetLength(hull->face3Array)) {
+  if (showFaceIndex == arrayGetLength(hull->faceArray)) {
     drawDebugPrintf("showFaceIndex:%d can add (%d,%d,%d)", showFaceIndex,
       index1, index2, index3);
   }
@@ -395,7 +408,7 @@ static int convexHullCanAddFace3(convexHull *hull, int index1, int index2,
         (vec3 *)arrayGetItem(hull->vertexArray, hill), &normal);
       angle = vec3Angle(&e->hill1Normal, &normal);
       
-      if (showFaceIndex == arrayGetLength(hull->face3Array)) {
+      if (showFaceIndex == arrayGetLength(hull->faceArray)) {
         drawDebugPrintf("showFaceIndex:%d angle:%f (%d,%d,%d)",
           showFaceIndex, angle, e->p1, e->p2, e->hill1);
         drawSphere((vec3 *)arrayGetItem(hull->vertexArray, 9),
@@ -435,13 +448,10 @@ int convexHullGenerate(convexHull *hull) {
     if (!convexHullCanAddFace3(hull, index1, index2, index3)) {
       continue;
     }
-    if (showFaceIndex == arrayGetLength(hull->face3Array)) {
+    if (showFaceIndex == arrayGetLength(hull->faceArray)) {
       drawDebugPrintf("showFaceIndex:%d added face3 (%d,%d,%d)",
         showFaceIndex, index1, index2, index3);
     }
-    convexHullAddEdge(hull, index1, index2, index3);
-    convexHullAddEdge(hull, index2, index3, index1);
-    convexHullAddEdge(hull, index3, index1, index2);
     convexHullAddFace3(hull, index1, index2, index3);
     convexHullAddTodo(hull, index2, index3, index1);
     convexHullAddTodo(hull, index3, index1, index2);
@@ -451,14 +461,14 @@ int convexHullGenerate(convexHull *hull) {
 
 int convexHullUnifyNormals(convexHull *hull, vec3 *origin) {
   int i;
-  for (i = 0; i < arrayGetLength(hull->face3Array); ++i) {
+  for (i = 0; i < arrayGetLength(hull->faceArray); ++i) {
     face3 *triIdx = (face3 *)arrayGetItem(
-      hull->face3Array, i);
-    converHullVertex *p1 = (converHullVertex *)arrayGetItem(
+      hull->faceArray, i);
+    convexHullVertex *p1 = (convexHullVertex *)arrayGetItem(
       hull->vertexArray, triIdx->indices[0]);
-    converHullVertex *p2 = (converHullVertex *)arrayGetItem(
+    convexHullVertex *p2 = (convexHullVertex *)arrayGetItem(
       hull->vertexArray, triIdx->indices[1]);
-    converHullVertex *p3 = (converHullVertex *)arrayGetItem(
+    convexHullVertex *p3 = (convexHullVertex *)arrayGetItem(
       hull->vertexArray, triIdx->indices[2]);
     vec3 normal;
     vec3 o2v;
@@ -473,16 +483,107 @@ int convexHullUnifyNormals(convexHull *hull, vec3 *origin) {
   return 0;
 }
 
-face3 *convexHullGetFace3(convexHull *hull, int faceIndex) {
-  return (face3 *)arrayGetItem(hull->face3Array, faceIndex);
+static int sortEdgeByScore(const void *first, const void *second) {
+   edge *e1 = (edge *)first;
+   edge *e2 = (edge *)second;
+   return e2->score - e1->score;
+}
+
+static int findFace3FirstEdgeVertex(face3 *face, edge *e) {
+  int i;
+  for (i = 0; i < 3; ++i) {
+    if (face->indices[i] == e->p1 || face->indices[i] == e->p2) {
+      return i;
+    }
+  }
+  return 0;
+}
+
+int convexHullMergeTriangles(convexHull *hull) {
+  int edgeIndex;
+  
+  for (edgeIndex = 0; edgeIndex < arrayGetLength(hull->edgeArray);
+      ++edgeIndex) {
+    edge *e = (edge *)arrayGetItem(hull->edgeArray, edgeIndex);
+    if (-1 != e->face1 && -1 != e->face2) {
+      face3 *f1 = (face3 *)arrayGetItem(hull->faceArray, e->face1);
+      face3 *f2 = (face3 *)arrayGetItem(hull->faceArray, e->face2);
+      float sumArea;
+      vec3 f1normal;
+      vec3 f2normal;
+      convexHullVertex *f1p1 = (convexHullVertex *)arrayGetItem(
+        hull->vertexArray, f1->indices[0]);
+      convexHullVertex *f1p2 = (convexHullVertex *)arrayGetItem(
+        hull->vertexArray, f1->indices[1]);
+      convexHullVertex *f1p3 = (convexHullVertex *)arrayGetItem(
+        hull->vertexArray, f1->indices[2]);
+      convexHullVertex *f2p1 = (convexHullVertex *)arrayGetItem(
+        hull->vertexArray, f2->indices[0]);
+      convexHullVertex *f2p2 = (convexHullVertex *)arrayGetItem(
+        hull->vertexArray, f2->indices[1]);
+      convexHullVertex *f2p3 = (convexHullVertex *)arrayGetItem(
+        hull->vertexArray, f2->indices[2]);
+      sumArea = vec3TriangleArea(&f1p1->pt, &f1p2->pt, &f1p3->pt) +
+        vec3TriangleArea(&f2p1->pt, &f2p2->pt, &f2p3->pt);
+      vec3Normal(&f1p1->pt, &f1p2->pt, &f1p3->pt, &f1normal);
+      vec3Normal(&f2p1->pt, &f2p2->pt, &f2p3->pt, &f2normal);
+      e->score = sumArea * vec3DotProduct(&f1normal, &f2normal) * 100;
+    }
+  }
+  
+  qsort(arrayGetItem(hull->edgeArray, 0), arrayGetLength(hull->edgeArray),
+    sizeof(edge), sortEdgeByScore);
+  
+  //
+  // After sort by score, the edge hashmap can not be used anymore.
+  //
+  hashtableDestroy(hull->edgeHashtable);
+  hull->edgeHashtable = 0;
+  
+  for (edgeIndex = 0; edgeIndex < arrayGetLength(hull->edgeArray);
+      ++edgeIndex) {
+    edge *e = (edge *)arrayGetItem(hull->edgeArray, edgeIndex);
+    if (-1 != e->face1 && -1 != e->face2) {
+      convexHullFace *f1 = (convexHullFace *)arrayGetItem(hull->faceArray,
+        e->face1);
+      convexHullFace *f2 = (convexHullFace *)arrayGetItem(hull->faceArray,
+        e->face2);
+      if (3 == f1->vertexNum && 3 == f2->vertexNum) {
+        if (e->score > 0) {
+          int firstEdgeVertex = findFace3FirstEdgeVertex((face3 *)f1, e);
+          int insertPos = firstEdgeVertex + 1;
+          
+          drawDebugPrintf("score:%d", e->score);
+          
+          memmove(&f1->u.q.indices[insertPos + 1],
+            &f1->u.q.indices[insertPos], (3 - insertPos) * sizeof(int));
+          f1->u.q.indices[insertPos] = e->hill2;
+          f1->vertexNum = 4;
+          f2->vertexNum = 0;
+        }
+      }
+    }
+  }
+  
+  // After merge, face3 hashtable can not be used anymore.
+  hashtableDestroy(hull->face3Hashtable);
+  hull->face3Hashtable = 0;
+  
+  return 0;
+}
+
+convexHullFace *convexHullGetFace(convexHull *hull, int faceIndex) {
+  convexHullFace *face = (convexHullFace *)arrayGetItem(hull->faceArray,
+    faceIndex);
+  return face;
 }
 
 vec3 *convexHullGetVertex(convexHull *hull, int vertexIndex) {
-  converHullVertex *vertex = (converHullVertex *)arrayGetItem(
+  convexHullVertex *vertex = (convexHullVertex *)arrayGetItem(
     hull->vertexArray, vertexIndex);
   return &vertex->pt;
 }
 
-int convexHullGetFace3Num(convexHull *hull) {
-  return arrayGetLength(hull->face3Array);
+int convexHullGetFaceNum(convexHull *hull) {
+  return arrayGetLength(hull->faceArray);
 }

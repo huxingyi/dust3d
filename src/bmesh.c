@@ -596,6 +596,7 @@ static int bmeshStichFrom(bmesh *bm, bmeshBall *parent, bmeshBall *ball) {
     }
     convexHullGenerate(hull);
     convexHullUnifyNormals(hull, &ball->position);
+    convexHullMergeTriangles(hull);
     glPushMatrix();
     
     /*
@@ -619,41 +620,84 @@ static int bmeshStichFrom(bmesh *bm, bmeshBall *parent, bmeshBall *ball) {
       }
     }*/
     
-    glColor3f(1.0f, 1.0f, 1.0f);
     {
       int triIndex;
-      for (triIndex = 0; triIndex < convexHullGetFace3Num(hull);
+      for (triIndex = 0; triIndex < convexHullGetFaceNum(hull);
           ++triIndex) {
-        triangle tri;
-        face3 *face = (face3 *)convexHullGetFace3(hull, triIndex);
-        tri.pt[0] = *convexHullGetVertex(hull, face->indices[0]);
-        tri.pt[1] = *convexHullGetVertex(hull, face->indices[1]);
-        tri.pt[2] = *convexHullGetVertex(hull, face->indices[2]);
-        if (triIndex >= showFaceIndex) {
-          break;
+        convexHullFace *face = (convexHullFace *)convexHullGetFace(hull,
+          triIndex);
+        if (3 == face->vertexNum) {
+          triangle tri;
+          int j;
+          tri.pt[0] = *convexHullGetVertex(hull, face->u.t.indices[0]);
+          tri.pt[1] = *convexHullGetVertex(hull, face->u.t.indices[1]);
+          tri.pt[2] = *convexHullGetVertex(hull, face->u.t.indices[2]);
+          
+          if (triIndex >= showFaceIndex) {
+            break;
+          }
+          
+          glColor3f(1.0f, 1.0f, 1.0f);
+          drawTriangle(&tri);
+          
+          glBegin(GL_LINE_STRIP);
+          for (j = 0; j < 3; ++j) {
+            glVertex3f(tri.pt[j].x, tri.pt[j].y, tri.pt[j].z);
+          }
+          glVertex3f(tri.pt[0].x, tri.pt[0].y, tri.pt[0].z);
+          glEnd();
+          
+        } else if (4 == face->vertexNum) {
+          quad q;
+          vec3 normal;
+          int j;
+          q.pt[0] = *convexHullGetVertex(hull, face->u.q.indices[0]);
+          q.pt[1] = *convexHullGetVertex(hull, face->u.q.indices[1]);
+          q.pt[2] = *convexHullGetVertex(hull, face->u.q.indices[2]);
+          q.pt[3] = *convexHullGetVertex(hull, face->u.q.indices[3]);
+          
+          glColor3f(1.0f, 1.0f, 1.0f);
+          glBegin(GL_QUADS);
+          vec3Normal(&q.pt[0], &q.pt[1], &q.pt[2], &normal);
+          for (j = 0; j < 4; ++j) {
+            glNormal3f(normal.x, normal.y, normal.z);
+            glVertex3f(q.pt[j].x, q.pt[j].y, q.pt[j].z);
+          }
+          glEnd();
+          
+          glBegin(GL_LINE_STRIP);
+          for (j = 0; j < 4; ++j) {
+            glVertex3f(q.pt[j].x, q.pt[j].y, q.pt[j].z);
+          }
+          glVertex3f(q.pt[0].x, q.pt[0].y, q.pt[0].z);
+          glEnd();
         }
-        drawTriangle(&tri);
       }
     }
+    
+    /*
     glColor3f(0.0f, 0.0f, 0.0f);
     {
       int triIndex;
       int j;
-      for (triIndex = 0; triIndex < convexHullGetFace3Num(hull);
+      for (triIndex = 0; triIndex < convexHullGetFaceNum(hull);
           ++triIndex) {
-        triangle tri;
-        face3 *face = (face3 *)convexHullGetFace3(hull, triIndex);
-        tri.pt[0] = *convexHullGetVertex(hull, face->indices[0]);
-        tri.pt[1] = *convexHullGetVertex(hull, face->indices[1]);
-        tri.pt[2] = *convexHullGetVertex(hull, face->indices[2]);
-        glBegin(GL_LINE_STRIP);
-        for (j = 0; j < 3; ++j) {
-          glVertex3f(tri.pt[j].x, tri.pt[j].y, tri.pt[j].z);
-        }
-        glVertex3f(tri.pt[0].x, tri.pt[0].y, tri.pt[0].z);
-        glEnd();
+        convexHullFace *face = (convexHullFace *)convexHullGetFace(hull,
+          triIndex);
+        if (3 == face->vertexNum) {
+          triangle tri;
+          tri.pt[0] = *convexHullGetVertex(hull, face->u.t.indices[0]);
+          tri.pt[1] = *convexHullGetVertex(hull, face->u.t.indices[1]);
+          tri.pt[2] = *convexHullGetVertex(hull, face->u.t.indices[2]);
+          glBegin(GL_LINE_STRIP);
+          for (j = 0; j < 3; ++j) {
+            glVertex3f(tri.pt[j].x, tri.pt[j].y, tri.pt[j].z);
+          }
+          glVertex3f(tri.pt[0].x, tri.pt[0].y, tri.pt[0].z);
+          glEnd();
+        } else if ()
       }
-    }
+    }*/
   
     /*
     glColor3f(1.0f, 1.0f, 1.0f);
