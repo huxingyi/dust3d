@@ -807,6 +807,30 @@ int bmeshStitch(bmesh *bm) {
   return bmeshStichFrom(bm, 0, bmeshGetRootBall(bm));
 }
 
+static void rollQuadVertexs(quad *q) {
+  int i;
+  quad oldQuad = *q;
+  for (i = 0; i < 4; ++i) {
+    q->pt[i] = oldQuad.pt[(i + 1) % 4];
+  }
+}
+
+static void matchTwoFaces(quad *q1, quad *q2) {
+  int i;
+  float minDistance = 9999;
+  int matchTo = 0;
+  for (i = 0; i < 4; ++i) {
+    float distance = vec3Distance(&q1->pt[0], &q2->pt[i]);
+    if (distance < minDistance) {
+      minDistance = distance;
+      matchTo = i;
+    }
+  }
+  for (i = 0; i < matchTo; ++i) {
+    rollQuadVertexs(q2);
+  }
+}
+
 void calculateBallQuad(bmeshBall *ball, quad *q) {
   vec3 z, y;
   vec3Scale(&ball->localYaxis, ball->radius, &y);
@@ -825,6 +849,7 @@ static void drawWallsBetweenQuads(vec3 *origin, quad *q1, quad *q2) {
   int i;
   vec3 normal;
   vec3 o2v;
+  matchTwoFaces(q1, q2);
   for (i = 0; i < 4; ++i) {
     quad wall = {{q1->pt[i], q2->pt[i],
       q2->pt[(i + 1) % 4], q1->pt[(i + 1) % 4]}};

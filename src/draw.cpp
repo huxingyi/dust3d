@@ -38,12 +38,20 @@ void drawTriangle(triangle *poly) {
 void drawQuad(quad *poly) {
   vec3 normal;
   int i;
+  glColor3f(1.0, 1.0, 1.0);
   glBegin(GL_QUADS);
   vec3Normal(&poly->pt[0], &poly->pt[1], &poly->pt[2], &normal);
   for (i = 0; i < 4; ++i) {
     glNormal3f(normal.x, normal.y, normal.z);
     glVertex3f(poly->pt[i].x, poly->pt[i].y, poly->pt[i].z);
   }
+  glEnd();
+  glColor3f(0.0, 0.0, 0.0);
+  glBegin(GL_LINE_STRIP);
+  for (i = 0; i < 4; ++i) {
+    glVertex3f(poly->pt[i].x, poly->pt[i].y, poly->pt[i].z);
+  }
+  glVertex3f(poly->pt[0].x, poly->pt[0].y, poly->pt[0].z);
   glEnd();
 }
 
