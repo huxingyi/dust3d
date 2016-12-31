@@ -20,6 +20,7 @@ int drawGrid(float size, float step);
 int drawText(int x, int y, char *text);
 int drawPrintf(int x, int y, const char *fmt, ...);
 int drawDebugPrintf(const char *fmt, ...);
+void drawDebugPoint(vec3 *origin, int colorIndex);
 
 #ifdef __cplusplus
 }

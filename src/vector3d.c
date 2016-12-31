@@ -103,15 +103,14 @@ void vec3RotateAlong(vec3 *a, float angle, vec3 *axis, vec3 *result) {
 
 float vec3Angle(vec3 *a, vec3 *b) {
   float angle;
-  vec3 p;
-  float distance;
+  float da, db;
   float acosParam;
-  vec3Sub(a, b, &p);
-  distance = vec3Length(&p);
-  if (0 == distance) {
+  da = vec3Length(a);
+  db = vec3Length(b);
+  if (0 == da || 0 == db) {
     return 0;
   }
-  acosParam = vec3DotProduct(a, b) / distance;
+  acosParam = vec3DotProduct(a, b) / (da * db);
   if (acosParam < -1) {
     acosParam = -1;
   }

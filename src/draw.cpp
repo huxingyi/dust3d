@@ -98,3 +98,25 @@ int drawPrintf(int x, int y, const char *fmt, ...) {
   return drawText(x, y, text);
 }
 
+static const float drawDebugColors[][4] {
+  {1.00, 0.00, 1.00, 1.0},
+  {0.00, 1.00, 1.00, 1.0},
+  {1.00, 1.00, 0.00, 1.0},
+  {1.00, 1.00, 1.00, 1.0},
+  {0.00, 0.00, 0.00, 1.0},
+  {1.00, 0.00, 1.00, 0.5},
+  {0.00, 1.00, 1.00, 0.5},
+  {1.00, 1.00, 0.00, 0.5},
+  {1.00, 1.00, 1.00, 0.5},
+  {0.00, 0.00, 0.00, 0.5},
+};
+
+void drawDebugPoint(vec3 *origin, int colorIndex) {
+  float currentColor[4];
+  glGetFloatv(GL_CURRENT_COLOR, currentColor);
+  glColor4fv(drawDebugColors[colorIndex %
+    (sizeof(drawDebugColors) / sizeof(drawDebugColors[0]))]);
+  drawSphere(origin, 0.05, 9, 6);
+  glColor4fv(currentColor);
+}
+

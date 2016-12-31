@@ -486,17 +486,17 @@ int convexHullUnifyNormals(convexHull *hull, vec3 *origin) {
 static int sortEdgeByScore(const void *first, const void *second) {
    edge *e1 = (edge *)first;
    edge *e2 = (edge *)second;
-   return e2->score - e1->score;
+   return e1->score - e2->score;
 }
 
-static int findFace3FirstEdgeVertex(face3 *face, edge *e) {
+static void rollTriangleIndices(face3 *face) {
   int i;
+  int oldIndices[] = {face->indices[0],
+    face->indices[1],
+    face->indices[2]};
   for (i = 0; i < 3; ++i) {
-    if (face->indices[i] == e->p1 || face->indices[i] == e->p2) {
-      return i;
-    }
+    face->indices[(i + 1) % 3] = oldIndices[i];
   }
-  return 0;
 }
 
 int convexHullMergeTriangles(convexHull *hull) {
@@ -506,11 +506,12 @@ int convexHullMergeTriangles(convexHull *hull) {
       ++edgeIndex) {
     edge *e = (edge *)arrayGetItem(hull->edgeArray, edgeIndex);
     if (-1 != e->face1 && -1 != e->face2) {
-      face3 *f1 = (face3 *)arrayGetItem(hull->faceArray, e->face1);
-      face3 *f2 = (face3 *)arrayGetItem(hull->faceArray, e->face2);
-      float sumArea;
+      //face3 *f1 = (face3 *)arrayGetItem(hull->faceArray, e->face1);
+      //face3 *f2 = (face3 *)arrayGetItem(hull->faceArray, e->face2);
       vec3 f1normal;
       vec3 f2normal;
+      float angle;
+      /*
       convexHullVertex *f1p1 = (convexHullVertex *)arrayGetItem(
         hull->vertexArray, f1->indices[0]);
       convexHullVertex *f1p2 = (convexHullVertex *)arrayGetItem(
@@ -523,11 +524,23 @@ int convexHullMergeTriangles(convexHull *hull) {
         hull->vertexArray, f2->indices[1]);
       convexHullVertex *f2p3 = (convexHullVertex *)arrayGetItem(
         hull->vertexArray, f2->indices[2]);
-      sumArea = vec3TriangleArea(&f1p1->pt, &f1p2->pt, &f1p3->pt) +
-        vec3TriangleArea(&f2p1->pt, &f2p2->pt, &f2p3->pt);
       vec3Normal(&f1p1->pt, &f1p2->pt, &f1p3->pt, &f1normal);
       vec3Normal(&f2p1->pt, &f2p2->pt, &f2p3->pt, &f2normal);
-      e->score = sumArea * vec3DotProduct(&f1normal, &f2normal) * 100;
+      */
+      vec3 *v1 = (vec3 *)arrayGetItem(hull->vertexArray, e->p1);
+      vec3 *v2 = (vec3 *)arrayGetItem(hull->vertexArray, e->p2);
+      vec3 *vHill1 = (vec3 *)arrayGetItem(hull->vertexArray, e->hill1);
+      vec3 *vHill2 = (vec3 *)arrayGetItem(hull->vertexArray, e->hill2);
+      vec3Normal(v1, vHill1, v2, &f1normal);
+      vec3Normal(v2, vHill2, v1, &f2normal);
+      angle = (int)vec3Angle(&f1normal, &f2normal);
+      e->score = (int)angle;
+      //if (edgeIndex >= 12 && edgeIndex <= 12) {
+      //  angle = (int)vec3Angle(&f1normal, &f2normal);
+        drawDebugPrintf("edgeIndex:%d angle:%f normal1:<%f,%f,%f> normal2:<%f,%f,%f>",
+          edgeIndex, angle, f1normal.x, f1normal.y, f1normal.z,
+          f2normal.x, f2normal.y, f2normal.z);
+      //}
     }
   }
   
@@ -549,17 +562,20 @@ int convexHullMergeTriangles(convexHull *hull) {
       convexHullFace *f2 = (convexHullFace *)arrayGetItem(hull->faceArray,
         e->face2);
       if (3 == f1->vertexNum && 3 == f2->vertexNum) {
-        if (e->score > 0) {
-          int firstEdgeVertex = findFace3FirstEdgeVertex((face3 *)f1, e);
-          int insertPos = firstEdgeVertex + 1;
-          
-          drawDebugPrintf("score:%d", e->score);
-          
-          memmove(&f1->u.q.indices[insertPos + 1],
-            &f1->u.q.indices[insertPos], (3 - insertPos) * sizeof(int));
-          f1->u.q.indices[insertPos] = e->hill2;
+        if (e->score <= 0) {
+          while (e->p1 == f1->u.t.indices[0] || e->p2 == f1->u.t.indices[0]) {
+            rollTriangleIndices((face3 *)f1);
+          }
+          f1->u.q.indices[3] = f1->u.q.indices[2];
+          f1->u.q.indices[2] = e->hill2;
           f1->vertexNum = 4;
           f2->vertexNum = 0;
+          //if (edgeIndex >= 12 && edgeIndex <= 12) {
+            drawDebugPoint((vec3 *)arrayGetItem(
+              hull->vertexArray, e->p1), edgeIndex);
+            drawDebugPoint((vec3 *)arrayGetItem(
+              hull->vertexArray, e->p2), edgeIndex);
+          //}
         }
       }
     }
