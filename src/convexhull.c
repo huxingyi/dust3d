@@ -573,10 +573,10 @@ int convexHullMergeTriangles(convexHull *hull) {
           f1->vertexNum = 4;
           f2->vertexNum = 0;
           //if (edgeIndex >= 12 && edgeIndex <= 12) {
-            drawDebugPoint((vec3 *)arrayGetItem(
-              hull->vertexArray, e->p1), edgeIndex);
-            drawDebugPoint((vec3 *)arrayGetItem(
-              hull->vertexArray, e->p2), edgeIndex);
+          //  drawDebugPoint((vec3 *)arrayGetItem(
+          //    hull->vertexArray, e->p1), edgeIndex);
+          //  drawDebugPoint((vec3 *)arrayGetItem(
+          //    hull->vertexArray, e->p2), edgeIndex);
           //}
         }
       }

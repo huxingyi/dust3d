@@ -821,11 +821,22 @@ void calculateBallQuad(bmeshBall *ball, quad *q) {
   vec3Add(&q->pt[3], &z, &q->pt[3]);
 }
 
-static void drawWallsBetweenQuads(quad *q1, quad *q2) {
+static void drawWallsBetweenQuads(vec3 *origin, quad *q1, quad *q2) {
   int i;
+  vec3 normal;
+  vec3 o2v;
   for (i = 0; i < 4; ++i) {
     quad wall = {{q1->pt[i], q2->pt[i],
       q2->pt[(i + 1) % 4], q1->pt[(i + 1) % 4]}};
+    vec3Normal(&wall.pt[0], &wall.pt[1], &wall.pt[2], &normal);
+    vec3Sub(&wall.pt[0], origin, &o2v);
+    if (vec3DotProduct(&o2v, &normal) < 0) {
+      int j;
+      quad oldWall = wall;
+      for (j = 0; j < 4; ++j) {
+        wall.pt[j] = oldWall.pt[3 - j];
+      }
+    }
     drawQuad(&wall);
   }
 }
@@ -845,7 +856,7 @@ static int bmeshGenerateInbetweenMeshFrom(bmesh *bm, bmeshBall *parent,
     if (parent && parent->radius > 0) {
       quad parentFace;
       calculateBallQuad(parent, &parentFace);
-      drawWallsBetweenQuads(&parentFace, &currentFace);
+      drawWallsBetweenQuads(&ball->position, &parentFace, &currentFace);
       child = bmeshGetBallFirstChild(bm, ball, &iterator);
       if (!child) {
         bmeshBall fakeParentParent = *parent;
@@ -857,7 +868,7 @@ static int bmeshGenerateInbetweenMeshFrom(bmesh *bm, bmeshBall *parent,
           vec3Lerp(&fakeParentParent.position, &fakeParent.position, 2,
             &fakeBall.position);
           calculateBallQuad(&fakeBall, &childFace);
-          drawWallsBetweenQuads(&currentFace, &childFace);
+          drawWallsBetweenQuads(&fakeBall.position, &currentFace, &childFace);
           if (vec3Distance(&ball->position, &fakeBall.position) >=
               ball->radius) {
             drawQuad(&childFace);
