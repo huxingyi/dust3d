@@ -58,7 +58,7 @@ After finish the rotation at the two connected bones, I need implement 3D Convex
 <img src="screenshot/dust3d_convex_hull.png" width="124" height="128">  
 *Stitching*  
 I follow the B-Mesh paper, made another test module inside Blender, and created a correspond `data/bmesh_test_2.h` manually.  
-<img src="screenshot/dust3d_bmesh_test_2.png" width="124" height="128">  
+<img src="screenshot/dust3d_bmesh_test_2.png" width="124" height="128">  <img src="screenshot/dust3d_bmesh_joint_1.png" width="124" height="128">  <img src="screenshot/dust3d_bmesh_joint_2.png" width="124" height="128">  
 - [ ] Export Wavefront .obj  
 - [ ] Render B-Mesh result  
 - [ ] Design UI for monster parts configuration  

@@ -280,7 +280,7 @@ void Render::paintGL() {
     
     for (index = 0; index < bmeshGetBoneNum(bm); ++index) {
       bmeshBone *bone = bmeshGetBone(bm, index);
-      //drawBmeshBone(bm, bone);
+      drawBmeshBone(bm, bone);
     }
     /*
     glColor4f(1.0f, 1.0f, 1.0f, 0.5);

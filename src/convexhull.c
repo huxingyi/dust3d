@@ -268,6 +268,7 @@ int convexHullAddFace3(convexHull *hull, int firstVertex, int secondVertex,
   vtx1 = (convexHullVertex *)arrayGetItem(hull->vertexArray, firstVertex);
   vtx2 = (convexHullVertex *)arrayGetItem(hull->vertexArray, secondVertex);
   vtx3 = (convexHullVertex *)arrayGetItem(hull->vertexArray, thirdVertex);
+  
   if (vtx1->plane == vtx2->plane && vtx1->plane == vtx3->plane) {
     return 0;
   }
@@ -286,6 +287,7 @@ int convexHullAddFace3(convexHull *hull, int firstVertex, int secondVertex,
       return 0;
     }
   }
+  
   memset(&hull->findFace3, 0, sizeof(hull->findFace3));
   hull->findFace3.indices[0] = firstVertex;
   hull->findFace3.indices[1] = secondVertex;
@@ -537,9 +539,9 @@ int convexHullMergeTriangles(convexHull *hull) {
       e->score = (int)angle;
       //if (edgeIndex >= 12 && edgeIndex <= 12) {
       //  angle = (int)vec3Angle(&f1normal, &f2normal);
-        drawDebugPrintf("edgeIndex:%d angle:%f normal1:<%f,%f,%f> normal2:<%f,%f,%f>",
-          edgeIndex, angle, f1normal.x, f1normal.y, f1normal.z,
-          f2normal.x, f2normal.y, f2normal.z);
+      //  drawDebugPrintf("edgeIndex:%d angle:%f normal1:<%f,%f,%f> normal2:<%f,%f,%f>",
+      //    edgeIndex, angle, f1normal.x, f1normal.y, f1normal.z,
+      //    f2normal.x, f2normal.y, f2normal.z);
       //}
     }
   }

@@ -10,7 +10,8 @@
 #include "convexhull.h"
 #include "draw.h"
 
-#define BMESH_STEP_DISTANCE 0.4
+#define BMESH_STEP_DISTANCE 0.2
+#define BMESH_MAX_PARENT_BALL_DEPTH 1000
 
 typedef struct bmeshBallIndex {
   int ballIndex;
@@ -24,6 +25,7 @@ struct bmesh {
   array *quadArray;
   int rootBallIndex;
   int roundColor;
+  bmeshBall *parentBallStack[BMESH_MAX_PARENT_BALL_DEPTH];
 };
 
 bmesh *bmeshCreate(void) {
@@ -503,12 +505,20 @@ int bmeshSweep(bmesh *bm) {
   return bmeshSweepFrom(bm, 0, bmeshGetRootBall(bm));
 }
 
-static bmeshBall *bmeshFindBallForConvexHull(bmesh *bm, bmeshBall *root,
+static int isDistanceEnoughForConvexHull(bmeshBall *root,
+      bmeshBall *ball) {
+  float distance = vec3Distance(&root->position, &ball->position);
+  if (distance >= root->radius + BMESH_STEP_DISTANCE) {
+    return 1;
+  }
+  return 0;
+}
+
+static bmeshBall *bmeshFindChildBallForConvexHull(bmesh *bm, bmeshBall *root,
       bmeshBall *ball) {
   bmeshBallIterator iterator;
   bmeshBall *child;
-  float distance = vec3Distance(&root->position, &ball->position);
-  if (distance >= root->radius) {
+  if (isDistanceEnoughForConvexHull(root, ball)) {
     return ball;
   }
   child = bmeshGetBallFirstChild(bm, ball, &iterator);
@@ -516,7 +526,19 @@ static bmeshBall *bmeshFindBallForConvexHull(bmesh *bm, bmeshBall *root,
     return ball;
   }
   ball->radius = 0;
-  return bmeshFindBallForConvexHull(bm, root, child);
+  return bmeshFindChildBallForConvexHull(bm, root, child);
+}
+
+static bmeshBall *bmeshFindParentBallForConvexHull(bmesh *bm, bmeshBall *root,
+    int depth, bmeshBall *ball) {
+  if (depth <= 0) {
+    return ball;
+  }
+  if (isDistanceEnoughForConvexHull(root, ball)) {
+    return ball;
+  }
+  return bmeshFindParentBallForConvexHull(bm, root, depth - 1,
+    bm->parentBallStack[depth - 1]);
 }
 
 static void addBallToHull(convexHull *hull, bmeshBall *ballForConvexHull,
@@ -559,7 +581,7 @@ static void addBallToHull(convexHull *hull, bmeshBall *ballForConvexHull,
 int showFaceIndex = 10000000;
 static long long lastShowFaceIndexIncTime = 0;
 
-static int bmeshStichFrom(bmesh *bm, bmeshBall *parent, bmeshBall *ball) {
+static int bmeshStichFrom(bmesh *bm, int depth, bmeshBall *ball) {
   int result = 0;
   bmeshBallIterator iterator;
   bmeshBall *child;
@@ -567,8 +589,11 @@ static int bmeshStichFrom(bmesh *bm, bmeshBall *parent, bmeshBall *ball) {
   if (bm->roundColor == ball->roundColor) {
     return 0;
   }
+  if (depth < BMESH_MAX_PARENT_BALL_DEPTH) {
+    bm->parentBallStack[depth] = ball;
+  }
   ball->roundColor = bm->roundColor;
-  if (BMESH_BALL_TYPE_ROOT == ball->type && 4 == ball->index) {
+  if (BMESH_BALL_TYPE_ROOT == ball->type/* && 4 == ball->index*/) {
     convexHull *hull;
     bmeshBall *outmostBall = 0;
     int outmostBallFirstVertexIndex = 0;
@@ -583,12 +608,15 @@ static int bmeshStichFrom(bmesh *bm, bmeshBall *parent, bmeshBall *ball) {
     for (child = bmeshGetBallFirstChild(bm, ball, &iterator);
         child;
         child = bmeshGetBallNextChild(bm, ball, &iterator)) {
-      ballForConvexHull = bmeshFindBallForConvexHull(bm, ball, child);
+      ballForConvexHull = bmeshFindChildBallForConvexHull(bm, ball, child);
       addBallToHull(hull, ballForConvexHull,
         &outmostBall, &outmostBallFirstVertexIndex);
     }
-    if (parent) {
-      addBallToHull(hull, parent, &outmostBall, &outmostBallFirstVertexIndex);
+    if (depth > 0 && depth - 1 < BMESH_MAX_PARENT_BALL_DEPTH) {
+      ballForConvexHull = bmeshFindParentBallForConvexHull(bm, ball, depth - 1,
+        bm->parentBallStack[depth - 1]);
+      addBallToHull(hull, ballForConvexHull,
+        &outmostBall, &outmostBallFirstVertexIndex);
     }
     if (outmostBall) {
       convexHullAddTodo(hull, outmostBallFirstVertexIndex + 0,
@@ -764,7 +792,7 @@ static int bmeshStichFrom(bmesh *bm, bmeshBall *parent, bmeshBall *ball) {
   for (child = bmeshGetBallFirstChild(bm, ball, &iterator);
       child;
       child = bmeshGetBallNextChild(bm, ball, &iterator)) {
-    result = bmeshStichFrom(bm, ball, child);
+    result = bmeshStichFrom(bm, depth + 1, child);
     if (0 != result) {
       fprintf(stderr, "%s:bmeshSweepFrom failed.\n", __FUNCTION__);
       return result;
