@@ -14,6 +14,7 @@ extern "C" {
 int drawInit(void);
 int drawSphere(vec3 *origin, float radius, int slices, int stacks);
 void drawTriangle(triangle *poly);
+void drawQuad(quad *poly);
 int drawCylinder(vec3 *topOrigin, vec3 *bottomOrigin, float radius, int slices,
     int stacks);
 int drawGrid(float size, float step);

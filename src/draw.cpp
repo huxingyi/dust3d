@@ -35,6 +35,18 @@ void drawTriangle(triangle *poly) {
   glEnd();
 }
 
+void drawQuad(quad *poly) {
+  vec3 normal;
+  int i;
+  glBegin(GL_QUADS);
+  vec3Normal(&poly->pt[0], &poly->pt[1], &poly->pt[2], &normal);
+  for (i = 0; i < 4; ++i) {
+    glNormal3f(normal.x, normal.y, normal.z);
+    glVertex3f(poly->pt[i].x, poly->pt[i].y, poly->pt[i].z);
+  }
+  glEnd();
+}
+
 int drawCylinder(vec3 *topOrigin, vec3 *bottomOrigin, float radius, int slices,
     int stacks) {
   vec3 zAxis = {0, 0, 1};

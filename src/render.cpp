@@ -42,7 +42,7 @@ static int drawBmeshBall(bmesh *bm, bmeshBall *ball) {
 static void drawBmeshBallRecursively(bmesh *bm, bmeshBall *ball) {
   bmeshBallIterator iterator;
   bmeshBall *child;
-  drawBmeshBall(bm, ball);
+  //drawBmeshBall(bm, ball);
   for (child = bmeshGetBallFirstChild(bm, ball, &iterator);
       child;
       child = bmeshGetBallNextChild(bm, ball, &iterator)) {
@@ -50,7 +50,7 @@ static void drawBmeshBallRecursively(bmesh *bm, bmeshBall *ball) {
   }
 }
 
-static int drawBmeshBallQuad(bmeshBall *ball) {
+static void drawBmeshBallQuad(bmeshBall *ball) {
   vec3 normal;
   int j;
   vec3 z, y;
@@ -262,6 +262,7 @@ void Render::paintGL() {
     bmeshGenerateInbetweenBalls(bm);
     bmeshSweep(bm);
     bmeshStitch(bm);
+    bmeshGenerateInbetweenMesh(bm);
   }
 
   drawBmeshBallRecursively(bm, bmeshGetRootBall(bm));
@@ -280,7 +281,7 @@ void Render::paintGL() {
     
     for (index = 0; index < bmeshGetBoneNum(bm); ++index) {
       bmeshBone *bone = bmeshGetBone(bm, index);
-      drawBmeshBone(bm, bone);
+      //drawBmeshBone(bm, bone);
     }
     /*
     glColor4f(1.0f, 1.0f, 1.0f, 0.5);

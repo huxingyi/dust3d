@@ -55,6 +55,7 @@ quad *bmeshGetQuad(bmesh *bm, int index);
 int bmeshAddQuad(bmesh *bm, quad *q);
 int bmeshSweep(bmesh *bm);
 int bmeshStitch(bmesh *bm);
+int bmeshGenerateInbetweenMesh(bmesh *bm);
 
 #ifdef __cplusplus
 }

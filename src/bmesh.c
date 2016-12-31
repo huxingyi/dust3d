@@ -537,6 +537,7 @@ static bmeshBall *bmeshFindParentBallForConvexHull(bmesh *bm, bmeshBall *root,
   if (isDistanceEnoughForConvexHull(root, ball)) {
     return ball;
   }
+  ball->radius = 0;
   return bmeshFindParentBallForConvexHull(bm, root, depth - 1,
     bm->parentBallStack[depth - 1]);
 }
@@ -593,7 +594,7 @@ static int bmeshStichFrom(bmesh *bm, int depth, bmeshBall *ball) {
     bm->parentBallStack[depth] = ball;
   }
   ball->roundColor = bm->roundColor;
-  if (BMESH_BALL_TYPE_ROOT == ball->type/* && 4 == ball->index*/) {
+  if (BMESH_BALL_TYPE_ROOT == ball->type) {
     convexHull *hull;
     bmeshBall *outmostBall = 0;
     int outmostBallFirstVertexIndex = 0;
@@ -805,3 +806,84 @@ int bmeshStitch(bmesh *bm) {
   bm->roundColor++;
   return bmeshStichFrom(bm, 0, bmeshGetRootBall(bm));
 }
+
+void calculateBallQuad(bmeshBall *ball, quad *q) {
+  vec3 z, y;
+  vec3Scale(&ball->localYaxis, ball->radius, &y);
+  vec3Scale(&ball->localZaxis, ball->radius, &z);
+  vec3Sub(&ball->position, &y, &q->pt[0]);
+  vec3Add(&q->pt[0], &z, &q->pt[0]);
+  vec3Sub(&ball->position, &y, &q->pt[1]);
+  vec3Sub(&q->pt[1], &z, &q->pt[1]);
+  vec3Add(&ball->position, &y, &q->pt[2]);
+  vec3Sub(&q->pt[2], &z, &q->pt[2]);
+  vec3Add(&ball->position, &y, &q->pt[3]);
+  vec3Add(&q->pt[3], &z, &q->pt[3]);
+}
+
+static void drawWallsBetweenQuads(quad *q1, quad *q2) {
+  int i;
+  for (i = 0; i < 4; ++i) {
+    quad wall = {{q1->pt[i], q2->pt[i],
+      q2->pt[(i + 1) % 4], q1->pt[(i + 1) % 4]}};
+    drawQuad(&wall);
+  }
+}
+
+static int bmeshGenerateInbetweenMeshFrom(bmesh *bm, bmeshBall *parent,
+    bmeshBall *ball) {
+  int result = 0;
+  bmeshBallIterator iterator;
+  bmeshBall *child = 0;
+  if (bm->roundColor == ball->roundColor) {
+    return 0;
+  }
+  ball->roundColor = bm->roundColor;
+  if (ball->radius > 0) {
+    quad currentFace;
+    calculateBallQuad(ball, &currentFace);
+    if (parent && parent->radius > 0) {
+      quad parentFace;
+      calculateBallQuad(parent, &parentFace);
+      drawWallsBetweenQuads(&parentFace, &currentFace);
+      child = bmeshGetBallFirstChild(bm, ball, &iterator);
+      if (!child) {
+        bmeshBall fakeParentParent = *parent;
+        bmeshBall fakeParent = *ball;
+        bmeshBall fakeBall;
+        for (;;) {
+          quad childFace;
+          fakeBall = fakeParent;
+          vec3Lerp(&fakeParentParent.position, &fakeParent.position, 2,
+            &fakeBall.position);
+          calculateBallQuad(&fakeBall, &childFace);
+          drawWallsBetweenQuads(&currentFace, &childFace);
+          if (vec3Distance(&ball->position, &fakeBall.position) >=
+              ball->radius) {
+            drawQuad(&childFace);
+            break;
+          }
+          fakeParentParent = fakeParent;
+          fakeParent = fakeBall;
+        }
+      }
+    }
+  }
+  for (child = bmeshGetBallFirstChild(bm, ball, &iterator);
+      child;
+      child = bmeshGetBallNextChild(bm, ball, &iterator)) {
+    result = bmeshGenerateInbetweenMeshFrom(bm, ball, child);
+    if (0 != result) {
+      fprintf(stderr, "%s:bmeshGenerateInbetweenMeshFrom failed.\n",
+        __FUNCTION__);
+      return result;
+    }
+  }
+  return result;
+}
+
+int bmeshGenerateInbetweenMesh(bmesh *bm) {
+  bm->roundColor++;
+  return bmeshGenerateInbetweenMeshFrom(bm, 0, bmeshGetRootBall(bm));
+}
+
