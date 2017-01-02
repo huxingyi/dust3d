@@ -11,6 +11,7 @@
 #include "draw.h"
 
 #define BMESH_MAX_PARENT_BALL_DEPTH 1000
+#define BMESH_INTVAL_DIST_DIV 10
 
 typedef struct bmeshBallIndex {
   int ballIndex;
@@ -246,7 +247,7 @@ static int bmeshGenerateInbetweenBallsBetween(bmesh *bm,
   generateYZfromBoneDirection(&boneDirection,
     &localYaxis, &localZaxis);
   
-  intvalDist = (firstBall->radius + secondBall->radius) / 3;
+  intvalDist = (firstBall->radius + secondBall->radius) / BMESH_INTVAL_DIST_DIV;
   step = intvalDist;
   distance = vec3Length(&boneDirection);
   if (distance > intvalDist) {
@@ -551,6 +552,15 @@ static convexHull *createConvexHullForBall(bmesh *bm, int depth,
     arrayDestroy(ballPtrArray);
     return 0;
   }
+  if (BMESH_BALL_TYPE_KEY == ball->type) {
+    if (-1 == addBallToHull(hull, ball,
+        &outmostBall, &outmostBallFirstVertexIndex)) {
+      fprintf(stderr, "%s:addBallToHull failed.\n", __FUNCTION__);
+      arrayDestroy(ballPtrArray);
+      convexHullDestroy(hull);
+      return 0;
+    }
+  }
   for (child = bmeshGetBallFirstChild(bm, ball, &iterator);
       child;
       child = bmeshGetBallNextChild(bm, ball, &iterator)) {
@@ -660,7 +670,8 @@ static int bmeshStichFrom(bmesh *bm, int depth, bmeshBall *ball) {
     bm->parentBallStack[depth] = ball;
   }
   ball->roundColor = bm->roundColor;
-  if (BMESH_BALL_TYPE_ROOT == ball->type) {
+  if (BMESH_BALL_TYPE_ROOT == ball->type ||
+      BMESH_BALL_TYPE_KEY == ball->type) {
     convexHull *hull = 0;
     
     for (;;) {
