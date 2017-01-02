@@ -31,18 +31,18 @@ hashtable *hashtableCreate(int bucketSize,
     void *userData) {
   hashtable *ht = (hashtable *)calloc(1, sizeof(hashtable));
   if (!ht) {
-    fprintf(stderr, "%s:Insufficient memory.", __FUNCTION__);
+    fprintf(stderr, "%s:Insufficient memory.\n", __FUNCTION__);
     return 0;
   }
   ht->keyArray = arrayCreate(sizeof(hashtableKey));
   if (!ht->keyArray) {
-    fprintf(stderr, "%s:arrayCreate failed.", __FUNCTION__);
+    fprintf(stderr, "%s:arrayCreate failed.\n", __FUNCTION__);
     hashtableDestroy(ht);
     return 0;
   }
   ht->entryArray = arrayCreate(sizeof(hashtableEntry));
   if (!ht->entryArray) {
-    fprintf(stderr, "%s:arrayCreate failed.", __FUNCTION__);
+    fprintf(stderr, "%s:arrayCreate failed.\n", __FUNCTION__);
     hashtableDestroy(ht);
     return 0;
   }
@@ -51,7 +51,7 @@ hashtable *hashtableCreate(int bucketSize,
   ht->compareCallback = compareCallback;
   ht->userData = userData;
   if (0 != arraySetLength(ht->keyArray, bucketSize)) {
-    fprintf(stderr, "%s:arraySetLength failed(bucketSize:%d).", __FUNCTION__,
+    fprintf(stderr, "%s:arraySetLength failed(bucketSize:%d).\n", __FUNCTION__,
       bucketSize);
     hashtableDestroy(ht);
     return 0;
@@ -98,7 +98,7 @@ int hashtableInsert(hashtable *ht, const void *node) {
   }
   newEntryIndex = arrayGetLength(ht->entryArray);
   if (0 != arraySetLength(ht->entryArray, newEntryIndex + 1)) {
-    fprintf(stderr, "%s:arraySetLength failed(newEntryIndex:%d).",
+    fprintf(stderr, "%s:arraySetLength failed(newEntryIndex:%d).\n",
       __FUNCTION__, newEntryIndex);
     return -1;
   }

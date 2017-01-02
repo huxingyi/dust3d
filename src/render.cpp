@@ -7,6 +7,7 @@
 #include "bmesh.h"
 #include "matrix.h"
 #include "vector3d.h"
+#include "subdivide.h"
 
 static const float bmeshBallColors[][4] {
   {0.00, 0.78, 1.00, 0.5},
@@ -212,7 +213,7 @@ void Render::initializeGL() {
   drawInit();
 }
 
-#include "../data/bmesh_test_2.h"
+#include "../data/bmesh_test_1.h"
 
 void Render::paintGL() {
   bmesh *bm = 0;
@@ -235,8 +236,17 @@ void Render::paintGL() {
   drawGrid(10, 1);
 
   glEnable(GL_LIGHTING);
+  
+  {
+    subdivModel *input = subdivCreateModel();
+    subdivModel *output;
+    subdivAddCube(input);
+    output = subdivCatmullClarkWithLoops(input, 2);
+    subdivDestroyModel(input);
+    subdivDestroyModel(output);
+  }
 
-  if (0 == bm) {
+  if (0 && 0 == bm) {
     bmeshBall ball;
     bmeshBone bone;
     int i;
@@ -264,50 +274,53 @@ void Render::paintGL() {
     bmeshStitch(bm);
     bmeshGenerateInbetweenMesh(bm);
   }
+  
+  if (bm) {
 
-  drawBmeshBallRecursively(bm, bmeshGetRootBall(bm));
+    drawBmeshBallRecursively(bm, bmeshGetRootBall(bm));
 
-  //glBegin(GL_QUADS);
-  drawBmeshBallQuadRecursively(bm, bmeshGetRootBall(bm));
-  //glEnd();
+    //glBegin(GL_QUADS);
+    drawBmeshBallQuadRecursively(bm, bmeshGetRootBall(bm));
+    //glEnd();
 
-  {
-    int index;
-    /*
-    for (index = 0; index < bmeshGetBallNum(bm); ++index) {
-      bmeshBall *ball = bmeshGetBall(bm, index);
-      drawBmeshBall(bm, ball);
-    }*/
-    
-    for (index = 0; index < bmeshGetBoneNum(bm); ++index) {
-      bmeshBone *bone = bmeshGetBone(bm, index);
-      drawBmeshBone(bm, bone);
-    }
-    /*
-    glColor4f(1.0f, 1.0f, 1.0f, 0.5);
-    glBegin(GL_QUADS);
-    for (index = 0; index < bmeshGetQuadNum(bm); ++index) {
-      quad *q = bmeshGetQuad(bm, index);
-      vec3 normal;
-      int j;
-      vec3Normal(&q->pt[0], &q->pt[1], &q->pt[2], &normal);
-      for (j = 0; j < 4; ++j) {
-        glNormal3f(normal.x, normal.y, normal.z);
-        glVertex3f(q->pt[j].x, q->pt[j].y, q->pt[j].z);
+    {
+      int index;
+      /*
+      for (index = 0; index < bmeshGetBallNum(bm); ++index) {
+        bmeshBall *ball = bmeshGetBall(bm, index);
+        drawBmeshBall(bm, ball);
+      }*/
+      
+      for (index = 0; index < bmeshGetBoneNum(bm); ++index) {
+        bmeshBone *bone = bmeshGetBone(bm, index);
+        drawBmeshBone(bm, bone);
       }
-    }
-    glEnd();
-    glColor3f(0.0f, 0.0f, 0.0f);
-    for (index = 0; index < bmeshGetQuadNum(bm); ++index) {
-      quad *q = bmeshGetQuad(bm, index);
-      int j;
-      glBegin(GL_LINE_STRIP);
-      for (j = 0; j < 4; ++j) {
-        glVertex3f(q->pt[j].x, q->pt[j].y, q->pt[j].z);
+      /*
+      glColor4f(1.0f, 1.0f, 1.0f, 0.5);
+      glBegin(GL_QUADS);
+      for (index = 0; index < bmeshGetQuadNum(bm); ++index) {
+        quad *q = bmeshGetQuad(bm, index);
+        vec3 normal;
+        int j;
+        vec3Normal(&q->pt[0], &q->pt[1], &q->pt[2], &normal);
+        for (j = 0; j < 4; ++j) {
+          glNormal3f(normal.x, normal.y, normal.z);
+          glVertex3f(q->pt[j].x, q->pt[j].y, q->pt[j].z);
+        }
       }
-      glVertex3f(q->pt[0].x, q->pt[0].y, q->pt[0].z);
       glEnd();
-    }*/
+      glColor3f(0.0f, 0.0f, 0.0f);
+      for (index = 0; index < bmeshGetQuadNum(bm); ++index) {
+        quad *q = bmeshGetQuad(bm, index);
+        int j;
+        glBegin(GL_LINE_STRIP);
+        for (j = 0; j < 4; ++j) {
+          glVertex3f(q->pt[j].x, q->pt[j].y, q->pt[j].z);
+        }
+        glVertex3f(q->pt[0].x, q->pt[0].y, q->pt[0].z);
+        glEnd();
+      }*/
+    }
   }
 
   glPopMatrix();

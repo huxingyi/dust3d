@@ -137,3 +137,9 @@ float vec3TriangleArea(vec3 *a, vec3 *b, vec3 *c) {
   vec3CrossProduct(&ab, &ac, &cross);
   return vec3Length(&cross) * 0.5;
 }
+
+void vec3Negative(vec3 *a, vec3 *result) {
+  result->x = -a->x;
+  result->y = -a->y;
+  result->z = -a->z;
+}

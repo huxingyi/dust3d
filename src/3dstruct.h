@@ -1,6 +1,7 @@
 #ifndef _3DSTRUCT_H
 #define _3DSTRUCT_H
 #include "vector3d.h"
+#include "array.h"
 
 typedef struct {
   vec3 pt[3];

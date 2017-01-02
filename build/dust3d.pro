@@ -17,7 +17,8 @@ SOURCES += main.cpp \
   matrix.c \
   convexhull.c \
   hashtable.c \
-  osutil.cpp
+  osutil.cpp \
+  subdivide.c
 
 HEADERS += mainwindow.h \
 	render.h \
@@ -29,4 +30,5 @@ HEADERS += mainwindow.h \
   convexhull.h \
   hashtable.h \
   3dstruct.h \
-  osutil.h
+  osutil.h \
+  subdivide.h

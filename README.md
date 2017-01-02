@@ -36,7 +36,8 @@ Two caps and many strips composites a cylinder.
 Almost all 3D editor have a infinite grid ground, I just made a finite one, in the future, I should expand the grid outside of the screen to make it infinite.  
 Now, for just beginning, I think it's a not bad start.
 <img src="screenshot/dust3d_sphere_cylinder.png">
-- [ ] Implement B-Mesh algorithm (Dec 18, 2016 ~ Dec 31, 2016)   
+- [ ] Implement B-Mesh algorithm (Dec 18, 2016 ~ Jan 02, 2017)   
+There is a implementation of [B-Mesh algorithm in C++](https://github.com/evanw/cs224final) language, but I want the pure C version, so I start to implement my own version. I read both paper and this implementation, it gave me very helpful understanding of this algorithm.    
 *Drawing Skeletal Shape Balls*  
 Draw shape ball is easy, no need to rotate, I just need scale it along the ball's radius.
 Draw the cylinder which connects two shape balls is more difficult, I need do some math to rotate it. [Here](http://www.thjsmith.com/40/cylinder-between-two-points-opengl-c) described it.  
@@ -55,10 +56,14 @@ I created the test nodes's geometry information from Blender. Here is the render
 When I am implementing the B-Mesh algorithm, I am also think in the future, how to create a library of bunch of initial base models. There is a paper [the Skeleton of a Closed 3D Shape](http://www1.idc.ac.il/icgf/GraphicsSeminar2006/DCGskeleton06.pdf) described how to generate skeleton from mesh, this is the reverse progress of what I am doing, I think it can resolve the problem of insufficient initial base models, I can generate from tons of existed models.  
 *Convex Hull*  
 After finish the rotation at the two connected bones, I need implement 3D Convex Hull algorithm at the joint ball, there are so many methods to get the convex hull, I found the [Gift wrapping](http://dccg.upc.edu/people/vera/wp-content/uploads/2014/11/GA2014-ConvexHulls3D-Roger-Hernando.pdf) is the most strait-forward one, though is not the most efficient one.  
+There is a good implementation of [Gift Wrapping algorithm written in lua](https://github.com/danielhst/3d-Hull-gift-wrap/blob/master/giftWrap.lua) language. When I was implementing, I first translated this version to C language, but maybe there are some bugs on my own translation, there are lots of repeated faces, so changed a little, the code now is not just the translation of the original lua version.  
 <img src="screenshot/dust3d_convex_hull.png" width="124" height="128">  
 *Stitching*  
 I follow the B-Mesh paper, made another test module inside Blender, and created a correspond `data/bmesh_test_2.h` manually.  
 <img src="screenshot/dust3d_bmesh_test_2.png" width="124" height="128">  <img src="screenshot/dust3d_bmesh_joint_1.png" width="124" height="128">  <img src="screenshot/dust3d_bmesh_joint_2.png" width="124" height="128">  
+*Catmull-Clark Subdivision*  
+<img src="screenshot/dust3d_subdivide_catmull_clark.png" width="124" height="128">    
+There is a implementation of Catmull-Clark Subdivision algorithm on [rosettacode](https://rosettacode.org/wiki/Catmull%E2%80%93Clark_subdivision_surface/C), the code is very simple and beautiful, just lack of some memory alloc fail check. I translated the algorithm to use my own array implementation.  
 - [ ] Export Wavefront .obj  
 - [ ] Render B-Mesh result  
 - [ ] Design UI for monster parts configuration  

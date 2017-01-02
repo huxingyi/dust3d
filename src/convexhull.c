@@ -539,9 +539,8 @@ int convexHullMergeTriangles(convexHull *hull) {
       e->score = (int)angle;
       //if (edgeIndex >= 12 && edgeIndex <= 12) {
       //  angle = (int)vec3Angle(&f1normal, &f2normal);
-      //  drawDebugPrintf("edgeIndex:%d angle:%f normal1:<%f,%f,%f> normal2:<%f,%f,%f>",
-      //    edgeIndex, angle, f1normal.x, f1normal.y, f1normal.z,
-      //    f2normal.x, f2normal.y, f2normal.z);
+        drawDebugPrintf("edgeIndex:%d angle:%f",
+          edgeIndex, angle);
       //}
     }
   }
@@ -564,7 +563,7 @@ int convexHullMergeTriangles(convexHull *hull) {
       convexHullFace *f2 = (convexHullFace *)arrayGetItem(hull->faceArray,
         e->face2);
       if (3 == f1->vertexNum && 3 == f2->vertexNum) {
-        if (e->score <= 0) {
+        if (e->score <= 40) {
           while (e->p1 == f1->u.t.indices[0] || e->p2 == f1->u.t.indices[0]) {
             rollTriangleIndices((face3 *)f1);
           }
