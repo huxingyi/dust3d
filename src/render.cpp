@@ -213,7 +213,7 @@ void Render::initializeGL() {
   drawInit();
 }
 
-#include "../data/bmesh_test_1.h"
+#include "../data/bmesh_test_2.h"
 
 void Render::paintGL() {
   bmesh *bm = 0;
@@ -237,6 +237,7 @@ void Render::paintGL() {
 
   glEnable(GL_LIGHTING);
   
+  /*
   {
     subdivModel *input = subdivCreateModel();
     subdivModel *output;
@@ -245,8 +246,9 @@ void Render::paintGL() {
     subdivDestroyModel(input);
     subdivDestroyModel(output);
   }
+  */
 
-  if (0 && 0 == bm) {
+  if (0 == bm) {
     bmeshBall ball;
     bmeshBone bone;
     int i;
@@ -272,7 +274,7 @@ void Render::paintGL() {
     bmeshGenerateInbetweenBalls(bm);
     bmeshSweep(bm);
     bmeshStitch(bm);
-    bmeshGenerateInbetweenMesh(bm);
+    //bmeshGenerateInbetweenMesh(bm);
   }
   
   if (bm) {

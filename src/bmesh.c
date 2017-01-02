@@ -10,7 +10,6 @@
 #include "convexhull.h"
 #include "draw.h"
 
-#define BMESH_STEP_DISTANCE 0.2
 #define BMESH_MAX_PARENT_BALL_DEPTH 1000
 
 typedef struct bmeshBallIndex {
@@ -92,6 +91,7 @@ int bmeshAddBall(bmesh *bm, bmeshBall *ball) {
   ball->index = index;
   ball->firstChildIndex = -1;
   ball->childrenIndices = 0;
+  ball->notFitHull = 0;
   if (0 != arraySetLength(bm->ballArray, index + 1)) {
     fprintf(stderr, "%s:arraySetLength failed.\n", __FUNCTION__);
     return -1;
@@ -235,11 +235,10 @@ static int bmeshGenerateInbetweenBallsBetween(bmesh *bm,
   bmeshBall *firstBall = bmeshGetBall(bm, firstBallIndex);
   bmeshBall *secondBall = bmeshGetBall(bm, secondBallIndex);
   bmeshBall *newBall;
+  float intvalDist;
   if (secondBall->roundColor == bm->roundColor) {
     return 0;
   }
-  
-  step = BMESH_STEP_DISTANCE;
   
   vec3Sub(&firstBall->position, &secondBall->position, &boneDirection);
   normalizedBoneDirection = boneDirection;
@@ -261,15 +260,17 @@ static int bmeshGenerateInbetweenBallsBetween(bmesh *bm,
     boneDirection.z);
   */
   
+  intvalDist = (firstBall->radius + secondBall->radius) / 3;
+  step = intvalDist;
   distance = vec3Length(&boneDirection);
-  if (distance > BMESH_STEP_DISTANCE) {
+  if (distance > intvalDist) {
     float offset;
-    int calculatedStepCount = (int)(distance / BMESH_STEP_DISTANCE);
-    float remaining = distance - BMESH_STEP_DISTANCE * calculatedStepCount;
+    int calculatedStepCount = (int)(distance / intvalDist);
+    float remaining = distance - intvalDist * calculatedStepCount;
     step += remaining / calculatedStepCount;
     offset = step;
     if (offset < distance) {
-      while (offset < distance && offset + BMESH_STEP_DISTANCE <= distance) {
+      while (offset < distance && offset + intvalDist <= distance) {
         float frac = offset / distance;
         parentBallIndex = bmeshAddInbetweenBallBetween(bm,
           firstBall, secondBall, frac, parentBallIndex);
@@ -508,7 +509,7 @@ int bmeshSweep(bmesh *bm) {
 static int isDistanceEnoughForConvexHull(bmeshBall *root,
       bmeshBall *ball) {
   float distance = vec3Distance(&root->position, &ball->position);
-  if (distance >= root->radius + BMESH_STEP_DISTANCE) {
+  if (distance >= root->radius) {
     return 1;
   }
   return 0;
@@ -518,14 +519,13 @@ static bmeshBall *bmeshFindChildBallForConvexHull(bmesh *bm, bmeshBall *root,
       bmeshBall *ball) {
   bmeshBallIterator iterator;
   bmeshBall *child;
-  if (isDistanceEnoughForConvexHull(root, ball)) {
+  if (!ball->notFitHull && isDistanceEnoughForConvexHull(root, ball)) {
     return ball;
   }
   child = bmeshGetBallFirstChild(bm, ball, &iterator);
   if (!child) {
     return ball;
   }
-  ball->radius = 0;
   return bmeshFindChildBallForConvexHull(bm, root, child);
 }
 
@@ -534,15 +534,14 @@ static bmeshBall *bmeshFindParentBallForConvexHull(bmesh *bm, bmeshBall *root,
   if (depth <= 0) {
     return ball;
   }
-  if (isDistanceEnoughForConvexHull(root, ball)) {
+  if (!ball->notFitHull && isDistanceEnoughForConvexHull(root, ball)) {
     return ball;
   }
-  ball->radius = 0;
   return bmeshFindParentBallForConvexHull(bm, root, depth - 1,
     bm->parentBallStack[depth - 1]);
 }
 
-static void addBallToHull(convexHull *hull, bmeshBall *ballForConvexHull,
+static int addBallToHull(convexHull *hull, bmeshBall *ballForConvexHull,
     bmeshBall **outmostBall, int *outmostBallFirstVertexIndex) {
   vec3 z, y;
   quad q;
@@ -560,10 +559,19 @@ static void addBallToHull(convexHull *hull, bmeshBall *ballForConvexHull,
   vec3Add(&ballForConvexHull->position, &y, &q.pt[3]);
   vec3Add(&q.pt[3], &z, &q.pt[3]);
   
-  vertexIndex[0] = convexHullAddVertex(hull, &q.pt[0], ballForConvexHull->index, 0);
-  vertexIndex[1] = convexHullAddVertex(hull, &q.pt[1], ballForConvexHull->index, 1);
-  vertexIndex[2] = convexHullAddVertex(hull, &q.pt[2], ballForConvexHull->index, 2);
-  vertexIndex[3] = convexHullAddVertex(hull, &q.pt[3], ballForConvexHull->index, 3);
+  vertexIndex[0] = convexHullAddVertex(hull, &q.pt[0],
+    ballForConvexHull->index, 0);
+  vertexIndex[1] = convexHullAddVertex(hull, &q.pt[1],
+    ballForConvexHull->index, 1);
+  vertexIndex[2] = convexHullAddVertex(hull, &q.pt[2],
+    ballForConvexHull->index, 2);
+  vertexIndex[3] = convexHullAddVertex(hull, &q.pt[3],
+    ballForConvexHull->index, 3);
+  if (-1 == vertexIndex[0] || -1 == vertexIndex[1] || -1 == vertexIndex[2] ||
+      -1 == vertexIndex[3]) {
+    fprintf(stderr, "%s:convexHullAddVertex failed.\n", __FUNCTION__);
+    return -1;
+  }
   
   if (*outmostBall) {
     if (ballForConvexHull->radius > (*outmostBall)->radius) {
@@ -576,17 +584,162 @@ static void addBallToHull(convexHull *hull, bmeshBall *ballForConvexHull,
     *outmostBall = ballForConvexHull;
     *outmostBallFirstVertexIndex = vertexIndex[0];
   }
+  
+  return 0;
 }
 
 #include "osutil.h"
 int showFaceIndex = 10000000;
 static long long lastShowFaceIndexIncTime = 0;
 
-static int bmeshStichFrom(bmesh *bm, int depth, bmeshBall *ball) {
-  int result = 0;
+static convexHull *createConvexHullForBall(bmesh *bm, int depth,
+    bmeshBall *ball, int *needRetry) {
+  convexHull *hull;
   bmeshBallIterator iterator;
   bmeshBall *child;
   bmeshBall *ballForConvexHull;
+  bmeshBall *outmostBall = 0;
+  int outmostBallFirstVertexIndex = 0;
+  array *ballPtrArray;
+  bmeshBall **ballPtr;
+  int i;
+  int hasVertexNotFitOnHull = 0;
+  
+  *needRetry = 0;
+  
+  ballPtrArray = arrayCreate(sizeof(bmeshBall *));
+  if (!ballPtrArray) {
+    fprintf(stderr, "%s:arrayCreate failed.\n", __FUNCTION__);
+    return 0;
+  }
+  hull = convexHullCreate();
+  if (!hull) {
+    fprintf(stderr, "%s:convexHullCreate failed.\n", __FUNCTION__);
+    arrayDestroy(ballPtrArray);
+    return 0;
+  }
+  for (child = bmeshGetBallFirstChild(bm, ball, &iterator);
+      child;
+      child = bmeshGetBallNextChild(bm, ball, &iterator)) {
+    ballForConvexHull = bmeshFindChildBallForConvexHull(bm, ball, child);
+    ballPtr = (bmeshBall **)arrayNewItem(ballPtrArray);
+    if (!ballPtr) {
+      fprintf(stderr, "%s:arrayNewItem failed.\n", __FUNCTION__);
+      arrayDestroy(ballPtrArray);
+      convexHullDestroy(hull);
+      return 0;
+    }
+    *ballPtr = ballForConvexHull;
+    if (-1 == addBallToHull(hull, ballForConvexHull,
+        &outmostBall, &outmostBallFirstVertexIndex)) {
+      fprintf(stderr, "%s:addBallToHull failed.\n", __FUNCTION__);
+      arrayDestroy(ballPtrArray);
+      convexHullDestroy(hull);
+      return 0;
+    }
+  }
+  if (depth > 0 && depth - 1 < BMESH_MAX_PARENT_BALL_DEPTH) {
+    ballForConvexHull = bmeshFindParentBallForConvexHull(bm, ball, depth - 1,
+      bm->parentBallStack[depth - 1]);
+    ballPtr = (bmeshBall **)arrayNewItem(ballPtrArray);
+    if (!ballPtr) {
+      fprintf(stderr, "%s:arrayNewItem failed.\n", __FUNCTION__);
+      arrayDestroy(ballPtrArray);
+      convexHullDestroy(hull);
+      return 0;
+    }
+    *ballPtr = ballForConvexHull;
+    if (-1 == addBallToHull(hull, ballForConvexHull,
+        &outmostBall, &outmostBallFirstVertexIndex)) {
+      fprintf(stderr, "%s:addBallToHull failed.\n", __FUNCTION__);
+      arrayDestroy(ballPtrArray);
+      convexHullDestroy(hull);
+      return 0;
+    }
+  }
+  if (outmostBall) {
+    if (-1 == convexHullAddTodo(hull, outmostBallFirstVertexIndex + 0,
+        outmostBallFirstVertexIndex + 1, outmostBallFirstVertexIndex + 2)) {
+      fprintf(stderr, "%s:convexHullAddTodo failed.\n", __FUNCTION__);
+      arrayDestroy(ballPtrArray);
+      convexHullDestroy(hull);
+      return 0;
+    }
+  }
+  
+  for (i = 0; i < arrayGetLength(ballPtrArray); ++i) {
+    bmeshBall *ballItem = *((bmeshBall **)arrayGetItem(ballPtrArray, i));
+    ballItem->flagForHull = 0;
+  }
+  
+  if (-1 == convexHullGenerate(hull)) {
+    fprintf(stderr, "%s:convexHullGenerate failed.\n", __FUNCTION__);
+    arrayDestroy(ballPtrArray);
+    convexHullDestroy(hull);
+    return 0;
+  }
+  
+  convexHullUnifyNormals(hull, &ball->position);
+  convexHullMergeTriangles(hull);
+  
+  for (i = 0; i < convexHullGetFaceNum(hull); ++i) {
+    convexHullFace *f = (convexHullFace *)convexHullGetFace(hull, i);
+    if (-1 != f->plane) {
+      bmeshBall *ballItem = (bmeshBall *)arrayGetItem(bm->ballArray, f->plane);
+      ballItem->flagForHull = 1;
+      f->vertexNum = 0;
+    }
+  }
+  
+  for (i = 0; i < arrayGetLength(ballPtrArray); ++i) {
+    bmeshBall *ballItem = *((bmeshBall **)arrayGetItem(ballPtrArray, i));
+    if (!ballItem->flagForHull) {
+      hasVertexNotFitOnHull = 1;
+      if (!ballItem->notFitHull) {
+        *needRetry = 1;
+        ballItem->notFitHull = 1;
+        arrayDestroy(ballPtrArray);
+        convexHullDestroy(hull);
+        return 0;
+      }
+    }
+  }
+  
+  /*
+  if (!hasVertexNotFitOnHull) {
+    for (i = 0; i < arrayGetLength(ballPtrArray); ++i) {
+      bmeshBall *ballItem = *((bmeshBall **)arrayGetItem(ballPtrArray, i));
+      if (-1 == ballItem->countsForHull[0] ||
+          ballItem->countsForHull[0] != ballItem->countsForHull[1] ||
+          ballItem->countsForHull[1] != ballItem->countsForHull[2] ||
+          ballItem->countsForHull[2] != ballItem->countsForHull[3]) {
+        hasVertexNotFitOnHull = 1;
+        if (!ballItem->notFitHull) {
+          *needRetry = 1;
+          ballItem->notFitHull = 1;
+          arrayDestroy(ballPtrArray);
+          convexHullDestroy(hull);
+          return 0;
+        }
+      }
+    }
+  }*/
+  
+  if (hasVertexNotFitOnHull) {
+    fprintf(stderr, "%s:hasVertexNotFitOnHull.\n", __FUNCTION__);
+    arrayDestroy(ballPtrArray);
+    convexHullDestroy(hull);
+    return 0;
+  }
+  
+  arrayDestroy(ballPtrArray);
+  return hull;
+}
+
+static int bmeshStichFrom(bmesh *bm, int depth, bmeshBall *ball) {
+  bmeshBallIterator iterator;
+  bmeshBall *child;
+  int result = 0;
   if (bm->roundColor == ball->roundColor) {
     return 0;
   }
@@ -594,38 +747,20 @@ static int bmeshStichFrom(bmesh *bm, int depth, bmeshBall *ball) {
     bm->parentBallStack[depth] = ball;
   }
   ball->roundColor = bm->roundColor;
-  if (BMESH_BALL_TYPE_ROOT == ball->type) {
-    convexHull *hull;
-    bmeshBall *outmostBall = 0;
-    int outmostBallFirstVertexIndex = 0;
-    hull = convexHullCreate();
-    if (!hull) {
-      fprintf(stderr, "%s:convexHullCreate failed.\n", __FUNCTION__);
-      return -1;
+  if (BMESH_BALL_TYPE_ROOT == ball->type/* && 2 == ball->index*/) {
+    convexHull *hull = 0;
+    
+    for (;;) {
+      int needRetry = 0;
+      hull = createConvexHullForBall(bm, depth, ball, &needRetry);
+      if (hull) {
+        break;
+      }
+      if (!needRetry) {
+        break;
+      }
     }
-    glColor3f(0.0, 0.0, 0.0);
-    drawDebugPrintf("root <%f,%f,%f>", ball->position.x,
-      ball->position.y, ball->position.z);
-    for (child = bmeshGetBallFirstChild(bm, ball, &iterator);
-        child;
-        child = bmeshGetBallNextChild(bm, ball, &iterator)) {
-      ballForConvexHull = bmeshFindChildBallForConvexHull(bm, ball, child);
-      addBallToHull(hull, ballForConvexHull,
-        &outmostBall, &outmostBallFirstVertexIndex);
-    }
-    if (depth > 0 && depth - 1 < BMESH_MAX_PARENT_BALL_DEPTH) {
-      ballForConvexHull = bmeshFindParentBallForConvexHull(bm, ball, depth - 1,
-        bm->parentBallStack[depth - 1]);
-      addBallToHull(hull, ballForConvexHull,
-        &outmostBall, &outmostBallFirstVertexIndex);
-    }
-    if (outmostBall) {
-      convexHullAddTodo(hull, outmostBallFirstVertexIndex + 0,
-        outmostBallFirstVertexIndex + 1, outmostBallFirstVertexIndex + 2);
-    }
-    convexHullGenerate(hull);
-    convexHullUnifyNormals(hull, &ball->position);
-    convexHullMergeTriangles(hull);
+    
     glPushMatrix();
     
     /*
@@ -649,6 +784,7 @@ static int bmeshStichFrom(bmesh *bm, int depth, bmeshBall *ball) {
       }
     }*/
     
+    if (hull)
     {
       int triIndex;
       for (triIndex = 0; triIndex < convexHullGetFaceNum(hull);
@@ -658,9 +794,9 @@ static int bmeshStichFrom(bmesh *bm, int depth, bmeshBall *ball) {
         if (3 == face->vertexNum) {
           triangle tri;
           int j;
-          tri.pt[0] = *convexHullGetVertex(hull, face->u.t.indices[0]);
-          tri.pt[1] = *convexHullGetVertex(hull, face->u.t.indices[1]);
-          tri.pt[2] = *convexHullGetVertex(hull, face->u.t.indices[2]);
+          tri.pt[0] = convexHullGetVertex(hull, face->u.t.indices[0])->pt;
+          tri.pt[1] = convexHullGetVertex(hull, face->u.t.indices[1])->pt;
+          tri.pt[2] = convexHullGetVertex(hull, face->u.t.indices[2])->pt;
           
           if (triIndex >= showFaceIndex) {
             break;
@@ -680,10 +816,10 @@ static int bmeshStichFrom(bmesh *bm, int depth, bmeshBall *ball) {
           quad q;
           vec3 normal;
           int j;
-          q.pt[0] = *convexHullGetVertex(hull, face->u.q.indices[0]);
-          q.pt[1] = *convexHullGetVertex(hull, face->u.q.indices[1]);
-          q.pt[2] = *convexHullGetVertex(hull, face->u.q.indices[2]);
-          q.pt[3] = *convexHullGetVertex(hull, face->u.q.indices[3]);
+          q.pt[0] = convexHullGetVertex(hull, face->u.q.indices[0])->pt;
+          q.pt[1] = convexHullGetVertex(hull, face->u.q.indices[1])->pt;
+          q.pt[2] = convexHullGetVertex(hull, face->u.q.indices[2])->pt;
+          q.pt[3] = convexHullGetVertex(hull, face->u.q.indices[3])->pt;
           
           glColor3f(1.0f, 1.0f, 1.0f);
           glBegin(GL_QUADS);
@@ -788,7 +924,9 @@ static int bmeshStichFrom(bmesh *bm, int depth, bmeshBall *ball) {
     }*/
     
     glPopMatrix();
-    convexHullDestroy(hull);
+    if (hull) {
+      convexHullDestroy(hull);
+    }
   }
   for (child = bmeshGetBallFirstChild(bm, ball, &iterator);
       child;

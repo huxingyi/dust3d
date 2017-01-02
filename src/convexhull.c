@@ -15,18 +15,13 @@
 #define EDGE_HASHTABLE_SIZE   100
 
 typedef struct {
-  vec3 pt;
-  int plane;
-  int orderOnPlane;
-} convexHullVertex;
-
-typedef struct {
   int p1;
   int p2;
   int hill1;
   int hill2;
   vec3 hill1Normal;
-  int score;
+  int angleBetweenFaces;
+  int angleWithLevel;
   int face1;
   int face2;
 } edge;
@@ -265,13 +260,17 @@ int convexHullAddFace3(convexHull *hull, int firstVertex, int secondVertex,
   convexHullVertex *vtx2;
   convexHullVertex *vtx3;
   int newTri;
+  int facePlane = -1;
+  
   vtx1 = (convexHullVertex *)arrayGetItem(hull->vertexArray, firstVertex);
   vtx2 = (convexHullVertex *)arrayGetItem(hull->vertexArray, secondVertex);
   vtx3 = (convexHullVertex *)arrayGetItem(hull->vertexArray, thirdVertex);
   
   if (vtx1->plane == vtx2->plane && vtx1->plane == vtx3->plane) {
-    return 0;
+    facePlane = vtx1->plane;
   }
+  
+  /*
   if (vtx1->plane == vtx2->plane) {
     if (!isInAdjacentOrder(vtx1->orderOnPlane, vtx2->orderOnPlane)) {
       return 0;
@@ -286,7 +285,7 @@ int convexHullAddFace3(convexHull *hull, int firstVertex, int secondVertex,
     if (!isInAdjacentOrder(vtx2->orderOnPlane, vtx3->orderOnPlane)) {
       return 0;
     }
-  }
+  }*/
   
   memset(&hull->findFace3, 0, sizeof(hull->findFace3));
   hull->findFace3.indices[0] = firstVertex;
@@ -302,6 +301,7 @@ int convexHullAddFace3(convexHull *hull, int firstVertex, int secondVertex,
     }
     tri = (face3 *)arrayGetItem(hull->faceArray, newTri);
     ((convexHullFace *)tri)->vertexNum = 3;
+    ((convexHullFace *)tri)->plane = facePlane;
     *tri = hull->findFace3;
     if (0 != hashtableInsert(hull->face3Hashtable,
         (char *)0 + newTri + 1)) {
@@ -486,9 +486,13 @@ int convexHullUnifyNormals(convexHull *hull, vec3 *origin) {
 }
 
 static int sortEdgeByScore(const void *first, const void *second) {
-   edge *e1 = (edge *)first;
-   edge *e2 = (edge *)second;
-   return e1->score - e2->score;
+    edge *e1 = (edge *)first;
+    edge *e2 = (edge *)second;
+    int result = e1->angleBetweenFaces - e2->angleBetweenFaces;
+    if (0 == result) {
+      result = e2->angleWithLevel - e1->angleWithLevel;
+    }
+    return result;
 }
 
 static void rollTriangleIndices(face3 *face) {
@@ -512,7 +516,7 @@ int convexHullMergeTriangles(convexHull *hull) {
       //face3 *f2 = (face3 *)arrayGetItem(hull->faceArray, e->face2);
       vec3 f1normal;
       vec3 f2normal;
-      float angle;
+      const vec3 yAxis = {0, 1, 0};
       /*
       convexHullVertex *f1p1 = (convexHullVertex *)arrayGetItem(
         hull->vertexArray, f1->indices[0]);
@@ -533,15 +537,12 @@ int convexHullMergeTriangles(convexHull *hull) {
       vec3 *v2 = (vec3 *)arrayGetItem(hull->vertexArray, e->p2);
       vec3 *vHill1 = (vec3 *)arrayGetItem(hull->vertexArray, e->hill1);
       vec3 *vHill2 = (vec3 *)arrayGetItem(hull->vertexArray, e->hill2);
+      vec3 v12;
+      vec3Sub(v1, v2, &v12);
       vec3Normal(v1, vHill1, v2, &f1normal);
       vec3Normal(v2, vHill2, v1, &f2normal);
-      angle = (int)vec3Angle(&f1normal, &f2normal);
-      e->score = (int)angle;
-      //if (edgeIndex >= 12 && edgeIndex <= 12) {
-      //  angle = (int)vec3Angle(&f1normal, &f2normal);
-        drawDebugPrintf("edgeIndex:%d angle:%f",
-          edgeIndex, angle);
-      //}
+      e->angleBetweenFaces = (int)vec3Angle(&f1normal, &f2normal);
+      e->angleWithLevel = (int)vec3Angle(&v12, (vec3 *)&yAxis);
     }
   }
   
@@ -563,7 +564,8 @@ int convexHullMergeTriangles(convexHull *hull) {
       convexHullFace *f2 = (convexHullFace *)arrayGetItem(hull->faceArray,
         e->face2);
       if (3 == f1->vertexNum && 3 == f2->vertexNum) {
-        if (e->score <= 40) {
+        if (e->angleBetweenFaces <= 40 &&
+            f1->plane == f2->plane) {
           while (e->p1 == f1->u.t.indices[0] || e->p2 == f1->u.t.indices[0]) {
             rollTriangleIndices((face3 *)f1);
           }
@@ -595,10 +597,10 @@ convexHullFace *convexHullGetFace(convexHull *hull, int faceIndex) {
   return face;
 }
 
-vec3 *convexHullGetVertex(convexHull *hull, int vertexIndex) {
+convexHullVertex *convexHullGetVertex(convexHull *hull, int vertexIndex) {
   convexHullVertex *vertex = (convexHullVertex *)arrayGetItem(
     hull->vertexArray, vertexIndex);
-  return &vertex->pt;
+  return vertex;
 }
 
 int convexHullGetFaceNum(convexHull *hull) {

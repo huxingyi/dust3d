@@ -26,6 +26,8 @@ typedef struct {
   vec3 localYaxis;
   vec3 localZaxis;
   int roundColor;
+  int notFitHull;
+  int flagForHull;
 } bmeshBall;
 
 typedef int bmeshBallIterator;

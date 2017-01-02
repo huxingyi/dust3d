@@ -11,6 +11,7 @@ array *arrayCreate(int nodeSize);
 void *arrayGetItem(array *arr, int index);
 int arrayGetLength(array *arr);
 int arraySetLength(array *arr, int length);
+void *arrayNewItem(array *arr);
 void arrayDestroy(array *arr);
 
 #ifdef __cplusplus

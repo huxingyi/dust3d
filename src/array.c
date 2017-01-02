@@ -57,3 +57,12 @@ void arrayDestroy(array *arr) {
     free(arr);
   }
 }
+
+void *arrayNewItem(array *arr) {
+  int newIndex = arrayGetLength(arr);
+  if (0 != arraySetLength(arr, newIndex + 1)) {
+    fprintf(stderr, "%s:arraySetLength.\n", __FUNCTION__);
+    return 0;
+  }
+  return arrayGetItem(arr, newIndex);
+}
