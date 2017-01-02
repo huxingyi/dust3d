@@ -213,11 +213,11 @@ static void generateYZfromBoneDirection(vec3 *boneDirection,
     vec3 *localYaxis, vec3 *localZaxis) {
   vec3 worldYaxis = {0, 1, 0};
   vec3 worldXaxis = {1, 0, 0};
-  if (0 == vec3Angle(boneDirection, &worldYaxis)) {
-    vec3CrossProduct(&worldXaxis, boneDirection, localYaxis);
-  } else {
+  //if (0 == vec3Angle(boneDirection, &worldYaxis)) {
+  //  vec3CrossProduct(&worldXaxis, boneDirection, localYaxis);
+  //} else {
     vec3CrossProduct(&worldYaxis, boneDirection, localYaxis);
-  }
+  //}
   vec3Normalize(localYaxis);
   vec3CrossProduct(localYaxis, boneDirection, localZaxis);
   vec3Normalize(localZaxis);
@@ -245,20 +245,6 @@ static int bmeshGenerateInbetweenBallsBetween(bmesh *bm,
   vec3Normalize(&normalizedBoneDirection);
   generateYZfromBoneDirection(&boneDirection,
     &localYaxis, &localZaxis);
-  
-  /*
-  glColor3f(0.0, 0.0, 0.0);
-  drawDebugPrintf("<%f,%f,%f> <%f,%f,%f> <%f,%f,%f>",
-    localYaxis.x,
-    localYaxis.y,
-    localYaxis.z,
-    localZaxis.x,
-    localZaxis.y,
-    localZaxis.z,
-    boneDirection.x,
-    boneDirection.y,
-    boneDirection.z);
-  */
   
   intvalDist = (firstBall->radius + secondBall->radius) / 3;
   step = intvalDist;
@@ -420,73 +406,18 @@ static int bmeshSweepFrom(bmesh *bm, bmeshBall *parent, bmeshBall *ball) {
           &rotateAxis);
         vec3Normalize(&rotateAxis);
         rotateAngle = vec3Angle(&parent->boneDirection, &child->boneDirection);
-        /*
-        if (1 || 11 == ball->index || 20 == ball->index) {
-          glColor3f(0.0, 0.0, 0.0);
-          drawDebugPrintf("<%f,%f,%f> <%f,%f,%f> <%f,%f,%f> rotateAngle:%f",
-            parent->boneDirection.x,
-            parent->boneDirection.y,
-            parent->boneDirection.z,
-            child->boneDirection.x,
-            child->boneDirection.y,
-            child->boneDirection.z,
-            rotateAxis.x,
-            rotateAxis.y,
-            rotateAxis.z,
-            rotateAngle);
-        }*/
-        rotateAngle *= 0.5;
-        
-        /*
-        if (11 == ball->index) {
-          glPushMatrix();
-          //glTranslatef(parent->position.x, parent->position.y, parent->position.z);
-          glColor3f(1.0, 0.0, 1.0);
-          glBegin(GL_LINES);
-          glVertex3f(0, 0, 0);
-          glVertex3f(parent->boneDirection.x, parent->boneDirection.y,
-            parent->boneDirection.z);
-          glEnd();
-          glPopMatrix();
-          
-          glPushMatrix();
-          //glTranslatef(child->position.x, child->position.y, child->position.z);
-          glColor3f(0.0, 1.0, 1.0);
-          glBegin(GL_LINES);
-          glVertex3f(0, 0, 0);
-          glVertex3f(child->boneDirection.x, child->boneDirection.y,
-            child->boneDirection.z);
-          glEnd();
-          glPopMatrix();
-          
-          glPushMatrix();
-          //glTranslatef(ball->position.x, ball->position.y, ball->position.z);
-          glColor3f(1.0, 0.0, 0.0);
-          glBegin(GL_LINES);
-          glVertex3f(0, 0, 0);
-          glVertex3f(rotateAxis.x, rotateAxis.y, rotateAxis.z);
-          glEnd();
-          glPopMatrix();
-        }*/
-        
         ball->boneDirection = parent->boneDirection;
+        rotateAxis.y = 0;
+        rotateAngle *= 0.5;
         vec3RotateAlong(&ball->boneDirection, rotateAngle, &rotateAxis,
           &ball->boneDirection);
         generateYZfromBoneDirection(&ball->boneDirection,
           &ball->localYaxis, &ball->localZaxis);
-      } else {
-        // TODO:
       }
     } else {
       ball->boneDirection = parent->boneDirection;
       generateYZfromBoneDirection(&ball->boneDirection,
         &ball->localYaxis, &ball->localZaxis);
-      /*
-      vec3CrossProduct(&worldYaxis, &ball->boneDirection, &ball->localYaxis);
-      vec3Normalize(&ball->localYaxis);
-      vec3CrossProduct(&ball->localYaxis, &ball->boneDirection,
-        &ball->localZaxis);
-      vec3Normalize(&ball->localZaxis);*/
     }
   }
   for (child = bmeshGetBallFirstChild(bm, ball, &iterator);
@@ -526,6 +457,7 @@ static bmeshBall *bmeshFindChildBallForConvexHull(bmesh *bm, bmeshBall *root,
   if (!child) {
     return ball;
   }
+  ball->radius = 0;
   return bmeshFindChildBallForConvexHull(bm, root, child);
 }
 
@@ -537,6 +469,7 @@ static bmeshBall *bmeshFindParentBallForConvexHull(bmesh *bm, bmeshBall *root,
   if (!ball->notFitHull && isDistanceEnoughForConvexHull(root, ball)) {
     return ball;
   }
+  ball->radius = 0;
   return bmeshFindParentBallForConvexHull(bm, root, depth - 1,
     bm->parentBallStack[depth - 1]);
 }
@@ -705,26 +638,6 @@ static convexHull *createConvexHullForBall(bmesh *bm, int depth,
     }
   }
   
-  /*
-  if (!hasVertexNotFitOnHull) {
-    for (i = 0; i < arrayGetLength(ballPtrArray); ++i) {
-      bmeshBall *ballItem = *((bmeshBall **)arrayGetItem(ballPtrArray, i));
-      if (-1 == ballItem->countsForHull[0] ||
-          ballItem->countsForHull[0] != ballItem->countsForHull[1] ||
-          ballItem->countsForHull[1] != ballItem->countsForHull[2] ||
-          ballItem->countsForHull[2] != ballItem->countsForHull[3]) {
-        hasVertexNotFitOnHull = 1;
-        if (!ballItem->notFitHull) {
-          *needRetry = 1;
-          ballItem->notFitHull = 1;
-          arrayDestroy(ballPtrArray);
-          convexHullDestroy(hull);
-          return 0;
-        }
-      }
-    }
-  }*/
-  
   if (hasVertexNotFitOnHull) {
     fprintf(stderr, "%s:hasVertexNotFitOnHull.\n", __FUNCTION__);
     arrayDestroy(ballPtrArray);
@@ -747,7 +660,7 @@ static int bmeshStichFrom(bmesh *bm, int depth, bmeshBall *ball) {
     bm->parentBallStack[depth] = ball;
   }
   ball->roundColor = bm->roundColor;
-  if (BMESH_BALL_TYPE_ROOT == ball->type/* && 2 == ball->index*/) {
+  if (BMESH_BALL_TYPE_ROOT == ball->type) {
     convexHull *hull = 0;
     
     for (;;) {
@@ -762,27 +675,6 @@ static int bmeshStichFrom(bmesh *bm, int depth, bmeshBall *ball) {
     }
     
     glPushMatrix();
-    
-    /*
-    if (lastShowFaceIndexIncTime + 0 < osGetMilliseconds()) {
-      if (17 == showFaceIndex) {
-        if (lastShowFaceIndexIncTime + 0 < osGetMilliseconds()) {
-          if (showFaceIndex > convexHullGetFace3Num(hull)) {
-            showFaceIndex = 0;
-          } else {
-            showFaceIndex++;
-          }
-          lastShowFaceIndexIncTime = osGetMilliseconds();
-        }
-      } else {
-        if (showFaceIndex > convexHullGetFace3Num(hull)) {
-          showFaceIndex = 0;
-        } else {
-          showFaceIndex++;
-        }
-        lastShowFaceIndexIncTime = osGetMilliseconds();
-      }
-    }*/
     
     if (hull)
     {
@@ -942,6 +834,7 @@ static int bmeshStichFrom(bmesh *bm, int depth, bmeshBall *ball) {
 
 int bmeshStitch(bmesh *bm) {
   bm->roundColor++;
+  memset(bm->parentBallStack, 0, sizeof(bm->parentBallStack));
   return bmeshStichFrom(bm, 0, bmeshGetRootBall(bm));
 }
 
@@ -1004,23 +897,30 @@ static void drawWallsBetweenQuads(vec3 *origin, quad *q1, quad *q2) {
   }
 }
 
-static int bmeshGenerateInbetweenMeshFrom(bmesh *bm, bmeshBall *parent,
+static int bmeshGenerateInbetweenMeshFrom(bmesh *bm, int depth,
     bmeshBall *ball) {
   int result = 0;
   bmeshBallIterator iterator;
   bmeshBall *child = 0;
+  bmeshBall *parent;
   if (bm->roundColor == ball->roundColor) {
     return 0;
   }
+  if (depth < BMESH_MAX_PARENT_BALL_DEPTH) {
+    bm->parentBallStack[depth] = ball;
+  }
   ball->roundColor = bm->roundColor;
-  if (ball->radius > 0) {
+  if (depth - 1 >= 0 && (ball->radius > 0 || ball->flagForHull) &&
+      !ball->notFitHull) {
     quad currentFace;
     calculateBallQuad(ball, &currentFace);
-    if (parent && parent->radius > 0) {
+    parent = bm->parentBallStack[depth - 1];
+    child = bmeshGetBallFirstChild(bm, ball, &iterator);
+    if (parent) {
       quad parentFace;
+      ball->inbetweenMesh = 1;
       calculateBallQuad(parent, &parentFace);
       drawWallsBetweenQuads(&ball->position, &parentFace, &currentFace);
-      child = bmeshGetBallFirstChild(bm, ball, &iterator);
       if (!child) {
         bmeshBall fakeParentParent = *parent;
         bmeshBall fakeParent = *ball;
@@ -1046,7 +946,7 @@ static int bmeshGenerateInbetweenMeshFrom(bmesh *bm, bmeshBall *parent,
   for (child = bmeshGetBallFirstChild(bm, ball, &iterator);
       child;
       child = bmeshGetBallNextChild(bm, ball, &iterator)) {
-    result = bmeshGenerateInbetweenMeshFrom(bm, ball, child);
+    result = bmeshGenerateInbetweenMeshFrom(bm, depth + 1, child);
     if (0 != result) {
       fprintf(stderr, "%s:bmeshGenerateInbetweenMeshFrom failed.\n",
         __FUNCTION__);
@@ -1058,6 +958,7 @@ static int bmeshGenerateInbetweenMeshFrom(bmesh *bm, bmeshBall *parent,
 
 int bmeshGenerateInbetweenMesh(bmesh *bm) {
   bm->roundColor++;
+  memset(bm->parentBallStack, 0, sizeof(bm->parentBallStack));
   return bmeshGenerateInbetweenMeshFrom(bm, 0, bmeshGetRootBall(bm));
 }
 

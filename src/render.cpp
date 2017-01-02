@@ -274,7 +274,7 @@ void Render::paintGL() {
     bmeshGenerateInbetweenBalls(bm);
     bmeshSweep(bm);
     bmeshStitch(bm);
-    //bmeshGenerateInbetweenMesh(bm);
+    bmeshGenerateInbetweenMesh(bm);
   }
   
   if (bm) {
