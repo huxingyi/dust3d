@@ -21,7 +21,7 @@ typedef struct {
   int hill2;
   vec3 hill1Normal;
   int angleBetweenFaces;
-  int angleWithLevel;
+  int angleWithY;
   int face1;
   int face2;
 } edge;
@@ -490,7 +490,7 @@ static int sortEdgeByScore(const void *first, const void *second) {
     edge *e2 = (edge *)second;
     int result = e1->angleBetweenFaces - e2->angleBetweenFaces;
     if (0 == result) {
-      result = e2->angleWithLevel - e1->angleWithLevel;
+      result = e1->angleWithY - e2->angleWithY;
     }
     return result;
 }
@@ -542,7 +542,7 @@ int convexHullMergeTriangles(convexHull *hull) {
       vec3Normal(v1, vHill1, v2, &f1normal);
       vec3Normal(v2, vHill2, v1, &f2normal);
       e->angleBetweenFaces = (int)vec3Angle(&f1normal, &f2normal);
-      e->angleWithLevel = (int)vec3Angle(&v12, (vec3 *)&yAxis);
+      e->angleWithY = (int)vec3Angle(&v12, (vec3 *)&yAxis);
     }
   }
   
