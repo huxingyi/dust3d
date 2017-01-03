@@ -189,7 +189,8 @@ int convexHullAddEdge(convexHull *hull, int p1, int p2, int hill,
 
 void convexHullMarkEdgeAsProcessed(convexHull *hull, int firstVertex,
     int secondVertex) {
-  int mapIndex = firstVertex * arrayGetLength(hull->vertexArray) + secondVertex;
+  int mapIndex = firstVertex * arrayGetLength(hull->vertexArray) +
+    secondVertex;
   int unitIndex = mapIndex / (sizeof(unsigned int) * 8);
   int unitOffset = mapIndex % (sizeof(unsigned int) * 8);
   hull->openEdgeProcessedMap[unitIndex] |= (0x00000001 << unitOffset);
@@ -198,7 +199,8 @@ void convexHullMarkEdgeAsProcessed(convexHull *hull, int firstVertex,
 int convexHullOpenEdgeProcessed(convexHull *hull, int firstVertex,
     int secondVertex) {
   if (hull->openEdgeProcessedMap) {
-    int mapIndex = firstVertex * arrayGetLength(hull->vertexArray) + secondVertex;
+    int mapIndex = firstVertex * arrayGetLength(hull->vertexArray) +
+      secondVertex;
     int unitIndex = mapIndex / (sizeof(unsigned int) * 8);
     int unitOffset = mapIndex % (sizeof(unsigned int) * 8);
     return hull->openEdgeProcessedMap[unitIndex] & (0x00000001 << unitOffset);

@@ -216,7 +216,7 @@ void Render::initializeGL() {
 #include "../data/bmesh_test_2.h"
 
 void Render::paintGL() {
-  bmesh *bm = 0;
+  static bmesh *bm = 0;
 
   _this = this;
   debugOutputTop = 0;
@@ -236,17 +236,6 @@ void Render::paintGL() {
   drawGrid(10, 1);
 
   glEnable(GL_LIGHTING);
-  
-  /*
-  {
-    subdivModel *input = subdivCreateModel();
-    subdivModel *output;
-    subdivAddCube(input);
-    output = subdivCatmullClarkWithLoops(input, 2);
-    subdivDestroyModel(input);
-    subdivDestroyModel(output);
-  }
-  */
 
   if (0 == bm) {
     bmeshBall ball;
@@ -271,13 +260,12 @@ void Render::paintGL() {
       bmeshAddBone(bm, &bone);
     }
 
-    bmeshGenerateInbetweenBalls(bm);
-    bmeshSweep(bm);
-    bmeshStitch(bm);
-    bmeshGenerateInbetweenMesh(bm);
+    bmeshGenerate(bm);
   }
   
   if (bm) {
+  
+    bmeshDraw(bm);
 
     drawBmeshBallRecursively(bm, bmeshGetRootBall(bm));
 
@@ -327,10 +315,10 @@ void Render::paintGL() {
 
   glPopMatrix();
   
-  if (bm) {
-    bmeshDestroy(bm);
-    bm = 0;
-  }
+  //if (bm) {
+  //  bmeshDestroy(bm);
+  //  bm = 0;
+  //}
 }
 
 void Render::resizeGL(int w, int h) {

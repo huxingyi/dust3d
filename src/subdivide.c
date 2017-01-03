@@ -114,11 +114,13 @@ subdivModel *subdivCreateModel(void) {
 }
 
 void subdivDestroyModel(subdivModel *model) {
-  arrayDestroy(model->vertexArray);
-  arrayDestroy(model->faceArray);
-  arrayDestroy(model->edgeArray);
-  arrayDestroy(model->indexArray);
-  free(model);
+  if (model) {
+    arrayDestroy(model->vertexArray);
+    arrayDestroy(model->faceArray);
+    arrayDestroy(model->edgeArray);
+    arrayDestroy(model->indexArray);
+    free(model);
+  }
 }
 
 static int allocLink(subdivModel *model, int index) {
@@ -402,7 +404,7 @@ static int updatedPoint(subdivModel *model, int p) {
   return nv;
 }
 
-static int subdivCalculteNorms(subdivModel *model) {
+int subdivCalculteNorms(subdivModel *model) {
   int i, j, n;
   int faceIterator;
   int nextFaceIterator;
@@ -470,14 +472,14 @@ static int subdivCalculteNorms(subdivModel *model) {
   return 0;
 }
 
-static void drawModel(subdivModel *model) {
+void subdivDrawModel(subdivModel *model) {
   subdivLink *linkItem;
   subdivFace *f;
   subdivVertex *v;
   int faceIterator;
   int vertexIterator;
   faceIterator = model->faceLink;
-  glColor3f(1.0, 1.0, 1.0);
+  glColor4f(1.0, 1.0, 1.0, 1.0);
   while (-1 != faceIterator) {
     linkItem = (subdivLink *)arrayGetItem(model->indexArray, faceIterator);
     f = getFace(model, linkItem->index);
@@ -745,6 +747,6 @@ subdivModel *subdivCatmullClarkWithLoops(subdivModel *model, int loops) {
     }
   }
   drawDebugPrintf("faces: %d", outputModel->faceNum);
-  drawModel(outputModel);
+  subdivDrawModel(outputModel);
   return outputModel;
 }

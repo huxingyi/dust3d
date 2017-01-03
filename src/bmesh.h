@@ -60,6 +60,8 @@ int bmeshAddQuad(bmesh *bm, quad *q);
 int bmeshSweep(bmesh *bm);
 int bmeshStitch(bmesh *bm);
 int bmeshGenerateInbetweenMesh(bmesh *bm);
+int bmeshGenerate(bmesh *bm);
+int bmeshDraw(bmesh *bm);
 
 #ifdef __cplusplus
 }

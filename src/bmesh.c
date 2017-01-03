@@ -6,17 +6,25 @@
 #include <time.h>
 #include "bmesh.h"
 #include "array.h"
+#include "hashtable.h"
 #include "matrix.h"
 #include "convexhull.h"
+#include "subdivide.h"
 #include "draw.h"
 
-#define BMESH_MAX_PARENT_BALL_DEPTH 1000
-#define BMESH_INTVAL_DIST_DIV 10
+#define BMESH_MAX_PARENT_BALL_DEPTH   1000
+#define BMESH_INTVAL_DIST_DIV         10
+#define BMESH_MODEL_VERTEX_HASHTABLE_SIZE   100
 
 typedef struct bmeshBallIndex {
   int ballIndex;
   int nextChildIndex;
 } bmeshBallIndex;
+
+typedef struct bmeshModelVertex {
+  vec3 vertex;
+  int indexOnModel;
+} bmeshModelVertex;
 
 struct bmesh {
   array *ballArray;
@@ -26,7 +34,102 @@ struct bmesh {
   int rootBallIndex;
   int roundColor;
   bmeshBall *parentBallStack[BMESH_MAX_PARENT_BALL_DEPTH];
+  subdivModel *model;
+  subdivModel *subdivModel;
+  array *modelVertexArray;
+  hashtable *modelVertexHashtable;
+  bmeshModelVertex findModelVertex;
 };
+
+static int cantorPair(int k1, int k2) {
+  return (k1 + k2) * (k1 + k2 + 1) / 2 + k2;
+}
+
+static bmeshModelVertex *bmeshFindModelVertex(bmesh *bm, vec3 *vertex) {
+  int index;
+  bm->findModelVertex.vertex = *vertex;
+  index = (char *)hashtableGet(bm->modelVertexHashtable, (char *)0) - (char *)0;
+  if (0 == index) {
+    return 0;
+  }
+  return (bmeshModelVertex *)arrayGetItem(bm->modelVertexArray, index - 1);
+}
+
+static int bmeshAddModelVertex(bmesh *bm, vec3 *vertex) {
+  bmeshModelVertex *v = bmeshFindModelVertex(bm, vertex);
+  if (!v) {
+    v = (bmeshModelVertex *)arrayNewItem(bm->modelVertexArray);
+    if (!v) {
+      fprintf(stderr, "%s:arrayNewItem failed.\n", __FUNCTION__);
+      return -1;
+    }
+    memset(v, 0, sizeof(bmeshModelVertex));
+    v->vertex = *vertex;
+    v->indexOnModel = subdivAddVertex(bm->model, &v->vertex);
+  }
+  return v->indexOnModel;
+}
+
+static int bmeshAddQuadToModel(bmesh *bm, quad *q) {
+  int indices[4];
+  indices[0] = bmeshAddModelVertex(bm, &q->pt[0]);
+  indices[1] = bmeshAddModelVertex(bm, &q->pt[1]);
+  indices[2] = bmeshAddModelVertex(bm, &q->pt[2]);
+  indices[3] = bmeshAddModelVertex(bm, &q->pt[3]);
+  if (-1 == indices[0] || -1 == indices[1] || -1 == indices[2] ||
+      -1 == indices[3]) {
+    fprintf(stderr, "%s:bmeshAddModelVertex failed.\n", __FUNCTION__);
+    return -1;
+  }
+  if (-1 == subdivAddQuadFace(bm->model, indices[0], indices[1], indices[2],
+      indices[3])) {
+    fprintf(stderr, "%s:subdivAddQuadFace failed.\n", __FUNCTION__);
+    return -1;
+  }
+  return 0;
+}
+
+static int bmeshAddTriangleToModel(bmesh *bm, triangle *t) {
+  int indices[3];
+  indices[0] = bmeshAddModelVertex(bm, &t->pt[0]);
+  indices[1] = bmeshAddModelVertex(bm, &t->pt[1]);
+  indices[2] = bmeshAddModelVertex(bm, &t->pt[2]);
+  if (-1 == indices[0] || -1 == indices[1] || -1 == indices[2]) {
+    fprintf(stderr, "%s:bmeshAddModelVertex failed.\n", __FUNCTION__);
+    return -1;
+  }
+  if (-1 == subdivAddTriangleFace(bm->model, indices[0], indices[1],
+      indices[2])) {
+    fprintf(stderr, "%s:subdivAddTriangleFace failed.\n", __FUNCTION__);
+    return -1;
+  }
+  return 0;
+}
+
+bmeshModelVertex *bmeshGetModelVertexByHashtableParam(void *userData,
+    const void *node) {
+  bmesh *bm = (bmesh *)userData;
+  int index = (char *)node - (char *)0;
+  if (0 == index) {
+    return &bm->findModelVertex;
+  }
+  return (bmeshModelVertex *)arrayGetItem(bm->modelVertexArray, index - 1);
+}
+
+static int modelVertexHash(void *userData, const void *node) {
+  bmeshModelVertex *v = bmeshGetModelVertexByHashtableParam(userData, node);
+  return cantorPair(cantorPair(v->vertex.x, v->vertex.y),
+    v->vertex.z);
+}
+
+static int modelVertexCompare(void *userData, const void *firstNode,
+    const void *secondNode) {
+  bmeshModelVertex *v1 = bmeshGetModelVertexByHashtableParam(userData,
+    firstNode);
+  bmeshModelVertex *v2 = bmeshGetModelVertexByHashtableParam(userData,
+    secondNode);
+  return 0 == memcmp(&v1->vertex, &v2->vertex, sizeof(v1->vertex));
+}
 
 bmesh *bmeshCreate(void) {
   bmesh *bm = (bmesh *)calloc(1, sizeof(bmesh));
@@ -58,6 +161,25 @@ bmesh *bmeshCreate(void) {
     bmeshDestroy(bm);
     return 0;
   }
+  bm->model = subdivCreateModel();
+  if (!bm->model) {
+    fprintf(stderr, "%s:subdivCreateModel failed.\n", __FUNCTION__);
+    bmeshDestroy(bm);
+    return 0;
+  }
+  bm->modelVertexArray = arrayCreate(sizeof(bmeshModelVertex));
+  if (!bm->modelVertexArray) {
+    fprintf(stderr, "%s:arrayCreate quad failed.\n", __FUNCTION__);
+    bmeshDestroy(bm);
+    return 0;
+  }
+  bm->modelVertexHashtable = hashtableCreate(BMESH_MODEL_VERTEX_HASHTABLE_SIZE,
+    modelVertexHash, modelVertexCompare, bm);
+  if (!bm->modelVertexHashtable) {
+    fprintf(stderr, "%s:hashtableCreate quad failed.\n", __FUNCTION__);
+    bmeshDestroy(bm);
+    return 0;
+  }
   bm->rootBallIndex = -1;
   bm->roundColor = 0;
   return bm;
@@ -68,6 +190,10 @@ void bmeshDestroy(bmesh *bm) {
   arrayDestroy(bm->boneArray);
   arrayDestroy(bm->indexArray);
   arrayDestroy(bm->quadArray);
+  subdivDestroyModel(bm->model);
+  subdivDestroyModel(bm->subdivModel);
+  arrayDestroy(bm->modelVertexArray);
+  hashtableDestroy(bm->modelVertexHashtable);
   free(bm);
 }
 
@@ -698,69 +824,35 @@ static int bmeshStichFrom(bmesh *bm, int depth, bmeshBall *ball) {
       }
     }
     
-    glPushMatrix();
-    
-    if (hull)
-    {
-      int triIndex;
-      for (triIndex = 0; triIndex < convexHullGetFaceNum(hull);
-          ++triIndex) {
-        convexHullFace *face = (convexHullFace *)convexHullGetFace(hull,
-          triIndex);
-        if (3 == face->vertexNum) {
-          triangle tri;
-          int j;
-          tri.pt[0] = convexHullGetVertex(hull, face->u.t.indices[0])->pt;
-          tri.pt[1] = convexHullGetVertex(hull, face->u.t.indices[1])->pt;
-          tri.pt[2] = convexHullGetVertex(hull, face->u.t.indices[2])->pt;
-          
-          if (triIndex >= showFaceIndex) {
-            break;
-          }
-          
-          glColor3f(1.0f, 1.0f, 1.0f);
-          drawTriangle(&tri);
-          
-          glBegin(GL_LINE_STRIP);
-          for (j = 0; j < 3; ++j) {
-            glVertex3f(tri.pt[j].x, tri.pt[j].y, tri.pt[j].z);
-          }
-          glVertex3f(tri.pt[0].x, tri.pt[0].y, tri.pt[0].z);
-          glEnd();
-          
-        } else if (4 == face->vertexNum) {
+    if (hull) {
+      int i;
+      for (i = 0; i < convexHullGetFaceNum(hull); ++i) {
+        convexHullFace *face = (convexHullFace *)convexHullGetFace(hull, i);
+        if (4 == face->vertexNum) {
           quad q;
-          vec3 normal;
-          int j;
           q.pt[0] = convexHullGetVertex(hull, face->u.q.indices[0])->pt;
           q.pt[1] = convexHullGetVertex(hull, face->u.q.indices[1])->pt;
           q.pt[2] = convexHullGetVertex(hull, face->u.q.indices[2])->pt;
           q.pt[3] = convexHullGetVertex(hull, face->u.q.indices[3])->pt;
-          
-          glColor3f(1.0f, 1.0f, 1.0f);
-          glBegin(GL_QUADS);
-          vec3Normal(&q.pt[0], &q.pt[1], &q.pt[2], &normal);
-          for (j = 0; j < 4; ++j) {
-            glNormal3f(normal.x, normal.y, normal.z);
-            glVertex3f(q.pt[j].x, q.pt[j].y, q.pt[j].z);
+          result = bmeshAddQuadToModel(bm, &q);
+          if (-1 == result) {
+            break;
           }
-          glEnd();
-          
-          glBegin(GL_LINE_STRIP);
-          for (j = 0; j < 4; ++j) {
-            glVertex3f(q.pt[j].x, q.pt[j].y, q.pt[j].z);
+        } else if (3 == face->vertexNum) {
+          triangle t;
+          t.pt[0] = convexHullGetVertex(hull, face->u.t.indices[0])->pt;
+          t.pt[1] = convexHullGetVertex(hull, face->u.t.indices[1])->pt;
+          t.pt[2] = convexHullGetVertex(hull, face->u.t.indices[2])->pt;
+          result = bmeshAddTriangleToModel(bm, &t);
+          if (-1 == result) {
+            break;
           }
-          glVertex3f(q.pt[0].x, q.pt[0].y, q.pt[0].z);
-          glEnd();
         }
       }
-    }
-    
-    glPopMatrix();
-    if (hull) {
       convexHullDestroy(hull);
     }
   }
+
   for (child = bmeshGetBallFirstChild(bm, ball, &iterator);
       child;
       child = bmeshGetBallNextChild(bm, ball, &iterator)) {
@@ -817,8 +909,10 @@ void calculateBallQuad(bmeshBall *ball, quad *q) {
   vec3Add(&q->pt[3], &z, &q->pt[3]);
 }
 
-static void drawWallsBetweenQuads(vec3 *origin, quad *q1, quad *q2) {
+static int bmeshAddWallsBetweenQuadsToModel(bmesh *bm, vec3 *origin, quad *q1,
+    quad *q2) {
   int i;
+  int result = 0;
   vec3 normal;
   vec3 o2v;
   matchTwoFaces(q1, q2);
@@ -834,8 +928,13 @@ static void drawWallsBetweenQuads(vec3 *origin, quad *q1, quad *q2) {
         wall.pt[j] = oldWall.pt[3 - j];
       }
     }
-    drawQuad(&wall);
+    result = bmeshAddQuadToModel(bm, &wall);
+    if (-1 == result) {
+      break;
+    }
+    //drawQuad(&wall);
   }
+  return result;
 }
 
 static bmeshBall *bmeshFindChildBallForInbetweenMesh(bmesh *bm, bmeshBall *ball) {
@@ -875,7 +974,12 @@ static int bmeshGenerateInbetweenMeshFrom(bmesh *bm, int depth,
       vec3Lerp(&parent->position, &ball->position, BMESH_INTVAL_DIST_DIV,
           &fakeBall.position);
       calculateBallQuad(&fakeBall, &childFace);
-      drawWallsBetweenQuads(&ball->position, &currentFace, &childFace);
+      bmeshAddWallsBetweenQuadsToModel(bm, &ball->position, &currentFace,
+        &childFace);
+      result = bmeshAddQuadToModel(bm, &childFace);
+      if (-1 == result) {
+        return result;
+      }
       drawQuad(&childFace);
     }
   }
@@ -888,7 +992,11 @@ static int bmeshGenerateInbetweenMeshFrom(bmesh *bm, int depth,
       //} else {
         child = bmeshFindChildBallForInbetweenMesh(bm, child);
         calculateBallQuad(child, &childFace);
-        drawWallsBetweenQuads(&ball->position, &currentFace, &childFace);
+        result = bmeshAddWallsBetweenQuadsToModel(bm, &ball->position, &currentFace,
+          &childFace);
+        if (-1 == result) {
+          return result;
+        }
       //}
       ball->meshGenerated = 1;
       child->meshGenerated = 1;
@@ -911,5 +1019,27 @@ int bmeshGenerateInbetweenMesh(bmesh *bm) {
   bm->roundColor++;
   memset(bm->parentBallStack, 0, sizeof(bm->parentBallStack));
   return bmeshGenerateInbetweenMeshFrom(bm, 0, bmeshGetRootBall(bm));
+}
+
+int bmeshGenerate(bmesh *bm) {
+  bmeshGenerateInbetweenBalls(bm);
+  bmeshSweep(bm);
+  bmeshStitch(bm);
+  bmeshGenerateInbetweenMesh(bm);
+  subdivCalculteNorms(bm->model);
+  bm->subdivModel = subdivCatmullClarkWithLoops(bm->model, 1);
+  return 0;
+}
+
+int bmeshDraw(bmesh *bm) {
+  glPushMatrix();
+  glTranslatef(-5, 0, 0);
+  subdivDrawModel(bm->model);
+  glPopMatrix();
+  subdivDrawModel(bm->subdivModel);
+  //subdivModel *model = subdivCreateModel();
+  //subdivAddCube(model);
+  //subdivDrawModel(subdivCatmullClarkWithLoops(model, 2));
+  return 0;
 }
 
