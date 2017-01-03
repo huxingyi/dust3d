@@ -451,6 +451,9 @@ static bmeshBall *bmeshFindChildBallForConvexHull(bmesh *bm, bmeshBall *root,
       bmeshBall *ball) {
   bmeshBallIterator iterator;
   bmeshBall *child;
+  if (ball->convexHullCount) {
+    return ball;
+  }
   if (!ball->notFitHull && isDistanceEnoughForConvexHull(root, ball)) {
     return ball;
   }
@@ -464,7 +467,7 @@ static bmeshBall *bmeshFindChildBallForConvexHull(bmesh *bm, bmeshBall *root,
 
 static bmeshBall *bmeshFindParentBallForConvexHull(bmesh *bm, bmeshBall *root,
     int depth, bmeshBall *ball) {
-  if (depth <= 0) {
+  if (depth <= 0 || ball->convexHullCount) {
     return ball;
   }
   if (!ball->notFitHull && isDistanceEnoughForConvexHull(root, ball)) {
@@ -655,6 +658,15 @@ static convexHull *createConvexHullForBall(bmesh *bm, int depth,
     return 0;
   }
   
+  for (i = 0; i < arrayGetLength(ballPtrArray); ++i) {
+    bmeshBall *ballItem = *((bmeshBall **)arrayGetItem(ballPtrArray, i));
+    ballItem->convexHullCount++;
+    drawDebugPrintf("convexHullCount:%d", ballItem->convexHullCount);
+    if (ballItem->convexHullCount == 1) {
+      drawDebugPoint(&ballItem->position, ballItem->index);
+    }
+  }
+  
   arrayDestroy(ballPtrArray);
   return hull;
 }
@@ -670,8 +682,9 @@ static int bmeshStichFrom(bmesh *bm, int depth, bmeshBall *ball) {
     bm->parentBallStack[depth] = ball;
   }
   ball->roundColor = bm->roundColor;
-  if (BMESH_BALL_TYPE_ROOT == ball->type ||
-      BMESH_BALL_TYPE_KEY == ball->type) {
+  if ((BMESH_BALL_TYPE_ROOT == ball->type ||
+        BMESH_BALL_TYPE_KEY == ball->type) &&
+      bmeshGetBallFirstChild(bm, ball, &iterator)) {
     convexHull *hull = 0;
     
     for (;;) {
@@ -742,89 +755,6 @@ static int bmeshStichFrom(bmesh *bm, int depth, bmeshBall *ball) {
         }
       }
     }
-    
-    /*
-    glColor3f(0.0f, 0.0f, 0.0f);
-    {
-      int triIndex;
-      int j;
-      for (triIndex = 0; triIndex < convexHullGetFaceNum(hull);
-          ++triIndex) {
-        convexHullFace *face = (convexHullFace *)convexHullGetFace(hull,
-          triIndex);
-        if (3 == face->vertexNum) {
-          triangle tri;
-          tri.pt[0] = *convexHullGetVertex(hull, face->u.t.indices[0]);
-          tri.pt[1] = *convexHullGetVertex(hull, face->u.t.indices[1]);
-          tri.pt[2] = *convexHullGetVertex(hull, face->u.t.indices[2]);
-          glBegin(GL_LINE_STRIP);
-          for (j = 0; j < 3; ++j) {
-            glVertex3f(tri.pt[j].x, tri.pt[j].y, tri.pt[j].z);
-          }
-          glVertex3f(tri.pt[0].x, tri.pt[0].y, tri.pt[0].z);
-          glEnd();
-        } else if ()
-      }
-    }*/
-  
-    /*
-    glColor3f(1.0f, 1.0f, 1.0f);
-    {
-      int triIndex;
-      for (triIndex = 0; triIndex < tri2QuadGetTriangleNum(t2q);
-          ++triIndex) {
-        triangle *tri = (triangle *)tri2QuadGetTriangle(t2q, triIndex);
-        drawTriangle(tri);
-      }
-    }
-    glColor3f(0.0f, 0.0f, 0.0f);
-    {
-      int triIndex;
-      int j;
-      for (triIndex = 0; triIndex < tri2QuadGetTriangleNum(t2q);
-          ++triIndex) {
-        triangle *tri = (triangle *)tri2QuadGetTriangle(t2q, triIndex);
-        glBegin(GL_LINE_STRIP);
-        for (j = 0; j < 3; ++j) {
-          glVertex3f(tri->pt[j].x, tri->pt[j].y, tri->pt[j].z);
-        }
-        glVertex3f(tri->pt[0].x, tri->pt[0].y, tri->pt[0].z);
-        glEnd();
-      }
-    }
-    
-    glColor3f(1.0f, 1.0f, 1.0f);
-    {
-      int quadIndex;
-      glBegin(GL_QUADS);
-      for (quadIndex = 0; quadIndex < tri2QuadGetQuadNum(t2q);
-          ++quadIndex) {
-        quad *q = (quad *)tri2QuadGetQuad(t2q, quadIndex);
-        vec3 normal;
-        int j;
-        vec3Normal(&q->pt[0], &q->pt[1], &q->pt[2], &normal);
-        for (j = 0; j < 4; ++j) {
-          glNormal3f(normal.x, normal.y, normal.z);
-          glVertex3f(q->pt[j].x, q->pt[j].y, q->pt[j].z);
-        }
-      }
-      glEnd();
-    }
-    glColor3f(0.0f, 0.0f, 0.0f);
-    {
-      int quadIndex;
-      int j;
-      for (quadIndex = 0; quadIndex < tri2QuadGetQuadNum(t2q);
-          ++quadIndex) {
-        quad *q = (quad *)tri2QuadGetQuad(t2q, quadIndex);
-        glBegin(GL_LINE_STRIP);
-        for (j = 0; j < 4; ++j) {
-          glVertex3f(q->pt[j].x, q->pt[j].y, q->pt[j].z);
-        }
-        glVertex3f(q->pt[0].x, q->pt[0].y, q->pt[0].z);
-        glEnd();
-      }
-    }*/
     
     glPopMatrix();
     if (hull) {
@@ -908,12 +838,26 @@ static void drawWallsBetweenQuads(vec3 *origin, quad *q1, quad *q2) {
   }
 }
 
+static bmeshBall *bmeshFindChildBallForInbetweenMesh(bmesh *bm, bmeshBall *ball) {
+  bmeshBallIterator iterator;
+  bmeshBall *child;
+  if (ball->convexHullCount > 0) {
+    return ball;
+  }
+  child = bmeshGetBallFirstChild(bm, ball, &iterator);
+  if (!child) {
+    return ball;
+  }
+  return bmeshFindChildBallForInbetweenMesh(bm, child);
+}
+
 static int bmeshGenerateInbetweenMeshFrom(bmesh *bm, int depth,
     bmeshBall *ball) {
   int result = 0;
   bmeshBallIterator iterator;
   bmeshBall *child = 0;
   bmeshBall *parent;
+  quad currentFace, childFace;
   if (bm->roundColor == ball->roundColor) {
     return 0;
   }
@@ -921,37 +865,33 @@ static int bmeshGenerateInbetweenMeshFrom(bmesh *bm, int depth,
     bm->parentBallStack[depth] = ball;
   }
   ball->roundColor = bm->roundColor;
-  if (depth - 1 >= 0 && (ball->radius > 0 || ball->flagForHull) &&
-      !ball->notFitHull) {
-    quad currentFace;
-    calculateBallQuad(ball, &currentFace);
-    parent = bm->parentBallStack[depth - 1];
+  calculateBallQuad(ball, &currentFace);
+  if (BMESH_BALL_TYPE_KEY == ball->type &&
+      !bmeshGetBallFirstChild(bm, ball, &iterator)) {
+    if (depth - 1 >= 0) {
+      bmeshBall fakeBall;
+      parent = bm->parentBallStack[depth - 1];
+      fakeBall = *ball;
+      vec3Lerp(&parent->position, &ball->position, BMESH_INTVAL_DIST_DIV,
+          &fakeBall.position);
+      calculateBallQuad(&fakeBall, &childFace);
+      drawWallsBetweenQuads(&ball->position, &currentFace, &childFace);
+      drawQuad(&childFace);
+    }
+  }
+  else if (1 == ball->convexHullCount && !ball->meshGenerated) {
     child = bmeshGetBallFirstChild(bm, ball, &iterator);
-    if (parent) {
-      quad parentFace;
-      ball->inbetweenMesh = 1;
-      calculateBallQuad(parent, &parentFace);
-      drawWallsBetweenQuads(&ball->position, &parentFace, &currentFace);
-      if (!child) {
-        bmeshBall fakeParentParent = *parent;
-        bmeshBall fakeParent = *ball;
-        bmeshBall fakeBall;
-        for (;;) {
-          quad childFace;
-          fakeBall = fakeParent;
-          vec3Lerp(&fakeParentParent.position, &fakeParent.position, 2,
-            &fakeBall.position);
-          calculateBallQuad(&fakeBall, &childFace);
-          drawWallsBetweenQuads(&fakeBall.position, &currentFace, &childFace);
-          if (vec3Distance(&ball->position, &fakeBall.position) >=
-              ball->radius) {
-            drawQuad(&childFace);
-            break;
-          }
-          fakeParentParent = fakeParent;
-          fakeParent = fakeBall;
-        }
-      }
+    if (child && !child->meshGenerated) {
+      //if (vec3Distance(&ball->position, &child->position) <=
+      //    (ball->radius + child->radius) / 10) {
+        // TODO: merge two face
+      //} else {
+        child = bmeshFindChildBallForInbetweenMesh(bm, child);
+        calculateBallQuad(child, &childFace);
+        drawWallsBetweenQuads(&ball->position, &currentFace, &childFace);
+      //}
+      ball->meshGenerated = 1;
+      child->meshGenerated = 1;
     }
   }
   for (child = bmeshGetBallFirstChild(bm, ball, &iterator);

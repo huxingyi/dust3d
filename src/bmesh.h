@@ -28,7 +28,8 @@ typedef struct {
   int roundColor;
   int notFitHull;
   int flagForHull;
-  int inbetweenMesh;
+  int convexHullCount;
+  int meshGenerated;
 } bmeshBall;
 
 typedef int bmeshBallIterator;
