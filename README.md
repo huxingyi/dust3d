@@ -36,7 +36,7 @@ Two caps and many strips composites a cylinder.
 Almost all 3D editor have a infinite grid ground, I just made a finite one, in the future, I should expand the grid outside of the screen to make it infinite.  
 Now, for just beginning, I think it's a not bad start.
 <img src="screenshot/dust3d_sphere_cylinder.png">
-- [ ] Implement B-Mesh algorithm (Dec 18, 2016 ~ Jan 02, 2017)   
+- [x] Implement B-Mesh algorithm (Dec 18, 2016 ~ Jan 04, 2017)   
 There is a implementation of [B-Mesh algorithm in C++](https://github.com/evanw/cs224final) language, but I want the pure C version, so I start to implement my own version. I read both paper and this implementation, it gave me very helpful understanding of this algorithm.    
 *Drawing Skeletal Shape Balls*  
 Draw shape ball is easy, no need to rotate, I just need scale it along the ball's radius.
@@ -62,10 +62,12 @@ There is a good implementation of [Gift Wrapping algorithm written in lua](https
 I follow the B-Mesh paper, made another test module inside Blender, and created a correspond `data/bmesh_test_2.h` manually.  
 <img src="screenshot/dust3d_bmesh_test_2.png" width="124" height="128">  <img src="screenshot/dust3d_bmesh_joint_1.png" width="124" height="128">  <img src="screenshot/dust3d_bmesh_joint_2.png" width="124" height="128">  
 *Catmull-Clark Subdivision*  
-<img src="screenshot/dust3d_subdivide_catmull_clark.png" width="124" height="128">    
+<img src="screenshot/dust3d_subdivide_catmull_clark.png" width="124" height="128">  <img src="screenshot/dust3d_bmesh_subdivide_2.png" width="124" height="128">    
 There is a implementation of Catmull-Clark Subdivision algorithm on [rosettacode](https://rosettacode.org/wiki/Catmull%E2%80%93Clark_subdivision_surface/C), the code is very simple and beautiful, just lack of some memory alloc fail check. I translated the algorithm to use my own array implementation.  
+Now, the render result looks not bad after 2 times of subdivisions. I would like to mark this todo as done, though there are more polish steps on the original paper, I just leave it as to be done in the future.
 - [ ] Export Wavefront .obj  
-- [ ] Render B-Mesh result  
+- [x] Render B-Mesh result  
+This todo already done in the B-Mesh algorithm implementation.  
 - [ ] Design UI for monster parts configuration  
 - [ ] Test B-Mesh realtime generation with UI  
 - [ ] Render rigid animation  

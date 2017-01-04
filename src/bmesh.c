@@ -41,10 +41,6 @@ struct bmesh {
   bmeshModelVertex findModelVertex;
 };
 
-static int cantorPair(int k1, int k2) {
-  return (k1 + k2) * (k1 + k2 + 1) / 2 + k2;
-}
-
 static bmeshModelVertex *bmeshFindModelVertex(bmesh *bm, vec3 *vertex) {
   int index;
   bm->findModelVertex.vertex = *vertex;
@@ -66,6 +62,11 @@ static int bmeshAddModelVertex(bmesh *bm, vec3 *vertex) {
     memset(v, 0, sizeof(bmeshModelVertex));
     v->vertex = *vertex;
     v->indexOnModel = subdivAddVertex(bm->model, &v->vertex);
+    if (-1 == hashtableInsert(bm->modelVertexHashtable,
+        (char *)0 + arrayGetLength(bm->modelVertexArray))) {
+      fprintf(stderr, "%s:hashtableInsert failed.\n", __FUNCTION__);
+      return -1;
+    }
   }
   return v->indexOnModel;
 }
@@ -118,8 +119,7 @@ bmeshModelVertex *bmeshGetModelVertexByHashtableParam(void *userData,
 
 static int modelVertexHash(void *userData, const void *node) {
   bmeshModelVertex *v = bmeshGetModelVertexByHashtableParam(userData, node);
-  return cantorPair(cantorPair(v->vertex.x, v->vertex.y),
-    v->vertex.z);
+  return abs(*((int *)v));
 }
 
 static int modelVertexCompare(void *userData, const void *firstNode,
@@ -128,7 +128,12 @@ static int modelVertexCompare(void *userData, const void *firstNode,
     firstNode);
   bmeshModelVertex *v2 = bmeshGetModelVertexByHashtableParam(userData,
     secondNode);
-  return 0 == memcmp(&v1->vertex, &v2->vertex, sizeof(v1->vertex));
+  if (0 == v1->vertex.x - v2->vertex.x &&
+      0 == v1->vertex.y - v2->vertex.y &&
+      0 == v1->vertex.z - v2->vertex.z) {
+    return 0;
+  }
+  return 1;
 }
 
 bmesh *bmeshCreate(void) {
@@ -1027,19 +1032,17 @@ int bmeshGenerate(bmesh *bm) {
   bmeshStitch(bm);
   bmeshGenerateInbetweenMesh(bm);
   subdivCalculteNorms(bm->model);
-  bm->subdivModel = subdivCatmullClarkWithLoops(bm->model, 1);
+  //bm->subdivModel = subdivCatmullClark(bm->model);
+  bm->subdivModel = subdivCatmullClarkWithLoops(bm->model, 2);
   return 0;
 }
 
 int bmeshDraw(bmesh *bm) {
   glPushMatrix();
-  glTranslatef(-5, 0, 0);
+  glTranslatef(-7, 0, 0);
   subdivDrawModel(bm->model);
   glPopMatrix();
   subdivDrawModel(bm->subdivModel);
-  //subdivModel *model = subdivCreateModel();
-  //subdivAddCube(model);
-  //subdivDrawModel(subdivCatmullClarkWithLoops(model, 2));
   return 0;
 }
 

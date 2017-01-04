@@ -291,6 +291,7 @@ static int facePoint(subdivModel *model, int f) {
   int nv = getFace(model, f)->avg;
   if (-1 == nv) {
     int iterator;
+    int i;
     subdivVertex *newVertex = allocVertex(model);
     if (!newVertex) {
       fprintf(stderr, "%s:allocVertex failed.\n", __FUNCTION__);
@@ -299,18 +300,20 @@ static int facePoint(subdivModel *model, int f) {
     nv = newVertex->index;
     getFace(model, f)->avg = nv;
     iterator = getFace(model, f)->vertexLink;
+    i = 0;
     while (-1 != iterator) {
       int p;
       subdivLink *linkItem = (subdivLink *)arrayGetItem(model->indexArray,
         iterator);
       p = linkItem->index;
       iterator = linkItem->nextLink;
-      if (getFace(model, f)->vertexLink == iterator) {
+      if (!i) {
         getVertex(model, nv)->v = getVertex(model, p)->v;
       } else {
         vec3Add(&getVertex(model, nv)->v, &getVertex(model, p)->v,
           &getVertex(model, nv)->v);
       }
+      ++i;
     }
     vec3Scale(&getVertex(model, nv)->v, 1.0 / (getFace(model, f)->vertexNum),
       &getVertex(model, nv)->v);
@@ -625,7 +628,8 @@ static int subdivAddEdge(subdivModel *model, int p1, int p2) {
     fprintf(stderr, "%s:pushLink failed.\n", __FUNCTION__);
     return -1;
   }
-  if (-1 == pushLink(model, &model->edgeLink, &model->edgeNum, newEdge->index)) {
+  if (-1 == pushLink(model, &model->edgeLink, &model->edgeNum,
+      newEdge->index)) {
     fprintf(stderr, "%s:pushLink failed.\n", __FUNCTION__);
     return -1;
   }
