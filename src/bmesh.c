@@ -688,7 +688,7 @@ static convexHull *createConvexHullForBall(bmesh *bm, int depth,
   }
   if (BMESH_BALL_TYPE_KEY == ball->type) {
     bmeshBall reduceBall = *ball;
-    reduceBall.radius *= 0.75;
+    reduceBall.radius *= 0.4;
     if (-1 == addBallToHull(hull, &reduceBall,
         &outmostBall, &outmostBallFirstVertexIndex)) {
       fprintf(stderr, "%s:addBallToHull failed.\n", __FUNCTION__);
