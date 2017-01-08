@@ -687,7 +687,9 @@ static convexHull *createConvexHullForBall(bmesh *bm, int depth,
     return 0;
   }
   if (BMESH_BALL_TYPE_KEY == ball->type) {
-    if (-1 == addBallToHull(hull, ball,
+    bmeshBall reduceBall = *ball;
+    reduceBall.radius *= 0.75;
+    if (-1 == addBallToHull(hull, &reduceBall,
         &outmostBall, &outmostBallFirstVertexIndex)) {
       fprintf(stderr, "%s:addBallToHull failed.\n", __FUNCTION__);
       arrayDestroy(ballPtrArray);
@@ -1033,7 +1035,7 @@ int bmeshGenerate(bmesh *bm) {
   bmeshGenerateInbetweenMesh(bm);
   subdivCalculteNorms(bm->model);
   //bm->subdivModel = subdivCatmullClark(bm->model);
-  bm->subdivModel = subdivCatmullClarkWithLoops(bm->model, 2);
+  bm->subdivModel = subdivCatmullClarkWithLoops(bm->model, 1);
   return 0;
 }
 
