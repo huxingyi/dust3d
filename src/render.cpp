@@ -17,7 +17,7 @@ static const float bmeshBallColors[][4] {
 
 static const float bmeshBoneColor[3] = {1, 1, 0};
 
-static QGLWidget *_this = 0;
+static Render *_this = 0;
 static int debugOutputTop = 0;
 
 int drawDebugPrintf(const char *fmt, ...) {
@@ -35,7 +35,14 @@ int drawDebugPrintf(const char *fmt, ...) {
 }
 
 static int drawBmeshBall(bmesh *bm, bmeshBall *ball) {
-  glColor4fv(bmeshBallColors[ball->type]);
+  float color[4];
+  memcpy(color, bmeshBallColors[ball->type], sizeof(color));
+  vec3 mousePos[] = {{_this->mouseWorldX, _this->mouseWorldY,
+    _this->mouseWorldZ}};
+  if (vec3Distance(&ball->position, mousePos) <= ball->radius * 5) {
+    color[3] = 1;
+  }
+  glColor4fv(color);
   drawSphere(&ball->position, ball->radius, 36, 24);
   return 0;
 }
@@ -43,7 +50,7 @@ static int drawBmeshBall(bmesh *bm, bmeshBall *ball) {
 static void drawBmeshBallRecursively(bmesh *bm, bmeshBall *ball) {
   bmeshBallIterator iterator;
   bmeshBall *child;
-  //drawBmeshBall(bm, ball);
+  drawBmeshBall(bm, ball);
   for (child = bmeshGetBallFirstChild(bm, ball, &iterator);
       child;
       child = bmeshGetBallNextChild(bm, ball, &iterator)) {
@@ -213,6 +220,31 @@ void Render::initializeGL() {
   drawInit();
 }
 
+void screenCoordsToWorld(float winX, float winY,
+    float *worldX, float *worldY, float *worldZ){
+  GLint viewport[4];
+  GLdouble modelview[16];
+  GLdouble projection[16];
+  GLfloat winZ = 0;
+  GLdouble x, y, z;
+
+  glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
+  glGetDoublev(GL_PROJECTION_MATRIX, projection);
+  glGetIntegerv(GL_VIEWPORT, viewport);
+
+  winX = (float)winX;
+  winY = (float)viewport[3] - (float)winY;
+  winZ = 0;
+
+  gluUnProject((GLdouble)winX, (GLdouble)winY, (GLdouble)winZ,
+    (const GLdouble *)modelview, (const GLdouble *)projection, viewport,
+    &x, &y, &z);
+  
+  *worldX = (float)x;
+  *worldY = (float)y;
+  *worldZ = (float)z;
+}
+
 #include "../data/bmesh_test_2.h"
 
 void Render::paintGL() {
@@ -236,6 +268,12 @@ void Render::paintGL() {
   drawGrid(10, 1);
 
   glEnable(GL_LIGHTING);
+  
+  screenCoordsToWorld(_this->mouseX, _this->mouseY,
+    &_this->mouseWorldX, &_this->mouseWorldY, &_this->mouseWorldZ);
+  glColor3f(0.0f, 0.0f, 0.0f);
+  drawDebugPrintf("%d,%d -> %f,%f,%f", _this->mouseX, _this->mouseY,
+    _this->mouseWorldX, _this->mouseWorldY, _this->mouseWorldZ);
 
   if (0 == bm) {
     bmeshBall ball;
@@ -312,6 +350,9 @@ void Render::paintGL() {
       }*/
     }
   }
+  
+  //glColor3f(0.0f, 0.0f, 0.0f);
+  //drawTestUnproject();
 
   glPopMatrix();
   
@@ -331,6 +372,17 @@ void Render::resizeGL(int w, int h) {
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
 }
+
+/*
+void drawTestUnproject(void) {
+  float worldX, worldY, worldZ;
+  if (_this) {
+    screenCoordsToWorld(_this->mouseX, _this->mouseY, &worldX, &worldY, &worldZ);
+    glColor3f(0.0f, 0.0f, 0.0f);
+    drawDebugPrintf("%d,%d -> %f,%f,%f", _this->mouseX, _this->mouseY,
+      worldX, worldY, worldZ);
+  }
+}*/
 
 void Render::mousePressEvent(QMouseEvent *event) {
   mouseX = event->x();

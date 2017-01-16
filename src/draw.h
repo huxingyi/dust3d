@@ -22,6 +22,7 @@ int drawText(int x, int y, char *text);
 int drawPrintf(int x, int y, const char *fmt, ...);
 int drawDebugPrintf(const char *fmt, ...);
 void drawDebugPoint(vec3 *origin, int colorIndex);
+void drawTestUnproject(void);
 
 #ifdef __cplusplus
 }

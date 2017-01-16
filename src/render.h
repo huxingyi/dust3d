@@ -18,9 +18,12 @@ protected:
   void mouseMoveEvent(QMouseEvent *event);
   void wheelEvent(QWheelEvent * event);
 
-private:
+public:
   int mouseX;
   int mouseY;
+  float mouseWorldX;
+  float mouseWorldY;
+  float mouseWorldZ;
   float cameraAngleX;
   float cameraAngleY;
   float cameraDistance;
