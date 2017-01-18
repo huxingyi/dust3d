@@ -28,19 +28,41 @@ int drawDebugPrintf(const char *fmt, ...) {
   va_start(args, fmt);
   vsnprintf(text, sizeof(text), fmt, args);
   debugOutputTop += 9;
-  if (debugOutputTop > 200) {
+  if (debugOutputTop > 400) {
     debugOutputTop = 0;
   }
+  glColor3f(0, 0, 0);
   return drawText(x, y, text);
 }
 
 static int drawBmeshBall(bmesh *bm, bmeshBall *ball) {
   float color[4];
   memcpy(color, bmeshBallColors[ball->type], sizeof(color));
-  vec3 mousePos[] = {{_this->mouseWorldX, _this->mouseWorldY,
-    _this->mouseWorldZ}};
-  if (vec3Distance(&ball->position, mousePos) <= ball->radius * 5) {
-    color[3] = 1;
+  if (BMESH_BALL_TYPE_ROOT == ball->type || BMESH_BALL_TYPE_KEY == ball->type) {
+    vec3 a = {_this->mouseWorldNearX, _this->mouseWorldNearY,
+      _this->mouseWorldNearZ};
+    vec3 b = {_this->mouseWorldFarX, _this->mouseWorldFarY,
+      _this->mouseWorldFarZ};
+    vec3 ab, ap, q;
+    float abDotAb;
+    float apDotAb;
+    float t;
+    vec3Sub(&b, &a, &ab);
+    vec3Sub(&ball->position, &a, &ap);
+    abDotAb = vec3DotProduct(&ab, &ab);
+    apDotAb = vec3DotProduct(&ap, &ab);
+    t = apDotAb / abDotAb;
+    if (t < 0.0f) {
+      t = 0.0f;
+    } else if (t > 1.0f) {
+      t = 1.0f;
+    }
+    vec3Scale(&ab, t, &q);
+    vec3Add(&a, &q, &q);
+    //drawDebugPrintf("q: %f,%f,%f t:%f", q.x, q.y, q.z, t);
+    if (vec3Distance(&ball->position, &q) <= ball->radius) {
+      color[3] = 1;
+    }
   }
   glColor4fv(color);
   drawSphere(&ball->position, ball->radius, 36, 24);
@@ -176,6 +198,12 @@ Render::Render(QWidget *parent)
   cameraAngleX = 30;
   cameraAngleY = -312;
   cameraDistance = 14.4;
+  //cameraAngleX = 0;
+  //cameraAngleY = 0;
+  //cameraDistance = 0;
+  
+  mouseScaleX = 1;
+  mouseScaleY = 1;
 }
 
 Render::~Render(void) {
@@ -221,7 +249,8 @@ void Render::initializeGL() {
 }
 
 void screenCoordsToWorld(float winX, float winY,
-    float *worldX, float *worldY, float *worldZ){
+    float *worldNearX, float *worldNearY, float *worldNearZ,
+    float *worldFarX, float *worldFarY, float *worldFarZ){
   GLint viewport[4];
   GLdouble modelview[16];
   GLdouble projection[16];
@@ -234,15 +263,46 @@ void screenCoordsToWorld(float winX, float winY,
 
   winX = (float)winX;
   winY = (float)viewport[3] - (float)winY;
+  
   winZ = 0;
-
   gluUnProject((GLdouble)winX, (GLdouble)winY, (GLdouble)winZ,
     (const GLdouble *)modelview, (const GLdouble *)projection, viewport,
     &x, &y, &z);
+  *worldNearX = (float)x;
+  *worldNearY = (float)y;
+  *worldNearZ = (float)z;
+  {
+    vec3 origin = {(float)x, (float)y, (float)z};
+    drawDebugPoint(&origin, 0);
+  }
   
-  *worldX = (float)x;
-  *worldY = (float)y;
-  *worldZ = (float)z;
+  winZ = 1;
+  gluUnProject((GLdouble)winX, (GLdouble)winY, (GLdouble)winZ,
+    (const GLdouble *)modelview, (const GLdouble *)projection, viewport,
+    &x, &y, &z);
+  *worldFarX = (float)x;
+  *worldFarY = (float)y;
+  *worldFarZ = (float)z;
+  {
+    vec3 origin = {(float)x, (float)y, (float)z};
+    drawDebugPoint(&origin, 1);
+  }
+  
+  {
+    vec3 topOrigin = {*worldNearX, *worldNearY, *worldNearZ};
+    vec3 bottomOrigin = {*worldFarX, *worldFarY, *worldFarZ};
+    glDisable(GL_LIGHTING);
+
+    // x z plane
+    glBegin(GL_LINES);
+      glColor3f(0.0, 0.0, 0.0);
+      glVertex3f(topOrigin.x, topOrigin.y, topOrigin.z);
+      glVertex3f(bottomOrigin.x, bottomOrigin.y, bottomOrigin.z);
+    glEnd();
+
+    glEnable(GL_LIGHTING);
+    //drawCylinder(&topOrigin, &bottomOrigin, 0.1, 36, 24);
+  }
 }
 
 #include "../data/bmesh_test_2.h"
@@ -254,7 +314,7 @@ void Render::paintGL() {
   debugOutputTop = 0;
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+  
   glPushMatrix();
 
   glTranslatef(0, 0, -cameraDistance);
@@ -264,16 +324,18 @@ void Render::paintGL() {
   glColor3f(0, 0, 0);
   drawDebugPrintf("cameraAngleX:%f cameraAngleY:%f cameraDistance:%f",
     cameraAngleX, cameraAngleY, cameraDistance);
+  
+  screenCoordsToWorld(_this->mouseX, _this->mouseY,
+    &_this->mouseWorldNearX, &_this->mouseWorldNearY, &_this->mouseWorldNearZ,
+    &_this->mouseWorldFarX, &_this->mouseWorldFarY, &_this->mouseWorldFarZ);
+  glColor3f(0.0f, 0.0f, 0.0f);
+  drawDebugPrintf("%d,%d -> %f,%f,%f %f,%f,%f", _this->mouseX, _this->mouseY,
+    _this->mouseWorldNearX, _this->mouseWorldNearY, _this->mouseWorldNearZ,
+    _this->mouseWorldFarX, _this->mouseWorldFarY, _this->mouseWorldFarZ);
 
   drawGrid(10, 1);
 
   glEnable(GL_LIGHTING);
-  
-  screenCoordsToWorld(_this->mouseX, _this->mouseY,
-    &_this->mouseWorldX, &_this->mouseWorldY, &_this->mouseWorldZ);
-  glColor3f(0.0f, 0.0f, 0.0f);
-  drawDebugPrintf("%d,%d -> %f,%f,%f", _this->mouseX, _this->mouseY,
-    _this->mouseWorldX, _this->mouseWorldY, _this->mouseWorldZ);
 
   if (0 == bm) {
     bmeshBall ball;
@@ -363,6 +425,9 @@ void Render::paintGL() {
 }
 
 void Render::resizeGL(int w, int h) {
+  mouseScaleX = w / width();
+  mouseScaleY = h / height();
+  
   glViewport(0, 0, (GLsizei)w, (GLsizei)h);
 
   glMatrixMode(GL_PROJECTION);
@@ -385,16 +450,18 @@ void drawTestUnproject(void) {
 }*/
 
 void Render::mousePressEvent(QMouseEvent *event) {
-  mouseX = event->x();
-  mouseY = event->y();
+  mouseX = event->x() * mouseScaleX;
+  mouseY = event->y() * mouseScaleY;
 }
 
 void Render::mouseMoveEvent(QMouseEvent *event) {
-  cameraAngleY += (event->x() - mouseX);
-  cameraAngleX += (event->y() - mouseY);
+  int x = event->x() * mouseScaleX;
+  int y = event->y() * mouseScaleY;
+  cameraAngleY += (x - mouseX);
+  cameraAngleX += (y - mouseY);
   update();
-  mouseX = event->x();
-  mouseY = event->y();
+  mouseX = x;
+  mouseY = y;
 }
 
 void Render::wheelEvent(QWheelEvent * event) {

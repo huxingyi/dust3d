@@ -65,13 +65,15 @@ I follow the B-Mesh paper, made another test module inside Blender, and created 
 <img src="screenshot/dust3d_subdivide_catmull_clark.png" width="124" height="128">  <img src="screenshot/dust3d_bmesh_subdivide_2.png" width="124" height="128">    
 There is a implementation of Catmull-Clark Subdivision algorithm on [rosettacode](https://rosettacode.org/wiki/Catmull%E2%80%93Clark_subdivision_surface/C), the code is very simple and beautiful, just lack of some memory alloc fail check. I translated the algorithm to use my own array implementation.  
 Now, the render result looks not bad after 2 times of subdivisions. I would like to mark this todo as done, though there are more polish steps on the original paper, I just leave it as to be done in the future.
-- [ ] Export Wavefront .obj  
 - [x] Render B-Mesh result  
 This todo already done in the B-Mesh algorithm implementation.  
-- [ ] Design UI for monster parts configuration  
-- [ ] Test B-Mesh realtime generation with UI  
+- [ ] Design UI for monster parts configuration (Jan 17, 2017 ~ Jan 18, 2017)  
+  *Skeleton Editor*  
+  There is good tutorial introduced how to implement object selection by mouse in OpenGL, written by [Bartek](http://www.bfilipek.com/2012/06/select-mouse-opengl.html).  
+  But there is a big pain in the progress of implement the object selection logic, because of resizeGL, the width and height which passed in as parameters of this function is not equal to the size of the window.
 - [ ] Render rigid animation  
 - [ ] png exporter for isometric 2.5D game  
+- [ ] Export Wavefront .obj
+- [ ] Materials merge of different parts      
 - [ ] Version 0.01 release  
-- [ ] Materials merge of different parts     
 - [ ] Implement [the Skeleton of a Closed 3D Shape](http://www1.idc.ac.il/icgf/GraphicsSeminar2006/DCGskeleton06.pdf)  

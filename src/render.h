@@ -21,9 +21,14 @@ protected:
 public:
   int mouseX;
   int mouseY;
-  float mouseWorldX;
-  float mouseWorldY;
-  float mouseWorldZ;
+  float mouseScaleX;
+  float mouseScaleY;
+  float mouseWorldNearX;
+  float mouseWorldNearY;
+  float mouseWorldNearZ;
+  float mouseWorldFarX;
+  float mouseWorldFarY;
+  float mouseWorldFarZ;
   float cameraAngleX;
   float cameraAngleY;
   float cameraDistance;
