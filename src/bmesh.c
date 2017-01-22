@@ -924,8 +924,11 @@ static int bmeshAddWallsBetweenQuadsToModel(bmesh *bm, vec3 *origin, quad *q1,
   vec3 o2v;
   matchTwoFaces(q1, q2);
   for (i = 0; i < 4; ++i) {
-    quad wall = {{q1->pt[i], q2->pt[i],
-      q2->pt[(i + 1) % 4], q1->pt[(i + 1) % 4]}};
+	quad wall;
+	wall.pt[0] = q1->pt[i];
+	wall.pt[1] = q2->pt[i];
+	wall.pt[2] = q2->pt[(i + 1) % 4];
+	wall.pt[3] = q1->pt[(i + 1) % 4];
     vec3Normal(&wall.pt[0], &wall.pt[1], &wall.pt[2], &normal);
     vec3Sub(&wall.pt[0], origin, &o2v);
     if (vec3DotProduct(&o2v, &normal) < 0) {

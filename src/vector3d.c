@@ -2,6 +2,10 @@
 #include "vector3d.h"
 #include "matrix.h"
 
+#ifndef M_PI
+#define M_PI 3.1415926
+#endif
+
 float vec3Length(vec3 *p) {
   double mag;
   mag = p->x * p->x + p->y * p->y + p->z * p->z;
