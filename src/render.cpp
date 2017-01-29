@@ -9,7 +9,7 @@
 #include "vector3d.h"
 #include "subdivide.h"
 
-static const float bmeshBallColors[][4] {
+static const float bmeshBallColors[][4] = {
   {0.00, 0.78, 1.00, 0.5},
   {1.00, 0.00, 0.00, 0.5},
   {1.00, 1.00, 1.00, 0.5}

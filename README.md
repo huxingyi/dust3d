@@ -17,6 +17,11 @@ Build
 $ cd build
 $ qmake -spec macx-xcode
 ```
+*Generate VC Project*
+```
+$ cd build
+$ qmake -tp vc
+```
 *Generate Makefile*
 ```
 $ cd build

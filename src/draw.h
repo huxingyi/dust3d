@@ -3,7 +3,8 @@
 #include "3dstruct.h"
 #ifdef __APPLE__
 #include <OpenGL/glu.h>
-#else
+#elif defined(_WIN32)
+#include <windows.h>
 #include <GL/glu.h>
 #endif
 
