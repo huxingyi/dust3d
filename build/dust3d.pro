@@ -18,7 +18,8 @@ SOURCES += main.cpp \
   convexhull.c \
   hashtable.c \
   osutil.cpp \
-  subdivide.c
+  subdivide.c \
+  skinnedmesh.c
 
 HEADERS += mainwindow.h \
 	render.h \
@@ -31,4 +32,5 @@ HEADERS += mainwindow.h \
   hashtable.h \
   3dstruct.h \
   osutil.h \
-  subdivide.h
+  subdivide.h \
+  skinnedmesh.h
