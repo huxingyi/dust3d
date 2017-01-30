@@ -8,10 +8,12 @@ extern "C" {
 typedef struct array array;
 
 array *arrayCreate(int nodeSize);
+int arrayGetNodeSize(array *arr);
 void *arrayGetItem(array *arr, int index);
 int arrayGetLength(array *arr);
-int arraySetLength(array *arr, int length);
+void arraySetLength(array *arr, int length);
 void *arrayNewItem(array *arr);
+void *arrayNewItemClear(array *arr);
 void arrayDestroy(array *arr);
 
 #ifdef __cplusplus

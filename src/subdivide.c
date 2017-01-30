@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "dmemory.h"
 #include "subdivide.h"
 #include "draw.h"
 
@@ -82,34 +83,14 @@ static void initFace(subdivFace *f) {
 }
 
 subdivModel *subdivCreateModel(void) {
-  subdivModel *model = (subdivModel *)calloc(1, sizeof(subdivModel));
-  if (!model) {
-    fprintf(stderr, "%s:Insufficient memory.\n", __FUNCTION__);
-    return 0;
-  }
+  subdivModel *model = (subdivModel *)dcalloc(1, sizeof(subdivModel));
   model->faceLink = -1;
   model->edgeLink = -1;
   model->vertexLink = -1;
   model->vertexArray = arrayCreate(sizeof(subdivVertex));
-  if (!model->vertexArray) {
-    fprintf(stderr, "%s:Insufficient memory.\n", __FUNCTION__);
-    return 0;
-  }
   model->faceArray = arrayCreate(sizeof(subdivFace));
-  if (!model->faceArray) {
-    fprintf(stderr, "%s:Insufficient memory.\n", __FUNCTION__);
-    return 0;
-  }
   model->edgeArray = arrayCreate(sizeof(subdivEdge));
-  if (!model->edgeArray) {
-    fprintf(stderr, "%s:Insufficient memory.\n", __FUNCTION__);
-    return 0;
-  }
   model->indexArray = arrayCreate(sizeof(subdivLink));
-  if (!model->indexArray) {
-    fprintf(stderr, "%s:Insufficient memory.\n", __FUNCTION__);
-    return 0;
-  }
   return model;
 }
 
@@ -119,18 +100,15 @@ void subdivDestroyModel(subdivModel *model) {
     arrayDestroy(model->faceArray);
     arrayDestroy(model->edgeArray);
     arrayDestroy(model->indexArray);
-    free(model);
+    dfree(model);
   }
 }
 
 static int allocLink(subdivModel *model, int index) {
   subdivLink *linkItem;
   int newLink = arrayGetLength(model->indexArray);
-  if (0 != arraySetLength(model->indexArray, newLink + 1)) {
-    fprintf(stderr, "%s:arraySetLength failed.\n", __FUNCTION__);
-    return -1;
-  }
-  linkItem = (subdivLink *)arrayGetItem(model->indexArray, newLink);
+  arraySetLength(model->indexArray, newLink + 1);
+  linkItem = arrayGetItem(model->indexArray, newLink);
   linkItem->index = index;
   linkItem->nextLink = -1;
   return newLink;
@@ -142,25 +120,21 @@ static int subdivLinkElement(subdivModel *model, int current, int order) {
   subdivLink *linkItem;
   iterator = current;
   for (i = 0; i <= order && -1 != iterator; ++i) {
-    linkItem = (subdivLink *)arrayGetItem(model->indexArray, iterator);
+    linkItem = arrayGetItem(model->indexArray, iterator);
     element = linkItem->index;
     iterator = linkItem->nextLink;
   }
   return element;
 }
 
-static int pushLink(subdivModel *model, int *link, int *num, int index) {
+static void pushLink(subdivModel *model, int *link, int *num, int index) {
   int newLink = allocLink(model, index);
   int i, iterator;
   subdivLink *linkItem = 0;
-  if (-1 == newLink) {
-    fprintf(stderr, "%s:allocLink failed.\n", __FUNCTION__);
-    return -1;
-  }
   if (-1 != *link) {
     iterator = *link;
     for (i = 0; i < *num; ++i) {
-      linkItem = (subdivLink *)arrayGetItem(model->indexArray, iterator);
+      linkItem = arrayGetItem(model->indexArray, iterator);
       iterator = linkItem->nextLink;
     }
     linkItem->nextLink = newLink;
@@ -168,34 +142,23 @@ static int pushLink(subdivModel *model, int *link, int *num, int index) {
     *link = newLink;
   }
   (*num)++;
-  return 0;
 }
 
 static subdivVertex *allocVertex(subdivModel *model) {
   subdivVertex *vertex;
   int newVertexIndex = arrayGetLength(model->vertexArray);
-  if (0 != arraySetLength(model->vertexArray, newVertexIndex + 1)) {
-    fprintf(stderr, "%s:arraySetLength failed.\n", __FUNCTION__);
-    return 0;
-  }
+  arraySetLength(model->vertexArray, newVertexIndex + 1);
   vertex = arrayGetItem(model->vertexArray, newVertexIndex);
   initVertex(vertex);
   vertex->index = newVertexIndex;
-  if (0 != pushLink(model, &model->vertexLink, &model->vertexNum,
-      vertex->index)) {
-    fprintf(stderr, "%s:pushLink failed.\n", __FUNCTION__);
-    return -1;
-  }
+  pushLink(model, &model->vertexLink, &model->vertexNum, vertex->index);
   return vertex;
 }
 
 static subdivEdge *allocEdge(subdivModel *model) {
   subdivEdge *edge;
   int newEdgeIndex = arrayGetLength(model->edgeArray);
-  if (0 != arraySetLength(model->edgeArray, newEdgeIndex + 1)) {
-    fprintf(stderr, "%s:arraySetLength failed.\n", __FUNCTION__);
-    return 0;
-  }
+  arraySetLength(model->edgeArray, newEdgeIndex + 1);
   edge = arrayGetItem(model->edgeArray, newEdgeIndex);
   initEdge(edge);
   edge->index = newEdgeIndex;
@@ -205,10 +168,7 @@ static subdivEdge *allocEdge(subdivModel *model) {
 static subdivFace *allocFace(subdivModel *model) {
   subdivFace *face;
   int newFaceIndex = arrayGetLength(model->faceArray);
-  if (0 != arraySetLength(model->faceArray, newFaceIndex + 1)) {
-    fprintf(stderr, "%s:arraySetLength failed.\n", __FUNCTION__);
-    return 0;
-  }
+  arraySetLength(model->faceArray, newFaceIndex + 1);
   face = arrayGetItem(model->faceArray, newFaceIndex);
   initFace(face);
   face->index = newFaceIndex;
@@ -219,21 +179,21 @@ static subdivVertex *getVertex(subdivModel *model, int index) {
   if (-1 == index) {
     return 0;
   }
-  return (subdivVertex *)arrayGetItem(model->vertexArray, index);
+  return arrayGetItem(model->vertexArray, index);
 }
 
 static subdivEdge *getEdge(subdivModel *model, int index) {
   if (-1 == index) {
     return 0;
   }
-  return (subdivEdge *)arrayGetItem(model->edgeArray, index);
+  return arrayGetItem(model->edgeArray, index);
 }
 
 static subdivFace *getFace(subdivModel *model, int index) {
   if (-1 == index) {
     return 0;
   }
-  return (subdivFace *)arrayGetItem(model->faceArray, index);
+  return arrayGetItem(model->faceArray, index);
 }
 
 static int isHoleEdge(subdivModel *model, int e) {
@@ -250,10 +210,6 @@ static int edgePoint(subdivModel *model, int e) {
   int nv = getEdge(model, e)->edgePt;
   if (-1 == nv) {
     subdivVertex *newVertex = allocVertex(model);
-    if (!newVertex) {
-      fprintf(stderr, "%s:allocVertex failed.\n", __FUNCTION__);
-      return 0;
-    }
     nv = newVertex->index;
     getEdge(model, e)->edgePt = nv;
     getEdge(model, e)->avg = getVertex(model, getEdge(model, e)->v[0])->v;
@@ -266,15 +222,11 @@ static int edgePoint(subdivModel *model, int e) {
       while (-1 != iterator) {
         int f;
         int fp;
-        subdivLink *linkItem = (subdivLink *)arrayGetItem(model->indexArray,
+        subdivLink *linkItem = arrayGetItem(model->indexArray,
           iterator);
         f = linkItem->index;
         iterator = linkItem->nextLink;
         fp = facePoint(model, f);
-        if (-1 == fp) {
-          fprintf(stderr, "%s:facePoint failed.\n", __FUNCTION__);
-          return 0;
-        }
         vec3Add(&getVertex(model, nv)->v, &getVertex(model, fp)->v,
           &getVertex(model, nv)->v);
       }
@@ -293,18 +245,13 @@ static int facePoint(subdivModel *model, int f) {
     int iterator;
     int i;
     subdivVertex *newVertex = allocVertex(model);
-    if (!newVertex) {
-      fprintf(stderr, "%s:allocVertex failed.\n", __FUNCTION__);
-      return 0;
-    }
     nv = newVertex->index;
     getFace(model, f)->avg = nv;
     iterator = getFace(model, f)->vertexLink;
     i = 0;
     while (-1 != iterator) {
       int p;
-      subdivLink *linkItem = (subdivLink *)arrayGetItem(model->indexArray,
-        iterator);
+      subdivLink *linkItem = arrayGetItem(model->indexArray, iterator);
       p = linkItem->index;
       iterator = linkItem->nextLink;
       if (!i) {
@@ -345,27 +292,19 @@ static int updatedPoint(subdivModel *model, int p) {
   }
 
   newVertex = allocVertex(model);
-  if (!newVertex) {
-    fprintf(stderr, "%s:allocVertex failed.\n", __FUNCTION__);
-    return 0;
-  }
   nv = newVertex->index;
   getVertex(model, p)->newVertexIndex = nv;
   if (isHoleVertex(model, p)) {
     getVertex(model, nv)->v = getVertex(model, p)->v;
     iterator = getVertex(model, p)->edgeLink;
     while (-1 != iterator) {
-      link = (subdivLink *)arrayGetItem(model->indexArray, iterator);
+      link = arrayGetItem(model->indexArray, iterator);
       e = link->index;
       iterator = link->nextLink;
       if (!isHoleEdge(model, e)) {
         continue;
       }
       ep = edgePoint(model, e);
-      if (-1 == ep) {
-        fprintf(stderr, "%s:edgePoint failed.\n", __FUNCTION__);
-        return 0;
-      }
       vec3Add(&getVertex(model, nv)->v, &getVertex(model, ep)->v,
         &getVertex(model, nv)->v);
       n++;
@@ -376,26 +315,18 @@ static int updatedPoint(subdivModel *model, int p) {
     n = getVertex(model, p)->faceNum;
     iterator = getVertex(model, p)->faceLink;
     while (-1 != iterator) {
-      link = (subdivLink *)arrayGetItem(model->indexArray, iterator);
+      link = arrayGetItem(model->indexArray, iterator);
       f = link->index;
       iterator = link->nextLink;
       facePt = facePoint(model, f);
-      if (-1 == facePt) {
-        fprintf(stderr, "%s:facePoint failed.\n", __FUNCTION__);
-        return 0;
-      }
       vec3Add(&sum, &getVertex(model, facePt)->v, &sum);
     }
     iterator = getVertex(model, p)->edgeLink;
     while (-1 != iterator) {
-      link = (subdivLink *)arrayGetItem(model->indexArray, iterator);
+      link = arrayGetItem(model->indexArray, iterator);
       e = link->index;
       iterator = link->nextLink;
       ep = edgePoint(model, e);
-      if (-1 == ep) {
-        fprintf(stderr, "%s:edgePoint failed.\n", __FUNCTION__);
-        return 0;
-      }
       scaleAdd(&sum, &getVertex(model, ep)->v, 2, &sum);
     }
     vec3Scale(&sum, 1.0 / n, &sum);
@@ -407,7 +338,7 @@ static int updatedPoint(subdivModel *model, int p) {
   return nv;
 }
 
-int subdivCalculteNorms(subdivModel *model) {
+void subdivCalculteNorms(subdivModel *model) {
   int i, j, n;
   int faceIterator;
   int nextFaceIterator;
@@ -423,16 +354,16 @@ int subdivCalculteNorms(subdivModel *model) {
   faceIterator = model->faceLink;
   j = 0;
   while (-1 != faceIterator) {
-    linkItem = (subdivLink *)arrayGetItem(model->indexArray, faceIterator);
+    linkItem = arrayGetItem(model->indexArray, faceIterator);
     f = getFace(model, linkItem->index);
     nextFaceIterator = linkItem->nextLink;
     vertexIterator = f->vertexLink;
     n = f->vertexNum;
     i = 0;
     while (-1 != vertexIterator) {
-      linkItem = (subdivLink *)arrayGetItem(model->indexArray, faceIterator);
+      linkItem = arrayGetItem(model->indexArray, faceIterator);
       f = getFace(model, linkItem->index);
-      linkItem = (subdivLink *)arrayGetItem(model->indexArray, vertexIterator);
+      linkItem = arrayGetItem(model->indexArray, vertexIterator);
       v = getVertex(model, linkItem->index);
       vertexIterator = linkItem->nextLink;
       v0 = getVertex(model,
@@ -454,13 +385,13 @@ int subdivCalculteNorms(subdivModel *model) {
 
   vertexIterator = model->vertexLink;
   while (-1 != vertexIterator) {
-    linkItem = (subdivLink *)arrayGetItem(model->indexArray, vertexIterator);
+    linkItem = arrayGetItem(model->indexArray, vertexIterator);
     v = getVertex(model, linkItem->index);
     nextVertexIterator = linkItem->nextLink;
     faceIterator = v->faceLink;
     j = 0;
     while (-1 != faceIterator) {
-      linkItem = (subdivLink *)arrayGetItem(model->indexArray, faceIterator);
+      linkItem = arrayGetItem(model->indexArray, faceIterator);
       f = getFace(model, linkItem->index);
       faceIterator = linkItem->nextLink;
       vec3Add(&v->avgNorm, &f->norm, &v->avgNorm);
@@ -471,8 +402,6 @@ int subdivCalculteNorms(subdivModel *model) {
     }
     vertexIterator = nextVertexIterator;
   }
-
-  return 0;
 }
 
 void subdivDrawModel(subdivModel *model) {
@@ -484,13 +413,13 @@ void subdivDrawModel(subdivModel *model) {
   faceIterator = model->faceLink;
   glColor4f(1.0, 1.0, 1.0, 1.0);
   while (-1 != faceIterator) {
-    linkItem = (subdivLink *)arrayGetItem(model->indexArray, faceIterator);
+    linkItem = arrayGetItem(model->indexArray, faceIterator);
     f = getFace(model, linkItem->index);
     faceIterator = linkItem->nextLink;
     vertexIterator = f->vertexLink;
     glBegin(GL_POLYGON);
     while (-1 != vertexIterator) {
-      linkItem = (subdivLink *)arrayGetItem(model->indexArray, vertexIterator);
+      linkItem = arrayGetItem(model->indexArray, vertexIterator);
       v = getVertex(model, linkItem->index);
       vertexIterator = linkItem->nextLink;
       glNormal3fv(&(f->norm.x));
@@ -512,48 +441,24 @@ subdivModel *subdivCatmullClark(subdivModel *model) {
   subdivModel *outputModel;
   
   outputModel = subdivCreateModel();
-  if (!outputModel) {
-    fprintf(stderr, "%s:subdivCreateModel failed.\n", __FUNCTION__);
-    return 0;
-  }
 
   faceIterator = model->faceLink;
   while (-1 != faceIterator) {
-    linkItem = (subdivLink *)arrayGetItem(model->indexArray, faceIterator);
+    linkItem = arrayGetItem(model->indexArray, faceIterator);
     f = linkItem->index;
     j = 0;
     nextFaceIterator = linkItem->nextLink;
     vertexIterator = getFace(model, f)->vertexLink;
     while (-1 != vertexIterator) {
-      linkItem = (subdivLink *)arrayGetItem(model->indexArray, vertexIterator);
+      linkItem = arrayGetItem(model->indexArray, vertexIterator);
       p = linkItem->index;
       vertexIterator = linkItem->nextLink;
       ai = updatedPoint(model, p);
-      if (-1 == ai) {
-        fprintf(stderr, "%s:updatedPoint failed.\n", __FUNCTION__);
-        subdivDestroyModel(outputModel);
-        return 0;
-      }
       bi = edgePoint(model, subdivLinkElement(model,
         getFace(model, f)->edgeLink, (j + 1) % getFace(model, f)->edgeNum));
-      if (-1 == bi) {
-        fprintf(stderr, "%s:edgePoint failed.\n", __FUNCTION__);
-        subdivDestroyModel(outputModel);
-        return 0;
-      }
       ci = facePoint(model, f);
-      if (-1 == ci) {
-        fprintf(stderr, "%s:facePoint failed.\n", __FUNCTION__);
-        subdivDestroyModel(outputModel);
-        return 0;
-      }
       di = edgePoint(model, subdivLinkElement(model,
         getFace(model, f)->edgeLink, j));
-      if (-1 == di) {
-        fprintf(stderr, "%s:edgePoint failed.\n", __FUNCTION__);
-        subdivDestroyModel(outputModel);
-        return 0;
-      }
       a = getVertex(model, ai)->indexOnNewModel;
       if (-1 == a) {
         a = subdivAddVertex(outputModel, &getVertex(model, ai)->v);
@@ -574,36 +479,19 @@ subdivModel *subdivCatmullClark(subdivModel *model) {
         d = subdivAddVertex(outputModel, &getVertex(model, di)->v);
         getVertex(model, di)->indexOnNewModel = d;
       }
-      if (-1 == a || -1 == b || -1 == c || -1 == d) {
-        fprintf(stderr, "%s:subdivAddVertex failed.\n", __FUNCTION__);
-        subdivDestroyModel(outputModel);
-        return 0;
-      }
-      if (-1 == subdivAddQuadFace(outputModel, a, b, c, d)) {
-        fprintf(stderr, "%s:subdivAddFace failed.\n", __FUNCTION__);
-        subdivDestroyModel(outputModel);
-        return 0;
-      }
+      subdivAddQuadFace(outputModel, a, b, c, d);
       ++j;
     }
     faceIterator = nextFaceIterator;
   }
   
-  if (0 != subdivCalculteNorms(outputModel)) {
-    fprintf(stderr, "%s:subdivCalculteNorms failed.\n", __FUNCTION__);
-    subdivDestroyModel(outputModel);
-    return 0;
-  }
-
+  subdivCalculteNorms(outputModel);
+  
   return outputModel;
 }
 
 int subdivAddVertex(subdivModel *model, vec3 *v) {
   subdivVertex *newVertex = allocVertex(model);
-  if (!newVertex) {
-    fprintf(stderr, "%s:allocVertex failed.\n", __FUNCTION__);
-    return -1;
-  }
   newVertex->v = *v;
   return newVertex->index;
 }
@@ -612,27 +500,13 @@ static int subdivAddEdge(subdivModel *model, int p1, int p2) {
   subdivEdge *newEdge = allocEdge(model);
   subdivVertex *v1;
   subdivVertex *v2;
-  if (!newEdge) {
-    fprintf(stderr, "%s:allocEdge failed.\n", __FUNCTION__);
-    return -1;
-  }
   newEdge->v[0] = p1;
   newEdge->v[1] = p2;
   v1 = getVertex(model, p1);
   v2 = getVertex(model, p2);
-  if (-1 == pushLink(model, &v1->edgeLink, &v1->edgeNum, newEdge->index)) {
-    fprintf(stderr, "%s:pushLink failed.\n", __FUNCTION__);
-    return -1;
-  }
-  if (-1 == pushLink(model, &v2->edgeLink, &v2->edgeNum, newEdge->index)) {
-    fprintf(stderr, "%s:pushLink failed.\n", __FUNCTION__);
-    return -1;
-  }
-  if (-1 == pushLink(model, &model->edgeLink, &model->edgeNum,
-      newEdge->index)) {
-    fprintf(stderr, "%s:pushLink failed.\n", __FUNCTION__);
-    return -1;
-  }
+  pushLink(model, &v1->edgeLink, &v1->edgeNum, newEdge->index);
+  pushLink(model, &v2->edgeLink, &v2->edgeNum, newEdge->index);
+  pushLink(model, &model->edgeLink, &model->edgeNum, newEdge->index);
   return newEdge->index;
 }
 
@@ -643,7 +517,7 @@ static int subdivEdgeByVertexs(subdivModel *model, int p1, int p2) {
   int newEdgeIndex;
   int iterator = v1->edgeLink;
   while (-1 != iterator) {
-    linkItem = (subdivLink *)arrayGetItem(model->indexArray, iterator);
+    linkItem = arrayGetItem(model->indexArray, iterator);
     e = getEdge(model, linkItem->index);
     iterator = linkItem->nextLink;
     if (e->v[0] == p2 || e->v[1] == p2) {
@@ -660,44 +534,21 @@ static int subdivAddFace(subdivModel *model, int *vertexs, int vertexNum) {
   int p0, p1;
   int newFaceIndex;
   int edgeIndex;
-  if (!f) {
-    fprintf(stderr, "%s:allocFace failed.\n", __FUNCTION__);
-    return -1;
-  }
   newFaceIndex = f->index;
-  if (0 != pushLink(model, &model->faceLink, &model->faceNum, newFaceIndex)) {
-    fprintf(stderr, "%s:pushLink failed.\n", __FUNCTION__);
-    return -1;
-  }
+  pushLink(model, &model->faceLink, &model->faceNum, newFaceIndex);
   p0 = vertexs[0];
   for (i = 1; i <= vertexNum; ++i, p0 = p1) {
     subdivVertex *v1;
     subdivEdge *e;
     p1 = vertexs[i % vertexNum];
     v1 = getVertex(model, p1);
-    if (0 != pushLink(model, &v1->faceLink, &v1->faceNum, newFaceIndex)) {
-      fprintf(stderr, "%s:pushLink failed.\n", __FUNCTION__);
-      return -1;
-    }
+    pushLink(model, &v1->faceLink, &v1->faceNum, newFaceIndex);
     edgeIndex = subdivEdgeByVertexs(model, p0, p1);
-    if (-1 == edgeIndex) {
-      fprintf(stderr, "%s:subdivEdgeByVertexs failed.\n", __FUNCTION__);
-      return -1;
-    }
     e = getEdge(model, edgeIndex);
-    if (0 != pushLink(model, &e->faceLink, &e->faceNum, newFaceIndex)) {
-      fprintf(stderr, "%s:pushLink failed.\n", __FUNCTION__);
-      return -1;
-    }
+    pushLink(model, &e->faceLink, &e->faceNum, newFaceIndex);
     f = getFace(model, newFaceIndex);
-    if (0 != pushLink(model, &f->edgeLink, &f->edgeNum, edgeIndex)) {
-      fprintf(stderr, "%s:pushLink failed.\n", __FUNCTION__);
-      return -1;
-    }
-    if (0 != pushLink(model, &f->vertexLink, &f->vertexNum, p1)) {
-      fprintf(stderr, "%s:pushLink failed.\n", __FUNCTION__);
-      return -1;
-    }
+    pushLink(model, &f->edgeLink, &f->edgeNum, edgeIndex);
+    pushLink(model, &f->vertexLink, &f->vertexNum, p1);
   }
   return newFaceIndex;
 }
@@ -712,7 +563,7 @@ int subdivAddQuadFace(subdivModel *model, int p1, int p2, int p3, int p4) {
   return subdivAddFace(model, vertexs, 4);
 }
 
-int subdivAddCube(subdivModel *model) {
+void subdivAddCube(subdivModel *model) {
   int x, y, z;
   for (x = -1; x <= 1; x += 2) {
     for (y = -1; y <= 1; y += 2) {
@@ -729,28 +580,17 @@ int subdivAddCube(subdivModel *model) {
 	subdivAddQuadFace(model, 0, 2, 6, 4);
 	subdivAddQuadFace(model, 5, 7, 3, 1);
   subdivCalculteNorms(model);
-  return 0;
 }
 
 subdivModel *subdivCatmullClarkWithLoops(subdivModel *model, int loops) {
   int i;
   subdivModel *outputModel;
   outputModel = subdivCatmullClark(model);
-  if (!outputModel) {
-    fprintf(stderr, "%s:subdivCatmullClark failed.\n", __FUNCTION__);
-    return 0;
-  }
   for (i = 1; i < loops; ++i) {
     subdivModel *loopInput = outputModel;
     outputModel = subdivCatmullClark(loopInput);
     subdivDestroyModel(loopInput);
-    if (!outputModel) {
-      fprintf(stderr, "%s:subdivCatmullClark failed(loops:%d i:%d).\n",
-        __FUNCTION__, loops, i);
-      return 0;
-    }
   }
-  drawDebugPrintf("faces: %d", outputModel->faceNum);
   subdivDrawModel(outputModel);
   return outputModel;
 }

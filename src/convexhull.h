@@ -23,12 +23,12 @@ convexHull *convexHullCreate(void);
 int convexHullAddVertex(convexHull *hull, vec3 *vertex, int plane,
   int orderOnPlane);
 void convexHullDestroy(convexHull *hull);
-int convexHullGenerate(convexHull *hull);
-int convexHullUnifyNormals(convexHull *hull, vec3 *origin);
-int convexHullMergeTriangles(convexHull *hull);
+void convexHullGenerate(convexHull *hull);
+void convexHullUnifyNormals(convexHull *hull, vec3 *origin);
+void convexHullMergeTriangles(convexHull *hull);
 int convexHullGetFaceNum(convexHull *hull);
 convexHullFace *convexHullGetFace(convexHull *hull, int faceIndex);
 convexHullVertex *convexHullGetVertex(convexHull *hull, int vertexIndex);
-int convexHullAddTodo(convexHull *hull, int vertex1, int vertex2, int vertex3);
+void convexHullAddTodo(convexHull *hull, int vertex1, int vertex2, int vertex3);
 
 #endif

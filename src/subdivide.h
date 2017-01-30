@@ -16,8 +16,8 @@ int subdivAddTriangleFace(subdivModel *model, int p1, int p2, int p3);
 int subdivAddQuadFace(subdivModel *model, int p1, int p2, int p3, int p4);
 subdivModel *subdivCatmullClark(subdivModel *model);
 subdivModel *subdivCatmullClarkWithLoops(subdivModel *model, int loops);
-int subdivAddCube(subdivModel *model);
-int subdivCalculteNorms(subdivModel *model);
+void subdivAddCube(subdivModel *model);
+void subdivCalculteNorms(subdivModel *model);
 void subdivDrawModel(subdivModel *model);
 
 #ifdef __cplusplus

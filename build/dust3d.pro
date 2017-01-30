@@ -16,10 +16,11 @@ SOURCES += main.cpp \
   bmesh.c \
   matrix.c \
   convexhull.c \
-  hashtable.c \
+  dict.c \
   osutil.cpp \
   subdivide.c \
-  skinnedmesh.c
+  skinnedmesh.c \
+  dmemory.c
 
 HEADERS += mainwindow.h \
 	render.h \
@@ -29,8 +30,9 @@ HEADERS += mainwindow.h \
   bmesh.h \
   matrix.h \
   convexhull.h \
-  hashtable.h \
+  dict.h \
   3dstruct.h \
   osutil.h \
   subdivide.h \
-  skinnedmesh.h
+  skinnedmesh.h \
+  dmemory.h

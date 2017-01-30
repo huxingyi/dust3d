@@ -340,7 +340,7 @@ void Render::paintGL() {
   if (0 == bm) {
     bmeshBall ball;
     bmeshBone bone;
-    int i;
+    unsigned int i;
     bm = bmeshCreate();
 
     for (i = 0; i < sizeof(bmeshTestBalls) / sizeof(bmeshTestBalls[0]); ++i) {

@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include "dmemory.h"
 #include "array.h"
 
 struct array {
@@ -11,34 +12,29 @@ struct array {
 };
 
 array *arrayCreate(int nodeSize) {
-  array *arr = (array *)calloc(1, sizeof(array));
-  if (!arr) {
-    fprintf(stderr, "%s:Insufficient memory.\n", __FUNCTION__);
-    return 0;
-  }
+  array *arr = dcalloc(1, sizeof(array));
   arr->nodeSize = nodeSize;
   return arr;
 }
 
-int arraySetLength(array *arr, int length) {
+int arrayGetNodeSize(array *arr) {
+  return arr->nodeSize;
+}
+
+void arraySetLength(array *arr, int length) {
   char *newNodes;
   if (length > arr->capacity) {
     int newCapacity = (arr->capacity + 1) * 2;
     if (newCapacity < length) {
       newCapacity = length;
     }
-    newNodes = (char *)realloc(arr->nodes, arr->nodeSize * newCapacity);
-    if (!newNodes) {
-      fprintf(stderr, "%s:Insufficient memory.\n", __FUNCTION__);
-      return -1;
-    }
+    newNodes = drealloc(arr->nodes, arr->nodeSize * newCapacity);
     memset(newNodes + arr->nodeSize * arr->capacity, 0,
       arr->nodeSize * (newCapacity - arr->capacity));
     arr->capacity = newCapacity;
     arr->nodes = newNodes;
   }
   arr->length = length;
-  return 0;
 }
 
 void *arrayGetItem(array *arr, int index) {
@@ -54,16 +50,19 @@ int arrayGetLength(array *arr) {
 
 void arrayDestroy(array *arr) {
   if (arr) {
-    free(arr->nodes);
-    free(arr);
+    dfree(arr->nodes);
+    dfree(arr);
   }
 }
 
 void *arrayNewItem(array *arr) {
   int newIndex = arrayGetLength(arr);
-  if (0 != arraySetLength(arr, newIndex + 1)) {
-    fprintf(stderr, "%s:arraySetLength.\n", __FUNCTION__);
-    return 0;
-  }
+  arraySetLength(arr, newIndex + 1);
   return arrayGetItem(arr, newIndex);
+}
+
+void *arrayNewItemClear(array *arr) {
+  void *ptr = arrayNewItem(arr);
+  memset(ptr, 0, arr->nodeSize);
+  return ptr;
 }
