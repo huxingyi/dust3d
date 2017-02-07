@@ -72,10 +72,19 @@ There is a implementation of Catmull-Clark Subdivision algorithm on [rosettacode
 Now, the render result looks not bad after 2 times of subdivisions. I would like to mark this todo as done, though there are more polish steps on the original paper, I just leave it as to be done in the future.
 - [x] Render B-Mesh result  
 This todo already done in the B-Mesh algorithm implementation.  
-- [ ] Design UI for monster parts configuration (Jan 17, 2017 ~ Jan 18, 2017)  
+- [ ] Design UI for monster parts configuration  
+  **Jan 17, 2017 ~ Jan 18, 2017:**    
   *Skeleton Editor*  
-  There is good tutorial introduced how to implement object selection by mouse in OpenGL, written by [Bartek](http://www.bfilipek.com/2012/06/select-mouse-opengl.html).  
-  But there is a big pain in the progress of implement the object selection logic, because of resizeGL, the width and height which passed in as parameters of this function is not equal to the size of the window.
+  There is a good tutorial introduced how to implement object selection by mouse in OpenGL, written by [Bartek](http://www.bfilipek.com/2012/06/select-mouse-opengl.html).  
+  But there is a big pain in the progress of implement the object selection logic, because of resizeGL, the width and height which passed in as parameters of this function is not equal to the size of the window.  
+  **Feb 3, 2017:**  
+  Recently, I submitted a patch(https://developer.blender.org/D2489) to blender to fix a crash bug, because is just a quick fix and I am not familiar with the blender's code, so the patch is not fixing the real problem, though the bug is there, and Gaia Clary fixed it. What I am trying to say is when I was compiling the blender code, there was a real pain to fix some third part dependency and different C++ version problem.  
+  So I reconsidered the GUI of Dust3d, I want remove all the C++ code inevitably including the Qt library. Maybe I need try just use OpenGL to draw the interface in the next step.  
+  **Feb 8, 2017:**  
+  There are lots of changes to the UI part of Dust3D, though not commit yet because of many things have not been finalize.  
+  I removed the Qt, the counterpart of the build system is CMake, and instead of using Qt based OpenGL windows, I am using my own implemented OpenGL support library. I considered using the most popular [Dear ImGui](https://github.com/ocornut/imgui) library, but I really want remove the C++ from the codebase. It's a good start of the skeleton editor UI!  
+  <img src="screenshot/dust3d_imgui.png" width="280" height="266">
+
 - [ ] Render rigid animation  
 - [ ] png exporter for isometric 2.5D game  
 - [ ] Export Wavefront .obj
