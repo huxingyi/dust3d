@@ -11,7 +11,6 @@
 #include "matrix.h"
 #include "convexhull.h"
 #include "subdivide.h"
-#include "draw.h"
 
 #define BMESH_MAX_PARENT_BALL_DEPTH   1000
 #define BMESH_INTVAL_DIST_DIV         10
@@ -547,10 +546,6 @@ static convexHull *createConvexHullForBall(bmesh *bm, int depth,
   for (i = 0; i < arrayGetLength(ballPtrArray); ++i) {
     bmeshBall *ballItem = *((bmeshBall **)arrayGetItem(ballPtrArray, i));
     ballItem->convexHullCount++;
-    drawDebugPrintf("convexHullCount:%d", ballItem->convexHullCount);
-    if (ballItem->convexHullCount == 1) {
-      drawDebugPoint(&ballItem->position, ballItem->index);
-    }
   }
   
   arrayDestroy(ballPtrArray);
@@ -727,7 +722,7 @@ static void bmeshGenerateInbetweenMeshFrom(bmesh *bm, int depth,
       bmeshAddWallsBetweenQuadsToModel(bm, &ball->position, &currentFace,
         &childFace);
       bmeshAddQuadToModel(bm, &childFace);
-      drawQuad(&childFace);
+      //drawQuad(&childFace);
     }
   }
   else if (1 == ball->convexHullCount && !ball->meshGenerated) {

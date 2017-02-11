@@ -1,9 +1,8 @@
-#include <QtGui>
-#include <QtOpenGL>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdarg.h>
+#include <math.h>
 #include "draw.h"
 
 static GLUquadricObj *quadricId = 0;
@@ -88,8 +87,6 @@ int drawCylinder(vec3 *topOrigin, vec3 *bottomOrigin, float radius, int slices,
 }
 
 int drawGrid(float size, float step) {
-  glDisable(GL_LIGHTING);
-
   // x z plane
   glBegin(GL_LINES);
   for (GLfloat i = -size; i <= size; i += step) {
@@ -105,8 +102,6 @@ int drawGrid(float size, float step) {
     }
   }
   glEnd();
-
-  glEnable(GL_LIGHTING);
   return 0;
 }
 
@@ -115,7 +110,8 @@ int drawPrintf(int x, int y, const char *fmt, ...) {
   char text[1024];
   va_start(args, fmt);
   vsnprintf(text, sizeof(text), fmt, args);
-  return drawText(x, y, text);
+  //return drawText(x, y, text);
+  return 0;
 }
 
 static const float drawDebugColors[][4] = {

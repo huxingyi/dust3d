@@ -12,6 +12,10 @@
 extern "C" {
 #endif
 
+#ifndef M_PI
+#define M_PI 3.14159265
+#endif
+
 int drawInit(void);
 int drawSphere(vec3 *origin, float radius, int slices, int stacks);
 void drawTriangle(triangle *poly);

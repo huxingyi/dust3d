@@ -6,7 +6,6 @@
 #include "convexhull.h"
 #include "array.h"
 #include "dict.h"
-#include "draw.h"
 
 //
 // Implement Gift wrapping method which describled in http://dccg.upc.edu/people/vera/wp-content/uploads/2014/11/GA2014-ConvexHulls3D-Roger-Hernando.pdf

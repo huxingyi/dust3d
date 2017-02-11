@@ -13,9 +13,14 @@ typedef struct skinnedMeshVertex {
 } skinnedMeshVertex;
 
 typedef struct skinnedMeshBone {
-  vec3 translation;
+  vec3 position;
   vec3 rotation;
   matrix toRoot;
 } skinnedMeshBone;
+
+typedef struct skinnedMesh skinnedMesh;
+
+skinnedMesh *skinnedMeshCreate(void);
+void skinnedMeshAddBone();
 
 #endif

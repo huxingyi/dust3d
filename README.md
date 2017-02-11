@@ -10,25 +10,6 @@ I was inspired by Jimmy Gunawan's blogs of monster generation, here is the first
 of 3D Articulated Shapes](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.357.7134&rep=rep1&type=pdf)(Authors: Zhongping Ji, Ligang Liu, Yigang Wang). I started to think of monster model generation for game development from years ago, thanks for this paper, Dust3D is achievable now.  
 From my initial thought, Dust3D should be a tool like [Makehuman](http://www.makehuman.org), with more versatile features, not only can make human, but also be able to **generate monsters automatically**.  
 
-Build
-============
-*Generate Xcode Project*  
-```
-$ cd build
-$ qmake -spec macx-xcode
-```
-*Generate VC Project*
-```
-$ cd build
-$ qmake -tp vc
-```
-*Generate Makefile*
-```
-$ cd build
-$ qmake
-$ make
-```
-
 TODO & Progress
 ==============
 - [x] Drawing Primitives (Dec 15, 2016 ~ Dec 17, 2016)   
@@ -83,7 +64,10 @@ This todo already done in the B-Mesh algorithm implementation.
   **Feb 8, 2017:**  
   There are lots of changes to the UI part of Dust3D, though not commit yet because of many things have not been finalize.  
   I removed the Qt, the counterpart of the build system is CMake, and instead of using Qt based OpenGL windows, I am using my own implemented OpenGL support library. I considered using the most popular [Dear ImGui](https://github.com/ocornut/imgui) library, but I really want remove the C++ from the codebase. It's a good start of the skeleton editor UI!  
-  <img src="screenshot/dust3d_imgui.png" width="280" height="266">
+  <img src="screenshot/dust3d_imgui.png" width="280" height="266">  
+  **Feb 11, 2017:**  
+  Qt removed, so C++ removed, but Objective-C imported for just support the OpenGL environment on OSX.  
+  <img src="screenshot/dust3d_glw_preview.png" width="278" height="167">  
 
 - [ ] Render rigid animation  
 - [ ] png exporter for isometric 2.5D game  
