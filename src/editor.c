@@ -10,6 +10,7 @@
 #include "glw.h"
 #include "glw_style.h"
 #include "draw.h"
+#include "skeleton.h"
 #include "bmesh.h"
 
 #define GEN_ID __LINE__
@@ -17,7 +18,7 @@
 #define ED_MODE_EDIT            0
 #define ED_MODE_ANIMATION       1
 
-#define ED_BACKGROUND_COLOR     0xe4e2e4
+#define ED_BACKGROUND_COLOR     0x2b2b2b
 
 #define ED_SIDEBAR_WIDTH        400
 #define ED_SPACING              10
@@ -48,6 +49,7 @@ typedef struct editor {
   int moveMouseX;
   int moveMouseY;
   bmesh *bm;
+  skeleton *skl;
 } editor;
 
 #include "../data/bmesh_test_2.h"
@@ -123,6 +125,10 @@ static void display(glwWin *win) {
       ed->renderTop = glWinY;
       ed->renderWidth = width - 3;
       ed->renderHeight = bottomY - glWinY;
+      
+      if (0 == ed->skl) {
+        ed->skl = skeletonCreate();
+      }
 
       if (0 == ed->bm) {
         bmeshBall ball;
@@ -171,7 +177,7 @@ static void display(glwWin *win) {
       glRotatef(ed->cameraAngleX, 1, 0, 0);
       glRotatef(ed->cameraAngleY, 0, 1, 0);
       
-      drawGrid(10, 1);
+      //drawGrid(10, 1);
       
       glEnable(GL_LIGHTING);
       glEnable(GL_CULL_FACE);

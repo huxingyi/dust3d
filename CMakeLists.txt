@@ -27,6 +27,8 @@ file(GLOB_RECURSE sources
   src/convexhull.c
   src/draw.h
   src/draw.c
+  src/skeleton.h
+  src/skeleton.c
   src/editor.c
 )
 

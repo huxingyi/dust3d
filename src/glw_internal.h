@@ -54,7 +54,8 @@ glwSize glwMeasureText(char *text, glwFont *font);
 unsigned char *glwRenderTextToRGBA(char *text, glwFont *font, glwSize size,
   int *pixelsWide, int *pixelsHigh);
 void glwDrawText(int x, int y, char *text, glwFont *font);
-void glwDrawSystemText(glwWin *win, int x, int y, char *text);
+void glwDrawSystemText(glwWin *win, int x, int y, char *text,
+    unsigned int color);
 glwSize glwMeasureSystemText(glwWin *win, char *text);
 void glwInitSystemFontTexture(glwWin *win);
 void glwInitPrimitives(void);

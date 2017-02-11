@@ -1,6 +1,5 @@
 #include "skeleton.h"
 #include "dmemory.h"
-#include "osutil.h"
 
 struct skeleton {
   skeletonNode *root;
@@ -15,7 +14,6 @@ void skeletonDestroy(skeleton *skl) {
 }
 
 skeletonNode *skeletonNewNode(skeleton *skl) {
-  unsued(skl);
   return dcalloc(1, sizeof(skeletonNode));
 }
 

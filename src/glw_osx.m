@@ -200,10 +200,6 @@ glwWinContext *glwGetWinContext(glwWin *win) {
   }
 }
 
-- (BOOL)isFlipped {
-  return YES;
-}
-
 - (void)mouseUp:(NSEvent*)event {
   [self saveMousePosFromEvent:event];
   glwMouseEvent((glwWin *)self.window, GLW_LEFT_BUTTON, GLW_UP,
@@ -212,6 +208,14 @@ glwWinContext *glwGetWinContext(glwWin *win) {
     self->context.onMouse((glwWin *)self.window, GLW_LEFT_BUTTON, GLW_UP,
       self->context.x, self->context.y);
   }
+}
+
+- (BOOL)isFlipped {
+  return YES;
+}
+
+-(void)windowWillClose:(NSNotification *)notification {
+  [[NSApplication sharedApplication] terminate:nil];
 }
 @end
 

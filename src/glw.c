@@ -9,13 +9,15 @@
 #define M_PI 3.14159265
 #endif
 
-void glwDrawSystemText(glwWin *win, int x, int y, char *text) {
+void glwDrawSystemText(glwWin *win, int x, int y, char *text,
+    unsigned int color) {
   int vleft, vwidth;
   float tleft, twidth;
   glwSystemFontTexture *systemFontTexture = glwGetSystemFontTexture(win);
   
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, systemFontTexture->texId);
+  glColor3f(glwR(color), glwG(color), glwB(color));
   for (vleft = 0; *text; vleft += vwidth, text++) {
     int idx = (*text) - GLW_SYSTEM_FONT_BEGIN_CHAR;
     if (idx < 0 || idx > GLW_SYSTEM_FONT_CHAR_NUM) {
@@ -110,7 +112,8 @@ void glwInitSystemFontTexture(glwWin *win) {
       glBindTexture(GL_TEXTURE_2D, texture);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
       glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-      glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+      //glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+      glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD);
       glTexImage2D(GL_TEXTURE_2D, 0, 4,
         (GLsizei)(systemFontTexture->size.width),
         (GLsizei)(systemFontTexture->size.height), 0,
@@ -460,7 +463,7 @@ int glwImButton(glwWin *win, int id, int x, int y, char *text) {
     imGUI->activeId == id ? GLW_CTRL_STATE_PRESS : GLW_CTRL_STATE_NORMAL);
   glwDrawSystemText(win, x + textSize.width * GLW_HOR_AUTO_MARGIN,
     y + textSize.height * GLW_VER_AUTO_MARGIN,
-    text);
+    text, GLW_SYSTEM_FONT_COLOR);
   imGUI->nextX = x + width;
   imGUI->nextY = y;
   return imGUI->activeId == id;
@@ -478,7 +481,7 @@ int glwImDropdownBox(glwWin *win, int id, int x, int y, char *text) {
     imGUI->activeId == id ? GLW_CTRL_STATE_PRESS : GLW_CTRL_STATE_NORMAL);
   glwDrawSystemText(win, x + textSize.width * (GLW_HOR_AUTO_MARGIN),
     y + textSize.height * (GLW_VER_AUTO_MARGIN),
-    text);
+    text, GLW_SYSTEM_FONT_COLOR);
   glwDrawDropdownArrow(x + width - textSize.width * GLW_HOR_AUTO_MARGIN -
       arrowWidth,
     y + (height - arrowHeight) / 2, arrowWidth, arrowHeight, 0);
@@ -500,7 +503,7 @@ int glwImCheck(glwWin *win, int id, int x, int y, char *text, int checked) {
     (imGUI->activeId == id || checked) ?
       GLW_CTRL_STATE_PRESS : GLW_CTRL_STATE_NORMAL);
   glwDrawSystemText(win, x + textSize.height * GLW_HOR_AUTO_MARGIN + boxWidth,
-    y, text);
+    y, text, GLW_SYSTEM_FONT_COLOR);
   if (checked) {
     glwDrawCheckSymbol(x, y, boxWidth, height, GLW_CHECK_COLOR);
   }
@@ -586,7 +589,7 @@ int glwImButtonGroup(glwWin *win, int id, int x, int y, int parentWidth,
       glwDrawVLine(offset, y, 1, height, GLW_BORDER_COLOR_2);
     }
     glwDrawSystemText(win, offset + (maxItemWidth - textSize.width) / 2,
-      y + height * 0.1, list[i]);
+      y + height * 0.1, list[i], GLW_SYSTEM_FONT_COLOR);
     offset += maxItemWidth;
   }
   imGUI->nextX = offset;
@@ -631,7 +634,7 @@ int glwImTabBox(glwWin *win, int id, int x, int y, int width, int height,
         GLW_BUTTON_CORNER_RADIUS, GLW_BORDER_COLOR_1);
     }
     glwDrawSystemText(win, offset + (maxItemWidth - textSize.width) / 2,
-      y + tabHeight * GLW_VER_AUTO_MARGIN, list[i]);
+      y + tabHeight * GLW_VER_AUTO_MARGIN, list[i], GLW_SYSTEM_FONT_COLOR);
     offset += maxItemWidth;
   }
   glwDrawRectGradientFill(x + 1, y + tabHeight,
