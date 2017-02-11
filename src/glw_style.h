@@ -3,7 +3,7 @@
 
 #define GLW_SYSTEM_FONT_NAME    "Helvetica"
 #define GLW_SYSTEM_FONT_WEIGHT  5
-#define GLW_SYSTEM_FONT_SIZE    20
+#define GLW_SYSTEM_FONT_SIZE    21
 
 #define GLW_SMALL_ROUNDED_CORNER_SLICES 5
 

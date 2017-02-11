@@ -688,3 +688,57 @@ int glwImLineHeight(glwWin *win) {
   glwSystemFontTexture *systemFontTexture = glwGetSystemFontTexture(win);
   return systemFontTexture->originSize.height * (1 + GLW_VER_AUTO_MARGIN * 2);
 }
+
+void glwSetUserData(glwWin *win, void *userData) {
+  glwWinContext *ctx = glwGetWinContext(win);
+  ctx->userData = userData;
+}
+
+void *glwGetUserData(glwWin *win) {
+  glwWinContext *ctx = glwGetWinContext(win);
+  return ctx->userData;
+}
+
+void glwDisplayFunc(glwWin *win, void (*func)(glwWin *win)) {
+  glwWinContext *ctx = glwGetWinContext(win);
+  ctx->onDisplay = func;
+}
+
+void glwReshapeFunc(glwWin *win, void (*func)(glwWin *win, int width,
+    int height)) {
+  glwWinContext *ctx = glwGetWinContext(win);
+  ctx->onReshape = func;
+}
+
+void glwMouseFunc(glwWin *win, void (*func)(glwWin *win, int button, int state,
+    int x, int y)) {
+  glwWinContext *ctx = glwGetWinContext(win);
+  ctx->onMouse = func;
+}
+
+void glwMotionFunc(glwWin *win,
+    void (*func)(glwWin *win, int x, int y)) {
+  glwWinContext *ctx = glwGetWinContext(win);
+  ctx->onMotion = func;
+}
+
+void glwPassiveMotionFunc(glwWin *win,
+    void (*func)(glwWin *win, int x, int y)) {
+  glwWinContext *ctx = glwGetWinContext(win);
+  ctx->onPassiveMotion = func;
+}
+
+void glwWheelFunc(glwWin *win, void(*func)(glwWin *win, float delta)) {
+  glwWinContext *ctx = glwGetWinContext(win);
+  ctx->onWheel = func;
+}
+
+int glwMouseX(glwWin *win) {
+  glwWinContext *ctx = glwGetWinContext(win);
+  return ctx->x;
+}
+
+int glwMouseY(glwWin *win) {
+  glwWinContext *ctx = glwGetWinContext(win);
+  return ctx->y;
+}

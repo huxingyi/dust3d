@@ -16,6 +16,22 @@ typedef enum glwCtrlState {
   GLW_CTRL_STATE_PRESS,
 } glwCtrlState;
 
+typedef struct glwWinContext {
+  void (*onReshape)(glwWin *win, int width, int height);
+  void (*onDisplay)(glwWin *win);
+  void (*onMouse)(glwWin *win, int button, int state, int x, int y);
+  void (*onMotion)(glwWin *win, int x, int y);
+  void (*onPassiveMotion)(glwWin *win, int x, int y);
+  void(*onWheel)(glwWin *win, float delta);
+  int viewWidth;
+  int viewHeight;
+  float scaleX;
+  float scaleY;
+  void *userData;
+  int x;
+  int y;
+} glwWinContext;
+
 typedef struct glwSystemFontTexture {
   int texId;
   glwSize size;
@@ -50,5 +66,6 @@ void glwDrawButtonBackground(float x, float y, float width, float height,
     glwCtrlState state);
 void glwMouseEvent(glwWin *win, int button, int state, int x, int y);
 glwImGui *glwGetImGUI(glwWin *win);
+glwWinContext *glwGetWinContext(glwWin *win);
 
 #endif

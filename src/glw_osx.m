@@ -6,17 +6,8 @@
 @interface GLView : NSOpenGLView <NSWindowDelegate> {
   CVDisplayLinkRef displayLink;
 @public
-  void (*onReshape)(glwWin *win, int width, int height);
-  void (*onDisplay)(glwWin *win);
-  void (*onMouse)(glwWin *win, int button, int state, int x, int y);
-  void (*onMotion)(glwWin *win, int x, int y);
-  void (*onPassiveMotion)(glwWin *win, int x, int y);
-  void *userData;
   int pendingReshape;
-  int viewWidth;
-  int viewHeight;
-  float scaleX;
-  float scaleY;
+  glwWinContext context;
   glwSystemFontTexture systemFontTexture;
   glwImGui imGUI;
 }
@@ -36,6 +27,11 @@ static CVReturn onDisplayLinkCallback(CVDisplayLinkRef displayLink,
 glwSystemFontTexture *glwGetSystemFontTexture(glwWin *win) {
   GLView *view = ((NSWindow *)win).contentView;
   return &view->systemFontTexture;
+}
+
+glwWinContext *glwGetWinContext(glwWin *win) {
+  GLView *view = ((NSWindow *)win).contentView;
+  return &view->context;
 }
 
 @implementation GLView
@@ -82,17 +78,17 @@ glwSystemFontTexture *glwGetSystemFontTexture(glwWin *win) {
     [currentContext makeCurrentContext];
     CGLLockContext([currentContext CGLContextObj]);
     if (self->pendingReshape) {
-      if (self->onReshape) {
+      if (self->context.onReshape) {
         self->pendingReshape = 0;
         if (!self->systemFontTexture.texId) {
           glwInitSystemFontTexture((glwWin *)self.window);
         }
-        self->onReshape((glwWin *)self.window, self->viewWidth,
-          self->viewHeight);
+        self->context.onReshape((glwWin *)self.window, self->context.viewWidth,
+          self->context.viewHeight);
       }
     }
-    if (self->onDisplay) {
-      self->onDisplay((glwWin *)self.window);
+    if (self->context.onDisplay) {
+      self->context.onDisplay((glwWin *)self.window);
     }
     CGLFlushDrawable([[self openGLContext] CGLContextObj]);
     CGLUnlockContext([currentContext CGLContextObj]);
@@ -116,10 +112,10 @@ glwSystemFontTexture *glwGetSystemFontTexture(glwWin *win) {
 - (void)reshape {
   NSRect bounds = [self bounds];
   NSRect backingBounds = [self convertRectToBacking:[self bounds]];
-  viewWidth = (int)backingBounds.size.width;
-  viewHeight = (int)backingBounds.size.height;
-  self->scaleX = (float)viewWidth / bounds.size.width;
-  self->scaleY = (float)viewHeight / bounds.size.height;
+  self->context.viewWidth = (int)backingBounds.size.width;
+  self->context.viewHeight = (int)backingBounds.size.height;
+  self->context.scaleX = (float)self->context.viewWidth / bounds.size.width;
+  self->context.scaleY = (float)self->context.viewHeight / bounds.size.height;
   self->pendingReshape = 1;
   [self drawFrame];
 }
@@ -140,49 +136,66 @@ glwSystemFontTexture *glwGetSystemFontTexture(glwWin *win) {
   CGLUnlockContext([currentContext CGLContextObj]);
 }
 
-- (void)mouseMoved:(NSEvent*)event {
+- (void)saveMousePosFromEvent:(NSEvent*)event {
   NSPoint loc = [self convertPoint:[event locationInWindow] fromView:nil];
-  int x = loc.x * self->scaleX;
-  int y = loc.y * self->scaleY;
+  self->context.x = loc.x * self->context.scaleX;
+  self->context.y = loc.y * self->context.scaleY;
+}
+
+- (void)mouseMoved:(NSEvent*)event {
+  [self saveMousePosFromEvent:event];
   if (GLW_DOWN == self->imGUI.mouseState) {
-    if (self->onMotion) {
-      self->onMotion((glwWin *)self.window, x, y);
+    if (self->context.onMotion) {
+      self->context.onMotion((glwWin *)self.window,
+        self->context.x, self->context.y);
     }
   } else {
-    if (self->onPassiveMotion) {
-      self->onPassiveMotion((glwWin *)self.window, x, y);
+    if (self->context.onPassiveMotion) {
+      self->context.onPassiveMotion((glwWin *)self.window,
+        self->context.x, self->context.y);
     }
   }
 }
 
 - (void)mouseDown:(NSEvent*)event {
-  NSPoint loc = [self convertPoint:[event locationInWindow] fromView:nil];
-  int x = loc.x * self->scaleX;
-  int y = loc.y * self->scaleY;
-  glwMouseEvent((glwWin *)self.window, GLW_LEFT_BUTTON, GLW_DOWN, x, y);
-  if (self->onMouse) {
-    self->onMouse((glwWin *)self.window, GLW_LEFT_BUTTON, GLW_DOWN, x, y);
+  [self saveMousePosFromEvent:event];
+  glwMouseEvent((glwWin *)self.window, GLW_LEFT_BUTTON, GLW_DOWN,
+    self->context.x, self->context.y);
+  if (self->context.onMouse) {
+    self->context.onMouse((glwWin *)self.window,
+      GLW_LEFT_BUTTON, GLW_DOWN,
+      self->context.x, self->context.y);
+  }
+}
+
+- (void)scrollWheel:(NSEvent *)event {
+  [self saveMousePosFromEvent:event];
+  if (self->context.onWheel) {
+    self->context.onWheel((glwWin *)self.window, [event deltaY] * 10);
   }
 }
 
 - (void)mouseDragged:(NSEvent *)event {
-  NSPoint loc = [self convertPoint:[event locationInWindow] fromView:nil];
-  int x = loc.x * self->scaleX;
-  int y = loc.y * self->scaleY;
+  [self saveMousePosFromEvent:event];
   if (GLW_DOWN == self->imGUI.mouseState) {
     if (GLW_DOWN == self->imGUI.mouseState) {
-      if (self->onMotion) {
-        self->onMotion((glwWin *)self.window, x, y);
+      if (self->context.onMotion) {
+        self->context.onMotion((glwWin *)self.window,
+          self->context.x, self->context.y);
       }
     } else {
-      if (self->onPassiveMotion) {
-        self->onPassiveMotion((glwWin *)self.window, x, y);
+      if (self->context.onPassiveMotion) {
+        self->context.onPassiveMotion((glwWin *)self.window,
+          self->context.x, self->context.y);
       }
     }
   } else {
-    glwMouseEvent((glwWin *)self.window, GLW_LEFT_BUTTON, GLW_DOWN, x, y);
-    if (self->onMouse) {
-      self->onMouse((glwWin *)self.window, GLW_LEFT_BUTTON, GLW_DOWN, x, y);
+    glwMouseEvent((glwWin *)self.window, GLW_LEFT_BUTTON, GLW_DOWN,
+      self->context.x, self->context.y);
+    if (self->context.onMouse) {
+      self->context.onMouse((glwWin *)self.window,
+        GLW_LEFT_BUTTON, GLW_DOWN,
+        self->context.x, self->context.y);
     }
   }
 }
@@ -192,12 +205,12 @@ glwSystemFontTexture *glwGetSystemFontTexture(glwWin *win) {
 }
 
 - (void)mouseUp:(NSEvent*)event {
-  NSPoint loc = [self convertPoint:[event locationInWindow] fromView:nil];
-  int x = loc.x * self->scaleX;
-  int y = loc.y * self->scaleY;
-  glwMouseEvent((glwWin *)self.window, GLW_LEFT_BUTTON, GLW_UP, x, y);
-  if (self->onMouse) {
-    self->onMouse((glwWin *)self.window, GLW_LEFT_BUTTON, GLW_UP, x, y);
+  [self saveMousePosFromEvent:event];
+  glwMouseEvent((glwWin *)self.window, GLW_LEFT_BUTTON, GLW_UP,
+    self->context.x, self->context.y);
+  if (self->context.onMouse) {
+    self->context.onMouse((glwWin *)self.window, GLW_LEFT_BUTTON, GLW_UP,
+      self->context.x, self->context.y);
   }
 }
 @end
@@ -235,16 +248,6 @@ void glwMainLoop(void) {
   }
 }
 
-void glwSetUserData(glwWin *win, void *userData) {
-  GLView *view = ((NSWindow *)win).contentView;
-  view->userData = userData;
-}
-
-void *glwGetUserData(glwWin *win) {
-  GLView *view = ((NSWindow *)win).contentView;
-  return view->userData;
-}
-
 glwWin *glwCreateWindow(int x, int y, int width, int height) {
   NSUInteger windowStyle = NSTitledWindowMask | NSClosableWindowMask | 
     NSResizableWindowMask | NSMiniaturizableWindowMask;
@@ -264,19 +267,15 @@ glwWin *glwCreateWindow(int x, int y, int width, int height) {
     defer:NO];
   
   GLView *view = [[GLView alloc] initWithFrame:viewRect];
-  view->onReshape = 0;
-  view->onDisplay = 0;
-  view->onMouse = 0;
-  view->userData = 0;
-  view->pendingReshape = 0;
-  view->viewWidth = width;
-  view->viewHeight = height;
-  view->systemFontTexture.texId = 0;
+  memset(&view->context, 0, sizeof(view->context));
+  memset(&view->systemFontTexture, 0, sizeof(view->systemFontTexture));
   memset(&view->imGUI, 0, sizeof(view->imGUI));
-  view->scaleX = 1;
-  view->scaleY = 1;
-  view->onPassiveMotion = 0;
-  view->onMotion = 0;
+  view->pendingReshape = 0;
+  view->context.viewWidth = width;
+  view->context.viewHeight = height;
+  view->systemFontTexture.texId = 0;
+  view->context.scaleX = 1;
+  view->context.scaleY = 1;
   
   [window setAcceptsMouseMovedEvents:YES];
   [window setContentView:view];
@@ -285,35 +284,6 @@ glwWin *glwCreateWindow(int x, int y, int width, int height) {
   [window orderFrontRegardless];
   
   return (glwWin *)window;
-}
-
-void glwDisplayFunc(glwWin *win, void (*func)(glwWin *win)) {
-  GLView *view = ((NSWindow *)win).contentView;
-  view->onDisplay = func;
-}
-
-void glwReshapeFunc(glwWin *win, void (*func)(glwWin *win, int width,
-    int height)) {
-  GLView *view = ((NSWindow *)win).contentView;
-  view->onReshape = func;
-}
-
-void glwMouseFunc(glwWin *win, void (*func)(glwWin *win, int button, int state,
-    int x, int y)) {
-  GLView *view = ((NSWindow *)win).contentView;
-  view->onMouse = func;
-}
-
-void glwMotionFunc(glwWin *win,
-    void (*func)(glwWin *win, int x, int y)) {
-  GLView *view = ((NSWindow *)win).contentView;
-  view->onMotion = func;
-}
-
-void glwPassiveMotionFunc(glwWin *win,
-    void (*func)(glwWin *win, int x, int y)) {
-  GLView *view = ((NSWindow *)win).contentView;
-  view->onPassiveMotion = func;
 }
 
 unsigned char *glwRenderTextToRGBA(char *text, glwFont *font, glwSize size,

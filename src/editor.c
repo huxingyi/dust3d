@@ -27,6 +27,8 @@
 
 #define ED_GL_BACKGROUND_COLOR  GLW_BACKGROUND_COLOR
 
+#define ED_BONE_COLOR           0xffff00
+
 typedef struct editor {
   glwWin *win;
   float cameraAngleX;
@@ -34,19 +36,36 @@ typedef struct editor {
   float cameraDistance;
   int newImId;
   int showBoneChecked;
+  int showBallChecked;
+  int showMeshChecked;
   int width;
   int height;
   int mode;
-  int glLeft;
-  int glTop;
-  int glWidth;
-  int glHeight;
-  int mouseX;
-  int mouseY;
+  int renderLeft;
+  int renderTop;
+  int renderWidth;
+  int renderHeight;
+  int moveMouseX;
+  int moveMouseY;
   bmesh *bm;
 } editor;
 
 #include "../data/bmesh_test_2.h"
+
+static int mouseInRenderRect(glwWin *win) {
+  editor *ed = glwGetUserData(win);
+  return glwPointTest(glwMouseX(win), glwMouseY(win),
+    ed->renderLeft, ed->renderTop,
+    ed->renderWidth, ed->renderHeight, 0);
+}
+
+static int drawBmeshBone(bmesh *bm, bmeshBone *bone) {
+  glColor3f(glwR(ED_BONE_COLOR), glwG(ED_BONE_COLOR), glwB(ED_BONE_COLOR));
+  bmeshBall *firstBall = bmeshGetBall(bm, bone->firstBallIndex);
+  bmeshBall *secondBall = bmeshGetBall(bm, bone->secondBallIndex);
+  drawCylinder(&firstBall->position, &secondBall->position, 0.1, 36, 24);
+  return 0;
+}
 
 static void display(glwWin *win) {
   editor *ed = glwGetUserData(win);
@@ -85,15 +104,25 @@ static void display(glwWin *win) {
       int glWinY = glwImNextY(win);
       int bottomY = y + height - ED_TOOLBAR_HEIGHT;
       glwImBottomBar(win, GEN_ID, x, bottomY, width, ED_TOOLBAR_HEIGHT);
-      ed->showBoneChecked = glwImCheck(win, GEN_ID, x + ED_SPACING + ED_SPACING,
+      ed->showBallChecked = glwImCheck(win, GEN_ID, x + ED_SPACING + ED_SPACING,
         bottomY + (ED_TOOLBAR_HEIGHT - glwImLineHeight(win)) / 2 + 2,
-        "Show Bone",
+        "Ball",
+        ed->showBallChecked);
+      ed->showBoneChecked = glwImCheck(win, GEN_ID,
+        glwImNextX(win) + ED_SPACING,
+        bottomY + (ED_TOOLBAR_HEIGHT - glwImLineHeight(win)) / 2 + 2,
+        "Bone",
         ed->showBoneChecked);
+      ed->showMeshChecked = glwImCheck(win, GEN_ID,
+        glwImNextX(win) + ED_SPACING,
+        bottomY + (ED_TOOLBAR_HEIGHT - glwImLineHeight(win)) / 2 + 2,
+        "Mesh",
+        ed->showMeshChecked);
       
-      ed->glLeft = x + 1;
-      ed->glTop = glWinY;
-      ed->glWidth = width - 3;
-      ed->glHeight = bottomY - glWinY;
+      ed->renderLeft = x + 1;
+      ed->renderTop = glWinY;
+      ed->renderWidth = width - 3;
+      ed->renderHeight = bottomY - glWinY;
 
       if (0 == ed->bm) {
         bmeshBall ball;
@@ -122,19 +151,19 @@ static void display(glwWin *win) {
       }
       
       glEnable(GL_SCISSOR_TEST);
-      glScissor(ed->glLeft, ED_SPACING / 2 + ED_TOOLBAR_HEIGHT + 1,
-        ed->glWidth, ed->glHeight);
+      glScissor(ed->renderLeft, ED_SPACING / 2 + ED_TOOLBAR_HEIGHT + 1,
+        ed->renderWidth, ed->renderHeight);
       glPushMatrix();
       glTranslatef(x + 1, glWinY, 0);
       
       glColor3f(glwR(ED_GL_BACKGROUND_COLOR),
         glwG(ED_GL_BACKGROUND_COLOR),
         glwB(ED_GL_BACKGROUND_COLOR));
-      glRecti(0, 0, ed->glWidth, ed->glHeight);
+      glRecti(0, 0, ed->renderWidth, ed->renderHeight);
       
       glMatrixMode(GL_PROJECTION);
       glLoadIdentity();
-      gluPerspective(60.0f, (float)ed->glWidth / ed->glHeight, 1, 1000);
+      gluPerspective(60.0f, (float)ed->renderWidth / ed->renderHeight, 1, 1000);
       glMatrixMode(GL_MODELVIEW);
       glLoadIdentity();
       glPushMatrix();
@@ -146,7 +175,23 @@ static void display(glwWin *win) {
       
       glEnable(GL_LIGHTING);
       glEnable(GL_CULL_FACE);
-      bmeshDraw(ed->bm);
+      
+      if (ed->showBallChecked) {
+        
+      }
+      
+      if (ed->showBoneChecked) {
+        int index;
+        for (index = 0; index < bmeshGetBoneNum(ed->bm); ++index) {
+        bmeshBone *bone = bmeshGetBone(ed->bm, index);
+          drawBmeshBone(ed->bm, bone);
+        }
+      }
+      
+      if (ed->showMeshChecked) {
+        bmeshDraw(ed->bm);
+      }
+      
       glDisable(GL_CULL_FACE);
       glDisable(GL_LIGHTING);
       
@@ -189,41 +234,52 @@ static void reshape(glwWin *win, int width, int height) {
 static void mouse(glwWin *win, int button, int state,
     int x, int y){
   editor *ed = glwGetUserData(win);
-  if (!glwPointTest(x, y, ed->glLeft, ed->glTop,
-      ed->glWidth, ed->glHeight, 0)) {
+  if (!mouseInRenderRect(win)) {
     return;
   }
   if (GLW_DOWN == state) {
-    ed->mouseX = x;
-    ed->mouseY = y;
+    ed->moveMouseX = x;
+    ed->moveMouseY = y;
   }
 }
 
 static void motion(glwWin *win, int x, int y) {
   editor *ed = glwGetUserData(win);
-  if (!glwPointTest(x, y, ed->glLeft, ed->glTop,
-      ed->glWidth, ed->glHeight, 0)) {
+  if (!mouseInRenderRect(win)) {
     return;
   }
-  ed->cameraAngleY += (x - ed->mouseX);
-  ed->cameraAngleX += (y - ed->mouseY);
-  ed->mouseX = x;
-  ed->mouseY = y;
+  ed->cameraAngleY += (x - ed->moveMouseX);
+  ed->cameraAngleX += (y - ed->moveMouseY);
+  ed->moveMouseX = x;
+  ed->moveMouseY = y;
+}
+
+static void wheel(glwWin *win, float delta) {
+  editor *ed = glwGetUserData(win);
+  if (!mouseInRenderRect(win)) {
+    return;
+  }
+  ed->cameraDistance -= delta * 0.01f;
 }
 
 int main(int argc, char *argv[]) {
   editor ed;
   glwInit();
+  drawInit();
+  
   memset(&ed, 0, sizeof(ed));
   ed.cameraAngleX = 30;
   ed.cameraAngleY = -312;
   ed.cameraDistance = 14.4;
+  ed.showMeshChecked = 1;
+  
   ed.win = glwCreateWindow(0, 0, 0, 0);
   glwSetUserData(ed.win, &ed);
   glwReshapeFunc(ed.win, reshape);
   glwDisplayFunc(ed.win, display);
   glwMouseFunc(ed.win, mouse);
   glwMotionFunc(ed.win, motion);
+  glwWheelFunc(ed.win, wheel);
   glwMainLoop();
   return 0;
 }

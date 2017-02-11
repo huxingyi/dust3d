@@ -44,6 +44,7 @@ void glwMouseFunc(glwWin *win, void (*func)(glwWin *win, int button, int state,
   int x, int y));
 void glwMotionFunc(glwWin *win, void (*func)(glwWin *win, int x, int y));
 void glwPassiveMotionFunc(glwWin *win, void (*func)(glwWin *win, int x, int y));
+void glwWheelFunc(glwWin *win, void(*func)(glwWin *win, float delta));
 #define glwR(rgb) ((float)(((rgb) >> 16) & 0xff) / 255)
 #define glwG(rgb) ((float)(((rgb) >> 8) & 0xff) / 255)
 #define glwB(rgb) ((float)(((rgb)) & 0xff) / 255)
@@ -62,6 +63,8 @@ int glwImNextY(glwWin *win);
 int glwImLineHeight(glwWin *win);
 int glwPointTest(int x, int y, int left, int top, int width, int height,
   int allowOffset);
+int glwMouseX(glwWin *win);
+int glwMouseY(glwWin *win);
 
 #ifdef __cplusplus
 }
