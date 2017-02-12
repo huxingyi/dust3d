@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <stdarg.h>
 #include <CoreFoundation/CoreFoundation.h>
 #include "glw_internal.h"
 #include "glw_style.h"
@@ -102,8 +103,8 @@ void glwMouseEvent(glwWin *win, int button, int state, int x, int y) {
 
 int glwPointTest(int x, int y, int left, int top, int width, int height,
     int allowOffset) {
-  int right = left + width - 1 + allowOffset;
-  int bottom = top + height - 1 + allowOffset;
+  int right = left + width + allowOffset;
+  int bottom = top + height + 5 + allowOffset;
   left -= allowOffset;
   top -= allowOffset;
   return x >= left && x <= right && y >= top && y <= bottom;
@@ -902,4 +903,59 @@ int glwImMenu(glwWin *win, int id, int x, int y, int width, int height,
   imGUI->nextX = x;
   imGUI->nextY = y + height;
   return sel;
+}
+
+static void glwDrawGradientLine(int x, int y, int width, int height,
+    unsigned int beginColor, unsigned int endColor) {
+  glLineWidth(height);
+  glBegin(GL_LINES);
+    glColor3f(glwR(beginColor), glwG(beginColor), glwB(beginColor));
+    glVertex2f(x, y);
+    glColor3f(glwR(endColor), glwG(endColor), glwB(endColor));
+    glVertex2f(x + width, y);
+  glEnd();
+  glLineWidth(1);
+}
+
+float glwImSlider(glwWin *win, int id, int x, int y, int width,
+    float min, float max, float cur, char *fmt, ...) {
+  glwImGui *imGUI = glwGetImGUI(win);
+  char text[100];
+  float leftSegLen = width * (cur - min) / max;
+  float thumLeft = x + leftSegLen - (GLW_SLIDER_THUMB_WIDTH / 2);
+  float thumTop = y + glwGetLineHeight(win) - (GLW_SLIDER_THUMB_HEIGHT / 2);
+  unsigned int topColor = 0;
+  unsigned int bottomColor = 0;
+  va_list args;
+  va_start(args, fmt);
+  vsnprintf(text, sizeof(text), fmt, args);
+  glwImGUIActiveIdCheck(imGUI, id, thumLeft, thumTop,
+    GLW_SLIDER_THUMB_WIDTH, GLW_SLIDER_THUMB_HEIGHT);
+  topColor = GLW_FILL_GRADIENT_COLOR_1_H;
+  bottomColor = GLW_FILL_GRADIENT_COLOR_2_H;
+  if (imGUI->activeId == id) {
+    float mouseFromLeft = (float)glwMouseX(win) - x;
+    glwSwapColor(topColor, bottomColor);
+    cur = min + (max - min) * mouseFromLeft / width;
+  }
+  if (cur < min) {
+    cur = min;
+  } else if (cur > max) {
+    cur = max;
+  }
+  glwDrawSystemText(win, x, y, text, GLW_SYSTEM_FONT_COLOR);
+  glwDrawGradientLine(x, y + glwGetLineHeight(win), leftSegLen,
+    GLW_SLIDER_HEIGHT,
+    GLW_TOOLBAR_BACKGROUND_COLOR, 0x4d4d4d);
+  glwDrawGradientLine(x + leftSegLen, y + glwGetLineHeight(win),
+    width - leftSegLen, GLW_SLIDER_HEIGHT,
+    0x4d4d4d, GLW_TOOLBAR_BACKGROUND_COLOR);
+  glwDrawRoundedRectGradientFill(thumLeft, thumTop,
+    GLW_SLIDER_THUMB_WIDTH, GLW_SLIDER_THUMB_HEIGHT,
+    GLW_SLIDER_CORNER_RADIUS,
+    topColor, bottomColor);
+  glwDrawRoundedRectBorder(thumLeft, thumTop,
+    GLW_SLIDER_THUMB_WIDTH, GLW_SLIDER_THUMB_HEIGHT,
+    GLW_SLIDER_CORNER_RADIUS, GLW_BORDER_COLOR_2);
+  return cur;
 }

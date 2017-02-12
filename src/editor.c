@@ -23,6 +23,7 @@
 
 #define ED_SIDEBAR_WIDTH        400
 #define ED_SPACING              10
+#define ED_MARGIN               20
 
 #define ED_MENU_HEIGHT          ((float)glwImLineHeight(win))
 
@@ -33,6 +34,9 @@
 #define ED_GL_BORDER_SIZE       7
 
 #define ED_BONE_COLOR           0xffff00
+
+#define ED_MIN_BALL_RADIUS      0.1
+#define ED_MAX_BALL_RADIUS      30
 
 typedef struct editor {
   glwWin *win;
@@ -54,6 +58,7 @@ typedef struct editor {
   int moveMouseY;
   bmesh *bm;
   skeleton *skl;
+  float ballRadius;
 } editor;
 
 #include "../data/bmesh_test_2.h"
@@ -145,6 +150,13 @@ static void display(glwWin *win) {
     glwImTabBox(win, GEN_ID, ED_SPACING / 2, ED_TOPBAR_HEIGHT, ED_SIDEBAR_WIDTH,
       ed->height - ED_TOPBAR_HEIGHT - ED_SPACING / 2,
       titles, icons, 0);
+    ed->ballRadius = glwImSlider(win, GEN_ID, glwImNextX(win) + ED_MARGIN,
+      glwImNextY(win) + ED_MARGIN,
+      ED_SIDEBAR_WIDTH - ED_MARGIN * 2,
+      ED_MIN_BALL_RADIUS, ED_MAX_BALL_RADIUS,
+      ed->ballRadius,
+      "Radius: %.4f",
+      ed->ballRadius);
   }
   
   {
