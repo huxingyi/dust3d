@@ -12,6 +12,12 @@
 #define M_PI 3.14159265
 #endif
 
+#define glwSwapColor(color1, color2) do {\
+  unsigned int tmp = color1;\
+  color1 = color2;\
+  color2 = tmp;\
+} while (0)
+
 void glwDrawSystemText(glwWin *win, int x, int y, char *text,
     unsigned int color) {
   int vleft, vwidth;
@@ -478,24 +484,35 @@ void glwDrawRoundedRectGradientFill(float x, float y, float width, float height,
   glEnd();
 }
 
-void glwDrawButtonBackground(float x, float y, float width, float height,
-    glwCtrlState state) {
+static void glwDrawGradientBackground(float x, float y, float width, float height,
+    glwCtrlState state, int sunken) {
+  unsigned int topColor = 0;
+  unsigned int bottomColor = 0;
   switch (state)
   {
   case GLW_CTRL_STATE_PRESS:
-    glwDrawRoundedRectGradientFill(x, y, width, height,
-      GLW_BUTTON_CORNER_RADIUS,
-      GLW_FILL_GRADIENT_COLOR_1_H, GLW_FILL_GRADIENT_COLOR_2_H);
+    topColor = GLW_FILL_GRADIENT_COLOR_1_H;
+    bottomColor = GLW_FILL_GRADIENT_COLOR_2_H;
     break;
   case GLW_CTRL_STATE_NORMAL:
   default:
-    glwDrawRoundedRectGradientFill(x, y, width, height,
-      GLW_BUTTON_CORNER_RADIUS,
-      GLW_FILL_GRADIENT_COLOR_1, GLW_FILL_GRADIENT_COLOR_2);
+    topColor = GLW_FILL_GRADIENT_COLOR_1;
+    bottomColor = GLW_FILL_GRADIENT_COLOR_2;
     break;
   }
+  if (sunken) {
+    glwSwapColor(topColor, bottomColor);
+  }
+  glwDrawRoundedRectGradientFill(x, y, width, height,
+      GLW_BUTTON_CORNER_RADIUS,
+      topColor, bottomColor);
   glwDrawRoundedRectBorder(x, y, width, height,
     GLW_BUTTON_CORNER_RADIUS, GLW_BORDER_COLOR_2);
+}
+
+void glwDrawButtonBackground(float x, float y, float width, float height,
+    glwCtrlState state) {
+  glwDrawGradientBackground(x, y, width, height, state, 0);
 }
 
 glwSize glwMeasureSystemText(glwWin *win, char *text) {
@@ -528,7 +545,7 @@ static void glwImGUIActiveIdCheck(glwImGui *imGUI, int id, int x, int y,
   }
 }
 
-int glwImButton(glwWin *win, int id, int x, int y, char *text) {
+int glwImButton(glwWin *win, int id, int x, int y, char *text, int icon) {
   glwImGui *imGUI = glwGetImGUI(win);
   glwSize textSize = glwMeasureSystemText(win, text);
   int width = textSize.width * (1 + GLW_HOR_AUTO_MARGIN * 2);
@@ -542,6 +559,30 @@ int glwImButton(glwWin *win, int id, int x, int y, char *text) {
   imGUI->nextX = x + width;
   imGUI->nextY = y;
   return imGUI->activeId == id;
+}
+
+static glwSize glwMeasureLabel(glwWin *win, char *text, int icon) {
+  glwSize size = glwMeasureSystemText(win, text);
+  int padding = glwGetLineHeight(win) / 2;
+  size.width += padding + padding + padding;
+  return size;
+}
+
+static void glwDrawLabel(glwWin *win, int x, int y, char *text, int icon,
+    unsigned int color) {
+  int lineHeight = glwGetLineHeight(win);
+  int padding = glwGetLineHeight(win) / 2;
+  if (icon) {
+    int iconIdx = icon - 1;
+    glwDrawSystemIcon(win, x + padding,
+      y + lineHeight * GLW_VER_AUTO_MARGIN, icon, color);
+    glwDrawSystemText(win, x + padding +
+        iconTable[iconIdx][ICON_ITEM_ORIGINAL_WIDTH] + padding / 2,
+      y + lineHeight * GLW_VER_AUTO_MARGIN, text, color);
+  } else {
+    glwDrawSystemText(win, x + padding,
+      y + lineHeight * GLW_VER_AUTO_MARGIN, text, color);
+  }
 }
 
 int glwImDropdownBox(glwWin *win, int id, int x, int y, char *text) {
@@ -569,14 +610,16 @@ int glwImCheck(glwWin *win, int id, int x, int y, char *text, int checked) {
   glwImGui *imGUI = glwGetImGUI(win);
   glwSize textSize = glwMeasureSystemText(win, text);
   int height = textSize.height;
-  int boxWidth = height;
+  int boxWidth = height * 0.8;
+  int boxHeight = boxWidth;
   int width = boxWidth + textSize.height * (1 + GLW_HOR_AUTO_MARGIN * 2) +
     textSize.width;
   int oldActiveId = imGUI->activeId;
   glwImGUIActiveIdCheck(imGUI, id, x, y, width, height);
-  glwDrawButtonBackground(x, y, boxWidth, height,
+  glwDrawGradientBackground(x, y + (height - boxHeight) / 2,
+    boxWidth, boxHeight,
     (imGUI->activeId == id || checked) ?
-      GLW_CTRL_STATE_PRESS : GLW_CTRL_STATE_NORMAL);
+      GLW_CTRL_STATE_PRESS : GLW_CTRL_STATE_NORMAL, 1);
   glwDrawSystemText(win, x + textSize.height * GLW_HOR_AUTO_MARGIN + boxWidth,
     y, text, GLW_SYSTEM_FONT_COLOR);
   if (checked) {
@@ -594,8 +637,8 @@ static int glwCalcListMaxWidth(glwWin *win, char **titles, int *icons,
   int maxItemWidth = 0;
 
   for (i = 0; titles[i]; ++i) {
-    glwSize textSize = glwMeasureSystemText(win, titles[i]);
-    itemWidth = textSize.width * (1 + GLW_HOR_AUTO_MARGIN * 2);
+    glwSize textSize = glwMeasureLabel(win, titles[i], icons ? icons[i] : 0);
+    itemWidth = textSize.width;
     if (icons && icons[i]) {
       itemWidth += iconTable[icons[i]][ICON_ITEM_ORIGINAL_WIDTH];
     }
@@ -610,15 +653,11 @@ static int glwCalcListMaxWidth(glwWin *win, char **titles, int *icons,
     }
   }
   
-  if (maxItemWidth < GLW_MIN_TAB_WIDTH) {
-    maxItemWidth = GLW_MIN_TAB_WIDTH;
-  }
-  
   return maxItemWidth;
 }
 
-int glwImButtonGroup(glwWin *win, int id, int x, int y, int parentWidth,
-    char **list, int sel) {
+int glwImButtonGroup(glwWin *win, int id, int x, int y, char **titles,
+    int *icons, int sel) {
   glwImGui *imGUI = glwGetImGUI(win);
   int width = 0;
   int height = 0;
@@ -627,16 +666,16 @@ int glwImButtonGroup(glwWin *win, int id, int x, int y, int parentWidth,
   int listLen = 0;
   int offset;
   int maxItemWidth = 0;
-  maxItemWidth = glwCalcListMaxWidth(win, list, 0, &height, &listLen);
+  unsigned int topColor = 0;
+  unsigned int bottomColor = 0;
+  maxItemWidth = glwCalcListMaxWidth(win, titles, icons, &height, &listLen);
   width = maxItemWidth * listLen;
-  left = listLen > 1 ? x + (parentWidth - width) / 2 :
-    x + maxItemWidth * GLW_HOR_AUTO_MARGIN;
+  left = x;
   glwImGUIActiveIdCheck(imGUI, id, left, y, width, height);
   glwDrawRoundedRectGradientFill(left, y, width, height,
     GLW_BUTTON_CORNER_RADIUS,
     GLW_FILL_GRADIENT_COLOR_1, GLW_FILL_GRADIENT_COLOR_2);
-  for (i = 0, offset = left; list[i]; ++i) {
-    glwSize textSize = glwMeasureSystemText(win, list[i]);
+  for (i = 0, offset = left; titles[i]; ++i) {
     if (imGUI->activeId == id) {
       int hit = glwPointTest(imGUI->mouseX, imGUI->mouseY, offset, y,
         maxItemWidth, height, 0);
@@ -645,33 +684,38 @@ int glwImButtonGroup(glwWin *win, int id, int x, int y, int parentWidth,
       }
     }
     if (sel == i) {
+      topColor = GLW_FILL_GRADIENT_COLOR_1_H;
+      bottomColor = GLW_FILL_GRADIENT_COLOR_2_H;
+      if (imGUI->activeId == id) {
+        glwSwapColor(topColor, bottomColor);
+      }
       if (1 == listLen) {
         glwDrawRoundedRectGradientFill(left, y, width, height,
           GLW_BUTTON_CORNER_RADIUS,
-          GLW_FILL_GRADIENT_COLOR_1_H, GLW_FILL_GRADIENT_COLOR_2_H);
+          topColor, bottomColor);
       } else {
         if (0 == i) {
           glwDrawLeftRoundedRectGradientFill(offset, y,
             maxItemWidth, height,
             GLW_BUTTON_CORNER_RADIUS,
-            GLW_FILL_GRADIENT_COLOR_1_H, GLW_FILL_GRADIENT_COLOR_2_H);
+            topColor, bottomColor);
         } else if (listLen - 1 == i) {
           glwDrawRightRoundedRectGradientFill(offset, y,
             maxItemWidth, height,
             GLW_BUTTON_CORNER_RADIUS,
-            GLW_FILL_GRADIENT_COLOR_1_H, GLW_FILL_GRADIENT_COLOR_2_H);
+            topColor, bottomColor);
         } else {
           glwDrawRectGradientFill(offset, y,
             maxItemWidth, height,
-            GLW_FILL_GRADIENT_COLOR_1_H, GLW_FILL_GRADIENT_COLOR_2_H);
+            topColor, bottomColor);
         }
       }
     }
     if (0 != i) {
       glwDrawVLine(offset, y, 1, height, GLW_BORDER_COLOR_2);
     }
-    glwDrawSystemText(win, offset + (maxItemWidth - textSize.width) / 2,
-      y + height * 0.1, list[i], GLW_SYSTEM_FONT_COLOR);
+    glwDrawLabel(win, offset, y, titles[i], icons ? icons[i] : 0,
+      GLW_SYSTEM_FONT_COLOR);
     offset += maxItemWidth;
   }
   imGUI->nextX = offset;
@@ -692,6 +736,9 @@ int glwImTabBox(glwWin *win, int id, int x, int y, int width, int height,
   int offset;
   int maxItemWidth = 0;
   maxItemWidth = glwCalcListMaxWidth(win, titles, icons, &tabHeight, &listLen);
+  if (maxItemWidth < GLW_MIN_TAB_WIDTH) {
+    maxItemWidth = GLW_MIN_TAB_WIDTH;
+  }
   tabWidth = maxItemWidth * listLen;
   left = x;
   imGUI->nextX = x;
@@ -707,7 +754,6 @@ int glwImTabBox(glwWin *win, int id, int x, int y, int width, int height,
   glwDrawVLine(x + width - 1, y + tabHeight, 1, height - tabHeight,
     GLW_BORDER_COLOR_1);
   for (i = 0, offset = left; titles[i]; ++i) {
-    glwSize textSize = glwMeasureSystemText(win, titles[i]);
     if (imGUI->activeId == id) {
       int hit = glwPointTest(imGUI->mouseX, imGUI->mouseY, offset, y,
         maxItemWidth, tabHeight, 0);
@@ -724,17 +770,8 @@ int glwImTabBox(glwWin *win, int id, int x, int y, int width, int height,
         GLW_BUTTON_CORNER_RADIUS,
         GLW_TAB_FILL_GRADIENT_COLOR_1, GLW_TAB_FILL_GRADIENT_COLOR_2);
     }
-    if (icons && icons[i]) {
-      int iconIdx = icons[i] - 1;
-      glwDrawSystemIcon(win, offset + textSize.height / 2,
-        y + tabHeight * GLW_VER_AUTO_MARGIN, icons[i], GLW_SYSTEM_FONT_COLOR);
-      glwDrawSystemText(win, offset + textSize.height / 2 +
-          iconTable[iconIdx][ICON_ITEM_ORIGINAL_WIDTH] + textSize.height / 2,
-        y + tabHeight * GLW_VER_AUTO_MARGIN, titles[i], GLW_SYSTEM_FONT_COLOR);
-    } else {
-      glwDrawSystemText(win, offset + (maxItemWidth - textSize.width) / 2,
-        y + tabHeight * GLW_VER_AUTO_MARGIN, titles[i], GLW_SYSTEM_FONT_COLOR);
-    }
+    glwDrawLabel(win, offset, y, titles[i], icons ? icons[i] : 0,
+      GLW_SYSTEM_FONT_COLOR);
     offset += maxItemWidth;
   }
   return sel;
@@ -836,4 +873,33 @@ int glwMouseY(glwWin *win) {
   return ctx->y;
 }
 
-
+int glwImMenu(glwWin *win, int id, int x, int y, int width, int height,
+    char **titles, int sel) {
+  glwImGui *imGUI = glwGetImGUI(win);
+  int left = 0;
+  int i;
+  int listLen = 0;
+  int offset;
+  int maxItemWidth = 0;
+  maxItemWidth = glwCalcListMaxWidth(win, titles, 0, &height, &listLen);
+  left = x + glwGetLineHeight(win) / 2;
+  glwImGUIActiveIdCheck(imGUI, id, left, y, width, height);
+  glwDrawRectGradientFill(x, y, width, height,
+    GLW_MENU_BACKGROUND_COLOR, GLW_MENU_BACKGROUND_COLOR);
+  for (i = 0, offset = left; titles[i]; ++i) {
+    if (imGUI->activeId == id) {
+      int hit = glwPointTest(imGUI->mouseX, imGUI->mouseY, offset, y,
+        maxItemWidth, height, 0);
+      if (hit) {
+        sel = i;
+      }
+    }
+    glwDrawLabel(win, offset, y, titles[i], 0, sel == i ?
+      GLW_SYSTEM_FONT_COLOR_H : GLW_SYSTEM_FONT_COLOR);
+    offset += maxItemWidth;
+  }
+  glwDrawHLine(x, y + height - 1, width, 1, GLW_BORDER_COLOR_1);
+  imGUI->nextX = x;
+  imGUI->nextY = y + height;
+  return sel;
+}

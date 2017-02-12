@@ -19,15 +19,18 @@
 #define ED_MODE_EDIT            0
 #define ED_MODE_ANIMATION       1
 
-#define ED_BACKGROUND_COLOR     0x141414
+#define ED_BACKGROUND_COLOR     0x141414 //0x111111
 
 #define ED_SIDEBAR_WIDTH        400
 #define ED_SPACING              10
 
-#define ED_TOPBAR_HEIGHT        100
-#define ED_TOOLBAR_HEIGHT       (glwImLineHeight(win) * 1.2)
+#define ED_MENU_HEIGHT          ((float)glwImLineHeight(win))
 
-#define ED_GL_BACKGROUND_COLOR  GLW_BACKGROUND_COLOR
+#define ED_TOPBAR_HEIGHT        (ED_MENU_HEIGHT + ED_SPACING + glwImLineHeight(win) + ED_SPACING)
+#define ED_TOOLBAR_HEIGHT       ((float)glwImLineHeight(win) * 1.2)
+
+#define ED_GL_BACKGROUND_COLOR  0x242424
+#define ED_GL_BORDER_SIZE       7
 
 #define ED_BONE_COLOR           0xffff00
 
@@ -36,7 +39,7 @@ typedef struct editor {
   float cameraAngleX;
   float cameraAngleY;
   float cameraDistance;
-  int newImId;
+  int selectedMenu;
   int showBoneChecked;
   int showBallChecked;
   int showMeshChecked;
@@ -103,12 +106,41 @@ static void display(glwWin *win) {
   glLoadIdentity();
   
   {
-    char *list[] = {"Open..", "New..", "Save As..", 0};
-    glwImButtonGroup(win, GEN_ID, 100, 30, 300, list, -1);
+    char *titles[] = {"File", "Window", "Help", 0};
+    ed->selectedMenu = glwImMenu(win, GEN_ID, 0, 0, ed->width,
+      glwImLineHeight(win), titles, ed->selectedMenu);
   }
   
   {
-    char *titles[] = {"Tool", 0};
+    char *titles[] = {"New..", "Open..", "Save As..", "Save", 0};
+    int icons[] = {ICON_FILE, 0, 0, 0, 0};
+    glwImButtonGroup(win, GEN_ID, ED_SPACING / 2,
+      ED_TOPBAR_HEIGHT - ED_SPACING - glwImLineHeight(win), titles, icons, 3);
+  }
+  
+  {
+    char *titles[] = {"Add Ball", 0};
+    int icons[] = {ICON_PLUS, 0};
+    glwImButtonGroup(win, GEN_ID, glwImNextX(win) + ED_SPACING,
+      glwImNextY(win), titles, icons, 0);
+  }
+  
+  {
+    char *titles[] = {"Del Ball", "Del All", 0};
+    int icons[] = {ICON_TRASH, 0, 0};
+    glwImButtonGroup(win, GEN_ID, glwImNextX(win) + ED_SPACING,
+      glwImNextY(win), titles, icons, -1);
+  }
+  
+  {
+    char *titles[] = {"Start", "Pause", "Stop", 0};
+    int icons[] = {ICON_PLAY, ICON_PAUSE, ICON_STOP, 0};
+    glwImButtonGroup(win, GEN_ID, glwImNextX(win) + ED_SPACING,
+      glwImNextY(win), titles, icons, -1);
+  }
+  
+  {
+    char *titles[] = {"Property", 0};
     int icons[] = {ICON_TOOL, 0};
     glwImTabBox(win, GEN_ID, ED_SPACING / 2, ED_TOPBAR_HEIGHT, ED_SIDEBAR_WIDTH,
       ed->height - ED_TOPBAR_HEIGHT - ED_SPACING / 2,
@@ -120,34 +152,36 @@ static void display(glwWin *win) {
     int y = ED_TOPBAR_HEIGHT;
     int width = ed->width - ED_SIDEBAR_WIDTH - ED_SPACING / 2 - ED_SPACING - ED_SPACING / 2;
     int height = ed->height - ED_TOPBAR_HEIGHT - ED_SPACING / 2;
-    char *titles[] = {"Skeleton", "Animation", "Config", 0};
-    int icons[] = {ICON_MONITOR, ICON_PENCIL, ICON_EYE, 0};
+    char *titles[] = {"Model", 0};
+    int icons[] = {ICON_MONITOR, 0};
     ed->mode = glwImTabBox(win, GEN_ID,
       x, y, width, height,
       titles, icons, ed->mode);
     if (ED_MODE_EDIT == ed->mode) {
       int toolBarY = glwImNextY(win) - 1;
       int glWinY = toolBarY + ED_TOOLBAR_HEIGHT;
+      int toolBarContentY = toolBarY +
+        (ED_TOOLBAR_HEIGHT - glwImLineHeight(win));
       glwImToolBar(win, GEN_ID, x, toolBarY, width, ED_TOOLBAR_HEIGHT);
       ed->showBallChecked = glwImCheck(win, GEN_ID, x + ED_SPACING + ED_SPACING,
-        toolBarY + (ED_TOOLBAR_HEIGHT - glwImLineHeight(win)) / 2 + 2,
+        toolBarContentY,
         "Ball",
         ed->showBallChecked);
       ed->showBoneChecked = glwImCheck(win, GEN_ID,
         glwImNextX(win) + ED_SPACING,
-        toolBarY + (ED_TOOLBAR_HEIGHT - glwImLineHeight(win)) / 2 + 2,
+        toolBarContentY,
         "Bone",
         ed->showBoneChecked);
       ed->showMeshChecked = glwImCheck(win, GEN_ID,
         glwImNextX(win) + ED_SPACING,
-        toolBarY + (ED_TOOLBAR_HEIGHT - glwImLineHeight(win)) / 2 + 2,
+        toolBarContentY,
         "Mesh",
         ed->showMeshChecked);
       
-      ed->renderLeft = x + 1;
-      ed->renderTop = glWinY;
-      ed->renderWidth = width - 3;
-      ed->renderHeight = height - ED_TOOLBAR_HEIGHT;
+      ed->renderLeft = x + 1 + ED_GL_BORDER_SIZE;
+      ed->renderTop = glWinY + ED_GL_BORDER_SIZE;
+      ed->renderWidth = width - 3 - ED_GL_BORDER_SIZE * 2;
+      ed->renderHeight = height - (glWinY - y) - 3 - ED_GL_BORDER_SIZE * 2;
       
       if (0 == ed->skl) {
         ed->skl = skeletonCreate();
@@ -179,17 +213,19 @@ static void display(glwWin *win) {
         bmeshGenerate(ed->bm);
       }
       
-      glEnable(GL_SCISSOR_TEST);
-      glScissor(ed->renderLeft, ED_SPACING / 2 + 1,
-        ed->renderWidth, ed->renderHeight);
-      glPushMatrix();
-      glTranslatef(ed->renderLeft, ed->renderTop, 0);
-      
-      /*
       glColor3f(glwR(ED_GL_BACKGROUND_COLOR),
         glwG(ED_GL_BACKGROUND_COLOR),
         glwB(ED_GL_BACKGROUND_COLOR));
-      glRecti(0, 0, ed->renderWidth, ed->renderHeight);*/
+      glRecti(ed->renderLeft,
+        ed->renderTop,
+        ed->renderLeft + ed->renderWidth,
+        ed->renderTop + ed->renderHeight);
+      
+      glEnable(GL_SCISSOR_TEST);
+      glScissor(ed->renderLeft, ed->height - (ed->renderTop + ed->renderHeight),
+        ed->renderWidth, ed->renderHeight);
+      glPushMatrix();
+      glTranslatef(ed->renderLeft, ed->renderTop, 0);
       
       glMatrixMode(GL_PROJECTION);
       glLoadIdentity();
@@ -302,6 +338,7 @@ int main(int argc, char *argv[]) {
   ed.cameraAngleY = -312;
   ed.cameraDistance = 14.4;
   ed.showMeshChecked = 1;
+  ed.selectedMenu = -1;
   
   ed.win = glwCreateWindow(0, 0, 600, 480);
   glwSetUserData(ed.win, &ed);

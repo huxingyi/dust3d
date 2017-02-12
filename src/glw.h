@@ -48,11 +48,11 @@ void glwWheelFunc(glwWin *win, void(*func)(glwWin *win, float delta));
 #define glwR(rgb) ((float)(((rgb) >> 16) & 0xff) / 255)
 #define glwG(rgb) ((float)(((rgb) >> 8) & 0xff) / 255)
 #define glwB(rgb) ((float)(((rgb)) & 0xff) / 255)
-int glwImButton(glwWin *win, int id, int x, int y, char *text);
+int glwImButton(glwWin *win, int id, int x, int y, char *text, int icon);
 int glwImCheck(glwWin *win, int id, int x, int y, char *text, int checked);
 int glwImDropdownBox(glwWin *win, int id, int x, int y, char *text);
-int glwImButtonGroup(glwWin *win, int id, int x, int y, int parentWidth,
-    char **list, int sel);
+int glwImButtonGroup(glwWin *win, int id, int x, int y, char **titles,
+  int *icons, int sel);
 int glwImPanel(glwWin *win, int id, int x, int y, int width, int height);
 int glwImTabBox(glwWin *win, int id, int x, int y, int width, int height,
   char **titles, int *icons, int sel);
@@ -65,6 +65,8 @@ int glwPointTest(int x, int y, int left, int top, int width, int height,
   int allowOffset);
 int glwMouseX(glwWin *win);
 int glwMouseY(glwWin *win);
+int glwImMenu(glwWin *win, int id, int x, int y, int width, int height,
+  char **titles, int sel);
 
 #ifdef __cplusplus
 }
