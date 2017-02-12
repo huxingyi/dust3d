@@ -2,8 +2,11 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <math.h>
+#include <CoreFoundation/CoreFoundation.h>
 #include "glw_internal.h"
 #include "glw_style.h"
+#include "icons.h"
+#include "lodepng.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265
@@ -42,6 +45,44 @@ void glwDrawSystemText(glwWin *win, int x, int y, char *text,
       glVertex2i(x + vleft, y + systemFontTexture->originSize.height);
     glEnd();
   }
+  glDisable(GL_TEXTURE_2D);
+}
+
+static int glwGetLineHeight(glwWin *win) {
+  glwSystemFontTexture *systemFontTexture = glwGetSystemFontTexture(win);
+  return systemFontTexture->originSize.height * (1 + GLW_VER_AUTO_MARGIN * 2);
+}
+
+void glwDrawSystemIcon(glwWin *win, int x, int y, int icon,
+    unsigned int color) {
+  glwWinContext *ctx = glwGetWinContext(win);
+  float texLeft, texWidth, texTop, texHeight;
+  icon--;
+  glEnable(GL_TEXTURE_2D);
+  glBindTexture(GL_TEXTURE_2D, ctx->iconTexId);
+  glColor3f(glwR(color), glwG(color), glwB(color));
+  texLeft = (float)iconTable[icon][ICON_ITEM_LEFT] / ICON_IMAGE_WIDTH;
+  texTop = (float)iconTable[icon][ICON_ITEM_TOP] / ICON_IMAGE_WIDTH;
+  texWidth = (float)iconTable[icon][ICON_ITEM_WIDTH] / ICON_IMAGE_WIDTH;
+  texHeight = (float)iconTable[icon][ICON_ITEM_HEIGHT] / ICON_IMAGE_WIDTH;
+  x += iconTable[icon][ICON_ITEM_TRIM_OFFSET_LEFT];
+  y += (iconTable[icon][ICON_ITEM_TRIM_OFFSET_TOP] +
+    (glwGetLineHeight(win) - iconTable[icon][ICON_ITEM_ORIGINAL_HEIGHT]) / 4);
+  glBegin(GL_QUADS);
+    glTexCoord2f(texLeft, texTop);
+    glVertex2i(x, y);
+  
+    glTexCoord2f(texLeft + texWidth, texTop);
+    glVertex2i(x + iconTable[icon][ICON_ITEM_WIDTH], y);
+  
+    glTexCoord2f(texLeft + texWidth, texTop + texHeight);
+    glVertex2i(x + iconTable[icon][ICON_ITEM_WIDTH],
+      y + iconTable[icon][ICON_ITEM_HEIGHT]);
+  
+    glTexCoord2f(texLeft, texTop + texHeight);
+    glVertex2i(x,
+      y + iconTable[icon][ICON_ITEM_HEIGHT]);
+  glEnd();
   glDisable(GL_TEXTURE_2D);
 }
 
@@ -129,6 +170,40 @@ void glwInitSystemFontTexture(glwWin *win) {
   }
   systemFontTexture->texId = (int)texture;
   glwDestroyFont(font);
+}
+
+void glwInitSystemIconTexture(glwWin *win) {
+  glwWinContext *ctx = glwGetWinContext(win);
+  if (0 == ctx->iconTexId) {
+    char filename[1024];
+    unsigned int err;
+    unsigned char *imageData = 0;
+    unsigned int width = 0;
+    unsigned int height = 0;
+    GLuint texture = 0;
+    snprintf(filename, sizeof(filename), "%s/icons.png", ctx->root);
+    err = lodepng_decode32_file(&imageData, &width, &height,
+      filename);
+    if (err) {
+      fprintf(stderr, "%s: lodepng_decode32_file error: %s\n", __FUNCTION__,
+        lodepng_error_text(err));
+      return;
+    }
+    glEnable(GL_TEXTURE_2D);
+    glGenTextures(1, &texture);
+    glBindTexture(GL_TEXTURE_2D, texture);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_ADD);
+    glTexImage2D(GL_TEXTURE_2D, 0, 4,
+      (GLsizei)ICON_IMAGE_WIDTH,
+      (GLsizei)ICON_IMAGE_HEIGHT, 0,
+      GL_RGBA, GL_UNSIGNED_BYTE, imageData);
+    free(imageData);
+    ctx->iconTexId = (int)texture;
+    ctx->iconTexWidth = width;
+    ctx->iconTexHeight = height;
+  }
 }
 
 static glwVec2 glwRoundedCorners[GLW_SMALL_ROUNDED_CORNER_SLICES] = {{0}};
@@ -512,15 +587,18 @@ int glwImCheck(glwWin *win, int id, int x, int y, char *text, int checked) {
   return (imGUI->activeId == id && oldActiveId != id) ? !checked : checked;
 }
 
-static int glwCalcListMaxWidth(glwWin *win, char **list, int *height,
-    int *len) {
+static int glwCalcListMaxWidth(glwWin *win, char **titles, int *icons,
+    int *height, int *len) {
   int i;
   int itemWidth = 0;
   int maxItemWidth = 0;
 
-  for (i = 0; list[i]; ++i) {
-    glwSize textSize = glwMeasureSystemText(win, list[i]);
+  for (i = 0; titles[i]; ++i) {
+    glwSize textSize = glwMeasureSystemText(win, titles[i]);
     itemWidth = textSize.width * (1 + GLW_HOR_AUTO_MARGIN * 2);
+    if (icons && icons[i]) {
+      itemWidth += iconTable[icons[i]][ICON_ITEM_ORIGINAL_WIDTH];
+    }
     if (itemWidth > maxItemWidth) {
       maxItemWidth = itemWidth;
     }
@@ -530,6 +608,10 @@ static int glwCalcListMaxWidth(glwWin *win, char **list, int *height,
     if (len) {
       ++(*len);
     }
+  }
+  
+  if (maxItemWidth < GLW_MIN_TAB_WIDTH) {
+    maxItemWidth = GLW_MIN_TAB_WIDTH;
   }
   
   return maxItemWidth;
@@ -545,7 +627,7 @@ int glwImButtonGroup(glwWin *win, int id, int x, int y, int parentWidth,
   int listLen = 0;
   int offset;
   int maxItemWidth = 0;
-  maxItemWidth = glwCalcListMaxWidth(win, list, &height, &listLen);
+  maxItemWidth = glwCalcListMaxWidth(win, list, 0, &height, &listLen);
   width = maxItemWidth * listLen;
   left = listLen > 1 ? x + (parentWidth - width) / 2 :
     x + maxItemWidth * GLW_HOR_AUTO_MARGIN;
@@ -600,7 +682,7 @@ int glwImButtonGroup(glwWin *win, int id, int x, int y, int parentWidth,
 }
 
 int glwImTabBox(glwWin *win, int id, int x, int y, int width, int height,
-    char **list, int sel) {
+    char **titles, int *icons, int sel) {
   glwImGui *imGUI = glwGetImGUI(win);
   int tabWidth = 0;
   int tabHeight = 0;
@@ -609,14 +691,23 @@ int glwImTabBox(glwWin *win, int id, int x, int y, int width, int height,
   int listLen = 0;
   int offset;
   int maxItemWidth = 0;
-  maxItemWidth = glwCalcListMaxWidth(win, list, &tabHeight, &listLen);
+  maxItemWidth = glwCalcListMaxWidth(win, titles, icons, &tabHeight, &listLen);
   tabWidth = maxItemWidth * listLen;
-  left = x + maxItemWidth * GLW_HOR_AUTO_MARGIN / 2;
+  left = x;
   imGUI->nextX = x;
   imGUI->nextY = y + tabHeight;
   glwImGUIActiveIdCheck(imGUI, id, left, y, tabWidth, tabHeight);
-  for (i = 0, offset = left; list[i]; ++i) {
-    glwSize textSize = glwMeasureSystemText(win, list[i]);
+  glwDrawRectGradientFill(x + 1, y + tabHeight,
+    width - 2, height - tabHeight - 2,
+    GLW_TAB_FILL_GRADIENT_COLOR_2, GLW_TAB_FILL_GRADIENT_COLOR_2);
+  glwDrawHLine(x, y + tabHeight - 1, width, 1, GLW_BORDER_COLOR_1);
+  glwDrawHLine(x, y + height - 1, width, 1, GLW_BORDER_COLOR_1);
+  glwDrawVLine(x, y + tabHeight, 1, height - tabHeight,
+    GLW_BORDER_COLOR_1);
+  glwDrawVLine(x + width - 1, y + tabHeight, 1, height - tabHeight,
+    GLW_BORDER_COLOR_1);
+  for (i = 0, offset = left; titles[i]; ++i) {
+    glwSize textSize = glwMeasureSystemText(win, titles[i]);
     if (imGUI->activeId == id) {
       int hit = glwPointTest(imGUI->mouseX, imGUI->mouseY, offset, y,
         maxItemWidth, tabHeight, 0);
@@ -625,27 +716,27 @@ int glwImTabBox(glwWin *win, int id, int x, int y, int width, int height,
       }
     }
     if (sel == i) {
-      glwDrawTopRoundedRectGradientFill(offset, y,
-        maxItemWidth, tabHeight,
-        GLW_BUTTON_CORNER_RADIUS,
-        GLW_TAB_FILL_GRADIENT_COLOR_1, GLW_TAB_FILL_GRADIENT_COLOR_2);
       glwDrawTopRoundedRectBorder(offset, y,
         maxItemWidth, tabHeight,
         GLW_BUTTON_CORNER_RADIUS, GLW_BORDER_COLOR_1);
+      glwDrawTopRoundedRectGradientFill(offset + 1, y + 1,
+        maxItemWidth - 2, tabHeight,
+        GLW_BUTTON_CORNER_RADIUS,
+        GLW_TAB_FILL_GRADIENT_COLOR_1, GLW_TAB_FILL_GRADIENT_COLOR_2);
     }
-    glwDrawSystemText(win, offset + (maxItemWidth - textSize.width) / 2,
-      y + tabHeight * GLW_VER_AUTO_MARGIN, list[i], GLW_SYSTEM_FONT_COLOR);
+    if (icons && icons[i]) {
+      int iconIdx = icons[i] - 1;
+      glwDrawSystemIcon(win, offset + textSize.height / 2,
+        y + tabHeight * GLW_VER_AUTO_MARGIN, icons[i], GLW_SYSTEM_FONT_COLOR);
+      glwDrawSystemText(win, offset + textSize.height / 2 +
+          iconTable[iconIdx][ICON_ITEM_ORIGINAL_WIDTH] + textSize.height / 2,
+        y + tabHeight * GLW_VER_AUTO_MARGIN, titles[i], GLW_SYSTEM_FONT_COLOR);
+    } else {
+      glwDrawSystemText(win, offset + (maxItemWidth - textSize.width) / 2,
+        y + tabHeight * GLW_VER_AUTO_MARGIN, titles[i], GLW_SYSTEM_FONT_COLOR);
+    }
     offset += maxItemWidth;
   }
-  glwDrawRectGradientFill(x + 1, y + tabHeight,
-    width - 2, height - tabHeight - 2,
-    GLW_BACKGROUND_COLOR, GLW_BACKGROUND_COLOR);
-  glwDrawHLine(x, y + tabHeight - 1, width, 1, GLW_BORDER_COLOR_1);
-  glwDrawHLine(x, y + height - 1, width, 1, GLW_BORDER_COLOR_1);
-  glwDrawVLine(x, y + tabHeight, 1, height - tabHeight,
-    GLW_BORDER_COLOR_1);
-  glwDrawVLine(x + width - 1, y + tabHeight, 1, height - tabHeight,
-    GLW_BORDER_COLOR_1);
   return sel;
 }
 
@@ -688,8 +779,7 @@ int glwImNextY(glwWin *win) {
 }
 
 int glwImLineHeight(glwWin *win) {
-  glwSystemFontTexture *systemFontTexture = glwGetSystemFontTexture(win);
-  return systemFontTexture->originSize.height * (1 + GLW_VER_AUTO_MARGIN * 2);
+  return glwGetLineHeight(win);
 }
 
 void glwSetUserData(glwWin *win, void *userData) {
@@ -745,3 +835,5 @@ int glwMouseY(glwWin *win) {
   glwWinContext *ctx = glwGetWinContext(win);
   return ctx->y;
 }
+
+

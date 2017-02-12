@@ -80,6 +80,9 @@ glwWinContext *glwGetWinContext(glwWin *win) {
     if (self->pendingReshape) {
       if (self->context.onReshape) {
         self->pendingReshape = 0;
+        if (!self->context.iconTexId) {
+          glwInitSystemIconTexture((glwWin *)self.window);
+        }
         if (!self->systemFontTexture.texId) {
           glwInitSystemFontTexture((glwWin *)self.window);
         }
@@ -225,10 +228,11 @@ glwImGui *glwGetImGUI(glwWin *win) {
 }
 
 glwFont *glwCreateFont(char *name, int weight, int size, int bold) {
-  NSString *fontFamily = [NSString stringWithCString:name 
+  NSString *fontFamily = [NSString stringWithCString:name
     encoding:NSMacOSRomanStringEncoding];
   NSFont *font = [[[NSFontManager sharedFontManager] fontWithFamily:fontFamily 
     traits:(bold ? NSBoldFontMask : NSUnboldFontMask) weight:weight size:size] retain];
+  //NSLog(@"%@",[[[NSFontManager sharedFontManager] availableFontFamilies] description]);
   return (glwFont *)font;
 }
 
@@ -280,6 +284,13 @@ glwWin *glwCreateWindow(int x, int y, int width, int height) {
   view->systemFontTexture.texId = 0;
   view->context.scaleX = 1;
   view->context.scaleY = 1;
+  
+  CFBundleRef mainBundle = CFBundleGetMainBundle();
+  CFURLRef resourcesURL = CFBundleCopyResourcesDirectoryURL(mainBundle);
+  CFURLGetFileSystemRepresentation(resourcesURL, TRUE,
+    (UInt8 *)view->context.root,
+    sizeof(view->context.root));
+  CFRelease(resourcesURL);
   
   [window setAcceptsMouseMovedEvents:YES];
   [window setContentView:view];

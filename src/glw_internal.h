@@ -30,6 +30,10 @@ typedef struct glwWinContext {
   void *userData;
   int x;
   int y;
+  int iconTexId;
+  int iconTexWidth;
+  int iconTexHeight;
+  char root[1024];
 } glwWinContext;
 
 typedef struct glwSystemFontTexture {
@@ -56,6 +60,8 @@ unsigned char *glwRenderTextToRGBA(char *text, glwFont *font, glwSize size,
 void glwDrawText(int x, int y, char *text, glwFont *font);
 void glwDrawSystemText(glwWin *win, int x, int y, char *text,
     unsigned int color);
+void glwDrawSystemIcon(glwWin *win, int x, int y, int icon,
+    unsigned int color);
 glwSize glwMeasureSystemText(glwWin *win, char *text);
 void glwInitSystemFontTexture(glwWin *win);
 void glwInitPrimitives(void);
@@ -68,5 +74,6 @@ void glwDrawButtonBackground(float x, float y, float width, float height,
 void glwMouseEvent(glwWin *win, int button, int state, int x, int y);
 glwImGui *glwGetImGUI(glwWin *win);
 glwWinContext *glwGetWinContext(glwWin *win);
+void glwInitSystemIconTexture(glwWin *win);
 
 #endif

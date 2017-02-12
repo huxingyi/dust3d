@@ -67,7 +67,8 @@ This todo already done in the B-Mesh algorithm implementation.
   <img src="screenshot/dust3d_imgui.png" width="280" height="266">  
   **Feb 11, 2017:**  
   Qt removed, so C++ removed, but Objective-C imported for just support the OpenGL environment on OSX.  
-  <img src="screenshot/dust3d_glw_preview.png" width="278" height="167">  
+  <img src="screenshot/dust3d_glw_preview.png" width="278" height="167"><img src="screenshot/dust3d_glw_preview_dark.png" width="284" height="244">  
+
 
 - [ ] Render rigid animation  
 - [ ] png exporter for isometric 2.5D game  

@@ -55,7 +55,7 @@ int glwImButtonGroup(glwWin *win, int id, int x, int y, int parentWidth,
     char **list, int sel);
 int glwImPanel(glwWin *win, int id, int x, int y, int width, int height);
 int glwImTabBox(glwWin *win, int id, int x, int y, int width, int height,
-  char **list, int sel);
+  char **titles, int *icons, int sel);
 int glwImToolBar(glwWin *win, int id, int x, int y, int width, int height);
 int glwImBottomBar(glwWin *win, int id, int x, int y, int width, int height);
 int glwImNextX(glwWin *win);
