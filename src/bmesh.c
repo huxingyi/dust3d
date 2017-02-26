@@ -755,14 +755,13 @@ int bmeshGenerateInbetweenMesh(bmesh *bm) {
   return 0;
 }
 
-int bmeshGenerate(bmesh *bm) {
+int bmeshGenerate(bmesh *bm, int level) {
   bmeshGenerateInbetweenBalls(bm);
   bmeshSweep(bm);
   bmeshStitch(bm);
   bmeshGenerateInbetweenMesh(bm);
   subdivCalculteNorms(bm->model);
-  //bm->subdivModel = subdivCatmullClark(bm->model);
-  bm->subdivModel = subdivCatmullClarkWithLoops(bm->model, 1);
+  bm->subdivModel = subdivCatmullClarkWithLoops(bm->model, level);
   return 0;
 }
 

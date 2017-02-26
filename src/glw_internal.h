@@ -1,5 +1,6 @@
 #ifndef GLW_INTERNAL_H
 #define GLW_INTERNAL_H
+#include <pthread.h>
 #include "glw.h"
 #include "glw_style.h"
 
@@ -22,7 +23,8 @@ typedef struct glwWinContext {
   void (*onMouse)(glwWin *win, int button, int state, int x, int y);
   void (*onMotion)(glwWin *win, int x, int y);
   void (*onPassiveMotion)(glwWin *win, int x, int y);
-  void(*onWheel)(glwWin *win, float delta);
+  void (*onWheel)(glwWin *win, float delta);
+  void (*onKeyboard)(glwWin *win, unsigned char key, int x, int y);
   int viewWidth;
   int viewHeight;
   float scaleX;
@@ -52,6 +54,11 @@ typedef struct glwImGui {
   int activeId;
   int nextX;
   int nextY;
+  int activeThreadId;
+  pthread_t activeThread;
+  void *activeThreadTag;
+  volatile int activeThreadDoneFlag;
+  void (*activeThreadCall)(glwWin *win, void *tag);
 } glwImGui;
 
 glwSize glwMeasureText(char *text, glwFont *font);

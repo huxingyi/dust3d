@@ -69,6 +69,8 @@ int glwImMenu(glwWin *win, int id, int x, int y, int width, int height,
   char **titles, int sel);
 float glwImSlider(glwWin *win, int id, int x, int y, int width,
   float min, float max, float cur, char *fmt, ...);
+int glwImThread(glwWin *win, int id, void (*thread)(glwWin *win, void *tag),
+  void *tag);
 
 #ifdef __cplusplus
 }

@@ -2,7 +2,7 @@
 #define GLW_STYLE_H
 
 #define GLW_SYSTEM_FONT_NAME    "PT Sans Narrow" //"Monaco" //"Helvetica"
-#define GLW_SYSTEM_FONT_WEIGHT  10
+#define GLW_SYSTEM_FONT_WEIGHT  5
 #define GLW_SYSTEM_FONT_SIZE    20
 #define GLW_SYSTEM_FONT_COLOR   0xb9b9b9
 #define GLW_SYSTEM_FONT_COLOR_H 0xffffff

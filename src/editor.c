@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 #include "glw.h"
 #include "glw_style.h"
 #include "draw.h"
@@ -59,6 +60,10 @@ typedef struct editor {
   bmesh *bm;
   skeleton *skl;
   float ballRadius;
+  int bmeshLevel;
+  float bmeshLevelCfg;
+  bmesh *newBm;
+  int needGenerateBm;
 } editor;
 
 #include "../data/bmesh_test_2.h"
@@ -96,6 +101,37 @@ static void drawCanvas(int x, int y, int width, int height) {
     glVertex2f(right, bottom);
     glVertex2f(left, bottom);
   glEnd();
+}
+
+static void generateBmeshInBackground(glwWin *win, void *tag) {
+  editor *ed = glwGetUserData(win);
+  bmesh *newBm;
+  bmeshBall ball;
+  bmeshBone bone;
+  unsigned int i;
+  
+  newBm = bmeshCreate();
+
+  for (i = 0; i < sizeof(bmeshTestBalls) / sizeof(bmeshTestBalls[0]); ++i) {
+    memset(&ball, 0, sizeof(ball));
+    ball.position.x = bmeshTestBalls[i][1];
+    ball.position.y = bmeshTestBalls[i][2];
+    ball.position.z = bmeshTestBalls[i][3];
+    ball.radius = bmeshTestBalls[i][4];
+    ball.type = bmeshTestBalls[i][5];
+    bmeshAddBall(newBm, &ball);
+  }
+
+  for (i = 0; i < sizeof(bmeshTestBones) / sizeof(bmeshTestBones[0]); ++i) {
+    memset(&bone, 0, sizeof(bone));
+    bone.firstBallIndex = bmeshTestBones[i][0];
+    bone.secondBallIndex = bmeshTestBones[i][1];
+    bmeshAddBone(newBm, &bone);
+  }
+
+  bmeshGenerate(newBm, ed->bmeshLevel);
+  
+  *(bmesh **)tag = newBm;
 }
 
 static void display(glwWin *win) {
@@ -144,19 +180,21 @@ static void display(glwWin *win) {
       glwImNextY(win), titles, icons, -1);
   }
   
+#define ED_MAX_BMESH_SUB_LEVEL 2
+  
   {
     char *titles[] = {"Property", 0};
     int icons[] = {ICON_TOOL, 0};
     glwImTabBox(win, GEN_ID, ED_SPACING / 2, ED_TOPBAR_HEIGHT, ED_SIDEBAR_WIDTH,
       ed->height - ED_TOPBAR_HEIGHT - ED_SPACING / 2,
       titles, icons, 0);
-    ed->ballRadius = glwImSlider(win, GEN_ID, glwImNextX(win) + ED_MARGIN,
+    ed->bmeshLevelCfg = glwImSlider(win, GEN_ID, glwImNextX(win) + ED_MARGIN,
       glwImNextY(win) + ED_MARGIN,
       ED_SIDEBAR_WIDTH - ED_MARGIN * 2,
-      ED_MIN_BALL_RADIUS, ED_MAX_BALL_RADIUS,
-      ed->ballRadius,
-      "Radius: %.4f",
-      ed->ballRadius);
+      0, 1,
+      ed->bmeshLevelCfg,
+      "Subdivide Level: %d",
+      1 + (int)round(ed->bmeshLevelCfg));
   }
   
   {
@@ -198,31 +236,24 @@ static void display(glwWin *win) {
       if (0 == ed->skl) {
         ed->skl = skeletonCreate();
       }
-
-      if (0 == ed->bm) {
-        bmeshBall ball;
-        bmeshBone bone;
-        unsigned int i;
-        ed->bm = bmeshCreate();
-
-        for (i = 0; i < sizeof(bmeshTestBalls) / sizeof(bmeshTestBalls[0]); ++i) {
-          memset(&ball, 0, sizeof(ball));
-          ball.position.x = bmeshTestBalls[i][1];
-          ball.position.y = bmeshTestBalls[i][2];
-          ball.position.z = bmeshTestBalls[i][3];
-          ball.radius = bmeshTestBalls[i][4];
-          ball.type = bmeshTestBalls[i][5];
-          bmeshAddBall(ed->bm, &ball);
+      
+      if (!ed->needGenerateBm) {
+        if (1 + (int)round(ed->bmeshLevelCfg) != ed->bmeshLevel) {
+          ed->bmeshLevel = 1 + (int)round(ed->bmeshLevelCfg);
+          ed->needGenerateBm = 1;
         }
-
-        for (i = 0; i < sizeof(bmeshTestBones) / sizeof(bmeshTestBones[0]); ++i) {
-          memset(&bone, 0, sizeof(bone));
-          bone.firstBallIndex = bmeshTestBones[i][0];
-          bone.secondBallIndex = bmeshTestBones[i][1];
-          bmeshAddBone(ed->bm, &bone);
+      }
+      
+      if (ed->needGenerateBm) {
+        if (glwImThread(win, GEN_ID, generateBmeshInBackground, &ed->newBm)) {
+          if (ed->bm) {
+            bmeshDestroy(ed->bm);
+            ed->bm = 0;
+          }
+          ed->bm = ed->newBm;
+          ed->newBm = 0;
+          ed->needGenerateBm = 0;
         }
-
-        bmeshGenerate(ed->bm);
       }
       
       glColor3f(glwR(ED_GL_BACKGROUND_COLOR),
@@ -254,20 +285,24 @@ static void display(glwWin *win) {
       glEnable(GL_LIGHTING);
       glEnable(GL_CULL_FACE);
       
-      if (ed->showBallChecked) {
+      if (ed->bm) {
+        if (ed->showBallChecked) {
         
-      }
-      
-      if (ed->showBoneChecked) {
-        int index;
-        for (index = 0; index < bmeshGetBoneNum(ed->bm); ++index) {
-        bmeshBone *bone = bmeshGetBone(ed->bm, index);
-          drawBmeshBone(ed->bm, bone);
         }
-      }
       
-      if (ed->showMeshChecked) {
-        bmeshDraw(ed->bm);
+        if (ed->showBoneChecked) {
+          int index;
+          for (index = 0; index < bmeshGetBoneNum(ed->bm); ++index) {
+          bmeshBone *bone = bmeshGetBone(ed->bm, index);
+            drawBmeshBone(ed->bm, bone);
+          }
+        }
+        
+        if (ed->showMeshChecked) {
+          unsigned int color = 0xffffff;
+          glColor3f(glwR(color), glwG(color), glwB(color));
+          bmeshDraw(ed->bm);
+        }
       }
       
       glDisable(GL_CULL_FACE);
@@ -340,6 +375,10 @@ static void wheel(glwWin *win, float delta) {
   ed->cameraDistance -= delta * 0.01f;
 }
 
+static void keyboard(glwWin *win, unsigned char key, int x, int y) {
+  
+}
+
 int main(int argc, char *argv[]) {
   editor ed;
   glwInit();
@@ -352,11 +391,14 @@ int main(int argc, char *argv[]) {
   ed.showMeshChecked = 1;
   ed.selectedMenu = -1;
   
-  ed.win = glwCreateWindow(0, 0, 600, 480);
+  ed.bmeshLevelCfg = 1;
+  
+  ed.win = glwCreateWindow(0, 0, 0, 0);
   glwSetUserData(ed.win, &ed);
   glwReshapeFunc(ed.win, reshape);
   glwDisplayFunc(ed.win, display);
   glwMouseFunc(ed.win, mouse);
+  glwKeyboardFunc(ed.win, keyboard);
   glwMotionFunc(ed.win, motion);
   glwWheelFunc(ed.win, wheel);
   glwMainLoop();

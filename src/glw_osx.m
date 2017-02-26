@@ -213,6 +213,20 @@ glwWinContext *glwGetWinContext(glwWin *win) {
   }
 }
 
+- (void)keyDown:(NSEvent *)event {
+  NSString * const character = [event charactersIgnoringModifiers];
+  if ([character length] > 0) {
+    unichar c = [character characterAtIndex:0];
+    NSCharacterSet *letters = [NSCharacterSet letterCharacterSet];
+    if ([letters characterIsMember:c]) {
+      if (self->context.onKeyboard) {
+        self->context.onKeyboard((glwWin *)self.window, (unsigned char)c,
+          self->context.x, self->context.y);
+      }
+    }
+  }
+}
+
 - (BOOL)isFlipped {
   return YES;
 }

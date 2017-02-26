@@ -847,6 +847,12 @@ void glwMouseFunc(glwWin *win, void (*func)(glwWin *win, int button, int state,
   ctx->onMouse = func;
 }
 
+void glwKeyboardFunc(glwWin *win, void (*func)(glwWin *win, unsigned char key,
+    int x, int y)) {
+  glwWinContext *ctx = glwGetWinContext(win);
+  ctx->onKeyboard = func;
+}
+
 void glwMotionFunc(glwWin *win,
     void (*func)(glwWin *win, int x, int y)) {
   glwWinContext *ctx = glwGetWinContext(win);
@@ -958,4 +964,32 @@ float glwImSlider(glwWin *win, int id, int x, int y, int width,
     GLW_SLIDER_THUMB_WIDTH, GLW_SLIDER_THUMB_HEIGHT,
     GLW_SLIDER_CORNER_RADIUS, GLW_BORDER_COLOR_2);
   return cur;
+}
+
+static void *activeThreadWrapper(void *param) {
+  glwWin *win = (glwWin *)param;
+  glwImGui *imGUI = glwGetImGUI(win);
+  imGUI->activeThreadCall(win, imGUI->activeThreadTag);
+  imGUI->activeThreadDoneFlag = 1;
+  return 0;
+}
+
+int glwImThread(glwWin *win, int id, void (*thread)(glwWin *win, void *tag),
+    void *tag) {
+  glwImGui *imGUI = glwGetImGUI(win);
+  int finished = 0;
+  if (0 == imGUI->activeThreadId) {
+    imGUI->activeThreadId = id;
+    imGUI->activeThreadTag = tag;
+    imGUI->activeThreadDoneFlag = 0;
+    imGUI->activeThreadCall = thread;
+    pthread_create(&imGUI->activeThread, NULL, activeThreadWrapper, win);
+  } else if (id == imGUI->activeThreadId) {
+    if (imGUI->activeThreadDoneFlag) {
+      pthread_join(imGUI->activeThread, NULL);
+      imGUI->activeThreadId = 0;
+      finished = 1;
+    }
+  }
+  return finished;
 }

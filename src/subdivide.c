@@ -411,7 +411,6 @@ void subdivDrawModel(subdivModel *model) {
   int faceIterator;
   int vertexIterator;
   faceIterator = model->faceLink;
-  glColor4f(1.0, 1.0, 1.0, 1.0);
   while (-1 != faceIterator) {
     linkItem = arrayGetItem(model->indexArray, faceIterator);
     f = getFace(model, linkItem->index);
@@ -591,6 +590,6 @@ subdivModel *subdivCatmullClarkWithLoops(subdivModel *model, int loops) {
     outputModel = subdivCatmullClark(loopInput);
     subdivDestroyModel(loopInput);
   }
-  subdivDrawModel(outputModel);
+  //subdivDrawModel(outputModel);
   return outputModel;
 }
