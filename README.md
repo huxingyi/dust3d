@@ -12,7 +12,18 @@ From my initial thought, Dust3D should be a tool like [Makehuman](http://www.mak
 
 TODO & Progress
 ==============
-- [x] Drawing Primitives (Dec 15, 2016 ~ Dec 17, 2016)   
+- [x] Drawing Primitives  
+- [x] Implement B-Mesh algorithm  
+- [x] Render B-Mesh result  
+- [ ] Design UI for monster parts configuration  
+- [ ] Render rigid animation  
+- [ ] png exporter for isometric 2.5D game  
+- [ ] Export Wavefront .obj  
+- [ ] Materials merge of different parts      
+- [ ] Version 0.01 release  
+- [ ] Implement [the Skeleton of a Closed 3D Shape](http://www1.idc.ac.il/icgf/GraphicsSeminar2006/DCGskeleton06.pdf)  
+
+**Dec 15, 2016 ~ Dec 17, 2016:**  
 *Sphere*  
 I don't want the whole project have any unnecessary dependent, like glu library.
 Let's start with [drawing a sphere without gluSphere]( http://stackoverflow.com/questions/7687148/drawing-sphere-in-opengl-without-using-glusphere), because I want implement the same spheres which presented in the [B-Mesh paper](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.357.7134&rep=rep1&type=pdf).   
@@ -20,9 +31,9 @@ Let's start with [drawing a sphere without gluSphere]( http://stackoverflow.com/
 Two caps and many strips composites a cylinder.  
 *Infinite Grid*  
 Almost all 3D editor have a infinite grid ground, I just made a finite one, in the future, I should expand the grid outside of the screen to make it infinite.  
-Now, for just beginning, I think it's a not bad start.
+Now, for just beginning, I think it's a not bad start.    
 <img src="screenshot/dust3d_sphere_cylinder.png">  
-- [x] Implement B-Mesh algorithm (Dec 18, 2016 ~ Jan 04, 2017)   
+**Dec 18, 2016 ~ Jan 04, 2017:**  
 There is a implementation of [B-Mesh algorithm in C++](https://github.com/evanw/cs224final) language, but I want the pure C version, so I start to implement my own version. I read both paper and this implementation, it gave me very helpful understanding of this algorithm.    
 *Drawing Skeletal Shape Balls*  
 Draw shape ball is easy, no need to rotate, I just need scale it along the ball's radius.
@@ -50,31 +61,22 @@ I follow the B-Mesh paper, made another test module inside Blender, and created 
 *Catmull-Clark Subdivision*  
 <img src="screenshot/dust3d_subdivide_catmull_clark.png" width="124" height="128">  <img src="screenshot/dust3d_bmesh_subdivide_2.png" width="124" height="128">    
 There is a implementation of Catmull-Clark Subdivision algorithm on [rosettacode](https://rosettacode.org/wiki/Catmull%E2%80%93Clark_subdivision_surface/C), the code is very simple and beautiful, just lack of some memory alloc fail check. I translated the algorithm to use my own array implementation.  
-Now, the render result looks not bad after 2 times of subdivisions. I would like to mark this todo as done, though there are more polish steps on the original paper, I just leave it as to be done in the future.
-- [x] Render B-Mesh result  
-This todo already done in the B-Mesh algorithm implementation.  
-- [ ] Design UI for monster parts configuration  
-  **Jan 17, 2017 ~ Jan 18, 2017:**    
-  *Skeleton Editor*  
-  There is a good tutorial introduced how to implement object selection by mouse in OpenGL, written by [Bartek](http://www.bfilipek.com/2012/06/select-mouse-opengl.html).  
-  But there is a big pain in the progress of implement the object selection logic, because of resizeGL, the width and height which passed in as parameters of this function is not equal to the size of the window.  
-  **Feb 3, 2017:**  
-  Recently, I submitted a patch(https://developer.blender.org/D2489) to blender to fix a crash bug, because is just a quick fix and I am not familiar with the blender's code, so the patch is not fixing the real problem, though the bug is there, and Gaia Clary fixed it. What I am trying to say is when I was compiling the blender code, there was a real pain to fix some third part dependency and different C++ version problem.  
-  So I reconsidered the GUI of Dust3d, I want remove all the C++ code inevitably including the Qt library. Maybe I need try just use OpenGL to draw the interface in the next step.  
-  **Feb 8, 2017:**  
-  There are lots of changes to the UI part of Dust3D, though not commit yet because of many things have not been finalize.  
-  I removed the Qt, the counterpart of the build system is CMake, and instead of using Qt based OpenGL windows, I am using my own implemented OpenGL support library. I considered using the most popular [Dear ImGui](https://github.com/ocornut/imgui) library, but I really want remove the C++ from the codebase. It's a good start of the skeleton editor UI!  
-  <img src="screenshot/dust3d_imgui.png" width="280" height="266">  
-  **Feb 11, 2017:**  
-  Qt removed, so C++ removed, but Objective-C imported for just support the OpenGL environment on OSX.  
-  <img src="screenshot/dust3d_glw_preview.png" width="278" height="167"><img src="screenshot/dust3d_glw_preview_dark.png" width="284" height="244">  
-  **Feb 12, 2017:**  
-  <img src="screenshot/dust3d_glw_preview_dark_2.png" width="278" height="167">  
-  **July 29, 2017:**  
-  It's been more than 5 months since my last update. I was busy on preparing for my IELTS and PTE English test, and still is. However, the suspended period on this project make me rethink the progress though. Removing C++ from codebase and introducing Objective-C is really not a good idea, especially because my target is not making a GUI framework, but a modeling tool for game making. I need focus back on my original target. 
-- [ ] Render rigid animation  
-- [ ] png exporter for isometric 2.5D game  
-- [ ] Export Wavefront .obj
-- [ ] Materials merge of different parts      
-- [ ] Version 0.01 release  
-- [ ] Implement [the Skeleton of a Closed 3D Shape](http://www1.idc.ac.il/icgf/GraphicsSeminar2006/DCGskeleton06.pdf)  
+Now, the render result looks not bad after 2 times of subdivisions. I would like to mark this todo as done, though there are more polish steps on the original paper, I just leave it as to be done in the future.  
+**Jan 17, 2017 ~ Jan 18, 2017:**    
+*Skeleton Editor*  
+There is a good tutorial introduced how to implement object selection by mouse in OpenGL, written by [Bartek](http://www.bfilipek.com/2012/06/select-mouse-opengl.html).  
+But there is a big pain in the progress of implement the object selection logic, because of resizeGL, the width and height which passed in as parameters of this function is not equal to the size of the window.  
+**Feb 3, 2017:**  
+Recently, I submitted a patch(https://developer.blender.org/D2489) to blender to fix a crash bug, because is just a quick fix and I am not familiar with the blender's code, so the patch is not fixing the real problem, though the bug is there, and Gaia Clary fixed it. What I am trying to say is when I was compiling the blender code, there was a real pain to fix some third part dependency and different C++ version problem.  
+So I reconsidered the GUI of Dust3d, I want remove all the C++ code inevitably including the Qt library. Maybe I need try just use OpenGL to draw the interface in the next step.  
+**Feb 8, 2017:**  
+There are lots of changes to the UI part of Dust3D, though not commit yet because of many things have not been finalize.  
+I removed the Qt, the counterpart of the build system is CMake, and instead of using Qt based OpenGL windows, I am using my own implemented OpenGL support library. I considered using the most popular [Dear ImGui](https://github.com/ocornut/imgui) library, but I really want remove the C++ from the codebase. It's a good start of the skeleton editor UI!  
+<img src="screenshot/dust3d_imgui.png" width="280" height="266">  
+**Feb 11, 2017:**  
+Qt removed, so C++ removed, but Objective-C imported for just support the OpenGL environment on OSX.  
+<img src="screenshot/dust3d_glw_preview.png" width="278" height="167"><img src="screenshot/dust3d_glw_preview_dark.png" width="284" height="244">  
+**Feb 12, 2017:**  
+<img src="screenshot/dust3d_glw_preview_dark_2.png" width="278" height="167">  
+**July 29, 2017:**  
+It's been more than 5 months since my last update. I was busy on preparing for my IELTS and PTE English test, and still is. However, the suspended period on this project make me rethink the progress though. Removing C++ from codebase and introducing Objective-C is really not a good idea, especially because my target is not making a GUI framework, but a modeling tool for game making. I need focus back on my original target.
