@@ -21,7 +21,7 @@ Two caps and many strips composites a cylinder.
 *Infinite Grid*  
 Almost all 3D editor have a infinite grid ground, I just made a finite one, in the future, I should expand the grid outside of the screen to make it infinite.  
 Now, for just beginning, I think it's a not bad start.
-<img src="screenshot/dust3d_sphere_cylinder.png">
+<img src="screenshot/dust3d_sphere_cylinder.png">  
 - [x] Implement B-Mesh algorithm (Dec 18, 2016 ~ Jan 04, 2017)   
 There is a implementation of [B-Mesh algorithm in C++](https://github.com/evanw/cs224final) language, but I want the pure C version, so I start to implement my own version. I read both paper and this implementation, it gave me very helpful understanding of this algorithm.    
 *Drawing Skeletal Shape Balls*  
@@ -70,7 +70,8 @@ This todo already done in the B-Mesh algorithm implementation.
   <img src="screenshot/dust3d_glw_preview.png" width="278" height="167"><img src="screenshot/dust3d_glw_preview_dark.png" width="284" height="244">  
   **Feb 12, 2017:**  
   <img src="screenshot/dust3d_glw_preview_dark_2.png" width="278" height="167">  
-
+  **July 29, 2017:**  
+  It's been more than 5 months since my last update. I was busy on preparing for my IELTS and PTE English test, and still is. However, the suspended period on this project make me rethink the progress though. Removing C++ from codebase and introducing Objective-C is really not a good idea, especially because my target is not making a GUI framework, but a modeling tool for game making. I need focus back on my original target. 
 - [ ] Render rigid animation  
 - [ ] png exporter for isometric 2.5D game  
 - [ ] Export Wavefront .obj
