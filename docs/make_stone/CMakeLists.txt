@@ -1,0 +1,13 @@
+cmake_minimum_required(VERSION 2.8)
+project(make_stone)
+set(targetName make_stone)
+include_directories(../../src)
+add_executable(${targetName}
+    ../../src/halfedge.h
+    ../../src/halfedge.c
+    ../../src/matrix.h
+    ../../src/matrix.c
+    make_stone.c
+    ../../src/vector3d.h
+    ../../src/vector3d.c
+)

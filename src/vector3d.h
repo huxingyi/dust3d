@@ -1,35 +1,21 @@
-#ifndef VECTOR_3D_H
-#define VECTOR_3D_H
+#ifndef DUST3D_VECTOR3D_H
+#define DUST3D_VECTOR3D_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+typedef struct vector3d {
+    float x;
+    float y;
+    float z;
+} vector3d;
 
-typedef struct {
-  float x;
-  float y;
-  float z;
-} vec3;
+typedef struct point3d {
+    float x;
+    float y;
+    float z;
+} point3d;
 
-void vec3Normalize(vec3 *p);
-void vec3Midpoint(vec3 *a, vec3 *b, vec3 *mid);
-void vec3Lerp(vec3 *a, vec3 *b, float frac, vec3 *result);
-void vec3CrossProduct(vec3 *a, vec3 *b, vec3 *result);
-void vec3Sub(vec3 *a, vec3 *b, vec3 *result);
-void vec3Add(vec3 *a, vec3 *b, vec3 *result);
-void vec3Scale(vec3 *a, float scale, vec3 *result);
-float vec3DotProduct(vec3 *a, vec3 *b);
-float vec3Length(vec3 *p);
-float vec3Distance(vec3 *a, vec3 *b);
-void vec3Normal(vec3 *a, vec3 *b, vec3 *c, vec3 *normal);
-void vec3RotateAlong(vec3 *a, float angle, vec3 *axis, vec3 *result);
-float vec3Angle(vec3 *a, vec3 *b);
-void vec3ProjectOver(vec3 *a, vec3 *over, vec3 *result);
-float vec3TriangleArea(vec3 *a, vec3 *b, vec3 *c);
-void vec3Negative(vec3 *a, vec3 *result);
-
-#ifdef __cplusplus
-}
-#endif
+void vector3dNormal(point3d *p1, point3d *p2, point3d *p3, vector3d *v);
+void vector3dAdd(vector3d *v, vector3d *add);
+void vector3dDivide(vector3d *v, float div);
+void vector3dMultiply(vector3d *v, float mul);
 
 #endif
