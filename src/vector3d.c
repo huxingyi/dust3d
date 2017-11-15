@@ -29,6 +29,12 @@ void vector3dAdd(vector3d *v, vector3d *add) {
     v->z += add->z;
 }
 
+void vector3dSub(vector3d *v, vector3d *sub) {
+    v->x -= sub->x;
+    v->y -= sub->y;
+    v->z -= sub->z;
+}
+
 void vector3dDivide(vector3d *v, float div) {
     v->x /= div;
     v->y /= div;
@@ -39,4 +45,10 @@ void vector3dMultiply(vector3d *v, float mul) {
     v->x *= mul;
     v->y *= mul;
     v->z *= mul;
+}
+
+void vector3dLerp(vector3d *a, vector3d *b, float frac, vector3d *result) {
+  result->x = a->x + (b->x - a->x) * frac;
+  result->y = a->y + (b->y - a->y) * frac;
+  result->z = a->z + (b->z - a->z) * frac;
 }
