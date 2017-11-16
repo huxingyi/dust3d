@@ -320,40 +320,40 @@ int halfedgeTransformFace(mesh *m, face *f, matrix *mat) {
     return 0;
 }
 
-face *halfedgeChamferVertex(mesh *m, vertex *v, float firstRadius, float secondRadius, float thirdRadius) {
-    face *tri;
-    int i;
-    halfedge *cornerHalfedges[6];
-    halfedge *newInnerHalfedges[3];
-    halfedge *newOutterHalfedges[3];
-    const int outterAdjcents[3][2] = {{5, 0}, {3, 4}, {1, 2}};
-    point3d newPoints[3];
-    cornerHalfedges[0] = v->handle;
-    cornerHalfedges[1] = cornerHalfedges[0]->opposite;
-    cornerHalfedges[2] = cornerHalfedges[1]->next;
-    cornerHalfedges[3] = cornerHalfedges[2]->opposite;
-    cornerHalfedges[4] = cornerHalfedges[3]->next;
-    cornerHalfedges[5] = cornerHalfedges[4]->opposite;
-    vector3dLerp(&v->position, &cornerHalfedges[1]->start->position, firstRadius, &newPoints[0]);
-    vector3dLerp(&v->position, &cornerHalfedges[5]->start->position, secondRadius, &newPoints[1]);
-    vector3dLerp(&v->position, &cornerHalfedges[3]->start->position, thirdRadius, &newPoints[2]);
-    tri = halfedgeCreateFaceFromPoints(m, newPoints, 3);
-    newInnerHalfedges[0] = tri->handle;
-    newInnerHalfedges[1] = tri->handle->next;
-    newInnerHalfedges[2] = tri->handle->next->next;
-    for (i = 0; i < 3; i++) {
-        newOutterHalfedges[i] = newHalfedge();
-        newOutterHalfedges[i]->start = newInnerHalfedges[i]->next->start;
-        pair(newInnerHalfedges[i], newOutterHalfedges[i]);
-    }
-    for (i = 0; i < 3; i++) {
-        const int first = outterAdjcents[i][0];
-        const int second = outterAdjcents[i][1];
-        newOutterHalfedges[i]->left = cornerHalfedges[first]->left;
-        link(cornerHalfedges[first], newOutterHalfedges[i]);
-        link(newOutterHalfedges[i], cornerHalfedges[second]);
-        cornerHalfedges[second]->start = newInnerHalfedges[i]->start;
-    }
+face *halfedgeChamferVertex(mesh *m, vertex *v, float ammount) {
+    halfedge *itAdjecent = v->handle;
+    halfedge *stopAdjecent = itAdjecent;
+    createFaceContext *ctx = halfedgeCreateFaceBegin(m);
+    halfedge *lastOutter = 0;
+    halfedge *lastInner = 0;
+    vertex *lastVertex = 0;
+    vertex *firstVertex = 0;
+    do {
+        point3d segPoint;
+        halfedge *current = itAdjecent;
+        itAdjecent = itAdjecent->previous->opposite;
+        vector3dLerp(&v->position, &current->opposite->start->position, ammount, &segPoint);
+        lastVertex = newVertex(m, segPoint);
+        if (!firstVertex) {
+            firstVertex = lastVertex;
+        }
+        if (lastInner && lastOutter) {
+            pair(lastInner, lastOutter);
+            lastOutter->start = lastVertex;
+        }
+        lastInner = halfedgeCreateFaceAddVertex(ctx, lastVertex);
+        if (lastOutter) {
+            lastOutter->start = lastVertex;
+        }
+        lastOutter = newHalfedge();
+        lastOutter->left = current->left;
+        link(current->previous, lastOutter);
+        link(lastOutter, current);
+        current->start = lastVertex;
+    } while (itAdjecent != stopAdjecent);
+    lastInner = halfedgeCreateFaceEnd(ctx);
+    lastOutter->start = firstVertex;
+    pair(lastInner, lastOutter);
     deleteVertex(m, v);
-    return newInnerHalfedges[0]->left;
+    return lastInner->left;
 }

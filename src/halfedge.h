@@ -50,6 +50,6 @@ face *halfedgeFlipFace(mesh *m, face *f);
 int halfedgeFaceNormal(mesh *m, face *f, vector3d *normal);
 int halfedgeTransformFace(mesh *m, face *f, matrix *mat);
 int halfedgeStitch(mesh *m, halfedge *from, halfedge *to);
-face *halfedgeChamferVertex(mesh *m, vertex *v, float firstRadius, float secondRadius, float thirdRadius);
+face *halfedgeChamferVertex(mesh *m, vertex *v, float ammount);
 
 #endif
