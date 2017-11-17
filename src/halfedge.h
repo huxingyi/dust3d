@@ -13,10 +13,13 @@ typedef struct vertex {
     int index;
 } vertex;
 
+#define MAX_FACE_NAME_SIZE  8
+
 typedef struct face {
     halfedge *handle;
     struct face *previous;
     struct face *next;
+    char name[MAX_FACE_NAME_SIZE];
 } face;
 
 struct halfedge {
@@ -37,7 +40,8 @@ typedef struct mesh {
 typedef struct createFaceContext createFaceContext;
 
 mesh *halfedgeCreateMesh(void);
-int halfedgeSaveAsObj(mesh *m, const char *filename);
+int halfedgeSaveMeshAsObj(mesh *m, const char *filename);
+int halfedgeSaveFaceAsObj(mesh *m, face *f, const char *filename);
 createFaceContext *halfedgeCreateFaceBegin(mesh *m);
 halfedge *halfedgeCreateFaceAddPoint(createFaceContext *ctx, point3d point);
 halfedge *halfedgeCreateFaceEnd(createFaceContext *ctx);
@@ -51,5 +55,7 @@ int halfedgeFaceNormal(mesh *m, face *f, vector3d *normal);
 int halfedgeTransformFace(mesh *m, face *f, matrix *mat);
 int halfedgeStitch(mesh *m, halfedge *from, halfedge *to);
 face *halfedgeChamferVertex(mesh *m, vertex *v, float ammount);
+int halfedgeIsBoundaryVertex(mesh *m, vertex *v);
+face *halfedgeChamferEdge(mesh *m, halfedge *h, float ammount);
 
 #endif

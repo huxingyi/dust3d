@@ -6,6 +6,8 @@
 #include "matrix.h"
 #include "vector3d.h"
 
+#define min(x, y) (((x) < (y)) ? (x) : (y))
+
 static face *newFace(mesh *m) {
     face *f = (face *)calloc(1, sizeof(face));
     if (m->lastFace) {
@@ -16,6 +18,11 @@ static face *newFace(mesh *m) {
     }
     m->lastFace = f;
     return f;
+}
+
+static void setFaceName(face *f, const char *name) {
+    strncpy(f->name, name, sizeof(f->name) - 1);
+    f->name[sizeof(f->name) - 1] = '\0';
 }
 
 static vertex *newVertex(mesh *m, point3d position) {
@@ -47,6 +54,31 @@ static void deleteVertex(mesh *m, vertex *v) {
     free(v);
 }
 
+static void deleteFace(mesh *m, face *f) {
+    if (f->next) {
+        f->next->previous = f->previous;
+    }
+    if (f->previous) {
+        f->previous->next = f->next;
+    }
+    if (m->lastFace == f) {
+        m->lastFace = f->previous;
+    }
+    if (m->firstFace == f) {
+        m->firstFace = f->next;
+    }
+    free(f);
+}
+
+static void deleteHalfedge(mesh *m, halfedge *h) {
+    free(h);
+}
+
+static void deleteEdge(mesh *m, halfedge *h) {
+    deleteHalfedge(m, h->opposite);
+    deleteHalfedge(m, h);
+}
+
 static halfedge *newHalfedge(void) {
     return (halfedge *)calloc(1, sizeof(halfedge));
 }
@@ -56,13 +88,17 @@ mesh *halfedgeCreateMesh(void) {
 }
 
 #define pair(first, second) do {\
-    (first)->opposite = (second);\
-    (second)->opposite = (first);\
+    halfedge *firstValue = (first);\
+    halfedge *secondValue = (second);\
+    (first)->opposite = (secondValue);\
+    (second)->opposite = (firstValue);\
 } while (0)
 
 #define link(first, second) do {\
-    (first)->next = (second);\
-    (second)->previous = (first);\
+    halfedge *firstValue = (first);\
+    halfedge *secondValue = (second);\
+    (first)->next = (secondValue);\
+    (second)->previous = (firstValue);\
 } while (0)
 
 #define swap(type, first, second) do {\
@@ -71,7 +107,7 @@ mesh *halfedgeCreateMesh(void) {
     (second) = tmp;\
 } while (0)
 
-int halfedgeSaveAsObj(mesh *m, const char *filename) {
+int halfedgeSaveMeshAsObj(mesh *m, const char *filename) {
     vertex *v = 0;
     face *f = 0;
     FILE *file = 0;
@@ -101,6 +137,35 @@ int halfedgeSaveAsObj(mesh *m, const char *filename) {
         } while (it != stop);
         fprintf(file, "\n");
     }
+    fclose(file);
+    return 0;
+}
+
+int halfedgeSaveFaceAsObj(mesh *m, face *f, const char *filename) {
+    halfedge *it = f->handle;
+    int nextVertexIndex = 1;
+    int nextFaceIndex = 1;
+    vector3d normal;
+    FILE *file;
+    file = fopen(filename, "wb");
+    if (!file) {
+        fprintf(stderr, "Open file \"%s\" failed.\n", filename);
+        return -1;
+    }
+    do {
+        it->start->index = nextVertexIndex++;
+        fprintf(file, "v %f %f %f\n", it->start->position.x, it->start->position.z, it->start->position.y);
+        it = it->next;
+    } while (it != f->handle);
+    halfedgeFaceNormal(m, f, &normal);
+    fprintf(file, "vn %f %f %f\n", normal.x, normal.z, normal.y);
+    it = f->handle;
+    fprintf(file, "f");
+    do {
+        fprintf(file, " %d//%d", it->start->index, nextFaceIndex);
+        it = it->next;
+    } while (it != f->handle);
+    fprintf(file, "\n");
     fclose(file);
     return 0;
 }
@@ -323,11 +388,15 @@ int halfedgeTransformFace(mesh *m, face *f, matrix *mat) {
 face *halfedgeChamferVertex(mesh *m, vertex *v, float ammount) {
     halfedge *itAdjecent = v->handle;
     halfedge *stopAdjecent = itAdjecent;
-    createFaceContext *ctx = halfedgeCreateFaceBegin(m);
+    createFaceContext *ctx = 0;
     halfedge *lastOutter = 0;
     halfedge *lastInner = 0;
     vertex *lastVertex = 0;
     vertex *firstVertex = 0;
+    if (halfedgeIsBoundaryVertex(m, v)) {
+        return 0;
+    }
+    ctx = halfedgeCreateFaceBegin(m);
     do {
         point3d segPoint;
         halfedge *current = itAdjecent;
@@ -337,13 +406,12 @@ face *halfedgeChamferVertex(mesh *m, vertex *v, float ammount) {
         if (!firstVertex) {
             firstVertex = lastVertex;
         }
-        if (lastInner && lastOutter) {
-            pair(lastInner, lastOutter);
+        if (lastOutter) {
             lastOutter->start = lastVertex;
         }
         lastInner = halfedgeCreateFaceAddVertex(ctx, lastVertex);
-        if (lastOutter) {
-            lastOutter->start = lastVertex;
+        if (lastInner && lastOutter) {
+            pair(lastInner, lastOutter);
         }
         lastOutter = newHalfedge();
         lastOutter->left = current->left;
@@ -356,4 +424,75 @@ face *halfedgeChamferVertex(mesh *m, vertex *v, float ammount) {
     pair(lastInner, lastOutter);
     deleteVertex(m, v);
     return lastInner->left;
+}
+
+int halfedgeIsBoundaryVertex(mesh *m, vertex *v) {
+    halfedge *it = v->handle;
+    do {
+        it = it->previous->opposite;
+    } while (it && it != v->handle);
+    return 0 == it;
+}
+
+static void changeFace(mesh *m, face *o, face *n) {
+    halfedge *it = o->handle;
+    do {
+        it->left = n;
+        it = it->next;
+    } while (it != o->handle);
+}
+
+face *halfedgeChamferEdge(mesh *m, halfedge *h, float ammount) {
+    vertex *rightVertex = h->start;
+    vertex *leftVertex = h->opposite->start;
+
+    face *leftFace = halfedgeChamferVertex(m, leftVertex, ammount);
+    face *rightFace = halfedgeChamferVertex(m, rightVertex, ammount);
+
+    vertex *lt = h->previous->start;
+    vertex *rt = h->next->next->start;
+    vertex *rb = h->opposite->previous->start;
+    vertex *lb = h->opposite->next->next->start;
+
+    halfedge *topOutter = newHalfedge();
+    halfedge *bottomOutter = newHalfedge();
+    halfedge *topInner = newHalfedge();
+    halfedge *bottomInner = newHalfedge();
+
+    topOutter->start = lt;
+    topOutter->left = h->previous->previous->left;
+    topOutter->left->handle = topOutter;
+    link(h->previous->previous, topOutter);
+    link(topOutter, h->next->next);
+
+    bottomOutter->start = rb;
+    bottomOutter->left = h->opposite->previous->previous->left;
+    bottomOutter->left->handle = bottomOutter;
+    link(h->opposite->previous->previous, bottomOutter);
+    link(bottomOutter, h->opposite->next->next);
+
+    topInner->start = rt;
+    link(topInner, h->previous->opposite->next);
+    link(h->next->opposite->previous, topInner);
+
+    bottomInner->start = lb;
+    link(bottomInner, h->opposite->previous->opposite->next);
+    link(h->opposite->next->opposite->previous, bottomInner);
+
+    pair(topInner, topOutter);
+    pair(bottomInner, bottomOutter);
+
+    deleteVertex(m, h->start);
+    deleteVertex(m, h->opposite->start);
+    deleteEdge(m, h->previous);
+    deleteEdge(m, h->next);
+    deleteEdge(m, h->opposite->previous);
+    deleteEdge(m, h->opposite->next);
+    deleteEdge(m, h);
+
+    leftFace->handle = topInner;
+    changeFace(m, leftFace, leftFace);
+    deleteFace(m, rightFace);
+
+    return leftFace;
 }
