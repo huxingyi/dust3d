@@ -38,6 +38,15 @@ static vertex *newVertex(mesh *m, point3d position) {
     return v;
 }
 
+#if DUST3D_DEBUG
+static vertex *newVertexAtLine(mesh *m, point3d position, long line) {
+    vertex *v = newVertex(m, position);
+    v->line_ = line;
+    return v;
+}
+#define newVertex(m, p) newVertexAtLine((m), (p), __LINE__)
+#endif
+
 static void deleteVertex(mesh *m, vertex *v) {
     if (v->next) {
         v->next->previous = v->previous;
@@ -297,6 +306,7 @@ face *halfedgeExtrudeFace(mesh *m, face *f, float radius) {
     face *extrudedFace = 0;
     face *needFlipFace = 0;
     matrix mat;
+    setFaceName(f, "bottom");
     halfedgeFaceNormal(m, f, &alongv);
     vector3dMultiply(&alongv, radius);
     matrixTranslation(&mat, alongv.x, alongv.y, alongv.z);
@@ -308,6 +318,7 @@ face *halfedgeExtrudeFace(mesh *m, face *f, float radius) {
         extrudedFace = halfedgeCopyFace(m, f);
         needFlipFace = f;
     }
+    setFaceName(extrudedFace, "top");
     halfedgeTransformFace(m, extrudedFace, &mat);
     halfedgeStitch(m, stitchFrom, extrudedFace->handle);
     if (needFlipFace) {
@@ -362,6 +373,7 @@ int halfedgeStitch(mesh *m, halfedge *from, halfedge *to) {
         handle = halfedgeCreateFaceAddVertex(ctx, itTo->start);
         pair(handle, itTo);
         handle = halfedgeCreateFaceEnd(ctx);
+        setFaceName(handle->left, "side");
         if (!head) {
             head = handle;
         } else {
@@ -423,11 +435,15 @@ face *halfedgeChamferVertex(mesh *m, vertex *v, float ammount) {
     lastOutter->start = firstVertex;
     pair(lastInner, lastOutter);
     deleteVertex(m, v);
+    setFaceName(lastInner->left, "bevelv");
     return lastInner->left;
 }
 
 int halfedgeIsBoundaryVertex(mesh *m, vertex *v) {
     halfedge *it = v->handle;
+    if (!it->opposite) {
+        return 1;
+    }
     do {
         it = it->previous->opposite;
     } while (it && it != v->handle);
@@ -482,6 +498,10 @@ face *halfedgeChamferEdge(mesh *m, halfedge *h, float ammount) {
     pair(topInner, topOutter);
     pair(bottomInner, bottomOutter);
 
+    h->previous->start->handle = h->previous->opposite->next;
+    h->next->opposite->start->handle = h->next->opposite->previous->opposite;
+    h->opposite->previous->start->handle = h->opposite->previous->opposite->next;
+    h->opposite->next->opposite->start->handle = h->opposite->next->opposite->previous->opposite;
     deleteVertex(m, h->start);
     deleteVertex(m, h->opposite->start);
     deleteEdge(m, h->previous);
@@ -491,6 +511,7 @@ face *halfedgeChamferEdge(mesh *m, halfedge *h, float ammount) {
     deleteEdge(m, h);
 
     leftFace->handle = topInner;
+    setFaceName(rightFace, "deleter");
     changeFace(m, leftFace, leftFace);
     deleteFace(m, rightFace);
 

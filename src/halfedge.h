@@ -11,6 +11,9 @@ typedef struct vertex {
     struct vertex *previous;
     struct vertex *next;
     int index;
+#if DUST3D_DEBUG
+    long line_;
+#endif
 } vertex;
 
 #define MAX_FACE_NAME_SIZE  8

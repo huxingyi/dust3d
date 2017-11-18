@@ -11,3 +11,4 @@ add_executable(${targetName}
     ../../src/vector3d.h
     ../../src/vector3d.c
 )
+add_definitions(-DDUST3D_DEBUG)
