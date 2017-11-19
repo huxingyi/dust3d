@@ -13,7 +13,7 @@ int main(int argc, char *argv[]) {
     //halfedgeSaveFaceAsObj(m, f->handle->opposite->left, "face2.obj");
     //halfedgeSaveFaceAsObj(m, f->handle->opposite->previous->opposite->left, "face3.obj");
     //halfedgeSaveFaceAsObj(m, f->handle->opposite->next->opposite->left, "face4.obj");
-    f = halfedgeChamferEdge(m, f->handle, 0.3);
+    f = halfedgeChamferEdge(m, f->handle->opposite->next, 0.3);
     //f = halfedgeChamferVertex(m, m->lastVertex, 0.2);
     printf("saving\n");
     halfedgeSaveMeshAsObj(m, "stone.obj");
