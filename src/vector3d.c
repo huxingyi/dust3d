@@ -52,3 +52,34 @@ void vector3dLerp(vector3d *a, vector3d *b, float frac, vector3d *result) {
   result->y = a->y + (b->y - a->y) * frac;
   result->z = a->z + (b->z - a->z) * frac;
 }
+
+float vector3dDotProduct(vector3d *a, vector3d *b) {
+    return a->x * b->x + a->y * b->y + a->z * b->z;
+}
+
+float vector3dMagnitude(vector3d *v) {
+    double mag;
+    mag = v->x * v->x + v->y * v->y + v->z * v->z;
+    return sqrt(mag);
+}
+
+float vector3dAngle(vector3d *a, vector3d *b) {
+    float angle;
+    float da, db;
+    float acosParam;
+    da = vector3dMagnitude(a);
+    db = vector3dMagnitude(b);
+    if (0 == da || 0 == db) {
+        return 0;
+    }
+    acosParam = vector3dDotProduct(a, b) / (da * db);
+    if (acosParam < -1) {
+        acosParam = -1;
+    }
+    if (acosParam > 1) {
+        acosParam = 1;
+    }
+    /* 57.29578f = 180 / M_PI */
+    angle = acos(acosParam) * 57.29578f;
+    return angle;
+}

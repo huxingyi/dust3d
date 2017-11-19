@@ -306,7 +306,6 @@ face *halfedgeExtrudeFace(mesh *m, face *f, float radius) {
     face *extrudedFace = 0;
     face *needFlipFace = 0;
     matrix mat;
-    setFaceName(f, "bottom");
     halfedgeFaceNormal(m, f, &alongv);
     vector3dMultiply(&alongv, radius);
     matrixTranslation(&mat, alongv.x, alongv.y, alongv.z);
@@ -318,7 +317,6 @@ face *halfedgeExtrudeFace(mesh *m, face *f, float radius) {
         extrudedFace = halfedgeCopyFace(m, f);
         needFlipFace = f;
     }
-    setFaceName(extrudedFace, "top");
     halfedgeTransformFace(m, extrudedFace, &mat);
     halfedgeStitch(m, stitchFrom, extrudedFace->handle);
     if (needFlipFace) {
@@ -373,7 +371,6 @@ int halfedgeStitch(mesh *m, halfedge *from, halfedge *to) {
         handle = halfedgeCreateFaceAddVertex(ctx, itTo->start);
         pair(handle, itTo);
         handle = halfedgeCreateFaceEnd(ctx);
-        setFaceName(handle->left, "side");
         if (!head) {
             head = handle;
         } else {
@@ -435,7 +432,6 @@ face *halfedgeChamferVertex(mesh *m, vertex *v, float ammount) {
     lastOutter->start = firstVertex;
     pair(lastInner, lastOutter);
     deleteVertex(m, v);
-    setFaceName(lastInner->left, "bevelv");
     return lastInner->left;
 }
 
@@ -511,9 +507,32 @@ face *halfedgeChamferEdge(mesh *m, halfedge *h, float ammount) {
     deleteEdge(m, h);
 
     leftFace->handle = topInner;
-    setFaceName(rightFace, "deleter");
     changeFace(m, leftFace, leftFace);
     deleteFace(m, rightFace);
 
     return leftFace;
+}
+
+void halfedgeVector3d(mesh *m, halfedge *h, vector3d *v) {
+    *v = h->start->position;
+    vector3dSub(v, &h->next->start->position);
+}
+
+halfedge *halfedgeEdgeLoopNext(mesh *m, halfedge *h) {
+    halfedge *it = h;
+    float selectedDegree = 0;
+    halfedge *selectedHalfedge = 0;
+    vector3d a, b;
+    float degree;
+    halfedgeVector3d(m, h, &a);
+    do {
+        halfedgeVector3d(m, it->next, &b);
+        degree = vector3dAngle(&a, &b);
+        if (selectedDegree <= selectedDegree) {
+            selectedDegree = degree;
+            selectedHalfedge = it->next;
+        }
+        it = it->next->opposite;
+    } while (it && it != h);
+    return selectedHalfedge;
 }

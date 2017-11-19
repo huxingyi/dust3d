@@ -60,5 +60,7 @@ int halfedgeStitch(mesh *m, halfedge *from, halfedge *to);
 face *halfedgeChamferVertex(mesh *m, vertex *v, float ammount);
 int halfedgeIsBoundaryVertex(mesh *m, vertex *v);
 face *halfedgeChamferEdge(mesh *m, halfedge *h, float ammount);
+void halfedgeVector3d(mesh *m, halfedge *h, vector3d *v);
+halfedge *halfedgeEdgeLoopNext(mesh *m, halfedge *h);
 
 #endif

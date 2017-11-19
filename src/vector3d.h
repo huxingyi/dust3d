@@ -15,5 +15,8 @@ void vector3dSub(vector3d *v, vector3d *sub);
 void vector3dDivide(vector3d *v, float div);
 void vector3dMultiply(vector3d *v, float mul);
 void vector3dLerp(vector3d *a, vector3d *b, float frac, vector3d *result);
+float vector3dDotProduct(vector3d *a, vector3d *b);
+float vector3dAngle(vector3d *a, vector3d *b);
+float vector3dMagnitude(vector3d *v);
 
 #endif
