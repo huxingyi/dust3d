@@ -11,6 +11,7 @@ typedef struct vertex {
     struct vertex *previous;
     struct vertex *next;
     int index;
+    int front:1;
 #if DUST3D_DEBUG
     long line_;
 #endif
@@ -45,10 +46,11 @@ typedef struct createFaceContext createFaceContext;
 mesh *halfedgeCreateMesh(void);
 int halfedgeSaveMeshAsObj(mesh *m, const char *filename);
 int halfedgeSaveFaceAsObj(mesh *m, face *f, const char *filename);
+int halfedgeSaveEdgeLoopAsObj(mesh *m, halfedge *h, const char *filename);
 createFaceContext *halfedgeCreateFaceBegin(mesh *m);
-halfedge *halfedgeCreateFaceAddPoint(createFaceContext *ctx, point3d point);
+halfedge *halfedgeCreateFaceAddPoint(createFaceContext *ctx, point3d *point);
 halfedge *halfedgeCreateFaceEnd(createFaceContext *ctx);
-face *halfedgeCreateFaceFromPoints(mesh *m, const point3d *counterClockWisedPoints, int count);
+face *halfedgeCreateFaceFromPoints(mesh *m, point3d *counterClockWisedPoints, int count);
 face *halfedgeCreatePlane(mesh *m, float radius);
 face *halfedgeCopyFace(mesh *m, face *f);
 face *halfedgeCutFace(mesh *m, face *f);
@@ -57,10 +59,11 @@ face *halfedgeFlipFace(mesh *m, face *f);
 int halfedgeFaceNormal(mesh *m, face *f, vector3d *normal);
 int halfedgeTransformFace(mesh *m, face *f, matrix *mat);
 int halfedgeStitch(mesh *m, halfedge *from, halfedge *to);
-face *halfedgeChamferVertex(mesh *m, vertex *v, float ammount);
+face *halfedgeChamferVertex(mesh *m, vertex *v, float amount);
 int halfedgeIsBoundaryVertex(mesh *m, vertex *v);
-face *halfedgeChamferEdge(mesh *m, halfedge *h, float ammount);
+face *halfedgeChamferEdge(mesh *m, halfedge *h, float amount);
 void halfedgeVector3d(mesh *m, halfedge *h, vector3d *v);
 halfedge *halfedgeEdgeLoopNext(mesh *m, halfedge *h);
+mesh *halfedgeSlice(mesh *m, point3d *facePoint, vector3d *faceNormal);
 
 #endif

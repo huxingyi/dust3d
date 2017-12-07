@@ -48,9 +48,9 @@ void vector3dMultiply(vector3d *v, float mul) {
 }
 
 void vector3dLerp(vector3d *a, vector3d *b, float frac, vector3d *result) {
-  result->x = a->x + (b->x - a->x) * frac;
-  result->y = a->y + (b->y - a->y) * frac;
-  result->z = a->z + (b->z - a->z) * frac;
+    result->x = a->x + (b->x - a->x) * frac;
+    result->y = a->y + (b->y - a->y) * frac;
+    result->z = a->z + (b->z - a->z) * frac;
 }
 
 float vector3dDotProduct(vector3d *a, vector3d *b) {
@@ -82,4 +82,15 @@ float vector3dAngle(vector3d *a, vector3d *b) {
     /* 57.29578f = 180 / M_PI */
     angle = acos(acosParam) * 57.29578f;
     return angle;
+}
+
+void vector3dNormalize(vector3d *v) {
+    double mag;
+    mag = v->x * v->x + v->y * v->y + v->z * v->z;
+    if (mag != 0.0) {
+        mag = 1.0 / sqrt(mag);
+        v->x *= mag;
+        v->y *= mag;
+        v->z *= mag;
+    }
 }
