@@ -18,8 +18,9 @@ int main(int argc, char *argv[]) {
     printf("saving\n");
     {
         point3d splitPoint = {0, 0, 0};
-        vector3d splitVector = {0, 1, 0};
-        mesh *m2 = halfedgeSlice(m, &splitPoint, &splitVector);
+        vector3d splitVector = {0.2, 0.7, 0.3};
+        vector3dNormalize(&splitVector);
+        mesh *m2 = halfedgeSliceMeshByFace(m, &splitPoint, &splitVector);
         halfedgeSaveMeshAsObj(m2, "stone2.obj");
     }
     halfedgeSaveMeshAsObj(m, "stone.obj");

@@ -19,5 +19,6 @@ float vector3dDotProduct(vector3d *a, vector3d *b);
 float vector3dAngle(vector3d *a, vector3d *b);
 float vector3dMagnitude(vector3d *v);
 void vector3dNormalize(vector3d *v);
+void vector3dSegment(point3d *p1, point3d *p2, vector3d *v);
 
 #endif

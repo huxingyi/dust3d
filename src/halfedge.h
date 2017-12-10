@@ -64,6 +64,8 @@ int halfedgeIsBoundaryVertex(mesh *m, vertex *v);
 face *halfedgeChamferEdge(mesh *m, halfedge *h, float amount);
 void halfedgeVector3d(mesh *m, halfedge *h, vector3d *v);
 halfedge *halfedgeEdgeLoopNext(mesh *m, halfedge *h);
-mesh *halfedgeSlice(mesh *m, point3d *facePoint, vector3d *faceNormal);
+mesh *halfedgeSliceMeshByFace(mesh *m, point3d *facePoint, vector3d *faceNormal);
+face *halfedgeFillFaceAlongOtherSideBorder(mesh *m, halfedge *h);
+mesh *halfedgeSplitMeshBySide(mesh *m);
 
 #endif

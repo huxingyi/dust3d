@@ -589,6 +589,60 @@ halfedge *halfedgeEdgeLoopNext(mesh *m, halfedge *h) {
     return selectedHalfedge;
 }
 
+face *halfedgeFillFaceAlongOtherSideBorder(mesh *m, halfedge *h) {
+    halfedge *newHandle = 0;
+    face *f = newFace(m);
+    halfedge *it = h;
+    halfedge *lastHandle = 0;
+    halfedge *firstHandle = 0;
+    vertex *firstVertex = 0;
+    do {
+        newHandle = newHalfedge();
+        pair(newHandle, it);
+        if (lastHandle) {
+            link(newHandle, lastHandle);
+            lastHandle->start = it->start;
+        } else {
+            firstHandle = newHandle;
+            firstVertex = it->start;
+        }
+        newHandle->left = f;
+        lastHandle = newHandle;
+        it = it->next->opposite->next;
+    } while (it != h);
+    link(firstHandle, lastHandle);
+    lastHandle->start = firstVertex;
+    f->handle = firstHandle;
+    return f;
+}
+
+mesh *halfedgeSplitMeshBySide(mesh *m) {
+    mesh *frontMesh = halfedgeCreateMesh();
+    face *it;
+    vertex *itVertex;
+    for (it = m->firstFace; it; ) {
+        if (it->handle->start->front) {
+            face *f = it;
+            it = it->next;
+            removeFace(m, f);
+            addFace(frontMesh, f);
+        } else {
+            it = it->next;
+        }
+    }
+    for (itVertex = m->firstVertex; itVertex; ) {
+        if (itVertex->front) {
+            vertex *v = itVertex;
+            itVertex = itVertex->next;
+            removeVertex(m, v);
+            addVertex(frontMesh, v);
+        } else {
+            itVertex = itVertex->next;
+        }
+    }
+    return frontMesh;
+}
+
 typedef struct splitEdgeKey {
     vertex *lo;
     vertex *hi;
@@ -608,17 +662,25 @@ static int splitEdgeComparator(rbtree *t, const void *firstKey, const void *seco
     return memcmp(firstKey, secondKey, sizeof(splitEdgeKey));
 }
 
-mesh *halfedgeSlice(mesh *m, point3d *facePoint, vector3d *faceNormal) {
+#define makeSplitEdgeKey(k, h) do {         \
+    (k)->lo = (h)->start;                   \
+    (k)->hi = (h)->next->start;             \
+    if ((k)->lo > (k)->hi) {                \
+        swap(vertex *, (k)->lo, (k)->hi);   \
+    }                                       \
+} while (0)
+
+mesh *halfedgeSliceMeshByFace(mesh *m, point3d *facePoint, vector3d *faceNormal) {
     face *it = 0;
-    mesh *frontMesh = halfedgeCreateMesh();
-    vertex *itVertex = 0;
     rbtree t;
     splitEdge *seLink = 0;
+    halfedge *side0AnyNewEdge = 0;
+    halfedge *side1AnyNewEdge = 0;
     rbtreeInit(&t, splitEdge, node, key, splitEdgeComparator);
     for (it = m->firstFace; it; it = it->next) {
         halfedge *h = it->handle;
         do {
-            h->start->front = (POINT_LOC_FRONT ==
+            h->start->front = (GEOMETRY_FRONT ==
                 geometryPointPlaneLocation(&h->start->position, facePoint, faceNormal));
             h = h->next;
         } while (h != it->handle);
@@ -630,11 +692,13 @@ mesh *halfedgeSlice(mesh *m, point3d *facePoint, vector3d *faceNormal) {
         int count = 0;
         do {
             if (h->start->front != h->next->start->front) {
-                handles[count] = h;
-                geometryPointPlaneIntersection(&h->start->position, &h->next->start->position, facePoint, faceNormal, &cross[count]);
-                count++;
-                if (2 == count) {
-                    break;
+                if (GEOMETRY_INTERSECT == geometryPointPlaneIntersection(&h->start->position,
+                        &h->next->start->position, facePoint, faceNormal, &cross[count])) {
+                    handles[count] = h;
+                    count++;
+                    if (2 == count) {
+                        break;
+                    }
                 }
             }
             h = h->next;
@@ -654,12 +718,8 @@ mesh *halfedgeSlice(mesh *m, point3d *facePoint, vector3d *faceNormal) {
             splitEdge *se0 = 0;
             splitEdgeKey key1;
             splitEdge *se1 = 0;
-
-            key0.lo = handles[0]->start;
-            key0.hi = handles[0]->next->start;
-            if (key0.lo > key0.hi) {
-                swap(vertex *, key0.lo, key0.hi);
-            }
+            
+            makeSplitEdgeKey(&key0, handles[0]);
             se0 = rbtreeFind(&t, &key0);
             if (se0) {
                 v0a = se0->vb;
@@ -668,12 +728,8 @@ mesh *halfedgeSlice(mesh *m, point3d *facePoint, vector3d *faceNormal) {
                 v0a = newVertex(m, &cross[0]);
                 v0b = newVertex(m, &cross[0]);
             }
-
-            key1.lo = handles[1]->start;
-            key1.hi = handles[1]->next->start;
-            if (key1.lo > key1.hi) {
-                swap(vertex *, key1.lo, key1.hi);
-            }
+            
+            makeSplitEdgeKey(&key1, handles[1]);
             se1 = rbtreeFind(&t, &key1);
             if (se1) {
                 v1a = se1->vb;
@@ -689,10 +745,12 @@ mesh *halfedgeSlice(mesh *m, point3d *facePoint, vector3d *faceNormal) {
             v1a->front = handles[1]->start->front;
             v1b->front = !v1a->front;
             h0 = newHalfedge();
+            side0AnyNewEdge = h0;
             h0->start = v0a;
             v0a->handle = h0;
             h0->left = handles[0]->left;
             h1 = newHalfedge();
+            side1AnyNewEdge = h1;
             h1->start = v1a;
             v1a->handle = h1;
             h0b = newHalfedge();
@@ -742,30 +800,16 @@ mesh *halfedgeSlice(mesh *m, point3d *facePoint, vector3d *faceNormal) {
             }
         }
     }
-    for (it = m->firstFace; it; ) {
-        if (it->handle->start->front) {
-            face *f = it;
-            it = it->next;
-            removeFace(m, f);
-            addFace(frontMesh, f);
-        } else {
-            it = it->next;
-        }
+    if (side0AnyNewEdge) {
+        halfedgeFillFaceAlongOtherSideBorder(m, side0AnyNewEdge);
     }
-    for (itVertex = m->firstVertex; itVertex; ) {
-        if (itVertex->front) {
-            vertex *v = itVertex;
-            itVertex = itVertex->next;
-            removeVertex(m, v);
-            addVertex(frontMesh, v);
-        } else {
-            itVertex = itVertex->next;
-        }
+    if (side1AnyNewEdge) {
+        halfedgeFillFaceAlongOtherSideBorder(m, side1AnyNewEdge);
     }
     while (seLink) {
         splitEdge *se = seLink;
         seLink = seLink->next;
         free(se);
     }
-    return frontMesh;
+    return halfedgeSplitMeshBySide(m);
 }
