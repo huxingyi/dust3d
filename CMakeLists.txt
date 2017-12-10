@@ -10,6 +10,8 @@ add_executable(${targetName}
     src/halfedge.c
     src/matrix.h
     src/matrix.c
+    src/parser.h
+    src/parser.c
     src/rbtree.h
     src/rbtree.c
     src/vector3d.h
