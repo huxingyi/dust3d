@@ -2,6 +2,7 @@
 #define DUST3D_HALFEDGE_H
 #include "vector3d.h"
 #include "matrix.h"
+#include "rbtree.h"
 
 typedef struct halfedge halfedge;
 
