@@ -81,6 +81,39 @@ int parserFindIntOptionOr(parser *p, const char *optionName, int orValue) {
     return orValue;
 }
 
+static int split(char *str, const char *splitter, char **vector, int max) {
+    char *token;
+    int n = 0;
+    while ((token=strsep(&str, splitter)) && n < max) {
+        vector[n++] = token;
+    }
+    return n;
+}
+
+static vector3d convertStringToVector3dOrExit(const char *str) {
+    vector3d v;
+    char *a = strdup(str);
+    char *vector[3];
+    int n = split(a, ",", vector, 3);
+    if (3 != n) {
+        printf("Invalid format:\"%s\"\n", str);
+        exit(-1);
+    }
+    v.x = atof(vector[0]);
+    v.y = atof(vector[1]);
+    v.z = atof(vector[2]);
+    free(a);
+    return v;
+}
+
+vector3d parserFindVector3dOptionOr(parser *p, const char *optionName, vector3d orValue) {
+    const char *result = parserFindOption(p, optionName);
+    if (result) {
+        return convertStringToVector3dOrExit(result);
+    }
+    return orValue;
+}
+
 const char *parserGetNextValue(parser *p) {
     return parserGetNextItem(p, '\0');
 }

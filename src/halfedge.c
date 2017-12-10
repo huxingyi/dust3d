@@ -124,6 +124,30 @@ mesh *halfedgeCreateMesh(void) {
     return (mesh *)calloc(1, sizeof(mesh));
 }
 
+void halfedgeDestroyMesh(mesh *m) {
+    face *itFace;
+    vertex *itVertex;
+    itFace = m->firstFace;
+    while (itFace) {
+        halfedge *itHandle = itFace->handle;
+        do {
+            halfedge *delHandle = itHandle;
+            itHandle = itHandle->next;
+            deleteHalfedge(m, delHandle);
+        } while (itHandle != itFace->handle);
+        face *delFace = itFace;
+        itFace = itFace->next;
+        deleteFace(m, delFace);
+    }
+    itVertex = m->firstVertex;
+    while (itVertex) {
+        vertex *delVertex = itVertex;
+        itVertex = itVertex->next;
+        deleteVertex(m, delVertex);
+    }
+    free(m);
+}
+
 #define pair(first, second) do {\
     halfedge *firstValue = (first);\
     halfedge *secondValue = (second);\

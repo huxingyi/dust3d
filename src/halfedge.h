@@ -45,6 +45,7 @@ typedef struct mesh {
 typedef struct createFaceContext createFaceContext;
 
 mesh *halfedgeCreateMesh(void);
+void halfedgeDestroyMesh(mesh *m);
 int halfedgeSaveMeshAsObj(mesh *m, const char *filename);
 int halfedgeSaveFaceAsObj(mesh *m, face *f, const char *filename);
 int halfedgeSaveEdgeLoopAsObj(mesh *m, halfedge *h, const char *filename);

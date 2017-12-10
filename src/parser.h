@@ -21,6 +21,8 @@ const char *parserFindOption(parser *p, const char *optionName);
 const char *parserFindOptionOr(parser *p, const char *optionName, const char *orValue);
 float parserFindFloatOptionOr(parser *p, const char *optionName, float orValue);
 int parserFindIntOptionOr(parser *p, const char *optionName, int orValue);
+vector3d parserFindVector3dOptionOr(parser *p, const char *optionName, vector3d orValue);
+#define parserFindPoint3dOptionOr(p, optionName, orValue)   parserFindVector3dOptionOr(p, optionName, orValue)
 const char *parserGetNextValue(parser *p);
 const char *parserGetNextValueOrExit(parser *p);
 vertex *parserMeshGetVertexByIndex(mesh *m, int index);
