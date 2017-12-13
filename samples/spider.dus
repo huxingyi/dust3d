@@ -1,0 +1,13 @@
+-function create-body r:1.0
+    -add cube r:r
+    -chamfer a:0.2 v:1
+    -scale 1.2 f:add[0].f[0]
+    -scale 0.8 f:chamfer[0].newf[0]
+-end
+
+-function create-spider r:2
+    -set main-r r
+    -create-body r:main-r+0.8
+    -create-body r:main-r
+    -merge create-body[0] create-body[1] f.n:0,1,1 f.o:0,0,0
+-end
