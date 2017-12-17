@@ -10,7 +10,7 @@ int theAdd(dust3dState *state) {
         return -1;
     }
     if (0 == strcmp("cube", base)) {
-        halfedgeExtrudeFace(dust3dGetCurrentMesh(state), halfedgeCreatePlane(dust3dGetCurrentMesh(state), radius), radius);
+        halfedgeExtrudeFace(dust3dGetCurrentMesh(state), halfedgeCreatePlane(dust3dGetCurrentMesh(state), radius), radius * 2);
     } else {
         fprintf(stderr, "Unrecognized base mesh type:\"%s\"\n", base);
         return -1;

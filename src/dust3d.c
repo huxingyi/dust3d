@@ -157,3 +157,28 @@ const char *dust3dGetNamingArgument(dust3dState *state, const char *name) {
 mesh *dust3dGetCurrentMesh(dust3dState *state) {
     return state->currentMesh;
 }
+
+static int split(char *str, const char *splitter, char **vector, int max) {
+    char *token;
+    int n = 0;
+    while ((token=strsep(&str, splitter)) && n < max) {
+        vector[n++] = token;
+    }
+    return n;
+}
+
+vector3d toVector3d(const char *str) {
+    vector3d v;
+    char *a = strdup(str);
+    char *vector[3];
+    int n = split(a, ",", vector, 3);
+    if (3 != n) {
+        fprintf(stderr, "Invalid format:\"%s\"\n", str);
+        exit(-1);
+    }
+    v.x = atof(vector[0]);
+    v.y = atof(vector[1]);
+    v.z = atof(vector[2]);
+    free(a);
+    return v;
+}
