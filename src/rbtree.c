@@ -45,7 +45,7 @@ int rbtreeUlongLongComparator(rbtree *tree, const void *firstKey, const void *se
 }
 
 int rbtreeStringComparator(rbtree *tree, const void *firstKey, const void *secondKey) {
-    return strcmp((const char *)firstKey, (const char *)secondKey);
+    return strcmp(((const char **)firstKey)[0], ((const char **)secondKey)[0]);
 }
 
 rbtreeNode *rbtreeSearch(rbtree *tree, const void *key, rbtreeNode **lastNode, int *lastCmp) {

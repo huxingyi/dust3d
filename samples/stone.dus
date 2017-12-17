@@ -1,10 +1,10 @@
 -function create-tino-stone
     -add cube r:1
-    -translate @add[0].f[right] y:+1
-    -scale @add[0].f[right] r:1.1
-    -scale @scale[0].e[top] r:1.2
-    -chamfer @scale[1].v[0] r:0.3
-    -chamfer @add[0].v[0] r:0.2
-    -chamfer @add[0].e[5] r:0.5
+    -translate add[0].f[right] y:+1
+    -scale add[0].f[right] r:1.1
+    -scale scale[0].e[top] r:1.2
+    -chamfer scale[1].v[0] r:0.3
+    -chamfer add[0].v[0] r:0.2
+    -chamfer add[0].e[5] r:0.5
     -rotate y:25
 -end
