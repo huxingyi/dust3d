@@ -22,7 +22,7 @@ static void initCamera(dust3dState *state) {
 void onDisplay(void) {
     dust3dState *state = camera.state;
     
-    glClearColor(0.14, 0.14, 0.14, 1);
+    glClearColor(0.8, 0.8, 0.8, 1);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
     
@@ -37,8 +37,11 @@ void onDisplay(void) {
         for (f = m->firstFace; f; f = f->next) {
             halfedge *it = f->handle;
             halfedge *stop = it;
+            vector3d faceNormal;
+            halfedgeFaceNormal(m, f, &faceNormal);
             glBegin(GL_POLYGON);
             do {
+                glNormal3f(faceNormal.x, faceNormal.y, faceNormal.z);
                 glVertex3f(it->start->position.x,
                     it->start->position.z,
                     it->start->position.y);
@@ -61,6 +64,9 @@ void onDisplay(void) {
                     it->start->position.y);
                 it = it->next;
             } while (it != stop);
+            glVertex3f(f->handle->start->position.x,
+                f->handle->start->position.z,
+                f->handle->start->position.y);
             glEnd();
         }
     }
@@ -119,11 +125,12 @@ void onProcessNormalKeys(unsigned char key, int x, int y) {
 int theShow(dust3dState *state) {
     int argc = 0;
     char **argv = 0;
-    GLfloat globalAmbient[] = {0.1f, 0.1f, 0.1f, 1.0f};
+    GLfloat globalAmbient[] = {0.5f, 0.5f, 0.5f, 1.0f};
     GLfloat ambientLight[] = {0.1f, 0.1f, 0.1f, 1.0f};
     GLfloat diffuseLight[] = {1.0f, 1.0f, 1.0f, 1.0f};
     GLfloat specularLight[] = {1.0f, 1.0f, 1.0f, 1.0f};
-    GLfloat shininess = 128.0f;
+    GLfloat shininess = 50.0;
+    GLfloat position[] = {1.0, 1.0, 1.0, 0.0};
     
     initCamera(state);
     
@@ -146,9 +153,14 @@ int theShow(dust3dState *state) {
     glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuseLight);
     glLightfv(GL_LIGHT0, GL_SPECULAR, specularLight);
     glLightf(GL_LIGHT0, GL_SHININESS, shininess);
+    glLightfv(GL_LIGHT0, GL_POSITION, position);
     glEnable(GL_LIGHT0);
     glEnable(GL_COLOR_MATERIAL);
-    glColorMaterial(GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
+    glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+    glEnable(GL_LINE_SMOOTH);
+    glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
     glEnable(GL_DEPTH_TEST);
