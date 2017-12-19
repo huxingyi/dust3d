@@ -28,8 +28,14 @@ int geometryPointPlaneIntersection(point3d *p1, point3d *p2, point3d *facePoint,
         return GEOMETRY_NO_INTERSECT;
     }
     i = n / d;
+    /*
     if (i < 0 || i > 1) {
         return GEOMETRY_NO_INTERSECT;
+    }*/
+    if (i < 0) {
+        i = 0;
+    } else if (i > 1) {
+        i = 1;
     }
     *result = u;
     vector3dMultiply(result, i);

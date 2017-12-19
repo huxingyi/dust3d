@@ -716,8 +716,9 @@ mesh *halfedgeSliceMeshByFace(mesh *m, point3d *facePoint, vector3d *faceNormal)
         int count = 0;
         do {
             if (h->start->front != h->next->start->front) {
-                if (GEOMETRY_INTERSECT == geometryPointPlaneIntersection(&h->start->position,
-                        &h->next->start->position, facePoint, faceNormal, &cross[count])) {
+                int geo = geometryPointPlaneIntersection(&h->start->position,
+                    &h->next->start->position, facePoint, faceNormal, &cross[count]);
+                if (GEOMETRY_INTERSECT == geo) {
                     handles[count] = h;
                     count++;
                     if (2 == count) {
