@@ -69,5 +69,6 @@ halfedge *halfedgeEdgeLoopNext(mesh *m, halfedge *h);
 mesh *halfedgeSliceMeshByFace(mesh *m, point3d *facePoint, vector3d *faceNormal);
 face *halfedgeFillFaceAlongOtherSideBorder(mesh *m, halfedge *h);
 mesh *halfedgeSplitMeshBySide(mesh *m);
+#define halfedgeMakeSureOnlyOnce(h) ((h)->start < (h)->opposite->start)
 
 #endif

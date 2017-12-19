@@ -182,3 +182,7 @@ vector3d toVector3d(const char *str) {
     free(a);
     return v;
 }
+
+float toFloat(const char *str) {
+    return atof(str);
+}

@@ -17,5 +17,6 @@ const char *dust3dGetNamingArgument(dust3dState *state, const char *name);
 
 vector3d toVector3d(const char *str);
 #define toPoint3d(str) toVector3d(str)
+float toFloat(const char *str);
 
 #endif

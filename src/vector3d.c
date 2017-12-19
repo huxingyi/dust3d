@@ -57,6 +57,12 @@ float vector3dDotProduct(vector3d *a, vector3d *b) {
     return a->x * b->x + a->y * b->y + a->z * b->z;
 }
 
+void vector3dCrossProduct(vector3d *a, vector3d *b, vector3d *result) {
+    result->x = a->y * b->z - a->z * b->y;
+    result->y = a->z * b->x - a->x * b->z;
+    result->z = a->x * b->y - a->y * b->x;
+}
+
 float vector3dMagnitude(vector3d *v) {
     double mag;
     mag = v->x * v->x + v->y * v->y + v->z * v->z;

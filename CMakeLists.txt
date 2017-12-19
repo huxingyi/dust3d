@@ -13,6 +13,8 @@ link_libraries(
     ${GLUT_LIBRARY}
 )
 set(SOURCES
+    src/array.h
+    src/array.c
     src/dust3d.h
     src/dust3d.c
     src/functionlist.h
@@ -48,6 +50,11 @@ add_executable(test-slice-by-face
     tests/test-slice-by-face.c
     ${SOURCES}
 )
+add_executable(test-chamfer-edge
+    tests/test-chamfer-edge.c
+    ${SOURCES}
+)
 add_definitions(-DDUST3D_DEBUG)
 add_test(test-add-cube test-add-cube)
 add_test(test-slice-by-face test-slice-by-face)
+add_test(test-chamfer-edge test-chamfer-edge)
