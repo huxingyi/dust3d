@@ -10,7 +10,7 @@ enum GEOMETRY {
     GEOMETRY_BACK,
     GEOMETRY_COLLAPSE
 };
-int geometryPointPlaneLocation(point3d *point, point3d *facePoint, vector3d *faceNormal);
-int geometryPointPlaneIntersection(point3d *p1, point3d *p2, point3d *facePoint, vector3d *faceNormal, point3d *result);
+int geometryRelationBetweenPointAndPlane(point3d *point, point3d *facePoint, vector3d *faceNormal);
+int geometryIntersectionOfSegmentAndPlane(point3d *p1, point3d *p2, point3d *facePoint, vector3d *faceNormal, point3d *result);
 
 #endif

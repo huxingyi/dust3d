@@ -1,7 +1,7 @@
 #include <math.h>
 #include "geometry.h"
 
-int geometryPointPlaneLocation(point3d *point, point3d *facePoint, vector3d *faceNormal) {
+int geometryRelationBetweenPointAndPlane(point3d *point, point3d *facePoint, vector3d *faceNormal) {
     vector3d v = *point;
     float result;
     vector3dSub(&v, facePoint);
@@ -14,7 +14,7 @@ int geometryPointPlaneLocation(point3d *point, point3d *facePoint, vector3d *fac
     return GEOMETRY_COLLAPSE;
 }
 
-int geometryPointPlaneIntersection(point3d *p1, point3d *p2, point3d *facePoint, vector3d *faceNormal, point3d *result) {
+int geometryIntersectionOfSegmentAndPlane(point3d *p1, point3d *p2, point3d *facePoint, vector3d *faceNormal, point3d *result) {
     vector3d u, w;
     float d, n, i;
     vector3dSegment(p2, p1, &u);

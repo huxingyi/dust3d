@@ -713,7 +713,7 @@ mesh *halfedgeSliceMeshByFace(mesh *m, point3d *facePoint, vector3d *faceNormal)
         halfedge *h = it->handle;
         do {
             h->start->front = (GEOMETRY_FRONT ==
-                geometryPointPlaneLocation(&h->start->position, facePoint, faceNormal));
+                geometryRelationBetweenPointAndPlane(&h->start->position, facePoint, faceNormal));
             h = h->next;
         } while (h != it->handle);
     }
@@ -724,7 +724,7 @@ mesh *halfedgeSliceMeshByFace(mesh *m, point3d *facePoint, vector3d *faceNormal)
         int count = 0;
         do {
             if (h->start->front != h->next->start->front) {
-                int geo = geometryPointPlaneIntersection(&h->start->position,
+                int geo = geometryIntersectionOfSegmentAndPlane(&h->start->position,
                     &h->next->start->position, facePoint, faceNormal, &cross[count]);
                 if (GEOMETRY_INTERSECT == geo) {
                     handles[count] = h;
