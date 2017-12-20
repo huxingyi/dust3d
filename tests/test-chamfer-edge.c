@@ -4,7 +4,7 @@ char *g_testArgv[] = {
     "-add",
         "cube",
     "-chamfer",
-        "a:0.6",
+        "a:0.1",
     "-show"
 };
 

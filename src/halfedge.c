@@ -7,6 +7,7 @@
 #include "vector3d.h"
 #include "geometry.h"
 #include "rbtree.h"
+#include "array.h"
 
 #define min(x, y) (((x) < (y)) ? (x) : (y))
 
@@ -694,12 +695,19 @@ static int splitEdgeComparator(rbtree *t, const void *firstKey, const void *seco
     }                                       \
 } while (0)
 
+typedef struct sliceIntersection {
+    point3d cross[2];
+    halfedge *handles[2];
+} sliceIntersection;
+
 mesh *halfedgeSliceMeshByFace(mesh *m, point3d *facePoint, vector3d *faceNormal) {
     face *it = 0;
     rbtree t;
+    int i;
     splitEdge *seLink = 0;
     halfedge *side0AnyNewEdge = 0;
     halfedge *side1AnyNewEdge = 0;
+    array *siArray = arrayCreate(sizeof(sliceIntersection));
     rbtreeInit(&t, splitEdge, node, key, splitEdgeComparator);
     for (it = m->firstFace; it; it = it->next) {
         halfedge *h = it->handle;
@@ -711,8 +719,8 @@ mesh *halfedgeSliceMeshByFace(mesh *m, point3d *facePoint, vector3d *faceNormal)
     }
     for (it = m->firstFace; it; it = it->next) {
         halfedge *h = it->handle;
-        point3d cross[2];
-        halfedge *handles[2];
+        point3d cross[3];
+        halfedge *handles[3];
         int count = 0;
         do {
             if (h->start->front != h->next->start->front) {
@@ -721,110 +729,126 @@ mesh *halfedgeSliceMeshByFace(mesh *m, point3d *facePoint, vector3d *faceNormal)
                 if (GEOMETRY_INTERSECT == geo) {
                     handles[count] = h;
                     count++;
-                    if (2 == count) {
+                    if (3 == count) {
                         break;
                     }
+                } else {
+                    arrayDestroy(siArray);
+                    return halfedgeCreateMesh();
                 }
             }
             h = h->next;
         } while (h != it->handle);
-        assert(0 == count || 2 == count);
-        if (2 == count) {
-            vertex *v0a;
-            vertex *v0b;
-            vertex *v1a;
-            vertex *v1b;
-            face *f;
-            halfedge *h0;
-            halfedge *h1;
-            halfedge *h0b;
-            halfedge *h1b;
-            splitEdgeKey key0;
-            splitEdge *se0 = 0;
-            splitEdgeKey key1;
-            splitEdge *se1 = 0;
-            
-            makeSplitEdgeKey(&key0, handles[0]);
-            se0 = rbtreeFind(&t, &key0);
-            if (se0) {
-                v0a = se0->vb;
-                v0b = se0->va;
+        if (count > 0) {
+            if (2 == count) {
+                sliceIntersection *newSi = (sliceIntersection *)arrayNewItemClear(siArray);
+                newSi->cross[0] = cross[0];
+                newSi->cross[1] = cross[1];
+                newSi->handles[0] = handles[0];
+                newSi->handles[1] = handles[1];
             } else {
-                v0a = newVertex(m, &cross[0]);
-                v0b = newVertex(m, &cross[0]);
-            }
-            
-            makeSplitEdgeKey(&key1, handles[1]);
-            se1 = rbtreeFind(&t, &key1);
-            if (se1) {
-                v1a = se1->vb;
-                v1b = se1->va;
-            } else {
-                v1a = newVertex(m, &cross[1]);
-                v1b = newVertex(m, &cross[1]);
-            }
-
-            f = newFace(m);
-            v0a->front = handles[0]->start->front;
-            v0b->front = !v0a->front;
-            v1a->front = handles[1]->start->front;
-            v1b->front = !v1a->front;
-            h0 = newHalfedge();
-            side0AnyNewEdge = h0;
-            h0->start = v0a;
-            v0a->handle = h0;
-            h0->left = handles[0]->left;
-            h1 = newHalfedge();
-            side1AnyNewEdge = h1;
-            h1->start = v1a;
-            v1a->handle = h1;
-            h0b = newHalfedge();
-            h0b->start = v0b;
-            v0b->handle = h0b;
-            h1b = newHalfedge();
-            h1b->left = handles[0]->left;
-            h1b->start = v1b;
-            v1b->handle = h1b;
-            link(h0b, handles[0]->next);
-            link(h1b, handles[1]->next);
-            link(handles[0], h0);
-            link(h0, h1b);
-            link(handles[1], h1);
-            link(h1, h0b);
-            f->handle = h1;
-            updateFace(h1, f);
-
-            if (se0) {
-                pair(handles[0], se0->hb);
-                pair(h0b, se0->ha);
-            } else {
-                se0 = (splitEdge *)calloc(1, sizeof(splitEdge));
-                se0->key = key0;
-                se0->ha = handles[0];
-                se0->hb = h0b;
-                se0->va = v0a;
-                se0->vb = v0b;
-                rbtreeInsert(&t, se0);
-                se0->next = seLink;
-                seLink = se0;
-            }
-
-            if (se1) {
-                pair(handles[1], se1->hb);
-                pair(h1b, se1->ha);
-            } else {
-                se1 = (splitEdge *)calloc(1, sizeof(splitEdge));
-                se1->key = key1;
-                se1->ha = handles[1];
-                se1->hb = h1b;
-                se1->va = v1a;
-                se1->vb = v1b;
-                rbtreeInsert(&t, se1);
-                se1->next = seLink;
-                seLink = se1;
+                arrayDestroy(siArray);
+                return halfedgeCreateMesh();
             }
         }
     }
+    for (i = 0; i < arrayGetLength(siArray); i++) {
+        vertex *v0a;
+        vertex *v0b;
+        vertex *v1a;
+        vertex *v1b;
+        face *f;
+        halfedge *h0;
+        halfedge *h1;
+        halfedge *h0b;
+        halfedge *h1b;
+        splitEdgeKey key0;
+        splitEdge *se0 = 0;
+        splitEdgeKey key1;
+        splitEdge *se1 = 0;
+        sliceIntersection *inter = (sliceIntersection *)arrayGetItem(siArray, i);
+        
+        makeSplitEdgeKey(&key0, inter->handles[0]);
+        se0 = rbtreeFind(&t, &key0);
+        if (se0) {
+            v0a = se0->vb;
+            v0b = se0->va;
+        } else {
+            v0a = newVertex(m, &inter->cross[0]);
+            v0b = newVertex(m, &inter->cross[0]);
+        }
+        
+        makeSplitEdgeKey(&key1, inter->handles[1]);
+        se1 = rbtreeFind(&t, &key1);
+        if (se1) {
+            v1a = se1->vb;
+            v1b = se1->va;
+        } else {
+            v1a = newVertex(m, &inter->cross[1]);
+            v1b = newVertex(m, &inter->cross[1]);
+        }
+
+        f = newFace(m);
+        v0a->front = inter->handles[0]->start->front;
+        v0b->front = !v0a->front;
+        v1a->front = inter->handles[1]->start->front;
+        v1b->front = !v1a->front;
+        h0 = newHalfedge();
+        side0AnyNewEdge = h0;
+        h0->start = v0a;
+        v0a->handle = h0;
+        h0->left = inter->handles[0]->left;
+        h1 = newHalfedge();
+        side1AnyNewEdge = h1;
+        h1->start = v1a;
+        v1a->handle = h1;
+        h0b = newHalfedge();
+        h0b->start = v0b;
+        v0b->handle = h0b;
+        h1b = newHalfedge();
+        h1b->left = inter->handles[0]->left;
+        h1b->start = v1b;
+        v1b->handle = h1b;
+        link(h0b, inter->handles[0]->next);
+        link(h1b, inter->handles[1]->next);
+        link(inter->handles[0], h0);
+        link(h0, h1b);
+        link(inter->handles[1], h1);
+        link(h1, h0b);
+        f->handle = h1;
+        updateFace(h1, f);
+
+        if (se0) {
+            pair(inter->handles[0], se0->hb);
+            pair(h0b, se0->ha);
+        } else {
+            se0 = (splitEdge *)calloc(1, sizeof(splitEdge));
+            se0->key = key0;
+            se0->ha = inter->handles[0];
+            se0->hb = h0b;
+            se0->va = v0a;
+            se0->vb = v0b;
+            rbtreeInsert(&t, se0);
+            se0->next = seLink;
+            seLink = se0;
+        }
+
+        if (se1) {
+            pair(inter->handles[1], se1->hb);
+            pair(h1b, se1->ha);
+        } else {
+            se1 = (splitEdge *)calloc(1, sizeof(splitEdge));
+            se1->key = key1;
+            se1->ha = inter->handles[1];
+            se1->hb = h1b;
+            se1->va = v1a;
+            se1->vb = v1b;
+            rbtreeInsert(&t, se1);
+            se1->next = seLink;
+            seLink = se1;
+        }
+    }
+    arrayDestroy(siArray);
     if (side0AnyNewEdge) {
         halfedgeFillFaceAlongOtherSideBorder(m, side0AnyNewEdge);
     }
