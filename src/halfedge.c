@@ -11,6 +11,26 @@
 
 #define min(x, y) (((x) < (y)) ? (x) : (y))
 
+#define pair(first, second) do {\
+    halfedge *firstValue = (first);\
+    halfedge *secondValue = (second);\
+    (first)->opposite = (secondValue);\
+    (second)->opposite = (firstValue);\
+} while (0)
+
+#define link(first, second) do {\
+    halfedge *firstValue = (first);\
+    halfedge *secondValue = (second);\
+    (first)->next = (secondValue);\
+    (second)->previous = (firstValue);\
+} while (0)
+
+#define swap(type, first, second) do {\
+    type tmp = (first);\
+    (first) = (second);\
+    (second) = tmp;\
+} while (0)
+
 static void addFace(mesh *m, face *f) {
     f->next = 0;
     if (m->lastFace) {
@@ -121,6 +141,37 @@ static halfedge *newHalfedge(void) {
     return (halfedge *)calloc(1, sizeof(halfedge));
 }
 
+typedef struct edge {
+    vertex *lo;
+    vertex *hi;
+} edge;
+
+static int edgeComparator(rbtree *tree, const void *firstKey, const void *secondKey) {
+    return memcmp(firstKey, secondKey, sizeof(edge));
+}
+
+#define makeEdgeFromHalfedge(e, h) do {                 \
+    (e)->lo = (h)->start;                               \
+    (e)->hi = (h)->next->start;                         \
+    if ((e)->lo > (e)->hi) {                            \
+        swap(vertex *, (e)->lo, (e)->hi);               \
+    }                                                   \
+} while (0)
+
+#define makeEdgeFromVertexs(e, v1, v2) do {             \
+    (e)->lo = (v1);                                     \
+    (e)->hi = (v2);                                     \
+    if ((e)->lo > (e)->hi) {                            \
+        swap(vertex *, (e)->lo, (e)->hi);               \
+    }                                                   \
+} while (0)
+
+static void *findEdgeFromMap(rbtree *t, vertex *v1, vertex *v2) {
+    edge key;
+    makeEdgeFromVertexs(&key, v1, v2);
+    return rbtreeFind(t, &key);
+}
+
 mesh *halfedgeCreateMesh(void) {
     return (mesh *)calloc(1, sizeof(mesh));
 }
@@ -148,26 +199,6 @@ void halfedgeDestroyMesh(mesh *m) {
     }
     free(m);
 }
-
-#define pair(first, second) do {\
-    halfedge *firstValue = (first);\
-    halfedge *secondValue = (second);\
-    (first)->opposite = (secondValue);\
-    (second)->opposite = (firstValue);\
-} while (0)
-
-#define link(first, second) do {\
-    halfedge *firstValue = (first);\
-    halfedge *secondValue = (second);\
-    (first)->next = (secondValue);\
-    (second)->previous = (firstValue);\
-} while (0)
-
-#define swap(type, first, second) do {\
-    type tmp = (first);\
-    (first) = (second);\
-    (second) = tmp;\
-} while (0)
 
 int halfedgeSaveMeshAsObj(mesh *m, const char *filename) {
     vertex *v = 0;
@@ -618,11 +649,18 @@ halfedge *halfedgeEdgeLoopNext(mesh *m, halfedge *h) {
 
 face *halfedgeFillFaceAlongOtherSideBorder(mesh *m, halfedge *h) {
     halfedge *newHandle = 0;
-    face *f = newFace(m);
+    face *f = 0;
     halfedge *it = h;
     halfedge *lastHandle = 0;
     halfedge *firstHandle = 0;
     vertex *firstVertex = 0;
+    do {
+        if (!it->next || !it->next->opposite || !it->next->opposite->next) {
+            return 0;
+        }
+        it = it->next->opposite->next;
+    } while (it != h);
+    f = newFace(m);
     do {
         newHandle = newHalfedge();
         pair(newHandle, it);
@@ -670,13 +708,8 @@ mesh *halfedgeSplitMeshBySide(mesh *m) {
     return frontMesh;
 }
 
-typedef struct splitEdgeKey {
-    vertex *lo;
-    vertex *hi;
-} splitEdgeKey;
-
 typedef struct splitEdge {
-    splitEdgeKey key;
+    edge key;
     rbtreeNode node;
     halfedge *ha;
     halfedge *hb;
@@ -684,18 +717,6 @@ typedef struct splitEdge {
     vertex *vb;
     struct splitEdge *next;
 } splitEdge;
-
-static int splitEdgeComparator(rbtree *t, const void *firstKey, const void *secondKey) {
-    return memcmp(firstKey, secondKey, sizeof(splitEdgeKey));
-}
-
-#define makeSplitEdgeKey(k, h) do {         \
-    (k)->lo = (h)->start;                   \
-    (k)->hi = (h)->next->start;             \
-    if ((k)->lo > (k)->hi) {                \
-        swap(vertex *, (k)->lo, (k)->hi);   \
-    }                                       \
-} while (0)
 
 typedef struct sliceIntersection {
     point3d cross[2];
@@ -710,7 +731,7 @@ mesh *halfedgeSliceMeshByFace(mesh *m, point3d *facePoint, vector3d *faceNormal)
     halfedge *side0AnyNewEdge = 0;
     halfedge *side1AnyNewEdge = 0;
     array *siArray = arrayCreate(sizeof(sliceIntersection));
-    rbtreeInit(&t, splitEdge, node, key, splitEdgeComparator);
+    rbtreeInit(&t, splitEdge, node, key, edgeComparator);
     for (it = m->firstFace; it; it = it->next) {
         halfedge *h = it->handle;
         do {
@@ -764,13 +785,13 @@ mesh *halfedgeSliceMeshByFace(mesh *m, point3d *facePoint, vector3d *faceNormal)
         halfedge *h1;
         halfedge *h0b;
         halfedge *h1b;
-        splitEdgeKey key0;
+        edge key0;
         splitEdge *se0 = 0;
-        splitEdgeKey key1;
+        edge key1;
         splitEdge *se1 = 0;
         sliceIntersection *inter = (sliceIntersection *)arrayGetItem(siArray, i);
         
-        makeSplitEdgeKey(&key0, inter->handles[0]);
+        makeEdgeFromHalfedge(&key0, inter->handles[0]);
         se0 = rbtreeFind(&t, &key0);
         if (se0) {
             v0a = se0->vb;
@@ -780,7 +801,7 @@ mesh *halfedgeSliceMeshByFace(mesh *m, point3d *facePoint, vector3d *faceNormal)
             v0b = newVertex(m, &inter->cross[0]);
         }
         
-        makeSplitEdgeKey(&key1, inter->handles[1]);
+        makeEdgeFromHalfedge(&key1, inter->handles[1]);
         se1 = rbtreeFind(&t, &key1);
         if (se1) {
             v1a = se1->vb;
@@ -865,54 +886,18 @@ mesh *halfedgeSliceMeshByFace(mesh *m, point3d *facePoint, vector3d *faceNormal)
     return halfedgeSplitMeshBySide(m);
 }
 
-typedef struct vertexMapNode {
+typedef struct importObjEdgeMapNode {
     rbtreeNode node;
-    vertex *v;
-} vertexMapNode;
+    edge key;
+    halfedge *h;
+    struct importObjEdgeMapNode *next;
+} importObjEdgeMapNode;
 
-typedef struct edgeEndpoints {
-    vertex *lo;
-    vertex *hi;
-} edgeEndpoints;
-
-typedef struct edgeMapNode {
-    rbtreeNode node;
-    edgeEndpoints endpoints;
-} edgeMapNode;
-
-static int vertexMapNodeComparator(rbtree *tree, const void *firstKey, const void *secondKey) {
-    return memcmp(firstKey, secondKey, sizeof(point3d));
-}
-
-static vertex *findVertexFromMap(rbtree *t, point3d *p) {
-    return rbtreeFind(t, p);
-}
-
-static int edgeMapNodeComparator(rbtree *tree, const void *firstKey, const void *secondKey) {
-    return memcmp(firstKey, secondKey, sizeof(edgeEndpoints));
-}
-
-static halfedge *findEdgeFromMap(rbtree *t, vertex *v1, vertex *v2) {
-    edgeEndpoints endpoints = {v1 < v2 ? v1 : v2, v1 < v2 ? v2 : v1};
-    return rbtreeFind(t, &endpoints);
-}
-
-static void addVertexToMap(rbtree *t, vertex *v) {
-    vertexMapNode *mapNode = (vertexMapNode *)calloc(1, sizeof(vertexMapNode));
-    mapNode->v = v;
+static importObjEdgeMapNode *addEdgeToImportObjEdgeMap(rbtree *t, vertex *v1, vertex *v2) {
+    importObjEdgeMapNode *mapNode = (importObjEdgeMapNode *)calloc(1, sizeof(importObjEdgeMapNode));
+    makeEdgeFromVertexs(&mapNode->key, v1, v2);
     rbtreeInsert(t, mapNode);
-}
-
-static void addEdgeToMap(rbtree *t, vertex *v1, vertex *v2) {
-    edgeMapNode *mapNode = (edgeMapNode *)calloc(1, sizeof(edgeMapNode));
-    if (v1 < v2) {
-        mapNode->endpoints.lo = v1;
-        mapNode->endpoints.hi = v2;
-    } else {
-        mapNode->endpoints.lo = v2;
-        mapNode->endpoints.hi = v1;
-    }
-    rbtreeInsert(t, mapNode);
+    return mapNode;
 }
 
 typedef struct objPoint {
@@ -926,8 +911,9 @@ int halfedgeImportObj(mesh *m, const char *filename) {
     char line[512];
     int result = -1;
     rbtree edgeMap;
+    importObjEdgeMapNode *edgeLink = 0;
     createFaceContext *createContext = 0;
-    rbtreeInit(&edgeMap, edgeMapNode, node, endpoints, edgeMapNodeComparator);
+    rbtreeInit(&edgeMap, importObjEdgeMapNode, node, key, edgeComparator);
     fp = fopen(filename, "rb");
     if (!fp) {
         fprintf(stderr, "Open file \"%s\" failed.\n", filename);
@@ -965,11 +951,14 @@ int halfedgeImportObj(mesh *m, const char *filename) {
             h = halfedgeCreateFaceEnd(createContext);
             stop = h;
             do {
-                halfedge *opposite = findEdgeFromMap(&edgeMap, h->start, h->next->start);
-                if (opposite) {
-                    pair(opposite, h);
+                importObjEdgeMapNode *edgeNode = (importObjEdgeMapNode *)findEdgeFromMap(&edgeMap, h->start, h->next->start);
+                if (edgeNode) {
+                    pair(edgeNode->h, h);
                 } else {
-                    addEdgeToMap(&edgeMap, h->start, h->next->start);
+                    edgeNode = addEdgeToImportObjEdgeMap(&edgeMap, h->start, h->next->start);
+                    edgeNode->h = h;
+                    edgeNode->next = edgeLink;
+                    edgeLink = edgeNode;
                 }
                 h = h->next;
             } while (h != stop);
@@ -987,7 +976,11 @@ tail:
     if (createContext) {
         halfedgeCreateFaceEnd(createContext);
     }
-    // FIXME: free edgeMap
+    while (edgeLink) {
+        importObjEdgeMapNode *del = edgeLink;
+        edgeLink = edgeLink->next;
+        free(del);
+    }
     return result;
 }
 
