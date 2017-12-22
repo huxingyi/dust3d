@@ -256,14 +256,14 @@ int halfedgeSaveEdgeLoopAsObj(mesh *m, halfedge *h, const char *filename) {
     return 0;
 }
 
-struct createFaceContext {
+typedef struct createFaceContext {
     mesh *m;
     face *left;
     vertex *previousVertex;
     vertex *currentVertex;
     vertex *firstVertex;
     halfedge *previousHalfedge;
-};
+} createFaceContext;
 
 createFaceContext *halfedgeCreateFaceBegin(mesh *m) {
     createFaceContext *ctx = (createFaceContext *)calloc(1, sizeof(createFaceContext));
@@ -310,12 +310,14 @@ halfedge *halfedgeCreateFaceAddVertex(createFaceContext *ctx, vertex *v) {
 }
 
 halfedge *halfedgeCreateFaceEnd(createFaceContext *ctx) {
-    halfedge *handle;
-    handle = newHalfedge();
-    ctx->currentVertex = ctx->firstVertex;
-    handle->next = ctx->left->handle;
-    halfedgeCreateFaceAddHalfedge(ctx, handle);
-    ctx->left->handle->previous = handle;
+    halfedge *handle = 0;
+    if (ctx->left) {
+        handle = newHalfedge();
+        ctx->currentVertex = ctx->firstVertex;
+        handle->next = ctx->left->handle;
+        halfedgeCreateFaceAddHalfedge(ctx, handle);
+        ctx->left->handle->previous = handle;
+    }
     free(ctx);
     return handle;
 }
@@ -862,3 +864,130 @@ mesh *halfedgeSliceMeshByFace(mesh *m, point3d *facePoint, vector3d *faceNormal)
     }
     return halfedgeSplitMeshBySide(m);
 }
+
+typedef struct vertexMapNode {
+    rbtreeNode node;
+    vertex *v;
+} vertexMapNode;
+
+typedef struct edgeEndpoints {
+    vertex *lo;
+    vertex *hi;
+} edgeEndpoints;
+
+typedef struct edgeMapNode {
+    rbtreeNode node;
+    edgeEndpoints endpoints;
+} edgeMapNode;
+
+static int vertexMapNodeComparator(rbtree *tree, const void *firstKey, const void *secondKey) {
+    return memcmp(firstKey, secondKey, sizeof(point3d));
+}
+
+static vertex *findVertexFromMap(rbtree *t, point3d *p) {
+    return rbtreeFind(t, p);
+}
+
+static int edgeMapNodeComparator(rbtree *tree, const void *firstKey, const void *secondKey) {
+    return memcmp(firstKey, secondKey, sizeof(edgeEndpoints));
+}
+
+static halfedge *findEdgeFromMap(rbtree *t, vertex *v1, vertex *v2) {
+    edgeEndpoints endpoints = {v1 < v2 ? v1 : v2, v1 < v2 ? v2 : v1};
+    return rbtreeFind(t, &endpoints);
+}
+
+static void addVertexToMap(rbtree *t, vertex *v) {
+    vertexMapNode *mapNode = (vertexMapNode *)calloc(1, sizeof(vertexMapNode));
+    mapNode->v = v;
+    rbtreeInsert(t, mapNode);
+}
+
+static void addEdgeToMap(rbtree *t, vertex *v1, vertex *v2) {
+    edgeMapNode *mapNode = (edgeMapNode *)calloc(1, sizeof(edgeMapNode));
+    if (v1 < v2) {
+        mapNode->endpoints.lo = v1;
+        mapNode->endpoints.hi = v2;
+    } else {
+        mapNode->endpoints.lo = v2;
+        mapNode->endpoints.hi = v1;
+    }
+    rbtreeInsert(t, mapNode);
+}
+
+typedef struct objPoint {
+    point3d position;
+    vertex *v;
+} objPoint;
+
+int halfedgeImportObj(mesh *m, const char *filename) {
+    array *pointArray = 0;
+    FILE *fp = 0;
+    char line[512];
+    int result = -1;
+    rbtree edgeMap;
+    createFaceContext *createContext = 0;
+    rbtreeInit(&edgeMap, edgeMapNode, node, endpoints, edgeMapNodeComparator);
+    fp = fopen(filename, "rb");
+    if (!fp) {
+        fprintf(stderr, "Open file \"%s\" failed.\n", filename);
+        goto tail;
+    }
+    pointArray = arrayCreate(sizeof(objPoint));
+    while (fgets(line, sizeof(line), fp)) {
+        if ('v' == line[0] && ' ' == line[1]) {
+            objPoint *p = (objPoint *)arrayNewItemClear(pointArray);
+            if (3 != sscanf(line, "v %f %f %f", &p->position.x, &p->position.y, &p->position.z)) {
+                fprintf(stderr, "Invalid line \"%s\".\n", line);
+                goto tail;
+            }
+        }
+        else if ('f' == line[0] && ' ' == line[1]) {
+            createContext = halfedgeCreateFaceBegin(m);
+            char *space = &line[1];
+            halfedge *h;
+            halfedge *stop;
+            do {
+                int index = -1;
+                objPoint *p;
+                sscanf(space, " %d", &index);
+                if (index <= 0 || index > arrayGetLength(pointArray)) {
+                    fprintf(stderr, "Invalid line \"%s\".\n", line);
+                    goto tail;
+                }
+                p = (objPoint *)arrayGetItem(pointArray, index - 1);
+                if (!p->v) {
+                    p->v = newVertex(m, &p->position);
+                }
+                halfedgeCreateFaceAddVertex(createContext, p->v);
+                space = strchr(space + 1, ' ');
+            } while (space);
+            h = halfedgeCreateFaceEnd(createContext);
+            stop = h;
+            do {
+                halfedge *opposite = findEdgeFromMap(&edgeMap, h->start, h->next->start);
+                if (opposite) {
+                    pair(opposite, h);
+                } else {
+                    addEdgeToMap(&edgeMap, h->start, h->next->start);
+                }
+                h = h->next;
+            } while (h != stop);
+            createContext = 0;
+        }
+    }
+    result = 0;
+tail:
+    if (fp) {
+        fclose(fp);
+    }
+    if (pointArray) {
+        arrayDestroy(pointArray);
+    }
+    if (createContext) {
+        halfedgeCreateFaceEnd(createContext);
+    }
+    // FIXME: free edgeMap
+    return result;
+}
+

@@ -42,16 +42,11 @@ typedef struct mesh {
     face *lastFace;
 } mesh;
 
-typedef struct createFaceContext createFaceContext;
-
 mesh *halfedgeCreateMesh(void);
 void halfedgeDestroyMesh(mesh *m);
 int halfedgeSaveMeshAsObj(mesh *m, const char *filename);
 int halfedgeSaveFaceAsObj(mesh *m, face *f, const char *filename);
 int halfedgeSaveEdgeLoopAsObj(mesh *m, halfedge *h, const char *filename);
-createFaceContext *halfedgeCreateFaceBegin(mesh *m);
-halfedge *halfedgeCreateFaceAddPoint(createFaceContext *ctx, point3d *point);
-halfedge *halfedgeCreateFaceEnd(createFaceContext *ctx);
 face *halfedgeCreateFaceFromPoints(mesh *m, point3d *counterClockWisedPoints, int count);
 face *halfedgeCreatePlane(mesh *m, float radius);
 face *halfedgeCopyFace(mesh *m, face *f);
@@ -70,5 +65,6 @@ mesh *halfedgeSliceMeshByFace(mesh *m, point3d *facePoint, vector3d *faceNormal)
 face *halfedgeFillFaceAlongOtherSideBorder(mesh *m, halfedge *h);
 mesh *halfedgeSplitMeshBySide(mesh *m);
 #define halfedgeMakeSureOnlyOnce(h) ((h)->start < (h)->opposite->start)
+int halfedgeImportObj(mesh *m, const char *filename);
 
 #endif

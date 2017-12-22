@@ -26,6 +26,8 @@ set(SOURCES
     src/matrix.c
     src/selector.h
     src/selector.c
+    src/strutil.h
+    src/strutil.c
     src/rbtree.h
     src/rbtree.c
     src/t_add.c
@@ -46,6 +48,10 @@ add_executable(test-add-cube
     tests/test-add-cube.c
     ${SOURCES}
 )
+add_executable(test-add-obj
+    tests/test-add-obj.c
+    ${SOURCES}
+)
 add_executable(test-slice-by-face
     tests/test-slice-by-face.c
     ${SOURCES}
@@ -56,5 +62,6 @@ add_executable(test-chamfer-edge
 )
 add_definitions(-DDUST3D_DEBUG)
 add_test(test-add-cube test-add-cube)
+add_test(test-add-obj test-add-obj)
 add_test(test-slice-by-face test-slice-by-face)
 add_test(test-chamfer-edge test-chamfer-edge)
