@@ -7,6 +7,7 @@ typedef struct cameraView {
     float angleX;
     float angleY;
     float distance;
+    float offsetH;
     dust3dState *state;
 } cameraView;
 
@@ -16,6 +17,7 @@ static void initCamera(dust3dState *state) {
     camera.angleX = 30;
     camera.angleY = -312;
     camera.distance = 5.4;
+    camera.offsetH = 0;
     camera.state = state;
 }
 
@@ -27,7 +29,7 @@ void onDisplay(void) {
     glLoadIdentity();
     
     glPushMatrix();
-    glTranslatef(0, 0, -camera.distance);
+    glTranslatef(camera.offsetH, 0, -camera.distance);
     glRotatef(camera.angleX, 0, 1, 0);
     glRotatef(camera.angleY, 1, 0, 0);
     {
@@ -116,8 +118,10 @@ void onProcessNormalKeys(unsigned char key, int x, int y) {
         camera.distance += fraction;
         break;
     case 'a':
+        camera.offsetH -= fraction;
         break;
     case 'd':
+        camera.offsetH += fraction;
         break;
     }
 }

@@ -8,6 +8,7 @@ int theExtrude(dust3dState *state);
 int theShow(dust3dState *state);
 int theSlice(dust3dState *state);
 int theSubdiv(dust3dState *state);
+int theSave(dust3dState *state);
 
 #define rust3dRegisterFunctionList(state)   do {        \
     dust3dRegister((state), "add", theAdd);             \
@@ -16,6 +17,7 @@ int theSubdiv(dust3dState *state);
     dust3dRegister((state), "show", theShow);           \
     dust3dRegister((state), "slice", theSlice);         \
     dust3dRegister((state), "subdiv", theSubdiv);       \
+    dust3dRegister((state), "save", theSave);           \
 } while (0)
 
 #endif

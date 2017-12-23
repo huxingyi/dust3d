@@ -46,7 +46,6 @@ mesh *halfedgeCreateMesh(void);
 void halfedgeDestroyMesh(mesh *m);
 int halfedgeSaveMeshAsObj(mesh *m, const char *filename);
 int halfedgeSaveFaceAsObj(mesh *m, face *f, const char *filename);
-int halfedgeSaveEdgeLoopAsObj(mesh *m, halfedge *h, const char *filename);
 face *halfedgeCreateFaceFromPoints(mesh *m, point3d *counterClockWisedPoints, int count);
 face *halfedgeCreatePlane(mesh *m, float radius);
 face *halfedgeCopyFace(mesh *m, face *f);
@@ -60,11 +59,10 @@ face *halfedgeChamferVertex(mesh *m, vertex *v, float amount);
 int halfedgeIsBoundaryVertex(mesh *m, vertex *v);
 face *halfedgeChamferEdge(mesh *m, halfedge *h, float amount);
 void halfedgeVector3d(mesh *m, halfedge *h, vector3d *v);
-halfedge *halfedgeEdgeLoopNext(mesh *m, halfedge *h);
 mesh *halfedgeSliceMeshByFace(mesh *m, point3d *facePoint, vector3d *faceNormal);
-face *halfedgeFillFaceAlongOtherSideBorder(mesh *m, halfedge *h);
 mesh *halfedgeSplitMeshBySide(mesh *m);
 #define halfedgeMakeSureOnlyOnce(h) ((h)->opposite && (h)->start < (h)->opposite->start)
 int halfedgeImportObj(mesh *m, const char *filename);
+int halfedgeFixHoles(mesh *m);
 
 #endif

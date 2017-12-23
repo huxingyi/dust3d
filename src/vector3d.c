@@ -1,6 +1,8 @@
 #include <math.h>
 #include "vector3d.h"
 
+#define CONST_180_DIV_PI    57.29578f
+
 void vector3dNormal(point3d *p1, point3d *p2, point3d *p3, vector3d *v) {
     float v1[3], v2[3], vr[3], val;
 
@@ -69,6 +71,7 @@ float vector3dMagnitude(vector3d *v) {
     return sqrt(mag);
 }
 
+/*
 float vector3dAngle(vector3d *a, vector3d *b) {
     float angle;
     float da, db;
@@ -85,10 +88,10 @@ float vector3dAngle(vector3d *a, vector3d *b) {
     if (acosParam > 1) {
         acosParam = 1;
     }
-    /* 57.29578f = 180 / M_PI */
-    angle = acos(acosParam) * 57.29578f;
+    angle = acos(acosParam) * CONST_180_DIV_PI;
     return angle;
 }
+*/
 
 void vector3dNormalize(vector3d *v) {
     double mag;
@@ -104,4 +107,19 @@ void vector3dNormalize(vector3d *v) {
 void vector3dSegment(point3d *p1, point3d *p2, vector3d *v) {
     *v = *p1;
     vector3dSub(v, p2);
+}
+
+float vector3dAngle360(vector3d *v1, vector3d *v2, vector3d *ref) {
+    vector3d v1n = *v1;
+    vector3d v2n = *v2;
+    float angle;
+    vector3d vcross;
+    vector3dNormalize(&v1n);
+    vector3dNormalize(&v2n);
+    angle = acos(vector3dDotProduct(&v1n, &v2n)) * CONST_180_DIV_PI;
+    vector3dCrossProduct(v1, v2, &vcross);
+    if (vector3dDotProduct(ref, &vcross) < 0) {
+        angle = 360 - angle;
+    }
+    return angle;
 }

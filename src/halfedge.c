@@ -31,6 +31,19 @@
     (second) = tmp;\
 } while (0)
 
+#define freeList(type, link) do {   \
+    while ((link)) {                \
+        type *del = (link);         \
+        (link) = (link)->next;      \
+        free(del);                  \
+    }                               \
+} while (0)
+
+#define addToList(cur, link) do {   \
+    (cur)->next = (link);           \
+    (link) = (cur);                 \
+} while (0)
+
 static void addFace(mesh *m, face *f) {
     f->next = 0;
     if (m->lastFace) {
@@ -158,7 +171,7 @@ static int edgeComparator(rbtree *tree, const void *firstKey, const void *second
     }                                                   \
 } while (0)
 
-#define makeEdgeFromVertexs(e, v1, v2) do {             \
+#define makeEdgeFromVertices(e, v1, v2) do {             \
     (e)->lo = (v1);                                     \
     (e)->hi = (v2);                                     \
     if ((e)->lo > (e)->hi) {                            \
@@ -168,7 +181,7 @@ static int edgeComparator(rbtree *tree, const void *firstKey, const void *second
 
 static void *findEdgeFromMap(rbtree *t, vertex *v1, vertex *v2) {
     edge key;
-    makeEdgeFromVertexs(&key, v1, v2);
+    makeEdgeFromVertices(&key, v1, v2);
     return rbtreeFind(t, &key);
 }
 
@@ -258,30 +271,6 @@ int halfedgeSaveFaceAsObj(mesh *m, face *f, const char *filename) {
         fprintf(file, " %d//%d", it->start->index, nextFaceIndex);
         it = it->next;
     } while (it != f->handle);
-    fprintf(file, "\n");
-    fclose(file);
-    return 0;
-}
-
-int halfedgeSaveEdgeLoopAsObj(mesh *m, halfedge *h, const char *filename) {
-    halfedge *it = h;
-    FILE *file;
-    int nextVertexIndex = 1;
-    int i = 0;
-    file = fopen(filename, "wb");
-    if (!file) {
-        fprintf(stderr, "Open file \"%s\" failed.\n", filename);
-        return -1;
-    }
-    do {
-        it->start->index = nextVertexIndex++;
-        fprintf(file, "v %f %f %f\n", it->start->position.x, it->start->position.z, it->start->position.y);
-        it = halfedgeEdgeLoopNext(m, it);
-    } while (it != h);
-    fprintf(file, "f");
-    for (i = 1; i < nextVertexIndex; ++i) {
-        fprintf(file, " %d", i);
-    }
     fprintf(file, "\n");
     fclose(file);
     return 0;
@@ -628,59 +617,6 @@ void halfedgeVector3d(mesh *m, halfedge *h, vector3d *v) {
     vector3dSub(v, &h->next->start->position);
 }
 
-halfedge *halfedgeEdgeLoopNext(mesh *m, halfedge *h) {
-    halfedge *it = h;
-    float selectedDegree = 0;
-    halfedge *selectedHalfedge = 0;
-    vector3d a, b;
-    float degree;
-    halfedgeVector3d(m, h, &a);
-    do {
-        halfedgeVector3d(m, it->next, &b);
-        degree = vector3dAngle(&a, &b);
-        if (!selectedHalfedge || selectedDegree < selectedDegree) {
-            selectedDegree = degree;
-            selectedHalfedge = it->next;
-        }
-        it = it->next->opposite;
-    } while (it && it != h);
-    return selectedHalfedge;
-}
-
-face *halfedgeFillFaceAlongOtherSideBorder(mesh *m, halfedge *h) {
-    halfedge *newHandle = 0;
-    face *f = 0;
-    halfedge *it = h;
-    halfedge *lastHandle = 0;
-    halfedge *firstHandle = 0;
-    vertex *firstVertex = 0;
-    do {
-        if (!it->next || !it->next->opposite || !it->next->opposite->next) {
-            return 0;
-        }
-        it = it->next->opposite->next;
-    } while (it != h);
-    f = newFace(m);
-    do {
-        newHandle = newHalfedge();
-        pair(newHandle, it);
-        if (lastHandle) {
-            link(newHandle, lastHandle);
-            lastHandle->start = it->start;
-        } else {
-            firstHandle = newHandle;
-            firstVertex = it->start;
-        }
-        newHandle->left = f;
-        lastHandle = newHandle;
-        it = it->next->opposite->next;
-    } while (it != h);
-    link(firstHandle, lastHandle);
-    lastHandle->start = firstVertex;
-    f->handle = firstHandle;
-    return f;
-}
-
 mesh *halfedgeSplitMeshBySide(mesh *m) {
     mesh *frontMesh = halfedgeCreateMesh();
     face *it;
@@ -705,6 +641,8 @@ mesh *halfedgeSplitMeshBySide(mesh *m) {
             itVertex = itVertex->next;
         }
     }
+    halfedgeFixHoles(m);
+    halfedgeFixHoles(frontMesh);
     return frontMesh;
 }
 
@@ -728,8 +666,6 @@ mesh *halfedgeSliceMeshByFace(mesh *m, point3d *facePoint, vector3d *faceNormal)
     rbtree t;
     int i;
     splitEdge *seLink = 0;
-    halfedge *side0AnyNewEdge = 0;
-    halfedge *side1AnyNewEdge = 0;
     array *siArray = arrayCreate(sizeof(sliceIntersection));
     rbtreeInit(&t, splitEdge, node, key, edgeComparator);
     for (it = m->firstFace; it; it = it->next) {
@@ -817,12 +753,10 @@ mesh *halfedgeSliceMeshByFace(mesh *m, point3d *facePoint, vector3d *faceNormal)
         v1a->front = inter->handles[1]->start->front;
         v1b->front = !v1a->front;
         h0 = newHalfedge();
-        side0AnyNewEdge = h0;
         h0->start = v0a;
         v0a->handle = h0;
         h0->left = inter->handles[0]->left;
         h1 = newHalfedge();
-        side1AnyNewEdge = h1;
         h1->start = v1a;
         v1a->handle = h1;
         h0b = newHalfedge();
@@ -872,30 +806,20 @@ mesh *halfedgeSliceMeshByFace(mesh *m, point3d *facePoint, vector3d *faceNormal)
         }
     }
     arrayDestroy(siArray);
-    if (side0AnyNewEdge) {
-        halfedgeFillFaceAlongOtherSideBorder(m, side0AnyNewEdge);
-    }
-    if (side1AnyNewEdge) {
-        halfedgeFillFaceAlongOtherSideBorder(m, side1AnyNewEdge);
-    }
-    while (seLink) {
-        splitEdge *se = seLink;
-        seLink = seLink->next;
-        free(se);
-    }
+    freeList(splitEdge, seLink);
     return halfedgeSplitMeshBySide(m);
 }
 
-typedef struct importObjEdgeMapNode {
+typedef struct edgeMapNode {
     rbtreeNode node;
     edge key;
     halfedge *h;
-    struct importObjEdgeMapNode *next;
-} importObjEdgeMapNode;
+    struct edgeMapNode *next;
+} edgeMapNode;
 
-static importObjEdgeMapNode *addEdgeToImportObjEdgeMap(rbtree *t, vertex *v1, vertex *v2) {
-    importObjEdgeMapNode *mapNode = (importObjEdgeMapNode *)calloc(1, sizeof(importObjEdgeMapNode));
-    makeEdgeFromVertexs(&mapNode->key, v1, v2);
+static edgeMapNode *addEdgeToMap(rbtree *t, vertex *v1, vertex *v2) {
+    edgeMapNode *mapNode = (edgeMapNode *)calloc(1, sizeof(edgeMapNode));
+    makeEdgeFromVertices(&mapNode->key, v1, v2);
     rbtreeInsert(t, mapNode);
     return mapNode;
 }
@@ -911,9 +835,9 @@ int halfedgeImportObj(mesh *m, const char *filename) {
     char line[512];
     int result = -1;
     rbtree edgeMap;
-    importObjEdgeMapNode *edgeLink = 0;
+    edgeMapNode *edgeLink = 0;
     createFaceContext *createContext = 0;
-    rbtreeInit(&edgeMap, importObjEdgeMapNode, node, key, edgeComparator);
+    rbtreeInit(&edgeMap, edgeMapNode, node, key, edgeComparator);
     fp = fopen(filename, "rb");
     if (!fp) {
         fprintf(stderr, "Open file \"%s\" failed.\n", filename);
@@ -951,14 +875,13 @@ int halfedgeImportObj(mesh *m, const char *filename) {
             h = halfedgeCreateFaceEnd(createContext);
             stop = h;
             do {
-                importObjEdgeMapNode *edgeNode = (importObjEdgeMapNode *)findEdgeFromMap(&edgeMap, h->start, h->next->start);
+                edgeMapNode *edgeNode = (edgeMapNode *)findEdgeFromMap(&edgeMap, h->start, h->next->start);
                 if (edgeNode) {
                     pair(edgeNode->h, h);
                 } else {
-                    edgeNode = addEdgeToImportObjEdgeMap(&edgeMap, h->start, h->next->start);
+                    edgeNode = addEdgeToMap(&edgeMap, h->start, h->next->start);
                     edgeNode->h = h;
-                    edgeNode->next = edgeLink;
-                    edgeLink = edgeNode;
+                    addToList(edgeNode, edgeLink);
                 }
                 h = h->next;
             } while (h != stop);
@@ -976,11 +899,112 @@ tail:
     if (createContext) {
         halfedgeCreateFaceEnd(createContext);
     }
-    while (edgeLink) {
-        importObjEdgeMapNode *del = edgeLink;
-        edgeLink = edgeLink->next;
-        free(del);
-    }
+    freeList(edgeMapNode, edgeLink);
     return result;
 }
 
+typedef struct holeVertex {
+    rbtreeNode node;
+    vertex *cone;
+    struct holeVertex *edge0;
+    struct holeVertex *edge1;
+    int processed;
+    struct holeVertex *next;
+} holeVertex;
+
+int pointerComparator(rbtree *tree, const void *firstKey, const void *secondKey) {
+    return memcmp(((void **)firstKey)[0], ((void **)secondKey)[0], sizeof(void *));
+}
+
+int halfedgeFixHoles(mesh *m) {
+    rbtree holeVertexMap;
+    holeVertex *holdVertexLink = 0;
+    holeVertex *itHv;
+    rbtree edgeMap;
+    edgeMapNode *edgeLink = 0;
+    createFaceContext *createContext = 0;
+    face *itFace;
+    rbtreeInit(&edgeMap, edgeMapNode, node, key, edgeComparator);
+    rbtreeInit(&holeVertexMap, holeVertex, node, cone, pointerComparator);
+    for (itFace = m->firstFace; itFace; itFace = itFace->next) {
+        halfedge *h = itFace->handle;
+        do {
+            if (!h->opposite) {
+                holeVertex *hv;
+                holeVertex *hv0;
+                edgeMapNode *edgeNode = addEdgeToMap(&edgeMap, h->start, h->next->start);
+                edgeNode->h = h;
+                addToList(edgeNode, edgeLink);
+                hv = rbtreeFind(&holeVertexMap, &h->start);
+                if (!hv) {
+                    hv = (holeVertex *)calloc(1, sizeof(holeVertex));
+                    hv->cone = h->start;
+                    addToList(hv, holdVertexLink);
+                    rbtreeInsert(&holeVertexMap, hv);
+                }
+                hv0 = rbtreeFind(&holeVertexMap, &h->next->start);
+                if (!hv0) {
+                    hv0 = (holeVertex *)calloc(1, sizeof(holeVertex));
+                    hv0->cone = h->next->start;
+                    addToList(hv0, holdVertexLink);
+                    rbtreeInsert(&holeVertexMap, hv0);
+                }
+                hv->edge0 = hv0;
+                hv0->edge1 = hv;
+            }
+            h = h->next;
+        } while (h != itFace->handle);
+    }
+    for (itHv = holdVertexLink; itHv; itHv = itHv->next) {
+        halfedge *h;
+        halfedge *stop;
+        holeVertex *subItHv;
+        int vertices = 0;
+        if (itHv->processed) {
+            continue;
+        }
+        subItHv = itHv;
+        do {
+            if (!subItHv) {
+                break;
+            }
+            if (subItHv->processed) {
+                break;
+            }
+            if (!subItHv->edge0) {
+                break;
+            }
+            if (subItHv->edge0->edge1 != subItHv) {
+                break;
+            }
+            vertices++;
+            subItHv->processed = 1;
+            subItHv = subItHv->edge1;
+        } while (subItHv != itHv);
+        if (subItHv != itHv || vertices < 3) {
+            continue;
+        }
+        createContext = halfedgeCreateFaceBegin(m);
+        subItHv = itHv;
+        do {
+            halfedgeCreateFaceAddVertex(createContext, subItHv->cone);
+            subItHv = subItHv->edge1;
+        } while (subItHv != itHv);
+        h = halfedgeCreateFaceEnd(createContext);
+        stop = h;
+        do {
+            edgeMapNode *edgeNode = (edgeMapNode *)findEdgeFromMap(&edgeMap, h->start, h->next->start);
+            if (edgeNode) {
+                pair(edgeNode->h, h);
+            } else {
+                edgeNode = addEdgeToMap(&edgeMap, h->start, h->next->start);
+                edgeNode->h = h;
+                addToList(edgeNode, edgeLink);
+            }
+            h = h->next;
+        } while (h != stop);
+    }
+    freeList(holeVertex, holdVertexLink);
+    freeList(edgeMapNode, edgeLink);
+    return 0;
+}
