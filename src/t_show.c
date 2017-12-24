@@ -148,8 +148,8 @@ static void onProcessNormalKeys(unsigned char key, int x, int y) {
 static void onMotion(int x, int y) {
     switch (mouse.button) {
     case GLUT_LEFT_BUTTON:
-        camera.offsetH += (mouse.x - x) * 0.5;
-        camera.distance -= (mouse.y - y) * 0.5;
+        camera.offsetH += (mouse.x - x) * 0.03;
+        camera.distance -= (mouse.y - y) * 0.03;
         break;
     case GLUT_RIGHT_BUTTON:
         camera.angleX -= (mouse.x - x) * 1;
