@@ -61,11 +61,21 @@ void onDisplay(void) {
             halfedge *stop = it;
             glBegin(GL_LINE_STRIP);
             do {
+                if (it->opposite) {
+                    glColor3f(0.07f, 0.07f, 0.07f);
+                } else {
+                    glColor3f(1.00f, 0.00f, 0.00f);
+                }
                 glVertex3f(it->start->position.x,
                     it->start->position.z,
                     it->start->position.y);
                 it = it->next;
             } while (it != stop);
+            if (it->opposite) {
+                glColor3f(0.07f, 0.07f, 0.07f);
+            } else {
+                glColor3f(1.00f, 0.00f, 0.00f);
+            }
             glVertex3f(f->handle->start->position.x,
                 f->handle->start->position.z,
                 f->handle->start->position.y);
