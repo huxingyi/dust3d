@@ -851,8 +851,7 @@ int halfedgeImportObj(mesh *m, const char *filename) {
                 fprintf(stderr, "Invalid line \"%s\".\n", line);
                 goto tail;
             }
-        }
-        else if ('f' == line[0] && ' ' == line[1]) {
+        } else if ('f' == line[0] && ' ' == line[1]) {
             createContext = halfedgeCreateFaceBegin(m);
             char *space = &line[1];
             halfedge *h;

@@ -2,7 +2,7 @@
 
 char *g_testArgv[] = {
     "-add",
-        "/Users/jeremy/Repositories/dust3d/teapot.obj",
+        "/Users/jeremy/Repositories/dust3d/cessna.obj",
     "-slice",
         "fn:0.2,0.5,0.3",
         "fo:0.9,0,0.2",

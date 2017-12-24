@@ -1,6 +1,7 @@
 #include <GLUT/glut.h>
 #include <OpenGL/gl.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "dust3d.h"
 
 typedef struct cameraView {
@@ -11,7 +12,15 @@ typedef struct cameraView {
     dust3dState *state;
 } cameraView;
 
+typedef struct mouseContext {
+    int x;
+    int y;
+    int button;
+    int state;
+} mouseContext;
+
 static cameraView camera;
+static mouseContext mouse;
 
 static void initCamera(dust3dState *state) {
     camera.angleX = 30;
@@ -21,7 +30,7 @@ static void initCamera(dust3dState *state) {
     camera.state = state;
 }
 
-void onDisplay(void) {
+static void onDisplay(void) {
     dust3dState *state = camera.state;
     
     glClearColor(0.8, 0.8, 0.8, 1);
@@ -87,7 +96,7 @@ void onDisplay(void) {
     glutSwapBuffers();
 }
 
-void onProcessSpecialKeys(int key, int x, int y) {
+static void onProcessSpecialKeys(int key, int x, int y) {
     float fraction = 10;
     switch (key) {
     case GLUT_KEY_LEFT:
@@ -105,7 +114,7 @@ void onProcessSpecialKeys(int key, int x, int y) {
     }
 }
 
-void onResize(int w, int h) {
+static void onResize(int w, int h) {
     float ratio;
     ratio = w * 1.0 / h;
     glMatrixMode(GL_PROJECTION);
@@ -115,7 +124,7 @@ void onResize(int w, int h) {
     glMatrixMode(GL_MODELVIEW);
 }
 
-void onProcessNormalKeys(unsigned char key, int x, int y) {
+static void onProcessNormalKeys(unsigned char key, int x, int y) {
     float fraction = 1.0f;
     if (key == 27) {
         exit(0);
@@ -136,6 +145,29 @@ void onProcessNormalKeys(unsigned char key, int x, int y) {
     }
 }
 
+static void onMotion(int x, int y) {
+    switch (mouse.button) {
+    case GLUT_LEFT_BUTTON:
+        camera.offsetH += (mouse.x - x) * 0.5;
+        camera.distance -= (mouse.y - y) * 0.5;
+        break;
+    case GLUT_RIGHT_BUTTON:
+        camera.angleX -= (mouse.x - x) * 1;
+        camera.angleY -= (mouse.y - y) * 1;
+        break;
+    }
+    mouse.x = x;
+    mouse.y = y;
+}
+
+static void onMouse(int button, int state, int x, int y) {
+    printf("button:%d state:%d x:%d y:%d\n", button, state, x, y);
+    mouse.button = button;
+    mouse.state = state;
+    mouse.x = x;
+    mouse.y = y;
+}
+
 int theShow(dust3dState *state) {
     int argc = 0;
     char **argv = 0;
@@ -147,6 +179,7 @@ int theShow(dust3dState *state) {
     GLfloat position[] = {1.0, 1.0, 1.0, 0.0};
     
     initCamera(state);
+    memset(&mouse, 0, sizeof(mouse));
     
     glutInit(&argc, argv);
     
@@ -160,6 +193,8 @@ int theShow(dust3dState *state) {
     glutIdleFunc(onDisplay);
     glutKeyboardFunc(onProcessNormalKeys);
     glutSpecialFunc(onProcessSpecialKeys);
+    glutMouseFunc(onMouse);
+    glutMotionFunc(onMotion);
 
     glShadeModel(GL_SMOOTH);
     glLightModelfv(GL_LIGHT_MODEL_AMBIENT, globalAmbient);
