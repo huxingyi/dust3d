@@ -24,6 +24,7 @@ typedef struct face {
     halfedge *handle;
     struct face *previous;
     struct face *next;
+    int color;
     char name[MAX_FACE_NAME_SIZE];
 } face;
 
@@ -33,6 +34,7 @@ struct halfedge {
     halfedge *next;
     halfedge *previous;
     halfedge *opposite;
+    int color;
 };
 
 typedef struct mesh {
@@ -43,6 +45,7 @@ typedef struct mesh {
 } mesh;
 
 mesh *halfedgeCreateMesh(void);
+void halfedgeResetMesh(mesh *m);
 void halfedgeDestroyMesh(mesh *m);
 int halfedgeSaveMeshAsObj(mesh *m, const char *filename);
 int halfedgeSaveFaceAsObj(mesh *m, face *f, const char *filename);
@@ -51,18 +54,33 @@ face *halfedgeCreatePlane(mesh *m, float radius);
 face *halfedgeCopyFace(mesh *m, face *f);
 face *halfedgeCutFace(mesh *m, face *f);
 face *halfedgeExtrudeFace(mesh *m, face *f, float radius);
-face *halfedgeFlipFace(mesh *m, face *f);
+int halfedgeFlipFace(mesh *m, face *f);
 int halfedgeFaceNormal(mesh *m, face *f, vector3d *normal);
 int halfedgeTransformFace(mesh *m, face *f, matrix *mat);
+int halfedgeTransform(mesh *m, matrix *mat);
 int halfedgeStitch(mesh *m, halfedge *from, halfedge *to);
 face *halfedgeChamferVertex(mesh *m, vertex *v, float amount);
 int halfedgeIsBoundaryVertex(mesh *m, vertex *v);
 face *halfedgeChamferEdge(mesh *m, halfedge *h, float amount);
 void halfedgeVector3d(mesh *m, halfedge *h, vector3d *v);
-mesh *halfedgeSliceMeshByFace(mesh *m, point3d *facePoint, vector3d *faceNormal);
+mesh *halfedgeSliceMeshByPlane(mesh *m, point3d *facePoint, vector3d *faceNormal, int coincidenceAsFront);
 mesh *halfedgeSplitMeshBySide(mesh *m);
 #define halfedgeMakeSureOnlyOnce(h) ((h)->opposite && (h)->start < (h)->opposite->start)
 int halfedgeImportObj(mesh *m, const char *filename);
 int halfedgeFixHoles(mesh *m);
+int halfedgeIntersectMesh(mesh *m, mesh *by);
+mesh *halfedgeSplitMeshByMesh(mesh *m, mesh *by);
+int halfedgeFlipMesh(mesh *m);
+int halfedgeJoinMesh(mesh *m, mesh *subm);
+mesh *halfedgeCloneMesh(mesh *m);
+int halfedgeIsEmptyMesh(mesh *m);
+int halfedgeConcatMesh(mesh *m, mesh *src);
+int halfedgeCombineDuplicateVertices(mesh *m);
+int halfedgeFixPairing(mesh *m);
+int halfedgeFixTjunction(mesh *m);
+int halfedgeIsWatertight(mesh *m);
+int halfedgeUnionMesh(mesh *m, mesh *by);
+int halfedgeDiffMesh(mesh *m, mesh *by);
+int halfedgeFixAll(mesh *m);
 
 #endif

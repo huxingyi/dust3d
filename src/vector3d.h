@@ -1,6 +1,8 @@
 #ifndef DUST3D_VECTOR3D_H
 #define DUST3D_VECTOR3D_H
 
+#define EPSILON 0.00000001
+
 typedef struct vector3d {
     float x;
     float y;
@@ -21,6 +23,6 @@ float vector3dAngle(vector3d *a, vector3d *b);
 float vector3dMagnitude(vector3d *v);
 void vector3dNormalize(vector3d *v);
 void vector3dSegment(point3d *p1, point3d *p2, vector3d *v);
-float vector3dAngle360(vector3d *v1, vector3d *v2, vector3d *ref);
+int vector3dIsNull(vector3d *v);
 
 #endif

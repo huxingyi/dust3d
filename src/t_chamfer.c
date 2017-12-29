@@ -60,7 +60,7 @@ int theChamfer(dust3dState *state) {
     }
     for (i = 0; i < arrayGetLength(sliceFaceArray); i++) {
         sliceFace *sf = (sliceFace *)arrayGetItem(sliceFaceArray, i);
-        mesh *frontMesh = halfedgeSliceMeshByFace(m, &sf->point, &sf->normal);
+        mesh *frontMesh = halfedgeSliceMeshByPlane(m, &sf->point, &sf->normal, 0);
         halfedgeDestroyMesh(frontMesh);
     }
     arrayDestroy(sliceFaceArray);

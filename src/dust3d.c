@@ -3,6 +3,7 @@
 #include <string.h>
 #include "dust3d.h"
 #include "rbtree.h"
+#include "strutil.h"
 #include "functionlist.h"
 
 typedef struct registerNode {
@@ -11,12 +12,19 @@ typedef struct registerNode {
     dust3dFunction func;
 } registerNode;
 
+typedef struct meshNode {
+    rbtreeNode node;
+    char *name;
+    mesh *mesh;
+} meshNode;
+
 struct dust3dState {
     rbtree registerMap;
     int argumentNum;
     int namingArgumentStart;
     char **arguments;
     mesh *currentMesh;
+    rbtree meshMap;
     void *tag;
 };
 
@@ -25,7 +33,8 @@ dust3dState *dust3dCreateState(void *tag) {
     state->tag = tag;
     rbtreeInit(&state->registerMap, registerNode, node, name, rbtreeStringComparator);
     rust3dRegisterFunctionList(state);
-    state->currentMesh = halfedgeCreateMesh();
+    rbtreeInit(&state->meshMap, meshNode, node, name, rbtreeStringComparator);
+    dust3dSetCurrentMesh(state, dust3dCreateMeshById(state, "default"));
     return state;
 }
 
@@ -154,17 +163,46 @@ const char *dust3dGetNamingArgument(dust3dState *state, const char *name) {
     return 0;
 }
 
+static meshNode *findMeshNode(dust3dState *state, const char *id) {
+    return (meshNode *)rbtreeFind(&state->meshMap, &id);
+}
+
+static meshNode *newMeshNode(dust3dState *state, const char *id) {
+    meshNode *node = (meshNode *)calloc(1, sizeof(meshNode));
+    node->name = strdup(id);
+    rbtreeInsert(&state->meshMap, node);
+    return node;
+}
+
+static void deleteMeshNode(meshNode *node) {
+    free(node->name);
+    free(node);
+}
+
+mesh *dust3dFindMeshById(dust3dState *state, const char *id) {
+    meshNode *node = findMeshNode(state, id);
+    return node ? node->mesh : 0;
+}
+
+mesh *dust3dCreateMeshById(dust3dState *state, const char *id) {
+    meshNode *node = newMeshNode(state, id);
+    node->mesh = halfedgeCreateMesh();
+    return node->mesh;
+}
+
+void dust3dDestroyMeshById(dust3dState *state, const char *id) {
+    meshNode *node = findMeshNode(state, id);
+    deleteMeshNode(node);
+}
+
 mesh *dust3dGetCurrentMesh(dust3dState *state) {
     return state->currentMesh;
 }
 
-static int split(char *str, const char *splitter, char **vector, int max) {
-    char *token;
-    int n = 0;
-    while ((token=strsep(&str, splitter)) && n < max) {
-        vector[n++] = token;
-    }
-    return n;
+mesh *dust3dSetCurrentMesh(dust3dState *state, mesh *m) {
+    mesh *last = state->currentMesh;
+    state->currentMesh = m;
+    return last;
 }
 
 vector3d toVector3d(const char *str) {

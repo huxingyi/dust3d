@@ -9,6 +9,10 @@ int theShow(dust3dState *state);
 int theSlice(dust3dState *state);
 int theSubdiv(dust3dState *state);
 int theSave(dust3dState *state);
+int theNew(dust3dState *state);
+int theSel(dust3dState *state);
+int theInter(dust3dState *state);
+int theMove(dust3dState *state);
 
 #define rust3dRegisterFunctionList(state)   do {        \
     dust3dRegister((state), "add", theAdd);             \
@@ -18,6 +22,10 @@ int theSave(dust3dState *state);
     dust3dRegister((state), "slice", theSlice);         \
     dust3dRegister((state), "subdiv", theSubdiv);       \
     dust3dRegister((state), "save", theSave);           \
+    dust3dRegister((state), "new", theNew);             \
+    dust3dRegister((state), "sel", theSel);             \
+    dust3dRegister((state), "inter", theInter);         \
+    dust3dRegister((state), "move", theMove);           \
 } while (0)
 
 #endif

@@ -5,11 +5,11 @@
 #include "halfedge.h"
 #include "matrix.h"
 #include "vector3d.h"
-#include "geometry.h"
+#include "math3d.h"
 #include "rbtree.h"
 #include "array.h"
-
-#define min(x, y) (((x) < (y)) ? (x) : (y))
+#include "util.h"
+#include "color.h"
 
 #define pair(first, second) do {\
     halfedge *firstValue = (first);\
@@ -23,25 +23,7 @@
     halfedge *secondValue = (second);\
     (first)->next = (secondValue);\
     (second)->previous = (firstValue);\
-} while (0)
-
-#define swap(type, first, second) do {\
-    type tmp = (first);\
-    (first) = (second);\
-    (second) = tmp;\
-} while (0)
-
-#define freeList(type, link) do {   \
-    while ((link)) {                \
-        type *del = (link);         \
-        (link) = (link)->next;      \
-        free(del);                  \
-    }                               \
-} while (0)
-
-#define addToList(cur, link) do {   \
-    (cur)->next = (link);           \
-    (link) = (cur);                 \
+    assert(firstValue->start != secondValue->start);\
 } while (0)
 
 static void addFace(mesh *m, face *f) {
@@ -57,6 +39,7 @@ static void addFace(mesh *m, face *f) {
 
 static face *newFace(mesh *m) {
     face *f = (face *)calloc(1, sizeof(face));
+    f->color = WHITE;
     addFace(m, f);
     return f;
 }
@@ -189,28 +172,38 @@ mesh *halfedgeCreateMesh(void) {
     return (mesh *)calloc(1, sizeof(mesh));
 }
 
-void halfedgeDestroyMesh(mesh *m) {
+void halfedgeResetMesh(mesh *m) {
     face *itFace;
     vertex *itVertex;
-    itFace = m->firstFace;
-    while (itFace) {
-        halfedge *itHandle = itFace->handle;
-        do {
-            halfedge *delHandle = itHandle;
-            itHandle = itHandle->next;
-            deleteHalfedge(m, delHandle);
-        } while (itHandle != itFace->handle);
-        face *delFace = itFace;
-        itFace = itFace->next;
-        deleteFace(m, delFace);
+    if (!halfedgeIsEmptyMesh(m)) {
+        itFace = m->firstFace;
+        while (itFace) {
+            halfedge *itHandle = itFace->handle;
+            do {
+                halfedge *delHandle = itHandle;
+                itHandle = itHandle->next;
+                deleteHalfedge(m, delHandle);
+            } while (itHandle != itFace->handle);
+            face *delFace = itFace;
+            itFace = itFace->next;
+            deleteFace(m, delFace);
+        }
+        itVertex = m->firstVertex;
+        while (itVertex) {
+            vertex *delVertex = itVertex;
+            itVertex = itVertex->next;
+            deleteVertex(m, delVertex);
+        }
     }
-    itVertex = m->firstVertex;
-    while (itVertex) {
-        vertex *delVertex = itVertex;
-        itVertex = itVertex->next;
-        deleteVertex(m, delVertex);
-    }
+}
+
+void halfedgeDestroyMesh(mesh *m) {
+    halfedgeResetMesh(m);
     free(m);
+}
+
+int halfedgeIsEmptyMesh(mesh *m) {
+    return !m->firstVertex;
 }
 
 int halfedgeSaveMeshAsObj(mesh *m, const char *filename) {
@@ -371,9 +364,12 @@ int halfedgeFaceNormal(mesh *m, face *f, vector3d *normal) {
         points[num % 3] = &it->start->position;
         num++;
         if (num >= 3) {
-            vector3dNormal(points[(num - 3) % 3], points[(num - 2) % 3], points[(num - 1) % 3], &v);
-            vector3dAdd(normal, &v);
-            total++;
+            point3d *arr[3] = {points[(num - 3) % 3], points[(num - 2) % 3], points[(num - 1) % 3]};
+            if (!isPointOnSegment(arr[1], arr[0], arr[2])) {
+                vector3dNormal(arr[0], arr[1], arr[2], &v);
+                vector3dAdd(normal, &v);
+                total++;
+            }
         }
         it = it->next;
     } while (it != stop);
@@ -381,7 +377,7 @@ int halfedgeFaceNormal(mesh *m, face *f, vector3d *normal) {
     return 0;
 }
 
-face *halfedgeFlipFace(mesh *m, face *f) {
+int halfedgeFlipFace(mesh *m, face *f) {
     halfedge *it = f->handle;
     halfedge *stop = it;
     vertex *last;
@@ -396,7 +392,7 @@ face *halfedgeFlipFace(mesh *m, face *f) {
         swap(vertex *, last, it->start);
         it = it->next;
     } while (it != stop);
-    return f;
+    return 0;
 }
 
 face *halfedgeExtrudeFace(mesh *m, face *f, float radius) {
@@ -490,6 +486,14 @@ int halfedgeTransformFace(mesh *m, face *f, matrix *mat) {
         matrixTransformXYZ(mat, &it->start->position.x, &it->start->position.y, &it->start->position.z);
         it = it->next;
     } while (it != stop);
+    return 0;
+}
+
+int halfedgeTransform(mesh *m, matrix *mat) {
+    vertex *v;
+    for (v = m->firstVertex; v; v = v->next) {
+        matrixTransformXYZ(mat, &v->position.x, &v->position.y, &v->position.z);
+    }
     return 0;
 }
 
@@ -641,8 +645,8 @@ mesh *halfedgeSplitMeshBySide(mesh *m) {
             itVertex = itVertex->next;
         }
     }
-    halfedgeFixHoles(m);
-    halfedgeFixHoles(frontMesh);
+    //halfedgeFixHoles(m);
+    //halfedgeFixHoles(frontMesh);
     return frontMesh;
 }
 
@@ -661,7 +665,7 @@ typedef struct sliceIntersection {
     halfedge *handles[2];
 } sliceIntersection;
 
-mesh *halfedgeSliceMeshByFace(mesh *m, point3d *facePoint, vector3d *faceNormal) {
+mesh *halfedgeSliceMeshByPlane(mesh *m, point3d *facePoint, vector3d *faceNormal, int coincidenceAsFront) {
     face *it = 0;
     rbtree t;
     int i;
@@ -671,8 +675,8 @@ mesh *halfedgeSliceMeshByFace(mesh *m, point3d *facePoint, vector3d *faceNormal)
     for (it = m->firstFace; it; it = it->next) {
         halfedge *h = it->handle;
         do {
-            h->start->front = (GEOMETRY_FRONT ==
-                geometryRelationBetweenPointAndPlane(&h->start->position, facePoint, faceNormal));
+            int side = identifyPointOnWhichSideOfPlane(&h->start->position, facePoint, faceNormal);
+            h->start->front = coincidenceAsFront ? (SIDE_BACK != side) : (SIDE_FRONT == side);
             h = h->next;
         } while (h != it->handle);
     }
@@ -683,9 +687,8 @@ mesh *halfedgeSliceMeshByFace(mesh *m, point3d *facePoint, vector3d *faceNormal)
         int count = 0;
         do {
             if (h->start->front != h->next->start->front) {
-                int geo = geometryIntersectionOfSegmentAndPlane(&h->start->position,
-                    &h->next->start->position, facePoint, faceNormal, &cross[count]);
-                if (GEOMETRY_INTERSECT == geo) {
+                if (0 == intersectionOfSegmentAndPlane(&h->start->position,
+                    &h->next->start->position, facePoint, faceNormal, &cross[count])) {
                     handles[count] = h;
                     count++;
                     if (3 == count) {
@@ -835,7 +838,7 @@ int halfedgeImportObj(mesh *m, const char *filename) {
     char line[512];
     int result = -1;
     rbtree edgeMap;
-    edgeMapNode *edgeLink = 0;
+    edgeMapNode *edgeList = 0;
     createFaceContext *createContext = 0;
     rbtreeInit(&edgeMap, edgeMapNode, node, key, edgeComparator);
     fp = fopen(filename, "rb");
@@ -852,10 +855,10 @@ int halfedgeImportObj(mesh *m, const char *filename) {
                 goto tail;
             }
         } else if ('f' == line[0] && ' ' == line[1]) {
-            createContext = halfedgeCreateFaceBegin(m);
             char *space = &line[1];
             halfedge *h;
             halfedge *stop;
+            createContext = halfedgeCreateFaceBegin(m);
             do {
                 int index = -1;
                 objPoint *p;
@@ -880,7 +883,7 @@ int halfedgeImportObj(mesh *m, const char *filename) {
                 } else {
                     edgeNode = addEdgeToMap(&edgeMap, h->start, h->next->start);
                     edgeNode->h = h;
-                    addToList(edgeNode, edgeLink);
+                    addToList(edgeNode, edgeList);
                 }
                 h = h->next;
             } while (h != stop);
@@ -898,8 +901,67 @@ tail:
     if (createContext) {
         halfedgeCreateFaceEnd(createContext);
     }
-    freeList(edgeMapNode, edgeLink);
+    freeList(edgeMapNode, edgeList);
     return result;
+}
+
+typedef struct vertexCloneMapNode {
+    rbtreeNode node;
+    vertex *key;
+    vertex *v;
+    struct vertexCloneMapNode *next;
+} vertexCloneMapNode;
+
+int halfedgeConcatMesh(mesh *m, mesh *src) {
+    face *srcFace;
+    rbtree edgeMap;
+    rbtree vertexCloneMap;
+    edgeMapNode *edgeList = 0;
+    createFaceContext *createContext = 0;
+    vertexCloneMapNode *vertexCloneList = 0;
+    rbtreeInit(&edgeMap, edgeMapNode, node, key, edgeComparator);
+    rbtreeInit(&vertexCloneMap, vertexCloneMapNode, node, key, rbtreePointerComparator);
+    for (srcFace = src->firstFace; srcFace; srcFace = srcFace->next) {
+        halfedge *h;
+        halfedge *stop;
+        halfedge *hSrc = srcFace->handle;
+        halfedge *stopSrc = hSrc;
+        createContext = halfedgeCreateFaceBegin(m);
+        do {
+            vertexCloneMapNode *vc = (vertexCloneMapNode *)rbtreeFind(&vertexCloneMap, &hSrc->start);
+            if (!vc) {
+                vc = (vertexCloneMapNode *)calloc(1, sizeof(vertexCloneMapNode));
+                vc->key = hSrc->start;
+                vc->v = newVertex(m, &vc->key->position);
+                addToList(vc, vertexCloneList);
+                rbtreeInsert(&vertexCloneMap, vc);
+            }
+            halfedgeCreateFaceAddVertex(createContext, vc->v);
+            hSrc = hSrc->next;
+        } while (hSrc != stopSrc);
+        h = halfedgeCreateFaceEnd(createContext);
+        stop = h;
+        do {
+            edgeMapNode *edgeNode = (edgeMapNode *)findEdgeFromMap(&edgeMap, h->start, h->next->start);
+            if (edgeNode) {
+                pair(edgeNode->h, h);
+            } else {
+                edgeNode = addEdgeToMap(&edgeMap, h->start, h->next->start);
+                edgeNode->h = h;
+                addToList(edgeNode, edgeList);
+            }
+            h = h->next;
+        } while (h != stop);
+    }
+    freeList(vertexCloneMapNode, vertexCloneList);
+    freeList(edgeMapNode, edgeList);
+    return 0;
+}
+
+mesh *halfedgeCloneMesh(mesh *m) {
+    mesh *clone = halfedgeCreateMesh();
+    halfedgeConcatMesh(clone, m);
+    return clone;
 }
 
 typedef struct holeVertex {
@@ -911,50 +973,52 @@ typedef struct holeVertex {
     struct holeVertex *next;
 } holeVertex;
 
-int pointerComparator(rbtree *tree, const void *firstKey, const void *secondKey) {
-    return memcmp(((void **)firstKey)[0], ((void **)secondKey)[0], sizeof(void *));
-}
-
 int halfedgeFixHoles(mesh *m) {
     rbtree holeVertexMap;
-    holeVertex *holdVertexLink = 0;
+    holeVertex *holeVertexLink = 0;
     holeVertex *itHv;
     rbtree edgeMap;
-    edgeMapNode *edgeLink = 0;
+    edgeMapNode *edgeList = 0;
     createFaceContext *createContext = 0;
     face *itFace;
+    int holeVertices = 0;
     rbtreeInit(&edgeMap, edgeMapNode, node, key, edgeComparator);
-    rbtreeInit(&holeVertexMap, holeVertex, node, cone, pointerComparator);
+    rbtreeInit(&holeVertexMap, holeVertex, node, cone, rbtreePointerComparator);
     for (itFace = m->firstFace; itFace; itFace = itFace->next) {
         halfedge *h = itFace->handle;
         do {
+            edgeMapNode *edgeNode;
             if (!h->opposite) {
                 holeVertex *hv;
                 holeVertex *hv0;
-                edgeMapNode *edgeNode = addEdgeToMap(&edgeMap, h->start, h->next->start);
+                assert(h->start != h->next->start);
+                assert(0 == findEdgeFromMap(&edgeMap, h->start, h->next->start));
+                edgeNode = addEdgeToMap(&edgeMap, h->start, h->next->start);
                 edgeNode->h = h;
-                addToList(edgeNode, edgeLink);
+                addToList(edgeNode, edgeList);
                 hv = rbtreeFind(&holeVertexMap, &h->start);
                 if (!hv) {
                     hv = (holeVertex *)calloc(1, sizeof(holeVertex));
                     hv->cone = h->start;
-                    addToList(hv, holdVertexLink);
+                    addToList(hv, holeVertexLink);
                     rbtreeInsert(&holeVertexMap, hv);
                 }
                 hv0 = rbtreeFind(&holeVertexMap, &h->next->start);
                 if (!hv0) {
                     hv0 = (holeVertex *)calloc(1, sizeof(holeVertex));
                     hv0->cone = h->next->start;
-                    addToList(hv0, holdVertexLink);
+                    addToList(hv0, holeVertexLink);
                     rbtreeInsert(&holeVertexMap, hv0);
                 }
+                assert(hv != hv0);
                 hv->edge0 = hv0;
                 hv0->edge1 = hv;
+                holeVertices++;
             }
             h = h->next;
         } while (h != itFace->handle);
     }
-    for (itHv = holdVertexLink; itHv; itHv = itHv->next) {
+    for (itHv = holeVertexLink; itHv; itHv = itHv->next) {
         halfedge *h;
         halfedge *stop;
         holeVertex *subItHv;
@@ -987,6 +1051,7 @@ int halfedgeFixHoles(mesh *m) {
         subItHv = itHv;
         do {
             halfedgeCreateFaceAddVertex(createContext, subItHv->cone);
+            subItHv->processed = 1;
             subItHv = subItHv->edge1;
         } while (subItHv != itHv);
         h = halfedgeCreateFaceEnd(createContext);
@@ -998,12 +1063,298 @@ int halfedgeFixHoles(mesh *m) {
             } else {
                 edgeNode = addEdgeToMap(&edgeMap, h->start, h->next->start);
                 edgeNode->h = h;
-                addToList(edgeNode, edgeLink);
+                addToList(edgeNode, edgeList);
             }
             h = h->next;
         } while (h != stop);
     }
-    freeList(holeVertex, holdVertexLink);
-    freeList(edgeMapNode, edgeLink);
+    freeList(holeVertex, holeVertexLink);
+    freeList(edgeMapNode, edgeList);
+    return 0;
+}
+
+int halfedgeFixPairing(mesh *m) {
+    rbtree edgeMap;
+    edgeMapNode *edgeList = 0;
+    face *itFace;
+    rbtreeInit(&edgeMap, edgeMapNode, node, key, edgeComparator);
+    for (itFace = m->firstFace; itFace; itFace = itFace->next) {
+        halfedge *h = itFace->handle;
+        halfedge *stop = h;
+        do {
+            edgeMapNode *edgeNode = (edgeMapNode *)findEdgeFromMap(&edgeMap, h->start, h->next->start);
+            if (edgeNode) {
+                pair(edgeNode->h, h);
+            } else {
+                edgeNode = addEdgeToMap(&edgeMap, h->start, h->next->start);
+                edgeNode->h = h;
+                addToList(edgeNode, edgeList);
+            }
+            //assert(h->start != h->next->start);
+            h = h->next;
+        } while (h != stop);
+    }
+    freeList(edgeMapNode, edgeList);
+    return 0;
+}
+
+int halfedgeIsWatertight(mesh *m) {
+    face *itFace;
+    for (itFace = m->firstFace; itFace; itFace = itFace->next) {
+        halfedge *h = itFace->handle;
+        halfedge *stop = h;
+        do {
+            if (!h->opposite) {
+                return 0;
+            }
+            h = h->next;
+        } while (h != stop);
+    }
+    return 1;
+}
+
+int halfedgeJoinMesh(mesh *m, mesh *subm) {
+    face *it;
+    vertex *itVertex;
+    for (it = subm->firstFace; it; ) {
+        face *f = it;
+        it = it->next;
+        removeFace(subm, f);
+        addFace(m, f);
+    }
+    for (itVertex = subm->firstVertex; itVertex; ) {
+        vertex *v = itVertex;
+        itVertex = itVertex->next;
+        removeVertex(subm, v);
+        addVertex(m, v);
+    }
+    halfedgeDestroyMesh(subm);
+    return 0;
+}
+
+/*
+int halfedgeIntersectMesh(mesh *m, mesh *by) {
+    face *sliceFace;
+    for (sliceFace = by->firstFace; sliceFace; sliceFace = sliceFace->next) {
+        vector3d normal;
+        mesh *otherSideMesh;
+        halfedgeFaceNormal(by, sliceFace, &normal);
+        otherSideMesh = halfedgeSliceMeshByPlane(m, &sliceFace->handle->start->position, &normal, 0);
+        halfedgeDestroyMesh(otherSideMesh);
+    }
+    return 0;
+}*/
+
+int halfedgeFlipMesh(mesh *m) {
+    face *itFace;
+    for (itFace = m->firstFace; itFace; itFace = itFace->next) {
+        halfedgeFlipFace(m, itFace);
+    }
+    return 0;
+}
+
+mesh *halfedgeSplitMeshByMesh(mesh *m, mesh *by) {
+    face *sliceFace;
+    mesh *outside = halfedgeCreateMesh();
+    for (sliceFace = by->firstFace; sliceFace; sliceFace = sliceFace->next) {
+        vector3d normal;
+        mesh *frontMesh;
+        halfedgeFaceNormal(by, sliceFace, &normal);
+        frontMesh = halfedgeSliceMeshByPlane(m, &sliceFace->handle->start->position, &normal, 0);
+        halfedgeJoinMesh(outside, frontMesh);
+    }
+    return outside;
+}
+
+typedef struct vertexMapNode {
+    rbtreeNode node;
+    vertex *v;
+    struct vertexMapNode *next;
+} vertexMapNode;
+
+static int vertexComparator(rbtree *tree, const void *firstKey, const void *secondKey) {
+    vertex *firstV = ((vertex **)firstKey)[0];
+    vertex *secondV = ((vertex **)secondKey)[0];
+    float offsetX = firstV->position.x - secondV->position.x;
+    float offsetY = firstV->position.y - secondV->position.y;
+    float offsetZ = firstV->position.z - secondV->position.z;
+    if (fabs(offsetX) > EPSILON_DISTANCE) {
+        if (offsetX < 0) {
+            return -1;
+        } else {
+            return 1;
+        }
+    }
+    if (fabs(offsetY) > EPSILON_DISTANCE) {
+        if (offsetY < 0) {
+            return -1;
+        } else {
+            return 1;
+        }
+    }
+    if (fabs(offsetZ) > EPSILON_DISTANCE) {
+        if (offsetZ < 0) {
+            return -1;
+        } else {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+int halfedgeCombineDuplicateVertices(mesh *m) {
+    rbtree vertexMap;
+    face *itFace;
+    vertexMapNode *vertexList = 0;
+    rbtreeInit(&vertexMap, vertexMapNode, node, v, vertexComparator);
+    for (itFace = m->firstFace; itFace; itFace = itFace->next) {
+        halfedge *h = itFace->handle;
+        halfedge *stop = h;
+        do {
+            vertexMapNode *node = rbtreeFind(&vertexMap, &h->start);
+            if (!node) {
+                node = (vertexMapNode *)calloc(1, sizeof(vertexMapNode));
+                node->v = h->start;
+                addToList(node, vertexList);
+                rbtreeInsert(&vertexMap, node);
+            } else if (node->v != h->start) {
+                removeVertex(m, h->start);
+                h->start = node->v;
+            }
+            h = h->next;
+        } while (h != stop);
+    }
+    freeList(vertexMapNode, vertexList);
+    return 0;
+}
+
+static void splitHalfedge(mesh *m, halfedge *h, vertex *v) {
+    halfedge *newHandle = newHalfedge();
+    newHandle->start = v;
+    newHandle->left = h->left;
+#if DUST3D_DEBUG
+    //h->left->color = CHOCOLATE;
+    //h->color = LAWN_GREEN;
+    //newHandle->color = BROWN;
+#endif
+    /*
+    printf("<%f,%f,%f> ---- <%f,%f,%f> --- <%f,%f,%f>\n",
+        h->start->position.x,
+        h->start->position.y,
+        h->start->position.z,
+        v->position.x,
+        v->position.y,
+        v->position.z,
+        h->next->start->position.x,
+        h->next->start->position.y,
+        h->next->start->position.z);*/
+    link(newHandle, h->next);
+    link(h, newHandle);
+}
+
+typedef struct halfedgeNode {
+    halfedge *h;
+    struct halfedgeNode *next;
+} halfedgeNode;
+
+int halfedgeFixTjunction(mesh *m) {
+    face *itFace;
+    halfedgeNode *boundaryList = 0;
+    halfedgeNode *itNode;
+    halfedgeNode *node;
+    for (itFace = m->firstFace; itFace; itFace = itFace->next) {
+        halfedge *h = itFace->handle;
+        halfedge *stop = h;
+        do {
+            if (!h->opposite) {
+                node = (halfedgeNode *)calloc(1, sizeof(halfedgeNode));
+                node->h = h;
+                addToList(node, boundaryList);
+            }
+            h = h->next;
+        } while (h != stop);
+    }
+    for (itNode = boundaryList; itNode;) {
+        halfedgeNode *subItNode;
+        int splitted = 0;
+        for (subItNode = boundaryList; subItNode; subItNode = subItNode->next) {
+            if (subItNode == itNode) {
+                continue;
+            }
+            if (isPointOnSegment(&subItNode->h->start->position, &itNode->h->start->position, &itNode->h->next->start->position)) {
+                //subItNode->h->color = DARK_SLATE_GRAY;
+                splitHalfedge(m, itNode->h, subItNode->h->start);
+                splitted = 1;
+                break;
+            }
+            if (isPointOnSegment(&subItNode->h->next->start->position, &itNode->h->start->position, &itNode->h->next->start->position)) {
+                //subItNode->h->next->color = DARK_SLATE_GRAY;
+                splitHalfedge(m, itNode->h, subItNode->h->next->start);
+                splitted = 1;
+                break;
+            }
+        }
+        if (!splitted) {
+            itNode = itNode->next;
+            continue;
+        }
+        node = (halfedgeNode *)calloc(1, sizeof(halfedgeNode));
+        node->h = itNode->h->next;
+        node->next = itNode->next;
+        itNode->next = node;
+    }
+    freeList(halfedgeNode, boundaryList);
+    return 0;
+}
+
+int halfedgeFixAll(mesh *m) {
+    halfedgeCombineDuplicateVertices(m);
+    halfedgeFixTjunction(m);
+    halfedgeFixPairing(m);
+    //halfedgeFixHoles(m);
+    return 0;
+}
+
+int halfedgeUnionMesh(mesh *m, mesh *by) {
+    mesh *cloneBy = halfedgeCloneMesh(by);
+    mesh *otherOutside = halfedgeSplitMeshByMesh(cloneBy, m);
+    mesh *myOutside = halfedgeSplitMeshByMesh(m, by);
+    halfedgeDestroyMesh(cloneBy);
+    halfedgeResetMesh(m);
+    halfedgeJoinMesh(m, otherOutside);
+    halfedgeJoinMesh(m, myOutside);
+    halfedgeFixAll(m);
+    return 0;
+}
+
+int halfedgeDiffMesh(mesh *m, mesh *by) {
+    mesh *cloneBy = halfedgeCloneMesh(by);
+    mesh *otherOutside = halfedgeSplitMeshByMesh(cloneBy, m);
+    mesh *myOutside = halfedgeSplitMeshByMesh(m, by);
+    mesh *otherInside = cloneBy;
+    halfedgeDestroyMesh(otherOutside);
+    halfedgeFlipMesh(otherInside);
+    halfedgeResetMesh(m);
+    halfedgeJoinMesh(m, myOutside);
+    halfedgeJoinMesh(m, otherInside);
+    halfedgeFixAll(m);
+    return 0;
+}
+
+int halfedgeIntersectMesh(mesh *m, mesh *by) {
+    mesh *cloneM = halfedgeCloneMesh(m);
+    mesh *cloneBy = halfedgeCloneMesh(by);
+    mesh *otherOutside = halfedgeSplitMeshByMesh(cloneBy, m);
+    mesh *myOutside = halfedgeSplitMeshByMesh(cloneM, by);
+    mesh *otherInside = cloneBy;
+    mesh *myInside = cloneM;
+    halfedgeDestroyMesh(otherOutside);
+    halfedgeDestroyMesh(myOutside);
+    halfedgeFlipMesh(otherInside);
+    halfedgeFlipMesh(myInside);
+    halfedgeResetMesh(m);
+    halfedgeJoinMesh(m, otherInside);
+    halfedgeJoinMesh(m, myInside);
+    halfedgeFixAll(m);
     return 0;
 }

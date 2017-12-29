@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <assert.h>
 #include "dust3d.h"
 #include "strutil.h"
 
@@ -27,7 +28,8 @@ int theInter(dust3dState *state) {
         fprintf(stderr, "Mesh id \"%s\" not found\n", meshId2);
         return -1;
     }
-    halfedgeIntersect(m1, m2);
+    halfedgeIntersectMesh(m1, m2);
     dust3dSetCurrentMesh(state, m1);
+    halfedgeDestroyMesh(m2);
     return 0;
 }

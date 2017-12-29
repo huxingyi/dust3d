@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "dust3d.h"
+#include "color.h"
 
 typedef struct cameraView {
     float angleX;
@@ -49,13 +50,17 @@ static void onDisplay(void) {
             halfedge *it = f->handle;
             halfedge *stop = it;
             vector3d faceNormal;
+            //int vertexIndex = 0;
             halfedgeFaceNormal(m, f, &faceNormal);
+            glColor3fv(colors[f->color]);
             glBegin(GL_POLYGON);
             do {
                 glNormal3f(faceNormal.x, faceNormal.y, faceNormal.z);
+                //glColor3fv(colors[(f->color + vertexIndex * 2) % MAX_COLOR]);
                 glVertex3f(it->start->position.x,
                     it->start->position.z,
                     it->start->position.y);
+                //vertexIndex++;
                 it = it->next;
             } while (it != stop);
             glEnd();
@@ -71,20 +76,15 @@ static void onDisplay(void) {
             glBegin(GL_LINE_STRIP);
             do {
                 if (it->opposite) {
-                    glColor3f(0.07f, 0.07f, 0.07f);
+                    glColor3fv(colors[it->color]);
                 } else {
-                    glColor3f(1.00f, 0.00f, 0.00f);
+                    glColor3fv(colors[RED]);
                 }
                 glVertex3f(it->start->position.x,
                     it->start->position.z,
                     it->start->position.y);
                 it = it->next;
             } while (it != stop);
-            if (it->opposite) {
-                glColor3f(0.07f, 0.07f, 0.07f);
-            } else {
-                glColor3f(1.00f, 0.00f, 0.00f);
-            }
             glVertex3f(f->handle->start->position.x,
                 f->handle->start->position.z,
                 f->handle->start->position.y);
@@ -161,7 +161,7 @@ static void onMotion(int x, int y) {
 }
 
 static void onMouse(int button, int state, int x, int y) {
-    printf("button:%d state:%d x:%d y:%d\n", button, state, x, y);
+    //printf("button:%d state:%d x:%d y:%d\n", button, state, x, y);
     mouse.button = button;
     mouse.state = state;
     mouse.x = x;
@@ -213,6 +213,8 @@ int theShow(dust3dState *state) {
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
     glEnable(GL_DEPTH_TEST);
+    
+    //glLineWidth(7);
 
     glutMainLoop();
     return 0;

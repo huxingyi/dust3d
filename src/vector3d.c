@@ -71,28 +71,6 @@ float vector3dMagnitude(vector3d *v) {
     return sqrt(mag);
 }
 
-/*
-float vector3dAngle(vector3d *a, vector3d *b) {
-    float angle;
-    float da, db;
-    float acosParam;
-    da = vector3dMagnitude(a);
-    db = vector3dMagnitude(b);
-    if (0 == da || 0 == db) {
-        return 0;
-    }
-    acosParam = vector3dDotProduct(a, b) / (da * db);
-    if (acosParam < -1) {
-        acosParam = -1;
-    }
-    if (acosParam > 1) {
-        acosParam = 1;
-    }
-    angle = acos(acosParam) * CONST_180_DIV_PI;
-    return angle;
-}
-*/
-
 void vector3dNormalize(vector3d *v) {
     double mag;
     mag = v->x * v->x + v->y * v->y + v->z * v->z;
@@ -109,17 +87,7 @@ void vector3dSegment(point3d *p1, point3d *p2, vector3d *v) {
     vector3dSub(v, p2);
 }
 
-float vector3dAngle360(vector3d *v1, vector3d *v2, vector3d *ref) {
-    vector3d v1n = *v1;
-    vector3d v2n = *v2;
-    float angle;
-    vector3d vcross;
-    vector3dNormalize(&v1n);
-    vector3dNormalize(&v2n);
-    angle = acos(vector3dDotProduct(&v1n, &v2n)) * CONST_180_DIV_PI;
-    vector3dCrossProduct(v1, v2, &vcross);
-    if (vector3dDotProduct(ref, &vcross) < 0) {
-        angle = 360 - angle;
-    }
-    return angle;
+int vector3dIsNull(vector3d *v) {
+    return (fabs(v->x) <= EPSILON && fabs(v->x) <= EPSILON && fabs(v->x) <= EPSILON);
 }
+

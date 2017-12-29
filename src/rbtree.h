@@ -46,6 +46,7 @@ int rbtreeUlongComparator(rbtree *tree, const void *firstKey, const void *second
 int rbtreeLongLongComparator(rbtree *tree, const void *firstKey, const void *secondKey);
 int rbtreeUlongLongComparator(rbtree *tree, const void *firstKey, const void *secondKey);
 int rbtreeStringComparator(rbtree *tree, const void *firstKey, const void *secondKey);
+int rbtreePointerComparator(rbtree *tree, const void *firstKey, const void *secondKey);
 
 /*API*/
 #define rbtreeInit(tree_, parentType_, nodeFieldName_, keyFieldName_, comparator_) do {  \

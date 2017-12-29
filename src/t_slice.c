@@ -19,7 +19,7 @@ int theSlice(dust3dState *state) {
     }
     faceNormal = toVector3d(faceNormalStr);
     faceOrigin = toPoint3d(faceOriginStr);
-    frontMesh = halfedgeSliceMeshByFace(dust3dGetCurrentMesh(state), &faceOrigin, &faceNormal);
+    frontMesh = halfedgeSliceMeshByPlane(dust3dGetCurrentMesh(state), &faceOrigin, &faceNormal, 0);
     halfedgeDestroyMesh(frontMesh);
     return 0;
 }
