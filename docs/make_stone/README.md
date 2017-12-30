@@ -6,4 +6,8 @@ The following picture is a screen shoot of [Tino Valentin](https://www.instagram
 
 It's a perfect guide of drawing a stone, so I will steal this idea and try to replicate in Dust 3D.
 
+```
+./dust3d -add cube w:1 d:0.7 h:0.5 -scale f:0 e:0 a:0.2 -show
+```
+
 (TO BE CONTINUED..)

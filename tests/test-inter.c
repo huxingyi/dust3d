@@ -1,11 +1,11 @@
 #include "dust3d.h"
 
 char *g_testArgv[] = {
-    /*"-add",
-        "/Users/jeremy/Repositories/dust3d/sphere.obj",*/
     "-add",
+        "/Users/jeremy/Repositories/dust3d/gourd.obj",
+    /*"-add",
         "cube",
-        "r:1.2",
+        "r:1.2",*/
     "-move",
         "x:0.2",
         "y:0.5",

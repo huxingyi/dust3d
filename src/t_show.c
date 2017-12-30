@@ -73,21 +73,23 @@ static void onDisplay(void) {
         for (f = m->firstFace; f; f = f->next) {
             halfedge *it = f->handle;
             halfedge *stop = it;
-            glBegin(GL_LINE_STRIP);
+            glBegin(GL_LINES);
             do {
-                if (it->opposite) {
-                    glColor3fv(colors[it->color]);
-                } else {
-                    glColor3fv(colors[RED]);
+                if (halfedgeMakeSureOnlyOnce(it)) {
+                    if (it->opposite) {
+                        glColor3fv(colors[it->color]);
+                    } else {
+                        glColor3fv(colors[RED]);
+                    }
+                    glVertex3f(it->start->position.x,
+                        it->start->position.z,
+                        it->start->position.y);
+                    glVertex3f(it->next->start->position.x,
+                        it->next->start->position.z,
+                        it->next->start->position.y);
                 }
-                glVertex3f(it->start->position.x,
-                    it->start->position.z,
-                    it->start->position.y);
                 it = it->next;
             } while (it != stop);
-            glVertex3f(f->handle->start->position.x,
-                f->handle->start->position.z,
-                f->handle->start->position.y);
             glEnd();
         }
     }
@@ -176,7 +178,7 @@ int theShow(dust3dState *state) {
     GLfloat diffuseLight[] = {1.0f, 1.0f, 1.0f, 1.0f};
     GLfloat specularLight[] = {1.0f, 1.0f, 1.0f, 1.0f};
     GLfloat shininess = 50.0;
-    GLfloat position[] = {1.0, 1.0, 1.0, 0.0};
+    GLfloat position[] = {1.0, 1.0, -1.0, 0.0};
     
     initCamera(state);
     memset(&mouse, 0, sizeof(mouse));
@@ -184,8 +186,8 @@ int theShow(dust3dState *state) {
     glutInit(&argc, argv);
     
     glutInitDisplayMode(GLUT_DEPTH | GLUT_DOUBLE | GLUT_RGBA);
-    glutInitWindowPosition(100, 100);
-    glutInitWindowSize(320, 320);
+    glutInitWindowPosition(0, 0);
+    glutInitWindowSize(glutGet(GLUT_SCREEN_WIDTH), glutGet(GLUT_SCREEN_HEIGHT));
     
     glutCreateWindow("dust3d");
     glutReshapeFunc(onResize);
@@ -213,8 +215,6 @@ int theShow(dust3dState *state) {
     glEnable(GL_LIGHTING);
     glEnable(GL_LIGHT0);
     glEnable(GL_DEPTH_TEST);
-    
-    //glLineWidth(7);
 
     glutMainLoop();
     return 0;

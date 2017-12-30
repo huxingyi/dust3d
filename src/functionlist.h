@@ -13,6 +13,7 @@ int theNew(dust3dState *state);
 int theSel(dust3dState *state);
 int theInter(dust3dState *state);
 int theMove(dust3dState *state);
+int theScale(dust3dState *state);
 
 #define rust3dRegisterFunctionList(state)   do {        \
     dust3dRegister((state), "add", theAdd);             \
@@ -26,6 +27,7 @@ int theMove(dust3dState *state);
     dust3dRegister((state), "sel", theSel);             \
     dust3dRegister((state), "inter", theInter);         \
     dust3dRegister((state), "move", theMove);           \
+    dust3dRegister((state), "scale", theScale);         \
 } while (0)
 
 #endif

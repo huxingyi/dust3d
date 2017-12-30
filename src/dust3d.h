@@ -17,6 +17,8 @@ mesh *dust3dGetCurrentMesh(dust3dState *state);
 mesh *dust3dSetCurrentMesh(dust3dState *state, mesh *m);
 const char *dust3dGetNthArgument(dust3dState *state, int n);
 const char *dust3dGetNamingArgument(dust3dState *state, const char *name);
+float dust3dGetNamingFloat(dust3dState *state, const char *name, float def);
+int dust3dGetNamingInt(dust3dState *state, const char *name, int def);
 
 vector3d toVector3d(const char *str);
 #define toPoint3d(str) toVector3d(str)

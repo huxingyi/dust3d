@@ -23,6 +23,6 @@ int theMove(dust3dState *state) {
     y = yStr ? toFloat(yStr) : 0.0f;
     z = zStr ? toFloat(zStr) : 0.0f;
     matrixTranslation(&mat, x, y, z);
-    halfedgeTransform(dust3dGetCurrentMesh(state), &mat);
+    halfedgeTransformMesh(dust3dGetCurrentMesh(state), &mat);
     return 0;
 }

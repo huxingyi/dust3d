@@ -40,6 +40,7 @@ set(SOURCES
     src/t_move.c
     src/t_new.c
     src/t_save.c
+    src/t_scale.c
     src/t_sel.c
     src/t_show.c
     src/t_slice.c

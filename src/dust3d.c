@@ -156,9 +156,19 @@ const char *dust3dGetNamingArgument(dust3dState *state, const char *name) {
     nameLen = (int)strlen(name);
     for (i = state->namingArgumentStart; i < state->argumentNum; i++) {
         const char *p = state->arguments[i];
-        if (0 == strncmp(p, name, nameLen) && ':' == p[nameLen]) {
-            return &p[nameLen + 1];
+        const char *pos = strstr(p, name); // swizzling
+        const char *splitter;
+        if (!pos) {
+            continue;
         }
+        splitter = strchr(p, ':');
+        if (!splitter) {
+            continue;
+        }
+        if (pos + nameLen > splitter) {
+            continue;
+        }
+        return &splitter[1];
     }
     return 0;
 }
@@ -224,3 +234,21 @@ vector3d toVector3d(const char *str) {
 float toFloat(const char *str) {
     return atof(str);
 }
+
+float dust3dGetNamingFloat(dust3dState *state, const char *name, float def) {
+    const char *str = dust3dGetNamingArgument(state, name);
+    if (!str) {
+        return def;
+    }
+    return toFloat(str);
+}
+
+int dust3dGetNamingInt(dust3dState *state, const char *name, int def) {
+    const char *str = dust3dGetNamingArgument(state, name);
+    if (!str) {
+        return def;
+    }
+    return atoi(str);
+}
+
+

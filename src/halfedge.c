@@ -345,9 +345,11 @@ face *halfedgeCreateFaceFromPoints(mesh *m, point3d *counterClockWisedPoints, in
     return halfedgeCreateFaceEnd(ctx)->left;
 }
 
-face *halfedgeCreatePlane(mesh *m, float radius) {
+face *halfedgeCreatePlane(mesh *m, float width, float depth) {
+    float x = width / 2;
+    float y = depth / 2;
     point3d points[] = {
-        {-radius, -radius, 0}, {radius, -radius, 0}, {radius, radius, 0}, {-radius, radius, 0}
+        {-x, -y, 0}, {x, -y, 0}, {x, y, 0}, {-x, y, 0}
     };
     return halfedgeCreateFaceFromPoints(m, points, 4);
 }
@@ -489,7 +491,7 @@ int halfedgeTransformFace(mesh *m, face *f, matrix *mat) {
     return 0;
 }
 
-int halfedgeTransform(mesh *m, matrix *mat) {
+int halfedgeTransformMesh(mesh *m, matrix *mat) {
     vertex *v;
     for (v = m->firstVertex; v; v = v->next) {
         matrixTransformXYZ(mat, &v->position.x, &v->position.y, &v->position.z);
