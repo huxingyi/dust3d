@@ -633,8 +633,8 @@ face *halfedgeChamferEdge(mesh *m, halfedge *h, float amount) {
 }
 
 void halfedgeVector3d(mesh *m, halfedge *h, vector3d *v) {
-    *v = h->start->position;
-    vector3dSub(v, &h->next->start->position);
+    *v = h->next->start->position;
+    vector3dSub(v, &h->start->position);
 }
 
 mesh *halfedgeSplitMeshBySide(mesh *m) {
@@ -1366,8 +1366,6 @@ int halfedgeIntersectMesh(mesh *m, mesh *by) {
     mesh *myInside = cloneM;
     halfedgeDestroyMesh(otherOutside);
     halfedgeDestroyMesh(myOutside);
-    halfedgeFlipMesh(otherInside);
-    halfedgeFlipMesh(myInside);
     halfedgeResetMesh(m);
     halfedgeJoinMesh(m, otherInside);
     halfedgeJoinMesh(m, myInside);

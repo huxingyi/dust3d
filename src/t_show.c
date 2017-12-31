@@ -2,6 +2,7 @@
 #include <OpenGL/gl.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <string.h>
 #include "dust3d.h"
 #include "color.h"
 
@@ -20,8 +21,14 @@ typedef struct mouseContext {
     int state;
 } mouseContext;
 
+typedef struct showOptions {
+    int showFaceNumber;
+    int showHalfedgeDebugInfo;
+} showOptions;
+
 static cameraView camera;
 static mouseContext mouse;
+static showOptions options;
 
 static void initCamera(dust3dState *state) {
     camera.angleX = 30;
@@ -33,7 +40,7 @@ static void initCamera(dust3dState *state) {
 
 static void showText(float x, float y, float z, int color, const char *text) {
     glColor3fv(colors[color]);
-    glRasterPos3f(x, z, y);
+    glRasterPos3f(x, y, z);
     while (*text) {
         glutBitmapCharacter(GLUT_BITMAP_8_BY_13, *text);
         text++;
@@ -66,14 +73,15 @@ static void onDisplay(void) {
                 glNormal3f(faceNormal.x, faceNormal.y, faceNormal.z);
                 //glColor3fv(colors[(f->color + vertexIndex * 2) % MAX_COLOR]);
                 glVertex3f(it->start->position.x,
-                    it->start->position.z,
-                    it->start->position.y);
+                    it->start->position.y,
+                    it->start->position.z);
                 //vertexIndex++;
                 it = it->next;
             } while (it != stop);
             glEnd();
         }
     }
+    if (options.showFaceNumber)
     {
         face *f;
         mesh *m = dust3dGetCurrentMesh(state);
@@ -92,13 +100,12 @@ static void onDisplay(void) {
             faceIndex++;
         }
     }
+    if (options.showHalfedgeDebugInfo)
     {
         face *f;
         mesh *m = dust3dGetCurrentMesh(state);
         for (f = m->firstFace; f; f = f->next) {
             vector3d normal;
-            vector3d edge;
-            vector3d perp;
             vector3d begin;
             vector3d end;
             halfedge *h = f->handle;
@@ -107,29 +114,29 @@ static void onDisplay(void) {
             halfedgeFaceNormal(m, f, &normal);
             vector3dNormalize(&normal);
             offset = normal;
-            vector3dMultiply(&offset, 0.05);
+            vector3dMultiply(&offset, 0.1);
             do {
-                halfedgeVector3d(m, f->handle, &edge);
-                vector3dCrossProduct(&edge, &normal, &perp);
-                vector3dNormalize(&perp);
-                vector3dMultiply(&perp, 0.02);
+                //halfedgeVector3d(m, f->handle, &edge);
+                //vector3dCrossProduct(&edge, &normal, &perp);
+                //vector3dNormalize(&perp);
+                //vector3dMultiply(&perp, 0.1);
                 begin = h->start->position;
                 end = h->next->start->position;
-                vector3dAdd(&begin, &perp);
                 vector3dAdd(&begin, &offset);
-                vector3dAdd(&end, &perp);
+                //vector3dAdd(&begin, &perp);
                 vector3dAdd(&end, &offset);
+                //vector3dAdd(&end, &perp);
                 glBegin(GL_QUADS);
                     glColor3fv(colors[h == f->handle ? BLACK : RED]);
                     glVertex3f(h->start->position.x,
-                        h->start->position.z,
-                        h->start->position.y);
-                    glVertex3f(begin.x, begin.z, begin.y);
+                        h->start->position.y,
+                        h->start->position.z);
+                    glVertex3f(begin.x, begin.y, begin.z);
                     glColor3fv(colors[WHITE]);
-                    glVertex3f(end.x, end.z, end.y);
+                    glVertex3f(end.x, end.y, end.z);
                     glVertex3f(h->next->start->position.x,
-                        h->next->start->position.z,
-                        h->next->start->position.y);
+                        h->next->start->position.y,
+                        h->next->start->position.z);
                 glEnd();
                 h = h->next;
             } while (h != stop);
@@ -150,11 +157,11 @@ static void onDisplay(void) {
                         glColor3fv(colors[RED]);
                     }
                     glVertex3f(it->start->position.x,
-                        it->start->position.z,
-                        it->start->position.y);
+                        it->start->position.y,
+                        it->start->position.z);
                     glVertex3f(it->next->start->position.x,
-                        it->next->start->position.z,
-                        it->next->start->position.y);
+                        it->next->start->position.y,
+                        it->next->start->position.z);
                 }
                 it = it->next;
             } while (it != stop);
@@ -166,7 +173,7 @@ static void onDisplay(void) {
     glutSwapBuffers();
 }
 
-static void onProcessSpecialKeys(int key, int x, int y) {
+static void onPressSpecialKeys(int key, int x, int y) {
     float fraction = 10;
     switch (key) {
     case GLUT_KEY_LEFT:
@@ -184,6 +191,10 @@ static void onProcessSpecialKeys(int key, int x, int y) {
     }
 }
 
+static void onReleaseSpecialKeys(int key, int x, int y) {
+    
+}
+
 static void onResize(int w, int h) {
     float ratio;
     ratio = w * 1.0 / h;
@@ -194,7 +205,7 @@ static void onResize(int w, int h) {
     glMatrixMode(GL_MODELVIEW);
 }
 
-static void onProcessNormalKeys(unsigned char key, int x, int y) {
+static void onPressNormalKeys(unsigned char key, int x, int y) {
     float fraction = 1.0f;
     if (key == 27) {
         exit(0);
@@ -212,7 +223,14 @@ static void onProcessNormalKeys(unsigned char key, int x, int y) {
     case 'd':
         camera.offsetH += fraction;
         break;
+    case 'z':
+        options.showFaceNumber = !options.showFaceNumber;
+        options.showHalfedgeDebugInfo = !options.showHalfedgeDebugInfo;
+        break;
     }
+}
+
+static void onReleaseNormalKeys(unsigned char key, int x, int y) {
 }
 
 static void onMotion(int x, int y) {
@@ -250,6 +268,7 @@ int theShow(dust3dState *state) {
     
     initCamera(state);
     memset(&mouse, 0, sizeof(mouse));
+    memset(&options, 0, sizeof(options));
     
     glutInit(&argc, argv);
     
@@ -261,8 +280,10 @@ int theShow(dust3dState *state) {
     glutReshapeFunc(onResize);
     glutDisplayFunc(onDisplay);
     glutIdleFunc(onDisplay);
-    glutKeyboardFunc(onProcessNormalKeys);
-    glutSpecialFunc(onProcessSpecialKeys);
+    glutKeyboardFunc(onPressNormalKeys);
+    glutKeyboardUpFunc(onReleaseNormalKeys);
+    glutSpecialFunc(onPressSpecialKeys);
+    glutSpecialUpFunc(onReleaseSpecialKeys);
     glutMouseFunc(onMouse);
     glutMotionFunc(onMotion);
 

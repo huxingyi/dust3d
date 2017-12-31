@@ -10,7 +10,11 @@ int theAdd(dust3dState *state) {
         fprintf(stderr, "Base mesh type missing\n");
         return -1;
     }
-    if (0 == strcmp("cube", name)) {
+    if (0 == strcmp("plane", name)) {
+        float w = dust3dGetNamingFloat(state, "w", 1.0);
+        float d = dust3dGetNamingFloat(state, "d", 1.0);
+        halfedgeCreatePlane(dust3dGetCurrentMesh(state), w, d);
+    } else if (0 == strcmp("cube", name)) {
         float w = dust3dGetNamingFloat(state, "w", 1.0);
         float d = dust3dGetNamingFloat(state, "d", 1.0);
         float h = dust3dGetNamingFloat(state, "h", 1.0);
