@@ -379,6 +379,20 @@ int halfedgeFaceNormal(mesh *m, face *f, vector3d *normal) {
     return 0;
 }
 
+int halfedgeFaceCenter(mesh *m, face *f, point3d *point) {
+    halfedge *it = f->handle;
+    halfedge *stop = it;
+    int total = 0;
+    point->x = point->y = point->z = 0;
+    do {
+        vector3dAdd(point, &it->start->position);
+        total++;
+        it = it->next;
+    } while (it != stop);
+    vector3dDivide(point, total);
+    return 0;
+}
+
 int halfedgeFlipFace(mesh *m, face *f) {
     halfedge *it = f->handle;
     halfedge *stop = it;

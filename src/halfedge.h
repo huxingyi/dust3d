@@ -56,6 +56,7 @@ face *halfedgeCutFace(mesh *m, face *f);
 face *halfedgeExtrudeFace(mesh *m, face *f, float radius);
 int halfedgeFlipFace(mesh *m, face *f);
 int halfedgeFaceNormal(mesh *m, face *f, vector3d *normal);
+int halfedgeFaceCenter(mesh *m, face *f, point3d *point);
 int halfedgeTransformFace(mesh *m, face *f, matrix *mat);
 int halfedgeTransformMesh(mesh *m, matrix *mat);
 int halfedgeStitch(mesh *m, halfedge *from, halfedge *to);

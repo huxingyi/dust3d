@@ -31,6 +31,15 @@ static void initCamera(dust3dState *state) {
     camera.state = state;
 }
 
+static void showText(float x, float y, float z, int color, const char *text) {
+    glColor3fv(colors[color]);
+    glRasterPos3f(x, z, y);
+    while (*text) {
+        glutBitmapCharacter(GLUT_BITMAP_8_BY_13, *text);
+        text++;
+    }
+}
+
 static void onDisplay(void) {
     dust3dState *state = camera.state;
     
@@ -45,7 +54,6 @@ static void onDisplay(void) {
     {
         face *f;
         mesh *m = dust3dGetCurrentMesh(state);
-        glColor3f(1.0f, 1.0f, 1.0f);
         for (f = m->firstFace; f; f = f->next) {
             halfedge *it = f->handle;
             halfedge *stop = it;
@@ -69,7 +77,67 @@ static void onDisplay(void) {
     {
         face *f;
         mesh *m = dust3dGetCurrentMesh(state);
-        glColor3f(0.07f, 0.07f, 0.07f);
+        int faceIndex = 0;
+        for (f = m->firstFace; f; f = f->next) {
+            point3d center;
+            vector3d normal;
+            char number[10];
+            halfedgeFaceCenter(m, f, &center);
+            halfedgeFaceNormal(m, f, &normal);
+            vector3dNormalize(&normal);
+            vector3dMultiply(&normal, 0.1);
+            vector3dAdd(&center, &normal);
+            snprintf(number, sizeof(number), "%d", faceIndex);
+            showText(center.x, center.y, center.z, BLACK, number);
+            faceIndex++;
+        }
+    }
+    {
+        face *f;
+        mesh *m = dust3dGetCurrentMesh(state);
+        for (f = m->firstFace; f; f = f->next) {
+            vector3d normal;
+            vector3d edge;
+            vector3d perp;
+            vector3d begin;
+            vector3d end;
+            halfedge *h = f->handle;
+            halfedge *stop = h;
+            vector3d offset;
+            halfedgeFaceNormal(m, f, &normal);
+            vector3dNormalize(&normal);
+            offset = normal;
+            vector3dMultiply(&offset, 0.05);
+            do {
+                halfedgeVector3d(m, f->handle, &edge);
+                vector3dCrossProduct(&edge, &normal, &perp);
+                vector3dNormalize(&perp);
+                vector3dMultiply(&perp, 0.02);
+                begin = h->start->position;
+                end = h->next->start->position;
+                vector3dAdd(&begin, &perp);
+                vector3dAdd(&begin, &offset);
+                vector3dAdd(&end, &perp);
+                vector3dAdd(&end, &offset);
+                glBegin(GL_QUADS);
+                    glColor3fv(colors[h == f->handle ? BLACK : RED]);
+                    glVertex3f(h->start->position.x,
+                        h->start->position.z,
+                        h->start->position.y);
+                    glVertex3f(begin.x, begin.z, begin.y);
+                    glColor3fv(colors[WHITE]);
+                    glVertex3f(end.x, end.z, end.y);
+                    glVertex3f(h->next->start->position.x,
+                        h->next->start->position.z,
+                        h->next->start->position.y);
+                glEnd();
+                h = h->next;
+            } while (h != stop);
+        }
+    }
+    {
+        face *f;
+        mesh *m = dust3dGetCurrentMesh(state);
         for (f = m->firstFace; f; f = f->next) {
             halfedge *it = f->handle;
             halfedge *stop = it;

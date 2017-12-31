@@ -75,9 +75,14 @@ add_executable(test-inter
     tests/test-inter.c
     ${SOURCES}
 )
+add_executable(test-add-stone
+    tests/test-add-stone.c
+    ${SOURCES}
+)
 add_definitions(-DDUST3D_DEBUG)
 add_test(test-add-cube test-add-cube)
 add_test(test-add-obj test-add-obj)
 add_test(test-slice-by-face test-slice-by-face)
 add_test(test-chamfer-edge test-chamfer-edge)
 add_test(test-inter test-inter)
+add_test(test-add-stone test-add-stone)
