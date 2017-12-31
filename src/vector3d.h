@@ -11,6 +11,9 @@ typedef struct vector3d {
 
 typedef vector3d point3d;
 
+#define VECTOR3D_NULL {0.0, 0.0, 0.0}
+
+void vector3dReset(vector3d *v);
 void vector3dNormal(point3d *p1, point3d *p2, point3d *p3, vector3d *v);
 void vector3dAdd(vector3d *v, vector3d *add);
 void vector3dSub(vector3d *v, vector3d *sub);

@@ -3,6 +3,10 @@
 
 #define CONST_180_DIV_PI    57.29578f
 
+void vector3dReset(vector3d *v) {
+    v->x = v->y = v->z = 0;
+}
+
 void vector3dNormal(point3d *p1, point3d *p2, point3d *p3, vector3d *v) {
     float v1[3], v2[3], vr[3], val;
 

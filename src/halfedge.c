@@ -393,6 +393,20 @@ int halfedgeFaceCenter(mesh *m, face *f, point3d *point) {
     return 0;
 }
 
+int halfedgeMeshCenter(mesh *m, point3d *point) {
+    face *itFace;
+    int num = 0;
+    vector3dReset(point);
+    for (itFace = m->firstFace; itFace; itFace = itFace->next) {
+        vector3d center;
+        halfedgeFaceCenter(m, itFace, &center);
+        vector3dAdd(point, &center);
+        num++;
+    }
+    vector3dDivide(point, num);
+    return 0;
+}
+
 int halfedgeFlipFace(mesh *m, face *f) {
     halfedge *it = f->handle;
     halfedge *stop = it;
