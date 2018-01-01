@@ -65,7 +65,6 @@ int halfedgeTransformMesh(mesh *m, matrix *mat);
 int halfedgeStitch(mesh *m, halfedge *from, halfedge *to);
 face *halfedgeChamferVertex(mesh *m, vertex *v, float amount);
 int halfedgeIsBoundaryVertex(mesh *m, vertex *v);
-face *halfedgeChamferEdge(mesh *m, halfedge *h, float amount);
 void halfedgeVector3d(mesh *m, halfedge *h, vector3d *v);
 mesh *halfedgeSliceMeshByPlane(mesh *m, point3d *facePoint, vector3d *faceNormal, int coincidenceAsFront);
 mesh *halfedgeSplitMeshBySide(mesh *m);
@@ -75,7 +74,7 @@ int halfedgeFixHoles(mesh *m);
 int halfedgeIntersectMesh(mesh *m, mesh *by);
 mesh *halfedgeSplitMeshByMesh(mesh *m, mesh *by);
 int halfedgeFlipMesh(mesh *m);
-int halfedgeJoinMesh(mesh *m, mesh *subm);
+int halfedgeJoinMesh(mesh *m, mesh *sub);
 mesh *halfedgeCloneMesh(mesh *m);
 int halfedgeIsEmptyMesh(mesh *m);
 int halfedgeConcatMesh(mesh *m, mesh *src);
@@ -86,5 +85,8 @@ int halfedgeIsWatertight(mesh *m);
 int halfedgeUnionMesh(mesh *m, mesh *by);
 int halfedgeDiffMesh(mesh *m, mesh *by);
 int halfedgeFixAll(mesh *m);
+int halfedgeWrapMesh(mesh *m, mesh *sub);
+int halfedgeStitchTwoFaces(mesh *m, face *f1, face *f2);
+void halfedgeDestroyFace(mesh *m, face *f);
 
 #endif

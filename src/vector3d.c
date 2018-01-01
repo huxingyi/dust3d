@@ -1,8 +1,6 @@
 #include <math.h>
 #include "vector3d.h"
 
-#define CONST_180_DIV_PI    57.29578f
-
 void vector3dReset(vector3d *v) {
     v->x = v->y = v->z = 0;
 }

@@ -17,6 +17,8 @@ set(SOURCES
     src/array.c
     src/color.h
     src/color.c
+    src/convexhull.h
+    src/convexhull.c
     src/dust3d.h
     src/dust3d.c
     src/functionlist.h
@@ -46,6 +48,7 @@ set(SOURCES
     src/t_slice.c
     src/t_subdiv.c
     src/t_union.c
+    src/t_wrap.c
     src/util.h
     src/util.c
     src/vector3d.h

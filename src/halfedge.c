@@ -10,6 +10,7 @@
 #include "array.h"
 #include "util.h"
 #include "color.h"
+#include "convexhull.h"
 
 #define pair(first, second) do {\
     halfedge *firstValue = (first);\
@@ -455,9 +456,11 @@ face *halfedgeCutFace(mesh *m, face *f) {
     halfedge *stop = it;
     do {
         if (it->start->handle->left == f) {
-            it->start->handle = 0;
+            it->start->handle->left = it->opposite ? it->opposite->left : 0;
         }
-        it->opposite->opposite = 0;
+        if (it->opposite) {
+            it->opposite->opposite = 0;
+        }
         it->start = newVertex(m, &it->start->position);
         it->start->handle = it;
         it = it->next;
@@ -587,65 +590,6 @@ static void changeFace(mesh *m, face *o, face *n) {
     } while (it != o->handle);
 }
 
-face *halfedgeChamferEdge(mesh *m, halfedge *h, float amount) {
-    vertex *rightVertex = h->start;
-    vertex *leftVertex = h->opposite->start;
-
-    face *leftFace = halfedgeChamferVertex(m, leftVertex, amount);
-    face *rightFace = halfedgeChamferVertex(m, rightVertex, amount);
-
-    vertex *lt = h->previous->start;
-    vertex *rt = h->next->next->start;
-    vertex *rb = h->opposite->previous->start;
-    vertex *lb = h->opposite->next->next->start;
-
-    halfedge *topOutter = newHalfedge();
-    halfedge *bottomOutter = newHalfedge();
-    halfedge *topInner = newHalfedge();
-    halfedge *bottomInner = newHalfedge();
-
-    topOutter->start = lt;
-    topOutter->left = h->previous->previous->left;
-    topOutter->left->handle = topOutter;
-    link(h->previous->previous, topOutter);
-    link(topOutter, h->next->next);
-
-    bottomOutter->start = rb;
-    bottomOutter->left = h->opposite->previous->previous->left;
-    bottomOutter->left->handle = bottomOutter;
-    link(h->opposite->previous->previous, bottomOutter);
-    link(bottomOutter, h->opposite->next->next);
-
-    topInner->start = rt;
-    link(topInner, h->previous->opposite->next);
-    link(h->next->opposite->previous, topInner);
-
-    bottomInner->start = lb;
-    link(bottomInner, h->opposite->previous->opposite->next);
-    link(h->opposite->next->opposite->previous, bottomInner);
-
-    pair(topInner, topOutter);
-    pair(bottomInner, bottomOutter);
-
-    h->previous->start->handle = h->previous->opposite->next;
-    h->next->opposite->start->handle = h->next->opposite->previous->opposite;
-    h->opposite->previous->start->handle = h->opposite->previous->opposite->next;
-    h->opposite->next->opposite->start->handle = h->opposite->next->opposite->previous->opposite;
-    deleteVertex(m, h->start);
-    deleteVertex(m, h->opposite->start);
-    deleteEdge(m, h->previous);
-    deleteEdge(m, h->next);
-    deleteEdge(m, h->opposite->previous);
-    deleteEdge(m, h->opposite->next);
-    deleteEdge(m, h);
-
-    leftFace->handle = topInner;
-    changeFace(m, leftFace, leftFace);
-    deleteFace(m, rightFace);
-
-    return leftFace;
-}
-
 void halfedgeVector3d(mesh *m, halfedge *h, vector3d *v) {
     *v = h->next->start->position;
     vector3dSub(v, &h->start->position);
@@ -675,8 +619,6 @@ mesh *halfedgeSplitMeshBySide(mesh *m) {
             itVertex = itVertex->next;
         }
     }
-    //halfedgeFixHoles(m);
-    //halfedgeFixHoles(frontMesh);
     return frontMesh;
 }
 
@@ -1143,37 +1085,24 @@ int halfedgeIsWatertight(mesh *m) {
     return 1;
 }
 
-int halfedgeJoinMesh(mesh *m, mesh *subm) {
+int halfedgeJoinMesh(mesh *m, mesh *sub) {
     face *it;
     vertex *itVertex;
-    for (it = subm->firstFace; it; ) {
+    for (it = sub->firstFace; it; ) {
         face *f = it;
         it = it->next;
-        removeFace(subm, f);
+        removeFace(sub, f);
         addFace(m, f);
     }
-    for (itVertex = subm->firstVertex; itVertex; ) {
+    for (itVertex = sub->firstVertex; itVertex; ) {
         vertex *v = itVertex;
         itVertex = itVertex->next;
-        removeVertex(subm, v);
+        removeVertex(sub, v);
         addVertex(m, v);
     }
-    halfedgeDestroyMesh(subm);
+    halfedgeDestroyMesh(sub);
     return 0;
 }
-
-/*
-int halfedgeIntersectMesh(mesh *m, mesh *by) {
-    face *sliceFace;
-    for (sliceFace = by->firstFace; sliceFace; sliceFace = sliceFace->next) {
-        vector3d normal;
-        mesh *otherSideMesh;
-        halfedgeFaceNormal(by, sliceFace, &normal);
-        otherSideMesh = halfedgeSliceMeshByPlane(m, &sliceFace->handle->start->position, &normal, 0);
-        halfedgeDestroyMesh(otherSideMesh);
-    }
-    return 0;
-}*/
 
 int halfedgeFlipMesh(mesh *m) {
     face *itFace;
@@ -1238,22 +1167,6 @@ static void splitHalfedge(mesh *m, halfedge *h, vertex *v) {
     halfedge *newHandle = newHalfedge();
     newHandle->start = v;
     newHandle->left = h->left;
-#if DUST3D_DEBUG
-    //h->left->color = CHOCOLATE;
-    //h->color = LAWN_GREEN;
-    //newHandle->color = BROWN;
-#endif
-    /*
-    printf("<%f,%f,%f> ---- <%f,%f,%f> --- <%f,%f,%f>\n",
-        h->start->position.x,
-        h->start->position.y,
-        h->start->position.z,
-        v->position.x,
-        v->position.y,
-        v->position.z,
-        h->next->start->position.x,
-        h->next->start->position.y,
-        h->next->start->position.z);*/
     link(newHandle, h->next);
     link(h, newHandle);
 }
@@ -1360,5 +1273,107 @@ int halfedgeIntersectMesh(mesh *m, mesh *by) {
     halfedgeJoinMesh(m, otherInside);
     halfedgeJoinMesh(m, myInside);
     halfedgeFixAll(m);
+    return 0;
+}
+
+/*
+static void addMeshBoundaryToConvexhull(mesh *m, convexhull *hull) {
+    face *itFace;
+    halfedge *firstEdge = 0;
+    face *firstEdgeOnFace = 0;
+    for (itFace = m->firstFace; itFace; itFace = itFace->next) {
+        halfedge *h = itFace->handle;
+        halfedge *stop = h;
+        do {
+            if (!h->opposite) {
+                if (!firstEdge) {
+                    firstEdge = h;
+                    firstEdgeOnFace = itFace;
+                }
+                h->start->index = convexhullAddPoint(hull, &h->start->position, m, h->start);
+            }
+            h = h->next;
+        } while (h != stop);
+    }
+    if (firstEdge) {
+        vector3d normal;
+        halfedgeFaceNormal(firstEdgeOnFace, &normal);
+        convexhullAddStartup(hull, firstEdge->next->start->index, firstEdge->start->index, &normal);
+    }
+}
+*/
+
+static void joinGeneratedFacesFromConvexhull(mesh *m, convexhull *hull) {
+    int i;
+    int total = convexhullGetGeneratedFaceCount(hull);
+    for (i = 0; i < total; i++) {
+        int p1, p2, p3;
+        point3d position;
+        vertex *v1 = 0;
+        vertex *v2 = 0;
+        vertex *v3 = 0;
+        createFaceContext *ctx = halfedgeCreateFaceBegin(m);
+        convexhullGetNthGeneratedFace(hull, i, &p1, &p2, &p3);
+        convexhullGetVertexInfo(hull, p1, &position, (void **)&v1);
+        convexhullGetVertexInfo(hull, p2, &position, (void **)&v2);
+        convexhullGetVertexInfo(hull, p3, &position, (void **)&v3);
+        halfedgeCreateFaceAddVertex(ctx, v1);
+        halfedgeCreateFaceAddVertex(ctx, v2);
+        halfedgeCreateFaceAddVertex(ctx, v3);
+        halfedgeCreateFaceEnd(ctx);
+    }
+    halfedgeFixPairing(m);
+}
+
+/*
+int halfedgeWrapMesh(mesh *m, mesh *sub) {
+    convexhull *hull = convexhullCreate();
+    mesh *wrapM = halfedgeCreateMesh();
+    addMeshBoundaryToConvexhull(m, hull);
+    addMeshBoundaryToConvexhull(sub, hull);
+    convexhullGenerate(hull);
+    joinGeneratedFacesFromConvexhull(wrapM, hull);
+    halfedgeJoinMesh(m, wrapM);
+    halfedgeJoinMesh(m, sub);
+    halfedgeFixHoles(m);
+    convexhullDestroy(hull);
+    return 0;
+}
+*/
+
+static void addFaceToConvexHull(face *f, convexhull *hull) {
+    halfedge *h = f->handle;
+    halfedge *stop = h;
+    do {
+        h->start->index = convexhullAddPoint(hull, &h->start->position, f, h->start);
+        h = h->next;
+    } while (h != stop);
+}
+
+void halfedgeDestroyFace(mesh *m, face *f) {
+    halfedge *itHandle = f->handle;
+    do {
+        halfedge *delHandle = itHandle;
+        itHandle = itHandle->next;
+        deleteHalfedge(m, delHandle);
+    } while (itHandle != f->handle);
+    removeFace(m, f);
+}
+
+int halfedgeStitchTwoFaces(mesh *m, face *f1, face *f2) {
+    vector3d normal;
+    convexhull *hull = convexhullCreate();
+    addFaceToConvexHull(f1, hull);
+    addFaceToConvexHull(f2, hull);
+    halfedgeFaceNormal(f1->handle->opposite->left, &normal);
+    convexhullAddStartup(hull, f1->handle->start->index, f1->handle->next->start->index, &normal);
+    convexhullGenerate(hull);
+    halfedgeCutFace(m, f1);
+    halfedgeCutFace(m, f2);
+    halfedgeDestroyFace(m, f1);
+    halfedgeDestroyFace(m, f2);
+    joinGeneratedFacesFromConvexhull(m, hull);
+    halfedgeFixHoles(m);
+    convexhullDestroy(hull);
     return 0;
 }

@@ -1,6 +1,8 @@
 #include <math.h>
 #include "math3d.h"
 
+#define CONST_180_DIV_PI    57.29578f
+
 int identifyPointOnWhichSideOfPlane(point3d *point, point3d *facePoint, vector3d *faceNormal) {
     vector3d v = *point;
     float result;
@@ -37,7 +39,7 @@ int intersectionOfSegmentAndPlane(point3d *p1, point3d *p2, point3d *facePoint, 
     return 0;
 }
 
-float distance(point3d *p1, point3d *p2) {
+float distanceOfTwoPoints(point3d *p1, point3d *p2) {
     double a = p1->x - p2->x;
     double b = p1->y - p2->y;
     double c = p1->z - p2->z;
@@ -61,7 +63,7 @@ int isPointOnSegment(point3d *c, point3d *a, point3d *b) {
     t = v;
     vector3dMultiply(&t, dot1 / dot2);
     vector3dAdd(&t, a);
-    if ((d=distance(c, &t)) > EPSILON_DISTANCE) {
+    if ((d=distanceOfTwoPoints(c, &t)) > EPSILON_DISTANCE) {
         return 0;
     }
     return 1;
@@ -93,5 +95,24 @@ int compareTwoPoints(point3d *p1, point3d *p2) {
         }
     }
     return 0;
+}
+
+float angleOfTwoVectors(vector3d *v1, vector3d *v2) {
+    float dot = vector3dDotProduct(v1, v2);
+    float mag1 = vector3dMagnitude(v1);
+    float mag2 = vector3dMagnitude(v2);
+    double mag1Xmag2 = mag1 * mag2;
+    double dotDivMags;
+    if (0 == mag1Xmag2) {
+        return 0;
+    }
+    dotDivMags = dot / mag1Xmag2;
+    if (dotDivMags < -1) {
+        dotDivMags = -1;
+    }
+    if (dotDivMags > 1) {
+        dotDivMags = 1;
+    }
+    return CONST_180_DIV_PI * acos(dotDivMags);
 }
 

@@ -116,7 +116,6 @@ static void showFaceNumbers(void) {
     dust3dState *state = camera.state;
     face *f;
     mesh *m = dust3dGetCurrentMesh(state);
-    int faceIndex = 0;
     for (f = m->firstFace; f; f = f->next) {
         point3d center;
         vector3d normal;
@@ -126,9 +125,8 @@ static void showFaceNumbers(void) {
         vector3dNormalize(&normal);
         vector3dMultiply(&normal, 0.1);
         vector3dAdd(&center, &normal);
-        snprintf(number, sizeof(number), "%d", faceIndex);
+        snprintf(number, sizeof(number), "%d", f->order);
         showText(center.x, center.y, center.z, BLACK, number);
-        faceIndex++;
     }
 }
 
@@ -229,7 +227,7 @@ static void onDisplay(void) {
             }
             showMeshEdges();
         glPopMatrix();
-    
+        
         showAxes();
     
     glPopMatrix();
