@@ -11,7 +11,7 @@ int theScale(dust3dState *state) {
     float amountX = dust3dGetNamingFloat(state, "x", 1.0);
     float amountY = dust3dGetNamingFloat(state, "y", 1.0);
     float amountZ = dust3dGetNamingFloat(state, "z", 1.0);
-    matrix mat;
+    //matrix mat;
     mesh *m = dust3dGetCurrentMesh(state);
     halfedge *h = 0;
     face *f = 0;
@@ -37,7 +37,7 @@ int theScale(dust3dState *state) {
         vector3d vec;
         halfedgeVector3d(m, h, &vec);
         vector3dNormalize(&vec);
-        vector3dMultiply(&vec, (amount - 1) / 2);
+        vector3dMultiply(&vec, (1 - amount) / 4);
         vector3dAdd(&h->start->position, &vec);
         vector3dMultiply(&vec, -1);
         vector3dAdd(&h->next->start->position, &vec);

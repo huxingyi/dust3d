@@ -87,8 +87,8 @@ void vector3dNormalize(vector3d *v) {
 }
 
 void vector3dSegment(point3d *p1, point3d *p2, vector3d *v) {
-    *v = *p1;
-    vector3dSub(v, p2);
+    *v = *p2;
+    vector3dSub(v, p1);
 }
 
 int vector3dIsNull(vector3d *v) {

@@ -31,11 +31,15 @@ static cameraView camera;
 static mouseContext mouse;
 static showOptions options;
 
-static void initCamera(dust3dState *state) {
+static void resetCamera(void) {
     camera.angleX = -38.0;
     camera.angleY = -337;
     camera.distance = 11.4;
     camera.offsetH = 0;
+}
+
+static void initCamera(dust3dState *state) {
+    resetCamera();
     camera.state = state;
 }
 
@@ -92,7 +96,7 @@ static void showMesh(void) {
         halfedge *stop = it;
         vector3d faceNormal;
         //int vertexIndex = 0;
-        halfedgeFaceNormal(m, f, &faceNormal);
+        halfedgeFaceNormal(f, &faceNormal);
         glColor3fv(colors[f->color]);
         glBegin(GL_POLYGON);
         do {
@@ -117,8 +121,8 @@ static void showFaceNumbers(void) {
         point3d center;
         vector3d normal;
         char number[10];
-        halfedgeFaceCenter(m, f, &center);
-        halfedgeFaceNormal(m, f, &normal);
+        halfedgeFaceCenter(f, &center);
+        halfedgeFaceNormal(f, &normal);
         vector3dNormalize(&normal);
         vector3dMultiply(&normal, 0.1);
         vector3dAdd(&center, &normal);
@@ -139,7 +143,7 @@ static void showHalfedgeDebugInfos(void) {
         halfedge *h = f->handle;
         halfedge *stop = h;
         vector3d offset;
-        halfedgeFaceNormal(m, f, &normal);
+        halfedgeFaceNormal(f, &normal);
         vector3dNormalize(&normal);
         offset = normal;
         vector3dMultiply(&offset, 0.1);
@@ -278,14 +282,17 @@ static void onPressNormalKeys(unsigned char key, int x, int y) {
         camera.distance += fraction;
         break;
     case 'a':
-        camera.offsetH -= fraction;
+        //camera.offsetH -= fraction;
         break;
     case 'd':
-        camera.offsetH += fraction;
+        //camera.offsetH += fraction;
         break;
     case 'z':
         options.showFaceNumber = !options.showFaceNumber;
         options.showHalfedgeDebugInfo = !options.showHalfedgeDebugInfo;
+        break;
+    case 'c':
+        resetCamera();
         break;
     }
 }
@@ -296,7 +303,7 @@ static void onReleaseNormalKeys(unsigned char key, int x, int y) {
 static void onMotion(int x, int y) {
     switch (mouse.button) {
     case GLUT_LEFT_BUTTON:
-        camera.offsetH += (mouse.x - x) * 0.03;
+        //camera.offsetH += (mouse.x - x) * 0.03;
         camera.distance -= (mouse.y - y) * 0.03;
         break;
     case GLUT_RIGHT_BUTTON:

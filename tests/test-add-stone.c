@@ -1,9 +1,10 @@
 #include "dust3d.h"
 
 char *g_testArgv[] = {
-    "-add", "cube", "w:1", "d:0.7", "h:0.5,",
-    "-scale", "f:0", "e:0", "a:1.2",
-    "-scale", "f:4", "e:0", "a:1.1",
+    "-add", "cube", "w:1", "d:0.6", "h:0.5",
+    "-scale", "f:3", "e:1", "a:1.2",
+    "-scale", "f:5", "e:1", "a:0.5",
+    "-chamfer", "f:0", "e:0", "a:0.1",
     "-show"
 };
 

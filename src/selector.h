@@ -4,6 +4,7 @@
 
 face *selectorGetNthFace(mesh *m, int n);
 halfedge *selectorGetNthHalfedge(face *f, int n);
+int selectorArrangeMesh(mesh *m);
 
 #endif
 

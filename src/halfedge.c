@@ -223,7 +223,7 @@ int halfedgeSaveMeshAsObj(mesh *m, const char *filename) {
     }
     for (f = m->firstFace; f; f = f->next) {
         vector3d normal;
-        halfedgeFaceNormal(m, f, &normal);
+        halfedgeFaceNormal(f, &normal);
         fprintf(file, "vn %f %f %f\n", normal.x, normal.z, normal.y);
     }
     for (f = m->firstFace; f; f = f->next, nextFaceIndex++) {
@@ -256,7 +256,7 @@ int halfedgeSaveFaceAsObj(mesh *m, face *f, const char *filename) {
         fprintf(file, "v %f %f %f\n", it->start->position.x, it->start->position.z, it->start->position.y);
         it = it->next;
     } while (it != f->handle);
-    halfedgeFaceNormal(m, f, &normal);
+    halfedgeFaceNormal(f, &normal);
     fprintf(file, "vn %f %f %f\n", normal.x, normal.z, normal.y);
     it = f->handle;
     fprintf(file, "f");
@@ -354,7 +354,7 @@ face *halfedgeCreatePlane(mesh *m, float width, float depth) {
     return halfedgeCreateFaceFromPoints(m, points, 4);
 }
 
-int halfedgeFaceNormal(mesh *m, face *f, vector3d *normal) {
+int halfedgeFaceNormal(face *f, vector3d *normal) {
     halfedge *it = f->handle;
     halfedge *stop = it;
     point3d *points[3] = {0};
@@ -379,7 +379,7 @@ int halfedgeFaceNormal(mesh *m, face *f, vector3d *normal) {
     return 0;
 }
 
-int halfedgeFaceCenter(mesh *m, face *f, point3d *point) {
+int halfedgeFaceCenter(face *f, point3d *point) {
     halfedge *it = f->handle;
     halfedge *stop = it;
     int total = 0;
@@ -399,7 +399,7 @@ int halfedgeMeshCenter(mesh *m, point3d *point) {
     vector3dReset(point);
     for (itFace = m->firstFace; itFace; itFace = itFace->next) {
         vector3d center;
-        halfedgeFaceCenter(m, itFace, &center);
+        halfedgeFaceCenter(itFace, &center);
         vector3dAdd(point, &center);
         num++;
     }
@@ -407,7 +407,7 @@ int halfedgeMeshCenter(mesh *m, point3d *point) {
     return 0;
 }
 
-int halfedgeFlipFace(mesh *m, face *f) {
+int halfedgeFlipFace(face *f) {
     halfedge *it = f->handle;
     halfedge *stop = it;
     vertex *last;
@@ -431,7 +431,7 @@ face *halfedgeExtrudeFace(mesh *m, face *f, float radius) {
     face *extrudedFace = 0;
     face *needFlipFace = 0;
     matrix mat;
-    halfedgeFaceNormal(m, f, &alongv);
+    halfedgeFaceNormal(f, &alongv);
     vector3dMultiply(&alongv, radius);
     matrixTranslation(&mat, alongv.x, alongv.y, alongv.z);
     if (f->handle->opposite) {
@@ -442,10 +442,10 @@ face *halfedgeExtrudeFace(mesh *m, face *f, float radius) {
         extrudedFace = halfedgeCopyFace(m, f);
         needFlipFace = f;
     }
-    halfedgeTransformFace(m, extrudedFace, &mat);
+    halfedgeTransformFace(extrudedFace, &mat);
     halfedgeStitch(m, stitchFrom, extrudedFace->handle);
     if (needFlipFace) {
-        halfedgeFlipFace(m, needFlipFace);
+        halfedgeFlipFace(needFlipFace);
     }
     return extrudedFace;
 }
@@ -509,7 +509,7 @@ int halfedgeStitch(mesh *m, halfedge *from, halfedge *to) {
     return 0;
 }
 
-int halfedgeTransformFace(mesh *m, face *f, matrix *mat) {
+int halfedgeTransformFace(face *f, matrix *mat) {
     halfedge *it = f->handle;
     halfedge *stop = it;
     do {
@@ -1178,7 +1178,7 @@ int halfedgeIntersectMesh(mesh *m, mesh *by) {
 int halfedgeFlipMesh(mesh *m) {
     face *itFace;
     for (itFace = m->firstFace; itFace; itFace = itFace->next) {
-        halfedgeFlipFace(m, itFace);
+        halfedgeFlipFace(itFace);
     }
     return 0;
 }
@@ -1189,7 +1189,7 @@ mesh *halfedgeSplitMeshByMesh(mesh *m, mesh *by) {
     for (sliceFace = by->firstFace; sliceFace; sliceFace = sliceFace->next) {
         vector3d normal;
         mesh *frontMesh;
-        halfedgeFaceNormal(by, sliceFace, &normal);
+        halfedgeFaceNormal(sliceFace, &normal);
         frontMesh = halfedgeSliceMeshByPlane(m, &sliceFace->handle->start->position, &normal, 0);
         halfedgeJoinMesh(outside, frontMesh);
     }
@@ -1205,31 +1205,7 @@ typedef struct vertexMapNode {
 static int vertexComparator(rbtree *tree, const void *firstKey, const void *secondKey) {
     vertex *firstV = ((vertex **)firstKey)[0];
     vertex *secondV = ((vertex **)secondKey)[0];
-    float offsetX = firstV->position.x - secondV->position.x;
-    float offsetY = firstV->position.y - secondV->position.y;
-    float offsetZ = firstV->position.z - secondV->position.z;
-    if (fabs(offsetX) > EPSILON_DISTANCE) {
-        if (offsetX < 0) {
-            return -1;
-        } else {
-            return 1;
-        }
-    }
-    if (fabs(offsetY) > EPSILON_DISTANCE) {
-        if (offsetY < 0) {
-            return -1;
-        } else {
-            return 1;
-        }
-    }
-    if (fabs(offsetZ) > EPSILON_DISTANCE) {
-        if (offsetZ < 0) {
-            return -1;
-        } else {
-            return 1;
-        }
-    }
-    return 0;
+    return compareTwoPoints(&firstV->position, &secondV->position);
 }
 
 int halfedgeCombineDuplicateVertices(mesh *m) {

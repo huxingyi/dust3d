@@ -5,6 +5,7 @@
 #include "rbtree.h"
 #include "strutil.h"
 #include "functionlist.h"
+#include "selector.h"
 
 typedef struct registerNode {
     rbtreeNode node;
@@ -116,6 +117,7 @@ int dust3dRunOne(dust3dState *state, int argc, char *argv[]) {
         fprintf(stderr, "Call failed with result: %d\n", result);
         return result;
     }
+    selectorArrangeMesh(state->currentMesh);
     return i;
 }
 

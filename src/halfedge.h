@@ -25,6 +25,7 @@ typedef struct face {
     struct face *previous;
     struct face *next;
     int color;
+    int order;
     char name[MAX_FACE_NAME_SIZE];
 } face;
 
@@ -35,6 +36,7 @@ struct halfedge {
     halfedge *previous;
     halfedge *opposite;
     int color;
+    int order;
 };
 
 typedef struct mesh {
@@ -54,11 +56,11 @@ face *halfedgeCreatePlane(mesh *m, float width, float depth);
 face *halfedgeCopyFace(mesh *m, face *f);
 face *halfedgeCutFace(mesh *m, face *f);
 face *halfedgeExtrudeFace(mesh *m, face *f, float radius);
-int halfedgeFlipFace(mesh *m, face *f);
-int halfedgeFaceNormal(mesh *m, face *f, vector3d *normal);
-int halfedgeFaceCenter(mesh *m, face *f, point3d *point);
+int halfedgeFlipFace(face *f);
+int halfedgeFaceNormal(face *f, vector3d *normal);
+int halfedgeFaceCenter(face *f, point3d *point);
 int halfedgeMeshCenter(mesh *m, point3d *point);
-int halfedgeTransformFace(mesh *m, face *f, matrix *mat);
+int halfedgeTransformFace(face *f, matrix *mat);
 int halfedgeTransformMesh(mesh *m, matrix *mat);
 int halfedgeStitch(mesh *m, halfedge *from, halfedge *to);
 face *halfedgeChamferVertex(mesh *m, vertex *v, float amount);

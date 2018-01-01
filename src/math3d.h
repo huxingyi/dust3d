@@ -13,5 +13,6 @@ int identifyPointOnWhichSideOfPlane(point3d *point, point3d *facePoint, vector3d
 int intersectionOfSegmentAndPlane(point3d *p1, point3d *p2, point3d *facePoint, vector3d *faceNormal, point3d *result);
 float distance(point3d *p1, point3d *p2);
 int isPointOnSegment(point3d *c, point3d *a, point3d *b);
+int compareTwoPoints(point3d *p1, point3d *p2);
 
 #endif
