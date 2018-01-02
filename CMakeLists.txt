@@ -34,6 +34,8 @@ set(SOURCES
     src/strutil.c
     src/rbtree.h
     src/rbtree.c
+    src/subdivision.h
+    src/subdivision.c
     src/t_add.c
     src/t_chamfer.c
     src/t_diff.c

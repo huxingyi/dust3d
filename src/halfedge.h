@@ -13,6 +13,7 @@ typedef struct vertex {
     struct vertex *next;
     int index;
     int front:1;
+    void *data;
 #if DUST3D_DEBUG
     long line_;
 #endif
@@ -27,6 +28,7 @@ typedef struct face {
     int color;
     int order;
     char name[MAX_FACE_NAME_SIZE];
+    void *data;
 } face;
 
 struct halfedge {
@@ -37,6 +39,7 @@ struct halfedge {
     halfedge *opposite;
     int color;
     int order;
+    void *data;
 };
 
 typedef struct mesh {
@@ -44,6 +47,7 @@ typedef struct mesh {
     vertex *lastVertex;
     face *firstFace;
     face *lastFace;
+    void *data;
 } mesh;
 
 mesh *halfedgeCreateMesh(void);
@@ -59,6 +63,7 @@ face *halfedgeExtrudeFace(mesh *m, face *f, float radius);
 int halfedgeFlipFace(face *f);
 int halfedgeFaceNormal(face *f, vector3d *normal);
 int halfedgeFaceCenter(face *f, point3d *point);
+int halfedgeEdgeCenter(halfedge *h, point3d *point);
 int halfedgeMeshCenter(mesh *m, point3d *point);
 int halfedgeTransformFace(face *f, matrix *mat);
 int halfedgeTransformMesh(mesh *m, matrix *mat);
@@ -88,5 +93,10 @@ int halfedgeFixAll(mesh *m);
 int halfedgeWrapMesh(mesh *m, mesh *sub);
 int halfedgeStitchTwoFaces(mesh *m, face *f1, face *f2);
 void halfedgeDestroyFace(mesh *m, face *f);
+vertex *halfedgeCreateVertex(mesh *m, point3d *position);
+halfedge *halfedgeCreateHalfedge(void);
+int halfedgeLinkHalfeges(halfedge *h, halfedge *next);
+face *halfedgeCreateFace(mesh *m);
+int halfedgePairHalfedges(halfedge *h, halfedge *opposite);
 
 #endif

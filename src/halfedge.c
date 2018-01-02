@@ -169,6 +169,28 @@ static void *findEdgeFromMap(rbtree *t, vertex *v1, vertex *v2) {
     return rbtreeFind(t, &key);
 }
 
+vertex *halfedgeCreateVertex(mesh *m, point3d *position) {
+    return newVertex(m, position);
+}
+
+halfedge *halfedgeCreateHalfedge(void) {
+    return newHalfedge();
+}
+
+int halfedgeLinkHalfeges(halfedge *h, halfedge *next) {
+    link(h, next);
+    return 0;
+}
+
+face *halfedgeCreateFace(mesh *m) {
+    return newFace(m);
+}
+
+int halfedgePairHalfedges(halfedge *h, halfedge *opposite) {
+    pair(h, opposite);
+    return 0;
+}
+
 mesh *halfedgeCreateMesh(void) {
     return (mesh *)calloc(1, sizeof(mesh));
 }
@@ -391,6 +413,11 @@ int halfedgeFaceCenter(face *f, point3d *point) {
         it = it->next;
     } while (it != stop);
     vector3dDivide(point, total);
+    return 0;
+}
+
+int halfedgeEdgeCenter(halfedge *h, point3d *point) {
+    middlePointOfTwoPoints(&h->start->position, &h->next->start->position, point);
     return 0;
 }
 
@@ -1056,6 +1083,7 @@ int halfedgeFixPairing(mesh *m) {
         do {
             edgeMapNode *edgeNode = (edgeMapNode *)findEdgeFromMap(&edgeMap, h->start, h->next->start);
             if (edgeNode) {
+                assert(edgeNode->h != h);
                 pair(edgeNode->h, h);
             } else {
                 edgeNode = addEdgeToMap(&edgeMap, h->start, h->next->start);

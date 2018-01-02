@@ -33,6 +33,9 @@ char *g_testArgv[] = {
     "-wrap",
         "default",
         "box",
+    "-subdiv",
+    "-subdiv",
+    "-subdiv",
     "-show"
 };
 

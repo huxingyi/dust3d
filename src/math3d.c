@@ -116,3 +116,19 @@ float angleOfTwoVectors(vector3d *v1, vector3d *v2) {
     return CONST_180_DIV_PI * acos(dotDivMags);
 }
 
+int middlePointOfTwoPoints(point3d *p1, point3d *p2, point3d *midPoint) {
+    point3d *points[] = {p1, p2};
+    averagePointOfPoints(points, 2, midPoint);
+    return 0;
+}
+
+int averagePointOfPoints(point3d **points, int num, point3d *averagePoint) {
+    int i;
+    averagePoint->x = averagePoint->y = averagePoint->z = 0;
+    for (i = 0; i < num; i++) {
+        vector3dAdd(averagePoint, points[i]);
+    }
+    vector3dDivide(averagePoint, num);
+    return 0;
+}
+

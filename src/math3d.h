@@ -15,5 +15,7 @@ float distanceOfTwoPoints(point3d *p1, point3d *p2);
 int isPointOnSegment(point3d *c, point3d *a, point3d *b);
 int compareTwoPoints(point3d *p1, point3d *p2);
 float angleOfTwoVectors(vector3d *v1, vector3d *v2);
+int middlePointOfTwoPoints(point3d *p1, point3d *p2, point3d *midPoint);
+int averagePointOfPoints(point3d **points, int num, point3d *averagePoint);
 
 #endif
