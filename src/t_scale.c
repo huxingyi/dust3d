@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "dust3d.h"
-#include "strutil.h"
+#include "util.h"
 #include "selector.h"
 
 int theScale(dust3dState *state) {

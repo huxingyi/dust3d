@@ -10,7 +10,7 @@ static int sortFace(const void *first, const void *second) {
     point3d secondCenter;
     halfedgeFaceCenter(firstFace, &firstCenter);
     halfedgeFaceCenter(secondFace, &secondCenter);
-    return compareTwoPoints(&firstCenter, &secondCenter);
+    return math3dCompareTwoPoints(&firstCenter, &secondCenter);
 }
 
 face *selectorGetNthFace(mesh *m, int n) {
@@ -26,7 +26,7 @@ face *selectorGetNthFace(mesh *m, int n) {
 static int sortHalfedge(const void *first, const void *second) {
     halfedge *firstHandle = ((halfedge **)first)[0];
     halfedge *secondHandle = ((halfedge **)second)[0];
-    return compareTwoPoints(&firstHandle->start->position, &secondHandle->start->position);
+    return math3dCompareTwoPoints(&firstHandle->start->position, &secondHandle->start->position);
 }
 
 halfedge *selectorGetNthHalfedge(face *f, int n) {

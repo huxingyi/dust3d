@@ -61,7 +61,7 @@ static subdivisionEdgeData *getEdgeData(subdivisionContext *ctx, halfedge *h) {
     points[1] = &f2Data->averageOfPoints;
     points[2] = &h->start->position;
     points[3] = &h->next->start->position;
-    averagePointOfPoints(points, 4, &averageOfFacesAndEndpoints);
+    math3dAveragePointOfPoints(points, 4, &averageOfFacesAndEndpoints);
     h->data = edgeData;
     edgeData->generatedVertex = halfedgeCreateVertex(ctx->newMesh, &averageOfFacesAndEndpoints);
     addToList(edgeData, ctx->edgeDataList);

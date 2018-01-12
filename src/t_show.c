@@ -146,16 +146,10 @@ static void showHalfedgeDebugInfos(void) {
         offset = normal;
         vector3dMultiply(&offset, 0.1);
         do {
-            //halfedgeVector3d(m, f->handle, &edge);
-            //vector3dCrossProduct(&edge, &normal, &perp);
-            //vector3dNormalize(&perp);
-            //vector3dMultiply(&perp, 0.1);
             begin = h->start->position;
             end = h->next->start->position;
             vector3dAdd(&begin, &offset);
-            //vector3dAdd(&begin, &perp);
             vector3dAdd(&end, &offset);
-            //vector3dAdd(&end, &perp);
             glBegin(GL_QUADS);
                 glColor3fv(colors[h == f->handle ? BLACK : RED]);
                 glVertex3f(h->start->position.x,
@@ -362,8 +356,8 @@ int theShow(dust3dState *state) {
     glLightf(GL_LIGHT0, GL_SHININESS, shininess);
     glLightfv(GL_LIGHT0, GL_POSITION, position);
     glEnable(GL_LIGHT0);
-    glEnable(GL_COLOR_MATERIAL);
     glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+    glEnable(GL_COLOR_MATERIAL);
     glEnable(GL_LINE_SMOOTH);
     glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
     glEnable(GL_BLEND);

@@ -3,10 +3,14 @@ enable_testing()
 project(dust3d)
 find_package(OpenGL REQUIRED)
 find_package(GLUT REQUIRED)
+find_package(glfw3 REQUIRED)
 include_directories(
-    src
     ${OPENGL_INCLUDE_DIRS}
     ${GLUT_INCLUDE_DIRS}
+    src
+    3rdparty/glad/include
+    #deps/imgui
+    #deps/imgui/examples/opengl2_example
 )
 link_libraries(
     ${OPENGL_LIBRARIES}
@@ -21,17 +25,19 @@ set(SOURCES
     src/convexhull.c
     src/dust3d.h
     src/dust3d.c
+    src/editor.h
+    src/editor.c
     src/functionlist.h
     src/halfedge.h
     src/halfedge.c
     src/math3d.h
     src/math3d.c
-    src/matrix.h
-    src/matrix.c
+    src/matrix4x4.h
+    src/matrix4x4.c
     src/selector.h
     src/selector.c
-    src/strutil.h
-    src/strutil.c
+    src/standard.h
+    src/standard.c
     src/rbtree.h
     src/rbtree.c
     src/subdivision.h
@@ -57,9 +63,24 @@ set(SOURCES
     src/vector3d.c
 )
 add_executable(dust3d
-    src/main.c
+    #deps/imgui/imconfig.h
+    #deps/imgui/imgui_demo.cpp
+    #deps/imgui/imgui_draw.cpp
+    #deps/imgui/imgui_internal.h
+    #deps/imgui/imgui.cpp
+    #deps/imgui/imgui.h
+    #deps/imgui/stb_rect_pack.h
+    #deps/imgui/stb_textedit.h
+    #deps/imgui/stb_truetype.h
+    #deps/imgui/examples/opengl2_example/imgui_impl_glfw.h
+    #deps/imgui/examples/opengl2_example/imgui_impl_glfw.cpp
+    3rdparty/glad/src/glad.c
+    src/render.h
+    src/render.c
+    #src/viewer.cpp
     ${SOURCES}
 )
+target_link_libraries(dust3d glfw)
 add_executable(test-add-cube
     tests/test-add-cube.c
     ${SOURCES}

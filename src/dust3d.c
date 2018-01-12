@@ -3,7 +3,7 @@
 #include <string.h>
 #include "dust3d.h"
 #include "rbtree.h"
-#include "strutil.h"
+#include "util.h"
 #include "functionlist.h"
 #include "selector.h"
 

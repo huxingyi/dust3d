@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "halfedge.h"
-#include "matrix.h"
+#include "matrix4x4.h"
 #include "vector3d.h"
 #include "math3d.h"
 #include "rbtree.h"
@@ -292,6 +292,29 @@ int halfedgeSaveFaceAsObj(mesh *m, face *f, const char *filename) {
     return 0;
 }
 
+int halfedgeExportVerticesAndIndices(mesh *m, array *vertices, array *indices) {
+    vertex *v = 0;
+    face *f = 0;
+    int nextVertexIndex = 1 + arrayGetLength(vertices);
+    assert(sizeof(float) == arrayGetNodeSize(vertices));
+    assert(sizeof(unsigned int) == arrayGetNodeSize(indices));
+    for (v = m->firstVertex; v; v = v->next) {
+        v->index = nextVertexIndex++;
+        *(float *)arrayNewItem(vertices) = v->position.x;
+        *(float *)arrayNewItem(vertices) = v->position.y;
+        *(float *)arrayNewItem(vertices) = v->position.z;
+    }
+    for (f = m->firstFace; f; f = f->next) {
+        halfedge *it = f->handle;
+        halfedge *stop = it;
+        do {
+            *(unsigned int *)arrayNewItem(indices) = it->start->index;
+            it = it->next;
+        } while (it != stop);
+    }
+    return 0;
+}
+
 typedef struct createFaceContext {
     mesh *m;
     face *left;
@@ -390,7 +413,7 @@ int halfedgeFaceNormal(face *f, vector3d *normal) {
         num++;
         if (num >= 3) {
             point3d *arr[3] = {points[(num - 3) % 3], points[(num - 2) % 3], points[(num - 1) % 3]};
-            if (!isPointOnSegment(arr[1], arr[0], arr[2])) {
+            if (!math3dIsPointOnSegment(arr[1], arr[0], arr[2])) {
                 vector3dNormal(arr[0], arr[1], arr[2], &v);
                 vector3dAdd(normal, &v);
                 total++;
@@ -417,7 +440,7 @@ int halfedgeFaceCenter(face *f, point3d *point) {
 }
 
 int halfedgeEdgeCenter(halfedge *h, point3d *point) {
-    middlePointOfTwoPoints(&h->start->position, &h->next->start->position, point);
+    math3dMiddlePointOfTwoPoints(&h->start->position, &h->next->start->position, point);
     return 0;
 }
 
@@ -458,10 +481,10 @@ face *halfedgeExtrudeFace(mesh *m, face *f, float radius) {
     halfedge *stitchFrom = 0;
     face *extrudedFace = 0;
     face *needFlipFace = 0;
-    matrix mat;
+    matrix4x4 mat;
     halfedgeFaceNormal(f, &alongv);
     vector3dMultiply(&alongv, radius);
-    matrixTranslation(&mat, alongv.x, alongv.y, alongv.z);
+    matrix4x4Translation(&mat, alongv.x, alongv.y, alongv.z);
     if (f->handle->opposite) {
         stitchFrom = f->handle->opposite;
         extrudedFace = halfedgeCutFace(m, f);
@@ -539,20 +562,20 @@ int halfedgeStitch(mesh *m, halfedge *from, halfedge *to) {
     return 0;
 }
 
-int halfedgeTransformFace(face *f, matrix *mat) {
+int halfedgeTransformFace(face *f, matrix4x4 *mat) {
     halfedge *it = f->handle;
     halfedge *stop = it;
     do {
-        matrixTransformXYZ(mat, &it->start->position.x, &it->start->position.y, &it->start->position.z);
+        matrix4x4TransformPoint3d(mat, &it->start->position);
         it = it->next;
     } while (it != stop);
     return 0;
 }
 
-int halfedgeTransformMesh(mesh *m, matrix *mat) {
+int halfedgeTransformMesh(mesh *m, matrix4x4 *mat) {
     vertex *v;
     for (v = m->firstVertex; v; v = v->next) {
-        matrixTransformXYZ(mat, &v->position.x, &v->position.y, &v->position.z);
+        matrix4x4TransformPoint3d(mat, &v->position);
     }
     return 0;
 }
@@ -674,8 +697,8 @@ mesh *halfedgeSliceMeshByPlane(mesh *m, point3d *facePoint, vector3d *faceNormal
     for (it = m->firstFace; it; it = it->next) {
         halfedge *h = it->handle;
         do {
-            int side = identifyPointOnWhichSideOfPlane(&h->start->position, facePoint, faceNormal);
-            h->start->front = coincidenceAsFront ? (SIDE_BACK != side) : (SIDE_FRONT == side);
+            int side = math3dIdentifyPointOnWhichSideOfPlane(&h->start->position, facePoint, faceNormal);
+            h->start->front = coincidenceAsFront ? (MATH3D_SIDE_BACK != side) : (MATH3D_SIDE_FRONT == side);
             h = h->next;
         } while (h != it->handle);
     }
@@ -686,7 +709,7 @@ mesh *halfedgeSliceMeshByPlane(mesh *m, point3d *facePoint, vector3d *faceNormal
         int count = 0;
         do {
             if (h->start->front != h->next->start->front) {
-                if (0 == intersectionOfSegmentAndPlane(&h->start->position,
+                if (0 == math3dIntersectionOfSegmentAndPlane(&h->start->position,
                     &h->next->start->position, facePoint, faceNormal, &cross[count])) {
                     handles[count] = h;
                     count++;
@@ -1162,10 +1185,10 @@ typedef struct vertexMapNode {
 static int vertexComparator(rbtree *tree, const void *firstKey, const void *secondKey) {
     vertex *firstV = ((vertex **)firstKey)[0];
     vertex *secondV = ((vertex **)secondKey)[0];
-    return compareTwoPoints(&firstV->position, &secondV->position);
+    return math3dCompareTwoPoints(&firstV->position, &secondV->position);
 }
 
-int halfedgeCombineDuplicateVertices(mesh *m) {
+int halfedgeWeldNearVertices(mesh *m) {
     rbtree vertexMap;
     face *itFace;
     vertexMapNode *vertexList = 0;
@@ -1228,13 +1251,13 @@ int halfedgeFixTjunction(mesh *m) {
             if (subItNode == itNode) {
                 continue;
             }
-            if (isPointOnSegment(&subItNode->h->start->position, &itNode->h->start->position, &itNode->h->next->start->position)) {
+            if (math3dIsPointOnSegment(&subItNode->h->start->position, &itNode->h->start->position, &itNode->h->next->start->position)) {
                 //subItNode->h->color = DARK_SLATE_GRAY;
                 splitHalfedge(m, itNode->h, subItNode->h->start);
                 splitted = 1;
                 break;
             }
-            if (isPointOnSegment(&subItNode->h->next->start->position, &itNode->h->start->position, &itNode->h->next->start->position)) {
+            if (math3dIsPointOnSegment(&subItNode->h->next->start->position, &itNode->h->start->position, &itNode->h->next->start->position)) {
                 //subItNode->h->next->color = DARK_SLATE_GRAY;
                 splitHalfedge(m, itNode->h, subItNode->h->next->start);
                 splitted = 1;
@@ -1255,7 +1278,7 @@ int halfedgeFixTjunction(mesh *m) {
 }
 
 int halfedgeFixAll(mesh *m) {
-    halfedgeCombineDuplicateVertices(m);
+    halfedgeWeldNearVertices(m);
     halfedgeFixTjunction(m);
     halfedgeFixPairing(m);
     //halfedgeFixHoles(m);

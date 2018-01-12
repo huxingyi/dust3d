@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include "dust3d.h"
-#include "strutil.h"
+#include "util.h"
 
 int theInter(dust3dState *state) {
     const char *meshId1;

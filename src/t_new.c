@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include "dust3d.h"
-#include "strutil.h"
+#include "util.h"
 
 int theNew(dust3dState *state) {
     const char *id = dust3dGetNthArgument(state, 0);

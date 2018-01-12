@@ -158,7 +158,7 @@ static void calculateFaceVector(convexhull *hull, int p1, int p2, vector3d *base
     vector3dCrossProduct(&seg, baseNormal, result);
 }
 
-static float angleOfBaseFaceAndPointNormals(convexhull *hull, convexhullItem *baseItem, int p) {
+static float angleOfBaseFaceAndPoint(convexhull *hull, convexhullItem *baseItem, int p) {
     convexhullVertex *v1 = (convexhullVertex *)arrayGetItem(hull->vertexArray, baseItem->key.p1);
     convexhullVertex *v2 = (convexhullVertex *)arrayGetItem(hull->vertexArray, baseItem->key.p2);
     convexhullVertex *vp = (convexhullVertex *)arrayGetItem(hull->vertexArray, p);
@@ -175,7 +175,7 @@ static float angleOfBaseFaceAndPointNormals(convexhull *hull, convexhullItem *ba
     calculateFaceVector(hull, baseItem->key.p2, baseItem->key.p1, &baseItem->baseNormal, &vd1);
     vector3dNormal(&v2->position, &v1->position, &vp->position, &normal);
     calculateFaceVector(hull, baseItem->key.p2, baseItem->key.p1, &normal, &vd2);
-    return angleOfTwoVectors(&vd1, &vd2);
+    return math3dAngleOfTwoVectors(&vd1, &vd2);
 }
 
 static int findBestVertexOnTheLeft(convexhull *hull, convexhullItem *baseItem) {
@@ -185,7 +185,7 @@ static int findBestVertexOnTheLeft(convexhull *hull, convexhullItem *baseItem) {
     int result = -1;
     convexhullVertex *choosen = 0;
     for (it = hull->firstWaitingVertex; it; it = it->next) {
-        angle = angleOfBaseFaceAndPointNormals(hull, baseItem, it->index);
+        angle = angleOfBaseFaceAndPoint(hull, baseItem, it->index);
         if (angle > maxAngle) {
             maxAngle = angle;
             choosen = it;

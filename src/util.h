@@ -57,4 +57,7 @@
     }                                                       \
 } while (0)
 
+int endsWith(const char *str, const char *suffix);
+int split(char *str, const char *splitter, char **vector, int max);
+
 #endif

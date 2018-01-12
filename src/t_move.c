@@ -1,8 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 #include "dust3d.h"
-#include "strutil.h"
-#include "matrix.h"
+#include "util.h"
+#include "matrix4x4.h"
 
 int theMove(dust3dState *state) {
     const char *xStr;
@@ -11,7 +11,7 @@ int theMove(dust3dState *state) {
     float x = 0;
     float y = 0;
     float z = 0;
-    matrix mat;
+    matrix4x4 mat;
     xStr = dust3dGetNamingArgument(state, "x");
     yStr = dust3dGetNamingArgument(state, "y");
     zStr = dust3dGetNamingArgument(state, "z");
@@ -22,7 +22,7 @@ int theMove(dust3dState *state) {
     x = xStr ? toFloat(xStr) : 0.0f;
     y = yStr ? toFloat(yStr) : 0.0f;
     z = zStr ? toFloat(zStr) : 0.0f;
-    matrixTranslation(&mat, x, y, z);
+    matrix4x4Translation(&mat, x, y, z);
     halfedgeTransformMesh(dust3dGetCurrentMesh(state), &mat);
     return 0;
 }

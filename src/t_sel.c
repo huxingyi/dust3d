@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include "dust3d.h"
-#include "strutil.h"
+#include "util.h"
 
 int theSel(dust3dState *state) {
     mesh *m;

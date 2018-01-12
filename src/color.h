@@ -145,6 +145,6 @@ enum colorName {
     MAX_COLOR
 };
 
-const float colors[MAX_COLOR][3];
+extern const float colors[MAX_COLOR][3];
 
 #endif

@@ -11,7 +11,7 @@ char *g_testArgv[] = {
 
 char *g_testArgv[] = {
     /*"-add",
-        "/Users/jeremy/Repositories/dust3d/gourd.obj",*/
+        "/Users/jeremy/Repositories/dust3d/nanosuit.obj",*/
     "-add",
         "cube",
         "wdh:1.8",
@@ -33,7 +33,6 @@ char *g_testArgv[] = {
     "-wrap",
         "default",
         "box",
-    "-subdiv",
     "-subdiv",
     "-subdiv",
     "-show"

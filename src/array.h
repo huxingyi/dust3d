@@ -10,6 +10,9 @@ int arrayGetLength(array *arr);
 void arraySetLength(array *arr, int length);
 void *arrayNewItem(array *arr);
 void *arrayNewItemClear(array *arr);
+void *arrayNewItemAt(array *arr, int index);
+void *arrayNewItemClearAt(array *arr, int index);
+void arrayRemoveItem(array *arr, int index);
 void arrayDestroy(array *arr);
 
 #endif

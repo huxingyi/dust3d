@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include "dust3d.h"
-#include "strutil.h"
+#include "util.h"
 
 int theAdd(dust3dState *state) {
     const char *name;

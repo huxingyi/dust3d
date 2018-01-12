@@ -1,8 +1,9 @@
 #ifndef DUST3D_HALFEDGE_H
 #define DUST3D_HALFEDGE_H
 #include "vector3d.h"
-#include "matrix.h"
+#include "matrix4x4.h"
 #include "rbtree.h"
+#include "array.h"
 
 typedef struct halfedge halfedge;
 
@@ -55,6 +56,7 @@ void halfedgeResetMesh(mesh *m);
 void halfedgeDestroyMesh(mesh *m);
 int halfedgeSaveMeshAsObj(mesh *m, const char *filename);
 int halfedgeSaveFaceAsObj(mesh *m, face *f, const char *filename);
+int halfedgeExportVerticesAndIndices(mesh *m, array *vertices, array *indices);
 face *halfedgeCreateFaceFromPoints(mesh *m, point3d *counterClockWisedPoints, int count);
 face *halfedgeCreatePlane(mesh *m, float width, float depth);
 face *halfedgeCopyFace(mesh *m, face *f);
@@ -65,8 +67,8 @@ int halfedgeFaceNormal(face *f, vector3d *normal);
 int halfedgeFaceCenter(face *f, point3d *point);
 int halfedgeEdgeCenter(halfedge *h, point3d *point);
 int halfedgeMeshCenter(mesh *m, point3d *point);
-int halfedgeTransformFace(face *f, matrix *mat);
-int halfedgeTransformMesh(mesh *m, matrix *mat);
+int halfedgeTransformFace(face *f, matrix4x4 *mat);
+int halfedgeTransformMesh(mesh *m, matrix4x4 *mat);
 int halfedgeStitch(mesh *m, halfedge *from, halfedge *to);
 face *halfedgeChamferVertex(mesh *m, vertex *v, float amount);
 int halfedgeIsBoundaryVertex(mesh *m, vertex *v);
@@ -83,7 +85,7 @@ int halfedgeJoinMesh(mesh *m, mesh *sub);
 mesh *halfedgeCloneMesh(mesh *m);
 int halfedgeIsEmptyMesh(mesh *m);
 int halfedgeConcatMesh(mesh *m, mesh *src);
-int halfedgeCombineDuplicateVertices(mesh *m);
+int halfedgeWeldNearVertices(mesh *m);
 int halfedgeFixPairing(mesh *m);
 int halfedgeFixTjunction(mesh *m);
 int halfedgeIsWatertight(mesh *m);

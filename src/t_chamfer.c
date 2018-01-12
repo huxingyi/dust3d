@@ -60,7 +60,7 @@ int theChamfer(dust3dState *state) {
     for (i = 0; i < arrayGetLength(sliceFaceArray); i++) {
         sliceFace *sf = (sliceFace *)arrayGetItem(sliceFaceArray, i);
         mesh *frontMesh = halfedgeSliceMeshByPlane(m, &sf->point, &sf->normal, 0);
-        halfedgeCombineDuplicateVertices(m);
+        halfedgeWeldNearVertices(m);
         halfedgeFixPairing(m);
         halfedgeFixHoles(m);
         halfedgeDestroyMesh(frontMesh);

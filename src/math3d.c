@@ -2,21 +2,22 @@
 #include "math3d.h"
 
 #define CONST_180_DIV_PI    57.29578f
+#define CONST_PI_DIV_180    0.01745329252f
 
-int identifyPointOnWhichSideOfPlane(point3d *point, point3d *facePoint, vector3d *faceNormal) {
+int math3dIdentifyPointOnWhichSideOfPlane(point3d *point, point3d *facePoint, vector3d *faceNormal) {
     vector3d v = *point;
     float result;
     vector3dSub(&v, facePoint);
     result = vector3dDotProduct(&v, faceNormal);
     if (result > 0) {
-        return SIDE_FRONT;
+        return MATH3D_SIDE_FRONT;
     } else if (result < 0) {
-        return SIDE_BACK;
+        return MATH3D_SIDE_BACK;
     }
-    return SIDE_COINCIDENCE;
+    return MATH3D_SIDE_COINCIDENCE;
 }
 
-int intersectionOfSegmentAndPlane(point3d *p1, point3d *p2, point3d *facePoint, vector3d *faceNormal, point3d *result) {
+int math3dIntersectionOfSegmentAndPlane(point3d *p1, point3d *p2, point3d *facePoint, vector3d *faceNormal, point3d *result) {
     vector3d u, w;
     float d, n, i;
     vector3dSegment(p1, p2, &u);
@@ -39,14 +40,14 @@ int intersectionOfSegmentAndPlane(point3d *p1, point3d *p2, point3d *facePoint, 
     return 0;
 }
 
-float distanceOfTwoPoints(point3d *p1, point3d *p2) {
+float math3dDistanceOfTwoPoints(point3d *p1, point3d *p2) {
     double a = p1->x - p2->x;
     double b = p1->y - p2->y;
     double c = p1->z - p2->z;
     return (float)sqrt(a * a + b * b + c * c);
 }
 
-int isPointOnSegment(point3d *c, point3d *a, point3d *b) {
+int math3dIsPointOnSegment(point3d *c, point3d *a, point3d *b) {
     vector3d t, v, w;
     double dot1, dot2;
     float d;
@@ -63,13 +64,13 @@ int isPointOnSegment(point3d *c, point3d *a, point3d *b) {
     t = v;
     vector3dMultiply(&t, dot1 / dot2);
     vector3dAdd(&t, a);
-    if ((d=distanceOfTwoPoints(c, &t)) > EPSILON_DISTANCE) {
+    if ((d=math3dDistanceOfTwoPoints(c, &t)) > EPSILON_DISTANCE) {
         return 0;
     }
     return 1;
 }
 
-int compareTwoPoints(point3d *p1, point3d *p2) {
+int math3dCompareTwoPoints(point3d *p1, point3d *p2) {
     float offsetX = p1->x - p2->x;
     float offsetY = p1->y - p2->y;
     float offsetZ = p1->z - p2->z;
@@ -97,7 +98,7 @@ int compareTwoPoints(point3d *p1, point3d *p2) {
     return 0;
 }
 
-float angleOfTwoVectors(vector3d *v1, vector3d *v2) {
+float math3dAngleOfTwoVectors(vector3d *v1, vector3d *v2) {
     float dot = vector3dDotProduct(v1, v2);
     float mag1 = vector3dMagnitude(v1);
     float mag2 = vector3dMagnitude(v2);
@@ -116,13 +117,13 @@ float angleOfTwoVectors(vector3d *v1, vector3d *v2) {
     return CONST_180_DIV_PI * acos(dotDivMags);
 }
 
-int middlePointOfTwoPoints(point3d *p1, point3d *p2, point3d *midPoint) {
+int math3dMiddlePointOfTwoPoints(point3d *p1, point3d *p2, point3d *midPoint) {
     point3d *points[] = {p1, p2};
-    averagePointOfPoints(points, 2, midPoint);
+    math3dAveragePointOfPoints(points, 2, midPoint);
     return 0;
 }
 
-int averagePointOfPoints(point3d **points, int num, point3d *averagePoint) {
+int math3dAveragePointOfPoints(point3d **points, int num, point3d *averagePoint) {
     int i;
     averagePoint->x = averagePoint->y = averagePoint->z = 0;
     for (i = 0; i < num; i++) {
@@ -130,5 +131,9 @@ int averagePointOfPoints(point3d **points, int num, point3d *averagePoint) {
     }
     vector3dDivide(averagePoint, num);
     return 0;
+}
+
+float math3dDegreeToRadian(float degree) {
+    return degree * CONST_PI_DIV_180;
 }
 

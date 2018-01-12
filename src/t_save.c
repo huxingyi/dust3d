@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include "dust3d.h"
-#include "strutil.h"
+#include "util.h"
 
 int theSave(dust3dState *state) {
     const char *name = dust3dGetNthArgument(state, 0);
