@@ -6,23 +6,34 @@
 
 // Modifed from http://doc.qt.io/qt-5/qtwidgets-graphicsview-chip-view-cpp.html
 
-SkeletonEditWidget::SkeletonEditWidget(QFrame *parent)
-    : QFrame(parent)
+SkeletonEditWidget::SkeletonEditWidget(QFrame *parent) :
+    QFrame(parent)
 {
-    //setFrameStyle(Sunken | StyledPanel);
+    m_graphicsView = new SkeletonEditGraphicsView(this);
+    m_graphicsView->setRenderHint(QPainter::Antialiasing, false);
+    m_graphicsView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_graphicsView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     
-    graphicsView = new QGraphicsView(this);
-    graphicsView->setRenderHint(QPainter::Antialiasing, false);
-    
-    scene = new QGraphicsScene();
-    graphicsView->setScene(scene);
-    
-    QImage image("../assets/male_werewolf_turnaround_lineart_by_jennette_brown.png");
-    QGraphicsPixmapItem *backgroundItem = new QGraphicsPixmapItem(QPixmap::fromImage(image));
-    scene->addItem(backgroundItem);
+    m_graphicsView->setBackgroundBrush(QBrush(QWidget::palette().color(QWidget::backgroundRole()), Qt::SolidPattern));
     
     QGridLayout *mainLayout = new QGridLayout;
-    mainLayout->addWidget(graphicsView, 0, 0, 1, 1);
+    mainLayout->addWidget(m_graphicsView, 0, 0, 1, 1);
     
     setLayout(mainLayout);
+}
+
+SkeletonEditGraphicsView *SkeletonEditWidget::graphicsView()
+{
+    return m_graphicsView;
+}
+
+void SkeletonEditWidget::resizeEvent(QResizeEvent *event)
+{
+    QFrame::resizeEvent(event);
+    m_graphicsView->fitInView(QRectF(0, 0, m_graphicsView->scene()->width(), m_graphicsView->scene()->height()), Qt::KeepAspectRatio);
+}
+
+void SkeletonEditWidget::mouseMoveEvent(QMouseEvent *event)
+{
+    QFrame::mouseMoveEvent(event);
 }

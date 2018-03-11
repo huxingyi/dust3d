@@ -3,7 +3,6 @@
 #include <QOpenGLShaderProgram>
 #include <QCoreApplication>
 #include <math.h>
-#include "meshlite.h"
 
 // Modifed from http://doc.qt.io/qt-5/qtopengl-hellogl2-glwidget-cpp.html
 
@@ -15,7 +14,9 @@ ModelingWidget::ModelingWidget(QWidget *parent)
       m_yRot(0),
       m_zRot(0),
       m_program(0),
-      m_mesh(NULL)
+      m_renderVertexCount(0),
+      m_mesh(NULL),
+      m_meshUpdated(false)
 {
     m_core = QSurfaceFormat::defaultFormat().profile() == QSurfaceFormat::CoreProfile;
     // --transparent causes the clear color to be transparent. Therefore, on systems that
@@ -25,16 +26,6 @@ ModelingWidget::ModelingWidget(QWidget *parent)
         fmt.setAlphaBufferSize(8);
         setFormat(fmt);
     }
-    
-    void *lite = meshlite_create_context();
-    int first = meshlite_import(lite, "../assets/cube.obj");
-    int second = meshlite_import(lite, "../assets/ball.obj");
-    meshlite_scale(lite, first, 0.65);
-    int merged = meshlite_union(lite, first, second);
-    int triangulate = meshlite_triangulate(lite, merged);
-    //meshlite_export(lite, triangulate, "/Users/jeremy/testlib.obj");
-    Mesh *mesh = new Mesh(lite, triangulate);
-    updateMesh(mesh);
 }
 
 ModelingWidget::~ModelingWidget()
@@ -96,7 +87,8 @@ void ModelingWidget::cleanup()
     if (m_program == nullptr)
         return;
     makeCurrent();
-    m_modelVbo.destroy();
+    if (m_modelVbo.isCreated())
+        m_modelVbo.destroy();
     delete m_program;
     m_program = 0;
     doneCurrent();
@@ -169,7 +161,8 @@ void ModelingWidget::initializeGL()
     connect(context(), &QOpenGLContext::aboutToBeDestroyed, this, &ModelingWidget::cleanup);
 
     initializeOpenGLFunctions();
-    glClearColor(0.2078, 0.2078, 0.2078, m_transparent ? 0 : 1);
+    QColor bgcolor = QWidget::palette().color(QWidget::backgroundRole());
+    glClearColor(bgcolor.redF(), bgcolor.greenF(), bgcolor.blueF(), m_transparent ? 0 : 1);
 
     m_program = new QOpenGLShaderProgram;
     m_program->addShaderFromSourceCode(QOpenGLShader::Vertex, m_core ? vertexShaderSourceCore : vertexShaderSource);
@@ -189,15 +182,10 @@ void ModelingWidget::initializeGL()
     // at all. Nonetheless the below code works in all cases and makes
     // sure there is a VAO when one is needed.
     m_vao.create();
-    QOpenGLVertexArrayObject::Binder vaoBinder(&m_vao);
-
-    // Setup our vertex buffer object.
-    m_modelVbo.create();
-    m_modelVbo.bind();
-    m_modelVbo.allocate(m_mesh->vertices(), m_mesh->vertexCount() * sizeof(Vertex));
+    //QOpenGLVertexArrayObject::Binder vaoBinder(&m_vao);
 
     // Store the vertex attribute bindings for the program.
-    setupVertexAttribs();
+    
 
     // Our camera never changes in this example.
     m_camera.setToIdentity();
@@ -232,13 +220,34 @@ void ModelingWidget::paintGL()
     m_world.rotate(m_zRot / 16.0f, 0, 0, 1);
 
     QOpenGLVertexArrayObject::Binder vaoBinder(&m_vao);
+    
+    {
+        QMutexLocker lock(&m_meshMutex);
+        if (m_meshUpdated) {
+            if (m_mesh) {
+                // Setup our vertex buffer object.
+                if (m_modelVbo.isCreated())
+                    m_modelVbo.destroy();
+                m_modelVbo.create();
+                m_modelVbo.bind();
+                m_modelVbo.allocate(m_mesh->vertices(), m_mesh->vertexCount() * sizeof(Vertex));
+                m_renderVertexCount = m_mesh->vertexCount();
+                setupVertexAttribs();
+            } else {
+                m_renderVertexCount = 0;
+            }
+            m_meshUpdated = false;
+        }
+    }
+    
     m_program->bind();
     m_program->setUniformValue(m_projMatrixLoc, m_proj);
     m_program->setUniformValue(m_mvMatrixLoc, m_camera * m_world);
     QMatrix3x3 normalMatrix = m_world.normalMatrix();
     m_program->setUniformValue(m_normalMatrixLoc, normalMatrix);
-
-    glDrawArrays(GL_TRIANGLES, 0, m_mesh->vertexCount());
+    
+    if (m_renderVertexCount > 0)
+        glDrawArrays(GL_TRIANGLES, 0, m_renderVertexCount);
 
     m_program->release();
 }
@@ -275,6 +284,8 @@ void ModelingWidget::updateMesh(Mesh *mesh)
     if (mesh != m_mesh) {
         delete m_mesh;
         m_mesh = mesh;
+        m_meshUpdated = true;
+        update();
     }
 }
 

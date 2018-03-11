@@ -3,15 +3,22 @@
 #include <QFrame>
 #include <QGraphicsView>
 #include <QGraphicsScene>
+#include <QGraphicsPixmapItem>
+#include <QMouseEvent>
+#include <QGraphicsEllipseItem>
+#include "skeletoneditgraphicsview.h"
 
 class SkeletonEditWidget : public QFrame
 {
     Q_OBJECT
 public:
     SkeletonEditWidget(QFrame *parent = 0);
+    SkeletonEditGraphicsView *graphicsView();
+protected:
+    void resizeEvent(QResizeEvent *event);
+    void mouseMoveEvent(QMouseEvent *event);
 private:
-    QGraphicsView *graphicsView;
-    QGraphicsScene *scene;
+    SkeletonEditGraphicsView *m_graphicsView;
 };
 
 #endif

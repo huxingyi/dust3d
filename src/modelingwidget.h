@@ -55,6 +55,7 @@ private:
     QOpenGLVertexArrayObject m_vao;
     QOpenGLBuffer m_modelVbo;
     QOpenGLShaderProgram *m_program;
+    int m_renderVertexCount;
     int m_projMatrixLoc;
     int m_mvMatrixLoc;
     int m_normalMatrixLoc;
@@ -66,6 +67,7 @@ private:
     
     Mesh *m_mesh;
     QMutex m_meshMutex;
+    bool m_meshUpdated;
 };
 
 #endif

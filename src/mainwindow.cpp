@@ -1,10 +1,14 @@
-#include "mainwindow.h"
-#include "skeletoneditwidget.h"
 #include <QVBoxLayout>
 #include <QPushButton>
 #include <QButtonGroup>
 #include <QGridLayout>
 #include <QToolBar>
+#include <QThread>
+#include <assert.h>
+#include "mainwindow.h"
+#include "skeletoneditwidget.h"
+#include "meshlite.h"
+#include "skeletontomesh.h"
 
 MainWindow::MainWindow()
 {
@@ -36,14 +40,15 @@ MainWindow::MainWindow()
     motionButton->adjustSize();
     modelButton->adjustSize();
     
-    SkeletonEditWidget *skeletonEditWidget = new SkeletonEditWidget;
-    ModelingWidget *modelViewWidget = new ModelingWidget;
-    modelViewWidget->setFixedSize(128, 128);
+    m_skeletonEditWidget = new SkeletonEditWidget;
+    
+    m_modelingWidget = new ModelingWidget;
+    m_modelingWidget->setFixedSize(128, 128);
     
     QPushButton *changeTurnaroundButton = new QPushButton("Change turnaround..");
     
     QVBoxLayout *rightLayout = new QVBoxLayout;
-    rightLayout->addWidget(modelViewWidget);
+    rightLayout->addWidget(m_modelingWidget);
     rightLayout->addSpacing(10);
     rightLayout->addWidget(changeTurnaroundButton);
     rightLayout->addStretch();
@@ -61,7 +66,7 @@ MainWindow::MainWindow()
     
     QHBoxLayout *middleLayout = new QHBoxLayout;
     middleLayout->addLayout(leftLayout);
-    middleLayout->addWidget(skeletonEditWidget);
+    middleLayout->addWidget(m_skeletonEditWidget);
     middleLayout->addLayout(rightLayout);
     
     QVBoxLayout *mainLayout = new QVBoxLayout;
@@ -74,5 +79,36 @@ MainWindow::MainWindow()
     
     setCentralWidget(centralWidget);
     setWindowTitle(tr("Dust 3D"));
+    
+    bool connectResult;
+    
+    connectResult = connect(addAction, SIGNAL(triggered(bool)), m_skeletonEditWidget->graphicsView(), SLOT(turnOnAddNodeMode()));
+    assert(connectResult);
+    
+    connectResult = connectResult = connect(selectAction, SIGNAL(triggered(bool)), m_skeletonEditWidget->graphicsView(), SLOT(turnOffAddNodeMode()));
+    assert(connectResult);
+    
+    connectResult = connect(m_skeletonEditWidget->graphicsView(), SIGNAL(nodesChanged()), this, SLOT(skeletonChanged()));
+    assert(connectResult);
 }
 
+void MainWindow::meshReady()
+{
+    SkeletonToMesh *worker = dynamic_cast<SkeletonToMesh *>(sender());
+    if (worker) {
+        m_modelingWidget->updateMesh(worker->takeResultMesh());
+    }
+}
+
+void MainWindow::skeletonChanged()
+{
+    QThread *thread = new QThread;
+    SkeletonToMesh *worker = new SkeletonToMesh(m_skeletonEditWidget->graphicsView());
+    worker->moveToThread(thread);
+    connect(thread, SIGNAL(started()), worker, SLOT(process()));
+    connect(worker, SIGNAL(finished()), thread, SLOT(quit()));
+    connect(worker, SIGNAL(finished()), this, SLOT(meshReady()));
+    connect(worker, SIGNAL(finished()), worker, SLOT(deleteLater()));
+    connect(thread, SIGNAL(finished()), thread, SLOT(deleteLater()));
+    thread->start();
+}

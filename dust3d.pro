@@ -12,6 +12,18 @@ HEADERS += src/modelingwidget.h
 SOURCES += src/skeletoneditwidget.cpp
 HEADERS += src/skeletoneditwidget.h
 
+SOURCES += src/skeletoneditgraphicsview.cpp
+HEADERS += src/skeletoneditgraphicsview.h
+
+SOURCES += src/skeletoneditnodeitem.cpp
+HEADERS += src/skeletoneditnodeitem.h
+
+SOURCES += src/skeletoneditedgeitem.cpp
+HEADERS += src/skeletoneditedgeitem.h
+
+SOURCES += src/skeletontomesh.cpp
+HEADERS += src/skeletontomesh.h
+
 SOURCES += src/mesh.cpp
 HEADERS += src/mesh.h
 
