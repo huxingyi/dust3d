@@ -27,12 +27,12 @@ ModelingWidget::ModelingWidget(QWidget *parent)
     }
     
     void *lite = meshlite_create_context();
-    int first = meshlite_import(lite, "/Users/jeremy/cube.obj");
-    int second = meshlite_import(lite, "/Users/jeremy/ball.obj");
+    int first = meshlite_import(lite, "../assets/cube.obj");
+    int second = meshlite_import(lite, "../assets/ball.obj");
     meshlite_scale(lite, first, 0.65);
-    int intersect = meshlite_intersect(lite, first, second);
-    int triangulate = meshlite_triangulate(lite, intersect);
-    meshlite_export(lite, triangulate, "/Users/jeremy/testlib.obj");
+    int merged = meshlite_union(lite, first, second);
+    int triangulate = meshlite_triangulate(lite, merged);
+    //meshlite_export(lite, triangulate, "/Users/jeremy/testlib.obj");
     Mesh *mesh = new Mesh(lite, triangulate);
     updateMesh(mesh);
 }
@@ -126,7 +126,7 @@ static const char *fragmentShaderSourceCore =
     "void main() {\n"
     "   highp vec3 L = normalize(lightPos - vert);\n"
     "   highp float NL = max(dot(normalize(vertNormal), L), 0.0);\n"
-    "   highp vec3 color = vec3(0.39, 1.0, 0.0);\n"
+    "   highp vec3 color = vec3(1.0, 1.0, 1.0);\n"
     "   highp vec3 col = clamp(color * 0.2 + color * 0.8 * NL, 0.0, 1.0);\n"
     "   fragColor = vec4(col, 1.0);\n"
     "}\n";
@@ -152,7 +152,7 @@ static const char *fragmentShaderSource =
     "void main() {\n"
     "   highp vec3 L = normalize(lightPos - vert);\n"
     "   highp float NL = max(dot(normalize(vertNormal), L), 0.0);\n"
-    "   highp vec3 color = vec3(0.39, 1.0, 0.0);\n"
+    "   highp vec3 color = vec3(1.0, 1.0, 1.0);\n"
     "   highp vec3 col = clamp(color * 0.2 + color * 0.8 * NL, 0.0, 1.0);\n"
     "   gl_FragColor = vec4(col, 1.0);\n"
     "}\n";
@@ -169,7 +169,7 @@ void ModelingWidget::initializeGL()
     connect(context(), &QOpenGLContext::aboutToBeDestroyed, this, &ModelingWidget::cleanup);
 
     initializeOpenGLFunctions();
-    glClearColor(0, 0, 0, m_transparent ? 0 : 1);
+    glClearColor(0.2078, 0.2078, 0.2078, m_transparent ? 0 : 1);
 
     m_program = new QOpenGLShaderProgram;
     m_program->addShaderFromSourceCode(QOpenGLShader::Vertex, m_core ? vertexShaderSourceCore : vertexShaderSource);

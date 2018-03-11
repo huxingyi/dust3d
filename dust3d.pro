@@ -9,6 +9,9 @@ HEADERS += src/mainwindow.h
 SOURCES += src/modelingwidget.cpp
 HEADERS += src/modelingwidget.h
 
+SOURCES += src/skeletoneditwidget.cpp
+HEADERS += src/skeletoneditwidget.h
+
 SOURCES += src/mesh.cpp
 HEADERS += src/mesh.h
 
