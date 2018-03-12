@@ -83,6 +83,7 @@ void SkeletonToMesh::process()
     float top = -1;
     float bottom = -1;
     float zLeft = -1;
+    float zRight = -1;
     for (size_t i = 0; i < m_nodes.size(); i++) {
         SkeletonNode *node = &m_nodes[i];
         if (left < 0 || node->originX < left) {
@@ -100,19 +101,23 @@ void SkeletonToMesh::process()
         if (zLeft < 0 || node->originZ < zLeft) {
             zLeft = node->originZ;
         }
+        if (node->originZ > zRight) {
+            zRight = node->originZ;
+        }
     }
     float height = bottom - top;
     if (height <= 0) {
         emit finished();
         return;
     }
+    float zWidth = right - left;
     void *context = meshlite_create_context();
     int bmesh = meshlite_bmesh_create(context);
     for (size_t i = 0; i < m_nodes.size(); i++) {
         SkeletonNode *node = &m_nodes[i];
         float x = (node->originX - left - height / 2) / height;
         float y = (node->originY - top - height / 2) / height;
-        float z = (node->originZ - zLeft - height / 2) / height;
+        float z = (node->originZ - zLeft - zWidth / 2) / height;
         float r = node->radius / height;
         node->bmeshNodeId = meshlite_bmesh_add_node(context, bmesh, x, y, z, r);
     }

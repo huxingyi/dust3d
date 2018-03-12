@@ -13,7 +13,8 @@ SkeletonEditGraphicsView::SkeletonEditGraphicsView(QWidget *parent) :
     m_inAddNodeMode(true),
     m_nextStartNodeItem(NULL),
     m_lastHoverNodeItem(NULL),
-    m_lastMousePos(0, 0)
+    m_lastMousePos(0, 0),
+    m_isMovingNodeItem(false)
 {
     setScene(new QGraphicsScene());
     
@@ -111,11 +112,25 @@ void SkeletonEditGraphicsView::mouseReleaseEvent(QMouseEvent *event)
             setNextStartNodeItem(masterNode);
             emit nodesChanged();
         }
+        m_isMovingNodeItem = false;
     } else if (event->button() == Qt::RightButton) {
         if (m_inAddNodeMode) {
             toggleAddNodeMode();
         }
     }
+}
+
+bool SkeletonEditGraphicsView::canNodeItemMoveTo(SkeletonEditNodeItem *item, QPointF moveTo)
+{
+    if (moveTo.x() < 0)
+        return false;
+    if (moveTo.y() < 0)
+        return false;
+    if (moveTo.x() + item->rect().width() >= m_backgroundItem->boundingRect().width())
+        return false;
+    if (moveTo.y() + item->rect().height() >= m_backgroundItem->boundingRect().height())
+        return false;
+    return true;
 }
 
 void SkeletonEditGraphicsView::mouseMoveEvent(QMouseEvent *event)
@@ -139,57 +154,64 @@ void SkeletonEditGraphicsView::mouseMoveEvent(QMouseEvent *event)
         m_pendingEdgeItem->setLine(QLineF(m_nextStartNodeItem->origin(), QPointF(moveTo.x() + m_pendingNodeItem->rect().width() / 2,
             moveTo.y() + m_pendingNodeItem->rect().height() / 2)));
     }
-    if (!m_inAddNodeMode) {
-        SkeletonEditNodeItem *hoverNodeItem = findNodeItemByPos(pos);
-        if (hoverNodeItem) {
-            hoverNodeItem->setHighlighted(true);
-        }
-        if (hoverNodeItem != m_lastHoverNodeItem) {
-            if (m_lastHoverNodeItem)
+    if (!m_isMovingNodeItem) {
+        if (!m_inAddNodeMode) {
+            SkeletonEditNodeItem *hoverNodeItem = findNodeItemByPos(pos);
+            if (hoverNodeItem) {
+                hoverNodeItem->setHighlighted(true);
+            }
+            if (hoverNodeItem != m_lastHoverNodeItem) {
+                if (m_lastHoverNodeItem)
+                    m_lastHoverNodeItem->setHighlighted(false);
+                m_lastHoverNodeItem = hoverNodeItem;
+            }
+        } else {
+            if (m_lastHoverNodeItem) {
                 m_lastHoverNodeItem->setHighlighted(false);
-            m_lastHoverNodeItem = hoverNodeItem;
-        }
-    } else {
-        if (m_lastHoverNodeItem) {
-            m_lastHoverNodeItem->setHighlighted(false);
-            m_lastHoverNodeItem = NULL;
+                m_lastHoverNodeItem = NULL;
+            }
         }
     }
     QPointF curMousePos = pos;
     if (m_lastHoverNodeItem) {
-        if (event->buttons() & Qt::LeftButton) {
+        if ((event->buttons() & Qt::LeftButton) &&
+                (curMousePos != m_lastMousePos || m_isMovingNodeItem)) {
+            m_isMovingNodeItem = true;
             QRectF rect = m_lastHoverNodeItem->rect();
+            QRectF slaveRect;
             if (m_lastHoverNodeItem->isMaster()) {
                 rect.translate(curMousePos.x() - m_lastMousePos.x(), curMousePos.y() - m_lastMousePos.y());
-                QRectF slaveRect = m_lastHoverNodeItem->slave()->rect();
+                slaveRect = m_lastHoverNodeItem->slave()->rect();
                 slaveRect.translate(0, curMousePos.y() - m_lastMousePos.y());
-                m_lastHoverNodeItem->slave()->setRect(slaveRect);
             } else {
                 rect.translate(curMousePos.x() - m_lastMousePos.x(), 0);
             }
-            m_lastHoverNodeItem->setRect(rect);
-            QList<QGraphicsItem *>::iterator it;
-            QList<QGraphicsItem *> list = scene()->items();
-            for (it = list.begin(); it != list.end(); ++it) {
-                if ((*it)->data(0).toString() == "edge") {
-                    SkeletonEditEdgeItem *edgeItem = static_cast<SkeletonEditEdgeItem *>(*it);
-                    if (edgeItem->connects(m_lastHoverNodeItem))
-                        edgeItem->updatePosition();
+            if (canNodeItemMoveTo(m_lastHoverNodeItem, QPointF(rect.x(), rect.y()))) {
+                if (m_lastHoverNodeItem->isMaster()) {
+                    m_lastHoverNodeItem->slave()->setRect(slaveRect);
                 }
+                m_lastHoverNodeItem->setRect(rect);
+                QList<QGraphicsItem *>::iterator it;
+                QList<QGraphicsItem *> list = scene()->items();
+                for (it = list.begin(); it != list.end(); ++it) {
+                    if ((*it)->data(0).toString() == "edge") {
+                        SkeletonEditEdgeItem *edgeItem = static_cast<SkeletonEditEdgeItem *>(*it);
+                        if (edgeItem->connects(m_lastHoverNodeItem))
+                            edgeItem->updatePosition();
+                    }
+                }
+                emit nodesChanged();
             }
-            emit nodesChanged();
         }
     }
     m_lastMousePos = curMousePos;
 }
 
-void SkeletonEditGraphicsView::wheelEvent(QWheelEvent *event)
+void SkeletonEditGraphicsView::AddItemRadius(QGraphicsEllipseItem *item, float delta)
 {
-    QWidget::wheelEvent(event);
-    qreal delta = event->delta();
-    QSizeF oldSize = m_pendingNodeItem->rect().size();
-    QPointF originPt = QPointF(m_pendingNodeItem->rect().left() + oldSize.width() / 2,
-        m_pendingNodeItem->rect().top() + oldSize.height() / 2);
+    QSizeF oldSize = item->rect().size();
+    QPointF originPt = QPointF(item->rect().left() + oldSize.width() / 2,
+        item->rect().top() + oldSize.height() / 2);
     QSizeF newSize = QSizeF(oldSize.width() + delta, oldSize.height() + delta);
     if (newSize.width() < m_minimalNodeSize || newSize.height() < m_minimalNodeSize) {
         newSize.setWidth(m_minimalNodeSize);
@@ -201,10 +223,44 @@ void SkeletonEditGraphicsView::wheelEvent(QWheelEvent *event)
         return;
     if (newLeftTop.y() < 0 || newLeftTop.y() + newSize.height() >= m_backgroundItem->boundingRect().height())
         return;
-    m_pendingNodeItem->setRect(newLeftTop.x(),
+    item->setRect(newLeftTop.x(),
         newLeftTop.y(),
         newSize.width(),
         newSize.height());
+}
+
+bool SkeletonEditGraphicsView::canAddItemRadius(QGraphicsEllipseItem *item, float delta)
+{
+    QSizeF oldSize = item->rect().size();
+    QPointF originPt = QPointF(item->rect().left() + oldSize.width() / 2,
+        item->rect().top() + oldSize.height() / 2);
+    QSizeF newSize = QSizeF(oldSize.width() + delta, oldSize.height() + delta);
+    if (newSize.width() < m_minimalNodeSize || newSize.height() < m_minimalNodeSize) {
+        newSize.setWidth(m_minimalNodeSize);
+        newSize.setHeight(m_minimalNodeSize);
+    }
+    QPointF newLeftTop = QPointF(originPt.x() - newSize.width() / 2,
+        originPt.y() - newSize.height() / 2);
+    if (newLeftTop.x() < 0 || newLeftTop.x() + newSize.width() >= m_backgroundItem->boundingRect().width())
+        return false;
+    if (newLeftTop.y() < 0 || newLeftTop.y() + newSize.height() >= m_backgroundItem->boundingRect().height())
+        return false;
+    return true;
+}
+
+void SkeletonEditGraphicsView::wheelEvent(QWheelEvent *event)
+{
+    QWidget::wheelEvent(event);
+    qreal delta = event->delta();
+    AddItemRadius(m_pendingNodeItem, delta);
+    if (!m_inAddNodeMode && m_lastHoverNodeItem) {
+        if (canAddItemRadius(m_lastHoverNodeItem, delta) &&
+                canAddItemRadius(m_lastHoverNodeItem->pair(), delta)) {
+            AddItemRadius(m_lastHoverNodeItem, delta);
+            AddItemRadius(m_lastHoverNodeItem->pair(), delta);
+        }
+        emit nodesChanged();
+    }
 }
 
 void SkeletonEditGraphicsView::setNextStartNodeItem(SkeletonEditNodeItem *item)

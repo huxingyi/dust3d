@@ -30,12 +30,15 @@ private:
     SkeletonEditNodeItem *m_nextStartNodeItem;
     SkeletonEditNodeItem *m_lastHoverNodeItem;
     QPointF m_lastMousePos;
+    bool m_isMovingNodeItem;
     void toggleAddNodeMode();
     void applyAddNodeMode();
     SkeletonEditNodeItem *findNodeItemByPos(QPointF pos);
     void setNextStartNodeItem(SkeletonEditNodeItem *item);
     float findXForSlave(float x);
-    
+    bool canNodeItemMoveTo(SkeletonEditNodeItem *item, QPointF moveTo);
+    void AddItemRadius(QGraphicsEllipseItem *item, float delta);
+    bool canAddItemRadius(QGraphicsEllipseItem *item, float delta);
 };
 
 #endif

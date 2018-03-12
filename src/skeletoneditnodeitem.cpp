@@ -38,6 +38,11 @@ void SkeletonEditNodeItem::setSlave(SkeletonEditNodeItem *nodeItem)
     m_slave = nodeItem;
 }
 
+SkeletonEditNodeItem *SkeletonEditNodeItem::pair()
+{
+    return m_master ? m_master : m_slave;
+}
+
 SkeletonEditNodeItem *SkeletonEditNodeItem::slave()
 {
     return m_slave;

@@ -18,6 +18,7 @@ public:
     void setSlave(SkeletonEditNodeItem *nodeItem);
     SkeletonEditNodeItem *master();
     SkeletonEditNodeItem *slave();
+    SkeletonEditNodeItem *pair();
 private:
     bool m_highlighted;
     bool m_isNextStartNode;
