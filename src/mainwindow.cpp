@@ -10,7 +10,9 @@
 #include "meshlite.h"
 #include "skeletontomesh.h"
 
-MainWindow::MainWindow()
+MainWindow::MainWindow() :
+    m_skeletonToMesh(NULL),
+    m_skeletonDirty(false)
 {
     QPushButton *skeletonButton = new QPushButton("Skeleton");
     QPushButton *motionButton = new QPushButton("Motion");
@@ -94,21 +96,29 @@ MainWindow::MainWindow()
 
 void MainWindow::meshReady()
 {
-    SkeletonToMesh *worker = dynamic_cast<SkeletonToMesh *>(sender());
-    if (worker) {
-        m_modelingWidget->updateMesh(worker->takeResultMesh());
+    m_modelingWidget->updateMesh(m_skeletonToMesh->takeResultMesh());
+    delete m_skeletonToMesh;
+    m_skeletonToMesh = NULL;
+    if (m_skeletonDirty) {
+        skeletonChanged();
     }
 }
 
 void MainWindow::skeletonChanged()
 {
+    if (m_skeletonToMesh) {
+        m_skeletonDirty = true;
+        return;
+    }
+    
+    m_skeletonDirty = false;
+    
     QThread *thread = new QThread;
-    SkeletonToMesh *worker = new SkeletonToMesh(m_skeletonEditWidget->graphicsView());
-    worker->moveToThread(thread);
-    connect(thread, SIGNAL(started()), worker, SLOT(process()));
-    connect(worker, SIGNAL(finished()), thread, SLOT(quit()));
-    connect(worker, SIGNAL(finished()), this, SLOT(meshReady()));
-    connect(worker, SIGNAL(finished()), worker, SLOT(deleteLater()));
+    m_skeletonToMesh = new SkeletonToMesh(m_skeletonEditWidget->graphicsView());
+    m_skeletonToMesh->moveToThread(thread);
+    connect(thread, SIGNAL(started()), m_skeletonToMesh, SLOT(process()));
+    connect(m_skeletonToMesh, SIGNAL(finished()), this, SLOT(meshReady()));
+    connect(m_skeletonToMesh, SIGNAL(finished()), thread, SLOT(quit()));
     connect(thread, SIGNAL(finished()), thread, SLOT(deleteLater()));
     thread->start();
 }

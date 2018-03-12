@@ -6,6 +6,7 @@ SkeletonEditNodeItem::SkeletonEditNodeItem(const QRectF &rect, QGraphicsItem *pa
     m_highlighted(false),
     m_isNextStartNode(false)
 {
+    setData(0, "node");
     updateBorder();
 }
 
@@ -13,6 +14,11 @@ QPointF SkeletonEditNodeItem::origin()
 {
     return QPointF(rect().left() + rect().width() / 2,
         rect().top() + rect().height() / 2);
+}
+
+float SkeletonEditNodeItem::radius()
+{
+    return rect().width() / 2;
 }
 
 void SkeletonEditNodeItem::setHighlighted(bool highlighted)

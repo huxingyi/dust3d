@@ -3,6 +3,7 @@
 #include <QMainWindow>
 #include "modelingwidget.h"
 #include "skeletoneditwidget.h"
+#include "skeletontomesh.h"
 
 class MainWindow : public QMainWindow
 {
@@ -15,6 +16,8 @@ public slots:
 private:
     ModelingWidget *m_modelingWidget;
     SkeletonEditWidget *m_skeletonEditWidget;
+    SkeletonToMesh *m_skeletonToMesh;
+    bool m_skeletonDirty;
 };
 
 #endif

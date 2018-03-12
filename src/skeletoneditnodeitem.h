@@ -7,6 +7,7 @@ class SkeletonEditNodeItem : public QGraphicsEllipseItem
 public:
     SkeletonEditNodeItem(const QRectF &rect, QGraphicsItem *parent = 0);
     QPointF origin();
+    float radius();
     void setHighlighted(bool highlited);
     void setIsNextStartNode(bool isNextStartNode);
 private:

@@ -61,9 +61,8 @@ SkeletonEditNodeItem *SkeletonEditGraphicsView::findNodeItemByPos(QPointF pos)
     QList<QGraphicsItem *>::iterator it;
     QList<QGraphicsItem *> list = scene()->items();
     for (it = list.begin(); it != list.end(); ++it) {
-        SkeletonEditNodeItem *nodeItem = dynamic_cast<SkeletonEditNodeItem *>(*it);
-        if (nodeItem) {
-            SkeletonEditNodeItem *nodeItem = (SkeletonEditNodeItem *)(*it);
+        if ((*it)->data(0).toString() == "node") {
+            SkeletonEditNodeItem *nodeItem = static_cast<SkeletonEditNodeItem *>(*it);
             if (nodeItem->rect().contains(pos)) {
                 return nodeItem;
             }

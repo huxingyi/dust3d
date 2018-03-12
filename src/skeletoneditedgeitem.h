@@ -9,6 +9,8 @@ public:
     SkeletonEditEdgeItem(QGraphicsItem *parent = 0);
     void setNodes(SkeletonEditNodeItem *first, SkeletonEditNodeItem *second);
     void updatePosition();
+    SkeletonEditNodeItem *firstNode();
+    SkeletonEditNodeItem *secondNode();
 private:
     SkeletonEditNodeItem *m_firstNode;
     SkeletonEditNodeItem *m_secondNode;
