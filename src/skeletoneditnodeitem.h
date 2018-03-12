@@ -2,6 +2,8 @@
 #define SKELETON_EDIT_NODE_ITEM_H
 #include <QGraphicsEllipseItem>
 
+class SkeletonEditEdgeItem;
+
 class SkeletonEditNodeItem : public QGraphicsEllipseItem
 {
 public:
@@ -10,9 +12,17 @@ public:
     float radius();
     void setHighlighted(bool highlited);
     void setIsNextStartNode(bool isNextStartNode);
+    bool isSlave();
+    bool isMaster();
+    void setMaster(SkeletonEditNodeItem *nodeItem);
+    void setSlave(SkeletonEditNodeItem *nodeItem);
+    SkeletonEditNodeItem *master();
+    SkeletonEditNodeItem *slave();
 private:
     bool m_highlighted;
     bool m_isNextStartNode;
+    SkeletonEditNodeItem *m_master;
+    SkeletonEditNodeItem *m_slave;
     void updateBorder();
 };
 

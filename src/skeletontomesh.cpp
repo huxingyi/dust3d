@@ -33,7 +33,7 @@ SkeletonToMesh::SkeletonToMesh(SkeletonEditGraphicsView *graphicsView) :
                     
                     node.originX = origin.x();
                     node.originY = origin.y();
-                    node.originZ = 0;
+                    node.originZ = nodeItem->slave()->origin().x();
                     node.bmeshNodeId = -1;
                     node.radius = nodeItem->radius();
                     
@@ -79,8 +79,10 @@ void SkeletonToMesh::process()
         return;
     }
     float left = -1;
+    float right = -1;
     float top = -1;
     float bottom = -1;
+    float zLeft = -1;
     for (size_t i = 0; i < m_nodes.size(); i++) {
         SkeletonNode *node = &m_nodes[i];
         if (left < 0 || node->originX < left) {
@@ -89,8 +91,14 @@ void SkeletonToMesh::process()
         if (top < 0 || node->originY < top) {
             top = node->originY;
         }
+        if (node->originX > right) {
+            right = node->originX;
+        }
         if (node->originY > bottom) {
             bottom = node->originY;
+        }
+        if (zLeft < 0 || node->originZ < zLeft) {
+            zLeft = node->originZ;
         }
     }
     float height = bottom - top;
@@ -102,9 +110,9 @@ void SkeletonToMesh::process()
     int bmesh = meshlite_bmesh_create(context);
     for (size_t i = 0; i < m_nodes.size(); i++) {
         SkeletonNode *node = &m_nodes[i];
-        float x = (node->originX - left) / height;
-        float y = (node->originY - top) / height;
-        float z = node->originZ / height;
+        float x = (node->originX - left - height / 2) / height;
+        float y = (node->originY - top - height / 2) / height;
+        float z = (node->originZ - zLeft - height / 2) / height;
         float r = node->radius / height;
         node->bmeshNodeId = meshlite_bmesh_add_node(context, bmesh, x, y, z, r);
     }

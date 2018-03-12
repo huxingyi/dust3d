@@ -1,5 +1,6 @@
 #include <QPen>
 #include "skeletoneditedgeitem.h"
+#include "theme.h"
 
 SkeletonEditEdgeItem::SkeletonEditEdgeItem(QGraphicsItem *parent) :
     QGraphicsLineItem(parent),
@@ -7,8 +8,8 @@ SkeletonEditEdgeItem::SkeletonEditEdgeItem(QGraphicsItem *parent) :
     m_secondNode(NULL)
 {
     setData(0, "edge");
-    QPen pen(Qt::darkGray);
-    pen.setWidth(15);
+    QPen pen(Theme::skeletonMasterNodeBorderColor);
+    pen.setWidth(Theme::skeletonMasterNodeBorderSize);
     setPen(pen);
 }
 
@@ -17,6 +18,11 @@ void SkeletonEditEdgeItem::setNodes(SkeletonEditNodeItem *first, SkeletonEditNod
     m_firstNode = first;
     m_secondNode = second;
     updatePosition();
+}
+
+bool SkeletonEditEdgeItem::connects(SkeletonEditNodeItem *nodeItem)
+{
+    return m_firstNode == nodeItem || m_secondNode == nodeItem;
 }
 
 void SkeletonEditEdgeItem::updatePosition()

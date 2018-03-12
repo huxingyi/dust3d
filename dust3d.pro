@@ -24,6 +24,9 @@ HEADERS += src/skeletoneditedgeitem.h
 SOURCES += src/skeletontomesh.cpp
 HEADERS += src/skeletontomesh.h
 
+SOURCES += src/theme.cpp
+HEADERS += src/theme.h
+
 SOURCES += src/mesh.cpp
 HEADERS += src/mesh.h
 

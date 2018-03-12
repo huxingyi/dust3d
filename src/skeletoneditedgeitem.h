@@ -11,6 +11,7 @@ public:
     void updatePosition();
     SkeletonEditNodeItem *firstNode();
     SkeletonEditNodeItem *secondNode();
+    bool connects(SkeletonEditNodeItem *nodeItem);
 private:
     SkeletonEditNodeItem *m_firstNode;
     SkeletonEditNodeItem *m_secondNode;

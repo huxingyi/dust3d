@@ -29,10 +29,12 @@ private:
     bool m_inAddNodeMode;
     SkeletonEditNodeItem *m_nextStartNodeItem;
     SkeletonEditNodeItem *m_lastHoverNodeItem;
+    QPointF m_lastMousePos;
     void toggleAddNodeMode();
     void applyAddNodeMode();
     SkeletonEditNodeItem *findNodeItemByPos(QPointF pos);
     void setNextStartNodeItem(SkeletonEditNodeItem *item);
+    float findXForSlave(float x);
     
 };
 
