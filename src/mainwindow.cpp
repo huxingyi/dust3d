@@ -4,15 +4,20 @@
 #include <QGridLayout>
 #include <QToolBar>
 #include <QThread>
+#include <QFileDialog>
 #include <assert.h>
 #include "mainwindow.h"
 #include "skeletoneditwidget.h"
 #include "meshlite.h"
 #include "skeletontomesh.h"
+#include "turnaroundloader.h"
 
 MainWindow::MainWindow() :
     m_skeletonToMesh(NULL),
-    m_skeletonDirty(false)
+    m_skeletonDirty(false),
+    m_turnaroundLoader(NULL),
+    m_turnaroundDirty(false)
+    //m_turnaroundFilename("../assets/male_werewolf_turnaround_lineart_by_jennette_brown.png")
 {
     QPushButton *skeletonButton = new QPushButton("Skeleton");
     QPushButton *motionButton = new QPushButton("Motion");
@@ -92,6 +97,12 @@ MainWindow::MainWindow() :
     
     connectResult = connect(m_skeletonEditWidget->graphicsView(), SIGNAL(nodesChanged()), this, SLOT(skeletonChanged()));
     assert(connectResult);
+    
+    connectResult = connect(m_skeletonEditWidget, SIGNAL(sizeChanged()), this, SLOT(turnaroundChanged()));
+    assert(connectResult);
+    
+    connectResult = connect(changeTurnaroundButton, SIGNAL(released()), this, SLOT(changeTurnaround()));
+    assert(connectResult);
 }
 
 void MainWindow::meshReady()
@@ -121,4 +132,51 @@ void MainWindow::skeletonChanged()
     connect(m_skeletonToMesh, SIGNAL(finished()), thread, SLOT(quit()));
     connect(thread, SIGNAL(finished()), thread, SLOT(deleteLater()));
     thread->start();
+}
+
+void MainWindow::turnaroundChanged()
+{
+    if (m_turnaroundFilename.isEmpty())
+        return;
+    
+    if (m_turnaroundLoader) {
+        m_turnaroundDirty = true;
+        return;
+    }
+    
+    m_turnaroundDirty = false;
+    
+    QThread *thread = new QThread;
+    m_turnaroundLoader = new TurnaroundLoader(m_turnaroundFilename,
+        m_skeletonEditWidget->rect().size());
+    m_turnaroundLoader->moveToThread(thread);
+    connect(thread, SIGNAL(started()), m_turnaroundLoader, SLOT(process()));
+    connect(m_turnaroundLoader, SIGNAL(finished()), this, SLOT(turnaroundImageReady()));
+    connect(m_turnaroundLoader, SIGNAL(finished()), thread, SLOT(quit()));
+    connect(thread, SIGNAL(finished()), thread, SLOT(deleteLater()));
+    thread->start();
+}
+
+void MainWindow::turnaroundImageReady()
+{
+    QImage *backgroundImage = m_turnaroundLoader->takeResultImage();
+    if (backgroundImage && backgroundImage->width() > 0 && backgroundImage->height() > 0)
+        m_skeletonEditWidget->graphicsView()->updateBackgroundImage(*backgroundImage);
+    delete backgroundImage;
+    delete m_turnaroundLoader;
+    m_turnaroundLoader = NULL;
+    if (m_turnaroundDirty) {
+        turnaroundChanged();
+    }
+}
+
+void MainWindow::changeTurnaround()
+{
+    QString fileName = QFileDialog::getOpenFileName(this, tr("Open Turnaround Reference Image"),
+        QString(),
+        tr("Image Files (*.png *.jpg *.bmp)")).trimmed();
+    if (fileName.isEmpty())
+        return;
+    m_turnaroundFilename = fileName;
+    turnaroundChanged();
 }

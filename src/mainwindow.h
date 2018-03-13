@@ -1,9 +1,11 @@
 #ifndef MAIN_WINDOW_H
 #define MAIN_WINDOW_H
 #include <QMainWindow>
+#include <QString>
 #include "modelingwidget.h"
 #include "skeletoneditwidget.h"
 #include "skeletontomesh.h"
+#include "turnaroundloader.h"
 
 class MainWindow : public QMainWindow
 {
@@ -13,11 +15,17 @@ public:
 public slots:
     void skeletonChanged();
     void meshReady();
+    void turnaroundChanged();
+    void turnaroundImageReady();
+    void changeTurnaround();
 private:
     ModelingWidget *m_modelingWidget;
     SkeletonEditWidget *m_skeletonEditWidget;
     SkeletonToMesh *m_skeletonToMesh;
     bool m_skeletonDirty;
+    TurnaroundLoader *m_turnaroundLoader;
+    bool m_turnaroundDirty;
+    QString m_turnaroundFilename;
 };
 
 #endif

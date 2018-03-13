@@ -15,6 +15,7 @@ public slots:
     void turnOnAddNodeMode();
 public:
     SkeletonEditGraphicsView(QWidget *parent = 0);
+    void updateBackgroundImage(const QImage &image);
 protected:
     void mouseMoveEvent(QMouseEvent *event);
     void wheelEvent(QWheelEvent *event);
@@ -31,6 +32,7 @@ private:
     SkeletonEditNodeItem *m_lastHoverNodeItem;
     QPointF m_lastMousePos;
     bool m_isMovingNodeItem;
+    bool m_backgroundLoaded;
     void toggleAddNodeMode();
     void applyAddNodeMode();
     SkeletonEditNodeItem *findNodeItemByPos(QPointF pos);

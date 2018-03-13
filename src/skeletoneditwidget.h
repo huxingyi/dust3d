@@ -11,6 +11,8 @@
 class SkeletonEditWidget : public QFrame
 {
     Q_OBJECT
+signals:
+    void sizeChanged();
 public:
     SkeletonEditWidget(QFrame *parent = 0);
     SkeletonEditGraphicsView *graphicsView();

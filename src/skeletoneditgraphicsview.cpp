@@ -14,23 +14,21 @@ SkeletonEditGraphicsView::SkeletonEditGraphicsView(QWidget *parent) :
     m_nextStartNodeItem(NULL),
     m_lastHoverNodeItem(NULL),
     m_lastMousePos(0, 0),
-    m_isMovingNodeItem(false)
+    m_isMovingNodeItem(false),
+    m_backgroundLoaded(false)
 {
     setScene(new QGraphicsScene());
-    
-    setMouseTracking(true);
-    
-    QImage image("../assets/male_werewolf_turnaround_lineart_by_jennette_brown.png");
-    m_backgroundItem = new QGraphicsPixmapItem(QPixmap::fromImage(image));
+
+    m_backgroundItem = new QGraphicsPixmapItem();
     scene()->addItem(m_backgroundItem);
     
     m_pendingNodeItem = new QGraphicsEllipseItem(0, 0, m_initialNodeSize, m_initialNodeSize);
+    m_pendingNodeItem->setVisible(false);
     scene()->addItem(m_pendingNodeItem);
     
     m_pendingEdgeItem = new QGraphicsLineItem(0, 0, 0, 0);
+    m_pendingEdgeItem->setVisible(false);
     scene()->addItem(m_pendingEdgeItem);
-    
-    applyAddNodeMode();
 }
 
 void SkeletonEditGraphicsView::toggleAddNodeMode()
@@ -75,6 +73,9 @@ SkeletonEditNodeItem *SkeletonEditGraphicsView::findNodeItemByPos(QPointF pos)
 
 void SkeletonEditGraphicsView::mousePressEvent(QMouseEvent *event)
 {
+    QWidget::mousePressEvent(event);
+    if (!m_backgroundLoaded)
+        return;
     if (event->button() == Qt::LeftButton) {
         if (!m_inAddNodeMode) {
             if (m_lastHoverNodeItem) {
@@ -93,6 +94,9 @@ float SkeletonEditGraphicsView::findXForSlave(float x)
 
 void SkeletonEditGraphicsView::mouseReleaseEvent(QMouseEvent *event)
 {
+    QWidget::mouseReleaseEvent(event);
+    if (!m_backgroundLoaded)
+        return;
     if (event->button() == Qt::LeftButton) {
         if (m_inAddNodeMode) {
             SkeletonEditNodeItem *masterNode = new SkeletonEditNodeItem(m_pendingNodeItem->rect());
@@ -114,9 +118,7 @@ void SkeletonEditGraphicsView::mouseReleaseEvent(QMouseEvent *event)
         }
         m_isMovingNodeItem = false;
     } else if (event->button() == Qt::RightButton) {
-        if (m_inAddNodeMode) {
-            toggleAddNodeMode();
-        }
+        toggleAddNodeMode();
     }
 }
 
@@ -136,6 +138,8 @@ bool SkeletonEditGraphicsView::canNodeItemMoveTo(SkeletonEditNodeItem *item, QPo
 void SkeletonEditGraphicsView::mouseMoveEvent(QMouseEvent *event)
 {
     QWidget::mouseMoveEvent(event);
+    if (!m_backgroundLoaded)
+        return;
     QPointF pos = mapToScene(event->pos());
     QPointF moveTo = QPointF(pos.x() - m_pendingNodeItem->rect().width() / 2, pos.y() - m_pendingNodeItem->rect().height() / 2);
     if (moveTo.x() < 0)
@@ -251,6 +255,8 @@ bool SkeletonEditGraphicsView::canAddItemRadius(QGraphicsEllipseItem *item, floa
 void SkeletonEditGraphicsView::wheelEvent(QWheelEvent *event)
 {
     QWidget::wheelEvent(event);
+    if (!m_backgroundLoaded)
+        return;
     qreal delta = event->delta();
     AddItemRadius(m_pendingNodeItem, delta);
     if (!m_inAddNodeMode && m_lastHoverNodeItem) {
@@ -274,3 +280,13 @@ void SkeletonEditGraphicsView::setNextStartNodeItem(SkeletonEditNodeItem *item)
         m_nextStartNodeItem->setIsNextStartNode(true);
 }
 
+void SkeletonEditGraphicsView::updateBackgroundImage(const QImage &image)
+{
+    QPixmap pixmap = QPixmap::fromImage(image);
+    m_backgroundItem->setPixmap(pixmap);
+    scene()->setSceneRect(pixmap.rect());
+    if (!m_backgroundLoaded) {
+        m_backgroundLoaded = true;
+        applyAddNodeMode();
+    }
+}

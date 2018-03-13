@@ -30,7 +30,8 @@ SkeletonEditGraphicsView *SkeletonEditWidget::graphicsView()
 void SkeletonEditWidget::resizeEvent(QResizeEvent *event)
 {
     QFrame::resizeEvent(event);
-    m_graphicsView->fitInView(QRectF(0, 0, m_graphicsView->scene()->width(), m_graphicsView->scene()->height()), Qt::KeepAspectRatio);
+    //m_graphicsView->fitInView(QRectF(0, 0, m_graphicsView->scene()->width(), m_graphicsView->scene()->height()), Qt::KeepAspectRatio);
+    emit sizeChanged();
 }
 
 void SkeletonEditWidget::mouseMoveEvent(QMouseEvent *event)

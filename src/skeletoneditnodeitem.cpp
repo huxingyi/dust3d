@@ -31,11 +31,13 @@ SkeletonEditNodeItem *SkeletonEditNodeItem::master()
 void SkeletonEditNodeItem::setMaster(SkeletonEditNodeItem *nodeItem)
 {
     m_master = nodeItem;
+    updateBorder();
 }
 
 void SkeletonEditNodeItem::setSlave(SkeletonEditNodeItem *nodeItem)
 {
     m_slave = nodeItem;
+    updateBorder();
 }
 
 SkeletonEditNodeItem *SkeletonEditNodeItem::pair()
