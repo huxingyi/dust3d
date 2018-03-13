@@ -1,0 +1,7 @@
+<!DOCTYPE RCC><RCC version="1.0">
+<qresource>
+  <file>resources/add.png</file>
+  <file>resources/select.png</file>
+  <file>resources/picture.png</file>
+</qresource>
+</RCC>

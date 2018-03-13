@@ -21,9 +21,6 @@ public:
 
     static bool isTransparent() { return m_transparent; }
     static void setTransparent(bool t) { m_transparent = t; }
-
-    QSize minimumSizeHint() const override;
-    QSize sizeHint() const override;
     
     void updateMesh(Mesh *mesh);
 

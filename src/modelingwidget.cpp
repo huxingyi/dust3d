@@ -34,16 +34,6 @@ ModelingWidget::~ModelingWidget()
     delete m_mesh;
 }
 
-QSize ModelingWidget::minimumSizeHint() const
-{
-    return QSize(50, 50);
-}
-
-QSize ModelingWidget::sizeHint() const
-{
-    return QSize(400, 400);
-}
-
 static void qNormalizeAngle(int &angle)
 {
     while (angle < 0)

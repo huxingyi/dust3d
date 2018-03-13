@@ -1,10 +1,11 @@
 #include <QGraphicsPixmapItem>
+#include <cmath>
 #include "skeletoneditgraphicsview.h"
 #include "skeletoneditnodeitem.h"
 #include "skeletoneditedgeitem.h"
 
 qreal SkeletonEditGraphicsView::m_initialNodeSize = 128;
-qreal SkeletonEditGraphicsView::m_minimalNodeSize = 32;
+qreal SkeletonEditGraphicsView::m_minimalNodeSize = 8;
 
 SkeletonEditGraphicsView::SkeletonEditGraphicsView(QWidget *parent) :
     QGraphicsView(parent),
@@ -20,6 +21,7 @@ SkeletonEditGraphicsView::SkeletonEditGraphicsView(QWidget *parent) :
     setScene(new QGraphicsScene());
 
     m_backgroundItem = new QGraphicsPixmapItem();
+    m_backgroundItem->setOpacity(0.25);
     scene()->addItem(m_backgroundItem);
     
     m_pendingNodeItem = new QGraphicsEllipseItem(0, 0, m_initialNodeSize, m_initialNodeSize);
@@ -257,7 +259,9 @@ void SkeletonEditGraphicsView::wheelEvent(QWheelEvent *event)
     QWidget::wheelEvent(event);
     if (!m_backgroundLoaded)
         return;
-    qreal delta = event->delta();
+    qreal delta = event->delta() / 10;
+    if (fabs(delta) < 1)
+        delta = delta < 0 ? -1.0 : 1.0;
     AddItemRadius(m_pendingNodeItem, delta);
     if (!m_inAddNodeMode && m_lastHoverNodeItem) {
         if (canAddItemRadius(m_lastHoverNodeItem, delta) &&

@@ -29,14 +29,8 @@ int main(int argc, char ** argv)
     qApp->setStyleSheet("QToolTip { color: #ffffff; background-color: #2a82da; border: 1px solid white; }");
     
     QCoreApplication::setApplicationName("Dust 3D");
+    
     MainWindow mainWindow;
-    mainWindow.resize(mainWindow.sizeHint());
-    int desktopArea = QApplication::desktop()->width() *
-                     QApplication::desktop()->height();
-    int widgetArea = mainWindow.width() * mainWindow.height();
-    if (((float)widgetArea / (float)desktopArea) < 0.75f)
-        mainWindow.show();
-    else
-        mainWindow.showMaximized();
+    mainWindow.showMaximized();
     return app.exec();
 }

@@ -1,5 +1,6 @@
 QT += core widgets opengl
 CONFIG += debug
+RESOURCES += resources.qrc
 
 INCLUDEPATH += src
 
