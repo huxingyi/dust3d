@@ -31,6 +31,9 @@ HEADERS += src/turnaroundloader.h
 SOURCES += src/skeletonwidget.cpp
 HEADERS += src/skeletonwidget.h
 
+SOURCES += src/combineeditwidget.cpp
+HEADERS += src/combineeditwidget.h
+
 SOURCES += src/theme.cpp
 HEADERS += src/theme.h
 

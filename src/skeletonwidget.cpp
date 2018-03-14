@@ -92,6 +92,11 @@ SkeletonWidget::SkeletonWidget(QWidget *parent) :
     //assert(connectResult);
 }
 
+SkeletonEditGraphicsView *SkeletonWidget::graphicsView()
+{
+    return m_skeletonEditWidget->graphicsView();
+}
+
 void SkeletonWidget::showModelingWidgetAtCorner()
 {
     if (!m_modelingWidget->isVisible()) {

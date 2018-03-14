@@ -17,6 +17,8 @@ public slots:
 public:
     SkeletonEditGraphicsView(QWidget *parent = 0);
     void updateBackgroundImage(const QImage &image);
+    void saveToXml(const QString &filename);
+    void loadFromXml(const QString &filename);
 protected:
     void mouseMoveEvent(QMouseEvent *event);
     void wheelEvent(QWheelEvent *event);

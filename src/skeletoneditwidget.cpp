@@ -6,7 +6,7 @@
 
 // Modifed from http://doc.qt.io/qt-5/qtwidgets-graphicsview-chip-view-cpp.html
 
-SkeletonEditWidget::SkeletonEditWidget(QFrame *parent) :
+SkeletonEditWidget::SkeletonEditWidget(QWidget *parent) :
     QFrame(parent)
 {
     m_graphicsView = new SkeletonEditGraphicsView(this);

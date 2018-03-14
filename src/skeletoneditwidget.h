@@ -14,7 +14,7 @@ class SkeletonEditWidget : public QFrame
 signals:
     void sizeChanged();
 public:
-    SkeletonEditWidget(QFrame *parent = 0);
+    SkeletonEditWidget(QWidget *parent = 0);
     SkeletonEditGraphicsView *graphicsView();
 protected:
     void resizeEvent(QResizeEvent *event);

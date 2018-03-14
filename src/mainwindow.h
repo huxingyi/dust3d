@@ -4,6 +4,8 @@
 #include <QString>
 #include <QVBoxLayout>
 #include <QPushButton>
+#include <QStackedWidget>
+#include "skeletonwidget.h"
 
 class MainWindow : public QMainWindow
 {
@@ -12,9 +14,15 @@ public:
     MainWindow();
 public slots:
     void updatePageButtons();
+    void saveParts();
+    void loadParts();
 private:
     QPushButton *m_partsPageButton;
     QPushButton *m_combinePageButton;
+    QPushButton *m_motionPageButton;
+    QStackedWidget *m_stackedWidget;
+    QString m_savePartsAs;
+    SkeletonWidget *m_skeletonWidget;
 };
 
 #endif
