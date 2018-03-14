@@ -61,6 +61,21 @@ float SkeletonEditNodeItem::radius()
     return rect().width() / 2;
 }
 
+void SkeletonEditNodeItem::setRadius(float radius)
+{
+    QPointF oldOrigin = origin();
+    setRect(oldOrigin.x() - radius, oldOrigin.y() - radius,
+        radius * 2, radius * 2);
+}
+
+void SkeletonEditNodeItem::setOrigin(QPointF point)
+{
+    QPointF moveBy = point - origin();
+    QRectF newRect = rect();
+    newRect.adjust(moveBy.x(), moveBy.y(), moveBy.x(), moveBy.y());
+    setRect(newRect);
+}
+
 void SkeletonEditNodeItem::setHighlighted(bool highlighted)
 {
     m_highlighted = highlighted;

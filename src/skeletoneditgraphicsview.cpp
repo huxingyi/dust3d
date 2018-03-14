@@ -35,6 +35,8 @@ SkeletonEditGraphicsView::SkeletonEditGraphicsView(QWidget *parent) :
 
 void SkeletonEditGraphicsView::toggleAddNodeMode()
 {
+    if (!m_backgroundLoaded)
+        return;
     m_inAddNodeMode = !m_inAddNodeMode;
     applyAddNodeMode();
 }
@@ -48,12 +50,16 @@ void SkeletonEditGraphicsView::applyAddNodeMode()
 
 void SkeletonEditGraphicsView::turnOffAddNodeMode()
 {
+    if (!m_backgroundLoaded)
+        return;
     m_inAddNodeMode = false;
     applyAddNodeMode();
 }
 
 void SkeletonEditGraphicsView::turnOnAddNodeMode()
 {
+    if (!m_backgroundLoaded)
+        return;
     m_inAddNodeMode = true;
     applyAddNodeMode();
 }
@@ -87,6 +93,12 @@ void SkeletonEditGraphicsView::mousePressEvent(QMouseEvent *event)
         }
     }
     m_lastMousePos = mapToScene(event->pos());
+}
+
+void SkeletonEditGraphicsView::mouseDoubleClickEvent(QMouseEvent *event)
+{
+    QWidget::mouseDoubleClickEvent(event);
+    emit changeTurnaroundTriggered();
 }
 
 float SkeletonEditGraphicsView::findXForSlave(float x)
@@ -286,11 +298,38 @@ void SkeletonEditGraphicsView::setNextStartNodeItem(SkeletonEditNodeItem *item)
 
 void SkeletonEditGraphicsView::updateBackgroundImage(const QImage &image)
 {
+    QSizeF oldSceneSize = scene()->sceneRect().size();
     QPixmap pixmap = QPixmap::fromImage(image);
     m_backgroundItem->setPixmap(pixmap);
     scene()->setSceneRect(pixmap.rect());
+    adjustItems(oldSceneSize, scene()->sceneRect().size());
     if (!m_backgroundLoaded) {
         m_backgroundLoaded = true;
         applyAddNodeMode();
+    }
+}
+
+void SkeletonEditGraphicsView::adjustItems(QSizeF oldSceneSize, QSizeF newSceneSize)
+{
+    if (oldSceneSize == newSceneSize)
+        return;
+    float radiusMul = (float)newSceneSize.height() / oldSceneSize.height();
+    float xMul = (float)newSceneSize.width() / oldSceneSize.width();
+    float yMul = radiusMul;
+    QList<QGraphicsItem *>::iterator it;
+    QList<QGraphicsItem *> list = scene()->items();
+    for (it = list.begin(); it != list.end(); ++it) {
+        if ((*it)->data(0).toString() == "node") {
+            SkeletonEditNodeItem *nodeItem = static_cast<SkeletonEditNodeItem *>(*it);
+            nodeItem->setRadius(nodeItem->radius() * radiusMul);
+            QPointF oldOrigin = nodeItem->origin();
+            nodeItem->setOrigin(QPointF(oldOrigin.x() * xMul, oldOrigin.y() * yMul));
+        }
+    }
+    for (it = list.begin(); it != list.end(); ++it) {
+        if ((*it)->data(0).toString() == "edge") {
+            SkeletonEditEdgeItem *edgeItem = static_cast<SkeletonEditEdgeItem *>(*it);
+            edgeItem->updatePosition();
+        }
     }
 }

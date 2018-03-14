@@ -5,6 +5,8 @@
 #include <QToolBar>
 #include <QThread>
 #include <QFileDialog>
+#include <QApplication>
+#include <QDesktopWidget>
 #include <assert.h>
 #include "mainwindow.h"
 #include "skeletoneditwidget.h"
@@ -53,28 +55,42 @@ MainWindow::MainWindow() :
     m_modelingWidget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     m_modelingWidget->setWindowFlags(Qt::Tool | Qt::Window);
     m_modelingWidget->setWindowTitle("3D Model");
-    
-    QPushButton *changeTurnaroundButton = new QPushButton("");
-    changeTurnaroundButton->setIcon(QIcon(":/resources/picture.png"));
-    
+
     QVBoxLayout *rightLayout = new QVBoxLayout;
     rightLayout->addSpacing(10);
-    rightLayout->addWidget(changeTurnaroundButton);
+    
+    //QPushButton *changeTurnaroundButton = new QPushButton("");
+    //changeTurnaroundButton->setIcon(QIcon(":/resources/picture.png"));
+    //changeTurnaroundButton->setToolTip(tr("Change turnaround reference image"));
+    //rightLayout->addWidget(changeTurnaroundButton);
+    
     rightLayout->addStretch();
     
     QToolBar *toolbar = new QToolBar;
     toolbar->setIconSize(QSize(16, 16));
     toolbar->setOrientation(Qt::Vertical);
+    
     QAction *addAction = new QAction(tr("Add"), this);
     addAction->setIcon(QIcon(":/resources/add.png"));
+    toolbar->addAction(addAction);
+    
     QAction *selectAction = new QAction(tr("Select"), this);
     selectAction->setIcon(QIcon(":/resources/select.png"));
-    toolbar->addAction(addAction);
     toolbar->addAction(selectAction);
+    
+    QAction *rangeSelectAction = new QAction(tr("Range Select"), this);
+    rangeSelectAction->setIcon(QIcon(":/resources/rangeselect.png"));
+    toolbar->addAction(rangeSelectAction);
+    
+    //m_clipTableWidget = new QTableWidget;
+    //m_clipTableWidget->setFixedWidth(32);
+    //m_clipTableWidget->verticalHeader()->setVisible(false);
     
     QVBoxLayout *leftLayout = new QVBoxLayout;
     leftLayout->addWidget(toolbar);
     leftLayout->addStretch();
+    //leftLayout->addWidget(m_clipTableWidget);
+    leftLayout->addSpacing(10);
     
     QHBoxLayout *middleLayout = new QHBoxLayout;
     middleLayout->addLayout(leftLayout);
@@ -106,22 +122,28 @@ MainWindow::MainWindow() :
     connectResult = connect(m_skeletonEditWidget, SIGNAL(sizeChanged()), this, SLOT(turnaroundChanged()));
     assert(connectResult);
     
-    connectResult = connect(changeTurnaroundButton, SIGNAL(released()), this, SLOT(changeTurnaround()));
+    connectResult = connect(m_skeletonEditWidget->graphicsView(), SIGNAL(changeTurnaroundTriggered()), this, SLOT(changeTurnaround()));
     assert(connectResult);
+    
+    //connectResult = connect(clipButton, SIGNAL(clicked()), this, SLOT(saveClip()));
+    //assert(connectResult);
+}
+
+void MainWindow::showModelingWidgetAtCorner()
+{
+    if (!m_modelingWidget->isVisible()) {
+        QPoint pos = QPoint(QApplication::desktop()->width(),
+            QApplication::desktop()->height());
+        m_modelingWidget->move(pos.x() - m_modelingWidget->width(),
+            pos.y() - m_modelingWidget->height());
+        m_modelingWidget->show();
+    }
 }
 
 void MainWindow::meshReady()
 {
     Mesh *resultMesh = m_skeletonToMesh->takeResultMesh();
-    if (resultMesh) {
-        if (!m_modelingWidget->isVisible()) {
-            QRect referenceRect = m_skeletonEditWidget->geometry();
-            QPoint pos = QPoint(referenceRect.right() - m_modelingWidget->width(),
-                referenceRect.bottom() - m_modelingWidget->height());
-            m_modelingWidget->move(pos.x(), pos.y());
-            m_modelingWidget->show();
-        }
-    }
+    showModelingWidgetAtCorner();
     m_modelingWidget->updateMesh(resultMesh);
     delete m_skeletonToMesh;
     m_skeletonToMesh = NULL;
@@ -195,4 +217,15 @@ void MainWindow::changeTurnaround()
         return;
     m_turnaroundFilename = fileName;
     turnaroundChanged();
+}
+
+void MainWindow::saveClip()
+{
+    QImage image = m_modelingWidget->grabFramebuffer();
+    //QTableWidgetItem *item = new QTableWidgetItem;
+    //item->setSizeHint(QSize(32, 32));
+    //item->setIcon(QPixmap::fromImage(image.scaled(32, 32)));
+    //m_clipTableWidget->insertRow(m_clipTableWidget->rowCount());
+    //m_clipTableWidget->setItem(m_clipTableWidget->rowCount() - 1, 0, item);
+    //image.save("/Users/jeremy/Repositories/dust3d/gl.png");
 }

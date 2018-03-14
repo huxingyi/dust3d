@@ -10,6 +10,7 @@ class SkeletonEditGraphicsView : public QGraphicsView
     Q_OBJECT
 signals:
     void nodesChanged();
+    void changeTurnaroundTriggered();
 public slots:
     void turnOffAddNodeMode();
     void turnOnAddNodeMode();
@@ -21,6 +22,7 @@ protected:
     void wheelEvent(QWheelEvent *event);
     void mouseReleaseEvent(QMouseEvent *event);
     void mousePressEvent(QMouseEvent *event);
+    void mouseDoubleClickEvent(QMouseEvent *event);
 private:
     QGraphicsPixmapItem *m_backgroundItem;
     QGraphicsEllipseItem *m_pendingNodeItem;
@@ -33,6 +35,7 @@ private:
     QPointF m_lastMousePos;
     bool m_isMovingNodeItem;
     bool m_backgroundLoaded;
+private:
     void toggleAddNodeMode();
     void applyAddNodeMode();
     SkeletonEditNodeItem *findNodeItemByPos(QPointF pos);
@@ -41,6 +44,7 @@ private:
     bool canNodeItemMoveTo(SkeletonEditNodeItem *item, QPointF moveTo);
     void AddItemRadius(QGraphicsEllipseItem *item, float delta);
     bool canAddItemRadius(QGraphicsEllipseItem *item, float delta);
+    void adjustItems(QSizeF oldSceneSize, QSizeF newSceneSize);
 };
 
 #endif

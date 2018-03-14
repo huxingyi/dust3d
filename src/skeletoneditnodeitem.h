@@ -19,6 +19,8 @@ public:
     SkeletonEditNodeItem *master();
     SkeletonEditNodeItem *slave();
     SkeletonEditNodeItem *pair();
+    void setRadius(float radius);
+    void setOrigin(QPointF point);
 private:
     bool m_highlighted;
     bool m_isNextStartNode;
