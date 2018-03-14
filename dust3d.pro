@@ -28,6 +28,9 @@ HEADERS += src/skeletontomesh.h
 SOURCES += src/turnaroundloader.cpp
 HEADERS += src/turnaroundloader.h
 
+SOURCES += src/skeletonwidget.cpp
+HEADERS += src/skeletonwidget.h
+
 SOURCES += src/theme.cpp
 HEADERS += src/theme.h
 
