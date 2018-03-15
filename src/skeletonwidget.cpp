@@ -9,7 +9,6 @@
 #include <QDesktopWidget>
 #include <assert.h>
 #include "skeletonwidget.h"
-#include "skeletoneditwidget.h"
 #include "meshlite.h"
 #include "skeletontomesh.h"
 #include "turnaroundloader.h"
@@ -24,7 +23,12 @@ SkeletonWidget::SkeletonWidget(QWidget *parent) :
     QHBoxLayout *topLayout = new QHBoxLayout;
     topLayout->addStretch();
     
-    m_skeletonEditWidget = new SkeletonEditWidget;
+    m_graphicsView = new SkeletonEditGraphicsView(this);
+    m_graphicsView->setRenderHint(QPainter::Antialiasing, false);
+    m_graphicsView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    m_graphicsView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    
+    m_graphicsView->setBackgroundBrush(QBrush(QWidget::palette().color(QWidget::backgroundRole()), Qt::SolidPattern));
     
     m_modelingWidget = new ModelingWidget(this);
     m_modelingWidget->setMinimumSize(128, 128);
@@ -59,7 +63,7 @@ SkeletonWidget::SkeletonWidget(QWidget *parent) :
     
     QHBoxLayout *middleLayout = new QHBoxLayout;
     middleLayout->addLayout(leftLayout);
-    middleLayout->addWidget(m_skeletonEditWidget);
+    middleLayout->addWidget(m_graphicsView);
     middleLayout->addLayout(rightLayout);
     
     QVBoxLayout *mainLayout = new QVBoxLayout;
@@ -73,19 +77,19 @@ SkeletonWidget::SkeletonWidget(QWidget *parent) :
     
     bool connectResult;
     
-    connectResult = connect(addAction, SIGNAL(triggered(bool)), m_skeletonEditWidget->graphicsView(), SLOT(turnOnAddNodeMode()));
+    connectResult = connect(addAction, SIGNAL(triggered(bool)), m_graphicsView, SLOT(turnOnAddNodeMode()));
     assert(connectResult);
     
-    connectResult = connectResult = connect(selectAction, SIGNAL(triggered(bool)), m_skeletonEditWidget->graphicsView(), SLOT(turnOffAddNodeMode()));
+    connectResult = connectResult = connect(selectAction, SIGNAL(triggered(bool)), m_graphicsView, SLOT(turnOffAddNodeMode()));
     assert(connectResult);
     
-    connectResult = connect(m_skeletonEditWidget->graphicsView(), SIGNAL(nodesChanged()), this, SLOT(skeletonChanged()));
+    connectResult = connect(m_graphicsView, SIGNAL(nodesChanged()), this, SLOT(skeletonChanged()));
     assert(connectResult);
     
-    connectResult = connect(m_skeletonEditWidget, SIGNAL(sizeChanged()), this, SLOT(turnaroundChanged()));
+    connectResult = connect(m_graphicsView, SIGNAL(sizeChanged()), this, SLOT(turnaroundChanged()));
     assert(connectResult);
     
-    connectResult = connect(m_skeletonEditWidget->graphicsView(), SIGNAL(changeTurnaroundTriggered()), this, SLOT(changeTurnaround()));
+    connectResult = connect(m_graphicsView, SIGNAL(changeTurnaroundTriggered()), this, SLOT(changeTurnaround()));
     assert(connectResult);
     
     //connectResult = connect(clipButton, SIGNAL(clicked()), this, SLOT(saveClip()));
@@ -94,7 +98,7 @@ SkeletonWidget::SkeletonWidget(QWidget *parent) :
 
 SkeletonEditGraphicsView *SkeletonWidget::graphicsView()
 {
-    return m_skeletonEditWidget->graphicsView();
+    return m_graphicsView;
 }
 
 void SkeletonWidget::showModelingWidgetAtCorner()
@@ -130,7 +134,7 @@ void SkeletonWidget::skeletonChanged()
     m_skeletonDirty = false;
     
     QThread *thread = new QThread;
-    m_skeletonToMesh = new SkeletonToMesh(m_skeletonEditWidget->graphicsView());
+    m_skeletonToMesh = new SkeletonToMesh(m_graphicsView);
     m_skeletonToMesh->moveToThread(thread);
     connect(thread, SIGNAL(started()), m_skeletonToMesh, SLOT(process()));
     connect(m_skeletonToMesh, SIGNAL(finished()), this, SLOT(meshReady()));
@@ -153,7 +157,7 @@ void SkeletonWidget::turnaroundChanged()
     
     QThread *thread = new QThread;
     m_turnaroundLoader = new TurnaroundLoader(m_turnaroundFilename,
-        m_skeletonEditWidget->rect().size());
+        m_graphicsView->rect().size());
     m_turnaroundLoader->moveToThread(thread);
     connect(thread, SIGNAL(started()), m_turnaroundLoader, SLOT(process()));
     connect(m_turnaroundLoader, SIGNAL(finished()), this, SLOT(turnaroundImageReady()));
@@ -166,7 +170,7 @@ void SkeletonWidget::turnaroundImageReady()
 {
     QImage *backgroundImage = m_turnaroundLoader->takeResultImage();
     if (backgroundImage && backgroundImage->width() > 0 && backgroundImage->height() > 0) {
-        m_skeletonEditWidget->graphicsView()->updateBackgroundImage(*backgroundImage);
+        m_graphicsView->updateBackgroundImage(*backgroundImage);
     }
     delete backgroundImage;
     delete m_turnaroundLoader;
@@ -187,13 +191,3 @@ void SkeletonWidget::changeTurnaround()
     turnaroundChanged();
 }
 
-void SkeletonWidget::saveClip()
-{
-    QImage image = m_modelingWidget->grabFramebuffer();
-    //QTableWidgetItem *item = new QTableWidgetItem;
-    //item->setSizeHint(QSize(32, 32));
-    //item->setIcon(QPixmap::fromImage(image.scaled(32, 32)));
-    //m_clipTableWidget->insertRow(m_clipTableWidget->rowCount());
-    //m_clipTableWidget->setItem(m_clipTableWidget->rowCount() - 1, 0, item);
-    //image.save("/Users/jeremy/Repositories/dust3d/gl.png");
-}

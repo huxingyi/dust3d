@@ -10,9 +10,6 @@ HEADERS += src/mainwindow.h
 SOURCES += src/modelingwidget.cpp
 HEADERS += src/modelingwidget.h
 
-SOURCES += src/skeletoneditwidget.cpp
-HEADERS += src/skeletoneditwidget.h
-
 SOURCES += src/skeletoneditgraphicsview.cpp
 HEADERS += src/skeletoneditgraphicsview.h
 
@@ -31,8 +28,8 @@ HEADERS += src/turnaroundloader.h
 SOURCES += src/skeletonwidget.cpp
 HEADERS += src/skeletonwidget.h
 
-SOURCES += src/combineeditwidget.cpp
-HEADERS += src/combineeditwidget.h
+SOURCES += src/ds3file.cpp
+HEADERS += src/ds3file.h
 
 SOURCES += src/theme.cpp
 HEADERS += src/theme.h

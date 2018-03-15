@@ -14,14 +14,13 @@ public:
     MainWindow();
 public slots:
     void updatePageButtons();
-    void saveParts();
-    void loadParts();
+    void saveModel();
+    void loadModel();
 private:
-    QPushButton *m_partsPageButton;
-    QPushButton *m_combinePageButton;
-    QPushButton *m_motionPageButton;
+    QPushButton *m_modelPageButton;
+    QPushButton *m_sharePageButton;
     QStackedWidget *m_stackedWidget;
-    QString m_savePartsAs;
+    QString m_saveModelAs;
     SkeletonWidget *m_skeletonWidget;
 };
 

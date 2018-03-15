@@ -5,7 +5,6 @@
 #include <QVBoxLayout>
 #include <QPushButton>
 #include "modelingwidget.h"
-#include "skeletoneditwidget.h"
 #include "skeletontomesh.h"
 #include "turnaroundloader.h"
 #include "skeletoneditgraphicsview.h"
@@ -22,11 +21,10 @@ public slots:
     void turnaroundChanged();
     void turnaroundImageReady();
     void changeTurnaround();
-    void saveClip();
     void showModelingWidgetAtCorner();
 private:
     ModelingWidget *m_modelingWidget;
-    SkeletonEditWidget *m_skeletonEditWidget;
+    SkeletonEditGraphicsView *m_graphicsView;
     SkeletonToMesh *m_skeletonToMesh;
     bool m_skeletonDirty;
     TurnaroundLoader *m_turnaroundLoader;

@@ -8,17 +8,18 @@
 #include <QApplication>
 #include <QDesktopWidget>
 #include <QStackedWidget>
+#include <QXmlStreamReader>
+#include <QBuffer>
 #include <assert.h>
 #include "mainwindow.h"
 #include "skeletonwidget.h"
-#include "combineeditwidget.h"
 #include "theme.h"
+#include "ds3file.h"
 
 MainWindow::MainWindow()
 {
-    m_partsPageButton = new QPushButton("Parts");
-    m_combinePageButton = new QPushButton("Combine");
-    m_motionPageButton = new QPushButton("Motion");
+    m_modelPageButton = new QPushButton("Model");
+    m_sharePageButton = new QPushButton("Share");
     
     QWidget *hrWidget = new QWidget;
     hrWidget->setFixedHeight(2);
@@ -27,25 +28,22 @@ MainWindow::MainWindow()
     hrWidget->setContentsMargins(0, 0, 0, 0);
     
     QButtonGroup *pageButtonGroup = new QButtonGroup;
-    pageButtonGroup->addButton(m_partsPageButton);
-    pageButtonGroup->addButton(m_combinePageButton);
-    pageButtonGroup->addButton(m_motionPageButton);
+    pageButtonGroup->addButton(m_modelPageButton);
+    pageButtonGroup->addButton(m_sharePageButton);
     
-    m_partsPageButton->setCheckable(true);
-    m_combinePageButton->setCheckable(true);
-    m_motionPageButton->setCheckable(true);
+    m_modelPageButton->setCheckable(true);
+    m_sharePageButton->setCheckable(true);
     
     pageButtonGroup->setExclusive(true);
     
-    m_combinePageButton->setChecked(true);
+    m_modelPageButton->setChecked(true);
     
     QHBoxLayout *topButtonsLayout = new QHBoxLayout;
     topButtonsLayout->setContentsMargins(0, 0, 0, 0);
     topButtonsLayout->setSpacing(0);
     topButtonsLayout->addStretch();
-    topButtonsLayout->addWidget(m_partsPageButton);
-    topButtonsLayout->addWidget(m_combinePageButton);
-    topButtonsLayout->addWidget(m_motionPageButton);
+    topButtonsLayout->addWidget(m_modelPageButton);
+    topButtonsLayout->addWidget(m_sharePageButton);
     topButtonsLayout->addStretch();
     
     QVBoxLayout *topLayout = new QVBoxLayout;
@@ -54,86 +52,46 @@ MainWindow::MainWindow()
     topLayout->addLayout(topButtonsLayout);
     topLayout->addWidget(hrWidget);
     
-    QVBoxLayout *partsRightLayout = new QVBoxLayout;
+    QVBoxLayout *modelRightLayout = new QVBoxLayout;
     
-    partsRightLayout->addSpacing(20);
+    modelRightLayout->addSpacing(20);
     
     QPushButton *changeTurnaroundButton = new QPushButton("    Change Turnaround    ");
-    partsRightLayout->addWidget(changeTurnaroundButton);
+    modelRightLayout->addWidget(changeTurnaroundButton);
     
-    QPushButton *exportPartsModelButton = new QPushButton("    Export Model(.obj)    ");
-    partsRightLayout->addWidget(exportPartsModelButton);
+    QPushButton *exportPartsModelButton = new QPushButton("    Export    ");
+    modelRightLayout->addWidget(exportPartsModelButton);
     
-    QPushButton *newPartsButton = new QPushButton("    New Parts    ");
-    partsRightLayout->addWidget(newPartsButton);
+    QPushButton *newModelButton = new QPushButton("    New    ");
+    modelRightLayout->addWidget(newModelButton);
     
-    QPushButton *loadPartsButton = new QPushButton("    Load Parts    ");
-    partsRightLayout->addWidget(loadPartsButton);
+    QPushButton *loadModelButton = new QPushButton("    Load    ");
+    modelRightLayout->addWidget(loadModelButton);
     
-    QPushButton *savePartsButton = new QPushButton("    Save Parts    ");
-    partsRightLayout->addWidget(savePartsButton);
+    QPushButton *saveModelButton = new QPushButton("    Save    ");
+    modelRightLayout->addWidget(saveModelButton);
     
-    QPushButton *savePartsAsButton = new QPushButton("    Save Parts as    ");
-    partsRightLayout->addWidget(savePartsAsButton);
-    savePartsAsButton->hide();
+    QPushButton *saveModelAsButton = new QPushButton("    Save as    ");
+    modelRightLayout->addWidget(saveModelAsButton);
+    saveModelAsButton->hide();
     
-    partsRightLayout->addStretch();
+    modelRightLayout->addStretch();
     
     SkeletonWidget *skeletonWidget = new SkeletonWidget(this);
     m_skeletonWidget = skeletonWidget;
     
-    QHBoxLayout *partsPageLayout = new QHBoxLayout;
-    partsPageLayout->addWidget(skeletonWidget);
-    partsPageLayout->addLayout(partsRightLayout);
+    QHBoxLayout *modelPageLayout = new QHBoxLayout;
+    modelPageLayout->addWidget(skeletonWidget);
+    modelPageLayout->addLayout(modelRightLayout);
     
-    QWidget *partsPageWidget = new QWidget;
-    partsPageWidget->setLayout(partsPageLayout);
+    QWidget *modelPageWidget = new QWidget;
+    modelPageWidget->setLayout(modelPageLayout);
     
-    QVBoxLayout *combineRightLayout = new QVBoxLayout;
-    
-    combineRightLayout->addSpacing(20);
-    
-    QPushButton *importPartsToCombineButton = new QPushButton("    Import Parts    ");
-    combineRightLayout->addWidget(importPartsToCombineButton);
-    
-    QPushButton *exportCombineModelButton = new QPushButton("    Export Model(.obj)    ");
-    combineRightLayout->addWidget(exportCombineModelButton);
-    
-    QPushButton *newCombineButton = new QPushButton("    New Combine    ");
-    combineRightLayout->addWidget(newCombineButton);
-    
-    QPushButton *loadCombineButton = new QPushButton("    Load Combine    ");
-    combineRightLayout->addWidget(loadCombineButton);
-    
-    QPushButton *saveCombineButton = new QPushButton("    Save Combine    ");
-    combineRightLayout->addWidget(saveCombineButton);
-    
-    QPushButton *saveCombineAsButton = new QPushButton("    Save Combine as    ");
-    combineRightLayout->addWidget(saveCombineAsButton);
-    saveCombineAsButton->hide();
-    
-    combineRightLayout->addStretch();
-    
-    combineRightLayout->setSizeConstraint(QLayout::SetMinimumSize);
-    
-    CombineEditWidget *combineEditWidget = new CombineEditWidget();
-    
-    QHBoxLayout *combinePageLayout = new QHBoxLayout;
-    combinePageLayout->addSpacing(10);
-    combinePageLayout->addWidget(combineEditWidget);
-    combinePageLayout->addStretch();
-    combinePageLayout->addLayout(combineRightLayout);
-    combinePageLayout->addSpacing(10);
-    
-    QWidget *combinePageWidget = new QWidget;
-    combinePageWidget->setLayout(combinePageLayout);
-    
-    QWidget *motionPageWidget = new QWidget;
+    QWidget *sharePageWidget = new QWidget;
     
     QStackedWidget *stackedWidget = new QStackedWidget;
-    stackedWidget->addWidget(partsPageWidget);
-    stackedWidget->addWidget(combinePageWidget);
-    stackedWidget->addWidget(motionPageWidget);
+    stackedWidget->addWidget(modelPageWidget);
+    stackedWidget->addWidget(sharePageWidget);
     
     m_stackedWidget = stackedWidget;
     
@@ -152,60 +110,85 @@ MainWindow::MainWindow()
     connectResult = connect(changeTurnaroundButton, SIGNAL(clicked()), skeletonWidget, SLOT(changeTurnaround()));
     assert(connectResult);
     
-    connectResult = connect(m_partsPageButton, SIGNAL(clicked()), this, SLOT(updatePageButtons()));
+    connectResult = connect(m_modelPageButton, SIGNAL(clicked()), this, SLOT(updatePageButtons()));
     assert(connectResult);
     
-    connectResult = connect(m_combinePageButton, SIGNAL(clicked()), this, SLOT(updatePageButtons()));
+    connectResult = connect(m_sharePageButton, SIGNAL(clicked()), this, SLOT(updatePageButtons()));
     assert(connectResult);
     
-    connectResult = connect(m_motionPageButton, SIGNAL(clicked()), this, SLOT(updatePageButtons()));
+    connectResult = connect(saveModelButton, SIGNAL(clicked()), this, SLOT(saveModel()));
     assert(connectResult);
     
-    connectResult = connect(savePartsButton, SIGNAL(clicked()), this, SLOT(saveParts()));
-    assert(connectResult);
-    
-    connectResult = connect(loadPartsButton, SIGNAL(clicked()), this, SLOT(loadParts()));
+    connectResult = connect(loadModelButton, SIGNAL(clicked()), this, SLOT(loadModel()));
     assert(connectResult);
     
     updatePageButtons();
 }
 
-void MainWindow::loadParts()
+void MainWindow::loadModel()
 {
     QString filename = QFileDialog::getOpenFileName(this,
-        tr("Load Parts"), ".",
-        tr("Xml files (*.xml)"));
+        tr("Load Model"), ".",
+        tr("Dust 3D Project (*.ds3)"));
     if (filename.isEmpty())
         return;
-    m_skeletonWidget->graphicsView()->loadFromXml(filename);
+    Ds3FileReader ds3Reader(filename);
+    for (int i = 0; i < ds3Reader.items().size(); ++i) {
+        Ds3ReaderItem item = ds3Reader.items().at(i);
+        if (item.type == "model") {
+            QByteArray data;
+            ds3Reader.loadItem(item.name, &data);
+            QXmlStreamReader xmlReader(data);
+            m_skeletonWidget->graphicsView()->loadFromXmlStream(xmlReader);
+        } else if (item.type == "asset") {
+            if (item.name == "canvas.png") {
+                QByteArray data;
+                ds3Reader.loadItem(item.name, &data);
+                QImage image = QImage::fromData(data, "PNG");
+                m_skeletonWidget->graphicsView()->updateBackgroundImage(image);
+            }
+        }
+    }
 }
 
-void MainWindow::saveParts()
+void MainWindow::saveModel()
 {
-    if (m_savePartsAs.isEmpty()) {
-        m_savePartsAs = QFileDialog::getSaveFileName(this,
-           tr("Save Parts"), ".",
-           tr("Xml files (*.xml)"));
-        if (m_savePartsAs.isEmpty()) {
+    if (m_saveModelAs.isEmpty()) {
+        m_saveModelAs = QFileDialog::getSaveFileName(this,
+           tr("Save Model"), ".",
+           tr("Dust 3D Project (*.ds3)"));
+        if (m_saveModelAs.isEmpty()) {
             return;
         }
     }
-    m_skeletonWidget->graphicsView()->saveToXml(m_savePartsAs);
+    
+    Ds3FileWriter ds3Writer;
+    
+    QByteArray modelXml;
+    QXmlStreamWriter stream(&modelXml);
+    m_skeletonWidget->graphicsView()->saveToXmlStream(&stream);
+    if (modelXml.size() > 0)
+        ds3Writer.add("model1.xml", "model", &modelXml);
+    
+    QByteArray imageByteArray;
+    QBuffer pngBuffer(&imageByteArray);
+    pngBuffer.open(QIODevice::WriteOnly);
+    m_skeletonWidget->graphicsView()->backgroundImage().save(&pngBuffer, "PNG");
+    if (imageByteArray.size() > 0)
+        ds3Writer.add("canvas.png", "asset", &imageByteArray);
+    
+    ds3Writer.save(m_saveModelAs);
 }
 
 void MainWindow::updatePageButtons()
 {
-    if (m_partsPageButton->isChecked()) {
+    if (m_modelPageButton->isChecked()) {
         m_stackedWidget->setCurrentIndex(0);
     }
-    if (m_combinePageButton->isChecked()) {
+    if (m_sharePageButton->isChecked()) {
         m_stackedWidget->setCurrentIndex(1);
     }
-    if (m_motionPageButton->isChecked()) {
-        m_stackedWidget->setCurrentIndex(2);
-    }
-    m_partsPageButton->setStyleSheet(m_partsPageButton->isChecked() ? Theme::tabButtonSelectedStylesheet : Theme::tabButtonStylesheet);
-    m_combinePageButton->setStyleSheet(m_combinePageButton->isChecked() ? Theme::tabButtonSelectedStylesheet : Theme::tabButtonStylesheet);
-    m_motionPageButton->setStyleSheet(m_motionPageButton->isChecked() ? Theme::tabButtonSelectedStylesheet : Theme::tabButtonStylesheet);
+    m_modelPageButton->setStyleSheet(m_modelPageButton->isChecked() ? Theme::tabButtonSelectedStylesheet : Theme::tabButtonStylesheet);
+    m_sharePageButton->setStyleSheet(m_sharePageButton->isChecked() ? Theme::tabButtonSelectedStylesheet : Theme::tabButtonStylesheet);
 }
 

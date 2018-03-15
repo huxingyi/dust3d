@@ -1,6 +1,7 @@
 #include <QGraphicsPixmapItem>
 #include <QXmlStreamWriter>
 #include <QFile>
+#include <QApplication>
 #include <cmath>
 #include <map>
 #include <vector>
@@ -48,7 +49,7 @@ void SkeletonEditGraphicsView::toggleAddNodeMode()
 void SkeletonEditGraphicsView::applyAddNodeMode()
 {
     m_pendingNodeItem->setVisible(m_inAddNodeMode);
-    m_pendingEdgeItem->setVisible(m_inAddNodeMode);
+    m_pendingEdgeItem->setVisible(m_inAddNodeMode && m_nextStartNodeItem);
     setMouseTracking(true);
 }
 
@@ -93,6 +94,10 @@ void SkeletonEditGraphicsView::mousePressEvent(QMouseEvent *event)
             if (m_lastHoverNodeItem) {
                 setNextStartNodeItem(m_lastHoverNodeItem->master());
                 m_lastHoverNodeItem = NULL;
+            } else {
+                if (m_nextStartNodeItem) {
+                    setNextStartNodeItem(NULL);
+                }
             }
         }
     }
@@ -102,12 +107,28 @@ void SkeletonEditGraphicsView::mousePressEvent(QMouseEvent *event)
 void SkeletonEditGraphicsView::mouseDoubleClickEvent(QMouseEvent *event)
 {
     QWidget::mouseDoubleClickEvent(event);
-    emit changeTurnaroundTriggered();
+    if (QApplication::keyboardModifiers() & Qt::ControlModifier)
+        emit changeTurnaroundTriggered();
 }
 
 float SkeletonEditGraphicsView::findXForSlave(float x)
 {
     return x - m_backgroundItem->boundingRect().width() / 4;
+}
+
+void SkeletonEditGraphicsView::keyPressEvent(QKeyEvent *event)
+{
+    QWidget::keyPressEvent(event);
+    if (!m_backgroundLoaded)
+        return;
+    if (event->key() == Qt::Key_A)
+        toggleAddNodeMode();
+}
+
+void SkeletonEditGraphicsView::resizeEvent(QResizeEvent *event)
+{
+    QFrame::resizeEvent(event);
+    emit sizeChanged();
 }
 
 void SkeletonEditGraphicsView::mouseReleaseEvent(QMouseEvent *event)
@@ -135,8 +156,6 @@ void SkeletonEditGraphicsView::mouseReleaseEvent(QMouseEvent *event)
             emit nodesChanged();
         }
         m_isMovingNodeItem = false;
-    } else if (event->button() == Qt::RightButton) {
-        toggleAddNodeMode();
     }
 }
 
@@ -313,6 +332,16 @@ void SkeletonEditGraphicsView::updateBackgroundImage(const QImage &image)
     }
 }
 
+QPixmap SkeletonEditGraphicsView::backgroundImage()
+{
+    return m_backgroundItem->pixmap();
+}
+
+bool SkeletonEditGraphicsView::hasBackgroundImage()
+{
+    return m_backgroundLoaded;
+}
+
 void SkeletonEditGraphicsView::adjustItems(QSizeF oldSceneSize, QSizeF newSceneSize)
 {
     if (oldSceneSize == newSceneSize)
@@ -338,13 +367,8 @@ void SkeletonEditGraphicsView::adjustItems(QSizeF oldSceneSize, QSizeF newSceneS
     }
 }
 
-void SkeletonEditGraphicsView::loadFromXml(const QString &filename)
+void SkeletonEditGraphicsView::loadFromXmlStream(QXmlStreamReader &reader)
 {
-    QFile file(filename);
-    if (!file.open(QFile::ReadOnly | QFile::Text)) {
-        return;
-    }
-    
     float radiusMul = 1.0;
     float xMul = 1.0;
     float yMul = radiusMul;
@@ -353,33 +377,34 @@ void SkeletonEditGraphicsView::loadFromXml(const QString &filename)
     std::vector<std::map<QString, QString>> pendingEdges;
     std::map<QString, SkeletonEditNodeItem *> addedNodeMapById;
     
-    QXmlStreamReader xml;
-    xml.setDevice(&file);
-    while (!xml.atEnd()) {
-        xml.readNext();
-        printf("tokenString:%s\n", xml.tokenString().toUtf8().constData());
-        if (xml.isStartElement()) {
-            printf("name:%s\n", xml.name().toUtf8().constData());
-            if (xml.name() == "canvas") {
-                QString canvasWidth = xml.attributes().value("width").toString();
-                QString canvasHeight = xml.attributes().value("height").toString();
+    while (!reader.atEnd()) {
+        reader.readNext();
+        if (reader.isStartElement()) {
+            if (reader.name() == "canvas") {
+                QString canvasWidth = reader.attributes().value("width").toString();
+                QString canvasHeight = reader.attributes().value("height").toString();
                 float canvasHeightWidth = canvasWidth.toFloat();
                 float canvasHeightVal = canvasHeight.toFloat();
+                if (!hasBackgroundImage()) {
+                    QPixmap emptyImage((int)canvasHeightWidth, (int)canvasHeightVal);
+                    emptyImage.fill(QWidget::palette().color(QWidget::backgroundRole()));
+                    updateBackgroundImage(emptyImage.toImage());
+                }
                 if (canvasHeightVal > 0)
                     radiusMul = (float)scene()->sceneRect().height() / canvasHeightVal;
                 if (canvasHeightWidth > 0)
                     xMul = (float)scene()->sceneRect().width() / canvasHeightWidth;
                 yMul = radiusMul;
-            } else if (xml.name() == "origin") {
+            } else if (reader.name() == "origin") {
                 if (pendingNodes.size() > 0) {
-                    pendingNodes[pendingNodes.size() - 1]["x"] = QString("%1").arg(xml.attributes().value("x").toString().toFloat() * xMul);
-                    pendingNodes[pendingNodes.size() - 1]["y"] = QString("%1").arg(xml.attributes().value("y").toString().toFloat() * yMul);
+                    pendingNodes[pendingNodes.size() - 1]["x"] = QString("%1").arg(reader.attributes().value("x").toString().toFloat() * xMul);
+                    pendingNodes[pendingNodes.size() - 1]["y"] = QString("%1").arg(reader.attributes().value("y").toString().toFloat() * yMul);
                 }
-            } else if (xml.name() == "node") {
-                QString nodeId = xml.attributes().value("id").toString();
-                QString nodeType = xml.attributes().value("type").toString();
-                QString nodePairId = xml.attributes().value("pair").toString();
-                QString nodeRadius = xml.attributes().value("radius").toString();
+            } else if (reader.name() == "node") {
+                QString nodeId = reader.attributes().value("id").toString();
+                QString nodeType = reader.attributes().value("type").toString();
+                QString nodePairId = reader.attributes().value("pair").toString();
+                QString nodeRadius = reader.attributes().value("radius").toString();
                 std::map<QString, QString> pendingNode;
                 pendingNode["id"] = nodeId;
                 pendingNode["type"] = nodeType;
@@ -388,10 +413,10 @@ void SkeletonEditGraphicsView::loadFromXml(const QString &filename)
                 pendingNode["x"] = "0";
                 pendingNode["y"] = "0";
                 pendingNodes.push_back(pendingNode);
-            } else if (xml.name() == "edge") {
-                QString edgeId = xml.attributes().value("id").toString();
-                QString edgeFromNodeId = xml.attributes().value("from").toString();
-                QString edgeToNodeId = xml.attributes().value("to").toString();
+            } else if (reader.name() == "edge") {
+                QString edgeId = reader.attributes().value("id").toString();
+                QString edgeFromNodeId = reader.attributes().value("from").toString();
+                QString edgeToNodeId = reader.attributes().value("to").toString();
                 if (!edgeFromNodeId.isEmpty() && !edgeToNodeId.isEmpty()) {
                     std::map<QString, QString> pendingEdge;
                     pendingEdge["id"] = edgeId;
@@ -431,18 +456,14 @@ void SkeletonEditGraphicsView::loadFromXml(const QString &filename)
     emit nodesChanged();
 }
 
-void SkeletonEditGraphicsView::saveToXml(const QString &filename)
+void SkeletonEditGraphicsView::saveToXmlStream(QXmlStreamWriter *writer)
 {
-    QFile file(filename);
-    file.open(QIODevice::WriteOnly);
+    writer->setAutoFormatting(true);
+    writer->writeStartDocument();
     
-    QXmlStreamWriter stream(&file);
-    stream.setAutoFormatting(true);
-    stream.writeStartDocument();
-    
-    stream.writeStartElement("canvas");
-        stream.writeAttribute("width", QString("%1").arg(scene()->sceneRect().width()));
-        stream.writeAttribute("height", QString("%1").arg(scene()->sceneRect().height()));
+    writer->writeStartElement("canvas");
+        writer->writeAttribute("width", QString("%1").arg(scene()->sceneRect().width()));
+        writer->writeAttribute("height", QString("%1").arg(scene()->sceneRect().height()));
     
         QList<QGraphicsItem *>::iterator it;
         QList<QGraphicsItem *> list = scene()->items();
@@ -455,40 +476,40 @@ void SkeletonEditGraphicsView::saveToXml(const QString &filename)
                 nextNodeId++;
             }
         }
-        stream.writeStartElement("nodes");
+        writer->writeStartElement("nodes");
         for (it = list.begin(); it != list.end(); ++it) {
             if ((*it)->data(0).toString() == "node") {
                 SkeletonEditNodeItem *nodeItem = static_cast<SkeletonEditNodeItem *>(*it);
-                stream.writeStartElement("node");
-                    stream.writeAttribute("id", QString("node%1").arg(nodeIdMap[nodeItem]));
-                    stream.writeAttribute("type", nodeItem->isMaster() ? "master" : "slave");
-                    stream.writeAttribute("pair", QString("node%1").arg(nodeIdMap[nodeItem->pair()]));
-                    stream.writeAttribute("radius", QString("%1").arg(nodeItem->radius()));
-                    stream.writeStartElement("origin");
+                writer->writeStartElement("node");
+                    writer->writeAttribute("id", QString("node%1").arg(nodeIdMap[nodeItem]));
+                    writer->writeAttribute("type", nodeItem->isMaster() ? "master" : "slave");
+                    writer->writeAttribute("pair", QString("node%1").arg(nodeIdMap[nodeItem->pair()]));
+                    writer->writeAttribute("radius", QString("%1").arg(nodeItem->radius()));
+                    writer->writeStartElement("origin");
                         QPointF origin = nodeItem->origin();
-                        stream.writeAttribute("x", QString("%1").arg(origin.x()));
-                        stream.writeAttribute("y", QString("%1").arg(origin.y()));
-                    stream.writeEndElement();
-                stream.writeEndElement();
+                        writer->writeAttribute("x", QString("%1").arg(origin.x()));
+                        writer->writeAttribute("y", QString("%1").arg(origin.y()));
+                    writer->writeEndElement();
+                writer->writeEndElement();
             }
         }
-        stream.writeEndElement();
-        stream.writeStartElement("edges");
+        writer->writeEndElement();
+        writer->writeStartElement("edges");
         int nextEdgeId = 1;
         for (it = list.begin(); it != list.end(); ++it) {
             if ((*it)->data(0).toString() == "edge") {
                 SkeletonEditEdgeItem *edgeItem = static_cast<SkeletonEditEdgeItem *>(*it);
-                stream.writeStartElement("edge");
-                    stream.writeAttribute("id", QString("edge%1").arg(nextEdgeId));
-                    stream.writeAttribute("from", QString("node%1").arg(nodeIdMap[edgeItem->firstNode()]));
-                    stream.writeAttribute("to", QString("node%1").arg(nodeIdMap[edgeItem->secondNode()]));
-                stream.writeEndElement();
+                writer->writeStartElement("edge");
+                    writer->writeAttribute("id", QString("edge%1").arg(nextEdgeId));
+                    writer->writeAttribute("from", QString("node%1").arg(nodeIdMap[edgeItem->firstNode()]));
+                    writer->writeAttribute("to", QString("node%1").arg(nodeIdMap[edgeItem->secondNode()]));
+                writer->writeEndElement();
                 nextEdgeId++;
             }
         }
-        stream.writeEndElement();
+        writer->writeEndElement();
     
-    stream.writeEndElement();
-    stream.writeEndDocument();
+    writer->writeEndElement();
+    writer->writeEndDocument();
 }
 

@@ -2,6 +2,9 @@
 #define SKELETON_EDIT_GRAPHICS_VIEW_H
 #include <QGraphicsView>
 #include <QMouseEvent>
+#include <QKeyEvent>
+#include <QXmlStreamWriter>
+#include <QXmlStreamReader>
 #include "skeletoneditnodeitem.h"
 #include "skeletoneditedgeitem.h"
 
@@ -9,6 +12,7 @@ class SkeletonEditGraphicsView : public QGraphicsView
 {
     Q_OBJECT
 signals:
+    void sizeChanged();
     void nodesChanged();
     void changeTurnaroundTriggered();
 public slots:
@@ -17,14 +21,18 @@ public slots:
 public:
     SkeletonEditGraphicsView(QWidget *parent = 0);
     void updateBackgroundImage(const QImage &image);
-    void saveToXml(const QString &filename);
-    void loadFromXml(const QString &filename);
+    void saveToXmlStream(QXmlStreamWriter *writer);
+    void loadFromXmlStream(QXmlStreamReader &reader);
+    bool hasBackgroundImage();
+    QPixmap backgroundImage();
 protected:
     void mouseMoveEvent(QMouseEvent *event);
     void wheelEvent(QWheelEvent *event);
     void mouseReleaseEvent(QMouseEvent *event);
     void mousePressEvent(QMouseEvent *event);
     void mouseDoubleClickEvent(QMouseEvent *event);
+    void keyPressEvent(QKeyEvent *event);
+    void resizeEvent(QResizeEvent *event);
 private:
     QGraphicsPixmapItem *m_backgroundItem;
     QGraphicsEllipseItem *m_pendingNodeItem;

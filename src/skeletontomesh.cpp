@@ -34,6 +34,7 @@ SkeletonToMesh::SkeletonToMesh(SkeletonEditGraphicsView *graphicsView) :
                     node.originX = origin.x();
                     node.originY = origin.y();
                     node.originZ = nodeItem->slave()->origin().x();
+                    node.processed = false;
                     node.bmeshNodeId = -1;
                     node.radius = nodeItem->radius();
                     
