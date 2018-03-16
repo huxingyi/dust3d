@@ -13,7 +13,6 @@ struct SkeletonNode
     float originY;
     float originZ;
     float radius;
-    bool processed;
     int bmeshNodeId;
 };
 
@@ -21,6 +20,16 @@ struct SkeletonEdge
 {
     int firstNode;
     int secondNode;
+};
+
+struct SkeletonGroup
+{
+    std::vector<SkeletonNode> nodes;
+    std::vector<SkeletonEdge> edges;
+    int rootNode;
+    int maxNeighborCount;
+    int bmeshId;
+    int meshId;
 };
 
 class SkeletonToMesh : public QObject 
@@ -36,9 +45,7 @@ public slots:
     void process();
 private:
     Mesh *m_mesh;
-    std::vector<SkeletonNode> m_nodes;
-    std::vector<SkeletonEdge> m_edges;
-    int m_rootNodeId;
+    std::vector<SkeletonGroup> m_groups;
 };
 
 #endif

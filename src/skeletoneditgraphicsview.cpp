@@ -151,6 +151,13 @@ void SkeletonEditGraphicsView::mouseReleaseEvent(QMouseEvent *event)
                 SkeletonEditEdgeItem *newEdge = new SkeletonEditEdgeItem();
                 newEdge->setNodes(masterNode, m_nextStartNodeItem);
                 scene()->addItem(newEdge);
+                masterNode->setGroup(m_nextStartNodeItem->group());
+                slaveNode->setGroup(masterNode->group());
+            } else {
+                QGraphicsItemGroup *group = new QGraphicsItemGroup();
+                scene()->addItem(group);
+                masterNode->setGroup(group);
+                slaveNode->setGroup(masterNode->group());
             }
             setNextStartNodeItem(masterNode);
             emit nodesChanged();

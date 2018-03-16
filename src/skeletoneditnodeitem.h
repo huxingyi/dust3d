@@ -26,6 +26,7 @@ private:
     bool m_isNextStartNode;
     SkeletonEditNodeItem *m_master;
     SkeletonEditNodeItem *m_slave;
+private:
     void updateBorder();
 };
 
