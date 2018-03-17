@@ -324,6 +324,7 @@ void SkeletonEditGraphicsView::setNextStartNodeItem(SkeletonEditNodeItem *item)
     m_nextStartNodeItem = item;
     if (m_nextStartNodeItem)
         m_nextStartNodeItem->setIsNextStartNode(true);
+    applyAddNodeMode();
 }
 
 void SkeletonEditGraphicsView::updateBackgroundImage(const QImage &image)

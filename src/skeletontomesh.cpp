@@ -3,7 +3,85 @@
 #include "skeletoneditnodeitem.h"
 #include "skeletoneditedgeitem.h"
 
+#if defined(HAVE_CONFIG_H)
+#  include <carve_config.h>
+#endif
+#include <carve/carve.hpp>
+#include <carve/csg.hpp>
+#include <carve/input.hpp>
+
 // Modified from https://wiki.qt.io/QThreads_general_usage
+
+#define MAX_VERTICES_PER_FACE   100
+
+carve::poly::Polyhedron *makeCarveMeshFromMeshlite(void *meshlite, int meshId)
+{
+    carve::input::PolyhedronData data;
+    int vertexCount = meshlite_get_vertex_count(meshlite, meshId);
+    float *vertexPositions = new float[vertexCount * 3];
+    meshlite_get_vertex_position_array(meshlite, meshId, vertexPositions, vertexCount * 3);
+    int offset = 0;
+    for (int i = 0; i < vertexCount; i++) {
+        data.addVertex(carve::geom::VECTOR(
+            vertexPositions[offset + 0],
+            vertexPositions[offset + 1],
+            vertexPositions[offset + 2]));
+        offset += 3;
+    }
+    int faceCount = meshlite_get_face_count(meshlite, meshId);
+    int *faceVertexNumAndIndices = new int[faceCount * MAX_VERTICES_PER_FACE];
+    int filledLength = meshlite_get_face_index_array(meshlite, meshId, faceVertexNumAndIndices, faceCount * MAX_VERTICES_PER_FACE);
+    int i = 0;
+    while (i < filledLength) {
+        int num = faceVertexNumAndIndices[i++];
+        std::vector<int> faceIndices;
+        for (int j = 0; j < num; j++) {
+            int index = faceVertexNumAndIndices[i++];
+            faceIndices.push_back(index);
+        }
+        data.addFace(faceIndices.begin(), faceIndices.end());
+    }
+    delete[] faceVertexNumAndIndices;
+    delete[] vertexPositions;
+    return new carve::poly::Polyhedron(data.points, data.getFaceCount(), data.faceIndices);
+}
+
+int makeMeshliteMeshFromCarve(void *meshlite, carve::poly::Polyhedron *polyhedron)
+{
+    int vertexCount = polyhedron->vertices.size();
+    float *vertexPositions = new float[vertexCount * 3];
+    int offset = 0;
+    std::map<const carve::poly::Geometry<3>::vertex_t *, int> vertexIndexMap;
+    for (int i = 0; i < vertexCount; i++) {
+        auto vertex = &polyhedron->vertices[i];
+        vertexPositions[offset++] = vertex->v.x;
+        vertexPositions[offset++] = vertex->v.y;
+        vertexPositions[offset++] = vertex->v.z;
+        vertexIndexMap[vertex] = i;
+    }
+    int faceCount = polyhedron->faces.size();
+    int *faceVertexNumAndIndices = new int[faceCount * MAX_VERTICES_PER_FACE];
+    offset = 0;
+    for (int i = 0; i < faceCount; i++) {
+        auto face  = &polyhedron->faces[i];
+        faceVertexNumAndIndices[offset++] = face->vertices.size();
+        for (int j = 0; j < (int)face->vertices.size(); j++) {
+            faceVertexNumAndIndices[offset++] = vertexIndexMap[face->vertices[j]];
+        }
+    }
+    int meshId = meshlite_build(meshlite, vertexPositions, vertexCount, faceVertexNumAndIndices, offset);
+    delete[] vertexPositions;
+    delete[] faceVertexNumAndIndices;
+    return meshId;
+}
+
+carve::poly::Polyhedron *unionCarveMeshs(carve::poly::Polyhedron *first,
+    carve::poly::Polyhedron *second)
+{
+    carve::csg::CSG csg;
+    carve::poly::Polyhedron *result = csg.compute(first, second, carve::csg::CSG::UNION, NULL, carve::csg::CSG::CLASSIFY_EDGE);
+    return new carve::poly::Polyhedron(*result);
+}
 
 struct NodeItemInfo
 {
@@ -148,21 +226,30 @@ void SkeletonToMesh::process()
         group->meshId = meshlite_bmesh_generate_mesh(context, group->bmeshId, group->nodes[group->rootNode].bmeshNodeId);
     }
     
-    int unionMeshId = m_groups[0].meshId;
+    carve::poly::Polyhedron *unionPolyhedron = makeCarveMeshFromMeshlite(context, m_groups[0].meshId);
     for (size_t i = 1; i < m_groups.size(); i++) {
-        int newUnionMeshId = meshlite_union(context, m_groups[i].meshId, unionMeshId);
-        // TODO: destroy last unionMeshId
-        // ... ...
-        unionMeshId = newUnionMeshId;
+        carve::poly::Polyhedron *polyhedron = makeCarveMeshFromMeshlite(context, m_groups[i].meshId);
+        carve::poly::Polyhedron *newUnionPolyhedron = unionCarveMeshs(unionPolyhedron, polyhedron);
+        delete polyhedron;
+        delete unionPolyhedron;
+        unionPolyhedron = newUnionPolyhedron;
+        if (NULL == unionPolyhedron) {
+            break;
+        }
     }
     
     for (size_t i = 1; i < m_groups.size(); i++) {
         meshlite_bmesh_destroy(context, m_groups[i].bmeshId);
     }
     
-    int triangulate = meshlite_triangulate(context, unionMeshId);
-    meshlite_export(context, triangulate, "/Users/jeremy/testlib.obj");
-    m_mesh = new Mesh(context, triangulate);
+    if (unionPolyhedron) {
+        int meshIdGeneratedFromCarve = makeMeshliteMeshFromCarve(context, unionPolyhedron);
+        delete unionPolyhedron;
+        
+        int triangulate = meshlite_triangulate(context, meshIdGeneratedFromCarve);
+        meshlite_export(context, triangulate, "/Users/jeremy/testlib.obj");
+        m_mesh = new Mesh(context, triangulate);
+    }
     meshlite_destroy_context(context);
     emit finished();
 }

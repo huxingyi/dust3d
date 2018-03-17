@@ -1,0 +1,30 @@
+cube_intersection           | -r -e -c    | CUBE INTERSECTION TRANS(1,1,1,ROT(1,1,1,1,CUBE))
+torus                       | -r -e -c    | TORUS(20,20,2.0,1.0) A_MINUS_B ROT(.5,1,1,1,TORUS(20,20,2.0,1.0))
+torus_2                     | -r -e -c    | TORUS(50,50,2.0,1.0) A_MINUS_B TRANS(0,0,1.5,SCALE(2.5,2.5,1.5,CUBE))
+sphere_one_point            | -r -e -c    | ../data/sphere_one_point_moved.ply A_MINUS_B ../data/sphere.ply
+double_cube                 | -r -e -c    | (TRANS(-1,-1,0,CUBE) UNION TRANS(+1,+1,0,CUBE)) INTERSECTION ROT(1.5707963267948966,1,0,0,TORUS(20,20,2.0,1.0))
+edge_intersecting_cubes     | -r -e -c    | TRANS(0.0,0.0,-0.5,CUBE) INTERSECTION TRANS(0.0,0.0,+0.5,CUBE)
+rotated_cube                | -r -e -c    | CUBE INTERSECTION ROT(0.78539816339744828,0,0,1,CUBE)
+rotated_shifted_cube        | -r -e -c    | CUBE INTERSECTION ROT(0.78539816339744828,0,0,1,TRANS(0,0,1,CUBE))
+rotated_shifted_scaled_cube | -r -e -c    | CUBE INTERSECTION ROT(0.78539816339744828,0,0,1,SCALE(0.70710678118654757,0.70710678118654757,0.1,TRANS(0,0,.1,CUBE)))
+cylinder_xy                 | -r -e -c    | ../data/cylinderx.ply UNION ../data/cylindery.ply
+cylinder_xyz                | -r -e -c    | ../data/cylinderx.ply UNION ../data/cylindery.ply UNION ../data/cylinderz.ply
+cone_up_down                | -r -e -c    | ../data/coneup.ply UNION ../data/coneup.ply
+cone_up_sub_down            | -r -e -c    | ../data/coneup.ply A_MINUS_B ../data/coneup.ply
+sphere_self_union           | -r -e -c    | ../data/sphere.ply UNION ../data/sphere.ply
+sphere_self_subtract        | -r -e -c    | ../data/sphere.ply A_MINUS_B ../data/sphere.ply
+sphere_self_shift_subtract  | -r -e -c    | ../data/sphere.ply A_MINUS_B TRANS(0.01,0.01,0.01,../data/sphere.ply)
+hollow_sphere               | -r -e -c    | (../data/sphere.ply A_MINUS_B SCALE(0.9,0.9,0.9,../data/sphere.ply)) A_MINUS_B TRANS(5.5,0.0,0.0,SCALE(5,5,5,CUBE))
+cube_small_rot_1            | -r -e -c    | CUBE A_MINUS_B ROT(1e-2,1,1,1,CUBE)
+cube_small_rot_2            | -r -e -c    | CUBE A_MINUS_B ROT(1e-4,1,1,1,CUBE)
+cube_small_rot_3            | -r -e -c    | CUBE A_MINUS_B ROT(1e-6,1,1,1,CUBE)
+cube_small_rot_4            | -r -e -c    | CUBE A_MINUS_B ROT(1e-8,1,1,1,CUBE)
+cube_small_rot_5            | -r -e -c    | CUBE A_MINUS_B ROT(1e-10,1,1,1,CUBE)
+sphere_stress_test_1        | -r -e -c -f | test-spheres-1
+sphere_stress_test_2        | -r -e -c -f | test-spheres-2
+sphere_stress_test_3        | -r -e -c -f | test-spheres-3
+sphere_stress_test_4        | -r -e -c -f | test-spheres-4
+shell_stress_test_1         | -r -e -c    | TRANS(0, 1.1547005383792515, 0, SCALE(2.71, 2.71, 2.71, ../data/shells.ply)) INTERSECTION TRANS(-1.0, -0.57735026918962584, 0, SCALE(2.71, 2.71, 2.71, ../data/shells.ply)) INTERSECTION TRANS(1.0, -0.57735026918962584, 0, SCALE(2.71, 2.71, 2.71, ../data/shells.ply)) INTERSECTION TRANS(0, 0, 1.6329931618554521, SCALE(2.71, 2.71, 2.71, ../data/shells.ply))
+shell_stress_test_2         | -r -e -c    | TRANS(0, 1.1547005383792515, 0, SCALE(2.71, 2.71, 2.71, ../data/shells.ply)) INTERSECTION TRANS(-1.0, -0.57735026918962584, 0, SCALE(2.71, 2.71, 2.71, ../data/shells.ply)) INTERSECTION TRANS(1.0, -0.57735026918962584, 0, SCALE(2.71, 2.71, 2.71, ../data/shells.ply))
+shell_stress_test_3         | -r -e -c    | TRANS(-1.0, -0.57735026918962584, 0, SCALE(2.71, 2.71, 2.71, ../data/shells.ply)) INTERSECTION TRANS(1.0, -0.57735026918962584, 0, SCALE(2.71, 2.71, 2.71, ../data/shells.ply))
+cylinder_spiral             | -r -e -c -f | test-cylinders

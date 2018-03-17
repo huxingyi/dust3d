@@ -42,5 +42,9 @@ SOURCES += src/main.cpp
 INCLUDEPATH += ../meshlite/include
 LIBS += -L../meshlite/target/debug -lmeshlite
 
+INCLUDEPATH += thirdparty/carve-1.4.0/include
+INCLUDEPATH += thirdparty/carve-1.4.0/build/include
+LIBS += -Lthirdparty/carve-1.4.0/build/lib -lcarve
+
 target.path = ./
 INSTALLS += target

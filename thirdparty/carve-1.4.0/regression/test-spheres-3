@@ -1,0 +1,21 @@
+(
+  ../data/ico5.ply UNION
+  TRANS(+1.4,+1.4,+1.4,../data/ico5.ply) UNION
+  TRANS(+1.4,+1.4,-1.4,../data/ico5.ply) UNION
+  TRANS(+1.4,-1.4,+1.4,../data/ico5.ply) UNION
+  TRANS(+1.4,-1.4,-1.4,../data/ico5.ply) UNION
+  TRANS(-1.4,+1.4,+1.4,../data/ico5.ply) UNION
+  TRANS(-1.4,+1.4,-1.4,../data/ico5.ply) UNION
+  TRANS(-1.4,-1.4,+1.4,../data/ico5.ply) UNION
+  TRANS(-1.4,-1.4,-1.4,../data/ico5.ply)
+) A_MINUS_B
+ROT(1,1,1,1,(
+  TRANS(+0.8,+0.8,+0.8,../data/ico5.ply) UNION
+  TRANS(+0.8,+0.8,-0.8,../data/ico5.ply) UNION
+  TRANS(+0.8,-0.8,+0.8,../data/ico5.ply) UNION
+  TRANS(+0.8,-0.8,-0.8,../data/ico5.ply) UNION
+  TRANS(-0.8,+0.8,+0.8,../data/ico5.ply) UNION
+  TRANS(-0.8,+0.8,-0.8,../data/ico5.ply) UNION
+  TRANS(-0.8,-0.8,+0.8,../data/ico5.ply) UNION
+  TRANS(-0.8,-0.8,-0.8,../data/ico5.ply))
+)
