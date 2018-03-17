@@ -2,6 +2,7 @@
 #include "meshlite.h"
 #include "skeletoneditnodeitem.h"
 #include "skeletoneditedgeitem.h"
+#include <vector>
 
 #if defined(HAVE_CONFIG_H)
 #  include <carve_config.h>
@@ -10,17 +11,118 @@
 #include <carve/csg.hpp>
 #include <carve/input.hpp>
 
+// Polygon_mesh_processing/corefinement_mesh_union.cpp
+// https://doc.cgal.org/latest/Polygon_mesh_processing/Polygon_mesh_processing_2corefinement_mesh_union_8cpp-example.html#a2
+// https://doc.cgal.org/latest/Polygon_mesh_processing/Polygon_mesh_processing_2triangulate_faces_example_8cpp-example.html
+#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
+#include <CGAL/Surface_mesh.h>
+#include <CGAL/Polygon_mesh_processing/corefinement.h>
+#include <CGAL/Polygon_mesh_processing/triangulate_faces.h>
+#include <CGAL/boost/graph/iterator.h>
+
 // Modified from https://wiki.qt.io/QThreads_general_usage
 
+typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
+typedef CGAL::Surface_mesh<K::Point_3>             CgalMesh;
+namespace PMP = CGAL::Polygon_mesh_processing;
+
 #define MAX_VERTICES_PER_FACE   100
+
+CgalMesh *makeCgalMeshFromMeshlite(void *meshlite, int meshId)
+{
+    CgalMesh *mesh = new CgalMesh;
+    int vertexCount = meshlite_get_vertex_count(meshlite, meshId);
+    float *vertexPositions = new float[vertexCount * 3];
+    int vertexArrayLen = meshlite_get_vertex_position_array(meshlite, meshId, vertexPositions, vertexCount * 3);
+    int offset = 0;
+    assert(vertexArrayLen == vertexCount * 3);
+    std::vector<CgalMesh::Vertex_index> vertices;
+    for (int i = 0; i < vertexCount; i++) {
+        vertices.push_back(mesh->add_vertex(K::Point_3(vertexPositions[offset + 0],
+            vertexPositions[offset + 1],
+            vertexPositions[offset + 2])));
+        offset += 3;
+    }
+    int faceCount = meshlite_get_face_count(meshlite, meshId);
+    int *faceVertexNumAndIndices = new int[faceCount * MAX_VERTICES_PER_FACE];
+    int filledLength = meshlite_get_face_index_array(meshlite, meshId, faceVertexNumAndIndices, faceCount * MAX_VERTICES_PER_FACE);
+    int i = 0;
+    while (i < filledLength) {
+        int num = faceVertexNumAndIndices[i++];
+        assert(num > 0 && num <= MAX_VERTICES_PER_FACE);
+        std::vector<CgalMesh::Vertex_index> faceIndices;
+        for (int j = 0; j < num; j++) {
+            int index = faceVertexNumAndIndices[i++];
+            assert(index >= 0 && index < vertexCount);
+            faceIndices.push_back(vertices[index]);
+        }
+        mesh->add_face(faceIndices);
+    }
+    delete[] faceVertexNumAndIndices;
+    delete[] vertexPositions;
+    return mesh;
+}
+
+// https://doc.cgal.org/latest/Surface_mesh/index.html#circulators_example
+
+int makeMeshliteMeshFromCgal(void *meshlite, CgalMesh *mesh)
+{
+    CgalMesh::Vertex_range vertexRange = mesh->vertices();
+    int vertexCount = vertexRange.size();
+    float *vertexPositions = new float[vertexCount * 3];
+    int offset = 0;
+    CgalMesh::Vertex_range::iterator vertexIt;
+    std::map<CgalMesh::Vertex_index, int> vertexIndexMap;
+    int i = 0;
+    for (vertexIt = vertexRange.begin(); vertexIt != vertexRange.end(); vertexIt++) {
+        auto point = mesh->point(*vertexIt);
+        vertexPositions[offset++] = point.x();
+        vertexPositions[offset++] = point.y();
+        vertexPositions[offset++] = point.z();
+        vertexIndexMap[*vertexIt] = i;
+        i++;
+    }
+    CgalMesh::Face_range faceRage = mesh->faces();
+    int faceCount = faceRage.size();
+    int *faceVertexNumAndIndices = new int[faceCount * MAX_VERTICES_PER_FACE];
+    CgalMesh::Face_range::iterator faceIt;
+    offset = 0;
+    for (faceIt = faceRage.begin(); faceIt != faceRage.end(); faceIt++) {
+        CGAL::Vertex_around_face_iterator<CgalMesh> vbegin, vend;
+        std::vector<int> indices;
+        for (boost::tie(vbegin, vend) = CGAL::vertices_around_face(mesh->halfedge(*faceIt), *mesh);
+                vbegin != vend;
+                ++vbegin){
+            indices.push_back(vertexIndexMap[*vbegin]);
+        }
+        faceVertexNumAndIndices[offset++] = indices.size();
+        for (int j = 0; j < (int)indices.size(); j++) {
+            faceVertexNumAndIndices[offset++] = indices[j];
+        }
+    }
+    int meshId = meshlite_build(meshlite, vertexPositions, vertexCount, faceVertexNumAndIndices, offset);
+    delete[] vertexPositions;
+    delete[] faceVertexNumAndIndices;
+    return meshId;
+}
+
+CgalMesh *unionCgalMeshs(CgalMesh *first, CgalMesh *second)
+{
+    CgalMesh *mesh = new CgalMesh;
+    if (!PMP::corefine_and_compute_union(*first, *second, *mesh)) {
+        return NULL;
+    }
+    return mesh;
+}
 
 carve::poly::Polyhedron *makeCarveMeshFromMeshlite(void *meshlite, int meshId)
 {
     carve::input::PolyhedronData data;
     int vertexCount = meshlite_get_vertex_count(meshlite, meshId);
     float *vertexPositions = new float[vertexCount * 3];
-    meshlite_get_vertex_position_array(meshlite, meshId, vertexPositions, vertexCount * 3);
+    int vertexArrayLen = meshlite_get_vertex_position_array(meshlite, meshId, vertexPositions, vertexCount * 3);
     int offset = 0;
+    assert(vertexArrayLen == vertexCount * 3);
     for (int i = 0; i < vertexCount; i++) {
         data.addVertex(carve::geom::VECTOR(
             vertexPositions[offset + 0],
@@ -34,9 +136,11 @@ carve::poly::Polyhedron *makeCarveMeshFromMeshlite(void *meshlite, int meshId)
     int i = 0;
     while (i < filledLength) {
         int num = faceVertexNumAndIndices[i++];
+        assert(num > 0 && num <= MAX_VERTICES_PER_FACE);
         std::vector<int> faceIndices;
         for (int j = 0; j < num; j++) {
             int index = faceVertexNumAndIndices[i++];
+            assert(index >= 0 && index < vertexCount);
             faceIndices.push_back(index);
         }
         data.addFace(faceIndices.begin(), faceIndices.end());
@@ -163,6 +267,20 @@ Mesh *SkeletonToMesh::takeResultMesh()
     return mesh;
 }
 
+#define USE_CARVE 0
+
+#if USE_CARVE
+#define ExternalMesh                    carve::poly::Polyhedron
+#define makeExternalMeshFromMeshlite    makeCarveMeshFromMeshlite
+#define unionExternalMeshs              unionCarveMeshs
+#define makeMeshliteMeshFromExternal    makeMeshliteMeshFromCarve
+#else
+#define ExternalMesh                    CgalMesh
+#define makeExternalMeshFromMeshlite    makeCgalMeshFromMeshlite
+#define unionExternalMeshs              unionCgalMeshs
+#define makeMeshliteMeshFromExternal    makeMeshliteMeshFromCgal
+#endif
+
 void SkeletonToMesh::process()
 {
     if (m_groups.size() <= 0) {
@@ -224,12 +342,13 @@ void SkeletonToMesh::process()
             meshlite_bmesh_add_edge(context, group->bmeshId, firstNode->bmeshNodeId, secondNode->bmeshNodeId);
         }
         group->meshId = meshlite_bmesh_generate_mesh(context, group->bmeshId, group->nodes[group->rootNode].bmeshNodeId);
+        group->meshId = meshlite_triangulate(context, group->meshId);
     }
     
-    carve::poly::Polyhedron *unionPolyhedron = makeCarveMeshFromMeshlite(context, m_groups[0].meshId);
+    ExternalMesh *unionPolyhedron = makeExternalMeshFromMeshlite(context, m_groups[0].meshId);
     for (size_t i = 1; i < m_groups.size(); i++) {
-        carve::poly::Polyhedron *polyhedron = makeCarveMeshFromMeshlite(context, m_groups[i].meshId);
-        carve::poly::Polyhedron *newUnionPolyhedron = unionCarveMeshs(unionPolyhedron, polyhedron);
+        ExternalMesh *polyhedron = makeExternalMeshFromMeshlite(context, m_groups[i].meshId);
+        ExternalMesh *newUnionPolyhedron = unionExternalMeshs(unionPolyhedron, polyhedron);
         delete polyhedron;
         delete unionPolyhedron;
         unionPolyhedron = newUnionPolyhedron;
@@ -243,10 +362,11 @@ void SkeletonToMesh::process()
     }
     
     if (unionPolyhedron) {
-        int meshIdGeneratedFromCarve = makeMeshliteMeshFromCarve(context, unionPolyhedron);
+        int meshIdGeneratedFromExternal = makeMeshliteMeshFromExternal(context, unionPolyhedron);
         delete unionPolyhedron;
         
-        int triangulate = meshlite_triangulate(context, meshIdGeneratedFromCarve);
+        //int subdived = meshlite_subdivide(context, meshIdGeneratedFromCarve);
+        int triangulate = meshlite_triangulate(context, meshIdGeneratedFromExternal);
         meshlite_export(context, triangulate, "/Users/jeremy/testlib.obj");
         m_mesh = new Mesh(context, triangulate);
     }
