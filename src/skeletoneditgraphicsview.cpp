@@ -116,6 +116,60 @@ float SkeletonEditGraphicsView::findXForSlave(float x)
     return x - m_backgroundItem->boundingRect().width() / 4;
 }
 
+void SkeletonEditGraphicsView::removeSelectedItems()
+{
+    if (m_nextStartNodeItem) {
+        SkeletonEditNodeItem *nodeItem = m_nextStartNodeItem;
+        setNextStartNodeItem(NULL);
+        removeNodeItem(nodeItem);
+        emit nodesChanged();
+    }
+}
+
+void SkeletonEditGraphicsView::removeNodeItem(SkeletonEditNodeItem *nodeItem)
+{
+    if (nodeItem->pair()) {
+        scene()->removeItem(nodeItem->pair());
+    }
+    scene()->removeItem(nodeItem);
+    QList<QGraphicsItem *>::iterator it;
+    QList<QGraphicsItem *> list = scene()->items();
+    for (it = list.begin(); it != list.end(); ++it) {
+        if ((*it)->data(0).toString() == "edge") {
+            SkeletonEditEdgeItem *edgeItem = static_cast<SkeletonEditEdgeItem *>(*it);
+            if (edgeItem->firstNode() == nodeItem || edgeItem->secondNode() == nodeItem) {
+                scene()->removeItem(edgeItem);
+            }
+        }
+    }
+}
+
+void SkeletonEditGraphicsView::removeGroupByNodeItem(SkeletonEditNodeItem *nodeItem)
+{
+    if (nodeItem->pair()) {
+        scene()->removeItem(nodeItem->pair());
+    }
+    scene()->removeItem(nodeItem);
+    QList<QGraphicsItem *>::iterator it;
+    QList<QGraphicsItem *> list = scene()->items();
+    std::vector<SkeletonEditNodeItem *> delayRemoveList;
+    for (it = list.begin(); it != list.end(); ++it) {
+        if ((*it)->data(0).toString() == "edge") {
+            SkeletonEditEdgeItem *edgeItem = static_cast<SkeletonEditEdgeItem *>(*it);
+            if (edgeItem->firstNode() == nodeItem) {
+                scene()->removeItem(edgeItem);
+                delayRemoveList.push_back(edgeItem->secondNode());
+            } else if (edgeItem->secondNode() == nodeItem) {
+                scene()->removeItem(edgeItem);
+                delayRemoveList.push_back(edgeItem->firstNode());
+            }
+        }
+    }
+    for (size_t i = 0; i < delayRemoveList.size(); i++) {
+        removeNodeItem(delayRemoveList[i]);
+    }
+}
+
 void SkeletonEditGraphicsView::keyPressEvent(QKeyEvent *event)
 {
     QWidget::keyPressEvent(event);
@@ -123,6 +177,9 @@ void SkeletonEditGraphicsView::keyPressEvent(QKeyEvent *event)
         return;
     if (event->key() == Qt::Key_A)
         toggleAddNodeMode();
+    else if (event->key() == Qt::Key_Delete || event->key() ==Qt::Key_Backspace) {
+        removeSelectedItems();
+    }
 }
 
 void SkeletonEditGraphicsView::resizeEvent(QResizeEvent *event)

@@ -1,6 +1,7 @@
 #include <QApplication>
 #include <QDesktopWidget>
 #include <QStyleFactory>
+#include <QFontDatabase>
 #include "mainwindow.h"
 #include "meshlite.h"
 
@@ -29,6 +30,9 @@ int main(int argc, char ** argv)
     qApp->setStyleSheet("QToolTip { color: #ffffff; background-color: #fc6621; border: 1px solid white; }");
     
     QCoreApplication::setApplicationName("Dust 3D");
+    
+    const QFont fixedFont = QFontDatabase::systemFont(QFontDatabase::FixedFont);
+    QApplication::setFont(fixedFont);
     
     MainWindow mainWindow;
     mainWindow.showMaximized();

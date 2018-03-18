@@ -55,6 +55,9 @@ private:
     void AddItemRadius(QGraphicsEllipseItem *item, float delta);
     bool canAddItemRadius(QGraphicsEllipseItem *item, float delta);
     void adjustItems(QSizeF oldSceneSize, QSizeF newSceneSize);
+    void removeSelectedItems();
+    void removeNodeItem(SkeletonEditNodeItem *nodeItem);
+    void removeGroupByNodeItem(SkeletonEditNodeItem *nodeItem);
 };
 
 #endif

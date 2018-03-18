@@ -149,6 +149,7 @@ void MainWindow::loadModel()
             }
         }
     }
+    m_skeletonWidget->graphicsView()->turnOffAddNodeMode();
 }
 
 void MainWindow::saveModel()

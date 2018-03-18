@@ -267,7 +267,7 @@ Mesh *SkeletonToMesh::takeResultMesh()
     return mesh;
 }
 
-#define USE_CARVE 0
+#define USE_CARVE 1
 
 #if USE_CARVE
 #define ExternalMesh                    carve::poly::Polyhedron
@@ -342,7 +342,6 @@ void SkeletonToMesh::process()
             meshlite_bmesh_add_edge(context, group->bmeshId, firstNode->bmeshNodeId, secondNode->bmeshNodeId);
         }
         group->meshId = meshlite_bmesh_generate_mesh(context, group->bmeshId, group->nodes[group->rootNode].bmeshNodeId);
-        group->meshId = meshlite_triangulate(context, group->meshId);
     }
     
     ExternalMesh *unionPolyhedron = makeExternalMeshFromMeshlite(context, m_groups[0].meshId);
