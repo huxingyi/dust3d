@@ -10,6 +10,8 @@
 #include <QStackedWidget>
 #include <QXmlStreamReader>
 #include <QBuffer>
+#include <QFormLayout>
+#include <QComboBox>
 #include <assert.h>
 #include "mainwindow.h"
 #include "skeletonwidget.h"
@@ -52,6 +54,14 @@ MainWindow::MainWindow()
     topLayout->addLayout(topButtonsLayout);
     topLayout->addWidget(hrWidget);
     
+    m_edgePropertyWidget = new QWidget;
+    QFormLayout *formLayout = new QFormLayout;
+    QComboBox *edgeTypeBox = new QComboBox;
+    edgeTypeBox->addItem("Spine", "Spine");
+    edgeTypeBox->addItem("Attach", "Attach");
+    formLayout->addRow(tr("Edge Type:"), edgeTypeBox);
+    m_edgePropertyWidget->setLayout(formLayout);
+    
     QVBoxLayout *modelRightLayout = new QVBoxLayout;
     
     modelRightLayout->addSpacing(20);
@@ -74,6 +84,10 @@ MainWindow::MainWindow()
     QPushButton *saveModelAsButton = new QPushButton("    Save as    ");
     modelRightLayout->addWidget(saveModelAsButton);
     saveModelAsButton->hide();
+    
+    modelRightLayout->addSpacing(20);
+    
+    modelRightLayout->addWidget(m_edgePropertyWidget);
     
     modelRightLayout->addStretch();
     

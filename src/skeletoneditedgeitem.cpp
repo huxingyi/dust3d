@@ -8,7 +8,27 @@ SkeletonEditEdgeItem::SkeletonEditEdgeItem(QGraphicsItem *parent) :
     m_secondNode(NULL)
 {
     setData(0, "edge");
-    QPen pen(Theme::skeletonMasterNodeBorderColor);
+    m_checked = false;
+    updateAppearance();
+}
+
+void SkeletonEditEdgeItem::setChecked(bool checked)
+{
+    if (m_checked == checked) {
+        return;
+    }
+    m_checked = checked;
+    updateAppearance();
+}
+
+bool SkeletonEditEdgeItem::checked()
+{
+    return m_checked;
+}
+
+void SkeletonEditEdgeItem::updateAppearance()
+{
+    QPen pen(m_checked ? Theme::skeletonMasterNodeBorderHighlightColor :  Theme::skeletonMasterNodeBorderColor);
     pen.setWidth(Theme::skeletonMasterNodeBorderSize);
     setPen(pen);
 }

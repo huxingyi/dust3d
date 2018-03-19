@@ -4,13 +4,20 @@
 #include "skeletoneditedgeitem.h"
 #include <vector>
 
+#define USE_CARVE 1
+
+#if USE_CARVE == 1
 #if defined(HAVE_CONFIG_H)
 #  include <carve_config.h>
 #endif
 #include <carve/carve.hpp>
 #include <carve/csg.hpp>
 #include <carve/input.hpp>
+#endif
 
+#define MAX_VERTICES_PER_FACE   100
+
+#if USE_CARVE == 0
 // Polygon_mesh_processing/corefinement_mesh_union.cpp
 // https://doc.cgal.org/latest/Polygon_mesh_processing/Polygon_mesh_processing_2corefinement_mesh_union_8cpp-example.html#a2
 // https://doc.cgal.org/latest/Polygon_mesh_processing/Polygon_mesh_processing_2triangulate_faces_example_8cpp-example.html
@@ -20,13 +27,9 @@
 #include <CGAL/Polygon_mesh_processing/triangulate_faces.h>
 #include <CGAL/boost/graph/iterator.h>
 
-// Modified from https://wiki.qt.io/QThreads_general_usage
-
 typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
 typedef CGAL::Surface_mesh<K::Point_3>             CgalMesh;
 namespace PMP = CGAL::Polygon_mesh_processing;
-
-#define MAX_VERTICES_PER_FACE   100
 
 CgalMesh *makeCgalMeshFromMeshlite(void *meshlite, int meshId)
 {
@@ -115,6 +118,10 @@ CgalMesh *unionCgalMeshs(CgalMesh *first, CgalMesh *second)
     return mesh;
 }
 
+#endif
+
+#if USE_CARVE == 1
+
 carve::poly::Polyhedron *makeCarveMeshFromMeshlite(void *meshlite, int meshId)
 {
     carve::input::PolyhedronData data;
@@ -187,6 +194,8 @@ carve::poly::Polyhedron *unionCarveMeshs(carve::poly::Polyhedron *first,
     return new carve::poly::Polyhedron(*result);
 }
 
+#endif
+
 struct NodeItemInfo
 {
     int index;
@@ -231,6 +240,7 @@ SkeletonToMesh::SkeletonToMesh(SkeletonEditGraphicsView *graphicsView) :
                     node.originZ = nodeItem->slave()->origin().x();
                     node.bmeshNodeId = -1;
                     node.radius = nodeItem->radius();
+                    node.thickness = nodeItem->slave()->radius();
                     
                     info.index = skeletonGroup->nodes.size();
                     info.neighborCount = 1;
@@ -266,8 +276,6 @@ Mesh *SkeletonToMesh::takeResultMesh()
     m_mesh = NULL;
     return mesh;
 }
-
-#define USE_CARVE 1
 
 #if USE_CARVE
 #define ExternalMesh                    carve::poly::Polyhedron
@@ -334,7 +342,8 @@ void SkeletonToMesh::process()
             float y = (node->originY - top - height / 2) / height;
             float z = (node->originZ - zLeft - zWidth / 2) / height;
             float r = node->radius / height;
-            node->bmeshNodeId = meshlite_bmesh_add_node(context, group->bmeshId, x, y, z, r);
+            float t = node->thickness / height;
+            node->bmeshNodeId = meshlite_bmesh_add_node(context, group->bmeshId, x, y, z, r, t);
         }
         for (size_t j = 0; j < group->edges.size(); j++) {
             SkeletonNode *firstNode = &group->nodes[group->edges[j].firstNode];

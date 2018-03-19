@@ -24,7 +24,7 @@ int main(int argc, char ** argv)
     darkPalette.setColor(QPalette::ButtonText, QColor(239,239,239));
     darkPalette.setColor(QPalette::BrightText, Qt::red);
     darkPalette.setColor(QPalette::Link, QColor(42, 130, 218));
-    darkPalette.setColor(QPalette::Highlight, QColor(42, 130, 218));
+    darkPalette.setColor(QPalette::Highlight, QColor(252, 102, 33));
     darkPalette.setColor(QPalette::HighlightedText, Qt::black);
     qApp->setPalette(darkPalette);
     qApp->setStyleSheet("QToolTip { color: #ffffff; background-color: #fc6621; border: 1px solid white; }");

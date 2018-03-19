@@ -13,6 +13,7 @@ struct SkeletonNode
     float originY;
     float originZ;
     float radius;
+    float thickness;
     int bmeshNodeId;
 };
 

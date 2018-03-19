@@ -22,6 +22,7 @@ private:
     QStackedWidget *m_stackedWidget;
     QString m_saveModelAs;
     SkeletonWidget *m_skeletonWidget;
+    QWidget *m_edgePropertyWidget;
 };
 
 #endif

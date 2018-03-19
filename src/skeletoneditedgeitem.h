@@ -12,9 +12,14 @@ public:
     SkeletonEditNodeItem *firstNode();
     SkeletonEditNodeItem *secondNode();
     bool connects(SkeletonEditNodeItem *nodeItem);
+    void setChecked(bool checked);
+    bool checked();
 private:
     SkeletonEditNodeItem *m_firstNode;
     SkeletonEditNodeItem *m_secondNode;
+    bool m_checked;
+private:
+    void updateAppearance();
 };
 
 #endif

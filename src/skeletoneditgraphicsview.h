@@ -15,6 +15,7 @@ signals:
     void sizeChanged();
     void nodesChanged();
     void changeTurnaroundTriggered();
+    void edgeCheckStateChanged();
 public slots:
     void turnOffAddNodeMode();
     void turnOnAddNodeMode();
@@ -45,10 +46,14 @@ private:
     QPointF m_lastMousePos;
     bool m_isMovingNodeItem;
     bool m_backgroundLoaded;
+    SkeletonEditEdgeItem *m_selectedEdgeItem;
 private:
     void toggleAddNodeMode();
     void applyAddNodeMode();
     SkeletonEditNodeItem *findNodeItemByPos(QPointF pos);
+    SkeletonEditEdgeItem *findEdgeItemByPos(QPointF pos);
+    SkeletonEditEdgeItem *findEdgeItemByNodePair(SkeletonEditNodeItem *first,
+        SkeletonEditNodeItem *second);
     void setNextStartNodeItem(SkeletonEditNodeItem *item);
     float findXForSlave(float x);
     bool canNodeItemMoveTo(SkeletonEditNodeItem *item, QPointF moveTo);
