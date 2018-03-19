@@ -373,10 +373,8 @@ void SkeletonToMesh::process()
         int meshIdGeneratedFromExternal = makeMeshliteMeshFromExternal(context, unionPolyhedron);
         delete unionPolyhedron;
         
-        //int subdived = meshlite_subdivide(context, meshIdGeneratedFromCarve);
-        int triangulate = meshlite_triangulate(context, meshIdGeneratedFromExternal);
-        meshlite_export(context, triangulate, "/Users/jeremy/testlib.obj");
-        m_mesh = new Mesh(context, triangulate);
+        meshlite_export(context, meshIdGeneratedFromExternal, "/Users/jeremy/testlib.obj");
+        m_mesh = new Mesh(context, meshIdGeneratedFromExternal);
     }
     meshlite_destroy_context(context);
     emit finished();

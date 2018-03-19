@@ -13,19 +13,26 @@ typedef struct
     GLfloat normX;
     GLfloat normY;
     GLfloat normZ;
+    GLfloat colorR;
+    GLfloat colorG;
+    GLfloat colorB;
 } Vertex;
 #pragma pack(pop)
 
 class Mesh
 {
 public:
-    Mesh(void *meshlite, int mesh_id);
+    Mesh(void *meshlite, int meshId);
     ~Mesh();
-    Vertex *vertices();
-    int vertexCount();
+    Vertex *triangleVertices();
+    int triangleVertexCount();
+    Vertex *edgeVertices();
+    int edgeVertexCount();
 private:
-    Vertex *m_vertices;
-    int m_vertexCount;
+    Vertex *m_triangleVertices;
+    int m_triangleVertexCount;
+    Vertex *m_edgeVertices;
+    int m_edgeVertexCount;
 };
 
 #endif

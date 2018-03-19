@@ -43,16 +43,18 @@ protected:
     void mouseMoveEvent(QMouseEvent *event) override;
 
 private:
-    void setupVertexAttribs();
     bool m_core;
     int m_xRot;
     int m_yRot;
     int m_zRot;
     QPoint m_lastPos;
-    QOpenGLVertexArrayObject m_vao;
-    QOpenGLBuffer m_modelVbo;
+    QOpenGLVertexArrayObject m_vaoTriangle;
+    QOpenGLBuffer m_vboTriangle;
+    QOpenGLVertexArrayObject m_vaoEdge;
+    QOpenGLBuffer m_vboEdge;
     QOpenGLShaderProgram *m_program;
-    int m_renderVertexCount;
+    int m_renderTriangleVertexCount;
+    int m_renderEdgeVertexCount;
     int m_projMatrixLoc;
     int m_mvMatrixLoc;
     int m_normalMatrixLoc;
