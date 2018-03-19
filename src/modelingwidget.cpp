@@ -204,6 +204,7 @@ void ModelingWidget::paintGL()
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
+    glEnable(GL_LINE_SMOOTH);
 
     m_world.setToIdentity();
     m_world.rotate(180.0f - (m_xRot / 16.0f), 1, 0, 0);
