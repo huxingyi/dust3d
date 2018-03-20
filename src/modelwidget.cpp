@@ -1,4 +1,5 @@
-#include "modelingwidget.h"
+#include "modelwidget.h"
+#include "ds3file.h"
 #include <QMouseEvent>
 #include <QOpenGLShaderProgram>
 #include <QCoreApplication>
@@ -6,9 +7,9 @@
 
 // Modifed from http://doc.qt.io/qt-5/qtopengl-hellogl2-glwidget-cpp.html
 
-bool ModelingWidget::m_transparent = false;
+bool ModelWidget::m_transparent = false;
 
-ModelingWidget::ModelingWidget(QWidget *parent)
+ModelWidget::ModelWidget(QWidget *parent)
     : QOpenGLWidget(parent),
       m_xRot(0),
       m_yRot(0),
@@ -34,7 +35,7 @@ ModelingWidget::ModelingWidget(QWidget *parent)
     }
 }
 
-ModelingWidget::~ModelingWidget()
+ModelWidget::~ModelWidget()
 {
     cleanup();
     delete m_mesh;
@@ -48,7 +49,7 @@ static void qNormalizeAngle(int &angle)
         angle -= 360 * 16;
 }
 
-void ModelingWidget::setXRotation(int angle)
+void ModelWidget::setXRotation(int angle)
 {
     qNormalizeAngle(angle);
     if (angle != m_xRot) {
@@ -58,7 +59,7 @@ void ModelingWidget::setXRotation(int angle)
     }
 }
 
-void ModelingWidget::setYRotation(int angle)
+void ModelWidget::setYRotation(int angle)
 {
     qNormalizeAngle(angle);
     if (angle != m_yRot) {
@@ -68,7 +69,7 @@ void ModelingWidget::setYRotation(int angle)
     }
 }
 
-void ModelingWidget::setZRotation(int angle)
+void ModelWidget::setZRotation(int angle)
 {
     qNormalizeAngle(angle);
     if (angle != m_zRot) {
@@ -78,7 +79,7 @@ void ModelingWidget::setZRotation(int angle)
     }
 }
 
-void ModelingWidget::cleanup()
+void ModelWidget::cleanup()
 {
     if (m_program == nullptr)
         return;
@@ -153,7 +154,7 @@ static const char *fragmentShaderSource =
     "   gl_FragColor = vec4(col, 1.0);\n"
     "}\n";
 
-void ModelingWidget::initializeGL()
+void ModelWidget::initializeGL()
 {
     // In this example the widget's corresponding top-level window can change
     // several times during the widget's lifetime. Whenever this happens, the
@@ -162,7 +163,7 @@ void ModelingWidget::initializeGL()
     // aboutToBeDestroyed() signal, instead of the destructor. The emission of
     // the signal will be followed by an invocation of initializeGL() where we
     // can recreate all resources.
-    connect(context(), &QOpenGLContext::aboutToBeDestroyed, this, &ModelingWidget::cleanup);
+    connect(context(), &QOpenGLContext::aboutToBeDestroyed, this, &ModelWidget::cleanup);
 
     initializeOpenGLFunctions();
     QColor bgcolor = QWidget::palette().color(QWidget::backgroundRole());
@@ -199,7 +200,7 @@ void ModelingWidget::initializeGL()
     m_program->release();
 }
 
-void ModelingWidget::paintGL()
+void ModelWidget::paintGL()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
@@ -275,18 +276,18 @@ void ModelingWidget::paintGL()
     m_program->release();
 }
 
-void ModelingWidget::resizeGL(int w, int h)
+void ModelWidget::resizeGL(int w, int h)
 {
     m_proj.setToIdentity();
     m_proj.perspective(45.0f, GLfloat(w) / h, 0.01f, 100.0f);
 }
 
-void ModelingWidget::mousePressEvent(QMouseEvent *event)
+void ModelWidget::mousePressEvent(QMouseEvent *event)
 {
     m_lastPos = event->pos();
 }
 
-void ModelingWidget::mouseMoveEvent(QMouseEvent *event)
+void ModelWidget::mouseMoveEvent(QMouseEvent *event)
 {
     int dx = event->x() - m_lastPos.x();
     int dy = event->y() - m_lastPos.y();
@@ -301,7 +302,7 @@ void ModelingWidget::mouseMoveEvent(QMouseEvent *event)
     m_lastPos = event->pos();
 }
 
-void ModelingWidget::updateMesh(Mesh *mesh)
+void ModelWidget::updateMesh(Mesh *mesh)
 {
     QMutexLocker lock(&m_meshMutex);
     if (mesh != m_mesh) {
@@ -312,3 +313,24 @@ void ModelingWidget::updateMesh(Mesh *mesh)
     }
 }
 
+void ModelWidget::exportMeshAsObj(const QString &filename)
+{
+    QMutexLocker lock(&m_meshMutex);
+    if (m_mesh) {
+        QFile file(filename);
+        if (file.open(QIODevice::WriteOnly)) {
+            QTextStream stream(&file);
+            stream << "# " << Ds3FileReader::m_applicationName << endl;
+            for (std::vector<const QVector3D>::iterator it = m_mesh->vertices().begin() ; it != m_mesh->vertices().end(); ++it) {
+                stream << "v " << (*it).x() << " " << (*it).y() << " " << (*it).z() << endl;
+            }
+            for (std::vector<const std::vector<int>>::iterator it = m_mesh->faces().begin() ; it != m_mesh->faces().end(); ++it) {
+                stream << "f";
+                for (std::vector<const int>::iterator subIt = (*it).begin() ; subIt != (*it).end(); ++subIt) {
+                    stream << " " << (1 + *subIt);
+                }
+                stream << endl;
+            }
+        }
+    }
+}

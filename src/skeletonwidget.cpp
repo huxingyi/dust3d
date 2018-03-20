@@ -30,11 +30,11 @@ SkeletonWidget::SkeletonWidget(QWidget *parent) :
     
     m_graphicsView->setBackgroundBrush(QBrush(QWidget::palette().color(QWidget::backgroundRole()), Qt::SolidPattern));
     
-    m_modelingWidget = new ModelingWidget(this);
-    m_modelingWidget->setMinimumSize(128, 128);
-    m_modelingWidget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-    m_modelingWidget->setWindowFlags(Qt::Tool | Qt::Window);
-    m_modelingWidget->setWindowTitle("3D Model");
+    m_modelWidget = new ModelWidget(this);
+    m_modelWidget->setMinimumSize(128, 128);
+    m_modelWidget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+    m_modelWidget->setWindowFlags(Qt::Tool | Qt::Window);
+    m_modelWidget->setWindowTitle("3D Model");
 
     QVBoxLayout *rightLayout = new QVBoxLayout;
     rightLayout->addSpacing(10);
@@ -101,14 +101,19 @@ SkeletonEditGraphicsView *SkeletonWidget::graphicsView()
     return m_graphicsView;
 }
 
+ModelWidget *SkeletonWidget::modelWidget()
+{
+    return m_modelWidget;
+}
+
 void SkeletonWidget::showModelingWidgetAtCorner()
 {
-    if (!m_modelingWidget->isVisible()) {
+    if (!m_modelWidget->isVisible()) {
         QPoint pos = QPoint(QApplication::desktop()->width(),
             QApplication::desktop()->height());
-        m_modelingWidget->move(pos.x() - m_modelingWidget->width(),
-            pos.y() - m_modelingWidget->height());
-        m_modelingWidget->show();
+        m_modelWidget->move(pos.x() - m_modelWidget->width(),
+            pos.y() - m_modelWidget->height());
+        m_modelWidget->show();
     }
 }
 
@@ -116,7 +121,7 @@ void SkeletonWidget::meshReady()
 {
     Mesh *resultMesh = m_skeletonToMesh->takeResultMesh();
     showModelingWidgetAtCorner();
-    m_modelingWidget->updateMesh(resultMesh);
+    m_modelWidget->updateMesh(resultMesh);
     delete m_skeletonToMesh;
     m_skeletonToMesh = NULL;
     if (m_skeletonDirty) {

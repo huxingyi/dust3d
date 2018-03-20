@@ -4,7 +4,7 @@
 #include <QString>
 #include <QVBoxLayout>
 #include <QPushButton>
-#include "modelingwidget.h"
+#include "modelwidget.h"
 #include "skeletontomesh.h"
 #include "turnaroundloader.h"
 #include "skeletoneditgraphicsview.h"
@@ -15,6 +15,7 @@ class SkeletonWidget : public QWidget
 public:
     SkeletonWidget(QWidget *parent=0);
     SkeletonEditGraphicsView *graphicsView();
+    ModelWidget *modelWidget();
 public slots:
     void skeletonChanged();
     void meshReady();
@@ -23,7 +24,7 @@ public slots:
     void changeTurnaround();
     void showModelingWidgetAtCorner();
 private:
-    ModelingWidget *m_modelingWidget;
+    ModelWidget *m_modelWidget;
     SkeletonEditGraphicsView *m_graphicsView;
     SkeletonToMesh *m_skeletonToMesh;
     bool m_skeletonDirty;

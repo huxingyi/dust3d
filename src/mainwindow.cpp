@@ -69,8 +69,8 @@ MainWindow::MainWindow()
     QPushButton *changeTurnaroundButton = new QPushButton("    Change Turnaround    ");
     modelRightLayout->addWidget(changeTurnaroundButton);
     
-    QPushButton *exportPartsModelButton = new QPushButton("    Export    ");
-    modelRightLayout->addWidget(exportPartsModelButton);
+    QPushButton *exportModelButton = new QPushButton("    Export    ");
+    modelRightLayout->addWidget(exportModelButton);
     
     QPushButton *newModelButton = new QPushButton("    New    ");
     modelRightLayout->addWidget(newModelButton);
@@ -130,6 +130,9 @@ MainWindow::MainWindow()
     connectResult = connect(m_sharePageButton, SIGNAL(clicked()), this, SLOT(updatePageButtons()));
     assert(connectResult);
     
+    connectResult = connect(exportModelButton, SIGNAL(clicked()), this, SLOT(exportModel()));
+    assert(connectResult);
+    
     connectResult = connect(saveModelButton, SIGNAL(clicked()), this, SLOT(saveModel()));
     assert(connectResult);
     
@@ -137,6 +140,17 @@ MainWindow::MainWindow()
     assert(connectResult);
     
     updatePageButtons();
+}
+
+void MainWindow::exportModel()
+{
+    QString exportTo = QFileDialog::getSaveFileName(this,
+       tr("Export Model"), ".",
+       tr("Wavefront OBJ File (*.obj)"));
+    if (exportTo.isEmpty()) {
+        return;
+    }
+    m_skeletonWidget->modelWidget()->exportMeshAsObj(exportTo);
 }
 
 void MainWindow::loadModel()

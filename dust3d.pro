@@ -7,8 +7,8 @@ INCLUDEPATH += src
 SOURCES += src/mainwindow.cpp
 HEADERS += src/mainwindow.h
 
-SOURCES += src/modelingwidget.cpp
-HEADERS += src/modelingwidget.h
+SOURCES += src/modelwidget.cpp
+HEADERS += src/modelwidget.h
 
 SOURCES += src/skeletoneditgraphicsview.cpp
 HEADERS += src/skeletoneditgraphicsview.h

@@ -2,6 +2,8 @@
 #include "meshlite.h"
 #include <assert.h>
 
+#define MAX_VERTICES_PER_FACE   100
+
 Mesh::Mesh(void *meshlite, int meshId) :
     m_triangleVertices(NULL),
     m_triangleVertexCount(0),
@@ -11,6 +13,30 @@ Mesh::Mesh(void *meshlite, int meshId) :
     int edgeVertexPositionCount = meshlite_get_vertex_count(meshlite, meshId);
     GLfloat *edgeVertexPositions = new GLfloat[edgeVertexPositionCount * 3];
     int loadedEdgeVertexPositionItemCount = meshlite_get_vertex_position_array(meshlite, meshId, edgeVertexPositions, edgeVertexPositionCount * 3);
+    
+    int offset = 0;
+    while (offset < loadedEdgeVertexPositionItemCount) {
+        QVector3D position = QVector3D(edgeVertexPositions[offset], edgeVertexPositions[offset + 1], edgeVertexPositions[offset + 2]);
+        m_vertices.push_back(position);
+        offset += 3;
+    }
+    int faceCount = meshlite_get_face_count(meshlite, meshId);
+    int *faceVertexNumAndIndices = new int[faceCount * (1 + MAX_VERTICES_PER_FACE)];
+    int loadedFaceVertexNumAndIndicesItemCount = meshlite_get_face_index_array(meshlite, meshId, faceVertexNumAndIndices, faceCount * (1 + MAX_VERTICES_PER_FACE));
+    offset = 0;
+    while (offset < loadedFaceVertexNumAndIndicesItemCount) {
+        int indicesNum = faceVertexNumAndIndices[offset++];
+        assert(indicesNum >= 0 && indicesNum <= MAX_VERTICES_PER_FACE);
+        std::vector<int> face;
+        for (int i = 0; i < indicesNum && offset < loadedFaceVertexNumAndIndicesItemCount; i++) {
+            int index = faceVertexNumAndIndices[offset++];
+            assert(index >= 0 && index < loadedEdgeVertexPositionItemCount);
+            face.push_back(index);
+        }
+        m_faces.push_back(face);
+    }
+    delete[] faceVertexNumAndIndices;
+    faceVertexNumAndIndices = NULL;
     
     int edgeCount = meshlite_get_halfedge_count(meshlite, meshId);
     int *edgeIndices = new int[edgeCount * 2];
@@ -87,6 +113,16 @@ Mesh::~Mesh()
 {
     delete[] m_triangleVertices;
     m_triangleVertexCount = 0;
+}
+
+const std::vector<QVector3D> &Mesh::vertices()
+{
+    return m_vertices;
+}
+
+const std::vector<std::vector<int>> &Mesh::faces()
+{
+    return m_faces;
 }
 
 Vertex *Mesh::triangleVertices()

@@ -2,6 +2,8 @@
 #define MESH_H
 #include <QObject>
 #include <QOpenGLFunctions>
+#include <vector>
+#include <QVector3D>
 
 #pragma pack(push)
 #pragma pack(1)
@@ -28,11 +30,15 @@ public:
     int triangleVertexCount();
     Vertex *edgeVertices();
     int edgeVertexCount();
+    const std::vector<QVector3D> &vertices();
+    const std::vector<std::vector<int>> &faces();
 private:
     Vertex *m_triangleVertices;
     int m_triangleVertexCount;
     Vertex *m_edgeVertices;
     int m_edgeVertexCount;
+    std::vector<QVector3D> m_vertices;
+    std::vector<std::vector<int>> m_faces;
 };
 
 #endif

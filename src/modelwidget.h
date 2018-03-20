@@ -1,5 +1,5 @@
-#ifndef MODELING_WIDGET_H
-#define MODELING_WIDGET_H
+#ifndef MODEL_WIDGET_H
+#define MODEL_WIDGET_H
 
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions>
@@ -11,18 +11,19 @@
 
 QT_FORWARD_DECLARE_CLASS(QOpenGLShaderProgram)
 
-class ModelingWidget : public QOpenGLWidget, protected QOpenGLFunctions
+class ModelWidget : public QOpenGLWidget, protected QOpenGLFunctions
 {
     Q_OBJECT
 
 public:
-    ModelingWidget(QWidget *parent = 0);
-    ~ModelingWidget();
+    ModelWidget(QWidget *parent = 0);
+    ~ModelWidget();
 
     static bool isTransparent() { return m_transparent; }
     static void setTransparent(bool t) { m_transparent = t; }
     
     void updateMesh(Mesh *mesh);
+    void exportMeshAsObj(const QString &filename);
 
 public slots:
     void setXRotation(int angle);
