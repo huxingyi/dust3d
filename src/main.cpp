@@ -31,8 +31,10 @@ int main(int argc, char ** argv)
     
     QCoreApplication::setApplicationName("Dust 3D");
     
-    const QFont fixedFont = QFontDatabase::systemFont(QFontDatabase::FixedFont);
-    QApplication::setFont(fixedFont);
+    QFont font;
+    font.setWeight(QFont::Light);
+    font.setPointSize(9);
+    QApplication::setFont(font);
     
     MainWindow mainWindow;
     mainWindow.showMaximized();

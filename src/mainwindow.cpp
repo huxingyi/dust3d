@@ -64,7 +64,7 @@ MainWindow::MainWindow()
     
     QVBoxLayout *modelRightLayout = new QVBoxLayout;
     
-    modelRightLayout->addSpacing(20);
+    modelRightLayout->addSpacing(10);
     
     QPushButton *changeTurnaroundButton = new QPushButton("    Change Turnaround    ");
     modelRightLayout->addWidget(changeTurnaroundButton);

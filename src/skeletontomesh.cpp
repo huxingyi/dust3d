@@ -353,6 +353,12 @@ void SkeletonToMesh::process()
         group->meshId = meshlite_bmesh_generate_mesh(context, group->bmeshId, group->nodes[group->rootNode].bmeshNodeId);
     }
     
+    int mergedMeshId = m_groups[0].meshId;
+    for (size_t i = 1; i < m_groups.size(); i++) {
+        mergedMeshId = meshlite_merge(context, mergedMeshId, m_groups[i].meshId);
+    }
+    
+    /*
     ExternalMesh *unionPolyhedron = makeExternalMeshFromMeshlite(context, m_groups[0].meshId);
     for (size_t i = 1; i < m_groups.size(); i++) {
         ExternalMesh *polyhedron = makeExternalMeshFromMeshlite(context, m_groups[i].meshId);
@@ -364,11 +370,13 @@ void SkeletonToMesh::process()
             break;
         }
     }
+    */
     
     for (size_t i = 1; i < m_groups.size(); i++) {
         meshlite_bmesh_destroy(context, m_groups[i].bmeshId);
     }
     
+    /*
     if (unionPolyhedron) {
         int meshIdGeneratedFromExternal = makeMeshliteMeshFromExternal(context, unionPolyhedron);
         delete unionPolyhedron;
@@ -376,6 +384,10 @@ void SkeletonToMesh::process()
         meshlite_export(context, meshIdGeneratedFromExternal, "/Users/jeremy/testlib.obj");
         m_mesh = new Mesh(context, meshIdGeneratedFromExternal);
     }
+    */
+    
+    m_mesh = new Mesh(context, mergedMeshId);
+    
     meshlite_destroy_context(context);
     emit finished();
 }

@@ -497,6 +497,7 @@ void SkeletonEditGraphicsView::loadFromXmlStream(QXmlStreamReader &reader)
     std::vector<std::map<QString, QString>> pendingNodes;
     std::vector<std::map<QString, QString>> pendingEdges;
     std::map<QString, SkeletonEditNodeItem *> addedNodeMapById;
+    std::map<QString, QGraphicsItemGroup *> addedGroupMapById;
     
     while (!reader.atEnd()) {
         reader.readNext();
@@ -523,11 +524,13 @@ void SkeletonEditGraphicsView::loadFromXmlStream(QXmlStreamReader &reader)
                 }
             } else if (reader.name() == "node") {
                 QString nodeId = reader.attributes().value("id").toString();
+                QString nodeGroupId = reader.attributes().value("group").toString();
                 QString nodeType = reader.attributes().value("type").toString();
                 QString nodePairId = reader.attributes().value("pair").toString();
                 QString nodeRadius = reader.attributes().value("radius").toString();
                 std::map<QString, QString> pendingNode;
                 pendingNode["id"] = nodeId;
+                pendingNode["group"] = nodeGroupId;
                 pendingNode["type"] = nodeType;
                 pendingNode["pair"] = nodePairId;
                 pendingNode["radius"] = QString("%1").arg(nodeRadius.toFloat() * radiusMul);
@@ -554,7 +557,15 @@ void SkeletonEditGraphicsView::loadFromXmlStream(QXmlStreamReader &reader)
         float radius = (*pendingNode)["radius"].toFloat();
         QRectF nodeRect((*pendingNode)["x"].toFloat() - radius, (*pendingNode)["y"].toFloat() - radius,
             radius * 2, radius * 2);
-        addedNodeMapById[(*pendingNode)["id"]] = new SkeletonEditNodeItem(nodeRect);
+        SkeletonEditNodeItem *nodeItem = new SkeletonEditNodeItem(nodeRect);
+        addedNodeMapById[(*pendingNode)["id"]] = nodeItem;
+        std::map<QString, QGraphicsItemGroup *>::iterator findGroup = addedGroupMapById.find((*pendingNode)["group"]);
+        if (findGroup == addedGroupMapById.end()) {
+            QGraphicsItemGroup *group = new QGraphicsItemGroup;
+            scene()->addItem(group);
+            addedGroupMapById[(*pendingNode)["group"]] = group;
+        }
+        nodeItem->setGroup(addedGroupMapById[(*pendingNode)["group"]]);
     }
     
     for (size_t i = 0; i < pendingNodes.size(); i++) {
@@ -570,7 +581,9 @@ void SkeletonEditGraphicsView::loadFromXmlStream(QXmlStreamReader &reader)
     for (size_t i = 0; i < pendingEdges.size(); i++) {
         std::map<QString, QString> *pendingEdge = &pendingEdges[i];
         SkeletonEditEdgeItem *newEdge = new SkeletonEditEdgeItem();
-        newEdge->setNodes(addedNodeMapById[(*pendingEdge)["from"]], addedNodeMapById[(*pendingEdge)["to"]]);
+        SkeletonEditNodeItem *fromNodeItem = addedNodeMapById[(*pendingEdge)["from"]];
+        SkeletonEditNodeItem *toNodeItem = addedNodeMapById[(*pendingEdge)["to"]];
+        newEdge->setNodes(fromNodeItem, toNodeItem);
         scene()->addItem(newEdge);
     }
     
@@ -589,7 +602,9 @@ void SkeletonEditGraphicsView::saveToXmlStream(QXmlStreamWriter *writer)
         QList<QGraphicsItem *>::iterator it;
         QList<QGraphicsItem *> list = scene()->items();
         std::map<SkeletonEditNodeItem *, int> nodeIdMap;
+        std::map<QGraphicsItemGroup *, int> groupIdMap;
         int nextNodeId = 1;
+        int nextGroupId = 1;
         for (it = list.begin(); it != list.end(); ++it) {
             if ((*it)->data(0).toString() == "node") {
                 SkeletonEditNodeItem *nodeItem = static_cast<SkeletonEditNodeItem *>(*it);
@@ -602,7 +617,12 @@ void SkeletonEditGraphicsView::saveToXmlStream(QXmlStreamWriter *writer)
             if ((*it)->data(0).toString() == "node") {
                 SkeletonEditNodeItem *nodeItem = static_cast<SkeletonEditNodeItem *>(*it);
                 writer->writeStartElement("node");
+                    std::map<QGraphicsItemGroup *, int>::iterator findGroup = groupIdMap.find(nodeItem->group());
+                    if (findGroup == groupIdMap.end()) {
+                        groupIdMap[nodeItem->group()] = nextGroupId++;
+                    }
                     writer->writeAttribute("id", QString("node%1").arg(nodeIdMap[nodeItem]));
+                    writer->writeAttribute("group", QString("group%1").arg(groupIdMap[nodeItem->group()]));
                     writer->writeAttribute("type", nodeItem->isMaster() ? "master" : "slave");
                     writer->writeAttribute("pair", QString("node%1").arg(nodeIdMap[nodeItem->pair()]));
                     writer->writeAttribute("radius", QString("%1").arg(nodeItem->radius()));
