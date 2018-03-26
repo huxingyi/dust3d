@@ -2,20 +2,23 @@
 #define THEME_H
 #include <QColor>
 #include <QString>
+#include <map>
 
 class Theme
 {
 public:
-    static QColor skeletonMasterNodeBorderColor;
-    static QColor skeletonMasterNodeBorderHighlightColor;
-    static QColor skeletonMasterNodeFillColor;
-    static int skeletonMasterNodeBorderSize;
-    static QColor skeletonSlaveNodeBorderColor;
-    static QColor skeletonSlaveNodeBorderHighlightColor;
-    static QColor skeletonSlaveNodeFillColor;
-    static int skeletonSlaveNodeBorderSize;
+    static QColor red;
+    static QColor green;
+    static QColor blue;
+    static float normalAlpha;
+    static float checkedAlpha;
+    static float fillAlpha;
+    static int skeletonNodeBorderSize;
+    static int skeletonEdgeWidth;
     static QString tabButtonSelectedStylesheet;
     static QString tabButtonStylesheet;
+    static std::map<QString, QString> nextSideColorNameMap;
+    static std::map<QString, QColor> sideColorNameToColorMap;
 };
 
 #endif

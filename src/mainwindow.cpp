@@ -12,11 +12,14 @@
 #include <QBuffer>
 #include <QFormLayout>
 #include <QComboBox>
+#include <QMenu>
+#include <QMenuBar>
 #include <assert.h>
 #include "mainwindow.h"
 #include "skeletonwidget.h"
 #include "theme.h"
 #include "ds3file.h"
+#include "skeletonxml.h"
 
 MainWindow::MainWindow()
 {
@@ -24,7 +27,7 @@ MainWindow::MainWindow()
     m_sharePageButton = new QPushButton("Share");
     
     QWidget *hrWidget = new QWidget;
-    hrWidget->setFixedHeight(2);
+    hrWidget->setFixedHeight(1);
     hrWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
     hrWidget->setStyleSheet(QString("background-color: #fc6621;"));
     hrWidget->setContentsMargins(0, 0, 0, 0);
@@ -42,8 +45,7 @@ MainWindow::MainWindow()
     
     QHBoxLayout *topButtonsLayout = new QHBoxLayout;
     topButtonsLayout->setContentsMargins(0, 0, 0, 0);
-    topButtonsLayout->setSpacing(0);
-    topButtonsLayout->addStretch();
+    topButtonsLayout->setSpacing(20);
     topButtonsLayout->addWidget(m_modelPageButton);
     topButtonsLayout->addWidget(m_sharePageButton);
     topButtonsLayout->addStretch();
@@ -96,7 +98,7 @@ MainWindow::MainWindow()
     
     QHBoxLayout *modelPageLayout = new QHBoxLayout;
     modelPageLayout->addWidget(skeletonWidget);
-    modelPageLayout->addLayout(modelRightLayout);
+    //modelPageLayout->addLayout(modelRightLayout);
     
     QWidget *modelPageWidget = new QWidget;
     modelPageWidget->setLayout(modelPageLayout);
@@ -106,18 +108,88 @@ MainWindow::MainWindow()
     QStackedWidget *stackedWidget = new QStackedWidget;
     stackedWidget->addWidget(modelPageWidget);
     stackedWidget->addWidget(sharePageWidget);
+    stackedWidget->setContentsMargins(0, 0, 0, 0);
     
     m_stackedWidget = stackedWidget;
     
     QVBoxLayout *mainLayout = new QVBoxLayout;
-    mainLayout->addLayout(topLayout);
+    //mainLayout->addLayout(topLayout);
     mainLayout->addWidget(stackedWidget);
+    mainLayout->setContentsMargins(0, 0, 0, 0);
     
     QWidget *centralWidget = new QWidget;
     centralWidget->setLayout(mainLayout);
     
     setCentralWidget(centralWidget);
     setWindowTitle(tr("Dust 3D"));
+    
+    QAction *newAct = new QAction(tr("&New"), this);
+    newAct->setShortcuts(QKeySequence::New);
+    newAct->setStatusTip(tr("Create a new file"));
+    connect(newAct, &QAction::triggered, this, &MainWindow::newFile);
+    
+    QAction *openAct = new QAction(tr("&Open..."), this);
+    openAct->setShortcuts(QKeySequence::Open);
+    openAct->setStatusTip(tr("Open an existing file"));
+    connect(openAct, &QAction::triggered, this, &MainWindow::open);
+    
+    QAction *saveAct = new QAction(tr("&Save"), this);
+    saveAct->setShortcuts(QKeySequence::Save);
+    saveAct->setStatusTip(tr("Save the document to disk"));
+    connect(saveAct, &QAction::triggered, this, &MainWindow::save);
+    
+    QAction *exitAct = new QAction(tr("E&xit"), this);
+    exitAct->setShortcuts(QKeySequence::Quit);
+    exitAct->setStatusTip(tr("Exit the application"));
+    connect(exitAct, &QAction::triggered, this, &QWidget::close);
+    
+    QAction *undoAct = new QAction(tr("&Undo"), this);
+    undoAct->setShortcuts(QKeySequence::Undo);
+    undoAct->setStatusTip(tr("Undo the last operation"));
+    connect(undoAct, &QAction::triggered, this, &MainWindow::undo);
+
+    QAction *redoAct = new QAction(tr("&Redo"), this);
+    redoAct->setShortcuts(QKeySequence::Redo);
+    redoAct->setStatusTip(tr("Redo the last operation"));
+    connect(redoAct, &QAction::triggered, this, &MainWindow::redo);
+
+    QAction *cutAct = new QAction(tr("Cu&t"), this);
+    cutAct->setShortcuts(QKeySequence::Cut);
+    cutAct->setStatusTip(tr("Cut the current selection's contents to the "
+                            "clipboard"));
+    connect(cutAct, &QAction::triggered, this, &MainWindow::cut);
+
+    QAction *copyAct = new QAction(tr("&Copy"), this);
+    copyAct->setShortcuts(QKeySequence::Copy);
+    copyAct->setStatusTip(tr("Copy the current selection's contents to the "
+                             "clipboard"));
+    connect(copyAct, &QAction::triggered, this, &MainWindow::copy);
+
+    QAction *pasteAct = new QAction(tr("&Paste"), this);
+    pasteAct->setShortcuts(QKeySequence::Paste);
+    pasteAct->setStatusTip(tr("Paste the clipboard's contents into the current "
+                              "selection"));
+    connect(pasteAct, &QAction::triggered, this, &MainWindow::paste);
+    
+    QAction *changeTurnaroundAct = new QAction(tr("&Change Turnaround..."), this);
+    connect(changeTurnaroundAct, &QAction::triggered, skeletonWidget, &SkeletonWidget::changeTurnaround);
+    
+    QMenu *fileMenu = menuBar()->addMenu(tr("&File"));
+    fileMenu->addAction(newAct);
+    fileMenu->addAction(openAct);
+    fileMenu->addAction(saveAct);
+    fileMenu->addSeparator();
+    fileMenu->addAction(exitAct);
+
+    QMenu *editMenu = menuBar()->addMenu(tr("&Edit"));
+    editMenu->addAction(undoAct);
+    editMenu->addAction(redoAct);
+    editMenu->addSeparator();
+    editMenu->addAction(cutAct);
+    editMenu->addAction(copyAct);
+    editMenu->addAction(pasteAct);
+    editMenu->addSeparator();
+    editMenu->addAction(changeTurnaroundAct);
     
     bool connectResult = false;
     
@@ -140,6 +212,46 @@ MainWindow::MainWindow()
     assert(connectResult);
     
     updatePageButtons();
+}
+
+void MainWindow::newFile()
+{
+
+}
+
+void MainWindow::open()
+{
+    loadModel();
+}
+
+void MainWindow::save()
+{
+    saveModel();
+}
+
+void MainWindow::undo()
+{
+
+}
+
+void MainWindow::redo()
+{
+
+}
+
+void MainWindow::cut()
+{
+
+}
+
+void MainWindow::copy()
+{
+
+}
+
+void MainWindow::paste()
+{
+
 }
 
 void MainWindow::exportModel()
@@ -167,7 +279,9 @@ void MainWindow::loadModel()
             QByteArray data;
             ds3Reader.loadItem(item.name, &data);
             QXmlStreamReader xmlReader(data);
-            m_skeletonWidget->graphicsView()->loadFromXmlStream(xmlReader);
+            SkeletonSnapshot snapshot;
+            loadSkeletonFromXmlStream(&snapshot, xmlReader);
+            m_skeletonWidget->graphicsView()->loadFromSnapshot(&snapshot);
         } else if (item.type == "asset") {
             if (item.name == "canvas.png") {
                 QByteArray data;
@@ -195,7 +309,9 @@ void MainWindow::saveModel()
     
     QByteArray modelXml;
     QXmlStreamWriter stream(&modelXml);
-    m_skeletonWidget->graphicsView()->saveToXmlStream(&stream);
+    SkeletonSnapshot snapshot;
+    m_skeletonWidget->graphicsView()->saveToSnapshot(&snapshot);
+    saveSkeletonToXmlStream(&snapshot, &stream);
     if (modelXml.size() > 0)
         ds3Writer.add("model1.xml", "model", &modelXml);
     

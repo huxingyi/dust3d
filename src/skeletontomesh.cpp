@@ -2,6 +2,7 @@
 #include "meshlite.h"
 #include "skeletoneditnodeitem.h"
 #include "skeletoneditedgeitem.h"
+#include "skeletonsnapshot.h"
 #include <vector>
 
 #define USE_CARVE 1
@@ -202,67 +203,10 @@ struct NodeItemInfo
     int neighborCount;
 };
 
-SkeletonToMesh::SkeletonToMesh(SkeletonEditGraphicsView *graphicsView) :
-    m_mesh(NULL)
+SkeletonToMesh::SkeletonToMesh(SkeletonSnapshot *snapshot) :
+    m_mesh(NULL),
+    m_snapshot(*snapshot)
 {
-    QList<QGraphicsItem *>::iterator it;
-    QList<QGraphicsItem *> list = graphicsView->scene()->items();
-    std::map<SkeletonEditNodeItem *, NodeItemInfo> nodeItemsMap;
-    std::map<QGraphicsItemGroup *, int> groupIdsMap;
-    int maxNeighborCount = 0;
-    for (it = list.begin(); it != list.end(); ++it) {
-        if ((*it)->data(0).toString() == "edge") {
-            SkeletonEditEdgeItem *edgeItem = static_cast<SkeletonEditEdgeItem *>(*it);
-            SkeletonEditNodeItem *nodeItems[] = {edgeItem->firstNode(), edgeItem->secondNode()};
-            int nodeIndices[] = {0, 0};
-            SkeletonGroup *skeletonGroup = NULL;
-            for (int i = 0; i < 2; i++) {
-                SkeletonEditNodeItem *nodeItem = nodeItems[i];
-                std::map<QGraphicsItemGroup *, int>::iterator findGroupId = groupIdsMap.find(nodeItem->group());
-                if (findGroupId == groupIdsMap.end()) {
-                    SkeletonGroup group;
-                    group.maxNeighborCount = 0;
-                    group.rootNode = 0;
-                    group.bmeshId = -1;
-                    group.meshId = -1;
-                    groupIdsMap[nodeItem->group()] = m_groups.size();
-                    m_groups.push_back(group);
-                }
-                skeletonGroup = &m_groups[groupIdsMap[nodeItem->group()]];
-                std::map<SkeletonEditNodeItem *, NodeItemInfo>::iterator findNode = nodeItemsMap.find(nodeItem);
-                if (findNode == nodeItemsMap.end()) {
-                    SkeletonNode node;
-                    NodeItemInfo info;
-                    QPointF origin = nodeItem->origin();
-                    
-                    node.originX = origin.x();
-                    node.originY = origin.y();
-                    node.originZ = nodeItem->slave()->origin().x();
-                    node.bmeshNodeId = -1;
-                    node.radius = nodeItem->radius();
-                    node.thickness = nodeItem->slave()->radius();
-                    
-                    info.index = skeletonGroup->nodes.size();
-                    info.neighborCount = 1;
-                    
-                    nodeIndices[i] = info.index;
-                    nodeItemsMap[nodeItem] = info;
-                    skeletonGroup->nodes.push_back(node);
-                } else {
-                    nodeIndices[i] = findNode->second.index;
-                    findNode->second.neighborCount++;
-                    if (findNode->second.neighborCount > skeletonGroup->maxNeighborCount) {
-                        skeletonGroup->rootNode = findNode->second.index;
-                        maxNeighborCount = findNode->second.neighborCount;
-                    }
-                }
-            }
-            SkeletonEdge edge;
-            edge.firstNode = nodeIndices[0];
-            edge.secondNode = nodeIndices[1];
-            skeletonGroup->edges.push_back(edge);
-        }
-    }
 }
 
 SkeletonToMesh::~SkeletonToMesh()
@@ -291,103 +235,64 @@ Mesh *SkeletonToMesh::takeResultMesh()
 
 void SkeletonToMesh::process()
 {
-    if (m_groups.size() <= 0) {
-        emit finished();
-        return;
-    }
-    float left = -1;
-    float right = -1;
-    float top = -1;
-    float bottom = -1;
-    float zLeft = -1;
-    float zRight = -1;
-    for (size_t i = 0; i < m_groups.size(); i++) {
-        SkeletonGroup *group = &m_groups[i];
-        for (size_t j = 0; j < group->nodes.size(); j++) {
-            SkeletonNode *node = &group->nodes[j];
-            if (left < 0 || node->originX < left) {
-                left = node->originX;
-            }
-            if (top < 0 || node->originY < top) {
-                top = node->originY;
-            }
-            if (node->originX > right) {
-                right = node->originX;
-            }
-            if (node->originY > bottom) {
-                bottom = node->originY;
-            }
-            if (zLeft < 0 || node->originZ < zLeft) {
-                zLeft = node->originZ;
-            }
-            if (node->originZ > zRight) {
-                zRight = node->originZ;
-            }
-        }
-    }
-    float height = bottom - top;
-    if (height <= 0) {
-        emit finished();
-        return;
-    }
-    float zWidth = right - left;
-    void *context = meshlite_create_context();
+    std::vector<SkeletonSnapshot> groups;
+    m_snapshot.splitByConnectivity(&groups);
     
-    for (size_t i = 0; i < m_groups.size(); i++) {
-        SkeletonGroup *group = &m_groups[i];
-        group->bmeshId = meshlite_bmesh_create(context);
-        for (size_t j = 0; j < group->nodes.size(); j++) {
-            SkeletonNode *node = &group->nodes[j];
-            float x = (node->originX - left - height / 2) / height;
-            float y = (node->originY - top - height / 2) / height;
-            float z = (node->originZ - zLeft - zWidth / 2) / height;
-            float r = node->radius / height;
-            float t = node->thickness / height;
-            node->bmeshNodeId = meshlite_bmesh_add_node(context, group->bmeshId, x, y, z, r, t);
-        }
-        for (size_t j = 0; j < group->edges.size(); j++) {
-            SkeletonNode *firstNode = &group->nodes[group->edges[j].firstNode];
-            SkeletonNode *secondNode = &group->nodes[group->edges[j].secondNode];
-            meshlite_bmesh_add_edge(context, group->bmeshId, firstNode->bmeshNodeId, secondNode->bmeshNodeId);
-        }
-        group->meshId = meshlite_bmesh_generate_mesh(context, group->bmeshId, group->nodes[group->rootNode].bmeshNodeId);
-    }
-    
-    int mergedMeshId = m_groups[0].meshId;
-    for (size_t i = 1; i < m_groups.size(); i++) {
-        mergedMeshId = meshlite_merge(context, mergedMeshId, m_groups[i].meshId);
-    }
-    
-    /*
-    ExternalMesh *unionPolyhedron = makeExternalMeshFromMeshlite(context, m_groups[0].meshId);
-    for (size_t i = 1; i < m_groups.size(); i++) {
-        ExternalMesh *polyhedron = makeExternalMeshFromMeshlite(context, m_groups[i].meshId);
-        ExternalMesh *newUnionPolyhedron = unionExternalMeshs(unionPolyhedron, polyhedron);
-        delete polyhedron;
-        delete unionPolyhedron;
-        unionPolyhedron = newUnionPolyhedron;
-        if (NULL == unionPolyhedron) {
-            break;
-        }
-    }
-    */
-    
-    for (size_t i = 1; i < m_groups.size(); i++) {
-        meshlite_bmesh_destroy(context, m_groups[i].bmeshId);
-    }
-    
-    /*
-    if (unionPolyhedron) {
-        int meshIdGeneratedFromExternal = makeMeshliteMeshFromExternal(context, unionPolyhedron);
-        delete unionPolyhedron;
+    std::vector<int> meshIds;
+    void *meshliteContext = meshlite_create_context();
+    for (size_t i = 0; i < groups.size(); i++) {
+        SkeletonSnapshot *skeleton = &groups[i];
+        QRectF front = skeleton->boundingBoxFront();
+        QRectF side = skeleton->boundingBoxSide();
         
-        meshlite_export(context, meshIdGeneratedFromExternal, "/Users/jeremy/testlib.obj");
-        m_mesh = new Mesh(context, meshIdGeneratedFromExternal);
+        std::map<QString, int> bmeshNodeMap;
+        
+        std::map<QString, std::map<QString, QString>>::iterator nodeIterator;
+        int bmeshId = meshlite_bmesh_create(meshliteContext);
+        for (nodeIterator = skeleton->nodes.begin(); nodeIterator != skeleton->nodes.end(); nodeIterator++) {
+            if ("red" != nodeIterator->second["sideColorName"])
+                continue;
+            std::map<QString, std::map<QString, QString>>::iterator nextSidePair = skeleton->nodes.find(nodeIterator->second["nextSidePair"]);
+            if (nextSidePair == skeleton->nodes.end())
+                continue;
+            float x = (nodeIterator->second["x"].toFloat() - front.left() - front.height() / 2) / front.height();
+            float y = (nodeIterator->second["y"].toFloat() - front.top() - front.height() / 2) / front.height();
+            float z = (nextSidePair->second["x"].toFloat() - side.left() - side.width() / 2) / side.height();
+            float r = nodeIterator->second["radius"].toFloat() / front.height();
+            float t = nextSidePair->second["radius"].toFloat() / side.height();
+            int bmeshNodeId = meshlite_bmesh_add_node(meshliteContext, bmeshId, x, y, z, r, t);
+            printf("meshlite_bmesh_add_node x:%f y:%f z:%f r:%f t:%f nodeName:%s bmeshNodeId:%d\n", x, y, z, r, t, nodeIterator->first.toUtf8().constData(), bmeshNodeId);
+            bmeshNodeMap[nodeIterator->first] = bmeshNodeId;
+        }
+        
+        std::map<QString, std::map<QString, QString>>::iterator edgeIterator;
+        for (edgeIterator = skeleton->edges.begin(); edgeIterator != skeleton->edges.end(); edgeIterator++) {
+            std::map<QString, int>::iterator from = bmeshNodeMap.find(edgeIterator->second["from"]);
+            if (from == bmeshNodeMap.end())
+                continue;
+            std::map<QString, int>::iterator to = bmeshNodeMap.find(edgeIterator->second["to"]);
+            if (to == bmeshNodeMap.end())
+                continue;
+            printf("meshlite_bmesh_add_edge %d -> %d\n", from->second, to->second);
+            meshlite_bmesh_add_edge(meshliteContext, bmeshId, from->second, to->second);
+        }
+        
+        if (bmeshNodeMap.size() > 0 && !skeleton->rootNode().isEmpty()) {
+            int meshId = meshlite_bmesh_generate_mesh(meshliteContext, bmeshId, bmeshNodeMap[skeleton->rootNode()]);
+            meshIds.push_back(meshId);
+        }
+        
+        meshlite_bmesh_destroy(meshliteContext, bmeshId);
     }
-    */
     
-    m_mesh = new Mesh(context, mergedMeshId);
+    if (meshIds.size() > 0) {
+        int mergedMeshId = meshIds[0];
+        for (size_t i = 1; i < meshIds.size(); i++) {
+            mergedMeshId = meshlite_merge(meshliteContext, mergedMeshId, meshIds[i]);
+        }
+        m_mesh = new Mesh(meshliteContext, mergedMeshId);
+    }
     
-    meshlite_destroy_context(context);
+    meshlite_destroy_context(meshliteContext);
     emit finished();
 }

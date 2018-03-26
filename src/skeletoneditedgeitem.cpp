@@ -28,8 +28,13 @@ bool SkeletonEditEdgeItem::checked()
 
 void SkeletonEditEdgeItem::updateAppearance()
 {
-    QPen pen(m_checked ? Theme::skeletonMasterNodeBorderHighlightColor :  Theme::skeletonMasterNodeBorderColor);
-    pen.setWidth(Theme::skeletonMasterNodeBorderSize);
+    QPen pen;
+    if (m_firstNode) {
+        pen.setColor(m_firstNode->sideColor());
+    } else if (m_secondNode) {
+        pen.setColor(m_secondNode->sideColor());
+    }
+    pen.setWidth(Theme::skeletonEdgeWidth);
     setPen(pen);
 }
 
@@ -51,6 +56,7 @@ void SkeletonEditEdgeItem::updatePosition()
         QLineF line(m_firstNode->origin(), m_secondNode->origin());
         setLine(line);
     }
+    updateAppearance();
 }
 
 SkeletonEditNodeItem *SkeletonEditEdgeItem::firstNode()

@@ -22,13 +22,15 @@ SkeletonWidget::SkeletonWidget(QWidget *parent) :
 {
     QHBoxLayout *topLayout = new QHBoxLayout;
     topLayout->addStretch();
+    topLayout->setContentsMargins(0, 0, 0, 0);
     
     m_graphicsView = new SkeletonEditGraphicsView(this);
     m_graphicsView->setRenderHint(QPainter::Antialiasing, false);
     m_graphicsView->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     m_graphicsView->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    
     m_graphicsView->setBackgroundBrush(QBrush(QWidget::palette().color(QWidget::backgroundRole()), Qt::SolidPattern));
+    m_graphicsView->setContentsMargins(0, 0, 0, 0);
+    m_graphicsView->setFrameStyle(QFrame::NoFrame);
     
     m_modelWidget = new ModelWidget(this);
     m_modelWidget->setMinimumSize(128, 128);
@@ -37,41 +39,48 @@ SkeletonWidget::SkeletonWidget(QWidget *parent) :
     m_modelWidget->setWindowTitle("3D Model");
 
     QVBoxLayout *rightLayout = new QVBoxLayout;
-    rightLayout->addSpacing(10);
+    rightLayout->addSpacing(0);
     rightLayout->addStretch();
+    rightLayout->setContentsMargins(0, 0, 0, 0);
     
     QToolBar *toolbar = new QToolBar;
-    toolbar->setIconSize(QSize(16, 16));
+    toolbar->setIconSize(QSize(18, 18));
     toolbar->setOrientation(Qt::Vertical);
     
     QAction *addAction = new QAction(tr("Add"), this);
-    addAction->setIcon(QIcon(":/resources/add.png"));
+    addAction->setIcon(QPixmap(":/resources/add.svg"));
     toolbar->addAction(addAction);
     
     QAction *selectAction = new QAction(tr("Select"), this);
-    selectAction->setIcon(QIcon(":/resources/select.png"));
+    selectAction->setIcon(QPixmap(":/resources/rotate.svg"));
     toolbar->addAction(selectAction);
     
     QAction *rangeSelectAction = new QAction(tr("Range Select"), this);
-    rangeSelectAction->setIcon(QIcon(":/resources/rangeselect.png"));
+    rangeSelectAction->setIcon(QPixmap(":/resources/zoomin.svg"));
     toolbar->addAction(rangeSelectAction);
+    
+    toolbar->setContentsMargins(0, 0, 0, 0);
     
     QVBoxLayout *leftLayout = new QVBoxLayout;
     leftLayout->addWidget(toolbar);
     leftLayout->addStretch();
-    leftLayout->addSpacing(10);
+    leftLayout->addSpacing(0);
+    leftLayout->setContentsMargins(0, 0, 0, 0);
     
     QHBoxLayout *middleLayout = new QHBoxLayout;
-    middleLayout->addLayout(leftLayout);
+    //middleLayout->addLayout(leftLayout);
     middleLayout->addWidget(m_graphicsView);
-    middleLayout->addLayout(rightLayout);
+    //middleLayout->addLayout(rightLayout);
+    middleLayout->setContentsMargins(0, 0, 0, 0);
     
     QVBoxLayout *mainLayout = new QVBoxLayout;
-    mainLayout->addLayout(topLayout);
+    //mainLayout->addLayout(topLayout);
     //mainLayout->addSpacing(10);
     mainLayout->addLayout(middleLayout);
+    mainLayout->setContentsMargins(0, 0, 0, 0);
     
     setLayout(mainLayout);
+    setContentsMargins(0, 0, 0, 0);
     
     setWindowTitle(tr("Dust 3D"));
     
@@ -139,7 +148,9 @@ void SkeletonWidget::skeletonChanged()
     m_skeletonDirty = false;
     
     QThread *thread = new QThread;
-    m_skeletonToMesh = new SkeletonToMesh(m_graphicsView);
+    SkeletonSnapshot snapshot;
+    m_graphicsView->saveToSnapshot(&snapshot);
+    m_skeletonToMesh = new SkeletonToMesh(&snapshot);
     m_skeletonToMesh->moveToThread(thread);
     connect(thread, SIGNAL(started()), m_skeletonToMesh, SLOT(process()));
     connect(m_skeletonToMesh, SIGNAL(finished()), this, SLOT(meshReady()));

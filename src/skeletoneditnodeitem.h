@@ -1,6 +1,9 @@
 #ifndef SKELETON_EDIT_NODE_ITEM_H
 #define SKELETON_EDIT_NODE_ITEM_H
 #include <QGraphicsEllipseItem>
+#include <map>
+#include <QString>
+#include <QColor>
 
 class SkeletonEditEdgeItem;
 
@@ -9,25 +12,28 @@ class SkeletonEditNodeItem : public QGraphicsEllipseItem
 public:
     SkeletonEditNodeItem(const QRectF &rect, QGraphicsItem *parent = 0);
     QPointF origin();
-    float radius();
-    void setHighlighted(bool highlited);
-    void setIsNextStartNode(bool isNextStartNode);
-    bool isSlave();
-    bool isMaster();
-    void setMaster(SkeletonEditNodeItem *nodeItem);
-    void setSlave(SkeletonEditNodeItem *nodeItem);
-    SkeletonEditNodeItem *master();
-    SkeletonEditNodeItem *slave();
-    SkeletonEditNodeItem *pair();
-    void setRadius(float radius);
     void setOrigin(QPointF point);
+    float radius();
+    void setRadius(float radius);
+    bool hovered();
+    void setHovered(bool hovered);
+    bool checked();
+    void setChecked(bool checked);
+    SkeletonEditNodeItem *nextSidePair();
+    void setNextSidePair(SkeletonEditNodeItem *nodeItem);
+    const QColor &sideColor();
+    QColor nextSideColor();
+    const QString &sideColorName();
+    QString nextSideColorName();
+    void setSideColorName(const QString &name);
 private:
-    bool m_highlighted;
-    bool m_isNextStartNode;
-    SkeletonEditNodeItem *m_master;
-    SkeletonEditNodeItem *m_slave;
+    bool m_hovered;
+    bool m_checked;
+    SkeletonEditNodeItem *m_nextSidePair;
+    QColor m_sideColor;
+    QString m_sideColorName;
 private:
-    void updateBorder();
+    void updateAppearance();
 };
 
 #endif

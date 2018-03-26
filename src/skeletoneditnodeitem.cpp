@@ -4,50 +4,69 @@
 
 SkeletonEditNodeItem::SkeletonEditNodeItem(const QRectF &rect, QGraphicsItem *parent) :
     QGraphicsEllipseItem(rect, parent),
-    m_highlighted(false),
-    m_isNextStartNode(false),
-    m_master(NULL),
-    m_slave(NULL)
+    m_hovered(false),
+    m_checked(false),
+    m_nextSidePair(NULL),
+    m_sideColor(Theme::red),
+    m_sideColorName("red")
 {
     setData(0, "node");
-    updateBorder();
+    updateAppearance();
 }
 
-bool SkeletonEditNodeItem::isSlave()
+const QString &SkeletonEditNodeItem::sideColorName()
 {
-    return NULL != m_master;
+    return m_sideColorName;
 }
 
-bool SkeletonEditNodeItem::isMaster()
+QString SkeletonEditNodeItem::nextSideColorName()
 {
-    return NULL == m_master;
+    return Theme::nextSideColorNameMap[m_sideColorName];
 }
 
-SkeletonEditNodeItem *SkeletonEditNodeItem::master()
+void SkeletonEditNodeItem::setSideColorName(const QString &name)
 {
-    return m_master ? m_master : this;
+    m_sideColorName = name;
+    m_sideColor = Theme::sideColorNameToColorMap[m_sideColorName];
+    updateAppearance();
 }
 
-void SkeletonEditNodeItem::setMaster(SkeletonEditNodeItem *nodeItem)
+bool SkeletonEditNodeItem::hovered()
 {
-    m_master = nodeItem;
-    updateBorder();
+    return m_hovered;
 }
 
-void SkeletonEditNodeItem::setSlave(SkeletonEditNodeItem *nodeItem)
+void SkeletonEditNodeItem::setHovered(bool hovered)
 {
-    m_slave = nodeItem;
-    updateBorder();
+    m_hovered = hovered;
+    updateAppearance();
 }
 
-SkeletonEditNodeItem *SkeletonEditNodeItem::pair()
+bool SkeletonEditNodeItem::checked()
 {
-    return m_master ? m_master : m_slave;
+    return m_checked;
 }
 
-SkeletonEditNodeItem *SkeletonEditNodeItem::slave()
+void SkeletonEditNodeItem::setChecked(bool checked)
 {
-    return m_slave;
+    m_checked = checked;
+    updateAppearance();
+}
+
+SkeletonEditNodeItem *SkeletonEditNodeItem::nextSidePair()
+{
+    return m_nextSidePair;
+}
+
+void SkeletonEditNodeItem::setNextSidePair(SkeletonEditNodeItem *nodeItem)
+{
+    m_nextSidePair = nodeItem;
+    updateAppearance();
+}
+
+const QColor &SkeletonEditNodeItem::sideColor()
+{
+    return m_sideColor;
 }
 
 QPointF SkeletonEditNodeItem::origin()
@@ -76,31 +95,22 @@ void SkeletonEditNodeItem::setOrigin(QPointF point)
     setRect(newRect);
 }
 
-void SkeletonEditNodeItem::setHighlighted(bool highlighted)
+void SkeletonEditNodeItem::updateAppearance()
 {
-    m_highlighted = highlighted;
-    if (m_highlighted) {
-        setBrush(QBrush(isMaster() ? Theme::skeletonMasterNodeFillColor :  Theme::skeletonSlaveNodeFillColor));
-    } else {
-        setBrush(QBrush(Qt::transparent));
-    }
-    if (m_slave)
-    {
-        m_slave->setHighlighted(highlighted);
-    }
-}
-
-void SkeletonEditNodeItem::setIsNextStartNode(bool isNextStartNode)
-{
-    m_isNextStartNode = isNextStartNode;
-    updateBorder();
-}
-
-void SkeletonEditNodeItem::updateBorder()
-{
-    QPen pen(m_isNextStartNode ?
-        (isMaster() ? Theme::skeletonMasterNodeBorderHighlightColor : Theme::skeletonSlaveNodeBorderHighlightColor) :
-        (isMaster() ? Theme::skeletonMasterNodeBorderColor : Theme::skeletonSlaveNodeBorderColor));
-    pen.setWidth(isMaster() ? Theme::skeletonMasterNodeBorderSize : Theme::skeletonSlaveNodeBorderSize);
+    QColor penColor = m_sideColor;
+    penColor.setAlphaF(m_checked ? Theme::checkedAlpha : Theme::normalAlpha);
+    QPen pen(penColor);
+    pen.setWidth(Theme::skeletonNodeBorderSize);
     setPen(pen);
+    
+    QColor brushColor = m_sideColor;
+    brushColor.setAlphaF((m_hovered || m_checked) ? Theme::fillAlpha : 0);
+    QBrush brush(brushColor);
+    setBrush(brush);
 }
+
+QColor SkeletonEditNodeItem::nextSideColor()
+{
+    return Theme::sideColorNameToColorMap[Theme::nextSideColorNameMap[m_sideColorName]];
+}
+

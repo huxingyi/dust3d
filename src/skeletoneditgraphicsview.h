@@ -7,6 +7,7 @@
 #include <QXmlStreamReader>
 #include "skeletoneditnodeitem.h"
 #include "skeletoneditedgeitem.h"
+#include "skeletonsnapshot.h"
 
 class SkeletonEditGraphicsView : public QGraphicsView
 {
@@ -22,10 +23,10 @@ public slots:
 public:
     SkeletonEditGraphicsView(QWidget *parent = 0);
     void updateBackgroundImage(const QImage &image);
-    void saveToXmlStream(QXmlStreamWriter *writer);
-    void loadFromXmlStream(QXmlStreamReader &reader);
     bool hasBackgroundImage();
     QPixmap backgroundImage();
+    void saveToSnapshot(SkeletonSnapshot *snapshot);
+    void loadFromSnapshot(SkeletonSnapshot *snapshot);
 protected:
     void mouseMoveEvent(QMouseEvent *event);
     void wheelEvent(QWheelEvent *event);
@@ -46,7 +47,6 @@ private:
     QPointF m_lastMousePos;
     bool m_isMovingNodeItem;
     bool m_backgroundLoaded;
-    SkeletonEditEdgeItem *m_selectedEdgeItem;
 private:
     void toggleAddNodeMode();
     void applyAddNodeMode();
@@ -55,14 +55,17 @@ private:
     SkeletonEditEdgeItem *findEdgeItemByNodePair(SkeletonEditNodeItem *first,
         SkeletonEditNodeItem *second);
     void setNextStartNodeItem(SkeletonEditNodeItem *item);
-    float findXForSlave(float x);
     bool canNodeItemMoveTo(SkeletonEditNodeItem *item, QPointF moveTo);
     void AddItemRadius(QGraphicsEllipseItem *item, float delta);
     bool canAddItemRadius(QGraphicsEllipseItem *item, float delta);
     void adjustItems(QSizeF oldSceneSize, QSizeF newSceneSize);
     void removeSelectedItems();
     void removeNodeItem(SkeletonEditNodeItem *nodeItem);
-    void removeGroupByNodeItem(SkeletonEditNodeItem *nodeItem);
+    void removeNodeItemAndSidePairs(SkeletonEditNodeItem *nodeItem);
+    void fetchNodeItemAndAllSidePairs(SkeletonEditNodeItem *nodeItem, std::vector<SkeletonEditNodeItem *> *sidePairs);
+    SkeletonEditNodeItem *addNodeItemAndSidePairs(QRectF area, SkeletonEditNodeItem *fromNodeItem, const QString &sideColorName="red");
+    SkeletonEditNodeItem *addNodeItem(float originX, float originY, float radius);
+    void addEdgeItem(SkeletonEditNodeItem *first, SkeletonEditNodeItem *second);
 };
 
 #endif

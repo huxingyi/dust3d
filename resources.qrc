@@ -1,17 +1,8 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
-    <file>resources/add.png</file>
-    <file>resources/select.png</file>
-    <file>resources/picture.png</file>
-    <file>resources/save.png</file>
-    <file>resources/info.png</file>
-    <file>resources/up.png</file>
-    <file>resources/down.png</file>
-    <file>resources/clip.png</file>
-    <file>resources/rangeselect.png</file>
-    <file>resources/delete.png</file>
-    <file>resources/new.png</file>
-    <file>resources/palette.png</file>
-    <file>resources/trashbin.png</file>
+    <file>resources/add.svg</file>
+    <file>resources/rotate.svg</file>
+    <file>resources/zoomin.svg</file>
+    <file>resources/zoomout.svg</file>
 </qresource>
 </RCC>

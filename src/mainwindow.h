@@ -17,6 +17,14 @@ public slots:
     void saveModel();
     void loadModel();
     void exportModel();
+    void newFile();
+    void open();
+    void save();
+    void undo();
+    void redo();
+    void cut();
+    void copy();
+    void paste();
 private:
     QPushButton *m_modelPageButton;
     QPushButton *m_sharePageButton;

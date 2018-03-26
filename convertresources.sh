@@ -1,13 +1,13 @@
-convert thirdparty/capicon/png/white/059.png -fuzz 90% -fill 'rgb(252,102,33)' -opaque 'rgb(255,255,255)' resources/add.png
-convert thirdparty/capicon/png/white/262.png -fuzz 90% -fill 'rgb(252,102,33)' -opaque 'rgb(255,255,255)' resources/select.png
-convert thirdparty/capicon/png/white/078.png -fuzz 90% -fill 'rgb(252,102,33)' -opaque 'rgb(255,255,255)' resources/picture.png
-convert thirdparty/capicon/png/white/226.png -fuzz 90% -fill 'rgb(252,102,33)' -opaque 'rgb(255,255,255)' resources/save.png
-convert thirdparty/capicon/png/white/341.png -fuzz 90% -fill 'rgb(252,102,33)' -opaque 'rgb(255,255,255)' resources/info.png
-convert thirdparty/capicon/png/white/279.png -fuzz 90% -fill 'rgb(252,102,33)' -opaque 'rgb(255,255,255)' resources/up.png
-convert thirdparty/capicon/png/white/278.png -fuzz 90% -fill 'rgb(252,102,33)' -opaque 'rgb(255,255,255)' resources/down.png
-convert thirdparty/capicon/png/white/274.png -fuzz 90% -fill 'rgb(252,102,33)' -opaque 'rgb(255,255,255)' resources/clip.png
-convert thirdparty/capicon/png/white/254.png -fuzz 90% -fill 'rgb(252,102,33)' -opaque 'rgb(255,255,255)' resources/rangeselect.png
-convert thirdparty/capicon/png/white/057.png -fuzz 90% -fill 'rgb(252,102,33)' -opaque 'rgb(255,255,255)' resources/delete.png
-convert thirdparty/capicon/png/white/047.png -fuzz 90% -fill 'rgb(252,102,33)' -opaque 'rgb(255,255,255)' resources/new.png
-convert thirdparty/capicon/png/white/039.png -fuzz 90% -fill 'rgb(252,102,33)' -opaque 'rgb(255,255,255)' resources/palette.png
-convert thirdparty/capicon/png/white/030.png -fuzz 90% -fill 'rgb(252,102,33)' -opaque 'rgb(255,255,255)' resources/trashbin.png
+cp -f thirdparty/capicon/svg/059.svg resources/add.svg
+cp -f thirdparty/capicon/svg/262.svg resources/select.svg
+cp -f thirdparty/capicon/svg/078.svg resources/picture.svg
+cp -f thirdparty/capicon/svg/226.svg resources/save.svg
+cp -f thirdparty/capicon/svg/341.svg resources/info.svg
+cp -f thirdparty/capicon/svg/279.svg resources/up.svg
+cp -f thirdparty/capicon/svg/278.svg resources/down.svg
+cp -f thirdparty/capicon/svg/274.svg resources/clip.svg
+cp -f thirdparty/capicon/svg/254.svg resources/rangeselect.svg
+cp -f thirdparty/capicon/svg/057.svg resources/delete.svg
+cp -f thirdparty/capicon/svg/047.svg resources/new.svg
+cp -f thirdparty/capicon/svg/039.svg resources/palette.svg
+cp -f thirdparty/capicon/svg/030.svg resources/trashbin.svg

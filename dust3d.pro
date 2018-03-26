@@ -28,6 +28,12 @@ HEADERS += src/turnaroundloader.h
 SOURCES += src/skeletonwidget.cpp
 HEADERS += src/skeletonwidget.h
 
+SOURCES += src/skeletonsnapshot.cpp
+HEADERS += src/skeletonsnapshot.h
+
+SOURCES += src/skeletonxml.cpp
+HEADERS += src/skeletonxml.h
+
 SOURCES += src/ds3file.cpp
 HEADERS += src/ds3file.h
 

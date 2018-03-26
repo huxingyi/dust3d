@@ -9,6 +9,7 @@
 #include "skeletoneditgraphicsview.h"
 #include "skeletoneditnodeitem.h"
 #include "skeletoneditedgeitem.h"
+#include "theme.h"
 
 qreal SkeletonEditGraphicsView::m_initialNodeSize = 128;
 qreal SkeletonEditGraphicsView::m_minimalNodeSize = 8;
@@ -22,8 +23,7 @@ SkeletonEditGraphicsView::SkeletonEditGraphicsView(QWidget *parent) :
     m_lastHoverNodeItem(NULL),
     m_lastMousePos(0, 0),
     m_isMovingNodeItem(false),
-    m_backgroundLoaded(false),
-    m_selectedEdgeItem(NULL)
+    m_backgroundLoaded(false)
 {
     setScene(new QGraphicsScene());
 
@@ -128,29 +128,11 @@ void SkeletonEditGraphicsView::mousePressEvent(QMouseEvent *event)
     if (event->button() == Qt::LeftButton) {
         if (!m_inAddNodeMode) {
             if (m_lastHoverNodeItem) {
-                setNextStartNodeItem(m_lastHoverNodeItem->master());
+                setNextStartNodeItem(m_lastHoverNodeItem);
                 m_lastHoverNodeItem = NULL;
             } else {
                 if (m_nextStartNodeItem) {
                     setNextStartNodeItem(NULL);
-                }
-            }
-            SkeletonEditEdgeItem *edgeItem = findEdgeItemByPos(pos);
-            if (edgeItem) {
-                if (m_selectedEdgeItem != edgeItem) {
-                    if (m_selectedEdgeItem) {
-                        m_selectedEdgeItem->setChecked(false);
-                        m_selectedEdgeItem = NULL;
-                    }
-                    edgeItem->setChecked(true);
-                    m_selectedEdgeItem = edgeItem;
-                    emit edgeCheckStateChanged();
-                }
-            } else {
-                if (m_selectedEdgeItem) {
-                    m_selectedEdgeItem->setChecked(false);
-                    m_selectedEdgeItem = NULL;
-                    emit edgeCheckStateChanged();
                 }
             }
         }
@@ -165,11 +147,6 @@ void SkeletonEditGraphicsView::mouseDoubleClickEvent(QMouseEvent *event)
         emit changeTurnaroundTriggered();
 }
 
-float SkeletonEditGraphicsView::findXForSlave(float x)
-{
-    return x - m_backgroundItem->boundingRect().width() / 4;
-}
-
 void SkeletonEditGraphicsView::removeSelectedItems()
 {
     if (m_nextStartNodeItem) {
@@ -182,9 +159,6 @@ void SkeletonEditGraphicsView::removeSelectedItems()
 
 void SkeletonEditGraphicsView::removeNodeItem(SkeletonEditNodeItem *nodeItem)
 {
-    if (nodeItem->pair()) {
-        scene()->removeItem(nodeItem->pair());
-    }
     scene()->removeItem(nodeItem);
     QList<QGraphicsItem *>::iterator it;
     QList<QGraphicsItem *> list = scene()->items();
@@ -198,29 +172,19 @@ void SkeletonEditGraphicsView::removeNodeItem(SkeletonEditNodeItem *nodeItem)
     }
 }
 
-void SkeletonEditGraphicsView::removeGroupByNodeItem(SkeletonEditNodeItem *nodeItem)
+void SkeletonEditGraphicsView::fetchNodeItemAndAllSidePairs(SkeletonEditNodeItem *nodeItem, std::vector<SkeletonEditNodeItem *> *sidePairs)
 {
-    if (nodeItem->pair()) {
-        scene()->removeItem(nodeItem->pair());
-    }
-    scene()->removeItem(nodeItem);
-    QList<QGraphicsItem *>::iterator it;
-    QList<QGraphicsItem *> list = scene()->items();
-    std::vector<SkeletonEditNodeItem *> delayRemoveList;
-    for (it = list.begin(); it != list.end(); ++it) {
-        if ((*it)->data(0).toString() == "edge") {
-            SkeletonEditEdgeItem *edgeItem = static_cast<SkeletonEditEdgeItem *>(*it);
-            if (edgeItem->firstNode() == nodeItem) {
-                scene()->removeItem(edgeItem);
-                delayRemoveList.push_back(edgeItem->secondNode());
-            } else if (edgeItem->secondNode() == nodeItem) {
-                scene()->removeItem(edgeItem);
-                delayRemoveList.push_back(edgeItem->firstNode());
-            }
-        }
-    }
-    for (size_t i = 0; i < delayRemoveList.size(); i++) {
-        removeNodeItem(delayRemoveList[i]);
+    sidePairs->push_back(nodeItem);
+    sidePairs->push_back(nodeItem->nextSidePair());
+    sidePairs->push_back(nodeItem->nextSidePair()->nextSidePair());
+}
+
+void SkeletonEditGraphicsView::removeNodeItemAndSidePairs(SkeletonEditNodeItem *nodeItem)
+{
+    std::vector<SkeletonEditNodeItem *> nodes;
+    fetchNodeItemAndAllSidePairs(nodeItem, &nodes);
+    for (size_t i = 0; i < nodes.size(); i++) {
+        removeNodeItem(nodes[i]);
     }
 }
 
@@ -242,6 +206,52 @@ void SkeletonEditGraphicsView::resizeEvent(QResizeEvent *event)
     emit sizeChanged();
 }
 
+SkeletonEditNodeItem *SkeletonEditGraphicsView::addNodeItemAndSidePairs(QRectF area, SkeletonEditNodeItem *fromNodeItem, const QString &sideColorName)
+{
+    float pairedX = 0;
+    QRectF pairedRect = area;
+    if (fromNodeItem) {
+        pairedX = fromNodeItem->nextSidePair()->rect().x();
+    } else {
+        if (area.center().x() < scene()->sceneRect().width() / 2) {
+            pairedX = area.center().x() + scene()->sceneRect().width() / 4;
+        } else {
+            pairedX = area.center().x() - scene()->sceneRect().width() / 4;
+        }
+    }
+    pairedRect.translate(pairedX - area.x(), 0);
+    SkeletonEditNodeItem *firstNode = new SkeletonEditNodeItem(area);
+    scene()->addItem(firstNode);
+    firstNode->setSideColorName(fromNodeItem ? fromNodeItem->sideColorName() : sideColorName);
+    SkeletonEditNodeItem *secondNode = new SkeletonEditNodeItem(pairedRect);
+    scene()->addItem(secondNode);
+    secondNode->setSideColorName(firstNode->nextSideColorName());
+    firstNode->setNextSidePair(secondNode);
+    secondNode->setNextSidePair(firstNode);
+    setNextStartNodeItem(firstNode);
+    if (!fromNodeItem) {
+        return firstNode;
+    }
+    addEdgeItem(fromNodeItem, firstNode);
+    addEdgeItem(fromNodeItem->nextSidePair(), firstNode->nextSidePair());
+    return firstNode;
+}
+
+SkeletonEditNodeItem *SkeletonEditGraphicsView::addNodeItem(float originX, float originY, float radius)
+{
+    QRectF area(originX - radius, originY - radius, radius * 2, radius * 2);
+    SkeletonEditNodeItem *firstNode = new SkeletonEditNodeItem(area);
+    scene()->addItem(firstNode);
+    return firstNode;
+}
+
+void SkeletonEditGraphicsView::addEdgeItem(SkeletonEditNodeItem *first, SkeletonEditNodeItem *second)
+{
+    SkeletonEditEdgeItem *newEdge = new SkeletonEditEdgeItem();
+    newEdge->setNodes(first, second);
+    scene()->addItem(newEdge);
+}
+
 void SkeletonEditGraphicsView::mouseReleaseEvent(QMouseEvent *event)
 {
     QWidget::mouseReleaseEvent(event);
@@ -249,38 +259,16 @@ void SkeletonEditGraphicsView::mouseReleaseEvent(QMouseEvent *event)
         return;
     if (event->button() == Qt::LeftButton) {
         if (m_inAddNodeMode) {
-            if (m_lastHoverNodeItem && m_nextStartNodeItem && m_lastHoverNodeItem != m_nextStartNodeItem) {
-                if (!findEdgeItemByNodePair(m_lastHoverNodeItem->master(), m_nextStartNodeItem)) {
-                    SkeletonEditEdgeItem *newEdge = new SkeletonEditEdgeItem();
-                    newEdge->setNodes(m_nextStartNodeItem, m_lastHoverNodeItem->master());
-                    scene()->addItem(newEdge);
+            if (m_lastHoverNodeItem && m_nextStartNodeItem &&
+                    m_lastHoverNodeItem != m_nextStartNodeItem &&
+                    m_lastHoverNodeItem->sideColor() == m_nextStartNodeItem->sideColor()) {
+                if (!findEdgeItemByNodePair(m_lastHoverNodeItem, m_nextStartNodeItem)) {
+                    addEdgeItem(m_nextStartNodeItem, m_lastHoverNodeItem);
+                    addEdgeItem(m_nextStartNodeItem->nextSidePair(), m_lastHoverNodeItem->nextSidePair());
                     emit nodesChanged();
                 }
             } else {
-                float newNodeX = m_pendingNodeItem->x();
-                QRectF newNodeRect = m_pendingNodeItem->rect();
-                SkeletonEditNodeItem *masterNode = new SkeletonEditNodeItem(newNodeRect);
-                scene()->addItem(masterNode);
-                QRectF slaveRect = newNodeRect;
-                float x = newNodeX + newNodeRect.width() / 2;
-                slaveRect.translate(findXForSlave(x) - x, 0);
-                SkeletonEditNodeItem *slaveNode = new SkeletonEditNodeItem(slaveRect);
-                scene()->addItem(slaveNode);
-                masterNode->setSlave(slaveNode);
-                slaveNode->setMaster(masterNode);
-                if (m_nextStartNodeItem) {
-                    SkeletonEditEdgeItem *newEdge = new SkeletonEditEdgeItem();
-                    newEdge->setNodes(masterNode, m_nextStartNodeItem);
-                    scene()->addItem(newEdge);
-                    masterNode->setGroup(m_nextStartNodeItem->group());
-                    slaveNode->setGroup(masterNode->group());
-                } else {
-                    QGraphicsItemGroup *group = new QGraphicsItemGroup();
-                    scene()->addItem(group);
-                    masterNode->setGroup(group);
-                    slaveNode->setGroup(masterNode->group());
-                }
-                setNextStartNodeItem(masterNode);
+                addNodeItemAndSidePairs(m_pendingNodeItem->rect(), m_nextStartNodeItem);
                 emit nodesChanged();
             }
         }
@@ -294,9 +282,9 @@ bool SkeletonEditGraphicsView::canNodeItemMoveTo(SkeletonEditNodeItem *item, QPo
         return false;
     if (moveTo.y() < 0)
         return false;
-    if (moveTo.x() + item->rect().width() >= m_backgroundItem->boundingRect().width())
+    if (moveTo.x() + item->rect().width() >= scene()->sceneRect().width())
         return false;
-    if (moveTo.y() + item->rect().height() >= m_backgroundItem->boundingRect().height())
+    if (moveTo.y() + item->rect().height() >= scene()->sceneRect().height())
         return false;
     return true;
 }
@@ -312,10 +300,10 @@ void SkeletonEditGraphicsView::mouseMoveEvent(QMouseEvent *event)
         moveTo.setX(0);
     if (moveTo.y() < 0)
         moveTo.setY(0);
-    if (moveTo.x() + m_pendingNodeItem->rect().width() >= m_backgroundItem->boundingRect().width())
-        moveTo.setX(m_backgroundItem->boundingRect().width() - m_pendingNodeItem->rect().width());
-    if (moveTo.y() + m_pendingNodeItem->rect().height() >= m_backgroundItem->boundingRect().height())
-        moveTo.setY(m_backgroundItem->boundingRect().height() - m_pendingNodeItem->rect().height());
+    if (moveTo.x() + m_pendingNodeItem->rect().width() >= scene()->sceneRect().width())
+        moveTo.setX(scene()->sceneRect().width() - m_pendingNodeItem->rect().width());
+    if (moveTo.y() + m_pendingNodeItem->rect().height() >= scene()->sceneRect().height())
+        moveTo.setY(scene()->sceneRect().height() - m_pendingNodeItem->rect().height());
     QSizeF oldSize = m_pendingNodeItem->rect().size();
     m_pendingNodeItem->setRect(moveTo.x(), moveTo.y(),
         oldSize.width(),
@@ -327,11 +315,11 @@ void SkeletonEditGraphicsView::mouseMoveEvent(QMouseEvent *event)
     if (!m_isMovingNodeItem) {
         SkeletonEditNodeItem *hoverNodeItem = findNodeItemByPos(pos);
         if (hoverNodeItem) {
-            hoverNodeItem->setHighlighted(true);
+            hoverNodeItem->setHovered(true);
         }
         if (hoverNodeItem != m_lastHoverNodeItem) {
             if (m_lastHoverNodeItem)
-                m_lastHoverNodeItem->setHighlighted(false);
+                m_lastHoverNodeItem->setHovered(false);
             m_lastHoverNodeItem = hoverNodeItem;
         }
     }
@@ -341,30 +329,26 @@ void SkeletonEditGraphicsView::mouseMoveEvent(QMouseEvent *event)
                 (curMousePos != m_lastMousePos || m_isMovingNodeItem)) {
             m_isMovingNodeItem = true;
             QRectF rect = m_lastHoverNodeItem->rect();
-            QRectF slaveRect;
-            if (m_lastHoverNodeItem->isMaster()) {
-                rect.translate(curMousePos.x() - m_lastMousePos.x(), curMousePos.y() - m_lastMousePos.y());
-                slaveRect = m_lastHoverNodeItem->slave()->rect();
-                slaveRect.translate(0, curMousePos.y() - m_lastMousePos.y());
-            } else {
-                rect.translate(curMousePos.x() - m_lastMousePos.x(), 0);
-            }
-            if (canNodeItemMoveTo(m_lastHoverNodeItem, QPointF(rect.x(), rect.y()))) {
-                if (m_lastHoverNodeItem->isMaster()) {
-                    m_lastHoverNodeItem->slave()->setRect(slaveRect);
+            QRectF pairedRect;
+            
+            rect.translate(curMousePos.x() - m_lastMousePos.x(), curMousePos.y() - m_lastMousePos.y());
+            pairedRect = m_lastHoverNodeItem->nextSidePair()->rect();
+            pairedRect.translate(0, curMousePos.y() - m_lastMousePos.y());
+
+            m_lastHoverNodeItem->setRect(rect);
+            m_lastHoverNodeItem->nextSidePair()->setRect(pairedRect);
+            
+            QList<QGraphicsItem *>::iterator it;
+            QList<QGraphicsItem *> list = scene()->items();
+            for (it = list.begin(); it != list.end(); ++it) {
+                if ((*it)->data(0).toString() == "edge") {
+                    SkeletonEditEdgeItem *edgeItem = static_cast<SkeletonEditEdgeItem *>(*it);
+                    if (edgeItem->connects(m_lastHoverNodeItem) ||
+                            edgeItem->connects(m_lastHoverNodeItem->nextSidePair()))
+                        edgeItem->updatePosition();
                 }
-                m_lastHoverNodeItem->setRect(rect);
-                QList<QGraphicsItem *>::iterator it;
-                QList<QGraphicsItem *> list = scene()->items();
-                for (it = list.begin(); it != list.end(); ++it) {
-                    if ((*it)->data(0).toString() == "edge") {
-                        SkeletonEditEdgeItem *edgeItem = static_cast<SkeletonEditEdgeItem *>(*it);
-                        if (edgeItem->connects(m_lastHoverNodeItem))
-                            edgeItem->updatePosition();
-                    }
-                }
-                emit nodesChanged();
             }
+            emit nodesChanged();
         }
     }
     m_lastMousePos = curMousePos;
@@ -382,9 +366,9 @@ void SkeletonEditGraphicsView::AddItemRadius(QGraphicsEllipseItem *item, float d
     }
     QPointF newLeftTop = QPointF(originPt.x() - newSize.width() / 2,
         originPt.y() - newSize.height() / 2);
-    if (newLeftTop.x() < 0 || newLeftTop.x() + newSize.width() >= m_backgroundItem->boundingRect().width())
+    if (newLeftTop.x() < 0 || newLeftTop.x() + newSize.width() >= scene()->sceneRect().width())
         return;
-    if (newLeftTop.y() < 0 || newLeftTop.y() + newSize.height() >= m_backgroundItem->boundingRect().height())
+    if (newLeftTop.y() < 0 || newLeftTop.y() + newSize.height() >= scene()->sceneRect().height())
         return;
     item->setRect(newLeftTop.x(),
         newLeftTop.y(),
@@ -404,9 +388,9 @@ bool SkeletonEditGraphicsView::canAddItemRadius(QGraphicsEllipseItem *item, floa
     }
     QPointF newLeftTop = QPointF(originPt.x() - newSize.width() / 2,
         originPt.y() - newSize.height() / 2);
-    if (newLeftTop.x() < 0 || newLeftTop.x() + newSize.width() >= m_backgroundItem->boundingRect().width())
+    if (newLeftTop.x() < 0 || newLeftTop.x() + newSize.width() >= scene()->sceneRect().width())
         return false;
-    if (newLeftTop.y() < 0 || newLeftTop.y() + newSize.height() >= m_backgroundItem->boundingRect().height())
+    if (newLeftTop.y() < 0 || newLeftTop.y() + newSize.height() >= scene()->sceneRect().height())
         return false;
     return true;
 }
@@ -421,9 +405,9 @@ void SkeletonEditGraphicsView::wheelEvent(QWheelEvent *event)
         delta = delta < 0 ? -1.0 : 1.0;
     AddItemRadius(m_pendingNodeItem, delta);
     if (!m_inAddNodeMode && m_lastHoverNodeItem) {
-        if (canAddItemRadius(m_lastHoverNodeItem, delta)) {
+        //if (canAddItemRadius(m_lastHoverNodeItem, delta)) {
             AddItemRadius(m_lastHoverNodeItem, delta);
-        }
+        //}
         emit nodesChanged();
     }
 }
@@ -432,11 +416,11 @@ void SkeletonEditGraphicsView::setNextStartNodeItem(SkeletonEditNodeItem *item)
 {
     if (m_nextStartNodeItem != item) {
         if (m_nextStartNodeItem)
-            m_nextStartNodeItem->setIsNextStartNode(false);
+            m_nextStartNodeItem->setChecked(false);
     }
     m_nextStartNodeItem = item;
     if (m_nextStartNodeItem)
-        m_nextStartNodeItem->setIsNextStartNode(true);
+        m_nextStartNodeItem->setChecked(true);
     applyAddNodeMode();
 }
 
@@ -444,8 +428,8 @@ void SkeletonEditGraphicsView::updateBackgroundImage(const QImage &image)
 {
     QSizeF oldSceneSize = scene()->sceneRect().size();
     QPixmap pixmap = QPixmap::fromImage(image);
-    m_backgroundItem->setPixmap(pixmap);
     scene()->setSceneRect(pixmap.rect());
+    m_backgroundItem->setPixmap(pixmap);
     adjustItems(oldSceneSize, scene()->sceneRect().size());
     if (!m_backgroundLoaded) {
         m_backgroundLoaded = true;
@@ -488,169 +472,99 @@ void SkeletonEditGraphicsView::adjustItems(QSizeF oldSceneSize, QSizeF newSceneS
     }
 }
 
-void SkeletonEditGraphicsView::loadFromXmlStream(QXmlStreamReader &reader)
+void SkeletonEditGraphicsView::loadFromSnapshot(SkeletonSnapshot *snapshot)
 {
     float radiusMul = 1.0;
     float xMul = 1.0;
     float yMul = radiusMul;
     
-    std::vector<std::map<QString, QString>> pendingNodes;
-    std::vector<std::map<QString, QString>> pendingEdges;
-    std::map<QString, SkeletonEditNodeItem *> addedNodeMapById;
-    std::map<QString, QGraphicsItemGroup *> addedGroupMapById;
+    QString canvasWidth = snapshot->canvas["width"];
+    QString canvasHeight = snapshot->canvas["height"];
+    float canvasWidthVal = canvasWidth.toFloat();
+    float canvasHeightVal = canvasHeight.toFloat();
+    if (!hasBackgroundImage()) {
+        QPixmap emptyImage((int)canvasWidthVal, (int)canvasHeightVal);
+        emptyImage.fill(QWidget::palette().color(QWidget::backgroundRole()));
+        updateBackgroundImage(emptyImage.toImage());
+    }
+    if (canvasHeightVal > 0)
+        radiusMul = (float)scene()->sceneRect().height() / canvasHeightVal;
+    if (canvasWidthVal > 0)
+        xMul = (float)scene()->sceneRect().width() / canvasWidthVal;
+    yMul = radiusMul;
     
-    while (!reader.atEnd()) {
-        reader.readNext();
-        if (reader.isStartElement()) {
-            if (reader.name() == "canvas") {
-                QString canvasWidth = reader.attributes().value("width").toString();
-                QString canvasHeight = reader.attributes().value("height").toString();
-                float canvasHeightWidth = canvasWidth.toFloat();
-                float canvasHeightVal = canvasHeight.toFloat();
-                if (!hasBackgroundImage()) {
-                    QPixmap emptyImage((int)canvasHeightWidth, (int)canvasHeightVal);
-                    emptyImage.fill(QWidget::palette().color(QWidget::backgroundRole()));
-                    updateBackgroundImage(emptyImage.toImage());
-                }
-                if (canvasHeightVal > 0)
-                    radiusMul = (float)scene()->sceneRect().height() / canvasHeightVal;
-                if (canvasHeightWidth > 0)
-                    xMul = (float)scene()->sceneRect().width() / canvasHeightWidth;
-                yMul = radiusMul;
-            } else if (reader.name() == "origin") {
-                if (pendingNodes.size() > 0) {
-                    pendingNodes[pendingNodes.size() - 1]["x"] = QString("%1").arg(reader.attributes().value("x").toString().toFloat() * xMul);
-                    pendingNodes[pendingNodes.size() - 1]["y"] = QString("%1").arg(reader.attributes().value("y").toString().toFloat() * yMul);
-                }
-            } else if (reader.name() == "node") {
-                QString nodeId = reader.attributes().value("id").toString();
-                QString nodeGroupId = reader.attributes().value("group").toString();
-                QString nodeType = reader.attributes().value("type").toString();
-                QString nodePairId = reader.attributes().value("pair").toString();
-                QString nodeRadius = reader.attributes().value("radius").toString();
-                std::map<QString, QString> pendingNode;
-                pendingNode["id"] = nodeId;
-                pendingNode["group"] = nodeGroupId;
-                pendingNode["type"] = nodeType;
-                pendingNode["pair"] = nodePairId;
-                pendingNode["radius"] = QString("%1").arg(nodeRadius.toFloat() * radiusMul);
-                pendingNode["x"] = "0";
-                pendingNode["y"] = "0";
-                pendingNodes.push_back(pendingNode);
-            } else if (reader.name() == "edge") {
-                QString edgeId = reader.attributes().value("id").toString();
-                QString edgeFromNodeId = reader.attributes().value("from").toString();
-                QString edgeToNodeId = reader.attributes().value("to").toString();
-                if (!edgeFromNodeId.isEmpty() && !edgeToNodeId.isEmpty()) {
-                    std::map<QString, QString> pendingEdge;
-                    pendingEdge["id"] = edgeId;
-                    pendingEdge["from"] = edgeFromNodeId;
-                    pendingEdge["to"] = edgeToNodeId;
-                    pendingEdges.push_back(pendingEdge);
-                }
-            }
-        }
+    std::map<QString, SkeletonEditNodeItem *> nodeItemMap;
+    std::map<QString, std::map<QString, QString>>::iterator nodeIterator;
+    for (nodeIterator = snapshot->nodes.begin(); nodeIterator != snapshot->nodes.end(); nodeIterator++) {
+        std::map<QString, QString> *snapshotNode = &nodeIterator->second;
+        SkeletonEditNodeItem *nodeItem = addNodeItem((*snapshotNode)["x"].toFloat() * xMul,
+            (*snapshotNode)["y"].toFloat() * yMul,
+            (*snapshotNode)["radius"].toFloat() * radiusMul);
+        nodeItem->setSideColorName((*snapshotNode)["sideColorName"]);
+        nodeItemMap[nodeIterator->first] = nodeItem;
+    }
+    for (nodeIterator = snapshot->nodes.begin(); nodeIterator != snapshot->nodes.end(); nodeIterator++) {
+        std::map<QString, QString> *snapshotNode = &nodeIterator->second;
+        SkeletonEditNodeItem *nodeItem = nodeItemMap[nodeIterator->first];
+        nodeItem->setNextSidePair(nodeItemMap[(*snapshotNode)["nextSidePair"]]);
     }
     
-    for (size_t i = 0; i < pendingNodes.size(); i++) {
-        std::map<QString, QString> *pendingNode = &pendingNodes[i];
-        float radius = (*pendingNode)["radius"].toFloat();
-        QRectF nodeRect((*pendingNode)["x"].toFloat() - radius, (*pendingNode)["y"].toFloat() - radius,
-            radius * 2, radius * 2);
-        SkeletonEditNodeItem *nodeItem = new SkeletonEditNodeItem(nodeRect);
-        addedNodeMapById[(*pendingNode)["id"]] = nodeItem;
-        std::map<QString, QGraphicsItemGroup *>::iterator findGroup = addedGroupMapById.find((*pendingNode)["group"]);
-        if (findGroup == addedGroupMapById.end()) {
-            QGraphicsItemGroup *group = new QGraphicsItemGroup;
-            scene()->addItem(group);
-            addedGroupMapById[(*pendingNode)["group"]] = group;
-        }
-        nodeItem->setGroup(addedGroupMapById[(*pendingNode)["group"]]);
-    }
-    
-    for (size_t i = 0; i < pendingNodes.size(); i++) {
-        std::map<QString, QString> *pendingNode = &pendingNodes[i];
-        if ((*pendingNode)["type"] == "master") {
-            addedNodeMapById[(*pendingNode)["id"]]->setSlave(addedNodeMapById[(*pendingNode)["pair"]]);
-        } else if ((*pendingNode)["type"] == "slave") {
-            addedNodeMapById[(*pendingNode)["id"]]->setMaster(addedNodeMapById[(*pendingNode)["pair"]]);
-        }
-        scene()->addItem(addedNodeMapById[(*pendingNode)["id"]]);
-    }
-    
-    for (size_t i = 0; i < pendingEdges.size(); i++) {
-        std::map<QString, QString> *pendingEdge = &pendingEdges[i];
-        SkeletonEditEdgeItem *newEdge = new SkeletonEditEdgeItem();
-        SkeletonEditNodeItem *fromNodeItem = addedNodeMapById[(*pendingEdge)["from"]];
-        SkeletonEditNodeItem *toNodeItem = addedNodeMapById[(*pendingEdge)["to"]];
-        newEdge->setNodes(fromNodeItem, toNodeItem);
-        scene()->addItem(newEdge);
+    std::map<QString, std::map<QString, QString>>::iterator edgeIterator;
+    for (edgeIterator = snapshot->edges.begin(); edgeIterator != snapshot->edges.end(); edgeIterator++) {
+        std::map<QString, QString> *snapshotEdge = &edgeIterator->second;
+        addEdgeItem(nodeItemMap[(*snapshotEdge)["from"]], nodeItemMap[(*snapshotEdge)["to"]]);
     }
     
     emit nodesChanged();
 }
 
-void SkeletonEditGraphicsView::saveToXmlStream(QXmlStreamWriter *writer)
+void SkeletonEditGraphicsView::saveToSnapshot(SkeletonSnapshot *snapshot)
 {
-    writer->setAutoFormatting(true);
-    writer->writeStartDocument();
+    snapshot->canvas["width"] = QString("%1").arg(scene()->sceneRect().width());
+    snapshot->canvas["height"] = QString("%1").arg(scene()->sceneRect().height());
     
-    writer->writeStartElement("canvas");
-        writer->writeAttribute("width", QString("%1").arg(scene()->sceneRect().width()));
-        writer->writeAttribute("height", QString("%1").arg(scene()->sceneRect().height()));
+    QList<QGraphicsItem *>::iterator it;
+    QList<QGraphicsItem *> list = scene()->items();
     
-        QList<QGraphicsItem *>::iterator it;
-        QList<QGraphicsItem *> list = scene()->items();
-        std::map<SkeletonEditNodeItem *, int> nodeIdMap;
-        std::map<QGraphicsItemGroup *, int> groupIdMap;
-        int nextNodeId = 1;
-        int nextGroupId = 1;
-        for (it = list.begin(); it != list.end(); ++it) {
-            if ((*it)->data(0).toString() == "node") {
-                SkeletonEditNodeItem *nodeItem = static_cast<SkeletonEditNodeItem *>(*it);
-                nodeIdMap[nodeItem] = nextNodeId;
-                nextNodeId++;
-            }
+    int nextNodeId = 1;
+    std::map<SkeletonEditNodeItem *, QString> nodeIdMap;
+    for (it = list.begin(); it != list.end(); ++it) {
+        if ((*it)->data(0).toString() == "node") {
+            SkeletonEditNodeItem *nodeItem = static_cast<SkeletonEditNodeItem *>(*it);
+            QString nodeId = QString("node%1").arg(nextNodeId);
+            std::map<QString, QString> *snapshotNode = &snapshot->nodes[nodeId];
+            (*snapshotNode)["id"] = nodeId;
+            (*snapshotNode)["sideColorName"] = nodeItem->sideColorName();
+            (*snapshotNode)["radius"] = QString("%1").arg(nodeItem->radius());
+            QPointF origin = nodeItem->origin();
+            (*snapshotNode)["x"] = QString("%1").arg(origin.x());
+            (*snapshotNode)["y"] = QString("%1").arg(origin.y());
+            nodeIdMap[nodeItem] = nodeId;
+            nextNodeId++;
         }
-        writer->writeStartElement("nodes");
-        for (it = list.begin(); it != list.end(); ++it) {
-            if ((*it)->data(0).toString() == "node") {
-                SkeletonEditNodeItem *nodeItem = static_cast<SkeletonEditNodeItem *>(*it);
-                writer->writeStartElement("node");
-                    std::map<QGraphicsItemGroup *, int>::iterator findGroup = groupIdMap.find(nodeItem->group());
-                    if (findGroup == groupIdMap.end()) {
-                        groupIdMap[nodeItem->group()] = nextGroupId++;
-                    }
-                    writer->writeAttribute("id", QString("node%1").arg(nodeIdMap[nodeItem]));
-                    writer->writeAttribute("group", QString("group%1").arg(groupIdMap[nodeItem->group()]));
-                    writer->writeAttribute("type", nodeItem->isMaster() ? "master" : "slave");
-                    writer->writeAttribute("pair", QString("node%1").arg(nodeIdMap[nodeItem->pair()]));
-                    writer->writeAttribute("radius", QString("%1").arg(nodeItem->radius()));
-                    writer->writeStartElement("origin");
-                        QPointF origin = nodeItem->origin();
-                        writer->writeAttribute("x", QString("%1").arg(origin.x()));
-                        writer->writeAttribute("y", QString("%1").arg(origin.y()));
-                    writer->writeEndElement();
-                writer->writeEndElement();
-            }
-        }
-        writer->writeEndElement();
-        writer->writeStartElement("edges");
-        int nextEdgeId = 1;
-        for (it = list.begin(); it != list.end(); ++it) {
-            if ((*it)->data(0).toString() == "edge") {
-                SkeletonEditEdgeItem *edgeItem = static_cast<SkeletonEditEdgeItem *>(*it);
-                writer->writeStartElement("edge");
-                    writer->writeAttribute("id", QString("edge%1").arg(nextEdgeId));
-                    writer->writeAttribute("from", QString("node%1").arg(nodeIdMap[edgeItem->firstNode()]));
-                    writer->writeAttribute("to", QString("node%1").arg(nodeIdMap[edgeItem->secondNode()]));
-                writer->writeEndElement();
-                nextEdgeId++;
-            }
-        }
-        writer->writeEndElement();
+    }
     
-    writer->writeEndElement();
-    writer->writeEndDocument();
+    for (it = list.begin(); it != list.end(); ++it) {
+        if ((*it)->data(0).toString() == "node") {
+            SkeletonEditNodeItem *nodeItem = static_cast<SkeletonEditNodeItem *>(*it);
+            QString nodeId = nodeIdMap[nodeItem];
+            std::map<QString, QString> *snapshotNode = &snapshot->nodes[nodeId];
+            (*snapshotNode)["nextSidePair"] = nodeIdMap[nodeItem->nextSidePair()];
+        }
+    }
+    
+    int nextEdgeId = 1;
+    for (it = list.begin(); it != list.end(); ++it) {
+        if ((*it)->data(0).toString() == "edge") {
+            SkeletonEditEdgeItem *edgeItem = static_cast<SkeletonEditEdgeItem *>(*it);
+            QString edgeId = QString("edge%1").arg(nextEdgeId);
+            std::map<QString, QString> *snapshotEdge = &snapshot->edges[edgeId];
+            (*snapshotEdge)["id"] = edgeId;
+            (*snapshotEdge)["from"] = nodeIdMap[edgeItem->firstNode()];
+            (*snapshotEdge)["to"] = nodeIdMap[edgeItem->secondNode()];
+            nextEdgeId++;
+        }
+    }
 }
+
 

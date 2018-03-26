@@ -6,38 +6,13 @@
 #include <map>
 #include "skeletoneditgraphicsview.h"
 #include "mesh.h"
-
-struct SkeletonNode
-{
-    float originX;
-    float originY;
-    float originZ;
-    float radius;
-    float thickness;
-    int bmeshNodeId;
-};
-
-struct SkeletonEdge
-{
-    int firstNode;
-    int secondNode;
-};
-
-struct SkeletonGroup
-{
-    std::vector<SkeletonNode> nodes;
-    std::vector<SkeletonEdge> edges;
-    int rootNode;
-    int maxNeighborCount;
-    int bmeshId;
-    int meshId;
-};
+#include "skeletonsnapshot.h"
 
 class SkeletonToMesh : public QObject 
 {
     Q_OBJECT
 public:
-    SkeletonToMesh(SkeletonEditGraphicsView *graphicsView);
+    SkeletonToMesh(SkeletonSnapshot *snapshot);
     ~SkeletonToMesh();
     Mesh *takeResultMesh();
 signals:
@@ -46,7 +21,7 @@ public slots:
     void process();
 private:
     Mesh *m_mesh;
-    std::vector<SkeletonGroup> m_groups;
+    SkeletonSnapshot m_snapshot;
 };
 
 #endif
