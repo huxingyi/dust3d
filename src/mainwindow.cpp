@@ -138,10 +138,8 @@ MainWindow::MainWindow()
     saveAct->setStatusTip(tr("Save the document to disk"));
     connect(saveAct, &QAction::triggered, this, &MainWindow::save);
     
-    QAction *exitAct = new QAction(tr("E&xit"), this);
-    exitAct->setShortcuts(QKeySequence::Quit);
-    exitAct->setStatusTip(tr("Exit the application"));
-    connect(exitAct, &QAction::triggered, this, &QWidget::close);
+    QAction *exportAct = new QAction(tr("E&xport.."), this);
+    connect(exportAct, &QAction::triggered, this, &MainWindow::exportModel);
     
     QAction *undoAct = new QAction(tr("&Undo"), this);
     undoAct->setShortcuts(QKeySequence::Undo);
@@ -179,7 +177,7 @@ MainWindow::MainWindow()
     fileMenu->addAction(openAct);
     fileMenu->addAction(saveAct);
     fileMenu->addSeparator();
-    fileMenu->addAction(exitAct);
+    fileMenu->addAction(exportAct);
 
     QMenu *editMenu = menuBar()->addMenu(tr("&Edit"));
     editMenu->addAction(undoAct);

@@ -2,6 +2,7 @@
 #include <QXmlStreamWriter>
 #include <QFile>
 #include <QApplication>
+#include <QGuiApplication>
 #include <cmath>
 #include <map>
 #include <vector>
@@ -152,6 +153,7 @@ void SkeletonEditGraphicsView::removeSelectedItems()
     if (m_nextStartNodeItem) {
         SkeletonEditNodeItem *nodeItem = m_nextStartNodeItem;
         setNextStartNodeItem(NULL);
+        removeNodeItem(nodeItem->nextSidePair());
         removeNodeItem(nodeItem);
         emit nodesChanged();
     }
@@ -401,13 +403,18 @@ void SkeletonEditGraphicsView::wheelEvent(QWheelEvent *event)
     if (!m_backgroundLoaded)
         return;
     qreal delta = event->delta() / 10;
-    if (fabs(delta) < 1)
-        delta = delta < 0 ? -1.0 : 1.0;
+    if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
+        if (delta > 0)
+            delta = 1;
+        else
+            delta = -1;
+    } else {
+        if (fabs(delta) < 1)
+            delta = delta < 0 ? -1.0 : 1.0;
+    }
     AddItemRadius(m_pendingNodeItem, delta);
     if (!m_inAddNodeMode && m_lastHoverNodeItem) {
-        //if (canAddItemRadius(m_lastHoverNodeItem, delta)) {
-            AddItemRadius(m_lastHoverNodeItem, delta);
-        //}
+        AddItemRadius(m_lastHoverNodeItem, delta);
         emit nodesChanged();
     }
 }
