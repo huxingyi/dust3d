@@ -30,6 +30,7 @@
 #include <CGAL/Polygon_mesh_processing/corefinement.h>
 #include <CGAL/Polygon_mesh_processing/triangulate_faces.h>
 #include <CGAL/boost/graph/iterator.h>
+#include <CGAL/assertions_behaviour.h>
 
 typedef CGAL::Exact_predicates_exact_constructions_kernel Kernel;
 typedef CGAL::Surface_mesh<Kernel::Point_3>             CgalMesh;
@@ -297,6 +298,9 @@ void SkeletonToMesh::process()
 
     if (meshIds.size() > 0) {
 #if USE_EXTERNAL
+#   if USE_CGAL
+        CGAL::set_error_behaviour(CGAL::THROW_EXCEPTION);
+#   endif
         std::vector<ExternalMesh *> externalMeshs;
         for (size_t i = 0; i < meshIds.size(); i++) {
             int triangledMeshId = meshlite_triangulate(meshliteContext, meshIds[i]);
@@ -308,7 +312,12 @@ void SkeletonToMesh::process()
             for (size_t i = 1; i < externalMeshs.size(); i++) {
                 if (!mergedExternalMesh)
                     break;
-                ExternalMesh *unionedExternalMesh = unionExternalMeshs(mergedExternalMesh, externalMeshs[i]);
+                ExternalMesh *unionedExternalMesh = NULL;
+                try {
+                    unionedExternalMesh = unionExternalMeshs(mergedExternalMesh, externalMeshs[i]);
+                } catch (...) {
+                    // ignore;
+                }
                 delete mergedExternalMesh;
                 delete externalMeshs[i];
                 mergedExternalMesh = unionedExternalMesh;
