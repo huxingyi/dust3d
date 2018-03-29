@@ -5,7 +5,9 @@
 #include "skeletonsnapshot.h"
 #include <vector>
 
-#define USE_CARVE 1
+#define USE_CARVE   0
+#define USE_CGAL    1
+#define USE_EXTERNAL    (USE_CARVE == 1 || USE_CGAL == 1)
 
 #if USE_CARVE == 1
 #if defined(HAVE_CONFIG_H)
@@ -18,18 +20,19 @@
 
 #define MAX_VERTICES_PER_FACE   100
 
-#if USE_CARVE == 0
+#if USE_CGAL == 1
 // Polygon_mesh_processing/corefinement_mesh_union.cpp
 // https://doc.cgal.org/latest/Polygon_mesh_processing/Polygon_mesh_processing_2corefinement_mesh_union_8cpp-example.html#a2
 // https://doc.cgal.org/latest/Polygon_mesh_processing/Polygon_mesh_processing_2triangulate_faces_example_8cpp-example.html
-#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
+// https://github.com/CGAL/cgal/issues/2875
+#include <CGAL/Exact_predicates_exact_constructions_kernel.h>
 #include <CGAL/Surface_mesh.h>
 #include <CGAL/Polygon_mesh_processing/corefinement.h>
 #include <CGAL/Polygon_mesh_processing/triangulate_faces.h>
 #include <CGAL/boost/graph/iterator.h>
 
-typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
-typedef CGAL::Surface_mesh<K::Point_3>             CgalMesh;
+typedef CGAL::Exact_predicates_exact_constructions_kernel Kernel;
+typedef CGAL::Surface_mesh<Kernel::Point_3>             CgalMesh;
 namespace PMP = CGAL::Polygon_mesh_processing;
 
 CgalMesh *makeCgalMeshFromMeshlite(void *meshlite, int meshId)
@@ -42,7 +45,7 @@ CgalMesh *makeCgalMeshFromMeshlite(void *meshlite, int meshId)
     assert(vertexArrayLen == vertexCount * 3);
     std::vector<CgalMesh::Vertex_index> vertices;
     for (int i = 0; i < vertexCount; i++) {
-        vertices.push_back(mesh->add_vertex(K::Point_3(vertexPositions[offset + 0],
+        vertices.push_back(mesh->add_vertex(Kernel::Point_3(vertexPositions[offset + 0],
             vertexPositions[offset + 1],
             vertexPositions[offset + 2])));
         offset += 3;
@@ -68,6 +71,7 @@ CgalMesh *makeCgalMeshFromMeshlite(void *meshlite, int meshId)
 }
 
 // https://doc.cgal.org/latest/Surface_mesh/index.html#circulators_example
+// https://www.cgal.org/FAQ.html
 
 int makeMeshliteMeshFromCgal(void *meshlite, CgalMesh *mesh)
 {
@@ -79,10 +83,10 @@ int makeMeshliteMeshFromCgal(void *meshlite, CgalMesh *mesh)
     std::map<CgalMesh::Vertex_index, int> vertexIndexMap;
     int i = 0;
     for (vertexIt = vertexRange.begin(); vertexIt != vertexRange.end(); vertexIt++) {
-        auto point = mesh->point(*vertexIt);
-        vertexPositions[offset++] = point.x();
-        vertexPositions[offset++] = point.y();
-        vertexPositions[offset++] = point.z();
+        Kernel::Point_3 point = mesh->point(*vertexIt);
+        vertexPositions[offset++] = CGAL::to_double(point.x());
+        vertexPositions[offset++] = CGAL::to_double(point.y());
+        vertexPositions[offset++] = CGAL::to_double(point.z());
         vertexIndexMap[*vertexIt] = i;
         i++;
     }
@@ -221,12 +225,14 @@ Mesh *SkeletonToMesh::takeResultMesh()
     return mesh;
 }
 
-#if USE_CARVE
+#if USE_CARVE == 1
 #define ExternalMesh                    carve::poly::Polyhedron
 #define makeExternalMeshFromMeshlite    makeCarveMeshFromMeshlite
 #define unionExternalMeshs              unionCarveMeshs
 #define makeMeshliteMeshFromExternal    makeMeshliteMeshFromCarve
-#else
+#endif
+
+#if USE_CGAL == 1
 #define ExternalMesh                    CgalMesh
 #define makeExternalMeshFromMeshlite    makeCgalMeshFromMeshlite
 #define unionExternalMeshs              unionCgalMeshs
@@ -288,13 +294,38 @@ void SkeletonToMesh::process()
         
         meshlite_bmesh_destroy(meshliteContext, bmeshId);
     }
-    
+
     if (meshIds.size() > 0) {
+#if USE_EXTERNAL
+        std::vector<ExternalMesh *> externalMeshs;
+        for (size_t i = 0; i < meshIds.size(); i++) {
+            int triangledMeshId = meshlite_triangulate(meshliteContext, meshIds[i]);
+            if (meshlite_is_triangulated_manifold(meshliteContext, triangledMeshId))
+                externalMeshs.push_back(makeExternalMeshFromMeshlite(meshliteContext, triangledMeshId));
+        }
+        if (externalMeshs.size() > 0) {
+            ExternalMesh *mergedExternalMesh = externalMeshs[0];
+            for (size_t i = 1; i < externalMeshs.size(); i++) {
+                if (!mergedExternalMesh)
+                    break;
+                ExternalMesh *unionedExternalMesh = unionExternalMeshs(mergedExternalMesh, externalMeshs[i]);
+                delete mergedExternalMesh;
+                delete externalMeshs[i];
+                mergedExternalMesh = unionedExternalMesh;
+            }
+            if (mergedExternalMesh) {
+                int mergedMeshId = makeMeshliteMeshFromExternal(meshliteContext, mergedExternalMesh);
+                delete mergedExternalMesh;
+                m_mesh = new Mesh(meshliteContext, mergedMeshId);
+            }
+        }
+#else
         int mergedMeshId = meshIds[0];
         for (size_t i = 1; i < meshIds.size(); i++) {
             mergedMeshId = meshlite_merge(meshliteContext, mergedMeshId, meshIds[i]);
         }
         m_mesh = new Mesh(meshliteContext, mergedMeshId);
+#endif
     }
     
     meshlite_destroy_context(meshliteContext);

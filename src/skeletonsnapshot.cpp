@@ -67,14 +67,14 @@ void SkeletonSnapshot::splitByConnectivity(std::vector<SkeletonSnapshot> *groups
             std::map<QString, QString> *newNode = &nodes[nodeId];
             *newNode = *linkNode;
             (*newNode)["id"] = nodeId;
-            (*newNode)["radius"] = (*newNode)["radius"].toFloat() / 2;
+            (*newNode)["radius"] = QString("%1").arg((*newNode)["radius"].toFloat() / 5);
             
             std::map<QString, QString> *pairNode = &nodes[(*oneNode)["nextSidePair"]];
             QString pairNodeId = QString("nodex%1").arg(nextNewXnodeId++);
             std::map<QString, QString> *newPairNode = &nodes[pairNodeId];
             *newPairNode = *pairNode;
             (*newPairNode)["id"] = pairNodeId;
-            (*newPairNode)["radius"] = (*newPairNode)["radius"].toFloat() / 2;
+            (*newPairNode)["radius"] = QString("%1").arg((*newPairNode)["radius"].toFloat() / 5);
             
             (*newNode)["nextSidePair"] = pairNodeId;
             (*newPairNode)["nextSidePair"] = nodeId;
