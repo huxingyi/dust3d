@@ -508,6 +508,7 @@ void SkeletonEditGraphicsView::loadFromSnapshot(SkeletonSnapshot *snapshot)
             (*snapshotNode)["y"].toFloat() * yMul,
             (*snapshotNode)["radius"].toFloat() * radiusMul);
         nodeItem->setSideColorName((*snapshotNode)["sideColorName"]);
+        nodeItem->markAsBranch("true" == (*snapshotNode)["isBranch"]);
         nodeItemMap[nodeIterator->first] = nodeItem;
     }
     for (nodeIterator = snapshot->nodes.begin(); nodeIterator != snapshot->nodes.end(); nodeIterator++) {
@@ -543,6 +544,7 @@ void SkeletonEditGraphicsView::saveToSnapshot(SkeletonSnapshot *snapshot)
             (*snapshotNode)["id"] = nodeId;
             (*snapshotNode)["sideColorName"] = nodeItem->sideColorName();
             (*snapshotNode)["radius"] = QString("%1").arg(nodeItem->radius());
+            (*snapshotNode)["isBranch"] = QString("%1").arg(nodeItem->isBranch() ? "true" : "false");
             QPointF origin = nodeItem->origin();
             (*snapshotNode)["x"] = QString("%1").arg(origin.x());
             (*snapshotNode)["y"] = QString("%1").arg(origin.y());
@@ -574,4 +576,20 @@ void SkeletonEditGraphicsView::saveToSnapshot(SkeletonSnapshot *snapshot)
     }
 }
 
+void SkeletonEditGraphicsView::markAsBranch()
+{
+    if (m_nextStartNodeItem) {
+        m_nextStartNodeItem->markAsBranch(true);
+        m_nextStartNodeItem->nextSidePair()->markAsBranch(true);
+        emit nodesChanged();
+    }
+}
 
+void SkeletonEditGraphicsView::markAsTrunk()
+{
+    if (m_nextStartNodeItem) {
+        m_nextStartNodeItem->markAsBranch(false);
+        m_nextStartNodeItem->nextSidePair()->markAsBranch(false);
+        emit nodesChanged();
+    }
+}

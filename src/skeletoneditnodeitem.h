@@ -19,6 +19,8 @@ public:
     void setHovered(bool hovered);
     bool checked();
     void setChecked(bool checked);
+    void markAsBranch(bool isBranch);
+    bool isBranch();
     SkeletonEditNodeItem *nextSidePair();
     void setNextSidePair(SkeletonEditNodeItem *nodeItem);
     const QColor &sideColor();
@@ -32,6 +34,7 @@ private:
     SkeletonEditNodeItem *m_nextSidePair;
     QColor m_sideColor;
     QString m_sideColorName;
+    bool m_isBranch;
 private:
     void updateAppearance();
 };

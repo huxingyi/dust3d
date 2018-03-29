@@ -20,6 +20,8 @@ signals:
 public slots:
     void turnOffAddNodeMode();
     void turnOnAddNodeMode();
+    void markAsBranch();
+    void markAsTrunk();
 public:
     SkeletonEditGraphicsView(QWidget *parent = 0);
     void updateBackgroundImage(const QImage &image);

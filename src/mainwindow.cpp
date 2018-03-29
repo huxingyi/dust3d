@@ -169,6 +169,12 @@ MainWindow::MainWindow()
                               "selection"));
     connect(pasteAct, &QAction::triggered, this, &MainWindow::paste);
     
+    QAction *markAsBranchAct = new QAction(tr("Mark as &Branch"), this);
+    connect(markAsBranchAct, &QAction::triggered, skeletonWidget->graphicsView(), &SkeletonEditGraphicsView::markAsBranch);
+    
+    QAction *markAsTrunkAct = new QAction(tr("Mark as &Trunk"), this);
+    connect(markAsTrunkAct, &QAction::triggered, skeletonWidget->graphicsView(), &SkeletonEditGraphicsView::markAsTrunk);
+    
     QAction *changeTurnaroundAct = new QAction(tr("&Change Turnaround..."), this);
     connect(changeTurnaroundAct, &QAction::triggered, skeletonWidget, &SkeletonWidget::changeTurnaround);
     
@@ -186,6 +192,9 @@ MainWindow::MainWindow()
     editMenu->addAction(cutAct);
     editMenu->addAction(copyAct);
     editMenu->addAction(pasteAct);
+    editMenu->addSeparator();
+    editMenu->addAction(markAsBranchAct);
+    editMenu->addAction(markAsTrunkAct);
     editMenu->addSeparator();
     editMenu->addAction(changeTurnaroundAct);
     

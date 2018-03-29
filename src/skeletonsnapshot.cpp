@@ -33,6 +33,71 @@ void SkeletonSnapshot::splitByConnectivity(std::vector<SkeletonSnapshot> *groups
 {
     std::map<QString, std::vector<QString>> nodeLinkMap;
     std::map<QString, std::map<QString, QString>>::iterator edgeIterator;
+    std::map<QString, int> neighborCountMap;
+    for (edgeIterator = edges.begin(); edgeIterator != edges.end(); edgeIterator++) {
+        neighborCountMap[edgeIterator->second["from"]]++;
+        neighborCountMap[edgeIterator->second["to"]]++;
+    }
+    int nextNewXnodeId = 1;
+    std::vector<std::pair<QString, QString>> newPendingEdges;
+    for (edgeIterator = edges.begin(); edgeIterator != edges.end(); ) {
+        std::map<QString, QString> *oneNode = &nodes[edgeIterator->second["from"]];
+        std::map<QString, QString> *linkNode = &nodes[edgeIterator->second["to"]];
+        if ("true" != (*oneNode)["isBranch"]) {
+            oneNode = &nodes[edgeIterator->second["to"]];
+            linkNode = &nodes[edgeIterator->second["from"]];
+            if ("true" != (*oneNode)["isBranch"]) {
+                edgeIterator++;
+                continue;
+            } else {
+                if (neighborCountMap[(*linkNode)["id"]] < 3) {
+                    edgeIterator++;
+                    continue;
+                }
+            }
+        } else {
+            if (neighborCountMap[(*linkNode)["id"]] < 3) {
+                edgeIterator++;
+                continue;
+            }
+        }
+        
+        if ("red" == (*oneNode)["sideColorName"]) {
+            QString nodeId = QString("nodex%1").arg(nextNewXnodeId++);
+            std::map<QString, QString> *newNode = &nodes[nodeId];
+            *newNode = *linkNode;
+            (*newNode)["id"] = nodeId;
+            (*newNode)["radius"] = (*newNode)["radius"].toFloat() / 2;
+            
+            std::map<QString, QString> *pairNode = &nodes[(*oneNode)["nextSidePair"]];
+            QString pairNodeId = QString("nodex%1").arg(nextNewXnodeId++);
+            std::map<QString, QString> *newPairNode = &nodes[pairNodeId];
+            *newPairNode = *pairNode;
+            (*newPairNode)["id"] = pairNodeId;
+            (*newPairNode)["radius"] = (*newPairNode)["radius"].toFloat() / 2;
+            
+            (*newNode)["nextSidePair"] = pairNodeId;
+            (*newPairNode)["nextSidePair"] = nodeId;
+            
+            newPendingEdges.push_back(std::make_pair((*oneNode)["id"], nodeId));
+        }
+        
+        edgeIterator = edges.erase(edgeIterator);
+    }
+    int nextNewXedgeId = 1;
+    for (size_t i = 0; i < newPendingEdges.size(); i++) {
+        QString edgeId = QString("edgex%1").arg(nextNewXedgeId++);
+        std::map<QString, QString> *newEdge = &edges[edgeId];
+        (*newEdge)["id"] = edgeId;
+        (*newEdge)["from"] = newPendingEdges[i].first;
+        (*newEdge)["to"] = newPendingEdges[i].second;
+        
+        edgeId = QString("edgex%1").arg(nextNewXedgeId++);
+        newEdge = &edges[edgeId];
+        (*newEdge)["id"] = edgeId;
+        (*newEdge)["from"] = nodes[newPendingEdges[i].first]["nextSidePair"];
+        (*newEdge)["to"] = nodes[newPendingEdges[i].second]["nextSidePair"];
+    }
     for (edgeIterator = edges.begin(); edgeIterator != edges.end(); edgeIterator++) {
         nodeLinkMap[edgeIterator->second["from"]].push_back(edgeIterator->second["to"]);
         nodeLinkMap[edgeIterator->second["to"]].push_back(edgeIterator->second["from"]);

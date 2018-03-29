@@ -12,6 +12,7 @@ public:
     static QColor blue;
     static float normalAlpha;
     static float checkedAlpha;
+    static float branchAlpha;
     static float fillAlpha;
     static int skeletonNodeBorderSize;
     static int skeletonEdgeWidth;
