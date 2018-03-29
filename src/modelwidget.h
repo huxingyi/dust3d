@@ -7,6 +7,7 @@
 #include <QOpenGLBuffer>
 #include <QMatrix4x4>
 #include <QMutex>
+#include <QRubberBand>
 #include "mesh.h"
 
 QT_FORWARD_DECLARE_CLASS(QOpenGLShaderProgram)
@@ -42,7 +43,8 @@ protected:
     void resizeGL(int width, int height) override;
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
-
+    void wheelEvent(QWheelEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
 private:
     bool m_core;
     int m_xRot;
@@ -68,6 +70,9 @@ private:
     Mesh *m_mesh;
     QMutex m_meshMutex;
     bool m_meshUpdated;
+    bool m_moveStarted;
+    QPoint m_moveStartPos;
+    QRect m_moveStartGeometry;
 };
 
 #endif

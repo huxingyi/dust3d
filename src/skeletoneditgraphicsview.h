@@ -5,9 +5,11 @@
 #include <QKeyEvent>
 #include <QXmlStreamWriter>
 #include <QXmlStreamReader>
+#include <QGraphicsProxyWidget>
 #include "skeletoneditnodeitem.h"
 #include "skeletoneditedgeitem.h"
 #include "skeletonsnapshot.h"
+#include "modelwidget.h"
 
 class SkeletonEditGraphicsView : public QGraphicsView
 {
@@ -31,6 +33,7 @@ public:
     QPixmap backgroundImage();
     void saveToSnapshot(SkeletonSnapshot *snapshot);
     void loadFromSnapshot(SkeletonSnapshot *snapshot);
+    ModelWidget *modelWidget();
 protected:
     void mouseMoveEvent(QMouseEvent *event);
     void wheelEvent(QWheelEvent *event);
@@ -51,6 +54,8 @@ private:
     QPointF m_lastMousePos;
     bool m_isMovingNodeItem;
     bool m_backgroundLoaded;
+    ModelWidget *m_modelWidget;
+    QGraphicsProxyWidget *m_modelWidgetProxy;
 private:
     void toggleAddNodeMode();
     void applyAddNodeMode();

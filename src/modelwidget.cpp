@@ -3,11 +3,12 @@
 #include <QMouseEvent>
 #include <QOpenGLShaderProgram>
 #include <QCoreApplication>
+#include <QGuiApplication>
 #include <math.h>
 
 // Modifed from http://doc.qt.io/qt-5/qtopengl-hellogl2-glwidget-cpp.html
 
-bool ModelWidget::m_transparent = false;
+bool ModelWidget::m_transparent = true;
 
 ModelWidget::ModelWidget(QWidget *parent)
     : QOpenGLWidget(parent),
@@ -18,12 +19,15 @@ ModelWidget::ModelWidget(QWidget *parent)
       m_renderTriangleVertexCount(0),
       m_renderEdgeVertexCount(0),
       m_mesh(NULL),
-      m_meshUpdated(false)
+      m_meshUpdated(false),
+      m_moveStarted(false)
 {
     m_core = QSurfaceFormat::defaultFormat().profile() == QSurfaceFormat::CoreProfile;
     // --transparent causes the clear color to be transparent. Therefore, on systems that
     // support it, the widget will become transparent apart from the logo.
     if (m_transparent) {
+        setAttribute(Qt::WA_AlwaysStackOnTop);
+        setAttribute(Qt::WA_TranslucentBackground);
         QSurfaceFormat fmt = format();
         fmt.setAlphaBufferSize(8);
         fmt.setSamples(4);
@@ -166,8 +170,12 @@ void ModelWidget::initializeGL()
     connect(context(), &QOpenGLContext::aboutToBeDestroyed, this, &ModelWidget::cleanup);
 
     initializeOpenGLFunctions();
-    QColor bgcolor = QWidget::palette().color(QWidget::backgroundRole());
-    glClearColor(bgcolor.redF(), bgcolor.greenF(), bgcolor.blueF(), m_transparent ? 0 : 1);
+    if (m_transparent) {
+        glClearColor(0, 0, 0, 0);
+    } else {
+        QColor bgcolor = QWidget::palette().color(QWidget::backgroundRole());
+        glClearColor(bgcolor.redF(), bgcolor.greenF(), bgcolor.blueF(), 1);
+    }
 
     m_program = new QOpenGLShaderProgram;
     m_program->addShaderFromSourceCode(QOpenGLShader::Vertex, m_core ? vertexShaderSourceCore : vertexShaderSource);
@@ -285,6 +293,21 @@ void ModelWidget::resizeGL(int w, int h)
 void ModelWidget::mousePressEvent(QMouseEvent *event)
 {
     m_lastPos = event->pos();
+    setMouseTracking(true);
+    if (event->button() == Qt::LeftButton) {
+        if (!m_moveStarted) {
+            m_moveStartPos = mapToParent(event->pos());
+            m_moveStartGeometry = geometry();
+            m_moveStarted = true;
+        }
+    }
+}
+
+void ModelWidget::mouseReleaseEvent(QMouseEvent *event)
+{
+    if (m_moveStarted) {
+        m_moveStarted = false;
+    }
 }
 
 void ModelWidget::mouseMoveEvent(QMouseEvent *event)
@@ -293,13 +316,35 @@ void ModelWidget::mouseMoveEvent(QMouseEvent *event)
     int dy = event->y() - m_lastPos.y();
 
     if (event->buttons() & Qt::LeftButton) {
-        setXRotation(m_xRot - 8 * dy);
-        setYRotation(m_yRot - 8 * dx);
+        if (m_moveStarted) {
+            QRect rect = m_moveStartGeometry;
+            QPoint pos = mapToParent(event->pos());
+            rect.translate(pos.x() - m_moveStartPos.x(), pos.y() - m_moveStartPos.y());
+            setGeometry(rect);
+        }
     } else if (event->buttons() & Qt::RightButton) {
         setXRotation(m_xRot - 8 * dy);
-        setZRotation(m_zRot - 8 * dx);
+        setYRotation(m_yRot - 8 * dx);
     }
     m_lastPos = event->pos();
+}
+
+void ModelWidget::wheelEvent(QWheelEvent *event)
+{
+    if (m_moveStarted)
+        return;
+    qreal delta = event->delta() / 10;
+    if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
+        if (delta > 0)
+            delta = 1;
+        else
+            delta = -1;
+    } else {
+        if (fabs(delta) < 1)
+            delta = delta < 0 ? -1.0 : 1.0;
+    }
+    QMargins margins(delta, delta, delta, delta);
+    setGeometry(geometry().marginsAdded(margins));
 }
 
 void ModelWidget::updateMesh(Mesh *mesh)

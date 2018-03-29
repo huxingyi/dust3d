@@ -32,11 +32,13 @@ SkeletonWidget::SkeletonWidget(QWidget *parent) :
     m_graphicsView->setContentsMargins(0, 0, 0, 0);
     m_graphicsView->setFrameStyle(QFrame::NoFrame);
     
+    /*
     m_modelWidget = new ModelWidget(this);
     m_modelWidget->setMinimumSize(128, 128);
     m_modelWidget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     m_modelWidget->setWindowFlags(Qt::Tool | Qt::Window);
     m_modelWidget->setWindowTitle("3D Model");
+    */
 
     QVBoxLayout *rightLayout = new QVBoxLayout;
     rightLayout->addSpacing(0);
@@ -112,25 +114,28 @@ SkeletonEditGraphicsView *SkeletonWidget::graphicsView()
 
 ModelWidget *SkeletonWidget::modelWidget()
 {
-    return m_modelWidget;
+    //return m_modelWidget;
+    return graphicsView()->modelWidget();
 }
 
 void SkeletonWidget::showModelingWidgetAtCorner()
 {
+    /*
     if (!m_modelWidget->isVisible()) {
         QPoint pos = QPoint(QApplication::desktop()->width(),
             QApplication::desktop()->height());
         m_modelWidget->move(pos.x() - m_modelWidget->width(),
             pos.y() - m_modelWidget->height());
         m_modelWidget->show();
-    }
+    }*/
 }
 
 void SkeletonWidget::meshReady()
 {
     Mesh *resultMesh = m_skeletonToMesh->takeResultMesh();
-    showModelingWidgetAtCorner();
-    m_modelWidget->updateMesh(resultMesh);
+    //showModelingWidgetAtCorner();
+    //m_modelWidget->updateMesh(resultMesh);
+    modelWidget()->updateMesh(resultMesh);
     delete m_skeletonToMesh;
     m_skeletonToMesh = NULL;
     if (m_skeletonDirty) {

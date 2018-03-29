@@ -24,9 +24,17 @@ SkeletonEditGraphicsView::SkeletonEditGraphicsView(QWidget *parent) :
     m_lastHoverNodeItem(NULL),
     m_lastMousePos(0, 0),
     m_isMovingNodeItem(false),
-    m_backgroundLoaded(false)
+    m_backgroundLoaded(false),
+    m_modelWidget(NULL),
+    m_modelWidgetProxy(NULL)
 {
     setScene(new QGraphicsScene());
+    
+    m_modelWidget = new ModelWidget(this);
+    m_modelWidget->setMinimumSize(128, 128);
+    m_modelWidget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+    m_modelWidget->move(100, 100);
+    m_modelWidgetProxy = scene()->addWidget(m_modelWidget);
 
     m_backgroundItem = new QGraphicsPixmapItem();
     m_backgroundItem->setOpacity(0.25);
@@ -39,6 +47,11 @@ SkeletonEditGraphicsView::SkeletonEditGraphicsView(QWidget *parent) :
     m_pendingEdgeItem = new QGraphicsLineItem(0, 0, 0, 0);
     m_pendingEdgeItem->setVisible(false);
     scene()->addItem(m_pendingEdgeItem);
+}
+
+ModelWidget *SkeletonEditGraphicsView::modelWidget()
+{
+    return m_modelWidget;
 }
 
 void SkeletonEditGraphicsView::toggleAddNodeMode()
