@@ -43,6 +43,9 @@ HEADERS += src/theme.h
 SOURCES += src/mesh.cpp
 HEADERS += src/mesh.h
 
+SOURCES += src/unionmesh.cpp
+HEADERS += src/unionmesh.h
+
 SOURCES += src/main.cpp
 
 INCLUDEPATH += ../meshlite/include

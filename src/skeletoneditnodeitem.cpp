@@ -124,7 +124,7 @@ void SkeletonEditNodeItem::updateAppearance()
     QColor penColor = m_sideColor;
     penColor.setAlphaF(m_checked ? Theme::checkedAlpha : (m_isBranch ? Theme::branchAlpha : Theme::normalAlpha));
     QPen pen(penColor);
-    pen.setWidth(m_isRoot ? Theme::skeletonNodeBorderSize : (Theme::skeletonNodeBorderSize * 2));
+    pen.setWidth(m_isRoot ? (Theme::skeletonNodeBorderSize * 2) : Theme::skeletonNodeBorderSize);
     setPen(pen);
     
     QColor brushColor = m_sideColor;
