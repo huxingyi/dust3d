@@ -21,6 +21,8 @@ public:
     void setChecked(bool checked);
     void markAsBranch(bool isBranch);
     bool isBranch();
+    void markAsRoot(bool isRoot);
+    bool isRoot();
     SkeletonEditNodeItem *nextSidePair();
     void setNextSidePair(SkeletonEditNodeItem *nodeItem);
     const QColor &sideColor();
@@ -35,6 +37,7 @@ private:
     QColor m_sideColor;
     QString m_sideColorName;
     bool m_isBranch;
+    bool m_isRoot;
 private:
     void updateAppearance();
 };

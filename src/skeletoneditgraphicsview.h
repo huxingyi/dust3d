@@ -22,6 +22,8 @@ public slots:
     void turnOnAddNodeMode();
     void markAsBranch();
     void markAsTrunk();
+    void markAsRoot();
+    void markAsChild();
 public:
     SkeletonEditGraphicsView(QWidget *parent = 0);
     void updateBackgroundImage(const QImage &image);

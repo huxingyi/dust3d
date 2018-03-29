@@ -175,6 +175,12 @@ MainWindow::MainWindow()
     QAction *markAsTrunkAct = new QAction(tr("Mark as &Trunk"), this);
     connect(markAsTrunkAct, &QAction::triggered, skeletonWidget->graphicsView(), &SkeletonEditGraphicsView::markAsTrunk);
     
+    QAction *markAsRootAct = new QAction(tr("Mark as &Root"), this);
+    connect(markAsRootAct, &QAction::triggered, skeletonWidget->graphicsView(), &SkeletonEditGraphicsView::markAsRoot);
+    
+    QAction *markAsChildAct = new QAction(tr("Mark as &Child"), this);
+    connect(markAsChildAct, &QAction::triggered, skeletonWidget->graphicsView(), &SkeletonEditGraphicsView::markAsChild);
+    
     QAction *changeTurnaroundAct = new QAction(tr("&Change Turnaround..."), this);
     connect(changeTurnaroundAct, &QAction::triggered, skeletonWidget, &SkeletonWidget::changeTurnaround);
     
@@ -195,6 +201,9 @@ MainWindow::MainWindow()
     editMenu->addSeparator();
     editMenu->addAction(markAsBranchAct);
     editMenu->addAction(markAsTrunkAct);
+    editMenu->addSeparator();
+    editMenu->addAction(markAsRootAct);
+    editMenu->addAction(markAsChildAct);
     editMenu->addSeparator();
     editMenu->addAction(changeTurnaroundAct);
     

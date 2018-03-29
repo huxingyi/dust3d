@@ -9,7 +9,8 @@ SkeletonEditNodeItem::SkeletonEditNodeItem(const QRectF &rect, QGraphicsItem *pa
     m_nextSidePair(NULL),
     m_sideColor(Theme::red),
     m_sideColorName("red"),
-    m_isBranch(false)
+    m_isBranch(false),
+    m_isRoot(false)
 {
     setData(0, "node");
     updateAppearance();
@@ -24,6 +25,17 @@ void SkeletonEditNodeItem::markAsBranch(bool isBranch)
 bool SkeletonEditNodeItem::isBranch()
 {
     return m_isBranch;
+}
+
+void SkeletonEditNodeItem::markAsRoot(bool isRoot)
+{
+    m_isRoot = isRoot;
+    updateAppearance();
+}
+
+bool SkeletonEditNodeItem::isRoot()
+{
+    return m_isRoot;
 }
 
 const QString &SkeletonEditNodeItem::sideColorName()
@@ -112,7 +124,7 @@ void SkeletonEditNodeItem::updateAppearance()
     QColor penColor = m_sideColor;
     penColor.setAlphaF(m_checked ? Theme::checkedAlpha : (m_isBranch ? Theme::branchAlpha : Theme::normalAlpha));
     QPen pen(penColor);
-    pen.setWidth(Theme::skeletonNodeBorderSize);
+    pen.setWidth(m_isRoot ? Theme::skeletonNodeBorderSize : (Theme::skeletonNodeBorderSize * 2));
     setPen(pen);
     
     QColor brushColor = m_sideColor;

@@ -545,6 +545,7 @@ void SkeletonEditGraphicsView::saveToSnapshot(SkeletonSnapshot *snapshot)
             (*snapshotNode)["sideColorName"] = nodeItem->sideColorName();
             (*snapshotNode)["radius"] = QString("%1").arg(nodeItem->radius());
             (*snapshotNode)["isBranch"] = QString("%1").arg(nodeItem->isBranch() ? "true" : "false");
+            (*snapshotNode)["isRoot"] = QString("%1").arg(nodeItem->isRoot() ? "true" : "false");
             QPointF origin = nodeItem->origin();
             (*snapshotNode)["x"] = QString("%1").arg(origin.x());
             (*snapshotNode)["y"] = QString("%1").arg(origin.y());
@@ -590,6 +591,24 @@ void SkeletonEditGraphicsView::markAsTrunk()
     if (m_nextStartNodeItem) {
         m_nextStartNodeItem->markAsBranch(false);
         m_nextStartNodeItem->nextSidePair()->markAsBranch(false);
+        emit nodesChanged();
+    }
+}
+
+void SkeletonEditGraphicsView::markAsRoot()
+{
+    if (m_nextStartNodeItem) {
+        m_nextStartNodeItem->markAsRoot(true);
+        m_nextStartNodeItem->nextSidePair()->markAsRoot(true);
+        emit nodesChanged();
+    }
+}
+
+void SkeletonEditGraphicsView::markAsChild()
+{
+    if (m_nextStartNodeItem) {
+        m_nextStartNodeItem->markAsRoot(false);
+        m_nextStartNodeItem->nextSidePair()->markAsRoot(false);
         emit nodesChanged();
     }
 }

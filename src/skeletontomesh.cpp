@@ -245,6 +245,11 @@ void SkeletonToMesh::process()
     std::vector<SkeletonSnapshot> groups;
     QRectF globalFront = m_snapshot.boundingBoxFront();
     QRectF globalSide = m_snapshot.boundingBoxSide();
+    QString rootNodeId = m_snapshot.rootNode();
+    printf("rootNodeId:%s\n", rootNodeId.toUtf8().constData());
+    float frontMiddleX = m_snapshot.nodes[rootNodeId]["x"].toFloat();
+    float frontMiddleY = m_snapshot.nodes[rootNodeId]["y"].toFloat();
+    float sideMiddleX = m_snapshot.nodes[m_snapshot.nodes[rootNodeId]["nextSidePair"]]["x"].toFloat();
     m_snapshot.splitByConnectivity(&groups);
     
     std::vector<int> meshIds;
@@ -266,9 +271,9 @@ void SkeletonToMesh::process()
             std::map<QString, std::map<QString, QString>>::iterator nextSidePair = skeleton->nodes.find(nodeIterator->second["nextSidePair"]);
             if (nextSidePair == skeleton->nodes.end())
                 continue;
-            float x = (nodeIterator->second["x"].toFloat() - globalFront.left()) / canvasHeight;
-            float y = (nodeIterator->second["y"].toFloat() - globalFront.top()) / canvasHeight;
-            float z = (nextSidePair->second["x"].toFloat() - globalSide.left()) / canvasHeight;
+            float x = (nodeIterator->second["x"].toFloat() - frontMiddleX) / canvasHeight;
+            float y = (nodeIterator->second["y"].toFloat() - frontMiddleY) / canvasHeight;
+            float z = (nextSidePair->second["x"].toFloat() - sideMiddleX) / canvasHeight;
             float r = nodeIterator->second["radius"].toFloat() / canvasHeight;
             float t = nextSidePair->second["radius"].toFloat() / canvasHeight;
             int bmeshNodeId = meshlite_bmesh_add_node(meshliteContext, bmeshId, x, y, z, r, t);

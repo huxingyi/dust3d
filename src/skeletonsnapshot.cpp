@@ -257,6 +257,10 @@ void SkeletonSnapshot::resolveRootNode()
     for (nodeIterator = nodes.begin(); nodeIterator != nodes.end(); nodeIterator++) {
         if ("red" != nodeIterator->second["sideColorName"])
             continue;
+        if ("true" == nodeIterator->second["isRoot"]) {
+            m_rootNode = nodeIterator->first;
+            break;
+        }
         if (nodeNeighborCountMap[nodeIterator->first] < 3)
             continue;
         float radius = nodeIterator->second["radius"].toFloat();
