@@ -115,7 +115,13 @@ int makeMeshliteMeshFromCgal(void *meshlite, CgalMesh *mesh)
 CgalMesh *unionCgalMeshs(CgalMesh *first, CgalMesh *second)
 {
     CgalMesh *mesh = new CgalMesh;
-    if (!PMP::corefine_and_compute_union(*first, *second, *mesh)) {
+    try {
+        if (!PMP::corefine_and_compute_union(*first, *second, *mesh)) {
+            delete mesh;
+            return NULL;
+        }
+    } catch (...) {
+        delete mesh;
         return NULL;
     }
     return mesh;
@@ -236,9 +242,13 @@ int unionMeshs(void *meshliteContext, const std::vector<int> &meshIds)
             } catch (...) {
                 // ignore;
             }
-            delete mergedExternalMesh;
             delete externalMeshs[i];
-            mergedExternalMesh = unionedExternalMesh;
+            if (unionedExternalMesh) {
+                delete mergedExternalMesh;
+                mergedExternalMesh = unionedExternalMesh;
+            } else {
+                // TOOD:
+            }
         }
         if (mergedExternalMesh) {
             int mergedMeshId = makeMeshliteMeshFromExternal(meshliteContext, mergedExternalMesh);
@@ -247,11 +257,16 @@ int unionMeshs(void *meshliteContext, const std::vector<int> &meshIds)
         }
     }
 #else
+    return mergeMeshs(meshliteContext, meshIds);
+#endif
+    return 0;
+}
+
+int mergeMeshs(void *meshliteContext, const std::vector<int> &meshIds)
+{
     int mergedMeshId = meshIds[0];
     for (size_t i = 1; i < meshIds.size(); i++) {
         mergedMeshId = meshlite_merge(meshliteContext, mergedMeshId, meshIds[i]);
     }
     return mergedMeshId;
-#endif
-    return 0;
 }

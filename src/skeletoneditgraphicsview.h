@@ -41,6 +41,9 @@ public:
     void saveToSnapshot(SkeletonSnapshot *snapshot);
     void loadFromSnapshot(SkeletonSnapshot *snapshot);
     ModelWidget *modelWidget();
+    bool combineEnabled();
+    bool unionEnabled();
+    bool subdivEnabled();
 protected:
     void mouseMoveEvent(QMouseEvent *event);
     void wheelEvent(QWheelEvent *event);
@@ -63,6 +66,9 @@ private:
     bool m_backgroundLoaded;
     ModelWidget *m_modelWidget;
     QGraphicsProxyWidget *m_modelWidgetProxy;
+    bool m_combineEnabled;
+    bool m_unionEnabled;
+    bool m_subdivEnabled;
 private:
     void toggleAddNodeMode();
     void applyAddNodeMode();

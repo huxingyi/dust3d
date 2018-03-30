@@ -26,7 +26,10 @@ SkeletonEditGraphicsView::SkeletonEditGraphicsView(QWidget *parent) :
     m_isMovingNodeItem(false),
     m_backgroundLoaded(false),
     m_modelWidget(NULL),
-    m_modelWidgetProxy(NULL)
+    m_modelWidgetProxy(NULL),
+    m_combineEnabled(false),
+    m_unionEnabled(true),
+    m_subdivEnabled(false)
 {
     setScene(new QGraphicsScene());
     
@@ -218,6 +221,15 @@ bool SkeletonEditGraphicsView::keyPress(QKeyEvent *event, const QPointF &scenePo
     if (event->key() == Qt::Key_A) {
         toggleAddNodeMode();
         processed = true;
+    } else if (event->key() == Qt::Key_C) {
+        m_combineEnabled = !m_combineEnabled;
+        emit nodesChanged();
+    } else if (event->key() == Qt::Key_U) {
+        m_unionEnabled = !m_unionEnabled;
+        emit nodesChanged();
+    } else if (event->key() == Qt::Key_S) {
+        m_subdivEnabled = !m_subdivEnabled;
+        emit nodesChanged();
     } else if (event->key() == Qt::Key_Delete || event->key() ==Qt::Key_Backspace) {
         removeSelectedItems();
         processed = true;
@@ -448,6 +460,8 @@ bool SkeletonEditGraphicsView::wheel(QWheelEvent *event, const QPointF &scenePos
         processed = true;
         emit nodesChanged();
     }
+    if (m_inAddNodeMode)
+        processed = true;
     return processed;
 }
 
@@ -562,6 +576,9 @@ void SkeletonEditGraphicsView::saveToSnapshot(SkeletonSnapshot *snapshot)
 {
     snapshot->canvas["width"] = QString("%1").arg(scene()->sceneRect().width());
     snapshot->canvas["height"] = QString("%1").arg(scene()->sceneRect().height());
+    snapshot->canvas["combine"] = m_combineEnabled ? "true" : "false";
+    snapshot->canvas["union"] = m_unionEnabled ? "true" : "false";
+    snapshot->canvas["subdiv"] = m_subdivEnabled ? "true" : "false";
     
     QList<QGraphicsItem *>::iterator it;
     QList<QGraphicsItem *> list = scene()->items();
@@ -675,4 +692,18 @@ void SkeletonEditGraphicsView::keyPressEvent(QKeyEvent *event)
     keyPress(event, QPointF());
 }
 
+bool SkeletonEditGraphicsView::combineEnabled()
+{
+    return m_combineEnabled;
+}
+
+bool SkeletonEditGraphicsView::unionEnabled()
+{
+    return m_unionEnabled;
+}
+
+bool SkeletonEditGraphicsView::subdivEnabled()
+{
+    return m_subdivEnabled;
+}
 

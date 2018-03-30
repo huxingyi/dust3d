@@ -17,10 +17,10 @@
 QColor Theme::red = QColor(0xff, 0xff, 0xff);
 QColor Theme::green = QColor(0xff, 0xff, 0xff);
 QColor Theme::blue = QColor(0x2a, 0x5a, 0xac);
-float Theme::normalAlpha = 128.0 / 255;
+float Theme::normalAlpha = 96.0 / 255;
 float Theme::branchAlpha = 64.0 / 255;
 float Theme::checkedAlpha = 1.0;
-float Theme::edgeAlpha = Theme::normalAlpha / 2;
+float Theme::edgeAlpha = 1.0;
 float Theme::fillAlpha = 50.0 / 255;
 int Theme::skeletonNodeBorderSize = 2;
 int Theme::skeletonEdgeWidth = 2;

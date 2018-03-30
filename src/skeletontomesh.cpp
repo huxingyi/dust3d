@@ -54,6 +54,9 @@ void SkeletonToMesh::process()
     float frontMiddleX = m_snapshot.nodes[rootNodeId]["x"].toFloat();
     float frontMiddleY = m_snapshot.nodes[rootNodeId]["y"].toFloat();
     float sideMiddleX = m_snapshot.nodes[m_snapshot.nodes[rootNodeId]["nextSidePair"]]["x"].toFloat();
+    bool combineEnabled = "true" == m_snapshot.canvas["combine"];
+    bool unionEnabled = "true" == m_snapshot.canvas["union"];
+    bool subdivEnabled = "true" == m_snapshot.canvas["subdiv"];
     m_snapshot.splitByConnectivity(&groups);
     
     std::vector<int> meshIds;
@@ -64,6 +67,7 @@ void SkeletonToMesh::process()
         //QRectF side = skeleton->boundingBoxSide();
         //float canvasWidth = skeleton->canvas["width"].toFloat();
         //float canvasHeight = skeleton->canvas["height"].toFloat();
+        float canvasHeight = globalFront.height();
         
         std::map<QString, int> bmeshNodeMap;
         
@@ -75,11 +79,11 @@ void SkeletonToMesh::process()
             std::map<QString, std::map<QString, QString>>::iterator nextSidePair = skeleton->nodes.find(nodeIterator->second["nextSidePair"]);
             if (nextSidePair == skeleton->nodes.end())
                 continue;
-            float x = (nodeIterator->second["x"].toFloat() - frontMiddleX) / globalFront.height();
-            float y = (nodeIterator->second["y"].toFloat() - frontMiddleY) / globalFront.height();
-            float z = (nextSidePair->second["x"].toFloat() - sideMiddleX) / globalFront.height();
-            float r = nodeIterator->second["radius"].toFloat() / globalFront.height();
-            float t = nextSidePair->second["radius"].toFloat() / globalFront.height();
+            float x = (nodeIterator->second["x"].toFloat() - frontMiddleX) / canvasHeight;
+            float y = (nodeIterator->second["y"].toFloat() - frontMiddleY) / canvasHeight;
+            float z = (nextSidePair->second["x"].toFloat() - sideMiddleX) / canvasHeight;
+            float r = nodeIterator->second["radius"].toFloat() / canvasHeight;
+            float t = nextSidePair->second["radius"].toFloat() / canvasHeight;
             int bmeshNodeId = meshlite_bmesh_add_node(meshliteContext, bmeshId, x, y, z, r, t);
             printf("meshlite_bmesh_add_node x:%f y:%f z:%f r:%f t:%f nodeName:%s bmeshNodeId:%d\n", x, y, z, r, t, nodeIterator->first.toUtf8().constData(), bmeshNodeId);
             bmeshNodeMap[nodeIterator->first] = bmeshNodeId;
@@ -106,8 +110,21 @@ void SkeletonToMesh::process()
     }
 
     if (meshIds.size() > 0) {
-        int mergedMeshId = unionMeshs(meshliteContext, meshIds);
+        int mergedMeshId = 0;
+        if (unionEnabled) {
+            mergedMeshId = unionMeshs(meshliteContext, meshIds);
+        } else {
+            mergedMeshId = mergeMeshs(meshliteContext, meshIds);
+        }
+        if (subdivEnabled) {
+            if (mergedMeshId > 0) {
+                mergedMeshId = meshlite_subdivide(meshliteContext, mergedMeshId);
+            }
+        }
         if (mergedMeshId > 0) {
+            if (combineEnabled) {
+                mergedMeshId = meshlite_combine_adj_faces(meshliteContext, mergedMeshId);
+            }
             m_mesh = new Mesh(meshliteContext, mergedMeshId);
         }
     }
