@@ -1,5 +1,6 @@
 #include "modelwidget.h"
 #include "ds3file.h"
+#include "skeletoneditgraphicsview.h"
 #include <QMouseEvent>
 #include <QOpenGLShaderProgram>
 #include <QCoreApplication>
@@ -20,7 +21,8 @@ ModelWidget::ModelWidget(QWidget *parent)
       m_renderEdgeVertexCount(0),
       m_mesh(NULL),
       m_meshUpdated(false),
-      m_moveStarted(false)
+      m_moveStarted(false),
+      m_graphicsView(NULL)
 {
     m_core = QSurfaceFormat::defaultFormat().profile() == QSurfaceFormat::CoreProfile;
     // --transparent causes the clear color to be transparent. Therefore, on systems that
@@ -37,6 +39,11 @@ ModelWidget::ModelWidget(QWidget *parent)
         fmt.setSamples(4);
         setFormat(fmt);
     }
+}
+
+void ModelWidget::setGraphicsView(SkeletonEditGraphicsView *view)
+{
+    m_graphicsView = view;
 }
 
 ModelWidget::~ModelWidget()
@@ -292,6 +299,8 @@ void ModelWidget::resizeGL(int w, int h)
 
 void ModelWidget::mousePressEvent(QMouseEvent *event)
 {
+    if (!m_moveStarted && m_graphicsView && m_graphicsView->mousePress(event, m_graphicsView->mapToScene(m_graphicsView->mapFromGlobal(event->globalPos()))))
+        return;
     m_lastPos = event->pos();
     setMouseTracking(true);
     if (event->button() == Qt::LeftButton) {
@@ -305,6 +314,8 @@ void ModelWidget::mousePressEvent(QMouseEvent *event)
 
 void ModelWidget::mouseReleaseEvent(QMouseEvent *event)
 {
+    if (!m_moveStarted && m_graphicsView && m_graphicsView->mouseRelease(event, m_graphicsView->mapToScene(m_graphicsView->mapFromGlobal(event->globalPos()))))
+        return;
     if (m_moveStarted) {
         m_moveStarted = false;
     }
@@ -312,6 +323,9 @@ void ModelWidget::mouseReleaseEvent(QMouseEvent *event)
 
 void ModelWidget::mouseMoveEvent(QMouseEvent *event)
 {
+    if (!m_moveStarted && m_graphicsView && m_graphicsView->mouseMove(event, m_graphicsView->mapToScene(m_graphicsView->mapFromGlobal(event->globalPos()))))
+        return;
+    
     int dx = event->x() - m_lastPos.x();
     int dy = event->y() - m_lastPos.y();
 
@@ -331,6 +345,8 @@ void ModelWidget::mouseMoveEvent(QMouseEvent *event)
 
 void ModelWidget::wheelEvent(QWheelEvent *event)
 {
+    if (!m_moveStarted && m_graphicsView && m_graphicsView->wheel(event, m_graphicsView->mapToScene(m_graphicsView->mapFromGlobal(event->globalPos()))))
+        return;
     if (m_moveStarted)
         return;
     qreal delta = event->delta() / 10;

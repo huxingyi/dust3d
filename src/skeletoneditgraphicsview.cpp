@@ -34,6 +34,7 @@ SkeletonEditGraphicsView::SkeletonEditGraphicsView(QWidget *parent) :
     m_modelWidget->setMinimumSize(128, 128);
     m_modelWidget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     m_modelWidget->move(100, 100);
+    m_modelWidget->setGraphicsView(this);
     m_modelWidgetProxy = scene()->addWidget(m_modelWidget);
 
     m_backgroundItem = new QGraphicsPixmapItem();
@@ -133,32 +134,38 @@ SkeletonEditEdgeItem *SkeletonEditGraphicsView::findEdgeItemByNodePair(SkeletonE
     return NULL;
 }
 
-void SkeletonEditGraphicsView::mousePressEvent(QMouseEvent *event)
+bool SkeletonEditGraphicsView::mousePress(QMouseEvent *event, const QPointF &scenePos)
 {
-    QWidget::mousePressEvent(event);
+    bool processed = false;
     if (!m_backgroundLoaded)
-        return;
-    QPointF pos = mapToScene(event->pos());
+        return false;
+    QPointF pos = scenePos;
     if (event->button() == Qt::LeftButton) {
         if (!m_inAddNodeMode) {
             if (m_lastHoverNodeItem) {
                 setNextStartNodeItem(m_lastHoverNodeItem);
                 m_lastHoverNodeItem = NULL;
+                processed = true;
             } else {
                 if (m_nextStartNodeItem) {
                     setNextStartNodeItem(NULL);
+                    processed = true;
                 }
             }
         }
     }
     m_lastMousePos = pos;
+    return processed;
 }
 
-void SkeletonEditGraphicsView::mouseDoubleClickEvent(QMouseEvent *event)
+bool SkeletonEditGraphicsView::mouseDoubleClick(QMouseEvent *event, const QPointF &scenePos)
 {
-    QWidget::mouseDoubleClickEvent(event);
-    if (QApplication::keyboardModifiers() & Qt::ControlModifier)
+    bool processed = false;
+    if (QApplication::keyboardModifiers() & Qt::ControlModifier) {
+        processed = true;
         emit changeTurnaroundTriggered();
+    }
+    return processed;
 }
 
 void SkeletonEditGraphicsView::removeSelectedItems()
@@ -203,16 +210,19 @@ void SkeletonEditGraphicsView::removeNodeItemAndSidePairs(SkeletonEditNodeItem *
     }
 }
 
-void SkeletonEditGraphicsView::keyPressEvent(QKeyEvent *event)
+bool SkeletonEditGraphicsView::keyPress(QKeyEvent *event, const QPointF &scenePos)
 {
-    QWidget::keyPressEvent(event);
+    bool processed = false;
     if (!m_backgroundLoaded)
-        return;
-    if (event->key() == Qt::Key_A)
+        return false;
+    if (event->key() == Qt::Key_A) {
         toggleAddNodeMode();
-    else if (event->key() == Qt::Key_Delete || event->key() ==Qt::Key_Backspace) {
+        processed = true;
+    } else if (event->key() == Qt::Key_Delete || event->key() ==Qt::Key_Backspace) {
         removeSelectedItems();
+        processed = true;
     }
+    return processed;
 }
 
 void SkeletonEditGraphicsView::resizeEvent(QResizeEvent *event)
@@ -267,11 +277,11 @@ void SkeletonEditGraphicsView::addEdgeItem(SkeletonEditNodeItem *first, Skeleton
     scene()->addItem(newEdge);
 }
 
-void SkeletonEditGraphicsView::mouseReleaseEvent(QMouseEvent *event)
+bool SkeletonEditGraphicsView::mouseRelease(QMouseEvent *event, const QPointF &scenePos)
 {
-    QWidget::mouseReleaseEvent(event);
+    bool processed = false;
     if (!m_backgroundLoaded)
-        return;
+        return false;
     if (event->button() == Qt::LeftButton) {
         if (m_inAddNodeMode) {
             if (m_lastHoverNodeItem && m_nextStartNodeItem &&
@@ -280,15 +290,18 @@ void SkeletonEditGraphicsView::mouseReleaseEvent(QMouseEvent *event)
                 if (!findEdgeItemByNodePair(m_lastHoverNodeItem, m_nextStartNodeItem)) {
                     addEdgeItem(m_nextStartNodeItem, m_lastHoverNodeItem);
                     addEdgeItem(m_nextStartNodeItem->nextSidePair(), m_lastHoverNodeItem->nextSidePair());
+                    processed = true;
                     emit nodesChanged();
                 }
             } else {
                 addNodeItemAndSidePairs(m_pendingNodeItem->rect(), m_nextStartNodeItem);
+                processed = true;
                 emit nodesChanged();
             }
         }
         m_isMovingNodeItem = false;
     }
+    return processed;
 }
 
 bool SkeletonEditGraphicsView::canNodeItemMoveTo(SkeletonEditNodeItem *item, QPointF moveTo)
@@ -304,12 +317,12 @@ bool SkeletonEditGraphicsView::canNodeItemMoveTo(SkeletonEditNodeItem *item, QPo
     return true;
 }
 
-void SkeletonEditGraphicsView::mouseMoveEvent(QMouseEvent *event)
+bool SkeletonEditGraphicsView::mouseMove(QMouseEvent *event, const QPointF &scenePos)
 {
-    QWidget::mouseMoveEvent(event);
+    bool processed = false;
     if (!m_backgroundLoaded)
-        return;
-    QPointF pos = mapToScene(event->pos());
+        return false;
+    QPointF pos = scenePos;
     QPointF moveTo = QPointF(pos.x() - m_pendingNodeItem->rect().width() / 2, pos.y() - m_pendingNodeItem->rect().height() / 2);
     if (moveTo.x() < 0)
         moveTo.setX(0);
@@ -331,11 +344,13 @@ void SkeletonEditGraphicsView::mouseMoveEvent(QMouseEvent *event)
         SkeletonEditNodeItem *hoverNodeItem = findNodeItemByPos(pos);
         if (hoverNodeItem) {
             hoverNodeItem->setHovered(true);
+            processed = true;
         }
         if (hoverNodeItem != m_lastHoverNodeItem) {
             if (m_lastHoverNodeItem)
                 m_lastHoverNodeItem->setHovered(false);
             m_lastHoverNodeItem = hoverNodeItem;
+            processed = true;
         }
     }
     QPointF curMousePos = pos;
@@ -363,10 +378,12 @@ void SkeletonEditGraphicsView::mouseMoveEvent(QMouseEvent *event)
                         edgeItem->updatePosition();
                 }
             }
+            processed = true;
             emit nodesChanged();
         }
     }
     m_lastMousePos = curMousePos;
+    return processed;
 }
 
 void SkeletonEditGraphicsView::AddItemRadius(QGraphicsEllipseItem *item, float delta)
@@ -410,11 +427,11 @@ bool SkeletonEditGraphicsView::canAddItemRadius(QGraphicsEllipseItem *item, floa
     return true;
 }
 
-void SkeletonEditGraphicsView::wheelEvent(QWheelEvent *event)
+bool SkeletonEditGraphicsView::wheel(QWheelEvent *event, const QPointF &scenePos)
 {
-    QWidget::wheelEvent(event);
+    bool processed = false;
     if (!m_backgroundLoaded)
-        return;
+        return false;
     qreal delta = event->delta() / 10;
     if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
         if (delta > 0)
@@ -428,8 +445,10 @@ void SkeletonEditGraphicsView::wheelEvent(QWheelEvent *event)
     AddItemRadius(m_pendingNodeItem, delta);
     if (!m_inAddNodeMode && m_lastHoverNodeItem) {
         AddItemRadius(m_lastHoverNodeItem, delta);
+        processed = true;
         emit nodesChanged();
     }
+    return processed;
 }
 
 void SkeletonEditGraphicsView::setNextStartNodeItem(SkeletonEditNodeItem *item)
@@ -625,3 +644,35 @@ void SkeletonEditGraphicsView::markAsChild()
         emit nodesChanged();
     }
 }
+
+void SkeletonEditGraphicsView::mouseMoveEvent(QMouseEvent *event)
+{
+    mouseMove(event, mapToScene(event->pos()));
+}
+
+void SkeletonEditGraphicsView::wheelEvent(QWheelEvent *event)
+{
+    wheel(event, mapToScene(event->pos()));
+}
+
+void SkeletonEditGraphicsView::mouseReleaseEvent(QMouseEvent *event)
+{
+    mouseRelease(event, mapToScene(event->pos()));
+}
+
+void SkeletonEditGraphicsView::mousePressEvent(QMouseEvent *event)
+{
+    mousePress(event, mapToScene(event->pos()));
+}
+
+void SkeletonEditGraphicsView::mouseDoubleClickEvent(QMouseEvent *event)
+{
+    mouseDoubleClick(event, mapToScene(event->pos()));
+}
+
+void SkeletonEditGraphicsView::keyPressEvent(QKeyEvent *event)
+{
+    keyPress(event, QPointF());
+}
+
+

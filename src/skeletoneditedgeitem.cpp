@@ -30,9 +30,13 @@ void SkeletonEditEdgeItem::updateAppearance()
 {
     QPen pen;
     if (m_firstNode) {
-        pen.setColor(m_firstNode->sideColor());
+        QColor color = m_firstNode->sideColor();
+        color.setAlphaF(Theme::edgeAlpha);
+        pen.setColor(color);
     } else if (m_secondNode) {
-        pen.setColor(m_secondNode->sideColor());
+        QColor color = m_secondNode->sideColor();
+        color.setAlphaF(Theme::edgeAlpha);
+        pen.setColor(color);
     }
     pen.setWidth(Theme::skeletonEdgeWidth);
     setPen(pen);

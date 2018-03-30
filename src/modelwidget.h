@@ -12,6 +12,8 @@
 
 QT_FORWARD_DECLARE_CLASS(QOpenGLShaderProgram)
 
+class SkeletonEditGraphicsView;
+
 class ModelWidget : public QOpenGLWidget, protected QOpenGLFunctions
 {
     Q_OBJECT
@@ -25,6 +27,7 @@ public:
     
     void updateMesh(Mesh *mesh);
     void exportMeshAsObj(const QString &filename);
+    void setGraphicsView(SkeletonEditGraphicsView *view);
 
 public slots:
     void setXRotation(int angle);
@@ -73,6 +76,8 @@ private:
     bool m_moveStarted;
     QPoint m_moveStartPos;
     QRect m_moveStartGeometry;
+    
+    SkeletonEditGraphicsView *m_graphicsView;
 };
 
 #endif

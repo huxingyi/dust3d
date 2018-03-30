@@ -2,6 +2,7 @@
 #define SKELETON_EDIT_GRAPHICS_VIEW_H
 #include <QGraphicsView>
 #include <QMouseEvent>
+#include <QWheelEvent>
 #include <QKeyEvent>
 #include <QXmlStreamWriter>
 #include <QXmlStreamReader>
@@ -26,6 +27,12 @@ public slots:
     void markAsTrunk();
     void markAsRoot();
     void markAsChild();
+    bool mouseMove(QMouseEvent *event, const QPointF &scenePos);
+    bool wheel(QWheelEvent *event, const QPointF &scenePos);
+    bool mouseRelease(QMouseEvent *event, const QPointF &scenePos);
+    bool mousePress(QMouseEvent *event, const QPointF &scenePos);
+    bool mouseDoubleClick(QMouseEvent *event, const QPointF &scenePos);
+    bool keyPress(QKeyEvent *event, const QPointF &scenePos);
 public:
     SkeletonEditGraphicsView(QWidget *parent = 0);
     void updateBackgroundImage(const QImage &image);

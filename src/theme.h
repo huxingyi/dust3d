@@ -14,6 +14,7 @@ public:
     static float checkedAlpha;
     static float branchAlpha;
     static float fillAlpha;
+    static float edgeAlpha;
     static int skeletonNodeBorderSize;
     static int skeletonEdgeWidth;
     static QString tabButtonSelectedStylesheet;

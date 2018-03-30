@@ -13,7 +13,7 @@ int main(int argc, char ** argv)
     // https://gist.github.com/QuantumCD/6245215
     qApp->setStyle(QStyleFactory::create("Fusion"));
     QPalette darkPalette;
-    darkPalette.setColor(QPalette::Window, QColor(53,53,53));
+    darkPalette.setColor(QPalette::Window, QColor(0x25,0x25,0x25));
     darkPalette.setColor(QPalette::WindowText, QColor(239,239,239));
     darkPalette.setColor(QPalette::Base, QColor(25,25,25));
     darkPalette.setColor(QPalette::AlternateBase, QColor(53,53,53));
