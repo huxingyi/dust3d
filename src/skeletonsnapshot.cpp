@@ -272,4 +272,11 @@ void SkeletonSnapshot::resolveRootNode()
     
     if (m_rootNode.isEmpty())
         m_rootNode = findMaxNeighborNumberNode();
+    
+    if (m_rootNode.isEmpty()) {
+        nodeIterator = nodes.begin();
+        if (nodeIterator != nodes.end()) {
+            m_rootNode = nodeIterator->first;
+        }
+    }
 }

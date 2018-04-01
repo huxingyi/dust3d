@@ -14,6 +14,7 @@
 #include <QComboBox>
 #include <QMenu>
 #include <QMenuBar>
+#include <QLabel>
 #include <assert.h>
 #include "mainwindow.h"
 #include "skeletonwidget.h"
@@ -93,10 +94,22 @@ MainWindow::MainWindow()
     
     modelRightLayout->addStretch();
     
+    QLabel *dust3dJezzasoftLabel = new QLabel;
+    QImage dust3dJezzasoftImage;
+    dust3dJezzasoftImage.load(":/resources/dust3d_jezzasoft.png");
+    dust3dJezzasoftLabel->setPixmap(QPixmap::fromImage(dust3dJezzasoftImage));
+    
+    QVBoxLayout *mainLeftLayout = new QVBoxLayout;
+    mainLeftLayout->addStretch();
+    mainLeftLayout->addWidget(dust3dJezzasoftLabel);
+    mainLeftLayout->setSpacing(0);
+    mainLeftLayout->setContentsMargins(0, 0, 0, 0);
+    
     SkeletonWidget *skeletonWidget = new SkeletonWidget(this);
     m_skeletonWidget = skeletonWidget;
     
     QHBoxLayout *modelPageLayout = new QHBoxLayout;
+    modelPageLayout->addLayout(mainLeftLayout);
     modelPageLayout->addWidget(skeletonWidget);
     //modelPageLayout->addLayout(modelRightLayout);
     

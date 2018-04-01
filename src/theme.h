@@ -10,6 +10,7 @@ public:
     static QColor red;
     static QColor green;
     static QColor blue;
+    static QColor white;
     static float normalAlpha;
     static float checkedAlpha;
     static float branchAlpha;

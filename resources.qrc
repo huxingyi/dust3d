@@ -4,5 +4,6 @@
     <file>resources/rotate.svg</file>
     <file>resources/zoomin.svg</file>
     <file>resources/zoomout.svg</file>
+    <file>resources/dust3d_jezzasoft.png</file>
 </qresource>
 </RCC>

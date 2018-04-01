@@ -14,16 +14,17 @@
 // White
 // 0xf7, 0xd9, 0xc8
 
-QColor Theme::red = QColor(0xff, 0xff, 0xff);
-QColor Theme::green = QColor(0xff, 0xff, 0xff);
+QColor Theme::red = QColor(0xfc, 0x66, 0x21);
+QColor Theme::green = QColor(0xaa, 0xeb, 0xc4);
 QColor Theme::blue = QColor(0x2a, 0x5a, 0xac);
+QColor Theme::white = QColor(0xf7, 0xd9, 0xc8);
 float Theme::normalAlpha = 96.0 / 255;
 float Theme::branchAlpha = 64.0 / 255;
 float Theme::checkedAlpha = 1.0;
 float Theme::edgeAlpha = 1.0;
 float Theme::fillAlpha = 50.0 / 255;
-int Theme::skeletonNodeBorderSize = 2;
-int Theme::skeletonEdgeWidth = 2;
+int Theme::skeletonNodeBorderSize = 0;
+int Theme::skeletonEdgeWidth = 0;
 
 std::map<QString, QString> createSideColorNameMap() {
     std::map<QString, QString> map;

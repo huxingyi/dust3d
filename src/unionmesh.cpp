@@ -22,12 +22,14 @@
 // https://doc.cgal.org/latest/Polygon_mesh_processing/Polygon_mesh_processing_2corefinement_mesh_union_8cpp-example.html#a2
 // https://doc.cgal.org/latest/Polygon_mesh_processing/Polygon_mesh_processing_2triangulate_faces_example_8cpp-example.html
 // https://github.com/CGAL/cgal/issues/2875
+// https://doc.cgal.org/latest/Polygon_mesh_processing/Polygon_mesh_processing_2hausdorff_distance_remeshing_example_8cpp-example.html#a3
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
 #include <CGAL/Surface_mesh.h>
 #include <CGAL/Polygon_mesh_processing/corefinement.h>
 #include <CGAL/Polygon_mesh_processing/triangulate_faces.h>
 #include <CGAL/boost/graph/iterator.h>
 #include <CGAL/assertions_behaviour.h>
+#include <CGAL/Polygon_mesh_processing/remesh.h>
 
 typedef CGAL::Exact_predicates_exact_constructions_kernel Kernel;
 typedef CGAL::Surface_mesh<Kernel::Point_3>             CgalMesh;
@@ -120,6 +122,7 @@ CgalMesh *unionCgalMeshs(CgalMesh *first, CgalMesh *second)
             delete mesh;
             return NULL;
         }
+        //CGAL::Polygon_mesh_processing::isotropic_remeshing(mesh->faces(), 0.4, *mesh);
     } catch (...) {
         delete mesh;
         return NULL;

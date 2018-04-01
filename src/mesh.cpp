@@ -1,5 +1,6 @@
 #include "mesh.h"
 #include "meshlite.h"
+#include "theme.h"
 #include <assert.h>
 
 #define MAX_VERTICES_PER_FACE   100
@@ -60,9 +61,9 @@ Mesh::Mesh(void *meshlite, int meshId) :
             v->normX = edgeNormals[firstIndex + 0];
             v->normY = edgeNormals[firstIndex + 1];
             v->normZ = edgeNormals[firstIndex + 2];
-            v->colorR = 0;
-            v->colorG = 0;
-            v->colorB = 0;
+            v->colorR = 0.0;
+            v->colorG = 0.0;
+            v->colorB = 0.0;
         }
     }
     
@@ -78,6 +79,9 @@ Mesh::Mesh(void *meshlite, int meshId) :
     GLfloat *triangleNormals = new GLfloat[triangleCount * 3];
     int loadedTriangleNormalItemCount = meshlite_get_triangle_normal_array(meshlite, triangleMesh, triangleNormals, triangleCount * 3);
     
+    float modelR = Theme::white.redF();
+    float modelG = Theme::white.greenF();
+    float modelB = Theme::white.blueF();
     m_triangleVertexCount = triangleCount * 3;
     m_triangleVertices = new Vertex[m_triangleVertexCount * 3];
     for (int i = 0; i < triangleCount; i++) {
@@ -94,9 +98,9 @@ Mesh::Mesh(void *meshlite, int meshId) :
             v->normX = triangleNormals[firstIndex + 0];
             v->normY = triangleNormals[firstIndex + 1];
             v->normZ = triangleNormals[firstIndex + 2];
-            v->colorR = 1.0;
-            v->colorG = 1.0;
-            v->colorB = 1.0;
+            v->colorR = modelR;
+            v->colorG = modelG;
+            v->colorB = modelB;
         }
     }
     

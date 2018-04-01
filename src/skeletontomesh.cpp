@@ -83,9 +83,8 @@ void SkeletonToMesh::process()
             float y = (nodeIterator->second["y"].toFloat() - frontMiddleY) / canvasHeight;
             float z = (nextSidePair->second["x"].toFloat() - sideMiddleX) / canvasHeight;
             float r = nodeIterator->second["radius"].toFloat() / canvasHeight;
-            float t = nextSidePair->second["radius"].toFloat() / canvasHeight;
-            int bmeshNodeId = meshlite_bmesh_add_node(meshliteContext, bmeshId, x, y, z, r, t);
-            printf("meshlite_bmesh_add_node x:%f y:%f z:%f r:%f t:%f nodeName:%s bmeshNodeId:%d\n", x, y, z, r, t, nodeIterator->first.toUtf8().constData(), bmeshNodeId);
+            int bmeshNodeId = meshlite_bmesh_add_node(meshliteContext, bmeshId, x, y, z, r);
+            printf("meshlite_bmesh_add_node x:%f y:%f z:%f r:%f nodeName:%s bmeshNodeId:%d\n", x, y, z, r, nodeIterator->first.toUtf8().constData(), bmeshNodeId);
             bmeshNodeMap[nodeIterator->first] = bmeshNodeId;
         }
         
@@ -116,15 +115,17 @@ void SkeletonToMesh::process()
         } else {
             mergedMeshId = mergeMeshs(meshliteContext, meshIds);
         }
-        if (subdivEnabled) {
+        if (combineEnabled) {
             if (mergedMeshId > 0) {
+                mergedMeshId = meshlite_combine_coplanar_faces(meshliteContext, mergedMeshId);
+            }
+        }
+        if (subdivEnabled) {
+            if (mergedMeshId > 0 && meshlite_is_triangulated_manifold(meshliteContext, mergedMeshId)) {
                 mergedMeshId = meshlite_subdivide(meshliteContext, mergedMeshId);
             }
         }
         if (mergedMeshId > 0) {
-            if (combineEnabled) {
-                mergedMeshId = meshlite_combine_adj_faces(meshliteContext, mergedMeshId);
-            }
             m_mesh = new Mesh(meshliteContext, mergedMeshId);
         }
     }

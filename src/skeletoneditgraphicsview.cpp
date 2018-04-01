@@ -27,7 +27,7 @@ SkeletonEditGraphicsView::SkeletonEditGraphicsView(QWidget *parent) :
     m_backgroundLoaded(false),
     m_modelWidget(NULL),
     m_modelWidgetProxy(NULL),
-    m_combineEnabled(false),
+    m_combineEnabled(true),
     m_unionEnabled(true),
     m_subdivEnabled(false)
 {
@@ -230,7 +230,10 @@ bool SkeletonEditGraphicsView::keyPress(QKeyEvent *event, const QPointF &scenePo
     } else if (event->key() == Qt::Key_S) {
         m_subdivEnabled = !m_subdivEnabled;
         emit nodesChanged();
-    } else if (event->key() == Qt::Key_Delete || event->key() ==Qt::Key_Backspace) {
+    } else if (event->key() == Qt::Key_Tab) {
+        if (m_nextStartNodeItem)
+            setNextStartNodeItem(m_nextStartNodeItem->nextSidePair());
+    }  else if (event->key() == Qt::Key_Delete || event->key() ==Qt::Key_Backspace) {
         removeSelectedItems();
         processed = true;
     }
@@ -457,6 +460,7 @@ bool SkeletonEditGraphicsView::wheel(QWheelEvent *event, const QPointF &scenePos
     AddItemRadius(m_pendingNodeItem, delta);
     if (!m_inAddNodeMode && m_lastHoverNodeItem) {
         AddItemRadius(m_lastHoverNodeItem, delta);
+        AddItemRadius(m_lastHoverNodeItem->nextSidePair(), delta);
         processed = true;
         emit nodesChanged();
     }
