@@ -1,6 +1,6 @@
 #include "modelwidget.h"
 #include "ds3file.h"
-#include "skeletoneditgraphicsview.h"
+#include "skeletongraphicswidget.h"
 #include <QMouseEvent>
 #include <QOpenGLShaderProgram>
 #include <QCoreApplication>
@@ -16,9 +16,9 @@ ModelWidget::ModelWidget(QWidget *parent)
       m_xRot(0),
       m_yRot(0),
       m_zRot(0),
-      m_program(NULL),
+      m_program(nullptr),
       m_moveStarted(false),
-      m_graphicsView(NULL)
+      m_graphicsFunctions(NULL)
 {
     // --transparent causes the clear color to be transparent. Therefore, on systems that
     // support it, the widget will become transparent apart from the logo.
@@ -34,11 +34,12 @@ ModelWidget::ModelWidget(QWidget *parent)
         fmt.setSamples(4);
         setFormat(fmt);
     }
+    setMouseTracking(true);
 }
 
-void ModelWidget::setGraphicsView(SkeletonEditGraphicsView *view)
+void ModelWidget::setGraphicsFunctions(SkeletonGraphicsFunctions *graphicsFunctions)
 {
-    m_graphicsView = view;
+    m_graphicsFunctions = graphicsFunctions;
 }
 
 ModelWidget::~ModelWidget()
@@ -91,7 +92,7 @@ void ModelWidget::cleanup()
     makeCurrent();
     m_meshBinder.cleanup();
     delete m_program;
-    m_program = 0;
+    m_program = nullptr;
     doneCurrent();
 }
 
@@ -124,7 +125,7 @@ void ModelWidget::initializeGL()
 
     // Our camera never changes in this example.
     m_camera.setToIdentity();
-    m_camera.translate(0, 0, -2.5);
+    m_camera.translate(0, 0, -3.5);
 
     // Light position is fixed.
     m_program->setUniformValue(m_program->lightPosLoc(), QVector3D(0, 0, 70));
@@ -164,10 +165,9 @@ void ModelWidget::resizeGL(int w, int h)
 
 void ModelWidget::mousePressEvent(QMouseEvent *event)
 {
-    if (!m_moveStarted && m_graphicsView && m_graphicsView->mousePress(event, m_graphicsView->mapToScene(m_graphicsView->mapFromGlobal(event->globalPos()))))
+    if (!m_moveStarted && m_graphicsFunctions && m_graphicsFunctions->mousePress(event))
         return;
     m_lastPos = event->pos();
-    setMouseTracking(true);
     if (event->button() == Qt::LeftButton) {
         if (!m_moveStarted) {
             m_moveStartPos = mapToParent(event->pos());
@@ -179,7 +179,7 @@ void ModelWidget::mousePressEvent(QMouseEvent *event)
 
 void ModelWidget::mouseReleaseEvent(QMouseEvent *event)
 {
-    if (!m_moveStarted && m_graphicsView && m_graphicsView->mouseRelease(event, m_graphicsView->mapToScene(m_graphicsView->mapFromGlobal(event->globalPos()))))
+    if (!m_moveStarted && m_graphicsFunctions && m_graphicsFunctions->mouseRelease(event))
         return;
     if (m_moveStarted) {
         m_moveStarted = false;
@@ -188,7 +188,7 @@ void ModelWidget::mouseReleaseEvent(QMouseEvent *event)
 
 void ModelWidget::mouseMoveEvent(QMouseEvent *event)
 {
-    if (!m_moveStarted && m_graphicsView && m_graphicsView->mouseMove(event, m_graphicsView->mapToScene(m_graphicsView->mapFromGlobal(event->globalPos()))))
+    if (!m_moveStarted && m_graphicsFunctions && m_graphicsFunctions->mouseMove(event))
         return;
     
     int dx = event->x() - m_lastPos.x();
@@ -210,7 +210,7 @@ void ModelWidget::mouseMoveEvent(QMouseEvent *event)
 
 void ModelWidget::wheelEvent(QWheelEvent *event)
 {
-    if (!m_moveStarted && m_graphicsView && m_graphicsView->wheel(event, m_graphicsView->mapToScene(m_graphicsView->mapFromGlobal(event->globalPos()))))
+    if (!m_moveStarted && m_graphicsFunctions && m_graphicsFunctions->wheel(event))
         return;
     if (m_moveStarted)
         return;

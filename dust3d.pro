@@ -2,10 +2,9 @@ QT += core widgets opengl
 CONFIG += debug
 RESOURCES += resources.qrc
 
-INCLUDEPATH += src
+include(thirdparty/QtAwesome/QtAwesome/QtAwesome.pri)
 
-SOURCES += src/mainwindow.cpp
-HEADERS += src/mainwindow.h
+INCLUDEPATH += src
 
 SOURCES += src/modelshaderprogram.cpp
 HEADERS += src/modelshaderprogram.h
@@ -13,26 +12,41 @@ HEADERS += src/modelshaderprogram.h
 SOURCES += src/modelmeshbinder.cpp
 HEADERS += src/modelmeshbinder.h
 
+SOURCES += src/modelofflinerender.cpp
+HEADERS += src/modelofflinerender.h
+
 SOURCES += src/modelwidget.cpp
 HEADERS += src/modelwidget.h
 
-SOURCES += src/skeletoneditgraphicsview.cpp
-HEADERS += src/skeletoneditgraphicsview.h
+SOURCES += src/skeletonnodepropertywidget.cpp
+HEADERS += src/skeletonnodepropertywidget.h
 
-SOURCES += src/skeletoneditnodeitem.cpp
-HEADERS += src/skeletoneditnodeitem.h
+SOURCES += src/skeletonedgepropertywidget.cpp
+HEADERS += src/skeletonedgepropertywidget.h
 
-SOURCES += src/skeletoneditedgeitem.cpp
-HEADERS += src/skeletoneditedgeitem.h
+SOURCES += src/skeletondocument.cpp
+HEADERS += src/skeletondocument.h
 
-SOURCES += src/skeletontomesh.cpp
-HEADERS += src/skeletontomesh.h
+SOURCES += src/skeletondocumentwindow.cpp
+HEADERS += src/skeletondocumentwindow.h
+
+SOURCES += src/skeletongraphicswidget.cpp
+HEADERS += src/skeletongraphicswidget.h
+
+SOURCES += src/skeletonhistorylistwidget.cpp
+HEADERS += src/skeletonhistorylistwidget.h
+
+SOURCES += src/skeletonpartlistwidget.cpp
+HEADERS += src/skeletonpartlistwidget.h
+
+SOURCES += src/meshgenerator.cpp
+HEADERS += src/meshgenerator.h
+
+SOURCES += src/util.cpp
+HEADERS += src/util.h
 
 SOURCES += src/turnaroundloader.cpp
 HEADERS += src/turnaroundloader.h
-
-SOURCES += src/skeletonwidget.cpp
-HEADERS += src/skeletonwidget.h
 
 SOURCES += src/skeletonsnapshot.cpp
 HEADERS += src/skeletonsnapshot.h
@@ -51,6 +65,12 @@ HEADERS += src/mesh.h
 
 SOURCES += src/unionmesh.cpp
 HEADERS += src/unionmesh.h
+
+SOURCES += src/logbrowser.cpp
+HEADERS += src/logbrowser.h
+
+SOURCES += src/logbrowserdialog.cpp
+HEADERS += src/logbrowserdialog.h
 
 SOURCES += src/main.cpp
 

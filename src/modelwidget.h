@@ -11,7 +11,7 @@
 #include "modelshaderprogram.h"
 #include "modelmeshbinder.h"
 
-class SkeletonEditGraphicsView;
+class SkeletonGraphicsFunctions;
 
 class ModelWidget : public QOpenGLWidget, protected QOpenGLFunctions
 {
@@ -26,7 +26,7 @@ public:
     
     void updateMesh(Mesh *mesh);
     void exportMeshAsObj(const QString &filename);
-    void setGraphicsView(SkeletonEditGraphicsView *view);
+    void setGraphicsFunctions(SkeletonGraphicsFunctions *graphicsFunctions);
 
 public slots:
     void setXRotation(int angle);
@@ -61,7 +61,7 @@ private:
     bool m_moveStarted;
     QPoint m_moveStartPos;
     QRect m_moveStartGeometry;
-    SkeletonEditGraphicsView *m_graphicsView;
+    SkeletonGraphicsFunctions *m_graphicsFunctions;
 };
 
 #endif

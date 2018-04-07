@@ -2,8 +2,20 @@
 #include <QDesktopWidget>
 #include <QStyleFactory>
 #include <QFontDatabase>
-#include "mainwindow.h"
-#include "meshlite.h"
+#include <QPointer>
+#include <QDebug>
+#include <QtGlobal>
+#include "logbrowser.h"
+#include "skeletondocumentwindow.h"
+#include "theme.h"
+
+QPointer<LogBrowser> g_logBrowser;
+
+void outputMessage(QtMsgType type, const QMessageLogContext &context, const QString &msg)
+{
+    if (g_logBrowser)
+        g_logBrowser->outputMessage(type, msg);
+}
 
 int main(int argc, char ** argv)
 {
@@ -24,8 +36,8 @@ int main(int argc, char ** argv)
     darkPalette.setColor(QPalette::ButtonText, QColor(239,239,239));
     darkPalette.setColor(QPalette::BrightText, Qt::red);
     darkPalette.setColor(QPalette::Link, QColor(42, 130, 218));
-    darkPalette.setColor(QPalette::Highlight, QColor(252, 102, 33));
-    darkPalette.setColor(QPalette::HighlightedText, Qt::black);
+    darkPalette.setColor(QPalette::Highlight, Theme::white);
+    darkPalette.setColor(QPalette::HighlightedText, Qt::white);
     qApp->setPalette(darkPalette);
     qApp->setStyleSheet("QToolTip { color: #ffffff; background-color: #fc6621; border: 1px solid white; }");
     
@@ -36,8 +48,11 @@ int main(int argc, char ** argv)
     font.setPixelSize(9);
     font.setBold(false);
     QApplication::setFont(font);
+
+    g_logBrowser = new LogBrowser;
+    qInstallMessageHandler(&outputMessage);
     
-    MainWindow mainWindow;
+    SkeletonDocumentWindow mainWindow;
     mainWindow.showMaximized();
     return app.exec();
 }

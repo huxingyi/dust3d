@@ -3,6 +3,7 @@
 #include <QColor>
 #include <QString>
 #include <map>
+#include "QtAwesome.h"
 
 class Theme
 {
@@ -22,6 +23,10 @@ public:
     static QString tabButtonStylesheet;
     static std::map<QString, QString> nextSideColorNameMap;
     static std::map<QString, QColor> sideColorNameToColorMap;
+    static QtAwesome *awesome();
+    static int toolIconFontSize;
+    static int toolIconSize;
+    static int previewImageSize;
 };
 
 #endif

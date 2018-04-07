@@ -25,6 +25,23 @@ float Theme::edgeAlpha = 1.0;
 float Theme::fillAlpha = 50.0 / 255;
 int Theme::skeletonNodeBorderSize = 0;
 int Theme::skeletonEdgeWidth = 0;
+int Theme::toolIconFontSize = 16;
+int Theme::toolIconSize = 24;
+int Theme::previewImageSize = 64;
+
+QtAwesome *Theme::awesome()
+{
+    static QtAwesome *s_awesome = nullptr;
+    if (nullptr == s_awesome) {
+        s_awesome = new QtAwesome();
+        s_awesome->initFontAwesome();
+        s_awesome->setDefaultOption("color", Theme::white);
+        s_awesome->setDefaultOption("color-disabled", QColor(0xcc, 0xcc, 0xcc));
+        s_awesome->setDefaultOption("color-active", Theme::white);
+        s_awesome->setDefaultOption("color-selected", Theme::white);
+    }
+    return s_awesome;
+}
 
 std::map<QString, QString> createSideColorNameMap() {
     std::map<QString, QString> map;

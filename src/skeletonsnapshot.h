@@ -12,6 +12,8 @@ public:
     std::map<QString, QString> canvas;
     std::map<QString, std::map<QString, QString>> nodes;
     std::map<QString, std::map<QString, QString>> edges;
+    std::map<QString, std::map<QString, QString>> parts;
+    std::vector<QString> partIdList;
 public:
     SkeletonSnapshot();
     void splitByConnectivity(std::vector<SkeletonSnapshot> *groups);
