@@ -8,7 +8,8 @@ ModelMeshBinder::ModelMeshBinder() :
     m_renderTriangleVertexCount(0),
     m_renderEdgeVertexCount(0),
     m_mesh(NULL),
-    m_meshUpdated(false)
+    m_meshUpdated(false),
+    m_showFrames(true)
 {
 }
 
@@ -102,10 +103,12 @@ void ModelMeshBinder::paint()
             m_meshUpdated = false;
         }
     }
-
-    if (m_renderEdgeVertexCount > 0) {
-        QOpenGLVertexArrayObject::Binder vaoBinder(&m_vaoEdge);
-        glDrawArrays(GL_LINES, 0, m_renderEdgeVertexCount);
+    
+    if (m_showFrames) {
+        if (m_renderEdgeVertexCount > 0) {
+            QOpenGLVertexArrayObject::Binder vaoBinder(&m_vaoEdge);
+            glDrawArrays(GL_LINES, 0, m_renderEdgeVertexCount);
+        }
     }
     if (m_renderTriangleVertexCount > 0) {
         QOpenGLVertexArrayObject::Binder vaoBinder(&m_vaoTriangle);
@@ -119,4 +122,14 @@ void ModelMeshBinder::cleanup()
         m_vboTriangle.destroy();
     if (m_vboEdge.isCreated())
         m_vboEdge.destroy();
+}
+
+void ModelMeshBinder::showFrames()
+{
+    m_showFrames = true;
+}
+
+void ModelMeshBinder::hideFrames()
+{
+    m_showFrames = false;
 }

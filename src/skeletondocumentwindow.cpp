@@ -103,35 +103,38 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     m_modelWidget->setGraphicsFunctions(graphicsWidget);
     
     SkeletonPartListWidget *partListWidget = new SkeletonPartListWidget(m_document);
+    partListWidget->setMaximumWidth(Theme::previewImageSize);
     
-    QTabWidget *firstTabWidget = new QTabWidget;
-    firstTabWidget->setFont(Theme::awesome()->font(Theme::toolIconFontSize * 3 / 4));
-    firstTabWidget->setMaximumWidth(200);
-    firstTabWidget->addTab(partListWidget, QChar(fa::puzzlepiece));
-    firstTabWidget->addTab(new QWidget, QChar(fa::history));
-    firstTabWidget->addTab(new QWidget, QChar(fa::wrench));
+    //QTabWidget *firstTabWidget = new QTabWidget;
+    //firstTabWidget->setFont(Theme::awesome()->font(Theme::toolIconFontSize * 3 / 4));
+    //firstTabWidget->setMaximumWidth(200);
+    //firstTabWidget->addTab(partListWidget, QChar(fa::puzzlepiece));
+    //firstTabWidget->addTab(new QWidget, QChar(fa::history));
+    //firstTabWidget->addTab(new QWidget, QChar(fa::wrench));
     
-    SkeletonEdgePropertyWidget *edgePropertyWidget = new SkeletonEdgePropertyWidget(m_document);
-    SkeletonNodePropertyWidget *nodePropertyWidget = new SkeletonNodePropertyWidget(m_document);
+    //SkeletonEdgePropertyWidget *edgePropertyWidget = new SkeletonEdgePropertyWidget(m_document);
+    //SkeletonNodePropertyWidget *nodePropertyWidget = new SkeletonNodePropertyWidget(m_document);
     
-    QVBoxLayout *propertyLayout = new QVBoxLayout;
-    propertyLayout->addWidget(edgePropertyWidget);
-    propertyLayout->addWidget(nodePropertyWidget);
+    //QVBoxLayout *propertyLayout = new QVBoxLayout;
+    //propertyLayout->addWidget(edgePropertyWidget);
+    //propertyLayout->addWidget(nodePropertyWidget);
     
-    QWidget *propertyWidget = new QWidget;
-    propertyWidget->setLayout(propertyLayout);
+    //QWidget *propertyWidget = new QWidget;
+    //propertyWidget->setLayout(propertyLayout);
     
-    QTabWidget *secondTabWidget = new QTabWidget;
-    secondTabWidget->setFont(Theme::awesome()->font(Theme::toolIconFontSize * 3 / 4));
-    secondTabWidget->setMaximumWidth(200);
-    secondTabWidget->setMaximumHeight(90);
-    secondTabWidget->addTab(propertyWidget, QChar(fa::adjust));
+    //QTabWidget *secondTabWidget = new QTabWidget;
+    //secondTabWidget->setFont(Theme::awesome()->font(Theme::toolIconFontSize * 3 / 4));
+    //secondTabWidget->setMaximumWidth(200);
+    //secondTabWidget->setMaximumHeight(90);
+    //secondTabWidget->addTab(propertyWidget, QChar(fa::adjust));
     
     QVBoxLayout *mainRightLayout = new QVBoxLayout;
     mainRightLayout->setSpacing(0);
-    mainRightLayout->setContentsMargins(5, 5, 5, 5);
-    mainRightLayout->addWidget(firstTabWidget);
-    mainRightLayout->addWidget(secondTabWidget);
+    //mainRightLayout->setContentsMargins(5, 5, 5, 5);
+    mainRightLayout->setContentsMargins(0, 0, 0, 0);
+    mainRightLayout->addWidget(partListWidget);
+    //mainRightLayout->addWidget(firstTabWidget);
+    //mainRightLayout->addWidget(secondTabWidget);
     
     QHBoxLayout *mainLayout = new QHBoxLayout;
     mainLayout->setSpacing(0);
@@ -194,6 +197,7 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(m_document, &SkeletonDocument::partListChanged, partListWidget, &SkeletonPartListWidget::partListChanged);
     connect(m_document, &SkeletonDocument::partPreviewChanged, partListWidget, &SkeletonPartListWidget::partPreviewChanged);
     
+    /*
     connect(graphicsWidget, &SkeletonGraphicsWidget::checkEdge, edgePropertyWidget, &SkeletonEdgePropertyWidget::showProperties);
     connect(graphicsWidget, &SkeletonGraphicsWidget::uncheckEdge, [=](QUuid edgeId) {
         edgePropertyWidget->hide();
@@ -215,6 +219,7 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
         }
     });
     connect(nodePropertyWidget, &SkeletonNodePropertyWidget::setNodeRootMarkMode, m_document, &SkeletonDocument::setNodeRootMarkMode);
+    */
     
     connect(m_document, &SkeletonDocument::skeletonChanged, m_document, &SkeletonDocument::generateMesh);
     

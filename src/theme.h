@@ -27,6 +27,8 @@ public:
     static int toolIconFontSize;
     static int toolIconSize;
     static int previewImageSize;
+    static int miniIconFontSize;
+    static int miniIconSize;
 };
 
 #endif

@@ -1,4 +1,5 @@
-#include <QGridLayout>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QDebug>
 #include "skeletonpartlistwidget.h"
 #include "theme.h"
@@ -8,18 +9,24 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     m_partId(partId)
 {
     m_visibleButton = new QPushButton(QChar(fa::eye));
-    //m_visibleButton->setStyleSheet("QPushButton {border: none; background: none;}");
-    m_visibleButton->setFont(Theme::awesome()->font(Theme::toolIconFontSize * 2 / 3));
-    m_visibleButton->setFixedSize(Theme::toolIconSize * 2 / 3, Theme::toolIconSize * 2 / 3);
+    m_visibleButton->setStyleSheet("QPushButton {border: none; background: none; color: #cccccc;}");
+    m_visibleButton->setFont(Theme::awesome()->font(Theme::miniIconFontSize));
+    m_visibleButton->setFixedSize(Theme::miniIconSize, Theme::miniIconSize);
     
     m_previewLabel = new QLabel;
     
-    //m_nameLabel = new QLabel;
+    QHBoxLayout *miniToolLayout = new QHBoxLayout;
+    miniToolLayout->setSpacing(0);
+    miniToolLayout->setContentsMargins(0, 0, 0, 0);
+    miniToolLayout->addSpacing(3);
+    miniToolLayout->addWidget(m_visibleButton);
+    miniToolLayout->addStretch();
     
-    QGridLayout *mainLayout = new QGridLayout;
-    mainLayout->addWidget(m_visibleButton, 0, 0);
-    mainLayout->addWidget(m_previewLabel, 0, 1);
-    //mainLayout->addWidget(m_nameLabel, 0, 2);
+    QVBoxLayout *mainLayout = new QVBoxLayout;
+    mainLayout->setSpacing(0);
+    mainLayout->setContentsMargins(0, 0, 0, 0);
+    mainLayout->addLayout(miniToolLayout);
+    mainLayout->addWidget(m_previewLabel);
     
     setLayout(mainLayout);
 }
@@ -45,6 +52,8 @@ SkeletonPartListWidget::SkeletonPartListWidget(const SkeletonDocument *document)
 {
     setSelectionMode(QAbstractItemView::NoSelection);
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    setSpacing(1);
+    setContentsMargins(0, 0, 0, 0);
 }
 
 void SkeletonPartListWidget::partChanged(QUuid partId)

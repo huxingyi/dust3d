@@ -189,7 +189,8 @@ void MeshGenerator::process()
         qDebug() << "m_requirePartPreviewMap.find:" << partIdIt;
         if (m_requirePartPreviewMap.find(partIdIt) != m_requirePartPreviewMap.end()) {
             ModelOfflineRender *render = m_partPreviewRenderMap[partIdIt];
-            render->updateMesh(new Mesh(meshliteContext, meshId));
+            int trimedMeshId = meshlite_trim(meshliteContext, meshId, 1);
+            render->updateMesh(new Mesh(meshliteContext, trimedMeshId));
             QImage *image = new QImage(render->toImage(QSize(Theme::previewImageSize, Theme::previewImageSize)));
             m_partPreviewMap[partIdIt] = image;
         }
@@ -211,7 +212,8 @@ void MeshGenerator::process()
             QImage *image = new QImage(m_previewRender->toImage(QSize(Theme::previewImageSize, Theme::previewImageSize)));
             m_preview = image;
         }
-        m_mesh = new Mesh(meshliteContext, mergedMeshId);
+        int trimedMeshId = meshlite_trim(meshliteContext, mergedMeshId, 1);
+        m_mesh = new Mesh(meshliteContext, trimedMeshId);
     }
     
     if (m_previewRender) {

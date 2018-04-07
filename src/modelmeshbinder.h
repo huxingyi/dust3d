@@ -16,6 +16,8 @@ public:
     void initialize();
     void paint();
     void cleanup();
+    void showFrames();
+    void hideFrames();
 private:
     QOpenGLVertexArrayObject m_vaoTriangle;
     QOpenGLBuffer m_vboTriangle;
@@ -26,6 +28,7 @@ private:
     int m_renderTriangleVertexCount;
     int m_renderEdgeVertexCount;
     bool m_meshUpdated;
+    bool m_showFrames;
 };
 
 #endif

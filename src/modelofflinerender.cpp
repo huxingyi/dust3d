@@ -10,7 +10,14 @@ ModelOfflineRender::ModelOfflineRender(QScreen *targetScreen) :
 {
     create();
     m_context = new QOpenGLContext();
-    m_context->setFormat(format());
+    
+    QSurfaceFormat fmt = format();
+    fmt.setAlphaBufferSize(8);
+    fmt.setSamples(4);
+    
+    setFormat(fmt);
+    
+    m_context->setFormat(fmt);
     m_context->create();
 }
 
@@ -41,6 +48,7 @@ QImage ModelOfflineRender::toImage(const QSize &size)
     
     QOpenGLFramebufferObjectFormat format;
     format.setAttachment(QOpenGLFramebufferObject::CombinedDepthStencil);
+    format.setSamples(16);
     QOpenGLFramebufferObject *renderFbo = new QOpenGLFramebufferObject(size, format);
     renderFbo->bind();
     m_context->functions()->glViewport(0, 0, size.width(), size.height());
@@ -56,6 +64,7 @@ QImage ModelOfflineRender::toImage(const QSize &size)
         ModelShaderProgram *program = new ModelShaderProgram;
         ModelMeshBinder meshBinder;
         meshBinder.initialize();
+        meshBinder.hideFrames();
 
         program->setUniformValue(program->lightPosLoc(), QVector3D(0, 0, 70));
 
@@ -65,7 +74,7 @@ QImage ModelOfflineRender::toImage(const QSize &size)
         glEnable(GL_LINE_SMOOTH);
 
         camera.setToIdentity();
-        camera.translate(0, 0, -2.5);
+        camera.translate(0, 0, -2.1);
 
         world.setToIdentity();
         world.rotate(180.0f - (xRot / 16.0f), 1, 0, 0);
