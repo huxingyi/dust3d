@@ -9,17 +9,29 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     m_partId(partId)
 {
     m_visibleButton = new QPushButton(QChar(fa::eye));
-    m_visibleButton->setStyleSheet("QPushButton {border: none; background: none; color: #cccccc;}");
+    m_visibleButton->setStyleSheet("QPushButton {border: none; background: none; color: #252525;}");
     m_visibleButton->setFont(Theme::awesome()->font(Theme::miniIconFontSize));
     m_visibleButton->setFixedSize(Theme::miniIconSize, Theme::miniIconSize);
+    
+    m_lockButton = new QPushButton(QChar(fa::unlock));
+    m_lockButton->setStyleSheet("QPushButton {border: none; background: none; color: #252525;}");
+    m_lockButton->setFont(Theme::awesome()->font(Theme::miniIconFontSize));
+    m_lockButton->setFixedSize(Theme::miniIconSize, Theme::miniIconSize);
+    
+    m_subdivButton = new QPushButton(QChar(fa::cube));
+    m_subdivButton->setStyleSheet("QPushButton {border: none; background: none; color: #252525;}");
+    m_subdivButton->setFont(Theme::awesome()->font(Theme::miniIconFontSize));
+    m_subdivButton->setFixedSize(Theme::miniIconSize, Theme::miniIconSize);
     
     m_previewLabel = new QLabel;
     
     QHBoxLayout *miniToolLayout = new QHBoxLayout;
     miniToolLayout->setSpacing(0);
     miniToolLayout->setContentsMargins(0, 0, 0, 0);
-    miniToolLayout->addSpacing(3);
+    miniToolLayout->addSpacing(5);
     miniToolLayout->addWidget(m_visibleButton);
+    miniToolLayout->addWidget(m_lockButton);
+    miniToolLayout->addWidget(m_subdivButton);
     miniToolLayout->addStretch();
     
     QVBoxLayout *mainLayout = new QVBoxLayout;

@@ -18,6 +18,8 @@ private:
     QUuid m_partId;
     QLabel *m_previewLabel;
     QPushButton *m_visibleButton;
+    QPushButton *m_lockButton;
+    QPushButton *m_subdivButton;
     QLabel *m_nameLabel;
 };
 
