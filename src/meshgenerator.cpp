@@ -206,7 +206,7 @@ void MeshGenerator::process()
     int mergedMeshId = 0;
     if (meshIds.size() > 1) {
         mergedMeshId = unionMeshs(meshliteContext, meshIds);
-    } else {
+    } else if (meshIds.size() > 0) {
         mergedMeshId = meshIds[0];
     }
     if (mergedMeshId > 0) {

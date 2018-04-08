@@ -44,13 +44,13 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     QPushButton *changeTurnaroundButton = new QPushButton(QChar(fa::image));
     initButton(changeTurnaroundButton);
     
-    QPushButton *markTrivialBranchButton = new QPushButton(QChar(fa::leaf));
-    initButton(markTrivialBranchButton);
-    
     QPushButton *markCenterButton = new QPushButton(QChar(fa::bullseye));
     initButton(markCenterButton);
     
-    QPushButton *markMirrorButton = new QPushButton(QChar(fa::adjust));
+    QPushButton *markTrivialBranchButton = new QPushButton(QChar(fa::link));
+    initButton(markTrivialBranchButton);
+    
+    QPushButton *markMirrorButton = new QPushButton(QChar(fa::clone));
     initButton(markMirrorButton);
     
     toolButtonLayout->addWidget(undoButton);
@@ -62,10 +62,10 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     toolButtonLayout->addWidget(zoomOutButton);
     //toolButtonLayout->addSpacing(10);
     //toolButtonLayout->addWidget(changeTurnaroundButton);
-    toolButtonLayout->addSpacing(30);
-    toolButtonLayout->addWidget(markCenterButton);
-    toolButtonLayout->addWidget(markTrivialBranchButton);
-    toolButtonLayout->addWidget(markMirrorButton);
+    //toolButtonLayout->addSpacing(30);
+    //toolButtonLayout->addWidget(markCenterButton);
+    //toolButtonLayout->addWidget(markTrivialBranchButton);
+    //toolButtonLayout->addWidget(markMirrorButton);
     
     QLabel *dust3dJezzasoftLabel = new QLabel;
     QImage dust3dJezzasoftImage;

@@ -9,9 +9,27 @@
 #include <QGraphicsPixmapItem>
 #include <QThread>
 #include <cmath>
+#include <set>
 #include "skeletondocument.h"
 #include "turnaroundloader.h"
 #include "theme.h"
+
+class SkeletonGraphicsSelectionItem : public QGraphicsRectItem
+{
+public:
+    SkeletonGraphicsSelectionItem()
+    {
+        QColor penColor = Theme::white;
+        QPen pen(penColor);
+        pen.setWidth(0);
+        pen.setStyle(Qt::DashLine);
+        setPen(pen);
+    }
+    void updateRange(QPointF beginPos, QPointF endPos)
+    {
+        setRect(QRectF(beginPos, endPos).normalized());
+    }
+};
 
 class SkeletonGraphicsNodeItem : public QGraphicsEllipseItem
 {
@@ -24,7 +42,6 @@ public:
         setData(0, "node");
         setRadius(32);
     }
-    
     void updateAppearance()
     {
         QColor color = Theme::white;
@@ -52,7 +69,6 @@ public:
         QBrush brush(brushColor);
         setBrush(brush);
     }
-    
     void setOrigin(QPointF point)
     {
         QPointF moveBy = point - origin();
@@ -61,18 +77,15 @@ public:
         setRect(newRect);
         updateAppearance();
     }
-    
     QPointF origin()
     {
         return QPointF(rect().x() + rect().width() / 2,
             rect().y() + rect().height() / 2);
     }
-    
     float radius()
     {
         return rect().width() / 2;
     }
-    
     void setRadius(float radius)
     {
         if (radius < 4)
@@ -82,37 +95,35 @@ public:
             radius * 2, radius * 2);
         updateAppearance();
     }
-    
     SkeletonProfile profile()
     {
         return m_profile;
     }
-    
     QUuid id()
     {
         return m_uuid;
     }
-    
     void setId(QUuid id)
     {
         m_uuid = id;
     }
-    
     void setHovered(bool hovered)
     {
         m_hovered = hovered;
         updateAppearance();
     }
-    
     void setChecked(bool checked)
     {
         m_checked = checked;
         updateAppearance();
     }
-    
     bool checked()
     {
         return m_checked;
+    }
+    bool hovered()
+    {
+        return m_hovered;
     }
 private:
     QUuid m_uuid;
@@ -128,22 +139,31 @@ public:
         m_firstItem(nullptr),
         m_secondItem(nullptr),
         m_hovered(false),
-        m_checked(false)
+        m_checked(false),
+        m_profile(SkeletonProfile::Unknown)
     {
         setData(0, "edge");
     }
-    
     void setEndpoints(SkeletonGraphicsNodeItem *first, SkeletonGraphicsNodeItem *second)
     {
         m_firstItem = first;
         m_secondItem = second;
         updateAppearance();
     }
-    
+    SkeletonGraphicsNodeItem *firstItem()
+    {
+        return m_firstItem;
+    }
+    SkeletonGraphicsNodeItem *secondItem()
+    {
+        return m_secondItem;
+    }
     void updateAppearance()
     {
         if (nullptr == m_firstItem || nullptr == m_secondItem)
             return;
+        
+        m_profile = m_firstItem->profile();
         
         QLineF line(m_firstItem->origin(), m_secondItem->origin());
         
@@ -176,29 +196,36 @@ public:
         pen.setWidth(0);
         setPen(pen);
     }
-    
     QUuid id()
     {
         return m_uuid;
     }
-    
     void setId(QUuid id)
     {
         m_uuid = id;
     }
-    
+    SkeletonProfile profile()
+    {
+        return m_profile;
+    }
     void setHovered(bool hovered)
     {
         m_hovered = hovered;
         updateAppearance();
     }
-    
     void setChecked(bool checked)
     {
         m_checked = checked;
         updateAppearance();
     }
-    
+    bool checked()
+    {
+        return m_checked;
+    }
+    bool hovered()
+    {
+        return m_hovered;
+    }
 private:
     QUuid m_uuid;
     SkeletonGraphicsNodeItem *m_firstItem;
@@ -206,6 +233,7 @@ private:
     QPolygonF m_selectionPolygon;
     bool m_hovered;
     bool m_checked;
+    SkeletonProfile m_profile;
 };
 
 class SkeletonGraphicsFunctions
@@ -224,10 +252,6 @@ class SkeletonGraphicsWidget : public QGraphicsView, public SkeletonGraphicsFunc
     Q_OBJECT
 signals:
     void addNode(float x, float y, float z, float radius, QUuid fromNodeId);
-    void uncheckNode(QUuid nodeId);
-    void checkNode(QUuid nodeId);
-    void uncheckEdge(QUuid edgeId);
-    void checkEdge(QUuid edgeId);
     void scaleNodeByAddRadius(QUuid nodeId, float amount);
     void moveNodeBy(QUuid nodeId, float x, float y, float z);
     void removeNode(QUuid nodeId);
@@ -245,6 +269,10 @@ public:
     bool mousePress(QMouseEvent *event);
     bool mouseDoubleClick(QMouseEvent *event);
     bool keyPress(QKeyEvent *event);
+    static bool checkSkeletonItem(QGraphicsItem *item, bool checked);
+    static SkeletonProfile readSkeletonItemProfile(QGraphicsItem *item);
+    void readMergedSkeletonNodeSetFromRangeSelection(std::set<SkeletonGraphicsNodeItem *> *nodeItemSet);
+    void readSkeletonNodeAndEdgeIdSetFromRangeSelection(std::set<QUuid> *nodeIdSet, std::set<QUuid> *edgeIdSet);
 protected:
     void mouseMoveEvent(QMouseEvent *event);
     void wheelEvent(QWheelEvent *event);
@@ -275,6 +303,9 @@ private:
     float sceneRadiusFromUnified(float radius);
     void updateTurnaround();
     void updateItems();
+    void checkRangeSelection();
+    void clearRangeSelection();
+    void removeItem(QGraphicsItem *item);
 private:
     QGraphicsPixmapItem *m_backgroundItem;
     const SkeletonDocument *m_document;
@@ -286,13 +317,17 @@ private:
     QPointF m_lastScenePos;
     SkeletonGraphicsNodeItem *m_cursorNodeItem;
     SkeletonGraphicsEdgeItem *m_cursorEdgeItem;
-    SkeletonGraphicsNodeItem *m_checkedNodeItem;
+    SkeletonGraphicsNodeItem *m_addFromNodeItem;
     SkeletonGraphicsNodeItem *m_hoveredNodeItem;
     SkeletonGraphicsEdgeItem *m_hoveredEdgeItem;
-    SkeletonGraphicsEdgeItem *m_checkedEdgeItem;
     float m_lastAddedX;
     float m_lastAddedY;
     float m_lastAddedZ;
+    SkeletonGraphicsSelectionItem *m_selectionItem;
+    QPointF m_rangeSelectionStartPos;
+    bool m_rangeSelectionStarted;
+    std::set<QGraphicsItem *> m_rangeSelectionSet;
+    bool m_mouseEventFromSelf;
 };
 
 class SkeletonGraphicsContainerWidget : public QWidget

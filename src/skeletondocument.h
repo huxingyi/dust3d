@@ -39,6 +39,8 @@ public:
     float y;
     float z;
     float radius;
+    bool xMirrored;
+    bool zMirrored;
     SkeletonNodeRootMarkMode rootMarkMode;
     std::vector<QUuid> edgeIds;
 };

@@ -4,6 +4,7 @@
 #include <cmath>
 #include <QtGlobal>
 #include <algorithm>
+#include <QVector2D>
 #include "skeletongraphicswidget.h"
 #include "theme.h"
 #include "util.h"
@@ -15,14 +16,16 @@ SkeletonGraphicsWidget::SkeletonGraphicsWidget(const SkeletonDocument *document)
     m_dragStarted(false),
     m_cursorNodeItem(nullptr),
     m_cursorEdgeItem(nullptr),
-    m_checkedNodeItem(nullptr),
+    m_addFromNodeItem(nullptr),
     m_moveStarted(false),
     m_hoveredNodeItem(nullptr),
     m_hoveredEdgeItem(nullptr),
-    m_checkedEdgeItem(nullptr),
     m_lastAddedX(0),
     m_lastAddedY(0),
-    m_lastAddedZ(0)
+    m_lastAddedZ(0),
+    m_selectionItem(nullptr),
+    m_rangeSelectionStarted(false),
+    m_mouseEventFromSelf(false)
 {
     setRenderHint(QPainter::Antialiasing, false);
     setBackgroundBrush(QBrush(QWidget::palette().color(QWidget::backgroundRole()), Qt::SolidPattern));
@@ -44,6 +47,10 @@ SkeletonGraphicsWidget::SkeletonGraphicsWidget(const SkeletonDocument *document)
     m_cursorEdgeItem = new SkeletonGraphicsEdgeItem();
     m_cursorEdgeItem->hide();
     scene()->addItem(m_cursorEdgeItem);
+    
+    m_selectionItem = new SkeletonGraphicsSelectionItem();
+    m_selectionItem->hide();
+    scene()->addItem(m_selectionItem);
     
     scene()->setSceneRect(rect());
     
@@ -126,7 +133,7 @@ void SkeletonGraphicsWidget::updateCursor()
             setCursor(QCursor(Theme::awesome()->icon(fa::plus).pixmap(Theme::toolIconFontSize, Theme::toolIconFontSize)));
             break;
         case SkeletonDocumentEditMode::Select:
-            setCursor(QCursor(Theme::awesome()->icon(fa::mousepointer).pixmap(Theme::toolIconFontSize, Theme::toolIconFontSize)));
+            setCursor(QCursor(Theme::awesome()->icon(fa::mousepointer).pixmap(Theme::toolIconFontSize, Theme::toolIconFontSize), Theme::toolIconFontSize / 5, 0));
             break;
         case SkeletonDocumentEditMode::Drag:
             setCursor(QCursor(Theme::awesome()->icon(m_dragStarted ? fa::handrocko : fa::handpapero).pixmap(Theme::toolIconFontSize, Theme::toolIconFontSize)));
@@ -144,16 +151,17 @@ void SkeletonGraphicsWidget::updateCursor()
 
 void SkeletonGraphicsWidget::editModeChanged()
 {
-    if (m_checkedNodeItem) {
-        if (!m_checkedNodeItem->checked()) {
-            if (m_hoveredNodeItem == m_checkedNodeItem) {
-                m_checkedNodeItem->setHovered(false);
-                m_hoveredNodeItem = nullptr;
-            }
-            m_checkedNodeItem = nullptr;
-        }
-    }
     updateCursor();
+    if (SkeletonDocumentEditMode::Add == m_document->editMode) {
+        SkeletonGraphicsNodeItem *choosenNodeItem = nullptr;
+        if (!m_rangeSelectionSet.empty()) {
+            std::set<SkeletonGraphicsNodeItem *> nodeItems;
+            readMergedSkeletonNodeSetFromRangeSelection(&nodeItems);
+            if (nodeItems.size() == 1)
+                choosenNodeItem = *nodeItems.begin();
+        }
+        m_addFromNodeItem = choosenNodeItem;
+    }
 }
 
 void SkeletonGraphicsWidget::mouseMoveEvent(QMouseEvent *event)
@@ -180,7 +188,20 @@ void SkeletonGraphicsWidget::mouseReleaseEvent(QMouseEvent *event)
 void SkeletonGraphicsWidget::mousePressEvent(QMouseEvent *event)
 {
     QGraphicsView::mousePressEvent(event);
-    mousePress(event);
+    m_mouseEventFromSelf = true;
+    if (mousePress(event)) {
+        m_mouseEventFromSelf = false;
+        return;
+    }
+    m_mouseEventFromSelf = false;
+    if (event->button() == Qt::LeftButton) {
+        if (SkeletonDocumentEditMode::Select == m_document->editMode) {
+            if (!m_rangeSelectionStarted) {
+                m_rangeSelectionStartPos = mouseEventScenePos(event);
+                m_rangeSelectionStarted = true;
+            }
+        }
+    }
 }
 
 void SkeletonGraphicsWidget::mouseDoubleClickEvent(QMouseEvent *event)
@@ -205,6 +226,17 @@ bool SkeletonGraphicsWidget::mouseMove(QMouseEvent *event)
             horizontalScrollBar()->setValue(horizontalScrollBar()->value() + m_lastGlobalPos.x() - currentGlobalPos.x());
         m_lastGlobalPos = currentGlobalPos;
         return true;
+    }
+    
+    if (SkeletonDocumentEditMode::Select == m_document->editMode) {
+        if (m_rangeSelectionStarted) {
+            QPointF mouseScenePos = mouseEventScenePos(event);
+            m_selectionItem->updateRange(m_rangeSelectionStartPos, mouseScenePos);
+            if (!m_selectionItem->isVisible())
+                m_selectionItem->setVisible(true);
+            checkRangeSelection();
+            return true;
+        }
     }
     
     if (SkeletonDocumentEditMode::Select == m_document->editMode ||
@@ -250,8 +282,8 @@ bool SkeletonGraphicsWidget::mouseMove(QMouseEvent *event)
         if (!m_cursorNodeItem->isVisible()) {
             m_cursorNodeItem->show();
         }
-        if (m_checkedNodeItem) {
-            m_cursorEdgeItem->setEndpoints(m_checkedNodeItem, m_cursorNodeItem);
+        if (m_addFromNodeItem) {
+            m_cursorEdgeItem->setEndpoints(m_addFromNodeItem, m_cursorNodeItem);
             if (!m_cursorEdgeItem->isVisible()) {
                 m_cursorEdgeItem->show();
             }
@@ -260,14 +292,19 @@ bool SkeletonGraphicsWidget::mouseMove(QMouseEvent *event)
     }
     
     if (SkeletonDocumentEditMode::Select == m_document->editMode) {
-        if (m_moveStarted && m_checkedNodeItem) {
+        if (m_moveStarted && !m_rangeSelectionSet.empty()) {
             QPointF mouseScenePos = mouseEventScenePos(event);
             float byX = sceneRadiusToUnified(mouseScenePos.x() - m_lastScenePos.x());
             float byY = sceneRadiusToUnified(mouseScenePos.y() - m_lastScenePos.y());
-            if (SkeletonProfile::Main == m_checkedNodeItem->profile()) {
-                emit moveNodeBy(m_checkedNodeItem->id(), byX, byY, 0);
-            } else {
-                emit moveNodeBy(m_checkedNodeItem->id(), 0, byY, byX);
+            std::set<SkeletonGraphicsNodeItem *> nodeItems;
+            readMergedSkeletonNodeSetFromRangeSelection(&nodeItems);
+            for (const auto &it: nodeItems) {
+                SkeletonGraphicsNodeItem *nodeItem = it;
+                if (SkeletonProfile::Main == nodeItem->profile()) {
+                    emit moveNodeBy(nodeItem->id(), byX, byY, 0);
+                } else {
+                    emit moveNodeBy(nodeItem->id(), 0, byY, byX);
+                }
             }
             m_lastScenePos = mouseScenePos;
             return true;
@@ -295,11 +332,37 @@ bool SkeletonGraphicsWidget::wheel(QWheelEvent *event)
             return true;
         }
     } else if (SkeletonDocumentEditMode::Select == m_document->editMode) {
-        if (m_hoveredNodeItem) {
-            emit scaleNodeByAddRadius(m_hoveredNodeItem->id(), sceneRadiusToUnified(delta));
+        if (!m_rangeSelectionSet.empty()) {
+            std::set<SkeletonGraphicsNodeItem *> nodeItems;
+            readMergedSkeletonNodeSetFromRangeSelection(&nodeItems);
+            float unifiedDelta = sceneRadiusToUnified(delta);
+            if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
+                QVector2D center;
+                for (const auto &nodeItem: nodeItems) {
+                    center += QVector2D(nodeItem->origin());
+                }
+                center /= nodeItems.size();
+                for (const auto &nodeItem: nodeItems) {
+                    QVector2D origin = QVector2D(nodeItem->origin());
+                    QVector2D ray = (center - origin) * 0.01 * delta;
+                    float byX = -sceneRadiusToUnified(ray.x());
+                    float byY = -sceneRadiusToUnified(ray.y());
+                    if (SkeletonProfile::Main == nodeItem->profile()) {
+                        emit moveNodeBy(nodeItem->id(), byX, byY, 0);
+                    } else {
+                        emit moveNodeBy(nodeItem->id(), 0, byY, byX);
+                    }
+                }
+            } else {
+                for (const auto &it: nodeItems) {
+                    SkeletonGraphicsNodeItem *nodeItem = it;
+                    emit scaleNodeByAddRadius(nodeItem->id(), unifiedDelta);
+                }
+            }
             return true;
-        } else if (m_checkedNodeItem) {
-            emit scaleNodeByAddRadius(m_checkedNodeItem->id(), sceneRadiusToUnified(delta));
+        } else if (m_hoveredNodeItem) {
+            float unifiedDelta = sceneRadiusToUnified(delta);
+            emit scaleNodeByAddRadius(m_hoveredNodeItem->id(), unifiedDelta);
             return true;
         }
     }
@@ -309,13 +372,17 @@ bool SkeletonGraphicsWidget::wheel(QWheelEvent *event)
 bool SkeletonGraphicsWidget::mouseRelease(QMouseEvent *event)
 {
     if (event->button() == Qt::LeftButton) {
-        bool processed = m_dragStarted || m_moveStarted;
+        bool processed = m_dragStarted || m_moveStarted || m_rangeSelectionStarted;
         if (m_dragStarted) {
             m_dragStarted = false;
             updateCursor();
         }
         if (m_moveStarted) {
             m_moveStarted = false;
+        }
+        if (m_rangeSelectionStarted) {
+            m_selectionItem->hide();
+            m_rangeSelectionStarted = false;
         }
         return processed;
     }
@@ -332,13 +399,13 @@ bool SkeletonGraphicsWidget::mousePress(QMouseEvent *event)
     if (event->button() == Qt::LeftButton) {
         if (SkeletonDocumentEditMode::ZoomIn == m_document->editMode) {
             ViewportAnchor lastAnchor = transformationAnchor();
-            setTransformationAnchor(QGraphicsView::AnchorUnderMouse) ;
+            setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
             scale(1.5, 1.5);
             setTransformationAnchor(lastAnchor);
             return true;
         } else if (SkeletonDocumentEditMode::ZoomOut == m_document->editMode) {
             ViewportAnchor lastAnchor = transformationAnchor();
-            setTransformationAnchor(QGraphicsView::AnchorUnderMouse) ;
+            setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
             scale(0.5, 0.5);
             setTransformationAnchor(lastAnchor);
             if ((!verticalScrollBar() || !verticalScrollBar()->isVisible()) &&
@@ -354,20 +421,20 @@ bool SkeletonGraphicsWidget::mousePress(QMouseEvent *event)
             }
         } else if (SkeletonDocumentEditMode::Add == m_document->editMode) {
             if (m_cursorNodeItem->isVisible()) {
-                if (m_checkedNodeItem) {
-                    if (m_hoveredNodeItem && m_checkedNodeItem &&
-                            m_hoveredNodeItem != m_checkedNodeItem &&
-                            m_hoveredNodeItem->profile() == m_checkedNodeItem->profile()) {
-                        if (m_document->findEdgeByNodes(m_checkedNodeItem->id(), m_hoveredNodeItem->id()))
+                if (m_addFromNodeItem) {
+                    if (m_hoveredNodeItem && m_addFromNodeItem &&
+                            m_hoveredNodeItem != m_addFromNodeItem &&
+                            m_hoveredNodeItem->profile() == m_addFromNodeItem->profile()) {
+                        if (m_document->findEdgeByNodes(m_addFromNodeItem->id(), m_hoveredNodeItem->id()))
                             return true;
-                        emit addEdge(m_checkedNodeItem->id(), m_hoveredNodeItem->id());
+                        emit addEdge(m_addFromNodeItem->id(), m_hoveredNodeItem->id());
                         return true;
                     }
                 }
                 QPointF mainProfile = m_cursorNodeItem->origin();
                 QPointF sideProfile = mainProfile;
-                if (m_checkedNodeItem) {
-                    auto itemIt = nodeItemMap.find(m_checkedNodeItem->id());
+                if (m_addFromNodeItem) {
+                    auto itemIt = nodeItemMap.find(m_addFromNodeItem->id());
                     sideProfile.setX(itemIt->second.second->origin().x());
                 } else {
                     if (mainProfile.x() >= scene()->width() / 2) {
@@ -384,52 +451,35 @@ bool SkeletonGraphicsWidget::mousePress(QMouseEvent *event)
                 m_lastAddedY = unifiedMainPos.y();
                 m_lastAddedZ = unifiedSidePos.x();
                 qDebug() << "Emit add node " << m_lastAddedX << m_lastAddedY << m_lastAddedZ;
-                emit addNode(unifiedMainPos.x(), unifiedMainPos.y(), unifiedSidePos.x(), sceneRadiusToUnified(m_cursorNodeItem->radius()), nullptr == m_checkedNodeItem ? QUuid() : m_checkedNodeItem->id());
+                emit addNode(unifiedMainPos.x(), unifiedMainPos.y(), unifiedSidePos.x(), sceneRadiusToUnified(m_cursorNodeItem->radius()), nullptr == m_addFromNodeItem ? QUuid() : m_addFromNodeItem->id());
                 return true;
             }
         } else if (SkeletonDocumentEditMode::Select == m_document->editMode) {
-            bool processed = false;
-            if (m_hoveredNodeItem) {
-                if (m_checkedNodeItem != m_hoveredNodeItem) {
-                    if (m_checkedNodeItem) {
-                        emit uncheckNode(m_checkedNodeItem->id());
-                        m_checkedNodeItem->setChecked(false);
+            if (m_mouseEventFromSelf) {
+                bool processed = false;
+                if ((nullptr == m_hoveredNodeItem || m_rangeSelectionSet.find(m_hoveredNodeItem) == m_rangeSelectionSet.end()) &&
+                        (nullptr == m_hoveredEdgeItem || m_rangeSelectionSet.find(m_hoveredEdgeItem) == m_rangeSelectionSet.end())) {
+                    if (!QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
+                        clearRangeSelection();
                     }
-                    m_checkedNodeItem = m_hoveredNodeItem;
-                    m_checkedNodeItem->setChecked(true);
-                    emit checkNode(m_checkedNodeItem->id());
-                }
-                m_moveStarted = true;
-                m_lastScenePos = mouseEventScenePos(event);
-                processed = true;
-            } else {
-                if (m_checkedNodeItem) {
-                    m_checkedNodeItem->setChecked(false);
-                    emit uncheckNode(m_checkedNodeItem->id());
-                    m_checkedNodeItem = nullptr;
-                    processed = true;
-                }
-            }
-            if (m_hoveredEdgeItem) {
-                if (m_checkedEdgeItem != m_hoveredEdgeItem) {
-                    if (m_checkedEdgeItem) {
-                        emit uncheckEdge(m_checkedEdgeItem->id());
-                        m_checkedEdgeItem->setChecked(false);
+                    if (m_hoveredNodeItem) {
+                        m_hoveredNodeItem->setChecked(true);
+                        m_rangeSelectionSet.insert(m_hoveredNodeItem);
+                    } else if (m_hoveredEdgeItem) {
+                        m_hoveredEdgeItem->setChecked(true);
+                        m_rangeSelectionSet.insert(m_hoveredEdgeItem);
                     }
-                    m_checkedEdgeItem = m_hoveredEdgeItem;
-                    m_checkedEdgeItem->setChecked(true);
-                    emit checkEdge(m_checkedEdgeItem->id());
                 }
-            } else {
-                if (m_checkedEdgeItem) {
-                    m_checkedEdgeItem->setChecked(false);
-                    emit uncheckEdge(m_checkedEdgeItem->id());
-                    m_checkedEdgeItem = nullptr;
-                    processed = true;
+                if (!m_rangeSelectionSet.empty()) {
+                    if (!QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
+                        m_moveStarted = true;
+                        m_lastScenePos = mouseEventScenePos(event);
+                        processed = true;
+                    }
                 }
-            }
-            if (processed) {
-                return true;
+                if (processed) {
+                    return true;
+                }
             }
         }
     }
@@ -469,13 +519,18 @@ bool SkeletonGraphicsWidget::keyPress(QKeyEvent *event)
 {
     if (event->key() == Qt::Key_Delete || event->key() ==Qt::Key_Backspace) {
         bool processed = false;
-        if (m_checkedNodeItem) {
-            emit removeNode(m_checkedNodeItem->id());
-            processed = true;
-        }
-        if (m_checkedEdgeItem) {
-            emit removeEdge(m_checkedEdgeItem->id());
-            processed = true;
+        if (!m_rangeSelectionSet.empty()) {
+            std::set<QUuid> nodeIdSet;
+            std::set<QUuid> edgeIdSet;
+            readSkeletonNodeAndEdgeIdSetFromRangeSelection(&nodeIdSet, &edgeIdSet);
+            for (const auto &id: edgeIdSet) {
+                emit removeEdge(id);
+                processed = true;
+            }
+            for (const auto &id: nodeIdSet) {
+                emit removeNode(id);
+                processed = true;
+            }
         }
         if (processed) {
             return true;
@@ -510,15 +565,15 @@ void SkeletonGraphicsWidget::nodeAdded(QUuid nodeId)
     scene()->addItem(sideProfileItem);
     nodeItemMap[nodeId] = std::make_pair(mainProfileItem, sideProfileItem);
     
-    if (nullptr == m_checkedNodeItem) {
-        m_checkedNodeItem = mainProfileItem;
+    if (nullptr == m_addFromNodeItem) {
+        m_addFromNodeItem = mainProfileItem;
     } else {
-        if (SkeletonProfile::Main == m_checkedNodeItem->profile()) {
-            m_checkedNodeItem = mainProfileItem;
+        if (SkeletonProfile::Main == m_addFromNodeItem->profile()) {
+            m_addFromNodeItem = mainProfileItem;
         } else {
-            m_checkedNodeItem = sideProfileItem;
+            m_addFromNodeItem = sideProfileItem;
         }
-        m_cursorEdgeItem->setEndpoints(m_checkedNodeItem, m_cursorNodeItem);
+        m_cursorEdgeItem->setEndpoints(m_addFromNodeItem, m_cursorNodeItem);
     }
 }
 
@@ -556,6 +611,17 @@ void SkeletonGraphicsWidget::edgeAdded(QUuid edgeId)
     edgeItemMap[edgeId] = std::make_pair(mainProfileEdgeItem, sideProfileEdgeItem);
 }
 
+void SkeletonGraphicsWidget::removeItem(QGraphicsItem *item)
+{
+    if (m_hoveredNodeItem == item)
+        m_hoveredNodeItem = nullptr;
+    if (m_addFromNodeItem == item)
+        m_addFromNodeItem = nullptr;
+    if (m_hoveredEdgeItem == item)
+        m_hoveredEdgeItem = nullptr;
+    m_rangeSelectionSet.erase(item);
+}
+
 void SkeletonGraphicsWidget::nodeRemoved(QUuid nodeId)
 {
     m_lastAddedX = 0;
@@ -566,14 +632,8 @@ void SkeletonGraphicsWidget::nodeRemoved(QUuid nodeId)
         qDebug() << "Node removed but node id not exist:" << nodeId;
         return;
     }
-    if (m_hoveredNodeItem == nodeItemIt->second.first)
-        m_hoveredNodeItem = nullptr;
-    if (m_hoveredNodeItem == nodeItemIt->second.second)
-        m_hoveredNodeItem = nullptr;
-    if (m_checkedNodeItem == nodeItemIt->second.first)
-        m_checkedNodeItem = nullptr;
-    if (m_checkedNodeItem == nodeItemIt->second.second)
-        m_checkedNodeItem = nullptr;
+    removeItem(nodeItemIt->second.first);
+    removeItem(nodeItemIt->second.second);
     delete nodeItemIt->second.first;
     delete nodeItemIt->second.second;
     nodeItemMap.erase(nodeItemIt);
@@ -586,14 +646,8 @@ void SkeletonGraphicsWidget::edgeRemoved(QUuid edgeId)
         qDebug() << "Edge removed but edge id not exist:" << edgeId;
         return;
     }
-    if (m_hoveredEdgeItem == edgeItemIt->second.first)
-        m_hoveredEdgeItem = nullptr;
-    if (m_hoveredEdgeItem == edgeItemIt->second.second)
-        m_hoveredEdgeItem = nullptr;
-    if (m_checkedEdgeItem == edgeItemIt->second.first)
-        m_checkedEdgeItem = nullptr;
-    if (m_checkedEdgeItem == edgeItemIt->second.second)
-        m_checkedEdgeItem = nullptr;
+    removeItem(edgeItemIt->second.first);
+    removeItem(edgeItemIt->second.second);
     delete edgeItemIt->second.first;
     delete edgeItemIt->second.second;
     edgeItemMap.erase(edgeItemIt);
@@ -668,6 +722,110 @@ void SkeletonGraphicsWidget::partVisibleStateChanged(QUuid partId)
         }
         nodeItemIt->second.first->setVisible(part->visible);
         nodeItemIt->second.second->setVisible(part->visible);
+    }
+}
+
+bool SkeletonGraphicsWidget::checkSkeletonItem(QGraphicsItem *item, bool checked)
+{
+    if (item->data(0) == "node") {
+        SkeletonGraphicsNodeItem *nodeItem = (SkeletonGraphicsNodeItem *)item;
+        if (checked != nodeItem->checked())
+            nodeItem->setChecked(checked);
+        return true;
+    } else if (item->data(0) == "edge") {
+        SkeletonGraphicsEdgeItem *edgeItem = (SkeletonGraphicsEdgeItem *)item;
+        if (checked != edgeItem->checked())
+            edgeItem->setChecked(checked);
+        return true;
+    }
+    return false;
+}
+
+SkeletonProfile SkeletonGraphicsWidget::readSkeletonItemProfile(QGraphicsItem *item)
+{
+    if (item->data(0) == "node") {
+        SkeletonGraphicsNodeItem *nodeItem = (SkeletonGraphicsNodeItem *)item;
+        return nodeItem->profile();
+    } else if (item->data(0) == "edge") {
+        SkeletonGraphicsEdgeItem *edgeItem = (SkeletonGraphicsEdgeItem *)item;
+        return edgeItem->profile();
+    }
+    return SkeletonProfile::Unknown;
+}
+
+void SkeletonGraphicsWidget::checkRangeSelection()
+{
+    std::set<QGraphicsItem *> newSet;
+    std::set<QGraphicsItem *> deleteSet;
+    SkeletonProfile choosenProfile = SkeletonProfile::Unknown;
+    if (!m_rangeSelectionSet.empty()) {
+        auto it = m_rangeSelectionSet.begin();
+        choosenProfile = readSkeletonItemProfile(*it);
+    }
+    if (m_selectionItem->isVisible()) {
+        QList<QGraphicsItem *> items = scene()->items(m_selectionItem->sceneBoundingRect());
+        for (auto it = items.begin(); it != items.end(); it++) {
+            QGraphicsItem *item = *it;
+            if (SkeletonProfile::Unknown == choosenProfile) {
+                if (checkSkeletonItem(item, true)) {
+                    choosenProfile = readSkeletonItemProfile(item);
+                    newSet.insert(item);
+                }
+            } else if (choosenProfile == readSkeletonItemProfile(item)) {
+                if (checkSkeletonItem(item, true))
+                    newSet.insert(item);
+            }
+        }
+    }
+    if (!QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
+        for (const auto &item: m_rangeSelectionSet) {
+            if (newSet.find(item) == newSet.end()) {
+                checkSkeletonItem(item, false);
+                deleteSet.insert(item);
+            }
+        }
+    }
+    for (const auto &item: newSet) {
+        m_rangeSelectionSet.insert(item);
+    }
+    for (const auto &item: deleteSet) {
+        m_rangeSelectionSet.erase(item);
+    }
+}
+
+void SkeletonGraphicsWidget::clearRangeSelection()
+{
+    for (const auto &item: m_rangeSelectionSet) {
+        checkSkeletonItem(item, false);
+    }
+    m_rangeSelectionSet.clear();
+}
+
+void SkeletonGraphicsWidget::readMergedSkeletonNodeSetFromRangeSelection(std::set<SkeletonGraphicsNodeItem *> *nodeItemSet)
+{
+    for (const auto &it: m_rangeSelectionSet) {
+        QGraphicsItem *item = it;
+        if (item->data(0) == "node") {
+            nodeItemSet->insert((SkeletonGraphicsNodeItem *)item);
+        } else if (item->data(0) == "edge") {
+            SkeletonGraphicsEdgeItem *edgeItem = (SkeletonGraphicsEdgeItem *)item;
+            if (edgeItem->firstItem() && edgeItem->secondItem()) {
+                nodeItemSet->insert(edgeItem->firstItem());
+                nodeItemSet->insert(edgeItem->secondItem());
+            }
+        }
+    }
+}
+
+void SkeletonGraphicsWidget::readSkeletonNodeAndEdgeIdSetFromRangeSelection(std::set<QUuid> *nodeIdSet, std::set<QUuid> *edgeIdSet)
+{
+    for (const auto &it: m_rangeSelectionSet) {
+        QGraphicsItem *item = it;
+        if (item->data(0) == "node") {
+            nodeIdSet->insert(((SkeletonGraphicsNodeItem *)item)->id());
+        } else if (item->data(0) == "edge") {
+            edgeIdSet->insert(((SkeletonGraphicsEdgeItem *)item)->id());
+        }
     }
 }
 
