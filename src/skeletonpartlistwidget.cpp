@@ -134,7 +134,7 @@ void SkeletonPartWidget::updateSubdivButton()
         return;
     }
     if (part->subdived)
-        updateButton(m_subdivButton, QChar(fa::cubes), true);
+        updateButton(m_subdivButton, QChar(fa::connectdevelop), true);
     else
         updateButton(m_subdivButton, QChar(fa::cube), false);
 }

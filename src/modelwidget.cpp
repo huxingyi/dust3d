@@ -179,8 +179,8 @@ void ModelWidget::mousePressEvent(QMouseEvent *event)
 
 void ModelWidget::mouseReleaseEvent(QMouseEvent *event)
 {
-    if (!m_moveStarted && m_graphicsFunctions && m_graphicsFunctions->mouseRelease(event))
-        return;
+    if (m_graphicsFunctions)
+        m_graphicsFunctions->mouseRelease(event);
     if (m_moveStarted) {
         m_moveStarted = false;
     }

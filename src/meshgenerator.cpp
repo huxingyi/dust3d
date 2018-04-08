@@ -5,7 +5,7 @@
 #include "skeletondocument.h"
 #include "meshlite.h"
 #include "modelofflinerender.h"
-#include "unionmesh.h"
+#include "meshutil.h"
 #include "theme.h"
 
 MeshGenerator::MeshGenerator(SkeletonSnapshot *snapshot, QThread *thread) :
@@ -188,7 +188,7 @@ void MeshGenerator::process()
         int bmeshId = partBmeshMap[partIdIt];
         int meshId = meshlite_bmesh_generate_mesh(meshliteContext, bmeshId, 0);
         if (isTrueValueString(part->second["subdived"])) {
-            int subdivedMeshId = meshlite_subdivide(meshliteContext, meshId);
+            int subdivedMeshId = subdivMesh(meshliteContext, meshId);
             if (subdivedMeshId > 0)
                 meshId = subdivedMeshId;
         }
@@ -204,11 +204,13 @@ void MeshGenerator::process()
     }
     
     int mergedMeshId = 0;
-    if (meshIds.size() > 0) {
+    if (meshIds.size() > 1) {
         mergedMeshId = unionMeshs(meshliteContext, meshIds);
-        if (mergedMeshId > 0) {
-            mergedMeshId = meshlite_combine_coplanar_faces(meshliteContext, mergedMeshId);
-        }
+    } else {
+        mergedMeshId = meshIds[0];
+    }
+    if (mergedMeshId > 0) {
+        mergedMeshId = meshlite_combine_coplanar_faces(meshliteContext, mergedMeshId);
     }
     
     if (mergedMeshId > 0) {

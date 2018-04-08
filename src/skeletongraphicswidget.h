@@ -149,8 +149,8 @@ public:
         
         QPolygonF polygon;
         float radAngle = line.angle() * M_PI / 180;
-        float dx = 5 * sin(radAngle);
-        float dy = 5 * cos(radAngle);
+        float dx = 2 * sin(radAngle);
+        float dy = 2 * cos(radAngle);
         QPointF offset1 = QPointF(dx, dy);
         QPointF offset2 = QPointF(-dx, -dy);
         polygon << line.p1() + offset1 << line.p1() + offset2 << line.p2() + offset2 << line.p2() + offset1;

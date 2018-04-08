@@ -63,8 +63,8 @@ HEADERS += src/theme.h
 SOURCES += src/mesh.cpp
 HEADERS += src/mesh.h
 
-SOURCES += src/unionmesh.cpp
-HEADERS += src/unionmesh.h
+SOURCES += src/meshutil.cpp
+HEADERS += src/meshutil.h
 
 SOURCES += src/logbrowser.cpp
 HEADERS += src/logbrowser.h
@@ -76,10 +76,6 @@ SOURCES += src/main.cpp
 
 INCLUDEPATH += ../meshlite/include
 LIBS += -L../meshlite/target/debug -lmeshlite
-
-INCLUDEPATH += thirdparty/carve-1.4.0/include
-INCLUDEPATH += thirdparty/carve-1.4.0/build/include
-LIBS += -Lthirdparty/carve-1.4.0/build/lib -lcarve
 
 INCLUDEPATH += /usr/local/opt/boost/include
 

@@ -1,9 +1,0 @@
-ply
-format binary_little_endian 1.0
-element vertex 0
-property double x
-property double y
-property double z
-element face 0
-property list uchar uchar vertex_indices
-end_header

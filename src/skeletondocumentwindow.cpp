@@ -24,36 +24,34 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     toolButtonLayout->setContentsMargins(5, 10, 4, 0);
     
     QPushButton *undoButton = new QPushButton(QChar(fa::undo));
-    undoButton->setFont(Theme::awesome()->font(Theme::toolIconFontSize));
-    undoButton->setFixedSize(Theme::toolIconSize, Theme::toolIconSize);
+    initButton(undoButton);
     
     QPushButton *addButton = new QPushButton(QChar(fa::plus));
-    addButton->setFont(Theme::awesome()->font(Theme::toolIconFontSize));
-    addButton->setFixedSize(Theme::toolIconSize, Theme::toolIconSize);
+    initButton(addButton);
     
     QPushButton *selectButton = new QPushButton(QChar(fa::mousepointer));
-    selectButton->setFont(Theme::awesome()->font(Theme::toolIconFontSize));
-    selectButton->setFixedSize(Theme::toolIconSize, Theme::toolIconSize);
+    initButton(selectButton);
     
     QPushButton *dragButton = new QPushButton(QChar(fa::handrocko));
-    dragButton->setFont(Theme::awesome()->font(Theme::toolIconFontSize));
-    dragButton->setFixedSize(Theme::toolIconSize, Theme::toolIconSize);
+    initButton(dragButton);
     
     QPushButton *zoomInButton = new QPushButton(QChar(fa::searchplus));
-    zoomInButton->setFont(Theme::awesome()->font(Theme::toolIconFontSize));
-    zoomInButton->setFixedSize(Theme::toolIconSize, Theme::toolIconSize);
+    initButton(zoomInButton);
     
     QPushButton *zoomOutButton = new QPushButton(QChar(fa::searchminus));
-    zoomOutButton->setFont(Theme::awesome()->font(Theme::toolIconFontSize));
-    zoomOutButton->setFixedSize(Theme::toolIconSize, Theme::toolIconSize);
+    initButton(zoomOutButton);
     
     QPushButton *changeTurnaroundButton = new QPushButton(QChar(fa::image));
-    changeTurnaroundButton->setFont(Theme::awesome()->font(Theme::toolIconFontSize));
-    changeTurnaroundButton->setFixedSize(Theme::toolIconSize, Theme::toolIconSize);
+    initButton(changeTurnaroundButton);
     
-    QPushButton *resetButton = new QPushButton(QChar(fa::trash));
-    resetButton->setFont(Theme::awesome()->font(Theme::toolIconFontSize));
-    resetButton->setFixedSize(Theme::toolIconSize, Theme::toolIconSize);
+    QPushButton *markTrivialBranchButton = new QPushButton(QChar(fa::leaf));
+    initButton(markTrivialBranchButton);
+    
+    QPushButton *markCenterButton = new QPushButton(QChar(fa::bullseye));
+    initButton(markCenterButton);
+    
+    QPushButton *markMirrorButton = new QPushButton(QChar(fa::adjust));
+    initButton(markMirrorButton);
     
     toolButtonLayout->addWidget(undoButton);
     toolButtonLayout->addSpacing(10);
@@ -62,10 +60,12 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     toolButtonLayout->addWidget(dragButton);
     toolButtonLayout->addWidget(zoomInButton);
     toolButtonLayout->addWidget(zoomOutButton);
-    toolButtonLayout->addSpacing(10);
-    toolButtonLayout->addWidget(changeTurnaroundButton);
+    //toolButtonLayout->addSpacing(10);
+    //toolButtonLayout->addWidget(changeTurnaroundButton);
     toolButtonLayout->addSpacing(30);
-    toolButtonLayout->addWidget(resetButton);
+    toolButtonLayout->addWidget(markCenterButton);
+    toolButtonLayout->addWidget(markTrivialBranchButton);
+    toolButtonLayout->addWidget(markMirrorButton);
     
     QLabel *dust3dJezzasoftLabel = new QLabel;
     QImage dust3dJezzasoftImage;
@@ -211,7 +211,18 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
         m_modelWidget->setCursor(graphicsWidget->cursor());
     });
     
+    connect(this, &SkeletonDocumentWindow::initialized, m_document, [=]() {
+        graphicsWidget->setFocus();
+    });
+    
     connect(this, &SkeletonDocumentWindow::initialized, m_document, &SkeletonDocument::uiReady);
+}
+
+void SkeletonDocumentWindow::initButton(QPushButton *button)
+{
+    button->setFont(Theme::awesome()->font(Theme::toolIconFontSize));
+    button->setFixedSize(Theme::toolIconSize, Theme::toolIconSize);
+    button->setStyleSheet("QPushButton {color: #f7d9c8}");
 }
 
 SkeletonDocumentWindow::~SkeletonDocumentWindow()

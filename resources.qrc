@@ -1,9 +1,5 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
-    <file>resources/add.svg</file>
-    <file>resources/rotate.svg</file>
-    <file>resources/zoomin.svg</file>
-    <file>resources/zoomout.svg</file>
     <file>resources/dust3d_jezzasoft.png</file>
 </qresource>
 </RCC>

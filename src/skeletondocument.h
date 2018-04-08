@@ -99,7 +99,6 @@ class SkeletonHistoryItem
 {
 public:
     SkeletonSnapshot snapshot;
-    QImage preview;
 };
 
 enum class SkeletonDocumentEditMode

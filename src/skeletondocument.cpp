@@ -717,7 +717,7 @@ void SkeletonDocument::generateMesh()
     toSnapshot(snapshot);
     m_meshGenerator = new MeshGenerator(snapshot, thread);
     m_meshGenerator->moveToThread(thread);
-    m_meshGenerator->addPreviewRequirement();
+    //m_meshGenerator->addPreviewRequirement();
     for (auto &part: partMap) {
         //if (part.second.previewIsObsolete) {
         //    part.second.previewIsObsolete = false;
