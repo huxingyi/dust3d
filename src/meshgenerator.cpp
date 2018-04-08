@@ -184,9 +184,14 @@ void MeshGenerator::process()
     std::map<QString, int> partMeshMap;
     std::vector<int> meshIds;
     for (const auto &partIdIt: m_snapshot->partIdList) {
+        const auto part = m_snapshot->parts.find(partIdIt);
         int bmeshId = partBmeshMap[partIdIt];
         int meshId = meshlite_bmesh_generate_mesh(meshliteContext, bmeshId, 0);
-        qDebug() << "m_requirePartPreviewMap.find:" << partIdIt;
+        if (isTrueValueString(part->second["subdived"])) {
+            int subdivedMeshId = meshlite_subdivide(meshliteContext, meshId);
+            if (subdivedMeshId > 0)
+                meshId = subdivedMeshId;
+        }
         if (m_requirePartPreviewMap.find(partIdIt) != m_requirePartPreviewMap.end()) {
             ModelOfflineRender *render = m_partPreviewRenderMap[partIdIt];
             int trimedMeshId = meshlite_trim(meshliteContext, meshId, 1);

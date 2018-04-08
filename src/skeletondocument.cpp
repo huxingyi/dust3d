@@ -26,14 +26,6 @@ void SkeletonDocument::removePart(QUuid partId)
 {
 }
 
-void SkeletonDocument::showPart(QUuid partId)
-{
-}
-
-void SkeletonDocument::hidePart(QUuid partId)
-{
-}
-
 void SkeletonDocument::removeEdge(QUuid edgeId)
 {
     const SkeletonEdge *edge = findEdge(edgeId);
@@ -41,6 +33,8 @@ void SkeletonDocument::removeEdge(QUuid edgeId)
         qDebug() << "Find edge failed:" << edgeId;
         return;
     }
+    if (isPartLocked(edge->partId))
+        return;
     const SkeletonPart *oldPart = findPart(edge->partId);
     if (nullptr == oldPart) {
         qDebug() << "Find part failed:" << edge->partId;
@@ -100,6 +94,8 @@ void SkeletonDocument::removeNode(QUuid nodeId)
         qDebug() << "Find node failed:" << nodeId;
         return;
     }
+    if (isPartLocked(node->partId))
+        return;
     const SkeletonPart *oldPart = findPart(node->partId);
     if (nullptr == oldPart) {
         qDebug() << "Find part failed:" << node->partId;
@@ -178,6 +174,8 @@ void SkeletonDocument::addNode(float x, float y, float z, float radius, QUuid fr
             return;
         }
         partId = fromNode->partId;
+        if (isPartLocked(partId))
+            return;
     }
     SkeletonNode node;
     node.partId = partId;
@@ -245,11 +243,17 @@ void SkeletonDocument::addEdge(QUuid fromNodeId, QUuid toNodeId)
         return;
     }
     
+    if (isPartLocked(fromNode->partId))
+        return;
+    
     toNode = findNode(toNodeId);
     if (nullptr == toNode) {
         qDebug() << "Find node failed:" << toNodeId;
         return;
     }
+    
+    if (isPartLocked(toNode->partId))
+        return;
     
     QUuid toPartId = toNode->partId;
     
@@ -335,9 +339,21 @@ void SkeletonDocument::scaleNodeByAddRadius(QUuid nodeId, float amount)
         qDebug() << "Find node failed:" << nodeId;
         return;
     }
+    if (isPartLocked(it->second.partId))
+        return;
     it->second.radius += amount;
     emit nodeRadiusChanged(nodeId);
     emit skeletonChanged();
+}
+
+bool SkeletonDocument::isPartLocked(QUuid partId)
+{
+    const SkeletonPart *part = findPart(partId);
+    if (nullptr == part) {
+        qDebug() << "Find part failed:" << partId;
+        return true;
+    }
+    return part->locked;
 }
 
 void SkeletonDocument::moveNodeBy(QUuid nodeId, float x, float y, float z)
@@ -347,6 +363,8 @@ void SkeletonDocument::moveNodeBy(QUuid nodeId, float x, float y, float z)
         qDebug() << "Find node failed:" << nodeId;
         return;
     }
+    if (isPartLocked(it->second.partId))
+        return;
     it->second.x += x;
     it->second.y += y;
     it->second.z += z;
@@ -361,6 +379,8 @@ void SkeletonDocument::setNodeOrigin(QUuid nodeId, float x, float y, float z)
         qDebug() << "Find node failed:" << nodeId;
         return;
     }
+    if (isPartLocked(it->second.partId))
+        return;
     it->second.x = x;
     it->second.y = y;
     it->second.z = z;
@@ -375,6 +395,8 @@ void SkeletonDocument::setNodeRadius(QUuid nodeId, float radius)
         qDebug() << "Find node failed:" << nodeId;
         return;
     }
+    if (isPartLocked(it->second.partId))
+        return;
     it->second.radius = radius;
     emit nodeRadiusChanged(nodeId);
     emit skeletonChanged();
@@ -479,6 +501,8 @@ void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot)
         std::map<QString, QString> part;
         part["id"] = partIt.second.id.toString();
         part["visible"] = partIt.second.visible ? "true" : "false";
+        part["locked"] = partIt.second.locked ? "true" : "false";
+        part["subdived"] = partIt.second.subdived ? "true" : "false";
         if (!partIt.second.name.isEmpty())
             part["name"] = partIt.second.name;
         snapshot->parts[part["id"]] = part;
@@ -560,6 +584,8 @@ void SkeletonDocument::fromSnapshot(const SkeletonSnapshot &snapshot)
         SkeletonPart part(QUuid(partKv.first));
         part.name = valueOfKeyInMapOrEmpty(partKv.second, "name");
         part.visible = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "visible"));
+        part.locked = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "locked"));
+        part.subdived = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "subdived"));
         partMap[part.id] = part;
     }
     for (const auto &partIdIt: snapshot.partIdList) {
@@ -704,3 +730,45 @@ void SkeletonDocument::generateMesh()
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
     thread->start();
 }
+
+void SkeletonDocument::setPartLockState(QUuid partId, bool locked)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    if (part->second.locked == locked)
+        return;
+    part->second.locked = locked;
+    emit partLockStateChanged(partId);
+}
+
+void SkeletonDocument::setPartVisibleState(QUuid partId, bool visible)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    if (part->second.visible == visible)
+        return;
+    part->second.visible = visible;
+    emit partVisibleStateChanged(partId);
+    emit skeletonChanged();
+}
+
+void SkeletonDocument::setPartSubdivState(QUuid partId, bool subdived)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    if (part->second.subdived == subdived)
+        return;
+    part->second.subdived = subdived;
+    emit partSubdivStateChanged(partId);
+    emit skeletonChanged();
+}
+

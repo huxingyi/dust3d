@@ -8,20 +8,17 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     m_document(document),
     m_partId(partId)
 {
-    m_visibleButton = new QPushButton(QChar(fa::eye));
-    m_visibleButton->setStyleSheet("QPushButton {border: none; background: none; color: #252525;}");
-    m_visibleButton->setFont(Theme::awesome()->font(Theme::miniIconFontSize));
-    m_visibleButton->setFixedSize(Theme::miniIconSize, Theme::miniIconSize);
+    m_visibleButton = new QPushButton();
+    updateButton(m_visibleButton, QChar(fa::eye), false);
+    initButton(m_visibleButton);
     
-    m_lockButton = new QPushButton(QChar(fa::unlock));
-    m_lockButton->setStyleSheet("QPushButton {border: none; background: none; color: #252525;}");
-    m_lockButton->setFont(Theme::awesome()->font(Theme::miniIconFontSize));
-    m_lockButton->setFixedSize(Theme::miniIconSize, Theme::miniIconSize);
+    m_lockButton = new QPushButton();
+    updateButton(m_lockButton, QChar(fa::unlock), false);
+    initButton(m_lockButton);
     
-    m_subdivButton = new QPushButton(QChar(fa::cube));
-    m_subdivButton->setStyleSheet("QPushButton {border: none; background: none; color: #252525;}");
-    m_subdivButton->setFont(Theme::awesome()->font(Theme::miniIconFontSize));
-    m_subdivButton->setFixedSize(Theme::miniIconSize, Theme::miniIconSize);
+    m_subdivButton = new QPushButton();
+    updateButton(m_subdivButton, QChar(fa::cube), false);
+    initButton(m_subdivButton);
     
     m_previewLabel = new QLabel;
     
@@ -34,46 +31,141 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     miniToolLayout->addWidget(m_subdivButton);
     miniToolLayout->addStretch();
     
+    QWidget *hrWidget = new QWidget;
+    hrWidget->setFixedHeight(1);
+    hrWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    hrWidget->setStyleSheet(QString("background-color: #252525;"));
+    hrWidget->setContentsMargins(0, 0, 0, 0);
+    
     QVBoxLayout *mainLayout = new QVBoxLayout;
     mainLayout->setSpacing(0);
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->addLayout(miniToolLayout);
     mainLayout->addWidget(m_previewLabel);
+    mainLayout->addWidget(hrWidget);
     
     setLayout(mainLayout);
+    
+    connect(this, &SkeletonPartWidget::setPartLockState, m_document, &SkeletonDocument::setPartLockState);
+    connect(this, &SkeletonPartWidget::setPartVisibleState, m_document, &SkeletonDocument::setPartVisibleState);
+    connect(this, &SkeletonPartWidget::setPartSubdivState, m_document, &SkeletonDocument::setPartSubdivState);
+    
+    connect(m_lockButton, &QPushButton::clicked, [=]() {
+        if (m_lockButton->text() == QChar(fa::lock)) {
+            emit setPartLockState(m_partId, false);
+        } else {
+            emit setPartLockState(m_partId, true);
+        }
+    });
+    
+    connect(m_visibleButton, &QPushButton::clicked, [=]() {
+        if (m_visibleButton->text() == QChar(fa::eye)) {
+            emit setPartVisibleState(m_partId, false);
+        } else {
+            emit setPartVisibleState(m_partId, true);
+        }
+    });
+    
+    connect(m_subdivButton, &QPushButton::clicked, [=]() {
+        if (m_subdivButton->text() == QChar(fa::cube)) {
+            emit setPartSubdivState(m_partId, true);
+        } else {
+            emit setPartSubdivState(m_partId, false);
+        }
+    });
 }
 
-QLabel *SkeletonPartWidget::previewLabel()
+void SkeletonPartWidget::initButton(QPushButton *button)
 {
-    return m_previewLabel;
+    button->setFont(Theme::awesome()->font(Theme::miniIconFontSize));
+    button->setFixedSize(Theme::miniIconSize, Theme::miniIconSize);
 }
 
-void SkeletonPartWidget::reload()
+void SkeletonPartWidget::updateButton(QPushButton *button, QChar icon, bool highlighted)
+{
+    button->setText(icon);
+    if (highlighted)
+        button->setStyleSheet("QPushButton {border: none; background: none; color: #f7d9c8;}");
+    else
+        button->setStyleSheet("QPushButton {border: none; background: none; color: #252525;}");
+}
+
+void SkeletonPartWidget::updatePreview()
 {
     const SkeletonPart *part = m_document->findPart(m_partId);
     if (!part) {
         qDebug() << "Part not found:" << m_partId;
         return;
     }
-    //m_nameLabel->setText(part->name.isEmpty() ? part->id.toString() : part->name);
     m_previewLabel->setPixmap(QPixmap::fromImage(part->preview));
+}
+
+void SkeletonPartWidget::updateLockButton()
+{
+    const SkeletonPart *part = m_document->findPart(m_partId);
+    if (!part) {
+        qDebug() << "Part not found:" << m_partId;
+        return;
+    }
+    if (part->locked)
+        updateButton(m_lockButton, QChar(fa::lock), true);
+    else
+        updateButton(m_lockButton, QChar(fa::unlock), false);
+}
+
+void SkeletonPartWidget::updateVisibleButton()
+{
+    const SkeletonPart *part = m_document->findPart(m_partId);
+    if (!part) {
+        qDebug() << "Part not found:" << m_partId;
+        return;
+    }
+    if (part->visible)
+        updateButton(m_visibleButton, QChar(fa::eye), false);
+    else
+        updateButton(m_visibleButton, QChar(fa::eyeslash), true);
+}
+
+void SkeletonPartWidget::updateSubdivButton()
+{
+    const SkeletonPart *part = m_document->findPart(m_partId);
+    if (!part) {
+        qDebug() << "Part not found:" << m_partId;
+        return;
+    }
+    if (part->subdived)
+        updateButton(m_subdivButton, QChar(fa::cubes), true);
+    else
+        updateButton(m_subdivButton, QChar(fa::cube), false);
+}
+
+void SkeletonPartWidget::reload()
+{
+    updatePreview();
+    updateLockButton();
+    updateVisibleButton();
+    updateSubdivButton();
 }
 
 SkeletonPartListWidget::SkeletonPartListWidget(const SkeletonDocument *document) :
     m_document(document)
 {
     setSelectionMode(QAbstractItemView::NoSelection);
+    setFocusPolicy(Qt::NoFocus);
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    setSpacing(1);
+    setSpacing(0);
     setContentsMargins(0, 0, 0, 0);
 }
 
 void SkeletonPartListWidget::partChanged(QUuid partId)
 {
-    auto itemIt = m_itemMap.find(partId);
-    if (itemIt == m_itemMap.end()) {
+    auto item = m_itemMap.find(partId);
+    if (item == m_itemMap.end()) {
+        qDebug() << "Part item not found:" << partId;
         return;
     }
+    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second);
+    widget->reload();
 }
 
 void SkeletonPartListWidget::partListChanged()
@@ -93,18 +185,46 @@ void SkeletonPartListWidget::partListChanged()
     }
 }
 
-void SkeletonPartListWidget::partPreviewChanged(QUuid partid)
+void SkeletonPartListWidget::partPreviewChanged(QUuid partId)
 {
-    const SkeletonPart *part = m_document->findPart(partid);
-    if (!part) {
-        qDebug() << "Part not found:" << partid;
-        return;
-    }
-    auto item = m_itemMap.find(partid);
+    auto item = m_itemMap.find(partId);
     if (item == m_itemMap.end()) {
-        qDebug() << "Part item not found:" << partid;
+        qDebug() << "Part item not found:" << partId;
         return;
     }
     SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second);
-    widget->previewLabel()->setPixmap(QPixmap::fromImage(part->preview));
+    widget->updatePreview();
+}
+
+void SkeletonPartListWidget::partLockStateChanged(QUuid partId)
+{
+    auto item = m_itemMap.find(partId);
+    if (item == m_itemMap.end()) {
+        qDebug() << "Part item not found:" << partId;
+        return;
+    }
+    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second);
+    widget->updateLockButton();
+}
+
+void SkeletonPartListWidget::partVisibleStateChanged(QUuid partId)
+{
+    auto item = m_itemMap.find(partId);
+    if (item == m_itemMap.end()) {
+        qDebug() << "Part item not found:" << partId;
+        return;
+    }
+    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second);
+    widget->updateVisibleButton();
+}
+
+void SkeletonPartListWidget::partSubdivStateChanged(QUuid partId)
+{
+    auto item = m_itemMap.find(partId);
+    if (item == m_itemMap.end()) {
+        qDebug() << "Part item not found:" << partId;
+        return;
+    }
+    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second);
+    widget->updateSubdivButton();
 }

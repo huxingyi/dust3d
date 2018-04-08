@@ -264,6 +264,7 @@ public slots:
     void canvasResized();
     void editModeChanged();
     void updateCursor();
+    void partVisibleStateChanged(QUuid partId);
 private slots:
     void turnaroundImageReady();
 private:

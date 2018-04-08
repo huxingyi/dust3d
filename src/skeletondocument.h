@@ -80,11 +80,15 @@ public:
     QUuid id;
     QString name;
     bool visible;
+    bool locked;
+    bool subdived;
     QImage preview;
     std::vector<QUuid> nodeIds;
     bool previewIsObsolete;
     SkeletonPart(const QUuid &withId=QUuid()) :
         visible(true),
+        locked(false),
+        subdived(false),
         previewIsObsolete(true)
     {
         id = withId.isNull() ? QUuid::createUuid() : withId;
@@ -134,6 +138,9 @@ signals:
     void turnaroundChanged();
     void editModeChanged();
     void skeletonChanged();
+    void partLockStateChanged(QUuid partId);
+    void partVisibleStateChanged(QUuid partId);
+    void partSubdivStateChanged(QUuid partId);
 public:
     SkeletonDocument();
     ~SkeletonDocument();
@@ -157,8 +164,6 @@ public slots:
     void removeNode(QUuid nodeId);
     void removeEdge(QUuid edgeId);
     void removePart(QUuid partId);
-    void showPart(QUuid partId);
-    void hidePart(QUuid partId);
     void addNode(float x, float y, float z, float radius, QUuid fromNodeId);
     void scaleNodeByAddRadius(QUuid nodeId, float amount);
     void moveNodeBy(QUuid nodeId, float x, float y, float z);
@@ -171,10 +176,14 @@ public slots:
     void uiReady();
     void generateMesh();
     void meshReady();
+    void setPartLockState(QUuid partId, bool locked);
+    void setPartVisibleState(QUuid partId, bool visible);
+    void setPartSubdivState(QUuid partId, bool subdived);
 private:
     void splitPartByNode(std::vector<std::vector<QUuid>> *groups, QUuid nodeId);
     void joinNodeAndNeiborsToGroup(std::vector<QUuid> *group, QUuid nodeId, std::set<QUuid> *visitMap, QUuid noUseEdgeId=QUuid());
     void splitPartByEdge(std::vector<std::vector<QUuid>> *groups, QUuid edgeId);
+    bool isPartLocked(QUuid partId);
 private:
     bool m_resultMeshIsObsolete;
     MeshGenerator *m_meshGenerator;

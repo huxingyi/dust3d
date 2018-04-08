@@ -366,10 +366,15 @@ bool SkeletonGraphicsWidget::mousePress(QMouseEvent *event)
                 }
                 QPointF mainProfile = m_cursorNodeItem->origin();
                 QPointF sideProfile = mainProfile;
-                if (mainProfile.x() >= scene()->width() / 2) {
-                    sideProfile.setX(mainProfile.x() - scene()->width() / 4);
+                if (m_checkedNodeItem) {
+                    auto itemIt = nodeItemMap.find(m_checkedNodeItem->id());
+                    sideProfile.setX(itemIt->second.second->origin().x());
                 } else {
-                    sideProfile.setX(mainProfile.x() +scene()->width() / 4);
+                    if (mainProfile.x() >= scene()->width() / 2) {
+                        sideProfile.setX(mainProfile.x() - scene()->width() / 4);
+                    } else {
+                        sideProfile.setX(mainProfile.x() +scene()->width() / 4);
+                    }
                 }
                 QPointF unifiedMainPos = scenePosToUnified(mainProfile);
                 QPointF unifiedSidePos = scenePosToUnified(sideProfile);
@@ -640,5 +645,29 @@ void SkeletonGraphicsWidget::nodeOriginChanged(QUuid nodeId)
 
 void SkeletonGraphicsWidget::edgeChanged(QUuid edgeId)
 {
+}
+
+void SkeletonGraphicsWidget::partVisibleStateChanged(QUuid partId)
+{
+    const SkeletonPart *part = m_document->findPart(partId);
+    for (const auto &nodeId: part->nodeIds) {
+        const SkeletonNode *node = m_document->findNode(nodeId);
+        for (auto edgeIt = node->edgeIds.begin(); edgeIt != node->edgeIds.end(); edgeIt++) {
+            auto edgeItemIt = edgeItemMap.find(*edgeIt);
+            if (edgeItemIt == edgeItemMap.end()) {
+                qDebug() << "Edge item not found:" << *edgeIt;
+                continue;
+            }
+            edgeItemIt->second.first->setVisible(part->visible);
+            edgeItemIt->second.second->setVisible(part->visible);
+        }
+        auto nodeItemIt = nodeItemMap.find(nodeId);
+        if (nodeItemIt == nodeItemMap.end()) {
+            qDebug() << "Node item not found:" << nodeId;
+            continue;
+        }
+        nodeItemIt->second.first->setVisible(part->visible);
+        nodeItemIt->second.second->setVisible(part->visible);
+    }
 }
 

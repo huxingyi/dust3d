@@ -97,9 +97,9 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     containerWidget->setMinimumSize(400, 400);
     
     m_modelWidget = new ModelWidget(containerWidget);
-    m_modelWidget->setMinimumSize(128, 128);
+    m_modelWidget->setMinimumSize(256, 256);
     m_modelWidget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-    m_modelWidget->move(10, 10);
+    m_modelWidget->move(16, 16);
     m_modelWidget->setGraphicsFunctions(graphicsWidget);
     
     SkeletonPartListWidget *partListWidget = new SkeletonPartListWidget(m_document);
@@ -193,33 +193,13 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(m_document, &SkeletonDocument::edgeRemoved, graphicsWidget, &SkeletonGraphicsWidget::edgeRemoved);
     connect(m_document, &SkeletonDocument::nodeRadiusChanged, graphicsWidget, &SkeletonGraphicsWidget::nodeRadiusChanged);
     connect(m_document, &SkeletonDocument::nodeOriginChanged, graphicsWidget, &SkeletonGraphicsWidget::nodeOriginChanged);
+    connect(m_document, &SkeletonDocument::partVisibleStateChanged, graphicsWidget, &SkeletonGraphicsWidget::partVisibleStateChanged);
     
     connect(m_document, &SkeletonDocument::partListChanged, partListWidget, &SkeletonPartListWidget::partListChanged);
     connect(m_document, &SkeletonDocument::partPreviewChanged, partListWidget, &SkeletonPartListWidget::partPreviewChanged);
-    
-    /*
-    connect(graphicsWidget, &SkeletonGraphicsWidget::checkEdge, edgePropertyWidget, &SkeletonEdgePropertyWidget::showProperties);
-    connect(graphicsWidget, &SkeletonGraphicsWidget::uncheckEdge, [=](QUuid edgeId) {
-        edgePropertyWidget->hide();
-    });
-    connect(m_document, &SkeletonDocument::edgeRemoved, [=](QUuid edgeId) {
-        if (edgeId == edgePropertyWidget->currentEdgeId()) {
-            edgePropertyWidget->hide();
-        }
-    });
-    connect(edgePropertyWidget, &SkeletonEdgePropertyWidget::setEdgeBranchMode, m_document, &SkeletonDocument::setEdgeBranchMode);
-    
-    connect(graphicsWidget, &SkeletonGraphicsWidget::checkNode, nodePropertyWidget, &SkeletonNodePropertyWidget::showProperties);
-    connect(graphicsWidget, &SkeletonGraphicsWidget::uncheckNode, [=](QUuid nodeId) {
-        nodePropertyWidget->hide();
-    });
-    connect(m_document, &SkeletonDocument::nodeRemoved, [=](QUuid nodeId) {
-        if (nodeId == nodePropertyWidget->currentNodeId()) {
-            nodePropertyWidget->hide();
-        }
-    });
-    connect(nodePropertyWidget, &SkeletonNodePropertyWidget::setNodeRootMarkMode, m_document, &SkeletonDocument::setNodeRootMarkMode);
-    */
+    connect(m_document, &SkeletonDocument::partLockStateChanged, partListWidget, &SkeletonPartListWidget::partLockStateChanged);
+    connect(m_document, &SkeletonDocument::partVisibleStateChanged, partListWidget, &SkeletonPartListWidget::partVisibleStateChanged);
+    connect(m_document, &SkeletonDocument::partSubdivStateChanged, partListWidget, &SkeletonPartListWidget::partSubdivStateChanged);
     
     connect(m_document, &SkeletonDocument::skeletonChanged, m_document, &SkeletonDocument::generateMesh);
     
