@@ -219,6 +219,7 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     });
     
     connect(this, &SkeletonDocumentWindow::initialized, m_document, [=]() {
+        m_document->saveSnapshot();
         graphicsWidget->setFocus();
     });
     

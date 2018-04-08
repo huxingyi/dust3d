@@ -577,11 +577,15 @@ void SkeletonDocument::fromSnapshot(const SkeletonSnapshot &snapshot)
         edge.partId = QUuid(valueOfKeyInMapOrEmpty(edgeKv.second, "partId"));
         edge.branchMode = SkeletonEdgeBranchModeFromString(valueOfKeyInMapOrEmpty(edgeKv.second, "branchMode"));
         QString fromNodeId = valueOfKeyInMapOrEmpty(edgeKv.second, "from");
-        if (!fromNodeId.isEmpty())
+        if (!fromNodeId.isEmpty()) {
             edge.nodeIds.push_back(QUuid(fromNodeId));
+            nodeMap[QUuid(fromNodeId)].edgeIds.push_back(edge.id);
+        }
         QString toNodeId = valueOfKeyInMapOrEmpty(edgeKv.second, "to");
-        if (!toNodeId.isEmpty())
+        if (!toNodeId.isEmpty()) {
             edge.nodeIds.push_back(QUuid(toNodeId));
+            nodeMap[QUuid(toNodeId)].edgeIds.push_back(edge.id);
+        }
         edgeMap[edge.id] = edge;
     }
     for (const auto &partKv : snapshot.parts) {
