@@ -5,6 +5,8 @@
 #include "skeletondocument.h"
 #include "util.h"
 
+unsigned long SkeletonDocument::m_maxSnapshot = 1000;
+
 SkeletonDocument::SkeletonDocument() :
     m_resultMeshIsObsolete(false),
     m_resultMesh(nullptr),
@@ -33,7 +35,7 @@ void SkeletonDocument::removeEdge(QUuid edgeId)
         qDebug() << "Find edge failed:" << edgeId;
         return;
     }
-    if (isPartLocked(edge->partId))
+    if (isPartReadonly(edge->partId))
         return;
     const SkeletonPart *oldPart = findPart(edge->partId);
     if (nullptr == oldPart) {
@@ -94,7 +96,7 @@ void SkeletonDocument::removeNode(QUuid nodeId)
         qDebug() << "Find node failed:" << nodeId;
         return;
     }
-    if (isPartLocked(node->partId))
+    if (isPartReadonly(node->partId))
         return;
     const SkeletonPart *oldPart = findPart(node->partId);
     if (nullptr == oldPart) {
@@ -174,7 +176,7 @@ void SkeletonDocument::addNode(float x, float y, float z, float radius, QUuid fr
             return;
         }
         partId = fromNode->partId;
-        if (isPartLocked(partId))
+        if (isPartReadonly(partId))
             return;
     }
     SkeletonNode node;
@@ -243,7 +245,7 @@ void SkeletonDocument::addEdge(QUuid fromNodeId, QUuid toNodeId)
         return;
     }
     
-    if (isPartLocked(fromNode->partId))
+    if (isPartReadonly(fromNode->partId))
         return;
     
     toNode = findNode(toNodeId);
@@ -252,7 +254,7 @@ void SkeletonDocument::addEdge(QUuid fromNodeId, QUuid toNodeId)
         return;
     }
     
-    if (isPartLocked(toNode->partId))
+    if (isPartReadonly(toNode->partId))
         return;
     
     QUuid toPartId = toNode->partId;
@@ -339,21 +341,21 @@ void SkeletonDocument::scaleNodeByAddRadius(QUuid nodeId, float amount)
         qDebug() << "Find node failed:" << nodeId;
         return;
     }
-    if (isPartLocked(it->second.partId))
+    if (isPartReadonly(it->second.partId))
         return;
     it->second.radius += amount;
     emit nodeRadiusChanged(nodeId);
     emit skeletonChanged();
 }
 
-bool SkeletonDocument::isPartLocked(QUuid partId)
+bool SkeletonDocument::isPartReadonly(QUuid partId)
 {
     const SkeletonPart *part = findPart(partId);
     if (nullptr == part) {
         qDebug() << "Find part failed:" << partId;
         return true;
     }
-    return part->locked;
+    return part->locked || !part->visible;
 }
 
 void SkeletonDocument::moveNodeBy(QUuid nodeId, float x, float y, float z)
@@ -363,7 +365,7 @@ void SkeletonDocument::moveNodeBy(QUuid nodeId, float x, float y, float z)
         qDebug() << "Find node failed:" << nodeId;
         return;
     }
-    if (isPartLocked(it->second.partId))
+    if (isPartReadonly(it->second.partId))
         return;
     it->second.x += x;
     it->second.y += y;
@@ -379,7 +381,7 @@ void SkeletonDocument::setNodeOrigin(QUuid nodeId, float x, float y, float z)
         qDebug() << "Find node failed:" << nodeId;
         return;
     }
-    if (isPartLocked(it->second.partId))
+    if (isPartReadonly(it->second.partId))
         return;
     it->second.x = x;
     it->second.y = y;
@@ -395,7 +397,7 @@ void SkeletonDocument::setNodeRadius(QUuid nodeId, float radius)
         qDebug() << "Find node failed:" << nodeId;
         return;
     }
-    if (isPartLocked(it->second.partId))
+    if (isPartReadonly(it->second.partId))
         return;
     it->second.radius = radius;
     emit nodeRadiusChanged(nodeId);
@@ -555,6 +557,8 @@ void SkeletonDocument::fromSnapshot(const SkeletonSnapshot &snapshot)
     nodeMap.clear();
     edgeMap.clear();
     partMap.clear();
+    partIds.clear();
+    emit partListChanged();
     
     for (const auto &nodeKv : snapshot.nodes) {
         SkeletonNode node(QUuid(nodeKv.first));
@@ -603,6 +607,7 @@ void SkeletonDocument::fromSnapshot(const SkeletonSnapshot &snapshot)
     }
     
     emit partListChanged();
+    emit skeletonChanged();
 }
 
 const char *SkeletonNodeRootMarkModeToString(SkeletonNodeRootMarkMode mode)
@@ -770,5 +775,35 @@ void SkeletonDocument::setPartSubdivState(QUuid partId, bool subdived)
     part->second.subdived = subdived;
     emit partSubdivStateChanged(partId);
     emit skeletonChanged();
+}
+
+void SkeletonDocument::saveSnapshot()
+{
+    if (m_undoItems.size() + 1 > m_maxSnapshot)
+        m_undoItems.pop_front();
+    SkeletonHistoryItem item;
+    toSnapshot(&item.snapshot);
+    m_undoItems.push_back(item);
+    qDebug() << "Undo items:" << m_undoItems.size();
+}
+
+void SkeletonDocument::undo()
+{
+    if (m_undoItems.empty())
+        return;
+    m_redoItems.push_back(m_undoItems.back());
+    fromSnapshot(m_undoItems.back().snapshot);
+    m_undoItems.pop_back();
+    qDebug() << "Undo/Redo items:" << m_undoItems.size() << m_redoItems.size();
+}
+
+void SkeletonDocument::redo()
+{
+    if (m_redoItems.empty())
+        return;
+    m_undoItems.push_back(m_redoItems.back());
+    fromSnapshot(m_redoItems.back().snapshot);
+    m_redoItems.pop_back();
+    qDebug() << "Undo/Redo items:" << m_undoItems.size() << m_redoItems.size();
 }
 

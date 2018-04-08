@@ -359,10 +359,12 @@ bool SkeletonGraphicsWidget::wheel(QWheelEvent *event)
                     emit scaleNodeByAddRadius(nodeItem->id(), unifiedDelta);
                 }
             }
+            emit groupOperationAdded();
             return true;
         } else if (m_hoveredNodeItem) {
             float unifiedDelta = sceneRadiusToUnified(delta);
             emit scaleNodeByAddRadius(m_hoveredNodeItem->id(), unifiedDelta);
+            emit groupOperationAdded();
             return true;
         }
     }
@@ -379,6 +381,7 @@ bool SkeletonGraphicsWidget::mouseRelease(QMouseEvent *event)
         }
         if (m_moveStarted) {
             m_moveStarted = false;
+            emit groupOperationAdded();
         }
         if (m_rangeSelectionStarted) {
             m_selectionItem->hide();
@@ -428,6 +431,7 @@ bool SkeletonGraphicsWidget::mousePress(QMouseEvent *event)
                         if (m_document->findEdgeByNodes(m_addFromNodeItem->id(), m_hoveredNodeItem->id()))
                             return true;
                         emit addEdge(m_addFromNodeItem->id(), m_hoveredNodeItem->id());
+                        emit groupOperationAdded();
                         return true;
                     }
                 }
@@ -452,6 +456,7 @@ bool SkeletonGraphicsWidget::mousePress(QMouseEvent *event)
                 m_lastAddedZ = unifiedSidePos.x();
                 qDebug() << "Emit add node " << m_lastAddedX << m_lastAddedY << m_lastAddedZ;
                 emit addNode(unifiedMainPos.x(), unifiedMainPos.y(), unifiedSidePos.x(), sceneRadiusToUnified(m_cursorNodeItem->radius()), nullptr == m_addFromNodeItem ? QUuid() : m_addFromNodeItem->id());
+                emit groupOperationAdded();
                 return true;
             }
         } else if (SkeletonDocumentEditMode::Select == m_document->editMode) {
@@ -533,6 +538,7 @@ bool SkeletonGraphicsWidget::keyPress(QKeyEvent *event)
             }
         }
         if (processed) {
+            emit groupOperationAdded();
             return true;
         }
     } else if (event->key() == Qt::Key_A) {
@@ -542,6 +548,20 @@ bool SkeletonGraphicsWidget::keyPress(QKeyEvent *event)
             emit setEditMode(SkeletonDocumentEditMode::Add);
         }
         return true;
+    } else if (event->key() == Qt::Key_Z) {
+        if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
+            if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
+                emit redo();
+            } else {
+                emit undo();
+            }
+        }
+    } else if (event->key() == Qt::Key_Y) {
+        if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
+            if (!QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
+                emit redo();
+            }
+        }
     }
     return false;
 }

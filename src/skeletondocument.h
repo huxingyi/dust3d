@@ -5,6 +5,7 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <deque>
 #include <QImage>
 #include "skeletonsnapshot.h"
 #include "mesh.h"
@@ -148,7 +149,6 @@ public:
     std::map<QUuid, SkeletonPart> partMap;
     std::map<QUuid, SkeletonNode> nodeMap;
     std::map<QUuid, SkeletonEdge> edgeMap;
-    std::vector<SkeletonHistoryItem> historyItems;
     std::vector<QUuid> partIds;
     QImage turnaround;
     SkeletonDocumentEditMode editMode;
@@ -180,15 +180,21 @@ public slots:
     void setPartLockState(QUuid partId, bool locked);
     void setPartVisibleState(QUuid partId, bool visible);
     void setPartSubdivState(QUuid partId, bool subdived);
+    void saveSnapshot();
+    void undo();
+    void redo();
 private:
     void splitPartByNode(std::vector<std::vector<QUuid>> *groups, QUuid nodeId);
     void joinNodeAndNeiborsToGroup(std::vector<QUuid> *group, QUuid nodeId, std::set<QUuid> *visitMap, QUuid noUseEdgeId=QUuid());
     void splitPartByEdge(std::vector<std::vector<QUuid>> *groups, QUuid edgeId);
-    bool isPartLocked(QUuid partId);
+    bool isPartReadonly(QUuid partId);
 private:
     bool m_resultMeshIsObsolete;
     MeshGenerator *m_meshGenerator;
     Mesh *m_resultMesh;
+    static unsigned long m_maxSnapshot;
+    std::deque<SkeletonHistoryItem> m_undoItems;
+    std::deque<SkeletonHistoryItem> m_redoItems;
 };
 
 #endif

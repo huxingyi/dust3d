@@ -259,6 +259,9 @@ signals:
     void removeEdge(QUuid edgeId);
     void addEdge(QUuid fromNodeId, QUuid toNodeId);
     void cursorChanged();
+    void groupOperationAdded();
+    void undo();
+    void redo();
 public:
     SkeletonGraphicsWidget(const SkeletonDocument *document);
     std::map<QUuid, std::pair<SkeletonGraphicsNodeItem *, SkeletonGraphicsNodeItem *>> nodeItemMap;

@@ -157,6 +157,10 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     
     connect(changeTurnaroundButton, &QPushButton::clicked, this, &SkeletonDocumentWindow::changeTurnaround);
     
+    connect(undoButton, &QPushButton::clicked, [=]() {
+        m_document->undo();
+    });
+    
     connect(addButton, &QPushButton::clicked, [=]() {
         m_document->setEditMode(SkeletonDocumentEditMode::Add);
     });
@@ -186,6 +190,9 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(graphicsWidget, &SkeletonGraphicsWidget::setEditMode, m_document, &SkeletonDocument::setEditMode);
     connect(graphicsWidget, &SkeletonGraphicsWidget::removeEdge, m_document, &SkeletonDocument::removeEdge);
     connect(graphicsWidget, &SkeletonGraphicsWidget::addEdge, m_document, &SkeletonDocument::addEdge);
+    connect(graphicsWidget, &SkeletonGraphicsWidget::groupOperationAdded, m_document, &SkeletonDocument::saveSnapshot);
+    connect(graphicsWidget, &SkeletonGraphicsWidget::undo, m_document, &SkeletonDocument::undo);
+    connect(graphicsWidget, &SkeletonGraphicsWidget::redo, m_document, &SkeletonDocument::redo);
     
     connect(m_document, &SkeletonDocument::nodeAdded, graphicsWidget, &SkeletonGraphicsWidget::nodeAdded);
     connect(m_document, &SkeletonDocument::nodeRemoved, graphicsWidget, &SkeletonGraphicsWidget::nodeRemoved);
