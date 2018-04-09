@@ -300,6 +300,7 @@ public slots:
     void deleteSelected();
     void selectAll();
     void unselectAll();
+    void selectPartAll();
 private slots:
     void turnaroundImageReady();
 private:

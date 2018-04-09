@@ -92,6 +92,11 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
     selectAllAction.setEnabled(!nodeItemMap.empty());
     contextMenu.addAction(&selectAllAction);
     
+    QAction selectPartAllAction("Select Part", this);
+    connect(&selectPartAllAction, &QAction::triggered, this, &SkeletonGraphicsWidget::selectPartAll);
+    selectPartAllAction.setEnabled(!nodeItemMap.empty());
+    contextMenu.addAction(&selectPartAllAction);
+    
     QAction unselectAllAction("Unselect All", this);
     connect(&unselectAllAction, &QAction::triggered, this, &SkeletonGraphicsWidget::unselectAll);
     unselectAllAction.setEnabled(!m_rangeSelectionSet.empty());
@@ -900,6 +905,50 @@ void SkeletonGraphicsWidget::readSkeletonNodeAndEdgeIdSetFromRangeSelection(std:
         } else if (item->data(0) == "edge") {
             edgeIdSet->insert(((SkeletonGraphicsEdgeItem *)item)->id());
         }
+    }
+}
+
+void SkeletonGraphicsWidget::selectPartAll()
+{
+    unselectAll();
+    SkeletonProfile choosenProfile = SkeletonProfile::Main;
+    QUuid choosenPartId;
+    if (m_hoveredNodeItem) {
+        choosenProfile = m_hoveredNodeItem->profile();
+        const SkeletonNode *node = m_document->findNode(m_hoveredNodeItem->id());
+        if (node)
+            choosenPartId = node->partId;
+    } else if (m_hoveredEdgeItem) {
+        choosenProfile = m_hoveredEdgeItem->profile();
+        const SkeletonEdge *edge = m_document->findEdge(m_hoveredEdgeItem->id());
+        if (edge)
+            choosenPartId = edge->partId;
+    }
+    for (const auto &it: nodeItemMap) {
+        SkeletonGraphicsNodeItem *item = SkeletonProfile::Main == choosenProfile ? it.second.first : it.second.second;
+        const SkeletonNode *node = m_document->findNode(item->id());
+        if (!node)
+            continue;
+        if (choosenPartId.isNull()) {
+            choosenPartId = node->partId;
+        }
+        if (node->partId != choosenPartId)
+            continue;
+        checkSkeletonItem(item, true);
+        m_rangeSelectionSet.insert(item);
+    }
+    for (const auto &it: edgeItemMap) {
+        SkeletonGraphicsEdgeItem *item = SkeletonProfile::Main == choosenProfile ? it.second.first : it.second.second;
+        const SkeletonEdge *edge = m_document->findEdge(item->id());
+        if (!edge)
+            continue;
+        if (choosenPartId.isNull()) {
+            choosenPartId = edge->partId;
+        }
+        if (edge->partId != choosenPartId)
+            continue;
+        checkSkeletonItem(item, true);
+        m_rangeSelectionSet.insert(item);
     }
 }
 

@@ -596,6 +596,9 @@ void SkeletonDocument::fromSnapshot(const SkeletonSnapshot &snapshot)
         part.subdived = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "subdived"));
         partMap[part.id] = part;
     }
+    for (const auto &nodeIt: nodeMap) {
+        partMap[nodeIt.second.partId].nodeIds.push_back(nodeIt.first);
+    }
     for (const auto &partIdIt: snapshot.partIdList) {
         partIds.push_back(QUuid(partIdIt));
     }
