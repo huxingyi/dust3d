@@ -33,6 +33,14 @@ public:
     {
         id = withId.isNull() ? QUuid::createUuid() : withId;
     }
+    void setRadius(float toRadius)
+    {
+        if (toRadius < 0.01)
+            toRadius = 0.01;
+        else if (toRadius > 1)
+            toRadius = 1;
+        radius = toRadius;
+    }
     QUuid id;
     QUuid partId;
     QString name;

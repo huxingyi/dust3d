@@ -307,6 +307,7 @@ bool SkeletonGraphicsWidget::mouseMove(QMouseEvent *event)
                 }
             }
             m_lastScenePos = mouseScenePos;
+            m_moveHappened = true;
             return true;
         }
     }
@@ -381,7 +382,8 @@ bool SkeletonGraphicsWidget::mouseRelease(QMouseEvent *event)
         }
         if (m_moveStarted) {
             m_moveStarted = false;
-            emit groupOperationAdded();
+            if (m_moveHappened)
+                emit groupOperationAdded();
         }
         if (m_rangeSelectionStarted) {
             m_selectionItem->hide();
@@ -477,9 +479,12 @@ bool SkeletonGraphicsWidget::mousePress(QMouseEvent *event)
                 }
                 if (!m_rangeSelectionSet.empty()) {
                     if (!QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
-                        m_moveStarted = true;
-                        m_lastScenePos = mouseEventScenePos(event);
-                        processed = true;
+                        if (!m_moveStarted) {
+                            m_moveStarted = true;
+                            m_lastScenePos = mouseEventScenePos(event);
+                            m_moveHappened = false;
+                            processed = true;
+                        }
                     }
                 }
                 if (processed) {

@@ -343,7 +343,7 @@ void SkeletonDocument::scaleNodeByAddRadius(QUuid nodeId, float amount)
     }
     if (isPartReadonly(it->second.partId))
         return;
-    it->second.radius += amount;
+    it->second.setRadius(it->second.radius + amount);
     emit nodeRadiusChanged(nodeId);
     emit skeletonChanged();
 }
@@ -399,7 +399,7 @@ void SkeletonDocument::setNodeRadius(QUuid nodeId, float radius)
     }
     if (isPartReadonly(it->second.partId))
         return;
-    it->second.radius = radius;
+    it->second.setRadius(radius);
     emit nodeRadiusChanged(nodeId);
     emit skeletonChanged();
 }

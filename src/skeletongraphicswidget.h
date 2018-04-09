@@ -331,6 +331,7 @@ private:
     bool m_rangeSelectionStarted;
     std::set<QGraphicsItem *> m_rangeSelectionSet;
     bool m_mouseEventFromSelf;
+    bool m_moveHappened;
 };
 
 class SkeletonGraphicsContainerWidget : public QWidget
