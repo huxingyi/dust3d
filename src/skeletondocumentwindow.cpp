@@ -9,8 +9,6 @@
 #include "skeletondocumentwindow.h"
 #include "skeletongraphicswidget.h"
 #include "skeletonpartlistwidget.h"
-#include "skeletonedgepropertywidget.h"
-#include "skeletonnodepropertywidget.h"
 #include "theme.h"
 
 SkeletonDocumentWindow::SkeletonDocumentWindow() :
@@ -41,18 +39,6 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     QPushButton *zoomOutButton = new QPushButton(QChar(fa::searchminus));
     initButton(zoomOutButton);
     
-    QPushButton *changeTurnaroundButton = new QPushButton(QChar(fa::image));
-    initButton(changeTurnaroundButton);
-    
-    QPushButton *markCenterButton = new QPushButton(QChar(fa::bullseye));
-    initButton(markCenterButton);
-    
-    QPushButton *markTrivialBranchButton = new QPushButton(QChar(fa::link));
-    initButton(markTrivialBranchButton);
-    
-    QPushButton *markMirrorButton = new QPushButton(QChar(fa::clone));
-    initButton(markMirrorButton);
-    
     toolButtonLayout->addWidget(undoButton);
     toolButtonLayout->addSpacing(10);
     toolButtonLayout->addWidget(addButton);
@@ -60,12 +46,6 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     toolButtonLayout->addWidget(dragButton);
     toolButtonLayout->addWidget(zoomInButton);
     toolButtonLayout->addWidget(zoomOutButton);
-    //toolButtonLayout->addSpacing(10);
-    //toolButtonLayout->addWidget(changeTurnaroundButton);
-    //toolButtonLayout->addSpacing(30);
-    //toolButtonLayout->addWidget(markCenterButton);
-    //toolButtonLayout->addWidget(markTrivialBranchButton);
-    //toolButtonLayout->addWidget(markMirrorButton);
     
     QLabel *dust3dJezzasoftLabel = new QLabel;
     QImage dust3dJezzasoftImage;
@@ -105,36 +85,10 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     SkeletonPartListWidget *partListWidget = new SkeletonPartListWidget(m_document);
     partListWidget->setMaximumWidth(Theme::previewImageSize);
     
-    //QTabWidget *firstTabWidget = new QTabWidget;
-    //firstTabWidget->setFont(Theme::awesome()->font(Theme::toolIconFontSize * 3 / 4));
-    //firstTabWidget->setMaximumWidth(200);
-    //firstTabWidget->addTab(partListWidget, QChar(fa::puzzlepiece));
-    //firstTabWidget->addTab(new QWidget, QChar(fa::history));
-    //firstTabWidget->addTab(new QWidget, QChar(fa::wrench));
-    
-    //SkeletonEdgePropertyWidget *edgePropertyWidget = new SkeletonEdgePropertyWidget(m_document);
-    //SkeletonNodePropertyWidget *nodePropertyWidget = new SkeletonNodePropertyWidget(m_document);
-    
-    //QVBoxLayout *propertyLayout = new QVBoxLayout;
-    //propertyLayout->addWidget(edgePropertyWidget);
-    //propertyLayout->addWidget(nodePropertyWidget);
-    
-    //QWidget *propertyWidget = new QWidget;
-    //propertyWidget->setLayout(propertyLayout);
-    
-    //QTabWidget *secondTabWidget = new QTabWidget;
-    //secondTabWidget->setFont(Theme::awesome()->font(Theme::toolIconFontSize * 3 / 4));
-    //secondTabWidget->setMaximumWidth(200);
-    //secondTabWidget->setMaximumHeight(90);
-    //secondTabWidget->addTab(propertyWidget, QChar(fa::adjust));
-    
     QVBoxLayout *mainRightLayout = new QVBoxLayout;
     mainRightLayout->setSpacing(0);
-    //mainRightLayout->setContentsMargins(5, 5, 5, 5);
     mainRightLayout->setContentsMargins(0, 0, 0, 0);
     mainRightLayout->addWidget(partListWidget);
-    //mainRightLayout->addWidget(firstTabWidget);
-    //mainRightLayout->addWidget(secondTabWidget);
     
     QHBoxLayout *mainLayout = new QHBoxLayout;
     mainLayout->setSpacing(0);
@@ -154,8 +108,6 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     
     connect(m_document, &SkeletonDocument::turnaroundChanged,
         graphicsWidget, &SkeletonGraphicsWidget::turnaroundChanged);
-    
-    connect(changeTurnaroundButton, &QPushButton::clicked, this, &SkeletonDocumentWindow::changeTurnaround);
     
     connect(undoButton, &QPushButton::clicked, [=]() {
         m_document->undo();

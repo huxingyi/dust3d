@@ -13,8 +13,8 @@ bool ModelWidget::m_transparent = true;
 
 ModelWidget::ModelWidget(QWidget *parent)
     : QOpenGLWidget(parent),
-      m_xRot(0),
-      m_yRot(0),
+      m_xRot(-30 * 16),
+      m_yRot(45 * 16),
       m_zRot(0),
       m_program(nullptr),
       m_moveStarted(false),

@@ -117,6 +117,7 @@ void MeshGenerator::process()
     void *meshliteContext = meshlite_create_context();
     std::map<QString, int> partBmeshMap;
     std::map<QString, int> bmeshNodeMap;
+    bool hasSubdiv = false;
     
     QRectF mainProfile, sideProfile;
     resolveBoundingBox(&mainProfile, &sideProfile);
@@ -207,8 +208,10 @@ void MeshGenerator::process()
         int meshId = meshlite_bmesh_generate_mesh(meshliteContext, bmeshId, 0);
         if (isTrueValueString(part->second["subdived"])) {
             int subdivedMeshId = subdivMesh(meshliteContext, meshId);
-            if (subdivedMeshId > 0)
+            if (subdivedMeshId > 0) {
                 meshId = subdivedMeshId;
+                hasSubdiv = true;
+            }
         }
         if (m_requirePartPreviewMap.find(partIdIt) != m_requirePartPreviewMap.end()) {
             ModelOfflineRender *render = m_partPreviewRenderMap[partIdIt];
@@ -227,7 +230,7 @@ void MeshGenerator::process()
     } else if (meshIds.size() > 0) {
         mergedMeshId = meshIds[0];
     }
-    if (mergedMeshId > 0) {
+    if (mergedMeshId > 0 && !hasSubdiv) {
         mergedMeshId = meshlite_combine_coplanar_faces(meshliteContext, mergedMeshId);
     }
     

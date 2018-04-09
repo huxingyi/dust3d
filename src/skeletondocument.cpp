@@ -482,26 +482,6 @@ void SkeletonDocument::splitPartByEdge(std::vector<std::vector<QUuid>> *groups, 
     }
 }
 
-void SkeletonDocument::setEdgeBranchMode(QUuid edgeId, SkeletonEdgeBranchMode mode)
-{
-    auto edgeIt = edgeMap.find(edgeId);
-    if (edgeIt == edgeMap.end()) {
-        qDebug() << "Find edge failed:" << edgeId;
-        return;
-    }
-    edgeIt->second.branchMode = mode;
-}
-
-void SkeletonDocument::setNodeRootMarkMode(QUuid nodeId, SkeletonNodeRootMarkMode mode)
-{
-    auto nodeIt = nodeMap.find(nodeId);
-    if (nodeIt == nodeMap.end()) {
-        qDebug() << "Find node failed:" << nodeId;
-        return;
-    }
-    nodeIt->second.rootMarkMode = mode;
-}
-
 void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUuid> &limitNodeIds) const
 {
     std::set<QUuid> limitPartIds;
@@ -532,7 +512,6 @@ void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUu
         node["x"] = QString::number(nodeIt.second.x);
         node["y"] = QString::number(nodeIt.second.y);
         node["z"] = QString::number(nodeIt.second.z);
-        node["rootMarkMode"] = SkeletonNodeRootMarkModeToString(nodeIt.second.rootMarkMode);
         node["partId"] = nodeIt.second.partId.toString();
         if (!nodeIt.second.name.isEmpty())
             node["name"] = nodeIt.second.name;
@@ -550,7 +529,6 @@ void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUu
         edge["id"] = edgeIt.second.id.toString();
         edge["from"] = edgeIt.second.nodeIds[0].toString();
         edge["to"] = edgeIt.second.nodeIds[1].toString();
-        edge["branchMode"] = SkeletonEdgeBranchModeToString(edgeIt.second.branchMode);
         edge["partId"] = edgeIt.second.partId.toString();
         if (!edgeIt.second.name.isEmpty())
             edge["name"] = edgeIt.second.name;
@@ -591,7 +569,6 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot)
         node.y = valueOfKeyInMapOrEmpty(nodeKv.second, "y").toFloat();
         node.z = valueOfKeyInMapOrEmpty(nodeKv.second, "z").toFloat();
         node.partId = oldNewIdMap[QUuid(valueOfKeyInMapOrEmpty(nodeKv.second, "partId"))];
-        node.rootMarkMode = SkeletonNodeRootMarkModeFromString(valueOfKeyInMapOrEmpty(nodeKv.second, "rootMarkMode"));
         nodeMap[node.id] = node;
     }
     for (const auto &edgeKv : snapshot.edges) {
@@ -603,7 +580,6 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot)
         oldNewIdMap[QUuid(edgeKv.first)] = edge.id;
         edge.name = valueOfKeyInMapOrEmpty(edgeKv.second, "name");
         edge.partId = oldNewIdMap[QUuid(valueOfKeyInMapOrEmpty(edgeKv.second, "partId"))];
-        edge.branchMode = SkeletonEdgeBranchModeFromString(valueOfKeyInMapOrEmpty(edgeKv.second, "branchMode"));
         QString fromNodeId = valueOfKeyInMapOrEmpty(edgeKv.second, "from");
         if (!fromNodeId.isEmpty()) {
             QUuid fromId = oldNewIdMap[QUuid(fromNodeId)];
@@ -658,56 +634,6 @@ void SkeletonDocument::fromSnapshot(const SkeletonSnapshot &snapshot)
     emit partListChanged();
     
     addFromSnapshot(snapshot);
-}
-
-const char *SkeletonNodeRootMarkModeToString(SkeletonNodeRootMarkMode mode)
-{
-    switch (mode) {
-        case SkeletonNodeRootMarkMode::Auto:
-            return "auto";
-        case SkeletonNodeRootMarkMode::MarkAsRoot:
-            return "markAsRoot";
-        case SkeletonNodeRootMarkMode::MarkAsNotRoot:
-            return "markAsNotRoot";
-        default:
-            return "";
-    }
-}
-
-SkeletonNodeRootMarkMode SkeletonNodeRootMarkModeFromString(const QString &mode)
-{
-    if (mode == "auto")
-        return SkeletonNodeRootMarkMode::Auto;
-    if (mode == "markAsRoot")
-        return SkeletonNodeRootMarkMode::MarkAsRoot;
-    if (mode == "markAsNotRoot")
-        return SkeletonNodeRootMarkMode::MarkAsNotRoot;
-    return SkeletonNodeRootMarkMode::Auto;
-}
-
-const char *SkeletonEdgeBranchModeToString(SkeletonEdgeBranchMode mode)
-{
-    switch (mode) {
-        case SkeletonEdgeBranchMode::Auto:
-            return "auto";
-        case SkeletonEdgeBranchMode::NoTrivial:
-            return "noTrivial";
-        case SkeletonEdgeBranchMode::Trivial:
-            return "trivial";
-        default:
-            return "";
-    }
-}
-
-SkeletonEdgeBranchMode SkeletonEdgeBranchModeFromString(const QString &mode)
-{
-    if (mode == "auto")
-        return SkeletonEdgeBranchMode::Auto;
-    if (mode == "noTrivial")
-        return SkeletonEdgeBranchMode::NoTrivial;
-    if (mode == "trivial")
-        return SkeletonEdgeBranchMode::Trivial;
-    return SkeletonEdgeBranchMode::Auto;
 }
 
 Mesh *SkeletonDocument::takeResultMesh()
@@ -787,12 +713,8 @@ void SkeletonDocument::generateMesh()
     toSnapshot(snapshot);
     m_meshGenerator = new MeshGenerator(snapshot, thread);
     m_meshGenerator->moveToThread(thread);
-    //m_meshGenerator->addPreviewRequirement();
     for (auto &part: partMap) {
-        //if (part.second.previewIsObsolete) {
-        //    part.second.previewIsObsolete = false;
-            m_meshGenerator->addPartPreviewRequirement(part.first.toString());
-        //}
+        m_meshGenerator->addPartPreviewRequirement(part.first.toString());
     }
     connect(thread, &QThread::started, m_meshGenerator, &MeshGenerator::process);
     connect(m_meshGenerator, &MeshGenerator::finished, this, &SkeletonDocument::meshReady);
@@ -895,3 +817,12 @@ bool SkeletonDocument::hasPastableContentInClipboard() const
     return false;
 }
 
+bool SkeletonDocument::undoable() const
+{
+    return !m_undoItems.empty();
+}
+
+bool SkeletonDocument::redoable() const
+{
+    return !m_redoItems.empty();
+}

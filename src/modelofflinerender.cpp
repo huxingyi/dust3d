@@ -54,8 +54,8 @@ QImage ModelOfflineRender::toImage(const QSize &size)
     m_context->functions()->glViewport(0, 0, size.width(), size.height());
     
     if (nullptr != m_mesh) {
-        int xRot = 0;
-        int yRot = 0;
+        int xRot = -30 * 16;
+        int yRot = 45 * 16;
         int zRot = 0;
         QMatrix4x4 proj;
         QMatrix4x4 camera;

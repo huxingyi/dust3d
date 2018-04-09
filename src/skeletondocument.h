@@ -11,16 +11,6 @@
 #include "mesh.h"
 #include "meshgenerator.h"
 
-enum class SkeletonNodeRootMarkMode
-{
-    Auto = 0,
-    MarkAsRoot,
-    MarkAsNotRoot
-};
-
-const char *SkeletonNodeRootMarkModeToString(SkeletonNodeRootMarkMode mode);
-SkeletonNodeRootMarkMode SkeletonNodeRootMarkModeFromString(const QString &mode);
-
 class SkeletonNode
 {
 public:
@@ -28,8 +18,7 @@ public:
         x(0),
         y(0),
         z(0),
-        radius(0),
-        rootMarkMode(SkeletonNodeRootMarkMode::Auto)
+        radius(0)
     {
         id = withId.isNull() ? QUuid::createUuid() : withId;
     }
@@ -48,34 +37,19 @@ public:
     float y;
     float z;
     float radius;
-    bool xMirrored;
-    bool zMirrored;
-    SkeletonNodeRootMarkMode rootMarkMode;
     std::vector<QUuid> edgeIds;
 };
-
-enum class SkeletonEdgeBranchMode
-{
-    Auto = 0,
-    Trivial,
-    NoTrivial
-};
-
-const char *SkeletonEdgeBranchModeToString(SkeletonEdgeBranchMode mode);
-SkeletonEdgeBranchMode SkeletonEdgeBranchModeFromString(const QString &mode);
 
 class SkeletonEdge
 {
 public:
-    SkeletonEdge(const QUuid &withId=QUuid()) :
-        branchMode(SkeletonEdgeBranchMode::Auto)
+    SkeletonEdge(const QUuid &withId=QUuid())
     {
         id = withId.isNull() ? QUuid::createUuid() : withId;
     }
     QUuid id;
     QUuid partId;
     QString name;
-    SkeletonEdgeBranchMode branchMode;
     std::vector<QUuid> nodeIds;
     QUuid neighborOf(QUuid nodeId) const
     {
@@ -95,12 +69,10 @@ public:
     bool subdived;
     QImage preview;
     std::vector<QUuid> nodeIds;
-    bool previewIsObsolete;
     SkeletonPart(const QUuid &withId=QUuid()) :
         visible(true),
         locked(false),
-        subdived(false),
-        previewIsObsolete(true)
+        subdived(false)
     {
         id = withId.isNull() ? QUuid::createUuid() : withId;
     }
@@ -171,6 +143,8 @@ public:
     QImage preview;
     void updateTurnaround(const QImage &image);
     bool hasPastableContentInClipboard() const;
+    bool undoable() const;
+    bool redoable() const;
 public slots:
     void removeNode(QUuid nodeId);
     void removeEdge(QUuid edgeId);
@@ -182,8 +156,6 @@ public slots:
     void setNodeRadius(QUuid nodeId, float radius);
     void addEdge(QUuid fromNodeId, QUuid toNodeId);
     void setEditMode(SkeletonDocumentEditMode mode);
-    void setEdgeBranchMode(QUuid edgeId, SkeletonEdgeBranchMode mode);
-    void setNodeRootMarkMode(QUuid nodeId, SkeletonNodeRootMarkMode mode);
     void uiReady();
     void generateMesh();
     void meshReady();

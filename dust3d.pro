@@ -18,12 +18,6 @@ HEADERS += src/modelofflinerender.h
 SOURCES += src/modelwidget.cpp
 HEADERS += src/modelwidget.h
 
-SOURCES += src/skeletonnodepropertywidget.cpp
-HEADERS += src/skeletonnodepropertywidget.h
-
-SOURCES += src/skeletonedgepropertywidget.cpp
-HEADERS += src/skeletonedgepropertywidget.h
-
 SOURCES += src/skeletondocument.cpp
 HEADERS += src/skeletondocument.h
 
@@ -32,9 +26,6 @@ HEADERS += src/skeletondocumentwindow.h
 
 SOURCES += src/skeletongraphicswidget.cpp
 HEADERS += src/skeletongraphicswidget.h
-
-SOURCES += src/skeletonhistorylistwidget.cpp
-HEADERS += src/skeletonhistorylistwidget.h
 
 SOURCES += src/skeletonpartlistwidget.cpp
 HEADERS += src/skeletonpartlistwidget.h
