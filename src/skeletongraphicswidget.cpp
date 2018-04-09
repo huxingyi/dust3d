@@ -5,6 +5,7 @@
 #include <QtGlobal>
 #include <algorithm>
 #include <QVector2D>
+#include <QMenu>
 #include "skeletongraphicswidget.h"
 #include "theme.h"
 #include "util.h"
@@ -55,6 +56,48 @@ SkeletonGraphicsWidget::SkeletonGraphicsWidget(const SkeletonDocument *document)
     scene()->setSceneRect(rect());
     
     setMouseTracking(true);
+    
+    setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(this, &SkeletonGraphicsWidget::customContextMenuRequested, this, &SkeletonGraphicsWidget::showContextMenu);
+}
+
+void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
+{
+    if (SkeletonDocumentEditMode::Add == m_document->editMode) {
+        emit setEditMode(SkeletonDocumentEditMode::Select);
+        return;
+    }
+    
+    if (SkeletonDocumentEditMode::Select != m_document->editMode) {
+        return;
+    }
+    
+    QMenu contextMenu(this);
+    
+    QAction addAction("Add..", this);
+    connect(&addAction, &QAction::triggered, [=]() {
+        emit setEditMode(SkeletonDocumentEditMode::Add);
+    });
+    contextMenu.addAction(&addAction);
+    contextMenu.addSeparator();
+    
+    QAction deleteAction("Delete", this);
+    connect(&deleteAction, &QAction::triggered, this, &SkeletonGraphicsWidget::deleteSelected);
+    deleteAction.setEnabled(!m_rangeSelectionSet.empty());
+    contextMenu.addAction(&deleteAction);
+    contextMenu.addSeparator();
+    
+    QAction selectAllAction("Select All", this);
+    connect(&selectAllAction, &QAction::triggered, this, &SkeletonGraphicsWidget::selectAll);
+    selectAllAction.setEnabled(!nodeItemMap.empty());
+    contextMenu.addAction(&selectAllAction);
+    
+    QAction unselectAllAction("Unselect All", this);
+    connect(&unselectAllAction, &QAction::triggered, this, &SkeletonGraphicsWidget::unselectAll);
+    unselectAllAction.setEnabled(!m_rangeSelectionSet.empty());
+    contextMenu.addAction(&unselectAllAction);
+
+    contextMenu.exec(mapToGlobal(pos));
 }
 
 void SkeletonGraphicsWidget::updateItems()
@@ -525,22 +568,28 @@ bool SkeletonGraphicsWidget::mouseDoubleClick(QMouseEvent *event)
     return false;
 }
 
+void SkeletonGraphicsWidget::deleteSelected()
+{
+    if (!m_rangeSelectionSet.empty()) {
+        std::set<QUuid> nodeIdSet;
+        std::set<QUuid> edgeIdSet;
+        readSkeletonNodeAndEdgeIdSetFromRangeSelection(&nodeIdSet, &edgeIdSet);
+        for (const auto &id: edgeIdSet) {
+            emit removeEdge(id);
+        }
+        for (const auto &id: nodeIdSet) {
+            emit removeNode(id);
+        }
+    }
+}
+
 bool SkeletonGraphicsWidget::keyPress(QKeyEvent *event)
 {
     if (event->key() == Qt::Key_Delete || event->key() ==Qt::Key_Backspace) {
         bool processed = false;
         if (!m_rangeSelectionSet.empty()) {
-            std::set<QUuid> nodeIdSet;
-            std::set<QUuid> edgeIdSet;
-            readSkeletonNodeAndEdgeIdSetFromRangeSelection(&nodeIdSet, &edgeIdSet);
-            for (const auto &id: edgeIdSet) {
-                emit removeEdge(id);
-                processed = true;
-            }
-            for (const auto &id: nodeIdSet) {
-                emit removeNode(id);
-                processed = true;
-            }
+            deleteSelected();
+            processed = true;
         }
         if (processed) {
             emit groupOperationAdded();
@@ -854,3 +903,31 @@ void SkeletonGraphicsWidget::readSkeletonNodeAndEdgeIdSetFromRangeSelection(std:
     }
 }
 
+void SkeletonGraphicsWidget::selectAll()
+{
+    unselectAll();
+    SkeletonProfile choosenProfile = SkeletonProfile::Main;
+    if (m_hoveredNodeItem) {
+        choosenProfile = m_hoveredNodeItem->profile();
+    } else if (m_hoveredEdgeItem) {
+        choosenProfile = m_hoveredEdgeItem->profile();
+    }
+    for (const auto &it: nodeItemMap) {
+        SkeletonGraphicsNodeItem *item = SkeletonProfile::Main == choosenProfile ? it.second.first : it.second.second;
+        checkSkeletonItem(item, true);
+        m_rangeSelectionSet.insert(item);
+    }
+    for (const auto &it: edgeItemMap) {
+        SkeletonGraphicsEdgeItem *item = SkeletonProfile::Main == choosenProfile ? it.second.first : it.second.second;
+        checkSkeletonItem(item, true);
+        m_rangeSelectionSet.insert(item);
+    }
+}
+
+void SkeletonGraphicsWidget::unselectAll()
+{
+    for (const auto &item: m_rangeSelectionSet) {
+        checkSkeletonItem(item, false);
+    }
+    m_rangeSelectionSet.clear();
+}

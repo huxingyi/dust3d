@@ -296,6 +296,10 @@ public slots:
     void editModeChanged();
     void updateCursor();
     void partVisibleStateChanged(QUuid partId);
+    void showContextMenu(const QPoint &pos);
+    void deleteSelected();
+    void selectAll();
+    void unselectAll();
 private slots:
     void turnaroundImageReady();
 private:
