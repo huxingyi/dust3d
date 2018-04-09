@@ -106,6 +106,13 @@ public:
     }
 };
 
+enum class SkeletonProfile
+{
+    Unknown = 0,
+    Main,
+    Side
+};
+
 class SkeletonHistoryItem
 {
 public:
@@ -119,13 +126,6 @@ enum class SkeletonDocumentEditMode
     Drag,
     ZoomIn,
     ZoomOut
-};
-
-enum class SkeletonProfile
-{
-    Unknown = 0,
-    Main,
-    Side
 };
 
 class SkeletonDocument : public QObject
@@ -170,6 +170,7 @@ public:
     Mesh *takeResultMesh();
     QImage preview;
     void updateTurnaround(const QImage &image);
+    bool hasPastableContentInClipboard() const;
 public slots:
     void removeNode(QUuid nodeId);
     void removeEdge(QUuid edgeId);
@@ -193,6 +194,8 @@ public slots:
     void undo();
     void redo();
     void paste();
+    void batchChangeBegin();
+    void batchChangeEnd();
 private:
     void splitPartByNode(std::vector<std::vector<QUuid>> *groups, QUuid nodeId);
     void joinNodeAndNeiborsToGroup(std::vector<QUuid> *group, QUuid nodeId, std::set<QUuid> *visitMap, QUuid noUseEdgeId=QUuid());
@@ -205,6 +208,7 @@ private:
     static unsigned long m_maxSnapshot;
     std::deque<SkeletonHistoryItem> m_undoItems;
     std::deque<SkeletonHistoryItem> m_redoItems;
+    int m_batchChangeRefCount;
 };
 
 #endif

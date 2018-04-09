@@ -14,7 +14,8 @@ unsigned long SkeletonDocument::m_maxSnapshot = 1000;
 SkeletonDocument::SkeletonDocument() :
     m_resultMeshIsObsolete(false),
     m_resultMesh(nullptr),
-    m_meshGenerator(nullptr)
+    m_meshGenerator(nullptr),
+    m_batchChangeRefCount(0)
 {
 }
 
@@ -754,9 +755,24 @@ void SkeletonDocument::meshReady()
     }
 }
 
+void SkeletonDocument::batchChangeBegin()
+{
+    m_batchChangeRefCount++;
+}
+
+void SkeletonDocument::batchChangeEnd()
+{
+    m_batchChangeRefCount--;
+    if (0 == m_batchChangeRefCount) {
+        if (m_resultMeshIsObsolete) {
+            generateMesh();
+        }
+    }
+}
+
 void SkeletonDocument::generateMesh()
 {
-    if (nullptr != m_meshGenerator) {
+    if (nullptr != m_meshGenerator || m_batchChangeRefCount > 0) {
         m_resultMeshIsObsolete = true;
         return;
     }
@@ -867,3 +883,15 @@ void SkeletonDocument::paste()
         addFromSnapshot(snapshot);
     }
 }
+
+bool SkeletonDocument::hasPastableContentInClipboard() const
+{
+    const QClipboard *clipboard = QApplication::clipboard();
+    const QMimeData *mimeData = clipboard->mimeData();
+    if (mimeData->hasText()) {
+        if (-1 != mimeData->text().left(1000).indexOf("partIdList"))
+            return true;
+    }
+    return false;
+}
+

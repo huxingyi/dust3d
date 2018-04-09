@@ -264,8 +264,8 @@ signals:
     void redo();
     void paste();
     void changeTurnaround();
-    void addMirror();
-    void deleteMirror();
+    void batchChangeBegin();
+    void batchChangeEnd();
 public:
     SkeletonGraphicsWidget(const SkeletonDocument *document);
     std::map<QUuid, std::pair<SkeletonGraphicsNodeItem *, SkeletonGraphicsNodeItem *>> nodeItemMap;
@@ -308,6 +308,8 @@ public slots:
     void selectPartAll();
     void cut();
     void copy();
+    void flipHorizontally();
+    void flipVertically();
 private slots:
     void turnaroundImageReady();
 private:
@@ -321,6 +323,7 @@ private:
     void checkRangeSelection();
     void clearRangeSelection();
     void removeItem(QGraphicsItem *item);
+    QVector2D centerOfNodeItemSet(const std::set<SkeletonGraphicsNodeItem *> &set);
 private:
     QGraphicsPixmapItem *m_backgroundItem;
     const SkeletonDocument *m_document;

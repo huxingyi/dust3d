@@ -13,6 +13,8 @@ public:
     std::map<QString, std::map<QString, QString>> nodes;
     std::map<QString, std::map<QString, QString>> edges;
     std::map<QString, std::map<QString, QString>> parts;
+    std::map<QString, std::map<QString, QString>> mirrors;
+    std::map<QString, std::map<QString, QString>> trivialMarkers;
     std::vector<QString> partIdList;
 public:
     SkeletonSnapshot();

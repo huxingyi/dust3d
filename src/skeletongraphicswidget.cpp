@@ -102,7 +102,20 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
     
     QAction pasteAction("Paste", this);
     connect(&pasteAction, &QAction::triggered, m_document, &SkeletonDocument::paste);
+    pasteAction.setEnabled(m_document->hasPastableContentInClipboard());
     contextMenu.addAction(&pasteAction);
+    
+    contextMenu.addSeparator();
+    
+    QAction flipHorizontallyAction("H Flip", this);
+    connect(&flipHorizontallyAction, &QAction::triggered, this, &SkeletonGraphicsWidget::flipHorizontally);
+    flipHorizontallyAction.setEnabled(!m_rangeSelectionSet.empty());
+    contextMenu.addAction(&flipHorizontallyAction);
+    
+    QAction flipVerticallyAction("V Flip", this);
+    connect(&flipVerticallyAction, &QAction::triggered, this, &SkeletonGraphicsWidget::flipVertically);
+    flipVerticallyAction.setEnabled(!m_rangeSelectionSet.empty());
+    contextMenu.addAction(&flipVerticallyAction);
     
     contextMenu.addSeparator();
     
@@ -120,18 +133,6 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
     connect(&unselectAllAction, &QAction::triggered, this, &SkeletonGraphicsWidget::unselectAll);
     unselectAllAction.setEnabled(!m_rangeSelectionSet.empty());
     contextMenu.addAction(&unselectAllAction);
-    
-    contextMenu.addSeparator();
-    
-    QAction addMirrorAction("Mirror", this);
-    connect(&addMirrorAction, &QAction::triggered, this, &SkeletonGraphicsWidget::addMirror);
-    addMirrorAction.setEnabled(readSkeletonNodeAndAnyEdgeOfNodeFromRangeSelection(nullptr, nullptr));
-    contextMenu.addAction(&addMirrorAction);
-    
-    QAction deleteMirrorAction("Delete Mirror", this);
-    connect(&deleteMirrorAction, &QAction::triggered, this, &SkeletonGraphicsWidget::deleteMirror);
-    deleteMirrorAction.setEnabled(readSkeletonNodeAndAnyEdgeOfNodeFromRangeSelection(nullptr, nullptr));
-    contextMenu.addAction(&deleteMirrorAction);
     
     contextMenu.addSeparator();
     
@@ -425,11 +426,7 @@ bool SkeletonGraphicsWidget::wheel(QWheelEvent *event)
             readMergedSkeletonNodeSetFromRangeSelection(&nodeItems);
             float unifiedDelta = sceneRadiusToUnified(delta);
             if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
-                QVector2D center;
-                for (const auto &nodeItem: nodeItems) {
-                    center += QVector2D(nodeItem->origin());
-                }
-                center /= nodeItems.size();
+                QVector2D center = centerOfNodeItemSet(nodeItems);
                 for (const auto &nodeItem: nodeItems) {
                     QVector2D origin = QVector2D(nodeItem->origin());
                     QVector2D ray = (center - origin) * 0.01 * delta;
@@ -457,6 +454,50 @@ bool SkeletonGraphicsWidget::wheel(QWheelEvent *event)
         }
     }
     return false;
+}
+
+QVector2D SkeletonGraphicsWidget::centerOfNodeItemSet(const std::set<SkeletonGraphicsNodeItem *> &set)
+{
+    QVector2D center;
+    for (const auto &nodeItem: set) {
+        center += QVector2D(nodeItem->origin());
+    }
+    center /= set.size();
+    return center;
+}
+
+void SkeletonGraphicsWidget::flipHorizontally()
+{
+    std::set<SkeletonGraphicsNodeItem *> nodeItems;
+    readMergedSkeletonNodeSetFromRangeSelection(&nodeItems);
+    if (nodeItems.empty())
+        return;
+    QVector2D center = centerOfNodeItemSet(nodeItems);
+    for (const auto &nodeItem: nodeItems) {
+        QPointF origin = nodeItem->origin();
+        float offset = origin.x() - center.x();
+        float unifiedOffset = -sceneRadiusToUnified(offset * 2);
+        if (SkeletonProfile::Main == nodeItem->profile()) {
+            emit moveNodeBy(nodeItem->id(), unifiedOffset, 0, 0);
+        } else {
+            emit moveNodeBy(nodeItem->id(), 0, 0, unifiedOffset);
+        }
+    }
+}
+
+void SkeletonGraphicsWidget::flipVertically()
+{
+    std::set<SkeletonGraphicsNodeItem *> nodeItems;
+    readMergedSkeletonNodeSetFromRangeSelection(&nodeItems);
+    if (nodeItems.empty())
+        return;
+    QVector2D center = centerOfNodeItemSet(nodeItems);
+    for (const auto &nodeItem: nodeItems) {
+        QPointF origin = nodeItem->origin();
+        float offset = origin.y() - center.y();
+        float unifiedOffset = -sceneRadiusToUnified(offset * 2);
+        emit moveNodeBy(nodeItem->id(), 0, unifiedOffset, 0);
+    }
 }
 
 bool SkeletonGraphicsWidget::mouseRelease(QMouseEvent *event)
@@ -619,6 +660,7 @@ bool SkeletonGraphicsWidget::mouseDoubleClick(QMouseEvent *event)
 void SkeletonGraphicsWidget::deleteSelected()
 {
     if (!m_rangeSelectionSet.empty()) {
+        emit batchChangeBegin();
         std::set<QUuid> nodeIdSet;
         std::set<QUuid> edgeIdSet;
         readSkeletonNodeAndEdgeIdSetFromRangeSelection(&nodeIdSet, &edgeIdSet);
@@ -628,6 +670,7 @@ void SkeletonGraphicsWidget::deleteSelected()
         for (const auto &id: nodeIdSet) {
             emit removeNode(id);
         }
+        emit batchChangeEnd();
     }
 }
 
@@ -1094,3 +1137,6 @@ void SkeletonGraphicsWidget::copy()
     QClipboard *clipboard = QApplication::clipboard();
     clipboard->setText(snapshotXml);
 }
+
+
+
