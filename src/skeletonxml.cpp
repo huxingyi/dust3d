@@ -10,6 +10,15 @@ void saveSkeletonToXmlStream(SkeletonSnapshot *snapshot, QXmlStreamWriter *write
         for (canvasIterator = snapshot->canvas.begin(); canvasIterator != snapshot->canvas.end(); canvasIterator++) {
             writer->writeAttribute(canvasIterator->first, canvasIterator->second);
         }
+    
+        writer->writeStartElement("partIdList");
+        std::vector<QString>::iterator partIdIterator;
+        for (partIdIterator = snapshot->partIdList.begin(); partIdIterator != snapshot->partIdList.end(); partIdIterator++) {
+            writer->writeStartElement("partId");
+            writer->writeAttribute("id", *partIdIterator);
+            writer->writeEndElement();
+        }
+        writer->writeEndElement();
 
         writer->writeStartElement("nodes");
         std::map<QString, std::map<QString, QString>>::iterator nodeIterator;
@@ -34,6 +43,18 @@ void saveSkeletonToXmlStream(SkeletonSnapshot *snapshot, QXmlStreamWriter *write
             writer->writeEndElement();
         }
         writer->writeEndElement();
+    
+        writer->writeStartElement("parts");
+        std::map<QString, std::map<QString, QString>>::iterator partIterator;
+        for (partIterator = snapshot->parts.begin(); partIterator != snapshot->parts.end(); partIterator++) {
+            std::map<QString, QString>::iterator partAttributeIterator;
+            writer->writeStartElement("part");
+            for (partAttributeIterator = partIterator->second.begin(); partAttributeIterator != partIterator->second.end(); partAttributeIterator++) {
+                writer->writeAttribute(partAttributeIterator->first, partAttributeIterator->second);
+            }
+            writer->writeEndElement();
+        }
+        writer->writeEndElement();
     writer->writeEndElement();
     
     writer->writeEndDocument();
@@ -50,16 +71,33 @@ void loadSkeletonFromXmlStream(SkeletonSnapshot *snapshot, QXmlStreamReader &rea
                 }
             } else if (reader.name() == "node") {
                 QString nodeId = reader.attributes().value("id").toString();
+                if (nodeId.isEmpty())
+                    continue;
                 std::map<QString, QString> *nodeMap = &snapshot->nodes[nodeId];
                 foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
                     (*nodeMap)[attr.name().toString()] = attr.value().toString();
                 }
             } else if (reader.name() == "edge") {
-                QString nodeId = reader.attributes().value("id").toString();
-                std::map<QString, QString> *edgeMap = &snapshot->edges[nodeId];
+                QString edgeId = reader.attributes().value("id").toString();
+                if (edgeId.isEmpty())
+                    continue;
+                std::map<QString, QString> *edgeMap = &snapshot->edges[edgeId];
                 foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
                     (*edgeMap)[attr.name().toString()] = attr.value().toString();
                 }
+            } else if (reader.name() == "part") {
+                QString partId = reader.attributes().value("id").toString();
+                if (partId.isEmpty())
+                    continue;
+                std::map<QString, QString> *partMap = &snapshot->parts[partId];
+                foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
+                    (*partMap)[attr.name().toString()] = attr.value().toString();
+                }
+            } else if (reader.name() == "partId") {
+                QString partId = reader.attributes().value("id").toString();
+                if (partId.isEmpty())
+                    continue;
+                snapshot->partIdList.push_back(partId);
             }
         }
     }

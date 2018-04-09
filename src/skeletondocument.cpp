@@ -2,8 +2,12 @@
 #include <QDebug>
 #include <QThread>
 #include <QGuiApplication>
+#include <QClipboard>
+#include <QMimeData>
+#include <QApplication>
 #include "skeletondocument.h"
 #include "util.h"
+#include "skeletonxml.h"
 
 unsigned long SkeletonDocument::m_maxSnapshot = 1000;
 
@@ -497,9 +501,18 @@ void SkeletonDocument::setNodeRootMarkMode(QUuid nodeId, SkeletonNodeRootMarkMod
     nodeIt->second.rootMarkMode = mode;
 }
 
-void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot)
+void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUuid> &limitNodeIds) const
 {
+    std::set<QUuid> limitPartIds;
+    for (const auto &nodeId: limitNodeIds) {
+        const SkeletonNode *node = findNode(nodeId);
+        if (!node)
+            continue;
+        limitPartIds.insert(node->partId);
+    }
     for (const auto &partIt : partMap) {
+        if (!limitPartIds.empty() && limitPartIds.find(partIt.first) == limitPartIds.end())
+            continue;
         std::map<QString, QString> part;
         part["id"] = partIt.second.id.toString();
         part["visible"] = partIt.second.visible ? "true" : "false";
@@ -510,6 +523,8 @@ void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot)
         snapshot->parts[part["id"]] = part;
     }
     for (const auto &nodeIt: nodeMap) {
+        if (!limitNodeIds.empty() && limitNodeIds.find(nodeIt.first) == limitNodeIds.end())
+            continue;
         std::map<QString, QString> node;
         node["id"] = nodeIt.second.id.toString();
         node["radius"] = QString::number(nodeIt.second.radius);
@@ -526,6 +541,10 @@ void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot)
     for (const auto &edgeIt: edgeMap) {
         if (edgeIt.second.nodeIds.size() != 2)
             continue;
+        if (!limitNodeIds.empty() &&
+                (limitNodeIds.find(edgeIt.second.nodeIds[0]) == limitNodeIds.end() ||
+                    limitNodeIds.find(edgeIt.second.nodeIds[1]) == limitNodeIds.end()))
+            continue;
         std::map<QString, QString> edge;
         edge["id"] = edgeIt.second.id.toString();
         edge["from"] = edgeIt.second.nodeIds[0].toString();
@@ -538,8 +557,85 @@ void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot)
         qDebug() << "Export edge to snapshot " << edge["from"] << "<=>" << edge["to"];
     }
     for (const auto &partIdIt: partIds) {
+        if (!limitPartIds.empty() && limitPartIds.find(partIdIt) == limitPartIds.end())
+            continue;
         snapshot->partIdList.push_back(partIdIt.toString());
     }
+}
+
+void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot)
+{
+    std::map<QUuid, QUuid> oldNewIdMap;
+    for (const auto &partKv : snapshot.parts) {
+        SkeletonPart part;
+        oldNewIdMap[QUuid(partKv.first)] = part.id;
+        part.name = valueOfKeyInMapOrEmpty(partKv.second, "name");
+        part.visible = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "visible"));
+        part.locked = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "locked"));
+        part.subdived = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "subdived"));
+        partMap[part.id] = part;
+    }
+    for (const auto &nodeKv : snapshot.nodes) {
+        if (nodeKv.second.find("radius") == nodeKv.second.end() ||
+                nodeKv.second.find("x") == nodeKv.second.end() ||
+                nodeKv.second.find("y") == nodeKv.second.end() ||
+                nodeKv.second.find("z") == nodeKv.second.end() ||
+                nodeKv.second.find("partId") == nodeKv.second.end())
+            continue;
+        SkeletonNode node;
+        oldNewIdMap[QUuid(nodeKv.first)] = node.id;
+        node.name = valueOfKeyInMapOrEmpty(nodeKv.second, "name");
+        node.radius = valueOfKeyInMapOrEmpty(nodeKv.second, "radius").toFloat();
+        node.x = valueOfKeyInMapOrEmpty(nodeKv.second, "x").toFloat();
+        node.y = valueOfKeyInMapOrEmpty(nodeKv.second, "y").toFloat();
+        node.z = valueOfKeyInMapOrEmpty(nodeKv.second, "z").toFloat();
+        node.partId = oldNewIdMap[QUuid(valueOfKeyInMapOrEmpty(nodeKv.second, "partId"))];
+        node.rootMarkMode = SkeletonNodeRootMarkModeFromString(valueOfKeyInMapOrEmpty(nodeKv.second, "rootMarkMode"));
+        nodeMap[node.id] = node;
+    }
+    for (const auto &edgeKv : snapshot.edges) {
+        if (edgeKv.second.find("from") == edgeKv.second.end() ||
+                edgeKv.second.find("to") == edgeKv.second.end() ||
+                edgeKv.second.find("partId") == edgeKv.second.end())
+            continue;
+        SkeletonEdge edge;
+        oldNewIdMap[QUuid(edgeKv.first)] = edge.id;
+        edge.name = valueOfKeyInMapOrEmpty(edgeKv.second, "name");
+        edge.partId = oldNewIdMap[QUuid(valueOfKeyInMapOrEmpty(edgeKv.second, "partId"))];
+        edge.branchMode = SkeletonEdgeBranchModeFromString(valueOfKeyInMapOrEmpty(edgeKv.second, "branchMode"));
+        QString fromNodeId = valueOfKeyInMapOrEmpty(edgeKv.second, "from");
+        if (!fromNodeId.isEmpty()) {
+            QUuid fromId = oldNewIdMap[QUuid(fromNodeId)];
+            edge.nodeIds.push_back(fromId);
+            nodeMap[fromId].edgeIds.push_back(edge.id);
+        }
+        QString toNodeId = valueOfKeyInMapOrEmpty(edgeKv.second, "to");
+        if (!toNodeId.isEmpty()) {
+            QUuid toId = oldNewIdMap[QUuid(toNodeId)];
+            edge.nodeIds.push_back(toId);
+            nodeMap[toId].edgeIds.push_back(edge.id);
+        }
+        edgeMap[edge.id] = edge;
+    }
+    for (const auto &nodeIt: nodeMap) {
+        partMap[nodeIt.second.partId].nodeIds.push_back(nodeIt.first);
+    }
+    for (const auto &partIdIt: snapshot.partIdList) {
+        partIds.push_back(oldNewIdMap[QUuid(partIdIt)]);
+    }
+    
+    for (const auto &nodeIt: nodeMap) {
+        emit nodeAdded(nodeIt.first);
+    }
+    for (const auto &edgeIt: edgeMap) {
+        emit edgeAdded(edgeIt.first);
+    }
+    for (const auto &partIt : partMap) {
+        emit partAdded(partIt.first);
+    }
+    
+    emit partListChanged();
+    emit skeletonChanged();
 }
 
 void SkeletonDocument::fromSnapshot(const SkeletonSnapshot &snapshot)
@@ -560,61 +656,7 @@ void SkeletonDocument::fromSnapshot(const SkeletonSnapshot &snapshot)
     partIds.clear();
     emit partListChanged();
     
-    for (const auto &nodeKv : snapshot.nodes) {
-        SkeletonNode node(QUuid(nodeKv.first));
-        node.name = valueOfKeyInMapOrEmpty(nodeKv.second, "name");
-        node.radius = valueOfKeyInMapOrEmpty(nodeKv.second, "radius").toFloat();
-        node.x = valueOfKeyInMapOrEmpty(nodeKv.second, "x").toFloat();
-        node.y = valueOfKeyInMapOrEmpty(nodeKv.second, "y").toFloat();
-        node.z = valueOfKeyInMapOrEmpty(nodeKv.second, "z").toFloat();
-        node.partId = QUuid(valueOfKeyInMapOrEmpty(nodeKv.second, "partId"));
-        node.rootMarkMode = SkeletonNodeRootMarkModeFromString(valueOfKeyInMapOrEmpty(nodeKv.second, "rootMarkMode"));
-        nodeMap[node.id] = node;
-    }
-    for (const auto &edgeKv : snapshot.edges) {
-        SkeletonEdge edge(QUuid(edgeKv.first));
-        edge.name = valueOfKeyInMapOrEmpty(edgeKv.second, "name");
-        edge.partId = QUuid(valueOfKeyInMapOrEmpty(edgeKv.second, "partId"));
-        edge.branchMode = SkeletonEdgeBranchModeFromString(valueOfKeyInMapOrEmpty(edgeKv.second, "branchMode"));
-        QString fromNodeId = valueOfKeyInMapOrEmpty(edgeKv.second, "from");
-        if (!fromNodeId.isEmpty()) {
-            edge.nodeIds.push_back(QUuid(fromNodeId));
-            nodeMap[QUuid(fromNodeId)].edgeIds.push_back(edge.id);
-        }
-        QString toNodeId = valueOfKeyInMapOrEmpty(edgeKv.second, "to");
-        if (!toNodeId.isEmpty()) {
-            edge.nodeIds.push_back(QUuid(toNodeId));
-            nodeMap[QUuid(toNodeId)].edgeIds.push_back(edge.id);
-        }
-        edgeMap[edge.id] = edge;
-    }
-    for (const auto &partKv : snapshot.parts) {
-        SkeletonPart part(QUuid(partKv.first));
-        part.name = valueOfKeyInMapOrEmpty(partKv.second, "name");
-        part.visible = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "visible"));
-        part.locked = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "locked"));
-        part.subdived = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "subdived"));
-        partMap[part.id] = part;
-    }
-    for (const auto &nodeIt: nodeMap) {
-        partMap[nodeIt.second.partId].nodeIds.push_back(nodeIt.first);
-    }
-    for (const auto &partIdIt: snapshot.partIdList) {
-        partIds.push_back(QUuid(partIdIt));
-    }
-    
-    for (const auto &nodeIt: nodeMap) {
-        emit nodeAdded(nodeIt.first);
-    }
-    for (const auto &edgeIt: edgeMap) {
-        emit edgeAdded(edgeIt.first);
-    }
-    for (const auto &partIt : partMap) {
-        emit partAdded(partIt.first);
-    }
-    
-    emit partListChanged();
-    emit skeletonChanged();
+    addFromSnapshot(snapshot);
 }
 
 const char *SkeletonNodeRootMarkModeToString(SkeletonNodeRootMarkMode mode)
@@ -814,3 +856,14 @@ void SkeletonDocument::redo()
     qDebug() << "Undo/Redo items:" << m_undoItems.size() << m_redoItems.size();
 }
 
+void SkeletonDocument::paste()
+{
+    const QClipboard *clipboard = QApplication::clipboard();
+    const QMimeData *mimeData = clipboard->mimeData();
+    if (mimeData->hasText()) {
+        QXmlStreamReader xmlStreamReader(mimeData->text());
+        SkeletonSnapshot snapshot;
+        loadSkeletonFromXmlStream(&snapshot, xmlStreamReader);
+        addFromSnapshot(snapshot);
+    }
+}

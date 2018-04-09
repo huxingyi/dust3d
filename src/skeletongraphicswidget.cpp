@@ -6,9 +6,12 @@
 #include <algorithm>
 #include <QVector2D>
 #include <QMenu>
+#include <QApplication>
+#include <QClipboard>
 #include "skeletongraphicswidget.h"
 #include "theme.h"
 #include "util.h"
+#include "skeletonxml.h"
 
 SkeletonGraphicsWidget::SkeletonGraphicsWidget(const SkeletonDocument *document) :
     m_document(document),
@@ -79,12 +82,28 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
         emit setEditMode(SkeletonDocumentEditMode::Add);
     });
     contextMenu.addAction(&addAction);
+    
     contextMenu.addSeparator();
     
     QAction deleteAction("Delete", this);
     connect(&deleteAction, &QAction::triggered, this, &SkeletonGraphicsWidget::deleteSelected);
     deleteAction.setEnabled(!m_rangeSelectionSet.empty());
     contextMenu.addAction(&deleteAction);
+    
+    QAction cutAction("Cut", this);
+    connect(&cutAction, &QAction::triggered, this, &SkeletonGraphicsWidget::cut);
+    cutAction.setEnabled(!nodeItemMap.empty());
+    contextMenu.addAction(&cutAction);
+    
+    QAction copyAction("Copy", this);
+    connect(&copyAction, &QAction::triggered, this, &SkeletonGraphicsWidget::copy);
+    copyAction.setEnabled(!nodeItemMap.empty());
+    contextMenu.addAction(&copyAction);
+    
+    QAction pasteAction("Paste", this);
+    connect(&pasteAction, &QAction::triggered, m_document, &SkeletonDocument::paste);
+    contextMenu.addAction(&pasteAction);
+    
     contextMenu.addSeparator();
     
     QAction selectAllAction("Select All", this);
@@ -621,6 +640,18 @@ bool SkeletonGraphicsWidget::keyPress(QKeyEvent *event)
                 emit redo();
             }
         }
+    } else if (event->key() == Qt::Key_X) {
+        if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
+            cut();
+        }
+    } else if (event->key() == Qt::Key_C) {
+        if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
+            copy();
+        }
+    } else if (event->key() == Qt::Key_V) {
+        if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
+            emit paste();
+        }
     }
     return false;
 }
@@ -630,6 +661,10 @@ void SkeletonGraphicsWidget::nodeAdded(QUuid nodeId)
     const SkeletonNode *node = m_document->findNode(nodeId);
     if (nullptr == node) {
         qDebug() << "New node added but node id not exist:" << nodeId;
+        return;
+    }
+    if (nodeItemMap.find(nodeId) != nodeItemMap.end()) {
+        qDebug() << "New node added but node item already exist:" << nodeId;
         return;
     }
     SkeletonGraphicsNodeItem *mainProfileItem = new SkeletonGraphicsNodeItem(SkeletonProfile::Main);
@@ -677,6 +712,10 @@ void SkeletonGraphicsWidget::edgeAdded(QUuid edgeId)
     auto toIt = nodeItemMap.find(toNodeId);
     if (toIt == nodeItemMap.end()) {
         qDebug() << "Node not found:" << toNodeId;
+        return;
+    }
+    if (edgeItemMap.find(edgeId) != edgeItemMap.end()) {
+        qDebug() << "New edge added but edge item already exist:" << edgeId;
         return;
     }
     SkeletonGraphicsEdgeItem *mainProfileEdgeItem = new SkeletonGraphicsEdgeItem();
@@ -980,3 +1019,26 @@ void SkeletonGraphicsWidget::unselectAll()
     }
     m_rangeSelectionSet.clear();
 }
+
+void SkeletonGraphicsWidget::cut()
+{
+    copy();
+    deleteSelected();
+}
+
+void SkeletonGraphicsWidget::copy()
+{
+    std::set<QUuid> nodeIdSet;
+    std::set<QUuid> edgeIdSet;
+    readSkeletonNodeAndEdgeIdSetFromRangeSelection(&nodeIdSet, &edgeIdSet);
+    if (nodeIdSet.empty())
+        return;
+    SkeletonSnapshot snapshot;
+    m_document->toSnapshot(&snapshot, nodeIdSet);
+    QString snapshotXml;
+    QXmlStreamWriter xmlStreamWriter(&snapshotXml);
+    saveSkeletonToXmlStream(&snapshot, &xmlStreamWriter);
+    QClipboard *clipboard = QApplication::clipboard();
+    clipboard->setText(snapshotXml);
+}
+

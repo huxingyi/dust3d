@@ -160,8 +160,9 @@ public:
     std::vector<QUuid> partIds;
     QImage turnaround;
     SkeletonDocumentEditMode editMode;
-    void toSnapshot(SkeletonSnapshot *snapshot);
+    void toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUuid> &limitNodeIds=std::set<QUuid>()) const;
     void fromSnapshot(const SkeletonSnapshot &snapshot);
+    void addFromSnapshot(const SkeletonSnapshot &snapshot);
     const SkeletonNode *findNode(QUuid nodeId) const;
     const SkeletonEdge *findEdge(QUuid edgeId) const;
     const SkeletonPart *findPart(QUuid partId) const;
@@ -191,6 +192,7 @@ public slots:
     void saveSnapshot();
     void undo();
     void redo();
+    void paste();
 private:
     void splitPartByNode(std::vector<std::vector<QUuid>> *groups, QUuid nodeId);
     void joinNodeAndNeiborsToGroup(std::vector<QUuid> *group, QUuid nodeId, std::set<QUuid> *visitMap, QUuid noUseEdgeId=QUuid());

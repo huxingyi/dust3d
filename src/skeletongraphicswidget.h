@@ -262,6 +262,7 @@ signals:
     void groupOperationAdded();
     void undo();
     void redo();
+    void paste();
 public:
     SkeletonGraphicsWidget(const SkeletonDocument *document);
     std::map<QUuid, std::pair<SkeletonGraphicsNodeItem *, SkeletonGraphicsNodeItem *>> nodeItemMap;
@@ -301,6 +302,8 @@ public slots:
     void selectAll();
     void unselectAll();
     void selectPartAll();
+    void cut();
+    void copy();
 private slots:
     void turnaroundImageReady();
 private:
