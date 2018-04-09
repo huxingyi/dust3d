@@ -181,6 +181,24 @@ void MeshGenerator::process()
         meshlite_bmesh_add_edge(meshliteContext, bmeshId, bmeshFromNodeId, bmeshToNodeId);
     }
     
+    for (const auto &nodeIt: m_snapshot->nodes) {
+        QString partId = valueOfKeyInMapOrEmpty(nodeIt.second, "partId");
+        const auto partBmeshIt = partBmeshMap.find(partId);
+        if (partBmeshIt == partBmeshMap.end())
+            continue;
+        const auto nodeBmeshIt = bmeshNodeMap.find(nodeIt.first);
+        if (nodeBmeshIt != bmeshNodeMap.end())
+            continue;
+        int bmeshId = partBmeshIt->second;
+        float radius = valueOfKeyInMapOrEmpty(nodeIt.second, "radius").toFloat() / longHeight;
+        float x = (valueOfKeyInMapOrEmpty(nodeIt.second, "x").toFloat() - mainProfileMiddleX) / longHeight;
+        float y = (valueOfKeyInMapOrEmpty(nodeIt.second, "y").toFloat() - mainProfileMiddleY) / longHeight;
+        float z = (valueOfKeyInMapOrEmpty(nodeIt.second, "z").toFloat() - sideProfileMiddleX) / longHeight;
+        int bmeshNodeId = meshlite_bmesh_add_node(meshliteContext, bmeshId, x, y, z, radius);
+        qDebug() << "bmeshId[" << bmeshId << "] add lonely node[" << bmeshNodeId << "]" << radius << x << y << z;
+        bmeshNodeMap[nodeIt.first] = bmeshNodeId;
+    }
+    
     std::map<QString, int> partMeshMap;
     std::vector<int> meshIds;
     for (const auto &partIdIt: m_snapshot->partIdList) {

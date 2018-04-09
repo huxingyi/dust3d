@@ -92,12 +92,12 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
     
     QAction cutAction("Cut", this);
     connect(&cutAction, &QAction::triggered, this, &SkeletonGraphicsWidget::cut);
-    cutAction.setEnabled(!nodeItemMap.empty());
+    cutAction.setEnabled(!m_rangeSelectionSet.empty());
     contextMenu.addAction(&cutAction);
     
     QAction copyAction("Copy", this);
     connect(&copyAction, &QAction::triggered, this, &SkeletonGraphicsWidget::copy);
-    copyAction.setEnabled(!nodeItemMap.empty());
+    copyAction.setEnabled(!m_rangeSelectionSet.empty());
     contextMenu.addAction(&copyAction);
     
     QAction pasteAction("Paste", this);
@@ -120,6 +120,26 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
     connect(&unselectAllAction, &QAction::triggered, this, &SkeletonGraphicsWidget::unselectAll);
     unselectAllAction.setEnabled(!m_rangeSelectionSet.empty());
     contextMenu.addAction(&unselectAllAction);
+    
+    contextMenu.addSeparator();
+    
+    QAction addMirrorAction("Mirror", this);
+    connect(&addMirrorAction, &QAction::triggered, this, &SkeletonGraphicsWidget::addMirror);
+    addMirrorAction.setEnabled(readSkeletonNodeAndAnyEdgeOfNodeFromRangeSelection(nullptr, nullptr));
+    contextMenu.addAction(&addMirrorAction);
+    
+    QAction deleteMirrorAction("Delete Mirror", this);
+    connect(&deleteMirrorAction, &QAction::triggered, this, &SkeletonGraphicsWidget::deleteMirror);
+    deleteMirrorAction.setEnabled(readSkeletonNodeAndAnyEdgeOfNodeFromRangeSelection(nullptr, nullptr));
+    contextMenu.addAction(&deleteMirrorAction);
+    
+    contextMenu.addSeparator();
+    
+    QAction changeTurnaroundAction("Change Turnaround..", this);
+    connect(&changeTurnaroundAction, &QAction::triggered, [=]() {
+        emit changeTurnaround();
+    });
+    contextMenu.addAction(&changeTurnaroundAction);
 
     contextMenu.exec(mapToGlobal(pos));
 }
@@ -589,6 +609,10 @@ QPointF SkeletonGraphicsWidget::scenePosFromUnified(QPointF pos)
 
 bool SkeletonGraphicsWidget::mouseDoubleClick(QMouseEvent *event)
 {
+    if (m_hoveredNodeItem || m_hoveredEdgeItem) {
+        selectPartAll();
+        return true;
+    }
     return false;
 }
 
@@ -947,6 +971,35 @@ void SkeletonGraphicsWidget::readSkeletonNodeAndEdgeIdSetFromRangeSelection(std:
     }
 }
 
+bool SkeletonGraphicsWidget::readSkeletonNodeAndAnyEdgeOfNodeFromRangeSelection(SkeletonGraphicsNodeItem **nodeItem, SkeletonGraphicsEdgeItem **edgeItem)
+{
+    SkeletonGraphicsNodeItem *choosenNodeItem = nullptr;
+    SkeletonGraphicsEdgeItem *choosenEdgeItem = nullptr;
+    for (const auto &it: m_rangeSelectionSet) {
+        QGraphicsItem *item = it;
+        if (item->data(0) == "node") {
+            choosenNodeItem = (SkeletonGraphicsNodeItem *)item;
+        } else if (item->data(0) == "edge") {
+            choosenEdgeItem = (SkeletonGraphicsEdgeItem *)item;
+        }
+        if (choosenNodeItem && choosenEdgeItem)
+            break;
+    }
+    if (!choosenNodeItem || !choosenEdgeItem)
+        return false;
+    if (choosenNodeItem->profile() != choosenEdgeItem->profile())
+        return false;
+    if (choosenNodeItem != choosenEdgeItem->firstItem() && choosenNodeItem != choosenEdgeItem->secondItem())
+        return false;
+    if (nodeItem)
+        *nodeItem = choosenNodeItem;
+    if (edgeItem)
+        *edgeItem = choosenEdgeItem;
+    if (m_rangeSelectionSet.size() != 2)
+        return false;
+    return true;
+}
+
 void SkeletonGraphicsWidget::selectPartAll()
 {
     unselectAll();
@@ -1041,4 +1094,3 @@ void SkeletonGraphicsWidget::copy()
     QClipboard *clipboard = QApplication::clipboard();
     clipboard->setText(snapshotXml);
 }
-
