@@ -324,6 +324,7 @@ private:
     void clearRangeSelection();
     void removeItem(QGraphicsItem *item);
     QVector2D centerOfNodeItemSet(const std::set<SkeletonGraphicsNodeItem *> &set);
+    bool isSingleNodeSelected();
 private:
     QGraphicsPixmapItem *m_backgroundItem;
     const SkeletonDocument *m_document;

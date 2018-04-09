@@ -83,56 +83,59 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
     });
     contextMenu.addAction(&addAction);
     
-    contextMenu.addSeparator();
-    
     QAction deleteAction("Delete", this);
-    connect(&deleteAction, &QAction::triggered, this, &SkeletonGraphicsWidget::deleteSelected);
-    deleteAction.setEnabled(!m_rangeSelectionSet.empty());
-    contextMenu.addAction(&deleteAction);
+    if (!m_rangeSelectionSet.empty()) {
+        connect(&deleteAction, &QAction::triggered, this, &SkeletonGraphicsWidget::deleteSelected);
+        contextMenu.addAction(&deleteAction);
+    }
     
     QAction cutAction("Cut", this);
-    connect(&cutAction, &QAction::triggered, this, &SkeletonGraphicsWidget::cut);
-    cutAction.setEnabled(!m_rangeSelectionSet.empty());
-    contextMenu.addAction(&cutAction);
+    if (!m_rangeSelectionSet.empty()) {
+        connect(&cutAction, &QAction::triggered, this, &SkeletonGraphicsWidget::cut);
+        contextMenu.addAction(&cutAction);
+    }
     
     QAction copyAction("Copy", this);
-    connect(&copyAction, &QAction::triggered, this, &SkeletonGraphicsWidget::copy);
-    copyAction.setEnabled(!m_rangeSelectionSet.empty());
-    contextMenu.addAction(&copyAction);
+    if (!m_rangeSelectionSet.empty()) {
+        connect(&copyAction, &QAction::triggered, this, &SkeletonGraphicsWidget::copy);
+        contextMenu.addAction(&copyAction);
+    }
     
     QAction pasteAction("Paste", this);
-    connect(&pasteAction, &QAction::triggered, m_document, &SkeletonDocument::paste);
-    pasteAction.setEnabled(m_document->hasPastableContentInClipboard());
-    contextMenu.addAction(&pasteAction);
-    
-    contextMenu.addSeparator();
+    if (m_document->hasPastableContentInClipboard()) {
+        connect(&pasteAction, &QAction::triggered, m_document, &SkeletonDocument::paste);
+        contextMenu.addAction(&pasteAction);
+    }
     
     QAction flipHorizontallyAction("H Flip", this);
-    connect(&flipHorizontallyAction, &QAction::triggered, this, &SkeletonGraphicsWidget::flipHorizontally);
-    flipHorizontallyAction.setEnabled(!m_rangeSelectionSet.empty());
-    contextMenu.addAction(&flipHorizontallyAction);
+    if (!m_rangeSelectionSet.empty() && !isSingleNodeSelected()) {
+        connect(&flipHorizontallyAction, &QAction::triggered, this, &SkeletonGraphicsWidget::flipHorizontally);
+        contextMenu.addAction(&flipHorizontallyAction);
+    }
     
     QAction flipVerticallyAction("V Flip", this);
-    connect(&flipVerticallyAction, &QAction::triggered, this, &SkeletonGraphicsWidget::flipVertically);
-    flipVerticallyAction.setEnabled(!m_rangeSelectionSet.empty());
-    contextMenu.addAction(&flipVerticallyAction);
-    
-    contextMenu.addSeparator();
+    if (!m_rangeSelectionSet.empty() && !isSingleNodeSelected()) {
+        connect(&flipVerticallyAction, &QAction::triggered, this, &SkeletonGraphicsWidget::flipVertically);
+        contextMenu.addAction(&flipVerticallyAction);
+    }
     
     QAction selectAllAction("Select All", this);
-    connect(&selectAllAction, &QAction::triggered, this, &SkeletonGraphicsWidget::selectAll);
-    selectAllAction.setEnabled(!nodeItemMap.empty());
-    contextMenu.addAction(&selectAllAction);
+    if (!nodeItemMap.empty()) {
+        connect(&selectAllAction, &QAction::triggered, this, &SkeletonGraphicsWidget::selectAll);
+        contextMenu.addAction(&selectAllAction);
+    }
     
     QAction selectPartAllAction("Select Part", this);
-    connect(&selectPartAllAction, &QAction::triggered, this, &SkeletonGraphicsWidget::selectPartAll);
-    selectPartAllAction.setEnabled(!nodeItemMap.empty());
-    contextMenu.addAction(&selectPartAllAction);
+    if (!nodeItemMap.empty()) {
+        connect(&selectPartAllAction, &QAction::triggered, this, &SkeletonGraphicsWidget::selectPartAll);
+        contextMenu.addAction(&selectPartAllAction);
+    }
     
     QAction unselectAllAction("Unselect All", this);
-    connect(&unselectAllAction, &QAction::triggered, this, &SkeletonGraphicsWidget::unselectAll);
-    unselectAllAction.setEnabled(!m_rangeSelectionSet.empty());
-    contextMenu.addAction(&unselectAllAction);
+    if (!m_rangeSelectionSet.empty()) {
+        connect(&unselectAllAction, &QAction::triggered, this, &SkeletonGraphicsWidget::unselectAll);
+        contextMenu.addAction(&unselectAllAction);
+    }
     
     contextMenu.addSeparator();
     
@@ -1138,5 +1141,12 @@ void SkeletonGraphicsWidget::copy()
     clipboard->setText(snapshotXml);
 }
 
-
+bool SkeletonGraphicsWidget::isSingleNodeSelected()
+{
+    if (m_rangeSelectionSet.size() != 1)
+        return false;
+    const auto &it = m_rangeSelectionSet.begin();
+    QGraphicsItem *item = *it;
+    return item->data(0) == "node";
+}
 
