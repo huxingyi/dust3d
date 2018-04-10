@@ -2,6 +2,21 @@ QT += core widgets opengl
 CONFIG += debug
 RESOURCES += resources.qrc
 
+HUMAN_VERSION = "0.0-alpha1"
+REPOSITORY_URL = "https://github.com/huxingyi/dust3d"
+ISSUES_URL = "https://github.com/huxingyi/dust3d/issues"
+VERSION = 0.0.0.1
+QMAKE_TARGET_COMPANY = Dust3D
+QMAKE_TARGET_PRODUCT = Dust3D
+QMAKE_TARGET_DESCRIPTION = "Aim to be a quick modeling tool for game development"
+QMAKE_TARGET_COPYRIGHT = "Copyright (C) 2018 Dust3D Project. All Rights Reserved."
+
+DEFINES += "APP_NAME=\"\\\"$$QMAKE_TARGET_PRODUCT\\\"\""
+DEFINES += "APP_VER=\"\\\"$$VERSION\\\"\""
+DEFINES += "APP_HUMAN_VER=\"\\\"$$HUMAN_VERSION\\\"\""
+DEFINES += "APP_REPOSITORY_URL=\"\\\"$$REPOSITORY_URL\\\"\""
+DEFINES += "APP_ISSUES_URL=\"\\\"$$ISSUES_URL\\\"\""
+
 include(thirdparty/QtAwesome/QtAwesome/QtAwesome.pri)
 
 INCLUDEPATH += src
@@ -29,6 +44,9 @@ HEADERS += src/skeletongraphicswidget.h
 
 SOURCES += src/skeletonpartlistwidget.cpp
 HEADERS += src/skeletonpartlistwidget.h
+
+SOURCES += src/aboutwidget.cpp
+HEADERS += src/aboutwidget.h
 
 SOURCES += src/meshgenerator.cpp
 HEADERS += src/meshgenerator.h

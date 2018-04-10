@@ -46,10 +46,12 @@ SkeletonGraphicsWidget::SkeletonGraphicsWidget(const SkeletonDocument *document)
     
     m_cursorNodeItem = new SkeletonGraphicsNodeItem();
     m_cursorNodeItem->hide();
+    m_cursorNodeItem->setData(0, "cursorNode");
     scene()->addItem(m_cursorNodeItem);
     
     m_cursorEdgeItem = new SkeletonGraphicsEdgeItem();
     m_cursorEdgeItem->hide();
+    m_cursorEdgeItem->setData(0, "cursorEdge");
     scene()->addItem(m_cursorEdgeItem);
     
     m_selectionItem = new SkeletonGraphicsSelectionItem();
@@ -77,7 +79,7 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
     
     QMenu contextMenu(this);
     
-    QAction addAction(tr("Add.."), this);
+    QAction addAction(tr("Add..."), this);
     connect(&addAction, &QAction::triggered, [=]() {
         emit setEditMode(SkeletonDocumentEditMode::Add);
     });
@@ -96,19 +98,19 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
     }
     
     QAction deleteAction(tr("Delete"), this);
-    if (!m_rangeSelectionSet.empty()) {
+    if (hasSelection()) {
         connect(&deleteAction, &QAction::triggered, this, &SkeletonGraphicsWidget::deleteSelected);
         contextMenu.addAction(&deleteAction);
     }
     
     QAction cutAction(tr("Cut"), this);
-    if (!m_rangeSelectionSet.empty()) {
+    if (hasSelection()) {
         connect(&cutAction, &QAction::triggered, this, &SkeletonGraphicsWidget::cut);
         contextMenu.addAction(&cutAction);
     }
     
     QAction copyAction(tr("Copy"), this);
-    if (!m_rangeSelectionSet.empty()) {
+    if (hasSelection()) {
         connect(&copyAction, &QAction::triggered, this, &SkeletonGraphicsWidget::copy);
         contextMenu.addAction(&copyAction);
     }
@@ -120,44 +122,65 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
     }
     
     QAction flipHorizontallyAction(tr("H Flip"), this);
-    if (!m_rangeSelectionSet.empty() && !isSingleNodeSelected()) {
+    if (hasMultipleSelection()) {
         connect(&flipHorizontallyAction, &QAction::triggered, this, &SkeletonGraphicsWidget::flipHorizontally);
         contextMenu.addAction(&flipHorizontallyAction);
     }
     
     QAction flipVerticallyAction(tr("V Flip"), this);
-    if (!m_rangeSelectionSet.empty() && !isSingleNodeSelected()) {
+    if (hasMultipleSelection()) {
         connect(&flipVerticallyAction, &QAction::triggered, this, &SkeletonGraphicsWidget::flipVertically);
         contextMenu.addAction(&flipVerticallyAction);
     }
     
     QAction selectAllAction(tr("Select All"), this);
-    if (!nodeItemMap.empty()) {
+    if (hasItems()) {
         connect(&selectAllAction, &QAction::triggered, this, &SkeletonGraphicsWidget::selectAll);
         contextMenu.addAction(&selectAllAction);
     }
     
     QAction selectPartAllAction(tr("Select Part"), this);
-    if (!nodeItemMap.empty()) {
+    if (hasItems()) {
         connect(&selectPartAllAction, &QAction::triggered, this, &SkeletonGraphicsWidget::selectPartAll);
         contextMenu.addAction(&selectPartAllAction);
     }
     
     QAction unselectAllAction(tr("Unselect All"), this);
-    if (!m_rangeSelectionSet.empty()) {
+    if (hasSelection()) {
         connect(&unselectAllAction, &QAction::triggered, this, &SkeletonGraphicsWidget::unselectAll);
         contextMenu.addAction(&unselectAllAction);
     }
     
     contextMenu.addSeparator();
     
-    QAction changeTurnaroundAction(tr("Change Turnaround.."), this);
+    QAction exportResultAction(tr("Export..."), this);
+    if (hasItems()) {
+        connect(&exportResultAction, &QAction::triggered, this, &SkeletonGraphicsWidget::exportResult);
+        contextMenu.addAction(&exportResultAction);
+    }
+    
+    QAction changeTurnaroundAction(tr("Change Turnaround..."), this);
     connect(&changeTurnaroundAction, &QAction::triggered, [=]() {
         emit changeTurnaround();
     });
     contextMenu.addAction(&changeTurnaroundAction);
 
     contextMenu.exec(mapToGlobal(pos));
+}
+
+bool SkeletonGraphicsWidget::hasSelection()
+{
+    return !m_rangeSelectionSet.empty();
+}
+
+bool SkeletonGraphicsWidget::hasItems()
+{
+    return !nodeItemMap.empty();
+}
+
+bool SkeletonGraphicsWidget::hasMultipleSelection()
+{
+    return !m_rangeSelectionSet.empty() && !isSingleNodeSelected();
 }
 
 void SkeletonGraphicsWidget::updateItems()
@@ -669,6 +692,10 @@ bool SkeletonGraphicsWidget::mouseDoubleClick(QMouseEvent *event)
         selectPartAll();
         return true;
     }
+    if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
+        emit open();
+        return true;
+    }
     return false;
 }
 
@@ -733,6 +760,10 @@ bool SkeletonGraphicsWidget::keyPress(QKeyEvent *event)
     } else if (event->key() == Qt::Key_V) {
         if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
             emit paste();
+        }
+    } else if (event->key() == Qt::Key_S) {
+        if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
+            emit save();
         }
     }
     return false;
@@ -1151,6 +1182,33 @@ void SkeletonGraphicsWidget::copy()
     saveSkeletonToXmlStream(&snapshot, &xmlStreamWriter);
     QClipboard *clipboard = QApplication::clipboard();
     clipboard->setText(snapshotXml);
+}
+
+void SkeletonGraphicsWidget::removeAllContent()
+{
+    nodeItemMap.clear();
+    edgeItemMap.clear();
+    m_rangeSelectionSet.clear();
+    m_hoveredEdgeItem = nullptr;
+    m_hoveredNodeItem = nullptr;
+    m_addFromNodeItem = nullptr;
+    m_cursorEdgeItem->hide();
+    m_cursorNodeItem->hide();
+    std::set<QGraphicsItem *> contentItems;
+    for (const auto &it: items()) {
+        QGraphicsItem *item = it;
+        if (item->data(0) == "node") {
+            contentItems.insert(item);
+        } else if (item->data(0) == "edge") {
+            contentItems.insert(item);
+        }
+    }
+    for (const auto &it: contentItems) {
+        QGraphicsItem *item = it;
+        Q_ASSERT(item != m_cursorEdgeItem);
+        Q_ASSERT(item != m_cursorNodeItem);
+        scene()->removeItem(item);
+    }
 }
 
 bool SkeletonGraphicsWidget::isSingleNodeSelected()

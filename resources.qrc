@@ -1,5 +1,6 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
-    <file>resources/dust3d_jezzasoft.png</file>
+    <file>resources/dust3d_vertical.png</file>
+    <file>ACKNOWLEDGEMENTS.html</file>
 </qresource>
 </RCC>

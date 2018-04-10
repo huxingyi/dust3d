@@ -123,6 +123,7 @@ signals:
     void partLockStateChanged(QUuid partId);
     void partVisibleStateChanged(QUuid partId);
     void partSubdivStateChanged(QUuid partId);
+    void cleanup();
 public:
     SkeletonDocument();
     ~SkeletonDocument();
@@ -168,6 +169,7 @@ public slots:
     void paste();
     void batchChangeBegin();
     void batchChangeEnd();
+    void reset();
 private:
     void splitPartByNode(std::vector<std::vector<QUuid>> *groups, QUuid nodeId);
     void joinNodeAndNeiborsToGroup(std::vector<QUuid> *group, QUuid nodeId, std::set<QUuid> *visitMap, QUuid noUseEdgeId=QUuid());

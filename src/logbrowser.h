@@ -14,6 +14,9 @@ public:
 
 public slots:
     void outputMessage(QtMsgType type, const QString &msg);
+    void showDialog();
+    void hideDialog();
+    bool isDialogVisible();
 
 signals:
     void sendMessage(QtMsgType type, const QString &msg);

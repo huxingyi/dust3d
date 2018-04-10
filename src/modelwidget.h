@@ -47,6 +47,12 @@ protected:
     void mouseMoveEvent(QMouseEvent *event) override;
     void wheelEvent(QWheelEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
+    
+public:
+    int xRot();
+    int yRot();
+    int zRot();
+    
 private:
     int m_xRot;
     int m_yRot;

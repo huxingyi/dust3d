@@ -9,12 +9,28 @@ LogBrowser::LogBrowser(QObject *parent) :
     qRegisterMetaType<QtMsgType>("QtMsgType");
     m_browserDialog = new LogBrowserDialog;
     connect(this, SIGNAL(sendMessage(QtMsgType,QString)), m_browserDialog, SLOT(outputMessage(QtMsgType,QString)), Qt::QueuedConnection);
-    m_browserDialog->show();
 }
 
 LogBrowser::~LogBrowser()
 {
     delete m_browserDialog;
+}
+
+void LogBrowser::showDialog()
+{
+    m_browserDialog->show();
+    m_browserDialog->activateWindow();
+    m_browserDialog->raise();
+}
+
+void LogBrowser::hideDialog()
+{
+    m_browserDialog->hide();
+}
+
+bool LogBrowser::isDialogVisible()
+{
+    return m_browserDialog->isVisible();
 }
 
 void LogBrowser::outputMessage(QtMsgType type, const QString &msg)

@@ -37,6 +37,21 @@ ModelWidget::ModelWidget(QWidget *parent)
     setMouseTracking(true);
 }
 
+int ModelWidget::xRot()
+{
+    return m_xRot;
+}
+
+int ModelWidget::yRot()
+{
+    return m_yRot;
+}
+
+int ModelWidget::zRot()
+{
+    return m_zRot;
+}
+
 void ModelWidget::setGraphicsFunctions(SkeletonGraphicsFunctions *graphicsFunctions)
 {
     m_graphicsFunctions = graphicsFunctions;

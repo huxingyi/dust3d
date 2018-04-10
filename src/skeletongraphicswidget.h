@@ -266,6 +266,9 @@ signals:
     void changeTurnaround();
     void batchChangeBegin();
     void batchChangeEnd();
+    void save();
+    void open();
+    void exportResult();
 public:
     SkeletonGraphicsWidget(const SkeletonDocument *document);
     std::map<QUuid, std::pair<SkeletonGraphicsNodeItem *, SkeletonGraphicsNodeItem *>> nodeItemMap;
@@ -281,6 +284,9 @@ public:
     void readMergedSkeletonNodeSetFromRangeSelection(std::set<SkeletonGraphicsNodeItem *> *nodeItemSet);
     void readSkeletonNodeAndEdgeIdSetFromRangeSelection(std::set<QUuid> *nodeIdSet, std::set<QUuid> *edgeIdSet);
     bool readSkeletonNodeAndAnyEdgeOfNodeFromRangeSelection(SkeletonGraphicsNodeItem **nodeItem, SkeletonGraphicsEdgeItem **edgeItem);
+    bool hasSelection();
+    bool hasItems();
+    bool hasMultipleSelection();
 protected:
     void mouseMoveEvent(QMouseEvent *event);
     void wheelEvent(QWheelEvent *event);
@@ -310,6 +316,7 @@ public slots:
     void copy();
     void flipHorizontally();
     void flipVertically();
+    void removeAllContent();
 private slots:
     void turnaroundImageReady();
 private:

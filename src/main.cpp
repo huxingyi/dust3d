@@ -2,20 +2,10 @@
 #include <QDesktopWidget>
 #include <QStyleFactory>
 #include <QFontDatabase>
-#include <QPointer>
 #include <QDebug>
 #include <QtGlobal>
-#include "logbrowser.h"
 #include "skeletondocumentwindow.h"
 #include "theme.h"
-
-QPointer<LogBrowser> g_logBrowser;
-
-void outputMessage(QtMsgType type, const QMessageLogContext &context, const QString &msg)
-{
-    if (g_logBrowser)
-        g_logBrowser->outputMessage(type, msg);
-}
 
 int main(int argc, char ** argv)
 {
@@ -49,11 +39,8 @@ int main(int argc, char ** argv)
     font.setPixelSize(9);
     font.setBold(false);
     QApplication::setFont(font);
-
-    g_logBrowser = new LogBrowser;
-    qInstallMessageHandler(&outputMessage);
     
-    SkeletonDocumentWindow mainWindow;
-    mainWindow.showMaximized();
+    SkeletonDocumentWindow::createDocumentWindow();
+    
     return app.exec();
 }

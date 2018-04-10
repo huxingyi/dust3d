@@ -26,6 +26,7 @@ SkeletonDocument::~SkeletonDocument()
 
 void SkeletonDocument::uiReady()
 {
+    qDebug() << "uiReady";
     emit editModeChanged();
 }
 
@@ -615,24 +616,19 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot)
     emit skeletonChanged();
 }
 
-void SkeletonDocument::fromSnapshot(const SkeletonSnapshot &snapshot)
+void SkeletonDocument::reset()
 {
-    for (const auto &nodeIt: nodeMap) {
-        emit nodeRemoved(nodeIt.first);
-    }
-    for (const auto &edgeIt: edgeMap) {
-        emit edgeRemoved(edgeIt.first);
-    }
-    for (const auto &partIt : partMap) {
-        emit partRemoved(partIt.first);
-    }
-    
     nodeMap.clear();
     edgeMap.clear();
     partMap.clear();
     partIds.clear();
-    emit partListChanged();
-    
+    emit cleanup();
+    emit skeletonChanged();
+}
+
+void SkeletonDocument::fromSnapshot(const SkeletonSnapshot &snapshot)
+{
+    reset();
     addFromSnapshot(snapshot);
 }
 

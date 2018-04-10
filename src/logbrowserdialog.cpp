@@ -38,6 +38,8 @@ LogBrowserDialog::LogBrowserDialog(QWidget *parent) :
     connect(m_saveButton, SIGNAL(clicked()), this, SLOT(save()));
 
     resize(400, 300);
+    
+    hide();
 }
 
 
@@ -100,15 +102,8 @@ void LogBrowserDialog::save()
 
 void LogBrowserDialog::closeEvent(QCloseEvent *e)
 {
-    QMessageBox::StandardButton answer = QMessageBox::question(this,
-        tr("Close Log Browser?"),
-        tr("Do you really want to close the log browser?"),
-        QMessageBox::Yes | QMessageBox::No);
-
-    if (answer == QMessageBox::Yes)
-        e->accept();
-    else
-        e->ignore();
+    e->ignore();
+    hide();
 }
 
 void LogBrowserDialog::keyPressEvent(QKeyEvent *e)
