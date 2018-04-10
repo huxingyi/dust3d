@@ -607,7 +607,10 @@ bool SkeletonGraphicsWidget::mousePress(QMouseEvent *event)
                 QPointF sideProfile = mainProfile;
                 if (m_addFromNodeItem) {
                     auto itemIt = nodeItemMap.find(m_addFromNodeItem->id());
-                    sideProfile.setX(itemIt->second.second->origin().x());
+                    if (SkeletonProfile::Main == m_addFromNodeItem->profile())
+                        sideProfile.setX(itemIt->second.second->origin().x());
+                    else
+                        mainProfile.setX(itemIt->second.first->origin().x());
                 } else {
                     if (mainProfile.x() >= scene()->width() / 2) {
                         sideProfile.setX(mainProfile.x() - scene()->width() / 4);
@@ -636,11 +639,9 @@ bool SkeletonGraphicsWidget::mousePress(QMouseEvent *event)
                         clearRangeSelection();
                     }
                     if (m_hoveredNodeItem) {
-                        m_hoveredNodeItem->setChecked(true);
-                        m_rangeSelectionSet.insert(m_hoveredNodeItem);
+                        addItemToRangeSelection(m_hoveredNodeItem);
                     } else if (m_hoveredEdgeItem) {
-                        m_hoveredEdgeItem->setChecked(true);
-                        m_rangeSelectionSet.insert(m_hoveredEdgeItem);
+                        addItemToRangeSelection(m_hoveredEdgeItem);
                     }
                 }
                 if (!m_rangeSelectionSet.empty()) {
@@ -958,6 +959,10 @@ void SkeletonGraphicsWidget::partVisibleStateChanged(QUuid partId)
 
 bool SkeletonGraphicsWidget::checkSkeletonItem(QGraphicsItem *item, bool checked)
 {
+    if (checked) {
+        if (!item->isVisible())
+            return false;
+    }
     if (item->data(0) == "node") {
         SkeletonGraphicsNodeItem *nodeItem = (SkeletonGraphicsNodeItem *)item;
         if (checked != nodeItem->checked())
@@ -1115,8 +1120,7 @@ void SkeletonGraphicsWidget::selectPartAll()
         }
         if (node->partId != choosenPartId)
             continue;
-        checkSkeletonItem(item, true);
-        m_rangeSelectionSet.insert(item);
+        addItemToRangeSelection(item);
     }
     for (const auto &it: edgeItemMap) {
         SkeletonGraphicsEdgeItem *item = SkeletonProfile::Main == choosenProfile ? it.second.first : it.second.second;
@@ -1128,8 +1132,7 @@ void SkeletonGraphicsWidget::selectPartAll()
         }
         if (edge->partId != choosenPartId)
             continue;
-        checkSkeletonItem(item, true);
-        m_rangeSelectionSet.insert(item);
+        addItemToRangeSelection(item);
     }
 }
 
@@ -1144,14 +1147,26 @@ void SkeletonGraphicsWidget::selectAll()
     }
     for (const auto &it: nodeItemMap) {
         SkeletonGraphicsNodeItem *item = SkeletonProfile::Main == choosenProfile ? it.second.first : it.second.second;
-        checkSkeletonItem(item, true);
-        m_rangeSelectionSet.insert(item);
+        addItemToRangeSelection(item);
     }
     for (const auto &it: edgeItemMap) {
         SkeletonGraphicsEdgeItem *item = SkeletonProfile::Main == choosenProfile ? it.second.first : it.second.second;
-        checkSkeletonItem(item, true);
-        m_rangeSelectionSet.insert(item);
+        addItemToRangeSelection(item);
     }
+}
+
+void SkeletonGraphicsWidget::addItemToRangeSelection(QGraphicsItem *item)
+{
+    if (!item->isVisible())
+        return;
+    checkSkeletonItem(item, true);
+    m_rangeSelectionSet.insert(item);
+}
+
+void SkeletonGraphicsWidget::removeItemFromRangeSelection(QGraphicsItem *item)
+{
+    checkSkeletonItem(item, false);
+    m_rangeSelectionSet.erase(item);
 }
 
 void SkeletonGraphicsWidget::unselectAll()
