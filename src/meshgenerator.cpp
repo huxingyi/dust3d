@@ -102,11 +102,11 @@ void MeshGenerator::resolveBoundingBox(QRectF *mainProfile, QRectF *sideProfile)
             top = y - radius;
             topFirstTime = false;
         }
-        if (rightFirstTime > right) {
+        if (rightFirstTime || x + radius > right) {
             right = x + radius;
             rightFirstTime = false;
         }
-        if (bottomFirstTime > bottom) {
+        if (bottomFirstTime || y + radius > bottom) {
             bottom = y + radius;
             bottomFirstTime = false;
         }
@@ -114,7 +114,7 @@ void MeshGenerator::resolveBoundingBox(QRectF *mainProfile, QRectF *sideProfile)
             zLeft = z - radius;
             zLeftFirstTime = false;
         }
-        if (zRightFirstTime > zRight) {
+        if (zRightFirstTime || z + radius > zRight) {
             zRight = z + radius;
             zRightFirstTime = false;
         }
