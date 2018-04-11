@@ -11,11 +11,11 @@ QMAKE_TARGET_PRODUCT = Dust3D
 QMAKE_TARGET_DESCRIPTION = "Aim to be a quick modeling tool for game development"
 QMAKE_TARGET_COPYRIGHT = "Copyright (C) 2018 Dust3D Project. All Rights Reserved."
 
-DEFINES += "APP_NAME=\"\\\"$$QMAKE_TARGET_PRODUCT\\\"\""
-DEFINES += "APP_VER=\"\\\"$$VERSION\\\"\""
-DEFINES += "APP_HUMAN_VER=\"\\\"$$HUMAN_VERSION\\\"\""
-DEFINES += "APP_REPOSITORY_URL=\"\\\"$$REPOSITORY_URL\\\"\""
-DEFINES += "APP_ISSUES_URL=\"\\\"$$ISSUES_URL\\\"\""
+DEFINES += "PROJECT_DEFINED_APP_NAME=\"\\\"$$QMAKE_TARGET_PRODUCT\\\"\""
+DEFINES += "PROJECT_DEFINED_APP_VER=\"\\\"$$VERSION\\\"\""
+DEFINES += "PROJECT_DEFINED_APP_HUMAN_VER=\"\\\"$$HUMAN_VERSION\\\"\""
+DEFINES += "PROJECT_DEFINED_APP_REPOSITORY_URL=\"\\\"$$REPOSITORY_URL\\\"\""
+DEFINES += "PROJECT_DEFINED_APP_ISSUES_URL=\"\\\"$$ISSUES_URL\\\"\""
 
 include(thirdparty/QtAwesome/QtAwesome/QtAwesome.pri)
 
@@ -82,6 +82,8 @@ SOURCES += src/logbrowserdialog.cpp
 HEADERS += src/logbrowserdialog.h
 
 SOURCES += src/main.cpp
+
+HEADERS += src/version.h
 
 INCLUDEPATH += ../meshlite/include
 LIBS += -L../meshlite/target/debug -lmeshlite

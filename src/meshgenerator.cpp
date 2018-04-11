@@ -119,8 +119,11 @@ void MeshGenerator::resolveBoundingBox(QRectF *mainProfile, QRectF *sideProfile)
             zRightFirstTime = false;
         }
     }
-    *mainProfile = QRectF(left, top, right - left, bottom - top);
-    *sideProfile = QRectF(zLeft, top, zRight - zLeft, bottom - top);
+    *mainProfile = QRectF(QPointF(left, top), QPointF(right, bottom));
+    *sideProfile = QRectF(QPointF(zLeft, top), QPointF(zRight, bottom));
+    qDebug() << "resolveBoundingBox left:" << left << "top:" << top << "right:" << right << "bottom:" << bottom << " zLeft:" << zLeft << "zRight:" << zRight;
+    qDebug() << "mainHeight:" << mainProfile->height() << "mainWidth:" << mainProfile->width();
+    qDebug() << "sideHeight:" << sideProfile->height() << "sideWidth:" << sideProfile->width();
 }
 
 void MeshGenerator::process()

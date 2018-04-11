@@ -1,6 +1,7 @@
 #include <QTextEdit>
 #include <QVBoxLayout>
 #include "aboutwidget.h"
+#include "version.h"
 
 AboutWidget::AboutWidget()
 {

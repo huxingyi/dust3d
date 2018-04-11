@@ -24,6 +24,7 @@
 #include "logbrowser.h"
 #include "util.h"
 #include "aboutwidget.h"
+#include "version.h"
 
 QPointer<LogBrowser> g_logBrowser;
 std::set<SkeletonDocumentWindow *> g_documentWindows;
