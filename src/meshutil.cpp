@@ -139,7 +139,7 @@ ExactMesh *unionCgalMeshs(ExactMesh *first, ExactMesh *second)
 
 #endif
 
-int unionMeshs(void *meshliteContext, const std::vector<int> &meshIds)
+int unionMeshs(void *meshliteContext, const std::vector<int> &meshIds, int *errorCount)
 {
 #if USE_CGAL == 1
     CGAL::set_error_behaviour(CGAL::THROW_EXCEPTION);
@@ -158,14 +158,13 @@ int unionMeshs(void *meshliteContext, const std::vector<int> &meshIds)
             try {
                 unionedExternalMesh = unionCgalMeshs(mergedExternalMesh, externalMeshs[i]);
             } catch (...) {
-                // ignore;
+                if (errorCount)
+                    (*errorCount)++;
             }
             delete externalMeshs[i];
             if (unionedExternalMesh) {
                 delete mergedExternalMesh;
                 mergedExternalMesh = unionedExternalMesh;
-            } else {
-                // TOOD:
             }
         }
         if (mergedExternalMesh) {
@@ -199,7 +198,7 @@ int subdivMesh(void *meshliteContext, int meshId)
 //    return makeMeshliteMeshFromCgal<SimpleKernel>(meshliteContext, simpleMesh);
 //#else
     if (0 == meshlite_is_triangulated_manifold(meshliteContext, triangulatedMeshId)) {
-        return meshId;
+        return 0;
     }
     return meshlite_subdivide(meshliteContext, meshId);
 //#endif

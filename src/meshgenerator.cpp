@@ -8,6 +8,8 @@
 #include "meshutil.h"
 #include "theme.h"
 
+bool MeshGenerator::enableDebug = false;
+
 MeshGenerator::MeshGenerator(SkeletonSnapshot *snapshot, QThread *thread) :
     m_snapshot(snapshot),
     m_mesh(nullptr),
@@ -75,34 +77,46 @@ QImage *MeshGenerator::takePartPreview(const QString &partId)
 
 void MeshGenerator::resolveBoundingBox(QRectF *mainProfile, QRectF *sideProfile)
 {
-    float left = -1;
-    float right = -1;
-    float top = -1;
-    float bottom = -1;
-    float zLeft = -1;
-    float zRight = -1;
+    float left = 0;
+    bool leftFirstTime = true;
+    float right = 0;
+    bool rightFirstTime = true;
+    float top = 0;
+    bool topFirstTime = true;
+    float bottom = 0;
+    bool bottomFirstTime = true;
+    float zLeft = 0;
+    bool zLeftFirstTime = true;
+    float zRight = 0;
+    bool zRightFirstTime = true;
     for (const auto &nodeIt: m_snapshot->nodes) {
         float radius = valueOfKeyInMapOrEmpty(nodeIt.second, "radius").toFloat();
         float x = valueOfKeyInMapOrEmpty(nodeIt.second, "x").toFloat();
         float y = valueOfKeyInMapOrEmpty(nodeIt.second, "y").toFloat();
         float z = valueOfKeyInMapOrEmpty(nodeIt.second, "z").toFloat();
-        if (left < 0 || x - radius < left) {
+        if (leftFirstTime || x - radius < left) {
             left = x - radius;
+            leftFirstTime = false;
         }
-        if (top < 0 || y - radius < top) {
+        if (topFirstTime || y - radius < top) {
             top = y - radius;
+            topFirstTime = false;
         }
-        if (x + radius > right) {
+        if (rightFirstTime > right) {
             right = x + radius;
+            rightFirstTime = false;
         }
-        if (y + radius > bottom) {
+        if (bottomFirstTime > bottom) {
             bottom = y + radius;
+            bottomFirstTime = false;
         }
-        if (zLeft < 0 || z - radius < zLeft) {
+        if (zLeftFirstTime || z - radius < zLeft) {
             zLeft = z - radius;
+            zLeftFirstTime = false;
         }
-        if (z + radius > zRight) {
+        if (zRightFirstTime > zRight) {
             zRight = z + radius;
+            zRightFirstTime = false;
         }
     }
     *mainProfile = QRectF(left, top, right - left, bottom - top);
@@ -117,7 +131,6 @@ void MeshGenerator::process()
     void *meshliteContext = meshlite_create_context();
     std::map<QString, int> partBmeshMap;
     std::map<QString, int> bmeshNodeMap;
-    bool hasSubdiv = false;
     
     QRectF mainProfile, sideProfile;
     resolveBoundingBox(&mainProfile, &sideProfile);
@@ -132,6 +145,8 @@ void MeshGenerator::process()
     
     for (const auto &partIdIt: m_snapshot->partIdList) {
         int bmeshId = meshlite_bmesh_create(meshliteContext);
+        if (MeshGenerator::enableDebug)
+            meshlite_bmesh_enable_debug(meshliteContext, bmeshId, 1);
         partBmeshMap[partIdIt] = bmeshId;
     }
     
@@ -200,38 +215,64 @@ void MeshGenerator::process()
         bmeshNodeMap[nodeIt.first] = bmeshNodeId;
     }
     
-    std::map<QString, int> partMeshMap;
     std::vector<int> meshIds;
+    std::vector<int> subdivMeshIds;
     for (const auto &partIdIt: m_snapshot->partIdList) {
         const auto part = m_snapshot->parts.find(partIdIt);
         int bmeshId = partBmeshMap[partIdIt];
-        int meshId = meshlite_bmesh_generate_mesh(meshliteContext, bmeshId, 0);
-        if (isTrueValueString(part->second["subdived"])) {
-            int subdivedMeshId = subdivMesh(meshliteContext, meshId);
-            if (subdivedMeshId > 0) {
-                meshId = subdivedMeshId;
-                hasSubdiv = true;
-            }
-        }
+        int meshId = meshlite_bmesh_generate_mesh(meshliteContext, bmeshId);
+        bool subdived = isTrueValueString(part->second["subdived"]);
         if (m_requirePartPreviewMap.find(partIdIt) != m_requirePartPreviewMap.end()) {
             ModelOfflineRender *render = m_partPreviewRenderMap[partIdIt];
             int trimedMeshId = meshlite_trim(meshliteContext, meshId, 1);
+            if (subdived) {
+                int subdivedMeshId = subdivMesh(meshliteContext, trimedMeshId);
+                if (subdivedMeshId > 0) {
+                    trimedMeshId = subdivedMeshId;
+                }
+            }
             render->updateMesh(new Mesh(meshliteContext, trimedMeshId));
             QImage *image = new QImage(render->toImage(QSize(Theme::previewImageSize, Theme::previewImageSize)));
             m_partPreviewMap[partIdIt] = image;
         }
-        int triangulatedMeshId = meshlite_triangulate(meshliteContext, meshId);
-        meshIds.push_back(triangulatedMeshId);
+        if (subdived)
+            subdivMeshIds.push_back(meshId);
+        else
+            meshIds.push_back(meshId);
+    }
+    
+    bool broken = false;
+    if (!subdivMeshIds.empty()) {
+        int mergedMeshId = 0;
+        int errorCount = 0;
+        mergedMeshId = unionMeshs(meshliteContext, subdivMeshIds, &errorCount);
+        if (errorCount)
+            broken = true;
+        else if (mergedMeshId > 0)
+            mergedMeshId = meshlite_combine_coplanar_faces(meshliteContext, mergedMeshId);
+        if (mergedMeshId > 0) {
+            int subdivedMeshId = subdivMesh(meshliteContext, mergedMeshId);
+            if (subdivedMeshId > 0)
+                mergedMeshId = subdivedMeshId;
+            else
+                broken = true;
+        }
+        if (mergedMeshId > 0)
+            meshIds.push_back(mergedMeshId);
+        else
+            broken = true;
     }
     
     int mergedMeshId = 0;
     if (meshIds.size() > 1) {
-        mergedMeshId = unionMeshs(meshliteContext, meshIds);
+        int errorCount = 0;
+        mergedMeshId = unionMeshs(meshliteContext, meshIds, &errorCount);
+        if (errorCount)
+            broken = true;
+        else if (mergedMeshId > 0)
+            mergedMeshId = meshlite_combine_coplanar_faces(meshliteContext, mergedMeshId);
     } else if (meshIds.size() > 0) {
         mergedMeshId = meshIds[0];
-    }
-    if (mergedMeshId > 0 && !hasSubdiv) {
-        mergedMeshId = meshlite_combine_coplanar_faces(meshliteContext, mergedMeshId);
     }
     
     if (mergedMeshId > 0) {
@@ -241,7 +282,7 @@ void MeshGenerator::process()
             m_preview = image;
         }
         int trimedMeshId = meshlite_trim(meshliteContext, mergedMeshId, 1);
-        m_mesh = new Mesh(meshliteContext, trimedMeshId);
+        m_mesh = new Mesh(meshliteContext, trimedMeshId, broken);
     }
     
     if (m_previewRender) {

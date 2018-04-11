@@ -24,7 +24,7 @@ typedef struct
 class Mesh
 {
 public:
-    Mesh(void *meshlite, int meshId);
+    Mesh(void *meshlite, int meshId, bool broken=false);
     ~Mesh();
     Vertex *triangleVertices();
     int triangleVertexCount();
@@ -32,6 +32,7 @@ public:
     int edgeVertexCount();
     const std::vector<QVector3D> &vertices();
     const std::vector<std::vector<int>> &faces();
+    void setBroken(bool broken);
 private:
     Vertex *m_triangleVertices;
     int m_triangleVertexCount;
@@ -39,6 +40,7 @@ private:
     int m_edgeVertexCount;
     std::vector<QVector3D> m_vertices;
     std::vector<std::vector<int>> m_faces;
+    bool m_broken;
 };
 
 #endif

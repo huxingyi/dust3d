@@ -5,11 +5,12 @@
 
 #define MAX_VERTICES_PER_FACE   100
 
-Mesh::Mesh(void *meshlite, int meshId) :
+Mesh::Mesh(void *meshlite, int meshId, bool broken) :
     m_triangleVertices(NULL),
     m_triangleVertexCount(0),
     m_edgeVertices(NULL),
-    m_edgeVertexCount(0)
+    m_edgeVertexCount(0),
+    m_broken(broken)
 {
     int edgeVertexPositionCount = meshlite_get_vertex_count(meshlite, meshId);
     GLfloat *edgeVertexPositions = new GLfloat[edgeVertexPositionCount * 3];
@@ -82,6 +83,11 @@ Mesh::Mesh(void *meshlite, int meshId) :
     float modelR = Theme::white.redF();
     float modelG = Theme::white.greenF();
     float modelB = Theme::white.blueF();
+    if (m_broken) {
+        modelR = 1.0;
+        modelG = 1.0;
+        modelB = 1.0;
+    }
     m_triangleVertexCount = triangleCount * 3;
     m_triangleVertices = new Vertex[m_triangleVertexCount * 3];
     for (int i = 0; i < triangleCount; i++) {
@@ -117,6 +123,11 @@ Mesh::~Mesh()
 {
     delete[] m_triangleVertices;
     m_triangleVertexCount = 0;
+}
+
+void Mesh::setBroken(bool broken)
+{
+    m_broken = broken;
 }
 
 const std::vector<QVector3D> &Mesh::vertices()

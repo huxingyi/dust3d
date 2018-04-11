@@ -37,6 +37,7 @@ private:
     QThread *m_thread;
 private:
     void resolveBoundingBox(QRectF *mainProfile, QRectF *sideProfile);
+    static bool enableDebug;
 };
 
 #endif
