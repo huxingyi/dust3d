@@ -78,6 +78,13 @@ public:
     {
         id = withId.isNull() ? QUuid::createUuid() : withId;
     }
+    void copyAttributes(const SkeletonPart &other)
+    {
+        visible = other.visible;
+        locked = other.locked;
+        subdived = other.subdived;
+        disabled = other.disabled;
+    }
 };
 
 enum class SkeletonProfile

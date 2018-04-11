@@ -54,6 +54,7 @@ void SkeletonDocument::removeEdge(QUuid edgeId)
     splitPartByEdge(&groups, edgeId);
     for (auto groupIt = groups.begin(); groupIt != groups.end(); groupIt++) {
         SkeletonPart part;
+        part.copyAttributes(*oldPart);
         part.name = nextPartName;
         for (auto nodeIdIt = (*groupIt).begin(); nodeIdIt != (*groupIt).end(); nodeIdIt++) {
             auto nodeIt = nodeMap.find(*nodeIdIt);
@@ -115,6 +116,7 @@ void SkeletonDocument::removeNode(QUuid nodeId)
     splitPartByNode(&groups, nodeId);
     for (auto groupIt = groups.begin(); groupIt != groups.end(); groupIt++) {
         SkeletonPart part;
+        part.copyAttributes(*oldPart);
         part.name = nextPartName;
         for (auto nodeIdIt = (*groupIt).begin(); nodeIdIt != (*groupIt).end(); nodeIdIt++) {
             auto nodeIt = nodeMap.find(*nodeIdIt);
