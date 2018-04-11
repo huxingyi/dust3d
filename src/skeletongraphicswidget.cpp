@@ -766,7 +766,11 @@ bool SkeletonGraphicsWidget::keyPress(QKeyEvent *event)
     } else if (event->key() == Qt::Key_S) {
         if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
             emit save();
+        } else {
+            emit setEditMode(SkeletonDocumentEditMode::Select);
         }
+    } else if (event->key() == Qt::Key_D) {
+        emit setEditMode(SkeletonDocumentEditMode::Drag);
     }
     return false;
 }
