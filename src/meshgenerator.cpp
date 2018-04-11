@@ -225,6 +225,8 @@ void MeshGenerator::process()
         bmeshNodeMap[nodeIt.first] = bmeshNodeId;
     }
     
+    bool broken = false;
+    
     std::vector<int> meshIds;
     std::vector<int> subdivMeshIds;
     for (const auto &partIdIt: m_snapshot->partIdList) {
@@ -237,6 +239,8 @@ void MeshGenerator::process()
             continue;
         int bmeshId = partBmeshMap[partIdIt];
         int meshId = meshlite_bmesh_generate_mesh(meshliteContext, bmeshId);
+        if (meshlite_bmesh_error_count(meshliteContext, bmeshId) != 0)
+            broken = true;
         bool subdived = isTrueValueString(part->second["subdived"]);
         if (m_requirePartPreviewMap.find(partIdIt) != m_requirePartPreviewMap.end()) {
             ModelOfflineRender *render = m_partPreviewRenderMap[partIdIt];
@@ -257,14 +261,17 @@ void MeshGenerator::process()
             meshIds.push_back(meshId);
     }
     
-    bool broken = false;
     if (!subdivMeshIds.empty()) {
         int mergedMeshId = 0;
-        int errorCount = 0;
-        mergedMeshId = unionMeshs(meshliteContext, subdivMeshIds, &errorCount);
-        if (errorCount)
-            broken = true;
-        else if (mergedMeshId > 0)
+        if (subdivMeshIds.size() > 1) {
+            int errorCount = 0;
+            mergedMeshId = unionMeshs(meshliteContext, subdivMeshIds, &errorCount);
+            if (errorCount)
+                broken = true;
+        } else {
+            mergedMeshId = subdivMeshIds[0];
+        }
+        if (mergedMeshId > 0)
             mergedMeshId = meshlite_combine_coplanar_faces(meshliteContext, mergedMeshId);
         if (mergedMeshId > 0) {
             int subdivedMeshId = subdivMesh(meshliteContext, mergedMeshId);
