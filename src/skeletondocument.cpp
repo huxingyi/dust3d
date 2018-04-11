@@ -500,6 +500,7 @@ void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUu
         part["visible"] = partIt.second.visible ? "true" : "false";
         part["locked"] = partIt.second.locked ? "true" : "false";
         part["subdived"] = partIt.second.subdived ? "true" : "false";
+        part["disabled"] = partIt.second.disabled ? "true" : "false";
         if (!partIt.second.name.isEmpty())
             part["name"] = partIt.second.name;
         snapshot->parts[part["id"]] = part;
@@ -553,6 +554,7 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot)
         part.visible = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "visible"));
         part.locked = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "locked"));
         part.subdived = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "subdived"));
+        part.disabled = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "disabled"));
         partMap[part.id] = part;
     }
     for (const auto &nodeKv : snapshot.nodes) {
@@ -743,7 +745,6 @@ void SkeletonDocument::setPartVisibleState(QUuid partId, bool visible)
         return;
     part->second.visible = visible;
     emit partVisibleStateChanged(partId);
-    emit skeletonChanged();
 }
 
 void SkeletonDocument::setPartSubdivState(QUuid partId, bool subdived)
@@ -757,6 +758,20 @@ void SkeletonDocument::setPartSubdivState(QUuid partId, bool subdived)
         return;
     part->second.subdived = subdived;
     emit partSubdivStateChanged(partId);
+    emit skeletonChanged();
+}
+
+void SkeletonDocument::setPartDisableState(QUuid partId, bool disabled)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    if (part->second.disabled == disabled)
+        return;
+    part->second.disabled = disabled;
+    emit partDisableStateChanged(partId);
     emit skeletonChanged();
 }
 

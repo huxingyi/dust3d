@@ -67,12 +67,14 @@ public:
     bool visible;
     bool locked;
     bool subdived;
+    bool disabled;
     QImage preview;
     std::vector<QUuid> nodeIds;
     SkeletonPart(const QUuid &withId=QUuid()) :
         visible(true),
         locked(false),
-        subdived(false)
+        subdived(false),
+        disabled(false)
     {
         id = withId.isNull() ? QUuid::createUuid() : withId;
     }
@@ -123,6 +125,7 @@ signals:
     void partLockStateChanged(QUuid partId);
     void partVisibleStateChanged(QUuid partId);
     void partSubdivStateChanged(QUuid partId);
+    void partDisableStateChanged(QUuid partId);
     void cleanup();
 public:
     SkeletonDocument();
@@ -163,6 +166,7 @@ public slots:
     void setPartLockState(QUuid partId, bool locked);
     void setPartVisibleState(QUuid partId, bool visible);
     void setPartSubdivState(QUuid partId, bool subdived);
+    void setPartDisableState(QUuid partId, bool disabled);
     void saveSnapshot();
     void undo();
     void redo();

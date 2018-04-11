@@ -13,6 +13,7 @@ signals:
     void setPartLockState(QUuid partId, bool locked);
     void setPartVisibleState(QUuid partId, bool visible);
     void setPartSubdivState(QUuid partId, bool subdived);
+    void setPartDisableState(QUuid partId, bool disabled);
 public:
     SkeletonPartWidget(const SkeletonDocument *document, QUuid partId);
     void reload();
@@ -20,6 +21,7 @@ public:
     void updateLockButton();
     void updateVisibleButton();
     void updateSubdivButton();
+    void updateDisableButton();
 private:
     const SkeletonDocument *m_document;
     QUuid m_partId;
@@ -27,6 +29,7 @@ private:
     QPushButton *m_visibleButton;
     QPushButton *m_lockButton;
     QPushButton *m_subdivButton;
+    QPushButton *m_disableButton;
     QLabel *m_nameLabel;
 private:
     void initButton(QPushButton *button);
@@ -45,6 +48,7 @@ public slots:
     void partLockStateChanged(QUuid partId);
     void partVisibleStateChanged(QUuid partId);
     void partSubdivStateChanged(QUuid partId);
+    void partDisableStateChanged(QUuid partId);
 private:
     const SkeletonDocument *m_document;
     std::map<QUuid, QListWidgetItem *> m_itemMap;

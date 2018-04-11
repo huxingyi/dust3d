@@ -20,15 +20,25 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     updateButton(m_subdivButton, QChar(fa::cube), false);
     initButton(m_subdivButton);
     
+    m_disableButton = new QPushButton();
+    updateButton(m_disableButton, QChar(fa::toggleon), false);
+    initButton(m_disableButton);
+    
     m_previewLabel = new QLabel;
     
-    QHBoxLayout *miniToolLayout = new QHBoxLayout;
-    miniToolLayout->setSpacing(0);
-    miniToolLayout->setContentsMargins(0, 0, 0, 0);
-    miniToolLayout->addWidget(m_visibleButton);
-    miniToolLayout->addWidget(m_lockButton);
-    miniToolLayout->addWidget(m_subdivButton);
-    miniToolLayout->addStretch();
+    QHBoxLayout *miniTopToolLayout = new QHBoxLayout;
+    miniTopToolLayout->setSpacing(0);
+    miniTopToolLayout->setContentsMargins(0, 0, 0, 0);
+    miniTopToolLayout->addWidget(m_visibleButton);
+    miniTopToolLayout->addWidget(m_lockButton);
+    miniTopToolLayout->addWidget(m_subdivButton);
+    miniTopToolLayout->addStretch();
+    
+    QHBoxLayout *miniBottomToolLayout = new QHBoxLayout;
+    miniBottomToolLayout->setSpacing(0);
+    miniBottomToolLayout->setContentsMargins(0, 0, 0, 0);
+    miniBottomToolLayout->addWidget(m_disableButton);
+    miniBottomToolLayout->addStretch();
     
     QWidget *hrWidget = new QWidget;
     hrWidget->setFixedHeight(1);
@@ -39,8 +49,9 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     QVBoxLayout *mainLayout = new QVBoxLayout;
     mainLayout->setSpacing(0);
     mainLayout->setContentsMargins(0, 0, 0, 0);
-    mainLayout->addLayout(miniToolLayout);
+    mainLayout->addLayout(miniTopToolLayout);
     mainLayout->addWidget(m_previewLabel);
+    mainLayout->addLayout(miniBottomToolLayout);
     mainLayout->addWidget(hrWidget);
     
     setLayout(mainLayout);
@@ -48,6 +59,7 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     connect(this, &SkeletonPartWidget::setPartLockState, m_document, &SkeletonDocument::setPartLockState);
     connect(this, &SkeletonPartWidget::setPartVisibleState, m_document, &SkeletonDocument::setPartVisibleState);
     connect(this, &SkeletonPartWidget::setPartSubdivState, m_document, &SkeletonDocument::setPartSubdivState);
+    connect(this, &SkeletonPartWidget::setPartDisableState, m_document, &SkeletonDocument::setPartDisableState);
     
     connect(m_lockButton, &QPushButton::clicked, [=]() {
         if (m_lockButton->text() == QChar(fa::lock)) {
@@ -70,6 +82,14 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
             emit setPartSubdivState(m_partId, true);
         } else {
             emit setPartSubdivState(m_partId, false);
+        }
+    });
+    
+    connect(m_disableButton, &QPushButton::clicked, [=]() {
+        if (m_disableButton->text() == QChar(fa::link)) {
+            emit setPartDisableState(m_partId, true);
+        } else {
+            emit setPartDisableState(m_partId, false);
         }
     });
 }
@@ -138,12 +158,26 @@ void SkeletonPartWidget::updateSubdivButton()
         updateButton(m_subdivButton, QChar(fa::cube), false);
 }
 
+void SkeletonPartWidget::updateDisableButton()
+{
+    const SkeletonPart *part = m_document->findPart(m_partId);
+    if (!part) {
+        qDebug() << "Part not found:" << m_partId;
+        return;
+    }
+    if (part->disabled)
+        updateButton(m_disableButton, QChar(fa::unlink), true);
+    else
+        updateButton(m_disableButton, QChar(fa::link), false);
+}
+
 void SkeletonPartWidget::reload()
 {
     updatePreview();
     updateLockButton();
     updateVisibleButton();
     updateSubdivButton();
+    updateDisableButton();
 }
 
 SkeletonPartListWidget::SkeletonPartListWidget(const SkeletonDocument *document) :
@@ -226,4 +260,15 @@ void SkeletonPartListWidget::partSubdivStateChanged(QUuid partId)
     }
     SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second);
     widget->updateSubdivButton();
+}
+
+void SkeletonPartListWidget::partDisableStateChanged(QUuid partId)
+{
+    auto item = m_itemMap.find(partId);
+    if (item == m_itemMap.end()) {
+        qDebug() << "Part item not found:" << partId;
+        return;
+    }
+    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second);
+    widget->updateDisableButton();
 }

@@ -147,6 +147,13 @@ void MeshGenerator::process()
     float mainProfileMiddleY = mainProfile.y() + mainProfile.height() / 2;
     
     for (const auto &partIdIt: m_snapshot->partIdList) {
+        const auto &part = m_snapshot->parts.find(partIdIt);
+        if (part == m_snapshot->parts.end())
+            continue;
+        QString disabledString = valueOfKeyInMapOrEmpty(part->second, "disabled");
+        bool isDisabled = isTrueValueString(disabledString);
+        if (isDisabled)
+            continue;
         int bmeshId = meshlite_bmesh_create(meshliteContext);
         if (MeshGenerator::enableDebug)
             meshlite_bmesh_enable_debug(meshliteContext, bmeshId, 1);
@@ -221,7 +228,13 @@ void MeshGenerator::process()
     std::vector<int> meshIds;
     std::vector<int> subdivMeshIds;
     for (const auto &partIdIt: m_snapshot->partIdList) {
-        const auto part = m_snapshot->parts.find(partIdIt);
+        const auto &part = m_snapshot->parts.find(partIdIt);
+        if (part == m_snapshot->parts.end())
+            continue;
+        QString disabledString = valueOfKeyInMapOrEmpty(part->second, "disabled");
+        bool isDisabled = isTrueValueString(disabledString);
+        if (isDisabled)
+            continue;
         int bmeshId = partBmeshMap[partIdIt];
         int meshId = meshlite_bmesh_generate_mesh(meshliteContext, bmeshId);
         bool subdived = isTrueValueString(part->second["subdived"]);
