@@ -631,7 +631,7 @@ bool SkeletonGraphicsWidget::mousePress(QMouseEvent *event)
                 return true;
             }
         } else if (SkeletonDocumentEditMode::Select == m_document->editMode) {
-            if (m_mouseEventFromSelf) {
+            //if (m_mouseEventFromSelf) {
                 bool processed = false;
                 if ((nullptr == m_hoveredNodeItem || m_rangeSelectionSet.find(m_hoveredNodeItem) == m_rangeSelectionSet.end()) &&
                         (nullptr == m_hoveredEdgeItem || m_rangeSelectionSet.find(m_hoveredEdgeItem) == m_rangeSelectionSet.end())) {
@@ -657,7 +657,7 @@ bool SkeletonGraphicsWidget::mousePress(QMouseEvent *event)
                 if (processed) {
                     return true;
                 }
-            }
+            //}
         }
     }
     return false;

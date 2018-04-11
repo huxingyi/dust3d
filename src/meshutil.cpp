@@ -188,18 +188,26 @@ int mergeMeshs(void *meshliteContext, const std::vector<int> &meshIds)
     return mergedMeshId;
 }
 
-int subdivMesh(void *meshliteContext, int meshId)
+int subdivMesh(void *meshliteContext, int meshId, int *errorCount)
 {
     int triangulatedMeshId = meshlite_triangulate(meshliteContext, meshId);
-//#if USE_CGAL == 1
-//    CGAL::set_error_behaviour(CGAL::THROW_EXCEPTION);
-//    SimpleMesh *simpleMesh = makeCgalMeshFromMeshlite<SimpleKernel>(meshliteContext, triangulatedMeshId);
-//    CGAL::Subdivision_method_3::CatmullClark_subdivision(*simpleMesh, CGAL::Polygon_mesh_processing::parameters::number_of_iterations(1));
-//    return makeMeshliteMeshFromCgal<SimpleKernel>(meshliteContext, simpleMesh);
-//#else
     if (0 == meshlite_is_triangulated_manifold(meshliteContext, triangulatedMeshId)) {
-        return 0;
+#if USE_CGAL == 1
+        CGAL::set_error_behaviour(CGAL::THROW_EXCEPTION);
+        int subdiviedMeshId = 0;
+        SimpleMesh *simpleMesh = nullptr;
+        try {
+            simpleMesh = makeCgalMeshFromMeshlite<SimpleKernel>(meshliteContext, triangulatedMeshId);
+            CGAL::Subdivision_method_3::CatmullClark_subdivision(*simpleMesh, CGAL::Polygon_mesh_processing::parameters::number_of_iterations(1));
+            subdiviedMeshId = makeMeshliteMeshFromCgal<SimpleKernel>(meshliteContext, simpleMesh);
+        } catch (...) {
+            if (errorCount)
+                (*errorCount)++;
+        }
+        if (simpleMesh)
+            delete simpleMesh;
+        return subdiviedMeshId;
+#endif
     }
     return meshlite_subdivide(meshliteContext, meshId);
-//#endif
 }

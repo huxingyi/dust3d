@@ -274,7 +274,10 @@ void MeshGenerator::process()
         if (mergedMeshId > 0)
             mergedMeshId = meshlite_combine_coplanar_faces(meshliteContext, mergedMeshId);
         if (mergedMeshId > 0) {
-            int subdivedMeshId = subdivMesh(meshliteContext, mergedMeshId);
+            int errorCount = 0;
+            int subdivedMeshId = subdivMesh(meshliteContext, mergedMeshId, &errorCount);
+            if (errorCount > 0)
+                broken = true;
             if (subdivedMeshId > 0)
                 mergedMeshId = subdivedMeshId;
             else

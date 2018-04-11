@@ -183,7 +183,7 @@ void ModelWidget::mousePressEvent(QMouseEvent *event)
     if (!m_moveStarted && m_graphicsFunctions && m_graphicsFunctions->mousePress(event))
         return;
     m_lastPos = event->pos();
-    if (event->button() == Qt::LeftButton) {
+    if (event->button() == Qt::MidButton) {
         if (!m_moveStarted) {
             m_moveStartPos = mapToParent(event->pos());
             m_moveStartGeometry = geometry();
@@ -209,7 +209,7 @@ void ModelWidget::mouseMoveEvent(QMouseEvent *event)
     int dx = event->x() - m_lastPos.x();
     int dy = event->y() - m_lastPos.y();
 
-    if (event->buttons() & Qt::LeftButton) {
+    if (event->buttons() & Qt::MidButton) {
         if (m_moveStarted) {
             QRect rect = m_moveStartGeometry;
             QPoint pos = mapToParent(event->pos());
