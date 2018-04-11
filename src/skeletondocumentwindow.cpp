@@ -385,6 +385,10 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(m_document, &SkeletonDocument::skeletonChanged, this, &SkeletonDocumentWindow::documentChanged);
     connect(m_document, &SkeletonDocument::turnaroundChanged, this, &SkeletonDocumentWindow::documentChanged);
     
+    connect(m_modelWidget, &ModelWidget::customContextMenuRequested, [=](const QPoint &pos) {
+        graphicsWidget->showContextMenu(graphicsWidget->mapFromGlobal(m_modelWidget->mapToGlobal(pos)));
+    });
+    
     connect(this, &SkeletonDocumentWindow::initialized, m_document, &SkeletonDocument::uiReady);
 }
 

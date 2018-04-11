@@ -9,7 +9,7 @@ ModelMeshBinder::ModelMeshBinder() :
     m_renderEdgeVertexCount(0),
     m_mesh(NULL),
     m_meshUpdated(false),
-    m_showFrames(true)
+    m_showWireframes(true)
 {
 }
 
@@ -104,7 +104,7 @@ void ModelMeshBinder::paint()
         }
     }
     
-    if (m_showFrames) {
+    if (m_showWireframes) {
         if (m_renderEdgeVertexCount > 0) {
             QOpenGLVertexArrayObject::Binder vaoBinder(&m_vaoEdge);
             glDrawArrays(GL_LINES, 0, m_renderEdgeVertexCount);
@@ -124,12 +124,12 @@ void ModelMeshBinder::cleanup()
         m_vboEdge.destroy();
 }
 
-void ModelMeshBinder::showFrames()
+void ModelMeshBinder::showWireframes()
 {
-    m_showFrames = true;
+    m_showWireframes = true;
 }
 
-void ModelMeshBinder::hideFrames()
+void ModelMeshBinder::hideWireframes()
 {
-    m_showFrames = false;
+    m_showWireframes = false;
 }

@@ -64,7 +64,7 @@ QImage ModelOfflineRender::toImage(const QSize &size)
         ModelShaderProgram *program = new ModelShaderProgram;
         ModelMeshBinder meshBinder;
         meshBinder.initialize();
-        meshBinder.hideFrames();
+        meshBinder.hideWireframes();
 
         program->setUniformValue(program->lightPosLoc(), QVector3D(0, 0, 70));
 

@@ -320,14 +320,6 @@ void SkeletonGraphicsWidget::mousePressEvent(QMouseEvent *event)
         return;
     }
     m_mouseEventFromSelf = false;
-    if (event->button() == Qt::LeftButton) {
-        if (SkeletonDocumentEditMode::Select == m_document->editMode) {
-            if (!m_rangeSelectionStarted) {
-                m_rangeSelectionStartPos = mouseEventScenePos(event);
-                m_rangeSelectionStarted = true;
-            }
-        }
-    }
 }
 
 void SkeletonGraphicsWidget::mouseDoubleClickEvent(QMouseEvent *event)
@@ -658,6 +650,15 @@ bool SkeletonGraphicsWidget::mousePress(QMouseEvent *event)
                     return true;
                 }
             //}
+        }
+    }
+    
+    if (event->button() == Qt::LeftButton) {
+        if (SkeletonDocumentEditMode::Select == m_document->editMode) {
+            if (!m_rangeSelectionStarted) {
+                m_rangeSelectionStartPos = mouseEventScenePos(event);
+                m_rangeSelectionStarted = true;
+            }
         }
     }
     return false;

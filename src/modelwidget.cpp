@@ -35,6 +35,7 @@ ModelWidget::ModelWidget(QWidget *parent)
         setFormat(fmt);
     }
     setMouseTracking(true);
+    setContextMenuPolicy(Qt::CustomContextMenu);
 }
 
 int ModelWidget::xRot()
@@ -188,6 +189,8 @@ void ModelWidget::mousePressEvent(QMouseEvent *event)
             m_moveStartPos = mapToParent(event->pos());
             m_moveStartGeometry = geometry();
             m_moveStarted = true;
+            m_meshBinder.hideWireframes();
+            update();
         }
     }
 }
@@ -198,6 +201,8 @@ void ModelWidget::mouseReleaseEvent(QMouseEvent *event)
         m_graphicsFunctions->mouseRelease(event);
     if (m_moveStarted) {
         m_moveStarted = false;
+        m_meshBinder.showWireframes();
+        update();
     }
 }
 
@@ -210,15 +215,17 @@ void ModelWidget::mouseMoveEvent(QMouseEvent *event)
     int dy = event->y() - m_lastPos.y();
 
     if (event->buttons() & Qt::MidButton) {
-        if (m_moveStarted) {
-            QRect rect = m_moveStartGeometry;
-            QPoint pos = mapToParent(event->pos());
-            rect.translate(pos.x() - m_moveStartPos.x(), pos.y() - m_moveStartPos.y());
-            setGeometry(rect);
+        if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
+            if (m_moveStarted) {
+                QRect rect = m_moveStartGeometry;
+                QPoint pos = mapToParent(event->pos());
+                rect.translate(pos.x() - m_moveStartPos.x(), pos.y() - m_moveStartPos.y());
+                setGeometry(rect);
+            }
+        } else {
+            setXRotation(m_xRot - 8 * dy);
+            setYRotation(m_yRot - 8 * dx);
         }
-    } else if (event->buttons() & Qt::RightButton) {
-        setXRotation(m_xRot - 8 * dy);
-        setYRotation(m_yRot - 8 * dx);
     }
     m_lastPos = event->pos();
 }
