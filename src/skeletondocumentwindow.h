@@ -68,6 +68,7 @@ private:
     QAction *m_undoAction;
     QAction *m_redoAction;
     QAction *m_deleteAction;
+    QAction *m_breakAction;
     QAction *m_cutAction;
     QAction *m_copyAction;
     QAction *m_pasteAction;

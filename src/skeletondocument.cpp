@@ -5,6 +5,7 @@
 #include <QClipboard>
 #include <QMimeData>
 #include <QApplication>
+#include <QVector3D>
 #include "skeletondocument.h"
 #include "util.h"
 #include "skeletonxml.h"
@@ -32,6 +33,41 @@ void SkeletonDocument::uiReady()
 
 void SkeletonDocument::removePart(QUuid partId)
 {
+}
+
+void SkeletonDocument::breakEdge(QUuid edgeId)
+{
+    const SkeletonEdge *edge = findEdge(edgeId);
+    if (nullptr == edge) {
+        qDebug() << "Find edge failed:" << edgeId;
+        return;
+    }
+    if (edge->nodeIds.size() != 2) {
+        return;
+    }
+    QUuid firstNodeId = edge->nodeIds[0];
+    QUuid secondNodeId = edge->nodeIds[1];
+    const SkeletonNode *firstNode = findNode(firstNodeId);
+    if (nullptr == firstNode) {
+        qDebug() << "Find node failed:" << firstNodeId;
+        return;
+    }
+    const SkeletonNode *secondNode = findNode(secondNodeId);
+    if (nullptr == secondNode) {
+        qDebug() << "Find node failed:" << secondNodeId;
+        return;
+    }
+    QVector3D firstOrigin(firstNode->x, firstNode->y, firstNode->z);
+    QVector3D secondOrigin(secondNode->x, secondNode->y, secondNode->z);
+    QVector3D middleOrigin = (firstOrigin + secondOrigin) / 2;
+    float middleRadius = (firstNode->radius + secondNode->radius) / 2;
+    removeEdge(edgeId);
+    QUuid middleNodeId = createNode(middleOrigin.x(), middleOrigin.y(), middleOrigin.z(), middleRadius, firstNodeId);
+    if (middleNodeId.isNull()) {
+        qDebug() << "Add middle node failed";
+        return;
+    }
+    addEdge(middleNodeId, secondNodeId);
 }
 
 void SkeletonDocument::removeEdge(QUuid edgeId)
@@ -167,6 +203,11 @@ void SkeletonDocument::removeNode(QUuid nodeId)
 
 void SkeletonDocument::addNode(float x, float y, float z, float radius, QUuid fromNodeId)
 {
+    createNode(x, y, z, radius, fromNodeId);
+}
+
+QUuid SkeletonDocument::createNode(float x, float y, float z, float radius, QUuid fromNodeId)
+{
     QUuid partId;
     const SkeletonNode *fromNode = nullptr;
     bool newPartAdded = false;
@@ -181,11 +222,11 @@ void SkeletonDocument::addNode(float x, float y, float z, float radius, QUuid fr
         fromNode = findNode(fromNodeId);
         if (nullptr == fromNode) {
             qDebug() << "Find node failed:" << fromNodeId;
-            return;
+            return QUuid();
         }
         partId = fromNode->partId;
         if (isPartReadonly(partId))
-            return;
+            return QUuid();
     }
     SkeletonNode node;
     node.partId = partId;
@@ -219,6 +260,8 @@ void SkeletonDocument::addNode(float x, float y, float z, float radius, QUuid fr
         emit partListChanged();
     
     emit skeletonChanged();
+    
+    return node.id;
 }
 
 const SkeletonEdge *SkeletonDocument::findEdgeByNodes(QUuid firstNodeId, QUuid secondNodeId) const
@@ -520,7 +563,6 @@ void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUu
         if (!nodeIt.second.name.isEmpty())
             node["name"] = nodeIt.second.name;
         snapshot->nodes[node["id"]] = node;
-        qDebug() << "Export node to snapshot " << node["id"] << node["x"] << node["y"] << node["z"];
     }
     for (const auto &edgeIt: edgeMap) {
         if (edgeIt.second.nodeIds.size() != 2)
@@ -537,7 +579,6 @@ void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUu
         if (!edgeIt.second.name.isEmpty())
             edge["name"] = edgeIt.second.name;
         snapshot->edges[edge["id"]] = edge;
-        qDebug() << "Export edge to snapshot " << edge["from"] << "<=>" << edge["to"];
     }
     for (const auto &partIdIt: partIds) {
         if (!limitPartIds.empty() && limitPartIds.find(partIdIt) == limitPartIds.end())

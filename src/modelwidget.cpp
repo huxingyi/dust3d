@@ -9,7 +9,7 @@
 
 // Modifed from http://doc.qt.io/qt-5/qtopengl-hellogl2-glwidget-cpp.html
 
-bool ModelWidget::m_transparent = false;
+bool ModelWidget::m_transparent = true;
 
 ModelWidget::ModelWidget(QWidget *parent)
     : QOpenGLWidget(parent),
@@ -204,6 +204,18 @@ void ModelWidget::mouseReleaseEvent(QMouseEvent *event)
         m_meshBinder.showWireframes();
         update();
     }
+}
+
+void ModelWidget::mouseDoubleClickEvent(QMouseEvent *event)
+{
+    if (m_graphicsFunctions)
+        m_graphicsFunctions->mouseDoubleClick(event);
+}
+
+void ModelWidget::keyPressEvent(QKeyEvent *event)
+{
+    if (m_graphicsFunctions)
+        m_graphicsFunctions->keyPress(event);
 }
 
 void ModelWidget::mouseMoveEvent(QMouseEvent *event)

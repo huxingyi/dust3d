@@ -270,6 +270,7 @@ signals:
     void save();
     void open();
     void exportResult();
+    void breakEdge(QUuid edgeId);
 public:
     SkeletonGraphicsWidget(const SkeletonDocument *document);
     std::map<QUuid, std::pair<SkeletonGraphicsNodeItem *, SkeletonGraphicsNodeItem *>> nodeItemMap;
@@ -288,6 +289,7 @@ public:
     bool hasSelection();
     bool hasItems();
     bool hasMultipleSelection();
+    bool hasEdgeSelection();
 protected:
     void mouseMoveEvent(QMouseEvent *event);
     void wheelEvent(QWheelEvent *event);
@@ -318,6 +320,7 @@ public slots:
     void flipHorizontally();
     void flipVertically();
     void removeAllContent();
+    void breakSelected();
 private slots:
     void turnaroundImageReady();
 private:

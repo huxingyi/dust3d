@@ -103,6 +103,12 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
         contextMenu.addAction(&deleteAction);
     }
     
+    QAction breakAction(tr("Break"), this);
+    if (hasEdgeSelection()) {
+        connect(&breakAction, &QAction::triggered, this, &SkeletonGraphicsWidget::breakSelected);
+        contextMenu.addAction(&breakAction);
+    }
+    
     QAction cutAction(tr("Cut"), this);
     if (hasSelection()) {
         connect(&cutAction, &QAction::triggered, this, &SkeletonGraphicsWidget::cut);
@@ -181,6 +187,29 @@ bool SkeletonGraphicsWidget::hasItems()
 bool SkeletonGraphicsWidget::hasMultipleSelection()
 {
     return !m_rangeSelectionSet.empty() && !isSingleNodeSelected();
+}
+
+bool SkeletonGraphicsWidget::hasEdgeSelection()
+{
+    for (const auto &it: m_rangeSelectionSet) {
+        if (it->data(0) == "edge")
+            return true;
+    }
+    return false;
+}
+
+void SkeletonGraphicsWidget::breakSelected()
+{
+    std::set<QUuid> edgeIds;
+    for (const auto &it: m_rangeSelectionSet) {
+        if (it->data(0) == "edge")
+            edgeIds.insert(((SkeletonGraphicsEdgeItem *)it)->id());
+    }
+    emit batchChangeBegin();
+    for (const auto &it: edgeIds) {
+        emit breakEdge(it);
+    }
+    emit batchChangeEnd();
 }
 
 void SkeletonGraphicsWidget::updateItems()

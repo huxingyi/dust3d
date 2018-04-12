@@ -181,11 +181,13 @@ public slots:
     void batchChangeBegin();
     void batchChangeEnd();
     void reset();
+    void breakEdge(QUuid edgeId);
 private:
     void splitPartByNode(std::vector<std::vector<QUuid>> *groups, QUuid nodeId);
     void joinNodeAndNeiborsToGroup(std::vector<QUuid> *group, QUuid nodeId, std::set<QUuid> *visitMap, QUuid noUseEdgeId=QUuid());
     void splitPartByEdge(std::vector<std::vector<QUuid>> *groups, QUuid edgeId);
     bool isPartReadonly(QUuid partId);
+    QUuid createNode(float x, float y, float z, float radius, QUuid fromNodeId);
 private:
     bool m_resultMeshIsObsolete;
     MeshGenerator *m_meshGenerator;

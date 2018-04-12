@@ -223,6 +223,10 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(m_deleteAction, &QAction::triggered, m_graphicsWidget, &SkeletonGraphicsWidget::deleteSelected);
     m_editMenu->addAction(m_deleteAction);
     
+    m_breakAction = new QAction(tr("Break"), this);
+    connect(m_breakAction, &QAction::triggered, m_graphicsWidget, &SkeletonGraphicsWidget::breakSelected);
+    m_editMenu->addAction(m_breakAction);
+    
     m_cutAction = new QAction(tr("Cut"), this);
     connect(m_cutAction, &QAction::triggered, m_graphicsWidget, &SkeletonGraphicsWidget::cut);
     m_editMenu->addAction(m_cutAction);
@@ -259,6 +263,7 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
         m_undoAction->setEnabled(m_document->undoable());
         m_redoAction->setEnabled(m_document->redoable());
         m_deleteAction->setEnabled(m_graphicsWidget->hasSelection());
+        m_breakAction->setEnabled(m_graphicsWidget->hasEdgeSelection());
         m_cutAction->setEnabled(m_graphicsWidget->hasSelection());
         m_copyAction->setEnabled(m_graphicsWidget->hasSelection());
         m_pasteAction->setEnabled(m_document->hasPastableContentInClipboard());
@@ -349,6 +354,7 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(graphicsWidget, &SkeletonGraphicsWidget::paste, m_document, &SkeletonDocument::paste);
     connect(graphicsWidget, &SkeletonGraphicsWidget::batchChangeBegin, m_document, &SkeletonDocument::batchChangeBegin);
     connect(graphicsWidget, &SkeletonGraphicsWidget::batchChangeEnd, m_document, &SkeletonDocument::batchChangeEnd);
+    connect(graphicsWidget, &SkeletonGraphicsWidget::breakEdge, m_document, &SkeletonDocument::breakEdge);
     
     connect(graphicsWidget, &SkeletonGraphicsWidget::changeTurnaround, this, &SkeletonDocumentWindow::changeTurnaround);
     connect(graphicsWidget, &SkeletonGraphicsWidget::save, this, &SkeletonDocumentWindow::save);
