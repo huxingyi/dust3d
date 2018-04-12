@@ -290,6 +290,7 @@ public:
     bool hasItems();
     bool hasMultipleSelection();
     bool hasEdgeSelection();
+    bool hasTwoDisconnectedNodesSelection();
 protected:
     void mouseMoveEvent(QMouseEvent *event);
     void wheelEvent(QWheelEvent *event);
@@ -321,6 +322,7 @@ public slots:
     void flipVertically();
     void removeAllContent();
     void breakSelected();
+    void connectSelected();
 private slots:
     void turnaroundImageReady();
 private:

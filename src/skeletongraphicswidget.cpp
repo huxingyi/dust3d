@@ -109,6 +109,12 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
         contextMenu.addAction(&breakAction);
     }
     
+    QAction connectAction(tr("Connect"), this);
+    if (hasTwoDisconnectedNodesSelection()) {
+        connect(&connectAction, &QAction::triggered, this, &SkeletonGraphicsWidget::connectSelected);
+        contextMenu.addAction(&connectAction);
+    }
+    
     QAction cutAction(tr("Cut"), this);
     if (hasSelection()) {
         connect(&cutAction, &QAction::triggered, this, &SkeletonGraphicsWidget::cut);
@@ -198,6 +204,21 @@ bool SkeletonGraphicsWidget::hasEdgeSelection()
     return false;
 }
 
+bool SkeletonGraphicsWidget::hasTwoDisconnectedNodesSelection()
+{
+    std::vector<QUuid> nodeIds;
+    for (const auto &it: m_rangeSelectionSet) {
+        if (it->data(0) == "node") {
+            nodeIds.push_back(((SkeletonGraphicsNodeItem *)it)->id());
+        }
+    }
+    if (nodeIds.size() != 2)
+        return false;
+    if (m_document->findEdgeByNodes(nodeIds[0], nodeIds[1]))
+        return false;
+    return true;
+}
+
 void SkeletonGraphicsWidget::breakSelected()
 {
     std::set<QUuid> edgeIds;
@@ -205,11 +226,30 @@ void SkeletonGraphicsWidget::breakSelected()
         if (it->data(0) == "edge")
             edgeIds.insert(((SkeletonGraphicsEdgeItem *)it)->id());
     }
+    if (edgeIds.empty())
+        return;
     emit batchChangeBegin();
     for (const auto &it: edgeIds) {
         emit breakEdge(it);
     }
     emit batchChangeEnd();
+    emit groupOperationAdded();
+}
+
+void SkeletonGraphicsWidget::connectSelected()
+{
+    std::vector<QUuid> nodeIds;
+    for (const auto &it: m_rangeSelectionSet) {
+        if (it->data(0) == "node") {
+            nodeIds.push_back(((SkeletonGraphicsNodeItem *)it)->id());
+        }
+    }
+    if (nodeIds.size() != 2)
+        return;
+    if (m_document->findEdgeByNodes(nodeIds[0], nodeIds[1]))
+        return;
+    emit addEdge(nodeIds[0], nodeIds[1]);
+    emit groupOperationAdded();
 }
 
 void SkeletonGraphicsWidget::updateItems()

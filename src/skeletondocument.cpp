@@ -286,6 +286,11 @@ const SkeletonEdge *SkeletonDocument::findEdgeByNodes(QUuid firstNodeId, QUuid s
 
 void SkeletonDocument::addEdge(QUuid fromNodeId, QUuid toNodeId)
 {
+    if (findEdgeByNodes(fromNodeId, toNodeId)) {
+        qDebug() << "Add edge but edge already existed:" << fromNodeId << toNodeId;
+        return;
+    }
+    
     const SkeletonNode *fromNode = nullptr;
     const SkeletonNode *toNode = nullptr;
     bool toPartRemoved = false;
