@@ -694,25 +694,26 @@ bool SkeletonGraphicsWidget::mousePress(QMouseEvent *event)
         } else if (SkeletonDocumentEditMode::Select == m_document->editMode) {
             //if (m_mouseEventFromSelf) {
                 bool processed = false;
-                //if ((nullptr == m_hoveredNodeItem || m_rangeSelectionSet.find(m_hoveredNodeItem) == m_rangeSelectionSet.end()) &&
-                //        (nullptr == m_hoveredEdgeItem || m_rangeSelectionSet.find(m_hoveredEdgeItem) == m_rangeSelectionSet.end())) {
+                if ((nullptr == m_hoveredNodeItem || m_rangeSelectionSet.find(m_hoveredNodeItem) == m_rangeSelectionSet.end()) &&
+                        (nullptr == m_hoveredEdgeItem || m_rangeSelectionSet.find(m_hoveredEdgeItem) == m_rangeSelectionSet.end())) {
                     if (!QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
                         clearRangeSelection();
                     }
-                    if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::AltModifier)) {
-                        if (m_hoveredNodeItem) {
-                            removeItemFromRangeSelection(m_hoveredNodeItem);
-                        } else if (m_hoveredEdgeItem) {
-                            removeItemFromRangeSelection(m_hoveredEdgeItem);
-                        }
-                    } else {
+                    if (!QGuiApplication::queryKeyboardModifiers().testFlag(Qt::AltModifier)) {
                         if (m_hoveredNodeItem) {
                             addItemToRangeSelection(m_hoveredNodeItem);
                         } else if (m_hoveredEdgeItem) {
                             addItemToRangeSelection(m_hoveredEdgeItem);
                         }
                     }
-                //}
+                }
+                if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::AltModifier)) {
+                    if (m_hoveredNodeItem) {
+                        removeItemFromRangeSelection(m_hoveredNodeItem);
+                    } else if (m_hoveredEdgeItem) {
+                        removeItemFromRangeSelection(m_hoveredEdgeItem);
+                    }
+                }
                 if (!m_rangeSelectionSet.empty()) {
                     if (!QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
                         if (!m_moveStarted) {
