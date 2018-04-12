@@ -9,7 +9,7 @@
 
 // Modifed from http://doc.qt.io/qt-5/qtopengl-hellogl2-glwidget-cpp.html
 
-bool ModelWidget::m_transparent = true;
+bool ModelWidget::m_transparent = false;
 
 ModelWidget::ModelWidget(QWidget *parent)
     : QOpenGLWidget(parent),

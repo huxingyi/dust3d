@@ -36,12 +36,12 @@ void ModelMeshBinder::exportMeshAsObj(const QString &filename)
         if (file.open(QIODevice::WriteOnly)) {
             QTextStream stream(&file);
             stream << "# " << Ds3FileReader::m_applicationName << endl;
-            for (std::vector<const QVector3D>::iterator it = m_mesh->vertices().begin() ; it != m_mesh->vertices().end(); ++it) {
+            for (std::vector<QVector3D>::const_iterator it = m_mesh->vertices().begin() ; it != m_mesh->vertices().end(); ++it) {
                 stream << "v " << (*it).x() << " " << (*it).y() << " " << (*it).z() << endl;
             }
-            for (std::vector<const std::vector<int>>::iterator it = m_mesh->faces().begin() ; it != m_mesh->faces().end(); ++it) {
+            for (std::vector<std::vector<int>>::const_iterator it = m_mesh->faces().begin() ; it != m_mesh->faces().end(); ++it) {
                 stream << "f";
-                for (std::vector<const int>::iterator subIt = (*it).begin() ; subIt != (*it).end(); ++subIt) {
+                for (std::vector<int>::const_iterator subIt = (*it).begin() ; subIt != (*it).end(); ++subIt) {
                     stream << " " << (1 + *subIt);
                 }
                 stream << endl;
@@ -107,12 +107,14 @@ void ModelMeshBinder::paint()
     if (m_showWireframes) {
         if (m_renderEdgeVertexCount > 0) {
             QOpenGLVertexArrayObject::Binder vaoBinder(&m_vaoEdge);
-            glDrawArrays(GL_LINES, 0, m_renderEdgeVertexCount);
+			QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+            f->glDrawArrays(GL_LINES, 0, m_renderEdgeVertexCount);
         }
     }
     if (m_renderTriangleVertexCount > 0) {
         QOpenGLVertexArrayObject::Binder vaoBinder(&m_vaoTriangle);
-        glDrawArrays(GL_TRIANGLES, 0, m_renderTriangleVertexCount);
+		QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+        f->glDrawArrays(GL_TRIANGLES, 0, m_renderTriangleVertexCount);
     }
 }
 

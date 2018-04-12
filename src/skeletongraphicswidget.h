@@ -13,6 +13,7 @@
 #include "skeletondocument.h"
 #include "turnaroundloader.h"
 #include "theme.h"
+#include "util.h"
 
 class SkeletonGraphicsSelectionItem : public QGraphicsRectItem
 {

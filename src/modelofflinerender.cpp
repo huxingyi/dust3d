@@ -67,11 +67,11 @@ QImage ModelOfflineRender::toImage(const QSize &size)
         meshBinder.hideWireframes();
 
         program->setUniformValue(program->lightPosLoc(), QVector3D(0, 0, 70));
-
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-        glEnable(GL_DEPTH_TEST);
-        glEnable(GL_CULL_FACE);
-        glEnable(GL_LINE_SMOOTH);
+		
+        m_context->functions()->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        m_context->functions()->glEnable(GL_DEPTH_TEST);
+        m_context->functions()->glEnable(GL_CULL_FACE);
+        m_context->functions()->glEnable(GL_LINE_SMOOTH);
 
         camera.setToIdentity();
         camera.translate(0, 0, -2.1);
