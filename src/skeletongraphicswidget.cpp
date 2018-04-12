@@ -694,17 +694,25 @@ bool SkeletonGraphicsWidget::mousePress(QMouseEvent *event)
         } else if (SkeletonDocumentEditMode::Select == m_document->editMode) {
             //if (m_mouseEventFromSelf) {
                 bool processed = false;
-                if ((nullptr == m_hoveredNodeItem || m_rangeSelectionSet.find(m_hoveredNodeItem) == m_rangeSelectionSet.end()) &&
-                        (nullptr == m_hoveredEdgeItem || m_rangeSelectionSet.find(m_hoveredEdgeItem) == m_rangeSelectionSet.end())) {
+                //if ((nullptr == m_hoveredNodeItem || m_rangeSelectionSet.find(m_hoveredNodeItem) == m_rangeSelectionSet.end()) &&
+                //        (nullptr == m_hoveredEdgeItem || m_rangeSelectionSet.find(m_hoveredEdgeItem) == m_rangeSelectionSet.end())) {
                     if (!QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
                         clearRangeSelection();
                     }
-                    if (m_hoveredNodeItem) {
-                        addItemToRangeSelection(m_hoveredNodeItem);
-                    } else if (m_hoveredEdgeItem) {
-                        addItemToRangeSelection(m_hoveredEdgeItem);
+                    if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::AltModifier)) {
+                        if (m_hoveredNodeItem) {
+                            removeItemFromRangeSelection(m_hoveredNodeItem);
+                        } else if (m_hoveredEdgeItem) {
+                            removeItemFromRangeSelection(m_hoveredEdgeItem);
+                        }
+                    } else {
+                        if (m_hoveredNodeItem) {
+                            addItemToRangeSelection(m_hoveredNodeItem);
+                        } else if (m_hoveredEdgeItem) {
+                            addItemToRangeSelection(m_hoveredEdgeItem);
+                        }
                     }
-                }
+                //}
                 if (!m_rangeSelectionSet.empty()) {
                     if (!QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
                         if (!m_moveStarted) {
@@ -1067,6 +1075,7 @@ void SkeletonGraphicsWidget::checkRangeSelection()
 {
     std::set<QGraphicsItem *> newSet;
     std::set<QGraphicsItem *> deleteSet;
+    std::set<QGraphicsItem *> forceDeleteSet;
     SkeletonProfile choosenProfile = SkeletonProfile::Unknown;
     if (!m_rangeSelectionSet.empty()) {
         auto it = m_rangeSelectionSet.begin();
@@ -1076,14 +1085,19 @@ void SkeletonGraphicsWidget::checkRangeSelection()
         QList<QGraphicsItem *> items = scene()->items(m_selectionItem->sceneBoundingRect());
         for (auto it = items.begin(); it != items.end(); it++) {
             QGraphicsItem *item = *it;
-            if (SkeletonProfile::Unknown == choosenProfile) {
-                if (checkSkeletonItem(item, true)) {
-                    choosenProfile = readSkeletonItemProfile(item);
-                    newSet.insert(item);
+            if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::AltModifier)) {
+                checkSkeletonItem(item, false);
+                forceDeleteSet.insert(item);
+            } else {
+                if (SkeletonProfile::Unknown == choosenProfile) {
+                    if (checkSkeletonItem(item, true)) {
+                        choosenProfile = readSkeletonItemProfile(item);
+                        newSet.insert(item);
+                    }
+                } else if (choosenProfile == readSkeletonItemProfile(item)) {
+                    if (checkSkeletonItem(item, true))
+                        newSet.insert(item);
                 }
-            } else if (choosenProfile == readSkeletonItemProfile(item)) {
-                if (checkSkeletonItem(item, true))
-                    newSet.insert(item);
             }
         }
     }
@@ -1099,6 +1113,9 @@ void SkeletonGraphicsWidget::checkRangeSelection()
         m_rangeSelectionSet.insert(item);
     }
     for (const auto &item: deleteSet) {
+        m_rangeSelectionSet.erase(item);
+    }
+    for (const auto &item: forceDeleteSet) {
         m_rangeSelectionSet.erase(item);
     }
 }
