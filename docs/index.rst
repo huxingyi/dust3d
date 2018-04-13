@@ -10,7 +10,7 @@ Welcome to dust3d's documentation!
    :maxdepth: 2
    :caption: Contents:
 
-
+   shortcuts
 
 Indices and tables
 ==================
