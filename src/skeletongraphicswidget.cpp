@@ -1075,11 +1075,21 @@ bool SkeletonGraphicsWidget::checkSkeletonItem(QGraphicsItem *item, bool checked
     }
     if (item->data(0) == "node") {
         SkeletonGraphicsNodeItem *nodeItem = (SkeletonGraphicsNodeItem *)item;
+        if (checked) {
+            if (!m_document->isNodeEditable(nodeItem->id())) {
+                return false;
+            }
+        }
         if (checked != nodeItem->checked())
             nodeItem->setChecked(checked);
         return true;
     } else if (item->data(0) == "edge") {
         SkeletonGraphicsEdgeItem *edgeItem = (SkeletonGraphicsEdgeItem *)item;
+        if (checked) {
+            if (!m_document->isEdgeEditable(edgeItem->id())) {
+                return false;
+            }
+        }
         if (checked != edgeItem->checked())
             edgeItem->setChecked(checked);
         return true;
@@ -1278,8 +1288,8 @@ void SkeletonGraphicsWidget::addItemToRangeSelection(QGraphicsItem *item)
 {
     if (!item->isVisible())
         return;
-    checkSkeletonItem(item, true);
-    m_rangeSelectionSet.insert(item);
+    if (checkSkeletonItem(item, true))
+        m_rangeSelectionSet.insert(item);
 }
 
 void SkeletonGraphicsWidget::removeItemFromRangeSelection(QGraphicsItem *item)

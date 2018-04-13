@@ -281,7 +281,7 @@ public:
     bool mousePress(QMouseEvent *event);
     bool mouseDoubleClick(QMouseEvent *event);
     bool keyPress(QKeyEvent *event);
-    static bool checkSkeletonItem(QGraphicsItem *item, bool checked);
+    bool checkSkeletonItem(QGraphicsItem *item, bool checked);
     static SkeletonProfile readSkeletonItemProfile(QGraphicsItem *item);
     void readMergedSkeletonNodeSetFromRangeSelection(std::set<SkeletonGraphicsNodeItem *> *nodeItemSet);
     void readSkeletonNodeAndEdgeIdSetFromRangeSelection(std::set<QUuid> *nodeIdSet, std::set<QUuid> *edgeIdSet);

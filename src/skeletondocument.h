@@ -156,6 +156,8 @@ public:
     bool hasPastableContentInClipboard() const;
     bool undoable() const;
     bool redoable() const;
+    bool isNodeEditable(QUuid nodeId) const;
+    bool isEdgeEditable(QUuid edgeId) const;
 public slots:
     void removeNode(QUuid nodeId);
     void removeEdge(QUuid edgeId);
@@ -186,7 +188,7 @@ private:
     void splitPartByNode(std::vector<std::vector<QUuid>> *groups, QUuid nodeId);
     void joinNodeAndNeiborsToGroup(std::vector<QUuid> *group, QUuid nodeId, std::set<QUuid> *visitMap, QUuid noUseEdgeId=QUuid());
     void splitPartByEdge(std::vector<std::vector<QUuid>> *groups, QUuid edgeId);
-    bool isPartReadonly(QUuid partId);
+    bool isPartReadonly(QUuid partId) const;
     QUuid createNode(float x, float y, float z, float radius, QUuid fromNodeId);
 private:
     bool m_resultMeshIsObsolete;

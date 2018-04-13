@@ -404,7 +404,7 @@ void SkeletonDocument::scaleNodeByAddRadius(QUuid nodeId, float amount)
     emit skeletonChanged();
 }
 
-bool SkeletonDocument::isPartReadonly(QUuid partId)
+bool SkeletonDocument::isPartReadonly(QUuid partId) const
 {
     const SkeletonPart *part = findPart(partId);
     if (nullptr == part) {
@@ -885,3 +885,24 @@ bool SkeletonDocument::redoable() const
 {
     return !m_redoItems.empty();
 }
+
+bool SkeletonDocument::isNodeEditable(QUuid nodeId) const
+{
+    const SkeletonNode *node = findNode(nodeId);
+    if (!node) {
+        qDebug() << "Node id not found:" << nodeId;
+        return false;
+    }
+    return !isPartReadonly(node->partId);
+}
+
+bool SkeletonDocument::isEdgeEditable(QUuid edgeId) const
+{
+    const SkeletonEdge *edge = findEdge(edgeId);
+    if (!edge) {
+        qDebug() << "Edge id not found:" << edgeId;
+        return false;
+    }
+    return !isPartReadonly(edge->partId);
+}
+
