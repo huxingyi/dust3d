@@ -9,7 +9,8 @@ Welcome to dust3d's documentation!
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
-
+   
+   builds
    shortcuts
 
 Indices and tables

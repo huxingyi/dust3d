@@ -2,17 +2,6 @@ QT += core widgets opengl
 CONFIG += release
 RESOURCES += resources.qrc
 
-BOOST_INCLUDEDIR = $$(BOOST_INCLUDEDIR)
-CGAL_DIR = $$(CGAL_DIR)
-
-isEmpty(BOOST_INCLUDEDIR) {
-	error("No BOOST_INCLUDEDIR define found in enviroment variables")
-}
-
-isEmpty(CGAL_DIR) {
-	error("No CGAL_DIR define found in enviroment variables")
-}
-
 HUMAN_VERSION = "0.0-alpha1"
 REPOSITORY_URL = "https://github.com/huxingyi/dust3d"
 ISSUES_URL = "https://github.com/huxingyi/dust3d/issues"
@@ -97,6 +86,17 @@ SOURCES += src/main.cpp
 HEADERS += src/version.h
 
 win32 {
+	BOOST_INCLUDEDIR = $$(BOOST_INCLUDEDIR)
+	CGAL_DIR = $$(CGAL_DIR)
+
+	isEmpty(BOOST_INCLUDEDIR) {
+		error("No BOOST_INCLUDEDIR define found in enviroment variables")
+	}
+
+	isEmpty(CGAL_DIR) {
+		error("No CGAL_DIR define found in enviroment variables")
+	}
+
 	contains(QMAKE_TARGET.arch, x86_64) {
 		MESHLITE_DIR = thirdparty/meshlite/meshlite_unstable_vc14_x64
 	} else {
@@ -121,13 +121,14 @@ unix {
 	GMP_LIBNAME = gmp
 	MPFR_LIBNAME = mpfr
 	CGAL_LIBNAME = cgal
-	CGAL_INCLUDEDIR = $$CGAL_DIR/include
-	CGAL_BUILDINCLUDEDIR = $$CGAL_DIR/build/include
-	CGAL_LIBDIR = $$CGAL_DIR/build/lib
-	GMP_INCLUDEDIR = $$CGAL_DIR/auxiliary/gmp/include
-	GMP_LIBDIR = $$CGAL_DIR/auxiliary/gmp/lib
-	MPFR_INCLUDEDIR = $$GMP_INCLUDEDIR
-	MPFR_LIBDIR = $$GMP_LIBDIR
+	BOOST_INCLUDEDIR = /usr/local/opt/boost/include
+	CGAL_INCLUDEDIR = /usr/local/opt/cgal/include
+	CGAL_BUILDINCLUDEDIR = /usr/local/opt/cgal/include
+	CGAL_LIBDIR = /usr/local/opt/cgal/lib
+	GMP_INCLUDEDIR = /usr/local/opt/gmp/include
+	GMP_LIBDIR = /usr/local/opt/gmp/lib
+	MPFR_INCLUDEDIR = /usr/local/opt/mpfr/include
+	MPFR_LIBDIR = /usr/local/opt/mpfr/lib
 }
 
 INCLUDEPATH += $$MESHLITE_DIR
