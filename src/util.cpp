@@ -18,3 +18,12 @@ bool isFloatEqual(float a, float b)
 {
     return fabs(a - b) <= 0.000001;
 }
+
+void qNormalizeAngle(int &angle)
+{
+    while (angle < 0)
+        angle += 360 * 16;
+    while (angle > 360 * 16)
+        angle -= 360 * 16;
+}
+

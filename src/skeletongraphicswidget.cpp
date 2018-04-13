@@ -8,6 +8,7 @@
 #include <QMenu>
 #include <QApplication>
 #include <QClipboard>
+#include <QMatrix4x4>
 #include "skeletongraphicswidget.h"
 #include "theme.h"
 #include "util.h"
@@ -29,7 +30,8 @@ SkeletonGraphicsWidget::SkeletonGraphicsWidget(const SkeletonDocument *document)
     m_lastAddedZ(0),
     m_selectionItem(nullptr),
     m_rangeSelectionStarted(false),
-    m_mouseEventFromSelf(false)
+    m_mouseEventFromSelf(false),
+    m_lastRot(0)
 {
     setRenderHint(QPainter::Antialiasing, false);
     setBackgroundBrush(QBrush(QWidget::palette().color(QWidget::backgroundRole()), Qt::SolidPattern));
@@ -485,12 +487,36 @@ bool SkeletonGraphicsWidget::mouseMove(QMouseEvent *event)
             float byY = sceneRadiusToUnified(mouseScenePos.y() - m_lastScenePos.y());
             std::set<SkeletonGraphicsNodeItem *> nodeItems;
             readMergedSkeletonNodeSetFromRangeSelection(&nodeItems);
-            for (const auto &it: nodeItems) {
-                SkeletonGraphicsNodeItem *nodeItem = it;
-                if (SkeletonProfile::Main == nodeItem->profile()) {
-                    emit moveNodeBy(nodeItem->id(), byX, byY, 0);
-                } else {
-                    emit moveNodeBy(nodeItem->id(), 0, byY, byX);
+            if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
+                QVector2D center = centerOfNodeItemSet(nodeItems);
+                int degreeX = (mouseScenePos.x() - m_lastScenePos.x());
+                qNormalizeAngle(degreeX);
+                for (const auto &it: nodeItems) {
+                    SkeletonGraphicsNodeItem *nodeItem = it;
+                    QMatrix4x4 mat;
+                    QVector3D centerPoint(center.x(), center.y(), 0);
+                    QPointF nodeOrigin = nodeItem->origin();
+                    QVector3D nodeOriginPoint(nodeOrigin.x(), nodeOrigin.y(), 0);
+                    QVector3D p = nodeOriginPoint - centerPoint;
+                    mat.rotate(degreeX, 0, 0, 1);
+                    p = mat * p;
+                    QVector3D finalPoint = p + centerPoint;
+                    byX = sceneRadiusToUnified(finalPoint.x() - nodeOrigin.x());
+                    byY = sceneRadiusToUnified(finalPoint.y() - nodeOrigin.y());
+                    if (SkeletonProfile::Main == nodeItem->profile()) {
+                        emit moveNodeBy(nodeItem->id(), byX, byY, 0);
+                    } else {
+                        emit moveNodeBy(nodeItem->id(), 0, byY, byX);
+                    }
+                }
+            } else {
+                for (const auto &it: nodeItems) {
+                    SkeletonGraphicsNodeItem *nodeItem = it;
+                    if (SkeletonProfile::Main == nodeItem->profile()) {
+                        emit moveNodeBy(nodeItem->id(), byX, byY, 0);
+                    } else {
+                        emit moveNodeBy(nodeItem->id(), 0, byY, byX);
+                    }
                 }
             }
             m_lastScenePos = mouseScenePos;
@@ -609,6 +635,7 @@ bool SkeletonGraphicsWidget::mouseRelease(QMouseEvent *event)
         }
         if (m_moveStarted) {
             m_moveStarted = false;
+            m_lastRot = 0;
             if (m_moveHappened)
                 emit groupOperationAdded();
         }

@@ -363,6 +363,7 @@ private:
     std::set<QGraphicsItem *> m_rangeSelectionSet;
     bool m_mouseEventFromSelf;
     bool m_moveHappened;
+    int m_lastRot;
 };
 
 class SkeletonGraphicsContainerWidget : public QWidget

@@ -1,11 +1,12 @@
-#include "modelwidget.h"
-#include "ds3file.h"
-#include "skeletongraphicswidget.h"
 #include <QMouseEvent>
 #include <QOpenGLShaderProgram>
 #include <QCoreApplication>
 #include <QGuiApplication>
 #include <math.h>
+#include "modelwidget.h"
+#include "ds3file.h"
+#include "skeletongraphicswidget.h"
+#include "modelwidget.h"
 
 // Modifed from http://doc.qt.io/qt-5/qtopengl-hellogl2-glwidget-cpp.html
 
@@ -61,14 +62,6 @@ void ModelWidget::setGraphicsFunctions(SkeletonGraphicsFunctions *graphicsFuncti
 ModelWidget::~ModelWidget()
 {
     cleanup();
-}
-
-static void qNormalizeAngle(int &angle)
-{
-    while (angle < 0)
-        angle += 360 * 16;
-    while (angle > 360 * 16)
-        angle -= 360 * 16;
 }
 
 void ModelWidget::setXRotation(int angle)
