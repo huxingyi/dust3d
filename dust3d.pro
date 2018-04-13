@@ -1,6 +1,17 @@
 QT += core widgets opengl
-CONFIG += debug
+CONFIG += release
 RESOURCES += resources.qrc
+
+BOOST_INCLUDEDIR = $$(BOOST_INCLUDEDIR)
+CGAL_DIR = $$(CGAL_DIR)
+
+isEmpty(BOOST_INCLUDEDIR) {
+	error("No BOOST_INCLUDEDIR define found in enviroment variables")
+}
+
+isEmpty(CGAL_DIR) {
+	error("No CGAL_DIR define found in enviroment variables")
+}
 
 HUMAN_VERSION = "0.0-alpha1"
 REPOSITORY_URL = "https://github.com/huxingyi/dust3d"
@@ -85,19 +96,54 @@ SOURCES += src/main.cpp
 
 HEADERS += src/version.h
 
-INCLUDEPATH += ../meshlite/include
-LIBS += -L../meshlite/target/debug -lmeshlite
+win32 {
+	contains(QMAKE_TARGET.arch, x86_64) {
+		MESHLITE_DIR = thirdparty/meshlite/meshlite_unstable_vc14_x64
+	} else {
+		MESHLITE_DIR = thirdparty/meshlite/meshlite_unstable_vc14_x86
+	}
+	MESHLITE_LIBNAME = meshlite.dll
+	GMP_LIBNAME = libgmp-10
+	MPFR_LIBNAME = libmpfr-4
+	CGAL_LIBNAME = CGAL-vc140-mt-4.11.1
+	CGAL_INCLUDEDIR = $$CGAL_DIR\include
+	CGAL_BUILDINCLUDEDIR = $$CGAL_DIR\build\include
+	CGAL_LIBDIR = $$CGAL_DIR\build\lib
+	GMP_INCLUDEDIR = $$CGAL_DIR\auxiliary\gmp\include
+	GMP_LIBDIR = $$CGAL_DIR\auxiliary\gmp\lib
+	MPFR_INCLUDEDIR = $$GMP_INCLUDEDIR
+	MPFR_LIBDIR = $$GMP_LIBDIR
+}
 
-INCLUDEPATH += /usr/local/opt/boost/include
+unix {
+	MESHLITE_DIR = thirdparty/meshlite
+	MESHLITE_LIBNAME = meshlite
+	GMP_LIBNAME = gmp
+	MPFR_LIBNAME = mpfr
+	CGAL_LIBNAME = cgal
+	CGAL_INCLUDEDIR = $$CGAL_DIR/include
+	CGAL_BUILDINCLUDEDIR = $$CGAL_DIR/build/include
+	CGAL_LIBDIR = $$CGAL_DIR/build/lib
+	GMP_INCLUDEDIR = $$CGAL_DIR/auxiliary/gmp/include
+	GMP_LIBDIR = $$CGAL_DIR/auxiliary/gmp/lib
+	MPFR_INCLUDEDIR = $$GMP_INCLUDEDIR
+	MPFR_LIBDIR = $$GMP_LIBDIR
+}
 
-INCLUDEPATH += /usr/local/opt/gmp/include
-LIBS += -L/usr/local/opt/gmp/lib -lgmp
+INCLUDEPATH += $$MESHLITE_DIR
+LIBS += -L$$MESHLITE_DIR -l$$MESHLITE_LIBNAME
 
-INCLUDEPATH += /usr/local/opt/mpfr/include
-LIBS += -L/usr/local/opt/mpfr/lib -lmpfr
+INCLUDEPATH += $$BOOST_INCLUDEDIR
 
-INCLUDEPATH += /usr/local/opt/cgal/include
-LIBS += -L/usr/local/opt/cgal/lib -lCGAL
+INCLUDEPATH += $$GMP_INCLUDEDIR
+LIBS += -L$$GMP_LIBDIR -l$$GMP_LIBNAME
+
+INCLUDEPATH += $$MPFR_INCLUDEDIR
+LIBS += -L$$MPFR_LIBDIR -l$$MPFR_LIBNAME
+
+INCLUDEPATH += $$CGAL_INCLUDEDIR
+INCLUDEPATH += $$CGAL_BUILDINCLUDEDIR
+LIBS += -L$$CGAL_LIBDIR -l$$CGAL_LIBNAME
 
 target.path = ./
 INSTALLS += target
