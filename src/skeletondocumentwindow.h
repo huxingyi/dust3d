@@ -26,6 +26,7 @@ public:
 protected:
     void showEvent(QShowEvent *event);
     void closeEvent(QCloseEvent *event);
+    void mousePressEvent(QMouseEvent *event);
 public slots:
     void changeTurnaround();
     void save();

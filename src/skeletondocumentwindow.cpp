@@ -534,6 +534,11 @@ void SkeletonDocumentWindow::showEvent(QShowEvent *event)
     }
 }
 
+void SkeletonDocumentWindow::mousePressEvent(QMouseEvent *event)
+{
+    QMainWindow::mousePressEvent(event);
+}
+
 void SkeletonDocumentWindow::changeTurnaround()
 {
     QString fileName = QFileDialog::getOpenFileName(this, QString(), QString(),

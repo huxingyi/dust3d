@@ -16,7 +16,8 @@ SkeletonDocument::SkeletonDocument() :
     m_resultMeshIsObsolete(false),
     m_resultMesh(nullptr),
     m_meshGenerator(nullptr),
-    m_batchChangeRefCount(0)
+    m_batchChangeRefCount(0),
+    editMode(SkeletonDocumentEditMode::Select)
 {
 }
 
