@@ -514,6 +514,7 @@ void SkeletonDocumentWindow::initButton(QPushButton *button)
     button->setFont(Theme::awesome()->font(Theme::toolIconFontSize));
     button->setFixedSize(Theme::toolIconSize, Theme::toolIconSize);
     button->setStyleSheet("QPushButton {color: #f7d9c8}");
+    button->setFocusPolicy(Qt::NoFocus);
 }
 
 SkeletonDocumentWindow::~SkeletonDocumentWindow()

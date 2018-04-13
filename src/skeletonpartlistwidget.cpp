@@ -98,6 +98,7 @@ void SkeletonPartWidget::initButton(QPushButton *button)
 {
     button->setFont(Theme::awesome()->font(Theme::miniIconFontSize));
     button->setFixedSize(Theme::miniIconSize, Theme::miniIconSize);
+    button->setFocusPolicy(Qt::NoFocus);
 }
 
 void SkeletonPartWidget::updateButton(QPushButton *button, QChar icon, bool highlighted)

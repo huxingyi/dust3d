@@ -323,6 +323,10 @@ public slots:
     void removeAllContent();
     void breakSelected();
     void connectSelected();
+    void rotateSelected(int degree);
+    void zoomSelected(float delta);
+    void scaleSelected(float delta);
+    void moveSelected(float byX, float byY);
 private slots:
     void turnaroundImageReady();
 private:
