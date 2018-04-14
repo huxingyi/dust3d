@@ -112,7 +112,7 @@ win32 {
 	CGAL_LIBNAME = CGAL-vc140-mt-4.11.1
 	CGAL_INCLUDEDIR = $$CGAL_DIR\include
 	CGAL_BUILDINCLUDEDIR = $$CGAL_DIR\build\include
-	CGAL_LIBDIR = $$CGAL_DIR\build\lib
+	CGAL_LIBDIR = $$CGAL_DIR\build\lib\Release
 	GMP_INCLUDEDIR = $$CGAL_DIR\auxiliary\gmp\include
 	GMP_LIBDIR = $$CGAL_DIR\auxiliary\gmp\lib
 	MPFR_INCLUDEDIR = $$GMP_INCLUDEDIR
