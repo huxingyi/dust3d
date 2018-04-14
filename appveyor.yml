@@ -22,13 +22,16 @@ install:
     call "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64
   - if "%PLATFORM%" == "x64"
     call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86_amd64
-  - if not exist CGAL-4.11.1.zip
+  - if not exist CGAL-4.11.1-Setup.exe
       appveyor DownloadFile https://github.com/CGAL/cgal/releases/download/releases/CGAL-4.11.1/CGAL-4.11.1-Setup.exe -FileName CGAL-4.11.1-Setup.exe
   - CGAL-4.11.1-Setup.exe /S /D=%APPVEYOR_BUILD_FOLDER%\CGAL-4.11.1
   - cd CGAL-4.11.1
   - mkdir build
   - cd build
-  - cmake ../ -DBOOST_INCLUDEDIR=C:\Libraries\boost_1_66_0
+  - if "%PLATFORM%" == "x86"
+    cmake -G "Visual Studio 14 2015" ../ -DBOOST_INCLUDEDIR=C:\Libraries\boost_1_66_0
+  - if "%PLATFORM%" == "x64"
+    cmake -G "Visual Studio 14 2015 Win64" ../ -DBOOST_INCLUDEDIR=C:\Libraries\boost_1_66_0
   - msbuild /p:Configuration=Release ALL_BUILD.vcxproj
   - cd %APPVEYOR_BUILD_FOLDER%
     
@@ -44,7 +47,7 @@ after_test:
   # Check Qt plugins by following https://wiki.qt.io/Deploy_an_Application_on_Windows
   - 7z a dust3d_unstable_%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\release\dust3d.exe
   - 7z a dust3d_unstable_%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\thirdparty\meshlite\meshlite_unstable_vc14_%PLATFORM%\meshlite.dll
-  - 7z a dust3d_unstable_%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-4.11.1\bin\Release\CGAL-vc140-mt-4.11.1.dll
+  - 7z a dust3d_unstable_%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-4.11.1\build\bin\Release\CGAL-vc140-mt-4.11.1.dll
   - 7z a dust3d_unstable_%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-4.11.1\auxiliary\gmp\lib\libgmp-10.dll
   - 7z a dust3d_unstable_%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-4.11.1\auxiliary\gmp\lib\libmpfr-4.dll
   - 7z a dust3d_unstable_%PLATFORM%.zip %QTDIR%\bin\Qt5Widgets.dll
