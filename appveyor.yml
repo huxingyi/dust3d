@@ -5,12 +5,12 @@ environment:
     - platform: x64
       target: x86_64-pc-windows-msvc
       qtdir: C:\Qt\5.10.1\msvc2015_64
-      sysdir: %WINDIR%\SysWOW64
+      sysdirname: SysWOW64
       
     - platform: x86
       target: i686-pc-windows-msvc
       qtdir: C:\Qt\5.10.1\msvc2015
-      sysdir: %WINDIR%\system32
+      sysdirname: system32
       
 cache:
   CGAL-4.11.1.zip -> appveyor.yml
@@ -43,8 +43,8 @@ after_test:
   - 7z a dust3d_unstable_%PLATFORM%.zip %QTDIR%\bin\Qt5Widgets.dll
   - 7z a dust3d_unstable_%PLATFORM%.zip %QTDIR%\bin\Qt5Gui.dll
   - 7z a dust3d_unstable_%PLATFORM%.zip %QTDIR%\bin\Qt5Core.dll
-  - 7z a dust3d_unstable_%PLATFORM%.zip %SYSDIR%\MSVCP140.dll
-  - 7z a dust3d_unstable_%PLATFORM%.zip %SYSDIR%\VCRUNTIME140.dll
+  - 7z a dust3d_unstable_%PLATFORM%.zip %WINDIR%\%SYSDIRNAME%\MSVCP140.dll
+  - 7z a dust3d_unstable_%PLATFORM%.zip %WINDIR%\%SYSDIRNAME%\VCRUNTIME140.dll
   - mkdir platforms
   - copy %QTDIR%\plugins\platforms\qwindows.dll %APPVEYOR_BUILD_FOLDER%\platforms\qwindows.dll
   - 7z a dust3d_unstable_%PLATFORM%.zip -r %APPVEYOR_BUILD_FOLDER%\platforms\
