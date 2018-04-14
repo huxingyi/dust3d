@@ -16,6 +16,12 @@ cache:
   CGAL-4.11.1-Setup.exe -> appveyor.yml
       
 install:
+  - if "%PLATFORM%" == "x86"
+    call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86
+  - if "%PLATFORM%" == "x64"
+    call "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64
+  - if "%PLATFORM%" == "x64"
+    call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86_amd64
   - if not exist CGAL-4.11.1.zip
       appveyor DownloadFile https://github.com/CGAL/cgal/releases/download/releases/CGAL-4.11.1/CGAL-4.11.1-Setup.exe -FileName CGAL-4.11.1-Setup.exe
   - CGAL-4.11.1-Setup.exe /S /D=%APPVEYOR_BUILD_FOLDER%\CGAL-4.11.1
@@ -29,12 +35,6 @@ install:
 build: false
 
 test_script:
-  - if "%PLATFORM%" == "x86"
-    call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86
-  - if "%PLATFORM%" == "x64"
-    call "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64
-  - if "%PLATFORM%" == "x64"
-    call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86_amd64
   - set PATH=%PATH%;%QTDIR%\bin
   - qmake "BOOST_INCLUDEDIR=C:\Libraries\boost_1_66_0" "CGAL_DIR=%APPVEYOR_BUILD_FOLDER%\CGAL-4.11.1"
   - nmake -f Makefile.Release
