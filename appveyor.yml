@@ -22,6 +22,8 @@ install:
   - cd CGAL-4.11.1
   - mkdir build
   - cd build
+  - set GMP_INCLUDE_DIR=%APPVEYOR_BUILD_FOLDER%\CGAL-4.11.1\auxiliary\gmp\include
+  - set GMP_LIBRARIES=%APPVEYOR_BUILD_FOLDER%\CGAL-4.11.1\auxiliary\gmp\lib
   - cmake ../
   - msbuild /p:Configuration=Release ALL_BUILD.vcxproj
     
