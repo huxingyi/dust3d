@@ -34,7 +34,9 @@ script:
 before_deploy:
   - git config --local user.name "huxingyi"
   - git config --local user.email "huxingyi@msn.com"
-  - git tag "dust3d-unstable"
+  - git tag -d dust3d-unstable
+  - git push origin :dust3d-unstable
+  - git tag dust3d-unstable
 
 deploy:
   - provider: releases
