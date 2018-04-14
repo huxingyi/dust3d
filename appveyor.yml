@@ -1,0 +1,67 @@
+os: Visual Studio 2015
+
+environment:
+  matrix:
+    - platform: x64
+      target: x86_64-pc-windows-msvc
+      qtdir: C:\Qt\5.10.1\msvc2015_64
+      sysdir: %WINDIR%\SysWOW64
+      
+    - platform: x86
+      target: i686-pc-windows-msvc
+      qtdir: C:\Qt\5.10.1\msvc2015
+      sysdir: %WINDIR%\system32
+      
+cache:
+  CGAL-4.11.1.zip -> appveyor.yml
+      
+install:
+  - if not exist CGAL-4.11.1.zip
+      appveyor DownloadFile https://github.com/CGAL/cgal/releases/download/releases%2FCGAL-4.11.1/CGAL-4.11.1.zip -FileName CGAL-4.11.1.zip
+  - 7z x CGAL-4.11.1.zip
+  - cd CGAL-4.11.1
+  - mkdir build
+  - cd build
+  - cmake ../
+  - msbuild /p:Configuration=Release ALL_BUILD.vcxproj
+    
+build: false
+
+test_script:
+  - set PATH=%PATH%;%QTDIR%\bin
+  - qmake DEFINES+=BOOST_INCLUDEDIR=C:\Libraries\boost_1_66_0 DEFINES+=CGAL_DIR=%APPVEYOR_BUILD_FOLDER%\CGAL-4.11.1
+  - nmake -f Makefile.Release
+    
+after_test:
+  # Check deps by Dependency Walker
+  # Check Qt plugins by following https://wiki.qt.io/Deploy_an_Application_on_Windows
+  - 7z a dust3d_unstable_%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\release\dust3d.exe
+  - 7z a dust3d_unstable_%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\thirdparty\meshlite\meshlite_unstable_vc14_%PLATFORM%\meshlite.dll
+  - 7z a dust3d_unstable_%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-4.11.1\bin\Release\CGAL-vc140-mt-4.11.1.dll
+  - 7z a dust3d_unstable_%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-4.11.1\auxiliary\gmp\lib\libgmp-10.dll
+  - 7z a dust3d_unstable_%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-4.11.1\auxiliary\gmp\lib\libmpfr-4.dll
+  - 7z a dust3d_unstable_%PLATFORM%.zip %QTDIR%\bin\Qt5Widgets.dll
+  - 7z a dust3d_unstable_%PLATFORM%.zip %QTDIR%\bin\Qt5Gui.dll
+  - 7z a dust3d_unstable_%PLATFORM%.zip %QTDIR%\bin\Qt5Core.dll
+  - 7z a dust3d_unstable_%PLATFORM%.zip %SYSDIR%\MSVCP140.dll
+  - 7z a dust3d_unstable_%PLATFORM%.zip %SYSDIR%\VCRUNTIME140.dll
+  - mkdir platforms
+  - copy %QTDIR%\plugins\platforms\qwindows.dll %APPVEYOR_BUILD_FOLDER%\platforms\qwindows.dll
+  - 7z a dust3d_unstable_%PLATFORM%.zip -r %APPVEYOR_BUILD_FOLDER%\platforms\
+    
+artifacts:
+  - path: '*.zip'
+    name: platform_zips
+    
+deploy:
+  release: dust3d-unstable
+  description: 'Unstable release for test purpose only'
+  force_update: true
+  provider: GitHub
+  auth_token:
+    secure: Rhzhefjk89WN2tDht8vVKYAojGfR23LhDPKPxhQwbT7k3qswSWjmoFoDTpIHNfc0
+  artifact: platform_zips
+  draft: false
+  prerelease: false
+  on:
+    branch: master                 # release from master branch only
