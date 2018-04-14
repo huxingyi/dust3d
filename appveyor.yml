@@ -13,12 +13,12 @@ environment:
       sysdirname: system32
       
 cache:
-  CGAL-4.11.1.zip -> appveyor.yml
+  CGAL-4.11.1-Setup.exe -> appveyor.yml
       
 install:
   - if not exist CGAL-4.11.1.zip
-      appveyor DownloadFile https://github.com/CGAL/cgal/releases/download/releases/CGAL-4.11.1/CGAL-4.11.1.zip -FileName CGAL-4.11.1.zip
-  - 7z x CGAL-4.11.1.zip
+      appveyor DownloadFile https://github.com/CGAL/cgal/releases/download/releases/CGAL-4.11.1/CGAL-4.11.1-Setup.exe -FileName CGAL-4.11.1-Setup.exe
+  - CGAL-4.11.1-Setup.exe /S /D=%APPVEYOR_BUILD_FOLDER%\CGAL-4.11.1
   - cd CGAL-4.11.1
   - mkdir build
   - cd build
