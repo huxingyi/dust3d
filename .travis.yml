@@ -28,20 +28,20 @@ script:
   - cp meshlite/target/release/libmeshlite.dylib thirdparty/meshlite/libmeshlite.dylib
   - qmake -config release
   - make
-  - mv dust3d.app dust3d-unstable.app
-  - macdeployqt dust3d-unstable.app -dmg
+  #- mv dust3d.app dust3d-unstable.app
+  #- macdeployqt dust3d-unstable.app -dmg
 
-deploy:
-  - provider: releases
-    api_key:
-      secure: ZoWp2r5I3tq6QjVJZBpZUwch0PBKV2GWqsaKGKc/Ntic28S2aNecF91Esx7Ebt/aUxVmooONvkSF0DvTsf9nUSxgRUhGI9kaPC3Ove4AGJjMUfSzdVSmv7DRFLWfZx/g4e0SxZ7QShiZQ4y9t08wMUZaCIt6hH46oe+FY8hawxnQ7BZMkdQDL7re2BO0XixBMzTO3ZeLJIPreFs9K/bCUwsmsC++EKf5lRkxQDkBPgryumQuKB//4D8NIsnfmjrUYH4mdCRIezIiiafFXiWSeYO+iuBtme/PH3V7c9npNCp4qbYIi0YwfPeLMS+sDngqWSmn/KFaXhPeS2h9z2z/dHf9C59kQ2Z83hdAujrX66lnrwL5le511KUpPAcH4z/DQpLMYn3zvac9dZVkRt4Ze+8Mw8UvdzNKUp0OafyeYTF85DoTP8dZW1pDMTdTSOm8u9xuPx64qX1D6os0I1mK8dTyQvcDYoKlZ7/V7nD2Xm0+p1LsRx4+K0BQF9PWytT2u0I8Tx9RUcy3p6vMS7vrYtgFvuW7sLKIvgkP/n2PvHRmUcTCD7SdFE8U7nwqEAyPXg5F2jO4CxrLzkU4R2OpPSh30+gE3TF3DtyldFdAk+RIrKtLu3iW1dek0YgtkF+zLGMVAWzTjkJhSRk8bzeyhdGwGpjfnJq1QstHknZB/iA=
-    file:
-      - dust3d-unstable.dmg
-    overwrite: true
-    skip_cleanup: true
-    on:
-      tags: true
-      condition: $TRAVIS_OS_NAME = osx
-      branches:
-      only:
-        - master
+#deploy:
+#  - provider: releases
+#    api_key:
+#      secure: ZoWp2r5I3tq6QjVJZBpZUwch0PBKV2GWqsaKGKc/Ntic28S2aNecF91Esx7Ebt/aUxVmooONvkSF0DvTsf9nUSxgRUhGI9kaPC3Ove4AGJjMUfSzdVSmv7DRFLWfZx/g4e0SxZ7QShiZQ4y9t08wMUZaCIt6hH46oe+FY8hawxnQ7BZMkdQDL7re2BO0XixBMzTO3ZeLJIPreFs9K/bCUwsmsC++EKf5lRkxQDkBPgryumQuKB//4D8NIsnfmjrUYH4mdCRIezIiiafFXiWSeYO+iuBtme/PH3V7c9npNCp4qbYIi0YwfPeLMS+sDngqWSmn/KFaXhPeS2h9z2z/dHf9C59kQ2Z83hdAujrX66lnrwL5le511KUpPAcH4z/DQpLMYn3zvac9dZVkRt4Ze+8Mw8UvdzNKUp0OafyeYTF85DoTP8dZW1pDMTdTSOm8u9xuPx64qX1D6os0I1mK8dTyQvcDYoKlZ7/V7nD2Xm0+p1LsRx4+K0BQF9PWytT2u0I8Tx9RUcy3p6vMS7vrYtgFvuW7sLKIvgkP/n2PvHRmUcTCD7SdFE8U7nwqEAyPXg5F2jO4CxrLzkU4R2OpPSh30+gE3TF3DtyldFdAk+RIrKtLu3iW1dek0YgtkF+zLGMVAWzTjkJhSRk8bzeyhdGwGpjfnJq1QstHknZB/iA=
+#    file:
+#      - dust3d-unstable.dmg
+#    overwrite: true
+#    skip_cleanup: true
+#    on:
+#      tags: true
+#      condition: $TRAVIS_OS_NAME = osx
+#      branches:
+#      only:
+#        - master
