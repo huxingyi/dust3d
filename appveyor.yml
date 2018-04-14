@@ -2,10 +2,10 @@ os: Visual Studio 2015
 
 environment:
   matrix:
-    - platform: x64
-      target: x86_64-pc-windows-msvc
-      qtdir: C:\Qt\5.10.1\msvc2015_64
-      sysdirname: SysWOW64
+    #- platform: x64
+    #  target: x86_64-pc-windows-msvc
+    #  qtdir: C:\Qt\5.10.1\msvc2015_64
+    #  sysdirname: SysWOW64
       
     - platform: x86
       target: i686-pc-windows-msvc
@@ -48,13 +48,13 @@ after_test:
   - 7z a dust3d_unstable_%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\release\dust3d.exe
   - 7z a dust3d_unstable_%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\thirdparty\meshlite\meshlite_unstable_vc14_%PLATFORM%\meshlite.dll
   - 7z a dust3d_unstable_%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-4.11.1\build\bin\Release\CGAL-vc140-mt-4.11.1.dll
-  - 7z a dust3d_unstable_%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-4.11.1\auxiliary\gmp\lib\libgmp-10.dll
-  - 7z a dust3d_unstable_%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-4.11.1\auxiliary\gmp\lib\libmpfr-4.dll
+  #- 7z a dust3d_unstable_%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-4.11.1\auxiliary\gmp\lib\libgmp-10.dll
+  #- 7z a dust3d_unstable_%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-4.11.1\auxiliary\gmp\lib\libmpfr-4.dll
   - 7z a dust3d_unstable_%PLATFORM%.zip %QTDIR%\bin\Qt5Widgets.dll
   - 7z a dust3d_unstable_%PLATFORM%.zip %QTDIR%\bin\Qt5Gui.dll
   - 7z a dust3d_unstable_%PLATFORM%.zip %QTDIR%\bin\Qt5Core.dll
-  - 7z a dust3d_unstable_%PLATFORM%.zip %WINDIR%\%SYSDIRNAME%\MSVCP140.dll
-  - 7z a dust3d_unstable_%PLATFORM%.zip %WINDIR%\%SYSDIRNAME%\VCRUNTIME140.dll
+  7z a dust3d_unstable_%PLATFORM%.zip "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\redist\%PLATFORM%\Microsoft.VC140.CRT\MSVCP140.DLL"
+  7z a dust3d_unstable_%PLATFORM%.zip "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\redist\%PLATFORM%\Microsoft.VC140.CRT\CONCRT140.DLL"
   - mkdir platforms
   - copy %QTDIR%\plugins\platforms\qwindows.dll %APPVEYOR_BUILD_FOLDER%\platforms\qwindows.dll
   - 7z a dust3d_unstable_%PLATFORM%.zip -r %APPVEYOR_BUILD_FOLDER%\platforms\
