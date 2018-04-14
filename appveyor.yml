@@ -64,8 +64,8 @@ artifacts:
     name: platform_zips
     
 deploy:
-  release: dust3d-unstable
-  description: 'Unstable release for test purpose only'
+  release: unstable-win
+  description: 'Unstable release for test purpose only. The source code is attached when this release first created, and it is not get updated while the binary been replaced on each commit.'
   force_update: true
   provider: GitHub
   auth_token:

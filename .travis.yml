@@ -31,13 +31,6 @@ script:
   - mv dust3d.app dust3d-unstable.app
   - macdeployqt dust3d-unstable.app -dmg
 
-before_deploy:
-  - git config --local user.name "huxingyi"
-  - git config --local user.email "huxingyi@msn.com"
-  - git tag -d dust3d-unstable
-  - git push origin :dust3d-unstable
-  - git tag dust3d-unstable
-
 deploy:
   - provider: releases
     api_key:
@@ -47,7 +40,7 @@ deploy:
     overwrite: true
     skip_cleanup: true
     on:
-      tags: false
+      tags: true
       condition: $TRAVIS_OS_NAME = osx
       branches:
       only:
