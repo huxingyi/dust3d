@@ -24,6 +24,7 @@ install:
   - cd build
   - cmake ../ -DBOOST_INCLUDEDIR=C:\Libraries\boost_1_66_0
   - msbuild /p:Configuration=Release ALL_BUILD.vcxproj
+  - cd %APPVEYOR_BUILD_FOLDER%
     
 build: false
 
