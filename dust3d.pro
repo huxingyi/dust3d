@@ -86,9 +86,13 @@ SOURCES += src/main.cpp
 HEADERS += src/version.h
 
 win32 {
-	BOOST_INCLUDEDIR = $$(BOOST_INCLUDEDIR)
-	CGAL_DIR = $$(CGAL_DIR)
-
+	isEmpty(BOOST_INCLUDEDIR) {
+		BOOST_INCLUDEDIR = $$(BOOST_INCLUDEDIR)
+	}
+	isEmpty(CGAL_DIR) {
+		CGAL_DIR = $$(CGAL_DIR)
+	}
+	
 	isEmpty(BOOST_INCLUDEDIR) {
 		error("No BOOST_INCLUDEDIR define found in enviroment variables")
 	}
