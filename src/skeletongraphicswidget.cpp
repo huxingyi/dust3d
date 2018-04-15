@@ -274,6 +274,7 @@ void SkeletonGraphicsWidget::updateItems()
         nodeRadiusChanged(nodeItemIt->first);
         nodeOriginChanged(nodeItemIt->first);
     }
+    originChanged();
 }
 
 void SkeletonGraphicsWidget::canvasResized()
