@@ -16,22 +16,28 @@
 
 SkeletonGraphicsWidget::SkeletonGraphicsWidget(const SkeletonDocument *document) :
     m_document(document),
+    m_backgroundItem(nullptr),
     m_turnaroundChanged(false),
     m_turnaroundLoader(nullptr),
     m_dragStarted(false),
+    m_moveStarted(false),
     m_cursorNodeItem(nullptr),
     m_cursorEdgeItem(nullptr),
     m_addFromNodeItem(nullptr),
-    m_moveStarted(false),
     m_hoveredNodeItem(nullptr),
     m_hoveredEdgeItem(nullptr),
-    m_lastAddedX(0),
-    m_lastAddedY(0),
-    m_lastAddedZ(0),
+    m_lastAddedX(false),
+    m_lastAddedY(false),
+    m_lastAddedZ(false),
     m_selectionItem(nullptr),
     m_rangeSelectionStarted(false),
     m_mouseEventFromSelf(false),
-    m_lastRot(0)
+    m_moveHappened(false),
+    m_lastRot(0),
+    m_mainOriginItem(nullptr),
+    m_sideOriginItem(nullptr),
+    m_hoveredOriginItem(nullptr),
+    m_checkedOriginItem(nullptr)
 {
     setRenderHint(QPainter::Antialiasing, false);
     setBackgroundBrush(QBrush(QWidget::palette().color(QWidget::backgroundRole()), Qt::SolidPattern));
@@ -59,6 +65,14 @@ SkeletonGraphicsWidget::SkeletonGraphicsWidget(const SkeletonDocument *document)
     m_selectionItem = new SkeletonGraphicsSelectionItem();
     m_selectionItem->hide();
     scene()->addItem(m_selectionItem);
+    
+    m_mainOriginItem = new SkeletonGraphicsOriginItem(SkeletonProfile::Main);
+    m_mainOriginItem->hide();
+    scene()->addItem(m_mainOriginItem);
+    
+    m_sideOriginItem = new SkeletonGraphicsOriginItem(SkeletonProfile::Side);
+    m_sideOriginItem->hide();
+    scene()->addItem(m_sideOriginItem);
     
     scene()->setSceneRect(rect());
     
@@ -432,18 +446,29 @@ bool SkeletonGraphicsWidget::mouseMove(QMouseEvent *event)
             SkeletonDocumentEditMode::Add == m_document->editMode) {
         SkeletonGraphicsNodeItem *newHoverNodeItem = nullptr;
         SkeletonGraphicsEdgeItem *newHoverEdgeItem = nullptr;
+        SkeletonGraphicsOriginItem *newHoverOriginItem = nullptr;
         QList<QGraphicsItem *> items = scene()->items(mouseEventScenePos(event));
         for (auto it = items.begin(); it != items.end(); it++) {
             QGraphicsItem *item = *it;
             if (item->data(0) == "node") {
                 newHoverNodeItem = (SkeletonGraphicsNodeItem *)item;
-                break;
             } else if (item->data(0) == "edge") {
                 newHoverEdgeItem = (SkeletonGraphicsEdgeItem *)item;
+            } else if (item->data(0) == "origin") {
+                newHoverOriginItem = (SkeletonGraphicsOriginItem *)item;
             }
         }
         if (newHoverNodeItem) {
             newHoverEdgeItem = nullptr;
+        }
+        if (newHoverOriginItem != m_hoveredOriginItem) {
+            if (nullptr != m_hoveredOriginItem) {
+                m_hoveredOriginItem->setHovered(false);
+            }
+            m_hoveredOriginItem = newHoverOriginItem;
+            if (nullptr != m_hoveredOriginItem) {
+                m_hoveredOriginItem->setHovered(true);
+            }
         }
         if (newHoverNodeItem != m_hoveredNodeItem) {
             if (nullptr != m_hoveredNodeItem) {
@@ -481,18 +506,28 @@ bool SkeletonGraphicsWidget::mouseMove(QMouseEvent *event)
     }
     
     if (SkeletonDocumentEditMode::Select == m_document->editMode) {
-        if (m_moveStarted && !m_rangeSelectionSet.empty()) {
-            QPointF mouseScenePos = mouseEventScenePos(event);
-            float byX = mouseScenePos.x() - m_lastScenePos.x();
-            float byY = mouseScenePos.y() - m_lastScenePos.y();
-            if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
-                rotateSelected(byX);
-            } else {
-                moveSelected(byX, byY);
+        if (m_moveStarted) {
+            if (m_checkedOriginItem) {
+                QPointF mouseScenePos = mouseEventScenePos(event);
+                float byX = mouseScenePos.x() - m_lastScenePos.x();
+                float byY = mouseScenePos.y() - m_lastScenePos.y();
+                moveCheckedOrigin(byX, byY);
+                m_lastScenePos = mouseScenePos;
+                m_moveHappened = true;
+                return true;
+            } else if (!m_rangeSelectionSet.empty()) {
+                QPointF mouseScenePos = mouseEventScenePos(event);
+                float byX = mouseScenePos.x() - m_lastScenePos.x();
+                float byY = mouseScenePos.y() - m_lastScenePos.y();
+                if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
+                    rotateSelected(byX);
+                } else {
+                    moveSelected(byX, byY);
+                }
+                m_lastScenePos = mouseScenePos;
+                m_moveHappened = true;
+                return true;
             }
-            m_lastScenePos = mouseScenePos;
-            m_moveHappened = true;
-            return true;
         }
     }
     
@@ -526,6 +561,19 @@ void SkeletonGraphicsWidget::rotateSelected(int degree)
         } else {
             emit moveNodeBy(nodeItem->id(), 0, byY, byX);
         }
+    }
+}
+
+void SkeletonGraphicsWidget::moveCheckedOrigin(float byX, float byY)
+{
+    if (!m_checkedOriginItem)
+        return;
+    byX = sceneRadiusToUnified(byX);
+    byY = sceneRadiusToUnified(byY);
+    if (SkeletonProfile::Main == m_checkedOriginItem->profile()) {
+        emit moveOriginBy(byX, byY, 0);
+    } else {
+        emit moveOriginBy(0, byY, byX);
     }
 }
 
@@ -760,8 +808,25 @@ bool SkeletonGraphicsWidget::mousePress(QMouseEvent *event)
                 return true;
             }
         } else if (SkeletonDocumentEditMode::Select == m_document->editMode) {
-            //if (m_mouseEventFromSelf) {
-                bool processed = false;
+            bool processed = false;
+            if (m_hoveredOriginItem != m_checkedOriginItem) {
+                if (m_checkedOriginItem) {
+                    m_checkedOriginItem->setChecked(false);
+                    m_checkedOriginItem->setHovered(false);
+                }
+                m_checkedOriginItem = m_hoveredOriginItem;
+                if (m_checkedOriginItem) {
+                    m_checkedOriginItem->setChecked(true);
+                }
+            }
+            if (m_checkedOriginItem) {
+                if (!m_moveStarted) {
+                    m_moveStarted = true;
+                    m_lastScenePos = mouseEventScenePos(event);
+                    m_moveHappened = false;
+                    processed = true;
+                }
+            } else {
                 if ((nullptr == m_hoveredNodeItem || m_rangeSelectionSet.find(m_hoveredNodeItem) == m_rangeSelectionSet.end()) &&
                         (nullptr == m_hoveredEdgeItem || m_rangeSelectionSet.find(m_hoveredEdgeItem) == m_rangeSelectionSet.end())) {
                     if (!QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
@@ -792,10 +857,10 @@ bool SkeletonGraphicsWidget::mousePress(QMouseEvent *event)
                         }
                     }
                 }
-                if (processed) {
-                    return true;
-                }
-            //}
+            }
+            if (processed) {
+                return true;
+            }
         }
     }
     
@@ -938,24 +1003,44 @@ bool SkeletonGraphicsWidget::keyPress(QKeyEvent *event)
             emit groupOperationAdded();
         }
     } else if (event->key() == Qt::Key_Left) {
-        if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
-            moveSelected(-1, 0);
-            emit groupOperationAdded();
+        if (SkeletonDocumentEditMode::Select == m_document->editMode) {
+            if (m_checkedOriginItem) {
+                moveCheckedOrigin(-1, 0);
+                emit groupOperationAdded();
+            } else if (hasSelection()) {
+                moveSelected(-1, 0);
+                emit groupOperationAdded();
+            }
         }
     } else if (event->key() == Qt::Key_Right) {
-        if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
-            moveSelected(1, 0);
-            emit groupOperationAdded();
+        if (SkeletonDocumentEditMode::Select == m_document->editMode) {
+            if (m_checkedOriginItem) {
+                moveCheckedOrigin(1, 0);
+                emit groupOperationAdded();
+            } else if (hasSelection()) {
+                moveSelected(1, 0);
+                emit groupOperationAdded();
+            }
         }
     } else if (event->key() == Qt::Key_Up) {
-        if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
-            moveSelected(0, -1);
-            emit groupOperationAdded();
+        if (SkeletonDocumentEditMode::Select == m_document->editMode) {
+            if (m_checkedOriginItem) {
+                moveCheckedOrigin(0, -1);
+                emit groupOperationAdded();
+            } else if (hasSelection()) {
+                moveSelected(0, -1);
+                emit groupOperationAdded();
+            }
         }
     } else if (event->key() == Qt::Key_Down) {
-        if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
-            moveSelected(0, 1);
-            emit groupOperationAdded();
+        if (SkeletonDocumentEditMode::Select == m_document->editMode) {
+            if (m_checkedOriginItem) {
+                moveCheckedOrigin(0, 1);
+                emit groupOperationAdded();
+            } else if (hasSelection()) {
+                moveSelected(0, 1);
+                emit groupOperationAdded();
+            }
         }
     } else if (event->key() == Qt::Key_BracketLeft) {
         if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
@@ -969,6 +1054,19 @@ bool SkeletonGraphicsWidget::keyPress(QKeyEvent *event)
         }
     }
     return false;
+}
+
+void SkeletonGraphicsWidget::originChanged()
+{
+    if (!m_document->originSettled()) {
+        m_mainOriginItem->hide();
+        m_sideOriginItem->hide();
+        return;
+    }
+    m_mainOriginItem->setOrigin(scenePosFromUnified(QPointF(m_document->originX, m_document->originY)));
+    m_sideOriginItem->setOrigin(scenePosFromUnified(QPointF(m_document->originZ, m_document->originY)));
+    m_mainOriginItem->show();
+    m_sideOriginItem->show();
 }
 
 void SkeletonGraphicsWidget::nodeAdded(QUuid nodeId)

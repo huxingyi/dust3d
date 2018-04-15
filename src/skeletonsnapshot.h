@@ -14,6 +14,8 @@ public:
     std::map<QString, std::map<QString, QString>> edges;
     std::map<QString, std::map<QString, QString>> parts;
     std::vector<QString> partIdList;
+public:
+    void resolveBoundingBox(QRectF *mainProfile, QRectF *sideProfile, const QString &partId=QString());
 };
 
 #endif

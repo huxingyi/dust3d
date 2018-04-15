@@ -13,11 +13,16 @@
 unsigned long SkeletonDocument::m_maxSnapshot = 1000;
 
 SkeletonDocument::SkeletonDocument() :
+    // public
+    originX(0),
+    originY(0),
+    originZ(0),
+    editMode(SkeletonDocumentEditMode::Select),
+    // private
     m_resultMeshIsObsolete(false),
-    m_resultMesh(nullptr),
     m_meshGenerator(nullptr),
-    m_batchChangeRefCount(0),
-    editMode(SkeletonDocumentEditMode::Select)
+    m_resultMesh(nullptr),
+    m_batchChangeRefCount(0)
 {
 }
 
@@ -285,6 +290,11 @@ const SkeletonEdge *SkeletonDocument::findEdgeByNodes(QUuid firstNodeId, QUuid s
     return nullptr;
 }
 
+bool SkeletonDocument::originSettled() const
+{
+    return originX > 0 && originY > 0 && originZ > 0;
+}
+
 void SkeletonDocument::addEdge(QUuid fromNodeId, QUuid toNodeId)
 {
     if (findEdgeByNodes(fromNodeId, toNodeId)) {
@@ -431,6 +441,15 @@ void SkeletonDocument::moveNodeBy(QUuid nodeId, float x, float y, float z)
     emit skeletonChanged();
 }
 
+void SkeletonDocument::moveOriginBy(float x, float y, float z)
+{
+    originX += x;
+    originY += y;
+    originZ += z;
+    emit originChanged();
+    emit skeletonChanged();
+}
+
 void SkeletonDocument::setNodeOrigin(QUuid nodeId, float x, float y, float z)
 {
     auto it = nodeMap.find(nodeId);
@@ -552,6 +571,8 @@ void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUu
         part["locked"] = partIt.second.locked ? "true" : "false";
         part["subdived"] = partIt.second.subdived ? "true" : "false";
         part["disabled"] = partIt.second.disabled ? "true" : "false";
+        part["xMirrored"] = partIt.second.xMirrored ? "true" : "false";
+        part["zMirrored"] = partIt.second.zMirrored ? "true" : "false";
         if (!partIt.second.name.isEmpty())
             part["name"] = partIt.second.name;
         snapshot->parts[part["id"]] = part;
@@ -591,10 +612,26 @@ void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUu
             continue;
         snapshot->partIdList.push_back(partIdIt.toString());
     }
+    std::map<QString, QString> canvas;
+    canvas["originX"] = QString::number(originX);
+    canvas["originY"] = QString::number(originY);
+    canvas["originZ"] = QString::number(originZ);
+    snapshot->canvas = canvas;
 }
 
 void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot)
 {
+    const auto &originXit = snapshot.canvas.find("originX");
+    const auto &originYit = snapshot.canvas.find("originY");
+    const auto &originZit = snapshot.canvas.find("originZ");
+    if (originXit != snapshot.canvas.end() &&
+            originYit != snapshot.canvas.end() &&
+            originZit != snapshot.canvas.end()) {
+        originX = originXit->second.toFloat();
+        originY = originYit->second.toFloat();
+        originZ = originZit->second.toFloat();
+    }
+    
     std::map<QUuid, QUuid> oldNewIdMap;
     for (const auto &partKv : snapshot.parts) {
         SkeletonPart part;
@@ -604,6 +641,8 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot)
         part.locked = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "locked"));
         part.subdived = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "subdived"));
         part.disabled = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "disabled"));
+        part.xMirrored = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "xMirrored"));
+        part.zMirrored = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "zMirrored"));
         partMap[part.id] = part;
     }
     for (const auto &nodeKv : snapshot.nodes) {
@@ -664,11 +703,15 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot)
     }
     
     emit partListChanged();
+    emit originChanged();
     emit skeletonChanged();
 }
 
 void SkeletonDocument::reset()
 {
+    originX = 0;
+    originY = 0;
+    originZ = 0;
     nodeMap.clear();
     edgeMap.clear();
     partMap.clear();
@@ -821,6 +864,51 @@ void SkeletonDocument::setPartDisableState(QUuid partId, bool disabled)
         return;
     part->second.disabled = disabled;
     emit partDisableStateChanged(partId);
+    emit skeletonChanged();
+}
+
+void SkeletonDocument::settleOrigin()
+{
+    if (originSettled())
+        return;
+    SkeletonSnapshot snapshot;
+    toSnapshot(&snapshot);
+    QRectF mainProfile;
+    QRectF sideProfile;
+    snapshot.resolveBoundingBox(&mainProfile, &sideProfile);
+    originX = mainProfile.x() + mainProfile.width() / 2;
+    originY = mainProfile.y() + mainProfile.height() / 2;
+    originZ = sideProfile.x() + sideProfile.width() / 2;
+    emit originChanged();
+}
+
+void SkeletonDocument::setPartXmirrorState(QUuid partId, bool mirrored)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    if (part->second.xMirrored == mirrored)
+        return;
+    part->second.xMirrored = mirrored;
+    settleOrigin();
+    emit partXmirrorStateChanged(partId);
+    emit skeletonChanged();
+}
+
+void SkeletonDocument::setPartZmirrorState(QUuid partId, bool mirrored)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    if (part->second.zMirrored == mirrored)
+        return;
+    part->second.zMirrored = mirrored;
+    settleOrigin();
+    emit partZmirrorStateChanged(partId);
     emit skeletonChanged();
 }
 

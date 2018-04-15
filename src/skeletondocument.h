@@ -68,13 +68,17 @@ public:
     bool locked;
     bool subdived;
     bool disabled;
+    bool xMirrored;
+    bool zMirrored;
     QImage preview;
     std::vector<QUuid> nodeIds;
     SkeletonPart(const QUuid &withId=QUuid()) :
         visible(true),
         locked(false),
         subdived(false),
-        disabled(false)
+        disabled(false),
+        xMirrored(false),
+        zMirrored(false)
     {
         id = withId.isNull() ? QUuid::createUuid() : withId;
     }
@@ -84,6 +88,8 @@ public:
         locked = other.locked;
         subdived = other.subdived;
         disabled = other.disabled;
+        xMirrored = other.xMirrored;
+        zMirrored = other.zMirrored;
     }
 };
 
@@ -133,7 +139,15 @@ signals:
     void partVisibleStateChanged(QUuid partId);
     void partSubdivStateChanged(QUuid partId);
     void partDisableStateChanged(QUuid partId);
+    void partXmirrorStateChanged(QUuid partId);
+    void partZmirrorStateChanged(QUuid partId);
     void cleanup();
+    void originChanged();
+public: // need initialize
+    float originX;
+    float originY;
+    float originZ;
+    SkeletonDocumentEditMode editMode;
 public:
     SkeletonDocument();
     ~SkeletonDocument();
@@ -142,7 +156,7 @@ public:
     std::map<QUuid, SkeletonEdge> edgeMap;
     std::vector<QUuid> partIds;
     QImage turnaround;
-    SkeletonDocumentEditMode editMode;
+    QImage preview;
     void toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUuid> &limitNodeIds=std::set<QUuid>()) const;
     void fromSnapshot(const SkeletonSnapshot &snapshot);
     void addFromSnapshot(const SkeletonSnapshot &snapshot);
@@ -151,13 +165,13 @@ public:
     const SkeletonPart *findPart(QUuid partId) const;
     const SkeletonEdge *findEdgeByNodes(QUuid firstNodeId, QUuid secondNodeId) const;
     Mesh *takeResultMesh();
-    QImage preview;
     void updateTurnaround(const QImage &image);
     bool hasPastableContentInClipboard() const;
     bool undoable() const;
     bool redoable() const;
     bool isNodeEditable(QUuid nodeId) const;
     bool isEdgeEditable(QUuid edgeId) const;
+    bool originSettled() const;
 public slots:
     void removeNode(QUuid nodeId);
     void removeEdge(QUuid edgeId);
@@ -167,6 +181,7 @@ public slots:
     void moveNodeBy(QUuid nodeId, float x, float y, float z);
     void setNodeOrigin(QUuid nodeId, float x, float y, float z);
     void setNodeRadius(QUuid nodeId, float radius);
+    void moveOriginBy(float x, float y, float z);
     void addEdge(QUuid fromNodeId, QUuid toNodeId);
     void setEditMode(SkeletonDocumentEditMode mode);
     void uiReady();
@@ -176,6 +191,8 @@ public slots:
     void setPartVisibleState(QUuid partId, bool visible);
     void setPartSubdivState(QUuid partId, bool subdived);
     void setPartDisableState(QUuid partId, bool disabled);
+    void setPartXmirrorState(QUuid partId, bool mirrored);
+    void setPartZmirrorState(QUuid partId, bool mirrored);
     void saveSnapshot();
     void undo();
     void redo();
@@ -190,14 +207,16 @@ private:
     void splitPartByEdge(std::vector<std::vector<QUuid>> *groups, QUuid edgeId);
     bool isPartReadonly(QUuid partId) const;
     QUuid createNode(float x, float y, float z, float radius, QUuid fromNodeId);
-private:
+    void settleOrigin();
+private: // need initialize
     bool m_resultMeshIsObsolete;
     MeshGenerator *m_meshGenerator;
     Mesh *m_resultMesh;
+    int m_batchChangeRefCount;
+private:
     static unsigned long m_maxSnapshot;
     std::deque<SkeletonHistoryItem> m_undoItems;
     std::deque<SkeletonHistoryItem> m_redoItems;
-    int m_batchChangeRefCount;
 };
 
 #endif

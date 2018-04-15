@@ -14,6 +14,8 @@ signals:
     void setPartVisibleState(QUuid partId, bool visible);
     void setPartSubdivState(QUuid partId, bool subdived);
     void setPartDisableState(QUuid partId, bool disabled);
+    void setPartXmirrorState(QUuid partId, bool mirrored);
+    void setPartZmirrorState(QUuid partId, bool mirrored);
 public:
     SkeletonPartWidget(const SkeletonDocument *document, QUuid partId);
     void reload();
@@ -22,6 +24,8 @@ public:
     void updateVisibleButton();
     void updateSubdivButton();
     void updateDisableButton();
+    void updateXmirrorButton();
+    void updateZmirrorButton();
 private:
     const SkeletonDocument *m_document;
     QUuid m_partId;
@@ -30,6 +34,8 @@ private:
     QPushButton *m_lockButton;
     QPushButton *m_subdivButton;
     QPushButton *m_disableButton;
+    QPushButton *m_xMirrorButton;
+    QPushButton *m_zMirrorButton;
     QLabel *m_nameLabel;
 private:
     void initButton(QPushButton *button);
@@ -49,6 +55,8 @@ public slots:
     void partVisibleStateChanged(QUuid partId);
     void partSubdivStateChanged(QUuid partId);
     void partDisableStateChanged(QUuid partId);
+    void partXmirrorStateChanged(QUuid partId);
+    void partZmirrorStateChanged(QUuid partId);
 private:
     const SkeletonDocument *m_document;
     std::map<QUuid, QListWidgetItem *> m_itemMap;

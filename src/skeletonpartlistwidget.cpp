@@ -24,6 +24,14 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     updateButton(m_disableButton, QChar(fa::toggleon), false);
     initButton(m_disableButton);
     
+    m_xMirrorButton = new QPushButton();
+    updateButton(m_xMirrorButton, QChar(fa::quoteleft), false);
+    initButton(m_xMirrorButton);
+    
+    m_zMirrorButton = new QPushButton();
+    updateButton(m_zMirrorButton, QChar(fa::quoteright), false);
+    initButton(m_zMirrorButton);
+    
     m_previewLabel = new QLabel;
     
     QHBoxLayout *miniTopToolLayout = new QHBoxLayout;
@@ -38,6 +46,8 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     miniBottomToolLayout->setSpacing(0);
     miniBottomToolLayout->setContentsMargins(0, 0, 0, 0);
     miniBottomToolLayout->addWidget(m_disableButton);
+    miniBottomToolLayout->addWidget(m_xMirrorButton);
+    miniBottomToolLayout->addWidget(m_zMirrorButton);
     miniBottomToolLayout->addStretch();
     
     QWidget *hrWidget = new QWidget;
@@ -60,37 +70,61 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     connect(this, &SkeletonPartWidget::setPartVisibleState, m_document, &SkeletonDocument::setPartVisibleState);
     connect(this, &SkeletonPartWidget::setPartSubdivState, m_document, &SkeletonDocument::setPartSubdivState);
     connect(this, &SkeletonPartWidget::setPartDisableState, m_document, &SkeletonDocument::setPartDisableState);
+    connect(this, &SkeletonPartWidget::setPartXmirrorState, m_document, &SkeletonDocument::setPartXmirrorState);
+    connect(this, &SkeletonPartWidget::setPartZmirrorState, m_document, &SkeletonDocument::setPartZmirrorState);
     
     connect(m_lockButton, &QPushButton::clicked, [=]() {
-        if (m_lockButton->text() == QChar(fa::lock)) {
-            emit setPartLockState(m_partId, false);
-        } else {
-            emit setPartLockState(m_partId, true);
+        const SkeletonPart *part = m_document->findPart(m_partId);
+        if (!part) {
+            qDebug() << "Part not found:" << m_partId;
+            return;
         }
+        emit setPartLockState(m_partId, !part->locked);
     });
     
     connect(m_visibleButton, &QPushButton::clicked, [=]() {
-        if (m_visibleButton->text() == QChar(fa::eye)) {
-            emit setPartVisibleState(m_partId, false);
-        } else {
-            emit setPartVisibleState(m_partId, true);
+        const SkeletonPart *part = m_document->findPart(m_partId);
+        if (!part) {
+            qDebug() << "Part not found:" << m_partId;
+            return;
         }
+        emit setPartVisibleState(m_partId, !part->visible);
     });
     
     connect(m_subdivButton, &QPushButton::clicked, [=]() {
-        if (m_subdivButton->text() == QChar(fa::cube)) {
-            emit setPartSubdivState(m_partId, true);
-        } else {
-            emit setPartSubdivState(m_partId, false);
+        const SkeletonPart *part = m_document->findPart(m_partId);
+        if (!part) {
+            qDebug() << "Part not found:" << m_partId;
+            return;
         }
+        emit setPartSubdivState(m_partId, !part->subdived);
     });
     
     connect(m_disableButton, &QPushButton::clicked, [=]() {
-        if (m_disableButton->text() == QChar(fa::link)) {
-            emit setPartDisableState(m_partId, true);
-        } else {
-            emit setPartDisableState(m_partId, false);
+        const SkeletonPart *part = m_document->findPart(m_partId);
+        if (!part) {
+            qDebug() << "Part not found:" << m_partId;
+            return;
         }
+        emit setPartDisableState(m_partId, !part->disabled);
+    });
+    
+    connect(m_xMirrorButton, &QPushButton::clicked, [=]() {
+        const SkeletonPart *part = m_document->findPart(m_partId);
+        if (!part) {
+            qDebug() << "Part not found:" << m_partId;
+            return;
+        }
+        emit setPartXmirrorState(m_partId, !part->xMirrored);
+    });
+    
+    connect(m_zMirrorButton, &QPushButton::clicked, [=]() {
+        const SkeletonPart *part = m_document->findPart(m_partId);
+        if (!part) {
+            qDebug() << "Part not found:" << m_partId;
+            return;
+        }
+        emit setPartZmirrorState(m_partId, !part->zMirrored);
     });
 }
 
@@ -172,6 +206,32 @@ void SkeletonPartWidget::updateDisableButton()
         updateButton(m_disableButton, QChar(fa::link), false);
 }
 
+void SkeletonPartWidget::updateXmirrorButton()
+{
+    const SkeletonPart *part = m_document->findPart(m_partId);
+    if (!part) {
+        qDebug() << "Part not found:" << m_partId;
+        return;
+    }
+    if (part->xMirrored)
+        updateButton(m_xMirrorButton, QChar(fa::quoteleft), true);
+    else
+        updateButton(m_xMirrorButton, QChar(fa::quoteleft), false);
+}
+
+void SkeletonPartWidget::updateZmirrorButton()
+{
+    const SkeletonPart *part = m_document->findPart(m_partId);
+    if (!part) {
+        qDebug() << "Part not found:" << m_partId;
+        return;
+    }
+    if (part->zMirrored)
+        updateButton(m_zMirrorButton, QChar(fa::quoteright), true);
+    else
+        updateButton(m_zMirrorButton, QChar(fa::quoteright), false);
+}
+
 void SkeletonPartWidget::reload()
 {
     updatePreview();
@@ -179,6 +239,8 @@ void SkeletonPartWidget::reload()
     updateVisibleButton();
     updateSubdivButton();
     updateDisableButton();
+    updateXmirrorButton();
+    updateZmirrorButton();
 }
 
 SkeletonPartListWidget::SkeletonPartListWidget(const SkeletonDocument *document) :
@@ -272,4 +334,26 @@ void SkeletonPartListWidget::partDisableStateChanged(QUuid partId)
     }
     SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second);
     widget->updateDisableButton();
+}
+
+void SkeletonPartListWidget::partXmirrorStateChanged(QUuid partId)
+{
+    auto item = m_itemMap.find(partId);
+    if (item == m_itemMap.end()) {
+        qDebug() << "Part item not found:" << partId;
+        return;
+    }
+    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second);
+    widget->updateXmirrorButton();
+}
+
+void SkeletonPartListWidget::partZmirrorStateChanged(QUuid partId)
+{
+    auto item = m_itemMap.find(partId);
+    if (item == m_itemMap.end()) {
+        qDebug() << "Part item not found:" << partId;
+        return;
+    }
+    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second);
+    widget->updateZmirrorButton();
 }

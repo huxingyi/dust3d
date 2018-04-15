@@ -36,7 +36,7 @@ private:
     std::map<QString, ModelOfflineRender *> m_partPreviewRenderMap;
     QThread *m_thread;
 private:
-    void resolveBoundingBox(QRectF *mainProfile, QRectF *sideProfile);
+    void resolveBoundingBox(QRectF *mainProfile, QRectF *sideProfile, const QString &partId=QString());
     static bool enableDebug;
 };
 

@@ -75,55 +75,9 @@ QImage *MeshGenerator::takePartPreview(const QString &partId)
     return resultImage;
 }
 
-void MeshGenerator::resolveBoundingBox(QRectF *mainProfile, QRectF *sideProfile)
+void MeshGenerator::resolveBoundingBox(QRectF *mainProfile, QRectF *sideProfile, const QString &partId)
 {
-    float left = 0;
-    bool leftFirstTime = true;
-    float right = 0;
-    bool rightFirstTime = true;
-    float top = 0;
-    bool topFirstTime = true;
-    float bottom = 0;
-    bool bottomFirstTime = true;
-    float zLeft = 0;
-    bool zLeftFirstTime = true;
-    float zRight = 0;
-    bool zRightFirstTime = true;
-    for (const auto &nodeIt: m_snapshot->nodes) {
-        float radius = valueOfKeyInMapOrEmpty(nodeIt.second, "radius").toFloat();
-        float x = valueOfKeyInMapOrEmpty(nodeIt.second, "x").toFloat();
-        float y = valueOfKeyInMapOrEmpty(nodeIt.second, "y").toFloat();
-        float z = valueOfKeyInMapOrEmpty(nodeIt.second, "z").toFloat();
-        if (leftFirstTime || x - radius < left) {
-            left = x - radius;
-            leftFirstTime = false;
-        }
-        if (topFirstTime || y - radius < top) {
-            top = y - radius;
-            topFirstTime = false;
-        }
-        if (rightFirstTime || x + radius > right) {
-            right = x + radius;
-            rightFirstTime = false;
-        }
-        if (bottomFirstTime || y + radius > bottom) {
-            bottom = y + radius;
-            bottomFirstTime = false;
-        }
-        if (zLeftFirstTime || z - radius < zLeft) {
-            zLeft = z - radius;
-            zLeftFirstTime = false;
-        }
-        if (zRightFirstTime || z + radius > zRight) {
-            zRight = z + radius;
-            zRightFirstTime = false;
-        }
-    }
-    *mainProfile = QRectF(QPointF(left, top), QPointF(right, bottom));
-    *sideProfile = QRectF(QPointF(zLeft, top), QPointF(zRight, bottom));
-    qDebug() << "resolveBoundingBox left:" << left << "top:" << top << "right:" << right << "bottom:" << bottom << " zLeft:" << zLeft << "zRight:" << zRight;
-    qDebug() << "mainHeight:" << mainProfile->height() << "mainWidth:" << mainProfile->width();
-    qDebug() << "sideHeight:" << sideProfile->height() << "sideWidth:" << sideProfile->width();
+    m_snapshot->resolveBoundingBox(mainProfile, sideProfile, partId);
 }
 
 void MeshGenerator::process()
@@ -145,6 +99,19 @@ void MeshGenerator::process()
     float mainProfileMiddleX = mainProfile.x() + mainProfile.width() / 2;
     float sideProfileMiddleX = sideProfile.x() + sideProfile.width() / 2;
     float mainProfileMiddleY = mainProfile.y() + mainProfile.height() / 2;
+    float originX = valueOfKeyInMapOrEmpty(m_snapshot->canvas, "originX").toFloat();
+    float originY = valueOfKeyInMapOrEmpty(m_snapshot->canvas, "originY").toFloat();
+    float originZ = valueOfKeyInMapOrEmpty(m_snapshot->canvas, "originZ").toFloat();
+    bool originSettled = false;
+    if (originX > 0 && originY > 0 && originZ > 0) {
+        qDebug() << "Use settled origin: " << originX << originY << originZ << " calculated:" << mainProfileMiddleX << mainProfileMiddleY << sideProfileMiddleX;
+        mainProfileMiddleX = originX;
+        mainProfileMiddleY = originY;
+        sideProfileMiddleX = originZ;
+        originSettled = true;
+    } else {
+        qDebug() << "No settled origin, calculated:" << mainProfileMiddleX << mainProfileMiddleY << sideProfileMiddleX;
+    }
     
     for (const auto &partIdIt: m_snapshot->partIdList) {
         const auto &part = m_snapshot->parts.find(partIdIt);
@@ -241,7 +208,19 @@ void MeshGenerator::process()
         int meshId = meshlite_bmesh_generate_mesh(meshliteContext, bmeshId);
         if (meshlite_bmesh_error_count(meshliteContext, bmeshId) != 0)
             broken = true;
-        bool subdived = isTrueValueString(part->second["subdived"]);
+        bool xMirrored = isTrueValueString(valueOfKeyInMapOrEmpty(part->second, "xMirrored"));
+        bool zMirrored = isTrueValueString(valueOfKeyInMapOrEmpty(part->second, "zMirrored"));
+        int xMirroredMeshId = 0;
+        int zMirroredMeshId = 0;
+        if (xMirrored || zMirrored) {
+            if (xMirrored) {
+                xMirroredMeshId = meshlite_mirror_in_x(meshliteContext, meshId, 0);
+            }
+            if (zMirrored) {
+                zMirroredMeshId = meshlite_mirror_in_z(meshliteContext, meshId, 0);
+            }
+        }
+        bool subdived = isTrueValueString(valueOfKeyInMapOrEmpty(part->second, "subdived"));
         if (m_requirePartPreviewMap.find(partIdIt) != m_requirePartPreviewMap.end()) {
             ModelOfflineRender *render = m_partPreviewRenderMap[partIdIt];
             int trimedMeshId = meshlite_trim(meshliteContext, meshId, 1);
@@ -255,10 +234,19 @@ void MeshGenerator::process()
             QImage *image = new QImage(render->toImage(QSize(Theme::previewImageSize, Theme::previewImageSize)));
             m_partPreviewMap[partIdIt] = image;
         }
-        if (subdived)
+        if (subdived) {
             subdivMeshIds.push_back(meshId);
-        else
+            if (xMirroredMeshId)
+                subdivMeshIds.push_back(xMirroredMeshId);
+            if (zMirroredMeshId)
+                subdivMeshIds.push_back(zMirroredMeshId);
+        } else {
             meshIds.push_back(meshId);
+            if (xMirroredMeshId)
+                meshIds.push_back(xMirroredMeshId);
+            if (zMirroredMeshId)
+                meshIds.push_back(zMirroredMeshId);
+        }
     }
     
     if (!subdivMeshIds.empty()) {
@@ -307,8 +295,11 @@ void MeshGenerator::process()
             QImage *image = new QImage(m_previewRender->toImage(QSize(Theme::previewImageSize, Theme::previewImageSize)));
             m_preview = image;
         }
-        int trimedMeshId = meshlite_trim(meshliteContext, mergedMeshId, 1);
-        m_mesh = new Mesh(meshliteContext, trimedMeshId, broken);
+        int finalMeshId = mergedMeshId;
+        if (!originSettled) {
+            finalMeshId = meshlite_trim(meshliteContext, mergedMeshId, 1);
+        }
+        m_mesh = new Mesh(meshliteContext, finalMeshId, broken);
     }
     
     if (m_previewRender) {

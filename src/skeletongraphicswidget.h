@@ -7,6 +7,7 @@
 #include <QGraphicsLineItem>
 #include <QGraphicsView>
 #include <QGraphicsPixmapItem>
+#include <QGraphicsPolygonItem>
 #include <QThread>
 #include <cmath>
 #include <set>
@@ -14,6 +15,88 @@
 #include "turnaroundloader.h"
 #include "theme.h"
 #include "util.h"
+
+class SkeletonGraphicsOriginItem : public QGraphicsPolygonItem
+{
+public:
+    SkeletonGraphicsOriginItem(SkeletonProfile profile=SkeletonProfile::Unknown) :
+        m_profile(profile),
+        m_hovered(false),
+        m_checked(false)
+    {
+        setData(0, "origin");
+    }
+    void updateAppearance()
+    {
+        QColor color = Theme::white;
+        
+        switch (m_profile)
+        {
+        case SkeletonProfile::Unknown:
+            break;
+        case SkeletonProfile::Main:
+            color = Theme::red;
+            break;
+        case SkeletonProfile::Side:
+            color = Theme::green;
+            break;
+        }
+        
+        QColor penColor = color;
+        penColor.setAlphaF(m_checked ? Theme::checkedAlpha : Theme::normalAlpha);
+        QPen pen(penColor);
+        pen.setWidth(0);
+        setPen(pen);
+        
+        QColor brushColor = color;
+        brushColor.setAlphaF((m_checked || m_hovered) ? Theme::checkedAlpha : Theme::normalAlpha);
+        QBrush brush(brushColor);
+        setBrush(brush);
+    }
+    void setOrigin(QPointF point)
+    {
+        m_origin = point;
+        QPolygonF triangle;
+        const int triangleRadius = 10;
+        triangle.append(QPointF(point.x() - triangleRadius, point.y()));
+        triangle.append(QPointF(point.x() + triangleRadius, point.y()));
+        triangle.append(QPointF(point.x(), point.y() - triangleRadius));
+        triangle.append(QPointF(point.x() - triangleRadius, point.y()));
+        setPolygon(triangle);
+        updateAppearance();
+    }
+    QPointF origin()
+    {
+        return m_origin;
+    }
+    SkeletonProfile profile()
+    {
+        return m_profile;
+    }
+    void setHovered(bool hovered)
+    {
+        m_hovered = hovered;
+        updateAppearance();
+    }
+    void setChecked(bool checked)
+    {
+        m_checked = checked;
+        updateAppearance();
+    }
+    bool checked()
+    {
+        return m_checked;
+    }
+    bool hovered()
+    {
+        return m_hovered;
+    }
+private:
+    SkeletonProfile m_profile;
+    bool m_hovered;
+    bool m_checked;
+    QPointF m_origin;
+};
 
 class SkeletonGraphicsSelectionItem : public QGraphicsRectItem
 {
@@ -271,6 +354,7 @@ signals:
     void open();
     void exportResult();
     void breakEdge(QUuid edgeId);
+    void moveOriginBy(float x, float y, float z);
 public:
     SkeletonGraphicsWidget(const SkeletonDocument *document);
     std::map<QUuid, std::pair<SkeletonGraphicsNodeItem *, SkeletonGraphicsNodeItem *>> nodeItemMap;
@@ -327,6 +411,8 @@ public slots:
     void zoomSelected(float delta);
     void scaleSelected(float delta);
     void moveSelected(float byX, float byY);
+    void moveCheckedOrigin(float byX, float byY);
+    void originChanged();
 private slots:
     void turnaroundImageReady();
 private:
@@ -344,15 +430,13 @@ private:
     bool isSingleNodeSelected();
     void addItemToRangeSelection(QGraphicsItem *item);
     void removeItemFromRangeSelection(QGraphicsItem *item);
-private:
-    QGraphicsPixmapItem *m_backgroundItem;
+private: //need initalize
     const SkeletonDocument *m_document;
+    QGraphicsPixmapItem *m_backgroundItem;
     bool m_turnaroundChanged;
     TurnaroundLoader *m_turnaroundLoader;
     bool m_dragStarted;
-    QPoint m_lastGlobalPos;
     bool m_moveStarted;
-    QPointF m_lastScenePos;
     SkeletonGraphicsNodeItem *m_cursorNodeItem;
     SkeletonGraphicsEdgeItem *m_cursorEdgeItem;
     SkeletonGraphicsNodeItem *m_addFromNodeItem;
@@ -362,12 +446,19 @@ private:
     float m_lastAddedY;
     float m_lastAddedZ;
     SkeletonGraphicsSelectionItem *m_selectionItem;
-    QPointF m_rangeSelectionStartPos;
     bool m_rangeSelectionStarted;
-    std::set<QGraphicsItem *> m_rangeSelectionSet;
     bool m_mouseEventFromSelf;
     bool m_moveHappened;
     int m_lastRot;
+    SkeletonGraphicsOriginItem *m_mainOriginItem;
+    SkeletonGraphicsOriginItem *m_sideOriginItem;
+    SkeletonGraphicsOriginItem *m_hoveredOriginItem;
+    SkeletonGraphicsOriginItem *m_checkedOriginItem;
+private:
+    std::set<QGraphicsItem *> m_rangeSelectionSet;
+    QPoint m_lastGlobalPos;
+    QPointF m_lastScenePos;
+    QPointF m_rangeSelectionStartPos;
 };
 
 class SkeletonGraphicsContainerWidget : public QWidget
