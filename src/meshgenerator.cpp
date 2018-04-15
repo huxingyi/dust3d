@@ -283,8 +283,10 @@ void MeshGenerator::process()
         mergedMeshId = unionMeshs(meshliteContext, meshIds, &errorCount);
         if (errorCount)
             broken = true;
-        //else if (mergedMeshId > 0)
-        //    mergedMeshId = meshlite_combine_coplanar_faces(meshliteContext, mergedMeshId);
+        else if (mergedMeshId > 0)
+            mergedMeshId = meshlite_combine_coplanar_faces(meshliteContext, mergedMeshId);
+            if (mergedMeshId > 0)
+                mergedMeshId = meshlite_fix_hole(meshliteContext, mergedMeshId);
     } else if (meshIds.size() > 0) {
         mergedMeshId = meshIds[0];
     }
