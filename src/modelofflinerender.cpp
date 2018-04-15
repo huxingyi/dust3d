@@ -104,8 +104,6 @@ QImage ModelOfflineRender::toImage(const QSize &size)
     m_context->functions()->glFlush();
 
     image = renderFbo->toImage();
-    
-    qDebug() << "Generated image size:" << image.size();
 
     renderFbo->bindDefault();
     delete renderFbo;

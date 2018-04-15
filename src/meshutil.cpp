@@ -1,3 +1,4 @@
+#include <QDebug>
 #include "meshutil.h"
 #include "meshlite.h"
 
@@ -12,6 +13,7 @@
 // https://github.com/CGAL/cgal/issues/2875
 // https://doc.cgal.org/latest/Polygon_mesh_processing/Polygon_mesh_processing_2hausdorff_distance_remeshing_example_8cpp-example.html#a3
 // https://github.com/CGAL/cgal/blob/master/Subdivision_method_3/examples/Subdivision_method_3/CatmullClark_subdivision.cpp
+// https://doc.cgal.org/latest/Polygon_mesh_processing/index.html#title25
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
 #include <CGAL/Surface_mesh.h>
 #include <CGAL/Polygon_mesh_processing/corefinement.h>
@@ -146,18 +148,22 @@ int unionMeshs(void *meshliteContext, const std::vector<int> &meshIds, int *erro
     std::vector<ExactMesh *> externalMeshs;
     for (size_t i = 0; i < meshIds.size(); i++) {
         int triangledMeshId = meshlite_triangulate(meshliteContext, meshIds[i]);
-        if (meshlite_is_triangulated_manifold(meshliteContext, triangledMeshId))
-            externalMeshs.push_back(makeCgalMeshFromMeshlite<ExactKernel>(meshliteContext, triangledMeshId));
+        if (!meshlite_is_triangulated_manifold(meshliteContext, triangledMeshId))
+            qDebug() << "Mesh is not manifold after triangulated:" << triangledMeshId;
+        externalMeshs.push_back(makeCgalMeshFromMeshlite<ExactKernel>(meshliteContext, triangledMeshId));
     }
     if (externalMeshs.size() > 0) {
         ExactMesh *mergedExternalMesh = externalMeshs[0];
         for (size_t i = 1; i < externalMeshs.size(); i++) {
-            if (!mergedExternalMesh)
+            if (!mergedExternalMesh) {
+                qDebug() << "Last union failed, break with remains unprocessed:" << (externalMeshs.size() - i);
                 break;
+            }
             ExactMesh *unionedExternalMesh = NULL;
             try {
                 unionedExternalMesh = unionCgalMeshs(mergedExternalMesh, externalMeshs[i]);
             } catch (...) {
+                qDebug() << "unionCgalMeshs throw exception";
                 if (errorCount)
                     (*errorCount)++;
             }
@@ -165,10 +171,21 @@ int unionMeshs(void *meshliteContext, const std::vector<int> &meshIds, int *erro
             if (unionedExternalMesh) {
                 delete mergedExternalMesh;
                 mergedExternalMesh = unionedExternalMesh;
+            } else {
+                if (errorCount)
+                    (*errorCount)++;
+                qDebug() << "unionCgalMeshs failed";
             }
         }
         if (mergedExternalMesh) {
             int mergedMeshId = makeMeshliteMeshFromCgal<ExactKernel>(meshliteContext, mergedExternalMesh);
+            if (mergedMeshId)
+                mergedMeshId = fixMeshHoles(meshliteContext, mergedMeshId);
+            else {
+                if (errorCount)
+                    (*errorCount)++;
+                qDebug() << "makeMeshliteMeshFromCgal failed";
+            }
             delete mergedExternalMesh;
             return mergedMeshId;
         }
@@ -206,8 +223,15 @@ int subdivMesh(void *meshliteContext, int meshId, int *errorCount)
         }
         if (simpleMesh)
             delete simpleMesh;
+        if (subdiviedMeshId)
+            subdiviedMeshId = fixMeshHoles(meshliteContext, subdiviedMeshId);
         return subdiviedMeshId;
 #endif
     }
     return meshlite_subdivide(meshliteContext, meshId);
+}
+
+int fixMeshHoles(void *meshliteContext, int meshId)
+{
+    return meshlite_fix_hole(meshliteContext, meshId);
 }

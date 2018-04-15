@@ -50,9 +50,9 @@ void SkeletonSnapshot::resolveBoundingBox(QRectF *mainProfile, QRectF *sideProfi
     }
     *mainProfile = QRectF(QPointF(left, top), QPointF(right, bottom));
     *sideProfile = QRectF(QPointF(zLeft, top), QPointF(zRight, bottom));
-    qDebug() << "resolveBoundingBox left:" << left << "top:" << top << "right:" << right << "bottom:" << bottom << " zLeft:" << zLeft << "zRight:" << zRight;
-    qDebug() << "mainHeight:" << mainProfile->height() << "mainWidth:" << mainProfile->width();
-    qDebug() << "sideHeight:" << sideProfile->height() << "sideWidth:" << sideProfile->width();
+    //qDebug() << "resolveBoundingBox left:" << left << "top:" << top << "right:" << right << "bottom:" << bottom << " zLeft:" << zLeft << "zRight:" << zRight;
+    //qDebug() << "mainHeight:" << mainProfile->height() << "mainWidth:" << mainProfile->width();
+    //qDebug() << "sideHeight:" << sideProfile->height() << "sideWidth:" << sideProfile->width();
 }
 
 

@@ -44,6 +44,7 @@ int meshlite_combine_coplanar_faces(void *context, int mesh_id);
 int meshlite_trim(void *context, int mesh_id, int normalize);
 int meshlite_mirror_in_x(void *context, int mesh_id, float center_x);
 int meshlite_mirror_in_z(void *context, int mesh_id, float center_z);
+int meshlite_fix_hole(void *context, int mesh_id);
 
 #ifdef __cplusplus
 }

@@ -45,7 +45,7 @@ void MeshGenerator::addPreviewRequirement()
 
 void MeshGenerator::addPartPreviewRequirement(const QString &partId)
 {
-    qDebug() << "addPartPreviewRequirement:" << partId;
+    //qDebug() << "addPartPreviewRequirement:" << partId;
     m_requirePartPreviewMap.insert(partId);
     if (m_partPreviewRenderMap.find(partId) == m_partPreviewRenderMap.end()) {
         ModelOfflineRender *render = new ModelOfflineRender;
@@ -104,13 +104,13 @@ void MeshGenerator::process()
     float originZ = valueOfKeyInMapOrEmpty(m_snapshot->canvas, "originZ").toFloat();
     bool originSettled = false;
     if (originX > 0 && originY > 0 && originZ > 0) {
-        qDebug() << "Use settled origin: " << originX << originY << originZ << " calculated:" << mainProfileMiddleX << mainProfileMiddleY << sideProfileMiddleX;
+        //qDebug() << "Use settled origin: " << originX << originY << originZ << " calculated:" << mainProfileMiddleX << mainProfileMiddleY << sideProfileMiddleX;
         mainProfileMiddleX = originX;
         mainProfileMiddleY = originY;
         sideProfileMiddleX = originZ;
         originSettled = true;
     } else {
-        qDebug() << "No settled origin, calculated:" << mainProfileMiddleX << mainProfileMiddleY << sideProfileMiddleX;
+        //qDebug() << "No settled origin, calculated:" << mainProfileMiddleX << mainProfileMiddleY << sideProfileMiddleX;
     }
     
     for (const auto &partIdIt: m_snapshot->partIdList) {
@@ -131,7 +131,7 @@ void MeshGenerator::process()
         QString partId = valueOfKeyInMapOrEmpty(edgeIt.second, "partId");
         QString fromNodeId = valueOfKeyInMapOrEmpty(edgeIt.second, "from");
         QString toNodeId = valueOfKeyInMapOrEmpty(edgeIt.second, "to");
-        qDebug() << "Processing edge " << fromNodeId << "<=>" << toNodeId;
+        //qDebug() << "Processing edge " << fromNodeId << "<=>" << toNodeId;
         const auto fromIt = m_snapshot->nodes.find(fromNodeId);
         const auto toIt = m_snapshot->nodes.find(toNodeId);
         if (fromIt == m_snapshot->nodes.end() || toIt == m_snapshot->nodes.end())
@@ -149,11 +149,11 @@ void MeshGenerator::process()
             float y = (valueOfKeyInMapOrEmpty(fromIt->second, "y").toFloat() - mainProfileMiddleY) / longHeight;
             float z = (valueOfKeyInMapOrEmpty(fromIt->second, "z").toFloat() - sideProfileMiddleX) / longHeight;
             bmeshFromNodeId = meshlite_bmesh_add_node(meshliteContext, bmeshId, x, y, z, radius);
-            qDebug() << "bmeshId[" << bmeshId << "] add node[" << bmeshFromNodeId << "]" << radius << x << y << z;
+            //qDebug() << "bmeshId[" << bmeshId << "] add node[" << bmeshFromNodeId << "]" << radius << x << y << z;
             bmeshNodeMap[fromNodeId] = bmeshFromNodeId;
         } else {
             bmeshFromNodeId = bmeshFromIt->second;
-            qDebug() << "bmeshId[" << bmeshId << "] use existed node[" << bmeshFromNodeId << "]";
+            //qDebug() << "bmeshId[" << bmeshId << "] use existed node[" << bmeshFromNodeId << "]";
         }
         
         int bmeshToNodeId = 0;
@@ -164,11 +164,11 @@ void MeshGenerator::process()
             float y = (valueOfKeyInMapOrEmpty(toIt->second, "y").toFloat() - mainProfileMiddleY) / longHeight;
             float z = (valueOfKeyInMapOrEmpty(toIt->second, "z").toFloat() - sideProfileMiddleX) / longHeight;
             bmeshToNodeId = meshlite_bmesh_add_node(meshliteContext, bmeshId, x, y, z, radius);
-            qDebug() << "bmeshId[" << bmeshId << "] add node[" << bmeshToNodeId << "]" << radius << x << y << z;
+            //qDebug() << "bmeshId[" << bmeshId << "] add node[" << bmeshToNodeId << "]" << radius << x << y << z;
             bmeshNodeMap[toNodeId] = bmeshToNodeId;
         } else {
             bmeshToNodeId = bmeshToIt->second;
-            qDebug() << "bmeshId[" << bmeshId << "] use existed node[" << bmeshToNodeId << "]";
+            //qDebug() << "bmeshId[" << bmeshId << "] use existed node[" << bmeshToNodeId << "]";
         }
         
         meshlite_bmesh_add_edge(meshliteContext, bmeshId, bmeshFromNodeId, bmeshToNodeId);
@@ -188,7 +188,7 @@ void MeshGenerator::process()
         float y = (valueOfKeyInMapOrEmpty(nodeIt.second, "y").toFloat() - mainProfileMiddleY) / longHeight;
         float z = (valueOfKeyInMapOrEmpty(nodeIt.second, "z").toFloat() - sideProfileMiddleX) / longHeight;
         int bmeshNodeId = meshlite_bmesh_add_node(meshliteContext, bmeshId, x, y, z, radius);
-        qDebug() << "bmeshId[" << bmeshId << "] add lonely node[" << bmeshNodeId << "]" << radius << x << y << z;
+        //qDebug() << "bmeshId[" << bmeshId << "] add lonely node[" << bmeshNodeId << "]" << radius << x << y << z;
         bmeshNodeMap[nodeIt.first] = bmeshNodeId;
     }
     
@@ -259,8 +259,8 @@ void MeshGenerator::process()
         } else {
             mergedMeshId = subdivMeshIds[0];
         }
-        if (mergedMeshId > 0)
-            mergedMeshId = meshlite_combine_coplanar_faces(meshliteContext, mergedMeshId);
+        //if (mergedMeshId > 0)
+        //    mergedMeshId = meshlite_combine_coplanar_faces(meshliteContext, mergedMeshId);
         if (mergedMeshId > 0) {
             int errorCount = 0;
             int subdivedMeshId = subdivMesh(meshliteContext, mergedMeshId, &errorCount);
@@ -283,8 +283,8 @@ void MeshGenerator::process()
         mergedMeshId = unionMeshs(meshliteContext, meshIds, &errorCount);
         if (errorCount)
             broken = true;
-        else if (mergedMeshId > 0)
-            mergedMeshId = meshlite_combine_coplanar_faces(meshliteContext, mergedMeshId);
+        //else if (mergedMeshId > 0)
+        //    mergedMeshId = meshlite_combine_coplanar_faces(meshliteContext, mergedMeshId);
     } else if (meshIds.size() > 0) {
         mergedMeshId = meshIds[0];
     }
