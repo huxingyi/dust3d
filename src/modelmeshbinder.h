@@ -18,17 +18,19 @@ public:
     void cleanup();
     void showWireframes();
     void hideWireframes();
+    bool isWireframesVisible();
+private:
+    Mesh *m_mesh;
+    int m_renderTriangleVertexCount;
+    int m_renderEdgeVertexCount;
+    bool m_meshUpdated;
+    bool m_showWireframes;
 private:
     QOpenGLVertexArrayObject m_vaoTriangle;
     QOpenGLBuffer m_vboTriangle;
     QOpenGLVertexArrayObject m_vaoEdge;
     QOpenGLBuffer m_vboEdge;
-    Mesh *m_mesh;
     QMutex m_meshMutex;
-    int m_renderTriangleVertexCount;
-    int m_renderEdgeVertexCount;
-    bool m_meshUpdated;
-    bool m_showWireframes;
 };
 
 #endif

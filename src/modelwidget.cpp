@@ -12,14 +12,14 @@
 
 bool ModelWidget::m_transparent = true;
 
-ModelWidget::ModelWidget(QWidget *parent)
-    : QOpenGLWidget(parent),
-      m_xRot(-30 * 16),
-      m_yRot(45 * 16),
-      m_zRot(0),
-      m_program(nullptr),
-      m_moveStarted(false),
-      m_graphicsFunctions(NULL)
+ModelWidget::ModelWidget(QWidget *parent) :
+    QOpenGLWidget(parent),
+    m_xRot(-30 * 16),
+    m_yRot(45 * 16),
+    m_zRot(0),
+    m_program(nullptr),
+    m_moveStarted(false),
+    m_graphicsFunctions(NULL)
 {
     // --transparent causes the clear color to be transparent. Therefore, on systems that
     // support it, the widget will become transparent apart from the logo.
@@ -172,6 +172,15 @@ void ModelWidget::resizeGL(int w, int h)
     m_proj.perspective(45.0f, GLfloat(w) / h, 0.01f, 100.0f);
 }
 
+void ModelWidget::toggleWireframe()
+{
+    if (m_meshBinder.isWireframesVisible())
+        m_meshBinder.hideWireframes();
+    else
+        m_meshBinder.showWireframes();
+    update();
+}
+
 void ModelWidget::mousePressEvent(QMouseEvent *event)
 {
     if (!m_moveStarted && m_graphicsFunctions && m_graphicsFunctions->mousePress(event))
@@ -182,8 +191,6 @@ void ModelWidget::mousePressEvent(QMouseEvent *event)
             m_moveStartPos = mapToParent(event->pos());
             m_moveStartGeometry = geometry();
             m_moveStarted = true;
-            m_meshBinder.hideWireframes();
-            update();
         }
     }
 }
@@ -194,8 +201,6 @@ void ModelWidget::mouseReleaseEvent(QMouseEvent *event)
         m_graphicsFunctions->mouseRelease(event);
     if (m_moveStarted) {
         m_moveStarted = false;
-        m_meshBinder.showWireframes();
-        update();
     }
 }
 

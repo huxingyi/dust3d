@@ -5,11 +5,11 @@
 #include "ds3file.h"
 
 ModelMeshBinder::ModelMeshBinder() :
+    m_mesh(nullptr),
     m_renderTriangleVertexCount(0),
     m_renderEdgeVertexCount(0),
-    m_mesh(NULL),
     m_meshUpdated(false),
-    m_showWireframes(true)
+    m_showWireframes(false)
 {
 }
 
@@ -134,4 +134,9 @@ void ModelMeshBinder::showWireframes()
 void ModelMeshBinder::hideWireframes()
 {
     m_showWireframes = false;
+}
+
+bool ModelMeshBinder::isWireframesVisible()
+{
+    return m_showWireframes;
 }

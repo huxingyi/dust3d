@@ -137,7 +137,7 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     containerWidget->setMinimumSize(400, 400);
     
     m_modelWidget = new ModelWidget(containerWidget);
-    m_modelWidget->setMinimumSize(256, 256);
+    m_modelWidget->setMinimumSize(128, 128);
     m_modelWidget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     m_modelWidget->move(16, 16);
     m_modelWidget->setGraphicsFunctions(graphicsWidget);
@@ -289,6 +289,12 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
         }
     });
     m_viewMenu->addAction(m_resetModelWidgetPosAction);
+    
+    m_toggleWireframeAction = new QAction(tr("Toggle Wireframe"), this);
+    connect(m_toggleWireframeAction, &QAction::triggered, [=]() {
+        m_modelWidget->toggleWireframe();
+    });
+    m_viewMenu->addAction(m_toggleWireframeAction);
     
     m_showDebugDialogAction = new QAction(tr("Show Debug Dialog"), this);
     connect(m_showDebugDialogAction, &QAction::triggered, g_logBrowser, &LogBrowser::showDialog);

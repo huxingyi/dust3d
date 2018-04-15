@@ -27,7 +27,7 @@ public:
     void updateMesh(Mesh *mesh);
     void exportMeshAsObj(const QString &filename);
     void setGraphicsFunctions(SkeletonGraphicsFunctions *graphicsFunctions);
-
+    void toggleWireframe();
 public slots:
     void setXRotation(int angle);
     void setYRotation(int angle);
@@ -53,22 +53,22 @@ public:
     int xRot();
     int yRot();
     int zRot();
-    
 private:
     int m_xRot;
     int m_yRot;
     int m_zRot;
+    ModelShaderProgram *m_program;
+    bool m_moveStarted;
+    SkeletonGraphicsFunctions *m_graphicsFunctions;
+private:
     QPoint m_lastPos;
     ModelMeshBinder m_meshBinder;
-    ModelShaderProgram *m_program;
     QMatrix4x4 m_proj;
     QMatrix4x4 m_camera;
     QMatrix4x4 m_world;
     static bool m_transparent;
-    bool m_moveStarted;
     QPoint m_moveStartPos;
     QRect m_moveStartGeometry;
-    SkeletonGraphicsFunctions *m_graphicsFunctions;
 };
 
 #endif
