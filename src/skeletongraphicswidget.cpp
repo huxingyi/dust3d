@@ -161,6 +161,12 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
         contextMenu.addAction(&flipVerticallyAction);
     }
     
+    QAction alignToCenterAction(tr("Align to Center"), this);
+    if (hasSelection() && m_document->originSettled()) {
+        connect(&alignToCenterAction, &QAction::triggered, this, &SkeletonGraphicsWidget::alignSelectedToCenter);
+        contextMenu.addAction(&alignToCenterAction);
+    }
+    
     QAction selectAllAction(tr("Select All"), this);
     if (hasItems()) {
         connect(&selectAllAction, &QAction::triggered, this, &SkeletonGraphicsWidget::selectAll);
@@ -265,6 +271,33 @@ void SkeletonGraphicsWidget::connectSelected()
     if (m_document->findEdgeByNodes(nodeIds[0], nodeIds[1]))
         return;
     emit addEdge(nodeIds[0], nodeIds[1]);
+    emit groupOperationAdded();
+}
+
+void SkeletonGraphicsWidget::alignSelectedToCenter()
+{
+    if (!m_document->originSettled())
+        return;
+    if (!hasSelection())
+        return;
+    std::set<SkeletonGraphicsNodeItem *> nodeItems;
+    readMergedSkeletonNodeSetFromRangeSelection(&nodeItems);
+    if (nodeItems.empty())
+        return;
+    emit batchChangeBegin();
+    for (const auto &nodeItem: nodeItems) {
+        const SkeletonNode *node = m_document->findNode(nodeItem->id());
+        if (!node) {
+            qDebug() << "Find node id failed:" << nodeItem->id();
+            continue;
+        }
+        if (SkeletonProfile::Main == nodeItem->profile()) {
+            emit moveNodeBy(node->id, m_document->originX - node->x, 0, 0);
+        } else {
+            emit moveNodeBy(node->id, 0, 0, m_document->originZ - node->z);
+        }
+    }
+    emit batchChangeEnd();
     emit groupOperationAdded();
 }
 
@@ -927,6 +960,7 @@ void SkeletonGraphicsWidget::deleteSelected()
             emit removeNode(id);
         }
         emit batchChangeEnd();
+        emit groupOperationAdded();
     }
 }
 

@@ -413,6 +413,7 @@ public slots:
     void moveSelected(float byX, float byY);
     void moveCheckedOrigin(float byX, float byY);
     void originChanged();
+    void alignSelectedToCenter();
 private slots:
     void turnaroundImageReady();
 private:

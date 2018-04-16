@@ -251,6 +251,10 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(m_flipVerticallyAction, &QAction::triggered, m_graphicsWidget, &SkeletonGraphicsWidget::flipVertically);
     m_editMenu->addAction(m_flipVerticallyAction);
     
+    m_alignToCenterAction = new QAction(tr("Align to Center"), this);
+    connect(m_alignToCenterAction, &QAction::triggered, m_graphicsWidget, &SkeletonGraphicsWidget::alignSelectedToCenter);
+    m_editMenu->addAction(m_alignToCenterAction);
+    
     m_selectAllAction = new QAction(tr("Select All"), this);
     connect(m_selectAllAction, &QAction::triggered, m_graphicsWidget, &SkeletonGraphicsWidget::selectAll);
     m_editMenu->addAction(m_selectAllAction);
@@ -274,6 +278,7 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
         m_pasteAction->setEnabled(m_document->hasPastableContentInClipboard());
         m_flipHorizontallyAction->setEnabled(m_graphicsWidget->hasMultipleSelection());
         m_flipVerticallyAction->setEnabled(m_graphicsWidget->hasMultipleSelection());
+        m_alignToCenterAction->setEnabled(m_graphicsWidget->hasSelection() && m_document->originSettled());
         m_selectAllAction->setEnabled(m_graphicsWidget->hasItems());
         m_selectPartAllAction->setEnabled(m_graphicsWidget->hasItems());
         m_unselectAllAction->setEnabled(m_graphicsWidget->hasSelection());

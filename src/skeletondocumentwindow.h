@@ -76,6 +76,7 @@ private:
     QAction *m_pasteAction;
     QAction *m_flipHorizontallyAction;
     QAction *m_flipVerticallyAction;
+    QAction *m_alignToCenterAction;
     QAction *m_selectAllAction;
     QAction *m_selectPartAllAction;
     QAction *m_unselectAllAction;
