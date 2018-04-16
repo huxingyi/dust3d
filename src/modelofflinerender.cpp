@@ -54,8 +54,10 @@ QImage ModelOfflineRender::toImage(const QSize &size)
     m_context->functions()->glViewport(0, 0, size.width(), size.height());
     
     if (nullptr != m_mesh) {
-        int xRot = -30 * 16;
-        int yRot = 45 * 16;
+        //int xRot = -30 * 16;
+        //int yRot = 45 * 16;
+        int xRot = 0;
+        int yRot = 0;
         int zRot = 0;
         QMatrix4x4 proj;
         QMatrix4x4 camera;
@@ -74,7 +76,7 @@ QImage ModelOfflineRender::toImage(const QSize &size)
         m_context->functions()->glEnable(GL_LINE_SMOOTH);
 
         camera.setToIdentity();
-        camera.translate(0, 0, -2.1);
+        camera.translate(0, 0, -3.0);
 
         world.setToIdentity();
         world.rotate(180.0f - (xRot / 16.0f), 1, 0, 0);

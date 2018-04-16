@@ -385,6 +385,7 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(m_document, &SkeletonDocument::nodeRadiusChanged, graphicsWidget, &SkeletonGraphicsWidget::nodeRadiusChanged);
     connect(m_document, &SkeletonDocument::nodeOriginChanged, graphicsWidget, &SkeletonGraphicsWidget::nodeOriginChanged);
     connect(m_document, &SkeletonDocument::partVisibleStateChanged, graphicsWidget, &SkeletonGraphicsWidget::partVisibleStateChanged);
+    connect(m_document, &SkeletonDocument::partDisableStateChanged, graphicsWidget, &SkeletonGraphicsWidget::partVisibleStateChanged);
     connect(m_document, &SkeletonDocument::cleanup, graphicsWidget, &SkeletonGraphicsWidget::removeAllContent);
     connect(m_document, &SkeletonDocument::originChanged, graphicsWidget, &SkeletonGraphicsWidget::originChanged);
     

@@ -223,34 +223,18 @@ void MeshGenerator::process()
                 zMirroredMeshId = meshlite_mirror_in_z(meshliteContext, meshId, 0);
             }
         }
-        //bool subdived = isTrueValueString(valueOfKeyInMapOrEmpty(part->second, "subdived"));
-        bool subdived = false;
         if (m_requirePartPreviewMap.find(partIdIt) != m_requirePartPreviewMap.end()) {
             ModelOfflineRender *render = m_partPreviewRenderMap[partIdIt];
             int trimedMeshId = meshlite_trim(meshliteContext, meshId, 1);
-            if (subdived) {
-                int subdivedMeshId = subdivMesh(meshliteContext, trimedMeshId);
-                if (subdivedMeshId > 0) {
-                    trimedMeshId = subdivedMeshId;
-                }
-            }
             render->updateMesh(new Mesh(meshliteContext, trimedMeshId));
             QImage *image = new QImage(render->toImage(QSize(Theme::previewImageSize, Theme::previewImageSize)));
             m_partPreviewMap[partIdIt] = image;
         }
-        if (subdived) {
-            subdivMeshIds.push_back(meshId);
-            if (xMirroredMeshId)
-                subdivMeshIds.push_back(xMirroredMeshId);
-            if (zMirroredMeshId)
-                subdivMeshIds.push_back(zMirroredMeshId);
-        } else {
-            meshIds.push_back(meshId);
-            if (xMirroredMeshId)
-                meshIds.push_back(xMirroredMeshId);
-            if (zMirroredMeshId)
-                meshIds.push_back(zMirroredMeshId);
-        }
+        meshIds.push_back(meshId);
+        if (xMirroredMeshId)
+            meshIds.push_back(xMirroredMeshId);
+        if (zMirroredMeshId)
+            meshIds.push_back(zMirroredMeshId);
     }
     
     if (!subdivMeshIds.empty()) {

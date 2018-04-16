@@ -9,28 +9,28 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     m_partId(partId)
 {
     m_visibleButton = new QPushButton();
-    updateButton(m_visibleButton, QChar(fa::eye), false);
     initButton(m_visibleButton);
+    updateVisibleButton();
     
     m_lockButton = new QPushButton();
-    updateButton(m_lockButton, QChar(fa::unlock), false);
     initButton(m_lockButton);
+    updateLockButton();
     
     m_subdivButton = new QPushButton();
-    updateButton(m_subdivButton, QChar(fa::cube), false);
     initButton(m_subdivButton);
+    updateSubdivButton();
     
     m_disableButton = new QPushButton();
-    updateButton(m_disableButton, QChar(fa::toggleon), false);
     initButton(m_disableButton);
+    updateDisableButton();
     
     m_xMirrorButton = new QPushButton();
-    updateButton(m_xMirrorButton, QChar(fa::quoteleft), false);
     initButton(m_xMirrorButton);
+    updateXmirrorButton();
     
     m_zMirrorButton = new QPushButton();
-    updateButton(m_zMirrorButton, QChar(fa::quoteright), false);
     initButton(m_zMirrorButton);
+    updateZmirrorButton();
     
     m_previewLabel = new QLabel;
     
@@ -139,7 +139,7 @@ void SkeletonPartWidget::updateButton(QPushButton *button, QChar icon, bool high
 {
     button->setText(icon);
     if (highlighted)
-        button->setStyleSheet("QPushButton {border: none; background: none; color: #f7d9c8;}");
+        button->setStyleSheet("QPushButton {border: none; background: none; color: #925935;}");
     else
         button->setStyleSheet("QPushButton {border: none; background: none; color: #252525;}");
 }
@@ -188,9 +188,9 @@ void SkeletonPartWidget::updateSubdivButton()
         return;
     }
     if (part->subdived)
-        updateButton(m_subdivButton, QChar(fa::connectdevelop), true);
+        updateButton(m_subdivButton, QChar(fa::circle), true);
     else
-        updateButton(m_subdivButton, QChar(fa::cube), false);
+        updateButton(m_subdivButton, QChar(fa::square), false);
 }
 
 void SkeletonPartWidget::updateDisableButton()
@@ -214,9 +214,9 @@ void SkeletonPartWidget::updateXmirrorButton()
         return;
     }
     if (part->xMirrored)
-        updateButton(m_xMirrorButton, QChar(fa::quoteleft), true);
+        updateButton(m_xMirrorButton, QChar(fa::balancescale), true);
     else
-        updateButton(m_xMirrorButton, QChar(fa::quoteleft), false);
+        updateButton(m_xMirrorButton, QChar(fa::balancescale), false);
 }
 
 void SkeletonPartWidget::updateZmirrorButton()
@@ -227,9 +227,9 @@ void SkeletonPartWidget::updateZmirrorButton()
         return;
     }
     if (part->zMirrored)
-        updateButton(m_zMirrorButton, QChar(fa::quoteright), true);
+        updateButton(m_zMirrorButton, QChar(fa::balancescale), true);
     else
-        updateButton(m_zMirrorButton, QChar(fa::quoteright), false);
+        updateButton(m_zMirrorButton, QChar(fa::balancescale), false);
 }
 
 void SkeletonPartWidget::reload()

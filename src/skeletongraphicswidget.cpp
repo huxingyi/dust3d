@@ -1278,16 +1278,16 @@ void SkeletonGraphicsWidget::partVisibleStateChanged(QUuid partId)
                 qDebug() << "Edge item not found:" << *edgeIt;
                 continue;
             }
-            edgeItemIt->second.first->setVisible(part->visible);
-            edgeItemIt->second.second->setVisible(part->visible);
+            edgeItemIt->second.first->setVisible(part->isEditVisible());
+            edgeItemIt->second.second->setVisible(part->isEditVisible());
         }
         auto nodeItemIt = nodeItemMap.find(nodeId);
         if (nodeItemIt == nodeItemMap.end()) {
             qDebug() << "Node item not found:" << nodeId;
             continue;
         }
-        nodeItemIt->second.first->setVisible(part->visible);
-        nodeItemIt->second.second->setVisible(part->visible);
+        nodeItemIt->second.first->setVisible(part->isEditVisible());
+        nodeItemIt->second.second->setVisible(part->isEditVisible());
     }
 }
 

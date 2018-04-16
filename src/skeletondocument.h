@@ -82,6 +82,10 @@ public:
     {
         id = withId.isNull() ? QUuid::createUuid() : withId;
     }
+    bool isEditVisible() const
+    {
+        return visible && !disabled;
+    }
     void copyAttributes(const SkeletonPart &other)
     {
         visible = other.visible;
