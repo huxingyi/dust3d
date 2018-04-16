@@ -42,17 +42,23 @@ public slots:
     void reportIssues();
     void seeAcknowlegements();
     void documentChanged();
+    void updateXlockButtonState();
+    void updateYlockButtonState();
+    void updateZlockButtonState();
 private:
-    void initButton(QPushButton *button);
+    void initAwesomeButton(QPushButton *button);
+    void initLockButton(QPushButton *button);
     void setCurrentFilename(const QString &filename);
     void updateTitle();
 private:
     SkeletonDocument *m_document;
     bool m_firstShow;
+    bool m_documentSaved;
+private:
+    QString m_currentFilename;
+    
     ModelWidget *m_modelWidget;
     SkeletonGraphicsWidget *m_graphicsWidget;
-    QString m_currentFilename;
-    bool m_documentSaved;
     
     QMenu *m_fileMenu;
     QAction *m_newWindowAction;
@@ -91,6 +97,10 @@ private:
     QAction *m_aboutAction;
     QAction *m_reportIssuesAction;
     QAction *m_seeAcknowlegementsAction;
+
+    QPushButton *m_xlockButton;
+    QPushButton *m_ylockButton;
+    QPushButton *m_zlockButton;
 };
 
 #endif

@@ -147,11 +147,17 @@ signals:
     void partZmirrorStateChanged(QUuid partId);
     void cleanup();
     void originChanged();
+    void xlockStateChanged();
+    void ylockStateChanged();
+    void zlockStateChanged();
 public: // need initialize
     float originX;
     float originY;
     float originZ;
     SkeletonDocumentEditMode editMode;
+    bool xlocked;
+    bool ylocked;
+    bool zlocked;
 public:
     SkeletonDocument();
     ~SkeletonDocument();
@@ -205,6 +211,9 @@ public slots:
     void batchChangeEnd();
     void reset();
     void breakEdge(QUuid edgeId);
+    void setXlockState(bool locked);
+    void setYlockState(bool locked);
+    void setZlockState(bool locked);
 private:
     void splitPartByNode(std::vector<std::vector<QUuid>> *groups, QUuid nodeId);
     void joinNodeAndNeiborsToGroup(std::vector<QUuid> *group, QUuid nodeId, std::set<QUuid> *visitMap, QUuid noUseEdgeId=QUuid());

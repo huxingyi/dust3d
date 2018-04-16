@@ -82,22 +82,34 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     toolButtonLayout->setContentsMargins(5, 10, 4, 0);
     
     QPushButton *undoButton = new QPushButton(QChar(fa::undo));
-    initButton(undoButton);
+    initAwesomeButton(undoButton);
     
     QPushButton *addButton = new QPushButton(QChar(fa::plus));
-    initButton(addButton);
+    initAwesomeButton(addButton);
     
     QPushButton *selectButton = new QPushButton(QChar(fa::mousepointer));
-    initButton(selectButton);
+    initAwesomeButton(selectButton);
     
     QPushButton *dragButton = new QPushButton(QChar(fa::handrocko));
-    initButton(dragButton);
+    initAwesomeButton(dragButton);
     
     QPushButton *zoomInButton = new QPushButton(QChar(fa::searchplus));
-    initButton(zoomInButton);
+    initAwesomeButton(zoomInButton);
     
     QPushButton *zoomOutButton = new QPushButton(QChar(fa::searchminus));
-    initButton(zoomOutButton);
+    initAwesomeButton(zoomOutButton);
+    
+    m_xlockButton = new QPushButton(QChar('X'));
+    initLockButton(m_xlockButton);
+    updateXlockButtonState();
+    
+    m_ylockButton = new QPushButton(QChar('Y'));
+    initLockButton(m_ylockButton);
+    updateYlockButtonState();
+    
+    m_zlockButton = new QPushButton(QChar('Z'));
+    initLockButton(m_zlockButton);
+    updateZlockButtonState();
     
     toolButtonLayout->addWidget(undoButton);
     toolButtonLayout->addSpacing(10);
@@ -106,6 +118,10 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     toolButtonLayout->addWidget(dragButton);
     toolButtonLayout->addWidget(zoomInButton);
     toolButtonLayout->addWidget(zoomOutButton);
+    toolButtonLayout->addSpacing(10);
+    toolButtonLayout->addWidget(m_xlockButton);
+    toolButtonLayout->addWidget(m_ylockButton);
+    toolButtonLayout->addWidget(m_zlockButton);
     
     QLabel *verticalLogoLabel = new QLabel;
     QImage verticalLogoImage;
@@ -355,6 +371,16 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
         m_document->setEditMode(SkeletonDocumentEditMode::ZoomOut);
     });
     
+    connect(m_xlockButton, &QPushButton::clicked, [=]() {
+        m_document->setXlockState(!m_document->xlocked);
+    });
+    connect(m_ylockButton, &QPushButton::clicked, [=]() {
+        m_document->setYlockState(!m_document->ylocked);
+    });
+    connect(m_zlockButton, &QPushButton::clicked, [=]() {
+        m_document->setZlockState(!m_document->zlocked);
+    });
+    
     connect(m_document, &SkeletonDocument::editModeChanged, graphicsWidget, &SkeletonGraphicsWidget::editModeChanged);
     
     connect(graphicsWidget, &SkeletonGraphicsWidget::addNode, m_document, &SkeletonDocument::addNode);
@@ -416,6 +442,10 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
         graphicsWidget->showContextMenu(graphicsWidget->mapFromGlobal(m_modelWidget->mapToGlobal(pos)));
     });
     
+    connect(m_document, &SkeletonDocument::xlockStateChanged, this, &SkeletonDocumentWindow::updateXlockButtonState);
+    connect(m_document, &SkeletonDocument::ylockStateChanged, this, &SkeletonDocumentWindow::updateYlockButtonState);
+    connect(m_document, &SkeletonDocument::zlockStateChanged, this, &SkeletonDocumentWindow::updateZlockButtonState);
+
     connect(this, &SkeletonDocumentWindow::initialized, m_document, &SkeletonDocument::uiReady);
 }
 
@@ -525,9 +555,22 @@ void SkeletonDocumentWindow::seeAcknowlegements()
     SkeletonDocumentWindow::showAcknowlegements();
 }
 
-void SkeletonDocumentWindow::initButton(QPushButton *button)
+void SkeletonDocumentWindow::initAwesomeButton(QPushButton *button)
 {
     button->setFont(Theme::awesome()->font(Theme::toolIconFontSize));
+    button->setFixedSize(Theme::toolIconSize, Theme::toolIconSize);
+    button->setStyleSheet("QPushButton {color: #f7d9c8}");
+    button->setFocusPolicy(Qt::NoFocus);
+}
+
+void SkeletonDocumentWindow::initLockButton(QPushButton *button)
+{
+    QFont font;
+    font.setWeight(QFont::Light);
+    font.setPixelSize(Theme::toolIconFontSize);
+    font.setBold(false);
+    
+    button->setFont(font);
     button->setFixedSize(Theme::toolIconSize, Theme::toolIconSize);
     button->setStyleSheet("QPushButton {color: #f7d9c8}");
     button->setFocusPolicy(Qt::NoFocus);
@@ -665,3 +708,26 @@ void SkeletonDocumentWindow::exportResult()
     QApplication::restoreOverrideCursor();
 }
 
+void SkeletonDocumentWindow::updateXlockButtonState()
+{
+    if (m_document->xlocked)
+        m_xlockButton->setStyleSheet("QPushButton {color: #252525}");
+    else
+        m_xlockButton->setStyleSheet("QPushButton {color: #fc6621}");
+}
+
+void SkeletonDocumentWindow::updateYlockButtonState()
+{
+    if (m_document->ylocked)
+        m_ylockButton->setStyleSheet("QPushButton {color: #252525}");
+    else
+        m_ylockButton->setStyleSheet("QPushButton {color: #2a5aac}");
+}
+
+void SkeletonDocumentWindow::updateZlockButtonState()
+{
+    if (m_document->zlocked)
+        m_zlockButton->setStyleSheet("QPushButton {color: #252525}");
+    else
+        m_zlockButton->setStyleSheet("QPushButton {color: #aaebc4}");
+}

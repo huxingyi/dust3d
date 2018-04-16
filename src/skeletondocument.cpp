@@ -18,6 +18,9 @@ SkeletonDocument::SkeletonDocument() :
     originY(0),
     originZ(0),
     editMode(SkeletonDocumentEditMode::Select),
+    xlocked(false),
+    ylocked(false),
+    zlocked(false),
     // private
     m_resultMeshIsObsolete(false),
     m_meshGenerator(nullptr),
@@ -434,18 +437,24 @@ void SkeletonDocument::moveNodeBy(QUuid nodeId, float x, float y, float z)
     }
     if (isPartReadonly(it->second.partId))
         return;
-    it->second.x += x;
-    it->second.y += y;
-    it->second.z += z;
+    if (!xlocked)
+        it->second.x += x;
+    if (!ylocked)
+        it->second.y += y;
+    if (!zlocked)
+        it->second.z += z;
     emit nodeOriginChanged(nodeId);
     emit skeletonChanged();
 }
 
 void SkeletonDocument::moveOriginBy(float x, float y, float z)
 {
-    originX += x;
-    originY += y;
-    originZ += z;
+    if (!xlocked)
+        originX += x;
+    if (!ylocked)
+        originY += y;
+    if (!zlocked)
+        originZ += z;
     emit originChanged();
     emit skeletonChanged();
 }
@@ -459,9 +468,12 @@ void SkeletonDocument::setNodeOrigin(QUuid nodeId, float x, float y, float z)
     }
     if (isPartReadonly(it->second.partId))
         return;
-    it->second.x = x;
-    it->second.y = y;
-    it->second.z = z;
+    if (!xlocked)
+        it->second.x = x;
+    if (!ylocked)
+        it->second.y = y;
+    if (!zlocked)
+        it->second.z = z;
     emit nodeOriginChanged(nodeId);
     emit skeletonChanged();
 }
@@ -995,3 +1007,26 @@ bool SkeletonDocument::isEdgeEditable(QUuid edgeId) const
     return !isPartReadonly(edge->partId);
 }
 
+void SkeletonDocument::setXlockState(bool locked)
+{
+    if (xlocked == locked)
+        return;
+    xlocked = locked;
+    emit xlockStateChanged();
+}
+
+void SkeletonDocument::setYlockState(bool locked)
+{
+    if (ylocked == locked)
+        return;
+    ylocked = locked;
+    emit ylockStateChanged();
+}
+
+void SkeletonDocument::setZlockState(bool locked)
+{
+    if (zlocked == locked)
+        return;
+    zlocked = locked;
+    emit zlockStateChanged();
+}
