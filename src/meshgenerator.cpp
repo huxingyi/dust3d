@@ -121,7 +121,10 @@ void MeshGenerator::process()
         bool isDisabled = isTrueValueString(disabledString);
         if (isDisabled)
             continue;
+        bool subdived = isTrueValueString(valueOfKeyInMapOrEmpty(part->second, "subdived"));
         int bmeshId = meshlite_bmesh_create(meshliteContext);
+        if (subdived)
+            meshlite_bmesh_set_cut_subdiv_count(meshliteContext, bmeshId, 1);
         if (MeshGenerator::enableDebug)
             meshlite_bmesh_enable_debug(meshliteContext, bmeshId, 1);
         partBmeshMap[partIdIt] = bmeshId;
@@ -220,7 +223,8 @@ void MeshGenerator::process()
                 zMirroredMeshId = meshlite_mirror_in_z(meshliteContext, meshId, 0);
             }
         }
-        bool subdived = isTrueValueString(valueOfKeyInMapOrEmpty(part->second, "subdived"));
+        //bool subdived = isTrueValueString(valueOfKeyInMapOrEmpty(part->second, "subdived"));
+        bool subdived = false;
         if (m_requirePartPreviewMap.find(partIdIt) != m_requirePartPreviewMap.end()) {
             ModelOfflineRender *render = m_partPreviewRenderMap[partIdIt];
             int trimedMeshId = meshlite_trim(meshliteContext, meshId, 1);
