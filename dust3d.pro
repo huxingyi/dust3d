@@ -81,6 +81,9 @@ HEADERS += src/logbrowser.h
 SOURCES += src/logbrowserdialog.cpp
 HEADERS += src/logbrowserdialog.h
 
+SOURCES += src/floatnumberwidget.cpp
+HEADERS += src/floatnumberwidget.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h

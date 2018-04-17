@@ -585,6 +585,8 @@ void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUu
         part["disabled"] = partIt.second.disabled ? "true" : "false";
         part["xMirrored"] = partIt.second.xMirrored ? "true" : "false";
         part["zMirrored"] = partIt.second.zMirrored ? "true" : "false";
+        if (partIt.second.thicknessAdjusted())
+            part["thickness"] = QString::number(partIt.second.thickness);
         if (!partIt.second.name.isEmpty())
             part["name"] = partIt.second.name;
         snapshot->parts[part["id"]] = part;
@@ -655,6 +657,9 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot)
         part.disabled = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "disabled"));
         part.xMirrored = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "xMirrored"));
         part.zMirrored = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "zMirrored"));
+        const auto &thicknessIt = partKv.second.find("thickness");
+        if (thicknessIt != partKv.second.end())
+            part.setThickness(thicknessIt->second.toFloat());
         partMap[part.id] = part;
     }
     for (const auto &nodeKv : snapshot.nodes) {
@@ -921,6 +926,18 @@ void SkeletonDocument::setPartZmirrorState(QUuid partId, bool mirrored)
     part->second.zMirrored = mirrored;
     settleOrigin();
     emit partZmirrorStateChanged(partId);
+    emit skeletonChanged();
+}
+
+void SkeletonDocument::setPartThickness(QUuid partId, float thickness)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    part->second.setThickness(thickness);
+    emit partThicknessChanged(partId);
     emit skeletonChanged();
 }
 

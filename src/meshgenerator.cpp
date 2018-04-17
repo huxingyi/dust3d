@@ -125,6 +125,9 @@ void MeshGenerator::process()
         int bmeshId = meshlite_bmesh_create(meshliteContext);
         if (subdived)
             meshlite_bmesh_set_cut_subdiv_count(meshliteContext, bmeshId, 1);
+        QString thicknessString = valueOfKeyInMapOrEmpty(part->second, "thickness");
+        if (!thicknessString.isEmpty())
+            meshlite_bmesh_set_thickness(meshliteContext, bmeshId, thicknessString.toFloat());
         if (MeshGenerator::enableDebug)
             meshlite_bmesh_enable_debug(meshliteContext, bmeshId, 1);
         partBmeshMap[partIdIt] = bmeshId;

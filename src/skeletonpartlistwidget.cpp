@@ -1,8 +1,11 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QDebug>
+#include <QMenu>
+#include <QWidgetAction>
 #include "skeletonpartlistwidget.h"
 #include "theme.h"
+#include "floatnumberwidget.h"
 
 SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid partId) :
     m_document(document),
@@ -28,9 +31,9 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     initButton(m_xMirrorButton);
     updateXmirrorButton();
     
-    m_zMirrorButton = new QPushButton();
-    initButton(m_zMirrorButton);
-    updateZmirrorButton();
+    m_thicknessButton = new QPushButton();
+    initButton(m_thicknessButton);
+    updateThicknessButton();
     
     m_previewLabel = new QLabel;
     
@@ -39,15 +42,15 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     miniTopToolLayout->setContentsMargins(0, 0, 0, 0);
     miniTopToolLayout->addWidget(m_visibleButton);
     miniTopToolLayout->addWidget(m_lockButton);
-    miniTopToolLayout->addWidget(m_subdivButton);
+    miniTopToolLayout->addWidget(m_disableButton);
     miniTopToolLayout->addStretch();
     
     QHBoxLayout *miniBottomToolLayout = new QHBoxLayout;
     miniBottomToolLayout->setSpacing(0);
     miniBottomToolLayout->setContentsMargins(0, 0, 0, 0);
-    miniBottomToolLayout->addWidget(m_disableButton);
+    miniBottomToolLayout->addWidget(m_subdivButton);
     miniBottomToolLayout->addWidget(m_xMirrorButton);
-    miniBottomToolLayout->addWidget(m_zMirrorButton);
+    miniBottomToolLayout->addWidget(m_thicknessButton);
     miniBottomToolLayout->addStretch();
     
     QWidget *hrWidget = new QWidget;
@@ -71,7 +74,7 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     connect(this, &SkeletonPartWidget::setPartSubdivState, m_document, &SkeletonDocument::setPartSubdivState);
     connect(this, &SkeletonPartWidget::setPartDisableState, m_document, &SkeletonDocument::setPartDisableState);
     connect(this, &SkeletonPartWidget::setPartXmirrorState, m_document, &SkeletonDocument::setPartXmirrorState);
-    connect(this, &SkeletonPartWidget::setPartZmirrorState, m_document, &SkeletonDocument::setPartZmirrorState);
+    connect(this, &SkeletonPartWidget::setPartThickness, m_document, &SkeletonDocument::setPartThickness);
     
     connect(m_lockButton, &QPushButton::clicked, [=]() {
         const SkeletonPart *part = m_document->findPart(m_partId);
@@ -118,14 +121,40 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
         emit setPartXmirrorState(m_partId, !part->xMirrored);
     });
     
-    connect(m_zMirrorButton, &QPushButton::clicked, [=]() {
+    connect(m_thicknessButton, &QPushButton::clicked, [=]() {
         const SkeletonPart *part = m_document->findPart(m_partId);
         if (!part) {
             qDebug() << "Part not found:" << m_partId;
             return;
         }
-        emit setPartZmirrorState(m_partId, !part->zMirrored);
+        showThicknessSettingPopup(mapFromGlobal(QCursor::pos()));
     });
+}
+
+void SkeletonPartWidget::showThicknessSettingPopup(const QPoint &pos)
+{
+    QMenu popupMenu;
+    
+    const SkeletonPart *part = m_document->findPart(m_partId);
+    if (!part) {
+        qDebug() << "Find part failed:" << m_partId;
+        return;
+    }
+    
+    FloatNumberWidget *popup = new FloatNumberWidget;
+    popup->setRange(0, 2);
+    popup->setValue(part->thickness);
+    
+    connect(popup, &FloatNumberWidget::valueChanged, [=](float value) {
+        emit setPartThickness(m_partId, value);
+    });
+    
+    QWidgetAction *action = new QWidgetAction(this);
+    action->setDefaultWidget(popup);
+    
+    popupMenu.addAction(action);
+    
+    popupMenu.exec(mapToGlobal(pos));
 }
 
 void SkeletonPartWidget::initButton(QPushButton *button)
@@ -219,17 +248,17 @@ void SkeletonPartWidget::updateXmirrorButton()
         updateButton(m_xMirrorButton, QChar(fa::balancescale), false);
 }
 
-void SkeletonPartWidget::updateZmirrorButton()
+void SkeletonPartWidget::updateThicknessButton()
 {
     const SkeletonPart *part = m_document->findPart(m_partId);
     if (!part) {
         qDebug() << "Part not found:" << m_partId;
         return;
     }
-    if (part->zMirrored)
-        updateButton(m_zMirrorButton, QChar(fa::balancescale), true);
+    if (part->thicknessAdjusted())
+        updateButton(m_thicknessButton, QChar(fa::handlizardo), true);
     else
-        updateButton(m_zMirrorButton, QChar(fa::balancescale), false);
+        updateButton(m_thicknessButton, QChar(fa::handlizardo), false);
 }
 
 void SkeletonPartWidget::reload()
@@ -240,7 +269,7 @@ void SkeletonPartWidget::reload()
     updateSubdivButton();
     updateDisableButton();
     updateXmirrorButton();
-    updateZmirrorButton();
+    updateThicknessButton();
 }
 
 SkeletonPartListWidget::SkeletonPartListWidget(const SkeletonDocument *document) :
@@ -347,7 +376,7 @@ void SkeletonPartListWidget::partXmirrorStateChanged(QUuid partId)
     widget->updateXmirrorButton();
 }
 
-void SkeletonPartListWidget::partZmirrorStateChanged(QUuid partId)
+void SkeletonPartListWidget::partThicknessChanged(QUuid partId)
 {
     auto item = m_itemMap.find(partId);
     if (item == m_itemMap.end()) {
@@ -355,5 +384,5 @@ void SkeletonPartListWidget::partZmirrorStateChanged(QUuid partId)
         return;
     }
     SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second);
-    widget->updateZmirrorButton();
+    widget->updateThicknessButton();
 }

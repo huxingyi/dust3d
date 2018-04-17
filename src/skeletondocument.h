@@ -7,6 +7,7 @@
 #include <set>
 #include <deque>
 #include <QImage>
+#include <cmath>
 #include "skeletonsnapshot.h"
 #include "mesh.h"
 #include "meshgenerator.h"
@@ -70,6 +71,7 @@ public:
     bool disabled;
     bool xMirrored;
     bool zMirrored;
+    float thickness;
     QImage preview;
     std::vector<QUuid> nodeIds;
     SkeletonPart(const QUuid &withId=QUuid()) :
@@ -78,9 +80,22 @@ public:
         subdived(false),
         disabled(false),
         xMirrored(false),
-        zMirrored(false)
+        zMirrored(false),
+        thickness(1.0)
     {
         id = withId.isNull() ? QUuid::createUuid() : withId;
+    }
+    void setThickness(float toThickness)
+    {
+        if (toThickness < 0)
+            toThickness = 0;
+        else if (toThickness > 2)
+            toThickness = 2;
+        thickness = toThickness;
+    }
+    bool thicknessAdjusted() const
+    {
+        return fabs(thickness - 1.0) >= 0.01;
     }
     bool isEditVisible() const
     {
@@ -94,6 +109,7 @@ public:
         disabled = other.disabled;
         xMirrored = other.xMirrored;
         zMirrored = other.zMirrored;
+        thickness = other.thickness;
     }
 };
 
@@ -145,6 +161,7 @@ signals:
     void partDisableStateChanged(QUuid partId);
     void partXmirrorStateChanged(QUuid partId);
     void partZmirrorStateChanged(QUuid partId);
+    void partThicknessChanged(QUuid partId);
     void cleanup();
     void originChanged();
     void xlockStateChanged();
@@ -203,6 +220,7 @@ public slots:
     void setPartDisableState(QUuid partId, bool disabled);
     void setPartXmirrorState(QUuid partId, bool mirrored);
     void setPartZmirrorState(QUuid partId, bool mirrored);
+    void setPartThickness(QUuid partId, float thickness);
     void saveSnapshot();
     void undo();
     void redo();

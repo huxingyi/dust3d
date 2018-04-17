@@ -182,7 +182,7 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     m_fileMenu = menuBar()->addMenu(tr("File"));
     
     m_newWindowAction = new QAction(tr("New Window"), this);
-    connect(m_newWindowAction, &QAction::triggered, this, &SkeletonDocumentWindow::newWindow);
+    connect(m_newWindowAction, &QAction::triggered, this, &SkeletonDocumentWindow::newWindow, Qt::QueuedConnection);
     m_fileMenu->addAction(m_newWindowAction);
     
     m_newDocumentAction = new QAction(tr("New"), this);
@@ -190,29 +190,29 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     m_fileMenu->addAction(m_newDocumentAction);
     
     m_openAction = new QAction(tr("Open..."), this);
-    connect(m_openAction, &QAction::triggered, this, &SkeletonDocumentWindow::open);
+    connect(m_openAction, &QAction::triggered, this, &SkeletonDocumentWindow::open, Qt::QueuedConnection);
     m_fileMenu->addAction(m_openAction);
     
     m_saveAction = new QAction(tr("Save"), this);
-    connect(m_saveAction, &QAction::triggered, this, &SkeletonDocumentWindow::save);
+    connect(m_saveAction, &QAction::triggered, this, &SkeletonDocumentWindow::save, Qt::QueuedConnection);
     m_fileMenu->addAction(m_saveAction);
     
     m_saveAsAction = new QAction(tr("Save As..."), this);
-    connect(m_saveAsAction, &QAction::triggered, this, &SkeletonDocumentWindow::saveAs);
+    connect(m_saveAsAction, &QAction::triggered, this, &SkeletonDocumentWindow::saveAs, Qt::QueuedConnection);
     m_fileMenu->addAction(m_saveAsAction);
     
     m_saveAllAction = new QAction(tr("Save All"), this);
-    connect(m_saveAllAction, &QAction::triggered, this, &SkeletonDocumentWindow::saveAll);
+    connect(m_saveAllAction, &QAction::triggered, this, &SkeletonDocumentWindow::saveAll, Qt::QueuedConnection);
     m_fileMenu->addAction(m_saveAllAction);
     
     m_fileMenu->addSeparator();
     
     m_exportAction = new QAction(tr("Export..."), this);
-    connect(m_exportAction, &QAction::triggered, this, &SkeletonDocumentWindow::exportResult);
+    connect(m_exportAction, &QAction::triggered, this, &SkeletonDocumentWindow::exportResult, Qt::QueuedConnection);
     m_fileMenu->addAction(m_exportAction);
     
     m_changeTurnaroundAction = new QAction(tr("Change Turnaround..."), this);
-    connect(m_changeTurnaroundAction, &QAction::triggered, this, &SkeletonDocumentWindow::changeTurnaround);
+    connect(m_changeTurnaroundAction, &QAction::triggered, this, &SkeletonDocumentWindow::changeTurnaround, Qt::QueuedConnection);
     m_fileMenu->addAction(m_changeTurnaroundAction);
     
     connect(m_fileMenu, &QMenu::aboutToShow, [=]() {
@@ -422,7 +422,7 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(m_document, &SkeletonDocument::partSubdivStateChanged, partListWidget, &SkeletonPartListWidget::partSubdivStateChanged);
     connect(m_document, &SkeletonDocument::partDisableStateChanged, partListWidget, &SkeletonPartListWidget::partDisableStateChanged);
     connect(m_document, &SkeletonDocument::partXmirrorStateChanged, partListWidget, &SkeletonPartListWidget::partXmirrorStateChanged);
-    connect(m_document, &SkeletonDocument::partZmirrorStateChanged, partListWidget, &SkeletonPartListWidget::partZmirrorStateChanged);
+    connect(m_document, &SkeletonDocument::partThicknessChanged, partListWidget, &SkeletonPartListWidget::partThicknessChanged);
     connect(m_document, &SkeletonDocument::cleanup, partListWidget, &SkeletonPartListWidget::partListChanged);
     
     connect(m_document, &SkeletonDocument::skeletonChanged, m_document, &SkeletonDocument::generateMesh);
