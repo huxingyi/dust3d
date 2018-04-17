@@ -422,7 +422,8 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(m_document, &SkeletonDocument::partSubdivStateChanged, partListWidget, &SkeletonPartListWidget::partSubdivStateChanged);
     connect(m_document, &SkeletonDocument::partDisableStateChanged, partListWidget, &SkeletonPartListWidget::partDisableStateChanged);
     connect(m_document, &SkeletonDocument::partXmirrorStateChanged, partListWidget, &SkeletonPartListWidget::partXmirrorStateChanged);
-    connect(m_document, &SkeletonDocument::partThicknessChanged, partListWidget, &SkeletonPartListWidget::partThicknessChanged);
+    connect(m_document, &SkeletonDocument::partDeformThicknessChanged, partListWidget, &SkeletonPartListWidget::partDeformChanged);
+    connect(m_document, &SkeletonDocument::partDeformWidthChanged, partListWidget, &SkeletonPartListWidget::partDeformChanged);
     connect(m_document, &SkeletonDocument::cleanup, partListWidget, &SkeletonPartListWidget::partListChanged);
     
     connect(m_document, &SkeletonDocument::skeletonChanged, m_document, &SkeletonDocument::generateMesh);

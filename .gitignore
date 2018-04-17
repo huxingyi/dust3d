@@ -1,2 +1,3 @@
 moc_*
 .DS_Store
+*.o

@@ -33,7 +33,8 @@ int meshlite_get_halfedge_normal_array(void *context, int mesh_id, float *buffer
 int meshlite_build(void *context, float *vertex_position_buffer, int vertex_count, int *face_index_buffer, int face_index_buffer_len);
 int meshlite_bmesh_create(void *context);
 int meshlite_bmesh_set_cut_subdiv_count(void *context, int bmesh_id, int subdiv_count);
-int meshlite_bmesh_set_thickness(void *context, int bmesh_id, float thickness);
+int meshlite_bmesh_set_deform_thickness(void *context, int bmesh_id, float thickness);
+int meshlite_bmesh_set_deform_width(void *context, int bmesh_id, float width);
 int meshlite_bmesh_enable_debug(void *context, int bmesh_id, int enable);
 int meshlite_bmesh_add_node(void *context, int bmesh_id, float x, float y, float z, float radius);
 int meshlite_bmesh_add_edge(void *context, int bmesh_id, int first_node_id, int second_node_id);

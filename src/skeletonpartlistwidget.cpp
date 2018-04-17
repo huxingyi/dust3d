@@ -31,9 +31,9 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     initButton(m_xMirrorButton);
     updateXmirrorButton();
     
-    m_thicknessButton = new QPushButton();
-    initButton(m_thicknessButton);
-    updateThicknessButton();
+    m_deformButton = new QPushButton();
+    initButton(m_deformButton);
+    updateDeformButton();
     
     m_previewLabel = new QLabel;
     
@@ -49,8 +49,8 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     miniBottomToolLayout->setSpacing(0);
     miniBottomToolLayout->setContentsMargins(0, 0, 0, 0);
     miniBottomToolLayout->addWidget(m_subdivButton);
+    miniBottomToolLayout->addWidget(m_deformButton);
     miniBottomToolLayout->addWidget(m_xMirrorButton);
-    miniBottomToolLayout->addWidget(m_thicknessButton);
     miniBottomToolLayout->addStretch();
     
     QWidget *hrWidget = new QWidget;
@@ -74,7 +74,8 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     connect(this, &SkeletonPartWidget::setPartSubdivState, m_document, &SkeletonDocument::setPartSubdivState);
     connect(this, &SkeletonPartWidget::setPartDisableState, m_document, &SkeletonDocument::setPartDisableState);
     connect(this, &SkeletonPartWidget::setPartXmirrorState, m_document, &SkeletonDocument::setPartXmirrorState);
-    connect(this, &SkeletonPartWidget::setPartThickness, m_document, &SkeletonDocument::setPartThickness);
+    connect(this, &SkeletonPartWidget::setPartDeformThickness, m_document, &SkeletonDocument::setPartDeformThickness);
+    connect(this, &SkeletonPartWidget::setPartDeformWidth, m_document, &SkeletonDocument::setPartDeformWidth);
     
     connect(m_lockButton, &QPushButton::clicked, [=]() {
         const SkeletonPart *part = m_document->findPart(m_partId);
@@ -121,17 +122,25 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
         emit setPartXmirrorState(m_partId, !part->xMirrored);
     });
     
-    connect(m_thicknessButton, &QPushButton::clicked, [=]() {
+    connect(m_deformButton, &QPushButton::clicked, [=]() {
         const SkeletonPart *part = m_document->findPart(m_partId);
         if (!part) {
             qDebug() << "Part not found:" << m_partId;
             return;
         }
-        showThicknessSettingPopup(mapFromGlobal(QCursor::pos()));
+        showDeformSettingPopup(mapFromGlobal(QCursor::pos()));
     });
 }
 
-void SkeletonPartWidget::showThicknessSettingPopup(const QPoint &pos)
+void SkeletonPartWidget::initToolButton(QPushButton *button)
+{
+    button->setFont(Theme::awesome()->font(Theme::toolIconFontSize / 2));
+    button->setFixedSize(Theme::toolIconSize / 2, Theme::toolIconSize / 2);
+    button->setStyleSheet("QPushButton {color: #f7d9c8}");
+    button->setFocusPolicy(Qt::NoFocus);
+}
+
+void SkeletonPartWidget::showDeformSettingPopup(const QPoint &pos)
 {
     QMenu popupMenu;
     
@@ -141,13 +150,49 @@ void SkeletonPartWidget::showThicknessSettingPopup(const QPoint &pos)
         return;
     }
     
-    FloatNumberWidget *popup = new FloatNumberWidget;
-    popup->setRange(0, 2);
-    popup->setValue(part->thickness);
+    QWidget *popup = new QWidget;
     
-    connect(popup, &FloatNumberWidget::valueChanged, [=](float value) {
-        emit setPartThickness(m_partId, value);
+    FloatNumberWidget *thicknessWidget = new FloatNumberWidget;
+    thicknessWidget->setRange(0, 2);
+    thicknessWidget->setValue(part->deformThickness);
+    
+    connect(thicknessWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+        emit setPartDeformThickness(m_partId, value);
     });
+    
+    FloatNumberWidget *widthWidget = new FloatNumberWidget;
+    widthWidget->setRange(0, 2);
+    widthWidget->setValue(part->deformWidth);
+    
+    connect(widthWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+        emit setPartDeformWidth(m_partId, value);
+    });
+    
+    QPushButton *thicknessEraser = new QPushButton(QChar(fa::eraser));
+    initToolButton(thicknessEraser);
+    
+    connect(thicknessEraser, &QPushButton::clicked, [=]() {
+        thicknessWidget->setValue(1.0);
+    });
+    
+    QPushButton *widthEraser = new QPushButton(QChar(fa::eraser));
+    initToolButton(widthEraser);
+    
+    connect(widthEraser, &QPushButton::clicked, [=]() {
+        widthWidget->setValue(1.0);
+    });
+    
+    QVBoxLayout *layout = new QVBoxLayout;
+    QHBoxLayout *thicknessLayout = new QHBoxLayout;
+    QHBoxLayout *widthLayout = new QHBoxLayout;
+    thicknessLayout->addWidget(thicknessEraser);
+    thicknessLayout->addWidget(thicknessWidget);
+    widthLayout->addWidget(widthEraser);
+    widthLayout->addWidget(widthWidget);
+    layout->addLayout(thicknessLayout);
+    layout->addLayout(widthLayout);
+    
+    popup->setLayout(layout);
     
     QWidgetAction *action = new QWidgetAction(this);
     action->setDefaultWidget(popup);
@@ -248,17 +293,17 @@ void SkeletonPartWidget::updateXmirrorButton()
         updateButton(m_xMirrorButton, QChar(fa::balancescale), false);
 }
 
-void SkeletonPartWidget::updateThicknessButton()
+void SkeletonPartWidget::updateDeformButton()
 {
     const SkeletonPart *part = m_document->findPart(m_partId);
     if (!part) {
         qDebug() << "Part not found:" << m_partId;
         return;
     }
-    if (part->thicknessAdjusted())
-        updateButton(m_thicknessButton, QChar(fa::handlizardo), true);
+    if (part->deformAdjusted())
+        updateButton(m_deformButton, QChar(fa::handlizardo), true);
     else
-        updateButton(m_thicknessButton, QChar(fa::handlizardo), false);
+        updateButton(m_deformButton, QChar(fa::handlizardo), false);
 }
 
 void SkeletonPartWidget::reload()
@@ -269,7 +314,7 @@ void SkeletonPartWidget::reload()
     updateSubdivButton();
     updateDisableButton();
     updateXmirrorButton();
-    updateThicknessButton();
+    updateDeformButton();
 }
 
 SkeletonPartListWidget::SkeletonPartListWidget(const SkeletonDocument *document) :
@@ -376,7 +421,7 @@ void SkeletonPartListWidget::partXmirrorStateChanged(QUuid partId)
     widget->updateXmirrorButton();
 }
 
-void SkeletonPartListWidget::partThicknessChanged(QUuid partId)
+void SkeletonPartListWidget::partDeformChanged(QUuid partId)
 {
     auto item = m_itemMap.find(partId);
     if (item == m_itemMap.end()) {
@@ -384,5 +429,5 @@ void SkeletonPartListWidget::partThicknessChanged(QUuid partId)
         return;
     }
     SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second);
-    widget->updateThicknessButton();
+    widget->updateDeformButton();
 }

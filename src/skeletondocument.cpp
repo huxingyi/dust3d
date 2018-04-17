@@ -585,8 +585,10 @@ void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUu
         part["disabled"] = partIt.second.disabled ? "true" : "false";
         part["xMirrored"] = partIt.second.xMirrored ? "true" : "false";
         part["zMirrored"] = partIt.second.zMirrored ? "true" : "false";
-        if (partIt.second.thicknessAdjusted())
-            part["thickness"] = QString::number(partIt.second.thickness);
+        if (partIt.second.deformThicknessAdjusted())
+            part["deformThickness"] = QString::number(partIt.second.deformThickness);
+        if (partIt.second.deformWidthAdjusted())
+            part["deformWidth"] = QString::number(partIt.second.deformWidth);
         if (!partIt.second.name.isEmpty())
             part["name"] = partIt.second.name;
         snapshot->parts[part["id"]] = part;
@@ -657,9 +659,12 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot)
         part.disabled = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "disabled"));
         part.xMirrored = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "xMirrored"));
         part.zMirrored = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "zMirrored"));
-        const auto &thicknessIt = partKv.second.find("thickness");
-        if (thicknessIt != partKv.second.end())
-            part.setThickness(thicknessIt->second.toFloat());
+        const auto &deformThicknessIt = partKv.second.find("deformThickness");
+        if (deformThicknessIt != partKv.second.end())
+            part.setDeformThickness(deformThicknessIt->second.toFloat());
+        const auto &deformWidthIt = partKv.second.find("deformWidth");
+        if (deformWidthIt != partKv.second.end())
+            part.setDeformWidth(deformWidthIt->second.toFloat());
         partMap[part.id] = part;
     }
     for (const auto &nodeKv : snapshot.nodes) {
@@ -929,15 +934,27 @@ void SkeletonDocument::setPartZmirrorState(QUuid partId, bool mirrored)
     emit skeletonChanged();
 }
 
-void SkeletonDocument::setPartThickness(QUuid partId, float thickness)
+void SkeletonDocument::setPartDeformThickness(QUuid partId, float thickness)
 {
     auto part = partMap.find(partId);
     if (part == partMap.end()) {
         qDebug() << "Part not found:" << partId;
         return;
     }
-    part->second.setThickness(thickness);
-    emit partThicknessChanged(partId);
+    part->second.setDeformThickness(thickness);
+    emit partDeformThicknessChanged(partId);
+    emit skeletonChanged();
+}
+
+void SkeletonDocument::setPartDeformWidth(QUuid partId, float width)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    part->second.setDeformWidth(width);
+    emit partDeformWidthChanged(partId);
     emit skeletonChanged();
 }
 

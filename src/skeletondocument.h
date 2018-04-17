@@ -71,7 +71,8 @@ public:
     bool disabled;
     bool xMirrored;
     bool zMirrored;
-    float thickness;
+    float deformThickness;
+    float deformWidth;
     QImage preview;
     std::vector<QUuid> nodeIds;
     SkeletonPart(const QUuid &withId=QUuid()) :
@@ -81,21 +82,38 @@ public:
         disabled(false),
         xMirrored(false),
         zMirrored(false),
-        thickness(1.0)
+        deformThickness(1.0),
+        deformWidth(1.0)
     {
         id = withId.isNull() ? QUuid::createUuid() : withId;
     }
-    void setThickness(float toThickness)
+    void setDeformThickness(float toThickness)
     {
         if (toThickness < 0)
             toThickness = 0;
         else if (toThickness > 2)
             toThickness = 2;
-        thickness = toThickness;
+        deformThickness = toThickness;
     }
-    bool thicknessAdjusted() const
+    void setDeformWidth(float toWidth)
     {
-        return fabs(thickness - 1.0) >= 0.01;
+        if (toWidth < 0)
+            toWidth = 0;
+        else if (toWidth > 2)
+            toWidth = 2;
+        deformWidth = toWidth;
+    }
+    bool deformThicknessAdjusted() const
+    {
+        return fabs(deformThickness - 1.0) >= 0.01;
+    }
+    bool deformWidthAdjusted() const
+    {
+        return fabs(deformWidth - 1.0) >= 0.01;
+    }
+    bool deformAdjusted() const
+    {
+        return deformThicknessAdjusted() || deformWidthAdjusted();
     }
     bool isEditVisible() const
     {
@@ -109,7 +127,8 @@ public:
         disabled = other.disabled;
         xMirrored = other.xMirrored;
         zMirrored = other.zMirrored;
-        thickness = other.thickness;
+        deformThickness = other.deformThickness;
+        deformWidth = other.deformWidth;
     }
 };
 
@@ -161,7 +180,8 @@ signals:
     void partDisableStateChanged(QUuid partId);
     void partXmirrorStateChanged(QUuid partId);
     void partZmirrorStateChanged(QUuid partId);
-    void partThicknessChanged(QUuid partId);
+    void partDeformThicknessChanged(QUuid partId);
+    void partDeformWidthChanged(QUuid partId);
     void cleanup();
     void originChanged();
     void xlockStateChanged();
@@ -220,7 +240,8 @@ public slots:
     void setPartDisableState(QUuid partId, bool disabled);
     void setPartXmirrorState(QUuid partId, bool mirrored);
     void setPartZmirrorState(QUuid partId, bool mirrored);
-    void setPartThickness(QUuid partId, float thickness);
+    void setPartDeformThickness(QUuid partId, float thickness);
+    void setPartDeformWidth(QUuid partId, float width);
     void saveSnapshot();
     void undo();
     void redo();

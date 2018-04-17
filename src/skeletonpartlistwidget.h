@@ -16,7 +16,8 @@ signals:
     void setPartDisableState(QUuid partId, bool disabled);
     void setPartXmirrorState(QUuid partId, bool mirrored);
     void setPartZmirrorState(QUuid partId, bool mirrored);
-    void setPartThickness(QUuid partId, float thickness);
+    void setPartDeformThickness(QUuid partId, float thickness);
+    void setPartDeformWidth(QUuid partId, float width);
 public:
     SkeletonPartWidget(const SkeletonDocument *document, QUuid partId);
     void reload();
@@ -27,9 +28,9 @@ public:
     void updateDisableButton();
     void updateXmirrorButton();
     void updateZmirrorButton();
-    void updateThicknessButton();
+    void updateDeformButton();
 public slots:
-    void showThicknessSettingPopup(const QPoint &pos);
+    void showDeformSettingPopup(const QPoint &pos);
 private:
     const SkeletonDocument *m_document;
     QUuid m_partId;
@@ -40,9 +41,10 @@ private:
     QPushButton *m_disableButton;
     QPushButton *m_xMirrorButton;
     QPushButton *m_zMirrorButton;
-    QPushButton *m_thicknessButton;
+    QPushButton *m_deformButton;
     QLabel *m_nameLabel;
 private:
+    void initToolButton(QPushButton *button);
     void initButton(QPushButton *button);
     void updateButton(QPushButton *button, QChar icon, bool highlighted);
 };
@@ -61,7 +63,7 @@ public slots:
     void partSubdivStateChanged(QUuid partId);
     void partDisableStateChanged(QUuid partId);
     void partXmirrorStateChanged(QUuid partId);
-    void partThicknessChanged(QUuid partId);
+    void partDeformChanged(QUuid partId);
 private:
     const SkeletonDocument *m_document;
     std::map<QUuid, QListWidgetItem *> m_itemMap;

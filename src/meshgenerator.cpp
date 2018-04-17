@@ -125,9 +125,12 @@ void MeshGenerator::process()
         int bmeshId = meshlite_bmesh_create(meshliteContext);
         if (subdived)
             meshlite_bmesh_set_cut_subdiv_count(meshliteContext, bmeshId, 1);
-        QString thicknessString = valueOfKeyInMapOrEmpty(part->second, "thickness");
+        QString thicknessString = valueOfKeyInMapOrEmpty(part->second, "deformThickness");
         if (!thicknessString.isEmpty())
-            meshlite_bmesh_set_thickness(meshliteContext, bmeshId, thicknessString.toFloat());
+            meshlite_bmesh_set_deform_thickness(meshliteContext, bmeshId, thicknessString.toFloat());
+        QString widthString = valueOfKeyInMapOrEmpty(part->second, "deformWidth");
+        if (!widthString.isEmpty())
+            meshlite_bmesh_set_deform_width(meshliteContext, bmeshId, widthString.toFloat());
         if (MeshGenerator::enableDebug)
             meshlite_bmesh_enable_debug(meshliteContext, bmeshId, 1);
         partBmeshMap[partIdIt] = bmeshId;
