@@ -2,3 +2,4 @@
 
 WIP... COMMING SOON
 
+<image src="https://raw.githubusercontent.com/huxingyi/dust3d/master/docs/examples/modeling-ant/modeling-ant-dust3d-screenshot-thumbnail.png" width="160" height="96">
