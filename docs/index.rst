@@ -12,6 +12,7 @@ Dust3D Reference Guide
    :glob:
    
    get_started
+   examples/index.rst
    for_developers
 
 Indices and tables
