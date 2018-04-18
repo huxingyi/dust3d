@@ -41,6 +41,7 @@ public slots:
     void about();
     void reportIssues();
     void seeAcknowlegements();
+    void seeReferenceGuide();
     void documentChanged();
     void updateXlockButtonState();
     void updateYlockButtonState();
@@ -97,6 +98,7 @@ private:
     QAction *m_aboutAction;
     QAction *m_reportIssuesAction;
     QAction *m_seeAcknowlegementsAction;
+    QAction *m_seeReferenceGuideAction;
 
     QPushButton *m_xlockButton;
     QPushButton *m_ylockButton;

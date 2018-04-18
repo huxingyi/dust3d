@@ -329,6 +329,12 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     
     m_helpMenu->addSeparator();
     
+    m_seeReferenceGuideAction = new QAction(tr("Reference Guide"), this);
+    connect(m_seeReferenceGuideAction, &QAction::triggered, this, &SkeletonDocumentWindow::seeReferenceGuide);
+    m_helpMenu->addAction(m_seeReferenceGuideAction);
+    
+    m_helpMenu->addSeparator();
+    
     m_aboutAction = new QAction(tr("About"), this);
     connect(m_aboutAction, &QAction::triggered, this, &SkeletonDocumentWindow::about);
     m_helpMenu->addAction(m_aboutAction);
@@ -563,6 +569,13 @@ void SkeletonDocumentWindow::reportIssues()
 {
     QString url = APP_ISSUES_URL;
     qDebug() << "reportIssues:" << url;
+    QDesktopServices::openUrl(QUrl(url));
+}
+
+void SkeletonDocumentWindow::seeReferenceGuide()
+{
+    QString url = APP_REFERENCE_GUIDE_URL;
+    qDebug() << "referenceGuide:" << url;
     QDesktopServices::openUrl(QUrl(url));
 }
 

@@ -11,6 +11,7 @@ isEmpty(VERSION) {
 
 REPOSITORY_URL = "https://github.com/huxingyi/dust3d"
 ISSUES_URL = "https://github.com/huxingyi/dust3d/issues"
+REFERENCE_GUIDE_URL = "https://dust3d.readthedocs.io"
 
 QMAKE_TARGET_COMPANY = Dust3D
 QMAKE_TARGET_PRODUCT = Dust3D
@@ -22,6 +23,7 @@ DEFINES += "PROJECT_DEFINED_APP_VER=\"\\\"$$VERSION\\\"\""
 DEFINES += "PROJECT_DEFINED_APP_HUMAN_VER=\"\\\"$$HUMAN_VERSION\\\"\""
 DEFINES += "PROJECT_DEFINED_APP_REPOSITORY_URL=\"\\\"$$REPOSITORY_URL\\\"\""
 DEFINES += "PROJECT_DEFINED_APP_ISSUES_URL=\"\\\"$$ISSUES_URL\\\"\""
+DEFINES += "PROJECT_DEFINED_APP_REFERENCE_GUIDE_URL=\"\\\"$$REFERENCE_GUIDE_URL\\\"\""
 
 include(thirdparty/QtAwesome/QtAwesome/QtAwesome.pri)
 
