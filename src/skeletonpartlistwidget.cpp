@@ -41,8 +41,8 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     miniTopToolLayout->setSpacing(0);
     miniTopToolLayout->setContentsMargins(0, 0, 0, 0);
     miniTopToolLayout->addWidget(m_visibleButton);
-    miniTopToolLayout->addWidget(m_lockButton);
     miniTopToolLayout->addWidget(m_disableButton);
+    miniTopToolLayout->addWidget(m_lockButton);
     miniTopToolLayout->addStretch();
     
     QHBoxLayout *miniBottomToolLayout = new QHBoxLayout;

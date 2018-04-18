@@ -401,6 +401,16 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(graphicsWidget, &SkeletonGraphicsWidget::partChecked, m_document, &SkeletonDocument::partChecked);
     connect(graphicsWidget, &SkeletonGraphicsWidget::partUnchecked, m_document, &SkeletonDocument::partUnchecked);
     
+    connect(graphicsWidget, &SkeletonGraphicsWidget::setPartLockState, m_document, &SkeletonDocument::setPartLockState);
+    connect(graphicsWidget, &SkeletonGraphicsWidget::setPartVisibleState, m_document, &SkeletonDocument::setPartVisibleState);
+    connect(graphicsWidget, &SkeletonGraphicsWidget::setPartSubdivState, m_document, &SkeletonDocument::setPartSubdivState);
+    connect(graphicsWidget, &SkeletonGraphicsWidget::setPartDisableState, m_document, &SkeletonDocument::setPartDisableState);
+    connect(graphicsWidget, &SkeletonGraphicsWidget::setPartXmirrorState, m_document, &SkeletonDocument::setPartXmirrorState);
+    
+    connect(graphicsWidget, &SkeletonGraphicsWidget::setXlockState, m_document, &SkeletonDocument::setXlockState);
+    connect(graphicsWidget, &SkeletonGraphicsWidget::setYlockState, m_document, &SkeletonDocument::setYlockState);
+    connect(graphicsWidget, &SkeletonGraphicsWidget::setZlockState, m_document, &SkeletonDocument::setZlockState);
+    
     connect(graphicsWidget, &SkeletonGraphicsWidget::changeTurnaround, this, &SkeletonDocumentWindow::changeTurnaround);
     connect(graphicsWidget, &SkeletonGraphicsWidget::save, this, &SkeletonDocumentWindow::save);
     connect(graphicsWidget, &SkeletonGraphicsWidget::open, this, &SkeletonDocumentWindow::open);

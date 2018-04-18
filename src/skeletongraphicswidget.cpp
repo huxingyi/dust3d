@@ -999,16 +999,22 @@ bool SkeletonGraphicsWidget::keyPress(QKeyEvent *event)
             } else {
                 emit undo();
             }
+        } else {
+            emit setZlockState(!m_document->zlocked);
         }
     } else if (event->key() == Qt::Key_Y) {
         if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
             if (!QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
                 emit redo();
             }
+        } else {
+            emit setYlockState(!m_document->ylocked);
         }
     } else if (event->key() == Qt::Key_X) {
         if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
             cut();
+        } else {
+            emit setXlockState(!m_document->xlocked);
         }
     } else if (event->key() == Qt::Key_C) {
         if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
@@ -1099,6 +1105,41 @@ bool SkeletonGraphicsWidget::keyPress(QKeyEvent *event)
     } else if (event->key() == Qt::Key_Tab) {
         if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
             switchProfileOnRangeSelection();
+        }
+    } else if (event->key() == Qt::Key_H) {
+        if (SkeletonDocumentEditMode::Select == m_document->editMode && !m_lastCheckedPart.isNull()) {
+            const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
+            bool partVisible = part && part->visible;
+            emit setPartVisibleState(m_lastCheckedPart, !partVisible);
+            emit groupOperationAdded();
+        }
+    } else if (event->key() == Qt::Key_J) {
+        if (SkeletonDocumentEditMode::Select == m_document->editMode && !m_lastCheckedPart.isNull()) {
+            const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
+            bool partDisabled = part && part->disabled;
+            emit setPartDisableState(m_lastCheckedPart, !partDisabled);
+            emit groupOperationAdded();
+        }
+    } else if (event->key() == Qt::Key_L) {
+        if (SkeletonDocumentEditMode::Select == m_document->editMode && !m_lastCheckedPart.isNull()) {
+            const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
+            bool partLocked = part && part->locked;
+            emit setPartLockState(m_lastCheckedPart, !partLocked);
+            emit groupOperationAdded();
+        }
+    } else if (event->key() == Qt::Key_M) {
+        if (SkeletonDocumentEditMode::Select == m_document->editMode && !m_lastCheckedPart.isNull()) {
+            const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
+            bool partXmirrored = part && part->xMirrored;
+            emit setPartXmirrorState(m_lastCheckedPart, !partXmirrored);
+            emit groupOperationAdded();
+        }
+    } else if (event->key() == Qt::Key_B) {
+        if (SkeletonDocumentEditMode::Select == m_document->editMode && !m_lastCheckedPart.isNull()) {
+            const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
+            bool partSubdived = part && part->subdived;
+            emit setPartSubdivState(m_lastCheckedPart, !partSubdived);
+            emit groupOperationAdded();
         }
     }
     return false;

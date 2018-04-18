@@ -357,6 +357,14 @@ signals:
     void moveOriginBy(float x, float y, float z);
     void partChecked(QUuid partId);
     void partUnchecked(QUuid partId);
+    void setPartLockState(QUuid partId, bool locked);
+    void setPartVisibleState(QUuid partId, bool visible);
+    void setPartSubdivState(QUuid partId, bool subdived);
+    void setPartDisableState(QUuid partId, bool disabled);
+    void setPartXmirrorState(QUuid partId, bool mirrored);
+    void setXlockState(bool locked);
+    void setYlockState(bool locked);
+    void setZlockState(bool locked);
 public:
     SkeletonGraphicsWidget(const SkeletonDocument *document);
     std::map<QUuid, std::pair<SkeletonGraphicsNodeItem *, SkeletonGraphicsNodeItem *>> nodeItemMap;
