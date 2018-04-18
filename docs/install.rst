@@ -18,4 +18,6 @@ Dust3D haven't yet been released, however, you can try the latest unstable versi
 
 Found BUG?
 
-If you have any thoughts while using Dust3D, please don't hesitate to share by drop it here https://github.com/huxingyi/dust3d/issues
+If you have any thoughts while using Dust3D, please don't hesitate to share by drop it here, 
+    
+    https://github.com/huxingyi/dust3d/issues

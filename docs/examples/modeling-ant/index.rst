@@ -21,7 +21,7 @@ Modeling in Dust3D
 #. Click Plus(+) Icon from Tool Box
 #. Place node on the canvas acording to the reference background.
 #. Use Mouse Wheel to Adjust the radius of the node, hold shift to slow down the scroll scale.
-#. Use the Parts List panel to toggle the settings to make you can easily select or see nodes.
+#. Use the Parts List panel to toggle the settings to make you easily select or see nodes.
 #. Use Mouse Middle button pluse Shift key to rotate and move around the Rendered Model.
 
 .. image:: https://raw.githubusercontent.com/huxingyi/dust3d/master/docs/examples/modeling-ant/modeling-ant-dust3d-screenshot.png
