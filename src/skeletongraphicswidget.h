@@ -355,6 +355,8 @@ signals:
     void exportResult();
     void breakEdge(QUuid edgeId);
     void moveOriginBy(float x, float y, float z);
+    void partChecked(QUuid partId);
+    void partUnchecked(QUuid partId);
 public:
     SkeletonGraphicsWidget(const SkeletonDocument *document);
     std::map<QUuid, std::pair<SkeletonGraphicsNodeItem *, SkeletonGraphicsNodeItem *>> nodeItemMap;
@@ -366,6 +368,7 @@ public:
     bool mouseDoubleClick(QMouseEvent *event);
     bool keyPress(QKeyEvent *event);
     bool checkSkeletonItem(QGraphicsItem *item, bool checked);
+    QUuid querySkeletonItemPartId(QGraphicsItem *item);
     static SkeletonProfile readSkeletonItemProfile(QGraphicsItem *item);
     void readMergedSkeletonNodeSetFromRangeSelection(std::set<SkeletonGraphicsNodeItem *> *nodeItemSet);
     void readSkeletonNodeAndEdgeIdSetFromRangeSelection(std::set<QUuid> *nodeIdSet, std::set<QUuid> *edgeIdSet);
@@ -414,6 +417,7 @@ public slots:
     void moveCheckedOrigin(float byX, float byY);
     void originChanged();
     void alignSelectedToCenter();
+    void selectPartAllById(QUuid partId);
 private slots:
     void turnaroundImageReady();
 private:
@@ -431,6 +435,7 @@ private:
     bool isSingleNodeSelected();
     void addItemToRangeSelection(QGraphicsItem *item);
     void removeItemFromRangeSelection(QGraphicsItem *item);
+    void hoverPart(QUuid partId);
 private: //need initalize
     const SkeletonDocument *m_document;
     QGraphicsPixmapItem *m_backgroundItem;
@@ -460,6 +465,7 @@ private:
     QPoint m_lastGlobalPos;
     QPointF m_lastScenePos;
     QPointF m_rangeSelectionStartPos;
+    QUuid m_lastCheckedPart;
 };
 
 class SkeletonGraphicsContainerWidget : public QWidget

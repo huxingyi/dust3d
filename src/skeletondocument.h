@@ -187,6 +187,9 @@ signals:
     void xlockStateChanged();
     void ylockStateChanged();
     void zlockStateChanged();
+    void checkPart(QUuid partId);
+    void partChecked(QUuid partId);
+    void partUnchecked(QUuid partId);
 public: // need initialize
     float originX;
     float originY;

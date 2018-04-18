@@ -76,6 +76,7 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     connect(this, &SkeletonPartWidget::setPartXmirrorState, m_document, &SkeletonDocument::setPartXmirrorState);
     connect(this, &SkeletonPartWidget::setPartDeformThickness, m_document, &SkeletonDocument::setPartDeformThickness);
     connect(this, &SkeletonPartWidget::setPartDeformWidth, m_document, &SkeletonDocument::setPartDeformWidth);
+    connect(this, &SkeletonPartWidget::checkPart, m_document, &SkeletonDocument::checkPart);
     
     connect(m_lockButton, &QPushButton::clicked, [=]() {
         const SkeletonPart *part = m_document->findPart(m_partId);
@@ -130,6 +131,12 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
         }
         showDeformSettingPopup(mapFromGlobal(QCursor::pos()));
     });
+}
+
+void SkeletonPartWidget::mouseDoubleClickEvent(QMouseEvent *event)
+{
+    QWidget::mouseDoubleClickEvent(event);
+    emit checkPart(m_partId);
 }
 
 void SkeletonPartWidget::initToolButton(QPushButton *button)
@@ -343,15 +350,31 @@ void SkeletonPartListWidget::partListChanged()
     clear();
     m_itemMap.clear();
     
-    for (auto partIdIt = m_document->partIds.begin(); partIdIt != m_document->partIds.end(); partIdIt++) {
+    int row = 0;
+    
+    for (auto partIdIt = m_document->partIds.begin(); partIdIt != m_document->partIds.end(); partIdIt++, row++) {
         QUuid partId = *partIdIt;
         QListWidgetItem *item = new QListWidgetItem(this);
         item->setSizeHint(QSize(width(), Theme::previewImageSize));
+        item->setData(Qt::UserRole, QVariant(row));
+        updateItemBackground(item, false);
         addItem(item);
         SkeletonPartWidget *widget = new SkeletonPartWidget(m_document, partId);
         setItemWidget(item, widget);
         widget->reload();
         m_itemMap[partId] = item;
+    }
+}
+
+void SkeletonPartListWidget::updateItemBackground(QListWidgetItem *item, bool checked)
+{
+    if (checked) {
+        QColor color = Theme::green;
+        color.setAlphaF(Theme::fillAlpha);
+        item->setBackground(color);
+    } else {
+        int row = item->data(Qt::UserRole).toInt();
+        item->setBackground(0 == row % 2 ? Theme::dark : Theme::altDark);
     }
 }
 
@@ -431,3 +454,24 @@ void SkeletonPartListWidget::partDeformChanged(QUuid partId)
     SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second);
     widget->updateDeformButton();
 }
+
+void SkeletonPartListWidget::partChecked(QUuid partId)
+{
+    auto item = m_itemMap.find(partId);
+    if (item == m_itemMap.end()) {
+        qDebug() << "Part item not found:" << partId;
+        return;
+    }
+    updateItemBackground(item->second, true);
+}
+
+void SkeletonPartListWidget::partUnchecked(QUuid partId)
+{
+    auto item = m_itemMap.find(partId);
+    if (item == m_itemMap.end()) {
+        qDebug() << "Part item not found:" << partId;
+        return;
+    }
+    updateItemBackground(item->second, false);
+}
+

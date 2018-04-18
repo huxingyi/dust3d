@@ -4,6 +4,7 @@
 #include <map>
 #include <QLabel>
 #include <QPushButton>
+#include <QMouseEvent>
 #include "skeletondocument.h"
 
 class SkeletonPartWidget : public QWidget
@@ -18,6 +19,7 @@ signals:
     void setPartZmirrorState(QUuid partId, bool mirrored);
     void setPartDeformThickness(QUuid partId, float thickness);
     void setPartDeformWidth(QUuid partId, float width);
+    void checkPart(QUuid partId);
 public:
     SkeletonPartWidget(const SkeletonDocument *document, QUuid partId);
     void reload();
@@ -29,6 +31,8 @@ public:
     void updateXmirrorButton();
     void updateZmirrorButton();
     void updateDeformButton();
+protected:
+    void mouseDoubleClickEvent(QMouseEvent *event);
 public slots:
     void showDeformSettingPopup(const QPoint &pos);
 private:
@@ -64,6 +68,10 @@ public slots:
     void partDisableStateChanged(QUuid partId);
     void partXmirrorStateChanged(QUuid partId);
     void partDeformChanged(QUuid partId);
+    void partChecked(QUuid partId);
+    void partUnchecked(QUuid partId);
+private:
+    void updateItemBackground(QListWidgetItem *item, bool checked);
 private:
     const SkeletonDocument *m_document;
     std::map<QUuid, QListWidgetItem *> m_itemMap;

@@ -504,12 +504,14 @@ bool SkeletonGraphicsWidget::mouseMove(QMouseEvent *event)
                 m_hoveredOriginItem->setHovered(true);
             }
         }
+        QUuid hoveredPartId;
         if (newHoverNodeItem != m_hoveredNodeItem) {
             if (nullptr != m_hoveredNodeItem) {
                 m_hoveredNodeItem->setHovered(false);
             }
             m_hoveredNodeItem = newHoverNodeItem;
             if (nullptr != m_hoveredNodeItem) {
+                hoveredPartId = querySkeletonItemPartId(m_hoveredNodeItem);
                 m_hoveredNodeItem->setHovered(true);
             }
         }
@@ -519,9 +521,16 @@ bool SkeletonGraphicsWidget::mouseMove(QMouseEvent *event)
             }
             m_hoveredEdgeItem = newHoverEdgeItem;
             if (nullptr != m_hoveredEdgeItem) {
+                hoveredPartId = querySkeletonItemPartId(m_hoveredEdgeItem);
                 m_hoveredEdgeItem->setHovered(true);
             }
         }
+        if (m_hoveredNodeItem) {
+            hoveredPartId = querySkeletonItemPartId(m_hoveredNodeItem);
+        } else if (m_hoveredEdgeItem) {
+            hoveredPartId = querySkeletonItemPartId(m_hoveredEdgeItem);
+        }
+        hoverPart(hoveredPartId);
     }
     
     if (SkeletonDocumentEditMode::Add == m_document->editMode) {
@@ -1321,6 +1330,28 @@ bool SkeletonGraphicsWidget::checkSkeletonItem(QGraphicsItem *item, bool checked
     return false;
 }
 
+QUuid SkeletonGraphicsWidget::querySkeletonItemPartId(QGraphicsItem *item)
+{
+    if (item->data(0) == "node") {
+        SkeletonGraphicsNodeItem *nodeItem = (SkeletonGraphicsNodeItem *)item;
+        const SkeletonNode *node = m_document->findNode(nodeItem->id());
+        if (!node) {
+            qDebug() << "Find node id failed:" << nodeItem->id();
+            return QUuid();
+        }
+        return node->partId;
+    } else if (item->data(0) == "edge") {
+        SkeletonGraphicsEdgeItem *edgeItem = (SkeletonGraphicsEdgeItem *)item;
+        const SkeletonEdge *edge = m_document->findEdge(edgeItem->id());
+        if (!edge) {
+            qDebug() << "Find edge id failed:" << edgeItem->id();
+            return QUuid();
+        }
+        return edge->partId;
+    }
+    return QUuid();
+}
+
 SkeletonProfile SkeletonGraphicsWidget::readSkeletonItemProfile(QGraphicsItem *item)
 {
     if (item->data(0) == "node") {
@@ -1445,6 +1476,30 @@ bool SkeletonGraphicsWidget::readSkeletonNodeAndAnyEdgeOfNodeFromRangeSelection(
     if (m_rangeSelectionSet.size() != 2)
         return false;
     return true;
+}
+
+void SkeletonGraphicsWidget::selectPartAllById(QUuid partId)
+{
+    unselectAll();
+    for (const auto &it: nodeItemMap) {
+        SkeletonGraphicsNodeItem *item = it.second.first;
+        const SkeletonNode *node = m_document->findNode(item->id());
+        if (!node)
+            continue;
+        if (node->partId != partId)
+            continue;
+        addItemToRangeSelection(item);
+    }
+    for (const auto &it: edgeItemMap) {
+        SkeletonGraphicsEdgeItem *item = it.second.first;
+        const SkeletonEdge *edge = m_document->findEdge(item->id());
+        if (!edge)
+            continue;
+        if (edge->partId != partId)
+            continue;
+        addItemToRangeSelection(item);
+    }
+    hoverPart(QUuid());
 }
 
 void SkeletonGraphicsWidget::selectPartAll()
@@ -1588,3 +1643,21 @@ bool SkeletonGraphicsWidget::isSingleNodeSelected()
     return item->data(0) == "node";
 }
 
+void SkeletonGraphicsWidget::hoverPart(QUuid partId)
+{
+    if (partId.isNull()) {
+        if (!m_rangeSelectionSet.empty()) {
+            const auto &it = m_rangeSelectionSet.begin();
+            partId = querySkeletonItemPartId(*it);
+        }
+    }
+    
+    if (m_lastCheckedPart == partId)
+        return;
+    
+    if (!m_lastCheckedPart.isNull())
+        emit partUnchecked(m_lastCheckedPart);
+    m_lastCheckedPart = partId;
+    if (!m_lastCheckedPart.isNull())
+        emit partChecked(m_lastCheckedPart);
+}
