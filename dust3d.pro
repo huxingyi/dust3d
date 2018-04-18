@@ -2,10 +2,16 @@ QT += core widgets opengl
 CONFIG += release
 RESOURCES += resources.qrc
 
-HUMAN_VERSION = "0.0-alpha1"
+isEmpty(HUMAN_VERSION) {
+	HUMAN_VERSION = "0.0-unversioned"
+}
+isEmpty(VERSION) {
+	VERSION = 0.0.0.1
+}
+
 REPOSITORY_URL = "https://github.com/huxingyi/dust3d"
 ISSUES_URL = "https://github.com/huxingyi/dust3d/issues"
-VERSION = 0.0.0.1
+
 QMAKE_TARGET_COMPANY = Dust3D
 QMAKE_TARGET_PRODUCT = Dust3D
 QMAKE_TARGET_DESCRIPTION = "Aim to be a quick modeling tool for game development"
