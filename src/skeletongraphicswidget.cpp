@@ -1096,6 +1096,10 @@ bool SkeletonGraphicsWidget::keyPress(QKeyEvent *event)
             scaleSelected(1);
             emit groupOperationAdded();
         }
+    } else if (event->key() == Qt::Key_Tab) {
+        if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
+            switchProfileOnRangeSelection();
+        }
     }
     return false;
 }
@@ -1660,4 +1664,36 @@ void SkeletonGraphicsWidget::hoverPart(QUuid partId)
     m_lastCheckedPart = partId;
     if (!m_lastCheckedPart.isNull())
         emit partChecked(m_lastCheckedPart);
+}
+
+void SkeletonGraphicsWidget::switchProfileOnRangeSelection()
+{
+    auto copiedSet = m_rangeSelectionSet;
+    for (const auto &item: copiedSet) {
+        if (item->data(0) == "node") {
+            SkeletonGraphicsNodeItem *nodeItem = (SkeletonGraphicsNodeItem *)item;
+            const auto &find = nodeItemMap.find(nodeItem->id());
+            if (find == nodeItemMap.end()) {
+                qDebug() << "Node item map key not found:" << nodeItem->id();
+                return;
+            }
+            checkSkeletonItem(nodeItem, false);
+            m_rangeSelectionSet.erase(nodeItem);
+            SkeletonGraphicsNodeItem *altNodeItem = nodeItem == find->second.first ? find->second.second : find->second.first;
+            if (checkSkeletonItem(altNodeItem, true))
+                m_rangeSelectionSet.insert(altNodeItem);
+        } else if (item->data(0) == "edge") {
+            SkeletonGraphicsEdgeItem *edgeItem = (SkeletonGraphicsEdgeItem *)item;
+            const auto &find = edgeItemMap.find(edgeItem->id());
+            if (find == edgeItemMap.end()) {
+                qDebug() << "Edge item map key not found:" << edgeItem->id();
+                return;
+            }
+            checkSkeletonItem(edgeItem, false);
+            m_rangeSelectionSet.erase(edgeItem);
+            SkeletonGraphicsEdgeItem *altEdgeItem = edgeItem == find->second.first ? find->second.second : find->second.first;
+            if (checkSkeletonItem(altEdgeItem, true))
+                m_rangeSelectionSet.insert(altEdgeItem);
+        }
+    }
 }
