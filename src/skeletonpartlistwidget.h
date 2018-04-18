@@ -20,6 +20,7 @@ signals:
     void setPartDeformThickness(QUuid partId, float thickness);
     void setPartDeformWidth(QUuid partId, float width);
     void checkPart(QUuid partId);
+    void groupOperationAdded();
 public:
     SkeletonPartWidget(const SkeletonDocument *document, QUuid partId);
     void reload();

@@ -78,6 +78,8 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     connect(this, &SkeletonPartWidget::setPartDeformWidth, m_document, &SkeletonDocument::setPartDeformWidth);
     connect(this, &SkeletonPartWidget::checkPart, m_document, &SkeletonDocument::checkPart);
     
+    connect(this, &SkeletonPartWidget::groupOperationAdded, m_document, &SkeletonDocument::saveSnapshot);
+    
     connect(m_lockButton, &QPushButton::clicked, [=]() {
         const SkeletonPart *part = m_document->findPart(m_partId);
         if (!part) {
@@ -103,6 +105,7 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
             return;
         }
         emit setPartSubdivState(m_partId, !part->subdived);
+        emit groupOperationAdded();
     });
     
     connect(m_disableButton, &QPushButton::clicked, [=]() {
@@ -112,6 +115,7 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
             return;
         }
         emit setPartDisableState(m_partId, !part->disabled);
+        emit groupOperationAdded();
     });
     
     connect(m_xMirrorButton, &QPushButton::clicked, [=]() {
@@ -121,6 +125,7 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
             return;
         }
         emit setPartXmirrorState(m_partId, !part->xMirrored);
+        emit groupOperationAdded();
     });
     
     connect(m_deformButton, &QPushButton::clicked, [=]() {
@@ -130,6 +135,7 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
             return;
         }
         showDeformSettingPopup(mapFromGlobal(QCursor::pos()));
+        emit groupOperationAdded();
     });
 }
 
