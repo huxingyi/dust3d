@@ -722,6 +722,7 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot)
     }
     for (const auto &partIt : partMap) {
         emit partAdded(partIt.first);
+        emit partVisibleStateChanged(partIt.first);
     }
     
     emit partListChanged();
