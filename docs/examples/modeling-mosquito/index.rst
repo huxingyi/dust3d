@@ -12,7 +12,7 @@ Download
 
 You can download all the resources including the full Dust3D Document from the following links.
 
-#. https://raw.githubusercontent.com/huxingyi/dust3d/master/docs/examples/modeling-mosquito/mosquito_reference_sheet.xcf
-#. https://raw.githubusercontent.com/huxingyi/dust3d/master/docs/examples/modeling-mosquito/mosquito_reference_sheet.png
+#. https://raw.githubusercontent.com/huxingyi/dust3d/master/docs/examples/modeling-mosquito/mosquito-reference-sheet.xcf
+#. https://raw.githubusercontent.com/huxingyi/dust3d/master/docs/examples/modeling-mosquito/mosquito-reference-sheet.png
 #. https://raw.githubusercontent.com/huxingyi/dust3d/master/docs/examples/modeling-mosquito/mosquito.ds3
 #. https://en.wikipedia.org/wiki/Empididae#/media/File:Empis_livida_(aka).jpg
