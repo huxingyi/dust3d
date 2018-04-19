@@ -22,10 +22,10 @@ Some day, I googled some monster generation keywords, and found Jimmy Gunawan’
 
 .. _article: https://blendersushi.blogspot.com.au/2013/06/inspiration-pixar-monster-factory-part.html
 
-Lunch
+Launch
 ======================
 
-I lunched the Dust3D project, and post my plan on reddit_ even I haven’t done much things. I did this because, as a newbie in game industry, I don’t want miss somethings in the very beginning. Thanks the amazing Redditors, I learned lots of new software names and modeling terms, such as Meshmixer, CGAL, and so on.
+I launched the Dust3D project, and post my plan on reddit_ even I haven’t done much things. I did this because, as a newbie in game industry, I don’t want miss somethings in the very beginning. Thanks the amazing Redditors, I learned lots of new software names and modeling terms, such as Meshmixer, CGAL, and so on.
 
 .. _reddit: https://www.reddit.com/r/gamedev/comments/5iuf3h/i_am_writting_a_3d_monster_model_generate_tool/
 
