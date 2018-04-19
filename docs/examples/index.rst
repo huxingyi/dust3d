@@ -8,3 +8,4 @@ Dust3D Modeling Examples
 
    modeling-ant/*
    modeling-mosquito/*
+   modeling-camel/*

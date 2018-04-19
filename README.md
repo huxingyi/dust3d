@@ -18,6 +18,11 @@ Examples:
 <a href="https://dust3d.readthedocs.io/en/latest/examples/modeling-ant/index.html">
 <image src="https://raw.githubusercontent.com/huxingyi/dust3d/master/docs/examples/modeling-ant/modeling-ant-dust3d-screenshot.png" width="320" height="192"></a>
 
+[Modeling Camel using Dust3D](https://dust3d.readthedocs.io/en/latest/examples/modeling-camel/index.html)  
+
+<a href="https://dust3d.readthedocs.io/en/latest/examples/modeling-camel/index.html">
+<image src="https://raw.githubusercontent.com/huxingyi/dust3d/master/docs/examples/modeling-camel/modeling-camel-dust3d-screenshot.png" width="320" height="192"></a>
+
 License
 -----------
 Dust3D software binaries and source code use MIT License, which means you can use it freely no matter for personal or for commercial purpose. However, Dust3D's UI built on Qt5, the Mesh Union Algorithm based on CGAL library, and there are other algorithms such as Gift Wrapping, Bmesh, and so on which implemented in the meshlite repository, all these, may have other license restrictions.
