@@ -13,7 +13,8 @@ Examples:
 
 <a href="https://youtu.be/wQerDObDjOs" target="_blank"><image src="https://raw.githubusercontent.com/huxingyi/dust3d/master/docs/examples/modeling-mosquito/make-a-3d-model-from-scratch-using-dust3d-video-thumbnail.png" width="480" height="270"></a>
 
-[Modeling Ant using Dust3D](https://dust3d.readthedocs.io/en/latest/examples/modeling-ant/index.html)
+[Modeling Ant using Dust3D](https://dust3d.readthedocs.io/en/latest/examples/modeling-ant/index.html)  
+
 <a href="https://dust3d.readthedocs.io/en/latest/examples/modeling-ant/index.html">
 <image src="https://raw.githubusercontent.com/huxingyi/dust3d/master/docs/examples/modeling-ant/modeling-ant-dust3d-screenshot.png" width="320" height="192"></a>
 
