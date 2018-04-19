@@ -1,5 +1,5 @@
 [![appveyor status](https://ci.appveyor.com/api/projects/status/github/huxingyi/dust3d?branch=master&svg=true)](https://ci.appveyor.com/project/huxingyi/dust3d) [![travis status](https://travis-ci.org/huxingyi/dust3d.svg?branch=master)](https://travis-ci.org/huxingyi/dust3d) [![readthedocs status](https://readthedocs.org/projects/dust3d/badge/?version=latest)](https://dust3d.readthedocs.io/en/latest/?badge=latest)
 
-WIP... COMMING SOON
+[![Make a 3D model from scratch using Dust3D](https://raw.githubusercontent.com/huxingyi/dust3d/master/docs/examples/modeling-mosquito/make-a-3d-model-from-scratch-using-dust3d-video-thumbnail.png)](https://youtu.be/wQerDObDjOs)
 
 <image src="https://raw.githubusercontent.com/huxingyi/dust3d/master/docs/examples/modeling-ant/modeling-ant-dust3d-screenshot-thumbnail.png" width="160" height="96">

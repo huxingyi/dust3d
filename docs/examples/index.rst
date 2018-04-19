@@ -7,3 +7,4 @@ Dust3D Modeling Examples
    :glob:
 
    modeling-ant/*
+   modeling-mosquito/*
