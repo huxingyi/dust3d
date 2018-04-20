@@ -478,18 +478,48 @@ bool SkeletonGraphicsWidget::mouseMove(QMouseEvent *event)
     
     if (SkeletonDocumentEditMode::Select == m_document->editMode ||
             SkeletonDocumentEditMode::Add == m_document->editMode) {
+        
+        //
+        // > For overlapping nodes, you can make it a bit better by selecting the node center nearest the mouse, rather than simply checking against the wider circle.
+        // > https://www.reddit.com/user/hdu
+        //
+        
         SkeletonGraphicsNodeItem *newHoverNodeItem = nullptr;
         SkeletonGraphicsEdgeItem *newHoverEdgeItem = nullptr;
         SkeletonGraphicsOriginItem *newHoverOriginItem = nullptr;
-        QList<QGraphicsItem *> items = scene()->items(mouseEventScenePos(event));
+        QPointF scenePos = mouseEventScenePos(event);
+        QList<QGraphicsItem *> items = scene()->items(scenePos);
+        std::vector<std::pair<QGraphicsItem *, float>> itemDistance2MapWithMouse;
         for (auto it = items.begin(); it != items.end(); it++) {
             QGraphicsItem *item = *it;
             if (item->data(0) == "node") {
-                newHoverNodeItem = (SkeletonGraphicsNodeItem *)item;
+                SkeletonGraphicsNodeItem *nodeItem = (SkeletonGraphicsNodeItem *)item;
+                QPointF origin = nodeItem->origin();
+                float distance2 = pow(origin.x() - scenePos.x(), 2) + pow(origin.y() - scenePos.y(), 2);
+                itemDistance2MapWithMouse.push_back(std::make_pair(item, distance2));
             } else if (item->data(0) == "edge") {
-                newHoverEdgeItem = (SkeletonGraphicsEdgeItem *)item;
+                SkeletonGraphicsEdgeItem *edgeItem = (SkeletonGraphicsEdgeItem *)item;
+                if (edgeItem->firstItem() && edgeItem->secondItem()) {
+                    QPointF firstOrigin = edgeItem->firstItem()->origin();
+                    QPointF secondOrigin = edgeItem->secondItem()->origin();
+                    QPointF origin = (firstOrigin + secondOrigin) / 2;
+                    float distance2 = pow(origin.x() - scenePos.x(), 2) + pow(origin.y() - scenePos.y(), 2);
+                    itemDistance2MapWithMouse.push_back(std::make_pair(item, distance2));
+                }
             } else if (item->data(0) == "origin") {
                 newHoverOriginItem = (SkeletonGraphicsOriginItem *)item;
+            }
+        }
+        if (!itemDistance2MapWithMouse.empty()) {
+            std::sort(itemDistance2MapWithMouse.begin(), itemDistance2MapWithMouse.end(),
+                    [](const std::pair<QGraphicsItem *, float> &a, const std::pair<QGraphicsItem *, float> &b) {
+                return a.second < b.second;
+            });
+            QGraphicsItem *pickedNearestItem = itemDistance2MapWithMouse[0].first;
+            if (pickedNearestItem->data(0) == "node") {
+                newHoverNodeItem = (SkeletonGraphicsNodeItem *)pickedNearestItem;
+            } else if (pickedNearestItem->data(0) == "edge") {
+                newHoverEdgeItem = (SkeletonGraphicsEdgeItem *)pickedNearestItem;
             }
         }
         if (newHoverNodeItem) {
