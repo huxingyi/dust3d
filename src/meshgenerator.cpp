@@ -155,8 +155,8 @@ void MeshGenerator::process()
         if (bmeshFromIt == bmeshNodeMap.end()) {
             float radius = valueOfKeyInMapOrEmpty(fromIt->second, "radius").toFloat() / longHeight;
             float x = (valueOfKeyInMapOrEmpty(fromIt->second, "x").toFloat() - mainProfileMiddleX) / longHeight;
-            float y = (valueOfKeyInMapOrEmpty(fromIt->second, "y").toFloat() - mainProfileMiddleY) / longHeight;
-            float z = (valueOfKeyInMapOrEmpty(fromIt->second, "z").toFloat() - sideProfileMiddleX) / longHeight;
+            float y = (mainProfileMiddleY - valueOfKeyInMapOrEmpty(fromIt->second, "y").toFloat()) / longHeight;
+            float z = (sideProfileMiddleX - valueOfKeyInMapOrEmpty(fromIt->second, "z").toFloat()) / longHeight;
             bmeshFromNodeId = meshlite_bmesh_add_node(meshliteContext, bmeshId, x, y, z, radius);
             //qDebug() << "bmeshId[" << bmeshId << "] add node[" << bmeshFromNodeId << "]" << radius << x << y << z;
             bmeshNodeMap[fromNodeId] = bmeshFromNodeId;
@@ -170,8 +170,8 @@ void MeshGenerator::process()
         if (bmeshToIt == bmeshNodeMap.end()) {
             float radius = valueOfKeyInMapOrEmpty(toIt->second, "radius").toFloat() / longHeight;
             float x = (valueOfKeyInMapOrEmpty(toIt->second, "x").toFloat() - mainProfileMiddleX) / longHeight;
-            float y = (valueOfKeyInMapOrEmpty(toIt->second, "y").toFloat() - mainProfileMiddleY) / longHeight;
-            float z = (valueOfKeyInMapOrEmpty(toIt->second, "z").toFloat() - sideProfileMiddleX) / longHeight;
+            float y = (mainProfileMiddleY - valueOfKeyInMapOrEmpty(toIt->second, "y").toFloat()) / longHeight;
+            float z = (sideProfileMiddleX - valueOfKeyInMapOrEmpty(toIt->second, "z").toFloat()) / longHeight;
             bmeshToNodeId = meshlite_bmesh_add_node(meshliteContext, bmeshId, x, y, z, radius);
             //qDebug() << "bmeshId[" << bmeshId << "] add node[" << bmeshToNodeId << "]" << radius << x << y << z;
             bmeshNodeMap[toNodeId] = bmeshToNodeId;
@@ -194,8 +194,8 @@ void MeshGenerator::process()
         int bmeshId = partBmeshIt->second;
         float radius = valueOfKeyInMapOrEmpty(nodeIt.second, "radius").toFloat() / longHeight;
         float x = (valueOfKeyInMapOrEmpty(nodeIt.second, "x").toFloat() - mainProfileMiddleX) / longHeight;
-        float y = (valueOfKeyInMapOrEmpty(nodeIt.second, "y").toFloat() - mainProfileMiddleY) / longHeight;
-        float z = (valueOfKeyInMapOrEmpty(nodeIt.second, "z").toFloat() - sideProfileMiddleX) / longHeight;
+        float y = (mainProfileMiddleY - valueOfKeyInMapOrEmpty(nodeIt.second, "y").toFloat()) / longHeight;
+        float z = (sideProfileMiddleX - valueOfKeyInMapOrEmpty(nodeIt.second, "z").toFloat()) / longHeight;
         int bmeshNodeId = meshlite_bmesh_add_node(meshliteContext, bmeshId, x, y, z, radius);
         //qDebug() << "bmeshId[" << bmeshId << "] add lonely node[" << bmeshNodeId << "]" << radius << x << y << z;
         bmeshNodeMap[nodeIt.first] = bmeshNodeId;

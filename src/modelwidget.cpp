@@ -14,8 +14,8 @@ bool ModelWidget::m_transparent = true;
 
 ModelWidget::ModelWidget(QWidget *parent) :
     QOpenGLWidget(parent),
-    m_xRot(-30 * 16),
-    m_yRot(45 * 16),
+    m_xRot(30 * 16),
+    m_yRot(-45 * 16),
     m_zRot(0),
     m_program(nullptr),
     m_moveStarted(false),
@@ -150,7 +150,7 @@ void ModelWidget::paintGL()
     glEnable(GL_LINE_SMOOTH);
 
     m_world.setToIdentity();
-    m_world.rotate(180.0f - (m_xRot / 16.0f), 1, 0, 0);
+    m_world.rotate(m_xRot / 16.0f, 1, 0, 0);
     m_world.rotate(m_yRot / 16.0f, 0, 1, 0);
     m_world.rotate(m_zRot / 16.0f, 0, 0, 1);
 
@@ -233,8 +233,8 @@ void ModelWidget::mouseMoveEvent(QMouseEvent *event)
                 setGeometry(rect);
             }
         } else {
-            setXRotation(m_xRot - 8 * dy);
-            setYRotation(m_yRot - 8 * dx);
+            setXRotation(m_xRot + 8 * dy);
+            setYRotation(m_yRot + 8 * dx);
         }
     }
     m_lastPos = event->pos();

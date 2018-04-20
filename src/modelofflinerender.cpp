@@ -79,7 +79,7 @@ QImage ModelOfflineRender::toImage(const QSize &size)
         camera.translate(0, 0, -3.0);
 
         world.setToIdentity();
-        world.rotate(180.0f - (xRot / 16.0f), 1, 0, 0);
+        world.rotate(xRot / 16.0f, 1, 0, 0);
         world.rotate(yRot / 16.0f, 0, 1, 0);
         world.rotate(zRot / 16.0f, 0, 0, 1);
 
