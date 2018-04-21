@@ -445,6 +445,7 @@ private:
     void removeItemFromRangeSelection(QGraphicsItem *item);
     void hoverPart(QUuid partId);
     void switchProfileOnRangeSelection();
+    void setItemHoveredOnAllProfiles(QGraphicsItem *item, bool hovered);
 private: //need initalize
     const SkeletonDocument *m_document;
     QGraphicsPixmapItem *m_backgroundItem;

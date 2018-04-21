@@ -537,22 +537,22 @@ bool SkeletonGraphicsWidget::mouseMove(QMouseEvent *event)
         QUuid hoveredPartId;
         if (newHoverNodeItem != m_hoveredNodeItem) {
             if (nullptr != m_hoveredNodeItem) {
-                m_hoveredNodeItem->setHovered(false);
+                setItemHoveredOnAllProfiles(m_hoveredNodeItem, false);
             }
             m_hoveredNodeItem = newHoverNodeItem;
             if (nullptr != m_hoveredNodeItem) {
                 hoveredPartId = querySkeletonItemPartId(m_hoveredNodeItem);
-                m_hoveredNodeItem->setHovered(true);
+                setItemHoveredOnAllProfiles(m_hoveredNodeItem, true);
             }
         }
         if (newHoverEdgeItem != m_hoveredEdgeItem) {
             if (nullptr != m_hoveredEdgeItem) {
-                m_hoveredEdgeItem->setHovered(false);
+                setItemHoveredOnAllProfiles(m_hoveredEdgeItem, false);
             }
             m_hoveredEdgeItem = newHoverEdgeItem;
             if (nullptr != m_hoveredEdgeItem) {
                 hoveredPartId = querySkeletonItemPartId(m_hoveredEdgeItem);
-                m_hoveredEdgeItem->setHovered(true);
+                setItemHoveredOnAllProfiles(m_hoveredEdgeItem, true);
             }
         }
         if (m_hoveredNodeItem) {
@@ -1768,3 +1768,28 @@ void SkeletonGraphicsWidget::switchProfileOnRangeSelection()
         }
     }
 }
+
+void SkeletonGraphicsWidget::setItemHoveredOnAllProfiles(QGraphicsItem *item, bool hovered)
+{
+    if (item->data(0) == "node") {
+        SkeletonGraphicsNodeItem *nodeItem = (SkeletonGraphicsNodeItem *)item;
+        const auto &find = nodeItemMap.find(nodeItem->id());
+        if (find == nodeItemMap.end()) {
+            qDebug() << "Node item map key not found:" << nodeItem->id();
+            return;
+        }
+        find->second.first->setHovered(hovered);
+        find->second.second->setHovered(hovered);
+    } else if (item->data(0) == "edge") {
+        SkeletonGraphicsEdgeItem *edgeItem = (SkeletonGraphicsEdgeItem *)item;
+        const auto &find = edgeItemMap.find(edgeItem->id());
+        if (find == edgeItemMap.end()) {
+            qDebug() << "Edge item map key not found:" << edgeItem->id();
+            return;
+        }
+        find->second.first->setHovered(hovered);
+        find->second.second->setHovered(hovered);
+    }
+}
+
+
