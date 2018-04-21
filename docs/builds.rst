@@ -51,3 +51,51 @@ Here is the snapshot of the command line of one build, you may use different def
     $ cd /Users/jeremy/Repositories/dust3d
     $ qmake -spec macx-xcode
     Open dust3d.xcodeproj in Xcode and build
+
+* Ubuntu
+
+.. code-block:: sh
+    
+    ;Install Rust
+    $ curl https://sh.rustup.rs -sSf | sh         ;Add ~/.cargo/bin to PATH after finishing install
+    
+    ;Install Qt5
+    $ sudo apt-get install --reinstall qtchooser
+    $ sudo apt-get install qtbase5-dev
+
+    ;Prepare compile environment for CGAL-4.11.1
+    $ sudo apt-get install libcgal-dev	; This is not the latest version, will encounter compiler error when build the Dust3D with this version, but helps resolve internal dependencies of CGAL for you
+    $ sudo apt install cmake
+    
+    ;Install CGAL-4.11.1, other versions of CGAL haven't test with Dust3D
+    $ wget https://github.com/CGAL/cgal/releases/download/releases/CGAL-4.11.1/CGAL-4.11.1.zip
+    $ unzip CGAL-4.11.1.zip
+    $ cd CGAL-4.11.1
+    $ mkdir build
+    $ cd build
+    $ cmake ../
+    $ make
+    $ sudo make install
+    
+    ;Clone the Main project
+    $ cd ~/Documents
+    $ git clone https://github.com/huxingyi/dust3d.git
+    
+    ;Compile the internal dependency
+    $ cd ~/Desktop
+    $ git clone https://github.com/huxingyi/meshlite.git
+    $ cd meshlite
+    $ cargo build --release
+    $ cp ~/Desktop/meshlite/include/meshlite.h ~/Documents/dust3d/thirdparty/meshlite/meshlite.h
+    $ cp ~/Desktop/meshlite/target/release/libmeshlite.so ~/Documents/dust3d/thirdparty/meshlite/libmeshlite.so
+    
+    ;Compile Dust3D
+    $ cd ~/Documents/dust3d
+    $ qmake -qt=5 -v -makefile
+    $ make
+    $ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/Documents/dust3d/thirdparty/meshlite
+    $ ./dust3d
+
+
+
+ 

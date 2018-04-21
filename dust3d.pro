@@ -96,6 +96,8 @@ SOURCES += src/main.cpp
 
 HEADERS += src/version.h
 
+QMAKE_CXXFLAGS += -std=c++11
+
 win32 {
 	isEmpty(BOOST_INCLUDEDIR) {
 		BOOST_INCLUDEDIR = $$(BOOST_INCLUDEDIR)
@@ -130,7 +132,7 @@ win32 {
 	MPFR_LIBDIR = $$GMP_LIBDIR
 }
 
-unix {
+macx {
 	MESHLITE_DIR = thirdparty/meshlite
 	MESHLITE_LIBNAME = meshlite
 	GMP_LIBNAME = gmp
@@ -144,6 +146,22 @@ unix {
 	GMP_LIBDIR = /usr/local/opt/gmp/lib
 	MPFR_INCLUDEDIR = /usr/local/opt/mpfr/include
 	MPFR_LIBDIR = /usr/local/opt/mpfr/lib
+}
+
+unix:!macx {
+	MESHLITE_DIR = thirdparty/meshlite
+	MESHLITE_LIBNAME = meshlite
+	GMP_LIBNAME = gmp
+	MPFR_LIBNAME = mpfr
+	CGAL_LIBNAME = CGAL
+	BOOST_INCLUDEDIR = /usr/local/include
+	CGAL_INCLUDEDIR = /usr/local/include
+	CGAL_BUILDINCLUDEDIR = /usr/local/include
+	CGAL_LIBDIR = /usr/local/lib
+	GMP_INCLUDEDIR = /usr/local/include
+	GMP_LIBDIR = /usr/local/lib
+	MPFR_INCLUDEDIR = /usr/local/include
+	MPFR_LIBDIR = /usr/local/lib
 }
 
 INCLUDEPATH += $$MESHLITE_DIR
