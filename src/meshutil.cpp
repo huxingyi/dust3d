@@ -129,12 +129,12 @@ ExactMesh *unionCgalMeshs(ExactMesh *first, ExactMesh *second)
     try {
         if (!PMP::corefine_and_compute_union(*first, *second, *mesh)) {
             delete mesh;
-            return NULL;
+            return nullptr;
         }
         //CGAL::Polygon_mesh_processing::isotropic_remeshing(mesh->faces(), 0.4, *mesh);
     } catch (...) {
         delete mesh;
-        return NULL;
+        return nullptr;
     }
     return mesh;
 }
@@ -148,9 +148,24 @@ int unionMeshs(void *meshliteContext, const std::vector<int> &meshIds, int *erro
     std::vector<ExactMesh *> externalMeshs;
     for (size_t i = 0; i < meshIds.size(); i++) {
         int triangledMeshId = meshlite_triangulate(meshliteContext, meshIds[i]);
-        if (!meshlite_is_triangulated_manifold(meshliteContext, triangledMeshId))
-            qDebug() << "Mesh is not manifold after triangulated:" << triangledMeshId;
-        externalMeshs.push_back(makeCgalMeshFromMeshlite<ExactKernel>(meshliteContext, triangledMeshId));
+        //if (!meshlite_is_triangulated_manifold(meshliteContext, triangledMeshId))
+        //    qDebug() << "Mesh is not manifold after triangulated:" << triangledMeshId;
+        ExactMesh *mesh = makeCgalMeshFromMeshlite<ExactKernel>(meshliteContext, triangledMeshId);
+        if (CGAL::Polygon_mesh_processing::does_self_intersect(*mesh)) {
+            qDebug() << "CGAL::Polygon_mesh_processing::does_self_intersect:" << i;
+            if (errorCount)
+                (*errorCount)++;
+            delete mesh;
+            continue;
+        }
+        if (!CGAL::Polygon_mesh_processing::does_bound_a_volume(*mesh)) {
+            qDebug() << "CGAL::Polygon_mesh_processing::!does_bound_a_volume" << i;
+            if (errorCount)
+                (*errorCount)++;
+            delete mesh;
+            continue;
+        }
+        externalMeshs.push_back(mesh);
     }
     if (externalMeshs.size() > 0) {
         ExactMesh *mergedExternalMesh = externalMeshs[0];

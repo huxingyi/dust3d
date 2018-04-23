@@ -25,8 +25,8 @@ public:
     }
     void setRadius(float toRadius)
     {
-        if (toRadius < 0.01)
-            toRadius = 0.01;
+        if (toRadius < 0.005)
+            toRadius = 0.005;
         else if (toRadius > 1)
             toRadius = 1;
         radius = toRadius;
@@ -73,6 +73,7 @@ public:
     bool zMirrored;
     float deformThickness;
     float deformWidth;
+    bool rounded;
     QImage preview;
     std::vector<QUuid> nodeIds;
     SkeletonPart(const QUuid &withId=QUuid()) :
@@ -83,7 +84,8 @@ public:
         xMirrored(false),
         zMirrored(false),
         deformThickness(1.0),
-        deformWidth(1.0)
+        deformWidth(1.0),
+        rounded(false)
     {
         id = withId.isNull() ? QUuid::createUuid() : withId;
     }
@@ -129,6 +131,7 @@ public:
         zMirrored = other.zMirrored;
         deformThickness = other.deformThickness;
         deformWidth = other.deformWidth;
+        rounded = other.rounded;
     }
 };
 
@@ -182,6 +185,7 @@ signals:
     void partZmirrorStateChanged(QUuid partId);
     void partDeformThicknessChanged(QUuid partId);
     void partDeformWidthChanged(QUuid partId);
+    void partRoundEndStateChanged(QUuid partId);
     void cleanup();
     void originChanged();
     void xlockStateChanged();

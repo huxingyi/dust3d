@@ -90,6 +90,7 @@ private:
     
     QMenu *m_viewMenu;
     QAction *m_resetModelWidgetPosAction;
+    QAction *m_showPartsListAction;
     QAction *m_showDebugDialogAction;
     QAction *m_toggleWireframeAction;
     

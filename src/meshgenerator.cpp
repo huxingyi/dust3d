@@ -233,7 +233,7 @@ void MeshGenerator::process()
             ModelOfflineRender *render = m_partPreviewRenderMap[partIdIt];
             int trimedMeshId = meshlite_trim(meshliteContext, meshId, 1);
             render->updateMesh(new Mesh(meshliteContext, trimedMeshId));
-            QImage *image = new QImage(render->toImage(QSize(Theme::previewImageSize, Theme::previewImageSize)));
+            QImage *image = new QImage(render->toImage(QSize(Theme::previewImageRenderSize, Theme::previewImageRenderSize)));
             m_partPreviewMap[partIdIt] = image;
         }
         meshIds.push_back(meshId);
@@ -272,7 +272,7 @@ void MeshGenerator::process()
     }
     
     int mergedMeshId = 0;
-    if (meshIds.size() > 1) {
+    if (meshIds.size() > 0) {
         int errorCount = 0;
         mergedMeshId = unionMeshs(meshliteContext, meshIds, &errorCount);
         if (errorCount)
@@ -281,14 +281,12 @@ void MeshGenerator::process()
             mergedMeshId = meshlite_combine_coplanar_faces(meshliteContext, mergedMeshId);
             if (mergedMeshId > 0)
                 mergedMeshId = meshlite_fix_hole(meshliteContext, mergedMeshId);
-    } else if (meshIds.size() > 0) {
-        mergedMeshId = meshIds[0];
     }
     
     if (mergedMeshId > 0) {
         if (m_requirePreview) {
             m_previewRender->updateMesh(new Mesh(meshliteContext, mergedMeshId));
-            QImage *image = new QImage(m_previewRender->toImage(QSize(Theme::previewImageSize, Theme::previewImageSize)));
+            QImage *image = new QImage(m_previewRender->toImage(QSize(Theme::previewImageRenderSize, Theme::previewImageRenderSize)));
             m_preview = image;
         }
         int finalMeshId = mergedMeshId;

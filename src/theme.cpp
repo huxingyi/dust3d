@@ -30,9 +30,10 @@ int Theme::skeletonNodeBorderSize = 0;
 int Theme::skeletonEdgeWidth = 0;
 int Theme::toolIconFontSize = 16;
 int Theme::toolIconSize = 24;
-int Theme::previewImageSize = 48;
-int Theme::miniIconFontSize = 8;
-int Theme::miniIconSize = 12;
+int Theme::previewImageSize = 84;
+int Theme::previewImageRenderSize = Theme::previewImageSize;
+int Theme::miniIconFontSize = 12;
+int Theme::miniIconSize = 18;
 
 QtAwesome *Theme::awesome()
 {

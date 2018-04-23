@@ -32,6 +32,7 @@ public:
     void updateXmirrorButton();
     void updateZmirrorButton();
     void updateDeformButton();
+    void updateCheckedState(bool checked);
 protected:
     void mouseDoubleClickEvent(QMouseEvent *event);
 public slots:
@@ -47,7 +48,9 @@ private:
     QPushButton *m_xMirrorButton;
     QPushButton *m_zMirrorButton;
     QPushButton *m_deformButton;
+    QPushButton *m_roundButton;
     QLabel *m_nameLabel;
+    QWidget *m_backgroundWidget;
 private:
     void initToolButton(QPushButton *button);
     void initButton(QPushButton *button);
@@ -58,7 +61,7 @@ class SkeletonPartListWidget : public QListWidget
 {
     Q_OBJECT
 public:
-    SkeletonPartListWidget(const SkeletonDocument *document);
+    SkeletonPartListWidget(const SkeletonDocument *document, QWidget *parent);
 public slots:
     void partChanged(QUuid partId);
     void partListChanged();
@@ -71,8 +74,8 @@ public slots:
     void partDeformChanged(QUuid partId);
     void partChecked(QUuid partId);
     void partUnchecked(QUuid partId);
-private:
-    void updateItemBackground(QListWidgetItem *item, bool checked);
+protected:
+    virtual QSize sizeHint() const;
 private:
     const SkeletonDocument *m_document;
     std::map<QUuid, QListWidgetItem *> m_itemMap;

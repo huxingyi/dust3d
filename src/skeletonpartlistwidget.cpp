@@ -3,6 +3,7 @@
 #include <QDebug>
 #include <QMenu>
 #include <QWidgetAction>
+#include <QScrollBar>
 #include "skeletonpartlistwidget.h"
 #include "theme.h"
 #include "floatnumberwidget.h"
@@ -40,6 +41,7 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     QHBoxLayout *miniTopToolLayout = new QHBoxLayout;
     miniTopToolLayout->setSpacing(0);
     miniTopToolLayout->setContentsMargins(0, 0, 0, 0);
+    miniTopToolLayout->addSpacing(5);
     miniTopToolLayout->addWidget(m_visibleButton);
     miniTopToolLayout->addWidget(m_disableButton);
     miniTopToolLayout->addWidget(m_lockButton);
@@ -48,23 +50,51 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     QHBoxLayout *miniBottomToolLayout = new QHBoxLayout;
     miniBottomToolLayout->setSpacing(0);
     miniBottomToolLayout->setContentsMargins(0, 0, 0, 0);
+    miniBottomToolLayout->addSpacing(5);
     miniBottomToolLayout->addWidget(m_subdivButton);
     miniBottomToolLayout->addWidget(m_deformButton);
     miniBottomToolLayout->addWidget(m_xMirrorButton);
     miniBottomToolLayout->addStretch();
     
+    QWidget *hrLightWidget = new QWidget;
+    hrLightWidget->setFixedHeight(1);
+    hrLightWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    hrLightWidget->setStyleSheet(QString("background-color: #565656;"));
+    hrLightWidget->setContentsMargins(0, 0, 0, 0);
+    
     QWidget *hrWidget = new QWidget;
     hrWidget->setFixedHeight(1);
     hrWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    hrWidget->setStyleSheet(QString("background-color: #252525;"));
+    hrWidget->setStyleSheet(QString("background-color: #1a1a1a;"));
     hrWidget->setContentsMargins(0, 0, 0, 0);
     
+    QVBoxLayout *toolsLayout = new QVBoxLayout;
+    toolsLayout->setSpacing(0);
+    toolsLayout->setContentsMargins(0, 0, 0, 0);
+    toolsLayout->addSpacing(4);
+    toolsLayout->addLayout(miniTopToolLayout);
+    toolsLayout->addWidget(m_previewLabel);
+    toolsLayout->addLayout(miniBottomToolLayout);
+    toolsLayout->addSpacing(4);
+    
+    QWidget *backgroundWidget = new QWidget;
+    backgroundWidget->setObjectName("background");
+    m_backgroundWidget = backgroundWidget;
+    backgroundWidget->setLayout(toolsLayout);
+    
+    QHBoxLayout *backgroundLayout = new QHBoxLayout;
+    backgroundLayout->setSpacing(0);
+    backgroundLayout->setContentsMargins(0, 0, 0, 0);
+    backgroundLayout->addWidget(backgroundWidget);
+    backgroundLayout->addSpacing(2);
+
     QVBoxLayout *mainLayout = new QVBoxLayout;
     mainLayout->setSpacing(0);
     mainLayout->setContentsMargins(0, 0, 0, 0);
-    mainLayout->addLayout(miniTopToolLayout);
-    mainLayout->addWidget(m_previewLabel);
-    mainLayout->addLayout(miniBottomToolLayout);
+    mainLayout->addWidget(hrLightWidget);
+    mainLayout->addSpacing(3);
+    mainLayout->addLayout(backgroundLayout);
+    mainLayout->addSpacing(3);
     mainLayout->addWidget(hrWidget);
     
     setLayout(mainLayout);
@@ -137,6 +167,15 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
         showDeformSettingPopup(mapFromGlobal(QCursor::pos()));
         emit groupOperationAdded();
     });
+}
+
+
+void SkeletonPartWidget::updateCheckedState(bool checked)
+{
+    if (checked)
+        m_backgroundWidget->setStyleSheet("QWidget#background {border: 1px solid #fc6621;}");
+    else
+        m_backgroundWidget->setStyleSheet("QWidget#background {border: 1px solid transparent;}");
 }
 
 void SkeletonPartWidget::mouseDoubleClickEvent(QMouseEvent *event)
@@ -226,9 +265,9 @@ void SkeletonPartWidget::updateButton(QPushButton *button, QChar icon, bool high
 {
     button->setText(icon);
     if (highlighted)
-        button->setStyleSheet("QPushButton {border: none; background: none; color: #925935;}");
+        button->setStyleSheet("QPushButton {border: none; background: none; color: #fc6621;}");
     else
-        button->setStyleSheet("QPushButton {border: none; background: none; color: #252525;}");
+        button->setStyleSheet("QPushButton {border: none; background: none; color: #525252;}");
 }
 
 void SkeletonPartWidget::updatePreview()
@@ -275,9 +314,9 @@ void SkeletonPartWidget::updateSubdivButton()
         return;
     }
     if (part->subdived)
-        updateButton(m_subdivButton, QChar(fa::circle), true);
+        updateButton(m_subdivButton, QChar(fa::circleo), true);
     else
-        updateButton(m_subdivButton, QChar(fa::square), false);
+        updateButton(m_subdivButton, QChar(fa::squareo), false);
 }
 
 void SkeletonPartWidget::updateDisableButton()
@@ -330,14 +369,19 @@ void SkeletonPartWidget::reload()
     updateDeformButton();
 }
 
-SkeletonPartListWidget::SkeletonPartListWidget(const SkeletonDocument *document) :
+SkeletonPartListWidget::SkeletonPartListWidget(const SkeletonDocument *document, QWidget *parent) :
+    QListWidget(parent),
     m_document(document)
 {
     setSelectionMode(QAbstractItemView::NoSelection);
     setFocusPolicy(Qt::NoFocus);
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
     setSpacing(0);
     setContentsMargins(0, 0, 0, 0);
+    
+    setFixedWidth(Theme::previewImageSize + 3);
+    setMinimumHeight(Theme::previewImageSize + 3);
 }
 
 void SkeletonPartListWidget::partChanged(QUuid partId)
@@ -363,24 +407,12 @@ void SkeletonPartListWidget::partListChanged()
         QListWidgetItem *item = new QListWidgetItem(this);
         item->setSizeHint(QSize(width(), Theme::previewImageSize));
         item->setData(Qt::UserRole, QVariant(row));
-        updateItemBackground(item, false);
+        item->setBackground(QWidget::palette().color(QPalette::Button));
         addItem(item);
         SkeletonPartWidget *widget = new SkeletonPartWidget(m_document, partId);
         setItemWidget(item, widget);
         widget->reload();
         m_itemMap[partId] = item;
-    }
-}
-
-void SkeletonPartListWidget::updateItemBackground(QListWidgetItem *item, bool checked)
-{
-    if (checked) {
-        QColor color = Theme::green;
-        color.setAlphaF(Theme::fillAlpha);
-        item->setBackground(color);
-    } else {
-        int row = item->data(Qt::UserRole).toInt();
-        item->setBackground(0 == row % 2 ? Theme::dark : Theme::altDark);
     }
 }
 
@@ -468,7 +500,8 @@ void SkeletonPartListWidget::partChecked(QUuid partId)
         qDebug() << "Part item not found:" << partId;
         return;
     }
-    updateItemBackground(item->second, true);
+    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second);
+    widget->updateCheckedState(true);
 }
 
 void SkeletonPartListWidget::partUnchecked(QUuid partId)
@@ -478,6 +511,10 @@ void SkeletonPartListWidget::partUnchecked(QUuid partId)
         qDebug() << "Part item not found:" << partId;
         return;
     }
-    updateItemBackground(item->second, false);
+    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second);
+    widget->updateCheckedState(false);
 }
 
+QSize SkeletonPartListWidget::sizeHint() const {
+    return QSize(Theme::previewImageSize, Theme::previewImageSize * 5.5);
+}

@@ -158,20 +158,23 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     m_modelWidget->move(16, 16);
     m_modelWidget->setGraphicsFunctions(graphicsWidget);
     
-    SkeletonPartListWidget *partListWidget = new SkeletonPartListWidget(m_document);
-    partListWidget->setMaximumWidth(Theme::previewImageSize);
+    SkeletonPartListWidget *partListWidget = new SkeletonPartListWidget(m_document, this);
+    partListWidget->setWindowFlags(Qt::Tool);
+    partListWidget->move(100, 200);
+    partListWidget->show();
     
-    QVBoxLayout *mainRightLayout = new QVBoxLayout;
-    mainRightLayout->setSpacing(0);
-    mainRightLayout->setContentsMargins(0, 0, 0, 0);
-    mainRightLayout->addWidget(partListWidget);
+    //QVBoxLayout *mainRightLayout = new QVBoxLayout;
+    //mainRightLayout->setSpacing(0);
+    //mainRightLayout->setContentsMargins(0, 0, 0, 0);
+    //mainRightLayout->addWidget(partListWidget);
     
     QHBoxLayout *mainLayout = new QHBoxLayout;
     mainLayout->setSpacing(0);
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->addLayout(mainLeftLayout);
     mainLayout->addWidget(containerWidget);
-    mainLayout->addLayout(mainRightLayout);
+    mainLayout->addSpacing(5);
+    //mainLayout->addLayout(mainRightLayout);
     
     QWidget *centralWidget = new QWidget;
     centralWidget->setLayout(mainLayout);
@@ -310,6 +313,12 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
         }
     });
     m_viewMenu->addAction(m_resetModelWidgetPosAction);
+    
+    m_showPartsListAction = new QAction(tr("Show Parts List"), this);
+    connect(m_showPartsListAction, &QAction::triggered, [=]() {
+        partListWidget->show();
+    });
+    m_viewMenu->addAction(m_showPartsListAction);
     
     m_toggleWireframeAction = new QAction(tr("Toggle Wireframe"), this);
     connect(m_toggleWireframeAction, &QAction::triggered, [=]() {

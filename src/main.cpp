@@ -36,7 +36,7 @@ int main(int argc, char ** argv)
     
     QFont font;
     font.setWeight(QFont::Light);
-    font.setPixelSize(9);
+    font.setPixelSize(11);
     font.setBold(false);
     QApplication::setFont(font);
     

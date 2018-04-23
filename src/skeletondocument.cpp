@@ -239,7 +239,7 @@ QUuid SkeletonDocument::createNode(float x, float y, float z, float radius, QUui
     }
     SkeletonNode node;
     node.partId = partId;
-    node.radius = radius;
+    node.setRadius(radius);
     node.x = x;
     node.y = y;
     node.z = z;

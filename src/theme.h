@@ -29,6 +29,7 @@ public:
     static QtAwesome *awesome();
     static int toolIconFontSize;
     static int toolIconSize;
+    static int previewImageRenderSize;
     static int previewImageSize;
     static int miniIconFontSize;
     static int miniIconSize;
