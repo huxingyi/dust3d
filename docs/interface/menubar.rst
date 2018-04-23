@@ -106,6 +106,10 @@ Show Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Usually, you will no need to use this, because the Rendered Model always show. But if you can not find the Rendered Model and you are sure the generation is done, then maybe it goes to some wierd position, you can use this menu item to reset it's position.
 
+Show Parts List
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The Parts List Panel is a tool window, if you closed it by accident, you can show it back here.
+
 Toggle Wireframe
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Rendered Model can be showed in two types, one with wireframe, one without.

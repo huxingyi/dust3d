@@ -183,20 +183,32 @@ void ModelWidget::toggleWireframe()
 
 void ModelWidget::mousePressEvent(QMouseEvent *event)
 {
-    if (!m_moveStarted && m_graphicsFunctions && m_graphicsFunctions->mousePress(event))
-        return;
-    m_lastPos = event->pos();
-    if (event->button() == Qt::MidButton) {
+    bool shouldStartMove = false;
+    QOpenGLWidget::mousePressEvent(event);
+    if (event->button() == Qt::LeftButton) {
+        if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::AltModifier) &&
+                !QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
+            shouldStartMove = true;
+        }
+    } else if (event->button() == Qt::MidButton) {
+        shouldStartMove = true;
+    }
+    if (shouldStartMove) {
+        m_lastPos = event->pos();
         if (!m_moveStarted) {
             m_moveStartPos = mapToParent(event->pos());
             m_moveStartGeometry = geometry();
             m_moveStarted = true;
         }
+        return;
     }
+    if (!m_moveStarted && m_graphicsFunctions && m_graphicsFunctions->mousePress(event))
+        return;
 }
 
 void ModelWidget::mouseReleaseEvent(QMouseEvent *event)
 {
+    QOpenGLWidget::mouseReleaseEvent(event);
     if (m_graphicsFunctions)
         m_graphicsFunctions->mouseRelease(event);
     if (m_moveStarted) {
@@ -206,25 +218,29 @@ void ModelWidget::mouseReleaseEvent(QMouseEvent *event)
 
 void ModelWidget::mouseDoubleClickEvent(QMouseEvent *event)
 {
+    QOpenGLWidget::mouseDoubleClickEvent(event);
     if (m_graphicsFunctions)
         m_graphicsFunctions->mouseDoubleClick(event);
 }
 
 void ModelWidget::keyPressEvent(QKeyEvent *event)
 {
+    QOpenGLWidget::keyPressEvent(event);
     if (m_graphicsFunctions)
         m_graphicsFunctions->keyPress(event);
 }
 
 void ModelWidget::mouseMoveEvent(QMouseEvent *event)
 {
+    QOpenGLWidget::mouseMoveEvent(event);
     if (!m_moveStarted && m_graphicsFunctions && m_graphicsFunctions->mouseMove(event))
         return;
     
     int dx = event->x() - m_lastPos.x();
     int dy = event->y() - m_lastPos.y();
 
-    if (event->buttons() & Qt::MidButton) {
+    if ((event->buttons() & Qt::MidButton) ||
+            (m_moveStarted && (event->buttons() & Qt::LeftButton))) {
         if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
             if (m_moveStarted) {
                 QRect rect = m_moveStartGeometry;
@@ -242,6 +258,7 @@ void ModelWidget::mouseMoveEvent(QMouseEvent *event)
 
 void ModelWidget::wheelEvent(QWheelEvent *event)
 {
+    QOpenGLWidget::wheelEvent(event);
     if (!m_moveStarted && m_graphicsFunctions && m_graphicsFunctions->wheel(event))
         return;
     if (m_moveStarted)
