@@ -6,6 +6,7 @@
 #include <QtGlobal>
 #include "skeletondocumentwindow.h"
 #include "theme.h"
+#include "version.h"
 
 int main(int argc, char ** argv)
 {
@@ -32,7 +33,7 @@ int main(int argc, char ** argv)
     qApp->setPalette(darkPalette);
     qApp->setStyleSheet("QToolTip { color: #ffffff; background-color: #fc6621; border: 1px solid white; }");
     
-    QCoreApplication::setApplicationName("Dust 3D");
+    QCoreApplication::setApplicationName(APP_NAME);
     
     QFont font;
     font.setWeight(QFont::Light);

@@ -1,16 +1,16 @@
+#include <assert.h>
 #include "mesh.h"
 #include "meshlite.h"
 #include "theme.h"
-#include <assert.h>
+#include "positionmap.h"
 
 #define MAX_VERTICES_PER_FACE   100
 
-Mesh::Mesh(void *meshlite, int meshId, bool broken) :
+Mesh::Mesh(void *meshlite, int meshId, int triangulatedMeshId, QColor modelColor, std::vector<QColor> *triangleColors) :
     m_triangleVertices(NULL),
     m_triangleVertexCount(0),
     m_edgeVertices(NULL),
-    m_edgeVertexCount(0),
-    m_broken(broken)
+    m_edgeVertexCount(0)
 {
     int edgeVertexPositionCount = meshlite_get_vertex_count(meshlite, meshId);
     GLfloat *edgeVertexPositions = new GLfloat[edgeVertexPositionCount * 3];
@@ -68,34 +68,51 @@ Mesh::Mesh(void *meshlite, int meshId, bool broken) :
         }
     }
     
-    int triangleMesh = meshlite_triangulate(meshlite, meshId);
+    int triangleMesh = -1 == triangulatedMeshId ? meshlite_triangulate(meshlite, meshId) : triangulatedMeshId;
     
     int triangleVertexPositionCount = meshlite_get_vertex_count(meshlite, triangleMesh);
     GLfloat *triangleVertexPositions = new GLfloat[triangleVertexPositionCount * 3];
     int loadedTriangleVertexPositionItemCount = meshlite_get_vertex_position_array(meshlite, triangleMesh, triangleVertexPositions, triangleVertexPositionCount * 3);
     
+    offset = 0;
+    while (offset < loadedTriangleVertexPositionItemCount) {
+        QVector3D position = QVector3D(triangleVertexPositions[offset], triangleVertexPositions[offset + 1], triangleVertexPositions[offset + 2]);
+        m_triangulatedVertices.push_back(position);
+        offset += 3;
+    }
+    
     int triangleCount = meshlite_get_face_count(meshlite, triangleMesh);
     int *triangleIndices = new int[triangleCount * 3];
     int loadedTriangleVertexIndexItemCount = meshlite_get_triangle_index_array(meshlite, triangleMesh, triangleIndices, triangleCount * 3);
+    
     GLfloat *triangleNormals = new GLfloat[triangleCount * 3];
     int loadedTriangleNormalItemCount = meshlite_get_triangle_normal_array(meshlite, triangleMesh, triangleNormals, triangleCount * 3);
     
-    float modelR = Theme::white.redF();
-    float modelG = Theme::white.greenF();
-    float modelB = Theme::white.blueF();
-    if (m_broken) {
-        modelR = 1.0;
-        modelG = 1.0;
-        modelB = 1.0;
-    }
+    float modelR = modelColor.redF();
+    float modelG = modelColor.greenF();
+    float modelB = modelColor.blueF();
     m_triangleVertexCount = triangleCount * 3;
     m_triangleVertices = new Vertex[m_triangleVertexCount * 3];
     for (int i = 0; i < triangleCount; i++) {
         int firstIndex = i * 3;
+        float useColorR = modelR;
+        float useColorG = modelG;
+        float useColorB = modelB;
+        if (triangleColors && i < (int)triangleColors->size()) {
+            QColor triangleColor = (*triangleColors)[i];
+            useColorR = triangleColor.redF();
+            useColorG = triangleColor.greenF();
+            useColorB = triangleColor.blueF();
+        }
+        TriangulatedFace triangulatedFace;
+        triangulatedFace.color.setRedF(useColorR);
+        triangulatedFace.color.setGreenF(useColorG);
+        triangulatedFace.color.setBlueF(useColorB);
         for (int j = 0; j < 3; j++) {
             assert(firstIndex + j < loadedTriangleVertexIndexItemCount);
             int posIndex = triangleIndices[firstIndex + j] * 3;
             assert(posIndex < loadedTriangleVertexPositionItemCount);
+            triangulatedFace.indicies[j] = triangleIndices[firstIndex + j];
             Vertex *v = &m_triangleVertices[firstIndex + j];
             v->posX = triangleVertexPositions[posIndex + 0];
             v->posY = triangleVertexPositions[posIndex + 1];
@@ -104,10 +121,11 @@ Mesh::Mesh(void *meshlite, int meshId, bool broken) :
             v->normX = triangleNormals[firstIndex + 0];
             v->normY = triangleNormals[firstIndex + 1];
             v->normZ = triangleNormals[firstIndex + 2];
-            v->colorR = modelR;
-            v->colorG = modelG;
-            v->colorB = modelB;
+            v->colorR = useColorR;
+            v->colorG = useColorG;
+            v->colorB = useColorB;
         }
+        m_triangulatedFaces.push_back(triangulatedFace);
     }
     
     delete[] triangleVertexPositions;
@@ -125,11 +143,6 @@ Mesh::~Mesh()
     m_triangleVertexCount = 0;
 }
 
-void Mesh::setBroken(bool broken)
-{
-    m_broken = broken;
-}
-
 const std::vector<QVector3D> &Mesh::vertices()
 {
     return m_vertices;
@@ -138,6 +151,16 @@ const std::vector<QVector3D> &Mesh::vertices()
 const std::vector<std::vector<int>> &Mesh::faces()
 {
     return m_faces;
+}
+
+const std::vector<QVector3D> &Mesh::triangulatedVertices()
+{
+    return m_triangulatedVertices;
+}
+
+const std::vector<TriangulatedFace> &Mesh::triangulatedFaces()
+{
+    return m_triangulatedFaces;
 }
 
 Vertex *Mesh::triangleVertices()

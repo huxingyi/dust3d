@@ -49,7 +49,7 @@ SkeletonGraphicsWidget::SkeletonGraphicsWidget(const SkeletonDocument *document)
     setScene(new QGraphicsScene());
     
     m_backgroundItem = new QGraphicsPixmapItem();
-    m_backgroundItem->setOpacity(0.25);
+    enableBackgroundBlur();
     scene()->addItem(m_backgroundItem);
     
     m_cursorNodeItem = new SkeletonGraphicsNodeItem();
@@ -80,6 +80,16 @@ SkeletonGraphicsWidget::SkeletonGraphicsWidget(const SkeletonDocument *document)
     
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, &SkeletonGraphicsWidget::customContextMenuRequested, this, &SkeletonGraphicsWidget::showContextMenu);
+}
+
+void SkeletonGraphicsWidget::enableBackgroundBlur()
+{
+    m_backgroundItem->setOpacity(0.25);
+}
+
+void SkeletonGraphicsWidget::disableBackgroundBlur()
+{
+    m_backgroundItem->setOpacity(1);
 }
 
 void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
@@ -185,6 +195,7 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
         contextMenu.addAction(&unselectAllAction);
     }
     
+    /*
     contextMenu.addSeparator();
     
     QAction exportResultAction(tr("Export..."), this);
@@ -198,6 +209,7 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
         emit changeTurnaround();
     });
     contextMenu.addAction(&changeTurnaroundAction);
+    */
 
     contextMenu.exec(mapToGlobal(pos));
 }
@@ -1169,6 +1181,13 @@ bool SkeletonGraphicsWidget::keyPress(QKeyEvent *event)
             const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
             bool partSubdived = part && part->subdived;
             emit setPartSubdivState(m_lastCheckedPart, !partSubdived);
+            emit groupOperationAdded();
+        }
+    } else if (event->key() == Qt::Key_U) {
+        if (SkeletonDocumentEditMode::Select == m_document->editMode && !m_lastCheckedPart.isNull()) {
+            const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
+            bool partRounded = part && part->rounded;
+            emit setPartRoundState(m_lastCheckedPart, !partRounded);
             emit groupOperationAdded();
         }
     }

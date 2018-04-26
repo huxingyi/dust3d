@@ -76,7 +76,7 @@ QImage ModelOfflineRender::toImage(const QSize &size)
         m_context->functions()->glEnable(GL_LINE_SMOOTH);
 
         camera.setToIdentity();
-        camera.translate(0, 0, -3.0);
+        camera.translate(0, 0, -4.5);
 
         world.setToIdentity();
         world.rotate(xRot / 16.0f, 1, 0, 0);

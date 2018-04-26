@@ -287,3 +287,9 @@ void ModelWidget::exportMeshAsObj(const QString &filename)
 {
     m_meshBinder.exportMeshAsObj(filename);
 }
+
+void ModelWidget::exportMeshAsObjPlusMaterials(const QString &filename)
+{
+    m_meshBinder.exportMeshAdObjPlusMaterials(filename);
+}
+

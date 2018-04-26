@@ -172,8 +172,8 @@ public:
     }
     void setRadius(float radius)
     {
-        if (radius < 4)
-            radius = 4;
+        if (radius < 1)
+            radius = 1;
         QPointF oldOrigin = origin();
         setRect(oldOrigin.x() - radius, oldOrigin.y() - radius,
             radius * 2, radius * 2);
@@ -362,6 +362,7 @@ signals:
     void setPartSubdivState(QUuid partId, bool subdived);
     void setPartDisableState(QUuid partId, bool disabled);
     void setPartXmirrorState(QUuid partId, bool mirrored);
+    void setPartRoundState(QUuid partId, bool rounded);
     void setXlockState(bool locked);
     void setYlockState(bool locked);
     void setZlockState(bool locked);
@@ -426,6 +427,8 @@ public slots:
     void originChanged();
     void alignSelectedToCenter();
     void selectPartAllById(QUuid partId);
+    void enableBackgroundBlur();
+    void disableBackgroundBlur();
 private slots:
     void turnaroundImageReady();
 private:

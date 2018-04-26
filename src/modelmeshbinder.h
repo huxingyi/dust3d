@@ -13,6 +13,7 @@ public:
     ~ModelMeshBinder();
     void updateMesh(Mesh *mesh);
     void exportMeshAsObj(const QString &filename);
+    void exportMeshAdObjPlusMaterials(const QString &filename);
     void initialize();
     void paint();
     void cleanup();

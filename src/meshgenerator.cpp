@@ -7,6 +7,7 @@
 #include "modelofflinerender.h"
 #include "meshutil.h"
 #include "theme.h"
+#include "positionmap.h"
 
 bool MeshGenerator::enableDebug = false;
 
@@ -16,7 +17,8 @@ MeshGenerator::MeshGenerator(SkeletonSnapshot *snapshot, QThread *thread) :
     m_preview(nullptr),
     m_requirePreview(false),
     m_previewRender(nullptr),
-    m_thread(thread)
+    m_thread(thread),
+    m_meshResultContext(nullptr)
 {
 }
 
@@ -32,6 +34,7 @@ MeshGenerator::~MeshGenerator()
         delete render.second;
     }
     delete m_previewRender;
+    delete m_meshResultContext;
 }
 
 void MeshGenerator::addPreviewRequirement()
@@ -75,15 +78,78 @@ QImage *MeshGenerator::takePartPreview(const QString &partId)
     return resultImage;
 }
 
+MeshResultContext *MeshGenerator::takeMeshResultContext()
+{
+    MeshResultContext *meshResultContext = m_meshResultContext;
+    m_meshResultContext = nullptr;
+    return meshResultContext;
+}
+
 void MeshGenerator::resolveBoundingBox(QRectF *mainProfile, QRectF *sideProfile, const QString &partId)
 {
     m_snapshot->resolveBoundingBox(mainProfile, sideProfile, partId);
+}
+
+void MeshGenerator::loadVertexSourcesToMeshResultContext(void *meshliteContext, int meshId, int bmeshId)
+{
+    int vertexCount = meshlite_get_vertex_count(meshliteContext, meshId);
+    int positionBufferLen = vertexCount * 3;
+    float *positionBuffer = new float[positionBufferLen];
+    int positionCount = meshlite_get_vertex_position_array(meshliteContext, meshId, positionBuffer, positionBufferLen) / 3;
+    int *sourceBuffer = new int[positionBufferLen];
+    int sourceCount = meshlite_get_vertex_source_array(meshliteContext, meshId, sourceBuffer, positionBufferLen);
+    Q_ASSERT(positionCount == sourceCount);
+    for (int i = 0, positionIndex = 0; i < positionCount; i++, positionIndex+=3) {
+        BmeshVertex vertex;
+        vertex.bmeshId = bmeshId;
+        vertex.nodeId = sourceBuffer[i];
+        vertex.position = QVector3D(positionBuffer[positionIndex + 0], positionBuffer[positionIndex + 1], positionBuffer[positionIndex + 2]);
+        m_meshResultContext->bmeshVertices.push_back(vertex);
+    }
+    delete[] positionBuffer;
+    delete[] sourceBuffer;
+}
+
+void MeshGenerator::loadGeneratedPositionsToMeshResultContext(void *meshliteContext, int triangulatedMeshId)
+{
+    int vertexCount = meshlite_get_vertex_count(meshliteContext, triangulatedMeshId);
+    int positionBufferLen = vertexCount * 3;
+    float *positionBuffer = new float[positionBufferLen];
+    int positionCount = meshlite_get_vertex_position_array(meshliteContext, triangulatedMeshId, positionBuffer, positionBufferLen) / 3;
+    std::map<int, int> verticesMap;
+    for (int i = 0, positionIndex = 0; i < positionCount; i++, positionIndex+=3) {
+        ResultVertex vertex;
+        vertex.position = QVector3D(positionBuffer[positionIndex + 0], positionBuffer[positionIndex + 1], positionBuffer[positionIndex + 2]);
+        verticesMap[i] = m_meshResultContext->resultVertices.size();
+        m_meshResultContext->resultVertices.push_back(vertex);
+    }
+    int faceCount = meshlite_get_face_count(meshliteContext, triangulatedMeshId);
+    int triangleIndexBufferLen = faceCount * 3;
+    int *triangleIndexBuffer = new int[triangleIndexBufferLen];
+    int triangleCount = meshlite_get_triangle_index_array(meshliteContext, triangulatedMeshId, triangleIndexBuffer, triangleIndexBufferLen) / 3;
+    int triangleNormalBufferLen = faceCount * 3;
+    float *normalBuffer = new float[triangleNormalBufferLen];
+    int normalCount = meshlite_get_triangle_normal_array(meshliteContext, triangulatedMeshId, normalBuffer, triangleNormalBufferLen) / 3;
+    Q_ASSERT(triangleCount == normalCount);
+    for (int i = 0, triangleVertIndex = 0, normalIndex=0; i < triangleCount; i++, triangleVertIndex+=3, normalIndex += 3) {
+        ResultTriangle triangle;
+        triangle.indicies[0] = verticesMap[triangleIndexBuffer[triangleVertIndex + 0]];
+        triangle.indicies[1] = verticesMap[triangleIndexBuffer[triangleVertIndex + 1]];
+        triangle.indicies[2] = verticesMap[triangleIndexBuffer[triangleVertIndex + 2]];
+        triangle.normal = QVector3D(normalBuffer[normalIndex + 0], normalBuffer[normalIndex + 1], normalBuffer[normalIndex + 2]);
+        m_meshResultContext->resultTriangles.push_back(triangle);
+    }
+    delete[] positionBuffer;
+    delete[] triangleIndexBuffer;
+    delete[] normalBuffer;
 }
 
 void MeshGenerator::process()
 {
     if (nullptr == m_snapshot)
         return;
+    
+    m_meshResultContext = new MeshResultContext;
     
     void *meshliteContext = meshlite_create_context();
     std::map<QString, int> partBmeshMap;
@@ -113,6 +179,8 @@ void MeshGenerator::process()
         //qDebug() << "No settled origin, calculated:" << mainProfileMiddleX << mainProfileMiddleY << sideProfileMiddleX;
     }
     
+    std::map<QString, QColor> partColorMap;
+    
     for (const auto &partIdIt: m_snapshot->partIdList) {
         const auto &part = m_snapshot->parts.find(partIdIt);
         if (part == m_snapshot->parts.end())
@@ -125,6 +193,11 @@ void MeshGenerator::process()
         int bmeshId = meshlite_bmesh_create(meshliteContext);
         if (subdived)
             meshlite_bmesh_set_cut_subdiv_count(meshliteContext, bmeshId, 1);
+        if (isTrueValueString(valueOfKeyInMapOrEmpty(part->second, "rounded")))
+            meshlite_bmesh_set_round_way(meshliteContext, bmeshId, 1);
+        QString colorString = valueOfKeyInMapOrEmpty(part->second, "color");
+        QColor partColor = colorString.isEmpty() ? Theme::white : QColor(colorString);
+        partColorMap[partIdIt] = partColor;
         QString thicknessString = valueOfKeyInMapOrEmpty(part->second, "deformThickness");
         if (!thicknessString.isEmpty())
             meshlite_bmesh_set_deform_thickness(meshliteContext, bmeshId, thicknessString.toFloat());
@@ -160,6 +233,14 @@ void MeshGenerator::process()
             bmeshFromNodeId = meshlite_bmesh_add_node(meshliteContext, bmeshId, x, y, z, radius);
             //qDebug() << "bmeshId[" << bmeshId << "] add node[" << bmeshFromNodeId << "]" << radius << x << y << z;
             bmeshNodeMap[fromNodeId] = bmeshFromNodeId;
+            
+            BmeshNode bmeshNode;
+            bmeshNode.bmeshId = bmeshId;
+            bmeshNode.origin = QVector3D(x, y, z);
+            bmeshNode.radius = radius;
+            bmeshNode.nodeId = bmeshFromNodeId;
+            bmeshNode.color = partColorMap[partId];
+            m_meshResultContext->bmeshNodes.push_back(bmeshNode);
         } else {
             bmeshFromNodeId = bmeshFromIt->second;
             //qDebug() << "bmeshId[" << bmeshId << "] use existed node[" << bmeshFromNodeId << "]";
@@ -175,12 +256,26 @@ void MeshGenerator::process()
             bmeshToNodeId = meshlite_bmesh_add_node(meshliteContext, bmeshId, x, y, z, radius);
             //qDebug() << "bmeshId[" << bmeshId << "] add node[" << bmeshToNodeId << "]" << radius << x << y << z;
             bmeshNodeMap[toNodeId] = bmeshToNodeId;
+            
+            BmeshNode bmeshNode;
+            bmeshNode.bmeshId = bmeshId;
+            bmeshNode.origin = QVector3D(x, y, z);
+            bmeshNode.radius = radius;
+            bmeshNode.nodeId = bmeshToNodeId;
+            bmeshNode.color = partColorMap[partId];
+            m_meshResultContext->bmeshNodes.push_back(bmeshNode);
         } else {
             bmeshToNodeId = bmeshToIt->second;
             //qDebug() << "bmeshId[" << bmeshId << "] use existed node[" << bmeshToNodeId << "]";
         }
         
         meshlite_bmesh_add_edge(meshliteContext, bmeshId, bmeshFromNodeId, bmeshToNodeId);
+        
+        BmeshEdge bmeshEdge;
+        bmeshEdge.bmeshId = bmeshId;
+        bmeshEdge.fromNodeId = bmeshFromNodeId;
+        bmeshEdge.toNodeId = bmeshToNodeId;
+        m_meshResultContext->bmeshEdges.push_back(bmeshEdge);
     }
     
     for (const auto &nodeIt: m_snapshot->nodes) {
@@ -199,6 +294,14 @@ void MeshGenerator::process()
         int bmeshNodeId = meshlite_bmesh_add_node(meshliteContext, bmeshId, x, y, z, radius);
         //qDebug() << "bmeshId[" << bmeshId << "] add lonely node[" << bmeshNodeId << "]" << radius << x << y << z;
         bmeshNodeMap[nodeIt.first] = bmeshNodeId;
+        
+        BmeshNode bmeshNode;
+        bmeshNode.bmeshId = bmeshId;
+        bmeshNode.origin = QVector3D(x, y, z);
+        bmeshNode.radius = radius;
+        bmeshNode.nodeId = bmeshNodeId;
+        bmeshNode.color = partColorMap[partId];
+        m_meshResultContext->bmeshNodes.push_back(bmeshNode);
     }
     
     bool broken = false;
@@ -219,20 +322,24 @@ void MeshGenerator::process()
             broken = true;
         bool xMirrored = isTrueValueString(valueOfKeyInMapOrEmpty(part->second, "xMirrored"));
         bool zMirrored = isTrueValueString(valueOfKeyInMapOrEmpty(part->second, "zMirrored"));
+        loadVertexSourcesToMeshResultContext(meshliteContext, meshId, bmeshId);
+        QColor modelColor = partColorMap[partIdIt];
         int xMirroredMeshId = 0;
         int zMirroredMeshId = 0;
         if (xMirrored || zMirrored) {
             if (xMirrored) {
                 xMirroredMeshId = meshlite_mirror_in_x(meshliteContext, meshId, 0);
+                loadVertexSourcesToMeshResultContext(meshliteContext, xMirroredMeshId, bmeshId);
             }
             if (zMirrored) {
                 zMirroredMeshId = meshlite_mirror_in_z(meshliteContext, meshId, 0);
+                loadVertexSourcesToMeshResultContext(meshliteContext, zMirroredMeshId, bmeshId);
             }
         }
         if (m_requirePartPreviewMap.find(partIdIt) != m_requirePartPreviewMap.end()) {
             ModelOfflineRender *render = m_partPreviewRenderMap[partIdIt];
             int trimedMeshId = meshlite_trim(meshliteContext, meshId, 1);
-            render->updateMesh(new Mesh(meshliteContext, trimedMeshId));
+            render->updateMesh(new Mesh(meshliteContext, trimedMeshId, -1, modelColor));
             QImage *image = new QImage(render->toImage(QSize(Theme::previewImageRenderSize, Theme::previewImageRenderSize)));
             m_partPreviewMap[partIdIt] = image;
         }
@@ -290,10 +397,16 @@ void MeshGenerator::process()
             m_preview = image;
         }
         int finalMeshId = mergedMeshId;
-        if (!originSettled) {
-            finalMeshId = meshlite_trim(meshliteContext, mergedMeshId, 1);
-        }
-        m_mesh = new Mesh(meshliteContext, finalMeshId, broken);
+        //if (!originSettled) {
+        //    finalMeshId = meshlite_trim(meshliteContext, mergedMeshId, 1);
+        //}
+        int triangulatedFinalMeshId = meshlite_triangulate(meshliteContext, mergedMeshId);
+        loadGeneratedPositionsToMeshResultContext(meshliteContext, triangulatedFinalMeshId);
+        //PositionMap<QColor> positionColorMap;
+        //m_meshResultContext->calculatePositionColorMap(positionColorMap);
+        std::vector<QColor> triangleColors;
+        m_meshResultContext->calculateTriangleColors(triangleColors);
+        m_mesh = new Mesh(meshliteContext, finalMeshId, triangulatedFinalMeshId, broken ? Theme::broken : Theme::white, &triangleColors);
     }
     
     if (m_previewRender) {

@@ -9,6 +9,7 @@
 #include "skeletonsnapshot.h"
 #include "mesh.h"
 #include "modelofflinerender.h"
+#include "meshresultcontext.h"
 
 class MeshGenerator : public QObject
 {
@@ -21,6 +22,7 @@ public:
     Mesh *takeResultMesh();
     QImage *takePreview();
     QImage *takePartPreview(const QString &partId);
+    MeshResultContext *takeMeshResultContext();
 signals:
     void finished();
 public slots:
@@ -35,8 +37,11 @@ private:
     ModelOfflineRender *m_previewRender;
     std::map<QString, ModelOfflineRender *> m_partPreviewRenderMap;
     QThread *m_thread;
+    MeshResultContext *m_meshResultContext;
 private:
     void resolveBoundingBox(QRectF *mainProfile, QRectF *sideProfile, const QString &partId=QString());
+    void loadVertexSourcesToMeshResultContext(void *meshliteContext, int meshId, int bmeshId);
+    void loadGeneratedPositionsToMeshResultContext(void *meshliteContext, int triangulatedMeshId);
     static bool enableDebug;
 };
 

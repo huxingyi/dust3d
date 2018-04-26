@@ -9,6 +9,7 @@
 #include <QTextBrowser>
 #include "skeletondocument.h"
 #include "modelwidget.h"
+#include "boneexportwidget.h"
 
 class SkeletonGraphicsWidget;
 
@@ -32,7 +33,9 @@ public slots:
     void save();
     void saveTo(const QString &saveAsFilename);
     void open();
-    void exportResult();
+    void exportModelResult();
+    void exportModelAndMaterialResult();
+    void exportSkeletonResult();
     void newWindow();
     void newDocument();
     void saveAs();
@@ -55,6 +58,7 @@ private:
     SkeletonDocument *m_document;
     bool m_firstShow;
     bool m_documentSaved;
+    BoneExportWidget *m_boneExportWidget;
 private:
     QString m_currentFilename;
     
@@ -68,8 +72,12 @@ private:
     QAction *m_saveAction;
     QAction *m_saveAsAction;
     QAction *m_saveAllAction;
-    QAction *m_exportAction;
+    QMenu *m_exportMenu;
     QAction *m_changeTurnaroundAction;
+    
+    QAction *m_exportModelAction;
+    QAction *m_exportModelAndMaterialsAction;
+    QAction *m_exportSkeletonAction;
     
     QMenu *m_editMenu;
     QAction *m_addAction;

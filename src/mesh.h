@@ -4,6 +4,9 @@
 #include <QOpenGLFunctions>
 #include <vector>
 #include <QVector3D>
+#include <QColor>
+#include "positionmap.h"
+#include "theme.h"
 
 #pragma pack(push)
 #pragma pack(1)
@@ -21,10 +24,16 @@ typedef struct
 } Vertex;
 #pragma pack(pop)
 
+struct TriangulatedFace
+{
+    int indicies[3];
+    QColor color;
+};
+
 class Mesh
 {
 public:
-    Mesh(void *meshlite, int meshId, bool broken=false);
+    Mesh(void *meshlite, int meshId, int triangulatedMeshId = -1, QColor modelColor=Theme::white, std::vector<QColor> *triangleColors=nullptr);
     ~Mesh();
     Vertex *triangleVertices();
     int triangleVertexCount();
@@ -32,7 +41,8 @@ public:
     int edgeVertexCount();
     const std::vector<QVector3D> &vertices();
     const std::vector<std::vector<int>> &faces();
-    void setBroken(bool broken);
+    const std::vector<QVector3D> &triangulatedVertices();
+    const std::vector<TriangulatedFace> &triangulatedFaces();
 private:
     Vertex *m_triangleVertices;
     int m_triangleVertexCount;
@@ -40,7 +50,8 @@ private:
     int m_edgeVertexCount;
     std::vector<QVector3D> m_vertices;
     std::vector<std::vector<int>> m_faces;
-    bool m_broken;
+    std::vector<QVector3D> m_triangulatedVertices;
+    std::vector<TriangulatedFace> m_triangulatedFaces;
 };
 
 #endif

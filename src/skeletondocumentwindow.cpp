@@ -66,7 +66,8 @@ void SkeletonDocumentWindow::SkeletonDocumentWindow::showAbout()
 SkeletonDocumentWindow::SkeletonDocumentWindow() :
     m_document(nullptr),
     m_firstShow(true),
-    m_documentSaved(true)
+    m_documentSaved(true),
+    m_boneExportWidget(nullptr)
 {
     if (!g_logBrowser) {
         g_logBrowser = new LogBrowser;
@@ -210,16 +211,28 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     
     m_fileMenu->addSeparator();
     
-    m_exportAction = new QAction(tr("Export..."), this);
-    connect(m_exportAction, &QAction::triggered, this, &SkeletonDocumentWindow::exportResult, Qt::QueuedConnection);
-    m_fileMenu->addAction(m_exportAction);
+    m_exportMenu = m_fileMenu->addMenu(tr("Export"));
+    
+    m_exportModelAction = new QAction(tr("Bare Model (.obj)..."), this);
+    connect(m_exportModelAction, &QAction::triggered, this, &SkeletonDocumentWindow::exportModelResult, Qt::QueuedConnection);
+    m_exportMenu->addAction(m_exportModelAction);
+    
+    m_exportModelAndMaterialsAction = new QAction(tr("Model and Materials (.obj)..."), this);
+    connect(m_exportModelAndMaterialsAction, &QAction::triggered, this, &SkeletonDocumentWindow::exportModelAndMaterialResult, Qt::QueuedConnection);
+    m_exportMenu->addAction(m_exportModelAndMaterialsAction);
+    
+    m_exportSkeletonAction = new QAction(tr("Skinned Model (.gltf)..."), this);
+    connect(m_exportSkeletonAction, &QAction::triggered, this, &SkeletonDocumentWindow::exportSkeletonResult, Qt::QueuedConnection);
+    //m_exportMenu->addAction(m_exportSkeletonAction);
     
     m_changeTurnaroundAction = new QAction(tr("Change Turnaround..."), this);
     connect(m_changeTurnaroundAction, &QAction::triggered, this, &SkeletonDocumentWindow::changeTurnaround, Qt::QueuedConnection);
     m_fileMenu->addAction(m_changeTurnaroundAction);
     
     connect(m_fileMenu, &QMenu::aboutToShow, [=]() {
-        m_exportAction->setEnabled(m_graphicsWidget->hasItems());
+        m_exportModelAction->setEnabled(m_graphicsWidget->hasItems());
+        m_exportModelAndMaterialsAction->setEnabled(m_graphicsWidget->hasItems());
+        m_exportSkeletonAction->setEnabled(m_graphicsWidget->hasItems());
     });
     
     m_editMenu = menuBar()->addMenu(tr("Edit"));
@@ -421,6 +434,7 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(graphicsWidget, &SkeletonGraphicsWidget::setPartSubdivState, m_document, &SkeletonDocument::setPartSubdivState);
     connect(graphicsWidget, &SkeletonGraphicsWidget::setPartDisableState, m_document, &SkeletonDocument::setPartDisableState);
     connect(graphicsWidget, &SkeletonGraphicsWidget::setPartXmirrorState, m_document, &SkeletonDocument::setPartXmirrorState);
+    connect(graphicsWidget, &SkeletonGraphicsWidget::setPartRoundState, m_document, &SkeletonDocument::setPartRoundState);
     
     connect(graphicsWidget, &SkeletonGraphicsWidget::setXlockState, m_document, &SkeletonDocument::setXlockState);
     connect(graphicsWidget, &SkeletonGraphicsWidget::setYlockState, m_document, &SkeletonDocument::setYlockState);
@@ -429,7 +443,6 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(graphicsWidget, &SkeletonGraphicsWidget::changeTurnaround, this, &SkeletonDocumentWindow::changeTurnaround);
     connect(graphicsWidget, &SkeletonGraphicsWidget::save, this, &SkeletonDocumentWindow::save);
     connect(graphicsWidget, &SkeletonGraphicsWidget::open, this, &SkeletonDocumentWindow::open);
-    connect(graphicsWidget, &SkeletonGraphicsWidget::exportResult, this, &SkeletonDocumentWindow::exportResult);
     
     connect(m_document, &SkeletonDocument::nodeAdded, graphicsWidget, &SkeletonGraphicsWidget::nodeAdded);
     connect(m_document, &SkeletonDocument::nodeRemoved, graphicsWidget, &SkeletonGraphicsWidget::nodeRemoved);
@@ -442,6 +455,8 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(m_document, &SkeletonDocument::cleanup, graphicsWidget, &SkeletonGraphicsWidget::removeAllContent);
     connect(m_document, &SkeletonDocument::originChanged, graphicsWidget, &SkeletonGraphicsWidget::originChanged);
     connect(m_document, &SkeletonDocument::checkPart, graphicsWidget, &SkeletonGraphicsWidget::selectPartAllById);
+    connect(m_document, &SkeletonDocument::enableBackgroundBlur, graphicsWidget, &SkeletonGraphicsWidget::enableBackgroundBlur);
+    connect(m_document, &SkeletonDocument::disableBackgroundBlur, graphicsWidget, &SkeletonGraphicsWidget::disableBackgroundBlur);
     
     connect(m_document, &SkeletonDocument::partListChanged, partListWidget, &SkeletonPartListWidget::partListChanged);
     connect(m_document, &SkeletonDocument::partPreviewChanged, partListWidget, &SkeletonPartListWidget::partPreviewChanged);
@@ -452,6 +467,8 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(m_document, &SkeletonDocument::partXmirrorStateChanged, partListWidget, &SkeletonPartListWidget::partXmirrorStateChanged);
     connect(m_document, &SkeletonDocument::partDeformThicknessChanged, partListWidget, &SkeletonPartListWidget::partDeformChanged);
     connect(m_document, &SkeletonDocument::partDeformWidthChanged, partListWidget, &SkeletonPartListWidget::partDeformChanged);
+    connect(m_document, &SkeletonDocument::partRoundStateChanged, partListWidget, &SkeletonPartListWidget::partRoundStateChanged);
+    connect(m_document, &SkeletonDocument::partColorStateChanged, partListWidget, &SkeletonPartListWidget::partColorStateChanged);
     connect(m_document, &SkeletonDocument::cleanup, partListWidget, &SkeletonPartListWidget::partListChanged);
     connect(m_document, &SkeletonDocument::partChecked, partListWidget, &SkeletonPartListWidget::partChecked);
     connect(m_document, &SkeletonDocument::partUnchecked, partListWidget, &SkeletonPartListWidget::partUnchecked);
@@ -734,7 +751,7 @@ void SkeletonDocumentWindow::open()
     setCurrentFilename(filename);
 }
 
-void SkeletonDocumentWindow::exportResult()
+void SkeletonDocumentWindow::exportModelResult()
 {
     QString filename = QFileDialog::getSaveFileName(this, QString(), QString(),
        tr("Wavefront (*.obj)"));
@@ -744,6 +761,28 @@ void SkeletonDocumentWindow::exportResult()
     QApplication::setOverrideCursor(Qt::WaitCursor);
     m_modelWidget->exportMeshAsObj(filename);
     QApplication::restoreOverrideCursor();
+}
+
+void SkeletonDocumentWindow::exportModelAndMaterialResult()
+{
+    QString filename = QFileDialog::getSaveFileName(this, QString(), QString(),
+       tr("Wavefront (*.obj)"));
+    if (filename.isEmpty()) {
+        return;
+    }
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    m_modelWidget->exportMeshAsObjPlusMaterials(filename);
+    QApplication::restoreOverrideCursor();
+}
+
+void SkeletonDocumentWindow::exportSkeletonResult()
+{
+    if (nullptr == m_boneExportWidget) {
+        m_boneExportWidget = new BoneExportWidget;
+    }
+    m_boneExportWidget->show();
+    m_boneExportWidget->activateWindow();
+    m_boneExportWidget->raise();
 }
 
 void SkeletonDocumentWindow::updateXlockButtonState()

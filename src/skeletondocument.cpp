@@ -585,6 +585,9 @@ void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUu
         part["disabled"] = partIt.second.disabled ? "true" : "false";
         part["xMirrored"] = partIt.second.xMirrored ? "true" : "false";
         part["zMirrored"] = partIt.second.zMirrored ? "true" : "false";
+        part["rounded"] = partIt.second.rounded ? "true" : "false";
+        if (partIt.second.hasColor)
+            part["color"] = partIt.second.color.name();
         if (partIt.second.deformThicknessAdjusted())
             part["deformThickness"] = QString::number(partIt.second.deformThickness);
         if (partIt.second.deformWidthAdjusted())
@@ -659,6 +662,12 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot)
         part.disabled = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "disabled"));
         part.xMirrored = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "xMirrored"));
         part.zMirrored = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "zMirrored"));
+        part.rounded = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "rounded"));
+        const auto &colorIt = partKv.second.find("color");
+        if (colorIt != partKv.second.end()) {
+            part.color = QColor(colorIt->second);
+            part.hasColor = true;
+        }
         const auto &deformThicknessIt = partKv.second.find("deformThickness");
         if (deformThicknessIt != partKv.second.end())
             part.setDeformThickness(deformThicknessIt->second.toFloat());
@@ -956,6 +965,35 @@ void SkeletonDocument::setPartDeformWidth(QUuid partId, float width)
     }
     part->second.setDeformWidth(width);
     emit partDeformWidthChanged(partId);
+    emit skeletonChanged();
+}
+
+void SkeletonDocument::setPartRoundState(QUuid partId, bool rounded)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    if (part->second.rounded == rounded)
+        return;
+    part->second.rounded = rounded;
+    emit partRoundStateChanged(partId);
+    emit skeletonChanged();
+}
+
+void SkeletonDocument::setPartColorState(QUuid partId, bool hasColor, QColor color)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    if (part->second.hasColor == hasColor && part->second.color == color)
+        return;
+    part->second.hasColor = hasColor;
+    part->second.color = color;
+    emit partColorStateChanged(partId);
     emit skeletonChanged();
 }
 

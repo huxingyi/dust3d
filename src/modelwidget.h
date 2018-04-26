@@ -26,6 +26,7 @@ public:
     
     void updateMesh(Mesh *mesh);
     void exportMeshAsObj(const QString &filename);
+    void exportMeshAsObjPlusMaterials(const QString &filename);
     void setGraphicsFunctions(SkeletonGraphicsFunctions *graphicsFunctions);
     void toggleWireframe();
 public slots:

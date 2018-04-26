@@ -21,6 +21,11 @@ Toggle the part's enablility, affects the final mesh generation. Unjoined parts 
 
 Toggle the part's edit lock. Locked part would still be visible on canvas, but can not been checked or edited.
 
+* Color Picker
+
+Choose the part's color. If there isn't color choosen, the Rendered Model will be show as the default color.
+The color choosen here will exported as a material color in the result output.
+
 Rendered Part Preview
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Shows the rendered image of the whole part's generated mesh.
@@ -30,12 +35,16 @@ Bottom Mini Buttons
 * (B)ox/Subdivisioned Box
 
 Toggle the basic unit type of mesh generation. Box means quad face, subdivisioned box means octagon face. If you want more sharp edges, choose box, otherwise choose subdivisioned box to make edges smooth.
- 
+
 * Thickness Modifier
 
 This is used when you want make fish body like mesh, or a thin or thick plane.
 The are two parameters for this modifier, one controls the thickness along the base plane normal, the other controls the thickness along the perpendicular of base plane normal. 
 
-* Mirror Modifier
+* (M)irror Modifier
 
 If there are two parts have the same shape but one sit left, the other sit right. It's like the human body, you no need to make the arm part two times, just once, and mirror it.
+
+* End Ro(U)ndable Modifier
+
+Toggle the begin/end roundable (Flat / Rounded). If you want the cut effect, choose not rounded, otherwise, the edge end will be rounded (Automatically added one more small face).

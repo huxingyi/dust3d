@@ -11,6 +11,7 @@
 #include "skeletonsnapshot.h"
 #include "mesh.h"
 #include "meshgenerator.h"
+#include "theme.h"
 
 class SkeletonNode
 {
@@ -25,7 +26,7 @@ public:
     }
     void setRadius(float toRadius)
     {
-        if (toRadius < 0.005)
+        if (toRadius < 0)
             toRadius = 0.005;
         else if (toRadius > 1)
             toRadius = 1;
@@ -74,6 +75,8 @@ public:
     float deformThickness;
     float deformWidth;
     bool rounded;
+    QColor color;
+    bool hasColor;
     QImage preview;
     std::vector<QUuid> nodeIds;
     SkeletonPart(const QUuid &withId=QUuid()) :
@@ -85,7 +88,9 @@ public:
         zMirrored(false),
         deformThickness(1.0),
         deformWidth(1.0),
-        rounded(false)
+        rounded(false),
+        color(Theme::white),
+        hasColor(false)
     {
         id = withId.isNull() ? QUuid::createUuid() : withId;
     }
@@ -132,6 +137,8 @@ public:
         deformThickness = other.deformThickness;
         deformWidth = other.deformWidth;
         rounded = other.rounded;
+        color = other.color;
+        hasColor = other.hasColor;
     }
 };
 
@@ -185,7 +192,8 @@ signals:
     void partZmirrorStateChanged(QUuid partId);
     void partDeformThicknessChanged(QUuid partId);
     void partDeformWidthChanged(QUuid partId);
-    void partRoundEndStateChanged(QUuid partId);
+    void partRoundStateChanged(QUuid partId);
+    void partColorStateChanged(QUuid partId);
     void cleanup();
     void originChanged();
     void xlockStateChanged();
@@ -194,6 +202,8 @@ signals:
     void checkPart(QUuid partId);
     void partChecked(QUuid partId);
     void partUnchecked(QUuid partId);
+    void enableBackgroundBlur();
+    void disableBackgroundBlur();
 public: // need initialize
     float originX;
     float originY;
@@ -249,6 +259,8 @@ public slots:
     void setPartZmirrorState(QUuid partId, bool mirrored);
     void setPartDeformThickness(QUuid partId, float thickness);
     void setPartDeformWidth(QUuid partId, float width);
+    void setPartRoundState(QUuid partId, bool rounded);
+    void setPartColorState(QUuid partId, bool hasColor, QColor color);
     void saveSnapshot();
     void undo();
     void redo();

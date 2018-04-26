@@ -1,6 +1,10 @@
 #include <QMutexLocker>
 #include <QFile>
 #include <QTextStream>
+#include <QFileInfo>
+#include <map>
+#include <QDebug>
+#include <QDir>
 #include "modelmeshbinder.h"
 #include "ds3file.h"
 
@@ -45,6 +49,55 @@ void ModelMeshBinder::exportMeshAsObj(const QString &filename)
                     stream << " " << (1 + *subIt);
                 }
                 stream << endl;
+            }
+        }
+    }
+}
+
+void ModelMeshBinder::exportMeshAdObjPlusMaterials(const QString &filename)
+{
+    QMutexLocker lock(&m_meshMutex);
+    if (m_mesh) {
+        QFileInfo nameInfo(filename);
+        QString mtlFilenameWithoutPath = nameInfo.baseName() + ".mtl";
+        QString mtlFilename = nameInfo.path() + QDir::separator() + mtlFilenameWithoutPath;
+        std::map<QString, QColor> colorNameMap;
+        QString lastColorName;
+        
+        qDebug() << "export obj to " << filename;
+        qDebug() << "export mtl to " << mtlFilename;
+        
+        QFile file(filename);
+        if (file.open(QIODevice::WriteOnly)) {
+            QTextStream stream(&file);
+            stream << "# " << Ds3FileReader::m_applicationName << endl;
+            stream << "mtllib " << mtlFilenameWithoutPath << endl;
+            for (std::vector<QVector3D>::const_iterator it = m_mesh->triangulatedVertices().begin() ; it != m_mesh->triangulatedVertices().end(); ++it) {
+                stream << "v " << (*it).x() << " " << (*it).y() << " " << (*it).z() << endl;
+            }
+            for (std::vector<TriangulatedFace>::const_iterator it = m_mesh->triangulatedFaces().begin() ; it != m_mesh->triangulatedFaces().end(); ++it) {
+                QString colorName = it->color.name();
+                colorName = "rgb" + colorName.remove(QChar('#'));
+                if (colorNameMap.find(colorName) == colorNameMap.end())
+                    colorNameMap[colorName] = it->color;
+                if (lastColorName != colorName) {
+                    lastColorName = colorName;
+                    stream << "usemtl " << colorName << endl;
+                }
+                stream << "f" << " " << (1 + it->indicies[0]) << " " << (1 + it->indicies[1]) << " " << (1 + it->indicies[2]) << endl;
+            }
+        }
+        
+        QFile mtlFile(mtlFilename);
+        if (mtlFile.open(QIODevice::WriteOnly)) {
+            QTextStream stream(&mtlFile);
+            stream << "# " << Ds3FileReader::m_applicationName << endl;
+            for (const auto &it: colorNameMap) {
+                stream << "newmtl " << it.first << endl;
+                stream << "Ka" << " " << it.second.redF() << " " << it.second.greenF() << " " << it.second.blueF() << endl;
+                stream << "Kd" << " " << it.second.redF() << " " << it.second.greenF() << " " << it.second.blueF() << endl;
+                stream << "Ks" << " 0.0 0.0 0.0" << endl;
+                stream << "illum" << " 1" << endl;
             }
         }
     }

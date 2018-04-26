@@ -13,4 +13,5 @@ bool isTrueValueString(const QString &str);
 bool isFloatEqual(float a, float b);
 void qNormalizeAngle(int &angle);
 
+
 #endif

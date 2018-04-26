@@ -83,6 +83,18 @@ HEADERS += src/mesh.h
 SOURCES += src/meshutil.cpp
 HEADERS += src/meshutil.h
 
+SOURCES += src/uvunwrapper.cpp
+HEADERS += src/uvunwrapper.h
+
+SOURCES += src/vertexskingenerator.cpp
+HEADERS += src/vertexskingenerator.h
+
+SOURCES += src/meshresultcontext.cpp
+HEADERS += src/meshresultcontext.h
+
+SOURCES += src/positionmap.cpp
+HEADERS += src/positionmap.h
+
 SOURCES += src/logbrowser.cpp
 HEADERS += src/logbrowser.h
 
@@ -91,6 +103,9 @@ HEADERS += src/logbrowserdialog.h
 
 SOURCES += src/floatnumberwidget.cpp
 HEADERS += src/floatnumberwidget.h
+
+SOURCES += src/boneexportwidget.cpp
+HEADERS += src/boneexportwidget.h
 
 SOURCES += src/main.cpp
 

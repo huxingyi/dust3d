@@ -30,7 +30,7 @@ Save all openned window.
 
 Export...
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Export current generated model mesh as Wavefront file format(.obj)
+Export current generated model mesh as Wavefront file format(.obj). You can choose to export the bare model or plus materials in (.mtl).
 
 Change Turnaround...
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -19,8 +19,12 @@ signals:
     void setPartZmirrorState(QUuid partId, bool mirrored);
     void setPartDeformThickness(QUuid partId, float thickness);
     void setPartDeformWidth(QUuid partId, float width);
+    void setPartRoundState(QUuid partId, bool rounded);
+    void setPartColorState(QUuid partId, bool hasColor, QColor color);
     void checkPart(QUuid partId);
     void groupOperationAdded();
+    void enableBackgroundBlur();
+    void disableBackgroundBlur();
 public:
     SkeletonPartWidget(const SkeletonDocument *document, QUuid partId);
     void reload();
@@ -32,11 +36,15 @@ public:
     void updateXmirrorButton();
     void updateZmirrorButton();
     void updateDeformButton();
+    void updateRoundButton();
+    void updateColorButton();
     void updateCheckedState(bool checked);
 protected:
     void mouseDoubleClickEvent(QMouseEvent *event);
 public slots:
     void showDeformSettingPopup(const QPoint &pos);
+    void showColorSettingPopup(const QPoint &pos);
+    void showContextMenu(const QPoint &pos);
 private:
     const SkeletonDocument *m_document;
     QUuid m_partId;
@@ -49,10 +57,12 @@ private:
     QPushButton *m_zMirrorButton;
     QPushButton *m_deformButton;
     QPushButton *m_roundButton;
+    QPushButton *m_colorButton;
     QLabel *m_nameLabel;
     QWidget *m_backgroundWidget;
 private:
     void initToolButton(QPushButton *button);
+    void initToolButtonWithoutFont(QPushButton *button);
     void initButton(QPushButton *button);
     void updateButton(QPushButton *button, QChar icon, bool highlighted);
 };
@@ -72,6 +82,8 @@ public slots:
     void partDisableStateChanged(QUuid partId);
     void partXmirrorStateChanged(QUuid partId);
     void partDeformChanged(QUuid partId);
+    void partRoundStateChanged(QUuid partId);
+    void partColorStateChanged(QUuid partId);
     void partChecked(QUuid partId);
     void partUnchecked(QUuid partId);
 protected:
