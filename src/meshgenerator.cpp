@@ -180,6 +180,7 @@ void MeshGenerator::process()
     }
     
     std::map<QString, QColor> partColorMap;
+    std::map<QString, bool> partMirrorFlagMap;
     
     for (const auto &partIdIt: m_snapshot->partIdList) {
         const auto &part = m_snapshot->parts.find(partIdIt);
@@ -195,6 +196,7 @@ void MeshGenerator::process()
             meshlite_bmesh_set_cut_subdiv_count(meshliteContext, bmeshId, 1);
         if (isTrueValueString(valueOfKeyInMapOrEmpty(part->second, "rounded")))
             meshlite_bmesh_set_round_way(meshliteContext, bmeshId, 1);
+        partMirrorFlagMap[partIdIt] = isTrueValueString(valueOfKeyInMapOrEmpty(part->second, "xMirrored"));
         QString colorString = valueOfKeyInMapOrEmpty(part->second, "color");
         QColor partColor = colorString.isEmpty() ? Theme::white : QColor(colorString);
         partColorMap[partIdIt] = partColor;
@@ -241,6 +243,12 @@ void MeshGenerator::process()
             bmeshNode.nodeId = bmeshFromNodeId;
             bmeshNode.color = partColorMap[partId];
             m_meshResultContext->bmeshNodes.push_back(bmeshNode);
+            
+            if (partMirrorFlagMap[partId]) {
+                bmeshNode.bmeshId = -bmeshId;
+                bmeshNode.origin.setX(-x);
+                m_meshResultContext->bmeshNodes.push_back(bmeshNode);
+            }
         } else {
             bmeshFromNodeId = bmeshFromIt->second;
             //qDebug() << "bmeshId[" << bmeshId << "] use existed node[" << bmeshFromNodeId << "]";
@@ -264,6 +272,12 @@ void MeshGenerator::process()
             bmeshNode.nodeId = bmeshToNodeId;
             bmeshNode.color = partColorMap[partId];
             m_meshResultContext->bmeshNodes.push_back(bmeshNode);
+            
+            if (partMirrorFlagMap[partId]) {
+                bmeshNode.bmeshId = -bmeshId;
+                bmeshNode.origin.setX(-x);
+                m_meshResultContext->bmeshNodes.push_back(bmeshNode);
+            }
         } else {
             bmeshToNodeId = bmeshToIt->second;
             //qDebug() << "bmeshId[" << bmeshId << "] use existed node[" << bmeshToNodeId << "]";
@@ -272,10 +286,20 @@ void MeshGenerator::process()
         meshlite_bmesh_add_edge(meshliteContext, bmeshId, bmeshFromNodeId, bmeshToNodeId);
         
         BmeshEdge bmeshEdge;
-        bmeshEdge.bmeshId = bmeshId;
+        bmeshEdge.fromBmeshId = bmeshId;
         bmeshEdge.fromNodeId = bmeshFromNodeId;
+        bmeshEdge.toBmeshId = bmeshId;
         bmeshEdge.toNodeId = bmeshToNodeId;
         m_meshResultContext->bmeshEdges.push_back(bmeshEdge);
+        
+        if (partMirrorFlagMap[partId]) {
+            BmeshEdge bmeshEdge;
+            bmeshEdge.fromBmeshId = -bmeshId;
+            bmeshEdge.fromNodeId = bmeshFromNodeId;
+            bmeshEdge.toBmeshId = -bmeshId;
+            bmeshEdge.toNodeId = bmeshToNodeId;
+            m_meshResultContext->bmeshEdges.push_back(bmeshEdge);
+        }
     }
     
     for (const auto &nodeIt: m_snapshot->nodes) {
@@ -302,6 +326,12 @@ void MeshGenerator::process()
         bmeshNode.nodeId = bmeshNodeId;
         bmeshNode.color = partColorMap[partId];
         m_meshResultContext->bmeshNodes.push_back(bmeshNode);
+        
+        if (partMirrorFlagMap[partId]) {
+            bmeshNode.bmeshId = -bmeshId;
+            bmeshNode.origin.setX(-x);
+            m_meshResultContext->bmeshNodes.push_back(bmeshNode);
+        }
     }
     
     bool broken = false;
@@ -321,19 +351,13 @@ void MeshGenerator::process()
         if (meshlite_bmesh_error_count(meshliteContext, bmeshId) != 0)
             broken = true;
         bool xMirrored = isTrueValueString(valueOfKeyInMapOrEmpty(part->second, "xMirrored"));
-        bool zMirrored = isTrueValueString(valueOfKeyInMapOrEmpty(part->second, "zMirrored"));
         loadVertexSourcesToMeshResultContext(meshliteContext, meshId, bmeshId);
         QColor modelColor = partColorMap[partIdIt];
         int xMirroredMeshId = 0;
-        int zMirroredMeshId = 0;
-        if (xMirrored || zMirrored) {
+        if (xMirrored) {
             if (xMirrored) {
                 xMirroredMeshId = meshlite_mirror_in_x(meshliteContext, meshId, 0);
-                loadVertexSourcesToMeshResultContext(meshliteContext, xMirroredMeshId, bmeshId);
-            }
-            if (zMirrored) {
-                zMirroredMeshId = meshlite_mirror_in_z(meshliteContext, meshId, 0);
-                loadVertexSourcesToMeshResultContext(meshliteContext, zMirroredMeshId, bmeshId);
+                loadVertexSourcesToMeshResultContext(meshliteContext, xMirroredMeshId, -bmeshId);
             }
         }
         if (m_requirePartPreviewMap.find(partIdIt) != m_requirePartPreviewMap.end()) {
@@ -346,8 +370,6 @@ void MeshGenerator::process()
         meshIds.push_back(meshId);
         if (xMirroredMeshId)
             meshIds.push_back(xMirroredMeshId);
-        if (zMirroredMeshId)
-            meshIds.push_back(zMirroredMeshId);
     }
     
     if (!subdivMeshIds.empty()) {
@@ -404,9 +426,7 @@ void MeshGenerator::process()
         loadGeneratedPositionsToMeshResultContext(meshliteContext, triangulatedFinalMeshId);
         //PositionMap<QColor> positionColorMap;
         //m_meshResultContext->calculatePositionColorMap(positionColorMap);
-        std::vector<QColor> triangleColors;
-        m_meshResultContext->calculateTriangleColors(triangleColors);
-        m_mesh = new Mesh(meshliteContext, finalMeshId, triangulatedFinalMeshId, broken ? Theme::broken : Theme::white, &triangleColors);
+        m_mesh = new Mesh(meshliteContext, finalMeshId, triangulatedFinalMeshId, broken ? Theme::broken : Theme::white, &m_meshResultContext->triangleColors());
     }
     
     if (m_previewRender) {

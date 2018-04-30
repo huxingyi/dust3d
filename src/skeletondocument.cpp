@@ -25,13 +25,20 @@ SkeletonDocument::SkeletonDocument() :
     m_resultMeshIsObsolete(false),
     m_meshGenerator(nullptr),
     m_resultMesh(nullptr),
-    m_batchChangeRefCount(0)
+    m_batchChangeRefCount(0),
+    m_currentMeshResultContext(nullptr),
+    m_resultSkeletonIsObsolete(false),
+    m_skeletonGenerator(nullptr),
+    m_resultSkeletonMesh(nullptr),
+    m_currentSkeletonResultContext(new MeshResultContext)
 {
 }
 
 SkeletonDocument::~SkeletonDocument()
 {
     delete m_resultMesh;
+    delete m_resultSkeletonMesh;
+    delete m_currentSkeletonResultContext;
 }
 
 void SkeletonDocument::uiReady()
@@ -765,9 +772,17 @@ Mesh *SkeletonDocument::takeResultMesh()
     return resultMesh;
 }
 
+Mesh *SkeletonDocument::takeResultSkeletonMesh()
+{
+    Mesh *resultSkeletonMesh = m_resultSkeletonMesh;
+    m_resultSkeletonMesh = nullptr;
+    return resultSkeletonMesh;
+}
+
 void SkeletonDocument::meshReady()
 {
     Mesh *resultMesh = m_meshGenerator->takeResultMesh();
+    MeshResultContext *meshResultContext = m_meshGenerator->takeMeshResultContext();
     
     QImage *resultPreview = m_meshGenerator->takePreview();
     if (resultPreview) {
@@ -786,6 +801,9 @@ void SkeletonDocument::meshReady()
     
     delete m_resultMesh;
     m_resultMesh = resultMesh;
+    
+    delete m_currentMeshResultContext;
+    m_currentMeshResultContext = meshResultContext;
     
     if (nullptr == m_resultMesh) {
         qDebug() << "Result mesh is null";
@@ -843,6 +861,61 @@ void SkeletonDocument::generateMesh()
     connect(m_meshGenerator, &MeshGenerator::finished, thread, &QThread::quit);
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
     thread->start();
+}
+
+void SkeletonDocument::generateSkeleton()
+{
+    if (nullptr != m_skeletonGenerator) {
+        m_resultSkeletonIsObsolete = true;
+        return;
+    }
+    
+    qDebug() << "Skeleton generating..";
+    
+    m_resultSkeletonIsObsolete = false;
+    
+    if (!m_currentMeshResultContext) {
+        qDebug() << "Skeleton is null";
+        return;
+    }
+    
+    QThread *thread = new QThread;
+    m_skeletonGenerator = new SkeletonGenerator(*m_currentMeshResultContext);
+    m_skeletonGenerator->moveToThread(thread);
+    connect(thread, &QThread::started, m_skeletonGenerator, &SkeletonGenerator::process);
+    connect(m_skeletonGenerator, &SkeletonGenerator::finished, this, &SkeletonDocument::skeletonReady);
+    connect(m_skeletonGenerator, &SkeletonGenerator::finished, thread, &QThread::quit);
+    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+    thread->start();
+}
+
+void SkeletonDocument::skeletonReady()
+{
+    Mesh *resultSkeletonMesh = m_skeletonGenerator->takeResultSkeletonMesh();
+    
+    delete m_resultSkeletonMesh;
+    m_resultSkeletonMesh = resultSkeletonMesh;
+    
+    MeshResultContext *resultContext = m_skeletonGenerator->takeResultContext();
+    
+    delete m_currentSkeletonResultContext;
+    m_currentSkeletonResultContext = resultContext;
+    
+    delete m_skeletonGenerator;
+    m_skeletonGenerator = nullptr;
+    
+    qDebug() << "Skeleton generation done";
+    
+    emit resultSkeletonChanged();
+    
+    if (m_resultSkeletonIsObsolete) {
+        generateSkeleton();
+    }
+}
+
+MeshResultContext &SkeletonDocument::currentSkeletonResultContext()
+{
+    return *m_currentSkeletonResultContext;
 }
 
 void SkeletonDocument::setPartLockState(QUuid partId, bool locked)

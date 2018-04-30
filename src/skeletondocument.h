@@ -11,6 +11,7 @@
 #include "skeletonsnapshot.h"
 #include "mesh.h"
 #include "meshgenerator.h"
+#include "skeletongenerator.h"
 #include "theme.h"
 
 class SkeletonNode
@@ -184,6 +185,7 @@ signals:
     void turnaroundChanged();
     void editModeChanged();
     void skeletonChanged();
+    void resultSkeletonChanged();
     void partLockStateChanged(QUuid partId);
     void partVisibleStateChanged(QUuid partId);
     void partSubdivStateChanged(QUuid partId);
@@ -229,6 +231,7 @@ public:
     const SkeletonPart *findPart(QUuid partId) const;
     const SkeletonEdge *findEdgeByNodes(QUuid firstNodeId, QUuid secondNodeId) const;
     Mesh *takeResultMesh();
+    Mesh *takeResultSkeletonMesh();
     void updateTurnaround(const QImage &image);
     bool hasPastableContentInClipboard() const;
     bool undoable() const;
@@ -236,6 +239,7 @@ public:
     bool isNodeEditable(QUuid nodeId) const;
     bool isEdgeEditable(QUuid edgeId) const;
     bool originSettled() const;
+    MeshResultContext &currentSkeletonResultContext();
 public slots:
     void removeNode(QUuid nodeId);
     void removeEdge(QUuid edgeId);
@@ -251,6 +255,8 @@ public slots:
     void uiReady();
     void generateMesh();
     void meshReady();
+    void generateSkeleton();
+    void skeletonReady();
     void setPartLockState(QUuid partId, bool locked);
     void setPartVisibleState(QUuid partId, bool visible);
     void setPartSubdivState(QUuid partId, bool subdived);
@@ -284,6 +290,11 @@ private: // need initialize
     MeshGenerator *m_meshGenerator;
     Mesh *m_resultMesh;
     int m_batchChangeRefCount;
+    MeshResultContext *m_currentMeshResultContext;
+    bool m_resultSkeletonIsObsolete;
+    SkeletonGenerator *m_skeletonGenerator;
+    Mesh *m_resultSkeletonMesh;
+    MeshResultContext *m_currentSkeletonResultContext;
 private:
     static unsigned long m_maxSnapshot;
     std::deque<SkeletonHistoryItem> m_undoItems;

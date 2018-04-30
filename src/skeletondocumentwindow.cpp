@@ -25,6 +25,14 @@
 #include "util.h"
 #include "aboutwidget.h"
 #include "version.h"
+#include "gltffile.h"
+
+int SkeletonDocumentWindow::m_modelRenderWidgetInitialX = 16;
+int SkeletonDocumentWindow::m_modelRenderWidgetInitialY = 16;
+int SkeletonDocumentWindow::m_modelRenderWidgetInitialSize = 128;
+int SkeletonDocumentWindow::m_skeletonRenderWidgetInitialX = SkeletonDocumentWindow::m_modelRenderWidgetInitialX + SkeletonDocumentWindow::m_modelRenderWidgetInitialSize + 16;
+int SkeletonDocumentWindow::m_skeletonRenderWidgetInitialY = SkeletonDocumentWindow::m_modelRenderWidgetInitialY;
+int SkeletonDocumentWindow::m_skeletonRenderWidgetInitialSize = SkeletonDocumentWindow::m_modelRenderWidgetInitialSize;
 
 QPointer<LogBrowser> g_logBrowser;
 std::set<SkeletonDocumentWindow *> g_documentWindows;
@@ -66,8 +74,7 @@ void SkeletonDocumentWindow::SkeletonDocumentWindow::showAbout()
 SkeletonDocumentWindow::SkeletonDocumentWindow() :
     m_document(nullptr),
     m_firstShow(true),
-    m_documentSaved(true),
-    m_boneExportWidget(nullptr)
+    m_documentSaved(true)
 {
     if (!g_logBrowser) {
         g_logBrowser = new LogBrowser;
@@ -153,11 +160,18 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     containerWidget->setLayout(containerLayout);
     containerWidget->setMinimumSize(400, 400);
     
-    m_modelWidget = new ModelWidget(containerWidget);
-    m_modelWidget->setMinimumSize(128, 128);
-    m_modelWidget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-    m_modelWidget->move(16, 16);
-    m_modelWidget->setGraphicsFunctions(graphicsWidget);
+    m_modelRenderWidget = new ModelWidget(containerWidget);
+    m_modelRenderWidget->setMinimumSize(SkeletonDocumentWindow::m_modelRenderWidgetInitialSize, SkeletonDocumentWindow::m_modelRenderWidgetInitialSize);
+    m_modelRenderWidget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+    m_modelRenderWidget->move(SkeletonDocumentWindow::m_modelRenderWidgetInitialX, SkeletonDocumentWindow::m_modelRenderWidgetInitialY);
+    m_modelRenderWidget->setGraphicsFunctions(graphicsWidget);
+    
+    m_skeletonRenderWidget = new ModelWidget(containerWidget);
+    m_skeletonRenderWidget->setMinimumSize(SkeletonDocumentWindow::m_skeletonRenderWidgetInitialSize, SkeletonDocumentWindow::m_skeletonRenderWidgetInitialSize);
+    m_skeletonRenderWidget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+    m_skeletonRenderWidget->move(SkeletonDocumentWindow::m_skeletonRenderWidgetInitialX, SkeletonDocumentWindow::m_skeletonRenderWidgetInitialY);
+    m_skeletonRenderWidget->setGraphicsFunctions(graphicsWidget);
+    m_skeletonRenderWidget->hide();
     
     SkeletonPartListWidget *partListWidget = new SkeletonPartListWidget(m_document, this);
     partListWidget->setWindowFlags(Qt::Tool);
@@ -213,17 +227,17 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     
     m_exportMenu = m_fileMenu->addMenu(tr("Export"));
     
-    m_exportModelAction = new QAction(tr("Bare Model (.obj)..."), this);
+    m_exportModelAction = new QAction(tr("Wavefront (.obj)..."), this);
     connect(m_exportModelAction, &QAction::triggered, this, &SkeletonDocumentWindow::exportModelResult, Qt::QueuedConnection);
     m_exportMenu->addAction(m_exportModelAction);
     
-    m_exportModelAndMaterialsAction = new QAction(tr("Model and Materials (.obj)..."), this);
+    m_exportModelAndMaterialsAction = new QAction(tr("Model and Materials(.obj)..."), this);
     connect(m_exportModelAndMaterialsAction, &QAction::triggered, this, &SkeletonDocumentWindow::exportModelAndMaterialResult, Qt::QueuedConnection);
-    m_exportMenu->addAction(m_exportModelAndMaterialsAction);
+    //m_exportMenu->addAction(m_exportModelAndMaterialsAction);
     
-    m_exportSkeletonAction = new QAction(tr("Skinned Model (.gltf)..."), this);
+    m_exportSkeletonAction = new QAction(tr("GL Transmission Format (.gltf)..."), this);
     connect(m_exportSkeletonAction, &QAction::triggered, this, &SkeletonDocumentWindow::exportSkeletonResult, Qt::QueuedConnection);
-    //m_exportMenu->addAction(m_exportSkeletonAction);
+    m_exportMenu->addAction(m_exportSkeletonAction);
     
     m_changeTurnaroundAction = new QAction(tr("Change Turnaround..."), this);
     connect(m_changeTurnaroundAction, &QAction::triggered, this, &SkeletonDocumentWindow::changeTurnaround, Qt::QueuedConnection);
@@ -320,12 +334,26 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     
     m_resetModelWidgetPosAction = new QAction(tr("Show Model"), this);
     connect(m_resetModelWidgetPosAction, &QAction::triggered, [=]() {
-        QRect parentRect = QRect(QPoint(0, 0), m_modelWidget->parentWidget()->size());
-        if (!parentRect.contains(m_modelWidget->geometry().center())) {
-            m_modelWidget->move(16, 16);
+        QRect parentRect = QRect(QPoint(0, 0), m_modelRenderWidget->parentWidget()->size());
+        if (!parentRect.contains(m_modelRenderWidget->geometry().center())) {
+            m_modelRenderWidget->move(SkeletonDocumentWindow::m_modelRenderWidgetInitialX, SkeletonDocumentWindow::m_modelRenderWidgetInitialY);
         }
     });
     m_viewMenu->addAction(m_resetModelWidgetPosAction);
+    
+    m_toggleSkeletonWidgetAction = new QAction(tr("Toggle Bones"), this);
+    connect(m_toggleSkeletonWidgetAction, &QAction::triggered, [=]() {
+        if (m_skeletonRenderWidget->isVisible()) {
+            m_skeletonRenderWidget->hide();
+        } else {
+            QRect parentRect = QRect(QPoint(0, 0), m_skeletonRenderWidget->parentWidget()->size());
+            if (!parentRect.contains(m_skeletonRenderWidget->geometry().center())) {
+                m_skeletonRenderWidget->move(SkeletonDocumentWindow::m_skeletonRenderWidgetInitialX, SkeletonDocumentWindow::m_skeletonRenderWidgetInitialY);
+            }
+            m_skeletonRenderWidget->show();
+        }
+    });
+    m_viewMenu->addAction(m_toggleSkeletonWidgetAction);
     
     m_showPartsListAction = new QAction(tr("Show Parts List"), this);
     connect(m_showPartsListAction, &QAction::triggered, [=]() {
@@ -335,7 +363,7 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     
     m_toggleWireframeAction = new QAction(tr("Toggle Wireframe"), this);
     connect(m_toggleWireframeAction, &QAction::triggered, [=]() {
-        m_modelWidget->toggleWireframe();
+        m_modelRenderWidget->toggleWireframe();
     });
     m_viewMenu->addAction(m_toggleWireframeAction);
     
@@ -474,20 +502,25 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(m_document, &SkeletonDocument::partUnchecked, partListWidget, &SkeletonPartListWidget::partUnchecked);
     
     connect(m_document, &SkeletonDocument::skeletonChanged, m_document, &SkeletonDocument::generateMesh);
+    connect(m_document, &SkeletonDocument::resultMeshChanged, m_document, &SkeletonDocument::generateSkeleton);
     
     connect(m_document, &SkeletonDocument::resultMeshChanged, [=]() {
-        m_modelWidget->updateMesh(m_document->takeResultMesh());
+        m_modelRenderWidget->updateMesh(m_document->takeResultMesh());
+    });
+    connect(m_document, &SkeletonDocument::resultSkeletonChanged, [=]() {
+        m_skeletonRenderWidget->updateMesh(m_document->takeResultSkeletonMesh());
     });
     
     connect(graphicsWidget, &SkeletonGraphicsWidget::cursorChanged, [=]() {
-        m_modelWidget->setCursor(graphicsWidget->cursor());
+        m_modelRenderWidget->setCursor(graphicsWidget->cursor());
+        m_skeletonRenderWidget->setCursor(graphicsWidget->cursor());
     });
     
     connect(m_document, &SkeletonDocument::skeletonChanged, this, &SkeletonDocumentWindow::documentChanged);
     connect(m_document, &SkeletonDocument::turnaroundChanged, this, &SkeletonDocumentWindow::documentChanged);
     
-    connect(m_modelWidget, &ModelWidget::customContextMenuRequested, [=](const QPoint &pos) {
-        graphicsWidget->showContextMenu(graphicsWidget->mapFromGlobal(m_modelWidget->mapToGlobal(pos)));
+    connect(m_modelRenderWidget, &ModelWidget::customContextMenuRequested, [=](const QPoint &pos) {
+        graphicsWidget->showContextMenu(graphicsWidget->mapFromGlobal(m_modelRenderWidget->mapToGlobal(pos)));
     });
     
     connect(m_document, &SkeletonDocument::xlockStateChanged, this, &SkeletonDocumentWindow::updateXlockButtonState);
@@ -759,7 +792,7 @@ void SkeletonDocumentWindow::exportModelResult()
         return;
     }
     QApplication::setOverrideCursor(Qt::WaitCursor);
-    m_modelWidget->exportMeshAsObj(filename);
+    m_modelRenderWidget->exportMeshAsObj(filename);
     QApplication::restoreOverrideCursor();
 }
 
@@ -771,18 +804,22 @@ void SkeletonDocumentWindow::exportModelAndMaterialResult()
         return;
     }
     QApplication::setOverrideCursor(Qt::WaitCursor);
-    m_modelWidget->exportMeshAsObjPlusMaterials(filename);
+    m_modelRenderWidget->exportMeshAsObjPlusMaterials(filename);
     QApplication::restoreOverrideCursor();
 }
 
 void SkeletonDocumentWindow::exportSkeletonResult()
 {
-    if (nullptr == m_boneExportWidget) {
-        m_boneExportWidget = new BoneExportWidget;
+    QString filename = QFileDialog::getSaveFileName(this, QString(), QString(),
+       tr("glTF (*.gltf)"));
+    if (filename.isEmpty()) {
+        return;
     }
-    m_boneExportWidget->show();
-    m_boneExportWidget->activateWindow();
-    m_boneExportWidget->raise();
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    MeshResultContext skeletonResult = m_document->currentSkeletonResultContext();
+    GLTFFileWriter gltfFileWriter(skeletonResult);
+    gltfFileWriter.save(filename);
+    QApplication::restoreOverrideCursor();
 }
 
 void SkeletonDocumentWindow::updateXlockButtonState()

@@ -9,7 +9,6 @@
 #include <QTextBrowser>
 #include "skeletondocument.h"
 #include "modelwidget.h"
-#include "boneexportwidget.h"
 
 class SkeletonGraphicsWidget;
 
@@ -58,11 +57,11 @@ private:
     SkeletonDocument *m_document;
     bool m_firstShow;
     bool m_documentSaved;
-    BoneExportWidget *m_boneExportWidget;
 private:
     QString m_currentFilename;
     
-    ModelWidget *m_modelWidget;
+    ModelWidget *m_modelRenderWidget;
+    ModelWidget *m_skeletonRenderWidget;
     SkeletonGraphicsWidget *m_graphicsWidget;
     
     QMenu *m_fileMenu;
@@ -98,6 +97,7 @@ private:
     
     QMenu *m_viewMenu;
     QAction *m_resetModelWidgetPosAction;
+    QAction *m_toggleSkeletonWidgetAction;
     QAction *m_showPartsListAction;
     QAction *m_showDebugDialogAction;
     QAction *m_toggleWireframeAction;
@@ -112,6 +112,14 @@ private:
     QPushButton *m_xlockButton;
     QPushButton *m_ylockButton;
     QPushButton *m_zlockButton;
+    
+public:
+    static int m_modelRenderWidgetInitialX;
+    static int m_modelRenderWidgetInitialY;
+    static int m_modelRenderWidgetInitialSize;
+    static int m_skeletonRenderWidgetInitialX;
+    static int m_skeletonRenderWidgetInitialY;
+    static int m_skeletonRenderWidgetInitialSize;
 };
 
 #endif

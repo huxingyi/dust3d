@@ -52,6 +52,10 @@ int meshlite_trim(void *context, int mesh_id, int normalize);
 int meshlite_mirror_in_x(void *context, int mesh_id, float center_x);
 int meshlite_mirror_in_z(void *context, int mesh_id, float center_z);
 int meshlite_fix_hole(void *context, int mesh_id);
+int meshlite_skeletonmesh_create(void *context);
+int meshlite_skeletonmesh_set_end_radius(void *context, float radius);
+int meshlite_skeletonmesh_add_bone(void *context, int sklt_id, float from_x, float from_y, float from_z, float to_x, float to_y, float to_z);
+int meshlite_skeletonmesh_generate_mesh(void *context, int sklt_id);
 
 #ifdef __cplusplus
 }

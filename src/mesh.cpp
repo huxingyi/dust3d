@@ -6,7 +6,7 @@
 
 #define MAX_VERTICES_PER_FACE   100
 
-Mesh::Mesh(void *meshlite, int meshId, int triangulatedMeshId, QColor modelColor, std::vector<QColor> *triangleColors) :
+Mesh::Mesh(void *meshlite, int meshId, int triangulatedMeshId, QColor modelColor, const std::vector<QColor> *triangleColors) :
     m_triangleVertices(NULL),
     m_triangleVertexCount(0),
     m_edgeVertices(NULL),

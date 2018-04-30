@@ -33,7 +33,7 @@ struct TriangulatedFace
 class Mesh
 {
 public:
-    Mesh(void *meshlite, int meshId, int triangulatedMeshId = -1, QColor modelColor=Theme::white, std::vector<QColor> *triangleColors=nullptr);
+    Mesh(void *meshlite, int meshId, int triangulatedMeshId = -1, QColor modelColor=Theme::white, const std::vector<QColor> *triangleColors=nullptr);
     ~Mesh();
     Vertex *triangleVertices();
     int triangleVertexCount();

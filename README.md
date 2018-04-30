@@ -7,7 +7,7 @@ Dust3D is a brand new 3D modeling software. It helps you create a 3D watertight 
 [Download Dust3D](https://dust3d.readthedocs.io/en/latest/install.html)  
 [Online Dust3D Reference Guide](https://dust3d.readthedocs.io/en/latest/index.html)
 
-Examples:
+Examples
 ----------------------
 [Make a 3D model from scratch using Dust3D](https://youtu.be/wQerDObDjOs)
 
@@ -28,11 +28,16 @@ Examples:
 <a href="https://dust3d.readthedocs.io/en/latest/examples/modeling-horse/index.html">
 <image src="https://raw.githubusercontent.com/huxingyi/dust3d/master/docs/examples/modeling-horse/modeling-horse-dust3d-screenshot.png" width="320" height="192"></a>
 
-Tutorials:
+Tutorials
 -------------
 [Dust3D -- Free Open Source 3D Modelling Application](https://www.youtube.com/watch?v=YBnEQk_5D70)
 
 <a href="https://www.youtube.com/watch?v=YBnEQk_5D70" target="_blank"><image src="https://raw.githubusercontent.com/huxingyi/dust3d/master/docs/images/dust3d-free-open-source-3d-modelling-application-video-thumbnail.png" width="480" height="270"></a>
+
+Contributing
+---------------
+Any contributions are welcome, including fix bug, correct typo, test functionality, propose new features, make post to introduce and let more people know Dust3D. If you have done any of these, and cannot find your name in CONTRIBUTORS, please feel free to make a pull request to add your name, or email me.
+If you have done programming code changes, including the example code listed in the docs folder, please don’t forget to add your name to AUTHORS in your pull request.
 
 License
 -----------

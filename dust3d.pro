@@ -74,6 +74,9 @@ HEADERS += src/skeletonxml.h
 SOURCES += src/ds3file.cpp
 HEADERS += src/ds3file.h
 
+SOURCES += src/gltffile.cpp
+HEADERS += src/gltffile.h
+
 SOURCES += src/theme.cpp
 HEADERS += src/theme.h
 
@@ -86,8 +89,8 @@ HEADERS += src/meshutil.h
 SOURCES += src/uvunwrapper.cpp
 HEADERS += src/uvunwrapper.h
 
-SOURCES += src/vertexskingenerator.cpp
-HEADERS += src/vertexskingenerator.h
+SOURCES += src/skeletongenerator.cpp
+HEADERS += src/skeletongenerator.h
 
 SOURCES += src/meshresultcontext.cpp
 HEADERS += src/meshresultcontext.h
@@ -103,9 +106,6 @@ HEADERS += src/logbrowserdialog.h
 
 SOURCES += src/floatnumberwidget.cpp
 HEADERS += src/floatnumberwidget.h
-
-SOURCES += src/boneexportwidget.cpp
-HEADERS += src/boneexportwidget.h
 
 SOURCES += src/main.cpp
 
@@ -178,6 +178,8 @@ unix:!macx {
 	MPFR_INCLUDEDIR = /usr/local/include
 	MPFR_LIBDIR = /usr/local/lib
 }
+
+INCLUDEPATH += thirdparty/json
 
 INCLUDEPATH += $$MESHLITE_DIR
 LIBS += -L$$MESHLITE_DIR -l$$MESHLITE_LIBNAME
