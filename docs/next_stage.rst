@@ -34,5 +34,6 @@ I have shared my full progress here_, including how I back and forth in Qt/C++ c
 
 .. _here: https://dust3d.readthedocs.io/en/latest/origin-and-future.html
 
-I wish this post is my new start of the game making journey, **please leave a comment on reddit website to share what's the best idea to achieve the simple monster animation task please, thanks.**
-(I will append the reddit link here when I made this post public on reddit)
+I wish this post is my new start of the game making journey, **please leave a comment on reddit_ website to share what's the best idea to achieve the simple monster animation task please, thanks.**
+
+.. _reddit: https://www.reddit.com/r/programming/comments/8g6i8l/i_am_writing_a_coarse_motion_capture_software_to/
