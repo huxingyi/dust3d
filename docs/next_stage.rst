@@ -28,7 +28,7 @@ https://www.reddit.com/r/gamedev/comments/8dfihy/dust3d_a_brand_new_3d_modeling_
 
 I have shared my full progress here_, including how I back and forth in Qt/C++ choice, and how the Rust language is been used as the core algorithm implementation.
 
-.. _here:: https://dust3d.readthedocs.io/en/latest/origin-and-future.html
+.. _here: https://dust3d.readthedocs.io/en/latest/origin-and-future.html
 
 I wish this post is my new start of the game making journey, **please leave a comment on reddit website to share what's the best idea to achieve the monster animation task, thanks.**
 (I will append the reddit link here when I made this post public on reddit)
