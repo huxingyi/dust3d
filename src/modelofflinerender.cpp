@@ -29,7 +29,7 @@ ModelOfflineRender::~ModelOfflineRender()
     delete m_mesh;
 }
 
-void ModelOfflineRender::updateMesh(Mesh *mesh)
+void ModelOfflineRender::updateMesh(MeshLoader *mesh)
 {
     delete m_mesh;
     m_mesh = mesh;

@@ -7,7 +7,7 @@
 #include <QMatrix4x4>
 #include <QMutex>
 #include <QRubberBand>
-#include "mesh.h"
+#include "meshloader.h"
 #include "modelshaderprogram.h"
 #include "modelmeshbinder.h"
 
@@ -24,7 +24,7 @@ public:
     static bool isTransparent() { return m_transparent; }
     static void setTransparent(bool t) { m_transparent = t; }
     
-    void updateMesh(Mesh *mesh);
+    void updateMesh(MeshLoader *mesh);
     void exportMeshAsObj(const QString &filename);
     void exportMeshAsObjPlusMaterials(const QString &filename);
     void setGraphicsFunctions(SkeletonGraphicsFunctions *graphicsFunctions);

@@ -57,9 +57,9 @@ void MeshGenerator::addPartPreviewRequirement(const QString &partId)
     }
 }
 
-Mesh *MeshGenerator::takeResultMesh()
+MeshLoader *MeshGenerator::takeResultMesh()
 {
-    Mesh *resultMesh = m_mesh;
+    MeshLoader *resultMesh = m_mesh;
     m_mesh = nullptr;
     return resultMesh;
 }
@@ -363,7 +363,7 @@ void MeshGenerator::process()
         if (m_requirePartPreviewMap.find(partIdIt) != m_requirePartPreviewMap.end()) {
             ModelOfflineRender *render = m_partPreviewRenderMap[partIdIt];
             int trimedMeshId = meshlite_trim(meshliteContext, meshId, 1);
-            render->updateMesh(new Mesh(meshliteContext, trimedMeshId, -1, modelColor));
+            render->updateMesh(new MeshLoader(meshliteContext, trimedMeshId, -1, modelColor));
             QImage *image = new QImage(render->toImage(QSize(Theme::previewImageRenderSize, Theme::previewImageRenderSize)));
             m_partPreviewMap[partIdIt] = image;
         }
@@ -414,7 +414,7 @@ void MeshGenerator::process()
     
     if (mergedMeshId > 0) {
         if (m_requirePreview) {
-            m_previewRender->updateMesh(new Mesh(meshliteContext, mergedMeshId));
+            m_previewRender->updateMesh(new MeshLoader(meshliteContext, mergedMeshId));
             QImage *image = new QImage(m_previewRender->toImage(QSize(Theme::previewImageRenderSize, Theme::previewImageRenderSize)));
             m_preview = image;
         }
@@ -426,7 +426,7 @@ void MeshGenerator::process()
         loadGeneratedPositionsToMeshResultContext(meshliteContext, triangulatedFinalMeshId);
         //PositionMap<QColor> positionColorMap;
         //m_meshResultContext->calculatePositionColorMap(positionColorMap);
-        m_mesh = new Mesh(meshliteContext, finalMeshId, triangulatedFinalMeshId, broken ? Theme::broken : Theme::white, &m_meshResultContext->triangleColors());
+        m_mesh = new MeshLoader(meshliteContext, finalMeshId, triangulatedFinalMeshId, broken ? Theme::broken : Theme::white, &m_meshResultContext->triangleColors());
     }
     
     if (m_previewRender) {

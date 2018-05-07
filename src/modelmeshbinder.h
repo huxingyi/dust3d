@@ -4,14 +4,14 @@
 #include <QMutex>
 #include <QOpenGLBuffer>
 #include <QString>
-#include "mesh.h"
+#include "meshloader.h"
 
 class ModelMeshBinder
 {
 public:
     ModelMeshBinder();
     ~ModelMeshBinder();
-    void updateMesh(Mesh *mesh);
+    void updateMesh(MeshLoader *mesh);
     void exportMeshAsObj(const QString &filename);
     void exportMeshAdObjPlusMaterials(const QString &filename);
     void initialize();
@@ -21,7 +21,7 @@ public:
     void hideWireframes();
     bool isWireframesVisible();
 private:
-    Mesh *m_mesh;
+    MeshLoader *m_mesh;
     int m_renderTriangleVertexCount;
     int m_renderEdgeVertexCount;
     bool m_meshUpdated;

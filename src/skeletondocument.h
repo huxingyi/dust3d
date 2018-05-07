@@ -9,7 +9,7 @@
 #include <QImage>
 #include <cmath>
 #include "skeletonsnapshot.h"
-#include "mesh.h"
+#include "meshloader.h"
 #include "meshgenerator.h"
 #include "skeletongenerator.h"
 #include "theme.h"
@@ -238,8 +238,8 @@ public:
     const SkeletonEdge *findEdge(QUuid edgeId) const;
     const SkeletonPart *findPart(QUuid partId) const;
     const SkeletonEdge *findEdgeByNodes(QUuid firstNodeId, QUuid secondNodeId) const;
-    Mesh *takeResultMesh();
-    Mesh *takeResultSkeletonMesh();
+    MeshLoader *takeResultMesh();
+    MeshLoader *takeResultSkeletonMesh();
     void updateTurnaround(const QImage &image);
     bool hasPastableContentInClipboard() const;
     bool undoable() const;
@@ -302,12 +302,12 @@ private:
 private: // need initialize
     bool m_resultMeshIsObsolete;
     MeshGenerator *m_meshGenerator;
-    Mesh *m_resultMesh;
+    MeshLoader *m_resultMesh;
     int m_batchChangeRefCount;
     MeshResultContext *m_currentMeshResultContext;
     bool m_resultSkeletonIsObsolete;
     SkeletonGenerator *m_skeletonGenerator;
-    Mesh *m_resultSkeletonMesh;
+    MeshLoader *m_resultSkeletonMesh;
     bool m_textureIsObsolete;
     TextureGenerator *m_textureGenerator;
     bool m_postProcessResultIsObsolete;

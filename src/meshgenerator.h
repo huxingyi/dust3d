@@ -7,7 +7,7 @@
 #include <set>
 #include <QThread>
 #include "skeletonsnapshot.h"
-#include "mesh.h"
+#include "meshloader.h"
 #include "modelofflinerender.h"
 #include "meshresultcontext.h"
 
@@ -19,7 +19,7 @@ public:
     ~MeshGenerator();
     void addPreviewRequirement();
     void addPartPreviewRequirement(const QString &partId);
-    Mesh *takeResultMesh();
+    MeshLoader *takeResultMesh();
     QImage *takePreview();
     QImage *takePartPreview(const QString &partId);
     MeshResultContext *takeMeshResultContext();
@@ -29,7 +29,7 @@ public slots:
     void process();
 private:
     SkeletonSnapshot *m_snapshot;
-    Mesh *m_mesh;
+    MeshLoader *m_mesh;
     QImage *m_preview;
     std::map<QString, QImage *> m_partPreviewMap;
     bool m_requirePreview;

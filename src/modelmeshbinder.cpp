@@ -22,7 +22,7 @@ ModelMeshBinder::~ModelMeshBinder()
     delete m_mesh;
 }
 
-void ModelMeshBinder::updateMesh(Mesh *mesh)
+void ModelMeshBinder::updateMesh(MeshLoader *mesh)
 {
     QMutexLocker lock(&m_meshMutex);
     if (mesh != m_mesh) {

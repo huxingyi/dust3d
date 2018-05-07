@@ -80,8 +80,8 @@ HEADERS += src/gltffile.h
 SOURCES += src/theme.cpp
 HEADERS += src/theme.h
 
-SOURCES += src/mesh.cpp
-HEADERS += src/mesh.h
+SOURCES += src/meshloader.cpp
+HEADERS += src/meshloader.h
 
 SOURCES += src/meshutil.cpp
 HEADERS += src/meshutil.h
@@ -120,6 +120,8 @@ HEADERS += src/version.h
 QMAKE_CXXFLAGS += -std=c++11
 
 win32 {
+    LIBS += -luser32
+	
 	isEmpty(BOOST_INCLUDEDIR) {
 		BOOST_INCLUDEDIR = $$(BOOST_INCLUDEDIR)
 	}

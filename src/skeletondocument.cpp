@@ -775,23 +775,23 @@ void SkeletonDocument::fromSnapshot(const SkeletonSnapshot &snapshot)
     addFromSnapshot(snapshot);
 }
 
-Mesh *SkeletonDocument::takeResultMesh()
+MeshLoader *SkeletonDocument::takeResultMesh()
 {
-    Mesh *resultMesh = m_resultMesh;
+    MeshLoader *resultMesh = m_resultMesh;
     m_resultMesh = nullptr;
     return resultMesh;
 }
 
-Mesh *SkeletonDocument::takeResultSkeletonMesh()
+MeshLoader *SkeletonDocument::takeResultSkeletonMesh()
 {
-    Mesh *resultSkeletonMesh = m_resultSkeletonMesh;
+    MeshLoader *resultSkeletonMesh = m_resultSkeletonMesh;
     m_resultSkeletonMesh = nullptr;
     return resultSkeletonMesh;
 }
 
 void SkeletonDocument::meshReady()
 {
-    Mesh *resultMesh = m_meshGenerator->takeResultMesh();
+    MeshLoader *resultMesh = m_meshGenerator->takeResultMesh();
     MeshResultContext *meshResultContext = m_meshGenerator->takeMeshResultContext();
     
     QImage *resultPreview = m_meshGenerator->takePreview();
@@ -822,7 +822,7 @@ void SkeletonDocument::meshReady()
     delete m_meshGenerator;
     m_meshGenerator = nullptr;
     
-    qDebug() << "Mesh generation done";
+    qDebug() << "MeshLoader generation done";
     
     emit resultMeshChanged();
     
@@ -853,7 +853,7 @@ void SkeletonDocument::generateMesh()
         return;
     }
     
-    qDebug() << "Mesh generating..";
+    qDebug() << "MeshLoader generating..";
     
     m_resultMeshIsObsolete = false;
     
@@ -942,7 +942,7 @@ void SkeletonDocument::generateSkeleton()
 
 void SkeletonDocument::skeletonReady()
 {
-    Mesh *resultSkeletonMesh = m_skeletonGenerator->takeResultSkeletonMesh();
+    MeshLoader *resultSkeletonMesh = m_skeletonGenerator->takeResultSkeletonMesh();
     
     delete m_resultSkeletonMesh;
     m_resultSkeletonMesh = resultSkeletonMesh;
@@ -973,7 +973,7 @@ void SkeletonDocument::postProcess()
     m_postProcessResultIsObsolete = false;
 
     if (!m_currentMeshResultContext) {
-        qDebug() << "Mesh is null";
+        qDebug() << "MeshLoader is null";
         return;
     }
 

@@ -277,7 +277,7 @@ void ModelWidget::wheelEvent(QWheelEvent *event)
     setGeometry(geometry().marginsAdded(margins));
 }
 
-void ModelWidget::updateMesh(Mesh *mesh)
+void ModelWidget::updateMesh(MeshLoader *mesh)
 {
     m_meshBinder.updateMesh(mesh);
     update();

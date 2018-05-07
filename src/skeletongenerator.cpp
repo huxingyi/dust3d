@@ -19,9 +19,9 @@ SkeletonGenerator::~SkeletonGenerator()
     delete m_meshResultContext;
 }
 
-Mesh *SkeletonGenerator::takeResultSkeletonMesh()
+MeshLoader *SkeletonGenerator::takeResultSkeletonMesh()
 {
-    Mesh *resultSkeletonMesh = m_resultSkeletonMesh;
+    MeshLoader *resultSkeletonMesh = m_resultSkeletonMesh;
     m_resultSkeletonMesh = nullptr;
     return resultSkeletonMesh;
 }
@@ -33,7 +33,7 @@ MeshResultContext *SkeletonGenerator::takeResultContext()
     return resultContext;
 }
 
-Mesh *SkeletonGenerator::createSkeletonMesh()
+MeshLoader *SkeletonGenerator::createSkeletonMesh()
 {
     void *meshliteContext = meshlite_create_context();
     int sklt = meshlite_skeletonmesh_create(meshliteContext);
@@ -63,7 +63,7 @@ Mesh *SkeletonGenerator::createSkeletonMesh()
     }
     
     int meshId = meshlite_skeletonmesh_generate_mesh(meshliteContext, sklt);
-    Mesh *skeletonMesh = new Mesh(meshliteContext, meshId, -1, Theme::green);
+    MeshLoader *skeletonMesh = new MeshLoader(meshliteContext, meshId, -1, Theme::green);
     
     meshlite_destroy_context(meshliteContext);
     

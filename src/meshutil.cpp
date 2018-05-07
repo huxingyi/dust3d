@@ -149,7 +149,7 @@ int unionMeshs(void *meshliteContext, const std::vector<int> &meshIds, int *erro
     for (size_t i = 0; i < meshIds.size(); i++) {
         int triangledMeshId = meshlite_triangulate(meshliteContext, meshIds[i]);
         //if (!meshlite_is_triangulated_manifold(meshliteContext, triangledMeshId))
-        //    qDebug() << "Mesh is not manifold after triangulated:" << triangledMeshId;
+        //    qDebug() << "MeshLoader is not manifold after triangulated:" << triangledMeshId;
         ExactMesh *mesh = makeCgalMeshFromMeshlite<ExactKernel>(meshliteContext, triangledMeshId);
         if (CGAL::Polygon_mesh_processing::does_self_intersect(*mesh)) {
             qDebug() << "CGAL::Polygon_mesh_processing::does_self_intersect:" << i;
