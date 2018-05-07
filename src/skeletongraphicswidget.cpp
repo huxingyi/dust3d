@@ -11,7 +11,7 @@
 #include <QMatrix4x4>
 #include "skeletongraphicswidget.h"
 #include "theme.h"
-#include "util.h"
+#include "dust3dutil.h"
 #include "skeletonxml.h"
 
 SkeletonGraphicsWidget::SkeletonGraphicsWidget(const SkeletonDocument *document) :

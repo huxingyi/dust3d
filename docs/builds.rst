@@ -7,7 +7,7 @@ The core mesh algorithms of Dust3D written in Rust language, located in meshlite
 
     https://github.com/huxingyi/meshlite
 
-The UI of Dust3D built in Qt5, the only thirdparty dependency is CGAL library, however, CGAL will introduce some new dependencies, such as boost and gmp library.
+The UI of Dust3D built in Qt5, the only thirdparty dependency which should been compiled separately is the CGAL library, however, CGAL will introduce some new dependencies, such as boost and gmp library.
 
 Prerequisites
 ===============

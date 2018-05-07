@@ -76,18 +76,8 @@ struct BmeshNodeDistWithWorldCenter
     float dist2;
 };
 
-void SkeletonGenerator::combineAllBmeshSkeletons()
-{
-    m_meshResultContext->resolveBmeshConnectivity();
-    m_meshResultContext->resolveBmeshEdgeDirections();
-    m_meshResultContext->resultParts();
-}
-
 void SkeletonGenerator::process()
 {
-    if (!m_meshResultContext->bmeshNodes.empty())
-        combineAllBmeshSkeletons();
-    
     m_resultSkeletonMesh = createSkeletonMesh();
     
     this->moveToThread(QGuiApplication::instance()->thread());

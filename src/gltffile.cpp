@@ -2,6 +2,8 @@
 #include <QQuaternion>
 #include <QByteArray>
 #include <QDataStream>
+#include <QFileInfo>
+#include <QDir>
 #include "gltffile.h"
 #include "version.h"
 #include "util.h"
@@ -15,7 +17,8 @@
 // http://quaternions.online/
 // https://en.m.wikipedia.org/wiki/Rotation_formalisms_in_three_dimensions?wprov=sfla1
 
-GLTFFileWriter::GLTFFileWriter(MeshResultContext &resultContext)
+GLTFFileWriter::GLTFFileWriter(MeshResultContext &resultContext, const QString &filename) :
+    m_filename(filename)
 {
     const BmeshNode *rootNode = resultContext.centerBmeshNode();
     if (!rootNode) {
@@ -23,6 +26,10 @@ GLTFFileWriter::GLTFFileWriter(MeshResultContext &resultContext)
         return;
     }
     
+    QFileInfo nameInfo(filename);
+    QString textureFilenameWithoutPath = nameInfo.completeBaseName() + ".png";
+    m_textureFilename = nameInfo.path() + QDir::separator() + textureFilenameWithoutPath;
+
     JointInfo rootHandleJoint;
     {
         rootHandleJoint.jointIndex = m_tracedJoints.size();
@@ -117,23 +124,35 @@ GLTFFileWriter::GLTFFileWriter(MeshResultContext &resultContext)
     m_json["bufferViews"][bufferViewIndex]["byteLength"] = binaries.size() - bufferViews0FromOffset;
     alignBinaries();
     bufferViewIndex++;
+    
+    m_json["textures"][0]["sampler"] = 0;
+    m_json["textures"][0]["source"] = 0;
+    
+    m_json["images"][0]["uri"] = textureFilenameWithoutPath.toUtf8().constData();
+    
+    m_json["samplers"][0]["magFilter"] = 9729;
+    m_json["samplers"][0]["minFilter"] = 9987;
+    m_json["samplers"][0]["wrapS"] = 33648;
+    m_json["samplers"][0]["wrapT"] = 33648;
 
     int primitiveIndex = 0;
-    for (const auto &part: resultContext.resultParts()) {
+    for (const auto &part: resultContext.parts()) {
         int bufferViewFromOffset;
         
         m_json["meshes"][0]["primitives"][primitiveIndex]["indices"] = bufferViewIndex;
         m_json["meshes"][0]["primitives"][primitiveIndex]["attributes"]["POSITION"] = bufferViewIndex + 1;
         m_json["meshes"][0]["primitives"][primitiveIndex]["attributes"]["JOINTS_0"] = bufferViewIndex + 2;
         m_json["meshes"][0]["primitives"][primitiveIndex]["attributes"]["WEIGHTS_0"] = bufferViewIndex + 3;
+        m_json["meshes"][0]["primitives"][primitiveIndex]["attributes"]["TEXCOORD_0"] = bufferViewIndex + 4;
         m_json["meshes"][0]["primitives"][primitiveIndex]["material"] = primitiveIndex;
-        
+        /*
         m_json["materials"][primitiveIndex]["pbrMetallicRoughness"]["baseColorFactor"] = {
             part.second.color.redF(),
             part.second.color.greenF(),
             part.second.color.blueF(),
             1.0
-        };
+        };*/
+        m_json["materials"][primitiveIndex]["pbrMetallicRoughness"]["baseColorTexture"]["index"] = 0;
         m_json["materials"][primitiveIndex]["pbrMetallicRoughness"]["metallicFactor"] = 0.0;
         m_json["materials"][primitiveIndex]["pbrMetallicRoughness"]["roughnessFactor"] = 1.0;
         
@@ -235,10 +254,30 @@ GLTFFileWriter::GLTFFileWriter(MeshResultContext &resultContext)
         m_json["accessors"][bufferViewIndex]["count"] =  part.second.weights.size();
         m_json["accessors"][bufferViewIndex]["type"] = "VEC4";
         bufferViewIndex++;
+        
+        bufferViewFromOffset = (int)binaries.size();
+        m_json["bufferViews"][bufferViewIndex]["buffer"] = 0;
+        m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
+        for (const auto &it: part.second.vertexUvs) {
+            stream << (float)it.uv[0] << (float)it.uv[1];
+        }
+        m_json["bufferViews"][bufferViewIndex]["byteLength"] = binaries.size() - bufferViewFromOffset;
+        alignBinaries();
+        m_json["accessors"][bufferViewIndex]["bufferView"] = bufferViewIndex;
+        m_json["accessors"][bufferViewIndex]["byteOffset"] = 0;
+        m_json["accessors"][bufferViewIndex]["componentType"] = 5126;
+        m_json["accessors"][bufferViewIndex]["count"] =  part.second.vertexUvs.size();
+        m_json["accessors"][bufferViewIndex]["type"] = "VEC2";
+        bufferViewIndex++;
     }
     
     m_json["buffers"][0]["uri"] = QString("data:application/octet-stream;base64," + binaries.toBase64()).toUtf8().constData();
     m_json["buffers"][0]["byteLength"] = binaries.size();
+}
+
+const QString &GLTFFileWriter::textureFilenameInGltf()
+{
+    return m_textureFilename;
 }
 
 void GLTFFileWriter::traceBoneFromJoint(MeshResultContext &resultContext, std::pair<int, int> node, std::set<std::pair<int, int>> &visitedNodes, std::set<std::pair<std::pair<int, int>, std::pair<int, int>>> &connections, int parentIndex)
@@ -303,9 +342,9 @@ void GLTFFileWriter::traceBoneFromJoint(MeshResultContext &resultContext, std::p
     }
 }
 
-bool GLTFFileWriter::save(const QString &filename)
+bool GLTFFileWriter::save()
 {
-    QFile file(filename);
+    QFile file(m_filename);
     if (!file.open(QIODevice::WriteOnly)) {
         return false;
     }

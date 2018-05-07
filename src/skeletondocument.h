@@ -13,6 +13,8 @@
 #include "meshgenerator.h"
 #include "skeletongenerator.h"
 #include "theme.h"
+#include "texturegenerator.h"
+#include "meshresultpostprocessor.h"
 
 class SkeletonNode
 {
@@ -186,6 +188,8 @@ signals:
     void editModeChanged();
     void skeletonChanged();
     void resultSkeletonChanged();
+    void resultTextureChanged();
+    void postProcessedResultChanged();
     void partLockStateChanged(QUuid partId);
     void partVisibleStateChanged(QUuid partId);
     void partSubdivStateChanged(QUuid partId);
@@ -206,6 +210,7 @@ signals:
     void partUnchecked(QUuid partId);
     void enableBackgroundBlur();
     void disableBackgroundBlur();
+    void exportReady();
 public: // need initialize
     float originX;
     float originY;
@@ -214,6 +219,9 @@ public: // need initialize
     bool xlocked;
     bool ylocked;
     bool zlocked;
+    QImage *textureGuideImage;
+    QImage *textureImage;
+    QImage *textureBorderImage;
 public:
     SkeletonDocument();
     ~SkeletonDocument();
@@ -239,7 +247,8 @@ public:
     bool isNodeEditable(QUuid nodeId) const;
     bool isEdgeEditable(QUuid edgeId) const;
     bool originSettled() const;
-    MeshResultContext &currentSkeletonResultContext();
+    MeshResultContext &currentPostProcessedResultContext();
+    bool isExportReady() const;
 public slots:
     void removeNode(QUuid nodeId);
     void removeEdge(QUuid edgeId);
@@ -257,6 +266,10 @@ public slots:
     void meshReady();
     void generateSkeleton();
     void skeletonReady();
+    void generateTexture();
+    void textureReady();
+    void postProcess();
+    void postProcessedMeshResultReady();
     void setPartLockState(QUuid partId, bool locked);
     void setPartVisibleState(QUuid partId, bool visible);
     void setPartSubdivState(QUuid partId, bool subdived);
@@ -285,6 +298,7 @@ private:
     bool isPartReadonly(QUuid partId) const;
     QUuid createNode(float x, float y, float z, float radius, QUuid fromNodeId);
     void settleOrigin();
+    void checkExportReadyState();
 private: // need initialize
     bool m_resultMeshIsObsolete;
     MeshGenerator *m_meshGenerator;
@@ -294,7 +308,11 @@ private: // need initialize
     bool m_resultSkeletonIsObsolete;
     SkeletonGenerator *m_skeletonGenerator;
     Mesh *m_resultSkeletonMesh;
-    MeshResultContext *m_currentSkeletonResultContext;
+    bool m_textureIsObsolete;
+    TextureGenerator *m_textureGenerator;
+    bool m_postProcessResultIsObsolete;
+    MeshResultPostProcessor *m_postProcessor;
+    MeshResultContext *m_postProcessedResultContext;
 private:
     static unsigned long m_maxSnapshot;
     std::deque<SkeletonHistoryItem> m_undoItems;

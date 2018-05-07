@@ -9,6 +9,7 @@
 #include <QTextBrowser>
 #include "skeletondocument.h"
 #include "modelwidget.h"
+#include "textureguidewidget.h"
 
 class SkeletonGraphicsWidget;
 
@@ -33,8 +34,7 @@ public slots:
     void saveTo(const QString &saveAsFilename);
     void open();
     void exportModelResult();
-    void exportModelAndMaterialResult();
-    void exportSkeletonResult();
+    void exportGltfResult();
     void newWindow();
     void newDocument();
     void saveAs();
@@ -48,6 +48,8 @@ public slots:
     void updateXlockButtonState();
     void updateYlockButtonState();
     void updateZlockButtonState();
+    void showTextureGuidePreview();
+    void checkDelayedExport();
 private:
     void initAwesomeButton(QPushButton *button);
     void initLockButton(QPushButton *button);
@@ -57,6 +59,8 @@ private:
     SkeletonDocument *m_document;
     bool m_firstShow;
     bool m_documentSaved;
+    TextureGuideWidget *m_textureGuideWidget;
+    bool m_exportRequired;
 private:
     QString m_currentFilename;
     
@@ -75,7 +79,6 @@ private:
     QAction *m_changeTurnaroundAction;
     
     QAction *m_exportModelAction;
-    QAction *m_exportModelAndMaterialsAction;
     QAction *m_exportSkeletonAction;
     
     QMenu *m_editMenu;
@@ -101,6 +104,7 @@ private:
     QAction *m_showPartsListAction;
     QAction *m_showDebugDialogAction;
     QAction *m_toggleWireframeAction;
+    QAction *m_showTextureGuidePreviewAction;
     
     QMenu *m_helpMenu;
     QAction *m_viewSourceAction;

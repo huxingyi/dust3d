@@ -1,5 +1,5 @@
-#ifndef UTIL_H
-#define UTIL_H
+#ifndef DUST3D_UTIL_H
+#define DUST3D_UTIL_H
 #include <QString>
 #include <map>
 #include <cmath>

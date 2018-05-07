@@ -7,7 +7,7 @@
 #include <QApplication>
 #include <QVector3D>
 #include "skeletondocument.h"
-#include "util.h"
+#include "dust3dutil.h"
 #include "skeletonxml.h"
 
 unsigned long SkeletonDocument::m_maxSnapshot = 1000;
@@ -21,6 +21,9 @@ SkeletonDocument::SkeletonDocument() :
     xlocked(false),
     ylocked(false),
     zlocked(false),
+    textureGuideImage(nullptr),
+    textureImage(nullptr),
+    textureBorderImage(nullptr),
     // private
     m_resultMeshIsObsolete(false),
     m_meshGenerator(nullptr),
@@ -30,7 +33,11 @@ SkeletonDocument::SkeletonDocument() :
     m_resultSkeletonIsObsolete(false),
     m_skeletonGenerator(nullptr),
     m_resultSkeletonMesh(nullptr),
-    m_currentSkeletonResultContext(new MeshResultContext)
+    m_textureIsObsolete(false),
+    m_textureGenerator(nullptr),
+    m_postProcessResultIsObsolete(false),
+    m_postProcessor(nullptr),
+    m_postProcessedResultContext(new MeshResultContext)
 {
 }
 
@@ -38,7 +45,10 @@ SkeletonDocument::~SkeletonDocument()
 {
     delete m_resultMesh;
     delete m_resultSkeletonMesh;
-    delete m_currentSkeletonResultContext;
+    delete m_postProcessedResultContext;
+    delete textureGuideImage;
+    delete textureImage;
+    delete textureBorderImage;
 }
 
 void SkeletonDocument::uiReady()
@@ -863,6 +873,52 @@ void SkeletonDocument::generateMesh()
     thread->start();
 }
 
+void SkeletonDocument::generateTexture()
+{
+    if (nullptr != m_textureGenerator) {
+        m_textureIsObsolete = true;
+        return;
+    }
+    
+    qDebug() << "Texture guide generating..";
+    
+    m_textureIsObsolete = false;
+    
+    QThread *thread = new QThread;
+    m_textureGenerator = new TextureGenerator(*m_postProcessedResultContext);
+    m_textureGenerator->moveToThread(thread);
+    connect(thread, &QThread::started, m_textureGenerator, &TextureGenerator::process);
+    connect(m_textureGenerator, &TextureGenerator::finished, this, &SkeletonDocument::textureReady);
+    connect(m_textureGenerator, &TextureGenerator::finished, thread, &QThread::quit);
+    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+    thread->start();
+}
+
+void SkeletonDocument::textureReady()
+{
+    delete textureGuideImage;
+    textureGuideImage = m_textureGenerator->takeResultTextureGuideImage();
+    
+    delete textureImage;
+    textureImage = m_textureGenerator->takeResultTextureImage();
+    
+    delete textureBorderImage;
+    textureBorderImage = m_textureGenerator->takeResultTextureBorderImage();
+    
+    delete m_textureGenerator;
+    m_textureGenerator = nullptr;
+    
+    qDebug() << "Texture guide generation done";
+    
+    emit resultTextureChanged();
+    
+    if (m_textureIsObsolete) {
+        generateTexture();
+    } else {
+        checkExportReadyState();
+    }
+}
+
 void SkeletonDocument::generateSkeleton()
 {
     if (nullptr != m_skeletonGenerator) {
@@ -874,13 +930,8 @@ void SkeletonDocument::generateSkeleton()
     
     m_resultSkeletonIsObsolete = false;
     
-    if (!m_currentMeshResultContext) {
-        qDebug() << "Skeleton is null";
-        return;
-    }
-    
     QThread *thread = new QThread;
-    m_skeletonGenerator = new SkeletonGenerator(*m_currentMeshResultContext);
+    m_skeletonGenerator = new SkeletonGenerator(*m_postProcessedResultContext);
     m_skeletonGenerator->moveToThread(thread);
     connect(thread, &QThread::started, m_skeletonGenerator, &SkeletonGenerator::process);
     connect(m_skeletonGenerator, &SkeletonGenerator::finished, this, &SkeletonDocument::skeletonReady);
@@ -896,11 +947,6 @@ void SkeletonDocument::skeletonReady()
     delete m_resultSkeletonMesh;
     m_resultSkeletonMesh = resultSkeletonMesh;
     
-    MeshResultContext *resultContext = m_skeletonGenerator->takeResultContext();
-    
-    delete m_currentSkeletonResultContext;
-    m_currentSkeletonResultContext = resultContext;
-    
     delete m_skeletonGenerator;
     m_skeletonGenerator = nullptr;
     
@@ -910,12 +956,57 @@ void SkeletonDocument::skeletonReady()
     
     if (m_resultSkeletonIsObsolete) {
         generateSkeleton();
+    } else {
+        checkExportReadyState();
     }
 }
 
-MeshResultContext &SkeletonDocument::currentSkeletonResultContext()
+void SkeletonDocument::postProcess()
 {
-    return *m_currentSkeletonResultContext;
+    if (nullptr != m_postProcessor) {
+        m_postProcessResultIsObsolete = true;
+        return;
+    }
+
+    qDebug() << "Post processing..";
+
+    m_postProcessResultIsObsolete = false;
+
+    if (!m_currentMeshResultContext) {
+        qDebug() << "Mesh is null";
+        return;
+    }
+
+    QThread *thread = new QThread;
+    m_postProcessor = new MeshResultPostProcessor(*m_currentMeshResultContext);
+    m_postProcessor->moveToThread(thread);
+    connect(thread, &QThread::started, m_postProcessor, &MeshResultPostProcessor::process);
+    connect(m_postProcessor, &MeshResultPostProcessor::finished, this, &SkeletonDocument::postProcessedMeshResultReady);
+    connect(m_postProcessor, &MeshResultPostProcessor::finished, thread, &QThread::quit);
+    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+    thread->start();
+}
+
+void SkeletonDocument::postProcessedMeshResultReady()
+{
+    delete m_postProcessedResultContext;
+    m_postProcessedResultContext = m_postProcessor->takePostProcessedResultContext();
+
+    delete m_postProcessor;
+    m_postProcessor = nullptr;
+
+    qDebug() << "Post process done";
+
+    emit postProcessedResultChanged();
+
+    if (m_postProcessResultIsObsolete) {
+        postProcess();
+    }
+}
+
+MeshResultContext &SkeletonDocument::currentPostProcessedResultContext()
+{
+    return *m_postProcessedResultContext;
 }
 
 void SkeletonDocument::setPartLockState(QUuid partId, bool locked)
@@ -1175,4 +1266,24 @@ void SkeletonDocument::setZlockState(bool locked)
         return;
     zlocked = locked;
     emit zlockStateChanged();
+}
+
+bool SkeletonDocument::isExportReady() const
+{
+    if (m_resultMeshIsObsolete ||
+            m_resultSkeletonIsObsolete ||
+            m_textureIsObsolete ||
+            m_postProcessResultIsObsolete ||
+            m_meshGenerator ||
+            m_skeletonGenerator ||
+            m_textureGenerator ||
+            m_postProcessor)
+        return false;
+    return true;
+}
+
+void SkeletonDocument::checkExportReadyState()
+{
+    if (isExportReady())
+        emit exportReady();
 }

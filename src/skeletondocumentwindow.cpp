@@ -22,7 +22,7 @@
 #include "skeletonsnapshot.h"
 #include "skeletonxml.h"
 #include "logbrowser.h"
-#include "util.h"
+#include "dust3dutil.h"
 #include "aboutwidget.h"
 #include "version.h"
 #include "gltffile.h"
@@ -45,7 +45,7 @@ void outputMessage(QtMsgType type, const QMessageLogContext &context, const QStr
         g_logBrowser->outputMessage(type, msg);
 }
 
-void SkeletonDocumentWindow::SkeletonDocumentWindow::showAcknowlegements()
+void SkeletonDocumentWindow::showAcknowlegements()
 {
     if (!g_acknowlegementsWidget) {
         g_acknowlegementsWidget = new QTextBrowser;
@@ -61,7 +61,7 @@ void SkeletonDocumentWindow::SkeletonDocumentWindow::showAcknowlegements()
     g_acknowlegementsWidget->raise();
 }
 
-void SkeletonDocumentWindow::SkeletonDocumentWindow::showAbout()
+void SkeletonDocumentWindow::showAbout()
 {
     if (!g_aboutWidget) {
         g_aboutWidget = new AboutWidget;
@@ -71,10 +71,28 @@ void SkeletonDocumentWindow::SkeletonDocumentWindow::showAbout()
     g_aboutWidget->raise();
 }
 
+void SkeletonDocumentWindow::showTextureGuidePreview()
+{
+    if (!m_textureGuideWidget) {
+        m_textureGuideWidget = new TextureGuideWidget;
+        connect(m_textureGuideWidget, &TextureGuideWidget::regenerate, m_document, &SkeletonDocument::generateMesh);
+    }
+    if (m_textureGuideWidget->isHidden()) {
+        if (m_document->textureGuideImage) {
+            m_textureGuideWidget->updateGuideImage(*m_document->textureGuideImage);
+        }
+    }
+    m_textureGuideWidget->show();
+    m_textureGuideWidget->activateWindow();
+    m_textureGuideWidget->raise();
+}
+
 SkeletonDocumentWindow::SkeletonDocumentWindow() :
     m_document(nullptr),
     m_firstShow(true),
-    m_documentSaved(true)
+    m_documentSaved(true),
+    m_textureGuideWidget(nullptr),
+    m_exportRequired(false)
 {
     if (!g_logBrowser) {
         g_logBrowser = new LogBrowser;
@@ -231,12 +249,8 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(m_exportModelAction, &QAction::triggered, this, &SkeletonDocumentWindow::exportModelResult, Qt::QueuedConnection);
     m_exportMenu->addAction(m_exportModelAction);
     
-    m_exportModelAndMaterialsAction = new QAction(tr("Model and Materials(.obj)..."), this);
-    connect(m_exportModelAndMaterialsAction, &QAction::triggered, this, &SkeletonDocumentWindow::exportModelAndMaterialResult, Qt::QueuedConnection);
-    //m_exportMenu->addAction(m_exportModelAndMaterialsAction);
-    
     m_exportSkeletonAction = new QAction(tr("GL Transmission Format (.gltf)..."), this);
-    connect(m_exportSkeletonAction, &QAction::triggered, this, &SkeletonDocumentWindow::exportSkeletonResult, Qt::QueuedConnection);
+    connect(m_exportSkeletonAction, &QAction::triggered, this, &SkeletonDocumentWindow::exportGltfResult, Qt::QueuedConnection);
     m_exportMenu->addAction(m_exportSkeletonAction);
     
     m_changeTurnaroundAction = new QAction(tr("Change Turnaround..."), this);
@@ -245,7 +259,6 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     
     connect(m_fileMenu, &QMenu::aboutToShow, [=]() {
         m_exportModelAction->setEnabled(m_graphicsWidget->hasItems());
-        m_exportModelAndMaterialsAction->setEnabled(m_graphicsWidget->hasItems());
         m_exportSkeletonAction->setEnabled(m_graphicsWidget->hasItems());
     });
     
@@ -341,6 +354,14 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     });
     m_viewMenu->addAction(m_resetModelWidgetPosAction);
     
+    m_toggleWireframeAction = new QAction(tr("Toggle Wireframe"), this);
+    connect(m_toggleWireframeAction, &QAction::triggered, [=]() {
+        m_modelRenderWidget->toggleWireframe();
+    });
+    m_viewMenu->addAction(m_toggleWireframeAction);
+    
+    m_viewMenu->addSeparator();
+    
     m_toggleSkeletonWidgetAction = new QAction(tr("Toggle Bones"), this);
     connect(m_toggleSkeletonWidgetAction, &QAction::triggered, [=]() {
         if (m_skeletonRenderWidget->isVisible()) {
@@ -355,17 +376,21 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     });
     m_viewMenu->addAction(m_toggleSkeletonWidgetAction);
     
+    m_viewMenu->addSeparator();
+    
+    m_showTextureGuidePreviewAction = new QAction(tr("Show Texture"), this);
+    connect(m_showTextureGuidePreviewAction, &QAction::triggered, this, &SkeletonDocumentWindow::showTextureGuidePreview);
+    m_viewMenu->addAction(m_showTextureGuidePreviewAction);
+    
+    m_viewMenu->addSeparator();
+    
     m_showPartsListAction = new QAction(tr("Show Parts List"), this);
     connect(m_showPartsListAction, &QAction::triggered, [=]() {
         partListWidget->show();
     });
     m_viewMenu->addAction(m_showPartsListAction);
     
-    m_toggleWireframeAction = new QAction(tr("Toggle Wireframe"), this);
-    connect(m_toggleWireframeAction, &QAction::triggered, [=]() {
-        m_modelRenderWidget->toggleWireframe();
-    });
-    m_viewMenu->addAction(m_toggleWireframeAction);
+    m_viewMenu->addSeparator();
     
     m_showDebugDialogAction = new QAction(tr("Show Debug Dialog"), this);
     connect(m_showDebugDialogAction, &QAction::triggered, g_logBrowser, &LogBrowser::showDialog);
@@ -437,6 +462,12 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
         m_document->setZlockState(!m_document->zlocked);
     });
     
+    connect(m_document, &SkeletonDocument::resultTextureChanged, [=]() {
+        if (m_document->textureGuideImage && m_textureGuideWidget && m_textureGuideWidget->isVisible()) {
+            m_textureGuideWidget->updateGuideImage(*m_document->textureGuideImage);
+        }
+    });
+    
     connect(m_document, &SkeletonDocument::editModeChanged, graphicsWidget, &SkeletonGraphicsWidget::editModeChanged);
     
     connect(graphicsWidget, &SkeletonGraphicsWidget::addNode, m_document, &SkeletonDocument::addNode);
@@ -502,7 +533,9 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(m_document, &SkeletonDocument::partUnchecked, partListWidget, &SkeletonPartListWidget::partUnchecked);
     
     connect(m_document, &SkeletonDocument::skeletonChanged, m_document, &SkeletonDocument::generateMesh);
-    connect(m_document, &SkeletonDocument::resultMeshChanged, m_document, &SkeletonDocument::generateSkeleton);
+    connect(m_document, &SkeletonDocument::resultMeshChanged, m_document, &SkeletonDocument::postProcess);
+    connect(m_document, &SkeletonDocument::postProcessedResultChanged, m_document, &SkeletonDocument::generateSkeleton);
+    connect(m_document, &SkeletonDocument::postProcessedResultChanged, m_document, &SkeletonDocument::generateTexture);
     
     connect(m_document, &SkeletonDocument::resultMeshChanged, [=]() {
         m_modelRenderWidget->updateMesh(m_document->takeResultMesh());
@@ -526,6 +559,8 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(m_document, &SkeletonDocument::xlockStateChanged, this, &SkeletonDocumentWindow::updateXlockButtonState);
     connect(m_document, &SkeletonDocument::ylockStateChanged, this, &SkeletonDocumentWindow::updateYlockButtonState);
     connect(m_document, &SkeletonDocument::zlockStateChanged, this, &SkeletonDocumentWindow::updateZlockButtonState);
+    
+    connect(m_document, &SkeletonDocument::exportReady, this, &SkeletonDocumentWindow::checkDelayedExport);
 
     connect(this, &SkeletonDocumentWindow::initialized, m_document, &SkeletonDocument::uiReady);
 }
@@ -666,6 +701,10 @@ void SkeletonDocumentWindow::initLockButton(QPushButton *button)
 
 SkeletonDocumentWindow::~SkeletonDocumentWindow()
 {
+    if (m_textureGuideWidget) {
+        delete m_textureGuideWidget;
+        m_textureGuideWidget = nullptr;
+    }
     g_documentWindows.erase(this);
 }
 
@@ -796,29 +835,30 @@ void SkeletonDocumentWindow::exportModelResult()
     QApplication::restoreOverrideCursor();
 }
 
-void SkeletonDocumentWindow::exportModelAndMaterialResult()
+void SkeletonDocumentWindow::exportGltfResult()
 {
+    if (!m_document->isExportReady()) {
+        m_exportRequired = true;
+        return;
+    }
+    
+    m_exportRequired = false;
+    
     QString filename = QFileDialog::getSaveFileName(this, QString(), QString(),
-       tr("Wavefront (*.obj)"));
+       tr("GL Transmission Format (.gltf)"));
     if (filename.isEmpty()) {
         return;
     }
     QApplication::setOverrideCursor(Qt::WaitCursor);
-    m_modelRenderWidget->exportMeshAsObjPlusMaterials(filename);
-    QApplication::restoreOverrideCursor();
-}
-
-void SkeletonDocumentWindow::exportSkeletonResult()
-{
-    QString filename = QFileDialog::getSaveFileName(this, QString(), QString(),
-       tr("glTF (*.gltf)"));
-    if (filename.isEmpty()) {
-        return;
-    }
-    QApplication::setOverrideCursor(Qt::WaitCursor);
-    MeshResultContext skeletonResult = m_document->currentSkeletonResultContext();
-    GLTFFileWriter gltfFileWriter(skeletonResult);
-    gltfFileWriter.save(filename);
+    MeshResultContext skeletonResult = m_document->currentPostProcessedResultContext();
+    GLTFFileWriter gltfFileWriter(skeletonResult, filename);
+    gltfFileWriter.save();
+    if (m_document->textureImage)
+        m_document->textureImage->save(gltfFileWriter.textureFilenameInGltf());
+    QFileInfo nameInfo(filename);
+    QString guideFilename = nameInfo.path() + QDir::separator() + nameInfo.completeBaseName() + "-BORDER.png";
+    if (m_document->textureBorderImage)
+        m_document->textureBorderImage->save(guideFilename);
     QApplication::restoreOverrideCursor();
 }
 
@@ -844,4 +884,11 @@ void SkeletonDocumentWindow::updateZlockButtonState()
         m_zlockButton->setStyleSheet("QPushButton {color: #252525}");
     else
         m_zlockButton->setStyleSheet("QPushButton {color: #aaebc4}");
+}
+
+void SkeletonDocumentWindow::checkDelayedExport()
+{
+    if (!m_exportRequired)
+        return;
+    exportGltfResult();
 }

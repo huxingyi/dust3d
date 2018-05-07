@@ -59,8 +59,8 @@ HEADERS += src/aboutwidget.h
 SOURCES += src/meshgenerator.cpp
 HEADERS += src/meshgenerator.h
 
-SOURCES += src/util.cpp
-HEADERS += src/util.h
+SOURCES += src/dust3dutil.cpp
+HEADERS += src/dust3dutil.h
 
 SOURCES += src/turnaroundloader.cpp
 HEADERS += src/turnaroundloader.h
@@ -86,14 +86,17 @@ HEADERS += src/mesh.h
 SOURCES += src/meshutil.cpp
 HEADERS += src/meshutil.h
 
-SOURCES += src/uvunwrapper.cpp
-HEADERS += src/uvunwrapper.h
+SOURCES += src/texturegenerator.cpp
+HEADERS += src/texturegenerator.h
 
 SOURCES += src/skeletongenerator.cpp
 HEADERS += src/skeletongenerator.h
 
 SOURCES += src/meshresultcontext.cpp
 HEADERS += src/meshresultcontext.h
+
+SOURCES += src/meshresultpostprocessor.cpp
+HEADERS += src/meshresultpostprocessor.h
 
 SOURCES += src/positionmap.cpp
 HEADERS += src/positionmap.h
@@ -106,6 +109,9 @@ HEADERS += src/logbrowserdialog.h
 
 SOURCES += src/floatnumberwidget.cpp
 HEADERS += src/floatnumberwidget.h
+
+SOURCES += src/textureguidewidget.cpp
+HEADERS += src/textureguidewidget.h
 
 SOURCES += src/main.cpp
 
@@ -180,6 +186,177 @@ unix:!macx {
 }
 
 INCLUDEPATH += thirdparty/json
+
+INCLUDEPATH += thirdparty/thekla_atlas/src
+INCLUDEPATH += thirdparty/thekla_atlas/extern/poshlib
+INCLUDEPATH += thirdparty/thekla_atlas/src/nvmesh
+INCLUDEPATH += thirdparty/thekla_atlas/src/nvmesh/param
+INCLUDEPATH += thirdparty/thekla_atlas/src/nvcore
+INCLUDEPATH += thirdparty/thekla_atlas/src/nvimage
+INCLUDEPATH += thirdparty/thekla_atlas/src/nvmath
+
+SOURCES += thirdparty/thekla_atlas/extern/poshlib/posh.c
+HEADERS += thirdparty/thekla_atlas/extern/poshlib/posh.h
+
+SOURCES += thirdparty/thekla_atlas/src/thekla/thekla_atlas.cpp
+HEADERS += thirdparty/thekla_atlas/src/thekla/thekla_atlas.h
+
+HEADERS += thirdparty/thekla_atlas/src/nvcore/Stream.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvcore/Debug.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvcore/Debug.h
+
+HEADERS += thirdparty/thekla_atlas/src/nvcore/StdStream.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvcore/StrLib.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvcore/StrLib.h
+
+HEADERS += thirdparty/thekla_atlas/src/nvcore/Utils.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvcore/Array.inl
+HEADERS += thirdparty/thekla_atlas/src/nvcore/Array.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvcore/Memory.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvcore/Memory.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvcore/RadixSort.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvcore/RadixSort.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvcore/HashMap.inl
+HEADERS += thirdparty/thekla_atlas/src/nvcore/HashMap.h
+
+HEADERS += thirdparty/thekla_atlas/src/nvcore/Hash.h
+
+HEADERS += thirdparty/thekla_atlas/src/nvcore/ForEach.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmesh/nvmesh.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvmesh/nvmesh.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmesh/BaseMesh.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvmesh/BaseMesh.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmesh/MeshBuilder.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvmesh/MeshBuilder.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmesh/TriMesh.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvmesh/TriMesh.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmesh/QuadTriMesh.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvmesh/QuadTriMesh.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmesh/MeshTopology.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvmesh/MeshTopology.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmesh/halfedge/Edge.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvmesh/halfedge/Edge.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmesh/halfedge/Mesh.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvmesh/halfedge/Mesh.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmesh/halfedge/Face.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvmesh/halfedge/Face.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmesh/halfedge/Vertex.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvmesh/halfedge/Vertex.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmesh/geometry/Bounds.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvmesh/geometry/Bounds.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmesh/geometry/Measurements.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvmesh/geometry/Measurements.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmesh/raster/Raster.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvmesh/raster/raster.h
+
+HEADERS += thirdparty/thekla_atlas/src/nvmesh/raster/ClippedTriangle.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmesh/param/Atlas.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvmesh/param/Atlas.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmesh/param/AtlasBuilder.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvmesh/param/AtlasBuilder.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmesh/param/AtlasPacker.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvmesh/param/AtlasPacker.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmesh/param/ConformalMap.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvmesh/param/ConformalMap.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmesh/param/LeastSquaresConformalMap.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvmesh/param/LeastSquaresConformalMap.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmesh/param/OrthogonalProjectionMap.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvmesh/param/OrthogonalProjectionMap.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmesh/param/ParameterizationQuality.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvmesh/param/ParameterizationQuality.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmesh/param/SingleFaceMap.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvmesh/param/SingleFaceMap.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmesh/param/Util.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvmesh/param/Util.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmesh/weld/VertexWeld.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvmesh/weld/VertexWeld.h
+
+HEADERS += thirdparty/thekla_atlas/src/nvmesh/weld/Weld.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmesh/weld/Snap.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvmesh/weld/Snap.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvimage/Image.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvimage/Image.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvimage/BitMap.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvimage/BitMap.h
+
+HEADERS += thirdparty/thekla_atlas/src/nvimage/nvimage.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmath/Basis.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvmath/Basis.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmath/Box.inl
+SOURCES += thirdparty/thekla_atlas/src/nvmath/Box.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvmath/Box.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmath/Color.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmath/ConvexHull.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvmath/ConvexHull.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmath/Fitting.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvmath/Fitting.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmath/KahanSum.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmath/Matrix.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmath/Plane.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvmath/Plane.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmath/ProximityGrid.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvmath/ProximityGrid.h
+
+HEADERS += thirdparty/thekla_atlas/src/nvmath/Quaternion.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmath/Random.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvmath/Random.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmath/Solver.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvmath/Solver.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmath/Sparse.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvmath/Sparse.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmath/TypeSerialization.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvmath/TypeSerialization.h
+
+SOURCES += thirdparty/thekla_atlas/src/nvmath/Vector.inl
+SOURCES += thirdparty/thekla_atlas/src/nvmath/Vector.cpp
+HEADERS += thirdparty/thekla_atlas/src/nvmath/Vector.h
+
+HEADERS += thirdparty/thekla_atlas/src/nvmath/ftoi.h
 
 INCLUDEPATH += $$MESHLITE_DIR
 LIBS += -L$$MESHLITE_DIR -l$$MESHLITE_LIBNAME

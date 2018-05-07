@@ -1,6 +1,6 @@
 #include <QDebug>
 #include "skeletonsnapshot.h"
-#include "util.h"
+#include "dust3dutil.h"
 
 void SkeletonSnapshot::resolveBoundingBox(QRectF *mainProfile, QRectF *sideProfile, const QString &partId)
 {

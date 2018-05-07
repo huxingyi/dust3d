@@ -14,7 +14,7 @@
 #include "skeletondocument.h"
 #include "turnaroundloader.h"
 #include "theme.h"
-#include "util.h"
+#include "dust3dutil.h"
 
 class SkeletonGraphicsOriginItem : public QGraphicsPolygonItem
 {

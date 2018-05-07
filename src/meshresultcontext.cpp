@@ -4,6 +4,8 @@
 #include <set>
 #include "theme.h"
 #include "meshresultcontext.h"
+#include "thekla_atlas.h"
+#include "positionmap.h"
 
 struct HalfColorEdge
 {
@@ -29,9 +31,11 @@ MeshResultContext::MeshResultContext() :
     m_centerBmeshNodeResolved(false),
     m_bmeshEdgeDirectionsResolved(false),
     m_bmeshNodeNeighborsResolved(false),
-    m_vertexWeightResolved(false),
+    m_vertexWeightsResolved(false),
     m_centerBmeshNode(nullptr),
-    m_resultPartsResolved(false)
+    m_resultPartsResolved(false),
+    m_resultTriangleUvsResolved(false),
+    m_resultRearrangedVerticesResolved(false)
 {
 }
 
@@ -97,12 +101,12 @@ void MeshResultContext::calculateTriangleSourceNodes(std::vector<std::pair<int, 
         positionMap.addPosition(it.position.x(), it.position.y(), it.position.z(),
             std::make_pair(it.bmeshId, it.nodeId));
     }
-    for (auto x = 0u; x < resultTriangles.size(); x++) {
-        const auto triangle = &resultTriangles[x];
+    for (auto x = 0u; x < triangles.size(); x++) {
+        const auto triangle = &triangles[x];
         std::vector<std::pair<std::pair<int, int>, int>> colorTypes;
         for (int i = 0; i < 3; i++) {
             int index = triangle->indicies[i];
-            ResultVertex *resultVertex = &resultVertices[index];
+            ResultVertex *resultVertex = &vertices[index];
             std::pair<int, int> source;
             if (positionMap.findPosition(resultVertex->position.x(), resultVertex->position.y(), resultVertex->position.z(), &source)) {
                 bool colorExisted = false;
@@ -149,7 +153,7 @@ void MeshResultContext::calculateTriangleSourceNodes(std::vector<std::pair<int, 
     std::map<std::pair<int, int>, int> brokenTriangleMapByEdge;
     std::vector<CandidateEdge> candidateEdges;
     for (const auto &x: brokenTriangleSet) {
-        const auto triangle = &resultTriangles[x];
+        const auto triangle = &triangles[x];
         for (int i = 0; i < 3; i++) {
             int oppositeStartIndex = triangle->indicies[(i + 1) % 3];
             int oppositeStopIndex = triangle->indicies[i];
@@ -160,11 +164,11 @@ void MeshResultContext::calculateTriangleSourceNodes(std::vector<std::pair<int, 
             if (findOpposite == halfColorEdgeMap.end())
                 continue;
             QVector3D selfPositions[3] = {
-                resultVertices[triangle->indicies[i]].position, // A
-                resultVertices[triangle->indicies[(i + 1) % 3]].position, // B
-                resultVertices[triangle->indicies[(i + 2) % 3]].position // C
+                vertices[triangle->indicies[i]].position, // A
+                vertices[triangle->indicies[(i + 1) % 3]].position, // B
+                vertices[triangle->indicies[(i + 2) % 3]].position // C
             };
-            QVector3D oppositeCornPosition = resultVertices[findOpposite->second.cornVertexIndex].position; // D
+            QVector3D oppositeCornPosition = vertices[findOpposite->second.cornVertexIndex].position; // D
             QVector3D AB = selfPositions[1] - selfPositions[0];
             float length = AB.length();
             QVector3D AC = selfPositions[2] - selfPositions[0];
@@ -213,7 +217,7 @@ void MeshResultContext::calculateTriangleSourceNodes(std::vector<std::pair<int, 
             brokenTriangleSet.erase(x);
             triangleSourceNodes[x] = candidate.source;
             //qDebug() << "resolved triangle:" << x;
-            const auto triangle = &resultTriangles[x];
+            const auto triangle = &triangles[x];
             for (int i = 0; i < 3; i++) {
                 int oppositeStartIndex = triangle->indicies[(i + 1) % 3];
                 int oppositeStopIndex = triangle->indicies[i];
@@ -226,7 +230,6 @@ void MeshResultContext::calculateTriangleSourceNodes(std::vector<std::pair<int, 
 
 void MeshResultContext::calculateTriangleColors(std::vector<QColor> &triangleColors)
 {
-    PositionMap<QColor> positionColorMap;
     std::map<std::pair<int, int>, QColor> nodeColorMap;
     for (const auto &it: bmeshNodes) {
         nodeColorMap[std::make_pair(it.bmeshId, it.nodeId)] = it.color;
@@ -298,8 +301,8 @@ void MeshResultContext::calculateBmeshConnectivity()
 void MeshResultContext::calculateTriangleEdgeSourceMap(std::map<std::pair<int, int>, std::pair<int, int>> &triangleEdgeSourceMap)
 {
     const std::vector<std::pair<int, int>> sourceNodes = triangleSourceNodes();
-    for (auto x = 0u; x < resultTriangles.size(); x++) {
-        const auto triangle = &resultTriangles[x];
+    for (auto x = 0u; x < triangles.size(); x++) {
+        const auto triangle = &triangles[x];
         for (int i = 0; i < 3; i++) {
             int startIndex = triangle->indicies[i];
             int stopIndex = triangle->indicies[(i + 1) % 3];
@@ -400,11 +403,11 @@ void MeshResultContext::calculateBmeshEdgeDirections()
     bmeshEdges = rearrangedEdges;
 }
 
-const std::vector<std::vector<ResultVertexWeight>> &MeshResultContext::resultVertexWeights()
+const std::vector<std::vector<ResultVertexWeight>> &MeshResultContext::vertexWeights()
 {
-    if (!m_vertexWeightResolved) {
+    if (!m_vertexWeightsResolved) {
         calculateVertexWeights(m_resultVertexWeights);
-        m_vertexWeightResolved = true;
+        m_vertexWeightsResolved = true;
     }
     return m_resultVertexWeights;
 }
@@ -412,11 +415,11 @@ const std::vector<std::vector<ResultVertexWeight>> &MeshResultContext::resultVer
 void MeshResultContext::calculateVertexWeights(std::vector<std::vector<ResultVertexWeight>> &vertexWeights)
 {
     vertexWeights.clear();
-    vertexWeights.resize(resultVertices.size());
-    for (auto i = 0u; i < resultTriangles.size(); i++) {
+    vertexWeights.resize(vertices.size());
+    for (auto i = 0u; i < triangles.size(); i++) {
         std::pair<int, int> sourceNode = triangleSourceNodes()[i];
         for (int j = 0; j < 3; j++) {
-            int vertexIndex = resultTriangles[i].indicies[j];
+            int vertexIndex = triangles[i].indicies[j];
             Q_ASSERT(vertexIndex < (int)vertexWeights.size());
             int foundSourceNodeIndex = -1;
             for (auto k = 0u; k < vertexWeights[vertexIndex].size(); k++) {
@@ -445,7 +448,7 @@ void MeshResultContext::calculateVertexWeights(std::vector<std::vector<ResultVer
     }
 }
 
-const std::map<int, ResultPart> &MeshResultContext::resultParts()
+const std::map<int, ResultPart> &MeshResultContext::parts()
 {
     if (!m_resultPartsResolved) {
         calculateResultParts(m_resultParts);
@@ -454,11 +457,20 @@ const std::map<int, ResultPart> &MeshResultContext::resultParts()
     return m_resultParts;
 }
 
+const std::vector<ResultTriangleUv> &MeshResultContext::triangleUvs()
+{
+    if (!m_resultTriangleUvsResolved) {
+        calculateResultTriangleUvs(m_resultTriangleUvs, m_seamVertices);
+        m_resultTriangleUvsResolved = true;
+    }
+    return m_resultTriangleUvs;
+}
+
 void MeshResultContext::calculateResultParts(std::map<int, ResultPart> &parts)
 {
     std::map<std::pair<int, int>, int> oldVertexToNewMap;
-    for (auto x = 0u; x < resultTriangles.size(); x++) {
-        const auto &triangle = resultTriangles[x];
+    for (auto x = 0u; x < triangles.size(); x++) {
+        const auto &triangle = triangles[x];
         const auto &sourceNode = triangleSourceNodes()[x];
         auto it = parts.find(sourceNode.first);
         if (it == parts.end()) {
@@ -472,16 +484,181 @@ void MeshResultContext::calculateResultParts(std::map<int, ResultPart> &parts)
         for (auto i = 0u; i < 3; i++) {
             auto key = std::make_pair(sourceNode.first, triangle.indicies[i]);
             const auto &it = oldVertexToNewMap.find(key);
-            if (it == oldVertexToNewMap.end()) {
+            if (it == oldVertexToNewMap.end() || m_seamVertices.end() != m_seamVertices.find(triangle.indicies[i])) {
                 int newIndex = resultPart.vertices.size();
-                resultPart.vertices.push_back(resultVertices[triangle.indicies[i]]);
-                resultPart.weights.push_back(resultVertexWeights()[triangle.indicies[i]]);
-                oldVertexToNewMap.insert(std::make_pair(key, newIndex));
+                resultPart.vertices.push_back(vertices[triangle.indicies[i]]);
+                ResultVertexUv vertexUv;
+                vertexUv.uv[0] = triangleUvs()[x].uv[i][0];
+                vertexUv.uv[1] = triangleUvs()[x].uv[i][1];
+                resultPart.vertexUvs.push_back(vertexUv);
+                resultPart.weights.push_back(vertexWeights()[triangle.indicies[i]]);
+                if (it == oldVertexToNewMap.end())
+                    oldVertexToNewMap.insert(std::make_pair(key, newIndex));
                 newTriangle.indicies[i] = newIndex;
             } else {
                 newTriangle.indicies[i] = it->second;
             }
         }
         resultPart.triangles.push_back(newTriangle);
+        resultPart.uvs.push_back(triangleUvs()[x]);
+    }
+}
+
+void MeshResultContext::calculateResultTriangleUvs(std::vector<ResultTriangleUv> &uvs, std::set<int> &seamVertices)
+{
+    using namespace Thekla;
+    
+    const std::vector<ResultRearrangedVertex> &choosenVertices = rearrangedVertices();
+    const std::vector<ResultRearrangedTriangle> &choosenTriangles = rearrangedTriangles();
+    
+    Atlas_Input_Mesh inputMesh;
+ 
+    inputMesh.vertex_count = choosenVertices.size();
+    inputMesh.vertex_array = new Atlas_Input_Vertex[inputMesh.vertex_count];
+    inputMesh.face_count = choosenTriangles.size();
+    inputMesh.face_array = new Atlas_Input_Face[inputMesh.face_count];
+    for (auto i = 0; i < inputMesh.vertex_count; i++) {
+        const ResultRearrangedVertex *src = &choosenVertices[i];
+        Atlas_Input_Vertex *dest = &inputMesh.vertex_array[i];
+        dest->position[0] = src->position.x();
+        dest->position[1] = src->position.y();
+        dest->position[2] = src->position.z();
+        dest->normal[0] = 0;
+        dest->normal[1] = 0;
+        dest->normal[2] = 0;
+        dest->uv[0] = 0;
+        dest->uv[1] = 0;
+        dest->first_colocal = i;
+    }
+    std::map<std::pair<int, int>, int> edgeToFaceIndexMap;
+    for (auto i = 0; i < inputMesh.face_count; i++) {
+        const ResultRearrangedTriangle *src = &choosenTriangles[i];
+        Atlas_Input_Face *dest = &inputMesh.face_array[i];
+        dest->material_index = abs(triangleSourceNodes()[src->originalIndex].first);
+        dest->vertex_index[0] = src->indicies[0];
+        dest->vertex_index[1] = src->indicies[1];
+        dest->vertex_index[2] = src->indicies[2];
+        edgeToFaceIndexMap[std::make_pair(src->indicies[0], src->indicies[1])] = src->originalIndex;
+        edgeToFaceIndexMap[std::make_pair(src->indicies[1], src->indicies[2])] = src->originalIndex;
+        edgeToFaceIndexMap[std::make_pair(src->indicies[2], src->indicies[0])] = src->originalIndex;
+        for (auto j = 0; j < 3; j++) {
+            Atlas_Input_Vertex *vertex = &inputMesh.vertex_array[src->indicies[j]];
+            vertex->normal[0] += src->normal.x();
+            vertex->normal[1] += src->normal.y();
+            vertex->normal[2] += src->normal.z();
+        }
+    }
+    for (auto i = 0; i < inputMesh.vertex_count; i++) {
+        Atlas_Input_Vertex *dest = &inputMesh.vertex_array[i];
+        QVector3D normal(dest->normal[0], dest->normal[1], dest->normal[2]);
+        normal.normalize();
+        dest->normal[0] = normal.x();
+        dest->normal[1] = normal.y();
+        dest->normal[2] = normal.z();
+    }
+    
+    Atlas_Options atlasOptions;
+    atlas_set_default_options(&atlasOptions);
+    
+    atlasOptions.packer_options.witness.packing_quality = 4;
+    
+    Atlas_Error error = Atlas_Error_Success;
+    Atlas_Output_Mesh *outputMesh = atlas_generate(&inputMesh, &atlasOptions, &error);
+    
+    PositionMap<int> uvPositionAndIndexMap;
+    
+    uvs.resize(triangles.size());
+    std::set<int> refs;
+    for (auto i = 0; i < outputMesh->index_count; i += 3) {
+        Atlas_Output_Vertex *outputVertices[] = {
+            &outputMesh->vertex_array[outputMesh->index_array[i + 0]],
+            &outputMesh->vertex_array[outputMesh->index_array[i + 1]],
+            &outputMesh->vertex_array[outputMesh->index_array[i + 2]]
+        };
+        int faceIndex = edgeToFaceIndexMap[std::make_pair(outputVertices[0]->xref, outputVertices[1]->xref)];
+        Q_ASSERT(faceIndex == edgeToFaceIndexMap[std::make_pair(outputVertices[1]->xref, outputVertices[2]->xref)]);
+        Q_ASSERT(faceIndex == edgeToFaceIndexMap[std::make_pair(outputVertices[2]->xref, outputVertices[0]->xref)]);
+        int firstIndex = 0;
+        for (auto j = 0; j < 3; j++) {
+            if (choosenVertices[outputVertices[0]->xref].originalIndex == triangles[faceIndex].indicies[j]) {
+                firstIndex = j;
+                break;
+            }
+        }
+        for (auto j = 0; j < 3; j++) {
+            Atlas_Output_Vertex *from = outputVertices[j];
+            ResultTriangleUv *to = &uvs[faceIndex];
+            to->resolved = true;
+            int toIndex = (firstIndex + j) % 3;
+            to->uv[toIndex][0] = (float)from->uv[0] / outputMesh->atlas_width;
+            to->uv[toIndex][1] = (float)from->uv[1] / outputMesh->atlas_height;
+            int originalRef = choosenVertices[from->xref].originalIndex;
+            if (refs.find(originalRef) == refs.end()) {
+                refs.insert(originalRef);
+                uvPositionAndIndexMap.addPosition(from->uv[0], from->uv[1], (float)originalRef, 0);
+            } else {
+                if (!uvPositionAndIndexMap.findPosition(from->uv[0], from->uv[1], (float)originalRef, nullptr)) {
+                    seamVertices.insert(originalRef);
+                }
+            }
+        }
+    }
+    int unresolvedUvFaceCount = 0;
+    for (auto i = 0u; i < uvs.size(); i++) {
+        ResultTriangleUv *uv = &uvs[i];
+        if (!uv->resolved) {
+            unresolvedUvFaceCount++;
+        }
+    }
+    qDebug() << "unresolvedUvFaceCount:" << unresolvedUvFaceCount;
+    
+    atlas_free(outputMesh);
+}
+
+const std::vector<ResultRearrangedVertex> &MeshResultContext::rearrangedVertices()
+{
+    if (!m_resultRearrangedVerticesResolved) {
+        calculateResultRearrangedVertices(m_rearrangedVertices, m_rearrangedTriangles);
+        m_resultRearrangedVerticesResolved = true;
+    }
+    return m_rearrangedVertices;
+}
+
+const std::vector<ResultRearrangedTriangle> &MeshResultContext::rearrangedTriangles()
+{
+    if (!m_resultRearrangedVerticesResolved) {
+        calculateResultRearrangedVertices(m_rearrangedVertices, m_rearrangedTriangles);
+        m_resultRearrangedVerticesResolved = true;
+    }
+    return m_rearrangedTriangles;
+}
+
+void MeshResultContext::calculateResultRearrangedVertices(std::vector<ResultRearrangedVertex> &rearrangedVertices, std::vector<ResultRearrangedTriangle> &rearrangedTriangles)
+{
+    std::map<std::pair<int, int>, int> oldVertexToNewMap;
+    rearrangedVertices.clear();
+    rearrangedTriangles.clear();
+    for (auto x = 0u; x < triangles.size(); x++) {
+        const auto &triangle = triangles[x];
+        const auto &sourceNode = triangleSourceNodes()[x];
+        ResultRearrangedTriangle newTriangle;
+        newTriangle.normal = triangle.normal;
+        newTriangle.originalIndex = x;
+        for (auto i = 0u; i < 3; i++) {
+            auto key = std::make_pair(sourceNode.first, triangle.indicies[i]);
+            const auto &it = oldVertexToNewMap.find(key);
+            if (it == oldVertexToNewMap.end()) {
+                ResultRearrangedVertex rearrangedVertex;
+                rearrangedVertex.originalIndex = triangle.indicies[i];
+                rearrangedVertex.position = vertices[triangle.indicies[i]].position;
+                int newIndex = rearrangedVertices.size();
+                rearrangedVertices.push_back(rearrangedVertex);
+                oldVertexToNewMap.insert(std::make_pair(key, newIndex));
+                newTriangle.indicies[i] = newIndex;
+            } else {
+                newTriangle.indicies[i] = it->second;
+            }
+        }
+        rearrangedTriangles.push_back(newTriangle);
     }
 }

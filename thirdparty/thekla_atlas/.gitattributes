@@ -1,0 +1,10 @@
+* text=auto
+
+*.c text
+*.cpp text
+*.h text
+*.md text
+*.txt text
+
+*.sln text eol=crlf
+*.vcproj text eol=crlf

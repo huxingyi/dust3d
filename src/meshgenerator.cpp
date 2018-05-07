@@ -1,7 +1,7 @@
 #include <vector>
 #include <QGuiApplication>
 #include "meshgenerator.h"
-#include "util.h"
+#include "dust3dutil.h"
 #include "skeletondocument.h"
 #include "meshlite.h"
 #include "modelofflinerender.h"
@@ -120,8 +120,8 @@ void MeshGenerator::loadGeneratedPositionsToMeshResultContext(void *meshliteCont
     for (int i = 0, positionIndex = 0; i < positionCount; i++, positionIndex+=3) {
         ResultVertex vertex;
         vertex.position = QVector3D(positionBuffer[positionIndex + 0], positionBuffer[positionIndex + 1], positionBuffer[positionIndex + 2]);
-        verticesMap[i] = m_meshResultContext->resultVertices.size();
-        m_meshResultContext->resultVertices.push_back(vertex);
+        verticesMap[i] = m_meshResultContext->vertices.size();
+        m_meshResultContext->vertices.push_back(vertex);
     }
     int faceCount = meshlite_get_face_count(meshliteContext, triangulatedMeshId);
     int triangleIndexBufferLen = faceCount * 3;
@@ -137,7 +137,7 @@ void MeshGenerator::loadGeneratedPositionsToMeshResultContext(void *meshliteCont
         triangle.indicies[1] = verticesMap[triangleIndexBuffer[triangleVertIndex + 1]];
         triangle.indicies[2] = verticesMap[triangleIndexBuffer[triangleVertIndex + 2]];
         triangle.normal = QVector3D(normalBuffer[normalIndex + 0], normalBuffer[normalIndex + 1], normalBuffer[normalIndex + 2]);
-        m_meshResultContext->resultTriangles.push_back(triangle);
+        m_meshResultContext->triangles.push_back(triangle);
     }
     delete[] positionBuffer;
     delete[] triangleIndexBuffer;

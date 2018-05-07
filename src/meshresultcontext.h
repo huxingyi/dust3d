@@ -51,12 +51,38 @@ struct ResultVertexWeight
     float weight;
 };
 
+struct ResultTriangleUv
+{
+    float uv[3][2];
+    bool resolved;
+};
+
+struct ResultVertexUv
+{
+    float uv[2];
+};
+
 struct ResultPart
 {
     QColor color;
     std::vector<ResultVertex> vertices;
     std::vector<std::vector<ResultVertexWeight>> weights;
     std::vector<ResultTriangle> triangles;
+    std::vector<ResultTriangleUv> uvs;
+    std::vector<ResultVertexUv> vertexUvs;
+};
+
+struct ResultRearrangedVertex
+{
+    QVector3D position;
+    int originalIndex;
+};
+
+struct ResultRearrangedTriangle
+{
+    int indicies[3];
+    QVector3D normal;
+    int originalIndex;
 };
 
 class MeshResultContext
@@ -65,8 +91,8 @@ public:
     std::vector<BmeshNode> bmeshNodes;
     std::vector<BmeshVertex> bmeshVertices;
     std::vector<BmeshEdge> bmeshEdges;
-    std::vector<ResultVertex> resultVertices;
-    std::vector<ResultTriangle> resultTriangles;
+    std::vector<ResultVertex> vertices;
+    std::vector<ResultTriangle> triangles;
     MeshResultContext();
 public:
     const std::vector<std::pair<int, int>> &triangleSourceNodes();
@@ -77,8 +103,11 @@ public:
     void resolveBmeshConnectivity();
     void resolveBmeshEdgeDirections();
     const std::map<std::pair<int, int>, std::vector<std::pair<int, int>>> &nodeNeighbors();
-    const std::vector<std::vector<ResultVertexWeight>> &resultVertexWeights();
-    const std::map<int, ResultPart> &resultParts();
+    const std::vector<std::vector<ResultVertexWeight>> &vertexWeights();
+    const std::map<int, ResultPart> &parts();
+    const std::vector<ResultTriangleUv> &triangleUvs();
+    const std::vector<ResultRearrangedVertex> &rearrangedVertices();
+    const std::vector<ResultRearrangedTriangle> &rearrangedTriangles();
 private:
     bool m_triangleSourceResolved;
     bool m_triangleColorResolved;
@@ -88,9 +117,11 @@ private:
     bool m_centerBmeshNodeResolved;
     bool m_bmeshEdgeDirectionsResolved;
     bool m_bmeshNodeNeighborsResolved;
-    bool m_vertexWeightResolved;
+    bool m_vertexWeightsResolved;
     BmeshNode *m_centerBmeshNode;
     bool m_resultPartsResolved;
+    bool m_resultTriangleUvsResolved;
+    bool m_resultRearrangedVerticesResolved;
 private:
     std::vector<std::pair<int, int>> m_triangleSourceNodes;
     std::vector<QColor> m_triangleColors;
@@ -99,6 +130,10 @@ private:
     std::map<std::pair<int, int>, std::vector<std::pair<int, int>>> m_nodeNeighbors;
     std::vector<std::vector<ResultVertexWeight>> m_resultVertexWeights;
     std::map<int, ResultPart> m_resultParts;
+    std::vector<ResultTriangleUv> m_resultTriangleUvs;
+    std::set<int> m_seamVertices;
+    std::vector<ResultRearrangedVertex> m_rearrangedVertices;
+    std::vector<ResultRearrangedTriangle> m_rearrangedTriangles;
 private:
     void calculateTriangleSourceNodes(std::vector<std::pair<int, int>> &triangleSourceNodes);
     void calculateTriangleColors(std::vector<QColor> &triangleColors);
@@ -112,6 +147,8 @@ private:
     void calculateBmeshNodeNeighbors(std::map<std::pair<int, int>, std::vector<std::pair<int, int>>> &nodeNeighbors);
     void calculateVertexWeights(std::vector<std::vector<ResultVertexWeight>> &vertexWeights);
     void calculateResultParts(std::map<int, ResultPart> &parts);
+    void calculateResultTriangleUvs(std::vector<ResultTriangleUv> &uvs, std::set<int> &seamVertices);
+    void calculateResultRearrangedVertices(std::vector<ResultRearrangedVertex> &rearrangedVertices, std::vector<ResultRearrangedTriangle> &rearrangedTriangles);
 };
 
 #endif

@@ -1,0 +1,22 @@
+#ifndef NV_CONFIG
+#define NV_CONFIG
+
+#cmakedefine NV_HAVE_UNISTD_H
+#cmakedefine NV_HAVE_STDARG_H
+#cmakedefine NV_HAVE_SIGNAL_H
+#cmakedefine NV_HAVE_EXECINFO_H
+#cmakedefine NV_HAVE_MALLOC_H
+
+#cmakedefine NV_HAVE_OPENMP
+#cmakedefine NV_HAVE_DISPATCH_H
+
+#define NV_HAVE_STBIMAGE
+//#cmakedefine NV_HAVE_PNG
+//#cmakedefine NV_HAVE_JPEG
+//#cmakedefine NV_HAVE_TIFF
+//#cmakedefine NV_HAVE_OPENEXR
+//#cmakedefine NV_HAVE_FREEIMAGE
+
+#cmakedefine NV_HAVE_MAYA
+
+#endif // NV_CONFIG
