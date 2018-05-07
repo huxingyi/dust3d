@@ -188,6 +188,7 @@ unix:!macx {
 INCLUDEPATH += thirdparty/json
 
 INCLUDEPATH += thirdparty/thekla_atlas/src
+INCLUDEPATH += thirdparty/thekla_atlas/src/thekla
 INCLUDEPATH += thirdparty/thekla_atlas/extern/poshlib
 INCLUDEPATH += thirdparty/thekla_atlas/src/nvmesh
 INCLUDEPATH += thirdparty/thekla_atlas/src/nvmesh/param
