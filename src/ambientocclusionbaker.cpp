@@ -1,6 +1,7 @@
 #include <QOpenGLFramebufferObjectFormat>
 #include <QThread>
 #include <QDebug>
+#include <QtGlobal>
 #define LIGHTMAPPER_IMPLEMENTATION
 #include "qtlightmapper.h"
 #include "ambientocclusionbaker.h"
@@ -15,8 +16,9 @@ AmbientOcclusionBaker::AmbientOcclusionBaker(QScreen *targetScreen) :
     m_bakeHeight(256),
     m_ambientOcclusionImage(nullptr)
 {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)
     m_useCore = QSurfaceFormat::defaultFormat().profile() == QSurfaceFormat::CoreProfile;
-    
+#endif
     create();
     m_context = new QOpenGLContext();
     
@@ -62,6 +64,7 @@ void AmbientOcclusionBaker::setRenderThread(QThread *thread)
 
 void AmbientOcclusionBaker::bake()
 {
+#if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)
     if (m_meshResultContext.parts().empty())
         return;
     
@@ -213,4 +216,5 @@ void AmbientOcclusionBaker::bake()
     free(sceneNormals);
 
     m_context->doneCurrent();
+#endif
 }

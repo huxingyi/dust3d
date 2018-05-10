@@ -5,6 +5,10 @@
 #include "Utils.h"
 
 #include <stdlib.h>
+#if defined(__APPLE__)
+#else
+#include <malloc.h>
+#endif
 
 #define USE_EFENCE 0
 

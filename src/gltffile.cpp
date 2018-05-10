@@ -6,7 +6,7 @@
 #include <QDir>
 #include "gltffile.h"
 #include "version.h"
-#include "util.h"
+#include "dust3dutil.h"
 
 // Play with glTF online:
 // https://gltf-viewer.donmccurdy.com/

@@ -10,7 +10,11 @@
 #include "meshresultcontext.h"
 #include "meshloader.h"
 
+#if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)
 class AmbientOcclusionBaker : QOffscreenSurface, public QtLightMapper
+#else
+class AmbientOcclusionBaker : QOffscreenSurface
+#endif
 {
 public:
 	AmbientOcclusionBaker(QScreen *targetScreen = Q_NULLPTR);

@@ -15,6 +15,8 @@
 * you are granted a perpetual, irrevocable license to copy *
 * and modify this file however you want.                   *
 ***********************************************************/
+#include <QtGlobal>
+#if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)
 
 #ifndef QT_LIGHTMAPPER_H
 #define QT_LIGHTMAPPER_H
@@ -166,10 +168,10 @@ GLuint loadShader(GLenum type, const char *source);
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <math.h>
 #include <float.h>
 #include <assert.h>
 #include <limits.h>
+#include <cmath>
 
 #define LM_SWAP(type, a, b) { type tmp = (a); (a) = (b); (b) = tmp; }
 
@@ -180,7 +182,7 @@ GLuint loadShader(GLenum type, const char *source);
 #if defined(_MSC_VER) && (_MSC_VER <= 1700)
 static inline lm_bool lm_finite(float a) { return _finite(a); }
 #else
-static inline lm_bool lm_finite(float a) { return isfinite(a); }
+static inline lm_bool lm_finite(float a) { return std::isfinite(a); }
 #endif
 
 static inline int      lm_mini      (int     a, int     b) { return a < b ? a : b; }
@@ -2087,3 +2089,5 @@ void QtLightMapper::destroyScene(scene_t *scene)
 }
 
 #endif // LIGHTMAPPER_IMPLEMENTATION
+
+#endif

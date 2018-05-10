@@ -99,7 +99,7 @@ namespace nv
 
 } // nv namespace
 
-#include "box.inl"
+#include "Box.inl"
 
 
 #endif // NV_MATH_BOX_H
