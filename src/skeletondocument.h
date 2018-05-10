@@ -222,6 +222,8 @@ public: // need initialize
     QImage *textureGuideImage;
     QImage *textureImage;
     QImage *textureBorderImage;
+    QImage *textureAmbientOcclusionImage;
+    QImage *textureColorImage;
 public:
     SkeletonDocument();
     ~SkeletonDocument();
@@ -240,6 +242,7 @@ public:
     const SkeletonEdge *findEdgeByNodes(QUuid firstNodeId, QUuid secondNodeId) const;
     MeshLoader *takeResultMesh();
     MeshLoader *takeResultSkeletonMesh();
+    MeshLoader *takeResultTextureMesh();
     void updateTurnaround(const QImage &image);
     bool hasPastableContentInClipboard() const;
     bool undoable() const;
@@ -313,6 +316,7 @@ private: // need initialize
     bool m_postProcessResultIsObsolete;
     MeshResultPostProcessor *m_postProcessor;
     MeshResultContext *m_postProcessedResultContext;
+    MeshLoader *m_resultTextureMesh;
 private:
     static unsigned long m_maxSnapshot;
     std::deque<SkeletonHistoryItem> m_undoItems;

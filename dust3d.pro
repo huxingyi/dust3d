@@ -110,8 +110,13 @@ HEADERS += src/logbrowserdialog.h
 SOURCES += src/floatnumberwidget.cpp
 HEADERS += src/floatnumberwidget.h
 
-SOURCES += src/textureguidewidget.cpp
-HEADERS += src/textureguidewidget.h
+SOURCES += src/exportpreviewwidget.cpp
+HEADERS += src/exportpreviewwidget.h
+
+SOURCES += src/ambientocclusionbaker.cpp
+HEADERS += src/ambientocclusionbaker.h
+
+HEADERS += src/qtlightmapper.h
 
 SOURCES += src/main.cpp
 
@@ -186,6 +191,11 @@ unix:!macx {
 	MPFR_INCLUDEDIR = /usr/local/include
 	MPFR_LIBDIR = /usr/local/lib
 }
+
+INCLUDEPATH += thirdparty/QtWaitingSpinner
+
+SOURCES += thirdparty/QtWaitingSpinner/waitingspinnerwidget.cpp
+HEADERS += thirdparty/QtWaitingSpinner/waitingspinnerwidget.h
 
 INCLUDEPATH += thirdparty/json
 

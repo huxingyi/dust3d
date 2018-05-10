@@ -45,9 +45,10 @@ public slots:
     void showDeformSettingPopup(const QPoint &pos);
     void showColorSettingPopup(const QPoint &pos);
     void showContextMenu(const QPoint &pos);
-private:
+private: // need initialize
     const SkeletonDocument *m_document;
     QUuid m_partId;
+private:
     QLabel *m_previewLabel;
     QPushButton *m_visibleButton;
     QPushButton *m_lockButton;
@@ -65,6 +66,7 @@ private:
     void initToolButtonWithoutFont(QPushButton *button);
     void initButton(QPushButton *button);
     void updateButton(QPushButton *button, QChar icon, bool highlighted);
+    void updateAllButtons();
 };
 
 class SkeletonPartListWidget : public QListWidget

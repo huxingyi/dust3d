@@ -9,7 +9,7 @@
 #include <QTextBrowser>
 #include "skeletondocument.h"
 #include "modelwidget.h"
-#include "textureguidewidget.h"
+#include "exportpreviewwidget.h"
 
 class SkeletonGraphicsWidget;
 
@@ -35,6 +35,7 @@ public slots:
     void open();
     void exportModelResult();
     void exportGltfResult();
+    void showExportPreview();
     void newWindow();
     void newDocument();
     void saveAs();
@@ -48,8 +49,6 @@ public slots:
     void updateXlockButtonState();
     void updateYlockButtonState();
     void updateZlockButtonState();
-    void showTextureGuidePreview();
-    void checkDelayedExport();
 private:
     void initAwesomeButton(QPushButton *button);
     void initLockButton(QPushButton *button);
@@ -59,13 +58,12 @@ private:
     SkeletonDocument *m_document;
     bool m_firstShow;
     bool m_documentSaved;
-    TextureGuideWidget *m_textureGuideWidget;
-    bool m_exportRequired;
+    ExportPreviewWidget *m_exportPreviewWidget;
 private:
     QString m_currentFilename;
     
     ModelWidget *m_modelRenderWidget;
-    ModelWidget *m_skeletonRenderWidget;
+    //ModelWidget *m_skeletonRenderWidget;
     SkeletonGraphicsWidget *m_graphicsWidget;
     
     QMenu *m_fileMenu;
@@ -100,11 +98,9 @@ private:
     
     QMenu *m_viewMenu;
     QAction *m_resetModelWidgetPosAction;
-    QAction *m_toggleSkeletonWidgetAction;
     QAction *m_showPartsListAction;
     QAction *m_showDebugDialogAction;
     QAction *m_toggleWireframeAction;
-    QAction *m_showTextureGuidePreviewAction;
     
     QMenu *m_helpMenu;
     QAction *m_viewSourceAction;
@@ -117,6 +113,7 @@ private:
     QPushButton *m_ylockButton;
     QPushButton *m_zlockButton;
     
+    QMetaObject::Connection m_partListDockerVisibleSwitchConnection;
 public:
     static int m_modelRenderWidgetInitialX;
     static int m_modelRenderWidgetInitialY;

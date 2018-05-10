@@ -10,6 +10,7 @@
 #include "positionmap.h"
 
 bool MeshGenerator::enableDebug = false;
+bool MeshGenerator::disableUnion = false;
 
 MeshGenerator::MeshGenerator(SkeletonSnapshot *snapshot, QThread *thread) :
     m_snapshot(snapshot),
@@ -403,7 +404,10 @@ void MeshGenerator::process()
     int mergedMeshId = 0;
     if (meshIds.size() > 0) {
         int errorCount = 0;
-        mergedMeshId = unionMeshs(meshliteContext, meshIds, &errorCount);
+        if (disableUnion)
+            mergedMeshId = mergeMeshs(meshliteContext, meshIds);
+        else
+            mergedMeshId = unionMeshs(meshliteContext, meshIds, &errorCount);
         if (errorCount)
             broken = true;
         else if (mergedMeshId > 0)
@@ -419,13 +423,8 @@ void MeshGenerator::process()
             m_preview = image;
         }
         int finalMeshId = mergedMeshId;
-        //if (!originSettled) {
-        //    finalMeshId = meshlite_trim(meshliteContext, mergedMeshId, 1);
-        //}
         int triangulatedFinalMeshId = meshlite_triangulate(meshliteContext, mergedMeshId);
         loadGeneratedPositionsToMeshResultContext(meshliteContext, triangulatedFinalMeshId);
-        //PositionMap<QColor> positionColorMap;
-        //m_meshResultContext->calculatePositionColorMap(positionColorMap);
         m_mesh = new MeshLoader(meshliteContext, finalMeshId, triangulatedFinalMeshId, broken ? Theme::broken : Theme::white, &m_meshResultContext->triangleColors());
     }
     

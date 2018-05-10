@@ -5,6 +5,7 @@
 #include <QWidgetAction>
 #include <QScrollBar>
 #include <QColorDialog>
+#include <QSizePolicy>
 #include "skeletonpartlistwidget.h"
 #include "theme.h"
 #include "floatnumberwidget.h"
@@ -13,37 +14,40 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     m_document(document),
     m_partId(partId)
 {
+    QSizePolicy retainSizePolicy = sizePolicy();
+    retainSizePolicy.setRetainSizeWhenHidden(true);
+
     m_visibleButton = new QPushButton();
+    m_visibleButton->setSizePolicy(retainSizePolicy);
     initButton(m_visibleButton);
-    updateVisibleButton();
     
     m_lockButton = new QPushButton();
+    m_lockButton->setSizePolicy(retainSizePolicy);
     initButton(m_lockButton);
-    updateLockButton();
     
     m_subdivButton = new QPushButton();
+    m_subdivButton->setSizePolicy(retainSizePolicy);
     initButton(m_subdivButton);
-    updateSubdivButton();
     
     m_disableButton = new QPushButton();
+    m_disableButton->setSizePolicy(retainSizePolicy);
     initButton(m_disableButton);
-    updateDisableButton();
     
     m_xMirrorButton = new QPushButton();
+    m_xMirrorButton->setSizePolicy(retainSizePolicy);
     initButton(m_xMirrorButton);
-    updateXmirrorButton();
     
     m_deformButton = new QPushButton();
+    m_deformButton->setSizePolicy(retainSizePolicy);
     initButton(m_deformButton);
-    updateDeformButton();
     
     m_roundButton = new QPushButton;
+    m_roundButton->setSizePolicy(retainSizePolicy);
     initButton(m_roundButton);
-    updateRoundButton();
     
     m_colorButton = new QPushButton;
+    m_colorButton->setSizePolicy(retainSizePolicy);
     initButton(m_colorButton);
-    updateColorButton();
     
     m_previewLabel = new QLabel;
     
@@ -70,13 +74,13 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     QWidget *hrLightWidget = new QWidget;
     hrLightWidget->setFixedHeight(1);
     hrLightWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    hrLightWidget->setStyleSheet(QString("background-color: #565656;"));
+    //hrLightWidget->setStyleSheet(QString("background-color: #565656;"));
     hrLightWidget->setContentsMargins(0, 0, 0, 0);
     
     QWidget *hrWidget = new QWidget;
     hrWidget->setFixedHeight(1);
     hrWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    hrWidget->setStyleSheet(QString("background-color: #1a1a1a;"));
+    //hrWidget->setStyleSheet(QString("background-color: #1a1a1a;"));
     hrWidget->setContentsMargins(0, 0, 0, 0);
     
     QVBoxLayout *toolsLayout = new QVBoxLayout;
@@ -95,9 +99,9 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     
     QHBoxLayout *backgroundLayout = new QHBoxLayout;
     backgroundLayout->setSpacing(0);
-    backgroundLayout->setContentsMargins(0, 0, 0, 0);
+    backgroundLayout->setContentsMargins(5, 0, 0, 0);
     backgroundLayout->addWidget(backgroundWidget);
-    backgroundLayout->addSpacing(2);
+    backgroundLayout->addSpacing(19);
 
     QVBoxLayout *mainLayout = new QVBoxLayout;
     mainLayout->setSpacing(0);
@@ -203,6 +207,22 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, &SkeletonPartWidget::customContextMenuRequested, this, &SkeletonPartWidget::showContextMenu);
+    
+    updateAllButtons();
+    
+    setMouseTracking(true);
+}
+
+void SkeletonPartWidget::updateAllButtons()
+{
+    updateVisibleButton();
+    updateLockButton();
+    updateSubdivButton();
+    updateDisableButton();
+    updateXmirrorButton();
+    updateDeformButton();
+    updateRoundButton();
+    updateColorButton();
 }
 
 void SkeletonPartWidget::showContextMenu(const QPoint &pos)
@@ -277,7 +297,7 @@ void SkeletonPartWidget::showContextMenu(const QPoint &pos)
 void SkeletonPartWidget::updateCheckedState(bool checked)
 {
     if (checked)
-        m_backgroundWidget->setStyleSheet("QWidget#background {border: 1px solid #fc6621;}");
+        m_backgroundWidget->setStyleSheet("QWidget#background {border: 1px solid #f7d9c8;}");
     else
         m_backgroundWidget->setStyleSheet("QWidget#background {border: 1px solid transparent;}");
 }
@@ -427,10 +447,17 @@ void SkeletonPartWidget::initButton(QPushButton *button)
 void SkeletonPartWidget::updateButton(QPushButton *button, QChar icon, bool highlighted)
 {
     button->setText(icon);
+    QColor color;
     if (highlighted)
-        button->setStyleSheet("QPushButton {border: none; background: none; color: #fc6621;}");
+        color = QColor("#fc6621");
     else
-        button->setStyleSheet("QPushButton {border: none; background: none; color: #525252;}");
+        color = QColor("#525252");
+
+    color = color.toHsv();
+    color.setHsv(color.hue(), color.saturation() / 5, color.value() * 2 / 3);
+    color = color.toRgb();
+
+    button->setStyleSheet("QPushButton {border: none; background: none; color: " + color.name() + ";}");
 }
 
 void SkeletonPartWidget::updatePreview()
@@ -571,7 +598,12 @@ SkeletonPartListWidget::SkeletonPartListWidget(const SkeletonDocument *document,
     setSpacing(0);
     setContentsMargins(0, 0, 0, 0);
     
-    setFixedWidth(Theme::previewImageSize + Theme::miniIconSize);
+    QPalette palette = this->palette();
+    palette.setColor(QPalette::Window, Qt::transparent);
+    palette.setColor(QPalette::Base, Qt::transparent);
+    setPalette(palette);
+    
+    setFixedWidth(Theme::previewImageSize + Theme::miniIconSize + 13);
     setMinimumHeight(Theme::previewImageSize + 3);
 }
 
@@ -598,7 +630,8 @@ void SkeletonPartListWidget::partListChanged()
         QListWidgetItem *item = new QListWidgetItem(this);
         item->setSizeHint(QSize(width(), Theme::previewImageSize));
         item->setData(Qt::UserRole, QVariant(row));
-        item->setBackground(QWidget::palette().color(QPalette::Button));
+        //item->setBackground(QWidget::palette().color(QPalette::Button));
+        item->setBackground(Theme::black);
         addItem(item);
         SkeletonPartWidget *widget = new SkeletonPartWidget(m_document, partId);
         setItemWidget(item, widget);

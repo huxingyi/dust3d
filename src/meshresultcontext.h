@@ -66,6 +66,7 @@ struct ResultPart
 {
     QColor color;
     std::vector<ResultVertex> vertices;
+    std::vector<QVector3D> interpolatedVertexNormals;
     std::vector<std::vector<ResultVertexWeight>> weights;
     std::vector<ResultTriangle> triangles;
     std::vector<ResultTriangleUv> uvs;

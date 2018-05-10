@@ -13,13 +13,16 @@ ModelMeshBinder::ModelMeshBinder() :
     m_renderTriangleVertexCount(0),
     m_renderEdgeVertexCount(0),
     m_meshUpdated(false),
-    m_showWireframes(false)
+    m_showWireframes(false),
+    m_hasTexture(false),
+    m_texture(nullptr)
 {
 }
 
 ModelMeshBinder::~ModelMeshBinder()
 {
     delete m_mesh;
+    delete m_texture;
 }
 
 void ModelMeshBinder::updateMesh(MeshLoader *mesh)
@@ -109,12 +112,18 @@ void ModelMeshBinder::initialize()
     m_vaoEdge.create();
 }
 
-void ModelMeshBinder::paint()
+void ModelMeshBinder::paint(ModelShaderProgram *program)
 {
     {
         QMutexLocker lock(&m_meshMutex);
         if (m_meshUpdated) {
             if (m_mesh) {
+                m_hasTexture = nullptr != m_mesh->textureImage();
+                delete m_texture;
+                m_texture = nullptr;
+                if (m_hasTexture) {
+                    m_texture = new QOpenGLTexture(*m_mesh->textureImage());
+                }
                 {
                     QOpenGLVertexArrayObject::Binder vaoBinder(&m_vaoTriangle);
                     if (m_vboTriangle.isCreated())
@@ -127,9 +136,11 @@ void ModelMeshBinder::paint()
                     f->glEnableVertexAttribArray(0);
                     f->glEnableVertexAttribArray(1);
                     f->glEnableVertexAttribArray(2);
-                    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(GLfloat), 0);
-                    f->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(GLfloat), reinterpret_cast<void *>(3 * sizeof(GLfloat)));
-                    f->glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(GLfloat), reinterpret_cast<void *>(6 * sizeof(GLfloat)));
+                    f->glEnableVertexAttribArray(3);
+                    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(GLfloat), 0);
+                    f->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(GLfloat), reinterpret_cast<void *>(3 * sizeof(GLfloat)));
+                    f->glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(GLfloat), reinterpret_cast<void *>(6 * sizeof(GLfloat)));
+                    f->glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 11 * sizeof(GLfloat), reinterpret_cast<void *>(9 * sizeof(GLfloat)));
                     m_vboTriangle.release();
                 }
                 {
@@ -144,9 +155,11 @@ void ModelMeshBinder::paint()
                     f->glEnableVertexAttribArray(0);
                     f->glEnableVertexAttribArray(1);
                     f->glEnableVertexAttribArray(2);
-                    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(GLfloat), 0);
-                    f->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(GLfloat), reinterpret_cast<void *>(3 * sizeof(GLfloat)));
-                    f->glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 9 * sizeof(GLfloat), reinterpret_cast<void *>(6 * sizeof(GLfloat)));
+                    f->glEnableVertexAttribArray(3);
+                    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(GLfloat), 0);
+                    f->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(GLfloat), reinterpret_cast<void *>(3 * sizeof(GLfloat)));
+                    f->glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(GLfloat), reinterpret_cast<void *>(6 * sizeof(GLfloat)));
+                    f->glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 11 * sizeof(GLfloat), reinterpret_cast<void *>(9 * sizeof(GLfloat)));
                     m_vboEdge.release();
                 }
             } else {
@@ -161,12 +174,21 @@ void ModelMeshBinder::paint()
         if (m_renderEdgeVertexCount > 0) {
             QOpenGLVertexArrayObject::Binder vaoBinder(&m_vaoEdge);
 			QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+            program->setUniformValue(program->textureEnabledLoc(), 0);
             f->glDrawArrays(GL_LINES, 0, m_renderEdgeVertexCount);
         }
     }
     if (m_renderTriangleVertexCount > 0) {
         QOpenGLVertexArrayObject::Binder vaoBinder(&m_vaoTriangle);
 		QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+        if (m_hasTexture) {
+            if (m_texture)
+                m_texture->bind(0);
+            program->setUniformValue(program->textureIdLoc(), 0);
+            program->setUniformValue(program->textureEnabledLoc(), 1);
+        } else {
+            program->setUniformValue(program->textureEnabledLoc(), 0);
+        }
         f->glDrawArrays(GL_TRIANGLES, 0, m_renderTriangleVertexCount);
     }
 }

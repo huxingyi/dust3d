@@ -4,7 +4,9 @@
 #include <QMutex>
 #include <QOpenGLBuffer>
 #include <QString>
+#include <QOpenGLTexture>
 #include "meshloader.h"
+#include "modelshaderprogram.h"
 
 class ModelMeshBinder
 {
@@ -15,7 +17,7 @@ public:
     void exportMeshAsObj(const QString &filename);
     void exportMeshAdObjPlusMaterials(const QString &filename);
     void initialize();
-    void paint();
+    void paint(ModelShaderProgram *program);
     void cleanup();
     void showWireframes();
     void hideWireframes();
@@ -26,6 +28,8 @@ private:
     int m_renderEdgeVertexCount;
     bool m_meshUpdated;
     bool m_showWireframes;
+    bool m_hasTexture;
+    QOpenGLTexture *m_texture;
 private:
     QOpenGLVertexArrayObject m_vaoTriangle;
     QOpenGLBuffer m_vboTriangle;

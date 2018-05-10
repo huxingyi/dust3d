@@ -24,6 +24,8 @@ SkeletonDocument::SkeletonDocument() :
     textureGuideImage(nullptr),
     textureImage(nullptr),
     textureBorderImage(nullptr),
+    textureAmbientOcclusionImage(nullptr),
+    textureColorImage(nullptr),
     // private
     m_resultMeshIsObsolete(false),
     m_meshGenerator(nullptr),
@@ -37,7 +39,8 @@ SkeletonDocument::SkeletonDocument() :
     m_textureGenerator(nullptr),
     m_postProcessResultIsObsolete(false),
     m_postProcessor(nullptr),
-    m_postProcessedResultContext(new MeshResultContext)
+    m_postProcessedResultContext(new MeshResultContext),
+    m_resultTextureMesh(nullptr)
 {
 }
 
@@ -49,6 +52,8 @@ SkeletonDocument::~SkeletonDocument()
     delete textureGuideImage;
     delete textureImage;
     delete textureBorderImage;
+    delete textureAmbientOcclusionImage;
+    delete m_resultTextureMesh;
 }
 
 void SkeletonDocument::uiReady()
@@ -789,6 +794,13 @@ MeshLoader *SkeletonDocument::takeResultSkeletonMesh()
     return resultSkeletonMesh;
 }
 
+MeshLoader *SkeletonDocument::takeResultTextureMesh()
+{
+    MeshLoader *resultTextureMesh = m_resultTextureMesh;
+    m_resultTextureMesh = nullptr;
+    return resultTextureMesh;
+}
+
 void SkeletonDocument::meshReady()
 {
     MeshLoader *resultMesh = m_meshGenerator->takeResultMesh();
@@ -885,7 +897,7 @@ void SkeletonDocument::generateTexture()
     m_textureIsObsolete = false;
     
     QThread *thread = new QThread;
-    m_textureGenerator = new TextureGenerator(*m_postProcessedResultContext);
+    m_textureGenerator = new TextureGenerator(*m_postProcessedResultContext, thread);
     m_textureGenerator->moveToThread(thread);
     connect(thread, &QThread::started, m_textureGenerator, &TextureGenerator::process);
     connect(m_textureGenerator, &TextureGenerator::finished, this, &SkeletonDocument::textureReady);
@@ -904,6 +916,15 @@ void SkeletonDocument::textureReady()
     
     delete textureBorderImage;
     textureBorderImage = m_textureGenerator->takeResultTextureBorderImage();
+    
+    delete textureAmbientOcclusionImage;
+    textureAmbientOcclusionImage = m_textureGenerator->takeResultTextureAmbientOcclusionImage();
+    
+    delete textureColorImage;
+    textureColorImage = m_textureGenerator->takeResultTextureColorImage();
+    
+    delete m_resultTextureMesh;
+    m_resultTextureMesh = m_textureGenerator->takeResultMesh();
     
     delete m_textureGenerator;
     m_textureGenerator = nullptr;

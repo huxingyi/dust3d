@@ -91,9 +91,10 @@ QImage ModelOfflineRender::toImage(const QSize &size)
         program->setUniformValue(program->mvMatrixLoc(), camera * world);
         QMatrix3x3 normalMatrix = world.normalMatrix();
         program->setUniformValue(program->normalMatrixLoc(), normalMatrix);
+        program->setUniformValue(program->textureEnabledLoc(), 0);
 
         meshBinder.updateMesh(m_mesh);
-        meshBinder.paint();
+        meshBinder.paint(program);
 
         meshBinder.cleanup();
 

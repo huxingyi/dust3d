@@ -141,9 +141,10 @@ GLTFFileWriter::GLTFFileWriter(MeshResultContext &resultContext, const QString &
         
         m_json["meshes"][0]["primitives"][primitiveIndex]["indices"] = bufferViewIndex;
         m_json["meshes"][0]["primitives"][primitiveIndex]["attributes"]["POSITION"] = bufferViewIndex + 1;
-        m_json["meshes"][0]["primitives"][primitiveIndex]["attributes"]["JOINTS_0"] = bufferViewIndex + 2;
-        m_json["meshes"][0]["primitives"][primitiveIndex]["attributes"]["WEIGHTS_0"] = bufferViewIndex + 3;
-        m_json["meshes"][0]["primitives"][primitiveIndex]["attributes"]["TEXCOORD_0"] = bufferViewIndex + 4;
+        m_json["meshes"][0]["primitives"][primitiveIndex]["attributes"]["NORMAL"] = bufferViewIndex + 2;
+        m_json["meshes"][0]["primitives"][primitiveIndex]["attributes"]["JOINTS_0"] = bufferViewIndex + 3;
+        m_json["meshes"][0]["primitives"][primitiveIndex]["attributes"]["WEIGHTS_0"] = bufferViewIndex + 4;
+        m_json["meshes"][0]["primitives"][primitiveIndex]["attributes"]["TEXCOORD_0"] = bufferViewIndex + 5;
         m_json["meshes"][0]["primitives"][primitiveIndex]["material"] = primitiveIndex;
         /*
         m_json["materials"][primitiveIndex]["pbrMetallicRoughness"]["baseColorFactor"] = {
@@ -211,6 +212,24 @@ GLTFFileWriter::GLTFFileWriter(MeshResultContext &resultContext, const QString &
         m_json["accessors"][bufferViewIndex]["type"] = "VEC3";
         m_json["accessors"][bufferViewIndex]["max"] = {maxX, maxY, maxZ};
         m_json["accessors"][bufferViewIndex]["min"] = {minX, minY, minZ};
+        bufferViewIndex++;
+        
+        bufferViewFromOffset = (int)binaries.size();
+        m_json["bufferViews"][bufferViewIndex]["buffer"] = 0;
+        m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
+        for (const auto &it: part.second.interpolatedVertexNormals) {
+            stream << (float)it.x() << (float)it.y() << (float)it.z();
+        }
+        Q_ASSERT( part.second.interpolatedVertexNormals.size() * 3 * sizeof(float) == binaries.size() - bufferViewFromOffset);
+        m_json["bufferViews"][bufferViewIndex]["byteLength"] =  part.second.vertices.size() * 3 * sizeof(float);
+        m_json["bufferViews"][bufferViewIndex]["target"] = 34962;
+        alignBinaries();
+        
+        m_json["accessors"][bufferViewIndex]["bufferView"] = bufferViewIndex;
+        m_json["accessors"][bufferViewIndex]["byteOffset"] = 0;
+        m_json["accessors"][bufferViewIndex]["componentType"] = 5126;
+        m_json["accessors"][bufferViewIndex]["count"] =  part.second.vertices.size();
+        m_json["accessors"][bufferViewIndex]["type"] = "VEC3";
         bufferViewIndex++;
         
         bufferViewFromOffset = (int)binaries.size();

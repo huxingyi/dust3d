@@ -5,8 +5,11 @@
 #include <vector>
 #include <QVector3D>
 #include <QColor>
+#include <QImage>
 #include "positionmap.h"
 #include "theme.h"
+#include "qtlightmapper.h"
+#include "meshresultcontext.h"
 
 #pragma pack(push)
 #pragma pack(1)
@@ -21,6 +24,8 @@ typedef struct
     GLfloat colorR;
     GLfloat colorG;
     GLfloat colorB;
+    GLfloat texU;
+    GLfloat texV;
 } Vertex;
 #pragma pack(pop)
 
@@ -34,6 +39,8 @@ class MeshLoader
 {
 public:
     MeshLoader(void *meshlite, int meshId, int triangulatedMeshId = -1, QColor modelColor=Theme::white, const std::vector<QColor> *triangleColors=nullptr);
+    //MeshLoader(const std::vector<vertex_t> &vertices, const std::vector<int> &indicies, const std::vector<QVector3D> &normals);
+    MeshLoader(MeshResultContext &resultContext);
     ~MeshLoader();
     Vertex *triangleVertices();
     int triangleVertexCount();
@@ -43,6 +50,8 @@ public:
     const std::vector<std::vector<int>> &faces();
     const std::vector<QVector3D> &triangulatedVertices();
     const std::vector<TriangulatedFace> &triangulatedFaces();
+    void setTextureImage(QImage *textureImage);
+    const QImage *textureImage();
 private:
     Vertex *m_triangleVertices;
     int m_triangleVertexCount;
@@ -52,6 +61,7 @@ private:
     std::vector<std::vector<int>> m_faces;
     std::vector<QVector3D> m_triangulatedVertices;
     std::vector<TriangulatedFace> m_triangulatedFaces;
+    QImage *m_textureImage;
 };
 
 #endif

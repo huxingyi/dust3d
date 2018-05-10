@@ -10,11 +10,15 @@ public:
     int mvMatrixLoc();
     int normalMatrixLoc();
     int lightPosLoc();
+    int textureIdLoc();
+    int textureEnabledLoc();
 private:
     int m_projMatrixLoc;
     int m_mvMatrixLoc;
     int m_normalMatrixLoc;
     int m_lightPosLoc;
+    int m_textureIdLoc;
+    int m_textureEnabledLoc;
 };
 
 #endif

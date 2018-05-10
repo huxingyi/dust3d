@@ -7,10 +7,11 @@
 #define MAX_VERTICES_PER_FACE   100
 
 MeshLoader::MeshLoader(void *meshlite, int meshId, int triangulatedMeshId, QColor modelColor, const std::vector<QColor> *triangleColors) :
-    m_triangleVertices(NULL),
+    m_triangleVertices(nullptr),
     m_triangleVertexCount(0),
-    m_edgeVertices(NULL),
-    m_edgeVertexCount(0)
+    m_edgeVertices(nullptr),
+    m_edgeVertexCount(0),
+    m_textureImage(nullptr)
 {
     int edgeVertexPositionCount = meshlite_get_vertex_count(meshlite, meshId);
     GLfloat *edgeVertexPositions = new GLfloat[edgeVertexPositionCount * 3];
@@ -65,6 +66,8 @@ MeshLoader::MeshLoader(void *meshlite, int meshId, int triangulatedMeshId, QColo
             v->colorR = 0.0;
             v->colorG = 0.0;
             v->colorB = 0.0;
+            v->texU = 0.0;
+            v->texV = 0.0;
         }
     }
     
@@ -137,10 +140,77 @@ MeshLoader::MeshLoader(void *meshlite, int meshId, int triangulatedMeshId, QColo
     delete[] edgeNormals;
 }
 
+/*
+MeshLoader::MeshLoader(const std::vector<vertex_t> &vertices, const std::vector<int> &indicies, const std::vector<QVector3D> &normals) :
+    m_triangleVertices(nullptr),
+    m_triangleVertexCount(0),
+    m_edgeVertices(nullptr),
+    m_edgeVertexCount(0),
+    m_textureImage(nullptr)
+{
+    m_triangleVertexCount = indicies.size();
+    m_triangleVertices = new Vertex[indicies.size()];
+    for (auto i = 0u; i < indicies.size(); i++) {
+        Vertex *dest = &m_triangleVertices[i];
+        const vertex_t *srcVert = &vertices[indicies[i]];
+        const QVector3D *srcNormal = &normals[indicies[i]];
+        dest->colorR = 0;
+        dest->colorG = 0;
+        dest->colorB = 0;
+        dest->posX = srcVert->p[0];
+        dest->posY = srcVert->p[1];
+        dest->posZ = srcVert->p[2];
+        dest->texU = srcVert->t[0];
+        dest->texV = srcVert->t[1];
+        dest->normX = srcNormal->x();
+        dest->normY = srcNormal->y();
+        dest->normZ = srcNormal->z();
+    }
+}
+*/
+
+MeshLoader::MeshLoader(MeshResultContext &resultContext) :
+    m_triangleVertices(nullptr),
+    m_triangleVertexCount(0),
+    m_edgeVertices(nullptr),
+    m_edgeVertexCount(0),
+    m_textureImage(nullptr)
+{
+    for (const auto &part: resultContext.parts()) {
+        m_triangleVertexCount += part.second.triangles.size() * 3;
+    }
+    m_triangleVertices = new Vertex[m_triangleVertexCount];
+    int destIndex = 0;
+    for (const auto &part: resultContext.parts()) {
+        for (const auto &it: part.second.triangles) {
+            for (auto i = 0; i < 3; i++) {
+                int vertexIndex = it.indicies[i];
+                const ResultVertex *srcVert = &part.second.vertices[vertexIndex];
+                const QVector3D *srcNormal = &part.second.interpolatedVertexNormals[vertexIndex];
+                const ResultVertexUv *srcUv = &part.second.vertexUvs[vertexIndex];
+                Vertex *dest = &m_triangleVertices[destIndex];
+                dest->colorR = 0;
+                dest->colorG = 0;
+                dest->colorB = 0;
+                dest->posX = srcVert->position.x();
+                dest->posY = srcVert->position.y();
+                dest->posZ = srcVert->position.z();
+                dest->texU = srcUv->uv[0];
+                dest->texV = srcUv->uv[1];
+                dest->normX = srcNormal->x();
+                dest->normY = srcNormal->y();
+                dest->normZ = srcNormal->z();
+                destIndex++;
+            }
+        }
+    }
+}
+
 MeshLoader::~MeshLoader()
 {
     delete[] m_triangleVertices;
     m_triangleVertexCount = 0;
+    delete m_textureImage;
 }
 
 const std::vector<QVector3D> &MeshLoader::vertices()
@@ -183,4 +253,12 @@ int MeshLoader::edgeVertexCount()
     return m_edgeVertexCount;
 }
 
+void MeshLoader::setTextureImage(QImage *textureImage)
+{
+    m_textureImage = textureImage;
+}
 
+const QImage *MeshLoader::textureImage()
+{
+    return m_textureImage;
+}

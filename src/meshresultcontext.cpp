@@ -486,6 +486,7 @@ void MeshResultContext::calculateResultParts(std::map<int, ResultPart> &parts)
             const auto &it = oldVertexToNewMap.find(key);
             if (it == oldVertexToNewMap.end() || m_seamVertices.end() != m_seamVertices.find(triangle.indicies[i])) {
                 int newIndex = resultPart.vertices.size();
+                resultPart.interpolatedVertexNormals.push_back(newTriangle.normal);
                 resultPart.vertices.push_back(vertices[triangle.indicies[i]]);
                 ResultVertexUv vertexUv;
                 vertexUv.uv[0] = triangleUvs()[x].uv[i][0];
@@ -497,10 +498,16 @@ void MeshResultContext::calculateResultParts(std::map<int, ResultPart> &parts)
                 newTriangle.indicies[i] = newIndex;
             } else {
                 newTriangle.indicies[i] = it->second;
+                resultPart.interpolatedVertexNormals[it->second] += newTriangle.normal;
             }
         }
         resultPart.triangles.push_back(newTriangle);
         resultPart.uvs.push_back(triangleUvs()[x]);
+    }
+    for (auto &partIt: parts) {
+        for (auto &normalIt: partIt.second.interpolatedVertexNormals) {
+            normalIt.normalize();
+        }
     }
 }
 
@@ -576,8 +583,8 @@ void MeshResultContext::calculateResultTriangleUvs(std::vector<ResultTriangleUv>
             &outputMesh->vertex_array[outputMesh->index_array[i + 2]]
         };
         int faceIndex = edgeToFaceIndexMap[std::make_pair(outputVertices[0]->xref, outputVertices[1]->xref)];
-        Q_ASSERT(faceIndex == edgeToFaceIndexMap[std::make_pair(outputVertices[1]->xref, outputVertices[2]->xref)]);
-        Q_ASSERT(faceIndex == edgeToFaceIndexMap[std::make_pair(outputVertices[2]->xref, outputVertices[0]->xref)]);
+        //Q_ASSERT(faceIndex == edgeToFaceIndexMap[std::make_pair(outputVertices[1]->xref, outputVertices[2]->xref)]);
+        //Q_ASSERT(faceIndex == edgeToFaceIndexMap[std::make_pair(outputVertices[2]->xref, outputVertices[0]->xref)]);
         int firstIndex = 0;
         for (auto j = 0; j < 3; j++) {
             if (choosenVertices[outputVertices[0]->xref].originalIndex == triangles[faceIndex].indicies[j]) {

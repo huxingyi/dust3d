@@ -160,8 +160,9 @@ void ModelWidget::paintGL()
     m_program->setUniformValue(m_program->mvMatrixLoc(), m_camera * m_world);
     QMatrix3x3 normalMatrix = m_world.normalMatrix();
     m_program->setUniformValue(m_program->normalMatrixLoc(), normalMatrix);
+    m_program->setUniformValue(m_program->textureEnabledLoc(), 0);
     
-    m_meshBinder.paint();
+    m_meshBinder.paint(m_program);
 
     m_program->release();
 }

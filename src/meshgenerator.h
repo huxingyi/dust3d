@@ -43,6 +43,7 @@ private:
     void loadVertexSourcesToMeshResultContext(void *meshliteContext, int meshId, int bmeshId);
     void loadGeneratedPositionsToMeshResultContext(void *meshliteContext, int triangulatedMeshId);
     static bool enableDebug;
+    static bool disableUnion;
 };
 
 #endif
