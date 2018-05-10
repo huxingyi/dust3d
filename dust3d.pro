@@ -126,6 +126,7 @@ QMAKE_CXXFLAGS += -std=c++11
 
 win32 {
     LIBS += -luser32
+	LIBS += -lopengl32
 	
 	isEmpty(BOOST_INCLUDEDIR) {
 		BOOST_INCLUDEDIR = $$(BOOST_INCLUDEDIR)

@@ -46,7 +46,7 @@ typedef int lm_type;
 
 typedef struct lm_context lm_context;
 
-#include <QOpenGLFunctions>
+#include <QOpenGLExtraFunctions>
 
 typedef struct lm_vec3 { float x, y, z; } lm_vec3;
 
@@ -71,7 +71,7 @@ typedef struct
     unsigned int vertexCount, indexCount;
 } scene_t;
 
-class QtLightMapper : public QOpenGLFunctions
+class QtLightMapper : public QOpenGLExtraFunctions
 {
 public:
     bool m_useCore = false;
