@@ -15,6 +15,7 @@
 #include "theme.h"
 #include "texturegenerator.h"
 #include "meshresultpostprocessor.h"
+#include "ambientocclusionbaker.h"
 
 class SkeletonNode
 {
@@ -189,6 +190,7 @@ signals:
     void skeletonChanged();
     void resultSkeletonChanged();
     void resultTextureChanged();
+    void resultBakedTextureChanged();
     void postProcessedResultChanged();
     void partLockStateChanged(QUuid partId);
     void partVisibleStateChanged(QUuid partId);
@@ -273,6 +275,8 @@ public slots:
     void textureReady();
     void postProcess();
     void postProcessedMeshResultReady();
+    void bakeAmbientOcclusionTexture();
+    void ambientOcclusionTextureReady();
     void setPartLockState(QUuid partId, bool locked);
     void setPartVisibleState(QUuid partId, bool visible);
     void setPartSubdivState(QUuid partId, bool subdived);
@@ -317,6 +321,9 @@ private: // need initialize
     MeshResultPostProcessor *m_postProcessor;
     MeshResultContext *m_postProcessedResultContext;
     MeshLoader *m_resultTextureMesh;
+    unsigned long long m_textureImageUpdateVersion;
+    AmbientOcclusionBaker *m_ambientOcclusionBaker;
+    unsigned long long m_ambientOcclusionBakedImageUpdateVersion;
 private:
     static unsigned long m_maxSnapshot;
     std::deque<SkeletonHistoryItem> m_undoItems;

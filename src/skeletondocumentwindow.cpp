@@ -521,6 +521,7 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     });
     connect(m_document, &SkeletonDocument::postProcessedResultChanged, m_document, &SkeletonDocument::generateSkeleton);
     connect(m_document, &SkeletonDocument::postProcessedResultChanged, m_document, &SkeletonDocument::generateTexture);
+    connect(m_document, &SkeletonDocument::resultTextureChanged, m_document, &SkeletonDocument::bakeAmbientOcclusionTexture);
     
     connect(m_document, &SkeletonDocument::resultMeshChanged, [=]() {
         m_modelRenderWidget->updateMesh(m_document->takeResultMesh());
@@ -824,6 +825,7 @@ void SkeletonDocumentWindow::showExportPreview()
         connect(m_document, &SkeletonDocument::resultMeshChanged, m_exportPreviewWidget, &ExportPreviewWidget::checkSpinner);
         connect(m_document, &SkeletonDocument::exportReady, m_exportPreviewWidget, &ExportPreviewWidget::checkSpinner);
         connect(m_document, &SkeletonDocument::resultTextureChanged, m_exportPreviewWidget, &ExportPreviewWidget::updateTexturePreview);
+        connect(m_document, &SkeletonDocument::resultBakedTextureChanged, m_exportPreviewWidget, &ExportPreviewWidget::updateTexturePreview);
         connect(m_document, &SkeletonDocument::resultSkeletonChanged, m_exportPreviewWidget, &ExportPreviewWidget::updateSkeleton);
     }
     m_document->postProcess();

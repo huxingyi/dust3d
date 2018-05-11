@@ -40,7 +40,10 @@ SkeletonDocument::SkeletonDocument() :
     m_postProcessResultIsObsolete(false),
     m_postProcessor(nullptr),
     m_postProcessedResultContext(new MeshResultContext),
-    m_resultTextureMesh(nullptr)
+    m_resultTextureMesh(nullptr),
+    m_textureImageUpdateVersion(0),
+    m_ambientOcclusionBaker(nullptr),
+    m_ambientOcclusionBakedImageUpdateVersion(0)
 {
 }
 
@@ -918,13 +921,15 @@ void SkeletonDocument::textureReady()
     textureBorderImage = m_textureGenerator->takeResultTextureBorderImage();
     
     delete textureAmbientOcclusionImage;
-    textureAmbientOcclusionImage = m_textureGenerator->takeResultTextureAmbientOcclusionImage();
+    textureAmbientOcclusionImage = nullptr;
     
     delete textureColorImage;
     textureColorImage = m_textureGenerator->takeResultTextureColorImage();
     
     delete m_resultTextureMesh;
     m_resultTextureMesh = m_textureGenerator->takeResultMesh();
+    
+    m_textureImageUpdateVersion++;
     
     delete m_textureGenerator;
     m_textureGenerator = nullptr;
@@ -937,6 +942,74 @@ void SkeletonDocument::textureReady()
         generateTexture();
     } else {
         checkExportReadyState();
+    }
+}
+
+void SkeletonDocument::bakeAmbientOcclusionTexture()
+{
+    if (nullptr != m_ambientOcclusionBaker) {
+        return;
+    }
+
+    if (nullptr == textureColorImage || m_textureIsObsolete)
+        return;
+
+    qDebug() << "Ambient occlusion texture baking..";
+
+    QThread *thread = new QThread;
+    m_ambientOcclusionBaker = new AmbientOcclusionBaker();
+    m_ambientOcclusionBaker->setInputMesh(*m_postProcessedResultContext);
+    m_ambientOcclusionBaker->setBakeSize(TextureGenerator::m_textureWidth, TextureGenerator::m_textureHeight);
+    if (textureBorderImage)
+        m_ambientOcclusionBaker->setBorderImage(*textureBorderImage);
+    if (textureColorImage)
+        m_ambientOcclusionBaker->setColorImage(*textureColorImage);
+    m_ambientOcclusionBaker->setImageUpdateVersion(m_textureImageUpdateVersion);
+    m_ambientOcclusionBaker->setRenderThread(thread);
+    m_ambientOcclusionBaker->moveToThread(thread);
+    connect(thread, &QThread::started, m_ambientOcclusionBaker, &AmbientOcclusionBaker::process);
+    connect(m_ambientOcclusionBaker, &AmbientOcclusionBaker::finished, this, &SkeletonDocument::ambientOcclusionTextureReady);
+    connect(m_ambientOcclusionBaker, &AmbientOcclusionBaker::finished, thread, &QThread::quit);
+    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+    thread->start();
+}
+
+void SkeletonDocument::ambientOcclusionTextureReady()
+{
+    m_ambientOcclusionBakedImageUpdateVersion = m_ambientOcclusionBaker->getImageUpdateVersion();
+
+    if (m_textureImageUpdateVersion == m_ambientOcclusionBakedImageUpdateVersion) {
+        QImage *bakedGuideImage = m_ambientOcclusionBaker->takeGuideImage();
+        if (nullptr != bakedGuideImage) {
+            delete textureGuideImage;
+            textureGuideImage = bakedGuideImage;
+        }
+
+        QImage *bakedTextureImage = m_ambientOcclusionBaker->takeTextureImage();
+        if (nullptr != bakedTextureImage) {
+            delete textureImage;
+            textureImage = bakedTextureImage;
+        }
+
+        delete textureAmbientOcclusionImage;
+        textureAmbientOcclusionImage = m_ambientOcclusionBaker->takeAmbientOcclusionImage();
+        
+        MeshLoader *resultMesh = m_ambientOcclusionBaker->takeResultMesh();
+        if (resultMesh) {
+            delete m_resultTextureMesh;
+            m_resultTextureMesh = resultMesh;
+        }
+    }
+
+    delete m_ambientOcclusionBaker;
+    m_ambientOcclusionBaker = nullptr;
+
+    qDebug() << "Ambient occlusion texture baking done";
+
+    if (m_textureImageUpdateVersion == m_ambientOcclusionBakedImageUpdateVersion) {
+        emit resultBakedTextureChanged();
+    } else {
+        bakeAmbientOcclusionTexture();
     }
 }
 

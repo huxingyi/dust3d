@@ -10,19 +10,12 @@ TextureGenerator::TextureGenerator(const MeshResultContext &meshResultContext, Q
     m_resultTextureGuideImage(nullptr),
     m_resultTextureImage(nullptr),
     m_resultTextureBorderImage(nullptr),
-    m_resultTextureAmbientOcclusionImage(nullptr),
     m_resultTextureColorImage(nullptr),
-    m_ambientOcclusionBaker(nullptr),
     m_thread(thread),
     m_resultMesh(nullptr)
 {
     m_resultContext = new MeshResultContext();
     *m_resultContext = meshResultContext;
-    m_ambientOcclusionBaker = new AmbientOcclusionBaker;
-    
-    m_ambientOcclusionBaker->setRenderThread(thread);
-    m_ambientOcclusionBaker->setInputMesh(meshResultContext);
-    m_ambientOcclusionBaker->setBakeSize(TextureGenerator::m_textureWidth, TextureGenerator::m_textureHeight);
 }
 
 TextureGenerator::~TextureGenerator()
@@ -31,8 +24,6 @@ TextureGenerator::~TextureGenerator()
     delete m_resultTextureGuideImage;
     delete m_resultTextureImage;
     delete m_resultTextureBorderImage;
-    delete m_resultTextureAmbientOcclusionImage;
-    delete m_ambientOcclusionBaker;
     delete m_resultTextureColorImage;
     delete m_resultMesh;
 }
@@ -56,13 +47,6 @@ QImage *TextureGenerator::takeResultTextureBorderImage()
     QImage *resultTextureBorderImage = m_resultTextureBorderImage;
     m_resultTextureBorderImage = nullptr;
     return resultTextureBorderImage;
-}
-
-QImage *TextureGenerator::takeResultTextureAmbientOcclusionImage()
-{
-    QImage *resultTextureAmbientOcclusionImage = m_resultTextureAmbientOcclusionImage;
-    m_resultTextureAmbientOcclusionImage = nullptr;
-    return resultTextureAmbientOcclusionImage;
 }
 
 QImage *TextureGenerator::takeResultTextureColorImage()
@@ -90,13 +74,6 @@ void TextureGenerator::process()
 {
     const std::vector<QColor> &triangleColors = m_resultContext->triangleColors();
     const std::vector<ResultTriangleUv> &triangleUvs = m_resultContext->triangleUvs();
-    
-    m_ambientOcclusionBaker->bake();
-    m_resultTextureAmbientOcclusionImage = m_ambientOcclusionBaker->takeAmbientOcclusionImage();
-    if (!m_resultTextureAmbientOcclusionImage || m_resultTextureAmbientOcclusionImage->isNull()) {
-        m_resultTextureAmbientOcclusionImage = new QImage(TextureGenerator::m_textureWidth, TextureGenerator::m_textureHeight, QImage::Format_ARGB32);
-        m_resultTextureAmbientOcclusionImage->fill(Qt::transparent);
-    }
     
     m_resultTextureColorImage = new QImage(TextureGenerator::m_textureWidth, TextureGenerator::m_textureHeight, QImage::Format_ARGB32);
     m_resultTextureColorImage->fill(Qt::transparent);
@@ -129,7 +106,7 @@ void TextureGenerator::process()
             }
         }
         QPen textureBorderPen(triangleColors[i]);
-        textureBorderPen.setWidth(16);
+        textureBorderPen.setWidth(32);
         texturePainter.setPen(textureBorderPen);
         texturePainter.setBrush(QBrush(triangleColors[i]));
         texturePainter.drawPath(path);
@@ -165,10 +142,6 @@ void TextureGenerator::process()
     textureBorderPainter.end();
     
     m_resultTextureImage = new QImage(*m_resultTextureColorImage);
-    QPainter mergeTexturePainter(m_resultTextureImage);
-    mergeTexturePainter.setCompositionMode(QPainter::CompositionMode_Multiply);
-    mergeTexturePainter.drawImage(0, 0, *m_resultTextureAmbientOcclusionImage);
-    mergeTexturePainter.end();
     
     m_resultTextureGuideImage = new QImage(*m_resultTextureImage);
     QPainter mergeTextureGuidePainter(m_resultTextureGuideImage);

@@ -2,6 +2,7 @@
 #include <QThread>
 #include <QDebug>
 #include <QtGlobal>
+#include <QGuiApplication>
 #define LIGHTMAPPER_IMPLEMENTATION
 #include "qtlightmapper.h"
 #include "ambientocclusionbaker.h"
@@ -14,7 +15,13 @@ AmbientOcclusionBaker::AmbientOcclusionBaker(QScreen *targetScreen) :
     m_context(nullptr),
     m_bakeWidth(256),
     m_bakeHeight(256),
-    m_ambientOcclusionImage(nullptr)
+    m_ambientOcclusionImage(nullptr),
+    m_colorImage(nullptr),
+    m_textureImage(nullptr),
+    m_borderImage(nullptr),
+    m_guideImage(nullptr),
+    m_imageUpdateVersion(0),
+    m_resultMesh(nullptr)
 {
 #if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)
     m_useCore = QSurfaceFormat::defaultFormat().profile() == QSurfaceFormat::CoreProfile;
@@ -31,11 +38,59 @@ AmbientOcclusionBaker::AmbientOcclusionBaker(QScreen *targetScreen) :
     m_context->create();
 }
 
+void AmbientOcclusionBaker::setRenderThread(QThread *thread)
+{
+    m_context->moveToThread(thread);
+}
+
+void AmbientOcclusionBaker::setBorderImage(const QImage &borderImage)
+{
+    delete m_borderImage;
+    m_borderImage = new QImage(borderImage);
+}
+
+void AmbientOcclusionBaker::setImageUpdateVersion(unsigned long long version)
+{
+    m_imageUpdateVersion = version;
+}
+
+unsigned long long AmbientOcclusionBaker::getImageUpdateVersion()
+{
+    return m_imageUpdateVersion;
+}
+
+void AmbientOcclusionBaker::setColorImage(const QImage &colorImage)
+{
+    delete m_colorImage;
+    m_colorImage = new QImage(colorImage);
+}
+
 QImage *AmbientOcclusionBaker::takeAmbientOcclusionImage()
 {
     QImage *resultImage = m_ambientOcclusionImage;
     m_ambientOcclusionImage = nullptr;
     return resultImage;
+}
+
+QImage *AmbientOcclusionBaker::takeTextureImage()
+{
+    QImage *resultImage = m_textureImage;
+    m_textureImage = nullptr;
+    return resultImage;
+}
+
+QImage *AmbientOcclusionBaker::takeGuideImage()
+{
+    QImage *resultImage = m_guideImage;
+    m_guideImage = nullptr;
+    return resultImage;
+}
+
+MeshLoader *AmbientOcclusionBaker::takeResultMesh()
+{
+    MeshLoader *resultMesh = m_resultMesh;
+    m_resultMesh = nullptr;
+    return resultMesh;
 }
 
 AmbientOcclusionBaker::~AmbientOcclusionBaker()
@@ -44,6 +99,11 @@ AmbientOcclusionBaker::~AmbientOcclusionBaker()
     m_context = nullptr;
     destroy();
     delete m_ambientOcclusionImage;
+    delete m_colorImage;
+    delete m_textureImage;
+    delete m_borderImage;
+    delete m_guideImage;
+    delete m_resultMesh;
 }
 
 void AmbientOcclusionBaker::setInputMesh(const MeshResultContext &meshResultContext)
@@ -57,9 +117,36 @@ void AmbientOcclusionBaker::setBakeSize(int width, int height)
     m_bakeHeight = height;
 }
 
-void AmbientOcclusionBaker::setRenderThread(QThread *thread)
+void AmbientOcclusionBaker::process()
 {
-    m_context->moveToThread(thread);
+    bake();
+    
+    if (m_colorImage) {
+        m_textureImage = new QImage(*m_colorImage);
+        QPainter mergeTexturePainter(m_textureImage);
+        mergeTexturePainter.setCompositionMode(QPainter::CompositionMode_Multiply);
+        if (m_ambientOcclusionImage)
+            mergeTexturePainter.drawImage(0, 0, *m_ambientOcclusionImage);
+        mergeTexturePainter.end();
+    } else {
+        if (m_ambientOcclusionImage)
+            m_textureImage = new QImage(*m_ambientOcclusionImage);
+    }
+    
+    if (m_textureImage) {
+        m_guideImage = new QImage(*m_textureImage);
+        QPainter mergeGuidePainter(m_guideImage);
+        mergeGuidePainter.setCompositionMode(QPainter::CompositionMode_Multiply);
+        if (m_borderImage)
+            mergeGuidePainter.drawImage(0, 0, *m_borderImage);
+        mergeGuidePainter.end();
+        
+        m_resultMesh = new MeshLoader(m_meshResultContext);
+        m_resultMesh->setTextureImage(new QImage(*m_textureImage));
+    }
+    
+    this->moveToThread(QGuiApplication::instance()->thread());
+    emit finished();
 }
 
 void AmbientOcclusionBaker::bake()
@@ -202,13 +289,6 @@ void AmbientOcclusionBaker::bake()
         LM_FREE(temp);
     }
     
-    // save result to a file
-    //if (lmImageSaveTGAf("result.tga", data, w, h, 4, 1.0f))
-    //    printf("Saved result.tga\n");
-
-    // upload result
-    //glBindTexture(GL_TEXTURE_2D, scene->lightmap);
-    //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_FLOAT, data);
     free(data);
     
     destroyScene(scene);
