@@ -306,6 +306,7 @@ private:
     QUuid createNode(float x, float y, float z, float radius, QUuid fromNodeId);
     void settleOrigin();
     void checkExportReadyState();
+    void reviseOrigin();
 private: // need initialize
     bool m_resultMeshIsObsolete;
     MeshGenerator *m_meshGenerator;

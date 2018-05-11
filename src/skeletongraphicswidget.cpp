@@ -335,8 +335,12 @@ void SkeletonGraphicsWidget::turnaroundChanged()
 
 void SkeletonGraphicsWidget::updateTurnaround()
 {
-    if (m_document->turnaround.isNull())
-        return;
+    const QImage *turnaroundImage = &m_document->turnaround;
+    QImage onePixel(16, 10, QImage::Format_ARGB32);
+    if (turnaroundImage->isNull()) {
+        onePixel.fill(Qt::transparent);
+        turnaroundImage = &onePixel;
+    }
     
     m_turnaroundChanged = true;
     if (m_turnaroundLoader)
@@ -347,7 +351,7 @@ void SkeletonGraphicsWidget::updateTurnaround()
     m_turnaroundChanged = false;
 
     QThread *thread = new QThread;
-    m_turnaroundLoader = new TurnaroundLoader(m_document->turnaround,
+    m_turnaroundLoader = new TurnaroundLoader(*turnaroundImage,
         parentWidget()->rect().size());
     m_turnaroundLoader->moveToThread(thread);
     connect(thread, SIGNAL(started()), m_turnaroundLoader, SLOT(process()));

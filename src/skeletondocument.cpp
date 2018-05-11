@@ -480,8 +480,19 @@ void SkeletonDocument::moveOriginBy(float x, float y, float z)
         originY += y;
     if (!zlocked)
         originZ += z;
+    reviseOrigin();
     emit originChanged();
     emit skeletonChanged();
+}
+
+void SkeletonDocument::reviseOrigin()
+{
+    if (originX < 0.001)
+        originX = 0.001;
+    if (originY < 0.001)
+        originY = 0.001;
+    if (originZ < 0.001)
+        originZ = 0.001;
 }
 
 void SkeletonDocument::setNodeOrigin(QUuid nodeId, float x, float y, float z)
@@ -1169,6 +1180,7 @@ void SkeletonDocument::settleOrigin()
     originX = mainProfile.x() + mainProfile.width() / 2;
     originY = mainProfile.y() + mainProfile.height() / 2;
     originZ = sideProfile.x() + sideProfile.width() / 2;
+    reviseOrigin();
     emit originChanged();
 }
 
