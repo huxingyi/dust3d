@@ -10,3 +10,4 @@ Dust3D Modeling Examples
    modeling-mosquito/*
    modeling-camel/*
    modeling-horse/*
+   modeling-sportgirl/*
