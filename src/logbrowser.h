@@ -13,13 +13,13 @@ public:
     ~LogBrowser();
 
 public slots:
-    void outputMessage(QtMsgType type, const QString &msg);
+    void outputMessage(QtMsgType type, const QString &msg, const QString &source, int line);
     void showDialog();
     void hideDialog();
     bool isDialogVisible();
 
 signals:
-    void sendMessage(QtMsgType type, const QString &msg);
+    void sendMessage(QtMsgType type, const QString &msg, const QString &source, int line);
 
 private:
     LogBrowserDialog *m_browserDialog;

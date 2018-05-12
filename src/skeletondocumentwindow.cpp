@@ -43,7 +43,7 @@ AboutWidget *g_aboutWidget = nullptr;
 void outputMessage(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
     if (g_logBrowser)
-        g_logBrowser->outputMessage(type, msg);
+        g_logBrowser->outputMessage(type, msg, context.file, context.line);
 }
 
 void SkeletonDocumentWindow::showAcknowlegements()
@@ -497,6 +497,9 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(m_document, &SkeletonDocument::checkPart, graphicsWidget, &SkeletonGraphicsWidget::selectPartAllById);
     connect(m_document, &SkeletonDocument::enableBackgroundBlur, graphicsWidget, &SkeletonGraphicsWidget::enableBackgroundBlur);
     connect(m_document, &SkeletonDocument::disableBackgroundBlur, graphicsWidget, &SkeletonGraphicsWidget::disableBackgroundBlur);
+    connect(m_document, &SkeletonDocument::uncheckAll, graphicsWidget, &SkeletonGraphicsWidget::unselectAll);
+    connect(m_document, &SkeletonDocument::checkNode, graphicsWidget, &SkeletonGraphicsWidget::addSelectNode);
+    connect(m_document, &SkeletonDocument::checkEdge, graphicsWidget, &SkeletonGraphicsWidget::addSelectEdge);
     
     connect(m_document, &SkeletonDocument::partListChanged, partListWidget, &SkeletonPartListWidget::partListChanged);
     connect(m_document, &SkeletonDocument::partPreviewChanged, partListWidget, &SkeletonPartListWidget::partPreviewChanged);
@@ -789,6 +792,7 @@ void SkeletonDocumentWindow::open()
             SkeletonSnapshot snapshot;
             loadSkeletonFromXmlStream(&snapshot, stream);
             m_document->fromSnapshot(snapshot);
+            m_document->saveSnapshot();
         } else if (item.type == "asset") {
             if (item.name == "canvas.png") {
                 QByteArray data;

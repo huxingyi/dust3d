@@ -687,6 +687,10 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot)
         originZ = originZit->second.toFloat();
     }
     
+    std::set<QUuid> newAddedNodeIds;
+    std::set<QUuid> newAddedEdgeIds;
+    std::set<QUuid> newAddedPartIds;
+    
     std::map<QUuid, QUuid> oldNewIdMap;
     for (const auto &partKv : snapshot.parts) {
         SkeletonPart part;
@@ -711,6 +715,7 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot)
         if (deformWidthIt != partKv.second.end())
             part.setDeformWidth(deformWidthIt->second.toFloat());
         partMap[part.id] = part;
+        newAddedPartIds.insert(part.id);
     }
     for (const auto &nodeKv : snapshot.nodes) {
         if (nodeKv.second.find("radius") == nodeKv.second.end() ||
@@ -728,6 +733,7 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot)
         node.z = valueOfKeyInMapOrEmpty(nodeKv.second, "z").toFloat();
         node.partId = oldNewIdMap[QUuid(valueOfKeyInMapOrEmpty(nodeKv.second, "partId"))];
         nodeMap[node.id] = node;
+        newAddedNodeIds.insert(node.id);
     }
     for (const auto &edgeKv : snapshot.edges) {
         if (edgeKv.second.find("from") == edgeKv.second.end() ||
@@ -751,28 +757,45 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot)
             nodeMap[toId].edgeIds.push_back(edge.id);
         }
         edgeMap[edge.id] = edge;
+        newAddedEdgeIds.insert(edge.id);
     }
     for (const auto &nodeIt: nodeMap) {
+        if (newAddedNodeIds.find(nodeIt.first) == newAddedNodeIds.end())
+            continue;
         partMap[nodeIt.second.partId].nodeIds.push_back(nodeIt.first);
     }
     for (const auto &partIdIt: snapshot.partIdList) {
-        partIds.push_back(oldNewIdMap[QUuid(partIdIt)]);
+        const auto partId = oldNewIdMap[QUuid(partIdIt)];
+        if (newAddedPartIds.find(partId) == newAddedPartIds.end())
+            continue;
+        partIds.push_back(partId);
     }
     
-    for (const auto &nodeIt: nodeMap) {
-        emit nodeAdded(nodeIt.first);
+    for (const auto &nodeIt: newAddedNodeIds) {
+        emit nodeAdded(nodeIt);
     }
-    for (const auto &edgeIt: edgeMap) {
-        emit edgeAdded(edgeIt.first);
+    for (const auto &edgeIt: newAddedEdgeIds) {
+        emit edgeAdded(edgeIt);
     }
-    for (const auto &partIt : partMap) {
-        emit partAdded(partIt.first);
-        emit partVisibleStateChanged(partIt.first);
+    for (const auto &partIt : newAddedPartIds) {
+        emit partAdded(partIt);
     }
     
     emit partListChanged();
     emit originChanged();
     emit skeletonChanged();
+    
+    for (const auto &partIt : newAddedPartIds) {
+        emit partVisibleStateChanged(partIt);
+    }
+    
+    emit uncheckAll();
+    for (const auto &nodeIt: newAddedNodeIds) {
+        emit checkNode(nodeIt);
+    }
+    for (const auto &edgeIt: newAddedEdgeIds) {
+        emit checkEdge(edgeIt);
+    }
 }
 
 void SkeletonDocument::reset()
@@ -792,6 +815,7 @@ void SkeletonDocument::fromSnapshot(const SkeletonSnapshot &snapshot)
 {
     reset();
     addFromSnapshot(snapshot);
+    emit uncheckAll();
 }
 
 MeshLoader *SkeletonDocument::takeResultMesh()

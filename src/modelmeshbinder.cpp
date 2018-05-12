@@ -199,6 +199,8 @@ void ModelMeshBinder::cleanup()
         m_vboTriangle.destroy();
     if (m_vboEdge.isCreated())
         m_vboEdge.destroy();
+    delete m_texture;
+    m_texture = nullptr;
 }
 
 void ModelMeshBinder::showWireframes()

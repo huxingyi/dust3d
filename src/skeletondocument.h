@@ -213,6 +213,9 @@ signals:
     void enableBackgroundBlur();
     void disableBackgroundBlur();
     void exportReady();
+    void uncheckAll();
+    void checkNode(QUuid nodeId);
+    void checkEdge(QUuid edgeId);
 public: // need initialize
     float originX;
     float originY;

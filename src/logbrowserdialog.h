@@ -14,7 +14,7 @@ public:
     ~LogBrowserDialog();
 
 public slots:
-    void outputMessage(QtMsgType type, const QString &msg);
+    void outputMessage(QtMsgType type, const QString &msg, const QString &source, int line);
 
 protected slots:
     void save();

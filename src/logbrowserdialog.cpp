@@ -49,27 +49,27 @@ LogBrowserDialog::~LogBrowserDialog()
 }
 
 
-void LogBrowserDialog::outputMessage(QtMsgType type, const QString &msg)
+void LogBrowserDialog::outputMessage(QtMsgType type, const QString &msg, const QString &source, int line)
 {
     switch (type) {
     case QtDebugMsg:
-        m_browser->append(tr("— DEBUG: %1").arg(msg));
+        m_browser->append(tr("— DEBUG: %1 - %2:%3").arg(msg).arg(source).arg(QString::number(line)));
         break;
 
     case QtWarningMsg:
-        m_browser->append(tr("— WARNING: %1").arg(msg));
+        m_browser->append(tr("— WARNING: %1 - %2:%3").arg(msg).arg(source).arg(QString::number(line)));
         break;
 
     case QtCriticalMsg:
-        m_browser->append(tr("— CRITICAL: %1").arg(msg));
+        m_browser->append(tr("— CRITICAL: %1 - %2:%3").arg(msg).arg(source).arg(QString::number(line)));
         break;
 
     case QtInfoMsg:
-        m_browser->append(tr("— INFO: %1").arg(msg));
+        m_browser->append(tr("— INFO: %1 - %2:%3").arg(msg).arg(source).arg(QString::number(line)));
         break;
 
     case QtFatalMsg:
-        m_browser->append(tr("— FATAL: %1").arg(msg));
+        m_browser->append(tr("— FATAL: %1 - %2:%3").arg(msg).arg(source).arg(QString::number(line)));
         break;
     }
 }

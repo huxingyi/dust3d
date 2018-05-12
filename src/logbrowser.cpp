@@ -8,7 +8,7 @@ LogBrowser::LogBrowser(QObject *parent) :
 {
     qRegisterMetaType<QtMsgType>("QtMsgType");
     m_browserDialog = new LogBrowserDialog;
-    connect(this, SIGNAL(sendMessage(QtMsgType,QString)), m_browserDialog, SLOT(outputMessage(QtMsgType,QString)), Qt::QueuedConnection);
+    connect(this, &LogBrowser::sendMessage, m_browserDialog, &LogBrowserDialog::outputMessage, Qt::QueuedConnection);
 }
 
 LogBrowser::~LogBrowser()
@@ -33,8 +33,8 @@ bool LogBrowser::isDialogVisible()
     return m_browserDialog->isVisible();
 }
 
-void LogBrowser::outputMessage(QtMsgType type, const QString &msg)
+void LogBrowser::outputMessage(QtMsgType type, const QString &msg, const QString &source, int line)
 {
     printf("%s\n", msg.toUtf8().constData());
-    emit sendMessage( type, msg );
+    emit sendMessage(type, msg, source, line);
 }

@@ -427,6 +427,8 @@ public slots:
     void originChanged();
     void alignSelectedToCenter();
     void selectPartAllById(QUuid partId);
+    void addSelectNode(QUuid nodeId);
+    void addSelectEdge(QUuid edgeId);
     void enableBackgroundBlur();
     void disableBackgroundBlur();
 private slots:

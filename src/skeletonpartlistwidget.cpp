@@ -754,7 +754,7 @@ void SkeletonPartListWidget::partUnchecked(QUuid partId)
 {
     auto item = m_itemMap.find(partId);
     if (item == m_itemMap.end()) {
-        qDebug() << "Part item not found:" << partId;
+        //qDebug() << "Part item not found:" << partId;
         return;
     }
     SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second);

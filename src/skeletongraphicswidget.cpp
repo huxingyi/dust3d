@@ -1600,6 +1600,28 @@ void SkeletonGraphicsWidget::selectPartAllById(QUuid partId)
     hoverPart(QUuid());
 }
 
+void SkeletonGraphicsWidget::addSelectNode(QUuid nodeId)
+{
+    const auto &findResult = nodeItemMap.find(nodeId);
+    if (findResult == nodeItemMap.end()) {
+        qDebug() << "addSelectNode failed because of node id not exists:<<" << nodeId;
+        return;
+    }
+    addItemToRangeSelection(findResult->second.first);
+    hoverPart(QUuid());
+}
+
+void SkeletonGraphicsWidget::addSelectEdge(QUuid edgeId)
+{
+    const auto &findResult = edgeItemMap.find(edgeId);
+    if (findResult == edgeItemMap.end()) {
+        qDebug() << "addSelectEdge failed because of edge id not exists:<<" << edgeId;
+        return;
+    }
+    addItemToRangeSelection(findResult->second.first);
+    hoverPart(QUuid());
+}
+
 void SkeletonGraphicsWidget::selectPartAll()
 {
     unselectAll();
