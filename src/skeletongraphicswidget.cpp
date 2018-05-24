@@ -37,7 +37,9 @@ SkeletonGraphicsWidget::SkeletonGraphicsWidget(const SkeletonDocument *document)
     m_mainOriginItem(nullptr),
     m_sideOriginItem(nullptr),
     m_hoveredOriginItem(nullptr),
-    m_checkedOriginItem(nullptr)
+    m_checkedOriginItem(nullptr),
+    m_ikMoveUpdateVersion(0),
+    m_ikMover(nullptr)
 {
     setRenderHint(QPainter::Antialiasing, false);
     setBackgroundBrush(QBrush(QWidget::palette().color(QWidget::backgroundRole()), Qt::SolidPattern));
@@ -609,7 +611,30 @@ bool SkeletonGraphicsWidget::mouseMove(QMouseEvent *event)
                 float byX = mouseScenePos.x() - m_lastScenePos.x();
                 float byY = mouseScenePos.y() - m_lastScenePos.y();
                 if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
-                    rotateSelected(byX);
+                    std::set<SkeletonGraphicsNodeItem *> nodeItems;
+                    readMergedSkeletonNodeSetFromRangeSelection(&nodeItems);
+                    if (nodeItems.size() == 1) {
+                        auto &nodeItem = *nodeItems.begin();
+                        const SkeletonNode *node = m_document->findNode(nodeItem->id());
+                        if (node->edgeIds.size() == 1) {
+                            const auto origin = nodeItem->origin();
+                            byX = mouseScenePos.x() - origin.x();
+                            byY = mouseScenePos.y() - origin.y();
+                            byX = sceneRadiusToUnified(byX);
+                            byY = sceneRadiusToUnified(byY);
+                            QVector3D target = QVector3D(node->x, node->y, node->z);
+                            if (SkeletonProfile::Main == nodeItem->profile()) {
+                                target.setX(target.x() + byX);
+                                target.setY(target.y() + byY);
+                            } else {
+                                target.setY(target.y() + byY);
+                                target.setZ(target.z() + byX);
+                            }
+                            emit ikMove(nodeItem->id(), target);
+                        }
+                    } else {
+                        rotateSelected(byX);
+                    }
                 } else {
                     moveSelected(byX, byY);
                 }
@@ -670,6 +695,8 @@ void SkeletonGraphicsWidget::moveSelected(float byX, float byY)
 {
     if (m_rangeSelectionSet.empty())
         return;
+    
+    m_ikMoveEndEffectorId = QUuid();
     
     byX = sceneRadiusToUnified(byX);
     byY = sceneRadiusToUnified(byY);
@@ -1837,4 +1864,79 @@ void SkeletonGraphicsWidget::setItemHoveredOnAllProfiles(QGraphicsItem *item, bo
     }
 }
 
+void SkeletonGraphicsWidget::ikMoveReady()
+{
+    unsigned long long movedUpdateVersion = m_ikMover->getUpdateVersion();
+    
+    if (movedUpdateVersion == m_ikMoveUpdateVersion &&
+            !m_ikMoveEndEffectorId.isNull()) {
+        emit batchChangeBegin();
+        for (const auto &it: m_ikMover->ikNodes()) {
+            emit setNodeOrigin(it.id, it.newPosition.x(), it.newPosition.y(), it.newPosition.z());
+        }
+        emit batchChangeEnd();
+        emit groupOperationAdded();
+    }
+    
+    delete m_ikMover;
+    m_ikMover = nullptr;
+    
+    if (movedUpdateVersion != m_ikMoveUpdateVersion &&
+            !m_ikMoveEndEffectorId.isNull()) {
+        ikMove(m_ikMoveEndEffectorId, m_ikMoveTarget);
+    }
+}
 
+void SkeletonGraphicsWidget::ikMove(QUuid endEffectorId, QVector3D target)
+{
+    m_ikMoveEndEffectorId = endEffectorId;
+    m_ikMoveTarget = target;
+    m_ikMoveUpdateVersion++;
+    if (nullptr != m_ikMover) {
+        return;
+    }
+    
+    QThread *thread = new QThread;
+    
+    m_ikMover = new SkeletonIkMover();
+    m_ikMover->setUpdateVersion(m_ikMoveUpdateVersion);
+    m_ikMover->setTarget(m_ikMoveTarget);
+    QUuid nodeId = endEffectorId;
+    std::set<QUuid> historyNodeIds;
+    std::vector<std::pair<QUuid, QVector3D>> appendNodes;
+    for (;;) {
+        historyNodeIds.insert(nodeId);
+        const auto node = m_document->findNode(nodeId);
+        if (nullptr == node)
+            break;
+        appendNodes.push_back(std::make_pair(nodeId, QVector3D(node->x, node->y, node->z)));
+        if (node->edgeIds.size() < 1 || node->edgeIds.size() > 2)
+            break;
+        QUuid choosenNodeId;
+        for (const auto &edgeId: node->edgeIds) {
+            const auto edge = m_document->findEdge(edgeId);
+            if (nullptr == edge)
+                break;
+            QUuid neighborNodeId = edge->neighborOf(nodeId);
+            if (historyNodeIds.find(neighborNodeId) != historyNodeIds.end())
+                continue;
+            choosenNodeId = neighborNodeId;
+            break;
+        }
+        if (choosenNodeId.isNull())
+            break;
+        nodeId = choosenNodeId;
+    }
+    qDebug() << "ik move nodes:";
+    for (int i = appendNodes.size() - 1; i >= 0; i--) {
+        qDebug() << i << appendNodes[i].first << appendNodes[i].second;
+        m_ikMover->addNode(appendNodes[i].first, appendNodes[i].second);
+    }
+    qDebug() << "target:" << m_ikMoveTarget;
+    m_ikMover->moveToThread(thread);
+    connect(thread, &QThread::started, m_ikMover, &SkeletonIkMover::process);
+    connect(m_ikMover, &SkeletonIkMover::finished, this, &SkeletonGraphicsWidget::ikMoveReady);
+    connect(m_ikMover, &SkeletonIkMover::finished, thread, &QThread::quit);
+    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+    thread->start();
+}

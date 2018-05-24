@@ -116,6 +116,12 @@ HEADERS += src/exportpreviewwidget.h
 SOURCES += src/ambientocclusionbaker.cpp
 HEADERS += src/ambientocclusionbaker.h
 
+SOURCES += src/ccdikresolver.cpp
+HEADERS += src/ccdikresolver.h
+
+SOURCES += src/skeletonikmover.cpp
+HEADERS += src/skeletonikmover.h
+
 HEADERS += src/qtlightmapper.h
 
 SOURCES += src/main.cpp

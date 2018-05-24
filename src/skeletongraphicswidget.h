@@ -15,6 +15,7 @@
 #include "turnaroundloader.h"
 #include "theme.h"
 #include "dust3dutil.h"
+#include "skeletonikmover.h"
 
 class SkeletonGraphicsOriginItem : public QGraphicsPolygonItem
 {
@@ -366,6 +367,7 @@ signals:
     void setXlockState(bool locked);
     void setYlockState(bool locked);
     void setZlockState(bool locked);
+    void setNodeOrigin(QUuid nodeId, float x, float y, float z);
 public:
     SkeletonGraphicsWidget(const SkeletonDocument *document);
     std::map<QUuid, std::pair<SkeletonGraphicsNodeItem *, SkeletonGraphicsNodeItem *>> nodeItemMap;
@@ -431,6 +433,8 @@ public slots:
     void addSelectEdge(QUuid edgeId);
     void enableBackgroundBlur();
     void disableBackgroundBlur();
+    void ikMove(QUuid endEffectorId, QVector3D target);
+    void ikMoveReady();
 private slots:
     void turnaroundImageReady();
 private:
@@ -475,6 +479,10 @@ private: //need initalize
     SkeletonGraphicsOriginItem *m_sideOriginItem;
     SkeletonGraphicsOriginItem *m_hoveredOriginItem;
     SkeletonGraphicsOriginItem *m_checkedOriginItem;
+    unsigned long long m_ikMoveUpdateVersion;
+    SkeletonIkMover *m_ikMover;
+    QVector3D m_ikMoveTarget;
+    QUuid m_ikMoveEndEffectorId;
 private:
     std::set<QGraphicsItem *> m_rangeSelectionSet;
     QPoint m_lastGlobalPos;
