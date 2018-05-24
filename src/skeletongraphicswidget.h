@@ -368,6 +368,7 @@ signals:
     void setYlockState(bool locked);
     void setZlockState(bool locked);
     void setNodeOrigin(QUuid nodeId, float x, float y, float z);
+    void zoomRenderedModelBy(float delta);
 public:
     SkeletonGraphicsWidget(const SkeletonDocument *document);
     std::map<QUuid, std::pair<SkeletonGraphicsNodeItem *, SkeletonGraphicsNodeItem *>> nodeItemMap;

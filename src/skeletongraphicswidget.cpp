@@ -1106,12 +1106,16 @@ bool SkeletonGraphicsWidget::keyPress(QKeyEvent *event)
     } else if (event->key() == Qt::Key_D) {
         emit setEditMode(SkeletonDocumentEditMode::Drag);
     } else if (event->key() == Qt::Key_Minus) {
-        if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
+        if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::AltModifier)) {
+            emit zoomRenderedModelBy(-10);
+        } else if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
             zoomSelected(-1);
             emit groupOperationAdded();
         }
     } else if (event->key() == Qt::Key_Equal) {
-        if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
+        if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::AltModifier)) {
+            emit zoomRenderedModelBy(10);
+        } else if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
             zoomSelected(1);
             emit groupOperationAdded();
         }

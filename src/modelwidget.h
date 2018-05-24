@@ -34,7 +34,7 @@ public slots:
     void setYRotation(int angle);
     void setZRotation(int angle);
     void cleanup();
-
+    void zoom(float delta);
 signals:
     void xRotationChanged(int angle);
     void yRotationChanged(int angle);

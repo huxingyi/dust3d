@@ -257,6 +257,12 @@ void ModelWidget::mouseMoveEvent(QMouseEvent *event)
     m_lastPos = event->pos();
 }
 
+void ModelWidget::zoom(float delta)
+{
+    QMargins margins(delta, delta, delta, delta);
+    setGeometry(geometry().marginsAdded(margins));
+}
+
 void ModelWidget::wheelEvent(QWheelEvent *event)
 {
     QOpenGLWidget::wheelEvent(event);
@@ -274,8 +280,7 @@ void ModelWidget::wheelEvent(QWheelEvent *event)
         if (fabs(delta) < 1)
             delta = delta < 0 ? -1.0 : 1.0;
     }
-    QMargins margins(delta, delta, delta, delta);
-    setGeometry(geometry().marginsAdded(margins));
+    zoom(delta);
 }
 
 void ModelWidget::updateMesh(MeshLoader *mesh)
