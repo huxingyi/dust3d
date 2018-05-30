@@ -240,18 +240,72 @@ void MeshResultContext::calculateTriangleColors(std::vector<QColor> &triangleCol
     }
 }
 
-struct BmeshConnectionPossible
+void MeshResultContext::calculateConnectionPossibleRscore(BmeshConnectionPossible &possible)
 {
-    BmeshEdge bmeshEdge;
-    float score;
-};
+    possible.rscore = 100000000; // just as bigger than all the lengthSquared
+    const auto &fromBmeshNode = bmeshNodeMap().find(std::make_pair(possible.bmeshEdge.fromBmeshId, possible.bmeshEdge.fromNodeId));
+    const auto &toBmeshNode = bmeshNodeMap().find(std::make_pair(possible.bmeshEdge.toBmeshId, possible.bmeshEdge.toNodeId));
+    if (fromBmeshNode == bmeshNodeMap().end())
+        qDebug() << "There is noexists node:" << possible.bmeshEdge.fromBmeshId << possible.bmeshEdge.fromNodeId;
+    else if (toBmeshNode == bmeshNodeMap().end())
+        qDebug() << "There is noexists node:" << possible.bmeshEdge.toBmeshId << possible.bmeshEdge.toNodeId;
+    else
+        possible.rscore = (fromBmeshNode->second->origin - toBmeshNode->second->origin).lengthSquared();
+}
 
 void MeshResultContext::calculateBmeshConnectivity()
 {
     const std::map<std::pair<int, int>, std::pair<int, int>> edgeSourceMap = triangleEdgeSourceMap();
     std::set<std::pair<int, int>> processedSet;
-    qDebug() << "start calculateBmeshConnectivity";
+    std::set<std::pair<int, int>> connectedBmeshSet;
+    std::set<int> legBmeshIdSet;
     std::vector<BmeshConnectionPossible> possibles;
+    qDebug() << "start calculateBmeshConnectivity";
+    // Check Leg (Start) && Spine
+    std::set<std::pair<int, int>> legStartNodes;
+    std::set<std::pair<int, int>> spineNodes;
+    for (const auto &it: bmeshNodes) {
+        switch (it.boneMark) {
+            case SkeletonBoneMark::LegStart:
+                legBmeshIdSet.insert(it.bmeshId);
+                legStartNodes.insert(std::make_pair(it.bmeshId, it.nodeId));
+                break;
+            case SkeletonBoneMark::Spine:
+                spineNodes.insert(std::make_pair(it.bmeshId, it.nodeId));
+                break;
+            default:
+                break;
+        }
+    }
+    for (const auto &legStart: legStartNodes) {
+        possibles.clear();
+        for (const auto &spine: spineNodes) {
+            if (legStart.first != spine.first && legStart.first != -spine.first) {
+                BmeshConnectionPossible possible;
+                possible.bmeshEdge.fromBmeshId = legStart.first;
+                possible.bmeshEdge.fromNodeId = legStart.second;
+                possible.bmeshEdge.toBmeshId = spine.first;
+                possible.bmeshEdge.toNodeId = spine.second;
+                calculateConnectionPossibleRscore(possible);
+                possibles.push_back(possible);
+            }
+        }
+        std::sort(possibles.begin(), possibles.end(), [](const BmeshConnectionPossible &a, const BmeshConnectionPossible &b) -> bool {
+            return a.rscore < b.rscore;
+        });
+        if (!possibles.empty()) {
+            BmeshConnectionPossible *possible = &possibles[0];
+            int fromBmeshId = possible->bmeshEdge.fromBmeshId;
+            int toBmeshId = possible->bmeshEdge.toBmeshId;
+            if (connectedBmeshSet.find(std::make_pair(fromBmeshId, toBmeshId)) == connectedBmeshSet.end()) {
+                bmeshEdges.push_back(possible->bmeshEdge);
+                connectedBmeshSet.insert(std::make_pair(fromBmeshId, toBmeshId));
+                connectedBmeshSet.insert(std::make_pair(toBmeshId, fromBmeshId));
+            }
+        }
+    }
+    // Check connectivity by mesh connection
+    possibles.clear();
     for (const auto &it: edgeSourceMap) {
         if (processedSet.find(it.first) != processedSet.end())
             continue;
@@ -267,29 +321,22 @@ void MeshResultContext::calculateBmeshConnectivity()
         possible.bmeshEdge.fromNodeId = it.second.second;
         possible.bmeshEdge.toBmeshId = paired->second.first;
         possible.bmeshEdge.toNodeId = paired->second.second;
-        possible.score = 100000000; // just as bigger than all the lengthSquared
-        const auto &fromBmeshNode = bmeshNodeMap().find(std::make_pair(possible.bmeshEdge.fromBmeshId, possible.bmeshEdge.fromNodeId));
-        const auto &toBmeshNode = bmeshNodeMap().find(std::make_pair(possible.bmeshEdge.toBmeshId, possible.bmeshEdge.toNodeId));
-        if (fromBmeshNode == bmeshNodeMap().end())
-            qDebug() << "There is noexists node:" << possible.bmeshEdge.fromBmeshId << possible.bmeshEdge.fromNodeId;
-        else if (toBmeshNode == bmeshNodeMap().end())
-            qDebug() << "There is noexists node:" << possible.bmeshEdge.toBmeshId << possible.bmeshEdge.toNodeId;
-        else
-            possible.score = (fromBmeshNode->second->origin - toBmeshNode->second->origin).lengthSquared();
+        calculateConnectionPossibleRscore(possible);
         possibles.push_back(possible);
     }
     std::sort(possibles.begin(), possibles.end(), [](const BmeshConnectionPossible &a, const BmeshConnectionPossible &b) -> bool {
-        return a.score < b.score;
+        return a.rscore < b.rscore;
     });
-    std::set<std::pair<int, int>> connectedBmeshSet;
     for (auto i = 0u; i < possibles.size(); i++) {
         BmeshConnectionPossible *possible = &possibles[i];
         int fromBmeshId = possible->bmeshEdge.fromBmeshId;
         int toBmeshId = possible->bmeshEdge.toBmeshId;
         if (connectedBmeshSet.find(std::make_pair(fromBmeshId, toBmeshId)) != connectedBmeshSet.end())
             continue;
-        if (possible->bmeshEdge.fromBmeshId != -possible->bmeshEdge.toBmeshId) {
-            // Don't connect each other mirrored parts
+        // Don't connect each other mirrored parts and two seperate legs
+        if (possible->bmeshEdge.fromBmeshId != -possible->bmeshEdge.toBmeshId &&
+                !(legBmeshIdSet.find(possible->bmeshEdge.fromBmeshId) != legBmeshIdSet.end() &&
+                    legBmeshIdSet.find(possible->bmeshEdge.toBmeshId) != legBmeshIdSet.end())) {
             bmeshEdges.push_back(possible->bmeshEdge);
         }
         connectedBmeshSet.insert(std::make_pair(fromBmeshId, toBmeshId));

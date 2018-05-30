@@ -122,6 +122,12 @@ HEADERS += src/ccdikresolver.h
 SOURCES += src/skeletonikmover.cpp
 HEADERS += src/skeletonikmover.h
 
+SOURCES += src/markiconcreator.cpp
+HEADERS += src/markiconcreator.h
+
+SOURCES += src/skeletonbonemark.cpp
+HEADERS += src/skeletonbonemark.h
+
 HEADERS += src/qtlightmapper.h
 
 SOURCES += src/main.cpp

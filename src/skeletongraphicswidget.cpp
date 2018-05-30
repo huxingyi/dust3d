@@ -13,6 +13,7 @@
 #include "theme.h"
 #include "dust3dutil.h"
 #include "skeletonxml.h"
+#include "markiconcreator.h"
 
 SkeletonGraphicsWidget::SkeletonGraphicsWidget(const SkeletonDocument *document) :
     m_document(document),
@@ -179,6 +180,31 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
         contextMenu.addAction(&alignToCenterAction);
     }
     
+    QAction markAsNoneAction(tr("None"), this);
+    QAction *markAsActions[SKELETON_BONE_MARK_TYPE_NUM];
+    for (int i = 0; i < SKELETON_BONE_MARK_TYPE_NUM; i++) {
+        markAsActions[i] = nullptr;
+    }
+    if (hasNodeSelection()) {
+        QMenu *subMenu = contextMenu.addMenu(tr("Mark As"));
+        
+        connect(&markAsNoneAction, &QAction::triggered, [=]() {
+            setSelectedNodesBoneMark(SkeletonBoneMark::None);
+        });
+        subMenu->addAction(&markAsNoneAction);
+        
+        subMenu->addSeparator();
+        
+        for (int i = 0; i < SKELETON_BONE_MARK_TYPE_NUM; i++) {
+            SkeletonBoneMark boneMark = (SkeletonBoneMark)(i + 1);
+            markAsActions[i] = new QAction(MarkIconCreator::createIcon(boneMark), SkeletonBoneMarkToDispName(boneMark), this);
+            connect(markAsActions[i], &QAction::triggered, [=]() {
+                setSelectedNodesBoneMark(boneMark);
+            });
+            subMenu->addAction(markAsActions[i]);
+        }
+    }
+    
     QAction selectAllAction(tr("Select All"), this);
     if (hasItems()) {
         connect(&selectAllAction, &QAction::triggered, this, &SkeletonGraphicsWidget::selectAll);
@@ -196,24 +222,12 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
         connect(&unselectAllAction, &QAction::triggered, this, &SkeletonGraphicsWidget::unselectAll);
         contextMenu.addAction(&unselectAllAction);
     }
-    
-    /*
-    contextMenu.addSeparator();
-    
-    QAction exportResultAction(tr("Export..."), this);
-    if (hasItems()) {
-        connect(&exportResultAction, &QAction::triggered, this, &SkeletonGraphicsWidget::exportResult);
-        contextMenu.addAction(&exportResultAction);
-    }
-    
-    QAction changeTurnaroundAction(tr("Change Turnaround..."), this);
-    connect(&changeTurnaroundAction, &QAction::triggered, [=]() {
-        emit changeTurnaround();
-    });
-    contextMenu.addAction(&changeTurnaroundAction);
-    */
 
     contextMenu.exec(mapToGlobal(pos));
+    
+    for (int i = 0; i < SKELETON_BONE_MARK_TYPE_NUM; i++) {
+        delete markAsActions[i];
+    }
 }
 
 bool SkeletonGraphicsWidget::hasSelection()
@@ -235,6 +249,15 @@ bool SkeletonGraphicsWidget::hasEdgeSelection()
 {
     for (const auto &it: m_rangeSelectionSet) {
         if (it->data(0) == "edge")
+            return true;
+    }
+    return false;
+}
+
+bool SkeletonGraphicsWidget::hasNodeSelection()
+{
+    for (const auto &it: m_rangeSelectionSet) {
+        if (it->data(0) == "node")
             return true;
     }
     return false;
@@ -1253,12 +1276,15 @@ void SkeletonGraphicsWidget::nodeAdded(QUuid nodeId)
         qDebug() << "New node added but node item already exist:" << nodeId;
         return;
     }
+    QColor markColor = SkeletonBoneMarkToColor(node->boneMark);
     SkeletonGraphicsNodeItem *mainProfileItem = new SkeletonGraphicsNodeItem(SkeletonProfile::Main);
     SkeletonGraphicsNodeItem *sideProfileItem = new SkeletonGraphicsNodeItem(SkeletonProfile::Side);
     mainProfileItem->setOrigin(scenePosFromUnified(QPointF(node->x, node->y)));
     sideProfileItem->setOrigin(scenePosFromUnified(QPointF(node->z, node->y)));
     mainProfileItem->setRadius(sceneRadiusFromUnified(node->radius));
     sideProfileItem->setRadius(sceneRadiusFromUnified(node->radius));
+    mainProfileItem->setMarkColor(markColor);
+    sideProfileItem->setMarkColor(markColor);
     mainProfileItem->setId(nodeId);
     sideProfileItem->setId(nodeId);
     scene()->addItem(mainProfileItem);
@@ -1372,6 +1398,23 @@ void SkeletonGraphicsWidget::nodeRadiusChanged(QUuid nodeId)
     float sceneRadius = sceneRadiusFromUnified(node->radius);
     it->second.first->setRadius(sceneRadius);
     it->second.second->setRadius(sceneRadius);
+}
+
+void SkeletonGraphicsWidget::nodeBoneMarkChanged(QUuid nodeId)
+{
+    const SkeletonNode *node = m_document->findNode(nodeId);
+    if (nullptr == node) {
+        qDebug() << "Node changed but node id not exist:" << nodeId;
+        return;
+    }
+    auto it = nodeItemMap.find(nodeId);
+    if (it == nodeItemMap.end()) {
+        qDebug() << "Node not found:" << nodeId;
+        return;
+    }
+    QColor markColor = SkeletonBoneMarkToColor(node->boneMark);
+    it->second.first->setMarkColor(markColor);
+    it->second.second->setMarkColor(markColor);
 }
 
 void SkeletonGraphicsWidget::nodeOriginChanged(QUuid nodeId)
@@ -1944,3 +1987,19 @@ void SkeletonGraphicsWidget::ikMove(QUuid endEffectorId, QVector3D target)
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
     thread->start();
 }
+
+void SkeletonGraphicsWidget::setSelectedNodesBoneMark(SkeletonBoneMark boneMark)
+{
+    std::set<QUuid> nodeIdSet;
+    std::set<QUuid> edgeIdSet;
+    readSkeletonNodeAndEdgeIdSetFromRangeSelection(&nodeIdSet, &edgeIdSet);
+    if (!nodeIdSet.empty()) {
+        emit batchChangeBegin();
+        for (const auto &id: nodeIdSet) {
+            emit setNodeBoneMark(id, boneMark);
+        }
+        emit batchChangeEnd();
+        emit groupOperationAdded();
+    }
+}
+

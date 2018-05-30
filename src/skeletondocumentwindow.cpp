@@ -27,6 +27,7 @@
 #include "aboutwidget.h"
 #include "version.h"
 #include "gltffile.h"
+#include "markiconcreator.h"
 
 int SkeletonDocumentWindow::m_modelRenderWidgetInitialX = 16;
 int SkeletonDocumentWindow::m_modelRenderWidgetInitialY = 16;
@@ -306,6 +307,27 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(m_alignToCenterAction, &QAction::triggered, m_graphicsWidget, &SkeletonGraphicsWidget::alignSelectedToCenter);
     m_editMenu->addAction(m_alignToCenterAction);
     
+    m_markAsMenu = new QMenu(tr("Mark As"));
+    
+    m_markAsNoneAction = new QAction(tr("None"), this);
+    connect(m_markAsNoneAction, &QAction::triggered, [=]() {
+        m_graphicsWidget->setSelectedNodesBoneMark(SkeletonBoneMark::None);
+    });
+    m_markAsMenu->addAction(m_markAsNoneAction);
+    
+    m_markAsMenu->addSeparator();
+    
+    for (int i = 0; i < SKELETON_BONE_MARK_TYPE_NUM; i++) {
+        SkeletonBoneMark boneMark = (SkeletonBoneMark)(i + 1);
+        m_markAsActions[i] = new QAction(MarkIconCreator::createIcon(boneMark), SkeletonBoneMarkToDispName(boneMark), this);
+        connect(m_markAsActions[i], &QAction::triggered, [=]() {
+            m_graphicsWidget->setSelectedNodesBoneMark(boneMark);
+        });
+        m_markAsMenu->addAction(m_markAsActions[i]);
+    }
+    
+    m_editMenu->addMenu(m_markAsMenu);
+    
     m_selectAllAction = new QAction(tr("Select All"), this);
     connect(m_selectAllAction, &QAction::triggered, m_graphicsWidget, &SkeletonGraphicsWidget::selectAll);
     m_editMenu->addAction(m_selectAllAction);
@@ -330,6 +352,7 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
         m_flipHorizontallyAction->setEnabled(m_graphicsWidget->hasMultipleSelection());
         m_flipVerticallyAction->setEnabled(m_graphicsWidget->hasMultipleSelection());
         m_alignToCenterAction->setEnabled(m_graphicsWidget->hasSelection() && m_document->originSettled());
+        m_markAsMenu->setEnabled(m_graphicsWidget->hasNodeSelection());
         m_selectAllAction->setEnabled(m_graphicsWidget->hasItems());
         m_selectPartAllAction->setEnabled(m_graphicsWidget->hasItems());
         m_unselectAllAction->setEnabled(m_graphicsWidget->hasSelection());
@@ -457,6 +480,7 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(graphicsWidget, &SkeletonGraphicsWidget::scaleNodeByAddRadius, m_document, &SkeletonDocument::scaleNodeByAddRadius);
     connect(graphicsWidget, &SkeletonGraphicsWidget::moveNodeBy, m_document, &SkeletonDocument::moveNodeBy);
     connect(graphicsWidget, &SkeletonGraphicsWidget::setNodeOrigin, m_document, &SkeletonDocument::setNodeOrigin);
+    connect(graphicsWidget, &SkeletonGraphicsWidget::setNodeBoneMark, m_document, &SkeletonDocument::setNodeBoneMark);
     connect(graphicsWidget, &SkeletonGraphicsWidget::removeNode, m_document, &SkeletonDocument::removeNode);
     connect(graphicsWidget, &SkeletonGraphicsWidget::setEditMode, m_document, &SkeletonDocument::setEditMode);
     connect(graphicsWidget, &SkeletonGraphicsWidget::removeEdge, m_document, &SkeletonDocument::removeEdge);
@@ -492,6 +516,7 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(m_document, &SkeletonDocument::edgeAdded, graphicsWidget, &SkeletonGraphicsWidget::edgeAdded);
     connect(m_document, &SkeletonDocument::edgeRemoved, graphicsWidget, &SkeletonGraphicsWidget::edgeRemoved);
     connect(m_document, &SkeletonDocument::nodeRadiusChanged, graphicsWidget, &SkeletonGraphicsWidget::nodeRadiusChanged);
+    connect(m_document, &SkeletonDocument::nodeBoneMarkChanged, graphicsWidget, &SkeletonGraphicsWidget::nodeBoneMarkChanged);
     connect(m_document, &SkeletonDocument::nodeOriginChanged, graphicsWidget, &SkeletonGraphicsWidget::nodeOriginChanged);
     connect(m_document, &SkeletonDocument::partVisibleStateChanged, graphicsWidget, &SkeletonGraphicsWidget::partVisibleStateChanged);
     connect(m_document, &SkeletonDocument::partDisableStateChanged, graphicsWidget, &SkeletonGraphicsWidget::partVisibleStateChanged);

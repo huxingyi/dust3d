@@ -96,6 +96,10 @@ private:
     QAction *m_selectPartAllAction;
     QAction *m_unselectAllAction;
     
+    QMenu *m_markAsMenu;
+    QAction *m_markAsNoneAction;
+    QAction *m_markAsActions[SKELETON_BONE_MARK_TYPE_NUM];
+    
     QMenu *m_viewMenu;
     QAction *m_resetModelWidgetPosAction;
     QAction *m_showPartsListAction;

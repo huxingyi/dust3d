@@ -6,6 +6,7 @@
 #include <QUuid>
 #include <QColor>
 #include "positionmap.h"
+#include "skeletonbonemark.h"
 
 #define MAX_WEIGHT_NUM  4
 
@@ -16,6 +17,7 @@ struct BmeshNode
     QVector3D origin;
     float radius;
     QColor color;
+    SkeletonBoneMark boneMark;
 };
 
 struct BmeshVertex
@@ -86,6 +88,12 @@ struct ResultRearrangedTriangle
     int originalIndex;
 };
 
+struct BmeshConnectionPossible
+{
+    BmeshEdge bmeshEdge;
+    float rscore;
+};
+
 class MeshResultContext
 {
 public:
@@ -150,6 +158,7 @@ private:
     void calculateResultParts(std::map<int, ResultPart> &parts);
     void calculateResultTriangleUvs(std::vector<ResultTriangleUv> &uvs, std::set<int> &seamVertices);
     void calculateResultRearrangedVertices(std::vector<ResultRearrangedVertex> &rearrangedVertices, std::vector<ResultRearrangedTriangle> &rearrangedTriangles);
+    void calculateConnectionPossibleRscore(BmeshConnectionPossible &possible);
 };
 
 #endif

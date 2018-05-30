@@ -6,7 +6,7 @@ File
 
 New Window
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Each window is a seperate Dust3D Document. You can create a new window from here.
+Each window is a separate Dust3D Document. You can create a new window from here.
 
 New
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -26,7 +26,7 @@ Same as Save except ask you provider a new save path.
 
 Save All
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Save all openned window.
+Save all opened window.
 
 Export...
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -43,7 +43,7 @@ Edit
 
 Add...
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Swith to edit mode, get ready to add node.
+Switch to edit mode, get ready to add node.
 
 Undo
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -87,7 +87,12 @@ Flip selected nodes vertically.
 
 Align to Center
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Align selected nodes vertically with center anchor. Normally, the center anchor(a Triangle) is not show up, you can turn on the Part Mirror to make it visible, then turn Part Mirror off, the centor anchor would not gone once showed.
+Align selected nodes vertically with center anchor. Normally, the center anchor(a Triangle) is not show up, you can turn on the Part Mirror to make it visible, then turn Part Mirror off, the center anchor would not gone once showed.
+
+Mark As
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Mark selected nodes as specified body location explicitly, such as Leg (Start), Leg (Joint), Leg (End), and Spine.
+This will help the rigging step generating more reasonable result.
 
 Select All
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -118,7 +123,7 @@ Rendered Model can be showed in two types, one with wireframe, one without.
 
 Show Debug Dialog
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-This is for debug perpose only. It prints some useful information when debug.
+This is for debug purpose only. It prints some useful information when debug.
 
 Help
 =====
@@ -129,7 +134,7 @@ You can check the version info of Dust3D from here.
 
 Fork me on GitHub
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Dust3D is a totally free and opensourced project, this bring you to the project website.
+Dust3D is a totally free and open-sourced project, this bring you to the project website.
 
 Report Issues
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

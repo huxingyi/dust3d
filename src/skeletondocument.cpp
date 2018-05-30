@@ -528,6 +528,22 @@ void SkeletonDocument::setNodeRadius(QUuid nodeId, float radius)
     emit skeletonChanged();
 }
 
+void SkeletonDocument::setNodeBoneMark(QUuid nodeId, SkeletonBoneMark mark)
+{
+    auto it = nodeMap.find(nodeId);
+    if (it == nodeMap.end()) {
+        qDebug() << "Find node failed:" << nodeId;
+        return;
+    }
+    if (isPartReadonly(it->second.partId))
+        return;
+    if (it->second.boneMark == mark)
+        return;
+    it->second.boneMark = mark;
+    emit nodeBoneMarkChanged(nodeId);
+    emit skeletonChanged();
+}
+
 void SkeletonDocument::updateTurnaround(const QImage &image)
 {
     turnaround = image;
@@ -642,6 +658,8 @@ void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUu
         node["y"] = QString::number(nodeIt.second.y);
         node["z"] = QString::number(nodeIt.second.z);
         node["partId"] = nodeIt.second.partId.toString();
+        if (nodeIt.second.boneMark != SkeletonBoneMark::None)
+            node["boneMark"] = SkeletonBoneMarkToString(nodeIt.second.boneMark);
         if (!nodeIt.second.name.isEmpty())
             node["name"] = nodeIt.second.name;
         snapshot->nodes[node["id"]] = node;
@@ -732,6 +750,7 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot)
         node.y = valueOfKeyInMapOrEmpty(nodeKv.second, "y").toFloat();
         node.z = valueOfKeyInMapOrEmpty(nodeKv.second, "z").toFloat();
         node.partId = oldNewIdMap[QUuid(valueOfKeyInMapOrEmpty(nodeKv.second, "partId"))];
+        node.boneMark = SkeletonBoneMarkFromString(valueOfKeyInMapOrEmpty(nodeKv.second, "boneMark").toUtf8().constData());
         nodeMap[node.id] = node;
         newAddedNodeIds.insert(node.id);
     }

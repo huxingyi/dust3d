@@ -122,7 +122,8 @@ public:
     SkeletonGraphicsNodeItem(SkeletonProfile profile=SkeletonProfile::Unknown) :
         m_profile(profile),
         m_hovered(false),
-        m_checked(false)
+        m_checked(false),
+        m_markColor(Qt::transparent)
     {
         setData(0, "node");
         setRadius(32);
@@ -149,10 +150,17 @@ public:
         pen.setWidth(0);
         setPen(pen);
         
-        QColor brushColor = color;
-        brushColor.setAlphaF((m_checked || m_hovered) ? Theme::fillAlpha : 0);
-        QBrush brush(brushColor);
-        setBrush(brush);
+        if (m_markColor == Qt::transparent) {
+            QColor brushColor = color;
+            brushColor.setAlphaF((m_checked || m_hovered) ? Theme::fillAlpha : 0);
+            QBrush brush(brushColor);
+            setBrush(brush);
+        } else {
+            QColor brushColor = m_markColor;
+            brushColor.setAlphaF((m_checked || m_hovered) ? Theme::fillAlpha * 4 : Theme::fillAlpha * 1.5);
+            QBrush brush(brushColor);
+            setBrush(brush);
+        }
     }
     void setOrigin(QPointF point)
     {
@@ -178,6 +186,11 @@ public:
         QPointF oldOrigin = origin();
         setRect(oldOrigin.x() - radius, oldOrigin.y() - radius,
             radius * 2, radius * 2);
+        updateAppearance();
+    }
+    void setMarkColor(QColor color)
+    {
+        m_markColor = color;
         updateAppearance();
     }
     SkeletonProfile profile()
@@ -215,6 +228,7 @@ private:
     SkeletonProfile m_profile;
     bool m_hovered;
     bool m_checked;
+    QColor m_markColor;
 };
 
 class SkeletonGraphicsEdgeItem : public QGraphicsPolygonItem
@@ -368,6 +382,7 @@ signals:
     void setYlockState(bool locked);
     void setZlockState(bool locked);
     void setNodeOrigin(QUuid nodeId, float x, float y, float z);
+    void setNodeBoneMark(QUuid nodeId, SkeletonBoneMark mark);
     void zoomRenderedModelBy(float delta);
 public:
     SkeletonGraphicsWidget(const SkeletonDocument *document);
@@ -389,6 +404,7 @@ public:
     bool hasItems();
     bool hasMultipleSelection();
     bool hasEdgeSelection();
+    bool hasNodeSelection();
     bool hasTwoDisconnectedNodesSelection();
 protected:
     void mouseMoveEvent(QMouseEvent *event);
@@ -403,6 +419,7 @@ public slots:
     void nodeRemoved(QUuid nodeId);
     void edgeRemoved(QUuid edgeId);
     void nodeRadiusChanged(QUuid nodeId);
+    void nodeBoneMarkChanged(QUuid nodeId);
     void nodeOriginChanged(QUuid nodeId);
     void edgeChanged(QUuid edgeId);
     void turnaroundChanged();
@@ -436,6 +453,7 @@ public slots:
     void disableBackgroundBlur();
     void ikMove(QUuid endEffectorId, QVector3D target);
     void ikMoveReady();
+    void setSelectedNodesBoneMark(SkeletonBoneMark boneMark);
 private slots:
     void turnaroundImageReady();
 private:

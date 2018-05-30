@@ -16,6 +16,7 @@
 #include "texturegenerator.h"
 #include "meshresultpostprocessor.h"
 #include "ambientocclusionbaker.h"
+#include "skeletonbonemark.h"
 
 class SkeletonNode
 {
@@ -24,7 +25,8 @@ public:
         x(0),
         y(0),
         z(0),
-        radius(0)
+        radius(0),
+        boneMark(SkeletonBoneMark::None)
     {
         id = withId.isNull() ? QUuid::createUuid() : withId;
     }
@@ -43,6 +45,7 @@ public:
     float y;
     float z;
     float radius;
+    SkeletonBoneMark boneMark;
     std::vector<QUuid> edgeIds;
 };
 
@@ -180,6 +183,7 @@ signals:
     void nodeRemoved(QUuid nodeId);
     void edgeRemoved(QUuid edgeId);
     void nodeRadiusChanged(QUuid nodeId);
+    void nodeBoneMarkChanged(QUuid nodeId);
     void nodeOriginChanged(QUuid nodeId);
     void edgeChanged(QUuid edgeId);
     void partChanged(QUuid partId);
@@ -266,6 +270,7 @@ public slots:
     void moveNodeBy(QUuid nodeId, float x, float y, float z);
     void setNodeOrigin(QUuid nodeId, float x, float y, float z);
     void setNodeRadius(QUuid nodeId, float radius);
+    void setNodeBoneMark(QUuid nodeId, SkeletonBoneMark mark);
     void moveOriginBy(float x, float y, float z);
     void addEdge(QUuid fromNodeId, QUuid toNodeId);
     void setEditMode(SkeletonDocumentEditMode mode);
