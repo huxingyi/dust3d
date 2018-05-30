@@ -41,6 +41,11 @@ Tutorials
 
 <a href="https://www.youtube.com/watch?v=YBnEQk_5D70" target="_blank"><image src="https://raw.githubusercontent.com/huxingyi/dust3d/master/docs/images/dust3d-free-open-source-3d-modelling-application-video-thumbnail.png" width="480" height="270"></a>
 
+External Links
+-------------
+- [DUST3D–A NEW OPEN SOURCE 3D MODELLER](http://www.gamefromscratch.com/post/2018/04/20/Dust3D-A-New-Open-Source-3D-Modeller.aspx) *gamefromscratch.com*  
+- [Dust3D - простая система 3D моделирования для игр](https://www.linux.org.ru/news/opensource/14198146)  *linux.org.ru*  
+
 Contributing
 ---------------
 Any contributions are welcome, including fix bug, correct typo, test functionality, propose new features, make post to introduce and let more people know Dust3D. If you have done any of these, and cannot find your name in CONTRIBUTORS, please feel free to make a pull request to add your name, or email me.
