@@ -105,11 +105,7 @@ Future
 Currently, there is no auto unwrap texture, no auto rigidify, no auto animation generated. There is a far way to go, and I am looking forward to it. 
 Thanks for reading.
 
-AD: I am looking for a Job to work in the real game industry, I have 10 years programming experience, full stack, though not in game industry. Contributed some trivial commits to open source communities, such as libuv.
-
-
-
-
-
+PS: Auto-unwrap texture and auto-rigidify already landed, auto-animation is under development.  
+(May 30, 2018)
 
 

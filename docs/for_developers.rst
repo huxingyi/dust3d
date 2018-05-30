@@ -8,4 +8,3 @@ For Developers
 
    builds
    origin_and_future
-   next_stage
