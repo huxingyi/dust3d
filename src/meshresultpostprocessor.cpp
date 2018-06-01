@@ -24,6 +24,8 @@ void MeshResultPostProcessor::process()
     if (!m_meshResultContext->bmeshNodes.empty()) {
         m_meshResultContext->resolveBmeshConnectivity();
         m_meshResultContext->resolveBmeshEdgeDirections();
+        m_meshResultContext->vertexWeights();
+        m_meshResultContext->removeIntermediateBones();
         m_meshResultContext->rearrangedVertices();
         m_meshResultContext->rearrangedTriangles();
         m_meshResultContext->parts();

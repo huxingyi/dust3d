@@ -36,8 +36,11 @@ private:
     QString getMatrixStringInColumnOrder(const QMatrix4x4 &mat);
     QString m_filename;
     QString m_textureFilename;
+    bool m_outputNormal;
 private:
     nlohmann::json m_json;
+public:
+    static bool m_enableComment;
 };
 
 #endif

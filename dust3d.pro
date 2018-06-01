@@ -128,6 +128,9 @@ HEADERS += src/markiconcreator.h
 SOURCES += src/skeletonbonemark.cpp
 HEADERS += src/skeletonbonemark.h
 
+SOURCES += src/intermediateboneremover.cpp
+HEADERS += src/intermediateboneremover.h
+
 HEADERS += src/qtlightmapper.h
 
 SOURCES += src/main.cpp

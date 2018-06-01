@@ -7,6 +7,7 @@
 #include <QColor>
 #include "positionmap.h"
 #include "skeletonbonemark.h"
+#include "intermediateboneremover.h"
 
 #define MAX_WEIGHT_NUM  4
 
@@ -117,6 +118,7 @@ public:
     const std::vector<ResultTriangleUv> &triangleUvs();
     const std::vector<ResultRearrangedVertex> &rearrangedVertices();
     const std::vector<ResultRearrangedTriangle> &rearrangedTriangles();
+    void removeIntermediateBones();
 private:
     bool m_triangleSourceResolved;
     bool m_triangleColorResolved;
@@ -154,7 +156,7 @@ private:
     void calculateBmeshNodeNeighbors();
     void calculateBmeshEdgeDirectionsFromNode(std::pair<int, int> node, std::set<std::pair<int, int>> &visitedNodes, std::set<std::pair<std::pair<int, int>, std::pair<int, int>>> &connections, std::vector<BmeshEdge> &rearrangedEdges);
     void calculateBmeshNodeNeighbors(std::map<std::pair<int, int>, std::vector<std::pair<int, int>>> &nodeNeighbors);
-    void calculateVertexWeights(std::vector<std::vector<ResultVertexWeight>> &vertexWeights);
+    void calculateVertexWeights(std::vector<std::vector<ResultVertexWeight>> &vertexWeights, const std::map<std::pair<int, int>, IntermediateBoneNode> *intermediateNodes=nullptr);
     void calculateResultParts(std::map<int, ResultPart> &parts);
     void calculateResultTriangleUvs(std::vector<ResultTriangleUv> &uvs, std::set<int> &seamVertices);
     void calculateResultRearrangedVertices(std::vector<ResultRearrangedVertex> &rearrangedVertices, std::vector<ResultRearrangedTriangle> &rearrangedTriangles);
