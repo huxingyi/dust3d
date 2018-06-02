@@ -41,9 +41,16 @@ typename CGAL::Surface_mesh<typename Kernel::Point_3> *makeCgalMeshFromMeshlite(
     assert(vertexArrayLen == vertexCount * 3);
     std::vector<typename CGAL::Surface_mesh<typename Kernel::Point_3>::Vertex_index> vertices;
     for (int i = 0; i < vertexCount; i++) {
-        vertices.push_back(mesh->add_vertex(typename Kernel::Point_3(vertexPositions[offset + 0],
-            vertexPositions[offset + 1],
-            vertexPositions[offset + 2])));
+        float x = vertexPositions[offset + 0];
+        float y = vertexPositions[offset + 1];
+        float z = vertexPositions[offset + 2];
+        if (std::isnan(x) || std::isinf(x))
+            x = 0;
+        if (std::isnan(y) || std::isinf(y))
+            y = 0;
+        if (std::isnan(z) || std::isinf(z))
+            z = 0;
+        vertices.push_back(mesh->add_vertex(typename Kernel::Point_3(x, y, z)));
         offset += 3;
     }
     int faceCount = meshlite_get_face_count(meshlite, meshId);
@@ -53,13 +60,15 @@ typename CGAL::Surface_mesh<typename Kernel::Point_3> *makeCgalMeshFromMeshlite(
     while (i < filledLength) {
         int num = faceVertexNumAndIndices[i++];
         assert(num > 0 && num <= MAX_VERTICES_PER_FACE);
-        std::vector<typename CGAL::Surface_mesh<typename Kernel::Point_3>::Vertex_index> faceIndices;
+        std::vector<typename CGAL::Surface_mesh<typename Kernel::Point_3>::Vertex_index> faceVertexIndices;
         for (int j = 0; j < num; j++) {
             int index = faceVertexNumAndIndices[i++];
             assert(index >= 0 && index < vertexCount);
-            faceIndices.push_back(vertices[index]);
+            faceVertexIndices.push_back(vertices[index]);
         }
-        mesh->add_face(faceIndices);
+        if (faceVertexIndices.size() >= 3) {
+            mesh->add_face(faceVertexIndices);
+        }
     }
     delete[] faceVertexNumAndIndices;
     delete[] vertexPositions;

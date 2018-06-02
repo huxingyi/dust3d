@@ -85,9 +85,9 @@ V Flip
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Flip selected nodes vertically.
 
-Align to Center
+Align To
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Align selected nodes vertically with center anchor. Normally, the center anchor(a Triangle) is not show up, you can turn on the Part Mirror to make it visible, then turn Part Mirror off, the center anchor would not gone once showed.
+Align selected nodes with center anchor globally or selected nodes' center locally. Normally, the center anchor(a Triangle) is not show up, you can turn on the Part Mirror to make it visible, then turn Part Mirror off, the center anchor would not gone once showed.
 
 Mark As
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

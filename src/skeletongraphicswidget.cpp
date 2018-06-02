@@ -176,8 +176,39 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
     
     QAction alignToCenterAction(tr("Align to Center"), this);
     if (hasSelection() && m_document->originSettled()) {
-        connect(&alignToCenterAction, &QAction::triggered, this, &SkeletonGraphicsWidget::alignSelectedToCenter);
+        connect(&alignToCenterAction, &QAction::triggered, this, &SkeletonGraphicsWidget::alignSelectedToGlobalVerticalCenter);
         contextMenu.addAction(&alignToCenterAction);
+    }
+    QAction alignToLocalCenterAction(tr("Local Center"), this);
+    QAction alignToLocalVerticalCenterAction(tr("Local Vertical Center"), this);
+    QAction alignToLocalHorizontalCenterAction(tr("Local Horizontal Center"), this);
+    QAction alignToGlobalCenterAction(tr("Global Center"), this);
+    QAction alignToGlobalVerticalCenterAction(tr("Global Vertical Center"), this);
+    QAction alignToGlobalHorizontalCenterAction(tr("Global Horizontal Center"), this);
+    if ((hasSelection() && m_document->originSettled()) || hasMultipleSelection()) {
+        QMenu *subMenu = contextMenu.addMenu(tr("Align To"));
+        
+        if (hasMultipleSelection()) {
+            connect(&alignToLocalCenterAction, &QAction::triggered, this, &SkeletonGraphicsWidget::alignSelectedToLocalCenter);
+            subMenu->addAction(&alignToLocalCenterAction);
+            
+            connect(&alignToLocalVerticalCenterAction, &QAction::triggered, this, &SkeletonGraphicsWidget::alignSelectedToLocalVerticalCenter);
+            subMenu->addAction(&alignToLocalVerticalCenterAction);
+            
+            connect(&alignToLocalHorizontalCenterAction, &QAction::triggered, this, &SkeletonGraphicsWidget::alignSelectedToLocalHorizontalCenter);
+            subMenu->addAction(&alignToLocalHorizontalCenterAction);
+        }
+        
+        if (hasSelection() && m_document->originSettled()) {
+            connect(&alignToGlobalCenterAction, &QAction::triggered, this, &SkeletonGraphicsWidget::alignSelectedToGlobalCenter);
+            subMenu->addAction(&alignToGlobalCenterAction);
+            
+            connect(&alignToGlobalVerticalCenterAction, &QAction::triggered, this, &SkeletonGraphicsWidget::alignSelectedToGlobalVerticalCenter);
+            subMenu->addAction(&alignToGlobalVerticalCenterAction);
+            
+            connect(&alignToGlobalHorizontalCenterAction, &QAction::triggered, this, &SkeletonGraphicsWidget::alignSelectedToGlobalHorizontalCenter);
+            subMenu->addAction(&alignToGlobalHorizontalCenterAction);
+        }
     }
     
     QAction markAsNoneAction(tr("None"), this);
@@ -311,7 +342,34 @@ void SkeletonGraphicsWidget::connectSelected()
     emit groupOperationAdded();
 }
 
-void SkeletonGraphicsWidget::alignSelectedToCenter()
+void SkeletonGraphicsWidget::alignSelectedToLocal(bool alignToVerticalCenter, bool alignToHorizontalCenter)
+{
+    if (!hasMultipleSelection())
+        return;
+    std::set<SkeletonGraphicsNodeItem *> nodeItems;
+    readMergedSkeletonNodeSetFromRangeSelection(&nodeItems);
+    if (nodeItems.empty())
+        return;
+    if (nodeItems.size() < 2)
+        return;
+    emit batchChangeBegin();
+    QVector2D center = centerOfNodeItemSet(nodeItems);
+    for (const auto &it: nodeItems) {
+        SkeletonGraphicsNodeItem *nodeItem = it;
+        QPointF nodeOrigin = nodeItem->origin();
+        float byX = alignToHorizontalCenter ? sceneRadiusToUnified(center.x() - nodeOrigin.x()) : 0;
+        float byY = alignToVerticalCenter ? sceneRadiusToUnified(center.y() - nodeOrigin.y()) : 0;
+        if (SkeletonProfile::Main == nodeItem->profile()) {
+            emit moveNodeBy(nodeItem->id(), byX, byY, 0);
+        } else {
+            emit moveNodeBy(nodeItem->id(), 0, byY, byX);
+        }
+    }
+    emit batchChangeEnd();
+    emit groupOperationAdded();
+}
+
+void SkeletonGraphicsWidget::alignSelectedToGlobal(bool alignToVerticalCenter, bool alignToHorizontalCenter)
 {
     if (!m_document->originSettled())
         return;
@@ -329,13 +387,55 @@ void SkeletonGraphicsWidget::alignSelectedToCenter()
             continue;
         }
         if (SkeletonProfile::Main == nodeItem->profile()) {
-            emit moveNodeBy(node->id, m_document->originX - node->x, 0, 0);
+            if (alignToVerticalCenter && alignToHorizontalCenter) {
+                emit moveNodeBy(node->id, m_document->originX - node->x, m_document->originY - node->y, 0);
+            } else if (alignToVerticalCenter) {
+                emit moveNodeBy(node->id, 0, m_document->originY - node->y, 0);
+            } else if (alignToHorizontalCenter) {
+                emit moveNodeBy(node->id, m_document->originX - node->x, 0, 0);
+            }
         } else {
-            emit moveNodeBy(node->id, 0, 0, m_document->originZ - node->z);
+            if (alignToVerticalCenter && alignToHorizontalCenter) {
+                emit moveNodeBy(node->id, 0, m_document->originY - node->y, m_document->originZ - node->z);
+            } else if (alignToVerticalCenter) {
+                emit moveNodeBy(node->id, 0, m_document->originY - node->y, 0);
+            } else if (alignToHorizontalCenter) {
+                emit moveNodeBy(node->id, 0, 0, m_document->originZ - node->z);
+            }
         }
     }
     emit batchChangeEnd();
     emit groupOperationAdded();
+}
+
+void SkeletonGraphicsWidget::alignSelectedToGlobalVerticalCenter()
+{
+    alignSelectedToGlobal(true, false);
+}
+
+void SkeletonGraphicsWidget::alignSelectedToGlobalHorizontalCenter()
+{
+    alignSelectedToGlobal(false, true);
+}
+
+void SkeletonGraphicsWidget::alignSelectedToGlobalCenter()
+{
+    alignSelectedToGlobal(true, true);
+}
+
+void SkeletonGraphicsWidget::alignSelectedToLocalVerticalCenter()
+{
+    alignSelectedToLocal(true, false);
+}
+
+void SkeletonGraphicsWidget::alignSelectedToLocalHorizontalCenter()
+{
+    alignSelectedToLocal(false, true);
+}
+
+void SkeletonGraphicsWidget::alignSelectedToLocalCenter()
+{
+    alignSelectedToLocal(true, true);
 }
 
 void SkeletonGraphicsWidget::updateItems()

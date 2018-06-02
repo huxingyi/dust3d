@@ -303,9 +303,33 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(m_flipVerticallyAction, &QAction::triggered, m_graphicsWidget, &SkeletonGraphicsWidget::flipVertically);
     m_editMenu->addAction(m_flipVerticallyAction);
     
-    m_alignToCenterAction = new QAction(tr("Align to Center"), this);
-    connect(m_alignToCenterAction, &QAction::triggered, m_graphicsWidget, &SkeletonGraphicsWidget::alignSelectedToCenter);
-    m_editMenu->addAction(m_alignToCenterAction);
+    m_alignToMenu = new QMenu(tr("Align To"));
+    
+    m_alignToGlobalCenterAction = new QAction(tr("Global Center"), this);
+    connect(m_alignToGlobalCenterAction, &QAction::triggered, m_graphicsWidget, &SkeletonGraphicsWidget::alignSelectedToGlobalCenter);
+    m_alignToMenu->addAction(m_alignToGlobalCenterAction);
+    
+    m_alignToGlobalVerticalCenterAction = new QAction(tr("Global Vertical Center"), this);
+    connect(m_alignToGlobalVerticalCenterAction, &QAction::triggered, m_graphicsWidget, &SkeletonGraphicsWidget::alignSelectedToGlobalVerticalCenter);
+    m_alignToMenu->addAction(m_alignToGlobalVerticalCenterAction);
+    
+    m_alignToGlobalHorizontalCenterAction = new QAction(tr("Global Horizontal Center"), this);
+    connect(m_alignToGlobalHorizontalCenterAction, &QAction::triggered, m_graphicsWidget, &SkeletonGraphicsWidget::alignSelectedToGlobalHorizontalCenter);
+    m_alignToMenu->addAction(m_alignToGlobalHorizontalCenterAction);
+    
+    m_alignToLocalCenterAction = new QAction(tr("Local Center"), this);
+    connect(m_alignToLocalCenterAction, &QAction::triggered, m_graphicsWidget, &SkeletonGraphicsWidget::alignSelectedToLocalCenter);
+    m_alignToMenu->addAction(m_alignToLocalCenterAction);
+    
+    m_alignToLocalVerticalCenterAction = new QAction(tr("Local Vertical Center"), this);
+    connect(m_alignToLocalVerticalCenterAction, &QAction::triggered, m_graphicsWidget, &SkeletonGraphicsWidget::alignSelectedToLocalVerticalCenter);
+    m_alignToMenu->addAction(m_alignToLocalVerticalCenterAction);
+    
+    m_alignToLocalHorizontalCenterAction = new QAction(tr("Local Horizontal Center"), this);
+    connect(m_alignToLocalHorizontalCenterAction, &QAction::triggered, m_graphicsWidget, &SkeletonGraphicsWidget::alignSelectedToLocalHorizontalCenter);
+    m_alignToMenu->addAction(m_alignToLocalHorizontalCenterAction);
+    
+    m_editMenu->addMenu(m_alignToMenu);
     
     m_markAsMenu = new QMenu(tr("Mark As"));
     
@@ -351,7 +375,13 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
         m_pasteAction->setEnabled(m_document->hasPastableContentInClipboard());
         m_flipHorizontallyAction->setEnabled(m_graphicsWidget->hasMultipleSelection());
         m_flipVerticallyAction->setEnabled(m_graphicsWidget->hasMultipleSelection());
-        m_alignToCenterAction->setEnabled(m_graphicsWidget->hasSelection() && m_document->originSettled());
+        m_alignToGlobalCenterAction->setEnabled(m_graphicsWidget->hasSelection() && m_document->originSettled());
+        m_alignToGlobalVerticalCenterAction->setEnabled(m_graphicsWidget->hasSelection() && m_document->originSettled());
+        m_alignToGlobalHorizontalCenterAction->setEnabled(m_graphicsWidget->hasSelection() && m_document->originSettled());
+        m_alignToLocalCenterAction->setEnabled(m_graphicsWidget->hasMultipleSelection());
+        m_alignToLocalVerticalCenterAction->setEnabled(m_graphicsWidget->hasMultipleSelection());
+        m_alignToLocalHorizontalCenterAction->setEnabled(m_graphicsWidget->hasMultipleSelection());
+        m_alignToMenu->setEnabled((m_graphicsWidget->hasSelection() && m_document->originSettled()) || m_graphicsWidget->hasMultipleSelection());
         m_markAsMenu->setEnabled(m_graphicsWidget->hasNodeSelection());
         m_selectAllAction->setEnabled(m_graphicsWidget->hasItems());
         m_selectPartAllAction->setEnabled(m_graphicsWidget->hasItems());

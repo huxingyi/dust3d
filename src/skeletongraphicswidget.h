@@ -445,7 +445,12 @@ public slots:
     void moveSelected(float byX, float byY);
     void moveCheckedOrigin(float byX, float byY);
     void originChanged();
-    void alignSelectedToCenter();
+    void alignSelectedToGlobalCenter();
+    void alignSelectedToGlobalVerticalCenter();
+    void alignSelectedToGlobalHorizontalCenter();
+    void alignSelectedToLocalCenter();
+    void alignSelectedToLocalVerticalCenter();
+    void alignSelectedToLocalHorizontalCenter();
     void selectPartAllById(QUuid partId);
     void addSelectNode(QUuid nodeId);
     void addSelectEdge(QUuid edgeId);
@@ -474,6 +479,8 @@ private:
     void hoverPart(QUuid partId);
     void switchProfileOnRangeSelection();
     void setItemHoveredOnAllProfiles(QGraphicsItem *item, bool hovered);
+    void alignSelectedToGlobal(bool alignToVerticalCenter, bool alignToHorizontalCenter);
+    void alignSelectedToLocal(bool alignToVerticalCenter, bool alignToHorizontalCenter);
 private: //need initalize
     const SkeletonDocument *m_document;
     QGraphicsPixmapItem *m_backgroundItem;

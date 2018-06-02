@@ -91,7 +91,15 @@ private:
     QAction *m_pasteAction;
     QAction *m_flipHorizontallyAction;
     QAction *m_flipVerticallyAction;
-    QAction *m_alignToCenterAction;
+    
+    QMenu *m_alignToMenu;
+    QAction *m_alignToGlobalCenterAction;
+    QAction *m_alignToGlobalVerticalCenterAction;
+    QAction *m_alignToGlobalHorizontalCenterAction;
+    QAction *m_alignToLocalCenterAction;
+    QAction *m_alignToLocalVerticalCenterAction;
+    QAction *m_alignToLocalHorizontalCenterAction;
+    
     QAction *m_selectAllAction;
     QAction *m_selectPartAllAction;
     QAction *m_unselectAllAction;
