@@ -30,6 +30,10 @@ Examples
 <a href="https://dust3d.readthedocs.io/en/latest/examples/modeling-horse/index.html">
 <image src="https://raw.githubusercontent.com/huxingyi/dust3d/master/docs/examples/modeling-horse/modeling-horse-dust3d-screenshot.png" width="320" height="192"></a>
 
+Free Dust3D Models
+---------------------
+<a href="https://github.com/huxingyi/free-dust3d-models"><image src="https://raw.githubusercontent.com/huxingyi/free-dust3d-models/master/free-dust3d-models.png" height="50"></a>
+
 Tutorials
 -------------
 [Dust3D -- Free Open Source 3D Modelling Application](https://www.youtube.com/watch?v=YBnEQk_5D70)
