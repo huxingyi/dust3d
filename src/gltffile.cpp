@@ -7,6 +7,7 @@
 #include "gltffile.h"
 #include "version.h"
 #include "dust3dutil.h"
+#include "jointnodetree.h"
 
 // Play with glTF online:
 // https://gltf-viewer.donmccurdy.com/
@@ -32,60 +33,34 @@ GLTFFileWriter::GLTFFileWriter(MeshResultContext &resultContext, const QString &
     QFileInfo nameInfo(filename);
     QString textureFilenameWithoutPath = nameInfo.completeBaseName() + ".png";
     m_textureFilename = nameInfo.path() + QDir::separator() + textureFilenameWithoutPath;
-
-    JointInfo rootHandleJoint;
-    {
-        rootHandleJoint.jointIndex = m_tracedJoints.size();
-        QMatrix4x4 localMatrix;
-        rootHandleJoint.translation = QVector3D(0, - 1, 0);
-        localMatrix.translate(rootHandleJoint.translation);
-        rootHandleJoint.worldMatrix = localMatrix;
-        rootHandleJoint.inverseBindMatrix = rootHandleJoint.worldMatrix.inverted();
-        m_tracedJoints.push_back(rootHandleJoint);
-    }
     
-    JointInfo rootCenterJoint;
-    {
-        rootCenterJoint.jointIndex = m_tracedJoints.size();
-        QMatrix4x4 localMatrix;
-        rootCenterJoint.translation = QVector3D(rootNode->origin.x(), rootNode->origin.y() + 1, rootNode->origin.z());
-        localMatrix.translate(rootCenterJoint.translation);
-        rootCenterJoint.worldMatrix = rootHandleJoint.worldMatrix * localMatrix;
-        rootCenterJoint.direction = QVector3D(0, 1, 0);
-        rootCenterJoint.inverseBindMatrix = rootCenterJoint.worldMatrix.inverted();
-        m_tracedJoints[rootHandleJoint.jointIndex].children.push_back(rootCenterJoint.jointIndex);
-        m_tracedJoints.push_back(rootCenterJoint);
-    }
-    
-    std::set<std::pair<int, int>> visitedNodes;
-    std::set<std::pair<std::pair<int, int>, std::pair<int, int>>> connections;
-    m_tracedNodeToJointIndexMap[std::make_pair(rootNode->bmeshId, rootNode->nodeId)] = rootCenterJoint.jointIndex;
-    traceBoneFromJoint(resultContext, std::make_pair(rootNode->bmeshId, rootNode->nodeId), visitedNodes, connections, rootCenterJoint.jointIndex);
+    JointNodeTree jointNodeTree(resultContext);
+    const std::vector<JointInfo> &tracedJoints = jointNodeTree.joints();
     
     m_json["asset"]["version"] = "2.0";
     m_json["asset"]["generator"] = APP_NAME " " APP_HUMAN_VER;
     m_json["scenes"][0]["nodes"] = {0};
-    m_json["nodes"][0]["children"] = {1, 2};
     
-    m_json["nodes"][1]["mesh"] = 0;
-    m_json["nodes"][1]["skin"] = 0;
+    m_json["nodes"][0]["mesh"] = 0;
+    m_json["nodes"][0]["skin"] = 0;
+    m_json["nodes"][0]["children"] = {1};
     
-    int skeletonNodeStartIndex = 2;
+    int skeletonNodeStartIndex = 1;
 
-    for (auto i = 0u; i < m_tracedJoints.size(); i++) {
-        m_json["nodes"][skeletonNodeStartIndex + i]["translation"] = {m_tracedJoints[i].translation.x(),
-            m_tracedJoints[i].translation.y(),
-            m_tracedJoints[i].translation.z()
+    for (auto i = 0u; i < tracedJoints.size(); i++) {
+        m_json["nodes"][skeletonNodeStartIndex + i]["translation"] = {tracedJoints[i].translation.x(),
+            tracedJoints[i].translation.y(),
+            tracedJoints[i].translation.z()
         };
-        m_json["nodes"][skeletonNodeStartIndex + i]["rotation"] = {m_tracedJoints[i].rotation.x(),
-            m_tracedJoints[i].rotation.y(),
-            m_tracedJoints[i].rotation.z(),
-            m_tracedJoints[i].rotation.scalar()
+        m_json["nodes"][skeletonNodeStartIndex + i]["rotation"] = {tracedJoints[i].rotation.x(),
+            tracedJoints[i].rotation.y(),
+            tracedJoints[i].rotation.z(),
+            tracedJoints[i].rotation.scalar()
         };
-        if (m_tracedJoints[i].children.empty())
+        if (tracedJoints[i].children.empty())
             continue;
         m_json["nodes"][skeletonNodeStartIndex + i]["children"] = {};
-        for (const auto &it: m_tracedJoints[i].children) {
+        for (const auto &it: tracedJoints[i].children) {
             m_json["nodes"][skeletonNodeStartIndex + i]["children"] += skeletonNodeStartIndex + it;
         }
     }
@@ -93,7 +68,7 @@ GLTFFileWriter::GLTFFileWriter(MeshResultContext &resultContext, const QString &
     m_json["skins"][0]["inverseBindMatrices"] = 0;
     m_json["skins"][0]["skeleton"] = skeletonNodeStartIndex;
     m_json["skins"][0]["joints"] = {};
-    for (auto i = 0u; i < m_tracedJoints.size(); i++) {
+    for (auto i = 0u; i < tracedJoints.size(); i++) {
         m_json["skins"][0]["joints"] += skeletonNodeStartIndex + i;
     }
     
@@ -115,13 +90,13 @@ GLTFFileWriter::GLTFFileWriter(MeshResultContext &resultContext, const QString &
     m_json["accessors"][bufferViewIndex]["bufferView"] = bufferViewIndex;
     m_json["accessors"][bufferViewIndex]["byteOffset"] = 0;
     m_json["accessors"][bufferViewIndex]["componentType"] = 5126;
-    m_json["accessors"][bufferViewIndex]["count"] = m_tracedJoints.size();
+    m_json["accessors"][bufferViewIndex]["count"] = tracedJoints.size();
     m_json["accessors"][bufferViewIndex]["type"] = "MAT4";
     m_json["bufferViews"][bufferViewIndex]["buffer"] = 0;
     m_json["bufferViews"][bufferViewIndex]["byteOffset"] = (int)binaries.size();
     int bufferViews0FromOffset = (int)binaries.size();
-    for (auto i = 0u; i < m_tracedJoints.size(); i++) {
-        const float *floatArray = m_tracedJoints[i].inverseBindMatrix.constData();
+    for (auto i = 0u; i < tracedJoints.size(); i++) {
+        const float *floatArray = tracedJoints[i].inverseBindMatrix.constData();
         for (auto j = 0u; j < 16; j++) {
             stream << (float)floatArray[j];
         }
@@ -254,7 +229,7 @@ GLTFFileWriter::GLTFFileWriter(MeshResultContext &resultContext, const QString &
         for (const auto &it: part.second.weights) {
             auto i = 0u;
             for (; i < it.size() && i < MAX_WEIGHT_NUM; i++) {
-                stream << (quint16)m_tracedNodeToJointIndexMap[it[i].sourceNode];
+                stream << (quint16)jointNodeTree.nodeToJointIndex(it[i].sourceNode.first, it[i].sourceNode.second);
             }
             for (; i < MAX_WEIGHT_NUM; i++) {
                 stream << (quint16)0;
@@ -277,7 +252,7 @@ GLTFFileWriter::GLTFFileWriter(MeshResultContext &resultContext, const QString &
         for (const auto &it: part.second.weights) {
             auto i = 0u;
             for (; i < it.size() && i < MAX_WEIGHT_NUM; i++) {
-                stream << (quint16)it[i].weight;
+                stream << (float)it[i].weight;
             }
             for (; i < MAX_WEIGHT_NUM; i++) {
                 stream << (float)0.0;
@@ -319,68 +294,6 @@ GLTFFileWriter::GLTFFileWriter(MeshResultContext &resultContext, const QString &
 const QString &GLTFFileWriter::textureFilenameInGltf()
 {
     return m_textureFilename;
-}
-
-void GLTFFileWriter::traceBoneFromJoint(MeshResultContext &resultContext, std::pair<int, int> node, std::set<std::pair<int, int>> &visitedNodes, std::set<std::pair<std::pair<int, int>, std::pair<int, int>>> &connections, int parentIndex)
-{
-    if (visitedNodes.find(node) != visitedNodes.end())
-        return;
-    visitedNodes.insert(node);
-    const auto &neighbors = resultContext.nodeNeighbors().find(node);
-    if (neighbors == resultContext.nodeNeighbors().end()) {
-        return;
-    }
-    for (const auto &it: neighbors->second) {
-        if (connections.find(std::make_pair(std::make_pair(node.first, node.second), std::make_pair(it.first, it.second))) != connections.end())
-            continue;
-        connections.insert(std::make_pair(std::make_pair(node.first, node.second), std::make_pair(it.first, it.second)));
-        connections.insert(std::make_pair(std::make_pair(it.first, it.second), std::make_pair(node.first, node.second)));
-        const auto &fromNode = resultContext.bmeshNodeMap().find(std::make_pair(node.first, node.second));
-        if (fromNode == resultContext.bmeshNodeMap().end()) {
-            qDebug() << "bmeshNodeMap find failed:" << node.first << node.second;
-            continue;
-        }
-        const auto &toNode = resultContext.bmeshNodeMap().find(std::make_pair(it.first, it.second));
-        if (toNode == resultContext.bmeshNodeMap().end()) {
-            qDebug() << "bmeshNodeMap find failed:" << it.first << it.second;
-            continue;
-        }
-        QVector3D boneDirect = toNode->second->origin - fromNode->second->origin;
-        QVector3D normalizedBoneDirect = boneDirect.normalized();
-        QMatrix4x4 translateMat;
-        translateMat.translate(boneDirect);
-        
-        QQuaternion rotation;
-        QMatrix4x4 rotateMat;
-        
-        QVector3D cross = QVector3D::crossProduct(normalizedBoneDirect, m_tracedJoints[parentIndex].direction).normalized();
-        float dot = QVector3D::dotProduct(normalizedBoneDirect, m_tracedJoints[parentIndex].direction);
-        float angle = acos(dot);
-        rotation = QQuaternion::fromAxisAndAngle(cross, angle);
-        rotateMat.rotate(rotation);
-        
-        QMatrix4x4 localMatrix;
-        localMatrix = translateMat * rotateMat;
-        
-        QMatrix4x4 worldMatrix;
-        worldMatrix = m_tracedJoints[parentIndex].worldMatrix * localMatrix;
-        
-        JointInfo joint;
-        joint.position = toNode->second->origin;
-        joint.direction = normalizedBoneDirect;
-        joint.translation = boneDirect;
-        joint.rotation = rotation;
-        joint.jointIndex = m_tracedJoints.size();
-        joint.worldMatrix = worldMatrix;
-        joint.inverseBindMatrix = worldMatrix.inverted();
-        
-        m_tracedNodeToJointIndexMap[std::make_pair(it.first, it.second)] = joint.jointIndex;
-        
-        m_tracedJoints.push_back(joint);
-        m_tracedJoints[parentIndex].children.push_back(joint.jointIndex);
-        
-        traceBoneFromJoint(resultContext, it, visitedNodes, connections, joint.jointIndex);
-    }
 }
 
 bool GLTFFileWriter::save()

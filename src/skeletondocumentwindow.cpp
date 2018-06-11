@@ -77,7 +77,8 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     m_document(nullptr),
     m_firstShow(true),
     m_documentSaved(true),
-    m_exportPreviewWidget(nullptr)
+    m_exportPreviewWidget(nullptr),
+    m_animationPanelWidget(nullptr)
 {
     if (!g_logBrowser) {
         g_logBrowser = new LogBrowser;
@@ -419,12 +420,19 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     
     m_viewMenu->addSeparator();
     
+    m_showAnimationPanelAction = new QAction(tr("Show Animation Panel"), this);
+    connect(m_showAnimationPanelAction, &QAction::triggered, this, &SkeletonDocumentWindow::showAnimationPanel);
+    //m_viewMenu->addAction(m_showAnimationPanelAction);
+    
+    m_viewMenu->addSeparator();
+    
     m_showDebugDialogAction = new QAction(tr("Show Debug Dialog"), this);
     connect(m_showDebugDialogAction, &QAction::triggered, g_logBrowser, &LogBrowser::showDialog);
     m_viewMenu->addAction(m_showDebugDialogAction);
     
     connect(m_viewMenu, &QMenu::aboutToShow, [=]() {
         m_showPartsListAction->setEnabled(partListDocker->isHidden());
+        m_showAnimationPanelAction->setEnabled(nullptr == m_animationPanelWidget || m_animationPanelWidget->isHidden());
         m_resetModelWidgetPosAction->setEnabled(!modelIsSitInVisibleArea(m_modelRenderWidget));
     });
     
@@ -576,7 +584,8 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     
     connect(m_document, &SkeletonDocument::skeletonChanged, m_document, &SkeletonDocument::generateMesh);
     connect(m_document, &SkeletonDocument::resultMeshChanged, [=]() {
-        if (m_exportPreviewWidget && m_exportPreviewWidget->isVisible()) {
+        if ((m_exportPreviewWidget && m_exportPreviewWidget->isVisible()) ||
+                (m_animationPanelWidget && m_animationPanelWidget->isVisible())) {
             m_document->postProcess();
         }
     });
@@ -877,6 +886,26 @@ void SkeletonDocumentWindow::exportModelResult()
     QApplication::restoreOverrideCursor();
 }
 
+void SkeletonDocumentWindow::showAnimationPanel()
+{
+    if (nullptr == m_animationPanelWidget) {
+        m_animationPanelWidget = new AnimationPanelWidget(m_document, this);
+        m_animationPanelWidget->setWindowFlags(Qt::Tool);
+        connect(m_animationPanelWidget, &AnimationPanelWidget::panelClosed, [=] {
+            m_modelRenderWidget->updateMesh(m_document->takeResultMesh());
+        });
+        connect(m_animationPanelWidget, &AnimationPanelWidget::frameReadyToShow, [=] {
+            if (m_animationPanelWidget->isVisible())
+                m_modelRenderWidget->updateMesh(m_animationPanelWidget->takeFrameMesh());
+        });
+        connect(m_document, &SkeletonDocument::postProcessedResultChanged, m_animationPanelWidget, &AnimationPanelWidget::sourceMeshChanged);
+    }
+    if (m_animationPanelWidget->isHidden()) {
+        m_document->postProcess();
+    }
+    m_animationPanelWidget->show();
+}
+
 void SkeletonDocumentWindow::showExportPreview()
 {
     if (nullptr == m_exportPreviewWidget) {
@@ -890,7 +919,9 @@ void SkeletonDocumentWindow::showExportPreview()
         connect(m_document, &SkeletonDocument::resultBakedTextureChanged, m_exportPreviewWidget, &ExportPreviewWidget::updateTexturePreview);
         connect(m_document, &SkeletonDocument::resultSkeletonChanged, m_exportPreviewWidget, &ExportPreviewWidget::updateSkeleton);
     }
-    m_document->postProcess();
+    if (m_exportPreviewWidget->isHidden()) {
+        m_document->postProcess();
+    }
     m_exportPreviewWidget->show();
 }
 

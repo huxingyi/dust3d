@@ -70,15 +70,15 @@ MeshLoader *SkeletonGenerator::createSkeletonMesh()
     return skeletonMesh;
 }
 
-struct BmeshNodeDistWithWorldCenter
+void SkeletonGenerator::generate()
 {
-    BmeshNode *bmeshNode;
-    float dist2;
-};
+    Q_ASSERT(nullptr == m_resultSkeletonMesh);
+    m_resultSkeletonMesh = createSkeletonMesh();
+}
 
 void SkeletonGenerator::process()
 {
-    m_resultSkeletonMesh = createSkeletonMesh();
+    generate();
     
     this->moveToThread(QGuiApplication::instance()->thread());
     emit finished();

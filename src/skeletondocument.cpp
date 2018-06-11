@@ -839,8 +839,9 @@ void SkeletonDocument::fromSnapshot(const SkeletonSnapshot &snapshot)
 
 MeshLoader *SkeletonDocument::takeResultMesh()
 {
-    MeshLoader *resultMesh = m_resultMesh;
-    m_resultMesh = nullptr;
+    if (nullptr == m_resultMesh)
+        return nullptr;
+    MeshLoader *resultMesh = new MeshLoader(*m_resultMesh);
     return resultMesh;
 }
 

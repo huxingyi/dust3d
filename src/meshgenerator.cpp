@@ -326,12 +326,15 @@ void MeshGenerator::process()
         //qDebug() << "bmeshId[" << bmeshId << "] add lonely node[" << bmeshNodeId << "]" << radius << x << y << z;
         bmeshNodeMap[nodeIt.first] = bmeshNodeId;
         
+        SkeletonBoneMark boneMark = SkeletonBoneMarkFromString(valueOfKeyInMapOrEmpty(nodeIt.second, "boneMark").toUtf8().constData());
+        
         BmeshNode bmeshNode;
         bmeshNode.bmeshId = bmeshId;
         bmeshNode.origin = QVector3D(x, y, z);
         bmeshNode.radius = radius;
         bmeshNode.nodeId = bmeshNodeId;
         bmeshNode.color = partColorMap[partId];
+        bmeshNode.boneMark = boneMark;
         m_meshResultContext->bmeshNodes.push_back(bmeshNode);
         
         if (partMirrorFlagMap[partId]) {

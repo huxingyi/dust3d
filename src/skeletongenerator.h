@@ -12,6 +12,7 @@ class SkeletonGenerator : public QObject
 public:
     SkeletonGenerator(const MeshResultContext &meshResultContext);
     ~SkeletonGenerator();
+    void generate();
     MeshLoader *takeResultSkeletonMesh();
     MeshResultContext *takeResultContext();
 signals:
@@ -19,7 +20,6 @@ signals:
 public slots:
     void process();
 private:
-    void combineAllBmeshSkeletons();
     MeshLoader *createSkeletonMesh();
 private:
     MeshResultContext *m_meshResultContext;

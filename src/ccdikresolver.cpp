@@ -1,11 +1,13 @@
 #include <QtGlobal>
 #include <QMatrix4x4>
 #include <QDebug>
+#include <cmath>
 #include "ccdikresolver.h"
 
 CCDIKSolver::CCDIKSolver() :
-    m_maxRound(5),
-    m_distanceThreshold2(0.001 * 0.001)
+    m_maxRound(4),
+    m_distanceThreshold2(0.01 * 0.01),
+    m_distanceCeaseThreshold2(0.01 * 0.01)
 {
 }
 
@@ -39,7 +41,7 @@ void CCDIKSolver::solveTo(const QVector3D &position)
         qDebug() << "Round:" << i << " distance2:" << distance2;
         if (distance2 <= m_distanceThreshold2)
             break;
-        if (lastDistance2 > 0 && distance2 >= lastDistance2)
+        if (lastDistance2 > 0 && abs(distance2 - lastDistance2) <= m_distanceCeaseThreshold2)
             break;
         lastDistance2 = distance2;
         iterate();
@@ -48,7 +50,7 @@ void CCDIKSolver::solveTo(const QVector3D &position)
 
 const QVector3D &CCDIKSolver::getNodeSolvedPosition(int index)
 {
-    Q_ASSERT(index >= 0 && index < m_nodes.size());
+    Q_ASSERT(index >= 0 && index < (int)m_nodes.size());
     return m_nodes[index].position;
 }
 
@@ -62,13 +64,13 @@ void CCDIKSolver::iterate()
     for (int i = m_nodes.size() - 2; i >= 0; i--) {
         const auto &origin = m_nodes[i];
         const auto &endEffector = m_nodes[m_nodes.size() - 1];
-        QVector3D from = endEffector.position - origin.position;
-        QVector3D to = m_destination - origin.position;
+        QVector3D from = (endEffector.position - origin.position).normalized();
+        QVector3D to = (m_destination - origin.position).normalized();
         auto quaternion = QQuaternion::rotationTo(from, to);
         for (size_t j = i + 1; j <= m_nodes.size() - 1; j++) {
             auto &next = m_nodes[j];
             const auto offset = next.position - origin.position;
-            next.position = origin.position + quaternion.rotatedVector(offset).normalized() * offset.length();
+            next.position = origin.position + quaternion.rotatedVector(offset);
         }
     }
 }

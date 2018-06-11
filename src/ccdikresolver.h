@@ -26,6 +26,7 @@ private:
     QVector3D m_destination;
     int m_maxRound;
     float m_distanceThreshold2;
+    float m_distanceCeaseThreshold2;
 };
 
 #endif

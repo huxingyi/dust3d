@@ -10,6 +10,7 @@
 #include "skeletondocument.h"
 #include "modelwidget.h"
 #include "exportpreviewwidget.h"
+#include "animationpanelwidget.h"
 
 class SkeletonGraphicsWidget;
 
@@ -36,6 +37,7 @@ public slots:
     void exportModelResult();
     void exportGltfResult();
     void showExportPreview();
+    void showAnimationPanel();
     void newWindow();
     void newDocument();
     void saveAs();
@@ -59,6 +61,7 @@ private:
     bool m_firstShow;
     bool m_documentSaved;
     ExportPreviewWidget *m_exportPreviewWidget;
+    AnimationPanelWidget *m_animationPanelWidget;
 private:
     QString m_currentFilename;
     
@@ -113,6 +116,7 @@ private:
     QAction *m_showPartsListAction;
     QAction *m_showDebugDialogAction;
     QAction *m_toggleWireframeAction;
+    QAction *m_showAnimationPanelAction;
     
     QMenu *m_helpMenu;
     QAction *m_viewSourceAction;

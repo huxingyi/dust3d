@@ -13,27 +13,27 @@
 
 struct BmeshNode
 {
-    int bmeshId;
-    int nodeId;
+    int bmeshId = 0;
+    int nodeId = 0;
     QVector3D origin;
-    float radius;
+    float radius = 0;
     QColor color;
-    SkeletonBoneMark boneMark;
+    SkeletonBoneMark boneMark = SkeletonBoneMark::None;
 };
 
 struct BmeshVertex
 {
     QVector3D position;
-    int bmeshId;
-    int nodeId;
+    int bmeshId = 0;
+    int nodeId = 0;
 };
 
 struct BmeshEdge
 {
-    int fromBmeshId;
-    int fromNodeId;
-    int toBmeshId;
-    int toNodeId;
+    int fromBmeshId = 0;
+    int fromNodeId = 0;
+    int toBmeshId = 0;
+    int toNodeId = 0;
 };
 
 struct ResultVertex
@@ -43,26 +43,26 @@ struct ResultVertex
 
 struct ResultTriangle
 {
-    int indicies[3];
+    int indicies[3] = {0, 0, 0};
     QVector3D normal;
 };
 
 struct ResultVertexWeight
 {
-    std::pair<int, int> sourceNode;
-    int count;
-    float weight;
+    std::pair<int, int> sourceNode = std::make_pair(0, 0);
+    int count = 0;
+    float weight = 0;
 };
 
 struct ResultTriangleUv
 {
-    float uv[3][2];
-    bool resolved;
+    float uv[3][2] = {{0, 0}, {0, 0}, {0, 0}};
+    bool resolved = false;
 };
 
 struct ResultVertexUv
 {
-    float uv[2];
+    float uv[2] = {0, 0};
 };
 
 struct ResultPart
@@ -118,6 +118,7 @@ public:
     const std::vector<ResultTriangleUv> &triangleUvs();
     const std::vector<ResultRearrangedVertex> &rearrangedVertices();
     const std::vector<ResultRearrangedTriangle> &rearrangedTriangles();
+    const std::map<int, std::pair<int, int>> &vertexSourceMap();
     void removeIntermediateBones();
 private:
     bool m_triangleSourceResolved;
@@ -145,8 +146,10 @@ private:
     std::set<int> m_seamVertices;
     std::vector<ResultRearrangedVertex> m_rearrangedVertices;
     std::vector<ResultRearrangedTriangle> m_rearrangedTriangles;
+    std::map<int, std::pair<int, int>> m_vertexSourceMap;
 private:
-    void calculateTriangleSourceNodes(std::vector<std::pair<int, int>> &triangleSourceNodes);
+    void calculateTriangleSourceNodes(std::vector<std::pair<int, int>> &triangleSourceNodes, std::map<int, std::pair<int, int>> &vertexSourceMap);
+    void calculateRemainingVertexSourceNodesAfterTriangleSourceNodesSolved(std::map<int, std::pair<int, int>> &vertexSourceMap);
     void calculateTriangleColors(std::vector<QColor> &triangleColors);
     void calculateTriangleEdgeSourceMap(std::map<std::pair<int, int>, std::pair<int, int>> &triangleEdgeSourceMap);
     void calculateBmeshNodeMap(std::map<std::pair<int, int>, BmeshNode *> &bmeshNodeMap);

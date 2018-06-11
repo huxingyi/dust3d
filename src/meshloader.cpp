@@ -140,34 +140,44 @@ MeshLoader::MeshLoader(void *meshlite, int meshId, int triangulatedMeshId, QColo
     delete[] edgeNormals;
 }
 
-/*
-MeshLoader::MeshLoader(const std::vector<vertex_t> &vertices, const std::vector<int> &indicies, const std::vector<QVector3D> &normals) :
+MeshLoader::MeshLoader(const MeshLoader &mesh) :
     m_triangleVertices(nullptr),
     m_triangleVertexCount(0),
     m_edgeVertices(nullptr),
     m_edgeVertexCount(0),
     m_textureImage(nullptr)
 {
-    m_triangleVertexCount = indicies.size();
-    m_triangleVertices = new Vertex[indicies.size()];
-    for (auto i = 0u; i < indicies.size(); i++) {
-        Vertex *dest = &m_triangleVertices[i];
-        const vertex_t *srcVert = &vertices[indicies[i]];
-        const QVector3D *srcNormal = &normals[indicies[i]];
-        dest->colorR = 0;
-        dest->colorG = 0;
-        dest->colorB = 0;
-        dest->posX = srcVert->p[0];
-        dest->posY = srcVert->p[1];
-        dest->posZ = srcVert->p[2];
-        dest->texU = srcVert->t[0];
-        dest->texV = srcVert->t[1];
-        dest->normX = srcNormal->x();
-        dest->normY = srcNormal->y();
-        dest->normZ = srcNormal->z();
+    if (nullptr != mesh.m_triangleVertices &&
+            mesh.m_triangleVertexCount > 0) {
+        this->m_triangleVertices = new Vertex[mesh.m_triangleVertexCount];
+        this->m_triangleVertexCount = mesh.m_triangleVertexCount;
+        for (int i = 0; i < mesh.m_triangleVertexCount; i++)
+            this->m_triangleVertices[i] = mesh.m_triangleVertices[i];
     }
+    if (nullptr != mesh.m_edgeVertices &&
+            mesh.m_edgeVertexCount > 0) {
+        this->m_edgeVertices = new Vertex[mesh.m_edgeVertexCount];
+        this->m_edgeVertexCount = mesh.m_edgeVertexCount;
+        for (int i = 0; i < mesh.m_edgeVertexCount; i++)
+            this->m_edgeVertices[i] = mesh.m_edgeVertices[i];
+    }
+    if (nullptr != mesh.m_textureImage) {
+        this->m_textureImage = new QImage(*mesh.m_textureImage);
+    }
+    this->m_vertices = mesh.m_vertices;
+    this->m_faces = mesh.m_faces;
+    this->m_triangulatedVertices = mesh.m_triangulatedVertices;
+    this->m_triangulatedFaces = mesh.m_triangulatedFaces;
 }
-*/
+
+MeshLoader::MeshLoader(Vertex *triangleVertices, int vertexNum) :
+    m_triangleVertices(triangleVertices),
+    m_triangleVertexCount(vertexNum),
+    m_edgeVertices(nullptr),
+    m_edgeVertexCount(0),
+    m_textureImage(nullptr)
+{
+}
 
 MeshLoader::MeshLoader(MeshResultContext &resultContext) :
     m_triangleVertices(nullptr),
@@ -210,6 +220,8 @@ MeshLoader::~MeshLoader()
 {
     delete[] m_triangleVertices;
     m_triangleVertexCount = 0;
+    delete[] m_edgeVertices;
+    m_edgeVertexCount = 0;
     delete m_textureImage;
 }
 

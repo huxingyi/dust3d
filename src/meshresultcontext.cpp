@@ -42,10 +42,21 @@ MeshResultContext::MeshResultContext() :
 const std::vector<std::pair<int, int>> &MeshResultContext::triangleSourceNodes()
 {
     if (!m_triangleSourceResolved) {
-        calculateTriangleSourceNodes(m_triangleSourceNodes);
         m_triangleSourceResolved = true;
+        calculateTriangleSourceNodes(m_triangleSourceNodes, m_vertexSourceMap);
+        calculateRemainingVertexSourceNodesAfterTriangleSourceNodesSolved(m_vertexSourceMap);
     }
     return m_triangleSourceNodes;
+}
+
+const std::map<int, std::pair<int, int>> &MeshResultContext::vertexSourceMap()
+{
+    if (!m_triangleSourceResolved) {
+        m_triangleSourceResolved = true;
+        calculateTriangleSourceNodes(m_triangleSourceNodes, m_vertexSourceMap);
+        calculateRemainingVertexSourceNodesAfterTriangleSourceNodesSolved(m_vertexSourceMap);
+    }
+    return m_vertexSourceMap;
 }
 
 const std::vector<QColor> &MeshResultContext::triangleColors()
@@ -92,7 +103,7 @@ void MeshResultContext::resolveBmeshConnectivity()
     }
 }
 
-void MeshResultContext::calculateTriangleSourceNodes(std::vector<std::pair<int, int>> &triangleSourceNodes)
+void MeshResultContext::calculateTriangleSourceNodes(std::vector<std::pair<int, int>> &triangleSourceNodes, std::map<int, std::pair<int, int>> &vertexSourceMap)
 {
     PositionMap<std::pair<int, int>> positionMap;
     std::map<std::pair<int, int>, HalfColorEdge> halfColorEdgeMap;
@@ -101,14 +112,21 @@ void MeshResultContext::calculateTriangleSourceNodes(std::vector<std::pair<int, 
         positionMap.addPosition(it.position.x(), it.position.y(), it.position.z(),
             std::make_pair(it.bmeshId, it.nodeId));
     }
+    for (auto x = 0u; x < vertices.size(); x++) {
+        ResultVertex *resultVertex = &vertices[x];
+        std::pair<int, int> source;
+        if (positionMap.findPosition(resultVertex->position.x(), resultVertex->position.y(), resultVertex->position.z(), &source)) {
+            vertexSourceMap[x] = source;
+        }
+    }
     for (auto x = 0u; x < triangles.size(); x++) {
         const auto triangle = &triangles[x];
         std::vector<std::pair<std::pair<int, int>, int>> colorTypes;
         for (int i = 0; i < 3; i++) {
             int index = triangle->indicies[i];
-            ResultVertex *resultVertex = &vertices[index];
-            std::pair<int, int> source;
-            if (positionMap.findPosition(resultVertex->position.x(), resultVertex->position.y(), resultVertex->position.z(), &source)) {
+            const auto &findResult = vertexSourceMap.find(index);
+            if (findResult != vertexSourceMap.end()) {
+                std::pair<int, int> source = findResult->second;
                 bool colorExisted = false;
                 for (auto j = 0u; j < colorTypes.size(); j++) {
                     if (colorTypes[j].first == source) {
@@ -225,6 +243,37 @@ void MeshResultContext::calculateTriangleSourceNodes(std::vector<std::pair<int, 
                 toResolvePairs.push_back(oppositePair);
             }
         }
+    }
+}
+
+void MeshResultContext::calculateRemainingVertexSourceNodesAfterTriangleSourceNodesSolved(std::map<int, std::pair<int, int>> &vertexSourceMap)
+{
+    std::map<int, std::set<std::pair<int, int>>> remainings;
+    for (auto x = 0u; x < triangles.size(); x++) {
+        const auto triangle = &triangles[x];
+        for (int i = 0; i < 3; i++) {
+            int index = triangle->indicies[i];
+            const auto &findResult = vertexSourceMap.find(index);
+            if (findResult == vertexSourceMap.end()) {
+                remainings[index].insert(triangleSourceNodes()[x]);
+            }
+        }
+    }
+    for (const auto &it: remainings) {
+        float minDist2 = 100000000;
+        std::pair<int, int> minSource = std::make_pair(0, 0);
+        for (const auto &source: it.second) {
+            const auto &vertex = vertices[it.first];
+            const auto &findNode = bmeshNodeMap().find(source);
+            if (findNode != bmeshNodeMap().end()) {
+                float dist2 = (vertex.position - findNode->second->origin).lengthSquared();
+                if (dist2 < minDist2) {
+                    minSource = source;
+                    minDist2 = dist2;
+                }
+            }
+        }
+        vertexSourceMap[it.first] = minSource;
     }
 }
 
@@ -373,10 +422,12 @@ struct BmeshNodeDistWithWorldCenter
 
 BmeshNode *MeshResultContext::calculateCenterBmeshNode()
 {
-    // Sort all the nodes by distance with world center.
+    // Sort all the nodes by distance with world center, excluding leg start nodes
     std::vector<BmeshNodeDistWithWorldCenter> nodesOrderByDistWithWorldCenter;
     for (auto i = 0u; i < bmeshNodes.size(); i++) {
         BmeshNode *bmeshNode = &bmeshNodes[i];
+        if (SkeletonBoneMarkIsStart(bmeshNode->boneMark))
+            continue;
         BmeshNodeDistWithWorldCenter distNode;
         distNode.bmeshNode = bmeshNode;
         distNode.dist2 = bmeshNode->origin.lengthSquared();
@@ -480,6 +531,7 @@ void MeshResultContext::calculateVertexWeights(std::vector<std::vector<ResultVer
                 ResultVertexWeight vertexWeight;
                 vertexWeight.sourceNode = sourceNode;
                 vertexWeight.count = 1;
+                vertexWeights[vertexIndex].push_back(vertexWeight);
                 continue;
             }
             vertexWeights[vertexIndex][foundSourceNodeIndex].count++;
@@ -501,9 +553,12 @@ void MeshResultContext::calculateVertexWeights(std::vector<std::vector<ResultVer
             for (auto i = 0u; i < it.size(); i++) {
                 const auto &findInter = intermediateNodes->find(it[i].sourceNode);
                 if (findInter != intermediateNodes->end()) {
-                    const auto &interBmeshNode = bmeshNodeMap().find(findInter->first);
-                    const auto &attachedFromBmeshNode = bmeshNodeMap().find(std::make_pair(findInter->second.attachedFromPartId, findInter->second.attachedFromNodeId));
+                    //const auto &interBmeshNode = bmeshNodeMap().find(findInter->first);
+                    //const auto &attachedFromBmeshNode = bmeshNodeMap().find(std::make_pair(findInter->second.attachedFromPartId, findInter->second.attachedFromNodeId));
                     const auto &attachedToBmeshNode = bmeshNodeMap().find(std::make_pair(findInter->second.attachedToPartId, findInter->second.attachedToNodeId));
+                    if (attachedToBmeshNode != bmeshNodeMap().end())
+                        weights.push_back(std::make_pair(attachedToBmeshNode->first, it[i].weight));
+                    /*
                     if (interBmeshNode != bmeshNodeMap().end() &&
                             attachedFromBmeshNode != bmeshNodeMap().end() &&
                             attachedToBmeshNode != bmeshNodeMap().end()) {
@@ -514,7 +569,7 @@ void MeshResultContext::calculateVertexWeights(std::vector<std::vector<ResultVer
                             weights.push_back(std::make_pair(attachedFromBmeshNode->first, it[i].weight * distWithFrom / distTotal));
                             weights.push_back(std::make_pair(attachedToBmeshNode->first, it[i].weight * distWithTo / distTotal));
                         }
-                    }
+                    }*/
                 } else {
                     weights.push_back(std::make_pair(it[i].sourceNode, it[i].weight));
                 }
@@ -527,9 +582,11 @@ void MeshResultContext::calculateVertexWeights(std::vector<std::vector<ResultVer
                 total += weights[i].second;
             }
             for (auto i = 0u; i < MAX_WEIGHT_NUM && i < weights.size(); i++) {
-                weights[i].second = weights[i].second / total;
+                weights[i].second = total > 0 ? weights[i].second / total : 0;
             }
             for (auto i = 0u; i < MAX_WEIGHT_NUM && i < weights.size(); i++) {
+                if (i >= it.size())
+                    it.push_back(ResultVertexWeight());
                 it[i].sourceNode = weights[i].first;
                 it[i].weight = weights[i].second;
                 it[i].count = -1; // no use
@@ -788,8 +845,10 @@ void MeshResultContext::removeIntermediateBones()
     bmeshEdges.clear();
     for (const auto &old: oldEdges) {
         if (intermediateNodes.find(std::make_pair(old.fromBmeshId, old.fromNodeId)) != intermediateNodes.end() ||
-                intermediateNodes.find(std::make_pair(old.toBmeshId, old.toNodeId)) != intermediateNodes.end())
+                intermediateNodes.find(std::make_pair(old.toBmeshId, old.toNodeId)) != intermediateNodes.end()) {
+            qDebug() << "Intermediate node from:" << old.fromBmeshId << old.fromNodeId << "to:" << old.toBmeshId << old.toNodeId;
             continue;
+        }
         bmeshEdges.push_back(old);
     }
     for (const auto &edge: remover.newEdges()) {
@@ -798,6 +857,7 @@ void MeshResultContext::removeIntermediateBones()
         newEdge.fromNodeId = std::get<1>(edge);
         newEdge.toBmeshId = std::get<2>(edge);
         newEdge.toNodeId = std::get<3>(edge);
+        qDebug() << "New edge from:" << newEdge.fromBmeshId << newEdge.fromNodeId << "to:" << newEdge.toBmeshId << newEdge.toNodeId;
         bmeshEdges.push_back(newEdge);
     }
     calculateBmeshNodeNeighbors(m_nodeNeighbors);

@@ -39,8 +39,9 @@ class MeshLoader
 {
 public:
     MeshLoader(void *meshlite, int meshId, int triangulatedMeshId = -1, QColor modelColor=Theme::white, const std::vector<QColor> *triangleColors=nullptr);
-    //MeshLoader(const std::vector<vertex_t> &vertices, const std::vector<int> &indicies, const std::vector<QVector3D> &normals);
     MeshLoader(MeshResultContext &resultContext);
+    MeshLoader(Vertex *triangleVertices, int vertexNum);
+    MeshLoader(const MeshLoader &mesh);
     ~MeshLoader();
     Vertex *triangleVertices();
     int triangleVertexCount();

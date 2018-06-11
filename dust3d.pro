@@ -131,6 +131,21 @@ HEADERS += src/skeletonbonemark.h
 SOURCES += src/intermediateboneremover.cpp
 HEADERS += src/intermediateboneremover.h
 
+SOURCES += src/animationpanelwidget.cpp
+HEADERS += src/animationpanelwidget.h
+
+SOURCES += src/rigcontroller.cpp
+HEADERS += src/rigcontroller.h
+
+SOURCES += src/jointnodetree.cpp
+HEADERS += src/jointnodetree.h
+
+SOURCES += src/animationclipgenerator.cpp
+HEADERS += src/animationclipgenerator.h
+
+SOURCES += src/skinnedmesh.cpp
+HEADERS += src/skinnedmesh.h
+
 HEADERS += src/qtlightmapper.h
 
 SOURCES += src/main.cpp
