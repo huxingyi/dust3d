@@ -174,11 +174,6 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
         contextMenu.addAction(&flipVerticallyAction);
     }
     
-    QAction alignToCenterAction(tr("Align to Center"), this);
-    if (hasSelection() && m_document->originSettled()) {
-        connect(&alignToCenterAction, &QAction::triggered, this, &SkeletonGraphicsWidget::alignSelectedToGlobalVerticalCenter);
-        contextMenu.addAction(&alignToCenterAction);
-    }
     QAction alignToLocalCenterAction(tr("Local Center"), this);
     QAction alignToLocalVerticalCenterAction(tr("Local Vertical Center"), this);
     QAction alignToLocalHorizontalCenterAction(tr("Local Horizontal Center"), this);

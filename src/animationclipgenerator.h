@@ -5,6 +5,8 @@
 #include <QString>
 #include "meshresultcontext.h"
 #include "meshloader.h"
+#include "skinnedmesh.h"
+#include "jointnodetree.h"
 
 class AnimationClipGenerator : public QObject
 {
@@ -14,16 +16,25 @@ signals:
 public slots:
     void process();
 public:
-    AnimationClipGenerator(const MeshResultContext &resultContext,
-        const QString &motionName, const std::map<QString, QString> &parameters);
+    AnimationClipGenerator(const MeshResultContext &resultContext, const JointNodeTree &jointNodeTree,
+        const QString &clipName, const std::map<QString, QString> &parameters, bool wantMesh=true);
     ~AnimationClipGenerator();
-    std::vector<std::pair<int, MeshLoader *>> takeFrameMeshes();
+    std::vector<std::pair<float, MeshLoader *>> takeFrameMeshes();
+    const std::vector<float> &times();
+    const std::vector<RigFrame> &frames();
     void generate();
+    static const std::vector<QString> supportedClipNames;
+private:
+    void generateFrame(SkinnedMesh &skinnedMesh, float amount, float beginTime, float duration);
 private:
     MeshResultContext m_resultContext;
-    QString m_motionName;
+    JointNodeTree m_jointNodeTree;
+    QString m_clipName;
     std::map<QString, QString> m_parameters;
-    std::vector<std::pair<int, MeshLoader *>> m_frameMeshes;
+    bool m_wantMesh = true;
+    std::vector<std::pair<float, MeshLoader *>> m_frameMeshes;
+    std::vector<float> m_times;
+    std::vector<RigFrame> m_frames;
 };
 
 #endif

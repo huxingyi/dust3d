@@ -30,10 +30,11 @@ struct SkinnedMeshTriangle
 class SkinnedMesh
 {
 public:
-    SkinnedMesh(const MeshResultContext &resultContext);
+    SkinnedMesh(const MeshResultContext &resultContext, const JointNodeTree &jointNodeTree);
     ~SkinnedMesh();
     void startRig();
     RigController *rigController();
+    JointNodeTree *jointNodeTree();
     void applyRigFrameToMesh(const RigFrame &frame);
     MeshLoader *toMeshLoader();
 private:

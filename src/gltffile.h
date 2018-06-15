@@ -7,12 +7,13 @@
 #include <vector>
 #include "meshresultcontext.h"
 #include "json.hpp"
+#include "skeletondocument.h"
 
 class GLTFFileWriter : public QObject
 {
     Q_OBJECT
 public:
-    GLTFFileWriter(MeshResultContext &resultContext, const QString &filename);
+    GLTFFileWriter(MeshResultContext &resultContext, const std::map<QString, AnimationClipContext> &animationClipContexts, const QString &filename);
     bool save();
     const QString &textureFilenameInGltf();
 private:
@@ -21,6 +22,9 @@ private:
     QString m_filename;
     QString m_textureFilename;
     bool m_outputNormal;
+    bool m_outputAnimation;
+    bool m_outputUv;
+    bool m_testOutputAsWhole;
 private:
     nlohmann::json m_json;
 public:

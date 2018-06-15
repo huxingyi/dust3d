@@ -17,6 +17,8 @@
 #include "meshresultpostprocessor.h"
 #include "ambientocclusionbaker.h"
 #include "skeletonbonemark.h"
+#include "animationclipgenerator.h"
+#include "jointnodetree.h"
 
 class SkeletonNode
 {
@@ -171,6 +173,15 @@ enum class SkeletonDocumentEditMode
     ZoomOut
 };
 
+class AnimationClipContext
+{
+public:
+    bool isObsolete = true;
+    AnimationClipGenerator *clipGenerator = nullptr;
+    std::vector<float> times;
+    std::vector<RigFrame> frames;
+};
+
 class SkeletonDocument : public QObject
 {
     Q_OBJECT
@@ -240,6 +251,7 @@ public:
     std::map<QUuid, SkeletonNode> nodeMap;
     std::map<QUuid, SkeletonEdge> edgeMap;
     std::vector<QUuid> partIds;
+    std::map<QString, std::map<QString, QString>> animationParameters;
     QImage turnaround;
     QImage preview;
     void toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUuid> &limitNodeIds=std::set<QUuid>()) const;
@@ -260,7 +272,11 @@ public:
     bool isEdgeEditable(QUuid edgeId) const;
     bool originSettled() const;
     MeshResultContext &currentPostProcessedResultContext();
+    JointNodeTree &currentJointNodeTree();
     bool isExportReady() const;
+    bool allAnimationClipsReady() const;
+    bool postProcessResultIsObsolete() const;
+    const std::map<QString, AnimationClipContext> &animationClipContexts();
 public slots:
     void removeNode(QUuid nodeId);
     void removeEdge(QUuid edgeId);
@@ -282,9 +298,12 @@ public slots:
     void generateTexture();
     void textureReady();
     void postProcess();
+    void generateAnimationClip(QString clipName);
+    void generateAllAnimationClips();
     void postProcessedMeshResultReady();
     void bakeAmbientOcclusionTexture();
     void ambientOcclusionTextureReady();
+    void animationClipReady(QString clipName);
     void setPartLockState(QUuid partId, bool locked);
     void setPartVisibleState(QUuid partId, bool visible);
     void setPartSubdivState(QUuid partId, bool subdived);
@@ -329,10 +348,12 @@ private: // need initialize
     bool m_postProcessResultIsObsolete;
     MeshResultPostProcessor *m_postProcessor;
     MeshResultContext *m_postProcessedResultContext;
+    JointNodeTree *m_jointNodeTree;
     MeshLoader *m_resultTextureMesh;
     unsigned long long m_textureImageUpdateVersion;
     AmbientOcclusionBaker *m_ambientOcclusionBaker;
     unsigned long long m_ambientOcclusionBakedImageUpdateVersion;
+    std::map<QString, AnimationClipContext> m_animationClipContexts;
 private:
     static unsigned long m_maxSnapshot;
     std::deque<SkeletonHistoryItem> m_undoItems;

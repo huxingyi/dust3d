@@ -1,9 +1,9 @@
 #include "skinnedmesh.h"
 
-SkinnedMesh::SkinnedMesh(const MeshResultContext &resultContext) :
+SkinnedMesh::SkinnedMesh(const MeshResultContext &resultContext, const JointNodeTree &jointNodeTree) :
     m_resultContext(resultContext),
     m_rigController(nullptr),
-    m_jointNodeTree(nullptr)
+    m_jointNodeTree(new JointNodeTree(jointNodeTree))
 {
 }
 
@@ -18,11 +18,14 @@ RigController *SkinnedMesh::rigController()
     return m_rigController;
 }
 
+JointNodeTree *SkinnedMesh::jointNodeTree()
+{
+    return m_jointNodeTree;
+}
+
 void SkinnedMesh::startRig()
 {
     Q_ASSERT(nullptr == m_rigController);
-    Q_ASSERT(nullptr == m_jointNodeTree);
-    m_jointNodeTree = new JointNodeTree(m_resultContext);
     m_rigController = new RigController(*m_jointNodeTree);
     fromMeshResultContext(m_resultContext);
 }
@@ -34,8 +37,7 @@ void SkinnedMesh::applyRigFrameToMesh(const RigFrame &frame)
     for (auto &vert: m_vertices) {
         QMatrix4x4 matrix;
         for (int i = 0; i < MAX_WEIGHT_NUM; i++) {
-            if (vert.weights[i].amount > 0)
-                matrix += matrices[vert.weights[i].jointIndex] * vert.weights[i].amount;
+            matrix += matrices[vert.weights[i].jointIndex] * vert.weights[i].amount;
         }
         vert.position = matrix * vert.posPosition;
         vert.normal = (matrix * vert.posNormal).normalized();

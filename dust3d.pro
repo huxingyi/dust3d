@@ -143,6 +143,9 @@ HEADERS += src/jointnodetree.h
 SOURCES += src/animationclipgenerator.cpp
 HEADERS += src/animationclipgenerator.h
 
+SOURCES += src/animationclipplayer.cpp
+HEADERS += src/animationclipplayer.h
+
 SOURCES += src/skinnedmesh.cpp
 HEADERS += src/skinnedmesh.h
 

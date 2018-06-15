@@ -2,12 +2,33 @@
 #include "animationclipgenerator.h"
 #include "skinnedmesh.h"
 
-AnimationClipGenerator::AnimationClipGenerator(const MeshResultContext &resultContext,
-        const QString &motionName, const std::map<QString, QString> &parameters) :
+const std::vector<QString> AnimationClipGenerator::supportedClipNames = {
+    "Idle",
+    //"Walk",
+    //"Run",
+    //"Attack",
+    //"Hurt",
+    //"Die",
+};
+
+AnimationClipGenerator::AnimationClipGenerator(const MeshResultContext &resultContext, const JointNodeTree &jointNodeTree,
+        const QString &clipName, const std::map<QString, QString> &parameters, bool wantMesh) :
     m_resultContext(resultContext),
-    m_motionName(motionName),
-    m_parameters(parameters)
+    m_jointNodeTree(jointNodeTree),
+    m_clipName(clipName),
+    m_parameters(parameters),
+    m_wantMesh(wantMesh)
 {
+}
+
+const std::vector<float> &AnimationClipGenerator::times()
+{
+    return m_times;
+}
+
+const std::vector<RigFrame> &AnimationClipGenerator::frames()
+{
+    return m_frames;
 }
 
 AnimationClipGenerator::~AnimationClipGenerator()
@@ -17,26 +38,48 @@ AnimationClipGenerator::~AnimationClipGenerator()
     }
 }
 
-std::vector<std::pair<int, MeshLoader *>> AnimationClipGenerator::takeFrameMeshes()
+std::vector<std::pair<float, MeshLoader *>> AnimationClipGenerator::takeFrameMeshes()
 {
-    std::vector<std::pair<int, MeshLoader *>> result = m_frameMeshes;
+    std::vector<std::pair<float, MeshLoader *>> result = m_frameMeshes;
     m_frameMeshes.clear();
     return result;
 }
 
+void AnimationClipGenerator::generateFrame(SkinnedMesh &skinnedMesh, float amount, float beginTime, float duration)
+{
+    RigController *rigController = skinnedMesh.rigController();
+    JointNodeTree *jointNodeTree = skinnedMesh.jointNodeTree();
+    
+    rigController->resetFrame();
+    
+    if (m_clipName == "Idle")
+        rigController->idle(amount);
+    
+    RigFrame frame(jointNodeTree->joints().size());
+    rigController->saveFrame(frame);
+    
+    if (m_wantMesh) {
+        skinnedMesh.applyRigFrameToMesh(frame);
+        m_frameMeshes.push_back(std::make_pair(duration, skinnedMesh.toMeshLoader()));
+    }
+    
+    m_times.push_back(beginTime);
+    m_frames.push_back(frame);
+}
+
 void AnimationClipGenerator::generate()
 {
-    SkinnedMesh skinnedMesh(m_resultContext);
+    SkinnedMesh skinnedMesh(m_resultContext, m_jointNodeTree);
     skinnedMesh.startRig();
-    
-    RigController *rigController = skinnedMesh.rigController();
-    
-    for (float amount = 0.0; amount <= 0.5; amount += 0.05) {
-        rigController->squat(amount);
-        RigFrame frame;
-        rigController->saveFrame(frame);
-        skinnedMesh.applyRigFrameToMesh(frame);
-        m_frameMeshes.push_back(std::make_pair(10, skinnedMesh.toMeshLoader()));
+    float duration = 0.1;
+    float nextBeginTime = 0;
+    for (float amount = 0.0; amount <= 0.05; amount += 0.01) {
+        generateFrame(skinnedMesh, amount, nextBeginTime, duration);
+        nextBeginTime += duration;
+    }
+    for (float amount = 0.05; amount >= 0.0; amount -= 0.01) {
+        generateFrame(skinnedMesh, amount, nextBeginTime, duration);
+        nextBeginTime += duration;
     }
 }
 

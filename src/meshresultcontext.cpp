@@ -515,10 +515,23 @@ void MeshResultContext::calculateVertexWeights(std::vector<std::vector<ResultVer
 {
     vertexWeights.clear();
     vertexWeights.resize(vertices.size());
+    std::set<int> solvedVertices;
+    for (auto i = 0u; i < vertices.size(); i++) {
+        const auto &findSourceNode = vertexSourceMap().find(i);
+        if (findSourceNode != vertexSourceMap().end()) {
+            ResultVertexWeight vertexWeight;
+            vertexWeight.sourceNode = findSourceNode->second;
+            vertexWeight.count = 1;
+            vertexWeights[i].push_back(vertexWeight);
+            solvedVertices.insert(i);
+        }
+    }
     for (auto i = 0u; i < triangles.size(); i++) {
         std::pair<int, int> sourceNode = triangleSourceNodes()[i];
         for (int j = 0; j < 3; j++) {
             int vertexIndex = triangles[i].indicies[j];
+            if (solvedVertices.find(vertexIndex) != solvedVertices.end())
+                continue;
             Q_ASSERT(vertexIndex < (int)vertexWeights.size());
             int foundSourceNodeIndex = -1;
             for (auto k = 0u; k < vertexWeights[vertexIndex].size(); k++) {
@@ -546,30 +559,16 @@ void MeshResultContext::calculateVertexWeights(std::vector<std::vector<ResultVer
             it[i].weight = (float)it[i].count / total;
         }
     }
-    if (nullptr != intermediateNodes) {
+    if (nullptr != intermediateNodes && !intermediateNodes->empty()) {
         // We removed some intermediate nodes, so we should recalculate the vertex weights.
         for (auto &it: vertexWeights) {
             std::vector<std::pair<std::pair<int, int>, float>> weights;
             for (auto i = 0u; i < it.size(); i++) {
                 const auto &findInter = intermediateNodes->find(it[i].sourceNode);
                 if (findInter != intermediateNodes->end()) {
-                    //const auto &interBmeshNode = bmeshNodeMap().find(findInter->first);
-                    //const auto &attachedFromBmeshNode = bmeshNodeMap().find(std::make_pair(findInter->second.attachedFromPartId, findInter->second.attachedFromNodeId));
                     const auto &attachedToBmeshNode = bmeshNodeMap().find(std::make_pair(findInter->second.attachedToPartId, findInter->second.attachedToNodeId));
                     if (attachedToBmeshNode != bmeshNodeMap().end())
                         weights.push_back(std::make_pair(attachedToBmeshNode->first, it[i].weight));
-                    /*
-                    if (interBmeshNode != bmeshNodeMap().end() &&
-                            attachedFromBmeshNode != bmeshNodeMap().end() &&
-                            attachedToBmeshNode != bmeshNodeMap().end()) {
-                        float distWithFrom = interBmeshNode->second->origin.distanceToPoint(attachedFromBmeshNode->second->origin);
-                        float distWithTo = interBmeshNode->second->origin.distanceToPoint(attachedToBmeshNode->second->origin);
-                        float distTotal = distWithFrom + distWithTo;
-                        if (distTotal > 0) {
-                            weights.push_back(std::make_pair(attachedFromBmeshNode->first, it[i].weight * distWithFrom / distTotal));
-                            weights.push_back(std::make_pair(attachedToBmeshNode->first, it[i].weight * distWithTo / distTotal));
-                        }
-                    }*/
                 } else {
                     weights.push_back(std::make_pair(it[i].sourceNode, it[i].weight));
                 }
@@ -631,7 +630,9 @@ void MeshResultContext::calculateResultParts(std::map<int, ResultPart> &parts)
         for (auto i = 0u; i < 3; i++) {
             auto key = std::make_pair(sourceNode.first, triangle.indicies[i]);
             const auto &it = oldVertexToNewMap.find(key);
-            if (it == oldVertexToNewMap.end() || m_seamVertices.end() != m_seamVertices.find(triangle.indicies[i])) {
+            bool isNewVertex = it == oldVertexToNewMap.end();
+            bool isSeamVertex = m_seamVertices.end() != m_seamVertices.find(triangle.indicies[i]);
+            if (isNewVertex || isSeamVertex) {
                 int newIndex = resultPart.vertices.size();
                 resultPart.interpolatedVertexNormals.push_back(newTriangle.normal);
                 resultPart.vertices.push_back(vertices[triangle.indicies[i]]);
@@ -639,8 +640,9 @@ void MeshResultContext::calculateResultParts(std::map<int, ResultPart> &parts)
                 vertexUv.uv[0] = triangleUvs()[x].uv[i][0];
                 vertexUv.uv[1] = triangleUvs()[x].uv[i][1];
                 resultPart.vertexUvs.push_back(vertexUv);
-                resultPart.weights.push_back(vertexWeights()[triangle.indicies[i]]);
-                if (it == oldVertexToNewMap.end())
+                const auto &weight = vertexWeights()[triangle.indicies[i]];
+                resultPart.weights.push_back(weight);
+                if (isNewVertex && !isSeamVertex)
                     oldVertexToNewMap.insert(std::make_pair(key, newIndex));
                 newTriangle.indicies[i] = newIndex;
             } else {

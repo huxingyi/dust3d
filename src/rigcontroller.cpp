@@ -5,7 +5,8 @@
 RigController::RigController(const JointNodeTree &jointNodeTree) :
     m_inputJointNodeTree(jointNodeTree),
     m_prepared(false),
-    m_legHeight(0)
+    m_legHeight(0),
+    m_averageLegEndY(0)
 {
 }
 
@@ -14,10 +15,14 @@ void RigController::saveFrame(RigFrame &frame)
     frame = m_rigFrame;
 }
 
-void RigController::collectLegs()
+void RigController::collectParts()
 {
     m_legs.clear();
+    m_spine.clear();
     for (const auto &node: m_inputJointNodeTree.joints()) {
+        if (node.boneMark == SkeletonBoneMark::Spine) {
+            m_spine.push_back(std::make_pair(node.partId, node.nodeId));
+        }
         if (node.boneMark == SkeletonBoneMark::LegStart && node.children.size() == 1) {
             const auto legStart = std::make_pair(node.partId, node.nodeId);
             const JointInfo *loopNode = &m_inputJointNodeTree.joints()[node.children[0]];
@@ -48,16 +53,43 @@ void RigController::prepare()
         return;
     m_prepared = true;
     
-    collectLegs();
-    m_rigFrame = RigFrame(m_inputJointNodeTree.joints().size());
+    collectParts();
     calculateAverageLegHeight();
+}
+
+void RigController::resetFrame()
+{
+    m_rigFrame = RigFrame(m_inputJointNodeTree.joints().size());
 }
 
 void RigController::lift(QVector3D offset)
 {
     if (m_inputJointNodeTree.joints().empty())
         return;
-    m_rigFrame.translations[0] = offset;
+    if (m_rigFrame.translatedIndicies.find(0) != m_rigFrame.translatedIndicies.end())
+        m_rigFrame.updateTranslation(0, m_rigFrame.translations[0] + offset);
+    else
+        m_rigFrame.updateTranslation(0, m_inputJointNodeTree.joints()[0].translation + offset);
+}
+
+void RigController::breathe(float amount)
+{
+    if (m_spine.empty() || amount <= 0)
+        return;
+    std::vector<int> spineJoints;
+    for (auto i = 0u; i < m_spine.size(); i++) {
+        int jointIndex = m_inputJointNodeTree.nodeToJointIndex(m_spine[i].first, m_spine[i].second);
+        spineJoints.push_back(jointIndex);
+    }
+    // make sure parent get processed first
+    std::sort(spineJoints.begin(), spineJoints.end());
+    float inverseAmount = 1 / amount;
+    for (const auto &jointIndex: spineJoints) {
+        m_rigFrame.updateScale(jointIndex, m_rigFrame.scales[jointIndex] * amount);
+        for (const auto &child: m_inputJointNodeTree.joints()[jointIndex].children) {
+            m_rigFrame.updateScale(child, m_rigFrame.scales[child] * inverseAmount);
+        }
+    }
 }
 
 void RigController::liftLegs(QVector3D offset, QVector3D &effectedOffset)
@@ -118,20 +150,12 @@ void RigController::liftLegEnd(int leg, QVector3D offset, QVector3D &effectedOff
     effectedOffset = ikSolver.getNodeSolvedPosition(nodeCount - 1) -
         m_inputJointNodeTree.joints()[ikSolvingIndicies[nodeCount - 1]].position;
     qDebug() << "end effector offset:" << destPosition.distanceToPoint(ikSolver.getNodeSolvedPosition(nodeCount - 1));
-    outputJointNodeTree.recalculateMatricesAfterPositionsUpdated();
-    QMatrix4x4 parentMatrix;
+    outputJointNodeTree.recalculateMatricesAfterPositionUpdated();
     for (int i = 0; i < nodeCount; i++) {
         int jointIndex = ikSolvingIndicies[i];
-        const auto &inputJoint = m_inputJointNodeTree.joints()[jointIndex];
         const auto &outputJoint = outputJointNodeTree.joints()[jointIndex];
-        
-        QMatrix4x4 worldMatrix = outputJoint.bindMatrix * inputJoint.inverseBindMatrix;
-        QMatrix4x4 trMatrix = worldMatrix * parentMatrix.inverted();
-        
-        m_rigFrame.rotations[jointIndex] = QQuaternion::fromRotationMatrix(trMatrix.normalMatrix());
-        m_rigFrame.translations[jointIndex] = QVector3D(trMatrix(0, 3), trMatrix(1, 3), trMatrix(2, 3));
-
-        parentMatrix = worldMatrix;
+        m_rigFrame.updateRotation(jointIndex, outputJoint.rotation);
+        m_rigFrame.updateTranslation(jointIndex, outputJoint.translation);
     }
 }
 
@@ -150,20 +174,32 @@ void RigController::frameToMatricesAtJoint(const RigFrame &frame, std::vector<QM
     const auto &joint = m_inputJointNodeTree.joints()[jointIndex];
     
     QMatrix4x4 translateMatrix;
-    translateMatrix.translate(frame.translations[jointIndex]);
+    if (frame.translatedIndicies.find(jointIndex) != frame.translatedIndicies.end())
+        translateMatrix.translate(frame.translations[jointIndex]);
+    else
+        translateMatrix.translate(joint.translation);
     
     QMatrix4x4 rotateMatrix;
-    rotateMatrix.rotate(frame.rotations[jointIndex]);
+    if (frame.rotatedIndicies.find(jointIndex) != frame.rotatedIndicies.end())
+        rotateMatrix.rotate(frame.rotations[jointIndex]);
+    else
+        rotateMatrix.rotate(joint.rotation);
     
-    QMatrix4x4 worldMatrix = parentWorldMatrix * translateMatrix * rotateMatrix;
-    matrices[jointIndex] = worldMatrix;
+    QMatrix4x4 scaleMatrix;
+    if (frame.scaledIndicies.find(jointIndex) != frame.scaledIndicies.end())
+        scaleMatrix.scale(frame.scales[jointIndex]);
+    else
+        scaleMatrix.scale(joint.scale);
+    
+    QMatrix4x4 worldMatrix = parentWorldMatrix * translateMatrix * rotateMatrix * scaleMatrix;
+    matrices[jointIndex] = worldMatrix * joint.inverseBindMatrix;
     
     for (const auto &child: joint.children) {
         frameToMatricesAtJoint(frame, matrices, child, worldMatrix);
     }
 }
 
-void RigController::squat(float amount)
+void RigController::idle(float amount)
 {
     prepare();
     
@@ -171,29 +207,65 @@ void RigController::squat(float amount)
     wantOffset.setY(m_legHeight * amount);
     QVector3D effectedOffset;
     liftLegs(wantOffset, effectedOffset);
-    lift(-effectedOffset);
+    breathe(1 + amount);
+    
+    JointNodeTree finalJointNodeTree = m_inputJointNodeTree;
+    applyRigFrameToJointNodeTree(finalJointNodeTree, m_rigFrame);
+    
+    QVector3D leftOffset;
+    leftOffset.setY(calculateAverageLegEndPosition(finalJointNodeTree).y() - m_averageLegEndY);
+    lift(-leftOffset);
 }
 
 void RigController::calculateAverageLegHeight()
 {
+    m_averageLegEndY = calculateAverageLegEndPosition(m_inputJointNodeTree).y();
+    m_legHeight = abs(m_averageLegEndY - calculateAverageLegStartPosition(m_inputJointNodeTree).y());
+}
+
+QVector3D RigController::calculateAverageLegStartPosition(JointNodeTree &jointNodeTree)
+{
     QVector3D averageLegPlaneTop = QVector3D();
-    QVector3D averageLegPlaneBottom = QVector3D();
     if (m_legs.empty())
-        return;
+        return QVector3D();
     for (auto leg = 0u; leg < m_legs.size(); leg++) {
         int legStartPartId = std::get<0>(m_legs[leg]);
         int legStartNodeId = std::get<1>(m_legs[leg]);
-        int legEndPartId = std::get<2>(m_legs[leg]);
-        int legEndNodeId = std::get<3>(m_legs[leg]);
-        int legStartIndex = m_inputJointNodeTree.nodeToJointIndex(legStartPartId, legStartNodeId);
-        int legEndIndex = m_inputJointNodeTree.nodeToJointIndex(legEndPartId, legEndNodeId);
-        const auto &legStart = m_inputJointNodeTree.joints()[legStartIndex];
-        const auto &legEnd = m_inputJointNodeTree.joints()[legEndIndex];
-        //qDebug() << "leg:" << leg << "legStartPartId:" << legStartPartId << "legEndPartId:" << legEndPartId << legStart.position << legEnd.position;
+        int legStartIndex = jointNodeTree.nodeToJointIndex(legStartPartId, legStartNodeId);
+        const auto &legStart = jointNodeTree.joints()[legStartIndex];
         averageLegPlaneTop += legStart.position;
-        averageLegPlaneBottom += legEnd.position;
     }
     averageLegPlaneTop /= m_legs.size();
-    averageLegPlaneBottom /= m_legs.size();
-    m_legHeight = abs(averageLegPlaneBottom.y() - averageLegPlaneTop.y());
+    return averageLegPlaneTop;
 }
+
+QVector3D RigController::calculateAverageLegEndPosition(JointNodeTree &jointNodeTree)
+{
+    QVector3D averageLegPlaneBottom = QVector3D();
+    if (m_legs.empty())
+        return QVector3D();
+    for (auto leg = 0u; leg < m_legs.size(); leg++) {
+        int legEndPartId = std::get<2>(m_legs[leg]);
+        int legEndNodeId = std::get<3>(m_legs[leg]);
+        int legEndIndex = jointNodeTree.nodeToJointIndex(legEndPartId, legEndNodeId);
+        const auto &legEnd = jointNodeTree.joints()[legEndIndex];
+        averageLegPlaneBottom += legEnd.position;
+    }
+    averageLegPlaneBottom /= m_legs.size();
+    return averageLegPlaneBottom;
+}
+
+void RigController::applyRigFrameToJointNodeTree(JointNodeTree &jointNodeTree, const RigFrame &frame)
+{
+    for (const auto &jointIndex: frame.translatedIndicies) {
+        jointNodeTree.joints()[jointIndex].translation = frame.translations[jointIndex];
+    }
+    for (const auto &jointIndex: frame.rotatedIndicies) {
+        jointNodeTree.joints()[jointIndex].rotation = frame.rotations[jointIndex];
+    }
+    for (const auto &jointIndex: frame.scaledIndicies) {
+        jointNodeTree.joints()[jointIndex].scale = frame.scales[jointIndex];
+    }
+    jointNodeTree.recalculateMatricesAfterTransformUpdated();
+}
+

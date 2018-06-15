@@ -5,6 +5,7 @@
 #include <QTimer>
 #include "skeletondocument.h"
 #include "animationclipgenerator.h"
+#include "animationclipplayer.h"
 
 class AnimationPanelWidget : public QWidget
 {
@@ -23,13 +24,12 @@ public slots:
     void clipReady();
     void sourceMeshChanged();
 private:
+    void reset();
+private:
     SkeletonDocument *m_document;
     AnimationClipGenerator *m_animationClipGenerator;
-    MeshLoader *m_lastFrameMesh;
-    bool m_sourceMeshReady;
 private:
-    std::vector<std::pair<int, MeshLoader *>> m_frameMeshes;
-    QTime m_countForFrame;
+    AnimationClipPlayer m_clipPlayer;
     QString m_nextMotionName;
     QString m_lastMotionName;
 };

@@ -4,6 +4,7 @@
 #include <map>
 #include <cmath>
 #include <QVector3D>
+#include <QQuaternion>
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846

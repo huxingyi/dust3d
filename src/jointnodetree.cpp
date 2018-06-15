@@ -17,6 +17,7 @@ JointNodeTree::JointNodeTree(MeshResultContext &resultContext)
         rootCenterJoint.nodeId = rootNode->nodeId;
         rootCenterJoint.position = rootNode->origin;
         rootCenterJoint.boneMark = rootNode->boneMark;
+        rootCenterJoint.scale = QVector3D(1.0, 1.0, 1.0);
         m_tracedJoints.push_back(rootCenterJoint);
     }
     
@@ -27,7 +28,7 @@ JointNodeTree::JointNodeTree(MeshResultContext &resultContext)
     m_tracedNodeToJointIndexMap[std::make_pair(rootNode->bmeshId, rootNode->nodeId)] = rootCenterJoint.jointIndex;
     traceBoneFromJoint(resultContext, std::make_pair(rootNode->bmeshId, rootNode->nodeId), visitedNodes, connections, rootCenterJoint.jointIndex);
     
-    calculateMatrices();
+    calculateMatricesByPosition();
 }
 
 void JointNodeTree::traceBoneFromJoint(MeshResultContext &resultContext, std::pair<int, int> node, std::set<std::pair<int, int>> &visitedNodes, std::set<std::pair<std::pair<int, int>, std::pair<int, int>>> &connections, int parentIndex)
@@ -38,6 +39,7 @@ void JointNodeTree::traceBoneFromJoint(MeshResultContext &resultContext, std::pa
     const auto &neighbors = resultContext.nodeNeighbors().find(node);
     if (neighbors == resultContext.nodeNeighbors().end())
         return;
+    std::vector<std::pair<int, std::pair<int, int>>> neighborJoints;
     for (const auto &it: neighbors->second) {
         if (connections.find(std::make_pair(std::make_pair(node.first, node.second), std::make_pair(it.first, it.second))) != connections.end())
             continue;
@@ -60,13 +62,18 @@ void JointNodeTree::traceBoneFromJoint(MeshResultContext &resultContext, std::pa
         joint.partId = toNode->second->bmeshId;
         joint.nodeId = toNode->second->nodeId;
         joint.boneMark = toNode->second->boneMark;
+        joint.scale = QVector3D(1.0, 1.0, 1.0);
         
         m_tracedNodeToJointIndexMap[std::make_pair(it.first, it.second)] = joint.jointIndex;
         
         m_tracedJoints.push_back(joint);
         m_tracedJoints[parentIndex].children.push_back(joint.jointIndex);
         
-        traceBoneFromJoint(resultContext, it, visitedNodes, connections, joint.jointIndex);
+        neighborJoints.push_back(std::make_pair(joint.jointIndex, it));
+    }
+    
+    for (const auto &joint: neighborJoints) {
+        traceBoneFromJoint(resultContext, joint.second, visitedNodes, connections, joint.first);
     }
 }
 
@@ -78,49 +85,95 @@ std::vector<JointInfo> &JointNodeTree::joints()
 int JointNodeTree::nodeToJointIndex(int partId, int nodeId)
 {
     const auto &findIt = m_tracedNodeToJointIndexMap.find(std::make_pair(partId, nodeId));
-    if (findIt == m_tracedNodeToJointIndexMap.end())
+    if (findIt == m_tracedNodeToJointIndexMap.end()) {
+        qDebug() << "node to joint index map failed, partId:" << partId << "nodeId:" << nodeId;
         return 0;
+    }
     return findIt->second;
 }
 
-void JointNodeTree::calculateMatrices()
+void JointNodeTree::calculateMatricesByPosition()
 {
     if (joints().empty())
         return;
-    calculateMatricesFrom(0, QVector3D(), QVector3D(), QMatrix4x4());
+    calculateMatricesByPositionFrom(0, QVector3D(), QVector3D(), QMatrix4x4());
 }
 
-void JointNodeTree::calculateMatricesFrom(int jointIndex, const QVector3D &parentPosition, const QVector3D &parentDirection, const QMatrix4x4 &parentMatrix)
+void JointNodeTree::calculateMatricesByTransform()
+{
+    for (auto &joint: joints()) {
+        QMatrix4x4 translateMatrix;
+        translateMatrix.translate(joint.translation);
+        
+        QMatrix4x4 rotateMatrix;
+        rotateMatrix.rotate(joint.rotation);
+        
+        QMatrix4x4 scaleMatrix;
+        scaleMatrix.scale(joint.scale);
+        
+        QMatrix4x4 localMatrix = translateMatrix * rotateMatrix * scaleMatrix;
+        QMatrix4x4 bindMatrix = joint.parentIndex == -1 ? localMatrix : (joints()[joint.parentIndex].bindMatrix * localMatrix);
+        
+        bool invertible = true;
+        
+        joint.bindMatrix = bindMatrix;
+        
+        joint.position = joint.inverseBindMatrix * joint.bindMatrix * joint.position;
+        
+        joint.inverseBindMatrix = joint.bindMatrix.inverted(&invertible);
+        
+        if (!invertible)
+            qDebug() << "jointIndex:" << joint.jointIndex << "invertible:" << invertible;
+    }
+}
+
+void JointNodeTree::calculateMatricesByPositionFrom(int jointIndex, const QVector3D &parentPosition, const QVector3D &parentDirection, const QMatrix4x4 &parentMatrix)
 {
     auto &joint = joints()[jointIndex];
     QVector3D translation = joint.position - parentPosition;
-    QVector3D direction = translation.normalized();
+    QVector3D direction = QVector3D();
     
     QMatrix4x4 translateMatrix;
     translateMatrix.translate(translation);
     
     QMatrix4x4 rotateMatrix;
-    QVector3D cross = QVector3D::crossProduct(parentDirection, direction).normalized();
-    float dot = QVector3D::dotProduct(parentDirection, direction);
-    float angle = acos(dot);
-    QQuaternion rotation = QQuaternion::fromAxisAndAngle(cross, angle);
-    rotateMatrix.rotate(QQuaternion::fromAxisAndAngle(cross, angle));
+    QQuaternion rotation;
+    if (!parentDirection.isNull()) {
+        direction = translation.normalized();
+        
+        rotation = QQuaternion::rotationTo(parentDirection, direction);
+        rotateMatrix.rotate(rotation);
+    }
     
-    QMatrix4x4 localMatrix = translateMatrix * rotateMatrix;
+    QMatrix4x4 scaleMatrix;
+    scaleMatrix.scale(joint.scale);
+    
+    QMatrix4x4 localMatrix = translateMatrix * rotateMatrix * scaleMatrix;
     QMatrix4x4 bindMatrix = parentMatrix * localMatrix;
+    
+    bool invertible = true;
     
     joint.localMatrix = localMatrix;
     joint.translation = translation;
     joint.rotation = rotation;
     joint.bindMatrix = bindMatrix;
-    joint.inverseBindMatrix = joint.bindMatrix.inverted();
+    joint.inverseBindMatrix = joint.bindMatrix.inverted(&invertible);
+    
+    if (!invertible)
+        qDebug() << "jointIndex:" << jointIndex << "invertible:" << invertible;
     
     for (const auto &child: joint.children) {
-        calculateMatricesFrom(child, joint.position, direction, bindMatrix);
+        calculateMatricesByPositionFrom(child, joint.position, direction, bindMatrix);
     }
 }
 
-void JointNodeTree::recalculateMatricesAfterPositionsUpdated()
+void JointNodeTree::recalculateMatricesAfterPositionUpdated()
 {
-    calculateMatrices();
+    calculateMatricesByPosition();
 }
+
+void JointNodeTree::recalculateMatricesAfterTransformUpdated()
+{
+    calculateMatricesByTransform();
+}
+

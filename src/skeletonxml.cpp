@@ -55,6 +55,23 @@ void saveSkeletonToXmlStream(SkeletonSnapshot *snapshot, QXmlStreamWriter *write
             writer->writeEndElement();
         }
         writer->writeEndElement();
+    
+        if (!snapshot->animationParameters.empty()) {
+            writer->writeStartElement("animations");
+            std::map<QString, std::map<QString, QString>>::iterator animationIterator;
+            for (animationIterator = snapshot->animationParameters.begin(); animationIterator != snapshot->animationParameters.end(); animationIterator++) {
+                std::map<QString, QString>::iterator animationParamterIterator;
+                if (animationIterator->second.find("clip") != animationIterator->second.end()) {
+                    writer->writeStartElement("animation");
+                    for (animationParamterIterator = animationIterator->second.begin(); animationParamterIterator != animationIterator->second.end(); animationParamterIterator++) {
+                        writer->writeAttribute(animationParamterIterator->first, animationParamterIterator->second);
+                    }
+                    writer->writeEndElement();
+                }
+            }
+            writer->writeEndElement();
+        }
+    
     writer->writeEndElement();
     
     writer->writeEndDocument();
@@ -93,7 +110,15 @@ void loadSkeletonFromXmlStream(SkeletonSnapshot *snapshot, QXmlStreamReader &rea
                 foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
                     (*partMap)[attr.name().toString()] = attr.value().toString();
                 }
-            } else if (reader.name() == "partId") {
+            } else if (reader.name() == "animation") {
+               QString animationClipName = reader.attributes().value("clip").toString();
+               if (animationClipName.isEmpty())
+                   continue;
+               std::map<QString, QString> *animationParameterMap = &snapshot->animationParameters[animationClipName];
+               foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
+                   (*animationParameterMap)[attr.name().toString()] = attr.value().toString();
+               }
+           } else if (reader.name() == "partId") {
                 QString partId = reader.attributes().value("id").toString();
                 if (partId.isEmpty())
                     continue;

@@ -6,8 +6,8 @@
 
 CCDIKSolver::CCDIKSolver() :
     m_maxRound(4),
-    m_distanceThreshold2(0.01 * 0.01),
-    m_distanceCeaseThreshold2(0.01 * 0.01)
+    m_distanceThreshold2(0.001 * 0.001),
+    m_distanceCeaseThreshold2(0.001 * 0.001)
 {
 }
 

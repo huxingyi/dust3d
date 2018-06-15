@@ -422,7 +422,7 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     
     m_showAnimationPanelAction = new QAction(tr("Show Animation Panel"), this);
     connect(m_showAnimationPanelAction, &QAction::triggered, this, &SkeletonDocumentWindow::showAnimationPanel);
-    //m_viewMenu->addAction(m_showAnimationPanelAction);
+    m_viewMenu->addAction(m_showAnimationPanelAction);
     
     m_viewMenu->addSeparator();
     
@@ -592,6 +592,7 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(m_document, &SkeletonDocument::postProcessedResultChanged, m_document, &SkeletonDocument::generateSkeleton);
     connect(m_document, &SkeletonDocument::postProcessedResultChanged, m_document, &SkeletonDocument::generateTexture);
     connect(m_document, &SkeletonDocument::resultTextureChanged, m_document, &SkeletonDocument::bakeAmbientOcclusionTexture);
+    connect(m_document, &SkeletonDocument::postProcessedResultChanged, m_document, &SkeletonDocument::generateAllAnimationClips);
     
     connect(m_document, &SkeletonDocument::resultMeshChanged, [=]() {
         m_modelRenderWidget->updateMesh(m_document->takeResultMesh());
@@ -895,12 +896,16 @@ void SkeletonDocumentWindow::showAnimationPanel()
             m_modelRenderWidget->updateMesh(m_document->takeResultMesh());
         });
         connect(m_animationPanelWidget, &AnimationPanelWidget::frameReadyToShow, [=] {
-            if (m_animationPanelWidget->isVisible())
-                m_modelRenderWidget->updateMesh(m_animationPanelWidget->takeFrameMesh());
+            if (m_animationPanelWidget->isVisible()) {
+                auto mesh = m_animationPanelWidget->takeFrameMesh();
+                if (nullptr == mesh)
+                    mesh = m_document->takeResultMesh();
+                m_modelRenderWidget->updateMesh(mesh);
+            }
         });
         connect(m_document, &SkeletonDocument::postProcessedResultChanged, m_animationPanelWidget, &AnimationPanelWidget::sourceMeshChanged);
     }
-    if (m_animationPanelWidget->isHidden()) {
+    if (m_document->postProcessResultIsObsolete()) {
         m_document->postProcess();
     }
     m_animationPanelWidget->show();
@@ -919,7 +924,7 @@ void SkeletonDocumentWindow::showExportPreview()
         connect(m_document, &SkeletonDocument::resultBakedTextureChanged, m_exportPreviewWidget, &ExportPreviewWidget::updateTexturePreview);
         connect(m_document, &SkeletonDocument::resultSkeletonChanged, m_exportPreviewWidget, &ExportPreviewWidget::updateSkeleton);
     }
-    if (m_exportPreviewWidget->isHidden()) {
+    if (m_document->postProcessResultIsObsolete()) {
         m_document->postProcess();
     }
     m_exportPreviewWidget->show();
@@ -934,7 +939,7 @@ void SkeletonDocumentWindow::exportGltfResult()
     }
     QApplication::setOverrideCursor(Qt::WaitCursor);
     MeshResultContext skeletonResult = m_document->currentPostProcessedResultContext();
-    GLTFFileWriter gltfFileWriter(skeletonResult, filename);
+    GLTFFileWriter gltfFileWriter(skeletonResult, m_document->animationClipContexts(),filename);
     gltfFileWriter.save();
     if (m_document->textureImage)
         m_document->textureImage->save(gltfFileWriter.textureFilenameInGltf());

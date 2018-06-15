@@ -40,6 +40,7 @@ SkeletonDocument::SkeletonDocument() :
     m_postProcessResultIsObsolete(false),
     m_postProcessor(nullptr),
     m_postProcessedResultContext(new MeshResultContext),
+    m_jointNodeTree(new JointNodeTree(*m_postProcessedResultContext)),
     m_resultTextureMesh(nullptr),
     m_textureImageUpdateVersion(0),
     m_ambientOcclusionBaker(nullptr),
@@ -52,6 +53,7 @@ SkeletonDocument::~SkeletonDocument()
     delete m_resultMesh;
     delete m_resultSkeletonMesh;
     delete m_postProcessedResultContext;
+    delete m_jointNodeTree;
     delete textureGuideImage;
     delete textureImage;
     delete textureBorderImage;
@@ -685,6 +687,9 @@ void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUu
             continue;
         snapshot->partIdList.push_back(partIdIt.toString());
     }
+    
+    snapshot->animationParameters = animationParameters;
+    
     std::map<QString, QString> canvas;
     canvas["originX"] = QString::number(originX);
     canvas["originY"] = QString::number(originY);
@@ -703,6 +708,12 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot)
         originX = originXit->second.toFloat();
         originY = originYit->second.toFloat();
         originZ = originZit->second.toFloat();
+    }
+    
+    for (const auto &ani: snapshot.animationParameters) {
+        for (const auto &param: ani.second) {
+            animationParameters[ani.first][param.first] = param.second;
+        }
     }
     
     std::set<QUuid> newAddedNodeIds;
@@ -894,11 +905,18 @@ void SkeletonDocument::meshReady()
     
     qDebug() << "MeshLoader generation done";
     
+    m_postProcessResultIsObsolete = true;
+    
     emit resultMeshChanged();
     
     if (m_resultMeshIsObsolete) {
         generateMesh();
     }
+}
+
+bool SkeletonDocument::postProcessResultIsObsolete() const
+{
+    return m_postProcessResultIsObsolete;
 }
 
 void SkeletonDocument::batchChangeBegin()
@@ -1140,6 +1158,9 @@ void SkeletonDocument::postProcessedMeshResultReady()
 {
     delete m_postProcessedResultContext;
     m_postProcessedResultContext = m_postProcessor->takePostProcessedResultContext();
+    
+    delete m_jointNodeTree;
+    m_jointNodeTree = m_postProcessor->takeJointNodeTree();
 
     delete m_postProcessor;
     m_postProcessor = nullptr;
@@ -1156,6 +1177,11 @@ void SkeletonDocument::postProcessedMeshResultReady()
 MeshResultContext &SkeletonDocument::currentPostProcessedResultContext()
 {
     return *m_postProcessedResultContext;
+}
+
+JointNodeTree &SkeletonDocument::currentJointNodeTree()
+{
+    return *m_jointNodeTree;
 }
 
 void SkeletonDocument::setPartLockState(QUuid partId, bool locked)
@@ -1427,8 +1453,24 @@ bool SkeletonDocument::isExportReady() const
             m_meshGenerator ||
             m_skeletonGenerator ||
             m_textureGenerator ||
-            m_postProcessor)
+            m_postProcessor ||
+            !allAnimationClipsReady())
         return false;
+    return true;
+}
+
+bool SkeletonDocument::allAnimationClipsReady() const
+{
+    for (const auto &clipName: AnimationClipGenerator::supportedClipNames) {
+        const auto &findClip = m_animationClipContexts.find(clipName);
+        if (findClip == m_animationClipContexts.end())
+            return false;
+        const auto &clipContext = findClip->second;
+        if (nullptr != clipContext.clipGenerator)
+            return false;
+        if (clipContext.isObsolete)
+            return false;
+    }
     return true;
 }
 
@@ -1437,3 +1479,59 @@ void SkeletonDocument::checkExportReadyState()
     if (isExportReady())
         emit exportReady();
 }
+
+void SkeletonDocument::generateAnimationClip(QString clipName)
+{
+    auto &clipContext = m_animationClipContexts[clipName];
+    if (nullptr != clipContext.clipGenerator) {
+        clipContext.isObsolete = true;
+        return;
+    }
+    
+    qDebug() << "Animation clip [" << clipName << "] generating for document..";
+    
+    clipContext.isObsolete = false;
+    
+    QThread *thread = new QThread;
+    clipContext.clipGenerator = new AnimationClipGenerator(currentPostProcessedResultContext(),
+        currentJointNodeTree(),
+        clipName, animationParameters[clipName], false);
+    clipContext.clipGenerator->moveToThread(thread);
+    connect(thread, &QThread::started, clipContext.clipGenerator, &AnimationClipGenerator::process);
+    connect(clipContext.clipGenerator, &AnimationClipGenerator::finished, [=] {
+        animationClipReady(clipName);
+    });
+    connect(clipContext.clipGenerator, &AnimationClipGenerator::finished, thread, &QThread::quit);
+    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+    thread->start();
+}
+
+void SkeletonDocument::animationClipReady(QString clipName)
+{
+    auto &clipContext = m_animationClipContexts[clipName];
+    
+    clipContext.times = clipContext.clipGenerator->times();
+    clipContext.frames = clipContext.clipGenerator->frames();
+    
+    delete clipContext.clipGenerator;
+    clipContext.clipGenerator = nullptr;
+    
+    qDebug() << "Animation clip [" << clipName << "] generation done";
+    
+    if (clipContext.isObsolete)
+        generateAnimationClip(clipName);
+    else
+        checkExportReadyState();
+}
+
+void SkeletonDocument::generateAllAnimationClips()
+{
+    for (const auto &clipName: AnimationClipGenerator::supportedClipNames)
+        generateAnimationClip(clipName);
+}
+
+const std::map<QString, AnimationClipContext> &SkeletonDocument::animationClipContexts()
+{
+    return m_animationClipContexts;
+}
+

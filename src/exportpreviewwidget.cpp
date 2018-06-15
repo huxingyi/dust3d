@@ -72,6 +72,9 @@ ExportPreviewWidget::ExportPreviewWidget(SkeletonDocument *document, QWidget *pa
     m_spinnerWidget->hide();
     
     setWindowTitle(APP_NAME);
+    
+    emit updateTexturePreview();
+    emit updateSkeleton();
 }
 
 void ExportPreviewWidget::updateTexturePreviewImage(const QImage &image)
