@@ -85,13 +85,13 @@ V Flip
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Flip selected nodes vertically.
 
-Rotate 90 (Clockwise)
+Rotate 90D CW
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Rotate selected nodes 90 degree. If you can hardly edit some nodes in normal front/side view, rotate it then edit it, and rotate it back after you finish editing.
+Rotate selected nodes clockwise by 90 degrees. If you can hardly edit some nodes in normal front/side view, rotate it then edit it, and rotate it back after you finish editing.
 
-Rotate 90 (Counterclockwise)
+Rotate 90D CCW
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Rotate selected nodes -90 degree.
+Rotate selected nodes counterclockwise by 90 degrees.
 
 Align To
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -304,13 +304,13 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(m_flipVerticallyAction, &QAction::triggered, m_graphicsWidget, &SkeletonGraphicsWidget::flipVertically);
     m_editMenu->addAction(m_flipVerticallyAction);
     
-    m_rotateClockwiseAction = new QAction(tr("Rotate 90 (Clockwise)"), this);
+    m_rotateClockwiseAction = new QAction(tr("Rotate 90D CW"), this);
     connect(m_rotateClockwiseAction, &QAction::triggered, [=] {
         m_graphicsWidget->rotateClockwise90Degree();
     });
     m_editMenu->addAction(m_rotateClockwiseAction);
     
-    m_rotateCounterclockwiseAction = new QAction(tr("Rotate 90 (Counterclockwise)"), this);
+    m_rotateCounterclockwiseAction = new QAction(tr("Rotate 90D CCW"), this);
     connect(m_rotateCounterclockwiseAction, &QAction::triggered, [=] {
         m_graphicsWidget->rotateCounterclockwise90Degree();
     });

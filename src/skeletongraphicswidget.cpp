@@ -175,13 +175,13 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
         contextMenu.addAction(&flipVerticallyAction);
     }
     
-    QAction rotateClockwiseAction(tr("Rotate 90 (Clockwise)"), this);
+    QAction rotateClockwiseAction(tr("Rotate 90D CW"), this);
     if (hasMultipleSelection()) {
         connect(&rotateClockwiseAction, &QAction::triggered, this, &SkeletonGraphicsWidget::rotateClockwise90Degree);
         contextMenu.addAction(&rotateClockwiseAction);
     }
     
-    QAction rotateCounterclockwiseAction(tr("Rotate 90 (Counterclockwise)"), this);
+    QAction rotateCounterclockwiseAction(tr("Rotate 90D CCW"), this);
     if (hasMultipleSelection()) {
         connect(&rotateCounterclockwiseAction, &QAction::triggered, this, &SkeletonGraphicsWidget::rotateCounterclockwise90Degree);
         contextMenu.addAction(&rotateCounterclockwiseAction);
