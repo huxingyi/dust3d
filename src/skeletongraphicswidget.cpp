@@ -40,7 +40,8 @@ SkeletonGraphicsWidget::SkeletonGraphicsWidget(const SkeletonDocument *document)
     m_hoveredOriginItem(nullptr),
     m_checkedOriginItem(nullptr),
     m_ikMoveUpdateVersion(0),
-    m_ikMover(nullptr)
+    m_ikMover(nullptr),
+    m_deferredRemoveTimer(nullptr)
 {
     setRenderHint(QPainter::Antialiasing, false);
     setBackgroundBrush(QBrush(QWidget::palette().color(QWidget::backgroundRole()), Qt::SolidPattern));
@@ -1180,8 +1181,58 @@ bool SkeletonGraphicsWidget::mouseDoubleClick(QMouseEvent *event)
     return false;
 }
 
+void SkeletonGraphicsWidget::timeToRemoveDeferredNodesAndEdges()
+{
+    delete m_deferredRemoveTimer;
+    m_deferredRemoveTimer = nullptr;
+    
+    bool committed = false;
+    
+    if (!committed && !m_deferredRemoveEdgeIds.empty()) {
+        const auto &it = m_deferredRemoveEdgeIds.begin();
+        const auto edgeId = *it;
+        m_deferredRemoveEdgeIds.erase(it);
+        emit removeEdge(edgeId);
+        committed = true;
+    }
+    
+    if (!committed && !m_deferredRemoveNodeIds.empty()) {
+        const auto &it = m_deferredRemoveNodeIds.begin();
+        const auto nodeId = *it;
+        m_deferredRemoveNodeIds.erase(it);
+        emit removeNode(nodeId);
+        committed = true;
+    }
+    
+    if (committed) {
+        m_deferredRemoveTimer = new QTimer(this);
+        connect(m_deferredRemoveTimer, &QTimer::timeout, this, &SkeletonGraphicsWidget::timeToRemoveDeferredNodesAndEdges);
+        m_deferredRemoveTimer->start(0);
+    } else {
+        emit groupOperationAdded();
+    }
+}
+
 void SkeletonGraphicsWidget::deleteSelected()
 {
+    if (m_rangeSelectionSet.empty())
+        return;
+    
+    std::set<QUuid> nodeIdSet;
+    std::set<QUuid> edgeIdSet;
+    readSkeletonNodeAndEdgeIdSetFromRangeSelection(&nodeIdSet, &edgeIdSet);
+    for (const auto &it: nodeIdSet) {
+        m_deferredRemoveNodeIds.insert(it);
+    }
+    for (const auto &it: edgeIdSet) {
+        m_deferredRemoveEdgeIds.insert(it);
+    }
+    
+    if (nullptr == m_deferredRemoveTimer) {
+        timeToRemoveDeferredNodesAndEdges();
+    }
+    
+    /*
     if (!m_rangeSelectionSet.empty()) {
         emit batchChangeBegin();
         std::set<QUuid> nodeIdSet;
@@ -1195,7 +1246,7 @@ void SkeletonGraphicsWidget::deleteSelected()
         }
         emit batchChangeEnd();
         emit groupOperationAdded();
-    }
+    }*/
 }
 
 bool SkeletonGraphicsWidget::keyPress(QKeyEvent *event)

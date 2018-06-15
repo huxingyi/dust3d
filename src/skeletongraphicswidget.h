@@ -11,6 +11,7 @@
 #include <QThread>
 #include <cmath>
 #include <set>
+#include <QTimer>
 #include "skeletondocument.h"
 #include "turnaroundloader.h"
 #include "theme.h"
@@ -461,6 +462,7 @@ public slots:
     void ikMove(QUuid endEffectorId, QVector3D target);
     void ikMoveReady();
     void setSelectedNodesBoneMark(SkeletonBoneMark boneMark);
+    void timeToRemoveDeferredNodesAndEdges();
 private slots:
     void turnaroundImageReady();
 private:
@@ -509,14 +511,17 @@ private: //need initalize
     SkeletonGraphicsOriginItem *m_checkedOriginItem;
     unsigned long long m_ikMoveUpdateVersion;
     SkeletonIkMover *m_ikMover;
+    QTimer *m_deferredRemoveTimer;
+private:
     QVector3D m_ikMoveTarget;
     QUuid m_ikMoveEndEffectorId;
-private:
     std::set<QGraphicsItem *> m_rangeSelectionSet;
     QPoint m_lastGlobalPos;
     QPointF m_lastScenePos;
     QPointF m_rangeSelectionStartPos;
     QUuid m_lastCheckedPart;
+    std::set<QUuid> m_deferredRemoveNodeIds;
+    std::set<QUuid> m_deferredRemoveEdgeIds;
 };
 
 class SkeletonGraphicsContainerWidget : public QWidget
