@@ -174,6 +174,18 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
         contextMenu.addAction(&flipVerticallyAction);
     }
     
+    QAction rotateClockwiseAction(tr("Rotate 90 (Clockwise)"), this);
+    if (hasMultipleSelection()) {
+        connect(&rotateClockwiseAction, &QAction::triggered, this, &SkeletonGraphicsWidget::rotateClockwise90Degree);
+        contextMenu.addAction(&rotateClockwiseAction);
+    }
+    
+    QAction rotateCounterclockwiseAction(tr("Rotate 90 (Counterclockwise)"), this);
+    if (hasMultipleSelection()) {
+        connect(&rotateCounterclockwiseAction, &QAction::triggered, this, &SkeletonGraphicsWidget::rotateCounterclockwise90Degree);
+        contextMenu.addAction(&rotateCounterclockwiseAction);
+    }
+    
     QAction alignToLocalCenterAction(tr("Local Center"), this);
     QAction alignToLocalVerticalCenterAction(tr("Local Vertical Center"), this);
     QAction alignToLocalHorizontalCenterAction(tr("Local Horizontal Center"), this);
@@ -921,6 +933,7 @@ void SkeletonGraphicsWidget::flipHorizontally()
     if (nodeItems.empty())
         return;
     QVector2D center = centerOfNodeItemSet(nodeItems);
+    emit batchChangeBegin();
     for (const auto &nodeItem: nodeItems) {
         QPointF origin = nodeItem->origin();
         float offset = origin.x() - center.x();
@@ -931,6 +944,8 @@ void SkeletonGraphicsWidget::flipHorizontally()
             emit moveNodeBy(nodeItem->id(), 0, 0, unifiedOffset);
         }
     }
+    emit batchChangeEnd();
+    emit groupOperationAdded();
 }
 
 void SkeletonGraphicsWidget::flipVertically()
@@ -940,12 +955,31 @@ void SkeletonGraphicsWidget::flipVertically()
     if (nodeItems.empty())
         return;
     QVector2D center = centerOfNodeItemSet(nodeItems);
+    emit batchChangeBegin();
     for (const auto &nodeItem: nodeItems) {
         QPointF origin = nodeItem->origin();
         float offset = origin.y() - center.y();
         float unifiedOffset = -sceneRadiusToUnified(offset * 2);
         emit moveNodeBy(nodeItem->id(), 0, unifiedOffset, 0);
     }
+    emit batchChangeEnd();
+    emit groupOperationAdded();
+}
+
+void SkeletonGraphicsWidget::rotateClockwise90Degree()
+{
+    emit batchChangeBegin();
+    emit rotateSelected(90);
+    emit batchChangeEnd();
+    emit groupOperationAdded();
+}
+
+void SkeletonGraphicsWidget::rotateCounterclockwise90Degree()
+{
+    emit batchChangeBegin();
+    emit rotateSelected(360 - 90);
+    emit batchChangeEnd();
+    emit groupOperationAdded();
 }
 
 bool SkeletonGraphicsWidget::mouseRelease(QMouseEvent *event)

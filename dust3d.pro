@@ -11,7 +11,7 @@ isEmpty(VERSION) {
 
 REPOSITORY_URL = "https://github.com/huxingyi/dust3d"
 ISSUES_URL = "https://github.com/huxingyi/dust3d/issues"
-REFERENCE_GUIDE_URL = "https://dust3d.readthedocs.io"
+REFERENCE_GUIDE_URL = "http://docs.dust3d.org"
 
 QMAKE_TARGET_COMPANY = Dust3D
 QMAKE_TARGET_PRODUCT = Dust3D

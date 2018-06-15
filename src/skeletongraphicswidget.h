@@ -436,6 +436,8 @@ public slots:
     void copy();
     void flipHorizontally();
     void flipVertically();
+    void rotateClockwise90Degree();
+    void rotateCounterclockwise90Degree();
     void removeAllContent();
     void breakSelected();
     void connectSelected();

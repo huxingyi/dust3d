@@ -304,6 +304,18 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(m_flipVerticallyAction, &QAction::triggered, m_graphicsWidget, &SkeletonGraphicsWidget::flipVertically);
     m_editMenu->addAction(m_flipVerticallyAction);
     
+    m_rotateClockwiseAction = new QAction(tr("Rotate 90 (Clockwise)"), this);
+    connect(m_rotateClockwiseAction, &QAction::triggered, [=] {
+        m_graphicsWidget->rotateClockwise90Degree();
+    });
+    m_editMenu->addAction(m_rotateClockwiseAction);
+    
+    m_rotateCounterclockwiseAction = new QAction(tr("Rotate 90 (Counterclockwise)"), this);
+    connect(m_rotateCounterclockwiseAction, &QAction::triggered, [=] {
+        m_graphicsWidget->rotateCounterclockwise90Degree();
+    });
+    m_editMenu->addAction(m_rotateCounterclockwiseAction);
+    
     m_alignToMenu = new QMenu(tr("Align To"));
     
     m_alignToGlobalCenterAction = new QAction(tr("Global Center"), this);
@@ -376,6 +388,8 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
         m_pasteAction->setEnabled(m_document->hasPastableContentInClipboard());
         m_flipHorizontallyAction->setEnabled(m_graphicsWidget->hasMultipleSelection());
         m_flipVerticallyAction->setEnabled(m_graphicsWidget->hasMultipleSelection());
+        m_rotateClockwiseAction->setEnabled(m_graphicsWidget->hasMultipleSelection());
+        m_rotateCounterclockwiseAction->setEnabled(m_graphicsWidget->hasMultipleSelection());
         m_alignToGlobalCenterAction->setEnabled(m_graphicsWidget->hasSelection() && m_document->originSettled());
         m_alignToGlobalVerticalCenterAction->setEnabled(m_graphicsWidget->hasSelection() && m_document->originSettled());
         m_alignToGlobalHorizontalCenterAction->setEnabled(m_graphicsWidget->hasSelection() && m_document->originSettled());

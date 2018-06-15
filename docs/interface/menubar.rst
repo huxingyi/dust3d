@@ -85,6 +85,14 @@ V Flip
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Flip selected nodes vertically.
 
+Rotate 90 (Clockwise)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Rotate selected nodes 90 degree. If you can hardly edit some nodes in normal front/side view, rotate it then edit it, and rotate it back after you finish editing.
+
+Rotate 90 (Counterclockwise)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Rotate selected nodes -90 degree.
+
 Align To
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Align selected nodes with center anchor globally or selected nodes' center locally. Normally, the center anchor(a Triangle) is not show up, you can turn on the Part Mirror to make it visible, then turn Part Mirror off, the center anchor would not gone once showed.

@@ -94,6 +94,8 @@ private:
     QAction *m_pasteAction;
     QAction *m_flipHorizontallyAction;
     QAction *m_flipVerticallyAction;
+    QAction *m_rotateClockwiseAction;
+    QAction *m_rotateCounterclockwiseAction;
     
     QMenu *m_alignToMenu;
     QAction *m_alignToGlobalCenterAction;

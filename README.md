@@ -1,13 +1,13 @@
-<a href="https://dust3d.readthedocs.io/en/latest/install.html" target="_blank"><image src="https://raw.githubusercontent.com/huxingyi/dust3d/master/dust3d-logo.png" width="81" height="50"></a>
+<a href="http://docs.dust3d.org/en/latest/install.html" target="_blank"><image src="https://raw.githubusercontent.com/huxingyi/dust3d/master/dust3d-logo.png" width="81" height="50"></a>
 
-[![appveyor status](https://ci.appveyor.com/api/projects/status/github/huxingyi/dust3d?branch=master&svg=true)](https://ci.appveyor.com/project/huxingyi/dust3d) [![travis status](https://travis-ci.org/huxingyi/dust3d.svg?branch=master)](https://travis-ci.org/huxingyi/dust3d) [![readthedocs status](https://readthedocs.org/projects/dust3d/badge/?version=latest)](https://dust3d.readthedocs.io/en/latest/?badge=latest)
+[![appveyor status](https://ci.appveyor.com/api/projects/status/github/huxingyi/dust3d?branch=master&svg=true)](https://ci.appveyor.com/project/huxingyi/dust3d) [![travis status](https://travis-ci.org/huxingyi/dust3d.svg?branch=master)](https://travis-ci.org/huxingyi/dust3d) [![readthedocs status](https://readthedocs.org/projects/dust3d/badge/?version=latest)](http://docs.dust3d.org/en/latest/?badge=latest)
 
 Overview
 ----------
 Dust3D is a brand new 3D modeling software. It helps you create a 3D watertight base model in seconds. Use it to speed up your character modeling in game making, 3D printing, and so on.
 
-[Download Dust3D](https://dust3d.readthedocs.io/en/latest/install.html)  
-[Online Dust3D Reference Guide](https://dust3d.readthedocs.io/en/latest/index.html)
+[Download Dust3D](http://docs.dust3d.org/en/latest/install.html)  
+[Online Dust3D Reference Guide](http://docs.dust3d.org)
 
 Examples
 ----------------------
@@ -15,19 +15,19 @@ Examples
 
 <a href="https://youtu.be/wQerDObDjOs" target="_blank"><image src="https://raw.githubusercontent.com/huxingyi/dust3d/master/docs/examples/modeling-mosquito/make-a-3d-model-from-scratch-using-dust3d-video-thumbnail.png" width="480" height="270"></a>
 
-[Modeling Ant using Dust3D](https://dust3d.readthedocs.io/en/latest/examples/modeling-ant/index.html)  
+[Modeling Ant using Dust3D](http://docs.dust3d.org/en/latest/examples/modeling-ant/index.html)  
 
-<a href="https://dust3d.readthedocs.io/en/latest/examples/modeling-ant/index.html">
+<a href="http://docs.dust3d.org/en/latest/examples/modeling-ant/index.html">
 <image src="https://raw.githubusercontent.com/huxingyi/dust3d/master/docs/examples/modeling-ant/modeling-ant-dust3d-screenshot.png" width="320" height="192"></a>
 
-[Modeling Camel using Dust3D](https://dust3d.readthedocs.io/en/latest/examples/modeling-camel/index.html)  
+[Modeling Camel using Dust3D](http://docs.dust3d.org/en/latest/examples/modeling-camel/index.html)  
 
-<a href="https://dust3d.readthedocs.io/en/latest/examples/modeling-camel/index.html">
+<a href="http://docs.dust3d.org/en/latest/examples/modeling-camel/index.html">
 <image src="https://raw.githubusercontent.com/huxingyi/dust3d/master/docs/examples/modeling-camel/modeling-camel-dust3d-screenshot.png" width="320" height="192"></a>
 
-[Modeling Horse using Dust3D](https://dust3d.readthedocs.io/en/latest/examples/modeling-horse/index.html)  
+[Modeling Horse using Dust3D](http://docs.dust3d.org/en/latest/examples/modeling-horse/index.html)  
 
-<a href="https://dust3d.readthedocs.io/en/latest/examples/modeling-horse/index.html">
+<a href="http://docs.dust3d.org/en/latest/examples/modeling-horse/index.html">
 <image src="https://raw.githubusercontent.com/huxingyi/dust3d/master/docs/examples/modeling-horse/modeling-horse-dust3d-screenshot.png" width="320" height="192"></a>
 
 Free Dust3D Models
