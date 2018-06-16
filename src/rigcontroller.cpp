@@ -74,13 +74,21 @@ void RigController::lift(QVector3D offset)
 
 void RigController::breathe(float amount)
 {
-    if (m_spine.empty() || amount <= 0)
+    if (m_inputJointNodeTree.joints().empty() || amount <= 0)
         return;
     std::vector<int> spineJoints;
     for (auto i = 0u; i < m_spine.size(); i++) {
         int jointIndex = m_inputJointNodeTree.nodeToJointIndex(m_spine[i].first, m_spine[i].second);
         spineJoints.push_back(jointIndex);
     }
+    if (spineJoints.empty()) {
+        // if no spine joints found, make the root node and its direct children as spine
+        spineJoints.push_back(0);
+        for (const auto &child: m_inputJointNodeTree.joints()[0].children)
+            spineJoints.push_back(child);
+    }
+    if (spineJoints.empty())
+        return;
     // make sure parent get processed first
     std::sort(spineJoints.begin(), spineJoints.end());
     float inverseAmount = 1 / amount;
