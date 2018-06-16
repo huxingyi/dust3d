@@ -21,6 +21,11 @@ signals:
     void setPartDeformWidth(QUuid partId, float width);
     void setPartRoundState(QUuid partId, bool rounded);
     void setPartColorState(QUuid partId, bool hasColor, QColor color);
+    void setPartInverseState(QUuid partId, bool inverse);
+    void movePartUp(QUuid partId);
+    void movePartDown(QUuid partId);
+    void movePartToTop(QUuid partId);
+    void movePartToBottom(QUuid partId);
     void checkPart(QUuid partId);
     void groupOperationAdded();
     void enableBackgroundBlur();

@@ -86,6 +86,7 @@ public:
     bool rounded;
     QColor color;
     bool hasColor;
+    bool inverse;
     QImage preview;
     std::vector<QUuid> nodeIds;
     SkeletonPart(const QUuid &withId=QUuid()) :
@@ -99,7 +100,8 @@ public:
         deformWidth(1.0),
         rounded(false),
         color(Theme::white),
-        hasColor(false)
+        hasColor(false),
+        inverse(false)
     {
         id = withId.isNull() ? QUuid::createUuid() : withId;
     }
@@ -148,6 +150,7 @@ public:
         rounded = other.rounded;
         color = other.color;
         hasColor = other.hasColor;
+        inverse = other.inverse;
     }
 };
 
@@ -217,6 +220,7 @@ signals:
     void partDeformWidthChanged(QUuid partId);
     void partRoundStateChanged(QUuid partId);
     void partColorStateChanged(QUuid partId);
+    void partInverseStateChanged(QUuid partId);
     void cleanup();
     void originChanged();
     void xlockStateChanged();
@@ -314,6 +318,11 @@ public slots:
     void setPartDeformWidth(QUuid partId, float width);
     void setPartRoundState(QUuid partId, bool rounded);
     void setPartColorState(QUuid partId, bool hasColor, QColor color);
+    void setPartInverseState(QUuid partId, bool inverse);
+    void movePartUp(QUuid partId);
+    void movePartDown(QUuid partId);
+    void movePartToTop(QUuid partId);
+    void movePartToBottom(QUuid partId);
     void saveSnapshot();
     void undo();
     void redo();

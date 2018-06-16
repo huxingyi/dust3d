@@ -348,6 +348,7 @@ void MeshGenerator::process()
     
     std::vector<int> meshIds;
     std::vector<int> subdivMeshIds;
+    std::set<int> inverseIds;
     for (const auto &partIdIt: m_snapshot->partIdList) {
         const auto &part = m_snapshot->parts.find(partIdIt);
         if (part == m_snapshot->parts.end())
@@ -378,15 +379,21 @@ void MeshGenerator::process()
             m_partPreviewMap[partIdIt] = image;
         }
         meshIds.push_back(meshId);
-        if (xMirroredMeshId)
+        bool inverse = isTrueValueString(valueOfKeyInMapOrEmpty(part->second, "inverse"));
+        if (inverse)
+            inverseIds.insert(meshId);
+        if (xMirroredMeshId) {
             meshIds.push_back(xMirroredMeshId);
+            if (inverse)
+                inverseIds.insert(xMirroredMeshId);
+        }
     }
     
     if (!subdivMeshIds.empty()) {
         int mergedMeshId = 0;
         if (subdivMeshIds.size() > 1) {
             int errorCount = 0;
-            mergedMeshId = unionMeshs(meshliteContext, subdivMeshIds, &errorCount);
+            mergedMeshId = unionMeshs(meshliteContext, subdivMeshIds, inverseIds, &errorCount);
             if (errorCount)
                 broken = true;
         } else {
@@ -416,7 +423,7 @@ void MeshGenerator::process()
         if (disableUnion)
             mergedMeshId = mergeMeshs(meshliteContext, meshIds);
         else
-            mergedMeshId = unionMeshs(meshliteContext, meshIds, &errorCount);
+            mergedMeshId = unionMeshs(meshliteContext, meshIds, inverseIds, &errorCount);
         if (errorCount)
             broken = true;
         else if (mergedMeshId > 0)

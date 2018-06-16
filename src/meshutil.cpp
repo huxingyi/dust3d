@@ -140,7 +140,21 @@ ExactMesh *unionCgalMeshs(ExactMesh *first, ExactMesh *second)
             delete mesh;
             return nullptr;
         }
-        //CGAL::Polygon_mesh_processing::isotropic_remeshing(mesh->faces(), 0.4, *mesh);
+    } catch (...) {
+        delete mesh;
+        return nullptr;
+    }
+    return mesh;
+}
+
+ExactMesh *diffCgalMeshs(ExactMesh *first, ExactMesh *second)
+{
+    ExactMesh *mesh = new ExactMesh;
+    try {
+        if (!PMP::corefine_and_compute_difference(*first, *second, *mesh)) {
+            delete mesh;
+            return nullptr;
+        }
     } catch (...) {
         delete mesh;
         return nullptr;
@@ -150,7 +164,7 @@ ExactMesh *unionCgalMeshs(ExactMesh *first, ExactMesh *second)
 
 #endif
 
-int unionMeshs(void *meshliteContext, const std::vector<int> &meshIds, int *errorCount)
+int unionMeshs(void *meshliteContext, const std::vector<int> &meshIds, const std::set<int> &inverseIds, int *errorCount)
 {
 #if USE_CGAL == 1
     CGAL::set_error_behaviour(CGAL::THROW_EXCEPTION);
@@ -185,7 +199,10 @@ int unionMeshs(void *meshliteContext, const std::vector<int> &meshIds, int *erro
             }
             ExactMesh *unionedExternalMesh = NULL;
             try {
-                unionedExternalMesh = unionCgalMeshs(mergedExternalMesh, externalMeshs[i]);
+                if (inverseIds.find(meshIds[i]) == inverseIds.end())
+                    unionedExternalMesh = unionCgalMeshs(mergedExternalMesh, externalMeshs[i]);
+                else
+                    unionedExternalMesh = diffCgalMeshs(mergedExternalMesh, externalMeshs[i]);
             } catch (...) {
                 qDebug() << "unionCgalMeshs throw exception";
                 if (errorCount)

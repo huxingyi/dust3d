@@ -640,6 +640,7 @@ void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUu
         part["xMirrored"] = partIt.second.xMirrored ? "true" : "false";
         part["zMirrored"] = partIt.second.zMirrored ? "true" : "false";
         part["rounded"] = partIt.second.rounded ? "true" : "false";
+        part["inverse"] = partIt.second.inverse ? "true" : "false";
         if (partIt.second.hasColor)
             part["color"] = partIt.second.color.name();
         if (partIt.second.deformThicknessAdjusted())
@@ -732,6 +733,7 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot)
         part.xMirrored = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "xMirrored"));
         part.zMirrored = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "zMirrored"));
         part.rounded = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "rounded"));
+        part.inverse = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "inverse"));
         const auto &colorIt = partKv.second.find("color");
         if (colorIt != partKv.second.end()) {
             part.color = QColor(colorIt->second);
@@ -1210,6 +1212,20 @@ void SkeletonDocument::setPartVisibleState(QUuid partId, bool visible)
     emit partVisibleStateChanged(partId);
 }
 
+void SkeletonDocument::setPartInverseState(QUuid partId, bool inverse)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    if (part->second.inverse == inverse)
+        return;
+    part->second.inverse = inverse;
+    emit partInverseStateChanged(partId);
+    emit skeletonChanged();
+}
+
 void SkeletonDocument::setPartSubdivState(QUuid partId, bool subdived)
 {
     auto part = partMap.find(partId);
@@ -1235,6 +1251,96 @@ void SkeletonDocument::setPartDisableState(QUuid partId, bool disabled)
         return;
     part->second.disabled = disabled;
     emit partDisableStateChanged(partId);
+    emit skeletonChanged();
+}
+
+void SkeletonDocument::movePartUp(QUuid partId)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    
+    auto it = std::find(partIds.begin(), partIds.end(), partId);
+    if (it == partIds.end()) {
+        qDebug() << "Part not found in list:" << partId;
+        return;
+    }
+    
+    auto index = std::distance(partIds.begin(), it);
+    if (index == 0)
+        return;
+    std::swap(partIds[index - 1], partIds[index]);
+    emit partListChanged();
+    emit skeletonChanged();
+}
+
+void SkeletonDocument::movePartDown(QUuid partId)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    
+    auto it = std::find(partIds.begin(), partIds.end(), partId);
+    if (it == partIds.end()) {
+        qDebug() << "Part not found in list:" << partId;
+        return;
+    }
+    
+    auto index = std::distance(partIds.begin(), it);
+    if (index == (int)partIds.size() - 1)
+        return;
+    std::swap(partIds[index], partIds[index + 1]);
+    emit partListChanged();
+    emit skeletonChanged();
+}
+
+void SkeletonDocument::movePartToTop(QUuid partId)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    
+    auto it = std::find(partIds.begin(), partIds.end(), partId);
+    if (it == partIds.end()) {
+        qDebug() << "Part not found in list:" << partId;
+        return;
+    }
+    
+    auto index = std::distance(partIds.begin(), it);
+    if (index == 0)
+        return;
+    for (int i = index; i >= 1; i--)
+        std::swap(partIds[i - 1], partIds[i]);
+    emit partListChanged();
+    emit skeletonChanged();
+}
+
+void SkeletonDocument::movePartToBottom(QUuid partId)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    
+    auto it = std::find(partIds.begin(), partIds.end(), partId);
+    if (it == partIds.end()) {
+        qDebug() << "Part not found in list:" << partId;
+        return;
+    }
+    
+    auto index = std::distance(partIds.begin(), it);
+    if (index == (int)partIds.size() - 1)
+        return;
+    for (int i = index; i <= (int)partIds.size() - 2; i++)
+        std::swap(partIds[i], partIds[i + 1]);
+    emit partListChanged();
     emit skeletonChanged();
 }
 
