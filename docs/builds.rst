@@ -19,7 +19,6 @@ Prerequisites
 
     https://www.rust-lang.org/en-US/install.html
 
-
 Building
 ==========
 

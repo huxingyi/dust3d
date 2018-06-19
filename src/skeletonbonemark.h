@@ -26,7 +26,7 @@ QColor SkeletonBoneMarkToColor(SkeletonBoneMark mark)               \
         case SkeletonBoneMark::LegEnd:                              \
             return QColor(0xd0, 0x8c, 0xe0);                        \
         case SkeletonBoneMark::Spine:                               \
-            return QColor(0xa4, 0xa4, 0xa7);                        \
+            return QColor(0xfc, 0x63, 0x60);                        \
         case SkeletonBoneMark::None:                                \
             return Qt::transparent;                                 \
         default:                                                    \

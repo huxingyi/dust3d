@@ -18,6 +18,7 @@ JointNodeTree::JointNodeTree(MeshResultContext &resultContext)
         rootCenterJoint.position = rootNode->origin;
         rootCenterJoint.boneMark = rootNode->boneMark;
         rootCenterJoint.scale = QVector3D(1.0, 1.0, 1.0);
+        rootCenterJoint.radius = rootNode->radius;
         m_tracedJoints.push_back(rootCenterJoint);
     }
     
@@ -63,6 +64,7 @@ void JointNodeTree::traceBoneFromJoint(MeshResultContext &resultContext, std::pa
         joint.nodeId = toNode->second->nodeId;
         joint.boneMark = toNode->second->boneMark;
         joint.scale = QVector3D(1.0, 1.0, 1.0);
+        joint.radius = toNode->second->radius;
         
         m_tracedNodeToJointIndexMap[std::make_pair(it.first, it.second)] = joint.jointIndex;
         

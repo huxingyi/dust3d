@@ -26,11 +26,31 @@ void IntermediateBoneRemover::markNodeAsEssential(int partId, int nodeId)
     m_essentialNodeSet.insert(std::make_pair(partId, nodeId));
 }
 
+void IntermediateBoneRemover::markNodeAsTrivial(int partId, int nodeId)
+{
+    m_trivialNodeSet.insert(std::make_pair(partId, nodeId));
+}
+
 void IntermediateBoneRemover::solveFrom(int partId, int nodeId)
+{
+    solveMarkedFrom(partId, nodeId);
+    solveTrivialFrom(partId, nodeId);
+}
+
+void IntermediateBoneRemover::solveMarkedFrom(int partId, int nodeId)
 {
     std::pair<int, int> pair = std::make_pair(partId, nodeId);
     std::vector<std::pair<int, int>> trace;
-    solveFromPairAndSaveTraceTo(pair, trace);
+    std::set<std::pair<int, int>> solvedSet;
+    solveMarkedFromPairAndSaveTraceTo(pair, trace, solvedSet);
+}
+
+void IntermediateBoneRemover::solveTrivialFrom(int partId, int nodeId)
+{
+    std::pair<int, int> pair = std::make_pair(partId, nodeId);
+    std::vector<std::pair<int, int>> trace;
+    std::set<std::pair<int, int>> solvedSet;
+    solveTrivialFromPairAndSaveTraceTo(pair, trace, solvedSet);
 }
 
 void IntermediateBoneRemover::addNeighborsOfIntermediateNodeFrom(std::pair<int, int> node, const IntermediateBoneNode &source)
@@ -53,34 +73,41 @@ void IntermediateBoneRemover::addNeighborsOfIntermediateNodeFrom(std::pair<int, 
     }
 }
 
-void IntermediateBoneRemover::solveFromPairAndSaveTraceTo(std::pair<int, int> node, std::vector<std::pair<int, int>> &history)
+void IntermediateBoneRemover::addIntermediateNodesFromHistory(std::vector<std::pair<int, int>> &history, int start, std::pair<int, int> endNode, bool addChildren)
 {
-    if (m_solvedSet.find(node) != m_solvedSet.end())
+    IntermediateBoneNode intermediate;
+    intermediate.attachedFromPartId = history[start].first;
+    intermediate.attachedFromNodeId = history[start].second;
+    intermediate.attachedToPartId = endNode.first;
+    intermediate.attachedToNodeId = endNode.second;
+    int removedNodeNum = 0;
+    for (int j = start + 1; j <= (int)history.size() - 1; j++) {
+        intermediate.partId = history[j].first;
+        intermediate.nodeId = history[j].second;
+        removedNodeNum++;
+        m_intermediateNodes[std::make_pair(intermediate.partId, intermediate.nodeId)] = intermediate;
+        if (addChildren)
+            addNeighborsOfIntermediateNodeFrom(std::make_pair(intermediate.partId, intermediate.nodeId), intermediate);
+    }
+    if (removedNodeNum > 0) {
+        m_newEdges.push_back(std::make_tuple(intermediate.attachedFromPartId,
+            intermediate.attachedFromNodeId,
+            intermediate.attachedToPartId,
+            intermediate.attachedToNodeId));
+    }
+}
+
+void IntermediateBoneRemover::solveMarkedFromPairAndSaveTraceTo(std::pair<int, int> node, std::vector<std::pair<int, int>> &history, std::set<std::pair<int, int>> &solvedSet)
+{
+    if (solvedSet.find(node) != solvedSet.end())
         return;
-    m_solvedSet.insert(node);
+    solvedSet.insert(node);
     if (m_essentialNodeSet.find(node) != m_essentialNodeSet.end()) {
         for (int i = history.size() - 1; i >= 0; i--) {
             if (m_essentialNodeSet.find(history[i]) != m_essentialNodeSet.end() ||
                     m_startNodeSet.find(history[i]) != m_startNodeSet.end()) {
-                IntermediateBoneNode intermediate;
-                intermediate.attachedFromPartId = history[i].first;
-                intermediate.attachedFromNodeId = history[i].second;
-                intermediate.attachedToPartId = node.first;
-                intermediate.attachedToNodeId = node.second;
-                int removedNodeNum = 0;
-                for (int j = i + 1; j <= (int)history.size() - 1; j++) {
-                    intermediate.partId = history[j].first;
-                    intermediate.nodeId = history[j].second;
-                    removedNodeNum++;
-                    m_intermediateNodes[std::make_pair(intermediate.partId, intermediate.nodeId)] = intermediate;
-                    addNeighborsOfIntermediateNodeFrom(std::make_pair(intermediate.partId, intermediate.nodeId), intermediate);
-                }
-                if (removedNodeNum > 0) {
-                    m_newEdges.push_back(std::make_tuple(intermediate.attachedFromPartId,
-                        intermediate.attachedFromNodeId,
-                        intermediate.attachedToPartId,
-                        intermediate.attachedToNodeId));
-                }
+                bool addChildren = true;
+                addIntermediateNodesFromHistory(history, i, node, addChildren);
                 break;
             }
         }
@@ -91,7 +118,36 @@ void IntermediateBoneRemover::solveFromPairAndSaveTraceTo(std::pair<int, int> no
         return;
     for (const auto &neighbor: it->second) {
         std::vector<std::pair<int, int>> subHistory = history;
-        solveFromPairAndSaveTraceTo(neighbor, subHistory);
+        solveMarkedFromPairAndSaveTraceTo(neighbor, subHistory, solvedSet);
+    }
+}
+
+void IntermediateBoneRemover::solveTrivialFromPairAndSaveTraceTo(std::pair<int, int> node, std::vector<std::pair<int, int>> &history, std::set<std::pair<int, int>> &solvedSet)
+{
+    if (solvedSet.find(node) != solvedSet.end())
+        return;
+    solvedSet.insert(node);
+    if (m_startNodeSet.find(node) != m_startNodeSet.end()) {
+        return;
+    }
+    if (m_trivialNodeSet.find(node) == m_trivialNodeSet.end()) {
+        if (!history.empty() && m_trivialNodeSet.find(history[history.size() - 1]) != m_trivialNodeSet.end()) {
+            for (int i = history.size() - 1; i >= 0; i--) {
+                if (m_trivialNodeSet.find(history[i]) == m_trivialNodeSet.end()) {
+                    bool addChildren = false;
+                    addIntermediateNodesFromHistory(history, i, node, addChildren);
+                    break;
+                }
+            }
+        }
+    }
+    history.push_back(node);
+    const auto &it = m_neighborMap.find(node);
+    if (it == m_neighborMap.end())
+        return;
+    for (const auto &neighbor: it->second) {
+        std::vector<std::pair<int, int>> subHistory = history;
+        solveTrivialFromPairAndSaveTraceTo(neighbor, subHistory, solvedSet);
     }
 }
 

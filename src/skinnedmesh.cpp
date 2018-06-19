@@ -28,6 +28,7 @@ void SkinnedMesh::startRig()
     Q_ASSERT(nullptr == m_rigController);
     m_rigController = new RigController(*m_jointNodeTree);
     fromMeshResultContext(m_resultContext);
+    m_rigController->prepare();
 }
 
 void SkinnedMesh::applyRigFrameToMesh(const RigFrame &frame)

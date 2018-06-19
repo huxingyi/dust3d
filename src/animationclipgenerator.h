@@ -7,6 +7,7 @@
 #include "meshloader.h"
 #include "skinnedmesh.h"
 #include "jointnodetree.h"
+#include "ragdoll.h"
 
 class AnimationClipGenerator : public QObject
 {
@@ -35,6 +36,9 @@ private:
     std::vector<std::pair<float, MeshLoader *>> m_frameMeshes;
     std::vector<float> m_times;
     std::vector<RigFrame> m_frames;
+#if USE_BULLET
+    Ragdoll *m_ragdoll = nullptr;
+#endif
 };
 
 #endif

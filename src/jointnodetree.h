@@ -14,6 +14,7 @@ struct JointInfo
     int nodeId = 0;
     SkeletonBoneMark boneMark = SkeletonBoneMark::None;
     QVector3D position;
+    float radius;
     QVector3D translation;
     QVector3D scale;
     QQuaternion rotation;

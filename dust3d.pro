@@ -137,6 +137,9 @@ HEADERS += src/animationpanelwidget.h
 SOURCES += src/rigcontroller.cpp
 HEADERS += src/rigcontroller.h
 
+SOURCES += src/rigframe.cpp
+HEADERS += src/rigframe.h
+
 SOURCES += src/jointnodetree.cpp
 HEADERS += src/jointnodetree.h
 
@@ -149,82 +152,14 @@ HEADERS += src/animationclipplayer.h
 SOURCES += src/skinnedmesh.cpp
 HEADERS += src/skinnedmesh.h
 
+SOURCES += src/ragdoll.cpp
+HEADERS += src/ragdoll.h
+
 HEADERS += src/qtlightmapper.h
 
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h
-
-QMAKE_CXXFLAGS += -std=c++11
-
-win32 {
-    LIBS += -luser32
-	LIBS += -lopengl32
-	
-	isEmpty(BOOST_INCLUDEDIR) {
-		BOOST_INCLUDEDIR = $$(BOOST_INCLUDEDIR)
-	}
-	isEmpty(CGAL_DIR) {
-		CGAL_DIR = $$(CGAL_DIR)
-	}
-	
-	isEmpty(BOOST_INCLUDEDIR) {
-		error("No BOOST_INCLUDEDIR define found in enviroment variables")
-	}
-
-	isEmpty(CGAL_DIR) {
-		error("No CGAL_DIR define found in enviroment variables")
-	}
-
-	contains(QMAKE_TARGET.arch, x86_64) {
-		MESHLITE_DIR = thirdparty/meshlite/meshlite_unstable_vc14_x64
-	} else {
-		MESHLITE_DIR = thirdparty/meshlite/meshlite_unstable_vc14_x86
-	}
-	MESHLITE_LIBNAME = meshlite.dll
-	GMP_LIBNAME = libgmp-10
-	MPFR_LIBNAME = libmpfr-4
-	CGAL_LIBNAME = CGAL-vc140-mt-4.11.1
-	CGAL_INCLUDEDIR = $$CGAL_DIR\include
-	CGAL_BUILDINCLUDEDIR = $$CGAL_DIR\build\include
-	CGAL_LIBDIR = $$CGAL_DIR\build\lib\Release
-	GMP_INCLUDEDIR = $$CGAL_DIR\auxiliary\gmp\include
-	GMP_LIBDIR = $$CGAL_DIR\auxiliary\gmp\lib
-	MPFR_INCLUDEDIR = $$GMP_INCLUDEDIR
-	MPFR_LIBDIR = $$GMP_LIBDIR
-}
-
-macx {
-	MESHLITE_DIR = thirdparty/meshlite
-	MESHLITE_LIBNAME = meshlite
-	GMP_LIBNAME = gmp
-	MPFR_LIBNAME = mpfr
-	CGAL_LIBNAME = cgal
-	BOOST_INCLUDEDIR = /usr/local/opt/boost/include
-	CGAL_INCLUDEDIR = /usr/local/opt/cgal/include
-	CGAL_BUILDINCLUDEDIR = /usr/local/opt/cgal/include
-	CGAL_LIBDIR = /usr/local/opt/cgal/lib
-	GMP_INCLUDEDIR = /usr/local/opt/gmp/include
-	GMP_LIBDIR = /usr/local/opt/gmp/lib
-	MPFR_INCLUDEDIR = /usr/local/opt/mpfr/include
-	MPFR_LIBDIR = /usr/local/opt/mpfr/lib
-}
-
-unix:!macx {
-	MESHLITE_DIR = thirdparty/meshlite
-	MESHLITE_LIBNAME = meshlite
-	GMP_LIBNAME = gmp
-	MPFR_LIBNAME = mpfr
-	CGAL_LIBNAME = CGAL
-	BOOST_INCLUDEDIR = /usr/local/include
-	CGAL_INCLUDEDIR = /usr/local/include
-	CGAL_BUILDINCLUDEDIR = /usr/local/include
-	CGAL_LIBDIR = /usr/local/lib
-	GMP_INCLUDEDIR = /usr/local/include
-	GMP_LIBDIR = /usr/local/lib
-	MPFR_INCLUDEDIR = /usr/local/include
-	MPFR_LIBDIR = /usr/local/lib
-}
 
 INCLUDEPATH += thirdparty/QtWaitingSpinner
 
@@ -404,6 +339,84 @@ SOURCES += thirdparty/thekla_atlas/src/nvmath/Vector.cpp
 HEADERS += thirdparty/thekla_atlas/src/nvmath/Vector.h
 
 HEADERS += thirdparty/thekla_atlas/src/nvmath/ftoi.h
+
+QMAKE_CXXFLAGS += -std=c++11
+
+win32 {
+    LIBS += -luser32
+	LIBS += -lopengl32
+	
+	isEmpty(BOOST_INCLUDEDIR) {
+		BOOST_INCLUDEDIR = $$(BOOST_INCLUDEDIR)
+	}
+	isEmpty(CGAL_DIR) {
+		CGAL_DIR = $$(CGAL_DIR)
+	}
+	
+	isEmpty(BOOST_INCLUDEDIR) {
+		error("No BOOST_INCLUDEDIR define found in enviroment variables")
+	}
+
+	isEmpty(CGAL_DIR) {
+		error("No CGAL_DIR define found in enviroment variables")
+	}
+
+	contains(QMAKE_TARGET.arch, x86_64) {
+		MESHLITE_DIR = thirdparty/meshlite/meshlite_unstable_vc14_x64
+	} else {
+		MESHLITE_DIR = thirdparty/meshlite/meshlite_unstable_vc14_x86
+	}
+	MESHLITE_LIBNAME = meshlite.dll
+	GMP_LIBNAME = libgmp-10
+	MPFR_LIBNAME = libmpfr-4
+	CGAL_LIBNAME = CGAL-vc140-mt-4.11.1
+	CGAL_INCLUDEDIR = $$CGAL_DIR\include
+	CGAL_BUILDINCLUDEDIR = $$CGAL_DIR\build\include
+	CGAL_LIBDIR = $$CGAL_DIR\build\lib\Release
+	GMP_INCLUDEDIR = $$CGAL_DIR\auxiliary\gmp\include
+	GMP_LIBDIR = $$CGAL_DIR\auxiliary\gmp\lib
+	MPFR_INCLUDEDIR = $$GMP_INCLUDEDIR
+	MPFR_LIBDIR = $$GMP_LIBDIR
+}
+
+macx {
+	MESHLITE_DIR = thirdparty/meshlite
+	MESHLITE_LIBNAME = meshlite
+	GMP_LIBNAME = gmp
+	MPFR_LIBNAME = mpfr
+	CGAL_LIBNAME = cgal
+	BOOST_INCLUDEDIR = /usr/local/opt/boost/include
+	CGAL_INCLUDEDIR = /usr/local/opt/cgal/include
+	CGAL_BUILDINCLUDEDIR = /usr/local/opt/cgal/include
+	CGAL_LIBDIR = /usr/local/opt/cgal/lib
+	GMP_INCLUDEDIR = /usr/local/opt/gmp/include
+	GMP_LIBDIR = /usr/local/opt/gmp/lib
+	MPFR_INCLUDEDIR = /usr/local/opt/mpfr/include
+	MPFR_LIBDIR = /usr/local/opt/mpfr/lib
+
+	#exists(/usr/local/opt/bullet) {
+	#	INCLUDEPATH += /usr/local/opt/bullet/include/Bullet
+	#	LIBS += -L/usr/local/opt/bullet/lib -lBulletDynamics -lBulletCollision -lLinearMath
+	#
+	#	DEFINES += "USE_BULLET=1"
+	#}
+}
+
+unix:!macx {
+	MESHLITE_DIR = thirdparty/meshlite
+	MESHLITE_LIBNAME = meshlite
+	GMP_LIBNAME = gmp
+	MPFR_LIBNAME = mpfr
+	CGAL_LIBNAME = CGAL
+	BOOST_INCLUDEDIR = /usr/local/include
+	CGAL_INCLUDEDIR = /usr/local/include
+	CGAL_BUILDINCLUDEDIR = /usr/local/include
+	CGAL_LIBDIR = /usr/local/lib
+	GMP_INCLUDEDIR = /usr/local/include
+	GMP_LIBDIR = /usr/local/lib
+	MPFR_INCLUDEDIR = /usr/local/include
+	MPFR_LIBDIR = /usr/local/lib
+}
 
 INCLUDEPATH += $$MESHLITE_DIR
 LIBS += -L$$MESHLITE_DIR -l$$MESHLITE_LIBNAME

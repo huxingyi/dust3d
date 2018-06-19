@@ -297,14 +297,13 @@ void MeshGenerator::process()
         bmeshEdge.fromNodeId = bmeshFromNodeId;
         bmeshEdge.toBmeshId = bmeshId;
         bmeshEdge.toNodeId = bmeshToNodeId;
+        //qDebug() << "add bmesh edge:" << bmeshEdge.fromBmeshId << bmeshEdge.fromNodeId << bmeshEdge.toBmeshId << bmeshEdge.toNodeId;
         m_meshResultContext->bmeshEdges.push_back(bmeshEdge);
         
         if (partMirrorFlagMap[partId]) {
-            BmeshEdge bmeshEdge;
             bmeshEdge.fromBmeshId = -bmeshId;
-            bmeshEdge.fromNodeId = bmeshFromNodeId;
             bmeshEdge.toBmeshId = -bmeshId;
-            bmeshEdge.toNodeId = bmeshToNodeId;
+            //qDebug() << "add bmesh edge:" << bmeshEdge.fromBmeshId << bmeshEdge.fromNodeId << bmeshEdge.toBmeshId << bmeshEdge.toNodeId;
             m_meshResultContext->bmeshEdges.push_back(bmeshEdge);
         }
     }

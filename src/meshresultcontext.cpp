@@ -347,6 +347,7 @@ void MeshResultContext::calculateBmeshConnectivity()
             int fromBmeshId = possible->bmeshEdge.fromBmeshId;
             int toBmeshId = possible->bmeshEdge.toBmeshId;
             if (connectedBmeshSet.find(std::make_pair(fromBmeshId, toBmeshId)) == connectedBmeshSet.end()) {
+                //qDebug() << "add bmesh edge by comparing rscore1:" << possible->rscore << possible->bmeshEdge.fromBmeshId << possible->bmeshEdge.fromNodeId << possible->bmeshEdge.toBmeshId << possible->bmeshEdge.toNodeId;
                 bmeshEdges.push_back(possible->bmeshEdge);
                 connectedBmeshSet.insert(std::make_pair(fromBmeshId, toBmeshId));
                 connectedBmeshSet.insert(std::make_pair(toBmeshId, fromBmeshId));
@@ -363,7 +364,12 @@ void MeshResultContext::calculateBmeshConnectivity()
         if (paired == edgeSourceMap.end())
             continue;
         processedSet.insert(pairKey);
-        if (it.second == paired->second)
+        // Don't connect the nodes come from the same part or each other mirrored parts
+        if (it.second.first == paired->second.first || it.second.first == -paired->second.first)
+            continue;
+        // Don't connect two seperate legs
+        if (legBmeshIdSet.find(it.second.first) != legBmeshIdSet.end() &&
+                    legBmeshIdSet.find(paired->second.first) != legBmeshIdSet.end())
             continue;
         BmeshConnectionPossible possible;
         possible.bmeshEdge.fromBmeshId = it.second.first;
@@ -382,12 +388,8 @@ void MeshResultContext::calculateBmeshConnectivity()
         int toBmeshId = possible->bmeshEdge.toBmeshId;
         if (connectedBmeshSet.find(std::make_pair(fromBmeshId, toBmeshId)) != connectedBmeshSet.end())
             continue;
-        // Don't connect each other mirrored parts and two seperate legs
-        if (possible->bmeshEdge.fromBmeshId != -possible->bmeshEdge.toBmeshId &&
-                !(legBmeshIdSet.find(possible->bmeshEdge.fromBmeshId) != legBmeshIdSet.end() &&
-                    legBmeshIdSet.find(possible->bmeshEdge.toBmeshId) != legBmeshIdSet.end())) {
-            bmeshEdges.push_back(possible->bmeshEdge);
-        }
+        //qDebug() << "add bmesh edge by comparing rscore2:" << possible->rscore << possible->bmeshEdge.fromBmeshId << possible->bmeshEdge.fromNodeId << possible->bmeshEdge.toBmeshId << possible->bmeshEdge.toNodeId;
+        bmeshEdges.push_back(possible->bmeshEdge);
         connectedBmeshSet.insert(std::make_pair(fromBmeshId, toBmeshId));
         connectedBmeshSet.insert(std::make_pair(toBmeshId, fromBmeshId));
     }
@@ -454,8 +456,12 @@ void MeshResultContext::calculateBmeshNodeNeighbors(std::map<std::pair<int, int>
 {
     nodeNeighbors.clear();
     for (const auto &it: bmeshEdges) {
-        nodeNeighbors[std::make_pair(it.fromBmeshId, it.fromNodeId)].push_back(std::make_pair(it.toBmeshId, it.toNodeId));
-        nodeNeighbors[std::make_pair(it.toBmeshId, it.toNodeId)].push_back(std::make_pair(it.fromBmeshId, it.fromNodeId));
+        auto fromPair = std::make_pair(it.fromBmeshId, it.fromNodeId);
+        auto toPair = std::make_pair(it.toBmeshId, it.toNodeId);
+        Q_ASSERT(fromPair != toPair);
+        //qDebug() << "iterate bmesh edge:" << it.fromBmeshId << it.fromNodeId << it.toBmeshId << it.toNodeId;
+        nodeNeighbors[fromPair].push_back(toPair);
+        nodeNeighbors[toPair].push_back(fromPair);
     }
 }
 
@@ -566,9 +572,20 @@ void MeshResultContext::calculateVertexWeights(std::vector<std::vector<ResultVer
             for (auto i = 0u; i < it.size(); i++) {
                 const auto &findInter = intermediateNodes->find(it[i].sourceNode);
                 if (findInter != intermediateNodes->end()) {
+                    const auto &attachedFromBmeshNode = bmeshNodeMap().find(std::make_pair(findInter->second.attachedFromPartId, findInter->second.attachedFromNodeId));
                     const auto &attachedToBmeshNode = bmeshNodeMap().find(std::make_pair(findInter->second.attachedToPartId, findInter->second.attachedToNodeId));
-                    if (attachedToBmeshNode != bmeshNodeMap().end())
+                    const auto &intermediateBmeshNode = bmeshNodeMap().find(it[i].sourceNode);
+                    const auto &fromPosition = attachedFromBmeshNode->second->origin;
+                    const auto &toPosition = attachedToBmeshNode->second->origin;
+                    float distance = fromPosition.distanceToPoint(toPosition);
+                    if (distance > 0) {
+                        const auto toLength =  QVector3D::dotProduct(intermediateBmeshNode->second->origin - toPosition, fromPosition - toPosition) / distance;
+                        float toRate = (distance - toLength) / distance;
+                        weights.push_back(std::make_pair(attachedToBmeshNode->first, it[i].weight * toRate));
+                        weights.push_back(std::make_pair(attachedFromBmeshNode->first, it[i].weight * (1 - toRate)));
+                    } else {
                         weights.push_back(std::make_pair(attachedToBmeshNode->first, it[i].weight));
+                    }
                 } else {
                     weights.push_back(std::make_pair(it[i].sourceNode, it[i].weight));
                 }
@@ -830,7 +847,14 @@ void MeshResultContext::removeIntermediateBones()
     for (const auto &node: bmeshNodes) {
         if (SkeletonBoneMarkIsStart(node.boneMark)) {
             remover.markNodeAsStart(node.bmeshId, node.nodeId);
-        } else if (SkeletonBoneMark::None != node.boneMark) {
+        } else if (SkeletonBoneMark::None == node.boneMark) {
+            const auto &findNeighbors = nodeNeighbors().find(std::make_pair(node.bmeshId, node.nodeId));
+            if (findNeighbors != nodeNeighbors().end() && findNeighbors->second.size() == 2) {
+                // Only mark as trivial if and only if there are two neighbors,
+                // that means no tree edges joint and end node will be marked as trivial.
+                remover.markNodeAsTrivial(node.bmeshId, node.nodeId);
+            }
+        } else {
             remover.markNodeAsEssential(node.bmeshId, node.nodeId);
         }
     }

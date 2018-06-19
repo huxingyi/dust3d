@@ -8,7 +8,9 @@ const std::vector<QString> AnimationClipGenerator::supportedClipNames = {
     //"Run",
     //"Attack",
     //"Hurt",
-    //"Die",
+#if USE_BULLET
+    "Die",
+#endif
 };
 
 AnimationClipGenerator::AnimationClipGenerator(const MeshResultContext &resultContext, const JointNodeTree &jointNodeTree,
@@ -36,6 +38,9 @@ AnimationClipGenerator::~AnimationClipGenerator()
     for (auto &mesh: m_frameMeshes) {
         delete mesh.second;
     }
+#if USE_RAGDOLL
+    delete m_ragdoll;
+#endif
 }
 
 std::vector<std::pair<float, MeshLoader *>> AnimationClipGenerator::takeFrameMeshes()
@@ -56,7 +61,17 @@ void AnimationClipGenerator::generateFrame(SkinnedMesh &skinnedMesh, float amoun
         rigController->idle(amount);
     
     RigFrame frame(jointNodeTree->joints().size());
+    
+#if USE_BULLET
+    if (nullptr == m_ragdoll) {
+        rigController->saveFrame(frame);
+    } else {
+        m_ragdoll->stepSimulation(duration);
+        m_ragdoll->saveFrame(frame);
+    }
+#else
     rigController->saveFrame(frame);
+#endif
     
     if (m_wantMesh) {
         skinnedMesh.applyRigFrameToMesh(frame);
@@ -70,16 +85,46 @@ void AnimationClipGenerator::generateFrame(SkinnedMesh &skinnedMesh, float amoun
 void AnimationClipGenerator::generate()
 {
     SkinnedMesh skinnedMesh(m_resultContext, m_jointNodeTree);
+    
     skinnedMesh.startRig();
-    float duration = 0.1;
-    float nextBeginTime = 0;
-    for (float amount = 0.0; amount <= 0.05; amount += 0.01) {
-        generateFrame(skinnedMesh, amount, nextBeginTime, duration);
-        nextBeginTime += duration;
+    
+    RigController *rigController = skinnedMesh.rigController();
+    rigController->resetFrame();
+    
+#if USE_BULLET
+    if (m_clipName == "Die") {
+        delete m_ragdoll;
+        float averageLegHeight = rigController->averageLegHeight();
+        rigController->liftLeftLegs(QVector3D(0, averageLegHeight * 1.2, 0));
+        rigController->liftRightLegs(QVector3D(0, averageLegHeight * 0.5, 0));
+        JointNodeTree ragdollJointNodeTree = m_jointNodeTree;
+        RigFrame frame;
+        rigController->saveFrame(frame);
+        rigController->applyRigFrameToJointNodeTree(ragdollJointNodeTree, frame);
+        m_ragdoll = new Ragdoll(m_jointNodeTree, ragdollJointNodeTree);
+        m_ragdoll->setGroundPlaneY(rigController->minY());
+        m_ragdoll->prepare();
     }
-    for (float amount = 0.05; amount >= 0.0; amount -= 0.01) {
-        generateFrame(skinnedMesh, amount, nextBeginTime, duration);
-        nextBeginTime += duration;
+#endif
+    
+    if (m_clipName == "Die") {
+        float duration = 1.0 / 120;
+        float nextBeginTime = 0;
+        for (float amount = 0.0; amount <= 3; amount += duration) {
+            generateFrame(skinnedMesh, amount, nextBeginTime, duration);
+            nextBeginTime += duration;
+        }
+    } else {
+        float duration = 0.1;
+        float nextBeginTime = 0;
+        for (float amount = 0.0; amount <= 0.05; amount += 0.01) {
+            generateFrame(skinnedMesh, amount, nextBeginTime, duration);
+            nextBeginTime += duration;
+        }
+        for (float amount = 0.05; amount >= 0.0; amount -= 0.01) {
+            generateFrame(skinnedMesh, amount, nextBeginTime, duration);
+            nextBeginTime += duration;
+        }
     }
 }
 

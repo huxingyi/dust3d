@@ -6,13 +6,29 @@ RigController::RigController(const JointNodeTree &jointNodeTree) :
     m_inputJointNodeTree(jointNodeTree),
     m_prepared(false),
     m_legHeight(0),
-    m_averageLegEndY(0)
+    m_averageLegEndY(0),
+    m_minY(0)
 {
 }
 
 void RigController::saveFrame(RigFrame &frame)
 {
     frame = m_rigFrame;
+}
+
+float RigController::averageLegEndY()
+{
+    return m_averageLegEndY;
+}
+
+float RigController::minY()
+{
+    return m_minY;
+}
+
+float RigController::averageLegHeight()
+{
+    return m_legHeight;
 }
 
 void RigController::collectParts()
@@ -55,6 +71,7 @@ void RigController::prepare()
     
     collectParts();
     calculateAverageLegHeight();
+    calculateMinY();
 }
 
 void RigController::resetFrame()
@@ -100,20 +117,45 @@ void RigController::breathe(float amount)
     }
 }
 
-void RigController::liftLegs(QVector3D offset, QVector3D &effectedOffset)
+void RigController::liftLegs(QVector3D offset)
 {
     if (m_legs.empty())
         return;
-    QVector3D effectedOffsetSum;
     for (auto i = 0u; i < m_legs.size(); i++) {
         QVector3D subEffectedOffset;
-        liftLegEnd(i, offset, subEffectedOffset);
-        effectedOffsetSum += subEffectedOffset;
+        liftLegEnd(i, offset);
     }
-    effectedOffset = effectedOffsetSum / m_legs.size();
 }
 
-void RigController::liftLegEnd(int leg, QVector3D offset, QVector3D &effectedOffset)
+void RigController::liftLeftLegs(QVector3D offset)
+{
+    if (m_legs.empty())
+        return;
+    for (auto i = 0u; i < m_legs.size(); i++) {
+        const auto &leg = m_legs[i];
+        int legEndIndex = m_inputJointNodeTree.nodeToJointIndex(std::get<2>(leg), std::get<3>(leg));
+        const auto legEndJoint = m_inputJointNodeTree.joints()[legEndIndex];
+        if (legEndJoint.position.x() > 0) {
+            liftLegEnd(i, offset);
+        }
+    }
+}
+
+void RigController::liftRightLegs(QVector3D offset)
+{
+    if (m_legs.empty())
+        return;
+    for (auto i = 0u; i < m_legs.size(); i++) {
+        const auto &leg = m_legs[i];
+        int legEndIndex = m_inputJointNodeTree.nodeToJointIndex(std::get<2>(leg), std::get<3>(leg));
+        const auto legEndJoint = m_inputJointNodeTree.joints()[legEndIndex];
+        if (legEndJoint.position.x() < 0) {
+            liftLegEnd(i, offset);
+        }
+    }
+}
+
+void RigController::liftLegEnd(int leg, QVector3D offset)
 {
     Q_ASSERT(leg >= 0 && leg < (int)m_legs.size());
     int legStartPartId = std::get<0>(m_legs[leg]);
@@ -151,13 +193,8 @@ void RigController::liftLegEnd(int leg, QVector3D offset, QVector3D &effectedOff
     for (int i = 0; i < nodeCount; i++) {
         int jointIndex = ikSolvingIndicies[i];
         const QVector3D &newPosition = ikSolver.getNodeSolvedPosition(i);
-        const QVector3D &oldPosition = outputJointNodeTree.joints()[jointIndex].position;
-        qDebug() << i << "position moved:" << oldPosition.distanceToPoint(newPosition);
         outputJointNodeTree.joints()[jointIndex].position = newPosition;
     }
-    effectedOffset = ikSolver.getNodeSolvedPosition(nodeCount - 1) -
-        m_inputJointNodeTree.joints()[ikSolvingIndicies[nodeCount - 1]].position;
-    qDebug() << "end effector offset:" << destPosition.distanceToPoint(ikSolver.getNodeSolvedPosition(nodeCount - 1));
     outputJointNodeTree.recalculateMatricesAfterPositionUpdated();
     for (int i = 0; i < nodeCount; i++) {
         int jointIndex = ikSolvingIndicies[i];
@@ -211,53 +248,65 @@ void RigController::idle(float amount)
 {
     prepare();
     
+    float legEndY = calculateAverageLegEndY(m_inputJointNodeTree);
+    
     QVector3D wantOffset;
     wantOffset.setY(m_legHeight * amount);
-    QVector3D effectedOffset;
-    liftLegs(wantOffset, effectedOffset);
+    liftLegs(wantOffset);
     breathe(1 + amount);
     
     JointNodeTree finalJointNodeTree = m_inputJointNodeTree;
     applyRigFrameToJointNodeTree(finalJointNodeTree, m_rigFrame);
     
     QVector3D leftOffset;
-    leftOffset.setY(calculateAverageLegEndPosition(finalJointNodeTree).y() - m_averageLegEndY);
+    leftOffset.setY(calculateAverageLegEndY(finalJointNodeTree) - legEndY);
     lift(-leftOffset);
 }
 
 void RigController::calculateAverageLegHeight()
 {
-    m_averageLegEndY = calculateAverageLegEndPosition(m_inputJointNodeTree).y();
-    m_legHeight = abs(m_averageLegEndY - calculateAverageLegStartPosition(m_inputJointNodeTree).y());
+    m_averageLegEndY = calculateAverageLegEndY(m_inputJointNodeTree);
+    m_legHeight = abs(m_averageLegEndY - calculateAverageLegStartY(m_inputJointNodeTree));
 }
 
-QVector3D RigController::calculateAverageLegStartPosition(JointNodeTree &jointNodeTree)
+void RigController::calculateMinY()
 {
-    QVector3D averageLegPlaneTop = QVector3D();
+    m_minY = 10000;
+    for (const auto &joint: m_inputJointNodeTree.joints()) {
+        float y = joint.position.y() - joint.radius;
+        if (y < m_minY) {
+            m_minY = y;
+        }
+    }
+}
+
+float RigController::calculateAverageLegStartY(JointNodeTree &jointNodeTree)
+{
+    float averageLegPlaneTop = 0;
     if (m_legs.empty())
-        return QVector3D();
+        return 0;
     for (auto leg = 0u; leg < m_legs.size(); leg++) {
         int legStartPartId = std::get<0>(m_legs[leg]);
         int legStartNodeId = std::get<1>(m_legs[leg]);
         int legStartIndex = jointNodeTree.nodeToJointIndex(legStartPartId, legStartNodeId);
         const auto &legStart = jointNodeTree.joints()[legStartIndex];
-        averageLegPlaneTop += legStart.position;
+        averageLegPlaneTop += legStart.position.y();
     }
     averageLegPlaneTop /= m_legs.size();
     return averageLegPlaneTop;
 }
 
-QVector3D RigController::calculateAverageLegEndPosition(JointNodeTree &jointNodeTree)
+float RigController::calculateAverageLegEndY(JointNodeTree &jointNodeTree)
 {
-    QVector3D averageLegPlaneBottom = QVector3D();
+    float averageLegPlaneBottom = 0;
     if (m_legs.empty())
-        return QVector3D();
+        return 0;
     for (auto leg = 0u; leg < m_legs.size(); leg++) {
         int legEndPartId = std::get<2>(m_legs[leg]);
         int legEndNodeId = std::get<3>(m_legs[leg]);
         int legEndIndex = jointNodeTree.nodeToJointIndex(legEndPartId, legEndNodeId);
         const auto &legEnd = jointNodeTree.joints()[legEndIndex];
-        averageLegPlaneBottom += legEnd.position;
+        averageLegPlaneBottom += legEnd.position.y();
     }
     averageLegPlaneBottom /= m_legs.size();
     return averageLegPlaneBottom;
