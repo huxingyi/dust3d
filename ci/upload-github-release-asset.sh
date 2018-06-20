@@ -66,9 +66,9 @@ release_id="$id"
 
 # Get ID of the asset based on given filename.
 id=""
-eval $(echo "$response" | grep -C1 "name.:.\+$filename" | grep -m 1 "id.:" | grep -w id | tr : = | tr -cd '[[:alnum:]]=')
+eval $(echo "$response" | grep -C2 "name.:.\+$filename" | grep -m 1 "id.:" | grep -w id | tr : = | tr -cd '[[:alnum:]]=')
 assert_id="$id"
-if [ "$assert_id" = "" ]; then
+if [ "$assert_id" == "" ]; then
     echo "No need to overwrite asset"
 else
     echo "Deleting asset($assert_id)... "
@@ -81,4 +81,12 @@ echo "Uploading asset... "
 # Construct url
 GH_ASSET="https://uploads.github.com/repos/$owner/$repo/releases/$release_id/assets?name=$(basename $filename)"
 
-curl "$GITHUB_OAUTH_BASIC" --data-binary @"$filename" -H "Authorization: token $github_api_token" -H "Content-Type: application/octet-stream" $GH_ASSET
+response=$(curl "$GITHUB_OAUTH_BASIC" --data-binary @"$filename" -H "Authorization: token $github_api_token" -H "Content-Type: application/octet-stream" $GH_ASSET)
+echo $response
+founderr=$(echo "$response" | grep "errors" | wc -l)
+if [ "$founderr" -eq "0" ]; then
+    echo "Upload success"
+else
+    echo "Upload failed"
+    exit 1;
+fi
