@@ -42,7 +42,7 @@ AUTH="Authorization: token $github_api_token"
 WGET_ARGS="--content-disposition --auth-no-challenge --no-cookie"
 CURL_ARGS="-LJO#"
 
-if [[ "$tag" == 'LATEST' ]]; then
+if [[ "$tag" == "LATEST" ]]; then
   GH_TAGS="$GH_REPO/releases/latest"
 fi
 

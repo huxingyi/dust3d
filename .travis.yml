@@ -1,33 +1,73 @@
 # Reference: https://andrewdolby.com/articles/2016/continuous-deployment-for-qt-applications/
+notifications:
+  email: false
 
 os: osx
 
 language: cpp
 
 matrix:
-  fast_finish: true
   include:
+    - os: linux
+      dist: trusty
+      sudo: required
+      compiler: gcc
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - gcc-4.9
+            - g++-4.9
     - os: osx
       compiler: clang
       osx_image: xcode8
 
 install:
-  - brew update
-  - brew reinstall cgal
-  - brew reinstall qt5
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew reinstall cgal; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo add-apt-repository --yes ppa:beineri/opt-qt591-trusty; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install gcc-4.9 g++-4.9; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install libcgal-dev; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt install cmake; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then wget https://github.com/CGAL/cgal/releases/download/releases/CGAL-4.11.1/CGAL-4.11.1.zip; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then unzip CGAL-4.11.1.zip; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cd CGAL-4.11.1; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then mkdir build; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cd build; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cmake ../; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then make; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo make install; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cd ../../; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew reinstall qt5; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install qt59base qt59tools --force-yes; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then source /opt/qt59/bin/qt59-env.sh; fi
   - wget -O installrust.sh https://sh.rustup.rs
   - sh installrust.sh -y
-  - export PATH="$HOME/.cargo/bin:/usr/local/opt/qt/bin:$(brew --prefix)/bin:$PATH"
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then export PATH="$HOME/.cargo/bin:/usr/local/opt/qt/bin:$(brew --prefix)/bin:$PATH"; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export PATH="~/.cargo/bin:$PATH"; fi
 
 script:
-  - git clone https://github.com/huxingyi/meshlite.git
+  - git clone https://github.com/huxingyi/meshlite.git || travis_terminate 1
   - cd meshlite
   - cargo build --release
   - cd ../
-  - cp meshlite/include/meshlite.h thirdparty/meshlite/meshlite.h
-  - cp meshlite/target/release/libmeshlite.dylib thirdparty/meshlite/libmeshlite.dylib
-  - qmake -config release
-  - make
-  - mv dust3d.app dust3d_unstable.app
-  - macdeployqt dust3d_unstable.app -dmg
-  - sh ci/upload-github-release-asset.sh github_api_token=${my_auth_token} branch=$TRAVIS_BRANCH owner=huxingyi repo=dust3d tag=unstable filename=dust3d_unstable.dmg
+  - cp meshlite/include/meshlite.h thirdparty/meshlite/meshlite.h || travis_terminate 1
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cp meshlite/target/release/libmeshlite.dylib thirdparty/meshlite/libmeshlite.dylib || travis_terminate 1; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cp meshlite/target/release/libmeshlite.so thirdparty/meshlite/libmeshlite.so || travis_terminate 1; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then qmake -config release || travis_terminate 1; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then qmake -config release || travis_terminate 1; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then make || travis_terminate 1; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then make CXX="g++-4.9 -fext-numeric-literals" || travis_terminate 1; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/thirdparty/meshlite || travis_terminate 1; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then mv dust3d.app dust3d_unstable.app || travis_terminate 1; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then mkdir dust3d_unstable || travis_terminate 1; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then mv ./dust3d dust3d_unstable/dust3d_unstable || travis_terminate 1;fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then mv ./ci/icon.png dust3d_unstable/icon.png || travis_terminate 1;fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then mv ./ci/dust3d.desktop dust3d_unstable/dust3d.desktop || travis_terminate 1;fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then macdeployqt dust3d_unstable.app -dmg || travis_terminate 1; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then chmod a+x ./ci/linuxdeployqt.AppImage || travis_terminate 1; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./ci/linuxdeployqt.AppImage dust3d_unstable/dust3d_unstable -appimage -bundle-non-qt-libs -verbose=2 || travis_terminate 1; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sh ci/upload-github-release-asset.sh github_api_token=${my_auth_token} branch=$TRAVIS_BRANCH owner=huxingyi repo=dust3d tag=unstable filename=dust3d_unstable.dmg; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then bash ci/upload-github-release-asset.sh github_api_token=${my_auth_token} branch=$TRAVIS_BRANCH owner=huxingyi repo=dust3d tag=unstable filename=dust3d_unstable-x86_64.AppImage; fi

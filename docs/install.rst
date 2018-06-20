@@ -14,11 +14,18 @@ Dust3D haven't yet been released, however, you can try the latest unstable versi
 
     https://github.com/huxingyi/dust3d/releases/download/unstable/dust3d_unstable.dmg
 
-* Other Platform:
+* For Linux:
 
-    please build_ from source.
+    https://github.com/huxingyi/dust3d/releases/download/unstable/dust3d_unstable-x86_64.AppImage
 
-.. _build: https://dust3d.readthedocs.io/en/latest/builds.html
+    $ chomd a+x ./dust3d_unstable-x86_64.AppImage
+    $ ./dust3d_unstable-x86_64.AppImage
+
+* Build on Your Own:
+
+    Build_ from source.
+
+.. _Build: https://dust3d.readthedocs.io/en/latest/builds.html
 
 Found BUG?
 
