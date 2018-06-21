@@ -187,6 +187,12 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
         contextMenu.addAction(&rotateCounterclockwiseAction);
     }
     
+    QAction switchXzAction(tr("Switch XZ"), this);
+    if (hasSelection()) {
+        connect(&switchXzAction, &QAction::triggered, this, &SkeletonGraphicsWidget::switchSelectedXZ);
+        contextMenu.addAction(&switchXzAction);
+    }
+    
     QAction alignToLocalCenterAction(tr("Local Center"), this);
     QAction alignToLocalVerticalCenterAction(tr("Local Vertical Center"), this);
     QAction alignToLocalHorizontalCenterAction(tr("Local Horizontal Center"), this);
@@ -842,6 +848,24 @@ void SkeletonGraphicsWidget::moveSelected(float byX, float byY)
             emit moveNodeBy(nodeItem->id(), 0, byY, byX);
         }
     }
+}
+
+void SkeletonGraphicsWidget::switchSelectedXZ()
+{
+    if (m_rangeSelectionSet.empty())
+        return;
+    
+    std::set<QUuid> nodeIdSet;
+    readSkeletonNodeAndEdgeIdSetFromRangeSelection(&nodeIdSet);
+    if (nodeIdSet.empty())
+        return;
+    
+    emit batchChangeBegin();
+    for (const auto nodeId: nodeIdSet) {
+        emit switchNodeXZ(nodeId);
+    }
+    emit batchChangeEnd();
+    emit groupOperationAdded();
 }
 
 void SkeletonGraphicsWidget::zoomSelected(float delta)
@@ -1796,7 +1820,8 @@ void SkeletonGraphicsWidget::readSkeletonNodeAndEdgeIdSetFromRangeSelection(std:
         if (item->data(0) == "node") {
             nodeIdSet->insert(((SkeletonGraphicsNodeItem *)item)->id());
         } else if (item->data(0) == "edge") {
-            edgeIdSet->insert(((SkeletonGraphicsEdgeItem *)item)->id());
+            if (nullptr != edgeIdSet)
+                edgeIdSet->insert(((SkeletonGraphicsEdgeItem *)item)->id());
         }
     }
 }

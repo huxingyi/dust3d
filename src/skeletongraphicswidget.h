@@ -385,6 +385,7 @@ signals:
     void setNodeOrigin(QUuid nodeId, float x, float y, float z);
     void setNodeBoneMark(QUuid nodeId, SkeletonBoneMark mark);
     void zoomRenderedModelBy(float delta);
+    void switchNodeXZ(QUuid nodeId);
 public:
     SkeletonGraphicsWidget(const SkeletonDocument *document);
     std::map<QUuid, std::pair<SkeletonGraphicsNodeItem *, SkeletonGraphicsNodeItem *>> nodeItemMap;
@@ -399,7 +400,7 @@ public:
     QUuid querySkeletonItemPartId(QGraphicsItem *item);
     static SkeletonProfile readSkeletonItemProfile(QGraphicsItem *item);
     void readMergedSkeletonNodeSetFromRangeSelection(std::set<SkeletonGraphicsNodeItem *> *nodeItemSet);
-    void readSkeletonNodeAndEdgeIdSetFromRangeSelection(std::set<QUuid> *nodeIdSet, std::set<QUuid> *edgeIdSet);
+    void readSkeletonNodeAndEdgeIdSetFromRangeSelection(std::set<QUuid> *nodeIdSet, std::set<QUuid> *edgeIdSet=nullptr);
     bool readSkeletonNodeAndAnyEdgeOfNodeFromRangeSelection(SkeletonGraphicsNodeItem **nodeItem, SkeletonGraphicsEdgeItem **edgeItem);
     bool hasSelection();
     bool hasItems();
@@ -463,6 +464,7 @@ public slots:
     void ikMoveReady();
     void setSelectedNodesBoneMark(SkeletonBoneMark boneMark);
     void timeToRemoveDeferredNodesAndEdges();
+    void switchSelectedXZ();
 private slots:
     void turnaroundImageReady();
 private:

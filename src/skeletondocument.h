@@ -291,6 +291,7 @@ public slots:
     void setNodeOrigin(QUuid nodeId, float x, float y, float z);
     void setNodeRadius(QUuid nodeId, float radius);
     void setNodeBoneMark(QUuid nodeId, SkeletonBoneMark mark);
+    void switchNodeXZ(QUuid nodeId);
     void moveOriginBy(float x, float y, float z);
     void addEdge(QUuid fromNodeId, QUuid toNodeId);
     void setEditMode(SkeletonDocumentEditMode mode);

@@ -316,6 +316,12 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     });
     m_editMenu->addAction(m_rotateCounterclockwiseAction);
     
+    m_switchXzAction = new QAction(tr("Switch XZ"), this);
+    connect(m_switchXzAction, &QAction::triggered, [=] {
+        m_graphicsWidget->switchSelectedXZ();
+    });
+    m_editMenu->addAction(m_switchXzAction);
+    
     m_alignToMenu = new QMenu(tr("Align To"));
     
     m_alignToGlobalCenterAction = new QAction(tr("Global Center"), this);
@@ -390,6 +396,7 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
         m_flipVerticallyAction->setEnabled(m_graphicsWidget->hasMultipleSelection());
         m_rotateClockwiseAction->setEnabled(m_graphicsWidget->hasMultipleSelection());
         m_rotateCounterclockwiseAction->setEnabled(m_graphicsWidget->hasMultipleSelection());
+        m_switchXzAction->setEnabled(m_graphicsWidget->hasSelection());
         m_alignToGlobalCenterAction->setEnabled(m_graphicsWidget->hasSelection() && m_document->originSettled());
         m_alignToGlobalVerticalCenterAction->setEnabled(m_graphicsWidget->hasSelection() && m_document->originSettled());
         m_alignToGlobalHorizontalCenterAction->setEnabled(m_graphicsWidget->hasSelection() && m_document->originSettled());
@@ -547,6 +554,7 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(graphicsWidget, &SkeletonGraphicsWidget::moveOriginBy, m_document, &SkeletonDocument::moveOriginBy);
     connect(graphicsWidget, &SkeletonGraphicsWidget::partChecked, m_document, &SkeletonDocument::partChecked);
     connect(graphicsWidget, &SkeletonGraphicsWidget::partUnchecked, m_document, &SkeletonDocument::partUnchecked);
+    connect(graphicsWidget, &SkeletonGraphicsWidget::switchNodeXZ, m_document, &SkeletonDocument::switchNodeXZ);
     
     connect(graphicsWidget, &SkeletonGraphicsWidget::setPartLockState, m_document, &SkeletonDocument::setPartLockState);
     connect(graphicsWidget, &SkeletonGraphicsWidget::setPartVisibleState, m_document, &SkeletonDocument::setPartVisibleState);

@@ -28,8 +28,9 @@ class JointNodeTree
 {
 public:
     JointNodeTree(MeshResultContext &resultContext);
+    const std::vector<JointInfo> &joints() const;
     std::vector<JointInfo> &joints();
-    int nodeToJointIndex(int partId, int nodeId);
+    int nodeToJointIndex(int partId, int nodeId) const;
     void recalculateMatricesAfterPositionUpdated();
     void recalculateMatricesAfterTransformUpdated();
 private:

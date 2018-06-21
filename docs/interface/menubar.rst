@@ -93,6 +93,10 @@ Rotate 90D CCW
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Rotate selected nodes counterclockwise by 90 degrees.
 
+Switch XZ
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Switch selected nodes' X and Z position. if you accidentally put some parts in front view which you planned put into side view, you can select these nodes and switch the XZ components.
+
 Align To
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Align selected nodes with center anchor globally or selected nodes' center locally. Normally, the center anchor(a Triangle) is not show up, you can turn on the Part Mirror to make it visible, then turn Part Mirror off, the center anchor would not gone once showed.

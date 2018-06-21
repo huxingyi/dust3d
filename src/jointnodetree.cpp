@@ -79,12 +79,17 @@ void JointNodeTree::traceBoneFromJoint(MeshResultContext &resultContext, std::pa
     }
 }
 
+const std::vector<JointInfo> &JointNodeTree::joints() const
+{
+    return m_tracedJoints;
+}
+
 std::vector<JointInfo> &JointNodeTree::joints()
 {
     return m_tracedJoints;
 }
 
-int JointNodeTree::nodeToJointIndex(int partId, int nodeId)
+int JointNodeTree::nodeToJointIndex(int partId, int nodeId) const
 {
     const auto &findIt = m_tracedNodeToJointIndexMap.find(std::make_pair(partId, nodeId));
     if (findIt == m_tracedNodeToJointIndexMap.end()) {

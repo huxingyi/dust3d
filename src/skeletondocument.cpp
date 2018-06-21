@@ -530,6 +530,20 @@ void SkeletonDocument::setNodeRadius(QUuid nodeId, float radius)
     emit skeletonChanged();
 }
 
+void SkeletonDocument::switchNodeXZ(QUuid nodeId)
+{
+    auto it = nodeMap.find(nodeId);
+    if (it == nodeMap.end()) {
+        qDebug() << "Find node failed:" << nodeId;
+        return;
+    }
+    if (isPartReadonly(it->second.partId))
+        return;
+    std::swap(it->second.x, it->second.z);
+    emit nodeOriginChanged(nodeId);
+    emit skeletonChanged();
+}
+
 void SkeletonDocument::setNodeBoneMark(QUuid nodeId, SkeletonBoneMark mark)
 {
     auto it = nodeMap.find(nodeId);
