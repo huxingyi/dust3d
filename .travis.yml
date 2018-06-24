@@ -62,10 +62,13 @@ script:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then make CXX="g++-4.9 -fext-numeric-literals" || travis_terminate 1; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/thirdparty/meshlite || travis_terminate 1; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then mv dust3d.app dust3d_unstable.app || travis_terminate 1; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then mkdir dust3d_unstable || travis_terminate 1; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then mv ./dust3d dust3d_unstable/dust3d_unstable || travis_terminate 1;fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then mv ./ci/icon.png dust3d_unstable/icon.png || travis_terminate 1;fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then mv ./ci/dust3d.desktop dust3d_unstable/dust3d.desktop || travis_terminate 1;fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then mkdir -p dust3d_unstable/usr/share/metainfo || travis_terminate 1; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then mkdir dust3d_unstable/usr/share/applications || travis_terminate 1; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then mv ./dust3d dust3d_unstable/dust3d_unstable || travis_terminate 1; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then mv ./ci/icon.png dust3d_unstable/icon.png || travis_terminate 1; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then mv ./ci/org.dust3d.appdata.xml dust3d_unstable/usr/share/metainfo/org.dust3d.appdata.xml || travis_terminate 1; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cp ./ci/org.dust3d.desktop dust3d_unstable/usr/share/applications/org.dust3d.desktop || travis_terminate 1; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cp ./ci/org.dust3d.desktop dust3d_unstable/org.dust3d.desktop || travis_terminate 1; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then macdeployqt dust3d_unstable.app -dmg || travis_terminate 1; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then chmod a+x ./ci/linuxdeployqt.AppImage || travis_terminate 1; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./ci/linuxdeployqt.AppImage dust3d_unstable/dust3d_unstable -appimage -bundle-non-qt-libs -verbose=2 || travis_terminate 1; fi
