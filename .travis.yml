@@ -69,5 +69,6 @@ script:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then macdeployqt dust3d_unstable.app -dmg || travis_terminate 1; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then chmod a+x ./ci/linuxdeployqt.AppImage || travis_terminate 1; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./ci/linuxdeployqt.AppImage dust3d_unstable/dust3d_unstable -appimage -bundle-non-qt-libs -verbose=2 || travis_terminate 1; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then mv ./Dust3D-x86_64.AppImage ./dust3d_unstable-x86_64.AppImage || travis_terminate 1;fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sh ci/upload-github-release-asset.sh github_api_token=${my_auth_token} branch=$TRAVIS_BRANCH owner=huxingyi repo=dust3d tag=unstable filename=dust3d_unstable.dmg; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then bash ci/upload-github-release-asset.sh github_api_token=${my_auth_token} branch=$TRAVIS_BRANCH owner=huxingyi repo=dust3d tag=unstable filename=dust3d_unstable-x86_64.AppImage; fi
