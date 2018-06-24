@@ -20,7 +20,7 @@ Dust3D haven't yet been released, however, you can try the latest unstable versi
 
     .. code-block:: none
 
-        $ chomd a+x ./dust3d_unstable-x86_64.AppImage
+        $ chmod a+x ./dust3d_unstable-x86_64.AppImage
         $ ./dust3d_unstable-x86_64.AppImage
 
 * Build on Your Own:
