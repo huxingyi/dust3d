@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop-application">
-​  <id>org.dust3d.desktop</id>
+​  <id>dust3d.desktop</id>
 ​  <metadata_license>FSFAP</metadata_license>
 ​  <project_license>MIT</project_license>
 ​  <name>Dust3D</name>

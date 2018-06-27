@@ -83,7 +83,7 @@ GH_ASSET="https://uploads.github.com/repos/$owner/$repo/releases/$release_id/ass
 
 response=$(curl "$GITHUB_OAUTH_BASIC" --data-binary @"$filename" -H "Authorization: token $github_api_token" -H "Content-Type: application/octet-stream" $GH_ASSET)
 echo $response
-founderr=$(echo "$response" | grep "errors" | wc -l)
+founderr=$(echo "$response" | grep "errors\|Error" | wc -l)
 if [ "$founderr" -eq "0" ]; then
     echo "Upload success"
 else

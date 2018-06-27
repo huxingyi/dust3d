@@ -41,7 +41,7 @@ void CCDIKSolver::solveTo(const QVector3D &position)
         qDebug() << "Round:" << i << " distance2:" << distance2;
         if (distance2 <= m_distanceThreshold2)
             break;
-        if (lastDistance2 > 0 && abs(distance2 - lastDistance2) <= m_distanceCeaseThreshold2)
+        if (lastDistance2 > 0 && fabs(distance2 - lastDistance2) <= m_distanceCeaseThreshold2)
             break;
         lastDistance2 = distance2;
         iterate();

@@ -2,5 +2,6 @@
 Type=Application
 Name=Dust3D
 Icon=icon
+Exec=dust3d
 Categories=Graphics;
 Comment=A quick 3D modeling tool

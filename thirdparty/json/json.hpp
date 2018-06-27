@@ -124,7 +124,7 @@ using json = basic_json<>;
     #endif
 #elif defined(__GNUC__) && !(defined(__ICC) || defined(__INTEL_COMPILER))
     #if (__GNUC__ * 10000 + __GNUC_MINOR__ * 100 + __GNUC_PATCHLEVEL__) < 40900
-        #error "unsupported GCC version - see https://github.com/nlohmann/json#supported-compilers"
+        //#error "unsupported GCC version - see https://github.com/nlohmann/json#supported-compilers"
     #endif
 #endif
 
