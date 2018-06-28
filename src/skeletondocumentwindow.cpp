@@ -905,6 +905,8 @@ void SkeletonDocumentWindow::exportModelResult()
         return;
     }
     QApplication::setOverrideCursor(Qt::WaitCursor);
+    // Must update mesh before export, because there may be an animation clip playing which breaks the original mesh.
+    m_modelRenderWidget->updateMesh(m_document->takeResultMesh());
     m_modelRenderWidget->exportMeshAsObj(filename);
     QApplication::restoreOverrideCursor();
 }

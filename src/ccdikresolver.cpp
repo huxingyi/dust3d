@@ -32,13 +32,13 @@ int CCDIKSolver::addNodeInOrder(const QVector3D &position)
 
 void CCDIKSolver::solveTo(const QVector3D &position)
 {
-    qDebug() << "solveTo:" << position;
+    //qDebug() << "solveTo:" << position;
     m_destination = position;
     float lastDistance2 = 0;
     for (int i = 0; i < m_maxRound; i++) {
         const auto &endEffector = m_nodes[m_nodes.size() - 1];
         float distance2 = (endEffector.position - m_destination).lengthSquared();
-        qDebug() << "Round:" << i << " distance2:" << distance2;
+        //qDebug() << "Round:" << i << " distance2:" << distance2;
         if (distance2 <= m_distanceThreshold2)
             break;
         if (lastDistance2 > 0 && abs(distance2 - lastDistance2) <= m_distanceCeaseThreshold2)

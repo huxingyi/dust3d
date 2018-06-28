@@ -20,7 +20,7 @@ AnimationPanelWidget::AnimationPanelWidget(SkeletonDocument *document, QWidget *
     buttonsLayout->addSpacing(10);
     
     for (const auto &clipName: AnimationClipGenerator::supportedClipNames) {
-        QPushButton *clipButton = new QPushButton(QObject::tr(qPrintable(clipName)));
+        QPushButton *clipButton = new QPushButton(QObject::tr(qPrintable(clipName + " (Experiment)")));
         connect(clipButton, &QPushButton::clicked, [=] {
             generateClip(clipName);
         });

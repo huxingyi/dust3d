@@ -8,6 +8,7 @@
 #include "skinnedmesh.h"
 #include "jointnodetree.h"
 #include "ragdoll.h"
+#include "locomotioncontroller.h"
 
 class AnimationClipGenerator : public QObject
 {
@@ -39,6 +40,7 @@ private:
 #if USE_BULLET
     Ragdoll *m_ragdoll = nullptr;
 #endif
+    LocomotionController *m_locomotionController = nullptr;
 };
 
 #endif
