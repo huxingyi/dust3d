@@ -4,7 +4,7 @@
 
 const std::vector<QString> AnimationClipGenerator::supportedClipNames = {
     "Idle",
-    //"Walk",
+    "Walk",
     //"Run",
     //"Attack",
     //"Hurt",
@@ -41,6 +41,7 @@ AnimationClipGenerator::~AnimationClipGenerator()
 #if USE_RAGDOLL
     delete m_ragdoll;
 #endif
+    delete m_locomotionController;
 }
 
 std::vector<std::pair<float, MeshLoader *>> AnimationClipGenerator::takeFrameMeshes()
@@ -57,21 +58,26 @@ void AnimationClipGenerator::generateFrame(SkinnedMesh &skinnedMesh, float amoun
     
     rigController->resetFrame();
     
-    if (m_clipName == "Idle")
-        rigController->idle(amount);
-    
     RigFrame frame(jointNodeTree->joints().size());
     
-#if USE_BULLET
-    if (nullptr == m_ragdoll) {
+    if (m_clipName == "Idle") {
+        rigController->idle(amount);
         rigController->saveFrame(frame);
-    } else {
-        m_ragdoll->stepSimulation(duration);
-        m_ragdoll->saveFrame(frame);
-    }
-#else
-    rigController->saveFrame(frame);
+    } else if (m_clipName == "Walk") {
+        m_locomotionController->simulate(amount);
+        JointNodeTree outputJointNodeTree = m_locomotionController->outputJointNodeTreeOnlyPositions();
+        outputJointNodeTree.recalculateMatricesAfterPositionUpdated();
+        m_jointNodeTree.diff(outputJointNodeTree, frame);
+    } else if (m_clipName == "Die") {
+#if USE_BULLET
+        if (nullptr == m_ragdoll) {
+            rigController->saveFrame(frame);
+        } else {
+            m_ragdoll->stepSimulation(duration);
+            m_ragdoll->saveFrame(frame);
+        }
 #endif
+    }
     
     if (m_wantMesh) {
         skinnedMesh.applyRigFrameToMesh(frame);
@@ -91,8 +97,31 @@ void AnimationClipGenerator::generate()
     RigController *rigController = skinnedMesh.rigController();
     rigController->resetFrame();
     
+    qDebug() << "animation clip name:" << m_clipName;
+    
+    if (m_clipName == "Idle") {
+        float duration = 0.1;
+        float nextBeginTime = 0;
+        for (float amount = 0.0; amount <= 0.05; amount += 0.01) {
+            generateFrame(skinnedMesh, amount, nextBeginTime, duration);
+            nextBeginTime += duration;
+        }
+        for (float amount = 0.05; amount >= 0.0; amount -= 0.01) {
+            generateFrame(skinnedMesh, amount, nextBeginTime, duration);
+            nextBeginTime += duration;
+        }
+    } else if (m_clipName == "Walk") {
+        m_locomotionController = new LocomotionController(m_jointNodeTree);
+        m_locomotionController->prepare();
+        
+        float duration = 0.05;
+        float nextBeginTime = 0;
+        for (float amount = 0.0; amount <= 1; amount += duration) {
+            generateFrame(skinnedMesh, amount, nextBeginTime, duration);
+            nextBeginTime += duration;
+        }
+    } else if (m_clipName == "Die") {
 #if USE_BULLET
-    if (m_clipName == "Die") {
         delete m_ragdoll;
         float averageLegHeight = rigController->averageLegHeight();
         rigController->liftLeftLegs(QVector3D(0, averageLegHeight * 1.2, 0));
@@ -104,27 +133,14 @@ void AnimationClipGenerator::generate()
         m_ragdoll = new Ragdoll(m_jointNodeTree, ragdollJointNodeTree);
         m_ragdoll->setGroundPlaneY(rigController->minY());
         m_ragdoll->prepare();
-    }
-#endif
-    
-    if (m_clipName == "Die") {
+        
         float duration = 1.0 / 120;
         float nextBeginTime = 0;
         for (float amount = 0.0; amount <= 3; amount += duration) {
             generateFrame(skinnedMesh, amount, nextBeginTime, duration);
             nextBeginTime += duration;
         }
-    } else {
-        float duration = 0.1;
-        float nextBeginTime = 0;
-        for (float amount = 0.0; amount <= 0.05; amount += 0.01) {
-            generateFrame(skinnedMesh, amount, nextBeginTime, duration);
-            nextBeginTime += duration;
-        }
-        for (float amount = 0.05; amount >= 0.0; amount -= 0.01) {
-            generateFrame(skinnedMesh, amount, nextBeginTime, duration);
-            nextBeginTime += duration;
-        }
+#endif
     }
 }
 

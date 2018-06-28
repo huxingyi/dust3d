@@ -127,11 +127,9 @@ void IntermediateBoneRemover::solveTrivialFromPairAndSaveTraceTo(std::pair<int, 
     if (solvedSet.find(node) != solvedSet.end())
         return;
     solvedSet.insert(node);
-    if (m_startNodeSet.find(node) != m_startNodeSet.end()) {
-        return;
-    }
     if (m_trivialNodeSet.find(node) == m_trivialNodeSet.end()) {
-        if (!history.empty() && m_trivialNodeSet.find(history[history.size() - 1]) != m_trivialNodeSet.end()) {
+        if (!history.empty() && m_trivialNodeSet.find(history[history.size() - 1]) != m_trivialNodeSet.end() &&
+                m_intermediateNodes.find(history[history.size() - 1]) == m_intermediateNodes.end()) {
             for (int i = history.size() - 1; i >= 0; i--) {
                 if (m_trivialNodeSet.find(history[i]) == m_trivialNodeSet.end()) {
                     bool addChildren = false;

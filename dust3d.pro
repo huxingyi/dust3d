@@ -155,6 +155,15 @@ HEADERS += src/skinnedmesh.h
 SOURCES += src/ragdoll.cpp
 HEADERS += src/ragdoll.h
 
+SOURCES += src/pogostick.cpp
+HEADERS += src/pogostick.h
+
+SOURCES += src/ikjoint.cpp
+HEADERS += src/ikjoint.h
+
+SOURCES += src/locomotioncontroller.cpp
+HEADERS += src/locomotioncontroller.h
+
 HEADERS += src/qtlightmapper.h
 
 SOURCES += src/main.cpp

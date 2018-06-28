@@ -6,10 +6,12 @@
 enum class SkeletonBoneMark
 {
     None = 0,
+    Head,
     LegStart,
     LegJoint,
     LegEnd,
     Spine,
+    Tail,
     Max
 };
 #define SKELETON_BONE_MARK_TYPE_NUM    ((int)SkeletonBoneMark::Max - 1)
@@ -19,6 +21,8 @@ QColor SkeletonBoneMarkToColor(SkeletonBoneMark mark);
 QColor SkeletonBoneMarkToColor(SkeletonBoneMark mark)               \
 {                                                                   \
     switch (mark) {                                                 \
+        case SkeletonBoneMark::Head:                                \
+            return QColor(0x00, 0x00, 0xff);                        \
         case SkeletonBoneMark::LegStart:                            \
             return QColor(0xf4, 0xcd, 0x56);                        \
         case SkeletonBoneMark::LegJoint:                            \
@@ -27,6 +31,8 @@ QColor SkeletonBoneMarkToColor(SkeletonBoneMark mark)               \
             return QColor(0xd0, 0x8c, 0xe0);                        \
         case SkeletonBoneMark::Spine:                               \
             return QColor(0xfc, 0x63, 0x60);                        \
+        case SkeletonBoneMark::Tail:                                \
+            return QColor(0x00, 0xff, 0x00);                        \
         case SkeletonBoneMark::None:                                \
             return Qt::transparent;                                 \
         default:                                                    \
@@ -38,6 +44,8 @@ const char *SkeletonBoneMarkToString(SkeletonBoneMark mark);
 const char *SkeletonBoneMarkToString(SkeletonBoneMark mark)         \
 {                                                                   \
     switch (mark) {                                                 \
+        case SkeletonBoneMark::Head:                                \
+            return "Head";                                          \
         case SkeletonBoneMark::LegStart:                            \
             return "LegStart";                                      \
         case SkeletonBoneMark::LegJoint:                            \
@@ -46,6 +54,8 @@ const char *SkeletonBoneMarkToString(SkeletonBoneMark mark)         \
             return "LegEnd";                                        \
         case SkeletonBoneMark::Spine:                               \
             return "Spine";                                         \
+        case SkeletonBoneMark::Tail:                                \
+            return "Tail";                                          \
         case SkeletonBoneMark::None:                                \
             return "None";                                          \
         default:                                                    \
@@ -57,6 +67,8 @@ SkeletonBoneMark SkeletonBoneMarkFromString(const char *markString);
 SkeletonBoneMark SkeletonBoneMarkFromString(const char *markString) \
 {                                                                   \
     QString mark = markString;                                      \
+    if (mark == "Head")                                             \
+        return SkeletonBoneMark::Head;                              \
     if (mark == "LegStart")                                         \
         return SkeletonBoneMark::LegStart;                          \
     if (mark == "LegJoint")                                         \
@@ -65,6 +77,8 @@ SkeletonBoneMark SkeletonBoneMarkFromString(const char *markString) \
         return SkeletonBoneMark::LegEnd;                            \
     if (mark == "Spine")                                            \
         return SkeletonBoneMark::Spine;                             \
+    if (mark == "Tail")                                             \
+        return SkeletonBoneMark::Tail;                              \
     if (mark == "None")                                             \
         return SkeletonBoneMark::None;                              \
     return SkeletonBoneMark::None;                                  \
@@ -74,6 +88,8 @@ const char *SkeletonBoneMarkToDispName(SkeletonBoneMark mark);
 const char *SkeletonBoneMarkToDispName(SkeletonBoneMark mark)       \
 {                                                                   \
     switch (mark) {                                                 \
+        case SkeletonBoneMark::Head:                                \
+            return "Head";                                          \
         case SkeletonBoneMark::LegStart:                            \
             return "Leg (Start)";                                   \
         case SkeletonBoneMark::LegJoint:                            \
@@ -82,6 +98,8 @@ const char *SkeletonBoneMarkToDispName(SkeletonBoneMark mark)       \
             return "Leg (End)";                                     \
         case SkeletonBoneMark::Spine:                               \
             return "Spine";                                         \
+        case SkeletonBoneMark::Tail:                                \
+            return "Tail";                                          \
         case SkeletonBoneMark::None:                                \
             return "";                                              \
         default:                                                    \

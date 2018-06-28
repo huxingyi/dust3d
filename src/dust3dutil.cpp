@@ -26,3 +26,12 @@ void qNormalizeAngle(int &angle)
     while (angle > 360 * 16)
         angle -= 360 * 16;
 }
+
+// https://en.wikibooks.org/wiki/Cg_Programming/Unity/Hermite_Curves
+QVector3D pointInHermiteCurve(float t, QVector3D p0, QVector3D m0, QVector3D p1, QVector3D m1)
+{
+    return (2.0f * t * t * t - 3.0f * t * t + 1.0f) * p0
+        + (t * t * t - 2.0f * t * t + t) * m0
+        + (-2.0f * t * t * t + 3.0f * t * t) * p1
+        + (t * t * t - t * t) * m1;
+}

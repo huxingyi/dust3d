@@ -120,6 +120,7 @@ public:
     const std::vector<ResultRearrangedTriangle> &rearrangedTriangles();
     const std::map<int, std::pair<int, int>> &vertexSourceMap();
     void removeIntermediateBones();
+    bool isVerticalSpine();
 private:
     bool m_triangleSourceResolved;
     bool m_triangleColorResolved;
@@ -134,6 +135,8 @@ private:
     bool m_resultPartsResolved;
     bool m_resultTriangleUvsResolved;
     bool m_resultRearrangedVerticesResolved;
+    bool m_isVerticalSpine;
+    bool m_spineDirectionResolved;
 private:
     std::vector<std::pair<int, int>> m_triangleSourceNodes;
     std::vector<QColor> m_triangleColors;
@@ -164,6 +167,7 @@ private:
     void calculateResultTriangleUvs(std::vector<ResultTriangleUv> &uvs, std::set<int> &seamVertices);
     void calculateResultRearrangedVertices(std::vector<ResultRearrangedVertex> &rearrangedVertices, std::vector<ResultRearrangedTriangle> &rearrangedTriangles);
     void calculateConnectionPossibleRscore(BmeshConnectionPossible &possible);
+    void calculateSpineDirection(bool &isVerticalSpine);
 };
 
 #endif

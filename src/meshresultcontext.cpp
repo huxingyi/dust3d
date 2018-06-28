@@ -2,6 +2,7 @@
 #include <vector>
 #include <QDebug>
 #include <set>
+#include <cmath>
 #include "theme.h"
 #include "meshresultcontext.h"
 #include "thekla_atlas.h"
@@ -35,7 +36,9 @@ MeshResultContext::MeshResultContext() :
     m_centerBmeshNode(nullptr),
     m_resultPartsResolved(false),
     m_resultTriangleUvsResolved(false),
-    m_resultRearrangedVerticesResolved(false)
+    m_resultRearrangedVerticesResolved(false),
+    m_isVerticalSpine(false),
+    m_spineDirectionResolved(false)
 {
 }
 
@@ -93,6 +96,15 @@ const BmeshNode *MeshResultContext::centerBmeshNode()
         m_centerBmeshNodeResolved = true;
     }
     return m_centerBmeshNode;
+}
+
+bool MeshResultContext::isVerticalSpine()
+{
+    if (!m_spineDirectionResolved) {
+        calculateSpineDirection(m_isVerticalSpine);
+        m_spineDirectionResolved = true;
+    }
+    return m_isVerticalSpine;
 }
 
 void MeshResultContext::resolveBmeshConnectivity()
@@ -416,6 +428,34 @@ void MeshResultContext::calculateBmeshNodeMap(std::map<std::pair<int, int>, Bmes
     }
 }
 
+void MeshResultContext::calculateSpineDirection(bool &isVerticalSpine)
+{
+    float minZ = 10000;
+    float maxZ = -10000;
+    float minY = 10000;
+    float maxY = -10000;
+    int spineNodeNum = 0;
+    for (auto i = 0u; i < bmeshNodes.size(); i++) {
+        BmeshNode *bmeshNode = &bmeshNodes[i];
+        if (bmeshNode->boneMark != SkeletonBoneMark::Spine)
+            continue;
+        if (bmeshNode->origin.y() < minY)
+            minY = bmeshNode->origin.y();
+        if (bmeshNode->origin.y() > maxY)
+            maxY = bmeshNode->origin.y();
+        if (bmeshNode->origin.z() < minZ)
+            minZ = bmeshNode->origin.z();
+        if (bmeshNode->origin.z() > maxZ)
+            maxZ = bmeshNode->origin.z();
+        spineNodeNum++;
+    }
+    if (spineNodeNum < 2)
+        isVerticalSpine = true;
+    else
+        isVerticalSpine = fabs(maxY - minY) > fabs(maxZ - minZ);
+    qDebug() << "calculateSpineDirection isVerticalSpine:" << isVerticalSpine;
+}
+
 struct BmeshNodeDistWithWorldCenter
 {
     BmeshNode *bmeshNode;
@@ -424,6 +464,29 @@ struct BmeshNodeDistWithWorldCenter
 
 BmeshNode *MeshResultContext::calculateCenterBmeshNode()
 {
+    // If there are marked spine node, we pick the last spine node as center
+    bool pickVerticalLast = isVerticalSpine();
+    float minLocation = 10000;
+    BmeshNode *lastSpineNode = nullptr;
+    for (auto i = 0u; i < bmeshNodes.size(); i++) {
+        BmeshNode *bmeshNode = &bmeshNodes[i];
+        if (bmeshNode->boneMark != SkeletonBoneMark::Spine)
+            continue;
+        if (pickVerticalLast) {
+            if (bmeshNode->origin.y() < minLocation) {
+                minLocation = bmeshNode->origin.y();
+                lastSpineNode = bmeshNode;
+            }
+        } else {
+            if (bmeshNode->origin.z() < minLocation) {
+                minLocation = bmeshNode->origin.z();
+                lastSpineNode = bmeshNode;
+            }
+        }
+    }
+    if (nullptr != lastSpineNode)
+        return lastSpineNode;
+    
     // Sort all the nodes by distance with world center, excluding leg start nodes
     std::vector<BmeshNodeDistWithWorldCenter> nodesOrderByDistWithWorldCenter;
     for (auto i = 0u; i < bmeshNodes.size(); i++) {
