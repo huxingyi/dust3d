@@ -281,6 +281,7 @@ public:
     bool allAnimationClipsReady() const;
     bool postProcessResultIsObsolete() const;
     const std::map<QString, AnimationClipContext> &animationClipContexts();
+    void findAllNeighbors(QUuid nodeId, std::set<QUuid> &neighbors) const;
 public slots:
     void removeNode(QUuid nodeId);
     void removeEdge(QUuid edgeId);

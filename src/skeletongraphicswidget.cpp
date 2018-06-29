@@ -750,6 +750,7 @@ bool SkeletonGraphicsWidget::mouseMove(QMouseEvent *event)
                 if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
                     std::set<SkeletonGraphicsNodeItem *> nodeItems;
                     readMergedSkeletonNodeSetFromRangeSelection(&nodeItems);
+                    bool ikMoved = false;
                     if (nodeItems.size() == 1) {
                         auto &nodeItem = *nodeItems.begin();
                         const SkeletonNode *node = m_document->findNode(nodeItem->id());
@@ -768,10 +769,11 @@ bool SkeletonGraphicsWidget::mouseMove(QMouseEvent *event)
                                 target.setZ(target.z() + byX);
                             }
                             emit ikMove(nodeItem->id(), target);
+                            ikMoved = true;
                         }
-                    } else {
-                        rotateSelected(byX);
                     }
+                    if (!ikMoved)
+                        rotateSelected(byX);
                 } else {
                     moveSelected(byX, byY);
                 }
@@ -793,8 +795,68 @@ void SkeletonGraphicsWidget::rotateSelected(int degree)
     std::set<SkeletonGraphicsNodeItem *> nodeItems;
     readMergedSkeletonNodeSetFromRangeSelection(&nodeItems);
     
-    QVector2D center = centerOfNodeItemSet(nodeItems);
+    QVector2D center;
     qNormalizeAngle(degree);
+    
+    if (1 == nodeItems.size() && m_document->originSettled()) {
+        // Rotate all children nodes around this node
+        // 1. Pick who is the parent from neighbors
+        // 2. Rotate all the remaining neighbor nodes and their children exlucde the picked parent
+        QVector3D worldOrigin = QVector3D(m_document->originX, m_document->originY, m_document->originZ);
+        SkeletonGraphicsNodeItem *centerNodeItem = *nodeItems.begin();
+        const auto &centerNode = m_document->findNode(centerNodeItem->id());
+        if (nullptr == centerNode) {
+            qDebug() << "findNode:" << centerNodeItem->id() << " failed while rotate";
+            return;
+        }
+        std::vector<std::pair<QUuid, float>> directNeighborDists;
+        for (const auto &neighborId: centerNode->edgeIds) {
+            const auto &neighborEdge = m_document->findEdge(neighborId);
+            if (nullptr == neighborEdge) {
+                qDebug() << "findEdge:" << neighborId << " failed while rotate";
+                continue;
+            }
+            const auto &neighborNodeId = neighborEdge->neighborOf(centerNodeItem->id());
+            const auto &neighborNode = m_document->findNode(neighborNodeId);
+            if (nullptr == centerNode) {
+                qDebug() << "findNode:" << neighborNodeId << " failed while rotate";
+                continue;
+            }
+            QVector3D nodeOrigin(neighborNode->x, neighborNode->y, neighborNode->z);
+            directNeighborDists.push_back(std::make_pair(neighborNodeId, (nodeOrigin - worldOrigin).lengthSquared()));
+        }
+        std::sort(directNeighborDists.begin(), directNeighborDists.end(), [](const std::pair<QUuid, float> &a, const std::pair<QUuid, float> &b) {
+            return a.second < b.second;
+        });
+        int skippedNum = 1;
+        if (directNeighborDists.size() == 1) {
+            skippedNum = 0;
+        }
+        std::set<QUuid> neighborIds;
+        // Adding self to force the neighbor finding not reverse
+        neighborIds.insert(centerNodeItem->id());
+        for (int i = skippedNum; i < (int)directNeighborDists.size(); i++) {
+            neighborIds.insert(directNeighborDists[i].first);
+            m_document->findAllNeighbors(directNeighborDists[i].first, neighborIds);
+        }
+        center = QVector2D(centerNodeItem->origin().x(), centerNodeItem->origin().y());
+        nodeItems.clear();
+        for (const auto &neighborId: neighborIds) {
+            const auto &findItemResult = nodeItemMap.find(neighborId);
+            if (findItemResult == nodeItemMap.end()) {
+                qDebug() << "find node item:" << neighborId << "failed";
+                continue;
+            }
+            if (SkeletonProfile::Main == centerNodeItem->profile()) {
+                nodeItems.insert(findItemResult->second.first);
+            } else {
+                nodeItems.insert(findItemResult->second.second);
+            }
+        }
+    } else {
+        center = centerOfNodeItemSet(nodeItems);
+    }
+
     for (const auto &it: nodeItems) {
         SkeletonGraphicsNodeItem *nodeItem = it;
         QMatrix4x4 mat;
