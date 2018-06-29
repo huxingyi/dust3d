@@ -6,7 +6,7 @@ float PogoStick::m_gravitationalAcceleration = 9.8;
 
 PogoStick::PogoStick()
 {
-    setStancePhaseDuration(0.8);
+    setStancePhaseDuration(0.95);
 }
 
 void PogoStick::setGroundLocation(float groundLocation)
@@ -99,7 +99,7 @@ void PogoStick::simulate(float time)
             qDebug() << "Propulsion Phase (up) displacement:" << displacement;
             m_pelviosLocation = m_restPelvisLocation - (m_stancePhaseHeight - displacement);
         }
-        m_footHorizontalOffset = -time * 0.25 / stancePhaseDuration;
+        m_footHorizontalOffset = -time * 0.5 / stancePhaseDuration;
     } else {
         float swingPhaseMiddle = swingPhaseBegin + (1 - swingPhaseBegin) * 0.5;
         // Swing Phase

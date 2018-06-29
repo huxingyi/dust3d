@@ -149,7 +149,8 @@ void LocomotionController::simulate(float amount)
     std::vector<QVector3D> spineOrientations;
     spineOrientations.resize(std::max(leftLegStartPositions.size(), rightLegStartPositions.size()), pointerFront);
     for (int i = 0; i < (int)leftLegStartPositions.size() && i < (int)rightLegStartPositions.size(); i++) {
-        spineOrientations[i] = -QVector3D::crossProduct(leftLegStartPositions[i] - rightLegStartPositions[i], pointerUp);
+        auto rotateDirection = -QVector3D::crossProduct(rightLegStartPositions[i] - leftLegStartPositions[i], pointerUp);
+        spineOrientations[i] = (rotateDirection + pointerFront + pointerFront).normalized();
     }
     
     // Calculate average pitch for each leg
@@ -164,9 +165,8 @@ void LocomotionController::simulate(float amount)
     for (int i = 0; i < (int)spinePitches.size(); i++) {
         spinePitches[i].normalize();
         if (i < (int)spineOrientations.size()) {
-            QQuaternion rotation;
-            rotation.rotationTo(pointerFront, spineOrientations[i]);
-            spinePitches[i] = rotation.rotatedVector(spinePitches[i]);
+            auto quaternion = QQuaternion::rotationTo(pointerFront, spineOrientations[i]);
+            spinePitches[i] = quaternion.rotatedVector(spinePitches[i]);
         }
     }
     
@@ -233,6 +233,17 @@ void LocomotionController::simulate(float amount)
         }
     }
     
+    // Move head
+    if (-1 != m_inputJointNodeTree.head && spineNodes.size() > 0) {
+        const auto offset = legStartOffsets[0];
+        m_outputJointNodeTree.joints()[m_inputJointNodeTree.head].position += offset;
+        std::vector<int> headChildren;
+        m_inputJointNodeTree.collectChildren(m_inputJointNodeTree.head, headChildren);
+        for (const auto &child: headChildren) {
+            m_outputJointNodeTree.joints()[child].position += offset;
+        }
+    }
+    
     // Move tail
     if (-1 != m_inputJointNodeTree.tail && spineNodes.size() > 0) {
         int lastSpineJointIndex = spineNodes[spineNodes.size() - 1];
@@ -258,7 +269,7 @@ void LocomotionController::simulate(float amount)
         int headParent = m_inputJointNodeTree.joints()[m_inputJointNodeTree.head].parentIndex;
         if (-1 != headParent) {
             makeInbetweenNodesInHermiteCurve(m_inputJointNodeTree.head,
-                m_inputJointNodeTree.joints()[m_inputJointNodeTree.head].position - m_inputJointNodeTree.joints()[headParent].position,
+                m_outputJointNodeTree.joints()[m_inputJointNodeTree.head].position - m_outputJointNodeTree.joints()[headParent].position,
                 firstSpineJointIndex,
                 spinePitches[0]);
         }
@@ -312,10 +323,17 @@ void LocomotionController::makeInbetweenNodesInHermiteCurve(int firstJointIndex,
         const QVector3D &m1 = childPitch;
         for (int i = (int)inbetweenIndicies.size() - 2; i >= 0; i--) {
             accumLength += lengths[i + 1];
-            float t = accumLength / totalLength;
+            float t = (accumLength / totalLength) * 0.8;
             QVector3D revisedPosition = pointInHermiteCurve(t, p0, m0, p1, m1);
             qDebug() << "pointInHermiteCurve(t:<<" << t << ", p0:" << p0 << ", m0:" << m0 << ", p1:" << p1 << ", m1:" << m1 << ") result:" << revisedPosition;
-            m_outputJointNodeTree.joints()[inbetweenIndicies[i]].position = revisedPosition;
+            auto &inbetweenJointPosition = m_outputJointNodeTree.joints()[inbetweenIndicies[i]].position;
+            QVector3D translation = revisedPosition - inbetweenJointPosition;
+            inbetweenJointPosition = revisedPosition;
+            std::vector<int> trivialChildren;
+            m_inputJointNodeTree.collectTrivialChildren(inbetweenIndicies[i], trivialChildren);
+            for (const auto &child: trivialChildren) {
+                m_outputJointNodeTree.joints()[child].position += translation;
+            }
         }
     }
 }
