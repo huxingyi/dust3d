@@ -53,7 +53,7 @@ void LocomotionController::prepare()
     }
 }
 
-void LocomotionController::simulateLeg(PogoStick *pogoStick, const std::vector<int> &childrenOfLegEnd, std::pair<int, int> leg, float amount, QVector3D *footDirection, QVector3D *finalLegStartPosition, float *finalLegStartOffsetY)
+void LocomotionController::simulateLeg(PogoStick *pogoStick, const std::vector<int> &childrenOfLegEnd, std::pair<int, int> leg, std::map<int, JointConstraint> *constrants, float amount, QVector3D *footDirection, QVector3D *finalLegStartPosition, float *finalLegStartOffsetY)
 {
     float time = amount;
     
@@ -62,7 +62,7 @@ void LocomotionController::simulateLeg(PogoStick *pogoStick, const std::vector<i
     const auto &legStart = m_outputJointNodeTree.joints()[leg.first];
     const auto &legEnd = m_outputJointNodeTree.joints()[leg.second];
     
-    float targetLegStartY = legStart.position.y() + (pogoStick->currentPelvisLocation() - legStart.position.y()) * 0.2;
+    float targetLegStartY = legStart.position.y() + (pogoStick->currentPelvisLocation() - legStart.position.y()) * 0.5;
     float targetLegEndY = pogoStick->currentFootLocation();
     float targetLegStartZ = legStart.position.z() + pogoStick->currentFootHorizontalOffset() * 0.05;
     float targetLegEndZ = legEnd.position.z() + pogoStick->currentFootHorizontalOffset();
@@ -80,7 +80,7 @@ void LocomotionController::simulateLeg(PogoStick *pogoStick, const std::vector<i
         moveIkJoints(m_outputJointNodeTree, m_outputJointNodeTree, legParentIndex, leg.first, targetLegStartPosition);
     }
     
-    moveIkJoints(m_outputJointNodeTree, m_outputJointNodeTree, leg.first, leg.second, targetLegEndPosition);
+    moveIkJoints(m_outputJointNodeTree, m_outputJointNodeTree, leg.first, leg.second, targetLegEndPosition, constrants);
     
     QVector3D finalLegEndTranslation = legEnd.position - initialLegEndPosition;
 
@@ -108,7 +108,7 @@ void LocomotionController::simulate(float amount)
     const auto pointerFront = QVector3D(0, 0, 1);
     const auto pointerOutFromCanvas = QVector3D(1, 0, 0);
     const auto pointerUp = QVector3D(0, 1, 0);
-    float offset = 0.3;
+    float offsets[2] = {0.5, 0.48};
     float delays[2] = {0};
     m_outputJointNodeTree = m_inputJointNodeTree;
     std::vector<QVector3D> leftPitches;
@@ -124,12 +124,36 @@ void LocomotionController::simulate(float amount)
         const auto &leg = m_inputJointNodeTree.leftLegs()[i];
         auto pogoStick = &m_leftPogoSticks[i];
         QVector3D footDirection;
-        simulateLeg(pogoStick, m_childrenOfLeftLegEnds[i], leg, amount + delays[i % 2], &footDirection, &leftLegStartPositions[i], &leftLegStartOffsetYs[i]);
+        std::map<int, JointConstraint> constrants;
+        /*
+        if (2 == m_inputJointNodeTree.leftLegJoints()[i].size()) {
+            int firstJointIndex = m_inputJointNodeTree.leftLegJoints()[i][0];
+            int secondJointIndex = m_inputJointNodeTree.leftLegJoints()[i][1];
+            JointConstraint legStartConstraint;
+            JointConstraint firstConstraint;
+            JointConstraint secondConstraint;
+            const auto pointerOutFromCanvas = QVector3D(1, 0, 0);
+            if (0 == i) {
+                legStartConstraint.setHingeLimit(195, 195, pointerOutFromCanvas);
+                firstConstraint.setHingeLimit(105, 210, pointerOutFromCanvas);
+                secondConstraint.setHingeLimit(165, 225, pointerOutFromCanvas);
+            } else {
+                legStartConstraint.setHingeLimit(185, 185, pointerOutFromCanvas);
+                firstConstraint.setHingeLimit(120, 240, pointerOutFromCanvas);
+                secondConstraint.setHingeLimit(145, 150, pointerOutFromCanvas);
+            }
+            constrants[leg.first] = legStartConstraint;
+            constrants[firstJointIndex] = firstConstraint;
+            constrants[secondJointIndex] = secondConstraint;
+        }*/
+        simulateLeg(pogoStick, m_childrenOfLeftLegEnds[i], leg, &constrants, amount + delays[i % 2], &footDirection, &leftLegStartPositions[i], &leftLegStartOffsetYs[i]);
         leftPitches[i] = -QVector3D::crossProduct(-footDirection, pointerOutFromCanvas);
-        delays[i % 2] += offset;
+        delays[i % 2] += offsets[i % 2];
     }
-    delays[0] = 0.5;
-    delays[1] = 0.5;
+    delays[0] = offsets[0] - 0.1;
+    delays[1] = offsets[1] - 0.1;
+    //delays[0] = 0;
+    //delays[1] = 0;
     rightPitches.resize(m_rightPogoSticks.size());
     rightLegStartPositions.resize(m_rightPogoSticks.size());
     rightLegStartOffsetYs.resize(m_rightPogoSticks.size());
@@ -137,9 +161,31 @@ void LocomotionController::simulate(float amount)
         const auto &leg = m_inputJointNodeTree.rightLegs()[i];
         auto pogoStick = &m_rightPogoSticks[i];
         QVector3D footDirection;
-        simulateLeg(pogoStick, m_childrenOfRightLegEnds[i], leg, amount + delays[i % 2], &footDirection, &rightLegStartPositions[i], &rightLegStartOffsetYs[i]);
+        std::map<int, JointConstraint> constrants;
+        /*
+        if (2 == m_inputJointNodeTree.rightLegJoints()[i].size()) {
+            int firstJointIndex = m_inputJointNodeTree.rightLegJoints()[i][0];
+            int secondJointIndex = m_inputJointNodeTree.rightLegJoints()[i][1];
+            JointConstraint legStartConstraint;
+            JointConstraint firstConstraint;
+            JointConstraint secondConstraint;
+            const auto pointerOutFromCanvas = QVector3D(1, 0, 0);
+            if (0 == i) {
+                legStartConstraint.setHingeLimit(195, 195, pointerOutFromCanvas);
+                firstConstraint.setHingeLimit(105, 210, pointerOutFromCanvas);
+                secondConstraint.setHingeLimit(165, 225, pointerOutFromCanvas);
+            } else {
+                legStartConstraint.setHingeLimit(185, 185, pointerOutFromCanvas);
+                firstConstraint.setHingeLimit(120, 240, pointerOutFromCanvas);
+                secondConstraint.setHingeLimit(145, 150, pointerOutFromCanvas);
+            }
+            constrants[leg.first] = legStartConstraint;
+            constrants[firstJointIndex] = firstConstraint;
+            constrants[secondJointIndex] = secondConstraint;
+        }*/
+        simulateLeg(pogoStick, m_childrenOfRightLegEnds[i], leg, &constrants, amount + delays[i % 2], &footDirection, &rightLegStartPositions[i], &rightLegStartOffsetYs[i]);
         rightPitches[i] = -QVector3D::crossProduct(-footDirection, pointerOutFromCanvas);
-        delays[i % 2] += offset;
+        delays[i % 2] += offsets[i % 2];
     }
     
     if (m_inputJointNodeTree.spine().empty())

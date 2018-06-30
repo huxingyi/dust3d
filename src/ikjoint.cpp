@@ -2,7 +2,7 @@
 #include "ccdikresolver.h"
 
 void moveIkJoints(const JointNodeTree &inputJointNodeTree, JointNodeTree &outputJointNodeTree,
-    int startJointIndex, int endJointIndex, QVector3D destination)
+    int startJointIndex, int endJointIndex, QVector3D destination, std::map<int, JointConstraint> *constrants)
 {
     CCDIKSolver ikSolver;
     ikSolver.setMaxRound(10);
@@ -18,7 +18,13 @@ void moveIkJoints(const JointNodeTree &inputJointNodeTree, JointNodeTree &output
     }
     std::reverse(std::begin(ikSolvingIndicies), std::end(ikSolvingIndicies));
     for (const auto &jointIndex: ikSolvingIndicies) {
-        ikSolver.addNodeInOrder(inputJointNodeTree.joints()[jointIndex].position);
+        const JointConstraint *constraint = nullptr;
+        if (nullptr != constrants) {
+            const auto &findResult = constrants->find(jointIndex);
+            if (findResult != constrants->end())
+                constraint = &findResult->second;
+        }
+        ikSolver.addNodeInOrder(inputJointNodeTree.joints()[jointIndex].position, constraint);
     }
     
     ikSolver.solveTo(destination);

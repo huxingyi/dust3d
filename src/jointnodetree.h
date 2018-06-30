@@ -38,6 +38,8 @@ public:
     const std::vector<int> &spine() const;
     const std::vector<std::pair<int, int>> &leftLegs() const;
     const std::vector<std::pair<int, int>> &rightLegs() const;
+    const std::vector<std::vector<int>> &leftLegJoints() const;
+    const std::vector<std::vector<int>> &rightLegJoints() const;
     void diff(const JointNodeTree &another, RigFrame &rigFrame);
     int findHubJoint(int jointIndex, std::vector<int> *tracePath=nullptr) const;
     void collectChildren(int jointIndex, std::vector<int> &children) const;
@@ -63,6 +65,8 @@ private:
     std::vector<std::pair<int, int>> m_legs;
     std::vector<std::pair<int, int>> m_leftLegs;
     std::vector<std::pair<int, int>> m_rightLegs;
+    std::vector<std::vector<int>> m_leftLegJoints;
+    std::vector<std::vector<int>> m_rightLegJoints;
     std::vector<int> m_spine;
 };
 

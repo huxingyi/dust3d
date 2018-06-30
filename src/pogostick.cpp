@@ -6,7 +6,7 @@ float PogoStick::m_gravitationalAcceleration = 9.8;
 
 PogoStick::PogoStick()
 {
-    setStancePhaseDuration(0.95);
+    setStancePhaseDuration(0.75);
 }
 
 void PogoStick::setGroundLocation(float groundLocation)

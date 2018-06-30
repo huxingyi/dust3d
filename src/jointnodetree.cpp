@@ -59,7 +59,10 @@ const std::vector<std::pair<int, int>> &JointNodeTree::rightLegs() const
 void JointNodeTree::collectParts()
 {
     m_legs.clear();
+    m_leftLegs.clear();
+    m_rightLegs.clear();
     m_spine.clear();
+    std::map<int, std::vector<int>> legJointsMap;
     for (const auto &node: joints()) {
         if (node.boneMark == SkeletonBoneMark::Spine) {
             m_spine.push_back(node.jointIndex);
@@ -81,6 +84,7 @@ void JointNodeTree::collectParts()
             const JointInfo *loopNode = &joints()[node.children[0]];
             while (loopNode->boneMark != SkeletonBoneMark::LegEnd &&
                     loopNode->children.size() == 1) {
+                legJointsMap[legStart].push_back(loopNode->jointIndex);
                 loopNode = &joints()[loopNode->children[0]];
             }
             if (loopNode->boneMark == SkeletonBoneMark::LegEnd) {
@@ -93,7 +97,23 @@ void JointNodeTree::collectParts()
     }
     sortLegs(m_leftLegs);
     sortLegs(m_rightLegs);
+    for (const auto &leg: m_leftLegs) {
+        m_leftLegJoints.push_back(legJointsMap[leg.first]);
+    }
+    for (const auto &leg: m_rightLegs) {
+        m_rightLegJoints.push_back(legJointsMap[leg.first]);
+    }
     sortSpine(m_spine);
+}
+
+const std::vector<std::vector<int>> &JointNodeTree::leftLegJoints() const
+{
+    return m_leftLegJoints;
+}
+
+const std::vector<std::vector<int>> &JointNodeTree::rightLegJoints() const
+{
+    return m_rightLegJoints;
 }
 
 void JointNodeTree::sortLegs(std::vector<std::pair<int, int>> &legs)

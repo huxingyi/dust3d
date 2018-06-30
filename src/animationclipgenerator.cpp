@@ -114,11 +114,11 @@ void AnimationClipGenerator::generate()
         m_locomotionController = new LocomotionController(m_jointNodeTree);
         m_locomotionController->prepare();
         
-        float duration = 0.05;
+        float duration = 0.025;
         float nextBeginTime = 0;
         for (float amount = 0.0; amount <= 1; amount += duration) {
-            generateFrame(skinnedMesh, amount, nextBeginTime, duration);
-            nextBeginTime += duration;
+            generateFrame(skinnedMesh, amount, nextBeginTime, duration * 1.5);
+            nextBeginTime += duration * 1.5;
         }
     } else if (m_clipName == "Die") {
 #if USE_BULLET

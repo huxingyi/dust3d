@@ -2,6 +2,7 @@
 #define LOCOMOTION_CONTROLLER_H
 #include "jointnodetree.h"
 #include "pogostick.h"
+#include "jointconstraint.h"
 
 class LocomotionController
 {
@@ -13,7 +14,7 @@ public:
     void simulate(float amount);
     const JointNodeTree &outputJointNodeTreeOnlyPositions() const;
 private:
-    void simulateLeg(PogoStick *pogoStick, const std::vector<int> &childrenOfLegEnd, std::pair<int, int> leg, float amount,
+    void simulateLeg(PogoStick *pogoStick, const std::vector<int> &childrenOfLegEnd, std::pair<int, int> leg, std::map<int, JointConstraint> *constrants, float amount,
         QVector3D *footDirection, QVector3D *finalLegStartPosition, float *finalLegStartOffsetY);
     void makeInbetweenNodesInHermiteCurve(int firstJointIndex, QVector3D firstPitch, int secondJointIndex, QVector3D secondPitch);
 private:

@@ -164,6 +164,9 @@ HEADERS += src/ikjoint.h
 SOURCES += src/locomotioncontroller.cpp
 HEADERS += src/locomotioncontroller.h
 
+SOURCES += src/jointconstraint.cpp
+HEADERS += src/jointconstraint.h
+
 HEADERS += src/qtlightmapper.h
 
 SOURCES += src/main.cpp
