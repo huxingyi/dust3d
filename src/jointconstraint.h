@@ -18,7 +18,7 @@ public:
     JointConstraintType type() const;
     float minHingeDegrees() const;
     float maxHingeDegrees() const;
-    const const QVector3D &hingePlaneNormal() const;
+    const QVector3D &hingePlaneNormal() const;
 private:
     JointConstraintType m_type;
     float m_minHingeDegrees = 0;
