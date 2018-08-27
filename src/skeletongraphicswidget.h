@@ -383,7 +383,6 @@ signals:
     void setYlockState(bool locked);
     void setZlockState(bool locked);
     void setNodeOrigin(QUuid nodeId, float x, float y, float z);
-    void setNodeBoneMark(QUuid nodeId, SkeletonBoneMark mark);
     void zoomRenderedModelBy(float delta);
     void switchNodeXZ(QUuid nodeId);
 public:
@@ -421,7 +420,6 @@ public slots:
     void nodeRemoved(QUuid nodeId);
     void edgeRemoved(QUuid edgeId);
     void nodeRadiusChanged(QUuid nodeId);
-    void nodeBoneMarkChanged(QUuid nodeId);
     void nodeOriginChanged(QUuid nodeId);
     void edgeChanged(QUuid edgeId);
     void turnaroundChanged();
@@ -462,7 +460,6 @@ public slots:
     void disableBackgroundBlur();
     void ikMove(QUuid endEffectorId, QVector3D target);
     void ikMoveReady();
-    void setSelectedNodesBoneMark(SkeletonBoneMark boneMark);
     void timeToRemoveDeferredNodesAndEdges();
     void switchSelectedXZ();
 private slots:

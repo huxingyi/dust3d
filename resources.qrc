@@ -1,6 +1,13 @@
 <!DOCTYPE RCC><RCC version="1.0">
 <qresource>
-    <file>resources/dust3d_vertical.png</file>
+    <file>resources/dust3d-vertical.png</file>
+    <file>resources/tree-branch-closed.png</file>
+    <file>resources/tree-branch-end.png</file>
+    <file>resources/tree-branch-more.png</file>
+    <file>resources/tree-branch-open.png</file>
+    <file>resources/tree-vline.png</file>
     <file>ACKNOWLEDGEMENTS.html</file>
+    <file>AUTHORS</file>
+    <file>CONTRIBUTORS</file>
 </qresource>
 </RCC>

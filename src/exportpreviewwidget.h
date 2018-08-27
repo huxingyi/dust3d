@@ -20,7 +20,6 @@ public:
 public slots:
     void checkSpinner();
     void updateTexturePreview();
-    void updateSkeleton();
 protected:
     void resizeEvent(QResizeEvent *event);
     void showEvent(QShowEvent *event);
@@ -32,7 +31,6 @@ private:
     SkeletonDocument *m_document;
     QLabel *m_previewLabel;
     QImage m_previewImage;
-    ModelWidget *m_skeletonRenderWidget;
     ModelWidget *m_textureRenderWidget;
     WaitingSpinnerWidget *m_spinnerWidget;
     QPushButton *m_saveButton;

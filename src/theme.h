@@ -3,6 +3,8 @@
 #include <QColor>
 #include <QString>
 #include <map>
+#include <QPushButton>
+#include <QLabel>
 #include "QtAwesome.h"
 
 class Theme
@@ -34,6 +36,10 @@ public:
     static int previewImageSize;
     static int miniIconFontSize;
     static int miniIconSize;
+public:
+    static void initAwesomeButton(QPushButton *button);
+    static void initAwesomeLabel(QLabel *label);
+    static void initAwesomeSmallButton(QPushButton *button);
 };
 
 #endif

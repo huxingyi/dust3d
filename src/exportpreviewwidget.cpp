@@ -42,16 +42,13 @@ ExportPreviewWidget::ExportPreviewWidget(SkeletonDocument *document, QWidget *pa
     containerLayout->setRowStretch(0, 1);
     containerLayout->setColumnStretch(0, 1);
     
-    m_skeletonRenderWidget = new ModelWidget;
-    m_skeletonRenderWidget->setMinimumSize(128, 128);
-    
     m_textureRenderWidget = new ModelWidget;
-    m_skeletonRenderWidget->setMinimumSize(128, 128);
+    m_textureRenderWidget->setMinimumSize(128, 128);
+    m_textureRenderWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     
     QVBoxLayout *renderLayout = new QVBoxLayout;
     renderLayout->setSpacing(0);
     renderLayout->setContentsMargins(20, 0, 20, 0);
-    renderLayout->addWidget(m_skeletonRenderWidget);
     renderLayout->addWidget(m_textureRenderWidget);
     
     QHBoxLayout *mainLayout = new QHBoxLayout;
@@ -74,7 +71,6 @@ ExportPreviewWidget::ExportPreviewWidget(SkeletonDocument *document, QWidget *pa
     setWindowTitle(APP_NAME);
     
     emit updateTexturePreview();
-    emit updateSkeleton();
 }
 
 void ExportPreviewWidget::updateTexturePreviewImage(const QImage &image)
@@ -130,7 +126,3 @@ void ExportPreviewWidget::updateTexturePreview()
     m_textureRenderWidget->updateMesh(m_document->takeResultTextureMesh());
 }
 
-void ExportPreviewWidget::updateSkeleton()
-{
-    m_skeletonRenderWidget->updateMesh(m_document->takeResultSkeletonMesh());
-}

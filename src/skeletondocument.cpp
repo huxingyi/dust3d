@@ -27,33 +27,28 @@ SkeletonDocument::SkeletonDocument() :
     textureAmbientOcclusionImage(nullptr),
     textureColorImage(nullptr),
     // private
-    m_resultMeshIsObsolete(false),
+    m_isResultMeshObsolete(false),
     m_meshGenerator(nullptr),
     m_resultMesh(nullptr),
     m_batchChangeRefCount(0),
     m_currentMeshResultContext(nullptr),
-    m_resultSkeletonIsObsolete(false),
-    m_skeletonGenerator(nullptr),
-    m_resultSkeletonMesh(nullptr),
-    m_textureIsObsolete(false),
+    m_isTextureObsolete(false),
     m_textureGenerator(nullptr),
-    m_postProcessResultIsObsolete(false),
+    m_isPostProcessResultObsolete(false),
     m_postProcessor(nullptr),
     m_postProcessedResultContext(new MeshResultContext),
-    m_jointNodeTree(new JointNodeTree(*m_postProcessedResultContext)),
     m_resultTextureMesh(nullptr),
     m_textureImageUpdateVersion(0),
     m_ambientOcclusionBaker(nullptr),
-    m_ambientOcclusionBakedImageUpdateVersion(0)
+    m_ambientOcclusionBakedImageUpdateVersion(0),
+    m_sharedContextWidget(nullptr)
 {
 }
 
 SkeletonDocument::~SkeletonDocument()
 {
     delete m_resultMesh;
-    delete m_resultSkeletonMesh;
     delete m_postProcessedResultContext;
-    delete m_jointNodeTree;
     delete textureGuideImage;
     delete textureImage;
     delete textureBorderImage;
@@ -65,10 +60,6 @@ void SkeletonDocument::uiReady()
 {
     qDebug() << "uiReady";
     emit editModeChanged();
-}
-
-void SkeletonDocument::removePart(QUuid partId)
-{
 }
 
 void SkeletonDocument::breakEdge(QUuid edgeId)
@@ -146,7 +137,7 @@ void SkeletonDocument::removeEdge(QUuid edgeId)
             }
         }
         partMap[part.id] = part;
-        partIds.push_back(part.id);
+        addPartToComponent(part.id, findComponentParentId(part.componentId));
         emit partAdded(part.id);
     }
     for (auto nodeIdIt = edge->nodeIds.begin(); nodeIdIt != edge->nodeIds.end(); nodeIdIt++) {
@@ -160,10 +151,7 @@ void SkeletonDocument::removeEdge(QUuid edgeId)
     }
     edgeMap.erase(edgeId);
     emit edgeRemoved(edgeId);
-    partIds.erase(std::remove(partIds.begin(), partIds.end(), oldPartId), partIds.end());
-    partMap.erase(oldPartId);
-    emit partRemoved(oldPartId);
-    emit partListChanged();
+    removePart(oldPartId);
     
     emit skeletonChanged();
 }
@@ -208,7 +196,7 @@ void SkeletonDocument::removeNode(QUuid nodeId)
             }
         }
         partMap[part.id] = part;
-        partIds.push_back(part.id);
+        addPartToComponent(part.id, findComponentParentId(part.componentId));
         emit partAdded(part.id);
     }
     for (auto edgeIdIt = node->edgeIds.begin(); edgeIdIt != node->edgeIds.end(); edgeIdIt++) {
@@ -229,10 +217,7 @@ void SkeletonDocument::removeNode(QUuid nodeId)
     }
     nodeMap.erase(nodeId);
     emit nodeRemoved(nodeId);
-    partIds.erase(std::remove(partIds.begin(), partIds.end(), oldPartId), partIds.end());
-    partMap.erase(oldPartId);
-    emit partRemoved(oldPartId);
-    emit partListChanged();
+    removePart(oldPartId);
     
     emit skeletonChanged();
 }
@@ -250,7 +235,6 @@ QUuid SkeletonDocument::createNode(float x, float y, float z, float radius, QUui
     if (fromNodeId.isNull()) {
         SkeletonPart part;
         partMap[part.id] = part;
-        partIds.push_back(part.id);
         partId = part.id;
         emit partAdded(partId);
         newPartAdded = true;
@@ -290,10 +274,8 @@ QUuid SkeletonDocument::createNode(float x, float y, float z, float radius, QUui
         emit edgeAdded(edge.id);
     }
     
-    emit partChanged(partId);
-    
     if (newPartAdded)
-        emit partListChanged();
+        addPartToComponent(partId, m_currentCanvasComponentId);
     
     emit skeletonChanged();
     
@@ -322,7 +304,7 @@ const SkeletonEdge *SkeletonDocument::findEdgeByNodes(QUuid firstNodeId, QUuid s
 
 bool SkeletonDocument::originSettled() const
 {
-    return originX > 0 && originY > 0 && originZ > 0;
+    return !qFuzzyIsNull(originX) && !qFuzzyIsNull(originY) && !qFuzzyIsNull(originZ);
 }
 
 void SkeletonDocument::addEdge(QUuid fromNodeId, QUuid toNodeId)
@@ -362,6 +344,8 @@ void SkeletonDocument::addEdge(QUuid fromNodeId, QUuid toNodeId)
         return;
     }
     
+    fromPart->second.dirty = true;
+    
     if (fromNode->partId != toNode->partId) {
         toPartRemoved = true;
         std::vector<QUuid> toGroup;
@@ -398,10 +382,7 @@ void SkeletonDocument::addEdge(QUuid fromNodeId, QUuid toNodeId)
     emit edgeAdded(edge.id);
     
     if (toPartRemoved) {
-        partIds.erase(std::remove(partIds.begin(), partIds.end(), toPartId), partIds.end());
-        partMap.erase(toPartId);
-        emit partRemoved(toPartId);
-        emit partListChanged();
+        removePart(toPartId);
     }
     
     emit skeletonChanged();
@@ -431,6 +412,16 @@ const SkeletonPart *SkeletonDocument::findPart(QUuid partId) const
     return &it->second;
 }
 
+const SkeletonComponent *SkeletonDocument::findComponent(QUuid componentId) const
+{
+    if (componentId.isNull())
+        return &rootComponent;
+    auto it = componentMap.find(componentId);
+    if (it == componentMap.end())
+        return nullptr;
+    return &it->second;
+}
+
 void SkeletonDocument::scaleNodeByAddRadius(QUuid nodeId, float amount)
 {
     auto it = nodeMap.find(nodeId);
@@ -441,6 +432,9 @@ void SkeletonDocument::scaleNodeByAddRadius(QUuid nodeId, float amount)
     if (isPartReadonly(it->second.partId))
         return;
     it->second.setRadius(it->second.radius + amount);
+    auto part = partMap.find(it->second.partId);
+    if (part != partMap.end())
+        part->second.dirty = true;
     emit nodeRadiusChanged(nodeId);
     emit skeletonChanged();
 }
@@ -470,6 +464,9 @@ void SkeletonDocument::moveNodeBy(QUuid nodeId, float x, float y, float z)
         it->second.y += y;
     if (!zlocked)
         it->second.z += z;
+    auto part = partMap.find(it->second.partId);
+    if (part != partMap.end())
+        part->second.dirty = true;
     emit nodeOriginChanged(nodeId);
     emit skeletonChanged();
 }
@@ -482,19 +479,8 @@ void SkeletonDocument::moveOriginBy(float x, float y, float z)
         originY += y;
     if (!zlocked)
         originZ += z;
-    reviseOrigin();
     emit originChanged();
     emit skeletonChanged();
-}
-
-void SkeletonDocument::reviseOrigin()
-{
-    if (originX < 0.001)
-        originX = 0.001;
-    if (originY < 0.001)
-        originY = 0.001;
-    if (originZ < 0.001)
-        originZ = 0.001;
 }
 
 void SkeletonDocument::setNodeOrigin(QUuid nodeId, float x, float y, float z)
@@ -512,6 +498,9 @@ void SkeletonDocument::setNodeOrigin(QUuid nodeId, float x, float y, float z)
         it->second.y = y;
     if (!zlocked)
         it->second.z = z;
+    auto part = partMap.find(it->second.partId);
+    if (part != partMap.end())
+        part->second.dirty = true;
     emit nodeOriginChanged(nodeId);
     emit skeletonChanged();
 }
@@ -526,6 +515,9 @@ void SkeletonDocument::setNodeRadius(QUuid nodeId, float radius)
     if (isPartReadonly(it->second.partId))
         return;
     it->second.setRadius(radius);
+    auto part = partMap.find(it->second.partId);
+    if (part != partMap.end())
+        part->second.dirty = true;
     emit nodeRadiusChanged(nodeId);
     emit skeletonChanged();
 }
@@ -540,23 +532,10 @@ void SkeletonDocument::switchNodeXZ(QUuid nodeId)
     if (isPartReadonly(it->second.partId))
         return;
     std::swap(it->second.x, it->second.z);
+    auto part = partMap.find(it->second.partId);
+    if (part != partMap.end())
+        part->second.dirty = true;
     emit nodeOriginChanged(nodeId);
-    emit skeletonChanged();
-}
-
-void SkeletonDocument::setNodeBoneMark(QUuid nodeId, SkeletonBoneMark mark)
-{
-    auto it = nodeMap.find(nodeId);
-    if (it == nodeMap.end()) {
-        qDebug() << "Find node failed:" << nodeId;
-        return;
-    }
-    if (isPartReadonly(it->second.partId))
-        return;
-    if (it->second.boneMark == mark)
-        return;
-    it->second.boneMark = mark;
-    emit nodeBoneMarkChanged(nodeId);
     emit skeletonChanged();
 }
 
@@ -633,14 +612,42 @@ void SkeletonDocument::splitPartByEdge(std::vector<std::vector<QUuid>> *groups, 
     }
 }
 
+void SkeletonDocument::resetDirtyFlags()
+{
+    for (auto &part: partMap) {
+        part.second.dirty = false;
+    }
+    for (auto &component: componentMap) {
+        component.second.dirty = false;
+    }
+}
+
+void SkeletonDocument::markAllDirty()
+{
+    for (auto &part: partMap) {
+        part.second.dirty = true;
+    }
+}
+
 void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUuid> &limitNodeIds) const
 {
     std::set<QUuid> limitPartIds;
+    std::set<QUuid> limitComponentIds;
     for (const auto &nodeId: limitNodeIds) {
         const SkeletonNode *node = findNode(nodeId);
         if (!node)
             continue;
+        const SkeletonPart *part = findPart(node->partId);
+        if (!part)
+            continue;
         limitPartIds.insert(node->partId);
+        const SkeletonComponent *component = findComponent(part->componentId);
+        while (component) {
+            limitComponentIds.insert(component->id);
+            if (component->id.isNull())
+                break;
+            component = findComponent(component->parentId);
+        }
     }
     for (const auto &partIt : partMap) {
         if (!limitPartIds.empty() && limitPartIds.find(partIt.first) == limitPartIds.end())
@@ -654,7 +661,7 @@ void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUu
         part["xMirrored"] = partIt.second.xMirrored ? "true" : "false";
         part["zMirrored"] = partIt.second.zMirrored ? "true" : "false";
         part["rounded"] = partIt.second.rounded ? "true" : "false";
-        part["inverse"] = partIt.second.inverse ? "true" : "false";
+        part["dirty"] = partIt.second.dirty ? "true" : "false";
         if (partIt.second.hasColor)
             part["color"] = partIt.second.color.name();
         if (partIt.second.deformThicknessAdjusted())
@@ -675,8 +682,6 @@ void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUu
         node["y"] = QString::number(nodeIt.second.y);
         node["z"] = QString::number(nodeIt.second.z);
         node["partId"] = nodeIt.second.partId.toString();
-        if (nodeIt.second.boneMark != SkeletonBoneMark::None)
-            node["boneMark"] = SkeletonBoneMarkToString(nodeIt.second.boneMark);
         if (!nodeIt.second.name.isEmpty())
             node["name"] = nodeIt.second.name;
         snapshot->nodes[node["id"]] = node;
@@ -697,13 +702,41 @@ void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUu
             edge["name"] = edgeIt.second.name;
         snapshot->edges[edge["id"]] = edge;
     }
-    for (const auto &partIdIt: partIds) {
-        if (!limitPartIds.empty() && limitPartIds.find(partIdIt) == limitPartIds.end())
+    for (const auto &componentIt: componentMap) {
+        if (!limitComponentIds.empty() && limitComponentIds.find(componentIt.first) == limitComponentIds.end())
             continue;
-        snapshot->partIdList.push_back(partIdIt.toString());
+        std::map<QString, QString> component;
+        component["id"] = componentIt.second.id.toString();
+        if (!componentIt.second.name.isEmpty())
+            component["name"] = componentIt.second.name;
+        component["expanded"] = componentIt.second.expanded ? "true" : "false";
+        component["inverse"] = componentIt.second.inverse ? "true" : "false";
+        component["dirty"] = componentIt.second.dirty ? "true" : "false";
+        QStringList childIdList;
+        for (const auto &childId: componentIt.second.childrenIds) {
+            childIdList.append(childId.toString());
+        }
+        QString children = childIdList.join(",");
+        if (!children.isEmpty())
+            component["children"] = children;
+        QString linkData = componentIt.second.linkData();
+        if (!linkData.isEmpty()) {
+            component["linkData"] = linkData;
+            component["linkDataType"] = componentIt.second.linkDataType();
+        }
+        if (!componentIt.second.name.isEmpty())
+            component["name"] = componentIt.second.name;
+        snapshot->components[component["id"]] = component;
     }
-    
-    snapshot->animationParameters = animationParameters;
+    if (limitComponentIds.empty() || limitComponentIds.find(QUuid()) != limitComponentIds.end()) {
+        QStringList childIdList;
+        for (const auto &childId: rootComponent.childrenIds) {
+            childIdList.append(childId.toString());
+        }
+        QString children = childIdList.join(",");
+        if (!children.isEmpty())
+            snapshot->rootComponent["children"] = children;
+    }
     
     std::map<QString, QString> canvas;
     canvas["originX"] = QString::number(originX);
@@ -725,18 +758,15 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot)
         originZ = originZit->second.toFloat();
     }
     
-    for (const auto &ani: snapshot.animationParameters) {
-        for (const auto &param: ani.second) {
-            animationParameters[ani.first][param.first] = param.second;
-        }
-    }
-    
     std::set<QUuid> newAddedNodeIds;
     std::set<QUuid> newAddedEdgeIds;
     std::set<QUuid> newAddedPartIds;
+    std::set<QUuid> newAddedComponentIds;
+    
+    std::set<QUuid> inversePartIds;
     
     std::map<QUuid, QUuid> oldNewIdMap;
-    for (const auto &partKv : snapshot.parts) {
+    for (const auto &partKv: snapshot.parts) {
         SkeletonPart part;
         oldNewIdMap[QUuid(partKv.first)] = part.id;
         part.name = valueOfKeyInMapOrEmpty(partKv.second, "name");
@@ -747,7 +777,8 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot)
         part.xMirrored = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "xMirrored"));
         part.zMirrored = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "zMirrored"));
         part.rounded = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "rounded"));
-        part.inverse = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "inverse"));
+        if (isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "inverse")))
+            inversePartIds.insert(part.id);
         const auto &colorIt = partKv.second.find("color");
         if (colorIt != partKv.second.end()) {
             part.color = QColor(colorIt->second);
@@ -762,7 +793,7 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot)
         partMap[part.id] = part;
         newAddedPartIds.insert(part.id);
     }
-    for (const auto &nodeKv : snapshot.nodes) {
+    for (const auto &nodeKv: snapshot.nodes) {
         if (nodeKv.second.find("radius") == nodeKv.second.end() ||
                 nodeKv.second.find("x") == nodeKv.second.end() ||
                 nodeKv.second.find("y") == nodeKv.second.end() ||
@@ -777,11 +808,10 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot)
         node.y = valueOfKeyInMapOrEmpty(nodeKv.second, "y").toFloat();
         node.z = valueOfKeyInMapOrEmpty(nodeKv.second, "z").toFloat();
         node.partId = oldNewIdMap[QUuid(valueOfKeyInMapOrEmpty(nodeKv.second, "partId"))];
-        node.boneMark = SkeletonBoneMarkFromString(valueOfKeyInMapOrEmpty(nodeKv.second, "boneMark").toUtf8().constData());
         nodeMap[node.id] = node;
         newAddedNodeIds.insert(node.id);
     }
-    for (const auto &edgeKv : snapshot.edges) {
+    for (const auto &edgeKv: snapshot.edges) {
         if (edgeKv.second.find("from") == edgeKv.second.end() ||
                 edgeKv.second.find("to") == edgeKv.second.end() ||
                 edgeKv.second.find("partId") == edgeKv.second.end())
@@ -810,11 +840,52 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot)
             continue;
         partMap[nodeIt.second.partId].nodeIds.push_back(nodeIt.first);
     }
-    for (const auto &partIdIt: snapshot.partIdList) {
-        const auto partId = oldNewIdMap[QUuid(partIdIt)];
-        if (newAddedPartIds.find(partId) == newAddedPartIds.end())
+    for (const auto &componentKv: snapshot.components) {
+        QString linkData = valueOfKeyInMapOrEmpty(componentKv.second, "linkData");
+        QString linkDataType = valueOfKeyInMapOrEmpty(componentKv.second, "linkDataType");
+        SkeletonComponent component(QUuid(), linkData, linkDataType);
+        oldNewIdMap[QUuid(componentKv.first)] = component.id;
+        component.name = valueOfKeyInMapOrEmpty(componentKv.second, "name");
+        component.expanded = isTrueValueString(valueOfKeyInMapOrEmpty(componentKv.second, "expanded"));
+        component.inverse = isTrueValueString(valueOfKeyInMapOrEmpty(componentKv.second, "inverse"));
+        qDebug() << "Add component:" << component.id << " old:" << componentKv.first << "name:" << component.name;
+        if ("partId" == linkDataType) {
+            QUuid partId = oldNewIdMap[QUuid(linkData)];
+            component.linkToPartId = partId;
+            qDebug() << "Add part:" << partId << " from component:" << component.id;
+            partMap[partId].componentId = component.id;
+            if (inversePartIds.find(partId) != inversePartIds.end())
+                component.inverse = true;
+        }
+        componentMap[component.id] = component;
+        newAddedComponentIds.insert(component.id);
+    }
+    const auto &rootComponentChildren = snapshot.rootComponent.find("children");
+    if (rootComponentChildren != snapshot.rootComponent.end()) {
+        for (const auto &childId: rootComponentChildren->second.split(",")) {
+            if (childId.isEmpty())
+                continue;
+            QUuid componentId = oldNewIdMap[QUuid(childId)];
+            if (componentMap.find(componentId) == componentMap.end())
+                continue;
+            qDebug() << "Add root component:" << componentId;
+            rootComponent.addChild(componentId);
+        }
+    }
+    for (const auto &componentKv: snapshot.components) {
+        QUuid componentId = oldNewIdMap[QUuid(componentKv.first)];
+        if (componentMap.find(componentId) == componentMap.end())
             continue;
-        partIds.push_back(partId);
+        for (const auto &childId: valueOfKeyInMapOrEmpty(componentKv.second, "children").split(",")) {
+            if (childId.isEmpty())
+                continue;
+            QUuid childComponentId = oldNewIdMap[QUuid(childId)];
+            if (componentMap.find(childComponentId) == componentMap.end())
+                continue;
+            qDebug() << "Add child component:" << childComponentId << "to" << componentId;
+            componentMap[componentId].addChild(childComponentId);
+            componentMap[childComponentId].parentId = componentId;
+        }
     }
     
     for (const auto &nodeIt: newAddedNodeIds) {
@@ -827,7 +898,7 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot)
         emit partAdded(partIt);
     }
     
-    emit partListChanged();
+    emit componentChildrenChanged(QUuid());
     emit originChanged();
     emit skeletonChanged();
     
@@ -846,13 +917,14 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot)
 
 void SkeletonDocument::reset()
 {
-    originX = 0;
-    originY = 0;
-    originZ = 0;
+    originX = 0.0;
+    originY = 0.0;
+    originZ = 0.0;
     nodeMap.clear();
     edgeMap.clear();
     partMap.clear();
-    partIds.clear();
+    componentMap.clear();
+    rootComponent = SkeletonComponent();
     emit cleanup();
     emit skeletonChanged();
 }
@@ -870,13 +942,6 @@ MeshLoader *SkeletonDocument::takeResultMesh()
         return nullptr;
     MeshLoader *resultMesh = new MeshLoader(*m_resultMesh);
     return resultMesh;
-}
-
-MeshLoader *SkeletonDocument::takeResultSkeletonMesh()
-{
-    MeshLoader *resultSkeletonMesh = m_resultSkeletonMesh;
-    m_resultSkeletonMesh = nullptr;
-    return resultSkeletonMesh;
 }
 
 MeshLoader *SkeletonDocument::takeResultTextureMesh()
@@ -921,18 +986,18 @@ void SkeletonDocument::meshReady()
     
     qDebug() << "MeshLoader generation done";
     
-    m_postProcessResultIsObsolete = true;
+    m_isPostProcessResultObsolete = true;
     
     emit resultMeshChanged();
     
-    if (m_resultMeshIsObsolete) {
+    if (m_isResultMeshObsolete) {
         generateMesh();
     }
 }
 
-bool SkeletonDocument::postProcessResultIsObsolete() const
+bool SkeletonDocument::isPostProcessResultObsolete() const
 {
-    return m_postProcessResultIsObsolete;
+    return m_isPostProcessResultObsolete;
 }
 
 void SkeletonDocument::batchChangeBegin()
@@ -944,28 +1009,40 @@ void SkeletonDocument::batchChangeEnd()
 {
     m_batchChangeRefCount--;
     if (0 == m_batchChangeRefCount) {
-        if (m_resultMeshIsObsolete) {
+        if (m_isResultMeshObsolete) {
             generateMesh();
         }
     }
 }
 
+void SkeletonDocument::regenerateMesh()
+{
+    markAllDirty();
+    generateMesh();
+}
+
 void SkeletonDocument::generateMesh()
 {
     if (nullptr != m_meshGenerator || m_batchChangeRefCount > 0) {
-        m_resultMeshIsObsolete = true;
+        m_isResultMeshObsolete = true;
         return;
     }
     
     qDebug() << "MeshLoader generating..";
     
-    m_resultMeshIsObsolete = false;
+    settleOrigin();
+    
+    m_isResultMeshObsolete = false;
     
     QThread *thread = new QThread;
     
     SkeletonSnapshot *snapshot = new SkeletonSnapshot;
     toSnapshot(snapshot);
+    resetDirtyFlags();
     m_meshGenerator = new MeshGenerator(snapshot, thread);
+    m_meshGenerator->setGeneratedCacheContext(&m_generatedCacheContext);
+    if (nullptr != m_sharedContextWidget)
+        m_meshGenerator->setSharedContextWidget(m_sharedContextWidget);
     m_meshGenerator->moveToThread(thread);
     for (auto &part: partMap) {
         m_meshGenerator->addPartPreviewRequirement(part.first.toString());
@@ -980,13 +1057,13 @@ void SkeletonDocument::generateMesh()
 void SkeletonDocument::generateTexture()
 {
     if (nullptr != m_textureGenerator) {
-        m_textureIsObsolete = true;
+        m_isTextureObsolete = true;
         return;
     }
     
     qDebug() << "Texture guide generating..";
     
-    m_textureIsObsolete = false;
+    m_isTextureObsolete = false;
     
     QThread *thread = new QThread;
     m_textureGenerator = new TextureGenerator(*m_postProcessedResultContext, thread);
@@ -1027,7 +1104,7 @@ void SkeletonDocument::textureReady()
     
     emit resultTextureChanged();
     
-    if (m_textureIsObsolete) {
+    if (m_isTextureObsolete) {
         generateTexture();
     } else {
         checkExportReadyState();
@@ -1040,7 +1117,7 @@ void SkeletonDocument::bakeAmbientOcclusionTexture()
         return;
     }
 
-    if (nullptr == textureColorImage || m_textureIsObsolete)
+    if (nullptr == textureColorImage || m_isTextureObsolete)
         return;
 
     qDebug() << "Ambient occlusion texture baking..";
@@ -1102,58 +1179,16 @@ void SkeletonDocument::ambientOcclusionTextureReady()
     }
 }
 
-void SkeletonDocument::generateSkeleton()
-{
-    if (nullptr != m_skeletonGenerator) {
-        m_resultSkeletonIsObsolete = true;
-        return;
-    }
-    
-    qDebug() << "Skeleton generating..";
-    
-    m_resultSkeletonIsObsolete = false;
-    
-    QThread *thread = new QThread;
-    m_skeletonGenerator = new SkeletonGenerator(*m_postProcessedResultContext);
-    m_skeletonGenerator->moveToThread(thread);
-    connect(thread, &QThread::started, m_skeletonGenerator, &SkeletonGenerator::process);
-    connect(m_skeletonGenerator, &SkeletonGenerator::finished, this, &SkeletonDocument::skeletonReady);
-    connect(m_skeletonGenerator, &SkeletonGenerator::finished, thread, &QThread::quit);
-    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
-    thread->start();
-}
-
-void SkeletonDocument::skeletonReady()
-{
-    MeshLoader *resultSkeletonMesh = m_skeletonGenerator->takeResultSkeletonMesh();
-    
-    delete m_resultSkeletonMesh;
-    m_resultSkeletonMesh = resultSkeletonMesh;
-    
-    delete m_skeletonGenerator;
-    m_skeletonGenerator = nullptr;
-    
-    qDebug() << "Skeleton generation done";
-    
-    emit resultSkeletonChanged();
-    
-    if (m_resultSkeletonIsObsolete) {
-        generateSkeleton();
-    } else {
-        checkExportReadyState();
-    }
-}
-
 void SkeletonDocument::postProcess()
 {
     if (nullptr != m_postProcessor) {
-        m_postProcessResultIsObsolete = true;
+        m_isPostProcessResultObsolete = true;
         return;
     }
 
     qDebug() << "Post processing..";
 
-    m_postProcessResultIsObsolete = false;
+    m_isPostProcessResultObsolete = false;
 
     if (!m_currentMeshResultContext) {
         qDebug() << "MeshLoader is null";
@@ -1174,9 +1209,6 @@ void SkeletonDocument::postProcessedMeshResultReady()
 {
     delete m_postProcessedResultContext;
     m_postProcessedResultContext = m_postProcessor->takePostProcessedResultContext();
-    
-    delete m_jointNodeTree;
-    m_jointNodeTree = m_postProcessor->takeJointNodeTree();
 
     delete m_postProcessor;
     m_postProcessor = nullptr;
@@ -1185,19 +1217,14 @@ void SkeletonDocument::postProcessedMeshResultReady()
 
     emit postProcessedResultChanged();
 
-    if (m_postProcessResultIsObsolete) {
+    if (m_isPostProcessResultObsolete) {
         postProcess();
     }
 }
 
-MeshResultContext &SkeletonDocument::currentPostProcessedResultContext()
+const MeshResultContext &SkeletonDocument::currentPostProcessedResultContext() const
 {
     return *m_postProcessedResultContext;
-}
-
-JointNodeTree &SkeletonDocument::currentJointNodeTree()
-{
-    return *m_jointNodeTree;
 }
 
 void SkeletonDocument::setPartLockState(QUuid partId, bool locked)
@@ -1211,6 +1238,7 @@ void SkeletonDocument::setPartLockState(QUuid partId, bool locked)
         return;
     part->second.locked = locked;
     emit partLockStateChanged(partId);
+    emit optionsChanged();
 }
 
 void SkeletonDocument::setPartVisibleState(QUuid partId, bool visible)
@@ -1224,19 +1252,21 @@ void SkeletonDocument::setPartVisibleState(QUuid partId, bool visible)
         return;
     part->second.visible = visible;
     emit partVisibleStateChanged(partId);
+    emit optionsChanged();
 }
 
-void SkeletonDocument::setPartInverseState(QUuid partId, bool inverse)
+void SkeletonDocument::setComponentInverseState(QUuid componentId, bool inverse)
 {
-    auto part = partMap.find(partId);
-    if (part == partMap.end()) {
-        qDebug() << "Part not found:" << partId;
+    auto component = componentMap.find(componentId);
+    if (component == componentMap.end()) {
+        qDebug() << "Component not found:" << componentId;
         return;
     }
-    if (part->second.inverse == inverse)
+    if (component->second.inverse == inverse)
         return;
-    part->second.inverse = inverse;
-    emit partInverseStateChanged(partId);
+    component->second.inverse = inverse;
+    component->second.dirty = true;
+    emit componentInverseStateChanged(componentId);
     emit skeletonChanged();
 }
 
@@ -1250,6 +1280,7 @@ void SkeletonDocument::setPartSubdivState(QUuid partId, bool subdived)
     if (part->second.subdived == subdived)
         return;
     part->second.subdived = subdived;
+    part->second.dirty = true;
     emit partSubdivStateChanged(partId);
     emit skeletonChanged();
 }
@@ -1264,78 +1295,151 @@ void SkeletonDocument::setPartDisableState(QUuid partId, bool disabled)
     if (part->second.disabled == disabled)
         return;
     part->second.disabled = disabled;
+    part->second.dirty = true;
     emit partDisableStateChanged(partId);
     emit skeletonChanged();
 }
 
-void SkeletonDocument::movePartUp(QUuid partId)
+const SkeletonComponent *SkeletonDocument::findComponentParent(QUuid componentId) const
 {
-    auto part = partMap.find(partId);
-    if (part == partMap.end()) {
-        qDebug() << "Part not found:" << partId;
-        return;
+    auto component = componentMap.find(componentId);
+    if (component == componentMap.end()) {
+        qDebug() << "Component not found:" << componentId;
+        return nullptr;
     }
     
-    auto it = std::find(partIds.begin(), partIds.end(), partId);
-    if (it == partIds.end()) {
-        qDebug() << "Part not found in list:" << partId;
-        return;
+    if (component->second.parentId.isNull())
+        return &rootComponent;
+    
+    return (SkeletonComponent *)findComponent(component->second.parentId);
+}
+
+QUuid SkeletonDocument::findComponentParentId(QUuid componentId) const
+{
+    auto component = componentMap.find(componentId);
+    if (component == componentMap.end()) {
+        qDebug() << "Component not found:" << componentId;
+        return QUuid();
     }
     
-    auto index = std::distance(partIds.begin(), it);
-    if (index == 0)
+    return component->second.parentId;
+}
+
+void SkeletonDocument::moveComponentUp(QUuid componentId)
+{
+    SkeletonComponent *parent = (SkeletonComponent *)findComponentParent(componentId);
+    if (nullptr == parent)
         return;
-    std::swap(partIds[index - 1], partIds[index]);
-    emit partListChanged();
+    
+    QUuid parentId = findComponentParentId(componentId);
+    
+    parent->moveChildUp(componentId);
+    parent->dirty = true;
+    emit componentChildrenChanged(parentId);
     emit skeletonChanged();
 }
 
-void SkeletonDocument::movePartDown(QUuid partId)
+void SkeletonDocument::moveComponentDown(QUuid componentId)
 {
-    auto part = partMap.find(partId);
-    if (part == partMap.end()) {
-        qDebug() << "Part not found:" << partId;
+    SkeletonComponent *parent = (SkeletonComponent *)findComponentParent(componentId);
+    if (nullptr == parent)
         return;
-    }
     
-    auto it = std::find(partIds.begin(), partIds.end(), partId);
-    if (it == partIds.end()) {
-        qDebug() << "Part not found in list:" << partId;
-        return;
-    }
+    QUuid parentId = findComponentParentId(componentId);
     
-    auto index = std::distance(partIds.begin(), it);
-    if (index == (int)partIds.size() - 1)
-        return;
-    std::swap(partIds[index], partIds[index + 1]);
-    emit partListChanged();
+    parent->moveChildDown(componentId);
+    parent->dirty = true;
+    emit componentChildrenChanged(parentId);
     emit skeletonChanged();
 }
 
-void SkeletonDocument::movePartToTop(QUuid partId)
+void SkeletonDocument::moveComponentToTop(QUuid componentId)
 {
-    auto part = partMap.find(partId);
-    if (part == partMap.end()) {
-        qDebug() << "Part not found:" << partId;
+    SkeletonComponent *parent = (SkeletonComponent *)findComponentParent(componentId);
+    if (nullptr == parent)
         return;
-    }
     
-    auto it = std::find(partIds.begin(), partIds.end(), partId);
-    if (it == partIds.end()) {
-        qDebug() << "Part not found in list:" << partId;
-        return;
-    }
+    QUuid parentId = findComponentParentId(componentId);
     
-    auto index = std::distance(partIds.begin(), it);
-    if (index == 0)
-        return;
-    for (int i = index; i >= 1; i--)
-        std::swap(partIds[i - 1], partIds[i]);
-    emit partListChanged();
+    parent->moveChildToTop(componentId);
+    parent->dirty = true;
+    emit componentChildrenChanged(parentId);
     emit skeletonChanged();
 }
 
-void SkeletonDocument::movePartToBottom(QUuid partId)
+void SkeletonDocument::moveComponentToBottom(QUuid componentId)
+{
+    SkeletonComponent *parent = (SkeletonComponent *)findComponentParent(componentId);
+    if (nullptr == parent)
+        return;
+    
+    QUuid parentId = findComponentParentId(componentId);
+    
+    parent->moveChildToBottom(componentId);
+    parent->dirty = true;
+    emit componentChildrenChanged(parentId);
+    emit skeletonChanged();
+}
+
+void SkeletonDocument::renameComponent(QUuid componentId, QString name)
+{
+    auto component = componentMap.find(componentId);
+    if (component == componentMap.end()) {
+        qDebug() << "Component not found:" << componentId;
+        return;
+    }
+    
+    if (component->second.name == name)
+        return;
+    
+    if (!name.trimmed().isEmpty())
+        component->second.name = name;
+    emit componentNameChanged(componentId);
+    emit optionsChanged();
+}
+
+void SkeletonDocument::setComponentExpandState(QUuid componentId, bool expanded)
+{
+    auto component = componentMap.find(componentId);
+    if (component == componentMap.end()) {
+        qDebug() << "Component not found:" << componentId;
+        return;
+    }
+    
+    if (component->second.expanded == expanded)
+        return;
+    
+    component->second.expanded = expanded;
+    emit componentExpandStateChanged(componentId);
+    emit optionsChanged();
+}
+
+void SkeletonDocument::createNewComponentAndMoveThisIn(QUuid componentId)
+{
+    auto component = componentMap.find(componentId);
+    if (component == componentMap.end()) {
+        qDebug() << "Component not found:" << componentId;
+        return;
+    }
+    
+    SkeletonComponent *oldParent = (SkeletonComponent *)findComponentParent(componentId);
+    
+    SkeletonComponent newParent(QUuid::createUuid());
+    newParent.name = tr("Group") + " " + QString::number(componentMap.size() - partMap.size() + 1);
+    
+    oldParent->replaceChild(componentId, newParent.id);
+    newParent.parentId = oldParent->id;
+    newParent.addChild(componentId);
+    componentMap[newParent.id] = newParent;
+    
+    component->second.parentId = newParent.id;
+    
+    emit componentChildrenChanged(oldParent->id);
+    emit componentAdded(newParent.id);
+    emit optionsChanged();
+}
+
+void SkeletonDocument::removePart(QUuid partId)
 {
     auto part = partMap.find(partId);
     if (part == partMap.end()) {
@@ -1343,18 +1447,199 @@ void SkeletonDocument::movePartToBottom(QUuid partId)
         return;
     }
     
-    auto it = std::find(partIds.begin(), partIds.end(), partId);
-    if (it == partIds.end()) {
-        qDebug() << "Part not found in list:" << partId;
+    if (!part->second.componentId.isNull()) {
+        removeComponent(part->second.componentId);
         return;
     }
     
-    auto index = std::distance(partIds.begin(), it);
-    if (index == (int)partIds.size() - 1)
+    removePartDontCareComponent(partId);
+}
+
+void SkeletonDocument::removePartDontCareComponent(QUuid partId)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
         return;
-    for (int i = index; i <= (int)partIds.size() - 2; i++)
-        std::swap(partIds[i], partIds[i + 1]);
-    emit partListChanged();
+    }
+    
+    std::vector<QUuid> removedNodeIds;
+    std::vector<QUuid> removedEdgeIds;
+    
+    for (auto nodeIt = nodeMap.begin(); nodeIt != nodeMap.end();) {
+        if (nodeIt->second.partId != partId) {
+            nodeIt++;
+            continue;
+        }
+        removedNodeIds.push_back(nodeIt->second.id);
+        nodeIt = nodeMap.erase(nodeIt);
+    }
+    
+    for (auto edgeIt = edgeMap.begin(); edgeIt != edgeMap.end();) {
+        if (edgeIt->second.partId != partId) {
+            edgeIt++;
+            continue;
+        }
+        removedEdgeIds.push_back(edgeIt->second.id);
+        edgeIt = edgeMap.erase(edgeIt);
+    }
+    
+    partMap.erase(part);
+    
+    for (const auto &nodeId: removedNodeIds) {
+        emit nodeRemoved(nodeId);
+    }
+    for (const auto &edgeId: removedEdgeIds) {
+        emit edgeRemoved(edgeId);
+    }
+    emit partRemoved(partId);
+}
+
+void SkeletonDocument::addPartToComponent(QUuid partId, QUuid componentId)
+{
+    SkeletonComponent child(QUuid::createUuid());
+    
+    if (!componentId.isNull()) {
+        auto parentComponent = componentMap.find(componentId);
+        if (parentComponent == componentMap.end()) {
+            componentId = QUuid();
+            rootComponent.addChild(child.id);
+        } else {
+            parentComponent->second.addChild(child.id);
+        }
+    } else {
+        rootComponent.addChild(child.id);
+    }
+    
+    partMap[partId].componentId = child.id;
+    child.linkToPartId = partId;
+    child.parentId = componentId;
+    componentMap[child.id] = child;
+    
+    emit componentChildrenChanged(componentId);
+    emit componentAdded(child.id);
+}
+
+void SkeletonDocument::removeComponent(QUuid componentId)
+{
+    removeComponentRecursively(componentId);
+    emit skeletonChanged();
+}
+
+void SkeletonDocument::removeComponentRecursively(QUuid componentId)
+{
+    auto component = componentMap.find(componentId);
+    if (component == componentMap.end()) {
+        qDebug() << "Component not found:" << componentId;
+        return;
+    }
+    
+    for (const auto &childId: component->second.childrenIds) {
+        removeComponent(childId);
+    }
+    
+    if (!component->second.linkToPartId.isNull()) {
+        removePartDontCareComponent(component->second.linkToPartId);
+    }
+    
+    QUuid parentId = component->second.parentId;
+    if (!parentId.isNull()) {
+        auto parentComponent = componentMap.find(parentId);
+        if (parentComponent == componentMap.end()) {
+            qDebug() << "Component not found:" << parentId;
+        }
+        parentComponent->second.dirty = true;
+        parentComponent->second.removeChild(componentId);
+    } else {
+        rootComponent.removeChild(componentId);
+    }
+    
+    componentMap.erase(component);
+    emit componentRemoved(componentId);
+    emit componentChildrenChanged(parentId);
+}
+
+void SkeletonDocument::setCurrentCanvasComponentId(QUuid componentId)
+{
+    m_currentCanvasComponentId = componentId;
+}
+
+void SkeletonDocument::addComponent(QUuid parentId)
+{
+    SkeletonComponent component(QUuid::createUuid());
+    
+    if (!parentId.isNull()) {
+        auto parentComponent = componentMap.find(parentId);
+        if (parentComponent == componentMap.end()) {
+            qDebug() << "Component not found:" << parentId;
+            return;
+        }
+        parentComponent->second.addChild(component.id);
+    } else {
+        rootComponent.addChild(component.id);
+    }
+    
+    component.parentId = parentId;
+    componentMap[component.id] = component;
+    
+    emit componentChildrenChanged(parentId);
+    emit componentAdded(component.id);
+}
+
+bool SkeletonDocument::isDescendantComponent(QUuid componentId, QUuid suspiciousId)
+{
+    const SkeletonComponent *loopComponent = findComponentParent(suspiciousId);
+    while (nullptr != loopComponent) {
+        if (loopComponent->id == componentId)
+            return true;
+        loopComponent = findComponentParent(loopComponent->parentId);
+    }
+    return false;
+}
+
+void SkeletonDocument::moveComponent(QUuid componentId, QUuid toParentId)
+{
+    if (componentId == toParentId)
+        return;
+
+    auto component = componentMap.find(componentId);
+    if (component == componentMap.end()) {
+        qDebug() << "Component not found:" << componentId;
+        return;
+    }
+    
+    if (component->second.parentId == toParentId)
+        return;
+    
+    if (isDescendantComponent(componentId, toParentId))
+        return;
+    
+    if (component->second.parentId.isNull()) {
+        rootComponent.removeChild(componentId);
+        emit componentChildrenChanged(rootComponent.id);
+    } else {
+        auto oldParent = componentMap.find(component->second.parentId);
+        if (oldParent != componentMap.end()) {
+            oldParent->second.dirty = true;
+            oldParent->second.removeChild(componentId);
+            emit componentChildrenChanged(oldParent->second.id);
+        }
+    }
+    
+    component->second.parentId = toParentId;
+    
+    if (toParentId.isNull()) {
+        rootComponent.addChild(componentId);
+        emit componentChildrenChanged(rootComponent.id);
+    } else {
+        auto newParent = componentMap.find(toParentId);
+        if (newParent != componentMap.end()) {
+            newParent->second.dirty = true;
+            newParent->second.addChild(componentId);
+            emit componentChildrenChanged(newParent->second.id);
+        }
+    }
+    
     emit skeletonChanged();
 }
 
@@ -1370,7 +1655,7 @@ void SkeletonDocument::settleOrigin()
     originX = mainProfile.x() + mainProfile.width() / 2;
     originY = mainProfile.y() + mainProfile.height() / 2;
     originZ = sideProfile.x() + sideProfile.width() / 2;
-    reviseOrigin();
+    markAllDirty();
     emit originChanged();
 }
 
@@ -1384,6 +1669,7 @@ void SkeletonDocument::setPartXmirrorState(QUuid partId, bool mirrored)
     if (part->second.xMirrored == mirrored)
         return;
     part->second.xMirrored = mirrored;
+    part->second.dirty = true;
     settleOrigin();
     emit partXmirrorStateChanged(partId);
     emit skeletonChanged();
@@ -1399,6 +1685,7 @@ void SkeletonDocument::setPartZmirrorState(QUuid partId, bool mirrored)
     if (part->second.zMirrored == mirrored)
         return;
     part->second.zMirrored = mirrored;
+    part->second.dirty = true;
     settleOrigin();
     emit partZmirrorStateChanged(partId);
     emit skeletonChanged();
@@ -1412,6 +1699,7 @@ void SkeletonDocument::setPartDeformThickness(QUuid partId, float thickness)
         return;
     }
     part->second.setDeformThickness(thickness);
+    part->second.dirty = true;
     emit partDeformThicknessChanged(partId);
     emit skeletonChanged();
 }
@@ -1424,6 +1712,7 @@ void SkeletonDocument::setPartDeformWidth(QUuid partId, float width)
         return;
     }
     part->second.setDeformWidth(width);
+    part->second.dirty = true;
     emit partDeformWidthChanged(partId);
     emit skeletonChanged();
 }
@@ -1438,6 +1727,7 @@ void SkeletonDocument::setPartRoundState(QUuid partId, bool rounded)
     if (part->second.rounded == rounded)
         return;
     part->second.rounded = rounded;
+    part->second.dirty = true;
     emit partRoundStateChanged(partId);
     emit skeletonChanged();
 }
@@ -1453,6 +1743,7 @@ void SkeletonDocument::setPartColorState(QUuid partId, bool hasColor, QColor col
         return;
     part->second.hasColor = hasColor;
     part->second.color = color;
+    part->second.dirty = true;
     emit partColorStateChanged(partId);
     emit skeletonChanged();
 }
@@ -1566,31 +1857,13 @@ void SkeletonDocument::setZlockState(bool locked)
 
 bool SkeletonDocument::isExportReady() const
 {
-    if (m_resultMeshIsObsolete ||
-            m_resultSkeletonIsObsolete ||
-            m_textureIsObsolete ||
-            m_postProcessResultIsObsolete ||
+    if (m_isResultMeshObsolete ||
+            m_isTextureObsolete ||
+            m_isPostProcessResultObsolete ||
             m_meshGenerator ||
-            m_skeletonGenerator ||
             m_textureGenerator ||
-            m_postProcessor ||
-            !allAnimationClipsReady())
+            m_postProcessor)
         return false;
-    return true;
-}
-
-bool SkeletonDocument::allAnimationClipsReady() const
-{
-    for (const auto &clipName: AnimationClipGenerator::supportedClipNames) {
-        const auto &findClip = m_animationClipContexts.find(clipName);
-        if (findClip == m_animationClipContexts.end())
-            return false;
-        const auto &clipContext = findClip->second;
-        if (nullptr != clipContext.clipGenerator)
-            return false;
-        if (clipContext.isObsolete)
-            return false;
-    }
     return true;
 }
 
@@ -1598,61 +1871,6 @@ void SkeletonDocument::checkExportReadyState()
 {
     if (isExportReady())
         emit exportReady();
-}
-
-void SkeletonDocument::generateAnimationClip(QString clipName)
-{
-    auto &clipContext = m_animationClipContexts[clipName];
-    if (nullptr != clipContext.clipGenerator) {
-        clipContext.isObsolete = true;
-        return;
-    }
-    
-    qDebug() << "Animation clip [" << clipName << "] generating for document..";
-    
-    clipContext.isObsolete = false;
-    
-    QThread *thread = new QThread;
-    clipContext.clipGenerator = new AnimationClipGenerator(currentPostProcessedResultContext(),
-        currentJointNodeTree(),
-        clipName, animationParameters[clipName], false);
-    clipContext.clipGenerator->moveToThread(thread);
-    connect(thread, &QThread::started, clipContext.clipGenerator, &AnimationClipGenerator::process);
-    connect(clipContext.clipGenerator, &AnimationClipGenerator::finished, [=] {
-        animationClipReady(clipName);
-    });
-    connect(clipContext.clipGenerator, &AnimationClipGenerator::finished, thread, &QThread::quit);
-    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
-    thread->start();
-}
-
-void SkeletonDocument::animationClipReady(QString clipName)
-{
-    auto &clipContext = m_animationClipContexts[clipName];
-    
-    clipContext.times = clipContext.clipGenerator->times();
-    clipContext.frames = clipContext.clipGenerator->frames();
-    
-    delete clipContext.clipGenerator;
-    clipContext.clipGenerator = nullptr;
-    
-    qDebug() << "Animation clip [" << clipName << "] generation done";
-    
-    if (clipContext.isObsolete)
-        generateAnimationClip(clipName);
-    else
-        checkExportReadyState();
-}
-
-void SkeletonDocument::generateAllAnimationClips()
-{
-    for (const auto &clipName: AnimationClipGenerator::supportedClipNames)
-        generateAnimationClip(clipName);
-}
-
-const std::map<QString, AnimationClipContext> &SkeletonDocument::animationClipContexts()
-{
-    return m_animationClipContexts;
 }
 
 void SkeletonDocument::findAllNeighbors(QUuid nodeId, std::set<QUuid> &neighbors) const
@@ -1680,3 +1898,154 @@ void SkeletonDocument::findAllNeighbors(QUuid nodeId, std::set<QUuid> &neighbors
         findAllNeighbors(neighborNodeId, neighbors);
     }
 }
+
+void SkeletonDocument::setSharedContextWidget(QOpenGLWidget *sharedContextWidget)
+{
+    m_sharedContextWidget = sharedContextWidget;
+}
+
+void SkeletonDocument::collectComponentDescendantParts(QUuid componentId, std::vector<QUuid> &partIds) const
+{
+    const SkeletonComponent *component = findComponent(componentId);
+    if (nullptr == component)
+        return;
+    
+    if (!component->linkToPartId.isNull()) {
+        partIds.push_back(component->linkToPartId);
+        return;
+    }
+    
+    for (const auto &childId: component->childrenIds) {
+        collectComponentDescendantParts(childId, partIds);
+    }
+}
+
+void SkeletonDocument::collectComponentDescendantComponents(QUuid componentId, std::vector<QUuid> &componentIds)
+{
+    const SkeletonComponent *component = findComponent(componentId);
+    if (nullptr == component)
+        return;
+    
+    if (!component->linkToPartId.isNull()) {
+        return;
+    }
+    
+    componentIds.push_back(component->id);
+
+    for (const auto &childId: component->childrenIds) {
+        collectComponentDescendantComponents(childId, componentIds);
+    }
+}
+
+void SkeletonDocument::hideOtherComponents(QUuid componentId)
+{
+    std::vector<QUuid> partIds;
+    collectComponentDescendantParts(componentId, partIds);
+    std::set<QUuid> partIdSet;
+    for (const auto &partId: partIds) {
+        partIdSet.insert(partId);
+    }
+    for (const auto &part: partMap) {
+        if (partIdSet.find(part.first) != partIdSet.end())
+            continue;
+        setPartVisibleState(part.first, false);
+    }
+}
+
+void SkeletonDocument::lockOtherComponents(QUuid componentId)
+{
+    std::vector<QUuid> partIds;
+    collectComponentDescendantParts(componentId, partIds);
+    std::set<QUuid> partIdSet;
+    for (const auto &partId: partIds) {
+        partIdSet.insert(partId);
+    }
+    for (const auto &part: partMap) {
+        if (partIdSet.find(part.first) != partIdSet.end())
+            continue;
+        setPartLockState(part.first, true);
+    }
+}
+
+void SkeletonDocument::hideAllComponents()
+{
+    for (const auto &part: partMap) {
+        setPartVisibleState(part.first, false);
+    }
+}
+
+void SkeletonDocument::showAllComponents()
+{
+    for (const auto &part: partMap) {
+        setPartVisibleState(part.first, true);
+    }
+}
+
+void SkeletonDocument::collapseAllComponents()
+{
+    for (const auto &component: componentMap) {
+        if (!component.second.linkToPartId.isNull())
+            continue;
+        setComponentExpandState(component.first, false);
+    }
+}
+
+void SkeletonDocument::expandAllComponents()
+{
+    for (const auto &component: componentMap) {
+        if (!component.second.linkToPartId.isNull())
+            continue;
+        setComponentExpandState(component.first, true);
+    }
+}
+
+void SkeletonDocument::lockAllComponents()
+{
+    for (const auto &part: partMap) {
+        setPartLockState(part.first, true);
+    }
+}
+
+void SkeletonDocument::unlockAllComponents()
+{
+    for (const auto &part: partMap) {
+        setPartLockState(part.first, false);
+    }
+}
+
+void SkeletonDocument::hideDescendantComponents(QUuid componentId)
+{
+    std::vector<QUuid> partIds;
+    collectComponentDescendantParts(componentId, partIds);
+    for (const auto &partId: partIds) {
+        setPartVisibleState(partId, false);
+    }
+}
+
+void SkeletonDocument::showDescendantComponents(QUuid componentId)
+{
+    std::vector<QUuid> partIds;
+    collectComponentDescendantParts(componentId, partIds);
+    for (const auto &partId: partIds) {
+        setPartVisibleState(partId, true);
+    }
+}
+
+void SkeletonDocument::lockDescendantComponents(QUuid componentId)
+{
+    std::vector<QUuid> partIds;
+    collectComponentDescendantParts(componentId, partIds);
+    for (const auto &partId: partIds) {
+        setPartLockState(partId, true);
+    }
+}
+
+void SkeletonDocument::unlockDescendantComponents(QUuid componentId)
+{
+    std::vector<QUuid> partIds;
+    collectComponentDescendantParts(componentId, partIds);
+    for (const auto &partId: partIds) {
+        setPartLockState(partId, false);
+    }
+}
+

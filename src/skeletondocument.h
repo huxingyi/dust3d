@@ -8,6 +8,8 @@
 #include <deque>
 #include <QImage>
 #include <cmath>
+#include <algorithm>
+#include <QOpenGLWidget>
 #include "skeletonsnapshot.h"
 #include "meshloader.h"
 #include "meshgenerator.h"
@@ -16,9 +18,6 @@
 #include "texturegenerator.h"
 #include "meshresultpostprocessor.h"
 #include "ambientocclusionbaker.h"
-#include "skeletonbonemark.h"
-#include "animationclipgenerator.h"
-#include "jointnodetree.h"
 
 class SkeletonNode
 {
@@ -27,8 +26,7 @@ public:
         x(0),
         y(0),
         z(0),
-        radius(0),
-        boneMark(SkeletonBoneMark::None)
+        radius(0)
     {
         id = withId.isNull() ? QUuid::createUuid() : withId;
     }
@@ -47,7 +45,6 @@ public:
     float y;
     float z;
     float radius;
-    SkeletonBoneMark boneMark;
     std::vector<QUuid> edgeIds;
 };
 
@@ -86,9 +83,10 @@ public:
     bool rounded;
     QColor color;
     bool hasColor;
-    bool inverse;
     QImage preview;
+    QUuid componentId;
     std::vector<QUuid> nodeIds;
+    bool dirty;
     SkeletonPart(const QUuid &withId=QUuid()) :
         visible(true),
         locked(false),
@@ -101,7 +99,7 @@ public:
         rounded(false),
         color(Theme::white),
         hasColor(false),
-        inverse(false)
+        dirty(true)
     {
         id = withId.isNull() ? QUuid::createUuid() : withId;
     }
@@ -150,7 +148,7 @@ public:
         rounded = other.rounded;
         color = other.color;
         hasColor = other.hasColor;
-        inverse = other.inverse;
+        componentId = other.componentId;
     }
 };
 
@@ -176,13 +174,121 @@ enum class SkeletonDocumentEditMode
     ZoomOut
 };
 
-class AnimationClipContext
+class SkeletonComponent
 {
 public:
-    bool isObsolete = true;
-    AnimationClipGenerator *clipGenerator = nullptr;
-    std::vector<float> times;
-    std::vector<RigFrame> frames;
+    SkeletonComponent()
+    {
+    }
+    SkeletonComponent(const QUuid &withId, const QString &linkData=QString(), const QString &linkDataType=QString())
+    {
+        id = withId.isNull() ? QUuid::createUuid() : withId;
+        if (!linkData.isEmpty()) {
+            if ("partId" == linkDataType) {
+                linkToPartId = QUuid(linkData);
+            }
+        }
+    }
+    QUuid id;
+    QString name;
+    QUuid linkToPartId;
+    QUuid parentId;
+    bool expanded = true;
+    bool inverse = false;
+    bool dirty = true;
+    std::vector<QUuid> childrenIds;
+    QString linkData() const
+    {
+        return linkToPartId.isNull() ? QString() : linkToPartId.toString();
+    }
+    QString linkDataType() const
+    {
+        return linkToPartId.isNull() ? QString() : QString("partId");
+    }
+    void addChild(QUuid childId)
+    {
+        if (m_childrenIdSet.find(childId) != m_childrenIdSet.end())
+            return;
+        m_childrenIdSet.insert(childId);
+        childrenIds.push_back(childId);
+    }
+    void removeChild(QUuid childId)
+    {
+        if (m_childrenIdSet.find(childId) == m_childrenIdSet.end())
+            return;
+        m_childrenIdSet.erase(childId);
+        auto findResult = std::find(childrenIds.begin(), childrenIds.end(), childId);
+        if (findResult != childrenIds.end())
+            childrenIds.erase(findResult);
+    }
+    void replaceChild(QUuid childId, QUuid newId)
+    {
+        if (m_childrenIdSet.find(childId) == m_childrenIdSet.end())
+            return;
+        if (m_childrenIdSet.find(newId) != m_childrenIdSet.end())
+            return;
+        m_childrenIdSet.erase(childId);
+        m_childrenIdSet.insert(newId);
+        auto findResult = std::find(childrenIds.begin(), childrenIds.end(), childId);
+        if (findResult != childrenIds.end())
+            *findResult = newId;
+    }
+    void moveChildUp(QUuid childId)
+    {
+        auto it = std::find(childrenIds.begin(), childrenIds.end(), childId);
+        if (it == childrenIds.end()) {
+            qDebug() << "Child not found in list:" << childId;
+            return;
+        }
+        
+        auto index = std::distance(childrenIds.begin(), it);
+        if (index == 0)
+            return;
+        std::swap(childrenIds[index - 1], childrenIds[index]);
+    }
+    void moveChildDown(QUuid childId)
+    {
+        auto it = std::find(childrenIds.begin(), childrenIds.end(), childId);
+        if (it == childrenIds.end()) {
+            qDebug() << "Child not found in list:" << childId;
+            return;
+        }
+        
+        auto index = std::distance(childrenIds.begin(), it);
+        if (index == (int)childrenIds.size() - 1)
+            return;
+        std::swap(childrenIds[index], childrenIds[index + 1]);
+    }
+    void moveChildToTop(QUuid childId)
+    {
+        auto it = std::find(childrenIds.begin(), childrenIds.end(), childId);
+        if (it == childrenIds.end()) {
+            qDebug() << "Child not found in list:" << childId;
+            return;
+        }
+        
+        auto index = std::distance(childrenIds.begin(), it);
+        if (index == 0)
+            return;
+        for (int i = index; i >= 1; i--)
+            std::swap(childrenIds[i - 1], childrenIds[i]);
+    }
+    void moveChildToBottom(QUuid childId)
+    {
+        auto it = std::find(childrenIds.begin(), childrenIds.end(), childId);
+        if (it == childrenIds.end()) {
+            qDebug() << "Child not found in list:" << childId;
+            return;
+        }
+        
+        auto index = std::distance(childrenIds.begin(), it);
+        if (index == (int)childrenIds.size() - 1)
+            return;
+        for (int i = index; i <= (int)childrenIds.size() - 2; i++)
+            std::swap(childrenIds[i], childrenIds[i + 1]);
+    }
+private:
+    std::set<QUuid> m_childrenIdSet;
 };
 
 class SkeletonDocument : public QObject
@@ -193,14 +299,16 @@ signals:
     void nodeAdded(QUuid nodeId);
     void edgeAdded(QUuid edgeId);
     void partRemoved(QUuid partId);
-    void partListChanged();
+    void componentNameChanged(QUuid componentId);
+    void componentChildrenChanged(QUuid componentId);
+    void componentRemoved(QUuid componentId);
+    void componentAdded(QUuid componentId);
+    void componentExpandStateChanged(QUuid componentId);
     void nodeRemoved(QUuid nodeId);
     void edgeRemoved(QUuid edgeId);
     void nodeRadiusChanged(QUuid nodeId);
-    void nodeBoneMarkChanged(QUuid nodeId);
     void nodeOriginChanged(QUuid nodeId);
     void edgeChanged(QUuid edgeId);
-    void partChanged(QUuid partId);
     void partPreviewChanged(QUuid partId);
     void resultMeshChanged();
     void turnaroundChanged();
@@ -220,7 +328,7 @@ signals:
     void partDeformWidthChanged(QUuid partId);
     void partRoundStateChanged(QUuid partId);
     void partColorStateChanged(QUuid partId);
-    void partInverseStateChanged(QUuid partId);
+    void componentInverseStateChanged(QUuid partId);
     void cleanup();
     void originChanged();
     void xlockStateChanged();
@@ -235,6 +343,7 @@ signals:
     void uncheckAll();
     void checkNode(QUuid nodeId);
     void checkEdge(QUuid edgeId);
+    void optionsChanged();
 public: // need initialize
     float originX;
     float originY;
@@ -254,8 +363,8 @@ public:
     std::map<QUuid, SkeletonPart> partMap;
     std::map<QUuid, SkeletonNode> nodeMap;
     std::map<QUuid, SkeletonEdge> edgeMap;
-    std::vector<QUuid> partIds;
-    std::map<QString, std::map<QString, QString>> animationParameters;
+    std::map<QUuid, SkeletonComponent> componentMap;
+    SkeletonComponent rootComponent;
     QImage turnaround;
     QImage preview;
     void toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUuid> &limitNodeIds=std::set<QUuid>()) const;
@@ -265,23 +374,24 @@ public:
     const SkeletonEdge *findEdge(QUuid edgeId) const;
     const SkeletonPart *findPart(QUuid partId) const;
     const SkeletonEdge *findEdgeByNodes(QUuid firstNodeId, QUuid secondNodeId) const;
+    const SkeletonComponent *findComponent(QUuid componentId) const;
+    const SkeletonComponent *findComponentParent(QUuid componentId) const;
+    QUuid findComponentParentId(QUuid componentId) const;
     MeshLoader *takeResultMesh();
-    MeshLoader *takeResultSkeletonMesh();
     MeshLoader *takeResultTextureMesh();
     void updateTurnaround(const QImage &image);
+    void setSharedContextWidget(QOpenGLWidget *sharedContextWidget);
     bool hasPastableContentInClipboard() const;
     bool undoable() const;
     bool redoable() const;
     bool isNodeEditable(QUuid nodeId) const;
     bool isEdgeEditable(QUuid edgeId) const;
     bool originSettled() const;
-    MeshResultContext &currentPostProcessedResultContext();
-    JointNodeTree &currentJointNodeTree();
+    const MeshResultContext &currentPostProcessedResultContext() const;
     bool isExportReady() const;
-    bool allAnimationClipsReady() const;
-    bool postProcessResultIsObsolete() const;
-    const std::map<QString, AnimationClipContext> &animationClipContexts();
+    bool isPostProcessResultObsolete() const;
     void findAllNeighbors(QUuid nodeId, std::set<QUuid> &neighbors) const;
+    void collectComponentDescendantParts(QUuid componentId, std::vector<QUuid> &partIds) const;
 public slots:
     void removeNode(QUuid nodeId);
     void removeEdge(QUuid edgeId);
@@ -291,25 +401,20 @@ public slots:
     void moveNodeBy(QUuid nodeId, float x, float y, float z);
     void setNodeOrigin(QUuid nodeId, float x, float y, float z);
     void setNodeRadius(QUuid nodeId, float radius);
-    void setNodeBoneMark(QUuid nodeId, SkeletonBoneMark mark);
     void switchNodeXZ(QUuid nodeId);
     void moveOriginBy(float x, float y, float z);
     void addEdge(QUuid fromNodeId, QUuid toNodeId);
     void setEditMode(SkeletonDocumentEditMode mode);
     void uiReady();
     void generateMesh();
+    void regenerateMesh();
     void meshReady();
-    void generateSkeleton();
-    void skeletonReady();
     void generateTexture();
     void textureReady();
     void postProcess();
-    void generateAnimationClip(QString clipName);
-    void generateAllAnimationClips();
     void postProcessedMeshResultReady();
     void bakeAmbientOcclusionTexture();
     void ambientOcclusionTextureReady();
-    void animationClipReady(QString clipName);
     void setPartLockState(QUuid partId, bool locked);
     void setPartVisibleState(QUuid partId, bool visible);
     void setPartSubdivState(QUuid partId, bool subdived);
@@ -320,11 +425,30 @@ public slots:
     void setPartDeformWidth(QUuid partId, float width);
     void setPartRoundState(QUuid partId, bool rounded);
     void setPartColorState(QUuid partId, bool hasColor, QColor color);
-    void setPartInverseState(QUuid partId, bool inverse);
-    void movePartUp(QUuid partId);
-    void movePartDown(QUuid partId);
-    void movePartToTop(QUuid partId);
-    void movePartToBottom(QUuid partId);
+    void setComponentInverseState(QUuid componentId, bool inverse);
+    void moveComponentUp(QUuid componentId);
+    void moveComponentDown(QUuid componentId);
+    void moveComponentToTop(QUuid componentId);
+    void moveComponentToBottom(QUuid componentId);
+    void renameComponent(QUuid componentId, QString name);
+    void removeComponent(QUuid componentId);
+    void addComponent(QUuid parentId);
+    void moveComponent(QUuid componentId, QUuid toParentId);
+    void setCurrentCanvasComponentId(QUuid componentId);
+    void createNewComponentAndMoveThisIn(QUuid componentId);
+    void setComponentExpandState(QUuid componentId, bool expanded);
+    void hideOtherComponents(QUuid componentId);
+    void lockOtherComponents(QUuid componentId);
+    void hideAllComponents();
+    void showAllComponents();
+    void collapseAllComponents();
+    void expandAllComponents();
+    void lockAllComponents();
+    void unlockAllComponents();
+    void hideDescendantComponents(QUuid componentId);
+    void showDescendantComponents(QUuid componentId);
+    void lockDescendantComponents(QUuid componentId);
+    void unlockDescendantComponents(QUuid componentId);
     void saveSnapshot();
     void undo();
     void redo();
@@ -344,31 +468,35 @@ private:
     QUuid createNode(float x, float y, float z, float radius, QUuid fromNodeId);
     void settleOrigin();
     void checkExportReadyState();
-    void reviseOrigin();
+    void removePartDontCareComponent(QUuid partId);
+    void addPartToComponent(QUuid partId, QUuid componentId);
+    bool isDescendantComponent(QUuid componentId, QUuid suspiciousId);
+    void removeComponentRecursively(QUuid componentId);
+    void collectComponentDescendantComponents(QUuid componentId, std::vector<QUuid> &componentIds);
+    void resetDirtyFlags();
+    void markAllDirty();
 private: // need initialize
-    bool m_resultMeshIsObsolete;
+    bool m_isResultMeshObsolete;
     MeshGenerator *m_meshGenerator;
     MeshLoader *m_resultMesh;
     int m_batchChangeRefCount;
     MeshResultContext *m_currentMeshResultContext;
-    bool m_resultSkeletonIsObsolete;
-    SkeletonGenerator *m_skeletonGenerator;
-    MeshLoader *m_resultSkeletonMesh;
-    bool m_textureIsObsolete;
+    bool m_isTextureObsolete;
     TextureGenerator *m_textureGenerator;
-    bool m_postProcessResultIsObsolete;
+    bool m_isPostProcessResultObsolete;
     MeshResultPostProcessor *m_postProcessor;
     MeshResultContext *m_postProcessedResultContext;
-    JointNodeTree *m_jointNodeTree;
     MeshLoader *m_resultTextureMesh;
     unsigned long long m_textureImageUpdateVersion;
     AmbientOcclusionBaker *m_ambientOcclusionBaker;
     unsigned long long m_ambientOcclusionBakedImageUpdateVersion;
-    std::map<QString, AnimationClipContext> m_animationClipContexts;
+    QOpenGLWidget *m_sharedContextWidget;
+    QUuid m_currentCanvasComponentId;
 private:
     static unsigned long m_maxSnapshot;
     std::deque<SkeletonHistoryItem> m_undoItems;
     std::deque<SkeletonHistoryItem> m_redoItems;
+    GeneratedCacheContext m_generatedCacheContext;
 };
 
 #endif

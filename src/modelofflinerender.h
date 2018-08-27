@@ -6,6 +6,7 @@
 #include <QOpenGLContext>
 #include <QImage>
 #include <QThread>
+#include <QOpenGLWidget>
 #include "modelshaderprogram.h"
 #include "modelmeshbinder.h"
 #include "meshloader.h"
@@ -13,7 +14,7 @@
 class ModelOfflineRender : QOffscreenSurface
 {
 public:
-	ModelOfflineRender(QScreen *targetScreen = Q_NULLPTR);
+	ModelOfflineRender(QOpenGLWidget *sharedContextWidget = nullptr, QScreen *targetScreen = Q_NULLPTR);
     ~ModelOfflineRender();
     void setRenderThread(QThread *thread);
     void updateMesh(MeshLoader *mesh);

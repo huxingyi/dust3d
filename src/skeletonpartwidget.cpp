@@ -1,12 +1,11 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
-#include <QDebug>
+#include <QAction>
 #include <QMenu>
 #include <QWidgetAction>
-#include <QScrollBar>
 #include <QColorDialog>
 #include <QSizePolicy>
-#include "skeletonpartlistwidget.h"
+#include "skeletonpartwidget.h"
 #include "theme.h"
 #include "floatnumberwidget.h"
 
@@ -50,26 +49,7 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     initButton(m_colorButton);
     
     m_previewLabel = new QLabel;
-    
-    QHBoxLayout *miniTopToolLayout = new QHBoxLayout;
-    miniTopToolLayout->setSpacing(0);
-    miniTopToolLayout->setContentsMargins(0, 0, 0, 0);
-    miniTopToolLayout->addSpacing(5);
-    miniTopToolLayout->addWidget(m_visibleButton);
-    miniTopToolLayout->addWidget(m_disableButton);
-    miniTopToolLayout->addWidget(m_lockButton);
-    miniTopToolLayout->addWidget(m_colorButton);
-    miniTopToolLayout->addStretch();
-    
-    QHBoxLayout *miniBottomToolLayout = new QHBoxLayout;
-    miniBottomToolLayout->setSpacing(0);
-    miniBottomToolLayout->setContentsMargins(0, 0, 0, 0);
-    miniBottomToolLayout->addSpacing(5);
-    miniBottomToolLayout->addWidget(m_subdivButton);
-    miniBottomToolLayout->addWidget(m_deformButton);
-    miniBottomToolLayout->addWidget(m_xMirrorButton);
-    miniBottomToolLayout->addWidget(m_roundButton);
-    miniBottomToolLayout->addStretch();
+    m_previewLabel->setFixedSize(Theme::previewImageSize, Theme::previewImageSize);
     
     QWidget *hrLightWidget = new QWidget;
     hrLightWidget->setFixedHeight(1);
@@ -83,25 +63,42 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     //hrWidget->setStyleSheet(QString("background-color: #1a1a1a;"));
     hrWidget->setContentsMargins(0, 0, 0, 0);
     
-    QVBoxLayout *toolsLayout = new QVBoxLayout;
+    QGridLayout *toolsLayout = new QGridLayout;
     toolsLayout->setSpacing(0);
-    toolsLayout->setContentsMargins(0, 0, 0, 0);
-    toolsLayout->addSpacing(4);
-    toolsLayout->addLayout(miniTopToolLayout);
-    toolsLayout->addWidget(m_previewLabel);
-    toolsLayout->addLayout(miniBottomToolLayout);
-    toolsLayout->addSpacing(4);
+    toolsLayout->setContentsMargins(0, 0, 5, 0);
+    int row = 0;
+    int col = 0;
+    toolsLayout->addWidget(m_visibleButton, row, col++, Qt::AlignBottom);
+    toolsLayout->addWidget(m_lockButton, row, col++, Qt::AlignBottom);
+    toolsLayout->addWidget(m_disableButton, row, col++, Qt::AlignBottom);
+    toolsLayout->addWidget(m_colorButton, row, col++, Qt::AlignBottom);
+    row++;
+    col = 0;
+    toolsLayout->addWidget(m_subdivButton, row, col++, Qt::AlignTop);
+    toolsLayout->addWidget(m_deformButton, row, col++, Qt::AlignTop);
+    toolsLayout->addWidget(m_xMirrorButton, row, col++, Qt::AlignTop);
+    toolsLayout->addWidget(m_roundButton, row, col++, Qt::AlignTop);
+    
+    QHBoxLayout *previewAndToolsLayout = new QHBoxLayout;
+    previewAndToolsLayout->setSpacing(0);
+    previewAndToolsLayout->setContentsMargins(0, 0, 0, 0);
+    previewAndToolsLayout->addWidget(m_previewLabel);
+    previewAndToolsLayout->addLayout(toolsLayout);
+    previewAndToolsLayout->setStretch(0, 0);
+    previewAndToolsLayout->setStretch(1, 0);
     
     QWidget *backgroundWidget = new QWidget;
+    backgroundWidget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+    backgroundWidget->setFixedSize(Theme::previewImageSize + Theme::miniIconSize * 4 + 5, Theme::previewImageSize);
     backgroundWidget->setObjectName("background");
     m_backgroundWidget = backgroundWidget;
-    backgroundWidget->setLayout(toolsLayout);
+    backgroundWidget->setLayout(previewAndToolsLayout);
     
     QHBoxLayout *backgroundLayout = new QHBoxLayout;
     backgroundLayout->setSpacing(0);
-    backgroundLayout->setContentsMargins(5, 0, 0, 0);
+    backgroundLayout->setContentsMargins(0, 0, 0, 0);
     backgroundLayout->addWidget(backgroundWidget);
-    backgroundLayout->addSpacing(19);
+    backgroundLayout->addSpacing(10);
 
     QVBoxLayout *mainLayout = new QVBoxLayout;
     mainLayout->setSpacing(0);
@@ -123,11 +120,6 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     connect(this, &SkeletonPartWidget::setPartDeformWidth, m_document, &SkeletonDocument::setPartDeformWidth);
     connect(this, &SkeletonPartWidget::setPartRoundState, m_document, &SkeletonDocument::setPartRoundState);
     connect(this, &SkeletonPartWidget::setPartColorState, m_document, &SkeletonDocument::setPartColorState);
-    connect(this, &SkeletonPartWidget::setPartInverseState, m_document, &SkeletonDocument::setPartInverseState);
-    connect(this, &SkeletonPartWidget::movePartUp, m_document, &SkeletonDocument::movePartUp);
-    connect(this, &SkeletonPartWidget::movePartDown, m_document, &SkeletonDocument::movePartDown);
-    connect(this, &SkeletonPartWidget::movePartToTop, m_document, &SkeletonDocument::movePartToTop);
-    connect(this, &SkeletonPartWidget::movePartToBottom, m_document, &SkeletonDocument::movePartToBottom);
     connect(this, &SkeletonPartWidget::checkPart, m_document, &SkeletonDocument::checkPart);
     connect(this, &SkeletonPartWidget::enableBackgroundBlur, m_document, &SkeletonDocument::enableBackgroundBlur);
     connect(this, &SkeletonPartWidget::disableBackgroundBlur, m_document, &SkeletonDocument::disableBackgroundBlur);
@@ -210,15 +202,15 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
         showColorSettingPopup(mapFromGlobal(QCursor::pos()));
     });
     
-    setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(this, &SkeletonPartWidget::customContextMenuRequested, [=] {
-        emit checkPart(m_partId);
-    });
-    connect(this, &SkeletonPartWidget::customContextMenuRequested, this, &SkeletonPartWidget::showContextMenu);
+    setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+    setFixedSize(preferredSize());
     
     updateAllButtons();
-    
-    setMouseTracking(true);
+}
+
+QSize SkeletonPartWidget::preferredSize()
+{
+    return QSize(Theme::previewImageSize + Theme::miniIconSize * 4 + 5 + 2, Theme::previewImageSize + 6);
 }
 
 void SkeletonPartWidget::updateAllButtons()
@@ -231,116 +223,6 @@ void SkeletonPartWidget::updateAllButtons()
     updateDeformButton();
     updateRoundButton();
     updateColorButton();
-}
-
-void SkeletonPartWidget::showContextMenu(const QPoint &pos)
-{
-    QMenu contextMenu(this);
-    
-    const SkeletonPart *part = m_document->findPart(m_partId);
-    
-    QAction hidePartAction(tr("Hide Part"), this);
-    if (part && part->visible) {
-        connect(&hidePartAction, &QAction::triggered, [=]() {
-            emit setPartVisibleState(m_partId, false);
-        });
-        contextMenu.addAction(&hidePartAction);
-    }
-    
-    QAction showPartAction(tr("Show Part"), this);
-    if (part && !part->visible) {
-        connect(&showPartAction, &QAction::triggered, [=]() {
-            emit setPartVisibleState(m_partId, true);
-        });
-        contextMenu.addAction(&showPartAction);
-    }
-    
-    QAction hideOtherPartsAction(tr("Hide Other Parts"), this);
-    connect(&hideOtherPartsAction, &QAction::triggered, [=]() {
-        for (const auto &it: m_document->partIds) {
-            if (it != m_partId)
-                emit setPartVisibleState(it, false);
-        }
-    });
-    contextMenu.addAction(&hideOtherPartsAction);
-    
-    QAction showAllPartsAction(tr("Show All Parts"), this);
-    connect(&showAllPartsAction, &QAction::triggered, [=]() {
-        for (const auto &it: m_document->partIds) {
-            emit setPartVisibleState(it, true);
-        }
-    });
-    contextMenu.addAction(&showAllPartsAction);
-    
-    QAction hideAllPartsAction(tr("Hide All Parts"), this);
-    connect(&hideAllPartsAction, &QAction::triggered, [=]() {
-        for (const auto &it: m_document->partIds) {
-            emit setPartVisibleState(it, false);
-        }
-    });
-    contextMenu.addAction(&hideAllPartsAction);
-    
-    contextMenu.addSeparator();
-    
-    QAction lockAllPartsAction(tr("Lock All Parts"), this);
-    connect(&lockAllPartsAction, &QAction::triggered, [=]() {
-        for (const auto &it: m_document->partIds) {
-            emit setPartLockState(it, true);
-        }
-    });
-    contextMenu.addAction(&lockAllPartsAction);
-    
-    QAction unlockAllPartsAction(tr("Unlock All Parts"), this);
-    connect(&unlockAllPartsAction, &QAction::triggered, [=]() {
-        for (const auto &it: m_document->partIds) {
-            emit setPartLockState(it, false);
-        }
-    });
-    contextMenu.addAction(&unlockAllPartsAction);
-    
-    contextMenu.addSeparator();
-    
-    QAction invertPartAction(tr("Invert Part"), this);
-    if (part && !part->inverse) {
-        connect(&invertPartAction, &QAction::triggered, [=]() {
-            emit setPartInverseState(m_partId, true);
-        });
-        contextMenu.addAction(&invertPartAction);
-    }
-    
-    QAction cancelInverseAction(tr("Cancel Inverse"), this);
-    if (part && part->inverse) {
-        connect(&cancelInverseAction, &QAction::triggered, [=]() {
-            emit setPartInverseState(m_partId, false);
-        });
-        contextMenu.addAction(&cancelInverseAction);
-    }
-    
-    QAction moveUpAction(tr("Move Up"), this);
-    connect(&moveUpAction, &QAction::triggered, [=]() {
-        emit movePartUp(m_partId);
-    });
-    contextMenu.addAction(&moveUpAction);
-    
-    QAction moveDownAction(tr("Move Down"), this);
-    connect(&moveDownAction, &QAction::triggered, [=]() {
-        emit movePartDown(m_partId);
-    });
-    contextMenu.addAction(&moveDownAction);
-    
-    QAction moveToTopAction(tr("Move To Top"), this);
-    connect(&moveToTopAction, &QAction::triggered, [=]() {
-        emit movePartToTop(m_partId);
-    });
-    contextMenu.addAction(&moveToTopAction);
-    
-    QAction moveToBottomAction(tr("Move To Bottom"), this);
-    connect(&moveToBottomAction, &QAction::triggered, [=]() {
-        emit movePartToBottom(m_partId);
-    });
-    contextMenu.addAction(&moveToBottomAction);
-
-    contextMenu.exec(mapToGlobal(pos));
 }
 
 void SkeletonPartWidget::updateCheckedState(bool checked)
@@ -634,182 +516,4 @@ void SkeletonPartWidget::reload()
     updateDeformButton();
     updateRoundButton();
     updateColorButton();
-}
-
-SkeletonPartListWidget::SkeletonPartListWidget(const SkeletonDocument *document, QWidget *parent) :
-    QListWidget(parent),
-    m_document(document)
-{
-    setSelectionMode(QAbstractItemView::NoSelection);
-    setFocusPolicy(Qt::NoFocus);
-    setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
-    setSpacing(0);
-    setContentsMargins(0, 0, 0, 0);
-    
-    QPalette palette = this->palette();
-    palette.setColor(QPalette::Window, Qt::transparent);
-    palette.setColor(QPalette::Base, Qt::transparent);
-    setPalette(palette);
-    
-    setFixedWidth(Theme::previewImageSize + Theme::miniIconSize + 13);
-    setMinimumHeight(Theme::previewImageSize + 3);
-}
-
-void SkeletonPartListWidget::partChanged(QUuid partId)
-{
-    auto item = m_itemMap.find(partId);
-    if (item == m_itemMap.end()) {
-        qDebug() << "Part item not found:" << partId;
-        return;
-    }
-    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second);
-    widget->reload();
-}
-
-void SkeletonPartListWidget::partListChanged()
-{
-    clear();
-    m_itemMap.clear();
-    
-    int row = 0;
-    
-    for (auto partIdIt = m_document->partIds.begin(); partIdIt != m_document->partIds.end(); partIdIt++, row++) {
-        QUuid partId = *partIdIt;
-        QListWidgetItem *item = new QListWidgetItem(this);
-        item->setSizeHint(QSize(width(), Theme::previewImageSize));
-        item->setData(Qt::UserRole, QVariant(row));
-        //item->setBackground(QWidget::palette().color(QPalette::Button));
-        item->setBackground(Theme::black);
-        addItem(item);
-        SkeletonPartWidget *widget = new SkeletonPartWidget(m_document, partId);
-        setItemWidget(item, widget);
-        widget->reload();
-        m_itemMap[partId] = item;
-    }
-}
-
-void SkeletonPartListWidget::partPreviewChanged(QUuid partId)
-{
-    auto item = m_itemMap.find(partId);
-    if (item == m_itemMap.end()) {
-        qDebug() << "Part item not found:" << partId;
-        return;
-    }
-    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second);
-    widget->updatePreview();
-}
-
-void SkeletonPartListWidget::partLockStateChanged(QUuid partId)
-{
-    auto item = m_itemMap.find(partId);
-    if (item == m_itemMap.end()) {
-        qDebug() << "Part item not found:" << partId;
-        return;
-    }
-    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second);
-    widget->updateLockButton();
-}
-
-void SkeletonPartListWidget::partVisibleStateChanged(QUuid partId)
-{
-    auto item = m_itemMap.find(partId);
-    if (item == m_itemMap.end()) {
-        qDebug() << "Part item not found:" << partId;
-        return;
-    }
-    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second);
-    widget->updateVisibleButton();
-}
-
-void SkeletonPartListWidget::partSubdivStateChanged(QUuid partId)
-{
-    auto item = m_itemMap.find(partId);
-    if (item == m_itemMap.end()) {
-        qDebug() << "Part item not found:" << partId;
-        return;
-    }
-    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second);
-    widget->updateSubdivButton();
-}
-
-void SkeletonPartListWidget::partDisableStateChanged(QUuid partId)
-{
-    auto item = m_itemMap.find(partId);
-    if (item == m_itemMap.end()) {
-        qDebug() << "Part item not found:" << partId;
-        return;
-    }
-    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second);
-    widget->updateDisableButton();
-}
-
-void SkeletonPartListWidget::partXmirrorStateChanged(QUuid partId)
-{
-    auto item = m_itemMap.find(partId);
-    if (item == m_itemMap.end()) {
-        qDebug() << "Part item not found:" << partId;
-        return;
-    }
-    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second);
-    widget->updateXmirrorButton();
-}
-
-void SkeletonPartListWidget::partDeformChanged(QUuid partId)
-{
-    auto item = m_itemMap.find(partId);
-    if (item == m_itemMap.end()) {
-        qDebug() << "Part item not found:" << partId;
-        return;
-    }
-    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second);
-    widget->updateDeformButton();
-}
-
-void SkeletonPartListWidget::partRoundStateChanged(QUuid partId)
-{
-    auto item = m_itemMap.find(partId);
-    if (item == m_itemMap.end()) {
-        qDebug() << "Part item not found:" << partId;
-        return;
-    }
-    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second);
-    widget->updateRoundButton();
-}
-
-void SkeletonPartListWidget::partColorStateChanged(QUuid partId)
-{
-    auto item = m_itemMap.find(partId);
-    if (item == m_itemMap.end()) {
-        qDebug() << "Part item not found:" << partId;
-        return;
-    }
-    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second);
-    widget->updateColorButton();
-}
-
-void SkeletonPartListWidget::partChecked(QUuid partId)
-{
-    auto item = m_itemMap.find(partId);
-    if (item == m_itemMap.end()) {
-        qDebug() << "Part item not found:" << partId;
-        return;
-    }
-    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second);
-    widget->updateCheckedState(true);
-}
-
-void SkeletonPartListWidget::partUnchecked(QUuid partId)
-{
-    auto item = m_itemMap.find(partId);
-    if (item == m_itemMap.end()) {
-        //qDebug() << "Part item not found:" << partId;
-        return;
-    }
-    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second);
-    widget->updateCheckedState(false);
-}
-
-QSize SkeletonPartListWidget::sizeHint() const {
-    return QSize(Theme::previewImageSize, Theme::previewImageSize * 5.5);
 }

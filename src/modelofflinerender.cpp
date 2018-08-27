@@ -3,22 +3,39 @@
 #include <QDebug>
 #include "modelofflinerender.h"
 
-ModelOfflineRender::ModelOfflineRender(QScreen *targetScreen) :
+ModelOfflineRender::ModelOfflineRender(QOpenGLWidget *sharedContextWidget, QScreen *targetScreen) :
     QOffscreenSurface(targetScreen),
     m_context(nullptr),
     m_mesh(nullptr)
 {
     create();
+    
+    QOpenGLContext *current = nullptr;
+    
+    if (nullptr != sharedContextWidget) {
+        current = sharedContextWidget->context();
+        current->doneCurrent();
+    }
+    
     m_context = new QOpenGLContext();
     
-    QSurfaceFormat fmt = format();
-    fmt.setAlphaBufferSize(8);
-    fmt.setSamples(4);
-    
-    setFormat(fmt);
-    
-    m_context->setFormat(fmt);
+    if (nullptr != current) {
+        m_context->setFormat(current->format());
+        m_context->setShareContext(current);
+    } else {
+        QSurfaceFormat fmt = format();
+        fmt.setAlphaBufferSize(8);
+        fmt.setSamples(4);
+        
+        setFormat(fmt);
+        
+        m_context->setFormat(fmt);
+    }
     m_context->create();
+    
+    if (nullptr != sharedContextWidget) {
+        sharedContextWidget->makeCurrent();
+    }
 }
 
 ModelOfflineRender::~ModelOfflineRender()

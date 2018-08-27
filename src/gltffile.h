@@ -13,7 +13,7 @@ class GLTFFileWriter : public QObject
 {
     Q_OBJECT
 public:
-    GLTFFileWriter(MeshResultContext &resultContext, const std::map<QString, AnimationClipContext> &animationClipContexts, const QString &filename);
+    GLTFFileWriter(MeshResultContext &resultContext, const QString &filename);
     bool save();
     const QString &textureFilenameInGltf();
 private:

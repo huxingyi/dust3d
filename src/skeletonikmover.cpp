@@ -57,5 +57,4 @@ void SkeletonIkMover::resolve()
     for (auto i = 0u; i < m_ikNodes.size(); i++) {
         m_ikNodes[i].newPosition = solver.getNodeSolvedPosition(i);
     }
-    
 }

@@ -1,7 +1,5 @@
-#ifndef SKELETON_PART_LIST_WIDGET_H
-#define SKELETON_PART_LIST_WIDGET_H
-#include <QListWidget>
-#include <map>
+#ifndef SKELETON_PART_WIDGET_H
+#define SKELETON_PART_WIDGET_H
 #include <QLabel>
 #include <QPushButton>
 #include <QMouseEvent>
@@ -44,12 +42,12 @@ public:
     void updateRoundButton();
     void updateColorButton();
     void updateCheckedState(bool checked);
+    static QSize preferredSize();
 protected:
     void mouseDoubleClickEvent(QMouseEvent *event);
 public slots:
     void showDeformSettingPopup(const QPoint &pos);
     void showColorSettingPopup(const QPoint &pos);
-    void showContextMenu(const QPoint &pos);
 private: // need initialize
     const SkeletonDocument *m_document;
     QUuid m_partId;
@@ -72,32 +70,6 @@ private:
     void initButton(QPushButton *button);
     void updateButton(QPushButton *button, QChar icon, bool highlighted);
     void updateAllButtons();
-};
-
-class SkeletonPartListWidget : public QListWidget
-{
-    Q_OBJECT
-public:
-    SkeletonPartListWidget(const SkeletonDocument *document, QWidget *parent);
-public slots:
-    void partChanged(QUuid partId);
-    void partListChanged();
-    void partPreviewChanged(QUuid partid);
-    void partLockStateChanged(QUuid partId);
-    void partVisibleStateChanged(QUuid partId);
-    void partSubdivStateChanged(QUuid partId);
-    void partDisableStateChanged(QUuid partId);
-    void partXmirrorStateChanged(QUuid partId);
-    void partDeformChanged(QUuid partId);
-    void partRoundStateChanged(QUuid partId);
-    void partColorStateChanged(QUuid partId);
-    void partChecked(QUuid partId);
-    void partUnchecked(QUuid partId);
-protected:
-    virtual QSize sizeHint() const;
-private:
-    const SkeletonDocument *m_document;
-    std::map<QUuid, QListWidgetItem *> m_itemMap;
 };
 
 #endif

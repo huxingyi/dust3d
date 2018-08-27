@@ -105,7 +105,7 @@ bool Ds3FileWriter::add(const QString &name, const QString &type, const QByteArr
     Ds3WriterItem writerItem;
     writerItem.type = type;
     writerItem.name = name;
-    writerItem.byteArray = byteArray;
+    writerItem.byteArray = *byteArray;
     m_itemsMap[name] = writerItem;
     m_items.push_back(writerItem);
     return true;
@@ -131,8 +131,8 @@ bool Ds3FileWriter::save(const QString &filename)
             stream.writeStartElement(writerItem->type);
                 stream.writeAttribute("name", QString("%1").arg(writerItem->name));
                 stream.writeAttribute("offset", QString("%1").arg(offset));
-                stream.writeAttribute("size", QString("%1").arg(writerItem->byteArray->size()));
-                offset += writerItem->byteArray->size();
+                stream.writeAttribute("size", QString("%1").arg(writerItem->byteArray.size()));
+                offset += writerItem->byteArray.size();
             stream.writeEndElement();
         }
         
@@ -152,7 +152,7 @@ bool Ds3FileWriter::save(const QString &filename)
     file.write(headerXml);
     for (int i = 0; i < m_items.size(); i++) {
         Ds3WriterItem *writerItem = &m_items[i];
-        file.write(*writerItem->byteArray);
+        file.write(writerItem->byteArray);
     }
     
     return true;

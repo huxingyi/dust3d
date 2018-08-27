@@ -3,12 +3,10 @@
 #include <vector>
 #include <QVector3D>
 #include <QQuaternion>
-#include "jointconstraint.h"
 
 struct CCDIKNode
 {
     QVector3D position;
-    JointConstraint constraint;
     bool hasConstraint = false;
 };
 
@@ -18,7 +16,7 @@ public:
     CCDIKSolver();
     void setMaxRound(int maxRound);
     void setDistanceThreshod(float threshold);
-    int addNodeInOrder(const QVector3D &position, const JointConstraint *constraint=nullptr);
+    int addNodeInOrder(const QVector3D &position);
     void solveTo(const QVector3D &position);
     const QVector3D &getNodeSolvedPosition(int index);
     int getNodeCount(void);

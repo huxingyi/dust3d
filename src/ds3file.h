@@ -49,7 +49,7 @@ class Ds3WriterItem
 public:
     QString type;
     QString name;
-    const QByteArray *byteArray;
+    QByteArray byteArray;
 };
 
 class Ds3FileWriter : public QObject

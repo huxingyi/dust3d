@@ -10,7 +10,6 @@
 #include "skeletondocument.h"
 #include "modelwidget.h"
 #include "exportpreviewwidget.h"
-#include "animationpanelwidget.h"
 
 class SkeletonGraphicsWidget;
 
@@ -24,6 +23,7 @@ public:
     ~SkeletonDocumentWindow();
     static SkeletonDocumentWindow *createDocumentWindow();
     static void showAcknowlegements();
+    static void showContributors();
     static void showAbout();
 protected:
     void showEvent(QShowEvent *event);
@@ -37,7 +37,6 @@ public slots:
     void exportModelResult();
     void exportGltfResult();
     void showExportPreview();
-    void showAnimationPanel();
     void newWindow();
     void newDocument();
     void saveAs();
@@ -46,13 +45,13 @@ public slots:
     void about();
     void reportIssues();
     void seeAcknowlegements();
+    void seeContributors();
     void seeReferenceGuide();
     void documentChanged();
     void updateXlockButtonState();
     void updateYlockButtonState();
     void updateZlockButtonState();
 private:
-    void initAwesomeButton(QPushButton *button);
     void initLockButton(QPushButton *button);
     void setCurrentFilename(const QString &filename);
     void updateTitle();
@@ -61,7 +60,6 @@ private:
     bool m_firstShow;
     bool m_documentSaved;
     ExportPreviewWidget *m_exportPreviewWidget;
-    AnimationPanelWidget *m_animationPanelWidget;
 private:
     QString m_currentFilename;
     
@@ -110,21 +108,18 @@ private:
     QAction *m_selectPartAllAction;
     QAction *m_unselectAllAction;
     
-    QMenu *m_markAsMenu;
-    QAction *m_markAsNoneAction;
-    QAction *m_markAsActions[SKELETON_BONE_MARK_TYPE_NUM];
-    
     QMenu *m_viewMenu;
     QAction *m_resetModelWidgetPosAction;
     QAction *m_showPartsListAction;
     QAction *m_showDebugDialogAction;
     QAction *m_toggleWireframeAction;
-    QAction *m_showAnimationPanelAction;
+    QAction *m_showMotionsListAction;
     
     QMenu *m_helpMenu;
     QAction *m_viewSourceAction;
     QAction *m_aboutAction;
     QAction *m_reportIssuesAction;
+    QAction *m_seeContributorsAction;
     QAction *m_seeAcknowlegementsAction;
     QAction *m_seeReferenceGuideAction;
 

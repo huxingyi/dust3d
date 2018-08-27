@@ -1,5 +1,6 @@
 QT += core widgets opengl
 CONFIG += release
+DEFINES += NDEBUG
 RESOURCES += resources.qrc
 
 isEmpty(HUMAN_VERSION) {
@@ -24,6 +25,12 @@ DEFINES += "PROJECT_DEFINED_APP_HUMAN_VER=\"\\\"$$HUMAN_VERSION\\\"\""
 DEFINES += "PROJECT_DEFINED_APP_REPOSITORY_URL=\"\\\"$$REPOSITORY_URL\\\"\""
 DEFINES += "PROJECT_DEFINED_APP_ISSUES_URL=\"\\\"$$ISSUES_URL\\\"\""
 DEFINES += "PROJECT_DEFINED_APP_REFERENCE_GUIDE_URL=\"\\\"$$REFERENCE_GUIDE_URL\\\"\""
+
+QMAKE_CXXFLAGS_RELEASE -= -O
+QMAKE_CXXFLAGS_RELEASE -= -O1
+QMAKE_CXXFLAGS_RELEASE -= -O2
+
+QMAKE_CXXFLAGS_RELEASE += -O3
 
 include(thirdparty/QtAwesome/QtAwesome/QtAwesome.pri)
 
@@ -50,8 +57,11 @@ HEADERS += src/skeletondocumentwindow.h
 SOURCES += src/skeletongraphicswidget.cpp
 HEADERS += src/skeletongraphicswidget.h
 
-SOURCES += src/skeletonpartlistwidget.cpp
-HEADERS += src/skeletonpartlistwidget.h
+SOURCES += src/skeletonparttreewidget.cpp
+HEADERS += src/skeletonparttreewidget.h
+
+SOURCES += src/skeletonpartwidget.cpp
+HEADERS += src/skeletonpartwidget.h
 
 SOURCES += src/aboutwidget.cpp
 HEADERS += src/aboutwidget.h
@@ -89,9 +99,6 @@ HEADERS += src/meshutil.h
 SOURCES += src/texturegenerator.cpp
 HEADERS += src/texturegenerator.h
 
-SOURCES += src/skeletongenerator.cpp
-HEADERS += src/skeletongenerator.h
-
 SOURCES += src/meshresultcontext.cpp
 HEADERS += src/meshresultcontext.h
 
@@ -122,52 +129,16 @@ HEADERS += src/ccdikresolver.h
 SOURCES += src/skeletonikmover.cpp
 HEADERS += src/skeletonikmover.h
 
-SOURCES += src/markiconcreator.cpp
-HEADERS += src/markiconcreator.h
-
-SOURCES += src/skeletonbonemark.cpp
-HEADERS += src/skeletonbonemark.h
-
-SOURCES += src/intermediateboneremover.cpp
-HEADERS += src/intermediateboneremover.h
-
-SOURCES += src/animationpanelwidget.cpp
-HEADERS += src/animationpanelwidget.h
-
-SOURCES += src/rigcontroller.cpp
-HEADERS += src/rigcontroller.h
-
-SOURCES += src/rigframe.cpp
-HEADERS += src/rigframe.h
-
-SOURCES += src/jointnodetree.cpp
-HEADERS += src/jointnodetree.h
-
-SOURCES += src/animationclipgenerator.cpp
-HEADERS += src/animationclipgenerator.h
-
-SOURCES += src/animationclipplayer.cpp
-HEADERS += src/animationclipplayer.h
-
-SOURCES += src/skinnedmesh.cpp
-HEADERS += src/skinnedmesh.h
-
-SOURCES += src/ragdoll.cpp
-HEADERS += src/ragdoll.h
-
-SOURCES += src/pogostick.cpp
-HEADERS += src/pogostick.h
-
-SOURCES += src/ikjoint.cpp
-HEADERS += src/ikjoint.h
-
-SOURCES += src/locomotioncontroller.cpp
-HEADERS += src/locomotioncontroller.h
-
-SOURCES += src/jointconstraint.cpp
-HEADERS += src/jointconstraint.h
-
 HEADERS += src/qtlightmapper.h
+
+SOURCES += src/spinnableawesomebutton.cpp
+HEADERS += src/spinnableawesomebutton.h
+
+SOURCES += src/infolabel.cpp
+HEADERS += src/infolabel.h
+
+SOURCES += src/graphicscontainerwidget.cpp
+HEADERS += src/graphicscontainerwidget.h
 
 SOURCES += src/main.cpp
 
@@ -406,12 +377,12 @@ macx {
 	MPFR_INCLUDEDIR = /usr/local/opt/mpfr/include
 	MPFR_LIBDIR = /usr/local/opt/mpfr/lib
 
-	#exists(/usr/local/opt/bullet) {
-	#	INCLUDEPATH += /usr/local/opt/bullet/include/Bullet
-	#	LIBS += -L/usr/local/opt/bullet/lib -lBulletDynamics -lBulletCollision -lLinearMath
-	#
-	#	DEFINES += "USE_BULLET=1"
-	#}
+	exists(/usr/local/opt/opencv) {
+		INCLUDEPATH += /usr/local/opt/opencv/include
+		LIBS += -L/usr/local/opt/opencv/lib -lopencv_core -lopencv_videoio -lopencv_imgproc
+	
+		DEFINES += "USE_OPENCV=1"
+	}
 }
 
 unix:!macx {
