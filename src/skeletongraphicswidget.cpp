@@ -572,8 +572,9 @@ void SkeletonGraphicsWidget::mouseDoubleClickEvent(QMouseEvent *event)
 
 void SkeletonGraphicsWidget::keyPressEvent(QKeyEvent *event)
 {
+    if (keyPress(event))
+        return;
     QGraphicsView::keyPressEvent(event);
-    keyPress(event);
 }
 
 bool SkeletonGraphicsWidget::mouseMove(QMouseEvent *event)
@@ -1285,22 +1286,6 @@ void SkeletonGraphicsWidget::deleteSelected()
     if (nullptr == m_deferredRemoveTimer) {
         timeToRemoveDeferredNodesAndEdges();
     }
-    
-    /*
-    if (!m_rangeSelectionSet.empty()) {
-        emit batchChangeBegin();
-        std::set<QUuid> nodeIdSet;
-        std::set<QUuid> edgeIdSet;
-        readSkeletonNodeAndEdgeIdSetFromRangeSelection(&nodeIdSet, &edgeIdSet);
-        for (const auto &id: edgeIdSet) {
-            emit removeEdge(id);
-        }
-        for (const auto &id: nodeIdSet) {
-            emit removeNode(id);
-        }
-        emit batchChangeEnd();
-        emit groupOperationAdded();
-    }*/
 }
 
 bool SkeletonGraphicsWidget::keyPress(QKeyEvent *event)
@@ -1326,74 +1311,94 @@ bool SkeletonGraphicsWidget::keyPress(QKeyEvent *event)
         if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
             if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
                 emit redo();
+                return true;
             } else {
                 emit undo();
+                return true;
             }
         } else {
             emit setZlockState(!m_document->zlocked);
+            return true;
         }
     } else if (event->key() == Qt::Key_Y) {
         if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
             if (!QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
                 emit redo();
+                return true;
             }
         } else {
             emit setYlockState(!m_document->ylocked);
+            return true;
         }
     } else if (event->key() == Qt::Key_X) {
         if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
             cut();
+            return true;
         } else {
             emit setXlockState(!m_document->xlocked);
+            return true;
         }
     } else if (event->key() == Qt::Key_C) {
         if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
             copy();
+            return true;
         }
     } else if (event->key() == Qt::Key_V) {
         if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
             emit paste();
+            return true;
         }
     } else if (event->key() == Qt::Key_S) {
         if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
             emit save();
+            return true;
         } else {
             emit setEditMode(SkeletonDocumentEditMode::Select);
+            return true;
         }
     } else if (event->key() == Qt::Key_D) {
         emit setEditMode(SkeletonDocumentEditMode::Drag);
+        return true;
     } else if (event->key() == Qt::Key_Minus) {
         if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::AltModifier)) {
             emit zoomRenderedModelBy(-10);
+            return true;
         } else if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
             zoomSelected(-1);
             emit groupOperationAdded();
+            return true;
         }
     } else if (event->key() == Qt::Key_Equal) {
         if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::AltModifier)) {
             emit zoomRenderedModelBy(10);
+            return true;
         } else if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
             zoomSelected(1);
             emit groupOperationAdded();
+            return true;
         }
     } else if (event->key() == Qt::Key_Comma) {
         if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
             rotateSelected(-1);
             emit groupOperationAdded();
+            return true;
         }
     } else if (event->key() == Qt::Key_Period) {
         if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
             rotateSelected(1);
             emit groupOperationAdded();
+            return true;
         }
     } else if (event->key() == Qt::Key_Left) {
         if (SkeletonDocumentEditMode::Select == m_document->editMode) {
             if (m_checkedOriginItem) {
                 moveCheckedOrigin(-1, 0);
                 emit groupOperationAdded();
+                return true;
             } else if (hasSelection()) {
                 moveSelected(-1, 0);
                 emit groupOperationAdded();
+                return true;
             }
         }
     } else if (event->key() == Qt::Key_Right) {
@@ -1401,9 +1406,11 @@ bool SkeletonGraphicsWidget::keyPress(QKeyEvent *event)
             if (m_checkedOriginItem) {
                 moveCheckedOrigin(1, 0);
                 emit groupOperationAdded();
+                return true;
             } else if (hasSelection()) {
                 moveSelected(1, 0);
                 emit groupOperationAdded();
+                return true;
             }
         }
     } else if (event->key() == Qt::Key_Up) {
@@ -1411,9 +1418,11 @@ bool SkeletonGraphicsWidget::keyPress(QKeyEvent *event)
             if (m_checkedOriginItem) {
                 moveCheckedOrigin(0, -1);
                 emit groupOperationAdded();
+                return true;
             } else if (hasSelection()) {
                 moveSelected(0, -1);
                 emit groupOperationAdded();
+                return true;
             }
         }
     } else if (event->key() == Qt::Key_Down) {
@@ -1421,24 +1430,29 @@ bool SkeletonGraphicsWidget::keyPress(QKeyEvent *event)
             if (m_checkedOriginItem) {
                 moveCheckedOrigin(0, 1);
                 emit groupOperationAdded();
+                return true;
             } else if (hasSelection()) {
                 moveSelected(0, 1);
                 emit groupOperationAdded();
+                return true;
             }
         }
     } else if (event->key() == Qt::Key_BracketLeft) {
         if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
             scaleSelected(-1);
             emit groupOperationAdded();
+            return true;
         }
     } else if (event->key() == Qt::Key_BracketRight) {
         if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
             scaleSelected(1);
             emit groupOperationAdded();
+            return true;
         }
     } else if (event->key() == Qt::Key_Tab) {
         if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
             switchProfileOnRangeSelection();
+            return true;
         }
     } else if (event->key() == Qt::Key_H) {
         if (SkeletonDocumentEditMode::Select == m_document->editMode && !m_lastCheckedPart.isNull()) {
@@ -1446,6 +1460,7 @@ bool SkeletonGraphicsWidget::keyPress(QKeyEvent *event)
             bool partVisible = part && part->visible;
             emit setPartVisibleState(m_lastCheckedPart, !partVisible);
             emit groupOperationAdded();
+            return true;
         }
     } else if (event->key() == Qt::Key_J) {
         if (SkeletonDocumentEditMode::Select == m_document->editMode && !m_lastCheckedPart.isNull()) {
@@ -1453,6 +1468,7 @@ bool SkeletonGraphicsWidget::keyPress(QKeyEvent *event)
             bool partDisabled = part && part->disabled;
             emit setPartDisableState(m_lastCheckedPart, !partDisabled);
             emit groupOperationAdded();
+            return true;
         }
     } else if (event->key() == Qt::Key_L) {
         if (SkeletonDocumentEditMode::Select == m_document->editMode && !m_lastCheckedPart.isNull()) {
@@ -1460,6 +1476,7 @@ bool SkeletonGraphicsWidget::keyPress(QKeyEvent *event)
             bool partLocked = part && part->locked;
             emit setPartLockState(m_lastCheckedPart, !partLocked);
             emit groupOperationAdded();
+            return true;
         }
     } else if (event->key() == Qt::Key_M) {
         if (SkeletonDocumentEditMode::Select == m_document->editMode && !m_lastCheckedPart.isNull()) {
@@ -1467,6 +1484,7 @@ bool SkeletonGraphicsWidget::keyPress(QKeyEvent *event)
             bool partXmirrored = part && part->xMirrored;
             emit setPartXmirrorState(m_lastCheckedPart, !partXmirrored);
             emit groupOperationAdded();
+            return true;
         }
     } else if (event->key() == Qt::Key_B) {
         if (SkeletonDocumentEditMode::Select == m_document->editMode && !m_lastCheckedPart.isNull()) {
@@ -1474,6 +1492,7 @@ bool SkeletonGraphicsWidget::keyPress(QKeyEvent *event)
             bool partSubdived = part && part->subdived;
             emit setPartSubdivState(m_lastCheckedPart, !partSubdived);
             emit groupOperationAdded();
+            return true;
         }
     } else if (event->key() == Qt::Key_U) {
         if (SkeletonDocumentEditMode::Select == m_document->editMode && !m_lastCheckedPart.isNull()) {
@@ -1481,6 +1500,7 @@ bool SkeletonGraphicsWidget::keyPress(QKeyEvent *event)
             bool partRounded = part && part->rounded;
             emit setPartRoundState(m_lastCheckedPart, !partRounded);
             emit groupOperationAdded();
+            return true;
         }
     }
     return false;
