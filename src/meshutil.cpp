@@ -139,6 +139,49 @@ int makeMeshliteMeshFromCgal(void *meshlite, typename CGAL::Surface_mesh<typenam
     return meshId;
 }
 
+template <class InputIterator, class Kernel>
+bool precheckForConvexHull(InputIterator first, InputIterator beyond)
+{
+  typedef typename CGAL::internal::Convex_hull_3::Default_traits_for_Chull_3<typename Kernel::Point_3, typename CGAL::Surface_mesh<typename Kernel::Point_3>>::type Traits;
+  typedef typename Traits::Point_3                Point_3;
+  typedef std::list<Point_3>                      Point_3_list;
+  typedef typename Point_3_list::iterator         P3_iterator;
+  Traits traits;
+
+  Point_3_list points(first, beyond);
+  if (!(points.size() > 3))
+    return false;
+
+  // at least 4 points
+  typename Traits::Collinear_3 collinear = traits.collinear_3_object();
+  typename Traits::Equal_3 equal = traits.equal_3_object();
+
+  P3_iterator point1_it = points.begin();
+  P3_iterator point2_it = points.begin();
+  point2_it++;
+
+  // find three that are not collinear
+  while (point2_it != points.end() && equal(*point1_it,*point2_it))
+    ++point2_it;
+
+  if (!(point2_it != points.end()))
+    return false;
+  
+  P3_iterator point3_it = point2_it;
+  ++point3_it;
+  
+  if (!(point3_it != points.end()))
+    return false;
+  
+  while (point3_it != points.end() && collinear(*point1_it,*point2_it,*point3_it))
+    ++point3_it;
+  
+  if (!(point3_it != points.end()))
+    return false;
+  
+  return true;
+}
+
 template <class Kernel>
 ExactMesh *makeCgalConvexHullMeshFromMeshlite(void *meshlite, int meshId)
 {
@@ -164,7 +207,12 @@ ExactMesh *makeCgalConvexHullMeshFromMeshlite(void *meshlite, int meshId)
     }
     delete[] vertexPositions;
     try {
-        CGAL::convex_hull_3(points.begin(), points.end(), *mesh);
+        if (precheckForConvexHull<typename std::vector<typename Kernel::Point_3>::iterator, Kernel>(points.begin(), points.end())) {
+            CGAL::convex_hull_3(points.begin(), points.end(), *mesh);
+        } else {
+            delete mesh;
+            return nullptr;
+        }
     } catch (...) {
         delete mesh;
         return nullptr;
