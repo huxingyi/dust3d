@@ -67,6 +67,7 @@ protected:
     virtual void mousePressEvent(QMouseEvent *event);
 private:
     void addComponentChildrenToItem(QUuid componentId, QTreeWidgetItem *parentItem);
+    void deleteItemChildren(QTreeWidgetItem *item);
 private:
     const SkeletonDocument *m_document = nullptr;
     std::map<QUuid, QTreeWidgetItem *> m_partItemMap;

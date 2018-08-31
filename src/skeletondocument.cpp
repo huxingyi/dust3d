@@ -1534,12 +1534,13 @@ void SkeletonDocument::removeComponentRecursively(QUuid componentId)
         return;
     }
     
-    for (const auto &childId: component->second.childrenIds) {
-        removeComponent(childId);
-    }
-    
     if (!component->second.linkToPartId.isNull()) {
         removePartDontCareComponent(component->second.linkToPartId);
+    }
+    
+    auto childrenIds = component->second.childrenIds;
+    for (const auto &childId: childrenIds) {
+        removeComponentRecursively(childId);
     }
     
     QUuid parentId = component->second.parentId;

@@ -375,6 +375,24 @@ void SkeletonPartTreeWidget::addComponentChildrenToItem(QUuid componentId, QTree
     }
 }
 
+void SkeletonPartTreeWidget::deleteItemChildren(QTreeWidgetItem *item)
+{
+    auto children = item->takeChildren();
+    while (!children.isEmpty()) {
+        auto first = children.takeFirst();
+        auto componentId = QUuid(first->data(0, Qt::UserRole).toString());
+        const SkeletonComponent *component = m_document->findComponent(componentId);
+        if (nullptr != component) {
+            m_componentItemMap.erase(componentId);
+            if (!component->linkToPartId.isNull()) {
+                m_partItemMap.erase(component->linkToPartId);
+            }
+        }
+        deleteItemChildren(first);
+        delete first;
+    }
+}
+
 void SkeletonPartTreeWidget::componentChildrenChanged(QUuid componentId)
 {
     QTreeWidgetItem *parentItem = findComponentItem(componentId);
@@ -382,7 +400,7 @@ void SkeletonPartTreeWidget::componentChildrenChanged(QUuid componentId)
         qDebug() << "Find component item failed:" << componentId;
         return;
     }
-    qDeleteAll(parentItem->takeChildren());
+    deleteItemChildren(parentItem);
     addComponentChildrenToItem(componentId, parentItem);
     
     // Fix the last item show in the wrong place sometimes
