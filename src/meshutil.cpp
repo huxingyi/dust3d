@@ -58,6 +58,7 @@ typename CGAL::Surface_mesh<typename Kernel::Point_3> *makeCgalMeshFromMeshlite(
     int *faceVertexNumAndIndices = new int[faceCount * MAX_VERTICES_PER_FACE];
     int filledLength = meshlite_get_face_index_array(meshlite, meshId, faceVertexNumAndIndices, faceCount * MAX_VERTICES_PER_FACE);
     int i = 0;
+    int addedFaceCount = 0;
     while (i < filledLength) {
         int num = faceVertexNumAndIndices[i++];
         assert(num > 0 && num <= MAX_VERTICES_PER_FACE);
@@ -69,10 +70,15 @@ typename CGAL::Surface_mesh<typename Kernel::Point_3> *makeCgalMeshFromMeshlite(
         }
         if (faceVertexIndices.size() >= 3) {
             mesh->add_face(faceVertexIndices);
+            addedFaceCount++;
         }
     }
     delete[] faceVertexNumAndIndices;
     delete[] vertexPositions;
+    if (0 == addedFaceCount) {
+        delete mesh;
+        mesh = nullptr;
+    }
     return mesh;
 }
 
@@ -157,7 +163,12 @@ ExactMesh *makeCgalConvexHullMeshFromMeshlite(void *meshlite, int meshId)
         offset += 3;
     }
     delete[] vertexPositions;
-    CGAL::convex_hull_3(points.begin(), points.end(), *mesh);
+    try {
+        CGAL::convex_hull_3(points.begin(), points.end(), *mesh);
+    } catch (...) {
+        delete mesh;
+        return nullptr;
+    }
     return mesh;
 }
 
@@ -309,6 +320,9 @@ void *convertToCombinableMesh(void *meshliteContext, int meshId)
     if (0 == meshId)
         return nullptr;
     mesh = makeCgalMeshFromMeshlite<ExactKernel>(meshliteContext, meshId);
+    if (nullptr == mesh) {
+        return mesh;
+    }
     if (CGAL::Polygon_mesh_processing::does_self_intersect(*mesh)) {
         qDebug() << "CGAL::Polygon_mesh_processing::does_self_intersect meshId:" << meshId;
         delete mesh;
