@@ -23,6 +23,7 @@
 #include <CGAL/Polygon_mesh_processing/remesh.h>
 #include <CGAL/subdivision_method_3.h>
 #include <CGAL/Simple_cartesian.h>
+#include <CGAL/convex_hull_3.h>
 
 typedef CGAL::Exact_predicates_exact_constructions_kernel ExactKernel;
 typedef CGAL::Simple_cartesian<double> SimpleKernel;
@@ -130,6 +131,34 @@ int makeMeshliteMeshFromCgal(void *meshlite, typename CGAL::Surface_mesh<typenam
     delete[] vertexPositions;
     delete[] faceVertexNumAndIndices;
     return meshId;
+}
+
+template <class Kernel>
+ExactMesh *makeCgalConvexHullMeshFromMeshlite(void *meshlite, int meshId)
+{
+    typename CGAL::Surface_mesh<typename Kernel::Point_3> *mesh = new typename CGAL::Surface_mesh<typename Kernel::Point_3>;
+    int vertexCount = meshlite_get_vertex_count(meshlite, meshId);
+    float *vertexPositions = new float[vertexCount * 3];
+    int vertexArrayLen = meshlite_get_vertex_position_array(meshlite, meshId, vertexPositions, vertexCount * 3);
+    int offset = 0;
+    assert(vertexArrayLen == vertexCount * 3);
+    std::vector<typename Kernel::Point_3> points;
+    for (int i = 0; i < vertexCount; i++) {
+        float x = vertexPositions[offset + 0];
+        float y = vertexPositions[offset + 1];
+        float z = vertexPositions[offset + 2];
+        if (std::isnan(x) || std::isinf(x))
+            x = 0;
+        if (std::isnan(y) || std::isinf(y))
+            y = 0;
+        if (std::isnan(z) || std::isinf(z))
+            z = 0;
+        points.push_back(typename Kernel::Point_3(x, y, z));
+        offset += 3;
+    }
+    delete[] vertexPositions;
+    CGAL::convex_hull_3(points.begin(), points.end(), *mesh);
+    return mesh;
 }
 
 ExactMesh *unionCgalMeshs(ExactMesh *first, ExactMesh *second)
@@ -315,3 +344,8 @@ void *cloneCombinableMesh(void *mesh)
     return (void *)new ExactMesh(*(ExactMesh *)mesh);
 }
 
+void *convertToCombinableConvexHullMesh(void *meshliteContext, int meshId)
+{
+    ExactMesh *mesh = makeCgalConvexHullMeshFromMeshlite<ExactKernel>(meshliteContext, meshId);
+    return (void *)mesh;
+}

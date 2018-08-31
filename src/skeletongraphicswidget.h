@@ -379,6 +379,7 @@ signals:
     void setPartDisableState(QUuid partId, bool disabled);
     void setPartXmirrorState(QUuid partId, bool mirrored);
     void setPartRoundState(QUuid partId, bool rounded);
+    void setPartWrapState(QUuid partId, bool wrapped);
     void setXlockState(bool locked);
     void setYlockState(bool locked);
     void setZlockState(bool locked);

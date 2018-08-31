@@ -19,7 +19,7 @@ signals:
     void setPartDeformWidth(QUuid partId, float width);
     void setPartRoundState(QUuid partId, bool rounded);
     void setPartColorState(QUuid partId, bool hasColor, QColor color);
-    void setPartInverseState(QUuid partId, bool inverse);
+    void setPartWrapState(QUuid partId, bool wrapped);
     void movePartUp(QUuid partId);
     void movePartDown(QUuid partId);
     void movePartToTop(QUuid partId);
@@ -41,6 +41,7 @@ public:
     void updateDeformButton();
     void updateRoundButton();
     void updateColorButton();
+    void updateWrapButton();
     void updateCheckedState(bool checked);
     static QSize preferredSize();
 protected:
@@ -62,6 +63,7 @@ private:
     QPushButton *m_deformButton;
     QPushButton *m_roundButton;
     QPushButton *m_colorButton;
+    QPushButton *m_wrapButton;
     QLabel *m_nameLabel;
     QWidget *m_backgroundWidget;
 private:

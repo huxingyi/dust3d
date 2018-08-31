@@ -661,6 +661,7 @@ void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUu
         part["xMirrored"] = partIt.second.xMirrored ? "true" : "false";
         part["zMirrored"] = partIt.second.zMirrored ? "true" : "false";
         part["rounded"] = partIt.second.rounded ? "true" : "false";
+        part["wrapped"] = partIt.second.wrapped ? "true" : "false";
         part["dirty"] = partIt.second.dirty ? "true" : "false";
         if (partIt.second.hasColor)
             part["color"] = partIt.second.color.name();
@@ -777,6 +778,7 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot)
         part.xMirrored = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "xMirrored"));
         part.zMirrored = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "zMirrored"));
         part.rounded = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "rounded"));
+        part.wrapped = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "wrapped"));
         if (isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "inverse")))
             inversePartIds.insert(part.id);
         const auto &colorIt = partKv.second.find("color");
@@ -1730,6 +1732,21 @@ void SkeletonDocument::setPartRoundState(QUuid partId, bool rounded)
     part->second.rounded = rounded;
     part->second.dirty = true;
     emit partRoundStateChanged(partId);
+    emit skeletonChanged();
+}
+
+void SkeletonDocument::setPartWrapState(QUuid partId, bool wrapped)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    if (part->second.wrapped == wrapped)
+        return;
+    part->second.wrapped = wrapped;
+    part->second.dirty = true;
+    emit partWrapStateChanged(partId);
     emit skeletonChanged();
 }
 

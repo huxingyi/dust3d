@@ -48,6 +48,10 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     m_colorButton->setSizePolicy(retainSizePolicy);
     initButton(m_colorButton);
     
+    m_wrapButton = new QPushButton;
+    m_wrapButton->setSizePolicy(retainSizePolicy);
+    initButton(m_wrapButton);
+    
     m_previewLabel = new QLabel;
     m_previewLabel->setFixedSize(Theme::previewImageSize, Theme::previewImageSize);
     
@@ -68,9 +72,9 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     toolsLayout->setContentsMargins(0, 0, 5, 0);
     int row = 0;
     int col = 0;
-    toolsLayout->addWidget(m_visibleButton, row, col++, Qt::AlignBottom);
     toolsLayout->addWidget(m_lockButton, row, col++, Qt::AlignBottom);
     toolsLayout->addWidget(m_disableButton, row, col++, Qt::AlignBottom);
+    toolsLayout->addWidget(m_wrapButton, row, col++, Qt::AlignBottom);
     toolsLayout->addWidget(m_colorButton, row, col++, Qt::AlignBottom);
     row++;
     col = 0;
@@ -79,17 +83,21 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     toolsLayout->addWidget(m_xMirrorButton, row, col++, Qt::AlignTop);
     toolsLayout->addWidget(m_roundButton, row, col++, Qt::AlignTop);
     
+    m_visibleButton->setContentsMargins(0, 0, 0, 0);
+    
     QHBoxLayout *previewAndToolsLayout = new QHBoxLayout;
     previewAndToolsLayout->setSpacing(0);
     previewAndToolsLayout->setContentsMargins(0, 0, 0, 0);
+    previewAndToolsLayout->addWidget(m_visibleButton);
     previewAndToolsLayout->addWidget(m_previewLabel);
     previewAndToolsLayout->addLayout(toolsLayout);
     previewAndToolsLayout->setStretch(0, 0);
     previewAndToolsLayout->setStretch(1, 0);
+    previewAndToolsLayout->setStretch(2, 1);
     
     QWidget *backgroundWidget = new QWidget;
     backgroundWidget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-    backgroundWidget->setFixedSize(Theme::previewImageSize + Theme::miniIconSize * 4 + 5, Theme::previewImageSize);
+    backgroundWidget->setFixedSize(preferredSize().width(), Theme::previewImageSize);
     backgroundWidget->setObjectName("background");
     m_backgroundWidget = backgroundWidget;
     backgroundWidget->setLayout(previewAndToolsLayout);
@@ -119,6 +127,7 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     connect(this, &SkeletonPartWidget::setPartDeformThickness, m_document, &SkeletonDocument::setPartDeformThickness);
     connect(this, &SkeletonPartWidget::setPartDeformWidth, m_document, &SkeletonDocument::setPartDeformWidth);
     connect(this, &SkeletonPartWidget::setPartRoundState, m_document, &SkeletonDocument::setPartRoundState);
+    connect(this, &SkeletonPartWidget::setPartWrapState, m_document, &SkeletonDocument::setPartWrapState);
     connect(this, &SkeletonPartWidget::setPartColorState, m_document, &SkeletonDocument::setPartColorState);
     connect(this, &SkeletonPartWidget::checkPart, m_document, &SkeletonDocument::checkPart);
     connect(this, &SkeletonPartWidget::enableBackgroundBlur, m_document, &SkeletonDocument::enableBackgroundBlur);
@@ -202,6 +211,16 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
         showColorSettingPopup(mapFromGlobal(QCursor::pos()));
     });
     
+    connect(m_wrapButton, &QPushButton::clicked, [=]() {
+        const SkeletonPart *part = m_document->findPart(m_partId);
+        if (!part) {
+            qDebug() << "Part not found:" << m_partId;
+            return;
+        }
+        emit setPartWrapState(m_partId, !part->wrapped);
+        emit groupOperationAdded();
+    });
+    
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     setFixedSize(preferredSize());
     
@@ -210,7 +229,7 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
 
 QSize SkeletonPartWidget::preferredSize()
 {
-    return QSize(Theme::previewImageSize + Theme::miniIconSize * 4 + 5 + 2, Theme::previewImageSize + 6);
+    return QSize(Theme::miniIconSize + Theme::previewImageSize + Theme::miniIconSize * 4 + 5 + 2, Theme::previewImageSize + 6);
 }
 
 void SkeletonPartWidget::updateAllButtons()
@@ -223,6 +242,7 @@ void SkeletonPartWidget::updateAllButtons()
     updateDeformButton();
     updateRoundButton();
     updateColorButton();
+    updateWrapButton();
 }
 
 void SkeletonPartWidget::updateCheckedState(bool checked)
@@ -505,15 +525,21 @@ void SkeletonPartWidget::updateColorButton()
         updateButton(m_colorButton, QChar(fa::eyedropper), false);
 }
 
+void SkeletonPartWidget::updateWrapButton()
+{
+    const SkeletonPart *part = m_document->findPart(m_partId);
+    if (!part) {
+        qDebug() << "Part not found:" << m_partId;
+        return;
+    }
+    if (part->wrapped)
+        updateButton(m_wrapButton, QChar(fa::cube), true);
+    else
+        updateButton(m_wrapButton, QChar(fa::cube), false);
+}
+
 void SkeletonPartWidget::reload()
 {
     updatePreview();
-    updateLockButton();
-    updateVisibleButton();
-    updateSubdivButton();
-    updateDisableButton();
-    updateXmirrorButton();
-    updateDeformButton();
-    updateRoundButton();
-    updateColorButton();
+    updateAllButtons();
 }

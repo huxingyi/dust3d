@@ -87,6 +87,7 @@ public:
     QUuid componentId;
     std::vector<QUuid> nodeIds;
     bool dirty;
+    bool wrapped;
     SkeletonPart(const QUuid &withId=QUuid()) :
         visible(true),
         locked(false),
@@ -99,7 +100,8 @@ public:
         rounded(false),
         color(Theme::white),
         hasColor(false),
-        dirty(true)
+        dirty(true),
+        wrapped(false)
     {
         id = withId.isNull() ? QUuid::createUuid() : withId;
     }
@@ -148,6 +150,7 @@ public:
         rounded = other.rounded;
         color = other.color;
         hasColor = other.hasColor;
+        wrapped = other.wrapped;
         componentId = other.componentId;
     }
 };
@@ -328,6 +331,7 @@ signals:
     void partDeformWidthChanged(QUuid partId);
     void partRoundStateChanged(QUuid partId);
     void partColorStateChanged(QUuid partId);
+    void partWrapStateChanged(QUuid partId);
     void componentInverseStateChanged(QUuid partId);
     void cleanup();
     void originChanged();
@@ -425,6 +429,7 @@ public slots:
     void setPartDeformWidth(QUuid partId, float width);
     void setPartRoundState(QUuid partId, bool rounded);
     void setPartColorState(QUuid partId, bool hasColor, QColor color);
+    void setPartWrapState(QUuid partId, bool wrapped);
     void setComponentInverseState(QUuid componentId, bool inverse);
     void moveComponentUp(QUuid componentId);
     void moveComponentDown(QUuid componentId);

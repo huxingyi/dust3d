@@ -561,6 +561,17 @@ void SkeletonPartTreeWidget::partRoundStateChanged(QUuid partId)
     widget->updateRoundButton();
 }
 
+void SkeletonPartTreeWidget::partWrapStateChanged(QUuid partId)
+{
+    auto item = m_partItemMap.find(partId);
+    if (item == m_partItemMap.end()) {
+        qDebug() << "Part item not found:" << partId;
+        return;
+    }
+    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second, 0);
+    widget->updateWrapButton();
+}
+
 void SkeletonPartTreeWidget::partColorStateChanged(QUuid partId)
 {
     auto item = m_partItemMap.find(partId);

@@ -196,6 +196,7 @@ void *MeshGenerator::combinePartMesh(QString partId)
     bool isDisabled = isTrueValueString(valueOfKeyInMapOrEmpty(part, "disabled"));
     bool xMirrored = isTrueValueString(valueOfKeyInMapOrEmpty(part, "xMirrored"));
     bool subdived = isTrueValueString(valueOfKeyInMapOrEmpty(part, "subdived"));
+    bool wrapped = isTrueValueString(valueOfKeyInMapOrEmpty(part, "wrapped"));
     int bmeshId = meshlite_bmesh_create(m_meshliteContext);
     if (subdived)
         meshlite_bmesh_set_cut_subdiv_count(m_meshliteContext, bmeshId, 1);
@@ -288,14 +289,21 @@ void *MeshGenerator::combinePartMesh(QString partId)
     if (!bmeshToNodeIdMap.empty()) {
         meshId = meshlite_bmesh_generate_mesh(m_meshliteContext, bmeshId);
         loadVertexSources(m_meshliteContext, meshId, partIdNotAsString, bmeshToNodeIdMap, cacheBmeshVertices);
-        resultMesh = convertToCombinableMesh(m_meshliteContext, meshlite_triangulate(m_meshliteContext, meshId));
+        if (wrapped)
+            resultMesh = convertToCombinableConvexHullMesh(m_meshliteContext, meshId);
+        else
+            resultMesh = convertToCombinableMesh(m_meshliteContext, meshlite_triangulate(m_meshliteContext, meshId));
     }
     
     if (nullptr != resultMesh) {
         if (xMirrored) {
             int xMirroredMeshId = meshlite_mirror_in_x(m_meshliteContext, meshId, 0);
             loadVertexSources(m_meshliteContext, xMirroredMeshId, mirroredPartIdNotAsString, bmeshToNodeIdMap, cacheBmeshVertices);
-            void *mirroredMesh = convertToCombinableMesh(m_meshliteContext, meshlite_triangulate(m_meshliteContext, xMirroredMeshId));
+            void *mirroredMesh = nullptr;
+            if (wrapped)
+                mirroredMesh = convertToCombinableConvexHullMesh(m_meshliteContext, xMirroredMeshId);
+            else
+                mirroredMesh = convertToCombinableMesh(m_meshliteContext, meshlite_triangulate(m_meshliteContext, xMirroredMeshId));
             if (nullptr != mirroredMesh) {
                 void *newResultMesh = unionCombinableMeshs(resultMesh, mirroredMesh);
                 deleteCombinableMesh(mirroredMesh);

@@ -15,5 +15,6 @@ void *diffCombinableMeshs(void *first, void *second);
 int convertFromCombinableMesh(void *meshliteContext, void *mesh);
 void deleteCombinableMesh(void *mesh);
 void *cloneCombinableMesh(void *mesh);
+void *convertToCombinableConvexHullMesh(void *meshliteContext, int meshId);
 
 #endif

@@ -1502,6 +1502,14 @@ bool SkeletonGraphicsWidget::keyPress(QKeyEvent *event)
             emit groupOperationAdded();
             return true;
         }
+    } else if (event->key() == Qt::Key_W) {
+        if (SkeletonDocumentEditMode::Select == m_document->editMode && !m_lastCheckedPart.isNull()) {
+            const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
+            bool partWrapped = part && part->wrapped;
+            emit setPartWrapState(m_lastCheckedPart, !partWrapped);
+            emit groupOperationAdded();
+            return true;
+        }
     }
     return false;
 }
