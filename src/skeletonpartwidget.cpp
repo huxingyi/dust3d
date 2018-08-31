@@ -142,6 +142,7 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
             return;
         }
         emit setPartLockState(m_partId, !part->locked);
+        emit groupOperationAdded();
     });
     
     connect(m_visibleButton, &QPushButton::clicked, [=]() {
@@ -151,6 +152,7 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
             return;
         }
         emit setPartVisibleState(m_partId, !part->visible);
+        emit groupOperationAdded();
     });
     
     connect(m_subdivButton, &QPushButton::clicked, [=]() {
@@ -305,6 +307,7 @@ void SkeletonPartWidget::showColorSettingPopup(const QPoint &pos)
     
     connect(colorEraser, &QPushButton::clicked, [=]() {
         emit setPartColorState(m_partId, false, Theme::white);
+        emit groupOperationAdded();
     });
     
     connect(pickButton, &QPushButton::clicked, [=]() {
@@ -313,6 +316,7 @@ void SkeletonPartWidget::showColorSettingPopup(const QPoint &pos)
         emit enableBackgroundBlur();
         if(color.isValid()) {
             emit setPartColorState(m_partId, true, color);
+            emit groupOperationAdded();
         }
     });
     
@@ -352,6 +356,7 @@ void SkeletonPartWidget::showDeformSettingPopup(const QPoint &pos)
     
     connect(widthWidget, &FloatNumberWidget::valueChanged, [=](float value) {
         emit setPartDeformWidth(m_partId, value);
+        emit groupOperationAdded();
     });
     
     QPushButton *thicknessEraser = new QPushButton(QChar(fa::eraser));
