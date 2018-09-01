@@ -226,6 +226,8 @@ void *MeshGenerator::combinePartMesh(QString partId)
     std::map<int, QUuid> bmeshToNodeIdMap;
     auto &cacheBmeshNodes = m_cacheContext->partBmeshNodes[partId];
     auto &cacheBmeshVertices = m_cacheContext->partBmeshVertices[partId];
+    cacheBmeshNodes.clear();
+    cacheBmeshVertices.clear();
     for (const auto &nodeId: m_partNodeIds[partId]) {
         auto findNode = m_snapshot->nodes.find(nodeId);
         if (findNode == m_snapshot->nodes.end()) {
