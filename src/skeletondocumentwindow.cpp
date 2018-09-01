@@ -193,6 +193,8 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     partListDocker->setAllowedAreas(Qt::RightDockWidgetArea);
 
     SkeletonPartTreeWidget *partTreeWidget = new SkeletonPartTreeWidget(m_document, partListDocker);
+    
+    partTreeWidget->setGraphicsFunctions(graphicsWidget);
 
     partListDocker->setWidget(partTreeWidget);
     addDockWidget(Qt::RightDockWidgetArea, partListDocker);
@@ -656,6 +658,16 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(m_document, &SkeletonDocument::zlockStateChanged, this, &SkeletonDocumentWindow::updateZlockButtonState);
 
     connect(this, &SkeletonDocumentWindow::initialized, m_document, &SkeletonDocument::uiReady);
+    
+    QTimer *timer = new QTimer(this);
+    timer->setInterval(100);
+    connect(timer, &QTimer::timeout, [=] {
+        QWidget *focusedWidget = QApplication::focusWidget();
+        //qDebug() << (focusedWidget ? ("Focused on:" + QString(focusedWidget->metaObject()->className()) + " title:" + focusedWidget->windowTitle()) : "No Focus") << " isActive:" << isActiveWindow();
+        if (nullptr == focusedWidget && isActiveWindow())
+            graphicsWidget->setFocus();
+    });
+    timer->start();
 }
 
 SkeletonDocumentWindow *SkeletonDocumentWindow::createDocumentWindow()

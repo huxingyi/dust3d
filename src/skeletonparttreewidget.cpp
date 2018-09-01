@@ -2,6 +2,7 @@
 #include <vector>
 #include "skeletonparttreewidget.h"
 #include "skeletonpartwidget.h"
+#include "skeletongraphicswidget.h"
 
 SkeletonPartTreeWidget::SkeletonPartTreeWidget(const SkeletonDocument *document, QWidget *parent) :
     QTreeWidget(parent),
@@ -611,3 +612,14 @@ QSize SkeletonPartTreeWidget::sizeHint() const
     return QSize(size.width() * 1.35, size.height() * 5.5);
 }
 
+void SkeletonPartTreeWidget::setGraphicsFunctions(SkeletonGraphicsFunctions *graphicsFunctions)
+{
+    m_graphicsFunctions = graphicsFunctions;
+}
+
+void SkeletonPartTreeWidget::keyPressEvent(QKeyEvent *event)
+{
+    QTreeWidget::keyPressEvent(event);
+    if (m_graphicsFunctions)
+        m_graphicsFunctions->keyPress(event);
+}

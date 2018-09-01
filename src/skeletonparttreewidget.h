@@ -5,6 +5,8 @@
 #include <QMouseEvent>
 #include "skeletondocument.h"
 
+class SkeletonGraphicsFunctions;
+
 class SkeletonPartTreeWidget : public QTreeWidget
 {
     Q_OBJECT
@@ -38,6 +40,7 @@ signals:
 public:
     SkeletonPartTreeWidget(const SkeletonDocument *document, QWidget *parent);
     QTreeWidgetItem *findComponentItem(QUuid componentId);
+    void setGraphicsFunctions(SkeletonGraphicsFunctions *graphicsFunctions);
 public slots:
     void componentNameChanged(QUuid componentId);
     void componentChildrenChanged(QUuid componentId);
@@ -66,6 +69,7 @@ public slots:
 protected:
     virtual QSize sizeHint() const;
     virtual void mousePressEvent(QMouseEvent *event);
+    virtual void keyPressEvent(QKeyEvent *event);
 private:
     void addComponentChildrenToItem(QUuid componentId, QTreeWidgetItem *parentItem);
     void deleteItemChildren(QTreeWidgetItem *item);
@@ -73,6 +77,7 @@ private:
     const SkeletonDocument *m_document = nullptr;
     std::map<QUuid, QTreeWidgetItem *> m_partItemMap;
     std::map<QUuid, QTreeWidgetItem *> m_componentItemMap;
+    SkeletonGraphicsFunctions *m_graphicsFunctions = nullptr;
 };
 
 #endif
