@@ -1096,9 +1096,9 @@ bool SkeletonGraphicsWidget::mousePress(QMouseEvent *event)
                 if (m_addFromNodeItem) {
                     if (m_hoveredNodeItem && m_addFromNodeItem &&
                             m_hoveredNodeItem != m_addFromNodeItem &&
-                            m_hoveredNodeItem->profile() == m_addFromNodeItem->profile()) {
-                        if (m_document->findEdgeByNodes(m_addFromNodeItem->id(), m_hoveredNodeItem->id()))
-                            return true;
+                            m_hoveredNodeItem->profile() == m_addFromNodeItem->profile() &&
+                            !m_document->findEdgeByNodes(m_addFromNodeItem->id(), m_hoveredNodeItem->id()) &&
+                            m_document->isNodeEditable(m_hoveredNodeItem->id())) {
                         emit addEdge(m_addFromNodeItem->id(), m_hoveredNodeItem->id());
                         emit groupOperationAdded();
                         return true;
