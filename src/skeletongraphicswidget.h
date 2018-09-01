@@ -433,6 +433,7 @@ public slots:
     void selectAll();
     void unselectAll();
     void selectPartAll();
+    void addPartToSelection(QUuid partId);
     void cut();
     void copy();
     void flipHorizontally();

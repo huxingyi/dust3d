@@ -97,6 +97,7 @@ void SkeletonPartTreeWidget::showContextMenu(const QPoint &pos)
     QAction unlockAction(tr("Unlock"), this);
     QAction invertAction(tr("Invert"), this);
     QAction cancelInverseAction(tr("Cancel Inverse"), this);
+    QAction selectAction(tr("Select"), this);
     
     if (!component->linkToPartId.isNull()) {
         emit checkPart(component->linkToPartId);
@@ -128,6 +129,15 @@ void SkeletonPartTreeWidget::showContextMenu(const QPoint &pos)
         }
     } else {
         if (!component->childrenIds.empty()) {
+            connect(&selectAction, &QAction::triggered, [=]() {
+                std::vector<QUuid> partIds;
+                m_document->collectComponentDescendantParts(componentId, partIds);
+                for (const auto &partId: partIds) {
+                    emit addPartToSelection(partId);
+                }
+            });
+            contextMenu.addAction(&selectAction);
+            
             connect(&showAction, &QAction::triggered, [=]() {
                 emit showDescendantComponents(componentId);
             });

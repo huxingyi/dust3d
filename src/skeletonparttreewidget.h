@@ -37,6 +37,7 @@ signals:
     void showDescendantComponents(QUuid componentId);
     void lockDescendantComponents(QUuid componentId);
     void unlockDescendantComponents(QUuid componentId);
+    void addPartToSelection(QUuid partId);
 public:
     SkeletonPartTreeWidget(const SkeletonDocument *document, QWidget *parent);
     QTreeWidgetItem *findComponentItem(QUuid componentId);

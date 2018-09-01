@@ -1939,6 +1939,41 @@ void SkeletonGraphicsWidget::addSelectEdge(QUuid edgeId)
     hoverPart(QUuid());
 }
 
+void SkeletonGraphicsWidget::addPartToSelection(QUuid partId)
+{
+    SkeletonProfile choosenProfile = SkeletonProfile::Main;
+    if (m_hoveredNodeItem) {
+        choosenProfile = m_hoveredNodeItem->profile();
+    } else if (m_hoveredEdgeItem) {
+        choosenProfile = m_hoveredEdgeItem->profile();
+    }
+    QUuid choosenPartId = partId;
+    for (const auto &it: nodeItemMap) {
+        SkeletonGraphicsNodeItem *item = SkeletonProfile::Main == choosenProfile ? it.second.first : it.second.second;
+        const SkeletonNode *node = m_document->findNode(item->id());
+        if (!node)
+            continue;
+        if (choosenPartId.isNull()) {
+            choosenPartId = node->partId;
+        }
+        if (node->partId != choosenPartId)
+            continue;
+        addItemToRangeSelection(item);
+    }
+    for (const auto &it: edgeItemMap) {
+        SkeletonGraphicsEdgeItem *item = SkeletonProfile::Main == choosenProfile ? it.second.first : it.second.second;
+        const SkeletonEdge *edge = m_document->findEdge(item->id());
+        if (!edge)
+            continue;
+        if (choosenPartId.isNull()) {
+            choosenPartId = edge->partId;
+        }
+        if (edge->partId != choosenPartId)
+            continue;
+        addItemToRangeSelection(item);
+    }
+}
+
 void SkeletonGraphicsWidget::selectPartAll()
 {
     unselectAll();
