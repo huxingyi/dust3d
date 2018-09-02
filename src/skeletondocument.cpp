@@ -479,6 +479,7 @@ void SkeletonDocument::moveOriginBy(float x, float y, float z)
         originY += y;
     if (!zlocked)
         originZ += z;
+    markAllDirty();
     emit originChanged();
     emit skeletonChanged();
 }
