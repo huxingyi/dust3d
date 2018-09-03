@@ -465,6 +465,8 @@ public slots:
     void setXlockState(bool locked);
     void setYlockState(bool locked);
     void setZlockState(bool locked);
+    void enableAllPositionRelatedLocks();
+    void disableAllPositionRelatedLocks();
 private:
     void splitPartByNode(std::vector<std::vector<QUuid>> *groups, QUuid nodeId);
     void joinNodeAndNeiborsToGroup(std::vector<QUuid> *group, QUuid nodeId, std::set<QUuid> *visitMap, QUuid noUseEdgeId=QUuid());
@@ -497,6 +499,7 @@ private: // need initialize
     unsigned long long m_ambientOcclusionBakedImageUpdateVersion;
     QOpenGLWidget *m_sharedContextWidget;
     QUuid m_currentCanvasComponentId;
+    bool m_allPositionRelatedLocksEnabled;
 private:
     static unsigned long m_maxSnapshot;
     std::deque<SkeletonHistoryItem> m_undoItems;

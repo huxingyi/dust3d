@@ -110,9 +110,6 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     toolButtonLayout->setSpacing(0);
     toolButtonLayout->setContentsMargins(5, 10, 4, 0);
 
-    QPushButton *undoButton = new QPushButton(QChar(fa::undo));
-    Theme::initAwesomeButton(undoButton);
-
     QPushButton *addButton = new QPushButton(QChar(fa::plus));
     Theme::initAwesomeButton(addButton);
 
@@ -139,9 +136,13 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     m_zlockButton = new QPushButton(QChar('Z'));
     initLockButton(m_zlockButton);
     updateZlockButtonState();
+    
+    QPushButton *rotateCounterclockwiseButton = new QPushButton(QChar(fa::rotateleft));
+    Theme::initAwesomeButton(rotateCounterclockwiseButton);
+    
+    QPushButton *rotateClockwiseButton = new QPushButton(QChar(fa::rotateright));
+    Theme::initAwesomeButton(rotateClockwiseButton);
 
-    toolButtonLayout->addWidget(undoButton);
-    toolButtonLayout->addSpacing(10);
     toolButtonLayout->addWidget(addButton);
     toolButtonLayout->addWidget(selectButton);
     toolButtonLayout->addWidget(dragButton);
@@ -151,6 +152,9 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     toolButtonLayout->addWidget(m_xlockButton);
     toolButtonLayout->addWidget(m_ylockButton);
     toolButtonLayout->addWidget(m_zlockButton);
+    toolButtonLayout->addSpacing(10);
+    toolButtonLayout->addWidget(rotateCounterclockwiseButton);
+    toolButtonLayout->addWidget(rotateClockwiseButton);
 
     QLabel *verticalLogoLabel = new QLabel;
     QImage verticalLogoImage;
@@ -477,9 +481,8 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(m_document, &SkeletonDocument::turnaroundChanged,
         graphicsWidget, &SkeletonGraphicsWidget::turnaroundChanged);
 
-    connect(undoButton, &QPushButton::clicked, [=]() {
-        m_document->undo();
-    });
+    connect(rotateCounterclockwiseButton, &QPushButton::clicked, graphicsWidget, &SkeletonGraphicsWidget::rotateAllMainProfileCounterclockwise90DegreeAlongOrigin);
+    connect(rotateClockwiseButton, &QPushButton::clicked, graphicsWidget, &SkeletonGraphicsWidget::rotateAllMainProfileClockwise90DegreeAlongOrigin);
 
     connect(addButton, &QPushButton::clicked, [=]() {
         m_document->setEditMode(SkeletonDocumentEditMode::Add);
@@ -554,6 +557,9 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(graphicsWidget, &SkeletonGraphicsWidget::setXlockState, m_document, &SkeletonDocument::setXlockState);
     connect(graphicsWidget, &SkeletonGraphicsWidget::setYlockState, m_document, &SkeletonDocument::setYlockState);
     connect(graphicsWidget, &SkeletonGraphicsWidget::setZlockState, m_document, &SkeletonDocument::setZlockState);
+    
+    connect(graphicsWidget, &SkeletonGraphicsWidget::enableAllPositionRelatedLocks, m_document, &SkeletonDocument::enableAllPositionRelatedLocks);
+    connect(graphicsWidget, &SkeletonGraphicsWidget::disableAllPositionRelatedLocks, m_document, &SkeletonDocument::disableAllPositionRelatedLocks);
 
     connect(graphicsWidget, &SkeletonGraphicsWidget::changeTurnaround, this, &SkeletonDocumentWindow::changeTurnaround);
     connect(graphicsWidget, &SkeletonGraphicsWidget::save, this, &SkeletonDocumentWindow::save);

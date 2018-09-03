@@ -765,8 +765,7 @@ void SkeletonGraphicsWidget::rotateSelected(int degree)
     readMergedSkeletonNodeSetFromRangeSelection(&nodeItems);
     
     QVector2D center;
-    qNormalizeAngle(degree);
-    
+
     if (1 == nodeItems.size() && m_document->originSettled()) {
         // Rotate all children nodes around this node
         // 1. Pick who is the parent from neighbors
@@ -826,10 +825,17 @@ void SkeletonGraphicsWidget::rotateSelected(int degree)
         center = centerOfNodeItemSet(nodeItems);
     }
 
+    rotateItems(nodeItems, degree, center);
+}
+
+void SkeletonGraphicsWidget::rotateItems(const std::set<SkeletonGraphicsNodeItem *> &nodeItems, int degree, QVector2D center)
+{
+    emit disableAllPositionRelatedLocks();
+    QVector3D centerPoint(center.x(), center.y(), 0);
+    qNormalizeAngle(degree);
     for (const auto &it: nodeItems) {
         SkeletonGraphicsNodeItem *nodeItem = it;
         QMatrix4x4 mat;
-        QVector3D centerPoint(center.x(), center.y(), 0);
         QPointF nodeOrigin = nodeItem->origin();
         QVector3D nodeOriginPoint(nodeOrigin.x(), nodeOrigin.y(), 0);
         QVector3D p = nodeOriginPoint - centerPoint;
@@ -844,6 +850,17 @@ void SkeletonGraphicsWidget::rotateSelected(int degree)
             emit moveNodeBy(nodeItem->id(), 0, byY, byX);
         }
     }
+    emit enableAllPositionRelatedLocks();
+}
+
+void SkeletonGraphicsWidget::rotateAllSideProfile(int degree)
+{
+    std::set<SkeletonGraphicsNodeItem *> items;
+    for (const auto &item: nodeItemMap) {
+        items.insert(item.second.second);
+    }
+    QVector2D center(scenePosFromUnified(QPointF(m_document->originZ, m_document->originY)));
+    rotateItems(items, degree, center);
 }
 
 void SkeletonGraphicsWidget::moveCheckedOrigin(float byX, float byY)
@@ -1034,6 +1051,26 @@ void SkeletonGraphicsWidget::rotateCounterclockwise90Degree()
 {
     emit batchChangeBegin();
     emit rotateSelected(360 - 90);
+    emit batchChangeEnd();
+    emit groupOperationAdded();
+}
+
+void SkeletonGraphicsWidget::rotateAllMainProfileClockwise90DegreeAlongOrigin()
+{
+    if (!m_document->originSettled())
+        return;
+    emit batchChangeBegin();
+    emit rotateAllSideProfile(90);
+    emit batchChangeEnd();
+    emit groupOperationAdded();
+}
+
+void SkeletonGraphicsWidget::rotateAllMainProfileCounterclockwise90DegreeAlongOrigin()
+{
+    if (!m_document->originSettled())
+        return;
+    emit batchChangeBegin();
+    emit rotateAllSideProfile(360 - 90);
     emit batchChangeEnd();
     emit groupOperationAdded();
 }

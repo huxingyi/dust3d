@@ -41,7 +41,8 @@ SkeletonDocument::SkeletonDocument() :
     m_textureImageUpdateVersion(0),
     m_ambientOcclusionBaker(nullptr),
     m_ambientOcclusionBakedImageUpdateVersion(0),
-    m_sharedContextWidget(nullptr)
+    m_sharedContextWidget(nullptr),
+    m_allPositionRelatedLocksEnabled(true)
 {
 }
 
@@ -60,6 +61,16 @@ void SkeletonDocument::uiReady()
 {
     qDebug() << "uiReady";
     emit editModeChanged();
+}
+
+void SkeletonDocument::SkeletonDocument::enableAllPositionRelatedLocks()
+{
+    m_allPositionRelatedLocksEnabled = true;
+}
+
+void SkeletonDocument::SkeletonDocument::disableAllPositionRelatedLocks()
+{
+    m_allPositionRelatedLocksEnabled = false;
 }
 
 void SkeletonDocument::breakEdge(QUuid edgeId)
@@ -456,13 +467,13 @@ void SkeletonDocument::moveNodeBy(QUuid nodeId, float x, float y, float z)
         qDebug() << "Find node failed:" << nodeId;
         return;
     }
-    if (isPartReadonly(it->second.partId))
+    if (m_allPositionRelatedLocksEnabled && isPartReadonly(it->second.partId))
         return;
-    if (!xlocked)
+    if (!(m_allPositionRelatedLocksEnabled && xlocked))
         it->second.x += x;
-    if (!ylocked)
+    if (!(m_allPositionRelatedLocksEnabled && ylocked))
         it->second.y += y;
-    if (!zlocked)
+    if (!(m_allPositionRelatedLocksEnabled && zlocked))
         it->second.z += z;
     auto part = partMap.find(it->second.partId);
     if (part != partMap.end())
@@ -473,11 +484,11 @@ void SkeletonDocument::moveNodeBy(QUuid nodeId, float x, float y, float z)
 
 void SkeletonDocument::moveOriginBy(float x, float y, float z)
 {
-    if (!xlocked)
+    if (!(m_allPositionRelatedLocksEnabled && xlocked))
         originX += x;
-    if (!ylocked)
+    if (!(m_allPositionRelatedLocksEnabled && ylocked))
         originY += y;
-    if (!zlocked)
+    if (!(m_allPositionRelatedLocksEnabled && zlocked))
         originZ += z;
     markAllDirty();
     emit originChanged();
@@ -491,13 +502,13 @@ void SkeletonDocument::setNodeOrigin(QUuid nodeId, float x, float y, float z)
         qDebug() << "Find node failed:" << nodeId;
         return;
     }
-    if (isPartReadonly(it->second.partId))
+    if ((m_allPositionRelatedLocksEnabled && isPartReadonly(it->second.partId)))
         return;
-    if (!xlocked)
+    if (!(m_allPositionRelatedLocksEnabled && xlocked))
         it->second.x = x;
-    if (!ylocked)
+    if (!(m_allPositionRelatedLocksEnabled && ylocked))
         it->second.y = y;
-    if (!zlocked)
+    if (!(m_allPositionRelatedLocksEnabled && zlocked))
         it->second.z = z;
     auto part = partMap.find(it->second.partId);
     if (part != partMap.end())

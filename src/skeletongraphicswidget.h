@@ -386,6 +386,8 @@ signals:
     void setNodeOrigin(QUuid nodeId, float x, float y, float z);
     void zoomRenderedModelBy(float delta);
     void switchNodeXZ(QUuid nodeId);
+    void enableAllPositionRelatedLocks();
+    void disableAllPositionRelatedLocks();
 public:
     SkeletonGraphicsWidget(const SkeletonDocument *document);
     std::map<QUuid, std::pair<SkeletonGraphicsNodeItem *, SkeletonGraphicsNodeItem *>> nodeItemMap;
@@ -440,6 +442,8 @@ public slots:
     void flipVertically();
     void rotateClockwise90Degree();
     void rotateCounterclockwise90Degree();
+    void rotateAllMainProfileClockwise90DegreeAlongOrigin();
+    void rotateAllMainProfileCounterclockwise90DegreeAlongOrigin();
     void removeAllContent();
     void breakSelected();
     void connectSelected();
@@ -486,6 +490,8 @@ private:
     void setItemHoveredOnAllProfiles(QGraphicsItem *item, bool hovered);
     void alignSelectedToGlobal(bool alignToVerticalCenter, bool alignToHorizontalCenter);
     void alignSelectedToLocal(bool alignToVerticalCenter, bool alignToHorizontalCenter);
+    void rotateItems(const std::set<SkeletonGraphicsNodeItem *> &nodeItems, int degree, QVector2D center);
+    void rotateAllSideProfile(int degree);
 private: //need initalize
     const SkeletonDocument *m_document;
     QGraphicsPixmapItem *m_backgroundItem;
