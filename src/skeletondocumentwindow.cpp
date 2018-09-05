@@ -250,13 +250,17 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     
     m_fileMenu->addSeparator();
 
-    m_exportModelAction = new QAction(tr("Wavefront (.obj)..."), this);
-    connect(m_exportModelAction, &QAction::triggered, this, &SkeletonDocumentWindow::exportModelResult, Qt::QueuedConnection);
-    m_exportMenu->addAction(m_exportModelAction);
+    m_exportAsObjAction = new QAction(tr("Wavefront (.obj)..."), this);
+    connect(m_exportAsObjAction, &QAction::triggered, this, &SkeletonDocumentWindow::exportObjResult, Qt::QueuedConnection);
+    m_exportMenu->addAction(m_exportAsObjAction);
+    
+    m_exportAsObjPlusMaterialsAction = new QAction(tr("Wavefront (.obj + .mtl)..."), this);
+    connect(m_exportAsObjPlusMaterialsAction, &QAction::triggered, this, &SkeletonDocumentWindow::exportObjPlusMaterialsResult, Qt::QueuedConnection);
+    m_exportMenu->addAction(m_exportAsObjPlusMaterialsAction);
 
-    m_exportSkeletonAction = new QAction(tr("GL Transmission Format (.gltf)..."), this);
-    connect(m_exportSkeletonAction, &QAction::triggered, this, &SkeletonDocumentWindow::showExportPreview, Qt::QueuedConnection);
-    m_exportMenu->addAction(m_exportSkeletonAction);
+    m_exportAsGltfAction = new QAction(tr("GL Transmission Format (.gltf)..."), this);
+    connect(m_exportAsGltfAction, &QAction::triggered, this, &SkeletonDocumentWindow::showExportPreview, Qt::QueuedConnection);
+    m_exportMenu->addAction(m_exportAsGltfAction);
     
     m_fileMenu->addSeparator();
 
@@ -267,8 +271,9 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     m_fileMenu->addSeparator();
 
     connect(m_fileMenu, &QMenu::aboutToShow, [=]() {
-        m_exportModelAction->setEnabled(m_graphicsWidget->hasItems());
-        m_exportSkeletonAction->setEnabled(m_graphicsWidget->hasItems());
+        m_exportAsObjAction->setEnabled(m_graphicsWidget->hasItems());
+        m_exportAsObjPlusMaterialsAction->setEnabled(m_graphicsWidget->hasItems());
+        m_exportAsGltfAction->setEnabled(m_graphicsWidget->hasItems());
     });
 
     m_editMenu = menuBar()->addMenu(tr("Edit"));
@@ -930,7 +935,7 @@ void SkeletonDocumentWindow::open()
     setCurrentFilename(filename);
 }
 
-void SkeletonDocumentWindow::exportModelResult()
+void SkeletonDocumentWindow::exportObjResult()
 {
     QString filename = QFileDialog::getSaveFileName(this, QString(), QString(),
        tr("Wavefront (*.obj)"));
@@ -938,9 +943,19 @@ void SkeletonDocumentWindow::exportModelResult()
         return;
     }
     QApplication::setOverrideCursor(Qt::WaitCursor);
-    // Must update mesh before export, because there may be an animation clip playing which breaks the original mesh.
-    m_modelRenderWidget->updateMesh(m_document->takeResultMesh());
     m_modelRenderWidget->exportMeshAsObj(filename);
+    QApplication::restoreOverrideCursor();
+}
+
+void SkeletonDocumentWindow::exportObjPlusMaterialsResult()
+{
+    QString filename = QFileDialog::getSaveFileName(this, QString(), QString(),
+       tr("Wavefront (*.obj)"));
+    if (filename.isEmpty()) {
+        return;
+    }
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    m_modelRenderWidget->exportMeshAsObjPlusMaterials(filename);
     QApplication::restoreOverrideCursor();
 }
 

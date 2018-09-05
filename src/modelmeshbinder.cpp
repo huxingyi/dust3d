@@ -57,7 +57,7 @@ void ModelMeshBinder::exportMeshAsObj(const QString &filename)
     }
 }
 
-void ModelMeshBinder::exportMeshAdObjPlusMaterials(const QString &filename)
+void ModelMeshBinder::exportMeshAsObjPlusMaterials(const QString &filename)
 {
     QMutexLocker lock(&m_meshMutex);
     if (m_mesh) {

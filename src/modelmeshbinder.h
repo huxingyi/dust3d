@@ -15,7 +15,7 @@ public:
     ~ModelMeshBinder();
     void updateMesh(MeshLoader *mesh);
     void exportMeshAsObj(const QString &filename);
-    void exportMeshAdObjPlusMaterials(const QString &filename);
+    void exportMeshAsObjPlusMaterials(const QString &filename);
     void initialize();
     void paint(ModelShaderProgram *program);
     void cleanup();

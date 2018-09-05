@@ -34,7 +34,8 @@ public slots:
     void save();
     void saveTo(const QString &saveAsFilename);
     void open();
-    void exportModelResult();
+    void exportObjResult();
+    void exportObjPlusMaterialsResult();
     void exportGltfResult();
     void showExportPreview();
     void newWindow();
@@ -77,8 +78,9 @@ private:
     QMenu *m_exportMenu;
     QAction *m_changeTurnaroundAction;
     
-    QAction *m_exportModelAction;
-    QAction *m_exportSkeletonAction;
+    QAction *m_exportAsObjAction;
+    QAction *m_exportAsObjPlusMaterialsAction;
+    QAction *m_exportAsGltfAction;
     
     QMenu *m_editMenu;
     QAction *m_addAction;
