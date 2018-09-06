@@ -502,7 +502,7 @@ void *MeshGenerator::combineComponentMesh(QString componentId, bool *inverse)
                 
                 std::vector<QVector3D> positionsAfterSmooth;
                 loadMeshVerticesPositions(m_meshliteContext, meshIdForSmooth, positionsAfterSmooth);
-                assert(positionsBeforeSmooth.size() == positionsAfterSmooth.size());
+                Q_ASSERT(positionsBeforeSmooth.size() == positionsAfterSmooth.size());
                 
                 for (size_t vertexIndex = 0; vertexIndex < positionsBeforeSmooth.size(); vertexIndex++) {
                     const auto &oldPosition = positionsBeforeSmooth[vertexIndex];
