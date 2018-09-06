@@ -11,6 +11,7 @@
 #include "meshloader.h"
 #include "modelofflinerender.h"
 #include "meshresultcontext.h"
+#include "positionmap.h"
 
 class GeneratedCacheContext
 {
@@ -19,6 +20,8 @@ public:
     std::map<QString, std::vector<BmeshVertex>> partBmeshVertices;
     std::map<QString, std::vector<BmeshNode>> partBmeshNodes;
     std::map<QString, void *> componentCombinableMeshs;
+    std::map<QString, std::vector<QVector3D>> componentPositions;
+    std::map<QString, PositionMap<BmeshVertex>> componentVerticesSources;
     void updateComponentCombinableMesh(QString componentId, void *mesh);
 };
 
@@ -29,7 +32,6 @@ public:
     MeshGenerator(SkeletonSnapshot *snapshot, QThread *thread);
     ~MeshGenerator();
     void setSharedContextWidget(QOpenGLWidget *widget);
-    //void addPreviewRequirement();
     void addPartPreviewRequirement(const QString &partId);
     void setGeneratedCacheContext(GeneratedCacheContext *cacheContext);
     MeshLoader *takeResultMesh();
@@ -59,6 +61,7 @@ private:
     std::map<QString, std::set<QString>> m_partEdgeIds;
     std::set<QString> m_dirtyComponentIds;
     std::set<QString> m_dirtyPartIds;
+    PositionMap<std::pair<QString, int>> m_bmeshPartVerticesIndiciesMap;
 private:
     static bool m_enableDebug;
 private:

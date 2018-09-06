@@ -50,7 +50,7 @@ public:
         m_map[makeKey(x, y, z)] = data;
     }
 
-    bool findPosition(float x, float y, float z, T *data)
+    bool findPosition(float x, float y, float z, T *data = nullptr)
     {
         const auto &result = m_map.find(makeKey(x, y, z));
         if (result == m_map.end())
@@ -58,6 +58,16 @@ public:
         if (data)
             *data = result->second;
         return true;
+    }
+    
+    void removePosition(float x, float y, float z)
+    {
+        m_map.erase(makeKey(x, y, z));
+    }
+    
+    std::map<PositionMapKey, T> &map()
+    {
+        return m_map;
     }
 
 private:

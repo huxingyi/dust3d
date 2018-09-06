@@ -12,6 +12,7 @@ public:
     explicit FloatNumberWidget(QWidget *parent = nullptr);
     void setRange(float min, float max);
     float value() const;
+    void setItemName(const QString &name);
 
 public slots:
     void increaseValue();
@@ -20,10 +21,14 @@ public slots:
 
 signals:
     void valueChanged(float value);
+    
+private:
+    void updateValueLabel(float value);
 
 private:
     QLabel *m_label = nullptr;
     QSlider *m_slider = nullptr;
+    QString m_itemName;
 };
 
 #endif

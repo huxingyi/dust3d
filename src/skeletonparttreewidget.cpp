@@ -1,8 +1,12 @@
 #include <QMenu>
 #include <vector>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QWidgetAction>
 #include "skeletonparttreewidget.h"
 #include "skeletonpartwidget.h"
 #include "skeletongraphicswidget.h"
+#include "floatnumberwidget.h"
 
 SkeletonPartTreeWidget::SkeletonPartTreeWidget(const SkeletonDocument *document, QWidget *parent) :
     QTreeWidget(parent),
@@ -22,6 +26,7 @@ SkeletonPartTreeWidget::SkeletonPartTreeWidget(const SkeletonDocument *document,
     m_componentItemMap[QUuid()] = invisibleRootItem();
     
     setContextMenuPolicy(Qt::CustomContextMenu);
+    //setIconSize(QSize(Theme::miniIconFontSize, Theme::miniIconFontSize));
     
     setStyleSheet("QTreeView {qproperty-indentation: 10; margin-left: 5px; margin-top: 5px;}"
         "QTreeView::branch:has-siblings:!adjoins-item {border-image: url(:/resources/tree-vline.png);}"
@@ -30,42 +35,63 @@ SkeletonPartTreeWidget::SkeletonPartTreeWidget(const SkeletonDocument *document,
         "QTreeView::branch:has-children:!has-siblings:closed, QTreeView::branch:closed:has-children:has-siblings {border-image: none; image: url(:/resources/tree-branch-closed.png);}"
         "QTreeView::branch:open:has-children:!has-siblings, QTreeView::branch:open:has-children:has-siblings  {border-image: none; image: url(:/resources/tree-branch-open.png);}");
     
-    QFont font;
-    font.setWeight(QFont::Light);
-    font.setPixelSize(9);
-    font.setBold(false);
-    setFont(font);
+    m_normalFont.setWeight(QFont::Light);
+    m_normalFont.setPixelSize(9);
+    m_normalFont.setBold(false);
+    
+    m_selectedFont.setWeight(QFont::Light);
+    m_selectedFont.setPixelSize(9);
+    m_selectedFont.setBold(true);
+    
+    setFont(m_normalFont);
     
     connect(this, &QTreeWidget::customContextMenuRequested, this, &SkeletonPartTreeWidget::showContextMenu);
     connect(this, &QTreeWidget::itemChanged, this, &SkeletonPartTreeWidget::groupChanged);
     connect(this, &QTreeWidget::itemExpanded, this, &SkeletonPartTreeWidget::groupExpanded);
     connect(this, &QTreeWidget::itemCollapsed, this, &SkeletonPartTreeWidget::groupCollapsed);
-    connect(this, &QTreeWidget::currentItemChanged, this, &SkeletonPartTreeWidget::currentGroupChanged);
 }
 
-void SkeletonPartTreeWidget::currentGroupChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous)
+void SkeletonPartTreeWidget::selectComponent(QUuid componentId)
 {
-    if (nullptr != current) {
-        auto componentId = QUuid(current->data(0, Qt::UserRole).toString());
-        const SkeletonComponent *component = m_document->findComponent(componentId);
-        if (nullptr != component) {
-            emit currentComponentChanged(componentId);
-            return;
+    if (m_currentSelectedComponent != componentId) {
+        if (!m_currentSelectedComponent.isNull()) {
+            auto item = m_componentItemMap.find(m_currentSelectedComponent);
+            if (item != m_componentItemMap.end()) {
+                item->second->setFont(0, m_normalFont);
+            }
         }
+        m_currentSelectedComponent = componentId;
+        if (!m_currentSelectedComponent.isNull()) {
+            auto item = m_componentItemMap.find(m_currentSelectedComponent);
+            if (item != m_componentItemMap.end()) {
+                item->second->setFont(0, m_selectedFont);
+            }
+        }
+        emit currentComponentChanged(m_currentSelectedComponent);
     }
-    emit currentComponentChanged(QUuid());
 }
 
 void SkeletonPartTreeWidget::mousePressEvent(QMouseEvent *event)
 {
-    QModelIndex item = indexAt(event->pos());
-    if (item.isValid()) {
-        QTreeView::mousePressEvent(event);
-    } else {
-        clearSelection();
-        QTreeView::mousePressEvent(event);
-        emit currentComponentChanged(QUuid());
+    QModelIndex itemIndex = indexAt(event->pos());
+    QTreeView::mousePressEvent(event);
+    if (itemIndex.isValid()) {
+        QTreeWidgetItem *item = itemFromIndex(itemIndex);
+        auto componentId = QUuid(item->data(0, Qt::UserRole).toString());
+        if (m_componentItemMap.find(componentId) != m_componentItemMap.end()) {
+            selectComponent(componentId);
+            return;
+        }
+        item = item->parent();
+        if (nullptr != item) {
+            componentId = QUuid(item->data(0, Qt::UserRole).toString());
+            if (m_componentItemMap.find(componentId) != m_componentItemMap.end()) {
+                selectComponent(componentId);
+                return;
+            }
+        }
     }
+    selectComponent(QUuid());
 }
 
 void SkeletonPartTreeWidget::showContextMenu(const QPoint &pos)
@@ -92,9 +118,13 @@ void SkeletonPartTreeWidget::showContextMenu(const QPoint &pos)
         contextMenu.addSection(component->name);
     
     QAction showAction(tr("Show"), this);
+    showAction.setIcon(Theme::awesome()->icon(fa::eye));
     QAction hideAction(tr("Hide"), this);
+    hideAction.setIcon(Theme::awesome()->icon(fa::eyeslash));
     QAction lockAction(tr("Lock"), this);
+    lockAction.setIcon(Theme::awesome()->icon(fa::lock));
     QAction unlockAction(tr("Unlock"), this);
+    unlockAction.setIcon(Theme::awesome()->icon(fa::unlock));
     QAction invertAction(tr("Invert"), this);
     QAction cancelInverseAction(tr("Cancel Inverse"), this);
     QAction selectAction(tr("Select"), this);
@@ -176,13 +206,22 @@ void SkeletonPartTreeWidget::showContextMenu(const QPoint &pos)
     
     contextMenu.addSeparator();
     
+    QMenu *smoothMenu = contextMenu.addMenu(tr("Smooth"));
+    QWidgetAction smoothAction(this);
+    smoothAction.setDefaultWidget(createSmoothMenuWidget(componentId));
+    smoothMenu->addAction(&smoothAction);
+    
+    contextMenu.addSeparator();
+    
     QAction hideOthersAction(tr("Hide Others"), this);
+    hideOthersAction.setIcon(Theme::awesome()->icon(fa::eyeslash));
     connect(&hideOthersAction, &QAction::triggered, [=]() {
         emit hideOtherComponents(componentId);
     });
     contextMenu.addAction(&hideOthersAction);
     
     QAction lockOthersAction(tr("Lock Others"), this);
+    lockOthersAction.setIcon(Theme::awesome()->icon(fa::lock));
     connect(&lockOthersAction, &QAction::triggered, [=]() {
         emit lockOtherComponents(componentId);
     });
@@ -205,12 +244,14 @@ void SkeletonPartTreeWidget::showContextMenu(const QPoint &pos)
     contextMenu.addSeparator();
     
     QAction hideAllAction(tr("Hide All"), this);
+    hideAllAction.setIcon(Theme::awesome()->icon(fa::eyeslash));
     connect(&hideAllAction, &QAction::triggered, [=]() {
         emit hideAllComponents();
     });
     contextMenu.addAction(&hideAllAction);
     
     QAction showAllAction(tr("Show All"), this);
+    showAllAction.setIcon(Theme::awesome()->icon(fa::eye));
     connect(&showAllAction, &QAction::triggered, [=]() {
         emit showAllComponents();
     });
@@ -219,12 +260,14 @@ void SkeletonPartTreeWidget::showContextMenu(const QPoint &pos)
     contextMenu.addSeparator();
     
     QAction lockAllAction(tr("Lock All"), this);
+    lockAllAction.setIcon(Theme::awesome()->icon(fa::lock));
     connect(&lockAllAction, &QAction::triggered, [=]() {
         emit lockAllComponents();
     });
     contextMenu.addAction(&lockAllAction);
     
     QAction unlockAllAction(tr("Unlock All"), this);
+    unlockAllAction.setIcon(Theme::awesome()->icon(fa::unlock));
     connect(&unlockAllAction, &QAction::triggered, [=]() {
         emit unlockAllComponents();
     });
@@ -234,25 +277,29 @@ void SkeletonPartTreeWidget::showContextMenu(const QPoint &pos)
     
     QMenu *moveToMenu = contextMenu.addMenu(tr("Move To"));
     
+    QAction moveToTopAction(tr("Top"), this);
+    moveToTopAction.setIcon(Theme::awesome()->icon(fa::angledoubleup));
+    connect(&moveToTopAction, &QAction::triggered, [=]() {
+        emit moveComponentToTop(componentId);
+    });
+    moveToMenu->addAction(&moveToTopAction);
+    
     QAction moveUpAction(tr("Up"), this);
+    moveUpAction.setIcon(Theme::awesome()->icon(fa::angleup));
     connect(&moveUpAction, &QAction::triggered, [=]() {
         emit moveComponentUp(componentId);
     });
     moveToMenu->addAction(&moveUpAction);
     
     QAction moveDownAction(tr("Down"), this);
+    moveDownAction.setIcon(Theme::awesome()->icon(fa::angledown));
     connect(&moveDownAction, &QAction::triggered, [=]() {
         emit moveComponentDown(componentId);
     });
     moveToMenu->addAction(&moveDownAction);
     
-    QAction moveToTopAction(tr("Top"), this);
-    connect(&moveToTopAction, &QAction::triggered, [=]() {
-        emit moveComponentToTop(componentId);
-    });
-    moveToMenu->addAction(&moveToTopAction);
-    
     QAction moveToBottomAction(tr("Bottom"), this);
+    moveToBottomAction.setIcon(Theme::awesome()->icon(fa::angledoubledown));
     connect(&moveToBottomAction, &QAction::triggered, [=]() {
         emit moveComponentToBottom(componentId);
     });
@@ -261,6 +308,7 @@ void SkeletonPartTreeWidget::showContextMenu(const QPoint &pos)
     moveToMenu->addSeparator();
     
     QAction moveToNewGroupAction(tr("New Group"), this);
+    moveToNewGroupAction.setIcon(Theme::awesome()->icon(fa::file));
     moveToMenu->addAction(&moveToNewGroupAction);
     connect(&moveToNewGroupAction, &QAction::triggered, [=]() {
         emit createNewComponentAndMoveThisIn(componentId);
@@ -297,6 +345,7 @@ void SkeletonPartTreeWidget::showContextMenu(const QPoint &pos)
     contextMenu.addSeparator();
     
     QAction deleteAction(tr("Delete"), this);
+    deleteAction.setIcon(Theme::awesome()->icon(fa::trash));
     connect(&deleteAction, &QAction::triggered, [=]() {
         emit removeComponent(componentId);
     });
@@ -307,6 +356,78 @@ void SkeletonPartTreeWidget::showContextMenu(const QPoint &pos)
     for (const auto &action: groupsActions) {
         delete action;
     }
+}
+
+QWidget *SkeletonPartTreeWidget::createSmoothMenuWidget(QUuid componentId)
+{
+    QWidget *popup = new QWidget;
+    
+    const SkeletonComponent *component = m_document->findComponent(componentId);
+    if (!component) {
+        qDebug() << "Find component failed:" << componentId;
+        return popup;
+    }
+    
+    bool showSeamControl = component->linkToPartId.isNull();
+    
+    FloatNumberWidget *smoothAllWidget = new FloatNumberWidget;
+    smoothAllWidget->setItemName(tr("All"));
+    smoothAllWidget->setRange(0, 1);
+    smoothAllWidget->setValue(component->smoothAll);
+    
+    connect(smoothAllWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+        emit setComponentSmoothAll(componentId, value);
+        emit groupOperationAdded();
+    });
+    
+    QPushButton *smoothAllEraser = new QPushButton(QChar(fa::eraser));
+    Theme::initAwesomeToolButton(smoothAllEraser);
+    
+    connect(smoothAllEraser, &QPushButton::clicked, [=]() {
+        smoothAllWidget->setValue(0.0);
+    });
+    
+    FloatNumberWidget *smoothSeamWidget = nullptr;
+    QPushButton *smoothSeamEraser = nullptr;
+    
+    if (showSeamControl) {
+        smoothSeamWidget = new FloatNumberWidget;
+        smoothSeamWidget->setItemName(tr("Seam"));
+        smoothSeamWidget->setRange(0, 1);
+        smoothSeamWidget->setValue(component->smoothSeam);
+        
+        connect(smoothSeamWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+            emit setComponentSmoothSeam(componentId, value);
+            emit groupOperationAdded();
+        });
+    
+        smoothSeamEraser = new QPushButton(QChar(fa::eraser));
+        Theme::initAwesomeToolButton(smoothSeamEraser);
+        
+        connect(smoothSeamEraser, &QPushButton::clicked, [=]() {
+            smoothSeamWidget->setValue(0.0);
+        });
+    }
+    
+    QHBoxLayout *smoothSeamLayout = nullptr;
+    
+    QVBoxLayout *layout = new QVBoxLayout;
+    QHBoxLayout *smoothAllLayout = new QHBoxLayout;
+    if (showSeamControl)
+        smoothSeamLayout = new QHBoxLayout;
+    smoothAllLayout->addWidget(smoothAllEraser);
+    smoothAllLayout->addWidget(smoothAllWidget);
+    if (showSeamControl) {
+        smoothSeamLayout->addWidget(smoothSeamEraser);
+        smoothSeamLayout->addWidget(smoothSeamWidget);
+    }
+    layout->addLayout(smoothAllLayout);
+    if (showSeamControl)
+        layout->addLayout(smoothSeamLayout);
+    
+    popup->setLayout(layout);
+    
+    return popup;
 }
 
 QTreeWidgetItem *SkeletonPartTreeWidget::findComponentItem(QUuid componentId)
@@ -379,7 +500,7 @@ void SkeletonPartTreeWidget::addComponentChildrenToItem(QUuid componentId, QTree
             item->setData(0, Qt::UserRole, QVariant(component->id.toString()));
             item->setChildIndicatorPolicy(QTreeWidgetItem::ShowIndicator);
             item->setExpanded(component->expanded);
-            item->setFlags(item->flags() | Qt::ItemIsEditable | Qt::ItemIsEnabled | Qt::ItemIsSelectable);
+            item->setFlags((item->flags() | Qt::ItemIsEditable | Qt::ItemIsEnabled) & ~(Qt::ItemIsSelectable));
             m_componentItemMap[childId] = item;
             addComponentChildrenToItem(childId, item);
         }

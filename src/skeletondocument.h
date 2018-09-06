@@ -199,6 +199,8 @@ public:
     bool expanded = true;
     bool inverse = false;
     bool dirty = true;
+    float smoothAll = 0.0;
+    float smoothSeam = 0.0;
     std::vector<QUuid> childrenIds;
     QString linkData() const
     {
@@ -290,6 +292,34 @@ public:
         for (int i = index; i <= (int)childrenIds.size() - 2; i++)
             std::swap(childrenIds[i], childrenIds[i + 1]);
     }
+    void setSmoothAll(float toSmoothAll)
+    {
+        if (toSmoothAll < 0)
+            toSmoothAll = 0;
+        else if (toSmoothAll > 1)
+            toSmoothAll = 1;
+        smoothAll = toSmoothAll;
+    }
+    void setSmoothSeam(float toSmoothSeam)
+    {
+        if (toSmoothSeam < 0)
+            toSmoothSeam = 0;
+        else if (toSmoothSeam > 1)
+            toSmoothSeam = 1;
+        smoothSeam = toSmoothSeam;
+    }
+    bool smoothAllAdjusted() const
+    {
+        return fabs(smoothAll - 0.0) >= 0.01;
+    }
+    bool smoothSeamAdjusted() const
+    {
+        return fabs(smoothSeam - 0.0) >= 0.01;
+    }
+    bool smoothAdjusted() const
+    {
+        return smoothAllAdjusted() || smoothSeamAdjusted();
+    }
 private:
     std::set<QUuid> m_childrenIdSet;
 };
@@ -307,6 +337,8 @@ signals:
     void componentRemoved(QUuid componentId);
     void componentAdded(QUuid componentId);
     void componentExpandStateChanged(QUuid componentId);
+    void componentSmoothAllChanged(QUuid componentId);
+    void componentSmoothSeamChanged(QUuid componentId);
     void nodeRemoved(QUuid nodeId);
     void edgeRemoved(QUuid edgeId);
     void nodeRadiusChanged(QUuid nodeId);
@@ -442,6 +474,8 @@ public slots:
     void setCurrentCanvasComponentId(QUuid componentId);
     void createNewComponentAndMoveThisIn(QUuid componentId);
     void setComponentExpandState(QUuid componentId, bool expanded);
+    void setComponentSmoothAll(QUuid componentId, float toSmoothAll);
+    void setComponentSmoothSeam(QUuid componentId, float toSmoothSeam);
     void hideOtherComponents(QUuid componentId);
     void lockOtherComponents(QUuid componentId);
     void hideAllComponents();

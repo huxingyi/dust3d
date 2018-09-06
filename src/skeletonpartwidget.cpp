@@ -263,15 +263,12 @@ void SkeletonPartWidget::mouseDoubleClickEvent(QMouseEvent *event)
 
 void SkeletonPartWidget::initToolButtonWithoutFont(QPushButton *button)
 {
-    button->setFixedSize(Theme::toolIconSize / 2, Theme::toolIconSize / 2);
-    button->setStyleSheet("QPushButton {color: #f7d9c8}");
-    button->setFocusPolicy(Qt::NoFocus);
+    Theme::initAwesomeToolButtonWithoutFont(button);
 }
 
 void SkeletonPartWidget::initToolButton(QPushButton *button)
 {
-    button->setFont(Theme::awesome()->font(Theme::toolIconFontSize / 2));
-    initToolButtonWithoutFont(button);
+    Theme::initAwesomeToolButton(button);
 }
 
 void SkeletonPartWidget::showColorSettingPopup(const QPoint &pos)
@@ -288,10 +285,6 @@ void SkeletonPartWidget::showColorSettingPopup(const QPoint &pos)
     
     QPushButton *colorEraser = new QPushButton(QChar(fa::eraser));
     initToolButton(colorEraser);
-    
-    //QLabel *colorPreviewLabel = new QLabel;
-    //colorPreviewLabel->setFixedSize(Theme::miniIconSize, Theme::miniIconSize);
-    //colorPreviewLabel->setAutoFillBackground(true);
     
     QPushButton *pickButton = new QPushButton();
     initToolButtonWithoutFont(pickButton);
@@ -343,14 +336,17 @@ void SkeletonPartWidget::showDeformSettingPopup(const QPoint &pos)
     QWidget *popup = new QWidget;
     
     FloatNumberWidget *thicknessWidget = new FloatNumberWidget;
+    thicknessWidget->setItemName(tr("Thickness"));
     thicknessWidget->setRange(0, 2);
     thicknessWidget->setValue(part->deformThickness);
     
     connect(thicknessWidget, &FloatNumberWidget::valueChanged, [=](float value) {
         emit setPartDeformThickness(m_partId, value);
+        emit groupOperationAdded();
     });
     
     FloatNumberWidget *widthWidget = new FloatNumberWidget;
+    widthWidget->setItemName(tr("Width"));
     widthWidget->setRange(0, 2);
     widthWidget->setValue(part->deformWidth);
     
@@ -364,6 +360,7 @@ void SkeletonPartWidget::showDeformSettingPopup(const QPoint &pos)
     
     connect(thicknessEraser, &QPushButton::clicked, [=]() {
         thicknessWidget->setValue(1.0);
+        emit groupOperationAdded();
     });
     
     QPushButton *widthEraser = new QPushButton(QChar(fa::eraser));
@@ -371,6 +368,7 @@ void SkeletonPartWidget::showDeformSettingPopup(const QPoint &pos)
     
     connect(widthEraser, &QPushButton::clicked, [=]() {
         widthWidget->setValue(1.0);
+        emit groupOperationAdded();
     });
     
     QVBoxLayout *layout = new QVBoxLayout;
@@ -385,35 +383,22 @@ void SkeletonPartWidget::showDeformSettingPopup(const QPoint &pos)
     
     popup->setLayout(layout);
     
-    QWidgetAction *action = new QWidgetAction(this);
-    action->setDefaultWidget(popup);
+    QWidgetAction action(this);
+    action.setDefaultWidget(popup);
     
-    popupMenu.addAction(action);
+    popupMenu.addAction(&action);
     
     popupMenu.exec(mapToGlobal(pos));
 }
 
 void SkeletonPartWidget::initButton(QPushButton *button)
 {
-    button->setFont(Theme::awesome()->font(Theme::miniIconFontSize));
-    button->setFixedSize(Theme::miniIconSize, Theme::miniIconSize);
-    button->setFocusPolicy(Qt::NoFocus);
+    Theme::initAwesomeMiniButton(button);
 }
 
 void SkeletonPartWidget::updateButton(QPushButton *button, QChar icon, bool highlighted)
 {
-    button->setText(icon);
-    QColor color;
-    if (highlighted)
-        color = QColor("#fc6621");
-    else
-        color = QColor("#525252");
-
-    color = color.toHsv();
-    color.setHsv(color.hue(), color.saturation() / 5, color.value() * 2 / 3);
-    color = color.toRgb();
-
-    button->setStyleSheet("QPushButton {border: none; background: none; color: " + color.name() + ";}");
+    Theme::updateAwesomeMiniButton(button, icon, highlighted);
 }
 
 void SkeletonPartWidget::updatePreview()

@@ -31,16 +31,13 @@ typedef CGAL::Surface_mesh<ExactKernel::Point_3> ExactMesh;
 typedef CGAL::Surface_mesh<SimpleKernel::Point_3> SimpleMesh;
 namespace PMP = CGAL::Polygon_mesh_processing;
 
-template <class Kernel>
-typename CGAL::Surface_mesh<typename Kernel::Point_3> *makeCgalMeshFromMeshlite(void *meshlite, int meshId)
+void loadMeshVerticesPositions(void *meshliteContext, int meshId, std::vector<QVector3D> &positions)
 {
-    typename CGAL::Surface_mesh<typename Kernel::Point_3> *mesh = new typename CGAL::Surface_mesh<typename Kernel::Point_3>;
-    int vertexCount = meshlite_get_vertex_count(meshlite, meshId);
+    int vertexCount = meshlite_get_vertex_count(meshliteContext, meshId);
     float *vertexPositions = new float[vertexCount * 3];
-    int vertexArrayLen = meshlite_get_vertex_position_array(meshlite, meshId, vertexPositions, vertexCount * 3);
+    int vertexArrayLen = meshlite_get_vertex_position_array(meshliteContext, meshId, vertexPositions, vertexCount * 3);
     int offset = 0;
     assert(vertexArrayLen == vertexCount * 3);
-    std::vector<typename CGAL::Surface_mesh<typename Kernel::Point_3>::Vertex_index> vertices;
     for (int i = 0; i < vertexCount; i++) {
         float x = vertexPositions[offset + 0];
         float y = vertexPositions[offset + 1];
@@ -51,7 +48,34 @@ typename CGAL::Surface_mesh<typename Kernel::Point_3> *makeCgalMeshFromMeshlite(
             y = 0;
         if (std::isnan(z) || std::isinf(z))
             z = 0;
-        vertices.push_back(mesh->add_vertex(typename Kernel::Point_3(x, y, z)));
+        positions.push_back(QVector3D(x, y, z));
+        offset += 3;
+    }
+    delete[] vertexPositions;
+}
+
+template <class Kernel>
+typename CGAL::Surface_mesh<typename Kernel::Point_3> *makeCgalMeshFromMeshlite(void *meshlite, int meshId)
+{
+    typename CGAL::Surface_mesh<typename Kernel::Point_3> *mesh = new typename CGAL::Surface_mesh<typename Kernel::Point_3>;
+    int vertexCount = meshlite_get_vertex_count(meshlite, meshId);
+    float *vertexPositions = new float[vertexCount * 3];
+    int vertexArrayLen = meshlite_get_vertex_position_array(meshlite, meshId, vertexPositions, vertexCount * 3);
+    int offset = 0;
+    assert(vertexArrayLen == vertexCount * 3);
+    std::vector<QVector3D> oldPositions;
+    std::map<int, typename CGAL::Surface_mesh<typename Kernel::Point_3>::Vertex_index> oldToNewMap;
+    for (int i = 0; i < vertexCount; i++) {
+        float x = vertexPositions[offset + 0];
+        float y = vertexPositions[offset + 1];
+        float z = vertexPositions[offset + 2];
+        if (std::isnan(x) || std::isinf(x))
+            x = 0;
+        if (std::isnan(y) || std::isinf(y))
+            y = 0;
+        if (std::isnan(z) || std::isinf(z))
+            z = 0;
+        oldPositions.push_back(QVector3D(x, y, z));
         offset += 3;
     }
     int faceCount = meshlite_get_face_count(meshlite, meshId);
@@ -62,24 +86,49 @@ typename CGAL::Surface_mesh<typename Kernel::Point_3> *makeCgalMeshFromMeshlite(
     while (i < filledLength) {
         int num = faceVertexNumAndIndices[i++];
         assert(num > 0 && num <= MAX_VERTICES_PER_FACE);
+        if (num < 3)
+            continue;
         std::vector<typename CGAL::Surface_mesh<typename Kernel::Point_3>::Vertex_index> faceVertexIndices;
         for (int j = 0; j < num; j++) {
             int index = faceVertexNumAndIndices[i++];
             assert(index >= 0 && index < vertexCount);
-            faceVertexIndices.push_back(vertices[index]);
+            if (oldToNewMap.find(index) == oldToNewMap.end()) {
+                const auto &pos = oldPositions[index];
+                oldToNewMap[index] = mesh->add_vertex(typename Kernel::Point_3(pos.x(), pos.y(), pos.z()));
+            }
+            faceVertexIndices.push_back(oldToNewMap[index]);
         }
-        if (faceVertexIndices.size() >= 3) {
-            mesh->add_face(faceVertexIndices);
-            addedFaceCount++;
-        }
+        mesh->add_face(faceVertexIndices);
+        addedFaceCount++;
     }
     delete[] faceVertexNumAndIndices;
     delete[] vertexPositions;
-    if (0 == addedFaceCount) {
+    if (addedFaceCount < 3) {
         delete mesh;
         mesh = nullptr;
     }
     return mesh;
+}
+
+void loadCombinableMeshVerticesPositions(void *mesh, std::vector<QVector3D> &positions)
+{
+    ExactMesh *exactMesh = (ExactMesh *)mesh;
+    if (nullptr == exactMesh)
+        return;
+    
+    for (auto vertexIt = exactMesh->vertices_begin(); vertexIt != exactMesh->vertices_end(); vertexIt++) {
+        auto point = exactMesh->point(*vertexIt);
+        float x = (float)CGAL::to_double(point.x());
+        float y = (float)CGAL::to_double(point.y());
+        float z = (float)CGAL::to_double(point.z());
+        if (std::isnan(x) || std::isinf(x))
+            x = 0;
+        if (std::isnan(y) || std::isinf(y))
+            y = 0;
+        if (std::isnan(z) || std::isinf(z))
+            z = 0;
+        positions.push_back(QVector3D(x, y, z));
+    }
 }
 
 // https://doc.cgal.org/latest/Surface_mesh/index.html#circulators_example
@@ -256,7 +305,6 @@ ExactMesh *diffCgalMeshs(ExactMesh *first, ExactMesh *second)
 int unionMeshs(void *meshliteContext, const std::vector<int> &meshIds, const std::set<int> &inverseIds, int *errorCount)
 {
 #if USE_CGAL == 1
-    CGAL::set_error_behaviour(CGAL::CONTINUE);
     std::vector<ExactMesh *> externalMeshs;
     for (size_t i = 0; i < meshIds.size(); i++) {
         int triangledMeshId = meshlite_triangulate(meshliteContext, meshIds[i]);
@@ -331,7 +379,6 @@ int subdivMesh(void *meshliteContext, int meshId, int *errorCount)
     int triangulatedMeshId = meshlite_triangulate(meshliteContext, meshId);
     if (0 == meshlite_is_triangulated_manifold(meshliteContext, triangulatedMeshId)) {
 #if USE_CGAL == 1
-        CGAL::set_error_behaviour(CGAL::THROW_EXCEPTION);
         int subdiviedMeshId = 0;
         SimpleMesh *simpleMesh = nullptr;
         try {
@@ -359,7 +406,7 @@ int fixMeshHoles(void *meshliteContext, int meshId)
 
 void initMeshUtils()
 {
-    CGAL::set_error_behaviour(CGAL::CONTINUE);
+    CGAL::set_error_behaviour(CGAL::THROW_EXCEPTION);
 }
 
 void *convertToCombinableMesh(void *meshliteContext, int meshId)

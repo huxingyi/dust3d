@@ -6,15 +6,14 @@ FloatNumberWidget::FloatNumberWidget(QWidget *parent) :
 {
     m_slider = new QSlider(Qt::Horizontal, this);
     m_slider->setRange(0, 100);
+    m_slider->setFixedWidth(120);
 
     m_label = new QLabel(this);
-    m_label->setAlignment(Qt::AlignCenter);
-    m_label->setNum(0);
-    m_label->setFixedWidth(30);
+    m_label->setAlignment(Qt::AlignLeft);
 
     connect(m_slider, &QAbstractSlider::valueChanged, [=](int value) {
         float fvalue = value / 100.0;
-        m_label->setText(QString().sprintf("%.2f", fvalue));
+        updateValueLabel(fvalue);
         emit valueChanged(fvalue);
     });
 
@@ -22,6 +21,21 @@ FloatNumberWidget::FloatNumberWidget(QWidget *parent) :
     popupLayout->setMargin(2);
     popupLayout->addWidget(m_slider);
     popupLayout->addWidget(m_label);
+}
+
+void FloatNumberWidget::updateValueLabel(float value)
+{
+    QString valueString = QString().sprintf("%.2f", value);
+    if (m_itemName.isEmpty())
+        m_label->setText(valueString);
+    else
+        m_label->setText(m_itemName + ": " + valueString);
+}
+
+void FloatNumberWidget::setItemName(const QString &name)
+{
+    m_itemName = name;
+    updateValueLabel(value());
 }
 
 void FloatNumberWidget::setRange(float min, float max)

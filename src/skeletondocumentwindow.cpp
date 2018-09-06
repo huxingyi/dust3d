@@ -596,6 +596,8 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(partTreeWidget, &SkeletonPartTreeWidget::createNewComponentAndMoveThisIn, m_document, &SkeletonDocument::createNewComponentAndMoveThisIn);
     connect(partTreeWidget, &SkeletonPartTreeWidget::renameComponent, m_document, &SkeletonDocument::renameComponent);
     connect(partTreeWidget, &SkeletonPartTreeWidget::setComponentExpandState, m_document, &SkeletonDocument::setComponentExpandState);
+    connect(partTreeWidget, &SkeletonPartTreeWidget::setComponentSmoothAll, m_document, &SkeletonDocument::setComponentSmoothAll);
+    connect(partTreeWidget, &SkeletonPartTreeWidget::setComponentSmoothSeam, m_document, &SkeletonDocument::setComponentSmoothSeam);
     connect(partTreeWidget, &SkeletonPartTreeWidget::moveComponent, m_document, &SkeletonDocument::moveComponent);
     connect(partTreeWidget, &SkeletonPartTreeWidget::removeComponent, m_document, &SkeletonDocument::removeComponent);
     connect(partTreeWidget, &SkeletonPartTreeWidget::hideOtherComponents, m_document, &SkeletonDocument::hideOtherComponents);

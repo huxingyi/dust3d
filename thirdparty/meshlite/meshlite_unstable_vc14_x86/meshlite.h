@@ -59,6 +59,8 @@ int meshlite_skeletonmesh_create(void *context);
 int meshlite_skeletonmesh_set_end_radius(void *context, float radius);
 int meshlite_skeletonmesh_add_bone(void *context, int sklt_id, float from_x, float from_y, float from_z, float to_x, float to_y, float to_z);
 int meshlite_skeletonmesh_generate_mesh(void *context, int sklt_id);
+int meshlite_smooth_vertices(void *context, int mesh_id, float factor, int *buffer, int max_buffer_len);
+int meshlite_smooth(void *context, int mesh_id, float factor);
 
 #ifdef __cplusplus
 }

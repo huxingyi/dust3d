@@ -20,6 +20,8 @@ signals:
     void createNewComponentAndMoveThisIn(QUuid componentId);
     void renameComponent(QUuid componentId, QString name);
     void setComponentExpandState(QUuid componentId, bool expanded);
+    void setComponentSmoothAll(QUuid componentId, float toSmoothAll);
+    void setComponentSmoothSeam(QUuid componentId, float toSmoothSeam);
     void moveComponent(QUuid componentId, QUuid toParentId);
     void removeComponent(QUuid componentId);
     void hideOtherComponents(QUuid componentId);
@@ -38,6 +40,7 @@ signals:
     void lockDescendantComponents(QUuid componentId);
     void unlockDescendantComponents(QUuid componentId);
     void addPartToSelection(QUuid partId);
+    void groupOperationAdded();
 public:
     SkeletonPartTreeWidget(const SkeletonDocument *document, QWidget *parent);
     QTreeWidgetItem *findComponentItem(QUuid componentId);
@@ -64,7 +67,6 @@ public slots:
     void groupChanged(QTreeWidgetItem *item, int column);
     void groupExpanded(QTreeWidgetItem *item);
     void groupCollapsed(QTreeWidgetItem *item);
-    void currentGroupChanged(QTreeWidgetItem *current, QTreeWidgetItem *previous);
     void removeAllContent();
     void showContextMenu(const QPoint &pos);
 protected:
@@ -74,11 +76,16 @@ protected:
 private:
     void addComponentChildrenToItem(QUuid componentId, QTreeWidgetItem *parentItem);
     void deleteItemChildren(QTreeWidgetItem *item);
+    void selectComponent(QUuid componentId);
+    QWidget *createSmoothMenuWidget(QUuid componentId);
 private:
     const SkeletonDocument *m_document = nullptr;
     std::map<QUuid, QTreeWidgetItem *> m_partItemMap;
     std::map<QUuid, QTreeWidgetItem *> m_componentItemMap;
     SkeletonGraphicsFunctions *m_graphicsFunctions = nullptr;
+    QFont m_normalFont;
+    QFont m_selectedFont;
+    QUuid m_currentSelectedComponent;
 };
 
 #endif

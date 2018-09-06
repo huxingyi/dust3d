@@ -92,4 +92,39 @@ void Theme::initAwesomeLabel(QLabel *label)
     label->setStyleSheet("QLabel {color: #f7d9c8}");
 }
 
+void Theme::initAwesomeMiniButton(QPushButton *button)
+{
+    button->setFont(Theme::awesome()->font(Theme::miniIconFontSize));
+    button->setFixedSize(Theme::miniIconSize, Theme::miniIconSize);
+    button->setFocusPolicy(Qt::NoFocus);
+}
+
+void Theme::updateAwesomeMiniButton(QPushButton *button, QChar icon, bool highlighted)
+{
+    button->setText(icon);
+    QColor color;
+    if (highlighted)
+        color = QColor("#fc6621");
+    else
+        color = QColor("#525252");
+
+    color = color.toHsv();
+    color.setHsv(color.hue(), color.saturation() / 5, color.value() * 2 / 3);
+    color = color.toRgb();
+
+    button->setStyleSheet("QPushButton {border: none; background: none; color: " + color.name() + ";}");
+}
+
+void Theme::initAwesomeToolButtonWithoutFont(QPushButton *button)
+{
+    button->setFixedSize(Theme::toolIconSize / 2, Theme::toolIconSize / 2);
+    button->setStyleSheet("QPushButton {color: #f7d9c8}");
+    button->setFocusPolicy(Qt::NoFocus);
+}
+
+void Theme::initAwesomeToolButton(QPushButton *button)
+{
+    button->setFont(Theme::awesome()->font(Theme::toolIconFontSize / 2));
+    Theme::initAwesomeToolButtonWithoutFont(button);
+}
 

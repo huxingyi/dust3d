@@ -725,6 +725,10 @@ void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUu
         component["expanded"] = componentIt.second.expanded ? "true" : "false";
         component["inverse"] = componentIt.second.inverse ? "true" : "false";
         component["dirty"] = componentIt.second.dirty ? "true" : "false";
+        if (componentIt.second.smoothAllAdjusted())
+            component["smoothAll"] = QString::number(componentIt.second.smoothAll);
+        if (componentIt.second.smoothSeamAdjusted())
+            component["smoothSeam"] = QString::number(componentIt.second.smoothSeam);
         QStringList childIdList;
         for (const auto &childId: componentIt.second.childrenIds) {
             childIdList.append(childId.toString());
@@ -862,6 +866,12 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot)
         component.name = valueOfKeyInMapOrEmpty(componentKv.second, "name");
         component.expanded = isTrueValueString(valueOfKeyInMapOrEmpty(componentKv.second, "expanded"));
         component.inverse = isTrueValueString(valueOfKeyInMapOrEmpty(componentKv.second, "inverse"));
+        const auto &smoothAllIt = componentKv.second.find("smoothAll");
+        if (smoothAllIt != componentKv.second.end())
+            component.setSmoothAll(smoothAllIt->second.toFloat());
+        const auto &smoothSeamIt = componentKv.second.find("smoothSeam");
+        if (smoothSeamIt != componentKv.second.end())
+            component.setSmoothSeam(smoothSeamIt->second.toFloat());
         qDebug() << "Add component:" << component.id << " old:" << componentKv.first << "name:" << component.name;
         if ("partId" == linkDataType) {
             QUuid partId = oldNewIdMap[QUuid(linkData)];
@@ -1281,6 +1291,32 @@ void SkeletonDocument::setComponentInverseState(QUuid componentId, bool inverse)
     component->second.inverse = inverse;
     component->second.dirty = true;
     emit componentInverseStateChanged(componentId);
+    emit skeletonChanged();
+}
+
+void SkeletonDocument::setComponentSmoothAll(QUuid componentId, float toSmoothAll)
+{
+    auto component = componentMap.find(componentId);
+    if (component == componentMap.end()) {
+        qDebug() << "Component not found:" << componentId;
+        return;
+    }
+    component->second.setSmoothAll(toSmoothAll);
+    component->second.dirty = true;
+    emit componentSmoothAllChanged(componentId);
+    emit skeletonChanged();
+}
+
+void SkeletonDocument::setComponentSmoothSeam(QUuid componentId, float toSmoothSeam)
+{
+    auto component = componentMap.find(componentId);
+    if (component == componentMap.end()) {
+        qDebug() << "Component not found:" << componentId;
+        return;
+    }
+    component->second.setSmoothSeam(toSmoothSeam);
+    component->second.dirty = true;
+    emit componentSmoothSeamChanged(componentId);
     emit skeletonChanged();
 }
 

@@ -215,12 +215,12 @@ void *MeshGenerator::combinePartMesh(QString partId)
     if (MeshGenerator::m_enableDebug)
         meshlite_bmesh_enable_debug(m_meshliteContext, bmeshId, 1);
     
-    QString mirroredPartId;
-    QUuid mirroredPartIdNotAsString;
-    if (xMirrored) {
-        mirroredPartIdNotAsString = QUuid().createUuid();
-        mirroredPartId = mirroredPartIdNotAsString.toString();
-    }
+    //QString mirroredPartId;
+    //QUuid mirroredPartIdNotAsString;
+    //if (xMirrored) {
+    //    mirroredPartIdNotAsString = QUuid().createUuid();
+    //    mirroredPartId = mirroredPartIdNotAsString.toString();
+    //}
     
     std::map<QString, int> nodeToBmeshIdMap;
     std::map<int, QUuid> bmeshToNodeIdMap;
@@ -252,12 +252,11 @@ void *MeshGenerator::combinePartMesh(QString partId)
         bmeshNode.nodeId = QUuid(nodeId);
         bmeshNode.color = partColor;
         cacheBmeshNodes.push_back(bmeshNode);
-        
-        if (xMirrored) {
-            bmeshNode.partId = mirroredPartId;
-            bmeshNode.origin.setX(-x);
-            cacheBmeshNodes.push_back(bmeshNode);
-        }
+        //if (xMirrored) {
+        //    bmeshNode.partId = mirroredPartId;
+        //    bmeshNode.origin.setX(-x);
+        //    cacheBmeshNodes.push_back(bmeshNode);
+        //}
     }
     
     for (const auto &edgeId: m_partEdgeIds[partId]) {
@@ -300,7 +299,7 @@ void *MeshGenerator::combinePartMesh(QString partId)
     if (nullptr != resultMesh) {
         if (xMirrored) {
             int xMirroredMeshId = meshlite_mirror_in_x(m_meshliteContext, meshId, 0);
-            loadVertexSources(m_meshliteContext, xMirroredMeshId, mirroredPartIdNotAsString, bmeshToNodeIdMap, cacheBmeshVertices);
+            loadVertexSources(m_meshliteContext, xMirroredMeshId, partIdNotAsString, bmeshToNodeIdMap, cacheBmeshVertices);
             void *mirroredMesh = nullptr;
             if (wrapped)
                 mirroredMesh = convertToCombinableConvexHullMesh(m_meshliteContext, xMirroredMeshId);
@@ -411,40 +410,121 @@ void *MeshGenerator::combineComponentMesh(QString componentId, bool *inverse)
         }
     }
     
-    QString linkDataType = valueOfKeyInMapOrEmpty(*component, "linkDataType");
-    if ("partId" == linkDataType) {
-        QString partId = valueOfKeyInMapOrEmpty(*component, "linkData");
-        return combinePartMesh(partId);
+    bool smoothSeam = false;
+    float smoothSeamFactor = 0.0;
+    QString smoothSeamString = valueOfKeyInMapOrEmpty(*component, "smoothSeam");
+    if (!smoothSeamString.isEmpty()) {
+        smoothSeam = true;
+        smoothSeamFactor = smoothSeamString.toFloat();
+    }
+    
+    bool smoothAll = false;
+    float smoothAllFactor = 0.0;
+    QString smoothAllString = valueOfKeyInMapOrEmpty(*component, "smoothAll");
+    if (!smoothAllString.isEmpty()) {
+        smoothAll = true;
+        smoothAllFactor = smoothAllString.toFloat();
     }
     
     void *resultMesh = nullptr;
     
-    for (const auto &childId: valueOfKeyInMapOrEmpty(*component, "children").split(",")) {
-        if (childId.isEmpty())
-            continue;
-        bool childInverse = false;
-        void *childCombinedMesh = combineComponentMesh(childId, &childInverse);
-        if (nullptr == childCombinedMesh)
-            continue;
-        if (nullptr == resultMesh) {
-            if (childInverse) {
-                deleteCombinableMesh(childCombinedMesh);
-            } else {
-                resultMesh = childCombinedMesh;
+    PositionMap<bool> positionsBeforeCombination;
+    auto &verticesSources = m_cacheContext->componentVerticesSources[componentId];
+    verticesSources.map().clear();
+    QString linkDataType = valueOfKeyInMapOrEmpty(*component, "linkDataType");
+    if ("partId" == linkDataType) {
+        QString partId = valueOfKeyInMapOrEmpty(*component, "linkData");
+        resultMesh = combinePartMesh(partId);
+        for (const auto &bmeshVertex: m_cacheContext->partBmeshVertices[partId]) {
+            verticesSources.addPosition(bmeshVertex.position.x(), bmeshVertex.position.y(), bmeshVertex.position.z(),
+                bmeshVertex);
+        }
+    } else {
+        for (const auto &childId: valueOfKeyInMapOrEmpty(*component, "children").split(",")) {
+            if (childId.isEmpty())
+                continue;
+            bool childInverse = false;
+            void *childCombinedMesh = combineComponentMesh(childId, &childInverse);
+            if (smoothSeam) {
+                for (const auto &positionIt: m_cacheContext->componentPositions[childId]) {
+                    positionsBeforeCombination.addPosition(positionIt.x(), positionIt.y(), positionIt.z(), true);
+                }
             }
-        } else {
-            void *newResultMesh = childInverse ? diffCombinableMeshs(resultMesh, childCombinedMesh) : unionCombinableMeshs(resultMesh, childCombinedMesh);
-            deleteCombinableMesh(childCombinedMesh);
-            if (nullptr != newResultMesh) {
-                deleteCombinableMesh(resultMesh);
-                resultMesh = newResultMesh;
+            for (const auto &verticesSourceIt: m_cacheContext->componentVerticesSources[childId].map()) {
+                verticesSources.map()[verticesSourceIt.first] = verticesSourceIt.second;
+            }
+            if (nullptr == childCombinedMesh)
+                continue;
+            if (nullptr == resultMesh) {
+                if (childInverse) {
+                    deleteCombinableMesh(childCombinedMesh);
+                } else {
+                    resultMesh = childCombinedMesh;
+                }
+            } else {
+                void *newResultMesh = childInverse ? diffCombinableMeshs(resultMesh, childCombinedMesh) : unionCombinableMeshs(resultMesh, childCombinedMesh);
+                deleteCombinableMesh(childCombinedMesh);
+                if (nullptr != newResultMesh) {
+                    deleteCombinableMesh(resultMesh);
+                    resultMesh = newResultMesh;
+                }
             }
         }
     }
     
-    if (!componentIdNotAsString.isNull()) {
-        m_cacheContext->updateComponentCombinableMesh(componentId, resultMesh);
+    if (nullptr != resultMesh) {
+        if (smoothSeam || smoothAll) {
+            int meshIdForSmooth = convertFromCombinableMesh(m_meshliteContext, resultMesh);
+            std::vector<QVector3D> positionsBeforeSmooth;
+            loadMeshVerticesPositions(m_meshliteContext, meshIdForSmooth, positionsBeforeSmooth);
+            
+            if (!positionsBeforeSmooth.empty()) {
+
+                if (smoothSeam) {
+                    int *seamVerticesIndicies = new int[positionsBeforeSmooth.size()];
+                    int seamVerticesNum = 0;
+                    for (size_t vertexIndex = 0; vertexIndex < positionsBeforeSmooth.size(); vertexIndex++) {
+                        const auto &oldPosition = positionsBeforeSmooth[vertexIndex];
+                        if (!positionsBeforeCombination.findPosition(oldPosition.x(), oldPosition.y(), oldPosition.z())) {
+                            seamVerticesIndicies[seamVerticesNum++] = vertexIndex + 1;
+                        }
+                    }
+                    if (seamVerticesNum > 0) {
+                        qDebug() << "smoothSeamFactor:" << smoothSeamFactor << "seamVerticesIndicies.size():" << seamVerticesNum;
+                        meshlite_smooth_vertices(m_meshliteContext, meshIdForSmooth, smoothSeamFactor, seamVerticesIndicies, seamVerticesNum);
+                    }
+                    delete[] seamVerticesIndicies;
+                }
+                
+                if (smoothAll) {
+                    meshlite_smooth(m_meshliteContext, meshIdForSmooth, smoothAllFactor);
+                }
+                
+                std::vector<QVector3D> positionsAfterSmooth;
+                loadMeshVerticesPositions(m_meshliteContext, meshIdForSmooth, positionsAfterSmooth);
+                assert(positionsBeforeSmooth.size() == positionsAfterSmooth.size());
+                
+                for (size_t vertexIndex = 0; vertexIndex < positionsBeforeSmooth.size(); vertexIndex++) {
+                    const auto &oldPosition = positionsBeforeSmooth[vertexIndex];
+                    const auto &smoothedPosition = positionsAfterSmooth[vertexIndex];
+                    BmeshVertex source;
+                    if (verticesSources.findPosition(oldPosition.x(), oldPosition.y(), oldPosition.z(), &source)) {
+                        verticesSources.removePosition(oldPosition.x(), oldPosition.y(), oldPosition.z());
+                        source.position = smoothedPosition;
+                        verticesSources.addPosition(smoothedPosition.x(), smoothedPosition.y(), smoothedPosition.z(), source);
+                    }
+                }
+                
+                deleteCombinableMesh(resultMesh);
+                resultMesh = convertToCombinableMesh(m_meshliteContext, meshIdForSmooth);
+            }
+        }
     }
+    
+    m_cacheContext->updateComponentCombinableMesh(componentId, resultMesh);
+    auto &cachedComponentPositions = m_cacheContext->componentPositions[componentId];
+    cachedComponentPositions.clear();
+    loadCombinableMeshVerticesPositions(resultMesh, cachedComponentPositions);
     
     return resultMesh;
 }
@@ -488,10 +568,26 @@ void MeshGenerator::process()
             }
             it++;
         }
+        for (auto it = m_cacheContext->componentPositions.begin(); it != m_cacheContext->componentPositions.end(); ) {
+            if (m_snapshot->components.find(it->first) == m_snapshot->components.end()) {
+                it = m_cacheContext->componentPositions.erase(it);
+                continue;
+            }
+            it++;
+        }
+        for (auto it = m_cacheContext->componentVerticesSources.begin(); it != m_cacheContext->componentVerticesSources.end(); ) {
+            if (m_snapshot->components.find(it->first) == m_snapshot->components.end()) {
+                it = m_cacheContext->componentVerticesSources.erase(it);
+                continue;
+            }
+            it++;
+        }
     }
     
     collectParts();
     checkDirtyFlags();
+    
+    m_dirtyComponentIds.insert(QUuid().toString());
     
     m_mainProfileMiddleX = valueOfKeyInMapOrEmpty(m_snapshot->canvas, "originX").toFloat();
     m_mainProfileMiddleY = valueOfKeyInMapOrEmpty(m_snapshot->canvas, "originY").toFloat();
@@ -506,9 +602,8 @@ void MeshGenerator::process()
         deleteCombinableMesh(combinedMesh);
     }
     
-    for (const auto &bmeshVertices: m_cacheContext->partBmeshVertices) {
-        m_meshResultContext->bmeshVertices.insert(m_meshResultContext->bmeshVertices.end(),
-            bmeshVertices.second.begin(), bmeshVertices.second.end());
+    for (const auto &verticesSourcesIt: m_cacheContext->componentVerticesSources[QUuid().toString()].map()) {
+        m_meshResultContext->bmeshVertices.push_back(verticesSourcesIt.second);
     }
     
     for (const auto &bmeshNodes: m_cacheContext->partBmeshNodes) {
