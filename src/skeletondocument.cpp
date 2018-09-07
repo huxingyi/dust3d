@@ -1489,6 +1489,27 @@ void SkeletonDocument::createNewComponentAndMoveThisIn(QUuid componentId)
     emit optionsChanged();
 }
 
+void SkeletonDocument::createNewChildComponent(QUuid parentComponentId)
+{
+    SkeletonComponent *parentComponent = (SkeletonComponent *)findComponent(parentComponentId);
+    if (!parentComponent->linkToPartId.isNull()) {
+        parentComponentId = parentComponent->parentId;
+        parentComponent = (SkeletonComponent *)findComponent(parentComponentId);
+    }
+    
+    SkeletonComponent newComponent(QUuid::createUuid());
+    newComponent.name = tr("Group") + " " + QString::number(componentMap.size() - partMap.size() + 1);
+    
+    parentComponent->addChild(newComponent.id);
+    newComponent.parentId = parentComponentId;
+    
+    componentMap[newComponent.id] = newComponent;
+    
+    emit componentChildrenChanged(parentComponentId);
+    emit componentAdded(newComponent.id);
+    emit optionsChanged();
+}
+
 void SkeletonDocument::removePart(QUuid partId)
 {
     auto part = partMap.find(partId);
@@ -1613,6 +1634,20 @@ void SkeletonDocument::removeComponentRecursively(QUuid componentId)
 void SkeletonDocument::setCurrentCanvasComponentId(QUuid componentId)
 {
     m_currentCanvasComponentId = componentId;
+    const SkeletonComponent *component = findComponent(m_currentCanvasComponentId);
+    if (nullptr == component) {
+        //qDebug() << "Current component switch to nullptr componentId:" << componentId;
+        m_currentCanvasComponentId = QUuid();
+    } else {
+        //qDebug() << "Current component switch to " << component->name << "componentId:" << componentId;
+        if (!component->linkToPartId.isNull()) {
+            m_currentCanvasComponentId = component->parentId;
+            component = findComponent(m_currentCanvasComponentId);
+            //if (nullptr != component) {
+            //    qDebug() << "Then switch to " << component->name << "componentId:" << m_currentCanvasComponentId;
+            //}
+        }
+    }
 }
 
 void SkeletonDocument::addComponent(QUuid parentId)
@@ -1986,19 +2021,18 @@ void SkeletonDocument::collectComponentDescendantParts(QUuid componentId, std::v
     }
 }
 
-void SkeletonDocument::collectComponentDescendantComponents(QUuid componentId, std::vector<QUuid> &componentIds)
+void SkeletonDocument::collectComponentDescendantComponents(QUuid componentId, std::vector<QUuid> &componentIds) const
 {
     const SkeletonComponent *component = findComponent(componentId);
     if (nullptr == component)
         return;
-    
+
     if (!component->linkToPartId.isNull()) {
         return;
     }
-    
-    componentIds.push_back(component->id);
 
     for (const auto &childId: component->childrenIds) {
+        componentIds.push_back(childId);
         collectComponentDescendantComponents(childId, componentIds);
     }
 }

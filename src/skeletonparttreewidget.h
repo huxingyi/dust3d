@@ -18,6 +18,7 @@ signals:
     void moveComponentToBottom(QUuid componentId);
     void checkPart(QUuid partId);
     void createNewComponentAndMoveThisIn(QUuid componentId);
+    void createNewChildComponent(QUuid parentComponentId);
     void renameComponent(QUuid componentId, QString name);
     void setComponentExpandState(QUuid componentId, bool expanded);
     void setComponentSmoothAll(QUuid componentId, float toSmoothAll);
@@ -76,8 +77,10 @@ protected:
 private:
     void addComponentChildrenToItem(QUuid componentId, QTreeWidgetItem *parentItem);
     void deleteItemChildren(QTreeWidgetItem *item);
-    void selectComponent(QUuid componentId);
+    void selectComponent(QUuid componentId, bool multiple=false);
     QWidget *createSmoothMenuWidget(QUuid componentId);
+    void updateComponentSelectState(QUuid componentId, bool selected);
+    bool isComponentSelected(QUuid componentId);
 private:
     const SkeletonDocument *m_document = nullptr;
     std::map<QUuid, QTreeWidgetItem *> m_partItemMap;
@@ -85,7 +88,10 @@ private:
     SkeletonGraphicsFunctions *m_graphicsFunctions = nullptr;
     QFont m_normalFont;
     QFont m_selectedFont;
-    QUuid m_currentSelectedComponent;
+    QUuid m_currentSelectedComponentId;
+    QBrush m_hightlightedPartBackground;
+    QUuid m_shiftStartComponentId;
+    std::set<QUuid> m_selectedComponentIds;
 };
 
 #endif

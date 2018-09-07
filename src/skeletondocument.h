@@ -428,6 +428,7 @@ public:
     bool isPostProcessResultObsolete() const;
     void findAllNeighbors(QUuid nodeId, std::set<QUuid> &neighbors) const;
     void collectComponentDescendantParts(QUuid componentId, std::vector<QUuid> &partIds) const;
+    void collectComponentDescendantComponents(QUuid componentId, std::vector<QUuid> &componentIds) const;
 public slots:
     void removeNode(QUuid nodeId);
     void removeEdge(QUuid edgeId);
@@ -473,6 +474,7 @@ public slots:
     void moveComponent(QUuid componentId, QUuid toParentId);
     void setCurrentCanvasComponentId(QUuid componentId);
     void createNewComponentAndMoveThisIn(QUuid componentId);
+    void createNewChildComponent(QUuid parentComponentId);
     void setComponentExpandState(QUuid componentId, bool expanded);
     void setComponentSmoothAll(QUuid componentId, float toSmoothAll);
     void setComponentSmoothSeam(QUuid componentId, float toSmoothSeam);
@@ -513,7 +515,6 @@ private:
     void addPartToComponent(QUuid partId, QUuid componentId);
     bool isDescendantComponent(QUuid componentId, QUuid suspiciousId);
     void removeComponentRecursively(QUuid componentId);
-    void collectComponentDescendantComponents(QUuid componentId, std::vector<QUuid> &componentIds);
     void resetDirtyFlags();
     void markAllDirty();
 private: // need initialize

@@ -3,6 +3,9 @@
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QWidgetAction>
+#include <QRadialGradient>
+#include <QBrush>
+#include <QGuiApplication>
 #include "skeletonparttreewidget.h"
 #include "skeletonpartwidget.h"
 #include "skeletongraphicswidget.h"
@@ -45,29 +48,85 @@ SkeletonPartTreeWidget::SkeletonPartTreeWidget(const SkeletonDocument *document,
     
     setFont(m_normalFont);
     
+    QRadialGradient gradient(QPointF(0.25, 0.3), 0.3);
+    QColor fillColor = QColor(0xfb, 0xf9, 0x87);
+    fillColor.setAlphaF(0.85);
+    gradient.setCoordinateMode(QGradient::StretchToDeviceMode);
+    gradient.setColorAt(0, fillColor);
+    gradient.setColorAt(1, Qt::transparent);
+    m_hightlightedPartBackground = QBrush(gradient);
+    
     connect(this, &QTreeWidget::customContextMenuRequested, this, &SkeletonPartTreeWidget::showContextMenu);
     connect(this, &QTreeWidget::itemChanged, this, &SkeletonPartTreeWidget::groupChanged);
     connect(this, &QTreeWidget::itemExpanded, this, &SkeletonPartTreeWidget::groupExpanded);
     connect(this, &QTreeWidget::itemCollapsed, this, &SkeletonPartTreeWidget::groupCollapsed);
 }
 
-void SkeletonPartTreeWidget::selectComponent(QUuid componentId)
+void SkeletonPartTreeWidget::selectComponent(QUuid componentId, bool multiple)
 {
-    if (m_currentSelectedComponent != componentId) {
-        if (!m_currentSelectedComponent.isNull()) {
-            auto item = m_componentItemMap.find(m_currentSelectedComponent);
-            if (item != m_componentItemMap.end()) {
-                item->second->setFont(0, m_normalFont);
-            }
+    if (multiple) {
+        if (!m_currentSelectedComponentId.isNull()) {
+            m_selectedComponentIds.insert(m_currentSelectedComponentId);
+            m_currentSelectedComponentId = QUuid();
+            emit currentComponentChanged(m_currentSelectedComponentId);
         }
-        m_currentSelectedComponent = componentId;
-        if (!m_currentSelectedComponent.isNull()) {
-            auto item = m_componentItemMap.find(m_currentSelectedComponent);
-            if (item != m_componentItemMap.end()) {
-                item->second->setFont(0, m_selectedFont);
-            }
+        if (m_selectedComponentIds.find(componentId) != m_selectedComponentIds.end()) {
+            updateComponentSelectState(componentId, false);
+            m_selectedComponentIds.erase(componentId);
+        } else {
+            updateComponentSelectState(componentId, true);
+            m_selectedComponentIds.insert(componentId);
         }
-        emit currentComponentChanged(m_currentSelectedComponent);
+        if (m_selectedComponentIds.size() > 1) {
+            return;
+        }
+        if (m_selectedComponentIds.size() == 1)
+            componentId = *m_selectedComponentIds.begin();
+        else
+            componentId = QUuid();
+    }
+    if (!m_selectedComponentIds.empty()) {
+        for (const auto &id: m_selectedComponentIds) {
+            updateComponentSelectState(id, false);
+        }
+        m_selectedComponentIds.clear();
+    }
+    if (m_currentSelectedComponentId != componentId) {
+        if (!m_currentSelectedComponentId.isNull()) {
+            updateComponentSelectState(m_currentSelectedComponentId, false);
+        }
+        m_currentSelectedComponentId = componentId;
+        if (!m_currentSelectedComponentId.isNull()) {
+            updateComponentSelectState(m_currentSelectedComponentId, true);
+        }
+        emit currentComponentChanged(m_currentSelectedComponentId);
+    }
+}
+
+void SkeletonPartTreeWidget::updateComponentSelectState(QUuid componentId, bool selected)
+{
+    const SkeletonComponent *component = m_document->findComponent(componentId);
+    if (nullptr == component) {
+        qDebug() << "Component not found:" << componentId;
+        return;
+    }
+    if (!component->linkToPartId.isNull()) {
+        auto item = m_partItemMap.find(component->linkToPartId);
+        if (item != m_componentItemMap.end()) {
+            SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second, 0);
+            widget->updateCheckedState(selected);
+        }
+        return;
+    }
+    auto item = m_componentItemMap.find(componentId);
+    if (item != m_componentItemMap.end()) {
+        if (selected) {
+            item->second->setFont(0, m_selectedFont);
+            item->second->setForeground(0, QBrush(Theme::red));
+        } else {
+            item->second->setFont(0, m_normalFont);
+            item->second->setForeground(0, QBrush(Theme::white));
+        }
     }
 }
 
@@ -75,47 +134,124 @@ void SkeletonPartTreeWidget::mousePressEvent(QMouseEvent *event)
 {
     QModelIndex itemIndex = indexAt(event->pos());
     QTreeView::mousePressEvent(event);
-    if (itemIndex.isValid()) {
-        QTreeWidgetItem *item = itemFromIndex(itemIndex);
-        auto componentId = QUuid(item->data(0, Qt::UserRole).toString());
-        if (m_componentItemMap.find(componentId) != m_componentItemMap.end()) {
-            selectComponent(componentId);
+    if (event->button() == Qt::LeftButton) {
+        bool multiple = QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier);
+        if (itemIndex.isValid()) {
+            QTreeWidgetItem *item = itemFromIndex(itemIndex);
+            auto componentId = QUuid(item->data(0, Qt::UserRole).toString());
+            if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
+                if (!m_shiftStartComponentId.isNull()) {
+                    const SkeletonComponent *parent = m_document->findComponentParent(m_shiftStartComponentId);
+                    if (parent) {
+                        if (!parent->childrenIds.empty()) {
+                            bool startAdd = false;
+                            bool stopAdd = false;
+                            std::vector<QUuid> waitQueue;
+                            for (const auto &childId: parent->childrenIds) {
+                                if (m_shiftStartComponentId == childId || componentId == childId) {
+                                    if (startAdd) {
+                                        stopAdd = true;
+                                    } else {
+                                        startAdd = true;
+                                    }
+                                }
+                                if (startAdd)
+                                    waitQueue.push_back(childId);
+                                if (stopAdd)
+                                    break;
+                            }
+                            if (stopAdd && !waitQueue.empty()) {
+                                if (!m_selectedComponentIds.empty()) {
+                                    for (const auto &id: m_selectedComponentIds) {
+                                        updateComponentSelectState(id, false);
+                                    }
+                                    m_selectedComponentIds.clear();
+                                }
+                                if (!m_currentSelectedComponentId.isNull()) {
+                                    m_currentSelectedComponentId = QUuid();
+                                    emit currentComponentChanged(m_currentSelectedComponentId);
+                                }
+                                for (const auto &waitId: waitQueue) {
+                                    selectComponent(waitId, true);
+                                }
+                            }
+                        }
+                    }
+                }
+                return;
+            } else {
+                m_shiftStartComponentId = componentId;
+            }
+            selectComponent(componentId, multiple);
             return;
         }
-        item = item->parent();
-        if (nullptr != item) {
-            componentId = QUuid(item->data(0, Qt::UserRole).toString());
-            if (m_componentItemMap.find(componentId) != m_componentItemMap.end()) {
-                selectComponent(componentId);
-                return;
-            }
-        }
+        if (!multiple)
+            selectComponent(QUuid());
     }
-    selectComponent(QUuid());
 }
 
 void SkeletonPartTreeWidget::showContextMenu(const QPoint &pos)
 {
-    QTreeWidgetItem *item = itemAt(pos);
-    if (nullptr == item)
-        return;
+    const SkeletonComponent *component = nullptr;
+    const SkeletonPart *part = nullptr;
     
-    auto componentId = QUuid(item->data(0, Qt::UserRole).toString());
-    const SkeletonComponent *component = m_document->findComponent(componentId);
-    if (nullptr == component) {
-        qDebug() << "Find component failed:" << componentId;
-        return;
+    std::set<QUuid> unorderedComponentIds = m_selectedComponentIds;
+    if (!m_currentSelectedComponentId.isNull())
+        unorderedComponentIds.insert(m_currentSelectedComponentId);
+    
+    if (unorderedComponentIds.empty()) {
+        QTreeWidgetItem *item = itemAt(pos);
+        if (nullptr != item) {
+            QUuid componentId = QUuid(item->data(0, Qt::UserRole).toString());
+            unorderedComponentIds.insert(componentId);
+        }
     }
     
-    const SkeletonPart *part = nullptr;
-    if (!component->linkToPartId.isNull()) {
-        part = m_document->findPart(component->linkToPartId);
+    std::vector<QUuid> componentIds;
+    std::vector<QUuid> candidates;
+    m_document->collectComponentDescendantComponents(QUuid(), candidates);
+    for (const auto &cand: candidates) {
+        if (unorderedComponentIds.find(cand) != unorderedComponentIds.end())
+            componentIds.push_back(cand);
     }
     
     QMenu contextMenu(this);
     
-    if (!component->name.isEmpty())
-        contextMenu.addSection(component->name);
+    if (componentIds.size() == 1) {
+        QUuid componentId = *componentIds.begin();
+        component = m_document->findComponent(componentId);
+        if (nullptr == component) {
+            qDebug() << "Component not found:" << componentId;
+            return;
+        }
+        if (component && !component->linkToPartId.isNull()) {
+            part = m_document->findPart(component->linkToPartId);
+        }
+    }
+    
+    QWidgetAction forDisplayPartImage(this);
+    QLabel *previewLabel = new QLabel;
+    previewLabel->setFixedHeight(Theme::previewImageSize);
+    previewLabel->setStyleSheet("QLabel {color: " + Theme::red.name() + "}");
+    if (nullptr != part) {
+        previewLabel->setPixmap(QPixmap::fromImage(part->preview));
+    } else if (nullptr != component) {
+        previewLabel->setText(component->name);
+    } else if (!componentIds.empty()) {
+        previewLabel->setText(tr("(%1 items)").arg(QString::number(componentIds.size())));
+    }
+    QHBoxLayout *layout = new QHBoxLayout;
+    layout->setAlignment(Qt::AlignCenter);
+    layout->addWidget(previewLabel);
+    layout->setContentsMargins(0, 0, 0, 0);
+    layout->setSpacing(0);
+    QWidget *widget = new QWidget;
+    widget->setLayout(layout);
+    forDisplayPartImage.setDefaultWidget(widget);
+    if (!componentIds.empty()) {
+        contextMenu.addAction(&forDisplayPartImage);
+        contextMenu.addSeparator();
+    }
     
     QAction showAction(tr("Show"), this);
     showAction.setIcon(Theme::awesome()->icon(fa::eye));
@@ -129,105 +265,113 @@ void SkeletonPartTreeWidget::showContextMenu(const QPoint &pos)
     QAction cancelInverseAction(tr("Cancel Inverse"), this);
     QAction selectAction(tr("Select"), this);
     
-    if (!component->linkToPartId.isNull()) {
-        emit checkPart(component->linkToPartId);
+    if (nullptr != component && nullptr != part) {
+        connect(&selectAction, &QAction::triggered, [=]() {
+            emit addPartToSelection(component->linkToPartId);
+        });
+        contextMenu.addAction(&selectAction);
         
-        if (nullptr != part) {
-            if (part->visible) {
-                connect(&hideAction, &QAction::triggered, [=]() {
-                    emit setPartVisibleState(component->linkToPartId, false);
-                });
-                contextMenu.addAction(&hideAction);
-            } else {
-                connect(&showAction, &QAction::triggered, [=]() {
-                    emit setPartVisibleState(component->linkToPartId, true);
-                });
-                contextMenu.addAction(&showAction);
-            }
-            
-            if (part->locked) {
-                connect(&unlockAction, &QAction::triggered, [=]() {
-                    emit setPartLockState(component->linkToPartId, false);
-                });
-                contextMenu.addAction(&unlockAction);
-            } else {
-                connect(&lockAction, &QAction::triggered, [=]() {
-                    emit setPartLockState(component->linkToPartId, true);
-                });
-                contextMenu.addAction(&lockAction);
-            }
+        if (part->visible) {
+            connect(&hideAction, &QAction::triggered, [=]() {
+                emit setPartVisibleState(component->linkToPartId, false);
+            });
+            contextMenu.addAction(&hideAction);
+        } else {
+            connect(&showAction, &QAction::triggered, [=]() {
+                emit setPartVisibleState(component->linkToPartId, true);
+            });
+            contextMenu.addAction(&showAction);
         }
-    } else {
-        if (!component->childrenIds.empty()) {
-            connect(&selectAction, &QAction::triggered, [=]() {
+        
+        if (part->locked) {
+            connect(&unlockAction, &QAction::triggered, [=]() {
+                emit setPartLockState(component->linkToPartId, false);
+            });
+            contextMenu.addAction(&unlockAction);
+        } else {
+            connect(&lockAction, &QAction::triggered, [=]() {
+                emit setPartLockState(component->linkToPartId, true);
+            });
+            contextMenu.addAction(&lockAction);
+        }
+    } else if (!componentIds.empty()) {
+        connect(&selectAction, &QAction::triggered, [=]() {
+            for (const auto &componentId: componentIds) {
                 std::vector<QUuid> partIds;
                 m_document->collectComponentDescendantParts(componentId, partIds);
                 for (const auto &partId: partIds) {
                     emit addPartToSelection(partId);
                 }
-            });
-            contextMenu.addAction(&selectAction);
-            
-            connect(&showAction, &QAction::triggered, [=]() {
+            }
+        });
+        contextMenu.addAction(&selectAction);
+
+        connect(&showAction, &QAction::triggered, [=]() {
+            for (const auto &componentId: componentIds)
                 emit showDescendantComponents(componentId);
-            });
-            contextMenu.addAction(&showAction);
-            
-            connect(&hideAction, &QAction::triggered, [=]() {
+        });
+        contextMenu.addAction(&showAction);
+
+        connect(&hideAction, &QAction::triggered, [=]() {
+            for (const auto &componentId: componentIds)
                 emit hideDescendantComponents(componentId);
-            });
-            contextMenu.addAction(&hideAction);
-            
-            connect(&lockAction, &QAction::triggered, [=]() {
+        });
+        contextMenu.addAction(&hideAction);
+
+        connect(&lockAction, &QAction::triggered, [=]() {
+            for (const auto &componentId: componentIds)
                 emit lockDescendantComponents(componentId);
-            });
-            contextMenu.addAction(&lockAction);
-            
-            connect(&unlockAction, &QAction::triggered, [=]() {
+        });
+        contextMenu.addAction(&lockAction);
+
+        connect(&unlockAction, &QAction::triggered, [=]() {
+            for (const auto &componentId: componentIds)
                 emit unlockDescendantComponents(componentId);
-            });
-            contextMenu.addAction(&unlockAction);
-        }
+        });
+        contextMenu.addAction(&unlockAction);
     }
     
-    if (!component->inverse) {
+    if (component && !component->inverse) {
         connect(&invertAction, &QAction::triggered, [=]() {
-            emit setComponentInverseState(componentId, true);
+            emit setComponentInverseState(component->id, true);
         });
         contextMenu.addAction(&invertAction);
     }
 
-    if (component->inverse) {
+    if (component && component->inverse) {
         connect(&cancelInverseAction, &QAction::triggered, [=]() {
-            emit setComponentInverseState(componentId, false);
+            emit setComponentInverseState(component->id, false);
         });
         contextMenu.addAction(&cancelInverseAction);
     }
     
     contextMenu.addSeparator();
     
-    QMenu *smoothMenu = contextMenu.addMenu(tr("Smooth"));
     QWidgetAction smoothAction(this);
-    smoothAction.setDefaultWidget(createSmoothMenuWidget(componentId));
-    smoothMenu->addAction(&smoothAction);
-    
-    contextMenu.addSeparator();
-    
     QAction hideOthersAction(tr("Hide Others"), this);
-    hideOthersAction.setIcon(Theme::awesome()->icon(fa::eyeslash));
-    connect(&hideOthersAction, &QAction::triggered, [=]() {
-        emit hideOtherComponents(componentId);
-    });
-    contextMenu.addAction(&hideOthersAction);
-    
     QAction lockOthersAction(tr("Lock Others"), this);
-    lockOthersAction.setIcon(Theme::awesome()->icon(fa::lock));
-    connect(&lockOthersAction, &QAction::triggered, [=]() {
-        emit lockOtherComponents(componentId);
-    });
-    contextMenu.addAction(&lockOthersAction);
+    if (nullptr != component) {
+        QMenu *smoothMenu = contextMenu.addMenu(tr("Smooth"));
+        
+        smoothAction.setDefaultWidget(createSmoothMenuWidget(component->id));
+        smoothMenu->addAction(&smoothAction);
+        
+        contextMenu.addSeparator();
     
-    contextMenu.addSeparator();
+        hideOthersAction.setIcon(Theme::awesome()->icon(fa::eyeslash));
+        connect(&hideOthersAction, &QAction::triggered, [=]() {
+            emit hideOtherComponents(component->id);
+        });
+        contextMenu.addAction(&hideOthersAction);
+        
+        lockOthersAction.setIcon(Theme::awesome()->icon(fa::lock));
+        connect(&lockOthersAction, &QAction::triggered, [=]() {
+            emit lockOtherComponents(component->id);
+        });
+        contextMenu.addAction(&lockOthersAction);
+        
+        contextMenu.addSeparator();
+    }
     
     QAction collapseAllAction(tr("Collapse All"), this);
     connect(&collapseAllAction, &QAction::triggered, [=]() {
@@ -275,81 +419,97 @@ void SkeletonPartTreeWidget::showContextMenu(const QPoint &pos)
     
     contextMenu.addSeparator();
     
-    QMenu *moveToMenu = contextMenu.addMenu(tr("Move To"));
-    
-    QAction moveToTopAction(tr("Top"), this);
-    moveToTopAction.setIcon(Theme::awesome()->icon(fa::angledoubleup));
-    connect(&moveToTopAction, &QAction::triggered, [=]() {
-        emit moveComponentToTop(componentId);
+    QAction newGroupAction(tr("New Group"), this);
+    newGroupAction.setIcon(Theme::awesome()->icon(fa::file));
+    connect(&newGroupAction, &QAction::triggered, [=]() {
+        emit createNewChildComponent(nullptr == component ? QUuid() : component->id);
     });
-    moveToMenu->addAction(&moveToTopAction);
-    
-    QAction moveUpAction(tr("Up"), this);
-    moveUpAction.setIcon(Theme::awesome()->icon(fa::angleup));
-    connect(&moveUpAction, &QAction::triggered, [=]() {
-        emit moveComponentUp(componentId);
-    });
-    moveToMenu->addAction(&moveUpAction);
-    
-    QAction moveDownAction(tr("Down"), this);
-    moveDownAction.setIcon(Theme::awesome()->icon(fa::angledown));
-    connect(&moveDownAction, &QAction::triggered, [=]() {
-        emit moveComponentDown(componentId);
-    });
-    moveToMenu->addAction(&moveDownAction);
-    
-    QAction moveToBottomAction(tr("Bottom"), this);
-    moveToBottomAction.setIcon(Theme::awesome()->icon(fa::angledoubledown));
-    connect(&moveToBottomAction, &QAction::triggered, [=]() {
-        emit moveComponentToBottom(componentId);
-    });
-    moveToMenu->addAction(&moveToBottomAction);
-    
-    moveToMenu->addSeparator();
-    
-    QAction moveToNewGroupAction(tr("New Group"), this);
-    moveToNewGroupAction.setIcon(Theme::awesome()->icon(fa::file));
-    moveToMenu->addAction(&moveToNewGroupAction);
-    connect(&moveToNewGroupAction, &QAction::triggered, [=]() {
-        emit createNewComponentAndMoveThisIn(componentId);
-    });
-    
-    moveToMenu->addSeparator();
-
-    QAction moveToRootGroupAction(tr("Root"), this);
-    moveToMenu->addAction(&moveToRootGroupAction);
-    connect(&moveToRootGroupAction, &QAction::triggered, [=]() {
-        emit moveComponent(componentId, QUuid());
-    });
-    
-    std::vector<QAction *> groupsActions;
-    std::function<void(QUuid, int)> addChildGroupsFunc;
-    addChildGroupsFunc = [this, &groupsActions, &addChildGroupsFunc, &moveToMenu, &componentId](QUuid currentId, int tabs) -> void {
-        const SkeletonComponent *current = m_document->findComponent(currentId);
-        if (nullptr == current)
-            return;
-        if (!current->id.isNull() && current->linkDataType().isEmpty()) {
-            QAction *action = new QAction(QString(" ").repeated(tabs * 4) + current->name, this);
-            connect(action, &QAction::triggered, [=]() {
-                emit moveComponent(componentId, current->id);
-            });
-            groupsActions.push_back(action);
-            moveToMenu->addAction(action);
-        }
-        for (const auto &childId: current->childrenIds) {
-            addChildGroupsFunc(childId, tabs + 1);
-        }
-    };
-    addChildGroupsFunc(QUuid(), 0);
+    contextMenu.addAction(&newGroupAction);
     
     contextMenu.addSeparator();
     
+    std::vector<QAction *> groupsActions;
     QAction deleteAction(tr("Delete"), this);
-    deleteAction.setIcon(Theme::awesome()->icon(fa::trash));
-    connect(&deleteAction, &QAction::triggered, [=]() {
-        emit removeComponent(componentId);
-    });
-    contextMenu.addAction(&deleteAction);
+    QAction moveToTopAction(tr("Top"), this);
+    QAction moveUpAction(tr("Up"), this);
+    QAction moveDownAction(tr("Down"), this);
+    QAction moveToBottomAction(tr("Bottom"), this);
+    QAction moveToNewGroupAction(tr("New Group"), this);
+    QAction moveToRootGroupAction(tr("Root"), this);
+    std::function<void(QUuid, int)> addChildGroupsFunc;
+    if (!componentIds.empty()) {
+        QMenu *moveToMenu = contextMenu.addMenu(tr("Move To"));
+        
+        if (nullptr != component) {
+            moveToTopAction.setIcon(Theme::awesome()->icon(fa::angledoubleup));
+            connect(&moveToTopAction, &QAction::triggered, [=]() {
+                emit moveComponentToTop(component->id);
+            });
+            moveToMenu->addAction(&moveToTopAction);
+            
+            moveUpAction.setIcon(Theme::awesome()->icon(fa::angleup));
+            connect(&moveUpAction, &QAction::triggered, [=]() {
+                emit moveComponentUp(component->id);
+            });
+            moveToMenu->addAction(&moveUpAction);
+            
+            moveDownAction.setIcon(Theme::awesome()->icon(fa::angledown));
+            connect(&moveDownAction, &QAction::triggered, [=]() {
+                emit moveComponentDown(component->id);
+            });
+            moveToMenu->addAction(&moveDownAction);
+            
+            moveToBottomAction.setIcon(Theme::awesome()->icon(fa::angledoubledown));
+            connect(&moveToBottomAction, &QAction::triggered, [=]() {
+                emit moveComponentToBottom(component->id);
+            });
+            moveToMenu->addAction(&moveToBottomAction);
+            
+            moveToMenu->addSeparator();
+            
+            moveToNewGroupAction.setIcon(Theme::awesome()->icon(fa::file));
+            moveToMenu->addAction(&moveToNewGroupAction);
+            connect(&moveToNewGroupAction, &QAction::triggered, [=]() {
+                emit createNewComponentAndMoveThisIn(component->id);
+            });
+            
+            moveToMenu->addSeparator();
+        }
+        
+        moveToMenu->addAction(&moveToRootGroupAction);
+        connect(&moveToRootGroupAction, &QAction::triggered, [=]() {
+            for (const auto &componentId: componentIds)
+                emit moveComponent(componentId, QUuid());
+        });
+        
+        addChildGroupsFunc = [this, &groupsActions, &addChildGroupsFunc, &moveToMenu, &componentIds](QUuid currentId, int tabs) -> void {
+            const SkeletonComponent *current = m_document->findComponent(currentId);
+            if (nullptr == current)
+                return;
+            if (!current->id.isNull() && current->linkDataType().isEmpty()) {
+                QAction *action = new QAction(QString(" ").repeated(tabs * 4) + current->name, this);
+                connect(action, &QAction::triggered, [=]() {
+                    for (const auto &componentId: componentIds)
+                        emit moveComponent(componentId, current->id);
+                });
+                groupsActions.push_back(action);
+                moveToMenu->addAction(action);
+            }
+            for (const auto &childId: current->childrenIds) {
+                addChildGroupsFunc(childId, tabs + 1);
+            }
+        };
+        addChildGroupsFunc(QUuid(), 0);
+        
+        contextMenu.addSeparator();
+        
+        deleteAction.setIcon(Theme::awesome()->icon(fa::trash));
+        connect(&deleteAction, &QAction::triggered, [=]() {
+            for (const auto &componentId: componentIds)
+                emit removeComponent(componentId);
+        });
+        contextMenu.addAction(&deleteAction);
+    }
     
     contextMenu.exec(mapToGlobal(pos));
     
@@ -504,6 +664,7 @@ void SkeletonPartTreeWidget::addComponentChildrenToItem(QUuid componentId, QTree
             m_componentItemMap[childId] = item;
             addComponentChildrenToItem(childId, item);
         }
+        updateComponentSelectState(childId, isComponentSelected(childId));
     }
 }
 
@@ -558,7 +719,9 @@ void SkeletonPartTreeWidget::componentRemoved(QUuid componentId)
     auto componentItem = m_componentItemMap.find(componentId);
     if (componentItem == m_componentItemMap.end())
         return;
-    
+    m_selectedComponentIds.erase(componentId);
+    if (m_currentSelectedComponentId == componentId)
+        m_currentSelectedComponentId = QUuid();
     m_componentItemMap.erase(componentId);
 }
 
@@ -722,8 +885,7 @@ void SkeletonPartTreeWidget::partChecked(QUuid partId)
         qDebug() << "Part item not found:" << partId;
         return;
     }
-    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second, 0);
-    widget->updateCheckedState(true);
+    item->second->setBackground(0, m_hightlightedPartBackground);
 }
 
 void SkeletonPartTreeWidget::partUnchecked(QUuid partId)
@@ -733,8 +895,7 @@ void SkeletonPartTreeWidget::partUnchecked(QUuid partId)
         //qDebug() << "Part item not found:" << partId;
         return;
     }
-    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second, 0);
-    widget->updateCheckedState(false);
+    item->second->setBackground(0, QBrush(Qt::transparent));
 }
 
 QSize SkeletonPartTreeWidget::sizeHint() const
@@ -753,4 +914,10 @@ void SkeletonPartTreeWidget::keyPressEvent(QKeyEvent *event)
     QTreeWidget::keyPressEvent(event);
     if (m_graphicsFunctions)
         m_graphicsFunctions->keyPress(event);
+}
+
+bool SkeletonPartTreeWidget::isComponentSelected(QUuid componentId)
+{
+    return (m_currentSelectedComponentId == componentId ||
+        m_selectedComponentIds.find(componentId) != m_selectedComponentIds.end());
 }

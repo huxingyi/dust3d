@@ -250,7 +250,7 @@ void SkeletonPartWidget::updateAllButtons()
 void SkeletonPartWidget::updateCheckedState(bool checked)
 {
     if (checked)
-        m_backgroundWidget->setStyleSheet("QWidget#background {border: 1px solid #f7d9c8;}");
+        m_backgroundWidget->setStyleSheet("QWidget#background {border: 1px solid " + Theme::red.name() + ";}");
     else
         m_backgroundWidget->setStyleSheet("QWidget#background {border: 1px solid transparent;}");
 }
