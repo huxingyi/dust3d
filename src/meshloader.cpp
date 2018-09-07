@@ -6,7 +6,7 @@
 
 #define MAX_VERTICES_PER_FACE   100
 
-MeshLoader::MeshLoader(void *meshlite, int meshId, int triangulatedMeshId, QColor modelColor, const std::vector<QColor> *triangleColors) :
+MeshLoader::MeshLoader(void *meshlite, int meshId, int triangulatedMeshId, QColor modelColor, const std::vector<QColor> *triangleColors, bool smoothNormal) :
     m_triangleVertices(nullptr),
     m_triangleVertexCount(0),
     m_edgeVertices(nullptr),
@@ -77,6 +77,10 @@ MeshLoader::MeshLoader(void *meshlite, int meshId, int triangulatedMeshId, QColo
     GLfloat *triangleVertexPositions = new GLfloat[triangleVertexPositionCount * 3];
     int loadedTriangleVertexPositionItemCount = meshlite_get_vertex_position_array(meshlite, triangleMesh, triangleVertexPositions, triangleVertexPositionCount * 3);
     
+    GLfloat *triangleVertexSmoothNormals = new GLfloat[triangleVertexPositionCount * 3];
+    if (smoothNormal)
+        memset(triangleVertexSmoothNormals, 0, sizeof(GLfloat) * triangleVertexPositionCount * 3);
+    
     offset = 0;
     while (offset < loadedTriangleVertexPositionItemCount) {
         QVector3D position = QVector3D(triangleVertexPositions[offset], triangleVertexPositions[offset + 1], triangleVertexPositions[offset + 2]);
@@ -124,6 +128,11 @@ MeshLoader::MeshLoader(void *meshlite, int meshId, int triangulatedMeshId, QColo
             v->normX = triangleNormals[firstIndex + 0];
             v->normY = triangleNormals[firstIndex + 1];
             v->normZ = triangleNormals[firstIndex + 2];
+            if (smoothNormal) {
+                triangleVertexSmoothNormals[posIndex + 0] += v->normX;
+                triangleVertexSmoothNormals[posIndex + 1] += v->normY;
+                triangleVertexSmoothNormals[posIndex + 2] += v->normZ;
+            }
             v->colorR = useColorR;
             v->colorG = useColorG;
             v->colorB = useColorB;
@@ -131,7 +140,26 @@ MeshLoader::MeshLoader(void *meshlite, int meshId, int triangulatedMeshId, QColo
         m_triangulatedFaces.push_back(triangulatedFace);
     }
     
+    if (smoothNormal) {
+        for (int i = 0; i < triangleCount; i++) {
+            int firstIndex = i * 3;
+            for (int j = 0; j < 3; j++) {
+                assert(firstIndex + j < loadedTriangleVertexIndexItemCount);
+                int posIndex = triangleIndices[firstIndex + j] * 3;
+                Vertex *v = &m_triangleVertices[firstIndex + j];
+                QVector3D normal(triangleVertexSmoothNormals[posIndex + 0],
+                    triangleVertexSmoothNormals[posIndex + 1],
+                    triangleVertexSmoothNormals[posIndex + 2]);
+                normal.normalize();
+                v->normX = normal.x();
+                v->normY = normal.y();
+                v->normZ = normal.z();
+            }
+        }
+    }
+    
     delete[] triangleVertexPositions;
+    delete[] triangleVertexSmoothNormals;
     delete[] triangleIndices;
     delete[] triangleNormals;
     

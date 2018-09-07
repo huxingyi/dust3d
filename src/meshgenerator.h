@@ -34,6 +34,7 @@ public:
     void setSharedContextWidget(QOpenGLWidget *widget);
     void addPartPreviewRequirement(const QString &partId);
     void setGeneratedCacheContext(GeneratedCacheContext *cacheContext);
+    void setSmoothNormal(bool smoothNormal);
     MeshLoader *takeResultMesh();
     QImage *takePreview();
     QImage *takePartPreview(const QString &partId);
@@ -54,6 +55,7 @@ private:
     QOpenGLWidget *m_sharedContextWidget;
     void *m_meshliteContext;
     GeneratedCacheContext *m_cacheContext;
+    bool m_smoothNormal;
     float m_mainProfileMiddleX;
     float m_sideProfileMiddleX;
     float m_mainProfileMiddleY;

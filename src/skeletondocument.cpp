@@ -42,7 +42,8 @@ SkeletonDocument::SkeletonDocument() :
     m_ambientOcclusionBaker(nullptr),
     m_ambientOcclusionBakedImageUpdateVersion(0),
     m_sharedContextWidget(nullptr),
-    m_allPositionRelatedLocksEnabled(true)
+    m_allPositionRelatedLocksEnabled(true),
+    m_smoothNormal(true)
 {
 }
 
@@ -1045,6 +1046,12 @@ void SkeletonDocument::regenerateMesh()
     generateMesh();
 }
 
+void SkeletonDocument::toggleSmoothNormal()
+{
+    m_smoothNormal = !m_smoothNormal;
+    regenerateMesh();
+}
+
 void SkeletonDocument::generateMesh()
 {
     if (nullptr != m_meshGenerator || m_batchChangeRefCount > 0) {
@@ -1064,6 +1071,7 @@ void SkeletonDocument::generateMesh()
     toSnapshot(snapshot);
     resetDirtyFlags();
     m_meshGenerator = new MeshGenerator(snapshot, thread);
+    m_meshGenerator->setSmoothNormal(m_smoothNormal);
     m_meshGenerator->setGeneratedCacheContext(&m_generatedCacheContext);
     if (nullptr != m_sharedContextWidget)
         m_meshGenerator->setSharedContextWidget(m_sharedContextWidget);

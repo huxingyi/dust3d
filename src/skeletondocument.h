@@ -503,6 +503,7 @@ public slots:
     void setZlockState(bool locked);
     void enableAllPositionRelatedLocks();
     void disableAllPositionRelatedLocks();
+    void toggleSmoothNormal();
 private:
     void splitPartByNode(std::vector<std::vector<QUuid>> *groups, QUuid nodeId);
     void joinNodeAndNeiborsToGroup(std::vector<QUuid> *group, QUuid nodeId, std::set<QUuid> *visitMap, QUuid noUseEdgeId=QUuid());
@@ -535,6 +536,7 @@ private: // need initialize
     QOpenGLWidget *m_sharedContextWidget;
     QUuid m_currentCanvasComponentId;
     bool m_allPositionRelatedLocksEnabled;
+    bool m_smoothNormal;
 private:
     static unsigned long m_maxSnapshot;
     std::deque<SkeletonHistoryItem> m_undoItems;

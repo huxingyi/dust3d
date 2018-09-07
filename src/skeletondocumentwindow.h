@@ -65,7 +65,6 @@ private:
     QString m_currentFilename;
     
     ModelWidget *m_modelRenderWidget;
-    //ModelWidget *m_skeletonRenderWidget;
     SkeletonGraphicsWidget *m_graphicsWidget;
     
     QMenu *m_fileMenu;
@@ -115,6 +114,7 @@ private:
     QAction *m_showPartsListAction;
     QAction *m_showDebugDialogAction;
     QAction *m_toggleWireframeAction;
+    QAction *m_toggleSmoothNormalAction;
     QAction *m_showMotionsListAction;
     
     QMenu *m_helpMenu;

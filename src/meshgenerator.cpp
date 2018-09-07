@@ -34,7 +34,8 @@ MeshGenerator::MeshGenerator(SkeletonSnapshot *snapshot, QThread *thread) :
     m_thread(thread),
     m_meshResultContext(nullptr),
     m_sharedContextWidget(nullptr),
-    m_cacheContext(nullptr)
+    m_cacheContext(nullptr),
+    m_smoothNormal(true)
 {
 }
 
@@ -50,6 +51,11 @@ MeshGenerator::~MeshGenerator()
         delete render.second;
     }
     delete m_meshResultContext;
+}
+
+void MeshGenerator::setSmoothNormal(bool smoothNormal)
+{
+    m_smoothNormal = smoothNormal;
 }
 
 void MeshGenerator::setGeneratedCacheContext(GeneratedCacheContext *cacheContext)
@@ -319,7 +325,7 @@ void *MeshGenerator::combinePartMesh(QString partId)
     if (m_requirePartPreviewMap.find(partId) != m_requirePartPreviewMap.end()) {
         ModelOfflineRender *render = m_partPreviewRenderMap[partId];
         int trimedMeshId = meshlite_trim(m_meshliteContext, meshId, 1);
-        render->updateMesh(new MeshLoader(m_meshliteContext, trimedMeshId, -1, partColor));
+        render->updateMesh(new MeshLoader(m_meshliteContext, trimedMeshId, -1, partColor, nullptr, m_smoothNormal));
         QImage *image = new QImage(render->toImage(QSize(Theme::previewImageRenderSize, Theme::previewImageRenderSize)));
         if (Theme::previewImageSize != Theme::previewImageRenderSize) {
             int cropOffset = (Theme::previewImageRenderSize - Theme::previewImageSize) / 2;
@@ -620,7 +626,7 @@ void MeshGenerator::process()
     if (resultMeshId > 0) {
         int triangulatedFinalMeshId = meshlite_triangulate(m_meshliteContext, resultMeshId);
         loadGeneratedPositionsToMeshResultContext(m_meshliteContext, triangulatedFinalMeshId);
-        m_mesh = new MeshLoader(m_meshliteContext, resultMeshId, triangulatedFinalMeshId, Theme::white, &m_meshResultContext->triangleColors());
+        m_mesh = new MeshLoader(m_meshliteContext, resultMeshId, triangulatedFinalMeshId, Theme::white, &m_meshResultContext->triangleColors(), m_smoothNormal);
     }
     
     if (needDeleteCacheContext) {

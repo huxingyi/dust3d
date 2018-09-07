@@ -38,7 +38,7 @@ struct TriangulatedFace
 class MeshLoader
 {
 public:
-    MeshLoader(void *meshlite, int meshId, int triangulatedMeshId = -1, QColor modelColor=Theme::white, const std::vector<QColor> *triangleColors=nullptr);
+    MeshLoader(void *meshlite, int meshId, int triangulatedMeshId=-1, QColor modelColor=Theme::white, const std::vector<QColor> *triangleColors=nullptr, bool smoothNormal=true);
     MeshLoader(MeshResultContext &resultContext);
     MeshLoader(Vertex *triangleVertices, int vertexNum);
     MeshLoader(const MeshLoader &mesh);
