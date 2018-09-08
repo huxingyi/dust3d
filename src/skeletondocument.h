@@ -370,6 +370,7 @@ signals:
     void xlockStateChanged();
     void ylockStateChanged();
     void zlockStateChanged();
+    void radiusLockStateChanged();
     void checkPart(QUuid partId);
     void partChecked(QUuid partId);
     void partUnchecked(QUuid partId);
@@ -388,6 +389,7 @@ public: // need initialize
     bool xlocked;
     bool ylocked;
     bool zlocked;
+    bool radiusLocked;
     QImage *textureGuideImage;
     QImage *textureImage;
     QImage *textureBorderImage;
@@ -501,6 +503,7 @@ public slots:
     void setXlockState(bool locked);
     void setYlockState(bool locked);
     void setZlockState(bool locked);
+    void setRadiusLockState(bool locked);
     void enableAllPositionRelatedLocks();
     void disableAllPositionRelatedLocks();
     void toggleSmoothNormal();

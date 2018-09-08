@@ -137,6 +137,10 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     initLockButton(m_zlockButton);
     updateZlockButtonState();
     
+    m_radiusLockButton = new QPushButton(QChar(fa::bullseye));
+    Theme::initAwesomeButton(m_radiusLockButton);
+    updateRadiusLockButtonState();
+    
     QPushButton *rotateCounterclockwiseButton = new QPushButton(QChar(fa::rotateleft));
     Theme::initAwesomeButton(rotateCounterclockwiseButton);
     
@@ -152,6 +156,7 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     toolButtonLayout->addWidget(m_xlockButton);
     toolButtonLayout->addWidget(m_ylockButton);
     toolButtonLayout->addWidget(m_zlockButton);
+    toolButtonLayout->addWidget(m_radiusLockButton);
     toolButtonLayout->addSpacing(10);
     toolButtonLayout->addWidget(rotateCounterclockwiseButton);
     toolButtonLayout->addWidget(rotateClockwiseButton);
@@ -524,6 +529,9 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(m_zlockButton, &QPushButton::clicked, [=]() {
         m_document->setZlockState(!m_document->zlocked);
     });
+    connect(m_radiusLockButton, &QPushButton::clicked, [=]() {
+        m_document->setRadiusLockState(!m_document->radiusLocked);
+    });
 
     m_partListDockerVisibleSwitchConnection = connect(m_document, &SkeletonDocument::skeletonChanged, [=]() {
         if (m_graphicsWidget->hasItems()) {
@@ -678,6 +686,7 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(m_document, &SkeletonDocument::xlockStateChanged, this, &SkeletonDocumentWindow::updateXlockButtonState);
     connect(m_document, &SkeletonDocument::ylockStateChanged, this, &SkeletonDocumentWindow::updateYlockButtonState);
     connect(m_document, &SkeletonDocument::zlockStateChanged, this, &SkeletonDocumentWindow::updateZlockButtonState);
+    connect(m_document, &SkeletonDocument::radiusLockStateChanged, this, &SkeletonDocumentWindow::updateRadiusLockButtonState);
 
     connect(this, &SkeletonDocumentWindow::initialized, m_document, &SkeletonDocument::uiReady);
     
@@ -1034,4 +1043,12 @@ void SkeletonDocumentWindow::updateZlockButtonState()
         m_zlockButton->setStyleSheet("QPushButton {color: #252525}");
     else
         m_zlockButton->setStyleSheet("QPushButton {color: #aaebc4}");
+}
+
+void SkeletonDocumentWindow::updateRadiusLockButtonState()
+{
+    if (m_document->radiusLocked)
+        m_radiusLockButton->setStyleSheet("QPushButton {color: #252525}");
+    else
+        m_radiusLockButton->setStyleSheet("QPushButton {color: " + Theme::white.name() + "}");
 }

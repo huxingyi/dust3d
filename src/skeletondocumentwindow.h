@@ -52,6 +52,7 @@ public slots:
     void updateXlockButtonState();
     void updateYlockButtonState();
     void updateZlockButtonState();
+    void updateRadiusLockButtonState();
 private:
     void initLockButton(QPushButton *button);
     void setCurrentFilename(const QString &filename);
@@ -128,6 +129,7 @@ private:
     QPushButton *m_xlockButton;
     QPushButton *m_ylockButton;
     QPushButton *m_zlockButton;
+    QPushButton *m_radiusLockButton;
     
     QMetaObject::Connection m_partListDockerVisibleSwitchConnection;
 public:

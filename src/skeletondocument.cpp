@@ -21,6 +21,7 @@ SkeletonDocument::SkeletonDocument() :
     xlocked(false),
     ylocked(false),
     zlocked(false),
+    radiusLocked(false),
     textureGuideImage(nullptr),
     textureImage(nullptr),
     textureBorderImage(nullptr),
@@ -443,7 +444,8 @@ void SkeletonDocument::scaleNodeByAddRadius(QUuid nodeId, float amount)
     }
     if (isPartReadonly(it->second.partId))
         return;
-    it->second.setRadius(it->second.radius + amount);
+    if (!radiusLocked)
+        it->second.setRadius(it->second.radius + amount);
     auto part = partMap.find(it->second.partId);
     if (part != partMap.end())
         part->second.dirty = true;
@@ -527,7 +529,8 @@ void SkeletonDocument::setNodeRadius(QUuid nodeId, float radius)
     }
     if (isPartReadonly(it->second.partId))
         return;
-    it->second.setRadius(radius);
+    if (!radiusLocked)
+        it->second.setRadius(radius);
     auto part = partMap.find(it->second.partId);
     if (part != partMap.end())
         part->second.dirty = true;
@@ -1962,6 +1965,14 @@ void SkeletonDocument::setZlockState(bool locked)
         return;
     zlocked = locked;
     emit zlockStateChanged();
+}
+
+void SkeletonDocument::setRadiusLockState(bool locked)
+{
+    if (radiusLocked == locked)
+        return;
+    radiusLocked = locked;
+    emit radiusLockStateChanged();
 }
 
 bool SkeletonDocument::isExportReady() const
