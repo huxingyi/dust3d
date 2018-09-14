@@ -10,7 +10,7 @@ int meshQuadify(void *meshlite, int meshId, const std::set<std::pair<PositionMap
     float *vertexPositions = new float[vertexCount * 3];
     int vertexArrayLen = meshlite_get_vertex_position_array(meshlite, meshId, vertexPositions, vertexCount * 3);
     int offset = 0;
-    assert(vertexArrayLen == vertexCount * 3);
+    Q_ASSERT(vertexArrayLen == vertexCount * 3);
     std::map<int, PositionMapKey> positionKeyMap;
     for (int i = 0; i < vertexCount; i++) {
         float x = vertexPositions[offset + 0];
@@ -26,7 +26,7 @@ int meshQuadify(void *meshlite, int meshId, const std::set<std::pair<PositionMap
     std::vector<std::vector<int>> newFaceIndicies;
     while (i < filledLength) {
         int num = faceVertexNumAndIndices[i++];
-        assert(num > 0 && num <= MAX_VERTICES_PER_FACE);
+        Q_ASSERT(num > 0 && num <= MAX_VERTICES_PER_FACE);
         if (num < 3) {
             i += num;
             continue;
@@ -34,7 +34,7 @@ int meshQuadify(void *meshlite, int meshId, const std::set<std::pair<PositionMap
         std::vector<int> indices;
         for (int j = 0; j < num; j++) {
             int index = faceVertexNumAndIndices[i++];
-            assert(index >= 0 && index < vertexCount);
+            Q_ASSERT(index >= 0 && index < vertexCount);
             indices.push_back(index);
         }
         newFaceIndicies.push_back(indices);
