@@ -136,7 +136,7 @@ void MeshGenerator::loadVertexSources(void *meshliteContext, int meshId, QUuid p
     int i = 0;
     while (i < filledLength) {
         int num = faceVertexNumAndIndices[i++];
-        assert(num > 0 && num <= MAX_VERTICES_PER_FACE);
+        Q_ASSERT(num > 0 && num <= MAX_VERTICES_PER_FACE);
         if (4 != num) {
             i += num;
             continue;
