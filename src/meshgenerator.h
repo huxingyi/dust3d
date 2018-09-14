@@ -19,9 +19,11 @@ public:
     ~GeneratedCacheContext();
     std::map<QString, std::vector<BmeshVertex>> partBmeshVertices;
     std::map<QString, std::vector<BmeshNode>> partBmeshNodes;
+    std::map<QString, std::vector<std::tuple<PositionMapKey, PositionMapKey, PositionMapKey, PositionMapKey>>> partBmeshQuads;
     std::map<QString, void *> componentCombinableMeshs;
     std::map<QString, std::vector<QVector3D>> componentPositions;
     std::map<QString, PositionMap<BmeshVertex>> componentVerticesSources;
+    std::map<QString, QString> partMirrorIdMap;
     void updateComponentCombinableMesh(QString componentId, void *mesh);
 };
 
@@ -63,11 +65,12 @@ private:
     std::map<QString, std::set<QString>> m_partEdgeIds;
     std::set<QString> m_dirtyComponentIds;
     std::set<QString> m_dirtyPartIds;
-    PositionMap<std::pair<QString, int>> m_bmeshPartVerticesIndiciesMap;
 private:
     static bool m_enableDebug;
+    static PositionMap<int> *m_forMakePositionKey;
 private:
-    void loadVertexSources(void *meshliteContext, int meshId, QUuid partId, const std::map<int, QUuid> &bmeshToNodeIdMap, std::vector<BmeshVertex> &bmeshVertices);
+    void loadVertexSources(void *meshliteContext, int meshId, QUuid partId, const std::map<int, QUuid> &bmeshToNodeIdMap, std::vector<BmeshVertex> &bmeshVertices,
+        std::vector<std::tuple<PositionMapKey, PositionMapKey, PositionMapKey, PositionMapKey>> &bmeshQuads);
     void loadGeneratedPositionsToMeshResultContext(void *meshliteContext, int triangulatedMeshId);
     void collectParts();
     void checkDirtyFlags();

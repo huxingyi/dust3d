@@ -4,8 +4,6 @@
 
 #define USE_CGAL    1
 
-#define MAX_VERTICES_PER_FACE   100
-
 #if USE_CGAL == 1
 // Polygon_mesh_processing/corefinement_mesh_union.cpp
 // https://doc.cgal.org/latest/Polygon_mesh_processing/Polygon_mesh_processing_2corefinement_mesh_union_8cpp-example.html#a2
@@ -86,8 +84,10 @@ typename CGAL::Surface_mesh<typename Kernel::Point_3> *makeCgalMeshFromMeshlite(
     while (i < filledLength) {
         int num = faceVertexNumAndIndices[i++];
         assert(num > 0 && num <= MAX_VERTICES_PER_FACE);
-        if (num < 3)
+        if (num < 3) {
+            i += num;
             continue;
+        }
         std::vector<typename CGAL::Surface_mesh<typename Kernel::Point_3>::Vertex_index> faceVertexIndices;
         for (int j = 0; j < num; j++) {
             int index = faceVertexNumAndIndices[i++];

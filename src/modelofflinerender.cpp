@@ -6,7 +6,10 @@
 ModelOfflineRender::ModelOfflineRender(QOpenGLWidget *sharedContextWidget, QScreen *targetScreen) :
     QOffscreenSurface(targetScreen),
     m_context(nullptr),
-    m_mesh(nullptr)
+    m_mesh(nullptr),
+    m_xRot(0),
+    m_yRot(0),
+    m_zRot(0)
 {
     create();
     
@@ -71,11 +74,9 @@ QImage ModelOfflineRender::toImage(const QSize &size)
     m_context->functions()->glViewport(0, 0, size.width(), size.height());
     
     if (nullptr != m_mesh) {
-        //int xRot = -30 * 16;
-        //int yRot = 45 * 16;
-        int xRot = 0;
-        int yRot = 0;
-        int zRot = 0;
+        int xRot = m_xRot;
+        int yRot = m_yRot;
+        int zRot = m_zRot;
         QMatrix4x4 proj;
         QMatrix4x4 camera;
         QMatrix4x4 world;
@@ -132,3 +133,19 @@ QImage ModelOfflineRender::toImage(const QSize &size)
 
     return image;
 }
+
+void ModelOfflineRender::setXRotation(int angle)
+{
+    m_xRot = angle;
+}
+
+void ModelOfflineRender::setYRotation(int angle)
+{
+    m_yRot = angle;
+}
+
+void ModelOfflineRender::setZRotation(int angle)
+{
+    m_zRot = angle;
+}
+

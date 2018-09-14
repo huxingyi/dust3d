@@ -10,6 +10,8 @@
 #include "skeletondocument.h"
 #include "modelwidget.h"
 #include "exportpreviewwidget.h"
+#include "rigwidget.h"
+#include "skeletonbonemark.h"
 
 class SkeletonGraphicsWidget;
 
@@ -37,6 +39,7 @@ public slots:
     void exportObjResult();
     void exportObjPlusMaterialsResult();
     void exportGltfResult();
+    void exportRenderedResult();
     void showExportPreview();
     void newWindow();
     void newDocument();
@@ -57,6 +60,7 @@ private:
     void initLockButton(QPushButton *button);
     void setCurrentFilename(const QString &filename);
     void updateTitle();
+    void exportRenderedAsImage(const QString &filename);
 private:
     SkeletonDocument *m_document;
     bool m_firstShow;
@@ -80,7 +84,8 @@ private:
     
     QAction *m_exportAsObjAction;
     QAction *m_exportAsObjPlusMaterialsAction;
-    QAction *m_exportAsGltfAction;
+    QAction *m_exportAction;
+    QAction *m_exportRenderedAsImageAction;
     
     QMenu *m_editMenu;
     QAction *m_addAction;
@@ -110,13 +115,20 @@ private:
     QAction *m_selectPartAllAction;
     QAction *m_unselectAllAction;
     
+    QMenu *m_markAsMenu;
+    QAction *m_markAsNoneAction;
+    QAction *m_markAsActions[(int)SkeletonBoneMark::Count - 1];
+    
     QMenu *m_viewMenu;
     QAction *m_resetModelWidgetPosAction;
-    QAction *m_showPartsListAction;
-    QAction *m_showDebugDialogAction;
     QAction *m_toggleWireframeAction;
     QAction *m_toggleSmoothNormalAction;
     QAction *m_showMotionsListAction;
+    
+    QMenu *m_windowMenu;
+    QAction *m_showPartsListAction;
+    QAction *m_showDebugDialogAction;
+    QAction *m_showRigAction;
     
     QMenu *m_helpMenu;
     QAction *m_viewSourceAction;

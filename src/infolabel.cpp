@@ -10,6 +10,7 @@ InfoLabel::InfoLabel(const QString &text, QWidget *parent) :
     Theme::initAwesomeLabel(m_icon);
     
     m_label = new QLabel(text);
+    m_label->setWordWrap(true);
     
     QHBoxLayout *mainLayout = new QHBoxLayout;
     mainLayout->addWidget(m_icon);

@@ -6,6 +6,7 @@
 #include <QUuid>
 #include <QColor>
 #include "positionmap.h"
+#include "skeletonbonemark.h"
 
 #define MAX_WEIGHT_NUM  4
 
@@ -16,6 +17,7 @@ struct BmeshNode
     QVector3D origin;
     float radius = 0;
     QColor color;
+    SkeletonBoneMark boneMark;
 };
 
 struct BmeshVertex
@@ -51,6 +53,7 @@ struct ResultPart
 {
     QColor color;
     std::vector<ResultVertex> vertices;
+    std::vector<int> verticesOldIndicies;
     std::vector<QVector3D> interpolatedVertexNormals;
     std::vector<ResultTriangle> triangles;
     std::vector<ResultTriangleUv> uvs;
@@ -107,6 +110,7 @@ private:
     std::vector<ResultRearrangedVertex> m_rearrangedVertices;
     std::vector<ResultRearrangedTriangle> m_rearrangedTriangles;
     std::map<int, std::pair<QUuid, QUuid>> m_vertexSourceMap;
+    std::map<int, int> m_rearrangedVerticesToOldIndexMap;
 private:
     void calculateTriangleSourceNodes(std::vector<std::pair<QUuid, QUuid>> &triangleSourceNodes, std::map<int, std::pair<QUuid, QUuid>> &vertexSourceMap);
     void calculateRemainingVertexSourceNodesAfterTriangleSourceNodesSolved(std::map<int, std::pair<QUuid, QUuid>> &vertexSourceMap);

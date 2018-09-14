@@ -11,6 +11,7 @@
 #include <QTextStream>
 #include <QCloseEvent>
 #include <QKeyEvent>
+#include "version.h"
 
 LogBrowserDialog::LogBrowserDialog(QWidget *parent) :
     QDialog(parent)
@@ -38,6 +39,8 @@ LogBrowserDialog::LogBrowserDialog(QWidget *parent) :
     connect(m_saveButton, SIGNAL(clicked()), this, SLOT(save()));
 
     resize(400, 300);
+    
+    setWindowTitle(tr("Debug") + tr(" - ") + APP_NAME);
     
     hide();
 }

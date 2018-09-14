@@ -13,11 +13,13 @@
 #include "skeletonsnapshot.h"
 #include "meshloader.h"
 #include "meshgenerator.h"
-#include "skeletongenerator.h"
 #include "theme.h"
 #include "texturegenerator.h"
 #include "meshresultpostprocessor.h"
 #include "ambientocclusionbaker.h"
+#include "skeletonbonemark.h"
+#include "riggenerator.h"
+#include "rigtype.h"
 
 class SkeletonNode
 {
@@ -26,7 +28,8 @@ public:
         x(0),
         y(0),
         z(0),
-        radius(0)
+        radius(0),
+        boneMark(SkeletonBoneMark::None)
     {
         id = withId.isNull() ? QUuid::createUuid() : withId;
     }
@@ -45,6 +48,7 @@ public:
     float y;
     float z;
     float radius;
+    SkeletonBoneMark boneMark;
     std::vector<QUuid> edgeIds;
 };
 
@@ -342,6 +346,7 @@ signals:
     void nodeRemoved(QUuid nodeId);
     void edgeRemoved(QUuid edgeId);
     void nodeRadiusChanged(QUuid nodeId);
+    void nodeBoneMarkChanged(QUuid nodeId);
     void nodeOriginChanged(QUuid nodeId);
     void edgeChanged(QUuid edgeId);
     void partPreviewChanged(QUuid partId);
@@ -353,6 +358,8 @@ signals:
     void resultTextureChanged();
     void resultBakedTextureChanged();
     void postProcessedResultChanged();
+    void resultRigChanged();
+    void rigChanged();
     void partLockStateChanged(QUuid partId);
     void partVisibleStateChanged(QUuid partId);
     void partSubdivStateChanged(QUuid partId);
@@ -381,6 +388,7 @@ signals:
     void checkNode(QUuid nodeId);
     void checkEdge(QUuid edgeId);
     void optionsChanged();
+    void rigTypeChanged();
 public: // need initialize
     float originX;
     float originY;
@@ -395,6 +403,7 @@ public: // need initialize
     QImage *textureBorderImage;
     QImage *textureAmbientOcclusionImage;
     QImage *textureColorImage;
+    RigType rigType;
 public:
     SkeletonDocument();
     ~SkeletonDocument();
@@ -407,7 +416,7 @@ public:
     QImage preview;
     void toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUuid> &limitNodeIds=std::set<QUuid>()) const;
     void fromSnapshot(const SkeletonSnapshot &snapshot);
-    void addFromSnapshot(const SkeletonSnapshot &snapshot);
+    void addFromSnapshot(const SkeletonSnapshot &snapshot, bool fromPaste=true);
     const SkeletonNode *findNode(QUuid nodeId) const;
     const SkeletonEdge *findEdge(QUuid edgeId) const;
     const SkeletonPart *findPart(QUuid partId) const;
@@ -417,6 +426,9 @@ public:
     QUuid findComponentParentId(QUuid componentId) const;
     MeshLoader *takeResultMesh();
     MeshLoader *takeResultTextureMesh();
+    MeshLoader *takeResultRigWeightMesh();
+    const std::vector<AutoRiggerBone> *resultRigBones();
+    const std::map<int, AutoRiggerVertexWeights> *resultRigWeights();
     void updateTurnaround(const QImage &image);
     void setSharedContextWidget(QOpenGLWidget *sharedContextWidget);
     bool hasPastableContentInClipboard() const;
@@ -431,6 +443,8 @@ public:
     void findAllNeighbors(QUuid nodeId, std::set<QUuid> &neighbors) const;
     void collectComponentDescendantParts(QUuid componentId, std::vector<QUuid> &partIds) const;
     void collectComponentDescendantComponents(QUuid componentId, std::vector<QUuid> &componentIds) const;
+    const std::vector<QString> &resultRigMissingMarkNames() const;
+    const std::vector<QString> &resultRigErrorMarkNames() const;
 public slots:
     void removeNode(QUuid nodeId);
     void removeEdge(QUuid edgeId);
@@ -440,6 +454,7 @@ public slots:
     void moveNodeBy(QUuid nodeId, float x, float y, float z);
     void setNodeOrigin(QUuid nodeId, float x, float y, float z);
     void setNodeRadius(QUuid nodeId, float radius);
+    void setNodeBoneMark(QUuid nodeId, SkeletonBoneMark mark);
     void switchNodeXZ(QUuid nodeId);
     void moveOriginBy(float x, float y, float z);
     void addEdge(QUuid fromNodeId, QUuid toNodeId);
@@ -454,6 +469,8 @@ public slots:
     void postProcessedMeshResultReady();
     void bakeAmbientOcclusionTexture();
     void ambientOcclusionTextureReady();
+    void generateRig();
+    void rigReady();
     void setPartLockState(QUuid partId, bool locked);
     void setPartVisibleState(QUuid partId, bool visible);
     void setPartSubdivState(QUuid partId, bool subdived);
@@ -507,6 +524,7 @@ public slots:
     void enableAllPositionRelatedLocks();
     void disableAllPositionRelatedLocks();
     void toggleSmoothNormal();
+    void setRigType(RigType toRigType);
 private:
     void splitPartByNode(std::vector<std::vector<QUuid>> *groups, QUuid nodeId);
     void joinNodeAndNeiborsToGroup(std::vector<QUuid> *group, QUuid nodeId, std::set<QUuid> *visitMap, QUuid noUseEdgeId=QUuid());
@@ -521,6 +539,7 @@ private:
     void removeComponentRecursively(QUuid componentId);
     void resetDirtyFlags();
     void markAllDirty();
+    void removeRigResults();
 private: // need initialize
     bool m_isResultMeshObsolete;
     MeshGenerator *m_meshGenerator;
@@ -540,6 +559,13 @@ private: // need initialize
     QUuid m_currentCanvasComponentId;
     bool m_allPositionRelatedLocksEnabled;
     bool m_smoothNormal;
+    RigGenerator *m_rigGenerator;
+    MeshLoader *m_resultRigWeightMesh;
+    std::vector<AutoRiggerBone> *m_resultRigBones;
+    std::map<int, AutoRiggerVertexWeights> *m_resultRigWeights;
+    bool m_isRigObsolete;
+    std::vector<QString> m_resultRigMissingMarkNames;
+    std::vector<QString> m_resultRigErrorMarkNames;
 private:
     static unsigned long m_maxSnapshot;
     std::deque<SkeletonHistoryItem> m_undoItems;

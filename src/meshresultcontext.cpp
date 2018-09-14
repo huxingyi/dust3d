@@ -7,6 +7,7 @@
 #include "meshresultcontext.h"
 #include "thekla_atlas.h"
 #include "positionmap.h"
+#include "nvcore/Debug.h"
 
 struct HalfColorEdge
 {
@@ -334,6 +335,7 @@ void MeshResultContext::calculateResultParts(std::map<QUuid, ResultPart> &parts)
             if (isNewVertex || isSeamVertex) {
                 int newIndex = resultPart.vertices.size();
                 resultPart.interpolatedVertexNormals.push_back(newTriangle.normal);
+                resultPart.verticesOldIndicies.push_back(triangle.indicies[i]);
                 resultPart.vertices.push_back(vertices[triangle.indicies[i]]);
                 ResultVertexUv vertexUv;
                 vertexUv.uv[0] = triangleUvs()[x].uv[i][0];
@@ -365,6 +367,18 @@ void MeshResultContext::calculateResultTriangleUvs(std::vector<ResultTriangleUv>
     const std::vector<ResultRearrangedTriangle> &choosenTriangles = rearrangedTriangles();
     
     Atlas_Input_Mesh inputMesh;
+    
+    using namespace nv;
+    
+    class NvAssertHandler : public nv::AssertHandler {
+        virtual int assertion(const char *exp, const char *file, int line, const char *func, const char *msg, va_list arg)
+        {
+            qDebug() << "Something bad happended inside nvMesh:" << exp << "file:" << file << "line:" << line << "msg:" << msg;
+            return NV_ABORT_IGNORE;
+        };
+    };
+    NvAssertHandler assertHandler;
+    nv::debug::setAssertHandler(&assertHandler);
  
     inputMesh.vertex_count = choosenVertices.size();
     inputMesh.vertex_array = new Atlas_Input_Vertex[inputMesh.vertex_count];

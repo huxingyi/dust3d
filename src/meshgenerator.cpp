@@ -9,8 +9,10 @@
 #include "meshutil.h"
 #include "theme.h"
 #include "positionmap.h"
+#include "meshquadify.h"
 
 bool MeshGenerator::m_enableDebug = false;
+PositionMap<int> *MeshGenerator::m_forMakePositionKey = new PositionMap<int>;
 
 GeneratedCacheContext::~GeneratedCacheContext()
 {
@@ -107,7 +109,8 @@ MeshResultContext *MeshGenerator::takeMeshResultContext()
     return meshResultContext;
 }
 
-void MeshGenerator::loadVertexSources(void *meshliteContext, int meshId, QUuid partId, const std::map<int, QUuid> &bmeshToNodeIdMap, std::vector<BmeshVertex> &bmeshVertices)
+void MeshGenerator::loadVertexSources(void *meshliteContext, int meshId, QUuid partId, const std::map<int, QUuid> &bmeshToNodeIdMap, std::vector<BmeshVertex> &bmeshVertices,
+    std::vector<std::tuple<PositionMapKey, PositionMapKey, PositionMapKey, PositionMapKey>> &bmeshQuads)
 {
     int vertexCount = meshlite_get_vertex_count(meshliteContext, meshId);
     int positionBufferLen = vertexCount * 3;
@@ -116,6 +119,7 @@ void MeshGenerator::loadVertexSources(void *meshliteContext, int meshId, QUuid p
     int *sourceBuffer = new int[positionBufferLen];
     int sourceCount = meshlite_get_vertex_source_array(meshliteContext, meshId, sourceBuffer, positionBufferLen);
     Q_ASSERT(positionCount == sourceCount);
+    std::vector<QVector3D> verticesPositions;
     for (int i = 0, positionIndex = 0; i < positionCount; i++, positionIndex+=3) {
         BmeshVertex vertex;
         vertex.partId = partId;
@@ -123,8 +127,34 @@ void MeshGenerator::loadVertexSources(void *meshliteContext, int meshId, QUuid p
         if (findNodeId != bmeshToNodeIdMap.end())
             vertex.nodeId = findNodeId->second;
         vertex.position = QVector3D(positionBuffer[positionIndex + 0], positionBuffer[positionIndex + 1], positionBuffer[positionIndex + 2]);
+        verticesPositions.push_back(vertex.position);
         bmeshVertices.push_back(vertex);
     }
+    int faceCount = meshlite_get_face_count(meshliteContext, meshId);
+    int *faceVertexNumAndIndices = new int[faceCount * MAX_VERTICES_PER_FACE];
+    int filledLength = meshlite_get_face_index_array(meshliteContext, meshId, faceVertexNumAndIndices, faceCount * MAX_VERTICES_PER_FACE);
+    int i = 0;
+    while (i < filledLength) {
+        int num = faceVertexNumAndIndices[i++];
+        assert(num > 0 && num <= MAX_VERTICES_PER_FACE);
+        if (4 != num) {
+            i += num;
+            continue;
+        }
+        int i0 = faceVertexNumAndIndices[i++];
+        int i1 = faceVertexNumAndIndices[i++];
+        int i2 = faceVertexNumAndIndices[i++];
+        int i3 = faceVertexNumAndIndices[i++];
+        const auto &v0 = verticesPositions[i0];
+        const auto &v1 = verticesPositions[i1];
+        const auto &v2 = verticesPositions[i2];
+        const auto &v3 = verticesPositions[i3];
+        bmeshQuads.push_back(std::make_tuple(m_forMakePositionKey->makeKey(v0.x(), v0.y(), v0.z()),
+            m_forMakePositionKey->makeKey(v1.x(), v1.y(), v1.z()),
+            m_forMakePositionKey->makeKey(v2.x(), v2.y(), v2.z()),
+            m_forMakePositionKey->makeKey(v3.x(), v3.y(), v3.z())));
+    }
+    delete[] faceVertexNumAndIndices;
     delete[] positionBuffer;
     delete[] sourceBuffer;
 }
@@ -221,19 +251,22 @@ void *MeshGenerator::combinePartMesh(QString partId)
     if (MeshGenerator::m_enableDebug)
         meshlite_bmesh_enable_debug(m_meshliteContext, bmeshId, 1);
     
-    //QString mirroredPartId;
-    //QUuid mirroredPartIdNotAsString;
-    //if (xMirrored) {
-    //    mirroredPartIdNotAsString = QUuid().createUuid();
-    //    mirroredPartId = mirroredPartIdNotAsString.toString();
-    //}
+    QString mirroredPartId;
+    QUuid mirroredPartIdNotAsString;
+    if (xMirrored) {
+        mirroredPartIdNotAsString = QUuid().createUuid();
+        mirroredPartId = mirroredPartIdNotAsString.toString();
+        m_cacheContext->partMirrorIdMap[mirroredPartId] = partId;
+    }
     
     std::map<QString, int> nodeToBmeshIdMap;
     std::map<int, QUuid> bmeshToNodeIdMap;
     auto &cacheBmeshNodes = m_cacheContext->partBmeshNodes[partId];
     auto &cacheBmeshVertices = m_cacheContext->partBmeshVertices[partId];
+    auto &cacheBmeshQuads = m_cacheContext->partBmeshQuads[partId];
     cacheBmeshNodes.clear();
     cacheBmeshVertices.clear();
+    cacheBmeshQuads.clear();
     for (const auto &nodeId: m_partNodeIds[partId]) {
         auto findNode = m_snapshot->nodes.find(nodeId);
         if (findNode == m_snapshot->nodes.end()) {
@@ -247,7 +280,9 @@ void *MeshGenerator::combinePartMesh(QString partId)
         float y = (m_mainProfileMiddleY - valueOfKeyInMapOrEmpty(node, "y").toFloat());
         float z = (m_sideProfileMiddleX - valueOfKeyInMapOrEmpty(node, "z").toFloat());
         int bmeshNodeId = meshlite_bmesh_add_node(m_meshliteContext, bmeshId, x, y, z, radius);
-
+        
+        SkeletonBoneMark boneMark = SkeletonBoneMarkFromString(valueOfKeyInMapOrEmpty(node, "boneMark").toUtf8().constData());
+        
         nodeToBmeshIdMap[nodeId] = bmeshNodeId;
         bmeshToNodeIdMap[bmeshNodeId] = nodeId;
         
@@ -257,12 +292,15 @@ void *MeshGenerator::combinePartMesh(QString partId)
         bmeshNode.radius = radius;
         bmeshNode.nodeId = QUuid(nodeId);
         bmeshNode.color = partColor;
+        bmeshNode.boneMark = boneMark;
+        //if (SkeletonBoneMark::None != boneMark)
+        //    bmeshNode.color = SkeletonBoneMarkToColor(boneMark);
         cacheBmeshNodes.push_back(bmeshNode);
-        //if (xMirrored) {
-        //    bmeshNode.partId = mirroredPartId;
-        //    bmeshNode.origin.setX(-x);
-        //    cacheBmeshNodes.push_back(bmeshNode);
-        //}
+        if (xMirrored) {
+            bmeshNode.partId = mirroredPartId;
+            bmeshNode.origin.setX(-x);
+            cacheBmeshNodes.push_back(bmeshNode);
+        }
     }
     
     for (const auto &edgeId: m_partEdgeIds[partId]) {
@@ -295,7 +333,7 @@ void *MeshGenerator::combinePartMesh(QString partId)
     void *resultMesh = nullptr;
     if (!bmeshToNodeIdMap.empty()) {
         meshId = meshlite_bmesh_generate_mesh(m_meshliteContext, bmeshId);
-        loadVertexSources(m_meshliteContext, meshId, partIdNotAsString, bmeshToNodeIdMap, cacheBmeshVertices);
+        loadVertexSources(m_meshliteContext, meshId, partIdNotAsString, bmeshToNodeIdMap, cacheBmeshVertices, cacheBmeshQuads);
         if (wrapped)
             resultMesh = convertToCombinableConvexHullMesh(m_meshliteContext, meshId);
         else
@@ -305,7 +343,7 @@ void *MeshGenerator::combinePartMesh(QString partId)
     if (nullptr != resultMesh) {
         if (xMirrored) {
             int xMirroredMeshId = meshlite_mirror_in_x(m_meshliteContext, meshId, 0);
-            loadVertexSources(m_meshliteContext, xMirroredMeshId, partIdNotAsString, bmeshToNodeIdMap, cacheBmeshVertices);
+            loadVertexSources(m_meshliteContext, xMirroredMeshId, mirroredPartIdNotAsString, bmeshToNodeIdMap, cacheBmeshVertices, cacheBmeshQuads);
             void *mirroredMesh = nullptr;
             if (wrapped)
                 mirroredMesh = convertToCombinableConvexHullMesh(m_meshliteContext, xMirroredMeshId);
@@ -554,6 +592,14 @@ void MeshGenerator::process()
     } else {
         for (auto it = m_cacheContext->partBmeshNodes.begin(); it != m_cacheContext->partBmeshNodes.end(); ) {
             if (m_snapshot->parts.find(it->first) == m_snapshot->parts.end()) {
+                auto mirrorFrom = m_cacheContext->partMirrorIdMap.find(it->first);
+                if (mirrorFrom != m_cacheContext->partMirrorIdMap.end()) {
+                    if (m_snapshot->parts.find(mirrorFrom->second) != m_snapshot->parts.end()) {
+                        it++;
+                        continue;
+                    }
+                    m_cacheContext->partMirrorIdMap.erase(mirrorFrom);
+                }
                 it = m_cacheContext->partBmeshNodes.erase(it);
                 continue;
             }
@@ -562,6 +608,13 @@ void MeshGenerator::process()
         for (auto it = m_cacheContext->partBmeshVertices.begin(); it != m_cacheContext->partBmeshVertices.end(); ) {
             if (m_snapshot->parts.find(it->first) == m_snapshot->parts.end()) {
                 it = m_cacheContext->partBmeshVertices.erase(it);
+                continue;
+            }
+            it++;
+        }
+        for (auto it = m_cacheContext->partBmeshQuads.begin(); it != m_cacheContext->partBmeshQuads.end(); ) {
+            if (m_snapshot->parts.find(it->first) == m_snapshot->parts.end()) {
+                it = m_cacheContext->partBmeshQuads.erase(it);
                 continue;
             }
             it++;
@@ -617,14 +670,29 @@ void MeshGenerator::process()
             bmeshNodes.second.begin(), bmeshNodes.second.end());
     }
     
-    if (resultMeshId > 0) {
-        resultMeshId = meshlite_combine_coplanar_faces(m_meshliteContext, resultMeshId);
-        if (resultMeshId > 0)
-            resultMeshId = meshlite_fix_hole(m_meshliteContext, resultMeshId);
+    //if (resultMeshId > 0) {
+    //    resultMeshId = meshlite_combine_coplanar_faces(m_meshliteContext, resultMeshId);
+    //    if (resultMeshId > 0)
+    //        resultMeshId = meshlite_fix_hole(m_meshliteContext, resultMeshId);
+    //}
+    
+    int triangulatedFinalMeshId = resultMeshId;
+    if (triangulatedFinalMeshId > 0) {
+        std::set<std::pair<PositionMapKey, PositionMapKey>> sharedQuadEdges;
+        for (const auto &bmeshQuads: m_cacheContext->partBmeshQuads) {
+            for (const auto &quad: bmeshQuads.second) {
+                sharedQuadEdges.insert(std::make_pair(std::get<0>(quad), std::get<2>(quad)));
+                sharedQuadEdges.insert(std::make_pair(std::get<1>(quad), std::get<3>(quad)));
+            }
+        }
+        if (!sharedQuadEdges.empty()) {
+            resultMeshId = meshQuadify(m_meshliteContext, triangulatedFinalMeshId, sharedQuadEdges, m_forMakePositionKey);
+        }
     }
     
     if (resultMeshId > 0) {
-        int triangulatedFinalMeshId = meshlite_triangulate(m_meshliteContext, resultMeshId);
+        //int triangulatedFinalMeshId = meshlite_triangulate(m_meshliteContext, resultMeshId);
+        //triangulatedFinalMeshId = resultMeshId;
         loadGeneratedPositionsToMeshResultContext(m_meshliteContext, triangulatedFinalMeshId);
         m_mesh = new MeshLoader(m_meshliteContext, resultMeshId, triangulatedFinalMeshId, Theme::white, &m_meshResultContext->triangleColors(), m_smoothNormal);
     }

@@ -28,6 +28,9 @@
 #include "gltffile.h"
 #include "graphicscontainerwidget.h"
 #include "skeletonparttreewidget.h"
+#include "rigwidget.h"
+#include "modelofflinerender.h"
+#include "markiconcreator.h"
 
 int SkeletonDocumentWindow::m_modelRenderWidgetInitialX = 16;
 int SkeletonDocumentWindow::m_modelRenderWidgetInitialY = 16;
@@ -197,18 +200,26 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     m_modelRenderWidget->setGraphicsFunctions(graphicsWidget);
     
     m_document->setSharedContextWidget(m_modelRenderWidget);
-
-    QDockWidget *partListDocker = new QDockWidget(QString(), this);
-    partListDocker->setAllowedAreas(Qt::RightDockWidgetArea);
-
-    SkeletonPartTreeWidget *partTreeWidget = new SkeletonPartTreeWidget(m_document, partListDocker);
     
+    setTabPosition(Qt::RightDockWidgetArea, QTabWidget::East);
+
+    QDockWidget *partTreeDocker = new QDockWidget(tr("Parts"), this);
+    partTreeDocker->setAllowedAreas(Qt::RightDockWidgetArea);
+    SkeletonPartTreeWidget *partTreeWidget = new SkeletonPartTreeWidget(m_document, partTreeDocker);
     partTreeWidget->setGraphicsFunctions(graphicsWidget);
-
-    partListDocker->setWidget(partTreeWidget);
-    addDockWidget(Qt::RightDockWidgetArea, partListDocker);
-
-    partListDocker->hide();
+    partTreeDocker->setWidget(partTreeWidget);
+    addDockWidget(Qt::RightDockWidgetArea, partTreeDocker);
+    //partTreeDocker->hide();
+    
+    QDockWidget *rigDocker = new QDockWidget(tr("Rig"), this);
+    rigDocker->setAllowedAreas(Qt::RightDockWidgetArea);
+    RigWidget *rigWidget = new RigWidget(m_document, rigDocker);
+    rigDocker->setWidget(rigWidget);
+    addDockWidget(Qt::RightDockWidgetArea, rigDocker);
+    
+    tabifyDockWidget(partTreeDocker, rigDocker);
+    
+    partTreeDocker->raise();
 
     QHBoxLayout *mainLayout = new QHBoxLayout;
     mainLayout->setSpacing(0);
@@ -251,21 +262,23 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
 
     m_fileMenu->addSeparator();
 
-    m_exportMenu = m_fileMenu->addMenu(tr("Export"));
-    
-    m_fileMenu->addSeparator();
+    //m_exportMenu = m_fileMenu->addMenu(tr("Export"));
 
-    m_exportAsObjAction = new QAction(tr("Wavefront (.obj)..."), this);
+    m_exportAction = new QAction(tr("Export..."), this);
+    connect(m_exportAction, &QAction::triggered, this, &SkeletonDocumentWindow::showExportPreview, Qt::QueuedConnection);
+    m_fileMenu->addAction(m_exportAction);
+    
+    m_exportAsObjAction = new QAction(tr("Export as OBJ..."), this);
     connect(m_exportAsObjAction, &QAction::triggered, this, &SkeletonDocumentWindow::exportObjResult, Qt::QueuedConnection);
-    m_exportMenu->addAction(m_exportAsObjAction);
+    m_fileMenu->addAction(m_exportAsObjAction);
     
-    m_exportAsObjPlusMaterialsAction = new QAction(tr("Wavefront (.obj + .mtl)..."), this);
-    connect(m_exportAsObjPlusMaterialsAction, &QAction::triggered, this, &SkeletonDocumentWindow::exportObjPlusMaterialsResult, Qt::QueuedConnection);
-    m_exportMenu->addAction(m_exportAsObjPlusMaterialsAction);
-
-    m_exportAsGltfAction = new QAction(tr("GL Transmission Format (.gltf)..."), this);
-    connect(m_exportAsGltfAction, &QAction::triggered, this, &SkeletonDocumentWindow::showExportPreview, Qt::QueuedConnection);
-    m_exportMenu->addAction(m_exportAsGltfAction);
+    //m_exportRenderedAsImageAction = new QAction(tr("Export as PNG..."), this);
+    //connect(m_exportRenderedAsImageAction, &QAction::triggered, this, &SkeletonDocumentWindow::exportRenderedResult, Qt::QueuedConnection);
+    //m_fileMenu->addAction(m_exportRenderedAsImageAction);
+    
+    //m_exportAsObjPlusMaterialsAction = new QAction(tr("Wavefront (.obj + .mtl)..."), this);
+    //connect(m_exportAsObjPlusMaterialsAction, &QAction::triggered, this, &SkeletonDocumentWindow::exportObjPlusMaterialsResult, Qt::QueuedConnection);
+    //m_exportMenu->addAction(m_exportAsObjPlusMaterialsAction);
     
     m_fileMenu->addSeparator();
 
@@ -277,8 +290,9 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
 
     connect(m_fileMenu, &QMenu::aboutToShow, [=]() {
         m_exportAsObjAction->setEnabled(m_graphicsWidget->hasItems());
-        m_exportAsObjPlusMaterialsAction->setEnabled(m_graphicsWidget->hasItems());
-        m_exportAsGltfAction->setEnabled(m_graphicsWidget->hasItems());
+        //m_exportAsObjPlusMaterialsAction->setEnabled(m_graphicsWidget->hasItems());
+        m_exportAction->setEnabled(m_graphicsWidget->hasItems());
+        //m_exportRenderedAsImageAction->setEnabled(m_graphicsWidget->hasItems());
     });
 
     m_editMenu = menuBar()->addMenu(tr("Edit"));
@@ -374,6 +388,27 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     m_alignToMenu->addAction(m_alignToGlobalHorizontalCenterAction);
 
     m_editMenu->addMenu(m_alignToMenu);
+    
+    m_markAsMenu = new QMenu(tr("Mark As"));
+
+    m_markAsNoneAction = new QAction(tr("None"), this);
+    connect(m_markAsNoneAction, &QAction::triggered, [=]() {
+        m_graphicsWidget->setSelectedNodesBoneMark(SkeletonBoneMark::None);
+    });
+    m_markAsMenu->addAction(m_markAsNoneAction);
+
+    m_markAsMenu->addSeparator();
+
+    for (int i = 0; i < (int)SkeletonBoneMark::Count - 1; i++) {
+        SkeletonBoneMark boneMark = (SkeletonBoneMark)(i + 1);
+        m_markAsActions[i] = new QAction(MarkIconCreator::createIcon(boneMark), SkeletonBoneMarkToDispName(boneMark), this);
+        connect(m_markAsActions[i], &QAction::triggered, [=]() {
+            m_graphicsWidget->setSelectedNodesBoneMark(boneMark);
+        });
+        m_markAsMenu->addAction(m_markAsActions[i]);
+    }
+
+    m_editMenu->addMenu(m_markAsMenu);
 
     m_selectAllAction = new QAction(tr("Select All"), this);
     connect(m_selectAllAction, &QAction::triggered, m_graphicsWidget, &SkeletonGraphicsWidget::selectAll);
@@ -440,24 +475,29 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     });
     m_viewMenu->addAction(m_toggleSmoothNormalAction);
 
-    m_viewMenu->addSeparator();
-
-    m_showPartsListAction = new QAction(tr("Show Parts List"), this);
-    connect(m_showPartsListAction, &QAction::triggered, [=]() {
-        partListDocker->show();
-    });
-    m_viewMenu->addAction(m_showPartsListAction);
-
-    m_viewMenu->addSeparator();
-
-    m_showDebugDialogAction = new QAction(tr("Show Debug Dialog"), this);
-    connect(m_showDebugDialogAction, &QAction::triggered, g_logBrowser, &LogBrowser::showDialog);
-    m_viewMenu->addAction(m_showDebugDialogAction);
-
     connect(m_viewMenu, &QMenu::aboutToShow, [=]() {
-        m_showPartsListAction->setEnabled(partListDocker->isHidden());
         m_resetModelWidgetPosAction->setEnabled(!isModelSitInVisibleArea(m_modelRenderWidget));
     });
+    
+    m_windowMenu = menuBar()->addMenu(tr("Window"));
+    
+    m_showPartsListAction = new QAction(tr("Parts"), this);
+    connect(m_showPartsListAction, &QAction::triggered, [=]() {
+        partTreeDocker->show();
+        partTreeDocker->raise();
+    });
+    m_windowMenu->addAction(m_showPartsListAction);
+    
+    m_showRigAction = new QAction(tr("Rig"), this);
+    connect(m_showRigAction, &QAction::triggered, [=]() {
+        rigDocker->show();
+        rigDocker->raise();
+    });
+    m_windowMenu->addAction(m_showRigAction);
+    
+    m_showDebugDialogAction = new QAction(tr("Debug"), this);
+    connect(m_showDebugDialogAction, &QAction::triggered, g_logBrowser, &LogBrowser::showDialog);
+    m_windowMenu->addAction(m_showDebugDialogAction);
 
     m_helpMenu = menuBar()->addMenu(tr("Help"));
 
@@ -535,8 +575,8 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
 
     m_partListDockerVisibleSwitchConnection = connect(m_document, &SkeletonDocument::skeletonChanged, [=]() {
         if (m_graphicsWidget->hasItems()) {
-            if (partListDocker->isHidden())
-                partListDocker->show();
+            if (partTreeDocker->isHidden())
+                partTreeDocker->show();
             disconnect(m_partListDockerVisibleSwitchConnection);
         }
     });
@@ -549,6 +589,7 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(graphicsWidget, &SkeletonGraphicsWidget::scaleNodeByAddRadius, m_document, &SkeletonDocument::scaleNodeByAddRadius);
     connect(graphicsWidget, &SkeletonGraphicsWidget::moveNodeBy, m_document, &SkeletonDocument::moveNodeBy);
     connect(graphicsWidget, &SkeletonGraphicsWidget::setNodeOrigin, m_document, &SkeletonDocument::setNodeOrigin);
+    connect(graphicsWidget, &SkeletonGraphicsWidget::setNodeBoneMark, m_document, &SkeletonDocument::setNodeBoneMark);
     connect(graphicsWidget, &SkeletonGraphicsWidget::removeNode, m_document, &SkeletonDocument::removeNode);
     connect(graphicsWidget, &SkeletonGraphicsWidget::setEditMode, m_document, &SkeletonDocument::setEditMode);
     connect(graphicsWidget, &SkeletonGraphicsWidget::removeEdge, m_document, &SkeletonDocument::removeEdge);
@@ -589,6 +630,7 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(m_document, &SkeletonDocument::edgeAdded, graphicsWidget, &SkeletonGraphicsWidget::edgeAdded);
     connect(m_document, &SkeletonDocument::edgeRemoved, graphicsWidget, &SkeletonGraphicsWidget::edgeRemoved);
     connect(m_document, &SkeletonDocument::nodeRadiusChanged, graphicsWidget, &SkeletonGraphicsWidget::nodeRadiusChanged);
+    connect(m_document, &SkeletonDocument::nodeBoneMarkChanged, graphicsWidget, &SkeletonGraphicsWidget::nodeBoneMarkChanged);
     connect(m_document, &SkeletonDocument::nodeOriginChanged, graphicsWidget, &SkeletonGraphicsWidget::nodeOriginChanged);
     connect(m_document, &SkeletonDocument::partVisibleStateChanged, graphicsWidget, &SkeletonGraphicsWidget::partVisibleStateChanged);
     connect(m_document, &SkeletonDocument::partDisableStateChanged, graphicsWidget, &SkeletonGraphicsWidget::partVisibleStateChanged);
@@ -660,6 +702,8 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
             m_document->postProcess();
         }
     });
+    connect(m_document, &SkeletonDocument::resultMeshChanged, m_document, &SkeletonDocument::generateRig);
+    connect(m_document, &SkeletonDocument::rigChanged, m_document, &SkeletonDocument::generateRig);
     connect(m_document, &SkeletonDocument::postProcessedResultChanged, m_document, &SkeletonDocument::generateTexture);
     connect(m_document, &SkeletonDocument::resultTextureChanged, m_document, &SkeletonDocument::bakeAmbientOcclusionTexture);
 
@@ -678,6 +722,7 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(m_document, &SkeletonDocument::skeletonChanged, this, &SkeletonDocumentWindow::documentChanged);
     connect(m_document, &SkeletonDocument::turnaroundChanged, this, &SkeletonDocumentWindow::documentChanged);
     connect(m_document, &SkeletonDocument::optionsChanged, this, &SkeletonDocumentWindow::documentChanged);
+    connect(m_document, &SkeletonDocument::rigChanged, this, &SkeletonDocumentWindow::documentChanged);
 
     connect(m_modelRenderWidget, &ModelWidget::customContextMenuRequested, [=](const QPoint &pos) {
         graphicsWidget->showContextMenu(graphicsWidget->mapFromGlobal(m_modelRenderWidget->mapToGlobal(pos)));
@@ -687,11 +732,26 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(m_document, &SkeletonDocument::ylockStateChanged, this, &SkeletonDocumentWindow::updateYlockButtonState);
     connect(m_document, &SkeletonDocument::zlockStateChanged, this, &SkeletonDocumentWindow::updateZlockButtonState);
     connect(m_document, &SkeletonDocument::radiusLockStateChanged, this, &SkeletonDocumentWindow::updateRadiusLockButtonState);
+    
+    connect(rigWidget, &RigWidget::setRigType, m_document, &SkeletonDocument::setRigType);
+    
+    connect(m_document, &SkeletonDocument::rigTypeChanged, rigWidget, &RigWidget::rigTypeChanged);
+    connect(m_document, &SkeletonDocument::resultRigChanged, rigWidget, &RigWidget::updateResultInfo);
+    connect(m_document, &SkeletonDocument::resultRigChanged, [=]() {
+        MeshLoader *resultRigWeightMesh = m_document->takeResultRigWeightMesh();
+        if (nullptr == resultRigWeightMesh) {
+            rigWidget->rigWeightRenderWidget()->hide();
+        } else {
+            rigWidget->rigWeightRenderWidget()->updateMesh(resultRigWeightMesh);
+            rigWidget->rigWeightRenderWidget()->show();
+            rigWidget->rigWeightRenderWidget()->update();
+        }
+    });
 
     connect(this, &SkeletonDocumentWindow::initialized, m_document, &SkeletonDocument::uiReady);
     
     QTimer *timer = new QTimer(this);
-    timer->setInterval(100);
+    timer->setInterval(250);
     connect(timer, &QTimer::timeout, [=] {
         QWidget *focusedWidget = QApplication::focusWidget();
         //qDebug() << (focusedWidget ? ("Focused on:" + QString(focusedWidget->metaObject()->className()) + " title:" + focusedWidget->windowTitle()) : "No Focus") << " isActive:" << isActiveWindow();
@@ -977,6 +1037,18 @@ void SkeletonDocumentWindow::exportObjPlusMaterialsResult()
     QApplication::restoreOverrideCursor();
 }
 
+void SkeletonDocumentWindow::exportRenderedResult()
+{
+    QString filename = QFileDialog::getSaveFileName(this, QString(), QString(),
+       tr("Image (*.png)"));
+    if (filename.isEmpty()) {
+        return;
+    }
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    exportRenderedAsImage(filename);
+    QApplication::restoreOverrideCursor();
+}
+
 void SkeletonDocumentWindow::showExportPreview()
 {
     if (nullptr == m_exportPreviewWidget) {
@@ -1002,9 +1074,13 @@ void SkeletonDocumentWindow::exportGltfResult()
     if (filename.isEmpty()) {
         return;
     }
+    if (!m_document->isExportReady()) {
+        qDebug() << "Export but document is not export ready";
+        return;
+    }
     QApplication::setOverrideCursor(Qt::WaitCursor);
     MeshResultContext skeletonResult = m_document->currentPostProcessedResultContext();
-    GLTFFileWriter gltfFileWriter(skeletonResult,filename);
+    GltfFileWriter gltfFileWriter(skeletonResult, m_document->resultRigBones(), m_document->resultRigWeights(), filename);
     gltfFileWriter.save();
     if (m_document->textureImage)
         m_document->textureImage->save(gltfFileWriter.textureFilenameInGltf());
@@ -1051,4 +1127,15 @@ void SkeletonDocumentWindow::updateRadiusLockButtonState()
         m_radiusLockButton->setStyleSheet("QPushButton {color: #252525}");
     else
         m_radiusLockButton->setStyleSheet("QPushButton {color: " + Theme::white.name() + "}");
+}
+
+void SkeletonDocumentWindow::exportRenderedAsImage(const QString &filename)
+{
+    ModelOfflineRender offlineRender(m_modelRenderWidget);
+    offlineRender.setXRotation(m_modelRenderWidget->xRot());
+    offlineRender.setYRotation(m_modelRenderWidget->yRot());
+    offlineRender.setZRotation(m_modelRenderWidget->zRot());
+    offlineRender.updateMesh(m_document->takeResultMesh());
+    QImage renderedImage = offlineRender.toImage(QSize(1024, 1024));
+    renderedImage.save(filename);
 }

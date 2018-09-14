@@ -2,6 +2,7 @@
 #include <QSizePolicy>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
+#include <QComboBox>
 #include "exportpreviewwidget.h"
 #include "aboutwidget.h"
 #include "version.h"
@@ -13,27 +14,34 @@ ExportPreviewWidget::ExportPreviewWidget(SkeletonDocument *document, QWidget *pa
     m_previewLabel(nullptr),
     m_spinnerWidget(nullptr)
 {
-    QVBoxLayout *toolButtonLayout = new QVBoxLayout;
+    QHBoxLayout *toolButtonLayout = new QHBoxLayout;
     toolButtonLayout->setSpacing(0);
-    toolButtonLayout->setContentsMargins(5, 10, 4, 0);
+    //toolButtonLayout->setContentsMargins(5, 10, 4, 0);
 
     m_previewLabel = new QLabel;
     m_previewLabel->setMinimumSize(128, 128);
     m_previewLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     
-    QPushButton *regenerateButton = new QPushButton(QChar(fa::recycle));
-    initAwesomeButton(regenerateButton);
+    //QPushButton *regenerateButton = new QPushButton(QChar(fa::recycle));
+    //initAwesomeButton(regenerateButton);
+    QPushButton *regenerateButton = new QPushButton(tr("Regenerate"));
     connect(this, &ExportPreviewWidget::regenerate, this, &ExportPreviewWidget::checkSpinner);
     connect(regenerateButton, &QPushButton::clicked, this, &ExportPreviewWidget::regenerate);
     
-    m_saveButton = new QPushButton(QChar(fa::save));
-    initAwesomeButton(m_saveButton);
+    //m_saveButton = new QPushButton(QChar(fa::save));
+    //initAwesomeButton(m_saveButton);
+    m_saveButton = new QPushButton(tr("Save"));
     connect(m_saveButton, &QPushButton::clicked, this, &ExportPreviewWidget::save);
     m_saveButton->hide();
     
+    QComboBox *exportFormatSelectBox = new QComboBox;
+    exportFormatSelectBox->addItem(tr("glTF"));
+    exportFormatSelectBox->setCurrentIndex(0);
+    
+    toolButtonLayout->addWidget(exportFormatSelectBox);
     toolButtonLayout->addWidget(regenerateButton);
-    toolButtonLayout->addWidget(m_saveButton);
     toolButtonLayout->addStretch();
+    toolButtonLayout->addWidget(m_saveButton);
     
     QGridLayout *containerLayout = new QGridLayout;
     containerLayout->setSpacing(0);
@@ -51,12 +59,22 @@ ExportPreviewWidget::ExportPreviewWidget(SkeletonDocument *document, QWidget *pa
     renderLayout->setContentsMargins(20, 0, 20, 0);
     renderLayout->addWidget(m_textureRenderWidget);
     
-    QHBoxLayout *mainLayout = new QHBoxLayout;
-    mainLayout->setSpacing(0);
-    mainLayout->setContentsMargins(0, 0, 0, 0);
+    QWidget *hrLightWidget = new QWidget;
+    hrLightWidget->setFixedHeight(1);
+    hrLightWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    hrLightWidget->setStyleSheet(QString("background-color: #565656;"));
+    hrLightWidget->setContentsMargins(0, 0, 0, 0);
+    
+    QHBoxLayout *topLayout = new QHBoxLayout;
+    topLayout->setSpacing(0);
+    topLayout->setContentsMargins(0, 0, 0, 0);
+    topLayout->addLayout(containerLayout);
+    topLayout->addLayout(renderLayout);
+    
+    QVBoxLayout *mainLayout = new QVBoxLayout;
+    mainLayout->addLayout(topLayout);
+    mainLayout->addWidget(hrLightWidget);
     mainLayout->addLayout(toolButtonLayout);
-    mainLayout->addLayout(containerLayout);
-    mainLayout->addLayout(renderLayout);
 
     setLayout(mainLayout);
     setMinimumSize(256, 256);
@@ -68,7 +86,7 @@ ExportPreviewWidget::ExportPreviewWidget(SkeletonDocument *document, QWidget *pa
     m_spinnerWidget->setNumberOfLines(12);
     m_spinnerWidget->hide();
     
-    setWindowTitle(APP_NAME);
+    setWindowTitle(tr("Export") + tr(" - ") + APP_NAME);
     
     emit updateTexturePreview();
 }

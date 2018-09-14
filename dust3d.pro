@@ -140,6 +140,30 @@ HEADERS += src/infolabel.h
 SOURCES += src/graphicscontainerwidget.cpp
 HEADERS += src/graphicscontainerwidget.h
 
+SOURCES += src/rigwidget.cpp
+HEADERS += src/rigwidget.h
+
+SOURCES += src/markiconcreator.cpp
+HEADERS += src/markiconcreator.h
+
+SOURCES += src/skeletonbonemark.cpp
+HEADERS += src/skeletonbonemark.h
+
+SOURCES += src/meshsplitter.cpp
+HEADERS += src/meshsplitter.h
+
+SOURCES += src/autorigger.cpp
+HEADERS += src/autorigger.h
+
+SOURCES += src/rigtype.cpp
+HEADERS += src/rigtype.h
+
+SOURCES += src/riggenerator.cpp
+HEADERS += src/riggenerator.h
+
+SOURCES += src/meshquadify.cpp
+HEADERS += src/meshquadify.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h
