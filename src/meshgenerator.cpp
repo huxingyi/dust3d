@@ -393,7 +393,7 @@ bool MeshGenerator::checkIsComponentDirty(QString componentId)
         auto findComponent = m_snapshot->components.find(componentId);
         if (findComponent == m_snapshot->components.end()) {
             qDebug() << "Component not found:" << componentId;
-            return nullptr;
+            return isDirty;
         }
         component = &findComponent->second;
     }
