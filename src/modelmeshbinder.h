@@ -24,9 +24,10 @@ public:
     bool isWireframesVisible();
 private:
     MeshLoader *m_mesh;
+    MeshLoader *m_newMesh;
     int m_renderTriangleVertexCount;
     int m_renderEdgeVertexCount;
-    bool m_meshUpdated;
+    bool m_newMeshComing;
     bool m_showWireframes;
     bool m_hasTexture;
     QOpenGLTexture *m_texture;
@@ -36,6 +37,7 @@ private:
     QOpenGLVertexArrayObject m_vaoEdge;
     QOpenGLBuffer m_vboEdge;
     QMutex m_meshMutex;
+    QMutex m_newMeshMutex;
 };
 
 #endif

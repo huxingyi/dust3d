@@ -10,9 +10,10 @@
 
 ModelMeshBinder::ModelMeshBinder() :
     m_mesh(nullptr),
+    m_newMesh(nullptr),
     m_renderTriangleVertexCount(0),
     m_renderEdgeVertexCount(0),
-    m_meshUpdated(false),
+    m_newMeshComing(false),
     m_showWireframes(false),
     m_hasTexture(false),
     m_texture(nullptr)
@@ -22,16 +23,17 @@ ModelMeshBinder::ModelMeshBinder() :
 ModelMeshBinder::~ModelMeshBinder()
 {
     delete m_mesh;
+    delete m_newMesh;
     delete m_texture;
 }
 
 void ModelMeshBinder::updateMesh(MeshLoader *mesh)
 {
-    QMutexLocker lock(&m_meshMutex);
+    QMutexLocker lock(&m_newMeshMutex);
     if (mesh != m_mesh) {
-        delete m_mesh;
-        m_mesh = mesh;
-        m_meshUpdated = true;
+        delete m_newMesh;
+        m_newMesh = mesh;
+        m_newMeshComing = true;
     }
 }
 
@@ -114,9 +116,22 @@ void ModelMeshBinder::initialize()
 
 void ModelMeshBinder::paint(ModelShaderProgram *program)
 {
+    MeshLoader *newMesh = nullptr;
+    bool hasNewMesh = false;
+    if (m_newMeshComing) {
+        QMutexLocker lock(&m_newMeshMutex);
+        if (m_newMeshComing) {
+            newMesh = m_newMesh;
+            m_newMesh = nullptr;
+            m_newMeshComing = false;
+            hasNewMesh = true;
+        }
+    }
     {
         QMutexLocker lock(&m_meshMutex);
-        if (m_meshUpdated) {
+        if (hasNewMesh) {
+            delete m_mesh;
+            m_mesh = newMesh;
             if (m_mesh) {
                 m_hasTexture = nullptr != m_mesh->textureImage();
                 delete m_texture;
@@ -166,7 +181,6 @@ void ModelMeshBinder::paint(ModelShaderProgram *program)
                 m_renderTriangleVertexCount = 0;
                 m_renderEdgeVertexCount = 0;
             }
-            m_meshUpdated = false;
         }
     }
     
