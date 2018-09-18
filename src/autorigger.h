@@ -4,6 +4,7 @@
 #include <QVector3D>
 #include <QObject>
 #include <QColor>
+#include <QDebug>
 #include "meshsplitter.h"
 #include "skeletonbonemark.h"
 #include "rigtype.h"
@@ -55,7 +56,7 @@ public:
     void addBone(int boneIndex, float distance)
     {
         if (qFuzzyIsNull(distance))
-            distance = 0.01;
+            distance = 0.0001;
         m_boneRawWeights.push_back(std::make_pair(boneIndex, 1.0 / distance));
     }
     void finalizeWeights()

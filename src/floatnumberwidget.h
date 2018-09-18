@@ -9,7 +9,7 @@ class FloatNumberWidget : public QWidget
 {
     Q_OBJECT
 public:
-    explicit FloatNumberWidget(QWidget *parent = nullptr);
+    explicit FloatNumberWidget(QWidget *parent = nullptr, bool singleLine=true);
     void setRange(float min, float max);
     float value() const;
     void setItemName(const QString &name);

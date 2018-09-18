@@ -427,8 +427,8 @@ public:
     MeshLoader *takeResultMesh();
     MeshLoader *takeResultTextureMesh();
     MeshLoader *takeResultRigWeightMesh();
-    const std::vector<AutoRiggerBone> *resultRigBones();
-    const std::map<int, AutoRiggerVertexWeights> *resultRigWeights();
+    const std::vector<AutoRiggerBone> *resultRigBones() const;
+    const std::map<int, AutoRiggerVertexWeights> *resultRigWeights() const;
     void updateTurnaround(const QImage &image);
     void setSharedContextWidget(QOpenGLWidget *sharedContextWidget);
     bool hasPastableContentInClipboard() const;
@@ -445,6 +445,7 @@ public:
     void collectComponentDescendantComponents(QUuid componentId, std::vector<QUuid> &componentIds) const;
     const std::vector<QString> &resultRigMissingMarkNames() const;
     const std::vector<QString> &resultRigErrorMarkNames() const;
+    const MeshResultContext &currentRiggedResultContext() const;
 public slots:
     void removeNode(QUuid nodeId);
     void removeEdge(QUuid edgeId);
@@ -563,14 +564,15 @@ private: // need initialize
     MeshLoader *m_resultRigWeightMesh;
     std::vector<AutoRiggerBone> *m_resultRigBones;
     std::map<int, AutoRiggerVertexWeights> *m_resultRigWeights;
+    MeshResultContext *m_riggedResultContext;
     bool m_isRigObsolete;
-    std::vector<QString> m_resultRigMissingMarkNames;
-    std::vector<QString> m_resultRigErrorMarkNames;
 private:
     static unsigned long m_maxSnapshot;
     std::deque<SkeletonHistoryItem> m_undoItems;
     std::deque<SkeletonHistoryItem> m_redoItems;
     GeneratedCacheContext m_generatedCacheContext;
+    std::vector<QString> m_resultRigMissingMarkNames;
+    std::vector<QString> m_resultRigErrorMarkNames;
 };
 
 #endif

@@ -249,7 +249,8 @@ void AutoRigger::addVerticesToWeights(const std::set<int> &vertices, int boneInd
 {
     for (const auto &vertexIndex: vertices) {
         auto &weights = m_resultWeights[vertexIndex];
-        float distance = m_verticesPositions[vertexIndex].distanceToPoint(m_resultBones[boneIndex].headPosition);
+        auto strongestPoint = (m_resultBones[boneIndex].headPosition * 3 + m_resultBones[boneIndex].tailPosition) / 4;
+        float distance = m_verticesPositions[vertexIndex].distanceToPoint(strongestPoint);
         weights.addBone(boneIndex, distance);
     }
 }
@@ -307,6 +308,7 @@ bool AutoRigger::rig()
     
     std::set<int> headVertices;
     addTrianglesToVertices(m_marks[neckIndicies->second[0]].smallGroup(), headVertices);
+    addTrianglesToVertices(m_marks[neckIndicies->second[0]].markTriangles, headVertices);
     QVector3D headBoneStopPosition;
     if (isMainBodyVerticalAligned) {
         QVector3D maxY = findMaxY(headVertices);
@@ -379,6 +381,9 @@ bool AutoRigger::rig()
     // 2.1 Collect vertices for neck bone:
     std::set<int> bodyVertices;
     addTrianglesToVertices(bodyTriangles, bodyVertices);
+    addTrianglesToVertices(m_marks[leftShoulderIndicies->second[0]].markTriangles, bodyVertices);
+    addTrianglesToVertices(m_marks[rightShoulderIndicies->second[0]].markTriangles, bodyVertices);
+    
     std::set<int> bodyVerticesAfterShoulder;
     std::set<int> neckVertices;
     {
@@ -447,11 +452,9 @@ bool AutoRigger::rig()
     {
         std::set<int> leftArmVerticesBeforeElbow;
         if (isLeftArmVerticalAligned) {
-            QVector3D maxY = findMaxY(leftElbowMarkVertices);
-            splitVerticesByY(leftArmVertices, maxY.y(), leftArmVerticesBeforeElbow, leftArmVerticesSinceElbow);
+            splitVerticesByY(leftArmVertices, m_marks[leftElbowIndicies->second[0]].bonePosition.y(), leftArmVerticesBeforeElbow, leftArmVerticesSinceElbow);
         } else {
-            QVector3D minX = findMinX(leftElbowMarkVertices);
-            splitVerticesByX(leftArmVertices, minX.x(), leftArmVerticesSinceElbow, leftArmVerticesBeforeElbow);
+            splitVerticesByX(leftArmVertices, m_marks[leftElbowIndicies->second[0]].bonePosition.x(), leftArmVerticesSinceElbow, leftArmVerticesBeforeElbow);
         }
     }
     std::set<int> leftWristMarkVertices;
@@ -472,11 +475,9 @@ bool AutoRigger::rig()
     {
         std::set<int> leftArmVerticesBeforeWrist;
         if (isLeftArmVerticalAligned) {
-            QVector3D maxY = findMaxY(leftWristMarkVertices);
-            splitVerticesByY(leftArmVerticesSinceElbow, maxY.y(), leftArmVerticesBeforeWrist, leftHandVertices);
+            splitVerticesByY(leftArmVerticesSinceElbow, m_marks[leftWristIndicies->second[0]].bonePosition.y(), leftArmVerticesBeforeWrist, leftHandVertices);
         } else {
-            QVector3D minX = findMinX(leftWristMarkVertices);
-            splitVerticesByX(leftArmVerticesSinceElbow, minX.x(), leftHandVertices, leftArmVerticesBeforeWrist);
+            splitVerticesByX(leftArmVerticesSinceElbow, m_marks[leftWristIndicies->second[0]].bonePosition.x(), leftHandVertices, leftArmVerticesBeforeWrist);
         }
     }
     
@@ -501,11 +502,9 @@ bool AutoRigger::rig()
     {
         std::set<int> rightArmVerticesBeforeElbow;
         if (isRightArmVerticalAligned) {
-            QVector3D maxY = findMaxY(rightElbowMarkVertices);
-            splitVerticesByY(rightArmVertices, maxY.y(), rightArmVerticesBeforeElbow, rightArmVerticesSinceElbow);
+            splitVerticesByY(rightArmVertices, m_marks[rightElbowIndicies->second[0]].bonePosition.y(), rightArmVerticesBeforeElbow, rightArmVerticesSinceElbow);
         } else {
-            QVector3D maxX = findMaxX(rightElbowMarkVertices);
-            splitVerticesByX(rightArmVertices, maxX.x(), rightArmVerticesBeforeElbow, rightArmVerticesSinceElbow);
+            splitVerticesByX(rightArmVertices, m_marks[rightElbowIndicies->second[0]].bonePosition.x(), rightArmVerticesBeforeElbow, rightArmVerticesSinceElbow);
         }
     }
     std::set<int> rightWristMarkVertices;
@@ -526,11 +525,9 @@ bool AutoRigger::rig()
     {
         std::set<int> rightArmVerticesBeforeWrist;
         if (isRightArmVerticalAligned) {
-            QVector3D maxY = findMaxY(rightWristMarkVertices);
-            splitVerticesByY(rightArmVerticesSinceElbow, maxY.y(), rightArmVerticesBeforeWrist, rightHandVertices);
+            splitVerticesByY(rightArmVerticesSinceElbow, m_marks[rightWristIndicies->second[0]].bonePosition.y(), rightArmVerticesBeforeWrist, rightHandVertices);
         } else {
-            QVector3D maxX = findMaxX(rightWristMarkVertices);
-            splitVerticesByX(rightArmVerticesSinceElbow, maxX.x(), rightArmVerticesBeforeWrist, rightHandVertices);
+            splitVerticesByX(rightArmVerticesSinceElbow, m_marks[rightWristIndicies->second[0]].bonePosition.x(), rightArmVerticesBeforeWrist, rightHandVertices);
         }
     }
     
@@ -566,8 +563,7 @@ bool AutoRigger::rig()
     std::set<int> leftFootVertices;
     {
         std::set<int> leftLegVerticesBeforeAnkle;
-        QVector3D maxY = findMaxY(leftAnkleMarkVertices);
-        splitVerticesByY(leftLegVerticesSinceKnee, maxY.y(), leftLegVerticesBeforeAnkle, leftFootVertices);
+        splitVerticesByY(leftLegVerticesSinceKnee, m_marks[leftAnkleIndicies->second[0]].bonePosition.y(), leftLegVerticesBeforeAnkle, leftFootVertices);
     }
     
     // 4.2.1 Collect vertices for right upper leg:
@@ -600,8 +596,7 @@ bool AutoRigger::rig()
     std::set<int> rightFootVertices;
     {
         std::set<int> rightLegVerticesBeforeAnkle;
-        QVector3D maxY = findMaxY(rightAnkleMarkVertices);
-        splitVerticesByY(rightLegVerticesSinceKnee, maxY.y(), rightLegVerticesBeforeAnkle, rightFootVertices);
+        splitVerticesByY(rightLegVerticesSinceKnee, m_marks[rightAnkleIndicies->second[0]].bonePosition.y(), rightLegVerticesBeforeAnkle, rightFootVertices);
     }
     
     // 5. Generate bones
