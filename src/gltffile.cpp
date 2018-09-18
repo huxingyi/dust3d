@@ -7,6 +7,7 @@
 #include "gltffile.h"
 #include "version.h"
 #include "dust3dutil.h"
+#include "jointnodetree.h"
 
 // Play with glTF online:
 // https://gltf-viewer.donmccurdy.com/
@@ -47,14 +48,15 @@ GltfFileWriter::GltfFileWriter(MeshResultContext &resultContext,
     int bufferViewIndex = 0;
     int bufferViewFromOffset;
     
+    JointNodeTree tailNodeTree(resultRigBones);
+    const auto &boneNodes = tailNodeTree.nodes();
+    
     m_json["asset"]["version"] = "2.0";
     m_json["asset"]["generator"] = APP_NAME " " APP_HUMAN_VER;
     m_json["scenes"][0]["nodes"] = {0};
     
     if (resultRigBones && resultRigWeights && !resultRigBones->empty()) {
-    
-        calculateMatrices(resultRigBones);
-        
+
         constexpr int skeletonNodeStartIndex = 2;
         
         m_json["nodes"][0]["children"] = {
@@ -66,25 +68,25 @@ GltfFileWriter::GltfFileWriter(MeshResultContext &resultContext,
         m_json["nodes"][1]["skin"] = 0;
         
         m_json["skins"][0]["joints"] = {};
-        for (size_t i = 0; i < m_boneNodes.size(); i++) {
+        for (size_t i = 0; i < boneNodes.size(); i++) {
             m_json["skins"][0]["joints"] += skeletonNodeStartIndex + i;
             
-            m_json["nodes"][skeletonNodeStartIndex + i]["name"] = m_boneNodes[i].name.toUtf8().constData();
+            m_json["nodes"][skeletonNodeStartIndex + i]["name"] = boneNodes[i].name.toUtf8().constData();
             m_json["nodes"][skeletonNodeStartIndex + i]["translation"] = {
-                m_boneNodes[i].translation.x(),
-                m_boneNodes[i].translation.y(),
-                m_boneNodes[i].translation.z()
+                boneNodes[i].translation.x(),
+                boneNodes[i].translation.y(),
+                boneNodes[i].translation.z()
             };
             m_json["nodes"][skeletonNodeStartIndex + i]["rotation"] = {
-                m_boneNodes[i].rotation.x(),
-                m_boneNodes[i].rotation.y(),
-                m_boneNodes[i].rotation.z(),
-                m_boneNodes[i].rotation.scalar()
+                boneNodes[i].rotation.x(),
+                boneNodes[i].rotation.y(),
+                boneNodes[i].rotation.z(),
+                boneNodes[i].rotation.scalar()
             };
             
-            if (!m_boneNodes[i].children.empty()) {
+            if (!boneNodes[i].children.empty()) {
                 m_json["nodes"][skeletonNodeStartIndex + i]["children"] = {};
-                for (const auto &it: m_boneNodes[i].children) {
+                for (const auto &it: boneNodes[i].children) {
                     m_json["nodes"][skeletonNodeStartIndex + i]["children"] += skeletonNodeStartIndex + it;
                 }
             }
@@ -95,21 +97,21 @@ GltfFileWriter::GltfFileWriter(MeshResultContext &resultContext,
         bufferViewFromOffset = (int)binaries.size();
         m_json["bufferViews"][bufferViewIndex]["buffer"] = 0;
         m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
-        for (auto i = 0u; i < m_boneNodes.size(); i++) {
-            const float *floatArray = m_boneNodes[i].inverseBindMatrix.constData();
+        for (auto i = 0u; i < boneNodes.size(); i++) {
+            const float *floatArray = boneNodes[i].inverseBindMatrix.constData();
             for (auto j = 0u; j < 16; j++) {
                 stream << (float)floatArray[j];
             }
         }
         m_json["bufferViews"][bufferViewIndex]["byteLength"] = binaries.size() - bufferViewFromOffset;
-        Q_ASSERT((int)m_boneNodes.size() * 16 * sizeof(float) == binaries.size() - bufferViewFromOffset);
+        Q_ASSERT((int)boneNodes.size() * 16 * sizeof(float) == binaries.size() - bufferViewFromOffset);
         alignBinaries();
         if (m_enableComment)
             m_json["accessors"][bufferViewIndex]["__comment"] = QString("/accessors/%1: mat").arg(QString::number(bufferViewIndex)).toUtf8().constData();
         m_json["accessors"][bufferViewIndex]["bufferView"] = bufferViewIndex;
         m_json["accessors"][bufferViewIndex]["byteOffset"] = 0;
         m_json["accessors"][bufferViewIndex]["componentType"] = 5126;
-        m_json["accessors"][bufferViewIndex]["count"] = m_boneNodes.size();
+        m_json["accessors"][bufferViewIndex]["count"] = boneNodes.size();
         m_json["accessors"][bufferViewIndex]["type"] = "MAT4";
         bufferViewIndex++;
     } else {
@@ -312,7 +314,7 @@ GltfFileWriter::GltfFileWriter(MeshResultContext &resultContext,
                 auto findWeight = resultRigWeights->find(oldIndex);
                 if (findWeight != resultRigWeights->end()) {
                     for (; i < MAX_WEIGHT_NUM; i++) {
-                        float weight = (quint16)findWeight->second.boneIndicies[i];
+                        float weight = (float)findWeight->second.boneWeights[i];
                         stream << (float)weight;
                         if (m_enableComment)
                             weightList.append(QString("%1").arg(QString::number((float)weight)));
@@ -357,38 +359,4 @@ bool GltfFileWriter::save()
     }
     file.write(QString::fromStdString(m_json.dump(4)).toUtf8());
     return true;
-}
-
-void GltfFileWriter::calculateMatrices(const std::vector<AutoRiggerBone> *resultRigBones)
-{
-    if (nullptr == resultRigBones)
-        return;
-    
-    m_boneNodes.resize(resultRigBones->size());
-    
-    m_boneNodes[0].parentIndex = -1;
-    for (decltype(resultRigBones->size()) i = 0; i < resultRigBones->size(); i++) {
-        const auto &bone = (*resultRigBones)[i];
-        auto &node = m_boneNodes[i];
-        node.name = bone.name;
-        node.position = bone.tailPosition;
-        node.children = bone.children;
-        for (const auto &childIndex: bone.children)
-            m_boneNodes[childIndex].parentIndex = i;
-    }
-    
-    for (decltype(resultRigBones->size()) i = 0; i < resultRigBones->size(); i++) {
-        const auto &bone = (*resultRigBones)[i];
-        QMatrix4x4 parentBindMatrix;
-        auto &node = m_boneNodes[i];
-        node.translation = bone.tailPosition - bone.headPosition;
-        if (node.parentIndex != -1) {
-            const auto &parent = m_boneNodes[node.parentIndex];
-            parentBindMatrix = parent.bindMatrix;
-        }
-        QMatrix4x4 translateMatrix;
-        translateMatrix.translate(node.translation);
-        node.bindMatrix = parentBindMatrix * translateMatrix;
-        node.inverseBindMatrix = node.bindMatrix.inverted();
-    }
 }

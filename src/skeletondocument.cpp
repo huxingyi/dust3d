@@ -50,7 +50,8 @@ SkeletonDocument::SkeletonDocument() :
     m_resultRigWeightMesh(nullptr),
     m_resultRigBones(nullptr),
     m_resultRigWeights(nullptr),
-    m_isRigObsolete(false)
+    m_isRigObsolete(false),
+    m_riggedResultContext(new MeshResultContext)
 {
 }
 
@@ -2263,6 +2264,11 @@ void SkeletonDocument::rigReady()
     m_resultRigMissingMarkNames = m_rigGenerator->missingMarkNames();
     m_resultRigErrorMarkNames = m_rigGenerator->errorMarkNames();
     
+    delete m_riggedResultContext;
+    m_riggedResultContext = m_rigGenerator->takeMeshResultContext();
+    if (nullptr == m_riggedResultContext)
+        m_riggedResultContext = new MeshResultContext;
+    
     delete m_rigGenerator;
     m_rigGenerator = nullptr;
     
@@ -2277,12 +2283,12 @@ void SkeletonDocument::rigReady()
     }
 }
 
-const std::vector<AutoRiggerBone> *SkeletonDocument::resultRigBones()
+const std::vector<AutoRiggerBone> *SkeletonDocument::resultRigBones() const
 {
     return m_resultRigBones;
 }
 
-const std::map<int, AutoRiggerVertexWeights> *SkeletonDocument::resultRigWeights()
+const std::map<int, AutoRiggerVertexWeights> *SkeletonDocument::resultRigWeights() const
 {
     return m_resultRigWeights;
 }
@@ -2327,4 +2333,9 @@ const std::vector<QString> &SkeletonDocument::resultRigMissingMarkNames() const
 const std::vector<QString> &SkeletonDocument::resultRigErrorMarkNames() const
 {
     return m_resultRigErrorMarkNames;
+}
+
+const MeshResultContext &SkeletonDocument::currentRiggedResultContext() const
+{
+    return *m_riggedResultContext;
 }

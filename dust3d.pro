@@ -164,6 +164,27 @@ HEADERS += src/riggenerator.h
 SOURCES += src/meshquadify.cpp
 HEADERS += src/meshquadify.h
 
+SOURCES += src/skinnedmeshcreator.cpp
+HEADERS += src/skinnedmeshcreator.h
+
+SOURCES += src/jointnodetree.cpp
+HEADERS += src/jointnodetree.h
+
+SOURCES += src/tetrapodposer.cpp
+HEADERS += src/tetrapodposer.h
+
+SOURCES += src/poser.cpp
+HEADERS += src/poser.h
+
+SOURCES += src/posemeshcreator.cpp
+HEADERS += src/posemeshcreator.h
+
+SOURCES += src/posepreviewmanager.cpp
+HEADERS += src/posepreviewmanager.h
+
+SOURCES += src/tetrapodposeeditwidget.cpp
+HEADERS += src/tetrapodposeeditwidget.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h

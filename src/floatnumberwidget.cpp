@@ -1,7 +1,9 @@
 #include <QtWidgets>
+#include <QHBoxLayout>
+#include <QVBoxLayout>
 #include "floatnumberwidget.h"
 
-FloatNumberWidget::FloatNumberWidget(QWidget *parent) :
+FloatNumberWidget::FloatNumberWidget(QWidget *parent, bool singleLine) :
     QWidget(parent)
 {
     m_slider = new QSlider(Qt::Horizontal, this);
@@ -16,11 +18,19 @@ FloatNumberWidget::FloatNumberWidget(QWidget *parent) :
         updateValueLabel(fvalue);
         emit valueChanged(fvalue);
     });
-
-    QBoxLayout *popupLayout = new QHBoxLayout(this);
-    popupLayout->setMargin(2);
-    popupLayout->addWidget(m_slider);
-    popupLayout->addWidget(m_label);
+    
+    QBoxLayout *layout = nullptr;
+    if (singleLine) {
+        layout = new QHBoxLayout(this);
+        layout->setMargin(2);
+        layout->addWidget(m_slider);
+        layout->addWidget(m_label);
+    } else {
+        layout = new QVBoxLayout(this);
+        layout->setMargin(2);
+        layout->addWidget(m_label);
+        layout->addWidget(m_slider);
+    }
 }
 
 void FloatNumberWidget::updateValueLabel(float value)

@@ -7,7 +7,6 @@
 struct CCDIKNode
 {
     QVector3D position;
-    bool hasConstraint = false;
 };
 
 class CCDIKSolver

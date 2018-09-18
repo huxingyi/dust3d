@@ -1,8 +1,10 @@
 #include <QFormLayout>
 #include <QComboBox>
+#include <QHBoxLayout>
 #include "rigwidget.h"
 #include "rigtype.h"
 #include "infolabel.h"
+#include "theme.h"
 
 RigWidget::RigWidget(const SkeletonDocument *document, QWidget *parent) :
     QWidget(parent),
@@ -17,7 +19,15 @@ RigWidget::RigWidget(const SkeletonDocument *document, QWidget *parent) :
         m_rigTypeBox->addItem(RigTypeToDispName(rigType));
     }
     
-    formLayout->addRow(tr("Type"), m_rigTypeBox);
+    //m_poseCheckButton = new QPushButton(QChar(fa::child));
+    //Theme::initAwesomeButton(m_poseCheckButton);
+    //m_poseCheckButton->hide();
+    
+    QHBoxLayout *controlsLayout = new QHBoxLayout;
+    controlsLayout->addWidget(m_rigTypeBox);
+    //controlsLayout->addWidget(m_poseCheckButton);
+    
+    formLayout->addRow(tr("Type"), controlsLayout);
     
     m_rigTypeBox->setCurrentIndex((int)m_document->rigType);
     
@@ -28,6 +38,8 @@ RigWidget::RigWidget(const SkeletonDocument *document, QWidget *parent) :
     
     m_rigWeightRenderWidget = new ModelWidget(this);
     m_rigWeightRenderWidget->setMinimumSize(128, 128);
+    //m_rigWeightRenderWidget->resize(256, 256);
+    //m_rigWeightRenderWidget->move(-64, 0);
     m_rigWeightRenderWidget->setXRotation(0);
     m_rigWeightRenderWidget->setYRotation(0);
     m_rigWeightRenderWidget->setZRotation(0);
@@ -50,6 +62,7 @@ RigWidget::RigWidget(const SkeletonDocument *document, QWidget *parent) :
 
 void RigWidget::rigTypeChanged()
 {
+    //m_poseCheckButton->setVisible(RigType::None != m_document->rigType);
     m_rigTypeBox->setCurrentIndex((int)m_document->rigType);
 }
 

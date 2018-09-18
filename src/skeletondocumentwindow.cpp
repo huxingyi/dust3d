@@ -31,6 +31,7 @@
 #include "rigwidget.h"
 #include "modelofflinerender.h"
 #include "markiconcreator.h"
+#include "tetrapodposeeditwidget.h"
 
 int SkeletonDocumentWindow::m_modelRenderWidgetInitialX = 16;
 int SkeletonDocumentWindow::m_modelRenderWidgetInitialY = 16;
@@ -209,7 +210,6 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     partTreeWidget->setGraphicsFunctions(graphicsWidget);
     partTreeDocker->setWidget(partTreeWidget);
     addDockWidget(Qt::RightDockWidgetArea, partTreeDocker);
-    //partTreeDocker->hide();
     
     QDockWidget *rigDocker = new QDockWidget(tr("Rig"), this);
     rigDocker->setAllowedAreas(Qt::RightDockWidgetArea);
@@ -217,7 +217,16 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     rigDocker->setWidget(rigWidget);
     addDockWidget(Qt::RightDockWidgetArea, rigDocker);
     
+    //QDockWidget *animationDocker = new QDockWidget(tr("Animation"), this);
+    //animationDocker->setAllowedAreas(Qt::RightDockWidgetArea);
+    //TetrapodPoseEditWidget *tetrapodPoseEditWidget = new TetrapodPoseEditWidget(m_document, animationDocker);
+    //animationDocker->setWidget(tetrapodPoseEditWidget);
+    //AnimationListWidget *animationListWidget = new AnimationListWidget(m_document, animationDocker);
+    //animationDocker->setWidget(animationListWidget);
+    //addDockWidget(Qt::RightDockWidgetArea, animationDocker);
+    
     tabifyDockWidget(partTreeDocker, rigDocker);
+    //tabifyDockWidget(rigDocker, animationDocker);
     
     partTreeDocker->raise();
 
@@ -495,6 +504,13 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     });
     m_windowMenu->addAction(m_showRigAction);
     
+    //m_showAnimationAction = new QAction(tr("Animation"), this);
+    //connect(m_showAnimationAction, &QAction::triggered, [=]() {
+    //    animationDocker->show();
+    //    animationDocker->raise();
+    //});
+    //m_windowMenu->addAction(m_showAnimationAction);
+    
     m_showDebugDialogAction = new QAction(tr("Debug"), this);
     connect(m_showDebugDialogAction, &QAction::triggered, g_logBrowser, &LogBrowser::showDialog);
     m_windowMenu->addAction(m_showDebugDialogAction);
@@ -747,6 +763,8 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
             rigWidget->rigWeightRenderWidget()->update();
         }
     });
+    
+    //connect(m_document, &SkeletonDocument::resultRigChanged, tetrapodPoseEditWidget, &TetrapodPoseEditWidget::updatePreview);
 
     connect(this, &SkeletonDocumentWindow::initialized, m_document, &SkeletonDocument::uiReady);
     

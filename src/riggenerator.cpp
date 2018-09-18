@@ -18,6 +18,13 @@ RigGenerator::~RigGenerator()
     delete m_resultWeights;
 }
 
+MeshResultContext *RigGenerator::takeMeshResultContext()
+{
+    MeshResultContext *resultContext = m_meshResultContext;
+    m_meshResultContext = nullptr;
+    return resultContext;
+}
+
 std::vector<AutoRiggerBone> *RigGenerator::takeResultBones()
 {
     std::vector<AutoRiggerBone> *resultBones = m_resultBones;
@@ -114,18 +121,17 @@ void RigGenerator::process()
         m_resultBones = new std::vector<AutoRiggerBone>;
         *m_resultBones = resultBones;
         
-        for (size_t vertexIndex = 0; vertexIndex < inputVerticesColors.size(); vertexIndex++) {
-            auto findResult = resultWeights.find((int)vertexIndex);
+        for (const auto &weightItem: resultWeights) {
+            size_t vertexIndex = weightItem.first;
+            const auto &weight = weightItem.second;
             int blendR = 0, blendG = 0, blendB = 0;
-            if (findResult != resultWeights.end()) {
-                for (int i = 0; i < 4; i++) {
-                    int boneIndex = findResult->second.boneIndicies[i];
-                    if (boneIndex > 0) {
-                        const auto &bone = resultBones[boneIndex];
-                        blendR += bone.color.red() * findResult->second.boneWeights[i];
-                        blendG += bone.color.green() * findResult->second.boneWeights[i];
-                        blendB += bone.color.blue() * findResult->second.boneWeights[i];
-                    }
+            for (int i = 0; i < 4; i++) {
+                int boneIndex = weight.boneIndicies[i];
+                if (boneIndex > 0) {
+                    const auto &bone = resultBones[boneIndex];
+                    blendR += bone.color.red() * weight.boneWeights[i];
+                    blendG += bone.color.green() * weight.boneWeights[i];
+                    blendB += bone.color.blue() * weight.boneWeights[i];
                 }
             }
             QColor blendColor = QColor(blendR, blendG, blendB, 255);
@@ -135,14 +141,15 @@ void RigGenerator::process()
     
     // Smooth normals
     
-    std::map<int, QVector3D> vertexNormalMap;
+    std::vector<QVector3D> vertexNormalMap;
+    vertexNormalMap.resize(inputVerticesPositions.size());
     for (size_t triangleIndex = 0; triangleIndex < m_meshResultContext->triangles.size(); triangleIndex++) {
         const auto &sourceTriangle = m_meshResultContext->triangles[triangleIndex];
         for (int i = 0; i < 3; i++)
             vertexNormalMap[sourceTriangle.indicies[i]] += sourceTriangle.normal;
     }
     for (auto &item: vertexNormalMap)
-        item.second.normalize();
+        item.normalize();
     
     // Create mesh for demo
     

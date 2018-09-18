@@ -2,6 +2,7 @@
 #define RIG_WIDGET_H
 #include <QWidget>
 #include <QComboBox>
+#include <QPushButton>
 #include "skeletondocument.h"
 #include "rigtype.h"
 #include "modelwidget.h"

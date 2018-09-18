@@ -18,6 +18,7 @@ public:
     std::map<int, AutoRiggerVertexWeights> *takeResultWeights();
     const std::vector<QString> &missingMarkNames();
     const std::vector<QString> &errorMarkNames();
+    MeshResultContext *takeMeshResultContext();
 signals:
     void finished();
 public slots:
