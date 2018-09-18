@@ -55,6 +55,7 @@ public slots:
     void updateYlockButtonState();
     void updateZlockButtonState();
     void updateRadiusLockButtonState();
+    void updateRigWeightRenderWidget();
 private:
     void initLockButton(QPushButton *button);
     void setCurrentFilename(const QString &filename);
@@ -69,6 +70,7 @@ private:
     
     ModelWidget *m_modelRenderWidget;
     SkeletonGraphicsWidget *m_graphicsWidget;
+    RigWidget *m_rigWidget;
     
     QMenu *m_fileMenu;
     QAction *m_newWindowAction;

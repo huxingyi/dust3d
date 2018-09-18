@@ -209,12 +209,21 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     partTreeWidget->setGraphicsFunctions(graphicsWidget);
     partTreeDocker->setWidget(partTreeWidget);
     addDockWidget(Qt::RightDockWidgetArea, partTreeDocker);
+    connect(partTreeDocker, &QDockWidget::topLevelChanged, [=](bool topLevel) {
+        Q_UNUSED(topLevel);
+        for (const auto &part: m_document->partMap)
+            partTreeWidget->partPreviewChanged(part.first);
+    });
     
     QDockWidget *rigDocker = new QDockWidget(tr("Rig"), this);
     rigDocker->setAllowedAreas(Qt::RightDockWidgetArea);
-    RigWidget *rigWidget = new RigWidget(m_document, rigDocker);
-    rigDocker->setWidget(rigWidget);
+    m_rigWidget = new RigWidget(m_document, rigDocker);
+    rigDocker->setWidget(m_rigWidget);
     addDockWidget(Qt::RightDockWidgetArea, rigDocker);
+    connect(rigDocker, &QDockWidget::topLevelChanged, [=](bool topLevel) {
+        Q_UNUSED(topLevel);
+        updateRigWeightRenderWidget();
+    });
     
     //QDockWidget *animationDocker = new QDockWidget(tr("Animation"), this);
     //animationDocker->setAllowedAreas(Qt::RightDockWidgetArea);
@@ -748,20 +757,11 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(m_document, &SkeletonDocument::zlockStateChanged, this, &SkeletonDocumentWindow::updateZlockButtonState);
     connect(m_document, &SkeletonDocument::radiusLockStateChanged, this, &SkeletonDocumentWindow::updateRadiusLockButtonState);
     
-    connect(rigWidget, &RigWidget::setRigType, m_document, &SkeletonDocument::setRigType);
+    connect(m_rigWidget, &RigWidget::setRigType, m_document, &SkeletonDocument::setRigType);
     
-    connect(m_document, &SkeletonDocument::rigTypeChanged, rigWidget, &RigWidget::rigTypeChanged);
-    connect(m_document, &SkeletonDocument::resultRigChanged, rigWidget, &RigWidget::updateResultInfo);
-    connect(m_document, &SkeletonDocument::resultRigChanged, [=]() {
-        MeshLoader *resultRigWeightMesh = m_document->takeResultRigWeightMesh();
-        if (nullptr == resultRigWeightMesh) {
-            rigWidget->rigWeightRenderWidget()->hide();
-        } else {
-            rigWidget->rigWeightRenderWidget()->updateMesh(resultRigWeightMesh);
-            rigWidget->rigWeightRenderWidget()->show();
-            rigWidget->rigWeightRenderWidget()->update();
-        }
-    });
+    connect(m_document, &SkeletonDocument::rigTypeChanged, m_rigWidget, &RigWidget::rigTypeChanged);
+    connect(m_document, &SkeletonDocument::resultRigChanged, m_rigWidget, &RigWidget::updateResultInfo);
+    connect(m_document, &SkeletonDocument::resultRigChanged, this, &SkeletonDocumentWindow::updateRigWeightRenderWidget);
     
     //connect(m_document, &SkeletonDocument::resultRigChanged, tetrapodPoseEditWidget, &TetrapodPoseEditWidget::updatePreview);
 
@@ -1132,4 +1132,16 @@ void SkeletonDocumentWindow::updateRadiusLockButtonState()
         m_radiusLockButton->setStyleSheet("QPushButton {color: #252525}");
     else
         m_radiusLockButton->setStyleSheet("QPushButton {color: " + Theme::white.name() + "}");
+}
+
+void SkeletonDocumentWindow::updateRigWeightRenderWidget()
+{
+    MeshLoader *resultRigWeightMesh = m_document->takeResultRigWeightMesh();
+    if (nullptr == resultRigWeightMesh) {
+        m_rigWidget->rigWeightRenderWidget()->hide();
+    } else {
+        m_rigWidget->rigWeightRenderWidget()->updateMesh(resultRigWeightMesh);
+        m_rigWidget->rigWeightRenderWidget()->show();
+        m_rigWidget->rigWeightRenderWidget()->update();
+    }
 }
