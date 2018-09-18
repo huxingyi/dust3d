@@ -68,7 +68,7 @@ Keyboard
 +----------------------+--------------------------------------------------------------------------+
 | W                    | Toggle Part Wrap Status: (W)rap using Convex hull/Normal                 |
 +----------------------+--------------------------------------------------------------------------+
-| TAB                  | Swith the Selected Nodes to Different Profile (Main / Side)              |
+| E                    | Swith the Selected Nodes to Different Profile (Main / Side)              |
 +----------------------+--------------------------------------------------------------------------+
 
 Mouse

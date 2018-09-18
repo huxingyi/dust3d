@@ -1516,7 +1516,7 @@ bool SkeletonGraphicsWidget::keyPress(QKeyEvent *event)
             emit groupOperationAdded();
             return true;
         }
-    } else if (event->key() == Qt::Key_Tab) {
+    } else if (event->key() == Qt::Key_E) {
         if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
             switchProfileOnRangeSelection();
             return true;
