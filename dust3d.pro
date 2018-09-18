@@ -42,9 +42,6 @@ HEADERS += src/modelshaderprogram.h
 SOURCES += src/modelmeshbinder.cpp
 HEADERS += src/modelmeshbinder.h
 
-SOURCES += src/modelofflinerender.cpp
-HEADERS += src/modelofflinerender.h
-
 SOURCES += src/modelwidget.cpp
 HEADERS += src/modelwidget.h
 

@@ -137,7 +137,9 @@ void SkeletonDocument::removeEdge(QUuid edgeId)
     std::vector<std::vector<QUuid>> groups;
     splitPartByEdge(&groups, edgeId);
     for (auto groupIt = groups.begin(); groupIt != groups.end(); groupIt++) {
-        SkeletonPart part;
+        const auto newUuid = QUuid::createUuid();
+        SkeletonPart &part = partMap[newUuid];
+        part.id = newUuid;
         part.copyAttributes(*oldPart);
         part.name = nextPartName;
         for (auto nodeIdIt = (*groupIt).begin(); nodeIdIt != (*groupIt).end(); nodeIdIt++) {
@@ -157,7 +159,6 @@ void SkeletonDocument::removeEdge(QUuid edgeId)
                 edgeIt->second.partId = part.id;
             }
         }
-        partMap[part.id] = part;
         addPartToComponent(part.id, findComponentParentId(part.componentId));
         emit partAdded(part.id);
     }
@@ -196,7 +197,9 @@ void SkeletonDocument::removeNode(QUuid nodeId)
     std::vector<std::vector<QUuid>> groups;
     splitPartByNode(&groups, nodeId);
     for (auto groupIt = groups.begin(); groupIt != groups.end(); groupIt++) {
-        SkeletonPart part;
+        const auto newUuid = QUuid::createUuid();
+        SkeletonPart &part = partMap[newUuid];
+        part.id = newUuid;
         part.copyAttributes(*oldPart);
         part.name = nextPartName;
         for (auto nodeIdIt = (*groupIt).begin(); nodeIdIt != (*groupIt).end(); nodeIdIt++) {
@@ -216,7 +219,6 @@ void SkeletonDocument::removeNode(QUuid nodeId)
                 edgeIt->second.partId = part.id;
             }
         }
-        partMap[part.id] = part;
         addPartToComponent(part.id, findComponentParentId(part.componentId));
         emit partAdded(part.id);
     }
@@ -254,8 +256,9 @@ QUuid SkeletonDocument::createNode(float x, float y, float z, float radius, QUui
     const SkeletonNode *fromNode = nullptr;
     bool newPartAdded = false;
     if (fromNodeId.isNull()) {
-        SkeletonPart part;
-        partMap[part.id] = part;
+        const auto newUuid = QUuid::createUuid();
+        SkeletonPart &part = partMap[newUuid];
+        part.id = newUuid;
         partId = part.id;
         emit partAdded(partId);
         newPartAdded = true;
@@ -828,7 +831,9 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot, bool fr
     
     std::map<QUuid, QUuid> oldNewIdMap;
     for (const auto &partKv: snapshot.parts) {
-        SkeletonPart part;
+        const auto newUuid = QUuid::createUuid();
+        SkeletonPart &part = partMap[newUuid];
+        part.id = newUuid;
         oldNewIdMap[QUuid(partKv.first)] = part.id;
         part.name = valueOfKeyInMapOrEmpty(partKv.second, "name");
         part.visible = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "visible"));
@@ -852,7 +857,6 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot, bool fr
         const auto &deformWidthIt = partKv.second.find("deformWidth");
         if (deformWidthIt != partKv.second.end())
             part.setDeformWidth(deformWidthIt->second.toFloat());
-        partMap[part.id] = part;
         newAddedPartIds.insert(part.id);
     }
     for (const auto &nodeKv: snapshot.nodes) {
@@ -1037,18 +1041,12 @@ void SkeletonDocument::meshReady()
     MeshLoader *resultMesh = m_meshGenerator->takeResultMesh();
     MeshResultContext *meshResultContext = m_meshGenerator->takeMeshResultContext();
     
-    QImage *resultPreview = m_meshGenerator->takePreview();
-    if (resultPreview) {
-        preview = *resultPreview;
-        delete resultPreview;
-    }
-    
-    for (auto &part: partMap) {
-        QImage *resultPartPreview = m_meshGenerator->takePartPreview(part.first.toString());
-        if (resultPartPreview) {
-            part.second.preview = *resultPartPreview;
-            emit partPreviewChanged(part.first);
-            delete resultPartPreview;
+    for (auto &partId: m_meshGenerator->generatedPreviewPartIds()) {
+        auto part = partMap.find(partId);
+        if (part != partMap.end()) {
+            MeshLoader *resultPartPreviewMesh = m_meshGenerator->takePartPreviewMesh(partId);
+            part->second.updatePreviewMesh(resultPartPreviewMesh);
+            emit partPreviewChanged(partId);
         }
     }
     
@@ -1134,7 +1132,7 @@ void SkeletonDocument::generateMesh()
         m_meshGenerator->setSharedContextWidget(m_sharedContextWidget);
     m_meshGenerator->moveToThread(thread);
     for (auto &part: partMap) {
-        m_meshGenerator->addPartPreviewRequirement(part.first.toString());
+        m_meshGenerator->addPartPreviewRequirement(part.first);
     }
     connect(thread, &QThread::started, m_meshGenerator, &MeshGenerator::process);
     connect(m_meshGenerator, &MeshGenerator::finished, this, &SkeletonDocument::meshReady);

@@ -74,6 +74,10 @@ public:
 class SkeletonPart
 {
 public:
+    ~SkeletonPart()
+    {
+        delete m_previewMesh;
+    }
     QUuid id;
     QString name;
     bool visible;
@@ -87,7 +91,6 @@ public:
     bool rounded;
     QColor color;
     bool hasColor;
-    QImage preview;
     QUuid componentId;
     std::vector<QUuid> nodeIds;
     bool dirty;
@@ -157,6 +160,20 @@ public:
         wrapped = other.wrapped;
         componentId = other.componentId;
     }
+    void updatePreviewMesh(MeshLoader *previewMesh)
+    {
+        delete m_previewMesh;
+        m_previewMesh = previewMesh;
+    }
+    MeshLoader *takePreviewMesh() const
+    {
+        if (nullptr == m_previewMesh)
+            return nullptr;
+        return new MeshLoader(*m_previewMesh);
+    }
+private:
+    Q_DISABLE_COPY(SkeletonPart);
+    MeshLoader *m_previewMesh = nullptr;
 };
 
 enum class SkeletonProfile
@@ -564,8 +581,8 @@ private: // need initialize
     MeshLoader *m_resultRigWeightMesh;
     std::vector<AutoRiggerBone> *m_resultRigBones;
     std::map<int, AutoRiggerVertexWeights> *m_resultRigWeights;
-    MeshResultContext *m_riggedResultContext;
     bool m_isRigObsolete;
+    MeshResultContext *m_riggedResultContext;
 private:
     static unsigned long m_maxSnapshot;
     std::deque<SkeletonHistoryItem> m_undoItems;

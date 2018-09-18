@@ -62,6 +62,42 @@ SkeletonPartTreeWidget::SkeletonPartTreeWidget(const SkeletonDocument *document,
     connect(this, &QTreeWidget::itemCollapsed, this, &SkeletonPartTreeWidget::groupCollapsed);
 }
 
+bool SkeletonPartTreeWidget::mouseMove(QMouseEvent *event)
+{
+    return false;
+}
+
+bool SkeletonPartTreeWidget::wheel(QWheelEvent *event)
+{
+    return false;
+}
+
+bool SkeletonPartTreeWidget::mouseRelease(QMouseEvent *event)
+{
+    return false;
+}
+
+bool SkeletonPartTreeWidget::mousePress(QMouseEvent *event)
+{
+    if (event->button() == Qt::RightButton) {
+        showContextMenu(mapFromGlobal(event->globalPos()));
+        return true;
+    }
+    return false;
+}
+
+bool SkeletonPartTreeWidget::mouseDoubleClick(QMouseEvent *event)
+{
+    return false;
+}
+
+bool SkeletonPartTreeWidget::keyPress(QKeyEvent *event)
+{
+    if (m_graphicsFunctions)
+        return m_graphicsFunctions->keyPress(event);
+    return false;
+}
+
 void SkeletonPartTreeWidget::selectComponent(QUuid componentId, bool multiple)
 {
     if (multiple) {
@@ -194,6 +230,7 @@ void SkeletonPartTreeWidget::showContextMenu(const QPoint &pos)
 {
     const SkeletonComponent *component = nullptr;
     const SkeletonPart *part = nullptr;
+    SkeletonPartWidget *partWidget = nullptr;
     
     std::set<QUuid> unorderedComponentIds = m_selectedComponentIds;
     if (!m_currentSelectedComponentId.isNull())
@@ -229,22 +266,38 @@ void SkeletonPartTreeWidget::showContextMenu(const QPoint &pos)
         }
     }
     
-    QWidgetAction forDisplayPartImage(this);
-    QLabel *previewLabel = new QLabel;
-    previewLabel->setFixedHeight(Theme::previewImageSize);
-    previewLabel->setStyleSheet("QLabel {color: " + Theme::red.name() + "}");
-    if (nullptr != part) {
-        previewLabel->setPixmap(QPixmap::fromImage(part->preview));
-    } else if (nullptr != component) {
-        previewLabel->setText(component->name);
-    } else if (!componentIds.empty()) {
-        previewLabel->setText(tr("(%1 items)").arg(QString::number(componentIds.size())));
-    }
     QHBoxLayout *layout = new QHBoxLayout;
+    QWidgetAction forDisplayPartImage(this);
     layout->setAlignment(Qt::AlignCenter);
-    layout->addWidget(previewLabel);
     layout->setContentsMargins(0, 0, 0, 0);
     layout->setSpacing(0);
+    if (nullptr != part) {
+        auto findItem = m_partItemMap.find(part->id);
+        if (findItem != m_partItemMap.end()) {
+            partWidget = (SkeletonPartWidget *)itemWidget(findItem->second, 0);
+        }
+    }
+    if (nullptr != part && nullptr != partWidget) {
+        ModelWidget *previewWidget = new ModelWidget;
+        previewWidget->enableMove(false);
+        previewWidget->enableZoom(false);
+        previewWidget->setFixedSize(Theme::previewImageSize, Theme::previewImageSize);
+        previewWidget->setXRotation(partWidget->previewWidget()->xRot());
+        previewWidget->setYRotation(partWidget->previewWidget()->yRot());
+        previewWidget->setZRotation(partWidget->previewWidget()->zRot());
+        previewWidget->updateMesh(part->takePreviewMesh());
+        layout->addWidget(previewWidget);
+    } else {
+        QLabel *previewLabel = new QLabel;
+        previewLabel->setFixedHeight(Theme::previewImageSize);
+        previewLabel->setStyleSheet("QLabel {color: " + Theme::red.name() + "}");
+        if (nullptr != component) {
+            previewLabel->setText(component->name);
+        } else if (!componentIds.empty()) {
+            previewLabel->setText(tr("(%1 items)").arg(QString::number(componentIds.size())));
+        }
+        layout->addWidget(previewLabel);
+    }
     QWidget *widget = new QWidget;
     widget->setLayout(layout);
     forDisplayPartImage.setDefaultWidget(widget);
@@ -650,6 +703,7 @@ void SkeletonPartTreeWidget::addComponentChildrenToItem(QUuid componentId, QTree
             item->setFlags(item->flags() & ~(Qt::ItemIsEditable | Qt::ItemIsEnabled | Qt::ItemIsSelectable));
             QUuid partId = component->linkToPartId;
             SkeletonPartWidget *widget = new SkeletonPartWidget(m_document, partId);
+            widget->previewWidget()->setGraphicsFunctions(this);
             item->setSizeHint(0, SkeletonPartWidget::preferredSize());
             setItemWidget(item, 0, widget);
             widget->reload();

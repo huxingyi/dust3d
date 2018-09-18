@@ -5,7 +5,6 @@
 #include "dust3dutil.h"
 #include "skeletondocument.h"
 #include "meshlite.h"
-#include "modelofflinerender.h"
 #include "meshutil.h"
 #include "theme.h"
 #include "positionmap.h"
@@ -32,7 +31,7 @@ void GeneratedCacheContext::updateComponentCombinableMesh(QString componentId, v
 MeshGenerator::MeshGenerator(SkeletonSnapshot *snapshot, QThread *thread) :
     m_snapshot(snapshot),
     m_mesh(nullptr),
-    m_preview(nullptr),
+    //m_preview(nullptr),
     m_thread(thread),
     m_meshResultContext(nullptr),
     m_sharedContextWidget(nullptr),
@@ -45,12 +44,8 @@ MeshGenerator::~MeshGenerator()
 {
     delete m_snapshot;
     delete m_mesh;
-    delete m_preview;
-    for (const auto &partPreviewIt: m_partPreviewMap) {
-        delete partPreviewIt.second;
-    }
-    for (const auto &render: m_partPreviewRenderMap) {
-        delete render.second;
+    for (const auto &partPreviewMeshIt: m_partPreviewMeshMap) {
+        delete partPreviewMeshIt.second;
     }
     delete m_meshResultContext;
 }
@@ -65,15 +60,10 @@ void MeshGenerator::setGeneratedCacheContext(GeneratedCacheContext *cacheContext
     m_cacheContext = cacheContext;
 }
 
-void MeshGenerator::addPartPreviewRequirement(const QString &partId)
+void MeshGenerator::addPartPreviewRequirement(const QUuid &partId)
 {
     //qDebug() << "addPartPreviewRequirement:" << partId;
-    m_requirePartPreviewMap.insert(partId);
-    if (m_partPreviewRenderMap.find(partId) == m_partPreviewRenderMap.end()) {
-        ModelOfflineRender *render = new ModelOfflineRender(m_sharedContextWidget);
-        render->setRenderThread(m_thread);
-        m_partPreviewRenderMap[partId] = render;
-    }
+    m_requirePreviewPartIds.insert(partId);
 }
 
 void MeshGenerator::setSharedContextWidget(QOpenGLWidget *widget)
@@ -88,18 +78,21 @@ MeshLoader *MeshGenerator::takeResultMesh()
     return resultMesh;
 }
 
-QImage *MeshGenerator::takePreview()
+MeshLoader *MeshGenerator::takePartPreviewMesh(const QUuid &partId)
 {
-    QImage *resultPreview = m_preview;
-    m_preview = nullptr;
-    return resultPreview;
+    MeshLoader *resultMesh = m_partPreviewMeshMap[partId];
+    m_partPreviewMeshMap[partId] = nullptr;
+    return resultMesh;
 }
 
-QImage *MeshGenerator::takePartPreview(const QString &partId)
+const std::set<QUuid> &MeshGenerator::requirePreviewPartIds()
 {
-    QImage *resultImage = m_partPreviewMap[partId];
-    m_partPreviewMap[partId] = nullptr;
-    return resultImage;
+    return m_requirePreviewPartIds;
+}
+
+const std::set<QUuid> &MeshGenerator::generatedPreviewPartIds()
+{
+    return m_generatedPreviewPartIds;
 }
 
 MeshResultContext *MeshGenerator::takeMeshResultContext()
@@ -360,18 +353,10 @@ void *MeshGenerator::combinePartMesh(QString partId)
         }
     }
     
-    if (m_requirePartPreviewMap.find(partId) != m_requirePartPreviewMap.end()) {
-        ModelOfflineRender *render = m_partPreviewRenderMap[partId];
+    if (m_requirePreviewPartIds.find(partIdNotAsString) != m_requirePreviewPartIds.end()) {
         int trimedMeshId = meshlite_trim(m_meshliteContext, meshId, 1);
-        render->updateMesh(new MeshLoader(m_meshliteContext, trimedMeshId, -1, partColor, nullptr, m_smoothNormal));
-        QImage *image = new QImage(render->toImage(QSize(Theme::previewImageRenderSize, Theme::previewImageRenderSize)));
-        if (Theme::previewImageSize != Theme::previewImageRenderSize) {
-            int cropOffset = (Theme::previewImageRenderSize - Theme::previewImageSize) / 2;
-            QImage *crop = new QImage(image->copy(cropOffset, cropOffset, Theme::previewImageSize, Theme::previewImageSize));
-            delete image;
-            image = crop;
-        }
-        m_partPreviewMap[partId] = image;
+        m_partPreviewMeshMap[partIdNotAsString] = new MeshLoader(m_meshliteContext, trimedMeshId, -1, partColor, nullptr, m_smoothNormal);
+        m_generatedPreviewPartIds.insert(partIdNotAsString);
     }
     
     if (isDisabled) {

@@ -42,6 +42,7 @@ public:
     MeshLoader(MeshResultContext &resultContext);
     MeshLoader(Vertex *triangleVertices, int vertexNum);
     MeshLoader(const MeshLoader &mesh);
+    MeshLoader();
     ~MeshLoader();
     Vertex *triangleVertices();
     int triangleVertexCount();
@@ -54,15 +55,15 @@ public:
     void setTextureImage(QImage *textureImage);
     const QImage *textureImage();
 private:
-    Vertex *m_triangleVertices;
-    int m_triangleVertexCount;
-    Vertex *m_edgeVertices;
-    int m_edgeVertexCount;
+    Vertex *m_triangleVertices = nullptr;
+    int m_triangleVertexCount = 0;
+    Vertex *m_edgeVertices = nullptr;
+    int m_edgeVertexCount = 0;
     std::vector<QVector3D> m_vertices;
     std::vector<std::vector<int>> m_faces;
     std::vector<QVector3D> m_triangulatedVertices;
     std::vector<TriangulatedFace> m_triangulatedFaces;
-    QImage *m_textureImage;
+    QImage *m_textureImage = nullptr;
 };
 
 #endif

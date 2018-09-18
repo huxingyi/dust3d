@@ -4,6 +4,7 @@
 #include <QPushButton>
 #include <QMouseEvent>
 #include "skeletondocument.h"
+#include "modelwidget.h"
 
 class SkeletonPartWidget : public QWidget
 {
@@ -44,6 +45,7 @@ public:
     void updateWrapButton();
     void updateCheckedState(bool checked);
     static QSize preferredSize();
+    ModelWidget *previewWidget();
 protected:
     void mouseDoubleClickEvent(QMouseEvent *event);
 public slots:
@@ -53,7 +55,7 @@ private: // need initialize
     const SkeletonDocument *m_document;
     QUuid m_partId;
 private:
-    QLabel *m_previewLabel;
+    ModelWidget *m_previewWidget;
     QPushButton *m_visibleButton;
     QPushButton *m_lockButton;
     QPushButton *m_subdivButton;
@@ -64,7 +66,6 @@ private:
     QPushButton *m_roundButton;
     QPushButton *m_colorButton;
     QPushButton *m_wrapButton;
-    QLabel *m_nameLabel;
     QWidget *m_backgroundWidget;
 private:
     void initToolButton(QPushButton *button);

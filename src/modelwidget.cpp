@@ -19,7 +19,9 @@ ModelWidget::ModelWidget(QWidget *parent) :
     m_zRot(0),
     m_program(nullptr),
     m_moveStarted(false),
-    m_graphicsFunctions(NULL)
+    m_graphicsFunctions(NULL),
+    m_moveEnabled(true),
+    m_zoomEnabled(true)
 {
     // --transparent causes the clear color to be transparent. Therefore, on systems that
     // support it, the widget will become transparent apart from the logo.
@@ -192,7 +194,7 @@ void ModelWidget::mousePressEvent(QMouseEvent *event)
             shouldStartMove = true;
         }
     } else if (event->button() == Qt::MidButton) {
-        shouldStartMove = true;
+        shouldStartMove = m_moveEnabled;
     }
     if (shouldStartMove) {
         m_lastPos = event->pos();
@@ -270,6 +272,8 @@ void ModelWidget::wheelEvent(QWheelEvent *event)
         return;
     if (m_moveStarted)
         return;
+    if (!m_zoomEnabled)
+        return;
     qreal delta = event->delta() / 10;
     if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
         if (delta > 0)
@@ -299,3 +303,12 @@ void ModelWidget::exportMeshAsObjPlusMaterials(const QString &filename)
     m_meshBinder.exportMeshAsObjPlusMaterials(filename);
 }
 
+void ModelWidget::enableMove(bool enabled)
+{
+    m_moveEnabled = enabled;
+}
+
+void ModelWidget::enableZoom(bool enabled)
+{
+    m_zoomEnabled = enabled;
+}

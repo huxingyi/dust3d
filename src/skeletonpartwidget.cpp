@@ -52,8 +52,10 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     m_wrapButton->setSizePolicy(retainSizePolicy);
     initButton(m_wrapButton);
     
-    m_previewLabel = new QLabel;
-    m_previewLabel->setFixedSize(Theme::previewImageSize, Theme::previewImageSize);
+    m_previewWidget = new ModelWidget;
+    m_previewWidget->enableMove(false);
+    m_previewWidget->enableZoom(false);
+    m_previewWidget->setFixedSize(Theme::previewImageSize, Theme::previewImageSize);
     
     QWidget *hrLightWidget = new QWidget;
     hrLightWidget->setFixedHeight(1);
@@ -89,7 +91,7 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     previewAndToolsLayout->setSpacing(0);
     previewAndToolsLayout->setContentsMargins(0, 0, 0, 0);
     previewAndToolsLayout->addWidget(m_visibleButton);
-    previewAndToolsLayout->addWidget(m_previewLabel);
+    previewAndToolsLayout->addWidget(m_previewWidget);
     previewAndToolsLayout->addLayout(toolsLayout);
     previewAndToolsLayout->setStretch(0, 0);
     previewAndToolsLayout->setStretch(1, 0);
@@ -227,6 +229,11 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     setFixedSize(preferredSize());
     
     updateAllButtons();
+}
+
+ModelWidget *SkeletonPartWidget::previewWidget()
+{
+    return m_previewWidget;
 }
 
 QSize SkeletonPartWidget::preferredSize()
@@ -408,7 +415,9 @@ void SkeletonPartWidget::updatePreview()
         qDebug() << "Part not found:" << m_partId;
         return;
     }
-    m_previewLabel->setPixmap(QPixmap::fromImage(part->preview));
+    //m_previewLabel->setPixmap(QPixmap::fromImage(part->preview));
+    MeshLoader *previewMesh = part->takePreviewMesh();
+    m_previewWidget->updateMesh(previewMesh);
 }
 
 void SkeletonPartWidget::updateLockButton()

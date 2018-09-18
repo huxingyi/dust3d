@@ -16,19 +16,24 @@ class SkeletonGraphicsFunctions;
 class ModelWidget : public QOpenGLWidget, protected QOpenGLFunctions
 {
     Q_OBJECT
-
 public:
     ModelWidget(QWidget *parent = 0);
     ~ModelWidget();
-
-    static bool isTransparent() { return m_transparent; }
-    static void setTransparent(bool t) { m_transparent = t; }
-    
+    static bool isTransparent()
+    {
+        return m_transparent;
+    }
+    static void setTransparent(bool t)
+    {
+        m_transparent = t;
+    }
     void updateMesh(MeshLoader *mesh);
     void exportMeshAsObj(const QString &filename);
     void exportMeshAsObjPlusMaterials(const QString &filename);
     void setGraphicsFunctions(SkeletonGraphicsFunctions *graphicsFunctions);
     void toggleWireframe();
+    void enableMove(bool enabled);
+    void enableZoom(bool enabled);
 public slots:
     void setXRotation(int angle);
     void setYRotation(int angle);
@@ -39,7 +44,6 @@ signals:
     void xRotationChanged(int angle);
     void yRotationChanged(int angle);
     void zRotationChanged(int angle);
-
 protected:
     void initializeGL() override;
     void paintGL() override;
@@ -61,6 +65,8 @@ private:
     ModelShaderProgram *m_program;
     bool m_moveStarted;
     SkeletonGraphicsFunctions *m_graphicsFunctions;
+    bool m_moveEnabled;
+    bool m_zoomEnabled;
 private:
     QPoint m_lastPos;
     ModelMeshBinder m_meshBinder;

@@ -4,10 +4,9 @@
 #include <QUuid>
 #include <QMouseEvent>
 #include "skeletondocument.h"
+#include "skeletongraphicswidget.h"
 
-class SkeletonGraphicsFunctions;
-
-class SkeletonPartTreeWidget : public QTreeWidget
+class SkeletonPartTreeWidget : public QTreeWidget, public SkeletonGraphicsFunctions
 {
     Q_OBJECT
 signals:
@@ -74,6 +73,12 @@ protected:
     virtual QSize sizeHint() const;
     virtual void mousePressEvent(QMouseEvent *event);
     virtual void keyPressEvent(QKeyEvent *event);
+    bool mouseMove(QMouseEvent *event);
+    bool wheel(QWheelEvent *event);
+    bool mouseRelease(QMouseEvent *event);
+    bool mousePress(QMouseEvent *event);
+    bool mouseDoubleClick(QMouseEvent *event);
+    bool keyPress(QKeyEvent *event);
 private:
     void addComponentChildrenToItem(QUuid componentId, QTreeWidgetItem *parentItem);
     void deleteItemChildren(QTreeWidgetItem *item);

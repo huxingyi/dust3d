@@ -29,7 +29,6 @@
 #include "graphicscontainerwidget.h"
 #include "skeletonparttreewidget.h"
 #include "rigwidget.h"
-#include "modelofflinerender.h"
 #include "markiconcreator.h"
 #include "tetrapodposeeditwidget.h"
 
@@ -1055,18 +1054,6 @@ void SkeletonDocumentWindow::exportObjPlusMaterialsResult()
     QApplication::restoreOverrideCursor();
 }
 
-void SkeletonDocumentWindow::exportRenderedResult()
-{
-    QString filename = QFileDialog::getSaveFileName(this, QString(), QString(),
-       tr("Image (*.png)"));
-    if (filename.isEmpty()) {
-        return;
-    }
-    QApplication::setOverrideCursor(Qt::WaitCursor);
-    exportRenderedAsImage(filename);
-    QApplication::restoreOverrideCursor();
-}
-
 void SkeletonDocumentWindow::showExportPreview()
 {
     if (nullptr == m_exportPreviewWidget) {
@@ -1145,15 +1132,4 @@ void SkeletonDocumentWindow::updateRadiusLockButtonState()
         m_radiusLockButton->setStyleSheet("QPushButton {color: #252525}");
     else
         m_radiusLockButton->setStyleSheet("QPushButton {color: " + Theme::white.name() + "}");
-}
-
-void SkeletonDocumentWindow::exportRenderedAsImage(const QString &filename)
-{
-    ModelOfflineRender offlineRender(m_modelRenderWidget);
-    offlineRender.setXRotation(m_modelRenderWidget->xRot());
-    offlineRender.setYRotation(m_modelRenderWidget->yRot());
-    offlineRender.setZRotation(m_modelRenderWidget->zRot());
-    offlineRender.updateMesh(m_document->takeResultMesh());
-    QImage renderedImage = offlineRender.toImage(QSize(1024, 1024));
-    renderedImage.save(filename);
 }

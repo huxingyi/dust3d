@@ -39,7 +39,6 @@ public slots:
     void exportObjResult();
     void exportObjPlusMaterialsResult();
     void exportGltfResult();
-    void exportRenderedResult();
     void showExportPreview();
     void newWindow();
     void newDocument();
@@ -60,7 +59,6 @@ private:
     void initLockButton(QPushButton *button);
     void setCurrentFilename(const QString &filename);
     void updateTitle();
-    void exportRenderedAsImage(const QString &filename);
 private:
     SkeletonDocument *m_document;
     bool m_firstShow;

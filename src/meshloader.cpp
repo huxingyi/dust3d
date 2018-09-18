@@ -244,6 +244,15 @@ MeshLoader::MeshLoader(MeshResultContext &resultContext) :
     }
 }
 
+MeshLoader::MeshLoader() :
+    m_triangleVertices(nullptr),
+    m_triangleVertexCount(0),
+    m_edgeVertices(nullptr),
+    m_edgeVertexCount(0),
+    m_textureImage(nullptr)
+{
+}
+
 MeshLoader::~MeshLoader()
 {
     delete[] m_triangleVertices;

@@ -9,7 +9,6 @@
 #include <QOpenGLWidget>
 #include "skeletonsnapshot.h"
 #include "meshloader.h"
-#include "modelofflinerender.h"
 #include "meshresultcontext.h"
 #include "positionmap.h"
 
@@ -34,12 +33,13 @@ public:
     MeshGenerator(SkeletonSnapshot *snapshot, QThread *thread);
     ~MeshGenerator();
     void setSharedContextWidget(QOpenGLWidget *widget);
-    void addPartPreviewRequirement(const QString &partId);
+    void addPartPreviewRequirement(const QUuid &partId);
     void setGeneratedCacheContext(GeneratedCacheContext *cacheContext);
     void setSmoothNormal(bool smoothNormal);
     MeshLoader *takeResultMesh();
-    QImage *takePreview();
-    QImage *takePartPreview(const QString &partId);
+    MeshLoader *takePartPreviewMesh(const QUuid &partId);
+    const std::set<QUuid> &requirePreviewPartIds();
+    const std::set<QUuid> &generatedPreviewPartIds();
     MeshResultContext *takeMeshResultContext();
 signals:
     void finished();
@@ -48,10 +48,9 @@ public slots:
 private:
     SkeletonSnapshot *m_snapshot;
     MeshLoader *m_mesh;
-    QImage *m_preview;
-    std::map<QString, QImage *> m_partPreviewMap;
-    std::set<QString> m_requirePartPreviewMap;
-    std::map<QString, ModelOfflineRender *> m_partPreviewRenderMap;
+    std::map<QUuid, MeshLoader *> m_partPreviewMeshMap;
+    std::set<QUuid> m_requirePreviewPartIds;
+    std::set<QUuid> m_generatedPreviewPartIds;
     QThread *m_thread;
     MeshResultContext *m_meshResultContext;
     QOpenGLWidget *m_sharedContextWidget;
