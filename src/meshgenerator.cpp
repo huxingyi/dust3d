@@ -434,7 +434,7 @@ void *MeshGenerator::combineComponentMesh(QString componentId, bool *inverse)
         auto findCachedMesh = m_cacheContext->componentCombinableMeshs.find(componentId);
         if (findCachedMesh != m_cacheContext->componentCombinableMeshs.end() &&
                 nullptr != findCachedMesh->second) {
-            qDebug() << "Component mesh cache used:" << componentId;
+            //qDebug() << "Component mesh cache used:" << componentId;
             return cloneCombinableMesh(findCachedMesh->second);
         }
     }
@@ -519,7 +519,7 @@ void *MeshGenerator::combineComponentMesh(QString componentId, bool *inverse)
                         }
                     }
                     if (seamVerticesNum > 0) {
-                        qDebug() << "smoothSeamFactor:" << smoothSeamFactor << "seamVerticesIndicies.size():" << seamVerticesNum;
+                        //qDebug() << "smoothSeamFactor:" << smoothSeamFactor << "seamVerticesIndicies.size():" << seamVerticesNum;
                         meshlite_smooth_vertices(m_meshliteContext, meshIdForSmooth, smoothSeamFactor, seamVerticesIndicies, seamVerticesNum);
                     }
                     delete[] seamVerticesIndicies;

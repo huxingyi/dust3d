@@ -3,6 +3,7 @@
 #include <QOpenGLFunctions>
 #include "aboutwidget.h"
 #include "version.h"
+#include "dust3dutil.h"
 
 AboutWidget::AboutWidget()
 {
@@ -16,5 +17,5 @@ AboutWidget::AboutWidget()
     setLayout(mainLayout);
     setFixedSize(QSize(350, 75));
     
-    setWindowTitle(APP_NAME);
+    setWindowTitle(unifiedWindowTitle(tr("About")));
 }

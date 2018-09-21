@@ -51,7 +51,8 @@ SkeletonDocument::SkeletonDocument() :
     m_resultRigBones(nullptr),
     m_resultRigWeights(nullptr),
     m_isRigObsolete(false),
-    m_riggedResultContext(new MeshResultContext)
+    m_riggedResultContext(new MeshResultContext),
+    m_posePreviewsGenerator(nullptr)
 {
 }
 
@@ -281,8 +282,6 @@ QUuid SkeletonDocument::createNode(float x, float y, float z, float radius, QUui
     nodeMap[node.id] = node;
     partMap[partId].nodeIds.push_back(node.id);
     
-    qDebug() << "Add node " << node.id << x << y << z;
-    
     emit nodeAdded(node.id);
     
     if (nullptr != fromNode) {
@@ -304,6 +303,66 @@ QUuid SkeletonDocument::createNode(float x, float y, float z, float radius, QUui
     emit skeletonChanged();
     
     return node.id;
+}
+
+void SkeletonDocument::addPose(QString name, std::map<QString, std::map<QString, QString>> parameters)
+{
+    QUuid newPoseId = QUuid::createUuid();
+    auto &pose = poseMap[newPoseId];
+    pose.id = newPoseId;
+    
+    pose.name = name;
+    pose.parameters = parameters;
+    pose.dirty = true;
+    
+    poseIdList.push_back(newPoseId);
+    
+    emit poseAdded(newPoseId);
+    emit poseListChanged();
+    emit optionsChanged();
+}
+
+void SkeletonDocument::removePose(QUuid poseId)
+{
+    auto findPoseResult = poseMap.find(poseId);
+    if (findPoseResult == poseMap.end()) {
+        qDebug() << "Remove a none exist pose:" << poseId;
+        return;
+    }
+    poseIdList.erase(std::remove(poseIdList.begin(), poseIdList.end(), poseId), poseIdList.end());
+    poseMap.erase(findPoseResult);
+    
+    emit poseListChanged();
+    emit poseRemoved(poseId);
+    emit optionsChanged();
+}
+
+void SkeletonDocument::setPoseParameters(QUuid poseId, std::map<QString, std::map<QString, QString>> parameters)
+{
+    auto findPoseResult = poseMap.find(poseId);
+    if (findPoseResult == poseMap.end()) {
+        qDebug() << "Find pose failed:" << poseId;
+        return;
+    }
+    findPoseResult->second.parameters = parameters;
+    findPoseResult->second.dirty = true;
+    emit poseParametersChanged(poseId);
+    emit optionsChanged();
+}
+
+void SkeletonDocument::renamePose(QUuid poseId, QString name)
+{
+    auto findPoseResult = poseMap.find(poseId);
+    if (findPoseResult == poseMap.end()) {
+        qDebug() << "Find pose failed:" << poseId;
+        return;
+    }
+    if (findPoseResult->second.name == name)
+        return;
+    
+    findPoseResult->second.name = name;
+    emit poseNameChanged(poseId);
+    emit optionsChanged();
 }
 
 const SkeletonEdge *SkeletonDocument::findEdgeByNodes(QUuid firstNodeId, QUuid secondNodeId) const
@@ -442,6 +501,14 @@ const SkeletonComponent *SkeletonDocument::findComponent(QUuid componentId) cons
         return &rootComponent;
     auto it = componentMap.find(componentId);
     if (it == componentMap.end())
+        return nullptr;
+    return &it->second;
+}
+
+const SkeletonPose *SkeletonDocument::findPose(QUuid poseId) const
+{
+    auto it = poseMap.find(poseId);
+    if (it == poseMap.end())
         return nullptr;
     return &it->second;
 }
@@ -675,128 +742,151 @@ void SkeletonDocument::markAllDirty()
     }
 }
 
-void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUuid> &limitNodeIds) const
+void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUuid> &limitNodeIds,
+    SkeletonDocumentToSnapshotFor forWhat, const std::set<QUuid> &limitPoseIds) const
 {
-    std::set<QUuid> limitPartIds;
-    std::set<QUuid> limitComponentIds;
-    for (const auto &nodeId: limitNodeIds) {
-        const SkeletonNode *node = findNode(nodeId);
-        if (!node)
-            continue;
-        const SkeletonPart *part = findPart(node->partId);
-        if (!part)
-            continue;
-        limitPartIds.insert(node->partId);
-        const SkeletonComponent *component = findComponent(part->componentId);
-        while (component) {
-            limitComponentIds.insert(component->id);
-            if (component->id.isNull())
-                break;
-            component = findComponent(component->parentId);
+    if (SkeletonDocumentToSnapshotFor::Document == forWhat ||
+            SkeletonDocumentToSnapshotFor::Nodes == forWhat) {
+        std::set<QUuid> limitPartIds;
+        std::set<QUuid> limitComponentIds;
+        for (const auto &nodeId: limitNodeIds) {
+            const SkeletonNode *node = findNode(nodeId);
+            if (!node)
+                continue;
+            const SkeletonPart *part = findPart(node->partId);
+            if (!part)
+                continue;
+            limitPartIds.insert(node->partId);
+            const SkeletonComponent *component = findComponent(part->componentId);
+            while (component) {
+                limitComponentIds.insert(component->id);
+                if (component->id.isNull())
+                    break;
+                component = findComponent(component->parentId);
+            }
+        }
+        for (const auto &partIt : partMap) {
+            if (!limitPartIds.empty() && limitPartIds.find(partIt.first) == limitPartIds.end())
+                continue;
+            std::map<QString, QString> part;
+            part["id"] = partIt.second.id.toString();
+            part["visible"] = partIt.second.visible ? "true" : "false";
+            part["locked"] = partIt.second.locked ? "true" : "false";
+            part["subdived"] = partIt.second.subdived ? "true" : "false";
+            part["disabled"] = partIt.second.disabled ? "true" : "false";
+            part["xMirrored"] = partIt.second.xMirrored ? "true" : "false";
+            part["zMirrored"] = partIt.second.zMirrored ? "true" : "false";
+            part["rounded"] = partIt.second.rounded ? "true" : "false";
+            part["wrapped"] = partIt.second.wrapped ? "true" : "false";
+            part["dirty"] = partIt.second.dirty ? "true" : "false";
+            if (partIt.second.hasColor)
+                part["color"] = partIt.second.color.name();
+            if (partIt.second.deformThicknessAdjusted())
+                part["deformThickness"] = QString::number(partIt.second.deformThickness);
+            if (partIt.second.deformWidthAdjusted())
+                part["deformWidth"] = QString::number(partIt.second.deformWidth);
+            if (!partIt.second.name.isEmpty())
+                part["name"] = partIt.second.name;
+            snapshot->parts[part["id"]] = part;
+        }
+        for (const auto &nodeIt: nodeMap) {
+            if (!limitNodeIds.empty() && limitNodeIds.find(nodeIt.first) == limitNodeIds.end())
+                continue;
+            std::map<QString, QString> node;
+            node["id"] = nodeIt.second.id.toString();
+            node["radius"] = QString::number(nodeIt.second.radius);
+            node["x"] = QString::number(nodeIt.second.x);
+            node["y"] = QString::number(nodeIt.second.y);
+            node["z"] = QString::number(nodeIt.second.z);
+            node["partId"] = nodeIt.second.partId.toString();
+            if (nodeIt.second.boneMark != SkeletonBoneMark::None)
+                node["boneMark"] = SkeletonBoneMarkToString(nodeIt.second.boneMark);
+            if (!nodeIt.second.name.isEmpty())
+                node["name"] = nodeIt.second.name;
+            snapshot->nodes[node["id"]] = node;
+        }
+        for (const auto &edgeIt: edgeMap) {
+            if (edgeIt.second.nodeIds.size() != 2)
+                continue;
+            if (!limitNodeIds.empty() &&
+                    (limitNodeIds.find(edgeIt.second.nodeIds[0]) == limitNodeIds.end() ||
+                        limitNodeIds.find(edgeIt.second.nodeIds[1]) == limitNodeIds.end()))
+                continue;
+            std::map<QString, QString> edge;
+            edge["id"] = edgeIt.second.id.toString();
+            edge["from"] = edgeIt.second.nodeIds[0].toString();
+            edge["to"] = edgeIt.second.nodeIds[1].toString();
+            edge["partId"] = edgeIt.second.partId.toString();
+            if (!edgeIt.second.name.isEmpty())
+                edge["name"] = edgeIt.second.name;
+            snapshot->edges[edge["id"]] = edge;
+        }
+        for (const auto &componentIt: componentMap) {
+            if (!limitComponentIds.empty() && limitComponentIds.find(componentIt.first) == limitComponentIds.end())
+                continue;
+            std::map<QString, QString> component;
+            component["id"] = componentIt.second.id.toString();
+            if (!componentIt.second.name.isEmpty())
+                component["name"] = componentIt.second.name;
+            component["expanded"] = componentIt.second.expanded ? "true" : "false";
+            component["inverse"] = componentIt.second.inverse ? "true" : "false";
+            component["dirty"] = componentIt.second.dirty ? "true" : "false";
+            if (componentIt.second.smoothAllAdjusted())
+                component["smoothAll"] = QString::number(componentIt.second.smoothAll);
+            if (componentIt.second.smoothSeamAdjusted())
+                component["smoothSeam"] = QString::number(componentIt.second.smoothSeam);
+            QStringList childIdList;
+            for (const auto &childId: componentIt.second.childrenIds) {
+                childIdList.append(childId.toString());
+            }
+            QString children = childIdList.join(",");
+            if (!children.isEmpty())
+                component["children"] = children;
+            QString linkData = componentIt.second.linkData();
+            if (!linkData.isEmpty()) {
+                component["linkData"] = linkData;
+                component["linkDataType"] = componentIt.second.linkDataType();
+            }
+            if (!componentIt.second.name.isEmpty())
+                component["name"] = componentIt.second.name;
+            snapshot->components[component["id"]] = component;
+        }
+        if (limitComponentIds.empty() || limitComponentIds.find(QUuid()) != limitComponentIds.end()) {
+            QStringList childIdList;
+            for (const auto &childId: rootComponent.childrenIds) {
+                childIdList.append(childId.toString());
+            }
+            QString children = childIdList.join(",");
+            if (!children.isEmpty())
+                snapshot->rootComponent["children"] = children;
         }
     }
-    for (const auto &partIt : partMap) {
-        if (!limitPartIds.empty() && limitPartIds.find(partIt.first) == limitPartIds.end())
-            continue;
-        std::map<QString, QString> part;
-        part["id"] = partIt.second.id.toString();
-        part["visible"] = partIt.second.visible ? "true" : "false";
-        part["locked"] = partIt.second.locked ? "true" : "false";
-        part["subdived"] = partIt.second.subdived ? "true" : "false";
-        part["disabled"] = partIt.second.disabled ? "true" : "false";
-        part["xMirrored"] = partIt.second.xMirrored ? "true" : "false";
-        part["zMirrored"] = partIt.second.zMirrored ? "true" : "false";
-        part["rounded"] = partIt.second.rounded ? "true" : "false";
-        part["wrapped"] = partIt.second.wrapped ? "true" : "false";
-        part["dirty"] = partIt.second.dirty ? "true" : "false";
-        if (partIt.second.hasColor)
-            part["color"] = partIt.second.color.name();
-        if (partIt.second.deformThicknessAdjusted())
-            part["deformThickness"] = QString::number(partIt.second.deformThickness);
-        if (partIt.second.deformWidthAdjusted())
-            part["deformWidth"] = QString::number(partIt.second.deformWidth);
-        if (!partIt.second.name.isEmpty())
-            part["name"] = partIt.second.name;
-        snapshot->parts[part["id"]] = part;
-    }
-    for (const auto &nodeIt: nodeMap) {
-        if (!limitNodeIds.empty() && limitNodeIds.find(nodeIt.first) == limitNodeIds.end())
-            continue;
-        std::map<QString, QString> node;
-        node["id"] = nodeIt.second.id.toString();
-        node["radius"] = QString::number(nodeIt.second.radius);
-        node["x"] = QString::number(nodeIt.second.x);
-        node["y"] = QString::number(nodeIt.second.y);
-        node["z"] = QString::number(nodeIt.second.z);
-        node["partId"] = nodeIt.second.partId.toString();
-        if (nodeIt.second.boneMark != SkeletonBoneMark::None)
-            node["boneMark"] = SkeletonBoneMarkToString(nodeIt.second.boneMark);
-        if (!nodeIt.second.name.isEmpty())
-            node["name"] = nodeIt.second.name;
-        snapshot->nodes[node["id"]] = node;
-    }
-    for (const auto &edgeIt: edgeMap) {
-        if (edgeIt.second.nodeIds.size() != 2)
-            continue;
-        if (!limitNodeIds.empty() &&
-                (limitNodeIds.find(edgeIt.second.nodeIds[0]) == limitNodeIds.end() ||
-                    limitNodeIds.find(edgeIt.second.nodeIds[1]) == limitNodeIds.end()))
-            continue;
-        std::map<QString, QString> edge;
-        edge["id"] = edgeIt.second.id.toString();
-        edge["from"] = edgeIt.second.nodeIds[0].toString();
-        edge["to"] = edgeIt.second.nodeIds[1].toString();
-        edge["partId"] = edgeIt.second.partId.toString();
-        if (!edgeIt.second.name.isEmpty())
-            edge["name"] = edgeIt.second.name;
-        snapshot->edges[edge["id"]] = edge;
-    }
-    for (const auto &componentIt: componentMap) {
-        if (!limitComponentIds.empty() && limitComponentIds.find(componentIt.first) == limitComponentIds.end())
-            continue;
-        std::map<QString, QString> component;
-        component["id"] = componentIt.second.id.toString();
-        if (!componentIt.second.name.isEmpty())
-            component["name"] = componentIt.second.name;
-        component["expanded"] = componentIt.second.expanded ? "true" : "false";
-        component["inverse"] = componentIt.second.inverse ? "true" : "false";
-        component["dirty"] = componentIt.second.dirty ? "true" : "false";
-        if (componentIt.second.smoothAllAdjusted())
-            component["smoothAll"] = QString::number(componentIt.second.smoothAll);
-        if (componentIt.second.smoothSeamAdjusted())
-            component["smoothSeam"] = QString::number(componentIt.second.smoothSeam);
-        QStringList childIdList;
-        for (const auto &childId: componentIt.second.childrenIds) {
-            childIdList.append(childId.toString());
+    if (SkeletonDocumentToSnapshotFor::Document == forWhat ||
+            SkeletonDocumentToSnapshotFor::Poses == forWhat) {
+        for (const auto &poseId: poseIdList) {
+            if (!limitPoseIds.empty() && limitPoseIds.find(poseId) == limitPoseIds.end())
+                continue;
+            auto findPoseResult = poseMap.find(poseId);
+            if (findPoseResult == poseMap.end()) {
+                qDebug() << "Find pose failed:" << poseId;
+                continue;
+            }
+            auto &poseIt = *findPoseResult;
+            std::map<QString, QString> pose;
+            pose["id"] = poseIt.second.id.toString();
+            if (!poseIt.second.name.isEmpty())
+                pose["name"] = poseIt.second.name;
+            snapshot->poses.push_back(std::make_pair(pose, poseIt.second.parameters));
         }
-        QString children = childIdList.join(",");
-        if (!children.isEmpty())
-            component["children"] = children;
-        QString linkData = componentIt.second.linkData();
-        if (!linkData.isEmpty()) {
-            component["linkData"] = linkData;
-            component["linkDataType"] = componentIt.second.linkDataType();
-        }
-        if (!componentIt.second.name.isEmpty())
-            component["name"] = componentIt.second.name;
-        snapshot->components[component["id"]] = component;
     }
-    if (limitComponentIds.empty() || limitComponentIds.find(QUuid()) != limitComponentIds.end()) {
-        QStringList childIdList;
-        for (const auto &childId: rootComponent.childrenIds) {
-            childIdList.append(childId.toString());
-        }
-        QString children = childIdList.join(",");
-        if (!children.isEmpty())
-            snapshot->rootComponent["children"] = children;
+    if (SkeletonDocumentToSnapshotFor::Document == forWhat) {
+        std::map<QString, QString> canvas;
+        canvas["originX"] = QString::number(originX);
+        canvas["originY"] = QString::number(originY);
+        canvas["originZ"] = QString::number(originZ);
+        canvas["rigType"] = RigTypeToString(rigType);
+        snapshot->canvas = canvas;
     }
-    
-    std::map<QString, QString> canvas;
-    canvas["originX"] = QString::number(originX);
-    canvas["originY"] = QString::number(originY);
-    canvas["originZ"] = QString::number(originZ);
-    canvas["rigType"] = RigTypeToString(rigType);
-    snapshot->canvas = canvas;
 }
 
 void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot, bool fromPaste)
@@ -921,11 +1011,11 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot, bool fr
         const auto &smoothSeamIt = componentKv.second.find("smoothSeam");
         if (smoothSeamIt != componentKv.second.end())
             component.setSmoothSeam(smoothSeamIt->second.toFloat());
-        qDebug() << "Add component:" << component.id << " old:" << componentKv.first << "name:" << component.name;
+        //qDebug() << "Add component:" << component.id << " old:" << componentKv.first << "name:" << component.name;
         if ("partId" == linkDataType) {
             QUuid partId = oldNewIdMap[QUuid(linkData)];
             component.linkToPartId = partId;
-            qDebug() << "Add part:" << partId << " from component:" << component.id;
+            //qDebug() << "Add part:" << partId << " from component:" << component.id;
             partMap[partId].componentId = component.id;
             if (inversePartIds.find(partId) != inversePartIds.end())
                 component.inverse = true;
@@ -941,7 +1031,7 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot, bool fr
             QUuid componentId = oldNewIdMap[QUuid(childId)];
             if (componentMap.find(componentId) == componentMap.end())
                 continue;
-            qDebug() << "Add root component:" << componentId;
+            //qDebug() << "Add root component:" << componentId;
             rootComponent.addChild(componentId);
         }
     }
@@ -955,10 +1045,21 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot, bool fr
             QUuid childComponentId = oldNewIdMap[QUuid(childId)];
             if (componentMap.find(childComponentId) == componentMap.end())
                 continue;
-            qDebug() << "Add child component:" << childComponentId << "to" << componentId;
+            //qDebug() << "Add child component:" << childComponentId << "to" << componentId;
             componentMap[componentId].addChild(childComponentId);
             componentMap[childComponentId].parentId = componentId;
         }
+    }
+    for (const auto &poseIt: snapshot.poses) {
+        QUuid newPoseId = QUuid::createUuid();
+        auto &newPose = poseMap[newPoseId];
+        newPose.id = newPoseId;
+        const auto &poseAttributes = poseIt.first;
+        newPose.name = valueOfKeyInMapOrEmpty(poseAttributes, "name");
+        newPose.parameters = poseIt.second;
+        oldNewIdMap[QUuid(valueOfKeyInMapOrEmpty(poseAttributes, "id"))] = newPoseId;
+        poseIdList.push_back(newPoseId);
+        emit poseAdded(newPoseId);
     }
     
     for (const auto &nodeIt: newAddedNodeIds) {
@@ -989,6 +1090,9 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot, bool fr
     for (const auto &edgeIt: newAddedEdgeIds) {
         emit checkEdge(edgeIt);
     }
+    
+    if (!snapshot.poses.empty())
+        emit poseListChanged();
 }
 
 void SkeletonDocument::reset()
@@ -1001,6 +1105,8 @@ void SkeletonDocument::reset()
     edgeMap.clear();
     partMap.clear();
     componentMap.clear();
+    poseMap.clear();
+    poseIdList.clear();
     rootComponent = SkeletonComponent();
     emit cleanup();
     emit skeletonChanged();
@@ -1954,12 +2060,23 @@ void SkeletonDocument::paste()
     }
 }
 
-bool SkeletonDocument::hasPastableContentInClipboard() const
+bool SkeletonDocument::hasPastableNodesInClipboard() const
 {
     const QClipboard *clipboard = QApplication::clipboard();
     const QMimeData *mimeData = clipboard->mimeData();
     if (mimeData->hasText()) {
-        if (-1 != mimeData->text().left(1000).indexOf("partIdList"))
+        if (-1 != mimeData->text().left(1000).indexOf("<node "))
+            return true;
+    }
+    return false;
+}
+
+bool SkeletonDocument::hasPastablePosesInClipboard() const
+{
+    const QClipboard *clipboard = QApplication::clipboard();
+    const QMimeData *mimeData = clipboard->mimeData();
+    if (mimeData->hasText()) {
+        if (-1 != mimeData->text().right(1000).indexOf("<pose "))
             return true;
     }
     return false;
@@ -2336,4 +2453,64 @@ const std::vector<QString> &SkeletonDocument::resultRigErrorMarkNames() const
 const MeshResultContext &SkeletonDocument::currentRiggedResultContext() const
 {
     return *m_riggedResultContext;
+}
+
+void SkeletonDocument::generatePosePreviews()
+{
+    if (nullptr != m_posePreviewsGenerator) {
+        return;
+    }
+    
+    const std::vector<AutoRiggerBone> *rigBones = resultRigBones();
+    const std::map<int, AutoRiggerVertexWeights> *rigWeights = resultRigWeights();
+    
+    if (nullptr == rigBones || nullptr == rigWeights) {
+        return;
+    }
+
+    QThread *thread = new QThread;
+    m_posePreviewsGenerator = new PosePreviewsGenerator(rigBones,
+        rigWeights, *m_riggedResultContext);
+    bool hasDirtyPose = false;
+    for (auto &poseIt: poseMap) {
+        if (!poseIt.second.dirty)
+            continue;
+        m_posePreviewsGenerator->addPose(poseIt.first, poseIt.second.parameters);
+        poseIt.second.dirty = false;
+        hasDirtyPose = true;
+    }
+    if (!hasDirtyPose) {
+        delete m_posePreviewsGenerator;
+        m_posePreviewsGenerator = nullptr;
+        delete thread;
+        return;
+    }
+    
+    qDebug() << "Pose previews generating..";
+    
+    m_posePreviewsGenerator->moveToThread(thread);
+    connect(thread, &QThread::started, m_posePreviewsGenerator, &PosePreviewsGenerator::process);
+    connect(m_posePreviewsGenerator, &PosePreviewsGenerator::finished, this, &SkeletonDocument::posePreviewsReady);
+    connect(m_posePreviewsGenerator, &PosePreviewsGenerator::finished, thread, &QThread::quit);
+    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+    thread->start();
+}
+
+void SkeletonDocument::posePreviewsReady()
+{
+    for (const auto &poseId: m_posePreviewsGenerator->generatedPreviewPoseIds()) {
+        auto pose = poseMap.find(poseId);
+        if (pose != poseMap.end()) {
+            MeshLoader *resultPartPreviewMesh = m_posePreviewsGenerator->takePreview(poseId);
+            pose->second.updatePreviewMesh(resultPartPreviewMesh);
+            emit posePreviewChanged(poseId);
+        }
+    }
+
+    delete m_posePreviewsGenerator;
+    m_posePreviewsGenerator = nullptr;
+    
+    qDebug() << "Pose previews generation done";
+    
+    generatePosePreviews();
 }

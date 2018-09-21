@@ -91,6 +91,29 @@ void saveSkeletonToXmlStream(SkeletonSnapshot *snapshot, QXmlStreamWriter *write
             writer->writeEndElement();
         }
     
+        writer->writeStartElement("poses");
+        std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>>::iterator poseIterator;
+        for (poseIterator = snapshot->poses.begin(); poseIterator != snapshot->poses.end(); poseIterator++) {
+            std::map<QString, QString>::iterator poseAttributeIterator;
+            writer->writeStartElement("pose");
+            for (poseAttributeIterator = poseIterator->first.begin(); poseAttributeIterator != poseIterator->first.end(); poseAttributeIterator++) {
+                writer->writeAttribute(poseAttributeIterator->first, poseAttributeIterator->second);
+            }
+            std::map<QString, std::map<QString, QString>>::iterator itemsIterator;
+            for (itemsIterator = poseIterator->second.begin(); itemsIterator != poseIterator->second.end(); itemsIterator++) {
+                std::map<QString, QString>::iterator parametersIterator;
+                writer->writeStartElement("parameter");
+                writer->writeAttribute("for", itemsIterator->first);
+                for (parametersIterator = itemsIterator->second.begin(); parametersIterator != itemsIterator->second.end();
+                        parametersIterator++) {
+                    writer->writeAttribute(parametersIterator->first, parametersIterator->second);
+                }
+                writer->writeEndElement();
+            }
+            writer->writeEndElement();
+        }
+        writer->writeEndElement();
+    
     writer->writeEndElement();
     
     writer->writeEndDocument();
@@ -100,10 +123,14 @@ void loadSkeletonFromXmlStream(SkeletonSnapshot *snapshot, QXmlStreamReader &rea
 {
     std::stack<QString> componentStack;
     std::vector<QString> elementNameStack;
+    std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>> currentPose;
     while (!reader.atEnd()) {
         reader.readNext();
-        if (!reader.isStartElement() && !reader.isEndElement())
+        if (!reader.isStartElement() && !reader.isEndElement()) {
+            if (!reader.name().toString().isEmpty())
+                qDebug() << "Skip xml element:" << reader.name().toString() << " tokenType:" << reader.tokenType();
             continue;
+        }
         QString baseName = reader.name().toString();
         if (reader.isStartElement())
             elementNameStack.push_back(baseName);
@@ -114,6 +141,7 @@ void loadSkeletonFromXmlStream(SkeletonSnapshot *snapshot, QXmlStreamReader &rea
         QString fullName = nameItems.join(".");
         if (reader.isEndElement())
             elementNameStack.pop_back();
+        //qDebug() << (reader.isStartElement() ? "<" : ">") << "fullName:" << fullName << "baseName:" << baseName;
         if (reader.isStartElement()) {
             if (fullName == "canvas") {
                 foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
@@ -172,10 +200,29 @@ void loadSkeletonFromXmlStream(SkeletonSnapshot *snapshot, QXmlStreamReader &rea
                 if (!parentChildrenIds.isEmpty())
                     parentChildrenIds += ",";
                 parentChildrenIds += componentId;
+            } else if (fullName == "canvas.poses.pose") {
+                QString poseId = reader.attributes().value("id").toString();
+                if (poseId.isEmpty())
+                    continue;
+                currentPose = decltype(currentPose)();
+                foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
+                    currentPose.first[attr.name().toString()] = attr.value().toString();
+                }
+            } else if (fullName == "canvas.poses.pose.parameter") {
+                QString forWhat = reader.attributes().value("for").toString();
+                if (forWhat.isEmpty())
+                    continue;
+                foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
+                    if ("for" == attr.name().toString())
+                        continue;
+                    currentPose.second[forWhat][attr.name().toString()] = attr.value().toString();
+                }
             }
         } else if (reader.isEndElement()) {
             if (fullName.startsWith("canvas.components.component")) {
                 componentStack.pop();
+            } else if (fullName == "canvas.poses.pose") {
+                snapshot->poses.push_back(currentPose);
             }
         }
     }

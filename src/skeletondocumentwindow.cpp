@@ -30,7 +30,6 @@
 #include "skeletonparttreewidget.h"
 #include "rigwidget.h"
 #include "markiconcreator.h"
-#include "tetrapodposeeditwidget.h"
 
 int SkeletonDocumentWindow::m_modelRenderWidgetInitialX = 16;
 int SkeletonDocumentWindow::m_modelRenderWidgetInitialY = 16;
@@ -55,7 +54,7 @@ void SkeletonDocumentWindow::showAcknowlegements()
 {
     if (!g_acknowlegementsWidget) {
         g_acknowlegementsWidget = new QTextBrowser;
-        g_acknowlegementsWidget->setWindowTitle(APP_NAME);
+        g_acknowlegementsWidget->setWindowTitle(unifiedWindowTitle(tr("Acknowlegements")));
         g_acknowlegementsWidget->setMinimumSize(QSize(400, 300));
         QFile file(":/ACKNOWLEDGEMENTS.html");
         file.open(QFile::ReadOnly | QFile::Text);
@@ -71,7 +70,7 @@ void SkeletonDocumentWindow::showContributors()
 {
     if (!g_contributorsWidget) {
         g_contributorsWidget = new QTextBrowser;
-        g_contributorsWidget->setWindowTitle(APP_NAME);
+        g_contributorsWidget->setWindowTitle(unifiedWindowTitle(tr("Contributors")));
         g_contributorsWidget->setMinimumSize(QSize(400, 300));
         QFile authors(":/AUTHORS");
         authors.open(QFile::ReadOnly | QFile::Text);
@@ -225,16 +224,21 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
         updateRigWeightRenderWidget();
     });
     
-    //QDockWidget *animationDocker = new QDockWidget(tr("Animation"), this);
-    //animationDocker->setAllowedAreas(Qt::RightDockWidgetArea);
-    //TetrapodPoseEditWidget *tetrapodPoseEditWidget = new TetrapodPoseEditWidget(m_document, animationDocker);
-    //animationDocker->setWidget(tetrapodPoseEditWidget);
-    //AnimationListWidget *animationListWidget = new AnimationListWidget(m_document, animationDocker);
-    //animationDocker->setWidget(animationListWidget);
-    //addDockWidget(Qt::RightDockWidgetArea, animationDocker);
+    QDockWidget *poseDocker = new QDockWidget(tr("Poses"), this);
+    poseDocker->setAllowedAreas(Qt::RightDockWidgetArea);
+    PoseManageWidget *poseManageWidget = new PoseManageWidget(m_document, poseDocker);
+    poseDocker->setWidget(poseManageWidget);
+    connect(poseManageWidget, &PoseManageWidget::registerDialog, this, &SkeletonDocumentWindow::registerDialog);
+    connect(poseManageWidget, &PoseManageWidget::unregisterDialog, this, &SkeletonDocumentWindow::unregisterDialog);
+    addDockWidget(Qt::RightDockWidgetArea, poseDocker);
+    connect(poseDocker, &QDockWidget::topLevelChanged, [=](bool topLevel) {
+        Q_UNUSED(topLevel);
+        for (const auto &pose: m_document->poseMap)
+            emit m_document->posePreviewChanged(pose.first);
+    });
     
     tabifyDockWidget(partTreeDocker, rigDocker);
-    //tabifyDockWidget(rigDocker, animationDocker);
+    tabifyDockWidget(rigDocker, poseDocker);
     
     partTreeDocker->raise();
 
@@ -447,7 +451,7 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
         m_connectAction->setEnabled(m_graphicsWidget->hasTwoDisconnectedNodesSelection());
         m_cutAction->setEnabled(m_graphicsWidget->hasSelection());
         m_copyAction->setEnabled(m_graphicsWidget->hasSelection());
-        m_pasteAction->setEnabled(m_document->hasPastableContentInClipboard());
+        m_pasteAction->setEnabled(m_document->hasPastableNodesInClipboard());
         m_flipHorizontallyAction->setEnabled(m_graphicsWidget->hasMultipleSelection());
         m_flipVerticallyAction->setEnabled(m_graphicsWidget->hasMultipleSelection());
         m_rotateClockwiseAction->setEnabled(m_graphicsWidget->hasMultipleSelection());
@@ -512,12 +516,22 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     });
     m_windowMenu->addAction(m_showRigAction);
     
-    //m_showAnimationAction = new QAction(tr("Animation"), this);
-    //connect(m_showAnimationAction, &QAction::triggered, [=]() {
-    //    animationDocker->show();
-    //    animationDocker->raise();
-    //});
-    //m_windowMenu->addAction(m_showAnimationAction);
+    QMenu *dialogsMenu = m_windowMenu->addMenu(tr("Dialogs"));
+    connect(dialogsMenu, &QMenu::aboutToShow, [=]() {
+        dialogsMenu->clear();
+        if (this->m_dialogs.empty()) {
+            QAction *action = dialogsMenu->addAction(tr("None"));
+            action->setEnabled(false);
+            return;
+        }
+        for (const auto &dialog: this->m_dialogs) {
+            QAction *action = dialogsMenu->addAction(dialog->windowTitle());
+            connect(action, &QAction::triggered, [=]() {
+                dialog->show();
+                dialog->raise();
+            });
+        }
+    });
     
     m_showDebugDialogAction = new QAction(tr("Debug"), this);
     connect(m_showDebugDialogAction, &QAction::triggered, g_logBrowser, &LogBrowser::showDialog);
@@ -764,6 +778,16 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(m_document, &SkeletonDocument::resultRigChanged, this, &SkeletonDocumentWindow::updateRigWeightRenderWidget);
     
     //connect(m_document, &SkeletonDocument::resultRigChanged, tetrapodPoseEditWidget, &TetrapodPoseEditWidget::updatePreview);
+    
+    connect(m_document, &SkeletonDocument::poseAdded, this, [=](QUuid poseId) {
+        Q_UNUSED(poseId);
+        m_document->generatePosePreviews();
+    });
+    connect(m_document, &SkeletonDocument::poseParametersChanged, this, [=](QUuid poseId) {
+        Q_UNUSED(poseId);
+        m_document->generatePosePreviews();
+    });
+    connect(m_document, &SkeletonDocument::resultRigChanged, m_document, &SkeletonDocument::generatePosePreviews);
 
     connect(this, &SkeletonDocumentWindow::initialized, m_document, &SkeletonDocument::uiReady);
     
@@ -1058,13 +1082,13 @@ void SkeletonDocumentWindow::showExportPreview()
 {
     if (nullptr == m_exportPreviewWidget) {
         m_exportPreviewWidget = new ExportPreviewWidget(m_document, this);
-        m_exportPreviewWidget->setWindowFlags(Qt::Tool);
         connect(m_exportPreviewWidget, &ExportPreviewWidget::regenerate, m_document, &SkeletonDocument::regenerateMesh);
         connect(m_exportPreviewWidget, &ExportPreviewWidget::save, this, &SkeletonDocumentWindow::exportGltfResult);
         connect(m_document, &SkeletonDocument::resultMeshChanged, m_exportPreviewWidget, &ExportPreviewWidget::checkSpinner);
         connect(m_document, &SkeletonDocument::exportReady, m_exportPreviewWidget, &ExportPreviewWidget::checkSpinner);
         connect(m_document, &SkeletonDocument::resultTextureChanged, m_exportPreviewWidget, &ExportPreviewWidget::updateTexturePreview);
         connect(m_document, &SkeletonDocument::resultBakedTextureChanged, m_exportPreviewWidget, &ExportPreviewWidget::updateTexturePreview);
+        registerDialog(m_exportPreviewWidget);
     }
     if (m_document->isPostProcessResultObsolete()) {
         m_document->postProcess();
@@ -1144,4 +1168,14 @@ void SkeletonDocumentWindow::updateRigWeightRenderWidget()
         m_rigWidget->rigWeightRenderWidget()->show();
         m_rigWidget->rigWeightRenderWidget()->update();
     }
+}
+
+void SkeletonDocumentWindow::registerDialog(QWidget *widget)
+{
+    m_dialogs.push_back(widget);
+}
+
+void SkeletonDocumentWindow::unregisterDialog(QWidget *widget)
+{
+    m_dialogs.erase(std::remove(m_dialogs.begin(), m_dialogs.end(), widget), m_dialogs.end());
 }

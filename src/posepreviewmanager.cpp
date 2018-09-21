@@ -49,12 +49,11 @@ void PosePreviewManager::poseMeshReady()
     delete m_previewMesh;
     m_previewMesh = m_poseMeshCreator->takeResultMesh();
 
-    emit resultPreviewMeshChanged();
-
     qDebug() << "Pose mesh generation done";
     
     delete m_poseMeshCreator;
     m_poseMeshCreator = nullptr;
     
+    emit resultPreviewMeshChanged();
     emit renderDone();
 }

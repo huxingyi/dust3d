@@ -1,5 +1,6 @@
 #include <cmath>
 #include "dust3dutil.h"
+#include "version.h"
 
 QString valueOfKeyInMapOrEmpty(const std::map<QString, QString> &map, const QString &key)
 {
@@ -51,3 +52,7 @@ QVector3D projectLineOnPlane(QVector3D line, QVector3D planeNormal)
     return line - verticalOffset;
 }
 
+QString unifiedWindowTitle(const QString &text)
+{
+    return text + QObject::tr(" - ") + APP_NAME;
+}

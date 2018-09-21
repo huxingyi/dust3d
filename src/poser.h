@@ -16,7 +16,7 @@ public:
     const std::vector<AutoRiggerBone> &bones() const;
     const std::vector<JointNode> &resultNodes() const;
     std::map<QString, std::map<QString, QString>> &parameters();
-    void commit();
+    virtual void commit();
     void reset();
 protected:
     std::vector<AutoRiggerBone> m_bones;

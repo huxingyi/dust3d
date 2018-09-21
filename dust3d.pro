@@ -179,8 +179,20 @@ HEADERS += src/posemeshcreator.h
 SOURCES += src/posepreviewmanager.cpp
 HEADERS += src/posepreviewmanager.h
 
-SOURCES += src/tetrapodposeeditwidget.cpp
-HEADERS += src/tetrapodposeeditwidget.h
+SOURCES += src/poseeditwidget.cpp
+HEADERS += src/poseeditwidget.h
+
+SOURCES += src/poselistwidget.cpp
+HEADERS += src/poselistwidget.h
+
+SOURCES += src/posemanagewidget.cpp
+HEADERS += src/posemanagewidget.h
+
+SOURCES += src/posepreviewsgenerator.cpp
+HEADERS += src/posepreviewsgenerator.h
+
+SOURCES += src/posewidget.cpp
+HEADERS += src/posewidget.h
 
 SOURCES += src/main.cpp
 

@@ -158,7 +158,7 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
     }
     
     QAction pasteAction(tr("Paste"), this);
-    if (m_document->hasPastableContentInClipboard()) {
+    if (m_document->hasPastableNodesInClipboard()) {
         connect(&pasteAction, &QAction::triggered, m_document, &SkeletonDocument::paste);
         contextMenu.addAction(&pasteAction);
     }
@@ -1193,7 +1193,6 @@ bool SkeletonGraphicsWidget::mousePress(QMouseEvent *event)
                 m_lastAddedX = unifiedMainPos.x();
                 m_lastAddedY = unifiedMainPos.y();
                 m_lastAddedZ = unifiedSidePos.x();
-                qDebug() << "Emit add node " << m_lastAddedX << m_lastAddedY << m_lastAddedZ;
                 emit addNode(unifiedMainPos.x(), unifiedMainPos.y(), unifiedSidePos.x(), sceneRadiusToUnified(m_cursorNodeItem->radius()), nullptr == m_addFromNodeItem ? QUuid() : m_addFromNodeItem->id());
                 emit groupOperationAdded();
                 return true;
@@ -2158,7 +2157,7 @@ void SkeletonGraphicsWidget::copy()
     if (nodeIdSet.empty())
         return;
     SkeletonSnapshot snapshot;
-    m_document->toSnapshot(&snapshot, nodeIdSet);
+    m_document->toSnapshot(&snapshot, nodeIdSet, SkeletonDocumentToSnapshotFor::Nodes);
     QString snapshotXml;
     QXmlStreamWriter xmlStreamWriter(&snapshotXml);
     saveSkeletonToXmlStream(&snapshot, &xmlStreamWriter);

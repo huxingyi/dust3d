@@ -33,8 +33,9 @@ int Theme::toolIconFontSize = 16;
 int Theme::toolIconSize = 24;
 int Theme::miniIconFontSize = 9;
 int Theme::miniIconSize = 15;
-int Theme::previewImageSize = (Theme::miniIconSize * 3);
-int Theme::previewImageRenderSize = 75;
+int Theme::partPreviewImageSize = (Theme::miniIconSize * 3);
+int Theme::posePreviewImageSize = 75;
+int Theme::sidebarPreferredWidth = 200;
 
 QtAwesome *Theme::awesome()
 {
@@ -128,3 +129,22 @@ void Theme::initAwesomeToolButton(QPushButton *button)
     Theme::initAwesomeToolButtonWithoutFont(button);
 }
 
+QWidget *Theme::createHorizontalLineWidget()
+{
+    QWidget *hrLightWidget = new QWidget;
+    hrLightWidget->setFixedHeight(1);
+    hrLightWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    hrLightWidget->setStyleSheet(QString("background-color: #565656;"));
+    hrLightWidget->setContentsMargins(0, 0, 0, 0);
+    return hrLightWidget;
+}
+
+QWidget *Theme::createVerticalLineWidget()
+{
+    QWidget *hrLightWidget = new QWidget;
+    hrLightWidget->setFixedWidth(1);
+    hrLightWidget->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
+    hrLightWidget->setStyleSheet(QString("background-color: #565656;"));
+    hrLightWidget->setContentsMargins(0, 0, 0, 0);
+    return hrLightWidget;
+}

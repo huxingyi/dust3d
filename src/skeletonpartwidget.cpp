@@ -55,7 +55,7 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     m_previewWidget = new ModelWidget;
     m_previewWidget->enableMove(false);
     m_previewWidget->enableZoom(false);
-    m_previewWidget->setFixedSize(Theme::previewImageSize, Theme::previewImageSize);
+    m_previewWidget->setFixedSize(Theme::partPreviewImageSize, Theme::partPreviewImageSize);
     
     QWidget *hrLightWidget = new QWidget;
     hrLightWidget->setFixedHeight(1);
@@ -99,7 +99,7 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     
     QWidget *backgroundWidget = new QWidget;
     backgroundWidget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-    backgroundWidget->setFixedSize(preferredSize().width(), Theme::previewImageSize);
+    backgroundWidget->setFixedSize(preferredSize().width(), Theme::partPreviewImageSize);
     backgroundWidget->setObjectName("background");
     m_backgroundWidget = backgroundWidget;
     backgroundWidget->setLayout(previewAndToolsLayout);
@@ -238,7 +238,7 @@ ModelWidget *SkeletonPartWidget::previewWidget()
 
 QSize SkeletonPartWidget::preferredSize()
 {
-    return QSize(Theme::miniIconSize + Theme::previewImageSize + Theme::miniIconSize * 4 + 5 + 2, Theme::previewImageSize + 6);
+    return QSize(Theme::miniIconSize + Theme::partPreviewImageSize + Theme::miniIconSize * 4 + 5 + 2, Theme::partPreviewImageSize + 6);
 }
 
 void SkeletonPartWidget::updateAllButtons()

@@ -7,9 +7,10 @@
 #include "aboutwidget.h"
 #include "version.h"
 #include "theme.h"
+#include "dust3dutil.h"
 
 ExportPreviewWidget::ExportPreviewWidget(SkeletonDocument *document, QWidget *parent) :
-    QWidget(parent),
+    QDialog(parent),
     m_document(document),
     m_previewLabel(nullptr),
     m_spinnerWidget(nullptr)
@@ -33,6 +34,7 @@ ExportPreviewWidget::ExportPreviewWidget(SkeletonDocument *document, QWidget *pa
     m_saveButton = new QPushButton(tr("Save"));
     connect(m_saveButton, &QPushButton::clicked, this, &ExportPreviewWidget::save);
     m_saveButton->hide();
+    m_saveButton->setDefault(true);
     
     QComboBox *exportFormatSelectBox = new QComboBox;
     exportFormatSelectBox->addItem(tr("glTF"));
@@ -59,11 +61,7 @@ ExportPreviewWidget::ExportPreviewWidget(SkeletonDocument *document, QWidget *pa
     renderLayout->setContentsMargins(20, 0, 20, 0);
     renderLayout->addWidget(m_textureRenderWidget);
     
-    QWidget *hrLightWidget = new QWidget;
-    hrLightWidget->setFixedHeight(1);
-    hrLightWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    hrLightWidget->setStyleSheet(QString("background-color: #565656;"));
-    hrLightWidget->setContentsMargins(0, 0, 0, 0);
+    QWidget *hrLightWidget = Theme::createHorizontalLineWidget();
     
     QHBoxLayout *topLayout = new QHBoxLayout;
     topLayout->setSpacing(0);
@@ -86,7 +84,7 @@ ExportPreviewWidget::ExportPreviewWidget(SkeletonDocument *document, QWidget *pa
     m_spinnerWidget->setNumberOfLines(12);
     m_spinnerWidget->hide();
     
-    setWindowTitle(tr("Export") + tr(" - ") + APP_NAME);
+    setWindowTitle(unifiedWindowTitle(tr("Export")));
     
     emit updateTexturePreview();
 }

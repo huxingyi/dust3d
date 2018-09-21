@@ -15,6 +15,7 @@ public:
     std::map<QString, std::map<QString, QString>> parts;
     std::map<QString, std::map<QString, QString>> components;
     std::map<QString, QString> rootComponent;
+    std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> poses; // std::pair<Pose attributes, Bone attributes>
 public:
     void resolveBoundingBox(QRectF *mainProfile, QRectF *sideProfile, const QString &partId=QString());
 };

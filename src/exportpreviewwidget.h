@@ -1,6 +1,6 @@
 #ifndef EXPORT_PREVIEW_WIDGET_H
 #define EXPORT_PREVIEW_WIDGET_H
-#include <QWidget>
+#include <QDialog>
 #include <QImage>
 #include <QLabel>
 #include <QPushButton>
@@ -9,7 +9,7 @@
 #include "waitingspinnerwidget.h"
 #include "skeletondocument.h"
 
-class ExportPreviewWidget : public QWidget
+class ExportPreviewWidget : public QDialog
 {
     Q_OBJECT
 signals:

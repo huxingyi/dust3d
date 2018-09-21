@@ -1,20 +1,31 @@
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QFormLayout>
 #include <QGridLayout>
 #include <QMenu>
 #include <QWidgetAction>
+#include <QLineEdit>
+#include <QMessageBox>
 #include "theme.h"
-#include "tetrapodposeeditwidget.h"
+#include "poseeditwidget.h"
 #include "floatnumberwidget.h"
+#include "version.h"
 
-TetrapodPoseEditWidget::TetrapodPoseEditWidget(const SkeletonDocument *document, QWidget *parent) :
-    QWidget(parent),
+PoseEditWidget::PoseEditWidget(const SkeletonDocument *document, QWidget *parent) :
+    QDialog(parent),
     m_document(document)
 {
     m_posePreviewManager = new PosePreviewManager();
     connect(m_posePreviewManager, &PosePreviewManager::renderDone, [=]() {
+        if (m_closed) {
+            close();
+            return;
+        }
         if (m_isPreviewDirty)
             updatePreview();
+    });
+    connect(m_posePreviewManager, &PosePreviewManager::resultPreviewMeshChanged, [=]() {
+        m_previewWidget->updateMesh(m_posePreviewManager->takeResultPreviewMesh());
     });
     
     std::map<QString, std::tuple<QPushButton *, PopupWidgetType>> buttons;
@@ -61,36 +72,117 @@ TetrapodPoseEditWidget::TetrapodPoseEditWidget(const SkeletonDocument *document,
     
     QFont buttonFont;
     buttonFont.setWeight(QFont::Light);
-    buttonFont.setPixelSize(7);
+    buttonFont.setPixelSize(9);
     buttonFont.setBold(false);
     for (const auto &item: buttons) {
         QString boneName = item.first;
         QPushButton *buttonWidget = std::get<0>(item.second);
         PopupWidgetType widgetType = std::get<1>(item.second);
         buttonWidget->setFont(buttonFont);
-        buttonWidget->setMaximumWidth(45);
+        buttonWidget->setMaximumWidth(55);
         connect(buttonWidget, &QPushButton::clicked, [this, boneName, widgetType]() {
             emit showPopupAngleDialog(boneName, widgetType, mapFromGlobal(QCursor::pos()));
         });
     }
     
-    QVBoxLayout *layout = new QVBoxLayout;
-    layout->addLayout(marksContainerLayout);
-    layout->addLayout(lowerMarksContainerLayout);
-    layout->addStretch();
+    m_previewWidget = new ModelWidget(this);
+    m_previewWidget->setMinimumSize(128, 128);
+    m_previewWidget->resize(384, 384);
+    m_previewWidget->move(-64, -64+22);
     
-    setLayout(layout);
+    QVBoxLayout *markButtonsLayout = new QVBoxLayout;
+    markButtonsLayout->addStretch();
+    markButtonsLayout->addLayout(marksContainerLayout);
+    markButtonsLayout->addLayout(lowerMarksContainerLayout);
+    markButtonsLayout->addStretch();
     
-    connect(m_document, &SkeletonDocument::resultRigChanged, this, &TetrapodPoseEditWidget::updatePreview);
+    QHBoxLayout *paramtersLayout = new QHBoxLayout;
+    paramtersLayout->setContentsMargins(256, 0, 0, 0);
+    paramtersLayout->addStretch();
+    paramtersLayout->addLayout(markButtonsLayout);
+    paramtersLayout->addSpacing(20);
+    
+    m_nameEdit = new QLineEdit;
+    connect(m_nameEdit, &QLineEdit::textChanged, this, [=]() {
+        m_unsaved = true;
+        updateTitle();
+    });
+    QPushButton *saveButton = new QPushButton(tr("Save"));
+    connect(saveButton, &QPushButton::clicked, this, &PoseEditWidget::save);
+    saveButton->setDefault(true);
+    
+    QHBoxLayout *baseInfoLayout = new QHBoxLayout;
+    baseInfoLayout->addWidget(new QLabel(tr("Name")));
+    baseInfoLayout->addWidget(m_nameEdit);
+    baseInfoLayout->addStretch();
+    baseInfoLayout->addWidget(saveButton);
+    
+    QVBoxLayout *mainLayout = new QVBoxLayout;
+    mainLayout->addLayout(paramtersLayout);
+    mainLayout->addWidget(Theme::createHorizontalLineWidget());
+    mainLayout->addLayout(baseInfoLayout);
+    
+    setLayout(mainLayout);
+    
+    connect(m_document, &SkeletonDocument::resultRigChanged, this, &PoseEditWidget::updatePreview);
+    connect(this, &PoseEditWidget::parametersAdjusted, this, &PoseEditWidget::updatePreview);
+    connect(this, &PoseEditWidget::parametersAdjusted, [=]() {
+        m_unsaved = true;
+        updateTitle();
+    });
+    connect(this, &PoseEditWidget::addPose, m_document, &SkeletonDocument::addPose);
+    connect(this, &PoseEditWidget::renamePose, m_document, &SkeletonDocument::renamePose);
+    connect(this, &PoseEditWidget::setPoseParameters, m_document, &SkeletonDocument::setPoseParameters);
+    
+    updatePreview();
+    updateTitle();
 }
 
-TetrapodPoseEditWidget::~TetrapodPoseEditWidget()
+void PoseEditWidget::reject()
+{
+    close();
+}
+
+void PoseEditWidget::closeEvent(QCloseEvent *event)
+{
+    if (m_unsaved && !m_closed) {
+        QMessageBox::StandardButton answer = QMessageBox::question(this,
+            APP_NAME,
+            tr("Do you really want to close while there are unsaved changes?"),
+            QMessageBox::Yes | QMessageBox::No);
+        if (answer != QMessageBox::Yes) {
+            event->ignore();
+            return;
+        }
+    }
+    m_closed = true;
+    hide();
+    if (m_openedMenuCount > 0) {
+        event->ignore();
+        return;
+    }
+    if (m_posePreviewManager->isRendering()) {
+        event->ignore();
+        return;
+    }
+    event->accept();
+}
+
+QSize PoseEditWidget::sizeHint() const
+{
+    return QSize(0, 350);
+}
+
+PoseEditWidget::~PoseEditWidget()
 {
     delete m_posePreviewManager;
 }
 
-void TetrapodPoseEditWidget::updatePreview()
+void PoseEditWidget::updatePreview()
 {
+    if (m_closed)
+        return;
+    
     if (m_posePreviewManager->isRendering()) {
         m_isPreviewDirty = true;
         return;
@@ -105,14 +197,37 @@ void TetrapodPoseEditWidget::updatePreview()
         return;
     }
     
-    delete m_poser;
-    m_poser = new TetrapodPoser(*rigBones);
-    m_poser->parameters() = m_parameters;
-    m_poser->commit();
-    m_posePreviewManager->postUpdate(*m_poser, m_document->currentRiggedResultContext(), *rigWeights);
+    TetrapodPoser *poser = new TetrapodPoser(*rigBones);
+    poser->parameters() = m_parameters;
+    poser->commit();
+    m_posePreviewManager->postUpdate(*poser, m_document->currentRiggedResultContext(), *rigWeights);
+    delete poser;
 }
 
-void TetrapodPoseEditWidget::showPopupAngleDialog(QString boneName, PopupWidgetType popupWidgetType, QPoint pos)
+void PoseEditWidget::setEditPoseId(QUuid poseId)
+{
+    if (m_poseId == poseId)
+        return;
+    
+    m_poseId = poseId;
+    updateTitle();
+}
+
+void PoseEditWidget::updateTitle()
+{
+    if (m_poseId.isNull()) {
+        setWindowTitle(unifiedWindowTitle(tr("New") + (m_unsaved ? "*" : "")));
+        return;
+    }
+    const SkeletonPose *pose = m_document->findPose(m_poseId);
+    if (nullptr == pose) {
+        qDebug() << "Find pose failed:" << m_poseId;
+        return;
+    }
+    setWindowTitle(unifiedWindowTitle(pose->name + (m_unsaved ? "*" : "")));
+}
+
+void PoseEditWidget::showPopupAngleDialog(QString boneName, PopupWidgetType popupWidgetType, QPoint pos)
 {
     QMenu popupMenu;
 
@@ -125,13 +240,13 @@ void TetrapodPoseEditWidget::showPopupAngleDialog(QString boneName, PopupWidgetT
         pitchWidget->setItemName(tr("Pitch"));
         pitchWidget->setRange(-180, 180);
         pitchWidget->setValue(valueOfKeyInMapOrEmpty(m_parameters[boneName], "pitch").toFloat());
-        connect(pitchWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+        connect(pitchWidget, &FloatNumberWidget::valueChanged, this, [=](float value) {
             m_parameters[boneName]["pitch"] = QString::number(value);
-            updatePreview();
+            emit parametersAdjusted();
         });
         QPushButton *pitchEraser = new QPushButton(QChar(fa::eraser));
         Theme::initAwesomeMiniButton(pitchEraser);
-        connect(pitchEraser, &QPushButton::clicked, [=]() {
+        connect(pitchEraser, &QPushButton::clicked, this, [=]() {
             pitchWidget->setValue(0.0);
         });
         QHBoxLayout *pitchLayout = new QHBoxLayout;
@@ -143,13 +258,13 @@ void TetrapodPoseEditWidget::showPopupAngleDialog(QString boneName, PopupWidgetT
         yawWidget->setItemName(tr("Yaw"));
         yawWidget->setRange(-180, 180);
         yawWidget->setValue(valueOfKeyInMapOrEmpty(m_parameters[boneName], "yaw").toFloat());
-        connect(yawWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+        connect(yawWidget, &FloatNumberWidget::valueChanged, this, [=](float value) {
             m_parameters[boneName]["yaw"] = QString::number(value);
-            updatePreview();
+            emit parametersAdjusted();
         });
         QPushButton *yawEraser = new QPushButton(QChar(fa::eraser));
         Theme::initAwesomeMiniButton(yawEraser);
-        connect(yawEraser, &QPushButton::clicked, [=]() {
+        connect(yawEraser, &QPushButton::clicked, this, [=]() {
             yawWidget->setValue(0.0);
         });
         QHBoxLayout *yawLayout = new QHBoxLayout;
@@ -161,13 +276,13 @@ void TetrapodPoseEditWidget::showPopupAngleDialog(QString boneName, PopupWidgetT
         rollWidget->setItemName(tr("Roll"));
         rollWidget->setRange(-180, 180);
         rollWidget->setValue(valueOfKeyInMapOrEmpty(m_parameters[boneName], "roll").toFloat());
-        connect(rollWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+        connect(rollWidget, &FloatNumberWidget::valueChanged, this, [=](float value) {
             m_parameters[boneName]["roll"] = QString::number(value);
-            updatePreview();
+            emit parametersAdjusted();
         });
         QPushButton *rollEraser = new QPushButton(QChar(fa::eraser));
         Theme::initAwesomeMiniButton(rollEraser);
-        connect(rollEraser, &QPushButton::clicked, [=]() {
+        connect(rollEraser, &QPushButton::clicked, this, [=]() {
             rollWidget->setValue(0.0);
         });
         QHBoxLayout *rollLayout = new QHBoxLayout;
@@ -179,13 +294,13 @@ void TetrapodPoseEditWidget::showPopupAngleDialog(QString boneName, PopupWidgetT
         intersectionWidget->setItemName(tr("Intersection"));
         intersectionWidget->setRange(-180, 180);
         intersectionWidget->setValue(valueOfKeyInMapOrEmpty(m_parameters[boneName], "intersection").toFloat());
-        connect(intersectionWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+        connect(intersectionWidget, &FloatNumberWidget::valueChanged, this, [=](float value) {
             m_parameters[boneName]["intersection"] = QString::number(value);
-            updatePreview();
+            emit parametersAdjusted();
         });
         QPushButton *intersectionEraser = new QPushButton(QChar(fa::eraser));
         Theme::initAwesomeMiniButton(intersectionEraser);
-        connect(intersectionEraser, &QPushButton::clicked, [=]() {
+        connect(intersectionEraser, &QPushButton::clicked, this, [=]() {
             intersectionWidget->setValue(0.0);
         });
         QHBoxLayout *intersectionLayout = new QHBoxLayout;
@@ -201,5 +316,40 @@ void TetrapodPoseEditWidget::showPopupAngleDialog(QString boneName, PopupWidgetT
     
     popupMenu.addAction(&action);
     
+    m_openedMenuCount++;
     popupMenu.exec(mapToGlobal(pos));
+    m_openedMenuCount--;
+
+    if (m_closed)
+        close();
+}
+
+void PoseEditWidget::setEditPoseName(QString name)
+{
+    m_nameEdit->setText(name);
+    updateTitle();
+}
+
+void PoseEditWidget::setEditParameters(std::map<QString, std::map<QString, QString>> parameters)
+{
+    m_parameters = parameters;
+    updatePreview();
+}
+
+void PoseEditWidget::clearUnsaveState()
+{
+    m_unsaved = false;
+    updateTitle();
+}
+
+void PoseEditWidget::save()
+{
+    if (m_poseId.isNull()) {
+        emit addPose(m_nameEdit->text(), m_parameters);
+    } else if (m_unsaved) {
+        m_unsaved = false;
+        emit renamePose(m_poseId, m_nameEdit->text());
+        emit setPoseParameters(m_poseId, m_parameters);
+    }
+    close();
 }

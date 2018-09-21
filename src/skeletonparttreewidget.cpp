@@ -281,7 +281,7 @@ void SkeletonPartTreeWidget::showContextMenu(const QPoint &pos)
         ModelWidget *previewWidget = new ModelWidget;
         previewWidget->enableMove(false);
         previewWidget->enableZoom(false);
-        previewWidget->setFixedSize(Theme::previewImageSize, Theme::previewImageSize);
+        previewWidget->setFixedSize(Theme::partPreviewImageSize, Theme::partPreviewImageSize);
         previewWidget->setXRotation(partWidget->previewWidget()->xRot());
         previewWidget->setYRotation(partWidget->previewWidget()->yRot());
         previewWidget->setZRotation(partWidget->previewWidget()->zRot());
@@ -289,7 +289,7 @@ void SkeletonPartTreeWidget::showContextMenu(const QPoint &pos)
         layout->addWidget(previewWidget);
     } else {
         QLabel *previewLabel = new QLabel;
-        previewLabel->setFixedHeight(Theme::previewImageSize);
+        previewLabel->setFixedHeight(Theme::partPreviewImageSize);
         previewLabel->setStyleSheet("QLabel {color: " + Theme::red.name() + "}");
         if (nullptr != component) {
             previewLabel->setText(component->name);

@@ -30,12 +30,15 @@ public:
     static std::map<QString, QString> nextSideColorNameMap;
     static std::map<QString, QColor> sideColorNameToColorMap;
     static QtAwesome *awesome();
+    static QWidget *createHorizontalLineWidget();
+    static QWidget *createVerticalLineWidget();
     static int toolIconFontSize;
     static int toolIconSize;
-    static int previewImageRenderSize;
-    static int previewImageSize;
+    static int posePreviewImageSize;
+    static int partPreviewImageSize;
     static int miniIconFontSize;
     static int miniIconSize;
+    static int sidebarPreferredWidth;
 public:
     static void initAwesomeButton(QPushButton *button);
     static void initAwesomeLabel(QLabel *label);

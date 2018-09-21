@@ -47,7 +47,7 @@ public:
     static QSize preferredSize();
     ModelWidget *previewWidget();
 protected:
-    void mouseDoubleClickEvent(QMouseEvent *event);
+    void mouseDoubleClickEvent(QMouseEvent *event) override;
 public slots:
     void showDeformSettingPopup(const QPoint &pos);
     void showColorSettingPopup(const QPoint &pos);

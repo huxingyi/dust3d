@@ -1,8 +1,8 @@
 #ifndef ABOUT_WIDGET_H
 #define ABOUT_WIDGET_H
-#include <QWidget>
+#include <QDialog>
 
-class AboutWidget : public QWidget
+class AboutWidget : public QDialog
 {
     Q_OBJECT
 public:

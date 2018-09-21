@@ -20,6 +20,7 @@
 #include "skeletonbonemark.h"
 #include "riggenerator.h"
 #include "rigtype.h"
+#include "posepreviewsgenerator.h"
 
 class SkeletonNode
 {
@@ -345,6 +346,43 @@ private:
     std::set<QUuid> m_childrenIdSet;
 };
 
+class SkeletonPose
+{
+public:
+    SkeletonPose()
+    {
+    }
+    ~SkeletonPose()
+    {
+        delete m_previewMesh;
+    }
+    QUuid id;
+    QString name;
+    bool dirty = true;
+    std::map<QString, std::map<QString, QString>> parameters;
+    void updatePreviewMesh(MeshLoader *previewMesh)
+    {
+        delete m_previewMesh;
+        m_previewMesh = previewMesh;
+    }
+    MeshLoader *takePreviewMesh() const
+    {
+        if (nullptr == m_previewMesh)
+            return nullptr;
+        return new MeshLoader(*m_previewMesh);
+    }
+private:
+    Q_DISABLE_COPY(SkeletonPose);
+    MeshLoader *m_previewMesh = nullptr;
+};
+
+enum class SkeletonDocumentToSnapshotFor
+{
+    Document = 0,
+    Nodes,
+    Poses
+};
+
 class SkeletonDocument : public QObject
 {
     Q_OBJECT
@@ -406,6 +444,12 @@ signals:
     void checkEdge(QUuid edgeId);
     void optionsChanged();
     void rigTypeChanged();
+    void poseAdded(QUuid poseId);
+    void poseRemoved(QUuid);
+    void poseListChanged();
+    void poseNameChanged(QUuid poseId);
+    void poseParametersChanged(QUuid poseId);
+    void posePreviewChanged(QUuid poseId);
 public: // need initialize
     float originX;
     float originY;
@@ -428,10 +472,14 @@ public:
     std::map<QUuid, SkeletonNode> nodeMap;
     std::map<QUuid, SkeletonEdge> edgeMap;
     std::map<QUuid, SkeletonComponent> componentMap;
+    std::map<QUuid, SkeletonPose> poseMap;
+    std::vector<QUuid> poseIdList;
     SkeletonComponent rootComponent;
     QImage turnaround;
     QImage preview;
-    void toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUuid> &limitNodeIds=std::set<QUuid>()) const;
+    void toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUuid> &limitNodeIds=std::set<QUuid>(),
+        SkeletonDocumentToSnapshotFor forWhat=SkeletonDocumentToSnapshotFor::Document,
+        const std::set<QUuid> &limitPoseIds=std::set<QUuid>()) const;
     void fromSnapshot(const SkeletonSnapshot &snapshot);
     void addFromSnapshot(const SkeletonSnapshot &snapshot, bool fromPaste=true);
     const SkeletonNode *findNode(QUuid nodeId) const;
@@ -441,6 +489,7 @@ public:
     const SkeletonComponent *findComponent(QUuid componentId) const;
     const SkeletonComponent *findComponentParent(QUuid componentId) const;
     QUuid findComponentParentId(QUuid componentId) const;
+    const SkeletonPose *findPose(QUuid poseId) const;
     MeshLoader *takeResultMesh();
     MeshLoader *takeResultTextureMesh();
     MeshLoader *takeResultRigWeightMesh();
@@ -448,7 +497,8 @@ public:
     const std::map<int, AutoRiggerVertexWeights> *resultRigWeights() const;
     void updateTurnaround(const QImage &image);
     void setSharedContextWidget(QOpenGLWidget *sharedContextWidget);
-    bool hasPastableContentInClipboard() const;
+    bool hasPastableNodesInClipboard() const;
+    bool hasPastablePosesInClipboard() const;
     bool undoable() const;
     bool redoable() const;
     bool isNodeEditable(QUuid nodeId) const;
@@ -489,6 +539,8 @@ public slots:
     void ambientOcclusionTextureReady();
     void generateRig();
     void rigReady();
+    void generatePosePreviews();
+    void posePreviewsReady();
     void setPartLockState(QUuid partId, bool locked);
     void setPartVisibleState(QUuid partId, bool visible);
     void setPartSubdivState(QUuid partId, bool subdived);
@@ -543,6 +595,10 @@ public slots:
     void disableAllPositionRelatedLocks();
     void toggleSmoothNormal();
     void setRigType(RigType toRigType);
+    void addPose(QString name, std::map<QString, std::map<QString, QString>> parameters);
+    void removePose(QUuid poseId);
+    void setPoseParameters(QUuid poseId, std::map<QString, std::map<QString, QString>> parameters);
+    void renamePose(QUuid poseId, QString name);
 private:
     void splitPartByNode(std::vector<std::vector<QUuid>> *groups, QUuid nodeId);
     void joinNodeAndNeiborsToGroup(std::vector<QUuid> *group, QUuid nodeId, std::set<QUuid> *visitMap, QUuid noUseEdgeId=QUuid());
@@ -583,6 +639,7 @@ private: // need initialize
     std::map<int, AutoRiggerVertexWeights> *m_resultRigWeights;
     bool m_isRigObsolete;
     MeshResultContext *m_riggedResultContext;
+    PosePreviewsGenerator *m_posePreviewsGenerator;
 private:
     static unsigned long m_maxSnapshot;
     std::deque<SkeletonHistoryItem> m_undoItems;

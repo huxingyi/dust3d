@@ -12,6 +12,7 @@
 #include <QCloseEvent>
 #include <QKeyEvent>
 #include "version.h"
+#include "dust3dutil.h"
 
 LogBrowserDialog::LogBrowserDialog(QWidget *parent) :
     QDialog(parent)
@@ -40,7 +41,7 @@ LogBrowserDialog::LogBrowserDialog(QWidget *parent) :
 
     resize(400, 300);
     
-    setWindowTitle(tr("Debug") + tr(" - ") + APP_NAME);
+    setWindowTitle(unifiedWindowTitle(tr("Debug")));
     
     hide();
 }
