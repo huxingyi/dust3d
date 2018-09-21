@@ -237,7 +237,7 @@ void PoseListWidget::reload()
     decltype(m_document->poseIdList.size()) poseIndex = 0;
     while (poseIndex < m_document->poseIdList.size()) {
         QTreeWidgetItem *item = new QTreeWidgetItem(this);
-        item->setFlags((item->flags() | Qt::ItemIsEditable | Qt::ItemIsEnabled) & ~(Qt::ItemIsSelectable));
+        item->setFlags((item->flags() | Qt::ItemIsEnabled) & ~(Qt::ItemIsSelectable) & ~(Qt::ItemIsEditable));
         for (int col = 0; col < columns && poseIndex < m_document->poseIdList.size(); col++, poseIndex++) {
             const auto &poseId = m_document->poseIdList[poseIndex];
             item->setSizeHint(col, QSize(columnWidth, PoseWidget::preferredHeight() + 2));

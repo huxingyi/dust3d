@@ -347,9 +347,9 @@ void PoseEditWidget::save()
     if (m_poseId.isNull()) {
         emit addPose(m_nameEdit->text(), m_parameters);
     } else if (m_unsaved) {
-        m_unsaved = false;
         emit renamePose(m_poseId, m_nameEdit->text());
         emit setPoseParameters(m_poseId, m_parameters);
     }
+    m_unsaved = false;
     close();
 }

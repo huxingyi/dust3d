@@ -134,6 +134,7 @@ private:
     QAction *m_showPartsListAction;
     QAction *m_showDebugDialogAction;
     QAction *m_showRigAction;
+    QAction *m_showPosesAction;
     
     QMenu *m_helpMenu;
     QAction *m_viewSourceAction;

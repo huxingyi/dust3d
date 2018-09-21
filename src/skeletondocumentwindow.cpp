@@ -516,6 +516,13 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     });
     m_windowMenu->addAction(m_showRigAction);
     
+    m_showPosesAction = new QAction(tr("Poses"), this);
+    connect(m_showPosesAction, &QAction::triggered, [=]() {
+        poseDocker->show();
+        poseDocker->raise();
+    });
+    m_windowMenu->addAction(m_showPosesAction);
+    
     QMenu *dialogsMenu = m_windowMenu->addMenu(tr("Dialogs"));
     connect(dialogsMenu, &QMenu::aboutToShow, [=]() {
         dialogsMenu->clear();
