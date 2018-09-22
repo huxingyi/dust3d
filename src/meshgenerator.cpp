@@ -1,6 +1,7 @@
 #include <vector>
 #include <QGuiApplication>
 #include <QElapsedTimer>
+#include <unordered_set>
 #include "meshgenerator.h"
 #include "dust3dutil.h"
 #include "skeletondocument.h"
@@ -9,6 +10,7 @@
 #include "theme.h"
 #include "positionmap.h"
 #include "meshquadify.h"
+#include "meshweldseam.h"
 
 bool MeshGenerator::m_enableDebug = false;
 PositionMap<int> *MeshGenerator::m_forMakePositionKey = new PositionMap<int>;
@@ -31,12 +33,12 @@ void GeneratedCacheContext::updateComponentCombinableMesh(QString componentId, v
 MeshGenerator::MeshGenerator(SkeletonSnapshot *snapshot, QThread *thread) :
     m_snapshot(snapshot),
     m_mesh(nullptr),
-    //m_preview(nullptr),
     m_thread(thread),
     m_meshResultContext(nullptr),
     m_sharedContextWidget(nullptr),
     m_cacheContext(nullptr),
-    m_smoothNormal(true)
+    m_smoothNormal(true),
+    m_weldEnabled(true)
 {
 }
 
@@ -53,6 +55,11 @@ MeshGenerator::~MeshGenerator()
 void MeshGenerator::setSmoothNormal(bool smoothNormal)
 {
     m_smoothNormal = smoothNormal;
+}
+
+void MeshGenerator::setWeldEnabled(bool weldEnabled)
+{
+    m_weldEnabled = weldEnabled;
 }
 
 void MeshGenerator::setGeneratedCacheContext(GeneratedCacheContext *cacheContext)
@@ -474,10 +481,8 @@ void *MeshGenerator::combineComponentMesh(QString componentId, bool *inverse)
                 continue;
             bool childInverse = false;
             void *childCombinedMesh = combineComponentMesh(childId, &childInverse);
-            if (smoothSeam) {
-                for (const auto &positionIt: m_cacheContext->componentPositions[childId]) {
-                    positionsBeforeCombination.addPosition(positionIt.x(), positionIt.y(), positionIt.z(), true);
-                }
+            for (const auto &positionIt: m_cacheContext->componentPositions[childId]) {
+                positionsBeforeCombination.addPosition(positionIt.x(), positionIt.y(), positionIt.z(), true);
             }
             for (const auto &verticesSourceIt: m_cacheContext->componentVerticesSources[childId].map()) {
                 verticesSources.map()[verticesSourceIt.first] = verticesSourceIt.second;
@@ -502,33 +507,55 @@ void *MeshGenerator::combineComponentMesh(QString componentId, bool *inverse)
     }
     
     if (nullptr != resultMesh) {
-        if (smoothSeam || smoothAll) {
-            int meshIdForSmooth = convertFromCombinableMesh(m_meshliteContext, resultMesh);
-            std::vector<QVector3D> positionsBeforeSmooth;
-            loadMeshVerticesPositions(m_meshliteContext, meshIdForSmooth, positionsBeforeSmooth);
+        int meshIdForSmooth = convertFromCombinableMesh(m_meshliteContext, resultMesh);
+        std::vector<QVector3D> positionsBeforeSmooth;
+        loadMeshVerticesPositions(m_meshliteContext, meshIdForSmooth, positionsBeforeSmooth);
+        
+        if (!positionsBeforeSmooth.empty()) {
+            std::vector<int> seamVerticesIds;
+            std::unordered_set<int> seamVerticesIndicies;
             
-            if (!positionsBeforeSmooth.empty()) {
-
-                if (smoothSeam) {
-                    int *seamVerticesIndicies = new int[positionsBeforeSmooth.size()];
-                    int seamVerticesNum = 0;
-                    for (size_t vertexIndex = 0; vertexIndex < positionsBeforeSmooth.size(); vertexIndex++) {
-                        const auto &oldPosition = positionsBeforeSmooth[vertexIndex];
-                        if (!positionsBeforeCombination.findPosition(oldPosition.x(), oldPosition.y(), oldPosition.z())) {
-                            seamVerticesIndicies[seamVerticesNum++] = vertexIndex + 1;
+            if (!positionsBeforeCombination.map().empty()) {
+                for (size_t vertexIndex = 0; vertexIndex < positionsBeforeSmooth.size(); vertexIndex++) {
+                    const auto &oldPosition = positionsBeforeSmooth[vertexIndex];
+                    if (!positionsBeforeCombination.findPosition(oldPosition.x(), oldPosition.y(), oldPosition.z())) {
+                        seamVerticesIds.push_back(vertexIndex + 1);
+                        seamVerticesIndicies.insert(vertexIndex);
+                    }
+                }
+            }
+            
+            bool meshChanged = false;
+            if (m_weldEnabled) {
+                if (!seamVerticesIndicies.empty()) {
+                    int weldedMeshId = meshWeldSeam(m_meshliteContext, meshIdForSmooth, 0.025, seamVerticesIndicies);
+                    {
+                        void *testCombinableMesh = convertToCombinableMesh(m_meshliteContext, weldedMeshId);
+                        if (nullptr != testCombinableMesh) {
+                            deleteCombinableMesh(testCombinableMesh);
+                            meshIdForSmooth = weldedMeshId;
+                            meshChanged = true;
+                        } else {
+                            qDebug() << "Weld seam failed, fall back";
                         }
                     }
-                    if (seamVerticesNum > 0) {
-                        //qDebug() << "smoothSeamFactor:" << smoothSeamFactor << "seamVerticesIndicies.size():" << seamVerticesNum;
-                        meshlite_smooth_vertices(m_meshliteContext, meshIdForSmooth, smoothSeamFactor, seamVerticesIndicies, seamVerticesNum);
-                    }
-                    delete[] seamVerticesIndicies;
                 }
-                
-                if (smoothAll) {
-                    meshlite_smooth(m_meshliteContext, meshIdForSmooth, smoothAllFactor);
+            }
+        
+            if (smoothSeam) {
+                if (!seamVerticesIds.empty()) {
+                    //qDebug() << "smoothSeamFactor:" << smoothSeamFactor << "seamVerticesIndicies.size():" << seamVerticesNum;
+                    meshlite_smooth_vertices(m_meshliteContext, meshIdForSmooth, smoothSeamFactor, seamVerticesIds.data(), seamVerticesIds.size());
+                    meshChanged = true;
                 }
-                
+            }
+            
+            if (smoothAll) {
+                meshlite_smooth(m_meshliteContext, meshIdForSmooth, smoothAllFactor);
+                meshChanged = true;
+            }
+            
+            if (meshChanged) {
                 std::vector<QVector3D> positionsAfterSmooth;
                 loadMeshVerticesPositions(m_meshliteContext, meshIdForSmooth, positionsAfterSmooth);
                 Q_ASSERT(positionsBeforeSmooth.size() == positionsAfterSmooth.size());
@@ -543,7 +570,6 @@ void *MeshGenerator::combineComponentMesh(QString componentId, bool *inverse)
                         verticesSources.addPosition(smoothedPosition.x(), smoothedPosition.y(), smoothedPosition.z(), source);
                     }
                 }
-                
                 deleteCombinableMesh(resultMesh);
                 resultMesh = convertToCombinableMesh(m_meshliteContext, meshIdForSmooth);
             }
@@ -655,12 +681,6 @@ void MeshGenerator::process()
             bmeshNodes.second.begin(), bmeshNodes.second.end());
     }
     
-    //if (resultMeshId > 0) {
-    //    resultMeshId = meshlite_combine_coplanar_faces(m_meshliteContext, resultMeshId);
-    //    if (resultMeshId > 0)
-    //        resultMeshId = meshlite_fix_hole(m_meshliteContext, resultMeshId);
-    //}
-    
     int triangulatedFinalMeshId = resultMeshId;
     if (triangulatedFinalMeshId > 0) {
         std::set<std::pair<PositionMapKey, PositionMapKey>> sharedQuadEdges;
@@ -676,8 +696,6 @@ void MeshGenerator::process()
     }
     
     if (resultMeshId > 0) {
-        //int triangulatedFinalMeshId = meshlite_triangulate(m_meshliteContext, resultMeshId);
-        //triangulatedFinalMeshId = resultMeshId;
         loadGeneratedPositionsToMeshResultContext(m_meshliteContext, triangulatedFinalMeshId);
         m_mesh = new MeshLoader(m_meshliteContext, resultMeshId, triangulatedFinalMeshId, Theme::white, &m_meshResultContext->triangleColors(), m_smoothNormal);
     }

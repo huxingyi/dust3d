@@ -1,5 +1,6 @@
 #include <QDebug>
 #include <unordered_set>
+#include <vector>
 #include "meshquadify.h"
 #include "meshlite.h"
 
@@ -11,12 +12,12 @@ int meshQuadify(void *meshlite, int meshId, const std::set<std::pair<PositionMap
     int vertexArrayLen = meshlite_get_vertex_position_array(meshlite, meshId, vertexPositions, vertexCount * 3);
     int offset = 0;
     Q_ASSERT(vertexArrayLen == vertexCount * 3);
-    std::map<int, PositionMapKey> positionKeyMap;
+    std::vector<PositionMapKey> positionKeyMap;
     for (int i = 0; i < vertexCount; i++) {
         float x = vertexPositions[offset + 0];
         float y = vertexPositions[offset + 1];
         float z = vertexPositions[offset + 2];
-        positionKeyMap[i] = positionMapForMakeKey->makeKey(x, y, z);
+        positionKeyMap.push_back(positionMapForMakeKey->makeKey(x, y, z));
         offset += 3;
     }
     int faceCount = meshlite_get_face_count(meshlite, meshId);

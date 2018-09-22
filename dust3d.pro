@@ -194,6 +194,12 @@ HEADERS += src/posepreviewsgenerator.h
 SOURCES += src/posewidget.cpp
 HEADERS += src/posewidget.h
 
+SOURCES += src/meshweldseam.cpp
+HEADERS += src/meshweldseam.h
+
+SOURCES += src/advancesettingwidget.cpp
+HEADERS += src/advancesettingwidget.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h

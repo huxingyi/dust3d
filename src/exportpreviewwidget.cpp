@@ -120,6 +120,9 @@ void ExportPreviewWidget::showEvent(QShowEvent *event)
 {
     QWidget::showEvent(event);
     checkSpinner();
+    if (m_document->isPostProcessResultObsolete()) {
+        m_document->postProcess();
+    }
 }
 
 void ExportPreviewWidget::checkSpinner()

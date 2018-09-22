@@ -36,6 +36,7 @@ public:
     void addPartPreviewRequirement(const QUuid &partId);
     void setGeneratedCacheContext(GeneratedCacheContext *cacheContext);
     void setSmoothNormal(bool smoothNormal);
+    void setWeldEnabled(bool weldEnabled);
     MeshLoader *takeResultMesh();
     MeshLoader *takePartPreviewMesh(const QUuid &partId);
     const std::set<QUuid> &requirePreviewPartIds();
@@ -57,6 +58,7 @@ private:
     void *m_meshliteContext;
     GeneratedCacheContext *m_cacheContext;
     bool m_smoothNormal;
+    bool m_weldEnabled;
     float m_mainProfileMiddleX;
     float m_sideProfileMiddleX;
     float m_mainProfileMiddleY;

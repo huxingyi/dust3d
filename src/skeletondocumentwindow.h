@@ -13,6 +13,7 @@
 #include "rigwidget.h"
 #include "skeletonbonemark.h"
 #include "posemanagewidget.h"
+#include "advancesettingwidget.h"
 
 class SkeletonGraphicsWidget;
 
@@ -59,6 +60,7 @@ public slots:
     void updateRigWeightRenderWidget();
     void registerDialog(QWidget *widget);
     void unregisterDialog(QWidget *widget);
+    void showAdvanceSetting();
 private:
     void initLockButton(QPushButton *button);
     void setCurrentFilename(const QString &filename);
@@ -68,6 +70,7 @@ private:
     bool m_firstShow;
     bool m_documentSaved;
     ExportPreviewWidget *m_exportPreviewWidget;
+    AdvanceSettingWidget *m_advanceSettingWidget;
     std::vector<QWidget *> m_dialogs;
 private:
     QString m_currentFilename;
@@ -75,7 +78,6 @@ private:
     ModelWidget *m_modelRenderWidget;
     SkeletonGraphicsWidget *m_graphicsWidget;
     RigWidget *m_rigWidget;
-    PoseManageWidget *m_poseManageWidget;
     
     QMenu *m_fileMenu;
     QAction *m_newWindowAction;
@@ -135,6 +137,7 @@ private:
     QAction *m_showDebugDialogAction;
     QAction *m_showRigAction;
     QAction *m_showPosesAction;
+    QAction *m_showAdvanceSettingAction;
     
     QMenu *m_helpMenu;
     QAction *m_viewSourceAction;

@@ -28,6 +28,7 @@ SkeletonDocument::SkeletonDocument() :
     textureAmbientOcclusionImage(nullptr),
     textureColorImage(nullptr),
     rigType(RigType::None),
+    weldEnabled(false),
     // private
     m_isResultMeshObsolete(false),
     m_meshGenerator(nullptr),
@@ -1213,6 +1214,12 @@ void SkeletonDocument::toggleSmoothNormal()
     regenerateMesh();
 }
 
+void SkeletonDocument::enableWeld(bool enabled)
+{
+    weldEnabled = enabled;
+    regenerateMesh();
+}
+
 void SkeletonDocument::generateMesh()
 {
     if (nullptr != m_meshGenerator || m_batchChangeRefCount > 0) {
@@ -1233,6 +1240,7 @@ void SkeletonDocument::generateMesh()
     resetDirtyFlags();
     m_meshGenerator = new MeshGenerator(snapshot, thread);
     m_meshGenerator->setSmoothNormal(m_smoothNormal);
+    m_meshGenerator->setWeldEnabled(weldEnabled);
     m_meshGenerator->setGeneratedCacheContext(&m_generatedCacheContext);
     if (nullptr != m_sharedContextWidget)
         m_meshGenerator->setSharedContextWidget(m_sharedContextWidget);

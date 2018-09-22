@@ -465,6 +465,7 @@ public: // need initialize
     QImage *textureAmbientOcclusionImage;
     QImage *textureColorImage;
     RigType rigType;
+    bool weldEnabled;
 public:
     SkeletonDocument();
     ~SkeletonDocument();
@@ -594,6 +595,7 @@ public slots:
     void enableAllPositionRelatedLocks();
     void disableAllPositionRelatedLocks();
     void toggleSmoothNormal();
+    void enableWeld(bool enabled);
     void setRigType(RigType toRigType);
     void addPose(QString name, std::map<QString, std::map<QString, QString>> parameters);
     void removePose(QUuid poseId);

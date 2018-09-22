@@ -97,7 +97,8 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     m_document(nullptr),
     m_firstShow(true),
     m_documentSaved(true),
-    m_exportPreviewWidget(nullptr)
+    m_exportPreviewWidget(nullptr),
+    m_advanceSettingWidget(nullptr)
 {
     if (!g_logBrowser) {
         g_logBrowser = new LogBrowser;
@@ -543,6 +544,12 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     m_showDebugDialogAction = new QAction(tr("Debug"), this);
     connect(m_showDebugDialogAction, &QAction::triggered, g_logBrowser, &LogBrowser::showDialog);
     m_windowMenu->addAction(m_showDebugDialogAction);
+    
+    m_showAdvanceSettingAction = new QAction(tr("Advance"), this);
+    connect(m_showAdvanceSettingAction, &QAction::triggered, this, &SkeletonDocumentWindow::showAdvanceSetting);
+#ifndef NDEBUG
+    m_windowMenu->addAction(m_showAdvanceSettingAction);
+#endif
 
     m_helpMenu = menuBar()->addMenu(tr("Help"));
 
@@ -1061,6 +1068,15 @@ void SkeletonDocumentWindow::open()
     setCurrentFilename(filename);
 }
 
+void SkeletonDocumentWindow::showAdvanceSetting()
+{
+    if (nullptr == m_advanceSettingWidget) {
+        m_advanceSettingWidget = new AdvanceSettingWidget(m_document, this);
+    }
+    m_advanceSettingWidget->show();
+    m_advanceSettingWidget->raise();
+}
+
 void SkeletonDocumentWindow::exportObjResult()
 {
     QString filename = QFileDialog::getSaveFileName(this, QString(), QString(),
@@ -1097,10 +1113,8 @@ void SkeletonDocumentWindow::showExportPreview()
         connect(m_document, &SkeletonDocument::resultBakedTextureChanged, m_exportPreviewWidget, &ExportPreviewWidget::updateTexturePreview);
         registerDialog(m_exportPreviewWidget);
     }
-    if (m_document->isPostProcessResultObsolete()) {
-        m_document->postProcess();
-    }
     m_exportPreviewWidget->show();
+    m_exportPreviewWidget->raise();
 }
 
 void SkeletonDocumentWindow::exportGltfResult()
