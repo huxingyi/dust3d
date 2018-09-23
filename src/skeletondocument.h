@@ -160,6 +160,7 @@ public:
         hasColor = other.hasColor;
         wrapped = other.wrapped;
         componentId = other.componentId;
+        dirty = other.dirty;
     }
     void updatePreviewMesh(MeshLoader *previewMesh)
     {

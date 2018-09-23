@@ -273,6 +273,9 @@ QUuid SkeletonDocument::createNode(float x, float y, float z, float radius, QUui
         partId = fromNode->partId;
         if (isPartReadonly(partId))
             return QUuid();
+        auto part = partMap.find(partId);
+        if (part != partMap.end())
+            part->second.dirty = true;
     }
     SkeletonNode node;
     node.partId = partId;
