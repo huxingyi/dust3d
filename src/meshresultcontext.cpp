@@ -31,7 +31,8 @@ MeshResultContext::MeshResultContext() :
     m_bmeshNodeMapResolved(false),
     m_resultPartsResolved(false),
     m_resultTriangleUvsResolved(false),
-    m_resultRearrangedVerticesResolved(false)
+    m_resultRearrangedVerticesResolved(false),
+    m_vertexNormalsInterpolated(false)
 {
 }
 
@@ -334,7 +335,7 @@ void MeshResultContext::calculateResultParts(std::map<QUuid, ResultPart> &parts)
             bool isSeamVertex = m_seamVertices.end() != m_seamVertices.find(triangle.indicies[i]);
             if (isNewVertex || isSeamVertex) {
                 int newIndex = resultPart.vertices.size();
-                resultPart.interpolatedVertexNormals.push_back(newTriangle.normal);
+                resultPart.interpolatedVertexNormals.push_back(interpolatedVertexNormals()[triangle.indicies[i]]);
                 resultPart.verticesOldIndicies.push_back(triangle.indicies[i]);
                 resultPart.vertices.push_back(vertices[triangle.indicies[i]]);
                 ResultVertexUv vertexUv;
@@ -346,16 +347,10 @@ void MeshResultContext::calculateResultParts(std::map<QUuid, ResultPart> &parts)
                 newTriangle.indicies[i] = newIndex;
             } else {
                 newTriangle.indicies[i] = it->second;
-                resultPart.interpolatedVertexNormals[it->second] += newTriangle.normal;
             }
         }
         resultPart.triangles.push_back(newTriangle);
         resultPart.uvs.push_back(triangleUvs()[x]);
-    }
-    for (auto &partIt: parts) {
-        for (auto &normalIt: partIt.second.interpolatedVertexNormals) {
-            normalIt.normalize();
-        }
     }
 }
 
@@ -538,4 +533,25 @@ void MeshResultContext::calculateResultRearrangedVertices(std::vector<ResultRear
         }
         rearrangedTriangles.push_back(newTriangle);
     }
+}
+
+void MeshResultContext::interpolateVertexNormals(std::vector<QVector3D> &resultNormals)
+{
+    resultNormals.resize(vertices.size());
+    for (size_t triangleIndex = 0; triangleIndex < triangles.size(); triangleIndex++) {
+        const auto &sourceTriangle = triangles[triangleIndex];
+        for (int i = 0; i < 3; i++)
+            resultNormals[sourceTriangle.indicies[i]] += sourceTriangle.normal;
+    }
+    for (auto &item: resultNormals)
+        item.normalize();
+}
+
+const std::vector<QVector3D> &MeshResultContext::interpolatedVertexNormals()
+{
+    if (!m_vertexNormalsInterpolated) {
+        m_vertexNormalsInterpolated = true;
+        interpolateVertexNormals(m_interpolatedVertexNormals);
+    }
+    return m_interpolatedVertexNormals;
 }

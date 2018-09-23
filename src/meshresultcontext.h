@@ -91,6 +91,7 @@ public:
     const std::vector<ResultRearrangedVertex> &rearrangedVertices();
     const std::vector<ResultRearrangedTriangle> &rearrangedTriangles();
     const std::map<int, std::pair<QUuid, QUuid>> &vertexSourceMap();
+    const std::vector<QVector3D> &interpolatedVertexNormals();
 private:
     bool m_triangleSourceResolved;
     bool m_triangleColorResolved;
@@ -99,6 +100,7 @@ private:
     bool m_resultPartsResolved;
     bool m_resultTriangleUvsResolved;
     bool m_resultRearrangedVerticesResolved;
+    bool m_vertexNormalsInterpolated;
 private:
     std::vector<std::pair<QUuid, QUuid>> m_triangleSourceNodes;
     std::vector<QColor> m_triangleColors;
@@ -111,6 +113,7 @@ private:
     std::vector<ResultRearrangedTriangle> m_rearrangedTriangles;
     std::map<int, std::pair<QUuid, QUuid>> m_vertexSourceMap;
     std::map<int, int> m_rearrangedVerticesToOldIndexMap;
+    std::vector<QVector3D> m_interpolatedVertexNormals;
 private:
     void calculateTriangleSourceNodes(std::vector<std::pair<QUuid, QUuid>> &triangleSourceNodes, std::map<int, std::pair<QUuid, QUuid>> &vertexSourceMap);
     void calculateRemainingVertexSourceNodesAfterTriangleSourceNodesSolved(std::map<int, std::pair<QUuid, QUuid>> &vertexSourceMap);
@@ -120,6 +123,7 @@ private:
     void calculateResultParts(std::map<QUuid, ResultPart> &parts);
     void calculateResultTriangleUvs(std::vector<ResultTriangleUv> &uvs, std::set<int> &seamVertices);
     void calculateResultRearrangedVertices(std::vector<ResultRearrangedVertex> &rearrangedVertices, std::vector<ResultRearrangedTriangle> &rearrangedTriangles);
+    void interpolateVertexNormals(std::vector<QVector3D> &resultNormals);
 };
 
 #endif
