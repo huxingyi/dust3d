@@ -388,14 +388,14 @@ QMAKE_CXXFLAGS += -std=c++11
 win32 {
     LIBS += -luser32
 	LIBS += -lopengl32
-	
+
 	isEmpty(BOOST_INCLUDEDIR) {
 		BOOST_INCLUDEDIR = $$(BOOST_INCLUDEDIR)
 	}
 	isEmpty(CGAL_DIR) {
 		CGAL_DIR = $$(CGAL_DIR)
 	}
-	
+
 	isEmpty(BOOST_INCLUDEDIR) {
 		error("No BOOST_INCLUDEDIR define found in enviroment variables")
 	}
@@ -409,7 +409,7 @@ win32 {
 	} else {
 		MESHLITE_DIR = thirdparty/meshlite/meshlite_unstable_vc14_x86
 	}
-	MESHLITE_LIBNAME = meshlite.dll
+	MESHLITE_LIBNAME = meshlite_ffi.dll
 	GMP_LIBNAME = libgmp-10
 	MPFR_LIBNAME = libmpfr-4
 	CGAL_LIBNAME = CGAL-vc140-mt-4.11.1
@@ -424,7 +424,7 @@ win32 {
 
 macx {
 	MESHLITE_DIR = thirdparty/meshlite
-	MESHLITE_LIBNAME = meshlite
+	MESHLITE_LIBNAME = meshlite_ffi
 	GMP_LIBNAME = gmp
 	MPFR_LIBNAME = mpfr
 	CGAL_LIBNAME = cgal
@@ -440,14 +440,14 @@ macx {
 	exists(/usr/local/opt/opencv) {
 		INCLUDEPATH += /usr/local/opt/opencv/include
 		LIBS += -L/usr/local/opt/opencv/lib -lopencv_core -lopencv_videoio -lopencv_imgproc
-	
+
 		DEFINES += "USE_OPENCV=1"
 	}
 }
 
 unix:!macx {
 	MESHLITE_DIR = thirdparty/meshlite
-	MESHLITE_LIBNAME = meshlite
+	MESHLITE_LIBNAME = meshlite_ffi
 	GMP_LIBNAME = gmp
 	MPFR_LIBNAME = mpfr
 	CGAL_LIBNAME = CGAL

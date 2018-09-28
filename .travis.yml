@@ -62,12 +62,12 @@ install:
 script:
   # Build Meshlite
   - git clone https://github.com/huxingyi/meshlite.git || travis_terminate 1
-  - cd meshlite
+  - cd meshlite/ffi
   - cargo build --release
-  - cd ../
-  - cp meshlite/include/meshlite.h thirdparty/meshlite/meshlite.h || travis_terminate 1
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cp meshlite/target/release/libmeshlite.dylib thirdparty/meshlite/libmeshlite.dylib || travis_terminate 1; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cp meshlite/target/release/libmeshlite.so thirdparty/meshlite/libmeshlite.so || travis_terminate 1; fi
+  - cd ../../
+  - cp meshlite/ffi/include/meshlite.h thirdparty/meshlite/meshlite.h || travis_terminate 1
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cp meshlite/ffi/target/release/libmeshlite_ffi.dylib thirdparty/meshlite/libmeshlite_ffi.dylib || travis_terminate 1; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cp meshlite/ffi/target/release/libmeshlite_ffi.so thirdparty/meshlite/libmeshlite_ffi.so || travis_terminate 1; fi
 
   # Build Dust3D
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then qmake -config release || travis_terminate 1; fi

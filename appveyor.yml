@@ -6,15 +6,15 @@ environment:
     #  target: x86_64-pc-windows-msvc
     #  qtdir: C:\Qt\5.10.1\msvc2015_64
     #  sysdirname: SysWOW64
-      
+
     - platform: x86
       target: i686-pc-windows-msvc
       qtdir: C:\Qt\5.10.1\msvc2015
       sysdirname: system32
-      
+
 cache:
   CGAL-4.11.1-Setup.exe -> appveyor.yml
-      
+
 install:
   - if "%PLATFORM%" == "x86"
     call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86
@@ -34,19 +34,19 @@ install:
     cmake -G "Visual Studio 14 2015 Win64" ../ -DBOOST_INCLUDEDIR=C:\Libraries\boost_1_66_0
   - msbuild /p:Configuration=Release ALL_BUILD.vcxproj
   - cd %APPVEYOR_BUILD_FOLDER%
-    
+
 build: false
 
 test_script:
   - set PATH=%PATH%;%QTDIR%\bin
   - qmake "BOOST_INCLUDEDIR=C:\Libraries\boost_1_66_0" "CGAL_DIR=%APPVEYOR_BUILD_FOLDER%\CGAL-4.11.1"
   - nmake -f Makefile.Release
-    
+
 after_test:
   # Check deps by Dependency Walker
   # Check Qt plugins by following https://wiki.qt.io/Deploy_an_Application_on_Windows
   - 7z a dust3d_unstable_%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\release\dust3d.exe
-  - 7z a dust3d_unstable_%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\thirdparty\meshlite\meshlite_unstable_vc14_%PLATFORM%\meshlite.dll
+  - 7z a dust3d_unstable_%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\thirdparty\meshlite\meshlite_unstable_vc14_%PLATFORM%\meshlite_ffi.dll
   - 7z a dust3d_unstable_%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-4.11.1\build\bin\Release\CGAL-vc140-mt-4.11.1.dll
   - 7z a dust3d_unstable_%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-4.11.1\auxiliary\gmp\lib\libgmp-10.dll
   - 7z a dust3d_unstable_%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-4.11.1\auxiliary\gmp\lib\libmpfr-4.dll
@@ -59,11 +59,11 @@ after_test:
   - mkdir platforms
   - copy %QTDIR%\plugins\platforms\qwindows.dll %APPVEYOR_BUILD_FOLDER%\platforms\qwindows.dll
   - 7z a dust3d_unstable_%PLATFORM%.zip -r %APPVEYOR_BUILD_FOLDER%\platforms\
-    
+
 artifacts:
   - path: '*.zip'
     name: platform_zips
-    
+
 deploy:
   release: unstable
   description: 'Unstable release for test purpose only. The source code is attached when this release first created, and it is not get updated while the binary been replaced.'

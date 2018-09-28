@@ -42,10 +42,10 @@ Here is the snapshot of the command line of one build, you may use different def
 
     $ cd /Users/jeremy/Desktop
     $ git clone https://github.com/huxingyi/meshlite.git
-    $ cd meshlite
+    $ cd meshlite/ffi
     $ cargo build --release
     $ cp include/meshlite.h /Users/jeremy/Repositories/dust3d/thirdparty/meshlite/meshlite.h
-    $ cp target/release/libmeshlite.dylib /Users/jeremy/Repositories/dust3d/thirdparty/meshlite/libmeshlite.dylib
+    $ cp target/release/libmeshlite_ffi.dylib /Users/jeremy/Repositories/dust3d/thirdparty/meshlite/libmeshlite_ffi.dylib
 
     $ cd /Users/jeremy/Repositories/dust3d
     $ qmake -spec macx-xcode
@@ -83,10 +83,10 @@ Here is the snapshot of the command line of one build, you may use different def
     ;Compile the internal dependency
     $ cd ~/Desktop
     $ git clone https://github.com/huxingyi/meshlite.git
-    $ cd meshlite
+    $ cd meshlite/ffi
     $ cargo build --release
-    $ cp ~/Desktop/meshlite/include/meshlite.h ~/Documents/dust3d/thirdparty/meshlite/meshlite.h
-    $ cp ~/Desktop/meshlite/target/release/libmeshlite.so ~/Documents/dust3d/thirdparty/meshlite/libmeshlite.so
+    $ cp ~/Desktop/meshlite/ffi/include/meshlite.h ~/Documents/dust3d/thirdparty/meshlite/meshlite.h
+    $ cp ~/Desktop/meshlite/ffi/target/release/libmeshlite_ffi.so ~/Documents/dust3d/thirdparty/meshlite/libmeshlite_ffi.so
 
     ;Compile Dust3D
     $ cd ~/Documents/dust3d
