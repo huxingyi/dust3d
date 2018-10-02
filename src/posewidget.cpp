@@ -35,6 +35,20 @@ PoseWidget::PoseWidget(const SkeletonDocument *document, QUuid poseId) :
     connect(document, &SkeletonDocument::posePreviewChanged, this, &PoseWidget::updatePreview);
 }
 
+void PoseWidget::setCornerButtonVisible(bool visible)
+{
+    if (nullptr == m_cornerButton) {
+        m_cornerButton = new QPushButton(this);
+        m_cornerButton->move(Theme::posePreviewImageSize - Theme::miniIconSize - 2, 2);
+        Theme::initAwesomeMiniButton(m_cornerButton);
+        m_cornerButton->setText(QChar(fa::plussquare));
+        connect(m_cornerButton, &QPushButton::clicked, this, [=]() {
+            emit cornerButtonClicked(m_poseId);
+        });
+    }
+    m_cornerButton->setVisible(visible);
+}
+
 void PoseWidget::resizeEvent(QResizeEvent *event)
 {
     QWidget::resizeEvent(event);

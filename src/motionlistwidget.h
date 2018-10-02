@@ -1,30 +1,27 @@
-#ifndef POSE_LIST_WIDGET_H
-#define POSE_LIST_WIDGET_H
+#ifndef MOTION_LIST_WIDGET_H
+#define MOTION_LIST_WIDGET_H
 #include <QTreeWidget>
 #include <map>
 #include "skeletondocument.h"
-#include "posewidget.h"
+#include "motionwidget.h"
 #include "skeletongraphicswidget.h"
 
-class PoseListWidget : public QTreeWidget, public SkeletonGraphicsFunctions
+class MotionListWidget : public QTreeWidget, public SkeletonGraphicsFunctions
 {
     Q_OBJECT
 signals:
-    void removePose(QUuid poseId);
-    void modifyPose(QUuid poseId);
-    void cornerButtonClicked(QUuid poseId);
+    void removeMotion(QUuid motionId);
+    void modifyMotion(QUuid motionId);
 public:
-    PoseListWidget(const SkeletonDocument *document, QWidget *parent=nullptr);
-    bool isPoseSelected(QUuid poseId);
+    MotionListWidget(const SkeletonDocument *document, QWidget *parent=nullptr);
+    bool isMotionSelected(QUuid motionId);
 public slots:
     void reload();
     void removeAllContent();
-    void poseRemoved(QUuid poseId);
+    void motionRemoved(QUuid motionId);
     void showContextMenu(const QPoint &pos);
-    void selectPose(QUuid poseId, bool multiple=false);
+    void selectMotion(QUuid motionId, bool multiple=false);
     void copy();
-    void setCornerButtonVisible(bool visible);
-    void setHasContextMenu(bool hasContextMenu);
 protected:
     void resizeEvent(QResizeEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
@@ -36,14 +33,12 @@ protected:
     bool keyPress(QKeyEvent *event) override;
 private:
     int calculateColumnCount();
-    void updatePoseSelectState(QUuid poseId, bool selected);
+    void updateMotionSelectState(QUuid motionId, bool selected);
     const SkeletonDocument *m_document = nullptr;
     std::map<QUuid, std::pair<QTreeWidgetItem *, int>> m_itemMap;
-    std::set<QUuid> m_selectedPoseIds;
-    QUuid m_currentSelectedPoseId;
-    QUuid m_shiftStartPoseId;
-    bool m_cornerButtonVisible = false;
-    bool m_hasContextMenu = true;
+    std::set<QUuid> m_selectedMotionIds;
+    QUuid m_currentSelectedMotionId;
+    QUuid m_shiftStartMotionId;
 };
 
 #endif

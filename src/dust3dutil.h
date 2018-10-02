@@ -18,5 +18,6 @@ QVector3D pointInHermiteCurve(float t, QVector3D p0, QVector3D m0, QVector3D p1,
 float angleInRangle360BetweenTwoVectors(QVector3D a, QVector3D b, QVector3D planeNormal);
 QVector3D projectLineOnPlane(QVector3D line, QVector3D planeNormal);
 QString unifiedWindowTitle(const QString &text);
+QQuaternion quaternionOvershootSlerp(const QQuaternion &q0, const QQuaternion &q1, float t);
 
 #endif

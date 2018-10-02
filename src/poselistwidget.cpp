@@ -55,6 +55,9 @@ void PoseListWidget::updatePoseSelectState(QUuid poseId, bool selected)
     }
     PoseWidget *poseWidget = (PoseWidget *)itemWidget(findItemResult->second.first, findItemResult->second.second);
     poseWidget->updateCheckedState(selected);
+    if (m_cornerButtonVisible) {
+        poseWidget->setCornerButtonVisible(selected);
+    }
 }
 
 void PoseListWidget::selectPose(QUuid poseId, bool multiple)
@@ -156,6 +159,9 @@ bool PoseListWidget::isPoseSelected(QUuid poseId)
 
 void PoseListWidget::showContextMenu(const QPoint &pos)
 {
+    if (!m_hasContextMenu)
+        return;
+    
     QMenu contextMenu(this);
     
     std::set<QUuid> unorderedPoseIds = m_selectedPoseIds;
@@ -244,6 +250,7 @@ void PoseListWidget::reload()
             item->setData(col, Qt::UserRole, poseId.toString());
             PoseWidget *widget = new PoseWidget(m_document, poseId);
             connect(widget, &PoseWidget::modifyPose, this, &PoseListWidget::modifyPose);
+            connect(widget, &PoseWidget::cornerButtonClicked, this, &PoseListWidget::cornerButtonClicked);
             widget->previewWidget()->setGraphicsFunctions(this);
             setItemWidget(item, col, widget);
             widget->reload();
@@ -252,6 +259,16 @@ void PoseListWidget::reload()
         }
         invisibleRootItem()->addChild(item);
     }
+}
+
+void PoseListWidget::setCornerButtonVisible(bool visible)
+{
+    m_cornerButtonVisible = visible;
+}
+
+void PoseListWidget::setHasContextMenu(bool hasContextMenu)
+{
+    m_hasContextMenu = hasContextMenu;
 }
 
 void PoseListWidget::removeAllContent()

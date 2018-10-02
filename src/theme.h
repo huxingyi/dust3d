@@ -36,6 +36,7 @@ public:
     static int toolIconSize;
     static int posePreviewImageSize;
     static int partPreviewImageSize;
+    static int motionPreviewImageSize;
     static int miniIconFontSize;
     static int miniIconSize;
     static int sidebarPreferredWidth;

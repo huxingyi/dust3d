@@ -53,7 +53,8 @@ SkeletonDocument::SkeletonDocument() :
     m_resultRigWeights(nullptr),
     m_isRigObsolete(false),
     m_riggedResultContext(new MeshResultContext),
-    m_posePreviewsGenerator(nullptr)
+    m_posePreviewsGenerator(nullptr),
+    m_currentRigSucceed(false)
 {
 }
 
@@ -326,6 +327,80 @@ void SkeletonDocument::addPose(QString name, std::map<QString, std::map<QString,
     emit optionsChanged();
 }
 
+void SkeletonDocument::addMotion(QString name, std::vector<HermiteControlNode> controlNodes, std::vector<std::pair<float, QUuid>> keyframes)
+{
+    QUuid newMotionId = QUuid::createUuid();
+    auto &motion = motionMap[newMotionId];
+    motion.id = newMotionId;
+    
+    motion.name = name;
+    motion.controlNodes = controlNodes;
+    motion.keyframes = keyframes;
+    motion.dirty = true;
+    
+    motionIdList.push_back(newMotionId);
+    
+    emit motionAdded(newMotionId);
+    emit motionListChanged();
+    emit optionsChanged();
+}
+
+void SkeletonDocument::removeMotion(QUuid motionId)
+{
+    auto findMotionResult = motionMap.find(motionId);
+    if (findMotionResult == motionMap.end()) {
+        qDebug() << "Remove a none exist motion:" << motionId;
+        return;
+    }
+    motionIdList.erase(std::remove(motionIdList.begin(), motionIdList.end(), motionId), motionIdList.end());
+    motionMap.erase(findMotionResult);
+    
+    emit motionListChanged();
+    emit motionRemoved(motionId);
+    emit optionsChanged();
+}
+
+void SkeletonDocument::setMotionControlNodes(QUuid motionId, std::vector<HermiteControlNode> controlNodes)
+{
+    auto findMotionResult = motionMap.find(motionId);
+    if (findMotionResult == motionMap.end()) {
+        qDebug() << "Find motion failed:" << motionId;
+        return;
+    }
+    findMotionResult->second.controlNodes = controlNodes;
+    findMotionResult->second.dirty = true;
+    emit motionControlNodesChanged(motionId);
+    emit optionsChanged();
+}
+
+void SkeletonDocument::setMotionKeyframes(QUuid motionId, std::vector<std::pair<float, QUuid>> keyframes)
+{
+    auto findMotionResult = motionMap.find(motionId);
+    if (findMotionResult == motionMap.end()) {
+        qDebug() << "Find motion failed:" << motionId;
+        return;
+    }
+    findMotionResult->second.keyframes = keyframes;
+    findMotionResult->second.dirty = true;
+    emit motionKeyframesChanged(motionId);
+    emit optionsChanged();
+}
+
+void SkeletonDocument::renameMotion(QUuid motionId, QString name)
+{
+    auto findMotionResult = motionMap.find(motionId);
+    if (findMotionResult == motionMap.end()) {
+        qDebug() << "Find motion failed:" << motionId;
+        return;
+    }
+    if (findMotionResult->second.name == name)
+        return;
+    
+    findMotionResult->second.name = name;
+    emit motionNameChanged(motionId);
+    emit optionsChanged();
+}
+
 void SkeletonDocument::removePose(QUuid poseId)
 {
     auto findPoseResult = poseMap.find(poseId);
@@ -513,6 +588,14 @@ const SkeletonPose *SkeletonDocument::findPose(QUuid poseId) const
 {
     auto it = poseMap.find(poseId);
     if (it == poseMap.end())
+        return nullptr;
+    return &it->second;
+}
+
+const SkeletonMotion *SkeletonDocument::findMotion(QUuid motionId) const
+{
+    auto it = motionMap.find(motionId);
+    if (it == motionMap.end())
         return nullptr;
     return &it->second;
 }
@@ -747,7 +830,7 @@ void SkeletonDocument::markAllDirty()
 }
 
 void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUuid> &limitNodeIds,
-    SkeletonDocumentToSnapshotFor forWhat, const std::set<QUuid> &limitPoseIds) const
+    SkeletonDocumentToSnapshotFor forWhat, const std::set<QUuid> &limitPoseIds, const std::set<QUuid> &limitMotionIds) const
 {
     if (SkeletonDocumentToSnapshotFor::Document == forWhat ||
             SkeletonDocumentToSnapshotFor::Nodes == forWhat) {
@@ -881,6 +964,43 @@ void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUu
             if (!poseIt.second.name.isEmpty())
                 pose["name"] = poseIt.second.name;
             snapshot->poses.push_back(std::make_pair(pose, poseIt.second.parameters));
+        }
+    }
+    if (SkeletonDocumentToSnapshotFor::Document == forWhat ||
+            SkeletonDocumentToSnapshotFor::Motions == forWhat) {
+        for (const auto &motionId: motionIdList) {
+            if (!limitMotionIds.empty() && limitMotionIds.find(motionId) == limitMotionIds.end())
+                continue;
+            auto findMotionResult = motionMap.find(motionId);
+            if (findMotionResult == motionMap.end()) {
+                qDebug() << "Find motion failed:" << motionId;
+                continue;
+            }
+            auto &motionIt = *findMotionResult;
+            std::map<QString, QString> motion;
+            motion["id"] = motionIt.second.id.toString();
+            if (!motionIt.second.name.isEmpty())
+                motion["name"] = motionIt.second.name;
+            std::vector<std::map<QString, QString>> controlNodesAttributes;
+            std::vector<std::map<QString, QString>> keyframesAttributes;
+            for (const auto &controlNode: motionIt.second.controlNodes) {
+                std::map<QString, QString> attributes;
+                attributes["x"] = QString::number(controlNode.position.x());
+                attributes["y"] = QString::number(controlNode.position.y());
+                attributes["inTangentX"] = QString::number(controlNode.inTangent.x());
+                attributes["inTangentY"] = QString::number(controlNode.inTangent.y());
+                attributes["outTangentX"] = QString::number(controlNode.outTangent.x());
+                attributes["outTangentY"] = QString::number(controlNode.outTangent.y());
+                controlNodesAttributes.push_back(attributes);
+            }
+            for (const auto &keyframe: motionIt.second.keyframes) {
+                std::map<QString, QString> attributes;
+                attributes["knot"] = QString::number(keyframe.first);
+                attributes["linkDataType"] = "poseId";
+                attributes["linkData"] = keyframe.second.toString();
+                keyframesAttributes.push_back(attributes);
+            }
+            snapshot->motions.push_back(std::make_tuple(motion, controlNodesAttributes, keyframesAttributes));
         }
     }
     if (SkeletonDocumentToSnapshotFor::Document == forWhat) {
@@ -1065,6 +1185,44 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot, bool fr
         poseIdList.push_back(newPoseId);
         emit poseAdded(newPoseId);
     }
+    for (const auto &motionIt: snapshot.motions) {
+        QUuid newMotionId = QUuid::createUuid();
+        auto &newMotion = motionMap[newMotionId];
+        newMotion.id = newMotionId;
+        const auto &motionAttributes = std::get<0>(motionIt);
+        newMotion.name = valueOfKeyInMapOrEmpty(motionAttributes, "name");
+        for (const auto &attributes: std::get<1>(motionIt)) {
+            float x = valueOfKeyInMapOrEmpty(attributes, "x").toFloat();
+            float y = valueOfKeyInMapOrEmpty(attributes, "y").toFloat();
+            float inTangentX = valueOfKeyInMapOrEmpty(attributes, "inTangentX").toFloat();
+            float inTangentY = valueOfKeyInMapOrEmpty(attributes, "inTangentY").toFloat();
+            float outTangentX = valueOfKeyInMapOrEmpty(attributes, "outTangentX").toFloat();
+            float outTangentY = valueOfKeyInMapOrEmpty(attributes, "outTangentY").toFloat();
+            HermiteControlNode hermite(QVector2D(x, y),
+                QVector2D(inTangentX, inTangentY), QVector2D(outTangentX, outTangentY));
+            newMotion.controlNodes.push_back(hermite);
+        }
+        for (const auto &attributes: std::get<2>(motionIt)) {
+            float knot = valueOfKeyInMapOrEmpty(attributes, "knot").toFloat();
+            QString linkDataType = valueOfKeyInMapOrEmpty(attributes, "linkDataType");
+            if ("poseId" != linkDataType) {
+                qDebug() << "Encounter unknown linkDataType:" << linkDataType;
+                continue;
+            }
+            QUuid linkToPoseId = QUuid(valueOfKeyInMapOrEmpty(attributes, "linkData"));
+            auto findPoseResult = poseMap.find(linkToPoseId);
+            if (findPoseResult != poseMap.end()) {
+                newMotion.keyframes.push_back({knot, findPoseResult->first});
+            } else {
+                auto findInOldNewIdMapResult = oldNewIdMap.find(linkToPoseId);
+                if (findInOldNewIdMapResult != oldNewIdMap.end())
+                    newMotion.keyframes.push_back({knot, findInOldNewIdMapResult->second});
+            }
+        }
+        oldNewIdMap[QUuid(valueOfKeyInMapOrEmpty(motionAttributes, "id"))] = newMotionId;
+        motionIdList.push_back(newMotionId);
+        emit motionAdded(newMotionId);
+    }
     
     for (const auto &nodeIt: newAddedNodeIds) {
         emit nodeAdded(nodeIt);
@@ -1097,6 +1255,8 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot, bool fr
     
     if (!snapshot.poses.empty())
         emit poseListChanged();
+    if (!snapshot.motions.empty())
+        emit motionListChanged();
 }
 
 void SkeletonDocument::reset()
@@ -1111,6 +1271,8 @@ void SkeletonDocument::reset()
     componentMap.clear();
     poseMap.clear();
     poseIdList.clear();
+    motionMap.clear();
+    motionIdList.clear();
     rootComponent = SkeletonComponent();
     emit cleanup();
     emit skeletonChanged();
@@ -2076,7 +2238,7 @@ bool SkeletonDocument::hasPastableNodesInClipboard() const
     const QClipboard *clipboard = QApplication::clipboard();
     const QMimeData *mimeData = clipboard->mimeData();
     if (mimeData->hasText()) {
-        if (-1 != mimeData->text().left(1000).indexOf("<node "))
+        if (-1 != mimeData->text().indexOf("<node "))
             return true;
     }
     return false;
@@ -2087,7 +2249,18 @@ bool SkeletonDocument::hasPastablePosesInClipboard() const
     const QClipboard *clipboard = QApplication::clipboard();
     const QMimeData *mimeData = clipboard->mimeData();
     if (mimeData->hasText()) {
-        if (-1 != mimeData->text().right(1000).indexOf("<pose "))
+        if (-1 != mimeData->text().indexOf("<pose "))
+            return true;
+    }
+    return false;
+}
+
+bool SkeletonDocument::hasPastableMotionsInClipboard() const
+{
+    const QClipboard *clipboard = QApplication::clipboard();
+    const QMimeData *mimeData = clipboard->mimeData();
+    if (mimeData->hasText()) {
+        if (-1 != mimeData->text().indexOf("<motion "))
             return true;
     }
     return false;
@@ -2378,6 +2551,8 @@ void SkeletonDocument::generateRig()
 
 void SkeletonDocument::rigReady()
 {
+    m_currentRigSucceed = m_rigGenerator->isSucceed();
+
     delete m_resultRigWeightMesh;
     m_resultRigWeightMesh = m_rigGenerator->takeResultMesh();
     
@@ -2464,6 +2639,11 @@ const std::vector<QString> &SkeletonDocument::resultRigErrorMarkNames() const
 const MeshResultContext &SkeletonDocument::currentRiggedResultContext() const
 {
     return *m_riggedResultContext;
+}
+
+bool SkeletonDocument::currentRigSucceed() const
+{
+    return m_currentRigSucceed;
 }
 
 void SkeletonDocument::generatePosePreviews()

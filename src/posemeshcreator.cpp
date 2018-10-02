@@ -2,10 +2,10 @@
 #include "posemeshcreator.h"
 #include "skinnedmeshcreator.h"
 
-PoseMeshCreator::PoseMeshCreator(const Poser &poser,
+PoseMeshCreator::PoseMeshCreator(const std::vector<JointNode> &resultNodes,
         const MeshResultContext &meshResultContext,
         const std::map<int, AutoRiggerVertexWeights> &resultWeights) :
-    m_resultNodes(poser.resultNodes()),
+    m_resultNodes(resultNodes),
     m_meshResultContext(meshResultContext),
     m_resultWeights(resultWeights)
 {

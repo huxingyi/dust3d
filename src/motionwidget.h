@@ -1,21 +1,20 @@
-#ifndef POSE_WIDGET_H
-#define POSE_WIDGET_H
+#ifndef MOTION_WIDGET_H
+#define MOTION_WIDGET_H
 #include <QFrame>
 #include <QLabel>
 #include <QIcon>
 #include "skeletondocument.h"
-#include "modelwidget.h"
+#include "interpolationgraphicswidget.h"
 
-class PoseWidget : public QFrame
+class MotionWidget : public QFrame
 {
     Q_OBJECT
 signals:
-    void modifyPose(QUuid poseId);
-    void cornerButtonClicked(QUuid poseId);
+    void modifyMotion(QUuid motionId);
 public:
-    PoseWidget(const SkeletonDocument *document, QUuid poseId);
+    MotionWidget(const SkeletonDocument *document, QUuid motionId);
     static int preferredHeight();
-    ModelWidget *previewWidget();
+    InterpolationGraphicsWidget *previewWidget();
 protected:
     void mouseDoubleClickEvent(QMouseEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
@@ -24,13 +23,11 @@ public slots:
     void updatePreview();
     void updateName();
     void updateCheckedState(bool checked);
-    void setCornerButtonVisible(bool visible);
 private:
-    QUuid m_poseId;
+    QUuid m_motionId;
     const SkeletonDocument *m_document = nullptr;
-    ModelWidget *m_previewWidget = nullptr;
+    InterpolationGraphicsWidget *m_previewWidget = nullptr;
     QLabel *m_nameLabel = nullptr;
-    QPushButton *m_cornerButton = nullptr;
 };
 
 #endif

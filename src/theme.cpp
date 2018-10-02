@@ -35,6 +35,7 @@ int Theme::miniIconFontSize = 9;
 int Theme::miniIconSize = 15;
 int Theme::partPreviewImageSize = (Theme::miniIconSize * 3);
 int Theme::posePreviewImageSize = 75;
+int Theme::motionPreviewImageSize = 75;
 int Theme::sidebarPreferredWidth = 200;
 
 QtAwesome *Theme::awesome()

@@ -48,7 +48,7 @@ void PosePreviewsGenerator::process()
         poser->parameters() = pose.second;
         poser->commit();
         
-        PoseMeshCreator *poseMeshCreator = new PoseMeshCreator(*poser, *m_meshResultContext, m_rigWeights);
+        PoseMeshCreator *poseMeshCreator = new PoseMeshCreator(poser->resultNodes(), *m_meshResultContext, m_rigWeights);
         poseMeshCreator->createMesh();
         m_previews[pose.first] = poseMeshCreator->takeResultMesh();
         delete poseMeshCreator;

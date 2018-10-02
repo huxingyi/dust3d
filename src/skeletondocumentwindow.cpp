@@ -30,6 +30,7 @@
 #include "skeletonparttreewidget.h"
 #include "rigwidget.h"
 #include "markiconcreator.h"
+#include "motionmanagewidget.h"
 
 int SkeletonDocumentWindow::m_modelRenderWidgetInitialX = 16;
 int SkeletonDocumentWindow::m_modelRenderWidgetInitialY = 16;
@@ -238,8 +239,17 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
             emit m_document->posePreviewChanged(pose.first);
     });
     
+    QDockWidget *motionDocker = new QDockWidget(tr("Motions"), this);
+    motionDocker->setAllowedAreas(Qt::RightDockWidgetArea);
+    MotionManageWidget *motionManageWidget = new MotionManageWidget(m_document, motionDocker);
+    motionDocker->setWidget(motionManageWidget);
+    connect(motionManageWidget, &MotionManageWidget::registerDialog, this, &SkeletonDocumentWindow::registerDialog);
+    connect(motionManageWidget, &MotionManageWidget::unregisterDialog, this, &SkeletonDocumentWindow::unregisterDialog);
+    addDockWidget(Qt::RightDockWidgetArea, motionDocker);
+    
     tabifyDockWidget(partTreeDocker, rigDocker);
     tabifyDockWidget(rigDocker, poseDocker);
+    tabifyDockWidget(poseDocker, motionDocker);
     
     partTreeDocker->raise();
 
@@ -523,6 +533,13 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
         poseDocker->raise();
     });
     m_windowMenu->addAction(m_showPosesAction);
+    
+    m_showMotionsAction = new QAction(tr("Motions"), this);
+    connect(m_showMotionsAction, &QAction::triggered, [=]() {
+        motionDocker->show();
+        motionDocker->raise();
+    });
+    m_windowMenu->addAction(m_showMotionsAction);
     
     QMenu *dialogsMenu = m_windowMenu->addMenu(tr("Dialogs"));
     connect(dialogsMenu, &QMenu::aboutToShow, [=]() {

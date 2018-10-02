@@ -40,6 +40,11 @@ const std::vector<JointNode> &Poser::resultNodes() const
     return m_jointNodeTree.nodes();
 }
 
+const JointNodeTree &Poser::resultJointNodeTree() const
+{
+    return m_jointNodeTree;
+}
+
 void Poser::commit()
 {
     m_jointNodeTree.recalculateTransformMatrices();

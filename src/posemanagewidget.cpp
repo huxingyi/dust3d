@@ -4,12 +4,14 @@
 #include "posemanagewidget.h"
 #include "theme.h"
 #include "poseeditwidget.h"
+#include "infolabel.h"
 
 PoseManageWidget::PoseManageWidget(const SkeletonDocument *document, QWidget *parent) :
     QWidget(parent),
     m_document(document)
 {
     QPushButton *addPoseButton = new QPushButton(Theme::awesome()->icon(fa::plus), tr("Add Pose..."));
+    addPoseButton->hide();
     
     connect(addPoseButton, &QPushButton::clicked, this, &PoseManageWidget::showAddPoseDialog);
     
@@ -19,7 +21,22 @@ PoseManageWidget::PoseManageWidget(const SkeletonDocument *document, QWidget *pa
     m_poseListWidget = new PoseListWidget(document);
     connect(m_poseListWidget, &PoseListWidget::modifyPose, this, &PoseManageWidget::showPoseDialog);
     
+    InfoLabel *infoLabel = new InfoLabel;
+    infoLabel->setText(tr("Missing Rig"));
+    infoLabel->show();
+    
+    connect(m_document, &SkeletonDocument::resultRigChanged, this, [=]() {
+        if (m_document->currentRigSucceed()) {
+            infoLabel->hide();
+            addPoseButton->show();
+        } else {
+            infoLabel->show();
+            addPoseButton->hide();
+        }
+    });
+    
     QVBoxLayout *mainLayout = new QVBoxLayout;
+    mainLayout->addWidget(infoLabel);
     mainLayout->addLayout(toolsLayout);
     mainLayout->addWidget(m_poseListWidget);
     

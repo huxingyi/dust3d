@@ -46,6 +46,11 @@ MeshLoader *RigGenerator::takeResultMesh()
     return resultMesh;
 }
 
+bool RigGenerator::isSucceed()
+{
+    return m_isSucceed;
+}
+
 const std::vector<QString> &RigGenerator::missingMarkNames()
 {
     return m_missingMarkNames;
@@ -95,9 +100,9 @@ void RigGenerator::process()
             std::get<0>(marks.second) / std::get<1>(marks.second),
             std::get<2>(marks.second));
     }
-    bool rigSucceed = m_autoRigger->rig();
+    m_isSucceed = m_autoRigger->rig();
     
-    if (rigSucceed) {
+    if (m_isSucceed) {
         qDebug() << "Rig succeed";
     } else {
         qDebug() << "Rig failed";
@@ -111,7 +116,7 @@ void RigGenerator::process()
     // Blend vertices colors according to bone weights
     
     std::vector<QColor> inputVerticesColors(m_meshResultContext->vertices.size());
-    if (rigSucceed) {
+    if (m_isSucceed) {
         const auto &resultWeights = m_autoRigger->resultWeights();
         const auto &resultBones = m_autoRigger->resultBones();
         

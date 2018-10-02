@@ -15,6 +15,7 @@ public:
     int findBoneIndex(const QString &name);
     const std::vector<AutoRiggerBone> &bones() const;
     const std::vector<JointNode> &resultNodes() const;
+    const JointNodeTree &resultJointNodeTree() const;
     std::map<QString, std::map<QString, QString>> &parameters();
     virtual void commit();
     void reset();
