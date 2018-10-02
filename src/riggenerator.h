@@ -19,6 +19,7 @@ public:
     const std::vector<QString> &missingMarkNames();
     const std::vector<QString> &errorMarkNames();
     MeshResultContext *takeMeshResultContext();
+    bool isSucceed();
 signals:
     void finished();
 public slots:
@@ -31,6 +32,7 @@ private:
     std::map<int, AutoRiggerVertexWeights> *m_resultWeights = nullptr;
     std::vector<QString> m_missingMarkNames;
     std::vector<QString> m_errorMarkNames;
+    bool m_isSucceed = false;
 };
 
 #endif

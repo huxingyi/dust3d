@@ -56,3 +56,21 @@ QString unifiedWindowTitle(const QString &text)
 {
     return text + QObject::tr(" - ") + APP_NAME;
 }
+
+// Sam Hocevar's answer
+// https://gamedev.stackexchange.com/questions/98246/quaternion-slerp-and-lerp-implementation-with-overshoot
+QQuaternion quaternionOvershootSlerp(const QQuaternion &q0, const QQuaternion &q1, float t)
+{
+    // If t is too large, divide it by two recursively
+    if (t > 1.0) {
+        auto tmp = quaternionOvershootSlerp(q0, q1, t / 2);
+        return tmp * q0.inverted() * tmp;
+    }
+
+    // It’s easier to handle negative t this way
+    if (t < 0.0)
+        return quaternionOvershootSlerp(q1, q0, 1.0 - t);
+
+    return QQuaternion::slerp(q0, q1, t);
+}
+

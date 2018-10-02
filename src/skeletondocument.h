@@ -21,6 +21,7 @@
 #include "riggenerator.h"
 #include "rigtype.h"
 #include "posepreviewsgenerator.h"
+#include "curveutil.h"
 
 class SkeletonNode
 {
@@ -377,11 +378,27 @@ private:
     MeshLoader *m_previewMesh = nullptr;
 };
 
+class SkeletonMotion
+{
+public:
+    SkeletonMotion()
+    {
+    }
+    QUuid id;
+    QString name;
+    bool dirty = true;
+    std::vector<HermiteControlNode> controlNodes;
+    std::vector<std::pair<float, QUuid>> keyframes; //std::pair<timeslot:0~1, poseId>
+private:
+    Q_DISABLE_COPY(SkeletonMotion);
+};
+
 enum class SkeletonDocumentToSnapshotFor
 {
     Document = 0,
     Nodes,
-    Poses
+    Poses,
+    Motions
 };
 
 class SkeletonDocument : public QObject
@@ -451,6 +468,12 @@ signals:
     void poseNameChanged(QUuid poseId);
     void poseParametersChanged(QUuid poseId);
     void posePreviewChanged(QUuid poseId);
+    void motionAdded(QUuid motionId);
+    void motionRemoved(QUuid motionId);
+    void motionListChanged();
+    void motionNameChanged(QUuid motionId);
+    void motionControlNodesChanged(QUuid motionId);
+    void motionKeyframesChanged(QUuid motionId);
 public: // need initialize
     float originX;
     float originY;
@@ -476,12 +499,15 @@ public:
     std::map<QUuid, SkeletonComponent> componentMap;
     std::map<QUuid, SkeletonPose> poseMap;
     std::vector<QUuid> poseIdList;
+    std::map<QUuid, SkeletonMotion> motionMap;
+    std::vector<QUuid> motionIdList;
     SkeletonComponent rootComponent;
     QImage turnaround;
     QImage preview;
     void toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUuid> &limitNodeIds=std::set<QUuid>(),
         SkeletonDocumentToSnapshotFor forWhat=SkeletonDocumentToSnapshotFor::Document,
-        const std::set<QUuid> &limitPoseIds=std::set<QUuid>()) const;
+        const std::set<QUuid> &limitPoseIds=std::set<QUuid>(),
+        const std::set<QUuid> &limitMotionIds=std::set<QUuid>()) const;
     void fromSnapshot(const SkeletonSnapshot &snapshot);
     void addFromSnapshot(const SkeletonSnapshot &snapshot, bool fromPaste=true);
     const SkeletonNode *findNode(QUuid nodeId) const;
@@ -492,6 +518,7 @@ public:
     const SkeletonComponent *findComponentParent(QUuid componentId) const;
     QUuid findComponentParentId(QUuid componentId) const;
     const SkeletonPose *findPose(QUuid poseId) const;
+    const SkeletonMotion *findMotion(QUuid motionId) const;
     MeshLoader *takeResultMesh();
     MeshLoader *takeResultTextureMesh();
     MeshLoader *takeResultRigWeightMesh();
@@ -501,6 +528,7 @@ public:
     void setSharedContextWidget(QOpenGLWidget *sharedContextWidget);
     bool hasPastableNodesInClipboard() const;
     bool hasPastablePosesInClipboard() const;
+    bool hasPastableMotionsInClipboard() const;
     bool undoable() const;
     bool redoable() const;
     bool isNodeEditable(QUuid nodeId) const;
@@ -515,6 +543,7 @@ public:
     const std::vector<QString> &resultRigMissingMarkNames() const;
     const std::vector<QString> &resultRigErrorMarkNames() const;
     const MeshResultContext &currentRiggedResultContext() const;
+    bool currentRigSucceed() const;
 public slots:
     void removeNode(QUuid nodeId);
     void removeEdge(QUuid edgeId);
@@ -602,6 +631,11 @@ public slots:
     void removePose(QUuid poseId);
     void setPoseParameters(QUuid poseId, std::map<QString, std::map<QString, QString>> parameters);
     void renamePose(QUuid poseId, QString name);
+    void addMotion(QString name, std::vector<HermiteControlNode> controlNodes, std::vector<std::pair<float, QUuid>> keyframes);
+    void removeMotion(QUuid motionId);
+    void setMotionControlNodes(QUuid motionId, std::vector<HermiteControlNode> controlNodes);
+    void setMotionKeyframes(QUuid motionId, std::vector<std::pair<float, QUuid>> keyframes);
+    void renameMotion(QUuid motionId, QString name);
 private:
     void splitPartByNode(std::vector<std::vector<QUuid>> *groups, QUuid nodeId);
     void joinNodeAndNeiborsToGroup(std::vector<QUuid> *group, QUuid nodeId, std::set<QUuid> *visitMap, QUuid noUseEdgeId=QUuid());
@@ -643,6 +677,7 @@ private: // need initialize
     bool m_isRigObsolete;
     MeshResultContext *m_riggedResultContext;
     PosePreviewsGenerator *m_posePreviewsGenerator;
+    bool m_currentRigSucceed;
 private:
     static unsigned long m_maxSnapshot;
     std::deque<SkeletonHistoryItem> m_undoItems;

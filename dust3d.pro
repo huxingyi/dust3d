@@ -200,6 +200,30 @@ HEADERS += src/meshweldseam.h
 SOURCES += src/advancesettingwidget.cpp
 HEADERS += src/advancesettingwidget.h
 
+SOURCES += src/curveutil.cpp
+HEADERS += src/curveutil.h
+
+SOURCES += src/interpolationgraphicswidget.cpp
+HEADERS += src/interpolationgraphicswidget.h
+
+SOURCES += src/motioneditwidget.cpp
+HEADERS += src/motioneditwidget.h
+
+SOURCES += src/motionmanagewidget.cpp
+HEADERS += src/motionmanagewidget.h
+
+SOURCES += src/motionlistwidget.cpp
+HEADERS += src/motionlistwidget.h
+
+SOURCES += src/motionwidget.cpp
+HEADERS += src/motionwidget.h
+
+SOURCES += src/motionpreviewsgenerator.cpp
+HEADERS += src/motionpreviewsgenerator.h
+
+SOURCES += src/animationclipplayer.cpp
+HEADERS += src/animationclipplayer.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h
@@ -436,13 +460,6 @@ macx {
 	GMP_LIBDIR = /usr/local/opt/gmp/lib
 	MPFR_INCLUDEDIR = /usr/local/opt/mpfr/include
 	MPFR_LIBDIR = /usr/local/opt/mpfr/lib
-
-	exists(/usr/local/opt/opencv) {
-		INCLUDEPATH += /usr/local/opt/opencv/include
-		LIBS += -L/usr/local/opt/opencv/lib -lopencv_core -lopencv_videoio -lopencv_imgproc
-	
-		DEFINES += "USE_OPENCV=1"
-	}
 }
 
 unix:!macx {

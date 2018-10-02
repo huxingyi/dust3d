@@ -1,7 +1,6 @@
 #ifndef POSE_MESH_CREATOR_H
 #define POSE_MESH_CREATOR_H
 #include <QObject>
-#include "poser.h"
 #include "meshloader.h"
 #include "jointnodetree.h"
 #include "meshresultcontext.h"
@@ -12,7 +11,7 @@ class PoseMeshCreator : public QObject
 signals:
     void finished();
 public:
-    PoseMeshCreator(const Poser &poser,
+    PoseMeshCreator(const std::vector<JointNode> &resultNodes,
         const MeshResultContext &meshResultContext,
         const std::map<int, AutoRiggerVertexWeights> &resultWeights);
     ~PoseMeshCreator();

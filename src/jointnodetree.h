@@ -25,6 +25,7 @@ public:
     void updateRotation(int index, QQuaternion rotation);
     void reset();
     void recalculateTransformMatrices();
+    static JointNodeTree slerp(const JointNodeTree &first, const JointNodeTree &second, float t);
 private:
     std::vector<JointNode> m_boneNodes;
 };

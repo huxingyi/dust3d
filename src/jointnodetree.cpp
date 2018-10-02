@@ -1,4 +1,5 @@
 #include "jointnodetree.h"
+#include "dust3dutil.h"
 
 const std::vector<JointNode> &JointNodeTree::nodes() const
 {
@@ -72,3 +73,15 @@ JointNodeTree::JointNodeTree(const std::vector<AutoRiggerBone> *resultRigBones)
         node.inverseBindMatrix = node.transformMatrix.inverted();
     }
 }
+
+JointNodeTree JointNodeTree::slerp(const JointNodeTree &first, const JointNodeTree &second, float t)
+{
+    JointNodeTree slerpResult = first;
+    for (decltype(first.nodes().size()) i = 0; i < first.nodes().size() && i < second.nodes().size(); i++) {
+        slerpResult.updateRotation(i,
+            quaternionOvershootSlerp(first.nodes()[i].rotation, second.nodes()[i].rotation, t));
+    }
+    slerpResult.recalculateTransformMatrices();
+    return slerpResult;
+}
+

@@ -15,6 +15,7 @@ InfoLabel::InfoLabel(const QString &text, QWidget *parent) :
     QHBoxLayout *mainLayout = new QHBoxLayout;
     mainLayout->addWidget(m_icon);
     mainLayout->addWidget(m_label);
+    mainLayout->addStretch();
     
     setLayout(mainLayout);
 }

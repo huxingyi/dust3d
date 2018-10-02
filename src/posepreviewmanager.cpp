@@ -26,7 +26,7 @@ bool PosePreviewManager::postUpdate(const Poser &poser,
     qDebug() << "Pose mesh generating..";
     
     QThread *thread = new QThread;
-    m_poseMeshCreator = new PoseMeshCreator(poser, meshResultContext, resultWeights);
+    m_poseMeshCreator = new PoseMeshCreator(poser.resultNodes(), meshResultContext, resultWeights);
     m_poseMeshCreator->moveToThread(thread);
     connect(thread, &QThread::started, m_poseMeshCreator, &PoseMeshCreator::process);
     connect(m_poseMeshCreator, &PoseMeshCreator::finished, this, &PosePreviewManager::poseMeshReady);
