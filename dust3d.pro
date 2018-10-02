@@ -460,16 +460,6 @@ macx {
 	GMP_LIBDIR = /usr/local/opt/gmp/lib
 	MPFR_INCLUDEDIR = /usr/local/opt/mpfr/include
 	MPFR_LIBDIR = /usr/local/opt/mpfr/lib
-<<<<<<< HEAD
-
-	exists(/usr/local/opt/opencv) {
-		INCLUDEPATH += /usr/local/opt/opencv/include
-		LIBS += -L/usr/local/opt/opencv/lib -lopencv_core -lopencv_videoio -lopencv_imgproc
-
-		DEFINES += "USE_OPENCV=1"
-	}
-=======
->>>>>>> curveeditor
 }
 
 unix:!macx {
