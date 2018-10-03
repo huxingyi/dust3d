@@ -6,6 +6,10 @@
     <file>resources/tree-branch-more.png</file>
     <file>resources/tree-branch-open.png</file>
     <file>resources/tree-vline.png</file>
+    <file>shaders/default.vert</file>
+    <file>shaders/default.frag</file>
+    <file>shaders/default.core.vert</file>
+    <file>shaders/default.core.frag</file>
     <file>ACKNOWLEDGEMENTS.html</file>
     <file>AUTHORS</file>
     <file>CONTRIBUTORS</file>
