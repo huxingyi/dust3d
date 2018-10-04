@@ -6,7 +6,7 @@
 class ModelShaderProgram : public QOpenGLShaderProgram
 {
 public:
-    ModelShaderProgram();
+    ModelShaderProgram(bool usePBR=false);
     int projMatrixLoc();
     int mvMatrixLoc();
     int normalMatrixLoc();

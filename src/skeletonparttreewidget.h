@@ -62,6 +62,8 @@ public slots:
     void partRoundStateChanged(QUuid partId);
     void partWrapStateChanged(QUuid partId);
     void partColorStateChanged(QUuid partId);
+    void partMetalnessChanged(QUuid partId);
+    void partRoughnessChanged(QUuid partId);
     void partChecked(QUuid partId);
     void partUnchecked(QUuid partId);
     void groupChanged(QTreeWidgetItem *item, int column);

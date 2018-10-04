@@ -72,7 +72,7 @@ MeshLoader *TextureGenerator::takeResultMesh()
 
 void TextureGenerator::process()
 {
-    const std::vector<QColor> &triangleColors = m_resultContext->triangleColors();
+    const std::vector<Material> &triangleMaterials = m_resultContext->triangleMaterials();
     const std::vector<ResultTriangleUv> &triangleUvs = m_resultContext->triangleUvs();
     
     m_resultTextureColorImage = new QImage(TextureGenerator::m_textureWidth, TextureGenerator::m_textureHeight, QImage::Format_ARGB32);
@@ -105,10 +105,10 @@ void TextureGenerator::process()
                 path.lineTo(uv->uv[j][0] * TextureGenerator::m_textureWidth, uv->uv[j][1] * TextureGenerator::m_textureHeight);
             }
         }
-        QPen textureBorderPen(triangleColors[i]);
+        QPen textureBorderPen(triangleMaterials[i].color);
         textureBorderPen.setWidth(32);
         texturePainter.setPen(textureBorderPen);
-        texturePainter.setBrush(QBrush(triangleColors[i]));
+        texturePainter.setBrush(QBrush(triangleMaterials[i].color));
         texturePainter.drawPath(path);
     }
     // round 2, real paint
@@ -123,7 +123,7 @@ void TextureGenerator::process()
                 path.lineTo(uv->uv[j][0] * TextureGenerator::m_textureWidth, uv->uv[j][1] * TextureGenerator::m_textureHeight);
             }
         }
-        texturePainter.fillPath(path, QBrush(triangleColors[i]));
+        texturePainter.fillPath(path, QBrush(triangleMaterials[i].color));
     }
     
     pen.setWidth(0);

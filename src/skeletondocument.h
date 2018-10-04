@@ -97,6 +97,8 @@ public:
     std::vector<QUuid> nodeIds;
     bool dirty;
     bool wrapped;
+    float metalness;
+    float roughness;
     SkeletonPart(const QUuid &withId=QUuid()) :
         visible(true),
         locked(false),
@@ -110,7 +112,9 @@ public:
         color(Theme::white),
         hasColor(false),
         dirty(true),
-        wrapped(false)
+        wrapped(false),
+        metalness(0.0),
+        roughness(1.0)
     {
         id = withId.isNull() ? QUuid::createUuid() : withId;
     }
@@ -142,6 +146,18 @@ public:
     {
         return deformThicknessAdjusted() || deformWidthAdjusted();
     }
+    bool metalnessAdjusted() const
+    {
+        return fabs(metalness - 0.0) >= 0.01;
+    }
+    bool roughnessAdjusted() const
+    {
+        return fabs(roughness - 1.0) >= 0.01;
+    }
+    bool materialAdjusted() const
+    {
+        return metalnessAdjusted() || roughnessAdjusted();
+    }
     bool isEditVisible() const
     {
         return visible && !disabled;
@@ -162,6 +178,8 @@ public:
         wrapped = other.wrapped;
         componentId = other.componentId;
         dirty = other.dirty;
+        metalness = other.metalness;
+        roughness = other.roughness;
     }
     void updatePreviewMesh(MeshLoader *previewMesh)
     {
@@ -444,6 +462,8 @@ signals:
     void partRoundStateChanged(QUuid partId);
     void partColorStateChanged(QUuid partId);
     void partWrapStateChanged(QUuid partId);
+    void partMetalnessChanged(QUuid partId);
+    void partRoughnessChanged(QUuid partId);
     void componentInverseStateChanged(QUuid partId);
     void cleanup();
     void originChanged();
@@ -583,6 +603,8 @@ public slots:
     void setPartRoundState(QUuid partId, bool rounded);
     void setPartColorState(QUuid partId, bool hasColor, QColor color);
     void setPartWrapState(QUuid partId, bool wrapped);
+    void setPartMetalness(QUuid partId, float metalness);
+    void setPartRoughness(QUuid partId, float roughness);
     void setComponentInverseState(QUuid componentId, bool inverse);
     void moveComponentUp(QUuid componentId);
     void moveComponentDown(QUuid componentId);

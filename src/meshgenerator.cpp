@@ -251,6 +251,16 @@ void *MeshGenerator::combinePartMesh(QString partId)
     if (MeshGenerator::m_enableDebug)
         meshlite_bmesh_enable_debug(m_meshliteContext, bmeshId, 1);
     
+    float metalness = 0.0;
+    QString metalnessString = valueOfKeyInMapOrEmpty(part, "metalness");
+    if (!metalnessString.isEmpty())
+        metalness = metalnessString.toFloat();
+    
+    float roughness = 1.0;
+    QString roughnessString = valueOfKeyInMapOrEmpty(part, "roughness");
+    if (!roughnessString.isEmpty())
+        roughness = roughnessString.toFloat();
+    
     QString mirroredPartId;
     QUuid mirroredPartIdNotAsString;
     if (xMirrored) {
@@ -291,7 +301,9 @@ void *MeshGenerator::combinePartMesh(QString partId)
         bmeshNode.origin = QVector3D(x, y, z);
         bmeshNode.radius = radius;
         bmeshNode.nodeId = QUuid(nodeId);
-        bmeshNode.color = partColor;
+        bmeshNode.material.color = partColor;
+        bmeshNode.material.metalness = metalness;
+        bmeshNode.material.roughness = roughness;
         bmeshNode.boneMark = boneMark;
         //if (SkeletonBoneMark::None != boneMark)
         //    bmeshNode.color = SkeletonBoneMarkToColor(boneMark);
@@ -362,7 +374,7 @@ void *MeshGenerator::combinePartMesh(QString partId)
     
     if (m_requirePreviewPartIds.find(partIdNotAsString) != m_requirePreviewPartIds.end()) {
         int trimedMeshId = meshlite_trim(m_meshliteContext, meshId, 1);
-        m_partPreviewMeshMap[partIdNotAsString] = new MeshLoader(m_meshliteContext, trimedMeshId, -1, partColor, nullptr, m_smoothNormal);
+        m_partPreviewMeshMap[partIdNotAsString] = new MeshLoader(m_meshliteContext, trimedMeshId, -1, {partColor, metalness, roughness}, nullptr, m_smoothNormal);
         m_generatedPreviewPartIds.insert(partIdNotAsString);
     }
     
@@ -697,7 +709,7 @@ void MeshGenerator::process()
     
     if (resultMeshId > 0) {
         loadGeneratedPositionsToMeshResultContext(m_meshliteContext, triangulatedFinalMeshId);
-        m_mesh = new MeshLoader(m_meshliteContext, resultMeshId, triangulatedFinalMeshId, Theme::white, &m_meshResultContext->triangleColors(), m_smoothNormal);
+        m_mesh = new MeshLoader(m_meshliteContext, resultMeshId, triangulatedFinalMeshId, {Theme::white, 0.0, 1.0}, &m_meshResultContext->triangleMaterials(), m_smoothNormal);
     }
     
     if (needDeleteCacheContext) {

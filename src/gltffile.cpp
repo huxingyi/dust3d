@@ -157,8 +157,8 @@ GltfFileWriter::GltfFileWriter(MeshResultContext &resultContext,
             m_json["meshes"][0]["primitives"][primitiveIndex]["attributes"]["WEIGHTS_0"] = bufferViewIndex + (++attributeIndex);
         }
         m_json["materials"][primitiveIndex]["pbrMetallicRoughness"]["baseColorTexture"]["index"] = 0;
-        m_json["materials"][primitiveIndex]["pbrMetallicRoughness"]["metallicFactor"] = 0.0;
-        m_json["materials"][primitiveIndex]["pbrMetallicRoughness"]["roughnessFactor"] = 1.0;
+        m_json["materials"][primitiveIndex]["pbrMetallicRoughness"]["metallicFactor"] = part.second.material.metalness;
+        m_json["materials"][primitiveIndex]["pbrMetallicRoughness"]["roughnessFactor"] = part.second.material.roughness;
         
         primitiveIndex++;
 

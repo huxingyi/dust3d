@@ -152,10 +152,14 @@ void ModelMeshBinder::paint(ModelShaderProgram *program)
                     f->glEnableVertexAttribArray(1);
                     f->glEnableVertexAttribArray(2);
                     f->glEnableVertexAttribArray(3);
-                    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(GLfloat), 0);
-                    f->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(GLfloat), reinterpret_cast<void *>(3 * sizeof(GLfloat)));
-                    f->glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(GLfloat), reinterpret_cast<void *>(6 * sizeof(GLfloat)));
-                    f->glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 11 * sizeof(GLfloat), reinterpret_cast<void *>(9 * sizeof(GLfloat)));
+                    f->glEnableVertexAttribArray(4);
+                    f->glEnableVertexAttribArray(5);
+                    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
+                    f->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void *>(3 * sizeof(GLfloat)));
+                    f->glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void *>(6 * sizeof(GLfloat)));
+                    f->glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void *>(9 * sizeof(GLfloat)));
+                    f->glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void *>(11 * sizeof(GLfloat)));
+                    f->glVertexAttribPointer(5, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void *>(12 * sizeof(GLfloat)));
                     m_vboTriangle.release();
                 }
                 {
@@ -171,10 +175,14 @@ void ModelMeshBinder::paint(ModelShaderProgram *program)
                     f->glEnableVertexAttribArray(1);
                     f->glEnableVertexAttribArray(2);
                     f->glEnableVertexAttribArray(3);
-                    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(GLfloat), 0);
-                    f->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(GLfloat), reinterpret_cast<void *>(3 * sizeof(GLfloat)));
-                    f->glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, 11 * sizeof(GLfloat), reinterpret_cast<void *>(6 * sizeof(GLfloat)));
-                    f->glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, 11 * sizeof(GLfloat), reinterpret_cast<void *>(9 * sizeof(GLfloat)));
+                    f->glEnableVertexAttribArray(4);
+                    f->glEnableVertexAttribArray(5);
+                    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
+                    f->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void *>(3 * sizeof(GLfloat)));
+                    f->glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void *>(6 * sizeof(GLfloat)));
+                    f->glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void *>(9 * sizeof(GLfloat)));
+                    f->glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void *>(11 * sizeof(GLfloat)));
+                    f->glVertexAttribPointer(5, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void *>(12 * sizeof(GLfloat)));
                     m_vboEdge.release();
                 }
             } else {

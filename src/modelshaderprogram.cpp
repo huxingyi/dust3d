@@ -17,19 +17,26 @@ const QString &ModelShaderProgram::loadShaderSource(const QString &name)
     return insertResult.first->second;
 }
 
-ModelShaderProgram::ModelShaderProgram()
+ModelShaderProgram::ModelShaderProgram(bool usePBR)
 {
     if (QSurfaceFormat::defaultFormat().profile() == QSurfaceFormat::CoreProfile) {
         this->addShaderFromSourceCode(QOpenGLShader::Vertex, loadShaderSource(":/shaders/default.core.vert"));
         this->addShaderFromSourceCode(QOpenGLShader::Fragment, loadShaderSource(":/shaders/default.core.frag"));
     } else {
-        this->addShaderFromSourceCode(QOpenGLShader::Vertex, loadShaderSource(":/shaders/default.vert"));
-        this->addShaderFromSourceCode(QOpenGLShader::Fragment, loadShaderSource(":/shaders/default.frag"));
+        if (usePBR) {
+            this->addShaderFromSourceCode(QOpenGLShader::Vertex, loadShaderSource(":/shaders/pbr.vert"));
+            this->addShaderFromSourceCode(QOpenGLShader::Fragment, loadShaderSource(":/shaders/pbr.frag"));
+        } else {
+            this->addShaderFromSourceCode(QOpenGLShader::Vertex, loadShaderSource(":/shaders/default.vert"));
+            this->addShaderFromSourceCode(QOpenGLShader::Fragment, loadShaderSource(":/shaders/default.frag"));
+        }
     }
     this->bindAttributeLocation("vertex", 0);
     this->bindAttributeLocation("normal", 1);
     this->bindAttributeLocation("color", 2);
     this->bindAttributeLocation("texCoord", 3);
+    this->bindAttributeLocation("metalness", 4);
+    this->bindAttributeLocation("roughness", 5);
     this->link();
 
     this->bind();

@@ -26,6 +26,8 @@ typedef struct
     GLfloat colorB;
     GLfloat texU;
     GLfloat texV;
+    GLfloat metalness;
+    GLfloat roughness;
 } Vertex;
 #pragma pack(pop)
 
@@ -38,7 +40,7 @@ struct TriangulatedFace
 class MeshLoader
 {
 public:
-    MeshLoader(void *meshlite, int meshId, int triangulatedMeshId=-1, QColor modelColor=Theme::white, const std::vector<QColor> *triangleColors=nullptr, bool smoothNormal=true);
+    MeshLoader(void *meshlite, int meshId, int triangulatedMeshId=-1, Material material={Theme::white, 0.0, 1.0}, const std::vector<Material> *triangleMaterials=nullptr, bool smoothNormal=true);
     MeshLoader(MeshResultContext &resultContext);
     MeshLoader(Vertex *triangleVertices, int vertexNum);
     MeshLoader(const MeshLoader &mesh);

@@ -874,6 +874,10 @@ void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUu
                 part["deformWidth"] = QString::number(partIt.second.deformWidth);
             if (!partIt.second.name.isEmpty())
                 part["name"] = partIt.second.name;
+            if (partIt.second.metalnessAdjusted())
+                part["metalness"] = QString::number(partIt.second.metalness);
+            if (partIt.second.roughnessAdjusted())
+                part["roughness"] = QString::number(partIt.second.roughness);
             snapshot->parts[part["id"]] = part;
         }
         for (const auto &nodeIt: nodeMap) {
@@ -1071,6 +1075,12 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot, bool fr
         const auto &deformWidthIt = partKv.second.find("deformWidth");
         if (deformWidthIt != partKv.second.end())
             part.setDeformWidth(deformWidthIt->second.toFloat());
+        const auto &metalnessIt = partKv.second.find("metalness");
+        if (metalnessIt != partKv.second.end())
+            part.metalness = metalnessIt->second.toFloat();
+        const auto &roughnessIt = partKv.second.find("roughness");
+        if (roughnessIt != partKv.second.end())
+            part.roughness = roughnessIt->second.toFloat();
         newAddedPartIds.insert(part.id);
     }
     for (const auto &nodeKv: snapshot.nodes) {
@@ -2142,6 +2152,32 @@ void SkeletonDocument::setPartDeformWidth(QUuid partId, float width)
     part->second.setDeformWidth(width);
     part->second.dirty = true;
     emit partDeformWidthChanged(partId);
+    emit skeletonChanged();
+}
+
+void SkeletonDocument::setPartMetalness(QUuid partId, float metalness)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    part->second.metalness = metalness;
+    part->second.dirty = true;
+    emit partMetalnessChanged(partId);
+    emit skeletonChanged();
+}
+
+void SkeletonDocument::setPartRoughness(QUuid partId, float roughness)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    part->second.roughness = roughness;
+    part->second.dirty = true;
+    emit partRoughnessChanged(partId);
     emit skeletonChanged();
 }
 

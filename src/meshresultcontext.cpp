@@ -26,7 +26,7 @@ struct CandidateEdge
 
 MeshResultContext::MeshResultContext() :
     m_triangleSourceResolved(false),
-    m_triangleColorResolved(false),
+    m_triangleMaterialResolved(false),
     m_triangleEdgeSourceMapResolved(false),
     m_bmeshNodeMapResolved(false),
     m_resultPartsResolved(false),
@@ -56,13 +56,13 @@ const std::map<int, std::pair<QUuid, QUuid>> &MeshResultContext::vertexSourceMap
     return m_vertexSourceMap;
 }
 
-const std::vector<QColor> &MeshResultContext::triangleColors()
+const std::vector<Material> &MeshResultContext::triangleMaterials()
 {
-    if (!m_triangleColorResolved) {
-        calculateTriangleColors(m_triangleColors);
-        m_triangleColorResolved = true;
+    if (!m_triangleMaterialResolved) {
+        calculateTriangleMaterials(m_triangleMaterials);
+        m_triangleMaterialResolved = true;
     }
-    return m_triangleColors;
+    return m_triangleMaterials;
 }
 
 const std::map<std::pair<int, int>, std::pair<QUuid, QUuid>> &MeshResultContext::triangleEdgeSourceMap()
@@ -257,15 +257,15 @@ void MeshResultContext::calculateRemainingVertexSourceNodesAfterTriangleSourceNo
     }
 }
 
-void MeshResultContext::calculateTriangleColors(std::vector<QColor> &triangleColors)
+void MeshResultContext::calculateTriangleMaterials(std::vector<Material> &triangleMaterials)
 {
-    std::map<std::pair<QUuid, QUuid>, QColor> nodeColorMap;
+    std::map<std::pair<QUuid, QUuid>, Material> nodeMaterialMap;
     for (const auto &it: bmeshNodes) {
-        nodeColorMap[std::make_pair(it.partId, it.nodeId)] = it.color;
+        nodeMaterialMap[std::make_pair(it.partId, it.nodeId)] = it.material;
     }
     const auto sourceNodes = triangleSourceNodes();
     for (const auto &it: sourceNodes) {
-        triangleColors.push_back(nodeColorMap[it]);
+        triangleMaterials.push_back(nodeMaterialMap[it]);
     }
 }
 
@@ -322,7 +322,7 @@ void MeshResultContext::calculateResultParts(std::map<QUuid, ResultPart> &parts)
         auto it = parts.find(sourceNode.first);
         if (it == parts.end()) {
             ResultPart newPart;
-            newPart.color = triangleColors()[x];
+            newPart.material = triangleMaterials()[x];
             parts.insert(std::make_pair(sourceNode.first, newPart));
         }
         auto &resultPart = parts[sourceNode.first];

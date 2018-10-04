@@ -4,6 +4,7 @@
 #include <QFontDatabase>
 #include <QDebug>
 #include <QtGlobal>
+#include <QSurfaceFormat>
 #include "skeletondocumentwindow.h"
 #include "theme.h"
 #include "version.h"
@@ -11,6 +12,10 @@
 int main(int argc, char ** argv)
 {
     QApplication app(argc, argv);
+    
+    QSurfaceFormat format = QSurfaceFormat::defaultFormat();
+    format.setProfile(QSurfaceFormat::OpenGLContextProfile::CompatibilityProfile);
+    QSurfaceFormat::setDefaultFormat(format);
     
     // QuantumCD/Qt 5 Dark Fusion Palette
     // https://gist.github.com/QuantumCD/6245215

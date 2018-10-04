@@ -17,8 +17,11 @@ uniform mat3 normalMatrix;
 void main() 
 {
     vert = vertex.xyz;
-    vertNormal = normalMatrix * normal;
+    vertNormal = normalize((projMatrix * mvMatrix * vec4(normal, 1.0)).xyz);
     vertColor = color;
     vertTexCoord = texCoord;
+    vertMetalness = metalness;
+    vertRoughness = roughness;
+    vertView = (projMatrix * mvMatrix * vec4(0, 0, 0, 1.0)).xyz;
     gl_Position = projMatrix * mvMatrix * vertex;
 }

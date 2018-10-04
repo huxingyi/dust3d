@@ -131,6 +131,8 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     connect(this, &SkeletonPartWidget::setPartRoundState, m_document, &SkeletonDocument::setPartRoundState);
     connect(this, &SkeletonPartWidget::setPartWrapState, m_document, &SkeletonDocument::setPartWrapState);
     connect(this, &SkeletonPartWidget::setPartColorState, m_document, &SkeletonDocument::setPartColorState);
+    connect(this, &SkeletonPartWidget::setPartMetalness, m_document, &SkeletonDocument::setPartMetalness);
+    connect(this, &SkeletonPartWidget::setPartRoughness, m_document, &SkeletonDocument::setPartRoughness);
     connect(this, &SkeletonPartWidget::checkPart, m_document, &SkeletonDocument::checkPart);
     connect(this, &SkeletonPartWidget::enableBackgroundBlur, m_document, &SkeletonDocument::enableBackgroundBlur);
     connect(this, &SkeletonPartWidget::disableBackgroundBlur, m_document, &SkeletonDocument::disableBackgroundBlur);
@@ -301,9 +303,10 @@ void SkeletonPartWidget::showColorSettingPopup(const QPoint &pos)
     palette.setColor(QPalette::Button, choosenColor);
     pickButton->setPalette(palette);
     
-    QHBoxLayout *layout = new QHBoxLayout;
-    layout->addWidget(colorEraser);
-    layout->addWidget(pickButton);
+    QHBoxLayout *colorLayout = new QHBoxLayout;
+    colorLayout->addWidget(colorEraser);
+    colorLayout->addWidget(pickButton);
+    colorLayout->addStretch();
     
     connect(colorEraser, &QPushButton::clicked, [=]() {
         emit setPartColorState(m_partId, false, Theme::white);
@@ -320,7 +323,55 @@ void SkeletonPartWidget::showColorSettingPopup(const QPoint &pos)
         }
     });
     
-    popup->setLayout(layout);
+    FloatNumberWidget *metalnessWidget = new FloatNumberWidget;
+    metalnessWidget->setItemName(tr("Metalness"));
+    metalnessWidget->setRange(0, 1);
+    metalnessWidget->setValue(part->metalness);
+    
+    connect(metalnessWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+        emit setPartMetalness(m_partId, value);
+        emit groupOperationAdded();
+    });
+    
+    FloatNumberWidget *roughnessWidget = new FloatNumberWidget;
+    roughnessWidget->setItemName(tr("Roughness"));
+    roughnessWidget->setRange(0, 1);
+    roughnessWidget->setValue(part->roughness);
+    
+    connect(roughnessWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+        emit setPartRoughness(m_partId, value);
+        emit groupOperationAdded();
+    });
+    
+    QPushButton *metalnessEraser = new QPushButton(QChar(fa::eraser));
+    initToolButton(metalnessEraser);
+    
+    connect(metalnessEraser, &QPushButton::clicked, [=]() {
+        metalnessWidget->setValue(0.0);
+        emit groupOperationAdded();
+    });
+    
+    QPushButton *roughnessEraser = new QPushButton(QChar(fa::eraser));
+    initToolButton(roughnessEraser);
+    
+    connect(roughnessEraser, &QPushButton::clicked, [=]() {
+        roughnessWidget->setValue(1.0);
+        emit groupOperationAdded();
+    });
+    
+    QHBoxLayout *metalnessLayout = new QHBoxLayout;
+    QHBoxLayout *roughnessLayout = new QHBoxLayout;
+    metalnessLayout->addWidget(metalnessEraser);
+    metalnessLayout->addWidget(metalnessWidget);
+    roughnessLayout->addWidget(roughnessEraser);
+    roughnessLayout->addWidget(roughnessWidget);
+    
+    QVBoxLayout *mainLayout = new QVBoxLayout;
+    mainLayout->addLayout(colorLayout);
+    mainLayout->addLayout(metalnessLayout);
+    mainLayout->addLayout(roughnessLayout);
+    
+    popup->setLayout(mainLayout);
     
     QWidgetAction *action = new QWidgetAction(this);
     action->setDefaultWidget(popup);
@@ -518,7 +569,7 @@ void SkeletonPartWidget::updateColorButton()
         qDebug() << "Part not found:" << m_partId;
         return;
     }
-    if (part->hasColor)
+    if (part->hasColor || part->materialAdjusted())
         updateButton(m_colorButton, QChar(fa::eyedropper), true);
     else
         updateButton(m_colorButton, QChar(fa::eyedropper), false);

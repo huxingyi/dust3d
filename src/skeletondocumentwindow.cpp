@@ -760,6 +760,8 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(m_document, &SkeletonDocument::partRoundStateChanged, partTreeWidget, &SkeletonPartTreeWidget::partRoundStateChanged);
     connect(m_document, &SkeletonDocument::partWrapStateChanged, partTreeWidget, &SkeletonPartTreeWidget::partWrapStateChanged);
     connect(m_document, &SkeletonDocument::partColorStateChanged, partTreeWidget, &SkeletonPartTreeWidget::partColorStateChanged);
+    connect(m_document, &SkeletonDocument::partMetalnessChanged, partTreeWidget, &SkeletonPartTreeWidget::partMetalnessChanged);
+    connect(m_document, &SkeletonDocument::partRoughnessChanged, partTreeWidget, &SkeletonPartTreeWidget::partRoughnessChanged);
     connect(m_document, &SkeletonDocument::partRemoved, partTreeWidget, &SkeletonPartTreeWidget::partRemoved);
     connect(m_document, &SkeletonDocument::cleanup, partTreeWidget, &SkeletonPartTreeWidget::removeAllContent);
     connect(m_document, &SkeletonDocument::partChecked, partTreeWidget, &SkeletonPartTreeWidget::partChecked);

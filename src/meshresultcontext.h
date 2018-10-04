@@ -10,13 +10,20 @@
 
 #define MAX_WEIGHT_NUM  4
 
+struct Material
+{
+    QColor color;
+    float metalness;
+    float roughness;
+};
+
 struct BmeshNode
 {
     QUuid partId;
     QUuid nodeId;
     QVector3D origin;
     float radius = 0;
-    QColor color;
+    Material material;
     SkeletonBoneMark boneMark;
 };
 
@@ -51,7 +58,7 @@ struct ResultVertexUv
 
 struct ResultPart
 {
-    QColor color;
+    Material material;
     std::vector<ResultVertex> vertices;
     std::vector<int> verticesOldIndicies;
     std::vector<QVector3D> interpolatedVertexNormals;
@@ -83,7 +90,7 @@ public:
     MeshResultContext();
 public:
     const std::vector<std::pair<QUuid, QUuid>> &triangleSourceNodes();
-    const std::vector<QColor> &triangleColors();
+    const std::vector<Material> &triangleMaterials();
     const std::map<std::pair<int, int>, std::pair<QUuid, QUuid>> &triangleEdgeSourceMap();
     const std::map<std::pair<QUuid, QUuid>, BmeshNode *> &bmeshNodeMap();
     const std::map<QUuid, ResultPart> &parts();
@@ -94,7 +101,7 @@ public:
     const std::vector<QVector3D> &interpolatedVertexNormals();
 private:
     bool m_triangleSourceResolved;
-    bool m_triangleColorResolved;
+    bool m_triangleMaterialResolved;
     bool m_triangleEdgeSourceMapResolved;
     bool m_bmeshNodeMapResolved;
     bool m_resultPartsResolved;
@@ -103,7 +110,7 @@ private:
     bool m_vertexNormalsInterpolated;
 private:
     std::vector<std::pair<QUuid, QUuid>> m_triangleSourceNodes;
-    std::vector<QColor> m_triangleColors;
+    std::vector<Material> m_triangleMaterials;
     std::map<std::pair<int, int>, std::pair<QUuid, QUuid>> m_triangleEdgeSourceMap;
     std::map<std::pair<QUuid, QUuid>, BmeshNode *> m_bmeshNodeMap;
     std::map<QUuid, ResultPart> m_resultParts;
@@ -117,7 +124,7 @@ private:
 private:
     void calculateTriangleSourceNodes(std::vector<std::pair<QUuid, QUuid>> &triangleSourceNodes, std::map<int, std::pair<QUuid, QUuid>> &vertexSourceMap);
     void calculateRemainingVertexSourceNodesAfterTriangleSourceNodesSolved(std::map<int, std::pair<QUuid, QUuid>> &vertexSourceMap);
-    void calculateTriangleColors(std::vector<QColor> &triangleColors);
+    void calculateTriangleMaterials(std::vector<Material> &triangleMaterials);
     void calculateTriangleEdgeSourceMap(std::map<std::pair<int, int>, std::pair<QUuid, QUuid>> &triangleEdgeSourceMap);
     void calculateBmeshNodeMap(std::map<std::pair<QUuid, QUuid>, BmeshNode *> &bmeshNodeMap);
     void calculateResultParts(std::map<QUuid, ResultPart> &parts);

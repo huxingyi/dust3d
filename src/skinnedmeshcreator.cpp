@@ -45,11 +45,11 @@ MeshLoader *SkinnedMeshCreator::createMeshFromTransform(const std::vector<QMatri
     int triangleVerticesNum = 0;
     for (size_t triangleIndex = 0; triangleIndex < m_meshResultContext.triangles.size(); triangleIndex++) {
         const auto &sourceTriangle = m_meshResultContext.triangles[triangleIndex];
-        QColor triangleColor = m_meshResultContext.triangleColors()[triangleIndex];
+        Material triangleMaterial = m_meshResultContext.triangleMaterials()[triangleIndex];
         for (int i = 0; i < 3; i++) {
             Vertex &currentVertex = triangleVertices[triangleVerticesNum++];
             const auto &sourcePosition = transformedPositions[sourceTriangle.indicies[i]];
-            const auto &sourceColor = triangleColor;
+            const auto &sourceColor = triangleMaterial.color;
             const auto &sourceNormal = transformedPoseNormals[sourceTriangle.indicies[i]];
             currentVertex.posX = sourcePosition.x();
             currentVertex.posY = sourcePosition.y();
@@ -62,6 +62,8 @@ MeshLoader *SkinnedMeshCreator::createMeshFromTransform(const std::vector<QMatri
             currentVertex.normX = sourceNormal.x();
             currentVertex.normY = sourceNormal.y();
             currentVertex.normZ = sourceNormal.z();
+            currentVertex.metalness = triangleMaterial.metalness;
+            currentVertex.roughness = triangleMaterial.roughness;
         }
     }
     

@@ -6,7 +6,7 @@
 
 #define MAX_VERTICES_PER_FACE   100
 
-MeshLoader::MeshLoader(void *meshlite, int meshId, int triangulatedMeshId, QColor modelColor, const std::vector<QColor> *triangleColors, bool smoothNormal) :
+MeshLoader::MeshLoader(void *meshlite, int meshId, int triangulatedMeshId, Material material, const std::vector<Material> *triangleMaterials, bool smoothNormal) :
     m_triangleVertices(nullptr),
     m_triangleVertexCount(0),
     m_edgeVertices(nullptr),
@@ -68,6 +68,8 @@ MeshLoader::MeshLoader(void *meshlite, int meshId, int triangulatedMeshId, QColo
             v->colorB = 0.0;
             v->texU = 0.0;
             v->texV = 0.0;
+            v->metalness = 0;
+            v->roughness = 1.0;
         }
     }
     
@@ -95,9 +97,9 @@ MeshLoader::MeshLoader(void *meshlite, int meshId, int triangulatedMeshId, QColo
     GLfloat *triangleNormals = new GLfloat[triangleCount * 3];
     int loadedTriangleNormalItemCount = meshlite_get_triangle_normal_array(meshlite, triangleMesh, triangleNormals, triangleCount * 3);
     
-    float modelR = modelColor.redF();
-    float modelG = modelColor.greenF();
-    float modelB = modelColor.blueF();
+    float modelR = material.color.redF();
+    float modelG = material.color.greenF();
+    float modelB = material.color.blueF();
     m_triangleVertexCount = triangleCount * 3;
     m_triangleVertices = new Vertex[m_triangleVertexCount * 3];
     for (int i = 0; i < triangleCount; i++) {
@@ -105,11 +107,15 @@ MeshLoader::MeshLoader(void *meshlite, int meshId, int triangulatedMeshId, QColo
         float useColorR = modelR;
         float useColorG = modelG;
         float useColorB = modelB;
-        if (triangleColors && i < (int)triangleColors->size()) {
-            QColor triangleColor = (*triangleColors)[i];
-            useColorR = triangleColor.redF();
-            useColorG = triangleColor.greenF();
-            useColorB = triangleColor.blueF();
+        float useMetalness = material.metalness;
+        float useRoughness = material.roughness;
+        if (triangleMaterials && i < (int)triangleMaterials->size()) {
+            auto triangleMaterial = (*triangleMaterials)[i];
+            useColorR = triangleMaterial.color.redF();
+            useColorG = triangleMaterial.color.greenF();
+            useColorB = triangleMaterial.color.blueF();
+            useMetalness = triangleMaterial.metalness;
+            useRoughness = triangleMaterial.roughness;
         }
         TriangulatedFace triangulatedFace;
         triangulatedFace.color.setRedF(useColorR);
@@ -136,6 +142,8 @@ MeshLoader::MeshLoader(void *meshlite, int meshId, int triangulatedMeshId, QColo
             v->colorR = useColorR;
             v->colorG = useColorG;
             v->colorB = useColorB;
+            v->metalness = useMetalness;
+            v->roughness = useRoughness;
         }
         m_triangulatedFaces.push_back(triangulatedFace);
     }
@@ -226,6 +234,7 @@ MeshLoader::MeshLoader(MeshResultContext &resultContext) :
                 const ResultVertex *srcVert = &part.second.vertices[vertexIndex];
                 const QVector3D *srcNormal = &part.second.interpolatedVertexNormals[vertexIndex];
                 const ResultVertexUv *srcUv = &part.second.vertexUvs[vertexIndex];
+                const Material *srcMaterial = &part.second.material;
                 Vertex *dest = &m_triangleVertices[destIndex];
                 dest->colorR = 0;
                 dest->colorG = 0;
@@ -238,6 +247,8 @@ MeshLoader::MeshLoader(MeshResultContext &resultContext) :
                 dest->normX = srcNormal->x();
                 dest->normY = srcNormal->y();
                 dest->normZ = srcNormal->z();
+                dest->metalness = srcMaterial->metalness;
+                dest->roughness = srcMaterial->roughness;
                 destIndex++;
             }
         }
