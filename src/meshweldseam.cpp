@@ -7,7 +7,7 @@
 #include "meshweldseam.h"
 #include "meshutil.h"
 
-int meshWeldSeam(void *meshlite, int meshId, float allowedSmallestDistance, const std::unordered_set<int> &seamVerticesIndicies)
+int meshWeldSeam(void *meshlite, int meshId, float allowedSmallestDistance, const PositionMap<bool> &excludePositions, int *affectedNum)
 {
     int vertexCount = meshlite_get_vertex_count(meshlite, meshId);
     float *vertexPositions = new float[vertexCount * 3];
@@ -15,11 +15,15 @@ int meshWeldSeam(void *meshlite, int meshId, float allowedSmallestDistance, cons
     int offset = 0;
     Q_ASSERT(vertexArrayLen == vertexCount * 3);
     std::vector<QVector3D> positions;
+    std::unordered_set<int> excludeVertices;
     for (int i = 0; i < vertexCount; i++) {
         float x = vertexPositions[offset + 0];
         float y = vertexPositions[offset + 1];
         float z = vertexPositions[offset + 2];
-        positions.push_back(QVector3D(x, y, z));
+        auto position = QVector3D(x, y, z);
+        if (excludePositions.findPosition(x, y, z))
+            excludeVertices.insert(i);
+        positions.push_back(position);
         offset += 3;
     }
     int faceCount = meshlite_get_face_count(meshlite, meshId);
@@ -66,9 +70,9 @@ int meshWeldSeam(void *meshlite, int meshId, float allowedSmallestDistance, cons
         const auto &faceIndicies = newFaceIndicies[i];
         if (faceIndicies.size() == 3) {
             bool indiciesSeamCheck[3] = {
-                seamVerticesIndicies.empty() || seamVerticesIndicies.find(faceIndicies[0]) != seamVerticesIndicies.end(),
-                seamVerticesIndicies.empty() || seamVerticesIndicies.find(faceIndicies[1]) != seamVerticesIndicies.end(),
-                seamVerticesIndicies.empty() || seamVerticesIndicies.find(faceIndicies[2]) != seamVerticesIndicies.end()
+                excludeVertices.find(faceIndicies[0]) == excludeVertices.end(),
+                excludeVertices.find(faceIndicies[1]) == excludeVertices.end(),
+                excludeVertices.find(faceIndicies[2]) == excludeVertices.end()
             };
             for (int j = 0; j < 3; j++) {
                 int next = (j + 1) % 3;
@@ -84,7 +88,6 @@ int meshWeldSeam(void *meshlite, int meshId, float allowedSmallestDistance, cons
                             continue;
                         }
                         int oppositeFaceIndex = findOppositeFace->second.first;
-                        // Weld on the longer edge vertex
                         if (((positions[edge.first] - positions[thirdVertexIndex]).lengthSquared() <
                                     (positions[edge.second] - positions[thirdVertexIndex]).lengthSquared()) &&
                                 vertexAdjFaceCountMap[edge.second] <= 4 &&
@@ -151,6 +154,8 @@ int meshWeldSeam(void *meshlite, int meshId, float allowedSmallestDistance, cons
             newFaceVertexNumAndIndices.push_back(index);
         }
     }
+    if (affectedNum)
+        *affectedNum = weldedCount;
     qDebug() << "Welded" << weldedCount << "triangles(" << newFaceIndicies.size() << " - " << weldedCount << " = " << faceCountAfterWeld << ")";
     weldedMesh = meshlite_build(meshlite, vertexPositions, vertexCount, newFaceVertexNumAndIndices.data(), newFaceVertexNumAndIndices.size());
     delete[] faceVertexNumAndIndices;

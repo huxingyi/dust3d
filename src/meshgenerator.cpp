@@ -538,21 +538,6 @@ void *MeshGenerator::combineComponentMesh(QString componentId, bool *inverse)
             }
             
             bool meshChanged = false;
-            if (m_weldEnabled) {
-                if (!seamVerticesIndicies.empty()) {
-                    int weldedMeshId = meshWeldSeam(m_meshliteContext, meshIdForSmooth, 0.025, seamVerticesIndicies);
-                    {
-                        void *testCombinableMesh = convertToCombinableMesh(m_meshliteContext, weldedMeshId);
-                        if (nullptr != testCombinableMesh) {
-                            deleteCombinableMesh(testCombinableMesh);
-                            meshIdForSmooth = weldedMeshId;
-                            meshChanged = true;
-                        } else {
-                            qDebug() << "Weld seam failed, fall back";
-                        }
-                    }
-                }
-            }
         
             if (smoothSeam) {
                 if (!seamVerticesIds.empty()) {
@@ -695,6 +680,26 @@ void MeshGenerator::process()
     
     int triangulatedFinalMeshId = resultMeshId;
     if (triangulatedFinalMeshId > 0) {
+        if (m_weldEnabled) {
+            PositionMap<bool> excludePositions;
+            for (auto it = m_cacheContext->partBmeshVertices.begin(); it != m_cacheContext->partBmeshVertices.end(); ++it) {
+                for (const auto &bmeshVertex: it->second) {
+                    excludePositions.addPosition(bmeshVertex.position.x(), bmeshVertex.position.y(), bmeshVertex.position.z(), true);
+                }
+            }
+            int totalAffectedNum = 0;
+            int affectedNum = 0;
+            int weldedMeshId = triangulatedFinalMeshId;
+            do {
+                affectedNum = 0;
+                weldedMeshId = meshWeldSeam(m_meshliteContext, weldedMeshId, 0.025, excludePositions, &affectedNum);
+                if (weldedMeshId <= 0)
+                    break;
+                triangulatedFinalMeshId = weldedMeshId;
+                totalAffectedNum += affectedNum;
+            } while (affectedNum > 0);
+            qDebug() << "Total weld affected triangles:" << totalAffectedNum;
+        }
         std::set<std::pair<PositionMapKey, PositionMapKey>> sharedQuadEdges;
         for (const auto &bmeshQuads: m_cacheContext->partBmeshQuads) {
             for (const auto &quad: bmeshQuads.second) {

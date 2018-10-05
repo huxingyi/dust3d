@@ -36,7 +36,7 @@ public:
         return value * 1000;
     }
 
-    PositionMapKey makeKey(float x, float y, float z)
+    PositionMapKey makeKey(float x, float y, float z) const
     {
         PositionMapKey key;
         key.x = makeInt(x) / m_intGridSize;
@@ -50,7 +50,7 @@ public:
         m_map[makeKey(x, y, z)] = data;
     }
 
-    bool findPosition(float x, float y, float z, T *data = nullptr)
+    bool findPosition(float x, float y, float z, T *data = nullptr) const
     {
         const auto &result = m_map.find(makeKey(x, y, z));
         if (result == m_map.end())

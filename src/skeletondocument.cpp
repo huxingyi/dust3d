@@ -28,7 +28,7 @@ SkeletonDocument::SkeletonDocument() :
     textureAmbientOcclusionImage(nullptr),
     textureColorImage(nullptr),
     rigType(RigType::None),
-    weldEnabled(false),
+    weldEnabled(true),
     // private
     m_isResultMeshObsolete(false),
     m_meshGenerator(nullptr),
