@@ -10,15 +10,18 @@ varying vec3 vertColor;
 varying vec2 vertTexCoord;
 varying float vertMetalness;
 varying float vertRoughness;
-varying vec3 vertView;
-uniform mat4 projMatrix;
-uniform mat4 mvMatrix;
-uniform mat3 normalMatrix;
-void main() 
+varying vec3 cameraPos;
+uniform mat4 projectionMatrix;
+uniform mat4 modelMatrix;
+uniform mat4 viewMatrix;
+void main()
 {
-    vert = vertex.xyz;
-    vertNormal = normalMatrix * normal;
+    vert = (modelMatrix * vertex).xyz;
+    vertNormal = normalize((modelMatrix * vec4(normal, 1.0)).xyz);
     vertColor = color;
     vertTexCoord = texCoord;
-    gl_Position = projMatrix * mvMatrix * vertex;
+    vertMetalness = metalness;
+    vertRoughness = roughness;
+    cameraPos = vec3(0, 0, -2.1);
+    gl_Position = projectionMatrix * viewMatrix * vec4(vert, 1.0);
 }

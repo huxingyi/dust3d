@@ -70,7 +70,7 @@ private:
 private:
     QPoint m_lastPos;
     ModelMeshBinder m_meshBinder;
-    QMatrix4x4 m_proj;
+    QMatrix4x4 m_projection;
     QMatrix4x4 m_camera;
     QMatrix4x4 m_world;
     static bool m_transparent;

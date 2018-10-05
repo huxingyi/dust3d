@@ -23,11 +23,10 @@ ModelShaderProgram::ModelShaderProgram(bool usePBR)
         this->addShaderFromSourceCode(QOpenGLShader::Vertex, loadShaderSource(":/shaders/default.core.vert"));
         this->addShaderFromSourceCode(QOpenGLShader::Fragment, loadShaderSource(":/shaders/default.core.frag"));
     } else {
+        this->addShaderFromSourceCode(QOpenGLShader::Vertex, loadShaderSource(":/shaders/default.vert"));
         if (usePBR) {
-            this->addShaderFromSourceCode(QOpenGLShader::Vertex, loadShaderSource(":/shaders/pbr.vert"));
-            this->addShaderFromSourceCode(QOpenGLShader::Fragment, loadShaderSource(":/shaders/pbr.frag"));
+            this->addShaderFromSourceCode(QOpenGLShader::Fragment, loadShaderSource(":/shaders/pbr-qt.frag"));
         } else {
-            this->addShaderFromSourceCode(QOpenGLShader::Vertex, loadShaderSource(":/shaders/default.vert"));
             this->addShaderFromSourceCode(QOpenGLShader::Fragment, loadShaderSource(":/shaders/default.frag"));
         }
     }
@@ -40,27 +39,27 @@ ModelShaderProgram::ModelShaderProgram(bool usePBR)
     this->link();
 
     this->bind();
-    m_projMatrixLoc = this->uniformLocation("projMatrix");
-    m_mvMatrixLoc = this->uniformLocation("mvMatrix");
-    m_normalMatrixLoc = this->uniformLocation("normalMatrix");
+    m_projectionMatrixLoc = this->uniformLocation("projectionMatrix");
+    m_modelMatrixLoc = this->uniformLocation("modelMatrix");
+    m_viewMatrixLoc = this->uniformLocation("viewMatrix");
     m_lightPosLoc = this->uniformLocation("lightPos");
     m_textureIdLoc = this->uniformLocation("textureId");
     m_textureEnabledLoc = this->uniformLocation("textureEnabled");
 }
 
-int ModelShaderProgram::projMatrixLoc()
+int ModelShaderProgram::projectionMatrixLoc()
 {
-    return m_projMatrixLoc;
+    return m_projectionMatrixLoc;
 }
 
-int ModelShaderProgram::mvMatrixLoc()
+int ModelShaderProgram::modelMatrixLoc()
 {
-    return m_mvMatrixLoc;
+    return m_modelMatrixLoc;
 }
 
-int ModelShaderProgram::normalMatrixLoc()
+int ModelShaderProgram::viewMatrixLoc()
 {
-    return m_normalMatrixLoc;
+    return m_viewMatrixLoc;
 }
 
 int ModelShaderProgram::lightPosLoc()

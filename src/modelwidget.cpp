@@ -156,12 +156,10 @@ void ModelWidget::paintGL()
     m_world.rotate(m_yRot / 16.0f, 0, 1, 0);
     m_world.rotate(m_zRot / 16.0f, 0, 0, 1);
 
-    
     m_program->bind();
-    m_program->setUniformValue(m_program->projMatrixLoc(), m_proj);
-    m_program->setUniformValue(m_program->mvMatrixLoc(), m_camera * m_world);
-    QMatrix3x3 normalMatrix = m_world.normalMatrix();
-    m_program->setUniformValue(m_program->normalMatrixLoc(), normalMatrix);
+    m_program->setUniformValue(m_program->projectionMatrixLoc(), m_projection);
+    m_program->setUniformValue(m_program->modelMatrixLoc(), m_world);
+    m_program->setUniformValue(m_program->viewMatrixLoc(), m_camera);
     m_program->setUniformValue(m_program->textureEnabledLoc(), 0);
     
     m_meshBinder.paint(m_program);
@@ -171,8 +169,8 @@ void ModelWidget::paintGL()
 
 void ModelWidget::resizeGL(int w, int h)
 {
-    m_proj.setToIdentity();
-    m_proj.perspective(45.0f, GLfloat(w) / h, 0.01f, 100.0f);
+    m_projection.setToIdentity();
+    m_projection.perspective(45.0f, GLfloat(w) / h, 0.01f, 100.0f);
 }
 
 void ModelWidget::toggleWireframe()

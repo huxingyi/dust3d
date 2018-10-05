@@ -62,7 +62,7 @@ varying highp vec3 vertColor;
 varying highp vec2 vertTexCoord;
 varying highp float vertMetalness;
 varying highp float vertRoughness;
-varying highp vec3 vertView;
+varying highp vec3 cameraPos;
 uniform highp vec3 lightPos;
 uniform highp sampler2D textureId;
 uniform highp int textureEnabled;
@@ -272,11 +272,6 @@ vec4 metalRoughFunction(const in vec4 baseColor,
 
 void main() 
 {
-    highp vec3 color = vertColor;
-    if (textureEnabled == 1) {
-        color = texture2D(textureId, vertTexCoord).rgb;
-    }
-
     // FIXME: don't hard code here
     exposure = 0.0;
     gamma = 2.2;
@@ -286,35 +281,46 @@ void main()
     // https://doc-snapshots.qt.io/qt5-5.12/qt3d-pbr-materials-lights-qml.html
     lightCount = 3;
 
+    // Key light 
     lights[0].type = TYPE_POINT;
-    lights[0].position = vec3(0.0, 5.0, 0.0);
-    lights[0].color = vec3(1.0, 1.0, 1.0);
+    lights[0].position = vec3(5.0, 5.0, 5.0);
+    lights[0].color = vec3(0.588, 0.588, 0.588);
     lights[0].intensity = 5.0;
-    lights[0].constantAttenuation = 1.0;
+    lights[0].constantAttenuation = 0.0;
     lights[0].linearAttenuation = 0.0;
-    lights[0].quadraticAttenuation = 0.0025;
+    lights[0].quadraticAttenuation = 0.0;
 
+    // Fill light
     lights[1].type = TYPE_POINT;
-    lights[1].position = vec3(5.0, 0.0, 0.0);
-    lights[1].color = vec3(1.0, 1.0, 1.0);
-    lights[1].intensity = 0.8;
-    lights[1].constantAttenuation = 1.0;
+    lights[1].position = vec3(-5.0, 5.0, 5.0);
+    lights[1].color = vec3(0.588, 0.588, 0.588);
+    lights[1].intensity = 3.0;
+    lights[1].constantAttenuation = 0.0;
     lights[1].linearAttenuation = 0.0;
-    lights[1].quadraticAttenuation = 0.0025;
+    lights[1].quadraticAttenuation = 0.0;
 
+    // Rim light
     lights[2].type = TYPE_POINT;
-    lights[2].position = vec3(0.0, -5.0, 0.0);
-    lights[2].color = vec3(1.0, 1.0, 1.0);
-    lights[2].intensity = 0.15;
-    lights[2].constantAttenuation = 1.0;
+    lights[2].position = vec3(0.0, -5.0, -5.0);
+    lights[2].color = vec3(0.588, 0.588, 0.588);
+    lights[2].intensity = 2.5;
+    lights[2].constantAttenuation = 0.0;
     lights[2].linearAttenuation = 0.0;
-    lights[2].quadraticAttenuation = 0.0025;
+    lights[2].quadraticAttenuation = 0.0;
+
+    highp vec3 color = vertColor;
+    if (textureEnabled == 1) {
+        color = texture2D(textureId, vertTexCoord).rgb;
+    }
+    color = pow(color, vec3(gamma));
+
+    float roughness = min(0.99, vertRoughness);
 
     gl_FragColor = metalRoughFunction(vec4(color, 1.0),
                                       vertMetalness,
-                                      vertRoughness,
+                                      roughness,
                                       vertAmbientOcclusion,
                                       vert,
-                                      vertView,
+                                      normalize(cameraPos - vert),
                                       vertNormal);
 }
