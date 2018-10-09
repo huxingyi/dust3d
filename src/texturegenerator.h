@@ -10,7 +10,7 @@ class TextureGenerator : public QObject
 {
     Q_OBJECT
 public:
-    TextureGenerator(const MeshResultContext &meshResultContext);
+    TextureGenerator(const MeshResultContext &meshResultContext, SkeletonSnapshot *snapshot=nullptr);
     ~TextureGenerator();
     QImage *takeResultTextureGuideImage();
     QImage *takeResultTextureImage();
@@ -32,6 +32,7 @@ public slots:
 public:
     static int m_textureSize;
 private:
+    void prepare();
     QPainterPath expandedPainterPath(const QPainterPath &painterPath);
 private:
     MeshResultContext *m_resultContext;
@@ -50,6 +51,7 @@ private:
     std::map<QUuid, QImage> m_partMetalnessTextureMap;
     std::map<QUuid, QImage> m_partRoughnessTextureMap;
     std::map<QUuid, QImage> m_partAmbientOcclusionTextureMap;
+    SkeletonSnapshot *m_snapshot;
 };
 
 #endif

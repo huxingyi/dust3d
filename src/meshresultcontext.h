@@ -8,14 +8,9 @@
 #include "positionmap.h"
 #include "skeletonbonemark.h"
 #include "texturetype.h"
+#include "material.h"
 
 #define MAX_WEIGHT_NUM  4
-
-struct Material
-{
-    QColor color;
-    const QImage *textureImages[(int)TextureType::Count - 1] = {nullptr};
-};
 
 struct BmeshNode
 {

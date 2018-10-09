@@ -2,12 +2,14 @@
 #include <QGuiApplication>
 #include <QRegion>
 #include <QPolygon>
+#include <QElapsedTimer>
 #include "texturegenerator.h"
 #include "theme.h"
+#include "dust3dutil.h"
 
 int TextureGenerator::m_textureSize = 1024;
 
-TextureGenerator::TextureGenerator(const MeshResultContext &meshResultContext) :
+TextureGenerator::TextureGenerator(const MeshResultContext &meshResultContext, SkeletonSnapshot *snapshot) :
     m_resultTextureGuideImage(nullptr),
     m_resultTextureImage(nullptr),
     m_resultTextureBorderImage(nullptr),
@@ -17,7 +19,8 @@ TextureGenerator::TextureGenerator(const MeshResultContext &meshResultContext) :
     m_resultTextureRoughnessImage(nullptr),
     m_resultTextureMetalnessImage(nullptr),
     m_resultTextureAmbientOcclusionImage(nullptr),
-    m_resultMesh(nullptr)
+    m_resultMesh(nullptr),
+    m_snapshot(snapshot)
 {
     m_resultContext = new MeshResultContext();
     *m_resultContext = meshResultContext;
@@ -36,6 +39,7 @@ TextureGenerator::~TextureGenerator()
     delete m_resultTextureMetalnessImage;
     delete m_resultTextureAmbientOcclusionImage;
     delete m_resultMesh;
+    delete m_snapshot;
 }
 
 QImage *TextureGenerator::takeResultTextureGuideImage()
@@ -130,8 +134,53 @@ QPainterPath TextureGenerator::expandedPainterPath(const QPainterPath &painterPa
     return (stroker.createStroke(painterPath) + painterPath).simplified();
 }
 
+void TextureGenerator::prepare()
+{
+    if (nullptr == m_snapshot)
+        return;
+    
+    std::map<QUuid, QUuid> updatedMaterialIdMap;
+    for (const auto &partIt: m_snapshot->parts) {
+        auto materialIdIt = partIt.second.find("materialId");
+        if (materialIdIt == partIt.second.end())
+            continue;
+        QUuid partId = QUuid(partIt.first);
+        QUuid materialId = QUuid(materialIdIt->second);
+        updatedMaterialIdMap.insert({partId, materialId});
+    }
+    for (const auto &bmeshNode: m_resultContext->bmeshNodes) {
+        for (size_t i = 0; i < (int)TextureType::Count - 1; ++i) {
+            TextureType forWhat = (TextureType)(i + 1);
+            MaterialTextures materialTextures;
+            QUuid materialId = bmeshNode.material.materialId;
+            auto findUpdatedMaterialIdResult = updatedMaterialIdMap.find(bmeshNode.partId);
+            if (findUpdatedMaterialIdResult != updatedMaterialIdMap.end())
+                materialId = findUpdatedMaterialIdResult->second;
+            initializeMaterialTexturesFromSnapshot(*m_snapshot, materialId, materialTextures);
+            const QImage *image = materialTextures.textureImages[i];
+            if (nullptr != image) {
+                if (TextureType::BaseColor == forWhat)
+                    addPartColorMap(bmeshNode.partId, image);
+                else if (TextureType::Normal == forWhat)
+                    addPartNormalMap(bmeshNode.partId, image);
+                else if (TextureType::Metalness == forWhat)
+                    addPartMetalnessMap(bmeshNode.partId, image);
+                else if (TextureType::Roughness == forWhat)
+                    addPartRoughnessMap(bmeshNode.partId, image);
+                else if (TextureType::AmbientOcclusion == forWhat)
+                    addPartAmbientOcclusionMap(bmeshNode.partId, image);
+            }
+        }
+    }
+}
+
 void TextureGenerator::generate()
 {
+    QElapsedTimer countTimeConsumed;
+    countTimeConsumed.start();
+    
+    prepare();
+    
     bool hasNormalMap = false;
     bool hasMetalnessMap = false;
     bool hasRoughnessMap = false;
@@ -350,6 +399,8 @@ void TextureGenerator::generate()
         m_resultMesh->setHasRoughnessInImage(hasRoughnessMap);
         m_resultMesh->setHasAmbientOcclusionInImage(hasAmbientOcclusionMap);
     }
+    
+    qDebug() << "The texture[" << TextureGenerator::m_textureSize << "x" << TextureGenerator::m_textureSize << "] generation took" << countTimeConsumed.elapsed() << "milliseconds";
 }
 
 void TextureGenerator::process()

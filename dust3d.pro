@@ -245,6 +245,9 @@ HEADERS += src/materialpreviewsgenerator.h
 SOURCES += src/materialwidget.cpp
 HEADERS += src/materialwidget.h
 
+SOURCES += src/material.cpp
+HEADERS += src/material.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h

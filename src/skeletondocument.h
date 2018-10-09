@@ -537,6 +537,7 @@ signals:
     void meshGenerating();
     void postProcessing();
     void textureGenerating();
+    void textureChanged();
 public: // need initialize
     float originX;
     float originY;

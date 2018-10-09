@@ -1524,26 +1524,11 @@ void SkeletonDocument::generateTexture()
     
     m_isTextureObsolete = false;
     
+    SkeletonSnapshot *snapshot = new SkeletonSnapshot;
+    toSnapshot(snapshot);
+    
     QThread *thread = new QThread;
-    m_textureGenerator = new TextureGenerator(*m_postProcessedResultContext);
-    for (const auto &bmeshNode: m_postProcessedResultContext->bmeshNodes) {
-        for (size_t i = 0; i < sizeof(bmeshNode.material.textureImages) / sizeof(bmeshNode.material.textureImages[0]); ++i) {
-            TextureType forWhat = (TextureType)(i + 1);
-            const QImage *image = bmeshNode.material.textureImages[i];
-            if (nullptr != image) {
-                if (TextureType::BaseColor == forWhat)
-                    m_textureGenerator->addPartColorMap(bmeshNode.partId, image);
-                else if (TextureType::Normal == forWhat)
-                    m_textureGenerator->addPartNormalMap(bmeshNode.partId, image);
-                else if (TextureType::Metalness == forWhat)
-                    m_textureGenerator->addPartMetalnessMap(bmeshNode.partId, image);
-                else if (TextureType::Roughness == forWhat)
-                    m_textureGenerator->addPartRoughnessMap(bmeshNode.partId, image);
-                else if (TextureType::AmbientOcclusion == forWhat)
-                    m_textureGenerator->addPartAmbientOcclusionMap(bmeshNode.partId, image);
-            }
-        }
-    }
+    m_textureGenerator = new TextureGenerator(*m_postProcessedResultContext, snapshot);
     m_textureGenerator->moveToThread(thread);
     connect(thread, &QThread::started, m_textureGenerator, &TextureGenerator::process);
     connect(m_textureGenerator, &TextureGenerator::finished, this, &SkeletonDocument::textureReady);
@@ -2270,7 +2255,7 @@ void SkeletonDocument::setPartMaterialId(QUuid partId, QUuid materialId)
     part->second.materialId = materialId;
     part->second.dirty = true;
     emit partMaterialIdChanged(partId);
-    emit skeletonChanged();
+    emit textureChanged();
 }
 
 void SkeletonDocument::setPartRoundState(QUuid partId, bool rounded)
@@ -2887,6 +2872,7 @@ void SkeletonDocument::setMaterialLayers(QUuid materialId, std::vector<SkeletonM
     findMaterialResult->second.layers = layers;
     findMaterialResult->second.dirty = true;
     emit materialLayersChanged(materialId);
+    emit textureChanged();
     emit optionsChanged();
 }
 

@@ -815,6 +815,7 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     //        m_document->postProcess();
     //    }
     //});
+    connect(m_document, &SkeletonDocument::textureChanged, m_document, &SkeletonDocument::generateTexture);
     connect(m_document, &SkeletonDocument::resultMeshChanged, m_document, &SkeletonDocument::postProcess);
     connect(m_document, &SkeletonDocument::resultMeshChanged, m_document, &SkeletonDocument::generateRig);
     connect(m_document, &SkeletonDocument::rigChanged, m_document, &SkeletonDocument::generateRig);

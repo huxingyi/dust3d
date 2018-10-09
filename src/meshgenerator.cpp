@@ -12,6 +12,7 @@
 #include "meshquadify.h"
 #include "meshweldseam.h"
 #include "imageforever.h"
+#include "material.h"
 
 bool MeshGenerator::m_enableDebug = false;
 PositionMap<int> *MeshGenerator::m_forMakePositionKey = new PositionMap<int>;
@@ -257,27 +258,8 @@ void *MeshGenerator::combinePartMesh(QString partId)
         materialId = QUuid(materialIdString);
     
     Material partMaterial;
-    for (const auto &material: m_snapshot->materials) {
-        if (materialIdString != valueOfKeyInMapOrEmpty(material.first, "id"))
-            continue;
-        for (const auto &layer: material.second) {
-            //FIXME: Only support one layer currently
-            for (const auto &mapItem: layer.second) {
-                auto textureType = TextureTypeFromString(valueOfKeyInMapOrEmpty(mapItem, "for").toUtf8().constData());
-                if (textureType != TextureType::None) {
-                    int index = (int)textureType - 1;
-                    if (index >= 0 && index < (int)TextureType::Count - 1) {
-                        if ("imageId" == valueOfKeyInMapOrEmpty(mapItem, "linkDataType")) {
-                            auto imageIdString = valueOfKeyInMapOrEmpty(mapItem, "linkData");
-                            partMaterial.textureImages[index] = ImageForever::get(QUuid(imageIdString));
-                        }
-                    }
-                }
-            }
-            break;
-        }
-        break;
-    }
+    partMaterial.color = partColor;
+    partMaterial.materialId = materialId;
     
     QString mirroredPartId;
     QUuid mirroredPartIdNotAsString;
