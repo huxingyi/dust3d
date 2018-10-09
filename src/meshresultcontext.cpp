@@ -378,6 +378,12 @@ void MeshResultContext::calculateResultTriangleUvs(std::vector<ResultTriangleUv>
     };
     NvAssertHandler assertHandler;
     nv::debug::setAssertHandler(&assertHandler);
+    
+    std::map<int, int> originalToRearrangeMap;
+    for (decltype(choosenVertices.size()) i = 0; i < choosenVertices.size(); i++) {
+        const auto &vertex = choosenVertices[i];
+        (void)originalToRearrangeMap.insert({vertex.originalIndex, i});
+    }
  
     inputMesh.vertex_count = choosenVertices.size();
     inputMesh.vertex_array = new Atlas_Input_Vertex[inputMesh.vertex_count];
@@ -394,7 +400,7 @@ void MeshResultContext::calculateResultTriangleUvs(std::vector<ResultTriangleUv>
         dest->normal[2] = 0;
         dest->uv[0] = 0;
         dest->uv[1] = 0;
-        dest->first_colocal = i;
+        dest->first_colocal = originalToRearrangeMap[src->originalIndex];
     }
     std::map<std::pair<int, int>, int> edgeToFaceIndexMap;
     std::map<QUuid, int> materialIndexMap;
@@ -437,8 +443,6 @@ void MeshResultContext::calculateResultTriangleUvs(std::vector<ResultTriangleUv>
     atlas_set_default_options(&atlasOptions);
     
     atlasOptions.packer_options.witness.packing_quality = 1;
-    //atlasOptions.packer_options.witness.texel_area = 1.0 / TextureGenerator::m_textureSize;
-    atlasOptions.packer_options.witness.conservative = false;
     
     Atlas_Error error = Atlas_Error_Success;
     Atlas_Output_Mesh *outputMesh = atlas_generate(&inputMesh, &atlasOptions, &error);

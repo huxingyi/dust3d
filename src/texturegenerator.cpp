@@ -125,7 +125,7 @@ void TextureGenerator::addPartAmbientOcclusionMap(QUuid partId, const QImage *im
 QPainterPath TextureGenerator::expandedPainterPath(const QPainterPath &painterPath)
 {
     QPainterPathStroker stroker;
-    stroker.setWidth(20);
+    stroker.setWidth(3);
     stroker.setJoinStyle(Qt::MiterJoin);
     return (stroker.createStroke(painterPath) + painterPath).simplified();
 }
@@ -212,7 +212,7 @@ void TextureGenerator::generate()
         texturePainter.setBrush(QBrush(triangleMaterials[i].color));
         texturePainter.drawPath(path);
     }
-    // round 2, real paint
+    // round 2.1, color paint
     texturePainter.setPen(Qt::NoPen);
     for (auto i = 0u; i < triangleUvs.size(); i++) {
         QPainterPath path;
@@ -228,17 +228,28 @@ void TextureGenerator::generate()
         path = expandedPainterPath(path);
         // Fill base color
         texturePainter.fillPath(path, QBrush(triangleMaterials[i].color));
+    }
+    // round 2.2, texture paint
+    texturePainter.setPen(Qt::NoPen);
+    for (auto i = 0u; i < triangleUvs.size(); i++) {
+        QPainterPath path;
+        const ResultTriangleUv *uv = &triangleUvs[i];
+        float points[][2] = {
+            {uv->uv[0][0] * TextureGenerator::m_textureSize, uv->uv[0][1] * TextureGenerator::m_textureSize},
+            {uv->uv[1][0] * TextureGenerator::m_textureSize, uv->uv[1][1] * TextureGenerator::m_textureSize},
+            {uv->uv[2][0] * TextureGenerator::m_textureSize, uv->uv[2][1] * TextureGenerator::m_textureSize}
+        };
+        path.moveTo(points[0][0], points[0][1]);
+        path.lineTo(points[1][0], points[1][1]);
+        path.lineTo(points[2][0], points[2][1]);
+        path = expandedPainterPath(path);
         // Copy color texture if there is one
         const std::pair<QUuid, QUuid> source = m_resultContext->triangleSourceNodes()[i];
         auto findColorTextureResult = m_partColorTextureMap.find(source.first);
         if (findColorTextureResult != m_partColorTextureMap.end()) {
             texturePainter.setClipping(true);
             texturePainter.setClipPath(path);
-            QPen textureBorderPen(triangleMaterials[i].color);
-            textureBorderPen.setWidth(0);
-            texturePainter.setPen(textureBorderPen);
             texturePainter.drawImage(0, 0, findColorTextureResult->second);
-            texturePainter.setPen(Qt::NoPen);
             texturePainter.setClipping(false);
         }
         // Copy normal texture if there is one
@@ -246,11 +257,7 @@ void TextureGenerator::generate()
         if (findNormalTextureResult != m_partNormalTextureMap.end()) {
             textureNormalPainter.setClipping(true);
             textureNormalPainter.setClipPath(path);
-            QPen textureBorderPen(triangleMaterials[i].color);
-            textureBorderPen.setWidth(0);
-            textureNormalPainter.setPen(textureBorderPen);
             textureNormalPainter.drawImage(0, 0, findNormalTextureResult->second);
-            textureNormalPainter.setPen(Qt::NoPen);
             textureNormalPainter.setClipping(false);
             hasNormalMap = true;
         }
@@ -259,11 +266,7 @@ void TextureGenerator::generate()
         if (findMetalnessTextureResult != m_partMetalnessTextureMap.end()) {
             textureMetalnessPainter.setClipping(true);
             textureMetalnessPainter.setClipPath(path);
-            QPen textureBorderPen(triangleMaterials[i].color);
-            textureBorderPen.setWidth(0);
-            textureMetalnessPainter.setPen(textureBorderPen);
             textureMetalnessPainter.drawImage(0, 0, findMetalnessTextureResult->second);
-            textureMetalnessPainter.setPen(Qt::NoPen);
             textureMetalnessPainter.setClipping(false);
             hasMetalnessMap = true;
         }
@@ -272,11 +275,7 @@ void TextureGenerator::generate()
         if (findRoughnessTextureResult != m_partRoughnessTextureMap.end()) {
             textureRoughnessPainter.setClipping(true);
             textureRoughnessPainter.setClipPath(path);
-            QPen textureBorderPen(triangleMaterials[i].color);
-            textureBorderPen.setWidth(0);
-            textureRoughnessPainter.setPen(textureBorderPen);
             textureRoughnessPainter.drawImage(0, 0, findRoughnessTextureResult->second);
-            textureRoughnessPainter.setPen(Qt::NoPen);
             textureRoughnessPainter.setClipping(false);
             hasRoughnessMap = true;
         }
@@ -285,11 +284,7 @@ void TextureGenerator::generate()
         if (findAmbientOcclusionTextureResult != m_partAmbientOcclusionTextureMap.end()) {
             textureAmbientOcclusionPainter.setClipping(true);
             textureAmbientOcclusionPainter.setClipPath(path);
-            QPen textureBorderPen(triangleMaterials[i].color);
-            textureBorderPen.setWidth(0);
-            textureAmbientOcclusionPainter.setPen(textureBorderPen);
             textureAmbientOcclusionPainter.drawImage(0, 0, findAmbientOcclusionTextureResult->second);
-            textureAmbientOcclusionPainter.setPen(Qt::NoPen);
             textureAmbientOcclusionPainter.setClipping(false);
             hasAmbientOcclusionMap = true;
         }
