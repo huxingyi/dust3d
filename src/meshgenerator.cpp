@@ -309,6 +309,7 @@ void *MeshGenerator::combinePartMesh(QString partId)
         cacheBmeshNodes.push_back(bmeshNode);
         if (xMirrored) {
             bmeshNode.partId = mirroredPartId;
+            bmeshNode.mirrorFromPartId = QUuid(partId);
             bmeshNode.origin.setX(-x);
             cacheBmeshNodes.push_back(bmeshNode);
         }

@@ -2943,3 +2943,8 @@ void SkeletonDocument::materialPreviewsReady()
     generateMaterialPreviews();
 }
 
+bool SkeletonDocument::isMeshGenerating() const
+{
+    return nullptr != m_meshGenerator;
+}
+

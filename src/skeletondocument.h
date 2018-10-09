@@ -613,6 +613,7 @@ public:
     const std::vector<QString> &resultRigErrorMarkNames() const;
     const MeshResultContext &currentRiggedResultContext() const;
     bool currentRigSucceed() const;
+    bool isMeshGenerating() const;
 public slots:
     void removeNode(QUuid nodeId);
     void removeEdge(QUuid edgeId);

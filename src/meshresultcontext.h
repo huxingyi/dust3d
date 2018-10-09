@@ -19,6 +19,7 @@ struct BmeshNode
     QVector3D origin;
     float radius = 0;
     Material material;
+    QUuid mirrorFromPartId;
     SkeletonBoneMark boneMark;
 };
 

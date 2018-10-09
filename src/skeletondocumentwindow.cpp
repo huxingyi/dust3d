@@ -822,6 +822,8 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(m_document, &SkeletonDocument::postProcessedResultChanged, m_document, &SkeletonDocument::generateTexture);
     //connect(m_document, &SkeletonDocument::resultTextureChanged, m_document, &SkeletonDocument::bakeAmbientOcclusionTexture);
     connect(m_document, &SkeletonDocument::resultTextureChanged, [=]() {
+        if (m_document->isMeshGenerating())
+            return;
         m_modelRenderWidget->updateMesh(m_document->takeResultTextureMesh());
     });
     
