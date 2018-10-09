@@ -63,9 +63,18 @@ varying highp vec2 vertTexCoord;
 varying highp float vertMetalness;
 varying highp float vertRoughness;
 varying highp vec3 cameraPos;
+varying vec3 firstLightPos;
+varying vec3 secondLightPos;
+varying vec3 thirdLightPos;
 uniform highp vec3 lightPos;
 uniform highp sampler2D textureId;
 uniform highp int textureEnabled;
+uniform highp sampler2D normalMapId;
+uniform highp int normalMapEnabled;
+uniform highp sampler2D metalnessRoughnessAmbientOcclusionMapId;
+uniform highp int metalnessMapEnabled;
+uniform highp int roughnessMapEnabled;
+uniform highp int ambientOcclusionMapEnabled;
 
 const int MAX_LIGHTS = 8;
 const int TYPE_POINT = 0;
@@ -275,7 +284,6 @@ void main()
     // FIXME: don't hard code here
     exposure = 0.0;
     gamma = 2.2;
-    const highp float vertAmbientOcclusion = 1.0;
 
     // Light settings:
     // https://doc-snapshots.qt.io/qt5-5.12/qt3d-pbr-materials-lights-qml.html
@@ -283,7 +291,7 @@ void main()
 
     // Key light 
     lights[0].type = TYPE_POINT;
-    lights[0].position = vec3(5.0, 5.0, 5.0);
+    lights[0].position = firstLightPos;
     lights[0].color = vec3(0.588, 0.588, 0.588);
     lights[0].intensity = 5.0;
     lights[0].constantAttenuation = 0.0;
@@ -292,7 +300,7 @@ void main()
 
     // Fill light
     lights[1].type = TYPE_POINT;
-    lights[1].position = vec3(-5.0, 5.0, 5.0);
+    lights[1].position = secondLightPos;
     lights[1].color = vec3(0.588, 0.588, 0.588);
     lights[1].intensity = 3.0;
     lights[1].constantAttenuation = 0.0;
@@ -301,7 +309,7 @@ void main()
 
     // Rim light
     lights[2].type = TYPE_POINT;
-    lights[2].position = vec3(0.0, -5.0, -5.0);
+    lights[2].position = thirdLightPos;
     lights[2].color = vec3(0.588, 0.588, 0.588);
     lights[2].intensity = 2.5;
     lights[2].constantAttenuation = 0.0;
@@ -314,13 +322,34 @@ void main()
     }
     color = pow(color, vec3(gamma));
 
-    float roughness = min(0.99, vertRoughness);
+    highp vec3 normal = vertNormal;
+    if (normalMapEnabled == 1) {
+        normal = texture2D(normalMapId, vertTexCoord).rgb;
+        normal = normalize(normal * 2.0 - 1.0);
+    }
+
+    float metalness = vertMetalness;
+    if (metalnessMapEnabled == 1) {
+        metalness = texture2D(metalnessRoughnessAmbientOcclusionMapId, vertTexCoord).b / 255.0;
+    }
+
+    float roughness = vertRoughness;
+    if (roughnessMapEnabled == 1) {
+        roughness = texture2D(metalnessRoughnessAmbientOcclusionMapId, vertTexCoord).r / 255.0;
+    }
+
+    float ambientOcclusion = 1.0;
+    if (ambientOcclusionMapEnabled == 1) {
+        ambientOcclusion = texture2D(metalnessRoughnessAmbientOcclusionMapId, vertTexCoord).g / 255.0;
+    }
+    
+    roughness = min(0.99, roughness);
 
     gl_FragColor = metalRoughFunction(vec4(color, 1.0),
-                                      vertMetalness,
+                                      metalness,
                                       roughness,
-                                      vertAmbientOcclusion,
+                                      ambientOcclusion,
                                       vert,
                                       normalize(cameraPos - vert),
-                                      vertNormal);
+                                      normal);
 }

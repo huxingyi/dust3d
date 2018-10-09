@@ -9,6 +9,7 @@
 #include "skeletondocument.h"
 #include "dust3dutil.h"
 #include "skeletonxml.h"
+#include "materialpreviewsgenerator.h"
 
 unsigned long SkeletonDocument::m_maxSnapshot = 1000;
 
@@ -54,7 +55,8 @@ SkeletonDocument::SkeletonDocument() :
     m_isRigObsolete(false),
     m_riggedResultContext(new MeshResultContext),
     m_posePreviewsGenerator(nullptr),
-    m_currentRigSucceed(false)
+    m_currentRigSucceed(false),
+    m_materialPreviewsGenerator(nullptr)
 {
 }
 
@@ -592,6 +594,14 @@ const SkeletonPose *SkeletonDocument::findPose(QUuid poseId) const
     return &it->second;
 }
 
+const SkeletonMaterial *SkeletonDocument::findMaterial(QUuid materialId) const
+{
+    auto it = materialMap.find(materialId);
+    if (it == materialMap.end())
+        return nullptr;
+    return &it->second;
+}
+
 const SkeletonMotion *SkeletonDocument::findMotion(QUuid motionId) const
 {
     auto it = motionMap.find(motionId);
@@ -830,7 +840,10 @@ void SkeletonDocument::markAllDirty()
 }
 
 void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUuid> &limitNodeIds,
-    SkeletonDocumentToSnapshotFor forWhat, const std::set<QUuid> &limitPoseIds, const std::set<QUuid> &limitMotionIds) const
+    SkeletonDocumentToSnapshotFor forWhat,
+    const std::set<QUuid> &limitPoseIds,
+    const std::set<QUuid> &limitMotionIds,
+    const std::set<QUuid> &limitMaterialIds) const
 {
     if (SkeletonDocumentToSnapshotFor::Document == forWhat ||
             SkeletonDocumentToSnapshotFor::Nodes == forWhat) {
@@ -874,10 +887,8 @@ void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUu
                 part["deformWidth"] = QString::number(partIt.second.deformWidth);
             if (!partIt.second.name.isEmpty())
                 part["name"] = partIt.second.name;
-            if (partIt.second.metalnessAdjusted())
-                part["metalness"] = QString::number(partIt.second.metalness);
-            if (partIt.second.roughnessAdjusted())
-                part["roughness"] = QString::number(partIt.second.roughness);
+            if (partIt.second.materialAdjusted())
+                part["materialId"] = partIt.second.materialId.toString();
             snapshot->parts[part["id"]] = part;
         }
         for (const auto &nodeIt: nodeMap) {
@@ -950,6 +961,38 @@ void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUu
             QString children = childIdList.join(",");
             if (!children.isEmpty())
                 snapshot->rootComponent["children"] = children;
+        }
+    }
+    if (SkeletonDocumentToSnapshotFor::Document == forWhat ||
+            SkeletonDocumentToSnapshotFor::Materials == forWhat) {
+        for (const auto &materialId: materialIdList) {
+            if (!limitMaterialIds.empty() && limitMaterialIds.find(materialId) == limitMaterialIds.end())
+                continue;
+            auto findMaterialResult = materialMap.find(materialId);
+            if (findMaterialResult == materialMap.end()) {
+                qDebug() << "Find material failed:" << materialId;
+                continue;
+            }
+            auto &materialIt = *findMaterialResult;
+            std::map<QString, QString> material;
+            material["id"] = materialIt.second.id.toString();
+            material["type"] = "MetalRoughness";
+            if (!materialIt.second.name.isEmpty())
+                material["name"] = materialIt.second.name;
+            std::vector<std::pair<std::map<QString, QString>, std::vector<std::map<QString, QString>>>> layers;
+            for (const auto &layer: materialIt.second.layers) {
+                std::vector<std::map<QString, QString>> maps;
+                for (const auto &mapItem: layer.maps) {
+                    std::map<QString, QString> textureMap;
+                    textureMap["for"] = TextureTypeToString(mapItem.forWhat);
+                    textureMap["linkDataType"] = "imageId";
+                    textureMap["linkData"] = mapItem.imageId.toString();
+                    maps.push_back(textureMap);
+                }
+                std::map<QString, QString> layerAttributes;
+                layers.push_back({layerAttributes, maps});
+            }
+            snapshot->materials.push_back(std::make_pair(material, layers));
         }
     }
     if (SkeletonDocumentToSnapshotFor::Document == forWhat ||
@@ -1048,6 +1091,43 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot, bool fr
     std::set<QUuid> inversePartIds;
     
     std::map<QUuid, QUuid> oldNewIdMap;
+    for (const auto &materialIt: snapshot.materials) {
+        const auto &materialAttributes = materialIt.first;
+        auto materialType = valueOfKeyInMapOrEmpty(materialAttributes, "type");
+        if ("MetalRoughness" != materialType) {
+            qDebug() << "Unsupported material type:" << materialType;
+            continue;
+        }
+        QUuid newMaterialId = QUuid::createUuid();
+        auto &newMaterial = materialMap[newMaterialId];
+        newMaterial.id = newMaterialId;
+        newMaterial.name = valueOfKeyInMapOrEmpty(materialAttributes, "name");
+        oldNewIdMap[QUuid(valueOfKeyInMapOrEmpty(materialAttributes, "id"))] = newMaterialId;
+        for (const auto &layerIt: materialIt.second) {
+            SkeletonMaterialLayer layer;
+            for (const auto &mapItem: layerIt.second) {
+                auto textureTypeString = valueOfKeyInMapOrEmpty(mapItem, "for");
+                auto textureType = TextureTypeFromString(textureTypeString.toUtf8().constData());
+                if (TextureType::None == textureType) {
+                    qDebug() << "Unsupported texture type:" << textureTypeString;
+                    continue;
+                }
+                auto linkTypeString = valueOfKeyInMapOrEmpty(mapItem, "linkDataType");
+                if ("imageId" != linkTypeString) {
+                    qDebug() << "Unsupported link data type:" << linkTypeString;
+                    continue;
+                }
+                auto imageId = QUuid(valueOfKeyInMapOrEmpty(mapItem, "linkData"));
+                SkeletonMaterialMap materialMap;
+                materialMap.imageId = imageId;
+                materialMap.forWhat = textureType;
+                layer.maps.push_back(materialMap);
+            }
+            newMaterial.layers.push_back(layer);
+        }
+        materialIdList.push_back(newMaterialId);
+        emit materialAdded(newMaterialId);
+    }
     for (const auto &partKv: snapshot.parts) {
         const auto newUuid = QUuid::createUuid();
         SkeletonPart &part = partMap[newUuid];
@@ -1075,12 +1155,9 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot, bool fr
         const auto &deformWidthIt = partKv.second.find("deformWidth");
         if (deformWidthIt != partKv.second.end())
             part.setDeformWidth(deformWidthIt->second.toFloat());
-        const auto &metalnessIt = partKv.second.find("metalness");
-        if (metalnessIt != partKv.second.end())
-            part.metalness = metalnessIt->second.toFloat();
-        const auto &roughnessIt = partKv.second.find("roughness");
-        if (roughnessIt != partKv.second.end())
-            part.roughness = roughnessIt->second.toFloat();
+        const auto &materialIdIt = partKv.second.find("materialId");
+        if (materialIdIt != partKv.second.end())
+            part.materialId = oldNewIdMap[QUuid(materialIdIt->second)];
         newAddedPartIds.insert(part.id);
     }
     for (const auto &nodeKv: snapshot.nodes) {
@@ -1263,6 +1340,8 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot, bool fr
         emit checkEdge(edgeIt);
     }
     
+    if (!snapshot.materials.empty())
+        emit materialListChanged();
     if (!snapshot.poses.empty())
         emit poseListChanged();
     if (!snapshot.motions.empty())
@@ -1279,6 +1358,8 @@ void SkeletonDocument::reset()
     edgeMap.clear();
     partMap.clear();
     componentMap.clear();
+    materialMap.clear();
+    materialIdList.clear();
     poseMap.clear();
     poseIdList.clear();
     motionMap.clear();
@@ -1305,8 +1386,9 @@ MeshLoader *SkeletonDocument::takeResultMesh()
 
 MeshLoader *SkeletonDocument::takeResultTextureMesh()
 {
-    MeshLoader *resultTextureMesh = m_resultTextureMesh;
-    m_resultTextureMesh = nullptr;
+    if (nullptr == m_resultTextureMesh)
+        return nullptr;
+    MeshLoader *resultTextureMesh = new MeshLoader(*m_resultTextureMesh);
     return resultTextureMesh;
 }
 
@@ -1413,20 +1495,21 @@ void SkeletonDocument::generateMesh()
     SkeletonSnapshot *snapshot = new SkeletonSnapshot;
     toSnapshot(snapshot);
     resetDirtyFlags();
-    m_meshGenerator = new MeshGenerator(snapshot, thread);
+    m_meshGenerator = new MeshGenerator(snapshot);
     m_meshGenerator->setSmoothNormal(m_smoothNormal);
     m_meshGenerator->setWeldEnabled(weldEnabled);
     m_meshGenerator->setGeneratedCacheContext(&m_generatedCacheContext);
     if (nullptr != m_sharedContextWidget)
         m_meshGenerator->setSharedContextWidget(m_sharedContextWidget);
-    m_meshGenerator->moveToThread(thread);
     for (auto &part: partMap) {
         m_meshGenerator->addPartPreviewRequirement(part.first);
     }
+    m_meshGenerator->moveToThread(thread);
     connect(thread, &QThread::started, m_meshGenerator, &MeshGenerator::process);
     connect(m_meshGenerator, &MeshGenerator::finished, this, &SkeletonDocument::meshReady);
     connect(m_meshGenerator, &MeshGenerator::finished, thread, &QThread::quit);
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+    emit meshGenerating();
     thread->start();
 }
 
@@ -1442,12 +1525,31 @@ void SkeletonDocument::generateTexture()
     m_isTextureObsolete = false;
     
     QThread *thread = new QThread;
-    m_textureGenerator = new TextureGenerator(*m_postProcessedResultContext, thread);
+    m_textureGenerator = new TextureGenerator(*m_postProcessedResultContext);
+    for (const auto &bmeshNode: m_postProcessedResultContext->bmeshNodes) {
+        for (size_t i = 0; i < sizeof(bmeshNode.material.textureImages) / sizeof(bmeshNode.material.textureImages[0]); ++i) {
+            TextureType forWhat = (TextureType)(i + 1);
+            const QImage *image = bmeshNode.material.textureImages[i];
+            if (nullptr != image) {
+                if (TextureType::BaseColor == forWhat)
+                    m_textureGenerator->addPartColorMap(bmeshNode.partId, image);
+                else if (TextureType::Normal == forWhat)
+                    m_textureGenerator->addPartNormalMap(bmeshNode.partId, image);
+                else if (TextureType::Metalness == forWhat)
+                    m_textureGenerator->addPartMetalnessMap(bmeshNode.partId, image);
+                else if (TextureType::Roughness == forWhat)
+                    m_textureGenerator->addPartRoughnessMap(bmeshNode.partId, image);
+                else if (TextureType::AmbientOcclusion == forWhat)
+                    m_textureGenerator->addPartAmbientOcclusionMap(bmeshNode.partId, image);
+            }
+        }
+    }
     m_textureGenerator->moveToThread(thread);
     connect(thread, &QThread::started, m_textureGenerator, &TextureGenerator::process);
     connect(m_textureGenerator, &TextureGenerator::finished, this, &SkeletonDocument::textureReady);
     connect(m_textureGenerator, &TextureGenerator::finished, thread, &QThread::quit);
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+    emit textureGenerating();
     thread->start();
 }
 
@@ -1501,7 +1603,7 @@ void SkeletonDocument::bakeAmbientOcclusionTexture()
     QThread *thread = new QThread;
     m_ambientOcclusionBaker = new AmbientOcclusionBaker();
     m_ambientOcclusionBaker->setInputMesh(*m_postProcessedResultContext);
-    m_ambientOcclusionBaker->setBakeSize(TextureGenerator::m_textureWidth, TextureGenerator::m_textureHeight);
+    m_ambientOcclusionBaker->setBakeSize(TextureGenerator::m_textureSize, TextureGenerator::m_textureSize);
     if (textureBorderImage)
         m_ambientOcclusionBaker->setBorderImage(*textureBorderImage);
     if (textureColorImage)
@@ -1578,6 +1680,7 @@ void SkeletonDocument::postProcess()
     connect(m_postProcessor, &MeshResultPostProcessor::finished, this, &SkeletonDocument::postProcessedMeshResultReady);
     connect(m_postProcessor, &MeshResultPostProcessor::finished, thread, &QThread::quit);
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+    emit postProcessing();
     thread->start();
 }
 
@@ -2155,29 +2258,18 @@ void SkeletonDocument::setPartDeformWidth(QUuid partId, float width)
     emit skeletonChanged();
 }
 
-void SkeletonDocument::setPartMetalness(QUuid partId, float metalness)
+void SkeletonDocument::setPartMaterialId(QUuid partId, QUuid materialId)
 {
     auto part = partMap.find(partId);
     if (part == partMap.end()) {
         qDebug() << "Part not found:" << partId;
         return;
     }
-    part->second.metalness = metalness;
-    part->second.dirty = true;
-    emit partMetalnessChanged(partId);
-    emit skeletonChanged();
-}
-
-void SkeletonDocument::setPartRoughness(QUuid partId, float roughness)
-{
-    auto part = partMap.find(partId);
-    if (part == partMap.end()) {
-        qDebug() << "Part not found:" << partId;
+    if (part->second.materialId == materialId)
         return;
-    }
-    part->second.roughness = roughness;
+    part->second.materialId = materialId;
     part->second.dirty = true;
-    emit partRoughnessChanged(partId);
+    emit partMaterialIdChanged(partId);
     emit skeletonChanged();
 }
 
@@ -2275,6 +2367,17 @@ bool SkeletonDocument::hasPastableNodesInClipboard() const
     const QMimeData *mimeData = clipboard->mimeData();
     if (mimeData->hasText()) {
         if (-1 != mimeData->text().indexOf("<node "))
+            return true;
+    }
+    return false;
+}
+
+bool SkeletonDocument::hasPastableMaterialsInClipboard() const
+{
+    const QClipboard *clipboard = QApplication::clipboard();
+    const QMimeData *mimeData = clipboard->mimeData();
+    if (mimeData->hasText()) {
+        if (-1 != mimeData->text().indexOf("<material "))
             return true;
     }
     return false;
@@ -2741,3 +2844,116 @@ void SkeletonDocument::posePreviewsReady()
     
     generatePosePreviews();
 }
+
+void SkeletonDocument::addMaterial(QString name, std::vector<SkeletonMaterialLayer> layers)
+{
+    QUuid newMaterialId = QUuid::createUuid();
+    auto &material = materialMap[newMaterialId];
+    material.id = newMaterialId;
+    
+    material.name = name;
+    material.layers = layers;
+    material.dirty = true;
+    
+    materialIdList.push_back(newMaterialId);
+    
+    emit materialAdded(newMaterialId);
+    emit materialListChanged();
+    emit optionsChanged();
+}
+
+void SkeletonDocument::removeMaterial(QUuid materialId)
+{
+    auto findMaterialResult = materialMap.find(materialId);
+    if (findMaterialResult == materialMap.end()) {
+        qDebug() << "Remove a none exist material:" << materialId;
+        return;
+    }
+    materialIdList.erase(std::remove(materialIdList.begin(), materialIdList.end(), materialId), materialIdList.end());
+    materialMap.erase(findMaterialResult);
+    
+    emit materialListChanged();
+    emit materialRemoved(materialId);
+    emit optionsChanged();
+}
+
+void SkeletonDocument::setMaterialLayers(QUuid materialId, std::vector<SkeletonMaterialLayer> layers)
+{
+    auto findMaterialResult = materialMap.find(materialId);
+    if (findMaterialResult == materialMap.end()) {
+        qDebug() << "Find material failed:" << materialId;
+        return;
+    }
+    findMaterialResult->second.layers = layers;
+    findMaterialResult->second.dirty = true;
+    emit materialLayersChanged(materialId);
+    emit optionsChanged();
+}
+
+void SkeletonDocument::renameMaterial(QUuid materialId, QString name)
+{
+    auto findMaterialResult = materialMap.find(materialId);
+    if (findMaterialResult == materialMap.end()) {
+        qDebug() << "Find material failed:" << materialId;
+        return;
+    }
+    if (findMaterialResult->second.name == name)
+        return;
+    
+    findMaterialResult->second.name = name;
+    emit materialNameChanged(materialId);
+    emit optionsChanged();
+}
+
+void SkeletonDocument::generateMaterialPreviews()
+{
+    if (nullptr != m_materialPreviewsGenerator) {
+        return;
+    }
+
+    QThread *thread = new QThread;
+    m_materialPreviewsGenerator = new MaterialPreviewsGenerator();
+    bool hasDirtyMaterial = false;
+    for (auto &materialIt: materialMap) {
+        if (!materialIt.second.dirty)
+            continue;
+        m_materialPreviewsGenerator->addMaterial(materialIt.first, materialIt.second.layers);
+        materialIt.second.dirty = false;
+        hasDirtyMaterial = true;
+    }
+    if (!hasDirtyMaterial) {
+        delete m_materialPreviewsGenerator;
+        m_materialPreviewsGenerator = nullptr;
+        delete thread;
+        return;
+    }
+    
+    qDebug() << "Material previews generating..";
+    
+    m_materialPreviewsGenerator->moveToThread(thread);
+    connect(thread, &QThread::started, m_materialPreviewsGenerator, &MaterialPreviewsGenerator::process);
+    connect(m_materialPreviewsGenerator, &MaterialPreviewsGenerator::finished, this, &SkeletonDocument::materialPreviewsReady);
+    connect(m_materialPreviewsGenerator, &MaterialPreviewsGenerator::finished, thread, &QThread::quit);
+    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+    thread->start();
+}
+
+void SkeletonDocument::materialPreviewsReady()
+{
+    for (const auto &materialId: m_materialPreviewsGenerator->generatedPreviewMaterialIds()) {
+        auto material = materialMap.find(materialId);
+        if (material != materialMap.end()) {
+            MeshLoader *resultPartPreviewMesh = m_materialPreviewsGenerator->takePreview(materialId);
+            material->second.updatePreviewMesh(resultPartPreviewMesh);
+            emit materialPreviewChanged(materialId);
+        }
+    }
+
+    delete m_materialPreviewsGenerator;
+    m_materialPreviewsGenerator = nullptr;
+    
+    qDebug() << "Material previews generation done";
+    
+    generateMaterialPreviews();
+}
+

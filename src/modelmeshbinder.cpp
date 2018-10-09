@@ -16,7 +16,13 @@ ModelMeshBinder::ModelMeshBinder() :
     m_newMeshComing(false),
     m_showWireframes(false),
     m_hasTexture(false),
-    m_texture(nullptr)
+    m_texture(nullptr),
+    m_hasNormalMap(false),
+    m_normalMap(nullptr),
+    m_hasMetalnessMap(false),
+    m_hasRoughnessMap(false),
+    m_hasAmbientOcclusionMap(false),
+    m_metalnessRoughnessAmbientOcclusionMap(nullptr)
 {
 }
 
@@ -25,6 +31,8 @@ ModelMeshBinder::~ModelMeshBinder()
     delete m_mesh;
     delete m_newMesh;
     delete m_texture;
+    delete m_normalMap;
+    delete m_metalnessRoughnessAmbientOcclusionMap;
 }
 
 void ModelMeshBinder::updateMesh(MeshLoader *mesh)
@@ -34,77 +42,6 @@ void ModelMeshBinder::updateMesh(MeshLoader *mesh)
         delete m_newMesh;
         m_newMesh = mesh;
         m_newMeshComing = true;
-    }
-}
-
-void ModelMeshBinder::exportMeshAsObj(const QString &filename)
-{
-    QMutexLocker lock(&m_meshMutex);
-    if (m_mesh) {
-        QFile file(filename);
-        if (file.open(QIODevice::WriteOnly)) {
-            QTextStream stream(&file);
-            stream << "# " << Ds3FileReader::m_applicationName << endl;
-            for (std::vector<QVector3D>::const_iterator it = m_mesh->vertices().begin() ; it != m_mesh->vertices().end(); ++it) {
-                stream << "v " << (*it).x() << " " << (*it).y() << " " << (*it).z() << endl;
-            }
-            for (std::vector<std::vector<int>>::const_iterator it = m_mesh->faces().begin() ; it != m_mesh->faces().end(); ++it) {
-                stream << "f";
-                for (std::vector<int>::const_iterator subIt = (*it).begin() ; subIt != (*it).end(); ++subIt) {
-                    stream << " " << (1 + *subIt);
-                }
-                stream << endl;
-            }
-        }
-    }
-}
-
-void ModelMeshBinder::exportMeshAsObjPlusMaterials(const QString &filename)
-{
-    QMutexLocker lock(&m_meshMutex);
-    if (m_mesh) {
-        QFileInfo nameInfo(filename);
-        QString mtlFilenameWithoutPath = nameInfo.baseName() + ".mtl";
-        QString mtlFilename = nameInfo.path() + QDir::separator() + mtlFilenameWithoutPath;
-        std::map<QString, QColor> colorNameMap;
-        QString lastColorName;
-        
-        qDebug() << "export obj to " << filename;
-        qDebug() << "export mtl to " << mtlFilename;
-        
-        QFile file(filename);
-        if (file.open(QIODevice::WriteOnly)) {
-            QTextStream stream(&file);
-            stream << "# " << Ds3FileReader::m_applicationName << endl;
-            stream << "mtllib " << mtlFilenameWithoutPath << endl;
-            for (std::vector<QVector3D>::const_iterator it = m_mesh->triangulatedVertices().begin() ; it != m_mesh->triangulatedVertices().end(); ++it) {
-                stream << "v " << (*it).x() << " " << (*it).y() << " " << (*it).z() << endl;
-            }
-            for (std::vector<TriangulatedFace>::const_iterator it = m_mesh->triangulatedFaces().begin() ; it != m_mesh->triangulatedFaces().end(); ++it) {
-                QString colorName = it->color.name();
-                colorName = "rgb" + colorName.remove(QChar('#'));
-                if (colorNameMap.find(colorName) == colorNameMap.end())
-                    colorNameMap[colorName] = it->color;
-                if (lastColorName != colorName) {
-                    lastColorName = colorName;
-                    stream << "usemtl " << colorName << endl;
-                }
-                stream << "f" << " " << (1 + it->indicies[0]) << " " << (1 + it->indicies[1]) << " " << (1 + it->indicies[2]) << endl;
-            }
-        }
-        
-        QFile mtlFile(mtlFilename);
-        if (mtlFile.open(QIODevice::WriteOnly)) {
-            QTextStream stream(&mtlFile);
-            stream << "# " << Ds3FileReader::m_applicationName << endl;
-            for (const auto &it: colorNameMap) {
-                stream << "newmtl " << it.first << endl;
-                stream << "Ka" << " " << it.second.redF() << " " << it.second.greenF() << " " << it.second.blueF() << endl;
-                stream << "Kd" << " " << it.second.redF() << " " << it.second.greenF() << " " << it.second.blueF() << endl;
-                stream << "Ks" << " 0.0 0.0 0.0" << endl;
-                stream << "illum" << " 1" << endl;
-            }
-        }
     }
 }
 
@@ -133,12 +70,28 @@ void ModelMeshBinder::paint(ModelShaderProgram *program)
             delete m_mesh;
             m_mesh = newMesh;
             if (m_mesh) {
+            
                 m_hasTexture = nullptr != m_mesh->textureImage();
                 delete m_texture;
                 m_texture = nullptr;
-                if (m_hasTexture) {
+                if (m_hasTexture)
                     m_texture = new QOpenGLTexture(*m_mesh->textureImage());
-                }
+                
+                m_hasNormalMap = nullptr != m_mesh->normalMapImage();
+                delete m_normalMap;
+                m_normalMap = nullptr;
+                if (m_hasNormalMap)
+                    m_normalMap = new QOpenGLTexture(*m_mesh->normalMapImage());
+                
+                m_hasMetalnessMap = m_mesh->hasMetalnessInImage();
+                m_hasRoughnessMap = m_mesh->hasRoughnessInImage();
+                m_hasAmbientOcclusionMap = m_mesh->hasAmbientOcclusionInImage();
+                delete m_metalnessRoughnessAmbientOcclusionMap;
+                m_metalnessRoughnessAmbientOcclusionMap = nullptr;
+                if (nullptr != m_mesh->metalnessRoughnessAmbientOcclusionImage() &&
+                        (m_hasMetalnessMap || m_hasRoughnessMap || m_hasAmbientOcclusionMap))
+                    m_metalnessRoughnessAmbientOcclusionMap = new QOpenGLTexture(*m_mesh->metalnessRoughnessAmbientOcclusionImage());
+                    
                 {
                     QOpenGLVertexArrayObject::Binder vaoBinder(&m_vaoTriangle);
                     if (m_vboTriangle.isCreated())
@@ -154,12 +107,14 @@ void ModelMeshBinder::paint(ModelShaderProgram *program)
                     f->glEnableVertexAttribArray(3);
                     f->glEnableVertexAttribArray(4);
                     f->glEnableVertexAttribArray(5);
+                    f->glEnableVertexAttribArray(6);
                     f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
                     f->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void *>(3 * sizeof(GLfloat)));
                     f->glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void *>(6 * sizeof(GLfloat)));
                     f->glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void *>(9 * sizeof(GLfloat)));
                     f->glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void *>(11 * sizeof(GLfloat)));
                     f->glVertexAttribPointer(5, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void *>(12 * sizeof(GLfloat)));
+                    f->glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void *>(13 * sizeof(GLfloat)));
                     m_vboTriangle.release();
                 }
                 {
@@ -177,12 +132,14 @@ void ModelMeshBinder::paint(ModelShaderProgram *program)
                     f->glEnableVertexAttribArray(3);
                     f->glEnableVertexAttribArray(4);
                     f->glEnableVertexAttribArray(5);
+                    f->glEnableVertexAttribArray(6);
                     f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
                     f->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void *>(3 * sizeof(GLfloat)));
                     f->glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void *>(6 * sizeof(GLfloat)));
                     f->glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void *>(9 * sizeof(GLfloat)));
                     f->glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void *>(11 * sizeof(GLfloat)));
                     f->glVertexAttribPointer(5, 1, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void *>(12 * sizeof(GLfloat)));
+                    f->glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), reinterpret_cast<void *>(13 * sizeof(GLfloat)));
                     m_vboEdge.release();
                 }
             } else {
@@ -197,6 +154,10 @@ void ModelMeshBinder::paint(ModelShaderProgram *program)
             QOpenGLVertexArrayObject::Binder vaoBinder(&m_vaoEdge);
 			QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
             program->setUniformValue(program->textureEnabledLoc(), 0);
+            program->setUniformValue(program->normalMapEnabledLoc(), 0);
+            program->setUniformValue(program->metalnessMapEnabledLoc(), 0);
+            program->setUniformValue(program->roughnessMapEnabledLoc(), 0);
+            program->setUniformValue(program->ambientOcclusionMapEnabledLoc(), 0);
             f->glDrawArrays(GL_LINES, 0, m_renderEdgeVertexCount);
         }
     }
@@ -211,6 +172,22 @@ void ModelMeshBinder::paint(ModelShaderProgram *program)
         } else {
             program->setUniformValue(program->textureEnabledLoc(), 0);
         }
+        if (m_hasNormalMap) {
+            if (m_normalMap)
+                m_normalMap->bind(1);
+            program->setUniformValue(program->normalMapIdLoc(), 1);
+            program->setUniformValue(program->normalMapEnabledLoc(), 1);
+        } else {
+            program->setUniformValue(program->normalMapEnabledLoc(), 0);
+        }
+        if (m_hasMetalnessMap || m_hasRoughnessMap || m_hasAmbientOcclusionMap) {
+            if (m_metalnessRoughnessAmbientOcclusionMap)
+                m_metalnessRoughnessAmbientOcclusionMap->bind(2);
+            program->setUniformValue(program->metalnessRoughnessAmbientOcclusionMapIdLoc(), 2);
+        }
+        program->setUniformValue(program->metalnessMapEnabledLoc(), m_hasMetalnessMap ? 1 : 0);
+        program->setUniformValue(program->roughnessMapEnabledLoc(), m_hasRoughnessMap ? 1 : 0);
+        program->setUniformValue(program->ambientOcclusionMapEnabledLoc(), m_hasAmbientOcclusionMap ? 1 : 0);
         f->glDrawArrays(GL_TRIANGLES, 0, m_renderTriangleVertexCount);
     }
 }
@@ -223,6 +200,10 @@ void ModelMeshBinder::cleanup()
         m_vboEdge.destroy();
     delete m_texture;
     m_texture = nullptr;
+    delete m_normalMap;
+    m_normalMap = nullptr;
+    delete m_metalnessRoughnessAmbientOcclusionMap;
+    m_metalnessRoughnessAmbientOcclusionMap = nullptr;
 }
 
 void ModelMeshBinder::showWireframes()

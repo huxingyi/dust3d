@@ -7,14 +7,14 @@
 #include <QColor>
 #include "positionmap.h"
 #include "skeletonbonemark.h"
+#include "texturetype.h"
 
 #define MAX_WEIGHT_NUM  4
 
 struct Material
 {
     QColor color;
-    float metalness;
-    float roughness;
+    const QImage *textureImages[(int)TextureType::Count - 1] = {nullptr};
 };
 
 struct BmeshNode
@@ -65,6 +65,7 @@ struct ResultPart
     std::vector<ResultTriangle> triangles;
     std::vector<ResultTriangleUv> uvs;
     std::vector<ResultVertexUv> vertexUvs;
+    std::vector<QVector3D> triangleTangents;
 };
 
 struct ResultRearrangedVertex
@@ -99,6 +100,7 @@ public:
     const std::vector<ResultRearrangedTriangle> &rearrangedTriangles();
     const std::map<int, std::pair<QUuid, QUuid>> &vertexSourceMap();
     const std::vector<QVector3D> &interpolatedVertexNormals();
+    const std::vector<QVector3D> &triangleTangents();
 private:
     bool m_triangleSourceResolved;
     bool m_triangleMaterialResolved;
@@ -108,6 +110,7 @@ private:
     bool m_resultTriangleUvsResolved;
     bool m_resultRearrangedVerticesResolved;
     bool m_vertexNormalsInterpolated;
+    bool m_triangleTangentsResolved;
 private:
     std::vector<std::pair<QUuid, QUuid>> m_triangleSourceNodes;
     std::vector<Material> m_triangleMaterials;
@@ -121,6 +124,7 @@ private:
     std::map<int, std::pair<QUuid, QUuid>> m_vertexSourceMap;
     std::map<int, int> m_rearrangedVerticesToOldIndexMap;
     std::vector<QVector3D> m_interpolatedVertexNormals;
+    std::vector<QVector3D> m_triangleTangents;
 private:
     void calculateTriangleSourceNodes(std::vector<std::pair<QUuid, QUuid>> &triangleSourceNodes, std::map<int, std::pair<QUuid, QUuid>> &vertexSourceMap);
     void calculateRemainingVertexSourceNodesAfterTriangleSourceNodesSolved(std::map<int, std::pair<QUuid, QUuid>> &vertexSourceMap);
@@ -131,6 +135,7 @@ private:
     void calculateResultTriangleUvs(std::vector<ResultTriangleUv> &uvs, std::set<int> &seamVertices);
     void calculateResultRearrangedVertices(std::vector<ResultRearrangedVertex> &rearrangedVertices, std::vector<ResultRearrangedTriangle> &rearrangedTriangles);
     void interpolateVertexNormals(std::vector<QVector3D> &resultNormals);
+    void calculateTriangleTangents(std::vector<QVector3D> &tangents);
 };
 
 #endif

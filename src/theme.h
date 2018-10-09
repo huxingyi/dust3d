@@ -34,6 +34,7 @@ public:
     static QWidget *createVerticalLineWidget();
     static int toolIconFontSize;
     static int toolIconSize;
+    static int materialPreviewImageSize;
     static int posePreviewImageSize;
     static int partPreviewImageSize;
     static int motionPreviewImageSize;

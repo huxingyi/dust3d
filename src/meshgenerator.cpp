@@ -11,6 +11,7 @@
 #include "positionmap.h"
 #include "meshquadify.h"
 #include "meshweldseam.h"
+#include "imageforever.h"
 
 bool MeshGenerator::m_enableDebug = false;
 PositionMap<int> *MeshGenerator::m_forMakePositionKey = new PositionMap<int>;
@@ -30,10 +31,9 @@ void GeneratedCacheContext::updateComponentCombinableMesh(QString componentId, v
     cache = cloneCombinableMesh(mesh);
 }
 
-MeshGenerator::MeshGenerator(SkeletonSnapshot *snapshot, QThread *thread) :
+MeshGenerator::MeshGenerator(SkeletonSnapshot *snapshot) :
     m_snapshot(snapshot),
     m_mesh(nullptr),
-    m_thread(thread),
     m_meshResultContext(nullptr),
     m_sharedContextWidget(nullptr),
     m_cacheContext(nullptr),
@@ -251,15 +251,33 @@ void *MeshGenerator::combinePartMesh(QString partId)
     if (MeshGenerator::m_enableDebug)
         meshlite_bmesh_enable_debug(m_meshliteContext, bmeshId, 1);
     
-    float metalness = 0.0;
-    QString metalnessString = valueOfKeyInMapOrEmpty(part, "metalness");
-    if (!metalnessString.isEmpty())
-        metalness = metalnessString.toFloat();
+    QUuid materialId;
+    QString materialIdString = valueOfKeyInMapOrEmpty(part, "materialId");
+    if (!materialIdString.isEmpty())
+        materialId = QUuid(materialIdString);
     
-    float roughness = 1.0;
-    QString roughnessString = valueOfKeyInMapOrEmpty(part, "roughness");
-    if (!roughnessString.isEmpty())
-        roughness = roughnessString.toFloat();
+    Material partMaterial;
+    for (const auto &material: m_snapshot->materials) {
+        if (materialIdString != valueOfKeyInMapOrEmpty(material.first, "id"))
+            continue;
+        for (const auto &layer: material.second) {
+            //FIXME: Only support one layer currently
+            for (const auto &mapItem: layer.second) {
+                auto textureType = TextureTypeFromString(valueOfKeyInMapOrEmpty(mapItem, "for").toUtf8().constData());
+                if (textureType != TextureType::None) {
+                    int index = (int)textureType - 1;
+                    if (index >= 0 && index < (int)TextureType::Count - 1) {
+                        if ("imageId" == valueOfKeyInMapOrEmpty(mapItem, "linkDataType")) {
+                            auto imageIdString = valueOfKeyInMapOrEmpty(mapItem, "linkData");
+                            partMaterial.textureImages[index] = ImageForever::get(QUuid(imageIdString));
+                        }
+                    }
+                }
+            }
+            break;
+        }
+        break;
+    }
     
     QString mirroredPartId;
     QUuid mirroredPartIdNotAsString;
@@ -301,9 +319,8 @@ void *MeshGenerator::combinePartMesh(QString partId)
         bmeshNode.origin = QVector3D(x, y, z);
         bmeshNode.radius = radius;
         bmeshNode.nodeId = QUuid(nodeId);
+        bmeshNode.material = partMaterial;
         bmeshNode.material.color = partColor;
-        bmeshNode.material.metalness = metalness;
-        bmeshNode.material.roughness = roughness;
         bmeshNode.boneMark = boneMark;
         //if (SkeletonBoneMark::None != boneMark)
         //    bmeshNode.color = SkeletonBoneMarkToColor(boneMark);
@@ -374,7 +391,7 @@ void *MeshGenerator::combinePartMesh(QString partId)
     
     if (m_requirePreviewPartIds.find(partIdNotAsString) != m_requirePreviewPartIds.end()) {
         int trimedMeshId = meshlite_trim(m_meshliteContext, meshId, 1);
-        m_partPreviewMeshMap[partIdNotAsString] = new MeshLoader(m_meshliteContext, trimedMeshId, -1, {partColor, metalness, roughness}, nullptr, m_smoothNormal);
+        m_partPreviewMeshMap[partIdNotAsString] = new MeshLoader(m_meshliteContext, trimedMeshId, -1, partColor, nullptr, m_smoothNormal);
         m_generatedPreviewPartIds.insert(partIdNotAsString);
     }
     
@@ -581,7 +598,7 @@ void *MeshGenerator::combineComponentMesh(QString componentId, bool *inverse)
     return resultMesh;
 }
 
-void MeshGenerator::process()
+void MeshGenerator::generate()
 {
     if (nullptr == m_snapshot)
         return;
@@ -714,7 +731,7 @@ void MeshGenerator::process()
     
     if (resultMeshId > 0) {
         loadGeneratedPositionsToMeshResultContext(m_meshliteContext, triangulatedFinalMeshId);
-        m_mesh = new MeshLoader(m_meshliteContext, resultMeshId, triangulatedFinalMeshId, {Theme::white, 0.0, 1.0}, &m_meshResultContext->triangleMaterials(), m_smoothNormal);
+        m_mesh = new MeshLoader(m_meshliteContext, resultMeshId, triangulatedFinalMeshId, Theme::white, &m_meshResultContext->triangleMaterials(), m_smoothNormal);
     }
     
     if (needDeleteCacheContext) {
@@ -725,6 +742,11 @@ void MeshGenerator::process()
     meshlite_destroy_context(m_meshliteContext);
     
     qDebug() << "The mesh generation took" << countTimeConsumed.elapsed() << "milliseconds";
+}
+
+void MeshGenerator::process()
+{
+    generate();
     
     this->moveToThread(QGuiApplication::instance()->thread());
     emit finished();

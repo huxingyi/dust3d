@@ -14,8 +14,6 @@ public:
     ModelMeshBinder();
     ~ModelMeshBinder();
     void updateMesh(MeshLoader *mesh);
-    void exportMeshAsObj(const QString &filename);
-    void exportMeshAsObjPlusMaterials(const QString &filename);
     void initialize();
     void paint(ModelShaderProgram *program);
     void cleanup();
@@ -31,6 +29,12 @@ private:
     bool m_showWireframes;
     bool m_hasTexture;
     QOpenGLTexture *m_texture;
+    bool m_hasNormalMap;
+    QOpenGLTexture *m_normalMap;
+    bool m_hasMetalnessMap;
+    bool m_hasRoughnessMap;
+    bool m_hasAmbientOcclusionMap;
+    QOpenGLTexture *m_metalnessRoughnessAmbientOcclusionMap;
 private:
     QOpenGLVertexArrayObject m_vaoTriangle;
     QOpenGLBuffer m_vboTriangle;

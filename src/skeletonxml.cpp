@@ -91,6 +91,41 @@ void saveSkeletonToXmlStream(SkeletonSnapshot *snapshot, QXmlStreamWriter *write
             writer->writeEndElement();
         }
     
+        writer->writeStartElement("materials");
+        std::vector<std::pair<std::map<QString, QString>, std::vector<std::pair<std::map<QString, QString>, std::vector<std::map<QString, QString>>>>>>::iterator materialIterator;
+        for (materialIterator = snapshot->materials.begin(); materialIterator != snapshot->materials.end(); materialIterator++) {
+            std::map<QString, QString>::iterator materialAttributeIterator;
+            writer->writeStartElement("material");
+                for (materialAttributeIterator = materialIterator->first.begin(); materialAttributeIterator != materialIterator->first.end(); materialAttributeIterator++) {
+                    writer->writeAttribute(materialAttributeIterator->first, materialAttributeIterator->second);
+                }
+                writer->writeStartElement("layers");
+                std::vector<std::pair<std::map<QString, QString>, std::vector<std::map<QString, QString>>>>::iterator layerIterator;
+                for (layerIterator = materialIterator->second.begin(); layerIterator != materialIterator->second.end(); layerIterator++) {
+                    std::map<QString, QString>::iterator layerAttributeIterator;
+                    writer->writeStartElement("layer");
+                        for (layerAttributeIterator = layerIterator->first.begin(); layerAttributeIterator != layerIterator->first.end(); layerAttributeIterator++) {
+                            writer->writeAttribute(layerAttributeIterator->first, layerAttributeIterator->second);
+                        }
+                        writer->writeStartElement("maps");
+                        std::vector<std::map<QString, QString>>::iterator mapIterator;
+                        for (mapIterator = layerIterator->second.begin(); mapIterator != layerIterator->second.end(); mapIterator++) {
+                            std::map<QString, QString>::iterator attributesIterator;
+                            writer->writeStartElement("map");
+                            for (attributesIterator = mapIterator->begin(); attributesIterator != mapIterator->end();
+                                    attributesIterator++) {
+                                writer->writeAttribute(attributesIterator->first, attributesIterator->second);
+                            }
+                            writer->writeEndElement();
+                        }
+                        writer->writeEndElement();
+                    writer->writeEndElement();
+                }
+                writer->writeEndElement();
+            writer->writeEndElement();
+        }
+        writer->writeEndElement();
+    
         writer->writeStartElement("poses");
         std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>>::iterator poseIterator;
         for (poseIterator = snapshot->poses.begin(); poseIterator != snapshot->poses.end(); poseIterator++) {
@@ -165,6 +200,8 @@ void loadSkeletonFromXmlStream(SkeletonSnapshot *snapshot, QXmlStreamReader &rea
 {
     std::stack<QString> componentStack;
     std::vector<QString> elementNameStack;
+    std::pair<std::map<QString, QString>, std::vector<std::map<QString, QString>>> currentMaterialLayer;
+    std::pair<std::map<QString, QString>, std::vector<std::pair<std::map<QString, QString>, std::vector<std::map<QString, QString>>>>> currentMaterial;
     std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>> currentPose;
     std::tuple<std::map<QString, QString>, std::vector<std::map<QString, QString>>, std::vector<std::map<QString, QString>>> currentMotion;
     while (!reader.atEnd()) {
@@ -243,6 +280,25 @@ void loadSkeletonFromXmlStream(SkeletonSnapshot *snapshot, QXmlStreamReader &rea
                 if (!parentChildrenIds.isEmpty())
                     parentChildrenIds += ",";
                 parentChildrenIds += componentId;
+            } else if (fullName == "canvas.materials.material.layers.layer") {
+                currentMaterialLayer = decltype(currentMaterialLayer)();
+                foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
+                    currentMaterialLayer.first[attr.name().toString()] = attr.value().toString();
+                }
+            } else if (fullName == "canvas.materials.material.layers.layer.maps.map") {
+                std::map<QString, QString> attributes;
+                foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
+                    attributes[attr.name().toString()] = attr.value().toString();
+                }
+                currentMaterialLayer.second.push_back(attributes);
+            } else if (fullName == "canvas.materials.material") {
+                QString materialId = reader.attributes().value("id").toString();
+                if (materialId.isEmpty())
+                    continue;
+                currentMaterial = decltype(currentMaterial)();
+                foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
+                    currentMaterial.first[attr.name().toString()] = attr.value().toString();
+                }
             } else if (fullName == "canvas.poses.pose") {
                 QString poseId = reader.attributes().value("id").toString();
                 if (poseId.isEmpty())
@@ -285,6 +341,10 @@ void loadSkeletonFromXmlStream(SkeletonSnapshot *snapshot, QXmlStreamReader &rea
         } else if (reader.isEndElement()) {
             if (fullName.startsWith("canvas.components.component")) {
                 componentStack.pop();
+            } else if (fullName == "canvas.materials.material.layers.layer") {
+                currentMaterial.second.push_back(currentMaterialLayer);
+            } else if (fullName == "canvas.materials.material") {
+                snapshot->materials.push_back(currentMaterial);
             } else if (fullName == "canvas.poses.pose") {
                 snapshot->poses.push_back(currentPose);
             } else if (fullName == "canvas.motions.motion") {

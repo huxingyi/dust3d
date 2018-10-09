@@ -21,8 +21,7 @@ signals:
     void setPartRoundState(QUuid partId, bool rounded);
     void setPartColorState(QUuid partId, bool hasColor, QColor color);
     void setPartWrapState(QUuid partId, bool wrapped);
-    void setPartMetalness(QUuid partId, float metalness);
-    void setPartRoughness(QUuid partId, float roughness);
+    void setPartMaterialId(QUuid partId, QUuid materialId);
     void movePartUp(QUuid partId);
     void movePartDown(QUuid partId);
     void movePartToTop(QUuid partId);

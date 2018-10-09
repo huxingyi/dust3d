@@ -22,6 +22,9 @@
 #include "rigtype.h"
 #include "posepreviewsgenerator.h"
 #include "curveutil.h"
+#include "texturetype.h"
+
+class MaterialPreviewsGenerator;
 
 class SkeletonNode
 {
@@ -97,8 +100,7 @@ public:
     std::vector<QUuid> nodeIds;
     bool dirty;
     bool wrapped;
-    float metalness;
-    float roughness;
+    QUuid materialId;
     SkeletonPart(const QUuid &withId=QUuid()) :
         visible(true),
         locked(false),
@@ -112,9 +114,7 @@ public:
         color(Theme::white),
         hasColor(false),
         dirty(true),
-        wrapped(false),
-        metalness(0.0),
-        roughness(1.0)
+        wrapped(false)
     {
         id = withId.isNull() ? QUuid::createUuid() : withId;
     }
@@ -146,17 +146,9 @@ public:
     {
         return deformThicknessAdjusted() || deformWidthAdjusted();
     }
-    bool metalnessAdjusted() const
-    {
-        return fabs(metalness - 0.0) >= 0.01;
-    }
-    bool roughnessAdjusted() const
-    {
-        return fabs(roughness - 1.0) >= 0.01;
-    }
     bool materialAdjusted() const
     {
-        return metalnessAdjusted() || roughnessAdjusted();
+        return !materialId.isNull();
     }
     bool isEditVisible() const
     {
@@ -178,8 +170,7 @@ public:
         wrapped = other.wrapped;
         componentId = other.componentId;
         dirty = other.dirty;
-        metalness = other.metalness;
-        roughness = other.roughness;
+        materialId = other.materialId;
     }
     void updatePreviewMesh(MeshLoader *previewMesh)
     {
@@ -411,10 +402,54 @@ private:
     Q_DISABLE_COPY(SkeletonMotion);
 };
 
+class SkeletonMaterialMap
+{
+public:
+    TextureType forWhat;
+    QUuid imageId;
+};
+
+class SkeletonMaterialLayer
+{
+public:
+    std::vector<SkeletonMaterialMap> maps;
+};
+
+class SkeletonMaterial
+{
+public:
+    SkeletonMaterial()
+    {
+    }
+    ~SkeletonMaterial()
+    {
+        delete m_previewMesh;
+    }
+    QUuid id;
+    QString name;
+    bool dirty = true;
+    std::vector<SkeletonMaterialLayer> layers;
+    void updatePreviewMesh(MeshLoader *previewMesh)
+    {
+        delete m_previewMesh;
+        m_previewMesh = previewMesh;
+    }
+    MeshLoader *takePreviewMesh() const
+    {
+        if (nullptr == m_previewMesh)
+            return nullptr;
+        return new MeshLoader(*m_previewMesh);
+    }
+private:
+    Q_DISABLE_COPY(SkeletonMaterial);
+    MeshLoader *m_previewMesh = nullptr;
+};
+
 enum class SkeletonDocumentToSnapshotFor
 {
     Document = 0,
     Nodes,
+    Materials,
     Poses,
     Motions
 };
@@ -462,8 +497,7 @@ signals:
     void partRoundStateChanged(QUuid partId);
     void partColorStateChanged(QUuid partId);
     void partWrapStateChanged(QUuid partId);
-    void partMetalnessChanged(QUuid partId);
-    void partRoughnessChanged(QUuid partId);
+    void partMaterialIdChanged(QUuid partId);
     void componentInverseStateChanged(QUuid partId);
     void cleanup();
     void originChanged();
@@ -494,6 +528,15 @@ signals:
     void motionNameChanged(QUuid motionId);
     void motionControlNodesChanged(QUuid motionId);
     void motionKeyframesChanged(QUuid motionId);
+    void materialAdded(QUuid materialId);
+    void materialRemoved(QUuid materialId);
+    void materialListChanged();
+    void materialNameChanged(QUuid materialId);
+    void materialLayersChanged(QUuid materialId);
+    void materialPreviewChanged(QUuid materialId);
+    void meshGenerating();
+    void postProcessing();
+    void textureGenerating();
 public: // need initialize
     float originX;
     float originY;
@@ -517,6 +560,8 @@ public:
     std::map<QUuid, SkeletonNode> nodeMap;
     std::map<QUuid, SkeletonEdge> edgeMap;
     std::map<QUuid, SkeletonComponent> componentMap;
+    std::map<QUuid, SkeletonMaterial> materialMap;
+    std::vector<QUuid> materialIdList;
     std::map<QUuid, SkeletonPose> poseMap;
     std::vector<QUuid> poseIdList;
     std::map<QUuid, SkeletonMotion> motionMap;
@@ -527,7 +572,8 @@ public:
     void toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUuid> &limitNodeIds=std::set<QUuid>(),
         SkeletonDocumentToSnapshotFor forWhat=SkeletonDocumentToSnapshotFor::Document,
         const std::set<QUuid> &limitPoseIds=std::set<QUuid>(),
-        const std::set<QUuid> &limitMotionIds=std::set<QUuid>()) const;
+        const std::set<QUuid> &limitMotionIds=std::set<QUuid>(),
+        const std::set<QUuid> &limitMaterialIds=std::set<QUuid>()) const;
     void fromSnapshot(const SkeletonSnapshot &snapshot);
     void addFromSnapshot(const SkeletonSnapshot &snapshot, bool fromPaste=true);
     const SkeletonNode *findNode(QUuid nodeId) const;
@@ -537,6 +583,7 @@ public:
     const SkeletonComponent *findComponent(QUuid componentId) const;
     const SkeletonComponent *findComponentParent(QUuid componentId) const;
     QUuid findComponentParentId(QUuid componentId) const;
+    const SkeletonMaterial *findMaterial(QUuid materialId) const;
     const SkeletonPose *findPose(QUuid poseId) const;
     const SkeletonMotion *findMotion(QUuid motionId) const;
     MeshLoader *takeResultMesh();
@@ -547,6 +594,7 @@ public:
     void updateTurnaround(const QImage &image);
     void setSharedContextWidget(QOpenGLWidget *sharedContextWidget);
     bool hasPastableNodesInClipboard() const;
+    bool hasPastableMaterialsInClipboard() const;
     bool hasPastablePosesInClipboard() const;
     bool hasPastableMotionsInClipboard() const;
     bool undoable() const;
@@ -592,6 +640,8 @@ public slots:
     void rigReady();
     void generatePosePreviews();
     void posePreviewsReady();
+    void generateMaterialPreviews();
+    void materialPreviewsReady();
     void setPartLockState(QUuid partId, bool locked);
     void setPartVisibleState(QUuid partId, bool visible);
     void setPartSubdivState(QUuid partId, bool subdived);
@@ -603,8 +653,7 @@ public slots:
     void setPartRoundState(QUuid partId, bool rounded);
     void setPartColorState(QUuid partId, bool hasColor, QColor color);
     void setPartWrapState(QUuid partId, bool wrapped);
-    void setPartMetalness(QUuid partId, float metalness);
-    void setPartRoughness(QUuid partId, float roughness);
+    void setPartMaterialId(QUuid partId, QUuid materialId);
     void setComponentInverseState(QUuid componentId, bool inverse);
     void moveComponentUp(QUuid componentId);
     void moveComponentDown(QUuid componentId);
@@ -658,6 +707,10 @@ public slots:
     void setMotionControlNodes(QUuid motionId, std::vector<HermiteControlNode> controlNodes);
     void setMotionKeyframes(QUuid motionId, std::vector<std::pair<float, QUuid>> keyframes);
     void renameMotion(QUuid motionId, QString name);
+    void addMaterial(QString name, std::vector<SkeletonMaterialLayer>);
+    void removeMaterial(QUuid materialId);
+    void setMaterialLayers(QUuid materialId, std::vector<SkeletonMaterialLayer> layers);
+    void renameMaterial(QUuid materialId, QString name);
 private:
     void splitPartByNode(std::vector<std::vector<QUuid>> *groups, QUuid nodeId);
     void joinNodeAndNeiborsToGroup(std::vector<QUuid> *group, QUuid nodeId, std::set<QUuid> *visitMap, QUuid noUseEdgeId=QUuid());
@@ -700,6 +753,7 @@ private: // need initialize
     MeshResultContext *m_riggedResultContext;
     PosePreviewsGenerator *m_posePreviewsGenerator;
     bool m_currentRigSucceed;
+    MaterialPreviewsGenerator *m_materialPreviewsGenerator;
 private:
     static unsigned long m_maxSnapshot;
     std::deque<SkeletonHistoryItem> m_undoItems;

@@ -1,12 +1,18 @@
 #include <assert.h>
+#include <QTextStream>
+#include <QFile>
 #include "meshloader.h"
 #include "meshlite.h"
 #include "theme.h"
 #include "positionmap.h"
+#include "ds3file.h"
 
 #define MAX_VERTICES_PER_FACE   100
 
-MeshLoader::MeshLoader(void *meshlite, int meshId, int triangulatedMeshId, Material material, const std::vector<Material> *triangleMaterials, bool smoothNormal) :
+float MeshLoader::m_defaultMetalness = 0.0;
+float MeshLoader::m_defaultRoughness = 1.0;
+
+MeshLoader::MeshLoader(void *meshlite, int meshId, int triangulatedMeshId, QColor defaultColor, const std::vector<Material> *triangleMaterials, bool smoothNormal) :
     m_triangleVertices(nullptr),
     m_triangleVertexCount(0),
     m_edgeVertices(nullptr),
@@ -97,9 +103,9 @@ MeshLoader::MeshLoader(void *meshlite, int meshId, int triangulatedMeshId, Mater
     GLfloat *triangleNormals = new GLfloat[triangleCount * 3];
     int loadedTriangleNormalItemCount = meshlite_get_triangle_normal_array(meshlite, triangleMesh, triangleNormals, triangleCount * 3);
     
-    float modelR = material.color.redF();
-    float modelG = material.color.greenF();
-    float modelB = material.color.blueF();
+    float modelR = defaultColor.redF();
+    float modelG = defaultColor.greenF();
+    float modelB = defaultColor.blueF();
     m_triangleVertexCount = triangleCount * 3;
     m_triangleVertices = new Vertex[m_triangleVertexCount * 3];
     for (int i = 0; i < triangleCount; i++) {
@@ -107,15 +113,13 @@ MeshLoader::MeshLoader(void *meshlite, int meshId, int triangulatedMeshId, Mater
         float useColorR = modelR;
         float useColorG = modelG;
         float useColorB = modelB;
-        float useMetalness = material.metalness;
-        float useRoughness = material.roughness;
+        float useMetalness = m_defaultMetalness;
+        float useRoughness = m_defaultRoughness;
         if (triangleMaterials && i < (int)triangleMaterials->size()) {
             auto triangleMaterial = (*triangleMaterials)[i];
             useColorR = triangleMaterial.color.redF();
             useColorG = triangleMaterial.color.greenF();
             useColorB = triangleMaterial.color.blueF();
-            useMetalness = triangleMaterial.metalness;
-            useRoughness = triangleMaterial.roughness;
         }
         TriangulatedFace triangulatedFace;
         triangulatedFace.color.setRedF(useColorR);
@@ -200,6 +204,9 @@ MeshLoader::MeshLoader(const MeshLoader &mesh) :
     if (nullptr != mesh.m_textureImage) {
         this->m_textureImage = new QImage(*mesh.m_textureImage);
     }
+    if (nullptr != mesh.m_normalMapImage) {
+        this->m_normalMapImage = new QImage(*mesh.m_normalMapImage);
+    }
     this->m_vertices = mesh.m_vertices;
     this->m_faces = mesh.m_faces;
     this->m_triangulatedVertices = mesh.m_triangulatedVertices;
@@ -228,13 +235,15 @@ MeshLoader::MeshLoader(MeshResultContext &resultContext) :
     m_triangleVertices = new Vertex[m_triangleVertexCount];
     int destIndex = 0;
     for (const auto &part: resultContext.parts()) {
-        for (const auto &it: part.second.triangles) {
+        for (int x = 0; x < (int)part.second.triangles.size(); x++) {
+            const auto &it = part.second.triangles[x];
             for (auto i = 0; i < 3; i++) {
                 int vertexIndex = it.indicies[i];
                 const ResultVertex *srcVert = &part.second.vertices[vertexIndex];
                 const QVector3D *srcNormal = &part.second.interpolatedVertexNormals[vertexIndex];
                 const ResultVertexUv *srcUv = &part.second.vertexUvs[vertexIndex];
-                const Material *srcMaterial = &part.second.material;
+                //const Material *srcMaterial = &part.second.material;
+                const QVector3D *srcTangent = &part.second.triangleTangents[x];
                 Vertex *dest = &m_triangleVertices[destIndex];
                 dest->colorR = 0;
                 dest->colorG = 0;
@@ -247,8 +256,11 @@ MeshLoader::MeshLoader(MeshResultContext &resultContext) :
                 dest->normX = srcNormal->x();
                 dest->normY = srcNormal->y();
                 dest->normZ = srcNormal->z();
-                dest->metalness = srcMaterial->metalness;
-                dest->roughness = srcMaterial->roughness;
+                dest->metalness = m_defaultMetalness;
+                dest->roughness = m_defaultRoughness;
+                dest->tangentX = srcTangent->x();
+                dest->tangentY = srcTangent->y();
+                dest->tangentZ = srcTangent->z();
                 destIndex++;
             }
         }
@@ -271,6 +283,7 @@ MeshLoader::~MeshLoader()
     delete[] m_edgeVertices;
     m_edgeVertexCount = 0;
     delete m_textureImage;
+    delete m_normalMapImage;
 }
 
 const std::vector<QVector3D> &MeshLoader::vertices()
@@ -321,4 +334,73 @@ void MeshLoader::setTextureImage(QImage *textureImage)
 const QImage *MeshLoader::textureImage()
 {
     return m_textureImage;
+}
+
+void MeshLoader::setNormalMapImage(QImage *normalMapImage)
+{
+    m_normalMapImage = normalMapImage;
+}
+
+const QImage *MeshLoader::normalMapImage()
+{
+    return m_normalMapImage;
+}
+
+const QImage *MeshLoader::metalnessRoughnessAmbientOcclusionImage()
+{
+    return m_metalnessRoughnessAmbientOcclusionImage;
+}
+
+void MeshLoader::setMetalnessRoughnessAmbientOcclusionImage(QImage *image)
+{
+    m_metalnessRoughnessAmbientOcclusionImage = image;
+}
+
+bool MeshLoader::hasMetalnessInImage()
+{
+    return m_hasMetalnessInImage;
+}
+
+void MeshLoader::setHasMetalnessInImage(bool hasInImage)
+{
+    m_hasMetalnessInImage = hasInImage;
+}
+
+bool MeshLoader::hasRoughnessInImage()
+{
+    return m_hasRoughnessInImage;
+}
+
+void MeshLoader::setHasRoughnessInImage(bool hasInImage)
+{
+    m_hasRoughnessInImage = hasInImage;
+}
+
+bool MeshLoader::hasAmbientOcclusionInImage()
+{
+    return m_hasAmbientOcclusionInImage;
+}
+
+void MeshLoader::setHasAmbientOcclusionInImage(bool hasInImage)
+{
+    m_hasAmbientOcclusionInImage = hasInImage;
+}
+
+void MeshLoader::exportAsObj(const QString &filename)
+{
+    QFile file(filename);
+    if (file.open(QIODevice::WriteOnly)) {
+        QTextStream stream(&file);
+        stream << "# " << Ds3FileReader::m_applicationName << endl;
+        for (std::vector<QVector3D>::const_iterator it = vertices().begin() ; it != vertices().end(); ++it) {
+            stream << "v " << (*it).x() << " " << (*it).y() << " " << (*it).z() << endl;
+        }
+        for (std::vector<std::vector<int>>::const_iterator it = faces().begin() ; it != faces().end(); ++it) {
+            stream << "f";
+            for (std::vector<int>::const_iterator subIt = (*it).begin() ; subIt != (*it).end(); ++subIt) {
+                stream << " " << (1 + *subIt);
+            }
+            stream << endl;
+        }
+    }
 }

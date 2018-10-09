@@ -30,7 +30,7 @@ class MeshGenerator : public QObject
 {
     Q_OBJECT
 public:
-    MeshGenerator(SkeletonSnapshot *snapshot, QThread *thread);
+    MeshGenerator(SkeletonSnapshot *snapshot);
     ~MeshGenerator();
     void setSharedContextWidget(QOpenGLWidget *widget);
     void addPartPreviewRequirement(const QUuid &partId);
@@ -42,6 +42,7 @@ public:
     const std::set<QUuid> &requirePreviewPartIds();
     const std::set<QUuid> &generatedPreviewPartIds();
     MeshResultContext *takeMeshResultContext();
+    void generate();
 signals:
     void finished();
 public slots:

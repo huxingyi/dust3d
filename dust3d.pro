@@ -224,6 +224,27 @@ HEADERS += src/motionpreviewsgenerator.h
 SOURCES += src/animationclipplayer.cpp
 HEADERS += src/animationclipplayer.h
 
+SOURCES += src/texturetype.cpp
+HEADERS += src/texturetype.h
+
+SOURCES += src/imageforever.cpp
+HEADERS += src/imageforever.h
+
+SOURCES += src/materialeditwidget.cpp
+HEADERS += src/materialeditwidget.h
+
+SOURCES += src/materiallistwidget.cpp
+HEADERS += src/materiallistwidget.h
+
+SOURCES += src/materialmanagewidget.cpp
+HEADERS += src/materialmanagewidget.h
+
+SOURCES += src/materialpreviewsgenerator.cpp
+HEADERS += src/materialpreviewsgenerator.h
+
+SOURCES += src/materialwidget.cpp
+HEADERS += src/materialwidget.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h

@@ -36,15 +36,23 @@ ModelShaderProgram::ModelShaderProgram(bool usePBR)
     this->bindAttributeLocation("texCoord", 3);
     this->bindAttributeLocation("metalness", 4);
     this->bindAttributeLocation("roughness", 5);
+    this->bindAttributeLocation("tangent", 6);
     this->link();
 
     this->bind();
     m_projectionMatrixLoc = this->uniformLocation("projectionMatrix");
     m_modelMatrixLoc = this->uniformLocation("modelMatrix");
+    m_normalMatrixLoc = this->uniformLocation("normalMatrix");
     m_viewMatrixLoc = this->uniformLocation("viewMatrix");
     m_lightPosLoc = this->uniformLocation("lightPos");
     m_textureIdLoc = this->uniformLocation("textureId");
     m_textureEnabledLoc = this->uniformLocation("textureEnabled");
+    m_normalMapIdLoc = this->uniformLocation("normalMapId");
+    m_normalMapEnabledLoc = this->uniformLocation("normalMapEnabled");
+    m_metalnessMapEnabledLoc = this->uniformLocation("metalnessMapEnabled");
+    m_roughnessMapEnabledLoc = this->uniformLocation("roughnessMapEnabled");
+    m_ambientOcclusionMapEnabledLoc = this->uniformLocation("ambientOcclusionMapEnabled");
+    m_metalnessRoughnessAmbientOcclusionMapIdLoc = this->uniformLocation("metalnessRoughnessAmbientOcclusionMapId");
 }
 
 int ModelShaderProgram::projectionMatrixLoc()
@@ -55,6 +63,11 @@ int ModelShaderProgram::projectionMatrixLoc()
 int ModelShaderProgram::modelMatrixLoc()
 {
     return m_modelMatrixLoc;
+}
+
+int ModelShaderProgram::normalMatrixLoc()
+{
+    return m_normalMatrixLoc;
 }
 
 int ModelShaderProgram::viewMatrixLoc()
@@ -76,3 +89,34 @@ int ModelShaderProgram::textureIdLoc()
 {
     return m_textureIdLoc;
 }
+
+int ModelShaderProgram::normalMapEnabledLoc()
+{
+    return m_normalMapEnabledLoc;
+}
+
+int ModelShaderProgram::normalMapIdLoc()
+{
+    return m_normalMapIdLoc;
+}
+
+int ModelShaderProgram::metalnessMapEnabledLoc()
+{
+    return m_metalnessMapEnabledLoc;
+}
+
+int ModelShaderProgram::roughnessMapEnabledLoc()
+{
+    return m_roughnessMapEnabledLoc;
+}
+
+int ModelShaderProgram::ambientOcclusionMapEnabledLoc()
+{
+    return m_ambientOcclusionMapEnabledLoc;
+}
+
+int ModelShaderProgram::metalnessRoughnessAmbientOcclusionMapIdLoc()
+{
+    return m_metalnessRoughnessAmbientOcclusionMapIdLoc;
+}
+

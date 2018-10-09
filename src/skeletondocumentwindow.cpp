@@ -31,6 +31,9 @@
 #include "rigwidget.h"
 #include "markiconcreator.h"
 #include "motionmanagewidget.h"
+#include "materialmanagewidget.h"
+#include "imageforever.h"
+#include "spinnableawesomebutton.h"
 
 int SkeletonDocumentWindow::m_modelRenderWidgetInitialX = 16;
 int SkeletonDocumentWindow::m_modelRenderWidgetInitialY = 16;
@@ -150,6 +153,22 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     
     QPushButton *rotateClockwiseButton = new QPushButton(QChar(fa::rotateright));
     Theme::initAwesomeButton(rotateClockwiseButton);
+    
+    SpinnableAwesomeButton *regenerateButton = new SpinnableAwesomeButton();
+    regenerateButton->setAwesomeIcon(QChar(fa::recycle));
+    connect(m_document, &SkeletonDocument::meshGenerating, this, [=]() {
+        regenerateButton->showSpinner(true);
+    });
+    connect(m_document, &SkeletonDocument::postProcessing, this, [=]() {
+        regenerateButton->showSpinner(true);
+    });
+    connect(m_document, &SkeletonDocument::textureGenerating, this, [=]() {
+        regenerateButton->showSpinner(true);
+    });
+    connect(m_document, &SkeletonDocument::resultTextureChanged, this, [=]() {
+        regenerateButton->showSpinner(false);
+    });
+    connect(regenerateButton->button(), &QPushButton::clicked, m_document, &SkeletonDocument::regenerateMesh);
 
     toolButtonLayout->addWidget(addButton);
     toolButtonLayout->addWidget(selectButton);
@@ -164,6 +183,9 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     toolButtonLayout->addSpacing(10);
     toolButtonLayout->addWidget(rotateCounterclockwiseButton);
     toolButtonLayout->addWidget(rotateClockwiseButton);
+    toolButtonLayout->addSpacing(10);
+    toolButtonLayout->addWidget(regenerateButton);
+    
 
     QLabel *verticalLogoLabel = new QLabel;
     QImage verticalLogoImage;
@@ -216,6 +238,19 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
             partTreeWidget->partPreviewChanged(part.first);
     });
     
+    QDockWidget *materialDocker = new QDockWidget(tr("Materials"), this);
+    materialDocker->setAllowedAreas(Qt::RightDockWidgetArea);
+    MaterialManageWidget *materialManageWidget = new MaterialManageWidget(m_document, materialDocker);
+    materialDocker->setWidget(materialManageWidget);
+    connect(materialManageWidget, &MaterialManageWidget::registerDialog, this, &SkeletonDocumentWindow::registerDialog);
+    connect(materialManageWidget, &MaterialManageWidget::unregisterDialog, this, &SkeletonDocumentWindow::unregisterDialog);
+    addDockWidget(Qt::RightDockWidgetArea, materialDocker);
+    connect(materialDocker, &QDockWidget::topLevelChanged, [=](bool topLevel) {
+        Q_UNUSED(topLevel);
+        for (const auto &material: m_document->materialMap)
+            emit m_document->materialPreviewChanged(material.first);
+    });
+    
     QDockWidget *rigDocker = new QDockWidget(tr("Rig"), this);
     rigDocker->setAllowedAreas(Qt::RightDockWidgetArea);
     m_rigWidget = new RigWidget(m_document, rigDocker);
@@ -247,7 +282,8 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(motionManageWidget, &MotionManageWidget::unregisterDialog, this, &SkeletonDocumentWindow::unregisterDialog);
     addDockWidget(Qt::RightDockWidgetArea, motionDocker);
     
-    tabifyDockWidget(partTreeDocker, rigDocker);
+    tabifyDockWidget(partTreeDocker, materialDocker);
+    tabifyDockWidget(materialDocker, rigDocker);
     tabifyDockWidget(rigDocker, poseDocker);
     tabifyDockWidget(poseDocker, motionDocker);
     
@@ -495,17 +531,17 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     });
     m_viewMenu->addAction(m_resetModelWidgetPosAction);
 
-    m_toggleWireframeAction = new QAction(tr("Toggle Wireframe"), this);
-    connect(m_toggleWireframeAction, &QAction::triggered, [=]() {
-        m_modelRenderWidget->toggleWireframe();
-    });
-    m_viewMenu->addAction(m_toggleWireframeAction);
+    //m_toggleWireframeAction = new QAction(tr("Toggle Wireframe"), this);
+    //connect(m_toggleWireframeAction, &QAction::triggered, [=]() {
+    //    m_modelRenderWidget->toggleWireframe();
+    //});
+    //m_viewMenu->addAction(m_toggleWireframeAction);
     
-    m_toggleSmoothNormalAction = new QAction(tr("Toggle Smooth Normal"), this);
-    connect(m_toggleSmoothNormalAction, &QAction::triggered, [=]() {
-        m_document->toggleSmoothNormal();
-    });
-    m_viewMenu->addAction(m_toggleSmoothNormalAction);
+    //m_toggleSmoothNormalAction = new QAction(tr("Toggle Smooth Normal"), this);
+    //connect(m_toggleSmoothNormalAction, &QAction::triggered, [=]() {
+    //    m_document->toggleSmoothNormal();
+    //});
+    //m_viewMenu->addAction(m_toggleSmoothNormalAction);
 
     connect(m_viewMenu, &QMenu::aboutToShow, [=]() {
         m_resetModelWidgetPosAction->setEnabled(!isModelSitInVisibleArea(m_modelRenderWidget));
@@ -519,6 +555,13 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
         partTreeDocker->raise();
     });
     m_windowMenu->addAction(m_showPartsListAction);
+    
+    m_showMaterialsAction = new QAction(tr("Materials"), this);
+    connect(m_showMaterialsAction, &QAction::triggered, [=]() {
+        materialDocker->show();
+        materialDocker->raise();
+    });
+    m_windowMenu->addAction(m_showMaterialsAction);
     
     m_showRigAction = new QAction(tr("Rig"), this);
     connect(m_showRigAction, &QAction::triggered, [=]() {
@@ -760,30 +803,30 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(m_document, &SkeletonDocument::partRoundStateChanged, partTreeWidget, &SkeletonPartTreeWidget::partRoundStateChanged);
     connect(m_document, &SkeletonDocument::partWrapStateChanged, partTreeWidget, &SkeletonPartTreeWidget::partWrapStateChanged);
     connect(m_document, &SkeletonDocument::partColorStateChanged, partTreeWidget, &SkeletonPartTreeWidget::partColorStateChanged);
-    connect(m_document, &SkeletonDocument::partMetalnessChanged, partTreeWidget, &SkeletonPartTreeWidget::partMetalnessChanged);
-    connect(m_document, &SkeletonDocument::partRoughnessChanged, partTreeWidget, &SkeletonPartTreeWidget::partRoughnessChanged);
+    connect(m_document, &SkeletonDocument::partMaterialIdChanged, partTreeWidget, &SkeletonPartTreeWidget::partMaterialIdChanged);
     connect(m_document, &SkeletonDocument::partRemoved, partTreeWidget, &SkeletonPartTreeWidget::partRemoved);
     connect(m_document, &SkeletonDocument::cleanup, partTreeWidget, &SkeletonPartTreeWidget::removeAllContent);
     connect(m_document, &SkeletonDocument::partChecked, partTreeWidget, &SkeletonPartTreeWidget::partChecked);
     connect(m_document, &SkeletonDocument::partUnchecked, partTreeWidget, &SkeletonPartTreeWidget::partUnchecked);
 
     connect(m_document, &SkeletonDocument::skeletonChanged, m_document, &SkeletonDocument::generateMesh);
-    connect(m_document, &SkeletonDocument::resultMeshChanged, [=]() {
-        if ((m_exportPreviewWidget && m_exportPreviewWidget->isVisible())) {
-            m_document->postProcess();
-        }
-    });
+    //connect(m_document, &SkeletonDocument::resultMeshChanged, [=]() {
+    //    if ((m_exportPreviewWidget && m_exportPreviewWidget->isVisible())) {
+    //        m_document->postProcess();
+    //    }
+    //});
+    connect(m_document, &SkeletonDocument::resultMeshChanged, m_document, &SkeletonDocument::postProcess);
     connect(m_document, &SkeletonDocument::resultMeshChanged, m_document, &SkeletonDocument::generateRig);
     connect(m_document, &SkeletonDocument::rigChanged, m_document, &SkeletonDocument::generateRig);
     connect(m_document, &SkeletonDocument::postProcessedResultChanged, m_document, &SkeletonDocument::generateTexture);
-    connect(m_document, &SkeletonDocument::resultTextureChanged, m_document, &SkeletonDocument::bakeAmbientOcclusionTexture);
-
+    //connect(m_document, &SkeletonDocument::resultTextureChanged, m_document, &SkeletonDocument::bakeAmbientOcclusionTexture);
+    connect(m_document, &SkeletonDocument::resultTextureChanged, [=]() {
+        m_modelRenderWidget->updateMesh(m_document->takeResultTextureMesh());
+    });
+    
     connect(m_document, &SkeletonDocument::resultMeshChanged, [=]() {
         m_modelRenderWidget->updateMesh(m_document->takeResultMesh());
     });
-    //connect(m_document, &SkeletonDocument::resultSkeletonChanged, [=]() {
-    //    m_skeletonRenderWidget->updateMesh(m_document->takeResultSkeletonMesh());
-    //});
 
     connect(graphicsWidget, &SkeletonGraphicsWidget::cursorChanged, [=]() {
         m_modelRenderWidget->setCursor(graphicsWidget->cursor());
@@ -821,6 +864,15 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
         m_document->generatePosePreviews();
     });
     connect(m_document, &SkeletonDocument::resultRigChanged, m_document, &SkeletonDocument::generatePosePreviews);
+    
+    connect(m_document, &SkeletonDocument::materialAdded, this, [=](QUuid materialId) {
+        Q_UNUSED(materialId);
+        m_document->generateMaterialPreviews();
+    });
+    connect(m_document, &SkeletonDocument::materialLayersChanged, this, [=](QUuid materialId) {
+        Q_UNUSED(materialId);
+        m_document->generateMaterialPreviews();
+    });
 
     connect(this, &SkeletonDocumentWindow::initialized, m_document, &SkeletonDocument::uiReady);
     
@@ -1037,6 +1089,26 @@ void SkeletonDocumentWindow::saveTo(const QString &saveAsFilename)
         if (imageByteArray.size() > 0)
             ds3Writer.add("canvas.png", "asset", &imageByteArray);
     }
+    
+    for (auto &material: snapshot.materials) {
+        for (auto &layer: material.second) {
+            for (auto &mapItem: layer.second) {
+                auto findImageIdString = mapItem.find("linkData");
+                if (findImageIdString == mapItem.end())
+                    continue;
+                QUuid imageId = QUuid(findImageIdString->second);
+                const QImage *image = ImageForever::get(imageId);
+                if (nullptr == image)
+                    continue;
+                QByteArray imageByteArray;
+                QBuffer pngBuffer(&imageByteArray);
+                pngBuffer.open(QIODevice::WriteOnly);
+                image->save(&pngBuffer, "PNG");
+                if (imageByteArray.size() > 0)
+                    ds3Writer.add("images/" + imageId.toString() + ".png", "asset", &imageByteArray);
+            }
+        }
+    }
 
     if (ds3Writer.save(filename)) {
         setCurrentFilename(filename);
@@ -1063,6 +1135,24 @@ void SkeletonDocumentWindow::open()
 
     QApplication::setOverrideCursor(Qt::WaitCursor);
     Ds3FileReader ds3Reader(filename);
+    
+    for (int i = 0; i < ds3Reader.items().size(); ++i) {
+        Ds3ReaderItem item = ds3Reader.items().at(i);
+        if (item.type == "asset") {
+            if (item.name.startsWith("images/")) {
+                QString filename = item.name.split("/")[1];
+                QString imageIdString = filename.split(".")[0];
+                QUuid imageId = QUuid(imageIdString);
+                if (!imageId.isNull()) {
+                    QByteArray data;
+                    ds3Reader.loadItem(item.name, &data);
+                    QImage image = QImage::fromData(data, "PNG");
+                    (void)ImageForever::add(&image, imageId);
+                }
+            }
+        }
+    }
+    
     for (int i = 0; i < ds3Reader.items().size(); ++i) {
         Ds3ReaderItem item = ds3Reader.items().at(i);
         if (item.type == "model") {
@@ -1104,19 +1194,11 @@ void SkeletonDocumentWindow::exportObjResult()
         return;
     }
     QApplication::setOverrideCursor(Qt::WaitCursor);
-    m_modelRenderWidget->exportMeshAsObj(filename);
-    QApplication::restoreOverrideCursor();
-}
-
-void SkeletonDocumentWindow::exportObjPlusMaterialsResult()
-{
-    QString filename = QFileDialog::getSaveFileName(this, QString(), QString(),
-       tr("Wavefront (*.obj)"));
-    if (filename.isEmpty()) {
-        return;
+    MeshLoader *resultMesh = m_document->takeResultMesh();
+    if (nullptr != resultMesh) {
+        resultMesh->exportAsObj(filename);
+        delete resultMesh;
     }
-    QApplication::setOverrideCursor(Qt::WaitCursor);
-    m_modelRenderWidget->exportMeshAsObjPlusMaterials(filename);
     QApplication::restoreOverrideCursor();
 }
 

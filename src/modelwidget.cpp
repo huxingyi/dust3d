@@ -136,9 +136,11 @@ void ModelWidget::initializeGL()
 
     // Our camera never changes in this example.
     m_camera.setToIdentity();
+    // FIXME: if change here, please also change the camera pos in PBR shader
     m_camera.translate(0, 0, -2.1);
 
     // Light position is fixed.
+    // FIXME: PBR render no longer use this parameter
     m_program->setUniformValue(m_program->lightPosLoc(), QVector3D(0, 0, 70));
 
     m_program->release();
@@ -159,8 +161,11 @@ void ModelWidget::paintGL()
     m_program->bind();
     m_program->setUniformValue(m_program->projectionMatrixLoc(), m_projection);
     m_program->setUniformValue(m_program->modelMatrixLoc(), m_world);
+    QMatrix3x3 normalMatrix = m_world.normalMatrix();
+    m_program->setUniformValue(m_program->normalMatrixLoc(), normalMatrix);
     m_program->setUniformValue(m_program->viewMatrixLoc(), m_camera);
     m_program->setUniformValue(m_program->textureEnabledLoc(), 0);
+    m_program->setUniformValue(m_program->normalMapEnabledLoc(), 0);
     
     m_meshBinder.paint(m_program);
 
@@ -289,16 +294,6 @@ void ModelWidget::updateMesh(MeshLoader *mesh)
 {
     m_meshBinder.updateMesh(mesh);
     update();
-}
-
-void ModelWidget::exportMeshAsObj(const QString &filename)
-{
-    m_meshBinder.exportMeshAsObj(filename);
-}
-
-void ModelWidget::exportMeshAsObjPlusMaterials(const QString &filename)
-{
-    m_meshBinder.exportMeshAsObjPlusMaterials(filename);
 }
 
 void ModelWidget::enableMove(bool enabled)

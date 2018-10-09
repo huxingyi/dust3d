@@ -143,6 +143,7 @@ void AmbientOcclusionBaker::process()
         
         m_resultMesh = new MeshLoader(m_meshResultContext);
         m_resultMesh->setTextureImage(new QImage(*m_textureImage));
+        //m_resultMesh->setNormalMapImage(new QImage(*m_textureImage));
     }
     
     this->moveToThread(QGuiApplication::instance()->thread());

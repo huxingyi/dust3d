@@ -62,8 +62,8 @@ MeshLoader *SkinnedMeshCreator::createMeshFromTransform(const std::vector<QMatri
             currentVertex.normX = sourceNormal.x();
             currentVertex.normY = sourceNormal.y();
             currentVertex.normZ = sourceNormal.z();
-            currentVertex.metalness = triangleMaterial.metalness;
-            currentVertex.roughness = triangleMaterial.roughness;
+            currentVertex.metalness = MeshLoader::m_defaultMetalness;
+            currentVertex.roughness = MeshLoader::m_defaultRoughness;
         }
     }
     

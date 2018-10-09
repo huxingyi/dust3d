@@ -24,6 +24,7 @@ void MeshResultPostProcessor::process()
     if (!m_meshResultContext->bmeshNodes.empty()) {
         m_meshResultContext->rearrangedVertices();
         m_meshResultContext->rearrangedTriangles();
+        (void)m_meshResultContext->triangleTangents();
         m_meshResultContext->parts();
     }
     

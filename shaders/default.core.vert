@@ -5,6 +5,7 @@ in vec3 color;
 in vec2 texCoord;
 in float metalness;
 in float roughness;
+in vec3 tangent;
 out vec3 vert;
 out vec3 vertNormal;
 out vec3 vertColor;

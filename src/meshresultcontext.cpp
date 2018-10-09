@@ -3,6 +3,8 @@
 #include <QDebug>
 #include <set>
 #include <cmath>
+#include <QVector2D>
+#include "texturegenerator.h"
 #include "theme.h"
 #include "meshresultcontext.h"
 #include "thekla_atlas.h"
@@ -32,7 +34,8 @@ MeshResultContext::MeshResultContext() :
     m_resultPartsResolved(false),
     m_resultTriangleUvsResolved(false),
     m_resultRearrangedVerticesResolved(false),
-    m_vertexNormalsInterpolated(false)
+    m_vertexNormalsInterpolated(false),
+    m_triangleTangentsResolved(false)
 {
 }
 
@@ -351,6 +354,7 @@ void MeshResultContext::calculateResultParts(std::map<QUuid, ResultPart> &parts)
         }
         resultPart.triangles.push_back(newTriangle);
         resultPart.uvs.push_back(triangleUvs()[x]);
+        resultPart.triangleTangents.push_back(triangleTangents()[x]);
     }
 }
 
@@ -432,7 +436,9 @@ void MeshResultContext::calculateResultTriangleUvs(std::vector<ResultTriangleUv>
     Atlas_Options atlasOptions;
     atlas_set_default_options(&atlasOptions);
     
-    atlasOptions.packer_options.witness.packing_quality = 4;
+    atlasOptions.packer_options.witness.packing_quality = 1;
+    //atlasOptions.packer_options.witness.texel_area = 1.0 / TextureGenerator::m_textureSize;
+    atlasOptions.packer_options.witness.conservative = false;
     
     Atlas_Error error = Atlas_Error_Success;
     Atlas_Output_Mesh *outputMesh = atlas_generate(&inputMesh, &atlasOptions, &error);
@@ -554,4 +560,46 @@ const std::vector<QVector3D> &MeshResultContext::interpolatedVertexNormals()
         interpolateVertexNormals(m_interpolatedVertexNormals);
     }
     return m_interpolatedVertexNormals;
+}
+
+const std::vector<QVector3D> &MeshResultContext::triangleTangents()
+{
+    if (!m_triangleTangentsResolved) {
+        m_triangleTangentsResolved = true;
+        calculateTriangleTangents(m_triangleTangents);
+    }
+    return m_triangleTangents;
+}
+
+void MeshResultContext::calculateTriangleTangents(std::vector<QVector3D> &tangents)
+{
+    tangents.resize(triangles.size());
+    
+    for (decltype(triangles.size()) i = 0; i < triangles.size(); i++) {
+        tangents[i] = {0, 0, 0};
+        const auto &uv = triangleUvs()[i];
+        if (!uv.resolved)
+            continue;
+        QVector2D uv1 = {uv.uv[0][0], uv.uv[0][1]};
+        QVector2D uv2 = {uv.uv[1][0], uv.uv[1][1]};
+        QVector2D uv3 = {uv.uv[2][0], uv.uv[2][1]};
+        const auto &triangle = triangles[i];
+        const QVector3D &pos1 = vertices[triangle.indicies[0]].position;
+        const QVector3D &pos2 = vertices[triangle.indicies[1]].position;
+        const QVector3D &pos3 = vertices[triangle.indicies[2]].position;
+        QVector3D edge1 = pos2 - pos1;
+        QVector3D edge2 = pos3 - pos1;
+        QVector2D deltaUv1 = uv2 - uv1;
+        QVector2D deltaUv2 = uv3 - uv1;
+        auto bottom = deltaUv1.x() * deltaUv2.y() - deltaUv2.x() * deltaUv1.y();
+        if (qFuzzyIsNull(bottom))
+            continue;
+        float f = 1.0 / bottom;
+        QVector3D tangent = {
+            f * (deltaUv2.y() * edge1.x() - deltaUv1.y() * edge2.x()),
+            f * (deltaUv2.y() * edge1.y() - deltaUv1.y() * edge2.y()),
+            f * (deltaUv2.y() * edge1.z() - deltaUv1.y() * edge2.z())
+        };
+        tangents[i] = tangent.normalized();
+    }
 }

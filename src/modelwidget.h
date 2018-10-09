@@ -28,8 +28,6 @@ public:
         m_transparent = t;
     }
     void updateMesh(MeshLoader *mesh);
-    void exportMeshAsObj(const QString &filename);
-    void exportMeshAsObjPlusMaterials(const QString &filename);
     void setGraphicsFunctions(SkeletonGraphicsFunctions *graphicsFunctions);
     void toggleWireframe();
     void enableMove(bool enabled);

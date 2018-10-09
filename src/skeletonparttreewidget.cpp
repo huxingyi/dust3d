@@ -932,18 +932,7 @@ void SkeletonPartTreeWidget::partColorStateChanged(QUuid partId)
     widget->updateColorButton();
 }
 
-void SkeletonPartTreeWidget::partMetalnessChanged(QUuid partId)
-{
-    auto item = m_partItemMap.find(partId);
-    if (item == m_partItemMap.end()) {
-        qDebug() << "Part item not found:" << partId;
-        return;
-    }
-    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second, 0);
-    widget->updateColorButton();
-}
-
-void SkeletonPartTreeWidget::partRoughnessChanged(QUuid partId)
+void SkeletonPartTreeWidget::partMaterialIdChanged(QUuid partId)
 {
     auto item = m_partItemMap.find(partId);
     if (item == m_partItemMap.end()) {

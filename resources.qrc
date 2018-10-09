@@ -6,6 +6,7 @@
     <file>resources/tree-branch-more.png</file>
     <file>resources/tree-branch-open.png</file>
     <file>resources/tree-vline.png</file>
+    <file>resources/material-demo-model.ds3</file>
     <file>shaders/default.vert</file>
     <file>shaders/default.frag</file>
     <file>shaders/default.core.vert</file>
