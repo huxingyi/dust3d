@@ -130,7 +130,7 @@ QPainterPath TextureGenerator::expandedPainterPath(const QPainterPath &painterPa
 {
     QPainterPathStroker stroker;
     stroker.setWidth(expandSize);
-    stroker.setJoinStyle(Qt::MiterJoin);
+    stroker.setJoinStyle(Qt::RoundJoin);
     return (stroker.createStroke(painterPath) + painterPath).simplified();
 }
 
