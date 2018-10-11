@@ -619,8 +619,9 @@ void SkeletonDocument::scaleNodeByAddRadius(QUuid nodeId, float amount)
     }
     if (isPartReadonly(it->second.partId))
         return;
-    if (!radiusLocked)
-        it->second.setRadius(it->second.radius + amount);
+    if (radiusLocked)
+        return;
+    it->second.setRadius(it->second.radius + amount);
     auto part = partMap.find(it->second.partId);
     if (part != partMap.end())
         part->second.dirty = true;
@@ -647,12 +648,21 @@ void SkeletonDocument::moveNodeBy(QUuid nodeId, float x, float y, float z)
     }
     if (m_allPositionRelatedLocksEnabled && isPartReadonly(it->second.partId))
         return;
-    if (!(m_allPositionRelatedLocksEnabled && xlocked))
+    bool changed = false;
+    if (!(m_allPositionRelatedLocksEnabled && xlocked)) {
         it->second.x += x;
-    if (!(m_allPositionRelatedLocksEnabled && ylocked))
+        changed = true;
+    }
+    if (!(m_allPositionRelatedLocksEnabled && ylocked)) {
         it->second.y += y;
-    if (!(m_allPositionRelatedLocksEnabled && zlocked))
+        changed = true;
+    }
+    if (!(m_allPositionRelatedLocksEnabled && zlocked)) {
         it->second.z += z;
+        changed = true;
+    }
+    if (!changed)
+        return;
     auto part = partMap.find(it->second.partId);
     if (part != partMap.end())
         part->second.dirty = true;
