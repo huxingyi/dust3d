@@ -141,11 +141,11 @@ void TextureGenerator::prepare()
     
     std::map<QUuid, QUuid> updatedMaterialIdMap;
     for (const auto &partIt: m_snapshot->parts) {
+        QUuid materialId;
         auto materialIdIt = partIt.second.find("materialId");
-        if (materialIdIt == partIt.second.end())
-            continue;
+        if (materialIdIt != partIt.second.end())
+            materialId = QUuid(materialIdIt->second);
         QUuid partId = QUuid(partIt.first);
-        QUuid materialId = QUuid(materialIdIt->second);
         updatedMaterialIdMap.insert({partId, materialId});
     }
     for (const auto &bmeshNode: m_resultContext->bmeshNodes) {
