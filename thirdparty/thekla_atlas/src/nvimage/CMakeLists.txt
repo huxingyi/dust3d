@@ -1,4 +1,5 @@
 PROJECT(nvimage)
+set(CMAKE_DEBUG_POSTFIX d)
 
 SET(IMAGE_SRCS	
     nvimage.h

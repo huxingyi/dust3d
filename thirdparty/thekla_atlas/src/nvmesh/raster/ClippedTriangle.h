@@ -116,7 +116,7 @@ namespace nv
                 centroidx += f * (v[k].x + v[k+1].x);
                 centroidy += f * (v[k].y + v[k+1].y);
             }
-            m_area = 0.5f * fabs(m_area);
+            m_area = 0.5f * fabsf(m_area);
             if (m_area==0) {
                 m_centroid = Vector2(0.0f);
             } else {

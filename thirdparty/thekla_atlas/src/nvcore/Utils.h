@@ -72,6 +72,11 @@ namespace nv
     //template <> inline uint32 U32<uint8>(uint8 x) { return x; }
     template <> inline uint32 U32<int8>(int8 x) { nvDebugCheck(x >= 0); return (uint32)x; }
 
+#if NV_OS_DARWIN
+    template <> inline uint32 U32<unsigned long>(unsigned long x) { nvDebugCheck(x <= NV_UINT32_MAX); return (uint32)x; }
+    template <> inline uint32 U32<long>(long x) { nvDebugCheck(x >= 0 && x <= NV_UINT32_MAX); return (uint32)x; }
+#endif
+
     // int32 casts:
     template <typename T> inline int32 I32(T x) { return x; }
     template <> inline int32 I32<uint64>(uint64 x) { nvDebugCheck(x <= NV_INT32_MAX); return (int32)x; }
@@ -120,11 +125,11 @@ namespace nv
     // int8 casts:
     template <typename T> inline int8 I8(T x) { return x; }
     template <> inline int8 I8<uint64>(uint64 x) { nvDebugCheck(x <= NV_INT8_MAX); return (int8)x; }
-    template <> inline int8 I8<int64>(int64 x) { nvDebugCheck(x >= NV_INT8_MIN && x <= NV_UINT8_MAX); return (int8)x; }
+    template <> inline int8 I8<int64>(int64 x) { nvDebugCheck(x >= NV_INT8_MIN && x <= NV_INT8_MAX); return (int8)x; }
     template <> inline int8 I8<uint32>(uint32 x) { nvDebugCheck(x <= NV_INT8_MAX); return (int8)x; }
-    template <> inline int8 I8<int32>(int32 x) { nvDebugCheck(x >= NV_INT8_MIN && x <= NV_UINT8_MAX); return (int8)x; }
+    template <> inline int8 I8<int32>(int32 x) { nvDebugCheck(x >= NV_INT8_MIN && x <= NV_INT8_MAX); return (int8)x; }
     template <> inline int8 I8<uint16>(uint16 x) { nvDebugCheck(x <= NV_INT8_MAX); return (int8)x; }
-    template <> inline int8 I8<int16>(int16 x) { nvDebugCheck(x >= NV_INT8_MIN && x <= NV_UINT8_MAX); return (int8)x; }
+    template <> inline int8 I8<int16>(int16 x) { nvDebugCheck(x >= NV_INT8_MIN && x <= NV_INT8_MAX); return (int8)x; }
     template <> inline int8 I8<uint8>(uint8 x) { nvDebugCheck(x <= NV_INT8_MAX); return (int8)x; }
     //template <> inline int8 I8<int8>(int8 x) { return x; }
 

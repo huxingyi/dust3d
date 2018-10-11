@@ -1,21 +1,39 @@
 
 // Thekla Atlas Generator
 
+#if THEKLA_ATLAS_SHARED
+#if _WIN32
+#define DLL_EXPORT __declspec(dllexport)
+#define DLL_IMPORT __declspec(dllimport)
+#else
+#define DLL_EXPORT
+#define DLL_IMPORT
+#endif
+#ifdef THEKLA_ATLAS_EXPORTS
+#define THEKLA_ATLAS_API DLL_EXPORT
+#else
+#define THEKLA_ATLAS_API DLL_IMPORT
+#endif
+#else
+#define THEKLA_ATLAS_API
+#endif
+
+
 namespace Thekla {
 
 enum Atlas_Charter {
-    Atlas_Charter_Witness,  // Options: threshold
-    Atlas_Charter_Extract,  // Options: ---
+    Atlas_Charter_Witness,
+    Atlas_Charter_Extract,
     Atlas_Charter_Default = Atlas_Charter_Witness
 };
 
 enum Atlas_Mapper {
-    Atlas_Mapper_LSCM,      // Options: ---
+    Atlas_Mapper_LSCM,
     Atlas_Mapper_Default = Atlas_Mapper_LSCM
 };
 
 enum Atlas_Packer {
-    Atlas_Packer_Witness,   // Options: texel_area
+    Atlas_Packer_Witness,
     Atlas_Packer_Default = Atlas_Packer_Witness
 };
 
@@ -92,11 +110,11 @@ enum Atlas_Error {
     Atlas_Error_Not_Implemented,
 };
 
-void atlas_set_default_options(Atlas_Options * options);
+THEKLA_ATLAS_API void atlas_set_default_options(Atlas_Options * options);
 
-Atlas_Output_Mesh * atlas_generate(const Atlas_Input_Mesh * input, const Atlas_Options * options, Atlas_Error * error);
+THEKLA_ATLAS_API Atlas_Output_Mesh * atlas_generate(const Atlas_Input_Mesh * input, const Atlas_Options * options, Atlas_Error * error);
 
-void atlas_free(Atlas_Output_Mesh * output);
+THEKLA_ATLAS_API void atlas_free(Atlas_Output_Mesh * output);
 
 
 /*

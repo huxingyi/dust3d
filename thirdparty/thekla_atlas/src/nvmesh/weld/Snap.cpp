@@ -1,7 +1,10 @@
 // This code is in the public domain -- castanyo@yahoo.es
 
 #include <nvcore/RadixSort.h>
-
+/////// Changes in Dust3D Begin /////////////
+#include "Array.inl"
+#include "nvmath/Box.inl"
+/////// Changes in Dust3D End /////////////
 #include <nvmesh/weld/Snap.h>
 #include <nvmesh/TriMesh.h>
 #include <nvmesh/geometry/Bounds.h>

@@ -12,6 +12,8 @@
 #   ifdef __APPLE__
 #       include <TargetConditionals.h>
 #       include <signal.h>
+#       include <sys/types.h>   // getpid
+#       include <unistd.h>
 #   endif
 #endif
 
@@ -43,10 +45,22 @@
 //#       define nvDebugBreak()        __asm { int 3 }
 #   elif NV_OS_ORBIS
 #       define nvDebugBreak()       __debugbreak()
-#   elif NV_OS_IOS && TARGET_OS_IPHONE
-#       define nvDebugBreak()       raise(SIGINT)
 #   elif NV_CC_CLANG
-#       define nvDebugBreak()       __builtin_debugtrap()
+#       if NV_OS_IOS
+#           if NV_CPU_ARM_64
+#               if __clang_major__ >= 9
+#                   define nvDebugBreak()     asm volatile("svc #0x80") // IC: "svc 0" doesn't seem to work anymore.
+#               else
+#                   define nvDebugBreak()     asm volatile("svc 0")
+#               endif
+#           elif NV_CPU_ARM
+#               define nvDebugBreak()     asm("trap")
+#           else // simulator?
+#               define nvDebugBreak()     __builtin_debugtrap()
+#           endif
+#       else
+#           define nvDebugBreak()       __builtin_debugtrap()
+#       endif
 #   elif NV_CC_GNUC
 //#       define nvDebugBreak()       __builtin_debugtrap()     // Does GCC have debugtrap?
 #       define nvDebugBreak()		__builtin_trap()
@@ -98,12 +112,14 @@
     } \
     NV_MULTI_LINE_MACRO_END
 
+// IC: When using this macro in llvm/ios you can ignore future hits typing 'expr ignoreAll=true' in the console.
 // GCC, LLVM need "##" before the __VA_ARGS__, MSVC doesn't care
 #define nvAssertMacroWithIgnoreAll(exp,...) \
     NV_MULTI_LINE_MACRO_BEGIN \
         static bool ignoreAll = false; \
         if (!ignoreAll && !nvExpect(exp)) { \
             int _result = nvAbort(#exp, __FILE__, __LINE__, __FUNC__, ##__VA_ARGS__); \
+            /*nvDebug("Type 'expr ignoreAll=true' to ignore future hits\n");*/ \
             if (_result == NV_ABORT_DEBUG) { \
                 nvDebugBreak(); \
             } else if (_result == NV_ABORT_IGNORE) { \
@@ -124,7 +140,7 @@
 #define nvCheckMacro(exp) \
     (\
         (exp) ? true : ( \
-            (nvAbort(#exp, __FILE__, __LINE__, __FUNC__) == NV_ABORT_DEBUG) ? (nvDebugBreak(), true) : ( false ) \
+                        (nvAbort(#exp, __FILE__, __LINE__, __FUNC__) == NV_ABORT_DEBUG) ? ([](){nvDebugBreak();}(), true) : ( false ) \
         ) \
     )
 
@@ -199,11 +215,15 @@ namespace nv
         if (ptr == NULL) return true;
         if (reinterpret_cast<uint64>(ptr) < 0x10000ULL) return false;
         if (reinterpret_cast<uint64>(ptr) >= 0x000007FFFFFEFFFFULL) return false;
+    #elif NV_CPU_ARM_64
+        if (ptr == NULL) return true;
+        if (reinterpret_cast<uint64>(ptr) < 0x10000ULL) return false;
+        if (reinterpret_cast<uint64>(ptr) >= 0x000007FFFFFEFFFFULL) return false;
     #else
-	    if (reinterpret_cast<uintptr_t>(ptr) == 0xcccccccc) return false;
-	    if (reinterpret_cast<uintptr_t>(ptr) == 0xcdcdcdcd) return false;
-	    if (reinterpret_cast<uintptr_t>(ptr) == 0xdddddddd) return false;
-	    if (reinterpret_cast<uintptr_t>(ptr) == 0xffffffff) return false;
+        if (reinterpret_cast<uint32>(ptr) == 0xcccccccc) return false;
+	    if (reinterpret_cast<uint32>(ptr) == 0xcdcdcdcd) return false;
+	    if (reinterpret_cast<uint32>(ptr) == 0xdddddddd) return false;
+	    if (reinterpret_cast<uint32>(ptr) == 0xffffffff) return false;
     #endif
         return true;
     }

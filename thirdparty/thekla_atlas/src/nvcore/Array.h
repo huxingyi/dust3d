@@ -179,6 +179,4 @@ namespace nv
 
 } // nv namespace
 
-#include "Array.inl"
-
 #endif // NV_CORE_ARRAY_H

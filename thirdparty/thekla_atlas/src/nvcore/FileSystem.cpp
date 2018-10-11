@@ -73,3 +73,31 @@ bool FileSystem::removeFile(const char * path)
     // @@ Use unlink or remove?
     return remove(path) == 0;
 }
+
+
+#include "StdStream.h" // for fileOpen
+
+bool FileSystem::copyFile(const char * src, const char * dst) {
+
+    FILE * fsrc = fileOpen(src, "rb");
+    if (fsrc == NULL) return false;
+    NV_ON_RETURN(fclose(fsrc));
+
+    FILE * fdst = fileOpen(dst, "wb");
+    if (fdst == NULL) return false;
+    NV_ON_RETURN(fclose(fdst));
+    
+    char buffer[1024];
+    size_t n;
+
+    while ((n = fread(buffer, sizeof(char), sizeof(buffer), fsrc)) > 0) {
+        if (fwrite(buffer, sizeof(char), n, fdst) != n) {
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+
+

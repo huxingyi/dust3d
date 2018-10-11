@@ -1,7 +1,10 @@
 // This code is in the public domain -- Ignacio Castaño <castano@gmail.com>
 
 #include "QuadTriMesh.h"
-#include "Stream.h"
+#include "nvcore/Stream.h"
+/////// Changes in Dust3D Begin /////////////
+#include "Array.inl"
+/////// Changes in Dust3D End /////////////
 
 using namespace nv;
 

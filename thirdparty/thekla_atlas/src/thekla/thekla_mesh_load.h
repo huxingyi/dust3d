@@ -58,35 +58,62 @@ Obj_Mesh * obj_mesh_load(const char * filename, const Obj_Load_Options * options
         return NULL;
     }
 
-    printf("%lu shapes\n", shapes.size());
-    printf("%lu materials\n", materials.size());
+    printf("%zu shapes\n", shapes.size());
+    printf("%zu materials\n", materials.size());
 
     assert(shapes.size() > 0);
 
     Obj_Mesh* mesh = new Obj_Mesh();
 
-    mesh->vertex_count = shapes[0].mesh.positions.size() / 3;
-    mesh->vertex_array = new Obj_Vertex[mesh->vertex_count];
-    for (int nvert = 0; nvert < mesh->vertex_count; nvert++) {
-        mesh->vertex_array[nvert].position[0] = shapes[0].mesh.positions[nvert * 3];
-        mesh->vertex_array[nvert].position[1] = shapes[0].mesh.positions[nvert * 3 + 1];
-        mesh->vertex_array[nvert].position[2] = shapes[0].mesh.positions[nvert * 3 + 2];
-        mesh->vertex_array[nvert].normal[0] = shapes[0].mesh.normals[nvert * 3];
-        mesh->vertex_array[nvert].normal[1] = shapes[0].mesh.normals[nvert * 3 + 1];
-        mesh->vertex_array[nvert].normal[2] = shapes[0].mesh.normals[nvert * 3 + 2];
-        mesh->vertex_array[nvert].uv[0] = 0;
-        mesh->vertex_array[nvert].uv[1] = 0;
-        mesh->vertex_array[nvert].first_colocal = nvert;
+    // Count vertices and faces in all shapes.
+    mesh->vertex_count = 0;
+    mesh->face_count = 0;
+    for (int s = 0; s < shapes.size(); s++) {
+        mesh->vertex_count += (int)shapes[s].mesh.positions.size() / 3;
+        mesh->face_count += (int)shapes[s].mesh.indices.size() / 3;
     }
 
-    mesh->face_count = shapes[0].mesh.indices.size() / 3;
-    mesh->face_array = new Obj_Face[mesh->face_count];
-    for (int nface = 0; nface < mesh->face_count; nface++) {
-        mesh->face_array[nface].material_index = 0;
-        mesh->face_array[nface].vertex_index[0] = shapes[0].mesh.indices[nface * 3];
-        mesh->face_array[nface].vertex_index[1] = shapes[0].mesh.indices[nface * 3 + 1];
-        mesh->face_array[nface].vertex_index[2] = shapes[0].mesh.indices[nface * 3 + 2];
+    mesh->vertex_array = new Obj_Vertex[mesh->vertex_count];
+    for (int s = 0, nv = 0; s < shapes.size(); s++) {
+        const int shape_vertex_count = (int)shapes[s].mesh.positions.size() / 3;
+
+        for (int v = 0; v < shape_vertex_count; v++) {
+            mesh->vertex_array[nv+v].position[0] = shapes[s].mesh.positions[v * 3 + 0];
+            mesh->vertex_array[nv+v].position[1] = shapes[s].mesh.positions[v * 3 + 1];
+            mesh->vertex_array[nv+v].position[2] = shapes[s].mesh.positions[v * 3 + 2];
+            mesh->vertex_array[nv+v].normal[0] = shapes[s].mesh.normals[v * 3 + 0];
+            mesh->vertex_array[nv+v].normal[1] = shapes[s].mesh.normals[v * 3 + 1];
+            mesh->vertex_array[nv+v].normal[2] = shapes[s].mesh.normals[v * 3 + 2];
+            mesh->vertex_array[nv+v].uv[0] = shapes[s].mesh.texcoords[v * 3 + 0];      // The input UVs are provided as a hint to the chart generator.
+            mesh->vertex_array[nv+v].uv[1] = shapes[s].mesh.texcoords[v * 3 + 1];
+            mesh->vertex_array[nv+v].first_colocal = nv+v;
+
+            // Link colocals. You probably want to do this more efficiently! Sort by one axis or use a hash or grid.
+            for (int vv = 0; vv < v; vv++) {
+                if (mesh->vertex_array[nv+v].position[0] == mesh->vertex_array[nv+vv].position[0] &&
+                    mesh->vertex_array[nv+v].position[1] == mesh->vertex_array[nv+vv].position[1] &&
+                    mesh->vertex_array[nv+v].position[2] == mesh->vertex_array[nv+vv].position[2])
+                {
+                    mesh->vertex_array[nv+v].first_colocal = nv+vv;
+                }
+            }
+        }
+        nv += shape_vertex_count;
     }
+
+    mesh->face_array = new Obj_Face[mesh->face_count];
+    for (int s = 0, nf = 0; s < shapes.size(); s++) {
+        const int shape_face_count = (int)shapes[s].mesh.indices.size() / 3;
+        for (int f = 0; f < shape_face_count; f++) {
+            mesh->face_array[nf+f].material_index = 0;
+            mesh->face_array[nf+f].vertex_index[0] = shapes[s].mesh.indices[f * 3 + 0];
+            mesh->face_array[nf+f].vertex_index[1] = shapes[s].mesh.indices[f * 3 + 1];
+            mesh->face_array[nf+f].vertex_index[2] = shapes[s].mesh.indices[f * 3 + 2];
+        }
+        nf += shape_face_count;
+    }
+
+    // @@ Add support for obj materials! Charter also uses material boundaries as a hint to cut charts.
 
     printf("Reading %d verts\n", mesh->vertex_count);
     printf("Reading %d triangles\n", mesh->face_count);

@@ -2,7 +2,9 @@
 
 #include "ConformalMap.h"
 #include "Util.h"
-
+/////// Changes in Dust3D Begin /////////////
+#include "Array.inl"
+/////// Changes in Dust3D End /////////////
 #include <nvmath/Sparse.h>
 #include <nvmath/Vector.inl>
 #include <nvmath/Solver.h>

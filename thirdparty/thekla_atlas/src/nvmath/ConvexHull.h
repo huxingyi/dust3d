@@ -12,6 +12,16 @@ namespace nv {
  
     void convexHull(const Array<Vector2> & input, Array<Vector2> & output, float epsilon = 0);
 
+    //ACS: moved these down from collision_volume.cpp
+    bool isClockwise(const Array<Vector2> & input);
+    void reduceConvexHullToNSides(Array<Vector2> *input, uint num_sides);
+    void flipWinding(Array<Vector2> *input);
+
+    bool bestFitPolygon(const Array<Vector2> & input, uint vertexCount, Array<Vector2> * output);
+
+    // Basic ear-clipping algorithm.
+    void triangulate(const Array<Vector2> & input, Array<uint> * output);
+
 } // namespace nv
 
 #endif // NV_MATH_CONVEXHULL_H

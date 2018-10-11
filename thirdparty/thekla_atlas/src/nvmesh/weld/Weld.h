@@ -111,7 +111,7 @@ inline void reverseXRefs(Array<uint> & xrefs, uint count)
 //
 struct WeldN
 {
-    uint vertexSize;
+    const uint vertexSize;
 
     WeldN(uint n) : vertexSize(n) {}
 

@@ -27,8 +27,8 @@
 #define NV_FASTCALL		__attribute__((fastcall))
 #define NV_FORCEINLINE	__attribute__((always_inline)) inline
 #define NV_DEPRECATED   __attribute__((deprecated))
-#if NV_OS_IOS
-#define NV_THREAD_LOCAL // @@ IC: Looks like iOS does not have support for TLS declarations.
+#if 0 //Apple finally added TLS support to iOS!// NV_OS_IOS
+#define NV_THREAD_LOCAL
 #else
 #define NV_THREAD_LOCAL __thread
 #endif

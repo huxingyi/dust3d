@@ -36,7 +36,7 @@ namespace nv
         void beginGroup(uint id);
         void endGroup();
 
-        uint addMaterial(const char * name);
+        uint addMaterial(const char * name, bool deleteDuplicateFaces);
         void beginMaterial(uint id);
         void endMaterial();
 
@@ -44,7 +44,7 @@ namespace nv
         uint addVertex(uint p, uint n = NIL, uint t0 = NIL, uint t1 = NIL, uint c0 = NIL, uint c1 = NIL, uint c2 = NIL);
         uint addVertex(const Vector3 & p);
         //uint addVertex(const Vector3 & p, const Vector3 & n, const Vector2 & t0 = Vector2(0), const Vector2 & t1 = Vector2(0), const Vector4 & c0 = Vector4(0), const Vector4 & c1 = Vector4(0));
-        bool endPolygon();
+        bool endPolygon(bool check_duplicates = true);
 
         uint weldPositions();
         uint weldNormals();

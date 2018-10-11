@@ -5,10 +5,12 @@
 #include "Utils.h"
 
 #include <stdlib.h>
+/////// Changes in Dust3D Begin /////////////
 #if defined(__APPLE__)
 #else
 #include <malloc.h>
 #endif
+/////// Changes in Dust3D End /////////////
 
 #define USE_EFENCE 0
 

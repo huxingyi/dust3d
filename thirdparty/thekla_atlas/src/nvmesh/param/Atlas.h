@@ -157,6 +157,7 @@ namespace nv
         float scale = 1.0f;
         uint vertexMapWidth;
         uint vertexMapHeight;
+        bool blockAligned = true;
 
     private:
 

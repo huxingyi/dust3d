@@ -114,9 +114,12 @@ namespace
 		for (int j = 0; j < h; j++) {
             for (int i = 0; i < w; i++) {
                 Color32 color = bitmap.pixel(i, j);
-                fwrite(&color.r, 1, 1, fp);
-                fwrite(&color.g, 1, 1, fp);
-                fwrite(&color.b, 1, 1, fp);
+                uint8 r = color.r;  // current version of apple's llvm compiling for arm64 doesn't like taking the address of a bit-field. Workaround by using the stack
+                uint8 g = color.g;
+                uint8 b = color.b;
+                fwrite(&r, 1, 1, fp);
+                fwrite(&g, 1, 1, fp);
+                fwrite(&b, 1, 1, fp);
             }
 		}
 
@@ -378,6 +381,8 @@ static void computeBoundingBox(Chart * chart, Vector2 * majorAxis, Vector2 * min
 
 void AtlasPacker::packCharts(int quality, float texelsPerUnit, bool blockAligned, bool conservative)
 {
+    nvDebugCheck(texelsPerUnit > 0.0f);
+
     const uint chartCount = m_atlas->chartCount();
     if (chartCount == 0) return;
 
@@ -416,7 +421,7 @@ void AtlasPacker::packCharts(int quality, float texelsPerUnit, bool blockAligned
             //chartOrderArray[c] = chartArea;
 
             // Compute chart scale
-            float parametricArea = fabs(chart->computeParametricArea());    // @@ There doesn't seem to be anything preventing parametric area to be negative.
+            float parametricArea = fabsf(chart->computeParametricArea());    // @@ There doesn't seem to be anything preventing parametric area to be negative.
             if (parametricArea < NV_EPSILON) {
                 // When the parametric area is too small we use a rough approximation to prevent divisions by very small numbers.
                 Vector2 bounds = chart->computeParametricBounds();
@@ -499,7 +504,7 @@ void AtlasPacker::packCharts(int quality, float texelsPerUnit, bool blockAligned
             if (extents.x > 0) {
                 int cw = ftoi_ceil(extents.x);
 
-                if (blockAligned) {
+                if (blockAligned && chart->blockAligned) {
                     // Align all chart extents to 4x4 blocks, but taking padding into account.
                     if (conservative) {
                         cw = align(cw + 2, 4) - 2;
@@ -517,7 +522,7 @@ void AtlasPacker::packCharts(int quality, float texelsPerUnit, bool blockAligned
             if (extents.y > 0) {
                 int ch = ftoi_ceil(extents.y);
 
-                if (blockAligned) {
+                if (blockAligned && chart->blockAligned) {
                     // Align all chart extents to 4x4 blocks, but taking padding into account.
                     if (conservative) {
                         ch = align(ch + 2, 4) - 2;
@@ -613,6 +618,8 @@ void AtlasPacker::packCharts(int quality, float texelsPerUnit, bool blockAligned
         BitMap chart_bitmap;
 
         if (chart->isVertexMapped()) {
+            chart->blockAligned = false;
+
             // Init all bits to 1.
             chart_bitmap.resize(ftoi_ceil(chartExtents[c].x), ftoi_ceil(chartExtents[c].y), /*initValue=*/true);
 
@@ -650,10 +657,14 @@ void AtlasPacker::packCharts(int quality, float texelsPerUnit, bool blockAligned
             }
         }
 
+        if (!chart->blockAligned) {
+            int k = 1;
+        }
+
         int best_x, best_y;
         int best_cw, best_ch;   // Includes padding now.
         int best_r;
-        findChartLocation(quality, &chart_bitmap, chartExtents[c], w, h, &best_x, &best_y, &best_cw, &best_ch, &best_r);
+        findChartLocation(quality, &chart_bitmap, chartExtents[c], w, h, &best_x, &best_y, &best_cw, &best_ch, &best_r, chart->blockAligned);
         
         /*if (w < best_x + best_cw || h < best_y + best_ch)
         {
@@ -849,7 +860,7 @@ void AtlasPacker::packCharts(int quality, float texelsPerUnit, bool blockAligned
 // is occupied at this point. At the end we have many small charts and a large atlas with sparse holes. Finding those holes randomly is slow. A better approach would be to 
 // start stacking large charts as if they were tetris pieces. Once charts get small try to place them randomly. It may be interesting to try a intermediate strategy, first try 
 // along one axis and then try exhaustively along that axis.
-void AtlasPacker::findChartLocation(int quality, const BitMap * bitmap, Vector2::Arg extents, int w, int h, int * best_x, int * best_y, int * best_w, int * best_h, int * best_r)
+void AtlasPacker::findChartLocation(int quality, const BitMap * bitmap, Vector2::Arg extents, int w, int h, int * best_x, int * best_y, int * best_w, int * best_h, int * best_r, bool blockAligned)
 {
     int attempts = 256;
     if (quality == 1) attempts = 4096;
@@ -859,19 +870,22 @@ void AtlasPacker::findChartLocation(int quality, const BitMap * bitmap, Vector2:
 
     if (quality == 0 || w*h < attempts)
     {
-        findChartLocation_bruteForce(bitmap, extents, w, h, best_x, best_y, best_w, best_h, best_r);
+        findChartLocation_bruteForce(bitmap, extents, w, h, best_x, best_y, best_w, best_h, best_r, blockAligned);
     }
     else
     {
-        findChartLocation_random(bitmap, extents, w, h, best_x, best_y, best_w, best_h, best_r, attempts);
+        findChartLocation_random(bitmap, extents, w, h, best_x, best_y, best_w, best_h, best_r, attempts, blockAligned);
     }
 }
 
 #define BLOCK_SIZE 4
 
-void AtlasPacker::findChartLocation_bruteForce(const BitMap * bitmap, Vector2::Arg extents, int w, int h, int * best_x, int * best_y, int * best_w, int * best_h, int * best_r)
+void AtlasPacker::findChartLocation_bruteForce(const BitMap * bitmap, Vector2::Arg extents, int w, int h, int * best_x, int * best_y, int * best_w, int * best_h, int * best_r, bool blockAligned)
 {
     int best_metric = INT_MAX;
+
+    int step_size = blockAligned ? BLOCK_SIZE : 1;
+    
 
     // Try two different orientations.
     for (int r = 0; r < 2; r++)
@@ -880,9 +894,9 @@ void AtlasPacker::findChartLocation_bruteForce(const BitMap * bitmap, Vector2::A
         int ch = bitmap->height();
         if (r & 1) swap(cw, ch);
 
-        for (int y = 0; y <= h + 1; y += BLOCK_SIZE) // + 1 to extend atlas in case atlas full.
+        for (int y = 0; y <= h + 1; y += step_size) // + 1 to extend atlas in case atlas full.
         {
-            for (int x = 0; x <= w + 1; x += BLOCK_SIZE) // + 1 not really necessary here.
+            for (int x = 0; x <= w + 1; x += step_size) // + 1 not really necessary here.
             {
                 // Early out.
                 int area = max(w, x+cw) * max(h, y+ch);
@@ -923,7 +937,7 @@ done:
 }
 
 
-void AtlasPacker::findChartLocation_random(const BitMap * bitmap, Vector2::Arg extents, int w, int h, int * best_x, int * best_y, int * best_w, int * best_h, int * best_r, int minTrialCount)
+void AtlasPacker::findChartLocation_random(const BitMap * bitmap, Vector2::Arg extents, int w, int h, int * best_x, int * best_y, int * best_w, int * best_h, int * best_r, int minTrialCount, bool blockAligned)
 {
     int best_metric = INT_MAX;
 
@@ -933,8 +947,10 @@ void AtlasPacker::findChartLocation_random(const BitMap * bitmap, Vector2::Arg e
         int x = m_rand.getRange(w + 1); // + 1 to extend atlas in case atlas full. We may want to use a higher number to increase probability of extending atlas.
         int y = m_rand.getRange(h + 1); // + 1 to extend atlas in case atlas full.
 
-        x = align(x, BLOCK_SIZE);
-        y = align(y, BLOCK_SIZE);
+        if (blockAligned) {
+            x = align(x, BLOCK_SIZE);
+            y = align(y, BLOCK_SIZE);
+        }
 
         int cw = bitmap->width();
         int ch = bitmap->height();

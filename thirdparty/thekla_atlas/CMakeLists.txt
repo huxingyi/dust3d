@@ -23,3 +23,32 @@ add_executable(
 target_link_libraries(
     thekla_atlas_test
     nvmesh)
+
+set(CMAKE_DEBUG_POSTFIX d)
+
+set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--export-all-symbols")
+
+add_library(libthekla_atlas
+	src/thekla/thekla_atlas.cpp
+)
+
+install(TARGETS libthekla_atlas DESTINATION lib/static)
+
+get_property(HEADER_DIRS DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+
+configure_file(theklaAtlasConfig.cmake.in ${CMAKE_CURRENT_BINARY_DIR}/theklaAtlasConfig.cmake @ONLY)
+install(FILES ${CMAKE_CURRENT_BINARY_DIR}/theklaAtlasConfig.cmake DESTINATION .)
+
+file(GLOB HEADERS src/*.h)
+install(FILES ${HEADERS} DESTINATION include)
+file(GLOB HEADERS src/thekla/*.h)
+install(FILES ${HEADERS} DESTINATION include/thekla)
+file(GLOB HEADERS src/nvcore/*.h)
+install(FILES ${HEADERS} DESTINATION include/nvcore)
+file(GLOB HEADERS src/nvimage/*.h)
+install(FILES ${HEADERS} DESTINATION include/nvimage)
+file(GLOB HEADERS src/nvmesh/*.h)
+install(FILES ${HEADERS} DESTINATION include/nvmesh)
+file(GLOB HEADERS src/nvmath/*.h)
+install(FILES ${HEADERS} DESTINATION include/nvmath)

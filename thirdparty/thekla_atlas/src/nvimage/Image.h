@@ -7,6 +7,10 @@
 #include "nvimage.h"
 #include "nvcore/Debug.h"
 
+#if NV_USE_ALTIVEC
+#undef pixel
+#endif
+
 namespace nv
 {
     class Color32;

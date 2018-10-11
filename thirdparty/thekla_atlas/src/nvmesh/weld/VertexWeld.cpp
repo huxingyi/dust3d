@@ -2,7 +2,9 @@
 
 #include <nvmesh/TriMesh.h>
 #include <nvmesh/QuadTriMesh.h>
-
+/////// Changes in Dust3D Begin /////////////
+#include "Array.inl"
+/////// Changes in Dust3D End /////////////
 #include <nvmesh/weld/VertexWeld.h>
 #include <nvmesh/weld/Weld.h>
 

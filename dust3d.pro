@@ -274,6 +274,8 @@ HEADERS += thirdparty/thekla_atlas/extern/poshlib/posh.h
 SOURCES += thirdparty/thekla_atlas/src/thekla/thekla_atlas.cpp
 HEADERS += thirdparty/thekla_atlas/src/thekla/thekla_atlas.h
 
+HEADERS += thirdparty/thekla_atlas/src/nvcore/nvcore.h
+
 HEADERS += thirdparty/thekla_atlas/src/nvcore/Stream.h
 
 SOURCES += thirdparty/thekla_atlas/src/nvcore/Debug.cpp

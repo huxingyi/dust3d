@@ -1,4 +1,5 @@
 PROJECT(nvmesh)
+set(CMAKE_DEBUG_POSTFIX d)
 
 SET(MESH_SRCS
 	nvmesh.h

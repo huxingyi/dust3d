@@ -77,6 +77,7 @@ namespace
 
         String name;
         uint faceCount;
+        bool doubleSided = false;
     };
 
     struct Vertex
@@ -141,6 +142,7 @@ struct MeshBuilder::PrivateData
     Array<Face> faceArray;
 
     uint maxFaceIndexCount;
+	bool detect_duplicate_faces = true;
 };
 
 
@@ -221,7 +223,7 @@ void MeshBuilder::endGroup()
 }
 
 // Add named material, check for uniquenes.
-uint MeshBuilder::addMaterial(const char * name)
+uint MeshBuilder::addMaterial(const char * name, bool doubleSided)
 {
     uint index;
     if (d->materialMap.get(name, &index)) {
@@ -232,6 +234,7 @@ uint MeshBuilder::addMaterial(const char * name)
         d->materialMap.add(name, index);
         
         Material material(name);
+        material.doubleSided = doubleSided;
         d->materialArray.append(material);
     }
     return index;
@@ -297,7 +300,7 @@ uint MeshBuilder::addVertex(const Vector3 & pos, const Vector3 & nor, const Vect
 #endif
 
 // Return true if the face is valid and was added to the mesh.
-bool MeshBuilder::endPolygon()
+bool MeshBuilder::endPolygon(bool check_duplicates/*=true*/)
 {
     const Face & face = d->faceArray.back();
     const uint count = face.indexCount;
@@ -351,6 +354,61 @@ bool MeshBuilder::endPolygon()
         // @@ This is not complete. We may still get zero area triangles after triangulation.
         // However, our plugin triangulates before building the mesh, so hopefully that's not a problem.
 
+    }
+
+    if (!invalid) {
+
+        Array<Vector3> faceVertices;
+        faceVertices.reserve(4);
+
+        for (uint i = 0; i < face.indexCount; i++) {
+            uint v = d->indexArray[face.firstIndex + i];
+            uint p = d->vertexArray[v].pos;
+            faceVertices.append(d->posArray[p]);
+        }
+
+		if (check_duplicates) {
+
+			uint faceCount = d->faceArray.count() - 1;
+			for (uint f = 0; f < faceCount; f++) {
+				const Face & other = d->faceArray[f];
+
+				// Skip faces with different vertex count.
+				if (other.indexCount != face.indexCount) {
+					continue;
+				}
+
+				const uint orientationCount = (face.material != NIL && d->materialArray[face.material].doubleSided) ? 2 : 1;
+
+				// Compare face vertices in all valid permutations.
+				bool duplicateFace;
+				for (uint orientation = 0; orientation < orientationCount; orientation++) {
+					for (uint order = 0; order < face.indexCount; order++) {
+						duplicateFace = true;
+						for (uint i = 0; i < other.indexCount; i++) {
+							uint v = d->indexArray[other.firstIndex + i];
+							uint p = d->vertexArray[v].pos;
+
+							uint idx = orientation ? (i + order) % face.indexCount : (face.indexCount - 1 - i + order) % face.indexCount;
+
+							if (!equal(faceVertices[idx], d->posArray[p], 0.0f)) {
+								duplicateFace = false;
+								break;
+							}
+						}
+						if (duplicateFace) {
+							goto duplicate;
+						}
+					}
+				}
+
+			duplicate:
+				if (duplicateFace) {
+					invalid = true;
+					break;
+				}
+			}
+		}
     }
 
     if (invalid)

@@ -1,4 +1,5 @@
 PROJECT(nvmath)
+set(CMAKE_DEBUG_POSTFIX d)
 
 SET(MATH_SRCS
 	nvmath.h

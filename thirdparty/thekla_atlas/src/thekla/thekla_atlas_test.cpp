@@ -54,5 +54,4 @@ int main(int argc, char * argv[]) {
     atlas_free(output_mesh);
  
     return 0;
-
 }

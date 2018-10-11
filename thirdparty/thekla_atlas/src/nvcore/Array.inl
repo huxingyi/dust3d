@@ -12,6 +12,9 @@
 #include <string.h>	// memmove
 #include <new> // for placement new
 
+/////// Changes in Dust3D Begin /////////////
+#include "Vector.inl"
+/////// Changes in Dust3D End /////////////
 
 
 namespace nv 

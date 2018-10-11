@@ -57,7 +57,7 @@ static bool ludcmp(float **a, int n, int *indx, float *d)
             }
             a[i][j]=sum;
 
-            float dum = vv[i]*fabs(sum);
+            float dum = vv[i]*fabsf(sum);
             if (dum >= big) {
                 // Is the figure of merit for the pivot better than the best so far?
                 big = dum;
@@ -197,6 +197,36 @@ bool nv::solveLU(const Matrix3 & A, const Vector3 & b, Vector3 * x)
     return true;
 }
 
+bool nv::solveLU(const Matrix2 & A, const Vector2 & b, Vector2 * x)
+{
+    nvDebugCheck(x != NULL);
+    
+    float m[2][2];
+    float *a[2] = {m[0], m[1]};
+    int idx[2];
+    float d;
+    
+    for (int y = 0; y < 2; y++) {
+        for (int x = 0; x < 2; x++) {
+            a[x][y] = A(x, y);
+        }
+    }
+    
+    // Create LU decomposition.
+    if (!ludcmp(a, 2, idx, &d)) {
+        // Singular matrix.
+        return false;
+    }
+    
+    // Init solution.
+    *x = b;
+    
+    // Do back substitution.
+    lubksb(a, 2, idx, x->component);
+    
+    return true;
+}
+
 
 bool nv::solveCramer(const Matrix & A, const Vector4 & b, Vector4 * x)
 {
@@ -223,6 +253,22 @@ bool nv::solveCramer(const Matrix3 & A, const Vector3 & b, Vector3 * x)
     return true;
 }
 
+bool nv::solveCramer(const Matrix2 & A, const Vector2 & b, Vector2 * x)
+{
+    nvDebugCheck(x != NULL);
+    
+    const float det = A.determinant();
+    if (equal(det, 0.0f)) {   // @@ Use input epsilon.
+        return false;
+    }
+    
+    Matrix2 Ai = inverseCramer(A);
+    
+    *x = transform(Ai, b);
+    
+    return true;
+}
+
 
 
 // Inverse using gaussian elimination. From Jon's code.
@@ -238,8 +284,8 @@ Matrix nv::inverse(const Matrix & m) {
     for (i=0; i<4; i++) {               /* eliminate in column i, below diag */
         max = -1.;
         for (k=i; k<4; k++)             /* find pivot for column i */
-            if (fabs(A(k, i)) > max) {
-                max = fabs(A(k, i));
+            if (fabsf(A(k, i)) > max) {
+                max = fabsf(A(k, i));
                 j = k;
             }
         if (max<=0.) return B;         /* if no nonzero pivot, PUNT */
@@ -293,8 +339,8 @@ Matrix3 nv::inverse(const Matrix3 & m) {
     for (i=0; i<3; i++) {               /* eliminate in column i, below diag */
         max = -1.;
         for (k=i; k<3; k++)             /* find pivot for column i */
-            if (fabs(A(k, i)) > max) {
-                max = fabs(A(k, i));
+            if (fabsf(A(k, i)) > max) {
+                max = fabsf(A(k, i));
                 j = k;
             }
         if (max<=0.) return B;         /* if no nonzero pivot, PUNT */

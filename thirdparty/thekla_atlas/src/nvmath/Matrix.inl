@@ -8,6 +8,199 @@
 
 namespace nv
 {
+    inline Matrix2::Matrix2() {}
+    
+    inline Matrix2::Matrix2(float f)
+    {
+        for(int i = 0; i < 4; i++) {
+            m_data[i] = f;
+        }
+    }
+    
+    inline Matrix2::Matrix2(identity_t)
+    {
+        for(int i = 0; i < 2; i++) {
+            for(int j = 0; j < 2; j++) {
+                m_data[2*j+i] = (i == j) ? 1.0f : 0.0f;
+            }
+        }
+    }
+    
+    inline Matrix2::Matrix2(const Matrix2 & m)
+    {
+        for(int i = 0; i < 4; i++) {
+            m_data[i] = m.m_data[i];
+        }
+    }
+    
+    inline Matrix2::Matrix2(Vector2::Arg v0, Vector2::Arg v1)
+    {
+        m_data[0] = v0.x; m_data[1] = v0.y;
+        m_data[2] = v1.x; m_data[3] = v1.y;
+    }
+    
+    inline Matrix2::Matrix2(float a, float b, float c, float d)
+    {
+        m_data[0] = a; m_data[1] = b;
+        m_data[2] = c; m_data[3] = d;
+    }
+    
+    inline float Matrix2::data(uint idx) const
+    {
+        nvDebugCheck(idx < 4);
+        return m_data[idx];
+    }
+    inline float & Matrix2::data(uint idx)
+    {
+        nvDebugCheck(idx < 4);
+        return m_data[idx];
+    }
+    inline float Matrix2::get(uint row, uint col) const
+    {
+        nvDebugCheck(row < 2 && col < 2);
+        return m_data[col * 2 + row];
+    }
+    inline float Matrix2::operator()(uint row, uint col) const
+    {
+        nvDebugCheck(row < 2 && col < 2);
+        return m_data[col * 2 + row];
+    }
+    inline float & Matrix2::operator()(uint row, uint col)
+    {
+        nvDebugCheck(row < 2 && col < 2);
+        return m_data[col * 2 + row];
+    }
+    
+    inline Vector2 Matrix2::row(uint i) const
+    {
+        nvDebugCheck(i < 2);
+        return Vector2(get(i, 0), get(i, 1));
+    }
+    inline Vector2 Matrix2::column(uint i) const
+    {
+        nvDebugCheck(i < 2);
+        return Vector2(get(0, i), get(1, i));
+    }
+    
+    inline void Matrix2::operator*=(float s)
+    {
+        for(int i = 0; i < 4; i++) {
+            m_data[i] *= s;
+        }
+    }
+    
+    inline void Matrix2::operator/=(float s)
+    {
+        float is = 1.0f /s;
+        for(int i = 0; i < 4; i++) {
+            m_data[i] *= is;
+        }
+    }
+    
+    inline void Matrix2::operator+=(const Matrix2 & m)
+    {
+        for(int i = 0; i < 4; i++) {
+            m_data[i] += m.m_data[i];
+        }
+    }
+    
+    inline void Matrix2::operator-=(const Matrix2 & m)
+    {
+        for(int i = 0; i < 4; i++) {
+            m_data[i] -= m.m_data[i];
+        }
+    }
+    
+    inline Matrix2 operator+(const Matrix2 & a, const Matrix2 & b)
+    {
+        Matrix2 m = a;
+        m += b;
+        return m;
+    }
+    
+    inline Matrix2 operator-(const Matrix2 & a, const Matrix2 & b)
+    {
+        Matrix2 m = a;
+        m -= b;
+        return m;
+    }
+    
+    inline Matrix2 operator*(const Matrix2 & a, float s)
+    {
+        Matrix2 m = a;
+        m *= s;
+        return m;
+    }
+    
+    inline Matrix2 operator*(float s, const Matrix2 & a)
+    {
+        Matrix2 m = a;
+        m *= s;
+        return m;
+    }
+    
+    inline Matrix2 operator/(const Matrix2 & a, float s)
+    {
+        Matrix2 m = a;
+        m /= s;
+        return m;
+    }
+    
+    inline Matrix2 mul(const Matrix2 & a, const Matrix2 & b)
+    {
+        Matrix2 m;
+        
+        for(int i = 0; i < 2; i++) {
+            const float ai0 = a(i,0), ai1 = a(i,1);
+            m(i, 0) = ai0 * b(0,0) + ai1 * b(1,0);
+            m(i, 1) = ai0 * b(0,1) + ai1 * b(1,1);
+        }
+        
+        return m;
+    }
+    
+    inline Matrix2 operator*(const Matrix2 & a, const Matrix2 & b)
+    {
+        return mul(a, b);
+    }
+    
+    // Transform the given 3d vector with the given matrix.
+    inline Vector2 transform(const Matrix2 & m, const Vector2 & p)
+    {
+        return Vector2(p.x * m(0,0) + p.y * m(0,1),
+                       p.x * m(1,0) + p.y * m(1,1));
+    }
+    
+    inline void Matrix2::scale(float s)
+    {
+        for (int i = 0; i < 4; i++) {
+            m_data[i] *= s;
+        }
+    }
+    
+    inline void Matrix2::scale(Vector2::Arg s)
+    {
+        m_data[0] *= s.x; m_data[1] *= s.x;
+        m_data[2] *= s.y; m_data[3] *= s.y;
+    }
+    
+    inline float Matrix2::determinant() const
+    {
+        return get(0,0) * get(1,1) - get(0,1) * get(1,0);
+    }
+    
+    // Inverse using Cramer's rule.
+    inline Matrix2 inverseCramer(const Matrix2 & m)
+    {
+        const float det = m.determinant();
+        if (equal(det, 0.0f, 0.0f)) {
+            return Matrix2(0);
+        }
+        
+        return m * (1/det);
+    }
+    
+    
     inline Matrix3::Matrix3() {}
     
     inline Matrix3::Matrix3(float f)
@@ -16,7 +209,7 @@ namespace nv
             m_data[i] = f;
         }
     }
-
+    
     inline Matrix3::Matrix3(identity_t)
     {
         for(int i = 0; i < 3; i++) {
@@ -536,7 +729,7 @@ namespace nv
     // Get perspective matrix.
     inline Matrix perspective(float fovy, float aspect, float zNear, float zFar)
     {
-        float xmax = zNear * tan(fovy / 2);
+        float xmax = zNear * tanf(fovy / 2);
         float xmin = -xmax;
 
         float ymax = xmax / aspect;
@@ -548,7 +741,7 @@ namespace nv
     // Get inverse perspective matrix.
     inline Matrix perspectiveInverse(float fovy, float aspect, float zNear, float zFar)
     {
-        float xmax = zNear * tan(fovy / 2);
+        float xmax = zNear * tanf(fovy / 2);
         float xmin = -xmax;
 
         float ymax = xmax / aspect;
@@ -560,7 +753,7 @@ namespace nv
     // Get infinite perspective matrix.
     inline Matrix perspective(float fovy, float aspect, float zNear)
     {
-        float x = zNear * tan(fovy / 2);
+        float x = zNear * tanf(fovy / 2);
         float y = x / aspect;
         return frustum( -x, x, -y, y, zNear );	
     }

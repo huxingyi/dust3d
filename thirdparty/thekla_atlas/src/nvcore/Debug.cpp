@@ -106,7 +106,8 @@ namespace
     struct sigaction s_old_sigtrap;
     struct sigaction s_old_sigfpe;
     struct sigaction s_old_sigbus;
-
+    struct sigaction s_old_sigill;
+    
 #endif
 
 
@@ -431,9 +432,9 @@ namespace
             pSymbol->SizeOfStruct = sizeof(IMAGEHLP_SYMBOL64);
             pSymbol->MaxNameLength = MAX_STRING_LEN;
 
-            DWORD64 dwDisplacement;
+            DWORD64 dwDisplacement64;
             
-            if (SymGetSymFromAddr64(hProcess, ip, &dwDisplacement, pSymbol))
+            if (SymGetSymFromAddr64(hProcess, ip, &dwDisplacement64, pSymbol))
             {
                 pSymbol->Name[MAX_STRING_LEN-1] = 0;
                 
@@ -455,8 +456,8 @@ namespace
                 IMAGEHLP_LINE64 theLine = { 0 };
                 theLine.SizeOfStruct = sizeof(theLine);
 
-                DWORD dwDisplacement;
-                if (!SymGetLineFromAddr64(hProcess, ip, &dwDisplacement, &theLine))
+                DWORD dwDisplacement32;
+                if (!SymGetLineFromAddr64(hProcess, ip, &dwDisplacement32, &theLine))
                 {
                     // Do not print unknown symbols anymore.
                     //break;
@@ -679,6 +680,9 @@ namespace
 #    elif NV_CPU_ARM
         ucontext_t * ucp = (ucontext_t *)secret;
         return (void *) ucp->uc_mcontext->__ss.__pc;
+#    elif NV_CPU_ARM_64
+        ucontext_t * ucp = (ucontext_t *)secret;
+        return (void *) ucp->uc_mcontext->__ss.__pc;
 #    else
 #      error "Unknown CPU"
 #    endif
@@ -784,8 +788,8 @@ namespace
             printStackTrace(trace, size, 1);
         }
 #endif // defined(NV_HAVE_EXECINFO_H)
-
-        exit(0);
+    
+        exit(EXIT_FAILURE + 2);
     }
 
 #endif // defined(NV_HAVE_SIGNAL_H)
@@ -933,15 +937,24 @@ namespace
         // Assert handler method.
         virtual int assertion(const char * exp, const char * file, int line, const char * func, const char * msg, va_list arg)
         {
-            int ret = NV_ABORT_EXIT;            
+            int ret = NV_ABORT_IGNORE;
             
-            if( func != NULL ) {
-                nvDebug( "*** Assertion failed: %s\n    On file: %s\n    On function: %s\n    On line: %d\n ", exp, file, func, line );
+            StringBuilder error_string;
+            error_string.format("*** Assertion failed: %s\n    On file: %s\n    On line: %d\n", exp, file, line );
+            if (func != NULL) {
+                error_string.appendFormat("    On function: %s\n", func);
             }
-            else {
-                nvDebug( "*** Assertion failed: %s\n    On file: %s\n    On line: %d\n ", exp, file, line );
+            if (msg != NULL) {
+                error_string.append("    Message: ");
+                va_list tmp;
+                va_copy(tmp, arg);
+                error_string.appendFormatList(msg, tmp);
+                va_end(tmp);
+                error_string.append("\n");
             }
-
+            nvDebug("%s", error_string.str());
+            
+            
 #if _DEBUG
             if (debug::isDebuggerPresent()) {
                 return NV_ABORT_DEBUG;
@@ -1173,7 +1186,7 @@ void debug::enableSigHandler(bool interactive)
     s_interactive = interactive;
 
 #if (NV_OS_WIN32 && NV_CC_MSVC) || NV_OS_DURANGO
-    if (interactive) {
+    if (!interactive) {
 #if NV_OS_WIN32
         // Do not display message boxes on error.
         // http://msdn.microsoft.com/en-us/library/windows/desktop/ms680621(v=vs.85).aspx
@@ -1224,6 +1237,8 @@ void debug::enableSigHandler(bool interactive)
     sigaction(SIGTRAP, &sa, &s_old_sigtrap);
     sigaction(SIGFPE, &sa, &s_old_sigfpe);
     sigaction(SIGBUS, &sa, &s_old_sigbus);
+    sigaction(SIGILL, &sa, &s_old_sigill);
+    
 
 #endif
 }
@@ -1249,7 +1264,8 @@ void debug::disableSigHandler()
     sigaction(SIGTRAP, &s_old_sigtrap, NULL);
     sigaction(SIGFPE, &s_old_sigfpe, NULL);
     sigaction(SIGBUS, &s_old_sigbus, NULL);
-
+    sigaction(SIGILL, &s_old_sigill, NULL);
+    
 #endif
 }
 

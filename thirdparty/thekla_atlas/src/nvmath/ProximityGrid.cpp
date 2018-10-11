@@ -65,7 +65,7 @@ void ProximityGrid::init(const Box & box, uint count) {
     else {
         // Ideally we want one cell per point.
         float cellVolume = volume / count;
-        cellWidth = pow(cellVolume, 1.0f / 3.0f);
+        cellWidth = powf(cellVolume, 1.0f / 3.0f);
     }
 
     nvDebugCheck(cellWidth != 0);

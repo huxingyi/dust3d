@@ -22,6 +22,7 @@ namespace nv
         Quaternion(Vector4::Arg v);
 
         const Quaternion & operator=(Quaternion::Arg v);
+        const Quaternion & operator*=(float s);
 
         Vector4 asVector() const;
 
@@ -45,6 +46,13 @@ namespace nv
         y = v.y;
         z = v.z;
         w = v.w;
+        return *this;
+    }
+    inline const Quaternion & Quaternion::operator*=(float s) {
+        x *= s;
+        y *= s;
+        z *= s;
+        w *= s;
         return *this;
     }
 
@@ -105,7 +113,7 @@ namespace nv
     {
         return scale(q, s);
     }
-
+    
     inline Quaternion scale(Quaternion::Arg q, Vector4::Arg s)
     {
         return scale(q.asVector(), s);
@@ -170,15 +178,15 @@ namespace nv
     /// Transform vector.
     inline Vector3 transform(Quaternion::Arg q, Vector3::Arg v)
     {
-        //Quaternion t = q * v * conjugate(q);
-        //return imag(t);
+        Quaternion t = q * v * conjugate(q);
+        return imag(t);
 
         // Faster method by Fabian Giesen and others:
         // http://molecularmusings.wordpress.com/2013/05/24/a-faster-quaternion-vector-multiplication/
         // http://mollyrocket.com/forums/viewtopic.php?t=833&sid=3a84e00a70ccb046cfc87ac39881a3d0
         
-        Vector3 t = 2 * cross(imag(q), v);
-        return v + q.w * t + cross(imag(q), t);
+        //Vector3 t = 2 * cross(imag(q), v);
+        //return v + q.w * t + cross(imag(q), t);
     }
 
     // @@ Not tested.
@@ -207,7 +215,73 @@ namespace nv
         }
     }
 
+    inline Quaternion fromMatrix(const Matrix3 & m) {
+    #if 0 // IC: There must be a bug in this code:
+        if (m(2, 2) < 0) {
+            if (m(0, 0) < m(1,1)) {
+                float t = 1 - m(0, 0) - m(1, 1) - m(2, 2);
+                return Quaternion(t, m(0,1)+m(1,0), m(2,0)+m(0,2), m(1,2)-m(2,1));
+            }
+            else {
+                float t = 1 - m(0, 0) + m(1, 1) - m(2, 2);
+                return Quaternion(t, m(0,1) + m(1,0), m(1,2) + m(2,1), m(2,0) - m(0,2));
+            }
+        }
+        else {
+            if (m(0, 0) < -m(1, 1)) {
+                float t = 1 - m(0, 0) - m(1, 1) + m(2, 2);
+                return Quaternion(t, m(2,0) + m(0,2), m(1,2) + m(2,1), m(0,1) - m(1,0));
+            }
+            else {
+                float t = 1 + m(0, 0) + m(1, 1) + m(2, 2);
+                return Quaternion(t, m(1,2) - m(2,1), m(2,0) - m(0,2), m(0,1) - m(1,0));
+            }
+        }
+    #else
+        Quaternion q;
+        float tr = m(0,0) + m(1,1) + m(2,2);
+        if (tr > 0) {
+            float s = sqrtf(tr + 1.0f);
+            float p = 0.5f / s;
+            q.x = (m(2,1) - m(1,2)) * p;
+            q.y = (m(0,2) - m(2,0)) * p;
+            q.z = (m(1,0) - m(0,1)) * p;
+            q.w = s * 0.5f;
+        }
+        else if ((m(0,0) >= m(1,1)) && (m(0,0) >= m(2,2))) {
+            float s = sqrtf(m(0,0) - m(1,1) - m(2,2) + 1.0f);
+            float p = 0.5f / s;
+            q.x = s * 0.5f;
+            q.y = (m(1,0) + m(0,1)) * p;
+            q.z = (m(2,0) + m(0,2)) * p;
+            q.w = (m(2,1) - m(1,2)) * p;
+        }
+        else if ((m(1,1) >= m(0,0)) && (m(1,1) >= m(2,2))) {
+            float s = sqrtf(m(1,1) - m(2,2) - m(0,0) + 1.0f);
+            float p = 0.5f / s;
+            q.x = (m(0,1) + m(1,0)) * p; 
+            q.y = s * 0.5f;
+            q.z = (m(2,1) + m(1,2)) * p;
+            q.w = (m(0,2) - m(2,0)) * p;
+        }
+        else if ((m(2,2) >= m(0,0)) && (m(2,2) >= m(1,1))) {
+            float s = sqrtf(m(2,2) - m(0,0) - m(1,1) + 1.0f);
+            float p = 0.5f / s;
+            q.x = (m(0,2) + m(2,0)) * p;
+            q.y = (m(1,2) + m(2,1)) * p;
+            q.z = s * 0.5f;
+            q.w = (m(1,0) - m(0,1)) * p;
+        }
+        return q;
+    #endif
+    }
+    
 
+    
+    
+    
+    
+    
 } // nv namespace
 
 #endif // NV_MATH_QUATERNION_H

@@ -526,6 +526,28 @@ StringBuilder & StringBuilder::copy( const StringBuilder & s )
     return *this;
 }
 
+void StringBuilder::removeChar(char c)
+{
+    char * src = strchr(m_str, c);
+    if (src) {
+        char * dst = src;
+        src++;
+        while (*src) {
+            *dst++ = *src++;
+        }
+        *dst = '\0';
+    }
+}
+
+void StringBuilder::replaceChars(char c, char x)
+{
+    char * src = m_str;
+    while (*src) {
+        if (*src == c) *src = x;
+        src++;
+    }
+}
+
 bool StringBuilder::endsWith(const char * str) const
 {
     uint l = uint(strlen(str));
@@ -540,7 +562,7 @@ bool StringBuilder::beginsWith(const char * str) const
     return strncmp(m_str, str, l) == 0;
 }
 
-// Find given char starting from the end.
+// Find given char starting from the end. Why not use strrchr!?
 char * StringBuilder::reverseFind(char c)
 {
     int length = (int)strlen(m_str) - 1;

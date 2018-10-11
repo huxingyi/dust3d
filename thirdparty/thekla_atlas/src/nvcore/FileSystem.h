@@ -15,7 +15,7 @@ namespace nv
         NVCORE_API bool createDirectory(const char * path);
         NVCORE_API bool changeDirectory(const char * path);
         NVCORE_API bool removeFile(const char * path);
-
+        NVCORE_API bool copyFile(const char * src, const char * dst);
     } // FileSystem namespace
 
 } // nv namespace

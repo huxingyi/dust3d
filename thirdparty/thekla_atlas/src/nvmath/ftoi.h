@@ -53,8 +53,7 @@ namespace nv
         return (val<0) ? ftoi_ceil_xs(val) : ftoi_floor_xs(val);
     }
 
-
-#if NV_USE_SSE
+#if NV_CPU_X86 || NV_CPU_X86_64
 
     NV_FORCEINLINE int ftoi_round_sse(float f) {
         return _mm_cvt_ss2si(_mm_set_ss(f));
@@ -63,6 +62,12 @@ namespace nv
     NV_FORCEINLINE int ftoi_trunc_sse(float f) {
       return _mm_cvtt_ss2si(_mm_set_ss(f));
     }
+
+#endif
+
+
+
+#if NV_USE_SSE
 
     NV_FORCEINLINE int ftoi_round(float val) {
         return ftoi_round_sse(val);

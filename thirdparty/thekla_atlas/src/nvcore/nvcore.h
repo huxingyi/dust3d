@@ -84,9 +84,9 @@
 
 // Threading:
 // some platforms don't implement __thread or similar for thread-local-storage
-#if NV_OS_UNIX || NV_OS_ORBIS || NV_OS_IOS //ACStodoIOS darwin instead of ios?
+#if NV_OS_UNIX || NV_OS_ORBIS || NV_OS_IOS
 #   define NV_OS_USE_PTHREAD 1
-#   if NV_OS_IOS
+#   if 0  //Apple finally added TLS support to iOS!// NV_OS_IOS
 #       define NV_OS_HAS_TLS_QUALIFIER 0
 #   else
 #       define NV_OS_HAS_TLS_QUALIFIER 1
@@ -114,6 +114,8 @@
 #   define NV_CPU_PPC 1
 #elif defined POSH_CPU_STRONGARM
 #   define NV_CPU_ARM 1
+#elif defined POSH_CPU_AARCH64
+#   define NV_CPU_ARM_64 1
 #else
 #   error "Unsupported CPU"
 #endif
@@ -151,10 +153,16 @@
 #endif
 
 // Endiannes:
-#define NV_LITTLE_ENDIAN    POSH_LITTLE_ENDIAN
-#define NV_BIG_ENDIAN       POSH_BIG_ENDIAN
-#define NV_ENDIAN_STRING    POSH_ENDIAN_STRING
-
+// @@ POSH endian detection is broken for arm64 on iOS. They are bi-endian and iOS sets all their processors to little endian by default.
+#if NV_OS_IOS
+#   define NV_LITTLE_ENDIAN    1
+#   define NV_BIG_ENDIAN       0
+#   define NV_ENDIAN_STRING    "little"
+#else
+#   define NV_LITTLE_ENDIAN    POSH_LITTLE_ENDIAN
+#   define NV_BIG_ENDIAN       POSH_BIG_ENDIAN
+#   define NV_ENDIAN_STRING    POSH_ENDIAN_STRING
+#endif
 
 // Define the right printf prefix for size_t arguments:
 #if POSH_64BIT_POINTER
@@ -311,11 +319,37 @@ template <typename T, size_t N> char (&ArraySizeHelper(T (&array)[N]))[N];
         NV_STRING_JOIN3(AtStartup_, __LINE__, Instance); \
     }
 
+namespace nv {
+    template <typename F>
+    struct ScopeExit {
+        ScopeExit(F f) : f(f) {}
+        ~ScopeExit() { f(); }
+        F f;
+    };
+
+    template <typename F>
+    ScopeExit<F> MakeScopeExit(F f) {
+        return ScopeExit<F>(f);
+    };
+}
+
+#define NV_ON_RETURN(code) \
+    auto NV_STRING_JOIN2(scope_exit_, __LINE__) = nv::MakeScopeExit([=](){code;})
+
+
 // Indicate the compiler that the parameter is not used to suppress compier warnings.
 #if NV_CC_MSVC
 #define NV_UNUSED(a) ((a)=(a))
 #else
 #define NV_UNUSED(a) _Pragma(NV_STRING(unused(a)))
+#endif
+
+#if NV_CC_GNUC || NV_CC_CLANG
+#define NV_LIKELY(x) __builtin_expect(!!(x), 1)
+#define NV_UNLIKELY(x) __builtin_expect(!!(x), 0)
+#else
+#define NV_LIKELY(x) x
+#define NV_UNLIKELY(x) x
 #endif
 
 // Null index. @@ Move this somewhere else... it's only used by nvmesh.

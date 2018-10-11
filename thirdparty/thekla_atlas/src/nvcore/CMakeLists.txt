@@ -1,4 +1,5 @@
 PROJECT(nvcore)
+set(CMAKE_DEBUG_POSTFIX d)
 
 SET(CORE_SRCS
 	nvcore.h

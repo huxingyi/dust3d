@@ -40,7 +40,7 @@ namespace nv
     {
     public:
 
-        BitArray() {}
+        BitArray() : m_size(0){}
         BitArray(uint sz) {
             resize(sz);
         }
@@ -237,7 +237,7 @@ namespace nv
     private:
 
         // Number of bits stored.
-        uint m_size;
+        uint m_size = 0;
 
         // Array of bits.
         Array<uint> m_wordArray;
