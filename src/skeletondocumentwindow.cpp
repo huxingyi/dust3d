@@ -154,7 +154,6 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     QPushButton *rotateClockwiseButton = new QPushButton(QChar(fa::rotateright));
     Theme::initAwesomeButton(rotateClockwiseButton);
     
-    /*
     SpinnableAwesomeButton *regenerateButton = new SpinnableAwesomeButton();
     regenerateButton->setAwesomeIcon(QChar(fa::recycle));
     connect(m_document, &SkeletonDocument::meshGenerating, this, [=]() {
@@ -170,7 +169,6 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
         regenerateButton->showSpinner(false);
     });
     connect(regenerateButton->button(), &QPushButton::clicked, m_document, &SkeletonDocument::regenerateMesh);
-    */
 
     toolButtonLayout->addWidget(addButton);
     toolButtonLayout->addWidget(selectButton);
@@ -185,8 +183,8 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     toolButtonLayout->addSpacing(10);
     toolButtonLayout->addWidget(rotateCounterclockwiseButton);
     toolButtonLayout->addWidget(rotateClockwiseButton);
-    //toolButtonLayout->addSpacing(10);
-    //toolButtonLayout->addWidget(regenerateButton);
+    toolButtonLayout->addSpacing(10);
+    toolButtonLayout->addWidget(regenerateButton);
     
 
     QLabel *verticalLogoLabel = new QLabel;
@@ -812,27 +810,27 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(m_document, &SkeletonDocument::partUnchecked, partTreeWidget, &SkeletonPartTreeWidget::partUnchecked);
 
     connect(m_document, &SkeletonDocument::skeletonChanged, m_document, &SkeletonDocument::generateMesh);
-    connect(m_document, &SkeletonDocument::resultMeshChanged, [=]() {
-        if ((m_exportPreviewWidget && m_exportPreviewWidget->isVisible())) {
-            m_document->postProcess();
-        }
-    });
-    connect(m_document, &SkeletonDocument::textureChanged, [=]() {
-        if ((m_exportPreviewWidget && m_exportPreviewWidget->isVisible())) {
-            m_document->generateTexture();
-        }
-    });
-    //connect(m_document, &SkeletonDocument::textureChanged, m_document, &SkeletonDocument::generateTexture);
-    //connect(m_document, &SkeletonDocument::resultMeshChanged, m_document, &SkeletonDocument::postProcess);
+    //connect(m_document, &SkeletonDocument::resultMeshChanged, [=]() {
+    //    if ((m_exportPreviewWidget && m_exportPreviewWidget->isVisible())) {
+    //        m_document->postProcess();
+    //    }
+    //});
+    //connect(m_document, &SkeletonDocument::textureChanged, [=]() {
+    //    if ((m_exportPreviewWidget && m_exportPreviewWidget->isVisible())) {
+    //        m_document->generateTexture();
+    //    }
+    //});
+    connect(m_document, &SkeletonDocument::textureChanged, m_document, &SkeletonDocument::generateTexture);
+    connect(m_document, &SkeletonDocument::resultMeshChanged, m_document, &SkeletonDocument::postProcess);
     connect(m_document, &SkeletonDocument::resultMeshChanged, m_document, &SkeletonDocument::generateRig);
     connect(m_document, &SkeletonDocument::rigChanged, m_document, &SkeletonDocument::generateRig);
     connect(m_document, &SkeletonDocument::postProcessedResultChanged, m_document, &SkeletonDocument::generateTexture);
     //connect(m_document, &SkeletonDocument::resultTextureChanged, m_document, &SkeletonDocument::bakeAmbientOcclusionTexture);
-    //connect(m_document, &SkeletonDocument::resultTextureChanged, [=]() {
-    //    if (m_document->isMeshGenerating())
-    //        return;
-    //    m_modelRenderWidget->updateMesh(m_document->takeResultTextureMesh());
-    //});
+    connect(m_document, &SkeletonDocument::resultTextureChanged, [=]() {
+        if (m_document->isMeshGenerating())
+            return;
+        m_modelRenderWidget->updateMesh(m_document->takeResultTextureMesh());
+    });
     
     connect(m_document, &SkeletonDocument::resultMeshChanged, [=]() {
         m_modelRenderWidget->updateMesh(m_document->takeResultMesh());

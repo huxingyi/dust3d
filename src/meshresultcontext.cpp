@@ -4,12 +4,11 @@
 #include <set>
 #include <cmath>
 #include <QVector2D>
+#include <simpleuv/uvunwrapper.h>
 #include "texturegenerator.h"
 #include "theme.h"
 #include "meshresultcontext.h"
-#include "thekla_atlas.h"
 #include "positionmap.h"
-#include "nvcore/Debug.h"
 
 struct HalfColorEdge
 {
@@ -33,7 +32,6 @@ MeshResultContext::MeshResultContext() :
     m_bmeshNodeMapResolved(false),
     m_resultPartsResolved(false),
     m_resultTriangleUvsResolved(false),
-    m_resultRearrangedVerticesResolved(false),
     m_vertexNormalsInterpolated(false),
     m_triangleTangentsResolved(false)
 {
@@ -360,188 +358,62 @@ void MeshResultContext::calculateResultParts(std::map<QUuid, ResultPart> &parts)
 
 void MeshResultContext::calculateResultTriangleUvs(std::vector<ResultTriangleUv> &uvs, std::set<int> &seamVertices)
 {
-    using namespace Thekla;
-    
-    const std::vector<ResultRearrangedVertex> &choosenVertices = rearrangedVertices();
-    const std::vector<ResultRearrangedTriangle> &choosenTriangles = rearrangedTriangles();
-    
-    Atlas_Input_Mesh inputMesh;
-    
-    using namespace nv;
-    
-    class NvAssertHandler : public nv::AssertHandler {
-        virtual int assertion(const char *exp, const char *file, int line, const char *func, const char *msg, va_list arg)
-        {
-            qDebug() << "Something bad happended inside nvMesh:" << exp << "file:" << file << "line:" << line << "msg:" << msg;
-            return NV_ABORT_IGNORE;
-        };
-    };
-    NvAssertHandler assertHandler;
-    nv::debug::setAssertHandler(&assertHandler);
-    
-    std::map<int, int> originalToRearrangeMap;
-    for (decltype(choosenVertices.size()) i = 0; i < choosenVertices.size(); i++) {
-        const auto &vertex = choosenVertices[i];
-        (void)originalToRearrangeMap.insert({vertex.originalIndex, i});
+    simpleuv::Mesh inputMesh;
+    const auto &choosenVertices = vertices;
+    for (const auto &vertex: choosenVertices) {
+        simpleuv::Vertex v;
+        v.xyz[0] = vertex.position.x();
+        v.xyz[1] = vertex.position.y();
+        v.xyz[2] = vertex.position.z();
+        inputMesh.verticies.push_back(v);
     }
- 
-    inputMesh.vertex_count = choosenVertices.size();
-    inputMesh.vertex_array = new Atlas_Input_Vertex[inputMesh.vertex_count];
-    inputMesh.face_count = choosenTriangles.size();
-    inputMesh.face_array = new Atlas_Input_Face[inputMesh.face_count];
-    for (auto i = 0; i < inputMesh.vertex_count; i++) {
-        const ResultRearrangedVertex *src = &choosenVertices[i];
-        Atlas_Input_Vertex *dest = &inputMesh.vertex_array[i];
-        dest->position[0] = src->position.x();
-        dest->position[1] = src->position.y();
-        dest->position[2] = src->position.z();
-        dest->normal[0] = 0;
-        dest->normal[1] = 0;
-        dest->normal[2] = 0;
-        dest->uv[0] = 0;
-        dest->uv[1] = 0;
-        dest->first_colocal = originalToRearrangeMap[src->originalIndex];
-    }
-    std::map<std::pair<int, int>, int> edgeToFaceIndexMap;
-    std::map<QUuid, int> materialIndexMap;
-    for (auto i = 0; i < inputMesh.face_count; i++) {
-        const ResultRearrangedTriangle *src = &choosenTriangles[i];
-        Atlas_Input_Face *dest = &inputMesh.face_array[i];
-        auto &materialKey = triangleSourceNodes()[src->originalIndex].first;
-        auto findMaterialResult = materialIndexMap.find(materialKey);
-        int materialIndex = 0;
-        if (findMaterialResult == materialIndexMap.end()) {
-            materialIndex = materialIndexMap.size() + 1;
-            materialIndexMap[materialKey] = materialIndex;
+    const auto &choosenTriangles = triangles;
+    std::map<QUuid, int> partIdToPartitionMap;
+    int partitions = 0;
+    for (decltype(choosenTriangles.size()) i = 0; i < choosenTriangles.size(); ++i) {
+        const auto &triangle = choosenTriangles[i];
+        const auto &sourceNode = triangleSourceNodes()[i];
+        simpleuv::Face f;
+        f.indicies[0] = triangle.indicies[0];
+        f.indicies[1] = triangle.indicies[1];
+        f.indicies[2] = triangle.indicies[2];
+        inputMesh.faces.push_back(f);
+        auto findPartitionResult = partIdToPartitionMap.find(sourceNode.first);
+        if (findPartitionResult == partIdToPartitionMap.end()) {
+            ++partitions;
+            partIdToPartitionMap.insert({sourceNode.first, partitions});
+            inputMesh.facePartitions.push_back(partitions);
         } else {
-            materialIndex = findMaterialResult->second;
-        }
-        dest->material_index = materialIndex;
-        dest->vertex_index[0] = src->indicies[0];
-        dest->vertex_index[1] = src->indicies[1];
-        dest->vertex_index[2] = src->indicies[2];
-        edgeToFaceIndexMap[std::make_pair(src->indicies[0], src->indicies[1])] = src->originalIndex;
-        edgeToFaceIndexMap[std::make_pair(src->indicies[1], src->indicies[2])] = src->originalIndex;
-        edgeToFaceIndexMap[std::make_pair(src->indicies[2], src->indicies[0])] = src->originalIndex;
-        for (auto j = 0; j < 3; j++) {
-            Atlas_Input_Vertex *vertex = &inputMesh.vertex_array[src->indicies[j]];
-            vertex->normal[0] += src->normal.x();
-            vertex->normal[1] += src->normal.y();
-            vertex->normal[2] += src->normal.z();
+            inputMesh.facePartitions.push_back(findPartitionResult->second);
         }
     }
-    for (auto i = 0; i < inputMesh.vertex_count; i++) {
-        Atlas_Input_Vertex *dest = &inputMesh.vertex_array[i];
-        QVector3D normal(dest->normal[0], dest->normal[1], dest->normal[2]);
-        normal.normalize();
-        dest->normal[0] = normal.x();
-        dest->normal[1] = normal.y();
-        dest->normal[2] = normal.z();
-    }
     
-    Atlas_Options atlasOptions;
-    atlas_set_default_options(&atlasOptions);
+    simpleuv::UvUnwrapper uvUnwrapper;
+    uvUnwrapper.setMesh(inputMesh);
+    uvUnwrapper.unwrap();
+    const std::vector<simpleuv::FaceTextureCoords> &resultFaceUvs = uvUnwrapper.getFaceUvs();
     
-    atlasOptions.packer_options.witness.packing_quality = 1;
-    
-    Atlas_Error error = Atlas_Error_Success;
-    Atlas_Output_Mesh *outputMesh = atlas_generate(&inputMesh, &atlasOptions, &error);
-    
-    PositionMap<int> uvPositionAndIndexMap;
-    
-    uvs.resize(triangles.size());
-    std::set<int> refs;
-    for (auto i = 0; i < outputMesh->index_count; i += 3) {
-        Atlas_Output_Vertex *outputVertices[] = {
-            &outputMesh->vertex_array[outputMesh->index_array[i + 0]],
-            &outputMesh->vertex_array[outputMesh->index_array[i + 1]],
-            &outputMesh->vertex_array[outputMesh->index_array[i + 2]]
-        };
-        int faceIndex = edgeToFaceIndexMap[std::make_pair(outputVertices[0]->xref, outputVertices[1]->xref)];
-        //Q_ASSERT(faceIndex == edgeToFaceIndexMap[std::make_pair(outputVertices[1]->xref, outputVertices[2]->xref)]);
-        //Q_ASSERT(faceIndex == edgeToFaceIndexMap[std::make_pair(outputVertices[2]->xref, outputVertices[0]->xref)]);
-        int firstIndex = 0;
-        for (auto j = 0; j < 3; j++) {
-            if (choosenVertices[outputVertices[0]->xref].originalIndex == triangles[faceIndex].indicies[j]) {
-                firstIndex = j;
-                break;
-            }
-        }
-        for (auto j = 0; j < 3; j++) {
-            Atlas_Output_Vertex *from = outputVertices[j];
-            ResultTriangleUv *to = &uvs[faceIndex];
-            to->resolved = true;
-            int toIndex = (firstIndex + j) % 3;
-            to->uv[toIndex][0] = (float)from->uv[0] / outputMesh->atlas_width;
-            to->uv[toIndex][1] = (float)from->uv[1] / outputMesh->atlas_height;
-            int originalRef = choosenVertices[from->xref].originalIndex;
-            if (refs.find(originalRef) == refs.end()) {
-                refs.insert(originalRef);
-                uvPositionAndIndexMap.addPosition(from->uv[0], from->uv[1], (float)originalRef, 0);
+    std::map<int, QVector2D> vertexUvMap;
+    uvs.resize(choosenTriangles.size());
+    for (decltype(choosenTriangles.size()) i = 0; i < choosenTriangles.size(); ++i) {
+        const auto &triangle = choosenTriangles[i];
+        const auto &src = resultFaceUvs[i];
+        auto &dest = uvs[i];
+        dest.resolved = true;
+        for (size_t j = 0; j < 3; ++j) {
+            QVector2D uvCoord = QVector2D(src.coords[j].uv[0], src.coords[j].uv[1]);
+            dest.uv[j][0] = uvCoord.x();
+            dest.uv[j][1] = uvCoord.y();
+            int vertexIndex = triangle.indicies[j];
+            auto findVertexUvResult = vertexUvMap.find(vertexIndex);
+            if (findVertexUvResult == vertexUvMap.end()) {
+                vertexUvMap.insert({vertexIndex, uvCoord});
             } else {
-                if (!uvPositionAndIndexMap.findPosition(from->uv[0], from->uv[1], (float)originalRef, nullptr)) {
-                    seamVertices.insert(originalRef);
+                if (!qFuzzyCompare(findVertexUvResult->second, uvCoord)) {
+                    seamVertices.insert(vertexIndex);
                 }
             }
         }
-    }
-    int unresolvedUvFaceCount = 0;
-    for (auto i = 0u; i < uvs.size(); i++) {
-        ResultTriangleUv *uv = &uvs[i];
-        if (!uv->resolved) {
-            unresolvedUvFaceCount++;
-        }
-    }
-    qDebug() << "unresolvedUvFaceCount:" << unresolvedUvFaceCount;
-    
-    atlas_free(outputMesh);
-}
-
-const std::vector<ResultRearrangedVertex> &MeshResultContext::rearrangedVertices()
-{
-    if (!m_resultRearrangedVerticesResolved) {
-        calculateResultRearrangedVertices(m_rearrangedVertices, m_rearrangedTriangles);
-        m_resultRearrangedVerticesResolved = true;
-    }
-    return m_rearrangedVertices;
-}
-
-const std::vector<ResultRearrangedTriangle> &MeshResultContext::rearrangedTriangles()
-{
-    if (!m_resultRearrangedVerticesResolved) {
-        calculateResultRearrangedVertices(m_rearrangedVertices, m_rearrangedTriangles);
-        m_resultRearrangedVerticesResolved = true;
-    }
-    return m_rearrangedTriangles;
-}
-
-void MeshResultContext::calculateResultRearrangedVertices(std::vector<ResultRearrangedVertex> &rearrangedVertices, std::vector<ResultRearrangedTriangle> &rearrangedTriangles)
-{
-    std::map<std::pair<QUuid, int>, int> oldVertexToNewMap;
-    rearrangedVertices.clear();
-    rearrangedTriangles.clear();
-    for (auto x = 0u; x < triangles.size(); x++) {
-        const auto &triangle = triangles[x];
-        const auto &sourceNode = triangleSourceNodes()[x];
-        ResultRearrangedTriangle newTriangle;
-        newTriangle.normal = triangle.normal;
-        newTriangle.originalIndex = x;
-        for (auto i = 0u; i < 3; i++) {
-            auto key = std::make_pair(sourceNode.first, triangle.indicies[i]);
-            const auto &it = oldVertexToNewMap.find(key);
-            if (it == oldVertexToNewMap.end()) {
-                ResultRearrangedVertex rearrangedVertex;
-                rearrangedVertex.originalIndex = triangle.indicies[i];
-                rearrangedVertex.position = vertices[triangle.indicies[i]].position;
-                int newIndex = rearrangedVertices.size();
-                rearrangedVertices.push_back(rearrangedVertex);
-                oldVertexToNewMap.insert(std::make_pair(key, newIndex));
-                newTriangle.indicies[i] = newIndex;
-            } else {
-                newTriangle.indicies[i] = it->second;
-            }
-        }
-        rearrangedTriangles.push_back(newTriangle);
     }
 }
 

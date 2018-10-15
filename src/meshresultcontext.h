@@ -64,19 +64,6 @@ struct ResultPart
     std::vector<QVector3D> triangleTangents;
 };
 
-struct ResultRearrangedVertex
-{
-    QVector3D position;
-    int originalIndex;
-};
-
-struct ResultRearrangedTriangle
-{
-    int indicies[3];
-    QVector3D normal;
-    int originalIndex;
-};
-
 class MeshResultContext
 {
 public:
@@ -92,8 +79,6 @@ public:
     const std::map<std::pair<QUuid, QUuid>, BmeshNode *> &bmeshNodeMap();
     const std::map<QUuid, ResultPart> &parts();
     const std::vector<ResultTriangleUv> &triangleUvs();
-    const std::vector<ResultRearrangedVertex> &rearrangedVertices();
-    const std::vector<ResultRearrangedTriangle> &rearrangedTriangles();
     const std::map<int, std::pair<QUuid, QUuid>> &vertexSourceMap();
     const std::vector<QVector3D> &interpolatedVertexNormals();
     const std::vector<QVector3D> &triangleTangents();
@@ -104,7 +89,6 @@ private:
     bool m_bmeshNodeMapResolved;
     bool m_resultPartsResolved;
     bool m_resultTriangleUvsResolved;
-    bool m_resultRearrangedVerticesResolved;
     bool m_vertexNormalsInterpolated;
     bool m_triangleTangentsResolved;
 private:
@@ -115,8 +99,6 @@ private:
     std::map<QUuid, ResultPart> m_resultParts;
     std::vector<ResultTriangleUv> m_resultTriangleUvs;
     std::set<int> m_seamVertices;
-    std::vector<ResultRearrangedVertex> m_rearrangedVertices;
-    std::vector<ResultRearrangedTriangle> m_rearrangedTriangles;
     std::map<int, std::pair<QUuid, QUuid>> m_vertexSourceMap;
     std::map<int, int> m_rearrangedVerticesToOldIndexMap;
     std::vector<QVector3D> m_interpolatedVertexNormals;
@@ -129,7 +111,6 @@ private:
     void calculateBmeshNodeMap(std::map<std::pair<QUuid, QUuid>, BmeshNode *> &bmeshNodeMap);
     void calculateResultParts(std::map<QUuid, ResultPart> &parts);
     void calculateResultTriangleUvs(std::vector<ResultTriangleUv> &uvs, std::set<int> &seamVertices);
-    void calculateResultRearrangedVertices(std::vector<ResultRearrangedVertex> &rearrangedVertices, std::vector<ResultRearrangedTriangle> &rearrangedTriangles);
     void interpolateVertexNormals(std::vector<QVector3D> &resultNormals);
     void calculateTriangleTangents(std::vector<QVector3D> &tangents);
 };

@@ -22,10 +22,8 @@ MeshResultContext *MeshResultPostProcessor::takePostProcessedResultContext()
 void MeshResultPostProcessor::process()
 {
     if (!m_meshResultContext->bmeshNodes.empty()) {
-        m_meshResultContext->rearrangedVertices();
-        m_meshResultContext->rearrangedTriangles();
         (void)m_meshResultContext->triangleTangents();
-        m_meshResultContext->parts();
+        (void)m_meshResultContext->parts();
     }
     
     this->moveToThread(QGuiApplication::instance()->thread());
