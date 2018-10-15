@@ -70,7 +70,11 @@ bool ChartPacker::tryPack(float textureSize)
         const auto &result = bestResult[i];
         const auto &rect = rects[i];
         auto &dest = m_result[i];
-        dest = {(float)result.left / width, (float)result.top / height, (float)rect.width / width, (float)rect.height / height, result.rotated};
+        std::get<0>(dest) = (float)result.left / width;
+        std::get<1>(dest) = (float)result.top / height;
+        std::get<2>(dest) = (float)rect.width / width;
+        std::get<3>(dest) = (float)rect.height / height;
+        std::get<4>(dest) = result.rotated;
         //qDebug() << "result[" << i << "]:" << std::get<0>(dest) << std::get<1>(dest) << std::get<2>(dest) << std::get<3>(dest) << std::get<4>(dest);
     }
     return true;
