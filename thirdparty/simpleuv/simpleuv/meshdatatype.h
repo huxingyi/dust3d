@@ -1,6 +1,7 @@
 #ifndef SIMPLEUV_MESH_DATA_TYPE_H
 #define SIMPLEUV_MESH_DATA_TYPE_H
 #include <vector>
+#include <cstdlib>
 
 namespace simpleuv 
 {

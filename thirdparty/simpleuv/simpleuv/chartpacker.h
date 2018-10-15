@@ -1,6 +1,7 @@
 #ifndef SIMPLEUV_CHART_PACKER_H
 #define SIMPLEUV_CHART_PACKER_H
 #include <vector>
+#include <cstdlib>
 
 namespace simpleuv
 {
