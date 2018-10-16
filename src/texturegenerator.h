@@ -33,7 +33,7 @@ public:
     static int m_textureSize;
 private:
     void prepare();
-    QPainterPath expandedPainterPath(const QPainterPath &painterPath, int expandSize=3);
+    QPainterPath expandedPainterPath(const QPainterPath &painterPath, int expandSize=7);
 private:
     MeshResultContext *m_resultContext;
     QImage *m_resultTextureGuideImage;
