@@ -99,7 +99,8 @@ uint64_t Reader::readUint64()
 
 std::string Reader::readString(uint32_t length)
 {
-    char buffer[length + 1];
+    std::vector<char> bufferVector(length + 1);
+    char *buffer = bufferVector.data();
     buffer[length] = 0;
     if(length) read(buffer, length);
     return std::string(buffer);
