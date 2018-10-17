@@ -20,7 +20,7 @@ void FBXDocument::read(string fname)
     ifstream file;
 
     // buffer
-    int bufferSize = 1 << 16;
+    constexpr int bufferSize = 1 << 16;
     char buffer[bufferSize];
     file.rdbuf()->pubsetbuf(buffer, bufferSize);
 
@@ -38,7 +38,7 @@ void FBXDocument::write(string fname)
     ofstream file;
 
     // buffer
-    int bufferSize = 1 << 16;
+    constexpr int bufferSize = 1 << 16;
     char buffer[bufferSize];
     file.rdbuf()->pubsetbuf(buffer, bufferSize);
 
