@@ -19,6 +19,7 @@ QMAKE_TARGET_PRODUCT = Dust3D
 QMAKE_TARGET_DESCRIPTION = "Aim to be a quick modeling tool for game development"
 QMAKE_TARGET_COPYRIGHT = "Copyright (C) 2018 Dust3D Project. All Rights Reserved."
 
+DEFINES += "PROJECT_DEFINED_APP_COMPANY=\"\\\"$$QMAKE_TARGET_COMPANY\\\"\""
 DEFINES += "PROJECT_DEFINED_APP_NAME=\"\\\"$$QMAKE_TARGET_PRODUCT\\\"\""
 DEFINES += "PROJECT_DEFINED_APP_VER=\"\\\"$$VERSION\\\"\""
 DEFINES += "PROJECT_DEFINED_APP_HUMAN_VER=\"\\\"$$HUMAN_VERSION\\\"\""
@@ -250,9 +251,31 @@ HEADERS += src/materialwidget.h
 SOURCES += src/material.cpp
 HEADERS += src/material.h
 
+SOURCES += src/fbxfile.cpp
+HEADERS += src/fbxfile.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h
+
+INCLUDEPATH += thirdparty/miniz
+
+SOURCES += thirdparty/miniz/miniz.c
+HEADERS += thirdparty/miniz/miniz.h
+
+INCLUDEPATH += thirdparty/fbx/src
+
+SOURCES += thirdparty/fbx/src/fbxdocument.cpp
+HEADERS += thirdparty/fbx/src/fbxdocument.h
+
+SOURCES += thirdparty/fbx/src/fbxnode.cpp
+HEADERS += thirdparty/fbx/src/fbxnode.h
+
+SOURCES += thirdparty/fbx/src/fbxproperty.cpp
+HEADERS += thirdparty/fbx/src/fbxproperty.h
+
+SOURCES += thirdparty/fbx/src/fbxutil.cpp
+HEADERS += thirdparty/fbx/src/fbxutil.h
 
 INCLUDEPATH += thirdparty/simpleuv
 INCLUDEPATH += thirdparty/simpleuv/thirdparty/libigl/include
