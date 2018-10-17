@@ -89,6 +89,10 @@ void ChartPacker::pack()
         if (tryPack(textureSize))
             break;
         m_textureSizeFactor += m_textureSizeGrowFactor;
+        if (m_tryNum >= m_maxTryNum) {
+            qDebug() << "Tried too many times:" << m_tryNum;
+            break;
+        }
     }
 }
 

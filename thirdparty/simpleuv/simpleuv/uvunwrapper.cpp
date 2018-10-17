@@ -299,7 +299,8 @@ void UvUnwrapper::calculateSizeAndRemoveInvalidCharts()
         left = top = right = bottom = 0;
         calculateFaceTextureBoundingBox(chart.second, left, top, right, bottom);
         std::pair<float, float> size = {right - left, bottom - top};
-        if (size.first <= 0 || std::isnan(size.first) || size.second <= 0 || std::isnan(size.second)) {
+        if (size.first <= 0 || std::isnan(size.first) || std::isinf(size.first) ||
+                size.second <= 0 || std::isnan(size.second) || std::isinf(size.second)) {
             qDebug() << "Found invalid chart size:" << size.first << "x" << size.second;
             continue;
         }
@@ -325,6 +326,15 @@ void UvUnwrapper::packCharts()
     for (decltype(m_charts.size()) i = 0; i < m_charts.size(); ++i) {
         const auto &chartSize = m_chartSizes[i];
         auto &chart = m_charts[i];
+        if (i >= packedResult.size()) {
+            for (auto &item: chart.second) {
+                for (int i = 0; i < 3; ++i) {
+                    item.coords[i].uv[0] = 0;
+                    item.coords[i].uv[1] = 0;
+                }
+            }
+            continue;
+        }
         const auto &result = packedResult[i];
         auto &left = std::get<0>(result);
         auto &top = std::get<1>(result);
