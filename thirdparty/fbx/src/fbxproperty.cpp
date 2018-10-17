@@ -98,7 +98,8 @@ FBXProperty::FBXProperty(std::ifstream &input)
             if(decompressedBuffer == NULL) throw std::string("Malloc failed");
             BufferAutoFree baf(decompressedBuffer);
 
-            uint8_t compressedBuffer[compressedLength];
+            std::vector<uint8_t> compressedBufferVector(compressedLength);
+            uint8_t *compressedBuffer = compressedBufferVector.data();
             reader.read((char*)compressedBuffer, compressedLength);
 
             mz_ulong destLen = uncompressedLength;
