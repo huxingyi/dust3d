@@ -420,11 +420,30 @@ void MeshResultContext::calculateResultTriangleUvs(std::vector<ResultTriangleUv>
 void MeshResultContext::interpolateVertexNormals(std::vector<QVector3D> &resultNormals)
 {
     resultNormals.resize(vertices.size());
+    
+    auto angleBetweenVectors = [](const QVector3D &first, const QVector3D &second) {
+        return std::acos(QVector3D::dotProduct(first.normalized(), second.normalized()));
+    };
+    
+    auto areaOfTriangle = [](const QVector3D &a, const QVector3D &b, const QVector3D &c) {
+        auto ab = b - a;
+        auto ac = c - a;
+        return 0.5 * QVector3D::crossProduct(ab, ac).length();
+    };
+    
     for (size_t triangleIndex = 0; triangleIndex < triangles.size(); triangleIndex++) {
         const auto &sourceTriangle = triangles[triangleIndex];
+        const auto &v1 = vertices[sourceTriangle.indicies[0]].position;
+        const auto &v2 = vertices[sourceTriangle.indicies[1]].position;
+        const auto &v3 = vertices[sourceTriangle.indicies[2]].position;
+        float area = areaOfTriangle(v1, v2, v3);
+        float angles[] = {angleBetweenVectors(v2-v1, v3-v1),
+            angleBetweenVectors(v1-v2, v3-v2),
+            angleBetweenVectors(v1-v3, v2-v3)};
         for (int i = 0; i < 3; i++)
-            resultNormals[sourceTriangle.indicies[i]] += sourceTriangle.normal;
+            resultNormals[sourceTriangle.indicies[i]] += sourceTriangle.normal * area * angles[i];
     }
+    
     for (auto &item: resultNormals)
         item.normalize();
 }
