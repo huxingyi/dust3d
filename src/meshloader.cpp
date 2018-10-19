@@ -1,6 +1,7 @@
 #include <assert.h>
 #include <QTextStream>
 #include <QFile>
+#include <cmath>
 #include "meshloader.h"
 #include "meshlite.h"
 #include "theme.h"
@@ -103,6 +104,16 @@ MeshLoader::MeshLoader(void *meshlite, int meshId, int triangulatedMeshId, QColo
     GLfloat *triangleNormals = new GLfloat[triangleCount * 3];
     int loadedTriangleNormalItemCount = meshlite_get_triangle_normal_array(meshlite, triangleMesh, triangleNormals, triangleCount * 3);
     
+    auto angleBetweenVectors = [](const QVector3D &first, const QVector3D &second) {
+        return std::acos(QVector3D::dotProduct(first.normalized(), second.normalized()));
+    };
+    
+    auto areaOfTriangle = [](const QVector3D &a, const QVector3D &b, const QVector3D &c) {
+        auto ab = b - a;
+        auto ac = c - a;
+        return 0.5 * QVector3D::crossProduct(ab, ac).length();
+    };
+    
     float modelR = defaultColor.redF();
     float modelG = defaultColor.greenF();
     float modelB = defaultColor.blueF();
@@ -125,6 +136,26 @@ MeshLoader::MeshLoader(void *meshlite, int meshId, int triangulatedMeshId, QColo
         triangulatedFace.color.setRedF(useColorR);
         triangulatedFace.color.setGreenF(useColorG);
         triangulatedFace.color.setBlueF(useColorB);
+        QVector3D positions[3];
+        float area = 1.0;
+        float angles[3] = {1.0, 1.0, 1.0};
+        if (smoothNormal) {
+            for (int j = 0; j < 3; j++) {
+                assert(firstIndex + j < loadedTriangleVertexIndexItemCount);
+                int posIndex = triangleIndices[firstIndex + j] * 3;
+                assert(posIndex < loadedTriangleVertexPositionItemCount);
+                positions[j] = QVector3D(triangleVertexPositions[posIndex + 0],
+                    triangleVertexPositions[posIndex + 1],
+                    triangleVertexPositions[posIndex + 2]);
+            }
+            const auto &v1 = positions[0];
+            const auto &v2 = positions[1];
+            const auto &v3 = positions[2];
+            area = areaOfTriangle(v1, v2, v3);
+            angles[0] = angleBetweenVectors(v2-v1, v3-v1);
+            angles[1] = angleBetweenVectors(v1-v2, v3-v2);
+            angles[2] = angleBetweenVectors(v1-v3, v2-v3);
+        }
         for (int j = 0; j < 3; j++) {
             assert(firstIndex + j < loadedTriangleVertexIndexItemCount);
             int posIndex = triangleIndices[firstIndex + j] * 3;
@@ -139,9 +170,10 @@ MeshLoader::MeshLoader(void *meshlite, int meshId, int triangulatedMeshId, QColo
             v->normY = triangleNormals[firstIndex + 1];
             v->normZ = triangleNormals[firstIndex + 2];
             if (smoothNormal) {
-                triangleVertexSmoothNormals[posIndex + 0] += v->normX;
-                triangleVertexSmoothNormals[posIndex + 1] += v->normY;
-                triangleVertexSmoothNormals[posIndex + 2] += v->normZ;
+                auto factor = area * angles[j];
+                triangleVertexSmoothNormals[posIndex + 0] += v->normX * factor;
+                triangleVertexSmoothNormals[posIndex + 1] += v->normY * factor;
+                triangleVertexSmoothNormals[posIndex + 2] += v->normZ * factor;
             }
             v->colorR = useColorR;
             v->colorG = useColorG;
@@ -149,6 +181,8 @@ MeshLoader::MeshLoader(void *meshlite, int meshId, int triangulatedMeshId, QColo
             v->metalness = useMetalness;
             v->roughness = useRoughness;
         }
+        
+        
         m_triangulatedFaces.push_back(triangulatedFace);
     }
     
