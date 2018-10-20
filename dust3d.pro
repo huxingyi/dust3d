@@ -254,6 +254,9 @@ HEADERS += src/material.h
 SOURCES += src/fbxfile.cpp
 HEADERS += src/fbxfile.h
 
+SOURCES += src/anglesmooth.cpp
+HEADERS += src/anglesmooth.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h

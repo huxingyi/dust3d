@@ -80,7 +80,7 @@ public:
     const std::map<QUuid, ResultPart> &parts();
     const std::vector<ResultTriangleUv> &triangleUvs();
     const std::map<int, std::pair<QUuid, QUuid>> &vertexSourceMap();
-    const std::vector<QVector3D> &interpolatedVertexNormals();
+    const std::vector<QVector3D> &interpolatedTriangleVertexNormals();
     const std::vector<QVector3D> &triangleTangents();
 private:
     bool m_triangleSourceResolved;
@@ -89,7 +89,7 @@ private:
     bool m_bmeshNodeMapResolved;
     bool m_resultPartsResolved;
     bool m_resultTriangleUvsResolved;
-    bool m_vertexNormalsInterpolated;
+    bool m_triangleVertexNormalsInterpolated;
     bool m_triangleTangentsResolved;
 private:
     std::vector<std::pair<QUuid, QUuid>> m_triangleSourceNodes;
@@ -101,7 +101,7 @@ private:
     std::set<int> m_seamVertices;
     std::map<int, std::pair<QUuid, QUuid>> m_vertexSourceMap;
     std::map<int, int> m_rearrangedVerticesToOldIndexMap;
-    std::vector<QVector3D> m_interpolatedVertexNormals;
+    std::vector<QVector3D> m_interpolatedTriangleVertexNormals;
     std::vector<QVector3D> m_triangleTangents;
 private:
     void calculateTriangleSourceNodes(std::vector<std::pair<QUuid, QUuid>> &triangleSourceNodes, std::map<int, std::pair<QUuid, QUuid>> &vertexSourceMap);
@@ -111,7 +111,7 @@ private:
     void calculateBmeshNodeMap(std::map<std::pair<QUuid, QUuid>, BmeshNode *> &bmeshNodeMap);
     void calculateResultParts(std::map<QUuid, ResultPart> &parts);
     void calculateResultTriangleUvs(std::vector<ResultTriangleUv> &uvs, std::set<int> &seamVertices);
-    void interpolateVertexNormals(std::vector<QVector3D> &resultNormals);
+    void interpolateTriangleVertexNormals(std::vector<QVector3D> &resultNormals);
     void calculateTriangleTangents(std::vector<QVector3D> &tangents);
 };
 

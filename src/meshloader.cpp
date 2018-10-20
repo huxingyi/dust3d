@@ -7,6 +7,7 @@
 #include "theme.h"
 #include "positionmap.h"
 #include "ds3file.h"
+#include "anglesmooth.h"
 
 #define MAX_VERTICES_PER_FACE   100
 
@@ -104,21 +105,15 @@ MeshLoader::MeshLoader(void *meshlite, int meshId, int triangulatedMeshId, QColo
     GLfloat *triangleNormals = new GLfloat[triangleCount * 3];
     int loadedTriangleNormalItemCount = meshlite_get_triangle_normal_array(meshlite, triangleMesh, triangleNormals, triangleCount * 3);
     
-    auto angleBetweenVectors = [](const QVector3D &first, const QVector3D &second) {
-        return std::acos(QVector3D::dotProduct(first.normalized(), second.normalized()));
-    };
-    
-    auto areaOfTriangle = [](const QVector3D &a, const QVector3D &b, const QVector3D &c) {
-        auto ab = b - a;
-        auto ac = c - a;
-        return 0.5 * QVector3D::crossProduct(ab, ac).length();
-    };
-    
     float modelR = defaultColor.redF();
     float modelG = defaultColor.greenF();
     float modelB = defaultColor.blueF();
     m_triangleVertexCount = triangleCount * 3;
     m_triangleVertices = new Vertex[m_triangleVertexCount * 3];
+    const std::vector<QVector3D> &inputVerticesForSmoothAngle = m_triangulatedVertices;
+    std::vector<std::tuple<size_t, size_t, size_t>> inputTrianglesForSmoothAngle;
+    std::vector<QVector3D> inputNormalsForSmoothAngle;
+    float thresholdAngleDegrees = 60;
     for (int i = 0; i < triangleCount; i++) {
         int firstIndex = i * 3;
         float useColorR = modelR;
@@ -140,21 +135,14 @@ MeshLoader::MeshLoader(void *meshlite, int meshId, int triangulatedMeshId, QColo
         float area = 1.0;
         float angles[3] = {1.0, 1.0, 1.0};
         if (smoothNormal) {
-            for (int j = 0; j < 3; j++) {
-                assert(firstIndex + j < loadedTriangleVertexIndexItemCount);
-                int posIndex = triangleIndices[firstIndex + j] * 3;
-                assert(posIndex < loadedTriangleVertexPositionItemCount);
-                positions[j] = QVector3D(triangleVertexPositions[posIndex + 0],
-                    triangleVertexPositions[posIndex + 1],
-                    triangleVertexPositions[posIndex + 2]);
-            }
-            const auto &v1 = positions[0];
-            const auto &v2 = positions[1];
-            const auto &v3 = positions[2];
-            area = areaOfTriangle(v1, v2, v3);
-            angles[0] = angleBetweenVectors(v2-v1, v3-v1);
-            angles[1] = angleBetweenVectors(v1-v2, v3-v2);
-            angles[2] = angleBetweenVectors(v1-v3, v2-v3);
+            inputTrianglesForSmoothAngle.push_back({
+                triangleIndices[firstIndex + 0],
+                triangleIndices[firstIndex + 1],
+                triangleIndices[firstIndex + 2]
+            });
+            inputNormalsForSmoothAngle.push_back(QVector3D(triangleNormals[firstIndex + 0],
+                triangleNormals[firstIndex + 1],
+                triangleNormals[firstIndex + 2]));
         }
         for (int j = 0; j < 3; j++) {
             assert(firstIndex + j < loadedTriangleVertexIndexItemCount);
@@ -169,34 +157,26 @@ MeshLoader::MeshLoader(void *meshlite, int meshId, int triangulatedMeshId, QColo
             v->normX = triangleNormals[firstIndex + 0];
             v->normY = triangleNormals[firstIndex + 1];
             v->normZ = triangleNormals[firstIndex + 2];
-            if (smoothNormal) {
-                auto factor = area * angles[j];
-                triangleVertexSmoothNormals[posIndex + 0] += v->normX * factor;
-                triangleVertexSmoothNormals[posIndex + 1] += v->normY * factor;
-                triangleVertexSmoothNormals[posIndex + 2] += v->normZ * factor;
-            }
             v->colorR = useColorR;
             v->colorG = useColorG;
             v->colorB = useColorB;
             v->metalness = useMetalness;
             v->roughness = useRoughness;
         }
-        
-        
         m_triangulatedFaces.push_back(triangulatedFace);
     }
     
     if (smoothNormal) {
+        std::vector<QVector3D> resultNormals;
+        angleSmooth(inputVerticesForSmoothAngle, inputTrianglesForSmoothAngle, inputNormalsForSmoothAngle,
+            thresholdAngleDegrees, resultNormals);
+        size_t normalIndex = 0;
         for (int i = 0; i < triangleCount; i++) {
             int firstIndex = i * 3;
             for (int j = 0; j < 3; j++) {
                 assert(firstIndex + j < loadedTriangleVertexIndexItemCount);
-                int posIndex = triangleIndices[firstIndex + j] * 3;
                 Vertex *v = &m_triangleVertices[firstIndex + j];
-                QVector3D normal(triangleVertexSmoothNormals[posIndex + 0],
-                    triangleVertexSmoothNormals[posIndex + 1],
-                    triangleVertexSmoothNormals[posIndex + 2]);
-                normal.normalize();
+                const auto &normal = resultNormals[normalIndex++];
                 v->normX = normal.x();
                 v->normY = normal.y();
                 v->normZ = normal.z();

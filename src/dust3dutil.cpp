@@ -74,3 +74,19 @@ QQuaternion quaternionOvershootSlerp(const QQuaternion &q0, const QQuaternion &q
     return QQuaternion::slerp(q0, q1, t);
 }
 
+float radianBetweenVectors(const QVector3D &first, const QVector3D &second)
+{
+    return std::acos(QVector3D::dotProduct(first.normalized(), second.normalized()));
+};
+
+float angleBetweenVectors(const QVector3D &first, const QVector3D &second)
+{
+    return radianBetweenVectors(first, second) * 180.0 / M_PI;
+}
+
+float areaOfTriangle(const QVector3D &a, const QVector3D &b, const QVector3D &c)
+{
+    auto ab = b - a;
+    auto ac = c - a;
+    return 0.5 * QVector3D::crossProduct(ab, ac).length();
+};

@@ -9,6 +9,7 @@
 #include "theme.h"
 #include "meshresultcontext.h"
 #include "positionmap.h"
+#include "anglesmooth.h"
 
 struct HalfColorEdge
 {
@@ -32,7 +33,7 @@ MeshResultContext::MeshResultContext() :
     m_bmeshNodeMapResolved(false),
     m_resultPartsResolved(false),
     m_resultTriangleUvsResolved(false),
-    m_vertexNormalsInterpolated(false),
+    m_triangleVertexNormalsInterpolated(false),
     m_triangleTangentsResolved(false)
 {
 }
@@ -318,6 +319,7 @@ void MeshResultContext::calculateResultParts(std::map<QUuid, ResultPart> &parts)
 {
     std::map<std::pair<QUuid, int>, int> oldVertexToNewMap;
     for (auto x = 0u; x < triangles.size(); x++) {
+        size_t normalIndex = x * 3;
         const auto &triangle = triangles[x];
         const auto &sourceNode = triangleSourceNodes()[x];
         auto it = parts.find(sourceNode.first);
@@ -330,13 +332,14 @@ void MeshResultContext::calculateResultParts(std::map<QUuid, ResultPart> &parts)
         ResultTriangle newTriangle;
         newTriangle.normal = triangle.normal;
         for (auto i = 0u; i < 3; i++) {
+            const auto &normal = interpolatedTriangleVertexNormals()[normalIndex++];
             auto key = std::make_pair(sourceNode.first, triangle.indicies[i]);
             const auto &it = oldVertexToNewMap.find(key);
             bool isNewVertex = it == oldVertexToNewMap.end();
             bool isSeamVertex = m_seamVertices.end() != m_seamVertices.find(triangle.indicies[i]);
             if (isNewVertex || isSeamVertex) {
                 int newIndex = resultPart.vertices.size();
-                resultPart.interpolatedVertexNormals.push_back(interpolatedVertexNormals()[triangle.indicies[i]]);
+                resultPart.interpolatedVertexNormals.push_back(normal);
                 resultPart.verticesOldIndicies.push_back(triangle.indicies[i]);
                 resultPart.vertices.push_back(vertices[triangle.indicies[i]]);
                 ResultVertexUv vertexUv;
@@ -417,44 +420,28 @@ void MeshResultContext::calculateResultTriangleUvs(std::vector<ResultTriangleUv>
     }
 }
 
-void MeshResultContext::interpolateVertexNormals(std::vector<QVector3D> &resultNormals)
+void MeshResultContext::interpolateTriangleVertexNormals(std::vector<QVector3D> &resultNormals)
 {
-    resultNormals.resize(vertices.size());
-    
-    auto angleBetweenVectors = [](const QVector3D &first, const QVector3D &second) {
-        return std::acos(QVector3D::dotProduct(first.normalized(), second.normalized()));
-    };
-    
-    auto areaOfTriangle = [](const QVector3D &a, const QVector3D &b, const QVector3D &c) {
-        auto ab = b - a;
-        auto ac = c - a;
-        return 0.5 * QVector3D::crossProduct(ab, ac).length();
-    };
-    
-    for (size_t triangleIndex = 0; triangleIndex < triangles.size(); triangleIndex++) {
-        const auto &sourceTriangle = triangles[triangleIndex];
-        const auto &v1 = vertices[sourceTriangle.indicies[0]].position;
-        const auto &v2 = vertices[sourceTriangle.indicies[1]].position;
-        const auto &v3 = vertices[sourceTriangle.indicies[2]].position;
-        float area = areaOfTriangle(v1, v2, v3);
-        float angles[] = {angleBetweenVectors(v2-v1, v3-v1),
-            angleBetweenVectors(v1-v2, v3-v2),
-            angleBetweenVectors(v1-v3, v2-v3)};
-        for (int i = 0; i < 3; i++)
-            resultNormals[sourceTriangle.indicies[i]] += sourceTriangle.normal * area * angles[i];
+    std::vector<QVector3D> inputVerticies;
+    std::vector<std::tuple<size_t, size_t, size_t>> inputTriangles;
+    std::vector<QVector3D> inputNormals;
+    float thresholdAngleDegrees = 60;
+    for (const auto &vertex: vertices)
+        inputVerticies.push_back(vertex.position);
+    for (const auto &triangle: triangles) {
+        inputTriangles.push_back({triangle.indicies[0], triangle.indicies[1], triangle.indicies[2]});
+        inputNormals.push_back(triangle.normal);
     }
-    
-    for (auto &item: resultNormals)
-        item.normalize();
+    angleSmooth(inputVerticies, inputTriangles, inputNormals, thresholdAngleDegrees, resultNormals);
 }
 
-const std::vector<QVector3D> &MeshResultContext::interpolatedVertexNormals()
+const std::vector<QVector3D> &MeshResultContext::interpolatedTriangleVertexNormals()
 {
-    if (!m_vertexNormalsInterpolated) {
-        m_vertexNormalsInterpolated = true;
-        interpolateVertexNormals(m_interpolatedVertexNormals);
+    if (!m_triangleVertexNormalsInterpolated) {
+        m_triangleVertexNormalsInterpolated = true;
+        interpolateTriangleVertexNormals(m_interpolatedTriangleVertexNormals);
     }
-    return m_interpolatedVertexNormals;
+    return m_interpolatedTriangleVertexNormals;
 }
 
 const std::vector<QVector3D> &MeshResultContext::triangleTangents()

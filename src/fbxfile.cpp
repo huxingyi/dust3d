@@ -1476,11 +1476,12 @@ FbxFileWriter::FbxFileWriter(MeshResultContext &resultContext,
     layerElementNormal.addProperty((int32_t)0);
     layerElementNormal.addPropertyNode("Version", (int32_t)101);
     layerElementNormal.addPropertyNode("Name", "");
-    layerElementNormal.addPropertyNode("MappingInformationType", "ByVertice");
+    layerElementNormal.addPropertyNode("MappingInformationType", "ByPolygonVertex");
     layerElementNormal.addPropertyNode("ReferenceInformationType", "Direct");
     std::vector<double> normals;
-    for (decltype(resultContext.vertices.size()) i = 0; i < resultContext.vertices.size(); ++i) {
-        const auto &n = resultContext.interpolatedVertexNormals()[i];
+    const auto &triangleVertexNormals = resultContext.interpolatedTriangleVertexNormals();
+    for (decltype(triangleVertexNormals.size()) i = 0; i < triangleVertexNormals.size(); ++i) {
+        const auto &n = triangleVertexNormals[i];
         normals.push_back((double)n.x());
         normals.push_back((double)n.y());
         normals.push_back((double)n.z());
