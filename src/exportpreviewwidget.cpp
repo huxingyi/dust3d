@@ -29,16 +29,22 @@ ExportPreviewWidget::ExportPreviewWidget(SkeletonDocument *document, QWidget *pa
     connect(this, &ExportPreviewWidget::regenerate, this, &ExportPreviewWidget::checkSpinner);
     connect(regenerateButton, &QPushButton::clicked, this, &ExportPreviewWidget::regenerate);
     
-    //m_saveButton = new QPushButton(QChar(fa::save));
-    //initAwesomeButton(m_saveButton);
-    m_saveButton = new QPushButton(tr("Save"));
-    connect(m_saveButton, &QPushButton::clicked, this, &ExportPreviewWidget::save);
-    m_saveButton->hide();
-    m_saveButton->setDefault(true);
-    
     QComboBox *exportFormatSelectBox = new QComboBox;
     exportFormatSelectBox->addItem(tr("glTF"));
+    exportFormatSelectBox->addItem(tr("FBX"));
     exportFormatSelectBox->setCurrentIndex(0);
+    
+    m_saveButton = new QPushButton(tr("Save"));
+    connect(m_saveButton, &QPushButton::clicked, this, [=]() {
+        auto currentIndex = exportFormatSelectBox->currentIndex();
+        if (0 == currentIndex) {
+            emit saveAsGltf();
+        } else if (1 == currentIndex) {
+            emit saveAsFbx();
+        }
+    });
+    m_saveButton->hide();
+    m_saveButton->setDefault(true);
     
     toolButtonLayout->addWidget(exportFormatSelectBox);
     toolButtonLayout->addWidget(regenerateButton);

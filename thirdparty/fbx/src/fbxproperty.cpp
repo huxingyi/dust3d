@@ -175,35 +175,35 @@ FBXProperty::FBXProperty(float a) { type = 'F'; value.f32 = a; }
 FBXProperty::FBXProperty(double a) { type = 'D'; value.f64 = a; }
 FBXProperty::FBXProperty(int64_t a) { type = 'L'; value.i64 = a; }
 // arrays
-FBXProperty::FBXProperty(const std::vector<bool> a) : type('b'), values(a.size()) {
+FBXProperty::FBXProperty(const std::vector<bool> a) : type('b') {
     for(auto el : a) {
         FBXPropertyValue v;
         v.boolean = el;
         values.push_back(v);
     }
 }
-FBXProperty::FBXProperty(const std::vector<int32_t> a) : type('i'), values(a.size()) {
+FBXProperty::FBXProperty(const std::vector<int32_t> a) : type('i') {
     for(auto el : a) {
         FBXPropertyValue v;
         v.i32 = el;
         values.push_back(v);
     }
 }
-FBXProperty::FBXProperty(const std::vector<float> a) : type('f'), values(a.size()) {
+FBXProperty::FBXProperty(const std::vector<float> a) : type('f') {
     for(auto el : a) {
         FBXPropertyValue v;
         v.f32 = el;
         values.push_back(v);
     }
 }
-FBXProperty::FBXProperty(const std::vector<double> a) : type('d'), values(a.size()) {
+FBXProperty::FBXProperty(const std::vector<double> a) : type('d') {
     for(auto el : a) {
         FBXPropertyValue v;
         v.f64 = el;
         values.push_back(v);
     }
 }
-FBXProperty::FBXProperty(const std::vector<int64_t> a) : type('l'), values(a.size()) {
+FBXProperty::FBXProperty(const std::vector<int64_t> a) : type('l') {
     for(auto el : a) {
         FBXPropertyValue v;
         v.i64 = el;

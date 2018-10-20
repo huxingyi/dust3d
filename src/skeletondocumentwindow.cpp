@@ -34,6 +34,7 @@
 #include "materialmanagewidget.h"
 #include "imageforever.h"
 #include "spinnableawesomebutton.h"
+#include "fbxfile.h"
 
 int SkeletonDocumentWindow::m_modelRenderWidgetInitialX = 16;
 int SkeletonDocumentWindow::m_modelRenderWidgetInitialY = 16;
@@ -1215,7 +1216,8 @@ void SkeletonDocumentWindow::showExportPreview()
     if (nullptr == m_exportPreviewWidget) {
         m_exportPreviewWidget = new ExportPreviewWidget(m_document, this);
         connect(m_exportPreviewWidget, &ExportPreviewWidget::regenerate, m_document, &SkeletonDocument::regenerateMesh);
-        connect(m_exportPreviewWidget, &ExportPreviewWidget::save, this, &SkeletonDocumentWindow::exportGltfResult);
+        connect(m_exportPreviewWidget, &ExportPreviewWidget::saveAsGltf, this, &SkeletonDocumentWindow::exportGltfResult);
+        connect(m_exportPreviewWidget, &ExportPreviewWidget::saveAsFbx, this, &SkeletonDocumentWindow::exportFbxResult);
         connect(m_document, &SkeletonDocument::resultMeshChanged, m_exportPreviewWidget, &ExportPreviewWidget::checkSpinner);
         connect(m_document, &SkeletonDocument::exportReady, m_exportPreviewWidget, &ExportPreviewWidget::checkSpinner);
         connect(m_document, &SkeletonDocument::resultTextureChanged, m_exportPreviewWidget, &ExportPreviewWidget::updateTexturePreview);
@@ -1224,6 +1226,24 @@ void SkeletonDocumentWindow::showExportPreview()
     }
     m_exportPreviewWidget->show();
     m_exportPreviewWidget->raise();
+}
+
+void SkeletonDocumentWindow::exportFbxResult()
+{
+    QString filename = QFileDialog::getSaveFileName(this, QString(), QString(),
+       tr("Autodesk FBX (.fbx)"));
+    if (filename.isEmpty()) {
+        return;
+    }
+    if (!m_document->isExportReady()) {
+        qDebug() << "Export but document is not export ready";
+        return;
+    }
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    MeshResultContext skeletonResult = m_document->currentPostProcessedResultContext();
+    FbxFileWriter fbxFileWriter(skeletonResult, filename);
+    fbxFileWriter.save();
+    QApplication::restoreOverrideCursor();
 }
 
 void SkeletonDocumentWindow::exportGltfResult()

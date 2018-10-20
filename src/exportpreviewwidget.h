@@ -14,7 +14,8 @@ class ExportPreviewWidget : public QDialog
     Q_OBJECT
 signals:
     void regenerate();
-    void save();
+    void saveAsGltf();
+    void saveAsFbx();
 public:
     ExportPreviewWidget(SkeletonDocument *document, QWidget *parent=nullptr);
 public slots:

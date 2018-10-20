@@ -8,6 +8,7 @@
 #include "skeletondocumentwindow.h"
 #include "theme.h"
 #include "version.h"
+//#include "fbxdocument.h"
 
 int main(int argc, char ** argv)
 {
@@ -47,6 +48,10 @@ int main(int argc, char ** argv)
     QApplication::setFont(font);
     
     SkeletonDocumentWindow::createDocumentWindow();
+    
+    //fbx::FBXDocument fbxDoc;
+    //fbxDoc.read("/Users/jeremy/Desktop/test.fbx");
+    //fbxDoc.print();
     
     return app.exec();
 }

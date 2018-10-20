@@ -40,6 +40,7 @@ public slots:
     void open();
     void exportObjResult();
     void exportGltfResult();
+    void exportFbxResult();
     void showExportPreview();
     void newWindow();
     void newDocument();
