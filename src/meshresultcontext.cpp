@@ -339,7 +339,6 @@ void MeshResultContext::calculateResultParts(std::map<QUuid, ResultPart> &parts)
             bool isSeamVertex = m_seamVertices.end() != m_seamVertices.find(triangle.indicies[i]);
             if (isNewVertex || isSeamVertex) {
                 int newIndex = resultPart.vertices.size();
-                resultPart.interpolatedVertexNormals.push_back(normal);
                 resultPart.verticesOldIndicies.push_back(triangle.indicies[i]);
                 resultPart.vertices.push_back(vertices[triangle.indicies[i]]);
                 ResultVertexUv vertexUv;
@@ -352,6 +351,7 @@ void MeshResultContext::calculateResultParts(std::map<QUuid, ResultPart> &parts)
             } else {
                 newTriangle.indicies[i] = it->second;
             }
+            resultPart.interpolatedTriangleVertexNormals.push_back(normal);
         }
         resultPart.triangles.push_back(newTriangle);
         resultPart.uvs.push_back(triangleUvs()[x]);

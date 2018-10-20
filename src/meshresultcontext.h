@@ -57,7 +57,7 @@ struct ResultPart
     Material material;
     std::vector<ResultVertex> vertices;
     std::vector<int> verticesOldIndicies;
-    std::vector<QVector3D> interpolatedVertexNormals;
+    std::vector<QVector3D> interpolatedTriangleVertexNormals;
     std::vector<ResultTriangle> triangles;
     std::vector<ResultTriangleUv> uvs;
     std::vector<ResultVertexUv> vertexUvs;

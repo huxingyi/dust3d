@@ -26,7 +26,7 @@ GltfFileWriter::GltfFileWriter(MeshResultContext &resultContext,
         const std::map<int, AutoRiggerVertexWeights> *resultRigWeights,
         const QString &filename) :
     m_filename(filename),
-    m_outputNormal(true),
+    m_outputNormal(false),
     m_outputAnimation(true),
     m_outputUv(true),
     m_testOutputAsWhole(false)
@@ -221,6 +221,7 @@ GltfFileWriter::GltfFileWriter(MeshResultContext &resultContext,
         m_json["accessors"][bufferViewIndex]["min"] = {minX, minY, minZ};
         bufferViewIndex++;
         
+        /*
         if (m_outputNormal) {
             bufferViewFromOffset = (int)binaries.size();
             m_json["bufferViews"][bufferViewIndex]["buffer"] = 0;
@@ -243,7 +244,7 @@ GltfFileWriter::GltfFileWriter(MeshResultContext &resultContext,
             m_json["accessors"][bufferViewIndex]["count"] =  part.second.vertices.size();
             m_json["accessors"][bufferViewIndex]["type"] = "VEC3";
             bufferViewIndex++;
-        }
+        }*/
         
         if (m_outputUv) {
             bufferViewFromOffset = (int)binaries.size();

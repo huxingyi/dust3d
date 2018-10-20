@@ -252,7 +252,7 @@ MeshLoader::MeshLoader(MeshResultContext &resultContext) :
             for (auto i = 0; i < 3; i++) {
                 int vertexIndex = it.indicies[i];
                 const ResultVertex *srcVert = &part.second.vertices[vertexIndex];
-                const QVector3D *srcNormal = &part.second.interpolatedVertexNormals[vertexIndex];
+                const QVector3D *srcNormal = &part.second.interpolatedTriangleVertexNormals[x * 3 + i];
                 const ResultVertexUv *srcUv = &part.second.vertexUvs[vertexIndex];
                 //const Material *srcMaterial = &part.second.material;
                 const QVector3D *srcTangent = &part.second.triangleTangents[x];
