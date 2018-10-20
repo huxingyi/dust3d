@@ -429,7 +429,7 @@ void MeshResultContext::interpolateTriangleVertexNormals(std::vector<QVector3D> 
     for (const auto &vertex: vertices)
         inputVerticies.push_back(vertex.position);
     for (const auto &triangle: triangles) {
-        inputTriangles.push_back({triangle.indicies[0], triangle.indicies[1], triangle.indicies[2]});
+        inputTriangles.push_back(std::make_tuple((size_t)triangle.indicies[0], (size_t)triangle.indicies[1], (size_t)triangle.indicies[2]));
         inputNormals.push_back(triangle.normal);
     }
     angleSmooth(inputVerticies, inputTriangles, inputNormals, thresholdAngleDegrees, resultNormals);

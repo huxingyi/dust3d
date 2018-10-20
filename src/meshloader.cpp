@@ -133,11 +133,10 @@ MeshLoader::MeshLoader(void *meshlite, int meshId, int triangulatedMeshId, QColo
         triangulatedFace.color.setBlueF(useColorB);
         QVector3D positions[3];
         if (smoothNormal) {
-            inputTrianglesForSmoothAngle.push_back({
-                (size_t)triangleIndices[firstIndex + 0],
+            inputTrianglesForSmoothAngle.push_back(std::make_tuple((size_t)triangleIndices[firstIndex + 0],
                 (size_t)triangleIndices[firstIndex + 1],
                 (size_t)triangleIndices[firstIndex + 2]
-            });
+            ));
             inputNormalsForSmoothAngle.push_back(QVector3D(triangleNormals[firstIndex + 0],
                 triangleNormals[firstIndex + 1],
                 triangleNormals[firstIndex + 2]));
