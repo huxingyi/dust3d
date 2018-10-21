@@ -1241,7 +1241,7 @@ void SkeletonDocumentWindow::exportFbxResult()
     }
     QApplication::setOverrideCursor(Qt::WaitCursor);
     MeshResultContext skeletonResult = m_document->currentPostProcessedResultContext();
-    FbxFileWriter fbxFileWriter(skeletonResult, filename);
+    FbxFileWriter fbxFileWriter(skeletonResult, m_document->resultRigBones(), m_document->resultRigWeights(), filename);
     fbxFileWriter.save();
     QApplication::restoreOverrideCursor();
 }

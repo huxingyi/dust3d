@@ -3,8 +3,16 @@
 #include <QDateTime>
 #include "fbxfile.h"
 #include "version.h"
+#include "jointnodetree.h"
 
 using namespace fbx;
+
+std::vector<double> FbxFileWriter::m_identityMatrix = {
+    1.000000, 0.000000, 0.000000, 0.000000,
+    0.000000, 1.000000, 0.000000, 0.000000,
+    0.000000, 0.000000, 1.000000, 0.000000,
+    0.000000, 0.000000, 0.000000, 1.000000
+};
 
 void FbxFileWriter::createFbxHeader()
 {
@@ -282,7 +290,7 @@ void FbxFileWriter::createGlobalSettings()
             p.addProperty("double");
             p.addProperty("Number");
             p.addProperty("");
-            p.addProperty((double)1.000000);
+            p.addProperty((double)100.000000);
             properties.addChild(p);
         }
         {
@@ -401,11 +409,10 @@ void FbxFileWriter::createReferences()
     m_fbxDocument.nodes.push_back(references);
 }
 
-void FbxFileWriter::createDefinitions()
+void FbxFileWriter::createDefinitions(size_t deformerCount)
 {
     FBXNode definitions("Definitions");
     definitions.addPropertyNode("Version", (int32_t)100);
-    definitions.addPropertyNode("Count", (int32_t)4);
     {
         FBXNode objectType("ObjectType");
         objectType.addProperty("GlobalSettings");
@@ -497,7 +504,7 @@ void FbxFileWriter::createDefinitions()
         FBXNode objectType("ObjectType");
         objectType.addProperty("Model");
         FBXNode count("Count");
-        count.addProperty((int32_t)1);
+        count.addProperty((int32_t)(1 + deformerCount)); // 1 for mesh, deformerCount for limbNodes
         objectType.addChild(count);
         FBXNode propertyTemplate("PropertyTemplate");
         propertyTemplate.addProperty("FbxNode");
@@ -1184,6 +1191,27 @@ void FbxFileWriter::createDefinitions()
         objectType.addChild(FBXNode());
         definitions.addChild(objectType);
     }
+    if (deformerCount > 0) {
+        FBXNode objectType("ObjectType");
+        objectType.addProperty("Deformer");
+        objectType.addPropertyNode("Count", (int32_t)deformerCount);
+        objectType.addChild(FBXNode());
+        definitions.addChild(objectType);
+    }
+    if (deformerCount > 0) {
+        FBXNode objectType("ObjectType");
+        objectType.addProperty("NodeAttribute");
+        objectType.addPropertyNode("Count", (int32_t)deformerCount);
+        objectType.addChild(FBXNode());
+        definitions.addChild(objectType);
+    }
+    if (deformerCount > 0) {
+        FBXNode objectType("ObjectType");
+        objectType.addProperty("Pose");
+        objectType.addPropertyNode("Count", (int32_t)1);
+        objectType.addChild(FBXNode());
+        definitions.addChild(objectType);
+    }
     {
         FBXNode objectType("ObjectType");
         objectType.addProperty("Material");
@@ -1443,6 +1471,8 @@ void FbxFileWriter::createDefinitions()
 }
 
 FbxFileWriter::FbxFileWriter(MeshResultContext &resultContext,
+        const std::vector<AutoRiggerBone> *resultRigBones,
+        const std::map<int, AutoRiggerVertexWeights> *resultRigWeights,
         const QString &filename) :
     m_filename(filename)
 {
@@ -1453,7 +1483,11 @@ FbxFileWriter::FbxFileWriter(MeshResultContext &resultContext,
     createGlobalSettings();
     createDocuments();
     createReferences();
-    createDefinitions();
+    
+    size_t deformerCount = 0;
+    if (resultRigBones && !resultRigBones->empty())
+        deformerCount = 1 + resultRigBones->size(); // 1 for the root Skin deformer
+    createDefinitions(deformerCount);
     
     FBXNode geometry("Geometry");
     int64_t geometryId = m_next64Id++;
@@ -1523,8 +1557,8 @@ FbxFileWriter::FbxFileWriter(MeshResultContext &resultContext,
     geometry.addChild(layer);
     geometry.addChild(FBXNode());
     
-    FBXNode model("Model");
     int64_t modelId = m_next64Id++;
+    FBXNode model("Model");
     model.addProperty(modelId);
     model.addProperty(std::vector<uint8_t>({'u','n','a','m','e','d',0,1,'M','o','d','e','l'}), 'S');
     model.addProperty("Mesh");
@@ -1548,9 +1582,9 @@ FbxFileWriter::FbxFileWriter(MeshResultContext &resultContext,
             p.addProperty("Lcl Scaling");
             p.addProperty("");
             p.addProperty("A");
-            p.addProperty((double)100.000000);
-            p.addProperty((double)100.000000);
-            p.addProperty((double)100.000000);
+            p.addProperty((double)1.000000);
+            p.addProperty((double)1.000000);
+            p.addProperty((double)1.000000);
             properties.addChild(p);
         }
         {
@@ -1579,6 +1613,388 @@ FbxFileWriter::FbxFileWriter(MeshResultContext &resultContext,
     model.addPropertyNode("Shading", (bool)true);
     model.addPropertyNode("Culling", "CullingOff");
     model.addChild(FBXNode());
+    
+    FBXNode pose("Pose");
+    int64_t poseId = 0;
+    std::vector<FBXNode> deformers;
+    std::vector<int64_t> deformerIds;
+    std::vector<FBXNode> limbNodes;
+    std::vector<int64_t> limbNodeIds;
+    std::vector<FBXNode> nodeAttributes;
+    std::vector<int64_t> nodeAttributeIds;
+    int64_t skinId = 0;
+    int64_t armatureId = 0;
+    JointNodeTree jointNodeTree(resultRigBones);
+    const auto &boneNodes = jointNodeTree.nodes();
+    if (resultRigBones && !resultRigBones->empty()) {
+        std::vector<std::pair<std::vector<int32_t>, std::vector<double>>> bindPerBone(resultRigBones->size());
+        if (resultRigWeights && !resultRigWeights->empty()) {
+            for (const auto &item: *resultRigWeights) {
+                for (int i = 0; i < 4; ++i) {
+                    const auto &boneIndex = item.second.boneIndicies[i];
+                    Q_ASSERT(boneIndex < bindPerBone.size());
+                    if (0 == boneIndex)
+                        break;
+                    bindPerBone[boneIndex].first.push_back(item.first);
+                    bindPerBone[boneIndex].second.push_back(item.second.boneWeights[i]);
+                }
+            }
+        }
+    
+        {
+            skinId = m_next64Id++;
+            deformerIds.push_back(skinId);
+            
+            deformers.push_back(FBXNode("Deformer"));
+            FBXNode &deformer = deformers.back();
+            deformer.addProperty(skinId);
+            deformer.addProperty(std::vector<uint8_t>({'A','r','m','a','t','u','r','e',0,1,'D','e','f','o','r','m','e','r'}), 'S');
+            deformer.addProperty("Skin");
+            deformer.addPropertyNode("Version", (int32_t)101);
+            deformer.addPropertyNode("Link_DeformAcuracy", (double)50.000000);
+            deformer.addChild(FBXNode());
+        }
+        
+        {
+            armatureId = m_next64Id++;
+            limbNodeIds.push_back(armatureId);
+            
+            limbNodes.push_back(FBXNode("Model"));
+            FBXNode &limbNode = limbNodes.back();
+            limbNode.addProperty(armatureId);
+            limbNode.addProperty(std::vector<uint8_t>({'A','r','m','a','t','u','r','e',0,1,'M','o','d','e','l'}), 'S');
+            limbNode.addProperty("Null");
+            limbNode.addPropertyNode("Version", (int32_t)232);
+            {
+                FBXNode properties("Properties70");
+                {
+                    FBXNode p("P");
+                    p.addProperty("Lcl Rotation");
+                    p.addProperty("Lcl Rotation");
+                    p.addProperty("");
+                    p.addProperty("A");
+                    p.addProperty((double)0.000000);
+                    p.addProperty((double)0.000000);
+                    p.addProperty((double)0.000000);
+                    properties.addChild(p);
+                }
+                {
+                    FBXNode p("P");
+                    p.addProperty("Lcl Scaling");
+                    p.addProperty("Lcl Scaling");
+                    p.addProperty("");
+                    p.addProperty("A");
+                    p.addProperty((double)1.000000);
+                    p.addProperty((double)1.000000);
+                    p.addProperty((double)1.000000);
+                    properties.addChild(p);
+                }
+                {
+                    FBXNode p("P");
+                    p.addProperty("DefaultAttributeIndex");
+                    p.addProperty("int");
+                    p.addProperty("Integer");
+                    p.addProperty("");
+                    p.addProperty((int32_t)0);
+                    properties.addChild(p);
+                }
+                {
+                    FBXNode p("P");
+                    p.addProperty("InheritType");
+                    p.addProperty("enum");
+                    p.addProperty("");
+                    p.addProperty("");
+                    p.addProperty((int32_t)1);
+                    properties.addChild(p);
+                }
+                properties.addChild(FBXNode());
+                limbNode.addChild(properties);
+            }
+            limbNode.addPropertyNode("MultiLayer", (int32_t)0);
+            limbNode.addPropertyNode("MultiTake", (int32_t)0);
+            limbNode.addPropertyNode("Shading", (bool)true);
+            limbNode.addPropertyNode("Culling", "CullingOff");
+            limbNode.addChild(FBXNode());
+        }
+        
+        {
+            int64_t nodeAttributeId = m_next64Id++;
+            nodeAttributeIds.push_back(nodeAttributeId);
+            
+            nodeAttributes.push_back(FBXNode("NodeAttribute"));
+            FBXNode &nodeAttribute = nodeAttributes.back();
+            nodeAttribute.addProperty(nodeAttributeId);
+            nodeAttribute.addProperty(std::vector<uint8_t>({'A','r','m','a','t','u','r','e',0,1,'N','o','d','e','A','t','t','r','i','b','u','t','e'}), 'S');
+            nodeAttribute.addProperty("Null");
+            nodeAttribute.addPropertyNode("TypeFlags", "Null");
+            {
+                FBXNode properties("Properties70");
+                {
+                    FBXNode p("P");
+                    p.addProperty("Color");
+                    p.addProperty("ColorRGB");
+                    p.addProperty("Color");
+                    p.addProperty("");
+                    p.addProperty("A");
+                    p.addProperty((double)0.800000);
+                    p.addProperty((double)0.800000);
+                    p.addProperty((double)0.800000);
+                    properties.addChild(p);
+                }
+                {
+                    FBXNode p("P");
+                    p.addProperty("Size");
+                    p.addProperty("double");
+                    p.addProperty("Number");
+                    p.addProperty("");
+                    p.addProperty("A");
+                    p.addProperty((double)100.000000);
+                    properties.addChild(p);
+                }
+                {
+                    FBXNode p("P");
+                    p.addProperty("Look");
+                    p.addProperty("enum");
+                    p.addProperty("");
+                    p.addProperty("");
+                    p.addProperty((int32_t)1);
+                    properties.addChild(p);
+                }
+                {
+                    FBXNode p("P");
+                    p.addProperty("InheritType");
+                    p.addProperty("enum");
+                    p.addProperty("");
+                    p.addProperty("");
+                    p.addProperty((int32_t)1);
+                    properties.addChild(p);
+                }
+                properties.addChild(FBXNode());
+                nodeAttribute.addChild(properties);
+            }
+            nodeAttribute.addPropertyNode("MultiLayer", (int32_t)0);
+            nodeAttribute.addPropertyNode("MultiTake", (int32_t)0);
+            nodeAttribute.addPropertyNode("Shading", (bool)true);
+            nodeAttribute.addPropertyNode("Culling", "CullingOff");
+            nodeAttribute.addChild(FBXNode());
+        }
+        
+        for (size_t i = 0; i < resultRigBones->size(); ++i) {
+            const auto &bone = (*resultRigBones)[i];
+            const auto &jointNode = boneNodes[i];
+            
+            {
+                int64_t clusterId = m_next64Id++;
+                deformerIds.push_back(clusterId);
+                
+                deformers.push_back(FBXNode("Deformer"));
+                FBXNode &deformer = deformers.back();
+                deformer.addProperty(clusterId);
+                std::vector<uint8_t> name;
+                QString clusterName = APP_NAME + QString(":") + bone.name;
+                for (const auto &c: clusterName) {
+                    name.push_back((uint8_t)c.toLatin1());
+                }
+                name.push_back(0);
+                name.push_back(1);
+                name.push_back('S');
+                name.push_back('u');
+                name.push_back('b');
+                name.push_back('D');
+                name.push_back('e');
+                name.push_back('f');
+                name.push_back('o');
+                name.push_back('r');
+                name.push_back('m');
+                name.push_back('e');
+                name.push_back('r');
+                deformer.addProperty(name, 'S');
+                deformer.addProperty("Cluster");
+                deformer.addPropertyNode("Version", (int32_t)100);
+                FBXNode userData("UserData");
+                userData.addProperty("");
+                userData.addProperty("");
+                deformer.addChild(userData);
+                deformer.addPropertyNode("Indexes", bindPerBone[i].first);
+                deformer.addPropertyNode("Weights", bindPerBone[i].second);
+                deformer.addPropertyNode("Transform", matrixToVector(jointNode.transformMatrix.inverted()));
+                deformer.addPropertyNode("TransformLink", matrixToVector(jointNode.transformMatrix));
+                deformer.addPropertyNode("TransformAssociateModel", m_identityMatrix);
+                deformer.addChild(FBXNode());
+            }
+            
+            {
+                int64_t limbNodeId = m_next64Id++;
+                limbNodeIds.push_back(limbNodeId);
+                
+                limbNodes.push_back(FBXNode("Model"));
+                FBXNode &limbNode = limbNodes.back();
+                limbNode.addProperty(limbNodeId);
+                std::vector<uint8_t> name;
+                QString limbNodeName = APP_NAME + QString(":") + bone.name;
+                for (const auto &c: limbNodeName) {
+                    name.push_back((uint8_t)c.toLatin1());
+                }
+                name.push_back(0);
+                name.push_back(1);
+                name.push_back('M');
+                name.push_back('o');
+                name.push_back('d');
+                name.push_back('e');
+                name.push_back('l');
+                limbNode.addProperty(name, 'S');
+                limbNode.addProperty("LimbNode");
+                limbNode.addPropertyNode("Version", (int32_t)232);
+                {
+                    FBXNode properties("Properties70");
+                    {
+                        FBXNode p("P");
+                        p.addProperty("Lcl Translation");
+                        p.addProperty("Lcl Translation");
+                        p.addProperty("");
+                        p.addProperty("A");
+                        p.addProperty((double)jointNode.translation.x());
+                        p.addProperty((double)jointNode.translation.y());
+                        p.addProperty((double)jointNode.translation.z());
+                        properties.addChild(p);
+                    }
+                    {
+                        FBXNode p("P");
+                        p.addProperty("Lcl Rotation");
+                        p.addProperty("Lcl Rotation");
+                        p.addProperty("");
+                        p.addProperty("A");
+                        p.addProperty((double)0.000000);
+                        p.addProperty((double)0.000000);
+                        p.addProperty((double)0.000000);
+                        properties.addChild(p);
+                    }
+                    {
+                        FBXNode p("P");
+                        p.addProperty("Lcl Scaling");
+                        p.addProperty("Lcl Scaling");
+                        p.addProperty("");
+                        p.addProperty("A");
+                        p.addProperty((double)1.000000);
+                        p.addProperty((double)1.000000);
+                        p.addProperty((double)1.000000);
+                        properties.addChild(p);
+                    }
+                    {
+                        FBXNode p("P");
+                        p.addProperty("DefaultAttributeIndex");
+                        p.addProperty("int");
+                        p.addProperty("Integer");
+                        p.addProperty("");
+                        p.addProperty((int32_t)0);
+                        properties.addChild(p);
+                    }
+                    {
+                        FBXNode p("P");
+                        p.addProperty("InheritType");
+                        p.addProperty("enum");
+                        p.addProperty("");
+                        p.addProperty("");
+                        p.addProperty((int32_t)1);
+                        properties.addChild(p);
+                    }
+                    properties.addChild(FBXNode());
+                    limbNode.addChild(properties);
+                }
+                limbNode.addPropertyNode("MultiLayer", (int32_t)0);
+                limbNode.addPropertyNode("MultiTake", (int32_t)0);
+                limbNode.addPropertyNode("Shading", (bool)true);
+                limbNode.addPropertyNode("Culling", "CullingOff");
+                limbNode.addChild(FBXNode());
+            }
+            
+            {
+                int64_t nodeAttributeId = m_next64Id++;
+                nodeAttributeIds.push_back(nodeAttributeId);
+                
+                nodeAttributes.push_back(FBXNode("NodeAttribute"));
+                FBXNode &nodeAttribute = nodeAttributes.back();
+                nodeAttribute.addProperty(nodeAttributeId);
+                std::vector<uint8_t> name;
+                QString nodeAttributeName = APP_NAME + QString(":") + bone.name;
+                for (const auto &c: nodeAttributeName) {
+                    name.push_back((uint8_t)c.toLatin1());
+                }
+                name.push_back(0);
+                name.push_back(1);
+                name.push_back('N');
+                name.push_back('o');
+                name.push_back('d');
+                name.push_back('e');
+                name.push_back('A');
+                name.push_back('t');
+                name.push_back('t');
+                name.push_back('r');
+                name.push_back('i');
+                name.push_back('b');
+                name.push_back('u');
+                name.push_back('t');
+                name.push_back('e');
+                nodeAttribute.addProperty(name, 'S');
+                nodeAttribute.addProperty("LimbNode");
+                nodeAttribute.addPropertyNode("TypeFlags", "Skeleton");
+                {
+                    FBXNode properties("Properties70");
+                    {
+                        FBXNode p("P");
+                        p.addProperty("Size");
+                        p.addProperty("double");
+                        p.addProperty("Number");
+                        p.addProperty("");
+                        p.addProperty("A");
+                        p.addProperty((double)3.300000);
+                        properties.addChild(p);
+                    }
+                    properties.addChild(FBXNode());
+                    nodeAttribute.addChild(properties);
+                }
+                nodeAttribute.addPropertyNode("MultiLayer", (int32_t)0);
+                nodeAttribute.addPropertyNode("MultiTake", (int32_t)0);
+                nodeAttribute.addPropertyNode("Shading", (bool)true);
+                nodeAttribute.addPropertyNode("Culling", "CullingOff");
+                nodeAttribute.addChild(FBXNode());
+            }
+        }
+    }
+    
+    if (deformerCount > 0)
+    {
+        poseId = m_next64Id++;
+        pose.addProperty(poseId);
+        pose.addProperty(std::vector<uint8_t>({'u','n','a','m','e','d',0,1,'P','o','s','e'}), 'S');
+        pose.addProperty("BindPose");
+        pose.addPropertyNode("Type", "BindPose");
+        pose.addPropertyNode("Version", (int32_t)100);
+        pose.addPropertyNode("NbPoseNodes", (int32_t)(1 + deformerCount)); // +1 for model
+        {
+            FBXNode poseNode("PoseNode");
+            poseNode.addPropertyNode("Node", (int64_t)modelId);
+            poseNode.addPropertyNode("Matrix", m_identityMatrix);
+            poseNode.addChild(FBXNode());
+            pose.addChild(poseNode);
+        }
+        {
+            FBXNode poseNode("PoseNode");
+            poseNode.addPropertyNode("Node", (int64_t)armatureId);
+            poseNode.addPropertyNode("Matrix", m_identityMatrix);
+            poseNode.addChild(FBXNode());
+            pose.addChild(poseNode);
+        }
+        for (size_t i = 0; i < boneNodes.size(); i++) {
+            const auto &boneNode = boneNodes[i];
+            FBXNode poseNode("PoseNode");
+            poseNode.addPropertyNode("Node", (int64_t)limbNodeIds[1 + i]);
+            poseNode.addPropertyNode("Matrix", matrixToVector(boneNode.transformMatrix));
+            poseNode.addChild(FBXNode());
+            pose.addChild(poseNode);
+        }
+        pose.addChild(FBXNode());
+    }
     
     FBXNode material("Material");
     int64_t materialId = m_next64Id++;
@@ -1718,7 +2134,18 @@ FbxFileWriter::FbxFileWriter(MeshResultContext &resultContext,
     FBXNode objects("Objects");
     objects.addChild(geometry);
     objects.addChild(model);
+    for (const auto &limbNode: limbNodes) {
+        objects.addChild(limbNode);
+    }
+    if (deformerCount > 0)
+        objects.addChild(pose);
     objects.addChild(material);
+    for (const auto &deformer: deformers) {
+        objects.addChild(deformer);
+    }
+    for (const auto &nodeAttribute: nodeAttributes) {
+        objects.addChild(nodeAttribute);
+    }
     objects.addChild(FBXNode());
     m_fbxDocument.nodes.push_back(objects);
     
@@ -1730,11 +2157,64 @@ FbxFileWriter::FbxFileWriter(MeshResultContext &resultContext,
         p.addProperty((int64_t)0);
         connections.addChild(p);
     }
+    if (armatureId > 0)
+    {
+        FBXNode p("C");
+        p.addProperty("OO");
+        p.addProperty(armatureId);
+        p.addProperty((int64_t)0);
+        connections.addChild(p);
+    }
     {
         FBXNode p("C");
         p.addProperty("OO");
         p.addProperty(geometryId);
         p.addProperty(modelId);
+        connections.addChild(p);
+    }
+    if (skinId > 0)
+    {
+        FBXNode p("C");
+        p.addProperty("OO");
+        p.addProperty(skinId);
+        p.addProperty(geometryId);
+        connections.addChild(p);
+    }
+    for (size_t i = 0; i < boneNodes.size(); ++i) {
+        const auto &boneNode = boneNodes[i];
+        {
+            FBXNode p("C");
+            p.addProperty("OO");
+            p.addProperty(deformerIds[1 + i]);
+            p.addProperty(skinId);
+            connections.addChild(p);
+        }
+        if (-1 == boneNode.parentIndex) {
+            FBXNode p("C");
+            p.addProperty("OO");
+            p.addProperty(limbNodeIds[1 + i]);
+            p.addProperty(armatureId);
+            connections.addChild(p);
+        } else {
+            FBXNode p("C");
+            p.addProperty("OO");
+            p.addProperty(limbNodeIds[1 + i]);
+            p.addProperty(limbNodeIds[1 + boneNode.parentIndex]);
+            connections.addChild(p);
+        }
+    }
+    for (size_t i = 0; i < limbNodeIds.size(); ++i) {
+        FBXNode p("C");
+        p.addProperty("OO");
+        p.addProperty(limbNodeIds[i]);
+        p.addProperty(deformerIds[i]);
+        connections.addChild(p);
+    }
+    for (size_t i = 0; i < nodeAttributeIds.size(); ++i) {
+        FBXNode p("C");
+        p.addProperty("OO");
+        p.addProperty(nodeAttributeIds[i]);
+        p.addProperty(limbNodeIds[i]);
         connections.addChild(p);
     }
     {
@@ -1770,4 +2250,17 @@ bool FbxFileWriter::save()
     m_fbxDocument.print();
     m_fbxDocument.write(m_filename.toStdString());
     return true;
+}
+
+std::vector<double> FbxFileWriter::matrixToVector(const QMatrix4x4 &matrix)
+{
+    std::vector<double> vec;
+    for (size_t col = 0; col < 4; ++col) {
+        const auto &line = matrix.column(col);
+        vec.push_back(line.x());
+        vec.push_back(line.y());
+        vec.push_back(line.z());
+        vec.push_back(line.w());
+    }
+    return vec;
 }

@@ -49,8 +49,8 @@ GltfFileWriter::GltfFileWriter(MeshResultContext &resultContext,
     int bufferViewIndex = 0;
     int bufferViewFromOffset;
     
-    JointNodeTree tailNodeTree(resultRigBones);
-    const auto &boneNodes = tailNodeTree.nodes();
+    JointNodeTree jointNodeTree(resultRigBones);
+    const auto &boneNodes = jointNodeTree.nodes();
     
     m_json["asset"]["version"] = "2.0";
     m_json["asset"]["generator"] = APP_NAME " " APP_HUMAN_VER;
