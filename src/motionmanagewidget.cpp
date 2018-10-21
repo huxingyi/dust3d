@@ -25,7 +25,7 @@ MotionManageWidget::MotionManageWidget(const SkeletonDocument *document, QWidget
     infoLabel->setText(tr("Missing Rig"));
     infoLabel->show();
     
-    connect(m_document, &SkeletonDocument::resultRigChanged, this, [=]() {
+    auto refreshInfoLabel = [=]() {
         if (m_document->currentRigSucceed()) {
             infoLabel->hide();
             addMotionButton->show();
@@ -33,7 +33,10 @@ MotionManageWidget::MotionManageWidget(const SkeletonDocument *document, QWidget
             infoLabel->show();
             addMotionButton->hide();
         }
-    });
+    };
+    
+    connect(m_document, &SkeletonDocument::resultRigChanged, this, refreshInfoLabel);
+    connect(m_document, &SkeletonDocument::cleanup, this, refreshInfoLabel);
     
     QVBoxLayout *mainLayout = new QVBoxLayout;
     mainLayout->addWidget(infoLabel);

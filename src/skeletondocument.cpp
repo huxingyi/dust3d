@@ -1375,6 +1375,7 @@ void SkeletonDocument::reset()
     motionMap.clear();
     motionIdList.clear();
     rootComponent = SkeletonComponent();
+    removeRigResults();
     emit cleanup();
     emit skeletonChanged();
 }
@@ -2741,6 +2742,8 @@ void SkeletonDocument::removeRigResults()
     
     m_resultRigErrorMarkNames.clear();
     m_resultRigMissingMarkNames.clear();
+    
+    m_currentRigSucceed = false;
     
     emit resultRigChanged();
 }

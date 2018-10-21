@@ -25,7 +25,7 @@ PoseManageWidget::PoseManageWidget(const SkeletonDocument *document, QWidget *pa
     infoLabel->setText(tr("Missing Rig"));
     infoLabel->show();
     
-    connect(m_document, &SkeletonDocument::resultRigChanged, this, [=]() {
+    auto refreshInfoLabel = [=]() {
         if (m_document->currentRigSucceed()) {
             infoLabel->hide();
             addPoseButton->show();
@@ -33,7 +33,10 @@ PoseManageWidget::PoseManageWidget(const SkeletonDocument *document, QWidget *pa
             infoLabel->show();
             addPoseButton->hide();
         }
-    });
+    };
+    
+    connect(m_document, &SkeletonDocument::resultRigChanged, this, refreshInfoLabel);
+    connect(m_document, &SkeletonDocument::cleanup, this, refreshInfoLabel);
     
     QVBoxLayout *mainLayout = new QVBoxLayout;
     mainLayout->addWidget(infoLabel);
