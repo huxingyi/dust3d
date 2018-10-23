@@ -4,17 +4,18 @@
 #include <QLabel>
 #include <QIcon>
 #include "skeletondocument.h"
-#include "interpolationgraphicswidget.h"
+#include "modelwidget.h"
 
 class MotionWidget : public QFrame
 {
     Q_OBJECT
 signals:
     void modifyMotion(QUuid motionId);
+    void cornerButtonClicked(QUuid motionId);
 public:
     MotionWidget(const SkeletonDocument *document, QUuid motionId);
     static int preferredHeight();
-    InterpolationGraphicsWidget *previewWidget();
+    ModelWidget *previewWidget();
 protected:
     void mouseDoubleClickEvent(QMouseEvent *event) override;
     void resizeEvent(QResizeEvent *event) override;
@@ -23,11 +24,13 @@ public slots:
     void updatePreview();
     void updateName();
     void updateCheckedState(bool checked);
+    void setCornerButtonVisible(bool visible);
 private:
     QUuid m_motionId;
     const SkeletonDocument *m_document = nullptr;
-    InterpolationGraphicsWidget *m_previewWidget = nullptr;
+    ModelWidget *m_previewWidget = nullptr;
     QLabel *m_nameLabel = nullptr;
+    QPushButton *m_cornerButton = nullptr;
 };
 
 #endif

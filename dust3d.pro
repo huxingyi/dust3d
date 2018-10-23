@@ -203,12 +203,6 @@ HEADERS += src/meshweldseam.h
 SOURCES += src/advancesettingwidget.cpp
 HEADERS += src/advancesettingwidget.h
 
-SOURCES += src/curveutil.cpp
-HEADERS += src/curveutil.h
-
-SOURCES += src/interpolationgraphicswidget.cpp
-HEADERS += src/interpolationgraphicswidget.h
-
 SOURCES += src/motioneditwidget.cpp
 HEADERS += src/motioneditwidget.h
 
@@ -221,8 +215,8 @@ HEADERS += src/motionlistwidget.h
 SOURCES += src/motionwidget.cpp
 HEADERS += src/motionwidget.h
 
-SOURCES += src/motionpreviewsgenerator.cpp
-HEADERS += src/motionpreviewsgenerator.h
+SOURCES += src/motionsgenerator.cpp
+HEADERS += src/motionsgenerator.h
 
 SOURCES += src/animationclipplayer.cpp
 HEADERS += src/animationclipplayer.h
@@ -256,6 +250,21 @@ HEADERS += src/fbxfile.h
 
 SOURCES += src/anglesmooth.cpp
 HEADERS += src/anglesmooth.h
+
+SOURCES += src/motiontimelinewidget.cpp
+HEADERS += src/motiontimelinewidget.h
+
+SOURCES += src/interpolationtype.cpp
+HEADERS += src/interpolationtype.h
+
+SOURCES += src/motionclipwidget.cpp
+HEADERS += src/motionclipwidget.h
+
+SOURCES += src/tabwidget.cpp
+HEADERS += src/tabwidget.h
+
+SOURCES += src/flowlayout.cpp
+HEADERS += src/flowlayout.h
 
 SOURCES += src/main.cpp
 

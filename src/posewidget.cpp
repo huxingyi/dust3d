@@ -31,8 +31,16 @@ PoseWidget::PoseWidget(const SkeletonDocument *document, QUuid poseId) :
     
     setFixedSize(Theme::posePreviewImageSize, PoseWidget::preferredHeight());
     
-    connect(document, &SkeletonDocument::poseNameChanged, this, &PoseWidget::updateName);
-    connect(document, &SkeletonDocument::posePreviewChanged, this, &PoseWidget::updatePreview);
+    connect(document, &SkeletonDocument::poseNameChanged, this, [=](QUuid poseId) {
+        if (poseId != m_poseId)
+            return;
+        updateName();
+    });
+    connect(document, &SkeletonDocument::posePreviewChanged, this, [=](QUuid poseId) {
+        if (poseId != m_poseId)
+            return;
+        updatePreview();
+    });
 }
 
 void PoseWidget::setCornerButtonVisible(bool visible)

@@ -7,9 +7,10 @@ MotionWidget::MotionWidget(const SkeletonDocument *document, QUuid motionId) :
 {
     setObjectName("MotionFrame");
 
-    m_previewWidget = new InterpolationGraphicsWidget(this);
+    m_previewWidget = new ModelWidget(this);
     m_previewWidget->setFixedSize(Theme::motionPreviewImageSize, Theme::motionPreviewImageSize);
-    m_previewWidget->setPreviewOnly(true);
+    m_previewWidget->enableMove(false);
+    m_previewWidget->enableZoom(false);
     
     m_nameLabel = new QLabel;
     m_nameLabel->setAlignment(Qt::AlignCenter);
@@ -30,9 +31,30 @@ MotionWidget::MotionWidget(const SkeletonDocument *document, QUuid motionId) :
     
     setFixedSize(Theme::motionPreviewImageSize, MotionWidget::preferredHeight());
     
-    connect(document, &SkeletonDocument::motionNameChanged, this, &MotionWidget::updateName);
-    connect(document, &SkeletonDocument::motionControlNodesChanged, this, &MotionWidget::updatePreview);
-    connect(document, &SkeletonDocument::motionKeyframesChanged, this, &MotionWidget::updatePreview);
+    connect(document, &SkeletonDocument::motionNameChanged, this, [=](QUuid motionId) {
+        if (motionId != m_motionId)
+            return;
+        updateName();
+    });
+    connect(document, &SkeletonDocument::motionPreviewChanged, this, [=](QUuid motionId) {
+        if (motionId != m_motionId)
+            return;
+        updatePreview();
+    });
+}
+
+void MotionWidget::setCornerButtonVisible(bool visible)
+{
+    if (nullptr == m_cornerButton) {
+        m_cornerButton = new QPushButton(this);
+        m_cornerButton->move(Theme::motionPreviewImageSize - Theme::miniIconSize - 2, 2);
+        Theme::initAwesomeMiniButton(m_cornerButton);
+        m_cornerButton->setText(QChar(fa::plussquare));
+        connect(m_cornerButton, &QPushButton::clicked, this, [=]() {
+            emit cornerButtonClicked(m_motionId);
+        });
+    }
+    m_cornerButton->setVisible(visible);
 }
 
 void MotionWidget::resizeEvent(QResizeEvent *event)
@@ -59,19 +81,8 @@ void MotionWidget::updatePreview()
         qDebug() << "Motion not found:" << m_motionId;
         return;
     }
-    std::vector<std::pair<float, QString>> keyframesForGraphicsView;
-    for (const auto &frame: motion->keyframes) {
-        QString poseName;
-        const SkeletonPose *pose = m_document->findPose(frame.second);
-        if (nullptr == pose) {
-            qDebug() << "Find pose failed:" << frame.second;
-        } else {
-            poseName = pose->name;
-        }
-        keyframesForGraphicsView.push_back({frame.first, poseName});
-    }
-    m_previewWidget->setControlNodes(motion->controlNodes);
-    m_previewWidget->setKeyframes(keyframesForGraphicsView);
+    MeshLoader *previewMesh = motion->takePreviewMesh();
+    m_previewWidget->updateMesh(previewMesh);
 }
 
 void MotionWidget::updateName()
@@ -92,7 +103,7 @@ void MotionWidget::updateCheckedState(bool checked)
         setStyleSheet("#MotionFrame {border: 1px solid transparent;}");
 }
 
-InterpolationGraphicsWidget *MotionWidget::previewWidget()
+ModelWidget *MotionWidget::previewWidget()
 {
     return m_previewWidget;
 }

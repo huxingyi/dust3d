@@ -10,6 +10,7 @@
 #include "dust3dutil.h"
 #include "skeletonxml.h"
 #include "materialpreviewsgenerator.h"
+#include "motionsgenerator.h"
 
 unsigned long SkeletonDocument::m_maxSnapshot = 1000;
 
@@ -56,7 +57,8 @@ SkeletonDocument::SkeletonDocument() :
     m_riggedResultContext(new MeshResultContext),
     m_posePreviewsGenerator(nullptr),
     m_currentRigSucceed(false),
-    m_materialPreviewsGenerator(nullptr)
+    m_materialPreviewsGenerator(nullptr),
+    m_motionsGenerator(nullptr)
 {
 }
 
@@ -324,24 +326,25 @@ void SkeletonDocument::addPose(QString name, std::map<QString, std::map<QString,
     
     poseIdList.push_back(newPoseId);
     
+    emit posesChanged();
     emit poseAdded(newPoseId);
     emit poseListChanged();
     emit optionsChanged();
 }
 
-void SkeletonDocument::addMotion(QString name, std::vector<HermiteControlNode> controlNodes, std::vector<std::pair<float, QUuid>> keyframes)
+void SkeletonDocument::addMotion(QString name, std::vector<SkeletonMotionClip> clips)
 {
     QUuid newMotionId = QUuid::createUuid();
     auto &motion = motionMap[newMotionId];
     motion.id = newMotionId;
     
     motion.name = name;
-    motion.controlNodes = controlNodes;
-    motion.keyframes = keyframes;
+    motion.clips = clips;
     motion.dirty = true;
     
     motionIdList.push_back(newMotionId);
     
+    emit motionsChanged();
     emit motionAdded(newMotionId);
     emit motionListChanged();
     emit optionsChanged();
@@ -356,35 +359,23 @@ void SkeletonDocument::removeMotion(QUuid motionId)
     }
     motionIdList.erase(std::remove(motionIdList.begin(), motionIdList.end(), motionId), motionIdList.end());
     motionMap.erase(findMotionResult);
-    
+    emit motionsChanged();
     emit motionListChanged();
     emit motionRemoved(motionId);
     emit optionsChanged();
 }
 
-void SkeletonDocument::setMotionControlNodes(QUuid motionId, std::vector<HermiteControlNode> controlNodes)
+void SkeletonDocument::setMotionClips(QUuid motionId, std::vector<SkeletonMotionClip> clips)
 {
     auto findMotionResult = motionMap.find(motionId);
     if (findMotionResult == motionMap.end()) {
         qDebug() << "Find motion failed:" << motionId;
         return;
     }
-    findMotionResult->second.controlNodes = controlNodes;
+    findMotionResult->second.clips = clips;
     findMotionResult->second.dirty = true;
-    emit motionControlNodesChanged(motionId);
-    emit optionsChanged();
-}
-
-void SkeletonDocument::setMotionKeyframes(QUuid motionId, std::vector<std::pair<float, QUuid>> keyframes)
-{
-    auto findMotionResult = motionMap.find(motionId);
-    if (findMotionResult == motionMap.end()) {
-        qDebug() << "Find motion failed:" << motionId;
-        return;
-    }
-    findMotionResult->second.keyframes = keyframes;
-    findMotionResult->second.dirty = true;
-    emit motionKeyframesChanged(motionId);
+    emit motionsChanged();
+    emit motionClipsChanged(motionId);
     emit optionsChanged();
 }
 
@@ -412,7 +403,7 @@ void SkeletonDocument::removePose(QUuid poseId)
     }
     poseIdList.erase(std::remove(poseIdList.begin(), poseIdList.end(), poseId), poseIdList.end());
     poseMap.erase(findPoseResult);
-    
+    emit posesChanged();
     emit poseListChanged();
     emit poseRemoved(poseId);
     emit optionsChanged();
@@ -427,6 +418,7 @@ void SkeletonDocument::setPoseParameters(QUuid poseId, std::map<QString, std::ma
     }
     findPoseResult->second.parameters = parameters;
     findPoseResult->second.dirty = true;
+    emit posesChanged();
     emit poseParametersChanged(poseId);
     emit optionsChanged();
 }
@@ -1038,26 +1030,15 @@ void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUu
             motion["id"] = motionIt.second.id.toString();
             if (!motionIt.second.name.isEmpty())
                 motion["name"] = motionIt.second.name;
-            std::vector<std::map<QString, QString>> controlNodesAttributes;
-            std::vector<std::map<QString, QString>> keyframesAttributes;
-            for (const auto &controlNode: motionIt.second.controlNodes) {
+            std::vector<std::map<QString, QString>> clips;
+            for (const auto &clip: motionIt.second.clips) {
                 std::map<QString, QString> attributes;
-                attributes["x"] = QString::number(controlNode.position.x());
-                attributes["y"] = QString::number(controlNode.position.y());
-                attributes["inTangentX"] = QString::number(controlNode.inTangent.x());
-                attributes["inTangentY"] = QString::number(controlNode.inTangent.y());
-                attributes["outTangentX"] = QString::number(controlNode.outTangent.x());
-                attributes["outTangentY"] = QString::number(controlNode.outTangent.y());
-                controlNodesAttributes.push_back(attributes);
+                attributes["duration"] = QString::number(clip.duration);
+                attributes["linkDataType"] = clip.linkDataType();
+                attributes["linkData"] = clip.linkData();
+                clips.push_back(attributes);
             }
-            for (const auto &keyframe: motionIt.second.keyframes) {
-                std::map<QString, QString> attributes;
-                attributes["knot"] = QString::number(keyframe.first);
-                attributes["linkDataType"] = "poseId";
-                attributes["linkData"] = keyframe.second.toString();
-                keyframesAttributes.push_back(attributes);
-            }
-            snapshot->motions.push_back(std::make_tuple(motion, controlNodesAttributes, keyframesAttributes));
+            snapshot->motions.push_back(std::make_pair(motion, clips));
         }
     }
     if (SkeletonDocumentToSnapshotFor::Document == forWhat) {
@@ -1286,35 +1267,21 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot, bool fr
         QUuid newMotionId = QUuid::createUuid();
         auto &newMotion = motionMap[newMotionId];
         newMotion.id = newMotionId;
-        const auto &motionAttributes = std::get<0>(motionIt);
+        const auto &motionAttributes = motionIt.first;
         newMotion.name = valueOfKeyInMapOrEmpty(motionAttributes, "name");
-        for (const auto &attributes: std::get<1>(motionIt)) {
-            float x = valueOfKeyInMapOrEmpty(attributes, "x").toFloat();
-            float y = valueOfKeyInMapOrEmpty(attributes, "y").toFloat();
-            float inTangentX = valueOfKeyInMapOrEmpty(attributes, "inTangentX").toFloat();
-            float inTangentY = valueOfKeyInMapOrEmpty(attributes, "inTangentY").toFloat();
-            float outTangentX = valueOfKeyInMapOrEmpty(attributes, "outTangentX").toFloat();
-            float outTangentY = valueOfKeyInMapOrEmpty(attributes, "outTangentY").toFloat();
-            HermiteControlNode hermite(QVector2D(x, y),
-                QVector2D(inTangentX, inTangentY), QVector2D(outTangentX, outTangentY));
-            newMotion.controlNodes.push_back(hermite);
-        }
-        for (const auto &attributes: std::get<2>(motionIt)) {
-            float knot = valueOfKeyInMapOrEmpty(attributes, "knot").toFloat();
-            QString linkDataType = valueOfKeyInMapOrEmpty(attributes, "linkDataType");
-            if ("poseId" != linkDataType) {
-                qDebug() << "Encounter unknown linkDataType:" << linkDataType;
-                continue;
+        for (const auto &attributes: motionIt.second) {
+            auto linkData = valueOfKeyInMapOrEmpty(attributes, "linkData");
+            QUuid testId = QUuid(linkData);
+            if (!testId.isNull()) {
+                auto findInOldNewIdMapResult = oldNewIdMap.find(testId);
+                if (findInOldNewIdMapResult != oldNewIdMap.end()) {
+                    linkData = findInOldNewIdMapResult->second.toString();
+                }
             }
-            QUuid linkToPoseId = QUuid(valueOfKeyInMapOrEmpty(attributes, "linkData"));
-            auto findPoseResult = poseMap.find(linkToPoseId);
-            if (findPoseResult != poseMap.end()) {
-                newMotion.keyframes.push_back({knot, findPoseResult->first});
-            } else {
-                auto findInOldNewIdMapResult = oldNewIdMap.find(linkToPoseId);
-                if (findInOldNewIdMapResult != oldNewIdMap.end())
-                    newMotion.keyframes.push_back({knot, findInOldNewIdMapResult->second});
-            }
+            SkeletonMotionClip clip(linkData,
+                valueOfKeyInMapOrEmpty(attributes, "linkDataType"));
+            clip.duration = valueOfKeyInMapOrEmpty(attributes, "duration").toFloat();
+            newMotion.clips.push_back(clip);
         }
         oldNewIdMap[QUuid(valueOfKeyInMapOrEmpty(motionAttributes, "id"))] = newMotionId;
         motionIdList.push_back(newMotionId);
@@ -2472,7 +2439,8 @@ bool SkeletonDocument::isExportReady() const
             m_meshGenerator ||
             m_textureGenerator ||
             m_postProcessor ||
-            m_rigGenerator)
+            m_rigGenerator ||
+            m_motionsGenerator)
         return false;
     return true;
 }
@@ -2783,6 +2751,71 @@ bool SkeletonDocument::currentRigSucceed() const
     return m_currentRigSucceed;
 }
 
+void SkeletonDocument::generateMotions()
+{
+    if (nullptr != m_motionsGenerator) {
+        return;
+    }
+    
+    const std::vector<AutoRiggerBone> *rigBones = resultRigBones();
+    const std::map<int, AutoRiggerVertexWeights> *rigWeights = resultRigWeights();
+    
+    if (nullptr == rigBones || nullptr == rigWeights) {
+        return;
+    }
+    
+    m_motionsGenerator = new MotionsGenerator(rigBones, rigWeights, currentRiggedResultContext());
+    bool hasDirtyMotion = false;
+    for (const auto &pose: poseMap) {
+        m_motionsGenerator->addPoseToLibrary(pose.first, pose.second.parameters);
+    }
+    for (auto &motion: motionMap) {
+        if (motion.second.dirty) {
+            hasDirtyMotion = true;
+            motion.second.dirty = false;
+            m_motionsGenerator->addRequirement(motion.first);
+        }
+        m_motionsGenerator->addMotionToLibrary(motion.first, motion.second.clips);
+    }
+    if (!hasDirtyMotion) {
+        delete m_motionsGenerator;
+        m_motionsGenerator = nullptr;
+        checkExportReadyState();
+        return;
+    }
+    
+    qDebug() << "Motions generating..";
+    
+    QThread *thread = new QThread;
+    m_motionsGenerator->moveToThread(thread);
+    connect(thread, &QThread::started, m_motionsGenerator, &MotionsGenerator::process);
+    connect(m_motionsGenerator, &MotionsGenerator::finished, this, &SkeletonDocument::motionsReady);
+    connect(m_motionsGenerator, &MotionsGenerator::finished, thread, &QThread::quit);
+    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+    thread->start();
+}
+
+void SkeletonDocument::motionsReady()
+{
+    for (auto &motionId: m_motionsGenerator->generatedMotionIds()) {
+        auto motion = motionMap.find(motionId);
+        if (motion != motionMap.end()) {
+            auto resultPreviewMeshs = m_motionsGenerator->takeResultPreviewMeshs(motionId);
+            motion->second.updatePreviewMeshs(resultPreviewMeshs);
+            motion->second.jointNodeTrees = m_motionsGenerator->takeResultJointNodeTrees(motionId);
+            emit motionPreviewChanged(motionId);
+            emit motionResultChanged(motionId);
+        }
+    }
+    
+    delete m_motionsGenerator;
+    m_motionsGenerator = nullptr;
+    
+    qDebug() << "Motions generation done";
+    
+    generateMotions();
+}
+
 void SkeletonDocument::generatePosePreviews()
 {
     if (nullptr != m_posePreviewsGenerator) {
@@ -2796,7 +2829,6 @@ void SkeletonDocument::generatePosePreviews()
         return;
     }
 
-    QThread *thread = new QThread;
     m_posePreviewsGenerator = new PosePreviewsGenerator(rigBones,
         rigWeights, *m_riggedResultContext);
     bool hasDirtyPose = false;
@@ -2810,12 +2842,12 @@ void SkeletonDocument::generatePosePreviews()
     if (!hasDirtyPose) {
         delete m_posePreviewsGenerator;
         m_posePreviewsGenerator = nullptr;
-        delete thread;
         return;
     }
     
     qDebug() << "Pose previews generating..";
     
+    QThread *thread = new QThread;
     m_posePreviewsGenerator->moveToThread(thread);
     connect(thread, &QThread::started, m_posePreviewsGenerator, &PosePreviewsGenerator::process);
     connect(m_posePreviewsGenerator, &PosePreviewsGenerator::finished, this, &SkeletonDocument::posePreviewsReady);

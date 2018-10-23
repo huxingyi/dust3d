@@ -12,6 +12,7 @@ class MotionListWidget : public QTreeWidget, public SkeletonGraphicsFunctions
 signals:
     void removeMotion(QUuid motionId);
     void modifyMotion(QUuid motionId);
+    void cornerButtonClicked(QUuid motionId);
 public:
     MotionListWidget(const SkeletonDocument *document, QWidget *parent=nullptr);
     bool isMotionSelected(QUuid motionId);
@@ -22,6 +23,8 @@ public slots:
     void showContextMenu(const QPoint &pos);
     void selectMotion(QUuid motionId, bool multiple=false);
     void copy();
+    void setCornerButtonVisible(bool visible);
+    void setHasContextMenu(bool hasContextMenu);
 protected:
     void resizeEvent(QResizeEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
@@ -39,6 +42,8 @@ private:
     std::set<QUuid> m_selectedMotionIds;
     QUuid m_currentSelectedMotionId;
     QUuid m_shiftStartMotionId;
+    bool m_cornerButtonVisible = false;
+    bool m_hasContextMenu = true;
 };
 
 #endif

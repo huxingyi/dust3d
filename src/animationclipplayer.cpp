@@ -5,6 +5,11 @@ AnimationClipPlayer::~AnimationClipPlayer()
     clear();
 }
 
+void AnimationClipPlayer::setSpeedMode(SpeedMode speedMode)
+{
+    m_speedMode = speedMode;
+}
+
 void AnimationClipPlayer::updateFrameMeshes(std::vector<std::pair<float, MeshLoader *>> &frameMeshes)
 {
     clear();
@@ -34,6 +39,17 @@ void AnimationClipPlayer::freeFrames()
     m_frameMeshes.clear();
 }
 
+int AnimationClipPlayer::getFrameDurationMillis(int frame)
+{
+    int millis = m_frameMeshes[frame].first * 1000;
+    if (SpeedMode::Slow == m_speedMode) {
+        millis *= 2;
+    } else if (SpeedMode::Fast == m_speedMode) {
+        millis /= 2;
+    }
+    return millis;
+}
+
 MeshLoader *AnimationClipPlayer::takeFrameMesh()
 {
     if (m_currentPlayIndex >= (int)m_frameMeshes.size()) {
@@ -41,7 +57,7 @@ MeshLoader *AnimationClipPlayer::takeFrameMesh()
             return new MeshLoader(*m_lastFrameMesh);
         return nullptr;
     }
-    int millis = m_frameMeshes[m_currentPlayIndex].first * 1000 - m_countForFrame.elapsed();
+    int millis = getFrameDurationMillis(m_currentPlayIndex) - m_countForFrame.elapsed();
     if (millis > 0) {
         m_timerForFrame.singleShot(millis, this, &AnimationClipPlayer::frameReadyToShow);
         if (nullptr != m_lastFrameMesh)
@@ -52,7 +68,7 @@ MeshLoader *AnimationClipPlayer::takeFrameMesh()
     m_countForFrame.restart();
 
     MeshLoader *mesh = new MeshLoader(*m_frameMeshes[m_currentPlayIndex].second);
-    m_timerForFrame.singleShot(m_frameMeshes[m_currentPlayIndex].first * 1000, this, &AnimationClipPlayer::frameReadyToShow);
+    m_timerForFrame.singleShot(getFrameDurationMillis(m_currentPlayIndex), this, &AnimationClipPlayer::frameReadyToShow);
     delete m_lastFrameMesh;
     m_lastFrameMesh = new MeshLoader(*mesh);
     return mesh;

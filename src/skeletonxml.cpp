@@ -152,33 +152,19 @@ void saveSkeletonToXmlStream(SkeletonSnapshot *snapshot, QXmlStreamWriter *write
         writer->writeEndElement();
     
         writer->writeStartElement("motions");
-        std::vector<std::tuple<std::map<QString, QString>, std::vector<std::map<QString, QString>>, std::vector<std::map<QString, QString>>>>::iterator motionIterator;
+        std::vector<std::pair<std::map<QString, QString>, std::vector<std::map<QString, QString>>>>::iterator motionIterator;
         for (motionIterator = snapshot->motions.begin(); motionIterator != snapshot->motions.end(); motionIterator++) {
             std::map<QString, QString>::iterator motionAttributeIterator;
             writer->writeStartElement("motion");
                 for (motionAttributeIterator = std::get<0>(*motionIterator).begin(); motionAttributeIterator != std::get<0>(*motionIterator).end(); motionAttributeIterator++) {
                     writer->writeAttribute(motionAttributeIterator->first, motionAttributeIterator->second);
                 }
-                writer->writeStartElement("controlNodes");
+                writer->writeStartElement("clips");
                 {
                     std::vector<std::map<QString, QString>>::iterator itemsIterator;
                     for (itemsIterator = std::get<1>(*motionIterator).begin(); itemsIterator != std::get<1>(*motionIterator).end(); itemsIterator++) {
                         std::map<QString, QString>::iterator attributesIterator;
-                        writer->writeStartElement("controlNode");
-                        for (attributesIterator = itemsIterator->begin(); attributesIterator != itemsIterator->end();
-                                attributesIterator++) {
-                            writer->writeAttribute(attributesIterator->first, attributesIterator->second);
-                        }
-                        writer->writeEndElement();
-                    }
-                }
-                writer->writeEndElement();
-                writer->writeStartElement("keyframes");
-                {
-                    std::vector<std::map<QString, QString>>::iterator itemsIterator;
-                    for (itemsIterator = std::get<2>(*motionIterator).begin(); itemsIterator != std::get<2>(*motionIterator).end(); itemsIterator++) {
-                        std::map<QString, QString>::iterator attributesIterator;
-                        writer->writeStartElement("keyframe");
+                        writer->writeStartElement("clip");
                         for (attributesIterator = itemsIterator->begin(); attributesIterator != itemsIterator->end();
                                 attributesIterator++) {
                             writer->writeAttribute(attributesIterator->first, attributesIterator->second);
@@ -203,7 +189,7 @@ void loadSkeletonFromXmlStream(SkeletonSnapshot *snapshot, QXmlStreamReader &rea
     std::pair<std::map<QString, QString>, std::vector<std::map<QString, QString>>> currentMaterialLayer;
     std::pair<std::map<QString, QString>, std::vector<std::pair<std::map<QString, QString>, std::vector<std::map<QString, QString>>>>> currentMaterial;
     std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>> currentPose;
-    std::tuple<std::map<QString, QString>, std::vector<std::map<QString, QString>>, std::vector<std::map<QString, QString>>> currentMotion;
+    std::pair<std::map<QString, QString>, std::vector<std::map<QString, QString>>> currentMotion;
     while (!reader.atEnd()) {
         reader.readNext();
         if (!reader.isStartElement() && !reader.isEndElement()) {
@@ -323,20 +309,14 @@ void loadSkeletonFromXmlStream(SkeletonSnapshot *snapshot, QXmlStreamReader &rea
                    continue;
                currentMotion = decltype(currentMotion)();
                foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
-                   std::get<0>(currentMotion)[attr.name().toString()] = attr.value().toString();
+                   currentMotion.first[attr.name().toString()] = attr.value().toString();
                }
-           } else if (fullName == "canvas.motions.motion.controlNodes.controlNode") {
+           } else if (fullName == "canvas.motions.motion.clips.clip") {
                 std::map<QString, QString> attributes;
                 foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
                     attributes[attr.name().toString()] = attr.value().toString();
                 }
-                std::get<1>(currentMotion).push_back(attributes);
-            } else if (fullName == "canvas.motions.motion.keyframes.keyframe") {
-                std::map<QString, QString> attributes;
-                foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
-                    attributes[attr.name().toString()] = attr.value().toString();
-                }
-                std::get<2>(currentMotion).push_back(attributes);
+                currentMotion.second.push_back(attributes);
             }
         } else if (reader.isEndElement()) {
             if (fullName.startsWith("canvas.components.component")) {

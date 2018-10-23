@@ -836,6 +836,9 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(m_document, &SkeletonDocument::resultMeshChanged, [=]() {
         m_modelRenderWidget->updateMesh(m_document->takeResultMesh());
     });
+    
+    connect(m_document, &SkeletonDocument::posesChanged, m_document, &SkeletonDocument::generateMotions);
+    connect(m_document, &SkeletonDocument::motionsChanged, m_document, &SkeletonDocument::generateMotions);
 
     connect(graphicsWidget, &SkeletonGraphicsWidget::cursorChanged, [=]() {
         m_modelRenderWidget->setCursor(graphicsWidget->cursor());
@@ -873,6 +876,8 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
         m_document->generatePosePreviews();
     });
     connect(m_document, &SkeletonDocument::resultRigChanged, m_document, &SkeletonDocument::generatePosePreviews);
+    
+    connect(m_document, &SkeletonDocument::resultRigChanged, m_document, &SkeletonDocument::generateMotions);
     
     connect(m_document, &SkeletonDocument::materialAdded, this, [=](QUuid materialId) {
         Q_UNUSED(materialId);

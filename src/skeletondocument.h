@@ -21,10 +21,12 @@
 #include "riggenerator.h"
 #include "rigtype.h"
 #include "posepreviewsgenerator.h"
-#include "curveutil.h"
 #include "texturetype.h"
+#include "interpolationtype.h"
+#include "jointnodetree.h"
 
 class MaterialPreviewsGenerator;
+class MotionsGenerator;
 
 class SkeletonNode
 {
@@ -387,19 +389,95 @@ private:
     MeshLoader *m_previewMesh = nullptr;
 };
 
+enum class SkeletonMotionClipType
+{
+    Pose,
+    Interpolation,
+    Motion
+};
+
+class SkeletonMotionClip
+{
+public:
+    SkeletonMotionClip()
+    {
+    }
+    SkeletonMotionClip(const QString &linkData, const QString &linkDataType)
+    {
+        if ("poseId" == linkDataType) {
+            clipType = SkeletonMotionClipType::Pose;
+            linkToId = QUuid(linkData);
+        } else if ("InterpolationType" == linkDataType) {
+            clipType = SkeletonMotionClipType::Interpolation;
+            interpolationType = InterpolationTypeFromString(linkData.toUtf8().constData());
+        } else if ("motionId" == linkDataType) {
+            clipType = SkeletonMotionClipType::Motion;
+            linkToId = QUuid(linkData);
+        }
+    }
+    QString linkDataType() const
+    {
+        if (SkeletonMotionClipType::Pose == clipType)
+            return "poseId";
+        if (SkeletonMotionClipType::Interpolation == clipType)
+            return "InterpolationType";
+        if (SkeletonMotionClipType::Motion == clipType)
+            return "motionId";
+        return "poseId";
+    }
+    QString linkData() const
+    {
+        if (SkeletonMotionClipType::Pose == clipType)
+            return linkToId.toString();
+        if (SkeletonMotionClipType::Interpolation == clipType)
+            return InterpolationTypeToString(interpolationType);
+        if (SkeletonMotionClipType::Motion == clipType)
+            return linkToId.toString();
+        return linkToId.toString();
+    }
+    float duration = 0.0;
+    SkeletonMotionClipType clipType = SkeletonMotionClipType::Pose;
+    QUuid linkToId;
+    InterpolationType interpolationType;
+};
+
 class SkeletonMotion
 {
 public:
     SkeletonMotion()
     {
     }
+    ~SkeletonMotion()
+    {
+        releasePreviewMeshs();
+    }
     QUuid id;
     QString name;
     bool dirty = true;
-    std::vector<HermiteControlNode> controlNodes;
-    std::vector<std::pair<float, QUuid>> keyframes; //std::pair<timeslot:0~1, poseId>
+    std::vector<SkeletonMotionClip> clips;
+    std::vector<std::pair<float, JointNodeTree>> jointNodeTrees;
+    void updatePreviewMeshs(std::vector<std::pair<float, MeshLoader *>> &previewMeshs)
+    {
+        releasePreviewMeshs();
+        m_previewMeshs = previewMeshs;
+        previewMeshs.clear();
+    }
+    MeshLoader *takePreviewMesh() const
+    {
+        if (m_previewMeshs.empty())
+            return nullptr;
+        return new MeshLoader(*m_previewMeshs[0].second);
+    }
 private:
     Q_DISABLE_COPY(SkeletonMotion);
+    void releasePreviewMeshs()
+    {
+        for (const auto &item: m_previewMeshs) {
+            delete item.second;
+        }
+        m_previewMeshs.clear();
+    }
+    std::vector<std::pair<float, MeshLoader *>> m_previewMeshs;
 };
 
 class SkeletonMaterialMap
@@ -516,6 +594,8 @@ signals:
     void checkEdge(QUuid edgeId);
     void optionsChanged();
     void rigTypeChanged();
+    void posesChanged();
+    void motionsChanged();
     void poseAdded(QUuid poseId);
     void poseRemoved(QUuid);
     void poseListChanged();
@@ -526,8 +606,9 @@ signals:
     void motionRemoved(QUuid motionId);
     void motionListChanged();
     void motionNameChanged(QUuid motionId);
-    void motionControlNodesChanged(QUuid motionId);
-    void motionKeyframesChanged(QUuid motionId);
+    void motionClipsChanged(QUuid motionId);
+    void motionPreviewChanged(QUuid motionId);
+    void motionResultChanged(QUuid motionId);
     void materialAdded(QUuid materialId);
     void materialRemoved(QUuid materialId);
     void materialListChanged();
@@ -644,6 +725,8 @@ public slots:
     void posePreviewsReady();
     void generateMaterialPreviews();
     void materialPreviewsReady();
+    void generateMotions();
+    void motionsReady();
     void setPartLockState(QUuid partId, bool locked);
     void setPartVisibleState(QUuid partId, bool visible);
     void setPartSubdivState(QUuid partId, bool subdived);
@@ -704,10 +787,9 @@ public slots:
     void removePose(QUuid poseId);
     void setPoseParameters(QUuid poseId, std::map<QString, std::map<QString, QString>> parameters);
     void renamePose(QUuid poseId, QString name);
-    void addMotion(QString name, std::vector<HermiteControlNode> controlNodes, std::vector<std::pair<float, QUuid>> keyframes);
+    void addMotion(QString name, std::vector<SkeletonMotionClip> clips);
     void removeMotion(QUuid motionId);
-    void setMotionControlNodes(QUuid motionId, std::vector<HermiteControlNode> controlNodes);
-    void setMotionKeyframes(QUuid motionId, std::vector<std::pair<float, QUuid>> keyframes);
+    void setMotionClips(QUuid motionId, std::vector<SkeletonMotionClip> clips);
     void renameMotion(QUuid motionId, QString name);
     void addMaterial(QString name, std::vector<SkeletonMaterialLayer>);
     void removeMaterial(QUuid materialId);
@@ -756,6 +838,7 @@ private: // need initialize
     PosePreviewsGenerator *m_posePreviewsGenerator;
     bool m_currentRigSucceed;
     MaterialPreviewsGenerator *m_materialPreviewsGenerator;
+    MotionsGenerator *m_motionsGenerator;
 private:
     static unsigned long m_maxSnapshot;
     std::deque<SkeletonHistoryItem> m_undoItems;

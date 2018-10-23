@@ -38,6 +38,7 @@ int Theme::materialPreviewImageSize = 75;
 int Theme::posePreviewImageSize = 75;
 int Theme::motionPreviewImageSize = 75;
 int Theme::sidebarPreferredWidth = 200;
+int Theme::normalButtonSize = Theme::toolIconSize * 2;
 
 QtAwesome *Theme::awesome()
 {
@@ -70,8 +71,8 @@ std::map<QString, QColor> createSideColorNameToColorMap() {
 std::map<QString, QString> Theme::nextSideColorNameMap = createSideColorNameMap();
 std::map<QString, QColor> Theme::sideColorNameToColorMap = createSideColorNameToColorMap();
 
-QString Theme::tabButtonSelectedStylesheet = "QPushButton { color: #efefef; background-color: #fc6621; border: 0px; padding-top: 2px; padding-bottom: 2px; padding-left: 25px; padding-right: 25px;}";
-QString Theme::tabButtonStylesheet = "QPushButton { color: #efefef; background-color: #353535; border: 0px; padding-top: 2px; padding-bottom: 2px; padding-left: 25px; padding-right: 25px;}";
+QString Theme::tabButtonSelectedStylesheet = "QPushButton { color: " + Theme::red.name() + "; background-color: #353535; border: 0px; padding-top: 2px; padding-bottom: 2px; padding-left: 25px; padding-right: 25px;}";
+QString Theme::tabButtonStylesheet = "QPushButton { color: " + Theme::white.name() + "; background-color: transparent; border: 0px; padding-top: 2px; padding-bottom: 2px; padding-left: 25px; padding-right: 25px;}";
 
 void Theme::initAwesomeButton(QPushButton *button)
 {

@@ -103,6 +103,7 @@ PoseEditWidget::PoseEditWidget(const SkeletonDocument *document, QWidget *parent
     paramtersLayout->addSpacing(20);
     
     m_nameEdit = new QLineEdit;
+    m_nameEdit->setFixedWidth(200);
     connect(m_nameEdit, &QLineEdit::textChanged, this, [=]() {
         m_unsaved = true;
         updateTitle();

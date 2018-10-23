@@ -55,6 +55,9 @@ void MotionListWidget::updateMotionSelectState(QUuid motionId, bool selected)
     }
     MotionWidget *motionWidget = (MotionWidget *)itemWidget(findItemResult->second.first, findItemResult->second.second);
     motionWidget->updateCheckedState(selected);
+    if (m_cornerButtonVisible) {
+        motionWidget->setCornerButtonVisible(selected);
+    }
 }
 
 void MotionListWidget::selectMotion(QUuid motionId, bool multiple)
@@ -156,6 +159,9 @@ bool MotionListWidget::isMotionSelected(QUuid motionId)
 
 void MotionListWidget::showContextMenu(const QPoint &pos)
 {
+    if (!m_hasContextMenu)
+        return;
+    
     QMenu contextMenu(this);
     
     std::set<QUuid> unorderedMotionIds = m_selectedMotionIds;
@@ -244,6 +250,8 @@ void MotionListWidget::reload()
             item->setData(col, Qt::UserRole, motionId.toString());
             MotionWidget *widget = new MotionWidget(m_document, motionId);
             connect(widget, &MotionWidget::modifyMotion, this, &MotionListWidget::modifyMotion);
+            connect(widget, &MotionWidget::cornerButtonClicked, this, &MotionListWidget::cornerButtonClicked);
+            widget->previewWidget()->setGraphicsFunctions(this);
             setItemWidget(item, col, widget);
             widget->reload();
             widget->updateCheckedState(isMotionSelected(motionId));
@@ -251,6 +259,16 @@ void MotionListWidget::reload()
         }
         invisibleRootItem()->addChild(item);
     }
+}
+
+void MotionListWidget::setCornerButtonVisible(bool visible)
+{
+    m_cornerButtonVisible = visible;
+}
+
+void MotionListWidget::setHasContextMenu(bool hasContextMenu)
+{
+    m_hasContextMenu = hasContextMenu;
 }
 
 void MotionListWidget::removeAllContent()

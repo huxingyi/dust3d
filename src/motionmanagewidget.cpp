@@ -65,8 +65,7 @@ void MotionManageWidget::showMotionDialog(QUuid motionId)
         if (nullptr != motion) {
             motionEditWidget->setEditMotionId(motionId);
             motionEditWidget->setEditMotionName(motion->name);
-            motionEditWidget->setEditMotionControlNodes(motion->controlNodes);
-            motionEditWidget->setEditMotionKeyframes(motion->keyframes);
+            motionEditWidget->setEditMotionClips(motion->clips);
             motionEditWidget->clearUnsaveState();
             motionEditWidget->generatePreviews();
         }

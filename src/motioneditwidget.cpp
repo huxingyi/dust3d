@@ -1,12 +1,16 @@
 #include <QHBoxLayout>
 #include <QVBoxLayout>
 #include <QGridLayout>
+#include <QSlider>
 #include <QMessageBox>
 #include <QDebug>
+#include <QStackedWidget>
 #include "motioneditwidget.h"
 #include "dust3dutil.h"
 #include "poselistwidget.h"
+#include "motionlistwidget.h"
 #include "version.h"
+#include "tabwidget.h"
 
 MotionEditWidget::MotionEditWidget(const SkeletonDocument *document, QWidget *parent) :
     QDialog(parent),
@@ -14,22 +18,10 @@ MotionEditWidget::MotionEditWidget(const SkeletonDocument *document, QWidget *pa
 {
     m_clipPlayer = new AnimationClipPlayer;
 
-    m_graphicsWidget = new InterpolationGraphicsWidget(this);
-    m_graphicsWidget->setMinimumSize(256, 128);
+    m_timelineWidget = new MotionTimelineWidget(document, this);
     
-    connect(m_graphicsWidget, &InterpolationGraphicsWidget::controlNodesChanged, this, &MotionEditWidget::setUnsavedState);
-    connect(m_graphicsWidget, &InterpolationGraphicsWidget::controlNodesChanged, this, &MotionEditWidget::generatePreviews);
-    connect(m_graphicsWidget, &InterpolationGraphicsWidget::removeKeyframe, this, [=](int index) {
-        m_keyframes.erase(m_keyframes.begin() + index);
-        syncKeyframesToGraphicsView();
-        setUnsavedState();
-        generatePreviews();
-    });
-    connect(m_graphicsWidget, &InterpolationGraphicsWidget::keyframeKnotChanged, this, [=](int index, float knot) {
-        m_keyframes[index].first = knot;
-        setUnsavedState();
-        generatePreviews();
-    });
+    connect(m_timelineWidget, &MotionTimelineWidget::clipsChanged, this, &MotionEditWidget::setUnsavedState);
+    connect(m_timelineWidget, &MotionTimelineWidget::clipsChanged, this, &MotionEditWidget::generatePreviews);
     
     m_previewWidget = new ModelWidget(this);
     m_previewWidget->setMinimumSize(128, 128);
@@ -51,34 +43,75 @@ MotionEditWidget::MotionEditWidget(const SkeletonDocument *document, QWidget *pa
     poseListContainerWidget->resize(512, Theme::posePreviewImageSize);
     
     connect(poseListWidget, &PoseListWidget::cornerButtonClicked, this, [=](QUuid poseId) {
-        addKeyframe(m_graphicsWidget->cursorKnot(), poseId);
+        m_timelineWidget->addPose(poseId);
     });
     
-    //QLabel *interpolationTypeItemName = new QLabel(tr("Interpolation:"));
-    //QLabel *interpolationTypeValue = new QLabel(tr("Spring"));
+    MotionListWidget *motionListWidget = new MotionListWidget(document);
+    motionListWidget->setCornerButtonVisible(true);
+    motionListWidget->setHasContextMenu(false);
+    QWidget *motionListContainerWidget = new QWidget;
+    QGridLayout *motionListLayoutForContainer = new QGridLayout;
+    motionListLayoutForContainer->addWidget(motionListWidget);
+    motionListContainerWidget->setLayout(motionListLayoutForContainer);
     
-    //QPushButton *interpolationTypeButton = new QPushButton();
-    //interpolationTypeButton->setText(tr("Browse..."));
+    motionListContainerWidget->resize(512, Theme::motionPreviewImageSize);
     
-    //QHBoxLayout *interpolationButtonsLayout = new QHBoxLayout;
-    //interpolationButtonsLayout->addStretch();
-    //interpolationButtonsLayout->addWidget(interpolationTypeItemName);
-    //interpolationButtonsLayout->addWidget(interpolationTypeValue);
-    //interpolationButtonsLayout->addWidget(interpolationTypeButton);
-    //interpolationButtonsLayout->addStretch();
+    QStackedWidget *stackedWidget = new QStackedWidget;
+    stackedWidget->addWidget(poseListContainerWidget);
+    stackedWidget->addWidget(motionListContainerWidget);
+    
+    connect(motionListWidget, &MotionListWidget::cornerButtonClicked, this, [=](QUuid motionId) {
+        m_timelineWidget->addMotion(motionId);
+    });
+    
+    std::vector<QString> tabs = {
+        QString("Poses"),
+        QString("Motions")
+    };
+    TabWidget *tabWidget = new TabWidget(tabs);
+    tabWidget->setCurrentIndex(0);
+    
+    connect(tabWidget, &TabWidget::currentIndexChanged, stackedWidget, &QStackedWidget::setCurrentIndex);
     
     QVBoxLayout *motionEditLayout = new QVBoxLayout;
-    motionEditLayout->addWidget(poseListContainerWidget);
+    motionEditLayout->addWidget(tabWidget);
+    motionEditLayout->addWidget(stackedWidget);
+    motionEditLayout->addStretch();
     motionEditLayout->addWidget(Theme::createHorizontalLineWidget());
-    motionEditLayout->addWidget(m_graphicsWidget);
-    //motionEditLayout->addLayout(interpolationButtonsLayout);
+    motionEditLayout->addWidget(m_timelineWidget);
+    
+    QSlider *speedModeSlider = new QSlider(Qt::Horizontal);
+    speedModeSlider->setFixedWidth(100);
+    speedModeSlider->setMaximum(2);
+    speedModeSlider->setMinimum(0);
+    speedModeSlider->setValue(1);
+    
+    connect(speedModeSlider, &QSlider::valueChanged, this, [=](int value) {
+        m_clipPlayer->setSpeedMode((AnimationClipPlayer::SpeedMode)value);
+    });
+    
+    QHBoxLayout *sliderLayout = new QHBoxLayout;
+    sliderLayout->addStretch();
+    sliderLayout->addSpacing(50);
+    sliderLayout->addWidget(new QLabel(tr("Slow")));
+    sliderLayout->addWidget(speedModeSlider);
+    sliderLayout->addWidget(new QLabel(tr("Fast")));
+    sliderLayout->addSpacing(50);
+    sliderLayout->addStretch();
+    
+    QVBoxLayout *previewLayout = new QVBoxLayout;
+    previewLayout->addStretch();
+    previewLayout->addLayout(sliderLayout);
+    previewLayout->addSpacing(20);
     
     QHBoxLayout *topLayout = new QHBoxLayout;
-    topLayout->setContentsMargins(256, 0, 0, 0);
+    topLayout->addLayout(previewLayout);
     topLayout->addWidget(Theme::createVerticalLineWidget());
     topLayout->addLayout(motionEditLayout);
+    topLayout->setStretch(2, 1);
     
     m_nameEdit = new QLineEdit;
+    m_nameEdit->setFixedWidth(200);
     connect(m_nameEdit, &QLineEdit::textChanged, this, &MotionEditWidget::setUnsavedState);
     QPushButton *saveButton = new QPushButton(tr("Save"));
     connect(saveButton, &QPushButton::clicked, this, &MotionEditWidget::save);
@@ -99,8 +132,7 @@ MotionEditWidget::MotionEditWidget(const SkeletonDocument *document, QWidget *pa
     
     connect(this, &MotionEditWidget::addMotion, m_document, &SkeletonDocument::addMotion);
     connect(this, &MotionEditWidget::renameMotion, m_document, &SkeletonDocument::renameMotion);
-    connect(this, &MotionEditWidget::setMotionControlNodes, m_document, &SkeletonDocument::setMotionControlNodes);
-    connect(this, &MotionEditWidget::setMotionKeyframes, m_document, &SkeletonDocument::setMotionKeyframes);
+    connect(this, &MotionEditWidget::setMotionClips, m_document, &SkeletonDocument::setMotionClips);
     
     updateTitle();
 }
@@ -143,14 +175,11 @@ void MotionEditWidget::closeEvent(QCloseEvent *event)
 
 void MotionEditWidget::save()
 {
-    std::vector<HermiteControlNode> controlNodes;
-    m_graphicsWidget->toNormalizedControlNodes(controlNodes);
     if (m_motionId.isNull()) {
-        emit addMotion(m_nameEdit->text(), controlNodes, m_keyframes);
+        emit addMotion(m_nameEdit->text(), m_timelineWidget->clips());
     } else if (m_unsaved) {
         emit renameMotion(m_motionId, m_nameEdit->text());
-        emit setMotionControlNodes(m_motionId, controlNodes);
-        emit setMotionKeyframes(m_motionId, m_keyframes);
+        emit setMotionClips(m_motionId, m_timelineWidget->clips());
     }
     m_unsaved = false;
     close();
@@ -197,52 +226,9 @@ void MotionEditWidget::updateTitle()
     setWindowTitle(unifiedWindowTitle(motion->name + (m_unsaved ? "*" : "")));
 }
 
-void MotionEditWidget::setEditMotionControlNodes(std::vector<HermiteControlNode> controlNodes)
+void MotionEditWidget::setEditMotionClips(std::vector<SkeletonMotionClip> clips)
 {
-    m_graphicsWidget->setControlNodes(controlNodes);
-}
-
-void MotionEditWidget::syncKeyframesToGraphicsView()
-{
-    std::vector<std::pair<float, QString>> keyframesForGraphicsView;
-    for (const auto &frame: m_keyframes) {
-        QString poseName;
-        const SkeletonPose *pose = m_document->findPose(frame.second);
-        if (nullptr == pose) {
-            qDebug() << "Find pose failed:" << frame.second;
-        } else {
-            poseName = pose->name;
-        }
-        keyframesForGraphicsView.push_back({frame.first, poseName});
-    }
-    m_graphicsWidget->setKeyframes(keyframesForGraphicsView);
-}
-
-void MotionEditWidget::setEditMotionKeyframes(std::vector<std::pair<float, QUuid>> keyframes)
-{
-    m_keyframes = keyframes;
-    syncKeyframesToGraphicsView();
-}
-
-void MotionEditWidget::addKeyframe(float knot, QUuid poseId)
-{
-    m_keyframes.push_back({knot, poseId});
-    std::sort(m_keyframes.begin(), m_keyframes.end(),
-            [](const std::pair<float, QUuid> &first, const std::pair<float, QUuid> &second) {
-        return first.first < second.first;
-    });
-    syncKeyframesToGraphicsView();
-    setUnsavedState();
-    generatePreviews();
-}
-
-void MotionEditWidget::updateKeyframeKnot(int index, float knot)
-{
-    if (index < 0 || index >= (int)m_keyframes.size())
-        return;
-    m_keyframes[index].first = knot;
-    setUnsavedState();
-    generatePreviews();
+    m_timelineWidget->setClips(clips);
 }
 
 void MotionEditWidget::generatePreviews()
@@ -261,21 +247,19 @@ void MotionEditWidget::generatePreviews()
         return;
     }
     
-    m_previewsGenerator = new MotionPreviewsGenerator(rigBones, rigWeights,
+    m_previewsGenerator = new MotionsGenerator(rigBones, rigWeights,
         m_document->currentRiggedResultContext());
     for (const auto &pose: m_document->poseMap)
         m_previewsGenerator->addPoseToLibrary(pose.first, pose.second.parameters);
-    //for (const auto &motion: m_document->motionMap)
-    //    m_previewsGenerator->addMotionToLibrary(motion.first, motion.second.controlNodes, motion.second.keyframes);
-    std::vector<HermiteControlNode> controlNodes;
-    m_graphicsWidget->toNormalizedControlNodes(controlNodes);
-    m_previewsGenerator->addMotionToLibrary(QUuid(), controlNodes, m_keyframes);
-    m_previewsGenerator->addPreviewRequirement(QUuid());
+    for (const auto &motion: m_document->motionMap)
+        m_previewsGenerator->addMotionToLibrary(motion.first, motion.second.clips);
+    m_previewsGenerator->addMotionToLibrary(QUuid(), m_timelineWidget->clips());
+    m_previewsGenerator->addRequirement(QUuid());
     QThread *thread = new QThread;
     m_previewsGenerator->moveToThread(thread);
-    connect(thread, &QThread::started, m_previewsGenerator, &MotionPreviewsGenerator::process);
-    connect(m_previewsGenerator, &MotionPreviewsGenerator::finished, this, &MotionEditWidget::previewsReady);
-    connect(m_previewsGenerator, &MotionPreviewsGenerator::finished, thread, &QThread::quit);
+    connect(thread, &QThread::started, m_previewsGenerator, &MotionsGenerator::process);
+    connect(m_previewsGenerator, &MotionsGenerator::finished, this, &MotionEditWidget::previewsReady);
+    connect(m_previewsGenerator, &MotionsGenerator::finished, thread, &QThread::quit);
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
     thread->start();
 }
