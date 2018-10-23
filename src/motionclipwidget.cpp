@@ -47,7 +47,8 @@ void MotionClipWidget::setClip(SkeletonMotionClip clip)
 
 void MotionClipWidget::reload()
 {
-    m_reloadToWidget->deleteLater();
+    if (nullptr != m_reloadToWidget)
+        m_reloadToWidget->deleteLater();
     m_reloadToWidget = new QWidget(this);
     m_reloadToWidget->setContentsMargins(1, 0, 0, 0);
     m_reloadToWidget->setFixedSize(preferredSize());
