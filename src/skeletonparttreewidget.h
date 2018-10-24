@@ -4,9 +4,8 @@
 #include <QUuid>
 #include <QMouseEvent>
 #include "skeletondocument.h"
-#include "skeletongraphicswidget.h"
 
-class SkeletonPartTreeWidget : public QTreeWidget, public SkeletonGraphicsFunctions
+class SkeletonPartTreeWidget : public QTreeWidget
 {
     Q_OBJECT
 signals:
@@ -44,7 +43,6 @@ signals:
 public:
     SkeletonPartTreeWidget(const SkeletonDocument *document, QWidget *parent);
     QTreeWidgetItem *findComponentItem(QUuid componentId);
-    void setGraphicsFunctions(SkeletonGraphicsFunctions *graphicsFunctions);
 public slots:
     void componentNameChanged(QUuid componentId);
     void componentChildrenChanged(QUuid componentId);
@@ -71,15 +69,8 @@ public slots:
     void removeAllContent();
     void showContextMenu(const QPoint &pos);
 protected:
-    virtual QSize sizeHint() const;
-    virtual void mousePressEvent(QMouseEvent *event);
-    virtual void keyPressEvent(QKeyEvent *event);
-    bool mouseMove(QMouseEvent *event);
-    bool wheel(QWheelEvent *event);
-    bool mouseRelease(QMouseEvent *event);
-    bool mousePress(QMouseEvent *event);
-    bool mouseDoubleClick(QMouseEvent *event);
-    bool keyPress(QKeyEvent *event);
+    QSize sizeHint() const override;
+    void mousePressEvent(QMouseEvent *event) override;
 private:
     void addComponentChildrenToItem(QUuid componentId, QTreeWidgetItem *parentItem);
     void deleteItemChildren(QTreeWidgetItem *item);
@@ -91,7 +82,6 @@ private:
     const SkeletonDocument *m_document = nullptr;
     std::map<QUuid, QTreeWidgetItem *> m_partItemMap;
     std::map<QUuid, QTreeWidgetItem *> m_componentItemMap;
-    SkeletonGraphicsFunctions *m_graphicsFunctions = nullptr;
     QFont m_normalFont;
     QFont m_selectedFont;
     QUuid m_currentSelectedComponentId;

@@ -41,7 +41,9 @@ SkeletonGraphicsWidget::SkeletonGraphicsWidget(const SkeletonDocument *document)
     m_checkedOriginItem(nullptr),
     m_ikMoveUpdateVersion(0),
     m_ikMover(nullptr),
-    m_deferredRemoveTimer(nullptr)
+    m_deferredRemoveTimer(nullptr),
+    m_eventForwardingToModelWidget(false),
+    m_modelWidget(nullptr)
 {
     setRenderHint(QPainter::Antialiasing, false);
     setBackgroundBrush(QBrush(QWidget::palette().color(QWidget::backgroundRole()), Qt::SolidPattern));
@@ -84,6 +86,11 @@ SkeletonGraphicsWidget::SkeletonGraphicsWidget(const SkeletonDocument *document)
     
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, &SkeletonGraphicsWidget::customContextMenuRequested, this, &SkeletonGraphicsWidget::showContextMenu);
+}
+
+void SkeletonGraphicsWidget::setModelWidget(ModelWidget *modelWidget)
+{
+    m_modelWidget = modelWidget;
 }
 
 void SkeletonGraphicsWidget::enableBackgroundBlur()
@@ -564,27 +571,40 @@ void SkeletonGraphicsWidget::editModeChanged()
 
 void SkeletonGraphicsWidget::mouseMoveEvent(QMouseEvent *event)
 {
+    if (m_modelWidget && m_modelWidget->inputMouseMoveEventFromOtherWidget(event))
+        return;
+    
     QGraphicsView::mouseMoveEvent(event);
     mouseMove(event);
 }
 
 void SkeletonGraphicsWidget::wheelEvent(QWheelEvent *event)
 {
-    if (SkeletonDocumentEditMode::ZoomIn == m_document->editMode ||
-            SkeletonDocumentEditMode::ZoomOut == m_document->editMode ||
-            SkeletonDocumentEditMode::Drag == m_document->editMode)
-        QGraphicsView::wheelEvent(event);
-    wheel(event);
+    if (!wheel(event)) {
+        if (m_modelWidget && m_modelWidget->inputWheelEventFromOtherWidget(event))
+            return;
+    }
+    
+    //if (SkeletonDocumentEditMode::ZoomIn == m_document->editMode ||
+    //        SkeletonDocumentEditMode::ZoomOut == m_document->editMode ||
+    //        SkeletonDocumentEditMode::Drag == m_document->editMode)
+    //    QGraphicsView::wheelEvent(event);
 }
 
 void SkeletonGraphicsWidget::mouseReleaseEvent(QMouseEvent *event)
 {
+    if (m_modelWidget && m_modelWidget->inputMouseReleaseEventFromOtherWidget(event))
+        return;
+    
     QGraphicsView::mouseReleaseEvent(event);
     mouseRelease(event);
 }
 
 void SkeletonGraphicsWidget::mousePressEvent(QMouseEvent *event)
 {
+    if (m_modelWidget && m_modelWidget->inputMousePressEventFromOtherWidget(event))
+        return;
+    
     QGraphicsView::mousePressEvent(event);
     m_mouseEventFromSelf = true;
     if (mousePress(event)) {

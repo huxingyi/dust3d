@@ -221,7 +221,8 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     m_modelRenderWidget->setMinimumSize(SkeletonDocumentWindow::m_modelRenderWidgetInitialSize, SkeletonDocumentWindow::m_modelRenderWidgetInitialSize);
     m_modelRenderWidget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     m_modelRenderWidget->move(SkeletonDocumentWindow::m_modelRenderWidgetInitialX, SkeletonDocumentWindow::m_modelRenderWidgetInitialY);
-    m_modelRenderWidget->setGraphicsFunctions(graphicsWidget);
+    
+    m_graphicsWidget->setModelWidget(m_modelRenderWidget);
     
     m_document->setSharedContextWidget(m_modelRenderWidget);
     
@@ -230,7 +231,6 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     QDockWidget *partTreeDocker = new QDockWidget(tr("Parts"), this);
     partTreeDocker->setAllowedAreas(Qt::RightDockWidgetArea);
     SkeletonPartTreeWidget *partTreeWidget = new SkeletonPartTreeWidget(m_document, partTreeDocker);
-    partTreeWidget->setGraphicsFunctions(graphicsWidget);
     partTreeDocker->setWidget(partTreeWidget);
     addDockWidget(Qt::RightDockWidgetArea, partTreeDocker);
     connect(partTreeDocker, &QDockWidget::topLevelChanged, [=](bool topLevel) {

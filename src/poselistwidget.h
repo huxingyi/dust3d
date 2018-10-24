@@ -2,11 +2,11 @@
 #define POSE_LIST_WIDGET_H
 #include <QTreeWidget>
 #include <map>
+#include <QMouseEvent>
 #include "skeletondocument.h"
 #include "posewidget.h"
-#include "skeletongraphicswidget.h"
 
-class PoseListWidget : public QTreeWidget, public SkeletonGraphicsFunctions
+class PoseListWidget : public QTreeWidget
 {
     Q_OBJECT
 signals:
@@ -28,12 +28,6 @@ public slots:
 protected:
     void resizeEvent(QResizeEvent *event) override;
     void mousePressEvent(QMouseEvent *event) override;
-    bool mouseMove(QMouseEvent *event) override;
-    bool wheel(QWheelEvent *event) override;
-    bool mouseRelease(QMouseEvent *event) override;
-    bool mousePress(QMouseEvent *event) override;
-    bool mouseDoubleClick(QMouseEvent *event) override;
-    bool keyPress(QKeyEvent *event) override;
 private:
     int calculateColumnCount();
     void updatePoseSelectState(QUuid poseId, bool selected);

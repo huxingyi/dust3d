@@ -251,7 +251,6 @@ void PoseListWidget::reload()
             PoseWidget *widget = new PoseWidget(m_document, poseId);
             connect(widget, &PoseWidget::modifyPose, this, &PoseListWidget::modifyPose);
             connect(widget, &PoseWidget::cornerButtonClicked, this, &PoseListWidget::cornerButtonClicked);
-            widget->previewWidget()->setGraphicsFunctions(this);
             setItemWidget(item, col, widget);
             widget->reload();
             widget->updateCheckedState(isPoseSelected(poseId));
@@ -275,40 +274,6 @@ void PoseListWidget::removeAllContent()
 {
     m_itemMap.clear();
     clear();
-}
-
-bool PoseListWidget::mouseMove(QMouseEvent *event)
-{
-    return false;
-}
-
-bool PoseListWidget::wheel(QWheelEvent *event)
-{
-    return false;
-}
-
-bool PoseListWidget::mouseRelease(QMouseEvent *event)
-{
-    return false;
-}
-
-bool PoseListWidget::mousePress(QMouseEvent *event)
-{
-    if (event->button() == Qt::RightButton) {
-        showContextMenu(mapFromGlobal(event->globalPos()));
-        return false;
-    }
-    return false;
-}
-
-bool PoseListWidget::mouseDoubleClick(QMouseEvent *event)
-{
-    return false;
-}
-
-bool PoseListWidget::keyPress(QKeyEvent *event)
-{
-    return false;
 }
 
 void PoseListWidget::copy()

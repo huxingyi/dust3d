@@ -4,9 +4,7 @@
 #include <QGuiApplication>
 #include <math.h>
 #include "modelwidget.h"
-#include "ds3file.h"
-#include "skeletongraphicswidget.h"
-#include "modelwidget.h"
+#include "dust3dutil.h"
 
 // Modifed from http://doc.qt.io/qt-5/qtopengl-hellogl2-glwidget-cpp.html
 
@@ -19,10 +17,11 @@ ModelWidget::ModelWidget(QWidget *parent) :
     m_zRot(0),
     m_program(nullptr),
     m_moveStarted(false),
-    m_graphicsFunctions(NULL),
     m_moveEnabled(true),
     m_zoomEnabled(true)
 {
+    setAttribute(Qt::WA_TransparentForMouseEvents);
+    
     // --transparent causes the clear color to be transparent. Therefore, on systems that
     // support it, the widget will become transparent apart from the logo.
     if (m_transparent) {
@@ -37,7 +36,6 @@ ModelWidget::ModelWidget(QWidget *parent) :
         fmt.setSamples(4);
         setFormat(fmt);
     }
-    setMouseTracking(true);
     setContextMenuPolicy(Qt::CustomContextMenu);
 }
 
@@ -54,11 +52,6 @@ int ModelWidget::yRot()
 int ModelWidget::zRot()
 {
     return m_zRot;
-}
-
-void ModelWidget::setGraphicsFunctions(SkeletonGraphicsFunctions *graphicsFunctions)
-{
-    m_graphicsFunctions = graphicsFunctions;
 }
 
 ModelWidget::~ModelWidget()
@@ -187,71 +180,56 @@ void ModelWidget::toggleWireframe()
     update();
 }
 
-void ModelWidget::mousePressEvent(QMouseEvent *event)
+bool ModelWidget::inputMousePressEventFromOtherWidget(QMouseEvent *event)
 {
     bool shouldStartMove = false;
-    QOpenGLWidget::mousePressEvent(event);
     if (event->button() == Qt::LeftButton) {
         if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::AltModifier) &&
                 !QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
-            shouldStartMove = true;
+            shouldStartMove = m_moveEnabled;
         }
     } else if (event->button() == Qt::MidButton) {
         shouldStartMove = m_moveEnabled;
     }
     if (shouldStartMove) {
-        m_lastPos = event->pos();
+        m_lastPos = convertInputPosFromOtherWidget(event);
         if (!m_moveStarted) {
-            m_moveStartPos = mapToParent(event->pos());
+            m_moveStartPos = mapToParent(convertInputPosFromOtherWidget(event));
             m_moveStartGeometry = geometry();
             m_moveStarted = true;
         }
-        return;
+        return true;
     }
-    if (!m_moveStarted && m_graphicsFunctions && m_graphicsFunctions->mousePress(event))
-        return;
+    return false;
 }
 
-void ModelWidget::mouseReleaseEvent(QMouseEvent *event)
+bool ModelWidget::inputMouseReleaseEventFromOtherWidget(QMouseEvent *event)
 {
-    QOpenGLWidget::mouseReleaseEvent(event);
-    if (m_graphicsFunctions)
-        m_graphicsFunctions->mouseRelease(event);
+    Q_UNUSED(event);
     if (m_moveStarted) {
         m_moveStarted = false;
+        return true;
     }
+    return false;
 }
 
-void ModelWidget::mouseDoubleClickEvent(QMouseEvent *event)
+bool ModelWidget::inputMouseMoveEventFromOtherWidget(QMouseEvent *event)
 {
-    QOpenGLWidget::mouseDoubleClickEvent(event);
-    if (m_graphicsFunctions)
-        m_graphicsFunctions->mouseDoubleClick(event);
-}
-
-void ModelWidget::keyPressEvent(QKeyEvent *event)
-{
-    QOpenGLWidget::keyPressEvent(event);
-    if (m_graphicsFunctions)
-        m_graphicsFunctions->keyPress(event);
-}
-
-void ModelWidget::mouseMoveEvent(QMouseEvent *event)
-{
-    QOpenGLWidget::mouseMoveEvent(event);
-    if (!m_moveStarted && m_graphicsFunctions && m_graphicsFunctions->mouseMove(event))
-        return;
+    if (!m_moveStarted) {
+        return false;
+    }
     
-    int dx = event->x() - m_lastPos.x();
-    int dy = event->y() - m_lastPos.y();
+    QPoint pos = convertInputPosFromOtherWidget(event);
+    int dx = pos.x() - m_lastPos.x();
+    int dy = pos.y() - m_lastPos.y();
 
     if ((event->buttons() & Qt::MidButton) ||
             (m_moveStarted && (event->buttons() & Qt::LeftButton))) {
         if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
             if (m_moveStarted) {
                 QRect rect = m_moveStartGeometry;
-                QPoint pos = mapToParent(event->pos());
-                rect.translate(pos.x() - m_moveStartPos.x(), pos.y() - m_moveStartPos.y());
+                QPoint posInParent = mapToParent(pos);
+                rect.translate(posInParent.x() - m_moveStartPos.x(), posInParent.y() - m_moveStartPos.y());
                 setGeometry(rect);
             }
         } else {
@@ -259,24 +237,29 @@ void ModelWidget::mouseMoveEvent(QMouseEvent *event)
             setYRotation(m_yRot + 8 * dx);
         }
     }
-    m_lastPos = event->pos();
+    m_lastPos = pos;
+    
+    return true;
 }
 
-void ModelWidget::zoom(float delta)
+QPoint ModelWidget::convertInputPosFromOtherWidget(QMouseEvent *event)
 {
-    QMargins margins(delta, delta, delta, delta);
-    setGeometry(geometry().marginsAdded(margins));
+    return mapFromGlobal(event->globalPos());
 }
 
-void ModelWidget::wheelEvent(QWheelEvent *event)
+bool ModelWidget::inputWheelEventFromOtherWidget(QWheelEvent *event)
 {
-    QOpenGLWidget::wheelEvent(event);
-    if (!m_moveStarted && m_graphicsFunctions && m_graphicsFunctions->wheel(event))
-        return;
+    //QPoint globalPos = event->globalPos();
+    //QPoint zero;
+    //QPoint leftTop = mapToGlobal(zero);
+    //QRect globalRect(leftTop.x(), leftTop.y(), width(), height());
+    //if (!globalRect.contains(globalPos))
+    //    return false;
+    
     if (m_moveStarted)
-        return;
+        return true;
     if (!m_zoomEnabled)
-        return;
+        return false;
     qreal delta = event->delta() / 10;
     if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
         if (delta > 0)
@@ -288,6 +271,13 @@ void ModelWidget::wheelEvent(QWheelEvent *event)
             delta = delta < 0 ? -1.0 : 1.0;
     }
     zoom(delta);
+    return true;
+}
+
+void ModelWidget::zoom(float delta)
+{
+    QMargins margins(delta, delta, delta, delta);
+    setGeometry(geometry().marginsAdded(margins));
 }
 
 void ModelWidget::updateMesh(MeshLoader *mesh)

@@ -251,7 +251,6 @@ void MotionListWidget::reload()
             MotionWidget *widget = new MotionWidget(m_document, motionId);
             connect(widget, &MotionWidget::modifyMotion, this, &MotionListWidget::modifyMotion);
             connect(widget, &MotionWidget::cornerButtonClicked, this, &MotionListWidget::cornerButtonClicked);
-            widget->previewWidget()->setGraphicsFunctions(this);
             setItemWidget(item, col, widget);
             widget->reload();
             widget->updateCheckedState(isMotionSelected(motionId));
@@ -275,40 +274,6 @@ void MotionListWidget::removeAllContent()
 {
     m_itemMap.clear();
     clear();
-}
-
-bool MotionListWidget::mouseMove(QMouseEvent *event)
-{
-    return false;
-}
-
-bool MotionListWidget::wheel(QWheelEvent *event)
-{
-    return false;
-}
-
-bool MotionListWidget::mouseRelease(QMouseEvent *event)
-{
-    return false;
-}
-
-bool MotionListWidget::mousePress(QMouseEvent *event)
-{
-    if (event->button() == Qt::RightButton) {
-        showContextMenu(mapFromGlobal(event->globalPos()));
-        return false;
-    }
-    return false;
-}
-
-bool MotionListWidget::mouseDoubleClick(QMouseEvent *event)
-{
-    return false;
-}
-
-bool MotionListWidget::keyPress(QKeyEvent *event)
-{
-    return false;
 }
 
 void MotionListWidget::copy()

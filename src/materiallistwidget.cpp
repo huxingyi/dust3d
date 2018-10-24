@@ -261,7 +261,6 @@ void MaterialListWidget::reload()
             MaterialWidget *widget = new MaterialWidget(m_document, materialId);
             connect(widget, &MaterialWidget::modifyMaterial, this, &MaterialListWidget::modifyMaterial);
             connect(widget, &MaterialWidget::cornerButtonClicked, this, &MaterialListWidget::cornerButtonClicked);
-            widget->previewWidget()->setGraphicsFunctions(this);
             setItemWidget(item, col, widget);
             widget->reload();
             widget->updateCheckedState(isMaterialSelected(materialId));
@@ -285,40 +284,6 @@ void MaterialListWidget::removeAllContent()
 {
     m_itemMap.clear();
     clear();
-}
-
-bool MaterialListWidget::mouseMove(QMouseEvent *event)
-{
-    return false;
-}
-
-bool MaterialListWidget::wheel(QWheelEvent *event)
-{
-    return false;
-}
-
-bool MaterialListWidget::mouseRelease(QMouseEvent *event)
-{
-    return false;
-}
-
-bool MaterialListWidget::mousePress(QMouseEvent *event)
-{
-    if (event->button() == Qt::RightButton) {
-        showContextMenu(mapFromGlobal(event->globalPos()));
-        return false;
-    }
-    return false;
-}
-
-bool MaterialListWidget::mouseDoubleClick(QMouseEvent *event)
-{
-    return false;
-}
-
-bool MaterialListWidget::keyPress(QKeyEvent *event)
-{
-    return false;
 }
 
 void MaterialListWidget::copy()

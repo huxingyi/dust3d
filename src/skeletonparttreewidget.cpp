@@ -62,42 +62,6 @@ SkeletonPartTreeWidget::SkeletonPartTreeWidget(const SkeletonDocument *document,
     connect(this, &QTreeWidget::itemCollapsed, this, &SkeletonPartTreeWidget::groupCollapsed);
 }
 
-bool SkeletonPartTreeWidget::mouseMove(QMouseEvent *event)
-{
-    return false;
-}
-
-bool SkeletonPartTreeWidget::wheel(QWheelEvent *event)
-{
-    return false;
-}
-
-bool SkeletonPartTreeWidget::mouseRelease(QMouseEvent *event)
-{
-    return false;
-}
-
-bool SkeletonPartTreeWidget::mousePress(QMouseEvent *event)
-{
-    if (event->button() == Qt::RightButton) {
-        showContextMenu(mapFromGlobal(event->globalPos()));
-        return true;
-    }
-    return false;
-}
-
-bool SkeletonPartTreeWidget::mouseDoubleClick(QMouseEvent *event)
-{
-    return false;
-}
-
-bool SkeletonPartTreeWidget::keyPress(QKeyEvent *event)
-{
-    if (m_graphicsFunctions)
-        return m_graphicsFunctions->keyPress(event);
-    return false;
-}
-
 void SkeletonPartTreeWidget::selectComponent(QUuid componentId, bool multiple)
 {
     if (multiple) {
@@ -703,7 +667,6 @@ void SkeletonPartTreeWidget::addComponentChildrenToItem(QUuid componentId, QTree
             item->setFlags(item->flags() & ~(Qt::ItemIsEditable | Qt::ItemIsEnabled | Qt::ItemIsSelectable));
             QUuid partId = component->linkToPartId;
             SkeletonPartWidget *widget = new SkeletonPartWidget(m_document, partId);
-            widget->previewWidget()->setGraphicsFunctions(this);
             item->setSizeHint(0, SkeletonPartWidget::preferredSize());
             setItemWidget(item, 0, widget);
             widget->reload();
@@ -967,18 +930,6 @@ QSize SkeletonPartTreeWidget::sizeHint() const
 {
     QSize size = SkeletonPartWidget::preferredSize();
     return QSize(size.width() * 1.35, size.height() * 5.5);
-}
-
-void SkeletonPartTreeWidget::setGraphicsFunctions(SkeletonGraphicsFunctions *graphicsFunctions)
-{
-    m_graphicsFunctions = graphicsFunctions;
-}
-
-void SkeletonPartTreeWidget::keyPressEvent(QKeyEvent *event)
-{
-    QTreeWidget::keyPressEvent(event);
-    if (m_graphicsFunctions)
-        m_graphicsFunctions->keyPress(event);
 }
 
 bool SkeletonPartTreeWidget::isComponentSelected(QUuid componentId)

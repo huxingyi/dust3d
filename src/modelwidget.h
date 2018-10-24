@@ -32,6 +32,11 @@ public:
     void toggleWireframe();
     void enableMove(bool enabled);
     void enableZoom(bool enabled);
+    bool inputMousePressEventFromOtherWidget(QMouseEvent *event);
+    bool inputMouseMoveEventFromOtherWidget(QMouseEvent *event);
+    bool inputWheelEventFromOtherWidget(QWheelEvent *event);
+    bool inputMouseReleaseEventFromOtherWidget(QMouseEvent *event);
+    QPoint convertInputPosFromOtherWidget(QMouseEvent *event);
 public slots:
     void setXRotation(int angle);
     void setYRotation(int angle);
@@ -46,12 +51,6 @@ protected:
     void initializeGL() override;
     void paintGL() override;
     void resizeGL(int width, int height) override;
-    void mousePressEvent(QMouseEvent *event) override;
-    void mouseMoveEvent(QMouseEvent *event) override;
-    void wheelEvent(QWheelEvent *event) override;
-    void mouseReleaseEvent(QMouseEvent *event) override;
-    void mouseDoubleClickEvent(QMouseEvent *event) override;
-    void keyPressEvent(QKeyEvent *event) override;
 public:
     int xRot();
     int yRot();
@@ -62,7 +61,6 @@ private:
     int m_zRot;
     ModelShaderProgram *m_program;
     bool m_moveStarted;
-    SkeletonGraphicsFunctions *m_graphicsFunctions;
     bool m_moveEnabled;
     bool m_zoomEnabled;
 private:

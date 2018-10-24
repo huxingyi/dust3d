@@ -17,6 +17,7 @@
 #include "theme.h"
 #include "dust3dutil.h"
 #include "skeletonikmover.h"
+#include "modelwidget.h"
 
 class SkeletonGraphicsOriginItem : public QGraphicsPolygonItem
 {
@@ -336,18 +337,7 @@ private:
     SkeletonProfile m_profile;
 };
 
-class SkeletonGraphicsFunctions
-{
-public:
-    virtual bool mouseMove(QMouseEvent *event) = 0;
-    virtual bool wheel(QWheelEvent *event) = 0;
-    virtual bool mouseRelease(QMouseEvent *event) = 0;
-    virtual bool mousePress(QMouseEvent *event) = 0;
-    virtual bool mouseDoubleClick(QMouseEvent *event) = 0;
-    virtual bool keyPress(QKeyEvent *event) = 0;
-};
-
-class SkeletonGraphicsWidget : public QGraphicsView, public SkeletonGraphicsFunctions
+class SkeletonGraphicsWidget : public QGraphicsView
 {
     Q_OBJECT
 signals:
@@ -411,6 +401,7 @@ public:
     bool hasEdgeSelection();
     bool hasNodeSelection();
     bool hasTwoDisconnectedNodesSelection();
+    void setModelWidget(ModelWidget *modelWidget);
 protected:
     void mouseMoveEvent(QMouseEvent *event);
     void wheelEvent(QWheelEvent *event);
@@ -522,6 +513,8 @@ private: //need initalize
     unsigned long long m_ikMoveUpdateVersion;
     SkeletonIkMover *m_ikMover;
     QTimer *m_deferredRemoveTimer;
+    bool m_eventForwardingToModelWidget;
+    ModelWidget *m_modelWidget;
 private:
     QVector3D m_ikMoveTarget;
     QUuid m_ikMoveEndEffectorId;
