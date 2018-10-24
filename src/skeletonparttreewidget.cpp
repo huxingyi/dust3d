@@ -48,7 +48,7 @@ SkeletonPartTreeWidget::SkeletonPartTreeWidget(const SkeletonDocument *document,
     
     setFont(m_normalFont);
     
-    QRadialGradient gradient(QPointF(0.25, 0.3), 0.3);
+    QRadialGradient gradient(QPointF(0.2, 0.3), 0.3);
     QColor fillColor = QColor(0xfb, 0xf9, 0x87);
     fillColor.setAlphaF(0.85);
     gradient.setCoordinateMode(QGradient::StretchToDeviceMode);
