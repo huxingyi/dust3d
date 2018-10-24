@@ -266,6 +266,9 @@ HEADERS += src/tabwidget.h
 SOURCES += src/flowlayout.cpp
 HEADERS += src/flowlayout.h
 
+SOURCES += src/shortcuts.cpp
+HEADERS += src/shortcuts.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h

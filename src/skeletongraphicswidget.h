@@ -389,6 +389,7 @@ public:
     bool mousePress(QMouseEvent *event);
     bool mouseDoubleClick(QMouseEvent *event);
     bool keyPress(QKeyEvent *event);
+    bool keyRelease(QKeyEvent *event);
     bool checkSkeletonItem(QGraphicsItem *item, bool checked);
     QUuid querySkeletonItemPartId(QGraphicsItem *item);
     static SkeletonProfile readSkeletonItemProfile(QGraphicsItem *item);
@@ -403,12 +404,13 @@ public:
     bool hasTwoDisconnectedNodesSelection();
     void setModelWidget(ModelWidget *modelWidget);
 protected:
-    void mouseMoveEvent(QMouseEvent *event);
-    void wheelEvent(QWheelEvent *event);
-    void mouseReleaseEvent(QMouseEvent *event);
-    void mousePressEvent(QMouseEvent *event);
-    void mouseDoubleClickEvent(QMouseEvent *event);
-    void keyPressEvent(QKeyEvent *event);
+    void mouseMoveEvent(QMouseEvent *event) override;
+    void wheelEvent(QWheelEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseDoubleClickEvent(QMouseEvent *event) override;
+    void keyPressEvent(QKeyEvent *event) override;
+    void keyReleaseEvent(QKeyEvent *event) override;
 public slots:
     void nodeAdded(QUuid nodeId);
     void edgeAdded(QUuid edgeId);
@@ -462,6 +464,39 @@ public slots:
     void setSelectedNodesBoneMark(SkeletonBoneMark boneMark);
     void timeToRemoveDeferredNodesAndEdges();
     void switchSelectedXZ();
+    void shortcutDelete();
+    void shortcutAddMode();
+    void shortcutUndo();
+    void shortcutRedo();
+    void shortcutXlock();
+    void shortcutYlock();
+    void shortcutZlock();
+    void shortcutCut();
+    void shortcutCopy();
+    void shortcutPaste();
+    void shortcutSave();
+    void shortcutSelectMode();
+    void shortcutDragMode();
+    void shortcutZoomRenderedModelByMinus10();
+    void shortcutZoomSelectedByMinus1();
+    void shortcutZoomRenderedModelBy10();
+    void shortcutZoomSelectedBy1();
+    void shortcutRotateSelectedByMinus1();
+    void shortcutRotateSelectedBy1();
+    void shortcutMoveSelectedToLeft();
+    void shortcutMoveSelectedToRight();
+    void shortcutMoveSelectedToUp();
+    void shortcutMoveSelectedToDown();
+    void shortcutScaleSelectedByMinus1();
+    void shortcutScaleSelectedBy1();
+    void shortcutSwitchProfileOnSelected();
+    void shortcutShowOrHideSelectedPart();
+    void shortcutEnableOrDisableSelectedPart();
+    void shortcutLockOrUnlockSelectedPart();
+    void shortcutXmirrorOnOrOffSelectedPart();
+    void shortcutSubdivedOrNotSelectedPart();
+    void shortcutRoundEndOrNotSelectedPart();
+    void shortcutWrapOrNotSelectedPart();
 private slots:
     void turnaroundImageReady();
 private:
@@ -515,6 +550,8 @@ private: //need initalize
     QTimer *m_deferredRemoveTimer;
     bool m_eventForwardingToModelWidget;
     ModelWidget *m_modelWidget;
+    bool m_inTempDragMode;
+    SkeletonDocumentEditMode m_modeBeforeEnterTempDragMode;
 private:
     QVector3D m_ikMoveTarget;
     QUuid m_ikMoveEndEffectorId;

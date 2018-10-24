@@ -35,6 +35,7 @@
 #include "imageforever.h"
 #include "spinnableawesomebutton.h"
 #include "fbxfile.h"
+#include "shortcuts.h"
 
 int SkeletonDocumentWindow::m_modelRenderWidgetInitialX = 16;
 int SkeletonDocumentWindow::m_modelRenderWidgetInitialY = 16;
@@ -887,6 +888,8 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
         Q_UNUSED(materialId);
         m_document->generateMaterialPreviews();
     });
+    
+    initShortCuts(this, m_graphicsWidget);
 
     connect(this, &SkeletonDocumentWindow::initialized, m_document, &SkeletonDocument::uiReady);
     

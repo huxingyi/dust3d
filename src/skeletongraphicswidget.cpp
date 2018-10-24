@@ -43,7 +43,9 @@ SkeletonGraphicsWidget::SkeletonGraphicsWidget(const SkeletonDocument *document)
     m_ikMover(nullptr),
     m_deferredRemoveTimer(nullptr),
     m_eventForwardingToModelWidget(false),
-    m_modelWidget(nullptr)
+    m_modelWidget(nullptr),
+    m_inTempDragMode(false),
+    m_modeBeforeEnterTempDragMode(SkeletonDocumentEditMode::Select)
 {
     setRenderHint(QPainter::Antialiasing, false);
     setBackgroundBrush(QBrush(QWidget::palette().color(QWidget::backgroundRole()), Qt::SolidPattern));
@@ -625,6 +627,13 @@ void SkeletonGraphicsWidget::keyPressEvent(QKeyEvent *event)
     if (keyPress(event))
         return;
     QGraphicsView::keyPressEvent(event);
+}
+
+void SkeletonGraphicsWidget::keyReleaseEvent(QKeyEvent *event)
+{
+    if (keyRelease(event))
+        return;
+    QGraphicsView::keyReleaseEvent(event);
 }
 
 bool SkeletonGraphicsWidget::mouseMove(QMouseEvent *event)
@@ -1374,229 +1383,297 @@ void SkeletonGraphicsWidget::deleteSelected()
     }
 }
 
+void SkeletonGraphicsWidget::shortcutDelete()
+{
+    bool processed = false;
+    if (!m_rangeSelectionSet.empty()) {
+        deleteSelected();
+        processed = true;
+    }
+    if (processed) {
+        emit groupOperationAdded();
+        return;
+    }
+}
+
+void SkeletonGraphicsWidget::shortcutAddMode()
+{
+    if (SkeletonDocumentEditMode::Add == m_document->editMode) {
+        emit setEditMode(SkeletonDocumentEditMode::Select);
+    } else {
+        emit setEditMode(SkeletonDocumentEditMode::Add);
+    }
+}
+
+void SkeletonGraphicsWidget::shortcutUndo()
+{
+    emit undo();
+}
+
+void SkeletonGraphicsWidget::shortcutRedo()
+{
+    emit redo();
+}
+
+void SkeletonGraphicsWidget::shortcutXlock()
+{
+    emit setXlockState(!m_document->xlocked);
+}
+
+void SkeletonGraphicsWidget::shortcutYlock()
+{
+    emit setYlockState(!m_document->ylocked);
+}
+
+void SkeletonGraphicsWidget::shortcutZlock()
+{
+    emit setZlockState(!m_document->zlocked);
+}
+
+void SkeletonGraphicsWidget::shortcutCut()
+{
+    cut();
+}
+
+void SkeletonGraphicsWidget::shortcutCopy()
+{
+    copy();
+}
+
+void SkeletonGraphicsWidget::shortcutPaste()
+{
+    emit paste();
+}
+
+void SkeletonGraphicsWidget::shortcutSave()
+{
+    emit save();
+}
+
+void SkeletonGraphicsWidget::shortcutSelectMode()
+{
+    emit setEditMode(SkeletonDocumentEditMode::Select);
+}
+
+void SkeletonGraphicsWidget::shortcutDragMode()
+{
+    emit setEditMode(SkeletonDocumentEditMode::Drag);
+}
+
+void SkeletonGraphicsWidget::shortcutZoomRenderedModelByMinus10()
+{
+    emit zoomRenderedModelBy(-10);
+}
+
+void SkeletonGraphicsWidget::shortcutZoomSelectedByMinus1()
+{
+    if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
+        zoomSelected(-1);
+        emit groupOperationAdded();
+    }
+}
+
+void SkeletonGraphicsWidget::shortcutZoomRenderedModelBy10()
+{
+    emit zoomRenderedModelBy(10);
+}
+
+void SkeletonGraphicsWidget::shortcutZoomSelectedBy1()
+{
+    if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
+        zoomSelected(1);
+        emit groupOperationAdded();
+    }
+}
+
+void SkeletonGraphicsWidget::shortcutRotateSelectedByMinus1()
+{
+    if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
+        rotateSelected(-1);
+        emit groupOperationAdded();
+    }
+}
+
+void SkeletonGraphicsWidget::shortcutRotateSelectedBy1()
+{
+    if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
+        rotateSelected(1);
+        emit groupOperationAdded();
+    }
+}
+
+void SkeletonGraphicsWidget::shortcutMoveSelectedToLeft()
+{
+    if (SkeletonDocumentEditMode::Select == m_document->editMode) {
+        if (m_checkedOriginItem) {
+            moveCheckedOrigin(-1, 0);
+            emit groupOperationAdded();
+        } else if (hasSelection()) {
+            moveSelected(-1, 0);
+            emit groupOperationAdded();
+        }
+    }
+}
+
+void SkeletonGraphicsWidget::shortcutMoveSelectedToRight()
+{
+    if (SkeletonDocumentEditMode::Select == m_document->editMode) {
+        if (m_checkedOriginItem) {
+            moveCheckedOrigin(1, 0);
+            emit groupOperationAdded();
+        } else if (hasSelection()) {
+            moveSelected(1, 0);
+            emit groupOperationAdded();
+        }
+    }
+}
+
+void SkeletonGraphicsWidget::shortcutMoveSelectedToUp()
+{
+    if (SkeletonDocumentEditMode::Select == m_document->editMode) {
+        if (m_checkedOriginItem) {
+            moveCheckedOrigin(0, -1);
+            emit groupOperationAdded();
+        } else if (hasSelection()) {
+            moveSelected(0, -1);
+            emit groupOperationAdded();
+        }
+    }
+}
+
+void SkeletonGraphicsWidget::shortcutMoveSelectedToDown()
+{
+    if (SkeletonDocumentEditMode::Select == m_document->editMode) {
+        if (m_checkedOriginItem) {
+            moveCheckedOrigin(0, 1);
+            emit groupOperationAdded();
+        } else if (hasSelection()) {
+            moveSelected(0, 1);
+            emit groupOperationAdded();
+        }
+    }
+}
+
+void SkeletonGraphicsWidget::shortcutScaleSelectedByMinus1()
+{
+    if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
+        scaleSelected(-1);
+        emit groupOperationAdded();
+    }
+}
+
+void SkeletonGraphicsWidget::shortcutScaleSelectedBy1()
+{
+    if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
+        scaleSelected(1);
+        emit groupOperationAdded();
+    }
+}
+
+void SkeletonGraphicsWidget::shortcutSwitchProfileOnSelected()
+{
+    if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
+        switchProfileOnRangeSelection();
+    }
+}
+
+void SkeletonGraphicsWidget::shortcutShowOrHideSelectedPart()
+{
+    if (SkeletonDocumentEditMode::Select == m_document->editMode && !m_lastCheckedPart.isNull()) {
+        const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
+        bool partVisible = part && part->visible;
+        emit setPartVisibleState(m_lastCheckedPart, !partVisible);
+        emit groupOperationAdded();
+    }
+}
+
+void SkeletonGraphicsWidget::shortcutEnableOrDisableSelectedPart()
+{
+    if (SkeletonDocumentEditMode::Select == m_document->editMode && !m_lastCheckedPart.isNull()) {
+        const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
+        bool partDisabled = part && part->disabled;
+        emit setPartDisableState(m_lastCheckedPart, !partDisabled);
+        emit groupOperationAdded();
+    }
+}
+
+void SkeletonGraphicsWidget::shortcutLockOrUnlockSelectedPart()
+{
+    if (SkeletonDocumentEditMode::Select == m_document->editMode && !m_lastCheckedPart.isNull()) {
+        const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
+        bool partLocked = part && part->locked;
+        emit setPartLockState(m_lastCheckedPart, !partLocked);
+        emit groupOperationAdded();
+    }
+}
+
+void SkeletonGraphicsWidget::shortcutXmirrorOnOrOffSelectedPart()
+{
+    if (SkeletonDocumentEditMode::Select == m_document->editMode && !m_lastCheckedPart.isNull()) {
+        const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
+        bool partXmirrored = part && part->xMirrored;
+        emit setPartXmirrorState(m_lastCheckedPart, !partXmirrored);
+        emit groupOperationAdded();
+    }
+}
+
+void SkeletonGraphicsWidget::shortcutSubdivedOrNotSelectedPart()
+{
+    if (SkeletonDocumentEditMode::Select == m_document->editMode && !m_lastCheckedPart.isNull()) {
+        const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
+        bool partSubdived = part && part->subdived;
+        emit setPartSubdivState(m_lastCheckedPart, !partSubdived);
+        emit groupOperationAdded();
+    }
+}
+
+void SkeletonGraphicsWidget::shortcutRoundEndOrNotSelectedPart()
+{
+    if (SkeletonDocumentEditMode::Select == m_document->editMode && !m_lastCheckedPart.isNull()) {
+        const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
+        bool partRounded = part && part->rounded;
+        emit setPartRoundState(m_lastCheckedPart, !partRounded);
+        emit groupOperationAdded();
+    }
+}
+
+void SkeletonGraphicsWidget::shortcutWrapOrNotSelectedPart()
+{
+    if (SkeletonDocumentEditMode::Select == m_document->editMode && !m_lastCheckedPart.isNull()) {
+        const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
+        bool partWrapped = part && part->wrapped;
+        emit setPartWrapState(m_lastCheckedPart, !partWrapped);
+        emit groupOperationAdded();
+    }
+}
+
 bool SkeletonGraphicsWidget::keyPress(QKeyEvent *event)
 {
-    if (event->key() == Qt::Key_Delete || event->key() ==Qt::Key_Backspace) {
-        bool processed = false;
-        if (!m_rangeSelectionSet.empty()) {
-            deleteSelected();
-            processed = true;
-        }
-        if (processed) {
-            emit groupOperationAdded();
-            return true;
-        }
-    } else if (event->key() == Qt::Key_A) {
-        if (SkeletonDocumentEditMode::Add == m_document->editMode) {
-            emit setEditMode(SkeletonDocumentEditMode::Select);
-        } else {
-            emit setEditMode(SkeletonDocumentEditMode::Add);
-        }
-        return true;
-    } else if (event->key() == Qt::Key_Z) {
-        if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
-            if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
-                emit redo();
-                return true;
-            } else {
-                emit undo();
-                return true;
-            }
-        } else {
-            emit setZlockState(!m_document->zlocked);
-            return true;
-        }
-    } else if (event->key() == Qt::Key_Y) {
-        if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
-            if (!QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
-                emit redo();
-                return true;
-            }
-        } else {
-            emit setYlockState(!m_document->ylocked);
-            return true;
-        }
-    } else if (event->key() == Qt::Key_X) {
-        if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
-            cut();
-            return true;
-        } else {
-            emit setXlockState(!m_document->xlocked);
-            return true;
-        }
-    } else if (event->key() == Qt::Key_C) {
-        if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
-            copy();
-            return true;
-        }
-    } else if (event->key() == Qt::Key_V) {
-        if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
-            emit paste();
-            return true;
-        }
-    } else if (event->key() == Qt::Key_S) {
-        if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
-            emit save();
-            return true;
-        } else {
-            emit setEditMode(SkeletonDocumentEditMode::Select);
-            return true;
-        }
-    } else if (event->key() == Qt::Key_D) {
-        emit setEditMode(SkeletonDocumentEditMode::Drag);
-        return true;
-    } else if (event->key() == Qt::Key_Minus) {
-        if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::AltModifier)) {
-            emit zoomRenderedModelBy(-10);
-            return true;
-        } else if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
-            zoomSelected(-1);
-            emit groupOperationAdded();
-            return true;
-        }
-    } else if (event->key() == Qt::Key_Equal) {
-        if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::AltModifier)) {
-            emit zoomRenderedModelBy(10);
-            return true;
-        } else if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
-            zoomSelected(1);
-            emit groupOperationAdded();
-            return true;
-        }
-    } else if (event->key() == Qt::Key_Comma) {
-        if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
-            rotateSelected(-1);
-            emit groupOperationAdded();
-            return true;
-        }
-    } else if (event->key() == Qt::Key_Period) {
-        if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
-            rotateSelected(1);
-            emit groupOperationAdded();
-            return true;
-        }
-    } else if (event->key() == Qt::Key_Left) {
-        if (SkeletonDocumentEditMode::Select == m_document->editMode) {
-            if (m_checkedOriginItem) {
-                moveCheckedOrigin(-1, 0);
-                emit groupOperationAdded();
-                return true;
-            } else if (hasSelection()) {
-                moveSelected(-1, 0);
-                emit groupOperationAdded();
-                return true;
-            }
-        }
-    } else if (event->key() == Qt::Key_Right) {
-        if (SkeletonDocumentEditMode::Select == m_document->editMode) {
-            if (m_checkedOriginItem) {
-                moveCheckedOrigin(1, 0);
-                emit groupOperationAdded();
-                return true;
-            } else if (hasSelection()) {
-                moveSelected(1, 0);
-                emit groupOperationAdded();
-                return true;
-            }
-        }
-    } else if (event->key() == Qt::Key_Up) {
-        if (SkeletonDocumentEditMode::Select == m_document->editMode) {
-            if (m_checkedOriginItem) {
-                moveCheckedOrigin(0, -1);
-                emit groupOperationAdded();
-                return true;
-            } else if (hasSelection()) {
-                moveSelected(0, -1);
-                emit groupOperationAdded();
-                return true;
-            }
-        }
-    } else if (event->key() == Qt::Key_Down) {
-        if (SkeletonDocumentEditMode::Select == m_document->editMode) {
-            if (m_checkedOriginItem) {
-                moveCheckedOrigin(0, 1);
-                emit groupOperationAdded();
-                return true;
-            } else if (hasSelection()) {
-                moveSelected(0, 1);
-                emit groupOperationAdded();
-                return true;
-            }
-        }
-    } else if (event->key() == Qt::Key_BracketLeft) {
-        if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
-            scaleSelected(-1);
-            emit groupOperationAdded();
-            return true;
-        }
-    } else if (event->key() == Qt::Key_BracketRight) {
-        if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
-            scaleSelected(1);
-            emit groupOperationAdded();
-            return true;
-        }
-    } else if (event->key() == Qt::Key_E) {
-        if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
-            switchProfileOnRangeSelection();
-            return true;
-        }
-    } else if (event->key() == Qt::Key_H) {
-        if (SkeletonDocumentEditMode::Select == m_document->editMode && !m_lastCheckedPart.isNull()) {
-            const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
-            bool partVisible = part && part->visible;
-            emit setPartVisibleState(m_lastCheckedPart, !partVisible);
-            emit groupOperationAdded();
-            return true;
-        }
-    } else if (event->key() == Qt::Key_J) {
-        if (SkeletonDocumentEditMode::Select == m_document->editMode && !m_lastCheckedPart.isNull()) {
-            const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
-            bool partDisabled = part && part->disabled;
-            emit setPartDisableState(m_lastCheckedPart, !partDisabled);
-            emit groupOperationAdded();
-            return true;
-        }
-    } else if (event->key() == Qt::Key_L) {
-        if (SkeletonDocumentEditMode::Select == m_document->editMode && !m_lastCheckedPart.isNull()) {
-            const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
-            bool partLocked = part && part->locked;
-            emit setPartLockState(m_lastCheckedPart, !partLocked);
-            emit groupOperationAdded();
-            return true;
-        }
-    } else if (event->key() == Qt::Key_M) {
-        if (SkeletonDocumentEditMode::Select == m_document->editMode && !m_lastCheckedPart.isNull()) {
-            const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
-            bool partXmirrored = part && part->xMirrored;
-            emit setPartXmirrorState(m_lastCheckedPart, !partXmirrored);
-            emit groupOperationAdded();
-            return true;
-        }
-    } else if (event->key() == Qt::Key_B) {
-        if (SkeletonDocumentEditMode::Select == m_document->editMode && !m_lastCheckedPart.isNull()) {
-            const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
-            bool partSubdived = part && part->subdived;
-            emit setPartSubdivState(m_lastCheckedPart, !partSubdived);
-            emit groupOperationAdded();
-            return true;
-        }
-    } else if (event->key() == Qt::Key_U) {
-        if (SkeletonDocumentEditMode::Select == m_document->editMode && !m_lastCheckedPart.isNull()) {
-            const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
-            bool partRounded = part && part->rounded;
-            emit setPartRoundState(m_lastCheckedPart, !partRounded);
-            emit groupOperationAdded();
-            return true;
-        }
-    } else if (event->key() == Qt::Key_W) {
-        if (SkeletonDocumentEditMode::Select == m_document->editMode && !m_lastCheckedPart.isNull()) {
-            const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
-            bool partWrapped = part && part->wrapped;
-            emit setPartWrapState(m_lastCheckedPart, !partWrapped);
-            emit groupOperationAdded();
+    if (event->key() == Qt::Key_Space) {
+        if (SkeletonDocumentEditMode::ZoomIn == m_document->editMode ||
+                SkeletonDocumentEditMode::ZoomOut == m_document->editMode ||
+                SkeletonDocumentEditMode::Select == m_document->editMode ||
+                SkeletonDocumentEditMode::Add == m_document->editMode) {
+            m_inTempDragMode = true;
+            m_modeBeforeEnterTempDragMode = m_document->editMode;
+            emit setEditMode(SkeletonDocumentEditMode::Drag);
             return true;
         }
     }
+    
+    return false;
+}
+
+bool SkeletonGraphicsWidget::keyRelease(QKeyEvent *event)
+{
+    if (event->key() == Qt::Key_Space) {
+        if (m_inTempDragMode) {
+            m_inTempDragMode = false;
+            emit setEditMode(m_modeBeforeEnterTempDragMode);
+            return true;
+        }
+    }
+    
     return false;
 }
 
