@@ -39,7 +39,7 @@ public slots:
     void saveTo(const QString &saveAsFilename);
     void open();
     void exportObjResult();
-    void exportGltfResult();
+    void exportGlbResult();
     void exportFbxResult();
     void showExportPreview();
     void newWindow();

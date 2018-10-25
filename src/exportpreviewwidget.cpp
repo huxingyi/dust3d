@@ -30,15 +30,15 @@ ExportPreviewWidget::ExportPreviewWidget(Document *document, QWidget *parent) :
     connect(regenerateButton, &QPushButton::clicked, this, &ExportPreviewWidget::regenerate);
     
     QComboBox *exportFormatSelectBox = new QComboBox;
-    exportFormatSelectBox->addItem(tr("glTF"));
-    exportFormatSelectBox->addItem(tr("FBX"));
+    exportFormatSelectBox->addItem(tr(".glb"));
+    exportFormatSelectBox->addItem(tr(".fbx"));
     exportFormatSelectBox->setCurrentIndex(0);
     
     m_saveButton = new QPushButton(tr("Save"));
     connect(m_saveButton, &QPushButton::clicked, this, [=]() {
         auto currentIndex = exportFormatSelectBox->currentIndex();
         if (0 == currentIndex) {
-            emit saveAsGltf();
+            emit saveAsGlb();
         } else if (1 == currentIndex) {
             emit saveAsFbx();
         }

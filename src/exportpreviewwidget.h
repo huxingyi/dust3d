@@ -14,7 +14,7 @@ class ExportPreviewWidget : public QDialog
     Q_OBJECT
 signals:
     void regenerate();
-    void saveAsGltf();
+    void saveAsGlb();
     void saveAsFbx();
 public:
     ExportPreviewWidget(Document *document, QWidget *parent=nullptr);

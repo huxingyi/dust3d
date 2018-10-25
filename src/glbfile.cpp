@@ -4,7 +4,8 @@
 #include <QDataStream>
 #include <QFileInfo>
 #include <QDir>
-#include "gltffile.h"
+#include <QBuffer>
+#include "glbfile.h"
 #include "version.h"
 #include "util.h"
 #include "jointnodetree.h"
@@ -19,30 +20,36 @@
 // http://quaternions.online/
 // https://en.m.wikipedia.org/wiki/Rotation_formalisms_in_three_dimensions?wprov=sfla1
 
-bool GltfFileWriter::m_enableComment = true;
+bool GlbFileWriter::m_enableComment = true;
 
-GltfFileWriter::GltfFileWriter(Outcome &outcome,
+GlbFileWriter::GlbFileWriter(Outcome &outcome,
         const std::vector<AutoRiggerBone> *resultRigBones,
         const std::map<int, AutoRiggerVertexWeights> *resultRigWeights,
-        const QString &filename) :
+        const QString &filename,
+        QImage *textureImage) :
     m_filename(filename),
     m_outputNormal(false),
     m_outputAnimation(true),
     m_outputUv(true),
     m_testOutputAsWhole(false)
 {
-    QFileInfo nameInfo(filename);
-    QString textureFilenameWithoutPath = nameInfo.completeBaseName() + ".png";
-    m_textureFilename = nameInfo.path() + QDir::separator() + textureFilenameWithoutPath;
+    QDataStream binStream(&m_binByteArray, QIODevice::WriteOnly);
+    binStream.setFloatingPointPrecision(QDataStream::SinglePrecision);
+    binStream.setByteOrder(QDataStream::LittleEndian);
     
-    QByteArray binaries;
-    QDataStream stream(&binaries, QIODevice::WriteOnly);
-    stream.setFloatingPointPrecision(QDataStream::SinglePrecision);
-    stream.setByteOrder(QDataStream::LittleEndian);
+    auto alignBin = [this, &binStream] {
+        while (0 != this->m_binByteArray.size() % 4) {
+            binStream << (quint8)0;
+        }
+    };
     
-    auto alignBinaries = [&binaries, &stream] {
-        while (0 != binaries.size() % 4) {
-            stream << (quint8)0;
+    QDataStream jsonStream(&m_jsonByteArray, QIODevice::WriteOnly);
+    jsonStream.setFloatingPointPrecision(QDataStream::SinglePrecision);
+    jsonStream.setByteOrder(QDataStream::LittleEndian);
+    
+    auto alignJson = [this, &jsonStream] {
+        while (0 != this->m_jsonByteArray.size() % 4) {
+            jsonStream << (quint8)' ';
         }
     };
     
@@ -95,18 +102,18 @@ GltfFileWriter::GltfFileWriter(Outcome &outcome,
         
         m_json["skins"][0]["skeleton"] = skeletonNodeStartIndex;
         m_json["skins"][0]["inverseBindMatrices"] = bufferViewIndex;
-        bufferViewFromOffset = (int)binaries.size();
+        bufferViewFromOffset = (int)m_binByteArray.size();
         m_json["bufferViews"][bufferViewIndex]["buffer"] = 0;
         m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
         for (auto i = 0u; i < boneNodes.size(); i++) {
             const float *floatArray = boneNodes[i].inverseBindMatrix.constData();
             for (auto j = 0u; j < 16; j++) {
-                stream << (float)floatArray[j];
+                binStream << (float)floatArray[j];
             }
         }
-        m_json["bufferViews"][bufferViewIndex]["byteLength"] = binaries.size() - bufferViewFromOffset;
-        Q_ASSERT((int)boneNodes.size() * 16 * sizeof(float) == binaries.size() - bufferViewFromOffset);
-        alignBinaries();
+        m_json["bufferViews"][bufferViewIndex]["byteLength"] = m_binByteArray.size() - bufferViewFromOffset;
+        Q_ASSERT((int)boneNodes.size() * 16 * sizeof(float) == m_binByteArray.size() - bufferViewFromOffset);
+        alignBin();
         if (m_enableComment)
             m_json["accessors"][bufferViewIndex]["__comment"] = QString("/accessors/%1: mat").arg(QString::number(bufferViewIndex)).toUtf8().constData();
         m_json["accessors"][bufferViewIndex]["bufferView"] = bufferViewIndex;
@@ -119,28 +126,7 @@ GltfFileWriter::GltfFileWriter(Outcome &outcome,
         m_json["nodes"][0]["mesh"] = 0;
     }
 
-    m_json["textures"][0]["sampler"] = 0;
-    m_json["textures"][0]["source"] = 0;
-    
-    m_json["images"][0]["uri"] = textureFilenameWithoutPath.toUtf8().constData();
-    
-    m_json["samplers"][0]["magFilter"] = 9729;
-    m_json["samplers"][0]["minFilter"] = 9987;
-    m_json["samplers"][0]["wrapS"] = 33648;
-    m_json["samplers"][0]["wrapT"] = 33648;
-    
     const std::map<QUuid, ResultPart> *parts = &outcome.parts();
-    
-    std::map<QUuid, ResultPart> testParts;
-    if (m_testOutputAsWhole) {
-        testParts[0].vertices = outcome.vertices;
-        testParts[0].triangles = outcome.triangles;
-        
-        m_outputNormal = false;
-        m_outputUv = false;
-        
-        parts = &testParts;
-    }
 
     int primitiveIndex = 0;
     for (const auto &part: *parts) {
@@ -163,16 +149,16 @@ GltfFileWriter::GltfFileWriter(Outcome &outcome,
         
         primitiveIndex++;
 
-        bufferViewFromOffset = (int)binaries.size();
+        bufferViewFromOffset = (int)m_binByteArray.size();
         for (const auto &it: part.second.triangles) {
-            stream << (quint16)it.indicies[0] << (quint16)it.indicies[1] << (quint16)it.indicies[2];
+            binStream << (quint16)it.indicies[0] << (quint16)it.indicies[1] << (quint16)it.indicies[2];
         }
         m_json["bufferViews"][bufferViewIndex]["buffer"] = 0;
         m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
         m_json["bufferViews"][bufferViewIndex]["byteLength"] = (int)part.second.triangles.size() * 3 * sizeof(quint16);
         m_json["bufferViews"][bufferViewIndex]["target"] = 34963;
-        Q_ASSERT((int)part.second.triangles.size() * 3 * sizeof(quint16) == binaries.size() - bufferViewFromOffset);
-        alignBinaries();
+        Q_ASSERT((int)part.second.triangles.size() * 3 * sizeof(quint16) == m_binByteArray.size() - bufferViewFromOffset);
+        alignBin();
         if (m_enableComment)
             m_json["accessors"][bufferViewIndex]["__comment"] = QString("/accessors/%1: triangle indicies").arg(QString::number(bufferViewIndex)).toUtf8().constData();
         m_json["accessors"][bufferViewIndex]["bufferView"] = bufferViewIndex;
@@ -182,7 +168,7 @@ GltfFileWriter::GltfFileWriter(Outcome &outcome,
         m_json["accessors"][bufferViewIndex]["type"] = "SCALAR";
         bufferViewIndex++;
         
-        bufferViewFromOffset = (int)binaries.size();
+        bufferViewFromOffset = (int)m_binByteArray.size();
         m_json["bufferViews"][bufferViewIndex]["buffer"] = 0;
         m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
         float minX = 100;
@@ -204,12 +190,12 @@ GltfFileWriter::GltfFileWriter(Outcome &outcome,
                 minZ = it.position.z();
             if (it.position.z() > maxZ)
                 maxZ = it.position.z();
-            stream << (float)it.position.x() << (float)it.position.y() << (float)it.position.z();
+            binStream << (float)it.position.x() << (float)it.position.y() << (float)it.position.z();
         }
-        Q_ASSERT((int)part.second.vertices.size() * 3 * sizeof(float) == binaries.size() - bufferViewFromOffset);
+        Q_ASSERT((int)part.second.vertices.size() * 3 * sizeof(float) == m_binByteArray.size() - bufferViewFromOffset);
         m_json["bufferViews"][bufferViewIndex]["byteLength"] =  part.second.vertices.size() * 3 * sizeof(float);
         m_json["bufferViews"][bufferViewIndex]["target"] = 34962;
-        alignBinaries();
+        alignBin();
         if (m_enableComment)
             m_json["accessors"][bufferViewIndex]["__comment"] = QString("/accessors/%1: xyz").arg(QString::number(bufferViewIndex)).toUtf8().constData();
         m_json["accessors"][bufferViewIndex]["bufferView"] = bufferViewIndex;
@@ -223,7 +209,7 @@ GltfFileWriter::GltfFileWriter(Outcome &outcome,
         
         /*
         if (m_outputNormal) {
-            bufferViewFromOffset = (int)binaries.size();
+            bufferViewFromOffset = (int)binByteArray.size();
             m_json["bufferViews"][bufferViewIndex]["buffer"] = 0;
             m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
             QStringList normalList;
@@ -232,7 +218,7 @@ GltfFileWriter::GltfFileWriter(Outcome &outcome,
                 if (m_enableComment && m_outputNormal)
                     normalList.append(QString("<%1,%2,%3>").arg(QString::number(it.x())).arg(QString::number(it.y())).arg(QString::number(it.z())));
             }
-            Q_ASSERT((int)part.second.interpolatedVertexNormals.size() * 3 * sizeof(float) == binaries.size() - bufferViewFromOffset);
+            Q_ASSERT((int)part.second.interpolatedVertexNormals.size() * 3 * sizeof(float) == binByteArray.size() - bufferViewFromOffset);
             m_json["bufferViews"][bufferViewIndex]["byteLength"] =  part.second.vertices.size() * 3 * sizeof(float);
             m_json["bufferViews"][bufferViewIndex]["target"] = 34962;
             alignBinaries();
@@ -247,14 +233,14 @@ GltfFileWriter::GltfFileWriter(Outcome &outcome,
         }*/
         
         if (m_outputUv) {
-            bufferViewFromOffset = (int)binaries.size();
+            bufferViewFromOffset = (int)m_binByteArray.size();
             m_json["bufferViews"][bufferViewIndex]["buffer"] = 0;
             m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
             for (const auto &it: part.second.vertexUvs) {
-                stream << (float)it.uv[0] << (float)it.uv[1];
+                binStream << (float)it.uv[0] << (float)it.uv[1];
             }
-            m_json["bufferViews"][bufferViewIndex]["byteLength"] = binaries.size() - bufferViewFromOffset;
-            alignBinaries();
+            m_json["bufferViews"][bufferViewIndex]["byteLength"] = m_binByteArray.size() - bufferViewFromOffset;
+            alignBin();
             if (m_enableComment)
                 m_json["accessors"][bufferViewIndex]["__comment"] = QString("/accessors/%1: uv").arg(QString::number(bufferViewIndex)).toUtf8().constData();
             m_json["accessors"][bufferViewIndex]["bufferView"] = bufferViewIndex;
@@ -266,7 +252,7 @@ GltfFileWriter::GltfFileWriter(Outcome &outcome,
         }
         
         if (resultRigWeights && !resultRigWeights->empty()) {
-            bufferViewFromOffset = (int)binaries.size();
+            bufferViewFromOffset = (int)m_binByteArray.size();
             m_json["bufferViews"][bufferViewIndex]["buffer"] = 0;
             m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
             QStringList boneList;
@@ -279,13 +265,13 @@ GltfFileWriter::GltfFileWriter(Outcome &outcome,
                 if (findWeight != resultRigWeights->end()) {
                     for (; i < MAX_WEIGHT_NUM; i++) {
                         quint16 nodeIndex = (quint16)findWeight->second.boneIndicies[i];
-                        stream << (quint16)nodeIndex;
+                        binStream << (quint16)nodeIndex;
                         if (m_enableComment)
                             boneList.append(QString("%1").arg(nodeIndex));
                     }
                 }
                 for (; i < MAX_WEIGHT_NUM; i++) {
-                    stream << (quint16)0;
+                    binStream << (quint16)0;
                     if (m_enableComment)
                         boneList.append(QString("%1").arg(0));
                 }
@@ -293,8 +279,8 @@ GltfFileWriter::GltfFileWriter(Outcome &outcome,
                     boneList.append(QString(">"));
                 weightItIndex++;
             }
-            m_json["bufferViews"][bufferViewIndex]["byteLength"] = binaries.size() - bufferViewFromOffset;
-            alignBinaries();
+            m_json["bufferViews"][bufferViewIndex]["byteLength"] = m_binByteArray.size() - bufferViewFromOffset;
+            alignBin();
             if (m_enableComment)
                 m_json["accessors"][bufferViewIndex]["__comment"] = QString("/accessors/%1: bone indicies %2").arg(QString::number(bufferViewIndex)).arg(boneList.join(" ")).toUtf8().constData();
             m_json["accessors"][bufferViewIndex]["bufferView"] = bufferViewIndex;
@@ -304,7 +290,7 @@ GltfFileWriter::GltfFileWriter(Outcome &outcome,
             m_json["accessors"][bufferViewIndex]["type"] = "VEC4";
             bufferViewIndex++;
             
-            bufferViewFromOffset = (int)binaries.size();
+            bufferViewFromOffset = (int)m_binByteArray.size();
             m_json["bufferViews"][bufferViewIndex]["buffer"] = 0;
             m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
             QStringList weightList;
@@ -317,13 +303,13 @@ GltfFileWriter::GltfFileWriter(Outcome &outcome,
                 if (findWeight != resultRigWeights->end()) {
                     for (; i < MAX_WEIGHT_NUM; i++) {
                         float weight = (float)findWeight->second.boneWeights[i];
-                        stream << (float)weight;
+                        binStream << (float)weight;
                         if (m_enableComment)
                             weightList.append(QString("%1").arg(QString::number((float)weight)));
                     }
                 }
                 for (; i < MAX_WEIGHT_NUM; i++) {
-                    stream << (float)0.0;
+                    binStream << (float)0.0;
                     if (m_enableComment)
                         weightList.append(QString("%1").arg(QString::number(0.0)));
                 }
@@ -331,8 +317,8 @@ GltfFileWriter::GltfFileWriter(Outcome &outcome,
                     weightList.append(QString(">"));
                 weightItIndex++;
             }
-            m_json["bufferViews"][bufferViewIndex]["byteLength"] = binaries.size() - bufferViewFromOffset;
-            alignBinaries();
+            m_json["bufferViews"][bufferViewIndex]["byteLength"] = m_binByteArray.size() - bufferViewFromOffset;
+            alignBin();
             if (m_enableComment)
                 m_json["accessors"][bufferViewIndex]["__comment"] = QString("/accessors/%1: bone weights %2").arg(QString::number(bufferViewIndex)).arg(weightList.join(" ")).toUtf8().constData();
             m_json["accessors"][bufferViewIndex]["bufferView"] = bufferViewIndex;
@@ -344,21 +330,89 @@ GltfFileWriter::GltfFileWriter(Outcome &outcome,
         }
     }
     
-    m_json["buffers"][0]["uri"] = QString("data:application/octet-stream;base64," + binaries.toBase64()).toUtf8().constData();
-    m_json["buffers"][0]["byteLength"] = binaries.size();
+    if (nullptr != textureImage) {
+        m_json["textures"][0]["sampler"] = 0;
+        m_json["textures"][0]["source"] = 0;
+        
+        m_json["samplers"][0]["magFilter"] = 9729;
+        m_json["samplers"][0]["minFilter"] = 9987;
+        m_json["samplers"][0]["wrapS"] = 33648;
+        m_json["samplers"][0]["wrapT"] = 33648;
+    
+        bufferViewFromOffset = (int)m_binByteArray.size();
+        m_json["bufferViews"][bufferViewIndex]["buffer"] = 0;
+        m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
+        QByteArray pngByteArray;
+        QBuffer buffer(&pngByteArray);
+        textureImage->save(&buffer, "PNG");
+        binStream.writeRawData(pngByteArray.data(), pngByteArray.size());
+        alignBin();
+        m_json["bufferViews"][bufferViewIndex]["byteLength"] = m_binByteArray.size() - bufferViewFromOffset;
+        m_json["images"][0]["bufferView"] = bufferViewIndex;
+        m_json["images"][0]["mimeType"] = "image/png";
+        bufferViewIndex++;
+    }
+    
+    m_json["buffers"][0]["byteLength"] = m_binByteArray.size();
+    
+    auto jsonString = m_json.dump(4);
+    jsonStream.writeRawData(jsonString.data(), jsonString.size());
+    alignJson();
 }
 
-const QString &GltfFileWriter::textureFilenameInGltf()
-{
-    return m_textureFilename;
-}
-
-bool GltfFileWriter::save()
+bool GlbFileWriter::save()
 {
     QFile file(m_filename);
     if (!file.open(QIODevice::WriteOnly)) {
         return false;
     }
-    file.write(QString::fromStdString(m_json.dump(4)).toUtf8());
+    QDataStream output(&file);
+    output.setFloatingPointPrecision(QDataStream::SinglePrecision);
+    output.setByteOrder(QDataStream::LittleEndian);
+    
+    uint32_t headerSize = 12;
+    uint32_t chunk0DescriptionSize = 8;
+    uint32_t chunk1DescriptionSize = 8;
+    uint32_t fileSize = headerSize +
+        chunk0DescriptionSize + m_jsonByteArray.size() +
+        chunk1DescriptionSize + m_binByteArray.size();
+    
+    qDebug() << "Chunk 0 data size:" << m_jsonByteArray.size();
+    qDebug() << "Chunk 1 data size:" << m_binByteArray.size();
+    qDebug() << "File size:" << fileSize;
+    
+    //////////// Header ////////////
+
+    // magic
+    output << (uint32_t)0x46546C67;
+    
+    // version
+    output << (uint32_t)0x00000002;
+    
+    // length
+    output << (uint32_t)fileSize;
+    
+    //////////// Chunk 0 (Json) ////////////
+    
+    // length
+    output << (uint32_t)m_jsonByteArray.size();
+    
+    // type
+    output << (uint32_t)0x4E4F534A;
+    
+    // data
+    output.writeRawData(m_jsonByteArray.data(), m_jsonByteArray.size());
+    
+    //////////// Chunk 1 (Binary Buffer) ///
+    
+    // length
+    output << (uint32_t)m_binByteArray.size();
+    
+    // type
+    output << (uint32_t)0x004E4942;
+    
+    // data
+    output.writeRawData(m_binByteArray.data(), m_binByteArray.size());
+    
     return true;
 }

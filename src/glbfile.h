@@ -1,32 +1,34 @@
-#ifndef DUST3D_GLTF_FILE_H
-#define DUST3D_GLTF_FILE_H
+#ifndef DUST3D_GLB_FILE_H
+#define DUST3D_GLB_FILE_H
 #include <QObject>
 #include <QString>
 #include <QByteArray>
 #include <QMatrix4x4>
 #include <vector>
 #include <QQuaternion>
+#include <QImage>
 #include "outcome.h"
 #include "json.hpp"
 #include "document.h"
 
-class GltfFileWriter : public QObject
+class GlbFileWriter : public QObject
 {
     Q_OBJECT
 public:
-    GltfFileWriter(Outcome &outcome,
+    GlbFileWriter(Outcome &outcome,
         const std::vector<AutoRiggerBone> *resultRigBones,
         const std::map<int, AutoRiggerVertexWeights> *resultRigWeights,
-        const QString &filename);
+        const QString &filename,
+        QImage *textureImage=nullptr);
     bool save();
-    const QString &textureFilenameInGltf();
 private:
     QString m_filename;
-    QString m_textureFilename;
     bool m_outputNormal;
     bool m_outputAnimation;
     bool m_outputUv;
     bool m_testOutputAsWhole;
+    QByteArray m_binByteArray;
+    QByteArray m_jsonByteArray;
 private:
     nlohmann::json m_json;
 public:

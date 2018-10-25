@@ -25,7 +25,7 @@
 #include "util.h"
 #include "aboutwidget.h"
 #include "version.h"
-#include "gltffile.h"
+#include "glbfile.h"
 #include "graphicscontainerwidget.h"
 #include "parttreewidget.h"
 #include "rigwidget.h"
@@ -1232,7 +1232,7 @@ void SkeletonDocumentWindow::showExportPreview()
     if (nullptr == m_exportPreviewWidget) {
         m_exportPreviewWidget = new ExportPreviewWidget(m_document, this);
         connect(m_exportPreviewWidget, &ExportPreviewWidget::regenerate, m_document, &Document::regenerateMesh);
-        connect(m_exportPreviewWidget, &ExportPreviewWidget::saveAsGltf, this, &SkeletonDocumentWindow::exportGltfResult);
+        connect(m_exportPreviewWidget, &ExportPreviewWidget::saveAsGlb, this, &SkeletonDocumentWindow::exportGlbResult);
         connect(m_exportPreviewWidget, &ExportPreviewWidget::saveAsFbx, this, &SkeletonDocumentWindow::exportFbxResult);
         connect(m_document, &Document::resultMeshChanged, m_exportPreviewWidget, &ExportPreviewWidget::checkSpinner);
         connect(m_document, &Document::exportReady, m_exportPreviewWidget, &ExportPreviewWidget::checkSpinner);
@@ -1262,10 +1262,10 @@ void SkeletonDocumentWindow::exportFbxResult()
     QApplication::restoreOverrideCursor();
 }
 
-void SkeletonDocumentWindow::exportGltfResult()
+void SkeletonDocumentWindow::exportGlbResult()
 {
     QString filename = QFileDialog::getSaveFileName(this, QString(), QString(),
-       tr("GL Transmission Format (.gltf)"));
+       tr("glTF Binary Format (.glb)"));
     if (filename.isEmpty()) {
         return;
     }
@@ -1275,10 +1275,10 @@ void SkeletonDocumentWindow::exportGltfResult()
     }
     QApplication::setOverrideCursor(Qt::WaitCursor);
     Outcome skeletonResult = m_document->currentPostProcessedResultContext();
-    GltfFileWriter gltfFileWriter(skeletonResult, m_document->resultRigBones(), m_document->resultRigWeights(), filename);
-    gltfFileWriter.save();
-    if (m_document->textureImage)
-        m_document->textureImage->save(gltfFileWriter.textureFilenameInGltf());
+    GlbFileWriter glbFileWriter(skeletonResult, m_document->resultRigBones(), m_document->resultRigWeights(), filename,
+        m_document->textureImage);
+    glbFileWriter.save();
+    /*
     QFileInfo nameInfo(filename);
     QString borderFilename = nameInfo.path() + QDir::separator() + nameInfo.completeBaseName() + "-BORDER.png";
     if (m_document->textureBorderImage)
@@ -1289,6 +1289,7 @@ void SkeletonDocumentWindow::exportGltfResult()
     QString colorFilename = nameInfo.path() + QDir::separator() + nameInfo.completeBaseName() + "-COLOR.png";
     if (m_document->textureColorImage)
         m_document->textureColorImage->save(colorFilename);
+    */
     QApplication::restoreOverrideCursor();
 }
 

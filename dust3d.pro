@@ -84,8 +84,8 @@ HEADERS += src/snapshotxml.h
 SOURCES += src/ds3file.cpp
 HEADERS += src/ds3file.h
 
-SOURCES += src/gltffile.cpp
-HEADERS += src/gltffile.h
+SOURCES += src/glbfile.cpp
+HEADERS += src/glbfile.h
 
 SOURCES += src/theme.cpp
 HEADERS += src/theme.h
