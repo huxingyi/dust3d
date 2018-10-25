@@ -219,11 +219,13 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     containerWidget->setMinimumSize(400, 400);
 
     m_modelRenderWidget = new ModelWidget(containerWidget);
+    m_modelRenderWidget->setAttribute(Qt::WA_TransparentForMouseEvents);
     m_modelRenderWidget->setMinimumSize(SkeletonDocumentWindow::m_modelRenderWidgetInitialSize, SkeletonDocumentWindow::m_modelRenderWidgetInitialSize);
     m_modelRenderWidget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     m_modelRenderWidget->move(SkeletonDocumentWindow::m_modelRenderWidgetInitialX, SkeletonDocumentWindow::m_modelRenderWidgetInitialY);
     
     m_graphicsWidget->setModelWidget(m_modelRenderWidget);
+    containerWidget->setModelWidget(m_modelRenderWidget);
     
     m_document->setSharedContextWidget(m_modelRenderWidget);
     

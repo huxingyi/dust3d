@@ -8,6 +8,7 @@ MotionWidget::MotionWidget(const Document *document, QUuid motionId) :
     setObjectName("MotionFrame");
 
     m_previewWidget = new ModelWidget(this);
+    m_previewWidget->setAttribute(Qt::WA_TransparentForMouseEvents);
     m_previewWidget->setFixedSize(Theme::motionPreviewImageSize, Theme::motionPreviewImageSize);
     m_previewWidget->enableMove(false);
     m_previewWidget->enableZoom(false);

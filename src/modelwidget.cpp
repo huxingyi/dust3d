@@ -20,8 +20,6 @@ ModelWidget::ModelWidget(QWidget *parent) :
     m_moveEnabled(true),
     m_zoomEnabled(true)
 {
-    setAttribute(Qt::WA_TransparentForMouseEvents);
-    
     // --transparent causes the clear color to be transparent. Therefore, on systems that
     // support it, the widget will become transparent apart from the logo.
     if (m_transparent) {
@@ -295,3 +293,24 @@ void ModelWidget::enableZoom(bool enabled)
 {
     m_zoomEnabled = enabled;
 }
+
+void ModelWidget::mousePressEvent(QMouseEvent *event)
+{
+    inputMousePressEventFromOtherWidget(event);
+}
+
+void ModelWidget::mouseMoveEvent(QMouseEvent *event)
+{
+    inputMouseMoveEventFromOtherWidget(event);
+}
+
+void ModelWidget::wheelEvent(QWheelEvent *event)
+{
+    inputWheelEventFromOtherWidget(event);
+}
+
+void ModelWidget::mouseReleaseEvent(QMouseEvent *event)
+{
+    inputMouseReleaseEventFromOtherWidget(event);
+}
+

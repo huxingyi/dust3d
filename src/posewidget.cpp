@@ -8,6 +8,7 @@ PoseWidget::PoseWidget(const Document *document, QUuid poseId) :
     setObjectName("PoseFrame");
 
     m_previewWidget = new ModelWidget(this);
+    m_previewWidget->setAttribute(Qt::WA_TransparentForMouseEvents);
     m_previewWidget->setFixedSize(Theme::posePreviewImageSize, Theme::posePreviewImageSize);
     m_previewWidget->enableMove(false);
     m_previewWidget->enableZoom(false);

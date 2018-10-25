@@ -56,6 +56,7 @@ PartWidget::PartWidget(const Document *document, QUuid partId) :
     initButton(m_wrapButton);
     
     m_previewWidget = new ModelWidget;
+    m_previewWidget->setAttribute(Qt::WA_TransparentForMouseEvents);
     m_previewWidget->enableMove(false);
     m_previewWidget->enableZoom(false);
     m_previewWidget->setFixedSize(Theme::partPreviewImageSize, Theme::partPreviewImageSize);

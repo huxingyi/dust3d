@@ -2,6 +2,9 @@
 #define DUST3D_GRAPHICS_CONTAINER_WIDGET_H
 #include <QWidget>
 #include <QResizeEvent>
+#include <QMouseEvent>
+#include <QWheelEvent>
+#include "modelwidget.h"
 
 class GraphicsContainerWidget : public QWidget
 {
@@ -10,10 +13,17 @@ signals:
     void containerSizeChanged(QSize size);
 public:
     GraphicsContainerWidget();
-    void resizeEvent(QResizeEvent *event) override;
     void setGraphicsWidget(QWidget *graphicsWidget);
+    void setModelWidget(ModelWidget *modelWidget);
+protected:
+    void resizeEvent(QResizeEvent *event) override;
+    void mousePressEvent(QMouseEvent *event) override;
+    void mouseMoveEvent(QMouseEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
+    void wheelEvent(QWheelEvent *event) override;
 private:
     QWidget *m_graphicsWidget = nullptr;
+    ModelWidget *m_modelWidget = nullptr;
 };
 
 #endif
