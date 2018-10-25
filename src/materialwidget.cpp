@@ -8,6 +8,7 @@ MaterialWidget::MaterialWidget(const Document *document, QUuid materialId) :
     setObjectName("MaterialFrame");
 
     m_previewWidget = new ModelWidget(this);
+    m_previewWidget->setAttribute(Qt::WA_TransparentForMouseEvents);
     m_previewWidget->setFixedSize(Theme::materialPreviewImageSize, Theme::materialPreviewImageSize);
     m_previewWidget->enableMove(false);
     m_previewWidget->enableZoom(false);

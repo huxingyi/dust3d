@@ -21,7 +21,7 @@ Outcome *MeshResultPostProcessor::takePostProcessedResultContext()
 
 void MeshResultPostProcessor::process()
 {
-    if (!m_outcome->bmeshNodes.empty()) {
+    if (!m_outcome->nodes.empty()) {
         (void)m_outcome->triangleTangents();
         (void)m_outcome->parts();
     }

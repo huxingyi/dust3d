@@ -148,7 +148,7 @@ void TextureGenerator::prepare()
         QUuid partId = QUuid(partIt.first);
         updatedMaterialIdMap.insert({partId, materialId});
     }
-    for (const auto &bmeshNode: m_outcome->bmeshNodes) {
+    for (const auto &bmeshNode: m_outcome->nodes) {
         for (size_t i = 0; i < (int)TextureType::Count - 1; ++i) {
             TextureType forWhat = (TextureType)(i + 1);
             MaterialTextures materialTextures;

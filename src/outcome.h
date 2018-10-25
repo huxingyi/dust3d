@@ -73,11 +73,10 @@ struct ResultPart
 class Outcome
 {
 public:
-    std::vector<OutcomeNode> bmeshNodes;
-    std::vector<OutcomeNodeVertex> bmeshVertices;
+    std::vector<OutcomeNode> nodes;
+    std::vector<OutcomeNodeVertex> nodeVertices;
     std::vector<OutcomeVertex> vertices;
     std::vector<OutcomeTriangle> triangles;
-    Outcome();
 public:
     const std::vector<std::pair<QUuid, QUuid>> &triangleSourceNodes();
     const std::vector<OutcomeMaterial> &triangleMaterials();
@@ -89,14 +88,14 @@ public:
     const std::vector<QVector3D> &interpolatedTriangleVertexNormals();
     const std::vector<QVector3D> &triangleTangents();
 private:
-    bool m_triangleSourceResolved;
-    bool m_triangleMaterialResolved;
-    bool m_triangleEdgeSourceMapResolved;
-    bool m_bmeshNodeMapResolved;
-    bool m_resultPartsResolved;
-    bool m_resultTriangleUvsResolved;
-    bool m_triangleVertexNormalsInterpolated;
-    bool m_triangleTangentsResolved;
+    bool m_triangleSourceResolved = false;
+    bool m_triangleMaterialResolved = false;
+    bool m_triangleEdgeSourceMapResolved = false;
+    bool m_bmeshNodeMapResolved = false;
+    bool m_resultPartsResolved = false;
+    bool m_resultTriangleUvsResolved = false;
+    bool m_triangleVertexNormalsInterpolated = false;
+    bool m_triangleTangentsResolved = false;
 private:
     std::vector<std::pair<QUuid, QUuid>> m_triangleSourceNodes;
     std::vector<OutcomeMaterial> m_triangleMaterials;

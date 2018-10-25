@@ -670,11 +670,11 @@ void MeshGenerator::generate()
     }
     
     for (const auto &verticesSourcesIt: m_cacheContext->componentVerticesSources[QUuid().toString()].map()) {
-        m_outcome->bmeshVertices.push_back(verticesSourcesIt.second);
+        m_outcome->nodeVertices.push_back(verticesSourcesIt.second);
     }
     
     for (const auto &bmeshNodes: m_cacheContext->partBmeshNodes) {
-        m_outcome->bmeshNodes.insert(m_outcome->bmeshNodes.end(),
+        m_outcome->nodes.insert(m_outcome->nodes.end(),
             bmeshNodes.second.begin(), bmeshNodes.second.end());
     }
     

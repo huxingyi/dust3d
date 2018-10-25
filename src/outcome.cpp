@@ -26,18 +26,6 @@ struct CandidateEdge
     float length;
 };
 
-Outcome::Outcome() :
-    m_triangleSourceResolved(false),
-    m_triangleMaterialResolved(false),
-    m_triangleEdgeSourceMapResolved(false),
-    m_bmeshNodeMapResolved(false),
-    m_resultPartsResolved(false),
-    m_resultTriangleUvsResolved(false),
-    m_triangleVertexNormalsInterpolated(false),
-    m_triangleTangentsResolved(false)
-{
-}
-
 const std::vector<std::pair<QUuid, QUuid>> &Outcome::triangleSourceNodes()
 {
     if (!m_triangleSourceResolved) {
@@ -90,7 +78,7 @@ void Outcome::calculateTriangleSourceNodes(std::vector<std::pair<QUuid, QUuid>> 
     PositionMap<std::pair<QUuid, QUuid>> positionMap;
     std::map<std::pair<int, int>, HalfColorEdge> halfColorEdgeMap;
     std::set<int> brokenTriangleSet;
-    for (const auto &it: bmeshVertices) {
+    for (const auto &it: nodeVertices) {
         positionMap.addPosition(it.position.x(), it.position.y(), it.position.z(),
             std::make_pair(it.partId, it.nodeId));
     }
@@ -262,7 +250,7 @@ void Outcome::calculateRemainingVertexSourceNodesAfterTriangleSourceNodesSolved(
 void Outcome::calculateTriangleMaterials(std::vector<OutcomeMaterial> &triangleMaterials)
 {
     std::map<std::pair<QUuid, QUuid>, OutcomeMaterial> nodeMaterialMap;
-    for (const auto &it: bmeshNodes) {
+    for (const auto &it: nodes) {
         nodeMaterialMap[std::make_pair(it.partId, it.nodeId)] = it.material;
     }
     const auto sourceNodes = triangleSourceNodes();
@@ -285,8 +273,8 @@ void Outcome::calculateTriangleEdgeSourceMap(std::map<std::pair<int, int>, std::
 }
 
 void Outcome::calculateBmeshNodeMap(std::map<std::pair<QUuid, QUuid>, OutcomeNode *> &bmeshNodeMap) {
-    for (auto i = 0u; i < bmeshNodes.size(); i++) {
-        OutcomeNode *bmeshNode = &bmeshNodes[i];
+    for (auto i = 0u; i < nodes.size(); i++) {
+        OutcomeNode *bmeshNode = &nodes[i];
         bmeshNodeMap[std::make_pair(bmeshNode->partId, bmeshNode->nodeId)] = bmeshNode;
     }
 }
