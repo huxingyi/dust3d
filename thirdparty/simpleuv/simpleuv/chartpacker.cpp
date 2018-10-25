@@ -32,12 +32,14 @@ bool ChartPacker::tryPack(float textureSize)
     std::vector<maxRectsSize> rects;
     int width = textureSize * m_floatToIntFactor;
     int height = width;
-    qDebug() << "Try the " << m_tryNum << "nth times pack with factor:" << m_textureSizeFactor << " size:" << width << "x" << height;
+    if (m_tryNum > 3) {
+        qDebug() << "Try the " << m_tryNum << "nth times pack with factor:" << m_textureSizeFactor << " size:" << width << "x" << height;
+    }
     for (const auto &chartSize: m_chartSizes) {
         maxRectsSize r;
         r.width = chartSize.first * m_floatToIntFactor;
         r.height = chartSize.second * m_floatToIntFactor;
-        qDebug() << "  :chart " << r.width << "x" << r.height;
+        //qDebug() << "  :chart " << r.width << "x" << r.height;
         rects.push_back(r);
     }
     const maxRectsFreeRectChoiceHeuristic methods[] = {
@@ -51,13 +53,13 @@ bool ChartPacker::tryPack(float textureSize)
     float bestOccupancy = 0;
     std::vector<maxRectsPosition> bestResult;
     for (size_t i = 0; i < sizeof(methods) / sizeof(methods[0]); ++i) {
-        qDebug() << "Test method[" << methods[i] << "]";
+        //qDebug() << "Test method[" << methods[i] << "]";
         std::vector<maxRectsPosition> result(rects.size());
         if (0 != maxRects(width, height, rects.size(), rects.data(), methods[i], true, result.data(), &occupancy)) {
-            qDebug() << "  method[" << methods[i] << "] failed";
+            //qDebug() << "  method[" << methods[i] << "] failed";
             continue;
         }
-        qDebug() << "  method[" << methods[i] << "] occupancy:" << occupancy;
+        //qDebug() << "  method[" << methods[i] << "] occupancy:" << occupancy;
         if (occupancy > bestOccupancy) {
             bestResult = result;
             bestOccupancy = occupancy;

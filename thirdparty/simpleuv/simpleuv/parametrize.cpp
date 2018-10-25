@@ -17,7 +17,7 @@ bool parametrize(const std::vector<Vertex> &verticies,
     if (verticies.empty() || faces.empty())
         return false;
     
-    qDebug() << "parametrize vertices:" << verticies.size() << "faces:" << faces.size();
+    //qDebug() << "parametrize vertices:" << verticies.size() << "faces:" << faces.size();
 
     Eigen::MatrixXd V(verticies.size(), 3);
     Eigen::MatrixXi F(faces.size(), 3);

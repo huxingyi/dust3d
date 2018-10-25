@@ -6,6 +6,7 @@
 #include <QMimeData>
 #include <QApplication>
 #include <QVector3D>
+#include <functional>
 #include "document.h"
 #include "util.h"
 #include "snapshotxml.h"
@@ -1326,7 +1327,7 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
         emit motionListChanged();
 }
 
-void Document::reset()
+void Document::silentReset()
 {
     originX = 0.0;
     originY = 0.0;
@@ -1344,6 +1345,11 @@ void Document::reset()
     motionIdList.clear();
     rootComponent = Component();
     removeRigResults();
+}
+
+void Document::reset()
+{
+    silentReset();
     emit cleanup();
     emit skeletonChanged();
 }
@@ -2285,21 +2291,27 @@ void Document::setPartColorState(QUuid partId, bool hasColor, QColor color)
 
 void Document::saveSnapshot()
 {
-    if (m_undoItems.size() + 1 > m_maxSnapshot)
-        m_undoItems.pop_front();
     HistoryItem item;
     toSnapshot(&item.snapshot);
+    item.hash = item.snapshot.hash();
+    if (!m_undoItems.empty() && item.hash == m_undoItems[m_undoItems.size() - 1].hash) {
+        qDebug() << "Snapshot has the same hash:" << item.hash << "skipped";
+        return;
+    }
+    if (m_undoItems.size() + 1 > m_maxSnapshot)
+        m_undoItems.pop_front();
     m_undoItems.push_back(item);
-    qDebug() << "Undo items:" << m_undoItems.size();
+    qDebug() << "Snapshot saved with hash:" << item.hash << " History count:" << m_undoItems.size();
 }
 
 void Document::undo()
 {
-    if (m_undoItems.empty())
+    if (!undoable())
         return;
     m_redoItems.push_back(m_undoItems.back());
-    fromSnapshot(m_undoItems.back().snapshot);
     m_undoItems.pop_back();
+    const auto &item = m_undoItems.back();
+    fromSnapshot(item.snapshot);
     qDebug() << "Undo/Redo items:" << m_undoItems.size() << m_redoItems.size();
 }
 
@@ -2308,9 +2320,16 @@ void Document::redo()
     if (m_redoItems.empty())
         return;
     m_undoItems.push_back(m_redoItems.back());
-    fromSnapshot(m_redoItems.back().snapshot);
+    const auto &item = m_redoItems.back();
+    fromSnapshot(item.snapshot);
     m_redoItems.pop_back();
     qDebug() << "Undo/Redo items:" << m_undoItems.size() << m_redoItems.size();
+}
+
+void Document::clearHistories()
+{
+    m_undoItems.clear();
+    m_redoItems.clear();
 }
 
 void Document::paste()
@@ -2371,7 +2390,7 @@ bool Document::hasPastableMotionsInClipboard() const
 
 bool Document::undoable() const
 {
-    return !m_undoItems.empty();
+    return m_undoItems.size() >= 2;
 }
 
 bool Document::redoable() const

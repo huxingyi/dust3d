@@ -739,6 +739,8 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(graphicsWidget, &SkeletonGraphicsWidget::save, this, &SkeletonDocumentWindow::save);
     connect(graphicsWidget, &SkeletonGraphicsWidget::open, this, &SkeletonDocumentWindow::open);
     
+    connect(m_document, &Document::optionsChanged, m_document, &Document::saveSnapshot);
+
     connect(m_document, &Document::nodeAdded, graphicsWidget, &SkeletonGraphicsWidget::nodeAdded);
     connect(m_document, &Document::nodeRemoved, graphicsWidget, &SkeletonGraphicsWidget::nodeRemoved);
     connect(m_document, &Document::edgeAdded, graphicsWidget, &SkeletonGraphicsWidget::edgeAdded);
@@ -966,9 +968,7 @@ void SkeletonDocumentWindow::newDocument()
         if (answer != QMessageBox::Yes)
             return;
     }
-    m_document->clearHistories();
     m_document->reset();
-    m_document->saveSnapshot();
 }
 
 void SkeletonDocumentWindow::saveAs()
@@ -1048,7 +1048,7 @@ void SkeletonDocumentWindow::showEvent(QShowEvent *event)
     if (m_firstShow) {
         m_firstShow = false;
         updateTitle();
-        m_document->saveSnapshot();
+        m_document->silentReset();
         m_graphicsWidget->setFocus();
         emit initialized();
     }
@@ -1154,10 +1154,6 @@ void SkeletonDocumentWindow::open()
 
     QApplication::setOverrideCursor(Qt::WaitCursor);
     Ds3FileReader ds3Reader(filename);
-    
-    m_document->clearHistories();
-    m_document->reset();
-    m_document->saveSnapshot();
     
     for (int i = 0; i < ds3Reader.items().size(); ++i) {
         Ds3ReaderItem item = ds3Reader.items().at(i);

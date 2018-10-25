@@ -2,7 +2,7 @@
 #include "snapshot.h"
 #include "util.h"
 
-void Snapshot::resolveBoundingBox(QRectF *mainProfile, QRectF *sideProfile, const QString &partId)
+void Snapshot::resolveBoundingBox(QRectF *mainProfile, QRectF *sideProfile, const QString &partId) const
 {
     float left = 0;
     bool leftFirstTime = true;
@@ -50,9 +50,6 @@ void Snapshot::resolveBoundingBox(QRectF *mainProfile, QRectF *sideProfile, cons
     }
     *mainProfile = QRectF(QPointF(left, top), QPointF(right, bottom));
     *sideProfile = QRectF(QPointF(zLeft, top), QPointF(zRight, bottom));
-    //qDebug() << "resolveBoundingBox left:" << left << "top:" << top << "right:" << right << "bottom:" << bottom << " zLeft:" << zLeft << "zRight:" << zRight;
-    //qDebug() << "mainHeight:" << mainProfile->height() << "mainWidth:" << mainProfile->width();
-    //qDebug() << "sideHeight:" << sideProfile->height() << "sideWidth:" << sideProfile->width();
 }
 
 

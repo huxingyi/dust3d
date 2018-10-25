@@ -200,6 +200,7 @@ enum class SkeletonProfile
 class HistoryItem
 {
 public:
+    uint32_t hash;
     Snapshot snapshot;
 };
 
@@ -773,6 +774,8 @@ public slots:
     void batchChangeBegin();
     void batchChangeEnd();
     void reset();
+    void clearHistories();
+    void silentReset();
     void breakEdge(QUuid edgeId);
     void setXlockState(bool locked);
     void setYlockState(bool locked);

@@ -276,6 +276,11 @@ SOURCES += src/main.cpp
 
 HEADERS += src/version.h
 
+INCLUDEPATH += thirdparty/crc64
+
+SOURCES += thirdparty/crc64/crc64.c
+HEADERS += thirdparty/crc64/crc64.h
+
 INCLUDEPATH += thirdparty/miniz
 
 SOURCES += thirdparty/miniz/miniz.c

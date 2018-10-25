@@ -310,8 +310,8 @@ void UvUnwrapper::calculateSizeAndRemoveInvalidCharts()
                 item.coords[i].uv[1] -= top;
             }
         }
-        qDebug() << "left:" << left << "top:" << top << "right:" << right << "bottom:" << bottom;
-        qDebug() << "width:" << size.first << "height:" << size.second;
+        //qDebug() << "left:" << left << "top:" << top << "right:" << right << "bottom:" << bottom;
+        //qDebug() << "width:" << size.first << "height:" << size.second;
         m_chartSizes.push_back(size);
         m_charts.push_back(chart);
     }

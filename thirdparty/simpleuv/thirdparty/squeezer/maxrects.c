@@ -645,7 +645,7 @@ static int startLayout(maxRectsContext *ctx) {
       loop = loop->next;
     }
     if (!bestNode) {
-      fprintf(stderr, "%s: %s\n", __FUNCTION__, "find bestRect failed");
+      //fprintf(stderr, "%s: %s\n", __FUNCTION__, "find bestRect failed");
       return -1;
     }
     if (bestNode->width != bestRect->width ||
