@@ -3,8 +3,8 @@
 #include <QElapsedTimer>
 #include <unordered_set>
 #include "meshgenerator.h"
-#include "dust3dutil.h"
-#include "skeletondocument.h"
+#include "util.h"
+#include "document.h"
 #include "meshlite.h"
 #include "meshutil.h"
 #include "theme.h"
@@ -32,10 +32,10 @@ void GeneratedCacheContext::updateComponentCombinableMesh(QString componentId, v
     cache = cloneCombinableMesh(mesh);
 }
 
-MeshGenerator::MeshGenerator(SkeletonSnapshot *snapshot) :
+MeshGenerator::MeshGenerator(Snapshot *snapshot) :
     m_snapshot(snapshot),
     m_mesh(nullptr),
-    m_meshResultContext(nullptr),
+    m_outcome(nullptr),
     m_sharedContextWidget(nullptr),
     m_cacheContext(nullptr),
     m_smoothNormal(true),
@@ -50,7 +50,7 @@ MeshGenerator::~MeshGenerator()
     for (const auto &partPreviewMeshIt: m_partPreviewMeshMap) {
         delete partPreviewMeshIt.second;
     }
-    delete m_meshResultContext;
+    delete m_outcome;
 }
 
 void MeshGenerator::setSmoothNormal(bool smoothNormal)
@@ -103,14 +103,14 @@ const std::set<QUuid> &MeshGenerator::generatedPreviewPartIds()
     return m_generatedPreviewPartIds;
 }
 
-MeshResultContext *MeshGenerator::takeMeshResultContext()
+Outcome *MeshGenerator::takeMeshResultContext()
 {
-    MeshResultContext *meshResultContext = m_meshResultContext;
-    m_meshResultContext = nullptr;
-    return meshResultContext;
+    Outcome *outcome = m_outcome;
+    m_outcome = nullptr;
+    return outcome;
 }
 
-void MeshGenerator::loadVertexSources(void *meshliteContext, int meshId, QUuid partId, const std::map<int, QUuid> &bmeshToNodeIdMap, std::vector<BmeshVertex> &bmeshVertices,
+void MeshGenerator::loadVertexSources(void *meshliteContext, int meshId, QUuid partId, const std::map<int, QUuid> &bmeshToNodeIdMap, std::vector<OutcomeNodeVertex> &bmeshVertices,
     std::vector<std::tuple<PositionMapKey, PositionMapKey, PositionMapKey, PositionMapKey>> &bmeshQuads)
 {
     int vertexCount = meshlite_get_vertex_count(meshliteContext, meshId);
@@ -122,7 +122,7 @@ void MeshGenerator::loadVertexSources(void *meshliteContext, int meshId, QUuid p
     Q_ASSERT(positionCount == sourceCount);
     std::vector<QVector3D> verticesPositions;
     for (int i = 0, positionIndex = 0; i < positionCount; i++, positionIndex+=3) {
-        BmeshVertex vertex;
+        OutcomeNodeVertex vertex;
         vertex.partId = partId;
         auto findNodeId = bmeshToNodeIdMap.find(sourceBuffer[i]);
         if (findNodeId != bmeshToNodeIdMap.end())
@@ -168,10 +168,10 @@ void MeshGenerator::loadGeneratedPositionsToMeshResultContext(void *meshliteCont
     int positionCount = meshlite_get_vertex_position_array(meshliteContext, triangulatedMeshId, positionBuffer, positionBufferLen) / 3;
     std::map<int, int> verticesMap;
     for (int i = 0, positionIndex = 0; i < positionCount; i++, positionIndex+=3) {
-        ResultVertex vertex;
+        OutcomeVertex vertex;
         vertex.position = QVector3D(positionBuffer[positionIndex + 0], positionBuffer[positionIndex + 1], positionBuffer[positionIndex + 2]);
-        verticesMap[i] = m_meshResultContext->vertices.size();
-        m_meshResultContext->vertices.push_back(vertex);
+        verticesMap[i] = m_outcome->vertices.size();
+        m_outcome->vertices.push_back(vertex);
     }
     int faceCount = meshlite_get_face_count(meshliteContext, triangulatedMeshId);
     int triangleIndexBufferLen = faceCount * 3;
@@ -182,12 +182,12 @@ void MeshGenerator::loadGeneratedPositionsToMeshResultContext(void *meshliteCont
     int normalCount = meshlite_get_triangle_normal_array(meshliteContext, triangulatedMeshId, normalBuffer, triangleNormalBufferLen) / 3;
     Q_ASSERT(triangleCount == normalCount);
     for (int i = 0, triangleVertIndex = 0, normalIndex=0; i < triangleCount; i++, triangleVertIndex+=3, normalIndex += 3) {
-        ResultTriangle triangle;
+        OutcomeTriangle triangle;
         triangle.indicies[0] = verticesMap[triangleIndexBuffer[triangleVertIndex + 0]];
         triangle.indicies[1] = verticesMap[triangleIndexBuffer[triangleVertIndex + 1]];
         triangle.indicies[2] = verticesMap[triangleIndexBuffer[triangleVertIndex + 2]];
         triangle.normal = QVector3D(normalBuffer[normalIndex + 0], normalBuffer[normalIndex + 1], normalBuffer[normalIndex + 2]);
-        m_meshResultContext->triangles.push_back(triangle);
+        m_outcome->triangles.push_back(triangle);
     }
     delete[] positionBuffer;
     delete[] triangleIndexBuffer;
@@ -257,7 +257,7 @@ void *MeshGenerator::combinePartMesh(QString partId)
     if (!materialIdString.isEmpty())
         materialId = QUuid(materialIdString);
     
-    Material partMaterial;
+    OutcomeMaterial partMaterial;
     partMaterial.color = partColor;
     partMaterial.materialId = materialId;
     
@@ -291,12 +291,12 @@ void *MeshGenerator::combinePartMesh(QString partId)
         float z = (m_sideProfileMiddleX - valueOfKeyInMapOrEmpty(node, "z").toFloat());
         int bmeshNodeId = meshlite_bmesh_add_node(m_meshliteContext, bmeshId, x, y, z, radius);
         
-        SkeletonBoneMark boneMark = SkeletonBoneMarkFromString(valueOfKeyInMapOrEmpty(node, "boneMark").toUtf8().constData());
+        BoneMark boneMark = BoneMarkFromString(valueOfKeyInMapOrEmpty(node, "boneMark").toUtf8().constData());
         
         nodeToBmeshIdMap[nodeId] = bmeshNodeId;
         bmeshToNodeIdMap[bmeshNodeId] = nodeId;
         
-        BmeshNode bmeshNode;
+        OutcomeNode bmeshNode;
         bmeshNode.partId = QUuid(partId);
         bmeshNode.origin = QVector3D(x, y, z);
         bmeshNode.radius = radius;
@@ -305,7 +305,7 @@ void *MeshGenerator::combinePartMesh(QString partId)
         bmeshNode.material.color = partColor;
         bmeshNode.boneMark = boneMark;
         //if (SkeletonBoneMark::None != boneMark)
-        //    bmeshNode.color = SkeletonBoneMarkToColor(boneMark);
+        //    bmeshNode.color = BoneMarkToColor(boneMark);
         cacheBmeshNodes.push_back(bmeshNode);
         if (xMirrored) {
             bmeshNode.partId = mirroredPartId;
@@ -560,7 +560,7 @@ void *MeshGenerator::combineComponentMesh(QString componentId, bool *inverse)
                 for (size_t vertexIndex = 0; vertexIndex < positionsBeforeSmooth.size(); vertexIndex++) {
                     const auto &oldPosition = positionsBeforeSmooth[vertexIndex];
                     const auto &smoothedPosition = positionsAfterSmooth[vertexIndex];
-                    BmeshVertex source;
+                    OutcomeNodeVertex source;
                     if (verticesSources.findPosition(oldPosition.x(), oldPosition.y(), oldPosition.z(), &source)) {
                         verticesSources.removePosition(oldPosition.x(), oldPosition.y(), oldPosition.z());
                         source.position = smoothedPosition;
@@ -591,7 +591,7 @@ void MeshGenerator::generate()
     m_meshliteContext = meshlite_create_context();
     
     initMeshUtils();
-    m_meshResultContext = new MeshResultContext;
+    m_outcome = new Outcome;
     
     bool needDeleteCacheContext = false;
     if (nullptr == m_cacheContext) {
@@ -670,11 +670,11 @@ void MeshGenerator::generate()
     }
     
     for (const auto &verticesSourcesIt: m_cacheContext->componentVerticesSources[QUuid().toString()].map()) {
-        m_meshResultContext->bmeshVertices.push_back(verticesSourcesIt.second);
+        m_outcome->bmeshVertices.push_back(verticesSourcesIt.second);
     }
     
     for (const auto &bmeshNodes: m_cacheContext->partBmeshNodes) {
-        m_meshResultContext->bmeshNodes.insert(m_meshResultContext->bmeshNodes.end(),
+        m_outcome->bmeshNodes.insert(m_outcome->bmeshNodes.end(),
             bmeshNodes.second.begin(), bmeshNodes.second.end());
     }
     
@@ -714,7 +714,7 @@ void MeshGenerator::generate()
     
     if (resultMeshId > 0) {
         loadGeneratedPositionsToMeshResultContext(m_meshliteContext, triangulatedFinalMeshId);
-        m_mesh = new MeshLoader(m_meshliteContext, resultMeshId, triangulatedFinalMeshId, Theme::white, &m_meshResultContext->triangleMaterials(), m_smoothNormal);
+        m_mesh = new MeshLoader(m_meshliteContext, resultMeshId, triangulatedFinalMeshId, Theme::white, &m_outcome->triangleMaterials(), m_smoothNormal);
     }
     
     if (needDeleteCacheContext) {

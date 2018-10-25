@@ -3,10 +3,10 @@
 #include <QXmlStreamWriter>
 #include <QClipboard>
 #include <QApplication>
-#include "skeletonxml.h"
+#include "snapshotxml.h"
 #include "materiallistwidget.h"
 
-MaterialListWidget::MaterialListWidget(const SkeletonDocument *document, QWidget *parent) :
+MaterialListWidget::MaterialListWidget(const Document *document, QWidget *parent) :
     QTreeWidget(parent),
     m_document(document)
 {
@@ -27,10 +27,10 @@ MaterialListWidget::MaterialListWidget(const SkeletonDocument *document, QWidget
 
     setContentsMargins(0, 0, 0, 0);
 
-    connect(document, &SkeletonDocument::materialListChanged, this, &MaterialListWidget::reload);
-    connect(document, &SkeletonDocument::cleanup, this, &MaterialListWidget::removeAllContent);
+    connect(document, &Document::materialListChanged, this, &MaterialListWidget::reload);
+    connect(document, &Document::cleanup, this, &MaterialListWidget::removeAllContent);
 
-    connect(this, &MaterialListWidget::removeMaterial, document, &SkeletonDocument::removeMaterial);
+    connect(this, &MaterialListWidget::removeMaterial, document, &Document::removeMaterial);
 
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, &QTreeWidget::customContextMenuRequested, this, &MaterialListWidget::showContextMenu);
@@ -200,7 +200,7 @@ void MaterialListWidget::showContextMenu(const QPoint &pos)
 
     QAction pasteAction(tr("Paste"), this);
     if (m_document->hasPastableMaterialsInClipboard()) {
-        connect(&pasteAction, &QAction::triggered, m_document, &SkeletonDocument::paste);
+        connect(&pasteAction, &QAction::triggered, m_document, &Document::paste);
         contextMenu.addAction(&pasteAction);
     }
 
@@ -297,8 +297,8 @@ void MaterialListWidget::copy()
 
     std::set<QUuid> emptySet;
 
-    SkeletonSnapshot snapshot;
-    m_document->toSnapshot(&snapshot, emptySet, SkeletonDocumentToSnapshotFor::Materials,
+    Snapshot snapshot;
+    m_document->toSnapshot(&snapshot, emptySet, DocumentToSnapshotFor::Materials,
         emptySet, emptySet, limitMaterialIds);
     QString snapshotXml;
     QXmlStreamWriter xmlStreamWriter(&snapshotXml);

@@ -6,7 +6,7 @@
 #include "theme.h"
 #include "infolabel.h"
 
-MotionManageWidget::MotionManageWidget(const SkeletonDocument *document, QWidget *parent) :
+MotionManageWidget::MotionManageWidget(const Document *document, QWidget *parent) :
     QWidget(parent),
     m_document(document)
 {
@@ -35,8 +35,8 @@ MotionManageWidget::MotionManageWidget(const SkeletonDocument *document, QWidget
         }
     };
     
-    connect(m_document, &SkeletonDocument::resultRigChanged, this, refreshInfoLabel);
-    connect(m_document, &SkeletonDocument::cleanup, this, refreshInfoLabel);
+    connect(m_document, &Document::resultRigChanged, this, refreshInfoLabel);
+    connect(m_document, &Document::cleanup, this, refreshInfoLabel);
     
     QVBoxLayout *mainLayout = new QVBoxLayout;
     mainLayout->addWidget(infoLabel);
@@ -61,7 +61,7 @@ void MotionManageWidget::showMotionDialog(QUuid motionId)
     MotionEditWidget *motionEditWidget = new MotionEditWidget(m_document);
     motionEditWidget->setAttribute(Qt::WA_DeleteOnClose);
     if (!motionId.isNull()) {
-        const SkeletonMotion *motion = m_document->findMotion(motionId);
+        const Motion *motion = m_document->findMotion(motionId);
         if (nullptr != motion) {
             motionEditWidget->setEditMotionId(motionId);
             motionEditWidget->setEditMotionName(motion->name);

@@ -6,7 +6,7 @@
 #include "posewidget.h"
 #include "motionwidget.h"
 
-MotionClipWidget::MotionClipWidget(const SkeletonDocument *document, QWidget *parent) :
+MotionClipWidget::MotionClipWidget(const Document *document, QWidget *parent) :
     QFrame(parent),
     m_document(document)
 {
@@ -17,13 +17,13 @@ QSize MotionClipWidget::preferredSize()
 {
     int preferredWidth = 0;
     switch (m_clip.clipType) {
-    case SkeletonMotionClipType::Motion:
+    case MotionClipType::Motion:
         preferredWidth = Theme::motionPreviewImageSize;
         break;
-    case SkeletonMotionClipType::Pose:
+    case MotionClipType::Pose:
         preferredWidth = Theme::posePreviewImageSize;
         break;
-    case SkeletonMotionClipType::Interpolation:
+    case MotionClipType::Interpolation:
         preferredWidth = Theme::normalButtonSize;
         break;
     default:
@@ -39,7 +39,7 @@ QSize MotionClipWidget::maxSize()
     return QSize(maxWidth, maxHeight);
 }
 
-void MotionClipWidget::setClip(SkeletonMotionClip clip)
+void MotionClipWidget::setClip(MotionClip clip)
 {
     m_clip = clip;
     reload();
@@ -60,21 +60,21 @@ void MotionClipWidget::reload()
     layout->addStretch();
     
     switch (m_clip.clipType) {
-    case SkeletonMotionClipType::Motion:
+    case MotionClipType::Motion:
         {
             MotionWidget *motionWidget = new MotionWidget(m_document, m_clip.linkToId);
             motionWidget->reload();
             layout->addWidget(motionWidget);
         }
         break;
-    case SkeletonMotionClipType::Pose:
+    case MotionClipType::Pose:
         {
             PoseWidget *poseWidget = new PoseWidget(m_document, m_clip.linkToId);
             poseWidget->reload();
             layout->addWidget(poseWidget);
         }
         break;
-    case SkeletonMotionClipType::Interpolation:
+    case MotionClipType::Interpolation:
         {
             QHBoxLayout *interpolationButtonLayout = new QHBoxLayout;
             QPushButton *interpolationButton = new QPushButton(QChar(fa::arrowsh));

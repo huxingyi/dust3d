@@ -1,5 +1,5 @@
-#ifndef JOINT_NODE_TREE_H
-#define JOINT_NODE_TREE_H
+#ifndef DUST3D_JOINT_NODE_TREE_H
+#define DUST3D_JOINT_NODE_TREE_H
 #include <QMatrix4x4>
 #include <vector>
 #include <QQuaternion>

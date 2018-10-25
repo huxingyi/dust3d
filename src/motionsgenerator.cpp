@@ -7,10 +7,10 @@
 
 MotionsGenerator::MotionsGenerator(const std::vector<AutoRiggerBone> *rigBones,
         const std::map<int, AutoRiggerVertexWeights> *rigWeights,
-        const MeshResultContext &meshResultContext) :
+        const Outcome &outcome) :
     m_rigBones(*rigBones),
     m_rigWeights(*rigWeights),
-    m_meshResultContext(meshResultContext)
+    m_outcome(outcome)
 {
 }
 
@@ -29,7 +29,7 @@ void MotionsGenerator::addPoseToLibrary(const QUuid &poseId, const std::map<QStr
     m_poses[poseId] = parameters;
 }
 
-void MotionsGenerator::addMotionToLibrary(const QUuid &motionId, const std::vector<SkeletonMotionClip> &clips)
+void MotionsGenerator::addMotionToLibrary(const QUuid &motionId, const std::vector<MotionClip> &clips)
 {
     m_motions[motionId] = clips;
 }
@@ -49,19 +49,19 @@ const std::set<QUuid> &MotionsGenerator::generatedMotionIds()
     return m_generatedMotionIds;
 }
 
-std::vector<SkeletonMotionClip> *MotionsGenerator::findMotionClips(const QUuid &motionId)
+std::vector<MotionClip> *MotionsGenerator::findMotionClips(const QUuid &motionId)
 {
     auto findMotionResult = m_motions.find(motionId);
     if (findMotionResult == m_motions.end())
         return nullptr;
-    std::vector<SkeletonMotionClip> &clips = findMotionResult->second;
+    std::vector<MotionClip> &clips = findMotionResult->second;
     return &clips;
 }
 
 void MotionsGenerator::generatePreviewsForOutcomes(const std::vector<std::pair<float, JointNodeTree>> &outcomes, std::vector<std::pair<float, MeshLoader *>> &previews)
 {
     for (const auto &item: outcomes) {
-        PoseMeshCreator *poseMeshCreator = new PoseMeshCreator(item.second.nodes(), m_meshResultContext, m_rigWeights);
+        PoseMeshCreator *poseMeshCreator = new PoseMeshCreator(item.second.nodes(), m_outcome, m_rigWeights);
         poseMeshCreator->createMesh();
         previews.push_back({item.first, poseMeshCreator->takeResultMesh()});
         delete poseMeshCreator;
@@ -70,7 +70,7 @@ void MotionsGenerator::generatePreviewsForOutcomes(const std::vector<std::pair<f
 
 float MotionsGenerator::calculateMotionDuration(const QUuid &motionId, std::set<QUuid> &visited)
 {
-    const std::vector<SkeletonMotionClip> *motionClips = findMotionClips(motionId);
+    const std::vector<MotionClip> *motionClips = findMotionClips(motionId);
     if (!motionClips || motionClips->empty())
         return 0;
     if (visited.find(motionId) != visited.end()) {
@@ -80,11 +80,11 @@ float MotionsGenerator::calculateMotionDuration(const QUuid &motionId, std::set<
     float totalDuration = 0;
     visited.insert(motionId);
     for (const auto &clip: *motionClips) {
-        if (clip.clipType == SkeletonMotionClipType::Interpolation)
+        if (clip.clipType == MotionClipType::Interpolation)
             totalDuration += clip.duration;
-        else if (clip.clipType == SkeletonMotionClipType::Pose)
+        else if (clip.clipType == MotionClipType::Pose)
             totalDuration += clip.duration;
-        else if (clip.clipType == SkeletonMotionClipType::Motion)
+        else if (clip.clipType == MotionClipType::Motion)
             totalDuration += calculateMotionDuration(clip.linkToId, visited);
     }
     return totalDuration;
@@ -99,14 +99,14 @@ void MotionsGenerator::generateMotion(const QUuid &motionId, std::set<QUuid> &vi
     
     visited.insert(motionId);
     
-    std::vector<SkeletonMotionClip> *motionClips = findMotionClips(motionId);
+    std::vector<MotionClip> *motionClips = findMotionClips(motionId);
     if (!motionClips || motionClips->empty())
         return;
     
     std::vector<float> timePoints;
     float totalDuration = 0;
     for (auto &clip: *motionClips) {
-        if (clip.clipType == SkeletonMotionClipType::Motion) {
+        if (clip.clipType == MotionClipType::Motion) {
             std::set<QUuid> subVisited;
             clip.duration = calculateMotionDuration(clip.linkToId, subVisited);
         }
@@ -131,8 +131,8 @@ void MotionsGenerator::generateMotion(const QUuid &motionId, std::set<QUuid> &vi
             break;
         }
         float clipLocalProgress = progress - timePoints[clipIndex];
-        const SkeletonMotionClip &progressClip = (*motionClips)[clipIndex];
-        if (SkeletonMotionClipType::Interpolation == progressClip.clipType) {
+        const MotionClip &progressClip = (*motionClips)[clipIndex];
+        if (MotionClipType::Interpolation == progressClip.clipType) {
             if (clipIndex <= 0) {
                 qDebug() << "Clip type is interpolation, but clip sit at begin";
                 break;
@@ -156,7 +156,7 @@ void MotionsGenerator::generateMotion(const QUuid &motionId, std::set<QUuid> &vi
             lastProgress = progress;
             progress += interval;
             continue;
-        } else if (SkeletonMotionClipType::Pose == progressClip.clipType) {
+        } else if (MotionClipType::Pose == progressClip.clipType) {
             const JointNodeTree *beginJointNodeTree = findClipBeginJointNodeTree((*motionClips)[clipIndex]);
             if (nullptr == beginJointNodeTree) {
                 qDebug() << "findClipBeginJointNodeTree failed";
@@ -166,7 +166,7 @@ void MotionsGenerator::generateMotion(const QUuid &motionId, std::set<QUuid> &vi
             lastProgress = progress;
             progress += interval;
             continue;
-        } else if (SkeletonMotionClipType::Motion == progressClip.clipType) {
+        } else if (MotionClipType::Motion == progressClip.clipType) {
             generateMotion(progressClip.linkToId, visited, outcomes);
             progress += progressClip.duration;
             continue;
@@ -193,13 +193,13 @@ const JointNodeTree &MotionsGenerator::poseJointNodeTree(const QUuid &poseId)
     return insertResult.first->second;
 }
 
-const JointNodeTree *MotionsGenerator::findClipBeginJointNodeTree(const SkeletonMotionClip &clip)
+const JointNodeTree *MotionsGenerator::findClipBeginJointNodeTree(const MotionClip &clip)
 {
-    if (SkeletonMotionClipType::Pose == clip.clipType) {
+    if (MotionClipType::Pose == clip.clipType) {
         const JointNodeTree &jointNodeTree = poseJointNodeTree(clip.linkToId);
         return &jointNodeTree;
-    } else if (SkeletonMotionClipType::Motion == clip.clipType) {
-        const std::vector<SkeletonMotionClip> *motionClips = findMotionClips(clip.linkToId);
+    } else if (MotionClipType::Motion == clip.clipType) {
+        const std::vector<MotionClip> *motionClips = findMotionClips(clip.linkToId);
         if (nullptr != motionClips && !motionClips->empty()) {
             return findClipBeginJointNodeTree((*motionClips)[0]);
         }
@@ -208,13 +208,13 @@ const JointNodeTree *MotionsGenerator::findClipBeginJointNodeTree(const Skeleton
     return nullptr;
 }
 
-const JointNodeTree *MotionsGenerator::findClipEndJointNodeTree(const SkeletonMotionClip &clip)
+const JointNodeTree *MotionsGenerator::findClipEndJointNodeTree(const MotionClip &clip)
 {
-    if (SkeletonMotionClipType::Pose == clip.clipType) {
+    if (MotionClipType::Pose == clip.clipType) {
         const JointNodeTree &jointNodeTree = poseJointNodeTree(clip.linkToId);
         return &jointNodeTree;
-    } else if (SkeletonMotionClipType::Motion == clip.clipType) {
-        const std::vector<SkeletonMotionClip> *motionClips = findMotionClips(clip.linkToId);
+    } else if (MotionClipType::Motion == clip.clipType) {
+        const std::vector<MotionClip> *motionClips = findMotionClips(clip.linkToId);
         if (nullptr != motionClips && !motionClips->empty()) {
             return findClipEndJointNodeTree((*motionClips)[motionClips->size() - 1]);
         }

@@ -1,7 +1,7 @@
 #include <QVBoxLayout>
 #include "motionwidget.h"
 
-MotionWidget::MotionWidget(const SkeletonDocument *document, QUuid motionId) :
+MotionWidget::MotionWidget(const Document *document, QUuid motionId) :
     m_motionId(motionId),
     m_document(document)
 {
@@ -31,12 +31,12 @@ MotionWidget::MotionWidget(const SkeletonDocument *document, QUuid motionId) :
     
     setFixedSize(Theme::motionPreviewImageSize, MotionWidget::preferredHeight());
     
-    connect(document, &SkeletonDocument::motionNameChanged, this, [=](QUuid motionId) {
+    connect(document, &Document::motionNameChanged, this, [=](QUuid motionId) {
         if (motionId != m_motionId)
             return;
         updateName();
     });
-    connect(document, &SkeletonDocument::motionPreviewChanged, this, [=](QUuid motionId) {
+    connect(document, &Document::motionPreviewChanged, this, [=](QUuid motionId) {
         if (motionId != m_motionId)
             return;
         updatePreview();
@@ -76,7 +76,7 @@ void MotionWidget::reload()
 
 void MotionWidget::updatePreview()
 {
-    const SkeletonMotion *motion = m_document->findMotion(m_motionId);
+    const Motion *motion = m_document->findMotion(m_motionId);
     if (!motion) {
         qDebug() << "Motion not found:" << m_motionId;
         return;
@@ -87,7 +87,7 @@ void MotionWidget::updatePreview()
 
 void MotionWidget::updateName()
 {
-    const SkeletonMotion *motion = m_document->findMotion(m_motionId);
+    const Motion *motion = m_document->findMotion(m_motionId);
     if (!motion) {
         qDebug() << "Motion not found:" << m_motionId;
         return;

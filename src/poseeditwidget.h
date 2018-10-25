@@ -1,12 +1,12 @@
-#ifndef POSE_EDIT_WIDGET_H
-#define POSE_EDIT_WIDGET_H
+#ifndef DUST3D_POSE_EDIT_WIDGET_H
+#define DUST3D_POSE_EDIT_WIDGET_H
 #include <QDialog>
 #include <map>
 #include <QCloseEvent>
 #include <QLineEdit>
 #include "posepreviewmanager.h"
 #include "tetrapodposer.h"
-#include "skeletondocument.h"
+#include "document.h"
 #include "modelwidget.h"
 
 enum class PopupWidgetType
@@ -25,7 +25,7 @@ signals:
     void renamePose(QUuid poseId, QString name);
     void parametersAdjusted();
 public:
-    PoseEditWidget(const SkeletonDocument *document, QWidget *parent=nullptr);
+    PoseEditWidget(const Document *document, QWidget *parent=nullptr);
     ~PoseEditWidget();
 public slots:
     void updatePreview();
@@ -41,7 +41,7 @@ protected:
     void closeEvent(QCloseEvent *event) override;
     void reject() override;
 private:
-    const SkeletonDocument *m_document = nullptr;
+    const Document *m_document = nullptr;
     PosePreviewManager *m_posePreviewManager = nullptr;
     ModelWidget *m_previewWidget = nullptr;
     bool m_isPreviewDirty = false;

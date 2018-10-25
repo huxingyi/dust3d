@@ -1,7 +1,8 @@
 #include <QDebug>
 #include <cmath>
 #include "theme.h"
-#include "skeletonbonemark.h"
+#include "bonemark.h"
+#include "skeletonside.h"
 #include "autorigger.h"
 
 AutoRigger::AutoRigger(const std::vector<QVector3D> &verticesPositions,
@@ -11,11 +12,11 @@ AutoRigger::AutoRigger(const std::vector<QVector3D> &verticesPositions,
 {
 }
 
-bool AutoRigger::isCutOffSplitter(SkeletonBoneMark boneMark)
+bool AutoRigger::isCutOffSplitter(BoneMark boneMark)
 {
-    return boneMark == SkeletonBoneMark::Neck ||
-        boneMark == SkeletonBoneMark::Shoulder ||
-        boneMark == SkeletonBoneMark::Hip;
+    return boneMark == BoneMark::Neck ||
+        boneMark == BoneMark::Shoulder ||
+        boneMark == BoneMark::Hip;
 }
 
 bool AutoRigger::calculateBodyTriangles(std::set<MeshSplitterTriangle> &bodyTriangles)
@@ -41,7 +42,7 @@ bool AutoRigger::calculateBodyTriangles(std::set<MeshSplitterTriangle> &bodyTria
     return true;
 }
 
-bool AutoRigger::addMarkGroup(SkeletonBoneMark boneMark, SkeletonSide boneSide, QVector3D bonePosition,
+bool AutoRigger::addMarkGroup(BoneMark boneMark, SkeletonSide boneSide, QVector3D bonePosition,
         const std::set<MeshSplitterTriangle> &markTriangles)
 {
     m_marks.push_back(AutoRiggerMark());
@@ -55,9 +56,9 @@ bool AutoRigger::addMarkGroup(SkeletonBoneMark boneMark, SkeletonSide boneSide, 
     if (isCutOffSplitter(mark.boneMark)) {
         if (!mark.split(m_inputTriangles)) {
             m_marksMap[std::make_pair(mark.boneMark, mark.boneSide)].push_back(m_marks.size() - 1);
-            m_errorMarkNames.push_back(SkeletonSideToDispName(mark.boneSide) + " " + SkeletonBoneMarkToDispName(mark.boneMark));
+            m_errorMarkNames.push_back(SkeletonSideToDispName(mark.boneSide) + " " + BoneMarkToDispName(mark.boneMark));
             m_messages.push_back(std::make_pair(QtCriticalMsg,
-                tr("Mark \"%1 %2\" couldn't cut off the mesh").arg(SkeletonSideToDispName(mark.boneSide)).arg(SkeletonBoneMarkToString(mark.boneMark))));
+                tr("Mark \"%1 %2\" couldn't cut off the mesh").arg(SkeletonSideToDispName(mark.boneSide)).arg(BoneMarkToString(mark.boneMark))));
             return false;
         }
     }
@@ -85,26 +86,26 @@ bool AutoRigger::validate()
 {
     bool foundError = false;
     
-    std::vector<std::pair<SkeletonBoneMark, SkeletonSide>> mustPresentedMarks;
+    std::vector<std::pair<BoneMark, SkeletonSide>> mustPresentedMarks;
     
-    mustPresentedMarks.push_back(std::make_pair(SkeletonBoneMark::Neck, SkeletonSide::None));
-    mustPresentedMarks.push_back(std::make_pair(SkeletonBoneMark::Shoulder, SkeletonSide::Left));
-    mustPresentedMarks.push_back(std::make_pair(SkeletonBoneMark::Elbow, SkeletonSide::Left));
-    mustPresentedMarks.push_back(std::make_pair(SkeletonBoneMark::Wrist, SkeletonSide::Left));
-    mustPresentedMarks.push_back(std::make_pair(SkeletonBoneMark::Shoulder, SkeletonSide::Right));
-    mustPresentedMarks.push_back(std::make_pair(SkeletonBoneMark::Elbow, SkeletonSide::Right));
-    mustPresentedMarks.push_back(std::make_pair(SkeletonBoneMark::Wrist, SkeletonSide::Right));
-    mustPresentedMarks.push_back(std::make_pair(SkeletonBoneMark::Hip, SkeletonSide::Left));
-    mustPresentedMarks.push_back(std::make_pair(SkeletonBoneMark::Knee, SkeletonSide::Left));
-    mustPresentedMarks.push_back(std::make_pair(SkeletonBoneMark::Ankle, SkeletonSide::Left));
-    mustPresentedMarks.push_back(std::make_pair(SkeletonBoneMark::Hip, SkeletonSide::Right));
-    mustPresentedMarks.push_back(std::make_pair(SkeletonBoneMark::Knee, SkeletonSide::Right));
-    mustPresentedMarks.push_back(std::make_pair(SkeletonBoneMark::Ankle, SkeletonSide::Right));
+    mustPresentedMarks.push_back(std::make_pair(BoneMark::Neck, SkeletonSide::None));
+    mustPresentedMarks.push_back(std::make_pair(BoneMark::Shoulder, SkeletonSide::Left));
+    mustPresentedMarks.push_back(std::make_pair(BoneMark::Elbow, SkeletonSide::Left));
+    mustPresentedMarks.push_back(std::make_pair(BoneMark::Wrist, SkeletonSide::Left));
+    mustPresentedMarks.push_back(std::make_pair(BoneMark::Shoulder, SkeletonSide::Right));
+    mustPresentedMarks.push_back(std::make_pair(BoneMark::Elbow, SkeletonSide::Right));
+    mustPresentedMarks.push_back(std::make_pair(BoneMark::Wrist, SkeletonSide::Right));
+    mustPresentedMarks.push_back(std::make_pair(BoneMark::Hip, SkeletonSide::Left));
+    mustPresentedMarks.push_back(std::make_pair(BoneMark::Knee, SkeletonSide::Left));
+    mustPresentedMarks.push_back(std::make_pair(BoneMark::Ankle, SkeletonSide::Left));
+    mustPresentedMarks.push_back(std::make_pair(BoneMark::Hip, SkeletonSide::Right));
+    mustPresentedMarks.push_back(std::make_pair(BoneMark::Knee, SkeletonSide::Right));
+    mustPresentedMarks.push_back(std::make_pair(BoneMark::Ankle, SkeletonSide::Right));
     
     for (const auto &pair: mustPresentedMarks) {
         if (m_marksMap.find(pair) == m_marksMap.end()) {
             foundError = true;
-            QString markDispName = SkeletonSideToDispName(pair.second) + " " + SkeletonBoneMarkToDispName(pair.first);
+            QString markDispName = SkeletonSideToDispName(pair.second) + " " + BoneMarkToDispName(pair.first);
             m_missingMarkNames.push_back(markDispName);
             m_messages.push_back(std::make_pair(QtCriticalMsg,
                 tr("Couldn't find valid \"%1\" mark").arg(markDispName)));
@@ -264,19 +265,19 @@ bool AutoRigger::rig()
     if (!calculateBodyTriangles(bodyTriangles))
         return false;
     
-    auto neckIndicies = m_marksMap.find(std::make_pair(SkeletonBoneMark::Neck, SkeletonSide::None));
-    auto leftShoulderIndicies = m_marksMap.find(std::make_pair(SkeletonBoneMark::Shoulder, SkeletonSide::Left));
-    auto leftElbowIndicies = m_marksMap.find(std::make_pair(SkeletonBoneMark::Elbow, SkeletonSide::Left));
-    auto leftWristIndicies = m_marksMap.find(std::make_pair(SkeletonBoneMark::Wrist, SkeletonSide::Left));
-    auto rightShoulderIndicies = m_marksMap.find(std::make_pair(SkeletonBoneMark::Shoulder, SkeletonSide::Right));
-    auto rightElbowIndicies = m_marksMap.find(std::make_pair(SkeletonBoneMark::Elbow, SkeletonSide::Right));
-    auto rightWristIndicies = m_marksMap.find(std::make_pair(SkeletonBoneMark::Wrist, SkeletonSide::Right));
-    auto leftHipIndicies = m_marksMap.find(std::make_pair(SkeletonBoneMark::Hip, SkeletonSide::Left));
-    auto leftKneeIndicies = m_marksMap.find(std::make_pair(SkeletonBoneMark::Knee, SkeletonSide::Left));
-    auto leftAnkleIndicies = m_marksMap.find(std::make_pair(SkeletonBoneMark::Ankle, SkeletonSide::Left));
-    auto rightHipIndicies = m_marksMap.find(std::make_pair(SkeletonBoneMark::Hip, SkeletonSide::Right));
-    auto rightKneeIndicies = m_marksMap.find(std::make_pair(SkeletonBoneMark::Knee, SkeletonSide::Right));
-    auto rightAnkleIndicies = m_marksMap.find(std::make_pair(SkeletonBoneMark::Ankle, SkeletonSide::Right));
+    auto neckIndicies = m_marksMap.find(std::make_pair(BoneMark::Neck, SkeletonSide::None));
+    auto leftShoulderIndicies = m_marksMap.find(std::make_pair(BoneMark::Shoulder, SkeletonSide::Left));
+    auto leftElbowIndicies = m_marksMap.find(std::make_pair(BoneMark::Elbow, SkeletonSide::Left));
+    auto leftWristIndicies = m_marksMap.find(std::make_pair(BoneMark::Wrist, SkeletonSide::Left));
+    auto rightShoulderIndicies = m_marksMap.find(std::make_pair(BoneMark::Shoulder, SkeletonSide::Right));
+    auto rightElbowIndicies = m_marksMap.find(std::make_pair(BoneMark::Elbow, SkeletonSide::Right));
+    auto rightWristIndicies = m_marksMap.find(std::make_pair(BoneMark::Wrist, SkeletonSide::Right));
+    auto leftHipIndicies = m_marksMap.find(std::make_pair(BoneMark::Hip, SkeletonSide::Left));
+    auto leftKneeIndicies = m_marksMap.find(std::make_pair(BoneMark::Knee, SkeletonSide::Left));
+    auto leftAnkleIndicies = m_marksMap.find(std::make_pair(BoneMark::Ankle, SkeletonSide::Left));
+    auto rightHipIndicies = m_marksMap.find(std::make_pair(BoneMark::Hip, SkeletonSide::Right));
+    auto rightKneeIndicies = m_marksMap.find(std::make_pair(BoneMark::Knee, SkeletonSide::Right));
+    auto rightAnkleIndicies = m_marksMap.find(std::make_pair(BoneMark::Ankle, SkeletonSide::Right));
     
     // 1. Prepare all bones start and stop positions:
     
@@ -625,7 +626,7 @@ bool AutoRigger::rig()
     leftUpperLegBone.name = "LeftUpperLeg";
     leftUpperLegBone.headPosition = m_resultBones[boneIndexMap["LeftHip"]].tailPosition;
     leftUpperLegBone.tailPosition = leftLowerLegBoneStartPosition;
-    leftUpperLegBone.color = SkeletonBoneMarkToColor(SkeletonBoneMark::Hip);
+    leftUpperLegBone.color = BoneMarkToColor(BoneMark::Hip);
     boneIndexMap[leftUpperLegBone.name] = leftUpperLegBone.index;
     m_resultBones[boneIndexMap["LeftHip"]].children.push_back(leftUpperLegBone.index);
     
@@ -635,7 +636,7 @@ bool AutoRigger::rig()
     leftLowerLegBone.name = "LeftLowerLeg";
     leftLowerLegBone.headPosition = m_resultBones[boneIndexMap["LeftUpperLeg"]].tailPosition;
     leftLowerLegBone.tailPosition = leftFootBoneStartPosition;
-    leftLowerLegBone.color = SkeletonBoneMarkToColor(SkeletonBoneMark::Knee);
+    leftLowerLegBone.color = BoneMarkToColor(BoneMark::Knee);
     boneIndexMap[leftLowerLegBone.name] = leftLowerLegBone.index;
     m_resultBones[boneIndexMap["LeftUpperLeg"]].children.push_back(leftLowerLegBone.index);
     
@@ -645,7 +646,7 @@ bool AutoRigger::rig()
     leftFootBone.name = "LeftFoot";
     leftFootBone.headPosition = m_resultBones[boneIndexMap["LeftLowerLeg"]].tailPosition;
     leftFootBone.tailPosition = leftFootBoneStopPosition;
-    leftFootBone.color = SkeletonBoneMarkToColor(SkeletonBoneMark::Ankle);
+    leftFootBone.color = BoneMarkToColor(BoneMark::Ankle);
     boneIndexMap[leftFootBone.name] = leftFootBone.index;
     m_resultBones[boneIndexMap["LeftLowerLeg"]].children.push_back(leftFootBone.index);
     
@@ -664,7 +665,7 @@ bool AutoRigger::rig()
     rightUpperLegBone.name = "RightUpperLeg";
     rightUpperLegBone.headPosition = m_resultBones[boneIndexMap["RightHip"]].tailPosition;
     rightUpperLegBone.tailPosition = rightLowerLegBoneStartPosition;
-    rightUpperLegBone.color = SkeletonBoneMarkToColor(SkeletonBoneMark::Hip);
+    rightUpperLegBone.color = BoneMarkToColor(BoneMark::Hip);
     boneIndexMap[rightUpperLegBone.name] = rightUpperLegBone.index;
     m_resultBones[boneIndexMap["RightHip"]].children.push_back(rightUpperLegBone.index);
     
@@ -674,7 +675,7 @@ bool AutoRigger::rig()
     rightLowerLegBone.name = "RightLowerLeg";
     rightLowerLegBone.headPosition = m_resultBones[boneIndexMap["RightUpperLeg"]].tailPosition;
     rightLowerLegBone.tailPosition = rightFootBoneStartPosition;
-    rightLowerLegBone.color = SkeletonBoneMarkToColor(SkeletonBoneMark::Knee);
+    rightLowerLegBone.color = BoneMarkToColor(BoneMark::Knee);
     boneIndexMap[rightLowerLegBone.name] = rightLowerLegBone.index;
     m_resultBones[boneIndexMap["RightUpperLeg"]].children.push_back(rightLowerLegBone.index);
     
@@ -684,7 +685,7 @@ bool AutoRigger::rig()
     rightFootBone.name = "RightFoot";
     rightFootBone.headPosition = m_resultBones[boneIndexMap["RightLowerLeg"]].tailPosition;
     rightFootBone.tailPosition = rightFootBoneStopPosition;
-    rightFootBone.color = SkeletonBoneMarkToColor(SkeletonBoneMark::Ankle);
+    rightFootBone.color = BoneMarkToColor(BoneMark::Ankle);
     boneIndexMap[rightFootBone.name] = rightFootBone.index;
     m_resultBones[boneIndexMap["RightLowerLeg"]].children.push_back(rightFootBone.index);
     
@@ -723,7 +724,7 @@ bool AutoRigger::rig()
     leftUpperArmBone.name = "LeftUpperArm";
     leftUpperArmBone.headPosition = m_resultBones[boneIndexMap["LeftShoulder"]].tailPosition;
     leftUpperArmBone.tailPosition = leftLowerArmBoneStartPosition;
-    leftUpperArmBone.color = SkeletonBoneMarkToColor(SkeletonBoneMark::Shoulder);
+    leftUpperArmBone.color = BoneMarkToColor(BoneMark::Shoulder);
     boneIndexMap[leftUpperArmBone.name] = leftUpperArmBone.index;
     m_resultBones[boneIndexMap["LeftShoulder"]].children.push_back(leftUpperArmBone.index);
     
@@ -733,7 +734,7 @@ bool AutoRigger::rig()
     leftLowerArmBone.name = "LeftLowerArm";
     leftLowerArmBone.headPosition = m_resultBones[boneIndexMap["LeftUpperArm"]].tailPosition;
     leftLowerArmBone.tailPosition = leftHandBoneStartPosition;
-    leftLowerArmBone.color = SkeletonBoneMarkToColor(SkeletonBoneMark::Elbow);
+    leftLowerArmBone.color = BoneMarkToColor(BoneMark::Elbow);
     boneIndexMap[leftLowerArmBone.name] = leftLowerArmBone.index;
     m_resultBones[boneIndexMap["LeftUpperArm"]].children.push_back(leftLowerArmBone.index);
     
@@ -743,7 +744,7 @@ bool AutoRigger::rig()
     leftHandBone.name = "LeftHand";
     leftHandBone.headPosition = m_resultBones[boneIndexMap["LeftLowerArm"]].tailPosition;
     leftHandBone.tailPosition = leftHandBoneStopPosition;
-    leftHandBone.color = SkeletonBoneMarkToColor(SkeletonBoneMark::Wrist);
+    leftHandBone.color = BoneMarkToColor(BoneMark::Wrist);
     boneIndexMap[leftHandBone.name] = leftHandBone.index;
     m_resultBones[boneIndexMap["LeftLowerArm"]].children.push_back(leftHandBone.index);
     
@@ -762,7 +763,7 @@ bool AutoRigger::rig()
     rightUpperArmBone.name = "RightUpperArm";
     rightUpperArmBone.headPosition = m_resultBones[boneIndexMap["RightShoulder"]].tailPosition;
     rightUpperArmBone.tailPosition = rightLowerArmBoneStartPosition;
-    rightUpperArmBone.color = SkeletonBoneMarkToColor(SkeletonBoneMark::Shoulder);
+    rightUpperArmBone.color = BoneMarkToColor(BoneMark::Shoulder);
     boneIndexMap[rightUpperArmBone.name] = rightUpperArmBone.index;
     m_resultBones[boneIndexMap["RightShoulder"]].children.push_back(rightUpperArmBone.index);
     
@@ -772,7 +773,7 @@ bool AutoRigger::rig()
     rightLowerArmBone.name = "RightLowerArm";
     rightLowerArmBone.headPosition = m_resultBones[boneIndexMap["RightUpperArm"]].tailPosition;
     rightLowerArmBone.tailPosition = rightHandBoneStartPosition;
-    rightLowerArmBone.color = SkeletonBoneMarkToColor(SkeletonBoneMark::Elbow);
+    rightLowerArmBone.color = BoneMarkToColor(BoneMark::Elbow);
     boneIndexMap[rightLowerArmBone.name] = rightLowerArmBone.index;
     m_resultBones[boneIndexMap["RightUpperArm"]].children.push_back(rightLowerArmBone.index);
     
@@ -782,7 +783,7 @@ bool AutoRigger::rig()
     rightHandBone.name = "RightHand";
     rightHandBone.headPosition = m_resultBones[boneIndexMap["RightLowerArm"]].tailPosition;
     rightHandBone.tailPosition = rightHandBoneStopPosition;
-    rightHandBone.color = SkeletonBoneMarkToColor(SkeletonBoneMark::Wrist);
+    rightHandBone.color = BoneMarkToColor(BoneMark::Wrist);
     boneIndexMap[rightHandBone.name] = rightHandBone.index;
     m_resultBones[boneIndexMap["RightLowerArm"]].children.push_back(rightHandBone.index);
     
@@ -792,7 +793,7 @@ bool AutoRigger::rig()
     neckBone.name = "Neck";
     neckBone.headPosition = m_resultBones[boneIndexMap["Chest"]].tailPosition;
     neckBone.tailPosition = headBoneStartPosition;
-    neckBone.color = SkeletonBoneMarkToColor(SkeletonBoneMark::Neck);
+    neckBone.color = BoneMarkToColor(BoneMark::Neck);
     boneIndexMap[neckBone.name] = neckBone.index;
     m_resultBones[boneIndexMap["Chest"]].children.push_back(neckBone.index);
     

@@ -6,7 +6,7 @@
 #include "infolabel.h"
 #include "theme.h"
 
-RigWidget::RigWidget(const SkeletonDocument *document, QWidget *parent) :
+RigWidget::RigWidget(const Document *document, QWidget *parent) :
     QWidget(parent),
     m_document(document)
 {

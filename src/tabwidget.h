@@ -1,5 +1,5 @@
-#ifndef TAB_WIDGET_H
-#define TAB_WIDGET_H
+#ifndef DUST3D_TAB_WIDGET_H
+#define DUST3D_TAB_WIDGET_H
 #include <QWidget>
 #include <QString>
 #include <vector>

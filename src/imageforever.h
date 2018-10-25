@@ -1,5 +1,5 @@
-#ifndef IMAGE_FOREVER_H
-#define IMAGE_FOREVER_H
+#ifndef DUST3D_IMAGE_FOREVER_H
+#define DUST3D_IMAGE_FOREVER_H
 #include <QImage>
 #include <QUuid>
 

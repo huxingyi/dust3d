@@ -1,5 +1,5 @@
-#ifndef EXPORT_PREVIEW_WIDGET_H
-#define EXPORT_PREVIEW_WIDGET_H
+#ifndef DUST3D_EXPORT_PREVIEW_WIDGET_H
+#define DUST3D_EXPORT_PREVIEW_WIDGET_H
 #include <QDialog>
 #include <QImage>
 #include <QLabel>
@@ -7,7 +7,7 @@
 #include <QShowEvent>
 #include "modelwidget.h"
 #include "waitingspinnerwidget.h"
-#include "skeletondocument.h"
+#include "document.h"
 
 class ExportPreviewWidget : public QDialog
 {
@@ -17,7 +17,7 @@ signals:
     void saveAsGltf();
     void saveAsFbx();
 public:
-    ExportPreviewWidget(SkeletonDocument *document, QWidget *parent=nullptr);
+    ExportPreviewWidget(Document *document, QWidget *parent=nullptr);
 public slots:
     void checkSpinner();
     void updateTexturePreview();
@@ -29,7 +29,7 @@ private:
     void initAwesomeButton(QPushButton *button);
     void updateTexturePreviewImage(const QImage &image);
 private:
-    SkeletonDocument *m_document;
+    Document *m_document;
     QLabel *m_previewLabel;
     QImage m_previewImage;
     ModelWidget *m_textureRenderWidget;

@@ -1,5 +1,5 @@
-#ifndef RIG_TYPE_H
-#define RIG_TYPE_H
+#ifndef DUST3D_RIG_TYPE_H
+#define DUST3D_RIG_TYPE_H
 #include <QString>
 
 enum class RigType

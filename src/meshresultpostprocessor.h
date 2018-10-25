@@ -1,21 +1,21 @@
-#ifndef MESH_RESULT_POST_PROCESSOR_H
-#define MESH_RESULT_POST_PROCESSOR_H
+#ifndef DUST3D_MESH_RESULT_POST_PROCESSOR_H
+#define DUST3D_MESH_RESULT_POST_PROCESSOR_H
 #include <QObject>
-#include "meshresultcontext.h"
+#include "outcome.h"
 
 class MeshResultPostProcessor : public QObject
 {
     Q_OBJECT
 public:
-    MeshResultPostProcessor(const MeshResultContext &meshResultContext);
+    MeshResultPostProcessor(const Outcome &outcome);
     ~MeshResultPostProcessor();
-    MeshResultContext *takePostProcessedResultContext();
+    Outcome *takePostProcessedResultContext();
 signals:
     void finished();
 public slots:
     void process();
 private:
-    MeshResultContext *m_meshResultContext = nullptr;
+    Outcome *m_outcome = nullptr;
 };
 
 #endif

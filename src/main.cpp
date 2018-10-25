@@ -5,7 +5,7 @@
 #include <QDebug>
 #include <QtGlobal>
 #include <QSurfaceFormat>
-#include "skeletondocumentwindow.h"
+#include "documentwindow.h"
 #include "theme.h"
 #include "version.h"
 //#include "fbxdocument.h"

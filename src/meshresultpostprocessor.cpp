@@ -1,29 +1,29 @@
 #include <QGuiApplication>
 #include "meshresultpostprocessor.h"
 
-MeshResultPostProcessor::MeshResultPostProcessor(const MeshResultContext &meshResultContext)
+MeshResultPostProcessor::MeshResultPostProcessor(const Outcome &outcome)
 {
-    m_meshResultContext = new MeshResultContext;
-    *m_meshResultContext = meshResultContext;
+    m_outcome = new Outcome;
+    *m_outcome = outcome;
 }
 
 MeshResultPostProcessor::~MeshResultPostProcessor()
 {
-    delete m_meshResultContext;
+    delete m_outcome;
 }
 
-MeshResultContext *MeshResultPostProcessor::takePostProcessedResultContext()
+Outcome *MeshResultPostProcessor::takePostProcessedResultContext()
 {
-    MeshResultContext *resultContext = m_meshResultContext;
-    m_meshResultContext = nullptr;
-    return resultContext;
+    Outcome *outcome = m_outcome;
+    m_outcome = nullptr;
+    return outcome;
 }
 
 void MeshResultPostProcessor::process()
 {
-    if (!m_meshResultContext->bmeshNodes.empty()) {
-        (void)m_meshResultContext->triangleTangents();
-        (void)m_meshResultContext->parts();
+    if (!m_outcome->bmeshNodes.empty()) {
+        (void)m_outcome->triangleTangents();
+        (void)m_outcome->parts();
     }
     
     this->moveToThread(QGuiApplication::instance()->thread());

@@ -1,5 +1,5 @@
-#ifndef INTERPOLATION_TYPE_H
-#define INTERPOLATION_TYPE_H
+#ifndef DUST3D_INTERPOLATION_TYPE_H
+#define DUST3D_INTERPOLATION_TYPE_H
 #include <QString>
 #include <QEasingCurve>
 

@@ -1,8 +1,8 @@
 #include "material.h"
 #include "imageforever.h"
-#include "dust3dutil.h"
+#include "util.h"
 
-void initializeMaterialTexturesFromSnapshot(const SkeletonSnapshot &snapshot, const QUuid &materialId, MaterialTextures &materialTextures)
+void initializeMaterialTexturesFromSnapshot(const Snapshot &snapshot, const QUuid &materialId, MaterialTextures &materialTextures)
 {
     QString materialIdString = materialId.toString();
     for (const auto &materialItem: snapshot.materials) {

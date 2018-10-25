@@ -1,5 +1,5 @@
-#ifndef MESH_GENERATOR_H
-#define MESH_GENERATOR_H
+#ifndef DUST3D_MESH_GENERATOR_H
+#define DUST3D_MESH_GENERATOR_H
 #include <QObject>
 #include <QString>
 #include <QImage>
@@ -7,21 +7,21 @@
 #include <set>
 #include <QThread>
 #include <QOpenGLWidget>
-#include "skeletonsnapshot.h"
+#include "snapshot.h"
 #include "meshloader.h"
-#include "meshresultcontext.h"
+#include "outcome.h"
 #include "positionmap.h"
 
 class GeneratedCacheContext
 {
 public:
     ~GeneratedCacheContext();
-    std::map<QString, std::vector<BmeshVertex>> partBmeshVertices;
-    std::map<QString, std::vector<BmeshNode>> partBmeshNodes;
+    std::map<QString, std::vector<OutcomeNodeVertex>> partBmeshVertices;
+    std::map<QString, std::vector<OutcomeNode>> partBmeshNodes;
     std::map<QString, std::vector<std::tuple<PositionMapKey, PositionMapKey, PositionMapKey, PositionMapKey>>> partBmeshQuads;
     std::map<QString, void *> componentCombinableMeshs;
     std::map<QString, std::vector<QVector3D>> componentPositions;
-    std::map<QString, PositionMap<BmeshVertex>> componentVerticesSources;
+    std::map<QString, PositionMap<OutcomeNodeVertex>> componentVerticesSources;
     std::map<QString, QString> partMirrorIdMap;
     void updateComponentCombinableMesh(QString componentId, void *mesh);
 };
@@ -30,7 +30,7 @@ class MeshGenerator : public QObject
 {
     Q_OBJECT
 public:
-    MeshGenerator(SkeletonSnapshot *snapshot);
+    MeshGenerator(Snapshot *snapshot);
     ~MeshGenerator();
     void setSharedContextWidget(QOpenGLWidget *widget);
     void addPartPreviewRequirement(const QUuid &partId);
@@ -41,20 +41,20 @@ public:
     MeshLoader *takePartPreviewMesh(const QUuid &partId);
     const std::set<QUuid> &requirePreviewPartIds();
     const std::set<QUuid> &generatedPreviewPartIds();
-    MeshResultContext *takeMeshResultContext();
+    Outcome *takeMeshResultContext();
     void generate();
 signals:
     void finished();
 public slots:
     void process();
 private:
-    SkeletonSnapshot *m_snapshot;
+    Snapshot *m_snapshot;
     MeshLoader *m_mesh;
     std::map<QUuid, MeshLoader *> m_partPreviewMeshMap;
     std::set<QUuid> m_requirePreviewPartIds;
     std::set<QUuid> m_generatedPreviewPartIds;
     QThread *m_thread;
-    MeshResultContext *m_meshResultContext;
+    Outcome *m_outcome;
     QOpenGLWidget *m_sharedContextWidget;
     void *m_meshliteContext;
     GeneratedCacheContext *m_cacheContext;
@@ -71,7 +71,7 @@ private:
     static bool m_enableDebug;
     static PositionMap<int> *m_forMakePositionKey;
 private:
-    void loadVertexSources(void *meshliteContext, int meshId, QUuid partId, const std::map<int, QUuid> &bmeshToNodeIdMap, std::vector<BmeshVertex> &bmeshVertices,
+    void loadVertexSources(void *meshliteContext, int meshId, QUuid partId, const std::map<int, QUuid> &bmeshToNodeIdMap, std::vector<OutcomeNodeVertex> &bmeshVertices,
         std::vector<std::tuple<PositionMapKey, PositionMapKey, PositionMapKey, PositionMapKey>> &bmeshQuads);
     void loadGeneratedPositionsToMeshResultContext(void *meshliteContext, int triangulatedMeshId);
     void collectParts();

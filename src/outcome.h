@@ -1,84 +1,90 @@
-#ifndef MESH_RESULT_CONTEXT_H
-#define MESH_RESULT_CONTEXT_H
+#ifndef DUST3D_OUTCOME_H
+#define DUST3D_OUTCOME_H
 #include <vector>
 #include <set>
 #include <QVector3D>
 #include <QUuid>
 #include <QColor>
 #include "positionmap.h"
-#include "skeletonbonemark.h"
+#include "bonemark.h"
 #include "texturetype.h"
 #include "material.h"
 
 #define MAX_WEIGHT_NUM  4
 
-struct BmeshNode
+struct OutcomeMaterial
+{
+    QColor color;
+    QUuid materialId;
+};
+
+struct OutcomeNode
 {
     QUuid partId;
     QUuid nodeId;
     QVector3D origin;
     float radius = 0;
-    Material material;
+    OutcomeMaterial material;
     QUuid mirrorFromPartId;
-    SkeletonBoneMark boneMark;
+    BoneMark boneMark;
 };
 
-struct BmeshVertex
+struct OutcomeNodeVertex
 {
     QVector3D position;
     QUuid partId;
     QUuid nodeId;
 };
 
-struct ResultVertex
+struct OutcomeVertex
 {
     QVector3D position;
 };
 
-struct ResultTriangle
+struct OutcomeTriangle
 {
     int indicies[3] = {0, 0, 0};
     QVector3D normal;
 };
 
-struct ResultTriangleUv
+struct OutcomeTriangleUv
 {
     float uv[3][2] = {{0, 0}, {0, 0}, {0, 0}};
     bool resolved = false;
 };
 
-struct ResultVertexUv
+struct OutcomeVertexUv
 {
     float uv[2] = {0, 0};
 };
 
 struct ResultPart
 {
-    Material material;
-    std::vector<ResultVertex> vertices;
+    OutcomeMaterial material;
+    std::vector<OutcomeVertex> vertices;
     std::vector<int> verticesOldIndicies;
     std::vector<QVector3D> interpolatedTriangleVertexNormals;
-    std::vector<ResultTriangle> triangles;
-    std::vector<ResultTriangleUv> uvs;
-    std::vector<ResultVertexUv> vertexUvs;
+    std::vector<OutcomeTriangle> triangles;
+    std::vector<OutcomeTriangleUv> uvs;
+    std::vector<OutcomeVertexUv> vertexUvs;
     std::vector<QVector3D> triangleTangents;
 };
 
-class MeshResultContext
+class Outcome
 {
 public:
-    std::vector<BmeshNode> bmeshNodes;
-    std::vector<BmeshVertex> bmeshVertices;
-    std::vector<ResultVertex> vertices;
-    std::vector<ResultTriangle> triangles;
-    MeshResultContext();
+    std::vector<OutcomeNode> bmeshNodes;
+    std::vector<OutcomeNodeVertex> bmeshVertices;
+    std::vector<OutcomeVertex> vertices;
+    std::vector<OutcomeTriangle> triangles;
+    Outcome();
 public:
     const std::vector<std::pair<QUuid, QUuid>> &triangleSourceNodes();
-    const std::vector<Material> &triangleMaterials();
+    const std::vector<OutcomeMaterial> &triangleMaterials();
     const std::map<std::pair<int, int>, std::pair<QUuid, QUuid>> &triangleEdgeSourceMap();
-    const std::map<std::pair<QUuid, QUuid>, BmeshNode *> &bmeshNodeMap();
+    const std::map<std::pair<QUuid, QUuid>, OutcomeNode *> &bmeshNodeMap();
     const std::map<QUuid, ResultPart> &parts();
-    const std::vector<ResultTriangleUv> &triangleUvs();
+    const std::vector<OutcomeTriangleUv> &triangleUvs();
     const std::map<int, std::pair<QUuid, QUuid>> &vertexSourceMap();
     const std::vector<QVector3D> &interpolatedTriangleVertexNormals();
     const std::vector<QVector3D> &triangleTangents();
@@ -93,11 +99,11 @@ private:
     bool m_triangleTangentsResolved;
 private:
     std::vector<std::pair<QUuid, QUuid>> m_triangleSourceNodes;
-    std::vector<Material> m_triangleMaterials;
+    std::vector<OutcomeMaterial> m_triangleMaterials;
     std::map<std::pair<int, int>, std::pair<QUuid, QUuid>> m_triangleEdgeSourceMap;
-    std::map<std::pair<QUuid, QUuid>, BmeshNode *> m_bmeshNodeMap;
+    std::map<std::pair<QUuid, QUuid>, OutcomeNode *> m_bmeshNodeMap;
     std::map<QUuid, ResultPart> m_resultParts;
-    std::vector<ResultTriangleUv> m_resultTriangleUvs;
+    std::vector<OutcomeTriangleUv> m_resultTriangleUvs;
     std::set<int> m_seamVertices;
     std::map<int, std::pair<QUuid, QUuid>> m_vertexSourceMap;
     std::map<int, int> m_rearrangedVerticesToOldIndexMap;
@@ -106,11 +112,11 @@ private:
 private:
     void calculateTriangleSourceNodes(std::vector<std::pair<QUuid, QUuid>> &triangleSourceNodes, std::map<int, std::pair<QUuid, QUuid>> &vertexSourceMap);
     void calculateRemainingVertexSourceNodesAfterTriangleSourceNodesSolved(std::map<int, std::pair<QUuid, QUuid>> &vertexSourceMap);
-    void calculateTriangleMaterials(std::vector<Material> &triangleMaterials);
+    void calculateTriangleMaterials(std::vector<OutcomeMaterial> &triangleMaterials);
     void calculateTriangleEdgeSourceMap(std::map<std::pair<int, int>, std::pair<QUuid, QUuid>> &triangleEdgeSourceMap);
-    void calculateBmeshNodeMap(std::map<std::pair<QUuid, QUuid>, BmeshNode *> &bmeshNodeMap);
+    void calculateBmeshNodeMap(std::map<std::pair<QUuid, QUuid>, OutcomeNode *> &bmeshNodeMap);
     void calculateResultParts(std::map<QUuid, ResultPart> &parts);
-    void calculateResultTriangleUvs(std::vector<ResultTriangleUv> &uvs, std::set<int> &seamVertices);
+    void calculateResultTriangleUvs(std::vector<OutcomeTriangleUv> &uvs, std::set<int> &seamVertices);
     void interpolateTriangleVertexNormals(std::vector<QVector3D> &resultNormals);
     void calculateTriangleTangents(std::vector<QVector3D> &tangents);
 };

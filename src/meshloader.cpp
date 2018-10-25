@@ -14,7 +14,7 @@
 float MeshLoader::m_defaultMetalness = 0.0;
 float MeshLoader::m_defaultRoughness = 1.0;
 
-MeshLoader::MeshLoader(void *meshlite, int meshId, int triangulatedMeshId, QColor defaultColor, const std::vector<Material> *triangleMaterials, bool smoothNormal) :
+MeshLoader::MeshLoader(void *meshlite, int meshId, int triangulatedMeshId, QColor defaultColor, const std::vector<OutcomeMaterial> *triangleMaterials, bool smoothNormal) :
     m_triangleVertices(nullptr),
     m_triangleVertexCount(0),
     m_edgeVertices(nullptr),
@@ -233,26 +233,26 @@ MeshLoader::MeshLoader(Vertex *triangleVertices, int vertexNum) :
 {
 }
 
-MeshLoader::MeshLoader(MeshResultContext &resultContext) :
+MeshLoader::MeshLoader(Outcome &outcome) :
     m_triangleVertices(nullptr),
     m_triangleVertexCount(0),
     m_edgeVertices(nullptr),
     m_edgeVertexCount(0),
     m_textureImage(nullptr)
 {
-    for (const auto &part: resultContext.parts()) {
+    for (const auto &part: outcome.parts()) {
         m_triangleVertexCount += part.second.triangles.size() * 3;
     }
     m_triangleVertices = new Vertex[m_triangleVertexCount];
     int destIndex = 0;
-    for (const auto &part: resultContext.parts()) {
+    for (const auto &part: outcome.parts()) {
         for (int x = 0; x < (int)part.second.triangles.size(); x++) {
             const auto &it = part.second.triangles[x];
             for (auto i = 0; i < 3; i++) {
                 int vertexIndex = it.indicies[i];
-                const ResultVertex *srcVert = &part.second.vertices[vertexIndex];
+                const OutcomeVertex *srcVert = &part.second.vertices[vertexIndex];
                 const QVector3D *srcNormal = &part.second.interpolatedTriangleVertexNormals[x * 3 + i];
-                const ResultVertexUv *srcUv = &part.second.vertexUvs[vertexIndex];
+                const OutcomeVertexUv *srcUv = &part.second.vertexUvs[vertexIndex];
                 //const Material *srcMaterial = &part.second.material;
                 const QVector3D *srcTangent = &part.second.triangleTangents[x];
                 Vertex *dest = &m_triangleVertices[destIndex];

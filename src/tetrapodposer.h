@@ -1,5 +1,5 @@
-#ifndef TETRAPOD_POSER_H
-#define TETRAPOD_POSER_H
+#ifndef DUST3D_TETRAPOD_POSER_H
+#define DUST3D_TETRAPOD_POSER_H
 #include "poser.h"
 
 class TetrapodPoser : public Poser

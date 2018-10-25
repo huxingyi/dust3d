@@ -1,17 +1,17 @@
 #include "skinnedmeshcreator.h"
 
-SkinnedMeshCreator::SkinnedMeshCreator(const MeshResultContext &meshResultContext,
+SkinnedMeshCreator::SkinnedMeshCreator(const Outcome &outcome,
         const std::map<int, AutoRiggerVertexWeights> &resultWeights) :
-    m_meshResultContext(meshResultContext),
+    m_outcome(outcome),
     m_resultWeights(resultWeights)
 {
-    for (const auto &vertex: m_meshResultContext.vertices) {
+    for (const auto &vertex: m_outcome.vertices) {
         m_verticesBindPositions.push_back(vertex.position);
     }
     
-    m_verticesBindNormals.resize(m_meshResultContext.vertices.size());
-    for (size_t triangleIndex = 0; triangleIndex < m_meshResultContext.triangles.size(); triangleIndex++) {
-        const auto &sourceTriangle = m_meshResultContext.triangles[triangleIndex];
+    m_verticesBindNormals.resize(m_outcome.vertices.size());
+    for (size_t triangleIndex = 0; triangleIndex < m_outcome.triangles.size(); triangleIndex++) {
+        const auto &sourceTriangle = m_outcome.triangles[triangleIndex];
         for (int i = 0; i < 3; i++)
             m_verticesBindNormals[sourceTriangle.indicies[i]] += sourceTriangle.normal;
     }
@@ -41,11 +41,11 @@ MeshLoader *SkinnedMeshCreator::createMeshFromTransform(const std::vector<QMatri
         }
     }
     
-    Vertex *triangleVertices = new Vertex[m_meshResultContext.triangles.size() * 3];
+    Vertex *triangleVertices = new Vertex[m_outcome.triangles.size() * 3];
     int triangleVerticesNum = 0;
-    for (size_t triangleIndex = 0; triangleIndex < m_meshResultContext.triangles.size(); triangleIndex++) {
-        const auto &sourceTriangle = m_meshResultContext.triangles[triangleIndex];
-        Material triangleMaterial = m_meshResultContext.triangleMaterials()[triangleIndex];
+    for (size_t triangleIndex = 0; triangleIndex < m_outcome.triangles.size(); triangleIndex++) {
+        const auto &sourceTriangle = m_outcome.triangles[triangleIndex];
+        OutcomeMaterial triangleMaterial = m_outcome.triangleMaterials()[triangleIndex];
         for (int i = 0; i < 3; i++) {
             Vertex &currentVertex = triangleVertices[triangleVerticesNum++];
             const auto &sourcePosition = transformedPositions[sourceTriangle.indicies[i]];

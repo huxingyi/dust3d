@@ -11,7 +11,7 @@
 #include "posewidget.h"
 #include "motionwidget.h"
 
-MotionTimelineWidget::MotionTimelineWidget(const SkeletonDocument *document, QWidget *parent) :
+MotionTimelineWidget::MotionTimelineWidget(const Document *document, QWidget *parent) :
     QListWidget(parent),
     m_document(document)
 {
@@ -39,12 +39,12 @@ QSize MotionTimelineWidget::sizeHint() const
     return QSize(0, MotionClipWidget::maxSize().height() + 4);
 }
 
-const std::vector<SkeletonMotionClip> &MotionTimelineWidget::clips()
+const std::vector<MotionClip> &MotionTimelineWidget::clips()
 {
     return m_clips;
 }
 
-void MotionTimelineWidget::setClips(std::vector<SkeletonMotionClip> clips)
+void MotionTimelineWidget::setClips(std::vector<MotionClip> clips)
 {
     m_clips = clips;
     if (m_currentSelectedIndex >= (int)m_clips.size())
@@ -54,38 +54,38 @@ void MotionTimelineWidget::setClips(std::vector<SkeletonMotionClip> clips)
 
 void MotionTimelineWidget::addPose(QUuid poseId)
 {
-    SkeletonMotionClip clip;
+    MotionClip clip;
     clip.linkToId = poseId;
-    clip.clipType = SkeletonMotionClipType::Pose;
+    clip.clipType = MotionClipType::Pose;
     clip.duration = 0;
     addClipAfterCurrentIndex(clip);
     emit clipsChanged();
     reload();
 }
 
-void MotionTimelineWidget::addClipAfterCurrentIndex(const SkeletonMotionClip &clip)
+void MotionTimelineWidget::addClipAfterCurrentIndex(const MotionClip &clip)
 {
-    SkeletonMotionClip interpolationClip;
+    MotionClip interpolationClip;
     bool needPrependInterpolationClip = false;
     int afterIndex = m_currentSelectedIndex;
     if (-1 == afterIndex)
         afterIndex = m_clips.size() - 1;
     
     if (-1 != afterIndex) {
-        if (m_clips[afterIndex].clipType == SkeletonMotionClipType::Interpolation) {
+        if (m_clips[afterIndex].clipType == MotionClipType::Interpolation) {
             --afterIndex;
         }
     }
     
-    if (clip.clipType == SkeletonMotionClipType::Interpolation) {
+    if (clip.clipType == MotionClipType::Interpolation) {
         if (m_clips.empty())
             return;
-        if (m_clips[m_clips.size() - 1].clipType == SkeletonMotionClipType::Interpolation)
+        if (m_clips[m_clips.size() - 1].clipType == MotionClipType::Interpolation)
             return;
     } else {
-        if (!m_clips.empty() && m_clips[m_clips.size() - 1].clipType != SkeletonMotionClipType::Interpolation) {
+        if (!m_clips.empty() && m_clips[m_clips.size() - 1].clipType != MotionClipType::Interpolation) {
             interpolationClip.interpolationType = InterpolationType::EaseInOutCubic;
-            interpolationClip.clipType = SkeletonMotionClipType::Interpolation;
+            interpolationClip.clipType = MotionClipType::Interpolation;
             interpolationClip.duration = 1.0;
             needPrependInterpolationClip = true;
         }
@@ -104,9 +104,9 @@ void MotionTimelineWidget::addClipAfterCurrentIndex(const SkeletonMotionClip &cl
 
 void MotionTimelineWidget::addMotion(QUuid motionId)
 {
-    SkeletonMotionClip clip;
+    MotionClip clip;
     clip.linkToId = motionId;
-    clip.clipType = SkeletonMotionClipType::Motion;
+    clip.clipType = MotionClipType::Motion;
     clip.duration = 0;
     addClipAfterCurrentIndex(clip);
     emit clipsChanged();
@@ -118,7 +118,7 @@ void MotionTimelineWidget::setClipInterpolationType(int index, InterpolationType
     if (index >= (int)m_clips.size())
         return;
     
-    if (m_clips[index].clipType != SkeletonMotionClipType::Interpolation)
+    if (m_clips[index].clipType != MotionClipType::Interpolation)
         return;
     
     m_clips[index].interpolationType = type;
@@ -130,7 +130,7 @@ void MotionTimelineWidget::setClipDuration(int index, float duration)
     if (index >= (int)m_clips.size())
         return;
     
-    if (m_clips[index].clipType == SkeletonMotionClipType::Motion)
+    if (m_clips[index].clipType == MotionClipType::Motion)
         return;
     
     m_clips[index].duration = duration;
@@ -284,7 +284,7 @@ void MotionTimelineWidget::showContextMenu(const QPoint &pos)
     
     QAction doubleDurationAction(tr("Double Duration"), this);
     if (-1 != m_currentSelectedIndex) {
-        if (m_clips[m_currentSelectedIndex].clipType == SkeletonMotionClipType::Interpolation) {
+        if (m_clips[m_currentSelectedIndex].clipType == MotionClipType::Interpolation) {
             connect(&doubleDurationAction, &QAction::triggered, [=]() {
                 setClipDuration(m_currentSelectedIndex, m_clips[m_currentSelectedIndex].duration * 2);
             });
@@ -294,7 +294,7 @@ void MotionTimelineWidget::showContextMenu(const QPoint &pos)
     
     QAction halveDurationAction(tr("Halve Duration"), this);
     if (-1 != m_currentSelectedIndex) {
-        if (m_clips[m_currentSelectedIndex].clipType == SkeletonMotionClipType::Interpolation) {
+        if (m_clips[m_currentSelectedIndex].clipType == MotionClipType::Interpolation) {
             connect(&halveDurationAction, &QAction::triggered, [=]() {
                 setClipDuration(m_currentSelectedIndex, m_clips[m_currentSelectedIndex].duration / 2);
             });
@@ -304,7 +304,7 @@ void MotionTimelineWidget::showContextMenu(const QPoint &pos)
     
     QAction deleteAction(tr("Delete"), this);
     if (-1 != m_currentSelectedIndex) {
-        if (m_clips[m_currentSelectedIndex].clipType != SkeletonMotionClipType::Interpolation) {
+        if (m_clips[m_currentSelectedIndex].clipType != MotionClipType::Interpolation) {
             connect(&deleteAction, &QAction::triggered, [=]() {
                 removeClip(m_currentSelectedIndex);
             });

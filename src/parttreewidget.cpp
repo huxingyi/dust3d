@@ -6,12 +6,12 @@
 #include <QRadialGradient>
 #include <QBrush>
 #include <QGuiApplication>
-#include "skeletonparttreewidget.h"
-#include "skeletonpartwidget.h"
+#include "parttreewidget.h"
+#include "partwidget.h"
 #include "skeletongraphicswidget.h"
 #include "floatnumberwidget.h"
 
-SkeletonPartTreeWidget::SkeletonPartTreeWidget(const SkeletonDocument *document, QWidget *parent) :
+PartTreeWidget::PartTreeWidget(const Document *document, QWidget *parent) :
     QTreeWidget(parent),
     m_document(document)
 {
@@ -56,13 +56,13 @@ SkeletonPartTreeWidget::SkeletonPartTreeWidget(const SkeletonDocument *document,
     gradient.setColorAt(1, Qt::transparent);
     m_hightlightedPartBackground = QBrush(gradient);
     
-    connect(this, &QTreeWidget::customContextMenuRequested, this, &SkeletonPartTreeWidget::showContextMenu);
-    connect(this, &QTreeWidget::itemChanged, this, &SkeletonPartTreeWidget::groupChanged);
-    connect(this, &QTreeWidget::itemExpanded, this, &SkeletonPartTreeWidget::groupExpanded);
-    connect(this, &QTreeWidget::itemCollapsed, this, &SkeletonPartTreeWidget::groupCollapsed);
+    connect(this, &QTreeWidget::customContextMenuRequested, this, &PartTreeWidget::showContextMenu);
+    connect(this, &QTreeWidget::itemChanged, this, &PartTreeWidget::groupChanged);
+    connect(this, &QTreeWidget::itemExpanded, this, &PartTreeWidget::groupExpanded);
+    connect(this, &QTreeWidget::itemCollapsed, this, &PartTreeWidget::groupCollapsed);
 }
 
-void SkeletonPartTreeWidget::selectComponent(QUuid componentId, bool multiple)
+void PartTreeWidget::selectComponent(QUuid componentId, bool multiple)
 {
     if (multiple) {
         if (!m_currentSelectedComponentId.isNull()) {
@@ -103,9 +103,9 @@ void SkeletonPartTreeWidget::selectComponent(QUuid componentId, bool multiple)
     }
 }
 
-void SkeletonPartTreeWidget::updateComponentSelectState(QUuid componentId, bool selected)
+void PartTreeWidget::updateComponentSelectState(QUuid componentId, bool selected)
 {
-    const SkeletonComponent *component = m_document->findComponent(componentId);
+    const Component *component = m_document->findComponent(componentId);
     if (nullptr == component) {
         qDebug() << "Component not found:" << componentId;
         return;
@@ -113,7 +113,7 @@ void SkeletonPartTreeWidget::updateComponentSelectState(QUuid componentId, bool 
     if (!component->linkToPartId.isNull()) {
         auto item = m_partItemMap.find(component->linkToPartId);
         if (item != m_componentItemMap.end()) {
-            SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second, 0);
+            PartWidget *widget = (PartWidget *)itemWidget(item->second, 0);
             widget->updateCheckedState(selected);
         }
         return;
@@ -130,7 +130,7 @@ void SkeletonPartTreeWidget::updateComponentSelectState(QUuid componentId, bool 
     }
 }
 
-void SkeletonPartTreeWidget::mousePressEvent(QMouseEvent *event)
+void PartTreeWidget::mousePressEvent(QMouseEvent *event)
 {
     QModelIndex itemIndex = indexAt(event->pos());
     QTreeView::mousePressEvent(event);
@@ -141,7 +141,7 @@ void SkeletonPartTreeWidget::mousePressEvent(QMouseEvent *event)
             auto componentId = QUuid(item->data(0, Qt::UserRole).toString());
             if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
                 if (!m_shiftStartComponentId.isNull()) {
-                    const SkeletonComponent *parent = m_document->findComponentParent(m_shiftStartComponentId);
+                    const Component *parent = m_document->findComponentParent(m_shiftStartComponentId);
                     if (parent) {
                         if (!parent->childrenIds.empty()) {
                             bool startAdd = false;
@@ -190,11 +190,11 @@ void SkeletonPartTreeWidget::mousePressEvent(QMouseEvent *event)
     }
 }
 
-void SkeletonPartTreeWidget::showContextMenu(const QPoint &pos)
+void PartTreeWidget::showContextMenu(const QPoint &pos)
 {
-    const SkeletonComponent *component = nullptr;
-    const SkeletonPart *part = nullptr;
-    SkeletonPartWidget *partWidget = nullptr;
+    const Component *component = nullptr;
+    const Part *part = nullptr;
+    PartWidget *partWidget = nullptr;
     
     std::set<QUuid> unorderedComponentIds = m_selectedComponentIds;
     if (!m_currentSelectedComponentId.isNull())
@@ -238,7 +238,7 @@ void SkeletonPartTreeWidget::showContextMenu(const QPoint &pos)
     if (nullptr != part) {
         auto findItem = m_partItemMap.find(part->id);
         if (findItem != m_partItemMap.end()) {
-            partWidget = (SkeletonPartWidget *)itemWidget(findItem->second, 0);
+            partWidget = (PartWidget *)itemWidget(findItem->second, 0);
         }
     }
     if (nullptr != part && nullptr != partWidget) {
@@ -500,7 +500,7 @@ void SkeletonPartTreeWidget::showContextMenu(const QPoint &pos)
         });
         
         addChildGroupsFunc = [this, &groupsActions, &addChildGroupsFunc, &moveToMenu, &componentIds](QUuid currentId, int tabs) -> void {
-            const SkeletonComponent *current = m_document->findComponent(currentId);
+            const Component *current = m_document->findComponent(currentId);
             if (nullptr == current)
                 return;
             if (!current->id.isNull() && current->linkDataType().isEmpty()) {
@@ -535,11 +535,11 @@ void SkeletonPartTreeWidget::showContextMenu(const QPoint &pos)
     }
 }
 
-QWidget *SkeletonPartTreeWidget::createSmoothMenuWidget(QUuid componentId)
+QWidget *PartTreeWidget::createSmoothMenuWidget(QUuid componentId)
 {
     QWidget *popup = new QWidget;
     
-    const SkeletonComponent *component = m_document->findComponent(componentId);
+    const Component *component = m_document->findComponent(componentId);
     if (!component) {
         qDebug() << "Find component failed:" << componentId;
         return popup;
@@ -607,7 +607,7 @@ QWidget *SkeletonPartTreeWidget::createSmoothMenuWidget(QUuid componentId)
     return popup;
 }
 
-QTreeWidgetItem *SkeletonPartTreeWidget::findComponentItem(QUuid componentId)
+QTreeWidgetItem *PartTreeWidget::findComponentItem(QUuid componentId)
 {
     auto findResult = m_componentItemMap.find(componentId);
     if (findResult == m_componentItemMap.end())
@@ -616,7 +616,7 @@ QTreeWidgetItem *SkeletonPartTreeWidget::findComponentItem(QUuid componentId)
     return findResult->second;
 }
 
-void SkeletonPartTreeWidget::componentNameChanged(QUuid componentId)
+void PartTreeWidget::componentNameChanged(QUuid componentId)
 {
     auto componentItem = m_componentItemMap.find(componentId);
     if (componentItem == m_componentItemMap.end()) {
@@ -624,7 +624,7 @@ void SkeletonPartTreeWidget::componentNameChanged(QUuid componentId)
         return;
     }
     
-    const SkeletonComponent *component = m_document->findComponent(componentId);
+    const Component *component = m_document->findComponent(componentId);
     if (nullptr == component) {
         qDebug() << "Find component failed:" << componentId;
         return;
@@ -633,7 +633,7 @@ void SkeletonPartTreeWidget::componentNameChanged(QUuid componentId)
     componentItem->second->setText(0, component->name);
 }
 
-void SkeletonPartTreeWidget::componentExpandStateChanged(QUuid componentId)
+void PartTreeWidget::componentExpandStateChanged(QUuid componentId)
 {
     auto componentItem = m_componentItemMap.find(componentId);
     if (componentItem == m_componentItemMap.end()) {
@@ -641,7 +641,7 @@ void SkeletonPartTreeWidget::componentExpandStateChanged(QUuid componentId)
         return;
     }
     
-    const SkeletonComponent *component = m_document->findComponent(componentId);
+    const Component *component = m_document->findComponent(componentId);
     if (nullptr == component) {
         qDebug() << "Find component failed:" << componentId;
         return;
@@ -650,14 +650,14 @@ void SkeletonPartTreeWidget::componentExpandStateChanged(QUuid componentId)
     componentItem->second->setExpanded(component->expanded);
 }
 
-void SkeletonPartTreeWidget::addComponentChildrenToItem(QUuid componentId, QTreeWidgetItem *parentItem)
+void PartTreeWidget::addComponentChildrenToItem(QUuid componentId, QTreeWidgetItem *parentItem)
 {
-    const SkeletonComponent *parentComponent = m_document->findComponent(componentId);
+    const Component *parentComponent = m_document->findComponent(componentId);
     if (nullptr == parentComponent)
         return;
     
     for (const auto &childId: parentComponent->childrenIds) {
-        const SkeletonComponent *component = m_document->findComponent(childId);
+        const Component *component = m_document->findComponent(childId);
         if (nullptr == component)
             continue;
         if (!component->linkToPartId.isNull()) {
@@ -666,8 +666,8 @@ void SkeletonPartTreeWidget::addComponentChildrenToItem(QUuid componentId, QTree
             item->setData(0, Qt::UserRole, QVariant(component->id.toString()));
             item->setFlags(item->flags() & ~(Qt::ItemIsEditable | Qt::ItemIsEnabled | Qt::ItemIsSelectable));
             QUuid partId = component->linkToPartId;
-            SkeletonPartWidget *widget = new SkeletonPartWidget(m_document, partId);
-            item->setSizeHint(0, SkeletonPartWidget::preferredSize());
+            PartWidget *widget = new PartWidget(m_document, partId);
+            item->setSizeHint(0, PartWidget::preferredSize());
             setItemWidget(item, 0, widget);
             widget->reload();
             m_partItemMap[partId] = item;
@@ -685,13 +685,13 @@ void SkeletonPartTreeWidget::addComponentChildrenToItem(QUuid componentId, QTree
     }
 }
 
-void SkeletonPartTreeWidget::deleteItemChildren(QTreeWidgetItem *item)
+void PartTreeWidget::deleteItemChildren(QTreeWidgetItem *item)
 {
     auto children = item->takeChildren();
     while (!children.isEmpty()) {
         auto first = children.takeFirst();
         auto componentId = QUuid(first->data(0, Qt::UserRole).toString());
-        const SkeletonComponent *component = m_document->findComponent(componentId);
+        const Component *component = m_document->findComponent(componentId);
         if (nullptr != component) {
             m_componentItemMap.erase(componentId);
             if (!component->linkToPartId.isNull()) {
@@ -703,7 +703,7 @@ void SkeletonPartTreeWidget::deleteItemChildren(QTreeWidgetItem *item)
     }
 }
 
-void SkeletonPartTreeWidget::componentChildrenChanged(QUuid componentId)
+void PartTreeWidget::componentChildrenChanged(QUuid componentId)
 {
     QTreeWidgetItem *parentItem = findComponentItem(componentId);
     if (nullptr == parentItem) {
@@ -723,7 +723,7 @@ void SkeletonPartTreeWidget::componentChildrenChanged(QUuid componentId)
     }
 }
 
-void SkeletonPartTreeWidget::removeAllContent()
+void PartTreeWidget::removeAllContent()
 {
     qDeleteAll(invisibleRootItem()->takeChildren());
     m_partItemMap.clear();
@@ -731,7 +731,7 @@ void SkeletonPartTreeWidget::removeAllContent()
     m_componentItemMap[QUuid()] = invisibleRootItem();
 }
 
-void SkeletonPartTreeWidget::componentRemoved(QUuid componentId)
+void PartTreeWidget::componentRemoved(QUuid componentId)
 {
     auto componentItem = m_componentItemMap.find(componentId);
     if (componentItem == m_componentItemMap.end())
@@ -742,12 +742,12 @@ void SkeletonPartTreeWidget::componentRemoved(QUuid componentId)
     m_componentItemMap.erase(componentId);
 }
 
-void SkeletonPartTreeWidget::componentAdded(QUuid componentId)
+void PartTreeWidget::componentAdded(QUuid componentId)
 {
     // ignore
 }
 
-void SkeletonPartTreeWidget::partRemoved(QUuid partId)
+void PartTreeWidget::partRemoved(QUuid partId)
 {
     auto partItem = m_partItemMap.find(partId);
     if (partItem == m_partItemMap.end())
@@ -756,14 +756,14 @@ void SkeletonPartTreeWidget::partRemoved(QUuid partId)
     m_partItemMap.erase(partItem);
 }
 
-void SkeletonPartTreeWidget::groupChanged(QTreeWidgetItem *item, int column)
+void PartTreeWidget::groupChanged(QTreeWidgetItem *item, int column)
 {
     if (0 != column)
         return;
     
     auto componentId = QUuid(item->data(0, Qt::UserRole).toString());
     
-    const SkeletonComponent *component = m_document->findComponent(componentId);
+    const Component *component = m_document->findComponent(componentId);
     if (nullptr == component) {
         qDebug() << "Find component failed:" << componentId;
         return;
@@ -773,140 +773,140 @@ void SkeletonPartTreeWidget::groupChanged(QTreeWidgetItem *item, int column)
         emit renameComponent(componentId, item->text(0));
 }
 
-void SkeletonPartTreeWidget::groupExpanded(QTreeWidgetItem *item)
+void PartTreeWidget::groupExpanded(QTreeWidgetItem *item)
 {
     QUuid componentId = QUuid(item->data(0, Qt::UserRole).toString());
     emit setComponentExpandState(componentId, true);
 }
 
-void SkeletonPartTreeWidget::groupCollapsed(QTreeWidgetItem *item)
+void PartTreeWidget::groupCollapsed(QTreeWidgetItem *item)
 {
     QUuid componentId = QUuid(item->data(0, Qt::UserRole).toString());
     emit setComponentExpandState(componentId, false);
 }
 
-void SkeletonPartTreeWidget::partPreviewChanged(QUuid partId)
+void PartTreeWidget::partPreviewChanged(QUuid partId)
 {
     auto item = m_partItemMap.find(partId);
     if (item == m_partItemMap.end()) {
         qDebug() << "Part item not found:" << partId;
         return;
     }
-    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second, 0);
+    PartWidget *widget = (PartWidget *)itemWidget(item->second, 0);
     widget->updatePreview();
 }
 
-void SkeletonPartTreeWidget::partLockStateChanged(QUuid partId)
+void PartTreeWidget::partLockStateChanged(QUuid partId)
 {
     auto item = m_partItemMap.find(partId);
     if (item == m_partItemMap.end()) {
         qDebug() << "Part item not found:" << partId;
         return;
     }
-    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second, 0);
+    PartWidget *widget = (PartWidget *)itemWidget(item->second, 0);
     widget->updateLockButton();
 }
 
-void SkeletonPartTreeWidget::partVisibleStateChanged(QUuid partId)
+void PartTreeWidget::partVisibleStateChanged(QUuid partId)
 {
     auto item = m_partItemMap.find(partId);
     if (item == m_partItemMap.end()) {
         qDebug() << "Part item not found:" << partId;
         return;
     }
-    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second, 0);
+    PartWidget *widget = (PartWidget *)itemWidget(item->second, 0);
     widget->updateVisibleButton();
 }
 
-void SkeletonPartTreeWidget::partSubdivStateChanged(QUuid partId)
+void PartTreeWidget::partSubdivStateChanged(QUuid partId)
 {
     auto item = m_partItemMap.find(partId);
     if (item == m_partItemMap.end()) {
         qDebug() << "Part item not found:" << partId;
         return;
     }
-    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second, 0);
+    PartWidget *widget = (PartWidget *)itemWidget(item->second, 0);
     widget->updateSubdivButton();
 }
 
-void SkeletonPartTreeWidget::partDisableStateChanged(QUuid partId)
+void PartTreeWidget::partDisableStateChanged(QUuid partId)
 {
     auto item = m_partItemMap.find(partId);
     if (item == m_partItemMap.end()) {
         qDebug() << "Part item not found:" << partId;
         return;
     }
-    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second, 0);
+    PartWidget *widget = (PartWidget *)itemWidget(item->second, 0);
     widget->updateDisableButton();
 }
 
-void SkeletonPartTreeWidget::partXmirrorStateChanged(QUuid partId)
+void PartTreeWidget::partXmirrorStateChanged(QUuid partId)
 {
     auto item = m_partItemMap.find(partId);
     if (item == m_partItemMap.end()) {
         qDebug() << "Part item not found:" << partId;
         return;
     }
-    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second, 0);
+    PartWidget *widget = (PartWidget *)itemWidget(item->second, 0);
     widget->updateXmirrorButton();
 }
 
-void SkeletonPartTreeWidget::partDeformChanged(QUuid partId)
+void PartTreeWidget::partDeformChanged(QUuid partId)
 {
     auto item = m_partItemMap.find(partId);
     if (item == m_partItemMap.end()) {
         qDebug() << "Part item not found:" << partId;
         return;
     }
-    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second, 0);
+    PartWidget *widget = (PartWidget *)itemWidget(item->second, 0);
     widget->updateDeformButton();
 }
 
-void SkeletonPartTreeWidget::partRoundStateChanged(QUuid partId)
+void PartTreeWidget::partRoundStateChanged(QUuid partId)
 {
     auto item = m_partItemMap.find(partId);
     if (item == m_partItemMap.end()) {
         qDebug() << "Part item not found:" << partId;
         return;
     }
-    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second, 0);
+    PartWidget *widget = (PartWidget *)itemWidget(item->second, 0);
     widget->updateRoundButton();
 }
 
-void SkeletonPartTreeWidget::partWrapStateChanged(QUuid partId)
+void PartTreeWidget::partWrapStateChanged(QUuid partId)
 {
     auto item = m_partItemMap.find(partId);
     if (item == m_partItemMap.end()) {
         qDebug() << "Part item not found:" << partId;
         return;
     }
-    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second, 0);
+    PartWidget *widget = (PartWidget *)itemWidget(item->second, 0);
     widget->updateWrapButton();
 }
 
-void SkeletonPartTreeWidget::partColorStateChanged(QUuid partId)
+void PartTreeWidget::partColorStateChanged(QUuid partId)
 {
     auto item = m_partItemMap.find(partId);
     if (item == m_partItemMap.end()) {
         qDebug() << "Part item not found:" << partId;
         return;
     }
-    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second, 0);
+    PartWidget *widget = (PartWidget *)itemWidget(item->second, 0);
     widget->updateColorButton();
 }
 
-void SkeletonPartTreeWidget::partMaterialIdChanged(QUuid partId)
+void PartTreeWidget::partMaterialIdChanged(QUuid partId)
 {
     auto item = m_partItemMap.find(partId);
     if (item == m_partItemMap.end()) {
         qDebug() << "Part item not found:" << partId;
         return;
     }
-    SkeletonPartWidget *widget = (SkeletonPartWidget *)itemWidget(item->second, 0);
+    PartWidget *widget = (PartWidget *)itemWidget(item->second, 0);
     widget->updateColorButton();
 }
 
-void SkeletonPartTreeWidget::partChecked(QUuid partId)
+void PartTreeWidget::partChecked(QUuid partId)
 {
     auto item = m_partItemMap.find(partId);
     if (item == m_partItemMap.end()) {
@@ -916,7 +916,7 @@ void SkeletonPartTreeWidget::partChecked(QUuid partId)
     item->second->setBackground(0, m_hightlightedPartBackground);
 }
 
-void SkeletonPartTreeWidget::partUnchecked(QUuid partId)
+void PartTreeWidget::partUnchecked(QUuid partId)
 {
     auto item = m_partItemMap.find(partId);
     if (item == m_partItemMap.end()) {
@@ -926,13 +926,13 @@ void SkeletonPartTreeWidget::partUnchecked(QUuid partId)
     item->second->setBackground(0, QBrush(Qt::transparent));
 }
 
-QSize SkeletonPartTreeWidget::sizeHint() const
+QSize PartTreeWidget::sizeHint() const
 {
-    QSize size = SkeletonPartWidget::preferredSize();
+    QSize size = PartWidget::preferredSize();
     return QSize(size.width() * 1.35, size.height() * 5.5);
 }
 
-bool SkeletonPartTreeWidget::isComponentSelected(QUuid componentId)
+bool PartTreeWidget::isComponentSelected(QUuid componentId)
 {
     return (m_currentSelectedComponentId == componentId ||
         m_selectedComponentIds.find(componentId) != m_selectedComponentIds.end());

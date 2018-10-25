@@ -6,7 +6,7 @@
 #include <QDir>
 #include "gltffile.h"
 #include "version.h"
-#include "dust3dutil.h"
+#include "util.h"
 #include "jointnodetree.h"
 #include "meshloader.h"
 
@@ -21,7 +21,7 @@
 
 bool GltfFileWriter::m_enableComment = true;
 
-GltfFileWriter::GltfFileWriter(MeshResultContext &resultContext,
+GltfFileWriter::GltfFileWriter(Outcome &outcome,
         const std::vector<AutoRiggerBone> *resultRigBones,
         const std::map<int, AutoRiggerVertexWeights> *resultRigWeights,
         const QString &filename) :
@@ -129,12 +129,12 @@ GltfFileWriter::GltfFileWriter(MeshResultContext &resultContext,
     m_json["samplers"][0]["wrapS"] = 33648;
     m_json["samplers"][0]["wrapT"] = 33648;
     
-    const std::map<QUuid, ResultPart> *parts = &resultContext.parts();
+    const std::map<QUuid, ResultPart> *parts = &outcome.parts();
     
     std::map<QUuid, ResultPart> testParts;
     if (m_testOutputAsWhole) {
-        testParts[0].vertices = resultContext.vertices;
-        testParts[0].triangles = resultContext.triangles;
+        testParts[0].vertices = outcome.vertices;
+        testParts[0].triangles = outcome.triangles;
         
         m_outputNormal = false;
         m_outputUv = false;

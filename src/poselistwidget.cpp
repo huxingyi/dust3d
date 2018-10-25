@@ -3,10 +3,10 @@
 #include <QXmlStreamWriter>
 #include <QClipboard>
 #include <QApplication>
-#include "skeletonxml.h"
+#include "snapshotxml.h"
 #include "poselistwidget.h"
 
-PoseListWidget::PoseListWidget(const SkeletonDocument *document, QWidget *parent) :
+PoseListWidget::PoseListWidget(const Document *document, QWidget *parent) :
     QTreeWidget(parent),
     m_document(document)
 {
@@ -27,10 +27,10 @@ PoseListWidget::PoseListWidget(const SkeletonDocument *document, QWidget *parent
     
     setContentsMargins(0, 0, 0, 0);
     
-    connect(document, &SkeletonDocument::poseListChanged, this, &PoseListWidget::reload);
-    connect(document, &SkeletonDocument::cleanup, this, &PoseListWidget::removeAllContent);
+    connect(document, &Document::poseListChanged, this, &PoseListWidget::reload);
+    connect(document, &Document::cleanup, this, &PoseListWidget::removeAllContent);
     
-    connect(this, &PoseListWidget::removePose, document, &SkeletonDocument::removePose);
+    connect(this, &PoseListWidget::removePose, document, &Document::removePose);
     
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, &QTreeWidget::customContextMenuRequested, this, &PoseListWidget::showContextMenu);
@@ -190,7 +190,7 @@ void PoseListWidget::showContextMenu(const QPoint &pos)
     
     QAction pasteAction(tr("Paste"), this);
     if (m_document->hasPastablePosesInClipboard()) {
-        connect(&pasteAction, &QAction::triggered, m_document, &SkeletonDocument::paste);
+        connect(&pasteAction, &QAction::triggered, m_document, &Document::paste);
         contextMenu.addAction(&pasteAction);
     }
     
@@ -287,8 +287,8 @@ void PoseListWidget::copy()
     
     std::set<QUuid> emptySet;
     
-    SkeletonSnapshot snapshot;
-    m_document->toSnapshot(&snapshot, emptySet, SkeletonDocumentToSnapshotFor::Poses,
+    Snapshot snapshot;
+    m_document->toSnapshot(&snapshot, emptySet, DocumentToSnapshotFor::Poses,
         limitPoseIds);
     QString snapshotXml;
     QXmlStreamWriter xmlStreamWriter(&snapshotXml);

@@ -1,5 +1,5 @@
-#ifndef CCD_IK_SOLVER_H
-#define CCD_IK_SOLVER_H
+#ifndef DUST3D_CCD_IK_SOLVER_H
+#define DUST3D_CCD_IK_SOLVER_H
 #include <vector>
 #include <QVector3D>
 #include <QQuaternion>

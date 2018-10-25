@@ -1,10 +1,10 @@
-#ifndef MATERIAL_EDIT_WIDGET_H
-#define MATERIAL_EDIT_WIDGET_H
+#ifndef DUST3D_MATERIAL_EDIT_WIDGET_H
+#define DUST3D_MATERIAL_EDIT_WIDGET_H
 #include <QDialog>
 #include <map>
 #include <QCloseEvent>
 #include <QLineEdit>
-#include "skeletondocument.h"
+#include "document.h"
 #include "modelwidget.h"
 #include "materialpreviewsgenerator.h"
 
@@ -18,19 +18,19 @@ class MaterialEditWidget : public QDialog
 {
     Q_OBJECT
 signals:
-    void addMaterial(QString name, std::vector<SkeletonMaterialLayer> layers);
+    void addMaterial(QString name, std::vector<MaterialLayer> layers);
     void removeMaterial(QUuid materialId);
-    void setMaterialLayers(QUuid materialId, std::vector<SkeletonMaterialLayer> layers);
+    void setMaterialLayers(QUuid materialId, std::vector<MaterialLayer> layers);
     void renameMaterial(QUuid materialId, QString name);
     void layersAdjusted();
 public:
-    MaterialEditWidget(const SkeletonDocument *document, QWidget *parent=nullptr);
+    MaterialEditWidget(const Document *document, QWidget *parent=nullptr);
     ~MaterialEditWidget();
 public slots:
     void updatePreview();
     void setEditMaterialId(QUuid materialId);
     void setEditMaterialName(QString name);
-    void setEditMaterialLayers(std::vector<SkeletonMaterialLayer> layers);
+    void setEditMaterialLayers(std::vector<MaterialLayer> layers);
     void updateTitle();
     void save();
     void clearUnsaveState();
@@ -43,7 +43,7 @@ private:
     void updateMapButtonBackground(QPushButton *button, const QImage *image);
     QPushButton *createMapButton();
     QImage *pickImage();
-    const SkeletonDocument *m_document = nullptr;
+    const Document *m_document = nullptr;
     MaterialPreviewsGenerator *m_materialPreviewsGenerator = nullptr;
     ModelWidget *m_previewWidget = nullptr;
     bool m_isPreviewDirty = false;
@@ -51,7 +51,7 @@ private:
     QUuid m_materialId;
     bool m_unsaved = false;
     QLineEdit *m_nameEdit = nullptr;
-    std::vector<SkeletonMaterialLayer> m_layers;
+    std::vector<MaterialLayer> m_layers;
     QPushButton *m_textureMapButtons[(int)TextureType::Count - 1] = {nullptr};
 };
 

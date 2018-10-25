@@ -6,7 +6,7 @@
 #include "materialeditwidget.h"
 #include "infolabel.h"
 
-MaterialManageWidget::MaterialManageWidget(const SkeletonDocument *document, QWidget *parent) :
+MaterialManageWidget::MaterialManageWidget(const Document *document, QWidget *parent) :
     QWidget(parent),
     m_document(document)
 {
@@ -47,7 +47,7 @@ void MaterialManageWidget::showMaterialDialog(QUuid materialId)
     MaterialEditWidget *materialEditWidget = new MaterialEditWidget(m_document);
     materialEditWidget->setAttribute(Qt::WA_DeleteOnClose);
     if (!materialId.isNull()) {
-        const SkeletonMaterial *material = m_document->findMaterial(materialId);
+        const Material *material = m_document->findMaterial(materialId);
         if (nullptr != material) {
             materialEditWidget->setEditMaterialId(materialId);
             materialEditWidget->setEditMaterialName(material->name);

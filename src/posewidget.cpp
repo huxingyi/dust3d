@@ -1,7 +1,7 @@
 #include <QVBoxLayout>
 #include "posewidget.h"
 
-PoseWidget::PoseWidget(const SkeletonDocument *document, QUuid poseId) :
+PoseWidget::PoseWidget(const Document *document, QUuid poseId) :
     m_poseId(poseId),
     m_document(document)
 {
@@ -31,12 +31,12 @@ PoseWidget::PoseWidget(const SkeletonDocument *document, QUuid poseId) :
     
     setFixedSize(Theme::posePreviewImageSize, PoseWidget::preferredHeight());
     
-    connect(document, &SkeletonDocument::poseNameChanged, this, [=](QUuid poseId) {
+    connect(document, &Document::poseNameChanged, this, [=](QUuid poseId) {
         if (poseId != m_poseId)
             return;
         updateName();
     });
-    connect(document, &SkeletonDocument::posePreviewChanged, this, [=](QUuid poseId) {
+    connect(document, &Document::posePreviewChanged, this, [=](QUuid poseId) {
         if (poseId != m_poseId)
             return;
         updatePreview();
@@ -76,7 +76,7 @@ void PoseWidget::reload()
 
 void PoseWidget::updatePreview()
 {
-    const SkeletonPose *pose = m_document->findPose(m_poseId);
+    const Pose *pose = m_document->findPose(m_poseId);
     if (!pose) {
         qDebug() << "Pose not found:" << m_poseId;
         return;
@@ -87,7 +87,7 @@ void PoseWidget::updatePreview()
 
 void PoseWidget::updateName()
 {
-    const SkeletonPose *pose = m_document->findPose(m_poseId);
+    const Pose *pose = m_document->findPose(m_poseId);
     if (!pose) {
         qDebug() << "Pose not found:" << m_poseId;
         return;

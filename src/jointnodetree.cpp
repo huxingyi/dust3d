@@ -1,5 +1,5 @@
 #include "jointnodetree.h"
-#include "dust3dutil.h"
+#include "util.h"
 
 const std::vector<JointNode> &JointNodeTree::nodes() const
 {

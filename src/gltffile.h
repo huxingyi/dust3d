@@ -1,20 +1,20 @@
-#ifndef GLTF_FILE_H
-#define GLTF_FILE_H
+#ifndef DUST3D_GLTF_FILE_H
+#define DUST3D_GLTF_FILE_H
 #include <QObject>
 #include <QString>
 #include <QByteArray>
 #include <QMatrix4x4>
 #include <vector>
 #include <QQuaternion>
-#include "meshresultcontext.h"
+#include "outcome.h"
 #include "json.hpp"
-#include "skeletondocument.h"
+#include "document.h"
 
 class GltfFileWriter : public QObject
 {
     Q_OBJECT
 public:
-    GltfFileWriter(MeshResultContext &resultContext,
+    GltfFileWriter(Outcome &outcome,
         const std::vector<AutoRiggerBone> *resultRigBones,
         const std::map<int, AutoRiggerVertexWeights> *resultRigWeights,
         const QString &filename);

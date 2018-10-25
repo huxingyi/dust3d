@@ -1,5 +1,5 @@
-#ifndef MODEL_SHADER_PROGRAM_H
-#define MODEL_SHADER_PROGRAM_H
+#ifndef DUST3D_MODEL_SHADER_PROGRAM_H
+#define DUST3D_MODEL_SHADER_PROGRAM_H
 #include <QOpenGLShaderProgram>
 #include <QString>
 

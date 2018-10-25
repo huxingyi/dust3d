@@ -6,13 +6,13 @@
 #include <QDebug>
 #include <QStackedWidget>
 #include "motioneditwidget.h"
-#include "dust3dutil.h"
+#include "util.h"
 #include "poselistwidget.h"
 #include "motionlistwidget.h"
 #include "version.h"
 #include "tabwidget.h"
 
-MotionEditWidget::MotionEditWidget(const SkeletonDocument *document, QWidget *parent) :
+MotionEditWidget::MotionEditWidget(const Document *document, QWidget *parent) :
     QDialog(parent),
     m_document(document)
 {
@@ -130,9 +130,9 @@ MotionEditWidget::MotionEditWidget(const SkeletonDocument *document, QWidget *pa
     
     setLayout(mainLayout);
     
-    connect(this, &MotionEditWidget::addMotion, m_document, &SkeletonDocument::addMotion);
-    connect(this, &MotionEditWidget::renameMotion, m_document, &SkeletonDocument::renameMotion);
-    connect(this, &MotionEditWidget::setMotionClips, m_document, &SkeletonDocument::setMotionClips);
+    connect(this, &MotionEditWidget::addMotion, m_document, &Document::addMotion);
+    connect(this, &MotionEditWidget::renameMotion, m_document, &Document::renameMotion);
+    connect(this, &MotionEditWidget::setMotionClips, m_document, &Document::setMotionClips);
     
     updateTitle();
 }
@@ -218,7 +218,7 @@ void MotionEditWidget::updateTitle()
         setWindowTitle(unifiedWindowTitle(tr("New") + (m_unsaved ? "*" : "")));
         return;
     }
-    const SkeletonMotion *motion = m_document->findMotion(m_motionId);
+    const Motion *motion = m_document->findMotion(m_motionId);
     if (nullptr == motion) {
         qDebug() << "Find motion failed:" << m_motionId;
         return;
@@ -226,7 +226,7 @@ void MotionEditWidget::updateTitle()
     setWindowTitle(unifiedWindowTitle(motion->name + (m_unsaved ? "*" : "")));
 }
 
-void MotionEditWidget::setEditMotionClips(std::vector<SkeletonMotionClip> clips)
+void MotionEditWidget::setEditMotionClips(std::vector<MotionClip> clips)
 {
     m_timelineWidget->setClips(clips);
 }

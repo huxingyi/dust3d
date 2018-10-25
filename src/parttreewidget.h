@@ -1,11 +1,11 @@
-#ifndef SKELETON_PART_TREE_WIDGET_H
-#define SKELETON_PART_TREE_WIDGET_H
+#ifndef DUST3D_PART_TREE_WIDGET_H
+#define DUST3D_PART_TREE_WIDGET_H
 #include <QTreeWidget>
 #include <QUuid>
 #include <QMouseEvent>
-#include "skeletondocument.h"
+#include "document.h"
 
-class SkeletonPartTreeWidget : public QTreeWidget
+class PartTreeWidget : public QTreeWidget
 {
     Q_OBJECT
 signals:
@@ -41,7 +41,7 @@ signals:
     void addPartToSelection(QUuid partId);
     void groupOperationAdded();
 public:
-    SkeletonPartTreeWidget(const SkeletonDocument *document, QWidget *parent);
+    PartTreeWidget(const Document *document, QWidget *parent);
     QTreeWidgetItem *findComponentItem(QUuid componentId);
 public slots:
     void componentNameChanged(QUuid componentId);
@@ -79,7 +79,7 @@ private:
     void updateComponentSelectState(QUuid componentId, bool selected);
     bool isComponentSelected(QUuid componentId);
 private:
-    const SkeletonDocument *m_document = nullptr;
+    const Document *m_document = nullptr;
     std::map<QUuid, QTreeWidgetItem *> m_partItemMap;
     std::map<QUuid, QTreeWidgetItem *> m_componentItemMap;
     QFont m_normalFont;

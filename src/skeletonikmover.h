@@ -1,5 +1,5 @@
-#ifndef SKELETON_IK_MOVER_H
-#define SKELETON_IK_MOVER_H
+#ifndef DUST3D_SKELETON_IK_MOVER_H
+#define DUST3D_SKELETON_IK_MOVER_H
 #include <QObject>
 #include <vector>
 #include <QVector3D>

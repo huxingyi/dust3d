@@ -106,9 +106,9 @@ AmbientOcclusionBaker::~AmbientOcclusionBaker()
     delete m_resultMesh;
 }
 
-void AmbientOcclusionBaker::setInputMesh(const MeshResultContext &meshResultContext)
+void AmbientOcclusionBaker::setInputMesh(const Outcome &outcome)
 {
-    m_meshResultContext = meshResultContext;
+    m_outcome = outcome;
 }
 
 void AmbientOcclusionBaker::setBakeSize(int width, int height)
@@ -141,7 +141,7 @@ void AmbientOcclusionBaker::process()
             mergeGuidePainter.drawImage(0, 0, *m_borderImage);
         mergeGuidePainter.end();
         
-        m_resultMesh = new MeshLoader(m_meshResultContext);
+        m_resultMesh = new MeshLoader(m_outcome);
         m_resultMesh->setTextureImage(new QImage(*m_textureImage));
         //m_resultMesh->setNormalMapImage(new QImage(*m_textureImage));
     }
@@ -153,7 +153,7 @@ void AmbientOcclusionBaker::process()
 void AmbientOcclusionBaker::bake()
 {
 #if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)
-    if (m_meshResultContext.parts().empty())
+    if (m_outcome.parts().empty())
         return;
     
     m_context->makeCurrent(this);
@@ -170,7 +170,7 @@ void AmbientOcclusionBaker::bake()
     std::vector<vertex_t> vertices;
     std::vector<int> indicies;
     std::vector<QVector3D> normals;
-    for (const auto &part: m_meshResultContext.parts()) {
+    for (const auto &part: m_outcome.parts()) {
         int i = 0;
         int startIndex = vertices.size();
         for (const auto &it: part.second.vertices) {

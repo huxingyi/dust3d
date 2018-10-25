@@ -1,7 +1,7 @@
-#ifndef ADVANCE_SETTING_WIDGET_H
-#define ADVANCE_SETTING_WIDGET_H
+#ifndef DUST3D_ADVANCE_SETTING_WIDGET_H
+#define DUST3D_ADVANCE_SETTING_WIDGET_H
 #include <QDialog>
-#include "skeletondocument.h"
+#include "document.h"
 
 class AdvanceSettingWidget : public QDialog
 {
@@ -9,9 +9,9 @@ class AdvanceSettingWidget : public QDialog
 signals:
     void enableWeld(bool enabled);
 public:
-    AdvanceSettingWidget(const SkeletonDocument *document, QWidget *parent=nullptr);
+    AdvanceSettingWidget(const Document *document, QWidget *parent=nullptr);
 private:
-    const SkeletonDocument *m_document = nullptr;
+    const Document *m_document = nullptr;
 };
 
 #endif

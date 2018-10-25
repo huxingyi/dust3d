@@ -1,9 +1,9 @@
-#ifndef POSE_WIDGET_H
-#define POSE_WIDGET_H
+#ifndef DUST3D_POSE_WIDGET_H
+#define DUST3D_POSE_WIDGET_H
 #include <QFrame>
 #include <QLabel>
 #include <QIcon>
-#include "skeletondocument.h"
+#include "document.h"
 #include "modelwidget.h"
 
 class PoseWidget : public QFrame
@@ -13,7 +13,7 @@ signals:
     void modifyPose(QUuid poseId);
     void cornerButtonClicked(QUuid poseId);
 public:
-    PoseWidget(const SkeletonDocument *document, QUuid poseId);
+    PoseWidget(const Document *document, QUuid poseId);
     static int preferredHeight();
     ModelWidget *previewWidget();
 protected:
@@ -27,7 +27,7 @@ public slots:
     void setCornerButtonVisible(bool visible);
 private:
     QUuid m_poseId;
-    const SkeletonDocument *m_document = nullptr;
+    const Document *m_document = nullptr;
     ModelWidget *m_previewWidget = nullptr;
     QLabel *m_nameLabel = nullptr;
     QPushButton *m_cornerButton = nullptr;

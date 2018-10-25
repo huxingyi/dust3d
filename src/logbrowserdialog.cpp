@@ -12,7 +12,7 @@
 #include <QCloseEvent>
 #include <QKeyEvent>
 #include "version.h"
-#include "dust3dutil.h"
+#include "util.h"
 
 LogBrowserDialog::LogBrowserDialog(QWidget *parent) :
     QDialog(parent)

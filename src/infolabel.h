@@ -1,5 +1,5 @@
-#ifndef INFO_LABEL_H
-#define INFO_LABEL_H
+#ifndef DUST3D_INFO_LABEL_H
+#define DUST3D_INFO_LABEL_H
 #include <QLabel>
 #include <QIcon>
 #include <QWidget>

@@ -48,20 +48,20 @@ HEADERS += src/modelmeshbinder.h
 SOURCES += src/modelwidget.cpp
 HEADERS += src/modelwidget.h
 
-SOURCES += src/skeletondocument.cpp
-HEADERS += src/skeletondocument.h
+SOURCES += src/document.cpp
+HEADERS += src/document.h
 
-SOURCES += src/skeletondocumentwindow.cpp
-HEADERS += src/skeletondocumentwindow.h
+SOURCES += src/documentwindow.cpp
+HEADERS += src/documentwindow.h
 
 SOURCES += src/skeletongraphicswidget.cpp
 HEADERS += src/skeletongraphicswidget.h
 
-SOURCES += src/skeletonparttreewidget.cpp
-HEADERS += src/skeletonparttreewidget.h
+SOURCES += src/parttreewidget.cpp
+HEADERS += src/parttreewidget.h
 
-SOURCES += src/skeletonpartwidget.cpp
-HEADERS += src/skeletonpartwidget.h
+SOURCES += src/partwidget.cpp
+HEADERS += src/partwidget.h
 
 SOURCES += src/aboutwidget.cpp
 HEADERS += src/aboutwidget.h
@@ -69,17 +69,17 @@ HEADERS += src/aboutwidget.h
 SOURCES += src/meshgenerator.cpp
 HEADERS += src/meshgenerator.h
 
-SOURCES += src/dust3dutil.cpp
-HEADERS += src/dust3dutil.h
+SOURCES += src/util.cpp
+HEADERS += src/util.h
 
 SOURCES += src/turnaroundloader.cpp
 HEADERS += src/turnaroundloader.h
 
-SOURCES += src/skeletonsnapshot.cpp
-HEADERS += src/skeletonsnapshot.h
+SOURCES += src/snapshot.cpp
+HEADERS += src/snapshot.h
 
-SOURCES += src/skeletonxml.cpp
-HEADERS += src/skeletonxml.h
+SOURCES += src/snapshotxml.cpp
+HEADERS += src/snapshotxml.h
 
 SOURCES += src/ds3file.cpp
 HEADERS += src/ds3file.h
@@ -99,8 +99,8 @@ HEADERS += src/meshutil.h
 SOURCES += src/texturegenerator.cpp
 HEADERS += src/texturegenerator.h
 
-SOURCES += src/meshresultcontext.cpp
-HEADERS += src/meshresultcontext.h
+SOURCES += src/outcome.cpp
+HEADERS += src/outcome.h
 
 SOURCES += src/meshresultpostprocessor.cpp
 HEADERS += src/meshresultpostprocessor.h
@@ -146,8 +146,11 @@ HEADERS += src/rigwidget.h
 SOURCES += src/markiconcreator.cpp
 HEADERS += src/markiconcreator.h
 
-SOURCES += src/skeletonbonemark.cpp
-HEADERS += src/skeletonbonemark.h
+SOURCES += src/bonemark.cpp
+HEADERS += src/bonemark.h
+
+SOURCES += src/skeletonside.cpp
+HEADERS += src/skeletonside.h
 
 SOURCES += src/meshsplitter.cpp
 HEADERS += src/meshsplitter.h

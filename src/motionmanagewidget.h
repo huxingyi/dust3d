@@ -1,7 +1,7 @@
-#ifndef MOTION_MANAGE_WIDGET_H
-#define MOTION_MANAGE_WIDGET_H
+#ifndef DUST3D_MOTION_MANAGE_WIDGET_H
+#define DUST3D_MOTION_MANAGE_WIDGET_H
 #include <QWidget>
-#include "skeletondocument.h"
+#include "document.h"
 #include "motionlistwidget.h"
 
 class MotionManageWidget : public QWidget
@@ -11,14 +11,14 @@ signals:
     void registerDialog(QWidget *widget);
     void unregisterDialog(QWidget *widget);
 public:
-    MotionManageWidget(const SkeletonDocument *document, QWidget *parent=nullptr);
+    MotionManageWidget(const Document *document, QWidget *parent=nullptr);
 protected:
     virtual QSize sizeHint() const;
 public slots:
     void showAddMotionDialog();
     void showMotionDialog(QUuid motionId);
 private:
-    const SkeletonDocument *m_document = nullptr;
+    const Document *m_document = nullptr;
     MotionListWidget *m_motionListWidget = nullptr;
 };
 

@@ -1,9 +1,9 @@
-#ifndef POSE_LIST_WIDGET_H
-#define POSE_LIST_WIDGET_H
+#ifndef DUST3D_POSE_LIST_WIDGET_H
+#define DUST3D_POSE_LIST_WIDGET_H
 #include <QTreeWidget>
 #include <map>
 #include <QMouseEvent>
-#include "skeletondocument.h"
+#include "document.h"
 #include "posewidget.h"
 
 class PoseListWidget : public QTreeWidget
@@ -14,7 +14,7 @@ signals:
     void modifyPose(QUuid poseId);
     void cornerButtonClicked(QUuid poseId);
 public:
-    PoseListWidget(const SkeletonDocument *document, QWidget *parent=nullptr);
+    PoseListWidget(const Document *document, QWidget *parent=nullptr);
     bool isPoseSelected(QUuid poseId);
 public slots:
     void reload();
@@ -31,7 +31,7 @@ protected:
 private:
     int calculateColumnCount();
     void updatePoseSelectState(QUuid poseId, bool selected);
-    const SkeletonDocument *m_document = nullptr;
+    const Document *m_document = nullptr;
     std::map<QUuid, std::pair<QTreeWidgetItem *, int>> m_itemMap;
     std::set<QUuid> m_selectedPoseIds;
     QUuid m_currentSelectedPoseId;

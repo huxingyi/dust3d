@@ -1,5 +1,5 @@
-#ifndef MESH_WELD_SEAM_H
-#define MESH_WELD_SEAM_H
+#ifndef DUST3D_MESH_WELD_SEAM_H
+#define DUST3D_MESH_WELD_SEAM_H
 #include "meshlite.h"
 #include "positionmap.h"
 #include <unordered_set>

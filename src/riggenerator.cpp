@@ -4,25 +4,25 @@
 #include "riggenerator.h"
 #include "autorigger.h"
 
-RigGenerator::RigGenerator(const MeshResultContext &meshResultContext) :
-    m_meshResultContext(new MeshResultContext(meshResultContext))
+RigGenerator::RigGenerator(const Outcome &outcome) :
+    m_outcome(new Outcome(outcome))
 {
 }
 
 RigGenerator::~RigGenerator()
 {
-    delete m_meshResultContext;
+    delete m_outcome;
     delete m_resultMesh;
     delete m_autoRigger;
     delete m_resultBones;
     delete m_resultWeights;
 }
 
-MeshResultContext *RigGenerator::takeMeshResultContext()
+Outcome *RigGenerator::takeMeshResultContext()
 {
-    MeshResultContext *resultContext = m_meshResultContext;
-    m_meshResultContext = nullptr;
-    return resultContext;
+    Outcome *outcome = m_outcome;
+    m_outcome = nullptr;
+    return outcome;
 }
 
 std::vector<AutoRiggerBone> *RigGenerator::takeResultBones()
@@ -69,21 +69,21 @@ void RigGenerator::process()
     std::vector<QVector3D> inputVerticesPositions;
     std::set<MeshSplitterTriangle> inputTriangles;
     
-    for (const auto &vertex: m_meshResultContext->vertices) {
+    for (const auto &vertex: m_outcome->vertices) {
         inputVerticesPositions.push_back(vertex.position);
     }
-    std::map<std::pair<SkeletonBoneMark, SkeletonSide>, std::tuple<QVector3D, int, std::set<MeshSplitterTriangle>>> marksMap;
-    for (size_t triangleIndex = 0; triangleIndex < m_meshResultContext->triangles.size(); triangleIndex++) {
-        const auto &sourceTriangle = m_meshResultContext->triangles[triangleIndex];
+    std::map<std::pair<BoneMark, SkeletonSide>, std::tuple<QVector3D, int, std::set<MeshSplitterTriangle>>> marksMap;
+    for (size_t triangleIndex = 0; triangleIndex < m_outcome->triangles.size(); triangleIndex++) {
+        const auto &sourceTriangle = m_outcome->triangles[triangleIndex];
         MeshSplitterTriangle newTriangle;
         for (int i = 0; i < 3; i++)
             newTriangle.indicies[i] = sourceTriangle.indicies[i];
-        auto findBmeshNodeResult = m_meshResultContext->bmeshNodeMap().find(m_meshResultContext->triangleSourceNodes()[triangleIndex]);
-        if (findBmeshNodeResult != m_meshResultContext->bmeshNodeMap().end()) {
+        auto findBmeshNodeResult = m_outcome->bmeshNodeMap().find(m_outcome->triangleSourceNodes()[triangleIndex]);
+        if (findBmeshNodeResult != m_outcome->bmeshNodeMap().end()) {
             const auto &bmeshNode = *findBmeshNodeResult->second;
-            if (bmeshNode.boneMark != SkeletonBoneMark::None) {
+            if (bmeshNode.boneMark != BoneMark::None) {
                 SkeletonSide boneSide = SkeletonSide::None;
-                if (SkeletonBoneMarkHasSide(bmeshNode.boneMark)) {
+                if (BoneMarkHasSide(bmeshNode.boneMark)) {
                     boneSide = bmeshNode.origin.x() > 0 ? SkeletonSide::Left : SkeletonSide::Right;
                 }
                 auto &marks = marksMap[std::make_pair(bmeshNode.boneMark, boneSide)];
@@ -115,7 +115,7 @@ void RigGenerator::process()
     
     // Blend vertices colors according to bone weights
     
-    std::vector<QColor> inputVerticesColors(m_meshResultContext->vertices.size());
+    std::vector<QColor> inputVerticesColors(m_outcome->vertices.size());
     if (m_isSucceed) {
         const auto &resultWeights = m_autoRigger->resultWeights();
         const auto &resultBones = m_autoRigger->resultBones();
@@ -148,8 +148,8 @@ void RigGenerator::process()
     
     std::vector<QVector3D> vertexNormalMap;
     vertexNormalMap.resize(inputVerticesPositions.size());
-    for (size_t triangleIndex = 0; triangleIndex < m_meshResultContext->triangles.size(); triangleIndex++) {
-        const auto &sourceTriangle = m_meshResultContext->triangles[triangleIndex];
+    for (size_t triangleIndex = 0; triangleIndex < m_outcome->triangles.size(); triangleIndex++) {
+        const auto &sourceTriangle = m_outcome->triangles[triangleIndex];
         for (int i = 0; i < 3; i++)
             vertexNormalMap[sourceTriangle.indicies[i]] += sourceTriangle.normal;
     }
@@ -158,10 +158,10 @@ void RigGenerator::process()
     
     // Create mesh for demo
     
-    Vertex *triangleVertices = new Vertex[m_meshResultContext->triangles.size() * 3];
+    Vertex *triangleVertices = new Vertex[m_outcome->triangles.size() * 3];
     int triangleVerticesNum = 0;
-    for (size_t triangleIndex = 0; triangleIndex < m_meshResultContext->triangles.size(); triangleIndex++) {
-        const auto &sourceTriangle = m_meshResultContext->triangles[triangleIndex];
+    for (size_t triangleIndex = 0; triangleIndex < m_outcome->triangles.size(); triangleIndex++) {
+        const auto &sourceTriangle = m_outcome->triangles[triangleIndex];
         for (int i = 0; i < 3; i++) {
             Vertex &currentVertex = triangleVertices[triangleVerticesNum++];
             const auto &sourcePosition = inputVerticesPositions[sourceTriangle.indicies[i]];

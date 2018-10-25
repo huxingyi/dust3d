@@ -1,5 +1,5 @@
-#ifndef DS3_FILE_H
-#define DS3_FILE_H
+#ifndef DUST3D_DS3_FILE_H
+#define DUST3D_DS3_FILE_H
 #include <QObject>
 #include <QString>
 #include <QByteArray>

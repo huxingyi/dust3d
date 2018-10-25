@@ -1,5 +1,5 @@
-#ifndef MOTIONS_GENERATOR_H
-#define MOTIONS_GENERATOR_H
+#ifndef DUST3D_MOTIONS_GENERATOR_H
+#define DUST3D_MOTIONS_GENERATOR_H
 #include <QObject>
 #include <vector>
 #include <map>
@@ -7,7 +7,7 @@
 #include "meshloader.h"
 #include "autorigger.h"
 #include "jointnodetree.h"
-#include "skeletondocument.h"
+#include "document.h"
 #include "tetrapodposer.h"
 
 class MotionsGenerator : public QObject
@@ -16,10 +16,10 @@ class MotionsGenerator : public QObject
 public:
     MotionsGenerator(const std::vector<AutoRiggerBone> *rigBones,
         const std::map<int, AutoRiggerVertexWeights> *rigWeights,
-        const MeshResultContext &meshResultContext);
+        const Outcome &outcome);
     ~MotionsGenerator();
     void addPoseToLibrary(const QUuid &poseId, const std::map<QString, std::map<QString, QString>> &parameters);
-    void addMotionToLibrary(const QUuid &motionId, const std::vector<SkeletonMotionClip> &clips);
+    void addMotionToLibrary(const QUuid &motionId, const std::vector<MotionClip> &clips);
     void addRequirement(const QUuid &motionId);
     std::vector<std::pair<float, MeshLoader *>> takeResultPreviewMeshs(const QUuid &motionId);
     std::vector<std::pair<float, JointNodeTree>> takeResultJointNodeTrees(const QUuid &motionId);
@@ -36,17 +36,17 @@ private:
     void generateMotion(const QUuid &motionId, std::set<QUuid> &visited, std::vector<std::pair<float, JointNodeTree>> &outcomes);
     const JointNodeTree &poseJointNodeTree(const QUuid &poseId);
     JointNodeTree generateInterpolation(InterpolationType interpolationType, const JointNodeTree &first, const JointNodeTree &second, float progress);
-    const JointNodeTree *findClipBeginJointNodeTree(const SkeletonMotionClip &clip);
-    const JointNodeTree *findClipEndJointNodeTree(const SkeletonMotionClip &clip);
-    std::vector<SkeletonMotionClip> *findMotionClips(const QUuid &motionId);
+    const JointNodeTree *findClipBeginJointNodeTree(const MotionClip &clip);
+    const JointNodeTree *findClipEndJointNodeTree(const MotionClip &clip);
+    std::vector<MotionClip> *findMotionClips(const QUuid &motionId);
     void generatePreviewsForOutcomes(const std::vector<std::pair<float, JointNodeTree>> &outcomes, std::vector<std::pair<float, MeshLoader *>> &previews);
     float calculateMotionDuration(const QUuid &motionId, std::set<QUuid> &visited);
     
     std::vector<AutoRiggerBone> m_rigBones;
     std::map<int, AutoRiggerVertexWeights> m_rigWeights;
-    MeshResultContext m_meshResultContext;
+    Outcome m_outcome;
     std::map<QUuid, std::map<QString, std::map<QString, QString>>> m_poses;
-    std::map<QUuid, std::vector<SkeletonMotionClip>> m_motions;
+    std::map<QUuid, std::vector<MotionClip>> m_motions;
     std::set<QUuid> m_requiredMotionIds;
     std::set<QUuid> m_generatedMotionIds;
     std::map<QUuid, std::vector<std::pair<float, MeshLoader *>>> m_resultPreviewMeshs;

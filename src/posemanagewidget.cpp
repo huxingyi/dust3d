@@ -6,7 +6,7 @@
 #include "poseeditwidget.h"
 #include "infolabel.h"
 
-PoseManageWidget::PoseManageWidget(const SkeletonDocument *document, QWidget *parent) :
+PoseManageWidget::PoseManageWidget(const Document *document, QWidget *parent) :
     QWidget(parent),
     m_document(document)
 {
@@ -35,8 +35,8 @@ PoseManageWidget::PoseManageWidget(const SkeletonDocument *document, QWidget *pa
         }
     };
     
-    connect(m_document, &SkeletonDocument::resultRigChanged, this, refreshInfoLabel);
-    connect(m_document, &SkeletonDocument::cleanup, this, refreshInfoLabel);
+    connect(m_document, &Document::resultRigChanged, this, refreshInfoLabel);
+    connect(m_document, &Document::cleanup, this, refreshInfoLabel);
     
     QVBoxLayout *mainLayout = new QVBoxLayout;
     mainLayout->addWidget(infoLabel);
@@ -66,7 +66,7 @@ void PoseManageWidget::showPoseDialog(QUuid poseId)
     PoseEditWidget *poseEditWidget = new PoseEditWidget(m_document);
     poseEditWidget->setAttribute(Qt::WA_DeleteOnClose);
     if (!poseId.isNull()) {
-        const SkeletonPose *pose = m_document->findPose(poseId);
+        const Pose *pose = m_document->findPose(poseId);
         if (nullptr != pose) {
             poseEditWidget->setEditPoseId(poseId);
             poseEditWidget->setEditPoseName(pose->name);

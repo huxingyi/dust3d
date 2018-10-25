@@ -1,18 +1,19 @@
-#ifndef AUTO_RIGGER_H
-#define AUTO_RIGGER_H
+#ifndef DUST3D_AUTO_RIGGER_H
+#define DUST3D_AUTO_RIGGER_H
 #include <QtGlobal>
 #include <QVector3D>
 #include <QObject>
 #include <QColor>
 #include <QDebug>
 #include "meshsplitter.h"
-#include "skeletonbonemark.h"
+#include "bonemark.h"
 #include "rigtype.h"
+#include "skeletonside.h"
 
 class AutoRiggerMark
 {
 public:
-    SkeletonBoneMark boneMark;
+    BoneMark boneMark;
     SkeletonSide boneSide;
     QVector3D bonePosition;
     std::set<MeshSplitterTriangle> markTriangles;
@@ -89,7 +90,7 @@ class AutoRigger : public QObject
 public:
     AutoRigger(const std::vector<QVector3D> &verticesPositions,
         const std::set<MeshSplitterTriangle> &inputTriangles);
-    bool addMarkGroup(SkeletonBoneMark boneMark, SkeletonSide boneSide, QVector3D bonePosition, 
+    bool addMarkGroup(BoneMark boneMark, SkeletonSide boneSide, QVector3D bonePosition, 
         const std::set<MeshSplitterTriangle> &markTriangles);
     const std::vector<std::pair<QtMsgType, QString>> &messages();
     bool rig();
@@ -101,7 +102,7 @@ private:
     bool validate();
     void addTrianglesToVertices(const std::set<MeshSplitterTriangle> &triangles, std::set<int> &vertices);
     bool calculateBodyTriangles(std::set<MeshSplitterTriangle> &bodyTriangles);
-    bool isCutOffSplitter(SkeletonBoneMark boneMark);
+    bool isCutOffSplitter(BoneMark boneMark);
     void resolveBoundingBox(const std::set<int> &vertices, QVector3D &xMin, QVector3D &xMax, QVector3D &yMin, QVector3D &yMax, QVector3D &zMin, QVector3D &zMax);
     QVector3D findMinX(const std::set<int> &vertices);
     QVector3D findMaxX(const std::set<int> &vertices);
@@ -117,7 +118,7 @@ private:
     std::vector<QVector3D> m_verticesPositions;
     std::set<MeshSplitterTriangle> m_inputTriangles;
     std::vector<AutoRiggerMark> m_marks;
-    std::map<std::pair<SkeletonBoneMark, SkeletonSide>, std::vector<int>> m_marksMap;
+    std::map<std::pair<BoneMark, SkeletonSide>, std::vector<int>> m_marksMap;
     std::vector<AutoRiggerBone> m_resultBones;
     std::map<int, AutoRiggerVertexWeights> m_resultWeights;
     std::vector<QString> m_missingMarkNames;

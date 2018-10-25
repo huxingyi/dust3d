@@ -1,5 +1,5 @@
-#ifndef LOG_BROWSER_H
-#define LOG_BROWSER_H
+#ifndef DUST3D_LOG_BROWSER_H
+#define DUST3D_LOG_BROWSER_H
 // Modified from https://wiki.qt.io/Browser_for_QDebug_output
 #include <QObject>
 

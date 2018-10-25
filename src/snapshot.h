@@ -1,12 +1,12 @@
-#ifndef SKELETON_SNAPSHOT_H
-#define SKELETON_SNAPSHOT_H
+#ifndef DUST3D_SNAPSHOT_H
+#define DUST3D_SNAPSHOT_H
 #include <vector>
 #include <map>
 #include <QString>
 #include <QRectF>
 #include <QSizeF>
 
-class SkeletonSnapshot
+class Snapshot
 {
 public:
     std::map<QString, QString> canvas;

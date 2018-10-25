@@ -1,5 +1,5 @@
-#ifndef SKELETON_DOCUMENT_WINDOW_H
-#define SKELETON_DOCUMENT_WINDOW_H
+#ifndef DUST3D_DOCUMENT_WINDOW_H
+#define DUST3D_DOCUMENT_WINDOW_H
 #include <QMainWindow>
 #include <QShowEvent>
 #include <QPushButton>
@@ -7,11 +7,11 @@
 #include <QMenu>
 #include <QAction>
 #include <QTextBrowser>
-#include "skeletondocument.h"
+#include "document.h"
 #include "modelwidget.h"
 #include "exportpreviewwidget.h"
 #include "rigwidget.h"
-#include "skeletonbonemark.h"
+#include "bonemark.h"
 #include "posemanagewidget.h"
 #include "advancesettingwidget.h"
 
@@ -66,7 +66,7 @@ private:
     void setCurrentFilename(const QString &filename);
     void updateTitle();
 private:
-    SkeletonDocument *m_document;
+    Document *m_document;
     bool m_firstShow;
     bool m_documentSaved;
     ExportPreviewWidget *m_exportPreviewWidget;
@@ -124,7 +124,7 @@ private:
     
     QMenu *m_markAsMenu;
     QAction *m_markAsNoneAction;
-    QAction *m_markAsActions[(int)SkeletonBoneMark::Count - 1];
+    QAction *m_markAsActions[(int)BoneMark::Count - 1];
     
     QMenu *m_viewMenu;
     QAction *m_resetModelWidgetPosAction;

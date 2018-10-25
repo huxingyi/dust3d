@@ -1,5 +1,5 @@
-#ifndef ABOUT_WIDGET_H
-#define ABOUT_WIDGET_H
+#ifndef DUST3D_ABOUT_WIDGET_H
+#define DUST3D_ABOUT_WIDGET_H
 #include <QDialog>
 
 class AboutWidget : public QDialog

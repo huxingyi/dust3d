@@ -1,5 +1,5 @@
-#ifndef TURNAROUND_LOADER_H
-#define TURNAROUND_LOADER_H
+#ifndef DUST3D_TURNAROUND_LOADER_H
+#define DUST3D_TURNAROUND_LOADER_H
 #include <QObject>
 #include <QString>
 #include <QSize>

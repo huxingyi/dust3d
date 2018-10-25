@@ -7,9 +7,9 @@
 #include "aboutwidget.h"
 #include "version.h"
 #include "theme.h"
-#include "dust3dutil.h"
+#include "util.h"
 
-ExportPreviewWidget::ExportPreviewWidget(SkeletonDocument *document, QWidget *parent) :
+ExportPreviewWidget::ExportPreviewWidget(Document *document, QWidget *parent) :
     QDialog(parent),
     m_document(document),
     m_previewLabel(nullptr),

@@ -3,7 +3,7 @@
 #include <QOpenGLFunctions>
 #include "aboutwidget.h"
 #include "version.h"
-#include "dust3dutil.h"
+#include "util.h"
 
 AboutWidget::AboutWidget()
 {

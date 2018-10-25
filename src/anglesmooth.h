@@ -1,5 +1,5 @@
-#ifndef ANGLE_SMOOTH_H
-#define ANGLE_SMOOTH_H
+#ifndef DUST3D_ANGLE_SMOOTH_H
+#define DUST3D_ANGLE_SMOOTH_H
 #include <QVector3D>
 #include <vector>
 

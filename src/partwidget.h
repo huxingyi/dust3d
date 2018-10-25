@@ -1,12 +1,12 @@
-#ifndef SKELETON_PART_WIDGET_H
-#define SKELETON_PART_WIDGET_H
+#ifndef DUST3D_PART_WIDGET_H
+#define DUST3D_PART_WIDGET_H
 #include <QLabel>
 #include <QPushButton>
 #include <QMouseEvent>
-#include "skeletondocument.h"
+#include "document.h"
 #include "modelwidget.h"
 
-class SkeletonPartWidget : public QWidget
+class PartWidget : public QWidget
 {
     Q_OBJECT
 signals:
@@ -31,7 +31,7 @@ signals:
     void enableBackgroundBlur();
     void disableBackgroundBlur();
 public:
-    SkeletonPartWidget(const SkeletonDocument *document, QUuid partId);
+    PartWidget(const Document *document, QUuid partId);
     void reload();
     void updatePreview();
     void updateLockButton();
@@ -53,7 +53,7 @@ public slots:
     void showDeformSettingPopup(const QPoint &pos);
     void showColorSettingPopup(const QPoint &pos);
 private: // need initialize
-    const SkeletonDocument *m_document;
+    const Document *m_document;
     QUuid m_partId;
 private:
     ModelWidget *m_previewWidget;

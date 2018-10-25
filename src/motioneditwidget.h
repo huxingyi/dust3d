@@ -1,9 +1,9 @@
-#ifndef MOTION_EDIT_WIDGET_H
-#define MOTION_EDIT_WIDGET_H
+#ifndef DUST3D_MOTION_EDIT_WIDGET_H
+#define DUST3D_MOTION_EDIT_WIDGET_H
 #include <QDialog>
 #include <QLineEdit>
 #include <QCloseEvent>
-#include "skeletondocument.h"
+#include "document.h"
 #include "motiontimelinewidget.h"
 #include "modelwidget.h"
 #include "motionsgenerator.h"
@@ -13,11 +13,11 @@ class MotionEditWidget : public QDialog
 {
     Q_OBJECT
 signals:
-    void addMotion(QString name, std::vector<SkeletonMotionClip> clips);
-    void setMotionClips(QUuid motionId, std::vector<SkeletonMotionClip> clips);
+    void addMotion(QString name, std::vector<MotionClip> clips);
+    void setMotionClips(QUuid motionId, std::vector<MotionClip> clips);
     void renameMotion(QUuid motionId, QString name);
 public:
-    MotionEditWidget(const SkeletonDocument *document, QWidget *parent=nullptr);
+    MotionEditWidget(const Document *document, QWidget *parent=nullptr);
     ~MotionEditWidget();
 protected:
     void closeEvent(QCloseEvent *event) override;
@@ -29,12 +29,12 @@ public slots:
     void clearUnsaveState();
     void setEditMotionId(QUuid poseId);
     void setEditMotionName(QString name);
-    void setEditMotionClips(std::vector<SkeletonMotionClip> clips);
+    void setEditMotionClips(std::vector<MotionClip> clips);
     void setUnsavedState();
     void generatePreviews();
     void previewsReady();
 private:
-    const SkeletonDocument *m_document = nullptr;
+    const Document *m_document = nullptr;
     MotionTimelineWidget *m_timelineWidget = nullptr;
     ModelWidget *m_previewWidget = nullptr;
     QUuid m_motionId;

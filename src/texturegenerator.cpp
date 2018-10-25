@@ -5,11 +5,11 @@
 #include <QElapsedTimer>
 #include "texturegenerator.h"
 #include "theme.h"
-#include "dust3dutil.h"
+#include "util.h"
 
 int TextureGenerator::m_textureSize = 1024;
 
-TextureGenerator::TextureGenerator(const MeshResultContext &meshResultContext, SkeletonSnapshot *snapshot) :
+TextureGenerator::TextureGenerator(const Outcome &outcome, Snapshot *snapshot) :
     m_resultTextureGuideImage(nullptr),
     m_resultTextureImage(nullptr),
     m_resultTextureBorderImage(nullptr),
@@ -22,13 +22,13 @@ TextureGenerator::TextureGenerator(const MeshResultContext &meshResultContext, S
     m_resultMesh(nullptr),
     m_snapshot(snapshot)
 {
-    m_resultContext = new MeshResultContext();
-    *m_resultContext = meshResultContext;
+    m_outcome = new Outcome();
+    *m_outcome = outcome;
 }
 
 TextureGenerator::~TextureGenerator()
 {
-    delete m_resultContext;
+    delete m_outcome;
     delete m_resultTextureGuideImage;
     delete m_resultTextureImage;
     delete m_resultTextureBorderImage;
@@ -77,11 +77,11 @@ QImage *TextureGenerator::takeResultTextureNormalImage()
     return resultTextureNormalImage;
 }
 
-MeshResultContext *TextureGenerator::takeResultContext()
+Outcome *TextureGenerator::takeResultContext()
 {
-    MeshResultContext *resultContext = m_resultContext;
+    Outcome *outcome = m_outcome;
     m_resultTextureImage = nullptr;
-    return resultContext;
+    return outcome;
 }
 
 MeshLoader *TextureGenerator::takeResultMesh()
@@ -148,7 +148,7 @@ void TextureGenerator::prepare()
         QUuid partId = QUuid(partIt.first);
         updatedMaterialIdMap.insert({partId, materialId});
     }
-    for (const auto &bmeshNode: m_resultContext->bmeshNodes) {
+    for (const auto &bmeshNode: m_outcome->bmeshNodes) {
         for (size_t i = 0; i < (int)TextureType::Count - 1; ++i) {
             TextureType forWhat = (TextureType)(i + 1);
             MaterialTextures materialTextures;
@@ -186,8 +186,8 @@ void TextureGenerator::generate()
     bool hasRoughnessMap = false;
     bool hasAmbientOcclusionMap = false;
     
-    const std::vector<Material> &triangleMaterials = m_resultContext->triangleMaterials();
-    const std::vector<ResultTriangleUv> &triangleUvs = m_resultContext->triangleUvs();
+    const std::vector<OutcomeMaterial> &triangleMaterials = m_outcome->triangleMaterials();
+    const std::vector<OutcomeTriangleUv> &triangleUvs = m_outcome->triangleUvs();
     
     auto createImageBeginTime = countTimeConsumed.elapsed();
     
@@ -251,7 +251,7 @@ void TextureGenerator::generate()
     texturePainter.setPen(Qt::NoPen);
     for (auto i = 0u; i < triangleUvs.size(); i++) {
         QPainterPath path;
-        const ResultTriangleUv *uv = &triangleUvs[i];
+        const OutcomeTriangleUv *uv = &triangleUvs[i];
         float points[][2] = {
             {uv->uv[0][0] * TextureGenerator::m_textureSize, uv->uv[0][1] * TextureGenerator::m_textureSize},
             {uv->uv[1][0] * TextureGenerator::m_textureSize, uv->uv[1][1] * TextureGenerator::m_textureSize},
@@ -262,7 +262,7 @@ void TextureGenerator::generate()
         path.lineTo(points[2][0], points[2][1]);
         path = expandedPainterPath(path);
         // Copy color texture if there is one
-        const std::pair<QUuid, QUuid> source = m_resultContext->triangleSourceNodes()[i];
+        const std::pair<QUuid, QUuid> source = m_outcome->triangleSourceNodes()[i];
         auto findColorTextureResult = m_partColorTextureMap.find(source.first);
         if (findColorTextureResult != m_partColorTextureMap.end()) {
             texturePainter.setClipping(true);
@@ -315,7 +315,7 @@ void TextureGenerator::generate()
     textureBorderPainter.setPen(pen);
     auto paintBorderBeginTime = countTimeConsumed.elapsed();
     for (auto i = 0u; i < triangleUvs.size(); i++) {
-        const ResultTriangleUv *uv = &triangleUvs[i];
+        const OutcomeTriangleUv *uv = &triangleUvs[i];
         for (auto j = 0; j < 3; j++) {
             int from = j;
             int to = (j + 1) % 3;
@@ -366,7 +366,7 @@ void TextureGenerator::generate()
     mergeTextureGuidePainter.end();
     
     auto createResultBeginTime = countTimeConsumed.elapsed();
-    m_resultMesh = new MeshLoader(*m_resultContext);
+    m_resultMesh = new MeshLoader(*m_outcome);
     m_resultMesh->setTextureImage(new QImage(*m_resultTextureImage));
     if (nullptr != m_resultTextureNormalImage)
         m_resultMesh->setNormalMapImage(new QImage(*m_resultTextureNormalImage));

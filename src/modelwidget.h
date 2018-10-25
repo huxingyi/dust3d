@@ -1,5 +1,5 @@
-#ifndef MODEL_WIDGET_H
-#define MODEL_WIDGET_H
+#ifndef DUST3D_MODEL_WIDGET_H
+#define DUST3D_MODEL_WIDGET_H
 #include <QOpenGLWidget>
 #include <QOpenGLFunctions>
 #include <QOpenGLVertexArrayObject>

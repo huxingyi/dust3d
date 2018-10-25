@@ -1,9 +1,9 @@
-#ifndef MOTION_LIST_WIDGET_H
-#define MOTION_LIST_WIDGET_H
+#ifndef DUST3D_MOTION_LIST_WIDGET_H
+#define DUST3D_MOTION_LIST_WIDGET_H
 #include <QTreeWidget>
 #include <map>
 #include <QMouseEvent>
-#include "skeletondocument.h"
+#include "document.h"
 #include "motionwidget.h"
 
 class MotionListWidget : public QTreeWidget
@@ -14,7 +14,7 @@ signals:
     void modifyMotion(QUuid motionId);
     void cornerButtonClicked(QUuid motionId);
 public:
-    MotionListWidget(const SkeletonDocument *document, QWidget *parent=nullptr);
+    MotionListWidget(const Document *document, QWidget *parent=nullptr);
     bool isMotionSelected(QUuid motionId);
 public slots:
     void reload();
@@ -31,7 +31,7 @@ protected:
 private:
     int calculateColumnCount();
     void updateMotionSelectState(QUuid motionId, bool selected);
-    const SkeletonDocument *m_document = nullptr;
+    const Document *m_document = nullptr;
     std::map<QUuid, std::pair<QTreeWidgetItem *, int>> m_itemMap;
     std::set<QUuid> m_selectedMotionIds;
     QUuid m_currentSelectedMotionId;

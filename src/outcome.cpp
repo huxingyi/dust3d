@@ -7,7 +7,7 @@
 #include <simpleuv/uvunwrapper.h>
 #include "texturegenerator.h"
 #include "theme.h"
-#include "meshresultcontext.h"
+#include "outcome.h"
 #include "positionmap.h"
 #include "anglesmooth.h"
 
@@ -26,7 +26,7 @@ struct CandidateEdge
     float length;
 };
 
-MeshResultContext::MeshResultContext() :
+Outcome::Outcome() :
     m_triangleSourceResolved(false),
     m_triangleMaterialResolved(false),
     m_triangleEdgeSourceMapResolved(false),
@@ -38,7 +38,7 @@ MeshResultContext::MeshResultContext() :
 {
 }
 
-const std::vector<std::pair<QUuid, QUuid>> &MeshResultContext::triangleSourceNodes()
+const std::vector<std::pair<QUuid, QUuid>> &Outcome::triangleSourceNodes()
 {
     if (!m_triangleSourceResolved) {
         m_triangleSourceResolved = true;
@@ -48,7 +48,7 @@ const std::vector<std::pair<QUuid, QUuid>> &MeshResultContext::triangleSourceNod
     return m_triangleSourceNodes;
 }
 
-const std::map<int, std::pair<QUuid, QUuid>> &MeshResultContext::vertexSourceMap()
+const std::map<int, std::pair<QUuid, QUuid>> &Outcome::vertexSourceMap()
 {
     if (!m_triangleSourceResolved) {
         m_triangleSourceResolved = true;
@@ -58,7 +58,7 @@ const std::map<int, std::pair<QUuid, QUuid>> &MeshResultContext::vertexSourceMap
     return m_vertexSourceMap;
 }
 
-const std::vector<Material> &MeshResultContext::triangleMaterials()
+const std::vector<OutcomeMaterial> &Outcome::triangleMaterials()
 {
     if (!m_triangleMaterialResolved) {
         calculateTriangleMaterials(m_triangleMaterials);
@@ -67,7 +67,7 @@ const std::vector<Material> &MeshResultContext::triangleMaterials()
     return m_triangleMaterials;
 }
 
-const std::map<std::pair<int, int>, std::pair<QUuid, QUuid>> &MeshResultContext::triangleEdgeSourceMap()
+const std::map<std::pair<int, int>, std::pair<QUuid, QUuid>> &Outcome::triangleEdgeSourceMap()
 {
     if (!m_triangleEdgeSourceMapResolved) {
         calculateTriangleEdgeSourceMap(m_triangleEdgeSourceMap);
@@ -76,7 +76,7 @@ const std::map<std::pair<int, int>, std::pair<QUuid, QUuid>> &MeshResultContext:
     return m_triangleEdgeSourceMap;
 }
 
-const std::map<std::pair<QUuid, QUuid>, BmeshNode *> &MeshResultContext::bmeshNodeMap()
+const std::map<std::pair<QUuid, QUuid>, OutcomeNode *> &Outcome::bmeshNodeMap()
 {
     if (!m_bmeshNodeMapResolved) {
         calculateBmeshNodeMap(m_bmeshNodeMap);
@@ -85,7 +85,7 @@ const std::map<std::pair<QUuid, QUuid>, BmeshNode *> &MeshResultContext::bmeshNo
     return m_bmeshNodeMap;
 }
 
-void MeshResultContext::calculateTriangleSourceNodes(std::vector<std::pair<QUuid, QUuid>> &triangleSourceNodes, std::map<int, std::pair<QUuid, QUuid>> &vertexSourceMap)
+void Outcome::calculateTriangleSourceNodes(std::vector<std::pair<QUuid, QUuid>> &triangleSourceNodes, std::map<int, std::pair<QUuid, QUuid>> &vertexSourceMap)
 {
     PositionMap<std::pair<QUuid, QUuid>> positionMap;
     std::map<std::pair<int, int>, HalfColorEdge> halfColorEdgeMap;
@@ -95,7 +95,7 @@ void MeshResultContext::calculateTriangleSourceNodes(std::vector<std::pair<QUuid
             std::make_pair(it.partId, it.nodeId));
     }
     for (auto x = 0u; x < vertices.size(); x++) {
-        ResultVertex *resultVertex = &vertices[x];
+        OutcomeVertex *resultVertex = &vertices[x];
         std::pair<QUuid, QUuid> source;
         if (positionMap.findPosition(resultVertex->position.x(), resultVertex->position.y(), resultVertex->position.z(), &source)) {
             vertexSourceMap[x] = source;
@@ -228,7 +228,7 @@ void MeshResultContext::calculateTriangleSourceNodes(std::vector<std::pair<QUuid
     }
 }
 
-void MeshResultContext::calculateRemainingVertexSourceNodesAfterTriangleSourceNodesSolved(std::map<int, std::pair<QUuid, QUuid>> &vertexSourceMap)
+void Outcome::calculateRemainingVertexSourceNodesAfterTriangleSourceNodesSolved(std::map<int, std::pair<QUuid, QUuid>> &vertexSourceMap)
 {
     std::map<int, std::set<std::pair<QUuid, QUuid>>> remainings;
     for (auto x = 0u; x < triangles.size(); x++) {
@@ -259,9 +259,9 @@ void MeshResultContext::calculateRemainingVertexSourceNodesAfterTriangleSourceNo
     }
 }
 
-void MeshResultContext::calculateTriangleMaterials(std::vector<Material> &triangleMaterials)
+void Outcome::calculateTriangleMaterials(std::vector<OutcomeMaterial> &triangleMaterials)
 {
-    std::map<std::pair<QUuid, QUuid>, Material> nodeMaterialMap;
+    std::map<std::pair<QUuid, QUuid>, OutcomeMaterial> nodeMaterialMap;
     for (const auto &it: bmeshNodes) {
         nodeMaterialMap[std::make_pair(it.partId, it.nodeId)] = it.material;
     }
@@ -271,7 +271,7 @@ void MeshResultContext::calculateTriangleMaterials(std::vector<Material> &triang
     }
 }
 
-void MeshResultContext::calculateTriangleEdgeSourceMap(std::map<std::pair<int, int>, std::pair<QUuid, QUuid>> &triangleEdgeSourceMap)
+void Outcome::calculateTriangleEdgeSourceMap(std::map<std::pair<int, int>, std::pair<QUuid, QUuid>> &triangleEdgeSourceMap)
 {
     const std::vector<std::pair<QUuid, QUuid>> sourceNodes = triangleSourceNodes();
     for (auto x = 0u; x < triangles.size(); x++) {
@@ -284,20 +284,20 @@ void MeshResultContext::calculateTriangleEdgeSourceMap(std::map<std::pair<int, i
     }
 }
 
-void MeshResultContext::calculateBmeshNodeMap(std::map<std::pair<QUuid, QUuid>, BmeshNode *> &bmeshNodeMap) {
+void Outcome::calculateBmeshNodeMap(std::map<std::pair<QUuid, QUuid>, OutcomeNode *> &bmeshNodeMap) {
     for (auto i = 0u; i < bmeshNodes.size(); i++) {
-        BmeshNode *bmeshNode = &bmeshNodes[i];
+        OutcomeNode *bmeshNode = &bmeshNodes[i];
         bmeshNodeMap[std::make_pair(bmeshNode->partId, bmeshNode->nodeId)] = bmeshNode;
     }
 }
 
 struct BmeshNodeDistWithWorldCenter
 {
-    BmeshNode *bmeshNode;
+    OutcomeNode *bmeshNode;
     float dist2;
 };
 
-const std::map<QUuid, ResultPart> &MeshResultContext::parts()
+const std::map<QUuid, ResultPart> &Outcome::parts()
 {
     if (!m_resultPartsResolved) {
         calculateResultParts(m_resultParts);
@@ -306,7 +306,7 @@ const std::map<QUuid, ResultPart> &MeshResultContext::parts()
     return m_resultParts;
 }
 
-const std::vector<ResultTriangleUv> &MeshResultContext::triangleUvs()
+const std::vector<OutcomeTriangleUv> &Outcome::triangleUvs()
 {
     if (!m_resultTriangleUvsResolved) {
         calculateResultTriangleUvs(m_resultTriangleUvs, m_seamVertices);
@@ -315,7 +315,7 @@ const std::vector<ResultTriangleUv> &MeshResultContext::triangleUvs()
     return m_resultTriangleUvs;
 }
 
-void MeshResultContext::calculateResultParts(std::map<QUuid, ResultPart> &parts)
+void Outcome::calculateResultParts(std::map<QUuid, ResultPart> &parts)
 {
     std::map<std::pair<QUuid, int>, int> oldVertexToNewMap;
     for (auto x = 0u; x < triangles.size(); x++) {
@@ -329,7 +329,7 @@ void MeshResultContext::calculateResultParts(std::map<QUuid, ResultPart> &parts)
             parts.insert(std::make_pair(sourceNode.first, newPart));
         }
         auto &resultPart = parts[sourceNode.first];
-        ResultTriangle newTriangle;
+        OutcomeTriangle newTriangle;
         newTriangle.normal = triangle.normal;
         for (auto i = 0u; i < 3; i++) {
             const auto &normal = interpolatedTriangleVertexNormals()[normalIndex++];
@@ -341,7 +341,7 @@ void MeshResultContext::calculateResultParts(std::map<QUuid, ResultPart> &parts)
                 int newIndex = resultPart.vertices.size();
                 resultPart.verticesOldIndicies.push_back(triangle.indicies[i]);
                 resultPart.vertices.push_back(vertices[triangle.indicies[i]]);
-                ResultVertexUv vertexUv;
+                OutcomeVertexUv vertexUv;
                 vertexUv.uv[0] = triangleUvs()[x].uv[i][0];
                 vertexUv.uv[1] = triangleUvs()[x].uv[i][1];
                 resultPart.vertexUvs.push_back(vertexUv);
@@ -359,7 +359,7 @@ void MeshResultContext::calculateResultParts(std::map<QUuid, ResultPart> &parts)
     }
 }
 
-void MeshResultContext::calculateResultTriangleUvs(std::vector<ResultTriangleUv> &uvs, std::set<int> &seamVertices)
+void Outcome::calculateResultTriangleUvs(std::vector<OutcomeTriangleUv> &uvs, std::set<int> &seamVertices)
 {
     simpleuv::Mesh inputMesh;
     const auto &choosenVertices = vertices;
@@ -420,7 +420,7 @@ void MeshResultContext::calculateResultTriangleUvs(std::vector<ResultTriangleUv>
     }
 }
 
-void MeshResultContext::interpolateTriangleVertexNormals(std::vector<QVector3D> &resultNormals)
+void Outcome::interpolateTriangleVertexNormals(std::vector<QVector3D> &resultNormals)
 {
     std::vector<QVector3D> inputVerticies;
     std::vector<std::tuple<size_t, size_t, size_t>> inputTriangles;
@@ -435,7 +435,7 @@ void MeshResultContext::interpolateTriangleVertexNormals(std::vector<QVector3D> 
     angleSmooth(inputVerticies, inputTriangles, inputNormals, thresholdAngleDegrees, resultNormals);
 }
 
-const std::vector<QVector3D> &MeshResultContext::interpolatedTriangleVertexNormals()
+const std::vector<QVector3D> &Outcome::interpolatedTriangleVertexNormals()
 {
     if (!m_triangleVertexNormalsInterpolated) {
         m_triangleVertexNormalsInterpolated = true;
@@ -444,7 +444,7 @@ const std::vector<QVector3D> &MeshResultContext::interpolatedTriangleVertexNorma
     return m_interpolatedTriangleVertexNormals;
 }
 
-const std::vector<QVector3D> &MeshResultContext::triangleTangents()
+const std::vector<QVector3D> &Outcome::triangleTangents()
 {
     if (!m_triangleTangentsResolved) {
         m_triangleTangentsResolved = true;
@@ -453,7 +453,7 @@ const std::vector<QVector3D> &MeshResultContext::triangleTangents()
     return m_triangleTangents;
 }
 
-void MeshResultContext::calculateTriangleTangents(std::vector<QVector3D> &tangents)
+void Outcome::calculateTriangleTangents(std::vector<QVector3D> &tangents)
 {
     tangents.resize(triangles.size());
     

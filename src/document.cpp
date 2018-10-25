@@ -6,20 +6,21 @@
 #include <QMimeData>
 #include <QApplication>
 #include <QVector3D>
-#include "skeletondocument.h"
-#include "dust3dutil.h"
-#include "skeletonxml.h"
+#include "document.h"
+#include "util.h"
+#include "snapshotxml.h"
 #include "materialpreviewsgenerator.h"
 #include "motionsgenerator.h"
+#include "skeletonside.h"
 
-unsigned long SkeletonDocument::m_maxSnapshot = 1000;
+unsigned long Document::m_maxSnapshot = 1000;
 
-SkeletonDocument::SkeletonDocument() :
+Document::Document() :
     // public
     originX(0),
     originY(0),
     originZ(0),
-    editMode(SkeletonDocumentEditMode::Select),
+    editMode(DocumentEditMode::Select),
     xlocked(false),
     ylocked(false),
     zlocked(false),
@@ -41,7 +42,7 @@ SkeletonDocument::SkeletonDocument() :
     m_textureGenerator(nullptr),
     m_isPostProcessResultObsolete(false),
     m_postProcessor(nullptr),
-    m_postProcessedResultContext(new MeshResultContext),
+    m_postProcessedResultContext(new Outcome),
     m_resultTextureMesh(nullptr),
     m_textureImageUpdateVersion(0),
     m_ambientOcclusionBaker(nullptr),
@@ -54,7 +55,7 @@ SkeletonDocument::SkeletonDocument() :
     m_resultRigBones(nullptr),
     m_resultRigWeights(nullptr),
     m_isRigObsolete(false),
-    m_riggedResultContext(new MeshResultContext),
+    m_riggedResultContext(new Outcome),
     m_posePreviewsGenerator(nullptr),
     m_currentRigSucceed(false),
     m_materialPreviewsGenerator(nullptr),
@@ -62,7 +63,7 @@ SkeletonDocument::SkeletonDocument() :
 {
 }
 
-SkeletonDocument::~SkeletonDocument()
+Document::~Document()
 {
     delete m_resultMesh;
     delete m_postProcessedResultContext;
@@ -74,25 +75,25 @@ SkeletonDocument::~SkeletonDocument()
     delete m_resultRigWeightMesh;
 }
 
-void SkeletonDocument::uiReady()
+void Document::uiReady()
 {
     qDebug() << "uiReady";
     emit editModeChanged();
 }
 
-void SkeletonDocument::SkeletonDocument::enableAllPositionRelatedLocks()
+void Document::Document::enableAllPositionRelatedLocks()
 {
     m_allPositionRelatedLocksEnabled = true;
 }
 
-void SkeletonDocument::SkeletonDocument::disableAllPositionRelatedLocks()
+void Document::Document::disableAllPositionRelatedLocks()
 {
     m_allPositionRelatedLocksEnabled = false;
 }
 
-void SkeletonDocument::breakEdge(QUuid edgeId)
+void Document::breakEdge(QUuid edgeId)
 {
-    const SkeletonEdge *edge = findEdge(edgeId);
+    const Edge *edge = findEdge(edgeId);
     if (nullptr == edge) {
         qDebug() << "Find edge failed:" << edgeId;
         return;
@@ -102,12 +103,12 @@ void SkeletonDocument::breakEdge(QUuid edgeId)
     }
     QUuid firstNodeId = edge->nodeIds[0];
     QUuid secondNodeId = edge->nodeIds[1];
-    const SkeletonNode *firstNode = findNode(firstNodeId);
+    const Node *firstNode = findNode(firstNodeId);
     if (nullptr == firstNode) {
         qDebug() << "Find node failed:" << firstNodeId;
         return;
     }
-    const SkeletonNode *secondNode = findNode(secondNodeId);
+    const Node *secondNode = findNode(secondNodeId);
     if (nullptr == secondNode) {
         qDebug() << "Find node failed:" << secondNodeId;
         return;
@@ -125,16 +126,16 @@ void SkeletonDocument::breakEdge(QUuid edgeId)
     addEdge(middleNodeId, secondNodeId);
 }
 
-void SkeletonDocument::removeEdge(QUuid edgeId)
+void Document::removeEdge(QUuid edgeId)
 {
-    const SkeletonEdge *edge = findEdge(edgeId);
+    const Edge *edge = findEdge(edgeId);
     if (nullptr == edge) {
         qDebug() << "Find edge failed:" << edgeId;
         return;
     }
     if (isPartReadonly(edge->partId))
         return;
-    const SkeletonPart *oldPart = findPart(edge->partId);
+    const Part *oldPart = findPart(edge->partId);
     if (nullptr == oldPart) {
         qDebug() << "Find part failed:" << edge->partId;
         return;
@@ -145,7 +146,7 @@ void SkeletonDocument::removeEdge(QUuid edgeId)
     splitPartByEdge(&groups, edgeId);
     for (auto groupIt = groups.begin(); groupIt != groups.end(); groupIt++) {
         const auto newUuid = QUuid::createUuid();
-        SkeletonPart &part = partMap[newUuid];
+        Part &part = partMap[newUuid];
         part.id = newUuid;
         part.copyAttributes(*oldPart);
         part.name = nextPartName;
@@ -185,16 +186,16 @@ void SkeletonDocument::removeEdge(QUuid edgeId)
     emit skeletonChanged();
 }
 
-void SkeletonDocument::removeNode(QUuid nodeId)
+void Document::removeNode(QUuid nodeId)
 {
-    const SkeletonNode *node = findNode(nodeId);
+    const Node *node = findNode(nodeId);
     if (nullptr == node) {
         qDebug() << "Find node failed:" << nodeId;
         return;
     }
     if (isPartReadonly(node->partId))
         return;
-    const SkeletonPart *oldPart = findPart(node->partId);
+    const Part *oldPart = findPart(node->partId);
     if (nullptr == oldPart) {
         qDebug() << "Find part failed:" << node->partId;
         return;
@@ -205,7 +206,7 @@ void SkeletonDocument::removeNode(QUuid nodeId)
     splitPartByNode(&groups, nodeId);
     for (auto groupIt = groups.begin(); groupIt != groups.end(); groupIt++) {
         const auto newUuid = QUuid::createUuid();
-        SkeletonPart &part = partMap[newUuid];
+        Part &part = partMap[newUuid];
         part.id = newUuid;
         part.copyAttributes(*oldPart);
         part.name = nextPartName;
@@ -252,19 +253,19 @@ void SkeletonDocument::removeNode(QUuid nodeId)
     emit skeletonChanged();
 }
 
-void SkeletonDocument::addNode(float x, float y, float z, float radius, QUuid fromNodeId)
+void Document::addNode(float x, float y, float z, float radius, QUuid fromNodeId)
 {
     createNode(x, y, z, radius, fromNodeId);
 }
 
-QUuid SkeletonDocument::createNode(float x, float y, float z, float radius, QUuid fromNodeId)
+QUuid Document::createNode(float x, float y, float z, float radius, QUuid fromNodeId)
 {
     QUuid partId;
-    const SkeletonNode *fromNode = nullptr;
+    const Node *fromNode = nullptr;
     bool newPartAdded = false;
     if (fromNodeId.isNull()) {
         const auto newUuid = QUuid::createUuid();
-        SkeletonPart &part = partMap[newUuid];
+        Part &part = partMap[newUuid];
         part.id = newUuid;
         partId = part.id;
         emit partAdded(partId);
@@ -282,7 +283,7 @@ QUuid SkeletonDocument::createNode(float x, float y, float z, float radius, QUui
         if (part != partMap.end())
             part->second.dirty = true;
     }
-    SkeletonNode node;
+    Node node;
     node.partId = partId;
     node.setRadius(radius);
     node.x = x;
@@ -294,7 +295,7 @@ QUuid SkeletonDocument::createNode(float x, float y, float z, float radius, QUui
     emit nodeAdded(node.id);
     
     if (nullptr != fromNode) {
-        SkeletonEdge edge;
+        Edge edge;
         edge.partId = partId;
         edge.nodeIds.push_back(fromNode->id);
         edge.nodeIds.push_back(node.id);
@@ -314,7 +315,7 @@ QUuid SkeletonDocument::createNode(float x, float y, float z, float radius, QUui
     return node.id;
 }
 
-void SkeletonDocument::addPose(QString name, std::map<QString, std::map<QString, QString>> parameters)
+void Document::addPose(QString name, std::map<QString, std::map<QString, QString>> parameters)
 {
     QUuid newPoseId = QUuid::createUuid();
     auto &pose = poseMap[newPoseId];
@@ -332,7 +333,7 @@ void SkeletonDocument::addPose(QString name, std::map<QString, std::map<QString,
     emit optionsChanged();
 }
 
-void SkeletonDocument::addMotion(QString name, std::vector<SkeletonMotionClip> clips)
+void Document::addMotion(QString name, std::vector<MotionClip> clips)
 {
     QUuid newMotionId = QUuid::createUuid();
     auto &motion = motionMap[newMotionId];
@@ -350,7 +351,7 @@ void SkeletonDocument::addMotion(QString name, std::vector<SkeletonMotionClip> c
     emit optionsChanged();
 }
 
-void SkeletonDocument::removeMotion(QUuid motionId)
+void Document::removeMotion(QUuid motionId)
 {
     auto findMotionResult = motionMap.find(motionId);
     if (findMotionResult == motionMap.end()) {
@@ -365,7 +366,7 @@ void SkeletonDocument::removeMotion(QUuid motionId)
     emit optionsChanged();
 }
 
-void SkeletonDocument::setMotionClips(QUuid motionId, std::vector<SkeletonMotionClip> clips)
+void Document::setMotionClips(QUuid motionId, std::vector<MotionClip> clips)
 {
     auto findMotionResult = motionMap.find(motionId);
     if (findMotionResult == motionMap.end()) {
@@ -379,7 +380,7 @@ void SkeletonDocument::setMotionClips(QUuid motionId, std::vector<SkeletonMotion
     emit optionsChanged();
 }
 
-void SkeletonDocument::renameMotion(QUuid motionId, QString name)
+void Document::renameMotion(QUuid motionId, QString name)
 {
     auto findMotionResult = motionMap.find(motionId);
     if (findMotionResult == motionMap.end()) {
@@ -394,7 +395,7 @@ void SkeletonDocument::renameMotion(QUuid motionId, QString name)
     emit optionsChanged();
 }
 
-void SkeletonDocument::removePose(QUuid poseId)
+void Document::removePose(QUuid poseId)
 {
     auto findPoseResult = poseMap.find(poseId);
     if (findPoseResult == poseMap.end()) {
@@ -409,7 +410,7 @@ void SkeletonDocument::removePose(QUuid poseId)
     emit optionsChanged();
 }
 
-void SkeletonDocument::setPoseParameters(QUuid poseId, std::map<QString, std::map<QString, QString>> parameters)
+void Document::setPoseParameters(QUuid poseId, std::map<QString, std::map<QString, QString>> parameters)
 {
     auto findPoseResult = poseMap.find(poseId);
     if (findPoseResult == poseMap.end()) {
@@ -423,7 +424,7 @@ void SkeletonDocument::setPoseParameters(QUuid poseId, std::map<QString, std::ma
     emit optionsChanged();
 }
 
-void SkeletonDocument::renamePose(QUuid poseId, QString name)
+void Document::renamePose(QUuid poseId, QString name)
 {
     auto findPoseResult = poseMap.find(poseId);
     if (findPoseResult == poseMap.end()) {
@@ -438,9 +439,9 @@ void SkeletonDocument::renamePose(QUuid poseId, QString name)
     emit optionsChanged();
 }
 
-const SkeletonEdge *SkeletonDocument::findEdgeByNodes(QUuid firstNodeId, QUuid secondNodeId) const
+const Edge *Document::findEdgeByNodes(QUuid firstNodeId, QUuid secondNodeId) const
 {
-    const SkeletonNode *firstNode = nullptr;
+    const Node *firstNode = nullptr;
     firstNode = findNode(firstNodeId);
     if (nullptr == firstNode) {
         qDebug() << "Find node failed:" << firstNodeId;
@@ -458,20 +459,20 @@ const SkeletonEdge *SkeletonDocument::findEdgeByNodes(QUuid firstNodeId, QUuid s
     return nullptr;
 }
 
-bool SkeletonDocument::originSettled() const
+bool Document::originSettled() const
 {
     return !qFuzzyIsNull(originX) && !qFuzzyIsNull(originY) && !qFuzzyIsNull(originZ);
 }
 
-void SkeletonDocument::addEdge(QUuid fromNodeId, QUuid toNodeId)
+void Document::addEdge(QUuid fromNodeId, QUuid toNodeId)
 {
     if (findEdgeByNodes(fromNodeId, toNodeId)) {
         qDebug() << "Add edge but edge already existed:" << fromNodeId << toNodeId;
         return;
     }
     
-    const SkeletonNode *fromNode = nullptr;
-    const SkeletonNode *toNode = nullptr;
+    const Node *fromNode = nullptr;
+    const Node *toNode = nullptr;
     bool toPartRemoved = false;
     
     fromNode = findNode(fromNodeId);
@@ -526,7 +527,7 @@ void SkeletonDocument::addEdge(QUuid fromNodeId, QUuid toNodeId)
         }
     }
     
-    SkeletonEdge edge;
+    Edge edge;
     edge.partId = fromNode->partId;
     edge.nodeIds.push_back(fromNode->id);
     edge.nodeIds.push_back(toNodeId);
@@ -544,7 +545,7 @@ void SkeletonDocument::addEdge(QUuid fromNodeId, QUuid toNodeId)
     emit skeletonChanged();
 }
 
-const SkeletonNode *SkeletonDocument::findNode(QUuid nodeId) const
+const Node *Document::findNode(QUuid nodeId) const
 {
     auto it = nodeMap.find(nodeId);
     if (it == nodeMap.end())
@@ -552,7 +553,7 @@ const SkeletonNode *SkeletonDocument::findNode(QUuid nodeId) const
     return &it->second;
 }
 
-const SkeletonEdge *SkeletonDocument::findEdge(QUuid edgeId) const
+const Edge *Document::findEdge(QUuid edgeId) const
 {
     auto it = edgeMap.find(edgeId);
     if (it == edgeMap.end())
@@ -560,7 +561,7 @@ const SkeletonEdge *SkeletonDocument::findEdge(QUuid edgeId) const
     return &it->second;
 }
 
-const SkeletonPart *SkeletonDocument::findPart(QUuid partId) const
+const Part *Document::findPart(QUuid partId) const
 {
     auto it = partMap.find(partId);
     if (it == partMap.end())
@@ -568,7 +569,7 @@ const SkeletonPart *SkeletonDocument::findPart(QUuid partId) const
     return &it->second;
 }
 
-const SkeletonComponent *SkeletonDocument::findComponent(QUuid componentId) const
+const Component *Document::findComponent(QUuid componentId) const
 {
     if (componentId.isNull())
         return &rootComponent;
@@ -578,7 +579,7 @@ const SkeletonComponent *SkeletonDocument::findComponent(QUuid componentId) cons
     return &it->second;
 }
 
-const SkeletonPose *SkeletonDocument::findPose(QUuid poseId) const
+const Pose *Document::findPose(QUuid poseId) const
 {
     auto it = poseMap.find(poseId);
     if (it == poseMap.end())
@@ -586,7 +587,7 @@ const SkeletonPose *SkeletonDocument::findPose(QUuid poseId) const
     return &it->second;
 }
 
-const SkeletonMaterial *SkeletonDocument::findMaterial(QUuid materialId) const
+const Material *Document::findMaterial(QUuid materialId) const
 {
     auto it = materialMap.find(materialId);
     if (it == materialMap.end())
@@ -594,7 +595,7 @@ const SkeletonMaterial *SkeletonDocument::findMaterial(QUuid materialId) const
     return &it->second;
 }
 
-const SkeletonMotion *SkeletonDocument::findMotion(QUuid motionId) const
+const Motion *Document::findMotion(QUuid motionId) const
 {
     auto it = motionMap.find(motionId);
     if (it == motionMap.end())
@@ -602,7 +603,7 @@ const SkeletonMotion *SkeletonDocument::findMotion(QUuid motionId) const
     return &it->second;
 }
 
-void SkeletonDocument::scaleNodeByAddRadius(QUuid nodeId, float amount)
+void Document::scaleNodeByAddRadius(QUuid nodeId, float amount)
 {
     auto it = nodeMap.find(nodeId);
     if (it == nodeMap.end()) {
@@ -621,9 +622,9 @@ void SkeletonDocument::scaleNodeByAddRadius(QUuid nodeId, float amount)
     emit skeletonChanged();
 }
 
-bool SkeletonDocument::isPartReadonly(QUuid partId) const
+bool Document::isPartReadonly(QUuid partId) const
 {
-    const SkeletonPart *part = findPart(partId);
+    const Part *part = findPart(partId);
     if (nullptr == part) {
         qDebug() << "Find part failed:" << partId;
         return true;
@@ -631,7 +632,7 @@ bool SkeletonDocument::isPartReadonly(QUuid partId) const
     return part->locked || !part->visible;
 }
 
-void SkeletonDocument::moveNodeBy(QUuid nodeId, float x, float y, float z)
+void Document::moveNodeBy(QUuid nodeId, float x, float y, float z)
 {
     auto it = nodeMap.find(nodeId);
     if (it == nodeMap.end()) {
@@ -662,7 +663,7 @@ void SkeletonDocument::moveNodeBy(QUuid nodeId, float x, float y, float z)
     emit skeletonChanged();
 }
 
-void SkeletonDocument::moveOriginBy(float x, float y, float z)
+void Document::moveOriginBy(float x, float y, float z)
 {
     if (!(m_allPositionRelatedLocksEnabled && xlocked))
         originX += x;
@@ -675,7 +676,7 @@ void SkeletonDocument::moveOriginBy(float x, float y, float z)
     emit skeletonChanged();
 }
 
-void SkeletonDocument::setNodeOrigin(QUuid nodeId, float x, float y, float z)
+void Document::setNodeOrigin(QUuid nodeId, float x, float y, float z)
 {
     auto it = nodeMap.find(nodeId);
     if (it == nodeMap.end()) {
@@ -697,7 +698,7 @@ void SkeletonDocument::setNodeOrigin(QUuid nodeId, float x, float y, float z)
     emit skeletonChanged();
 }
 
-void SkeletonDocument::setNodeRadius(QUuid nodeId, float radius)
+void Document::setNodeRadius(QUuid nodeId, float radius)
 {
     auto it = nodeMap.find(nodeId);
     if (it == nodeMap.end()) {
@@ -715,7 +716,7 @@ void SkeletonDocument::setNodeRadius(QUuid nodeId, float radius)
     emit skeletonChanged();
 }
 
-void SkeletonDocument::switchNodeXZ(QUuid nodeId)
+void Document::switchNodeXZ(QUuid nodeId)
 {
     auto it = nodeMap.find(nodeId);
     if (it == nodeMap.end()) {
@@ -732,7 +733,7 @@ void SkeletonDocument::switchNodeXZ(QUuid nodeId)
     emit skeletonChanged();
 }
 
-void SkeletonDocument::setNodeBoneMark(QUuid nodeId, SkeletonBoneMark mark)
+void Document::setNodeBoneMark(QUuid nodeId, BoneMark mark)
 {
     auto it = nodeMap.find(nodeId);
     if (it == nodeMap.end()) {
@@ -751,13 +752,13 @@ void SkeletonDocument::setNodeBoneMark(QUuid nodeId, SkeletonBoneMark mark)
     emit skeletonChanged();
 }
 
-void SkeletonDocument::updateTurnaround(const QImage &image)
+void Document::updateTurnaround(const QImage &image)
 {
     turnaround = image;
     emit turnaroundChanged();
 }
 
-void SkeletonDocument::setEditMode(SkeletonDocumentEditMode mode)
+void Document::setEditMode(DocumentEditMode mode)
 {
     if (editMode == mode)
         return;
@@ -766,11 +767,11 @@ void SkeletonDocument::setEditMode(SkeletonDocumentEditMode mode)
     emit editModeChanged();
 }
 
-void SkeletonDocument::joinNodeAndNeiborsToGroup(std::vector<QUuid> *group, QUuid nodeId, std::set<QUuid> *visitMap, QUuid noUseEdgeId)
+void Document::joinNodeAndNeiborsToGroup(std::vector<QUuid> *group, QUuid nodeId, std::set<QUuid> *visitMap, QUuid noUseEdgeId)
 {
     if (nodeId.isNull() || visitMap->find(nodeId) != visitMap->end())
         return;
-    const SkeletonNode *node = findNode(nodeId);
+    const Node *node = findNode(nodeId);
     if (nullptr == node) {
         qDebug() << "Find node failed:" << nodeId;
         return;
@@ -780,7 +781,7 @@ void SkeletonDocument::joinNodeAndNeiborsToGroup(std::vector<QUuid> *group, QUui
     for (auto edgeIt = node->edgeIds.begin(); edgeIt != node->edgeIds.end(); edgeIt++) {
         if (noUseEdgeId == *edgeIt)
             continue;
-        const SkeletonEdge *edge = findEdge(*edgeIt);
+        const Edge *edge = findEdge(*edgeIt);
         if (nullptr == edge) {
             qDebug() << "Find edge failed:" << *edgeIt;
             continue;
@@ -791,13 +792,13 @@ void SkeletonDocument::joinNodeAndNeiborsToGroup(std::vector<QUuid> *group, QUui
     }
 }
 
-void SkeletonDocument::splitPartByNode(std::vector<std::vector<QUuid>> *groups, QUuid nodeId)
+void Document::splitPartByNode(std::vector<std::vector<QUuid>> *groups, QUuid nodeId)
 {
-    const SkeletonNode *node = findNode(nodeId);
+    const Node *node = findNode(nodeId);
     std::set<QUuid> visitMap;
     for (auto edgeIt = node->edgeIds.begin(); edgeIt != node->edgeIds.end(); edgeIt++) {
         std::vector<QUuid> group;
-        const SkeletonEdge *edge = findEdge(*edgeIt);
+        const Edge *edge = findEdge(*edgeIt);
         if (nullptr == edge) {
             qDebug() << "Find edge failed:" << *edgeIt;
             continue;
@@ -808,9 +809,9 @@ void SkeletonDocument::splitPartByNode(std::vector<std::vector<QUuid>> *groups, 
     }
 }
 
-void SkeletonDocument::splitPartByEdge(std::vector<std::vector<QUuid>> *groups, QUuid edgeId)
+void Document::splitPartByEdge(std::vector<std::vector<QUuid>> *groups, QUuid edgeId)
 {
-    const SkeletonEdge *edge = findEdge(edgeId);
+    const Edge *edge = findEdge(edgeId);
     if (nullptr == edge) {
         qDebug() << "Find edge failed:" << edgeId;
         return;
@@ -824,7 +825,7 @@ void SkeletonDocument::splitPartByEdge(std::vector<std::vector<QUuid>> *groups, 
     }
 }
 
-void SkeletonDocument::resetDirtyFlags()
+void Document::resetDirtyFlags()
 {
     for (auto &part: partMap) {
         part.second.dirty = false;
@@ -834,32 +835,32 @@ void SkeletonDocument::resetDirtyFlags()
     }
 }
 
-void SkeletonDocument::markAllDirty()
+void Document::markAllDirty()
 {
     for (auto &part: partMap) {
         part.second.dirty = true;
     }
 }
 
-void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUuid> &limitNodeIds,
-    SkeletonDocumentToSnapshotFor forWhat,
+void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeIds,
+    DocumentToSnapshotFor forWhat,
     const std::set<QUuid> &limitPoseIds,
     const std::set<QUuid> &limitMotionIds,
     const std::set<QUuid> &limitMaterialIds) const
 {
-    if (SkeletonDocumentToSnapshotFor::Document == forWhat ||
-            SkeletonDocumentToSnapshotFor::Nodes == forWhat) {
+    if (DocumentToSnapshotFor::Document == forWhat ||
+            DocumentToSnapshotFor::Nodes == forWhat) {
         std::set<QUuid> limitPartIds;
         std::set<QUuid> limitComponentIds;
         for (const auto &nodeId: limitNodeIds) {
-            const SkeletonNode *node = findNode(nodeId);
+            const Node *node = findNode(nodeId);
             if (!node)
                 continue;
-            const SkeletonPart *part = findPart(node->partId);
+            const Part *part = findPart(node->partId);
             if (!part)
                 continue;
             limitPartIds.insert(node->partId);
-            const SkeletonComponent *component = findComponent(part->componentId);
+            const Component *component = findComponent(part->componentId);
             while (component) {
                 limitComponentIds.insert(component->id);
                 if (component->id.isNull())
@@ -903,8 +904,8 @@ void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUu
             node["y"] = QString::number(nodeIt.second.y);
             node["z"] = QString::number(nodeIt.second.z);
             node["partId"] = nodeIt.second.partId.toString();
-            if (nodeIt.second.boneMark != SkeletonBoneMark::None)
-                node["boneMark"] = SkeletonBoneMarkToString(nodeIt.second.boneMark);
+            if (nodeIt.second.boneMark != BoneMark::None)
+                node["boneMark"] = BoneMarkToString(nodeIt.second.boneMark);
             if (!nodeIt.second.name.isEmpty())
                 node["name"] = nodeIt.second.name;
             snapshot->nodes[node["id"]] = node;
@@ -965,8 +966,8 @@ void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUu
                 snapshot->rootComponent["children"] = children;
         }
     }
-    if (SkeletonDocumentToSnapshotFor::Document == forWhat ||
-            SkeletonDocumentToSnapshotFor::Materials == forWhat) {
+    if (DocumentToSnapshotFor::Document == forWhat ||
+            DocumentToSnapshotFor::Materials == forWhat) {
         for (const auto &materialId: materialIdList) {
             if (!limitMaterialIds.empty() && limitMaterialIds.find(materialId) == limitMaterialIds.end())
                 continue;
@@ -997,8 +998,8 @@ void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUu
             snapshot->materials.push_back(std::make_pair(material, layers));
         }
     }
-    if (SkeletonDocumentToSnapshotFor::Document == forWhat ||
-            SkeletonDocumentToSnapshotFor::Poses == forWhat) {
+    if (DocumentToSnapshotFor::Document == forWhat ||
+            DocumentToSnapshotFor::Poses == forWhat) {
         for (const auto &poseId: poseIdList) {
             if (!limitPoseIds.empty() && limitPoseIds.find(poseId) == limitPoseIds.end())
                 continue;
@@ -1015,8 +1016,8 @@ void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUu
             snapshot->poses.push_back(std::make_pair(pose, poseIt.second.parameters));
         }
     }
-    if (SkeletonDocumentToSnapshotFor::Document == forWhat ||
-            SkeletonDocumentToSnapshotFor::Motions == forWhat) {
+    if (DocumentToSnapshotFor::Document == forWhat ||
+            DocumentToSnapshotFor::Motions == forWhat) {
         for (const auto &motionId: motionIdList) {
             if (!limitMotionIds.empty() && limitMotionIds.find(motionId) == limitMotionIds.end())
                 continue;
@@ -1041,7 +1042,7 @@ void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUu
             snapshot->motions.push_back(std::make_pair(motion, clips));
         }
     }
-    if (SkeletonDocumentToSnapshotFor::Document == forWhat) {
+    if (DocumentToSnapshotFor::Document == forWhat) {
         std::map<QString, QString> canvas;
         canvas["originX"] = QString::number(originX);
         canvas["originY"] = QString::number(originY);
@@ -1051,7 +1052,7 @@ void SkeletonDocument::toSnapshot(SkeletonSnapshot *snapshot, const std::set<QUu
     }
 }
 
-void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot, bool fromPaste)
+void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
 {
     bool isOriginChanged = false;
     bool isRigTypeChanged = false;
@@ -1095,7 +1096,7 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot, bool fr
         newMaterial.name = valueOfKeyInMapOrEmpty(materialAttributes, "name");
         oldNewIdMap[QUuid(valueOfKeyInMapOrEmpty(materialAttributes, "id"))] = newMaterialId;
         for (const auto &layerIt: materialIt.second) {
-            SkeletonMaterialLayer layer;
+            MaterialLayer layer;
             for (const auto &mapItem: layerIt.second) {
                 auto textureTypeString = valueOfKeyInMapOrEmpty(mapItem, "for");
                 auto textureType = TextureTypeFromString(textureTypeString.toUtf8().constData());
@@ -1109,7 +1110,7 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot, bool fr
                     continue;
                 }
                 auto imageId = QUuid(valueOfKeyInMapOrEmpty(mapItem, "linkData"));
-                SkeletonMaterialMap materialMap;
+                MaterialMap materialMap;
                 materialMap.imageId = imageId;
                 materialMap.forWhat = textureType;
                 layer.maps.push_back(materialMap);
@@ -1121,7 +1122,7 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot, bool fr
     }
     for (const auto &partKv: snapshot.parts) {
         const auto newUuid = QUuid::createUuid();
-        SkeletonPart &part = partMap[newUuid];
+        Part &part = partMap[newUuid];
         part.id = newUuid;
         oldNewIdMap[QUuid(partKv.first)] = part.id;
         part.name = valueOfKeyInMapOrEmpty(partKv.second, "name");
@@ -1158,7 +1159,7 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot, bool fr
                 nodeKv.second.find("z") == nodeKv.second.end() ||
                 nodeKv.second.find("partId") == nodeKv.second.end())
             continue;
-        SkeletonNode node;
+        Node node;
         oldNewIdMap[QUuid(nodeKv.first)] = node.id;
         node.name = valueOfKeyInMapOrEmpty(nodeKv.second, "name");
         node.radius = valueOfKeyInMapOrEmpty(nodeKv.second, "radius").toFloat();
@@ -1166,7 +1167,7 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot, bool fr
         node.y = valueOfKeyInMapOrEmpty(nodeKv.second, "y").toFloat();
         node.z = valueOfKeyInMapOrEmpty(nodeKv.second, "z").toFloat();
         node.partId = oldNewIdMap[QUuid(valueOfKeyInMapOrEmpty(nodeKv.second, "partId"))];
-        node.boneMark = SkeletonBoneMarkFromString(valueOfKeyInMapOrEmpty(nodeKv.second, "boneMark").toUtf8().constData());
+        node.boneMark = BoneMarkFromString(valueOfKeyInMapOrEmpty(nodeKv.second, "boneMark").toUtf8().constData());
         nodeMap[node.id] = node;
         newAddedNodeIds.insert(node.id);
     }
@@ -1175,7 +1176,7 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot, bool fr
                 edgeKv.second.find("to") == edgeKv.second.end() ||
                 edgeKv.second.find("partId") == edgeKv.second.end())
             continue;
-        SkeletonEdge edge;
+        Edge edge;
         oldNewIdMap[QUuid(edgeKv.first)] = edge.id;
         edge.name = valueOfKeyInMapOrEmpty(edgeKv.second, "name");
         edge.partId = oldNewIdMap[QUuid(valueOfKeyInMapOrEmpty(edgeKv.second, "partId"))];
@@ -1202,7 +1203,7 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot, bool fr
     for (const auto &componentKv: snapshot.components) {
         QString linkData = valueOfKeyInMapOrEmpty(componentKv.second, "linkData");
         QString linkDataType = valueOfKeyInMapOrEmpty(componentKv.second, "linkDataType");
-        SkeletonComponent component(QUuid(), linkData, linkDataType);
+        Component component(QUuid(), linkData, linkDataType);
         oldNewIdMap[QUuid(componentKv.first)] = component.id;
         component.name = valueOfKeyInMapOrEmpty(componentKv.second, "name");
         component.expanded = isTrueValueString(valueOfKeyInMapOrEmpty(componentKv.second, "expanded"));
@@ -1278,7 +1279,7 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot, bool fr
                     linkData = findInOldNewIdMapResult->second.toString();
                 }
             }
-            SkeletonMotionClip clip(linkData,
+            MotionClip clip(linkData,
                 valueOfKeyInMapOrEmpty(attributes, "linkDataType"));
             clip.duration = valueOfKeyInMapOrEmpty(attributes, "duration").toFloat();
             newMotion.clips.push_back(clip);
@@ -1325,7 +1326,7 @@ void SkeletonDocument::addFromSnapshot(const SkeletonSnapshot &snapshot, bool fr
         emit motionListChanged();
 }
 
-void SkeletonDocument::reset()
+void Document::reset()
 {
     originX = 0.0;
     originY = 0.0;
@@ -1341,20 +1342,20 @@ void SkeletonDocument::reset()
     poseIdList.clear();
     motionMap.clear();
     motionIdList.clear();
-    rootComponent = SkeletonComponent();
+    rootComponent = Component();
     removeRigResults();
     emit cleanup();
     emit skeletonChanged();
 }
 
-void SkeletonDocument::fromSnapshot(const SkeletonSnapshot &snapshot)
+void Document::fromSnapshot(const Snapshot &snapshot)
 {
     reset();
     addFromSnapshot(snapshot, false);
     emit uncheckAll();
 }
 
-MeshLoader *SkeletonDocument::takeResultMesh()
+MeshLoader *Document::takeResultMesh()
 {
     if (nullptr == m_resultMesh)
         return nullptr;
@@ -1362,7 +1363,7 @@ MeshLoader *SkeletonDocument::takeResultMesh()
     return resultMesh;
 }
 
-MeshLoader *SkeletonDocument::takeResultTextureMesh()
+MeshLoader *Document::takeResultTextureMesh()
 {
     if (nullptr == m_resultTextureMesh)
         return nullptr;
@@ -1370,7 +1371,7 @@ MeshLoader *SkeletonDocument::takeResultTextureMesh()
     return resultTextureMesh;
 }
 
-MeshLoader *SkeletonDocument::takeResultRigWeightMesh()
+MeshLoader *Document::takeResultRigWeightMesh()
 {
     if (nullptr == m_resultRigWeightMesh)
         return nullptr;
@@ -1378,10 +1379,10 @@ MeshLoader *SkeletonDocument::takeResultRigWeightMesh()
     return resultMesh;
 }
 
-void SkeletonDocument::meshReady()
+void Document::meshReady()
 {
     MeshLoader *resultMesh = m_meshGenerator->takeResultMesh();
-    MeshResultContext *meshResultContext = m_meshGenerator->takeMeshResultContext();
+    Outcome *outcome = m_meshGenerator->takeMeshResultContext();
     
     for (auto &partId: m_meshGenerator->generatedPreviewPartIds()) {
         auto part = partMap.find(partId);
@@ -1396,7 +1397,7 @@ void SkeletonDocument::meshReady()
     m_resultMesh = resultMesh;
     
     delete m_currentMeshResultContext;
-    m_currentMeshResultContext = meshResultContext;
+    m_currentMeshResultContext = outcome;
     
     if (nullptr == m_resultMesh) {
         qDebug() << "Result mesh is null";
@@ -1417,17 +1418,17 @@ void SkeletonDocument::meshReady()
     }
 }
 
-bool SkeletonDocument::isPostProcessResultObsolete() const
+bool Document::isPostProcessResultObsolete() const
 {
     return m_isPostProcessResultObsolete;
 }
 
-void SkeletonDocument::batchChangeBegin()
+void Document::batchChangeBegin()
 {
     m_batchChangeRefCount++;
 }
 
-void SkeletonDocument::batchChangeEnd()
+void Document::batchChangeEnd()
 {
     m_batchChangeRefCount--;
     if (0 == m_batchChangeRefCount) {
@@ -1437,25 +1438,25 @@ void SkeletonDocument::batchChangeEnd()
     }
 }
 
-void SkeletonDocument::regenerateMesh()
+void Document::regenerateMesh()
 {
     markAllDirty();
     generateMesh();
 }
 
-void SkeletonDocument::toggleSmoothNormal()
+void Document::toggleSmoothNormal()
 {
     m_smoothNormal = !m_smoothNormal;
     regenerateMesh();
 }
 
-void SkeletonDocument::enableWeld(bool enabled)
+void Document::enableWeld(bool enabled)
 {
     weldEnabled = enabled;
     regenerateMesh();
 }
 
-void SkeletonDocument::generateMesh()
+void Document::generateMesh()
 {
     if (nullptr != m_meshGenerator || m_batchChangeRefCount > 0) {
         m_isResultMeshObsolete = true;
@@ -1470,7 +1471,7 @@ void SkeletonDocument::generateMesh()
     
     QThread *thread = new QThread;
     
-    SkeletonSnapshot *snapshot = new SkeletonSnapshot;
+    Snapshot *snapshot = new Snapshot;
     toSnapshot(snapshot);
     resetDirtyFlags();
     m_meshGenerator = new MeshGenerator(snapshot);
@@ -1484,14 +1485,14 @@ void SkeletonDocument::generateMesh()
     }
     m_meshGenerator->moveToThread(thread);
     connect(thread, &QThread::started, m_meshGenerator, &MeshGenerator::process);
-    connect(m_meshGenerator, &MeshGenerator::finished, this, &SkeletonDocument::meshReady);
+    connect(m_meshGenerator, &MeshGenerator::finished, this, &Document::meshReady);
     connect(m_meshGenerator, &MeshGenerator::finished, thread, &QThread::quit);
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
     emit meshGenerating();
     thread->start();
 }
 
-void SkeletonDocument::generateTexture()
+void Document::generateTexture()
 {
     if (nullptr != m_textureGenerator) {
         m_isTextureObsolete = true;
@@ -1502,21 +1503,21 @@ void SkeletonDocument::generateTexture()
     
     m_isTextureObsolete = false;
     
-    SkeletonSnapshot *snapshot = new SkeletonSnapshot;
+    Snapshot *snapshot = new Snapshot;
     toSnapshot(snapshot);
     
     QThread *thread = new QThread;
     m_textureGenerator = new TextureGenerator(*m_postProcessedResultContext, snapshot);
     m_textureGenerator->moveToThread(thread);
     connect(thread, &QThread::started, m_textureGenerator, &TextureGenerator::process);
-    connect(m_textureGenerator, &TextureGenerator::finished, this, &SkeletonDocument::textureReady);
+    connect(m_textureGenerator, &TextureGenerator::finished, this, &Document::textureReady);
     connect(m_textureGenerator, &TextureGenerator::finished, thread, &QThread::quit);
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
     emit textureGenerating();
     thread->start();
 }
 
-void SkeletonDocument::textureReady()
+void Document::textureReady()
 {
     delete textureGuideImage;
     textureGuideImage = m_textureGenerator->takeResultTextureGuideImage();
@@ -1552,7 +1553,7 @@ void SkeletonDocument::textureReady()
     }
 }
 
-void SkeletonDocument::bakeAmbientOcclusionTexture()
+void Document::bakeAmbientOcclusionTexture()
 {
     if (nullptr != m_ambientOcclusionBaker) {
         return;
@@ -1575,13 +1576,13 @@ void SkeletonDocument::bakeAmbientOcclusionTexture()
     m_ambientOcclusionBaker->setRenderThread(thread);
     m_ambientOcclusionBaker->moveToThread(thread);
     connect(thread, &QThread::started, m_ambientOcclusionBaker, &AmbientOcclusionBaker::process);
-    connect(m_ambientOcclusionBaker, &AmbientOcclusionBaker::finished, this, &SkeletonDocument::ambientOcclusionTextureReady);
+    connect(m_ambientOcclusionBaker, &AmbientOcclusionBaker::finished, this, &Document::ambientOcclusionTextureReady);
     connect(m_ambientOcclusionBaker, &AmbientOcclusionBaker::finished, thread, &QThread::quit);
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
     thread->start();
 }
 
-void SkeletonDocument::ambientOcclusionTextureReady()
+void Document::ambientOcclusionTextureReady()
 {
     m_ambientOcclusionBakedImageUpdateVersion = m_ambientOcclusionBaker->getImageUpdateVersion();
 
@@ -1620,7 +1621,7 @@ void SkeletonDocument::ambientOcclusionTextureReady()
     }
 }
 
-void SkeletonDocument::postProcess()
+void Document::postProcess()
 {
     if (nullptr != m_postProcessor) {
         m_isPostProcessResultObsolete = true;
@@ -1640,14 +1641,14 @@ void SkeletonDocument::postProcess()
     m_postProcessor = new MeshResultPostProcessor(*m_currentMeshResultContext);
     m_postProcessor->moveToThread(thread);
     connect(thread, &QThread::started, m_postProcessor, &MeshResultPostProcessor::process);
-    connect(m_postProcessor, &MeshResultPostProcessor::finished, this, &SkeletonDocument::postProcessedMeshResultReady);
+    connect(m_postProcessor, &MeshResultPostProcessor::finished, this, &Document::postProcessedMeshResultReady);
     connect(m_postProcessor, &MeshResultPostProcessor::finished, thread, &QThread::quit);
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
     emit postProcessing();
     thread->start();
 }
 
-void SkeletonDocument::postProcessedMeshResultReady()
+void Document::postProcessedMeshResultReady()
 {
     delete m_postProcessedResultContext;
     m_postProcessedResultContext = m_postProcessor->takePostProcessedResultContext();
@@ -1664,12 +1665,12 @@ void SkeletonDocument::postProcessedMeshResultReady()
     }
 }
 
-const MeshResultContext &SkeletonDocument::currentPostProcessedResultContext() const
+const Outcome &Document::currentPostProcessedResultContext() const
 {
     return *m_postProcessedResultContext;
 }
 
-void SkeletonDocument::setPartLockState(QUuid partId, bool locked)
+void Document::setPartLockState(QUuid partId, bool locked)
 {
     auto part = partMap.find(partId);
     if (part == partMap.end()) {
@@ -1683,7 +1684,7 @@ void SkeletonDocument::setPartLockState(QUuid partId, bool locked)
     emit optionsChanged();
 }
 
-void SkeletonDocument::setPartVisibleState(QUuid partId, bool visible)
+void Document::setPartVisibleState(QUuid partId, bool visible)
 {
     auto part = partMap.find(partId);
     if (part == partMap.end()) {
@@ -1697,7 +1698,7 @@ void SkeletonDocument::setPartVisibleState(QUuid partId, bool visible)
     emit optionsChanged();
 }
 
-void SkeletonDocument::setComponentInverseState(QUuid componentId, bool inverse)
+void Document::setComponentInverseState(QUuid componentId, bool inverse)
 {
     auto component = componentMap.find(componentId);
     if (component == componentMap.end()) {
@@ -1712,7 +1713,7 @@ void SkeletonDocument::setComponentInverseState(QUuid componentId, bool inverse)
     emit skeletonChanged();
 }
 
-void SkeletonDocument::setComponentSmoothAll(QUuid componentId, float toSmoothAll)
+void Document::setComponentSmoothAll(QUuid componentId, float toSmoothAll)
 {
     auto component = componentMap.find(componentId);
     if (component == componentMap.end()) {
@@ -1725,7 +1726,7 @@ void SkeletonDocument::setComponentSmoothAll(QUuid componentId, float toSmoothAl
     emit skeletonChanged();
 }
 
-void SkeletonDocument::setComponentSmoothSeam(QUuid componentId, float toSmoothSeam)
+void Document::setComponentSmoothSeam(QUuid componentId, float toSmoothSeam)
 {
     auto component = componentMap.find(componentId);
     if (component == componentMap.end()) {
@@ -1738,7 +1739,7 @@ void SkeletonDocument::setComponentSmoothSeam(QUuid componentId, float toSmoothS
     emit skeletonChanged();
 }
 
-void SkeletonDocument::setPartSubdivState(QUuid partId, bool subdived)
+void Document::setPartSubdivState(QUuid partId, bool subdived)
 {
     auto part = partMap.find(partId);
     if (part == partMap.end()) {
@@ -1753,7 +1754,7 @@ void SkeletonDocument::setPartSubdivState(QUuid partId, bool subdived)
     emit skeletonChanged();
 }
 
-void SkeletonDocument::setPartDisableState(QUuid partId, bool disabled)
+void Document::setPartDisableState(QUuid partId, bool disabled)
 {
     auto part = partMap.find(partId);
     if (part == partMap.end()) {
@@ -1768,7 +1769,7 @@ void SkeletonDocument::setPartDisableState(QUuid partId, bool disabled)
     emit skeletonChanged();
 }
 
-const SkeletonComponent *SkeletonDocument::findComponentParent(QUuid componentId) const
+const Component *Document::findComponentParent(QUuid componentId) const
 {
     auto component = componentMap.find(componentId);
     if (component == componentMap.end()) {
@@ -1779,10 +1780,10 @@ const SkeletonComponent *SkeletonDocument::findComponentParent(QUuid componentId
     if (component->second.parentId.isNull())
         return &rootComponent;
     
-    return (SkeletonComponent *)findComponent(component->second.parentId);
+    return (Component *)findComponent(component->second.parentId);
 }
 
-QUuid SkeletonDocument::findComponentParentId(QUuid componentId) const
+QUuid Document::findComponentParentId(QUuid componentId) const
 {
     auto component = componentMap.find(componentId);
     if (component == componentMap.end()) {
@@ -1793,9 +1794,9 @@ QUuid SkeletonDocument::findComponentParentId(QUuid componentId) const
     return component->second.parentId;
 }
 
-void SkeletonDocument::moveComponentUp(QUuid componentId)
+void Document::moveComponentUp(QUuid componentId)
 {
-    SkeletonComponent *parent = (SkeletonComponent *)findComponentParent(componentId);
+    Component *parent = (Component *)findComponentParent(componentId);
     if (nullptr == parent)
         return;
     
@@ -1807,9 +1808,9 @@ void SkeletonDocument::moveComponentUp(QUuid componentId)
     emit skeletonChanged();
 }
 
-void SkeletonDocument::moveComponentDown(QUuid componentId)
+void Document::moveComponentDown(QUuid componentId)
 {
-    SkeletonComponent *parent = (SkeletonComponent *)findComponentParent(componentId);
+    Component *parent = (Component *)findComponentParent(componentId);
     if (nullptr == parent)
         return;
     
@@ -1821,9 +1822,9 @@ void SkeletonDocument::moveComponentDown(QUuid componentId)
     emit skeletonChanged();
 }
 
-void SkeletonDocument::moveComponentToTop(QUuid componentId)
+void Document::moveComponentToTop(QUuid componentId)
 {
-    SkeletonComponent *parent = (SkeletonComponent *)findComponentParent(componentId);
+    Component *parent = (Component *)findComponentParent(componentId);
     if (nullptr == parent)
         return;
     
@@ -1835,9 +1836,9 @@ void SkeletonDocument::moveComponentToTop(QUuid componentId)
     emit skeletonChanged();
 }
 
-void SkeletonDocument::moveComponentToBottom(QUuid componentId)
+void Document::moveComponentToBottom(QUuid componentId)
 {
-    SkeletonComponent *parent = (SkeletonComponent *)findComponentParent(componentId);
+    Component *parent = (Component *)findComponentParent(componentId);
     if (nullptr == parent)
         return;
     
@@ -1849,7 +1850,7 @@ void SkeletonDocument::moveComponentToBottom(QUuid componentId)
     emit skeletonChanged();
 }
 
-void SkeletonDocument::renameComponent(QUuid componentId, QString name)
+void Document::renameComponent(QUuid componentId, QString name)
 {
     auto component = componentMap.find(componentId);
     if (component == componentMap.end()) {
@@ -1866,7 +1867,7 @@ void SkeletonDocument::renameComponent(QUuid componentId, QString name)
     emit optionsChanged();
 }
 
-void SkeletonDocument::setComponentExpandState(QUuid componentId, bool expanded)
+void Document::setComponentExpandState(QUuid componentId, bool expanded)
 {
     auto component = componentMap.find(componentId);
     if (component == componentMap.end()) {
@@ -1882,7 +1883,7 @@ void SkeletonDocument::setComponentExpandState(QUuid componentId, bool expanded)
     emit optionsChanged();
 }
 
-void SkeletonDocument::createNewComponentAndMoveThisIn(QUuid componentId)
+void Document::createNewComponentAndMoveThisIn(QUuid componentId)
 {
     auto component = componentMap.find(componentId);
     if (component == componentMap.end()) {
@@ -1890,9 +1891,9 @@ void SkeletonDocument::createNewComponentAndMoveThisIn(QUuid componentId)
         return;
     }
     
-    SkeletonComponent *oldParent = (SkeletonComponent *)findComponentParent(componentId);
+    Component *oldParent = (Component *)findComponentParent(componentId);
     
-    SkeletonComponent newParent(QUuid::createUuid());
+    Component newParent(QUuid::createUuid());
     newParent.name = tr("Group") + " " + QString::number(componentMap.size() - partMap.size() + 1);
     
     oldParent->replaceChild(componentId, newParent.id);
@@ -1907,15 +1908,15 @@ void SkeletonDocument::createNewComponentAndMoveThisIn(QUuid componentId)
     emit optionsChanged();
 }
 
-void SkeletonDocument::createNewChildComponent(QUuid parentComponentId)
+void Document::createNewChildComponent(QUuid parentComponentId)
 {
-    SkeletonComponent *parentComponent = (SkeletonComponent *)findComponent(parentComponentId);
+    Component *parentComponent = (Component *)findComponent(parentComponentId);
     if (!parentComponent->linkToPartId.isNull()) {
         parentComponentId = parentComponent->parentId;
-        parentComponent = (SkeletonComponent *)findComponent(parentComponentId);
+        parentComponent = (Component *)findComponent(parentComponentId);
     }
     
-    SkeletonComponent newComponent(QUuid::createUuid());
+    Component newComponent(QUuid::createUuid());
     newComponent.name = tr("Group") + " " + QString::number(componentMap.size() - partMap.size() + 1);
     
     parentComponent->addChild(newComponent.id);
@@ -1928,7 +1929,7 @@ void SkeletonDocument::createNewChildComponent(QUuid parentComponentId)
     emit optionsChanged();
 }
 
-void SkeletonDocument::removePart(QUuid partId)
+void Document::removePart(QUuid partId)
 {
     auto part = partMap.find(partId);
     if (part == partMap.end()) {
@@ -1944,7 +1945,7 @@ void SkeletonDocument::removePart(QUuid partId)
     removePartDontCareComponent(partId);
 }
 
-void SkeletonDocument::removePartDontCareComponent(QUuid partId)
+void Document::removePartDontCareComponent(QUuid partId)
 {
     auto part = partMap.find(partId);
     if (part == partMap.end()) {
@@ -1984,9 +1985,9 @@ void SkeletonDocument::removePartDontCareComponent(QUuid partId)
     emit partRemoved(partId);
 }
 
-void SkeletonDocument::addPartToComponent(QUuid partId, QUuid componentId)
+void Document::addPartToComponent(QUuid partId, QUuid componentId)
 {
-    SkeletonComponent child(QUuid::createUuid());
+    Component child(QUuid::createUuid());
     
     if (!componentId.isNull()) {
         auto parentComponent = componentMap.find(componentId);
@@ -2009,13 +2010,13 @@ void SkeletonDocument::addPartToComponent(QUuid partId, QUuid componentId)
     emit componentAdded(child.id);
 }
 
-void SkeletonDocument::removeComponent(QUuid componentId)
+void Document::removeComponent(QUuid componentId)
 {
     removeComponentRecursively(componentId);
     emit skeletonChanged();
 }
 
-void SkeletonDocument::removeComponentRecursively(QUuid componentId)
+void Document::removeComponentRecursively(QUuid componentId)
 {
     auto component = componentMap.find(componentId);
     if (component == componentMap.end()) {
@@ -2049,10 +2050,10 @@ void SkeletonDocument::removeComponentRecursively(QUuid componentId)
     emit componentChildrenChanged(parentId);
 }
 
-void SkeletonDocument::setCurrentCanvasComponentId(QUuid componentId)
+void Document::setCurrentCanvasComponentId(QUuid componentId)
 {
     m_currentCanvasComponentId = componentId;
-    const SkeletonComponent *component = findComponent(m_currentCanvasComponentId);
+    const Component *component = findComponent(m_currentCanvasComponentId);
     if (nullptr == component) {
         //qDebug() << "Current component switch to nullptr componentId:" << componentId;
         m_currentCanvasComponentId = QUuid();
@@ -2068,9 +2069,9 @@ void SkeletonDocument::setCurrentCanvasComponentId(QUuid componentId)
     }
 }
 
-void SkeletonDocument::addComponent(QUuid parentId)
+void Document::addComponent(QUuid parentId)
 {
-    SkeletonComponent component(QUuid::createUuid());
+    Component component(QUuid::createUuid());
     
     if (!parentId.isNull()) {
         auto parentComponent = componentMap.find(parentId);
@@ -2090,9 +2091,9 @@ void SkeletonDocument::addComponent(QUuid parentId)
     emit componentAdded(component.id);
 }
 
-bool SkeletonDocument::isDescendantComponent(QUuid componentId, QUuid suspiciousId)
+bool Document::isDescendantComponent(QUuid componentId, QUuid suspiciousId)
 {
-    const SkeletonComponent *loopComponent = findComponentParent(suspiciousId);
+    const Component *loopComponent = findComponentParent(suspiciousId);
     while (nullptr != loopComponent) {
         if (loopComponent->id == componentId)
             return true;
@@ -2101,7 +2102,7 @@ bool SkeletonDocument::isDescendantComponent(QUuid componentId, QUuid suspicious
     return false;
 }
 
-void SkeletonDocument::moveComponent(QUuid componentId, QUuid toParentId)
+void Document::moveComponent(QUuid componentId, QUuid toParentId)
 {
     if (componentId == toParentId)
         return;
@@ -2147,11 +2148,11 @@ void SkeletonDocument::moveComponent(QUuid componentId, QUuid toParentId)
     emit skeletonChanged();
 }
 
-void SkeletonDocument::settleOrigin()
+void Document::settleOrigin()
 {
     if (originSettled())
         return;
-    SkeletonSnapshot snapshot;
+    Snapshot snapshot;
     toSnapshot(&snapshot);
     QRectF mainProfile;
     QRectF sideProfile;
@@ -2163,7 +2164,7 @@ void SkeletonDocument::settleOrigin()
     emit originChanged();
 }
 
-void SkeletonDocument::setPartXmirrorState(QUuid partId, bool mirrored)
+void Document::setPartXmirrorState(QUuid partId, bool mirrored)
 {
     auto part = partMap.find(partId);
     if (part == partMap.end()) {
@@ -2179,7 +2180,7 @@ void SkeletonDocument::setPartXmirrorState(QUuid partId, bool mirrored)
     emit skeletonChanged();
 }
 
-void SkeletonDocument::setPartZmirrorState(QUuid partId, bool mirrored)
+void Document::setPartZmirrorState(QUuid partId, bool mirrored)
 {
     auto part = partMap.find(partId);
     if (part == partMap.end()) {
@@ -2195,7 +2196,7 @@ void SkeletonDocument::setPartZmirrorState(QUuid partId, bool mirrored)
     emit skeletonChanged();
 }
 
-void SkeletonDocument::setPartDeformThickness(QUuid partId, float thickness)
+void Document::setPartDeformThickness(QUuid partId, float thickness)
 {
     auto part = partMap.find(partId);
     if (part == partMap.end()) {
@@ -2208,7 +2209,7 @@ void SkeletonDocument::setPartDeformThickness(QUuid partId, float thickness)
     emit skeletonChanged();
 }
 
-void SkeletonDocument::setPartDeformWidth(QUuid partId, float width)
+void Document::setPartDeformWidth(QUuid partId, float width)
 {
     auto part = partMap.find(partId);
     if (part == partMap.end()) {
@@ -2221,7 +2222,7 @@ void SkeletonDocument::setPartDeformWidth(QUuid partId, float width)
     emit skeletonChanged();
 }
 
-void SkeletonDocument::setPartMaterialId(QUuid partId, QUuid materialId)
+void Document::setPartMaterialId(QUuid partId, QUuid materialId)
 {
     auto part = partMap.find(partId);
     if (part == partMap.end()) {
@@ -2236,7 +2237,7 @@ void SkeletonDocument::setPartMaterialId(QUuid partId, QUuid materialId)
     emit textureChanged();
 }
 
-void SkeletonDocument::setPartRoundState(QUuid partId, bool rounded)
+void Document::setPartRoundState(QUuid partId, bool rounded)
 {
     auto part = partMap.find(partId);
     if (part == partMap.end()) {
@@ -2251,7 +2252,7 @@ void SkeletonDocument::setPartRoundState(QUuid partId, bool rounded)
     emit skeletonChanged();
 }
 
-void SkeletonDocument::setPartWrapState(QUuid partId, bool wrapped)
+void Document::setPartWrapState(QUuid partId, bool wrapped)
 {
     auto part = partMap.find(partId);
     if (part == partMap.end()) {
@@ -2266,7 +2267,7 @@ void SkeletonDocument::setPartWrapState(QUuid partId, bool wrapped)
     emit skeletonChanged();
 }
 
-void SkeletonDocument::setPartColorState(QUuid partId, bool hasColor, QColor color)
+void Document::setPartColorState(QUuid partId, bool hasColor, QColor color)
 {
     auto part = partMap.find(partId);
     if (part == partMap.end()) {
@@ -2282,17 +2283,17 @@ void SkeletonDocument::setPartColorState(QUuid partId, bool hasColor, QColor col
     emit skeletonChanged();
 }
 
-void SkeletonDocument::saveSnapshot()
+void Document::saveSnapshot()
 {
     if (m_undoItems.size() + 1 > m_maxSnapshot)
         m_undoItems.pop_front();
-    SkeletonHistoryItem item;
+    HistoryItem item;
     toSnapshot(&item.snapshot);
     m_undoItems.push_back(item);
     qDebug() << "Undo items:" << m_undoItems.size();
 }
 
-void SkeletonDocument::undo()
+void Document::undo()
 {
     if (m_undoItems.empty())
         return;
@@ -2302,7 +2303,7 @@ void SkeletonDocument::undo()
     qDebug() << "Undo/Redo items:" << m_undoItems.size() << m_redoItems.size();
 }
 
-void SkeletonDocument::redo()
+void Document::redo()
 {
     if (m_redoItems.empty())
         return;
@@ -2312,19 +2313,19 @@ void SkeletonDocument::redo()
     qDebug() << "Undo/Redo items:" << m_undoItems.size() << m_redoItems.size();
 }
 
-void SkeletonDocument::paste()
+void Document::paste()
 {
     const QClipboard *clipboard = QApplication::clipboard();
     const QMimeData *mimeData = clipboard->mimeData();
     if (mimeData->hasText()) {
         QXmlStreamReader xmlStreamReader(mimeData->text());
-        SkeletonSnapshot snapshot;
+        Snapshot snapshot;
         loadSkeletonFromXmlStream(&snapshot, xmlStreamReader);
         addFromSnapshot(snapshot, true);
     }
 }
 
-bool SkeletonDocument::hasPastableNodesInClipboard() const
+bool Document::hasPastableNodesInClipboard() const
 {
     const QClipboard *clipboard = QApplication::clipboard();
     const QMimeData *mimeData = clipboard->mimeData();
@@ -2335,7 +2336,7 @@ bool SkeletonDocument::hasPastableNodesInClipboard() const
     return false;
 }
 
-bool SkeletonDocument::hasPastableMaterialsInClipboard() const
+bool Document::hasPastableMaterialsInClipboard() const
 {
     const QClipboard *clipboard = QApplication::clipboard();
     const QMimeData *mimeData = clipboard->mimeData();
@@ -2346,7 +2347,7 @@ bool SkeletonDocument::hasPastableMaterialsInClipboard() const
     return false;
 }
 
-bool SkeletonDocument::hasPastablePosesInClipboard() const
+bool Document::hasPastablePosesInClipboard() const
 {
     const QClipboard *clipboard = QApplication::clipboard();
     const QMimeData *mimeData = clipboard->mimeData();
@@ -2357,7 +2358,7 @@ bool SkeletonDocument::hasPastablePosesInClipboard() const
     return false;
 }
 
-bool SkeletonDocument::hasPastableMotionsInClipboard() const
+bool Document::hasPastableMotionsInClipboard() const
 {
     const QClipboard *clipboard = QApplication::clipboard();
     const QMimeData *mimeData = clipboard->mimeData();
@@ -2368,19 +2369,19 @@ bool SkeletonDocument::hasPastableMotionsInClipboard() const
     return false;
 }
 
-bool SkeletonDocument::undoable() const
+bool Document::undoable() const
 {
     return !m_undoItems.empty();
 }
 
-bool SkeletonDocument::redoable() const
+bool Document::redoable() const
 {
     return !m_redoItems.empty();
 }
 
-bool SkeletonDocument::isNodeEditable(QUuid nodeId) const
+bool Document::isNodeEditable(QUuid nodeId) const
 {
-    const SkeletonNode *node = findNode(nodeId);
+    const Node *node = findNode(nodeId);
     if (!node) {
         qDebug() << "Node id not found:" << nodeId;
         return false;
@@ -2388,9 +2389,9 @@ bool SkeletonDocument::isNodeEditable(QUuid nodeId) const
     return !isPartReadonly(node->partId);
 }
 
-bool SkeletonDocument::isEdgeEditable(QUuid edgeId) const
+bool Document::isEdgeEditable(QUuid edgeId) const
 {
-    const SkeletonEdge *edge = findEdge(edgeId);
+    const Edge *edge = findEdge(edgeId);
     if (!edge) {
         qDebug() << "Edge id not found:" << edgeId;
         return false;
@@ -2398,7 +2399,7 @@ bool SkeletonDocument::isEdgeEditable(QUuid edgeId) const
     return !isPartReadonly(edge->partId);
 }
 
-void SkeletonDocument::setXlockState(bool locked)
+void Document::setXlockState(bool locked)
 {
     if (xlocked == locked)
         return;
@@ -2406,7 +2407,7 @@ void SkeletonDocument::setXlockState(bool locked)
     emit xlockStateChanged();
 }
 
-void SkeletonDocument::setYlockState(bool locked)
+void Document::setYlockState(bool locked)
 {
     if (ylocked == locked)
         return;
@@ -2414,7 +2415,7 @@ void SkeletonDocument::setYlockState(bool locked)
     emit ylockStateChanged();
 }
 
-void SkeletonDocument::setZlockState(bool locked)
+void Document::setZlockState(bool locked)
 {
     if (zlocked == locked)
         return;
@@ -2422,7 +2423,7 @@ void SkeletonDocument::setZlockState(bool locked)
     emit zlockStateChanged();
 }
 
-void SkeletonDocument::setRadiusLockState(bool locked)
+void Document::setRadiusLockState(bool locked)
 {
     if (radiusLocked == locked)
         return;
@@ -2430,7 +2431,7 @@ void SkeletonDocument::setRadiusLockState(bool locked)
     emit radiusLockStateChanged();
 }
 
-bool SkeletonDocument::isExportReady() const
+bool Document::isExportReady() const
 {
     if (m_isResultMeshObsolete ||
             m_isTextureObsolete ||
@@ -2445,13 +2446,13 @@ bool SkeletonDocument::isExportReady() const
     return true;
 }
 
-void SkeletonDocument::checkExportReadyState()
+void Document::checkExportReadyState()
 {
     if (isExportReady())
         emit exportReady();
 }
 
-void SkeletonDocument::findAllNeighbors(QUuid nodeId, std::set<QUuid> &neighbors) const
+void Document::findAllNeighbors(QUuid nodeId, std::set<QUuid> &neighbors) const
 {
     const auto &node = findNode(nodeId);
     if (nullptr == node) {
@@ -2477,14 +2478,14 @@ void SkeletonDocument::findAllNeighbors(QUuid nodeId, std::set<QUuid> &neighbors
     }
 }
 
-void SkeletonDocument::setSharedContextWidget(QOpenGLWidget *sharedContextWidget)
+void Document::setSharedContextWidget(QOpenGLWidget *sharedContextWidget)
 {
     m_sharedContextWidget = sharedContextWidget;
 }
 
-void SkeletonDocument::collectComponentDescendantParts(QUuid componentId, std::vector<QUuid> &partIds) const
+void Document::collectComponentDescendantParts(QUuid componentId, std::vector<QUuid> &partIds) const
 {
-    const SkeletonComponent *component = findComponent(componentId);
+    const Component *component = findComponent(componentId);
     if (nullptr == component)
         return;
     
@@ -2498,9 +2499,9 @@ void SkeletonDocument::collectComponentDescendantParts(QUuid componentId, std::v
     }
 }
 
-void SkeletonDocument::collectComponentDescendantComponents(QUuid componentId, std::vector<QUuid> &componentIds) const
+void Document::collectComponentDescendantComponents(QUuid componentId, std::vector<QUuid> &componentIds) const
 {
-    const SkeletonComponent *component = findComponent(componentId);
+    const Component *component = findComponent(componentId);
     if (nullptr == component)
         return;
 
@@ -2514,7 +2515,7 @@ void SkeletonDocument::collectComponentDescendantComponents(QUuid componentId, s
     }
 }
 
-void SkeletonDocument::hideOtherComponents(QUuid componentId)
+void Document::hideOtherComponents(QUuid componentId)
 {
     std::vector<QUuid> partIds;
     collectComponentDescendantParts(componentId, partIds);
@@ -2529,7 +2530,7 @@ void SkeletonDocument::hideOtherComponents(QUuid componentId)
     }
 }
 
-void SkeletonDocument::lockOtherComponents(QUuid componentId)
+void Document::lockOtherComponents(QUuid componentId)
 {
     std::vector<QUuid> partIds;
     collectComponentDescendantParts(componentId, partIds);
@@ -2544,21 +2545,21 @@ void SkeletonDocument::lockOtherComponents(QUuid componentId)
     }
 }
 
-void SkeletonDocument::hideAllComponents()
+void Document::hideAllComponents()
 {
     for (const auto &part: partMap) {
         setPartVisibleState(part.first, false);
     }
 }
 
-void SkeletonDocument::showAllComponents()
+void Document::showAllComponents()
 {
     for (const auto &part: partMap) {
         setPartVisibleState(part.first, true);
     }
 }
 
-void SkeletonDocument::collapseAllComponents()
+void Document::collapseAllComponents()
 {
     for (const auto &component: componentMap) {
         if (!component.second.linkToPartId.isNull())
@@ -2567,7 +2568,7 @@ void SkeletonDocument::collapseAllComponents()
     }
 }
 
-void SkeletonDocument::expandAllComponents()
+void Document::expandAllComponents()
 {
     for (const auto &component: componentMap) {
         if (!component.second.linkToPartId.isNull())
@@ -2576,21 +2577,21 @@ void SkeletonDocument::expandAllComponents()
     }
 }
 
-void SkeletonDocument::lockAllComponents()
+void Document::lockAllComponents()
 {
     for (const auto &part: partMap) {
         setPartLockState(part.first, true);
     }
 }
 
-void SkeletonDocument::unlockAllComponents()
+void Document::unlockAllComponents()
 {
     for (const auto &part: partMap) {
         setPartLockState(part.first, false);
     }
 }
 
-void SkeletonDocument::hideDescendantComponents(QUuid componentId)
+void Document::hideDescendantComponents(QUuid componentId)
 {
     std::vector<QUuid> partIds;
     collectComponentDescendantParts(componentId, partIds);
@@ -2599,7 +2600,7 @@ void SkeletonDocument::hideDescendantComponents(QUuid componentId)
     }
 }
 
-void SkeletonDocument::showDescendantComponents(QUuid componentId)
+void Document::showDescendantComponents(QUuid componentId)
 {
     std::vector<QUuid> partIds;
     collectComponentDescendantParts(componentId, partIds);
@@ -2608,7 +2609,7 @@ void SkeletonDocument::showDescendantComponents(QUuid componentId)
     }
 }
 
-void SkeletonDocument::lockDescendantComponents(QUuid componentId)
+void Document::lockDescendantComponents(QUuid componentId)
 {
     std::vector<QUuid> partIds;
     collectComponentDescendantParts(componentId, partIds);
@@ -2617,7 +2618,7 @@ void SkeletonDocument::lockDescendantComponents(QUuid componentId)
     }
 }
 
-void SkeletonDocument::unlockDescendantComponents(QUuid componentId)
+void Document::unlockDescendantComponents(QUuid componentId)
 {
     std::vector<QUuid> partIds;
     collectComponentDescendantParts(componentId, partIds);
@@ -2626,7 +2627,7 @@ void SkeletonDocument::unlockDescendantComponents(QUuid componentId)
     }
 }
 
-void SkeletonDocument::generateRig()
+void Document::generateRig()
 {
     if (nullptr != m_rigGenerator) {
         m_isRigObsolete = true;
@@ -2646,13 +2647,13 @@ void SkeletonDocument::generateRig()
     m_rigGenerator = new RigGenerator(*m_currentMeshResultContext);
     m_rigGenerator->moveToThread(thread);
     connect(thread, &QThread::started, m_rigGenerator, &RigGenerator::process);
-    connect(m_rigGenerator, &RigGenerator::finished, this, &SkeletonDocument::rigReady);
+    connect(m_rigGenerator, &RigGenerator::finished, this, &Document::rigReady);
     connect(m_rigGenerator, &RigGenerator::finished, thread, &QThread::quit);
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
     thread->start();
 }
 
-void SkeletonDocument::rigReady()
+void Document::rigReady()
 {
     m_currentRigSucceed = m_rigGenerator->isSucceed();
 
@@ -2671,7 +2672,7 @@ void SkeletonDocument::rigReady()
     delete m_riggedResultContext;
     m_riggedResultContext = m_rigGenerator->takeMeshResultContext();
     if (nullptr == m_riggedResultContext)
-        m_riggedResultContext = new MeshResultContext;
+        m_riggedResultContext = new Outcome;
     
     delete m_rigGenerator;
     m_rigGenerator = nullptr;
@@ -2687,17 +2688,17 @@ void SkeletonDocument::rigReady()
     }
 }
 
-const std::vector<AutoRiggerBone> *SkeletonDocument::resultRigBones() const
+const std::vector<AutoRiggerBone> *Document::resultRigBones() const
 {
     return m_resultRigBones;
 }
 
-const std::map<int, AutoRiggerVertexWeights> *SkeletonDocument::resultRigWeights() const
+const std::map<int, AutoRiggerVertexWeights> *Document::resultRigWeights() const
 {
     return m_resultRigWeights;
 }
 
-void SkeletonDocument::removeRigResults()
+void Document::removeRigResults()
 {
     delete m_resultRigBones;
     m_resultRigBones = nullptr;
@@ -2716,7 +2717,7 @@ void SkeletonDocument::removeRigResults()
     emit resultRigChanged();
 }
 
-void SkeletonDocument::setRigType(RigType toRigType)
+void Document::setRigType(RigType toRigType)
 {
     if (rigType == toRigType)
         return;
@@ -2731,27 +2732,27 @@ void SkeletonDocument::setRigType(RigType toRigType)
     emit rigChanged();
 }
 
-const std::vector<QString> &SkeletonDocument::resultRigMissingMarkNames() const
+const std::vector<QString> &Document::resultRigMissingMarkNames() const
 {
     return m_resultRigMissingMarkNames;
 }
 
-const std::vector<QString> &SkeletonDocument::resultRigErrorMarkNames() const
+const std::vector<QString> &Document::resultRigErrorMarkNames() const
 {
     return m_resultRigErrorMarkNames;
 }
 
-const MeshResultContext &SkeletonDocument::currentRiggedResultContext() const
+const Outcome &Document::currentRiggedResultContext() const
 {
     return *m_riggedResultContext;
 }
 
-bool SkeletonDocument::currentRigSucceed() const
+bool Document::currentRigSucceed() const
 {
     return m_currentRigSucceed;
 }
 
-void SkeletonDocument::generateMotions()
+void Document::generateMotions()
 {
     if (nullptr != m_motionsGenerator) {
         return;
@@ -2789,13 +2790,13 @@ void SkeletonDocument::generateMotions()
     QThread *thread = new QThread;
     m_motionsGenerator->moveToThread(thread);
     connect(thread, &QThread::started, m_motionsGenerator, &MotionsGenerator::process);
-    connect(m_motionsGenerator, &MotionsGenerator::finished, this, &SkeletonDocument::motionsReady);
+    connect(m_motionsGenerator, &MotionsGenerator::finished, this, &Document::motionsReady);
     connect(m_motionsGenerator, &MotionsGenerator::finished, thread, &QThread::quit);
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
     thread->start();
 }
 
-void SkeletonDocument::motionsReady()
+void Document::motionsReady()
 {
     for (auto &motionId: m_motionsGenerator->generatedMotionIds()) {
         auto motion = motionMap.find(motionId);
@@ -2816,7 +2817,7 @@ void SkeletonDocument::motionsReady()
     generateMotions();
 }
 
-void SkeletonDocument::generatePosePreviews()
+void Document::generatePosePreviews()
 {
     if (nullptr != m_posePreviewsGenerator) {
         return;
@@ -2850,13 +2851,13 @@ void SkeletonDocument::generatePosePreviews()
     QThread *thread = new QThread;
     m_posePreviewsGenerator->moveToThread(thread);
     connect(thread, &QThread::started, m_posePreviewsGenerator, &PosePreviewsGenerator::process);
-    connect(m_posePreviewsGenerator, &PosePreviewsGenerator::finished, this, &SkeletonDocument::posePreviewsReady);
+    connect(m_posePreviewsGenerator, &PosePreviewsGenerator::finished, this, &Document::posePreviewsReady);
     connect(m_posePreviewsGenerator, &PosePreviewsGenerator::finished, thread, &QThread::quit);
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
     thread->start();
 }
 
-void SkeletonDocument::posePreviewsReady()
+void Document::posePreviewsReady()
 {
     for (const auto &poseId: m_posePreviewsGenerator->generatedPreviewPoseIds()) {
         auto pose = poseMap.find(poseId);
@@ -2875,7 +2876,7 @@ void SkeletonDocument::posePreviewsReady()
     generatePosePreviews();
 }
 
-void SkeletonDocument::addMaterial(QString name, std::vector<SkeletonMaterialLayer> layers)
+void Document::addMaterial(QString name, std::vector<MaterialLayer> layers)
 {
     QUuid newMaterialId = QUuid::createUuid();
     auto &material = materialMap[newMaterialId];
@@ -2892,7 +2893,7 @@ void SkeletonDocument::addMaterial(QString name, std::vector<SkeletonMaterialLay
     emit optionsChanged();
 }
 
-void SkeletonDocument::removeMaterial(QUuid materialId)
+void Document::removeMaterial(QUuid materialId)
 {
     auto findMaterialResult = materialMap.find(materialId);
     if (findMaterialResult == materialMap.end()) {
@@ -2907,7 +2908,7 @@ void SkeletonDocument::removeMaterial(QUuid materialId)
     emit optionsChanged();
 }
 
-void SkeletonDocument::setMaterialLayers(QUuid materialId, std::vector<SkeletonMaterialLayer> layers)
+void Document::setMaterialLayers(QUuid materialId, std::vector<MaterialLayer> layers)
 {
     auto findMaterialResult = materialMap.find(materialId);
     if (findMaterialResult == materialMap.end()) {
@@ -2921,7 +2922,7 @@ void SkeletonDocument::setMaterialLayers(QUuid materialId, std::vector<SkeletonM
     emit optionsChanged();
 }
 
-void SkeletonDocument::renameMaterial(QUuid materialId, QString name)
+void Document::renameMaterial(QUuid materialId, QString name)
 {
     auto findMaterialResult = materialMap.find(materialId);
     if (findMaterialResult == materialMap.end()) {
@@ -2936,7 +2937,7 @@ void SkeletonDocument::renameMaterial(QUuid materialId, QString name)
     emit optionsChanged();
 }
 
-void SkeletonDocument::generateMaterialPreviews()
+void Document::generateMaterialPreviews()
 {
     if (nullptr != m_materialPreviewsGenerator) {
         return;
@@ -2963,13 +2964,13 @@ void SkeletonDocument::generateMaterialPreviews()
     
     m_materialPreviewsGenerator->moveToThread(thread);
     connect(thread, &QThread::started, m_materialPreviewsGenerator, &MaterialPreviewsGenerator::process);
-    connect(m_materialPreviewsGenerator, &MaterialPreviewsGenerator::finished, this, &SkeletonDocument::materialPreviewsReady);
+    connect(m_materialPreviewsGenerator, &MaterialPreviewsGenerator::finished, this, &Document::materialPreviewsReady);
     connect(m_materialPreviewsGenerator, &MaterialPreviewsGenerator::finished, thread, &QThread::quit);
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
     thread->start();
 }
 
-void SkeletonDocument::materialPreviewsReady()
+void Document::materialPreviewsReady()
 {
     for (const auto &materialId: m_materialPreviewsGenerator->generatedPreviewMaterialIds()) {
         auto material = materialMap.find(materialId);
@@ -2988,7 +2989,7 @@ void SkeletonDocument::materialPreviewsReady()
     generateMaterialPreviews();
 }
 
-bool SkeletonDocument::isMeshGenerating() const
+bool Document::isMeshGenerating() const
 {
     return nullptr != m_meshGenerator;
 }

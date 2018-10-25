@@ -1,7 +1,7 @@
 #include <QVBoxLayout>
 #include "materialwidget.h"
 
-MaterialWidget::MaterialWidget(const SkeletonDocument *document, QUuid materialId) :
+MaterialWidget::MaterialWidget(const Document *document, QUuid materialId) :
     m_materialId(materialId),
     m_document(document)
 {
@@ -31,8 +31,8 @@ MaterialWidget::MaterialWidget(const SkeletonDocument *document, QUuid materialI
 
     setFixedSize(Theme::materialPreviewImageSize, MaterialWidget::preferredHeight());
 
-    connect(document, &SkeletonDocument::materialNameChanged, this, &MaterialWidget::updateName);
-    connect(document, &SkeletonDocument::materialPreviewChanged, this, &MaterialWidget::updatePreview);
+    connect(document, &Document::materialNameChanged, this, &MaterialWidget::updateName);
+    connect(document, &Document::materialPreviewChanged, this, &MaterialWidget::updatePreview);
 }
 
 void MaterialWidget::setCornerButtonVisible(bool visible)
@@ -68,7 +68,7 @@ void MaterialWidget::reload()
 
 void MaterialWidget::updatePreview()
 {
-    const SkeletonMaterial *material = m_document->findMaterial(m_materialId);
+    const Material *material = m_document->findMaterial(m_materialId);
     if (!material) {
         qDebug() << "Material not found:" << m_materialId;
         return;
@@ -79,7 +79,7 @@ void MaterialWidget::updatePreview()
 
 void MaterialWidget::updateName()
 {
-    const SkeletonMaterial *material = m_document->findMaterial(m_materialId);
+    const Material *material = m_document->findMaterial(m_materialId);
     if (!material) {
         qDebug() << "Material not found:" << m_materialId;
         return;

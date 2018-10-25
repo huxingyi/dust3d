@@ -1,21 +1,15 @@
-#ifndef MATERIAL_H
-#define MATERIAL_H
+#ifndef DUST3D_MATERIAL_H
+#define DUST3D_MATERIAL_H
 #include <QImage>
 #include <QUuid>
 #include "texturetype.h"
-#include "skeletonsnapshot.h"
-
-struct Material
-{
-    QColor color;
-    QUuid materialId;
-};
+#include "snapshot.h"
 
 struct MaterialTextures
 {
     const QImage *textureImages[(int)TextureType::Count - 1] = {nullptr};
 };
 
-void initializeMaterialTexturesFromSnapshot(const SkeletonSnapshot &snapshot, const QUuid &materialId, MaterialTextures &materialTextures);
+void initializeMaterialTexturesFromSnapshot(const Snapshot &snapshot, const QUuid &materialId, MaterialTextures &materialTextures);
 
 #endif

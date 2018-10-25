@@ -1,5 +1,5 @@
-#ifndef SHORTCUTS_H
-#define SHORTCUTS_H
+#ifndef DUST3D_SHORTCUTS_H
+#define DUST3D_SHORTCUTS_H
 #include <QMainWindow>
 #include "skeletongraphicswidget.h"
 

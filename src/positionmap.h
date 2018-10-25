@@ -1,5 +1,5 @@
-#ifndef POSITION_MAP_H
-#define POSITION_MAP_H
+#ifndef DUST3D_POSITION_MAP_H
+#define DUST3D_POSITION_MAP_H
 #include <map>
 
 struct PositionMapKey

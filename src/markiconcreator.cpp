@@ -3,15 +3,15 @@
 #include "markiconcreator.h"
 #include "theme.h"
 
-std::map<SkeletonBoneMark, QIcon> MarkIconCreator::m_iconMap;
+std::map<BoneMark, QIcon> MarkIconCreator::m_iconMap;
 int MarkIconCreator::m_iconSize = 40;
 
-QIcon MarkIconCreator::createIcon(SkeletonBoneMark boneMark)
+QIcon MarkIconCreator::createIcon(BoneMark boneMark)
 {
     if (m_iconMap.find(boneMark) == m_iconMap.end()) {
         QPixmap pixmap(MarkIconCreator::m_iconSize, MarkIconCreator::m_iconSize);
         pixmap.fill(Qt::transparent);
-        QColor color = SkeletonBoneMarkToColor(boneMark);
+        QColor color = BoneMarkToColor(boneMark);
         QPainter painter(&pixmap);
         painter.setBrush(QBrush(color));
         painter.setPen(Qt::NoPen);

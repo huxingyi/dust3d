@@ -1,9 +1,9 @@
-#ifndef POSE_MESH_CREATOR_H
-#define POSE_MESH_CREATOR_H
+#ifndef DUST3D_POSE_MESH_CREATOR_H
+#define DUST3D_POSE_MESH_CREATOR_H
 #include <QObject>
 #include "meshloader.h"
 #include "jointnodetree.h"
-#include "meshresultcontext.h"
+#include "outcome.h"
 
 class PoseMeshCreator : public QObject
 {
@@ -12,7 +12,7 @@ signals:
     void finished();
 public:
     PoseMeshCreator(const std::vector<JointNode> &resultNodes,
-        const MeshResultContext &meshResultContext,
+        const Outcome &outcome,
         const std::map<int, AutoRiggerVertexWeights> &resultWeights);
     ~PoseMeshCreator();
     void createMesh();
@@ -21,7 +21,7 @@ public slots:
     void process();
 private:
     std::vector<JointNode> m_resultNodes;
-    MeshResultContext m_meshResultContext;
+    Outcome m_outcome;
     std::map<int, AutoRiggerVertexWeights> m_resultWeights;
     MeshLoader *m_resultMesh = nullptr;
 };

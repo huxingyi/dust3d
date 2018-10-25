@@ -1,5 +1,5 @@
-#ifndef SKELETON_GRAPHICS_VIEW_H
-#define SKELETON_GRAPHICS_VIEW_H
+#ifndef DUST3D_SKELETON_GRAPHICS_VIEW_H
+#define DUST3D_SKELETON_GRAPHICS_VIEW_H
 #include <map>
 #include <QMouseEvent>
 #include <QKeyEvent>
@@ -12,10 +12,10 @@
 #include <cmath>
 #include <set>
 #include <QTimer>
-#include "skeletondocument.h"
+#include "document.h"
 #include "turnaroundloader.h"
 #include "theme.h"
-#include "dust3dutil.h"
+#include "util.h"
 #include "skeletonikmover.h"
 #include "modelwidget.h"
 
@@ -345,7 +345,7 @@ signals:
     void scaleNodeByAddRadius(QUuid nodeId, float amount);
     void moveNodeBy(QUuid nodeId, float x, float y, float z);
     void removeNode(QUuid nodeId);
-    void setEditMode(SkeletonDocumentEditMode mode);
+    void setEditMode(DocumentEditMode mode);
     void removeEdge(QUuid edgeId);
     void addEdge(QUuid fromNodeId, QUuid toNodeId);
     void cursorChanged();
@@ -374,13 +374,13 @@ signals:
     void setYlockState(bool locked);
     void setZlockState(bool locked);
     void setNodeOrigin(QUuid nodeId, float x, float y, float z);
-    void setNodeBoneMark(QUuid nodeId, SkeletonBoneMark mark);
+    void setNodeBoneMark(QUuid nodeId, BoneMark mark);
     void zoomRenderedModelBy(float delta);
     void switchNodeXZ(QUuid nodeId);
     void enableAllPositionRelatedLocks();
     void disableAllPositionRelatedLocks();
 public:
-    SkeletonGraphicsWidget(const SkeletonDocument *document);
+    SkeletonGraphicsWidget(const Document *document);
     std::map<QUuid, std::pair<SkeletonGraphicsNodeItem *, SkeletonGraphicsNodeItem *>> nodeItemMap;
     std::map<QUuid, std::pair<SkeletonGraphicsEdgeItem *, SkeletonGraphicsEdgeItem *>> edgeItemMap;
     bool mouseMove(QMouseEvent *event);
@@ -461,7 +461,7 @@ public slots:
     void disableBackgroundBlur();
     void ikMove(QUuid endEffectorId, QVector3D target);
     void ikMoveReady();
-    void setSelectedNodesBoneMark(SkeletonBoneMark boneMark);
+    void setSelectedNodesBoneMark(BoneMark boneMark);
     void timeToRemoveDeferredNodesAndEdges();
     void switchSelectedXZ();
     void shortcutDelete();
@@ -522,7 +522,7 @@ private:
     void rotateItems(const std::set<SkeletonGraphicsNodeItem *> &nodeItems, int degree, QVector2D center);
     void rotateAllSideProfile(int degree);
 private: //need initalize
-    const SkeletonDocument *m_document;
+    const Document *m_document;
     QGraphicsPixmapItem *m_backgroundItem;
     bool m_turnaroundChanged;
     TurnaroundLoader *m_turnaroundLoader;
@@ -551,7 +551,7 @@ private: //need initalize
     bool m_eventForwardingToModelWidget;
     ModelWidget *m_modelWidget;
     bool m_inTempDragMode;
-    SkeletonDocumentEditMode m_modeBeforeEnterTempDragMode;
+    DocumentEditMode m_modeBeforeEnterTempDragMode;
 private:
     QVector3D m_ikMoveTarget;
     QUuid m_ikMoveEndEffectorId;

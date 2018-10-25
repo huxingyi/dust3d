@@ -1,7 +1,7 @@
-#ifndef POSE_PREVIEW_MANAGER_H
-#define POSE_PREVIEW_MANAGER_H
+#ifndef DUST3D_POSE_PREVIEW_MANAGER_H
+#define DUST3D_POSE_PREVIEW_MANAGER_H
 #include <QWidget>
-#include "skeletondocument.h"
+#include "document.h"
 #include "poser.h"
 #include "posemeshcreator.h"
 #include "meshloader.h"
@@ -14,7 +14,7 @@ public:
     ~PosePreviewManager();
     bool isRendering();
     bool postUpdate(const Poser &poser,
-        const MeshResultContext &meshResultContext,
+        const Outcome &outcome,
         const std::map<int, AutoRiggerVertexWeights> &resultWeights);
     MeshLoader *takeResultPreviewMesh();
 private slots:

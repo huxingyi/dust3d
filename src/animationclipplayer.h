@@ -1,5 +1,5 @@
-#ifndef ANIMATION_PLAYER_H
-#define ANIMATION_PLAYER_H
+#ifndef DUST3D_ANIMATION_PLAYER_H
+#define DUST3D_ANIMATION_PLAYER_H
 #include <QObject>
 #include <QTimer>
 #include <QTime>

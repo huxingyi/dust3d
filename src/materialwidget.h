@@ -1,9 +1,9 @@
-#ifndef MATERIAL_WIDGET_H
-#define MATERIAL_WIDGET_H
+#ifndef DUST3D_MATERIAL_WIDGET_H
+#define DUST3D_MATERIAL_WIDGET_H
 #include <QFrame>
 #include <QLabel>
 #include <QIcon>
-#include "skeletondocument.h"
+#include "document.h"
 #include "modelwidget.h"
 
 class MaterialWidget : public QFrame
@@ -13,7 +13,7 @@ signals:
     void modifyMaterial(QUuid materialId);
     void cornerButtonClicked(QUuid materialId);
 public:
-    MaterialWidget(const SkeletonDocument *document, QUuid materialId);
+    MaterialWidget(const Document *document, QUuid materialId);
     static int preferredHeight();
     ModelWidget *previewWidget();
 protected:
@@ -27,7 +27,7 @@ public slots:
     void setCornerButtonVisible(bool visible);
 private:
     QUuid m_materialId;
-    const SkeletonDocument *m_document = nullptr;
+    const Document *m_document = nullptr;
     ModelWidget *m_previewWidget = nullptr;
     QLabel *m_nameLabel = nullptr;
     QPushButton *m_cornerButton = nullptr;

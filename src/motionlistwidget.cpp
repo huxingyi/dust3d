@@ -3,10 +3,10 @@
 #include <QXmlStreamWriter>
 #include <QClipboard>
 #include <QApplication>
-#include "skeletonxml.h"
+#include "snapshotxml.h"
 #include "motionlistwidget.h"
 
-MotionListWidget::MotionListWidget(const SkeletonDocument *document, QWidget *parent) :
+MotionListWidget::MotionListWidget(const Document *document, QWidget *parent) :
     QTreeWidget(parent),
     m_document(document)
 {
@@ -27,10 +27,10 @@ MotionListWidget::MotionListWidget(const SkeletonDocument *document, QWidget *pa
     
     setContentsMargins(0, 0, 0, 0);
     
-    connect(document, &SkeletonDocument::motionListChanged, this, &MotionListWidget::reload);
-    connect(document, &SkeletonDocument::cleanup, this, &MotionListWidget::removeAllContent);
+    connect(document, &Document::motionListChanged, this, &MotionListWidget::reload);
+    connect(document, &Document::cleanup, this, &MotionListWidget::removeAllContent);
     
-    connect(this, &MotionListWidget::removeMotion, document, &SkeletonDocument::removeMotion);
+    connect(this, &MotionListWidget::removeMotion, document, &Document::removeMotion);
     
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, &QTreeWidget::customContextMenuRequested, this, &MotionListWidget::showContextMenu);
@@ -190,7 +190,7 @@ void MotionListWidget::showContextMenu(const QPoint &pos)
     
     QAction pasteAction(tr("Paste"), this);
     if (m_document->hasPastableMotionsInClipboard()) {
-        connect(&pasteAction, &QAction::triggered, m_document, &SkeletonDocument::paste);
+        connect(&pasteAction, &QAction::triggered, m_document, &Document::paste);
         contextMenu.addAction(&pasteAction);
     }
     
@@ -287,8 +287,8 @@ void MotionListWidget::copy()
     
     std::set<QUuid> emptySet;
     
-    SkeletonSnapshot snapshot;
-    m_document->toSnapshot(&snapshot, emptySet, SkeletonDocumentToSnapshotFor::Motions,
+    Snapshot snapshot;
+    m_document->toSnapshot(&snapshot, emptySet, DocumentToSnapshotFor::Motions,
         emptySet, limitMotionIds);
     QString snapshotXml;
     QXmlStreamWriter xmlStreamWriter(&snapshotXml);

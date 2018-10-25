@@ -1,9 +1,9 @@
-#ifndef RIG_GENERATOR_H
-#define RIG_GENERATOR_H
+#ifndef DUST3D_RIG_GENERATOR_H
+#define DUST3D_RIG_GENERATOR_H
 #include <QObject>
 #include <QThread>
 #include <QDebug>
-#include "meshresultcontext.h"
+#include "outcome.h"
 #include "meshloader.h"
 #include "autorigger.h"
 
@@ -11,21 +11,21 @@ class RigGenerator : public QObject
 {
     Q_OBJECT
 public:
-    RigGenerator(const MeshResultContext &meshResultContext);
+    RigGenerator(const Outcome &outcome);
     ~RigGenerator();
     MeshLoader *takeResultMesh();
     std::vector<AutoRiggerBone> *takeResultBones();
     std::map<int, AutoRiggerVertexWeights> *takeResultWeights();
     const std::vector<QString> &missingMarkNames();
     const std::vector<QString> &errorMarkNames();
-    MeshResultContext *takeMeshResultContext();
+    Outcome *takeMeshResultContext();
     bool isSucceed();
 signals:
     void finished();
 public slots:
     void process();
 private:
-    MeshResultContext *m_meshResultContext = nullptr;
+    Outcome *m_outcome = nullptr;
     MeshLoader *m_resultMesh = nullptr;
     AutoRigger *m_autoRigger = nullptr;
     std::vector<AutoRiggerBone> *m_resultBones = nullptr;

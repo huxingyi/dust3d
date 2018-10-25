@@ -4,7 +4,7 @@
 #include <QGuiApplication>
 #include <math.h>
 #include "modelwidget.h"
-#include "dust3dutil.h"
+#include "util.h"
 
 // Modifed from http://doc.qt.io/qt-5/qtopengl-hellogl2-glwidget-cpp.html
 

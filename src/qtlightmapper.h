@@ -1,3 +1,6 @@
+#ifndef DUST3D_QT_LIGHT_MAPPER_H
+#define DUST3D_QT_LIGHT_MAPPER_H
+
 // https://github.com/huxingyi/dust3d/blob/master/src/qtlightmapper.h
 // This qtlightmapper.h is modified from Andreas Mantler' lightmapper to better work with Qt's OpenGL, especially for QOpenGLFunctions.
 // The low version shader is modified from ppiecuch's answer: https://github.com/ands/lightmapper/issues/9
@@ -17,9 +20,6 @@
 ***********************************************************/
 #include <QtGlobal>
 #if QT_VERSION >= QT_VERSION_CHECK(5, 6, 0)
-
-#ifndef QT_LIGHTMAPPER_H
-#define QT_LIGHTMAPPER_H
 
 #ifdef __cplusplus
 #define LM_DEFAULT_VALUE(value) = value
@@ -2091,3 +2091,4 @@ void QtLightMapper::destroyScene(scene_t *scene)
 #endif // LIGHTMAPPER_IMPLEMENTATION
 
 #endif
+

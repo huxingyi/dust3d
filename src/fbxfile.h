@@ -1,17 +1,17 @@
-#ifndef FBX_FILE_H
-#define FBX_FILE_H
+#ifndef DUST3D_FBX_FILE_H
+#define DUST3D_FBX_FILE_H
 #include <fbxdocument.h>
 #include <map>
 #include <QString>
 #include <QMatrix4x4>
-#include "meshresultcontext.h"
-#include "skeletondocument.h"
+#include "outcome.h"
+#include "document.h"
 
 class FbxFileWriter : public QObject
 {
     Q_OBJECT
 public:
-    FbxFileWriter(MeshResultContext &resultContext,
+    FbxFileWriter(Outcome &outcome,
         const std::vector<AutoRiggerBone> *resultRigBones,
         const std::map<int, AutoRiggerVertexWeights> *resultRigWeights,
         const QString &filename);

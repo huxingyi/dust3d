@@ -1,9 +1,9 @@
-#ifndef MOTION_TIMELINE_WIDGET_H
-#define MOTION_TIMELINE_WIDGET_H
+#ifndef DUST3D_MOTION_TIMELINE_WIDGET_H
+#define DUST3D_MOTION_TIMELINE_WIDGET_H
 #include <QListWidget>
 #include <QUuid>
 #include <QMouseEvent>
-#include "skeletondocument.h"
+#include "document.h"
 #include "interpolationtype.h"
 
 class MotionTimelineWidget : public QListWidget
@@ -12,11 +12,11 @@ class MotionTimelineWidget : public QListWidget
 signals:
     void clipsChanged();
 public:
-    MotionTimelineWidget(const SkeletonDocument *document, QWidget *parent=nullptr);
-    const std::vector<SkeletonMotionClip> &clips();
+    MotionTimelineWidget(const Document *document, QWidget *parent=nullptr);
+    const std::vector<MotionClip> &clips();
     
 public slots:
-    void setClips(std::vector<SkeletonMotionClip> clips);
+    void setClips(std::vector<MotionClip> clips);
     void addPose(QUuid poseId);
     void addMotion(QUuid motionId);
     void reload();
@@ -32,10 +32,10 @@ protected:
     QSize sizeHint() const override;
     
 private:
-    void addClipAfterCurrentIndex(const SkeletonMotionClip &clip);
+    void addClipAfterCurrentIndex(const MotionClip &clip);
     
-    std::vector<SkeletonMotionClip> m_clips;
-    const SkeletonDocument *m_document = nullptr;
+    std::vector<MotionClip> m_clips;
+    const Document *m_document = nullptr;
     int m_currentSelectedIndex = -1;
 };
 

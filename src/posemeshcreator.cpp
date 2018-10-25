@@ -3,10 +3,10 @@
 #include "skinnedmeshcreator.h"
 
 PoseMeshCreator::PoseMeshCreator(const std::vector<JointNode> &resultNodes,
-        const MeshResultContext &meshResultContext,
+        const Outcome &outcome,
         const std::map<int, AutoRiggerVertexWeights> &resultWeights) :
     m_resultNodes(resultNodes),
-    m_meshResultContext(meshResultContext),
+    m_outcome(outcome),
     m_resultWeights(resultWeights)
 {
 }
@@ -25,7 +25,7 @@ MeshLoader *PoseMeshCreator::takeResultMesh()
 
 void PoseMeshCreator::createMesh()
 {
-    SkinnedMeshCreator skinnedMeshCreator(m_meshResultContext, m_resultWeights);
+    SkinnedMeshCreator skinnedMeshCreator(m_outcome, m_resultWeights);
     
     std::vector<QMatrix4x4> matricies;
     matricies.resize(m_resultNodes.size());

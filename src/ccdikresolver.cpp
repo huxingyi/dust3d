@@ -3,7 +3,7 @@
 #include <QDebug>
 #include <cmath>
 #include "ccdikresolver.h"
-#include "dust3dutil.h"
+#include "util.h"
 
 CCDIKSolver::CCDIKSolver() :
     m_maxRound(4),

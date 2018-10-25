@@ -1,9 +1,9 @@
 #include <QFormLayout>
 #include <QCheckBox>
 #include "advancesettingwidget.h"
-#include "dust3dutil.h"
+#include "util.h"
 
-AdvanceSettingWidget::AdvanceSettingWidget(const SkeletonDocument *document, QWidget *parent) :
+AdvanceSettingWidget::AdvanceSettingWidget(const Document *document, QWidget *parent) :
     QDialog(parent),
     m_document(document)
 {
@@ -18,5 +18,5 @@ AdvanceSettingWidget::AdvanceSettingWidget(const SkeletonDocument *document, QWi
     
     setLayout(formLayout);
     
-    connect(this, &AdvanceSettingWidget::enableWeld, document, &SkeletonDocument::enableWeld);
+    connect(this, &AdvanceSettingWidget::enableWeld, document, &Document::enableWeld);
 }

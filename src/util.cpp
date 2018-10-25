@@ -1,5 +1,5 @@
 #include <cmath>
-#include "dust3dutil.h"
+#include "util.h"
 #include "version.h"
 
 QString valueOfKeyInMapOrEmpty(const std::map<QString, QString> &map, const QString &key)

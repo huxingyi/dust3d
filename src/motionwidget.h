@@ -1,9 +1,9 @@
-#ifndef MOTION_WIDGET_H
-#define MOTION_WIDGET_H
+#ifndef DUST3D_MOTION_WIDGET_H
+#define DUST3D_MOTION_WIDGET_H
 #include <QFrame>
 #include <QLabel>
 #include <QIcon>
-#include "skeletondocument.h"
+#include "document.h"
 #include "modelwidget.h"
 
 class MotionWidget : public QFrame
@@ -13,7 +13,7 @@ signals:
     void modifyMotion(QUuid motionId);
     void cornerButtonClicked(QUuid motionId);
 public:
-    MotionWidget(const SkeletonDocument *document, QUuid motionId);
+    MotionWidget(const Document *document, QUuid motionId);
     static int preferredHeight();
     ModelWidget *previewWidget();
 protected:
@@ -27,7 +27,7 @@ public slots:
     void setCornerButtonVisible(bool visible);
 private:
     QUuid m_motionId;
-    const SkeletonDocument *m_document = nullptr;
+    const Document *m_document = nullptr;
     ModelWidget *m_previewWidget = nullptr;
     QLabel *m_nameLabel = nullptr;
     QPushButton *m_cornerButton = nullptr;

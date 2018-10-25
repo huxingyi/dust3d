@@ -14,7 +14,7 @@
 #include "floatnumberwidget.h"
 #include "version.h"
 #include "imageforever.h"
-#include "dust3dutil.h"
+#include "util.h"
 
 QPushButton *MaterialEditWidget::createMapButton()
 {
@@ -38,7 +38,7 @@ QImage *MaterialEditWidget::pickImage()
     return image;
 }
 
-MaterialEditWidget::MaterialEditWidget(const SkeletonDocument *document, QWidget *parent) :
+MaterialEditWidget::MaterialEditWidget(const Document *document, QWidget *parent) :
     QDialog(parent),
     m_document(document)
 {
@@ -60,7 +60,7 @@ MaterialEditWidget::MaterialEditWidget(const SkeletonDocument *document, QWidget
     for (int i = 1; i < (int)TextureType::Count; i++) {
         QVBoxLayout *textureManageLayout = new QVBoxLayout;
     
-        SkeletonMaterialMap item;
+        MaterialMap item;
         item.forWhat = (TextureType)i;
         m_layers[0].maps.push_back(item);
         
@@ -141,9 +141,9 @@ MaterialEditWidget::MaterialEditWidget(const SkeletonDocument *document, QWidget
         m_unsaved = true;
         updateTitle();
     });
-    connect(this, &MaterialEditWidget::addMaterial, document, &SkeletonDocument::addMaterial);
-    connect(this, &MaterialEditWidget::renameMaterial, document, &SkeletonDocument::renameMaterial);
-    connect(this, &MaterialEditWidget::setMaterialLayers, document, &SkeletonDocument::setMaterialLayers);
+    connect(this, &MaterialEditWidget::addMaterial, document, &Document::addMaterial);
+    connect(this, &MaterialEditWidget::renameMaterial, document, &Document::renameMaterial);
+    connect(this, &MaterialEditWidget::setMaterialLayers, document, &Document::setMaterialLayers);
 
     updatePreview();
     updateTitle();
@@ -253,7 +253,7 @@ void MaterialEditWidget::updateTitle()
         setWindowTitle(unifiedWindowTitle(tr("New") + (m_unsaved ? "*" : "")));
         return;
     }
-    const SkeletonMaterial *material = m_document->findMaterial(m_materialId);
+    const Material *material = m_document->findMaterial(m_materialId);
     if (nullptr == material) {
         qDebug() << "Find material failed:" << m_materialId;
         return;
@@ -267,7 +267,7 @@ void MaterialEditWidget::setEditMaterialName(QString name)
     updateTitle();
 }
 
-void MaterialEditWidget::setEditMaterialLayers(std::vector<SkeletonMaterialLayer> layers)
+void MaterialEditWidget::setEditMaterialLayers(std::vector<MaterialLayer> layers)
 {
     for (int i = 1; i < (int)TextureType::Count; i++) {
         m_layers[0].maps[i - 1].imageId = QUuid();

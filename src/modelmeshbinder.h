@@ -1,5 +1,5 @@
-#ifndef MODEL_MESH_BINDER_H
-#define MODEL_MESH_BINDER_H
+#ifndef DUST3D_MODEL_MESH_BINDER_H
+#define DUST3D_MODEL_MESH_BINDER_H
 #include <QOpenGLVertexArrayObject>
 #include <QMutex>
 #include <QOpenGLBuffer>

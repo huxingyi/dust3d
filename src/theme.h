@@ -1,5 +1,5 @@
-#ifndef THEME_H
-#define THEME_H
+#ifndef DUST3D_THEME_H
+#define DUST3D_THEME_H
 #include <QColor>
 #include <QString>
 #include <map>

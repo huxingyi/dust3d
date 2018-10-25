@@ -1,9 +1,9 @@
-#ifndef POSER_H
-#define POSER_H
+#ifndef DUST3D_POSER_H
+#define DUST3D_POSER_H
 #include <QObject>
 #include "autorigger.h"
 #include "jointnodetree.h"
-#include "dust3dutil.h"
+#include "util.h"
 
 class Poser : public QObject
 {

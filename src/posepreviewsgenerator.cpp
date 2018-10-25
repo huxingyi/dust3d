@@ -6,10 +6,10 @@
 
 PosePreviewsGenerator::PosePreviewsGenerator(const std::vector<AutoRiggerBone> *rigBones,
         const std::map<int, AutoRiggerVertexWeights> *rigWeights,
-        const MeshResultContext &meshResultContext) :
+        const Outcome &outcome) :
     m_rigBones(*rigBones),
     m_rigWeights(*rigWeights),
-    m_meshResultContext(new MeshResultContext(meshResultContext))
+    m_outcome(new Outcome(outcome))
 {
 }
 
@@ -18,7 +18,7 @@ PosePreviewsGenerator::~PosePreviewsGenerator()
     for (auto &item: m_previews) {
         delete item.second;
     }
-    delete m_meshResultContext;
+    delete m_outcome;
 }
 
 void PosePreviewsGenerator::addPose(QUuid poseId, const std::map<QString, std::map<QString, QString>> &pose)
@@ -48,7 +48,7 @@ void PosePreviewsGenerator::process()
         poser->parameters() = pose.second;
         poser->commit();
         
-        PoseMeshCreator *poseMeshCreator = new PoseMeshCreator(poser->resultNodes(), *m_meshResultContext, m_rigWeights);
+        PoseMeshCreator *poseMeshCreator = new PoseMeshCreator(poser->resultNodes(), *m_outcome, m_rigWeights);
         poseMeshCreator->createMesh();
         m_previews[pose.first] = poseMeshCreator->takeResultMesh();
         delete poseMeshCreator;

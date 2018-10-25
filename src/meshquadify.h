@@ -1,5 +1,5 @@
-#ifndef MESH_QUADIFY_H
-#define MESH_QUADIFY_H
+#ifndef DUST3D_MESH_QUADIFY_H
+#define DUST3D_MESH_QUADIFY_H
 #include <set>
 #include "meshutil.h"
 #include "positionmap.h"

@@ -1,6 +1,6 @@
 #include <cmath>
 #include <map>
-#include "dust3dutil.h"
+#include "util.h"
 #include "anglesmooth.h"
 
 void angleSmooth(const std::vector<QVector3D> &vertices,

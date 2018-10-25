@@ -1,9 +1,9 @@
-#ifndef MATERIAL_LIST_WIDGET_H
-#define MATERIAL_LIST_WIDGET_H
+#ifndef DUST3D_MATERIAL_LIST_WIDGET_H
+#define DUST3D_MATERIAL_LIST_WIDGET_H
 #include <QTreeWidget>
 #include <map>
 #include <QMouseEvent>
-#include "skeletondocument.h"
+#include "document.h"
 #include "materialwidget.h"
 
 class MaterialListWidget : public QTreeWidget
@@ -15,7 +15,7 @@ signals:
     void cornerButtonClicked(QUuid materialId);
     void currentSelectedMaterialChanged(QUuid materialId);
 public:
-    MaterialListWidget(const SkeletonDocument *document, QWidget *parent=nullptr);
+    MaterialListWidget(const Document *document, QWidget *parent=nullptr);
     bool isMaterialSelected(QUuid materialId);
     void enableMultipleSelection(bool enabled);
 public slots:
@@ -33,7 +33,7 @@ protected:
 private:
     int calculateColumnCount();
     void updateMaterialSelectState(QUuid materialId, bool selected);
-    const SkeletonDocument *m_document = nullptr;
+    const Document *m_document = nullptr;
     std::map<QUuid, std::pair<QTreeWidgetItem *, int>> m_itemMap;
     std::set<QUuid> m_selectedMaterialIds;
     QUuid m_currentSelectedMaterialId;

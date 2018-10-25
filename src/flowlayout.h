@@ -49,8 +49,8 @@
 ****************************************************************************/
 
 
-#ifndef FLOWLAYOUT_H
-#define FLOWLAYOUT_H
+#ifndef DUST3D_FLOWLAYOUT_H
+#define DUST3D_FLOWLAYOUT_H
 
 #include <QLayout>
 #include <QRect>

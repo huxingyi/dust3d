@@ -1,5 +1,5 @@
-#ifndef MESH_UTIL_H
-#define MESH_UTIL_H
+#ifndef DUST3D_MESH_UTIL_H
+#define DUST3D_MESH_UTIL_H
 #include <vector>
 #include <set>
 #include <QVector3D>

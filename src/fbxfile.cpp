@@ -1470,7 +1470,7 @@ void FbxFileWriter::createDefinitions(size_t deformerCount)
     m_fbxDocument.nodes.push_back(definitions);
 }
 
-FbxFileWriter::FbxFileWriter(MeshResultContext &resultContext,
+FbxFileWriter::FbxFileWriter(Outcome &outcome,
         const std::vector<AutoRiggerBone> *resultRigBones,
         const std::map<int, AutoRiggerVertexWeights> *resultRigWeights,
         const QString &filename) :
@@ -1495,13 +1495,13 @@ FbxFileWriter::FbxFileWriter(MeshResultContext &resultContext,
     geometry.addProperty(std::vector<uint8_t>({'u','n','a','m','e','d','m','e','s','h',0,1,'G','e','o','m','e','t','r','y'}), 'S');
     geometry.addProperty("Mesh");
     std::vector<double> positions;
-    for (const auto &vertex: resultContext.vertices) {
+    for (const auto &vertex: outcome.vertices) {
         positions.push_back((double)vertex.position.x());
         positions.push_back((double)vertex.position.y());
         positions.push_back((double)vertex.position.z());
     }
     std::vector<int32_t> indicies;
-    for (const auto &triangle: resultContext.triangles) {
+    for (const auto &triangle: outcome.triangles) {
         indicies.push_back(triangle.indicies[0]);
         indicies.push_back(triangle.indicies[1]);
         indicies.push_back(triangle.indicies[2] ^ -1);
@@ -1513,7 +1513,7 @@ FbxFileWriter::FbxFileWriter(MeshResultContext &resultContext,
     layerElementNormal.addPropertyNode("MappingInformationType", "ByPolygonVertex");
     layerElementNormal.addPropertyNode("ReferenceInformationType", "Direct");
     std::vector<double> normals;
-    const auto &triangleVertexNormals = resultContext.interpolatedTriangleVertexNormals();
+    const auto &triangleVertexNormals = outcome.interpolatedTriangleVertexNormals();
     for (decltype(triangleVertexNormals.size()) i = 0; i < triangleVertexNormals.size(); ++i) {
         const auto &n = triangleVertexNormals[i];
         normals.push_back((double)n.x());

@@ -1,5 +1,5 @@
-#ifndef TEXTURE_TYPE_H
-#define TEXTURE_TYPE_H
+#ifndef DUST3D_TEXTURE_TYPE_H
+#define DUST3D_TEXTURE_TYPE_H
 #include <QObject>
 #include <QColor>
 #include <QString>

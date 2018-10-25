@@ -1,5 +1,5 @@
-#ifndef MESH_SPLITTER_H
-#define MESH_SPLITTER_H
+#ifndef DUST3D_MESH_SPLITTER_H
+#define DUST3D_MESH_SPLITTER_H
 #include <set>
 
 class MeshSplitterTriangle

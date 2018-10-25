@@ -1,5 +1,5 @@
-#ifndef MESH_LOADER_H
-#define MESH_LOADER_H
+#ifndef DUST3D_MESH_LOADER_H
+#define DUST3D_MESH_LOADER_H
 #include <QObject>
 #include <QOpenGLFunctions>
 #include <vector>
@@ -9,7 +9,7 @@
 #include "positionmap.h"
 #include "theme.h"
 #include "qtlightmapper.h"
-#include "meshresultcontext.h"
+#include "outcome.h"
 
 #pragma pack(push)
 #pragma pack(1)
@@ -43,8 +43,8 @@ struct TriangulatedFace
 class MeshLoader
 {
 public:
-    MeshLoader(void *meshlite, int meshId, int triangulatedMeshId=-1, QColor defaultColor=Theme::white, const std::vector<Material> *triangleMaterials=nullptr, bool smoothNormal=true);
-    MeshLoader(MeshResultContext &resultContext);
+    MeshLoader(void *meshlite, int meshId, int triangulatedMeshId=-1, QColor defaultColor=Theme::white, const std::vector<OutcomeMaterial> *triangleMaterials=nullptr, bool smoothNormal=true);
+    MeshLoader(Outcome &outcome);
     MeshLoader(Vertex *triangleVertices, int vertexNum);
     MeshLoader(const MeshLoader &mesh);
     MeshLoader();

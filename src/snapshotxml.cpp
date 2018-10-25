@@ -1,9 +1,9 @@
 #include <stack>
 #include <QUuid>
 #include <QDebug>
-#include "skeletonxml.h"
+#include "snapshotxml.h"
 
-static void saveSkeletonComponent(SkeletonSnapshot *snapshot, QXmlStreamWriter *writer, const QString &componentId)
+static void saveSkeletonComponent(Snapshot *snapshot, QXmlStreamWriter *writer, const QString &componentId)
 {
     const auto findComponent = snapshot->components.find(componentId);
     if (findComponent == snapshot->components.end())
@@ -31,7 +31,7 @@ static void saveSkeletonComponent(SkeletonSnapshot *snapshot, QXmlStreamWriter *
     writer->writeEndElement();
 }
 
-void saveSkeletonToXmlStream(SkeletonSnapshot *snapshot, QXmlStreamWriter *writer)
+void saveSkeletonToXmlStream(Snapshot *snapshot, QXmlStreamWriter *writer)
 {
     writer->setAutoFormatting(true);
     writer->writeStartDocument();
@@ -182,7 +182,7 @@ void saveSkeletonToXmlStream(SkeletonSnapshot *snapshot, QXmlStreamWriter *write
     writer->writeEndDocument();
 }
 
-void loadSkeletonFromXmlStream(SkeletonSnapshot *snapshot, QXmlStreamReader &reader)
+void loadSkeletonFromXmlStream(Snapshot *snapshot, QXmlStreamReader &reader)
 {
     std::stack<QString> componentStack;
     std::vector<QString> elementNameStack;

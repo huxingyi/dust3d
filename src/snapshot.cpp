@@ -1,8 +1,8 @@
 #include <QDebug>
-#include "skeletonsnapshot.h"
-#include "dust3dutil.h"
+#include "snapshot.h"
+#include "util.h"
 
-void SkeletonSnapshot::resolveBoundingBox(QRectF *mainProfile, QRectF *sideProfile, const QString &partId)
+void Snapshot::resolveBoundingBox(QRectF *mainProfile, QRectF *sideProfile, const QString &partId)
 {
     float left = 0;
     bool leftFirstTime = true;

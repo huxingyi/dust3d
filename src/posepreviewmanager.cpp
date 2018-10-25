@@ -17,7 +17,7 @@ bool PosePreviewManager::isRendering()
 }
 
 bool PosePreviewManager::postUpdate(const Poser &poser,
-    const MeshResultContext &meshResultContext,
+    const Outcome &outcome,
     const std::map<int, AutoRiggerVertexWeights> &resultWeights)
 {
     if (nullptr != m_poseMeshCreator)
@@ -26,7 +26,7 @@ bool PosePreviewManager::postUpdate(const Poser &poser,
     qDebug() << "Pose mesh generating..";
     
     QThread *thread = new QThread;
-    m_poseMeshCreator = new PoseMeshCreator(poser.resultNodes(), meshResultContext, resultWeights);
+    m_poseMeshCreator = new PoseMeshCreator(poser.resultNodes(), outcome, resultWeights);
     m_poseMeshCreator->moveToThread(thread);
     connect(thread, &QThread::started, m_poseMeshCreator, &PoseMeshCreator::process);
     connect(m_poseMeshCreator, &PoseMeshCreator::finished, this, &PosePreviewManager::poseMeshReady);

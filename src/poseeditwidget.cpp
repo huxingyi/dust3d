@@ -11,7 +11,7 @@
 #include "floatnumberwidget.h"
 #include "version.h"
 
-PoseEditWidget::PoseEditWidget(const SkeletonDocument *document, QWidget *parent) :
+PoseEditWidget::PoseEditWidget(const Document *document, QWidget *parent) :
     QDialog(parent),
     m_document(document)
 {
@@ -125,15 +125,15 @@ PoseEditWidget::PoseEditWidget(const SkeletonDocument *document, QWidget *parent
     
     setLayout(mainLayout);
     
-    connect(m_document, &SkeletonDocument::resultRigChanged, this, &PoseEditWidget::updatePreview);
+    connect(m_document, &Document::resultRigChanged, this, &PoseEditWidget::updatePreview);
     connect(this, &PoseEditWidget::parametersAdjusted, this, &PoseEditWidget::updatePreview);
     connect(this, &PoseEditWidget::parametersAdjusted, [=]() {
         m_unsaved = true;
         updateTitle();
     });
-    connect(this, &PoseEditWidget::addPose, m_document, &SkeletonDocument::addPose);
-    connect(this, &PoseEditWidget::renamePose, m_document, &SkeletonDocument::renamePose);
-    connect(this, &PoseEditWidget::setPoseParameters, m_document, &SkeletonDocument::setPoseParameters);
+    connect(this, &PoseEditWidget::addPose, m_document, &Document::addPose);
+    connect(this, &PoseEditWidget::renamePose, m_document, &Document::renamePose);
+    connect(this, &PoseEditWidget::setPoseParameters, m_document, &Document::setPoseParameters);
     
     updatePreview();
     updateTitle();
@@ -220,7 +220,7 @@ void PoseEditWidget::updateTitle()
         setWindowTitle(unifiedWindowTitle(tr("New") + (m_unsaved ? "*" : "")));
         return;
     }
-    const SkeletonPose *pose = m_document->findPose(m_poseId);
+    const Pose *pose = m_document->findPose(m_poseId);
     if (nullptr == pose) {
         qDebug() << "Find pose failed:" << m_poseId;
         return;

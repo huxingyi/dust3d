@@ -2,7 +2,7 @@
 #include <QElapsedTimer>
 #include "materialpreviewsgenerator.h"
 #include "meshgenerator.h"
-#include "skeletonxml.h"
+#include "snapshotxml.h"
 #include "ds3file.h"
 #include "texturegenerator.h"
 #include "imageforever.h"
@@ -18,7 +18,7 @@ MaterialPreviewsGenerator::~MaterialPreviewsGenerator()
     }
 }
 
-void MaterialPreviewsGenerator::addMaterial(QUuid materialId, const std::vector<SkeletonMaterialLayer> &layers)
+void MaterialPreviewsGenerator::addMaterial(QUuid materialId, const std::vector<MaterialLayer> &layers)
 {
     m_materials.push_back({materialId, layers});
 }
@@ -37,7 +37,7 @@ MeshLoader *MaterialPreviewsGenerator::takePreview(QUuid materialId)
 
 void MaterialPreviewsGenerator::generate()
 {
-    SkeletonSnapshot *snapshot = new SkeletonSnapshot;
+    Snapshot *snapshot = new Snapshot;
     
     std::vector<QUuid> partIds;
     Ds3FileReader ds3Reader(":/resources/material-demo-model.ds3");
@@ -65,12 +65,12 @@ void MaterialPreviewsGenerator::generate()
         partIds.push_back(QUuid(mirror.first));
     }
     
-    MeshResultContext *meshResultContext = meshGenerator->takeMeshResultContext();
+    Outcome *outcome = meshGenerator->takeMeshResultContext();
     
     MeshLoader *resultMesh = meshGenerator->takeResultMesh();
     
     for (const auto &material: m_materials) {
-        TextureGenerator *textureGenerator = new TextureGenerator(*meshResultContext);
+        TextureGenerator *textureGenerator = new TextureGenerator(*outcome);
         for (const auto &layer: material.second) {
             for (const auto &mapItem: layer.maps) {
                 const QImage *image = ImageForever::get(mapItem.imageId);
@@ -102,7 +102,7 @@ void MaterialPreviewsGenerator::generate()
     
     delete resultMesh;
     
-    delete meshResultContext;
+    delete outcome;
     
     delete meshGenerator;
     delete cacheContext;

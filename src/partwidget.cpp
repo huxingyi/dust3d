@@ -6,13 +6,13 @@
 #include <QColorDialog>
 #include <QSizePolicy>
 #include <QFileDialog>
-#include "skeletonpartwidget.h"
+#include "partwidget.h"
 #include "theme.h"
 #include "floatnumberwidget.h"
 #include "materiallistwidget.h"
 #include "infolabel.h"
 
-SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid partId) :
+PartWidget::PartWidget(const Document *document, QUuid partId) :
     m_document(document),
     m_partId(partId)
 {
@@ -124,25 +124,25 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     
     setLayout(mainLayout);
     
-    connect(this, &SkeletonPartWidget::setPartLockState, m_document, &SkeletonDocument::setPartLockState);
-    connect(this, &SkeletonPartWidget::setPartVisibleState, m_document, &SkeletonDocument::setPartVisibleState);
-    connect(this, &SkeletonPartWidget::setPartSubdivState, m_document, &SkeletonDocument::setPartSubdivState);
-    connect(this, &SkeletonPartWidget::setPartDisableState, m_document, &SkeletonDocument::setPartDisableState);
-    connect(this, &SkeletonPartWidget::setPartXmirrorState, m_document, &SkeletonDocument::setPartXmirrorState);
-    connect(this, &SkeletonPartWidget::setPartDeformThickness, m_document, &SkeletonDocument::setPartDeformThickness);
-    connect(this, &SkeletonPartWidget::setPartDeformWidth, m_document, &SkeletonDocument::setPartDeformWidth);
-    connect(this, &SkeletonPartWidget::setPartRoundState, m_document, &SkeletonDocument::setPartRoundState);
-    connect(this, &SkeletonPartWidget::setPartWrapState, m_document, &SkeletonDocument::setPartWrapState);
-    connect(this, &SkeletonPartWidget::setPartColorState, m_document, &SkeletonDocument::setPartColorState);
-    connect(this, &SkeletonPartWidget::setPartMaterialId, m_document, &SkeletonDocument::setPartMaterialId);
-    connect(this, &SkeletonPartWidget::checkPart, m_document, &SkeletonDocument::checkPart);
-    connect(this, &SkeletonPartWidget::enableBackgroundBlur, m_document, &SkeletonDocument::enableBackgroundBlur);
-    connect(this, &SkeletonPartWidget::disableBackgroundBlur, m_document, &SkeletonDocument::disableBackgroundBlur);
+    connect(this, &PartWidget::setPartLockState, m_document, &Document::setPartLockState);
+    connect(this, &PartWidget::setPartVisibleState, m_document, &Document::setPartVisibleState);
+    connect(this, &PartWidget::setPartSubdivState, m_document, &Document::setPartSubdivState);
+    connect(this, &PartWidget::setPartDisableState, m_document, &Document::setPartDisableState);
+    connect(this, &PartWidget::setPartXmirrorState, m_document, &Document::setPartXmirrorState);
+    connect(this, &PartWidget::setPartDeformThickness, m_document, &Document::setPartDeformThickness);
+    connect(this, &PartWidget::setPartDeformWidth, m_document, &Document::setPartDeformWidth);
+    connect(this, &PartWidget::setPartRoundState, m_document, &Document::setPartRoundState);
+    connect(this, &PartWidget::setPartWrapState, m_document, &Document::setPartWrapState);
+    connect(this, &PartWidget::setPartColorState, m_document, &Document::setPartColorState);
+    connect(this, &PartWidget::setPartMaterialId, m_document, &Document::setPartMaterialId);
+    connect(this, &PartWidget::checkPart, m_document, &Document::checkPart);
+    connect(this, &PartWidget::enableBackgroundBlur, m_document, &Document::enableBackgroundBlur);
+    connect(this, &PartWidget::disableBackgroundBlur, m_document, &Document::disableBackgroundBlur);
     
-    connect(this, &SkeletonPartWidget::groupOperationAdded, m_document, &SkeletonDocument::saveSnapshot);
+    connect(this, &PartWidget::groupOperationAdded, m_document, &Document::saveSnapshot);
     
     connect(m_lockButton, &QPushButton::clicked, [=]() {
-        const SkeletonPart *part = m_document->findPart(m_partId);
+        const Part *part = m_document->findPart(m_partId);
         if (!part) {
             qDebug() << "Part not found:" << m_partId;
             return;
@@ -152,7 +152,7 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     });
     
     connect(m_visibleButton, &QPushButton::clicked, [=]() {
-        const SkeletonPart *part = m_document->findPart(m_partId);
+        const Part *part = m_document->findPart(m_partId);
         if (!part) {
             qDebug() << "Part not found:" << m_partId;
             return;
@@ -162,7 +162,7 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     });
     
     connect(m_subdivButton, &QPushButton::clicked, [=]() {
-        const SkeletonPart *part = m_document->findPart(m_partId);
+        const Part *part = m_document->findPart(m_partId);
         if (!part) {
             qDebug() << "Part not found:" << m_partId;
             return;
@@ -172,7 +172,7 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     });
     
     connect(m_disableButton, &QPushButton::clicked, [=]() {
-        const SkeletonPart *part = m_document->findPart(m_partId);
+        const Part *part = m_document->findPart(m_partId);
         if (!part) {
             qDebug() << "Part not found:" << m_partId;
             return;
@@ -182,7 +182,7 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     });
     
     connect(m_xMirrorButton, &QPushButton::clicked, [=]() {
-        const SkeletonPart *part = m_document->findPart(m_partId);
+        const Part *part = m_document->findPart(m_partId);
         if (!part) {
             qDebug() << "Part not found:" << m_partId;
             return;
@@ -192,7 +192,7 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     });
     
     connect(m_deformButton, &QPushButton::clicked, [=]() {
-        const SkeletonPart *part = m_document->findPart(m_partId);
+        const Part *part = m_document->findPart(m_partId);
         if (!part) {
             qDebug() << "Part not found:" << m_partId;
             return;
@@ -201,7 +201,7 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     });
     
     connect(m_roundButton, &QPushButton::clicked, [=]() {
-        const SkeletonPart *part = m_document->findPart(m_partId);
+        const Part *part = m_document->findPart(m_partId);
         if (!part) {
             qDebug() << "Part not found:" << m_partId;
             return;
@@ -211,7 +211,7 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     });
     
     connect(m_colorButton, &QPushButton::clicked, [=]() {
-        const SkeletonPart *part = m_document->findPart(m_partId);
+        const Part *part = m_document->findPart(m_partId);
         if (!part) {
             qDebug() << "Part not found:" << m_partId;
             return;
@@ -220,7 +220,7 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     });
     
     connect(m_wrapButton, &QPushButton::clicked, [=]() {
-        const SkeletonPart *part = m_document->findPart(m_partId);
+        const Part *part = m_document->findPart(m_partId);
         if (!part) {
             qDebug() << "Part not found:" << m_partId;
             return;
@@ -235,17 +235,17 @@ SkeletonPartWidget::SkeletonPartWidget(const SkeletonDocument *document, QUuid p
     updateAllButtons();
 }
 
-ModelWidget *SkeletonPartWidget::previewWidget()
+ModelWidget *PartWidget::previewWidget()
 {
     return m_previewWidget;
 }
 
-QSize SkeletonPartWidget::preferredSize()
+QSize PartWidget::preferredSize()
 {
     return QSize(Theme::miniIconSize + Theme::partPreviewImageSize + Theme::miniIconSize * 4 + 5 + 2, Theme::partPreviewImageSize + 6);
 }
 
-void SkeletonPartWidget::updateAllButtons()
+void PartWidget::updateAllButtons()
 {
     updateVisibleButton();
     updateLockButton();
@@ -258,7 +258,7 @@ void SkeletonPartWidget::updateAllButtons()
     updateWrapButton();
 }
 
-void SkeletonPartWidget::updateCheckedState(bool checked)
+void PartWidget::updateCheckedState(bool checked)
 {
     if (checked)
         m_backgroundWidget->setStyleSheet("QWidget#background {border: 1px solid " + Theme::red.name() + ";}");
@@ -266,27 +266,27 @@ void SkeletonPartWidget::updateCheckedState(bool checked)
         m_backgroundWidget->setStyleSheet("QWidget#background {border: 1px solid transparent;}");
 }
 
-void SkeletonPartWidget::mouseDoubleClickEvent(QMouseEvent *event)
+void PartWidget::mouseDoubleClickEvent(QMouseEvent *event)
 {
     QWidget::mouseDoubleClickEvent(event);
     emit checkPart(m_partId);
 }
 
-void SkeletonPartWidget::initToolButtonWithoutFont(QPushButton *button)
+void PartWidget::initToolButtonWithoutFont(QPushButton *button)
 {
     Theme::initAwesomeToolButtonWithoutFont(button);
 }
 
-void SkeletonPartWidget::initToolButton(QPushButton *button)
+void PartWidget::initToolButton(QPushButton *button)
 {
     Theme::initAwesomeToolButton(button);
 }
 
-void SkeletonPartWidget::showColorSettingPopup(const QPoint &pos)
+void PartWidget::showColorSettingPopup(const QPoint &pos)
 {
     QMenu popupMenu;
     
-    const SkeletonPart *part = m_document->findPart(m_partId);
+    const Part *part = m_document->findPart(m_partId);
     if (!part) {
         qDebug() << "Find part failed:" << m_partId;
         return;
@@ -353,11 +353,11 @@ void SkeletonPartWidget::showColorSettingPopup(const QPoint &pos)
     popupMenu.exec(mapToGlobal(pos));
 }
 
-void SkeletonPartWidget::showDeformSettingPopup(const QPoint &pos)
+void PartWidget::showDeformSettingPopup(const QPoint &pos)
 {
     QMenu popupMenu;
     
-    const SkeletonPart *part = m_document->findPart(m_partId);
+    const Part *part = m_document->findPart(m_partId);
     if (!part) {
         qDebug() << "Find part failed:" << m_partId;
         return;
@@ -421,19 +421,19 @@ void SkeletonPartWidget::showDeformSettingPopup(const QPoint &pos)
     popupMenu.exec(mapToGlobal(pos));
 }
 
-void SkeletonPartWidget::initButton(QPushButton *button)
+void PartWidget::initButton(QPushButton *button)
 {
     Theme::initAwesomeMiniButton(button);
 }
 
-void SkeletonPartWidget::updateButton(QPushButton *button, QChar icon, bool highlighted)
+void PartWidget::updateButton(QPushButton *button, QChar icon, bool highlighted)
 {
     Theme::updateAwesomeMiniButton(button, icon, highlighted);
 }
 
-void SkeletonPartWidget::updatePreview()
+void PartWidget::updatePreview()
 {
-    const SkeletonPart *part = m_document->findPart(m_partId);
+    const Part *part = m_document->findPart(m_partId);
     if (!part) {
         qDebug() << "Part not found:" << m_partId;
         return;
@@ -443,9 +443,9 @@ void SkeletonPartWidget::updatePreview()
     m_previewWidget->updateMesh(previewMesh);
 }
 
-void SkeletonPartWidget::updateLockButton()
+void PartWidget::updateLockButton()
 {
-    const SkeletonPart *part = m_document->findPart(m_partId);
+    const Part *part = m_document->findPart(m_partId);
     if (!part) {
         qDebug() << "Part not found:" << m_partId;
         return;
@@ -456,9 +456,9 @@ void SkeletonPartWidget::updateLockButton()
         updateButton(m_lockButton, QChar(fa::unlock), false);
 }
 
-void SkeletonPartWidget::updateVisibleButton()
+void PartWidget::updateVisibleButton()
 {
-    const SkeletonPart *part = m_document->findPart(m_partId);
+    const Part *part = m_document->findPart(m_partId);
     if (!part) {
         qDebug() << "Part not found:" << m_partId;
         return;
@@ -469,9 +469,9 @@ void SkeletonPartWidget::updateVisibleButton()
         updateButton(m_visibleButton, QChar(fa::eyeslash), true);
 }
 
-void SkeletonPartWidget::updateSubdivButton()
+void PartWidget::updateSubdivButton()
 {
-    const SkeletonPart *part = m_document->findPart(m_partId);
+    const Part *part = m_document->findPart(m_partId);
     if (!part) {
         qDebug() << "Part not found:" << m_partId;
         return;
@@ -482,9 +482,9 @@ void SkeletonPartWidget::updateSubdivButton()
         updateButton(m_subdivButton, QChar(fa::squareo), false);
 }
 
-void SkeletonPartWidget::updateDisableButton()
+void PartWidget::updateDisableButton()
 {
-    const SkeletonPart *part = m_document->findPart(m_partId);
+    const Part *part = m_document->findPart(m_partId);
     if (!part) {
         qDebug() << "Part not found:" << m_partId;
         return;
@@ -495,9 +495,9 @@ void SkeletonPartWidget::updateDisableButton()
         updateButton(m_disableButton, QChar(fa::link), false);
 }
 
-void SkeletonPartWidget::updateXmirrorButton()
+void PartWidget::updateXmirrorButton()
 {
-    const SkeletonPart *part = m_document->findPart(m_partId);
+    const Part *part = m_document->findPart(m_partId);
     if (!part) {
         qDebug() << "Part not found:" << m_partId;
         return;
@@ -508,9 +508,9 @@ void SkeletonPartWidget::updateXmirrorButton()
         updateButton(m_xMirrorButton, QChar(fa::balancescale), false);
 }
 
-void SkeletonPartWidget::updateDeformButton()
+void PartWidget::updateDeformButton()
 {
-    const SkeletonPart *part = m_document->findPart(m_partId);
+    const Part *part = m_document->findPart(m_partId);
     if (!part) {
         qDebug() << "Part not found:" << m_partId;
         return;
@@ -521,9 +521,9 @@ void SkeletonPartWidget::updateDeformButton()
         updateButton(m_deformButton, QChar(fa::handlizardo), false);
 }
 
-void SkeletonPartWidget::updateRoundButton()
+void PartWidget::updateRoundButton()
 {
-    const SkeletonPart *part = m_document->findPart(m_partId);
+    const Part *part = m_document->findPart(m_partId);
     if (!part) {
         qDebug() << "Part not found:" << m_partId;
         return;
@@ -534,9 +534,9 @@ void SkeletonPartWidget::updateRoundButton()
         updateButton(m_roundButton, QChar(fa::magnet), false);
 }
 
-void SkeletonPartWidget::updateColorButton()
+void PartWidget::updateColorButton()
 {
-    const SkeletonPart *part = m_document->findPart(m_partId);
+    const Part *part = m_document->findPart(m_partId);
     if (!part) {
         qDebug() << "Part not found:" << m_partId;
         return;
@@ -547,9 +547,9 @@ void SkeletonPartWidget::updateColorButton()
         updateButton(m_colorButton, QChar(fa::eyedropper), false);
 }
 
-void SkeletonPartWidget::updateWrapButton()
+void PartWidget::updateWrapButton()
 {
-    const SkeletonPart *part = m_document->findPart(m_partId);
+    const Part *part = m_document->findPart(m_partId);
     if (!part) {
         qDebug() << "Part not found:" << m_partId;
         return;
@@ -560,7 +560,7 @@ void SkeletonPartWidget::updateWrapButton()
         updateButton(m_wrapButton, QChar(fa::cube), false);
 }
 
-void SkeletonPartWidget::reload()
+void PartWidget::reload()
 {
     updatePreview();
     updateAllButtons();

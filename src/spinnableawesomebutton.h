@@ -1,5 +1,5 @@
-#ifndef SPINNABLE_AWESOME_BUTTON_H
-#define SPINNABLE_AWESOME_BUTTON_H
+#ifndef DUST3D_SPINNABLE_AWESOME_BUTTON_H
+#define DUST3D_SPINNABLE_AWESOME_BUTTON_H
 #include <QWidget>
 #include <QPushButton>
 #include "waitingspinnerwidget.h"

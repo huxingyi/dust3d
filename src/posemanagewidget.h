@@ -1,7 +1,7 @@
-#ifndef POSE_MANAGE_WIDGET_H
-#define POSE_MANAGE_WIDGET_H
+#ifndef DUST3D_POSE_MANAGE_WIDGET_H
+#define DUST3D_POSE_MANAGE_WIDGET_H
 #include <QWidget>
-#include "skeletondocument.h"
+#include "document.h"
 #include "poselistwidget.h"
 
 class PoseManageWidget : public QWidget
@@ -11,7 +11,7 @@ signals:
     void registerDialog(QWidget *widget);
     void unregisterDialog(QWidget *widget);
 public:
-    PoseManageWidget(const SkeletonDocument *document, QWidget *parent=nullptr);
+    PoseManageWidget(const Document *document, QWidget *parent=nullptr);
     PoseListWidget *poseListWidget();
 protected:
     virtual QSize sizeHint() const;
@@ -19,7 +19,7 @@ public slots:
     void showAddPoseDialog();
     void showPoseDialog(QUuid poseId);
 private:
-    const SkeletonDocument *m_document = nullptr;
+    const Document *m_document = nullptr;
     PoseListWidget *m_poseListWidget = nullptr;
 };
 
