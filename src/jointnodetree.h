@@ -3,7 +3,7 @@
 #include <QMatrix4x4>
 #include <vector>
 #include <QQuaternion>
-#include "autorigger.h"
+#include "rigger.h"
 
 struct JointNode
 {
@@ -21,7 +21,7 @@ class JointNodeTree
 {
 public:
     const std::vector<JointNode> &nodes() const;
-    JointNodeTree(const std::vector<AutoRiggerBone> *resultRigBones);
+    JointNodeTree(const std::vector<RiggerBone> *resultRigBones);
     void updateRotation(int index, QQuaternion rotation);
     void reset();
     void recalculateTransformMatrices();

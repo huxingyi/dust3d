@@ -3,23 +3,23 @@
 #include "theme.h"
 #include "bonemark.h"
 #include "skeletonside.h"
-#include "autorigger.h"
+#include "rigger.h"
 
-AutoRigger::AutoRigger(const std::vector<QVector3D> &verticesPositions,
+Rigger::Rigger(const std::vector<QVector3D> &verticesPositions,
         const std::set<MeshSplitterTriangle> &inputTriangles) :
     m_verticesPositions(verticesPositions),
     m_inputTriangles(inputTriangles)
 {
 }
 
-bool AutoRigger::isCutOffSplitter(BoneMark boneMark)
+bool Rigger::isCutOffSplitter(BoneMark boneMark)
 {
     return boneMark == BoneMark::Neck ||
         boneMark == BoneMark::Shoulder ||
         boneMark == BoneMark::Hip;
 }
 
-bool AutoRigger::calculateBodyTriangles(std::set<MeshSplitterTriangle> &bodyTriangles)
+bool Rigger::calculateBodyTriangles(std::set<MeshSplitterTriangle> &bodyTriangles)
 {
     bodyTriangles = m_inputTriangles;
     for (const auto &marksMapIt: m_marksMap) {
@@ -42,12 +42,12 @@ bool AutoRigger::calculateBodyTriangles(std::set<MeshSplitterTriangle> &bodyTria
     return true;
 }
 
-bool AutoRigger::addMarkGroup(BoneMark boneMark, SkeletonSide boneSide, QVector3D bonePosition,
+bool Rigger::addMarkGroup(BoneMark boneMark, SkeletonSide boneSide, QVector3D bonePosition,
         const std::set<MeshSplitterTriangle> &markTriangles)
 {
-    m_marks.push_back(AutoRiggerMark());
+    m_marks.push_back(RiggerMark());
 
-    AutoRiggerMark &mark = m_marks.back();
+    RiggerMark &mark = m_marks.back();
     mark.boneMark = boneMark;
     mark.boneSide = boneSide;
     mark.bonePosition = bonePosition;
@@ -68,12 +68,12 @@ bool AutoRigger::addMarkGroup(BoneMark boneMark, SkeletonSide boneSide, QVector3
     return true;
 }
 
-const std::vector<std::pair<QtMsgType, QString>> &AutoRigger::messages()
+const std::vector<std::pair<QtMsgType, QString>> &Rigger::messages()
 {
     return m_messages;
 }
 
-void AutoRigger::addTrianglesToVertices(const std::set<MeshSplitterTriangle> &triangles, std::set<int> &vertices)
+void Rigger::addTrianglesToVertices(const std::set<MeshSplitterTriangle> &triangles, std::set<int> &vertices)
 {
     for (const auto &triangle: triangles) {
         for (int i = 0; i < 3; i++) {
@@ -82,7 +82,7 @@ void AutoRigger::addTrianglesToVertices(const std::set<MeshSplitterTriangle> &tr
     }
 }
 
-bool AutoRigger::validate()
+bool Rigger::validate()
 {
     bool foundError = false;
     
@@ -121,7 +121,7 @@ bool AutoRigger::validate()
     return true;
 }
 
-void AutoRigger::resolveBoundingBox(const std::set<int> &vertices, QVector3D &xMin, QVector3D &xMax, QVector3D &yMin, QVector3D &yMax, QVector3D &zMin, QVector3D &zMax)
+void Rigger::resolveBoundingBox(const std::set<int> &vertices, QVector3D &xMin, QVector3D &xMax, QVector3D &yMin, QVector3D &yMax, QVector3D &zMin, QVector3D &zMax)
 {
     bool leftFirstTime = true;
     bool rightFirstTime = true;
@@ -161,49 +161,49 @@ void AutoRigger::resolveBoundingBox(const std::set<int> &vertices, QVector3D &xM
     }
 }
 
-QVector3D AutoRigger::findMinX(const std::set<int> &vertices)
+QVector3D Rigger::findMinX(const std::set<int> &vertices)
 {
     QVector3D minX, minY, minZ, maxX, maxY, maxZ;
     resolveBoundingBox(vertices, minX, maxX, minY, maxY, minZ, maxZ);
     return minX;
 }
 
-QVector3D AutoRigger::findMaxX(const std::set<int> &vertices)
+QVector3D Rigger::findMaxX(const std::set<int> &vertices)
 {
     QVector3D minX, minY, minZ, maxX, maxY, maxZ;
     resolveBoundingBox(vertices, minX, maxX, minY, maxY, minZ, maxZ);
     return maxX;
 }
 
-QVector3D AutoRigger::findMinY(const std::set<int> &vertices)
+QVector3D Rigger::findMinY(const std::set<int> &vertices)
 {
     QVector3D minX, minY, minZ, maxX, maxY, maxZ;
     resolveBoundingBox(vertices, minX, maxX, minY, maxY, minZ, maxZ);
     return minY;
 }
 
-QVector3D AutoRigger::findMaxY(const std::set<int> &vertices)
+QVector3D Rigger::findMaxY(const std::set<int> &vertices)
 {
     QVector3D minX, minY, minZ, maxX, maxY, maxZ;
     resolveBoundingBox(vertices, minX, maxX, minY, maxY, minZ, maxZ);
     return maxY;
 }
 
-QVector3D AutoRigger::findMinZ(const std::set<int> &vertices)
+QVector3D Rigger::findMinZ(const std::set<int> &vertices)
 {
     QVector3D minX, minY, minZ, maxX, maxY, maxZ;
     resolveBoundingBox(vertices, minX, maxX, minY, maxY, minZ, maxZ);
     return minZ;
 }
 
-QVector3D AutoRigger::findMaxZ(const std::set<int> &vertices)
+QVector3D Rigger::findMaxZ(const std::set<int> &vertices)
 {
     QVector3D minX, minY, minZ, maxX, maxY, maxZ;
     resolveBoundingBox(vertices, minX, maxX, minY, maxY, minZ, maxZ);
     return maxZ;
 }
 
-void AutoRigger::splitVerticesByY(const std::set<int> &vertices, float y, std::set<int> &greaterEqualThanVertices, std::set<int> &lessThanVertices)
+void Rigger::splitVerticesByY(const std::set<int> &vertices, float y, std::set<int> &greaterEqualThanVertices, std::set<int> &lessThanVertices)
 {
     for (const auto &index: vertices) {
         const auto &position = m_verticesPositions[index];
@@ -214,7 +214,7 @@ void AutoRigger::splitVerticesByY(const std::set<int> &vertices, float y, std::s
     }
 }
 
-void AutoRigger::splitVerticesByX(const std::set<int> &vertices, float x, std::set<int> &greaterEqualThanVertices, std::set<int> &lessThanVertices)
+void Rigger::splitVerticesByX(const std::set<int> &vertices, float x, std::set<int> &greaterEqualThanVertices, std::set<int> &lessThanVertices)
 {
     for (const auto &index: vertices) {
         const auto &position = m_verticesPositions[index];
@@ -225,7 +225,7 @@ void AutoRigger::splitVerticesByX(const std::set<int> &vertices, float x, std::s
     }
 }
 
-void AutoRigger::splitVerticesByZ(const std::set<int> &vertices, float z, std::set<int> &greaterEqualThanVertices, std::set<int> &lessThanVertices)
+void Rigger::splitVerticesByZ(const std::set<int> &vertices, float z, std::set<int> &greaterEqualThanVertices, std::set<int> &lessThanVertices)
 {
     for (const auto &index: vertices) {
         const auto &position = m_verticesPositions[index];
@@ -236,17 +236,17 @@ void AutoRigger::splitVerticesByZ(const std::set<int> &vertices, float z, std::s
     }
 }
 
-const std::vector<AutoRiggerBone> &AutoRigger::resultBones()
+const std::vector<RiggerBone> &Rigger::resultBones()
 {
     return m_resultBones;
 }
 
-const std::map<int, AutoRiggerVertexWeights> &AutoRigger::resultWeights()
+const std::map<int, RiggerVertexWeights> &Rigger::resultWeights()
 {
     return m_resultWeights;
 }
 
-void AutoRigger::addVerticesToWeights(const std::set<int> &vertices, int boneIndex)
+void Rigger::addVerticesToWeights(const std::set<int> &vertices, int boneIndex)
 {
     for (const auto &vertexIndex: vertices) {
         auto &weights = m_resultWeights[vertexIndex];
@@ -256,7 +256,7 @@ void AutoRigger::addVerticesToWeights(const std::set<int> &vertices, int boneInd
     }
 }
 
-bool AutoRigger::rig()
+bool Rigger::rig()
 {
     if (!validate())
         return false;
@@ -603,16 +603,16 @@ bool AutoRigger::rig()
     // 5. Generate bones
     std::map<QString, int> boneIndexMap;
     
-    m_resultBones.push_back(AutoRiggerBone());
-    AutoRiggerBone &bodyBone = m_resultBones.back();
+    m_resultBones.push_back(RiggerBone());
+    RiggerBone &bodyBone = m_resultBones.back();
     bodyBone.index = m_resultBones.size() - 1;
     bodyBone.name = "Body";
     bodyBone.headPosition = QVector3D(0, 0, 0);
     bodyBone.tailPosition = bonesOrigin;
     boneIndexMap[bodyBone.name] = bodyBone.index;
     
-    m_resultBones.push_back(AutoRiggerBone());
-    AutoRiggerBone &leftHipBone = m_resultBones.back();
+    m_resultBones.push_back(RiggerBone());
+    RiggerBone &leftHipBone = m_resultBones.back();
     leftHipBone.index = m_resultBones.size() - 1;
     leftHipBone.name = "LeftHip";
     leftHipBone.headPosition = m_resultBones[boneIndexMap["Body"]].tailPosition;
@@ -620,8 +620,8 @@ bool AutoRigger::rig()
     boneIndexMap[leftHipBone.name] = leftHipBone.index;
     m_resultBones[boneIndexMap["Body"]].children.push_back(leftHipBone.index);
     
-    m_resultBones.push_back(AutoRiggerBone());
-    AutoRiggerBone &leftUpperLegBone = m_resultBones.back();
+    m_resultBones.push_back(RiggerBone());
+    RiggerBone &leftUpperLegBone = m_resultBones.back();
     leftUpperLegBone.index = m_resultBones.size() - 1;
     leftUpperLegBone.name = "LeftUpperLeg";
     leftUpperLegBone.headPosition = m_resultBones[boneIndexMap["LeftHip"]].tailPosition;
@@ -630,8 +630,8 @@ bool AutoRigger::rig()
     boneIndexMap[leftUpperLegBone.name] = leftUpperLegBone.index;
     m_resultBones[boneIndexMap["LeftHip"]].children.push_back(leftUpperLegBone.index);
     
-    m_resultBones.push_back(AutoRiggerBone());
-    AutoRiggerBone &leftLowerLegBone = m_resultBones.back();
+    m_resultBones.push_back(RiggerBone());
+    RiggerBone &leftLowerLegBone = m_resultBones.back();
     leftLowerLegBone.index = m_resultBones.size() - 1;
     leftLowerLegBone.name = "LeftLowerLeg";
     leftLowerLegBone.headPosition = m_resultBones[boneIndexMap["LeftUpperLeg"]].tailPosition;
@@ -640,8 +640,8 @@ bool AutoRigger::rig()
     boneIndexMap[leftLowerLegBone.name] = leftLowerLegBone.index;
     m_resultBones[boneIndexMap["LeftUpperLeg"]].children.push_back(leftLowerLegBone.index);
     
-    m_resultBones.push_back(AutoRiggerBone());
-    AutoRiggerBone &leftFootBone = m_resultBones.back();
+    m_resultBones.push_back(RiggerBone());
+    RiggerBone &leftFootBone = m_resultBones.back();
     leftFootBone.index = m_resultBones.size() - 1;
     leftFootBone.name = "LeftFoot";
     leftFootBone.headPosition = m_resultBones[boneIndexMap["LeftLowerLeg"]].tailPosition;
@@ -650,8 +650,8 @@ bool AutoRigger::rig()
     boneIndexMap[leftFootBone.name] = leftFootBone.index;
     m_resultBones[boneIndexMap["LeftLowerLeg"]].children.push_back(leftFootBone.index);
     
-    m_resultBones.push_back(AutoRiggerBone());
-    AutoRiggerBone &rightHipBone = m_resultBones.back();
+    m_resultBones.push_back(RiggerBone());
+    RiggerBone &rightHipBone = m_resultBones.back();
     rightHipBone.index = m_resultBones.size() - 1;
     rightHipBone.name = "RightHip";
     rightHipBone.headPosition = m_resultBones[boneIndexMap["Body"]].tailPosition;
@@ -659,8 +659,8 @@ bool AutoRigger::rig()
     boneIndexMap[rightHipBone.name] = rightHipBone.index;
     m_resultBones[boneIndexMap["Body"]].children.push_back(rightHipBone.index);
     
-    m_resultBones.push_back(AutoRiggerBone());
-    AutoRiggerBone &rightUpperLegBone = m_resultBones.back();
+    m_resultBones.push_back(RiggerBone());
+    RiggerBone &rightUpperLegBone = m_resultBones.back();
     rightUpperLegBone.index = m_resultBones.size() - 1;
     rightUpperLegBone.name = "RightUpperLeg";
     rightUpperLegBone.headPosition = m_resultBones[boneIndexMap["RightHip"]].tailPosition;
@@ -669,8 +669,8 @@ bool AutoRigger::rig()
     boneIndexMap[rightUpperLegBone.name] = rightUpperLegBone.index;
     m_resultBones[boneIndexMap["RightHip"]].children.push_back(rightUpperLegBone.index);
     
-    m_resultBones.push_back(AutoRiggerBone());
-    AutoRiggerBone &rightLowerLegBone = m_resultBones.back();
+    m_resultBones.push_back(RiggerBone());
+    RiggerBone &rightLowerLegBone = m_resultBones.back();
     rightLowerLegBone.index = m_resultBones.size() - 1;
     rightLowerLegBone.name = "RightLowerLeg";
     rightLowerLegBone.headPosition = m_resultBones[boneIndexMap["RightUpperLeg"]].tailPosition;
@@ -679,8 +679,8 @@ bool AutoRigger::rig()
     boneIndexMap[rightLowerLegBone.name] = rightLowerLegBone.index;
     m_resultBones[boneIndexMap["RightUpperLeg"]].children.push_back(rightLowerLegBone.index);
     
-    m_resultBones.push_back(AutoRiggerBone());
-    AutoRiggerBone &rightFootBone = m_resultBones.back();
+    m_resultBones.push_back(RiggerBone());
+    RiggerBone &rightFootBone = m_resultBones.back();
     rightFootBone.index = m_resultBones.size() - 1;
     rightFootBone.name = "RightFoot";
     rightFootBone.headPosition = m_resultBones[boneIndexMap["RightLowerLeg"]].tailPosition;
@@ -689,8 +689,8 @@ bool AutoRigger::rig()
     boneIndexMap[rightFootBone.name] = rightFootBone.index;
     m_resultBones[boneIndexMap["RightLowerLeg"]].children.push_back(rightFootBone.index);
     
-    m_resultBones.push_back(AutoRiggerBone());
-    AutoRiggerBone &spineBone = m_resultBones.back();
+    m_resultBones.push_back(RiggerBone());
+    RiggerBone &spineBone = m_resultBones.back();
     spineBone.index = m_resultBones.size() - 1;
     spineBone.name = "Spine";
     spineBone.headPosition = m_resultBones[boneIndexMap["Body"]].tailPosition;
@@ -699,8 +699,8 @@ bool AutoRigger::rig()
     boneIndexMap[spineBone.name] = spineBone.index;
     m_resultBones[boneIndexMap["Body"]].children.push_back(spineBone.index);
     
-    m_resultBones.push_back(AutoRiggerBone());
-    AutoRiggerBone &chestBone = m_resultBones.back();
+    m_resultBones.push_back(RiggerBone());
+    RiggerBone &chestBone = m_resultBones.back();
     chestBone.index = m_resultBones.size() - 1;
     chestBone.name = "Chest";
     chestBone.headPosition = m_resultBones[boneIndexMap["Spine"]].tailPosition;
@@ -709,8 +709,8 @@ bool AutoRigger::rig()
     boneIndexMap[chestBone.name] = chestBone.index;
     m_resultBones[boneIndexMap["Spine"]].children.push_back(chestBone.index);
     
-    m_resultBones.push_back(AutoRiggerBone());
-    AutoRiggerBone &leftShoulderBone = m_resultBones.back();
+    m_resultBones.push_back(RiggerBone());
+    RiggerBone &leftShoulderBone = m_resultBones.back();
     leftShoulderBone.index = m_resultBones.size() - 1;
     leftShoulderBone.name = "LeftShoulder";
     leftShoulderBone.headPosition = m_resultBones[boneIndexMap["Chest"]].tailPosition;
@@ -718,8 +718,8 @@ bool AutoRigger::rig()
     boneIndexMap[leftShoulderBone.name] = leftShoulderBone.index;
     m_resultBones[boneIndexMap["Chest"]].children.push_back(leftShoulderBone.index);
     
-    m_resultBones.push_back(AutoRiggerBone());
-    AutoRiggerBone &leftUpperArmBone = m_resultBones.back();
+    m_resultBones.push_back(RiggerBone());
+    RiggerBone &leftUpperArmBone = m_resultBones.back();
     leftUpperArmBone.index = m_resultBones.size() - 1;
     leftUpperArmBone.name = "LeftUpperArm";
     leftUpperArmBone.headPosition = m_resultBones[boneIndexMap["LeftShoulder"]].tailPosition;
@@ -728,8 +728,8 @@ bool AutoRigger::rig()
     boneIndexMap[leftUpperArmBone.name] = leftUpperArmBone.index;
     m_resultBones[boneIndexMap["LeftShoulder"]].children.push_back(leftUpperArmBone.index);
     
-    m_resultBones.push_back(AutoRiggerBone());
-    AutoRiggerBone &leftLowerArmBone = m_resultBones.back();
+    m_resultBones.push_back(RiggerBone());
+    RiggerBone &leftLowerArmBone = m_resultBones.back();
     leftLowerArmBone.index = m_resultBones.size() - 1;
     leftLowerArmBone.name = "LeftLowerArm";
     leftLowerArmBone.headPosition = m_resultBones[boneIndexMap["LeftUpperArm"]].tailPosition;
@@ -738,8 +738,8 @@ bool AutoRigger::rig()
     boneIndexMap[leftLowerArmBone.name] = leftLowerArmBone.index;
     m_resultBones[boneIndexMap["LeftUpperArm"]].children.push_back(leftLowerArmBone.index);
     
-    m_resultBones.push_back(AutoRiggerBone());
-    AutoRiggerBone &leftHandBone = m_resultBones.back();
+    m_resultBones.push_back(RiggerBone());
+    RiggerBone &leftHandBone = m_resultBones.back();
     leftHandBone.index = m_resultBones.size() - 1;
     leftHandBone.name = "LeftHand";
     leftHandBone.headPosition = m_resultBones[boneIndexMap["LeftLowerArm"]].tailPosition;
@@ -748,8 +748,8 @@ bool AutoRigger::rig()
     boneIndexMap[leftHandBone.name] = leftHandBone.index;
     m_resultBones[boneIndexMap["LeftLowerArm"]].children.push_back(leftHandBone.index);
     
-    m_resultBones.push_back(AutoRiggerBone());
-    AutoRiggerBone &rightShoulderBone = m_resultBones.back();
+    m_resultBones.push_back(RiggerBone());
+    RiggerBone &rightShoulderBone = m_resultBones.back();
     rightShoulderBone.index = m_resultBones.size() - 1;
     rightShoulderBone.name = "RightShoulder";
     rightShoulderBone.headPosition = m_resultBones[boneIndexMap["Chest"]].tailPosition;
@@ -757,8 +757,8 @@ bool AutoRigger::rig()
     boneIndexMap[rightShoulderBone.name] = rightShoulderBone.index;
     m_resultBones[boneIndexMap["Chest"]].children.push_back(rightShoulderBone.index);
     
-    m_resultBones.push_back(AutoRiggerBone());
-    AutoRiggerBone &rightUpperArmBone = m_resultBones.back();
+    m_resultBones.push_back(RiggerBone());
+    RiggerBone &rightUpperArmBone = m_resultBones.back();
     rightUpperArmBone.index = m_resultBones.size() - 1;
     rightUpperArmBone.name = "RightUpperArm";
     rightUpperArmBone.headPosition = m_resultBones[boneIndexMap["RightShoulder"]].tailPosition;
@@ -767,8 +767,8 @@ bool AutoRigger::rig()
     boneIndexMap[rightUpperArmBone.name] = rightUpperArmBone.index;
     m_resultBones[boneIndexMap["RightShoulder"]].children.push_back(rightUpperArmBone.index);
     
-    m_resultBones.push_back(AutoRiggerBone());
-    AutoRiggerBone &rightLowerArmBone = m_resultBones.back();
+    m_resultBones.push_back(RiggerBone());
+    RiggerBone &rightLowerArmBone = m_resultBones.back();
     rightLowerArmBone.index = m_resultBones.size() - 1;
     rightLowerArmBone.name = "RightLowerArm";
     rightLowerArmBone.headPosition = m_resultBones[boneIndexMap["RightUpperArm"]].tailPosition;
@@ -777,8 +777,8 @@ bool AutoRigger::rig()
     boneIndexMap[rightLowerArmBone.name] = rightLowerArmBone.index;
     m_resultBones[boneIndexMap["RightUpperArm"]].children.push_back(rightLowerArmBone.index);
     
-    m_resultBones.push_back(AutoRiggerBone());
-    AutoRiggerBone &rightHandBone = m_resultBones.back();
+    m_resultBones.push_back(RiggerBone());
+    RiggerBone &rightHandBone = m_resultBones.back();
     rightHandBone.index = m_resultBones.size() - 1;
     rightHandBone.name = "RightHand";
     rightHandBone.headPosition = m_resultBones[boneIndexMap["RightLowerArm"]].tailPosition;
@@ -787,8 +787,8 @@ bool AutoRigger::rig()
     boneIndexMap[rightHandBone.name] = rightHandBone.index;
     m_resultBones[boneIndexMap["RightLowerArm"]].children.push_back(rightHandBone.index);
     
-    m_resultBones.push_back(AutoRiggerBone());
-    AutoRiggerBone &neckBone = m_resultBones.back();
+    m_resultBones.push_back(RiggerBone());
+    RiggerBone &neckBone = m_resultBones.back();
     neckBone.index = m_resultBones.size() - 1;
     neckBone.name = "Neck";
     neckBone.headPosition = m_resultBones[boneIndexMap["Chest"]].tailPosition;
@@ -797,8 +797,8 @@ bool AutoRigger::rig()
     boneIndexMap[neckBone.name] = neckBone.index;
     m_resultBones[boneIndexMap["Chest"]].children.push_back(neckBone.index);
     
-    m_resultBones.push_back(AutoRiggerBone());
-    AutoRiggerBone &headBone = m_resultBones.back();
+    m_resultBones.push_back(RiggerBone());
+    RiggerBone &headBone = m_resultBones.back();
     headBone.index = m_resultBones.size() - 1;
     headBone.name = "Head";
     headBone.headPosition = m_resultBones[boneIndexMap["Neck"]].tailPosition;
@@ -832,12 +832,12 @@ bool AutoRigger::rig()
     return true;
 }
 
-const std::vector<QString> &AutoRigger::missingMarkNames()
+const std::vector<QString> &Rigger::missingMarkNames()
 {
     return m_missingMarkNames;
 }
 
-const std::vector<QString> &AutoRigger::errorMarkNames()
+const std::vector<QString> &Rigger::errorMarkNames()
 {
     return m_errorMarkNames;
 }

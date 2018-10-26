@@ -1,7 +1,7 @@
 #include <QQuaternion>
 #include "poser.h"
 
-Poser::Poser(const std::vector<AutoRiggerBone> &bones) :
+Poser::Poser(const std::vector<RiggerBone> &bones) :
     m_bones(bones),
     m_jointNodeTree(&bones)
 {
@@ -22,7 +22,7 @@ int Poser::findBoneIndex(const QString &name)
     return findResult->second;
 }
 
-const AutoRiggerBone *Poser::findBone(const QString &name)
+const RiggerBone *Poser::findBone(const QString &name)
 {
     auto findResult = m_boneNameToIndexMap.find(name);
     if (findResult == m_boneNameToIndexMap.end())
@@ -30,7 +30,7 @@ const AutoRiggerBone *Poser::findBone(const QString &name)
     return &m_bones[findResult->second];
 }
 
-const std::vector<AutoRiggerBone> &Poser::bones() const
+const std::vector<RiggerBone> &Poser::bones() const
 {
     return m_bones;
 }

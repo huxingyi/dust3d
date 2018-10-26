@@ -5,8 +5,8 @@
 #include "tetrapodposer.h"
 #include "posemeshcreator.h"
 
-MotionsGenerator::MotionsGenerator(const std::vector<AutoRiggerBone> *rigBones,
-        const std::map<int, AutoRiggerVertexWeights> *rigWeights,
+MotionsGenerator::MotionsGenerator(const std::vector<RiggerBone> *rigBones,
+        const std::map<int, RiggerVertexWeights> *rigWeights,
         const Outcome &outcome) :
     m_rigBones(*rigBones),
     m_rigWeights(*rigWeights),

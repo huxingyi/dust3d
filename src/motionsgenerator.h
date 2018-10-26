@@ -5,7 +5,7 @@
 #include <map>
 #include <set>
 #include "meshloader.h"
-#include "autorigger.h"
+#include "rigger.h"
 #include "jointnodetree.h"
 #include "document.h"
 #include "tetrapodposer.h"
@@ -14,8 +14,8 @@ class MotionsGenerator : public QObject
 {
     Q_OBJECT
 public:
-    MotionsGenerator(const std::vector<AutoRiggerBone> *rigBones,
-        const std::map<int, AutoRiggerVertexWeights> *rigWeights,
+    MotionsGenerator(const std::vector<RiggerBone> *rigBones,
+        const std::map<int, RiggerVertexWeights> *rigWeights,
         const Outcome &outcome);
     ~MotionsGenerator();
     void addPoseToLibrary(const QUuid &poseId, const std::map<QString, std::map<QString, QString>> &parameters);
@@ -42,8 +42,8 @@ private:
     void generatePreviewsForOutcomes(const std::vector<std::pair<float, JointNodeTree>> &outcomes, std::vector<std::pair<float, MeshLoader *>> &previews);
     float calculateMotionDuration(const QUuid &motionId, std::set<QUuid> &visited);
     
-    std::vector<AutoRiggerBone> m_rigBones;
-    std::map<int, AutoRiggerVertexWeights> m_rigWeights;
+    std::vector<RiggerBone> m_rigBones;
+    std::map<int, RiggerVertexWeights> m_rigWeights;
     Outcome m_outcome;
     std::map<QUuid, std::map<QString, std::map<QString, QString>>> m_poses;
     std::map<QUuid, std::vector<MotionClip>> m_motions;

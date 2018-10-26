@@ -3,6 +3,7 @@
 #include <QMatrix4x4>
 #include <vector>
 #include <QVector3D>
+#include <QColor>
 #include "meshloader.h"
 #include "outcome.h"
 #include "jointnodetree.h"
@@ -11,13 +12,15 @@ class SkinnedMeshCreator
 {
 public:
     SkinnedMeshCreator(const Outcome &outcome,
-        const std::map<int, AutoRiggerVertexWeights> &resultWeights);
+        const std::map<int, RiggerVertexWeights> &resultWeights);
     MeshLoader *createMeshFromTransform(const std::vector<QMatrix4x4> &matricies);
 private:
     Outcome m_outcome;
-    std::map<int, AutoRiggerVertexWeights> m_resultWeights;
-    std::vector<QVector3D> m_verticesBindPositions;
-    std::vector<QVector3D> m_verticesBindNormals;
+    std::map<int, RiggerVertexWeights> m_resultWeights;
+    std::vector<std::vector<int>> m_verticesOldIndicies;
+    std::vector<std::vector<QVector3D>> m_verticesBindPositions;
+    std::vector<std::vector<QVector3D>> m_verticesBindNormals;
+    std::vector<QColor> m_triangleColors;
 };
 
 #endif

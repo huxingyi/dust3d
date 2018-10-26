@@ -1471,8 +1471,8 @@ void FbxFileWriter::createDefinitions(size_t deformerCount)
 }
 
 FbxFileWriter::FbxFileWriter(Outcome &outcome,
-        const std::vector<AutoRiggerBone> *resultRigBones,
-        const std::map<int, AutoRiggerVertexWeights> *resultRigWeights,
+        const std::vector<RiggerBone> *resultRigBones,
+        const std::map<int, RiggerVertexWeights> *resultRigWeights,
         const QString &filename) :
     m_filename(filename)
 {
@@ -1496,32 +1496,36 @@ FbxFileWriter::FbxFileWriter(Outcome &outcome,
     geometry.addProperty("Mesh");
     std::vector<double> positions;
     for (const auto &vertex: outcome.vertices) {
-        positions.push_back((double)vertex.position.x());
-        positions.push_back((double)vertex.position.y());
-        positions.push_back((double)vertex.position.z());
+        positions.push_back((double)vertex.x());
+        positions.push_back((double)vertex.y());
+        positions.push_back((double)vertex.z());
     }
     std::vector<int32_t> indicies;
     for (const auto &triangle: outcome.triangles) {
-        indicies.push_back(triangle.indicies[0]);
-        indicies.push_back(triangle.indicies[1]);
-        indicies.push_back(triangle.indicies[2] ^ -1);
+        indicies.push_back(triangle[0]);
+        indicies.push_back(triangle[1]);
+        indicies.push_back(triangle[2] ^ -1);
     }
     FBXNode layerElementNormal("LayerElementNormal");
-    layerElementNormal.addProperty((int32_t)0);
-    layerElementNormal.addPropertyNode("Version", (int32_t)101);
-    layerElementNormal.addPropertyNode("Name", "");
-    layerElementNormal.addPropertyNode("MappingInformationType", "ByPolygonVertex");
-    layerElementNormal.addPropertyNode("ReferenceInformationType", "Direct");
-    std::vector<double> normals;
-    const auto &triangleVertexNormals = outcome.interpolatedTriangleVertexNormals();
-    for (decltype(triangleVertexNormals.size()) i = 0; i < triangleVertexNormals.size(); ++i) {
-        const auto &n = triangleVertexNormals[i];
-        normals.push_back((double)n.x());
-        normals.push_back((double)n.y());
-        normals.push_back((double)n.z());
+    const auto triangleVertexNormals = outcome.triangleVertexNormals();
+    if (nullptr != triangleVertexNormals) {
+        layerElementNormal.addProperty((int32_t)0);
+        layerElementNormal.addPropertyNode("Version", (int32_t)101);
+        layerElementNormal.addPropertyNode("Name", "");
+        layerElementNormal.addPropertyNode("MappingInformationType", "ByPolygonVertex");
+        layerElementNormal.addPropertyNode("ReferenceInformationType", "Direct");
+        std::vector<double> normals;
+        for (decltype(triangleVertexNormals->size()) i = 0; i < triangleVertexNormals->size(); ++i) {
+            for (size_t j = 0; j < 3; ++j) {
+                const auto &n = (*triangleVertexNormals)[i][j];
+                normals.push_back((double)n.x());
+                normals.push_back((double)n.y());
+                normals.push_back((double)n.z());
+            }
+        }
+        layerElementNormal.addPropertyNode("Normals", normals);
+        layerElementNormal.addChild(FBXNode());
     }
-    layerElementNormal.addPropertyNode("Normals", normals);
-    layerElementNormal.addChild(FBXNode());
     FBXNode layerElementMaterial("LayerElementMaterial");
     layerElementMaterial.addProperty((int32_t)0);
     layerElementMaterial.addPropertyNode("Version", (int32_t)101);
@@ -1552,7 +1556,8 @@ FbxFileWriter::FbxFileWriter(Outcome &outcome,
     geometry.addPropertyNode("GeometryVersion", (int32_t)124);
     geometry.addPropertyNode("Vertices", positions);
     geometry.addPropertyNode("PolygonVertexIndex", indicies);
-    geometry.addChild(layerElementNormal);
+    if (nullptr != triangleVertexNormals)
+        geometry.addChild(layerElementNormal);
     geometry.addChild(layerElementMaterial);
     geometry.addChild(layer);
     geometry.addChild(FBXNode());

@@ -16,12 +16,12 @@ class GeneratedCacheContext
 {
 public:
     ~GeneratedCacheContext();
-    std::map<QString, std::vector<OutcomeNodeVertex>> partBmeshVertices;
+    std::map<QString, std::vector<std::pair<QVector3D, std::pair<QUuid, QUuid>>>> partBmeshVertices;
     std::map<QString, std::vector<OutcomeNode>> partBmeshNodes;
     std::map<QString, std::vector<std::tuple<PositionMapKey, PositionMapKey, PositionMapKey, PositionMapKey>>> partBmeshQuads;
     std::map<QString, void *> componentCombinableMeshs;
     std::map<QString, std::vector<QVector3D>> componentPositions;
-    std::map<QString, PositionMap<OutcomeNodeVertex>> componentVerticesSources;
+    std::map<QString, PositionMap<std::pair<QVector3D, std::pair<QUuid, QUuid>>>> componentVerticesSources;
     std::map<QString, QString> partMirrorIdMap;
     void updateComponentCombinableMesh(QString componentId, void *mesh);
 };
@@ -41,7 +41,7 @@ public:
     MeshLoader *takePartPreviewMesh(const QUuid &partId);
     const std::set<QUuid> &requirePreviewPartIds();
     const std::set<QUuid> &generatedPreviewPartIds();
-    Outcome *takeMeshResultContext();
+    Outcome *takeOutcome();
     void generate();
 signals:
     void finished();
@@ -71,9 +71,9 @@ private:
     static bool m_enableDebug;
     static PositionMap<int> *m_forMakePositionKey;
 private:
-    void loadVertexSources(void *meshliteContext, int meshId, QUuid partId, const std::map<int, QUuid> &bmeshToNodeIdMap, std::vector<OutcomeNodeVertex> &bmeshVertices,
+    void loadVertexSources(void *meshliteContext, int meshId, QUuid partId, const std::map<int, QUuid> &bmeshToNodeIdMap, std::vector<std::pair<QVector3D, std::pair<QUuid, QUuid>>> &bmeshVertices,
         std::vector<std::tuple<PositionMapKey, PositionMapKey, PositionMapKey, PositionMapKey>> &bmeshQuads);
-    void loadGeneratedPositionsToMeshResultContext(void *meshliteContext, int triangulatedMeshId);
+    void loadGeneratedPositionsToOutcome(void *meshliteContext, int triangulatedMeshId);
     void collectParts();
     void checkDirtyFlags();
     bool checkIsComponentDirty(QString componentId);

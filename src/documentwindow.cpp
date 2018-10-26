@@ -826,7 +826,7 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     //});
     connect(m_document, &Document::textureChanged, m_document, &Document::generateTexture);
     connect(m_document, &Document::resultMeshChanged, m_document, &Document::postProcess);
-    connect(m_document, &Document::resultMeshChanged, m_document, &Document::generateRig);
+    connect(m_document, &Document::postProcessedResultChanged, m_document, &Document::generateRig);
     connect(m_document, &Document::rigChanged, m_document, &Document::generateRig);
     connect(m_document, &Document::postProcessedResultChanged, m_document, &Document::generateTexture);
     //connect(m_document, &SkeletonDocument::resultTextureChanged, m_document, &SkeletonDocument::bakeAmbientOcclusionTexture);
@@ -1256,7 +1256,7 @@ void SkeletonDocumentWindow::exportFbxResult()
         return;
     }
     QApplication::setOverrideCursor(Qt::WaitCursor);
-    Outcome skeletonResult = m_document->currentPostProcessedResultContext();
+    Outcome skeletonResult = m_document->currentPostProcessedOutcome();
     FbxFileWriter fbxFileWriter(skeletonResult, m_document->resultRigBones(), m_document->resultRigWeights(), filename);
     fbxFileWriter.save();
     QApplication::restoreOverrideCursor();
@@ -1274,7 +1274,7 @@ void SkeletonDocumentWindow::exportGlbResult()
         return;
     }
     QApplication::setOverrideCursor(Qt::WaitCursor);
-    Outcome skeletonResult = m_document->currentPostProcessedResultContext();
+    Outcome skeletonResult = m_document->currentPostProcessedOutcome();
     GlbFileWriter glbFileWriter(skeletonResult, m_document->resultRigBones(), m_document->resultRigWeights(), filename,
         m_document->textureImage);
     glbFileWriter.save();

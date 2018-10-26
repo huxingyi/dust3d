@@ -14,7 +14,7 @@
 float MeshLoader::m_defaultMetalness = 0.0;
 float MeshLoader::m_defaultRoughness = 1.0;
 
-MeshLoader::MeshLoader(void *meshlite, int meshId, int triangulatedMeshId, QColor defaultColor, const std::vector<OutcomeMaterial> *triangleMaterials, bool smoothNormal) :
+MeshLoader::MeshLoader(void *meshlite, int meshId, int triangulatedMeshId, QColor defaultColor, const std::vector<QColor> *triangleColors, bool smoothNormal) :
     m_triangleVertices(nullptr),
     m_triangleVertexCount(0),
     m_edgeVertices(nullptr),
@@ -121,11 +121,11 @@ MeshLoader::MeshLoader(void *meshlite, int meshId, int triangulatedMeshId, QColo
         float useColorB = modelB;
         float useMetalness = m_defaultMetalness;
         float useRoughness = m_defaultRoughness;
-        if (triangleMaterials && i < (int)triangleMaterials->size()) {
-            auto triangleMaterial = (*triangleMaterials)[i];
-            useColorR = triangleMaterial.color.redF();
-            useColorG = triangleMaterial.color.greenF();
-            useColorB = triangleMaterial.color.blueF();
+        if (nullptr != triangleColors && i < (int)triangleColors->size()) {
+            const auto &triangleColor = (*triangleColors)[i];
+            useColorR = triangleColor.redF();
+            useColorG = triangleColor.greenF();
+            useColorB = triangleColor.blueF();
         }
         TriangulatedFace triangulatedFace;
         triangulatedFace.color.setRedF(useColorR);
@@ -240,40 +240,46 @@ MeshLoader::MeshLoader(Outcome &outcome) :
     m_edgeVertexCount(0),
     m_textureImage(nullptr)
 {
-    for (const auto &part: outcome.parts()) {
-        m_triangleVertexCount += part.second.triangles.size() * 3;
-    }
+    m_triangleVertexCount = outcome.triangles.size() * 3;
     m_triangleVertices = new Vertex[m_triangleVertexCount];
     int destIndex = 0;
-    for (const auto &part: outcome.parts()) {
-        for (int x = 0; x < (int)part.second.triangles.size(); x++) {
-            const auto &it = part.second.triangles[x];
-            for (auto i = 0; i < 3; i++) {
-                int vertexIndex = it.indicies[i];
-                const OutcomeVertex *srcVert = &part.second.vertices[vertexIndex];
-                const QVector3D *srcNormal = &part.second.interpolatedTriangleVertexNormals[x * 3 + i];
-                const OutcomeVertexUv *srcUv = &part.second.vertexUvs[vertexIndex];
-                //const Material *srcMaterial = &part.second.material;
-                const QVector3D *srcTangent = &part.second.triangleTangents[x];
-                Vertex *dest = &m_triangleVertices[destIndex];
-                dest->colorR = 0;
-                dest->colorG = 0;
-                dest->colorB = 0;
-                dest->posX = srcVert->position.x();
-                dest->posY = srcVert->position.y();
-                dest->posZ = srcVert->position.z();
-                dest->texU = srcUv->uv[0];
-                dest->texV = srcUv->uv[1];
-                dest->normX = srcNormal->x();
-                dest->normY = srcNormal->y();
-                dest->normZ = srcNormal->z();
-                dest->metalness = m_defaultMetalness;
-                dest->roughness = m_defaultRoughness;
-                dest->tangentX = srcTangent->x();
-                dest->tangentY = srcTangent->y();
-                dest->tangentZ = srcTangent->z();
-                destIndex++;
-            }
+    const auto triangleVertexNormals = outcome.triangleVertexNormals();
+    const auto triangleVertexUvs = outcome.triangleVertexUvs();
+    const auto triangleTangents = outcome.triangleTangents();
+    const QVector3D defaultNormal = QVector3D(0, 0, 0);
+    const QVector2D defaultUv = QVector2D(0, 0);
+    const QVector3D defaultTangent = QVector3D(0, 0, 0);
+    for (size_t i = 0; i < outcome.triangles.size(); ++i) {
+        for (auto j = 0; j < 3; j++) {
+            int vertexIndex = outcome.triangles[i][j];
+            const QVector3D *srcVert = &outcome.vertices[vertexIndex];
+            const QVector3D *srcNormal = &defaultNormal;
+            if (triangleVertexNormals)
+                srcNormal = &(*triangleVertexNormals)[i][j];
+            const QVector2D *srcUv = &defaultUv;
+            if (triangleVertexUvs)
+                srcUv = &(*triangleVertexUvs)[i][j];
+            const QVector3D *srcTangent = &defaultTangent;
+            if (triangleTangents)
+                srcTangent = &(*triangleTangents)[i];
+            Vertex *dest = &m_triangleVertices[destIndex];
+            dest->colorR = 0;
+            dest->colorG = 0;
+            dest->colorB = 0;
+            dest->posX = srcVert->x();
+            dest->posY = srcVert->y();
+            dest->posZ = srcVert->z();
+            dest->texU = srcUv->x();
+            dest->texV = srcUv->y();
+            dest->normX = srcNormal->x();
+            dest->normY = srcNormal->y();
+            dest->normZ = srcNormal->z();
+            dest->metalness = m_defaultMetalness;
+            dest->roughness = m_defaultRoughness;
+            dest->tangentX = srcTangent->x();
+            dest->tangentY = srcTangent->y();
+            dest->tangentZ = srcTangent->z();
+            destIndex++;
         }
     }
 }

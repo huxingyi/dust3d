@@ -13,7 +13,7 @@ signals:
 public:
     PoseMeshCreator(const std::vector<JointNode> &resultNodes,
         const Outcome &outcome,
-        const std::map<int, AutoRiggerVertexWeights> &resultWeights);
+        const std::map<int, RiggerVertexWeights> &resultWeights);
     ~PoseMeshCreator();
     void createMesh();
     MeshLoader *takeResultMesh();
@@ -22,7 +22,7 @@ public slots:
 private:
     std::vector<JointNode> m_resultNodes;
     Outcome m_outcome;
-    std::map<int, AutoRiggerVertexWeights> m_resultWeights;
+    std::map<int, RiggerVertexWeights> m_resultWeights;
     MeshLoader *m_resultMesh = nullptr;
 };
 

@@ -38,16 +38,14 @@ Document::Document() :
     m_meshGenerator(nullptr),
     m_resultMesh(nullptr),
     m_batchChangeRefCount(0),
-    m_currentMeshResultContext(nullptr),
+    m_currentOutcome(nullptr),
     m_isTextureObsolete(false),
     m_textureGenerator(nullptr),
     m_isPostProcessResultObsolete(false),
     m_postProcessor(nullptr),
-    m_postProcessedResultContext(new Outcome),
+    m_postProcessedOutcome(new Outcome),
     m_resultTextureMesh(nullptr),
     m_textureImageUpdateVersion(0),
-    m_ambientOcclusionBaker(nullptr),
-    m_ambientOcclusionBakedImageUpdateVersion(0),
     m_sharedContextWidget(nullptr),
     m_allPositionRelatedLocksEnabled(true),
     m_smoothNormal(true),
@@ -56,7 +54,7 @@ Document::Document() :
     m_resultRigBones(nullptr),
     m_resultRigWeights(nullptr),
     m_isRigObsolete(false),
-    m_riggedResultContext(new Outcome),
+    m_riggedOutcome(new Outcome),
     m_posePreviewsGenerator(nullptr),
     m_currentRigSucceed(false),
     m_materialPreviewsGenerator(nullptr),
@@ -67,7 +65,7 @@ Document::Document() :
 Document::~Document()
 {
     delete m_resultMesh;
-    delete m_postProcessedResultContext;
+    delete m_postProcessedOutcome;
     delete textureGuideImage;
     delete textureImage;
     delete textureBorderImage;
@@ -1388,7 +1386,7 @@ MeshLoader *Document::takeResultRigWeightMesh()
 void Document::meshReady()
 {
     MeshLoader *resultMesh = m_meshGenerator->takeResultMesh();
-    Outcome *outcome = m_meshGenerator->takeMeshResultContext();
+    Outcome *outcome = m_meshGenerator->takeOutcome();
     
     for (auto &partId: m_meshGenerator->generatedPreviewPartIds()) {
         auto part = partMap.find(partId);
@@ -1402,8 +1400,8 @@ void Document::meshReady()
     delete m_resultMesh;
     m_resultMesh = resultMesh;
     
-    delete m_currentMeshResultContext;
-    m_currentMeshResultContext = outcome;
+    delete m_currentOutcome;
+    m_currentOutcome = outcome;
     
     if (nullptr == m_resultMesh) {
         qDebug() << "Result mesh is null";
@@ -1513,7 +1511,7 @@ void Document::generateTexture()
     toSnapshot(snapshot);
     
     QThread *thread = new QThread;
-    m_textureGenerator = new TextureGenerator(*m_postProcessedResultContext, snapshot);
+    m_textureGenerator = new TextureGenerator(*m_postProcessedOutcome, snapshot);
     m_textureGenerator->moveToThread(thread);
     connect(thread, &QThread::started, m_textureGenerator, &TextureGenerator::process);
     connect(m_textureGenerator, &TextureGenerator::finished, this, &Document::textureReady);
@@ -1559,74 +1557,6 @@ void Document::textureReady()
     }
 }
 
-void Document::bakeAmbientOcclusionTexture()
-{
-    if (nullptr != m_ambientOcclusionBaker) {
-        return;
-    }
-
-    if (nullptr == textureColorImage || m_isTextureObsolete)
-        return;
-
-    qDebug() << "Ambient occlusion texture baking..";
-
-    QThread *thread = new QThread;
-    m_ambientOcclusionBaker = new AmbientOcclusionBaker();
-    m_ambientOcclusionBaker->setInputMesh(*m_postProcessedResultContext);
-    m_ambientOcclusionBaker->setBakeSize(TextureGenerator::m_textureSize, TextureGenerator::m_textureSize);
-    if (textureBorderImage)
-        m_ambientOcclusionBaker->setBorderImage(*textureBorderImage);
-    if (textureColorImage)
-        m_ambientOcclusionBaker->setColorImage(*textureColorImage);
-    m_ambientOcclusionBaker->setImageUpdateVersion(m_textureImageUpdateVersion);
-    m_ambientOcclusionBaker->setRenderThread(thread);
-    m_ambientOcclusionBaker->moveToThread(thread);
-    connect(thread, &QThread::started, m_ambientOcclusionBaker, &AmbientOcclusionBaker::process);
-    connect(m_ambientOcclusionBaker, &AmbientOcclusionBaker::finished, this, &Document::ambientOcclusionTextureReady);
-    connect(m_ambientOcclusionBaker, &AmbientOcclusionBaker::finished, thread, &QThread::quit);
-    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
-    thread->start();
-}
-
-void Document::ambientOcclusionTextureReady()
-{
-    m_ambientOcclusionBakedImageUpdateVersion = m_ambientOcclusionBaker->getImageUpdateVersion();
-
-    if (m_textureImageUpdateVersion == m_ambientOcclusionBakedImageUpdateVersion) {
-        QImage *bakedGuideImage = m_ambientOcclusionBaker->takeGuideImage();
-        if (nullptr != bakedGuideImage) {
-            delete textureGuideImage;
-            textureGuideImage = bakedGuideImage;
-        }
-
-        QImage *bakedTextureImage = m_ambientOcclusionBaker->takeTextureImage();
-        if (nullptr != bakedTextureImage) {
-            delete textureImage;
-            textureImage = bakedTextureImage;
-        }
-
-        delete textureAmbientOcclusionImage;
-        textureAmbientOcclusionImage = m_ambientOcclusionBaker->takeAmbientOcclusionImage();
-        
-        MeshLoader *resultMesh = m_ambientOcclusionBaker->takeResultMesh();
-        if (resultMesh) {
-            delete m_resultTextureMesh;
-            m_resultTextureMesh = resultMesh;
-        }
-    }
-
-    delete m_ambientOcclusionBaker;
-    m_ambientOcclusionBaker = nullptr;
-
-    qDebug() << "Ambient occlusion texture baking done";
-
-    if (m_textureImageUpdateVersion == m_ambientOcclusionBakedImageUpdateVersion) {
-        emit resultBakedTextureChanged();
-    } else {
-        bakeAmbientOcclusionTexture();
-    }
-}
-
 void Document::postProcess()
 {
     if (nullptr != m_postProcessor) {
@@ -1636,7 +1566,7 @@ void Document::postProcess()
 
     m_isPostProcessResultObsolete = false;
 
-    if (!m_currentMeshResultContext) {
+    if (!m_currentOutcome) {
         qDebug() << "MeshLoader is null";
         return;
     }
@@ -1644,7 +1574,7 @@ void Document::postProcess()
     qDebug() << "Post processing..";
 
     QThread *thread = new QThread;
-    m_postProcessor = new MeshResultPostProcessor(*m_currentMeshResultContext);
+    m_postProcessor = new MeshResultPostProcessor(*m_currentOutcome);
     m_postProcessor->moveToThread(thread);
     connect(thread, &QThread::started, m_postProcessor, &MeshResultPostProcessor::process);
     connect(m_postProcessor, &MeshResultPostProcessor::finished, this, &Document::postProcessedMeshResultReady);
@@ -1656,8 +1586,8 @@ void Document::postProcess()
 
 void Document::postProcessedMeshResultReady()
 {
-    delete m_postProcessedResultContext;
-    m_postProcessedResultContext = m_postProcessor->takePostProcessedResultContext();
+    delete m_postProcessedOutcome;
+    m_postProcessedOutcome = m_postProcessor->takePostProcessedOutcome();
 
     delete m_postProcessor;
     m_postProcessor = nullptr;
@@ -1671,9 +1601,9 @@ void Document::postProcessedMeshResultReady()
     }
 }
 
-const Outcome &Document::currentPostProcessedResultContext() const
+const Outcome &Document::currentPostProcessedOutcome() const
 {
-    return *m_postProcessedResultContext;
+    return *m_postProcessedOutcome;
 }
 
 void Document::setPartLockState(QUuid partId, bool locked)
@@ -2655,7 +2585,7 @@ void Document::generateRig()
     
     m_isRigObsolete = false;
     
-    if (RigType::None == rigType || nullptr == m_currentMeshResultContext) {
+    if (RigType::None == rigType || nullptr == m_currentOutcome) {
         removeRigResults();
         return;
     }
@@ -2663,7 +2593,7 @@ void Document::generateRig()
     qDebug() << "Rig generating..";
     
     QThread *thread = new QThread;
-    m_rigGenerator = new RigGenerator(*m_currentMeshResultContext);
+    m_rigGenerator = new RigGenerator(*m_postProcessedOutcome);
     m_rigGenerator->moveToThread(thread);
     connect(thread, &QThread::started, m_rigGenerator, &RigGenerator::process);
     connect(m_rigGenerator, &RigGenerator::finished, this, &Document::rigReady);
@@ -2688,10 +2618,10 @@ void Document::rigReady()
     m_resultRigMissingMarkNames = m_rigGenerator->missingMarkNames();
     m_resultRigErrorMarkNames = m_rigGenerator->errorMarkNames();
     
-    delete m_riggedResultContext;
-    m_riggedResultContext = m_rigGenerator->takeMeshResultContext();
-    if (nullptr == m_riggedResultContext)
-        m_riggedResultContext = new Outcome;
+    delete m_riggedOutcome;
+    m_riggedOutcome = m_rigGenerator->takeOutcome();
+    if (nullptr == m_riggedOutcome)
+        m_riggedOutcome = new Outcome;
     
     delete m_rigGenerator;
     m_rigGenerator = nullptr;
@@ -2707,12 +2637,12 @@ void Document::rigReady()
     }
 }
 
-const std::vector<AutoRiggerBone> *Document::resultRigBones() const
+const std::vector<RiggerBone> *Document::resultRigBones() const
 {
     return m_resultRigBones;
 }
 
-const std::map<int, AutoRiggerVertexWeights> *Document::resultRigWeights() const
+const std::map<int, RiggerVertexWeights> *Document::resultRigWeights() const
 {
     return m_resultRigWeights;
 }
@@ -2761,9 +2691,9 @@ const std::vector<QString> &Document::resultRigErrorMarkNames() const
     return m_resultRigErrorMarkNames;
 }
 
-const Outcome &Document::currentRiggedResultContext() const
+const Outcome &Document::currentRiggedOutcome() const
 {
-    return *m_riggedResultContext;
+    return *m_riggedOutcome;
 }
 
 bool Document::currentRigSucceed() const
@@ -2777,14 +2707,14 @@ void Document::generateMotions()
         return;
     }
     
-    const std::vector<AutoRiggerBone> *rigBones = resultRigBones();
-    const std::map<int, AutoRiggerVertexWeights> *rigWeights = resultRigWeights();
+    const std::vector<RiggerBone> *rigBones = resultRigBones();
+    const std::map<int, RiggerVertexWeights> *rigWeights = resultRigWeights();
     
     if (nullptr == rigBones || nullptr == rigWeights) {
         return;
     }
     
-    m_motionsGenerator = new MotionsGenerator(rigBones, rigWeights, currentRiggedResultContext());
+    m_motionsGenerator = new MotionsGenerator(rigBones, rigWeights, currentRiggedOutcome());
     bool hasDirtyMotion = false;
     for (const auto &pose: poseMap) {
         m_motionsGenerator->addPoseToLibrary(pose.first, pose.second.parameters);
@@ -2842,15 +2772,15 @@ void Document::generatePosePreviews()
         return;
     }
     
-    const std::vector<AutoRiggerBone> *rigBones = resultRigBones();
-    const std::map<int, AutoRiggerVertexWeights> *rigWeights = resultRigWeights();
+    const std::vector<RiggerBone> *rigBones = resultRigBones();
+    const std::map<int, RiggerVertexWeights> *rigWeights = resultRigWeights();
     
     if (nullptr == rigBones || nullptr == rigWeights) {
         return;
     }
 
     m_posePreviewsGenerator = new PosePreviewsGenerator(rigBones,
-        rigWeights, *m_riggedResultContext);
+        rigWeights, *m_riggedOutcome);
     bool hasDirtyPose = false;
     for (auto &poseIt: poseMap) {
         if (!poseIt.second.dirty)

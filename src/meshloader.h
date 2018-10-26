@@ -8,7 +8,6 @@
 #include <QImage>
 #include "positionmap.h"
 #include "theme.h"
-#include "qtlightmapper.h"
 #include "outcome.h"
 
 #pragma pack(push)
@@ -43,7 +42,7 @@ struct TriangulatedFace
 class MeshLoader
 {
 public:
-    MeshLoader(void *meshlite, int meshId, int triangulatedMeshId=-1, QColor defaultColor=Theme::white, const std::vector<OutcomeMaterial> *triangleMaterials=nullptr, bool smoothNormal=true);
+    MeshLoader(void *meshlite, int meshId, int triangulatedMeshId=-1, QColor defaultColor=Theme::white, const std::vector<QColor> *triangleColors=nullptr, bool smoothNormal=true);
     MeshLoader(Outcome &outcome);
     MeshLoader(Vertex *triangleVertices, int vertexNum);
     MeshLoader(const MeshLoader &mesh);

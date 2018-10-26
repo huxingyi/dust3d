@@ -240,15 +240,15 @@ void MotionEditWidget::generatePreviews()
     
     m_isPreviewsObsolete = false;
     
-    const std::vector<AutoRiggerBone> *rigBones = m_document->resultRigBones();
-    const std::map<int, AutoRiggerVertexWeights> *rigWeights = m_document->resultRigWeights();
+    const std::vector<RiggerBone> *rigBones = m_document->resultRigBones();
+    const std::map<int, RiggerVertexWeights> *rigWeights = m_document->resultRigWeights();
     
     if (nullptr == rigBones || nullptr == rigWeights) {
         return;
     }
     
     m_previewsGenerator = new MotionsGenerator(rigBones, rigWeights,
-        m_document->currentRiggedResultContext());
+        m_document->currentRiggedOutcome());
     for (const auto &pose: m_document->poseMap)
         m_previewsGenerator->addPoseToLibrary(pose.first, pose.second.parameters);
     for (const auto &motion: m_document->motionMap)

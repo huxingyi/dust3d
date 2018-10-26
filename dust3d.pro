@@ -120,16 +120,11 @@ HEADERS += src/floatnumberwidget.h
 SOURCES += src/exportpreviewwidget.cpp
 HEADERS += src/exportpreviewwidget.h
 
-SOURCES += src/ambientocclusionbaker.cpp
-HEADERS += src/ambientocclusionbaker.h
-
 SOURCES += src/ccdikresolver.cpp
 HEADERS += src/ccdikresolver.h
 
 SOURCES += src/skeletonikmover.cpp
 HEADERS += src/skeletonikmover.h
-
-HEADERS += src/qtlightmapper.h
 
 SOURCES += src/spinnableawesomebutton.cpp
 HEADERS += src/spinnableawesomebutton.h
@@ -155,8 +150,8 @@ HEADERS += src/skeletonside.h
 SOURCES += src/meshsplitter.cpp
 HEADERS += src/meshsplitter.h
 
-SOURCES += src/autorigger.cpp
-HEADERS += src/autorigger.h
+SOURCES += src/rigger.cpp
+HEADERS += src/rigger.h
 
 SOURCES += src/rigtype.cpp
 HEADERS += src/rigtype.h
@@ -271,6 +266,15 @@ HEADERS += src/flowlayout.h
 
 SOURCES += src/shortcuts.cpp
 HEADERS += src/shortcuts.h
+
+SOURCES += src/trianglesourcenoderesolve.cpp
+HEADERS += src/trianglesourcenoderesolve.h
+
+SOURCES += src/uvunwrap.cpp
+HEADERS += src/uvunwrap.h
+
+SOURCES += src/triangletangentresolve.cpp
+HEADERS += src/triangletangentresolve.h
 
 SOURCES += src/main.cpp
 

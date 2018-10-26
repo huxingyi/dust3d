@@ -1,5 +1,5 @@
-#ifndef DUST3D_AUTO_RIGGER_H
-#define DUST3D_AUTO_RIGGER_H
+#ifndef DUST3D_RIGGER_H
+#define DUST3D_RIGGER_H
 #include <QtGlobal>
 #include <QVector3D>
 #include <QObject>
@@ -10,7 +10,7 @@
 #include "rigtype.h"
 #include "skeletonside.h"
 
-class AutoRiggerMark
+class RiggerMark
 {
 public:
     BoneMark boneMark;
@@ -38,7 +38,7 @@ private:
     std::set<MeshSplitterTriangle> m_secondGroup;
 };
 
-class AutoRiggerBone
+class RiggerBone
 {
 public:
     QString name;
@@ -49,7 +49,7 @@ public:
     std::vector<int> children;
 };
 
-class AutoRiggerVertexWeights
+class RiggerVertexWeights
 {
 public:
     int boneIndicies[4] = {0, 0, 0, 0};
@@ -85,17 +85,17 @@ private:
     std::vector<std::pair<int, float>> m_boneRawWeights;
 };
 
-class AutoRigger : public QObject
+class Rigger : public QObject
 {
 public:
-    AutoRigger(const std::vector<QVector3D> &verticesPositions,
+    Rigger(const std::vector<QVector3D> &verticesPositions,
         const std::set<MeshSplitterTriangle> &inputTriangles);
     bool addMarkGroup(BoneMark boneMark, SkeletonSide boneSide, QVector3D bonePosition, 
         const std::set<MeshSplitterTriangle> &markTriangles);
     const std::vector<std::pair<QtMsgType, QString>> &messages();
     bool rig();
-    const std::vector<AutoRiggerBone> &resultBones();
-    const std::map<int, AutoRiggerVertexWeights> &resultWeights();
+    const std::vector<RiggerBone> &resultBones();
+    const std::map<int, RiggerVertexWeights> &resultWeights();
     const std::vector<QString> &missingMarkNames();
     const std::vector<QString> &errorMarkNames();
 private:
@@ -117,10 +117,10 @@ private:
     std::vector<std::pair<QtMsgType, QString>> m_messages;
     std::vector<QVector3D> m_verticesPositions;
     std::set<MeshSplitterTriangle> m_inputTriangles;
-    std::vector<AutoRiggerMark> m_marks;
+    std::vector<RiggerMark> m_marks;
     std::map<std::pair<BoneMark, SkeletonSide>, std::vector<int>> m_marksMap;
-    std::vector<AutoRiggerBone> m_resultBones;
-    std::map<int, AutoRiggerVertexWeights> m_resultWeights;
+    std::vector<RiggerBone> m_resultBones;
+    std::map<int, RiggerVertexWeights> m_resultWeights;
     std::vector<QString> m_missingMarkNames;
     std::vector<QString> m_errorMarkNames;
 };

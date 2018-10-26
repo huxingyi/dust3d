@@ -5,15 +5,15 @@
 #include <QUuid>
 #include <vector>
 #include "meshloader.h"
-#include "autorigger.h"
+#include "rigger.h"
 #include "outcome.h"
 
 class PosePreviewsGenerator : public QObject
 {
     Q_OBJECT
 public:
-    PosePreviewsGenerator(const std::vector<AutoRiggerBone> *rigBones,
-        const std::map<int, AutoRiggerVertexWeights> *rigWeights,
+    PosePreviewsGenerator(const std::vector<RiggerBone> *rigBones,
+        const std::map<int, RiggerVertexWeights> *rigWeights,
         const Outcome &outcome);
     ~PosePreviewsGenerator();
     void addPose(QUuid poseId, const std::map<QString, std::map<QString, QString>> &pose);
@@ -24,8 +24,8 @@ signals:
 public slots:
     void process();
 private:
-    std::vector<AutoRiggerBone> m_rigBones;
-    std::map<int, AutoRiggerVertexWeights> m_rigWeights;
+    std::vector<RiggerBone> m_rigBones;
+    std::map<int, RiggerVertexWeights> m_rigWeights;
     Outcome *m_outcome = nullptr;
     std::vector<std::pair<QUuid, std::map<QString, std::map<QString, QString>>>> m_poses;
     std::map<QUuid, MeshLoader *> m_previews;

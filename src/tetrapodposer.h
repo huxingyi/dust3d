@@ -6,7 +6,7 @@ class TetrapodPoser : public Poser
 {
     Q_OBJECT
 public:
-    TetrapodPoser(const std::vector<AutoRiggerBone> &bones);
+    TetrapodPoser(const std::vector<RiggerBone> &bones);
 public:
     void commit();
 };

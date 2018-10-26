@@ -16,7 +16,6 @@
 #include "theme.h"
 #include "texturegenerator.h"
 #include "meshresultpostprocessor.h"
-#include "ambientocclusionbaker.h"
 #include "bonemark.h"
 #include "riggenerator.h"
 #include "rigtype.h"
@@ -672,8 +671,8 @@ public:
     MeshLoader *takeResultMesh();
     MeshLoader *takeResultTextureMesh();
     MeshLoader *takeResultRigWeightMesh();
-    const std::vector<AutoRiggerBone> *resultRigBones() const;
-    const std::map<int, AutoRiggerVertexWeights> *resultRigWeights() const;
+    const std::vector<RiggerBone> *resultRigBones() const;
+    const std::map<int, RiggerVertexWeights> *resultRigWeights() const;
     void updateTurnaround(const QImage &image);
     void setSharedContextWidget(QOpenGLWidget *sharedContextWidget);
     bool hasPastableNodesInClipboard() const;
@@ -685,7 +684,7 @@ public:
     bool isNodeEditable(QUuid nodeId) const;
     bool isEdgeEditable(QUuid edgeId) const;
     bool originSettled() const;
-    const Outcome &currentPostProcessedResultContext() const;
+    const Outcome &currentPostProcessedOutcome() const;
     bool isExportReady() const;
     bool isPostProcessResultObsolete() const;
     void findAllNeighbors(QUuid nodeId, std::set<QUuid> &neighbors) const;
@@ -693,7 +692,7 @@ public:
     void collectComponentDescendantComponents(QUuid componentId, std::vector<QUuid> &componentIds) const;
     const std::vector<QString> &resultRigMissingMarkNames() const;
     const std::vector<QString> &resultRigErrorMarkNames() const;
-    const Outcome &currentRiggedResultContext() const;
+    const Outcome &currentRiggedOutcome() const;
     bool currentRigSucceed() const;
     bool isMeshGenerating() const;
 public slots:
@@ -718,8 +717,6 @@ public slots:
     void textureReady();
     void postProcess();
     void postProcessedMeshResultReady();
-    void bakeAmbientOcclusionTexture();
-    void ambientOcclusionTextureReady();
     void generateRig();
     void rigReady();
     void generatePosePreviews();
@@ -818,26 +815,24 @@ private: // need initialize
     MeshGenerator *m_meshGenerator;
     MeshLoader *m_resultMesh;
     int m_batchChangeRefCount;
-    Outcome *m_currentMeshResultContext;
+    Outcome *m_currentOutcome;
     bool m_isTextureObsolete;
     TextureGenerator *m_textureGenerator;
     bool m_isPostProcessResultObsolete;
     MeshResultPostProcessor *m_postProcessor;
-    Outcome *m_postProcessedResultContext;
+    Outcome *m_postProcessedOutcome;
     MeshLoader *m_resultTextureMesh;
     unsigned long long m_textureImageUpdateVersion;
-    AmbientOcclusionBaker *m_ambientOcclusionBaker;
-    unsigned long long m_ambientOcclusionBakedImageUpdateVersion;
     QOpenGLWidget *m_sharedContextWidget;
     QUuid m_currentCanvasComponentId;
     bool m_allPositionRelatedLocksEnabled;
     bool m_smoothNormal;
     RigGenerator *m_rigGenerator;
     MeshLoader *m_resultRigWeightMesh;
-    std::vector<AutoRiggerBone> *m_resultRigBones;
-    std::map<int, AutoRiggerVertexWeights> *m_resultRigWeights;
+    std::vector<RiggerBone> *m_resultRigBones;
+    std::map<int, RiggerVertexWeights> *m_resultRigWeights;
     bool m_isRigObsolete;
-    Outcome *m_riggedResultContext;
+    Outcome *m_riggedOutcome;
     PosePreviewsGenerator *m_posePreviewsGenerator;
     bool m_currentRigSucceed;
     MaterialPreviewsGenerator *m_materialPreviewsGenerator;

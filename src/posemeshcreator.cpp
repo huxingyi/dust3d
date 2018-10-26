@@ -4,7 +4,7 @@
 
 PoseMeshCreator::PoseMeshCreator(const std::vector<JointNode> &resultNodes,
         const Outcome &outcome,
-        const std::map<int, AutoRiggerVertexWeights> &resultWeights) :
+        const std::map<int, RiggerVertexWeights> &resultWeights) :
     m_resultNodes(resultNodes),
     m_outcome(outcome),
     m_resultWeights(resultWeights)

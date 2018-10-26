@@ -189,8 +189,8 @@ void PoseEditWidget::updatePreview()
         return;
     }
     
-    const std::vector<AutoRiggerBone> *rigBones = m_document->resultRigBones();
-    const std::map<int, AutoRiggerVertexWeights> *rigWeights = m_document->resultRigWeights();
+    const std::vector<RiggerBone> *rigBones = m_document->resultRigBones();
+    const std::map<int, RiggerVertexWeights> *rigWeights = m_document->resultRigWeights();
     
     m_isPreviewDirty = false;
     
@@ -201,7 +201,7 @@ void PoseEditWidget::updatePreview()
     TetrapodPoser *poser = new TetrapodPoser(*rigBones);
     poser->parameters() = m_parameters;
     poser->commit();
-    m_posePreviewManager->postUpdate(*poser, m_document->currentRiggedResultContext(), *rigWeights);
+    m_posePreviewManager->postUpdate(*poser, m_document->currentRiggedOutcome(), *rigWeights);
     delete poser;
 }
 

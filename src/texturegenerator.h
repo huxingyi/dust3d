@@ -5,6 +5,7 @@
 #include <QImage>
 #include "outcome.h"
 #include "meshloader.h"
+#include "snapshot.h"
 
 class TextureGenerator : public QObject
 {
@@ -17,7 +18,7 @@ public:
     QImage *takeResultTextureBorderImage();
     QImage *takeResultTextureColorImage();
     QImage *takeResultTextureNormalImage();
-    Outcome *takeResultContext();
+    Outcome *takeOutcome();
     MeshLoader *takeResultMesh();
     void addPartColorMap(QUuid partId, const QImage *image);
     void addPartNormalMap(QUuid partId, const QImage *image);

@@ -9,7 +9,8 @@ class MeshResultPostProcessor : public QObject
 public:
     MeshResultPostProcessor(const Outcome &outcome);
     ~MeshResultPostProcessor();
-    Outcome *takePostProcessedResultContext();
+    Outcome *takePostProcessedOutcome();
+    void poseProcess();
 signals:
     void finished();
 public slots:

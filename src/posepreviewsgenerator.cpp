@@ -4,8 +4,8 @@
 #include "tetrapodposer.h"
 #include "posemeshcreator.h"
 
-PosePreviewsGenerator::PosePreviewsGenerator(const std::vector<AutoRiggerBone> *rigBones,
-        const std::map<int, AutoRiggerVertexWeights> *rigWeights,
+PosePreviewsGenerator::PosePreviewsGenerator(const std::vector<RiggerBone> *rigBones,
+        const std::map<int, RiggerVertexWeights> *rigWeights,
         const Outcome &outcome) :
     m_rigBones(*rigBones),
     m_rigWeights(*rigWeights),

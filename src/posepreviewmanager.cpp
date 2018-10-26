@@ -18,7 +18,7 @@ bool PosePreviewManager::isRendering()
 
 bool PosePreviewManager::postUpdate(const Poser &poser,
     const Outcome &outcome,
-    const std::map<int, AutoRiggerVertexWeights> &resultWeights)
+    const std::map<int, RiggerVertexWeights> &resultWeights)
 {
     if (nullptr != m_poseMeshCreator)
         return false;

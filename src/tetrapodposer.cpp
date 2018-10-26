@@ -1,6 +1,6 @@
 #include "tetrapodposer.h"
 
-TetrapodPoser::TetrapodPoser(const std::vector<AutoRiggerBone> &bones) :
+TetrapodPoser::TetrapodPoser(const std::vector<RiggerBone> &bones) :
     Poser(bones)
 {
 }
@@ -31,7 +31,7 @@ void TetrapodPoser::commit()
         auto findIntersectionResult = item.second.find("intersection");
         if (findIntersectionResult != item.second.end()) {
             float intersectionAngle = valueOfKeyInMapOrEmpty(item.second, "intersection").toFloat();
-            const AutoRiggerBone &bone = bones()[boneIndex];
+            const RiggerBone &bone = bones()[boneIndex];
             if (bone.name == "LeftHand" || bone.name == "RightHand") {
                 QVector3D handDirection = bone.tailPosition - bone.headPosition;
                 QVector3D rotateAxis = QVector3D::crossProduct(handDirection, bone.name == "RightHand" ? QVector3D(1, 0, 0) : QVector3D(-1, 0, 0)).normalized();

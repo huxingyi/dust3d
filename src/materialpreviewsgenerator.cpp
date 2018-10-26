@@ -6,6 +6,7 @@
 #include "ds3file.h"
 #include "texturegenerator.h"
 #include "imageforever.h"
+#include "meshresultpostprocessor.h"
 
 MaterialPreviewsGenerator::MaterialPreviewsGenerator()
 {
@@ -65,9 +66,14 @@ void MaterialPreviewsGenerator::generate()
         partIds.push_back(QUuid(mirror.first));
     }
     
-    Outcome *outcome = meshGenerator->takeMeshResultContext();
-    
-    MeshLoader *resultMesh = meshGenerator->takeResultMesh();
+    Outcome *outcome = meshGenerator->takeOutcome();
+    if (nullptr != outcome) {
+        MeshResultPostProcessor *poseProcessor = new MeshResultPostProcessor(*outcome);
+        poseProcessor->poseProcess();
+        delete outcome;
+        outcome = poseProcessor->takePostProcessedOutcome();
+        delete poseProcessor;
+    }
     
     for (const auto &material: m_materials) {
         TextureGenerator *textureGenerator = new TextureGenerator(*outcome);
@@ -99,8 +105,6 @@ void MaterialPreviewsGenerator::generate()
         }
         delete textureGenerator;
     }
-    
-    delete resultMesh;
     
     delete outcome;
     

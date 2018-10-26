@@ -12,8 +12,8 @@ class FbxFileWriter : public QObject
     Q_OBJECT
 public:
     FbxFileWriter(Outcome &outcome,
-        const std::vector<AutoRiggerBone> *resultRigBones,
-        const std::map<int, AutoRiggerVertexWeights> *resultRigWeights,
+        const std::vector<RiggerBone> *resultRigBones,
+        const std::map<int, RiggerVertexWeights> *resultRigWeights,
         const QString &filename);
     bool save();
 

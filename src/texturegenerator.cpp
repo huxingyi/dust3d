@@ -6,6 +6,8 @@
 #include "texturegenerator.h"
 #include "theme.h"
 #include "util.h"
+#include "texturetype.h"
+#include "material.h"
 
 int TextureGenerator::m_textureSize = 1024;
 
@@ -77,7 +79,7 @@ QImage *TextureGenerator::takeResultTextureNormalImage()
     return resultTextureNormalImage;
 }
 
-Outcome *TextureGenerator::takeResultContext()
+Outcome *TextureGenerator::takeOutcome()
 {
     Outcome *outcome = m_outcome;
     m_resultTextureImage = nullptr;
@@ -152,7 +154,7 @@ void TextureGenerator::prepare()
         for (size_t i = 0; i < (int)TextureType::Count - 1; ++i) {
             TextureType forWhat = (TextureType)(i + 1);
             MaterialTextures materialTextures;
-            QUuid materialId = bmeshNode.material.materialId;
+            QUuid materialId = bmeshNode.materialId;
             auto findUpdatedMaterialIdResult = updatedMaterialIdMap.find(bmeshNode.mirrorFromPartId.isNull() ? bmeshNode.partId : bmeshNode.mirrorFromPartId);
             if (findUpdatedMaterialIdResult != updatedMaterialIdMap.end())
                 materialId = findUpdatedMaterialIdResult->second;
@@ -176,6 +178,11 @@ void TextureGenerator::prepare()
 
 void TextureGenerator::generate()
 {
+    if (nullptr == m_outcome->triangleVertexUvs())
+        return;
+    if (nullptr == m_outcome->triangleSourceNodes())
+        return;
+    
     QElapsedTimer countTimeConsumed;
     countTimeConsumed.start();
     
@@ -186,8 +193,13 @@ void TextureGenerator::generate()
     bool hasRoughnessMap = false;
     bool hasAmbientOcclusionMap = false;
     
-    const std::vector<OutcomeMaterial> &triangleMaterials = m_outcome->triangleMaterials();
-    const std::vector<OutcomeTriangleUv> &triangleUvs = m_outcome->triangleUvs();
+    const auto &triangleVertexUvs = *m_outcome->triangleVertexUvs();
+    const auto &triangleSourceNodes = *m_outcome->triangleSourceNodes();
+    
+    std::map<std::pair<QUuid, QUuid>, const OutcomeNode *> nodeMap;
+    for (const auto &item: m_outcome->nodes) {
+        nodeMap.insert({{item.partId, item.nodeId}, &item});
+    }
     
     auto createImageBeginTime = countTimeConsumed.elapsed();
     
@@ -249,20 +261,20 @@ void TextureGenerator::generate()
     
     auto paintTextureBeginTime = countTimeConsumed.elapsed();
     texturePainter.setPen(Qt::NoPen);
-    for (auto i = 0u; i < triangleUvs.size(); i++) {
+    for (auto i = 0u; i < triangleVertexUvs.size(); i++) {
         QPainterPath path;
-        const OutcomeTriangleUv *uv = &triangleUvs[i];
+        const std::vector<QVector2D> &uv = triangleVertexUvs[i];
         float points[][2] = {
-            {uv->uv[0][0] * TextureGenerator::m_textureSize, uv->uv[0][1] * TextureGenerator::m_textureSize},
-            {uv->uv[1][0] * TextureGenerator::m_textureSize, uv->uv[1][1] * TextureGenerator::m_textureSize},
-            {uv->uv[2][0] * TextureGenerator::m_textureSize, uv->uv[2][1] * TextureGenerator::m_textureSize}
+            {uv[0][0] * TextureGenerator::m_textureSize, uv[0][1] * TextureGenerator::m_textureSize},
+            {uv[1][0] * TextureGenerator::m_textureSize, uv[1][1] * TextureGenerator::m_textureSize},
+            {uv[2][0] * TextureGenerator::m_textureSize, uv[2][1] * TextureGenerator::m_textureSize}
         };
         path.moveTo(points[0][0], points[0][1]);
         path.lineTo(points[1][0], points[1][1]);
         path.lineTo(points[2][0], points[2][1]);
         path = expandedPainterPath(path);
         // Copy color texture if there is one
-        const std::pair<QUuid, QUuid> source = m_outcome->triangleSourceNodes()[i];
+        const std::pair<QUuid, QUuid> &source = triangleSourceNodes[i];
         auto findColorTextureResult = m_partColorTextureMap.find(source.first);
         if (findColorTextureResult != m_partColorTextureMap.end()) {
             texturePainter.setClipping(true);
@@ -270,7 +282,12 @@ void TextureGenerator::generate()
             texturePainter.drawImage(0, 0, findColorTextureResult->second);
             texturePainter.setClipping(false);
         } else {
-            texturePainter.fillPath(path, QBrush(triangleMaterials[i].color));
+            auto findSourceNodeResult = nodeMap.find(source);
+            if (findSourceNodeResult != nodeMap.end() && nullptr != findSourceNodeResult->second) {
+                texturePainter.fillPath(path, QBrush(findSourceNodeResult->second->color));
+            } else {
+                texturePainter.fillPath(path, QBrush(Theme::white));
+            }
         }
         // Copy normal texture if there is one
         auto findNormalTextureResult = m_partNormalTextureMap.find(source.first);
@@ -314,13 +331,13 @@ void TextureGenerator::generate()
     pen.setWidth(0);
     textureBorderPainter.setPen(pen);
     auto paintBorderBeginTime = countTimeConsumed.elapsed();
-    for (auto i = 0u; i < triangleUvs.size(); i++) {
-        const OutcomeTriangleUv *uv = &triangleUvs[i];
+    for (auto i = 0u; i < triangleVertexUvs.size(); i++) {
+        const std::vector<QVector2D> &uv = triangleVertexUvs[i];
         for (auto j = 0; j < 3; j++) {
             int from = j;
             int to = (j + 1) % 3;
-            textureBorderPainter.drawLine(uv->uv[from][0] * TextureGenerator::m_textureSize, uv->uv[from][1] * TextureGenerator::m_textureSize,
-                uv->uv[to][0] * TextureGenerator::m_textureSize, uv->uv[to][1] * TextureGenerator::m_textureSize);
+            textureBorderPainter.drawLine(uv[from][0] * TextureGenerator::m_textureSize, uv[from][1] * TextureGenerator::m_textureSize,
+                uv[to][0] * TextureGenerator::m_textureSize, uv[to][1] * TextureGenerator::m_textureSize);
         }
     }
     auto paintBorderEndTime = countTimeConsumed.elapsed();

@@ -15,7 +15,7 @@ public:
     bool isRendering();
     bool postUpdate(const Poser &poser,
         const Outcome &outcome,
-        const std::map<int, AutoRiggerVertexWeights> &resultWeights);
+        const std::map<int, RiggerVertexWeights> &resultWeights);
     MeshLoader *takeResultPreviewMesh();
 private slots:
     void poseMeshReady();

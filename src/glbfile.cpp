@@ -20,19 +20,29 @@
 // http://quaternions.online/
 // https://en.m.wikipedia.org/wiki/Rotation_formalisms_in_three_dimensions?wprov=sfla1
 
-bool GlbFileWriter::m_enableComment = true;
+bool GlbFileWriter::m_enableComment = false;
 
 GlbFileWriter::GlbFileWriter(Outcome &outcome,
-        const std::vector<AutoRiggerBone> *resultRigBones,
-        const std::map<int, AutoRiggerVertexWeights> *resultRigWeights,
+        const std::vector<RiggerBone> *resultRigBones,
+        const std::map<int, RiggerVertexWeights> *resultRigWeights,
         const QString &filename,
         QImage *textureImage) :
     m_filename(filename),
-    m_outputNormal(false),
+    m_outputNormal(true),
     m_outputAnimation(true),
     m_outputUv(true),
     m_testOutputAsWhole(false)
 {
+    const std::vector<std::vector<QVector3D>> *triangleVertexNormals = outcome.triangleVertexNormals();
+    if (m_outputNormal) {
+        m_outputNormal = nullptr != triangleVertexNormals;
+    }
+    
+    const std::vector<std::vector<QVector2D>> *triangleVertexUvs = outcome.triangleVertexUvs();
+    if (m_outputUv) {
+        m_outputUv = nullptr != triangleVertexUvs;
+    }
+
     QDataStream binStream(&m_binByteArray, QIODevice::WriteOnly);
     binStream.setFloatingPointPrecision(QDataStream::SinglePrecision);
     binStream.setByteOrder(QDataStream::LittleEndian);
@@ -126,10 +136,17 @@ GlbFileWriter::GlbFileWriter(Outcome &outcome,
         m_json["nodes"][0]["mesh"] = 0;
     }
 
-    const std::map<QUuid, ResultPart> *parts = &outcome.parts();
+    std::vector<QVector3D> triangleVertexPositions;
+    std::vector<size_t> triangleVertexOldIndicies;
+    for (const auto &triangleIndicies: outcome.triangles) {
+        for (size_t j = 0; j < 3; ++j) {
+            triangleVertexOldIndicies.push_back(triangleIndicies[j]);
+            triangleVertexPositions.push_back(outcome.vertices[triangleIndicies[j]]);
+        }
+    }
 
     int primitiveIndex = 0;
-    for (const auto &part: *parts) {
+    if (!triangleVertexPositions.empty()) {
         
         m_json["meshes"][0]["primitives"][primitiveIndex]["indices"] = bufferViewIndex;
         m_json["meshes"][0]["primitives"][primitiveIndex]["material"] = primitiveIndex;
@@ -150,21 +167,21 @@ GlbFileWriter::GlbFileWriter(Outcome &outcome,
         primitiveIndex++;
 
         bufferViewFromOffset = (int)m_binByteArray.size();
-        for (const auto &it: part.second.triangles) {
-            binStream << (quint16)it.indicies[0] << (quint16)it.indicies[1] << (quint16)it.indicies[2];
+        for (size_t index = 0; index < triangleVertexPositions.size(); index += 3) {
+            binStream << (quint16)index << (quint16)(index + 1) << (quint16)(index + 2);
         }
         m_json["bufferViews"][bufferViewIndex]["buffer"] = 0;
         m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
-        m_json["bufferViews"][bufferViewIndex]["byteLength"] = (int)part.second.triangles.size() * 3 * sizeof(quint16);
+        m_json["bufferViews"][bufferViewIndex]["byteLength"] = (int)triangleVertexPositions.size() * sizeof(quint16);
         m_json["bufferViews"][bufferViewIndex]["target"] = 34963;
-        Q_ASSERT((int)part.second.triangles.size() * 3 * sizeof(quint16) == m_binByteArray.size() - bufferViewFromOffset);
+        Q_ASSERT((int)triangleVertexPositions.size() * sizeof(quint16) == m_binByteArray.size() - bufferViewFromOffset);
         alignBin();
         if (m_enableComment)
             m_json["accessors"][bufferViewIndex]["__comment"] = QString("/accessors/%1: triangle indicies").arg(QString::number(bufferViewIndex)).toUtf8().constData();
         m_json["accessors"][bufferViewIndex]["bufferView"] = bufferViewIndex;
         m_json["accessors"][bufferViewIndex]["byteOffset"] = 0;
         m_json["accessors"][bufferViewIndex]["componentType"] = 5123;
-        m_json["accessors"][bufferViewIndex]["count"] = part.second.triangles.size() * 3;
+        m_json["accessors"][bufferViewIndex]["count"] = triangleVertexPositions.size();
         m_json["accessors"][bufferViewIndex]["type"] = "SCALAR";
         bufferViewIndex++;
         
@@ -177,23 +194,23 @@ GlbFileWriter::GlbFileWriter(Outcome &outcome,
         float maxY = -100;
         float minZ = 100;
         float maxZ = -100;
-        for (const auto &it: part.second.vertices) {
-            if (it.position.x() < minX)
-                minX = it.position.x();
-            if (it.position.x() > maxX)
-                maxX = it.position.x();
-            if (it.position.y() < minY)
-                minY = it.position.y();
-            if (it.position.y() > maxY)
-                maxY = it.position.y();
-            if (it.position.z() < minZ)
-                minZ = it.position.z();
-            if (it.position.z() > maxZ)
-                maxZ = it.position.z();
-            binStream << (float)it.position.x() << (float)it.position.y() << (float)it.position.z();
+        for (const auto &position: triangleVertexPositions) {
+            if (position.x() < minX)
+                minX = position.x();
+            if (position.x() > maxX)
+                maxX = position.x();
+            if (position.y() < minY)
+                minY = position.y();
+            if (position.y() > maxY)
+                maxY = position.y();
+            if (position.z() < minZ)
+                minZ = position.z();
+            if (position.z() > maxZ)
+                maxZ = position.z();
+            binStream << (float)position.x() << (float)position.y() << (float)position.z();
         }
-        Q_ASSERT((int)part.second.vertices.size() * 3 * sizeof(float) == m_binByteArray.size() - bufferViewFromOffset);
-        m_json["bufferViews"][bufferViewIndex]["byteLength"] =  part.second.vertices.size() * 3 * sizeof(float);
+        Q_ASSERT((int)triangleVertexPositions.size() * 3 * sizeof(float) == m_binByteArray.size() - bufferViewFromOffset);
+        m_json["bufferViews"][bufferViewIndex]["byteLength"] =  triangleVertexPositions.size() * 3 * sizeof(float);
         m_json["bufferViews"][bufferViewIndex]["target"] = 34962;
         alignBin();
         if (m_enableComment)
@@ -201,43 +218,45 @@ GlbFileWriter::GlbFileWriter(Outcome &outcome,
         m_json["accessors"][bufferViewIndex]["bufferView"] = bufferViewIndex;
         m_json["accessors"][bufferViewIndex]["byteOffset"] = 0;
         m_json["accessors"][bufferViewIndex]["componentType"] = 5126;
-        m_json["accessors"][bufferViewIndex]["count"] =  part.second.vertices.size();
+        m_json["accessors"][bufferViewIndex]["count"] =  triangleVertexPositions.size();
         m_json["accessors"][bufferViewIndex]["type"] = "VEC3";
         m_json["accessors"][bufferViewIndex]["max"] = {maxX, maxY, maxZ};
         m_json["accessors"][bufferViewIndex]["min"] = {minX, minY, minZ};
         bufferViewIndex++;
         
-        /*
         if (m_outputNormal) {
-            bufferViewFromOffset = (int)binByteArray.size();
+            bufferViewFromOffset = (int)m_binByteArray.size();
             m_json["bufferViews"][bufferViewIndex]["buffer"] = 0;
             m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
             QStringList normalList;
-            for (const auto &it: part.second.interpolatedVertexNormals) {
-                stream << (float)it.x() << (float)it.y() << (float)it.z();
-                if (m_enableComment && m_outputNormal)
-                    normalList.append(QString("<%1,%2,%3>").arg(QString::number(it.x())).arg(QString::number(it.y())).arg(QString::number(it.z())));
+            for (const auto &normals: (*triangleVertexNormals)) {
+                for (const auto &it: normals) {
+                    binStream << (float)it.x() << (float)it.y() << (float)it.z();
+                    if (m_enableComment && m_outputNormal)
+                        normalList.append(QString("<%1,%2,%3>").arg(QString::number(it.x())).arg(QString::number(it.y())).arg(QString::number(it.z())));
+                }
             }
-            Q_ASSERT((int)part.second.interpolatedVertexNormals.size() * 3 * sizeof(float) == binByteArray.size() - bufferViewFromOffset);
-            m_json["bufferViews"][bufferViewIndex]["byteLength"] =  part.second.vertices.size() * 3 * sizeof(float);
+            Q_ASSERT((int)triangleVertexNormals->size() * 3 * 3 * sizeof(float) == m_binByteArray.size() - bufferViewFromOffset);
+            m_json["bufferViews"][bufferViewIndex]["byteLength"] =  triangleVertexNormals->size() * 3 * 3 * sizeof(float);
             m_json["bufferViews"][bufferViewIndex]["target"] = 34962;
-            alignBinaries();
+            alignBin();
             if (m_enableComment)
                 m_json["accessors"][bufferViewIndex]["__comment"] = QString("/accessors/%1: normal %2").arg(QString::number(bufferViewIndex)).arg(normalList.join(" ")).toUtf8().constData();
             m_json["accessors"][bufferViewIndex]["bufferView"] = bufferViewIndex;
             m_json["accessors"][bufferViewIndex]["byteOffset"] = 0;
             m_json["accessors"][bufferViewIndex]["componentType"] = 5126;
-            m_json["accessors"][bufferViewIndex]["count"] =  part.second.vertices.size();
+            m_json["accessors"][bufferViewIndex]["count"] =  triangleVertexNormals->size() * 3;
             m_json["accessors"][bufferViewIndex]["type"] = "VEC3";
             bufferViewIndex++;
-        }*/
+        }
         
         if (m_outputUv) {
             bufferViewFromOffset = (int)m_binByteArray.size();
             m_json["bufferViews"][bufferViewIndex]["buffer"] = 0;
             m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
-            for (const auto &it: part.second.vertexUvs) {
-                binStream << (float)it.uv[0] << (float)it.uv[1];
+            for (const auto &uvs: (*triangleVertexUvs)) {
+                for (const auto &it: uvs)
+                    binStream << (float)it.x() << (float)it.y();
             }
             m_json["bufferViews"][bufferViewIndex]["byteLength"] = m_binByteArray.size() - bufferViewFromOffset;
             alignBin();
@@ -246,7 +265,7 @@ GlbFileWriter::GlbFileWriter(Outcome &outcome,
             m_json["accessors"][bufferViewIndex]["bufferView"] = bufferViewIndex;
             m_json["accessors"][bufferViewIndex]["byteOffset"] = 0;
             m_json["accessors"][bufferViewIndex]["componentType"] = 5126;
-            m_json["accessors"][bufferViewIndex]["count"] =  part.second.vertexUvs.size();
+            m_json["accessors"][bufferViewIndex]["count"] =  triangleVertexUvs->size() * 3;
             m_json["accessors"][bufferViewIndex]["type"] = "VEC2";
             bufferViewIndex++;
         }
@@ -257,7 +276,7 @@ GlbFileWriter::GlbFileWriter(Outcome &outcome,
             m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
             QStringList boneList;
             int weightItIndex = 0;
-            for (const auto &oldIndex: part.second.verticesOldIndicies) {
+            for (const auto &oldIndex: triangleVertexOldIndicies) {
                 auto i = 0u;
                 if (m_enableComment)
                     boneList.append(QString("%1:<").arg(QString::number(weightItIndex)));
@@ -286,7 +305,7 @@ GlbFileWriter::GlbFileWriter(Outcome &outcome,
             m_json["accessors"][bufferViewIndex]["bufferView"] = bufferViewIndex;
             m_json["accessors"][bufferViewIndex]["byteOffset"] = 0;
             m_json["accessors"][bufferViewIndex]["componentType"] = 5123;
-            m_json["accessors"][bufferViewIndex]["count"] =  part.second.verticesOldIndicies.size();
+            m_json["accessors"][bufferViewIndex]["count"] =  triangleVertexOldIndicies.size();
             m_json["accessors"][bufferViewIndex]["type"] = "VEC4";
             bufferViewIndex++;
             
@@ -295,7 +314,7 @@ GlbFileWriter::GlbFileWriter(Outcome &outcome,
             m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
             QStringList weightList;
             weightItIndex = 0;
-            for (const auto &oldIndex: part.second.verticesOldIndicies) {
+            for (const auto &oldIndex: triangleVertexOldIndicies) {
                 auto i = 0u;
                 if (m_enableComment)
                     weightList.append(QString("%1:<").arg(QString::number(weightItIndex)));
@@ -324,7 +343,7 @@ GlbFileWriter::GlbFileWriter(Outcome &outcome,
             m_json["accessors"][bufferViewIndex]["bufferView"] = bufferViewIndex;
             m_json["accessors"][bufferViewIndex]["byteOffset"] = 0;
             m_json["accessors"][bufferViewIndex]["componentType"] = 5126;
-            m_json["accessors"][bufferViewIndex]["count"] =  part.second.verticesOldIndicies.size();
+            m_json["accessors"][bufferViewIndex]["count"] = triangleVertexOldIndicies.size();
             m_json["accessors"][bufferViewIndex]["type"] = "VEC4";
             bufferViewIndex++;
         }

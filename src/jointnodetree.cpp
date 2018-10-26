@@ -39,7 +39,7 @@ void JointNodeTree::recalculateTransformMatrices()
     }
 }
 
-JointNodeTree::JointNodeTree(const std::vector<AutoRiggerBone> *resultRigBones)
+JointNodeTree::JointNodeTree(const std::vector<RiggerBone> *resultRigBones)
 {
     if (nullptr == resultRigBones || resultRigBones->empty())
         return;
