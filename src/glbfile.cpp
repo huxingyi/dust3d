@@ -26,7 +26,8 @@ GlbFileWriter::GlbFileWriter(Outcome &outcome,
         const std::vector<RiggerBone> *resultRigBones,
         const std::map<int, RiggerVertexWeights> *resultRigWeights,
         const QString &filename,
-        QImage *textureImage) :
+        QImage *textureImage,
+        const std::vector<std::pair<QString, std::vector<std::pair<float, JointNodeTree>>>> *motions) :
     m_filename(filename),
     m_outputNormal(true),
     m_outputAnimation(true),
@@ -40,6 +41,10 @@ GlbFileWriter::GlbFileWriter(Outcome &outcome,
     const std::vector<std::vector<QVector2D>> *triangleVertexUvs = outcome.triangleVertexUvs();
     if (m_outputUv) {
         m_outputUv = nullptr != triangleVertexUvs;
+    }
+    
+    if (m_outputAnimation) {
+        m_outputAnimation = nullptr != motions && !motions->empty();
     }
 
     QDataStream binStream(&m_binByteArray, QIODevice::WriteOnly);
@@ -72,10 +77,9 @@ GlbFileWriter::GlbFileWriter(Outcome &outcome,
     m_json["asset"]["generator"] = APP_NAME " " APP_HUMAN_VER;
     m_json["scenes"][0]["nodes"] = {0};
     
+    constexpr int skeletonNodeStartIndex = 2;
+    
     if (resultRigBones && resultRigWeights && !resultRigBones->empty()) {
-
-        constexpr int skeletonNodeStartIndex = 2;
-        
         m_json["nodes"][0]["children"] = {
             1,
             skeletonNodeStartIndex
@@ -348,6 +352,136 @@ GlbFileWriter::GlbFileWriter(Outcome &outcome,
         }
     }
     
+    if (m_outputAnimation) {
+        for (int animationIndex = 0; animationIndex < (int)motions->size(); ++animationIndex) {
+            const auto &motion = (*motions)[animationIndex];
+            
+            m_json["animations"][animationIndex]["name"] = motion.first.toUtf8().constData();
+            
+            int input = bufferViewIndex;
+            bufferViewFromOffset = (int)m_binByteArray.size();
+            m_json["bufferViews"][bufferViewIndex]["buffer"] = 0;
+            m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
+            float minTime = 1000000.0;
+            float maxTime = 0.0;
+            QStringList timeList;
+            float timePoint = 0;
+            for (const auto &keyframe: motion.second) {
+                binStream << (float)timePoint;
+                if (timePoint < minTime)
+                    minTime = timePoint;
+                if (timePoint > maxTime)
+                    maxTime = timePoint;
+                if (m_enableComment)
+                    timeList.append(QString::number(timePoint));
+                timePoint += keyframe.first;
+            }
+            m_json["bufferViews"][bufferViewIndex]["byteLength"] = m_binByteArray.size() - bufferViewFromOffset;
+            alignBin();
+            if (m_enableComment)
+                m_json["accessors"][bufferViewIndex]["__comment"] = QString("/accessors/%1: times %2").arg(QString::number(bufferViewIndex)).arg(timeList.join(" ")).toUtf8().constData();
+            m_json["accessors"][bufferViewIndex]["bufferView"] = bufferViewIndex;
+            m_json["accessors"][bufferViewIndex]["byteOffset"] = 0;
+            m_json["accessors"][bufferViewIndex]["componentType"] = 5126;
+            m_json["accessors"][bufferViewIndex]["count"] =  motion.second.size();
+            m_json["accessors"][bufferViewIndex]["type"] = "SCALAR";
+            m_json["accessors"][bufferViewIndex]["max"][0] = maxTime;
+            m_json["accessors"][bufferViewIndex]["min"][0] = minTime;
+            bufferViewIndex++;
+            
+            std::set<int> rotatedJoints;
+            std::set<int> translatedJoints;
+            
+            for (const auto &keyframe: motion.second) {
+                for (int i = 0; i < (int)keyframe.second.nodes().size() && i < (int)boneNodes.size(); ++i) {
+                    const auto &src = boneNodes[i];
+                    const auto &dest = keyframe.second.nodes()[i];
+                    if (!qFuzzyCompare(src.rotation, dest.rotation))
+                        rotatedJoints.insert(i);
+                    if (!qFuzzyCompare(src.translation, dest.translation))
+                        translatedJoints.insert(i);
+                }
+            }
+            
+            int sampler = 0;
+            int channel = 0;
+            
+            for (const auto &jointIndex: rotatedJoints) {
+                int output = bufferViewIndex;
+                bufferViewFromOffset = (int)m_binByteArray.size();
+                m_json["bufferViews"][bufferViewIndex]["buffer"] = 0;
+                m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
+                QStringList rotationList;
+                for (int frame = 0; frame < (int)motion.second.size(); frame++) {
+                    const auto &keyframe = motion.second[frame];
+                    const auto &rotation = keyframe.second.nodes()[jointIndex].rotation;
+                    float x = rotation.x();
+                    float y = rotation.y();
+                    float z = rotation.z();
+                    float w = rotation.scalar();
+                    binStream << (float)x << (float)y << (float)z << (float)w;
+                    if (m_enableComment)
+                        rotationList.append(QString("%1:<%2,%3,%4,%5>").arg(QString::number(frame)).arg(QString::number(x)).arg(QString::number(y)).arg(QString::number(z)).arg(QString::number(w)));
+                }
+                m_json["bufferViews"][bufferViewIndex]["byteLength"] = m_binByteArray.size() - bufferViewFromOffset;
+                alignBin();
+                if (m_enableComment)
+                    m_json["accessors"][bufferViewIndex]["__comment"] = QString("/accessors/%1: rotation %2").arg(QString::number(bufferViewIndex)).arg(rotationList.join(" ")).toUtf8().constData();
+                m_json["accessors"][bufferViewIndex]["bufferView"] = bufferViewIndex;
+                m_json["accessors"][bufferViewIndex]["byteOffset"] = 0;
+                m_json["accessors"][bufferViewIndex]["componentType"] = 5126;
+                m_json["accessors"][bufferViewIndex]["count"] =  motion.second.size();
+                m_json["accessors"][bufferViewIndex]["type"] = "VEC4";
+                bufferViewIndex++;
+
+                m_json["animations"][animationIndex]["samplers"][sampler]["input"] = input;
+                m_json["animations"][animationIndex]["samplers"][sampler]["interpolation"] = "LINEAR";
+                m_json["animations"][animationIndex]["samplers"][sampler]["output"] = output;
+                
+                m_json["animations"][animationIndex]["channels"][channel]["sampler"] = sampler;
+                m_json["animations"][animationIndex]["channels"][channel]["target"]["node"] = skeletonNodeStartIndex + jointIndex;
+                m_json["animations"][animationIndex]["channels"][channel]["target"]["path"] = "rotation";
+                
+                sampler++;
+                channel++;
+                
+                for (const auto &jointIndex: translatedJoints) {
+                    int output = bufferViewIndex;
+                    bufferViewFromOffset = (int)m_binByteArray.size();
+                    m_json["bufferViews"][bufferViewIndex]["buffer"] = 0;
+                    m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
+                    for (int frame = 0; frame < (int)motion.second.size(); frame++) {
+                        const auto &keyframe = motion.second[frame];
+                        const auto &translation = keyframe.second.nodes()[jointIndex].translation;
+                        binStream << (float)translation.x() << (float)translation.y() << (float)translation.z();
+                    }
+                    m_json["bufferViews"][bufferViewIndex]["byteLength"] = m_binByteArray.size() - bufferViewFromOffset;
+                    alignBin();
+                    if (m_enableComment)
+                        m_json["accessors"][bufferViewIndex]["__comment"] = QString("/accessors/%1: translation").arg(QString::number(bufferViewIndex)).toUtf8().constData();
+                    m_json["accessors"][bufferViewIndex]["bufferView"] = bufferViewIndex;
+                    m_json["accessors"][bufferViewIndex]["byteOffset"] = 0;
+                    m_json["accessors"][bufferViewIndex]["componentType"] = 5126;
+                    m_json["accessors"][bufferViewIndex]["count"] =  motion.second.size();
+                    m_json["accessors"][bufferViewIndex]["type"] = "VEC3";
+                    bufferViewIndex++;
+
+                    m_json["animations"][animationIndex]["samplers"][sampler]["input"] = input;
+                    m_json["animations"][animationIndex]["samplers"][sampler]["interpolation"] = "LINEAR";
+                    m_json["animations"][animationIndex]["samplers"][sampler]["output"] = output;
+                    
+                    m_json["animations"][animationIndex]["channels"][channel]["sampler"] = sampler;
+                    m_json["animations"][animationIndex]["channels"][channel]["target"]["node"] = skeletonNodeStartIndex + jointIndex;
+                    m_json["animations"][animationIndex]["channels"][channel]["target"]["path"] = "translation";
+                    
+                    sampler++;
+                    channel++;
+                }
+            }
+        }
+    }
+    
+    // Images should be put in the end of the buffer, because we are not using accessors
     if (nullptr != textureImage) {
         m_json["textures"][0]["sampler"] = 0;
         m_json["textures"][0]["source"] = 0;
@@ -373,7 +507,7 @@ GlbFileWriter::GlbFileWriter(Outcome &outcome,
     
     m_json["buffers"][0]["byteLength"] = m_binByteArray.size();
     
-    auto jsonString = m_json.dump(4);
+    auto jsonString = m_enableComment ? m_json.dump(4) : m_json.dump();
     jsonStream.writeRawData(jsonString.data(), jsonString.size());
     alignJson();
 }

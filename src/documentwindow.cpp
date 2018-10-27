@@ -1275,21 +1275,16 @@ void SkeletonDocumentWindow::exportGlbResult()
     }
     QApplication::setOverrideCursor(Qt::WaitCursor);
     Outcome skeletonResult = m_document->currentPostProcessedOutcome();
+    std::vector<std::pair<QString, std::vector<std::pair<float, JointNodeTree>>>> exportMotions;
+    for (const auto &motionId: m_document->motionIdList) {
+        const Motion *motion = m_document->findMotion(motionId);
+        if (nullptr == motion)
+            continue;
+        exportMotions.push_back({motion->name, motion->jointNodeTrees});
+    }
     GlbFileWriter glbFileWriter(skeletonResult, m_document->resultRigBones(), m_document->resultRigWeights(), filename,
-        m_document->textureImage);
+        m_document->textureImage, exportMotions.empty() ? nullptr : &exportMotions);
     glbFileWriter.save();
-    /*
-    QFileInfo nameInfo(filename);
-    QString borderFilename = nameInfo.path() + QDir::separator() + nameInfo.completeBaseName() + "-BORDER.png";
-    if (m_document->textureBorderImage)
-        m_document->textureBorderImage->save(borderFilename);
-    QString ambientOcclusionFilename = nameInfo.path() + QDir::separator() + nameInfo.completeBaseName() + "-AMBIENT-OCCLUSION.png";
-    if (m_document->textureAmbientOcclusionImage)
-        m_document->textureAmbientOcclusionImage->save(ambientOcclusionFilename);
-    QString colorFilename = nameInfo.path() + QDir::separator() + nameInfo.completeBaseName() + "-COLOR.png";
-    if (m_document->textureColorImage)
-        m_document->textureColorImage->save(colorFilename);
-    */
     QApplication::restoreOverrideCursor();
 }
 

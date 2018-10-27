@@ -19,7 +19,8 @@ public:
         const std::vector<RiggerBone> *resultRigBones,
         const std::map<int, RiggerVertexWeights> *resultRigWeights,
         const QString &filename,
-        QImage *textureImage=nullptr);
+        QImage *textureImage=nullptr,
+        const std::vector<std::pair<QString, std::vector<std::pair<float, JointNodeTree>>>> *motions=nullptr);
     bool save();
 private:
     QString m_filename;
