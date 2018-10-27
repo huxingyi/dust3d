@@ -30,8 +30,7 @@ GlbFileWriter::GlbFileWriter(Outcome &outcome,
     m_filename(filename),
     m_outputNormal(true),
     m_outputAnimation(true),
-    m_outputUv(true),
-    m_testOutputAsWhole(false)
+    m_outputUv(true)
 {
     const std::vector<std::vector<QVector3D>> *triangleVertexNormals = outcome.triangleVertexNormals();
     if (m_outputNormal) {

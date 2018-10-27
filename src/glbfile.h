@@ -26,7 +26,6 @@ private:
     bool m_outputNormal;
     bool m_outputAnimation;
     bool m_outputUv;
-    bool m_testOutputAsWhole;
     QByteArray m_binByteArray;
     QByteArray m_jsonByteArray;
 private:

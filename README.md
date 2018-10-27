@@ -1,4 +1,4 @@
-<a href="http://docs.dust3d.org/en/latest/install.html" target="_blank"><image src="https://raw.githubusercontent.com/huxingyi/dust3d/master/dust3d-logo.png" width="81" height="50"></a>
+<a href="http://docs.dust3d.org/en/latest/install.html" target="_blank"><image src="https://raw.githubusercontent.com/huxingyi/dust3d/master/dust3d-logo.png" width="66" height="58"></a>
 
 [![appveyor status](https://ci.appveyor.com/api/projects/status/github/huxingyi/dust3d?branch=master&svg=true)](https://ci.appveyor.com/project/huxingyi/dust3d) [![travis status](https://travis-ci.org/huxingyi/dust3d.svg?branch=master)](https://travis-ci.org/huxingyi/dust3d) [![readthedocs status](https://readthedocs.org/projects/dust3d/badge/?version=latest)](http://docs.dust3d.org/en/latest/?badge=latest)
 
