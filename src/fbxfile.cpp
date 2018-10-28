@@ -1,9 +1,11 @@
 #include <fbxnode.h>
 #include <fbxproperty.h>
 #include <QDateTime>
+#include <QtMath>
 #include "fbxfile.h"
 #include "version.h"
 #include "jointnodetree.h"
+#include "util.h"
 
 using namespace fbx;
 
@@ -409,7 +411,12 @@ void FbxFileWriter::createReferences()
     m_fbxDocument.nodes.push_back(references);
 }
 
-void FbxFileWriter::createDefinitions(size_t deformerCount)
+void FbxFileWriter::createDefinitions(size_t deformerCount,
+        bool hasAnimtion,
+        size_t animationStackCount,
+        size_t animationLayerCount,
+        size_t animationCurveNodeCount,
+        size_t animationCurveCount)
 {
     FBXNode definitions("Definitions");
     definitions.addPropertyNode("Version", (int32_t)100);
@@ -1466,6 +1473,197 @@ void FbxFileWriter::createDefinitions(size_t deformerCount)
         objectType.addChild(FBXNode());
         definitions.addChild(objectType);
     }
+    if (hasAnimtion) {
+        FBXNode objectType("ObjectType");
+        objectType.addProperty("AnimationStack");
+        objectType.addPropertyNode("Count", (int32_t)animationStackCount);
+        FBXNode propertyTemplate("PropertyTemplate");
+        propertyTemplate.addProperty("FbxAnimStack");
+        {
+            FBXNode properties("Properties70");
+            {
+                FBXNode p("P");
+                p.addProperty("Description");
+                p.addProperty("KString");
+                p.addProperty("");
+                p.addProperty("");
+                p.addProperty("");
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("LocalStart");
+                p.addProperty("KTime");
+                p.addProperty("Time");
+                p.addProperty("");
+                p.addProperty((int64_t)0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("LocalStop");
+                p.addProperty("KTime");
+                p.addProperty("Time");
+                p.addProperty("");
+                p.addProperty((int64_t)0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("ReferenceStart");
+                p.addProperty("KTime");
+                p.addProperty("Time");
+                p.addProperty("");
+                p.addProperty((int64_t)0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("ReferenceStop");
+                p.addProperty("KTime");
+                p.addProperty("Time");
+                p.addProperty("");
+                p.addProperty((int64_t)0);
+                properties.addChild(p);
+            }
+            properties.addChild(FBXNode());
+            propertyTemplate.addChild(properties);
+        }
+        propertyTemplate.addChild(FBXNode());
+        objectType.addChild(propertyTemplate);
+        objectType.addChild(FBXNode());
+        definitions.addChild(objectType);
+    }
+    if (hasAnimtion) {
+        FBXNode objectType("ObjectType");
+        objectType.addProperty("AnimationLayer");
+        objectType.addPropertyNode("Count", (int32_t)animationLayerCount);
+        FBXNode propertyTemplate("PropertyTemplate");
+        propertyTemplate.addProperty("FbxAnimLayer");
+        {
+            FBXNode properties("Properties70");
+            {
+                FBXNode p("P");
+                p.addProperty("Weight");
+                p.addProperty("Number");
+                p.addProperty("");
+                p.addProperty("A");
+                p.addProperty((double)100.000000);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("Mute");
+                p.addProperty("bool");
+                p.addProperty("");
+                p.addProperty("");
+                p.addProperty((int32_t)0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("Solo");
+                p.addProperty("bool");
+                p.addProperty("");
+                p.addProperty("");
+                p.addProperty((int32_t)0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("Lock");
+                p.addProperty("bool");
+                p.addProperty("");
+                p.addProperty("");
+                p.addProperty((int32_t)0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("Color");
+                p.addProperty("ColorRGB");
+                p.addProperty("Color");
+                p.addProperty("");
+                p.addProperty((double)0.800000);
+                p.addProperty((double)0.800000);
+                p.addProperty((double)0.800000);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("BlendMode");
+                p.addProperty("enum");
+                p.addProperty("");
+                p.addProperty("");
+                p.addProperty((int32_t)0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("RotationAccumulationMode");
+                p.addProperty("enum");
+                p.addProperty("");
+                p.addProperty("");
+                p.addProperty((int32_t)0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("ScaleAccumulationMode");
+                p.addProperty("enum");
+                p.addProperty("");
+                p.addProperty("");
+                p.addProperty((int32_t)0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("BlendModeBypass");
+                p.addProperty("ULongLong");
+                p.addProperty("");
+                p.addProperty("");
+                p.addProperty((int64_t)0);
+                properties.addChild(p);
+            }
+            properties.addChild(FBXNode());
+            propertyTemplate.addChild(properties);
+        }
+        propertyTemplate.addChild(FBXNode());
+        objectType.addChild(propertyTemplate);
+        objectType.addChild(FBXNode());
+        definitions.addChild(objectType);
+    }
+    if (hasAnimtion) {
+        FBXNode objectType("ObjectType");
+        objectType.addProperty("AnimationCurveNode");
+        objectType.addPropertyNode("Count", (int32_t)animationCurveNodeCount);
+        FBXNode propertyTemplate("PropertyTemplate");
+        propertyTemplate.addProperty("FbxAnimCurveNode");
+        {
+            FBXNode properties("Properties70");
+            {
+                FBXNode p("P");
+                p.addProperty("d");
+                p.addProperty("Compound");
+                p.addProperty("");
+                p.addProperty("");
+                properties.addChild(p);
+            }
+            properties.addChild(FBXNode());
+            propertyTemplate.addChild(properties);
+        }
+        propertyTemplate.addChild(FBXNode());
+        objectType.addChild(propertyTemplate);
+        objectType.addChild(FBXNode());
+        definitions.addChild(objectType);
+    }
+    if (hasAnimtion) {
+        FBXNode objectType("ObjectType");
+        objectType.addProperty("AnimationCurve");
+        objectType.addPropertyNode("Count", (int32_t)animationCurveCount);
+        objectType.addChild(FBXNode());
+        definitions.addChild(objectType);
+    }
     definitions.addChild(FBXNode());
     m_fbxDocument.nodes.push_back(definitions);
 }
@@ -1473,7 +1671,8 @@ void FbxFileWriter::createDefinitions(size_t deformerCount)
 FbxFileWriter::FbxFileWriter(Outcome &outcome,
         const std::vector<RiggerBone> *resultRigBones,
         const std::map<int, RiggerVertexWeights> *resultRigWeights,
-        const QString &filename) :
+        const QString &filename,
+        const std::vector<std::pair<QString, std::vector<std::pair<float, JointNodeTree>>>> *motions) :
     m_filename(filename)
 {
     createFbxHeader();
@@ -1484,10 +1683,14 @@ FbxFileWriter::FbxFileWriter(Outcome &outcome,
     createDocuments();
     createReferences();
     
+    FBXNode connections("Connections");
+    
     size_t deformerCount = 0;
     if (resultRigBones && !resultRigBones->empty())
         deformerCount = 1 + resultRigBones->size(); // 1 for the root Skin deformer
-    createDefinitions(deformerCount);
+    
+    JointNodeTree jointNodeTree(resultRigBones);
+    const auto &boneNodes = jointNodeTree.nodes();
     
     FBXNode geometry("Geometry");
     int64_t geometryId = m_next64Id++;
@@ -1629,8 +1832,6 @@ FbxFileWriter::FbxFileWriter(Outcome &outcome,
     std::vector<int64_t> nodeAttributeIds;
     int64_t skinId = 0;
     int64_t armatureId = 0;
-    JointNodeTree jointNodeTree(resultRigBones);
-    const auto &boneNodes = jointNodeTree.nodes();
     if (resultRigBones && !resultRigBones->empty()) {
         std::vector<std::pair<std::vector<int32_t>, std::vector<double>>> bindPerBone(resultRigBones->size());
         if (resultRigWeights && !resultRigWeights->empty()) {
@@ -2136,6 +2337,267 @@ FbxFileWriter::FbxFileWriter(Outcome &outcome,
     }
     material.addChild(FBXNode());
     
+    bool hasAnimation = nullptr != motions && !motions->empty();
+    size_t animationStackCount = 0;
+    size_t animationLayerCount = 0;
+    size_t animationCurveNodeCount = 0;
+    size_t animationCurveCount = 0;
+    
+    std::vector<FBXNode> animationStacks;
+    std::vector<FBXNode> animationLayers;
+    std::vector<FBXNode> animationCurveNodes;
+    std::vector<FBXNode> animationCurves;
+    
+    if (hasAnimation) {
+        std::set<int> rotatedJoints;
+        std::set<int> translatedJoints;
+    
+        for (int animationIndex = 0; animationIndex < (int)motions->size(); ++animationIndex) {
+            const auto &motion = (*motions)[animationIndex];
+            
+            FBXNode animationStack("AnimationStack");
+            int64_t animationStackId = m_next64Id++;
+            animationStack.addProperty(animationStackId);
+            {
+                std::vector<uint8_t> name;
+                auto stackName = motion.first.toUtf8();
+                for (const auto &c: stackName) {
+                    name.push_back((uint8_t)c);
+                }
+                name.push_back(0);
+                name.push_back(1);
+                name.push_back('A');
+                name.push_back('n');
+                name.push_back('i');
+                name.push_back('m');
+                name.push_back('S');
+                name.push_back('t');
+                name.push_back('a');
+                name.push_back('c');
+                name.push_back('k');
+                animationStack.addProperty(name, 'S');
+            }
+            animationStack.addProperty("");
+            {
+                FBXNode properties("Properties70");
+                {
+                    FBXNode p("P");
+                    p.addProperty("LocalStop");
+                    p.addProperty("KTime");
+                    p.addProperty("Time");
+                    p.addProperty("");
+                    p.addProperty((int64_t)0);
+                    properties.addChild(p);
+                }
+                {
+                    FBXNode p("P");
+                    p.addProperty("ReferenceStop");
+                    p.addProperty("KTime");
+                    p.addProperty("Time");
+                    p.addProperty("");
+                    p.addProperty((int64_t)0);
+                    properties.addChild(p);
+                }
+                properties.addChild(FBXNode());
+                animationStack.addChild(properties);
+            }
+            animationStack.addChild(FBXNode());
+            animationStacks.push_back(animationStack);
+            
+            FBXNode animationLayer("AnimationLayer");
+            int64_t animationLayerId = m_next64Id++;
+            animationLayer.addProperty((int64_t)animationLayerId);
+            {
+                std::vector<uint8_t> name;
+                auto layerName = motion.first.toUtf8();
+                for (const auto &c: layerName) {
+                    name.push_back((uint8_t)c);
+                }
+                name.push_back(0);
+                name.push_back(1);
+                name.push_back('A');
+                name.push_back('n');
+                name.push_back('i');
+                name.push_back('m');
+                name.push_back('L');
+                name.push_back('a');
+                name.push_back('y');
+                name.push_back('e');
+                name.push_back('r');
+                animationLayer.addProperty(name, 'S');
+            }
+            animationLayer.addProperty("");
+            animationLayer.addChild(FBXNode());
+            animationLayers.push_back(animationLayer);
+            
+            {
+                FBXNode p("C");
+                p.addProperty("OO");
+                p.addProperty(animationLayerId);
+                p.addProperty(animationStackId);
+                connections.addChild(p);
+            }
+            
+            for (const auto &keyframe: motion.second) {
+                for (int i = 0; i < (int)keyframe.second.nodes().size() && i < (int)boneNodes.size(); ++i) {
+                    const auto &src = boneNodes[i];
+                    const auto &dest = keyframe.second.nodes()[i];
+                    if (!qFuzzyCompare(src.rotation, dest.rotation))
+                        rotatedJoints.insert(i);
+                    if (!qFuzzyCompare(src.translation, dest.translation))
+                        translatedJoints.insert(i);
+                }
+            }
+            
+            for (const auto &jointIndex: rotatedJoints) {
+                int64_t animationCurveIds[3];
+                std::vector<int64_t> ktimes;
+                std::vector<float> values[3];
+                for (int curveIndex = 0; curveIndex < 3; ++curveIndex) {
+                    animationCurveIds[curveIndex] = m_next64Id++;
+                }
+                double timePoint = 0;
+                for (int frame = 0; frame < (int)motion.second.size(); frame++) {
+                    const auto &keyframe = motion.second[frame];
+                    const auto &rotation = keyframe.second.nodes()[jointIndex].rotation;
+                    double pitch = 0;
+                    double yaw = 0;
+                    double roll = 0;
+                    quaternionToFbxEulerAngles(rotation, &pitch, &yaw, &roll);
+
+                    qDebug() << "curve:" << boneNodes[jointIndex].name << "frame:" << frame << "pitch:" << pitch << "yaw:" << yaw << "roll:" << roll;
+                    
+                    {
+                        double qpitch = 0;
+                        double qyaw = 0;
+                        double qroll = 0;
+                        quaternionToEulerAngles(rotation, &qpitch, &qyaw, &qroll);
+                        if (!qFuzzyCompare(pitch, qpitch)) {
+                            qDebug() << "pitch qt:" << qpitch << "this:" << pitch;
+                        }
+                        if (!qFuzzyCompare(yaw, qyaw)) {
+                            qDebug() << "yaw qt:" << qyaw << "this:" << yaw;
+                        }
+                        if (!qFuzzyCompare(roll, qroll)) {
+                            qDebug() << "roll qt:" << qroll << "this:" << roll;
+                        }
+                    }
+                    
+                    values[0].push_back(pitch);
+                    values[1].push_back(yaw);
+                    values[2].push_back(roll);
+                    ktimes.push_back(secondsToKtime(timePoint));
+                    timePoint += keyframe.first;
+                    
+                    FBXNode animationCurveNode("AnimationCurveNode");
+                    int64_t animationCurveNodeId = m_next64Id++;
+                    animationCurveNode.addProperty(animationCurveNodeId);
+                    animationCurveNode.addProperty(std::vector<uint8_t>({'R',0,1,'A','n','i','m','C','u','r','v','e','N','o','d','e'}), 'S');
+                    animationCurveNode.addProperty("");
+                    {
+                        FBXNode properties("Properties70");
+                        {
+                            FBXNode p("P");
+                            p.addProperty("d|X");
+                            p.addProperty("Number");
+                            p.addProperty("");
+                            p.addProperty("A");
+                            p.addProperty((double)pitch);
+                            properties.addChild(p);
+                        }
+                        {
+                            FBXNode p("P");
+                            p.addProperty("d|Y");
+                            p.addProperty("Number");
+                            p.addProperty("");
+                            p.addProperty("A");
+                            p.addProperty((double)yaw);
+                            properties.addChild(p);
+                        }
+                        {
+                            FBXNode p("P");
+                            p.addProperty("d|Z");
+                            p.addProperty("Number");
+                            p.addProperty("");
+                            p.addProperty("A");
+                            p.addProperty((double)roll);
+                            properties.addChild(p);
+                        }
+                        properties.addChild(FBXNode());
+                        animationCurveNode.addChild(properties);
+                    }
+                    animationCurveNode.addChild(FBXNode());
+                    animationCurveNodes.push_back(animationCurveNode);
+                    
+                    {
+                        FBXNode p("C");
+                        p.addProperty("OO");
+                        p.addProperty(animationCurveNodeId);
+                        p.addProperty(animationLayerId);
+                        connections.addChild(p);
+                    }
+                    {
+                        FBXNode p("C");
+                        p.addProperty("OP");
+                        p.addProperty(animationCurveNodeId);
+                        p.addProperty(limbNodeIds[1 + jointIndex]);
+                        p.addProperty("Lcl Rotation");
+                        connections.addChild(p);
+                    }
+                    {
+                        FBXNode p("C");
+                        p.addProperty("OP");
+                        p.addProperty(animationCurveIds[0]);
+                        p.addProperty(animationCurveNodeId);
+                        p.addProperty("d|X");
+                        connections.addChild(p);
+                    }
+                    {
+                        FBXNode p("C");
+                        p.addProperty("OP");
+                        p.addProperty(animationCurveIds[1]);
+                        p.addProperty(animationCurveNodeId);
+                        p.addProperty("d|Y");
+                        connections.addChild(p);
+                    }
+                    {
+                        FBXNode p("C");
+                        p.addProperty("OP");
+                        p.addProperty(animationCurveIds[2]);
+                        p.addProperty(animationCurveNodeId);
+                        p.addProperty("d|Z");
+                        connections.addChild(p);
+                    }
+                }
+                for (int curveIndex = 0; curveIndex < 3; ++curveIndex)
+                {
+                    FBXNode animationCurve("AnimationCurve");
+                    animationCurve.addProperty(animationCurveIds[curveIndex]);
+                    animationCurve.addProperty(std::vector<uint8_t>({'C','u','r','v','e',(uint8_t)('1'+curveIndex),0,1,'A','n','i','m','C','u','r','v','e'}), 'S');
+                    animationCurve.addProperty("");
+                    animationCurve.addPropertyNode("Default", (double)0.000000);
+                    animationCurve.addPropertyNode("KeyVer", (int32_t)4008);
+                    animationCurve.addPropertyNode("KeyTime", ktimes);
+                    animationCurve.addPropertyNode("KeyValueFloat", values[curveIndex]);
+                    animationCurve.addPropertyNode("KeyAttrFlags", std::vector<int>(1, 24836));
+                    animationCurve.addPropertyNode("KeyAttrDataFloat", std::vector<float>(4, 0.000000));
+                    animationCurve.addPropertyNode("KeyAttrRefCount", std::vector<int32_t>(1, ktimes.size()));
+                    animationCurve.addChild(FBXNode());
+                    animationCurves.push_back(animationCurve);
+                }
+            }
+        }
+        
+        animationStackCount = animationStacks.size();
+        animationLayerCount = animationLayers.size();
+        animationCurveNodeCount = animationCurveNodes.size();
+        animationCurveCount = animationCurves.size();
+    }
+
+    createDefinitions(deformerCount,
+        hasAnimation,
+        animationStackCount, animationLayerCount, animationCurveNodeCount, animationCurveCount);
+    
     FBXNode objects("Objects");
     objects.addChild(geometry);
     objects.addChild(model);
@@ -2151,10 +2613,23 @@ FbxFileWriter::FbxFileWriter(Outcome &outcome,
     for (const auto &nodeAttribute: nodeAttributes) {
         objects.addChild(nodeAttribute);
     }
+    if (hasAnimation) {
+        for (const auto &animationStack: animationStacks) {
+            objects.addChild(animationStack);
+        }
+        for (const auto &animationLayer: animationLayers) {
+            objects.addChild(animationLayer);
+        }
+        for (const auto &animationCurveNode: animationCurveNodes) {
+            objects.addChild(animationCurveNode);
+        }
+        for (const auto &animationCurve: animationCurves) {
+            objects.addChild(animationCurve);
+        }
+    }
     objects.addChild(FBXNode());
     m_fbxDocument.nodes.push_back(objects);
     
-    FBXNode connections("Connections");
     {
         FBXNode p("C");
         p.addProperty("OO");
@@ -2252,7 +2727,7 @@ int64_t FbxFileWriter::to64Id(const QUuid &uuid)
 
 bool FbxFileWriter::save()
 {
-    m_fbxDocument.print();
+    //m_fbxDocument.print();
     m_fbxDocument.write(m_filename.toStdString());
     return true;
 }
@@ -2268,4 +2743,31 @@ std::vector<double> FbxFileWriter::matrixToVector(const QMatrix4x4 &matrix)
         vec.push_back(line.w());
     }
     return vec;
+}
+
+int64_t FbxFileWriter::secondsToKtime(double seconds)
+{
+    return (int64_t)(seconds * 46186158000);
+}
+
+// http://bediyap.com/programming/convert-quaternion-to-euler-rotations/
+static void threeaxisrot(double r11, double r12, double r21, double r31, double r32, double res[])
+{
+    res[0] = atan2(r31, r32);
+    res[1] = asin(r21);
+    res[2] = atan2(r11, r12);
+}
+
+void FbxFileWriter::quaternionToFbxEulerAngles(const QQuaternion &q, double *pitch, double *yaw, double *roll)
+{
+    double radians[3] = {0, 0, 0};
+    threeaxisrot(2*(q.x()*q.y() + q.scalar()*q.z()),
+        q.scalar()*q.scalar() + q.x()*q.x() - q.y()*q.y() - q.z()*q.z(),
+        -2*(q.x()*q.z() - q.scalar()*q.y()),
+        2*(q.y()*q.z() + q.scalar()*q.x()),
+        q.scalar()*q.scalar() - q.x()*q.x() - q.y()*q.y() + q.z()*q.z(),
+        radians);
+    *pitch = qRadiansToDegrees(radians[0]);
+    *yaw = qRadiansToDegrees(radians[1]);
+    *roll = qRadiansToDegrees(radians[2]);
 }

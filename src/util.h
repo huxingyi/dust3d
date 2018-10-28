@@ -22,5 +22,8 @@ QQuaternion quaternionOvershootSlerp(const QQuaternion &q0, const QQuaternion &q
 float radianBetweenVectors(const QVector3D &first, const QVector3D &second);
 float angleBetweenVectors(const QVector3D &first, const QVector3D &second);
 float areaOfTriangle(const QVector3D &a, const QVector3D &b, const QVector3D &c);
+QQuaternion eulerAnglesToQuaternion(double pitch, double yaw, double roll);
+void quaternionToEulerAngles(const QQuaternion &q, double *pitch, double *yaw, double *roll);
+void quaternionToEulerAnglesXYZ(const QQuaternion &q, double *pitch, double *yaw, double *roll);
 
 #endif

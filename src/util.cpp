@@ -1,4 +1,5 @@
 #include <cmath>
+#include <QtMath>
 #include "util.h"
 #include "version.h"
 
@@ -89,4 +90,17 @@ float areaOfTriangle(const QVector3D &a, const QVector3D &b, const QVector3D &c)
     auto ab = b - a;
     auto ac = c - a;
     return 0.5 * QVector3D::crossProduct(ab, ac).length();
-};
+}
+
+QQuaternion eulerAnglesToQuaternion(double pitch, double yaw, double roll)
+{
+    return QQuaternion::fromEulerAngles(pitch, yaw, roll);
+}
+
+void quaternionToEulerAngles(const QQuaternion &q, double *pitch, double *yaw, double *roll)
+{
+    auto eulerAngles = q.toEulerAngles();
+    *pitch = eulerAngles.x();
+    *yaw = eulerAngles.y();
+    *roll = eulerAngles.z();
+}

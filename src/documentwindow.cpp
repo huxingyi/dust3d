@@ -1257,7 +1257,15 @@ void SkeletonDocumentWindow::exportFbxResult()
     }
     QApplication::setOverrideCursor(Qt::WaitCursor);
     Outcome skeletonResult = m_document->currentPostProcessedOutcome();
-    FbxFileWriter fbxFileWriter(skeletonResult, m_document->resultRigBones(), m_document->resultRigWeights(), filename);
+    std::vector<std::pair<QString, std::vector<std::pair<float, JointNodeTree>>>> exportMotions;
+    for (const auto &motionId: m_document->motionIdList) {
+        const Motion *motion = m_document->findMotion(motionId);
+        if (nullptr == motion)
+            continue;
+        exportMotions.push_back({motion->name, motion->jointNodeTrees});
+    }
+    FbxFileWriter fbxFileWriter(skeletonResult, m_document->resultRigBones(), m_document->resultRigWeights(), filename,
+        exportMotions.empty() ? nullptr : &exportMotions);
     fbxFileWriter.save();
     QApplication::restoreOverrideCursor();
 }

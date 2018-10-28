@@ -1,4 +1,5 @@
 #include "tetrapodposer.h"
+#include "util.h"
 
 TetrapodPoser::TetrapodPoser(const std::vector<RiggerBone> &bones) :
     Poser(bones)
@@ -22,7 +23,7 @@ void TetrapodPoser::commit()
             if (item.first.startsWith("Left")) {
                 yawAngle = -yawAngle;
             }
-            QQuaternion rotation = QQuaternion::fromEulerAngles(valueOfKeyInMapOrEmpty(item.second, "pitch").toFloat(),
+            QQuaternion rotation = eulerAnglesToQuaternion(valueOfKeyInMapOrEmpty(item.second, "pitch").toFloat(),
                 yawAngle,
                 valueOfKeyInMapOrEmpty(item.second, "roll").toFloat());
             m_jointNodeTree.updateRotation(boneIndex, rotation);
