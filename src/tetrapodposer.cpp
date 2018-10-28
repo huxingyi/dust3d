@@ -35,7 +35,13 @@ void TetrapodPoser::commit()
             const RiggerBone &bone = bones()[boneIndex];
             if (bone.name == "LeftHand" || bone.name == "RightHand") {
                 QVector3D handDirection = bone.tailPosition - bone.headPosition;
-                QVector3D rotateAxis = QVector3D::crossProduct(handDirection, bone.name == "RightHand" ? QVector3D(1, 0, 0) : QVector3D(-1, 0, 0)).normalized();
+                QVector3D referenceDirection = bone.name == "RightHand" ? QVector3D(1, 0, 0) : QVector3D(-1, 0, 0);
+                auto angleWithX = (int)angleBetweenVectors(handDirection, -referenceDirection);
+                auto angleWithZ = (int)angleBetweenVectors(handDirection, QVector3D(0, 0, -1));
+                qDebug() << "angleWithX:" << angleWithX << "angleWithZ:" << angleWithZ;
+                QVector3D rotateAxis = angleWithX < angleWithZ ?
+                    QVector3D::crossProduct(handDirection, referenceDirection).normalized() :
+                    QVector3D::crossProduct(handDirection, QVector3D(0, 0, -1)).normalized();
                 QQuaternion rotation = QQuaternion::fromAxisAndAngle(rotateAxis, intersectionAngle);
                 m_jointNodeTree.updateRotation(boneIndex, rotation);
                 continue;
