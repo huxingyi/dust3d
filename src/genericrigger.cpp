@@ -36,15 +36,18 @@ void GenericRigger::collectJointsForLimb(int markIndex, std::vector<int> &jointM
     
     jointMarkIndicies.push_back(markIndex);
     
+    // First insert joints, then the limb node,
+    // because the limb node may contains the triangles of other joint becuase of expanding in split
     std::map<MeshSplitterTriangle, int> triangleToMarkMap;
     for (size_t i = 0; i < m_marks.size(); ++i) {
         const auto &item = m_marks[i];
-        if (item.boneMark == BoneMark::Joint || (int)i == markIndex) {
+        if (item.boneMark == BoneMark::Joint) {
             for (const auto &triangle: item.markTriangles)
                 triangleToMarkMap.insert({triangle, i});
-            //qDebug() << "Mapped" << item.markTriangles.size() << "triangles for" << BoneMarkToString(item.boneMark) << SkeletonSideToDispName(item.boneSide);
         }
     }
+    for (const auto &triangle: mark.markTriangles)
+        triangleToMarkMap.insert({triangle, markIndex});
     
     if (triangleToMarkMap.size() <= 1) {
         qDebug() << "Collect joints for limb failed because of lack marks";
@@ -87,6 +90,7 @@ void GenericRigger::collectJointsForLimb(int markIndex, std::vector<int> &jointM
     
     // Traverse all the triangles and fill the triangle to mark map
     std::unordered_set<const MeshSplitterTriangle *> processedTriangles;
+    std::unordered_set<int> processedSourceMarks;
     while (!waitTriangles.empty()) {
         const MeshSplitterTriangle *triangle = waitTriangles.front();
         waitTriangles.pop();
@@ -97,6 +101,7 @@ void GenericRigger::collectJointsForLimb(int markIndex, std::vector<int> &jointM
         auto findTriangleSourceMarkResult = triangleToMarkMap.find(*triangle);
         if (findTriangleSourceMarkResult != triangleToMarkMap.end()) {
             sourceMark = findTriangleSourceMarkResult->second;
+            processedSourceMarks.insert(sourceMark);
         }
         for (int i = 0; i < 3; i++) {
             int j = (i + 1) % 3;
@@ -108,10 +113,13 @@ void GenericRigger::collectJointsForLimb(int markIndex, std::vector<int> &jointM
             if (findTriangleSourceMarkResult == triangleToMarkMap.end()) {
                 if (-1 != sourceMark)
                     triangleToMarkMap.insert({*neighborTriangle, sourceMark});
+            } else {
+                processedSourceMarks.insert(findTriangleSourceMarkResult->second);
             }
             waitTriangles.push(neighborTriangle);
         }
     }
+    //qDebug() << "processedTriangles:" << processedTriangles.size() << "processedSourceMarks:" << processedSourceMarks.size();
     
     std::map<int, std::set<int>> pairs;
     std::set<std::pair<int, int>> processedEdges;
@@ -132,6 +140,7 @@ void GenericRigger::collectJointsForLimb(int markIndex, std::vector<int> &jointM
         if (findSecondTriangleMarkResult == triangleToMarkMap.end())
             continue;
         if (findFirstTriangleMarkResult->second != findSecondTriangleMarkResult->second) {
+            //qDebug() << "New pair added:" << findFirstTriangleMarkResult->second << findSecondTriangleMarkResult->second;
             pairs[findFirstTriangleMarkResult->second].insert(findSecondTriangleMarkResult->second);
             pairs[findSecondTriangleMarkResult->second].insert(findFirstTriangleMarkResult->second);
         }
@@ -140,6 +149,26 @@ void GenericRigger::collectJointsForLimb(int markIndex, std::vector<int> &jointM
     std::set<int> visited;
     auto findPairResult = pairs.find(markIndex);
     visited.insert(markIndex);
+    if (findPairResult == pairs.end() && processedSourceMarks.size() > 1) {
+        // Couldn't find the limb node, we pick the nearest joint
+        float minLength2 = std::numeric_limits<float>::max();
+        int nearestMarkIndex = -1;
+        for (const auto &item: pairs) {
+            const auto &joint = m_marks[item.first];
+            float length2 = (joint.bonePosition - mark.bonePosition).lengthSquared();
+            if (length2 < minLength2) {
+                nearestMarkIndex = item.first;
+                minLength2 = length2;
+            }
+        }
+        if (-1 == nearestMarkIndex) {
+            qDebug() << "Find nearest joint failed";
+            return;
+        }
+        jointMarkIndicies.push_back(nearestMarkIndex);
+        visited.insert(nearestMarkIndex);
+        findPairResult = pairs.find(nearestMarkIndex);
+    }
     while (findPairResult != pairs.end()) {
         int linkTo = -1;
         for (const auto &item: findPairResult->second) {
@@ -254,7 +283,7 @@ bool GenericRigger::rig()
             break;
         }
         
-        qDebug() << "Create new spine node from" << countOfLimbs << "limbs current coord:" << choosenCoord;
+        //qDebug() << "Create new spine node from" << countOfLimbs << "limbs current coord:" << choosenCoord;
         
         spineNodes.push_back(SpineNode());
         SpineNode &spineNode = spineNodes.back();
@@ -343,7 +372,7 @@ bool GenericRigger::rig()
         addVerticesToWeights(spineBoneVertices, spineBone.index);
         boneIndexMap[spineBone.name] = spineBone.index;
         
-        qDebug() << spineBone.name << "head:" << spineBone.headPosition << "tail:" << spineBone.tailPosition;
+        //qDebug() << spineBone.name << "head:" << spineBone.headPosition << "tail:" << spineBone.tailPosition;
         
         if (1 == spineGenerateOrder) {
             m_resultBones[boneIndexMap["Body"]].tailPosition = spineBone.headPosition;
