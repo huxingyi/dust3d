@@ -18,9 +18,10 @@ class MeshSplitter
 {
 public:
     static bool split(const std::set<MeshSplitterTriangle> &input, 
-        const std::set<MeshSplitterTriangle> &splitter,
+        std::set<MeshSplitterTriangle> &splitter,
         std::set<MeshSplitterTriangle> &firstGroup,
-        std::set<MeshSplitterTriangle> &secondGroup);
+        std::set<MeshSplitterTriangle> &secondGroup,
+        bool expandSplitter=false);
 };
 
 #endif

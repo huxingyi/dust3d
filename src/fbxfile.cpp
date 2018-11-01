@@ -2465,24 +2465,6 @@ FbxFileWriter::FbxFileWriter(Outcome &outcome,
                     double roll = 0;
                     quaternionToFbxEulerAngles(rotation, &pitch, &yaw, &roll);
 
-                    qDebug() << "curve:" << boneNodes[jointIndex].name << "frame:" << frame << "pitch:" << pitch << "yaw:" << yaw << "roll:" << roll;
-                    
-                    {
-                        double qpitch = 0;
-                        double qyaw = 0;
-                        double qroll = 0;
-                        quaternionToEulerAngles(rotation, &qpitch, &qyaw, &qroll);
-                        if (!qFuzzyCompare(pitch, qpitch)) {
-                            qDebug() << "pitch qt:" << qpitch << "this:" << pitch;
-                        }
-                        if (!qFuzzyCompare(yaw, qyaw)) {
-                            qDebug() << "yaw qt:" << qyaw << "this:" << yaw;
-                        }
-                        if (!qFuzzyCompare(roll, qroll)) {
-                            qDebug() << "roll qt:" << qroll << "this:" << roll;
-                        }
-                    }
-                    
                     values[0].push_back(pitch);
                     values[1].push_back(yaw);
                     values[2].push_back(roll);

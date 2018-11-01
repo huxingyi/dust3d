@@ -276,6 +276,21 @@ HEADERS += src/uvunwrap.h
 SOURCES += src/triangletangentresolve.cpp
 HEADERS += src/triangletangentresolve.h
 
+SOURCES += src/tetrapodrigger.cpp
+HEADERS += src/tetrapodrigger.h
+
+SOURCES += src/genericrigger.cpp
+HEADERS += src/genericrigger.h
+
+SOURCES += src/genericposer.cpp
+HEADERS += src/genericposer.h
+
+SOURCES += src/riggerconstruct.cpp
+HEADERS += src/riggerconstruct.h
+
+SOURCES += src/poserconstruct.cpp
+HEADERS += src/poserconstruct.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h

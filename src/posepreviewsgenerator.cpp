@@ -1,12 +1,14 @@
 #include <QGuiApplication>
 #include <QElapsedTimer>
 #include "posepreviewsgenerator.h"
-#include "tetrapodposer.h"
 #include "posemeshcreator.h"
+#include "poserconstruct.h"
 
-PosePreviewsGenerator::PosePreviewsGenerator(const std::vector<RiggerBone> *rigBones,
+PosePreviewsGenerator::PosePreviewsGenerator(RigType rigType,
+        const std::vector<RiggerBone> *rigBones,
         const std::map<int, RiggerVertexWeights> *rigWeights,
         const Outcome &outcome) :
+    m_rigType(rigType),
     m_rigBones(*rigBones),
     m_rigWeights(*rigWeights),
     m_outcome(new Outcome(outcome))
@@ -43,7 +45,7 @@ void PosePreviewsGenerator::process()
     QElapsedTimer countTimeConsumed;
     countTimeConsumed.start();
 
-    TetrapodPoser *poser = new TetrapodPoser(m_rigBones);
+    Poser *poser = newPoser(m_rigType, m_rigBones);
     for (const auto &pose: m_poses) {
         poser->parameters() = pose.second;
         poser->commit();

@@ -5,6 +5,7 @@
 enum class RigType
 {
     None = 0,
+    Generic,
     Tetrapod,
     Count
 };
@@ -13,6 +14,8 @@ RigType RigTypeFromString(const char *typeString);
 RigType RigTypeFromString(const char *typeString)                   \
 {                                                                   \
     QString type = typeString;                                      \
+    if (type == "Generic")                                          \
+        return RigType::Generic;                                    \
     if (type == "Tetrapod")                                         \
         return RigType::Tetrapod;                                   \
     return RigType::None;                                           \
@@ -22,6 +25,8 @@ const char *RigTypeToString(RigType type);
 const char *RigTypeToString(RigType type)                           \
 {                                                                   \
     switch (type) {                                                 \
+        case RigType::Generic:                                      \
+            return "Generic";                                       \
         case RigType::Tetrapod:                                     \
             return "Tetrapod";                                      \
         case RigType::None:                                         \
@@ -35,6 +40,8 @@ QString RigTypeToDispName(RigType type);
 QString RigTypeToDispName(RigType type)                             \
 {                                                                   \
     switch (type) {                                                 \
+        case RigType::Generic:                                      \
+            return QObject::tr("Generic");                          \
         case RigType::Tetrapod:                                     \
             return QObject::tr("Tetrapod");                         \
         case RigType::None:                                         \

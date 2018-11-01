@@ -8,7 +8,7 @@ class TetrapodPoser : public Poser
 public:
     TetrapodPoser(const std::vector<RiggerBone> &bones);
 public:
-    void commit();
+    void commit() override;
 };
 
 #endif

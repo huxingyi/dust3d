@@ -13,6 +13,8 @@ enum class BoneMark
     Hip,
     Knee,
     Ankle,
+    Limb,
+    Joint,
     Count
 };
 #define BoneMarkHasSide(mark) ((mark) != BoneMark::Neck)
@@ -35,6 +37,10 @@ QColor BoneMarkToColor(BoneMark mark)                               \
             return QColor(0x0b, 0x24, 0xfb);                        \
         case BoneMark::Ankle:                                       \
             return QColor(0xfc, 0x28, 0xfc);                        \
+        case BoneMark::Limb:                                        \
+            return QColor(0xf7, 0xf7, 0xf7);                        \
+        case BoneMark::Joint:                                       \
+            return QColor(0xfd, 0xa9, 0xaa);                        \
         case BoneMark::None:                                        \
             return Qt::transparent;                                 \
         default:                                                    \
@@ -60,6 +66,10 @@ const char *BoneMarkToString(BoneMark mark)                         \
             return "Knee";                                          \
         case BoneMark::Ankle:                                       \
             return "Ankle";                                         \
+        case BoneMark::Limb:                                        \
+            return "Limb";                                          \
+        case BoneMark::Joint:                                       \
+            return "Joint";                                         \
         case BoneMark::None:                                        \
             return "None";                                          \
         default:                                                    \
@@ -85,6 +95,10 @@ BoneMark BoneMarkFromString(const char *markString)                 \
         return BoneMark::Knee;                                      \
     if (mark == "Ankle")                                            \
         return BoneMark::Ankle;                                     \
+    if (mark == "Limb")                                             \
+        return BoneMark::Limb;                                      \
+    if (mark == "Joint")                                            \
+        return BoneMark::Joint;                                     \
     return BoneMark::None;                                          \
 }
 QString BoneMarkToDispName(BoneMark mark);
@@ -106,6 +120,10 @@ QString BoneMarkToDispName(BoneMark mark)                           \
             return QObject::tr("Knee");                             \
         case BoneMark::Ankle:                                       \
             return QObject::tr("Ankle");                            \
+        case BoneMark::Limb:                                        \
+            return QObject::tr("Limb (Generic)");                   \
+        case BoneMark::Joint:                                       \
+            return QObject::tr("Joint (Generic)");                  \
         case BoneMark::None:                                        \
             return QObject::tr("None");                             \
         default:                                                    \

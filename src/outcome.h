@@ -19,7 +19,9 @@ struct OutcomeNode
     QColor color;
     QUuid materialId;
     QUuid mirrorFromPartId;
+    QUuid mirroredByPartId;
     BoneMark boneMark;
+    QVector3D baseNormal;
 };
 
 class Outcome

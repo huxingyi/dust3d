@@ -5,15 +5,11 @@
 #include <QCloseEvent>
 #include <QLineEdit>
 #include "posepreviewmanager.h"
-#include "tetrapodposer.h"
 #include "document.h"
 #include "modelwidget.h"
+#include "rigger.h"
 
-enum class PopupWidgetType
-{
-    PitchYawRoll,
-    Intersection
-};
+typedef RiggerButtonParameterType PopupWidgetType;
 
 class PoseEditWidget : public QDialog
 {
@@ -28,6 +24,7 @@ public:
     PoseEditWidget(const Document *document, QWidget *parent=nullptr);
     ~PoseEditWidget();
 public slots:
+    void updateButtons();
     void updatePreview();
     void showPopupAngleDialog(QString boneName, PopupWidgetType popupWidgetType, QPoint pos);
     void setEditPoseId(QUuid poseId);
@@ -51,6 +48,7 @@ private:
     QUuid m_poseId;
     bool m_unsaved = false;
     QLineEdit *m_nameEdit = nullptr;
+    QWidget *m_buttonsContainer = nullptr;
 };
 
 #endif

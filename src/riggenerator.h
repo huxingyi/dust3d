@@ -6,12 +6,13 @@
 #include "outcome.h"
 #include "meshloader.h"
 #include "rigger.h"
+#include "rigtype.h"
 
 class RigGenerator : public QObject
 {
     Q_OBJECT
 public:
-    RigGenerator(const Outcome &outcome);
+    RigGenerator(RigType rigType, const Outcome &outcome);
     ~RigGenerator();
     MeshLoader *takeResultMesh();
     std::vector<RiggerBone> *takeResultBones();
@@ -26,6 +27,7 @@ signals:
 public slots:
     void process();
 private:
+    RigType m_rigType = RigType::None;
     Outcome *m_outcome = nullptr;
     MeshLoader *m_resultMesh = nullptr;
     Rigger *m_autoRigger = nullptr;

@@ -2593,7 +2593,7 @@ void Document::generateRig()
     qDebug() << "Rig generating..";
     
     QThread *thread = new QThread;
-    m_rigGenerator = new RigGenerator(*m_postProcessedOutcome);
+    m_rigGenerator = new RigGenerator(rigType, *m_postProcessedOutcome);
     m_rigGenerator->moveToThread(thread);
     connect(thread, &QThread::started, m_rigGenerator, &RigGenerator::process);
     connect(m_rigGenerator, &RigGenerator::finished, this, &Document::rigReady);
@@ -2714,7 +2714,7 @@ void Document::generateMotions()
         return;
     }
     
-    m_motionsGenerator = new MotionsGenerator(rigBones, rigWeights, currentRiggedOutcome());
+    m_motionsGenerator = new MotionsGenerator(rigType, rigBones, rigWeights, currentRiggedOutcome());
     bool hasDirtyMotion = false;
     for (const auto &pose: poseMap) {
         m_motionsGenerator->addPoseToLibrary(pose.first, pose.second.parameters);
@@ -2779,7 +2779,7 @@ void Document::generatePosePreviews()
         return;
     }
 
-    m_posePreviewsGenerator = new PosePreviewsGenerator(rigBones,
+    m_posePreviewsGenerator = new PosePreviewsGenerator(rigType, rigBones,
         rigWeights, *m_riggedOutcome);
     bool hasDirtyPose = false;
     for (auto &poseIt: poseMap) {

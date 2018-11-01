@@ -4,9 +4,10 @@
 #include "meshsplitter.h"
 
 bool MeshSplitter::split(const std::set<MeshSplitterTriangle> &input,
-    const std::set<MeshSplitterTriangle> &splitter,
+    std::set<MeshSplitterTriangle> &splitter,
     std::set<MeshSplitterTriangle> &firstGroup,
-    std::set<MeshSplitterTriangle> &secondGroup)
+    std::set<MeshSplitterTriangle> &secondGroup,
+    bool expandSplitter)
 {
     firstGroup.clear();
     secondGroup.clear();
@@ -20,19 +21,35 @@ bool MeshSplitter::split(const std::set<MeshSplitterTriangle> &input,
         }
     }
     
-    /*
-    size_t noClosingEdges = 0;
-    for (const auto &triangle: input) {
-        for (int i = 0; i < 3; i++) {
-            int next = (i + 1) % 3;
-            if (edgeToTriangleMap.find(std::make_pair(triangle.indicies[next], triangle.indicies[i])) == edgeToTriangleMap.end()) {
-                qDebug() << "Edge is not closing:" << triangle.indicies[next] << triangle.indicies[i];
-                noClosingEdges++;
+    // Expand the splitter if needed
+    if (expandSplitter) {
+        std::vector<MeshSplitterTriangle> expandedTriangles;
+        for (const auto &triangle: splitter) {
+            for (int i = 0; i < 3; i++) {
+                int next = (i + 1) % 3;
+                auto oppositeEdge = std::make_pair(triangle.indicies[next], triangle.indicies[i]);
+                auto oppositeTriangle = edgeToTriangleMap.find(oppositeEdge);
+                if (oppositeTriangle == edgeToTriangleMap.end()) {
+                    qDebug() << "Find opposite edge failed:" << oppositeEdge.first << oppositeEdge.second;
+                    continue;
+                }
+                if (splitter.find(oppositeTriangle->second) == splitter.end()) {
+                    expandedTriangles.push_back(oppositeTriangle->second);
+                }
             }
         }
+        size_t addTriangles = 0;
+        for (const auto &triangle: expandedTriangles) {
+            auto insertResult = splitter.insert(triangle);
+            if (insertResult.second)
+                ++addTriangles;
+        }
+        if (0 == addTriangles) {
+            qDebug() << "Expanded without new triangles added";
+        } else {
+            qDebug() << "Expanded with new triangles added:" << addTriangles;
+        }
     }
-    qDebug() << "noClosingEdges:" << noClosingEdges;
-    */
     
     // Find one triangle wich is direct neighbor of one splitter
     MeshSplitterTriangle startTriangle;

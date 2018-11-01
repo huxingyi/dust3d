@@ -278,6 +278,7 @@ void *MeshGenerator::combinePartMesh(QString partId)
     cacheBmeshNodes.clear();
     cacheBmeshVertices.clear();
     cacheBmeshQuads.clear();
+    std::map<int, std::vector<int>> bmeshNodeIdToDataMap;
     for (const auto &nodeId: m_partNodeIds[partId]) {
         auto findNode = m_snapshot->nodes.find(nodeId);
         if (findNode == m_snapshot->nodes.end()) {
@@ -305,13 +306,15 @@ void *MeshGenerator::combinePartMesh(QString partId)
         bmeshNode.color = partColor;
         bmeshNode.materialId = materialId;
         bmeshNode.boneMark = boneMark;
-        //if (SkeletonBoneMark::None != boneMark)
-        //    bmeshNode.color = BoneMarkToColor(boneMark);
+        bmeshNode.mirroredByPartId = mirroredPartId;
+        bmeshNodeIdToDataMap[bmeshNodeId].push_back(cacheBmeshNodes.size());
         cacheBmeshNodes.push_back(bmeshNode);
         if (xMirrored) {
             bmeshNode.partId = mirroredPartId;
             bmeshNode.mirrorFromPartId = QUuid(partId);
+            bmeshNode.mirroredByPartId = QUuid();
             bmeshNode.origin.setX(-x);
+            bmeshNodeIdToDataMap[bmeshNodeId].push_back(cacheBmeshNodes.size());
             cacheBmeshNodes.push_back(bmeshNode);
         }
     }
@@ -346,6 +349,12 @@ void *MeshGenerator::combinePartMesh(QString partId)
     void *resultMesh = nullptr;
     if (!bmeshToNodeIdMap.empty()) {
         meshId = meshlite_bmesh_generate_mesh(m_meshliteContext, bmeshId);
+        for (const auto &item: bmeshNodeIdToDataMap) {
+            float baseNormal[3] = {0, 0, 0};
+            meshlite_bmesh_get_node_base_norm(m_meshliteContext, bmeshId, item.first, baseNormal);
+            for (auto &subItem: item.second)
+                cacheBmeshNodes[subItem].baseNormal = QVector3D(baseNormal[0], baseNormal[1], baseNormal[2]);
+        }
         loadVertexSources(m_meshliteContext, meshId, partIdNotAsString, bmeshToNodeIdMap, cacheBmeshVertices, cacheBmeshQuads);
         if (wrapped)
             resultMesh = convertToCombinableConvexHullMesh(m_meshliteContext, meshId);

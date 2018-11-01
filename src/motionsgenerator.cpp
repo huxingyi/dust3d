@@ -2,12 +2,14 @@
 #include <QElapsedTimer>
 #include <cmath>
 #include "motionsgenerator.h"
-#include "tetrapodposer.h"
 #include "posemeshcreator.h"
+#include "poserconstruct.h"
 
-MotionsGenerator::MotionsGenerator(const std::vector<RiggerBone> *rigBones,
+MotionsGenerator::MotionsGenerator(RigType rigType,
+        const std::vector<RiggerBone> *rigBones,
         const std::map<int, RiggerVertexWeights> *rigWeights,
         const Outcome &outcome) :
+    m_rigType(rigType),
     m_rigBones(*rigBones),
     m_rigWeights(*rigWeights),
     m_outcome(outcome)
@@ -243,7 +245,9 @@ std::vector<std::pair<float, JointNodeTree>> MotionsGenerator::takeResultJointNo
 
 void MotionsGenerator::generate()
 {
-    m_poser = new TetrapodPoser(m_rigBones);
+    m_poser = newPoser(m_rigType, m_rigBones);
+    if (nullptr == m_poser)
+        return;
     
     for (const auto &motionId: m_requiredMotionIds) {
         std::set<QUuid> visited;

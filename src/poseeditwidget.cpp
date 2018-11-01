@@ -10,6 +10,7 @@
 #include "poseeditwidget.h"
 #include "floatnumberwidget.h"
 #include "version.h"
+#include "poserconstruct.h"
 
 PoseEditWidget::PoseEditWidget(const Document *document, QWidget *parent) :
     QDialog(parent),
@@ -28,78 +29,14 @@ PoseEditWidget::PoseEditWidget(const Document *document, QWidget *parent) :
         m_previewWidget->updateMesh(m_posePreviewManager->takeResultPreviewMesh());
     });
     
-    std::map<QString, std::tuple<QPushButton *, PopupWidgetType>> buttons;
-    buttons["Head"] = std::make_tuple(new QPushButton(tr("Head")), PopupWidgetType::PitchYawRoll);
-    buttons["Neck"] = std::make_tuple(new QPushButton(tr("Neck")), PopupWidgetType::PitchYawRoll);
-    buttons["RightUpperArm"] = std::make_tuple(new QPushButton(tr("UpperArm")), PopupWidgetType::PitchYawRoll);
-    buttons["RightLowerArm"] = std::make_tuple(new QPushButton(tr("LowerArm")), PopupWidgetType::Intersection);
-    buttons["RightHand"] = std::make_tuple(new QPushButton(tr("Hand")), PopupWidgetType::Intersection);
-    buttons["LeftUpperArm"] = std::make_tuple(new QPushButton(tr("UpperArm")), PopupWidgetType::PitchYawRoll);
-    buttons["LeftLowerArm"] = std::make_tuple(new QPushButton(tr("LowerArm")), PopupWidgetType::Intersection);
-    buttons["LeftHand"] = std::make_tuple(new QPushButton(tr("Hand")), PopupWidgetType::Intersection);
-    buttons["Chest"] = std::make_tuple(new QPushButton(tr("Chest")), PopupWidgetType::PitchYawRoll);
-    buttons["Spine"] = std::make_tuple(new QPushButton(tr("Spine")), PopupWidgetType::PitchYawRoll);
-    buttons["RightUpperLeg"] = std::make_tuple(new QPushButton(tr("UpperLeg")), PopupWidgetType::PitchYawRoll);
-    buttons["RightLowerLeg"] = std::make_tuple(new QPushButton(tr("LowerLeg")), PopupWidgetType::Intersection);
-    buttons["RightFoot"] = std::make_tuple(new QPushButton(tr("Foot")), PopupWidgetType::Intersection);
-    buttons["LeftUpperLeg"] = std::make_tuple(new QPushButton(tr("UpperLeg")), PopupWidgetType::PitchYawRoll);
-    buttons["LeftLowerLeg"] = std::make_tuple(new QPushButton(tr("LowerLeg")), PopupWidgetType::Intersection);
-    buttons["LeftFoot"] = std::make_tuple(new QPushButton(tr("Foot")), PopupWidgetType::Intersection);
-    
-    QGridLayout *marksContainerLayout = new QGridLayout;
-    marksContainerLayout->setContentsMargins(0, 0, 0, 0);
-    marksContainerLayout->setSpacing(0);
-    marksContainerLayout->addWidget(std::get<0>(buttons["Head"]), 0, 1);
-    marksContainerLayout->addWidget(std::get<0>(buttons["Neck"]), 1, 1);
-    marksContainerLayout->addWidget(std::get<0>(buttons["RightUpperArm"]), 1, 0);
-    marksContainerLayout->addWidget(std::get<0>(buttons["RightLowerArm"]), 2, 0);
-    marksContainerLayout->addWidget(std::get<0>(buttons["RightHand"]), 3, 0);
-    marksContainerLayout->addWidget(std::get<0>(buttons["LeftUpperArm"]), 1, 2);
-    marksContainerLayout->addWidget(std::get<0>(buttons["LeftLowerArm"]), 2, 2);
-    marksContainerLayout->addWidget(std::get<0>(buttons["LeftHand"]), 3, 2);
-    marksContainerLayout->addWidget(std::get<0>(buttons["Chest"]), 2, 1);
-    marksContainerLayout->addWidget(std::get<0>(buttons["Spine"]), 3, 1);
-    
-    QGridLayout *lowerMarksContainerLayout = new QGridLayout;
-    lowerMarksContainerLayout->setContentsMargins(0, 0, 0, 0);
-    lowerMarksContainerLayout->setSpacing(0);
-    lowerMarksContainerLayout->addWidget(std::get<0>(buttons["RightUpperLeg"]), 0, 1);
-    lowerMarksContainerLayout->addWidget(std::get<0>(buttons["RightLowerLeg"]), 1, 1);
-    lowerMarksContainerLayout->addWidget(std::get<0>(buttons["RightFoot"]), 2, 0);
-    lowerMarksContainerLayout->addWidget(std::get<0>(buttons["LeftUpperLeg"]), 0, 2);
-    lowerMarksContainerLayout->addWidget(std::get<0>(buttons["LeftLowerLeg"]), 1, 2);
-    lowerMarksContainerLayout->addWidget(std::get<0>(buttons["LeftFoot"]), 2, 3);
-    
-    QFont buttonFont;
-    buttonFont.setWeight(QFont::Light);
-    buttonFont.setPixelSize(9);
-    buttonFont.setBold(false);
-    for (const auto &item: buttons) {
-        QString boneName = item.first;
-        QPushButton *buttonWidget = std::get<0>(item.second);
-        PopupWidgetType widgetType = std::get<1>(item.second);
-        buttonWidget->setFont(buttonFont);
-        buttonWidget->setMaximumWidth(55);
-        connect(buttonWidget, &QPushButton::clicked, [this, boneName, widgetType]() {
-            emit showPopupAngleDialog(boneName, widgetType, mapFromGlobal(QCursor::pos()));
-        });
-    }
-    
     m_previewWidget = new ModelWidget(this);
     m_previewWidget->setMinimumSize(128, 128);
     m_previewWidget->resize(384, 384);
     m_previewWidget->move(-64, -64+22);
     
-    QVBoxLayout *markButtonsLayout = new QVBoxLayout;
-    markButtonsLayout->addStretch();
-    markButtonsLayout->addLayout(marksContainerLayout);
-    markButtonsLayout->addLayout(lowerMarksContainerLayout);
-    markButtonsLayout->addStretch();
-    
     QHBoxLayout *paramtersLayout = new QHBoxLayout;
-    paramtersLayout->setContentsMargins(256, 0, 0, 0);
+    paramtersLayout->setContentsMargins(0, 480, 0, 0);
     paramtersLayout->addStretch();
-    paramtersLayout->addLayout(markButtonsLayout);
     paramtersLayout->addSpacing(20);
     
     m_nameEdit = new QLineEdit;
@@ -135,8 +72,54 @@ PoseEditWidget::PoseEditWidget(const Document *document, QWidget *parent) :
     connect(this, &PoseEditWidget::renamePose, m_document, &Document::renamePose);
     connect(this, &PoseEditWidget::setPoseParameters, m_document, &Document::setPoseParameters);
     
+    updateButtons();
     updatePreview();
     updateTitle();
+}
+
+void PoseEditWidget::updateButtons()
+{
+    delete m_buttonsContainer;
+    m_buttonsContainer = new QWidget(this);
+    m_buttonsContainer->resize(600, 500);
+    m_buttonsContainer->move(256, 0);
+    m_buttonsContainer->show();
+    
+    QGridLayout *marksContainerLayout = new QGridLayout;
+    marksContainerLayout->setContentsMargins(0, 0, 0, 0);
+    marksContainerLayout->setSpacing(2);
+    
+    QFont buttonFont;
+    buttonFont.setWeight(QFont::Light);
+    buttonFont.setPixelSize(7);
+    buttonFont.setBold(false);
+    
+    std::map<QString, std::tuple<QPushButton *, PopupWidgetType>> buttons;
+    const std::vector<RiggerBone> *rigBones = m_document->resultRigBones();
+    if (nullptr != rigBones && !rigBones->empty()) {
+        for (const auto &bone: *rigBones) {
+            if (!bone.hasButton)
+                continue;
+            QPushButton *buttonWidget = new QPushButton(bone.name);
+            PopupWidgetType widgetType = bone.buttonParameterType;
+            buttonWidget->setFont(buttonFont);
+            buttonWidget->setMaximumWidth(100);
+            QString boneName = bone.name;
+            connect(buttonWidget, &QPushButton::clicked, [this, boneName, widgetType]() {
+                emit showPopupAngleDialog(boneName, widgetType, mapFromGlobal(QCursor::pos()));
+            });
+            marksContainerLayout->addWidget(buttonWidget, bone.button.first, bone.button.second);
+        }
+    }
+    
+    marksContainerLayout->setSizeConstraint(QLayout::SizeConstraint::SetMinimumSize);
+    
+    QVBoxLayout *mainLayouer = new QVBoxLayout;
+    mainLayouer->addStretch();
+    mainLayouer->addLayout(marksContainerLayout);
+    mainLayouer->addStretch();
+    
+    m_buttonsContainer->setLayout(mainLayouer);
 }
 
 void PoseEditWidget::reject()
@@ -171,7 +154,7 @@ void PoseEditWidget::closeEvent(QCloseEvent *event)
 
 QSize PoseEditWidget::sizeHint() const
 {
-    return QSize(0, 350);
+    return QSize(1024, 768);
 }
 
 PoseEditWidget::~PoseEditWidget()
@@ -198,7 +181,10 @@ void PoseEditWidget::updatePreview()
         return;
     }
     
-    TetrapodPoser *poser = new TetrapodPoser(*rigBones);
+    Poser *poser = newPoser(m_document->rigType, *rigBones);
+    if (nullptr == poser)
+        return;
+    
     poser->parameters() = m_parameters;
     poser->commit();
     m_posePreviewManager->postUpdate(*poser, m_document->currentRiggedOutcome(), *rigWeights);
@@ -290,7 +276,7 @@ void PoseEditWidget::showPopupAngleDialog(QString boneName, PopupWidgetType popu
         rollLayout->addWidget(rollEraser);
         rollLayout->addWidget(rollWidget);
         layout->addLayout(rollLayout);
-    } else {
+    } else if (PopupWidgetType::Intersection == popupWidgetType) {
         FloatNumberWidget *intersectionWidget = new FloatNumberWidget;
         intersectionWidget->setItemName(tr("Intersection"));
         intersectionWidget->setRange(-180, 180);

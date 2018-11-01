@@ -247,7 +247,7 @@ void MotionEditWidget::generatePreviews()
         return;
     }
     
-    m_previewsGenerator = new MotionsGenerator(rigBones, rigWeights,
+    m_previewsGenerator = new MotionsGenerator(m_document->rigType, rigBones, rigWeights,
         m_document->currentRiggedOutcome());
     for (const auto &pose: m_document->poseMap)
         m_previewsGenerator->addPoseToLibrary(pose.first, pose.second.parameters);

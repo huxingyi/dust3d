@@ -147,22 +147,27 @@ public:
         }
         
         QColor penColor = color;
-        penColor.setAlphaF(m_checked ? Theme::checkedAlpha : Theme::normalAlpha);
+        penColor.setAlphaF((m_checked || m_hovered) ? Theme::checkedAlpha : Theme::normalAlpha);
         QPen pen(penColor);
         pen.setWidth(0);
         setPen(pen);
         
+        QColor brushColor;
+        Qt::BrushStyle style;
         if (m_markColor == Qt::transparent) {
-            QColor brushColor = color;
+            brushColor = color;
             brushColor.setAlphaF((m_checked || m_hovered) ? Theme::fillAlpha : 0);
-            QBrush brush(brushColor);
-            setBrush(brush);
+            style = Qt::SolidPattern;
         } else {
-            QColor brushColor = m_markColor;
+            brushColor = m_markColor;
             brushColor.setAlphaF((m_checked || m_hovered) ? Theme::fillAlpha * 4 : Theme::fillAlpha * 1.5);
-            QBrush brush(brushColor);
-            setBrush(brush);
+            style = Qt::Dense4Pattern;
         }
+        if (m_checked)
+            brushColor.setAlphaF(brushColor.alphaF() * 1.2);
+        QBrush brush(brushColor);
+        brush.setStyle(style);
+        setBrush(brush);
     }
     void setOrigin(QPointF point)
     {

@@ -1,10 +1,12 @@
 #include <QGuiApplication>
 #include <QDebug>
 #include <QElapsedTimer>
+#include <cmath>
 #include "riggenerator.h"
-#include "rigger.h"
+#include "riggerconstruct.h"
 
-RigGenerator::RigGenerator(const Outcome &outcome) :
+RigGenerator::RigGenerator(RigType rigType, const Outcome &outcome) :
+    m_rigType(rigType),
     m_outcome(new Outcome(outcome))
 {
 }
@@ -71,59 +73,113 @@ void RigGenerator::generate()
     
     const auto &triangleSourceNodes = *m_outcome->triangleSourceNodes();
     const std::vector<std::vector<QVector3D>> *triangleVertexNormals = m_outcome->triangleVertexNormals();
-    
-    std::map<std::pair<QUuid, QUuid>, const OutcomeNode *> nodeMap;
-    for (const auto &item: m_outcome->nodes) {
-        nodeMap.insert({{item.partId, item.nodeId}, &item});
-    }
+    const std::vector<QVector3D> *triangleTangents = m_outcome->triangleTangents();
     
     for (const auto &vertex: m_outcome->vertices) {
         inputVerticesPositions.push_back(vertex);
     }
-    std::map<std::pair<BoneMark, SkeletonSide>, std::tuple<QVector3D, int, std::set<MeshSplitterTriangle>>> marksMap;
+    
+    std::map<std::pair<QUuid, QUuid>, std::tuple<BoneMark, SkeletonSide, QVector3D, std::set<MeshSplitterTriangle>, float, QVector3D>> markedNodes;
+    for (const auto &bmeshNode: m_outcome->nodes) {
+        if (bmeshNode.boneMark == BoneMark::None)
+            continue;
+        SkeletonSide boneSide = SkeletonSide::None;
+        if (BoneMarkHasSide(bmeshNode.boneMark) &&
+                std::abs(bmeshNode.origin.x()) > 0.01 ) {
+            boneSide = bmeshNode.origin.x() > 0 ? SkeletonSide::Left : SkeletonSide::Right;
+        }
+        //qDebug() << "Add bone mark:" << BoneMarkToString(bmeshNode.boneMark) << "side:" << SkeletonSideToDispName(boneSide);
+        markedNodes[std::make_pair(bmeshNode.partId, bmeshNode.nodeId)] = std::make_tuple(bmeshNode.boneMark, boneSide, bmeshNode.origin, std::set<MeshSplitterTriangle>(), bmeshNode.radius, bmeshNode.baseNormal);
+    }
+    
     for (size_t triangleIndex = 0; triangleIndex < m_outcome->triangles.size(); triangleIndex++) {
         const auto &sourceTriangle = m_outcome->triangles[triangleIndex];
         MeshSplitterTriangle newTriangle;
         for (int i = 0; i < 3; i++)
             newTriangle.indicies[i] = sourceTriangle[i];
-        auto findBmeshNodeResult = nodeMap.find(triangleSourceNodes[triangleIndex]);
-        if (findBmeshNodeResult != nodeMap.end()) {
-            const auto &bmeshNode = *findBmeshNodeResult->second;
-            if (bmeshNode.boneMark != BoneMark::None) {
-                SkeletonSide boneSide = SkeletonSide::None;
-                if (BoneMarkHasSide(bmeshNode.boneMark)) {
-                    boneSide = bmeshNode.origin.x() > 0 ? SkeletonSide::Left : SkeletonSide::Right;
-                }
-                auto &marks = marksMap[std::make_pair(bmeshNode.boneMark, boneSide)];
-                std::get<0>(marks) += bmeshNode.origin;
-                std::get<1>(marks) += 1;
-                std::get<2>(marks).insert(newTriangle);
-            }
+        auto findMarkedNodeResult = markedNodes.find(triangleSourceNodes[triangleIndex]);
+        if (findMarkedNodeResult != markedNodes.end()) {
+            auto &markedNode = findMarkedNodeResult->second;
+            std::get<3>(markedNode).insert(newTriangle);
         }
         inputTriangles.insert(newTriangle);
     }
-    m_autoRigger = new Rigger(inputVerticesPositions, inputTriangles);
-    for (const auto &marks: marksMap) {
-        m_autoRigger->addMarkGroup(marks.first.first, marks.first.second,
-            std::get<0>(marks.second) / std::get<1>(marks.second),
-            std::get<2>(marks.second));
+    
+    std::vector<std::tuple<BoneMark, SkeletonSide, QVector3D, std::set<MeshSplitterTriangle>, float, QVector3D>> markedNodesList;
+    for (const auto &markedNode: markedNodes) {
+        markedNodesList.push_back(markedNode.second);
     }
-    m_isSucceed = m_autoRigger->rig();
+    
+    // Combine the overlapped marks
+    std::vector<std::tuple<BoneMark, SkeletonSide, QVector3D, std::set<MeshSplitterTriangle>, float, QVector3D>> combinedMarkedNodesList;
+    std::set<size_t> processedNodes;
+    for (size_t i = 0; i < markedNodesList.size(); ++i) {
+        if (processedNodes.find(i) != processedNodes.end())
+            continue;
+        const auto &first = markedNodesList[i];
+        std::tuple<BoneMark, SkeletonSide, QVector3D, std::set<MeshSplitterTriangle>, float, QVector3D> newNodes;
+        size_t combinedNum = 1;
+        newNodes = first;
+        for (size_t j = i + 1; j < markedNodesList.size(); ++j) {
+            const auto &second = markedNodesList[j];
+            if (std::get<0>(first) == std::get<0>(second) &&
+                    std::get<1>(first) == std::get<1>(second)) {
+                if ((std::get<2>(first) - std::get<2>(second)).lengthSquared() <
+                        std::pow((std::get<4>(first) + std::get<4>(second)), 2)) {
+                    processedNodes.insert(j);
+                    
+                    std::get<2>(newNodes) += std::get<2>(second);
+                    for (const auto &triangle: std::get<3>(second))
+                        std::get<3>(newNodes).insert(triangle);
+                    std::get<4>(newNodes) += std::get<4>(second);
+                    std::get<5>(newNodes) += std::get<5>(second);
+                    ++combinedNum;
+                }
+            }
+        }
+        if (combinedNum > 1) {
+            std::get<2>(newNodes) /= combinedNum;
+            std::get<4>(newNodes) /= combinedNum;
+            std::get<5>(newNodes).normalize();
+            
+            qDebug() << "Combined" << combinedNum << "on mark:" << BoneMarkToString(std::get<0>(newNodes)) << "side:" << SkeletonSideToDispName(std::get<1>(newNodes));
+        }
+        combinedMarkedNodesList.push_back(newNodes);
+    }
+    
+    m_autoRigger = newRigger(m_rigType, inputVerticesPositions, inputTriangles);
+    if (nullptr == m_autoRigger) {
+        qDebug() << "Unsupported rig type:" << RigTypeToString(m_rigType);
+    } else {
+        for (const auto &markedNode: combinedMarkedNodesList) {
+            const auto &triangles = std::get<3>(markedNode);
+            if (triangles.empty())
+                continue;
+            m_autoRigger->addMarkGroup(std::get<0>(markedNode), std::get<1>(markedNode),
+                std::get<2>(markedNode),
+                std::get<4>(markedNode),
+                std::get<5>(markedNode),
+                std::get<3>(markedNode));
+        }
+        m_isSucceed = m_autoRigger->rig();
+    }
     
     if (m_isSucceed) {
         qDebug() << "Rig succeed";
     } else {
         qDebug() << "Rig failed";
-        m_missingMarkNames = m_autoRigger->missingMarkNames();
-        m_errorMarkNames = m_autoRigger->errorMarkNames();
-        for (const auto &message: m_autoRigger->messages()) {
-            qDebug() << "errorType:" << message.first << "Message:" << message.second;
+        if (nullptr != m_autoRigger) {
+            m_missingMarkNames = m_autoRigger->missingMarkNames();
+            m_errorMarkNames = m_autoRigger->errorMarkNames();
+            for (const auto &message: m_autoRigger->messages()) {
+                qDebug() << "errorType:" << message.first << "Message:" << message.second;
+            }
         }
     }
     
     // Blend vertices colors according to bone weights
     
-    std::vector<QColor> inputVerticesColors(m_outcome->vertices.size());
+    std::vector<QColor> inputVerticesColors(m_outcome->vertices.size(), Qt::black);
     if (m_isSucceed) {
         const auto &resultWeights = m_autoRigger->resultWeights();
         const auto &resultBones = m_autoRigger->resultBones();
@@ -157,8 +213,12 @@ void RigGenerator::generate()
     Vertex *triangleVertices = new Vertex[m_outcome->triangles.size() * 3];
     int triangleVerticesNum = 0;
     const QVector3D defaultUv = QVector3D(0, 0, 0);
+    const QVector3D defaultTangents = QVector3D(0, 0, 0);
     for (size_t triangleIndex = 0; triangleIndex < m_outcome->triangles.size(); triangleIndex++) {
         const auto &sourceTriangle = m_outcome->triangles[triangleIndex];
+        const auto *sourceTangent = &defaultTangents;
+        if (nullptr != triangleTangents)
+            sourceTangent = &(*triangleTangents)[triangleIndex];
         for (int i = 0; i < 3; i++) {
             Vertex &currentVertex = triangleVertices[triangleVerticesNum++];
             const auto &sourcePosition = inputVerticesPositions[sourceTriangle[i]];
@@ -177,6 +237,11 @@ void RigGenerator::generate()
             currentVertex.normX = sourceNormal->x();
             currentVertex.normY = sourceNormal->y();
             currentVertex.normZ = sourceNormal->z();
+            currentVertex.metalness = MeshLoader::m_defaultMetalness;
+            currentVertex.roughness = MeshLoader::m_defaultRoughness;
+            currentVertex.tangentX = sourceTangent->x();
+            currentVertex.tangentY = sourceTangent->y();
+            currentVertex.tangentZ = sourceTangent->z();
         }
     }
     m_resultMesh = new MeshLoader(triangleVertices, triangleVerticesNum);

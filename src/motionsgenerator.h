@@ -8,13 +8,14 @@
 #include "rigger.h"
 #include "jointnodetree.h"
 #include "document.h"
-#include "tetrapodposer.h"
+#include "poser.h"
 
 class MotionsGenerator : public QObject
 {
     Q_OBJECT
 public:
-    MotionsGenerator(const std::vector<RiggerBone> *rigBones,
+    MotionsGenerator(RigType rigType,
+        const std::vector<RiggerBone> *rigBones,
         const std::map<int, RiggerVertexWeights> *rigWeights,
         const Outcome &outcome);
     ~MotionsGenerator();
@@ -42,6 +43,7 @@ private:
     void generatePreviewsForOutcomes(const std::vector<std::pair<float, JointNodeTree>> &outcomes, std::vector<std::pair<float, MeshLoader *>> &previews);
     float calculateMotionDuration(const QUuid &motionId, std::set<QUuid> &visited);
     
+    RigType m_rigType = RigType::None;
     std::vector<RiggerBone> m_rigBones;
     std::map<int, RiggerVertexWeights> m_rigWeights;
     Outcome m_outcome;
@@ -52,7 +54,7 @@ private:
     std::map<QUuid, std::vector<std::pair<float, MeshLoader *>>> m_resultPreviewMeshs;
     std::map<QUuid, std::vector<std::pair<float, JointNodeTree>>> m_resultJointNodeTrees;
     std::map<QUuid, JointNodeTree> m_poseJointNodeTreeMap;
-    TetrapodPoser *m_poser = nullptr;
+    Poser *m_poser = nullptr;
     int m_fps = 30;
 };
 

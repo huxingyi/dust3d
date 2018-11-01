@@ -7,12 +7,14 @@
 #include "meshloader.h"
 #include "rigger.h"
 #include "outcome.h"
+#include "rigtype.h"
 
 class PosePreviewsGenerator : public QObject
 {
     Q_OBJECT
 public:
-    PosePreviewsGenerator(const std::vector<RiggerBone> *rigBones,
+    PosePreviewsGenerator(RigType rigType,
+        const std::vector<RiggerBone> *rigBones,
         const std::map<int, RiggerVertexWeights> *rigWeights,
         const Outcome &outcome);
     ~PosePreviewsGenerator();
@@ -24,6 +26,7 @@ signals:
 public slots:
     void process();
 private:
+    RigType m_rigType = RigType::None;
     std::vector<RiggerBone> m_rigBones;
     std::map<int, RiggerVertexWeights> m_rigWeights;
     Outcome *m_outcome = nullptr;
