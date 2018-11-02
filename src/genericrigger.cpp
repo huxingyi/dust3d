@@ -507,8 +507,8 @@ bool GenericRigger::rig()
 
 void GenericRigger::normalizeButtonColumns()
 {
-    int minColumn = std::numeric_limits<int>::max();
-    int maxColumn = std::numeric_limits<int>::min();
+    double minColumn = std::numeric_limits<int>::max();
+    double maxColumn = std::numeric_limits<int>::min();
     for (const auto &bone: m_resultBones) {
         if (!bone.hasButton)
             continue;
@@ -517,7 +517,7 @@ void GenericRigger::normalizeButtonColumns()
         if (bone.button.second > maxColumn)
             maxColumn = bone.button.second;
     }
-    int columnNumOfOneSide = std::max(std::abs(minColumn), std::abs(maxColumn));
+    int columnNumOfOneSide = (int)std::max(std::abs(minColumn), std::abs(maxColumn));
     for (auto &bone: m_resultBones) {
         if (!bone.hasButton)
             continue;
