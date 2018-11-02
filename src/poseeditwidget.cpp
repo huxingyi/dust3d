@@ -294,6 +294,60 @@ void PoseEditWidget::showPopupAngleDialog(QString boneName, PopupWidgetType popu
         intersectionLayout->addWidget(intersectionEraser);
         intersectionLayout->addWidget(intersectionWidget);
         layout->addLayout(intersectionLayout);
+    } else if (PopupWidgetType::Translation == popupWidgetType) {
+        FloatNumberWidget *xWidget = new FloatNumberWidget;
+        xWidget->setItemName(tr("X"));
+        xWidget->setRange(-1, 1);
+        xWidget->setValue(valueOfKeyInMapOrEmpty(m_parameters[boneName], "x").toFloat());
+        connect(xWidget, &FloatNumberWidget::valueChanged, this, [=](float value) {
+            m_parameters[boneName]["x"] = QString::number(value);
+            emit parametersAdjusted();
+        });
+        QPushButton *xEraser = new QPushButton(QChar(fa::eraser));
+        Theme::initAwesomeMiniButton(xEraser);
+        connect(xEraser, &QPushButton::clicked, this, [=]() {
+            xWidget->setValue(0.0);
+        });
+        QHBoxLayout *xLayout = new QHBoxLayout;
+        xLayout->addWidget(xEraser);
+        xLayout->addWidget(xWidget);
+        layout->addLayout(xLayout);
+        
+        FloatNumberWidget *yWidget = new FloatNumberWidget;
+        yWidget->setItemName(tr("Y"));
+        yWidget->setRange(-1, 1);
+        yWidget->setValue(valueOfKeyInMapOrEmpty(m_parameters[boneName], "y").toFloat());
+        connect(yWidget, &FloatNumberWidget::valueChanged, this, [=](float value) {
+            m_parameters[boneName]["y"] = QString::number(value);
+            emit parametersAdjusted();
+        });
+        QPushButton *yEraser = new QPushButton(QChar(fa::eraser));
+        Theme::initAwesomeMiniButton(yEraser);
+        connect(yEraser, &QPushButton::clicked, this, [=]() {
+            yWidget->setValue(0.0);
+        });
+        QHBoxLayout *yLayout = new QHBoxLayout;
+        yLayout->addWidget(yEraser);
+        yLayout->addWidget(yWidget);
+        layout->addLayout(yLayout);
+        
+        FloatNumberWidget *zWidget = new FloatNumberWidget;
+        zWidget->setItemName(tr("Z"));
+        zWidget->setRange(-1, 1);
+        zWidget->setValue(valueOfKeyInMapOrEmpty(m_parameters[boneName], "z").toFloat());
+        connect(zWidget, &FloatNumberWidget::valueChanged, this, [=](float value) {
+            m_parameters[boneName]["z"] = QString::number(value);
+            emit parametersAdjusted();
+        });
+        QPushButton *zEraser = new QPushButton(QChar(fa::eraser));
+        Theme::initAwesomeMiniButton(zEraser);
+        connect(zEraser, &QPushButton::clicked, this, [=]() {
+            zWidget->setValue(0.0);
+        });
+        QHBoxLayout *zLayout = new QHBoxLayout;
+        zLayout->addWidget(zEraser);
+        zLayout->addWidget(zWidget);
+        layout->addLayout(zLayout);
     }
     
     popup->setLayout(layout);

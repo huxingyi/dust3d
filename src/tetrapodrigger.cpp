@@ -374,6 +374,9 @@ bool TetrapodRigger::rig()
     bodyBone.name = "Body";
     bodyBone.headPosition = QVector3D(0, 0, 0);
     bodyBone.tailPosition = bonesOrigin;
+    bodyBone.hasButton = true;
+    bodyBone.button = {7, 1};
+    bodyBone.buttonParameterType = RiggerButtonParameterType::Translation;
     boneIndexMap[bodyBone.name] = bodyBone.index;
     
     m_resultBones.push_back(RiggerBone());

@@ -11,6 +11,16 @@ void JointNodeTree::updateRotation(int index, QQuaternion rotation)
     m_boneNodes[index].rotation = rotation;
 }
 
+void JointNodeTree::updateTranslation(int index, QVector3D translation)
+{
+    m_boneNodes[index].translation = translation;
+}
+
+void JointNodeTree::addTranslation(int index, QVector3D translation)
+{
+    m_boneNodes[index].translation += translation;
+}
+
 void JointNodeTree::reset()
 {
     for (auto &node: m_boneNodes) {
@@ -80,6 +90,7 @@ JointNodeTree JointNodeTree::slerp(const JointNodeTree &first, const JointNodeTr
     for (decltype(first.nodes().size()) i = 0; i < first.nodes().size() && i < second.nodes().size(); i++) {
         slerpResult.updateRotation(i,
             quaternionOvershootSlerp(first.nodes()[i].rotation, second.nodes()[i].rotation, t));
+        slerpResult.updateTranslation(i, (first.nodes()[i].translation * (1.0 - t) + second.nodes()[i].translation * t));
     }
     slerpResult.recalculateTransformMatrices();
     return slerpResult;

@@ -15,7 +15,8 @@ enum class RiggerButtonParameterType
 {
     None = 0,
     PitchYawRoll,
-    Intersection
+    Intersection,
+    Translation
 };
 
 class RiggerMark

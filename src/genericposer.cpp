@@ -38,6 +38,19 @@ void GenericPoser::commit()
             m_jointNodeTree.updateRotation(boneIndex, rotation);
             continue;
         }
+        auto findXResult = item.second.find("x");
+        auto findYResult = item.second.find("y");
+        auto findZResult = item.second.find("z");
+        if (findXResult != item.second.end() ||
+                findYResult != item.second.end() ||
+                findZResult != item.second.end()) {
+            float x = valueOfKeyInMapOrEmpty(item.second, "x").toFloat();
+            float y = valueOfKeyInMapOrEmpty(item.second, "y").toFloat();
+            float z = valueOfKeyInMapOrEmpty(item.second, "z").toFloat();
+            QVector3D translation = {x, y, z};
+            m_jointNodeTree.addTranslation(boneIndex, translation);
+            continue;
+        }
     }
     
     Poser::commit();

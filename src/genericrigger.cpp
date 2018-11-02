@@ -304,6 +304,9 @@ bool GenericRigger::rig()
     bodyBone.index = m_resultBones.size() - 1;
     bodyBone.name = "Body";
     bodyBone.headPosition = QVector3D(0, 0, 0);
+    bodyBone.hasButton = true;
+    bodyBone.button = {spineNodes.size(), 0};
+    bodyBone.buttonParameterType = RiggerButtonParameterType::Translation;
     boneIndexMap[bodyBone.name] = bodyBone.index;
     
     auto remainingSpineVerticies = bodyVerticies;

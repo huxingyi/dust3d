@@ -23,6 +23,8 @@ public:
     const std::vector<JointNode> &nodes() const;
     JointNodeTree(const std::vector<RiggerBone> *resultRigBones);
     void updateRotation(int index, QQuaternion rotation);
+    void updateTranslation(int index, QVector3D translation);
+    void addTranslation(int index, QVector3D translation);
     void reset();
     void recalculateTransformMatrices();
     static JointNodeTree slerp(const JointNodeTree &first, const JointNodeTree &second, float t);
