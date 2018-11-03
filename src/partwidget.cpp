@@ -143,7 +143,7 @@ PartWidget::PartWidget(const Document *document, QUuid partId) :
     connect(this, &PartWidget::groupOperationAdded, m_document, &Document::saveSnapshot);
     
     connect(m_lockButton, &QPushButton::clicked, [=]() {
-        const Part *part = m_document->findPart(m_partId);
+        const SkeletonPart *part = m_document->findPart(m_partId);
         if (!part) {
             qDebug() << "Part not found:" << m_partId;
             return;
@@ -153,7 +153,7 @@ PartWidget::PartWidget(const Document *document, QUuid partId) :
     });
     
     connect(m_visibleButton, &QPushButton::clicked, [=]() {
-        const Part *part = m_document->findPart(m_partId);
+        const SkeletonPart *part = m_document->findPart(m_partId);
         if (!part) {
             qDebug() << "Part not found:" << m_partId;
             return;
@@ -163,7 +163,7 @@ PartWidget::PartWidget(const Document *document, QUuid partId) :
     });
     
     connect(m_subdivButton, &QPushButton::clicked, [=]() {
-        const Part *part = m_document->findPart(m_partId);
+        const SkeletonPart *part = m_document->findPart(m_partId);
         if (!part) {
             qDebug() << "Part not found:" << m_partId;
             return;
@@ -173,7 +173,7 @@ PartWidget::PartWidget(const Document *document, QUuid partId) :
     });
     
     connect(m_disableButton, &QPushButton::clicked, [=]() {
-        const Part *part = m_document->findPart(m_partId);
+        const SkeletonPart *part = m_document->findPart(m_partId);
         if (!part) {
             qDebug() << "Part not found:" << m_partId;
             return;
@@ -183,7 +183,7 @@ PartWidget::PartWidget(const Document *document, QUuid partId) :
     });
     
     connect(m_xMirrorButton, &QPushButton::clicked, [=]() {
-        const Part *part = m_document->findPart(m_partId);
+        const SkeletonPart *part = m_document->findPart(m_partId);
         if (!part) {
             qDebug() << "Part not found:" << m_partId;
             return;
@@ -193,7 +193,7 @@ PartWidget::PartWidget(const Document *document, QUuid partId) :
     });
     
     connect(m_deformButton, &QPushButton::clicked, [=]() {
-        const Part *part = m_document->findPart(m_partId);
+        const SkeletonPart *part = m_document->findPart(m_partId);
         if (!part) {
             qDebug() << "Part not found:" << m_partId;
             return;
@@ -202,7 +202,7 @@ PartWidget::PartWidget(const Document *document, QUuid partId) :
     });
     
     connect(m_roundButton, &QPushButton::clicked, [=]() {
-        const Part *part = m_document->findPart(m_partId);
+        const SkeletonPart *part = m_document->findPart(m_partId);
         if (!part) {
             qDebug() << "Part not found:" << m_partId;
             return;
@@ -212,7 +212,7 @@ PartWidget::PartWidget(const Document *document, QUuid partId) :
     });
     
     connect(m_colorButton, &QPushButton::clicked, [=]() {
-        const Part *part = m_document->findPart(m_partId);
+        const SkeletonPart *part = m_document->findPart(m_partId);
         if (!part) {
             qDebug() << "Part not found:" << m_partId;
             return;
@@ -221,7 +221,7 @@ PartWidget::PartWidget(const Document *document, QUuid partId) :
     });
     
     connect(m_wrapButton, &QPushButton::clicked, [=]() {
-        const Part *part = m_document->findPart(m_partId);
+        const SkeletonPart *part = m_document->findPart(m_partId);
         if (!part) {
             qDebug() << "Part not found:" << m_partId;
             return;
@@ -287,7 +287,7 @@ void PartWidget::showColorSettingPopup(const QPoint &pos)
 {
     QMenu popupMenu;
     
-    const Part *part = m_document->findPart(m_partId);
+    const SkeletonPart *part = m_document->findPart(m_partId);
     if (!part) {
         qDebug() << "Find part failed:" << m_partId;
         return;
@@ -358,7 +358,7 @@ void PartWidget::showDeformSettingPopup(const QPoint &pos)
 {
     QMenu popupMenu;
     
-    const Part *part = m_document->findPart(m_partId);
+    const SkeletonPart *part = m_document->findPart(m_partId);
     if (!part) {
         qDebug() << "Find part failed:" << m_partId;
         return;
@@ -434,7 +434,7 @@ void PartWidget::updateButton(QPushButton *button, QChar icon, bool highlighted)
 
 void PartWidget::updatePreview()
 {
-    const Part *part = m_document->findPart(m_partId);
+    const SkeletonPart *part = m_document->findPart(m_partId);
     if (!part) {
         qDebug() << "Part not found:" << m_partId;
         return;
@@ -446,7 +446,7 @@ void PartWidget::updatePreview()
 
 void PartWidget::updateLockButton()
 {
-    const Part *part = m_document->findPart(m_partId);
+    const SkeletonPart *part = m_document->findPart(m_partId);
     if (!part) {
         qDebug() << "Part not found:" << m_partId;
         return;
@@ -459,7 +459,7 @@ void PartWidget::updateLockButton()
 
 void PartWidget::updateVisibleButton()
 {
-    const Part *part = m_document->findPart(m_partId);
+    const SkeletonPart *part = m_document->findPart(m_partId);
     if (!part) {
         qDebug() << "Part not found:" << m_partId;
         return;
@@ -472,7 +472,7 @@ void PartWidget::updateVisibleButton()
 
 void PartWidget::updateSubdivButton()
 {
-    const Part *part = m_document->findPart(m_partId);
+    const SkeletonPart *part = m_document->findPart(m_partId);
     if (!part) {
         qDebug() << "Part not found:" << m_partId;
         return;
@@ -485,7 +485,7 @@ void PartWidget::updateSubdivButton()
 
 void PartWidget::updateDisableButton()
 {
-    const Part *part = m_document->findPart(m_partId);
+    const SkeletonPart *part = m_document->findPart(m_partId);
     if (!part) {
         qDebug() << "Part not found:" << m_partId;
         return;
@@ -498,7 +498,7 @@ void PartWidget::updateDisableButton()
 
 void PartWidget::updateXmirrorButton()
 {
-    const Part *part = m_document->findPart(m_partId);
+    const SkeletonPart *part = m_document->findPart(m_partId);
     if (!part) {
         qDebug() << "Part not found:" << m_partId;
         return;
@@ -511,7 +511,7 @@ void PartWidget::updateXmirrorButton()
 
 void PartWidget::updateDeformButton()
 {
-    const Part *part = m_document->findPart(m_partId);
+    const SkeletonPart *part = m_document->findPart(m_partId);
     if (!part) {
         qDebug() << "Part not found:" << m_partId;
         return;
@@ -524,7 +524,7 @@ void PartWidget::updateDeformButton()
 
 void PartWidget::updateRoundButton()
 {
-    const Part *part = m_document->findPart(m_partId);
+    const SkeletonPart *part = m_document->findPart(m_partId);
     if (!part) {
         qDebug() << "Part not found:" << m_partId;
         return;
@@ -537,7 +537,7 @@ void PartWidget::updateRoundButton()
 
 void PartWidget::updateColorButton()
 {
-    const Part *part = m_document->findPart(m_partId);
+    const SkeletonPart *part = m_document->findPart(m_partId);
     if (!part) {
         qDebug() << "Part not found:" << m_partId;
         return;
@@ -550,7 +550,7 @@ void PartWidget::updateColorButton()
 
 void PartWidget::updateWrapButton()
 {
-    const Part *part = m_document->findPart(m_partId);
+    const SkeletonPart *part = m_document->findPart(m_partId);
     if (!part) {
         qDebug() << "Part not found:" << m_partId;
         return;

@@ -371,7 +371,7 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
 
     m_addAction = new QAction(tr("Add..."), this);
     connect(m_addAction, &QAction::triggered, [=]() {
-        m_document->setEditMode(DocumentEditMode::Add);
+        m_document->setEditMode(SkeletonDocumentEditMode::Add);
     });
     m_editMenu->addAction(m_addAction);
 
@@ -657,23 +657,23 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(rotateClockwiseButton, &QPushButton::clicked, graphicsWidget, &SkeletonGraphicsWidget::rotateAllMainProfileClockwise90DegreeAlongOrigin);
 
     connect(addButton, &QPushButton::clicked, [=]() {
-        m_document->setEditMode(DocumentEditMode::Add);
+        m_document->setEditMode(SkeletonDocumentEditMode::Add);
     });
 
     connect(selectButton, &QPushButton::clicked, [=]() {
-        m_document->setEditMode(DocumentEditMode::Select);
+        m_document->setEditMode(SkeletonDocumentEditMode::Select);
     });
 
     connect(dragButton, &QPushButton::clicked, [=]() {
-        m_document->setEditMode(DocumentEditMode::Drag);
+        m_document->setEditMode(SkeletonDocumentEditMode::Drag);
     });
 
     connect(zoomInButton, &QPushButton::clicked, [=]() {
-        m_document->setEditMode(DocumentEditMode::ZoomIn);
+        m_document->setEditMode(SkeletonDocumentEditMode::ZoomIn);
     });
 
     connect(zoomOutButton, &QPushButton::clicked, [=]() {
-        m_document->setEditMode(DocumentEditMode::ZoomOut);
+        m_document->setEditMode(SkeletonDocumentEditMode::ZoomOut);
     });
 
     connect(m_xlockButton, &QPushButton::clicked, [=]() {

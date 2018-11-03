@@ -23,193 +23,16 @@
 #include "texturetype.h"
 #include "interpolationtype.h"
 #include "jointnodetree.h"
+#include "skeletondocument.h"
 
 class MaterialPreviewsGenerator;
 class MotionsGenerator;
-
-class Node
-{
-public:
-    Node(const QUuid &withId=QUuid()) :
-        x(0),
-        y(0),
-        z(0),
-        radius(0),
-        boneMark(BoneMark::None)
-    {
-        id = withId.isNull() ? QUuid::createUuid() : withId;
-    }
-    void setRadius(float toRadius)
-    {
-        if (toRadius < 0)
-            toRadius = 0.005;
-        else if (toRadius > 1)
-            toRadius = 1;
-        radius = toRadius;
-    }
-    QUuid id;
-    QUuid partId;
-    QString name;
-    float x;
-    float y;
-    float z;
-    float radius;
-    BoneMark boneMark;
-    std::vector<QUuid> edgeIds;
-};
-
-class Edge
-{
-public:
-    Edge(const QUuid &withId=QUuid())
-    {
-        id = withId.isNull() ? QUuid::createUuid() : withId;
-    }
-    QUuid id;
-    QUuid partId;
-    QString name;
-    std::vector<QUuid> nodeIds;
-    QUuid neighborOf(QUuid nodeId) const
-    {
-        if (nodeIds.size() != 2)
-            return QUuid();
-        return nodeIds[0] == nodeId ? nodeIds[1] : nodeIds[0];
-    }
-};
-
-class Part
-{
-public:
-    ~Part()
-    {
-        delete m_previewMesh;
-    }
-    QUuid id;
-    QString name;
-    bool visible;
-    bool locked;
-    bool subdived;
-    bool disabled;
-    bool xMirrored;
-    bool zMirrored;
-    float deformThickness;
-    float deformWidth;
-    bool rounded;
-    QColor color;
-    bool hasColor;
-    QUuid componentId;
-    std::vector<QUuid> nodeIds;
-    bool dirty;
-    bool wrapped;
-    QUuid materialId;
-    Part(const QUuid &withId=QUuid()) :
-        visible(true),
-        locked(false),
-        subdived(false),
-        disabled(false),
-        xMirrored(false),
-        zMirrored(false),
-        deformThickness(1.0),
-        deformWidth(1.0),
-        rounded(false),
-        color(Theme::white),
-        hasColor(false),
-        dirty(true),
-        wrapped(false)
-    {
-        id = withId.isNull() ? QUuid::createUuid() : withId;
-    }
-    void setDeformThickness(float toThickness)
-    {
-        if (toThickness < 0)
-            toThickness = 0;
-        else if (toThickness > 2)
-            toThickness = 2;
-        deformThickness = toThickness;
-    }
-    void setDeformWidth(float toWidth)
-    {
-        if (toWidth < 0)
-            toWidth = 0;
-        else if (toWidth > 2)
-            toWidth = 2;
-        deformWidth = toWidth;
-    }
-    bool deformThicknessAdjusted() const
-    {
-        return fabs(deformThickness - 1.0) >= 0.01;
-    }
-    bool deformWidthAdjusted() const
-    {
-        return fabs(deformWidth - 1.0) >= 0.01;
-    }
-    bool deformAdjusted() const
-    {
-        return deformThicknessAdjusted() || deformWidthAdjusted();
-    }
-    bool materialAdjusted() const
-    {
-        return !materialId.isNull();
-    }
-    bool isEditVisible() const
-    {
-        return visible && !disabled;
-    }
-    void copyAttributes(const Part &other)
-    {
-        visible = other.visible;
-        locked = other.locked;
-        subdived = other.subdived;
-        disabled = other.disabled;
-        xMirrored = other.xMirrored;
-        zMirrored = other.zMirrored;
-        deformThickness = other.deformThickness;
-        deformWidth = other.deformWidth;
-        rounded = other.rounded;
-        color = other.color;
-        hasColor = other.hasColor;
-        wrapped = other.wrapped;
-        componentId = other.componentId;
-        dirty = other.dirty;
-        materialId = other.materialId;
-    }
-    void updatePreviewMesh(MeshLoader *previewMesh)
-    {
-        delete m_previewMesh;
-        m_previewMesh = previewMesh;
-    }
-    MeshLoader *takePreviewMesh() const
-    {
-        if (nullptr == m_previewMesh)
-            return nullptr;
-        return new MeshLoader(*m_previewMesh);
-    }
-private:
-    Q_DISABLE_COPY(Part);
-    MeshLoader *m_previewMesh = nullptr;
-};
-
-enum class SkeletonProfile
-{
-    Unknown = 0,
-    Main,
-    Side
-};
 
 class HistoryItem
 {
 public:
     uint32_t hash;
     Snapshot snapshot;
-};
-
-enum class DocumentEditMode
-{
-    Add = 0,
-    Select,
-    Drag,
-    ZoomIn,
-    ZoomOut
 };
 
 class Component
@@ -532,7 +355,7 @@ enum class DocumentToSnapshotFor
     Motions
 };
 
-class Document : public QObject
+class Document : public SkeletonDocument
 {
     Q_OBJECT
 signals:
@@ -620,14 +443,6 @@ signals:
     void textureGenerating();
     void textureChanged();
 public: // need initialize
-    float originX;
-    float originY;
-    float originZ;
-    DocumentEditMode editMode;
-    bool xlocked;
-    bool ylocked;
-    bool zlocked;
-    bool radiusLocked;
     QImage *textureGuideImage;
     QImage *textureImage;
     QImage *textureBorderImage;
@@ -638,9 +453,9 @@ public: // need initialize
 public:
     Document();
     ~Document();
-    std::map<QUuid, Part> partMap;
-    std::map<QUuid, Node> nodeMap;
-    std::map<QUuid, Edge> edgeMap;
+    std::map<QUuid, SkeletonPart> partMap;
+    std::map<QUuid, SkeletonNode> nodeMap;
+    std::map<QUuid, SkeletonEdge> edgeMap;
     std::map<QUuid, Component> componentMap;
     std::map<QUuid, Material> materialMap;
     std::vector<QUuid> materialIdList;
@@ -649,8 +464,19 @@ public:
     std::map<QUuid, Motion> motionMap;
     std::vector<QUuid> motionIdList;
     Component rootComponent;
-    QImage turnaround;
     QImage preview;
+    const SkeletonNode *findNode(QUuid nodeId) const override;
+    const SkeletonEdge *findEdge(QUuid edgeId) const override;
+    const SkeletonPart *findPart(QUuid partId) const override;
+    const SkeletonEdge *findEdgeByNodes(QUuid firstNodeId, QUuid secondNodeId) const override;
+    bool undoable() const override;
+    bool redoable() const override;
+    bool hasPastableNodesInClipboard() const override;
+    bool originSettled() const override;
+    bool isNodeEditable(QUuid nodeId) const override;
+    bool isEdgeEditable(QUuid edgeId) const override;
+    void findAllNeighbors(QUuid nodeId, std::set<QUuid> &neighbors) const override;
+    void copyNodes(std::set<QUuid> nodeIdSet) const override;
     void toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeIds=std::set<QUuid>(),
         DocumentToSnapshotFor forWhat=DocumentToSnapshotFor::Document,
         const std::set<QUuid> &limitPoseIds=std::set<QUuid>(),
@@ -658,10 +484,6 @@ public:
         const std::set<QUuid> &limitMaterialIds=std::set<QUuid>()) const;
     void fromSnapshot(const Snapshot &snapshot);
     void addFromSnapshot(const Snapshot &snapshot, bool fromPaste=true);
-    const Node *findNode(QUuid nodeId) const;
-    const Edge *findEdge(QUuid edgeId) const;
-    const Part *findPart(QUuid partId) const;
-    const Edge *findEdgeByNodes(QUuid firstNodeId, QUuid secondNodeId) const;
     const Component *findComponent(QUuid componentId) const;
     const Component *findComponentParent(QUuid componentId) const;
     QUuid findComponentParentId(QUuid componentId) const;
@@ -675,19 +497,12 @@ public:
     const std::map<int, RiggerVertexWeights> *resultRigWeights() const;
     void updateTurnaround(const QImage &image);
     void setSharedContextWidget(QOpenGLWidget *sharedContextWidget);
-    bool hasPastableNodesInClipboard() const;
     bool hasPastableMaterialsInClipboard() const;
     bool hasPastablePosesInClipboard() const;
     bool hasPastableMotionsInClipboard() const;
-    bool undoable() const;
-    bool redoable() const;
-    bool isNodeEditable(QUuid nodeId) const;
-    bool isEdgeEditable(QUuid edgeId) const;
-    bool originSettled() const;
     const Outcome &currentPostProcessedOutcome() const;
     bool isExportReady() const;
     bool isPostProcessResultObsolete() const;
-    void findAllNeighbors(QUuid nodeId, std::set<QUuid> &neighbors) const;
     void collectComponentDescendantParts(QUuid componentId, std::vector<QUuid> &partIds) const;
     void collectComponentDescendantComponents(QUuid componentId, std::vector<QUuid> &componentIds) const;
     const std::vector<QString> &resultRigMissingMarkNames() const;
@@ -696,6 +511,9 @@ public:
     bool currentRigSucceed() const;
     bool isMeshGenerating() const;
 public slots:
+    void undo() override;
+    void redo() override;
+    void paste() override;
     void removeNode(QUuid nodeId);
     void removeEdge(QUuid edgeId);
     void removePart(QUuid partId);
@@ -708,7 +526,7 @@ public slots:
     void switchNodeXZ(QUuid nodeId);
     void moveOriginBy(float x, float y, float z);
     void addEdge(QUuid fromNodeId, QUuid toNodeId);
-    void setEditMode(DocumentEditMode mode);
+    void setEditMode(SkeletonDocumentEditMode mode);
     void uiReady();
     void generateMesh();
     void regenerateMesh();
@@ -765,9 +583,6 @@ public slots:
     void lockDescendantComponents(QUuid componentId);
     void unlockDescendantComponents(QUuid componentId);
     void saveSnapshot();
-    void undo();
-    void redo();
-    void paste();
     void batchChangeBegin();
     void batchChangeEnd();
     void reset();

@@ -12,7 +12,7 @@
 #include <cmath>
 #include <set>
 #include <QTimer>
-#include "document.h"
+#include "skeletondocument.h"
 #include "turnaroundloader.h"
 #include "theme.h"
 #include "util.h"
@@ -350,7 +350,7 @@ signals:
     void scaleNodeByAddRadius(QUuid nodeId, float amount);
     void moveNodeBy(QUuid nodeId, float x, float y, float z);
     void removeNode(QUuid nodeId);
-    void setEditMode(DocumentEditMode mode);
+    void setEditMode(SkeletonDocumentEditMode mode);
     void removeEdge(QUuid edgeId);
     void addEdge(QUuid fromNodeId, QUuid toNodeId);
     void cursorChanged();
@@ -385,7 +385,7 @@ signals:
     void enableAllPositionRelatedLocks();
     void disableAllPositionRelatedLocks();
 public:
-    SkeletonGraphicsWidget(const Document *document);
+    SkeletonGraphicsWidget(const SkeletonDocument *document);
     std::map<QUuid, std::pair<SkeletonGraphicsNodeItem *, SkeletonGraphicsNodeItem *>> nodeItemMap;
     std::map<QUuid, std::pair<SkeletonGraphicsEdgeItem *, SkeletonGraphicsEdgeItem *>> edgeItemMap;
     bool mouseMove(QMouseEvent *event);
@@ -527,7 +527,7 @@ private:
     void rotateItems(const std::set<SkeletonGraphicsNodeItem *> &nodeItems, int degree, QVector2D center);
     void rotateAllSideProfile(int degree);
 private: //need initalize
-    const Document *m_document;
+    const SkeletonDocument *m_document;
     QGraphicsPixmapItem *m_backgroundItem;
     bool m_turnaroundChanged;
     TurnaroundLoader *m_turnaroundLoader;
@@ -556,7 +556,7 @@ private: //need initalize
     bool m_eventForwardingToModelWidget;
     ModelWidget *m_modelWidget;
     bool m_inTempDragMode;
-    DocumentEditMode m_modeBeforeEnterTempDragMode;
+    SkeletonDocumentEditMode m_modeBeforeEnterTempDragMode;
 private:
     QVector3D m_ikMoveTarget;
     QUuid m_ikMoveEndEffectorId;

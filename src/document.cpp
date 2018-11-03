@@ -17,15 +17,8 @@
 unsigned long Document::m_maxSnapshot = 1000;
 
 Document::Document() :
+    SkeletonDocument(),
     // public
-    originX(0),
-    originY(0),
-    originZ(0),
-    editMode(DocumentEditMode::Select),
-    xlocked(false),
-    ylocked(false),
-    zlocked(false),
-    radiusLocked(false),
     textureGuideImage(nullptr),
     textureImage(nullptr),
     textureBorderImage(nullptr),
@@ -92,7 +85,7 @@ void Document::Document::disableAllPositionRelatedLocks()
 
 void Document::breakEdge(QUuid edgeId)
 {
-    const Edge *edge = findEdge(edgeId);
+    const SkeletonEdge *edge = findEdge(edgeId);
     if (nullptr == edge) {
         qDebug() << "Find edge failed:" << edgeId;
         return;
@@ -102,12 +95,12 @@ void Document::breakEdge(QUuid edgeId)
     }
     QUuid firstNodeId = edge->nodeIds[0];
     QUuid secondNodeId = edge->nodeIds[1];
-    const Node *firstNode = findNode(firstNodeId);
+    const SkeletonNode *firstNode = findNode(firstNodeId);
     if (nullptr == firstNode) {
         qDebug() << "Find node failed:" << firstNodeId;
         return;
     }
-    const Node *secondNode = findNode(secondNodeId);
+    const SkeletonNode *secondNode = findNode(secondNodeId);
     if (nullptr == secondNode) {
         qDebug() << "Find node failed:" << secondNodeId;
         return;
@@ -127,14 +120,14 @@ void Document::breakEdge(QUuid edgeId)
 
 void Document::removeEdge(QUuid edgeId)
 {
-    const Edge *edge = findEdge(edgeId);
+    const SkeletonEdge *edge = findEdge(edgeId);
     if (nullptr == edge) {
         qDebug() << "Find edge failed:" << edgeId;
         return;
     }
     if (isPartReadonly(edge->partId))
         return;
-    const Part *oldPart = findPart(edge->partId);
+    const SkeletonPart *oldPart = findPart(edge->partId);
     if (nullptr == oldPart) {
         qDebug() << "Find part failed:" << edge->partId;
         return;
@@ -145,7 +138,7 @@ void Document::removeEdge(QUuid edgeId)
     splitPartByEdge(&groups, edgeId);
     for (auto groupIt = groups.begin(); groupIt != groups.end(); groupIt++) {
         const auto newUuid = QUuid::createUuid();
-        Part &part = partMap[newUuid];
+        SkeletonPart &part = partMap[newUuid];
         part.id = newUuid;
         part.copyAttributes(*oldPart);
         part.name = nextPartName;
@@ -187,14 +180,14 @@ void Document::removeEdge(QUuid edgeId)
 
 void Document::removeNode(QUuid nodeId)
 {
-    const Node *node = findNode(nodeId);
+    const SkeletonNode *node = findNode(nodeId);
     if (nullptr == node) {
         qDebug() << "Find node failed:" << nodeId;
         return;
     }
     if (isPartReadonly(node->partId))
         return;
-    const Part *oldPart = findPart(node->partId);
+    const SkeletonPart *oldPart = findPart(node->partId);
     if (nullptr == oldPart) {
         qDebug() << "Find part failed:" << node->partId;
         return;
@@ -205,7 +198,7 @@ void Document::removeNode(QUuid nodeId)
     splitPartByNode(&groups, nodeId);
     for (auto groupIt = groups.begin(); groupIt != groups.end(); groupIt++) {
         const auto newUuid = QUuid::createUuid();
-        Part &part = partMap[newUuid];
+        SkeletonPart &part = partMap[newUuid];
         part.id = newUuid;
         part.copyAttributes(*oldPart);
         part.name = nextPartName;
@@ -260,11 +253,11 @@ void Document::addNode(float x, float y, float z, float radius, QUuid fromNodeId
 QUuid Document::createNode(float x, float y, float z, float radius, QUuid fromNodeId)
 {
     QUuid partId;
-    const Node *fromNode = nullptr;
+    const SkeletonNode *fromNode = nullptr;
     bool newPartAdded = false;
     if (fromNodeId.isNull()) {
         const auto newUuid = QUuid::createUuid();
-        Part &part = partMap[newUuid];
+        SkeletonPart &part = partMap[newUuid];
         part.id = newUuid;
         partId = part.id;
         emit partAdded(partId);
@@ -282,7 +275,7 @@ QUuid Document::createNode(float x, float y, float z, float radius, QUuid fromNo
         if (part != partMap.end())
             part->second.dirty = true;
     }
-    Node node;
+    SkeletonNode node;
     node.partId = partId;
     node.setRadius(radius);
     node.x = x;
@@ -294,7 +287,7 @@ QUuid Document::createNode(float x, float y, float z, float radius, QUuid fromNo
     emit nodeAdded(node.id);
     
     if (nullptr != fromNode) {
-        Edge edge;
+        SkeletonEdge edge;
         edge.partId = partId;
         edge.nodeIds.push_back(fromNode->id);
         edge.nodeIds.push_back(node.id);
@@ -438,9 +431,9 @@ void Document::renamePose(QUuid poseId, QString name)
     emit optionsChanged();
 }
 
-const Edge *Document::findEdgeByNodes(QUuid firstNodeId, QUuid secondNodeId) const
+const SkeletonEdge *Document::findEdgeByNodes(QUuid firstNodeId, QUuid secondNodeId) const
 {
-    const Node *firstNode = nullptr;
+    const SkeletonNode *firstNode = nullptr;
     firstNode = findNode(firstNodeId);
     if (nullptr == firstNode) {
         qDebug() << "Find node failed:" << firstNodeId;
@@ -470,8 +463,8 @@ void Document::addEdge(QUuid fromNodeId, QUuid toNodeId)
         return;
     }
     
-    const Node *fromNode = nullptr;
-    const Node *toNode = nullptr;
+    const SkeletonNode *fromNode = nullptr;
+    const SkeletonNode *toNode = nullptr;
     bool toPartRemoved = false;
     
     fromNode = findNode(fromNodeId);
@@ -526,7 +519,7 @@ void Document::addEdge(QUuid fromNodeId, QUuid toNodeId)
         }
     }
     
-    Edge edge;
+    SkeletonEdge edge;
     edge.partId = fromNode->partId;
     edge.nodeIds.push_back(fromNode->id);
     edge.nodeIds.push_back(toNodeId);
@@ -544,7 +537,7 @@ void Document::addEdge(QUuid fromNodeId, QUuid toNodeId)
     emit skeletonChanged();
 }
 
-const Node *Document::findNode(QUuid nodeId) const
+const SkeletonNode *Document::findNode(QUuid nodeId) const
 {
     auto it = nodeMap.find(nodeId);
     if (it == nodeMap.end())
@@ -552,7 +545,7 @@ const Node *Document::findNode(QUuid nodeId) const
     return &it->second;
 }
 
-const Edge *Document::findEdge(QUuid edgeId) const
+const SkeletonEdge *Document::findEdge(QUuid edgeId) const
 {
     auto it = edgeMap.find(edgeId);
     if (it == edgeMap.end())
@@ -560,7 +553,7 @@ const Edge *Document::findEdge(QUuid edgeId) const
     return &it->second;
 }
 
-const Part *Document::findPart(QUuid partId) const
+const SkeletonPart *Document::findPart(QUuid partId) const
 {
     auto it = partMap.find(partId);
     if (it == partMap.end())
@@ -623,7 +616,7 @@ void Document::scaleNodeByAddRadius(QUuid nodeId, float amount)
 
 bool Document::isPartReadonly(QUuid partId) const
 {
-    const Part *part = findPart(partId);
+    const SkeletonPart *part = findPart(partId);
     if (nullptr == part) {
         qDebug() << "Find part failed:" << partId;
         return true;
@@ -757,7 +750,7 @@ void Document::updateTurnaround(const QImage &image)
     emit turnaroundChanged();
 }
 
-void Document::setEditMode(DocumentEditMode mode)
+void Document::setEditMode(SkeletonDocumentEditMode mode)
 {
     if (editMode == mode)
         return;
@@ -770,7 +763,7 @@ void Document::joinNodeAndNeiborsToGroup(std::vector<QUuid> *group, QUuid nodeId
 {
     if (nodeId.isNull() || visitMap->find(nodeId) != visitMap->end())
         return;
-    const Node *node = findNode(nodeId);
+    const SkeletonNode *node = findNode(nodeId);
     if (nullptr == node) {
         qDebug() << "Find node failed:" << nodeId;
         return;
@@ -780,7 +773,7 @@ void Document::joinNodeAndNeiborsToGroup(std::vector<QUuid> *group, QUuid nodeId
     for (auto edgeIt = node->edgeIds.begin(); edgeIt != node->edgeIds.end(); edgeIt++) {
         if (noUseEdgeId == *edgeIt)
             continue;
-        const Edge *edge = findEdge(*edgeIt);
+        const SkeletonEdge *edge = findEdge(*edgeIt);
         if (nullptr == edge) {
             qDebug() << "Find edge failed:" << *edgeIt;
             continue;
@@ -793,11 +786,11 @@ void Document::joinNodeAndNeiborsToGroup(std::vector<QUuid> *group, QUuid nodeId
 
 void Document::splitPartByNode(std::vector<std::vector<QUuid>> *groups, QUuid nodeId)
 {
-    const Node *node = findNode(nodeId);
+    const SkeletonNode *node = findNode(nodeId);
     std::set<QUuid> visitMap;
     for (auto edgeIt = node->edgeIds.begin(); edgeIt != node->edgeIds.end(); edgeIt++) {
         std::vector<QUuid> group;
-        const Edge *edge = findEdge(*edgeIt);
+        const SkeletonEdge *edge = findEdge(*edgeIt);
         if (nullptr == edge) {
             qDebug() << "Find edge failed:" << *edgeIt;
             continue;
@@ -810,7 +803,7 @@ void Document::splitPartByNode(std::vector<std::vector<QUuid>> *groups, QUuid no
 
 void Document::splitPartByEdge(std::vector<std::vector<QUuid>> *groups, QUuid edgeId)
 {
-    const Edge *edge = findEdge(edgeId);
+    const SkeletonEdge *edge = findEdge(edgeId);
     if (nullptr == edge) {
         qDebug() << "Find edge failed:" << edgeId;
         return;
@@ -852,10 +845,10 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
         std::set<QUuid> limitPartIds;
         std::set<QUuid> limitComponentIds;
         for (const auto &nodeId: limitNodeIds) {
-            const Node *node = findNode(nodeId);
+            const SkeletonNode *node = findNode(nodeId);
             if (!node)
                 continue;
-            const Part *part = findPart(node->partId);
+            const SkeletonPart *part = findPart(node->partId);
             if (!part)
                 continue;
             limitPartIds.insert(node->partId);
@@ -1121,7 +1114,7 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
     }
     for (const auto &partKv: snapshot.parts) {
         const auto newUuid = QUuid::createUuid();
-        Part &part = partMap[newUuid];
+        SkeletonPart &part = partMap[newUuid];
         part.id = newUuid;
         oldNewIdMap[QUuid(partKv.first)] = part.id;
         part.name = valueOfKeyInMapOrEmpty(partKv.second, "name");
@@ -1158,7 +1151,7 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
                 nodeKv.second.find("z") == nodeKv.second.end() ||
                 nodeKv.second.find("partId") == nodeKv.second.end())
             continue;
-        Node node;
+        SkeletonNode node;
         oldNewIdMap[QUuid(nodeKv.first)] = node.id;
         node.name = valueOfKeyInMapOrEmpty(nodeKv.second, "name");
         node.radius = valueOfKeyInMapOrEmpty(nodeKv.second, "radius").toFloat();
@@ -1175,7 +1168,7 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
                 edgeKv.second.find("to") == edgeKv.second.end() ||
                 edgeKv.second.find("partId") == edgeKv.second.end())
             continue;
-        Edge edge;
+        SkeletonEdge edge;
         oldNewIdMap[QUuid(edgeKv.first)] = edge.id;
         edge.name = valueOfKeyInMapOrEmpty(edgeKv.second, "name");
         edge.partId = oldNewIdMap[QUuid(valueOfKeyInMapOrEmpty(edgeKv.second, "partId"))];
@@ -2330,7 +2323,7 @@ bool Document::redoable() const
 
 bool Document::isNodeEditable(QUuid nodeId) const
 {
-    const Node *node = findNode(nodeId);
+    const SkeletonNode *node = findNode(nodeId);
     if (!node) {
         qDebug() << "Node id not found:" << nodeId;
         return false;
@@ -2340,7 +2333,7 @@ bool Document::isNodeEditable(QUuid nodeId) const
 
 bool Document::isEdgeEditable(QUuid edgeId) const
 {
-    const Edge *edge = findEdge(edgeId);
+    const SkeletonEdge *edge = findEdge(edgeId);
     if (!edge) {
         qDebug() << "Edge id not found:" << edgeId;
         return false;
@@ -2943,3 +2936,13 @@ bool Document::isMeshGenerating() const
     return nullptr != m_meshGenerator;
 }
 
+void Document::copyNodes(std::set<QUuid> nodeIdSet) const
+{
+    Snapshot snapshot;
+    toSnapshot(&snapshot, nodeIdSet, DocumentToSnapshotFor::Nodes);
+    QString snapshotXml;
+    QXmlStreamWriter xmlStreamWriter(&snapshotXml);
+    saveSkeletonToXmlStream(&snapshot, &xmlStreamWriter);
+    QClipboard *clipboard = QApplication::clipboard();
+    clipboard->setText(snapshotXml);
+}

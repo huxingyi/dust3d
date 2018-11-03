@@ -193,7 +193,7 @@ void PartTreeWidget::mousePressEvent(QMouseEvent *event)
 void PartTreeWidget::showContextMenu(const QPoint &pos)
 {
     const Component *component = nullptr;
-    const Part *part = nullptr;
+    const SkeletonPart *part = nullptr;
     PartWidget *partWidget = nullptr;
     
     std::set<QUuid> unorderedComponentIds = m_selectedComponentIds;
