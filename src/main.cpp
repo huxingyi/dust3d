@@ -46,7 +46,7 @@ int main(int argc, char ** argv)
     font.setBold(false);
     QApplication::setFont(font);
     
-    SkeletonDocumentWindow::createDocumentWindow();
+    DocumentWindow::createDocumentWindow();
     
     return app.exec();
 }

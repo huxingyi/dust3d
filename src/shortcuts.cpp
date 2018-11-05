@@ -3,13 +3,13 @@
 #include "shortcuts.h"
 
 #define defineKey(keyVal, funcName) do {                                     \
-    auto key = new QShortcut(mainWindow);                                    \
+    auto key = new QShortcut(widget);                                        \
     key->setKey(keyVal);                                                     \
     QObject::connect(key, &QShortcut::activated,                             \
         graphicsWidget, funcName);                                           \
 } while (false)
 
-void initShortCuts(QMainWindow *mainWindow, SkeletonGraphicsWidget *graphicsWidget)
+void initShortCuts(QWidget *widget, SkeletonGraphicsWidget *graphicsWidget)
 {
     defineKey(Qt::Key_Delete, &SkeletonGraphicsWidget::shortcutDelete);
     defineKey(Qt::Key_Backspace, &SkeletonGraphicsWidget::shortcutDelete);

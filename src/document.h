@@ -195,6 +195,7 @@ public:
     QUuid id;
     QString name;
     bool dirty = true;
+    std::map<QString, QString> attributes;
     std::map<QString, std::map<QString, QString>> parameters;
     void updatePreviewMesh(MeshLoader *previewMesh)
     {
@@ -424,6 +425,7 @@ signals:
     void poseListChanged();
     void poseNameChanged(QUuid poseId);
     void poseParametersChanged(QUuid poseId);
+    void poseAttributesChanged(QUuid poseId);
     void posePreviewChanged(QUuid poseId);
     void motionAdded(QUuid motionId);
     void motionRemoved(QUuid motionId);
@@ -453,9 +455,6 @@ public: // need initialize
 public:
     Document();
     ~Document();
-    std::map<QUuid, SkeletonPart> partMap;
-    std::map<QUuid, SkeletonNode> nodeMap;
-    std::map<QUuid, SkeletonEdge> edgeMap;
     std::map<QUuid, Component> componentMap;
     std::map<QUuid, Material> materialMap;
     std::vector<QUuid> materialIdList;
@@ -465,17 +464,12 @@ public:
     std::vector<QUuid> motionIdList;
     Component rootComponent;
     QImage preview;
-    const SkeletonNode *findNode(QUuid nodeId) const override;
-    const SkeletonEdge *findEdge(QUuid edgeId) const override;
-    const SkeletonPart *findPart(QUuid partId) const override;
-    const SkeletonEdge *findEdgeByNodes(QUuid firstNodeId, QUuid secondNodeId) const override;
     bool undoable() const override;
     bool redoable() const override;
     bool hasPastableNodesInClipboard() const override;
     bool originSettled() const override;
     bool isNodeEditable(QUuid nodeId) const override;
     bool isEdgeEditable(QUuid edgeId) const override;
-    void findAllNeighbors(QUuid nodeId, std::set<QUuid> &neighbors) const override;
     void copyNodes(std::set<QUuid> nodeIdSet) const override;
     void toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeIds=std::set<QUuid>(),
         DocumentToSnapshotFor forWhat=DocumentToSnapshotFor::Document,
@@ -601,6 +595,7 @@ public slots:
     void addPose(QString name, std::map<QString, std::map<QString, QString>> parameters);
     void removePose(QUuid poseId);
     void setPoseParameters(QUuid poseId, std::map<QString, std::map<QString, QString>> parameters);
+    void setPoseAttributes(QUuid poseId, std::map<QString, QString> attributes);
     void renamePose(QUuid poseId, QString name);
     void addMotion(QString name, std::vector<MotionClip> clips);
     void removeMotion(QUuid motionId);

@@ -416,6 +416,20 @@ void Document::setPoseParameters(QUuid poseId, std::map<QString, std::map<QStrin
     emit optionsChanged();
 }
 
+void Document::setPoseAttributes(QUuid poseId, std::map<QString, QString> attributes)
+{
+    auto findPoseResult = poseMap.find(poseId);
+    if (findPoseResult == poseMap.end()) {
+        qDebug() << "Find pose failed:" << poseId;
+        return;
+    }
+    findPoseResult->second.attributes = attributes;
+    findPoseResult->second.dirty = true;
+    emit posesChanged();
+    emit poseAttributesChanged(poseId);
+    emit optionsChanged();
+}
+
 void Document::renamePose(QUuid poseId, QString name)
 {
     auto findPoseResult = poseMap.find(poseId);
@@ -429,26 +443,6 @@ void Document::renamePose(QUuid poseId, QString name)
     findPoseResult->second.name = name;
     emit poseNameChanged(poseId);
     emit optionsChanged();
-}
-
-const SkeletonEdge *Document::findEdgeByNodes(QUuid firstNodeId, QUuid secondNodeId) const
-{
-    const SkeletonNode *firstNode = nullptr;
-    firstNode = findNode(firstNodeId);
-    if (nullptr == firstNode) {
-        qDebug() << "Find node failed:" << firstNodeId;
-        return nullptr;
-    }
-    for (auto edgeIdIt = firstNode->edgeIds.begin(); edgeIdIt != firstNode->edgeIds.end(); edgeIdIt++) {
-        auto edgeIt = edgeMap.find(*edgeIdIt);
-        if (edgeIt == edgeMap.end()) {
-            qDebug() << "Find edge failed:" << *edgeIdIt;
-            continue;
-        }
-        if (std::find(edgeIt->second.nodeIds.begin(), edgeIt->second.nodeIds.end(), secondNodeId) != edgeIt->second.nodeIds.end())
-            return &edgeIt->second;
-    }
-    return nullptr;
 }
 
 bool Document::originSettled() const
@@ -535,30 +529,6 @@ void Document::addEdge(QUuid fromNodeId, QUuid toNodeId)
     }
     
     emit skeletonChanged();
-}
-
-const SkeletonNode *Document::findNode(QUuid nodeId) const
-{
-    auto it = nodeMap.find(nodeId);
-    if (it == nodeMap.end())
-        return nullptr;
-    return &it->second;
-}
-
-const SkeletonEdge *Document::findEdge(QUuid edgeId) const
-{
-    auto it = edgeMap.find(edgeId);
-    if (it == edgeMap.end())
-        return nullptr;
-    return &it->second;
-}
-
-const SkeletonPart *Document::findPart(QUuid partId) const
-{
-    auto it = partMap.find(partId);
-    if (it == partMap.end())
-        return nullptr;
-    return &it->second;
 }
 
 const Component *Document::findComponent(QUuid componentId) const
@@ -1001,7 +971,7 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
                 continue;
             }
             auto &poseIt = *findPoseResult;
-            std::map<QString, QString> pose;
+            std::map<QString, QString> pose = poseIt.second.attributes;
             pose["id"] = poseIt.second.id.toString();
             if (!poseIt.second.name.isEmpty())
                 pose["name"] = poseIt.second.name;
@@ -1251,6 +1221,13 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
         newPose.id = newPoseId;
         const auto &poseAttributes = poseIt.first;
         newPose.name = valueOfKeyInMapOrEmpty(poseAttributes, "name");
+        for (const auto &attribute: poseAttributes) {
+            if (attribute.first == "name" ||
+                    attribute.first == "id") {
+                continue;
+            }
+            newPose.attributes.insert({attribute.first, attribute.second});
+        }
         newPose.parameters = poseIt.second;
         oldNewIdMap[QUuid(valueOfKeyInMapOrEmpty(poseAttributes, "id"))] = newPoseId;
         poseIdList.push_back(newPoseId);
@@ -2392,32 +2369,6 @@ void Document::checkExportReadyState()
 {
     if (isExportReady())
         emit exportReady();
-}
-
-void Document::findAllNeighbors(QUuid nodeId, std::set<QUuid> &neighbors) const
-{
-    const auto &node = findNode(nodeId);
-    if (nullptr == node) {
-        qDebug() << "findNode:" << nodeId << "failed";
-        return;
-    }
-    for (const auto &edgeId: node->edgeIds) {
-        const auto &edge = findEdge(edgeId);
-        if (nullptr == edge) {
-            qDebug() << "findEdge:" << edgeId << "failed";
-            continue;
-        }
-        const auto &neighborNodeId = edge->neighborOf(nodeId);
-        if (neighborNodeId.isNull()) {
-            qDebug() << "neighborOf:" << nodeId << "is null from edge:" << edgeId;
-            continue;
-        }
-        if (neighbors.find(neighborNodeId) != neighbors.end()) {
-            continue;
-        }
-        neighbors.insert(neighborNodeId);
-        findAllNeighbors(neighborNodeId, neighbors);
-    }
 }
 
 void Document::setSharedContextWidget(QOpenGLWidget *sharedContextWidget)

@@ -371,7 +371,7 @@ bool TetrapodRigger::rig()
     m_resultBones.push_back(RiggerBone());
     RiggerBone &bodyBone = m_resultBones.back();
     bodyBone.index = m_resultBones.size() - 1;
-    bodyBone.name = "Body";
+    bodyBone.name = Rigger::rootBoneName;
     bodyBone.headPosition = QVector3D(0, 0, 0);
     bodyBone.tailPosition = bonesOrigin;
     bodyBone.hasButton = true;
@@ -383,10 +383,10 @@ bool TetrapodRigger::rig()
     RiggerBone &leftHipBone = m_resultBones.back();
     leftHipBone.index = m_resultBones.size() - 1;
     leftHipBone.name = "LeftHip";
-    leftHipBone.headPosition = m_resultBones[boneIndexMap["Body"]].tailPosition;
+    leftHipBone.headPosition = m_resultBones[boneIndexMap[Rigger::rootBoneName]].tailPosition;
     leftHipBone.tailPosition = leftUpperLegBoneStartPosition;
     boneIndexMap[leftHipBone.name] = leftHipBone.index;
-    m_resultBones[boneIndexMap["Body"]].children.push_back(leftHipBone.index);
+    m_resultBones[boneIndexMap[Rigger::rootBoneName]].children.push_back(leftHipBone.index);
     
     m_resultBones.push_back(RiggerBone());
     RiggerBone &leftUpperLegBone = m_resultBones.back();
@@ -431,10 +431,10 @@ bool TetrapodRigger::rig()
     RiggerBone &rightHipBone = m_resultBones.back();
     rightHipBone.index = m_resultBones.size() - 1;
     rightHipBone.name = "RightHip";
-    rightHipBone.headPosition = m_resultBones[boneIndexMap["Body"]].tailPosition;
+    rightHipBone.headPosition = m_resultBones[boneIndexMap[Rigger::rootBoneName]].tailPosition;
     rightHipBone.tailPosition = rightUpperLegBoneStartPosition;
     boneIndexMap[rightHipBone.name] = rightHipBone.index;
-    m_resultBones[boneIndexMap["Body"]].children.push_back(rightHipBone.index);
+    m_resultBones[boneIndexMap[Rigger::rootBoneName]].children.push_back(rightHipBone.index);
     
     m_resultBones.push_back(RiggerBone());
     RiggerBone &rightUpperLegBone = m_resultBones.back();
@@ -479,14 +479,14 @@ bool TetrapodRigger::rig()
     RiggerBone &spineBone = m_resultBones.back();
     spineBone.index = m_resultBones.size() - 1;
     spineBone.name = "Spine";
-    spineBone.headPosition = m_resultBones[boneIndexMap["Body"]].tailPosition;
+    spineBone.headPosition = m_resultBones[boneIndexMap[Rigger::rootBoneName]].tailPosition;
     spineBone.tailPosition = chestBoneStartPosition;
     spineBone.color = Qt::white;
     spineBone.hasButton = true;
     spineBone.button = {3, 1};
     spineBone.buttonParameterType = RiggerButtonParameterType::PitchYawRoll;
     boneIndexMap[spineBone.name] = spineBone.index;
-    m_resultBones[boneIndexMap["Body"]].children.push_back(spineBone.index);
+    m_resultBones[boneIndexMap[Rigger::rootBoneName]].children.push_back(spineBone.index);
     
     m_resultBones.push_back(RiggerBone());
     RiggerBone &chestBone = m_resultBones.back();

@@ -302,7 +302,7 @@ bool GenericRigger::rig()
     m_resultBones.push_back(RiggerBone());
     RiggerBone &bodyBone = m_resultBones.back();
     bodyBone.index = m_resultBones.size() - 1;
-    bodyBone.name = "Body";
+    bodyBone.name = Rigger::rootBoneName;
     bodyBone.headPosition = QVector3D(0, 0, 0);
     bodyBone.hasButton = true;
     bodyBone.button = {spineNodes.size(), 0};
@@ -378,8 +378,8 @@ bool GenericRigger::rig()
         //qDebug() << spineBone.name << "head:" << spineBone.headPosition << "tail:" << spineBone.tailPosition;
         
         if (1 == spineGenerateOrder) {
-            m_resultBones[boneIndexMap["Body"]].tailPosition = spineBone.headPosition;
-            m_resultBones[boneIndexMap["Body"]].children.push_back(spineBone.index);
+            m_resultBones[boneIndexMap[Rigger::rootBoneName]].tailPosition = spineBone.headPosition;
+            m_resultBones[boneIndexMap[Rigger::rootBoneName]].children.push_back(spineBone.index);
         } else {
             m_resultBones[boneIndexMap["Spine" + QString::number(spineGenerateOrder - 1)]].tailPosition = spineBone.headPosition;
             m_resultBones[boneIndexMap["Spine" + QString::number(spineGenerateOrder - 1)]].children.push_back(spineBone.index);
@@ -396,7 +396,7 @@ bool GenericRigger::rig()
             ribBone.headPosition = spineBoneHeadPosition;
             boneIndexMap[ribBone.name] = ribBone.index;
             if (1 == spineGenerateOrder) {
-                m_resultBones[boneIndexMap["Body"]].children.push_back(ribBone.index);
+                m_resultBones[boneIndexMap[Rigger::rootBoneName]].children.push_back(ribBone.index);
             } else {
                 m_resultBones[boneIndexMap["Spine" + QString::number(spineGenerateOrder)]].children.push_back(ribBone.index);
             }

@@ -37,15 +37,15 @@
 #include "fbxfile.h"
 #include "shortcuts.h"
 
-int SkeletonDocumentWindow::m_modelRenderWidgetInitialX = 16;
-int SkeletonDocumentWindow::m_modelRenderWidgetInitialY = 16;
-int SkeletonDocumentWindow::m_modelRenderWidgetInitialSize = 128;
-int SkeletonDocumentWindow::m_skeletonRenderWidgetInitialX = SkeletonDocumentWindow::m_modelRenderWidgetInitialX + SkeletonDocumentWindow::m_modelRenderWidgetInitialSize + 16;
-int SkeletonDocumentWindow::m_skeletonRenderWidgetInitialY = SkeletonDocumentWindow::m_modelRenderWidgetInitialY;
-int SkeletonDocumentWindow::m_skeletonRenderWidgetInitialSize = SkeletonDocumentWindow::m_modelRenderWidgetInitialSize;
+int DocumentWindow::m_modelRenderWidgetInitialX = 16;
+int DocumentWindow::m_modelRenderWidgetInitialY = 16;
+int DocumentWindow::m_modelRenderWidgetInitialSize = 128;
+int DocumentWindow::m_skeletonRenderWidgetInitialX = DocumentWindow::m_modelRenderWidgetInitialX + DocumentWindow::m_modelRenderWidgetInitialSize + 16;
+int DocumentWindow::m_skeletonRenderWidgetInitialY = DocumentWindow::m_modelRenderWidgetInitialY;
+int DocumentWindow::m_skeletonRenderWidgetInitialSize = DocumentWindow::m_modelRenderWidgetInitialSize;
 
 LogBrowser *g_logBrowser = nullptr;
-std::set<SkeletonDocumentWindow *> g_documentWindows;
+std::set<DocumentWindow *> g_documentWindows;
 QTextBrowser *g_acknowlegementsWidget = nullptr;
 AboutWidget *g_aboutWidget = nullptr;
 QTextBrowser *g_contributorsWidget = nullptr;
@@ -56,7 +56,7 @@ void outputMessage(QtMsgType type, const QMessageLogContext &context, const QStr
         g_logBrowser->outputMessage(type, msg, context.file, context.line);
 }
 
-void SkeletonDocumentWindow::showAcknowlegements()
+void DocumentWindow::showAcknowlegements()
 {
     if (!g_acknowlegementsWidget) {
         g_acknowlegementsWidget = new QTextBrowser;
@@ -72,7 +72,7 @@ void SkeletonDocumentWindow::showAcknowlegements()
     g_acknowlegementsWidget->raise();
 }
 
-void SkeletonDocumentWindow::showContributors()
+void DocumentWindow::showContributors()
 {
     if (!g_contributorsWidget) {
         g_contributorsWidget = new QTextBrowser;
@@ -89,7 +89,7 @@ void SkeletonDocumentWindow::showContributors()
     g_contributorsWidget->raise();
 }
 
-void SkeletonDocumentWindow::showAbout()
+void DocumentWindow::showAbout()
 {
     if (!g_aboutWidget) {
         g_aboutWidget = new AboutWidget;
@@ -99,7 +99,7 @@ void SkeletonDocumentWindow::showAbout()
     g_aboutWidget->raise();
 }
 
-SkeletonDocumentWindow::SkeletonDocumentWindow() :
+DocumentWindow::DocumentWindow() :
     m_document(nullptr),
     m_firstShow(true),
     m_documentSaved(true),
@@ -220,9 +220,9 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
 
     m_modelRenderWidget = new ModelWidget(containerWidget);
     m_modelRenderWidget->setAttribute(Qt::WA_TransparentForMouseEvents);
-    m_modelRenderWidget->setMinimumSize(SkeletonDocumentWindow::m_modelRenderWidgetInitialSize, SkeletonDocumentWindow::m_modelRenderWidgetInitialSize);
+    m_modelRenderWidget->setMinimumSize(DocumentWindow::m_modelRenderWidgetInitialSize, DocumentWindow::m_modelRenderWidgetInitialSize);
     m_modelRenderWidget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-    m_modelRenderWidget->move(SkeletonDocumentWindow::m_modelRenderWidgetInitialX, SkeletonDocumentWindow::m_modelRenderWidgetInitialY);
+    m_modelRenderWidget->move(DocumentWindow::m_modelRenderWidgetInitialX, DocumentWindow::m_modelRenderWidgetInitialY);
     
     m_graphicsWidget->setModelWidget(m_modelRenderWidget);
     containerWidget->setModelWidget(m_modelRenderWidget);
@@ -246,8 +246,8 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     materialDocker->setAllowedAreas(Qt::RightDockWidgetArea);
     MaterialManageWidget *materialManageWidget = new MaterialManageWidget(m_document, materialDocker);
     materialDocker->setWidget(materialManageWidget);
-    connect(materialManageWidget, &MaterialManageWidget::registerDialog, this, &SkeletonDocumentWindow::registerDialog);
-    connect(materialManageWidget, &MaterialManageWidget::unregisterDialog, this, &SkeletonDocumentWindow::unregisterDialog);
+    connect(materialManageWidget, &MaterialManageWidget::registerDialog, this, &DocumentWindow::registerDialog);
+    connect(materialManageWidget, &MaterialManageWidget::unregisterDialog, this, &DocumentWindow::unregisterDialog);
     addDockWidget(Qt::RightDockWidgetArea, materialDocker);
     connect(materialDocker, &QDockWidget::topLevelChanged, [=](bool topLevel) {
         Q_UNUSED(topLevel);
@@ -269,8 +269,8 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     poseDocker->setAllowedAreas(Qt::RightDockWidgetArea);
     PoseManageWidget *poseManageWidget = new PoseManageWidget(m_document, poseDocker);
     poseDocker->setWidget(poseManageWidget);
-    connect(poseManageWidget, &PoseManageWidget::registerDialog, this, &SkeletonDocumentWindow::registerDialog);
-    connect(poseManageWidget, &PoseManageWidget::unregisterDialog, this, &SkeletonDocumentWindow::unregisterDialog);
+    connect(poseManageWidget, &PoseManageWidget::registerDialog, this, &DocumentWindow::registerDialog);
+    connect(poseManageWidget, &PoseManageWidget::unregisterDialog, this, &DocumentWindow::unregisterDialog);
     addDockWidget(Qt::RightDockWidgetArea, poseDocker);
     connect(poseDocker, &QDockWidget::topLevelChanged, [=](bool topLevel) {
         Q_UNUSED(topLevel);
@@ -282,8 +282,8 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     motionDocker->setAllowedAreas(Qt::RightDockWidgetArea);
     MotionManageWidget *motionManageWidget = new MotionManageWidget(m_document, motionDocker);
     motionDocker->setWidget(motionManageWidget);
-    connect(motionManageWidget, &MotionManageWidget::registerDialog, this, &SkeletonDocumentWindow::registerDialog);
-    connect(motionManageWidget, &MotionManageWidget::unregisterDialog, this, &SkeletonDocumentWindow::unregisterDialog);
+    connect(motionManageWidget, &MotionManageWidget::registerDialog, this, &DocumentWindow::registerDialog);
+    connect(motionManageWidget, &MotionManageWidget::unregisterDialog, this, &DocumentWindow::unregisterDialog);
     addDockWidget(Qt::RightDockWidgetArea, motionDocker);
     
     tabifyDockWidget(partTreeDocker, materialDocker);
@@ -309,27 +309,27 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     m_fileMenu = menuBar()->addMenu(tr("File"));
 
     m_newWindowAction = new QAction(tr("New Window"), this);
-    connect(m_newWindowAction, &QAction::triggered, this, &SkeletonDocumentWindow::newWindow, Qt::QueuedConnection);
+    connect(m_newWindowAction, &QAction::triggered, this, &DocumentWindow::newWindow, Qt::QueuedConnection);
     m_fileMenu->addAction(m_newWindowAction);
 
     m_newDocumentAction = new QAction(tr("New"), this);
-    connect(m_newDocumentAction, &QAction::triggered, this, &SkeletonDocumentWindow::newDocument);
+    connect(m_newDocumentAction, &QAction::triggered, this, &DocumentWindow::newDocument);
     m_fileMenu->addAction(m_newDocumentAction);
 
     m_openAction = new QAction(tr("Open..."), this);
-    connect(m_openAction, &QAction::triggered, this, &SkeletonDocumentWindow::open, Qt::QueuedConnection);
+    connect(m_openAction, &QAction::triggered, this, &DocumentWindow::open, Qt::QueuedConnection);
     m_fileMenu->addAction(m_openAction);
 
     m_saveAction = new QAction(tr("Save"), this);
-    connect(m_saveAction, &QAction::triggered, this, &SkeletonDocumentWindow::save, Qt::QueuedConnection);
+    connect(m_saveAction, &QAction::triggered, this, &DocumentWindow::save, Qt::QueuedConnection);
     m_fileMenu->addAction(m_saveAction);
 
     m_saveAsAction = new QAction(tr("Save As..."), this);
-    connect(m_saveAsAction, &QAction::triggered, this, &SkeletonDocumentWindow::saveAs, Qt::QueuedConnection);
+    connect(m_saveAsAction, &QAction::triggered, this, &DocumentWindow::saveAs, Qt::QueuedConnection);
     m_fileMenu->addAction(m_saveAsAction);
 
     m_saveAllAction = new QAction(tr("Save All"), this);
-    connect(m_saveAllAction, &QAction::triggered, this, &SkeletonDocumentWindow::saveAll, Qt::QueuedConnection);
+    connect(m_saveAllAction, &QAction::triggered, this, &DocumentWindow::saveAll, Qt::QueuedConnection);
     m_fileMenu->addAction(m_saveAllAction);
 
     m_fileMenu->addSeparator();
@@ -337,11 +337,11 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     //m_exportMenu = m_fileMenu->addMenu(tr("Export"));
 
     m_exportAction = new QAction(tr("Export..."), this);
-    connect(m_exportAction, &QAction::triggered, this, &SkeletonDocumentWindow::showExportPreview, Qt::QueuedConnection);
+    connect(m_exportAction, &QAction::triggered, this, &DocumentWindow::showExportPreview, Qt::QueuedConnection);
     m_fileMenu->addAction(m_exportAction);
     
     m_exportAsObjAction = new QAction(tr("Export as OBJ..."), this);
-    connect(m_exportAsObjAction, &QAction::triggered, this, &SkeletonDocumentWindow::exportObjResult, Qt::QueuedConnection);
+    connect(m_exportAsObjAction, &QAction::triggered, this, &DocumentWindow::exportObjResult, Qt::QueuedConnection);
     m_fileMenu->addAction(m_exportAsObjAction);
     
     //m_exportRenderedAsImageAction = new QAction(tr("Export as PNG..."), this);
@@ -355,7 +355,7 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     m_fileMenu->addSeparator();
 
     m_changeTurnaroundAction = new QAction(tr("Change Reference Sheet..."), this);
-    connect(m_changeTurnaroundAction, &QAction::triggered, this, &SkeletonDocumentWindow::changeTurnaround, Qt::QueuedConnection);
+    connect(m_changeTurnaroundAction, &QAction::triggered, this, &DocumentWindow::changeTurnaround, Qt::QueuedConnection);
     m_fileMenu->addAction(m_changeTurnaroundAction);
     
     m_fileMenu->addSeparator();
@@ -530,7 +530,7 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     m_resetModelWidgetPosAction = new QAction(tr("Show Model"), this);
     connect(m_resetModelWidgetPosAction, &QAction::triggered, [=]() {
         if (!isModelSitInVisibleArea(m_modelRenderWidget)) {
-            m_modelRenderWidget->move(SkeletonDocumentWindow::m_modelRenderWidgetInitialX, SkeletonDocumentWindow::m_modelRenderWidgetInitialY);
+            m_modelRenderWidget->move(DocumentWindow::m_modelRenderWidgetInitialX, DocumentWindow::m_modelRenderWidgetInitialY);
         }
     });
     m_viewMenu->addAction(m_resetModelWidgetPosAction);
@@ -610,7 +610,7 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     m_windowMenu->addAction(m_showDebugDialogAction);
     
     m_showAdvanceSettingAction = new QAction(tr("Advance"), this);
-    connect(m_showAdvanceSettingAction, &QAction::triggered, this, &SkeletonDocumentWindow::showAdvanceSetting);
+    connect(m_showAdvanceSettingAction, &QAction::triggered, this, &DocumentWindow::showAdvanceSetting);
 #ifndef NDEBUG
     m_windowMenu->addAction(m_showAdvanceSettingAction);
 #endif
@@ -618,33 +618,33 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     m_helpMenu = menuBar()->addMenu(tr("Help"));
 
     m_viewSourceAction = new QAction(tr("Fork me on GitHub"), this);
-    connect(m_viewSourceAction, &QAction::triggered, this, &SkeletonDocumentWindow::viewSource);
+    connect(m_viewSourceAction, &QAction::triggered, this, &DocumentWindow::viewSource);
     m_helpMenu->addAction(m_viewSourceAction);
 
     m_helpMenu->addSeparator();
 
     m_seeReferenceGuideAction = new QAction(tr("Reference Guide"), this);
-    connect(m_seeReferenceGuideAction, &QAction::triggered, this, &SkeletonDocumentWindow::seeReferenceGuide);
+    connect(m_seeReferenceGuideAction, &QAction::triggered, this, &DocumentWindow::seeReferenceGuide);
     m_helpMenu->addAction(m_seeReferenceGuideAction);
 
     m_helpMenu->addSeparator();
 
     m_aboutAction = new QAction(tr("About"), this);
-    connect(m_aboutAction, &QAction::triggered, this, &SkeletonDocumentWindow::about);
+    connect(m_aboutAction, &QAction::triggered, this, &DocumentWindow::about);
     m_helpMenu->addAction(m_aboutAction);
 
     m_reportIssuesAction = new QAction(tr("Report Issues"), this);
-    connect(m_reportIssuesAction, &QAction::triggered, this, &SkeletonDocumentWindow::reportIssues);
+    connect(m_reportIssuesAction, &QAction::triggered, this, &DocumentWindow::reportIssues);
     m_helpMenu->addAction(m_reportIssuesAction);
     
     m_helpMenu->addSeparator();
 
     m_seeContributorsAction = new QAction(tr("Contributors"), this);
-    connect(m_seeContributorsAction, &QAction::triggered, this, &SkeletonDocumentWindow::seeContributors);
+    connect(m_seeContributorsAction, &QAction::triggered, this, &DocumentWindow::seeContributors);
     m_helpMenu->addAction(m_seeContributorsAction);
 
     m_seeAcknowlegementsAction = new QAction(tr("Acknowlegements"), this);
-    connect(m_seeAcknowlegementsAction, &QAction::triggered, this, &SkeletonDocumentWindow::seeAcknowlegements);
+    connect(m_seeAcknowlegementsAction, &QAction::triggered, this, &DocumentWindow::seeAcknowlegements);
     m_helpMenu->addAction(m_seeAcknowlegementsAction);
 
     connect(containerWidget, &GraphicsContainerWidget::containerSizeChanged,
@@ -737,9 +737,9 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     connect(graphicsWidget, &SkeletonGraphicsWidget::enableAllPositionRelatedLocks, m_document, &Document::enableAllPositionRelatedLocks);
     connect(graphicsWidget, &SkeletonGraphicsWidget::disableAllPositionRelatedLocks, m_document, &Document::disableAllPositionRelatedLocks);
 
-    connect(graphicsWidget, &SkeletonGraphicsWidget::changeTurnaround, this, &SkeletonDocumentWindow::changeTurnaround);
-    connect(graphicsWidget, &SkeletonGraphicsWidget::save, this, &SkeletonDocumentWindow::save);
-    connect(graphicsWidget, &SkeletonGraphicsWidget::open, this, &SkeletonDocumentWindow::open);
+    connect(graphicsWidget, &SkeletonGraphicsWidget::changeTurnaround, this, &DocumentWindow::changeTurnaround);
+    connect(graphicsWidget, &SkeletonGraphicsWidget::save, this, &DocumentWindow::save);
+    connect(graphicsWidget, &SkeletonGraphicsWidget::open, this, &DocumentWindow::open);
     
     connect(m_document, &Document::nodeAdded, graphicsWidget, &SkeletonGraphicsWidget::nodeAdded);
     connect(m_document, &Document::nodeRemoved, graphicsWidget, &SkeletonGraphicsWidget::nodeRemoved);
@@ -848,25 +848,25 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
         //m_skeletonRenderWidget->setCursor(graphicsWidget->cursor());
     });
 
-    connect(m_document, &Document::skeletonChanged, this, &SkeletonDocumentWindow::documentChanged);
-    connect(m_document, &Document::turnaroundChanged, this, &SkeletonDocumentWindow::documentChanged);
-    connect(m_document, &Document::optionsChanged, this, &SkeletonDocumentWindow::documentChanged);
-    connect(m_document, &Document::rigChanged, this, &SkeletonDocumentWindow::documentChanged);
+    connect(m_document, &Document::skeletonChanged, this, &DocumentWindow::documentChanged);
+    connect(m_document, &Document::turnaroundChanged, this, &DocumentWindow::documentChanged);
+    connect(m_document, &Document::optionsChanged, this, &DocumentWindow::documentChanged);
+    connect(m_document, &Document::rigChanged, this, &DocumentWindow::documentChanged);
 
     connect(m_modelRenderWidget, &ModelWidget::customContextMenuRequested, [=](const QPoint &pos) {
         graphicsWidget->showContextMenu(graphicsWidget->mapFromGlobal(m_modelRenderWidget->mapToGlobal(pos)));
     });
 
-    connect(m_document, &Document::xlockStateChanged, this, &SkeletonDocumentWindow::updateXlockButtonState);
-    connect(m_document, &Document::ylockStateChanged, this, &SkeletonDocumentWindow::updateYlockButtonState);
-    connect(m_document, &Document::zlockStateChanged, this, &SkeletonDocumentWindow::updateZlockButtonState);
-    connect(m_document, &Document::radiusLockStateChanged, this, &SkeletonDocumentWindow::updateRadiusLockButtonState);
+    connect(m_document, &Document::xlockStateChanged, this, &DocumentWindow::updateXlockButtonState);
+    connect(m_document, &Document::ylockStateChanged, this, &DocumentWindow::updateYlockButtonState);
+    connect(m_document, &Document::zlockStateChanged, this, &DocumentWindow::updateZlockButtonState);
+    connect(m_document, &Document::radiusLockStateChanged, this, &DocumentWindow::updateRadiusLockButtonState);
     
     connect(m_rigWidget, &RigWidget::setRigType, m_document, &Document::setRigType);
     
     connect(m_document, &Document::rigTypeChanged, m_rigWidget, &RigWidget::rigTypeChanged);
     connect(m_document, &Document::resultRigChanged, m_rigWidget, &RigWidget::updateResultInfo);
-    connect(m_document, &Document::resultRigChanged, this, &SkeletonDocumentWindow::updateRigWeightRenderWidget);
+    connect(m_document, &Document::resultRigChanged, this, &DocumentWindow::updateRigWeightRenderWidget);
     
     //connect(m_document, &SkeletonDocument::resultRigChanged, tetrapodPoseEditWidget, &TetrapodPoseEditWidget::updatePreview);
     
@@ -893,7 +893,7 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     
     initShortCuts(this, m_graphicsWidget);
 
-    connect(this, &SkeletonDocumentWindow::initialized, m_document, &Document::uiReady);
+    connect(this, &DocumentWindow::initialized, m_document, &Document::uiReady);
     
     QTimer *timer = new QTimer(this);
     timer->setInterval(250);
@@ -906,15 +906,15 @@ SkeletonDocumentWindow::SkeletonDocumentWindow() :
     timer->start();
 }
 
-SkeletonDocumentWindow *SkeletonDocumentWindow::createDocumentWindow()
+DocumentWindow *DocumentWindow::createDocumentWindow()
 {
-    SkeletonDocumentWindow *documentWindow = new SkeletonDocumentWindow();
+    DocumentWindow *documentWindow = new DocumentWindow();
     documentWindow->setAttribute(Qt::WA_DeleteOnClose);
     documentWindow->showMaximized();
     return documentWindow;
 }
 
-void SkeletonDocumentWindow::closeEvent(QCloseEvent *event)
+void DocumentWindow::closeEvent(QCloseEvent *event)
 {
     if (m_documentSaved) {
         event->accept();
@@ -931,21 +931,21 @@ void SkeletonDocumentWindow::closeEvent(QCloseEvent *event)
         event->ignore();
 }
 
-void SkeletonDocumentWindow::setCurrentFilename(const QString &filename)
+void DocumentWindow::setCurrentFilename(const QString &filename)
 {
     m_currentFilename = filename;
     m_documentSaved = true;
     updateTitle();
 }
 
-void SkeletonDocumentWindow::updateTitle()
+void DocumentWindow::updateTitle()
 {
     QString appName = APP_NAME;
     QString appVer = APP_HUMAN_VER;
     setWindowTitle(QString("%1 %2 %3%4").arg(appName).arg(appVer).arg(m_currentFilename).arg(m_documentSaved ? "" : "*"));
 }
 
-void SkeletonDocumentWindow::documentChanged()
+void DocumentWindow::documentChanged()
 {
     if (m_documentSaved) {
         m_documentSaved = false;
@@ -953,12 +953,12 @@ void SkeletonDocumentWindow::documentChanged()
     }
 }
 
-void SkeletonDocumentWindow::newWindow()
+void DocumentWindow::newWindow()
 {
-    SkeletonDocumentWindow::createDocumentWindow();
+    DocumentWindow::createDocumentWindow();
 }
 
-void SkeletonDocumentWindow::newDocument()
+void DocumentWindow::newDocument()
 {
     if (!m_documentSaved) {
         QMessageBox::StandardButton answer = QMessageBox::question(this,
@@ -973,7 +973,7 @@ void SkeletonDocumentWindow::newDocument()
     m_document->saveSnapshot();
 }
 
-void SkeletonDocumentWindow::saveAs()
+void DocumentWindow::saveAs()
 {
     QString filename = QFileDialog::getSaveFileName(this, QString(), QString(),
        tr("Dust3D Document (*.ds3)"));
@@ -983,50 +983,50 @@ void SkeletonDocumentWindow::saveAs()
     saveTo(filename);
 }
 
-void SkeletonDocumentWindow::saveAll()
+void DocumentWindow::saveAll()
 {
     for (auto &window: g_documentWindows) {
         window->save();
     }
 }
 
-void SkeletonDocumentWindow::viewSource()
+void DocumentWindow::viewSource()
 {
     QString url = APP_REPOSITORY_URL;
     qDebug() << "viewSource:" << url;
     QDesktopServices::openUrl(QUrl(url));
 }
 
-void SkeletonDocumentWindow::about()
+void DocumentWindow::about()
 {
-    SkeletonDocumentWindow::showAbout();
+    DocumentWindow::showAbout();
 }
 
-void SkeletonDocumentWindow::reportIssues()
+void DocumentWindow::reportIssues()
 {
     QString url = APP_ISSUES_URL;
     qDebug() << "reportIssues:" << url;
     QDesktopServices::openUrl(QUrl(url));
 }
 
-void SkeletonDocumentWindow::seeReferenceGuide()
+void DocumentWindow::seeReferenceGuide()
 {
     QString url = APP_REFERENCE_GUIDE_URL;
     qDebug() << "referenceGuide:" << url;
     QDesktopServices::openUrl(QUrl(url));
 }
 
-void SkeletonDocumentWindow::seeAcknowlegements()
+void DocumentWindow::seeAcknowlegements()
 {
-    SkeletonDocumentWindow::showAcknowlegements();
+    DocumentWindow::showAcknowlegements();
 }
 
-void SkeletonDocumentWindow::seeContributors()
+void DocumentWindow::seeContributors()
 {
-    SkeletonDocumentWindow::showContributors();
+    DocumentWindow::showContributors();
 }
 
-void SkeletonDocumentWindow::initLockButton(QPushButton *button)
+void DocumentWindow::initLockButton(QPushButton *button)
 {
     QFont font;
     font.setWeight(QFont::Light);
@@ -1039,12 +1039,12 @@ void SkeletonDocumentWindow::initLockButton(QPushButton *button)
     button->setFocusPolicy(Qt::NoFocus);
 }
 
-SkeletonDocumentWindow::~SkeletonDocumentWindow()
+DocumentWindow::~DocumentWindow()
 {
     g_documentWindows.erase(this);
 }
 
-void SkeletonDocumentWindow::showEvent(QShowEvent *event)
+void DocumentWindow::showEvent(QShowEvent *event)
 {
     QMainWindow::showEvent(event);
     if (m_firstShow) {
@@ -1056,12 +1056,12 @@ void SkeletonDocumentWindow::showEvent(QShowEvent *event)
     }
 }
 
-void SkeletonDocumentWindow::mousePressEvent(QMouseEvent *event)
+void DocumentWindow::mousePressEvent(QMouseEvent *event)
 {
     QMainWindow::mousePressEvent(event);
 }
 
-void SkeletonDocumentWindow::changeTurnaround()
+void DocumentWindow::changeTurnaround()
 {
     QString fileName = QFileDialog::getOpenFileName(this, QString(), QString(),
         tr("Image Files (*.png *.jpg *.bmp)")).trimmed();
@@ -1073,12 +1073,12 @@ void SkeletonDocumentWindow::changeTurnaround()
     m_document->updateTurnaround(image);
 }
 
-void SkeletonDocumentWindow::save()
+void DocumentWindow::save()
 {
     saveTo(m_currentFilename);
 }
 
-void SkeletonDocumentWindow::saveTo(const QString &saveAsFilename)
+void DocumentWindow::saveTo(const QString &saveAsFilename)
 {
     QString filename = saveAsFilename;
 
@@ -1111,6 +1111,7 @@ void SkeletonDocumentWindow::saveTo(const QString &saveAsFilename)
             ds3Writer.add("canvas.png", "asset", &imageByteArray);
     }
     
+    std::set<QUuid> imageIds;
     for (auto &material: snapshot.materials) {
         for (auto &layer: material.second) {
             for (auto &mapItem: layer.second) {
@@ -1118,17 +1119,29 @@ void SkeletonDocumentWindow::saveTo(const QString &saveAsFilename)
                 if (findImageIdString == mapItem.end())
                     continue;
                 QUuid imageId = QUuid(findImageIdString->second);
-                const QImage *image = ImageForever::get(imageId);
-                if (nullptr == image)
-                    continue;
-                QByteArray imageByteArray;
-                QBuffer pngBuffer(&imageByteArray);
-                pngBuffer.open(QIODevice::WriteOnly);
-                image->save(&pngBuffer, "PNG");
-                if (imageByteArray.size() > 0)
-                    ds3Writer.add("images/" + imageId.toString() + ".png", "asset", &imageByteArray);
+                imageIds.insert(imageId);
             }
         }
+    }
+    
+    for (auto &pose: snapshot.poses) {
+        auto findCanvasImageId = pose.first.find("canvasImageId");
+        if (findCanvasImageId != pose.first.end()) {
+            QUuid imageId = QUuid(findCanvasImageId->second);
+            imageIds.insert(imageId);
+        }
+    }
+    
+    for (const auto &imageId: imageIds) {
+        const QImage *image = ImageForever::get(imageId);
+        if (nullptr == image)
+            continue;
+        QByteArray imageByteArray;
+        QBuffer pngBuffer(&imageByteArray);
+        pngBuffer.open(QIODevice::WriteOnly);
+        image->save(&pngBuffer, "PNG");
+        if (imageByteArray.size() > 0)
+            ds3Writer.add("images/" + imageId.toString() + ".png", "asset", &imageByteArray);
     }
 
     if (ds3Writer.save(filename)) {
@@ -1138,7 +1151,7 @@ void SkeletonDocumentWindow::saveTo(const QString &saveAsFilename)
     QApplication::restoreOverrideCursor();
 }
 
-void SkeletonDocumentWindow::open()
+void DocumentWindow::open()
 {
     if (!m_documentSaved) {
         QMessageBox::StandardButton answer = QMessageBox::question(this,
@@ -1202,7 +1215,7 @@ void SkeletonDocumentWindow::open()
     setCurrentFilename(filename);
 }
 
-void SkeletonDocumentWindow::showAdvanceSetting()
+void DocumentWindow::showAdvanceSetting()
 {
     if (nullptr == m_advanceSettingWidget) {
         m_advanceSettingWidget = new AdvanceSettingWidget(m_document, this);
@@ -1211,7 +1224,7 @@ void SkeletonDocumentWindow::showAdvanceSetting()
     m_advanceSettingWidget->raise();
 }
 
-void SkeletonDocumentWindow::exportObjResult()
+void DocumentWindow::exportObjResult()
 {
     QString filename = QFileDialog::getSaveFileName(this, QString(), QString(),
        tr("Wavefront (*.obj)"));
@@ -1227,13 +1240,13 @@ void SkeletonDocumentWindow::exportObjResult()
     QApplication::restoreOverrideCursor();
 }
 
-void SkeletonDocumentWindow::showExportPreview()
+void DocumentWindow::showExportPreview()
 {
     if (nullptr == m_exportPreviewWidget) {
         m_exportPreviewWidget = new ExportPreviewWidget(m_document, this);
         connect(m_exportPreviewWidget, &ExportPreviewWidget::regenerate, m_document, &Document::regenerateMesh);
-        connect(m_exportPreviewWidget, &ExportPreviewWidget::saveAsGlb, this, &SkeletonDocumentWindow::exportGlbResult);
-        connect(m_exportPreviewWidget, &ExportPreviewWidget::saveAsFbx, this, &SkeletonDocumentWindow::exportFbxResult);
+        connect(m_exportPreviewWidget, &ExportPreviewWidget::saveAsGlb, this, &DocumentWindow::exportGlbResult);
+        connect(m_exportPreviewWidget, &ExportPreviewWidget::saveAsFbx, this, &DocumentWindow::exportFbxResult);
         connect(m_document, &Document::resultMeshChanged, m_exportPreviewWidget, &ExportPreviewWidget::checkSpinner);
         connect(m_document, &Document::exportReady, m_exportPreviewWidget, &ExportPreviewWidget::checkSpinner);
         connect(m_document, &Document::resultTextureChanged, m_exportPreviewWidget, &ExportPreviewWidget::updateTexturePreview);
@@ -1244,7 +1257,7 @@ void SkeletonDocumentWindow::showExportPreview()
     m_exportPreviewWidget->raise();
 }
 
-void SkeletonDocumentWindow::exportFbxResult()
+void DocumentWindow::exportFbxResult()
 {
     QString filename = QFileDialog::getSaveFileName(this, QString(), QString(),
        tr("Autodesk FBX (.fbx)"));
@@ -1270,7 +1283,7 @@ void SkeletonDocumentWindow::exportFbxResult()
     QApplication::restoreOverrideCursor();
 }
 
-void SkeletonDocumentWindow::exportGlbResult()
+void DocumentWindow::exportGlbResult()
 {
     QString filename = QFileDialog::getSaveFileName(this, QString(), QString(),
        tr("glTF Binary Format (.glb)"));
@@ -1296,7 +1309,7 @@ void SkeletonDocumentWindow::exportGlbResult()
     QApplication::restoreOverrideCursor();
 }
 
-void SkeletonDocumentWindow::updateXlockButtonState()
+void DocumentWindow::updateXlockButtonState()
 {
     if (m_document->xlocked)
         m_xlockButton->setStyleSheet("QPushButton {color: #252525}");
@@ -1304,7 +1317,7 @@ void SkeletonDocumentWindow::updateXlockButtonState()
         m_xlockButton->setStyleSheet("QPushButton {color: #fc6621}");
 }
 
-void SkeletonDocumentWindow::updateYlockButtonState()
+void DocumentWindow::updateYlockButtonState()
 {
     if (m_document->ylocked)
         m_ylockButton->setStyleSheet("QPushButton {color: #252525}");
@@ -1312,7 +1325,7 @@ void SkeletonDocumentWindow::updateYlockButtonState()
         m_ylockButton->setStyleSheet("QPushButton {color: #2a5aac}");
 }
 
-void SkeletonDocumentWindow::updateZlockButtonState()
+void DocumentWindow::updateZlockButtonState()
 {
     if (m_document->zlocked)
         m_zlockButton->setStyleSheet("QPushButton {color: #252525}");
@@ -1320,7 +1333,7 @@ void SkeletonDocumentWindow::updateZlockButtonState()
         m_zlockButton->setStyleSheet("QPushButton {color: #aaebc4}");
 }
 
-void SkeletonDocumentWindow::updateRadiusLockButtonState()
+void DocumentWindow::updateRadiusLockButtonState()
 {
     if (m_document->radiusLocked)
         m_radiusLockButton->setStyleSheet("QPushButton {color: #252525}");
@@ -1328,7 +1341,7 @@ void SkeletonDocumentWindow::updateRadiusLockButtonState()
         m_radiusLockButton->setStyleSheet("QPushButton {color: " + Theme::white.name() + "}");
 }
 
-void SkeletonDocumentWindow::updateRigWeightRenderWidget()
+void DocumentWindow::updateRigWeightRenderWidget()
 {
     MeshLoader *resultRigWeightMesh = m_document->takeResultRigWeightMesh();
     if (nullptr == resultRigWeightMesh) {
@@ -1340,12 +1353,12 @@ void SkeletonDocumentWindow::updateRigWeightRenderWidget()
     }
 }
 
-void SkeletonDocumentWindow::registerDialog(QWidget *widget)
+void DocumentWindow::registerDialog(QWidget *widget)
 {
     m_dialogs.push_back(widget);
 }
 
-void SkeletonDocumentWindow::unregisterDialog(QWidget *widget)
+void DocumentWindow::unregisterDialog(QWidget *widget)
 {
     m_dialogs.erase(std::remove(m_dialogs.begin(), m_dialogs.end(), widget), m_dialogs.end());
 }

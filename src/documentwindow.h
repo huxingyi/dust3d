@@ -17,15 +17,15 @@
 
 class SkeletonGraphicsWidget;
 
-class SkeletonDocumentWindow : public QMainWindow
+class DocumentWindow : public QMainWindow
 {
     Q_OBJECT
 signals:
     void initialized();
 public:
-    SkeletonDocumentWindow();
-    ~SkeletonDocumentWindow();
-    static SkeletonDocumentWindow *createDocumentWindow();
+    DocumentWindow();
+    ~DocumentWindow();
+    static DocumentWindow *createDocumentWindow();
     static void showAcknowlegements();
     static void showContributors();
     static void showAbout();

@@ -294,6 +294,9 @@ HEADERS += src/poserconstruct.h
 SOURCES += src/skeletondocument.cpp
 HEADERS += src/skeletondocument.h
 
+SOURCES += src/posedocument.cpp
+HEADERS += src/posedocument.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h

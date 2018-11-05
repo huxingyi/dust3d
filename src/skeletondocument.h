@@ -200,18 +200,22 @@ public:
     bool zlocked = false;
     bool radiusLocked = false;
     QImage turnaround;
+    std::map<QUuid, SkeletonPart> partMap;
+    std::map<QUuid, SkeletonNode> nodeMap;
+    std::map<QUuid, SkeletonEdge> edgeMap;
 
-    virtual const SkeletonNode *findNode(QUuid nodeId) const = 0;
-    virtual const SkeletonEdge *findEdge(QUuid edgeId) const = 0;
-    virtual const SkeletonPart *findPart(QUuid partId) const = 0;
-    virtual const SkeletonEdge *findEdgeByNodes(QUuid firstNodeId, QUuid secondNodeId) const = 0;
+    const SkeletonNode *findNode(QUuid nodeId) const;
+    const SkeletonEdge *findEdge(QUuid edgeId) const;
+    const SkeletonPart *findPart(QUuid partId) const;
+    const SkeletonEdge *findEdgeByNodes(QUuid firstNodeId, QUuid secondNodeId) const;
+    void findAllNeighbors(QUuid nodeId, std::set<QUuid> &neighbors) const;
+    
     virtual bool undoable() const = 0;
     virtual bool redoable() const = 0;
     virtual bool hasPastableNodesInClipboard() const = 0;
     virtual bool originSettled() const = 0;
     virtual bool isNodeEditable(QUuid nodeId) const = 0;
     virtual bool isEdgeEditable(QUuid edgeId) const = 0;
-    virtual void findAllNeighbors(QUuid nodeId, std::set<QUuid> &neighbors) const = 0;
     virtual void copyNodes(std::set<QUuid> nodeIdSet) const = 0;
     
 public slots:

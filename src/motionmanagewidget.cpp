@@ -22,14 +22,21 @@ MotionManageWidget::MotionManageWidget(const Document *document, QWidget *parent
     connect(m_motionListWidget, &MotionListWidget::modifyMotion, this, &MotionManageWidget::showMotionDialog);
     
     InfoLabel *infoLabel = new InfoLabel;
-    infoLabel->setText(tr("Missing Rig"));
     infoLabel->show();
     
     auto refreshInfoLabel = [=]() {
         if (m_document->currentRigSucceed()) {
-            infoLabel->hide();
-            addMotionButton->show();
+            if (m_document->rigType == RigType::Tetrapod) {
+                infoLabel->setText("");
+                infoLabel->hide();
+                addMotionButton->show();
+            } else {
+                infoLabel->setText(tr("Motion editor doesn't support this rig type yet: ") + RigTypeToDispName(m_document->rigType));
+                infoLabel->show();
+                addMotionButton->hide();
+            }
         } else {
+            infoLabel->setText(tr("Missing Rig"));
             infoLabel->show();
             addMotionButton->hide();
         }

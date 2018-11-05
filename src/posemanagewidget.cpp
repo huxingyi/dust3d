@@ -22,14 +22,21 @@ PoseManageWidget::PoseManageWidget(const Document *document, QWidget *parent) :
     connect(m_poseListWidget, &PoseListWidget::modifyPose, this, &PoseManageWidget::showPoseDialog);
     
     InfoLabel *infoLabel = new InfoLabel;
-    infoLabel->setText(tr("Missing Rig"));
     infoLabel->show();
     
     auto refreshInfoLabel = [=]() {
         if (m_document->currentRigSucceed()) {
-            infoLabel->hide();
-            addPoseButton->show();
+            if (m_document->rigType == RigType::Tetrapod) {
+                infoLabel->setText("");
+                infoLabel->hide();
+                addPoseButton->show();
+            } else {
+                infoLabel->setText(tr("Pose editor doesn't support this rig type yet: ") + RigTypeToDispName(m_document->rigType));
+                infoLabel->show();
+                addPoseButton->hide();
+            }
         } else {
+            infoLabel->setText(tr("Missing Rig"));
             infoLabel->show();
             addPoseButton->hide();
         }
@@ -71,6 +78,7 @@ void PoseManageWidget::showPoseDialog(QUuid poseId)
             poseEditWidget->setEditPoseId(poseId);
             poseEditWidget->setEditPoseName(pose->name);
             poseEditWidget->setEditParameters(pose->parameters);
+            poseEditWidget->setEditAttributes(pose->attributes);
             poseEditWidget->clearUnsaveState();
         }
     }

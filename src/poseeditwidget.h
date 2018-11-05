@@ -8,6 +8,8 @@
 #include "document.h"
 #include "modelwidget.h"
 #include "rigger.h"
+#include "skeletongraphicswidget.h"
+#include "posedocument.h"
 
 typedef RiggerButtonParameterType PopupWidgetType;
 
@@ -18,21 +20,23 @@ signals:
     void addPose(QString name, std::map<QString, std::map<QString, QString>> parameters);
     void removePose(QUuid poseId);
     void setPoseParameters(QUuid poseId, std::map<QString, std::map<QString, QString>> parameters);
+    void setPoseAttributes(QUuid poseId, std::map<QString, QString> attributes);
     void renamePose(QUuid poseId, QString name);
     void parametersAdjusted();
 public:
     PoseEditWidget(const Document *document, QWidget *parent=nullptr);
     ~PoseEditWidget();
 public slots:
-    void updateButtons();
+    void updatePoseDocument();
     void updatePreview();
-    void showPopupAngleDialog(QString boneName, PopupWidgetType popupWidgetType, QPoint pos);
     void setEditPoseId(QUuid poseId);
     void setEditPoseName(QString name);
     void setEditParameters(std::map<QString, std::map<QString, QString>> parameters);
+    void setEditAttributes(std::map<QString, QString> attributes);
     void updateTitle();
     void save();
     void clearUnsaveState();
+    void changeTurnaround();
 protected:
     QSize sizeHint() const override;
     void closeEvent(QCloseEvent *event) override;
@@ -44,11 +48,14 @@ private:
     bool m_isPreviewDirty = false;
     bool m_closed = false;
     std::map<QString, std::map<QString, QString>> m_parameters;
-    size_t m_openedMenuCount = 0;
+    std::map<QString, QString> m_attributes;
     QUuid m_poseId;
     bool m_unsaved = false;
+    QUuid m_imageId;
     QLineEdit *m_nameEdit = nullptr;
-    QWidget *m_buttonsContainer = nullptr;
+    PoseDocument *m_poseDocument = nullptr;
+    SkeletonGraphicsWidget *m_poseGraphicsWidget = nullptr;
+    QUuid findImageIdFromAttributes(const std::map<QString, QString> &attributes);
 };
 
 #endif

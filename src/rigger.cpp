@@ -6,6 +6,7 @@
 #include "rigger.h"
 
 size_t Rigger::m_maxCutOffSplitterExpandRound = 3;
+QString Rigger::rootBoneName = "Body";
 
 Rigger::Rigger(const std::vector<QVector3D> &verticesPositions,
         const std::set<MeshSplitterTriangle> &inputTriangles) :

@@ -125,6 +125,7 @@ public:
     const std::vector<QString> &missingMarkNames();
     const std::vector<QString> &errorMarkNames();
     virtual bool rig() = 0;
+    static QString rootBoneName;
 protected:
     virtual bool validate() = 0;
     virtual bool isCutOffSplitter(BoneMark boneMark) = 0;

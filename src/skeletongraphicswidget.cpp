@@ -44,7 +44,8 @@ SkeletonGraphicsWidget::SkeletonGraphicsWidget(const SkeletonDocument *document)
     m_eventForwardingToModelWidget(false),
     m_modelWidget(nullptr),
     m_inTempDragMode(false),
-    m_modeBeforeEnterTempDragMode(SkeletonDocumentEditMode::Select)
+    m_modeBeforeEnterTempDragMode(SkeletonDocumentEditMode::Select),
+    m_nodePositionModifyOnly(false)
 {
     setRenderHint(QPainter::Antialiasing, false);
     setBackgroundBrush(QBrush(QWidget::palette().color(QWidget::backgroundRole()), Qt::SolidPattern));
@@ -118,10 +119,12 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
     QMenu contextMenu(this);
     
     QAction addAction(tr("Add..."), this);
-    connect(&addAction, &QAction::triggered, [=]() {
-        emit setEditMode(SkeletonDocumentEditMode::Add);
-    });
-    contextMenu.addAction(&addAction);
+    if (!m_nodePositionModifyOnly) {
+        connect(&addAction, &QAction::triggered, [=]() {
+            emit setEditMode(SkeletonDocumentEditMode::Add);
+        });
+        contextMenu.addAction(&addAction);
+    }
     
     QAction undoAction(tr("Undo"), this);
     if (m_document->undoable()) {
@@ -136,67 +139,67 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
     }
     
     QAction deleteAction(tr("Delete"), this);
-    if (hasSelection()) {
+    if (!m_nodePositionModifyOnly && hasSelection()) {
         connect(&deleteAction, &QAction::triggered, this, &SkeletonGraphicsWidget::deleteSelected);
         contextMenu.addAction(&deleteAction);
     }
     
     QAction breakAction(tr("Break"), this);
-    if (hasEdgeSelection()) {
+    if (!m_nodePositionModifyOnly && hasEdgeSelection()) {
         connect(&breakAction, &QAction::triggered, this, &SkeletonGraphicsWidget::breakSelected);
         contextMenu.addAction(&breakAction);
     }
     
     QAction connectAction(tr("Connect"), this);
-    if (hasTwoDisconnectedNodesSelection()) {
+    if (!m_nodePositionModifyOnly && hasTwoDisconnectedNodesSelection()) {
         connect(&connectAction, &QAction::triggered, this, &SkeletonGraphicsWidget::connectSelected);
         contextMenu.addAction(&connectAction);
     }
     
     QAction cutAction(tr("Cut"), this);
-    if (hasSelection()) {
+    if (!m_nodePositionModifyOnly && hasSelection()) {
         connect(&cutAction, &QAction::triggered, this, &SkeletonGraphicsWidget::cut);
         contextMenu.addAction(&cutAction);
     }
     
     QAction copyAction(tr("Copy"), this);
-    if (hasSelection()) {
+    if (!m_nodePositionModifyOnly && hasSelection()) {
         connect(&copyAction, &QAction::triggered, this, &SkeletonGraphicsWidget::copy);
         contextMenu.addAction(&copyAction);
     }
     
     QAction pasteAction(tr("Paste"), this);
-    if (m_document->hasPastableNodesInClipboard()) {
+    if (!m_nodePositionModifyOnly && m_document->hasPastableNodesInClipboard()) {
         connect(&pasteAction, &QAction::triggered, m_document, &SkeletonDocument::paste);
         contextMenu.addAction(&pasteAction);
     }
     
     QAction flipHorizontallyAction(tr("H Flip"), this);
-    if (hasMultipleSelection()) {
+    if (!m_nodePositionModifyOnly && hasMultipleSelection()) {
         connect(&flipHorizontallyAction, &QAction::triggered, this, &SkeletonGraphicsWidget::flipHorizontally);
         contextMenu.addAction(&flipHorizontallyAction);
     }
     
     QAction flipVerticallyAction(tr("V Flip"), this);
-    if (hasMultipleSelection()) {
+    if (!m_nodePositionModifyOnly && hasMultipleSelection()) {
         connect(&flipVerticallyAction, &QAction::triggered, this, &SkeletonGraphicsWidget::flipVertically);
         contextMenu.addAction(&flipVerticallyAction);
     }
     
     QAction rotateClockwiseAction(tr("Rotate 90D CW"), this);
-    if (hasMultipleSelection()) {
+    if (!m_nodePositionModifyOnly && hasMultipleSelection()) {
         connect(&rotateClockwiseAction, &QAction::triggered, this, &SkeletonGraphicsWidget::rotateClockwise90Degree);
         contextMenu.addAction(&rotateClockwiseAction);
     }
     
     QAction rotateCounterclockwiseAction(tr("Rotate 90D CCW"), this);
-    if (hasMultipleSelection()) {
+    if (!m_nodePositionModifyOnly && hasMultipleSelection()) {
         connect(&rotateCounterclockwiseAction, &QAction::triggered, this, &SkeletonGraphicsWidget::rotateCounterclockwise90Degree);
         contextMenu.addAction(&rotateCounterclockwiseAction);
     }
     
     QAction switchXzAction(tr("Switch XZ"), this);
-    if (hasSelection()) {
+    if (!m_nodePositionModifyOnly && hasSelection()) {
         connect(&switchXzAction, &QAction::triggered, this, &SkeletonGraphicsWidget::switchSelectedXZ);
         contextMenu.addAction(&switchXzAction);
     }
@@ -207,7 +210,7 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
     QAction alignToGlobalCenterAction(tr("Global Center"), this);
     QAction alignToGlobalVerticalCenterAction(tr("Global Vertical Center"), this);
     QAction alignToGlobalHorizontalCenterAction(tr("Global Horizontal Center"), this);
-    if ((hasSelection() && m_document->originSettled()) || hasMultipleSelection()) {
+    if (!m_nodePositionModifyOnly && ((hasSelection() && m_document->originSettled()) || hasMultipleSelection())) {
         QMenu *subMenu = contextMenu.addMenu(tr("Align To"));
         
         if (hasMultipleSelection()) {
@@ -238,7 +241,7 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
     for (int i = 0; i < (int)BoneMark::Count - 1; i++) {
         markAsActions[i] = nullptr;
     }
-    if (hasNodeSelection()) {
+    if (!m_nodePositionModifyOnly && hasNodeSelection()) {
         QMenu *subMenu = contextMenu.addMenu(tr("Mark As"));
         
         connect(&markAsNoneAction, &QAction::triggered, [=]() {
@@ -265,7 +268,7 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
     }
     
     QAction selectPartAllAction(tr("Select Part"), this);
-    if (hasItems()) {
+    if (!m_nodePositionModifyOnly && hasItems()) {
         connect(&selectPartAllAction, &QAction::triggered, this, &SkeletonGraphicsWidget::selectPartAll);
         contextMenu.addAction(&selectPartAllAction);
     }
@@ -2455,4 +2458,9 @@ void SkeletonGraphicsWidget::setSelectedNodesBoneMark(BoneMark boneMark)
         emit batchChangeEnd();
         emit groupOperationAdded();
     }
+}
+
+void SkeletonGraphicsWidget::setNodePositionModifyOnly(bool nodePositionModifyOnly)
+{
+    m_nodePositionModifyOnly = nodePositionModifyOnly;
 }

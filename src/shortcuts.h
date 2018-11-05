@@ -3,6 +3,6 @@
 #include <QMainWindow>
 #include "skeletongraphicswidget.h"
 
-void initShortCuts(QMainWindow *mainWindow, SkeletonGraphicsWidget *graphicsWidget);
+void initShortCuts(QWidget *widget, SkeletonGraphicsWidget *graphicsWidget);
 
 #endif
