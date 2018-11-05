@@ -3,8 +3,8 @@
 #include "rigger.h"
 #include "util.h"
 
-constexpr float PoseDocument::m_nodeRadius = 0.01;
-constexpr float PoseDocument::m_groundPlaneHalfThickness = m_nodeRadius / 4;
+const float PoseDocument::m_nodeRadius = 0.01;
+const float PoseDocument::m_groundPlaneHalfThickness = 0.01 / 4;
 
 bool PoseDocument::hasPastableNodesInClipboard() const
 {
