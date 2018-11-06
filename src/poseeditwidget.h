@@ -11,8 +11,6 @@
 #include "skeletongraphicswidget.h"
 #include "posedocument.h"
 
-typedef RiggerButtonParameterType PopupWidgetType;
-
 class PoseEditWidget : public QDialog
 {
     Q_OBJECT

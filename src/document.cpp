@@ -2559,8 +2559,7 @@ void Document::rigReady()
     delete m_resultRigWeights;
     m_resultRigWeights = m_rigGenerator->takeResultWeights();
     
-    m_resultRigMissingMarkNames = m_rigGenerator->missingMarkNames();
-    m_resultRigErrorMarkNames = m_rigGenerator->errorMarkNames();
+    m_resultRigMessages = m_rigGenerator->messages();
     
     delete m_riggedOutcome;
     m_riggedOutcome = m_rigGenerator->takeOutcome();
@@ -2602,8 +2601,7 @@ void Document::removeRigResults()
     delete m_resultRigWeightMesh;
     m_resultRigWeightMesh = nullptr;
     
-    m_resultRigErrorMarkNames.clear();
-    m_resultRigMissingMarkNames.clear();
+    m_resultRigMessages.clear();
     
     m_currentRigSucceed = false;
     
@@ -2625,14 +2623,9 @@ void Document::setRigType(RigType toRigType)
     emit rigChanged();
 }
 
-const std::vector<QString> &Document::resultRigMissingMarkNames() const
+const std::vector<std::pair<QtMsgType, QString>> &Document::resultRigMessages() const
 {
-    return m_resultRigMissingMarkNames;
-}
-
-const std::vector<QString> &Document::resultRigErrorMarkNames() const
-{
-    return m_resultRigErrorMarkNames;
+    return m_resultRigMessages;
 }
 
 const Outcome &Document::currentRiggedOutcome() const

@@ -23,8 +23,7 @@ private:
     const Document *m_document = nullptr;
     QComboBox *m_rigTypeBox = nullptr;
     ModelWidget *m_rigWeightRenderWidget = nullptr;
-    InfoLabel *m_missingMarksInfoLabel = nullptr;
-    InfoLabel *m_errorMarksInfoLabel = nullptr;
+    InfoLabel *m_infoLabel = nullptr;
 };
 
 #endif

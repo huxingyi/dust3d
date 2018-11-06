@@ -499,8 +499,7 @@ public:
     bool isPostProcessResultObsolete() const;
     void collectComponentDescendantParts(QUuid componentId, std::vector<QUuid> &partIds) const;
     void collectComponentDescendantComponents(QUuid componentId, std::vector<QUuid> &componentIds) const;
-    const std::vector<QString> &resultRigMissingMarkNames() const;
-    const std::vector<QString> &resultRigErrorMarkNames() const;
+    const std::vector<std::pair<QtMsgType, QString>> &resultRigMessages() const;
     const Outcome &currentRiggedOutcome() const;
     bool currentRigSucceed() const;
     bool isMeshGenerating() const;
@@ -652,8 +651,7 @@ private:
     std::deque<HistoryItem> m_undoItems;
     std::deque<HistoryItem> m_redoItems;
     GeneratedCacheContext m_generatedCacheContext;
-    std::vector<QString> m_resultRigMissingMarkNames;
-    std::vector<QString> m_resultRigErrorMarkNames;
+    std::vector<std::pair<QtMsgType, QString>> m_resultRigMessages;
 };
 
 #endif

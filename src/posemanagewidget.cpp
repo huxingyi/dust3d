@@ -26,7 +26,7 @@ PoseManageWidget::PoseManageWidget(const Document *document, QWidget *parent) :
     
     auto refreshInfoLabel = [=]() {
         if (m_document->currentRigSucceed()) {
-            if (m_document->rigType == RigType::Tetrapod) {
+            if (m_document->rigType == RigType::Animal) {
                 infoLabel->setText("");
                 infoLabel->hide();
                 addPoseButton->show();

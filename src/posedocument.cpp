@@ -189,37 +189,44 @@ void PoseDocument::updateRigBones(const std::vector<RiggerBone> *rigBones, const
         auto findFirst = boneIndexToHeadNodeIdMap.find(edgePair.first);
         if (findFirst == boneIndexToHeadNodeIdMap.end()) {
             const auto &bone = (*rigBones)[edgePair.first];
-            SkeletonNode node;
-            node.partId = m_bonesPartId;
-            node.id = QUuid::createUuid();
-            node.setRadius(m_nodeRadius);
-            node.x = bone.headPosition.x() + 0.5;
-            node.y = -bone.headPosition.y() + 0.5;
-            node.z = -bone.headPosition.z() + 1;
-            nodeMap[node.id] = node;
-            newAddedNodeIds.insert(node.id);
-            boneIndexToHeadNodeIdMap[edgePair.first] = node.id;
-            firstNodeId = node.id;
+            if (!bone.name.startsWith("Virtual_")) {
+                SkeletonNode node;
+                node.partId = m_bonesPartId;
+                node.id = QUuid::createUuid();
+                node.setRadius(m_nodeRadius);
+                node.x = bone.headPosition.x() + 0.5;
+                node.y = -bone.headPosition.y() + 0.5;
+                node.z = -bone.headPosition.z() + 1;
+                nodeMap[node.id] = node;
+                newAddedNodeIds.insert(node.id);
+                boneIndexToHeadNodeIdMap[edgePair.first] = node.id;
+                firstNodeId = node.id;
+            }
         } else {
             firstNodeId = findFirst->second;
         }
         auto findSecond = boneIndexToHeadNodeIdMap.find(edgePair.second);
         if (findSecond == boneIndexToHeadNodeIdMap.end()) {
             const auto &bone = (*rigBones)[edgePair.second];
-            SkeletonNode node;
-            node.partId = m_bonesPartId;
-            node.id = QUuid::createUuid();
-            node.setRadius(m_nodeRadius);
-            node.x = bone.headPosition.x() + 0.5;
-            node.y = -bone.headPosition.y() + 0.5;
-            node.z = -bone.headPosition.z() + 1;
-            nodeMap[node.id] = node;
-            newAddedNodeIds.insert(node.id);
-            boneIndexToHeadNodeIdMap[edgePair.second] = node.id;
-            secondNodeId = node.id;
+            if (!bone.name.startsWith("Virtual_")) {
+                SkeletonNode node;
+                node.partId = m_bonesPartId;
+                node.id = QUuid::createUuid();
+                node.setRadius(m_nodeRadius);
+                node.x = bone.headPosition.x() + 0.5;
+                node.y = -bone.headPosition.y() + 0.5;
+                node.z = -bone.headPosition.z() + 1;
+                nodeMap[node.id] = node;
+                newAddedNodeIds.insert(node.id);
+                boneIndexToHeadNodeIdMap[edgePair.second] = node.id;
+                secondNodeId = node.id;
+            }
         } else {
             secondNodeId = findSecond->second;
         }
+        
+        if (firstNodeId.isNull() || secondNodeId.isNull())
+            continue;
         
         SkeletonEdge edge;
         edge.partId = m_bonesPartId;
@@ -231,8 +238,11 @@ void PoseDocument::updateRigBones(const std::vector<RiggerBone> *rigBones, const
         nodeMap[firstNodeId].edgeIds.push_back(edge.id);
         nodeMap[secondNodeId].edgeIds.push_back(edge.id);
     }
-    for (size_t i = 0; i < rigBones->size(); ++i) {
+    
+    for (size_t i = 1; i < rigBones->size(); ++i) {
         const auto &bone = (*rigBones)[i];
+        if (bone.name.startsWith("Virtual_"))
+            continue;
         if (bone.children.empty()) {
             const QUuid &firstNodeId = boneIndexToHeadNodeIdMap[i];
             

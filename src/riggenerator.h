@@ -17,8 +17,7 @@ public:
     MeshLoader *takeResultMesh();
     std::vector<RiggerBone> *takeResultBones();
     std::map<int, RiggerVertexWeights> *takeResultWeights();
-    const std::vector<QString> &missingMarkNames();
-    const std::vector<QString> &errorMarkNames();
+    const std::vector<std::pair<QtMsgType, QString>> &messages();
     Outcome *takeOutcome();
     bool isSucceed();
     void generate();
@@ -33,8 +32,7 @@ private:
     Rigger *m_autoRigger = nullptr;
     std::vector<RiggerBone> *m_resultBones = nullptr;
     std::map<int, RiggerVertexWeights> *m_resultWeights = nullptr;
-    std::vector<QString> m_missingMarkNames;
-    std::vector<QString> m_errorMarkNames;
+    std::vector<std::pair<QtMsgType, QString>> m_messages;
     bool m_isSucceed = false;
 };
 

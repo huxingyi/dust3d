@@ -11,14 +11,6 @@
 #include "rigtype.h"
 #include "skeletonside.h"
 
-enum class RiggerButtonParameterType
-{
-    None = 0,
-    PitchYawRoll,
-    Intersection,
-    Translation
-};
-
 class RiggerMark
 {
 public:
@@ -65,9 +57,6 @@ public:
     QVector3D headPosition;
     QVector3D tailPosition;
     QColor color;
-    bool hasButton = false;
-    RiggerButtonParameterType buttonParameterType = RiggerButtonParameterType::None;
-    std::pair<int, int> button = {0, 0};
     QVector3D baseNormal;
     std::vector<int> children;
 };
@@ -122,8 +111,6 @@ public:
     const std::vector<std::pair<QtMsgType, QString>> &messages();
     const std::vector<RiggerBone> &resultBones();
     const std::map<int, RiggerVertexWeights> &resultWeights();
-    const std::vector<QString> &missingMarkNames();
-    const std::vector<QString> &errorMarkNames();
     virtual bool rig() = 0;
     static QString rootBoneName;
 protected:
@@ -152,9 +139,10 @@ protected:
     std::map<std::pair<BoneMark, SkeletonSide>, std::vector<int>> m_marksMap;
     std::vector<RiggerBone> m_resultBones;
     std::map<int, RiggerVertexWeights> m_resultWeights;
-    std::vector<QString> m_missingMarkNames;
-    std::vector<QString> m_errorMarkNames;
+    std::vector<QString> m_cutoffErrorItems;
+    std::vector<QString> m_jointErrorItems;
     static size_t m_maxCutOffSplitterExpandRound;
+    bool m_extraMessagedAdded;
 };
 
 #endif

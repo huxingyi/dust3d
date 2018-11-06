@@ -168,9 +168,6 @@ HEADERS += src/skinnedmeshcreator.h
 SOURCES += src/jointnodetree.cpp
 HEADERS += src/jointnodetree.h
 
-SOURCES += src/tetrapodposer.cpp
-HEADERS += src/tetrapodposer.h
-
 SOURCES += src/poser.cpp
 HEADERS += src/poser.h
 
@@ -276,14 +273,11 @@ HEADERS += src/uvunwrap.h
 SOURCES += src/triangletangentresolve.cpp
 HEADERS += src/triangletangentresolve.h
 
-SOURCES += src/tetrapodrigger.cpp
-HEADERS += src/tetrapodrigger.h
+SOURCES += src/animalrigger.cpp
+HEADERS += src/animalrigger.h
 
-SOURCES += src/genericrigger.cpp
-HEADERS += src/genericrigger.h
-
-SOURCES += src/genericposer.cpp
-HEADERS += src/genericposer.h
+SOURCES += src/animalposer.cpp
+HEADERS += src/animalposer.h
 
 SOURCES += src/riggerconstruct.cpp
 HEADERS += src/riggerconstruct.h

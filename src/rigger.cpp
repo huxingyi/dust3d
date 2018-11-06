@@ -11,7 +11,8 @@ QString Rigger::rootBoneName = "Body";
 Rigger::Rigger(const std::vector<QVector3D> &verticesPositions,
         const std::set<MeshSplitterTriangle> &inputTriangles) :
     m_verticesPositions(verticesPositions),
-    m_inputTriangles(inputTriangles)
+    m_inputTriangles(inputTriangles),
+    m_extraMessagedAdded(false)
 {
 }
 
@@ -58,10 +59,7 @@ bool Rigger::addMarkGroup(BoneMark boneMark, SkeletonSide boneSide, QVector3D bo
     
     if (isCutOffSplitter(mark.boneMark)) {
         if (!mark.split(m_inputTriangles, m_maxCutOffSplitterExpandRound)) {
-            m_marksMap[std::make_pair(mark.boneMark, mark.boneSide)].push_back(m_marks.size() - 1);
-            m_errorMarkNames.push_back(SkeletonSideToDispName(mark.boneSide) + " " + BoneMarkToDispName(mark.boneMark));
-            m_messages.push_back(std::make_pair(QtCriticalMsg,
-                tr("Mark \"%1 %2\" couldn't cut off the mesh").arg(SkeletonSideToDispName(mark.boneSide)).arg(BoneMarkToString(boneMark))));
+            m_cutoffErrorItems.push_back(SkeletonSideToDispName(mark.boneSide) + " " + BoneMarkToDispName(mark.boneMark));
             return false;
         }
     }
@@ -73,6 +71,22 @@ bool Rigger::addMarkGroup(BoneMark boneMark, SkeletonSide boneSide, QVector3D bo
 
 const std::vector<std::pair<QtMsgType, QString>> &Rigger::messages()
 {
+    if (!m_extraMessagedAdded) {
+        m_extraMessagedAdded = true;
+        if (!m_cutoffErrorItems.empty()) {
+            QStringList cutoffErrorNames;
+            for (const auto &item: m_cutoffErrorItems) {
+                cutoffErrorNames.append("<b>" + item + "</b>");
+            }
+            m_messages.push_back(std::make_pair(QtCriticalMsg, tr("The following marks couldn't cut off the mesh, pelease try mark more nearby nodes for them: %1").arg(cutoffErrorNames.join(", "))));
+        }
+        if (!m_jointErrorItems.empty()) {
+            QStringList jointErrorNames;
+            for (const auto &item: m_jointErrorItems)
+                jointErrorNames.append("<b>" + item + "</b>");
+            m_messages.push_back(std::make_pair(QtCriticalMsg, tr("The following marks looks like don't contain any vertices, pelease try mark other nearby nodes for them: %1").arg(jointErrorNames.join(", "))));
+        }
+    }
     return m_messages;
 }
 
@@ -246,12 +260,3 @@ void Rigger::addVerticesToWeights(const std::set<int> &vertices, int boneIndex)
     }
 }
 
-const std::vector<QString> &Rigger::missingMarkNames()
-{
-    return m_missingMarkNames;
-}
-
-const std::vector<QString> &Rigger::errorMarkNames()
-{
-    return m_errorMarkNames;
-}

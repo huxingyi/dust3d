@@ -2,35 +2,36 @@
 #include <cmath>
 #include <queue>
 #include <unordered_set>
-#include "genericrigger.h"
+#include "animalrigger.h"
 
-GenericRigger::GenericRigger(const std::vector<QVector3D> &verticesPositions,
+AnimalRigger::AnimalRigger(const std::vector<QVector3D> &verticesPositions,
         const std::set<MeshSplitterTriangle> &inputTriangles) :
     Rigger(verticesPositions, inputTriangles)
 {
 }
 
-bool GenericRigger::validate()
+bool AnimalRigger::validate()
 {
+    if (m_marksMap.empty()) {
+        m_messages.push_back(std::make_pair(QtCriticalMsg,
+            tr("Please tell me where is the neck, limbs and joints by mark the nodes from context menu")));
+        return false;
+    }
+    
     return true;
 }
 
-bool GenericRigger::isCutOffSplitter(BoneMark boneMark)
+bool AnimalRigger::isCutOffSplitter(BoneMark boneMark)
 {
-    return BoneMark::Limb == boneMark;
+    return BoneMark::Joint != boneMark;
 }
 
-BoneMark GenericRigger::translateBoneMark(BoneMark boneMark)
+BoneMark AnimalRigger::translateBoneMark(BoneMark boneMark)
 {
-    if (boneMark == BoneMark::Neck ||
-            boneMark == BoneMark::Shoulder ||
-            boneMark == BoneMark::Hip ||
-            boneMark == BoneMark::Limb)
-        return BoneMark::Limb;
-    return BoneMark::Joint;
+    return boneMark;
 }
 
-void GenericRigger::collectJointsForLimb(int markIndex, std::vector<int> &jointMarkIndicies)
+bool AnimalRigger::collectJontsForChain(int markIndex, std::vector<int> &jointMarkIndicies)
 {
     const auto &mark = m_marks[markIndex];
     
@@ -51,13 +52,13 @@ void GenericRigger::collectJointsForLimb(int markIndex, std::vector<int> &jointM
     
     if (triangleToMarkMap.size() <= 1) {
         qDebug() << "Collect joints for limb failed because of lack marks";
-        return;
+        return true;
     }
     
     const auto &group = mark.smallGroup();
     if (group.empty()) {
         qDebug() << "Collect joints for limb failed because of lack verticies";
-        return;
+        return false;
     }
     
     // Build the edge to triangle map;
@@ -85,7 +86,7 @@ void GenericRigger::collectJointsForLimb(int markIndex, std::vector<int> &jointM
     
     if (waitTriangles.empty()) {
         qDebug() << "Couldn't find a triangle to start";
-        return;
+        return false;
     }
     
     // Traverse all the triangles and fill the triangle to mark map
@@ -163,7 +164,7 @@ void GenericRigger::collectJointsForLimb(int markIndex, std::vector<int> &jointM
         }
         if (-1 == nearestMarkIndex) {
             qDebug() << "Find nearest joint failed";
-            return;
+            return false;
         }
         jointMarkIndicies.push_back(nearestMarkIndex);
         visited.insert(nearestMarkIndex);
@@ -185,9 +186,11 @@ void GenericRigger::collectJointsForLimb(int markIndex, std::vector<int> &jointM
             break;
         findPairResult = pairs.find(linkTo);
     }
+    
+    return true;
 }
 
-bool GenericRigger::rig()
+bool AnimalRigger::rig()
 {
     if (!validate())
         return false;
@@ -205,27 +208,44 @@ bool GenericRigger::rig()
         isMainBodyVerticalAligned = fabs(yMax.y() - yMin.y()) > fabs(zMax.z() - zMin.z());
     }
     
-    // Collect all limbs
-    auto nosideLimbIndicies = m_marksMap.find(std::make_pair(BoneMark::Limb, SkeletonSide::None));
+    // Collect all branchs
+    auto neckIndicies = m_marksMap.find(std::make_pair(BoneMark::Neck, SkeletonSide::None));
+    auto tailIndicies = m_marksMap.find(std::make_pair(BoneMark::Tail, SkeletonSide::None));
     auto leftLimbIndicies = m_marksMap.find(std::make_pair(BoneMark::Limb, SkeletonSide::Left));
     auto rightLimbIndicies = m_marksMap.find(std::make_pair(BoneMark::Limb, SkeletonSide::Right));
+    std::vector<int> nosideMarkIndicies;
+    std::vector<int> leftMarkIndicies;
+    std::vector<int> righMarkIndicies;
+    if (neckIndicies != m_marksMap.end()) {
+        for (const auto &index: neckIndicies->second)
+            nosideMarkIndicies.push_back(index);
+    }
+    if (tailIndicies != m_marksMap.end()) {
+        for (const auto &index: tailIndicies->second)
+            nosideMarkIndicies.push_back(index);
+    }
+    if (leftLimbIndicies != m_marksMap.end()) {
+        for (const auto &index: leftLimbIndicies->second)
+            leftMarkIndicies.push_back(index);
+    }
+    if (rightLimbIndicies != m_marksMap.end()) {
+        for (const auto &index: rightLimbIndicies->second)
+            righMarkIndicies.push_back(index);
+    }
     
     // Generate spine for main body
-    auto sortLimbIndiciesInSpineOrder = [=](const int &first, const int &second) {
+    auto sortMarkIndiciesInSpineOrder = [=](const int &first, const int &second) {
         return isMainBodyVerticalAligned ?
             (m_marks[first].bonePosition.y() < m_marks[second].bonePosition.y()) :
             (m_marks[first].bonePosition.z() < m_marks[second].bonePosition.z());
     };
-    if (nosideLimbIndicies != m_marksMap.end())
-        std::sort(nosideLimbIndicies->second.begin(), nosideLimbIndicies->second.end(), sortLimbIndiciesInSpineOrder);
-    if (leftLimbIndicies != m_marksMap.end())
-        std::sort(leftLimbIndicies->second.begin(), leftLimbIndicies->second.end(), sortLimbIndiciesInSpineOrder);
-    if (rightLimbIndicies != m_marksMap.end())
-        std::sort(rightLimbIndicies->second.begin(), rightLimbIndicies->second.end(), sortLimbIndiciesInSpineOrder);
+    std::sort(nosideMarkIndicies.begin(), nosideMarkIndicies.end(), sortMarkIndiciesInSpineOrder);
+    std::sort(leftMarkIndicies.begin(), leftMarkIndicies.end(), sortMarkIndiciesInSpineOrder);
+    std::sort(righMarkIndicies.begin(), righMarkIndicies.end(), sortMarkIndiciesInSpineOrder);
     const static std::vector<int> s_empty;
-    const std::vector<int> *limbColumns[3] = {leftLimbIndicies != m_marksMap.end() ? &leftLimbIndicies->second : &s_empty,
-        nosideLimbIndicies != m_marksMap.end() ? &nosideLimbIndicies->second : &s_empty,
-        rightLimbIndicies != m_marksMap.end() ? &rightLimbIndicies->second : &s_empty
+    const std::vector<int> *chainColumns[3] = {&leftMarkIndicies,
+        &nosideMarkIndicies,
+        &righMarkIndicies
     };
     enum Column
     {
@@ -237,18 +257,18 @@ bool GenericRigger::rig()
     {
         float coord;
         QVector3D position;
-        std::set<int> limbMarkIndicies;
+        std::set<int> chainMarkIndicies;
     };
-    std::vector<SpineNode> spineNodes;
+    std::vector<SpineNode> rawSpineNodes;
     for (size_t sideIndicies[3] = {0, 0, 0};
-            sideIndicies[Column::Noside] < limbColumns[Column::Noside]->size() ||
-            sideIndicies[Column::Left] < limbColumns[Column::Left]->size() ||
-            sideIndicies[Column::Right] < limbColumns[Column::Right]->size();) {
+            sideIndicies[Column::Noside] < chainColumns[Column::Noside]->size() ||
+            sideIndicies[Column::Left] < chainColumns[Column::Left]->size() ||
+            sideIndicies[Column::Right] < chainColumns[Column::Right]->size();) {
         float choosenCoord = std::numeric_limits<float>::max();
         int choosenColumn = -1;
         for (size_t side = Column::Left; side <= Column::Right; ++side) {
-            if (sideIndicies[side] < limbColumns[side]->size()) {
-                const auto &mark = m_marks[limbColumns[side]->at(sideIndicies[side])];
+            if (sideIndicies[side] < chainColumns[side]->size()) {
+                const auto &mark = m_marks[chainColumns[side]->at(sideIndicies[side])];
                 const auto &coord = isMainBodyVerticalAligned ? mark.bonePosition.y() :
                         mark.bonePosition.z();
                 if (coord < choosenCoord) {
@@ -261,40 +281,67 @@ bool GenericRigger::rig()
             qDebug() << "Should not come here, coord corrupted";
             break;
         }
-        // Find all the limbs before or near this choosenCoord
-        QVector3D sumOfLimbPositions;
-        int countOfLimbs = 0;
-        std::set<int> limbMarkIndicies;
+        // Find all the chains before or near this choosenCoord
+        QVector3D sumOfChainPositions;
+        int countOfChains = 0;
+        std::set<int> chainMarkIndicies;
         for (size_t side = Column::Left; side <= Column::Right; ++side) {
-            if (sideIndicies[side] < limbColumns[side]->size()) {
-                const auto &mark = m_marks[limbColumns[side]->at(sideIndicies[side])];
+            if (sideIndicies[side] < chainColumns[side]->size()) {
+                const auto &mark = m_marks[chainColumns[side]->at(sideIndicies[side])];
                 const auto &coord = isMainBodyVerticalAligned ? mark.bonePosition.y() :
                         mark.bonePosition.z();
                 if (coord <= choosenCoord + 0.001) {
-                    limbMarkIndicies.insert(limbColumns[side]->at(sideIndicies[side]));
-                    sumOfLimbPositions += mark.bonePosition;
-                    ++countOfLimbs;
+                    chainMarkIndicies.insert(chainColumns[side]->at(sideIndicies[side]));
+                    sumOfChainPositions += mark.bonePosition;
+                    ++countOfChains;
                     ++sideIndicies[side];
                 }
             }
         }
-        if (countOfLimbs <= 0) {
+        if (countOfChains <= 0) {
             qDebug() << "Should not come here, there must be at least one limb";
             break;
         }
-        
-        //qDebug() << "Create new spine node from" << countOfLimbs << "limbs current coord:" << choosenCoord;
-        
-        spineNodes.push_back(SpineNode());
-        SpineNode &spineNode = spineNodes.back();
+
+        rawSpineNodes.push_back(SpineNode());
+        SpineNode &spineNode = rawSpineNodes.back();
         spineNode.coord = choosenCoord;
-        spineNode.limbMarkIndicies = limbMarkIndicies;
-        spineNode.position = sumOfLimbPositions / countOfLimbs;
+        spineNode.chainMarkIndicies = chainMarkIndicies;
+        spineNode.position = sumOfChainPositions / countOfChains;
     }
     
-    if (spineNodes.empty()) {
+    if (rawSpineNodes.empty()) {
         qDebug() << "Couldn't find limbs to create a spine";
         return false;
+    }
+    
+    // Reassemble spine nodes, each spine will be cut off as two
+    std::vector<SpineNode> spineNodes;
+    for (size_t i = 0; i < rawSpineNodes.size(); ++i) {
+        const auto &raw = rawSpineNodes[i];
+        spineNodes.push_back(raw);
+        if (i + 1 < rawSpineNodes.size()) {
+            SpineNode intermediate;
+            const auto &nextRaw = rawSpineNodes[i + 1];
+            intermediate.coord = (raw.coord + nextRaw.coord) / 2;
+            intermediate.position = (raw.position + nextRaw.position) / 2;
+            spineNodes.push_back(intermediate);
+        }
+    }
+    // Move the chain mark indicies to the new generated intermediate spine
+    for (size_t i = 2; i < spineNodes.size(); i += 2) {
+        auto &spineNode = spineNodes[i];
+        std::vector<int> needMoveIndicies;
+        for (const auto &markIndex: spineNode.chainMarkIndicies) {
+            const auto &chain = m_marks[markIndex];
+            if (chain.boneSide != SkeletonSide::None)
+                needMoveIndicies.push_back(markIndex);
+        }
+        auto &previousSpineNode = spineNodes[i - 1];
+        for (const auto &markIndex: needMoveIndicies) {
+            previousSpineNode.chainMarkIndicies.insert(markIndex);
+            spineNode.chainMarkIndicies.erase(markIndex);
+        }
     }
     
     std::map<QString, int> boneIndexMap;
@@ -304,47 +351,54 @@ bool GenericRigger::rig()
     bodyBone.index = m_resultBones.size() - 1;
     bodyBone.name = Rigger::rootBoneName;
     bodyBone.headPosition = QVector3D(0, 0, 0);
-    bodyBone.hasButton = true;
-    bodyBone.button = {spineNodes.size(), 0};
-    bodyBone.buttonParameterType = RiggerButtonParameterType::Translation;
     boneIndexMap[bodyBone.name] = bodyBone.index;
     
     auto remainingSpineVerticies = bodyVerticies;
-    const std::vector<QColor> twoColorsForSpine = {QColor(0x57, 0x43, 0x98), Qt::white};
-    const std::vector<QColor> twoColorsForLimb = {BoneMarkToColor(BoneMark::Joint), BoneMarkToColor(BoneMark::Hip)};
+    const std::vector<QColor> twoColorsForSpine = {BoneMarkToColor(BoneMark::Neck), BoneMarkToColor(BoneMark::Tail)};
+    const std::vector<QColor> twoColorsForLimb = {BoneMarkToColor(BoneMark::Joint), BoneMarkToColor(BoneMark::Limb)};
     int spineGenerateOrder = 1;
+    std::map<std::pair<QString, SkeletonSide>, int> chainOrderMapBySide;
     for (int spineNodeIndex = 0; spineNodeIndex < (int)spineNodes.size(); ++spineNodeIndex) {
         const auto &spineNode = spineNodes[spineNodeIndex];
         std::set<int> spineBoneVertices;
         QVector3D tailPosition;
-        
-        int buttonRow = spineNodes.size() - spineGenerateOrder;
-        
+
         if (spineNodeIndex + 1 < (int)spineNodes.size()) {
-            std::set<int> frontOrCoincidentVertices;
-            std::set<int> backVertices;
             float distance = (spineNodes[spineNodeIndex + 1].position - spineNode.position).length();
-            auto planeNormal = (spineNodes[spineNodeIndex + 1].position - spineNode.position).normalized();
+            QVector3D currentSpineDirection = (spineNodes[spineNodeIndex + 1].position - spineNode.position).normalized();
+            QVector3D previousSpineDirection = currentSpineDirection;
+            if (spineNodeIndex - 1 >= 0) {
+                previousSpineDirection = (spineNodes[spineNodeIndex].position - spineNodes[spineNodeIndex - 1].position).normalized();
+            }
+            auto planeNormal = (currentSpineDirection + previousSpineDirection).normalized();
             auto pointOnPlane = spineNode.position + planeNormal * distance * 1.25;
             auto perpVector = isMainBodyVerticalAligned ? QVector3D(1, 0, 0) : QVector3D(0, 1, 0);
             auto vectorOnPlane = QVector3D::crossProduct(planeNormal, perpVector);
             // Move this point to far away, so the checking vector will not collapse with the plane normal
             pointOnPlane += vectorOnPlane.normalized() * 1000;
-            splitVerticesByPlane(remainingSpineVerticies,
-                pointOnPlane,
-                planeNormal,
-                frontOrCoincidentVertices,
-                backVertices);
-            spineBoneVertices = backVertices;
+            {
+                std::set<int> frontOrCoincidentVertices;
+                std::set<int> backVertices;
+                splitVerticesByPlane(remainingSpineVerticies,
+                    pointOnPlane,
+                    planeNormal,
+                    frontOrCoincidentVertices,
+                    backVertices);
+                spineBoneVertices = backVertices;
+            }
             // Split again, this time, we step back a little bit
             pointOnPlane = spineNode.position + planeNormal * distance * 0.85;
             pointOnPlane += vectorOnPlane.normalized() * 1000;
-            splitVerticesByPlane(remainingSpineVerticies,
-                pointOnPlane,
-                planeNormal,
-                frontOrCoincidentVertices,
-                backVertices);
-            remainingSpineVerticies = frontOrCoincidentVertices;
+            {
+                std::set<int> frontOrCoincidentVertices;
+                std::set<int> backVertices;
+                splitVerticesByPlane(remainingSpineVerticies,
+                    pointOnPlane,
+                    planeNormal,
+                    frontOrCoincidentVertices,
+                    backVertices);
+                remainingSpineVerticies = frontOrCoincidentVertices;
+            }
             tailPosition = spineNodes[spineNodeIndex + 1].position;
         } else {
             spineBoneVertices = remainingSpineVerticies;
@@ -362,16 +416,15 @@ bool GenericRigger::rig()
             spineBoneHeadPosition.setZ(spineNode.coord);
         }
         
+        QString spineName = namingSpine(spineGenerateOrder);
+        
         m_resultBones.push_back(RiggerBone());
         RiggerBone &spineBone = m_resultBones.back();
         spineBone.index = m_resultBones.size() - 1;
-        spineBone.name = "Spine" + QString::number(spineGenerateOrder);
+        spineBone.name = spineName;
         spineBone.headPosition = spineBoneHeadPosition;
         spineBone.tailPosition = tailPosition;
         spineBone.color = twoColorsForSpine[spineGenerateOrder % 2];
-        spineBone.hasButton = true;
-        spineBone.button = {buttonRow, 0};
-        spineBone.buttonParameterType = RiggerButtonParameterType::PitchYawRoll;
         addVerticesToWeights(spineBoneVertices, spineBone.index);
         boneIndexMap[spineBone.name] = spineBone.index;
         
@@ -381,125 +434,149 @@ bool GenericRigger::rig()
             m_resultBones[boneIndexMap[Rigger::rootBoneName]].tailPosition = spineBone.headPosition;
             m_resultBones[boneIndexMap[Rigger::rootBoneName]].children.push_back(spineBone.index);
         } else {
-            m_resultBones[boneIndexMap["Spine" + QString::number(spineGenerateOrder - 1)]].tailPosition = spineBone.headPosition;
-            m_resultBones[boneIndexMap["Spine" + QString::number(spineGenerateOrder - 1)]].children.push_back(spineBone.index);
+            m_resultBones[boneIndexMap[namingSpine(spineGenerateOrder - 1)]].tailPosition = spineBone.headPosition;
+            m_resultBones[boneIndexMap[namingSpine(spineGenerateOrder - 1)]].children.push_back(spineBone.index);
         }
         
-        int limbGenerateOrder = 1;
-        for (const auto &limbMarkIndex: spineNode.limbMarkIndicies) {
-            const auto &limbMark = m_marks[limbMarkIndex];
+        for (const auto &chainMarkIndex: spineNode.chainMarkIndicies) {
+            const auto &chainMark = m_marks[chainMarkIndex];
+            
+            QString chainBaseName = BoneMarkToString(chainMark.boneMark);
+            int chainGenerateOrder = ++chainOrderMapBySide[{chainBaseName, chainMark.boneSide}];
+            QString chainName = namingChainPrefix(chainBaseName, chainMark.boneSide, chainGenerateOrder, spineNode.chainMarkIndicies.size());
             
             m_resultBones.push_back(RiggerBone());
             RiggerBone &ribBone = m_resultBones.back();
             ribBone.index = m_resultBones.size() - 1;
-            ribBone.name = "Rib" + QString::number(spineGenerateOrder) + "x" + QString::number(limbGenerateOrder);
+            ribBone.name = namingConnector(spineName, chainName);
             ribBone.headPosition = spineBoneHeadPosition;
             boneIndexMap[ribBone.name] = ribBone.index;
             if (1 == spineGenerateOrder) {
                 m_resultBones[boneIndexMap[Rigger::rootBoneName]].children.push_back(ribBone.index);
             } else {
-                m_resultBones[boneIndexMap["Spine" + QString::number(spineGenerateOrder)]].children.push_back(ribBone.index);
+                m_resultBones[boneIndexMap[namingSpine(spineGenerateOrder)]].children.push_back(ribBone.index);
             }
             
             std::vector<int> jointMarkIndicies;
-            collectJointsForLimb(limbMarkIndex, jointMarkIndicies);
+            if (!collectJontsForChain(chainMarkIndex, jointMarkIndicies)) {
+                m_jointErrorItems.push_back(chainName);
+            }
             
             //qDebug() << "Limb markIndex:" << limbMarkIndex << " joints:" << jointMarkIndicies.size();
             
             int jointGenerateOrder = 1;
             
             auto boneColor = [&]() {
-                return twoColorsForLimb[(jointGenerateOrder + 1) % 2];
-            };
-            auto boneColumn = [&]() {
-                return limbMark.boneSide == SkeletonSide::Left ? jointGenerateOrder : -jointGenerateOrder;
+                return twoColorsForLimb[jointGenerateOrder % 2];
             };
             auto addToParentBone = [&](QVector3D headPosition, SkeletonSide side, int boneIndex) {
                 if (1 == jointGenerateOrder) {
-                    m_resultBones[boneIndexMap["Rib" + QString::number(spineGenerateOrder) + "x" + QString::number(limbGenerateOrder)]].tailPosition = headPosition;
-                    m_resultBones[boneIndexMap["Rib" + QString::number(spineGenerateOrder) + "x" + QString::number(limbGenerateOrder)]].children.push_back(boneIndex);
+                    m_resultBones[boneIndexMap[namingConnector(spineName, chainName)]].tailPosition = headPosition;
+                    m_resultBones[boneIndexMap[namingConnector(spineName, chainName)]].children.push_back(boneIndex);
                 } else {
-                    QString parentLimbBoneName = namingLimb(spineGenerateOrder, side, limbGenerateOrder, jointGenerateOrder - 1);
+                    QString parentLimbBoneName = namingChain(chainBaseName, side, chainGenerateOrder, spineNode.chainMarkIndicies.size(), jointGenerateOrder - 1);
                     m_resultBones[boneIndexMap[parentLimbBoneName]].tailPosition = headPosition;
                     m_resultBones[boneIndexMap[parentLimbBoneName]].children.push_back(boneIndex);
                 }
             };
             
             std::set<int> remainingLimbVertices;
-            addTrianglesToVertices(limbMark.smallGroup(), remainingLimbVertices);
-            addTrianglesToVertices(limbMark.markTriangles, remainingLimbVertices);
-
-            QVector3D lastPosition = spineBoneHeadPosition;
-            for (const auto &jointMarkIndex: jointMarkIndicies) {
+            addTrianglesToVertices(chainMark.smallGroup(), remainingLimbVertices);
+            addTrianglesToVertices(chainMark.markTriangles, remainingLimbVertices);
+            
+            std::vector<QVector3D> jointPositions;
+            for (jointGenerateOrder = 1; jointGenerateOrder <= (int)jointMarkIndicies.size(); ++jointGenerateOrder) {
+                int jointMarkIndex = jointMarkIndicies[jointGenerateOrder - 1];
                 const auto jointMark = m_marks[jointMarkIndex];
-                int buttonColumn = boneColumn();
+                jointPositions.push_back(jointMark.bonePosition);
+            }
+            std::set<int> lastJointBoneVerticies;
+            if (jointPositions.size() >= 2)
+            {
+                QVector3D cutoffPlaneNormal = (jointPositions[jointPositions.size() - 1] - jointPositions[jointPositions.size() - 2]).normalized();
+                QVector3D pointOnPlane = jointPositions[jointPositions.size() - 1];
+                std::set<int> frontOrCoincidentVertices;
+                std::set<int> backVertices;
+                splitVerticesByPlane(remainingLimbVertices,
+                    pointOnPlane,
+                    cutoffPlaneNormal,
+                    frontOrCoincidentVertices,
+                    backVertices);
+                lastJointBoneVerticies = frontOrCoincidentVertices;
+            } else {
+                lastJointBoneVerticies = remainingLimbVertices;
+            }
+            // Calculate the tail position from remaining verticies
+            std::vector<QVector3D> extremCoords(6, jointPositions.back());
+            resolveBoundingBox(lastJointBoneVerticies, extremCoords[0], extremCoords[1], extremCoords[2], extremCoords[3], extremCoords[4], extremCoords[5]);
+            float maxDistance2 = std::numeric_limits<float>::min();
+            QVector3D choosenExtreamCoord = jointPositions.back();
+            for (size_t i = 0; i < 6; ++i) {
+                const auto &position = extremCoords[i];
+                auto length2 = (position - jointPositions.back()).lengthSquared();
+                if (length2 >= maxDistance2) {
+                    maxDistance2 = length2;
+                    choosenExtreamCoord = position;
+                }
+            }
+            jointPositions.push_back(choosenExtreamCoord);
+            
+            QVector3D lastPosition = spineBoneHeadPosition;
+            for (jointGenerateOrder = 1; jointGenerateOrder <= (int)jointMarkIndicies.size(); ++jointGenerateOrder) {
+                int jointMarkIndex = jointMarkIndicies[jointGenerateOrder - 1];
+                const auto &jointMark = m_marks[jointMarkIndex];
                 m_resultBones.push_back(RiggerBone());
-                RiggerBone &limbBone = m_resultBones.back();
-                limbBone.index = m_resultBones.size() - 1;
-                limbBone.name = namingLimb(spineGenerateOrder, jointMark.boneSide, limbGenerateOrder, jointGenerateOrder);
-                limbBone.headPosition = jointMark.bonePosition;
-                limbBone.baseNormal = jointMark.baseNormal;
-                limbBone.color = boneColor();
-                limbBone.hasButton = true;
-                limbBone.button = {buttonRow, buttonColumn};
-                limbBone.buttonParameterType = jointGenerateOrder == 1 ? RiggerButtonParameterType::PitchYawRoll : RiggerButtonParameterType::Intersection;
+                RiggerBone &jointBone = m_resultBones.back();
+                jointBone.index = m_resultBones.size() - 1;
+                jointBone.name = namingChain(chainBaseName, chainMark.boneSide, chainGenerateOrder, spineNode.chainMarkIndicies.size(), jointGenerateOrder);
+                jointBone.headPosition = jointPositions[jointGenerateOrder - 1];
+                jointBone.tailPosition = jointPositions[jointGenerateOrder];
+                jointBone.baseNormal = jointMark.baseNormal;
+                jointBone.color = boneColor();
                 if (jointGenerateOrder == (int)jointMarkIndicies.size()) {
-                    // Calculate the tail position from remaining verticies
-                    std::vector<QVector3D> extremCoords(6, jointMark.bonePosition);
-                    resolveBoundingBox(remainingLimbVertices, extremCoords[0], extremCoords[1], extremCoords[2], extremCoords[3], extremCoords[4], extremCoords[5]);
-                    float maxDistance2 = std::numeric_limits<float>::min();
-                    QVector3D choosenExtreamCoord;
-                    for (size_t i = 0; i < 6; ++i) {
-                        const auto &position = extremCoords[i];
-                        auto length2 = (position - jointMark.bonePosition).lengthSquared();
-                        if (length2 >= maxDistance2) {
-                            maxDistance2 = length2;
-                            choosenExtreamCoord = position;
-                        }
-                    }
-                    limbBone.tailPosition = choosenExtreamCoord;
-                    addVerticesToWeights(remainingLimbVertices, limbBone.index);
+                    addVerticesToWeights(remainingLimbVertices, jointBone.index);
                 } else {
-                    std::set<int> frontOrCoincidentVertices;
-                    std::set<int> backVertices;
-                    limbBone.tailPosition = m_marks[jointMarkIndicies[jointGenerateOrder]].bonePosition;
-                    auto previousBoneDirection = (limbBone.headPosition - lastPosition).normalized();
-                    auto currentBoneDirection = (limbBone.tailPosition - limbBone.headPosition).normalized();
-                    auto planeNormal = (previousBoneDirection + currentBoneDirection).normalized();
-                    float previousBoneLength = (limbBone.headPosition - lastPosition).length();
-                    float currentBoneLength = (limbBone.tailPosition - limbBone.headPosition).length();
-                    auto pointOnPlane = limbBone.tailPosition + currentBoneDirection * currentBoneLength * 0.25;
-                    splitVerticesByPlane(remainingLimbVertices,
-                        pointOnPlane,
-                        planeNormal,
-                        frontOrCoincidentVertices,
-                        backVertices);
-                    addVerticesToWeights(backVertices, limbBone.index);
-                    pointOnPlane = limbBone.tailPosition - previousBoneDirection * previousBoneLength * 0.1 * (currentBoneLength / std::max(previousBoneLength, (float)0.00001));
-                    splitVerticesByPlane(remainingLimbVertices,
-                        pointOnPlane,
-                        planeNormal,
-                        frontOrCoincidentVertices,
-                        backVertices);
-                    remainingLimbVertices = frontOrCoincidentVertices;
+                    int nextJointMarkIndex = jointMarkIndicies[jointGenerateOrder];
+                    const auto &nextJointMark = m_marks[nextJointMarkIndex];
+                    auto nextBoneDirection = (jointPositions[jointGenerateOrder + 1] - jointPositions[jointGenerateOrder]).normalized();
+                    auto currentBoneDirection = (jointBone.tailPosition - jointBone.headPosition).normalized();
+                    auto planeNormal = (currentBoneDirection + nextBoneDirection).normalized();
+                    auto pointOnPlane = jointBone.tailPosition + planeNormal * nextJointMark.nodeRadius;
+                    {
+                        std::set<int> frontOrCoincidentVertices;
+                        std::set<int> backVertices;
+                        splitVerticesByPlane(remainingLimbVertices,
+                            pointOnPlane,
+                            planeNormal,
+                            frontOrCoincidentVertices,
+                            backVertices);
+                        addVerticesToWeights(backVertices, jointBone.index);
+                    }
+                    pointOnPlane = jointBone.tailPosition - planeNormal * nextJointMark.nodeRadius;
+                    {
+                        std::set<int> frontOrCoincidentVertices;
+                        std::set<int> backVertices;
+                        splitVerticesByPlane(remainingLimbVertices,
+                            pointOnPlane,
+                            planeNormal,
+                            frontOrCoincidentVertices,
+                            backVertices);
+                        remainingLimbVertices = frontOrCoincidentVertices;
+                    }
                 }
                 
-                boneIndexMap[limbBone.name] = limbBone.index;
-                addToParentBone(limbBone.headPosition, jointMark.boneSide, limbBone.index);
+                boneIndexMap[jointBone.name] = jointBone.index;
+                addToParentBone(jointBone.headPosition, chainMark.boneSide, jointBone.index);
                 
-                lastPosition = jointMark.bonePosition;
-                
-                ++jointGenerateOrder;
+                lastPosition = jointPositions[jointGenerateOrder - 1];
             }
             
-            ++limbGenerateOrder;
+            ++chainGenerateOrder;
         }
         
         ++spineGenerateOrder;
     }
-    
-    normalizeButtonColumns();
-    
+
     // Finalize weights
     for (auto &weights: m_resultWeights) {
         weights.second.finalizeWeights();
@@ -508,27 +585,22 @@ bool GenericRigger::rig()
     return true;
 }
 
-void GenericRigger::normalizeButtonColumns()
+QString AnimalRigger::namingChain(const QString &baseName, SkeletonSide side, int orderInSide, int totalInSide, int jointOrder)
 {
-    double minColumn = std::numeric_limits<int>::max();
-    double maxColumn = std::numeric_limits<int>::min();
-    for (const auto &bone: m_resultBones) {
-        if (!bone.hasButton)
-            continue;
-        if (bone.button.second < minColumn)
-            minColumn = bone.button.second;
-        if (bone.button.second > maxColumn)
-            maxColumn = bone.button.second;
-    }
-    int columnNumOfOneSide = (int)std::max(std::abs(minColumn), std::abs(maxColumn));
-    for (auto &bone: m_resultBones) {
-        if (!bone.hasButton)
-            continue;
-        bone.button.second += columnNumOfOneSide;
-    }
+    return namingChainPrefix(baseName, side, orderInSide, totalInSide) + "_Joint" + QString::number(jointOrder);
 }
 
-QString GenericRigger::namingLimb(int spineOrder, SkeletonSide side, int limbOrder, int jointOrder)
+QString AnimalRigger::namingSpine(int spineOrder)
 {
-    return SkeletonSideToDispName(side) + "Limb" + QString::number(spineOrder) + "x" + QString::number(jointOrder);
+    return "Spine" + QString::number(spineOrder);
+}
+
+QString AnimalRigger::namingConnector(const QString &spineName, const QString &chainName)
+{
+    return "Virtual_" + spineName + "_" + chainName;
+}
+
+QString AnimalRigger::namingChainPrefix(const QString &baseName, SkeletonSide side, int orderInSide, int totalInSide)
+{
+    return SkeletonSideToDispName(side) + baseName + (totalInSide == 1 ? QString() : QString::number(orderInSide));
 }

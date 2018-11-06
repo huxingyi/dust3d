@@ -53,14 +53,9 @@ bool RigGenerator::isSucceed()
     return m_isSucceed;
 }
 
-const std::vector<QString> &RigGenerator::missingMarkNames()
+const std::vector<std::pair<QtMsgType, QString>> &RigGenerator::messages()
 {
-    return m_missingMarkNames;
-}
-
-const std::vector<QString> &RigGenerator::errorMarkNames()
-{
-    return m_errorMarkNames;
+    return m_messages;
 }
 
 void RigGenerator::generate()
@@ -84,8 +79,7 @@ void RigGenerator::generate()
         if (bmeshNode.boneMark == BoneMark::None)
             continue;
         SkeletonSide boneSide = SkeletonSide::None;
-        if (BoneMarkHasSide(bmeshNode.boneMark) &&
-                std::abs(bmeshNode.origin.x()) > 0.01 ) {
+        if (BoneMarkHasSide(bmeshNode.boneMark)) {
             boneSide = bmeshNode.origin.x() > 0 ? SkeletonSide::Left : SkeletonSide::Right;
         }
         //qDebug() << "Add bone mark:" << BoneMarkToString(bmeshNode.boneMark) << "side:" << SkeletonSideToDispName(boneSide);
@@ -168,12 +162,11 @@ void RigGenerator::generate()
         qDebug() << "Rig succeed";
     } else {
         qDebug() << "Rig failed";
-        if (nullptr != m_autoRigger) {
-            m_missingMarkNames = m_autoRigger->missingMarkNames();
-            m_errorMarkNames = m_autoRigger->errorMarkNames();
-            for (const auto &message: m_autoRigger->messages()) {
-                qDebug() << "errorType:" << message.first << "Message:" << message.second;
-            }
+    }
+    if (nullptr != m_autoRigger) {
+        m_messages = m_autoRigger->messages();
+        for (const auto &message: m_autoRigger->messages()) {
+            qDebug() << "errorType:" << message.first << "Message:" << message.second;
         }
     }
     

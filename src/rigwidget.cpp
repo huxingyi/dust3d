@@ -19,13 +19,8 @@ RigWidget::RigWidget(const Document *document, QWidget *parent) :
         m_rigTypeBox->addItem(RigTypeToDispName(rigType));
     }
     
-    //m_poseCheckButton = new QPushButton(QChar(fa::child));
-    //Theme::initAwesomeButton(m_poseCheckButton);
-    //m_poseCheckButton->hide();
-    
     QHBoxLayout *controlsLayout = new QHBoxLayout;
     controlsLayout->addWidget(m_rigTypeBox);
-    //controlsLayout->addWidget(m_poseCheckButton);
     
     formLayout->addRow(tr("Type"), controlsLayout);
     
@@ -38,23 +33,17 @@ RigWidget::RigWidget(const Document *document, QWidget *parent) :
     
     m_rigWeightRenderWidget = new ModelWidget(this);
     m_rigWeightRenderWidget->setMinimumSize(128, 128);
-    //m_rigWeightRenderWidget->resize(256, 256);
-    //m_rigWeightRenderWidget->move(-64, 0);
     m_rigWeightRenderWidget->setXRotation(0);
     m_rigWeightRenderWidget->setYRotation(0);
     m_rigWeightRenderWidget->setZRotation(0);
     
-    m_missingMarksInfoLabel = new InfoLabel;
-    m_missingMarksInfoLabel->hide();
-    
-    m_errorMarksInfoLabel = new InfoLabel;
-    m_errorMarksInfoLabel->hide();
+    m_infoLabel = new InfoLabel;
+    m_infoLabel->hide();
     
     QVBoxLayout *layout = new QVBoxLayout;
     layout->addLayout(formLayout);
     layout->addWidget(m_rigWeightRenderWidget);
-    layout->addWidget(m_missingMarksInfoLabel);
-    layout->addWidget(m_errorMarksInfoLabel);
+    layout->addWidget(m_infoLabel);
     layout->addStretch();
     
     setLayout(layout);
@@ -62,36 +51,21 @@ RigWidget::RigWidget(const Document *document, QWidget *parent) :
 
 void RigWidget::rigTypeChanged()
 {
-    //m_poseCheckButton->setVisible(RigType::None != m_document->rigType);
     m_rigTypeBox->setCurrentIndex((int)m_document->rigType);
 }
 
 void RigWidget::updateResultInfo()
 {
-    QStringList missingMarkNames;
-    for (const auto &markName: m_document->resultRigMissingMarkNames()) {
-        missingMarkNames.append(markName);
-    }
-    QString missingNamesString = missingMarkNames.join(tr(", "));
-    if (missingNamesString.isEmpty()) {
-        m_missingMarksInfoLabel->hide();
+    const auto &messages = m_document->resultRigMessages();
+    if (messages.empty()) {
+        m_infoLabel->hide();
     } else {
-        m_missingMarksInfoLabel->setText(tr("Missing marks: ") + missingNamesString);
-        m_missingMarksInfoLabel->setMaximumWidth(width() * 0.8);
-        m_missingMarksInfoLabel->show();
-    }
-    
-    QStringList errorMarkNames;
-    for (const auto &markName: m_document->resultRigErrorMarkNames()) {
-        errorMarkNames.append(markName);
-    }
-    QString errorNamesString = errorMarkNames.join(tr(","));
-    if (errorNamesString.isEmpty()) {
-        m_errorMarksInfoLabel->hide();
-    } else {
-        m_errorMarksInfoLabel->setText(tr("Error marks: ") + errorNamesString);
-        m_errorMarksInfoLabel->setMaximumWidth(width() * 0.8);
-        m_errorMarksInfoLabel->show();
+        QStringList messageList;
+        for (const auto &item: messages)
+            messageList.append(item.second);
+        m_infoLabel->setText(messageList.join("<br><br>"));
+        m_infoLabel->setMaximumWidth(width() * 0.90);
+        m_infoLabel->show();
     }
 }
 
