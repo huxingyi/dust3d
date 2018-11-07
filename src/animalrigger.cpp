@@ -407,6 +407,14 @@ bool AnimalRigger::rig()
         }
         
         QVector3D spineBoneHeadPosition = spineNode.position;
+        QVector3D averagePoint = averagePosition(spineBoneVertices);
+        if (isMainBodyVerticalAligned) {
+            //qDebug() << "Update spine position's z from:" << spineBoneHeadPosition.z() << "to:" << averagePoint.z();
+            spineBoneHeadPosition.setZ(averagePoint.z());
+        } else {
+            //qDebug() << "Update spine position's y from:" << spineBoneHeadPosition.y() << "to:" << averagePoint.y();
+            spineBoneHeadPosition.setY(averagePoint.y());
+        }
         
         QString spineName = namingSpine(spineGenerateOrder);
         
@@ -420,7 +428,7 @@ bool AnimalRigger::rig()
         addVerticesToWeights(spineBoneVertices, spineBone.index);
         boneIndexMap[spineBone.name] = spineBone.index;
         
-        qDebug() << "Added spine:" << spineBone.name << "head:" << spineBone.headPosition << "tail:" << spineBone.tailPosition;
+        //qDebug() << "Added spine:" << spineBone.name << "head:" << spineBone.headPosition << "tail:" << spineBone.tailPosition;
         
         if (1 == spineGenerateOrder) {
             m_resultBones[boneIndexMap[Rigger::rootBoneName]].tailPosition = spineBone.headPosition;
@@ -442,7 +450,7 @@ bool AnimalRigger::rig()
             ribBone.index = m_resultBones.size() - 1;
             ribBone.name = namingConnector(spineName, chainName);
             ribBone.headPosition = spineBoneHeadPosition;
-            qDebug() << "Added connector:" << ribBone.name;
+            //qDebug() << "Added connector:" << ribBone.name;
             boneIndexMap[ribBone.name] = ribBone.index;
             if (1 == spineGenerateOrder) {
                 m_resultBones[boneIndexMap[Rigger::rootBoneName]].children.push_back(ribBone.index);
@@ -455,7 +463,7 @@ bool AnimalRigger::rig()
                 m_jointErrorItems.push_back(chainName);
             }
             
-            qDebug() << "Adding chain:" << chainName << " joints:" << jointMarkIndicies.size();
+            //qDebug() << "Adding chain:" << chainName << " joints:" << jointMarkIndicies.size();
             
             int jointGenerateOrder = 1;
             

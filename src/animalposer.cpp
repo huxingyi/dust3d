@@ -38,15 +38,15 @@ void AnimalPoser::resolveTranslation()
         if (match.hasMatch()) {
             QString name = match.captured(1);
             chains[name].push_back(item.first);
-            qDebug() << "chains[" << name << "]:" << item.first;
+            //qDebug() << "chains[" << name << "]:" << item.first;
         } else {
             match = reSpine.match(item.first);
             if (match.hasMatch()) {
                 QString name = match.captured(1);
                 chains[name].push_back(item.first);
-                qDebug() << "chains[" << name << "]:" << item.first;
+                //qDebug() << "chains[" << name << "]:" << item.first;
             } else if (item.first.startsWith("Virtual_")) {
-                qDebug() << "Ignore connector:" << item.first;
+                //qDebug() << "Ignore connector:" << item.first;
             } else {
                 qDebug() << "Unrecognized bone name:" << item.first;
             }
@@ -56,10 +56,10 @@ void AnimalPoser::resolveTranslation()
         std::sort(chain.second.begin(), chain.second.end(), [](const QString &first, const QString &second) {
             return first < second;
         });
-        qDebug() << "Chain:";
-        for (const auto &chainJoint: chain.second) {
-            qDebug() << chainJoint;
-        }
+        //qDebug() << "Chain:";
+        //for (const auto &chainJoint: chain.second) {
+        //    qDebug() << chainJoint;
+        //}
         resolveChainRotation(chain.second);
     }
 }
@@ -172,7 +172,7 @@ void AnimalPoser::resolveChainRotation(const std::vector<QString> &limbBoneNames
         
         QVector3D targetMiddleBoneStartPosition;
         {
-            qDebug() << beginBoneName << "Angle:" << angleBetweenDistanceAndMiddleBones;
+            //qDebug() << beginBoneName << "Angle:" << angleBetweenDistanceAndMiddleBones;
             auto rotation = QQuaternion::fromAxisAndAngle(matchRotatePlaneNormal, angleBetweenDistanceAndMiddleBones);
             targetMiddleBoneStartPosition = targetEndBoneStartPosition + rotation.rotatedVector(-matchDirectionBetweenBeginAndEndPones).normalized() * targetMiddleBoneLength;
         }

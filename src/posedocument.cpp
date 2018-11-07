@@ -178,13 +178,13 @@ void PoseDocument::updateRigBones(const std::vector<RiggerBone> *rigBones, const
     auto &bonesPart = partMap[m_bonesPartId];
     bonesPart.id = m_bonesPartId;
     
-    qDebug() << "rigBones size:" << rigBones->size();
+    //qDebug() << "rigBones size:" << rigBones->size();
     
     std::vector<std::pair<int, int>> edgePairs;
     for (size_t i = m_hideRootAndVirtual ? 1 : 0; i < rigBones->size(); ++i) {
         const auto &bone = (*rigBones)[i];
         for (const auto &child: bone.children) {
-            qDebug() << "Add pair:" << bone.name << "->" << (*rigBones)[child].name;
+            //qDebug() << "Add pair:" << bone.name << "->" << (*rigBones)[child].name;
             edgePairs.push_back({i, child});
         }
     }
@@ -272,7 +272,7 @@ void PoseDocument::updateRigBones(const std::vector<RiggerBone> *rigBones, const
             nodeMap[firstNodeId].edgeIds.push_back(edge.id);
             nodeMap[node.id].edgeIds.push_back(edge.id);
             
-            qDebug() << "Add pair:" << bone.name << "->" << "~";
+            //qDebug() << "Add pair:" << bone.name << "->" << "~";
             continue;
         }
         for (const auto &child: bone.children) {
