@@ -19,7 +19,7 @@ QColor BoneMarkToColor(BoneMark mark)                               \
 {                                                                   \
     switch (mark) {                                                 \
         case BoneMark::Neck:                                        \
-            return QColor(0x51, 0xba, 0xf2);                        \
+            return QColor(0xfd, 0x64, 0x61);                        \
         case BoneMark::Limb:                                        \
             return QColor(0x29, 0xfd, 0x2f);                        \
         case BoneMark::Tail:                                        \

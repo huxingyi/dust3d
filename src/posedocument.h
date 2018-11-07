@@ -52,6 +52,7 @@ public slots:
 public:
     static const float m_nodeRadius;
     static const float m_groundPlaneHalfThickness;
+    static const bool m_hideRootAndVirtual;
     
 private:
     std::map<QString, std::pair<QUuid, QUuid>> m_boneNameToIdsMap;
@@ -61,6 +62,13 @@ private:
     std::deque<PoseHistoryItem> m_undoItems;
     std::deque<PoseHistoryItem> m_redoItems;
     std::vector<RiggerBone> m_riggerBones;
+    
+    static float fromOutcomeX(float x);
+    static float toOutcomeX(float x);
+    static float fromOutcomeY(float y);
+    static float toOutcomeY(float y);
+    static float fromOutcomeZ(float z);
+    static float toOutcomeZ(float z);
 };
 
 #endif

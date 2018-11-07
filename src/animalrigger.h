@@ -23,6 +23,7 @@ private:
     QString namingConnector(const QString &spineName, const QString &chainName);
     QString namingChain(const QString &baseName, SkeletonSide side, int orderInSide, int totalInSide, int jointOrder);
     QString namingChainPrefix(const QString &baseName, SkeletonSide side, int orderInSide, int totalInSide);
+    QVector3D findExtremPointFrom(const std::set<int> &verticies, const QVector3D &from);
 };
 
 #endif

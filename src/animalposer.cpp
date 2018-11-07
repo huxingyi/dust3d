@@ -154,6 +154,8 @@ void AnimalPoser::resolveChainRotation(const std::vector<QString> &limbBoneNames
         float targetMiddleBoneLength = (middleBone.headPosition - middleBone.tailPosition).length();
         float targetLimbLength = targetBeginBoneLength + targetMiddleBoneLength;
         
+        //qDebug() << beginBoneName << "targetLimbLength:" << targetLimbLength << "matchLimbLength:" << matchLimbLength;
+        
         float targetDistanceBetweenBeginAndEndBones = matchDistanceBetweenBeginAndEndBones * (targetLimbLength / matchLimbLength);
         QVector3D targetEndBoneStartPosition = beginBone.headPosition + matchDirectionBetweenBeginAndEndPones * targetDistanceBetweenBeginAndEndBones;
         
@@ -177,12 +179,15 @@ void AnimalPoser::resolveChainRotation(const std::vector<QString> &limbBoneNames
         
         auto oldBeginBoneDirection = (beginBone.tailPosition - beginBone.headPosition).normalized();
         auto newBeginBoneDirection = (targetMiddleBoneStartPosition - beginBone.headPosition).normalized();
+        //qDebug() << beginBoneName << "oldBeginBoneDirection:" << oldBeginBoneDirection << "newBeginBoneDirection:" << newBeginBoneDirection;
         auto beginBoneRotation = QQuaternion::rotationTo(oldBeginBoneDirection, newBeginBoneDirection);
         m_jointNodeTree.updateRotation(beginBoneIndex, beginBoneRotation);
         
         auto oldMiddleBoneDirection = (middleBone.tailPosition - middleBone.headPosition).normalized();
         auto newMiddleBoneDirection = (targetEndBoneStartPosition - targetMiddleBoneStartPosition).normalized();
+        //qDebug() << beginBoneName << "oldMiddleBoneDirection:" << oldMiddleBoneDirection << "newMiddleBoneDirection:" << newMiddleBoneDirection;
         oldMiddleBoneDirection = beginBoneRotation.rotatedVector(oldMiddleBoneDirection);
+        //qDebug() << beginBoneName << "oldMiddleBoneDirection:" << oldMiddleBoneDirection << "after rotation";
         auto middleBoneRotation = QQuaternion::rotationTo(oldMiddleBoneDirection, newMiddleBoneDirection);
         m_jointNodeTree.updateRotation(middleBoneIndex, middleBoneRotation);
         

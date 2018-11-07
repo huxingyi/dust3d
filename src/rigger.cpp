@@ -38,9 +38,35 @@ bool Rigger::calculateBodyTriangles(std::set<MeshSplitterTriangle> &bodyTriangle
     }
     if (bodyTriangles.empty()) {
         m_messages.push_back(std::make_pair(QtCriticalMsg,
-            tr("Calculate body from marks failed")));
+            tr("Calculate body from marks failed, try to move the center anchor around")));
         return false;
     }
+    
+    // Check if the calculated body is neighboring with all the cutoff makers
+    std::set<int> bodyVertices;
+    addTrianglesToVertices(bodyTriangles, bodyVertices);
+    for (const auto &marksMapIt: m_marksMap) {
+        if (isCutOffSplitter(marksMapIt.first.first)) {
+            for (const auto index: marksMapIt.second) {
+                auto &mark = m_marks[index];
+                std::set<int> markSplitterVertices;
+                addTrianglesToVertices(mark.markTriangles, markSplitterVertices);
+                bool neighboring = false;
+                for (const auto &index: markSplitterVertices) {
+                    if (bodyVertices.find(index) != bodyVertices.end()) {
+                        neighboring = true;
+                        break;
+                    }
+                }
+                if (!neighboring) {
+                    m_messages.push_back(std::make_pair(QtCriticalMsg,
+                        tr("The center anchor is not located in the center of the model")));
+                    return false;
+                }
+            }
+        }
+    }
+    
     return true;
 }
 
@@ -58,7 +84,7 @@ bool Rigger::addMarkGroup(BoneMark boneMark, SkeletonSide boneSide, QVector3D bo
     mark.markTriangles = markTriangles;
     
     if (isCutOffSplitter(mark.boneMark)) {
-        if (!mark.split(m_inputTriangles, m_maxCutOffSplitterExpandRound)) {
+        if (!mark.split(m_verticesPositions, m_inputTriangles, m_maxCutOffSplitterExpandRound)) {
             m_cutoffErrorItems.push_back(SkeletonSideToDispName(mark.boneSide) + " " + BoneMarkToDispName(mark.boneMark));
             return false;
         }

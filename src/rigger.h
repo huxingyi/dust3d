@@ -22,31 +22,49 @@ public:
     std::set<MeshSplitterTriangle> markTriangles;
     const std::set<MeshSplitterTriangle> &bigGroup() const
     {
-        return m_firstGroup.size() > m_secondGroup.size() ? 
-            m_firstGroup :
-            m_secondGroup;
+        return m_isFirstBiggerThenSecond ? m_firstGroup : m_secondGroup;
     }
     const std::set<MeshSplitterTriangle> &smallGroup() const
     {
-        return m_firstGroup.size() > m_secondGroup.size() ?
-            m_secondGroup :
-            m_firstGroup;
+        return m_isFirstBiggerThenSecond ? m_secondGroup : m_firstGroup;
     }
-    bool split(const std::set<MeshSplitterTriangle> &input, int expandRound=0)
+    bool split(const std::vector<QVector3D> &verticesPositions, const std::set<MeshSplitterTriangle> &input, int expandRound=0)
     {
         int totalRound = 1 + expandRound;
         for (int round = 0; round < totalRound; ++round) {
             m_firstGroup.clear();
             m_secondGroup.clear();
             bool splitResult = MeshSplitter::split(input, markTriangles, m_firstGroup, m_secondGroup, round > 0);
-            if (splitResult)
+            if (splitResult) {
+                sortByDistanceFromOrigin(verticesPositions);
                 return true;
+            }
         }
         return false;
     }
 private:
     std::set<MeshSplitterTriangle> m_firstGroup;
     std::set<MeshSplitterTriangle> m_secondGroup;
+    bool m_isFirstBiggerThenSecond = false;
+    
+    float minDistance2FromOrigin(const std::vector<QVector3D> &verticesPositions, const std::set<MeshSplitterTriangle> &triangles)
+    {
+        float minDistance2 = std::numeric_limits<float>::max();
+        for (const auto &triangle: triangles) {
+            for (size_t i = 0; i < 3; ++i) {
+                float distance2 = verticesPositions[triangle.indicies[i]].lengthSquared();
+                if (distance2 < minDistance2)
+                    minDistance2 = distance2;
+            }
+        }
+        return minDistance2;
+    }
+    
+    void sortByDistanceFromOrigin(const std::vector<QVector3D> &verticesPositions)
+    {
+        m_isFirstBiggerThenSecond = minDistance2FromOrigin(verticesPositions, m_firstGroup) <
+            minDistance2FromOrigin(verticesPositions, m_secondGroup);
+    }
 };
 
 class RiggerBone
