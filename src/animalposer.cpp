@@ -166,6 +166,8 @@ void AnimalPoser::resolveChainRotation(const std::vector<QString> &limbBoneNames
             const float &c = targetBeginBoneLength;
             double cosC = (a*a + b*b - c*c) / (2.0*a*b);
             angleBetweenDistanceAndMiddleBones = qRadiansToDegrees(acos(cosC));
+            if (std::isnan(angleBetweenDistanceAndMiddleBones) || std::isinf(angleBetweenDistanceAndMiddleBones))
+                angleBetweenDistanceAndMiddleBones = 0;
         }
         
         QVector3D targetMiddleBoneStartPosition;

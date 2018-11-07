@@ -6,6 +6,7 @@
 const float PoseDocument::m_nodeRadius = 0.01;
 const float PoseDocument::m_groundPlaneHalfThickness = 0.01 / 4;
 const bool PoseDocument::m_hideRootAndVirtual = true;
+const float PoseDocument::m_outcomeScaleFactor = 0.5;
 
 bool PoseDocument::hasPastableNodesInClipboard() const
 {
@@ -198,9 +199,9 @@ void PoseDocument::updateRigBones(const std::vector<RiggerBone> *rigBones, const
                 node.partId = m_bonesPartId;
                 node.id = QUuid::createUuid();
                 node.setRadius(m_nodeRadius);
-                node.x = bone.headPosition.x() + 0.5;
-                node.y = -bone.headPosition.y() + 0.5;
-                node.z = -bone.headPosition.z() + 1;
+                node.x = fromOutcomeX(bone.headPosition.x());
+                node.y = fromOutcomeY(bone.headPosition.y());
+                node.z = fromOutcomeZ(bone.headPosition.z());
                 nodeMap[node.id] = node;
                 newAddedNodeIds.insert(node.id);
                 boneIndexToHeadNodeIdMap[edgePair.first] = node.id;
@@ -217,9 +218,9 @@ void PoseDocument::updateRigBones(const std::vector<RiggerBone> *rigBones, const
                 node.partId = m_bonesPartId;
                 node.id = QUuid::createUuid();
                 node.setRadius(m_nodeRadius);
-                node.x = bone.headPosition.x() + 0.5;
-                node.y = -bone.headPosition.y() + 0.5;
-                node.z = -bone.headPosition.z() + 1;
+                node.x = fromOutcomeX(bone.headPosition.x());
+                node.y = fromOutcomeY(bone.headPosition.y());
+                node.z = fromOutcomeZ(bone.headPosition.z());
                 nodeMap[node.id] = node;
                 newAddedNodeIds.insert(node.id);
                 boneIndexToHeadNodeIdMap[edgePair.second] = node.id;
@@ -423,31 +424,31 @@ void PoseDocument::toParameters(std::map<QString, std::map<QString, QString>> &p
 
 float PoseDocument::fromOutcomeX(float x)
 {
-    return x + 0.5;
+    return x * m_outcomeScaleFactor + 0.5;
 }
 
 float PoseDocument::toOutcomeX(float x)
 {
-    return x - 0.5;
+    return (x - 0.5) / m_outcomeScaleFactor;
 }
 
 float PoseDocument::fromOutcomeY(float y)
 {
-    return -y + 0.5;
+    return -y * m_outcomeScaleFactor + 0.5;
 }
 
 float PoseDocument::toOutcomeY(float y)
 {
-    return 0.5 - y;
+    return (0.5 - y) / m_outcomeScaleFactor;
 }
 
 float PoseDocument::fromOutcomeZ(float z)
 {
-    return -z + 1;
+    return -z * m_outcomeScaleFactor + 1;
 }
 
 float PoseDocument::toOutcomeZ(float z)
 {
-    return 1.0 - z;
+    return (1.0 - z) / m_outcomeScaleFactor;
 }
 

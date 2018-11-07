@@ -53,6 +53,7 @@ public:
     static const float m_nodeRadius;
     static const float m_groundPlaneHalfThickness;
     static const bool m_hideRootAndVirtual;
+    static const float m_outcomeScaleFactor;
     
 private:
     std::map<QString, std::pair<QUuid, QUuid>> m_boneNameToIdsMap;

@@ -406,12 +406,7 @@ bool AnimalRigger::rig()
             tailPosition = findExtremPointFrom(spineBoneVertices, spineNode.position);
         }
         
-        QVector3D spineBoneHeadPosition = averagePosition(spineBoneVertices);
-        if (isMainBodyVerticalAligned) {
-            spineBoneHeadPosition.setY(spineNode.coord);
-        } else {
-            spineBoneHeadPosition.setZ(spineNode.coord);
-        }
+        QVector3D spineBoneHeadPosition = spineNode.position;
         
         QString spineName = namingSpine(spineGenerateOrder);
         
