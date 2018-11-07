@@ -127,9 +127,10 @@ void AnimalPoser::resolveChainRotation(const std::vector<QString> &limbBoneNames
             qDebug() << middleBoneName << "'s positions not found";
             return;
         }
-
-        float matchLimbLength = (matchBeginBonePositions.second.first - matchBeginBonePositions.second.second).length() +
-             (matchMiddleBonePositions.second.first - matchMiddleBonePositions.second.second).length();
+        
+        float matchBeginBoneLength = (matchBeginBonePositions.second.first - matchBeginBonePositions.second.second).length();
+        float matchMiddleBoneLength = (matchMiddleBonePositions.second.first - matchMiddleBonePositions.second.second).length();
+        float matchLimbLength = matchBeginBoneLength + matchMiddleBoneLength;
         
         auto matchDistanceBetweenBeginAndEndBones = (matchBeginBonePositions.second.first - matchMiddleBonePositions.second.second).length();
         auto matchRotatePlaneNormal = QVector3D::crossProduct((matchBeginBonePositions.second.second - matchBeginBonePositions.second.first).normalized(), (matchMiddleBonePositions.second.second - matchBeginBonePositions.second.second).normalized());
@@ -148,13 +149,11 @@ void AnimalPoser::resolveChainRotation(const std::vector<QString> &limbBoneNames
             qDebug() << middleBoneName << "not found in rigged bones";
             return;
         }
-        const auto &middleBone = bones()[beginBoneIndex];
+        const auto &middleBone = bones()[middleBoneIndex];
         
         float targetBeginBoneLength = (beginBone.headPosition - beginBone.tailPosition).length();
         float targetMiddleBoneLength = (middleBone.headPosition - middleBone.tailPosition).length();
         float targetLimbLength = targetBeginBoneLength + targetMiddleBoneLength;
-        
-        //qDebug() << beginBoneName << "targetLimbLength:" << targetLimbLength << "matchLimbLength:" << matchLimbLength;
         
         float targetDistanceBetweenBeginAndEndBones = matchDistanceBetweenBeginAndEndBones * (targetLimbLength / matchLimbLength);
         QVector3D targetEndBoneStartPosition = beginBone.headPosition + matchDirectionBetweenBeginAndEndPones * targetDistanceBetweenBeginAndEndBones;
