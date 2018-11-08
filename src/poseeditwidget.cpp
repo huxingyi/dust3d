@@ -222,6 +222,9 @@ void PoseEditWidget::updatePreview()
     if (nullptr == poser)
         return;
     
+    m_parameters.clear();
+    m_poseDocument->toParameters(m_parameters);
+    
     poser->parameters() = m_parameters;
     poser->commit();
     m_posePreviewManager->postUpdate(*poser, m_document->currentRiggedOutcome(), *rigWeights);

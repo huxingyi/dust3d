@@ -188,8 +188,10 @@ const JointNodeTree &MotionsGenerator::poseJointNodeTree(const QUuid &poseId)
     if (findResult != m_poseJointNodeTreeMap.end())
         return findResult->second;
     
+    const auto &parameters = m_poses[poseId];
+    
     m_poser->reset();
-    m_poser->parameters() = m_poses[poseId];
+    m_poser->parameters() = parameters;
     m_poser->commit();
     auto insertResult = m_poseJointNodeTreeMap.insert({poseId, m_poser->resultJointNodeTree()});
     return insertResult.first->second;

@@ -132,11 +132,16 @@ void PoseDocument::fromParameters(const std::vector<RiggerBone> *rigBones,
             if (findXResult != map.end() ||
                     findYResult != map.end() ||
                     findZResult != map.end()) {
-                bone.tailPosition = {
+                QVector3D toPosition = {
                     valueOfKeyInMapOrEmpty(map, "toX").toFloat(),
                     valueOfKeyInMapOrEmpty(map, "toY").toFloat(),
                     valueOfKeyInMapOrEmpty(map, "toZ").toFloat()
                 };
+                bone.tailPosition = toPosition;
+                for (const auto &child: bone.children) {
+                    auto &childBone = bones[child];
+                    childBone.headPosition = toPosition;
+                }
             }
         }
     }
@@ -405,7 +410,6 @@ void PoseDocument::toParameters(std::map<QString, std::map<QString, QString>> &p
         boneParameter["translateY"] = QString::number(translateY);
     }
     for (const auto &item: m_boneNameToIdsMap) {
-        auto &boneParameter = parameters[item.first];
         const auto &boneNodeIdPair = item.second;
         auto findFirstNode = nodeMap.find(boneNodeIdPair.first);
         if (findFirstNode == nodeMap.end())
@@ -413,6 +417,7 @@ void PoseDocument::toParameters(std::map<QString, std::map<QString, QString>> &p
         auto findSecondNode = nodeMap.find(boneNodeIdPair.second);
         if (findSecondNode == nodeMap.end())
             continue;
+        auto &boneParameter = parameters[item.first];
         boneParameter["fromX"] = QString::number(toOutcomeX(findFirstNode->second.x));
         boneParameter["fromY"] = QString::number(toOutcomeY(findFirstNode->second.y));
         boneParameter["fromZ"] = QString::number(toOutcomeZ(findFirstNode->second.z));
