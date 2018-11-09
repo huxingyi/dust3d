@@ -1,7 +1,14 @@
 #include <QDebug>
+#include <QXmlStreamWriter>
+#include <QClipboard>
+#include <QApplication>
+#include <QMimeData>
 #include "posedocument.h"
 #include "rigger.h"
 #include "util.h"
+#include "document.h"
+#include "snapshot.h"
+#include "snapshotxml.h"
 
 const float PoseDocument::m_nodeRadius = 0.01;
 const float PoseDocument::m_groundPlaneHalfThickness = 0.01 / 4;
@@ -10,6 +17,12 @@ const float PoseDocument::m_outcomeScaleFactor = 0.5;
 
 bool PoseDocument::hasPastableNodesInClipboard() const
 {
+    const QClipboard *clipboard = QApplication::clipboard();
+    const QMimeData *mimeData = clipboard->mimeData();
+    if (mimeData->hasText()) {
+        if (-1 != mimeData->text().indexOf("<pose ") && -1 != mimeData->text().indexOf("<parameter "))
+            return true;
+    }
     return false;
 }
 
@@ -20,17 +33,37 @@ bool PoseDocument::originSettled() const
 
 bool PoseDocument::isNodeEditable(QUuid nodeId) const
 {
+    Q_UNUSED(nodeId);
     return true;
 }
 
 bool PoseDocument::isEdgeEditable(QUuid edgeId) const
 {
+    Q_UNUSED(edgeId);
     return true;
 }
 
 void PoseDocument::copyNodes(std::set<QUuid> nodeIdSet) const
 {
-    // TODO:
+    std::map<QString, std::map<QString, QString>> parameters;
+    toParameters(parameters, nodeIdSet);
+    if (parameters.empty())
+        return;
+    Document document;
+    QUuid poseId = QUuid::createUuid();
+    auto &pose = document.poseMap[poseId];
+    pose.id = poseId;
+    pose.frames.push_back({std::map<QString, QString>(), parameters});
+    document.poseIdList.push_back(poseId);
+    
+    Snapshot snapshot;
+    std::set<QUuid> limitPoseIds;
+    document.toSnapshot(&snapshot, limitPoseIds, DocumentToSnapshotFor::Poses);
+    QString snapshotXml;
+    QXmlStreamWriter xmlStreamWriter(&snapshotXml);
+    saveSkeletonToXmlStream(&snapshot, &xmlStreamWriter);
+    QClipboard *clipboard = QApplication::clipboard();
+    clipboard->setText(snapshotXml);
 }
 
 void PoseDocument::saveHistoryItem()
@@ -72,6 +105,21 @@ void PoseDocument::redo()
 
 void PoseDocument::paste()
 {
+    const QClipboard *clipboard = QApplication::clipboard();
+    const QMimeData *mimeData = clipboard->mimeData();
+    if (mimeData->hasText()) {
+        QXmlStreamReader xmlStreamReader(mimeData->text());
+        Snapshot snapshot;
+        loadSkeletonFromXmlStream(&snapshot, xmlStreamReader);
+        if (snapshot.poses.empty())
+            return;
+        const auto &firstPose = *snapshot.poses.begin();
+        if (firstPose.second.empty())
+            return;
+        const auto &firstFrame = *firstPose.second.begin();
+        fromParameters(&m_riggerBones, firstFrame.second);
+        saveHistoryItem();
+    }
 }
 
 void PoseDocument::updateTurnaround(const QImage &image)
@@ -91,6 +139,12 @@ void PoseDocument::reset()
     m_groundEdgeId = QUuid();
     emit cleanup();
     emit parametersChanged();
+}
+
+void PoseDocument::clearHistories()
+{
+    m_undoItems.clear();
+    m_redoItems.clear();
 }
 
 void PoseDocument::fromParameters(const std::vector<RiggerBone> *rigBones,
@@ -390,7 +444,7 @@ float PoseDocument::findGroundY() const
     return maxY;
 }
 
-void PoseDocument::toParameters(std::map<QString, std::map<QString, QString>> &parameters) const
+void PoseDocument::toParameters(std::map<QString, std::map<QString, QString>> &parameters, const std::set<QUuid> &limitNodeIds) const
 {
     float translateY = 0;
     auto findGroundEdge = edgeMap.find(m_groundEdgeId);
@@ -400,6 +454,8 @@ void PoseDocument::toParameters(std::map<QString, std::map<QString, QString>> &p
             auto findFirstNode = nodeMap.find(nodeIds[0]);
             auto findSecondNode = nodeMap.find(nodeIds[1]);
             if (findFirstNode != nodeMap.end() && findSecondNode != nodeMap.end()) {
+                if (limitNodeIds.empty() || limitNodeIds.find(findFirstNode->first) != limitNodeIds.end() ||
+                        limitNodeIds.find(findSecondNode->first) != limitNodeIds.end())
                 translateY = (findFirstNode->second.y + findSecondNode->second.y) / 2 -
                     (findGroundY() + m_groundPlaneHalfThickness);
             }
@@ -417,13 +473,16 @@ void PoseDocument::toParameters(std::map<QString, std::map<QString, QString>> &p
         auto findSecondNode = nodeMap.find(boneNodeIdPair.second);
         if (findSecondNode == nodeMap.end())
             continue;
-        auto &boneParameter = parameters[item.first];
-        boneParameter["fromX"] = QString::number(toOutcomeX(findFirstNode->second.x));
-        boneParameter["fromY"] = QString::number(toOutcomeY(findFirstNode->second.y));
-        boneParameter["fromZ"] = QString::number(toOutcomeZ(findFirstNode->second.z));
-        boneParameter["toX"] = QString::number(toOutcomeX(findSecondNode->second.x));
-        boneParameter["toY"] = QString::number(toOutcomeY(findSecondNode->second.y));
-        boneParameter["toZ"] = QString::number(toOutcomeZ(findSecondNode->second.z));
+        if (limitNodeIds.empty() || limitNodeIds.find(boneNodeIdPair.first) != limitNodeIds.end() ||
+                limitNodeIds.find(boneNodeIdPair.second) != limitNodeIds.end()) {
+            auto &boneParameter = parameters[item.first];
+            boneParameter["fromX"] = QString::number(toOutcomeX(findFirstNode->second.x));
+            boneParameter["fromY"] = QString::number(toOutcomeY(findFirstNode->second.y));
+            boneParameter["fromZ"] = QString::number(toOutcomeZ(findFirstNode->second.z));
+            boneParameter["toX"] = QString::number(toOutcomeX(findSecondNode->second.x));
+            boneParameter["toY"] = QString::number(toOutcomeY(findSecondNode->second.y));
+            boneParameter["toZ"] = QString::number(toOutcomeZ(findSecondNode->second.z));
+        }
     }
 }
 

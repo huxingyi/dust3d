@@ -18,7 +18,7 @@ public:
     std::map<QString, std::map<QString, QString>> parts;
     std::map<QString, std::map<QString, QString>> components;
     std::map<QString, QString> rootComponent;
-    std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> poses; // std::pair<Pose attributes, Bone attributes>
+    std::vector<std::pair<std::map<QString, QString>, std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>>>> poses; // std::pair<Pose attributes, frames> frame: std::pair<Frame attributes, Frame parameters>
     std::vector<std::pair<std::map<QString, QString>, std::vector<std::map<QString, QString>>>> motions; // std::pair<Motion attributes, clips>
     std::vector<std::pair<std::map<QString, QString>, std::vector<std::pair<std::map<QString, QString>, std::vector<std::map<QString, QString>>>>>> materials; // std::pair<Material attributes, layers>  layer: std::pair<Layer attributes, maps>
     
@@ -72,10 +72,16 @@ public:
                 addQStringToBuffer(subItem.second);
             }
             for (const auto &subItem: item.second) {
-                addQStringToBuffer(subItem.first);
-                for (const auto &subSubItem: subItem.second) {
+                for (const auto &subSubItem: subItem.first) {
                     addQStringToBuffer(subSubItem.first);
                     addQStringToBuffer(subSubItem.second);
+                }
+                for (const auto &subSubItem: subItem.second) {
+                    addQStringToBuffer(subSubItem.first);
+                    for (const auto &subSubSubItem: subSubItem.second) {
+                        addQStringToBuffer(subSubSubItem.first);
+                        addQStringToBuffer(subSubSubItem.second);
+                    }
                 }
             }
         }

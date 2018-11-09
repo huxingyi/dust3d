@@ -874,7 +874,7 @@ DocumentWindow::DocumentWindow() :
         Q_UNUSED(poseId);
         m_document->generatePosePreviews();
     });
-    connect(m_document, &Document::poseParametersChanged, this, [=](QUuid poseId) {
+    connect(m_document, &Document::poseFramesChanged, this, [=](QUuid poseId) {
         Q_UNUSED(poseId);
         m_document->generatePosePreviews();
     });
@@ -1112,7 +1112,7 @@ void DocumentWindow::saveTo(const QString &saveAsFilename)
     }
     
     std::set<QUuid> imageIds;
-    for (auto &material: snapshot.materials) {
+    for (const auto &material: snapshot.materials) {
         for (auto &layer: material.second) {
             for (auto &mapItem: layer.second) {
                 auto findImageIdString = mapItem.find("linkData");

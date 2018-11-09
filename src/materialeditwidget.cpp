@@ -118,7 +118,7 @@ MaterialEditWidget::MaterialEditWidget(const Document *document, QWidget *parent
         m_unsaved = true;
         updateTitle();
     });
-    QPushButton *saveButton = new QPushButton(tr("Save"));
+    QPushButton *saveButton = new QPushButton(tr("Apply"));
     connect(saveButton, &QPushButton::clicked, this, &MaterialEditWidget::save);
     saveButton->setDefault(true);
 

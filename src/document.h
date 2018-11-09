@@ -195,8 +195,8 @@ public:
     QUuid id;
     QString name;
     bool dirty = true;
-    std::map<QString, QString> attributes;
-    std::map<QString, std::map<QString, QString>> parameters;
+    QUuid turnaroundImageId;
+    std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> frames; // pair<attributes, parameters>
     void updatePreviewMesh(MeshLoader *previewMesh)
     {
         delete m_previewMesh;
@@ -290,7 +290,8 @@ public:
     {
         if (m_previewMeshs.empty())
             return nullptr;
-        return new MeshLoader(*m_previewMeshs[0].second);
+        int middle = std::max((int)m_previewMeshs.size() / 2 - 1, (int)0);
+        return new MeshLoader(*m_previewMeshs[middle].second);
     }
 private:
     Q_DISABLE_COPY(Motion);
@@ -424,8 +425,8 @@ signals:
     void poseRemoved(QUuid);
     void poseListChanged();
     void poseNameChanged(QUuid poseId);
-    void poseParametersChanged(QUuid poseId);
-    void poseAttributesChanged(QUuid poseId);
+    void poseFramesChanged(QUuid poseId);
+    void poseTurnaroundImageIdChanged(QUuid poseId);
     void posePreviewChanged(QUuid poseId);
     void motionAdded(QUuid motionId);
     void motionRemoved(QUuid motionId);
@@ -591,10 +592,11 @@ public slots:
     void toggleSmoothNormal();
     void enableWeld(bool enabled);
     void setRigType(RigType toRigType);
-    void addPose(QString name, std::map<QString, std::map<QString, QString>> parameters);
+    void addPose(QString name, std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> frames,
+        QUuid turnaroundImageId);
     void removePose(QUuid poseId);
-    void setPoseParameters(QUuid poseId, std::map<QString, std::map<QString, QString>> parameters);
-    void setPoseAttributes(QUuid poseId, std::map<QString, QString> attributes);
+    void setPoseFrames(QUuid poseId, std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> frames);
+    void setPoseTurnaroundImageId(QUuid poseId, QUuid imageId);
     void renamePose(QUuid poseId, QString name);
     void addMotion(QString name, std::vector<MotionClip> clips);
     void removeMotion(QUuid motionId);

@@ -23,20 +23,20 @@ PosePreviewsGenerator::~PosePreviewsGenerator()
     delete m_outcome;
 }
 
-void PosePreviewsGenerator::addPose(QUuid poseId, const std::map<QString, std::map<QString, QString>> &pose)
+void PosePreviewsGenerator::addPose(std::pair<QUuid, int> idAndFrame, const std::map<QString, std::map<QString, QString>> &pose)
 {
-    m_poses.push_back(std::make_pair(poseId, pose));
+    m_poses.push_back(std::make_pair(idAndFrame, pose));
 }
 
-const std::set<QUuid> &PosePreviewsGenerator::generatedPreviewPoseIds()
+const std::set<std::pair<QUuid, int>> &PosePreviewsGenerator::generatedPreviewPoseIdAndFrames()
 {
-    return m_generatedPoseIds;
+    return m_generatedPoseIdAndFrames;
 }
 
-MeshLoader *PosePreviewsGenerator::takePreview(QUuid poseId)
+MeshLoader *PosePreviewsGenerator::takePreview(std::pair<QUuid, int> idAndFrame)
 {
-    MeshLoader *resultMesh = m_previews[poseId];
-    m_previews[poseId] = nullptr;
+    MeshLoader *resultMesh = m_previews[idAndFrame];
+    m_previews[idAndFrame] = nullptr;
     return resultMesh;
 }
 
@@ -57,7 +57,7 @@ void PosePreviewsGenerator::process()
         
         poser->reset();
         
-        m_generatedPoseIds.insert(pose.first);
+        m_generatedPoseIdAndFrames.insert(pose.first);
     }
     delete poser;
     

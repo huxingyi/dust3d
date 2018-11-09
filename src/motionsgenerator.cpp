@@ -26,9 +26,9 @@ MotionsGenerator::~MotionsGenerator()
     delete m_poser;
 }
 
-void MotionsGenerator::addPoseToLibrary(const QUuid &poseId, const std::map<QString, std::map<QString, QString>> &parameters)
+void MotionsGenerator::addPoseToLibrary(const QUuid &poseId, const std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> &frames)
 {
-    m_poses[poseId] = parameters;
+    m_poses[poseId] = frames;
 }
 
 void MotionsGenerator::addMotionToLibrary(const QUuid &motionId, const std::vector<MotionClip> &clips)
@@ -60,6 +60,15 @@ std::vector<MotionClip> *MotionsGenerator::findMotionClips(const QUuid &motionId
     return &clips;
 }
 
+std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> *MotionsGenerator::findPoseFrames(const QUuid &poseId)
+{
+    auto findPoseResult = m_poses.find(poseId);
+    if (findPoseResult == m_poses.end())
+        return nullptr;
+    std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> &frames = findPoseResult->second;
+    return &frames;
+}
+
 void MotionsGenerator::generatePreviewsForOutcomes(const std::vector<std::pair<float, JointNodeTree>> &outcomes, std::vector<std::pair<float, MeshLoader *>> &previews)
 {
     for (const auto &item: outcomes) {
@@ -68,6 +77,18 @@ void MotionsGenerator::generatePreviewsForOutcomes(const std::vector<std::pair<f
         previews.push_back({item.first, poseMeshCreator->takeResultMesh()});
         delete poseMeshCreator;
     }
+}
+
+float MotionsGenerator::calculatePoseDuration(const QUuid &poseId)
+{
+    const std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> *pose = findPoseFrames(poseId);
+    if (nullptr == pose)
+        return 0;
+    float totalDuration = 0;
+    for (const auto &frame: *pose) {
+        totalDuration += valueOfKeyInMapOrEmpty(frame.first, "duration").toFloat();
+    }
+    return totalDuration;
 }
 
 float MotionsGenerator::calculateMotionDuration(const QUuid &motionId, std::set<QUuid> &visited)
@@ -85,7 +106,7 @@ float MotionsGenerator::calculateMotionDuration(const QUuid &motionId, std::set<
         if (clip.clipType == MotionClipType::Interpolation)
             totalDuration += clip.duration;
         else if (clip.clipType == MotionClipType::Pose)
-            totalDuration += clip.duration;
+            totalDuration += calculatePoseDuration(clip.linkToId);
         else if (clip.clipType == MotionClipType::Motion)
             totalDuration += calculateMotionDuration(clip.linkToId, visited);
     }
@@ -111,6 +132,8 @@ void MotionsGenerator::generateMotion(const QUuid &motionId, std::set<QUuid> &vi
         if (clip.clipType == MotionClipType::Motion) {
             std::set<QUuid> subVisited;
             clip.duration = calculateMotionDuration(clip.linkToId, subVisited);
+        } else if (clip.clipType == MotionClipType::Pose) {
+            clip.duration = calculatePoseDuration(clip.linkToId);
         }
         timePoints.push_back(totalDuration);
         totalDuration += clip.duration;
@@ -159,13 +182,15 @@ void MotionsGenerator::generateMotion(const QUuid &motionId, std::set<QUuid> &vi
             progress += interval;
             continue;
         } else if (MotionClipType::Pose == progressClip.clipType) {
-            const JointNodeTree *beginJointNodeTree = findClipBeginJointNodeTree((*motionClips)[clipIndex]);
-            if (nullptr == beginJointNodeTree) {
-                qDebug() << "findClipBeginJointNodeTree failed";
-                break;
+            const auto &frames = findPoseFrames(progressClip.linkToId);
+            int frame = clipLocalProgress * frames->size() / std::max((float)0.01, progressClip.duration);
+            if (frame >= (int)frames->size())
+                frame = frames->size() - 1;
+            if (frame >= 0 && frame < (int)frames->size()) {
+                const JointNodeTree jointNodeTree = poseJointNodeTree(progressClip.linkToId, frame);
+                outcomes.push_back({progress - lastProgress, jointNodeTree});
+                lastProgress = progress;
             }
-            outcomes.push_back({progress - lastProgress, *beginJointNodeTree});
-            lastProgress = progress;
             progress += interval;
             continue;
         } else if (MotionClipType::Motion == progressClip.clipType) {
@@ -182,25 +207,28 @@ JointNodeTree MotionsGenerator::generateInterpolation(InterpolationType interpol
     return JointNodeTree::slerp(first, second, calculateInterpolation(interpolationType, progress));
 }
 
-const JointNodeTree &MotionsGenerator::poseJointNodeTree(const QUuid &poseId)
+const JointNodeTree &MotionsGenerator::poseJointNodeTree(const QUuid &poseId, int frame)
 {
-    auto findResult = m_poseJointNodeTreeMap.find(poseId);
+    auto findResult = m_poseJointNodeTreeMap.find({poseId, frame});
     if (findResult != m_poseJointNodeTreeMap.end())
         return findResult->second;
     
-    const auto &parameters = m_poses[poseId];
+    const auto &frames = m_poses[poseId];
     
     m_poser->reset();
-    m_poser->parameters() = parameters;
+    if (frame < (int)frames.size()) {
+        const auto &parameters = frames[frame].second;
+        m_poser->parameters() = parameters;
+    }
     m_poser->commit();
-    auto insertResult = m_poseJointNodeTreeMap.insert({poseId, m_poser->resultJointNodeTree()});
+    auto insertResult = m_poseJointNodeTreeMap.insert({{poseId, frame}, m_poser->resultJointNodeTree()});
     return insertResult.first->second;
 }
 
 const JointNodeTree *MotionsGenerator::findClipBeginJointNodeTree(const MotionClip &clip)
 {
     if (MotionClipType::Pose == clip.clipType) {
-        const JointNodeTree &jointNodeTree = poseJointNodeTree(clip.linkToId);
+        const JointNodeTree &jointNodeTree = poseJointNodeTree(clip.linkToId, 0);
         return &jointNodeTree;
     } else if (MotionClipType::Motion == clip.clipType) {
         const std::vector<MotionClip> *motionClips = findMotionClips(clip.linkToId);
@@ -215,8 +243,11 @@ const JointNodeTree *MotionsGenerator::findClipBeginJointNodeTree(const MotionCl
 const JointNodeTree *MotionsGenerator::findClipEndJointNodeTree(const MotionClip &clip)
 {
     if (MotionClipType::Pose == clip.clipType) {
-        const JointNodeTree &jointNodeTree = poseJointNodeTree(clip.linkToId);
-        return &jointNodeTree;
+        const std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> *poseFrames = findPoseFrames(clip.linkToId);
+        if (nullptr != poseFrames && !poseFrames->empty()) {
+            return &poseJointNodeTree(clip.linkToId, poseFrames->size() - 1);
+        }
+        return nullptr;
     } else if (MotionClipType::Motion == clip.clipType) {
         const std::vector<MotionClip> *motionClips = findMotionClips(clip.linkToId);
         if (nullptr != motionClips && !motionClips->empty()) {

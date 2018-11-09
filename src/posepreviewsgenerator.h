@@ -18,9 +18,9 @@ public:
         const std::map<int, RiggerVertexWeights> *rigWeights,
         const Outcome &outcome);
     ~PosePreviewsGenerator();
-    void addPose(QUuid poseId, const std::map<QString, std::map<QString, QString>> &pose);
-    const std::set<QUuid> &generatedPreviewPoseIds();
-    MeshLoader *takePreview(QUuid poseId);
+    void addPose(std::pair<QUuid, int> idAndFrame, const std::map<QString, std::map<QString, QString>> &pose);
+    const std::set<std::pair<QUuid, int>> &generatedPreviewPoseIdAndFrames();
+    MeshLoader *takePreview(std::pair<QUuid, int> idAndFrame);
 signals:
     void finished();
 public slots:
@@ -30,9 +30,9 @@ private:
     std::vector<RiggerBone> m_rigBones;
     std::map<int, RiggerVertexWeights> m_rigWeights;
     Outcome *m_outcome = nullptr;
-    std::vector<std::pair<QUuid, std::map<QString, std::map<QString, QString>>>> m_poses;
-    std::map<QUuid, MeshLoader *> m_previews;
-    std::set<QUuid> m_generatedPoseIds;
+    std::vector<std::pair<std::pair<QUuid, int>, std::map<QString, std::map<QString, QString>>>> m_poses;
+    std::map<std::pair<QUuid, int>, MeshLoader *> m_previews;
+    std::set<std::pair<QUuid, int>> m_generatedPoseIdAndFrames;
 };
 
 #endif

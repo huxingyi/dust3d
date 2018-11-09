@@ -22,7 +22,7 @@ PoseManageWidget::PoseManageWidget(const Document *document, QWidget *parent) :
     connect(m_poseListWidget, &PoseListWidget::modifyPose, this, &PoseManageWidget::showPoseDialog);
     
     InfoLabel *infoLabel = new InfoLabel;
-    infoLabel->show();
+    infoLabel->hide();
     
     auto refreshInfoLabel = [=]() {
         if (m_document->currentRigSucceed()) {
@@ -77,8 +77,8 @@ void PoseManageWidget::showPoseDialog(QUuid poseId)
         if (nullptr != pose) {
             poseEditWidget->setEditPoseId(poseId);
             poseEditWidget->setEditPoseName(pose->name);
-            poseEditWidget->setEditParameters(pose->parameters);
-            poseEditWidget->setEditAttributes(pose->attributes);
+            poseEditWidget->setEditPoseFrames(pose->frames);
+            poseEditWidget->setEditPoseTurnaroundImageId(pose->turnaroundImageId);
             poseEditWidget->clearUnsaveState();
         }
     }

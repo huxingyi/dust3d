@@ -35,12 +35,13 @@ public:
     void updateRigBones(const std::vector<RiggerBone> *rigBones, const QVector3D &rootTranslation=QVector3D(0, 0, 0));
     void reset();
     
-    void toParameters(std::map<QString, std::map<QString, QString>> &parameters) const;
+    void toParameters(std::map<QString, std::map<QString, QString>> &parameters, const std::set<QUuid> &limitNodeIds=std::set<QUuid>()) const;
     void fromParameters(const std::vector<RiggerBone> *rigBones,
         const std::map<QString, std::map<QString, QString>> &parameters);
     
 public slots:
     void saveHistoryItem();
+    void clearHistories();
     void undo() override;
     void redo() override;
     void paste() override;

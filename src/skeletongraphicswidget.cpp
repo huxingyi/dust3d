@@ -163,13 +163,13 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
     }
     
     QAction copyAction(tr("Copy"), this);
-    if (!m_nodePositionModifyOnly && hasSelection()) {
+    if (hasNodeSelection()) {
         connect(&copyAction, &QAction::triggered, this, &SkeletonGraphicsWidget::copy);
         contextMenu.addAction(&copyAction);
     }
     
     QAction pasteAction(tr("Paste"), this);
-    if (!m_nodePositionModifyOnly && m_document->hasPastableNodesInClipboard()) {
+    if (m_document->hasPastableNodesInClipboard()) {
         connect(&pasteAction, &QAction::triggered, m_document, &SkeletonDocument::paste);
         contextMenu.addAction(&pasteAction);
     }

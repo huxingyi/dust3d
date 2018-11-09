@@ -307,14 +307,15 @@ QUuid Document::createNode(float x, float y, float z, float radius, QUuid fromNo
     return node.id;
 }
 
-void Document::addPose(QString name, std::map<QString, std::map<QString, QString>> parameters)
+void Document::addPose(QString name, std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> frames, QUuid turnaroundImageId)
 {
     QUuid newPoseId = QUuid::createUuid();
     auto &pose = poseMap[newPoseId];
     pose.id = newPoseId;
     
     pose.name = name;
-    pose.parameters = parameters;
+    pose.frames = frames;
+    pose.turnaroundImageId = turnaroundImageId;
     pose.dirty = true;
     
     poseIdList.push_back(newPoseId);
@@ -402,31 +403,32 @@ void Document::removePose(QUuid poseId)
     emit optionsChanged();
 }
 
-void Document::setPoseParameters(QUuid poseId, std::map<QString, std::map<QString, QString>> parameters)
+void Document::setPoseFrames(QUuid poseId, std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> frames)
 {
     auto findPoseResult = poseMap.find(poseId);
     if (findPoseResult == poseMap.end()) {
         qDebug() << "Find pose failed:" << poseId;
         return;
     }
-    findPoseResult->second.parameters = parameters;
+    findPoseResult->second.frames = frames;
     findPoseResult->second.dirty = true;
     emit posesChanged();
-    emit poseParametersChanged(poseId);
+    emit poseFramesChanged(poseId);
     emit optionsChanged();
 }
 
-void Document::setPoseAttributes(QUuid poseId, std::map<QString, QString> attributes)
+void Document::setPoseTurnaroundImageId(QUuid poseId, QUuid imageId)
 {
     auto findPoseResult = poseMap.find(poseId);
     if (findPoseResult == poseMap.end()) {
         qDebug() << "Find pose failed:" << poseId;
         return;
     }
-    findPoseResult->second.attributes = attributes;
+    if (findPoseResult->second.turnaroundImageId == imageId)
+        return;
+    findPoseResult->second.turnaroundImageId = imageId;
     findPoseResult->second.dirty = true;
-    emit posesChanged();
-    emit poseAttributesChanged(poseId);
+    emit poseTurnaroundImageIdChanged(poseId);
     emit optionsChanged();
 }
 
@@ -971,11 +973,13 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
                 continue;
             }
             auto &poseIt = *findPoseResult;
-            std::map<QString, QString> pose = poseIt.second.attributes;
+            std::map<QString, QString> pose;
             pose["id"] = poseIt.second.id.toString();
             if (!poseIt.second.name.isEmpty())
                 pose["name"] = poseIt.second.name;
-            snapshot->poses.push_back(std::make_pair(pose, poseIt.second.parameters));
+            if (!poseIt.second.turnaroundImageId.isNull())
+                pose["canvasImageId"] = poseIt.second.turnaroundImageId.toString();
+            snapshot->poses.push_back(std::make_pair(pose, poseIt.second.frames));
         }
     }
     if (DocumentToSnapshotFor::Document == forWhat ||
@@ -1221,14 +1225,10 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
         newPose.id = newPoseId;
         const auto &poseAttributes = poseIt.first;
         newPose.name = valueOfKeyInMapOrEmpty(poseAttributes, "name");
-        for (const auto &attribute: poseAttributes) {
-            if (attribute.first == "name" ||
-                    attribute.first == "id") {
-                continue;
-            }
-            newPose.attributes.insert({attribute.first, attribute.second});
-        }
-        newPose.parameters = poseIt.second;
+        auto findCanvasImageId = poseAttributes.find("canvasImageId");
+        if (findCanvasImageId != poseAttributes.end())
+            newPose.turnaroundImageId = QUuid(findCanvasImageId->second);
+        newPose.frames = poseIt.second;
         oldNewIdMap[QUuid(valueOfKeyInMapOrEmpty(poseAttributes, "id"))] = newPoseId;
         poseIdList.push_back(newPoseId);
         emit poseAdded(newPoseId);
@@ -2654,7 +2654,7 @@ void Document::generateMotions()
     m_motionsGenerator = new MotionsGenerator(rigType, rigBones, rigWeights, currentRiggedOutcome());
     bool hasDirtyMotion = false;
     for (const auto &pose: poseMap) {
-        m_motionsGenerator->addPoseToLibrary(pose.first, pose.second.parameters);
+        m_motionsGenerator->addPoseToLibrary(pose.first, pose.second.frames);
     }
     for (auto &motion: motionMap) {
         if (motion.second.dirty) {
@@ -2722,7 +2722,12 @@ void Document::generatePosePreviews()
     for (auto &poseIt: poseMap) {
         if (!poseIt.second.dirty)
             continue;
-        m_posePreviewsGenerator->addPose(poseIt.first, poseIt.second.parameters);
+        if (poseIt.second.frames.empty())
+            continue;
+        int middle = poseIt.second.frames.size() / 2;
+        if (middle >= (int)poseIt.second.frames.size())
+            middle = 0;
+        m_posePreviewsGenerator->addPose({poseIt.first, middle}, poseIt.second.frames[middle].second);
         poseIt.second.dirty = false;
         hasDirtyPose = true;
     }
@@ -2745,12 +2750,12 @@ void Document::generatePosePreviews()
 
 void Document::posePreviewsReady()
 {
-    for (const auto &poseId: m_posePreviewsGenerator->generatedPreviewPoseIds()) {
-        auto pose = poseMap.find(poseId);
+    for (const auto &poseIdAndFrame: m_posePreviewsGenerator->generatedPreviewPoseIdAndFrames()) {
+        auto pose = poseMap.find(poseIdAndFrame.first);
         if (pose != poseMap.end()) {
-            MeshLoader *resultPartPreviewMesh = m_posePreviewsGenerator->takePreview(poseId);
+            MeshLoader *resultPartPreviewMesh = m_posePreviewsGenerator->takePreview(poseIdAndFrame);
             pose->second.updatePreviewMesh(resultPartPreviewMesh);
-            emit posePreviewChanged(poseId);
+            emit posePreviewChanged(poseIdAndFrame.first);
         }
     }
 

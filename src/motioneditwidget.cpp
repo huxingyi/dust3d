@@ -113,7 +113,7 @@ MotionEditWidget::MotionEditWidget(const Document *document, QWidget *parent) :
     m_nameEdit = new QLineEdit;
     m_nameEdit->setFixedWidth(200);
     connect(m_nameEdit, &QLineEdit::textChanged, this, &MotionEditWidget::setUnsavedState);
-    QPushButton *saveButton = new QPushButton(tr("Save"));
+    QPushButton *saveButton = new QPushButton(tr("Apply"));
     connect(saveButton, &QPushButton::clicked, this, &MotionEditWidget::save);
     saveButton->setDefault(true);
     
@@ -250,7 +250,7 @@ void MotionEditWidget::generatePreviews()
     m_previewsGenerator = new MotionsGenerator(m_document->rigType, rigBones, rigWeights,
         m_document->currentRiggedOutcome());
     for (const auto &pose: m_document->poseMap)
-        m_previewsGenerator->addPoseToLibrary(pose.first, pose.second.parameters);
+        m_previewsGenerator->addPoseToLibrary(pose.first, pose.second.frames);
     for (const auto &motion: m_document->motionMap)
         m_previewsGenerator->addMotionToLibrary(motion.first, motion.second.clips);
     m_previewsGenerator->addMotionToLibrary(QUuid(), m_timelineWidget->clips());

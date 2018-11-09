@@ -22,7 +22,7 @@ MotionManageWidget::MotionManageWidget(const Document *document, QWidget *parent
     connect(m_motionListWidget, &MotionListWidget::modifyMotion, this, &MotionManageWidget::showMotionDialog);
     
     InfoLabel *infoLabel = new InfoLabel;
-    infoLabel->show();
+    infoLabel->hide();
     
     auto refreshInfoLabel = [=]() {
         if (m_document->currentRigSucceed()) {
