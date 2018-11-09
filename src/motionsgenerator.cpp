@@ -189,10 +189,10 @@ void MotionsGenerator::generateMotion(const QUuid &motionId, std::set<QUuid> &vi
                 frame = frames->size() - 1;
             int previousFrame = frame - 1;
             if (previousFrame < 0)
-                previousFrame = 0;
+                previousFrame = frames->size() - 1;
             int nextFrame = frame + 1;
             if (nextFrame >= (int)frames->size())
-                nextFrame = frames->size() - 1;
+                nextFrame = 0;
             if (frame >= 0 && frame < (int)frames->size()) {
                 const JointNodeTree previousJointNodeTree = poseJointNodeTree(progressClip.linkToId, previousFrame);
                 const JointNodeTree jointNodeTree = poseJointNodeTree(progressClip.linkToId, frame);
