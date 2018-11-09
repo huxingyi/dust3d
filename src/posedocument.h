@@ -49,6 +49,7 @@ public slots:
     void moveNodeBy(QUuid nodeId, float x, float y, float z);
     void setNodeOrigin(QUuid nodeId, float x, float y, float z);
     float findGroundY() const;
+    void switchChainSide(const std::set<QUuid> nodeIds);
     
 public:
     static const float m_nodeRadius;
@@ -57,6 +58,8 @@ public:
     static const float m_outcomeScaleFactor;
     
 private:
+    QString findBoneNameByNodeId(const QUuid &nodeId);
+
     std::map<QString, std::pair<QUuid, QUuid>> m_boneNameToIdsMap;
     QUuid m_groundPartId;
     QUuid m_bonesPartId;

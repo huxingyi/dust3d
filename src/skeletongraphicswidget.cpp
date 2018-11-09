@@ -204,6 +204,12 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
         contextMenu.addAction(&switchXzAction);
     }
     
+    QAction switchChainSideAction(tr("Switch Chain Side"), this);
+    if (m_nodePositionModifyOnly && hasNodeSelection()) {
+        connect(&switchChainSideAction, &QAction::triggered, this, &SkeletonGraphicsWidget::switchSelectedChainSide);
+        contextMenu.addAction(&switchChainSideAction);
+    }
+    
     QAction alignToLocalCenterAction(tr("Local Center"), this);
     QAction alignToLocalVerticalCenterAction(tr("Local Vertical Center"), this);
     QAction alignToLocalHorizontalCenterAction(tr("Local Horizontal Center"), this);
@@ -974,6 +980,20 @@ void SkeletonGraphicsWidget::switchSelectedXZ()
         emit switchNodeXZ(nodeId);
     }
     emit batchChangeEnd();
+    emit groupOperationAdded();
+}
+
+void SkeletonGraphicsWidget::switchSelectedChainSide()
+{
+    if (m_rangeSelectionSet.empty())
+        return;
+    
+    std::set<QUuid> nodeIdSet;
+    readSkeletonNodeAndEdgeIdSetFromRangeSelection(&nodeIdSet);
+    if (nodeIdSet.empty())
+        return;
+    
+    emit switchChainSide(nodeIdSet);
     emit groupOperationAdded();
 }
 

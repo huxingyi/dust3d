@@ -3,6 +3,7 @@
 #include <QClipboard>
 #include <QApplication>
 #include <QMimeData>
+#include <QRegularExpression>
 #include "posedocument.h"
 #include "rigger.h"
 #include "util.h"
@@ -516,3 +517,80 @@ float PoseDocument::toOutcomeZ(float z)
     return (1.0 - z) / m_outcomeScaleFactor;
 }
 
+QString PoseDocument::findBoneNameByNodeId(const QUuid &nodeId)
+{
+    for (const auto &item: m_boneNameToIdsMap) {
+        if (nodeId == item.second.first || nodeId == item.second.second)
+            return item.first;
+    }
+    return QString();
+}
+
+void PoseDocument::switchChainSide(const std::set<QUuid> nodeIds)
+{
+    QRegularExpression reJoints("^(Left|Right)([a-zA-Z]+\\d*)_(Joint\\d+)$");
+    
+    std::set<QString> baseNames;
+    for (const auto &nodeId: nodeIds) {
+        QString boneName = findBoneNameByNodeId(nodeId);
+        if (boneName.isEmpty()) {
+            //qDebug() << "Find bone name for node failed:" << nodeId;
+            continue;
+        }
+        
+        QRegularExpressionMatch match = reJoints.match(boneName);
+        if (!match.hasMatch()) {
+            //qDebug() << "Match bone name for side failed:" << boneName;
+            continue;
+        }
+        
+        QString baseName = match.captured(2);
+        baseNames.insert(baseName);
+    }
+    
+    auto switchYZ = [=](const QUuid &first, const QUuid &second) {
+        auto findFirstNode = nodeMap.find(first);
+        if (findFirstNode == nodeMap.end())
+            return;
+        auto findSecondNode = nodeMap.find(second);
+        if (findSecondNode == nodeMap.end())
+            return;
+        std::swap(findFirstNode->second.y, findSecondNode->second.y);
+        std::swap(findFirstNode->second.z, findSecondNode->second.z);
+        emit nodeOriginChanged(first);
+        emit nodeOriginChanged(second);
+    };
+    
+    std::set<std::pair<QUuid, QUuid>> switchPairs;
+    for (const auto &baseName: baseNames) {
+        for (const auto &item: m_boneNameToIdsMap) {
+            QRegularExpressionMatch match = reJoints.match(item.first);
+            if (!match.hasMatch())
+                continue;
+            QString itemSide = match.captured(1);
+            QString itemBaseName = match.captured(2);
+            QString itemJointName = match.captured(3);
+            //qDebug() << "itemSide:" << itemSide << "itemBaseName:" << itemBaseName << "itemJointName:" << itemJointName;
+            if (itemBaseName == baseName && "Left" == itemSide) {
+                QString otherSide = "Right";
+                QString pairedName = otherSide + itemBaseName + "_" + itemJointName;
+                const auto findPaired = m_boneNameToIdsMap.find(pairedName);
+                if (findPaired == m_boneNameToIdsMap.end()) {
+                    qDebug() << "Couldn't find paired name:" << pairedName;
+                    continue;
+                }
+                //qDebug() << "Switched:" << pairedName;
+                switchPairs.insert({item.second.first, findPaired->second.first});
+                switchPairs.insert({item.second.second, findPaired->second.second});
+            }
+        }
+    }
+    
+    for (const auto &pair: switchPairs) {
+        switchYZ(pair.first, pair.second);
+    }
+    
+    //qDebug() << "switchedPairNum:" << switchPairs.size();
+    if (!switchPairs.empty())
+        emit parametersChanged();
+}

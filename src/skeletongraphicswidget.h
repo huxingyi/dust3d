@@ -382,6 +382,7 @@ signals:
     void setNodeBoneMark(QUuid nodeId, BoneMark mark);
     void zoomRenderedModelBy(float delta);
     void switchNodeXZ(QUuid nodeId);
+    void switchChainSide(std::set<QUuid> nodeIds);
     void enableAllPositionRelatedLocks();
     void disableAllPositionRelatedLocks();
 public:
@@ -470,6 +471,7 @@ public slots:
     void setSelectedNodesBoneMark(BoneMark boneMark);
     void timeToRemoveDeferredNodesAndEdges();
     void switchSelectedXZ();
+    void switchSelectedChainSide();
     void shortcutDelete();
     void shortcutAddMode();
     void shortcutUndo();
