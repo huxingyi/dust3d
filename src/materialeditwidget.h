@@ -18,7 +18,7 @@ class MaterialEditWidget : public QDialog
 {
     Q_OBJECT
 signals:
-    void addMaterial(QString name, std::vector<MaterialLayer> layers);
+    void addMaterial(QUuid materialId, QString name, std::vector<MaterialLayer> layers);
     void removeMaterial(QUuid materialId);
     void setMaterialLayers(QUuid materialId, std::vector<MaterialLayer> layers);
     void renameMaterial(QUuid materialId, QString name);

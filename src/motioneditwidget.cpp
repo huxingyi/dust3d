@@ -113,7 +113,7 @@ MotionEditWidget::MotionEditWidget(const Document *document, QWidget *parent) :
     m_nameEdit = new QLineEdit;
     m_nameEdit->setFixedWidth(200);
     connect(m_nameEdit, &QLineEdit::textChanged, this, &MotionEditWidget::setUnsavedState);
-    QPushButton *saveButton = new QPushButton(tr("Apply"));
+    QPushButton *saveButton = new QPushButton(tr("Save"));
     connect(saveButton, &QPushButton::clicked, this, &MotionEditWidget::save);
     saveButton->setDefault(true);
     
@@ -176,13 +176,13 @@ void MotionEditWidget::closeEvent(QCloseEvent *event)
 void MotionEditWidget::save()
 {
     if (m_motionId.isNull()) {
-        emit addMotion(m_nameEdit->text(), m_timelineWidget->clips());
+        m_motionId = QUuid::createUuid();
+        emit addMotion(m_motionId, m_nameEdit->text(), m_timelineWidget->clips());
     } else if (m_unsaved) {
         emit renameMotion(m_motionId, m_nameEdit->text());
         emit setMotionClips(m_motionId, m_timelineWidget->clips());
     }
-    m_unsaved = false;
-    close();
+    clearUnsaveState();
 }
 
 void MotionEditWidget::clearUnsaveState()

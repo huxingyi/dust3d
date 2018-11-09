@@ -92,7 +92,7 @@ PoseEditWidget::PoseEditWidget(const Document *document, QWidget *parent) :
     connect(m_nameEdit, &QLineEdit::textChanged, this, [=]() {
         setUnsaveState();
     });
-    QPushButton *saveButton = new QPushButton(tr("Apply"));
+    QPushButton *saveButton = new QPushButton(tr("Save"));
     connect(saveButton, &QPushButton::clicked, this, &PoseEditWidget::save);
     saveButton->setDefault(true);
     
@@ -385,12 +385,12 @@ void PoseEditWidget::setUnsaveState()
 void PoseEditWidget::save()
 {
     if (m_poseId.isNull()) {
-        emit addPose(m_nameEdit->text(), m_frames, m_imageId);
+        m_poseId = QUuid::createUuid();
+        emit addPose(m_poseId, m_nameEdit->text(), m_frames, m_imageId);
     } else if (m_unsaved) {
         emit renamePose(m_poseId, m_nameEdit->text());
         emit setPoseFrames(m_poseId, m_frames);
         emit setPoseTurnaroundImageId(m_poseId, m_imageId);
     }
-    m_unsaved = false;
-    close();
+    clearUnsaveState();
 }

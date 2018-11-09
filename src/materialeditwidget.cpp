@@ -118,7 +118,7 @@ MaterialEditWidget::MaterialEditWidget(const Document *document, QWidget *parent
         m_unsaved = true;
         updateTitle();
     });
-    QPushButton *saveButton = new QPushButton(tr("Apply"));
+    QPushButton *saveButton = new QPushButton(tr("Save"));
     connect(saveButton, &QPushButton::clicked, this, &MaterialEditWidget::save);
     saveButton->setDefault(true);
 
@@ -297,11 +297,11 @@ void MaterialEditWidget::clearUnsaveState()
 void MaterialEditWidget::save()
 {
     if (m_materialId.isNull()) {
-        emit addMaterial(m_nameEdit->text(), m_layers);
+        m_materialId = QUuid::createUuid();
+        emit addMaterial(m_materialId, m_nameEdit->text(), m_layers);
     } else if (m_unsaved) {
         emit renameMaterial(m_materialId, m_nameEdit->text());
         emit setMaterialLayers(m_materialId, m_layers);
     }
-    m_unsaved = false;
-    close();
+    clearUnsaveState();
 }

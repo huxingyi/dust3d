@@ -307,9 +307,9 @@ QUuid Document::createNode(float x, float y, float z, float radius, QUuid fromNo
     return node.id;
 }
 
-void Document::addPose(QString name, std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> frames, QUuid turnaroundImageId)
+void Document::addPose(QUuid poseId, QString name, std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> frames, QUuid turnaroundImageId)
 {
-    QUuid newPoseId = QUuid::createUuid();
+    QUuid newPoseId = poseId;
     auto &pose = poseMap[newPoseId];
     pose.id = newPoseId;
     
@@ -326,9 +326,9 @@ void Document::addPose(QString name, std::vector<std::pair<std::map<QString, QSt
     emit optionsChanged();
 }
 
-void Document::addMotion(QString name, std::vector<MotionClip> clips)
+void Document::addMotion(QUuid motionId, QString name, std::vector<MotionClip> clips)
 {
-    QUuid newMotionId = QUuid::createUuid();
+    QUuid newMotionId = motionId;
     auto &motion = motionMap[newMotionId];
     motion.id = newMotionId;
     
@@ -2767,9 +2767,9 @@ void Document::posePreviewsReady()
     generatePosePreviews();
 }
 
-void Document::addMaterial(QString name, std::vector<MaterialLayer> layers)
+void Document::addMaterial(QUuid materialId, QString name, std::vector<MaterialLayer> layers)
 {
-    QUuid newMaterialId = QUuid::createUuid();
+    QUuid newMaterialId = materialId;
     auto &material = materialMap[newMaterialId];
     material.id = newMaterialId;
     

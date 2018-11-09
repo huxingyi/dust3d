@@ -17,7 +17,7 @@ class PoseEditWidget : public QDialog
 {
     Q_OBJECT
 signals:
-    void addPose(QString name, std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> frames, QUuid turnaroundImageId);
+    void addPose(QUuid poseId, QString name, std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> frames, QUuid turnaroundImageId);
     void removePose(QUuid poseId);
     void setPoseFrames(QUuid poseId, std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> frames);
     void setPoseTurnaroundImageId(QUuid poseId, QUuid imageId);

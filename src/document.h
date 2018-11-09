@@ -592,17 +592,17 @@ public slots:
     void toggleSmoothNormal();
     void enableWeld(bool enabled);
     void setRigType(RigType toRigType);
-    void addPose(QString name, std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> frames,
+    void addPose(QUuid poseId, QString name, std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> frames,
         QUuid turnaroundImageId);
     void removePose(QUuid poseId);
     void setPoseFrames(QUuid poseId, std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> frames);
     void setPoseTurnaroundImageId(QUuid poseId, QUuid imageId);
     void renamePose(QUuid poseId, QString name);
-    void addMotion(QString name, std::vector<MotionClip> clips);
+    void addMotion(QUuid motionId, QString name, std::vector<MotionClip> clips);
     void removeMotion(QUuid motionId);
     void setMotionClips(QUuid motionId, std::vector<MotionClip> clips);
     void renameMotion(QUuid motionId, QString name);
-    void addMaterial(QString name, std::vector<MaterialLayer>);
+    void addMaterial(QUuid materialId, QString name, std::vector<MaterialLayer>);
     void removeMaterial(QUuid materialId);
     void setMaterialLayers(QUuid materialId, std::vector<MaterialLayer> layers);
     void renameMaterial(QUuid materialId, QString name);

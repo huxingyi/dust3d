@@ -177,17 +177,27 @@ void MotionsGenerator::generateMotion(const QUuid &motionId, std::set<QUuid> &vi
                 break;
             }
             outcomes.push_back({progress - lastProgress,
-                generateInterpolation(progressClip.interpolationType, *beginJointNodeTree, *endJointNodeTree, clipLocalProgress / std::max((float)0.01, progressClip.duration))});
+                generateInterpolation(progressClip.interpolationType, *beginJointNodeTree, *endJointNodeTree, clipLocalProgress / std::max((float)0.0001, progressClip.duration))});
             lastProgress = progress;
             progress += interval;
             continue;
         } else if (MotionClipType::Pose == progressClip.clipType) {
             const auto &frames = findPoseFrames(progressClip.linkToId);
-            int frame = clipLocalProgress * frames->size() / std::max((float)0.01, progressClip.duration);
+            float clipDuration = std::max((float)0.0001, progressClip.duration);
+            int frame = clipLocalProgress * frames->size() / clipDuration;
             if (frame >= (int)frames->size())
                 frame = frames->size() - 1;
-            if (frame >= 0 && frame < (int)frames->size()) {
+            //int nextFrame = frame + 1;
+            //if (nextFrame >= (int)frames->size())
+            //    nextFrame = frames->size() - 1;
+            //float offset = clipLocalProgress / clipDuration;
+            //qDebug() << "frame:" << frame << "clipLocalProgress:" << clipLocalProgress << "clipDuration:" << clipDuration;
+            if (frame >= 0 && frame < (int)frames->size()/* &&
+                    nextFrame >= 0 && nextFrame < (int)frames->size()*/) {
                 const JointNodeTree jointNodeTree = poseJointNodeTree(progressClip.linkToId, frame);
+                //const JointNodeTree nextJointNodeTree = poseJointNodeTree(progressClip.linkToId, nextFrame);
+                //outcomes.push_back({progress - lastProgress,
+                //    generateInterpolation(progressClip.interpolationType, jointNodeTree, nextJointNodeTree, offset)});
                 outcomes.push_back({progress - lastProgress, jointNodeTree});
                 lastProgress = progress;
             }

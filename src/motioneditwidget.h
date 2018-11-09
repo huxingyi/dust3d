@@ -13,7 +13,7 @@ class MotionEditWidget : public QDialog
 {
     Q_OBJECT
 signals:
-    void addMotion(QString name, std::vector<MotionClip> clips);
+    void addMotion(QUuid motionId, QString name, std::vector<MotionClip> clips);
     void setMotionClips(QUuid motionId, std::vector<MotionClip> clips);
     void renameMotion(QUuid motionId, QString name);
 public:
