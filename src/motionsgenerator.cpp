@@ -187,18 +187,19 @@ void MotionsGenerator::generateMotion(const QUuid &motionId, std::set<QUuid> &vi
             int frame = clipLocalProgress * frames->size() / clipDuration;
             if (frame >= (int)frames->size())
                 frame = frames->size() - 1;
-            //int nextFrame = frame + 1;
-            //if (nextFrame >= (int)frames->size())
-            //    nextFrame = frames->size() - 1;
-            //float offset = clipLocalProgress / clipDuration;
-            //qDebug() << "frame:" << frame << "clipLocalProgress:" << clipLocalProgress << "clipDuration:" << clipDuration;
-            if (frame >= 0 && frame < (int)frames->size()/* &&
-                    nextFrame >= 0 && nextFrame < (int)frames->size()*/) {
+            int previousFrame = frame - 1;
+            if (previousFrame < 0)
+                previousFrame = 0;
+            int nextFrame = frame + 1;
+            if (nextFrame >= (int)frames->size())
+                nextFrame = frames->size() - 1;
+            if (frame >= 0 && frame < (int)frames->size()) {
+                const JointNodeTree previousJointNodeTree = poseJointNodeTree(progressClip.linkToId, previousFrame);
                 const JointNodeTree jointNodeTree = poseJointNodeTree(progressClip.linkToId, frame);
-                //const JointNodeTree nextJointNodeTree = poseJointNodeTree(progressClip.linkToId, nextFrame);
-                //outcomes.push_back({progress - lastProgress,
-                //    generateInterpolation(progressClip.interpolationType, jointNodeTree, nextJointNodeTree, offset)});
-                outcomes.push_back({progress - lastProgress, jointNodeTree});
+                const JointNodeTree nextJointNodeTree = poseJointNodeTree(progressClip.linkToId, nextFrame);
+                const JointNodeTree middleJointNodeTree = generateInterpolation(InterpolationType::Linear, previousJointNodeTree, nextJointNodeTree, 0.5);
+                outcomes.push_back({progress - lastProgress,
+                    generateInterpolation(InterpolationType::Linear, jointNodeTree, middleJointNodeTree, 0.5)});
                 lastProgress = progress;
             }
             progress += interval;
