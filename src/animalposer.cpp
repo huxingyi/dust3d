@@ -9,27 +9,8 @@ AnimalPoser::AnimalPoser(const std::vector<RiggerBone> &bones) :
 {
 }
 
-void AnimalPoser::resolveTranslation()
+void AnimalPoser::resolveTransform()
 {
-    for (const auto &item: parameters()) {
-        int boneIndex = findBoneIndex(item.first);
-        if (-1 == boneIndex) {
-            continue;
-        }
-        auto findTranslateXResult = item.second.find("translateX");
-        auto findTranslateYResult = item.second.find("translateY");
-        auto findTranslateZResult = item.second.find("translateZ");
-        if (findTranslateXResult != item.second.end() ||
-                findTranslateYResult != item.second.end() ||
-                findTranslateZResult != item.second.end()) {
-            float x = valueOfKeyInMapOrEmpty(item.second, "translateX").toFloat();
-            float y = valueOfKeyInMapOrEmpty(item.second, "translateY").toFloat();
-            float z = valueOfKeyInMapOrEmpty(item.second, "translateZ").toFloat();
-            QVector3D translation = {x, y, z};
-            m_jointNodeTree.addTranslation(boneIndex, translation);
-            continue;
-        }
-    }
     QRegularExpression reJoints("^([a-zA-Z]+\\d*)_Joint\\d+$");
     QRegularExpression reSpine("^([a-zA-Z]+)\\d*$");
     std::map<QString, std::vector<QString>> chains;
@@ -56,11 +37,62 @@ void AnimalPoser::resolveTranslation()
         std::sort(chain.second.begin(), chain.second.end(), [](const QString &first, const QString &second) {
             return first < second;
         });
-        //qDebug() << "Chain:";
-        //for (const auto &chainJoint: chain.second) {
-        //    qDebug() << chainJoint;
-        //}
         resolveChainRotation(chain.second);
+    }
+    
+    int firstSpineBoneIndex = findBoneIndex(Rigger::firstSpineBoneName);
+    if (-1 == firstSpineBoneIndex) {
+        qDebug() << "Find first spine bone failed:" << Rigger::firstSpineBoneName;
+        return;
+    }
+    
+    const auto &firstSpineBone = bones()[firstSpineBoneIndex];
+    
+    float mostBottomYBeforeTransform = std::numeric_limits<float>::max();
+    for (const auto &bone: bones()) {
+        if (bone.tailPosition.y() < mostBottomYBeforeTransform)
+            mostBottomYBeforeTransform = bone.tailPosition.y();
+    }
+    
+    float legHeightBeforeTransform = std::abs(mostBottomYBeforeTransform - firstSpineBone.headPosition.y());
+    auto transformedJointNodeTree = m_jointNodeTree;
+    transformedJointNodeTree.recalculateTransformMatrices();
+    float mostBottomYAfterTransform = std::numeric_limits<float>::max();
+    QVector3D firstSpineBonePositionAfterTransform = firstSpineBone.headPosition;
+    for (int i = 0; i < (int)transformedJointNodeTree.nodes().size(); ++i) {
+        const auto &bone = bones()[i];
+        const auto &jointNode = transformedJointNodeTree.nodes()[i];
+        QVector3D newPosition = jointNode.transformMatrix * bone.tailPosition;
+        if (0 == i) {
+            // Root bone's tail position is the first spine bone's head position
+            firstSpineBonePositionAfterTransform = newPosition;
+        }
+        if (newPosition.y() < mostBottomYAfterTransform)
+            mostBottomYAfterTransform = newPosition.y();
+    }
+    float legHeightAfterTransform = std::abs(mostBottomYAfterTransform - firstSpineBonePositionAfterTransform.y());
+    float translateY = legHeightAfterTransform - legHeightBeforeTransform;
+    
+    //qDebug() << "Leg height changed, translateY:" << translateY << "legHeightBeforeTransform:" << legHeightBeforeTransform << "legHeightAfterTransform:" << legHeightAfterTransform << "firstSpineBonePositionAfterTransform:" << firstSpineBonePositionAfterTransform << "firstSpineBone.headPosition:" << firstSpineBone.headPosition;
+    
+    const auto &findRootParameters = parameters().find(Rigger::rootBoneName);
+    if (findRootParameters != parameters().end()) {
+        auto findHeightAboveGroundLevel = findRootParameters->second.find("heightAboveGroundLevel");
+        if (findHeightAboveGroundLevel != findRootParameters->second.end()) {
+            float heightAboveGroundLevel = findHeightAboveGroundLevel->second.toFloat();
+            float myHeightAboveGroundLevel = heightAboveGroundLevel * legHeightAfterTransform;
+            translateY += myHeightAboveGroundLevel;
+            //qDebug() << "heightAboveGroundLevel:" << heightAboveGroundLevel << "myHeightAboveGroundLevel:" << myHeightAboveGroundLevel << "legHeightBeforeTransform:" << legHeightBeforeTransform << "applied translateY:" << translateY;
+        }
+    }
+    
+    if (!qFuzzyIsNull(translateY)) {
+        int rootBoneIndex = findBoneIndex(Rigger::rootBoneName);
+        if (-1 == rootBoneIndex) {
+            qDebug() << "Find root bone failed:" << Rigger::rootBoneName;
+            return;
+        }
+        m_jointNodeTree.addTranslation(rootBoneIndex, QVector3D(0, translateY, 0));
     }
 }
 
@@ -231,7 +263,7 @@ void AnimalPoser::resolveChainRotation(const std::vector<QString> &limbBoneNames
 
 void AnimalPoser::commit()
 {
-    resolveTranslation();
+    resolveTransform();
     
     Poser::commit();
 }

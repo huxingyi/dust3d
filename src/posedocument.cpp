@@ -159,7 +159,7 @@ void PoseDocument::fromParameters(const std::vector<RiggerBone> *rigBones,
     if (&m_riggerBones != rigBones)
         m_riggerBones = *rigBones;
     
-    QVector3D rootTranslation;
+    float heightAboveGroundLevel = 0;
     std::vector<RiggerBone> bones = *rigBones;
     for (auto &bone: bones) {
         const auto findParameterResult = parameters.find(bone.name);
@@ -205,25 +205,17 @@ void PoseDocument::fromParameters(const std::vector<RiggerBone> *rigBones,
     if (findRoot != parameters.end()) {
         const auto &map = findRoot->second;
         {
-            auto findXResult = map.find("translateX");
-            auto findYResult = map.find("translateY");
-            auto findZResult = map.find("translateZ");
-            if (findXResult != map.end() ||
-                    findYResult != map.end() ||
-                    findZResult != map.end()) {
-                rootTranslation = {
-                    valueOfKeyInMapOrEmpty(map, "translateX").toFloat(),
-                    valueOfKeyInMapOrEmpty(map, "translateY").toFloat(),
-                    valueOfKeyInMapOrEmpty(map, "translateZ").toFloat()
-                };
+            auto findHeightAboveGroundLevel = map.find("heightAboveGroundLevel");
+            if (findHeightAboveGroundLevel != map.end()) {
+                heightAboveGroundLevel = valueOfKeyInMapOrEmpty(map, "heightAboveGroundLevel").toFloat();
             }
         }
     }
     
-    updateRigBones(&bones, rootTranslation);
+    updateRigBones(&bones, heightAboveGroundLevel);
 }
 
-void PoseDocument::updateRigBones(const std::vector<RiggerBone> *rigBones, const QVector3D &rootTranslation)
+void PoseDocument::updateRigBones(const std::vector<RiggerBone> *rigBones, const float heightAboveGroundLevel)
 {
     reset();
     
@@ -349,7 +341,10 @@ void PoseDocument::updateRigBones(const std::vector<RiggerBone> *rigBones, const
     auto &groundPart = partMap[m_groundPartId];
     groundPart.id = m_groundPartId;
     
-    float groundY = findGroundY() + rootTranslation.y();
+    float footBottomY = findFootBottomY();
+    float legHeight = findLegHeight();
+    float myHeightAboveGroundLevel = heightAboveGroundLevel * legHeight;
+    float groundNodeY = footBottomY + m_groundPlaneHalfThickness + myHeightAboveGroundLevel;
     
     std::pair<QUuid, QUuid> groundNodesPair;
     {
@@ -358,7 +353,7 @@ void PoseDocument::updateRigBones(const std::vector<RiggerBone> *rigBones, const
         node.id = QUuid::createUuid();
         node.setRadius(m_groundPlaneHalfThickness);
         node.x = -100;
-        node.y = groundY + m_groundPlaneHalfThickness;
+        node.y = groundNodeY;
         node.z = -100;
         nodeMap[node.id] = node;
         newAddedNodeIds.insert(node.id);
@@ -371,7 +366,7 @@ void PoseDocument::updateRigBones(const std::vector<RiggerBone> *rigBones, const
         node.id = QUuid::createUuid();
         node.setRadius(m_groundPlaneHalfThickness);
         node.x = 100;
-        node.y = groundY + m_groundPlaneHalfThickness;
+        node.y = groundNodeY;
         node.z = 100;
         nodeMap[node.id] = node;
         newAddedNodeIds.insert(node.id);
@@ -432,7 +427,7 @@ void PoseDocument::setNodeOrigin(QUuid nodeId, float x, float y, float z)
     emit parametersChanged();
 }
 
-float PoseDocument::findGroundY() const
+float PoseDocument::findFootBottomY() const
 {
     auto maxY = std::numeric_limits<float>::lowest();
     for (const auto &nodeIt: nodeMap) {
@@ -445,9 +440,31 @@ float PoseDocument::findGroundY() const
     return maxY;
 }
 
+float PoseDocument::findLegHeight() const
+{
+    float firstSpineY = findFirstSpineY();
+    float footBottomY = findFootBottomY();
+    return std::abs(footBottomY - firstSpineY);
+}
+
+float PoseDocument::findFirstSpineY() const
+{
+    const auto &findFirstSpine = m_boneNameToIdsMap.find(Rigger::firstSpineBoneName);
+    if (findFirstSpine == m_boneNameToIdsMap.end()) {
+        qDebug() << "Find first spine bone failed:" << Rigger::firstSpineBoneName;
+        return 0;
+    }
+    const SkeletonNode *firstSpineNode = findNode(findFirstSpine->second.first);
+    if (nullptr == firstSpineNode) {
+        qDebug() << "Find first spine node failed";
+        return 0;
+    }
+    return firstSpineNode->y;
+}
+
 void PoseDocument::toParameters(std::map<QString, std::map<QString, QString>> &parameters, const std::set<QUuid> &limitNodeIds) const
 {
-    float translateY = 0;
+    float heightAboveGroundLevel = 0;
     auto findGroundEdge = edgeMap.find(m_groundEdgeId);
     if (findGroundEdge != edgeMap.end()) {
         const auto &nodeIds = findGroundEdge->second.nodeIds;
@@ -456,15 +473,19 @@ void PoseDocument::toParameters(std::map<QString, std::map<QString, QString>> &p
             auto findSecondNode = nodeMap.find(nodeIds[1]);
             if (findFirstNode != nodeMap.end() && findSecondNode != nodeMap.end()) {
                 if (limitNodeIds.empty() || limitNodeIds.find(findFirstNode->first) != limitNodeIds.end() ||
-                        limitNodeIds.find(findSecondNode->first) != limitNodeIds.end())
-                translateY = (findFirstNode->second.y + findSecondNode->second.y) / 2 -
-                    (findGroundY() + m_groundPlaneHalfThickness);
+                        limitNodeIds.find(findSecondNode->first) != limitNodeIds.end()) {
+                    float myHeightAboveGroundLevel = (findFirstNode->second.y + findSecondNode->second.y) / 2 -
+                        (findFootBottomY() + m_groundPlaneHalfThickness);
+                    float legHeight = findLegHeight();
+                    if (legHeight > 0)
+                        heightAboveGroundLevel = myHeightAboveGroundLevel / legHeight;
+                }
             }
         }
     }
-    if (!qFuzzyIsNull(translateY)) {
+    if (!qFuzzyIsNull(heightAboveGroundLevel)) {
         auto &boneParameter = parameters[Rigger::rootBoneName];
-        boneParameter["translateY"] = QString::number(translateY);
+        boneParameter["heightAboveGroundLevel"] = QString::number(heightAboveGroundLevel);
     }
     for (const auto &item: m_boneNameToIdsMap) {
         const auto &boneNodeIdPair = item.second;

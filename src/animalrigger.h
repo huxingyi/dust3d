@@ -19,10 +19,10 @@ protected:
     BoneMark translateBoneMark(BoneMark boneMark) override;
 private:
     bool collectJontsForChain(int markIndex, std::vector<int> &jointMarkIndicies);
-    QString namingSpine(int spineOrder);
-    QString namingConnector(const QString &spineName, const QString &chainName);
-    QString namingChain(const QString &baseName, SkeletonSide side, int orderInSide, int totalInSide, int jointOrder);
-    QString namingChainPrefix(const QString &baseName, SkeletonSide side, int orderInSide, int totalInSide);
+    static QString namingSpine(int spineOrder);
+    static QString namingConnector(const QString &spineName, const QString &chainName);
+    static QString namingChain(const QString &baseName, SkeletonSide side, int orderInSide, int totalInSide, int jointOrder);
+    static QString namingChainPrefix(const QString &baseName, SkeletonSide side, int orderInSide, int totalInSide);
     QVector3D findExtremPointFrom(const std::set<int> &verticies, const QVector3D &from);
 };
 

@@ -10,6 +10,7 @@ struct JointNode
     int parentIndex;
     QString name;
     QVector3D position;
+    QVector3D bindTranslation;
     QVector3D translation;
     QQuaternion rotation;
     QMatrix4x4 transformMatrix;

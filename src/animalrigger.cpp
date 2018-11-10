@@ -595,6 +595,8 @@ QString AnimalRigger::namingChain(const QString &baseName, SkeletonSide side, in
 
 QString AnimalRigger::namingSpine(int spineOrder)
 {
+    if (1 == spineOrder)
+        return Rigger::firstSpineBoneName;
     return "Spine" + QString::number(spineOrder);
 }
 

@@ -11,7 +11,7 @@ public:
     void commit() override;
     
 private:
-    void resolveTranslation();
+    void resolveTransform();
     void resolveChainRotation(const std::vector<QString> &limbBoneNames);
     std::pair<bool, QVector3D> findQVector3DFromMap(const std::map<QString, QString> &map, const QString &xName, const QString &yName, const QString &zName);
     std::pair<bool, std::pair<QVector3D, QVector3D>> findBonePositionsFromParameters(const std::map<QString, QString> &map);

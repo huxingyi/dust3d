@@ -32,7 +32,7 @@ public:
     void copyNodes(std::set<QUuid> nodeIdSet) const override;
     
     void updateTurnaround(const QImage &image);
-    void updateRigBones(const std::vector<RiggerBone> *rigBones, const QVector3D &rootTranslation=QVector3D(0, 0, 0));
+    void updateRigBones(const std::vector<RiggerBone> *rigBones, const float heightAboveGroundLevel=0.0);
     void reset();
     
     void toParameters(std::map<QString, std::map<QString, QString>> &parameters, const std::set<QUuid> &limitNodeIds=std::set<QUuid>()) const;
@@ -48,7 +48,6 @@ public slots:
     
     void moveNodeBy(QUuid nodeId, float x, float y, float z);
     void setNodeOrigin(QUuid nodeId, float x, float y, float z);
-    float findGroundY() const;
     void switchChainSide(const std::set<QUuid> nodeIds);
     
 public:
@@ -59,6 +58,9 @@ public:
     
 private:
     QString findBoneNameByNodeId(const QUuid &nodeId);
+    float findFootBottomY() const;
+    float findFirstSpineY() const;
+    float findLegHeight() const;
 
     std::map<QString, std::pair<QUuid, QUuid>> m_boneNameToIdsMap;
     QUuid m_groundPartId;

@@ -25,6 +25,7 @@ void JointNodeTree::reset()
 {
     for (auto &node: m_boneNodes) {
         node.rotation = QQuaternion();
+        node.translation = node.bindTranslation;
     }
 }
 
@@ -77,6 +78,7 @@ JointNodeTree::JointNodeTree(const std::vector<RiggerBone> *resultRigBones)
         } else {
             node.translation = node.position;
         }
+        node.bindTranslation = node.translation;
         QMatrix4x4 translateMatrix;
         translateMatrix.translate(node.translation);
         node.transformMatrix = parentTransformMatrix * translateMatrix;
