@@ -70,6 +70,7 @@ PoseEditWidget::PoseEditWidget(const Document *document, QWidget *parent) :
     connect(graphicsWidget, &SkeletonGraphicsWidget::groupOperationAdded, m_poseDocument, &PoseDocument::saveHistoryItem);
     connect(graphicsWidget, &SkeletonGraphicsWidget::undo, m_poseDocument, &PoseDocument::undo);
     connect(graphicsWidget, &SkeletonGraphicsWidget::redo, m_poseDocument, &PoseDocument::redo);
+    connect(graphicsWidget, &SkeletonGraphicsWidget::paste, m_poseDocument, &PoseDocument::paste);
     connect(graphicsWidget, &SkeletonGraphicsWidget::switchChainSide, m_poseDocument, &PoseDocument::switchChainSide);
     
     connect(m_poseDocument, &PoseDocument::cleanup, graphicsWidget, &SkeletonGraphicsWidget::removeAllContent);
