@@ -2449,6 +2449,126 @@ FbxFileWriter::FbxFileWriter(Outcome &outcome,
                 }
             }
             
+            for (const auto &jointIndex: translatedJoints) {
+                int64_t animationCurveIds[3];
+                std::vector<int64_t> ktimes;
+                std::vector<float> values[3];
+                for (int curveIndex = 0; curveIndex < 3; ++curveIndex) {
+                    animationCurveIds[curveIndex] = m_next64Id++;
+                }
+                double timePoint = 0;
+                for (int frame = 0; frame < (int)motion.second.size(); frame++) {
+                    const auto &keyframe = motion.second[frame];
+                    const auto &translation = keyframe.second.nodes()[jointIndex].translation;
+                    double x = translation.x();
+                    double y = translation.y();
+                    double z = translation.z();
+                    
+                    values[0].push_back(x);
+                    values[1].push_back(y);
+                    values[2].push_back(z);
+                    ktimes.push_back(secondsToKtime(timePoint));
+                    timePoint += keyframe.first;
+                    
+                    FBXNode animationCurveNode("AnimationCurveNode");
+                    int64_t animationCurveNodeId = m_next64Id++;
+                    animationCurveNode.addProperty(animationCurveNodeId);
+                    animationCurveNode.addProperty(std::vector<uint8_t>({'T',0,1,'A','n','i','m','C','u','r','v','e','N','o','d','e'}), 'S');
+                    animationCurveNode.addProperty("");
+                    {
+                        FBXNode properties("Properties70");
+                        {
+                            FBXNode p("P");
+                            p.addProperty("d|X");
+                            p.addProperty("Number");
+                            p.addProperty("");
+                            p.addProperty("A");
+                            p.addProperty((double)x);
+                            properties.addChild(p);
+                        }
+                        {
+                            FBXNode p("P");
+                            p.addProperty("d|Y");
+                            p.addProperty("Number");
+                            p.addProperty("");
+                            p.addProperty("A");
+                            p.addProperty((double)y);
+                            properties.addChild(p);
+                        }
+                        {
+                            FBXNode p("P");
+                            p.addProperty("d|Z");
+                            p.addProperty("Number");
+                            p.addProperty("");
+                            p.addProperty("A");
+                            p.addProperty((double)z);
+                            properties.addChild(p);
+                        }
+                        properties.addChild(FBXNode());
+                        animationCurveNode.addChild(properties);
+                    }
+                    animationCurveNode.addChild(FBXNode());
+                    animationCurveNodes.push_back(animationCurveNode);
+                    
+                    {
+                        FBXNode p("C");
+                        p.addProperty("OO");
+                        p.addProperty(animationCurveNodeId);
+                        p.addProperty(animationLayerId);
+                        connections.addChild(p);
+                    }
+                    {
+                        FBXNode p("C");
+                        p.addProperty("OP");
+                        p.addProperty(animationCurveNodeId);
+                        p.addProperty(limbNodeIds[1 + jointIndex]);
+                        p.addProperty("Lcl Translation");
+                        connections.addChild(p);
+                    }
+                    {
+                        FBXNode p("C");
+                        p.addProperty("OP");
+                        p.addProperty(animationCurveIds[0]);
+                        p.addProperty(animationCurveNodeId);
+                        p.addProperty("d|X");
+                        connections.addChild(p);
+                    }
+                    {
+                        FBXNode p("C");
+                        p.addProperty("OP");
+                        p.addProperty(animationCurveIds[1]);
+                        p.addProperty(animationCurveNodeId);
+                        p.addProperty("d|Y");
+                        connections.addChild(p);
+                    }
+                    {
+                        FBXNode p("C");
+                        p.addProperty("OP");
+                        p.addProperty(animationCurveIds[2]);
+                        p.addProperty(animationCurveNodeId);
+                        p.addProperty("d|Z");
+                        connections.addChild(p);
+                    }
+                }
+                
+                for (int curveIndex = 0; curveIndex < 3; ++curveIndex)
+                {
+                    FBXNode animationCurve("AnimationCurve");
+                    animationCurve.addProperty(animationCurveIds[curveIndex]);
+                    animationCurve.addProperty(std::vector<uint8_t>({'C','u','r','v','e',(uint8_t)('1'+curveIndex),0,1,'A','n','i','m','C','u','r','v','e'}), 'S');
+                    animationCurve.addProperty("");
+                    animationCurve.addPropertyNode("Default", (double)0.000000);
+                    animationCurve.addPropertyNode("KeyVer", (int32_t)4008);
+                    animationCurve.addPropertyNode("KeyTime", ktimes);
+                    animationCurve.addPropertyNode("KeyValueFloat", values[curveIndex]);
+                    animationCurve.addPropertyNode("KeyAttrFlags", std::vector<int>(1, 24836));
+                    animationCurve.addPropertyNode("KeyAttrDataFloat", std::vector<float>(4, 0.000000));
+                    animationCurve.addPropertyNode("KeyAttrRefCount", std::vector<int32_t>(1, ktimes.size()));
+                    animationCurve.addChild(FBXNode());
+                    animationCurves.push_back(animationCurve);
+                }
+            }
+            
             for (const auto &jointIndex: rotatedJoints) {
                 int64_t animationCurveIds[3];
                 std::vector<int64_t> ktimes;
