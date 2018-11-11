@@ -279,6 +279,14 @@ void *MeshGenerator::combinePartMesh(QString partId)
     cacheBmeshVertices.clear();
     cacheBmeshQuads.clear();
     std::map<int, std::vector<int>> bmeshNodeIdToDataMap;
+    
+    struct NodeInfo
+    {
+        float radius = 0;
+        QVector3D position;
+        BoneMark boneMark = BoneMark::None;
+    };
+    std::map<QString, NodeInfo> nodeInfos;
     for (const auto &nodeId: m_partNodeIds[partId]) {
         auto findNode = m_snapshot->nodes.find(nodeId);
         if (findNode == m_snapshot->nodes.end()) {
@@ -291,34 +299,15 @@ void *MeshGenerator::combinePartMesh(QString partId)
         float x = (valueOfKeyInMapOrEmpty(node, "x").toFloat() - m_mainProfileMiddleX);
         float y = (m_mainProfileMiddleY - valueOfKeyInMapOrEmpty(node, "y").toFloat());
         float z = (m_sideProfileMiddleX - valueOfKeyInMapOrEmpty(node, "z").toFloat());
-        int bmeshNodeId = meshlite_bmesh_add_node(m_meshliteContext, bmeshId, x, y, z, radius);
-        
+
         BoneMark boneMark = BoneMarkFromString(valueOfKeyInMapOrEmpty(node, "boneMark").toUtf8().constData());
         
-        nodeToBmeshIdMap[nodeId] = bmeshNodeId;
-        bmeshToNodeIdMap[bmeshNodeId] = nodeId;
-        
-        OutcomeNode bmeshNode;
-        bmeshNode.partId = QUuid(partId);
-        bmeshNode.origin = QVector3D(x, y, z);
-        bmeshNode.radius = radius;
-        bmeshNode.nodeId = QUuid(nodeId);
-        bmeshNode.color = partColor;
-        bmeshNode.materialId = materialId;
-        bmeshNode.boneMark = boneMark;
-        bmeshNode.mirroredByPartId = mirroredPartId;
-        bmeshNodeIdToDataMap[bmeshNodeId].push_back(cacheBmeshNodes.size());
-        cacheBmeshNodes.push_back(bmeshNode);
-        if (xMirrored) {
-            bmeshNode.partId = mirroredPartId;
-            bmeshNode.mirrorFromPartId = QUuid(partId);
-            bmeshNode.mirroredByPartId = QUuid();
-            bmeshNode.origin.setX(-x);
-            bmeshNodeIdToDataMap[bmeshNodeId].push_back(cacheBmeshNodes.size());
-            cacheBmeshNodes.push_back(bmeshNode);
-        }
+        auto &nodeInfo = nodeInfos[nodeId];
+        nodeInfo.position = QVector3D(x, y, z);
+        nodeInfo.radius = radius;
+        nodeInfo.boneMark = boneMark;
     }
-    
+    std::set<std::pair<QString, QString>> edges;
     for (const auto &edgeId: m_partEdgeIds[partId]) {
         auto findEdge = m_snapshot->edges.find(edgeId);
         if (findEdge == m_snapshot->edges.end()) {
@@ -329,6 +318,77 @@ void *MeshGenerator::combinePartMesh(QString partId)
         
         QString fromNodeId = valueOfKeyInMapOrEmpty(edge, "from");
         QString toNodeId = valueOfKeyInMapOrEmpty(edge, "to");
+        
+        std::function<void(const QString &, const QString &)> connectNodes;
+        connectNodes = [&connectNodes, &edges, &nodeInfos](const QString &fromNodeId, const QString &toNodeId) {
+        
+            const auto &findFromNodeInfo = nodeInfos.find(fromNodeId);
+            if (findFromNodeInfo == nodeInfos.end()) {
+                qDebug() << "Find from-node info failed:" << fromNodeId;
+                return;
+            }
+            
+            const auto &findToNodeInfo = nodeInfos.find(toNodeId);
+            if (findToNodeInfo == nodeInfos.end()) {
+                qDebug() << "Find to-node info failed:" << toNodeId;
+                return;
+            }
+            
+            auto distanceBetweenNodes = findFromNodeInfo->second.position.distanceToPoint(findToNodeInfo->second.position);
+            float centerEmptyLength = distanceBetweenNodes - (findFromNodeInfo->second.radius + findToNodeInfo->second.radius);
+            if (centerEmptyLength < distanceBetweenNodes * 0.5) {
+                edges.insert({fromNodeId, toNodeId});
+                return;
+            }
+            
+            // Cut off by add intermediate nodes
+            QString newNodeId = QUuid::createUuid().toString();
+            auto &nodeInfo = nodeInfos[newNodeId];
+            nodeInfo.position = (findFromNodeInfo->second.position + findToNodeInfo->second.position) / 2;
+            nodeInfo.radius = (findFromNodeInfo->second.radius + findToNodeInfo->second.radius) / 2;
+            
+            connectNodes(fromNodeId, newNodeId);
+            connectNodes(newNodeId, toNodeId);
+        };
+        
+        connectNodes(fromNodeId, toNodeId);
+    }
+    
+    
+    for (const auto &nodeIt: nodeInfos) {
+        const auto &nodeId = nodeIt.first;
+        const auto &nodeInfo = nodeIt.second;
+        
+        int bmeshNodeId = meshlite_bmesh_add_node(m_meshliteContext, bmeshId,
+            nodeInfo.position.x(), nodeInfo.position.y(), nodeInfo.position.z(), nodeInfo.radius);
+        
+        nodeToBmeshIdMap[nodeId] = bmeshNodeId;
+        bmeshToNodeIdMap[bmeshNodeId] = nodeId;
+        
+        OutcomeNode bmeshNode;
+        bmeshNode.partId = QUuid(partId);
+        bmeshNode.origin = nodeInfo.position;
+        bmeshNode.radius = nodeInfo.radius;
+        bmeshNode.nodeId = QUuid(nodeId);
+        bmeshNode.color = partColor;
+        bmeshNode.materialId = materialId;
+        bmeshNode.boneMark = nodeInfo.boneMark;
+        bmeshNode.mirroredByPartId = mirroredPartId;
+        bmeshNodeIdToDataMap[bmeshNodeId].push_back(cacheBmeshNodes.size());
+        cacheBmeshNodes.push_back(bmeshNode);
+        if (xMirrored) {
+            bmeshNode.partId = mirroredPartId;
+            bmeshNode.mirrorFromPartId = QUuid(partId);
+            bmeshNode.mirroredByPartId = QUuid();
+            bmeshNode.origin.setX(-nodeInfo.position.x());
+            bmeshNodeIdToDataMap[bmeshNodeId].push_back(cacheBmeshNodes.size());
+            cacheBmeshNodes.push_back(bmeshNode);
+        }
+    }
+    
+    for (const auto &edgeIt: edges) {
+        const QString &fromNodeId = edgeIt.first;
+        const QString &toNodeId = edgeIt.second;
         
         auto findFromBmeshId = nodeToBmeshIdMap.find(fromNodeId);
         if (findFromBmeshId == nodeToBmeshIdMap.end()) {
