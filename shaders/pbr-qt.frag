@@ -330,17 +330,17 @@ void main()
 
     float metalness = vertMetalness;
     if (metalnessMapEnabled == 1) {
-        metalness = texture2D(metalnessRoughnessAmbientOcclusionMapId, vertTexCoord).b / 255.0;
+        metalness = texture2D(metalnessRoughnessAmbientOcclusionMapId, vertTexCoord).b;
     }
 
     float roughness = vertRoughness;
     if (roughnessMapEnabled == 1) {
-        roughness = texture2D(metalnessRoughnessAmbientOcclusionMapId, vertTexCoord).r / 255.0;
+        roughness = texture2D(metalnessRoughnessAmbientOcclusionMapId, vertTexCoord).r;
     }
 
     float ambientOcclusion = 1.0;
     if (ambientOcclusionMapEnabled == 1) {
-        ambientOcclusion = texture2D(metalnessRoughnessAmbientOcclusionMapId, vertTexCoord).g / 255.0;
+        ambientOcclusion = texture2D(metalnessRoughnessAmbientOcclusionMapId, vertTexCoord).g;
     }
     
     roughness = min(0.99, roughness);

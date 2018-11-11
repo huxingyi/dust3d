@@ -216,13 +216,13 @@ void TextureGenerator::generate()
     m_resultTextureMetalnessRoughnessAmbientOcclusionImage->fill(Qt::transparent);
     
     m_resultTextureMetalnessImage = new QImage(TextureGenerator::m_textureSize, TextureGenerator::m_textureSize, QImage::Format_ARGB32);
-    m_resultTextureMetalnessImage->fill(Qt::transparent);
+    m_resultTextureMetalnessImage->fill(Qt::black);
     
     m_resultTextureRoughnessImage = new QImage(TextureGenerator::m_textureSize, TextureGenerator::m_textureSize, QImage::Format_ARGB32);
-    m_resultTextureRoughnessImage->fill(Qt::transparent);
+    m_resultTextureRoughnessImage->fill(Qt::white);
     
     m_resultTextureAmbientOcclusionImage = new QImage(TextureGenerator::m_textureSize, TextureGenerator::m_textureSize, QImage::Format_ARGB32);
-    m_resultTextureAmbientOcclusionImage->fill(Qt::transparent);
+    m_resultTextureAmbientOcclusionImage->fill(Qt::white);
     
     auto createImageEndTime = countTimeConsumed.elapsed();
     

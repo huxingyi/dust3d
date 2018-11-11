@@ -218,6 +218,12 @@ MeshLoader::MeshLoader(const MeshLoader &mesh) :
     if (nullptr != mesh.m_normalMapImage) {
         this->m_normalMapImage = new QImage(*mesh.m_normalMapImage);
     }
+    if (nullptr != mesh.m_metalnessRoughnessAmbientOcclusionImage) {
+        this->m_metalnessRoughnessAmbientOcclusionImage = new QImage(*mesh.m_metalnessRoughnessAmbientOcclusionImage);
+        this->m_hasMetalnessInImage = mesh.m_hasMetalnessInImage;
+        this->m_hasRoughnessInImage = mesh.m_hasRoughnessInImage;
+        this->m_hasAmbientOcclusionInImage = mesh.m_hasAmbientOcclusionInImage;
+    }
     this->m_vertices = mesh.m_vertices;
     this->m_faces = mesh.m_faces;
     this->m_triangulatedVertices = mesh.m_triangulatedVertices;
@@ -301,6 +307,7 @@ MeshLoader::~MeshLoader()
     m_edgeVertexCount = 0;
     delete m_textureImage;
     delete m_normalMapImage;
+    delete m_metalnessRoughnessAmbientOcclusionImage;
 }
 
 const std::vector<QVector3D> &MeshLoader::vertices()
