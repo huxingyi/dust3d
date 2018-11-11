@@ -23,7 +23,8 @@ matrix:
 install:
   # (Mac) Install CGAL
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew reinstall cgal; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then HOMEBREW_VERBOSE_USING_DOTS=1 brew reinstall --verbose boost --without-single --without-static; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then HOMEBREW_VERBOSE_USING_DOTS=1 brew reinstall --verbose cgal; fi
 
   # (Linux) Prepare build environment
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo add-apt-repository --yes ppa:beineri/opt-qt591-trusty; fi
