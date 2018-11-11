@@ -1102,13 +1102,8 @@ void DocumentWindow::saveTo(const QString &saveAsFilename)
     if (modelXml.size() > 0)
         ds3Writer.add("model.xml", "model", &modelXml);
 
-    QByteArray imageByteArray;
-    QBuffer pngBuffer(&imageByteArray);
-    if (!m_document->turnaround.isNull()) {
-        pngBuffer.open(QIODevice::WriteOnly);
-        m_document->turnaround.save(&pngBuffer, "PNG");
-        if (imageByteArray.size() > 0)
-            ds3Writer.add("canvas.png", "asset", &imageByteArray);
+    if (!m_document->turnaround.isNull() && m_document->turnaroundPngByteArray.size() > 0) {
+        ds3Writer.add("canvas.png", "asset", &m_document->turnaroundPngByteArray);
     }
     
     std::set<QUuid> imageIds;
@@ -1133,15 +1128,11 @@ void DocumentWindow::saveTo(const QString &saveAsFilename)
     }
     
     for (const auto &imageId: imageIds) {
-        const QImage *image = ImageForever::get(imageId);
-        if (nullptr == image)
+        const QByteArray *pngByteArray = ImageForever::getPngByteArray(imageId);
+        if (nullptr == pngByteArray)
             continue;
-        QByteArray imageByteArray;
-        QBuffer pngBuffer(&imageByteArray);
-        pngBuffer.open(QIODevice::WriteOnly);
-        image->save(&pngBuffer, "PNG");
-        if (imageByteArray.size() > 0)
-            ds3Writer.add("images/" + imageId.toString() + ".png", "asset", &imageByteArray);
+        if (pngByteArray->size() > 0)
+            ds3Writer.add("images/" + imageId.toString() + ".png", "asset", pngByteArray);
     }
 
     if (ds3Writer.save(filename)) {

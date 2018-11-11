@@ -7,6 +7,7 @@
 #include <QApplication>
 #include <QVector3D>
 #include <functional>
+#include <QBuffer>
 #include "document.h"
 #include "util.h"
 #include "snapshotxml.h"
@@ -719,6 +720,10 @@ void Document::setNodeBoneMark(QUuid nodeId, BoneMark mark)
 void Document::updateTurnaround(const QImage &image)
 {
     turnaround = image;
+    turnaroundPngByteArray.clear();
+    QBuffer pngBuffer(&turnaroundPngByteArray);
+    pngBuffer.open(QIODevice::WriteOnly);
+    turnaround.save(&pngBuffer, "PNG");
     emit turnaroundChanged();
 }
 

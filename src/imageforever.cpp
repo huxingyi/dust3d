@@ -1,12 +1,14 @@
 #include <map>
 #include <QMutex>
 #include <QMutexLocker>
+#include <QBuffer>
 #include "imageforever.h"
 
 struct ImageForeverItem
 {
     QImage *image;
     QUuid id;
+    QByteArray *imageByteArray;
 };
 static std::map<QUuid, ImageForeverItem> g_foreverMap;
 static std::map<qint64, QUuid> g_foreverCacheKeyToIdMap;
@@ -19,6 +21,15 @@ const QImage *ImageForever::get(const QUuid &id)
     if (findResult == g_foreverMap.end())
         return nullptr;
     return findResult->second.image;
+}
+
+const QByteArray *ImageForever::getPngByteArray(const QUuid &id)
+{
+    QMutexLocker locker(&g_mapMutex);
+    auto findResult = g_foreverMap.find(id);
+    if (findResult == g_foreverMap.end())
+        return nullptr;
+    return findResult->second.imageByteArray;
 }
 
 QUuid ImageForever::add(const QImage *image, QUuid toId)
@@ -35,7 +46,11 @@ QUuid ImageForever::add(const QImage *image, QUuid toId)
     if (g_foreverMap.find(newId) != g_foreverMap.end())
         return newId;
     QImage *newImage = new QImage(*image);
-    g_foreverMap[newId] = {newImage, newId};
+    QByteArray *imageByteArray = new QByteArray();
+    QBuffer pngBuffer(imageByteArray);
+    pngBuffer.open(QIODevice::WriteOnly);
+    newImage->save(&pngBuffer, "PNG");
+    g_foreverMap[newId] = {newImage, newId, imageByteArray};
     g_foreverCacheKeyToIdMap[newImage->cacheKey()] = newId;
     return newId;
 }

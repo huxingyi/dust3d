@@ -5,6 +5,7 @@
 #include <QString>
 #include <cmath>
 #include <QImage>
+#include <QByteArray>
 #include "bonemark.h"
 #include "theme.h"
 #include "meshloader.h"
@@ -200,6 +201,7 @@ public:
     bool zlocked = false;
     bool radiusLocked = false;
     QImage turnaround;
+    QByteArray turnaroundPngByteArray;
     std::map<QUuid, SkeletonPart> partMap;
     std::map<QUuid, SkeletonNode> nodeMap;
     std::map<QUuid, SkeletonEdge> edgeMap;
