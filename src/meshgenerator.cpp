@@ -516,7 +516,8 @@ void *MeshGenerator::combineComponentMesh(QString componentId, bool *inverse)
         component = &findComponent->second;
     }
     
-    if (isTrueValueString(valueOfKeyInMapOrEmpty(*component, "inverse")))
+    CombineMode combineMode = CombineModeFromString(valueOfKeyInMapOrEmpty(*component, "combineMode").toUtf8().constData());
+    if (combineMode == CombineMode::Inversion)
         *inverse = true;
     
     if (m_dirtyComponentIds.find(componentId) == m_dirtyComponentIds.end()) {

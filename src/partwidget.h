@@ -45,7 +45,7 @@ public:
     void updateColorButton();
     void updateWrapButton();
     void updateCheckedState(bool checked);
-    void updateInverseState(bool inverse);
+    void updateUnnormalState(bool unnormal);
     static QSize preferredSize();
     ModelWidget *previewWidget();
 protected:
@@ -56,7 +56,7 @@ public slots:
 private: // need initialize
     const Document *m_document;
     QUuid m_partId;
-    bool m_inverted;
+    bool m_unnormal;
 private:
     ModelWidget *m_previewWidget;
     QPushButton *m_visibleButton;

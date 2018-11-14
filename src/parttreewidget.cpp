@@ -6,6 +6,7 @@
 #include <QRadialGradient>
 #include <QBrush>
 #include <QGuiApplication>
+#include <QComboBox>
 #include "parttreewidget.h"
 #include "partwidget.h"
 #include "skeletongraphicswidget.h"
@@ -119,8 +120,8 @@ void PartTreeWidget::updateComponentSelectState(QUuid componentId, bool selected
         auto item = m_partItemMap.find(component->linkToPartId);
         if (item != m_componentItemMap.end()) {
             PartWidget *widget = (PartWidget *)itemWidget(item->second, 0);
-            // Inverse state updating call should be called before check state updating call
-            widget->updateInverseState(component->inverse);
+            // Unnormal state updating call should be called before check state updating call
+            widget->updateUnnormalState(component->combineMode != CombineMode::Normal);
             widget->updateCheckedState(selected);
         }
         return;
@@ -128,7 +129,7 @@ void PartTreeWidget::updateComponentSelectState(QUuid componentId, bool selected
     auto item = m_componentItemMap.find(componentId);
     if (item != m_componentItemMap.end()) {
         item->second->setFont(0, selected ? m_selectedFont : m_normalFont);
-        if (component->inverse)
+        if (component->combineMode != CombineMode::Normal)
             item->second->setForeground(0, selected ? QBrush(Theme::blue) : QBrush(Theme::blue));
         else
             item->second->setForeground(0, selected ? QBrush(Theme::red) : QBrush(Theme::white));
@@ -259,7 +260,7 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
     } else {
         QLabel *previewLabel = new QLabel;
         previewLabel->setFixedHeight(Theme::partPreviewImageSize);
-        previewLabel->setStyleSheet("QLabel {color: " + (component && component->inverse ? Theme::blue.name() : Theme::red.name()) + "}");
+        previewLabel->setStyleSheet("QLabel {color: " + (component && (component->combineMode != CombineMode::Normal) ? Theme::blue.name() : Theme::red.name()) + "}");
         if (nullptr != component) {
             previewLabel->setText(component->name);
         } else if (!componentIds.empty()) {
@@ -268,7 +269,31 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
         layout->addWidget(previewLabel);
     }
     QWidget *widget = new QWidget;
-    widget->setLayout(layout);
+    if (nullptr != component) {
+        QComboBox *combineModeSelectBox = new QComboBox;
+        for (size_t i = 0; i < (size_t)CombineMode::Count; ++i) {
+            CombineMode mode = (CombineMode)i;
+            combineModeSelectBox->addItem(CombineModeToDispName(mode));
+        }
+        combineModeSelectBox->setCurrentIndex((int)component->combineMode);
+        
+        connect(combineModeSelectBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [=](int index) {
+            emit setComponentCombineMode(component->id, (CombineMode)index);
+        });
+        
+        QHBoxLayout *combineModeLayout = new QHBoxLayout;
+        combineModeLayout->setAlignment(Qt::AlignCenter);
+        combineModeLayout->setContentsMargins(0, 0, 0, 0);
+        combineModeLayout->setSpacing(0);
+        combineModeLayout->addWidget(combineModeSelectBox);
+    
+        QVBoxLayout *newLayout = new QVBoxLayout;
+        newLayout->addLayout(layout);
+        newLayout->addLayout(combineModeLayout);
+        widget->setLayout(newLayout);
+    } else {
+        widget->setLayout(layout);
+    }
     forDisplayPartImage.setDefaultWidget(widget);
     if (!componentIds.empty()) {
         contextMenu.addAction(&forDisplayPartImage);
@@ -283,8 +308,6 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
     lockAction.setIcon(Theme::awesome()->icon(fa::lock));
     QAction unlockAction(tr("Unlock"), this);
     unlockAction.setIcon(Theme::awesome()->icon(fa::unlock));
-    QAction invertAction(tr("Invert"), this);
-    QAction cancelInverseAction(tr("Cancel Inverse"), this);
     QAction selectAction(tr("Select"), this);
     
     if (nullptr != component && nullptr != part) {
@@ -353,6 +376,7 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
         contextMenu.addAction(&unlockAction);
     }
     
+    /*
     if (component && !component->inverse) {
         connect(&invertAction, &QAction::triggered, [=]() {
             emit setComponentInverseState(component->id, true);
@@ -366,6 +390,7 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
         });
         contextMenu.addAction(&cancelInverseAction);
     }
+    */
     
     contextMenu.addSeparator();
     
@@ -655,7 +680,7 @@ void PartTreeWidget::componentExpandStateChanged(QUuid componentId)
     componentItem->second->setExpanded(component->expanded);
 }
 
-void PartTreeWidget::componentInverseStateChanged(QUuid componentId)
+void PartTreeWidget::componentCombineModeChanged(QUuid componentId)
 {
     updateComponentAppearance(componentId);
 }

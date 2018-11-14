@@ -15,7 +15,7 @@
 PartWidget::PartWidget(const Document *document, QUuid partId) :
     m_document(document),
     m_partId(partId),
-    m_inverted(false)
+    m_unnormal(false)
 {
     QSizePolicy retainSizePolicy = sizePolicy();
     retainSizePolicy.setRetainSizeWhenHidden(true);
@@ -263,17 +263,17 @@ void PartWidget::updateAllButtons()
 void PartWidget::updateCheckedState(bool checked)
 {
     if (checked)
-        m_backgroundWidget->setStyleSheet("QWidget#background {border: 1px solid " + (m_inverted ? Theme::blue.name() : Theme::red.name()) + ";}");
+        m_backgroundWidget->setStyleSheet("QWidget#background {border: 1px solid " + (m_unnormal ? Theme::blue.name() : Theme::red.name()) + ";}");
     else
         m_backgroundWidget->setStyleSheet("QWidget#background {border: 1px solid transparent;}");
 }
 
-void PartWidget::updateInverseState(bool inverse)
+void PartWidget::updateUnnormalState(bool unnormal)
 {
-    if (m_inverted == inverse)
+    if (m_unnormal == unnormal)
         return;
     
-    m_inverted = inverse;
+    m_unnormal = unnormal;
     updateAllButtons();
 }
 
@@ -439,7 +439,7 @@ void PartWidget::initButton(QPushButton *button)
 
 void PartWidget::updateButton(QPushButton *button, QChar icon, bool highlighted)
 {
-    Theme::updateAwesomeMiniButton(button, icon, highlighted, m_inverted);
+    Theme::updateAwesomeMiniButton(button, icon, highlighted, m_unnormal);
 }
 
 void PartWidget::updatePreview()

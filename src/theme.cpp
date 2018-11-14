@@ -103,14 +103,14 @@ void Theme::initAwesomeMiniButton(QPushButton *button)
     button->setFocusPolicy(Qt::NoFocus);
 }
 
-void Theme::updateAwesomeMiniButton(QPushButton *button, QChar icon, bool highlighted, bool inverted)
+void Theme::updateAwesomeMiniButton(QPushButton *button, QChar icon, bool highlighted, bool unnormal)
 {
     button->setText(icon);
     QColor color;
     bool needDesaturation = true;
     
     if (highlighted) {
-        if (inverted) {
+        if (unnormal) {
             color = Theme::blue;
             needDesaturation = false;
         } else {

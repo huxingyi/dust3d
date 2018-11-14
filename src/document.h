@@ -24,6 +24,7 @@
 #include "interpolationtype.h"
 #include "jointnodetree.h"
 #include "skeletondocument.h"
+#include "combinemode.h"
 
 class MaterialPreviewsGenerator;
 class MotionsGenerator;
@@ -55,7 +56,7 @@ public:
     QUuid linkToPartId;
     QUuid parentId;
     bool expanded = true;
-    bool inverse = false;
+    CombineMode combineMode = CombineMode::Normal;
     bool dirty = true;
     float smoothAll = 0.0;
     float smoothSeam = 0.0;
@@ -401,7 +402,7 @@ signals:
     void partColorStateChanged(QUuid partId);
     void partWrapStateChanged(QUuid partId);
     void partMaterialIdChanged(QUuid partId);
-    void componentInverseStateChanged(QUuid partId);
+    void componentCombineModeChanged(QUuid componentId);
     void cleanup();
     void originChanged();
     void xlockStateChanged();
@@ -549,7 +550,7 @@ public slots:
     void setPartColorState(QUuid partId, bool hasColor, QColor color);
     void setPartWrapState(QUuid partId, bool wrapped);
     void setPartMaterialId(QUuid partId, QUuid materialId);
-    void setComponentInverseState(QUuid componentId, bool inverse);
+    void setComponentCombineMode(QUuid componentId, CombineMode combineMode);
     void moveComponentUp(QUuid componentId);
     void moveComponentDown(QUuid componentId);
     void moveComponentToTop(QUuid componentId);
