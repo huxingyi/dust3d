@@ -796,6 +796,7 @@ DocumentWindow::DocumentWindow() :
     connect(m_document, &Document::componentRemoved, partTreeWidget, &PartTreeWidget::componentRemoved);
     connect(m_document, &Document::componentAdded, partTreeWidget, &PartTreeWidget::componentAdded);
     connect(m_document, &Document::componentExpandStateChanged, partTreeWidget, &PartTreeWidget::componentExpandStateChanged);
+    connect(m_document, &Document::componentInverseStateChanged, partTreeWidget, &PartTreeWidget::componentInverseStateChanged);
     connect(m_document, &Document::partPreviewChanged, partTreeWidget, &PartTreeWidget::partPreviewChanged);
     connect(m_document, &Document::partLockStateChanged, partTreeWidget, &PartTreeWidget::partLockStateChanged);
     connect(m_document, &Document::partVisibleStateChanged, partTreeWidget, &PartTreeWidget::partVisibleStateChanged);

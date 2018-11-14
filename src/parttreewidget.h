@@ -49,6 +49,7 @@ public slots:
     void componentRemoved(QUuid componentId);
     void componentAdded(QUuid componentId);
     void componentExpandStateChanged(QUuid componentId);
+    void componentInverseStateChanged(QUuid componentId);
     void partRemoved(QUuid partId);
     void partPreviewChanged(QUuid partid);
     void partLockStateChanged(QUuid partId);
@@ -77,6 +78,7 @@ private:
     void selectComponent(QUuid componentId, bool multiple=false);
     QWidget *createSmoothMenuWidget(QUuid componentId);
     void updateComponentSelectState(QUuid componentId, bool selected);
+    void updateComponentAppearance(QUuid componentId);
     bool isComponentSelected(QUuid componentId);
 private:
     const Document *m_document = nullptr;

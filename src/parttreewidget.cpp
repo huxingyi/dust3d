@@ -103,6 +103,11 @@ void PartTreeWidget::selectComponent(QUuid componentId, bool multiple)
     }
 }
 
+void PartTreeWidget::updateComponentAppearance(QUuid componentId)
+{
+    updateComponentSelectState(componentId, isComponentSelected(componentId));
+}
+
 void PartTreeWidget::updateComponentSelectState(QUuid componentId, bool selected)
 {
     const Component *component = m_document->findComponent(componentId);
@@ -114,19 +119,19 @@ void PartTreeWidget::updateComponentSelectState(QUuid componentId, bool selected
         auto item = m_partItemMap.find(component->linkToPartId);
         if (item != m_componentItemMap.end()) {
             PartWidget *widget = (PartWidget *)itemWidget(item->second, 0);
+            // Inverse state updating call should be called before check state updating call
+            widget->updateInverseState(component->inverse);
             widget->updateCheckedState(selected);
         }
         return;
     }
     auto item = m_componentItemMap.find(componentId);
     if (item != m_componentItemMap.end()) {
-        if (selected) {
-            item->second->setFont(0, m_selectedFont);
-            item->second->setForeground(0, QBrush(Theme::red));
-        } else {
-            item->second->setFont(0, m_normalFont);
-            item->second->setForeground(0, QBrush(Theme::white));
-        }
+        item->second->setFont(0, selected ? m_selectedFont : m_normalFont);
+        if (component->inverse)
+            item->second->setForeground(0, selected ? QBrush(Theme::blue) : QBrush(Theme::blue));
+        else
+            item->second->setForeground(0, selected ? QBrush(Theme::red) : QBrush(Theme::white));
     }
 }
 
@@ -254,7 +259,7 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
     } else {
         QLabel *previewLabel = new QLabel;
         previewLabel->setFixedHeight(Theme::partPreviewImageSize);
-        previewLabel->setStyleSheet("QLabel {color: " + Theme::red.name() + "}");
+        previewLabel->setStyleSheet("QLabel {color: " + (component && component->inverse ? Theme::blue.name() : Theme::red.name()) + "}");
         if (nullptr != component) {
             previewLabel->setText(component->name);
         } else if (!componentIds.empty()) {
@@ -648,6 +653,11 @@ void PartTreeWidget::componentExpandStateChanged(QUuid componentId)
     }
     
     componentItem->second->setExpanded(component->expanded);
+}
+
+void PartTreeWidget::componentInverseStateChanged(QUuid componentId)
+{
+    updateComponentAppearance(componentId);
 }
 
 void PartTreeWidget::addComponentChildrenToItem(QUuid componentId, QTreeWidgetItem *parentItem)
