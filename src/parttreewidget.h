@@ -33,7 +33,7 @@ signals:
     void unlockAllComponents();
     void setPartLockState(QUuid partId, bool locked);
     void setPartVisibleState(QUuid partId, bool visible);
-    void setComponentInverseState(QUuid componentId, bool inverse);
+    void setComponentCombineMode(QUuid componentId, CombineMode combineMode);
     void hideDescendantComponents(QUuid componentId);
     void showDescendantComponents(QUuid componentId);
     void lockDescendantComponents(QUuid componentId);
@@ -49,6 +49,7 @@ public slots:
     void componentRemoved(QUuid componentId);
     void componentAdded(QUuid componentId);
     void componentExpandStateChanged(QUuid componentId);
+    void componentCombineModeChanged(QUuid componentId);
     void partRemoved(QUuid partId);
     void partPreviewChanged(QUuid partid);
     void partLockStateChanged(QUuid partId);
@@ -77,6 +78,7 @@ private:
     void selectComponent(QUuid componentId, bool multiple=false);
     QWidget *createSmoothMenuWidget(QUuid componentId);
     void updateComponentSelectState(QUuid componentId, bool selected);
+    void updateComponentAppearance(QUuid componentId);
     bool isComponentSelected(QUuid componentId);
 private:
     const Document *m_document = nullptr;

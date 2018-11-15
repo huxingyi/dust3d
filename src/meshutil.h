@@ -21,5 +21,7 @@ void *cloneCombinableMesh(void *mesh);
 void *convertToCombinableConvexHullMesh(void *meshliteContext, int meshId);
 void loadMeshVerticesPositions(void *meshliteContext, int meshId, std::vector<QVector3D> &positions);
 void loadCombinableMeshVerticesPositions(void *mesh, std::vector<QVector3D> &positions);
+void loadCombinableMeshVerticesPositionsAndFacesIndices(void *mesh, std::vector<QVector3D> &positions, std::vector<std::vector<int>> &indices);
+void *buildCombinableMeshFromVerticesPositionsAndFacesIndices(const std::vector<QVector3D> &positions, const std::vector<std::vector<int>> &indices);
 
 #endif

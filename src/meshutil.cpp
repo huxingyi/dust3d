@@ -53,6 +53,25 @@ void loadMeshVerticesPositions(void *meshliteContext, int meshId, std::vector<QV
 }
 
 template <class Kernel>
+typename CGAL::Surface_mesh<typename Kernel::Point_3> *buildCgalMesh(const std::vector<QVector3D> &positions, const std::vector<std::vector<int>> &indices)
+{
+    typename CGAL::Surface_mesh<typename Kernel::Point_3> *mesh = new typename CGAL::Surface_mesh<typename Kernel::Point_3>;
+    std::map<int, typename CGAL::Surface_mesh<typename Kernel::Point_3>::Vertex_index> oldToNewMap;
+    for (int i = 0; i < (int)positions.size(); ++i) {
+        const auto &pos = positions[i];
+        oldToNewMap[i] = mesh->add_vertex(typename Kernel::Point_3(pos.x(), pos.y(), pos.z()));
+    }
+    for (const auto &face: indices) {
+        std::vector<typename CGAL::Surface_mesh<typename Kernel::Point_3>::Vertex_index> faceVertexIndices;
+        for (const auto &index: face) {
+            faceVertexIndices.push_back(oldToNewMap[index]);
+        }
+        mesh->add_face(faceVertexIndices);
+    }
+    return mesh;
+}
+
+template <class Kernel>
 typename CGAL::Surface_mesh<typename Kernel::Point_3> *makeCgalMeshFromMeshlite(void *meshlite, int meshId)
 {
     typename CGAL::Surface_mesh<typename Kernel::Point_3> *mesh = new typename CGAL::Surface_mesh<typename Kernel::Point_3>;
@@ -456,5 +475,56 @@ void *cloneCombinableMesh(void *mesh)
 void *convertToCombinableConvexHullMesh(void *meshliteContext, int meshId)
 {
     ExactMesh *mesh = makeCgalConvexHullMeshFromMeshlite<ExactKernel>(meshliteContext, meshId);
+    return (void *)mesh;
+}
+
+void loadCombinableMeshVerticesPositionsAndFacesIndices(void *mesh, std::vector<QVector3D> &positions, std::vector<std::vector<int>> &indices)
+{
+    ExactMesh *exactMesh = (ExactMesh *)mesh;
+    if (nullptr == exactMesh)
+        return;
+    
+    for (auto vertexIt = exactMesh->vertices_begin(); vertexIt != exactMesh->vertices_end(); vertexIt++) {
+        auto point = exactMesh->point(*vertexIt);
+        float x = (float)CGAL::to_double(point.x());
+        float y = (float)CGAL::to_double(point.y());
+        float z = (float)CGAL::to_double(point.z());
+        if (std::isnan(x) || std::isinf(x))
+            x = 0;
+        if (std::isnan(y) || std::isinf(y))
+            y = 0;
+        if (std::isnan(z) || std::isinf(z))
+            z = 0;
+        positions.push_back(QVector3D(x, y, z));
+    }
+    
+    typename CGAL::Surface_mesh<ExactKernel::Point_3>::Face_range faceRage = exactMesh->faces();
+    typename CGAL::Surface_mesh<ExactKernel::Point_3>::Face_range::iterator faceIt;
+    for (faceIt = faceRage.begin(); faceIt != faceRage.end(); faceIt++) {
+        CGAL::Vertex_around_face_iterator<typename CGAL::Surface_mesh<ExactKernel::Point_3>> vbegin, vend;
+        std::vector<int> faceIndices;
+        for (boost::tie(vbegin, vend) = CGAL::vertices_around_face(exactMesh->halfedge(*faceIt), *exactMesh);
+                vbegin != vend;
+                ++vbegin){
+            faceIndices.push_back(*vbegin);
+        }
+        indices.push_back(faceIndices);
+    }
+}
+
+void *buildCombinableMeshFromVerticesPositionsAndFacesIndices(const std::vector<QVector3D> &positions, const std::vector<std::vector<int>> &indices)
+{
+    ExactMesh *mesh = nullptr;
+    if (indices.empty())
+        return nullptr;
+    mesh = buildCgalMesh<ExactKernel>(positions, indices);
+    if (nullptr == mesh) {
+        return mesh;
+    }
+    if (CGAL::Polygon_mesh_processing::does_self_intersect(*mesh)) {
+        qDebug() << "CGAL::Polygon_mesh_processing::does_self_intersect";
+        delete mesh;
+        return nullptr;
+    }
     return (void *)mesh;
 }

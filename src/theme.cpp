@@ -103,18 +103,28 @@ void Theme::initAwesomeMiniButton(QPushButton *button)
     button->setFocusPolicy(Qt::NoFocus);
 }
 
-void Theme::updateAwesomeMiniButton(QPushButton *button, QChar icon, bool highlighted)
+void Theme::updateAwesomeMiniButton(QPushButton *button, QChar icon, bool highlighted, bool unnormal)
 {
     button->setText(icon);
     QColor color;
-    if (highlighted)
-        color = QColor("#fc6621");
-    else
+    bool needDesaturation = true;
+    
+    if (highlighted) {
+        if (unnormal) {
+            color = Theme::blue;
+            needDesaturation = false;
+        } else {
+            color = Theme::red;
+        }
+    } else {
         color = QColor("#525252");
-
-    color = color.toHsv();
-    color.setHsv(color.hue(), color.saturation() / 5, color.value() * 2 / 3);
-    color = color.toRgb();
+    }
+    
+    if (needDesaturation) {
+        color = color.toHsv();
+        color.setHsv(color.hue(), color.saturation() / 5, color.value() * 2 / 3);
+        color = color.toRgb();
+    }
 
     button->setStyleSheet("QPushButton {border: none; background: none; color: " + color.name() + ";}");
 }

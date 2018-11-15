@@ -906,7 +906,7 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
             if (!componentIt.second.name.isEmpty())
                 component["name"] = componentIt.second.name;
             component["expanded"] = componentIt.second.expanded ? "true" : "false";
-            component["inverse"] = componentIt.second.inverse ? "true" : "false";
+            component["combineMode"] = CombineModeToString(componentIt.second.combineMode);
             component["dirty"] = componentIt.second.dirty ? "true" : "false";
             if (componentIt.second.smoothAllAdjusted())
                 component["smoothAll"] = QString::number(componentIt.second.smoothAll);
@@ -1181,7 +1181,11 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
         oldNewIdMap[QUuid(componentKv.first)] = component.id;
         component.name = valueOfKeyInMapOrEmpty(componentKv.second, "name");
         component.expanded = isTrueValueString(valueOfKeyInMapOrEmpty(componentKv.second, "expanded"));
-        component.inverse = isTrueValueString(valueOfKeyInMapOrEmpty(componentKv.second, "inverse"));
+        component.combineMode = CombineModeFromString(valueOfKeyInMapOrEmpty(componentKv.second, "combineMode").toUtf8().constData());
+        if (component.combineMode == CombineMode::Normal) {
+            if (isTrueValueString(valueOfKeyInMapOrEmpty(componentKv.second, "inverse")))
+                component.combineMode = CombineMode::Inversion;
+        }
         const auto &smoothAllIt = componentKv.second.find("smoothAll");
         if (smoothAllIt != componentKv.second.end())
             component.setSmoothAll(smoothAllIt->second.toFloat());
@@ -1195,7 +1199,7 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
             //qDebug() << "Add part:" << partId << " from component:" << component.id;
             partMap[partId].componentId = component.id;
             if (inversePartIds.find(partId) != inversePartIds.end())
-                component.inverse = true;
+                component.combineMode = CombineMode::Inversion;
         }
         componentMap[component.id] = component;
         newAddedComponentIds.insert(component.id);
@@ -1615,18 +1619,18 @@ void Document::setPartVisibleState(QUuid partId, bool visible)
     emit optionsChanged();
 }
 
-void Document::setComponentInverseState(QUuid componentId, bool inverse)
+void Document::setComponentCombineMode(QUuid componentId, CombineMode combineMode)
 {
     auto component = componentMap.find(componentId);
     if (component == componentMap.end()) {
         qDebug() << "Component not found:" << componentId;
         return;
     }
-    if (component->second.inverse == inverse)
+    if (component->second.combineMode == combineMode)
         return;
-    component->second.inverse = inverse;
+    component->second.combineMode = combineMode;
     component->second.dirty = true;
-    emit componentInverseStateChanged(componentId);
+    emit componentCombineModeChanged(componentId);
     emit skeletonChanged();
 }
 

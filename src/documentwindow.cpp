@@ -783,7 +783,7 @@ DocumentWindow::DocumentWindow() :
     connect(partTreeWidget, &PartTreeWidget::unlockAllComponents, m_document, &Document::unlockAllComponents);
     connect(partTreeWidget, &PartTreeWidget::setPartLockState, m_document, &Document::setPartLockState);
     connect(partTreeWidget, &PartTreeWidget::setPartVisibleState, m_document, &Document::setPartVisibleState);
-    connect(partTreeWidget, &PartTreeWidget::setComponentInverseState, m_document, &Document::setComponentInverseState);
+    connect(partTreeWidget, &PartTreeWidget::setComponentCombineMode, m_document, &Document::setComponentCombineMode);
     connect(partTreeWidget, &PartTreeWidget::hideDescendantComponents, m_document, &Document::hideDescendantComponents);
     connect(partTreeWidget, &PartTreeWidget::showDescendantComponents, m_document, &Document::showDescendantComponents);
     connect(partTreeWidget, &PartTreeWidget::lockDescendantComponents, m_document, &Document::lockDescendantComponents);
@@ -796,6 +796,7 @@ DocumentWindow::DocumentWindow() :
     connect(m_document, &Document::componentRemoved, partTreeWidget, &PartTreeWidget::componentRemoved);
     connect(m_document, &Document::componentAdded, partTreeWidget, &PartTreeWidget::componentAdded);
     connect(m_document, &Document::componentExpandStateChanged, partTreeWidget, &PartTreeWidget::componentExpandStateChanged);
+    connect(m_document, &Document::componentCombineModeChanged, partTreeWidget, &PartTreeWidget::componentCombineModeChanged);
     connect(m_document, &Document::partPreviewChanged, partTreeWidget, &PartTreeWidget::partPreviewChanged);
     connect(m_document, &Document::partLockStateChanged, partTreeWidget, &PartTreeWidget::partLockStateChanged);
     connect(m_document, &Document::partVisibleStateChanged, partTreeWidget, &PartTreeWidget::partVisibleStateChanged);

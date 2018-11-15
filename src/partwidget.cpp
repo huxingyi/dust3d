@@ -14,7 +14,8 @@
 
 PartWidget::PartWidget(const Document *document, QUuid partId) :
     m_document(document),
-    m_partId(partId)
+    m_partId(partId),
+    m_unnormal(false)
 {
     QSizePolicy retainSizePolicy = sizePolicy();
     retainSizePolicy.setRetainSizeWhenHidden(true);
@@ -262,9 +263,18 @@ void PartWidget::updateAllButtons()
 void PartWidget::updateCheckedState(bool checked)
 {
     if (checked)
-        m_backgroundWidget->setStyleSheet("QWidget#background {border: 1px solid " + Theme::red.name() + ";}");
+        m_backgroundWidget->setStyleSheet("QWidget#background {border: 1px solid " + (m_unnormal ? Theme::blue.name() : Theme::red.name()) + ";}");
     else
         m_backgroundWidget->setStyleSheet("QWidget#background {border: 1px solid transparent;}");
+}
+
+void PartWidget::updateUnnormalState(bool unnormal)
+{
+    if (m_unnormal == unnormal)
+        return;
+    
+    m_unnormal = unnormal;
+    updateAllButtons();
 }
 
 void PartWidget::mouseDoubleClickEvent(QMouseEvent *event)
@@ -429,7 +439,7 @@ void PartWidget::initButton(QPushButton *button)
 
 void PartWidget::updateButton(QPushButton *button, QChar icon, bool highlighted)
 {
-    Theme::updateAwesomeMiniButton(button, icon, highlighted);
+    Theme::updateAwesomeMiniButton(button, icon, highlighted, m_unnormal);
 }
 
 void PartWidget::updatePreview()
