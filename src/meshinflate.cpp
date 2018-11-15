@@ -1,5 +1,6 @@
 #include <QDebug>
 #include <set>
+#include <cmath>
 #include "meshinflate.h"
 #include "meshutil.h"
 
