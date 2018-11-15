@@ -11,6 +11,7 @@
 #include "meshloader.h"
 #include "outcome.h"
 #include "positionmap.h"
+#include "combinemode.h"
 
 class GeneratedCacheContext
 {
@@ -23,6 +24,7 @@ public:
     std::map<QString, std::vector<QVector3D>> componentPositions;
     std::map<QString, PositionMap<std::pair<QVector3D, std::pair<QUuid, QUuid>>>> componentVerticesSources;
     std::map<QString, QString> partMirrorIdMap;
+    std::map<QString, std::vector<std::pair<QVector3D, float>>> componentInflateBalls;
     void updateComponentCombinableMesh(QString componentId, void *mesh);
 };
 
@@ -78,8 +80,8 @@ private:
     void checkDirtyFlags();
     bool checkIsComponentDirty(QString componentId);
     bool checkIsPartDirty(QString partId);
-    void *combineComponentMesh(QString componentId, bool *inverse);
-    void *combinePartMesh(QString partId);
+    void *combineComponentMesh(QString componentId, CombineMode *combineMode, std::vector<std::pair<QVector3D, float>> *inflateBalls);
+    void *combinePartMesh(QString partId, std::vector<std::pair<QVector3D, float>> *balls=nullptr);
 };
 
 #endif

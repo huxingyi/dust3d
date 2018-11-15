@@ -14,6 +14,7 @@
 #include "imageforever.h"
 #include "material.h"
 #include "trianglesourcenoderesolve.h"
+#include "meshinflate.h"
 
 bool MeshGenerator::m_enableDebug = false;
 PositionMap<int> *MeshGenerator::m_forMakePositionKey = new PositionMap<int>;
@@ -225,7 +226,7 @@ bool MeshGenerator::checkIsPartDirty(QString partId)
     return isTrueValueString(valueOfKeyInMapOrEmpty(findPart->second, "dirty"));
 }
 
-void *MeshGenerator::combinePartMesh(QString partId)
+void *MeshGenerator::combinePartMesh(QString partId, std::vector<std::pair<QVector3D, float>> *balls)
 {
     auto findPart = m_snapshot->parts.find(partId);
     if (findPart == m_snapshot->parts.end()) {
@@ -306,6 +307,13 @@ void *MeshGenerator::combinePartMesh(QString partId)
         nodeInfo.position = QVector3D(x, y, z);
         nodeInfo.radius = radius;
         nodeInfo.boneMark = boneMark;
+        
+        if (nullptr != balls) {
+            balls->push_back({QVector3D(x, y, z), radius});
+            if (xMirrored) {
+                balls->push_back({QVector3D(-x, y, z), radius});
+            }
+        }
     }
     std::set<std::pair<QString, QString>> edges;
     for (const auto &edgeId: m_partEdgeIds[partId]) {
@@ -499,11 +507,9 @@ bool MeshGenerator::checkIsComponentDirty(QString componentId)
     return isDirty;
 }
 
-void *MeshGenerator::combineComponentMesh(QString componentId, bool *inverse)
+void *MeshGenerator::combineComponentMesh(QString componentId, CombineMode *combineMode, std::vector<std::pair<QVector3D, float>> *inflateBalls)
 {
     QUuid componentIdNotAsString;
-    
-    *inverse = false;
     
     const std::map<QString, QString> *component = &m_snapshot->rootComponent;
     if (componentId != QUuid().toString()) {
@@ -516,16 +522,26 @@ void *MeshGenerator::combineComponentMesh(QString componentId, bool *inverse)
         component = &findComponent->second;
     }
     
-    CombineMode combineMode = CombineModeFromString(valueOfKeyInMapOrEmpty(*component, "combineMode").toUtf8().constData());
-    if (combineMode == CombineMode::Inversion)
-        *inverse = true;
+    *combineMode = CombineModeFromString(valueOfKeyInMapOrEmpty(*component, "combineMode").toUtf8().constData());
     
-    if (m_dirtyComponentIds.find(componentId) == m_dirtyComponentIds.end()) {
-        auto findCachedMesh = m_cacheContext->componentCombinableMeshs.find(componentId);
-        if (findCachedMesh != m_cacheContext->componentCombinableMeshs.end() &&
-                nullptr != findCachedMesh->second) {
-            //qDebug() << "Component mesh cache used:" << componentId;
-            return cloneCombinableMesh(findCachedMesh->second);
+    if (*combineMode == CombineMode::Inflation) {
+        if (m_dirtyComponentIds.find(componentId) == m_dirtyComponentIds.end()) {
+            auto findCacheInflateBalls = m_cacheContext->componentInflateBalls.find(componentId);
+            if (findCacheInflateBalls != m_cacheContext->componentInflateBalls.end()) {
+                *inflateBalls = findCacheInflateBalls->second;
+                return nullptr;
+            }
+        }
+    }
+    
+    if (*combineMode != CombineMode::Inflation) {
+        if (m_dirtyComponentIds.find(componentId) == m_dirtyComponentIds.end()) {
+            auto findCachedMesh = m_cacheContext->componentCombinableMeshs.find(componentId);
+            if (findCachedMesh != m_cacheContext->componentCombinableMeshs.end() &&
+                    nullptr != findCachedMesh->second) {
+                //qDebug() << "Component mesh cache used:" << componentId;
+                return cloneCombinableMesh(findCachedMesh->second);
+            }
         }
     }
     
@@ -553,17 +569,47 @@ void *MeshGenerator::combineComponentMesh(QString componentId, bool *inverse)
     QString linkDataType = valueOfKeyInMapOrEmpty(*component, "linkDataType");
     if ("partId" == linkDataType) {
         QString partId = valueOfKeyInMapOrEmpty(*component, "linkData");
-        resultMesh = combinePartMesh(partId);
-        for (const auto &bmeshVertex: m_cacheContext->partBmeshVertices[partId]) {
-            verticesSources.addPosition(bmeshVertex.first.x(), bmeshVertex.first.y(), bmeshVertex.first.z(),
-                bmeshVertex);
+        std::vector<std::pair<QVector3D, float>> partBalls;
+        resultMesh = combinePartMesh(partId, &partBalls);
+        if (*combineMode == CombineMode::Inflation) {
+            deleteCombinableMesh(resultMesh);
+            resultMesh = nullptr;
+            inflateBalls->insert(inflateBalls->end(), partBalls.begin(), partBalls.end());
+        } else {
+            for (const auto &bmeshVertex: m_cacheContext->partBmeshVertices[partId]) {
+                verticesSources.addPosition(bmeshVertex.first.x(), bmeshVertex.first.y(), bmeshVertex.first.z(),
+                    bmeshVertex);
+            }
         }
     } else {
         for (const auto &childId: valueOfKeyInMapOrEmpty(*component, "children").split(",")) {
             if (childId.isEmpty())
                 continue;
-            bool childInverse = false;
-            void *childCombinedMesh = combineComponentMesh(childId, &childInverse);
+            CombineMode childCombineMode = CombineMode::Normal;
+            std::vector<std::pair<QVector3D, float>> childInflateBalls;
+            void *childCombinedMesh = combineComponentMesh(childId, &childCombineMode, &childInflateBalls);
+            inflateBalls->insert(inflateBalls->end(), childInflateBalls.begin(), childInflateBalls.end());
+            if (childCombineMode == CombineMode::Inflation) {
+                deleteCombinableMesh(childCombinedMesh);
+                childCombinedMesh = nullptr;
+                if (nullptr == resultMesh)
+                    continue;
+                std::vector<std::pair<QVector3D, QVector3D>> inflatedVertices;
+                void *inflatedMesh = meshInflate(resultMesh, childInflateBalls, inflatedVertices);
+                deleteCombinableMesh(resultMesh);
+                resultMesh = inflatedMesh;
+                for (const auto &item: inflatedVertices) {
+                    const auto &oldPosition = item.first;
+                    const auto &newPosition = item.second;
+                    std::pair<QVector3D, std::pair<QUuid, QUuid>> source;
+                    if (verticesSources.findPosition(oldPosition.x(), oldPosition.y(), oldPosition.z(), &source)) {
+                        verticesSources.removePosition(oldPosition.x(), oldPosition.y(), oldPosition.z());
+                        source.first = newPosition;
+                        verticesSources.addPosition(newPosition.x(), newPosition.y(), newPosition.z(), source);
+                    }
+                }
+                continue;
+            }
             for (const auto &positionIt: m_cacheContext->componentPositions[childId]) {
                 positionsBeforeCombination.addPosition(positionIt.x(), positionIt.y(), positionIt.z(), true);
             }
@@ -573,13 +619,13 @@ void *MeshGenerator::combineComponentMesh(QString componentId, bool *inverse)
             if (nullptr == childCombinedMesh)
                 continue;
             if (nullptr == resultMesh) {
-                if (childInverse) {
+                if (childCombineMode == CombineMode::Inversion) {
                     deleteCombinableMesh(childCombinedMesh);
                 } else {
                     resultMesh = childCombinedMesh;
                 }
             } else {
-                void *newResultMesh = childInverse ? diffCombinableMeshs(resultMesh, childCombinedMesh) : unionCombinableMeshs(resultMesh, childCombinedMesh);
+                void *newResultMesh = childCombineMode == CombineMode::Inversion ? diffCombinableMeshs(resultMesh, childCombinedMesh) : unionCombinableMeshs(resultMesh, childCombinedMesh);
                 deleteCombinableMesh(childCombinedMesh);
                 if (nullptr != newResultMesh) {
                     deleteCombinableMesh(resultMesh);
@@ -643,6 +689,8 @@ void *MeshGenerator::combineComponentMesh(QString componentId, bool *inverse)
             }
         }
     }
+    
+    m_cacheContext->componentInflateBalls[componentId] = *inflateBalls;
     
     m_cacheContext->updateComponentCombinableMesh(componentId, resultMesh);
     auto &cachedComponentPositions = m_cacheContext->componentPositions[componentId];
@@ -713,6 +761,13 @@ void MeshGenerator::generate()
             }
             it++;
         }
+        for (auto it = m_cacheContext->componentInflateBalls.begin(); it != m_cacheContext->componentInflateBalls.end(); ) {
+            if (m_snapshot->components.find(it->first) == m_snapshot->components.end()) {
+                it = m_cacheContext->componentInflateBalls.erase(it);
+                continue;
+            }
+            it++;
+        }
         for (auto it = m_cacheContext->componentVerticesSources.begin(); it != m_cacheContext->componentVerticesSources.end(); ) {
             if (m_snapshot->components.find(it->first) == m_snapshot->components.end()) {
                 it = m_cacheContext->componentVerticesSources.erase(it);
@@ -733,8 +788,9 @@ void MeshGenerator::generate()
     
     int resultMeshId = 0;
     
-    bool inverse = false;
-    void *combinedMesh = combineComponentMesh(QUuid().toString(), &inverse);
+    CombineMode combineMode;
+    std::vector<std::pair<QVector3D, float>> inflateBalls;
+    void *combinedMesh = combineComponentMesh(QUuid().toString(), &combineMode, &inflateBalls);
     if (nullptr != combinedMesh) {
         resultMeshId = convertFromCombinableMesh(m_meshliteContext, combinedMesh);
         deleteCombinableMesh(combinedMesh);

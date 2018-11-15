@@ -294,6 +294,9 @@ HEADERS += src/posedocument.h
 SOURCES += src/combinemode.cpp
 HEADERS += src/combinemode.h
 
+SOURCES += src/meshinflate.cpp
+HEADERS += src/meshinflate.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h

@@ -6,6 +6,7 @@ enum class CombineMode
 {
     Normal = 0,
     Inversion,
+    Inflation,
     Count
 };
 CombineMode CombineModeFromString(const char *modeString);
@@ -17,6 +18,8 @@ CombineMode CombineModeFromString(const char *modeString)           \
         return CombineMode::Normal;                                 \
     if (mode == "Inversion")                                        \
         return CombineMode::Inversion;                              \
+    if (mode == "Inflation")                                        \
+        return CombineMode::Inflation;                              \
     return CombineMode::Normal;                                     \
 }
 const char *CombineModeToString(CombineMode mode);
@@ -28,6 +31,8 @@ const char *CombineModeToString(CombineMode mode)                   \
             return "Normal";                                        \
         case CombineMode::Inversion:                                \
             return "Inversion";                                     \
+        case CombineMode::Inflation:                                \
+            return "Inflation";                                     \
         default:                                                    \
             return "Normal";                                        \
     }                                                               \
@@ -41,6 +46,8 @@ QString CombineModeToDispName(CombineMode mode)                     \
             return QObject::tr("Normal");                           \
         case CombineMode::Inversion:                                \
             return QObject::tr("Inversion");                        \
+        case CombineMode::Inflation:                                \
+            return QObject::tr("Inflation");                        \
         default:                                                    \
             return QObject::tr("Normal");                           \
     }                                                               \
