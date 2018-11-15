@@ -1,7 +1,6 @@
 #include "graphicscontainerwidget.h"
 
-GraphicsContainerWidget::GraphicsContainerWidget() :
-    m_graphicsWidget(nullptr)
+GraphicsContainerWidget::GraphicsContainerWidget()
 {
 }
 
@@ -31,11 +30,16 @@ void GraphicsContainerWidget::mouseReleaseEvent(QMouseEvent *event)
 
 void GraphicsContainerWidget::wheelEvent(QWheelEvent *event)
 {
+    if (m_graphicsWidget) {
+        m_graphicsWidget->inputWheelEventFromOtherWidget(event);
+        return;
+    }
+        
     if (m_modelWidget)
         m_modelWidget->inputWheelEventFromOtherWidget(event);
 }
 
-void GraphicsContainerWidget::setGraphicsWidget(QWidget *graphicsWidget)
+void GraphicsContainerWidget::setGraphicsWidget(SkeletonGraphicsWidget *graphicsWidget)
 {
     m_graphicsWidget = graphicsWidget;
 }

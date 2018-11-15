@@ -410,6 +410,7 @@ public:
     bool hasTwoDisconnectedNodesSelection();
     void setModelWidget(ModelWidget *modelWidget);
     void setNodePositionModifyOnly(bool nodePositionModifyOnly);
+    bool inputWheelEventFromOtherWidget(QWheelEvent *event);
 protected:
     void mouseMoveEvent(QMouseEvent *event) override;
     void wheelEvent(QWheelEvent *event) override;

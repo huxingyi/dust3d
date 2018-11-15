@@ -588,17 +588,21 @@ void SkeletonGraphicsWidget::mouseMoveEvent(QMouseEvent *event)
     mouseMove(event);
 }
 
+bool SkeletonGraphicsWidget::inputWheelEventFromOtherWidget(QWheelEvent *event)
+{
+    if (!wheel(event)) {
+        if (m_modelWidget && m_modelWidget->inputWheelEventFromOtherWidget(event))
+            return true;
+    }
+    return true;
+}
+
 void SkeletonGraphicsWidget::wheelEvent(QWheelEvent *event)
 {
     if (!wheel(event)) {
         if (m_modelWidget && m_modelWidget->inputWheelEventFromOtherWidget(event))
             return;
     }
-    
-    //if (SkeletonDocumentEditMode::ZoomIn == m_document->editMode ||
-    //        SkeletonDocumentEditMode::ZoomOut == m_document->editMode ||
-    //        SkeletonDocumentEditMode::Drag == m_document->editMode)
-    //    QGraphicsView::wheelEvent(event);
 }
 
 void SkeletonGraphicsWidget::mouseReleaseEvent(QMouseEvent *event)

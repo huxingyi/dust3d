@@ -5,6 +5,7 @@
 #include <QMouseEvent>
 #include <QWheelEvent>
 #include "modelwidget.h"
+#include "skeletongraphicswidget.h"
 
 class GraphicsContainerWidget : public QWidget
 {
@@ -13,7 +14,7 @@ signals:
     void containerSizeChanged(QSize size);
 public:
     GraphicsContainerWidget();
-    void setGraphicsWidget(QWidget *graphicsWidget);
+    void setGraphicsWidget(SkeletonGraphicsWidget *graphicsWidget);
     void setModelWidget(ModelWidget *modelWidget);
 protected:
     void resizeEvent(QResizeEvent *event) override;
@@ -22,8 +23,8 @@ protected:
     void mouseReleaseEvent(QMouseEvent *event) override;
     void wheelEvent(QWheelEvent *event) override;
 private:
-    QWidget *m_graphicsWidget = nullptr;
     ModelWidget *m_modelWidget = nullptr;
+    SkeletonGraphicsWidget *m_graphicsWidget = nullptr;
 };
 
 #endif
