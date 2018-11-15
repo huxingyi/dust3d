@@ -18,6 +18,7 @@ public:
     QImage *takeResultTextureBorderImage();
     QImage *takeResultTextureColorImage();
     QImage *takeResultTextureNormalImage();
+    QImage *takeResultTextureMetalnessRoughnessAmbientOcclusionImage();
     Outcome *takeOutcome();
     MeshLoader *takeResultMesh();
     void addPartColorMap(QUuid partId, const QImage *image);

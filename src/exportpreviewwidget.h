@@ -25,13 +25,16 @@ protected:
     void resizeEvent(QResizeEvent *event);
     void showEvent(QShowEvent *event);
 private:
-    void resizePreviewImage();
+    void resizePreviewImages();
     void initAwesomeButton(QPushButton *button);
-    void updateTexturePreviewImage(const QImage &image);
 private:
     Document *m_document;
-    QLabel *m_previewLabel;
-    QImage m_previewImage;
+    QLabel *m_colorPreviewLabel;
+    QLabel *m_normalPreviewLabel;
+    QLabel *m_metalnessRoughnessAmbientOcclusionPreviewLabel;
+    QImage m_colorImage;
+    QImage m_normalImage;
+    QImage m_metalnessRoughnessAmbientOcclusionImage;
     ModelWidget *m_textureRenderWidget;
     WaitingSpinnerWidget *m_spinnerWidget;
     QPushButton *m_saveButton;

@@ -79,6 +79,13 @@ QImage *TextureGenerator::takeResultTextureNormalImage()
     return resultTextureNormalImage;
 }
 
+QImage *TextureGenerator::takeResultTextureMetalnessRoughnessAmbientOcclusionImage()
+{
+    QImage *resultTextureMetalnessRoughnessAmbientOcclusionImage = m_resultTextureMetalnessRoughnessAmbientOcclusionImage;
+    m_resultTextureMetalnessRoughnessAmbientOcclusionImage = nullptr;
+    return resultTextureMetalnessRoughnessAmbientOcclusionImage;
+}
+
 Outcome *TextureGenerator::takeOutcome()
 {
     Outcome *outcome = m_outcome;
@@ -213,7 +220,7 @@ void TextureGenerator::generate()
     m_resultTextureNormalImage->fill(Qt::transparent);
     
     m_resultTextureMetalnessRoughnessAmbientOcclusionImage = new QImage(TextureGenerator::m_textureSize, TextureGenerator::m_textureSize, QImage::Format_ARGB32);
-    m_resultTextureMetalnessRoughnessAmbientOcclusionImage->fill(Qt::transparent);
+    m_resultTextureMetalnessRoughnessAmbientOcclusionImage->fill(QColor(255, 255, 0));
     
     m_resultTextureMetalnessImage = new QImage(TextureGenerator::m_textureSize, TextureGenerator::m_textureSize, QImage::Format_ARGB32);
     m_resultTextureMetalnessImage->fill(Qt::black);
@@ -361,7 +368,7 @@ void TextureGenerator::generate()
     } else {
         for (int row = 0; row < m_resultTextureMetalnessRoughnessAmbientOcclusionImage->height(); ++row) {
             for (int col = 0; col < m_resultTextureMetalnessRoughnessAmbientOcclusionImage->width(); ++col) {
-                QColor color;
+                QColor color(255, 255, 0);
                 if (hasMetalnessMap)
                     color.setBlue(qGray(m_resultTextureMetalnessImage->pixel(col, row)));
                 if (hasRoughnessMap)

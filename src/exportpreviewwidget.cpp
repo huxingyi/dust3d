@@ -12,16 +12,24 @@
 ExportPreviewWidget::ExportPreviewWidget(Document *document, QWidget *parent) :
     QDialog(parent),
     m_document(document),
-    m_previewLabel(nullptr),
+    m_colorPreviewLabel(nullptr),
     m_spinnerWidget(nullptr)
 {
     QHBoxLayout *toolButtonLayout = new QHBoxLayout;
     toolButtonLayout->setSpacing(0);
     //toolButtonLayout->setContentsMargins(5, 10, 4, 0);
 
-    m_previewLabel = new QLabel;
-    m_previewLabel->setMinimumSize(128, 128);
-    m_previewLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    m_colorPreviewLabel = new QLabel;
+    m_colorPreviewLabel->setMinimumSize(128, 128);
+    m_colorPreviewLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    
+    m_normalPreviewLabel = new QLabel;
+    m_normalPreviewLabel->setMinimumSize(64, 64);
+    m_normalPreviewLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    
+    m_metalnessRoughnessAmbientOcclusionPreviewLabel = new QLabel;
+    m_metalnessRoughnessAmbientOcclusionPreviewLabel->setMinimumSize(64, 64);
+    m_metalnessRoughnessAmbientOcclusionPreviewLabel->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     
     //QPushButton *regenerateButton = new QPushButton(QChar(fa::recycle));
     //initAwesomeButton(regenerateButton);
@@ -54,7 +62,9 @@ ExportPreviewWidget::ExportPreviewWidget(Document *document, QWidget *parent) :
     QGridLayout *containerLayout = new QGridLayout;
     containerLayout->setSpacing(0);
     containerLayout->setContentsMargins(0, 0, 0, 0);
-    containerLayout->addWidget(m_previewLabel);
+    containerLayout->addWidget(m_colorPreviewLabel, 0, 0);
+    //containerLayout->addWidget(m_normalPreviewLabel, 1, 0);
+    //containerLayout->addWidget(m_metalnessRoughnessAmbientOcclusionPreviewLabel, 2, 0);
     containerLayout->setRowStretch(0, 1);
     containerLayout->setColumnStretch(0, 1);
     
@@ -84,7 +94,7 @@ ExportPreviewWidget::ExportPreviewWidget(Document *document, QWidget *parent) :
     setMinimumSize(256, 256);
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     
-    m_spinnerWidget = new WaitingSpinnerWidget(m_previewLabel);
+    m_spinnerWidget = new WaitingSpinnerWidget(m_colorPreviewLabel);
     m_spinnerWidget->setColor(Theme::white);
     m_spinnerWidget->setInnerRadius(Theme::miniIconFontSize / 4);
     m_spinnerWidget->setNumberOfLines(12);
@@ -95,23 +105,26 @@ ExportPreviewWidget::ExportPreviewWidget(Document *document, QWidget *parent) :
     emit updateTexturePreview();
 }
 
-void ExportPreviewWidget::updateTexturePreviewImage(const QImage &image)
-{
-    m_previewImage = image;
-    resizePreviewImage();
-    checkSpinner();
-}
-
 void ExportPreviewWidget::resizeEvent(QResizeEvent *event)
 {
     QWidget::resizeEvent(event);
-    resizePreviewImage();
+    resizePreviewImages();
 }
 
-void ExportPreviewWidget::resizePreviewImage()
+void ExportPreviewWidget::resizePreviewImages()
 {
-    QPixmap pixmap = QPixmap::fromImage(m_previewImage);
-    m_previewLabel->setPixmap(pixmap.scaled(m_previewLabel->width(), m_previewLabel->height(), Qt::KeepAspectRatio));
+    {
+        QPixmap pixmap = QPixmap::fromImage(m_colorImage);
+        m_colorPreviewLabel->setPixmap(pixmap.scaled(m_colorPreviewLabel->width(), m_colorPreviewLabel->height(), Qt::KeepAspectRatio));
+    }
+    {
+        QPixmap pixmap = QPixmap::fromImage(m_normalImage);
+        m_normalPreviewLabel->setPixmap(pixmap.scaled(m_normalPreviewLabel->width(), m_normalPreviewLabel->height(), Qt::KeepAspectRatio));
+    }
+    {
+        QPixmap pixmap = QPixmap::fromImage(m_metalnessRoughnessAmbientOcclusionImage);
+        m_metalnessRoughnessAmbientOcclusionPreviewLabel->setPixmap(pixmap.scaled(m_metalnessRoughnessAmbientOcclusionPreviewLabel->width(), m_metalnessRoughnessAmbientOcclusionPreviewLabel->height(), Qt::KeepAspectRatio));
+    }
 }
 
 void ExportPreviewWidget::initAwesomeButton(QPushButton *button)
@@ -147,7 +160,13 @@ void ExportPreviewWidget::checkSpinner()
 void ExportPreviewWidget::updateTexturePreview()
 {
     if (m_document->textureGuideImage)
-        updateTexturePreviewImage(*m_document->textureGuideImage);
+        m_colorImage = *m_document->textureGuideImage;
+    if (m_document->textureNormalImage)
+        m_normalImage = *m_document->textureNormalImage;
+    if (m_document->textureMetalnessRoughnessAmbientOcclusionImage)
+        m_metalnessRoughnessAmbientOcclusionImage = *m_document->textureMetalnessRoughnessAmbientOcclusionImage;
     m_textureRenderWidget->updateMesh(m_document->takeResultTextureMesh());
+    resizePreviewImages();
+    checkSpinner();
 }
 

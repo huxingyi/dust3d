@@ -449,8 +449,9 @@ public: // need initialize
     QImage *textureGuideImage;
     QImage *textureImage;
     QImage *textureBorderImage;
-    QImage *textureAmbientOcclusionImage;
     QImage *textureColorImage;
+    QImage *textureNormalImage;
+    QImage *textureMetalnessRoughnessAmbientOcclusionImage;
     RigType rigType;
     bool weldEnabled;
 public:
