@@ -63,14 +63,14 @@ ExportPreviewWidget::ExportPreviewWidget(Document *document, QWidget *parent) :
     containerLayout->setSpacing(0);
     containerLayout->setContentsMargins(0, 0, 0, 0);
     containerLayout->addWidget(m_colorPreviewLabel, 0, 0);
-    //containerLayout->addWidget(m_normalPreviewLabel, 1, 0);
-    //containerLayout->addWidget(m_metalnessRoughnessAmbientOcclusionPreviewLabel, 2, 0);
-    containerLayout->setRowStretch(0, 1);
-    containerLayout->setColumnStretch(0, 1);
+    containerLayout->addWidget(m_normalPreviewLabel, 0, 1);
+    containerLayout->addWidget(m_metalnessRoughnessAmbientOcclusionPreviewLabel, 0, 2);
+    //containerLayout->setRowStretch(0, 1);
+    //containerLayout->setColumnStretch(0, 1);
     
     m_textureRenderWidget = new ModelWidget;
     m_textureRenderWidget->setMinimumSize(128, 128);
-    m_textureRenderWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+    //m_textureRenderWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     
     QVBoxLayout *renderLayout = new QVBoxLayout;
     renderLayout->setSpacing(0);
@@ -113,17 +113,28 @@ void ExportPreviewWidget::resizeEvent(QResizeEvent *event)
 
 void ExportPreviewWidget::resizePreviewImages()
 {
-    {
+    if (m_colorImage.isNull()) {
+        m_colorPreviewLabel->hide();
+    } else {
         QPixmap pixmap = QPixmap::fromImage(m_colorImage);
         m_colorPreviewLabel->setPixmap(pixmap.scaled(m_colorPreviewLabel->width(), m_colorPreviewLabel->height(), Qt::KeepAspectRatio));
+        m_colorPreviewLabel->show();
     }
-    {
+    
+    if (m_normalImage.isNull()) {
+        m_normalPreviewLabel->hide();
+    } else {
         QPixmap pixmap = QPixmap::fromImage(m_normalImage);
         m_normalPreviewLabel->setPixmap(pixmap.scaled(m_normalPreviewLabel->width(), m_normalPreviewLabel->height(), Qt::KeepAspectRatio));
+        m_normalPreviewLabel->show();
     }
-    {
+    
+    if (m_metalnessRoughnessAmbientOcclusionImage.isNull()) {
+        m_metalnessRoughnessAmbientOcclusionPreviewLabel->hide();
+    } else {
         QPixmap pixmap = QPixmap::fromImage(m_metalnessRoughnessAmbientOcclusionImage);
         m_metalnessRoughnessAmbientOcclusionPreviewLabel->setPixmap(pixmap.scaled(m_metalnessRoughnessAmbientOcclusionPreviewLabel->width(), m_metalnessRoughnessAmbientOcclusionPreviewLabel->height(), Qt::KeepAspectRatio));
+        m_metalnessRoughnessAmbientOcclusionPreviewLabel->show();
     }
 }
 
@@ -161,10 +172,16 @@ void ExportPreviewWidget::updateTexturePreview()
 {
     if (m_document->textureGuideImage)
         m_colorImage = *m_document->textureGuideImage;
+    else
+        m_colorImage = QImage();
     if (m_document->textureNormalImage)
         m_normalImage = *m_document->textureNormalImage;
+    else
+        m_normalImage = QImage();
     if (m_document->textureMetalnessRoughnessAmbientOcclusionImage)
         m_metalnessRoughnessAmbientOcclusionImage = *m_document->textureMetalnessRoughnessAmbientOcclusionImage;
+    else
+        m_metalnessRoughnessAmbientOcclusionImage = QImage();
     m_textureRenderWidget->updateMesh(m_document->takeResultTextureMesh());
     resizePreviewImages();
     checkSpinner();

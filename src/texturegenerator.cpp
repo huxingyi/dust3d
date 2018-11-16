@@ -202,6 +202,7 @@ void TextureGenerator::generate()
     
     const auto &triangleVertexUvs = *m_outcome->triangleVertexUvs();
     const auto &triangleSourceNodes = *m_outcome->triangleSourceNodes();
+    const auto &triangleNormals = m_outcome->triangleNormals;
     
     std::map<std::pair<QUuid, QUuid>, const OutcomeNode *> nodeMap;
     for (const auto &item: m_outcome->nodes) {
@@ -304,6 +305,13 @@ void TextureGenerator::generate()
             textureNormalPainter.drawImage(0, 0, findNormalTextureResult->second);
             textureNormalPainter.setClipping(false);
             hasNormalMap = true;
+        } else {
+            const auto &triangleNormal = triangleNormals[i];
+            QColor brushColor;
+            brushColor.setRedF((triangleNormal.x() + 1) / 2);
+            brushColor.setGreenF((triangleNormal.y() + 1) / 2);
+            brushColor.setBlueF((triangleNormal.z() + 1) / 2);
+            textureNormalPainter.fillPath(path, brushColor);
         }
         // Copy metalness texture if there is one
         auto findMetalnessTextureResult = m_partMetalnessTextureMap.find(source.first);
