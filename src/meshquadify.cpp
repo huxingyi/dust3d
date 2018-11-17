@@ -24,7 +24,7 @@ int meshQuadify(void *meshlite, int meshId, const std::set<std::pair<PositionMap
     int *faceVertexNumAndIndices = new int[faceCount * MAX_VERTICES_PER_FACE];
     int filledLength = meshlite_get_face_index_array(meshlite, meshId, faceVertexNumAndIndices, faceCount * MAX_VERTICES_PER_FACE);
     int i = 0;
-    std::vector<std::vector<int>> newFaceIndicies;
+    std::vector<std::vector<int>> newFaceIndices;
     while (i < filledLength) {
         int num = faceVertexNumAndIndices[i++];
         Q_ASSERT(num > 0 && num <= MAX_VERTICES_PER_FACE);
@@ -38,20 +38,20 @@ int meshQuadify(void *meshlite, int meshId, const std::set<std::pair<PositionMap
             Q_ASSERT(index >= 0 && index < vertexCount);
             indices.push_back(index);
         }
-        newFaceIndicies.push_back(indices);
+        newFaceIndices.push_back(indices);
     }
     int quadMesh = 0;
     std::map<std::pair<int, int>, std::pair<int, int>> triangleEdgeMap;
-    for (int i = 0; i < (int)newFaceIndicies.size(); i++) {
-        const auto &faceIndicies = newFaceIndicies[i];
-        if (faceIndicies.size() == 3) {
-            triangleEdgeMap[std::make_pair(faceIndicies[0], faceIndicies[1])] = std::make_pair(i, faceIndicies[2]);
-            triangleEdgeMap[std::make_pair(faceIndicies[1], faceIndicies[2])] = std::make_pair(i, faceIndicies[0]);
-            triangleEdgeMap[std::make_pair(faceIndicies[2], faceIndicies[0])] = std::make_pair(i, faceIndicies[1]);
+    for (int i = 0; i < (int)newFaceIndices.size(); i++) {
+        const auto &faceIndices = newFaceIndices[i];
+        if (faceIndices.size() == 3) {
+            triangleEdgeMap[std::make_pair(faceIndices[0], faceIndices[1])] = std::make_pair(i, faceIndices[2]);
+            triangleEdgeMap[std::make_pair(faceIndices[1], faceIndices[2])] = std::make_pair(i, faceIndices[0]);
+            triangleEdgeMap[std::make_pair(faceIndices[2], faceIndices[0])] = std::make_pair(i, faceIndices[1]);
         }
     }
     std::unordered_set<int> unionedFaces;
-    std::vector<std::vector<int>> newUnionedFaceIndicies;
+    std::vector<std::vector<int>> newUnionedFaceIndices;
     for (const auto &edge: triangleEdgeMap) {
         if (unionedFaces.find(edge.second.first) != unionedFaces.end())
             continue;
@@ -69,24 +69,24 @@ int meshQuadify(void *meshlite, int meshId, const std::set<std::pair<PositionMap
                     indices.push_back(edge.first.first);
                     indices.push_back(oppositeEdge->second.second);
                     indices.push_back(edge.first.second);
-                    newUnionedFaceIndicies.push_back(indices);
+                    newUnionedFaceIndices.push_back(indices);
                 }
             }
         }
     }
     std::vector<int> newFaceVertexNumAndIndices;
-    for (int i = 0; i < (int)newFaceIndicies.size(); i++) {
+    for (int i = 0; i < (int)newFaceIndices.size(); i++) {
         if (unionedFaces.find(i) == unionedFaces.end()) {
-            const auto &faceIndicies = newFaceIndicies[i];
-            newFaceVertexNumAndIndices.push_back(faceIndicies.size());
-            for (const auto &index: faceIndicies) {
+            const auto &faceIndices = newFaceIndices[i];
+            newFaceVertexNumAndIndices.push_back(faceIndices.size());
+            for (const auto &index: faceIndices) {
                 newFaceVertexNumAndIndices.push_back(index);
             }
         }
     }
-    for (const auto &faceIndicies: newUnionedFaceIndicies) {
-        newFaceVertexNumAndIndices.push_back(faceIndicies.size());
-        for (const auto &index: faceIndicies) {
+    for (const auto &faceIndices: newUnionedFaceIndices) {
+        newFaceVertexNumAndIndices.push_back(faceIndices.size());
+        for (const auto &index: faceIndices) {
             newFaceVertexNumAndIndices.push_back(index);
         }
     }

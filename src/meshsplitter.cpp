@@ -17,7 +17,7 @@ bool MeshSplitter::split(const std::set<MeshSplitterTriangle> &input,
     for (const auto &triangle: input) {
         for (int i = 0; i < 3; i++) {
             int next = (i + 1) % 3;
-            edgeToTriangleMap[std::make_pair(triangle.indicies[i], triangle.indicies[next])] = triangle;
+            edgeToTriangleMap[std::make_pair(triangle.indices[i], triangle.indices[next])] = triangle;
         }
     }
     
@@ -27,7 +27,7 @@ bool MeshSplitter::split(const std::set<MeshSplitterTriangle> &input,
         for (const auto &triangle: splitter) {
             for (int i = 0; i < 3; i++) {
                 int next = (i + 1) % 3;
-                auto oppositeEdge = std::make_pair(triangle.indicies[next], triangle.indicies[i]);
+                auto oppositeEdge = std::make_pair(triangle.indices[next], triangle.indices[i]);
                 auto oppositeTriangle = edgeToTriangleMap.find(oppositeEdge);
                 if (oppositeTriangle == edgeToTriangleMap.end()) {
                     qDebug() << "Find opposite edge failed:" << oppositeEdge.first << oppositeEdge.second;
@@ -57,7 +57,7 @@ bool MeshSplitter::split(const std::set<MeshSplitterTriangle> &input,
     for (const auto &triangle: splitter) {
         for (int i = 0; i < 3; i++) {
             int next = (i + 1) % 3;
-            auto oppositeEdge = std::make_pair(triangle.indicies[next], triangle.indicies[i]);
+            auto oppositeEdge = std::make_pair(triangle.indices[next], triangle.indices[i]);
             auto oppositeTriangle = edgeToTriangleMap.find(oppositeEdge);
             if (oppositeTriangle == edgeToTriangleMap.end()) {
                 qDebug() << "Find opposite edge failed:" << oppositeEdge.first << oppositeEdge.second;
@@ -90,7 +90,7 @@ bool MeshSplitter::split(const std::set<MeshSplitterTriangle> &input,
             continue;
         for (int i = 0; i < 3; i++) {
             int next = (i + 1) % 3;
-            auto oppositeEdge = std::make_pair(triangle.indicies[next], triangle.indicies[i]);
+            auto oppositeEdge = std::make_pair(triangle.indices[next], triangle.indices[i]);
             auto oppositeTriangle = edgeToTriangleMap.find(oppositeEdge);
             if (oppositeTriangle == edgeToTriangleMap.end()) {
                 qDebug() << "Find opposite edge failed:" << oppositeEdge.first << oppositeEdge.second;

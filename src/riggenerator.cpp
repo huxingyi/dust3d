@@ -90,7 +90,7 @@ void RigGenerator::generate()
         const auto &sourceTriangle = m_outcome->triangles[triangleIndex];
         MeshSplitterTriangle newTriangle;
         for (int i = 0; i < 3; i++)
-            newTriangle.indicies[i] = sourceTriangle[i];
+            newTriangle.indices[i] = sourceTriangle[i];
         auto findMarkedNodeResult = markedNodes.find(triangleSourceNodes[triangleIndex]);
         if (findMarkedNodeResult != markedNodes.end()) {
             auto &markedNode = findMarkedNodeResult->second;
@@ -188,7 +188,7 @@ void RigGenerator::generate()
             const auto &weight = weightItem.second;
             int blendR = 0, blendG = 0, blendB = 0;
             for (int i = 0; i < 4; i++) {
-                int boneIndex = weight.boneIndicies[i];
+                int boneIndex = weight.boneIndices[i];
                 if (boneIndex > 0) {
                     const auto &bone = resultBones[boneIndex];
                     blendR += bone.color.red() * weight.boneWeights[i];

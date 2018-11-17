@@ -28,7 +28,7 @@ void UvUnwrapper::buildEdgeToFaceMap(const std::vector<Face> &faces, std::map<st
         const auto &face = faces[index];
         for (size_t i = 0; i < 3; i++) {
             size_t j = (i + 1) % 3;
-            edgeToFaceMap[{face.indicies[i], face.indicies[j]}] = index;
+            edgeToFaceMap[{face.indices[i], face.indices[j]}] = index;
         }
     }
 }
@@ -40,7 +40,7 @@ void UvUnwrapper::buildEdgeToFaceMap(const std::vector<size_t> &group, std::map<
         const auto &face = m_mesh.faces[index];
         for (size_t i = 0; i < 3; i++) {
             size_t j = (i + 1) % 3;
-            edgeToFaceMap[{face.indicies[i], face.indicies[j]}] = index;
+            edgeToFaceMap[{face.indices[i], face.indices[j]}] = index;
         }
     }
 }
@@ -65,7 +65,7 @@ void UvUnwrapper::splitPartitionToIslands(const std::vector<size_t> &group, std:
             const auto &face = m_mesh.faces[index];
             for (size_t i = 0; i < 3; i++) {
                 size_t j = (i + 1) % 3;
-                auto findOppositeFaceResult = edgeToFaceMap.find({face.indicies[j], face.indicies[i]});
+                auto findOppositeFaceResult = edgeToFaceMap.find({face.indices[j], face.indices[i]});
                 if (findOppositeFaceResult == edgeToFaceMap.end())
                     continue;
                 waitFaces.push(findOppositeFaceResult->second);
@@ -134,10 +134,10 @@ bool UvUnwrapper::fixHolesExceptTheLongestRing(const std::vector<Vertex> &vertic
     for (const auto &face: faces) {
         for (size_t i = 0; i < 3; i++) {
             size_t j = (i + 1) % 3;
-            auto findOppositeFaceResult = edgeToFaceMap.find({face.indicies[j], face.indicies[i]});
+            auto findOppositeFaceResult = edgeToFaceMap.find({face.indices[j], face.indices[i]});
             if (findOppositeFaceResult != edgeToFaceMap.end())
                 continue;
-            holeVertexLink[face.indicies[j]].push_back(face.indicies[i]);
+            holeVertexLink[face.indices[j]].push_back(face.indices[i]);
         }
     }
     
@@ -220,7 +220,7 @@ bool UvUnwrapper::fixHolesExceptTheLongestRing(const std::vector<Vertex> &vertic
     }
     
     if (holeRings.size() > 1) {
-        // Sort by ring length, the longer ring sit in the lower array indicies
+        // Sort by ring length, the longer ring sit in the lower array indices
         std::sort(holeRings.begin(), holeRings.end(), [](const std::pair<std::vector<size_t>, double> &first, const std::pair<std::vector<size_t>, double> &second) {
             return first.second > second.second;
         });
@@ -248,7 +248,7 @@ void UvUnwrapper::makeSeamAndCut(const std::vector<Vertex> &verticies,
     for (decltype(faces.size()) i = 0; i < faces.size(); ++i) {
         const auto &face = faces[i];
         for (int j = 0; j < 3; ++j) {
-            const auto &vertex = verticies[face.indicies[j]];
+            const auto &vertex = verticies[face.indices[j]];
             if (firstTime || vertex.xyz[2] > maxY) {
                 maxY = vertex.xyz[2];
                 firstTime = false;
@@ -273,7 +273,7 @@ void UvUnwrapper::makeSeamAndCut(const std::vector<Vertex> &verticies,
         const auto &face = faces[index];
         for (size_t i = 0; i < 3; i++) {
             size_t j = (i + 1) % 3;
-            auto findOppositeFaceResult = edgeToFaceMap.find({face.indicies[j], face.indicies[i]});
+            auto findOppositeFaceResult = edgeToFaceMap.find({face.indices[j], face.indices[i]});
             if (findOppositeFaceResult == edgeToFaceMap.end())
                 continue;
             waitFaces.push(findOppositeFaceResult->second);
@@ -400,12 +400,12 @@ void UvUnwrapper::unwrapSingleIsland(const std::vector<size_t> &group, bool skip
         const auto &globalFace = m_mesh.faces[group[i]];
         Face localFace;
         for (size_t j = 0; j < 3; j++) {
-            int globalVertexIndex = globalFace.indicies[j];
+            int globalVertexIndex = globalFace.indices[j];
             if (globalToLocalVerticesMap.find(globalVertexIndex) == globalToLocalVerticesMap.end()) {
                 localVertices.push_back(m_mesh.verticies[globalVertexIndex]);
                 globalToLocalVerticesMap[globalVertexIndex] = (int)localVertices.size() - 1;
             }
-            localFace.indicies[j] = globalToLocalVerticesMap[globalVertexIndex];
+            localFace.indices[j] = globalToLocalVerticesMap[globalVertexIndex];
         }
         localFaces.push_back(localFace);
         localToGlobalFacesMap[localFaces.size() - 1] = group[i];
@@ -455,7 +455,7 @@ void UvUnwrapper::parametrizeSingleGroup(const std::vector<Vertex> &verticies,
         auto globalFaceIndex = localToGlobalFacesMap[i];
         FaceTextureCoords faceUv;
         for (size_t j = 0; j < 3; j++) {
-            const auto &localVertexIndex = localFace.indicies[j];
+            const auto &localVertexIndex = localFace.indices[j];
             const auto &vertexUv = localVertexUvs[localVertexIndex];
             faceUv.coords[j].uv[0] = vertexUv.uv[0];
             faceUv.coords[j].uv[1] = vertexUv.uv[1];

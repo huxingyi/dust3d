@@ -52,7 +52,7 @@ private:
         float minDistance2 = std::numeric_limits<float>::max();
         for (const auto &triangle: triangles) {
             for (size_t i = 0; i < 3; ++i) {
-                float distance2 = verticesPositions[triangle.indicies[i]].lengthSquared();
+                float distance2 = verticesPositions[triangle.indices[i]].lengthSquared();
                 if (distance2 < minDistance2)
                     minDistance2 = distance2;
             }
@@ -82,13 +82,13 @@ public:
 class RiggerVertexWeights
 {
 public:
-    int boneIndicies[4] = {0, 0, 0, 0};
+    int boneIndices[4] = {0, 0, 0, 0};
     float boneWeights[4] = {0, 0, 0, 0};
     void addBone(int boneIndex, float distance)
     {
-        if (m_boneRawIndicies.find(boneIndex) != m_boneRawIndicies.end())
+        if (m_boneRawIndices.find(boneIndex) != m_boneRawIndices.end())
             return;
-        m_boneRawIndicies.insert(boneIndex);
+        m_boneRawIndices.insert(boneIndex);
         if (qFuzzyIsNull(distance))
             distance = 0.0001;
         m_boneRawWeights.push_back(std::make_pair(boneIndex, 1.0 / distance));
@@ -107,7 +107,7 @@ public:
         if (totalDistance > 0) {
             for (size_t i = 0; i < m_boneRawWeights.size() && i < 4; i++) {
                 const auto &item = m_boneRawWeights[i];
-                boneIndicies[i] = item.first;
+                boneIndices[i] = item.first;
                 boneWeights[i] = item.second / totalDistance;
             }
         } else {
@@ -115,7 +115,7 @@ public:
         }
     }
 private:
-    std::set<int> m_boneRawIndicies;
+    std::set<int> m_boneRawIndices;
     std::vector<std::pair<int, float>> m_boneRawWeights;
 };
 

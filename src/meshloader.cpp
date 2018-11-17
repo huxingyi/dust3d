@@ -145,7 +145,7 @@ MeshLoader::MeshLoader(void *meshlite, int meshId, int triangulatedMeshId, QColo
             assert(firstIndex + j < loadedTriangleVertexIndexItemCount);
             int posIndex = triangleIndices[firstIndex + j] * 3;
             assert(posIndex < loadedTriangleVertexPositionItemCount);
-            triangulatedFace.indicies[j] = triangleIndices[firstIndex + j];
+            triangulatedFace.indices[j] = triangleIndices[firstIndex + j];
             Vertex *v = &m_triangleVertices[firstIndex + j];
             v->posX = triangleVertexPositions[posIndex + 0];
             v->posY = triangleVertexPositions[posIndex + 1];

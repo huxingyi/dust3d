@@ -30,7 +30,7 @@ int meshWeldSeam(void *meshlite, int meshId, float allowedSmallestDistance, cons
     int *faceVertexNumAndIndices = new int[faceCount * MAX_VERTICES_PER_FACE];
     int filledLength = meshlite_get_face_index_array(meshlite, meshId, faceVertexNumAndIndices, faceCount * MAX_VERTICES_PER_FACE);
     int i = 0;
-    std::vector<std::vector<int>> newFaceIndicies;
+    std::vector<std::vector<int>> newFaceIndices;
     while (i < filledLength) {
         int num = faceVertexNumAndIndices[i++];
         Q_ASSERT(num > 0 && num <= MAX_VERTICES_PER_FACE);
@@ -44,7 +44,7 @@ int meshWeldSeam(void *meshlite, int meshId, float allowedSmallestDistance, cons
             Q_ASSERT(index >= 0 && index < vertexCount);
             indices.push_back(index);
         }
-        newFaceIndicies.push_back(indices);
+        newFaceIndices.push_back(indices);
     }
     float squareOfAllowedSmallestDistance = allowedSmallestDistance * allowedSmallestDistance;
     int weldedMesh = 0;
@@ -53,33 +53,33 @@ int meshWeldSeam(void *meshlite, int meshId, float allowedSmallestDistance, cons
     std::unordered_set<int> processedFaces;
     std::map<std::pair<int, int>, std::pair<int, int>> triangleEdgeMap;
     std::unordered_map<int, int> vertexAdjFaceCountMap;
-    for (int i = 0; i < (int)newFaceIndicies.size(); i++) {
-        const auto &faceIndicies = newFaceIndicies[i];
-        if (faceIndicies.size() == 3) {
-            vertexAdjFaceCountMap[faceIndicies[0]]++;
-            vertexAdjFaceCountMap[faceIndicies[1]]++;
-            vertexAdjFaceCountMap[faceIndicies[2]]++;
-            triangleEdgeMap[std::make_pair(faceIndicies[0], faceIndicies[1])] = std::make_pair(i, faceIndicies[2]);
-            triangleEdgeMap[std::make_pair(faceIndicies[1], faceIndicies[2])] = std::make_pair(i, faceIndicies[0]);
-            triangleEdgeMap[std::make_pair(faceIndicies[2], faceIndicies[0])] = std::make_pair(i, faceIndicies[1]);
+    for (int i = 0; i < (int)newFaceIndices.size(); i++) {
+        const auto &faceIndices = newFaceIndices[i];
+        if (faceIndices.size() == 3) {
+            vertexAdjFaceCountMap[faceIndices[0]]++;
+            vertexAdjFaceCountMap[faceIndices[1]]++;
+            vertexAdjFaceCountMap[faceIndices[2]]++;
+            triangleEdgeMap[std::make_pair(faceIndices[0], faceIndices[1])] = std::make_pair(i, faceIndices[2]);
+            triangleEdgeMap[std::make_pair(faceIndices[1], faceIndices[2])] = std::make_pair(i, faceIndices[0]);
+            triangleEdgeMap[std::make_pair(faceIndices[2], faceIndices[0])] = std::make_pair(i, faceIndices[1]);
         }
     }
-    for (int i = 0; i < (int)newFaceIndicies.size(); i++) {
+    for (int i = 0; i < (int)newFaceIndices.size(); i++) {
         if (processedFaces.find(i) != processedFaces.end())
             continue;
-        const auto &faceIndicies = newFaceIndicies[i];
-        if (faceIndicies.size() == 3) {
-            bool indiciesSeamCheck[3] = {
-                excludeVertices.find(faceIndicies[0]) == excludeVertices.end(),
-                excludeVertices.find(faceIndicies[1]) == excludeVertices.end(),
-                excludeVertices.find(faceIndicies[2]) == excludeVertices.end()
+        const auto &faceIndices = newFaceIndices[i];
+        if (faceIndices.size() == 3) {
+            bool indicesSeamCheck[3] = {
+                excludeVertices.find(faceIndices[0]) == excludeVertices.end(),
+                excludeVertices.find(faceIndices[1]) == excludeVertices.end(),
+                excludeVertices.find(faceIndices[2]) == excludeVertices.end()
             };
             for (int j = 0; j < 3; j++) {
                 int next = (j + 1) % 3;
                 int nextNext = (j + 2) % 3;
-                if (indiciesSeamCheck[j] && indiciesSeamCheck[next]) {
-                    std::pair<int, int> edge = std::make_pair(faceIndicies[j], faceIndicies[next]);
-                    int thirdVertexIndex = faceIndicies[nextNext];
+                if (indicesSeamCheck[j] && indicesSeamCheck[next]) {
+                    std::pair<int, int> edge = std::make_pair(faceIndices[j], faceIndices[next]);
+                    int thirdVertexIndex = faceIndices[nextNext];
                     if ((positions[edge.first] - positions[edge.second]).lengthSquared() < squareOfAllowedSmallestDistance) {
                         auto oppositeEdge = std::make_pair(edge.second, edge.first);
                         auto findOppositeFace = triangleEdgeMap.find(oppositeEdge);
@@ -113,11 +113,11 @@ int meshWeldSeam(void *meshlite, int meshId, float allowedSmallestDistance, cons
     std::vector<int> newFaceVertexNumAndIndices;
     int weldedCount = 0;
     int faceCountAfterWeld = 0;
-    for (int i = 0; i < (int)newFaceIndicies.size(); i++) {
-        const auto &faceIndicies = newFaceIndicies[i];
-        std::vector<int> mappedFaceIndicies;
+    for (int i = 0; i < (int)newFaceIndices.size(); i++) {
+        const auto &faceIndices = newFaceIndices[i];
+        std::vector<int> mappedFaceIndices;
         bool errored = false;
-        for (const auto &index: faceIndicies) {
+        for (const auto &index: faceIndices) {
             int finalIndex = index;
             int mapTimes = 0;
             while (mapTimes < 500) {
@@ -132,14 +132,14 @@ int meshWeldSeam(void *meshlite, int meshId, float allowedSmallestDistance, cons
                 errored = true;
                 break;
             }
-            mappedFaceIndicies.push_back(finalIndex);
+            mappedFaceIndices.push_back(finalIndex);
         }
-        if (errored || mappedFaceIndicies.size() < 3)
+        if (errored || mappedFaceIndices.size() < 3)
             continue;
         bool welded = false;
-        for (decltype(mappedFaceIndicies.size()) j = 0; j < mappedFaceIndicies.size(); j++) {
+        for (decltype(mappedFaceIndices.size()) j = 0; j < mappedFaceIndices.size(); j++) {
             int next = (j + 1) % 3;
-            if (mappedFaceIndicies[j] == mappedFaceIndicies[next]) {
+            if (mappedFaceIndices[j] == mappedFaceIndices[next]) {
                 welded = true;
                 break;
             }
@@ -149,14 +149,14 @@ int meshWeldSeam(void *meshlite, int meshId, float allowedSmallestDistance, cons
             continue;
         }
         faceCountAfterWeld++;
-        newFaceVertexNumAndIndices.push_back(mappedFaceIndicies.size());
-        for (const auto &index: mappedFaceIndicies) {
+        newFaceVertexNumAndIndices.push_back(mappedFaceIndices.size());
+        for (const auto &index: mappedFaceIndices) {
             newFaceVertexNumAndIndices.push_back(index);
         }
     }
     if (affectedNum)
         *affectedNum = weldedCount;
-    qDebug() << "Welded" << weldedCount << "triangles(" << newFaceIndicies.size() << " - " << weldedCount << " = " << faceCountAfterWeld << ")";
+    qDebug() << "Welded" << weldedCount << "triangles(" << newFaceIndices.size() << " - " << weldedCount << " = " << faceCountAfterWeld << ")";
     weldedMesh = meshlite_build(meshlite, vertexPositions, vertexCount, newFaceVertexNumAndIndices.data(), newFaceVertexNumAndIndices.size());
     delete[] faceVertexNumAndIndices;
     delete[] vertexPositions;

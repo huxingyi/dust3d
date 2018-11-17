@@ -17,7 +17,7 @@ public:
 private:
     Outcome m_outcome;
     std::map<int, RiggerVertexWeights> m_resultWeights;
-    std::vector<std::vector<int>> m_verticesOldIndicies;
+    std::vector<std::vector<int>> m_verticesOldIndices;
     std::vector<std::vector<QVector3D>> m_verticesBindPositions;
     std::vector<std::vector<QVector3D>> m_verticesBindNormals;
     std::vector<QColor> m_triangleColors;

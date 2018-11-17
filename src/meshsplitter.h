@@ -5,12 +5,12 @@
 class MeshSplitterTriangle
 {
 public:
-    int indicies[3] = {0, 0, 0};
+    int indices[3] = {0, 0, 0};
     
     bool operator<(const MeshSplitterTriangle &other) const
     {
-        return std::make_tuple(indicies[0], indicies[1], indicies[2]) <
-            std::make_tuple(other.indicies[0], other.indicies[1], other.indicies[2]);
+        return std::make_tuple(indices[0], indices[1], indices[2]) <
+            std::make_tuple(other.indices[0], other.indices[1], other.indices[2]);
     }
 };
 

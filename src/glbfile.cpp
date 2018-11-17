@@ -140,11 +140,11 @@ GlbFileWriter::GlbFileWriter(Outcome &outcome,
     }
 
     std::vector<QVector3D> triangleVertexPositions;
-    std::vector<size_t> triangleVertexOldIndicies;
-    for (const auto &triangleIndicies: outcome.triangles) {
+    std::vector<size_t> triangleVertexOldIndices;
+    for (const auto &triangleIndices: outcome.triangles) {
         for (size_t j = 0; j < 3; ++j) {
-            triangleVertexOldIndicies.push_back(triangleIndicies[j]);
-            triangleVertexPositions.push_back(outcome.vertices[triangleIndicies[j]]);
+            triangleVertexOldIndices.push_back(triangleIndices[j]);
+            triangleVertexPositions.push_back(outcome.vertices[triangleIndices[j]]);
         }
     }
 
@@ -180,7 +180,7 @@ GlbFileWriter::GlbFileWriter(Outcome &outcome,
         Q_ASSERT((int)triangleVertexPositions.size() * sizeof(quint16) == m_binByteArray.size() - bufferViewFromOffset);
         alignBin();
         if (m_enableComment)
-            m_json["accessors"][bufferViewIndex]["__comment"] = QString("/accessors/%1: triangle indicies").arg(QString::number(bufferViewIndex)).toUtf8().constData();
+            m_json["accessors"][bufferViewIndex]["__comment"] = QString("/accessors/%1: triangle indices").arg(QString::number(bufferViewIndex)).toUtf8().constData();
         m_json["accessors"][bufferViewIndex]["bufferView"] = bufferViewIndex;
         m_json["accessors"][bufferViewIndex]["byteOffset"] = 0;
         m_json["accessors"][bufferViewIndex]["componentType"] = 5123;
@@ -279,14 +279,14 @@ GlbFileWriter::GlbFileWriter(Outcome &outcome,
             m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
             QStringList boneList;
             int weightItIndex = 0;
-            for (const auto &oldIndex: triangleVertexOldIndicies) {
+            for (const auto &oldIndex: triangleVertexOldIndices) {
                 auto i = 0u;
                 if (m_enableComment)
                     boneList.append(QString("%1:<").arg(QString::number(weightItIndex)));
                 auto findWeight = resultRigWeights->find(oldIndex);
                 if (findWeight != resultRigWeights->end()) {
                     for (; i < MAX_WEIGHT_NUM; i++) {
-                        quint16 nodeIndex = (quint16)findWeight->second.boneIndicies[i];
+                        quint16 nodeIndex = (quint16)findWeight->second.boneIndices[i];
                         binStream << (quint16)nodeIndex;
                         if (m_enableComment)
                             boneList.append(QString("%1").arg(nodeIndex));
@@ -304,11 +304,11 @@ GlbFileWriter::GlbFileWriter(Outcome &outcome,
             m_json["bufferViews"][bufferViewIndex]["byteLength"] = m_binByteArray.size() - bufferViewFromOffset;
             alignBin();
             if (m_enableComment)
-                m_json["accessors"][bufferViewIndex]["__comment"] = QString("/accessors/%1: bone indicies %2").arg(QString::number(bufferViewIndex)).arg(boneList.join(" ")).toUtf8().constData();
+                m_json["accessors"][bufferViewIndex]["__comment"] = QString("/accessors/%1: bone indices %2").arg(QString::number(bufferViewIndex)).arg(boneList.join(" ")).toUtf8().constData();
             m_json["accessors"][bufferViewIndex]["bufferView"] = bufferViewIndex;
             m_json["accessors"][bufferViewIndex]["byteOffset"] = 0;
             m_json["accessors"][bufferViewIndex]["componentType"] = 5123;
-            m_json["accessors"][bufferViewIndex]["count"] =  triangleVertexOldIndicies.size();
+            m_json["accessors"][bufferViewIndex]["count"] =  triangleVertexOldIndices.size();
             m_json["accessors"][bufferViewIndex]["type"] = "VEC4";
             bufferViewIndex++;
             
@@ -317,7 +317,7 @@ GlbFileWriter::GlbFileWriter(Outcome &outcome,
             m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
             QStringList weightList;
             weightItIndex = 0;
-            for (const auto &oldIndex: triangleVertexOldIndicies) {
+            for (const auto &oldIndex: triangleVertexOldIndices) {
                 auto i = 0u;
                 if (m_enableComment)
                     weightList.append(QString("%1:<").arg(QString::number(weightItIndex)));
@@ -346,7 +346,7 @@ GlbFileWriter::GlbFileWriter(Outcome &outcome,
             m_json["accessors"][bufferViewIndex]["bufferView"] = bufferViewIndex;
             m_json["accessors"][bufferViewIndex]["byteOffset"] = 0;
             m_json["accessors"][bufferViewIndex]["componentType"] = 5126;
-            m_json["accessors"][bufferViewIndex]["count"] = triangleVertexOldIndicies.size();
+            m_json["accessors"][bufferViewIndex]["count"] = triangleVertexOldIndices.size();
             m_json["accessors"][bufferViewIndex]["type"] = "VEC4";
             bufferViewIndex++;
         }

@@ -35,7 +35,7 @@ typedef struct
 
 struct TriangulatedFace
 {
-    int indicies[3];
+    int indices[3];
     QColor color;
 };
 

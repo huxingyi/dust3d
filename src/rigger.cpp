@@ -121,7 +121,7 @@ void Rigger::addTrianglesToVertices(const std::set<MeshSplitterTriangle> &triang
 {
     for (const auto &triangle: triangles) {
         for (int i = 0; i < 3; i++) {
-            vertices.insert(triangle.indicies[i]);
+            vertices.insert(triangle.indices[i]);
         }
     }
 }

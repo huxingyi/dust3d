@@ -6,14 +6,14 @@ SkinnedMeshCreator::SkinnedMeshCreator(const Outcome &outcome,
     m_outcome(outcome),
     m_resultWeights(resultWeights)
 {
-    m_verticesOldIndicies.resize(m_outcome.triangles.size());
+    m_verticesOldIndices.resize(m_outcome.triangles.size());
     m_verticesBindNormals.resize(m_outcome.triangles.size());
     m_verticesBindPositions.resize(m_outcome.triangles.size());
     const std::vector<std::vector<QVector3D>> *triangleVertexNormals = m_outcome.triangleVertexNormals();
     for (size_t triangleIndex = 0; triangleIndex < m_outcome.triangles.size(); triangleIndex++) {
         for (int j = 0; j < 3; j++) {
             int oldIndex = m_outcome.triangles[triangleIndex][j];
-            m_verticesOldIndicies[triangleIndex].push_back(oldIndex);
+            m_verticesOldIndices[triangleIndex].push_back(oldIndex);
             m_verticesBindPositions[triangleIndex].push_back(m_outcome.vertices[oldIndex]);
             if (nullptr != triangleVertexNormals)
                 m_verticesBindNormals[triangleIndex].push_back((*triangleVertexNormals)[triangleIndex][j]);
@@ -44,15 +44,15 @@ MeshLoader *SkinnedMeshCreator::createMeshFromTransform(const std::vector<QMatri
     if (!matricies.empty()) {
         for (size_t i = 0; i < transformedPositions.size(); ++i) {
             for (size_t j = 0; j < 3; ++j) {
-                const auto &weight = m_resultWeights[m_verticesOldIndicies[i][j]];
+                const auto &weight = m_resultWeights[m_verticesOldIndices[i][j]];
                 QMatrix4x4 mixedMatrix;
                 transformedPositions[i][j] = QVector3D();
                 transformedPoseNormals[i][j] = QVector3D();
                 for (int x = 0; x < 4; x++) {
                     float factor = weight.boneWeights[x];
                     if (factor > 0) {
-                        transformedPositions[i][j] += matricies[weight.boneIndicies[x]] * m_verticesBindPositions[i][j] * factor;
-                        transformedPoseNormals[i][j] += matricies[weight.boneIndicies[x]] * m_verticesBindNormals[i][j] * factor;
+                        transformedPositions[i][j] += matricies[weight.boneIndices[x]] * m_verticesBindPositions[i][j] * factor;
+                        transformedPoseNormals[i][j] += matricies[weight.boneIndices[x]] * m_verticesBindNormals[i][j] * factor;
                     }
                 }
             }

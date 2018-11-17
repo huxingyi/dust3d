@@ -1703,11 +1703,11 @@ FbxFileWriter::FbxFileWriter(Outcome &outcome,
         positions.push_back((double)vertex.y());
         positions.push_back((double)vertex.z());
     }
-    std::vector<int32_t> indicies;
+    std::vector<int32_t> indices;
     for (const auto &triangle: outcome.triangles) {
-        indicies.push_back(triangle[0]);
-        indicies.push_back(triangle[1]);
-        indicies.push_back(triangle[2] ^ -1);
+        indices.push_back(triangle[0]);
+        indices.push_back(triangle[1]);
+        indices.push_back(triangle[2] ^ -1);
     }
     FBXNode layerElementNormal("LayerElementNormal");
     const auto triangleVertexNormals = outcome.triangleVertexNormals();
@@ -1758,7 +1758,7 @@ FbxFileWriter::FbxFileWriter(Outcome &outcome,
     layer.addChild(FBXNode());
     geometry.addPropertyNode("GeometryVersion", (int32_t)124);
     geometry.addPropertyNode("Vertices", positions);
-    geometry.addPropertyNode("PolygonVertexIndex", indicies);
+    geometry.addPropertyNode("PolygonVertexIndex", indices);
     if (nullptr != triangleVertexNormals)
         geometry.addChild(layerElementNormal);
     geometry.addChild(layerElementMaterial);
@@ -1837,7 +1837,7 @@ FbxFileWriter::FbxFileWriter(Outcome &outcome,
         if (resultRigWeights && !resultRigWeights->empty()) {
             for (const auto &item: *resultRigWeights) {
                 for (int i = 0; i < 4; ++i) {
-                    const auto &boneIndex = item.second.boneIndicies[i];
+                    const auto &boneIndex = item.second.boneIndices[i];
                     Q_ASSERT(boneIndex < bindPerBone.size());
                     if (0 == boneIndex)
                         break;

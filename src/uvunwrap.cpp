@@ -28,9 +28,9 @@ void uvUnwrap(const Outcome &outcome, std::vector<std::vector<QVector2D>> &trian
         const auto &triangle = choosenTriangles[i];
         const auto &sourceNode = triangleSourceNodes[i];
         simpleuv::Face f;
-        f.indicies[0] = triangle[0];
-        f.indicies[1] = triangle[1];
-        f.indicies[2] = triangle[2];
+        f.indices[0] = triangle[0];
+        f.indices[1] = triangle[1];
+        f.indices[2] = triangle[2];
         inputMesh.faces.push_back(f);
         auto findPartitionResult = partIdToPartitionMap.find(sourceNode.first);
         if (findPartitionResult == partIdToPartitionMap.end()) {

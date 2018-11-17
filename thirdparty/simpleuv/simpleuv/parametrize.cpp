@@ -31,7 +31,7 @@ bool parametrize(const std::vector<Vertex> &verticies,
 
     for (decltype(faces.size()) i = 0; i < faces.size(); i++) {
         const auto &face = faces[i];
-        F.row(i) << face.indicies[0], face.indicies[1], face.indicies[2];
+        F.row(i) << face.indices[0], face.indices[1], face.indices[2];
     }
 
     // Compute the initial solution for ARAP (harmonic parametrization)

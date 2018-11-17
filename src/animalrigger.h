@@ -18,7 +18,7 @@ protected:
     bool rig() override;
     BoneMark translateBoneMark(BoneMark boneMark) override;
 private:
-    bool collectJontsForChain(int markIndex, std::vector<int> &jointMarkIndicies);
+    bool collectJontsForChain(int markIndex, std::vector<int> &jointMarkIndices);
     static QString namingSpine(int spineOrder);
     static QString namingConnector(const QString &spineName, const QString &chainName);
     static QString namingChain(const QString &baseName, SkeletonSide side, int orderInSide, int totalInSide, int jointOrder);

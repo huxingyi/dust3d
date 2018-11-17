@@ -186,13 +186,13 @@ void MeshGenerator::loadGeneratedPositionsToOutcome(void *meshliteContext, int t
     for (int i = 0, triangleVertIndex = 0, normalIndex=0;
             i < triangleCount;
             i++, triangleVertIndex+=3, normalIndex += 3) {
-        std::vector<size_t> triangleIndicies(3);
+        std::vector<size_t> triangleIndices(3);
         QVector3D triangleNormal;
-        triangleIndicies[0] = verticesMap[triangleIndexBuffer[triangleVertIndex + 0]];
-        triangleIndicies[1] = verticesMap[triangleIndexBuffer[triangleVertIndex + 1]];
-        triangleIndicies[2] = verticesMap[triangleIndexBuffer[triangleVertIndex + 2]];
+        triangleIndices[0] = verticesMap[triangleIndexBuffer[triangleVertIndex + 0]];
+        triangleIndices[1] = verticesMap[triangleIndexBuffer[triangleVertIndex + 1]];
+        triangleIndices[2] = verticesMap[triangleIndexBuffer[triangleVertIndex + 2]];
         triangleNormal = QVector3D(normalBuffer[normalIndex + 0], normalBuffer[normalIndex + 1], normalBuffer[normalIndex + 2]);
-        m_outcome->triangles.push_back(triangleIndicies);
+        m_outcome->triangles.push_back(triangleIndices);
         m_outcome->triangleNormals.push_back(triangleNormal);
     }
     delete[] positionBuffer;
@@ -642,14 +642,14 @@ void *MeshGenerator::combineComponentMesh(QString componentId, CombineMode *comb
         
         if (!positionsBeforeSmooth.empty()) {
             std::vector<int> seamVerticesIds;
-            std::unordered_set<int> seamVerticesIndicies;
+            std::unordered_set<int> seamVerticesIndices;
             
             if (!positionsBeforeCombination.map().empty()) {
                 for (size_t vertexIndex = 0; vertexIndex < positionsBeforeSmooth.size(); vertexIndex++) {
                     const auto &oldPosition = positionsBeforeSmooth[vertexIndex];
                     if (!positionsBeforeCombination.findPosition(oldPosition.x(), oldPosition.y(), oldPosition.z())) {
                         seamVerticesIds.push_back(vertexIndex + 1);
-                        seamVerticesIndicies.insert(vertexIndex);
+                        seamVerticesIndices.insert(vertexIndex);
                     }
                 }
             }
@@ -658,7 +658,7 @@ void *MeshGenerator::combineComponentMesh(QString componentId, CombineMode *comb
         
             if (smoothSeam) {
                 if (!seamVerticesIds.empty()) {
-                    //qDebug() << "smoothSeamFactor:" << smoothSeamFactor << "seamVerticesIndicies.size():" << seamVerticesNum;
+                    //qDebug() << "smoothSeamFactor:" << smoothSeamFactor << "seamVerticesIndices.size():" << seamVerticesNum;
                     meshlite_smooth_vertices(m_meshliteContext, meshIdForSmooth, smoothSeamFactor, seamVerticesIds.data(), seamVerticesIds.size());
                     meshChanged = true;
                 }
