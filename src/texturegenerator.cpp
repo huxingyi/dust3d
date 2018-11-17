@@ -218,7 +218,7 @@ void TextureGenerator::generate()
     m_resultTextureBorderImage->fill(Qt::transparent);
     
     m_resultTextureNormalImage = new QImage(TextureGenerator::m_textureSize, TextureGenerator::m_textureSize, QImage::Format_ARGB32);
-    m_resultTextureNormalImage->fill(Qt::transparent);
+    m_resultTextureNormalImage->fill(QColor(127, 127, 127));
     
     m_resultTextureMetalnessRoughnessAmbientOcclusionImage = new QImage(TextureGenerator::m_textureSize, TextureGenerator::m_textureSize, QImage::Format_ARGB32);
     m_resultTextureMetalnessRoughnessAmbientOcclusionImage->fill(QColor(255, 255, 0));

@@ -1,3 +1,4 @@
+#include <QDebug>
 #include "triangletangentresolve.h"
 
 void triangleTangentResolve(const Outcome &outcome, std::vector<QVector3D> &tangents)
@@ -24,8 +25,9 @@ void triangleTangentResolve(const Outcome &outcome, std::vector<QVector3D> &tang
         QVector2D deltaUv1 = uv2 - uv1;
         QVector2D deltaUv2 = uv3 - uv1;
         auto bottom = deltaUv1.x() * deltaUv2.y() - deltaUv2.x() * deltaUv1.y();
-        if (qFuzzyIsNull(bottom))
-            continue;
+        if (qFuzzyIsNull(bottom)) {
+            bottom = 0.000001;
+        }
         float f = 1.0 / bottom;
         QVector3D tangent = {
             f * (deltaUv2.y() * edge1.x() - deltaUv1.y() * edge2.x()),
