@@ -328,6 +328,10 @@ void main()
         normal = normalize(normal * 2.0 - 1.0);
     }
 
+    // Red: Ambient Occlusion
+    // Green: Roughness
+    // Blue: Metallic
+
     float metalness = vertMetalness;
     if (metalnessMapEnabled == 1) {
         metalness = texture2D(metalnessRoughnessAmbientOcclusionMapId, vertTexCoord).b;
@@ -335,12 +339,12 @@ void main()
 
     float roughness = vertRoughness;
     if (roughnessMapEnabled == 1) {
-        roughness = texture2D(metalnessRoughnessAmbientOcclusionMapId, vertTexCoord).r;
+        roughness = texture2D(metalnessRoughnessAmbientOcclusionMapId, vertTexCoord).g;
     }
 
     float ambientOcclusion = 1.0;
     if (ambientOcclusionMapEnabled == 1) {
-        ambientOcclusion = texture2D(metalnessRoughnessAmbientOcclusionMapId, vertTexCoord).g;
+        ambientOcclusion = texture2D(metalnessRoughnessAmbientOcclusionMapId, vertTexCoord).r;
     }
     
     roughness = min(0.99, roughness);

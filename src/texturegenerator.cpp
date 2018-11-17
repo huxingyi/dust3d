@@ -380,9 +380,9 @@ void TextureGenerator::generate()
                 if (hasMetalnessMap)
                     color.setBlue(qGray(m_resultTextureMetalnessImage->pixel(col, row)));
                 if (hasRoughnessMap)
-                    color.setRed(qGray(m_resultTextureRoughnessImage->pixel(col, row)));
+                    color.setGreen(qGray(m_resultTextureRoughnessImage->pixel(col, row)));
                 if (hasAmbientOcclusionMap)
-                    color.setGreen(qGray(m_resultTextureAmbientOcclusionImage->pixel(col, row)));
+                    color.setRed(qGray(m_resultTextureAmbientOcclusionImage->pixel(col, row)));
                 m_resultTextureMetalnessRoughnessAmbientOcclusionImage->setPixelColor(col, row, color);
             }
         }
