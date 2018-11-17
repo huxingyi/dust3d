@@ -68,14 +68,14 @@ ExportPreviewWidget::ExportPreviewWidget(Document *document, QWidget *parent) :
     //containerLayout->setRowStretch(0, 1);
     //containerLayout->setColumnStretch(0, 1);
     
-    m_textureRenderWidget = new ModelWidget;
-    m_textureRenderWidget->setMinimumSize(128, 128);
+    //m_textureRenderWidget = new ModelWidget;
+    //m_textureRenderWidget->setMinimumSize(128, 128);
     //m_textureRenderWidget->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     
-    QVBoxLayout *renderLayout = new QVBoxLayout;
-    renderLayout->setSpacing(0);
-    renderLayout->setContentsMargins(20, 0, 20, 0);
-    renderLayout->addWidget(m_textureRenderWidget);
+    //QVBoxLayout *renderLayout = new QVBoxLayout;
+    //renderLayout->setSpacing(0);
+    //renderLayout->setContentsMargins(20, 0, 20, 0);
+    //renderLayout->addWidget(m_textureRenderWidget);
     
     QWidget *hrLightWidget = Theme::createHorizontalLineWidget();
     
@@ -83,7 +83,7 @@ ExportPreviewWidget::ExportPreviewWidget(Document *document, QWidget *parent) :
     topLayout->setSpacing(0);
     topLayout->setContentsMargins(0, 0, 0, 0);
     topLayout->addLayout(containerLayout);
-    topLayout->addLayout(renderLayout);
+    //topLayout->addLayout(renderLayout);
     
     QVBoxLayout *mainLayout = new QVBoxLayout;
     mainLayout->addLayout(topLayout);
@@ -182,7 +182,7 @@ void ExportPreviewWidget::updateTexturePreview()
         m_metalnessRoughnessAmbientOcclusionImage = *m_document->textureMetalnessRoughnessAmbientOcclusionImage;
     else
         m_metalnessRoughnessAmbientOcclusionImage = QImage();
-    m_textureRenderWidget->updateMesh(m_document->takeResultTextureMesh());
+    //m_textureRenderWidget->updateMesh(m_document->takeResultTextureMesh());
     resizePreviewImages();
     checkSpinner();
 }

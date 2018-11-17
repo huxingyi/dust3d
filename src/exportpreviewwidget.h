@@ -35,7 +35,7 @@ private:
     QImage m_colorImage;
     QImage m_normalImage;
     QImage m_metalnessRoughnessAmbientOcclusionImage;
-    ModelWidget *m_textureRenderWidget;
+    //ModelWidget *m_textureRenderWidget;
     WaitingSpinnerWidget *m_spinnerWidget;
     QPushButton *m_saveButton;
 };
