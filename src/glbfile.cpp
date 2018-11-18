@@ -27,6 +27,8 @@ GlbFileWriter::GlbFileWriter(Outcome &outcome,
         const std::map<int, RiggerVertexWeights> *resultRigWeights,
         const QString &filename,
         QImage *textureImage,
+        QImage *normalImage,
+        QImage *ormImage,
         const std::vector<std::pair<QString, std::vector<std::pair<float, JointNodeTree>>>> *motions) :
     m_filename(filename),
     m_outputNormal(true),
@@ -163,9 +165,20 @@ GlbFileWriter::GlbFileWriter(Outcome &outcome,
             m_json["meshes"][0]["primitives"][primitiveIndex]["attributes"]["JOINTS_0"] = bufferViewIndex + (++attributeIndex);
             m_json["meshes"][0]["primitives"][primitiveIndex]["attributes"]["WEIGHTS_0"] = bufferViewIndex + (++attributeIndex);
         }
-        m_json["materials"][primitiveIndex]["pbrMetallicRoughness"]["baseColorTexture"]["index"] = 0;
+        int textureIndex = 0;
+        m_json["materials"][primitiveIndex]["pbrMetallicRoughness"]["baseColorTexture"]["index"] = textureIndex++;
         m_json["materials"][primitiveIndex]["pbrMetallicRoughness"]["metallicFactor"] = MeshLoader::m_defaultMetalness;
         m_json["materials"][primitiveIndex]["pbrMetallicRoughness"]["roughnessFactor"] = MeshLoader::m_defaultRoughness;
+        if (normalImage) {
+            m_json["materials"][primitiveIndex]["normalTexture"]["index"] = textureIndex++;
+        }
+        if (ormImage) {
+            m_json["materials"][primitiveIndex]["occlusionTexture"]["index"] = textureIndex;
+            m_json["materials"][primitiveIndex]["pbrMetallicRoughness"]["metallicRoughnessTexture"]["index"] = textureIndex;
+            m_json["materials"][primitiveIndex]["pbrMetallicRoughness"]["metallicFactor"] = 1.0;
+            m_json["materials"][primitiveIndex]["pbrMetallicRoughness"]["roughnessFactor"] = 1.0;
+            textureIndex++;
+        }
         
         primitiveIndex++;
 
@@ -481,15 +494,18 @@ GlbFileWriter::GlbFileWriter(Outcome &outcome,
         }
     }
     
+    m_json["samplers"][0]["magFilter"] = 9729;
+    m_json["samplers"][0]["minFilter"] = 9987;
+    m_json["samplers"][0]["wrapS"] = 33648;
+    m_json["samplers"][0]["wrapT"] = 33648;
+    
+    int imageIndex = 0;
+    int textureIndex = 0;
+    
     // Images should be put in the end of the buffer, because we are not using accessors
     if (nullptr != textureImage) {
-        m_json["textures"][0]["sampler"] = 0;
-        m_json["textures"][0]["source"] = 0;
-        
-        m_json["samplers"][0]["magFilter"] = 9729;
-        m_json["samplers"][0]["minFilter"] = 9987;
-        m_json["samplers"][0]["wrapS"] = 33648;
-        m_json["samplers"][0]["wrapT"] = 33648;
+        m_json["textures"][textureIndex]["sampler"] = 0;
+        m_json["textures"][textureIndex]["source"] = imageIndex;
     
         bufferViewFromOffset = (int)m_binByteArray.size();
         m_json["bufferViews"][bufferViewIndex]["buffer"] = 0;
@@ -500,9 +516,52 @@ GlbFileWriter::GlbFileWriter(Outcome &outcome,
         binStream.writeRawData(pngByteArray.data(), pngByteArray.size());
         alignBin();
         m_json["bufferViews"][bufferViewIndex]["byteLength"] = m_binByteArray.size() - bufferViewFromOffset;
-        m_json["images"][0]["bufferView"] = bufferViewIndex;
-        m_json["images"][0]["mimeType"] = "image/png";
+        m_json["images"][imageIndex]["bufferView"] = bufferViewIndex;
+        m_json["images"][imageIndex]["mimeType"] = "image/png";
         bufferViewIndex++;
+        
+        imageIndex++;
+        textureIndex++;
+    }
+    if (nullptr != normalImage) {
+        m_json["textures"][textureIndex]["sampler"] = 0;
+        m_json["textures"][textureIndex]["source"] = imageIndex;
+    
+        bufferViewFromOffset = (int)m_binByteArray.size();
+        m_json["bufferViews"][bufferViewIndex]["buffer"] = 0;
+        m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
+        QByteArray pngByteArray;
+        QBuffer buffer(&pngByteArray);
+        normalImage->save(&buffer, "PNG");
+        binStream.writeRawData(pngByteArray.data(), pngByteArray.size());
+        alignBin();
+        m_json["bufferViews"][bufferViewIndex]["byteLength"] = m_binByteArray.size() - bufferViewFromOffset;
+        m_json["images"][imageIndex]["bufferView"] = bufferViewIndex;
+        m_json["images"][imageIndex]["mimeType"] = "image/png";
+        bufferViewIndex++;
+        
+        imageIndex++;
+        textureIndex++;
+    }
+    if (nullptr != ormImage) {
+        m_json["textures"][textureIndex]["sampler"] = 0;
+        m_json["textures"][textureIndex]["source"] = imageIndex;
+    
+        bufferViewFromOffset = (int)m_binByteArray.size();
+        m_json["bufferViews"][bufferViewIndex]["buffer"] = 0;
+        m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
+        QByteArray pngByteArray;
+        QBuffer buffer(&pngByteArray);
+        ormImage->save(&buffer, "PNG");
+        binStream.writeRawData(pngByteArray.data(), pngByteArray.size());
+        alignBin();
+        m_json["bufferViews"][bufferViewIndex]["byteLength"] = m_binByteArray.size() - bufferViewFromOffset;
+        m_json["images"][imageIndex]["bufferView"] = bufferViewIndex;
+        m_json["images"][imageIndex]["mimeType"] = "image/png";
+        bufferViewIndex++;
+        
+        imageIndex++;
+        textureIndex++;
     }
     
     m_json["buffers"][0]["byteLength"] = m_binByteArray.size();

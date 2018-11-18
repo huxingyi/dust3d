@@ -1296,7 +1296,7 @@ void DocumentWindow::exportGlbResult()
         exportMotions.push_back({motion->name, motion->jointNodeTrees});
     }
     GlbFileWriter glbFileWriter(skeletonResult, m_document->resultRigBones(), m_document->resultRigWeights(), filename,
-        m_document->textureImage, exportMotions.empty() ? nullptr : &exportMotions);
+        m_document->textureImage, m_document->textureNormalImage, m_document->textureMetalnessRoughnessAmbientOcclusionImage, exportMotions.empty() ? nullptr : &exportMotions);
     glbFileWriter.save();
     QApplication::restoreOverrideCursor();
 }

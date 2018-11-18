@@ -20,6 +20,8 @@ public:
         const std::map<int, RiggerVertexWeights> *resultRigWeights,
         const QString &filename,
         QImage *textureImage=nullptr,
+        QImage *normalImage=nullptr,
+        QImage *ormImage=nullptr,
         const std::vector<std::pair<QString, std::vector<std::pair<float, JointNodeTree>>>> *motions=nullptr);
     bool save();
 private:
