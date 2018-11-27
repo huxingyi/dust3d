@@ -5,6 +5,7 @@
 #include <QString>
 #include <QMatrix4x4>
 #include <QQuaternion>
+#include <QImage>
 #include "outcome.h"
 #include "document.h"
 
@@ -16,6 +17,9 @@ public:
         const std::vector<RiggerBone> *resultRigBones,
         const std::map<int, RiggerVertexWeights> *resultRigWeights,
         const QString &filename,
+        QImage *textureImage=nullptr,
+        QImage *normalImage=nullptr,
+        QImage *ormImage=nullptr,
         const std::vector<std::pair<QString, std::vector<std::pair<float, JointNodeTree>>>> *motions=nullptr);
     bool save();
 
@@ -28,6 +32,8 @@ private:
     void createDocuments();
     void createReferences();
     void createDefinitions(size_t deformerCount,
+        size_t textureCount=0,
+        size_t videoCount=0,
         bool hasAnimtion=false,
         size_t animationStackCount=0,
         size_t animationLayerCount=0,

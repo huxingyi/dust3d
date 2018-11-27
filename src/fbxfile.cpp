@@ -2,10 +2,13 @@
 #include <fbxproperty.h>
 #include <QDateTime>
 #include <QtMath>
+#include <QBuffer>
+#include <QByteArray>
 #include "fbxfile.h"
 #include "version.h"
 #include "jointnodetree.h"
 #include "util.h"
+#include "modelshaderprogram.h"
 
 using namespace fbx;
 
@@ -21,6 +24,7 @@ void FbxFileWriter::createFbxHeader()
     FBXNode headerExtension("FBXHeaderExtension");
     headerExtension.addPropertyNode("FBXHeaderVersion", (int32_t)1003);
     headerExtension.addPropertyNode("FBXVersion", (int32_t)m_fbxDocument.getVersion());
+    //headerExtension.addPropertyNode("FBXVersion", (int32_t)7500);
     headerExtension.addPropertyNode("EncryptionType", (int32_t)0);
     {
         auto currentDateTime = QDateTime::currentDateTime();
@@ -412,6 +416,8 @@ void FbxFileWriter::createReferences()
 }
 
 void FbxFileWriter::createDefinitions(size_t deformerCount,
+        size_t textureCount,
+        size_t videoCount,
         bool hasAnimtion,
         size_t animationStackCount,
         size_t animationLayerCount,
@@ -1198,6 +1204,163 @@ void FbxFileWriter::createDefinitions(size_t deformerCount,
         objectType.addChild(FBXNode());
         definitions.addChild(objectType);
     }
+    {
+        FBXNode objectType("ObjectType");
+        objectType.addProperty("Implementation");
+        objectType.addPropertyNode("Count", (int32_t)1);
+        FBXNode propertyTemplate("PropertyTemplate");
+        propertyTemplate.addProperty("FbxImplementation");
+        {
+            FBXNode properties("Properties70");
+            {
+                FBXNode p("P");
+                p.addProperty("ShaderLanguage");
+                p.addProperty("KString");
+                p.addProperty("");
+                p.addProperty("");
+                p.addProperty("MentalRaySL");
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("ShaderLanguageVersion");
+                p.addProperty("KString");
+                p.addProperty("");
+                p.addProperty("");
+                p.addProperty("");
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("RenderAPI");
+                p.addProperty("KString");
+                p.addProperty("");
+                p.addProperty("");
+                p.addProperty("MentalRay");
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("RenderAPIVersion");
+                p.addProperty("KString");
+                p.addProperty("");
+                p.addProperty("");
+                p.addProperty("");
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("RootBindingName");
+                p.addProperty("KString");
+                p.addProperty("");
+                p.addProperty("");
+                p.addProperty("");
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("Constants");
+                p.addProperty("Compound");
+                p.addProperty("");
+                p.addProperty("");
+                properties.addChild(p);
+            }
+            properties.addChild(FBXNode());
+            propertyTemplate.addChild(properties);
+        }
+        propertyTemplate.addChild(FBXNode());
+        objectType.addChild(propertyTemplate);
+        objectType.addChild(FBXNode());
+        definitions.addChild(objectType);
+    }
+    {
+        FBXNode objectType("ObjectType");
+        objectType.addProperty("BindingTable");
+        objectType.addPropertyNode("Count", (int32_t)1);
+        FBXNode propertyTemplate("PropertyTemplate");
+        propertyTemplate.addProperty("FbxBindingTable");
+        {
+            FBXNode properties("Properties70");
+            {
+                FBXNode p("P");
+                p.addProperty("TargetName");
+                p.addProperty("KString");
+                p.addProperty("");
+                p.addProperty("");
+                p.addProperty("");
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("TargetType");
+                p.addProperty("KString");
+                p.addProperty("");
+                p.addProperty("");
+                p.addProperty("");
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("CodeAbsoluteURL");
+                p.addProperty("KString");
+                p.addProperty("XRefUrl");
+                p.addProperty("");
+                p.addProperty("");
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("CodeRelativeURL");
+                p.addProperty("KString");
+                p.addProperty("XRefUrl");
+                p.addProperty("");
+                p.addProperty("");
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("CodeTAG");
+                p.addProperty("KString");
+                p.addProperty("");
+                p.addProperty("");
+                p.addProperty("shader");
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("DescAbsoluteURL");
+                p.addProperty("KString");
+                p.addProperty("XRefUrl");
+                p.addProperty("");
+                p.addProperty("");
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("DescRelativeURL");
+                p.addProperty("KString");
+                p.addProperty("XRefUrl");
+                p.addProperty("");
+                p.addProperty("");
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("DescTAG");
+                p.addProperty("KString");
+                p.addProperty("");
+                p.addProperty("");
+                p.addProperty("shader");
+                properties.addChild(p);
+            }
+            properties.addChild(FBXNode());
+            propertyTemplate.addChild(properties);
+        }
+        propertyTemplate.addChild(FBXNode());
+        objectType.addChild(propertyTemplate);
+        objectType.addChild(FBXNode());
+        definitions.addChild(objectType);
+    }
     if (deformerCount > 0) {
         FBXNode objectType("ObjectType");
         objectType.addProperty("Deformer");
@@ -1216,6 +1379,374 @@ void FbxFileWriter::createDefinitions(size_t deformerCount,
         FBXNode objectType("ObjectType");
         objectType.addProperty("Pose");
         objectType.addPropertyNode("Count", (int32_t)1);
+        objectType.addChild(FBXNode());
+        definitions.addChild(objectType);
+    }
+    if (textureCount > 0) {
+        FBXNode objectType("ObjectType");
+        objectType.addProperty("Texture");
+        objectType.addPropertyNode("Count", (int32_t)textureCount);
+        FBXNode propertyTemplate("PropertyTemplate");
+        propertyTemplate.addProperty("FbxFileTexture");
+        {
+            FBXNode properties("Properties70");
+            {
+                FBXNode p("P");
+                p.addProperty("TextureTypeUse");
+                p.addProperty("enum");
+                p.addProperty("");
+                p.addProperty("");
+                p.addProperty((int32_t)0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("Texture alpha");
+                p.addProperty("Number");
+                p.addProperty("");
+                p.addProperty("A");
+                p.addProperty((double)1.0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("CurrentMappingType");
+                p.addProperty("enum");
+                p.addProperty("");
+                p.addProperty("");
+                p.addProperty((int32_t)0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("WrapModeU");
+                p.addProperty("enum");
+                p.addProperty("");
+                p.addProperty("");
+                p.addProperty((int32_t)0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("WrapModeV");
+                p.addProperty("enum");
+                p.addProperty("");
+                p.addProperty("");
+                p.addProperty((int32_t)0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("UVSwap");
+                p.addProperty("bool");
+                p.addProperty("");
+                p.addProperty("");
+                p.addProperty((int32_t)0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("PremultiplyAlpha");
+                p.addProperty("bool");
+                p.addProperty("");
+                p.addProperty("");
+                p.addProperty((int32_t)1);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("Translation");
+                p.addProperty("Vector");
+                p.addProperty("");
+                p.addProperty("A");
+                p.addProperty((double)0);
+                p.addProperty((double)0);
+                p.addProperty((double)0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("Rotation");
+                p.addProperty("Vector");
+                p.addProperty("");
+                p.addProperty("A");
+                p.addProperty((double)0);
+                p.addProperty((double)0);
+                p.addProperty((double)0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("Scaling");
+                p.addProperty("Vector");
+                p.addProperty("");
+                p.addProperty("A");
+                p.addProperty((double)1.0);
+                p.addProperty((double)1.0);
+                p.addProperty((double)1.0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("TextureRotationPivot");
+                p.addProperty("Vector3D");
+                p.addProperty("Vector");
+                p.addProperty("");
+                p.addProperty((double)0.0);
+                p.addProperty((double)0.0);
+                p.addProperty((double)0.0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("TextureScalingPivot");
+                p.addProperty("Vector3D");
+                p.addProperty("Vector");
+                p.addProperty("");
+                p.addProperty((double)0.0);
+                p.addProperty((double)0.0);
+                p.addProperty((double)0.0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("CurrentTextureBlendMode");
+                p.addProperty("enum");
+                p.addProperty("");
+                p.addProperty("");
+                p.addProperty((int32_t)1);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("UVSet");
+                p.addProperty("KString");
+                p.addProperty("");
+                p.addProperty("");
+                p.addProperty("default");
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("UseMaterial");
+                p.addProperty("bool");
+                p.addProperty("");
+                p.addProperty("");
+                p.addProperty((int32_t)0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("UseMipMap");
+                p.addProperty("bool");
+                p.addProperty("");
+                p.addProperty("");
+                p.addProperty((int32_t)0);
+                properties.addChild(p);
+            }
+            properties.addChild(FBXNode());
+            propertyTemplate.addChild(properties);
+        }
+        propertyTemplate.addChild(FBXNode());
+        objectType.addChild(propertyTemplate);
+        objectType.addChild(FBXNode());
+        definitions.addChild(objectType);
+    }
+    if (videoCount > 0) {
+        FBXNode objectType("ObjectType");
+        objectType.addProperty("Video");
+        objectType.addPropertyNode("Count", (int32_t)videoCount);
+        FBXNode propertyTemplate("PropertyTemplate");
+        propertyTemplate.addProperty("FbxVideo");
+        {
+            FBXNode properties("Properties70");
+            {
+                FBXNode p("P");
+                p.addProperty("Path");
+                p.addProperty("KString");
+                p.addProperty("XRefUrl");
+                p.addProperty("");
+                p.addProperty("");
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("RelPath");
+                p.addProperty("KString");
+                p.addProperty("XRefUrl");
+                p.addProperty("");
+                p.addProperty("");
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("Color");
+                p.addProperty("ColorRGB");
+                p.addProperty("Color");
+                p.addProperty("");
+                p.addProperty((double)0.000000);
+                p.addProperty((double)0.000000);
+                p.addProperty((double)0.000000);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("ClipIn");
+                p.addProperty("KTime");
+                p.addProperty("Time");
+                p.addProperty("");
+                p.addProperty((int64_t)0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("ClipOut");
+                p.addProperty("KTime");
+                p.addProperty("Time");
+                p.addProperty("");
+                p.addProperty((int64_t)0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("Offset");
+                p.addProperty("KTime");
+                p.addProperty("Time");
+                p.addProperty("");
+                p.addProperty((int64_t)0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("PlaySpeed");
+                p.addProperty("double");
+                p.addProperty("Number");
+                p.addProperty("");
+                p.addProperty((double)0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("FreeRunning");
+                p.addProperty("bool");
+                p.addProperty("");
+                p.addProperty("");
+                p.addProperty((int32_t)0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("Loop");
+                p.addProperty("bool");
+                p.addProperty("");
+                p.addProperty("");
+                p.addProperty((int32_t)0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("Mute");
+                p.addProperty("bool");
+                p.addProperty("");
+                p.addProperty("");
+                p.addProperty((int32_t)0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("AccessMode");
+                p.addProperty("enum");
+                p.addProperty("");
+                p.addProperty("");
+                p.addProperty((int32_t)0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("ImageSequence");
+                p.addProperty("bool");
+                p.addProperty("");
+                p.addProperty("");
+                p.addProperty((int32_t)0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("ImageSequenceOffset");
+                p.addProperty("int");
+                p.addProperty("Integer");
+                p.addProperty("");
+                p.addProperty((int32_t)0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("FrameRate");
+                p.addProperty("double");
+                p.addProperty("Number");
+                p.addProperty("");
+                p.addProperty((double)0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("LastFrame");
+                p.addProperty("int");
+                p.addProperty("Integer");
+                p.addProperty("");
+                p.addProperty((int32_t)0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("Width");
+                p.addProperty("int");
+                p.addProperty("Integer");
+                p.addProperty("");
+                p.addProperty((int32_t)0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("Height");
+                p.addProperty("int");
+                p.addProperty("Integer");
+                p.addProperty("");
+                p.addProperty((int32_t)0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("StartFrame");
+                p.addProperty("int");
+                p.addProperty("Integer");
+                p.addProperty("");
+                p.addProperty((int32_t)0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("StopFrame");
+                p.addProperty("int");
+                p.addProperty("Integer");
+                p.addProperty("");
+                p.addProperty((int32_t)0);
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("InterlaceMode");
+                p.addProperty("enum");
+                p.addProperty("");
+                p.addProperty("");
+                p.addProperty((int32_t)0);
+                properties.addChild(p);
+            }
+            properties.addChild(FBXNode());
+            propertyTemplate.addChild(properties);
+        }
+        propertyTemplate.addChild(FBXNode());
+        objectType.addChild(propertyTemplate);
         objectType.addChild(FBXNode());
         definitions.addChild(objectType);
     }
@@ -1293,9 +1824,9 @@ void FbxFileWriter::createDefinitions(size_t deformerCount,
                 p.addProperty("Color");
                 p.addProperty("");
                 p.addProperty("A");
-                p.addProperty((double)0.800000);
-                p.addProperty((double)0.800000);
-                p.addProperty((double)0.800000);
+                p.addProperty((double)1.000000);
+                p.addProperty((double)1.000000);
+                p.addProperty((double)1.000000);
                 properties.addChild(p);
             }
             {
@@ -1672,6 +2203,9 @@ FbxFileWriter::FbxFileWriter(Outcome &outcome,
         const std::vector<RiggerBone> *resultRigBones,
         const std::map<int, RiggerVertexWeights> *resultRigWeights,
         const QString &filename,
+        QImage *textureImage,
+        QImage *normalImage,
+        QImage *ormImage,
         const std::vector<std::pair<QString, std::vector<std::pair<float, JointNodeTree>>>> *motions) :
     m_filename(filename)
 {
@@ -1729,6 +2263,28 @@ FbxFileWriter::FbxFileWriter(Outcome &outcome,
         layerElementNormal.addPropertyNode("Normals", normals);
         layerElementNormal.addChild(FBXNode());
     }
+    FBXNode layerElementUv("LayerElementUV");
+    const auto triangleVertexUvs = outcome.triangleVertexUvs();
+    if (nullptr != triangleVertexUvs) {
+        layerElementUv.addProperty((int32_t)0);
+        layerElementUv.addPropertyNode("Version", (int32_t)101);
+        layerElementUv.addPropertyNode("Name", "default");
+        layerElementUv.addPropertyNode("MappingInformationType", "ByPolygonVertex");
+        layerElementUv.addPropertyNode("ReferenceInformationType", "Direct");
+        std::vector<double> uvs;
+        //std::vector<int32_t> uvIndices;
+        for (decltype(triangleVertexUvs->size()) i = 0; i < triangleVertexUvs->size(); ++i) {
+            for (size_t j = 0; j < 3; ++j) {
+                const auto &uv = (*triangleVertexUvs)[i][j];
+                uvs.push_back((double)uv.x());
+                uvs.push_back((double)1.0 - uv.y());
+                //uvIndices.push_back(uvIndices.size());
+            }
+        }
+        layerElementUv.addPropertyNode("UV", uvs);
+        //layerElementUv.addPropertyNode("UVIndex", uvIndices);
+        layerElementUv.addChild(FBXNode());
+    }
     FBXNode layerElementMaterial("LayerElementMaterial");
     layerElementMaterial.addProperty((int32_t)0);
     layerElementMaterial.addPropertyNode("Version", (int32_t)101);
@@ -1741,7 +2297,7 @@ FbxFileWriter::FbxFileWriter(Outcome &outcome,
     FBXNode layer("Layer");
     layer.addProperty((int32_t)0);
     layer.addPropertyNode("Version", (int32_t)100);
-    {
+    if (nullptr != triangleVertexNormals) {
         FBXNode layerElement("LayerElement");
         layerElement.addPropertyNode("Type", "LayerElementNormal");
         layerElement.addPropertyNode("TypedIndex", (int32_t)0);
@@ -1755,6 +2311,13 @@ FbxFileWriter::FbxFileWriter(Outcome &outcome,
         layerElement.addChild(FBXNode());
         layer.addChild(layerElement);
     }
+    if (nullptr != triangleVertexUvs) {
+        FBXNode layerElement("LayerElement");
+        layerElement.addPropertyNode("Type", "LayerElementUV");
+        layerElement.addPropertyNode("TypedIndex", (int32_t)0);
+        layerElement.addChild(FBXNode());
+        layer.addChild(layerElement);
+    }
     layer.addChild(FBXNode());
     geometry.addPropertyNode("GeometryVersion", (int32_t)124);
     geometry.addPropertyNode("Vertices", positions);
@@ -1762,6 +2325,8 @@ FbxFileWriter::FbxFileWriter(Outcome &outcome,
     if (nullptr != triangleVertexNormals)
         geometry.addChild(layerElementNormal);
     geometry.addChild(layerElementMaterial);
+    if (nullptr != triangleVertexUvs)
+        geometry.addChild(layerElementUv);
     geometry.addChild(layer);
     geometry.addChild(FBXNode());
     
@@ -1813,6 +2378,16 @@ FbxFileWriter::FbxFileWriter(Outcome &outcome,
             p.addProperty((int32_t)1);
             properties.addChild(p);
         }
+        /*
+        {
+            FBXNode p("P");
+            p.addProperty("currentUVSet");
+            p.addProperty("KString");
+            p.addProperty("");
+            p.addProperty("U");
+            p.addProperty("default");
+            properties.addChild(p);
+        }*/
         properties.addChild(FBXNode());
         model.addChild(properties);
     }
@@ -2202,6 +2777,276 @@ FbxFileWriter::FbxFileWriter(Outcome &outcome,
         pose.addChild(FBXNode());
     }
     
+    size_t textureCount = 0;
+    size_t videoCount = 0;
+    
+    std::vector<FBXNode> videos;
+    std::vector<FBXNode> textures;
+    
+    FBXNode material("Material");
+    int64_t materialId = m_next64Id++;
+    material.addProperty(materialId);
+    material.addProperty(std::vector<uint8_t>({'M','a','t','e','r','i','a','l',0,1,'S','t','i','n','g','r','a','y','P','B','S'}), 'S');
+    material.addProperty("");
+    material.addPropertyNode("Version", (int32_t)102);
+    material.addPropertyNode("ShadingModel", "unknown");
+    material.addPropertyNode("MultiLayer", (int32_t)0);
+    {
+        FBXNode properties("Properties70");
+        {
+            FBXNode p("P");
+            p.addProperty("Maya");
+            p.addProperty("Compound");
+            p.addProperty("");
+            p.addProperty("");
+            properties.addChild(p);
+        }
+        {
+            FBXNode p("P");
+            p.addProperty("Maya|TypeId");
+            p.addProperty("int");
+            p.addProperty("Integer");
+            p.addProperty("");
+            p.addProperty((int32_t)1166017); // Don't known what does this id mean
+            properties.addChild(p);
+        }
+        {
+            FBXNode p("P");
+            p.addProperty("Maya|TEX_global_diffuse_cube");
+            p.addProperty("Vector3D");
+            p.addProperty("Vector");
+            p.addProperty("");
+            p.addProperty((double)0.000000);
+            p.addProperty((double)0.000000);
+            p.addProperty((double)0.000000);
+            properties.addChild(p);
+        }
+        {
+            FBXNode p("P");
+            p.addProperty("Maya|TEX_global_specular_cube");
+            p.addProperty("Vector3D");
+            p.addProperty("Vector");
+            p.addProperty("");
+            p.addProperty((double)0.000000);
+            p.addProperty((double)0.000000);
+            p.addProperty((double)0.000000);
+            properties.addChild(p);
+        }
+        {
+            FBXNode p("P");
+            p.addProperty("Maya|TEX_brdf_lut");
+            p.addProperty("Vector3D");
+            p.addProperty("Vector");
+            p.addProperty("");
+            p.addProperty((double)0.000000);
+            p.addProperty((double)0.000000);
+            p.addProperty((double)0.000000);
+            properties.addChild(p);
+        }
+        {
+            FBXNode p("P");
+            p.addProperty("Maya|use_normal_map");
+            p.addProperty("float");
+            p.addProperty("");
+            p.addProperty("");
+            p.addProperty(normalImage ? (float)1.000000 : (float)0.000000);
+            properties.addChild(p);
+        }
+        {
+            FBXNode p("P");
+            p.addProperty("Maya|uv_offset");
+            p.addProperty("Vector2D");
+            p.addProperty("Vector2");
+            p.addProperty("");
+            p.addProperty((double)0.000000);
+            p.addProperty((double)0.000000);
+            properties.addChild(p);
+        }
+        {
+            FBXNode p("P");
+            p.addProperty("Maya|uv_scale");
+            p.addProperty("Vector2D");
+            p.addProperty("Vector2");
+            p.addProperty("");
+            p.addProperty((double)1.000000);
+            p.addProperty((double)1.000000);
+            properties.addChild(p);
+        }
+        {
+            FBXNode p("P");
+            p.addProperty("Maya|TEX_normal_map");
+            p.addProperty("Vector3D");
+            p.addProperty("Vector");
+            p.addProperty("");
+            p.addProperty((double)0.000000);
+            p.addProperty((double)0.000000);
+            p.addProperty((double)0.000000);
+            properties.addChild(p);
+        }
+        {
+            FBXNode p("P");
+            p.addProperty("Maya|use_color_map");
+            p.addProperty("float");
+            p.addProperty("");
+            p.addProperty("");
+            p.addProperty(textureImage ? (float)1.000000 : (float)0.000000);
+            properties.addChild(p);
+        }
+        {
+            FBXNode p("P");
+            p.addProperty("Maya|TEX_color_map");
+            p.addProperty("Vector3D");
+            p.addProperty("Vector");
+            p.addProperty("");
+            p.addProperty((double)0.000000);
+            p.addProperty((double)0.000000);
+            p.addProperty((double)0.000000);
+            properties.addChild(p);
+        }
+        {
+            FBXNode p("P");
+            p.addProperty("Maya|base_color");
+            p.addProperty("Vector3D");
+            p.addProperty("Vector");
+            p.addProperty("");
+            p.addProperty((double)Theme::white.redF());
+            p.addProperty((double)Theme::white.greenF());
+            p.addProperty((double)Theme::white.blueF());
+            properties.addChild(p);
+        }
+        {
+            FBXNode p("P");
+            p.addProperty("Maya|use_metallic_map");
+            p.addProperty("float");
+            p.addProperty("");
+            p.addProperty("");
+            p.addProperty((float)0.000000);
+            properties.addChild(p);
+        }
+        {
+            FBXNode p("P");
+            p.addProperty("Maya|TEX_metallic_map");
+            p.addProperty("Vector3D");
+            p.addProperty("Vector");
+            p.addProperty("");
+            p.addProperty((double)0.000000);
+            p.addProperty((double)0.000000);
+            p.addProperty((double)0.000000);
+            properties.addChild(p);
+        }
+        {
+            FBXNode p("P");
+            p.addProperty("Maya|metallic");
+            p.addProperty("float");
+            p.addProperty("");
+            p.addProperty((float)0.0);
+            properties.addChild(p);
+        }
+        {
+            FBXNode p("P");
+            p.addProperty("Maya|use_roughness_map");
+            p.addProperty("float");
+            p.addProperty("");
+            p.addProperty("");
+            p.addProperty((float)0.000000);
+            properties.addChild(p);
+        }
+        {
+            FBXNode p("P");
+            p.addProperty("Maya|TEX_roughness_map");
+            p.addProperty("Vector3D");
+            p.addProperty("Vector");
+            p.addProperty("");
+            p.addProperty((double)0.000000);
+            p.addProperty((double)0.000000);
+            p.addProperty((double)0.000000);
+            properties.addChild(p);
+        }
+        {
+            FBXNode p("P");
+            p.addProperty("Maya|roughness");
+            p.addProperty("float");
+            p.addProperty("");
+            p.addProperty((float)1.0);
+            properties.addChild(p);
+        }
+        {
+            FBXNode p("P");
+            p.addProperty("Maya|use_emissive_map");
+            p.addProperty("float");
+            p.addProperty("");
+            p.addProperty("");
+            p.addProperty((float)0.000000);
+            properties.addChild(p);
+        }
+        {
+            FBXNode p("P");
+            p.addProperty("Maya|TEX_emissive_map");
+            p.addProperty("Vector3D");
+            p.addProperty("Vector");
+            p.addProperty("");
+            p.addProperty((double)0.000000);
+            p.addProperty((double)0.000000);
+            p.addProperty((double)0.000000);
+            properties.addChild(p);
+        }
+        {
+            FBXNode p("P");
+            p.addProperty("Maya|emissive");
+            p.addProperty("Vector3D");
+            p.addProperty("Vector");
+            p.addProperty("");
+            p.addProperty((double)0.000000);
+            p.addProperty((double)0.000000);
+            p.addProperty((double)0.000000);
+            properties.addChild(p);
+        }
+        {
+            FBXNode p("P");
+            p.addProperty("Maya|emissive_intensity");
+            p.addProperty("float");
+            p.addProperty("");
+            p.addProperty("");
+            p.addProperty((float)0.000000);
+            properties.addChild(p);
+        }
+        {
+            FBXNode p("P");
+            p.addProperty("Maya|TEX_metallic_map");
+            p.addProperty("Vector3D");
+            p.addProperty("Vector");
+            p.addProperty("");
+            p.addProperty((double)0.000000);
+            p.addProperty((double)0.000000);
+            p.addProperty((double)0.000000);
+            properties.addChild(p);
+        }
+        {
+            FBXNode p("P");
+            p.addProperty("Maya|use_ao_map");
+            p.addProperty("float");
+            p.addProperty("");
+            p.addProperty("");
+            p.addProperty((float)0.000000);
+            properties.addChild(p);
+        }
+        {
+            FBXNode p("P");
+            p.addProperty("Maya|TEX_ao_map");
+            p.addProperty("Vector3D");
+            p.addProperty("Vector");
+            p.addProperty("");
+            p.addProperty((double)0.000000);
+            p.addProperty((double)0.000000);
+            p.addProperty((double)0.000000);
+            properties.addChild(p);
+        }
+        properties.addChild(FBXNode());
+        material.addChild(properties);
+    }
+    material.addChild(FBXNode());
+    
+    /*
     FBXNode material("Material");
     int64_t materialId = m_next64Id++;
     material.addProperty(materialId);
@@ -2336,6 +3181,408 @@ FbxFileWriter::FbxFileWriter(Outcome &outcome,
         material.addChild(properties);
     }
     material.addChild(FBXNode());
+    */
+    
+    FBXNode implementation("Implementation");
+    int64_t implementationId = m_next64Id++;
+    implementation.addProperty(implementationId);
+    implementation.addProperty(std::vector<uint8_t>({'I','m','p','l','e','m','e','n','t','a','t','i','o','n',0,1,'S','t','i','n','g','r','a','y','P','B','S','_','I','m','p','l','e','m','e','n','t','a','t','i','o','n'}), 'S');
+    implementation.addProperty("");
+    implementation.addPropertyNode("Version", (int32_t)100);
+    {
+        FBXNode properties("Properties70");
+        {
+            FBXNode p("P");
+            p.addProperty("ShaderLanguage");
+            p.addProperty("KString");
+            p.addProperty("");
+            p.addProperty("");
+            p.addProperty("SFX");
+            properties.addChild(p);
+        }
+        {
+            FBXNode p("P");
+            p.addProperty("ShaderLanguageVersion");
+            p.addProperty("KString");
+            p.addProperty("");
+            p.addProperty("");
+            p.addProperty("28");
+            properties.addChild(p);
+        }
+        {
+            FBXNode p("P");
+            p.addProperty("RenderAPI");
+            p.addProperty("KString");
+            p.addProperty("");
+            p.addProperty("");
+            p.addProperty("SFX_PBS_SHADER");
+            properties.addChild(p);
+        }
+        {
+            FBXNode p("P");
+            p.addProperty("RootBindingName");
+            p.addProperty("KString");
+            p.addProperty("");
+            p.addProperty("");
+            p.addProperty("root");
+            properties.addChild(p);
+        }
+        /*
+        {
+            QString shaderGraph = ModelShaderProgram::loadShaderSource(":/shaders/stingraypbs.shadergraph");
+            const auto &shaderGraphByteArray = shaderGraph.toUtf8();
+            std::vector<uint8_t> content(shaderGraphByteArray.begin(), shaderGraphByteArray.end());
+            FBXNode p("P");
+            p.addProperty("ShaderGraph");
+            p.addProperty("Blob");
+            p.addProperty("");
+            p.addProperty("");
+            p.addProperty(content, 'R');
+            properties.addChild(p);
+        }
+        */
+        properties.addChild(FBXNode());
+        implementation.addChild(properties);
+    }
+    implementation.addChild(FBXNode());
+    
+    FBXNode bindingTable("BindingTable");
+    int64_t bindingTableId = m_next64Id++;
+    bindingTable.addProperty(bindingTableId);
+    bindingTable.addProperty(std::vector<uint8_t>({'B','i','n','d','i','n','g','T','a','b','l','e',0,1,'S','t','i','n','g','r','a','y','P','B','S','_','B','i','n','d','i','n','g','T','a','b','l','e'}), 'S');
+    bindingTable.addProperty("");
+    bindingTable.addPropertyNode("Version", (int32_t)100);
+    {
+        FBXNode properties("Properties70");
+        {
+            FBXNode p("P");
+            p.addProperty("TargetName");
+            p.addProperty("KString");
+            p.addProperty("");
+            p.addProperty("");
+            p.addProperty("root");
+            properties.addChild(p);
+        }
+        {
+            FBXNode p("P");
+            p.addProperty("TargetType");
+            p.addProperty("KString");
+            p.addProperty("");
+            p.addProperty("");
+            p.addProperty("shader");
+            properties.addChild(p);
+        }
+        properties.addChild(FBXNode());
+        bindingTable.addChild(properties);
+    }
+    {
+        FBXNode entry("Entry");
+        entry.addProperty("Maya|use_metallic_map");
+        entry.addProperty("FbxPropertyEntry");
+        entry.addProperty("use_metallic_map");
+        entry.addProperty("FbxSemanticEntry");
+        bindingTable.addChild(entry);
+    }
+    {
+        FBXNode entry("Entry");
+        entry.addProperty("Maya|base_color");
+        entry.addProperty("FbxPropertyEntry");
+        entry.addProperty("base_color");
+        entry.addProperty("FbxSemanticEntry");
+        bindingTable.addChild(entry);
+    }
+    {
+        FBXNode entry("Entry");
+        entry.addProperty("Maya|use_ao_map");
+        entry.addProperty("FbxPropertyEntry");
+        entry.addProperty("use_ao_map");
+        entry.addProperty("FbxSemanticEntry");
+        bindingTable.addChild(entry);
+    }
+    {
+        FBXNode entry("Entry");
+        entry.addProperty("Maya|TEX_emissive_map");
+        entry.addProperty("FbxPropertyEntry");
+        entry.addProperty("TEX_emissive_map");
+        entry.addProperty("FbxSemanticEntry");
+        bindingTable.addChild(entry);
+    }
+    {
+        FBXNode entry("Entry");
+        entry.addProperty("Maya|TEX_metallic_map");
+        entry.addProperty("FbxPropertyEntry");
+        entry.addProperty("TEX_metallic_map");
+        entry.addProperty("FbxSemanticEntry");
+        bindingTable.addChild(entry);
+    }
+    {
+        FBXNode entry("Entry");
+        entry.addProperty("Maya|TEX_ao_map");
+        entry.addProperty("FbxPropertyEntry");
+        entry.addProperty("TEX_ao_map");
+        entry.addProperty("FbxSemanticEntry");
+        bindingTable.addChild(entry);
+    }
+    {
+        FBXNode entry("Entry");
+        entry.addProperty("Maya|uv_offset");
+        entry.addProperty("FbxPropertyEntry");
+        entry.addProperty("uv_offset");
+        entry.addProperty("FbxSemanticEntry");
+        bindingTable.addChild(entry);
+    }
+    {
+        FBXNode entry("Entry");
+        entry.addProperty("Maya|emissive_intensity");
+        entry.addProperty("FbxPropertyEntry");
+        entry.addProperty("emissive_intensity");
+        entry.addProperty("FbxSemanticEntry");
+        bindingTable.addChild(entry);
+    }
+    {
+        FBXNode entry("Entry");
+        entry.addProperty("Maya|metallic");
+        entry.addProperty("FbxPropertyEntry");
+        entry.addProperty("metallic");
+        entry.addProperty("FbxSemanticEntry");
+        bindingTable.addChild(entry);
+    }
+    {
+        FBXNode entry("Entry");
+        entry.addProperty("Maya|TEX_global_specular_cube");
+        entry.addProperty("FbxPropertyEntry");
+        entry.addProperty("TEX_global_specular_cube");
+        entry.addProperty("FbxSemanticEntry");
+        bindingTable.addChild(entry);
+    }
+    {
+        FBXNode entry("Entry");
+        entry.addProperty("Maya|use_roughness_map");
+        entry.addProperty("FbxPropertyEntry");
+        entry.addProperty("use_roughness_map");
+        entry.addProperty("FbxSemanticEntry");
+        bindingTable.addChild(entry);
+    }
+    {
+        FBXNode entry("Entry");
+        entry.addProperty("Maya|use_normal_map");
+        entry.addProperty("FbxPropertyEntry");
+        entry.addProperty("use_normal_map");
+        entry.addProperty("FbxSemanticEntry");
+        bindingTable.addChild(entry);
+    }
+    {
+        FBXNode entry("Entry");
+        entry.addProperty("Maya|use_color_map");
+        entry.addProperty("FbxPropertyEntry");
+        entry.addProperty("use_color_map");
+        entry.addProperty("FbxSemanticEntry");
+        bindingTable.addChild(entry);
+    }
+    {
+        FBXNode entry("Entry");
+        entry.addProperty("Maya|emissive");
+        entry.addProperty("FbxPropertyEntry");
+        entry.addProperty("emissive");
+        entry.addProperty("FbxSemanticEntry");
+        bindingTable.addChild(entry);
+    }
+    {
+        FBXNode entry("Entry");
+        entry.addProperty("Maya|use_emissive_map");
+        entry.addProperty("FbxPropertyEntry");
+        entry.addProperty("use_emissive_map");
+        entry.addProperty("FbxSemanticEntry");
+        bindingTable.addChild(entry);
+    }
+    {
+        FBXNode entry("Entry");
+        entry.addProperty("Maya|uv_scale");
+        entry.addProperty("FbxPropertyEntry");
+        entry.addProperty("uv_scale");
+        entry.addProperty("FbxSemanticEntry");
+        bindingTable.addChild(entry);
+    }
+    {
+        FBXNode entry("Entry");
+        entry.addProperty("Maya|TEX_global_diffuse_cube");
+        entry.addProperty("FbxPropertyEntry");
+        entry.addProperty("TEX_global_diffuse_cube");
+        entry.addProperty("FbxSemanticEntry");
+        bindingTable.addChild(entry);
+    }
+    {
+        FBXNode entry("Entry");
+        entry.addProperty("Maya|TEX_roughness_map");
+        entry.addProperty("FbxPropertyEntry");
+        entry.addProperty("TEX_roughness_map");
+        entry.addProperty("FbxSemanticEntry");
+        bindingTable.addChild(entry);
+    }
+    {
+        FBXNode entry("Entry");
+        entry.addProperty("Maya|roughness");
+        entry.addProperty("FbxPropertyEntry");
+        entry.addProperty("roughness");
+        entry.addProperty("FbxSemanticEntry");
+        bindingTable.addChild(entry);
+    }
+    {
+        FBXNode entry("Entry");
+        entry.addProperty("Maya|TEX_brdf_lut");
+        entry.addProperty("FbxPropertyEntry");
+        entry.addProperty("TEX_brdf_lut");
+        entry.addProperty("FbxSemanticEntry");
+        bindingTable.addChild(entry);
+    }
+    {
+        FBXNode entry("Entry");
+        entry.addProperty("Maya|TEX_color_map");
+        entry.addProperty("FbxPropertyEntry");
+        entry.addProperty("TEX_color_map");
+        entry.addProperty("FbxSemanticEntry");
+        bindingTable.addChild(entry);
+    }
+    {
+        FBXNode entry("Entry");
+        entry.addProperty("Maya|TEX_normal_map");
+        entry.addProperty("FbxPropertyEntry");
+        entry.addProperty("TEX_normal_map");
+        entry.addProperty("FbxSemanticEntry");
+        bindingTable.addChild(entry);
+    }
+    bindingTable.addChild(FBXNode());
+    
+    auto addTexture = [&](const QImage *image, const std::vector<uint8_t> &clipName, const std::vector<uint8_t> &textureName, const QString &filename, const QString &propertyName){
+        FBXNode video("Video");
+        int64_t videoId = m_next64Id++;
+        video.addProperty(videoId);
+        video.addProperty(clipName, 'S');
+        video.addProperty("Clip");
+        video.addPropertyNode("Type", "Clip");
+        {
+            FBXNode properties("Properties70");
+            {
+                FBXNode p("P");
+                p.addProperty("Path");
+                p.addProperty("KString");
+                p.addProperty("XRefUrl");
+                p.addProperty("");
+                p.addProperty(filename.toUtf8().constData());
+                properties.addChild(p);
+            }
+            properties.addChild(FBXNode());
+            video.addChild(properties);
+        }
+        video.addPropertyNode("UseMipMap", (int32_t)0);
+        video.addPropertyNode("RelativeFilename", filename.toUtf8().constData());
+        video.addPropertyNode("FileName", filename.toUtf8().constData());
+        QByteArray pngByteArray;
+        QBuffer buffer(&pngByteArray);
+        image->save(&buffer, "PNG");
+        std::vector<uint8_t> content(pngByteArray.begin(), pngByteArray.end());
+        video.addPropertyNode("Content", content, 'R');
+        video.addChild(FBXNode());
+        videos.push_back(video);
+        videoCount++;
+        
+        FBXNode texture("Texture");
+        int64_t textureId = m_next64Id++;
+        texture.addProperty(textureId);
+        texture.addProperty(clipName, 'S');
+        texture.addProperty("");
+        texture.addPropertyNode("Type", "TextureVideoClip");
+        texture.addPropertyNode("Version", (int32_t)202);
+        texture.addPropertyNode("TextureName", textureName, 'S');
+        {
+            FBXNode properties("Properties70");
+            {
+                FBXNode p("P");
+                p.addProperty("UVSet");
+                p.addProperty("KString");
+                p.addProperty("");
+                p.addProperty("");
+                p.addProperty("default");
+                properties.addChild(p);
+            }
+            {
+                FBXNode p("P");
+                p.addProperty("UseMaterial");
+                p.addProperty("bool");
+                p.addProperty("");
+                p.addProperty("");
+                p.addProperty((int32_t)1);
+                properties.addChild(p);
+            }
+            properties.addChild(FBXNode());
+            texture.addChild(properties);
+        }
+        texture.addPropertyNode("Media", clipName, 'S');
+        texture.addPropertyNode("RelativeFilename", filename.toUtf8().constData());
+        texture.addPropertyNode("FileName", filename.toUtf8().constData());
+        {
+            FBXNode modelUVTranslation("ModelUVTranslation");
+            modelUVTranslation.addProperty((double)0);
+            modelUVTranslation.addProperty((double)0);
+            texture.addChild(modelUVTranslation);
+        }
+        {
+            FBXNode modelUVScaling("ModelUVScaling");
+            modelUVScaling.addProperty((double)1);
+            modelUVScaling.addProperty((double)1);
+            texture.addChild(modelUVScaling);
+        }
+        texture.addPropertyNode("Texture_Alpha_Source", "None");
+        {
+            FBXNode modelUVScaling("Cropping");
+            modelUVScaling.addProperty((int32_t)0);
+            modelUVScaling.addProperty((int32_t)0);
+            modelUVScaling.addProperty((int32_t)0);
+            modelUVScaling.addProperty((int32_t)0);
+            texture.addChild(modelUVScaling);
+        }
+        texture.addChild(FBXNode());
+        textures.push_back(texture);
+        textureCount++;
+        
+        {
+            FBXNode p("C");
+            p.addProperty("OO");
+            p.addProperty(videoId);
+            p.addProperty(textureId);
+            connections.addChild(p);
+        }
+        {
+            FBXNode p("C");
+            p.addProperty("OP");
+            p.addProperty(textureId);
+            p.addProperty(materialId);
+            p.addProperty(propertyName.toUtf8().constData());
+            connections.addChild(p);
+        }
+    };
+    if (nullptr != textureImage) {
+        addTexture(textureImage,
+            std::vector<uint8_t>({'V','i','d','e','o',0,1,'B','a','s','e','C','o','l','o','r'}),
+            std::vector<uint8_t>({'T','e','x','t','u','r','e',0,1,'B','a','s','e','C','o','l','o','r'}),
+            "BaseColor.png",
+            "Maya|TEX_color_map");
+    }
+    if (nullptr != normalImage) {
+        addTexture(normalImage,
+            std::vector<uint8_t>({'V','i','d','e','o',0,1,'N','o','r','m','a','l'}),
+            std::vector<uint8_t>({'T','e','x','t','u','r','e',0,1,'N','o','r','m','a','l'}),
+            "Normal.png",
+            "Maya|TEX_normal_map");
+    }
+    /*
+    if (nullptr != textureImage) {
+        addTexture(textureImage,
+            std::vector<uint8_t>({'V','i','d','e','o',0,1,'B','a','s','e','C','o','l','o','r'}),
+            std::vector<uint8_t>({'T','e','x','t','u','r','e',0,1,'B','a','s','e','C','o','l','o','r'}),
+            "DiffuseColor.png",
+            "DiffuseColor");
+    }*/
     
     bool hasAnimation = nullptr != motions && !motions->empty();
     size_t animationStackCount = 0;
@@ -2697,6 +3944,7 @@ FbxFileWriter::FbxFileWriter(Outcome &outcome,
     }
 
     createDefinitions(deformerCount,
+        textureCount, videoCount,
         hasAnimation,
         animationStackCount, animationLayerCount, animationCurveNodeCount, animationCurveCount);
     
@@ -2709,6 +3957,18 @@ FbxFileWriter::FbxFileWriter(Outcome &outcome,
     if (deformerCount > 0)
         objects.addChild(pose);
     objects.addChild(material);
+    objects.addChild(implementation);
+    objects.addChild(bindingTable);
+    if (textureCount > 0) {
+        for (const auto &texture: textures) {
+            objects.addChild(texture);
+        }
+    }
+    if (videoCount > 0) {
+        for (const auto &video: videos) {
+            objects.addChild(video);
+        }
+    }
     for (const auto &deformer: deformers) {
         objects.addChild(deformer);
     }
@@ -2797,6 +4057,20 @@ FbxFileWriter::FbxFileWriter(Outcome &outcome,
         p.addProperty("OO");
         p.addProperty(nodeAttributeIds[i]);
         p.addProperty(limbNodeIds[i]);
+        connections.addChild(p);
+    }
+    {
+        FBXNode p("C");
+        p.addProperty("OO");
+        p.addProperty(materialId);
+        p.addProperty(implementationId);
+        connections.addChild(p);
+    }
+    {
+        FBXNode p("C");
+        p.addProperty("OO");
+        p.addProperty(bindingTableId);
+        p.addProperty(implementationId);
         connections.addChild(p);
     }
     {
