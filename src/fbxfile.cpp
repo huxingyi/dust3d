@@ -4,6 +4,7 @@
 #include <QtMath>
 #include <QBuffer>
 #include <QByteArray>
+#include <QFileInfo>
 #include "fbxfile.h"
 #include "version.h"
 #include "jointnodetree.h"
@@ -2207,7 +2208,8 @@ FbxFileWriter::FbxFileWriter(Outcome &outcome,
         QImage *normalImage,
         QImage *ormImage,
         const std::vector<std::pair<QString, std::vector<std::pair<float, JointNodeTree>>>> *motions) :
-    m_filename(filename)
+    m_filename(filename),
+    m_baseName(QFileInfo(m_filename).baseName())
 {
     createFbxHeader();
     createFileId();
@@ -3565,14 +3567,14 @@ FbxFileWriter::FbxFileWriter(Outcome &outcome,
         addTexture(textureImage,
             std::vector<uint8_t>({'V','i','d','e','o',0,1,'B','a','s','e','C','o','l','o','r'}),
             std::vector<uint8_t>({'T','e','x','t','u','r','e',0,1,'B','a','s','e','C','o','l','o','r'}),
-            "BaseColor.png",
+            m_baseName + "_color.png",
             "Maya|TEX_color_map");
     }
     if (nullptr != normalImage) {
         addTexture(normalImage,
             std::vector<uint8_t>({'V','i','d','e','o',0,1,'N','o','r','m','a','l'}),
             std::vector<uint8_t>({'T','e','x','t','u','r','e',0,1,'N','o','r','m','a','l'}),
-            "Normal.png",
+            m_baseName + "_normal.png",
             "Maya|TEX_normal_map");
     }
     /*

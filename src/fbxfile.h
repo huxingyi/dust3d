@@ -47,6 +47,7 @@ private:
     int64_t to64Id(const QUuid &uuid);
     int64_t m_next64Id = 612150000;
     QString m_filename;
+    QString m_baseName;
     fbx::FBXDocument m_fbxDocument;
     std::map<QString, int64_t> m_uuidTo64Map;
     static std::vector<double> m_identityMatrix;
