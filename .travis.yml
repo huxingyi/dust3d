@@ -18,13 +18,13 @@ matrix:
             - ubuntu-toolchain-r-test
     - os: osx
       compiler: clang
-      osx_image: xcode8
+      osx_image: xcode9.3
 
 install:
   # (Mac) Install CGAL
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then HOMEBREW_VERBOSE_USING_DOTS=1 brew upgrade --verbose boost --without-single --without-static; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then HOMEBREW_VERBOSE_USING_DOTS=1 brew reinstall --verbose cgal; fi
+  #- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update; fi
+  #- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then HOMEBREW_VERBOSE_USING_DOTS=1 brew upgrade --verbose boost --without-single --without-static; fi
+  #- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then HOMEBREW_VERBOSE_USING_DOTS=1 brew reinstall --verbose cgal; fi
 
   # (Linux) Prepare build environment
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo add-apt-repository --yes ppa:beineri/opt-qt591-trusty; fi
@@ -48,7 +48,7 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cd ../../; fi
 
   # (Mac) Install Qt5
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then HOMEBREW_VERBOSE_USING_DOTS=1 brew reinstall qt5; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then HOMEBREW_VERBOSE_USING_DOTS=1 brew reinstall --verbose qt; fi
 
   # (Linux) Install Qt5
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install qt59base qt59tools --force-yes; fi
