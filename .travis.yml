@@ -48,7 +48,7 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cd ../../; fi
 
   # (Mac) Install Qt5
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew reinstall qt5; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then HOMEBREW_VERBOSE_USING_DOTS=1 brew reinstall qt5; fi
 
   # (Linux) Install Qt5
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install qt59base qt59tools --force-yes; fi
