@@ -1270,7 +1270,11 @@ void DocumentWindow::exportFbxResult()
         exportMotions.push_back({motion->name, motion->jointNodeTrees});
     }
     FbxFileWriter fbxFileWriter(skeletonResult, m_document->resultRigBones(), m_document->resultRigWeights(), filename,
-        m_document->textureImage, m_document->textureNormalImage, m_document->textureMetalnessRoughnessAmbientOcclusionImage,
+        m_document->textureImage,
+        m_document->textureNormalImage,
+        m_document->textureMetalnessImage,
+        m_document->textureRoughnessImage,
+        m_document->textureAmbientOcclusionImage,
         exportMotions.empty() ? nullptr : &exportMotions);
     fbxFileWriter.save();
     QApplication::restoreOverrideCursor();

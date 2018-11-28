@@ -19,7 +19,9 @@ public:
         const QString &filename,
         QImage *textureImage=nullptr,
         QImage *normalImage=nullptr,
-        QImage *ormImage=nullptr,
+        QImage *metalnessImage=nullptr,
+        QImage *roughnessImage=nullptr,
+        QImage *ambientOcclusionImage=nullptr,
         const std::vector<std::pair<QString, std::vector<std::pair<float, JointNodeTree>>>> *motions=nullptr);
     bool save();
 

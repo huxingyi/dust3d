@@ -2206,7 +2206,9 @@ FbxFileWriter::FbxFileWriter(Outcome &outcome,
         const QString &filename,
         QImage *textureImage,
         QImage *normalImage,
-        QImage *ormImage,
+        QImage *metalnessImage,
+        QImage *roughnessImage,
+        QImage *ambientOcclusionImage,
         const std::vector<std::pair<QString, std::vector<std::pair<float, JointNodeTree>>>> *motions) :
     m_filename(filename),
     m_baseName(QFileInfo(m_filename).baseName())
@@ -2922,7 +2924,7 @@ FbxFileWriter::FbxFileWriter(Outcome &outcome,
             p.addProperty("float");
             p.addProperty("");
             p.addProperty("");
-            p.addProperty((float)0.000000);
+            p.addProperty(metalnessImage ? (float)1.000000 : (float)0.000000);
             properties.addChild(p);
         }
         {
@@ -2950,7 +2952,7 @@ FbxFileWriter::FbxFileWriter(Outcome &outcome,
             p.addProperty("float");
             p.addProperty("");
             p.addProperty("");
-            p.addProperty((float)0.000000);
+            p.addProperty(roughnessImage ? (float)1.000000 : (float)0.000000);
             properties.addChild(p);
         }
         {
@@ -3029,7 +3031,7 @@ FbxFileWriter::FbxFileWriter(Outcome &outcome,
             p.addProperty("float");
             p.addProperty("");
             p.addProperty("");
-            p.addProperty((float)0.000000);
+            p.addProperty(ambientOcclusionImage ? (float)1.000000 : (float)0.000000);
             properties.addChild(p);
         }
         {
@@ -3576,6 +3578,27 @@ FbxFileWriter::FbxFileWriter(Outcome &outcome,
             std::vector<uint8_t>({'T','e','x','t','u','r','e',0,1,'N','o','r','m','a','l'}),
             m_baseName + "_normal.png",
             "Maya|TEX_normal_map");
+    }
+    if (nullptr != metalnessImage) {
+        addTexture(metalnessImage,
+            std::vector<uint8_t>({'V','i','d','e','o',0,1,'M','e','t','a','l','l','i','c'}),
+            std::vector<uint8_t>({'T','e','x','t','u','r','e',0,1,'M','e','t','a','l','l','i','c'}),
+            m_baseName + "_metallic.png",
+            "Maya|TEX_metallic_map");
+    }
+    if (nullptr != roughnessImage) {
+        addTexture(roughnessImage,
+            std::vector<uint8_t>({'V','i','d','e','o',0,1,'R','o','u','g','h','n','e','s','s'}),
+            std::vector<uint8_t>({'T','e','x','t','u','r','e',0,1,'R','o','u','g','h','n','e','s','s'}),
+            m_baseName + "_roughness.png",
+            "Maya|TEX_roughness_map");
+    }
+    if (nullptr != ambientOcclusionImage) {
+        addTexture(ambientOcclusionImage,
+            std::vector<uint8_t>({'V','i','d','e','o',0,1,'A','o'}),
+            std::vector<uint8_t>({'T','e','x','t','u','r','e',0,1,'A','o'}),
+            m_baseName + "_ao.png",
+            "Maya|TEX_ao_map");
     }
     /*
     if (nullptr != textureImage) {

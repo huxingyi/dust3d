@@ -26,6 +26,9 @@ Document::Document() :
     textureColorImage(nullptr),
     textureNormalImage(nullptr),
     textureMetalnessRoughnessAmbientOcclusionImage(nullptr),
+    textureMetalnessImage(nullptr),
+    textureRoughnessImage(nullptr),
+    textureAmbientOcclusionImage(nullptr),
     rigType(RigType::None),
     weldEnabled(true),
     // private
@@ -66,6 +69,9 @@ Document::~Document()
     delete textureColorImage;
     delete textureNormalImage;
     delete textureMetalnessRoughnessAmbientOcclusionImage;
+    delete textureMetalnessImage;
+    delete textureRoughnessImage;
+    delete textureAmbientOcclusionImage;
     delete textureBorderImage;
     delete m_resultTextureMesh;
     delete m_resultRigWeightMesh;
@@ -1522,6 +1528,15 @@ void Document::textureReady()
     
     delete textureMetalnessRoughnessAmbientOcclusionImage;
     textureMetalnessRoughnessAmbientOcclusionImage = m_textureGenerator->takeResultTextureMetalnessRoughnessAmbientOcclusionImage();
+    
+    delete textureMetalnessImage;
+    textureMetalnessImage = m_textureGenerator->takeResultTextureMetalnessImage();
+    
+    delete textureRoughnessImage;
+    textureRoughnessImage = m_textureGenerator->takeResultTextureRoughnessImage();
+    
+    delete textureAmbientOcclusionImage;
+    textureAmbientOcclusionImage = m_textureGenerator->takeResultTextureAmbientOcclusionImage();
     
     delete m_resultTextureMesh;
     m_resultTextureMesh = m_textureGenerator->takeResultMesh();

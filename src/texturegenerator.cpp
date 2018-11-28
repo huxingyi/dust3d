@@ -86,6 +86,27 @@ QImage *TextureGenerator::takeResultTextureMetalnessRoughnessAmbientOcclusionIma
     return resultTextureMetalnessRoughnessAmbientOcclusionImage;
 }
 
+QImage *TextureGenerator::takeResultTextureRoughnessImage()
+{
+    QImage *resultTextureRoughnessImage = m_resultTextureRoughnessImage;
+    m_resultTextureRoughnessImage = nullptr;
+    return resultTextureRoughnessImage;
+}
+
+QImage *TextureGenerator::takeResultTextureMetalnessImage()
+{
+    QImage *resultTextureMetalnessImage = m_resultTextureMetalnessImage;
+    m_resultTextureMetalnessImage = nullptr;
+    return resultTextureMetalnessImage;
+}
+
+QImage *TextureGenerator::takeResultTextureAmbientOcclusionImage()
+{
+    QImage *resultTextureAmbientOcclusionImage = m_resultTextureAmbientOcclusionImage;
+    m_resultTextureAmbientOcclusionImage = nullptr;
+    return resultTextureAmbientOcclusionImage;
+}
+
 Outcome *TextureGenerator::takeOutcome()
 {
     Outcome *outcome = m_outcome;
@@ -385,6 +406,18 @@ void TextureGenerator::generate()
                     color.setRed(qGray(m_resultTextureAmbientOcclusionImage->pixel(col, row)));
                 m_resultTextureMetalnessRoughnessAmbientOcclusionImage->setPixelColor(col, row, color);
             }
+        }
+        if (!hasMetalnessMap) {
+            delete m_resultTextureMetalnessImage;
+            m_resultTextureMetalnessImage = nullptr;
+        }
+        if (!hasRoughnessMap) {
+            delete m_resultTextureRoughnessImage;
+            m_resultTextureRoughnessImage = nullptr;
+        }
+        if (!hasAmbientOcclusionMap) {
+            delete m_resultTextureAmbientOcclusionImage;
+            m_resultTextureAmbientOcclusionImage = nullptr;
         }
     }
     auto mergeMetalnessRoughnessAmbientOcclusionEndTime = countTimeConsumed.elapsed();
