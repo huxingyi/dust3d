@@ -77,9 +77,13 @@ script:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then make CXX="g++ -fext-numeric-literals" || travis_terminate 1; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/thirdparty/meshlite || travis_terminate 1; fi
 
+  # Prepare tag name
+  - set TAG="$TRAVIS_TAG"
+  - if [[ "$TAG" == "" ]]; then set TAG=unstable; fi
+
   # (Mac) Prepare dmg
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then mv dust3d.app dust3d_unstable.app || travis_terminate 1; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then macdeployqt dust3d_unstable.app -dmg || travis_terminate 1; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then mv dust3d.app dust3d-$TAG.app || travis_terminate 1; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then macdeployqt dust3d-$TAG.app -dmg || travis_terminate 1; fi
 
   # (Linux) Prepare AppImage
   # References:
@@ -110,10 +114,10 @@ script:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then chmod a+x appdir/AppRun || travis_terminate 1; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./ci/linuxdeployqt.AppImage --appimage-extract || travis_terminate 1; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export PATH=$(readlink -f ./squashfs-root/usr/bin):$PATH || travis_terminate 1; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./squashfs-root/usr/bin/appimagetool -g ./appdir/ dust3d_unstable-x86_64.AppImage || travis_terminate 1; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./squashfs-root/usr/bin/appimagetool -g ./appdir/ dust3d-$TAG-x86_64.AppImage || travis_terminate 1; fi
 
   # Distribute
   - if [[ "$TRAVIS_PULL_REQUEST" != "false" ]]; then echo "No distribution on pull request"; fi
   - if [[ "$TRAVIS_PULL_REQUEST" != "false" ]]; then travis_terminate 0; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sh ci/upload-github-release-asset.sh github_api_token=${my_auth_token} branch=$TRAVIS_BRANCH owner=huxingyi repo=dust3d tag=unstable filename=dust3d_unstable.dmg; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then bash ci/upload-github-release-asset.sh github_api_token=${my_auth_token} branch=$TRAVIS_BRANCH owner=huxingyi repo=dust3d tag=unstable filename=dust3d_unstable-x86_64.AppImage; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sh ci/upload-github-release-asset.sh github_api_token=${my_auth_token} branch=$TRAVIS_BRANCH owner=huxingyi repo=dust3d tag=$TAG filename=dust3d-$TAG.dmg; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then bash ci/upload-github-release-asset.sh github_api_token=${my_auth_token} branch=$TRAVIS_BRANCH owner=huxingyi repo=dust3d tag=$TAG filename=dust3d-$TAG-x86_64.AppImage; fi
