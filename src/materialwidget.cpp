@@ -19,7 +19,7 @@ MaterialWidget::MaterialWidget(const Document *document, QUuid materialId) :
 
     QFont nameFont;
     nameFont.setWeight(QFont::Light);
-    nameFont.setPixelSize(9);
+    //nameFont.setPixelSize(9);
     nameFont.setBold(false);
     m_nameLabel->setFont(nameFont);
 

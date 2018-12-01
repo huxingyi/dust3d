@@ -1031,7 +1031,7 @@ void DocumentWindow::initLockButton(QPushButton *button)
 {
     QFont font;
     font.setWeight(QFont::Light);
-    font.setPixelSize(Theme::toolIconFontSize);
+    //font.setPixelSize(Theme::toolIconFontSize);
     font.setBold(false);
 
     button->setFont(font);

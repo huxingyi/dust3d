@@ -19,7 +19,7 @@ MotionWidget::MotionWidget(const Document *document, QUuid motionId) :
     
     QFont nameFont;
     nameFont.setWeight(QFont::Light);
-    nameFont.setPixelSize(9);
+    //nameFont.setPixelSize(9);
     nameFont.setBold(false);
     m_nameLabel->setFont(nameFont);
     

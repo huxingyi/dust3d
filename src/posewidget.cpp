@@ -19,7 +19,7 @@ PoseWidget::PoseWidget(const Document *document, QUuid poseId) :
     
     QFont nameFont;
     nameFont.setWeight(QFont::Light);
-    nameFont.setPixelSize(9);
+    //nameFont.setPixelSize(9);
     nameFont.setBold(false);
     m_nameLabel->setFont(nameFont);
     

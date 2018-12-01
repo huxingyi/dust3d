@@ -40,11 +40,11 @@ PartTreeWidget::PartTreeWidget(const Document *document, QWidget *parent) :
         "QTreeView::branch:open:has-children:!has-siblings, QTreeView::branch:open:has-children:has-siblings  {border-image: none; image: url(:/resources/tree-branch-open.png);}");
     
     m_normalFont.setWeight(QFont::Light);
-    m_normalFont.setPixelSize(9);
+    //m_normalFont.setPixelSize(9);
     m_normalFont.setBold(false);
     
     m_selectedFont.setWeight(QFont::Light);
-    m_selectedFont.setPixelSize(9);
+    //m_selectedFont.setPixelSize(9);
     m_selectedFont.setBold(true);
     
     setFont(m_normalFont);
