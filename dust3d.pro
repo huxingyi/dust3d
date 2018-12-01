@@ -4,10 +4,10 @@ DEFINES += NDEBUG
 RESOURCES += resources.qrc
 
 isEmpty(HUMAN_VERSION) {
-	HUMAN_VERSION = "1.0.0-beta"
+	HUMAN_VERSION = "1.0.0-beta.2"
 }
 isEmpty(VERSION) {
-	VERSION = 1.0.0.1
+	VERSION = 1.0.0.2
 }
 
 REPOSITORY_URL = "https://github.com/huxingyi/dust3d"
