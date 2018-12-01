@@ -78,8 +78,8 @@ script:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/thirdparty/meshlite || travis_terminate 1; fi
 
   # Prepare tag name
-  - set TAG="$TRAVIS_TAG"
-  - if [[ "$TAG" == "" ]]; then set TAG=unstable; fi
+  - export TAG="$TRAVIS_TAG"
+  - if [[ "$TAG" == "" ]]; then export TAG=unstable; fi
 
   # (Mac) Prepare dmg
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then mv dust3d.app dust3d-$TAG.app || travis_terminate 1; fi
