@@ -55,6 +55,10 @@ bool extractResult(const std::vector<Vertex> &verticies, const Eigen::MatrixXd &
             return false;
         return true;
     };
+    if ((decltype(verticies.size()))V_uv.size() < verticies.size() * 2) {
+        qDebug() << "Invalid V_uv.size:" << V_uv.size() << "Expected:" << verticies.size() * 2;
+        return false;
+    }
     for (decltype(verticies.size()) i = 0; i < verticies.size(); i++) {
         TextureCoord coord;
         coord.uv[0] = V_uv.row(i)[0];
