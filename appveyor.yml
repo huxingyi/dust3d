@@ -68,7 +68,7 @@ artifacts:
     name: platform_zips
 
 deploy:
-  release: %TAG%
+  release: $(TAG)
   force_update: true
   provider: GitHub
   auth_token:
