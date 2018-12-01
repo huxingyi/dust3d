@@ -80,6 +80,8 @@ script:
   # Prepare tag name
   - export TAG="$TRAVIS_TAG"
   - if [[ "$TAG" == "" ]]; then export TAG=unstable; fi
+  - export BRANCH="$TRAVIS_BRANCH"
+  - if [[ "$BRANCH" == "$TAG" ]]; then export BRANCH=master; fi
 
   # (Mac) Prepare dmg
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then mv dust3d.app dust3d-$TAG.app || travis_terminate 1; fi
@@ -119,5 +121,5 @@ script:
   # Distribute
   - if [[ "$TRAVIS_PULL_REQUEST" != "false" ]]; then echo "No distribution on pull request"; fi
   - if [[ "$TRAVIS_PULL_REQUEST" != "false" ]]; then travis_terminate 0; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sh ci/upload-github-release-asset.sh github_api_token=${my_auth_token} branch=$TRAVIS_BRANCH owner=huxingyi repo=dust3d tag=$TAG filename=dust3d-$TAG.dmg; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then bash ci/upload-github-release-asset.sh github_api_token=${my_auth_token} branch=$TRAVIS_BRANCH owner=huxingyi repo=dust3d tag=$TAG filename=dust3d-$TAG-x86_64.AppImage; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then sh ci/upload-github-release-asset.sh github_api_token=${my_auth_token} branch=$BRANCH owner=huxingyi repo=dust3d tag=$TAG filename=dust3d-$TAG.dmg; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then bash ci/upload-github-release-asset.sh github_api_token=${my_auth_token} branch=$BRANCH owner=huxingyi repo=dust3d tag=$TAG filename=dust3d-$TAG-x86_64.AppImage; fi
