@@ -42,6 +42,7 @@ public:
     static int miniIconSize;
     static int sidebarPreferredWidth;
     static int normalButtonSize;
+    static double dpi;
 public:
     static void initAwesomeButton(QPushButton *button);
     static void initAwesomeLabel(QLabel *label);
@@ -51,6 +52,7 @@ public:
     static void initAwesomeToolButton(QPushButton *button);
     static void initAwesomeToolButtonWithoutFont(QPushButton *button);
     static void initAwsomeBaseSizes();
+    static float dp2px(float dp);
 };
 
 #endif

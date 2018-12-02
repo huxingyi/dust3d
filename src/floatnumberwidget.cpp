@@ -1,6 +1,7 @@
 #include <QtWidgets>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
+#include "theme.h"
 #include "floatnumberwidget.h"
 
 FloatNumberWidget::FloatNumberWidget(QWidget *parent, bool singleLine) :
@@ -8,7 +9,7 @@ FloatNumberWidget::FloatNumberWidget(QWidget *parent, bool singleLine) :
 {
     m_slider = new QSlider(Qt::Horizontal, this);
     m_slider->setRange(0, 100);
-    m_slider->setFixedWidth(120);
+    m_slider->setFixedWidth(Theme::dp2px(120));
 
     m_label = new QLabel(this);
     m_label->setAlignment(Qt::AlignLeft);

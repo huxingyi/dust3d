@@ -963,8 +963,7 @@ void PartTreeWidget::partUnchecked(QUuid partId)
 
 QSize PartTreeWidget::sizeHint() const
 {
-    QSize size = PartWidget::preferredSize();
-    return QSize(size.width() * 1.35, size.height() * 5.5);
+    return QSize(Theme::sidebarPreferredWidth, 0);
 }
 
 bool PartTreeWidget::isComponentSelected(QUuid componentId)

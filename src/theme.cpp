@@ -43,24 +43,30 @@ int Theme::posePreviewImageSize = 0;
 int Theme::motionPreviewImageSize = 0;
 int Theme::sidebarPreferredWidth = 0;
 int Theme::normalButtonSize = 0;
+double Theme::dpi = 0;
+
+float Theme::dp2px(float dp)
+{
+    return dp / 72 * Theme::dpi;
+}
 
 void Theme::initAwsomeBaseSizes()
 {
+    Theme::dpi = QGuiApplication::primaryScreen()->physicalDotsPerInch();
+    
     Theme::toolIconFontSize = QApplication::font().pixelSize();
     if (-1 == Theme::toolIconFontSize) {
-        double dpi = QGuiApplication::primaryScreen()->physicalDotsPerInch();
-        Theme::toolIconFontSize = (float)QApplication::font().pointSize() / 72 * dpi;
+        Theme::toolIconFontSize = Theme::dp2px(QApplication::font().pointSize());
     }
-    Theme::toolIconFontSize *= 0.7;
     
-    Theme::toolIconSize = (int)(Theme::toolIconFontSize * 1.67);
+    Theme::toolIconSize = (int)(Theme::toolIconFontSize * 1.5);
     Theme::miniIconFontSize = (int)(Theme::toolIconFontSize * 0.64);
     Theme::miniIconSize = (int)(Theme::miniIconFontSize * 1.67);
     Theme::partPreviewImageSize = (Theme::miniIconSize * 3);
-    Theme::materialPreviewImageSize = 75;
-    Theme::posePreviewImageSize = 75;
-    Theme::motionPreviewImageSize = 75;
-    Theme::sidebarPreferredWidth = 200;
+    Theme::materialPreviewImageSize = Theme::dp2px(62);
+    Theme::posePreviewImageSize = Theme::dp2px(62);
+    Theme::motionPreviewImageSize = Theme::dp2px(62);
+    Theme::sidebarPreferredWidth = Theme::dp2px(150);
     Theme::normalButtonSize = Theme::toolIconSize * 2;
     
     qDebug() << "Theme::toolIconFontSize:" << Theme::toolIconFontSize;
