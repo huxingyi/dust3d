@@ -1,3 +1,7 @@
+#include <QApplication>
+#include <QGuiApplication>
+#include <QDebug>
+#include <QScreen>
 #include "theme.h"
 
 // Red
@@ -29,16 +33,38 @@ float Theme::edgeAlpha = 1.0;
 float Theme::fillAlpha = 50.0 / 255;
 int Theme::skeletonNodeBorderSize = 0;
 int Theme::skeletonEdgeWidth = 0;
-int Theme::toolIconFontSize = 16;
-int Theme::toolIconSize = 24;
-int Theme::miniIconFontSize = 9;
-int Theme::miniIconSize = 15;
-int Theme::partPreviewImageSize = (Theme::miniIconSize * 3);
-int Theme::materialPreviewImageSize = 75;
-int Theme::posePreviewImageSize = 75;
-int Theme::motionPreviewImageSize = 75;
-int Theme::sidebarPreferredWidth = 200;
-int Theme::normalButtonSize = Theme::toolIconSize * 2;
+int Theme::toolIconFontSize = 0;
+int Theme::toolIconSize = 0;
+int Theme::miniIconFontSize = 0;
+int Theme::miniIconSize = 0;
+int Theme::partPreviewImageSize = 0;
+int Theme::materialPreviewImageSize = 0;
+int Theme::posePreviewImageSize = 0;
+int Theme::motionPreviewImageSize = 0;
+int Theme::sidebarPreferredWidth = 0;
+int Theme::normalButtonSize = 0;
+
+void Theme::initAwsomeBaseSizes()
+{
+    Theme::toolIconFontSize = QApplication::font().pixelSize();
+    if (-1 == Theme::toolIconFontSize) {
+        double dpi = QGuiApplication::primaryScreen()->physicalDotsPerInch();
+        Theme::toolIconFontSize = (float)QApplication::font().pointSize() / 72 * dpi;
+    }
+    Theme::toolIconFontSize *= 0.7;
+    
+    Theme::toolIconSize = (int)(Theme::toolIconFontSize * 1.67);
+    Theme::miniIconFontSize = (int)(Theme::toolIconFontSize * 0.64);
+    Theme::miniIconSize = (int)(Theme::miniIconFontSize * 1.67);
+    Theme::partPreviewImageSize = (Theme::miniIconSize * 3);
+    Theme::materialPreviewImageSize = 75;
+    Theme::posePreviewImageSize = 75;
+    Theme::motionPreviewImageSize = 75;
+    Theme::sidebarPreferredWidth = 200;
+    Theme::normalButtonSize = Theme::toolIconSize * 2;
+    
+    qDebug() << "Theme::toolIconFontSize:" << Theme::toolIconFontSize;
+}
 
 QtAwesome *Theme::awesome()
 {

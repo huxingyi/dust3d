@@ -4,10 +4,10 @@ DEFINES += NDEBUG
 RESOURCES += resources.qrc
 
 isEmpty(HUMAN_VERSION) {
-	HUMAN_VERSION = "1.0.0-beta.7"
+	HUMAN_VERSION = "1.0.0-beta.8"
 }
 isEmpty(VERSION) {
-	VERSION = 1.0.0.7
+	VERSION = 1.0.0.8
 }
 
 REPOSITORY_URL = "https://github.com/huxingyi/dust3d"
@@ -16,7 +16,7 @@ REFERENCE_GUIDE_URL = "http://docs.dust3d.org"
 
 QMAKE_TARGET_COMPANY = Dust3D
 QMAKE_TARGET_PRODUCT = Dust3D
-QMAKE_TARGET_DESCRIPTION = "Aim to be a quick modeling tool for game development"
+QMAKE_TARGET_DESCRIPTION = "Dust3D is a cross-platform open-source 3D modeling software"
 QMAKE_TARGET_COPYRIGHT = "Copyright (C) 2018 Dust3D Project. All Rights Reserved."
 
 DEFINES += "PROJECT_DEFINED_APP_COMPANY=\"\\\"$$QMAKE_TARGET_COMPANY\\\"\""

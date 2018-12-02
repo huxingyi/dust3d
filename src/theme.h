@@ -50,6 +50,7 @@ public:
     static void updateAwesomeMiniButton(QPushButton *button, QChar icon, bool highlighted, bool unnormal=false);
     static void initAwesomeToolButton(QPushButton *button);
     static void initAwesomeToolButtonWithoutFont(QPushButton *button);
+    static void initAwsomeBaseSizes();
 };
 
 #endif
