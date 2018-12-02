@@ -62,6 +62,9 @@ after_test:
   - mkdir platforms
   - copy %QTDIR%\plugins\platforms\qwindows.dll %APPVEYOR_BUILD_FOLDER%\platforms\qwindows.dll
   - 7z a dust3d-%TAG%-%PLATFORM%.zip -r %APPVEYOR_BUILD_FOLDER%\platforms\
+  - mkdir imageformats
+  - copy %QTDIR%\plugins\imageformats\qjpeg.dll %APPVEYOR_BUILD_FOLDER%\imageformats\qjpeg.dll
+  - 7z a dust3d-%TAG%-%PLATFORM%.zip -r %APPVEYOR_BUILD_FOLDER%\imageformats\
 
 artifacts:
   - path: '*.zip'
