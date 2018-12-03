@@ -117,7 +117,7 @@ DocumentWindow::DocumentWindow() :
 
     QVBoxLayout *toolButtonLayout = new QVBoxLayout;
     toolButtonLayout->setSpacing(0);
-    toolButtonLayout->setContentsMargins(Theme::dp2px(5), Theme::dp2px(10), Theme::dp2px(4), 0);
+    toolButtonLayout->setContentsMargins(5, 10, 4, 0);
 
     QPushButton *addButton = new QPushButton(QChar(fa::plus));
     Theme::initAwesomeButton(addButton);
@@ -177,15 +177,15 @@ DocumentWindow::DocumentWindow() :
     toolButtonLayout->addWidget(dragButton);
     toolButtonLayout->addWidget(zoomInButton);
     toolButtonLayout->addWidget(zoomOutButton);
-    toolButtonLayout->addSpacing(Theme::dp2px(10));
+    toolButtonLayout->addSpacing(10);
     toolButtonLayout->addWidget(m_xlockButton);
     toolButtonLayout->addWidget(m_ylockButton);
     toolButtonLayout->addWidget(m_zlockButton);
     toolButtonLayout->addWidget(m_radiusLockButton);
-    toolButtonLayout->addSpacing(Theme::dp2px(10));
+    toolButtonLayout->addSpacing(10);
     toolButtonLayout->addWidget(rotateCounterclockwiseButton);
     toolButtonLayout->addWidget(rotateClockwiseButton);
-    toolButtonLayout->addSpacing(Theme::dp2px(10));
+    toolButtonLayout->addSpacing(10);
     toolButtonLayout->addWidget(regenerateButton);
     
 
@@ -204,7 +204,7 @@ DocumentWindow::DocumentWindow() :
     mainLeftLayout->addLayout(toolButtonLayout);
     mainLeftLayout->addStretch();
     mainLeftLayout->addLayout(logoLayout);
-    mainLeftLayout->addSpacing(Theme::dp2px(10));
+    mainLeftLayout->addSpacing(10);
 
     SkeletonGraphicsWidget *graphicsWidget = new SkeletonGraphicsWidget(m_document);
     m_graphicsWidget = graphicsWidget;
@@ -298,7 +298,7 @@ DocumentWindow::DocumentWindow() :
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->addLayout(mainLeftLayout);
     mainLayout->addWidget(containerWidget);
-    mainLayout->addSpacing(Theme::dp2px(3));
+    mainLayout->addSpacing(3);
 
     QWidget *centralWidget = new QWidget;
     centralWidget->setLayout(mainLayout);

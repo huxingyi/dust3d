@@ -1,7 +1,7 @@
 #include <QApplication>
 #include <QGuiApplication>
 #include <QDebug>
-#include <QScreen>
+#include <QFontMetrics>
 #include "theme.h"
 
 // Red
@@ -43,30 +43,20 @@ int Theme::posePreviewImageSize = 0;
 int Theme::motionPreviewImageSize = 0;
 int Theme::sidebarPreferredWidth = 0;
 int Theme::normalButtonSize = 0;
-double Theme::dpi = 0;
-
-float Theme::dp2px(float dp)
-{
-    return dp / 72 * Theme::dpi;
-}
 
 void Theme::initAwsomeBaseSizes()
 {
-    Theme::dpi = QGuiApplication::primaryScreen()->physicalDotsPerInch();
-    
-    Theme::toolIconFontSize = QApplication::font().pixelSize();
-    if (-1 == Theme::toolIconFontSize) {
-        Theme::toolIconFontSize = Theme::dp2px(QApplication::font().pointSize());
-    }
+    QFontMetrics fontMetrics(QApplication::font());
+    Theme::toolIconFontSize = fontMetrics.height();
     
     Theme::toolIconSize = (int)(Theme::toolIconFontSize * 1.5);
     Theme::miniIconFontSize = (int)(Theme::toolIconFontSize * 0.64);
     Theme::miniIconSize = (int)(Theme::miniIconFontSize * 1.67);
     Theme::partPreviewImageSize = (Theme::miniIconSize * 3);
-    Theme::materialPreviewImageSize = Theme::dp2px(62);
-    Theme::posePreviewImageSize = Theme::dp2px(62);
-    Theme::motionPreviewImageSize = Theme::dp2px(62);
-    Theme::sidebarPreferredWidth = Theme::dp2px(150);
+    Theme::materialPreviewImageSize = 75;
+    Theme::posePreviewImageSize = 75;
+    Theme::motionPreviewImageSize = 75;
+    Theme::sidebarPreferredWidth = 200;
     Theme::normalButtonSize = Theme::toolIconSize * 2;
     
     qDebug() << "Theme::toolIconFontSize:" << Theme::toolIconFontSize;
