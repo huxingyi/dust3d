@@ -116,6 +116,7 @@ script:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then chmod a+x appdir/AppRun || travis_terminate 1; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./ci/linuxdeployqt.AppImage --appimage-extract || travis_terminate 1; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export PATH=$(readlink -f ./squashfs-root/usr/bin):$PATH || travis_terminate 1; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then rm -v "./appdir/usr/lib/libxcb-dri2.so"* "./appdir/usr/lib/libxcb-dri3.so"*; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./squashfs-root/usr/bin/appimagetool -g ./appdir/ dust3d-$TAG-x86_64.AppImage || travis_terminate 1; fi
 
   # Distribute
