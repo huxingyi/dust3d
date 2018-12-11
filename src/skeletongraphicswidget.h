@@ -438,6 +438,7 @@ public slots:
     void selectAll();
     void unselectAll();
     void selectPartAll();
+    void selectConnectedAll();
     void addPartToSelection(QUuid partId);
     void cut();
     void copy();

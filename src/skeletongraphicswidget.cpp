@@ -8,6 +8,7 @@
 #include <QMenu>
 #include <QApplication>
 #include <QMatrix4x4>
+#include <queue>
 #include "skeletongraphicswidget.h"
 #include "theme.h"
 #include "util.h"
@@ -1347,7 +1348,10 @@ QPointF SkeletonGraphicsWidget::scenePosFromUnified(QPointF pos)
 bool SkeletonGraphicsWidget::mouseDoubleClick(QMouseEvent *event)
 {
     if (m_hoveredNodeItem || m_hoveredEdgeItem) {
-        selectPartAll();
+        if (m_nodePositionModifyOnly)
+            selectConnectedAll();
+        else
+            selectPartAll();
         return true;
     }
     if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
@@ -2178,6 +2182,63 @@ void SkeletonGraphicsWidget::addPartToSelection(QUuid partId)
             choosenPartId = edge->partId;
         }
         if (edge->partId != choosenPartId)
+            continue;
+        addItemToRangeSelection(item);
+    }
+}
+
+void SkeletonGraphicsWidget::selectConnectedAll()
+{
+    unselectAll();
+    SkeletonProfile choosenProfile = SkeletonProfile::Main;
+    QUuid startNodeId;
+    if (m_hoveredNodeItem) {
+        choosenProfile = m_hoveredNodeItem->profile();
+        const SkeletonNode *node = m_document->findNode(m_hoveredNodeItem->id());
+        if (node)
+            startNodeId = node->id;
+    } else if (m_hoveredEdgeItem) {
+        choosenProfile = m_hoveredEdgeItem->profile();
+        const SkeletonEdge *edge = m_document->findEdge(m_hoveredEdgeItem->id());
+        if (edge && !edge->nodeIds.empty())
+            startNodeId = *edge->nodeIds.begin();
+    }
+    if (startNodeId.isNull())
+        return;
+    std::set<QUuid> visitedNodes;
+    std::set<QUuid> visitedEdges;
+    std::queue<QUuid> nodeIds;
+    nodeIds.push(startNodeId);
+    while (!nodeIds.empty()) {
+        QUuid nodeId = nodeIds.front();
+        nodeIds.pop();
+        if (visitedNodes.find(nodeId) != visitedNodes.end())
+            continue;
+        const SkeletonNode *node = m_document->findNode(nodeId);
+        if (nullptr == node)
+            continue;
+        visitedNodes.insert(nodeId);
+        for (const auto &edgeId: node->edgeIds) {
+            const SkeletonEdge *edge = m_document->findEdge(edgeId);
+            if (nullptr == edge)
+                continue;
+            visitedEdges.insert(edgeId);
+            for (const auto &nodeIdOfEdge: edge->nodeIds) {
+                if (visitedNodes.find(nodeIdOfEdge) != visitedNodes.end())
+                    continue;
+                nodeIds.push(nodeIdOfEdge);
+            }
+        }
+    }
+    for (const auto &it: nodeItemMap) {
+        SkeletonGraphicsNodeItem *item = SkeletonProfile::Main == choosenProfile ? it.second.first : it.second.second;
+        if (visitedNodes.find(item->id()) == visitedNodes.end())
+            continue;
+        addItemToRangeSelection(item);
+    }
+    for (const auto &it: edgeItemMap) {
+        SkeletonGraphicsEdgeItem *item = SkeletonProfile::Main == choosenProfile ? it.second.first : it.second.second;
+        if (visitedEdges.find(item->id()) == visitedEdges.end())
             continue;
         addItemToRangeSelection(item);
     }
