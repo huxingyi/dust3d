@@ -1500,6 +1500,10 @@ void SkeletonGraphicsWidget::shortcutZoomSelectedByMinus1()
     if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
         zoomSelected(-1);
         emit groupOperationAdded();
+    } else if (SkeletonDocumentEditMode::Add == m_document->editMode) {
+        if (m_cursorNodeItem->isVisible()) {
+            m_cursorNodeItem->setRadius(m_cursorNodeItem->radius() + -1);
+        }
     }
 }
 
@@ -1513,6 +1517,10 @@ void SkeletonGraphicsWidget::shortcutZoomSelectedBy1()
     if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
         zoomSelected(1);
         emit groupOperationAdded();
+    } else if (SkeletonDocumentEditMode::Add == m_document->editMode) {
+        if (m_cursorNodeItem->isVisible()) {
+            m_cursorNodeItem->setRadius(m_cursorNodeItem->radius() + 1);
+        }
     }
 }
 
