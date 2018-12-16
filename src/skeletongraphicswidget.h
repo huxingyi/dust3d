@@ -468,6 +468,7 @@ public slots:
     void addSelectEdge(QUuid edgeId);
     void enableBackgroundBlur();
     void disableBackgroundBlur();
+    void setBackgroundBlur(float turnaroundOpacity);
     void ikMove(QUuid endEffectorId, QVector3D target);
     void ikMoveReady();
     void setSelectedNodesBoneMark(BoneMark boneMark);
@@ -563,6 +564,7 @@ private: //need initalize
     bool m_inTempDragMode;
     SkeletonDocumentEditMode m_modeBeforeEnterTempDragMode;
     bool m_nodePositionModifyOnly;
+    float m_turnaroundOpacity;
 private:
     QVector3D m_ikMoveTarget;
     QUuid m_ikMoveEndEffectorId;

@@ -11,8 +11,8 @@
 #include "snapshot.h"
 #include "snapshotxml.h"
 
-const float PoseDocument::m_nodeRadius = 0.01;
-const float PoseDocument::m_groundPlaneHalfThickness = 0.01 / 4;
+const float PoseDocument::m_nodeRadius = 0.005;
+const float PoseDocument::m_groundPlaneHalfThickness = 0.005 / 4;
 const bool PoseDocument::m_hideRootAndVirtual = true;
 const float PoseDocument::m_outcomeScaleFactor = 0.5;
 

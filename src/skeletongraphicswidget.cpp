@@ -46,7 +46,8 @@ SkeletonGraphicsWidget::SkeletonGraphicsWidget(const SkeletonDocument *document)
     m_modelWidget(nullptr),
     m_inTempDragMode(false),
     m_modeBeforeEnterTempDragMode(SkeletonDocumentEditMode::Select),
-    m_nodePositionModifyOnly(false)
+    m_nodePositionModifyOnly(false),
+    m_turnaroundOpacity(0.25)
 {
     setRenderHint(QPainter::Antialiasing, false);
     setBackgroundBrush(QBrush(QWidget::palette().color(QWidget::backgroundRole()), Qt::SolidPattern));
@@ -98,12 +99,18 @@ void SkeletonGraphicsWidget::setModelWidget(ModelWidget *modelWidget)
 
 void SkeletonGraphicsWidget::enableBackgroundBlur()
 {
-    m_backgroundItem->setOpacity(0.25);
+    m_backgroundItem->setOpacity(m_turnaroundOpacity);
 }
 
 void SkeletonGraphicsWidget::disableBackgroundBlur()
 {
     m_backgroundItem->setOpacity(1);
+}
+
+void SkeletonGraphicsWidget::setBackgroundBlur(float turnaroundOpacity)
+{
+    m_turnaroundOpacity = turnaroundOpacity;
+    m_backgroundItem->setOpacity(m_turnaroundOpacity);
 }
 
 void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
