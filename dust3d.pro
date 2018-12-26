@@ -3,6 +3,14 @@ CONFIG += release
 DEFINES += NDEBUG
 RESOURCES += resources.qrc
 
+macx {
+	ICON = dust3d.icns
+
+	RESOURCE_FILES.files = $$ICON
+	RESOURCE_FILES.path = Contents/Resources
+	QMAKE_BUNDLE_DATA += RESOURCE_FILES
+}
+
 isEmpty(HUMAN_VERSION) {
 	HUMAN_VERSION = "1.0.0-beta.14"
 }
