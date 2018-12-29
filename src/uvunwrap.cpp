@@ -20,7 +20,7 @@ void uvUnwrap(const Outcome &outcome, std::vector<std::vector<QVector2D>> &trian
         v.xyz[0] = vertex.x();
         v.xyz[1] = vertex.y();
         v.xyz[2] = vertex.z();
-        inputMesh.verticies.push_back(v);
+        inputMesh.vertices.push_back(v);
     }
     std::map<QUuid, int> partIdToPartitionMap;
     int partitions = 0;

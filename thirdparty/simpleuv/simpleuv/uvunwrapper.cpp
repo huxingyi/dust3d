@@ -402,7 +402,7 @@ void UvUnwrapper::unwrapSingleIsland(const std::vector<size_t> &group, bool skip
         for (size_t j = 0; j < 3; j++) {
             int globalVertexIndex = globalFace.indices[j];
             if (globalToLocalVerticesMap.find(globalVertexIndex) == globalToLocalVerticesMap.end()) {
-                localVertices.push_back(m_mesh.verticies[globalVertexIndex]);
+                localVertices.push_back(m_mesh.vertices[globalVertexIndex]);
                 globalToLocalVerticesMap[globalVertexIndex] = (int)localVertices.size() - 1;
             }
             localFace.indices[j] = globalToLocalVerticesMap[globalVertexIndex];

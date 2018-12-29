@@ -28,7 +28,7 @@ struct FaceTextureCoords
 
 struct Mesh
 {
-    std::vector<Vertex> verticies;
+    std::vector<Vertex> vertices;
     std::vector<Face> faces;
     std::vector<int> facePartitions;
 };
