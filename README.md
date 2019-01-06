@@ -4,10 +4,14 @@
 
 Overview
 ----------
-Dust3D is a brand new 3D modeling software. It helps you create a 3D watertight base model in seconds. Use it to speed up your character modeling in game making, 3D printing, and so on.
+Dust3D is a brand new 3D modeling software. It helps you create a 3D watertight model in seconds. Use it to speed up your character modeling in game making, 3D printing, and so on.
 
 [Download Dust3D](http://docs.dust3d.org/en/latest/install.html)  
-[Online Dust3D Reference Guide](http://docs.dust3d.org)
+[Online Dust3D Reference Guide](http://docs.dust3d.org)  
+
+Calling for Posts
+--------------------
+Please share your work done in Dust3D to our [Forum](https://dust3d.discourse.group) and twitter by hashtag [#Dust3D](https://twitter.com/hashtag/Dust3D), the final 1.0 version is planned to release in 2019, your work may be picked as the featured cover of Dust3D 1.0 stable version show on the about window of software and the homepage of website.
 
 [Dust3D 1.0 Beta Is Now Available](https://youtu.be/BjkDoRC_BVc)
 
@@ -34,20 +38,21 @@ Examples
 <a href="http://docs.dust3d.org/en/latest/examples/modeling-horse/index.html">
 <image src="https://raw.githubusercontent.com/huxingyi/dust3d/master/docs/examples/modeling-horse/modeling-horse-dust3d-screenshot.png" width="320" height="192"></a>
 
-Free Dust3D Models
+More Examples
 ---------------------
 <a href="https://github.com/huxingyi/free-dust3d-models"><image src="https://raw.githubusercontent.com/huxingyi/free-dust3d-models/master/free-dust3d-models.png" height="50"></a>
 
-Tutorials
+External Links
+-------------
+- [DUST3D–A NEW OPEN SOURCE 3D MODELLER](http://www.gamefromscratch.com/post/2018/04/20/Dust3D-A-New-Open-Source-3D-Modeller.aspx) **gamefromscratch.com**  
+- [Dust3D - простая система 3D моделирования для игр](https://www.linux.org.ru/news/opensource/14198146) **linux.org.ru**  
+- [Бета-выпуск Dust3D, нового открытого пакета для создания 3D-моделей](https://www.opennet.ru/opennews/art.shtml?num=49694) **opennet.ru**  
+
+External Media
 -------------
 [Dust3D -- Free Open Source 3D Modelling Application](https://www.youtube.com/watch?v=YBnEQk_5D70)
 
 <a href="https://www.youtube.com/watch?v=YBnEQk_5D70" target="_blank"><image src="https://raw.githubusercontent.com/huxingyi/dust3d/master/docs/images/dust3d-free-open-source-3d-modelling-application-video-thumbnail.png" width="480" height="270"></a>
-
-External Links
--------------
-- [DUST3D–A NEW OPEN SOURCE 3D MODELLER](http://www.gamefromscratch.com/post/2018/04/20/Dust3D-A-New-Open-Source-3D-Modeller.aspx) *gamefromscratch.com*  
-- [Dust3D - простая система 3D моделирования для игр](https://www.linux.org.ru/news/opensource/14198146)  *linux.org.ru*  
 
 Contributing
 ---------------
