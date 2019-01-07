@@ -25,8 +25,8 @@ int main(int argc, char ** argv)
     darkPalette.setColor(QPalette::WindowText, Theme::white);
     darkPalette.setColor(QPalette::Base, QColor(25,25,25));
     darkPalette.setColor(QPalette::AlternateBase, QColor(53,53,53));
-    darkPalette.setColor(QPalette::ToolTipBase, Theme::white);
-    darkPalette.setColor(QPalette::ToolTipText, Theme::white);
+    //darkPalette.setColor(QPalette::ToolTipBase, Theme::white);
+    //darkPalette.setColor(QPalette::ToolTipText, Theme::white);
     darkPalette.setColor(QPalette::Text, Theme::white);
     darkPalette.setColor(QPalette::Disabled, QPalette::Text, Theme::black);
     darkPalette.setColor(QPalette::Button, QColor(53,53,53));
@@ -36,7 +36,7 @@ int main(int argc, char ** argv)
     darkPalette.setColor(QPalette::Highlight, Theme::red);
     darkPalette.setColor(QPalette::HighlightedText, Theme::black);
     qApp->setPalette(darkPalette);
-    qApp->setStyleSheet("QToolTip { color: #ffffff; background-color: #fc6621; border: 1px solid white; }");
+    //qApp->setStyleSheet("QToolTip { color: #ffffff; background-color: #fc6621; border: 1px solid white; }");
     
     QCoreApplication::setApplicationName(APP_NAME);
     

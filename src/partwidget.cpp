@@ -21,38 +21,47 @@ PartWidget::PartWidget(const Document *document, QUuid partId) :
     retainSizePolicy.setRetainSizeWhenHidden(true);
 
     m_visibleButton = new QPushButton();
+    m_visibleButton->setToolTip(tr("Show/hide nodes"));
     m_visibleButton->setSizePolicy(retainSizePolicy);
     initButton(m_visibleButton);
     
     m_lockButton = new QPushButton();
+    m_lockButton->setToolTip(tr("Lock/unlock nodes"));
     m_lockButton->setSizePolicy(retainSizePolicy);
     initButton(m_lockButton);
     
     m_subdivButton = new QPushButton();
+    m_subdivButton->setToolTip(tr("Square/Round"));
     m_subdivButton->setSizePolicy(retainSizePolicy);
     initButton(m_subdivButton);
     
     m_disableButton = new QPushButton();
+    m_disableButton->setToolTip(tr("Join/Remove from final result"));
     m_disableButton->setSizePolicy(retainSizePolicy);
     initButton(m_disableButton);
     
     m_xMirrorButton = new QPushButton();
+    m_xMirrorButton->setToolTip(tr("Toggle mirror"));
     m_xMirrorButton->setSizePolicy(retainSizePolicy);
     initButton(m_xMirrorButton);
     
     m_deformButton = new QPushButton();
+    m_deformButton->setToolTip(tr("Deform"));
     m_deformButton->setSizePolicy(retainSizePolicy);
     initButton(m_deformButton);
     
     m_roundButton = new QPushButton;
+    m_roundButton->setToolTip(tr("Toggle round end"));
     m_roundButton->setSizePolicy(retainSizePolicy);
     initButton(m_roundButton);
     
     m_colorButton = new QPushButton;
+    m_colorButton->setToolTip(tr("Color and material picker"));
     m_colorButton->setSizePolicy(retainSizePolicy);
     initButton(m_colorButton);
     
     m_wrapButton = new QPushButton;
+    m_wrapButton->setToolTip(tr("Toggle convex wrap"));
     m_wrapButton->setSizePolicy(retainSizePolicy);
     initButton(m_wrapButton);
     

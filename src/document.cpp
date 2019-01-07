@@ -35,6 +35,7 @@ Document::Document() :
     m_isResultMeshObsolete(false),
     m_meshGenerator(nullptr),
     m_resultMesh(nullptr),
+    m_isMeshGenerationSucceed(true),
     m_batchChangeRefCount(0),
     m_currentOutcome(nullptr),
     m_isTextureObsolete(false),
@@ -1355,6 +1356,11 @@ MeshLoader *Document::takeResultMesh()
     return resultMesh;
 }
 
+bool Document::isMeshGenerationSucceed()
+{
+    return m_isMeshGenerationSucceed;
+}
+
 MeshLoader *Document::takeResultTextureMesh()
 {
     if (nullptr == m_resultTextureMesh)
@@ -1375,6 +1381,7 @@ void Document::meshReady()
 {
     MeshLoader *resultMesh = m_meshGenerator->takeResultMesh();
     Outcome *outcome = m_meshGenerator->takeOutcome();
+    bool isSucceed = m_meshGenerator->isSucceed();
     
     for (auto &partId: m_meshGenerator->generatedPreviewPartIds()) {
         auto part = partMap.find(partId);
@@ -1387,6 +1394,8 @@ void Document::meshReady()
     
     delete m_resultMesh;
     m_resultMesh = resultMesh;
+    
+    m_isMeshGenerationSucceed = isSucceed;
     
     delete m_currentOutcome;
     m_currentOutcome = outcome;

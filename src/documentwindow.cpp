@@ -104,7 +104,8 @@ DocumentWindow::DocumentWindow() :
     m_firstShow(true),
     m_documentSaved(true),
     m_exportPreviewWidget(nullptr),
-    m_advanceSettingWidget(nullptr)
+    m_advanceSettingWidget(nullptr),
+    m_isLastMeshGenerationSucceed(true)
 {
     if (!g_logBrowser) {
         g_logBrowser = new LogBrowser;
@@ -120,46 +121,70 @@ DocumentWindow::DocumentWindow() :
     toolButtonLayout->setContentsMargins(5, 10, 4, 0);
 
     QPushButton *addButton = new QPushButton(QChar(fa::plus));
+    addButton->setToolTip(tr("Add node to canvas"));
     Theme::initAwesomeButton(addButton);
 
     QPushButton *selectButton = new QPushButton(QChar(fa::mousepointer));
+    selectButton->setToolTip(tr("Select node on canvas"));
     Theme::initAwesomeButton(selectButton);
 
     QPushButton *dragButton = new QPushButton(QChar(fa::handrocko));
+    dragButton->setToolTip(tr("Enter drag mode"));
     Theme::initAwesomeButton(dragButton);
 
     QPushButton *zoomInButton = new QPushButton(QChar(fa::searchplus));
+    zoomInButton->setToolTip(tr("Enter zoom in mode"));
     Theme::initAwesomeButton(zoomInButton);
 
     QPushButton *zoomOutButton = new QPushButton(QChar(fa::searchminus));
+    zoomOutButton->setToolTip(tr("Enter zoom out mode"));
     Theme::initAwesomeButton(zoomOutButton);
 
     m_xlockButton = new QPushButton(QChar('X'));
+    m_xlockButton->setToolTip(tr("X axis locker"));
     initLockButton(m_xlockButton);
     updateXlockButtonState();
 
     m_ylockButton = new QPushButton(QChar('Y'));
+    m_ylockButton->setToolTip(tr("Y axis locker"));
     initLockButton(m_ylockButton);
     updateYlockButtonState();
 
     m_zlockButton = new QPushButton(QChar('Z'));
+    m_zlockButton->setToolTip(tr("Z axis locker"));
     initLockButton(m_zlockButton);
     updateZlockButtonState();
     
     m_radiusLockButton = new QPushButton(QChar(fa::bullseye));
+    m_radiusLockButton->setToolTip(tr("Node radius locker"));
     Theme::initAwesomeButton(m_radiusLockButton);
     updateRadiusLockButtonState();
     
     QPushButton *rotateCounterclockwiseButton = new QPushButton(QChar(fa::rotateleft));
+    rotateCounterclockwiseButton->setToolTip(tr("Rotate whole model (CCW)"));
     Theme::initAwesomeButton(rotateCounterclockwiseButton);
     
     QPushButton *rotateClockwiseButton = new QPushButton(QChar(fa::rotateright));
+    rotateClockwiseButton->setToolTip(tr("Rotate whole model"));
     Theme::initAwesomeButton(rotateClockwiseButton);
     
+    auto updateRegenerateIconAndTips = [&](SpinnableAwesomeButton *regenerateButton, bool isSucceed, bool forceUpdate=false) {
+        if (!forceUpdate) {
+            if (m_isLastMeshGenerationSucceed == isSucceed)
+                return;
+        }
+        m_isLastMeshGenerationSucceed = isSucceed;
+        regenerateButton->setToolTip(m_isLastMeshGenerationSucceed ? tr("Regenerate") : tr("Mesh generation failed, please undo or adjust recent changed nodes\nTips:\n  - Don't let generated mesh self-intersect\n  - Make multiple parts instead of one single part for whole model"));
+        regenerateButton->setAwesomeIcon(m_isLastMeshGenerationSucceed ? QChar(fa::recycle) : QChar(fa::warning));
+    };
+    
     SpinnableAwesomeButton *regenerateButton = new SpinnableAwesomeButton();
-    regenerateButton->setAwesomeIcon(QChar(fa::recycle));
+    updateRegenerateIconAndTips(regenerateButton, m_isLastMeshGenerationSucceed, true);
     connect(m_document, &Document::meshGenerating, this, [=]() {
         regenerateButton->showSpinner(true);
+    });
+    connect(m_document, &Document::resultMeshChanged, this, [=]() {
+        updateRegenerateIconAndTips(regenerateButton, m_document->isMeshGenerationSucceed());
     });
     connect(m_document, &Document::postProcessing, this, [=]() {
         regenerateButton->showSpinner(true);

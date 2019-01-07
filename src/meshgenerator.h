@@ -39,6 +39,7 @@ public:
     void setGeneratedCacheContext(GeneratedCacheContext *cacheContext);
     void setSmoothNormal(bool smoothNormal);
     void setWeldEnabled(bool weldEnabled);
+    bool isSucceed();
     MeshLoader *takeResultMesh();
     MeshLoader *takePartPreviewMesh(const QUuid &partId);
     const std::set<QUuid> &requirePreviewPartIds();
@@ -51,6 +52,7 @@ public slots:
     void process();
 private:
     Snapshot *m_snapshot;
+    bool m_isSucceed;
     MeshLoader *m_mesh;
     std::map<QUuid, MeshLoader *> m_partPreviewMeshMap;
     std::set<QUuid> m_requirePreviewPartIds;

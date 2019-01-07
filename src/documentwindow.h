@@ -72,6 +72,7 @@ private:
     ExportPreviewWidget *m_exportPreviewWidget;
     AdvanceSettingWidget *m_advanceSettingWidget;
     std::vector<QWidget *> m_dialogs;
+    bool m_isLastMeshGenerationSucceed;
 private:
     QString m_currentFilename;
     

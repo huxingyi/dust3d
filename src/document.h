@@ -491,6 +491,7 @@ public:
     const Pose *findPose(QUuid poseId) const;
     const Motion *findMotion(QUuid motionId) const;
     MeshLoader *takeResultMesh();
+    bool isMeshGenerationSucceed();
     MeshLoader *takeResultTextureMesh();
     MeshLoader *takeResultRigWeightMesh();
     const std::vector<RiggerBone> *resultRigBones() const;
@@ -630,6 +631,7 @@ private: // need initialize
     bool m_isResultMeshObsolete;
     MeshGenerator *m_meshGenerator;
     MeshLoader *m_resultMesh;
+    bool m_isMeshGenerationSucceed;
     int m_batchChangeRefCount;
     Outcome *m_currentOutcome;
     bool m_isTextureObsolete;

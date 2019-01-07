@@ -36,6 +36,7 @@ void GeneratedCacheContext::updateComponentCombinableMesh(QString componentId, v
 
 MeshGenerator::MeshGenerator(Snapshot *snapshot) :
     m_snapshot(snapshot),
+    m_isSucceed(false),
     m_mesh(nullptr),
     m_outcome(nullptr),
     m_sharedContextWidget(nullptr),
@@ -79,6 +80,11 @@ void MeshGenerator::addPartPreviewRequirement(const QUuid &partId)
 void MeshGenerator::setSharedContextWidget(QOpenGLWidget *widget)
 {
     m_sharedContextWidget = widget;
+}
+
+bool MeshGenerator::isSucceed()
+{
+    return m_isSucceed;
 }
 
 MeshLoader *MeshGenerator::takeResultMesh()
@@ -697,6 +703,10 @@ void *MeshGenerator::combineComponentMesh(QString componentId, CombineMode *comb
     cachedComponentPositions.clear();
     loadCombinableMeshVerticesPositions(resultMesh, cachedComponentPositions);
     
+    if (nullptr == resultMesh) {
+        m_isSucceed = false;
+    }
+    
     return resultMesh;
 }
 
@@ -706,6 +716,8 @@ void MeshGenerator::generate()
         return;
     QElapsedTimer countTimeConsumed;
     countTimeConsumed.start();
+    
+    m_isSucceed = true;
 
     m_meshliteContext = meshlite_create_context();
     
