@@ -12,10 +12,10 @@ macx {
 }
 
 isEmpty(HUMAN_VERSION) {
-	HUMAN_VERSION = "1.0.0-beta.14"
+	HUMAN_VERSION = "1.0.0-beta.15"
 }
 isEmpty(VERSION) {
-	VERSION = 1.0.0.14
+	VERSION = 1.0.0.15
 }
 
 REPOSITORY_URL = "https://github.com/huxingyi/dust3d"
@@ -25,7 +25,7 @@ REFERENCE_GUIDE_URL = "http://docs.dust3d.org"
 QMAKE_TARGET_COMPANY = Dust3D
 QMAKE_TARGET_PRODUCT = Dust3D
 QMAKE_TARGET_DESCRIPTION = "Dust3D is a cross-platform open-source 3D modeling software"
-QMAKE_TARGET_COPYRIGHT = "Copyright (C) 2018 Dust3D Project. All Rights Reserved."
+QMAKE_TARGET_COPYRIGHT = "Copyright (C) 2018-2019 Dust3D Project. All Rights Reserved."
 
 DEFINES += "PROJECT_DEFINED_APP_COMPANY=\"\\\"$$QMAKE_TARGET_COMPANY\\\"\""
 DEFINES += "PROJECT_DEFINED_APP_NAME=\"\\\"$$QMAKE_TARGET_PRODUCT\\\"\""
