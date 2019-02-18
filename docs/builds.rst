@@ -3,21 +3,13 @@ Building Dust3D
 
 Overview
 ==========
-The core mesh algorithms of Dust3D written in Rust language, located in meshlite repository,
-
-    https://github.com/huxingyi/meshlite
-
-The UI of Dust3D built in Qt5, the only thirdparty dependency which should been compiled separately is the CGAL library, however, CGAL will introduce some new dependencies, such as boost and gmp library.
+The UI of Dust3D built in Qt5, the only third party dependency which should be compiled separately is the CGAL library, however, CGAL will introduce some new dependencies, such as boost and gmp library.
 
 Prerequisites
 ===============
 * CGAL
 
     https://www.cgal.org/
-
-* Rust
-
-    https://www.rust-lang.org/en-US/install.html
 
 Building
 ==========
@@ -40,13 +32,6 @@ Here is the snapshot of the command line of one build, you may use different def
 
 .. code-block:: sh
 
-    $ cd /Users/jeremy/Desktop
-    $ git clone https://github.com/huxingyi/meshlite.git
-    $ cd meshlite/ffi
-    $ cargo build --release
-    $ cp include/meshlite.h /Users/jeremy/Repositories/dust3d/thirdparty/meshlite/meshlite.h
-    $ cp target/release/libmeshlite_ffi.dylib /Users/jeremy/Repositories/dust3d/thirdparty/meshlite/libmeshlite_ffi.dylib
-
     $ cd /Users/jeremy/Repositories/dust3d
     $ qmake -spec macx-xcode
     Open dust3d.xcodeproj in Xcode and build
@@ -54,9 +39,6 @@ Here is the snapshot of the command line of one build, you may use different def
 * Ubuntu
 
 .. code-block:: sh
-
-    ;Install Rust
-    $ curl https://sh.rustup.rs -sSf | sh         ;Add ~/.cargo/bin to PATH after finishing install
 
     ;Install Qt5
     $ sudo apt-get install --reinstall qtchooser
@@ -80,17 +62,8 @@ Here is the snapshot of the command line of one build, you may use different def
     $ cd ~/Documents
     $ git clone https://github.com/huxingyi/dust3d.git
 
-    ;Compile the internal dependency
-    $ cd ~/Desktop
-    $ git clone https://github.com/huxingyi/meshlite.git
-    $ cd meshlite/ffi
-    $ cargo build --release
-    $ cp ~/Desktop/meshlite/ffi/include/meshlite.h ~/Documents/dust3d/thirdparty/meshlite/meshlite.h
-    $ cp ~/Desktop/meshlite/ffi/target/release/libmeshlite_ffi.so ~/Documents/dust3d/thirdparty/meshlite/libmeshlite_ffi.so
-
     ;Compile Dust3D
     $ cd ~/Documents/dust3d
     $ qmake -qt=5 -makefile
     $ make
-    $ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:~/Documents/dust3d/thirdparty/meshlite
     $ ./dust3d

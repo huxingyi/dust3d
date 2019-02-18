@@ -54,28 +54,13 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install qt59base qt59tools --force-yes; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then source /opt/qt59/bin/qt59-env.sh; fi
 
-  # Install Rust
-  - wget -O installrust.sh https://sh.rustup.rs
-  - sh installrust.sh -y
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then export PATH="$HOME/.cargo/bin:/usr/local/opt/qt/bin:$(brew --prefix)/bin:$PATH"; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export PATH="~/.cargo/bin:$PATH"; fi
-
 script:
-  # Build Meshlite
-  - git clone https://github.com/huxingyi/meshlite.git || travis_terminate 1
-  - cd meshlite/ffi
-  - cargo build --release
-  - cd ../../
-  - cp meshlite/ffi/include/meshlite.h thirdparty/meshlite/meshlite.h || travis_terminate 1
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then cp meshlite/ffi/target/release/libmeshlite_ffi.dylib thirdparty/meshlite/libmeshlite_ffi.dylib || travis_terminate 1; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cp meshlite/ffi/target/release/libmeshlite_ffi.so thirdparty/meshlite/libmeshlite_ffi.so || travis_terminate 1; fi
 
   # Build Dust3D
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then qmake -config release || travis_terminate 1; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then qmake -config release || travis_terminate 1; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then make || travis_terminate 1; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then make CXX="g++ -fext-numeric-literals" || travis_terminate 1; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/thirdparty/meshlite || travis_terminate 1; fi
 
   # Prepare tag name
   - export TAG="$TRAVIS_TAG"
@@ -109,7 +94,7 @@ script:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cp ./dust3d appdir/usr/bin/dust3d || travis_terminate 1; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cp ./ci/dust3d.desktop appdir/usr/share/applications/dust3d.desktop || travis_terminate 1; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then chmod a+x ./ci/linuxdeployqt.AppImage || travis_terminate 1; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then unset QTDIR; unset QT_PLUGIN_PATH ; export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$(pwd)/thirdparty/meshlite; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then unset QTDIR; unset QT_PLUGIN_PATH ; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then ./ci/linuxdeployqt.AppImage appdir/usr/share/applications/dust3d.desktop -bundle-non-qt-libs -verbose=2 || travis_terminate 1; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then rm appdir/AppRun || travis_terminate 1; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cp ./ci/AppRun-patched-x86_64 appdir/AppRun || travis_terminate 1; fi

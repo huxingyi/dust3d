@@ -519,7 +519,6 @@ bool AnimalRigger::rig()
                 jointBone.name = namingChain(chainBaseName, chainMark.boneSide, chainGenerateOrder, spineNode.chainMarkIndices.size(), jointGenerateOrder);
                 jointBone.headPosition = jointPositions[jointGenerateOrder - 1];
                 jointBone.tailPosition = jointPositions[jointGenerateOrder];
-                jointBone.baseNormal = jointMark.baseNormal;
                 jointBone.color = boneColor();
                 if (jointGenerateOrder == (int)jointMarkIndices.size()) {
                     addVerticesToWeights(remainingLimbVertices, jointBone.index);

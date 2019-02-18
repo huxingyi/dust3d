@@ -1,5 +1,6 @@
+#include <nodemesh/positionkey.h>
+#include <map>
 #include "trianglesourcenoderesolve.h"
-#include "positionmap.h"
 
 struct HalfColorEdge
 {
@@ -19,18 +20,18 @@ struct CandidateEdge
 void triangleSourceNodeResolve(const Outcome &outcome, std::vector<std::pair<QUuid, QUuid>> &triangleSourceNodes)
 {
     std::map<int, std::pair<QUuid, QUuid>> vertexSourceMap;
-    PositionMap<std::pair<QUuid, QUuid>> positionMap;
+    std::map<nodemesh::PositionKey, std::pair<QUuid, QUuid>> positionMap;
     std::map<std::pair<int, int>, HalfColorEdge> halfColorEdgeMap;
     std::set<int> brokenTriangleSet;
     for (const auto &it: outcome.nodeVertices) {
-        positionMap.addPosition(it.first.x(), it.first.y(), it.first.z(), it.second);
+        positionMap.insert({nodemesh::PositionKey(it.first), it.second});
     }
     for (auto x = 0u; x < outcome.vertices.size(); x++) {
         const QVector3D *resultVertex = &outcome.vertices[x];
         std::pair<QUuid, QUuid> source;
-        if (positionMap.findPosition(resultVertex->x(), resultVertex->y(), resultVertex->z(), &source)) {
-            vertexSourceMap[x] = source;
-        }
+        auto findPosition = positionMap.find(nodemesh::PositionKey(*resultVertex));
+        if (findPosition != positionMap.end())
+            vertexSourceMap[x] = findPosition->second;
     }
     for (auto x = 0u; x < outcome.triangles.size(); x++) {
         const auto triangle = outcome.triangles[x];

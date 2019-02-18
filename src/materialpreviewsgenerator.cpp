@@ -57,8 +57,6 @@ void MaterialPreviewsGenerator::generate()
     
     GeneratedCacheContext *cacheContext = new GeneratedCacheContext();
     MeshGenerator *meshGenerator = new MeshGenerator(snapshot);
-    meshGenerator->setSmoothNormal(true);
-    meshGenerator->setWeldEnabled(false);
     meshGenerator->setGeneratedCacheContext(cacheContext);
     
     meshGenerator->generate();

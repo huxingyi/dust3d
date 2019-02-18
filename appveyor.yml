@@ -49,7 +49,6 @@ after_test:
   - if "%TAG%" == ""
     set TAG=unstable
   - 7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\release\dust3d.exe
-  - 7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\thirdparty\meshlite\meshlite_unstable_vc14_%PLATFORM%\meshlite_ffi.dll
   - 7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-4.11.1\build\bin\Release\CGAL-vc140-mt-4.11.1.dll
   - 7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-4.11.1\auxiliary\gmp\lib\libgmp-10.dll
   - 7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-4.11.1\auxiliary\gmp\lib\libmpfr-4.dll

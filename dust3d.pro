@@ -101,9 +101,6 @@ HEADERS += src/theme.h
 SOURCES += src/meshloader.cpp
 HEADERS += src/meshloader.h
 
-SOURCES += src/meshutil.cpp
-HEADERS += src/meshutil.h
-
 SOURCES += src/texturegenerator.cpp
 HEADERS += src/texturegenerator.h
 
@@ -112,9 +109,6 @@ HEADERS += src/outcome.h
 
 SOURCES += src/meshresultpostprocessor.cpp
 HEADERS += src/meshresultpostprocessor.h
-
-SOURCES += src/positionmap.cpp
-HEADERS += src/positionmap.h
 
 SOURCES += src/logbrowser.cpp
 HEADERS += src/logbrowser.h
@@ -167,9 +161,6 @@ HEADERS += src/rigtype.h
 SOURCES += src/riggenerator.cpp
 HEADERS += src/riggenerator.h
 
-SOURCES += src/meshquadify.cpp
-HEADERS += src/meshquadify.h
-
 SOURCES += src/skinnedmeshcreator.cpp
 HEADERS += src/skinnedmeshcreator.h
 
@@ -199,9 +190,6 @@ HEADERS += src/posepreviewsgenerator.h
 
 SOURCES += src/posewidget.cpp
 HEADERS += src/posewidget.h
-
-SOURCES += src/meshweldseam.cpp
-HEADERS += src/meshweldseam.h
 
 SOURCES += src/advancesettingwidget.cpp
 HEADERS += src/advancesettingwidget.h
@@ -251,9 +239,6 @@ HEADERS += src/material.h
 SOURCES += src/fbxfile.cpp
 HEADERS += src/fbxfile.h
 
-SOURCES += src/anglesmooth.cpp
-HEADERS += src/anglesmooth.h
-
 SOURCES += src/motiontimelinewidget.cpp
 HEADERS += src/motiontimelinewidget.h
 
@@ -302,12 +287,40 @@ HEADERS += src/posedocument.h
 SOURCES += src/combinemode.cpp
 HEADERS += src/combinemode.h
 
-SOURCES += src/meshinflate.cpp
-HEADERS += src/meshinflate.h
-
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h
+
+INCLUDEPATH += thirdparty/nodemesh
+
+SOURCES += thirdparty/nodemesh/nodemesh/wrapper.cpp
+HEADERS += thirdparty/nodemesh/nodemesh/wrapper.h
+
+SOURCES += thirdparty/nodemesh/nodemesh/stitcher.cpp
+HEADERS += thirdparty/nodemesh/nodemesh/stitcher.h
+
+SOURCES += thirdparty/nodemesh/nodemesh/builder.cpp
+HEADERS += thirdparty/nodemesh/nodemesh/builder.h
+
+SOURCES += thirdparty/nodemesh/nodemesh/combiner.cpp
+HEADERS += thirdparty/nodemesh/nodemesh/combiner.h
+
+SOURCES += thirdparty/nodemesh/nodemesh/util.cpp
+HEADERS += thirdparty/nodemesh/nodemesh/util.h
+
+SOURCES += thirdparty/nodemesh/nodemesh/positionkey.cpp
+HEADERS += thirdparty/nodemesh/nodemesh/positionkey.h
+
+SOURCES += thirdparty/nodemesh/nodemesh/modifier.cpp
+HEADERS += thirdparty/nodemesh/nodemesh/modifier.h
+
+SOURCES += thirdparty/nodemesh/nodemesh/box.cpp
+HEADERS += thirdparty/nodemesh/nodemesh/box.h
+
+SOURCES += thirdparty/nodemesh/nodemesh/recombiner.cpp
+HEADERS += thirdparty/nodemesh/nodemesh/recombiner.h
+
+HEADERS += thirdparty/nodemesh/nodemesh/cgalmesh.h
 
 INCLUDEPATH += thirdparty/crc64
 
@@ -381,12 +394,6 @@ win32 {
 		error("No CGAL_DIR define found in enviroment variables")
 	}
 
-	contains(QMAKE_TARGET.arch, x86_64) {
-		MESHLITE_DIR = thirdparty/meshlite/meshlite_unstable_vc14_x64
-	} else {
-		MESHLITE_DIR = thirdparty/meshlite/meshlite_unstable_vc14_x86
-	}
-	MESHLITE_LIBNAME = meshlite_ffi.dll
 	GMP_LIBNAME = libgmp-10
 	MPFR_LIBNAME = libmpfr-4
 	CGAL_LIBNAME = CGAL-vc140-mt-4.11.1
@@ -400,8 +407,6 @@ win32 {
 }
 
 macx {
-	MESHLITE_DIR = thirdparty/meshlite
-	MESHLITE_LIBNAME = meshlite_ffi
 	GMP_LIBNAME = gmp
 	MPFR_LIBNAME = mpfr
 	CGAL_LIBNAME = cgal
@@ -416,8 +421,6 @@ macx {
 }
 
 unix:!macx {
-	MESHLITE_DIR = thirdparty/meshlite
-	MESHLITE_LIBNAME = meshlite_ffi
 	GMP_LIBNAME = gmp
 	MPFR_LIBNAME = mpfr
 	CGAL_LIBNAME = CGAL
@@ -430,9 +433,6 @@ unix:!macx {
 	MPFR_INCLUDEDIR = /usr/local/include
 	MPFR_LIBDIR = /usr/local/lib
 }
-
-INCLUDEPATH += $$MESHLITE_DIR
-LIBS += -L$$MESHLITE_DIR -l$$MESHLITE_LIBNAME
 
 INCLUDEPATH += $$BOOST_INCLUDEDIR
 

@@ -21,7 +21,6 @@ struct OutcomeNode
     QUuid mirrorFromPartId;
     QUuid mirroredByPartId;
     BoneMark boneMark;
-    QVector3D baseNormal;
 };
 
 class Outcome
@@ -30,6 +29,7 @@ public:
     std::vector<OutcomeNode> nodes;
     std::vector<std::pair<QVector3D, std::pair<QUuid, QUuid>>> nodeVertices;
     std::vector<QVector3D> vertices;
+    std::vector<std::vector<size_t>> triangleAndQuads;
     std::vector<std::vector<size_t>> triangles;
     std::vector<QVector3D> triangleNormals;
     

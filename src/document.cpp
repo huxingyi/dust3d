@@ -1476,14 +1476,7 @@ void Document::generateMesh()
     toSnapshot(snapshot);
     resetDirtyFlags();
     m_meshGenerator = new MeshGenerator(snapshot);
-    m_meshGenerator->setSmoothNormal(m_smoothNormal);
-    m_meshGenerator->setWeldEnabled(weldEnabled);
     m_meshGenerator->setGeneratedCacheContext(&m_generatedCacheContext);
-    if (nullptr != m_sharedContextWidget)
-        m_meshGenerator->setSharedContextWidget(m_sharedContextWidget);
-    for (auto &part: partMap) {
-        m_meshGenerator->addPartPreviewRequirement(part.first);
-    }
     m_meshGenerator->moveToThread(thread);
     connect(thread, &QThread::started, m_meshGenerator, &MeshGenerator::process);
     connect(m_meshGenerator, &MeshGenerator::finished, this, &Document::meshReady);

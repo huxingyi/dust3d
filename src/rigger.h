@@ -18,7 +18,6 @@ public:
     SkeletonSide boneSide;
     QVector3D bonePosition;
     float nodeRadius = 0;
-    QVector3D baseNormal;
     std::set<MeshSplitterTriangle> markTriangles;
     const std::set<MeshSplitterTriangle> &bigGroup() const
     {
@@ -124,8 +123,7 @@ class Rigger : public QObject
 public:
     Rigger(const std::vector<QVector3D> &verticesPositions,
         const std::set<MeshSplitterTriangle> &inputTriangles);
-    bool addMarkGroup(BoneMark boneMark, SkeletonSide boneSide, QVector3D bonePosition, float nodeRadius, QVector3D baseNormal,
-        const std::set<MeshSplitterTriangle> &markTriangles);
+    bool addMarkGroup(BoneMark boneMark, SkeletonSide boneSide, QVector3D bonePosition, float nodeRadius, const std::set<MeshSplitterTriangle> &markTriangles);
     const std::vector<std::pair<QtMsgType, QString>> &messages();
     const std::vector<RiggerBone> &resultBones();
     const std::map<int, RiggerVertexWeights> &resultWeights();

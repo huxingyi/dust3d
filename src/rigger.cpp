@@ -71,8 +71,7 @@ bool Rigger::calculateBodyTriangles(std::set<MeshSplitterTriangle> &bodyTriangle
     return true;
 }
 
-bool Rigger::addMarkGroup(BoneMark boneMark, SkeletonSide boneSide, QVector3D bonePosition, float nodeRadius, QVector3D baseNormal,
-        const std::set<MeshSplitterTriangle> &markTriangles)
+bool Rigger::addMarkGroup(BoneMark boneMark, SkeletonSide boneSide, QVector3D bonePosition, float nodeRadius, const std::set<MeshSplitterTriangle> &markTriangles)
 {
     m_marks.push_back(RiggerMark());
 
@@ -81,7 +80,6 @@ bool Rigger::addMarkGroup(BoneMark boneMark, SkeletonSide boneSide, QVector3D bo
     mark.boneSide = boneSide;
     mark.bonePosition = bonePosition;
     mark.nodeRadius = nodeRadius;
-    mark.baseNormal = baseNormal;
     mark.markTriangles = markTriangles;
     
     if (isCutOffSplitter(mark.boneMark)) {

@@ -74,7 +74,7 @@ void RigGenerator::generate()
         inputVerticesPositions.push_back(vertex);
     }
     
-    std::map<std::pair<QUuid, QUuid>, std::tuple<BoneMark, SkeletonSide, QVector3D, std::set<MeshSplitterTriangle>, float, QVector3D>> markedNodes;
+    std::map<std::pair<QUuid, QUuid>, std::tuple<BoneMark, SkeletonSide, QVector3D, std::set<MeshSplitterTriangle>, float>> markedNodes;
     for (const auto &bmeshNode: m_outcome->nodes) {
         if (bmeshNode.boneMark == BoneMark::None)
             continue;
@@ -83,7 +83,7 @@ void RigGenerator::generate()
             boneSide = bmeshNode.origin.x() > 0 ? SkeletonSide::Left : SkeletonSide::Right;
         }
         //qDebug() << "Add bone mark:" << BoneMarkToString(bmeshNode.boneMark) << "side:" << SkeletonSideToDispName(boneSide);
-        markedNodes[std::make_pair(bmeshNode.partId, bmeshNode.nodeId)] = std::make_tuple(bmeshNode.boneMark, boneSide, bmeshNode.origin, std::set<MeshSplitterTriangle>(), bmeshNode.radius, bmeshNode.baseNormal);
+        markedNodes[std::make_pair(bmeshNode.partId, bmeshNode.nodeId)] = std::make_tuple(bmeshNode.boneMark, boneSide, bmeshNode.origin, std::set<MeshSplitterTriangle>(), bmeshNode.radius);
     }
     
     for (size_t triangleIndex = 0; triangleIndex < m_outcome->triangles.size(); triangleIndex++) {
@@ -99,19 +99,19 @@ void RigGenerator::generate()
         inputTriangles.insert(newTriangle);
     }
     
-    std::vector<std::tuple<BoneMark, SkeletonSide, QVector3D, std::set<MeshSplitterTriangle>, float, QVector3D>> markedNodesList;
+    std::vector<std::tuple<BoneMark, SkeletonSide, QVector3D, std::set<MeshSplitterTriangle>, float>> markedNodesList;
     for (const auto &markedNode: markedNodes) {
         markedNodesList.push_back(markedNode.second);
     }
     
     // Combine the overlapped marks
-    std::vector<std::tuple<BoneMark, SkeletonSide, QVector3D, std::set<MeshSplitterTriangle>, float, QVector3D>> combinedMarkedNodesList;
+    std::vector<std::tuple<BoneMark, SkeletonSide, QVector3D, std::set<MeshSplitterTriangle>, float>> combinedMarkedNodesList;
     std::set<size_t> processedNodes;
     for (size_t i = 0; i < markedNodesList.size(); ++i) {
         if (processedNodes.find(i) != processedNodes.end())
             continue;
         const auto &first = markedNodesList[i];
-        std::tuple<BoneMark, SkeletonSide, QVector3D, std::set<MeshSplitterTriangle>, float, QVector3D> newNodes;
+        std::tuple<BoneMark, SkeletonSide, QVector3D, std::set<MeshSplitterTriangle>, float> newNodes;
         size_t combinedNum = 1;
         newNodes = first;
         for (size_t j = i + 1; j < markedNodesList.size(); ++j) {
@@ -126,7 +126,6 @@ void RigGenerator::generate()
                     for (const auto &triangle: std::get<3>(second))
                         std::get<3>(newNodes).insert(triangle);
                     std::get<4>(newNodes) += std::get<4>(second);
-                    std::get<5>(newNodes) += std::get<5>(second);
                     ++combinedNum;
                 }
             }
@@ -134,7 +133,6 @@ void RigGenerator::generate()
         if (combinedNum > 1) {
             std::get<2>(newNodes) /= combinedNum;
             std::get<4>(newNodes) /= combinedNum;
-            std::get<5>(newNodes).normalize();
             
             qDebug() << "Combined" << combinedNum << "on mark:" << BoneMarkToString(std::get<0>(newNodes)) << "side:" << SkeletonSideToDispName(std::get<1>(newNodes));
         }
@@ -152,7 +150,6 @@ void RigGenerator::generate()
             m_autoRigger->addMarkGroup(std::get<0>(markedNode), std::get<1>(markedNode),
                 std::get<2>(markedNode),
                 std::get<4>(markedNode),
-                std::get<5>(markedNode),
                 std::get<3>(markedNode));
         }
         m_isSucceed = m_autoRigger->rig();
