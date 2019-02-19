@@ -1,6 +1,6 @@
 #include <nodemesh/recombiner.h>
 #include <nodemesh/positionkey.h>
-#include <nodemesh/util.h>
+#include <nodemesh/misc.h>
 #include <nodemesh/wrapper.h>
 #include <set>
 #include <QDebug>

@@ -1,5 +1,5 @@
 #include <nodemesh/wrapper.h>
-#include <nodemesh/util.h>
+#include <nodemesh/misc.h>
 #include <cmath>
 #include <set>
 
@@ -90,7 +90,7 @@ void Wrapper::addStartup(size_t p1, size_t p2, const QVector3D &baseNormal)
 {
     if (m_items.empty())
         addItem(p1, p2, baseNormal);
-    m_generatedFaceEdgesMap.insert({WrapItemKey {.p1 = p2, .p2 = p1}, {0, false}});
+    m_generatedFaceEdgesMap.insert({WrapItemKey {p2, p1}, {0, false}});
 }
 
 QVector3D Wrapper::calculateFaceVector(size_t p1, size_t p2, const QVector3D &baseNormal)
@@ -112,14 +112,20 @@ void Wrapper::addItem(size_t p1, size_t p2, const QVector3D &baseNormal)
     if (isEdgeGenerated(p1, p2) || isEdgeGenerated(p2, p1))
         return;
     auto index = m_items.size();
-    m_items.push_back(WrapItem {.p3 = 0, .p1 = p1, .p2 = p2, .baseNormal = baseNormal, .processed = false});
-    m_itemsMap.insert({WrapItemKey {.p1 = p1, .p2 = p2}, index});
+    WrapItem item;
+    item.p3 = 0;
+    item.p1 = p1;
+    item.p2 = p2;
+    item.baseNormal = baseNormal;
+    item.processed = false;
+    m_items.push_back(item);
+    m_itemsMap.insert({WrapItemKey {p1, p2}, index});
     m_itemsList.push_front(index);
 }
 
 std::pair<size_t, bool> Wrapper::findItem(size_t p1, size_t p2)
 {
-    auto key = WrapItemKey {.p1 = p1, .p2 = p2};
+    auto key = WrapItemKey {p1, p2};
     auto findResult = m_itemsMap.find(key);
     if (findResult == m_itemsMap.end()) {
         return {0, false};
@@ -129,7 +135,7 @@ std::pair<size_t, bool> Wrapper::findItem(size_t p1, size_t p2)
 
 bool Wrapper::isEdgeGenerated(size_t p1, size_t p2)
 {
-    auto key = WrapItemKey {.p1 = p1, .p2 = p2};
+    auto key = WrapItemKey {p1, p2};
     if (m_generatedFaceEdgesMap.find(key) == m_generatedFaceEdgesMap.end())
         return false;
     return true;
@@ -187,8 +193,8 @@ std::pair<size_t, bool> Wrapper::peekItem()
 
 bool Wrapper::isEdgeClosed(size_t p1, size_t p2)
 {
-    return m_generatedFaceEdgesMap.find(WrapItemKey {.p1 = p1, .p2 = p2}) != m_generatedFaceEdgesMap.end() &&
-        m_generatedFaceEdgesMap.find(WrapItemKey {.p1 = p2, .p2 = p1}) != m_generatedFaceEdgesMap.end();
+    return m_generatedFaceEdgesMap.find(WrapItemKey {p1, p2}) != m_generatedFaceEdgesMap.end() &&
+        m_generatedFaceEdgesMap.find(WrapItemKey {p2, p1}) != m_generatedFaceEdgesMap.end();
 }
 
 bool Wrapper::isVertexClosed(size_t vertexIndex)
@@ -223,12 +229,12 @@ void Wrapper::generate()
                 m_sourceVertices[p2].position,
                 m_sourceVertices[p3].position);
             auto faceIndex = m_generatedFaces.size();
-            m_generatedFaces.push_back(Face3 {.p1 = p1, .p2 = p2, .p3 = p3, .normal = baseNormal, .index = faceIndex});
+            m_generatedFaces.push_back(Face3 {p1, p2, p3, baseNormal, faceIndex});
             addItem(p3, p2, baseNormal);
             addItem(p1, p3, baseNormal);
-            m_generatedFaceEdgesMap.insert({WrapItemKey {.p1 = p1, .p2 = p2}, {faceIndex, true}});
-            m_generatedFaceEdgesMap.insert({WrapItemKey {.p1 = p2, .p2 = p3}, {faceIndex, true}});
-            m_generatedFaceEdgesMap.insert({WrapItemKey {.p1 = p3, .p2 = p1}, {faceIndex, true}});
+            m_generatedFaceEdgesMap.insert({WrapItemKey {p1, p2}, {faceIndex, true}});
+            m_generatedFaceEdgesMap.insert({WrapItemKey {p2, p3}, {faceIndex, true}});
+            m_generatedFaceEdgesMap.insert({WrapItemKey {p3, p1}, {faceIndex, true}});
             m_generatedVertexEdgesMap[p1].push_back(p2);
             m_generatedVertexEdgesMap[p1].push_back(p3);
             m_generatedVertexEdgesMap[p2].push_back(p3);
@@ -255,7 +261,7 @@ std::pair<size_t, bool> Wrapper::findPairFace3(const Face3 &f, std::map<size_t, 
     for (size_t i = 0; i < indices.size(); ++i) {
         auto j = (i + 1) % indices.size();
         auto k = (i + 2) % indices.size();
-        auto findPairedFace3Id = m_generatedFaceEdgesMap.find(WrapItemKey {.p1 = indices[j], .p2 = indices[i]});
+        auto findPairedFace3Id = m_generatedFaceEdgesMap.find(WrapItemKey {indices[j], indices[i]});
         if (findPairedFace3Id != m_generatedFaceEdgesMap.end() && findPairedFace3Id->second.second) {
             auto pairedFace3Id = findPairedFace3Id->second.first;
             if (usedIds.find(pairedFace3Id) != usedIds.end())
@@ -264,7 +270,7 @@ std::pair<size_t, bool> Wrapper::findPairFace3(const Face3 &f, std::map<size_t, 
             if (!almostEqual(pairedFace3.normal, f.normal))
                 continue;
             auto anotherIndex = anotherVertexIndexOfFace3(pairedFace3, indices[j], indices[i]);
-            auto mergedF = Face4 {.p1 = indices[i], .p2 = anotherIndex, .p3 = indices[j], .p4 = indices[k]};
+            auto mergedF = Face4 {indices[i], anotherIndex, indices[j], indices[k]};
             q.push_back(mergedF);
             return {pairedFace3Id, true};
         }

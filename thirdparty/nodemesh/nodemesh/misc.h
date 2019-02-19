@@ -1,5 +1,5 @@
-#ifndef NODEMESH_UTIL_H
-#define NODEMESH_UTIL_H
+#ifndef NODEMESH_MISC_H
+#define NODEMESH_MISC_H
 #include <QVector3D>
 #include <vector>
 #include <set>

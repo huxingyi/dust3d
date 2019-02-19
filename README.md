@@ -61,7 +61,7 @@ If you have done programming code changes, including the example code listed in 
 
 License
 -----------
-Dust3D software binaries and source code use MIT License, which means you can use it freely no matter for personal or for commercial purpose. However, Dust3D's UI built on Qt5, the Mesh Union Algorithm based on CGAL library, and there are other algorithms such as Gift Wrapping, Bmesh, and so on which implemented in the meshlite repository, all these, may have other license restrictions.
+Dust3D software binaries and source code use MIT License, which means you can use it freely no matter for personal or for commercial purpose.
 
 Acknowledgements
 -------------------

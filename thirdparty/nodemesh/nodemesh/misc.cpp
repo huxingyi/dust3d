@@ -1,4 +1,4 @@
-#include <nodemesh/util.h>
+#include <nodemesh/misc.h>
 #include <cmath>
 #include <QFile>
 #include <QTextStream>
@@ -6,25 +6,28 @@
 #include <unordered_set>
 #include <unordered_map>
 
-namespace nodemesh
-{
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
-float radianToDegree(float r)
+using namespace nodemesh;
+
+float nodemesh::radianToDegree(float r)
 {
     return r * 180.0 / M_PI;
 }
 
-float angleBetween(const QVector3D &v1, const QVector3D &v2)
+float nodemesh::angleBetween(const QVector3D &v1, const QVector3D &v2)
 {
     return atan2(QVector3D::crossProduct(v1, v2).length(), QVector3D::dotProduct(v1, v2));
 }
 
-float degreeBetween(const QVector3D &v1, const QVector3D &v2)
+float nodemesh::degreeBetween(const QVector3D &v1, const QVector3D &v2)
 {
     return radianToDegree(angleBetween(v1, v2));
 }
 
-float degreeBetweenIn360(const QVector3D &a, const QVector3D &b, const QVector3D &direct)
+float nodemesh::degreeBetweenIn360(const QVector3D &a, const QVector3D &b, const QVector3D &direct)
 {
     auto angle = radianToDegree(angleBetween(a, b));
     auto c = QVector3D::crossProduct(a, b);
@@ -34,7 +37,7 @@ float degreeBetweenIn360(const QVector3D &a, const QVector3D &b, const QVector3D
     return angle;
 }
 
-QVector3D polygonNormal(const std::vector<QVector3D> &vertices, const std::vector<size_t> &polygon)
+QVector3D nodemesh::polygonNormal(const std::vector<QVector3D> &vertices, const std::vector<size_t> &polygon)
 {
     QVector3D normal;
     for (size_t i = 0; i < polygon.size(); ++i) {
@@ -48,7 +51,7 @@ QVector3D polygonNormal(const std::vector<QVector3D> &vertices, const std::vecto
     return normal.normalized();
 }
 
-bool pointInTriangle(const QVector3D &a, const QVector3D &b, const QVector3D &c, const QVector3D &p)
+bool nodemesh::pointInTriangle(const QVector3D &a, const QVector3D &b, const QVector3D &c, const QVector3D &p)
 {
     auto u = b - a;
     auto v = c - a;
@@ -69,7 +72,7 @@ bool pointInTriangle(const QVector3D &a, const QVector3D &b, const QVector3D &c,
     return r + t <= 1.0;
 }
 
-void triangulate(const std::vector<QVector3D> &vertices, const std::vector<std::vector<size_t>> &faces, std::vector<std::vector<size_t>> &triangles)
+void nodemesh::triangulate(const std::vector<QVector3D> &vertices, const std::vector<std::vector<size_t>> &faces, std::vector<std::vector<size_t>> &triangles)
 {
     std::vector<std::vector<size_t>> rings;
     for (const auto &face: faces) {
@@ -129,7 +132,7 @@ void triangulate(const std::vector<QVector3D> &vertices, const std::vector<std::
     }
 }
 
-void exportMeshAsObj(const std::vector<QVector3D> &vertices, const std::vector<std::vector<size_t>> &faces, const QString &filename, const std::set<size_t> *excludeFacesOfVertices)
+void nodemesh::exportMeshAsObj(const std::vector<QVector3D> &vertices, const std::vector<std::vector<size_t>> &faces, const QString &filename, const std::set<size_t> *excludeFacesOfVertices)
 {
     QFile file(filename);
     if (file.open(QIODevice::WriteOnly)) {
@@ -157,7 +160,7 @@ void exportMeshAsObj(const std::vector<QVector3D> &vertices, const std::vector<s
     }
 }
 
-void exportMeshAsObjWithNormals(const std::vector<QVector3D> &vertices, const std::vector<std::vector<size_t>> &faces, const QString &filename,
+void nodemesh::exportMeshAsObjWithNormals(const std::vector<QVector3D> &vertices, const std::vector<std::vector<size_t>> &faces, const QString &filename,
     const std::vector<QVector3D> &triangleVertexNormals)
 {
     QFile file(filename);
@@ -182,14 +185,14 @@ void exportMeshAsObjWithNormals(const std::vector<QVector3D> &vertices, const st
     }
 }
 
-float areaOfTriangle(const QVector3D &a, const QVector3D &b, const QVector3D &c)
+float nodemesh::areaOfTriangle(const QVector3D &a, const QVector3D &b, const QVector3D &c)
 {
     auto ab = b - a;
     auto ac = c - a;
     return 0.5 * QVector3D::crossProduct(ab, ac).length();
 }
 
-void angleSmooth(const std::vector<QVector3D> &vertices,
+void nodemesh::angleSmooth(const std::vector<QVector3D> &vertices,
     const std::vector<std::vector<size_t>> &triangles,
     const std::vector<QVector3D> &triangleNormals,
     float thresholdAngleDegrees,
@@ -247,7 +250,7 @@ void angleSmooth(const std::vector<QVector3D> &vertices,
         item.normalize();
 }
 
-void recoverQuads(const std::vector<QVector3D> &vertices, const std::vector<std::vector<size_t>> &triangles, const std::set<std::pair<PositionKey, PositionKey>> &sharedQuadEdges, std::vector<std::vector<size_t>> &triangleAndQuads)
+void nodemesh::recoverQuads(const std::vector<QVector3D> &vertices, const std::vector<std::vector<size_t>> &triangles, const std::set<std::pair<PositionKey, PositionKey>> &sharedQuadEdges, std::vector<std::vector<size_t>> &triangleAndQuads)
 {
     std::vector<PositionKey> verticesPositionKeys;
     for (const auto &position: vertices) {
@@ -293,7 +296,7 @@ void recoverQuads(const std::vector<QVector3D> &vertices, const std::vector<std:
     }
 }
 
-size_t weldSeam(const std::vector<QVector3D> &sourceVertices, const std::vector<std::vector<size_t>> &sourceTriangles,
+size_t nodemesh::weldSeam(const std::vector<QVector3D> &sourceVertices, const std::vector<std::vector<size_t>> &sourceTriangles,
     float allowedSmallestDistance, const std::set<PositionKey> &excludePositions,
     std::vector<QVector3D> &destVertices, std::vector<std::vector<size_t>> &destTriangles)
 {
@@ -421,7 +424,7 @@ size_t weldSeam(const std::vector<QVector3D> &sourceVertices, const std::vector<
     return weldedCount;
 }
 
-bool isManifold(const std::vector<std::vector<size_t>> &faces)
+bool nodemesh::isManifold(const std::vector<std::vector<size_t>> &faces)
 {
     std::set<std::pair<size_t, size_t>> halfEdges;
     for (const auto &face: faces) {
@@ -439,7 +442,7 @@ bool isManifold(const std::vector<std::vector<size_t>> &faces)
     return true;
 }
 
-void trim(std::vector<QVector3D> *vertices, bool normalize)
+void nodemesh::trim(std::vector<QVector3D> *vertices, bool normalize)
 {
     float xLow = std::numeric_limits<float>::max();
     float xHigh = std::numeric_limits<float>::lowest();
@@ -487,6 +490,4 @@ void trim(std::vector<QVector3D> *vertices, bool normalize)
             position.setZ((position.z() - zMiddle));
         }
     }
-}
-
 }

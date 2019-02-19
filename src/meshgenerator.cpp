@@ -4,7 +4,7 @@
 #include <QGuiApplication>
 #include <nodemesh/builder.h>
 #include <nodemesh/modifier.h>
-#include <nodemesh/util.h>
+#include <nodemesh/misc.h>
 #include <nodemesh/recombiner.h>
 #include "meshgenerator.h"
 #include "util.h"

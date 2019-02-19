@@ -7,7 +7,7 @@
 #include <nodemesh/stitcher.h>
 #include <nodemesh/box.h>
 #include <nodemesh/combiner.h>
-#include <nodemesh/util.h>
+#include <nodemesh/misc.h>
 
 #define WRAP_STEP_BACK_FACTOR   0.1     // 0.1 ~ 0.9
 #define WRAP_WELD_FACTOR        0.01    // Allowed distance: WELD_FACTOR * radius
@@ -31,9 +31,9 @@ size_t Builder::addNode(const QVector3D &position, float radius, const std::vect
 size_t Builder::addEdge(size_t firstNodeIndex, size_t secondNodeIndex)
 {
     size_t edgeIndex = m_edges.size();
-    m_edges.push_back(Edge {
-        .nodes = {firstNodeIndex, secondNodeIndex}
-    });
+    Edge edge;
+    edge.nodes = {firstNodeIndex, secondNodeIndex};
+    m_edges.push_back(edge);
     m_nodes[firstNodeIndex].edges.push_back(edgeIndex);
     m_nodes[secondNodeIndex].edges.push_back(edgeIndex);
     //qDebug() << "addEdge" << firstNodeIndex << secondNodeIndex;

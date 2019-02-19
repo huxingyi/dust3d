@@ -1,5 +1,5 @@
 #include <nodemesh/combiner.h>
-#include <nodemesh/util.h>
+#include <nodemesh/misc.h>
 #include <nodemesh/positionkey.h>
 #include <nodemesh/cgalmesh.h>
 #include <CGAL/Polygon_mesh_processing/corefinement.h>

@@ -1,5 +1,5 @@
 #include <nodemesh/box.h>
-#include <nodemesh/util.h>
+#include <nodemesh/misc.h>
 #include <nodemesh/cgalmesh.h>
 #include <CGAL/Simple_cartesian.h>
 #include <CGAL/subdivision_method_3.h>

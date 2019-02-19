@@ -305,8 +305,8 @@ HEADERS += thirdparty/nodemesh/nodemesh/builder.h
 SOURCES += thirdparty/nodemesh/nodemesh/combiner.cpp
 HEADERS += thirdparty/nodemesh/nodemesh/combiner.h
 
-SOURCES += thirdparty/nodemesh/nodemesh/util.cpp
-HEADERS += thirdparty/nodemesh/nodemesh/util.h
+SOURCES += thirdparty/nodemesh/nodemesh/misc.cpp
+HEADERS += thirdparty/nodemesh/nodemesh/misc.h
 
 SOURCES += thirdparty/nodemesh/nodemesh/positionkey.cpp
 HEADERS += thirdparty/nodemesh/nodemesh/positionkey.h

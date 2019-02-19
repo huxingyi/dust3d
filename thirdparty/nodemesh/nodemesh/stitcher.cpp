@@ -1,5 +1,5 @@
 #include <nodemesh/stitcher.h>
-#include <nodemesh/util.h>
+#include <nodemesh/misc.h>
 #include <memory>
 #include <QDebug>
 
