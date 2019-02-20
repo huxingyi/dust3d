@@ -409,6 +409,53 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
     return mesh;
 }
 
+const std::map<QString, QString> *MeshGenerator::findComponent(const QString &componentIdString)
+{
+    const std::map<QString, QString> *component = &m_snapshot->rootComponent;
+    if (componentIdString != QUuid().toString()) {
+        auto findComponent = m_snapshot->components.find(componentIdString);
+        if (findComponent == m_snapshot->components.end()) {
+            qDebug() << "Component not found:" << componentIdString;
+            return nullptr;
+        }
+        return &findComponent->second;
+    }
+    return component;
+}
+
+CombineMode MeshGenerator::componentCombineMode(const std::map<QString, QString> *component)
+{
+    if (nullptr == component)
+        return CombineMode::Normal;
+    CombineMode combineMode = CombineModeFromString(valueOfKeyInMapOrEmpty(*component, "combineMode").toUtf8().constData());
+    if (combineMode == CombineMode::Normal) {
+        if (isTrueValueString(valueOfKeyInMapOrEmpty(*component, "inverse")))
+            combineMode = CombineMode::Inversion;
+    }
+    return combineMode;
+}
+
+QString MeshGenerator::componentColorName(const std::map<QString, QString> *component)
+{
+    if (nullptr == component)
+        return QString();
+    QString linkDataType = valueOfKeyInMapOrEmpty(*component, "linkDataType");
+    if ("partId" == linkDataType) {
+        QString partIdString = valueOfKeyInMapOrEmpty(*component, "linkData");
+        auto findPart = m_snapshot->parts.find(partIdString);
+        if (findPart == m_snapshot->parts.end()) {
+            qDebug() << "Find part failed:" << partIdString;
+            return QString();
+        }
+        auto &part = findPart->second;
+        QString colorName = valueOfKeyInMapOrEmpty(part, "color");
+        if (colorName.isEmpty())
+            return QString("-");
+        return colorName;
+    }
+    return QString();
+}
+
 nodemesh::Combiner::Mesh *MeshGenerator::combineComponentMesh(const QString &componentIdString, CombineMode *combineMode)
 {
     nodemesh::Combiner::Mesh *mesh = nullptr;
@@ -425,11 +472,7 @@ nodemesh::Combiner::Mesh *MeshGenerator::combineComponentMesh(const QString &com
         component = &findComponent->second;
     }
 
-    *combineMode = CombineModeFromString(valueOfKeyInMapOrEmpty(*component, "combineMode").toUtf8().constData());
-    if (*combineMode == CombineMode::Normal) {
-        if (isTrueValueString(valueOfKeyInMapOrEmpty(*component, "inverse")))
-            *combineMode = CombineMode::Inversion;
-    }
+    *combineMode = componentCombineMode(component);
     
     auto &componentCache = m_cacheContext->components[componentIdString];
     
@@ -462,56 +505,74 @@ nodemesh::Combiner::Mesh *MeshGenerator::combineComponentMesh(const QString &com
         for (const auto &it: partCache.outcomeNodeVertices)
             componentCache.outcomeNodeVertices.push_back(it);
     } else {
+        std::vector<std::pair<CombineMode, std::vector<std::pair<QString, QString>>>> combineGroups;
+        // Firstly, group by combine mode
+        int currentGroupIndex = -1;
+        auto lastCombineMode = CombineMode::Count;
         for (const auto &childIdString: valueOfKeyInMapOrEmpty(*component, "children").split(",")) {
             if (childIdString.isEmpty())
                 continue;
-            CombineMode childCombineMode = CombineMode::Normal;
-            nodemesh::Combiner::Mesh *subMesh = combineComponentMesh(childIdString, &childCombineMode);
-            
-            const auto &childComponentCache = m_cacheContext->components[childIdString];
-            for (const auto &vertex: childComponentCache.noneSeamVertices)
-                componentCache.noneSeamVertices.insert(vertex);
-            for (const auto &it: childComponentCache.sharedQuadEdges)
-                componentCache.sharedQuadEdges.insert(it);
-            for (const auto &it: childComponentCache.outcomeNodes)
-                componentCache.outcomeNodes.push_back(it);
-            for (const auto &it: childComponentCache.outcomeNodeVertices)
-                componentCache.outcomeNodeVertices.push_back(it);
-            
-            qDebug() << "Combine mode:" << CombineModeToString(childCombineMode);
-            if (nullptr == subMesh) {
-                m_isSucceed = false;
-                qDebug() << "Child mesh is null";
+            const auto &child = findComponent(childIdString);
+            QString colorName = componentColorName(child);
+            auto combineMode = componentCombineMode(child);
+            if (lastCombineMode != combineMode || lastCombineMode == CombineMode::Inversion) {
+                qDebug() << "New group[" << currentGroupIndex << "] for combine mode[" << CombineModeToString(combineMode) << "]";
+                combineGroups.push_back({combineMode, {}});
+                ++currentGroupIndex;
+                lastCombineMode = combineMode;
+            }
+            if (-1 == currentGroupIndex) {
+                qDebug() << "Should not happen: -1 == currentGroupIndex";
                 continue;
             }
-            if (subMesh->isNull()) {
-                m_isSucceed = false;
-                qDebug() << "Child mesh is uncombinable";
-                delete subMesh;
-                continue;
-            }
-            if (nullptr == mesh) {
-                if (childCombineMode == CombineMode::Inversion) {
-                    delete subMesh;
-                } else {
-                    mesh = subMesh;
-                }
-            } else {
-                nodemesh::Combiner::Mesh *newMesh = combineTwoMeshes(*mesh,
-                    *subMesh,
-                    childCombineMode == CombineMode::Inversion ?
-                        nodemesh::Combiner::Method::Diff : nodemesh::Combiner::Method::Union);
-                delete subMesh;
-                if (newMesh && !newMesh->isNull()) {
-                    delete mesh;
-                    mesh = newMesh;
-                } else {
-                    m_isSucceed = false;
-                    qDebug() << "Mesh combine failed";
-                    delete newMesh;
-                }
-            }
+            combineGroups[currentGroupIndex].second.push_back({childIdString, colorName});
         }
+        // Secondly, sub group by color
+        std::vector<std::pair<nodemesh::Combiner::Mesh *, CombineMode>> groupMeshes;
+        for (const auto &group: combineGroups) {
+            std::set<size_t> used;
+            std::vector<std::vector<QString>> componentIdStrings;
+            int currentSubGroupIndex = -1;
+            auto lastColorName = QString();
+            for (size_t i = 0; i < group.second.size(); ++i) {
+                if (used.find(i) != used.end())
+                    continue;
+                const auto &colorName = group.second[i].second;
+                if (lastColorName != colorName || lastColorName.isEmpty()) {
+                    qDebug() << "New sub group[" << currentSubGroupIndex << "] for color[" << colorName << "]";
+                    componentIdStrings.push_back({});
+                    ++currentSubGroupIndex;
+                    lastColorName = colorName;
+                }
+                if (-1 == currentSubGroupIndex) {
+                    qDebug() << "Should not happen: -1 == currentSubGroupIndex";
+                    continue;
+                }
+                used.insert(i);
+                componentIdStrings[currentSubGroupIndex].push_back(group.second[i].first);
+                if (colorName.isEmpty())
+                    continue;
+                for (size_t j = i + 1; j < group.second.size(); ++j) {
+                    if (used.find(j) != used.end())
+                        continue;
+                    const auto &otherColorName = group.second[j].second;
+                    if (otherColorName.isEmpty())
+                        continue;
+                    if (otherColorName != colorName)
+                        continue;
+                    used.insert(j);
+                    componentIdStrings[currentSubGroupIndex].push_back(group.second[j].first);
+                }
+            }
+            std::vector<std::pair<nodemesh::Combiner::Mesh *, CombineMode>> multipleMeshes;
+            for (const auto &it: componentIdStrings) {
+                nodemesh::Combiner::Mesh *childMesh = combineComponentChildGroupMesh(it, componentCache);
+                multipleMeshes.push_back({childMesh, CombineMode::Normal});
+            }
+            nodemesh::Combiner::Mesh *subGroupMesh = combineMultipleMeshes(multipleMeshes, false);
+            groupMeshes.push_back({subGroupMesh, group.first});
+        }
+        mesh = combineMultipleMeshes(groupMeshes, false);
     }
     
     if (nullptr != mesh)
@@ -525,8 +586,75 @@ nodemesh::Combiner::Mesh *MeshGenerator::combineComponentMesh(const QString &com
     return mesh;
 }
 
+nodemesh::Combiner::Mesh *MeshGenerator::combineMultipleMeshes(const std::vector<std::pair<nodemesh::Combiner::Mesh *, CombineMode>> &multipleMeshes, bool recombine)
+{
+    nodemesh::Combiner::Mesh *mesh = nullptr;
+    for (const auto &it: multipleMeshes) {
+        const auto &childCombineMode = it.second;
+        nodemesh::Combiner::Mesh *subMesh = it.first;
+        qDebug() << "Combine mode:" << CombineModeToString(childCombineMode);
+        if (nullptr == subMesh) {
+            m_isSucceed = false;
+            qDebug() << "Child mesh is null";
+            continue;
+        }
+        if (subMesh->isNull()) {
+            m_isSucceed = false;
+            qDebug() << "Child mesh is uncombinable";
+            delete subMesh;
+            continue;
+        }
+        if (nullptr == mesh) {
+            //if (childCombineMode == CombineMode::Inversion) {
+            //    delete subMesh;
+            //} else {
+                mesh = subMesh;
+            //}
+        } else {
+            nodemesh::Combiner::Mesh *newMesh = combineTwoMeshes(*mesh,
+                *subMesh,
+                childCombineMode == CombineMode::Inversion ?
+                    nodemesh::Combiner::Method::Diff : nodemesh::Combiner::Method::Union,
+                recombine);
+            delete subMesh;
+            if (newMesh && !newMesh->isNull()) {
+                delete mesh;
+                mesh = newMesh;
+            } else {
+                m_isSucceed = false;
+                qDebug() << "Mesh combine failed";
+                delete newMesh;
+            }
+        }
+    }
+    return mesh;
+}
+
+nodemesh::Combiner::Mesh *MeshGenerator::combineComponentChildGroupMesh(const std::vector<QString> &componentIdStrings, GeneratedComponent &componentCache)
+{
+    std::vector<std::pair<nodemesh::Combiner::Mesh *, CombineMode>> multipleMeshes;
+    for (const auto &childIdString: componentIdStrings) {
+        CombineMode childCombineMode = CombineMode::Normal;
+        nodemesh::Combiner::Mesh *subMesh = combineComponentMesh(childIdString, &childCombineMode);
+    
+        const auto &childComponentCache = m_cacheContext->components[childIdString];
+        for (const auto &vertex: childComponentCache.noneSeamVertices)
+            componentCache.noneSeamVertices.insert(vertex);
+        for (const auto &it: childComponentCache.sharedQuadEdges)
+            componentCache.sharedQuadEdges.insert(it);
+        for (const auto &it: childComponentCache.outcomeNodes)
+            componentCache.outcomeNodes.push_back(it);
+        for (const auto &it: childComponentCache.outcomeNodeVertices)
+            componentCache.outcomeNodeVertices.push_back(it);
+    
+        multipleMeshes.push_back({subMesh, childCombineMode});
+    }
+    return combineMultipleMeshes(multipleMeshes);
+}
+
 nodemesh::Combiner::Mesh *MeshGenerator::combineTwoMeshes(const nodemesh::Combiner::Mesh &first, const nodemesh::Combiner::Mesh &second,
-    nodemesh::Combiner::Method method)
+    nodemesh::Combiner::Method method,
+    bool recombine)
 {
     if (first.isNull() || second.isNull())
         return nullptr;
@@ -537,7 +665,7 @@ nodemesh::Combiner::Mesh *MeshGenerator::combineTwoMeshes(const nodemesh::Combin
         &combinedVerticesSources);
     if (nullptr == newMesh)
         return nullptr;
-    if (!newMesh->isNull()) {
+    if (!newMesh->isNull() && recombine) {
         nodemesh::Recombiner recombiner;
         std::vector<QVector3D> combinedVertices;
         std::vector<std::vector<size_t>> combinedFaces;
@@ -686,7 +814,7 @@ void MeshGenerator::generate()
                 combinedVertices[face[2]]
             ));
         }
-
+        
         recoverQuads(combinedVertices, combinedFaces, componentCache.sharedQuadEdges, m_outcome->triangleAndQuads);
         
         m_outcome->nodes = componentCache.outcomeNodes;
@@ -698,6 +826,19 @@ void MeshGenerator::generate()
         std::vector<std::pair<QUuid, QUuid>> sourceNodes;
         triangleSourceNodeResolve(*m_outcome, sourceNodes);
         m_outcome->setTriangleSourceNodes(sourceNodes);
+        
+        std::map<std::pair<QUuid, QUuid>, QColor> sourceNodeToColorMap;
+        for (const auto &node: m_outcome->nodes)
+            sourceNodeToColorMap.insert({{node.partId, node.nodeId}, node.color});
+        
+        m_outcome->triangleColors.resize(m_outcome->triangles.size(), Qt::white);
+        const std::vector<std::pair<QUuid, QUuid>> *triangleSourceNodes = m_outcome->triangleSourceNodes();
+        if (nullptr != triangleSourceNodes) {
+            for (size_t triangleIndex = 0; triangleIndex < m_outcome->triangles.size(); triangleIndex++) {
+                const auto &source = (*triangleSourceNodes)[triangleIndex];
+                m_outcome->triangleColors[triangleIndex] = sourceNodeToColorMap[source];
+            }
+        }
         
         std::vector<std::vector<QVector3D>> triangleVertexNormals;
         generateSmoothTriangleVertexNormals(combinedVertices,

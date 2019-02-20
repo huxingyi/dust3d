@@ -93,10 +93,17 @@ private:
     void collectSharedQuadEdges(const std::vector<QVector3D> &vertices, const std::vector<std::vector<size_t>> &faces,
         std::set<std::pair<nodemesh::PositionKey, nodemesh::PositionKey>> *sharedQuadEdges);
     nodemesh::Combiner::Mesh *combineTwoMeshes(const nodemesh::Combiner::Mesh &first, const nodemesh::Combiner::Mesh &second,
-        nodemesh::Combiner::Method method);
+        nodemesh::Combiner::Method method,
+        bool recombine=true);
     void generateSmoothTriangleVertexNormals(const std::vector<QVector3D> &vertices, const std::vector<std::vector<size_t>> &triangles,
         const std::vector<QVector3D> &triangleNormals,
         std::vector<std::vector<QVector3D>> *triangleVertexNormals);
+    const std::map<QString, QString> *findComponent(const QString &componentIdString);
+    CombineMode componentCombineMode(const std::map<QString, QString> *component);
+    nodemesh::Combiner::Mesh *combineComponentChildGroupMesh(const std::vector<QString> &componentIdStrings,
+        GeneratedComponent &componentCache);
+    nodemesh::Combiner::Mesh *combineMultipleMeshes(const std::vector<std::pair<nodemesh::Combiner::Mesh *, CombineMode>> &multipleMeshes, bool recombine=true);
+    QString componentColorName(const std::map<QString, QString> *component);
 };
 
 #endif

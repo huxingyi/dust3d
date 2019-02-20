@@ -320,7 +320,7 @@ void PartWidget::showColorSettingPopup(const QPoint &pos)
     QPushButton *pickButton = new QPushButton();
     initToolButtonWithoutFont(pickButton);
     QPalette palette = pickButton->palette();
-    QColor choosenColor = part->hasColor ? part->color : Theme::white;
+    QColor choosenColor = part->hasColor ? part->color : Qt::white;
     palette.setColor(QPalette::Window, choosenColor);
     palette.setColor(QPalette::Button, choosenColor);
     pickButton->setPalette(palette);
@@ -331,7 +331,7 @@ void PartWidget::showColorSettingPopup(const QPoint &pos)
     colorLayout->addStretch();
     
     connect(colorEraser, &QPushButton::clicked, [=]() {
-        emit setPartColorState(m_partId, false, Theme::white);
+        emit setPartColorState(m_partId, false, Qt::white);
         emit groupOperationAdded();
     });
     

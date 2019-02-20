@@ -14,7 +14,7 @@ ModelMeshBinder::ModelMeshBinder() :
     m_renderTriangleVertexCount(0),
     m_renderEdgeVertexCount(0),
     m_newMeshComing(false),
-    m_showWireframes(false),
+    m_showWireframes(true),
     m_hasTexture(false),
     m_texture(nullptr),
     m_hasNormalMap(false),

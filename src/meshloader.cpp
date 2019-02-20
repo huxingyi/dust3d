@@ -112,6 +112,7 @@ MeshLoader::MeshLoader(Outcome &outcome) :
     const QVector2D defaultUv = QVector2D(0, 0);
     const QVector3D defaultTangent = QVector3D(0, 0, 0);
     for (size_t i = 0; i < outcome.triangles.size(); ++i) {
+        const auto &triangleColor = &outcome.triangleColors[i];
         for (auto j = 0; j < 3; j++) {
             int vertexIndex = outcome.triangles[i][j];
             const QVector3D *srcVert = &outcome.vertices[vertexIndex];
@@ -125,9 +126,9 @@ MeshLoader::MeshLoader(Outcome &outcome) :
             if (triangleTangents)
                 srcTangent = &(*triangleTangents)[i];
             Vertex *dest = &m_triangleVertices[destIndex];
-            dest->colorR = 0;
-            dest->colorG = 0;
-            dest->colorB = 0;
+            dest->colorR = triangleColor->redF();
+            dest->colorG = triangleColor->greenF();
+            dest->colorB = triangleColor->blueF();
             dest->posX = srcVert->x();
             dest->posY = srcVert->y();
             dest->posZ = srcVert->z();
@@ -144,6 +145,37 @@ MeshLoader::MeshLoader(Outcome &outcome) :
             destIndex++;
         }
     }
+    
+    // Uncomment out to show wireframes
+    /*
+    size_t edgeCount = 0;
+    for (const auto &face: outcome.triangleAndQuads) {
+        edgeCount += face.size();
+    }
+    m_edgeVertexCount = edgeCount * 2;
+    m_edgeVertices = new Vertex[m_edgeVertexCount];
+    size_t edgeVertexIndex = 0;
+    for (size_t faceIndex = 0; faceIndex < outcome.triangleAndQuads.size(); ++faceIndex) {
+        const auto &face = outcome.triangleAndQuads[faceIndex];
+        for (size_t i = 0; i < face.size(); ++i) {
+            for (size_t x = 0; x < 2; ++x) {
+                size_t sourceIndex = face[(i + x) % face.size()];
+                const QVector3D *srcVert = &outcome.vertices[sourceIndex];
+                Vertex *dest = &m_edgeVertices[edgeVertexIndex];
+                memset(dest, 0, sizeof(Vertex));
+                dest->colorR = 0.0;
+                dest->colorG = 0.0;
+                dest->colorB = 0.0;
+                dest->posX = srcVert->x();
+                dest->posY = srcVert->y();
+                dest->posZ = srcVert->z();
+                dest->metalness = m_defaultMetalness;
+                dest->roughness = m_defaultRoughness;
+                edgeVertexIndex++;
+            }
+        }
+    }
+    */
 }
 
 MeshLoader::MeshLoader() :

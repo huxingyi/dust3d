@@ -32,6 +32,7 @@ public:
     std::vector<std::vector<size_t>> triangleAndQuads;
     std::vector<std::vector<size_t>> triangles;
     std::vector<QVector3D> triangleNormals;
+    std::vector<QColor> triangleColors;
     
     const std::vector<std::pair<QUuid, QUuid>> *triangleSourceNodes() const
     {
