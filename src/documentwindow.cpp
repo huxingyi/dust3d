@@ -160,13 +160,13 @@ DocumentWindow::DocumentWindow() :
     Theme::initAwesomeButton(m_radiusLockButton);
     updateRadiusLockButtonState();
     
-    QPushButton *rotateCounterclockwiseButton = new QPushButton(QChar(fa::rotateleft));
-    rotateCounterclockwiseButton->setToolTip(tr("Rotate whole model (CCW)"));
-    Theme::initAwesomeButton(rotateCounterclockwiseButton);
+    //QPushButton *rotateCounterclockwiseButton = new QPushButton(QChar(fa::rotateleft));
+    //rotateCounterclockwiseButton->setToolTip(tr("Rotate whole model (CCW)"));
+    //Theme::initAwesomeButton(rotateCounterclockwiseButton);
     
-    QPushButton *rotateClockwiseButton = new QPushButton(QChar(fa::rotateright));
-    rotateClockwiseButton->setToolTip(tr("Rotate whole model"));
-    Theme::initAwesomeButton(rotateClockwiseButton);
+    //QPushButton *rotateClockwiseButton = new QPushButton(QChar(fa::rotateright));
+    //rotateClockwiseButton->setToolTip(tr("Rotate whole model"));
+    //Theme::initAwesomeButton(rotateClockwiseButton);
     
     auto updateRegenerateIconAndTips = [&](SpinnableAwesomeButton *regenerateButton, bool isSucceed, bool forceUpdate=false) {
         if (!forceUpdate) {
@@ -208,9 +208,9 @@ DocumentWindow::DocumentWindow() :
     toolButtonLayout->addWidget(m_zlockButton);
     toolButtonLayout->addWidget(m_radiusLockButton);
     toolButtonLayout->addSpacing(10);
-    toolButtonLayout->addWidget(rotateCounterclockwiseButton);
-    toolButtonLayout->addWidget(rotateClockwiseButton);
-    toolButtonLayout->addSpacing(10);
+    //toolButtonLayout->addWidget(rotateCounterclockwiseButton);
+    //toolButtonLayout->addWidget(rotateClockwiseButton);
+    //toolButtonLayout->addSpacing(10);
     toolButtonLayout->addWidget(regenerateButton);
     
 
@@ -678,8 +678,8 @@ DocumentWindow::DocumentWindow() :
     connect(m_document, &Document::turnaroundChanged,
         graphicsWidget, &SkeletonGraphicsWidget::turnaroundChanged);
 
-    connect(rotateCounterclockwiseButton, &QPushButton::clicked, graphicsWidget, &SkeletonGraphicsWidget::rotateAllMainProfileCounterclockwise90DegreeAlongOrigin);
-    connect(rotateClockwiseButton, &QPushButton::clicked, graphicsWidget, &SkeletonGraphicsWidget::rotateAllMainProfileClockwise90DegreeAlongOrigin);
+    //connect(rotateCounterclockwiseButton, &QPushButton::clicked, graphicsWidget, &SkeletonGraphicsWidget::rotateAllMainProfileCounterclockwise90DegreeAlongOrigin);
+    //connect(rotateClockwiseButton, &QPushButton::clicked, graphicsWidget, &SkeletonGraphicsWidget::rotateAllMainProfileClockwise90DegreeAlongOrigin);
 
     connect(addButton, &QPushButton::clicked, [=]() {
         m_document->setEditMode(SkeletonDocumentEditMode::Add);
