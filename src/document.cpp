@@ -859,7 +859,8 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
             part["xMirrored"] = partIt.second.xMirrored ? "true" : "false";
             part["zMirrored"] = partIt.second.zMirrored ? "true" : "false";
             part["rounded"] = partIt.second.rounded ? "true" : "false";
-            part["wrapped"] = partIt.second.wrapped ? "true" : "false";
+            if (partIt.second.cutRotationAdjusted())
+                part["cutRotation"] = QString::number(partIt.second.cutRotation);
             part["dirty"] = partIt.second.dirty ? "true" : "false";
             if (partIt.second.hasColor)
                 part["color"] = partIt.second.color.name();
@@ -1114,7 +1115,9 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
         part.xMirrored = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "xMirrored"));
         part.zMirrored = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "zMirrored"));
         part.rounded = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "rounded"));
-        part.wrapped = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "wrapped"));
+        const auto &cutRotationIt = partKv.second.find("cutRotation");
+        if (cutRotationIt != partKv.second.end())
+            part.setCutRotation(cutRotationIt->second.toFloat());
         if (isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "inverse")))
             inversePartIds.insert(part.id);
         const auto &colorIt = partKv.second.find("color");
@@ -2190,18 +2193,16 @@ void Document::setPartRoundState(QUuid partId, bool rounded)
     emit skeletonChanged();
 }
 
-void Document::setPartWrapState(QUuid partId, bool wrapped)
+void Document::setPartCutRotation(QUuid partId, float cutRotation)
 {
     auto part = partMap.find(partId);
     if (part == partMap.end()) {
         qDebug() << "Part not found:" << partId;
         return;
     }
-    if (part->second.wrapped == wrapped)
-        return;
-    part->second.wrapped = wrapped;
+    part->second.setCutRotation(cutRotation);
     part->second.dirty = true;
-    emit partWrapStateChanged(partId);
+    emit partCutRotationChanged(partId);
     emit skeletonChanged();
 }
 

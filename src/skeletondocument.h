@@ -83,7 +83,7 @@ public:
     QUuid componentId;
     std::vector<QUuid> nodeIds;
     bool dirty;
-    bool wrapped;
+    float cutRotation;
     QUuid materialId;
     SkeletonPart(const QUuid &withId=QUuid()) :
         visible(true),
@@ -98,7 +98,7 @@ public:
         color(Theme::white),
         hasColor(false),
         dirty(true),
-        wrapped(false)
+        cutRotation(0.0)
     {
         id = withId.isNull() ? QUuid::createUuid() : withId;
     }
@@ -118,6 +118,14 @@ public:
             toWidth = 2;
         deformWidth = toWidth;
     }
+    void setCutRotation(float toRotation)
+    {
+        if (toRotation < -1)
+            toRotation = -1;
+        else if (toRotation > 1)
+            toRotation = 1;
+        cutRotation = toRotation;
+    }
     bool deformThicknessAdjusted() const
     {
         return fabs(deformThickness - 1.0) >= 0.01;
@@ -129,6 +137,10 @@ public:
     bool deformAdjusted() const
     {
         return deformThicknessAdjusted() || deformWidthAdjusted();
+    }
+    bool cutRotationAdjusted() const
+    {
+        return fabs(cutRotation - 0.0) >= 0.01;
     }
     bool materialAdjusted() const
     {
@@ -151,7 +163,7 @@ public:
         rounded = other.rounded;
         color = other.color;
         hasColor = other.hasColor;
-        wrapped = other.wrapped;
+        cutRotation = other.cutRotation;
         componentId = other.componentId;
         dirty = other.dirty;
         materialId = other.materialId;

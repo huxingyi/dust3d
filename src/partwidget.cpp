@@ -60,10 +60,10 @@ PartWidget::PartWidget(const Document *document, QUuid partId) :
     m_colorButton->setSizePolicy(retainSizePolicy);
     initButton(m_colorButton);
     
-    m_wrapButton = new QPushButton;
-    m_wrapButton->setToolTip(tr("Toggle convex wrap"));
-    m_wrapButton->setSizePolicy(retainSizePolicy);
-    initButton(m_wrapButton);
+    m_cutButton = new QPushButton;
+    m_cutButton->setToolTip(tr("Rotation"));
+    m_cutButton->setSizePolicy(retainSizePolicy);
+    initButton(m_cutButton);
     
     m_previewWidget = new ModelWidget;
     m_previewWidget->setAttribute(Qt::WA_TransparentForMouseEvents);
@@ -90,14 +90,14 @@ PartWidget::PartWidget(const Document *document, QUuid partId) :
     int col = 0;
     toolsLayout->addWidget(m_lockButton, row, col++, Qt::AlignBottom);
     toolsLayout->addWidget(m_disableButton, row, col++, Qt::AlignBottom);
-    toolsLayout->addWidget(m_wrapButton, row, col++, Qt::AlignBottom);
+    toolsLayout->addWidget(m_xMirrorButton, row, col++, Qt::AlignBottom);
     toolsLayout->addWidget(m_colorButton, row, col++, Qt::AlignBottom);
     row++;
     col = 0;
     toolsLayout->addWidget(m_subdivButton, row, col++, Qt::AlignTop);
-    toolsLayout->addWidget(m_deformButton, row, col++, Qt::AlignTop);
-    toolsLayout->addWidget(m_xMirrorButton, row, col++, Qt::AlignTop);
+    toolsLayout->addWidget(m_cutButton, row, col++, Qt::AlignTop);
     toolsLayout->addWidget(m_roundButton, row, col++, Qt::AlignTop);
+    toolsLayout->addWidget(m_deformButton, row, col++, Qt::AlignTop);
     
     m_visibleButton->setContentsMargins(0, 0, 0, 0);
     
@@ -143,7 +143,7 @@ PartWidget::PartWidget(const Document *document, QUuid partId) :
     connect(this, &PartWidget::setPartDeformThickness, m_document, &Document::setPartDeformThickness);
     connect(this, &PartWidget::setPartDeformWidth, m_document, &Document::setPartDeformWidth);
     connect(this, &PartWidget::setPartRoundState, m_document, &Document::setPartRoundState);
-    connect(this, &PartWidget::setPartWrapState, m_document, &Document::setPartWrapState);
+    connect(this, &PartWidget::setPartCutRotation, m_document, &Document::setPartCutRotation);
     connect(this, &PartWidget::setPartColorState, m_document, &Document::setPartColorState);
     connect(this, &PartWidget::setPartMaterialId, m_document, &Document::setPartMaterialId);
     connect(this, &PartWidget::checkPart, m_document, &Document::checkPart);
@@ -230,14 +230,13 @@ PartWidget::PartWidget(const Document *document, QUuid partId) :
         showColorSettingPopup(mapFromGlobal(QCursor::pos()));
     });
     
-    connect(m_wrapButton, &QPushButton::clicked, [=]() {
+    connect(m_cutButton, &QPushButton::clicked, [=]() {
         const SkeletonPart *part = m_document->findPart(m_partId);
         if (!part) {
             qDebug() << "Part not found:" << m_partId;
             return;
         }
-        emit setPartWrapState(m_partId, !part->wrapped);
-        emit groupOperationAdded();
+        showCutRotationSettingPopup(mapFromGlobal(QCursor::pos()));
     });
     
     setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
@@ -266,7 +265,7 @@ void PartWidget::updateAllButtons()
     updateDeformButton();
     updateRoundButton();
     updateColorButton();
-    updateWrapButton();
+    updateCutRotationButton();
 }
 
 void PartWidget::updateCheckedState(bool checked)
@@ -369,6 +368,52 @@ void PartWidget::showColorSettingPopup(const QPoint &pos)
     action->setDefaultWidget(popup);
     
     popupMenu.addAction(action);
+    
+    popupMenu.exec(mapToGlobal(pos));
+}
+
+void PartWidget::showCutRotationSettingPopup(const QPoint &pos)
+{
+    QMenu popupMenu;
+    
+    const SkeletonPart *part = m_document->findPart(m_partId);
+    if (!part) {
+        qDebug() << "Find part failed:" << m_partId;
+        return;
+    }
+    
+    QWidget *popup = new QWidget;
+    
+    FloatNumberWidget *rotationWidget = new FloatNumberWidget;
+    rotationWidget->setItemName(tr("Rotation"));
+    rotationWidget->setRange(-1, 1);
+    rotationWidget->setValue(part->cutRotation);
+    
+    connect(rotationWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+        emit setPartCutRotation(m_partId, value);
+        emit groupOperationAdded();
+    });
+    
+    QPushButton *rotationEraser = new QPushButton(QChar(fa::eraser));
+    initToolButton(rotationEraser);
+    
+    connect(rotationEraser, &QPushButton::clicked, [=]() {
+        rotationWidget->setValue(0.0);
+        emit groupOperationAdded();
+    });
+    
+    QVBoxLayout *layout = new QVBoxLayout;
+    QHBoxLayout *rotationLayout = new QHBoxLayout;
+    rotationLayout->addWidget(rotationEraser);
+    rotationLayout->addWidget(rotationWidget);
+    layout->addLayout(rotationLayout);
+    
+    popup->setLayout(layout);
+    
+    QWidgetAction action(this);
+    action.setDefaultWidget(popup);
+    
+    popupMenu.addAction(&action);
     
     popupMenu.exec(mapToGlobal(pos));
 }
@@ -567,17 +612,17 @@ void PartWidget::updateColorButton()
         updateButton(m_colorButton, QChar(fa::eyedropper), false);
 }
 
-void PartWidget::updateWrapButton()
+void PartWidget::updateCutRotationButton()
 {
     const SkeletonPart *part = m_document->findPart(m_partId);
     if (!part) {
         qDebug() << "Part not found:" << m_partId;
         return;
     }
-    if (part->wrapped)
-        updateButton(m_wrapButton, QChar(fa::cube), true);
+    if (part->cutRotationAdjusted())
+        updateButton(m_cutButton, QChar(fa::spinner), true);
     else
-        updateButton(m_wrapButton, QChar(fa::cube), false);
+        updateButton(m_cutButton, QChar(fa::spinner), false);
 }
 
 void PartWidget::reload()

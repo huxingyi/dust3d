@@ -8,6 +8,7 @@
 #include <nodemesh/box.h>
 #include <nodemesh/combiner.h>
 #include <nodemesh/misc.h>
+#include <QMatrix4x4>
 
 #define WRAP_STEP_BACK_FACTOR   0.1     // 0.1 ~ 0.9
 #define WRAP_WELD_FACTOR        0.01    // Allowed distance: WELD_FACTOR * radius
@@ -521,7 +522,19 @@ void Builder::makeCut(const QVector3D &position,
     auto uFactor = u * radius;
     auto vFactor = v * radius;
     for (const auto &t: cutTemplate) {
-        resultCut.push_back(position + uFactor * t.x() + vFactor * t.y());
+        resultCut.push_back(uFactor * t.x() + vFactor * t.y());
+    }
+    if (!qFuzzyIsNull(m_cutRotation)) {
+        float degree = m_cutRotation * 180;
+        QMatrix4x4 rotation;
+        rotation.rotate(degree, cutNormal);
+        baseNormal = rotation * baseNormal;
+        for (auto &positionOnCut: resultCut) {
+            positionOnCut = rotation * positionOnCut;
+        }
+    }
+    for (auto &positionOnCut: resultCut) {
+        positionOnCut += position;
     }
 }
 
@@ -596,6 +609,11 @@ void Builder::setDeformThickness(float thickness)
 void Builder::setDeformWidth(float width)
 {
     m_deformWidth = width;
+}
+
+void Builder::setCutRotation(float cutRotation)
+{
+    m_cutRotation = cutRotation;
 }
 
 QVector3D Builder::calculateDeformPosition(const QVector3D &vertexPosition, const QVector3D &ray, const QVector3D &deformNormal, float deformFactor)

@@ -1682,16 +1682,6 @@ void SkeletonGraphicsWidget::shortcutRoundEndOrNotSelectedPart()
     }
 }
 
-void SkeletonGraphicsWidget::shortcutWrapOrNotSelectedPart()
-{
-    if (SkeletonDocumentEditMode::Select == m_document->editMode && !m_lastCheckedPart.isNull()) {
-        const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
-        bool partWrapped = part && part->wrapped;
-        emit setPartWrapState(m_lastCheckedPart, !partWrapped);
-        emit groupOperationAdded();
-    }
-}
-
 bool SkeletonGraphicsWidget::keyPress(QKeyEvent *event)
 {
     if (event->key() == Qt::Key_Space) {

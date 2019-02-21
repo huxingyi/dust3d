@@ -16,6 +16,7 @@ public:
     size_t addEdge(size_t firstNodeIndex, size_t secondNodeIndex);
     void setDeformThickness(float thickness);
     void setDeformWidth(float width);
+    void setCutRotation(float cutRotation);
     const std::vector<QVector3D> &generatedVertices();
     const std::vector<std::vector<size_t>> &generatedFaces();
     const std::vector<size_t> &generatedVerticesSourceNodeIndices();
@@ -86,6 +87,7 @@ private:
     std::set<size_t> m_swallowedNodes;
     float m_deformThickness = 1.0;
     float m_deformWidth = 1.0;
+    float m_cutRotation = 0.0;
     
     void sortNodeIndices();
     void prepareNode(size_t nodeIndex);

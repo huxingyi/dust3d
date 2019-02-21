@@ -916,7 +916,7 @@ void PartTreeWidget::partWrapStateChanged(QUuid partId)
         return;
     }
     PartWidget *widget = (PartWidget *)itemWidget(item->second, 0);
-    widget->updateWrapButton();
+    widget->updateCutRotationButton();
 }
 
 void PartTreeWidget::partColorStateChanged(QUuid partId)

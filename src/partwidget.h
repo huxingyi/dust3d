@@ -20,7 +20,7 @@ signals:
     void setPartDeformWidth(QUuid partId, float width);
     void setPartRoundState(QUuid partId, bool rounded);
     void setPartColorState(QUuid partId, bool hasColor, QColor color);
-    void setPartWrapState(QUuid partId, bool wrapped);
+    void setPartCutRotation(QUuid partId, float cutRotation);
     void setPartMaterialId(QUuid partId, QUuid materialId);
     void movePartUp(QUuid partId);
     void movePartDown(QUuid partId);
@@ -43,7 +43,7 @@ public:
     void updateDeformButton();
     void updateRoundButton();
     void updateColorButton();
-    void updateWrapButton();
+    void updateCutRotationButton();
     void updateCheckedState(bool checked);
     void updateUnnormalState(bool unnormal);
     static QSize preferredSize();
@@ -52,6 +52,7 @@ protected:
     void mouseDoubleClickEvent(QMouseEvent *event) override;
 public slots:
     void showDeformSettingPopup(const QPoint &pos);
+    void showCutRotationSettingPopup(const QPoint &pos);
     void showColorSettingPopup(const QPoint &pos);
 private: // need initialize
     const Document *m_document;
@@ -68,7 +69,7 @@ private:
     QPushButton *m_deformButton;
     QPushButton *m_roundButton;
     QPushButton *m_colorButton;
-    QPushButton *m_wrapButton;
+    QPushButton *m_cutButton;
     QWidget *m_backgroundWidget;
 private:
     void initToolButton(QPushButton *button);

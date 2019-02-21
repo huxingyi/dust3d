@@ -400,7 +400,7 @@ signals:
     void partDeformWidthChanged(QUuid partId);
     void partRoundStateChanged(QUuid partId);
     void partColorStateChanged(QUuid partId);
-    void partWrapStateChanged(QUuid partId);
+    void partCutRotationChanged(QUuid partId);
     void partMaterialIdChanged(QUuid partId);
     void componentCombineModeChanged(QUuid componentId);
     void cleanup();
@@ -553,7 +553,7 @@ public slots:
     void setPartDeformWidth(QUuid partId, float width);
     void setPartRoundState(QUuid partId, bool rounded);
     void setPartColorState(QUuid partId, bool hasColor, QColor color);
-    void setPartWrapState(QUuid partId, bool wrapped);
+    void setPartCutRotation(QUuid partId, float cutRotation);
     void setPartMaterialId(QUuid partId, QUuid materialId);
     void setComponentCombineMode(QUuid componentId, CombineMode combineMode);
     void moveComponentUp(QUuid componentId);

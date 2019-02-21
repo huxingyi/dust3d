@@ -507,7 +507,6 @@ public slots:
     void shortcutXmirrorOnOrOffSelectedPart();
     void shortcutSubdivedOrNotSelectedPart();
     void shortcutRoundEndOrNotSelectedPart();
-    void shortcutWrapOrNotSelectedPart();
 private slots:
     void turnaroundImageReady();
 private:

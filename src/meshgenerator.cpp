@@ -2,6 +2,7 @@
 #include <QElapsedTimer>
 #include <QVector2D>
 #include <QGuiApplication>
+#include <QMatrix4x4>
 #include <nodemesh/builder.h>
 #include <nodemesh/modifier.h>
 #include <nodemesh/misc.h>
@@ -152,6 +153,13 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
     QColor partColor = colorString.isEmpty() ? m_defaultPartColor : QColor(colorString);
     float deformThickness = 1.0;
     float deformWidth = 1.0;
+    float cutRotation = 0.0;
+    
+    std::vector<QVector2D> cutTemplate = g_defaultCutTemplate;
+    QString cutRotationString = valueOfKeyInMapOrEmpty(part, "cutRotation");
+    if (!cutRotationString.isEmpty()) {
+        cutRotation = cutRotationString.toFloat();
+    }
     
     QString thicknessString = valueOfKeyInMapOrEmpty(part, "deformThickness");
     if (!thicknessString.isEmpty()) {
@@ -247,7 +255,7 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
     for (const auto &nodeIt: nodeInfos) {
         const auto &nodeIdString = nodeIt.first;
         const auto &nodeInfo = nodeIt.second;
-        size_t nodeIndex = modifier->addNode(nodeInfo.position, nodeInfo.radius, g_defaultCutTemplate);
+        size_t nodeIndex = modifier->addNode(nodeInfo.position, nodeInfo.radius, cutTemplate);
         nodeIdStringToIndexMap[nodeIdString] = nodeIndex;
         nodeIndexToIdStringMap[nodeIndex] = nodeIdString;
         
@@ -300,6 +308,7 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
     nodemesh::Builder *builder = new nodemesh::Builder;
     builder->setDeformThickness(deformThickness);
     builder->setDeformWidth(deformWidth);
+    builder->setCutRotation(cutRotation);
     
     for (const auto &node: modifier->nodes())
         builder->addNode(node.position, node.radius, node.cutTemplate);
