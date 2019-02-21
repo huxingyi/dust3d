@@ -147,7 +147,6 @@ MeshLoader::MeshLoader(Outcome &outcome) :
     }
     
     // Uncomment out to show wireframes
-    /*
     size_t edgeCount = 0;
     for (const auto &face: outcome.triangleAndQuads) {
         edgeCount += face.size();
@@ -175,7 +174,6 @@ MeshLoader::MeshLoader(Outcome &outcome) :
             }
         }
     }
-    */
 }
 
 MeshLoader::MeshLoader() :

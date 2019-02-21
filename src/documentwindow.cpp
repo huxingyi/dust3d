@@ -560,11 +560,11 @@ DocumentWindow::DocumentWindow() :
     });
     m_viewMenu->addAction(m_resetModelWidgetPosAction);
 
-    //m_toggleWireframeAction = new QAction(tr("Toggle Wireframe"), this);
-    //connect(m_toggleWireframeAction, &QAction::triggered, [=]() {
-    //    m_modelRenderWidget->toggleWireframe();
-    //});
-    //m_viewMenu->addAction(m_toggleWireframeAction);
+    m_toggleWireframeAction = new QAction(tr("Toggle Wireframe"), this);
+    connect(m_toggleWireframeAction, &QAction::triggered, [=]() {
+        m_modelRenderWidget->toggleWireframe();
+    });
+    m_viewMenu->addAction(m_toggleWireframeAction);
     
     //m_toggleSmoothNormalAction = new QAction(tr("Toggle Smooth Normal"), this);
     //connect(m_toggleSmoothNormalAction, &QAction::triggered, [=]() {
