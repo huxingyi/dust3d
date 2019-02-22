@@ -151,6 +151,46 @@ void Builder::resolveBaseNormalForLeavesRecursively(size_t nodeIndex, const QVec
     }
 }
 
+void Builder::resolveInitialTraverseDirectionRecursively(size_t nodeIndex, const QVector3D *from, std::set<size_t> *visited)
+{
+    if (visited->find(nodeIndex) != visited->end())
+        return;
+    auto &node = m_nodes[nodeIndex];
+    node.reversedTraverseOrder = visited->size();
+    visited->insert(nodeIndex);
+    if (nullptr != from) {
+        node.initialTraverseDirection = (node.position - *from).normalized();
+        node.hasInitialTraverseDirection = true;
+    }
+    for (size_t i = 0; i < node.edges.size(); ++i) {
+        size_t neighborIndex = m_edges[node.edges[i]].neiborOf(nodeIndex);
+        resolveInitialTraverseDirectionRecursively(neighborIndex, &node.position, visited);
+    }
+}
+
+void Builder::resolveTraverseDirection(size_t nodeIndex)
+{
+    auto &node = m_nodes[nodeIndex];
+    if (!node.hasInitialTraverseDirection) {
+        if (node.edges.size() > 0) {
+            size_t neighborIndex = m_edges[node.edges[0]].neiborOf(nodeIndex);
+            const auto &neighbor = m_nodes[neighborIndex];
+            node.initialTraverseDirection = neighbor.initialTraverseDirection;
+            node.hasInitialTraverseDirection = true;
+        }
+    }
+    if (node.edges.size() == 2) {
+        std::vector<size_t> neighborIndices = {m_edges[node.edges[0]].neiborOf(nodeIndex),
+            m_edges[node.edges[1]].neiborOf(nodeIndex)};
+        std::sort(neighborIndices.begin(), neighborIndices.end(), [&](const size_t &firstIndex, const size_t &secondIndex) {
+            return m_nodes[firstIndex].reversedTraverseOrder < m_nodes[secondIndex].reversedTraverseOrder;
+        });
+        node.traverseDirection = (node.initialTraverseDirection + m_nodes[neighborIndices[1]].initialTraverseDirection).normalized();
+    } else {
+        node.traverseDirection = node.initialTraverseDirection;
+    }
+}
+
 std::pair<QVector3D, bool> Builder::searchBaseNormalFromNeighborsRecursively(size_t nodeIndex)
 {
     auto &node = m_nodes[nodeIndex];
@@ -196,6 +236,22 @@ bool Builder::build()
             m_generatedVerticesSourceNodeIndices.resize(m_generatedVertices.size(), 0);
         }
         return true;
+    }
+    
+    {
+        std::set<size_t> visited;
+        for (auto nodeIndex = m_sortedNodeIndices.rbegin();
+                nodeIndex != m_sortedNodeIndices.rend();
+                ++nodeIndex) {
+            resolveInitialTraverseDirectionRecursively(*nodeIndex, nullptr, &visited);
+        }
+    }
+    {
+        for (auto nodeIndex = m_sortedNodeIndices.rbegin();
+                nodeIndex != m_sortedNodeIndices.rend();
+                ++nodeIndex) {
+            resolveTraverseDirection(*nodeIndex);
+        }
     }
     
     for (const auto &nodeIndex: m_sortedNodeIndices) {
@@ -295,17 +351,17 @@ bool Builder::generateCutsForNode(size_t nodeIndex)
     size_t neighborsCount = node.edges.size();
     //qDebug() << "Generate cuts for node" << nodeIndex << "with neighbor count" << neighborsCount;
     if (1 == neighborsCount) {
-        QVector3D cutNormal = node.raysToNeibors[0];
+        const QVector3D &cutNormal = node.raysToNeibors[0];
         std::vector<QVector3D> cut;
-        makeCut(node.position, node.radius, node.cutTemplate, node.baseNormal, cutNormal, cut);
+        makeCut(node.position, node.radius, node.cutTemplate, node.baseNormal, cutNormal, node.traverseDirection, cut);
         std::vector<size_t> vertices;
         insertCutVertices(cut, vertices, nodeIndex, cutNormal);
         m_generatedFaces.push_back(vertices);
         m_edges[node.edges[0]].cuts.push_back({vertices, -cutNormal});
     } else if (2 == neighborsCount) {
-        QVector3D cutNormal = (node.raysToNeibors[0].normalized() - node.raysToNeibors[1].normalized()) / 2;
+        const QVector3D cutNormal = (node.raysToNeibors[0].normalized() - node.raysToNeibors[1].normalized()) / 2;
         std::vector<QVector3D> cut;
-        makeCut(node.position, node.radius, node.cutTemplate, node.baseNormal, cutNormal, cut);
+        makeCut(node.position, node.radius, node.cutTemplate, node.baseNormal, cutNormal, node.traverseDirection, cut);
         std::vector<size_t> vertices;
         insertCutVertices(cut, vertices, nodeIndex, cutNormal);
         std::vector<size_t> verticesReversed;
@@ -344,7 +400,7 @@ bool Builder::tryWrapMultipleBranchesForNode(size_t nodeIndex, std::vector<float
     std::vector<std::pair<std::vector<size_t>, QVector3D>> cutsForEdges;
     bool directSwallowed = false;
     for (size_t i = 0; i < node.edges.size(); ++i) {
-        QVector3D cutNormal = node.raysToNeibors[i];
+        const QVector3D &cutNormal = node.raysToNeibors[i];
         size_t edgeIndex = node.edges[i];
         size_t neighborIndex = m_edges[edgeIndex].neiborOf(nodeIndex);
         const auto &neighbor = m_nodes[neighborIndex];
@@ -368,7 +424,7 @@ bool Builder::tryWrapMultipleBranchesForNode(size_t nodeIndex, std::vector<float
                 continue;
             }
         }
-        makeCut(node.position + cutNormal * finalDistance, radius, node.cutTemplate, node.baseNormal, cutNormal, cut);
+        makeCut(node.position + cutNormal * finalDistance, radius, node.cutTemplate, node.baseNormal, cutNormal, neighbor.traverseDirection, cut);
         std::vector<size_t> vertices;
         insertCutVertices(cut, vertices, nodeIndex, cutNormal);
         cutsForEdges.push_back({vertices, -cutNormal});
@@ -504,6 +560,7 @@ void Builder::makeCut(const QVector3D &position,
         const std::vector<QVector2D> &cutTemplate,
         QVector3D &baseNormal,
         const QVector3D &cutNormal,
+        const QVector3D &traverseDirection,
         std::vector<QVector3D> &resultCut)
 {
     QVector3D orientedBaseNormal = QVector3D::dotProduct(cutNormal, baseNormal) > 0 ?
@@ -527,7 +584,7 @@ void Builder::makeCut(const QVector3D &position,
     if (!qFuzzyIsNull(m_cutRotation)) {
         float degree = m_cutRotation * 180;
         QMatrix4x4 rotation;
-        rotation.rotate(degree, cutNormal);
+        rotation.rotate(degree, traverseDirection);
         baseNormal = rotation * baseNormal;
         for (auto &positionOnCut: resultCut) {
             positionOnCut = rotation * positionOnCut;

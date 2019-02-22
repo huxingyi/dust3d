@@ -34,12 +34,16 @@ private:
         std::vector<size_t> edges;
         std::vector<QVector2D> cutTemplate;
         std::vector<QVector3D> raysToNeibors;
+        QVector3D initialTraverseDirection;
+        QVector3D traverseDirection;
         QVector3D growthDirection;
         QVector3D initialBaseNormal;
         QVector3D baseNormal;
+        size_t reversedTraverseOrder;
         bool hasInitialBaseNormal = false;
         bool baseNormalResolved = false;
         bool baseNormalSearched = false;
+        bool hasInitialTraverseDirection = false;
         
         size_t anotherEdge(size_t edgeIndex) const
         {
@@ -98,6 +102,8 @@ private:
     void resolveBaseNormalRecursively(size_t nodeIndex);
     void resolveBaseNormalForLeavesRecursively(size_t nodeIndex, const QVector3D &baseNormal);
     std::pair<QVector3D, bool> searchBaseNormalFromNeighborsRecursively(size_t nodeIndex);
+    void resolveInitialTraverseDirectionRecursively(size_t nodeIndex, const QVector3D *from, std::set<size_t> *visited);
+    void resolveTraverseDirection(size_t nodeIndex);
     bool generateCutsForNode(size_t nodeIndex);
     bool tryWrapMultipleBranchesForNode(size_t nodeIndex, std::vector<float> &offsets, bool &offsetsChanged);
     void makeCut(const QVector3D &position,
@@ -105,6 +111,7 @@ private:
         const std::vector<QVector2D> &cutTemplate,
         QVector3D &baseNormal,
         const QVector3D &cutNormal,
+        const QVector3D &traverseDirection,
         std::vector<QVector3D> &resultCut);
     void insertCutVertices(const std::vector<QVector3D> &cut, std::vector<size_t> &vertices, size_t nodeIndex, const QVector3D &cutDirect);
     void stitchEdgeCuts();
