@@ -394,6 +394,7 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
     
     contextMenu.addSeparator();
     
+    /*
     QWidgetAction smoothAction(this);
     QAction hideOthersAction(tr("Hide Others"), this);
     QAction lockOthersAction(tr("Lock Others"), this);
@@ -419,6 +420,7 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
         
         contextMenu.addSeparator();
     }
+    */
     
     QAction collapseAllAction(tr("Collapse All"), this);
     connect(&collapseAllAction, &QAction::triggered, [=]() {
