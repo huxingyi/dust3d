@@ -22,6 +22,8 @@ public:
     std::vector<std::vector<size_t>> faces;
     std::vector<OutcomeNode> outcomeNodes;
     std::vector<std::pair<QVector3D, std::pair<QUuid, QUuid>>> outcomeNodeVertices;
+    std::vector<std::vector<size_t>> previewTriangles;
+    bool isSucceed = false;
 };
 
 class GeneratedComponent
@@ -95,7 +97,7 @@ private:
     nodemesh::Combiner::Mesh *combineTwoMeshes(const nodemesh::Combiner::Mesh &first, const nodemesh::Combiner::Mesh &second,
         nodemesh::Combiner::Method method,
         bool recombine=true);
-    void generateSmoothTriangleVertexNormals(const std::vector<QVector3D> &vertices, const std::vector<std::vector<size_t>> &triangles,
+    static void generateSmoothTriangleVertexNormals(const std::vector<QVector3D> &vertices, const std::vector<std::vector<size_t>> &triangles,
         const std::vector<QVector3D> &triangleNormals,
         std::vector<std::vector<QVector3D>> *triangleVertexNormals);
     const std::map<QString, QString> *findComponent(const QString &componentIdString);

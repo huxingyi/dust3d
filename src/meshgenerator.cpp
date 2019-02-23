@@ -181,6 +181,8 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
     partCache.outcomeNodeVertices.clear();
     partCache.vertices.clear();
     partCache.faces.clear();
+    partCache.previewTriangles.clear();
+    partCache.isSucceed = false;
     delete partCache.mesh;
     partCache.mesh = nullptr;
     
@@ -376,30 +378,39 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
     m_partPreviewMeshes[partId] = nullptr;
     m_generatedPreviewPartIds.insert(partId);
     
+    std::vector<QVector3D> partPreviewVertices;
+    QColor partPreviewColor = partColor;
     if (nullptr != mesh) {
         partCache.mesh = new nodemesh::Combiner::Mesh(*mesh);
-        
-        std::vector<QVector3D> partPreviewVertices;
-        std::vector<std::vector<size_t>> partPreviewTriangles;
-        mesh->fetch(partPreviewVertices, partPreviewTriangles);
-        nodemesh::trim(&partPreviewVertices, true);
-        std::vector<QVector3D> partPreviewTriangleNormals;
-        for (const auto &face: partPreviewTriangles) {
-            partPreviewTriangleNormals.push_back(QVector3D::normal(
-                partPreviewVertices[face[0]],
-                partPreviewVertices[face[1]],
-                partPreviewVertices[face[2]]
-            ));
-        }
-        std::vector<std::vector<QVector3D>> partPreviewTriangleVertexNormals;
-        generateSmoothTriangleVertexNormals(partPreviewVertices,
-            partPreviewTriangles,
-            partPreviewTriangleNormals,
-            &partPreviewTriangleVertexNormals);
+        mesh->fetch(partPreviewVertices, partCache.previewTriangles);
+        partCache.isSucceed = true;
+    }
+    if (partCache.previewTriangles.empty()) {
+        partPreviewVertices = partCache.vertices;
+        nodemesh::triangulate(partPreviewVertices, partCache.faces, partCache.previewTriangles);
+        partPreviewColor = Qt::red;
+        partCache.isSucceed = false;
+    }
+    
+    nodemesh::trim(&partPreviewVertices, true);
+    std::vector<QVector3D> partPreviewTriangleNormals;
+    for (const auto &face: partCache.previewTriangles) {
+        partPreviewTriangleNormals.push_back(QVector3D::normal(
+            partPreviewVertices[face[0]],
+            partPreviewVertices[face[1]],
+            partPreviewVertices[face[2]]
+        ));
+    }
+    std::vector<std::vector<QVector3D>> partPreviewTriangleVertexNormals;
+    generateSmoothTriangleVertexNormals(partPreviewVertices,
+        partCache.previewTriangles,
+        partPreviewTriangleNormals,
+        &partPreviewTriangleVertexNormals);
+    if (!partCache.previewTriangles.empty()) {
         m_partPreviewMeshes[partId] = new MeshLoader(partPreviewVertices,
-            partPreviewTriangles,
+            partCache.previewTriangles,
             partPreviewTriangleVertexNormals,
-            partColor);
+            partPreviewColor);
     }
     
     delete builder;
@@ -815,49 +826,76 @@ void MeshGenerator::generate()
         } while (affectedNum > 0);
         qDebug() << "Total weld affected triangles:" << totalAffectedNum;
         
-        std::vector<QVector3D> combinedFacesNormals;
-        for (const auto &face: combinedFaces) {
-            combinedFacesNormals.push_back(QVector3D::normal(
-                combinedVertices[face[0]],
-                combinedVertices[face[1]],
-                combinedVertices[face[2]]
-            ));
-        }
-        
         recoverQuads(combinedVertices, combinedFaces, componentCache.sharedQuadEdges, m_outcome->triangleAndQuads);
         
         m_outcome->nodes = componentCache.outcomeNodes;
         m_outcome->nodeVertices = componentCache.outcomeNodeVertices;
         m_outcome->vertices = combinedVertices;
         m_outcome->triangles = combinedFaces;
-        m_outcome->triangleNormals = combinedFacesNormals;
+    }
+    
+    auto postprocessOutcome = [](Outcome *outcome) {
+        std::vector<QVector3D> combinedFacesNormals;
+        for (const auto &face: outcome->triangles) {
+            combinedFacesNormals.push_back(QVector3D::normal(
+                outcome->vertices[face[0]],
+                outcome->vertices[face[1]],
+                outcome->vertices[face[2]]
+            ));
+        }
+        
+        outcome->triangleNormals = combinedFacesNormals;
         
         std::vector<std::pair<QUuid, QUuid>> sourceNodes;
-        triangleSourceNodeResolve(*m_outcome, sourceNodes);
-        m_outcome->setTriangleSourceNodes(sourceNodes);
+        triangleSourceNodeResolve(*outcome, sourceNodes);
+        outcome->setTriangleSourceNodes(sourceNodes);
         
         std::map<std::pair<QUuid, QUuid>, QColor> sourceNodeToColorMap;
-        for (const auto &node: m_outcome->nodes)
+        for (const auto &node: outcome->nodes)
             sourceNodeToColorMap.insert({{node.partId, node.nodeId}, node.color});
         
-        m_outcome->triangleColors.resize(m_outcome->triangles.size(), Qt::white);
-        const std::vector<std::pair<QUuid, QUuid>> *triangleSourceNodes = m_outcome->triangleSourceNodes();
+        outcome->triangleColors.resize(outcome->triangles.size(), Qt::white);
+        const std::vector<std::pair<QUuid, QUuid>> *triangleSourceNodes = outcome->triangleSourceNodes();
         if (nullptr != triangleSourceNodes) {
-            for (size_t triangleIndex = 0; triangleIndex < m_outcome->triangles.size(); triangleIndex++) {
+            for (size_t triangleIndex = 0; triangleIndex < outcome->triangles.size(); triangleIndex++) {
                 const auto &source = (*triangleSourceNodes)[triangleIndex];
-                m_outcome->triangleColors[triangleIndex] = sourceNodeToColorMap[source];
+                outcome->triangleColors[triangleIndex] = sourceNodeToColorMap[source];
             }
         }
         
         std::vector<std::vector<QVector3D>> triangleVertexNormals;
-        generateSmoothTriangleVertexNormals(combinedVertices,
-            combinedFaces,
-            combinedFacesNormals,
+        generateSmoothTriangleVertexNormals(outcome->vertices,
+            outcome->triangles,
+            outcome->triangleNormals,
             &triangleVertexNormals);
-        m_outcome->setTriangleVertexNormals(triangleVertexNormals);
-        
-        m_resultMesh = new MeshLoader(*m_outcome);
+        outcome->setTriangleVertexNormals(triangleVertexNormals);
+    };
+    
+    /*
+    Outcome *previewOutcome = new Outcome(*m_outcome);
+    for (const auto &partCache: m_cacheContext->parts) {
+        if (partCache.second.isSucceed)
+            continue;
+        size_t oldVerticesCount = previewOutcome->vertices.size();
+        for (const auto &vertex: partCache.second.vertices) {
+            previewOutcome->vertices.push_back(vertex);
+        }
+        for (const auto &face: partCache.second.previewTriangles) {
+            std::vector<size_t> newFace = face;
+            for (auto &index: newFace)
+                index += oldVerticesCount;
+            previewOutcome->triangles.push_back(newFace);
+        }
     }
+    postprocessOutcome(previewOutcome);
+    m_resultMesh = new MeshLoader(*previewOutcome);
+    delete previewOutcome;
+    */
+    
+    postprocessOutcome(m_outcome);
+    
+    m_resultMesh = new MeshLoader(*m_outcome);
+    
     delete combinedMesh;
 
     if (needDeleteCacheContext) {
