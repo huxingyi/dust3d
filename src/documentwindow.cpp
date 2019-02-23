@@ -723,6 +723,10 @@ DocumentWindow::DocumentWindow() :
     });
 
     connect(m_document, &Document::editModeChanged, graphicsWidget, &SkeletonGraphicsWidget::editModeChanged);
+    
+    connect(graphicsWidget, &SkeletonGraphicsWidget::shortcutToggleWireframe, [=]() {
+        m_modelRenderWidget->toggleWireframe();
+    });
 
     connect(graphicsWidget, &SkeletonGraphicsWidget::zoomRenderedModelBy, m_modelRenderWidget, &ModelWidget::zoom);
 

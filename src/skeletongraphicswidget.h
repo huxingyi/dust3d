@@ -385,6 +385,7 @@ signals:
     void switchChainSide(std::set<QUuid> nodeIds);
     void enableAllPositionRelatedLocks();
     void disableAllPositionRelatedLocks();
+    void shortcutToggleWireframe();
 public:
     SkeletonGraphicsWidget(const SkeletonDocument *document);
     std::map<QUuid, std::pair<SkeletonGraphicsNodeItem *, SkeletonGraphicsNodeItem *>> nodeItemMap;

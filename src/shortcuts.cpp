@@ -45,4 +45,5 @@ void initShortCuts(QWidget *widget, SkeletonGraphicsWidget *graphicsWidget)
     defineKey(Qt::Key_M, &SkeletonGraphicsWidget::shortcutXmirrorOnOrOffSelectedPart);
     defineKey(Qt::Key_B, &SkeletonGraphicsWidget::shortcutSubdivedOrNotSelectedPart);
     defineKey(Qt::Key_U, &SkeletonGraphicsWidget::shortcutRoundEndOrNotSelectedPart);
+    defineKey(Qt::Key_W, &SkeletonGraphicsWidget::shortcutToggleWireframe);
 }
