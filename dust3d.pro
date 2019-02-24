@@ -287,6 +287,12 @@ HEADERS += src/posedocument.h
 SOURCES += src/combinemode.cpp
 HEADERS += src/combinemode.h
 
+SOURCES += src/cutdocument.cpp
+HEADERS += src/cutdocument.h
+
+SOURCES += src/cuttemplate.cpp
+HEADERS += src/cuttemplate.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h

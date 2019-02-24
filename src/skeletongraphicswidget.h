@@ -411,6 +411,7 @@ public:
     bool hasTwoDisconnectedNodesSelection();
     void setModelWidget(ModelWidget *modelWidget);
     void setNodePositionModifyOnly(bool nodePositionModifyOnly);
+    void setMainProfileOnly(bool mainProfileOnly);
     bool inputWheelEventFromOtherWidget(QWheelEvent *event);
 protected:
     void mouseMoveEvent(QMouseEvent *event) override;
@@ -564,6 +565,7 @@ private: //need initalize
     bool m_inTempDragMode;
     SkeletonDocumentEditMode m_modeBeforeEnterTempDragMode;
     bool m_nodePositionModifyOnly;
+    bool m_mainProfileOnly;
     float m_turnaroundOpacity;
 private:
     QVector3D m_ikMoveTarget;

@@ -49,7 +49,7 @@ PartTreeWidget::PartTreeWidget(const Document *document, QWidget *parent) :
     
     setFont(m_normalFont);
     
-    QRadialGradient gradient(QPointF(0.2, 0.3), 0.3);
+    QRadialGradient gradient(QPointF(0.115, 0.3), 0.3);
     QColor fillColor = QColor(0xfb, 0xf9, 0x87);
     fillColor.setAlphaF(0.85);
     gradient.setCoordinateMode(QGradient::StretchToDeviceMode);
@@ -910,7 +910,18 @@ void PartTreeWidget::partRoundStateChanged(QUuid partId)
     widget->updateRoundButton();
 }
 
-void PartTreeWidget::partWrapStateChanged(QUuid partId)
+void PartTreeWidget::partColorStateChanged(QUuid partId)
+{
+    auto item = m_partItemMap.find(partId);
+    if (item == m_partItemMap.end()) {
+        qDebug() << "Part item not found:" << partId;
+        return;
+    }
+    PartWidget *widget = (PartWidget *)itemWidget(item->second, 0);
+    widget->updateColorButton();
+}
+
+void PartTreeWidget::partCutRotationChanged(QUuid partId)
 {
     auto item = m_partItemMap.find(partId);
     if (item == m_partItemMap.end()) {
@@ -921,7 +932,7 @@ void PartTreeWidget::partWrapStateChanged(QUuid partId)
     widget->updateCutRotationButton();
 }
 
-void PartTreeWidget::partColorStateChanged(QUuid partId)
+void PartTreeWidget::partCutTemplateChanged(QUuid partId)
 {
     auto item = m_partItemMap.find(partId);
     if (item == m_partItemMap.end()) {
@@ -929,7 +940,7 @@ void PartTreeWidget::partColorStateChanged(QUuid partId)
         return;
     }
     PartWidget *widget = (PartWidget *)itemWidget(item->second, 0);
-    widget->updateColorButton();
+    widget->updateCutTemplateButton();
 }
 
 void PartTreeWidget::partMaterialIdChanged(QUuid partId)

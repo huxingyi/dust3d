@@ -164,6 +164,17 @@ void Theme::initAwesomeToolButton(QPushButton *button)
     Theme::initAwesomeToolButtonWithoutFont(button);
 }
 
+void Theme::initToolButton(QPushButton *button)
+{
+    QFont font = button->font();
+    font.setWeight(QFont::Light);
+    font.setBold(false);
+    button->setFont(font);
+    button->setFixedHeight(Theme::toolIconSize * 0.75);
+    button->setStyleSheet("QPushButton {color: #f7d9c8}");
+    button->setFocusPolicy(Qt::NoFocus);
+}
+
 QWidget *Theme::createHorizontalLineWidget()
 {
     QWidget *hrLightWidget = new QWidget;

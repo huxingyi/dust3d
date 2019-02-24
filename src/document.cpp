@@ -861,6 +861,8 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
             part["rounded"] = partIt.second.rounded ? "true" : "false";
             if (partIt.second.cutRotationAdjusted())
                 part["cutRotation"] = QString::number(partIt.second.cutRotation);
+            if (partIt.second.cutTemplateAdjusted())
+                part["cutTemplate"] = cutTemplatePointsToString(partIt.second.cutTemplate);
             part["dirty"] = partIt.second.dirty ? "true" : "false";
             if (partIt.second.hasColor)
                 part["color"] = partIt.second.color.name();
@@ -1118,6 +1120,9 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
         const auto &cutRotationIt = partKv.second.find("cutRotation");
         if (cutRotationIt != partKv.second.end())
             part.setCutRotation(cutRotationIt->second.toFloat());
+        const auto &cutTemplateIt = partKv.second.find("cutTemplate");
+        if (cutTemplateIt != partKv.second.end())
+            part.setCutTemplate(cutTemplatePointsFromString(cutTemplateIt->second));
         if (isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "inverse")))
             inversePartIds.insert(part.id);
         const auto &colorIt = partKv.second.find("color");
@@ -2200,9 +2205,26 @@ void Document::setPartCutRotation(QUuid partId, float cutRotation)
         qDebug() << "Part not found:" << partId;
         return;
     }
+    if (qFuzzyCompare(cutRotation, part->second.cutRotation))
+        return;
     part->second.setCutRotation(cutRotation);
     part->second.dirty = true;
     emit partCutRotationChanged(partId);
+    emit skeletonChanged();
+}
+
+void Document::setPartCutTemplate(QUuid partId, std::vector<QVector2D> cutTemplate)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    if (cutTemplatePointsCompare(cutTemplate, part->second.cutTemplate))
+        return;
+    part->second.setCutTemplate(cutTemplate);
+    part->second.dirty = true;
+    emit partCutTemplateChanged(partId);
     emit skeletonChanged();
 }
 

@@ -59,8 +59,9 @@ public slots:
     void partXmirrorStateChanged(QUuid partId);
     void partDeformChanged(QUuid partId);
     void partRoundStateChanged(QUuid partId);
-    void partWrapStateChanged(QUuid partId);
     void partColorStateChanged(QUuid partId);
+    void partCutRotationChanged(QUuid partId);
+    void partCutTemplateChanged(QUuid partId);
     void partMaterialIdChanged(QUuid partId);
     void partChecked(QUuid partId);
     void partUnchecked(QUuid partId);

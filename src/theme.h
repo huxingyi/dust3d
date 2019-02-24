@@ -51,6 +51,7 @@ public:
     static void initAwesomeToolButton(QPushButton *button);
     static void initAwesomeToolButtonWithoutFont(QPushButton *button);
     static void initAwsomeBaseSizes();
+    static void initToolButton(QPushButton *button);
 };
 
 #endif

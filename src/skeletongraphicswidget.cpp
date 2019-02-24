@@ -47,6 +47,7 @@ SkeletonGraphicsWidget::SkeletonGraphicsWidget(const SkeletonDocument *document)
     m_inTempDragMode(false),
     m_modeBeforeEnterTempDragMode(SkeletonDocumentEditMode::Select),
     m_nodePositionModifyOnly(false),
+    m_mainProfileOnly(false),
     m_turnaroundOpacity(0.25)
 {
     setRenderHint(QPainter::Antialiasing, false);
@@ -171,7 +172,7 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
     }
     
     QAction copyAction(tr("Copy"), this);
-    if (hasNodeSelection()) {
+    if (!m_mainProfileOnly && hasNodeSelection()) {
         connect(&copyAction, &QAction::triggered, this, &SkeletonGraphicsWidget::copy);
         contextMenu.addAction(&copyAction);
     }
@@ -213,7 +214,7 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
     }
     
     QAction switchChainSideAction(tr("Switch Chain Side"), this);
-    if (m_nodePositionModifyOnly && hasNodeSelection()) {
+    if (m_nodePositionModifyOnly && !m_mainProfileOnly && hasNodeSelection()) {
         connect(&switchChainSideAction, &QAction::triggered, this, &SkeletonGraphicsWidget::switchSelectedChainSide);
         contextMenu.addAction(&switchChainSideAction);
     }
@@ -1747,6 +1748,8 @@ void SkeletonGraphicsWidget::nodeAdded(QUuid nodeId)
     sideProfileItem->setMarkColor(markColor);
     mainProfileItem->setId(nodeId);
     sideProfileItem->setId(nodeId);
+    if (m_mainProfileOnly)
+        sideProfileItem->hide();
     scene()->addItem(mainProfileItem);
     scene()->addItem(sideProfileItem);
     nodeItemMap[nodeId] = std::make_pair(mainProfileItem, sideProfileItem);
@@ -1796,6 +1799,8 @@ void SkeletonGraphicsWidget::edgeAdded(QUuid edgeId)
     sideProfileEdgeItem->setId(edgeId);
     mainProfileEdgeItem->setEndpoints(fromIt->second.first, toIt->second.first);
     sideProfileEdgeItem->setEndpoints(fromIt->second.second, toIt->second.second);
+    if (m_mainProfileOnly)
+        sideProfileEdgeItem->hide();
     scene()->addItem(mainProfileEdgeItem);
     scene()->addItem(sideProfileEdgeItem);
     edgeItemMap[edgeId] = std::make_pair(mainProfileEdgeItem, sideProfileEdgeItem);
@@ -2554,3 +2559,10 @@ void SkeletonGraphicsWidget::setNodePositionModifyOnly(bool nodePositionModifyOn
 {
     m_nodePositionModifyOnly = nodePositionModifyOnly;
 }
+
+void SkeletonGraphicsWidget::setMainProfileOnly(bool mainProfileOnly)
+{
+    m_mainProfileOnly = mainProfileOnly;
+}
+
+

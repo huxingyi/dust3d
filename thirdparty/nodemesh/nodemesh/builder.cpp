@@ -574,11 +574,18 @@ void Builder::makeCut(const QVector3D &position,
         }
     }
     baseNormal = orientedBaseNormal.normalized();
-    QVector3D u = QVector3D::crossProduct(cutNormal, orientedBaseNormal).normalized();
-    QVector3D v = QVector3D::crossProduct(u, cutNormal).normalized();
+    auto finalCutTemplate = cutTemplate;
+    auto finalCutNormal = cutNormal;
+    if (QVector3D::dotProduct(cutNormal, traverseDirection) <= 0) {
+        baseNormal = -baseNormal;
+        finalCutNormal = -finalCutNormal;
+        std::reverse(finalCutTemplate.begin(), finalCutTemplate.end());
+    }
+    QVector3D u = QVector3D::crossProduct(finalCutNormal, baseNormal).normalized();
+    QVector3D v = QVector3D::crossProduct(u, finalCutNormal).normalized();
     auto uFactor = u * radius;
     auto vFactor = v * radius;
-    for (const auto &t: cutTemplate) {
+    for (const auto &t: finalCutTemplate) {
         resultCut.push_back(uFactor * t.x() + vFactor * t.y());
     }
     if (!qFuzzyIsNull(m_cutRotation)) {

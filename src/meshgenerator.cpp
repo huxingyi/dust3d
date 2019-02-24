@@ -10,13 +10,7 @@
 #include "meshgenerator.h"
 #include "util.h"
 #include "trianglesourcenoderesolve.h"
-
-const std::vector<QVector2D> g_defaultCutTemplate = {
-    {-1.0, -1.0},
-    { 1.0, -1.0},
-    { 1.0,  1.0},
-    {-1.0,  1.0},
-};
+#include "cuttemplate.h"
 
 MeshGenerator::MeshGenerator(Snapshot *snapshot) :
     m_snapshot(snapshot)
@@ -155,7 +149,8 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
     float deformWidth = 1.0;
     float cutRotation = 0.0;
     
-    std::vector<QVector2D> cutTemplate = g_defaultCutTemplate;
+    std::vector<QVector2D> cutTemplate = cutTemplatePointsFromString(valueOfKeyInMapOrEmpty(part, "cutTemplate"));
+    normalizeCutTemplatePoints(&cutTemplate);
     QString cutRotationString = valueOfKeyInMapOrEmpty(part, "cutRotation");
     if (!cutRotationString.isEmpty()) {
         cutRotation = cutRotationString.toFloat();
