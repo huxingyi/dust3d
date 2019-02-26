@@ -498,7 +498,7 @@ void PartWidget::showCutTemplateSettingPopup(const QPoint &pos)
     for (size_t i = 0; i < (size_t)CutTemplate::Count; ++i) {
         CutTemplate cutTemplate = (CutTemplate)i;
         QPushButton *button = new QPushButton(CutTemplateToDispName(cutTemplate));
-        connect(button, &QPushButton::clicked, [&]() {
+        connect(button, &QPushButton::clicked, [cutTemplate, &cutDocument, this]() {
             auto points = CutTemplateToPoints(cutTemplate);
             cutDocument.fromCutTemplate(points);
             emit setPartCutTemplate(m_partId, points);

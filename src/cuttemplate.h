@@ -8,7 +8,7 @@
 enum class CutTemplate
 {
     Quad = 0,
-    //Octagon,
+    Triangle,
     Count
 };
 
@@ -19,6 +19,8 @@ QString CutTemplateToDispName(CutTemplate cutTemplate)                      \
     switch (cutTemplate) {                                                  \
         case CutTemplate::Quad:                                             \
             return QObject::tr("Quad");                                     \
+        case CutTemplate::Triangle:                                         \
+            return QObject::tr("Triangle");                                 \
         default:                                                            \
             return "";                                                      \
     }                                                                       \
@@ -34,6 +36,12 @@ std::vector<QVector2D> CutTemplateToPoints(CutTemplate cutTemplate)         \
                 { 1.0, -1.0},                                               \
                 { 1.0,  1.0},                                               \
                 {-1.0,  1.0},                                               \
+            };                                                              \
+        case CutTemplate::Triangle:                                         \
+            return {                                                        \
+                {0,     -1.0},                                              \
+                {1.732,  0},                                                \
+                {0,      1.0},                                              \
             };                                                              \
         default:                                                            \
             return {                                                        \
