@@ -104,6 +104,8 @@ void Builder::prepareNode(size_t nodeIndex)
         neighborRadius);
     node.initialBaseNormal = baseNormalResult.first;
     node.hasInitialBaseNormal = baseNormalResult.second;
+    if (node.hasInitialBaseNormal)
+        node.initialBaseNormal = revisedBaseNormalAcordingToCutNormal(node.initialBaseNormal, node.traverseDirection);
 }
 
 void Builder::resolveBaseNormalRecursively(size_t nodeIndex)
@@ -260,6 +262,9 @@ bool Builder::build()
     for (const auto &nodeIndex: m_sortedNodeIndices) {
         resolveBaseNormalRecursively(nodeIndex);
     }
+    
+    unifyBaseNormals();
+    
     for (const auto &nodeIndex: m_sortedNodeIndices) {
         if (!generateCutsForNode(nodeIndex))
             succeed = false;
@@ -555,13 +560,24 @@ bool Builder::swallowEdgeForNode(size_t nodeIndex, size_t edgeOrder)
     return true;
 }
 
-void Builder::makeCut(const QVector3D &position,
-        float radius,
-        const std::vector<QVector2D> &cutTemplate,
-        QVector3D &baseNormal,
-        const QVector3D &cutNormal,
-        const QVector3D &traverseDirection,
-        std::vector<QVector3D> &resultCut)
+void Builder::unifyBaseNormals()
+{
+    std::vector<size_t> nodeIndices(m_nodes.size());
+    for (size_t i = 0; i < m_nodes.size(); ++i) {
+        const auto &node = m_nodes[i];
+        nodeIndices[node.reversedTraverseOrder] = i;
+    }
+    for (size_t i = 1; i < nodeIndices.size(); ++i) {
+        size_t lastIndex = nodeIndices[i - 1];
+        size_t nodeIndex = nodeIndices[i];
+        auto &node = m_nodes[nodeIndex];
+        const auto &last = m_nodes[lastIndex];
+        if (QVector3D::dotProduct(node.baseNormal, last.baseNormal) <= 0)
+            node.baseNormal = -node.baseNormal;
+    }
+}
+
+QVector3D Builder::revisedBaseNormalAcordingToCutNormal(const QVector3D &baseNormal, const QVector3D &cutNormal)
 {
     QVector3D orientedBaseNormal = QVector3D::dotProduct(cutNormal, baseNormal) > 0 ?
         baseNormal : -baseNormal;
@@ -573,13 +589,28 @@ void Builder::makeCut(const QVector3D &position,
             orientedBaseNormal = QVector3D(1, 0, 0);
         }
     }
-    baseNormal = orientedBaseNormal.normalized();
+    return orientedBaseNormal.normalized();
+}
+
+void Builder::makeCut(const QVector3D &position,
+        float radius,
+        const std::vector<QVector2D> &cutTemplate,
+        QVector3D &baseNormal,
+        const QVector3D &cutNormal,
+        const QVector3D &traverseDirection,
+        std::vector<QVector3D> &resultCut)
+{
+    baseNormal = revisedBaseNormalAcordingToCutNormal(baseNormal, cutNormal);
     auto finalCutTemplate = cutTemplate;
     auto finalCutNormal = cutNormal;
     if (QVector3D::dotProduct(cutNormal, traverseDirection) <= 0) {
         baseNormal = -baseNormal;
         finalCutNormal = -finalCutNormal;
         std::reverse(finalCutTemplate.begin(), finalCutTemplate.end());
+        //for (auto &it: finalCutTemplate) {
+        //    it.setX(-it.x());
+        //    it.setY(-it.y());
+        //}
     }
     QVector3D u = QVector3D::crossProduct(finalCutNormal, baseNormal).normalized();
     QVector3D v = QVector3D::crossProduct(u, finalCutNormal).normalized();

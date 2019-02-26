@@ -3,6 +3,7 @@
 #include <QObject>
 #include <vector>
 #include <QImage>
+#include <QColor>
 #include "outcome.h"
 #include "meshloader.h"
 #include "snapshot.h"
@@ -36,6 +37,7 @@ public slots:
     void process();
 public:
     static int m_textureSize;
+    static QColor m_defaultTextureColor;
 private:
     void prepare();
     QPainterPath expandedPainterPath(const QPainterPath &painterPath, int expandSize=7);

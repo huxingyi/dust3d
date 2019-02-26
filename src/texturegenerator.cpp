@@ -10,6 +10,7 @@
 #include "material.h"
 
 int TextureGenerator::m_textureSize = 1024;
+QColor TextureGenerator::m_defaultTextureColor = Qt::darkGray;
 
 TextureGenerator::TextureGenerator(const Outcome &outcome, Snapshot *snapshot) :
     m_resultTextureGuideImage(nullptr),
@@ -233,7 +234,7 @@ void TextureGenerator::generate()
     auto createImageBeginTime = countTimeConsumed.elapsed();
     
     m_resultTextureColorImage = new QImage(TextureGenerator::m_textureSize, TextureGenerator::m_textureSize, QImage::Format_ARGB32);
-    m_resultTextureColorImage->fill(Theme::white);
+    m_resultTextureColorImage->fill(m_defaultTextureColor);
     
     m_resultTextureBorderImage = new QImage(TextureGenerator::m_textureSize, TextureGenerator::m_textureSize, QImage::Format_ARGB32);
     m_resultTextureBorderImage->fill(Qt::transparent);
@@ -315,7 +316,7 @@ void TextureGenerator::generate()
             if (findSourceNodeResult != nodeMap.end() && nullptr != findSourceNodeResult->second) {
                 texturePainter.fillPath(path, QBrush(findSourceNodeResult->second->color));
             } else {
-                texturePainter.fillPath(path, QBrush(Theme::white));
+                texturePainter.fillPath(path, QBrush(m_defaultTextureColor));
             }
         }
         // Copy normal texture if there is one

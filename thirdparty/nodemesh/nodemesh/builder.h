@@ -102,7 +102,9 @@ private:
     void resolveBaseNormalRecursively(size_t nodeIndex);
     void resolveBaseNormalForLeavesRecursively(size_t nodeIndex, const QVector3D &baseNormal);
     std::pair<QVector3D, bool> searchBaseNormalFromNeighborsRecursively(size_t nodeIndex);
+    QVector3D revisedBaseNormalAcordingToCutNormal(const QVector3D &baseNormal, const QVector3D &cutNormal);
     void resolveInitialTraverseDirectionRecursively(size_t nodeIndex, const QVector3D *from, std::set<size_t> *visited);
+    void unifyBaseNormals();
     void resolveTraverseDirection(size_t nodeIndex);
     bool generateCutsForNode(size_t nodeIndex);
     bool tryWrapMultipleBranchesForNode(size_t nodeIndex, std::vector<float> &offsets, bool &offsetsChanged);
