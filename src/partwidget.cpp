@@ -7,6 +7,7 @@
 #include <QSizePolicy>
 #include <QFileDialog>
 #include <QSizePolicy>
+#include <nodemesh/misc.h>
 #include "partwidget.h"
 #include "theme.h"
 #include "floatnumberwidget.h"
@@ -495,9 +496,10 @@ void PartWidget::showCutTemplateSettingPopup(const QPoint &pos)
     initShortCuts(popup, graphicsWidget);
     
     std::vector<QPushButton *> presetButtons;
-    for (size_t i = 0; i < (size_t)CutTemplate::Count; ++i) {
-        CutTemplate cutTemplate = (CutTemplate)i;
-        QPushButton *button = new QPushButton(CutTemplateToDispName(cutTemplate));
+    
+    {
+        CutTemplate cutTemplate = CutTemplate::Quad;
+        QPushButton *button = new QPushButton(tr("Reset"));
         connect(button, &QPushButton::clicked, [cutTemplate, &cutDocument, this]() {
             auto points = CutTemplateToPoints(cutTemplate);
             cutDocument.fromCutTemplate(points);
@@ -508,6 +510,36 @@ void PartWidget::showCutTemplateSettingPopup(const QPoint &pos)
         presetButtons.push_back(button);
     }
     
+    /*
+    {
+        QPushButton *button = new QPushButton(tr("Subdivide"));
+        connect(button, &QPushButton::clicked, [&cutDocument, this]() {
+            std::vector<QVector2D> cutTemplate;
+            cutDocument.toCutTemplate(cutTemplate);
+            nodemesh::subdivideFace2D(&cutTemplate);
+            cutDocument.fromCutTemplate(cutTemplate);
+            emit setPartCutTemplate(m_partId, cutTemplate);
+            emit groupOperationAdded();
+        });
+        Theme::initToolButton(button);
+        presetButtons.push_back(button);
+    }
+    */
+    
+    {
+        QPushButton *button = new QPushButton(tr("Chamfer"));
+        connect(button, &QPushButton::clicked, [&cutDocument, this]() {
+            std::vector<QVector2D> cutTemplate;
+            cutDocument.toCutTemplate(cutTemplate);
+            nodemesh::chamferFace2D(&cutTemplate);
+            cutDocument.fromCutTemplate(cutTemplate);
+            emit setPartCutTemplate(m_partId, cutTemplate);
+            emit groupOperationAdded();
+        });
+        Theme::initToolButton(button);
+        presetButtons.push_back(button);
+    }
+
     QVBoxLayout *layout = new QVBoxLayout;
     QHBoxLayout *presetButtonsLayout = new QHBoxLayout;
     for (const auto &it: presetButtons)

@@ -1,4 +1,5 @@
 #include <nodemesh/modifier.h>
+#include <nodemesh/misc.h>
 #include <QVector2D>
 #include <QDebug>
 
@@ -47,15 +48,7 @@ void Modifier::createIntermediateNode(const Node &firstNode, const Node &secondN
 void Modifier::subdivide()
 {
     for (auto &node: m_nodes) {
-        auto oldCutTemplate = node.cutTemplate;
-        node.cutTemplate.clear();
-        for (size_t i = 0; i < oldCutTemplate.size(); ++i) {
-            size_t j = (i + 1) % oldCutTemplate.size();
-            QVector2D direct = (oldCutTemplate[i] + oldCutTemplate[j]).normalized();
-            float length = (oldCutTemplate[i].length() + oldCutTemplate[j].length()) * 0.4; // 0.4 = 0.5 * 0.8
-            node.cutTemplate.push_back(oldCutTemplate[i] * 0.8);
-            node.cutTemplate.push_back(direct * length);
-        }
+        subdivideFace2D(&node.cutTemplate);
     }
 }
 

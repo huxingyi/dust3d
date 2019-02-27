@@ -1,6 +1,7 @@
 #ifndef NODEMESH_MISC_H
 #define NODEMESH_MISC_H
 #include <QVector3D>
+#include <QVector2D>
 #include <vector>
 #include <set>
 #include <QString>
@@ -31,6 +32,8 @@ size_t weldSeam(const std::vector<QVector3D> &sourceVertices, const std::vector<
     std::vector<QVector3D> &destVertices, std::vector<std::vector<size_t>> &destTriangles);
 bool isManifold(const std::vector<std::vector<size_t>> &faces);
 void trim(std::vector<QVector3D> *vertices, bool normalize=false);
+void subdivideFace2D(std::vector<QVector2D> *face);
+void chamferFace2D(std::vector<QVector2D> *face);
 
 }
 
