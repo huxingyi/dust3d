@@ -21,7 +21,7 @@ Combiner::Mesh::Mesh(const std::vector<QVector3D> &vertices, const std::vector<s
         triangulate(vertices, faces, triangles);
         cgalMesh = buildCgalMesh<ExactKernel>(vertices, triangles);
         if (!CGAL::is_valid_polygon_mesh(*cgalMesh)) {
-            qDebug() << "Mesh is not valid polygon";
+            //qDebug() << "Mesh is not valid polygon";
             delete cgalMesh;
             cgalMesh = nullptr;
         } else if (CGAL::Polygon_mesh_processing::does_self_intersect(*cgalMesh)) {
@@ -29,16 +29,16 @@ Combiner::Mesh::Mesh(const std::vector<QVector3D> &vertices, const std::vector<s
             m_isSelfIntersected = true;
             if (removeSelfIntersects) {
                 if (!CGAL::Polygon_mesh_processing::remove_self_intersections(*cgalMesh)) {
-                    qDebug() << "Mesh does self intersect and cann't remove intersections";
+                    //qDebug() << "Mesh does self intersect and cann't remove intersections";
                     delete cgalMesh;
                     cgalMesh = nullptr;
                 } else {
-                    qDebug() << "Mesh does self intersect but intersections got removed";
+                    //qDebug() << "Mesh does self intersect but intersections got removed";
                 }
             } else {
                 delete cgalMesh;
                 cgalMesh = nullptr;
-                qDebug() << "Mesh does self intersect";
+                //qDebug() << "Mesh does self intersect";
             }
         }
     }

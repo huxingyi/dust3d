@@ -348,7 +348,7 @@ void Builder::insertCutVertices(const std::vector<QVector3D> &cut, std::vector<s
 bool Builder::generateCutsForNode(size_t nodeIndex)
 {
     if (m_swallowedNodes.find(nodeIndex) != m_swallowedNodes.end()) {
-        qDebug() << "node" << nodeIndex << "ignore cuts generating because of been swallowed";
+        //qDebug() << "node" << nodeIndex << "ignore cuts generating because of been swallowed";
         return true;
     }
     
@@ -380,9 +380,9 @@ bool Builder::generateCutsForNode(size_t nodeIndex)
         size_t tries = 0;
         do {
             offsetChanged = false;
-            qDebug() << "Try wrap #" << tries;
+            //qDebug() << "Try wrap #" << tries;
             if (tryWrapMultipleBranchesForNode(nodeIndex, offsets, offsetChanged)) {
-                qDebug() << "Wrap succeed";
+                //qDebug() << "Wrap succeed";
                 return true;
             }
             ++tries;
@@ -422,7 +422,7 @@ bool Builder::tryWrapMultipleBranchesForNode(size_t nodeIndex, std::vector<float
         float finalDistance = node.radius + offsetDistance;
         if (finalDistance >= distance) {
             if (swallowEdgeForNode(nodeIndex, i)) {
-                qDebug() << "Neighbor too near to wrap, swallow it";
+                //qDebug() << "Neighbor too near to wrap, swallow it";
                 offsets[i] = 0;
                 offsetsChanged = true;
                 directSwallowed = true;
@@ -456,13 +456,13 @@ bool Builder::tryWrapMultipleBranchesForNode(size_t nodeIndex, std::vector<float
     if (stitchSucceed) {
         stitchSucceed = nodemesh::isManifold(testFaces);
         if (!stitchSucceed) {
-            qDebug() << "Mesh stitch but not manifold";
+            //qDebug() << "Mesh stitch but not manifold";
         }
     }
     if (stitchSucceed) {
         nodemesh::Combiner::Mesh mesh(m_generatedVertices, testFaces, false);
         if (mesh.isNull()) {
-            qDebug() << "Mesh stitched but not not pass test";
+            //qDebug() << "Mesh stitched but not not pass test";
             //nodemesh::exportMeshAsObj(m_generatedVertices, testFaces, "/Users/jeremy/Desktop/test.obj");
             stitchSucceed = false;
             for (size_t i = 0; i < node.edges.size(); ++i) {
@@ -484,7 +484,7 @@ bool Builder::tryWrapMultipleBranchesForNode(size_t nodeIndex, std::vector<float
             for (const auto &edgeLoop: failedEdgeLoops) {
                 if (offsets[edgeLoop] + WRAP_STEP_BACK_FACTOR >= 1.0) {
                     if (swallowEdgeForNode(nodeIndex, edgeLoop)) {
-                        qDebug() << "No offset to step back, swallow neighbor instead";
+                        //qDebug() << "No offset to step back, swallow neighbor instead";
                         offsets[edgeLoop] = 0;
                         offsetsChanged = true;
                         break;
@@ -509,7 +509,7 @@ bool Builder::tryWrapMultipleBranchesForNode(size_t nodeIndex, std::vector<float
             for (const auto &u: first.first) {
                 for (const auto &v: second.first) {
                     if ((m_generatedVertices[u] - m_generatedVertices[v]).lengthSquared() < allowedMinDist2) {
-                        qDebug() << "Weld" << v << "to" << u;
+                        //qDebug() << "Weld" << v << "to" << u;
                         m_weldMap.insert({v, u});
                     }
                 }
@@ -532,18 +532,18 @@ bool Builder::swallowEdgeForNode(size_t nodeIndex, size_t edgeOrder)
     auto &node = m_nodes[nodeIndex];
     size_t edgeIndex = node.edges[edgeOrder];
     if (m_swallowedEdges.find(edgeIndex) != m_swallowedEdges.end()) {
-        qDebug() << "No more edge to swallow";
+        //qDebug() << "No more edge to swallow";
         return false;
     }
     size_t neighborIndex = m_edges[edgeIndex].neiborOf(nodeIndex);
     const auto &neighbor = m_nodes[neighborIndex];
     if (neighbor.edges.size() != 2) {
-        qDebug() << "Neighbor is not a simple two edges node to swallow, edges:" << neighbor.edges.size() << "neighbor:" << neighborIndex << "node" << nodeIndex;
+        //qDebug() << "Neighbor is not a simple two edges node to swallow, edges:" << neighbor.edges.size() << "neighbor:" << neighborIndex << "node" << nodeIndex;
         return false;
     }
     size_t anotherEdgeIndex = neighbor.anotherEdge(edgeIndex);
     if (m_swallowedEdges.find(anotherEdgeIndex) != m_swallowedEdges.end()) {
-        qDebug() << "Desired edge already been swallowed";
+        //qDebug() << "Desired edge already been swallowed";
         return false;
     }
     node.edges[edgeOrder] = anotherEdgeIndex;
@@ -556,7 +556,7 @@ bool Builder::swallowEdgeForNode(size_t nodeIndex, size_t edgeOrder)
     //    qDebug() << it;
     m_swallowedEdges.insert(edgeIndex);
     m_swallowedNodes.insert(neighborIndex);
-    qDebug() << "Swallow edge" << edgeIndex << "for node" << nodeIndex << "neighbor" << neighborIndex << "got eliminated, choosen edge" << anotherEdgeIndex;
+    //qDebug() << "Swallow edge" << edgeIndex << "for node" << nodeIndex << "neighbor" << neighborIndex << "got eliminated, choosen edge" << anotherEdgeIndex;
     return true;
 }
 
@@ -684,7 +684,7 @@ void Builder::applyWeld()
             newIndices.push_back(newIndex);
         }
         if (newIndices.size() < 3) {
-            qDebug() << "Face been welded";
+            //qDebug() << "Face been welded";
             continue;
         }
         newFaces.push_back(newIndices);

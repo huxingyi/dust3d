@@ -75,7 +75,7 @@ bool Stitcher::stitch(const std::vector<std::pair<std::vector<size_t>, QVector3D
     m_wrapper->setVertices(m_positions);
     m_wrapper->wrap(edgeLoops);
     if (!m_wrapper->finished()) {
-        qDebug() << "Wrapping failed";
+        //qDebug() << "Wrapping failed";
         return false;
     }
     return true;

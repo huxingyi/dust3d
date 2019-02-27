@@ -31,7 +31,7 @@ bool Recombiner::convertHalfEdgesToEdgeLoops(const std::vector<std::pair<size_t,
     for (const auto &halfEdge: halfEdges) {
         auto inserResult = vertexLinkMap.insert(halfEdge);
         if (!inserResult.second) {
-            qDebug() << "Create edge loop from half edge failed, found repeated vertex link" << halfEdge.first << "->" << halfEdge.second << "exist:" << inserResult.first->first << "->" << inserResult.first->second;
+            //qDebug() << "Create edge loop from half edge failed, found repeated vertex link" << halfEdge.first << "->" << halfEdge.second << "exist:" << inserResult.first->first << "->" << inserResult.first->second;
             return false;
         }
     }
@@ -53,11 +53,11 @@ bool Recombiner::convertHalfEdgesToEdgeLoops(const std::vector<std::pair<size_t,
             }
         }
         if (!loopBack) {
-            qDebug() << "Create edge loop from half edge failed, edge doesn't loop back";
+            //qDebug() << "Create edge loop from half edge failed, edge doesn't loop back";
             return false;
         }
         if (edgeLoop.size() < 3) {
-            qDebug() << "Create edge loop from half edge failed, edge loop size invalid:" << edgeLoop.size();
+            //qDebug() << "Create edge loop from half edge failed, edge loop size invalid:" << edgeLoop.size();
             return false;
         }
         for (const auto &vertex: edgeLoop) {
@@ -107,7 +107,7 @@ bool Recombiner::buildHalfEdgeToFaceMap(std::map<std::pair<size_t, size_t>, size
             size_t j = (i + 1) % face.size();
             const auto insertResult = halfEdgeToFaceMap.insert({{face[i], face[j]}, faceIndex});
             if (!insertResult.second) {
-                qDebug() << "Non manifold edge found:" << face[i] << face[j];
+                //qDebug() << "Non manifold edge found:" << face[i] << face[j];
                 succeed = false;
             }
         }
@@ -135,7 +135,7 @@ bool Recombiner::recombine()
     }
     std::map<size_t, size_t> seamVertexToIslandMap;
     size_t islands = splitSeamVerticesToIslands(seamLink, &seamVertexToIslandMap);
-    qDebug() << "Seam islands:" << islands;
+    //qDebug() << "Seam islands:" << islands;
     
     std::map<std::pair<size_t, size_t>, std::pair<size_t, bool>> edgesInSeamArea;
     for (size_t faceIndex = 0; faceIndex < (*m_faces).size(); ++faceIndex) {
@@ -182,7 +182,7 @@ bool Recombiner::recombine()
     for (auto &it: islandsMap) {
         for (size_t side = 0; side < 2; ++side) {
             if (!convertHalfEdgesToEdgeLoops(it.second.halfedges[side], &it.second.edgeLoops[side])) {
-                qDebug() << "Convert half edges to edge loops for island" << it.first << "side" << side << "failed";
+                //qDebug() << "Convert half edges to edge loops for island" << it.first << "side" << side << "failed";
                 it.second.edgeLoops[side].clear();
             }
         }
@@ -197,7 +197,7 @@ bool Recombiner::recombine()
                 while ((adjustedTriangles=adjustTrianglesFromSeam(edgeLoop, it.first)) > 0) {
                     totalAdjustedTriangles += adjustedTriangles;
                 }
-                qDebug() << "Island" << it.first << "side" << side << "edge loop" << i << "adjusted" << totalAdjustedTriangles << "triangles";
+                //qDebug() << "Island" << it.first << "side" << side << "edge loop" << i << "adjusted" << totalAdjustedTriangles << "triangles";
             }
         }
     }
@@ -217,7 +217,7 @@ bool Recombiner::recombine()
     copyNonSeamFacesAsRegenerated();
     removeReluctantVertices();
     
-    qDebug() << "Optimized" << m_goodSeams.size() << "seams";
+    //qDebug() << "Optimized" << m_goodSeams.size() << "seams";
     
     return true;
 }
@@ -343,7 +343,7 @@ bool Recombiner::bridge(const std::vector<size_t> &first, const std::vector<size
         }
     }
     
-    qDebug() << "small:" << small->size() << "large:" << large->size() << "matches:" << matchedPairs.size();
+    //qDebug() << "small:" << small->size() << "large:" << large->size() << "matches:" << matchedPairs.size();
     
     if (matchedPairs.empty())
         return false;
