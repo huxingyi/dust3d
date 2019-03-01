@@ -344,6 +344,10 @@ DocumentWindow::DocumentWindow() :
     m_openAction = new QAction(tr("Open..."), this);
     connect(m_openAction, &QAction::triggered, this, &DocumentWindow::open, Qt::QueuedConnection);
     m_fileMenu->addAction(m_openAction);
+    
+    m_openExampleAction = new QAction(tr("Open Example"), this);
+    connect(m_openExampleAction, &QAction::triggered, this, &DocumentWindow::openExample, Qt::QueuedConnection);
+    m_fileMenu->addAction(m_openExampleAction);
 
     m_saveAction = new QAction(tr("Save"), this);
     connect(m_saveAction, &QAction::triggered, this, &DocumentWindow::save, Qt::QueuedConnection);
@@ -1171,6 +1175,65 @@ void DocumentWindow::saveTo(const QString &saveAsFilename)
     }
 
     QApplication::restoreOverrideCursor();
+}
+
+void DocumentWindow::openExample()
+{
+    if (!m_documentSaved) {
+        QMessageBox::StandardButton answer = QMessageBox::question(this,
+            APP_NAME,
+            tr("Do you really want to open example and lose the unsaved changes?"),
+            QMessageBox::Yes | QMessageBox::No);
+        if (answer != QMessageBox::Yes)
+            return;
+    }
+    
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    Ds3FileReader ds3Reader(":/resources/bob.ds3");
+    
+    m_document->clearHistories();
+    m_document->reset();
+    m_document->saveSnapshot();
+    
+    for (int i = 0; i < ds3Reader.items().size(); ++i) {
+        Ds3ReaderItem item = ds3Reader.items().at(i);
+        if (item.type == "asset") {
+            if (item.name.startsWith("images/")) {
+                QString filename = item.name.split("/")[1];
+                QString imageIdString = filename.split(".")[0];
+                QUuid imageId = QUuid(imageIdString);
+                if (!imageId.isNull()) {
+                    QByteArray data;
+                    ds3Reader.loadItem(item.name, &data);
+                    QImage image = QImage::fromData(data, "PNG");
+                    (void)ImageForever::add(&image, imageId);
+                }
+            }
+        }
+    }
+    
+    for (int i = 0; i < ds3Reader.items().size(); ++i) {
+        Ds3ReaderItem item = ds3Reader.items().at(i);
+        if (item.type == "model") {
+            QByteArray data;
+            ds3Reader.loadItem(item.name, &data);
+            QXmlStreamReader stream(data);
+            Snapshot snapshot;
+            loadSkeletonFromXmlStream(&snapshot, stream);
+            m_document->fromSnapshot(snapshot);
+            m_document->saveSnapshot();
+        } else if (item.type == "asset") {
+            if (item.name == "canvas.png") {
+                QByteArray data;
+                ds3Reader.loadItem(item.name, &data);
+                QImage image = QImage::fromData(data, "PNG");
+                m_document->updateTurnaround(image);
+            }
+        }
+    }
+    QApplication::restoreOverrideCursor();
+
+    setCurrentFilename("");
 }
 
 void DocumentWindow::open()
