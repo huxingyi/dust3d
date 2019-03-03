@@ -13,12 +13,12 @@ Download and Install Dust3D
 
 * For Linux:
 
-    https://github.com/huxingyi/dust3d/releases/download/1.0.0-beta.15/dust3d-1.0.0-beta.15-x86_64.AppImage
+    https://github.com/huxingyi/dust3d/releases/download/1.0.0-beta.14/dust3d-1.0.0-beta.14-x86_64.AppImage
 
     .. code-block:: none
 
-        $ chmod a+x ./dust3d-1.0.0-beta.15-x86_64.AppImage
-        $ ./dust3d-1.0.0-beta.15-x86_64.AppImage
+        $ chmod a+x ./dust3d-1.0.0-beta.14-x86_64.AppImage
+        $ ./dust3d-1.0.0-beta.14-x86_64.AppImage
 
 * Build on Your Own:
 
