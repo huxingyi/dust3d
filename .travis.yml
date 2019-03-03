@@ -37,9 +37,9 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install libcgal-dev; fi
 
   # (Linux) Build from source
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then wget https://github.com/CGAL/cgal/releases/download/releases/CGAL-4.11.1/CGAL-4.11.1.zip; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then unzip CGAL-4.11.1.zip; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cd CGAL-4.11.1; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then wget https://github.com/CGAL/cgal/releases/download/releases/CGAL-4.13/CGAL-4.13.zip; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then unzip CGAL-4.13.zip; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cd CGAL-4.13; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then mkdir build; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cd build; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cmake ../; fi

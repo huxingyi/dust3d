@@ -402,7 +402,7 @@ win32 {
 
 	GMP_LIBNAME = libgmp-10
 	MPFR_LIBNAME = libmpfr-4
-	CGAL_LIBNAME = CGAL-vc140-mt-4.11.1
+	CGAL_LIBNAME = CGAL-vc140-mt-4.13
 	CGAL_INCLUDEDIR = $$CGAL_DIR\include
 	CGAL_BUILDINCLUDEDIR = $$CGAL_DIR\build\include
 	CGAL_LIBDIR = $$CGAL_DIR\build\lib\Release

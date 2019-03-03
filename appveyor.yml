@@ -13,7 +13,7 @@ environment:
       sysdirname: system32
 
 cache:
-  CGAL-4.11.1-Setup.exe -> appveyor.yml
+  CGAL-4.13-Setup.exe -> appveyor.yml
 
 install:
   - if "%PLATFORM%" == "x86"
@@ -22,10 +22,10 @@ install:
     call "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64
   - if "%PLATFORM%" == "x64"
     call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86_amd64
-  - if not exist CGAL-4.11.1-Setup.exe
-      appveyor DownloadFile https://github.com/CGAL/cgal/releases/download/releases/CGAL-4.11.1/CGAL-4.11.1-Setup.exe -FileName CGAL-4.11.1-Setup.exe
-  - CGAL-4.11.1-Setup.exe /S /D=%APPVEYOR_BUILD_FOLDER%\CGAL-4.11.1
-  - cd CGAL-4.11.1
+  - if not exist CGAL-4.13-Setup.exe
+      appveyor DownloadFile https://github.com/CGAL/cgal/releases/download/releases/CGAL-4.13/CGAL-4.13-Setup.exe -FileName CGAL-4.13-Setup.exe
+  - CGAL-4.13-Setup.exe /S /D=%APPVEYOR_BUILD_FOLDER%\CGAL-4.13
+  - cd CGAL-4.13
   - mkdir build
   - cd build
   - if "%PLATFORM%" == "x86"
@@ -39,7 +39,7 @@ build: false
 
 test_script:
   - set PATH=%PATH%;%QTDIR%\bin
-  - qmake "BOOST_INCLUDEDIR=C:\Libraries\boost_1_66_0" "CGAL_DIR=%APPVEYOR_BUILD_FOLDER%\CGAL-4.11.1"
+  - qmake "BOOST_INCLUDEDIR=C:\Libraries\boost_1_66_0" "CGAL_DIR=%APPVEYOR_BUILD_FOLDER%\CGAL-4.13"
   - nmake -f Makefile.Release
 
 after_test:
@@ -49,9 +49,9 @@ after_test:
   - if "%TAG%" == ""
     set TAG=unstable
   - 7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\release\dust3d.exe
-  - 7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-4.11.1\build\bin\Release\CGAL-vc140-mt-4.11.1.dll
-  - 7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-4.11.1\auxiliary\gmp\lib\libgmp-10.dll
-  - 7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-4.11.1\auxiliary\gmp\lib\libmpfr-4.dll
+  - 7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-4.13\build\bin\Release\CGAL-vc140-mt-4.13.dll
+  - 7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-4.13\auxiliary\gmp\lib\libgmp-10.dll
+  - 7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-4.13\auxiliary\gmp\lib\libmpfr-4.dll
   - 7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\ci\opengl32sw.dll
   - 7z a dust3d-%TAG%-%PLATFORM%.zip %QTDIR%\bin\Qt5Widgets.dll
   - 7z a dust3d-%TAG%-%PLATFORM%.zip %QTDIR%\bin\Qt5Gui.dll
