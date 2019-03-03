@@ -18,8 +18,6 @@
 #include "shortcuts.h"
 #include "imageforever.h"
 
-const float PoseEditWidget::m_frameDuration = 0.042; //(1.0 / 24)
-
 PoseEditWidget::PoseEditWidget(const Document *document, QWidget *parent) :
     QDialog(parent),
     m_document(document),
@@ -95,6 +93,18 @@ PoseEditWidget::PoseEditWidget(const Document *document, QWidget *parent) :
     connect(m_nameEdit, &QLineEdit::textChanged, this, [=]() {
         setUnsaveState();
     });
+    
+    m_durationEdit = new QDoubleSpinBox();
+    m_durationEdit->setDecimals(2);
+    m_durationEdit->setMaximum(60);
+    m_durationEdit->setMinimum(0);
+    m_durationEdit->setSingleStep(0.1);
+    m_durationEdit->setValue(m_duration);
+    
+    connect(m_durationEdit, static_cast<void (QDoubleSpinBox::*)(double)>(&QDoubleSpinBox::valueChanged), this, [=](double value) {
+        setDuration((float)value);
+    });
+    
     QPushButton *saveButton = new QPushButton(tr("Save"));
     connect(saveButton, &QPushButton::clicked, this, &PoseEditWidget::save);
     saveButton->setDefault(true);
@@ -112,26 +122,67 @@ PoseEditWidget::PoseEditWidget(const Document *document, QWidget *parent) :
     m_currentFrameSlider = new QSlider(Qt::Horizontal);
     m_currentFrameSlider->setRange(0, m_frames.size() - 1);
     m_currentFrameSlider->setValue(m_currentFrame);
-    m_currentFrameSlider->hide();
+    //m_currentFrameSlider->hide();
     connect(m_currentFrameSlider, static_cast<void (QSlider::*)(int)>(&QSlider::valueChanged), this, [=](int value) {
         setCurrentFrame(value);
     });
     
     connect(m_document, &Document::resultRigChanged, this, &PoseEditWidget::updatePoseDocument);
     
+    QPushButton *moveToFirstFrameButton = new QPushButton(Theme::awesome()->icon(fa::angledoubleleft), "");
+    connect(moveToFirstFrameButton, &QPushButton::clicked, this, [=]() {
+        setCurrentFrame(0);
+    });
+    
+    QPushButton *moveToPreviousFrameButton = new QPushButton(Theme::awesome()->icon(fa::angleleft), "");
+    connect(moveToPreviousFrameButton, &QPushButton::clicked, this, [=]() {
+        if (m_currentFrame > 0)
+            setCurrentFrame(m_currentFrame - 1);
+    });
+    
+    QPushButton *moveToNextFrameButton = new QPushButton(Theme::awesome()->icon(fa::angleright), "");
+    connect(moveToNextFrameButton, &QPushButton::clicked, this, [=]() {
+        if (m_currentFrame + 1 < (int)m_frames.size())
+            setCurrentFrame(m_currentFrame + 1);
+    });
+    
+    QPushButton *moveToLastFrameButton = new QPushButton(Theme::awesome()->icon(fa::angledoubleright), "");
+    connect(moveToLastFrameButton, &QPushButton::clicked, this, [=]() {
+        if (!m_frames.empty())
+            setCurrentFrame(m_frames.size() - 1);
+    });
+    
+    QPushButton *insertAfterFrameButton = new QPushButton(Theme::awesome()->icon(fa::plus), "");
+    connect(insertAfterFrameButton, &QPushButton::clicked, this, &PoseEditWidget::insertFrameAfterCurrentFrame);
+    
+    QPushButton *deleteFrameButton = new QPushButton(Theme::awesome()->icon(fa::trash), "");
+    connect(deleteFrameButton, &QPushButton::clicked, this, &PoseEditWidget::removeCurrentFrame);
+    
+    QHBoxLayout *timelineLayout = new QHBoxLayout;
+    timelineLayout->addWidget(insertAfterFrameButton);
+    timelineLayout->addWidget(moveToFirstFrameButton);
+    timelineLayout->addWidget(moveToPreviousFrameButton);
+    timelineLayout->addWidget(moveToNextFrameButton);
+    timelineLayout->addWidget(moveToLastFrameButton);
+    timelineLayout->addWidget(m_framesSettingButton);
+    timelineLayout->addWidget(m_currentFrameSlider);
+    timelineLayout->addWidget(deleteFrameButton);
+    timelineLayout->setStretch(6, 1);
+    
     QHBoxLayout *baseInfoLayout = new QHBoxLayout;
     baseInfoLayout->addWidget(new QLabel(tr("Name")));
     baseInfoLayout->addWidget(m_nameEdit);
-    baseInfoLayout->addWidget(changeReferenceSheet);
-    baseInfoLayout->addWidget(m_framesSettingButton);
-    baseInfoLayout->addWidget(m_currentFrameSlider);
+    baseInfoLayout->addSpacing(10);
+    baseInfoLayout->addWidget(new QLabel(tr("Duration")));
+    baseInfoLayout->addWidget(m_durationEdit);
     baseInfoLayout->addStretch();
+    baseInfoLayout->addWidget(changeReferenceSheet);
     baseInfoLayout->addWidget(saveButton);
-    baseInfoLayout->setStretch(4, 1);
     
     QVBoxLayout *mainLayout = new QVBoxLayout;
     mainLayout->addLayout(paramtersLayout);
     mainLayout->addWidget(Theme::createHorizontalLineWidget());
+    mainLayout->addLayout(timelineLayout);
     mainLayout->addLayout(baseInfoLayout);
     
     setLayout(mainLayout);
@@ -183,7 +234,8 @@ void PoseEditWidget::showFramesSettingPopup(const QPoint &pos)
 void PoseEditWidget::updateFramesSettingButton()
 {
     m_currentFrameSlider->setRange(0, m_frames.size() - 1);
-    m_currentFrameSlider->setVisible(m_frames.size() > 1);
+    if (m_currentFrame != m_currentFrameSlider->value())
+        m_currentFrameSlider->setValue(m_currentFrame);
     m_framesSettingButton->setText(tr("Frame: %1 / %2").arg(QString::number(m_currentFrame + 1).rightJustified(2, ' ')).arg(QString::number(m_frames.size()).leftJustified(2, ' ')));
 }
 
@@ -200,7 +252,7 @@ void PoseEditWidget::syncFrameFromCurrent()
 {
     ensureEnoughFrames();
     m_frames[m_currentFrame] = {m_currentAttributes, m_currentParameters};
-    m_frames[m_currentFrame].first["duration"] = QString::number(m_frameDuration);
+    updateFramesDurations();
 }
 
 void PoseEditWidget::setFrameCount(int count)
@@ -211,10 +263,31 @@ void PoseEditWidget::setFrameCount(int count)
     setUnsaveState();
     count = std::max(count, 1);
     m_frames.resize(count);
+    updateFramesDurations();
     updateFramesSettingButton();
     if (m_currentFrame >= count) {
         setCurrentFrame(count - 1);
     }
+}
+
+void PoseEditWidget::updateFramesDurations()
+{
+    if (m_frames.empty())
+        return;
+    
+    float frameDuration = m_duration / m_frames.size();
+    for (auto &frame: m_frames)
+        frame.first["duration"] = QString::number(frameDuration);
+}
+
+void PoseEditWidget::setDuration(float duration)
+{
+    if (qFuzzyCompare(duration, m_duration))
+        return;
+    
+    m_duration = duration;
+    setUnsaveState();
+    updateFramesDurations();
 }
 
 void PoseEditWidget::setCurrentFrame(int frame)
@@ -227,6 +300,43 @@ void PoseEditWidget::setCurrentFrame(int frame)
     m_currentAttributes = m_frames[m_currentFrame].first;
     m_currentParameters = m_frames[m_currentFrame].second;
     updatePoseDocument();
+}
+
+void PoseEditWidget::insertFrameAfterCurrentFrame()
+{
+    int currentFrame = m_currentFrame;
+    m_frames.resize(m_frames.size() + 1);
+    updateFramesDurations();
+    if (-1 != currentFrame) {
+        for (int index = m_frames.size() - 1; index > currentFrame; --index) {
+            m_frames[index] = m_frames[index - 1];
+        }
+    }
+    setUnsaveState();
+    setCurrentFrame(currentFrame + 1);
+}
+
+void PoseEditWidget::removeCurrentFrame()
+{
+    if (m_frames.size() <= 1)
+        return;
+    
+    int currentFrame = m_currentFrame;
+    if (-1 != currentFrame) {
+        for (int index = currentFrame + 1; index < (int)m_frames.size(); ++index) {
+            m_frames[index - 1] = m_frames[index];
+        }
+        m_frames.resize(m_frames.size() - 1);
+    }
+    updateFramesDurations();
+    setUnsaveState();
+    if (currentFrame - 1 >= 0)
+        setCurrentFrame(currentFrame - 1);
+    else if (currentFrame < (int)m_frames.size()) {
+        m_currentFrame = -1;
+        setCurrentFrame(currentFrame);
+    } else
+        setCurrentFrame(0);
 }
 
 void PoseEditWidget::changeTurnaround()
@@ -248,6 +358,13 @@ void PoseEditWidget::changeTurnaround()
 
 void PoseEditWidget::updatePoseDocument()
 {
+    m_otherFramesParameters.clear();
+    for (int i = 0; i < (int)m_frames.size(); ++i) {
+        if (m_currentFrame == i)
+            continue;
+        m_otherFramesParameters.push_back(m_frames[i].second);
+    }
+    m_poseDocument->updateOtherFramesParameters(m_otherFramesParameters);
     m_poseDocument->fromParameters(m_document->resultRigBones(), m_currentParameters);
     m_poseDocument->clearHistories();
     m_poseDocument->saveHistoryItem();
@@ -358,6 +475,14 @@ void PoseEditWidget::setEditPoseFrames(std::vector<std::pair<std::map<QString, Q
         m_currentAttributes = frame.first;
         m_currentParameters = frame.second;
     }
+    float totalDuration = 0;
+    for (const auto &frame: m_frames) {
+        float frameDuration = valueOfKeyInMapOrEmpty(frame.first, "duration").toFloat();
+        totalDuration += frameDuration;
+    }
+    if (qFuzzyIsNull(totalDuration))
+        totalDuration = 1.0;
+    m_durationEdit->setValue(totalDuration);
     updatePoseDocument();
     updatePreview();
     updateFramesSettingButton();

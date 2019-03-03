@@ -29,10 +29,12 @@ public:
     bool originSettled() const override;
     bool isNodeEditable(QUuid nodeId) const override;
     bool isEdgeEditable(QUuid edgeId) const override;
+    bool isNodeDeactivated(QUuid nodeId) const override;
+    bool isEdgeDeactivated(QUuid edgeId) const override;
     void copyNodes(std::set<QUuid> nodeIdSet) const override;
     
     void updateTurnaround(const QImage &image);
-    void updateRigBones(const std::vector<RiggerBone> *rigBones, const float heightAboveGroundLevel=0.0);
+    void updateOtherFramesParameters(const std::vector<std::map<QString, std::map<QString, QString>>> &otherFramesParameters);
     void reset();
     
     void toParameters(std::map<QString, std::map<QString, QString>> &parameters, const std::set<QUuid> &limitNodeIds=std::set<QUuid>()) const;
@@ -61,6 +63,16 @@ private:
     float findFootBottomY() const;
     float findFirstSpineY() const;
     float findLegHeight() const;
+    void parametersToNodes(const std::vector<RiggerBone> *rigBones,
+        const float heightAboveGroundLevel,
+        std::map<QString, std::pair<QUuid, QUuid>> *boneNameToIdsMap,
+        QUuid *groundPartId,
+        QUuid *bonesPartId,
+        QUuid *groundEdgeId,
+        bool isOther=false);
+    void updateBonesAndHeightAboveGroundLevelFromParameters(std::vector<RiggerBone> *bones,
+        float *heightAboveGroundLevel,
+        const std::map<QString, std::map<QString, QString>> &parameters);
 
     std::map<QString, std::pair<QUuid, QUuid>> m_boneNameToIdsMap;
     QUuid m_groundPartId;
@@ -69,6 +81,8 @@ private:
     std::deque<PoseHistoryItem> m_undoItems;
     std::deque<PoseHistoryItem> m_redoItems;
     std::vector<RiggerBone> m_riggerBones;
+    std::vector<std::map<QString, std::map<QString, QString>>> m_otherFramesParameters;
+    std::set<QUuid> m_otherIds;
     
     static float fromOutcomeX(float x);
     static float toOutcomeX(float x);

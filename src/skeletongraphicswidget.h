@@ -125,25 +125,28 @@ public:
         m_profile(profile),
         m_hovered(false),
         m_checked(false),
-        m_markColor(Qt::transparent)
+        m_markColor(Qt::transparent),
+        m_deactivated(false)
     {
         setData(0, "node");
         setRadius(32);
     }
     void updateAppearance()
     {
-        QColor color = Theme::white;
+        QColor color = Qt::gray;
         
-        switch (m_profile)
-        {
-        case SkeletonProfile::Unknown:
-            break;
-        case SkeletonProfile::Main:
-            color = Theme::red;
-            break;
-        case SkeletonProfile::Side:
-            color = Theme::green;
-            break;
+        if (!m_deactivated) {
+            switch (m_profile)
+            {
+            case SkeletonProfile::Unknown:
+                break;
+            case SkeletonProfile::Main:
+                color = Theme::red;
+                break;
+            case SkeletonProfile::Side:
+                color = Theme::green;
+                break;
+            }
         }
         
         QColor penColor = color;
@@ -222,6 +225,15 @@ public:
         m_checked = checked;
         updateAppearance();
     }
+    void setDeactivated(bool deactivated)
+    {
+        m_deactivated = deactivated;
+        updateAppearance();
+    }
+    bool deactivated()
+    {
+        return m_deactivated;
+    }
     bool checked()
     {
         return m_checked;
@@ -236,6 +248,7 @@ private:
     bool m_hovered;
     bool m_checked;
     QColor m_markColor;
+    bool m_deactivated;
 };
 
 class SkeletonGraphicsEdgeItem : public QGraphicsPolygonItem
@@ -246,7 +259,8 @@ public:
         m_secondItem(nullptr),
         m_hovered(false),
         m_checked(false),
-        m_profile(SkeletonProfile::Unknown)
+        m_profile(SkeletonProfile::Unknown),
+        m_deactivated(false)
     {
         setData(0, "edge");
     }
@@ -282,18 +296,20 @@ public:
         polygon << line.p1() + offset1 << line.p1() + offset2 << line.p2() + offset2 << line.p2() + offset1;
         setPolygon(polygon);
         
-        QColor color = Theme::white;
+        QColor color = Qt::gray;
         
-        switch (m_firstItem->profile())
-        {
-        case SkeletonProfile::Unknown:
-            break;
-        case SkeletonProfile::Main:
-            color = Theme::red;
-            break;
-        case SkeletonProfile::Side:
-            color = Theme::green;
-            break;
+        if (!m_deactivated) {
+            switch (m_firstItem->profile())
+            {
+            case SkeletonProfile::Unknown:
+                break;
+            case SkeletonProfile::Main:
+                color = Theme::red;
+                break;
+            case SkeletonProfile::Side:
+                color = Theme::green;
+                break;
+            }
         }
         
         QColor penColor = color;
@@ -324,6 +340,15 @@ public:
         m_checked = checked;
         updateAppearance();
     }
+    void setDeactivated(bool deactivated)
+    {
+        m_deactivated = deactivated;
+        updateAppearance();
+    }
+    bool deactivated()
+    {
+        return m_deactivated;
+    }
     bool checked()
     {
         return m_checked;
@@ -340,6 +365,7 @@ private:
     bool m_hovered;
     bool m_checked;
     SkeletonProfile m_profile;
+    bool m_deactivated;
 };
 
 class SkeletonGraphicsWidget : public QGraphicsView

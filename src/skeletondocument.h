@@ -246,6 +246,14 @@ public:
     virtual bool originSettled() const = 0;
     virtual bool isNodeEditable(QUuid nodeId) const = 0;
     virtual bool isEdgeEditable(QUuid edgeId) const = 0;
+    virtual bool isNodeDeactivated(QUuid nodeId) const
+    {
+        return false;
+    };
+    virtual bool isEdgeDeactivated(QUuid edgeId) const
+    {
+        return false;
+    };
     virtual void copyNodes(std::set<QUuid> nodeIdSet) const = 0;
     
 public slots:

@@ -698,11 +698,15 @@ bool SkeletonGraphicsWidget::mouseMove(QMouseEvent *event)
             QGraphicsItem *item = *it;
             if (item->data(0) == "node") {
                 SkeletonGraphicsNodeItem *nodeItem = (SkeletonGraphicsNodeItem *)item;
+                if (nodeItem->deactivated())
+                    continue;
                 QPointF origin = nodeItem->origin();
                 float distance2 = pow(origin.x() - scenePos.x(), 2) + pow(origin.y() - scenePos.y(), 2);
                 itemDistance2MapWithMouse.push_back(std::make_pair(item, distance2));
             } else if (item->data(0) == "edge") {
                 SkeletonGraphicsEdgeItem *edgeItem = (SkeletonGraphicsEdgeItem *)item;
+                if (edgeItem->deactivated())
+                    continue;
                 if (edgeItem->firstItem() && edgeItem->secondItem()) {
                     QPointF firstOrigin = edgeItem->firstItem()->origin();
                     QPointF secondOrigin = edgeItem->secondItem()->origin();
@@ -1748,6 +1752,10 @@ void SkeletonGraphicsWidget::nodeAdded(QUuid nodeId)
     sideProfileItem->setMarkColor(markColor);
     mainProfileItem->setId(nodeId);
     sideProfileItem->setId(nodeId);
+    if (m_document->isNodeDeactivated(nodeId)) {
+        mainProfileItem->setDeactivated(true);
+        sideProfileItem->setDeactivated(true);
+    }
     if (m_mainProfileOnly)
         sideProfileItem->hide();
     scene()->addItem(mainProfileItem);
@@ -1799,6 +1807,10 @@ void SkeletonGraphicsWidget::edgeAdded(QUuid edgeId)
     sideProfileEdgeItem->setId(edgeId);
     mainProfileEdgeItem->setEndpoints(fromIt->second.first, toIt->second.first);
     sideProfileEdgeItem->setEndpoints(fromIt->second.second, toIt->second.second);
+    if (m_document->isNodeDeactivated(edgeId)) {
+        mainProfileEdgeItem->setDeactivated(true);
+        sideProfileEdgeItem->setDeactivated(true);
+    }
     if (m_mainProfileOnly)
         sideProfileEdgeItem->hide();
     scene()->addItem(mainProfileEdgeItem);

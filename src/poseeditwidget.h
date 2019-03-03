@@ -5,6 +5,7 @@
 #include <QCloseEvent>
 #include <QLineEdit>
 #include <QSlider>
+#include <QDoubleSpinBox>
 #include "posepreviewmanager.h"
 #include "document.h"
 #include "modelwidget.h"
@@ -27,7 +28,7 @@ public:
     PoseEditWidget(const Document *document, QWidget *parent=nullptr);
     ~PoseEditWidget();
     
-    static const float m_frameDuration;
+    float m_duration = 1.0;
 public slots:
     void updatePoseDocument();
     void updatePreview();
@@ -37,7 +38,10 @@ public slots:
     void setEditPoseFrames(std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> frames);
     void setEditPoseTurnaroundImageId(QUuid imageId);
     void setCurrentFrame(int frame);
+    void insertFrameAfterCurrentFrame();
+    void removeCurrentFrame();
     void setFrameCount(int count);
+    void setDuration(float duration);
     void updateTitle();
     void save();
     void clearUnsaveState();
@@ -46,6 +50,7 @@ public slots:
 private slots:
     void updateFramesSettingButton();
     void showFramesSettingPopup(const QPoint &pos);
+    void updateFramesDurations();
 protected:
     QSize sizeHint() const override;
     void closeEvent(QCloseEvent *event) override;
@@ -60,11 +65,13 @@ private:
     std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> m_frames;
     std::map<QString, QString> m_currentAttributes;
     std::map<QString, std::map<QString, QString>> m_currentParameters;
+    std::vector<std::map<QString, std::map<QString, QString>>> m_otherFramesParameters;
     int m_currentFrame = 0;
     QUuid m_poseId;
     bool m_unsaved = false;
     QUuid m_imageId;
     QLineEdit *m_nameEdit = nullptr;
+    QDoubleSpinBox *m_durationEdit = nullptr;
     PoseDocument *m_poseDocument = nullptr;
     SkeletonGraphicsWidget *m_poseGraphicsWidget = nullptr;
     QPushButton *m_framesSettingButton = nullptr;
