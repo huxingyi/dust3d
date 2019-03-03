@@ -2,6 +2,7 @@
 #include <unordered_set>
 #include <set>
 #include <queue>
+#include <cmath>
 #include <simpleuv/uvunwrapper.h>
 #include <simpleuv/parametrize.h>
 #include <simpleuv/chartpacker.h>

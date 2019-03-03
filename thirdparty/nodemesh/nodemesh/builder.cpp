@@ -283,7 +283,7 @@ bool Builder::validateNormal(const QVector3D &normal)
     if (normal.isNull()) {
         return false;
     }
-    if (isnan(normal.x()) || isnan(normal.y()) || isnan(normal.z())) {
+    if (std::isnan(normal.x()) || std::isnan(normal.y()) || std::isnan(normal.z())) {
         return false;
     }
     return true;
