@@ -24,7 +24,7 @@ private:
     float m_floatToIntFactor = 10000;
     size_t m_tryNum = 0;
     float m_textureSizeFactor = 1.0;
-    size_t m_maxTryNum = 10000;
+    size_t m_maxTryNum = 100;
 };
 
 }

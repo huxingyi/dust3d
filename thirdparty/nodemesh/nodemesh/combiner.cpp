@@ -4,6 +4,7 @@
 #include <nodemesh/cgalmesh.h>
 #include <CGAL/Polygon_mesh_processing/corefinement.h>
 #include <CGAL/Polygon_mesh_processing/repair.h>
+#include <CGAL/Polygon_mesh_processing/triangulate_faces.h>
 #include <QDebug>
 #include <map>
 
@@ -17,28 +18,34 @@ Combiner::Mesh::Mesh(const std::vector<QVector3D> &vertices, const std::vector<s
 {
     ExactMesh *cgalMesh = nullptr;
     if (!faces.empty()) {
-        std::vector<std::vector<size_t>> triangles;
-        triangulate(vertices, faces, triangles);
-        cgalMesh = buildCgalMesh<ExactKernel>(vertices, triangles);
+        cgalMesh = buildCgalMesh<ExactKernel>(vertices, faces);
         if (!CGAL::is_valid_polygon_mesh(*cgalMesh)) {
-            //qDebug() << "Mesh is not valid polygon";
+            qDebug() << "Mesh is not valid polygon";
             delete cgalMesh;
             cgalMesh = nullptr;
-        } else if (CGAL::Polygon_mesh_processing::does_self_intersect(*cgalMesh)) {
-            //nodemesh::exportMeshAsObj(vertices, triangles, "/Users/jeremy/Desktop/test.obj");
-            m_isSelfIntersected = true;
-            if (removeSelfIntersects) {
-                if (!CGAL::Polygon_mesh_processing::remove_self_intersections(*cgalMesh)) {
-                    //qDebug() << "Mesh does self intersect and cann't remove intersections";
-                    delete cgalMesh;
-                    cgalMesh = nullptr;
-                } else {
-                    //qDebug() << "Mesh does self intersect but intersections got removed";
+        } else {
+            if (CGAL::Polygon_mesh_processing::triangulate_faces(*cgalMesh)) {
+                if (CGAL::Polygon_mesh_processing::does_self_intersect(*cgalMesh)) {
+                    //nodemesh::exportMeshAsObj(vertices, triangles, "/Users/jeremy/Desktop/test.obj");
+                    m_isSelfIntersected = true;
+                    if (removeSelfIntersects) {
+                        if (!CGAL::Polygon_mesh_processing::remove_self_intersections(*cgalMesh)) {
+                            //qDebug() << "Mesh does self intersect and cann't remove intersections";
+                            delete cgalMesh;
+                            cgalMesh = nullptr;
+                        } else {
+                            //qDebug() << "Mesh does self intersect but intersections got removed";
+                        }
+                    } else {
+                        delete cgalMesh;
+                        cgalMesh = nullptr;
+                        //qDebug() << "Mesh does self intersect";
+                    }
                 }
             } else {
+                qDebug() << "Mesh triangulate failed";
                 delete cgalMesh;
                 cgalMesh = nullptr;
-                //qDebug() << "Mesh does self intersect";
             }
         }
     }
