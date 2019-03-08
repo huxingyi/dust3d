@@ -16,7 +16,7 @@ float degreeBetween(const QVector3D &v1, const QVector3D &v2);
 float degreeBetweenIn360(const QVector3D &a, const QVector3D &b, const QVector3D &direct);
 bool pointInTriangle(const QVector3D &a, const QVector3D &b, const QVector3D &c, const QVector3D &p);
 QVector3D polygonNormal(const std::vector<QVector3D> &vertices, const std::vector<size_t> &polygon);
-void triangulate(const std::vector<QVector3D> &vertices, const std::vector<std::vector<size_t>> &faces, std::vector<std::vector<size_t>> &triangles);
+bool triangulate(std::vector<QVector3D> &vertices, const std::vector<std::vector<size_t>> &faces, std::vector<std::vector<size_t>> &triangles);
 void exportMeshAsObj(const std::vector<QVector3D> &vertices, const std::vector<std::vector<size_t>> &faces, const QString &filename, const std::set<size_t> *excludeFacesOfVertices=nullptr);
 void exportMeshAsObjWithNormals(const std::vector<QVector3D> &vertices, const std::vector<std::vector<size_t>> &faces, const QString &filename,
     const std::vector<QVector3D> &triangleVertexNormals);
@@ -34,6 +34,7 @@ bool isManifold(const std::vector<std::vector<size_t>> &faces);
 void trim(std::vector<QVector3D> *vertices, bool normalize=false);
 void subdivideFace2D(std::vector<QVector2D> *face);
 void chamferFace2D(std::vector<QVector2D> *face);
+bool validatePosition(const QVector3D &position);
 
 }
 

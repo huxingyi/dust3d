@@ -4,6 +4,8 @@
 #include <CGAL/Surface_mesh.h>
 #include <QVector3D>
 #include <vector>
+#include <cmath>
+#include <nodemesh/misc.h>
 
 typedef CGAL::Exact_predicates_exact_constructions_kernel ExactKernel;
 typedef CGAL::Surface_mesh<ExactKernel::Point_3> ExactMesh;
@@ -15,6 +17,16 @@ typename CGAL::Surface_mesh<typename Kernel::Point_3> *buildCgalMesh(const std::
     std::map<size_t, typename CGAL::Surface_mesh<typename Kernel::Point_3>::Vertex_index> vertexIndices;
     for (const auto &face: indices) {
         std::vector<typename CGAL::Surface_mesh<typename Kernel::Point_3>::Vertex_index> faceVertexIndices;
+        bool faceValid = true;
+        for (const auto &index: face) {
+            const auto &pos = positions[index];
+            if (!nodemesh::validatePosition(pos)) {
+                faceValid = false;
+                break;
+            }
+        }
+        if (!faceValid)
+            continue;
         for (const auto &index: face) {
             auto findIndex = vertexIndices.find(index);
             if (findIndex != vertexIndices.end()) {

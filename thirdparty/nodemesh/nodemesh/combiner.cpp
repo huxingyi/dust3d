@@ -18,34 +18,27 @@ Combiner::Mesh::Mesh(const std::vector<QVector3D> &vertices, const std::vector<s
 {
     ExactMesh *cgalMesh = nullptr;
     if (!faces.empty()) {
-        cgalMesh = buildCgalMesh<ExactKernel>(vertices, faces);
-        if (!CGAL::is_valid_polygon_mesh(*cgalMesh)) {
-            qDebug() << "Mesh is not valid polygon";
-            delete cgalMesh;
-            cgalMesh = nullptr;
-        } else {
-            if (CGAL::Polygon_mesh_processing::triangulate_faces(*cgalMesh)) {
+        std::vector<QVector3D> triangleVertices = vertices;
+        std::vector<std::vector<size_t>> triangles;
+        if (nodemesh::triangulate(triangleVertices, faces, triangles)) {
+            cgalMesh = buildCgalMesh<ExactKernel>(triangleVertices, triangles);
+            if (!CGAL::is_valid_polygon_mesh(*cgalMesh)) {
+                qDebug() << "Mesh is not valid polygon";
+                delete cgalMesh;
+                cgalMesh = nullptr;
+            } else {
                 if (CGAL::Polygon_mesh_processing::does_self_intersect(*cgalMesh)) {
-                    //nodemesh::exportMeshAsObj(vertices, triangles, "/Users/jeremy/Desktop/test.obj");
                     m_isSelfIntersected = true;
                     if (removeSelfIntersects) {
                         if (!CGAL::Polygon_mesh_processing::remove_self_intersections(*cgalMesh)) {
-                            //qDebug() << "Mesh does self intersect and cann't remove intersections";
                             delete cgalMesh;
                             cgalMesh = nullptr;
-                        } else {
-                            //qDebug() << "Mesh does self intersect but intersections got removed";
                         }
                     } else {
                         delete cgalMesh;
                         cgalMesh = nullptr;
-                        //qDebug() << "Mesh does self intersect";
                     }
                 }
-            } else {
-                qDebug() << "Mesh triangulate failed";
-                delete cgalMesh;
-                cgalMesh = nullptr;
             }
         }
     }
