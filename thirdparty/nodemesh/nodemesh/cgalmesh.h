@@ -1,14 +1,14 @@
 #ifndef NODEMESH_CGAL_MESH_H
 #define NODEMESH_CGAL_MESH_H
-#include <CGAL/Exact_predicates_exact_constructions_kernel.h>
+#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
 #include <CGAL/Surface_mesh.h>
 #include <QVector3D>
 #include <vector>
 #include <cmath>
 #include <nodemesh/misc.h>
 
-typedef CGAL::Exact_predicates_exact_constructions_kernel ExactKernel;
-typedef CGAL::Surface_mesh<ExactKernel::Point_3> ExactMesh;
+typedef CGAL::Exact_predicates_inexact_constructions_kernel CgalKernel;
+typedef CGAL::Surface_mesh<CgalKernel::Point_3> CgalMesh;
 
 template <class Kernel>
 typename CGAL::Surface_mesh<typename Kernel::Point_3> *buildCgalMesh(const std::vector<QVector3D> &positions, const std::vector<std::vector<size_t>> &indices)

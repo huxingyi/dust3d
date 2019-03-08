@@ -8,20 +8,20 @@
 #include <QDebug>
 #include <map>
 
-typedef CGAL::Exact_predicates_exact_constructions_kernel ExactKernel;
-typedef CGAL::Surface_mesh<ExactKernel::Point_3> ExactMesh;
+typedef CGAL::Exact_predicates_inexact_constructions_kernel CgalKernel;
+typedef CGAL::Surface_mesh<CgalKernel::Point_3> CgalMesh;
 
 namespace nodemesh 
 {
 
 Combiner::Mesh::Mesh(const std::vector<QVector3D> &vertices, const std::vector<std::vector<size_t>> &faces, bool removeSelfIntersects)
 {
-    ExactMesh *cgalMesh = nullptr;
+    CgalMesh *cgalMesh = nullptr;
     if (!faces.empty()) {
         std::vector<QVector3D> triangleVertices = vertices;
         std::vector<std::vector<size_t>> triangles;
         if (nodemesh::triangulate(triangleVertices, faces, triangles)) {
-            cgalMesh = buildCgalMesh<ExactKernel>(triangleVertices, triangles);
+            cgalMesh = buildCgalMesh<CgalKernel>(triangleVertices, triangles);
             if (!CGAL::is_valid_polygon_mesh(*cgalMesh)) {
                 qDebug() << "Mesh is not valid polygon";
                 delete cgalMesh;
@@ -48,23 +48,23 @@ Combiner::Mesh::Mesh(const std::vector<QVector3D> &vertices, const std::vector<s
 Combiner::Mesh::Mesh(const Mesh &other)
 {
     if (other.m_privateData) {
-        m_privateData = new ExactMesh(*(ExactMesh *)other.m_privateData);
+        m_privateData = new CgalMesh(*(CgalMesh *)other.m_privateData);
     }
 }
 
 Combiner::Mesh::~Mesh()
 {
-    ExactMesh *cgalMesh = (ExactMesh *)m_privateData;
+    CgalMesh *cgalMesh = (CgalMesh *)m_privateData;
     delete cgalMesh;
 }
 
 void Combiner::Mesh::fetch(std::vector<QVector3D> &vertices, std::vector<std::vector<size_t>> &faces) const
 {
-    ExactMesh *exactMesh = (ExactMesh *)m_privateData;
+    CgalMesh *exactMesh = (CgalMesh *)m_privateData;
     if (nullptr == exactMesh)
         return;
     
-    fetchFromCgalMesh<ExactKernel>(exactMesh, vertices, faces);
+    fetchFromCgalMesh<CgalKernel>(exactMesh, vertices, faces);
 }
 
 bool Combiner::Mesh::isNull() const
@@ -80,12 +80,12 @@ bool Combiner::Mesh::isSelfIntersected() const
 Combiner::Mesh *Combiner::combine(const Mesh &firstMesh, const Mesh &secondMesh, Method method,
     std::vector<std::pair<Source, size_t>> *combinedVerticesComeFrom)
 {
-    ExactMesh *resultCgalMesh = nullptr;
-    ExactMesh *firstCgalMesh = (ExactMesh *)firstMesh.m_privateData;
-    ExactMesh *secondCgalMesh = (ExactMesh *)secondMesh.m_privateData;
+    CgalMesh *resultCgalMesh = nullptr;
+    CgalMesh *firstCgalMesh = (CgalMesh *)firstMesh.m_privateData;
+    CgalMesh *secondCgalMesh = (CgalMesh *)secondMesh.m_privateData;
     std::map<PositionKey, std::pair<Source, size_t>> verticesSourceMap;
     
-    auto addToSourceMap = [&](ExactMesh *mesh, Source source) {
+    auto addToSourceMap = [&](CgalMesh *mesh, Source source) {
         size_t vertexIndex = 0;
         for (auto vertexIt = mesh->vertices_begin(); vertexIt != mesh->vertices_end(); vertexIt++) {
             auto point = mesh->point(*vertexIt);
@@ -105,7 +105,7 @@ Combiner::Mesh *Combiner::combine(const Mesh &firstMesh, const Mesh &secondMesh,
     }
     
     if (Method::Union == method) {
-        resultCgalMesh = new ExactMesh;
+        resultCgalMesh = new CgalMesh;
         try {
             if (!CGAL::Polygon_mesh_processing::corefine_and_compute_union(*firstCgalMesh, *secondCgalMesh, *resultCgalMesh)) {
                 delete resultCgalMesh;
@@ -116,7 +116,7 @@ Combiner::Mesh *Combiner::combine(const Mesh &firstMesh, const Mesh &secondMesh,
             resultCgalMesh = nullptr;
         }
     } else if (Method::Diff == method) {
-        resultCgalMesh = new ExactMesh;
+        resultCgalMesh = new CgalMesh;
         try {
             if (!CGAL::Polygon_mesh_processing::corefine_and_compute_difference(*firstCgalMesh, *secondCgalMesh, *resultCgalMesh)) {
                 delete resultCgalMesh;
