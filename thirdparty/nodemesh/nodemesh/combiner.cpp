@@ -18,27 +18,31 @@ Combiner::Mesh::Mesh(const std::vector<QVector3D> &vertices, const std::vector<s
 {
     CgalMesh *cgalMesh = nullptr;
     if (!faces.empty()) {
-        std::vector<QVector3D> triangleVertices = vertices;
-        std::vector<std::vector<size_t>> triangles;
-        if (nodemesh::triangulate(triangleVertices, faces, triangles)) {
-            cgalMesh = buildCgalMesh<CgalKernel>(triangleVertices, triangles);
-            if (!CGAL::is_valid_polygon_mesh(*cgalMesh)) {
-                qDebug() << "Mesh is not valid polygon";
-                delete cgalMesh;
-                cgalMesh = nullptr;
-            } else {
+        cgalMesh = buildCgalMesh<CgalKernel>(vertices, faces);
+        if (!CGAL::is_valid_polygon_mesh(*cgalMesh)) {
+            qDebug() << "Mesh is not valid polygon";
+            delete cgalMesh;
+            cgalMesh = nullptr;
+        } else {
+            if (CGAL::Polygon_mesh_processing::triangulate_faces(*cgalMesh)) {
                 if (CGAL::Polygon_mesh_processing::does_self_intersect(*cgalMesh)) {
                     m_isSelfIntersected = true;
                     if (removeSelfIntersects) {
                         if (!CGAL::Polygon_mesh_processing::remove_self_intersections(*cgalMesh)) {
+                            qDebug() << "Mesh remove_self_intersections failed";
                             delete cgalMesh;
                             cgalMesh = nullptr;
                         }
                     } else {
+                        qDebug() << "Mesh does_self_intersect";
                         delete cgalMesh;
                         cgalMesh = nullptr;
                     }
                 }
+            } else {
+                qDebug() << "Mesh triangulate failed";
+                delete cgalMesh;
+                cgalMesh = nullptr;
             }
         }
     }

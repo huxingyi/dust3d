@@ -283,7 +283,7 @@ bool Builder::validateNormal(const QVector3D &normal)
     if (normal.isNull()) {
         return false;
     }
-    if (std::isnan(normal.x()) || std::isnan(normal.y()) || std::isnan(normal.z())) {
+    if (!validatePosition(normal)) {
         return false;
     }
     return true;
@@ -293,6 +293,13 @@ std::pair<QVector3D, bool> Builder::calculateBaseNormal(const std::vector<QVecto
         const std::vector<QVector3D> &positions,
         const std::vector<float> &weights)
 {
+    auto calculateTwoPointsNormal = [&](size_t i0, size_t i1) -> std::pair<QVector3D, bool> {
+        auto normal = QVector3D::crossProduct(directs[i0], directs[i1]).normalized();
+        if (validateNormal(normal)) {
+            return {normal, true};
+        }
+        return {{}, false};
+    };
     auto calculateThreePointsNormal = [&](size_t i0, size_t i1, size_t i2) -> std::pair<QVector3D, bool> {
         auto normal = QVector3D::normal(positions[i0], positions[i1], positions[i2]);
         if (validateNormal(normal)) {
@@ -300,14 +307,21 @@ std::pair<QVector3D, bool> Builder::calculateBaseNormal(const std::vector<QVecto
         }
         // >=15 degrees && <= 165 degrees
         if (abs(QVector3D::dotProduct(directs[i0], directs[i1])) < 0.966) {
-            return {QVector3D::crossProduct(directs[i0], directs[i1]).normalized(), true};
-        } else if (abs(QVector3D::dotProduct(directs[i1], directs[i2])) < 0.966) {
-            return {QVector3D::crossProduct(directs[i1], directs[i2]).normalized(), true};
-        } else if (abs(QVector3D::dotProduct(directs[i2], directs[i0])) < 0.966) {
-            return {QVector3D::crossProduct(directs[i2], directs[i0]).normalized(), true};
-        } else {
-            return {{}, false};
+            auto twoPointsResult = calculateTwoPointsNormal(i0, i1);
+            if (twoPointsResult.second)
+                return twoPointsResult;
         }
+        if (abs(QVector3D::dotProduct(directs[i1], directs[i2])) < 0.966) {
+            auto twoPointsResult = calculateTwoPointsNormal(i1, i2);
+            if (twoPointsResult.second)
+                return twoPointsResult;
+        }
+        if (abs(QVector3D::dotProduct(directs[i2], directs[i0])) < 0.966) {
+            auto twoPointsResult = calculateTwoPointsNormal(i2, i0);
+            if (twoPointsResult.second)
+                return twoPointsResult;
+        }
+        return {{}, false};
     };
     
     if (directs.size() <= 1) {
@@ -315,7 +329,9 @@ std::pair<QVector3D, bool> Builder::calculateBaseNormal(const std::vector<QVecto
     } else if (directs.size() <= 2) {
         // >=15 degrees && <= 165 degrees
         if (abs(QVector3D::dotProduct(directs[0], directs[1])) < 0.966) {
-            return {QVector3D::crossProduct(directs[0], directs[1]).normalized(), true};
+            auto twoPointsResult = calculateTwoPointsNormal(0, 1);
+            if (twoPointsResult.second)
+                return twoPointsResult;
         }
         return {{}, false};
     } else if (directs.size() <= 3) {

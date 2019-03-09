@@ -6,6 +6,7 @@
 #include <vector>
 #include <cmath>
 #include <nodemesh/misc.h>
+#include <nodemesh/positionkey.h>
 
 typedef CGAL::Exact_predicates_inexact_constructions_kernel CgalKernel;
 typedef CGAL::Surface_mesh<CgalKernel::Point_3> CgalMesh;
@@ -14,27 +15,40 @@ template <class Kernel>
 typename CGAL::Surface_mesh<typename Kernel::Point_3> *buildCgalMesh(const std::vector<QVector3D> &positions, const std::vector<std::vector<size_t>> &indices)
 {
     typename CGAL::Surface_mesh<typename Kernel::Point_3> *mesh = new typename CGAL::Surface_mesh<typename Kernel::Point_3>;
-    std::map<size_t, typename CGAL::Surface_mesh<typename Kernel::Point_3>::Vertex_index> vertexIndices;
+    std::map<nodemesh::PositionKey, typename CGAL::Surface_mesh<typename Kernel::Point_3>::Vertex_index> vertexIndices;
     for (const auto &face: indices) {
         std::vector<typename CGAL::Surface_mesh<typename Kernel::Point_3>::Vertex_index> faceVertexIndices;
         bool faceValid = true;
+        std::vector<nodemesh::PositionKey> positionKeys;
+        std::vector<QVector3D> positionsInKeys;
+        std::set<nodemesh::PositionKey> existedKeys;
         for (const auto &index: face) {
-            const auto &pos = positions[index];
-            if (!nodemesh::validatePosition(pos)) {
+            const auto &position = positions[index];
+            if (!nodemesh::validatePosition(position)) {
                 faceValid = false;
                 break;
             }
+            auto positionKey = nodemesh::PositionKey(position);
+            if (existedKeys.find(positionKey) != existedKeys.end()) {
+                continue;
+            }
+            existedKeys.insert(positionKey);
+            positionKeys.push_back(positionKey);
+            positionsInKeys.push_back(position);
         }
         if (!faceValid)
             continue;
-        for (const auto &index: face) {
-            auto findIndex = vertexIndices.find(index);
+        if (positionKeys.size() < 3)
+            continue;
+        for (size_t index = 0; index < positionKeys.size(); ++index) {
+            const auto &position = positionsInKeys[index];
+            const auto &positionKey = positionKeys[index];
+            auto findIndex = vertexIndices.find(positionKey);
             if (findIndex != vertexIndices.end()) {
                 faceVertexIndices.push_back(findIndex->second);
             } else {
-                const auto &pos = positions[index];
-                auto newIndex = mesh->add_vertex(typename Kernel::Point_3(pos.x(), pos.y(), pos.z()));
-                vertexIndices.insert({index, newIndex});
+                auto newIndex = mesh->add_vertex(typename Kernel::Point_3(position.x(), position.y(), position.z()));
+                vertexIndices.insert({positionKey, newIndex});
                 faceVertexIndices.push_back(newIndex);
             }
         }
