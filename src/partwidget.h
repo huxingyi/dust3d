@@ -19,6 +19,7 @@ signals:
     void setPartDeformThickness(QUuid partId, float thickness);
     void setPartDeformWidth(QUuid partId, float width);
     void setPartRoundState(QUuid partId, bool rounded);
+    void setPartChamferState(QUuid partId, bool chamfered);
     void setPartColorState(QUuid partId, bool hasColor, QColor color);
     void setPartCutRotation(QUuid partId, float cutRotation);
     void setPartCutTemplate(QUuid partId, std::vector<QVector2D> cutTemplate);
@@ -43,6 +44,7 @@ public:
     void updateZmirrorButton();
     void updateDeformButton();
     void updateRoundButton();
+    void updateChamferButton();
     void updateColorButton();
     void updateCutRotationButton();
     void updateCutTemplateButton();
@@ -55,7 +57,7 @@ protected:
 public slots:
     void showDeformSettingPopup(const QPoint &pos);
     void showCutRotationSettingPopup(const QPoint &pos);
-    void showCutTemplateSettingPopup(const QPoint &pos);
+    //void showCutTemplateSettingPopup(const QPoint &pos);
     void showColorSettingPopup(const QPoint &pos);
 private: // need initialize
     const Document *m_document;
@@ -71,9 +73,10 @@ private:
     QPushButton *m_zMirrorButton;
     QPushButton *m_deformButton;
     QPushButton *m_roundButton;
+    QPushButton *m_chamferButton;
     QPushButton *m_colorButton;
     QPushButton *m_cutRotationButton;
-    QPushButton *m_cutTemplateButton;
+    //QPushButton *m_cutTemplateButton;
     QWidget *m_backgroundWidget;
 private:
     void initToolButton(QPushButton *button);

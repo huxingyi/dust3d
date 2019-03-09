@@ -403,6 +403,7 @@ signals:
     void partCutRotationChanged(QUuid partId);
     void partCutTemplateChanged(QUuid partId);
     void partMaterialIdChanged(QUuid partId);
+    void partChamferStateChanged(QUuid partId);
     void componentCombineModeChanged(QUuid componentId);
     void cleanup();
     void originChanged();
@@ -557,6 +558,7 @@ public slots:
     void setPartCutRotation(QUuid partId, float cutRotation);
     void setPartCutTemplate(QUuid partId, std::vector<QVector2D> cutTemplate);
     void setPartMaterialId(QUuid partId, QUuid materialId);
+    void setPartChamferState(QUuid partId, bool chamfered);
     void setComponentCombineMode(QUuid componentId, CombineMode combineMode);
     void moveComponentUp(QUuid componentId);
     void moveComponentDown(QUuid componentId);

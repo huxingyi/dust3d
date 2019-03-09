@@ -143,6 +143,7 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
     bool xMirrored = isTrueValueString(valueOfKeyInMapOrEmpty(part, "xMirrored"));
     bool subdived = isTrueValueString(valueOfKeyInMapOrEmpty(part, "subdived"));
     bool rounded = isTrueValueString(valueOfKeyInMapOrEmpty(part, "rounded"));
+    bool chamfered = isTrueValueString(valueOfKeyInMapOrEmpty(part, "chamfered"));
     QString colorString = valueOfKeyInMapOrEmpty(part, "color");
     QColor partColor = colorString.isEmpty() ? m_defaultPartColor : QColor(colorString);
     float deformThickness = 1.0;
@@ -150,6 +151,8 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
     float cutRotation = 0.0;
     
     std::vector<QVector2D> cutTemplate = cutTemplatePointsFromString(valueOfKeyInMapOrEmpty(part, "cutTemplate"));
+    if (chamfered)
+        nodemesh::chamferFace2D(&cutTemplate);
     normalizeCutTemplatePoints(&cutTemplate);
     QString cutRotationString = valueOfKeyInMapOrEmpty(part, "cutRotation");
     if (!cutRotationString.isEmpty()) {

@@ -859,6 +859,7 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
             part["xMirrored"] = partIt.second.xMirrored ? "true" : "false";
             part["zMirrored"] = partIt.second.zMirrored ? "true" : "false";
             part["rounded"] = partIt.second.rounded ? "true" : "false";
+            part["chamfered"] = partIt.second.chamfered ? "true" : "false";
             if (partIt.second.cutRotationAdjusted())
                 part["cutRotation"] = QString::number(partIt.second.cutRotation);
             if (partIt.second.cutTemplateAdjusted())
@@ -1117,6 +1118,7 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
         part.xMirrored = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "xMirrored"));
         part.zMirrored = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "zMirrored"));
         part.rounded = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "rounded"));
+        part.chamfered = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "chamfered"));
         const auto &cutRotationIt = partKv.second.find("cutRotation");
         if (cutRotationIt != partKv.second.end())
             part.setCutRotation(cutRotationIt->second.toFloat());
@@ -2195,6 +2197,21 @@ void Document::setPartRoundState(QUuid partId, bool rounded)
     part->second.rounded = rounded;
     part->second.dirty = true;
     emit partRoundStateChanged(partId);
+    emit skeletonChanged();
+}
+
+void Document::setPartChamferState(QUuid partId, bool chamfered)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    if (part->second.chamfered == chamfered)
+        return;
+    part->second.chamfered = chamfered;
+    part->second.dirty = true;
+    emit partChamferStateChanged(partId);
     emit skeletonChanged();
 }
 

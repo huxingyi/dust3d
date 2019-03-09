@@ -79,6 +79,7 @@ public:
     float deformThickness;
     float deformWidth;
     bool rounded;
+    bool chamfered;
     QColor color;
     bool hasColor;
     QUuid componentId;
@@ -98,6 +99,7 @@ public:
         deformThickness(1.0),
         deformWidth(1.0),
         rounded(false),
+        chamfered(false),
         color(Theme::white),
         hasColor(false),
         dirty(true),
@@ -175,6 +177,7 @@ public:
         deformThickness = other.deformThickness;
         deformWidth = other.deformWidth;
         rounded = other.rounded;
+        chamfered = other.chamfered;
         color = other.color;
         hasColor = other.hasColor;
         cutRotation = other.cutRotation;

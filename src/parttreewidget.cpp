@@ -910,6 +910,17 @@ void PartTreeWidget::partRoundStateChanged(QUuid partId)
     widget->updateRoundButton();
 }
 
+void PartTreeWidget::partChamferStateChanged(QUuid partId)
+{
+    auto item = m_partItemMap.find(partId);
+    if (item == m_partItemMap.end()) {
+        qDebug() << "Part item not found:" << partId;
+        return;
+    }
+    PartWidget *widget = (PartWidget *)itemWidget(item->second, 0);
+    widget->updateChamferButton();
+}
+
 void PartTreeWidget::partColorStateChanged(QUuid partId)
 {
     auto item = m_partItemMap.find(partId);
@@ -932,16 +943,16 @@ void PartTreeWidget::partCutRotationChanged(QUuid partId)
     widget->updateCutRotationButton();
 }
 
-void PartTreeWidget::partCutTemplateChanged(QUuid partId)
-{
-    auto item = m_partItemMap.find(partId);
-    if (item == m_partItemMap.end()) {
-        qDebug() << "Part item not found:" << partId;
-        return;
-    }
-    PartWidget *widget = (PartWidget *)itemWidget(item->second, 0);
-    widget->updateCutTemplateButton();
-}
+//void PartTreeWidget::partCutTemplateChanged(QUuid partId)
+//{
+//    auto item = m_partItemMap.find(partId);
+//    if (item == m_partItemMap.end()) {
+//        qDebug() << "Part item not found:" << partId;
+//        return;
+//    }
+//    PartWidget *widget = (PartWidget *)itemWidget(item->second, 0);
+//    widget->updateCutTemplateButton();
+//}
 
 void PartTreeWidget::partMaterialIdChanged(QUuid partId)
 {
