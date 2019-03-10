@@ -47,6 +47,7 @@ public slots:
     void newDocument();
     void saveAs();
     void saveAll();
+    void gotoHomepage();
     void viewSource();
     void about();
     void reportIssues();
@@ -145,6 +146,7 @@ private:
     QAction *m_showAdvanceSettingAction;
     
     QMenu *m_helpMenu;
+    QAction *m_gotoHomepageAction;
     QAction *m_viewSourceAction;
     QAction *m_aboutAction;
     QAction *m_reportIssuesAction;

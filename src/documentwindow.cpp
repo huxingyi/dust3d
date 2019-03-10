@@ -645,8 +645,12 @@ DocumentWindow::DocumentWindow() :
 #endif
 
     m_helpMenu = menuBar()->addMenu(tr("Help"));
+    
+    m_gotoHomepageAction = new QAction(tr("Dust3D Homepage"), this);
+    connect(m_gotoHomepageAction, &QAction::triggered, this, &DocumentWindow::gotoHomepage);
+    m_helpMenu->addAction(m_gotoHomepageAction);
 
-    m_viewSourceAction = new QAction(tr("Fork me on GitHub"), this);
+    m_viewSourceAction = new QAction(tr("Source Code"), this);
     connect(m_viewSourceAction, &QAction::triggered, this, &DocumentWindow::viewSource);
     m_helpMenu->addAction(m_viewSourceAction);
 
@@ -1030,6 +1034,13 @@ void DocumentWindow::viewSource()
 {
     QString url = APP_REPOSITORY_URL;
     qDebug() << "viewSource:" << url;
+    QDesktopServices::openUrl(QUrl(url));
+}
+
+void DocumentWindow::gotoHomepage()
+{
+    QString url = APP_HOMEPAGE_URL;
+    qDebug() << "gotoHomepage:" << url;
     QDesktopServices::openUrl(QUrl(url));
 }
 
