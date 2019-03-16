@@ -496,9 +496,8 @@ nodemesh::Combiner::Mesh *MeshGenerator::combineComponentMesh(const QString &com
     
     if (m_cacheEnabled) {
         if (m_dirtyComponentIds.find(componentIdString) == m_dirtyComponentIds.end()) {
-            if (nullptr == componentCache.mesh)
-                return nullptr;
-            return new nodemesh::Combiner::Mesh(*componentCache.mesh);
+            if (nullptr != componentCache.mesh)
+                return new nodemesh::Combiner::Mesh(*componentCache.mesh);
         }
     }
     
