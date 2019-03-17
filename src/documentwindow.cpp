@@ -61,6 +61,11 @@ const std::map<DocumentWindow *, QUuid> &DocumentWindow::documentWindows()
     return g_documentWindows;
 }
 
+Document *DocumentWindow::document()
+{
+    return m_document;
+}
+
 void DocumentWindow::showAcknowlegements()
 {
     if (!g_acknowlegementsWidget) {
@@ -1353,7 +1358,7 @@ void DocumentWindow::showExportPreview()
         connect(m_document, &Document::resultMeshChanged, m_exportPreviewWidget, &ExportPreviewWidget::checkSpinner);
         connect(m_document, &Document::exportReady, m_exportPreviewWidget, &ExportPreviewWidget::checkSpinner);
         connect(m_document, &Document::resultTextureChanged, m_exportPreviewWidget, &ExportPreviewWidget::updateTexturePreview);
-        connect(m_document, &Document::resultBakedTextureChanged, m_exportPreviewWidget, &ExportPreviewWidget::updateTexturePreview);
+        //connect(m_document, &Document::resultBakedTextureChanged, m_exportPreviewWidget, &ExportPreviewWidget::updateTexturePreview);
         registerDialog(m_exportPreviewWidget);
     }
     m_exportPreviewWidget->show();

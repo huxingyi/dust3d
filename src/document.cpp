@@ -2128,21 +2128,21 @@ void Document::setPartXmirrorState(QUuid partId, bool mirrored)
     emit skeletonChanged();
 }
 
-void Document::setPartZmirrorState(QUuid partId, bool mirrored)
-{
-    auto part = partMap.find(partId);
-    if (part == partMap.end()) {
-        qDebug() << "Part not found:" << partId;
-        return;
-    }
-    if (part->second.zMirrored == mirrored)
-        return;
-    part->second.zMirrored = mirrored;
-    part->second.dirty = true;
-    settleOrigin();
-    emit partZmirrorStateChanged(partId);
-    emit skeletonChanged();
-}
+//void Document::setPartZmirrorState(QUuid partId, bool mirrored)
+//{
+//    auto part = partMap.find(partId);
+//    if (part == partMap.end()) {
+//        qDebug() << "Part not found:" << partId;
+//        return;
+//    }
+//    if (part->second.zMirrored == mirrored)
+//        return;
+//    part->second.zMirrored = mirrored;
+//    part->second.dirty = true;
+//    settleOrigin();
+//    emit partZmirrorStateChanged(partId);
+//    emit skeletonChanged();
+//}
 
 void Document::setPartDeformThickness(QUuid partId, float thickness)
 {

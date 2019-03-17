@@ -384,9 +384,9 @@ signals:
     void turnaroundChanged();
     void editModeChanged();
     void skeletonChanged();
-    void resultSkeletonChanged();
+    //void resultSkeletonChanged();
     void resultTextureChanged();
-    void resultBakedTextureChanged();
+    //void resultBakedTextureChanged();
     void postProcessedResultChanged();
     void resultRigChanged();
     void rigChanged();
@@ -395,7 +395,7 @@ signals:
     void partSubdivStateChanged(QUuid partId);
     void partDisableStateChanged(QUuid partId);
     void partXmirrorStateChanged(QUuid partId);
-    void partZmirrorStateChanged(QUuid partId);
+    //void partZmirrorStateChanged(QUuid partId);
     void partDeformThicknessChanged(QUuid partId);
     void partDeformWidthChanged(QUuid partId);
     void partRoundStateChanged(QUuid partId);
@@ -550,7 +550,7 @@ public slots:
     void setPartSubdivState(QUuid partId, bool subdived);
     void setPartDisableState(QUuid partId, bool disabled);
     void setPartXmirrorState(QUuid partId, bool mirrored);
-    void setPartZmirrorState(QUuid partId, bool mirrored);
+    //void setPartZmirrorState(QUuid partId, bool mirrored);
     void setPartDeformThickness(QUuid partId, float thickness);
     void setPartDeformWidth(QUuid partId, float width);
     void setPartRoundState(QUuid partId, bool rounded);

@@ -27,6 +27,7 @@ signals:
 public:
     DocumentWindow();
     ~DocumentWindow();
+    Document *document();
     static DocumentWindow *createDocumentWindow();
     static const std::map<DocumentWindow *, QUuid> &documentWindows();
     static void showAcknowlegements();
