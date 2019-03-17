@@ -48,6 +48,14 @@ private:
     QByteArray commandRemoveEdge(const QByteArray &parameters, QString *errorMessage);
     QByteArray commandRemovePart(const QByteArray &parameters, QString *errorMessage);
     QByteArray commandAddNode(const QByteArray &parameters, QString *errorMessage);
+    QByteArray commandScaleNodeByAddRadius(const QByteArray &parameters, QString *errorMessage);
+    QByteArray commandMoveNodeBy(const QByteArray &parameters, QString *errorMessage);
+    QByteArray commandSetNodeOrigin(const QByteArray &parameters, QString *errorMessage);
+    QByteArray commandSetNodeRadius(const QByteArray &parameters, QString *errorMessage);
+    QByteArray commandSetNodeBoneMark(const QByteArray &parameters, QString *errorMessage);
+    QByteArray commandSwitchNodeXZ(const QByteArray &parameters, QString *errorMessage);
+    QByteArray commandMoveOriginBy(const QByteArray &parameters, QString *errorMessage);
+    QByteArray commandAddEdge(const QByteArray &parameters, QString *errorMessage);
 };
 
 #endif

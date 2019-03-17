@@ -1,6 +1,7 @@
 #include <QAbstractSocket>
 #include <QHostAddress>
 #include "remoteioconnection.h"
+#include "bonemark.h"
 
 RemoteIoConnection::RemoteIoConnection(QTcpSocket *tcpSocket) :
     m_tcpSocket(tcpSocket)
@@ -21,6 +22,14 @@ RemoteIoConnection::RemoteIoConnection(QTcpSocket *tcpSocket) :
     m_commandHandlers["removeedge"] = &RemoteIoConnection::commandRemoveEdge;
     m_commandHandlers["removepart"] = &RemoteIoConnection::commandRemovePart;
     m_commandHandlers["addnode"] = &RemoteIoConnection::commandAddNode;
+    m_commandHandlers["scalenodebyaddradius"] = &RemoteIoConnection::commandScaleNodeByAddRadius;
+    m_commandHandlers["movenodeby"] = &RemoteIoConnection::commandMoveNodeBy;
+    m_commandHandlers["setnodeorigin"] = &RemoteIoConnection::commandSetNodeOrigin;
+    m_commandHandlers["setnoderadius"] = &RemoteIoConnection::commandSetNodeRadius;
+    m_commandHandlers["setnodebonemark"] = &RemoteIoConnection::commandSetNodeBoneMark;
+    m_commandHandlers["switchnodexz"] = &RemoteIoConnection::commandSwitchNodeXZ;
+    m_commandHandlers["moveoriginby"] = &RemoteIoConnection::commandMoveOriginBy;
+    m_commandHandlers["addedge"] = &RemoteIoConnection::commandAddEdge;
     
     if (!DocumentWindow::documentWindows().empty()) {
         connectDocumentWindow(DocumentWindow::documentWindows().begin()->first);
@@ -579,3 +588,228 @@ QByteArray RemoteIoConnection::commandAddNode(const QByteArray &parameters, QStr
     m_currentDocumentWindow->document()->addNode(x, y, z, radius, fromNodeId);
     return QByteArray();
 }
+
+QByteArray RemoteIoConnection::commandScaleNodeByAddRadius(const QByteArray &parameters, QString *errorMessage)
+{
+    COMMAND_PRECHECK();
+    
+    // QUuid nodeId, float amount
+    
+    int offset = 0;
+    
+    QUuid nodeId = QUuid(nextParameter(parameters, &offset));
+    if (nodeId.isNull()) {
+        *errorMessage = "Must specify nodeId parameter";
+        return QByteArray();
+    }
+
+    auto amountString = nextParameter(parameters, &offset);
+    if (amountString.isEmpty()) {
+        *errorMessage = "Must specify amount parameter";
+        return QByteArray();
+    }
+    float amount = amountString.toFloat();
+    
+    m_currentDocumentWindow->document()->scaleNodeByAddRadius(nodeId, amount);
+    return QByteArray();
+}
+
+QByteArray RemoteIoConnection::commandMoveNodeBy(const QByteArray &parameters, QString *errorMessage)
+{
+    COMMAND_PRECHECK();
+    
+    // QUuid nodeId, float x, float y, float z
+    
+    int offset = 0;
+    
+    QUuid nodeId = QUuid(nextParameter(parameters, &offset));
+    if (nodeId.isNull()) {
+        *errorMessage = "Must specify nodeId parameter";
+        return QByteArray();
+    }
+    
+    auto xString = nextParameter(parameters, &offset);
+    if (xString.isEmpty()) {
+        *errorMessage = "Must specify x parameter";
+        return QByteArray();
+    }
+    float x = xString.toFloat();
+    
+    auto yString = nextParameter(parameters, &offset);
+    if (yString.isEmpty()) {
+        *errorMessage = "Must specify y parameter";
+        return QByteArray();
+    }
+    float y = yString.toFloat();
+    
+    auto zString = nextParameter(parameters, &offset);
+    if (zString.isEmpty()) {
+        *errorMessage = "Must specify z parameter";
+        return QByteArray();
+    }
+    float z = zString.toFloat();
+    
+    m_currentDocumentWindow->document()->moveNodeBy(nodeId, x, y, z);
+    return QByteArray();
+}
+
+QByteArray RemoteIoConnection::commandSetNodeOrigin(const QByteArray &parameters, QString *errorMessage)
+{
+    COMMAND_PRECHECK();
+    
+    // QUuid nodeId, float x, float y, float z
+    
+    int offset = 0;
+    
+    QUuid nodeId = QUuid(nextParameter(parameters, &offset));
+    if (nodeId.isNull()) {
+        *errorMessage = "Must specify nodeId parameter";
+        return QByteArray();
+    }
+    
+    auto xString = nextParameter(parameters, &offset);
+    if (xString.isEmpty()) {
+        *errorMessage = "Must specify x parameter";
+        return QByteArray();
+    }
+    float x = xString.toFloat();
+    
+    auto yString = nextParameter(parameters, &offset);
+    if (yString.isEmpty()) {
+        *errorMessage = "Must specify y parameter";
+        return QByteArray();
+    }
+    float y = yString.toFloat();
+    
+    auto zString = nextParameter(parameters, &offset);
+    if (zString.isEmpty()) {
+        *errorMessage = "Must specify z parameter";
+        return QByteArray();
+    }
+    float z = zString.toFloat();
+    
+    m_currentDocumentWindow->document()->setNodeOrigin(nodeId, x, y, z);
+    return QByteArray();
+}
+
+QByteArray RemoteIoConnection::commandSetNodeRadius(const QByteArray &parameters, QString *errorMessage)
+{
+    COMMAND_PRECHECK();
+    
+    // QUuid nodeId, float radius
+    
+    int offset = 0;
+    
+    QUuid nodeId = QUuid(nextParameter(parameters, &offset));
+    if (nodeId.isNull()) {
+        *errorMessage = "Must specify nodeId parameter";
+        return QByteArray();
+    }
+
+    auto radiusString = nextParameter(parameters, &offset);
+    if (radiusString.isEmpty()) {
+        *errorMessage = "Must specify radius parameter";
+        return QByteArray();
+    }
+    float radius = radiusString.toFloat();
+    
+    m_currentDocumentWindow->document()->setNodeRadius(nodeId, radius);
+    return QByteArray();
+}
+
+QByteArray RemoteIoConnection::commandSetNodeBoneMark(const QByteArray &parameters, QString *errorMessage)
+{
+    COMMAND_PRECHECK();
+    
+    // QUuid nodeId, BoneMark mark
+    
+    int offset = 0;
+    
+    QUuid nodeId = QUuid(nextParameter(parameters, &offset));
+    if (nodeId.isNull()) {
+        *errorMessage = "Must specify nodeId parameter";
+        return QByteArray();
+    }
+
+    auto boneMarkString = nextParameter(parameters, &offset);
+    auto boneMark = BoneMarkFromString(boneMarkString.toUtf8().constData());
+    
+    m_currentDocumentWindow->document()->setNodeBoneMark(nodeId, boneMark);
+    return QByteArray();
+}
+
+QByteArray RemoteIoConnection::commandSwitchNodeXZ(const QByteArray &parameters, QString *errorMessage)
+{
+    COMMAND_PRECHECK();
+    
+    // QUuid nodeId
+    
+    int offset = 0;
+    
+    QUuid nodeId = QUuid(nextParameter(parameters, &offset));
+    if (nodeId.isNull()) {
+        *errorMessage = "Must specify nodeId parameter";
+        return QByteArray();
+    }
+    
+    m_currentDocumentWindow->document()->switchNodeXZ(nodeId);
+    return QByteArray();
+}
+
+QByteArray RemoteIoConnection::commandMoveOriginBy(const QByteArray &parameters, QString *errorMessage)
+{
+    COMMAND_PRECHECK();
+    
+    // float x, float y, float z
+    
+    int offset = 0;
+
+    auto xString = nextParameter(parameters, &offset);
+    if (xString.isEmpty()) {
+        *errorMessage = "Must specify x parameter";
+        return QByteArray();
+    }
+    float x = xString.toFloat();
+    
+    auto yString = nextParameter(parameters, &offset);
+    if (yString.isEmpty()) {
+        *errorMessage = "Must specify y parameter";
+        return QByteArray();
+    }
+    float y = yString.toFloat();
+    
+    auto zString = nextParameter(parameters, &offset);
+    if (zString.isEmpty()) {
+        *errorMessage = "Must specify z parameter";
+        return QByteArray();
+    }
+    float z = zString.toFloat();
+    
+    m_currentDocumentWindow->document()->moveOriginBy(x, y, z);
+    return QByteArray();
+}
+
+QByteArray RemoteIoConnection::commandAddEdge(const QByteArray &parameters, QString *errorMessage)
+{
+    COMMAND_PRECHECK();
+    
+    // QUuid fromNodeId, QUuid toNodeId
+    
+    int offset = 0;
+    
+    QUuid fromNodeId = QUuid(nextParameter(parameters, &offset));
+    if (fromNodeId.isNull()) {
+        *errorMessage = "Must specify fromNodeId parameter";
+        return QByteArray();
+    }
+    
+    QUuid toNodeId = QUuid(nextParameter(parameters, &offset));
+    if (toNodeId.isNull()) {
+        *errorMessage = "Must specify toNodeId parameter";
+        return QByteArray();
+    }
+    
+    m_currentDocumentWindow->document()->addEdge(fromNodeId, toNodeId);
+    return QByteArray();
+}
+
