@@ -5,9 +5,11 @@
 #include <QDebug>
 #include <QtGlobal>
 #include <QSurfaceFormat>
+#include <QSettings>
 #include "documentwindow.h"
 #include "theme.h"
 #include "version.h"
+#include "remoteioserver.h"
 
 int main(int argc, char ** argv)
 {
@@ -39,6 +41,8 @@ int main(int argc, char ** argv)
     //qApp->setStyleSheet("QToolTip { color: #ffffff; background-color: #fc6621; border: 1px solid white; }");
     
     QCoreApplication::setApplicationName(APP_NAME);
+    QCoreApplication::setOrganizationName(APP_COMPANY);
+    QCoreApplication::setOrganizationDomain(APP_HOMEPAGE_URL);
     
     QFont font;
     font.setWeight(QFont::Light);
@@ -49,6 +53,15 @@ int main(int argc, char ** argv)
     Theme::initAwsomeBaseSizes();
     
     DocumentWindow::createDocumentWindow();
+    
+    QSettings settings;
+    QVariant remoteIoListenPort = settings.value("RemoteIo/ListenPort");
+    //if (remoteIoListenPort.isNull()) {
+    //    settings.setValue("RemoteIo/ListenPort", "53309");
+    //}
+    if (!remoteIoListenPort.isNull()) {
+        new RemoteIoServer(remoteIoListenPort.toInt());
+    }
     
     return app.exec();
 }

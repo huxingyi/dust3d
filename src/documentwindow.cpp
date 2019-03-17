@@ -12,7 +12,7 @@
 #include <QMenuBar>
 #include <QPointer>
 #include <QApplication>
-#include <set>
+#include <map>
 #include <QDesktopServices>
 #include <QDockWidget>
 #include "documentwindow.h"
@@ -45,7 +45,7 @@ int DocumentWindow::m_skeletonRenderWidgetInitialY = DocumentWindow::m_modelRend
 int DocumentWindow::m_skeletonRenderWidgetInitialSize = DocumentWindow::m_modelRenderWidgetInitialSize;
 
 LogBrowser *g_logBrowser = nullptr;
-std::set<DocumentWindow *> g_documentWindows;
+std::map<DocumentWindow *, QUuid> g_documentWindows;
 QTextBrowser *g_acknowlegementsWidget = nullptr;
 AboutWidget *g_aboutWidget = nullptr;
 QTextBrowser *g_contributorsWidget = nullptr;
@@ -54,6 +54,11 @@ void outputMessage(QtMsgType type, const QMessageLogContext &context, const QStr
 {
     if (g_logBrowser)
         g_logBrowser->outputMessage(type, msg, context.file, context.line);
+}
+
+const std::map<DocumentWindow *, QUuid> &DocumentWindow::documentWindows()
+{
+    return g_documentWindows;
 }
 
 void DocumentWindow::showAcknowlegements()
@@ -112,7 +117,7 @@ DocumentWindow::DocumentWindow() :
         qInstallMessageHandler(&outputMessage);
     }
 
-    g_documentWindows.insert(this);
+    g_documentWindows.insert({this, QUuid::createUuid()});
 
     m_document = new Document;
 
@@ -1025,8 +1030,8 @@ void DocumentWindow::saveAs()
 
 void DocumentWindow::saveAll()
 {
-    for (auto &window: g_documentWindows) {
-        window->save();
+    for (auto &it: g_documentWindows) {
+        it.first->save();
     }
 }
 
@@ -1088,6 +1093,7 @@ void DocumentWindow::initLockButton(QPushButton *button)
 
 DocumentWindow::~DocumentWindow()
 {
+    emit uninialized();
     g_documentWindows.erase(this);
 }
 

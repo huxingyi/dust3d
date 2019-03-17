@@ -1,4 +1,4 @@
-QT += core widgets opengl
+QT += core widgets opengl network
 CONFIG += release
 DEFINES += NDEBUG
 RESOURCES += resources.qrc
@@ -294,6 +294,12 @@ HEADERS += src/cutdocument.h
 
 SOURCES += src/cuttemplate.cpp
 HEADERS += src/cuttemplate.h
+
+SOURCES += src/remoteioserver.cpp
+HEADERS += src/remoteioserver.h
+
+SOURCES += src/remoteioconnection.cpp
+HEADERS += src/remoteioconnection.h
 
 SOURCES += src/main.cpp
 

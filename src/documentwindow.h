@@ -7,6 +7,7 @@
 #include <QMenu>
 #include <QAction>
 #include <QTextBrowser>
+#include <map>
 #include "document.h"
 #include "modelwidget.h"
 #include "exportpreviewwidget.h"
@@ -22,10 +23,12 @@ class DocumentWindow : public QMainWindow
     Q_OBJECT
 signals:
     void initialized();
+    void uninialized();
 public:
     DocumentWindow();
     ~DocumentWindow();
     static DocumentWindow *createDocumentWindow();
+    static const std::map<DocumentWindow *, QUuid> &documentWindows();
     static void showAcknowlegements();
     static void showContributors();
     static void showAbout();
