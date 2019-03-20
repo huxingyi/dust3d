@@ -121,7 +121,7 @@ void Document::breakEdge(QUuid edgeId)
     QVector3D middleOrigin = (firstOrigin + secondOrigin) / 2;
     float middleRadius = (firstNode->radius + secondNode->radius) / 2;
     removeEdge(edgeId);
-    QUuid middleNodeId = createNode(middleOrigin.x(), middleOrigin.y(), middleOrigin.z(), middleRadius, firstNodeId);
+    QUuid middleNodeId = createNode(QUuid::createUuid(), middleOrigin.x(), middleOrigin.y(), middleOrigin.z(), middleRadius, firstNodeId);
     if (middleNodeId.isNull()) {
         qDebug() << "Add middle node failed";
         return;
@@ -258,10 +258,15 @@ void Document::removeNode(QUuid nodeId)
 
 void Document::addNode(float x, float y, float z, float radius, QUuid fromNodeId)
 {
-    createNode(x, y, z, radius, fromNodeId);
+    createNode(QUuid::createUuid(), x, y, z, radius, fromNodeId);
 }
 
-QUuid Document::createNode(float x, float y, float z, float radius, QUuid fromNodeId)
+void Document::addNodeWithId(QUuid nodeId, float x, float y, float z, float radius, QUuid fromNodeId)
+{
+    createNode(nodeId, x, y, z, radius, fromNodeId);
+}
+
+QUuid Document::createNode(QUuid nodeId, float x, float y, float z, float radius, QUuid fromNodeId)
 {
     QUuid partId;
     const SkeletonNode *fromNode = nullptr;
@@ -286,7 +291,7 @@ QUuid Document::createNode(float x, float y, float z, float radius, QUuid fromNo
         if (part != partMap.end())
             part->second.dirty = true;
     }
-    SkeletonNode node;
+    SkeletonNode node(nodeId);
     node.partId = partId;
     node.setRadius(radius);
     node.x = x;

@@ -48,6 +48,7 @@ private:
     QByteArray commandRemoveEdge(const QByteArray &parameters, QString *errorMessage);
     QByteArray commandRemovePart(const QByteArray &parameters, QString *errorMessage);
     QByteArray commandAddNode(const QByteArray &parameters, QString *errorMessage);
+    QByteArray commandAddNodeWithId(const QByteArray &parameters, QString *errorMessage);
     QByteArray commandScaleNodeByAddRadius(const QByteArray &parameters, QString *errorMessage);
     QByteArray commandMoveNodeBy(const QByteArray &parameters, QString *errorMessage);
     QByteArray commandSetNodeOrigin(const QByteArray &parameters, QString *errorMessage);
@@ -56,6 +57,19 @@ private:
     QByteArray commandSwitchNodeXZ(const QByteArray &parameters, QString *errorMessage);
     QByteArray commandMoveOriginBy(const QByteArray &parameters, QString *errorMessage);
     QByteArray commandAddEdge(const QByteArray &parameters, QString *errorMessage);
+    QByteArray commandSetPartLockState(const QByteArray &parameters, QString *errorMessage);
+    QByteArray commandSetPartVisibleState(const QByteArray &parameters, QString *errorMessage);
+    QByteArray commandSetPartSubdivState(const QByteArray &parameters, QString *errorMessage);
+    QByteArray commandSetPartDisableState(const QByteArray &parameters, QString *errorMessage);
+    QByteArray commandSetPartXmirrorState(const QByteArray &parameters, QString *errorMessage);
+    QByteArray commandSetPartRoundState(const QByteArray &parameters, QString *errorMessage);
+    QByteArray commandSetPartChamferState(const QByteArray &parameters, QString *errorMessage);
+    QByteArray commandGetNodePartId(const QByteArray &parameters, QString *errorMessage);
+    QByteArray commandSaveSnapshot(const QByteArray &parameters, QString *errorMessage);
+    QByteArray commandGetSnapshot(const QByteArray &parameters, QString *errorMessage);
+    QByteArray commandExportAsObj(const QByteArray &parameters, QString *errorMessage);
+    QByteArray commandNew(const QByteArray &parameters, QString *errorMessage);
+    QByteArray commandSetPartColor(const QByteArray &parameters, QString *errorMessage);
 };
 
 #endif

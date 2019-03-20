@@ -519,6 +519,7 @@ public slots:
     void removeNode(QUuid nodeId);
     void removeEdge(QUuid edgeId);
     void removePart(QUuid partId);
+    void addNodeWithId(QUuid nodeId, float x, float y, float z, float radius, QUuid fromNodeId);
     void addNode(float x, float y, float z, float radius, QUuid fromNodeId);
     void scaleNodeByAddRadius(QUuid nodeId, float amount);
     void moveNodeBy(QUuid nodeId, float x, float y, float z);
@@ -621,7 +622,7 @@ private:
     void joinNodeAndNeiborsToGroup(std::vector<QUuid> *group, QUuid nodeId, std::set<QUuid> *visitMap, QUuid noUseEdgeId=QUuid());
     void splitPartByEdge(std::vector<std::vector<QUuid>> *groups, QUuid edgeId);
     bool isPartReadonly(QUuid partId) const;
-    QUuid createNode(float x, float y, float z, float radius, QUuid fromNodeId);
+    QUuid createNode(QUuid nodeId, float x, float y, float z, float radius, QUuid fromNodeId);
     void settleOrigin();
     void checkExportReadyState();
     void removePartDontCareComponent(QUuid partId);

@@ -1,7 +1,9 @@
 #include <QAbstractSocket>
 #include <QHostAddress>
+#include <QXmlStreamWriter>
 #include "remoteioconnection.h"
 #include "bonemark.h"
+#include "snapshotxml.h"
 
 RemoteIoConnection::RemoteIoConnection(QTcpSocket *tcpSocket) :
     m_tcpSocket(tcpSocket)
@@ -22,6 +24,7 @@ RemoteIoConnection::RemoteIoConnection(QTcpSocket *tcpSocket) :
     m_commandHandlers["removeedge"] = &RemoteIoConnection::commandRemoveEdge;
     m_commandHandlers["removepart"] = &RemoteIoConnection::commandRemovePart;
     m_commandHandlers["addnode"] = &RemoteIoConnection::commandAddNode;
+    m_commandHandlers["addnodewithid"] = &RemoteIoConnection::commandAddNodeWithId;
     m_commandHandlers["scalenodebyaddradius"] = &RemoteIoConnection::commandScaleNodeByAddRadius;
     m_commandHandlers["movenodeby"] = &RemoteIoConnection::commandMoveNodeBy;
     m_commandHandlers["setnodeorigin"] = &RemoteIoConnection::commandSetNodeOrigin;
@@ -30,6 +33,19 @@ RemoteIoConnection::RemoteIoConnection(QTcpSocket *tcpSocket) :
     m_commandHandlers["switchnodexz"] = &RemoteIoConnection::commandSwitchNodeXZ;
     m_commandHandlers["moveoriginby"] = &RemoteIoConnection::commandMoveOriginBy;
     m_commandHandlers["addedge"] = &RemoteIoConnection::commandAddEdge;
+    m_commandHandlers["setpartlockstate"] = &RemoteIoConnection::commandSetPartLockState;
+    m_commandHandlers["setpartvisiblestate"] = &RemoteIoConnection::commandSetPartVisibleState;
+    m_commandHandlers["setpartsubdivstate"] = &RemoteIoConnection::commandSetPartSubdivState;
+    m_commandHandlers["setpartdisablestate"] = &RemoteIoConnection::commandSetPartDisableState;
+    m_commandHandlers["setpartxmirrorstate"] = &RemoteIoConnection::commandSetPartXmirrorState;
+    m_commandHandlers["setpartroundstate"] = &RemoteIoConnection::commandSetPartRoundState;
+    m_commandHandlers["setpartchamferstate"] = &RemoteIoConnection::commandSetPartChamferState;
+    m_commandHandlers["getnodepartid"] = &RemoteIoConnection::commandGetNodePartId;
+    m_commandHandlers["savesnapshot"] = &RemoteIoConnection::commandSaveSnapshot;
+    m_commandHandlers["getsnapshot"] = &RemoteIoConnection::commandGetSnapshot;
+    m_commandHandlers["exportasobj"] = &RemoteIoConnection::commandExportAsObj;
+    m_commandHandlers["new"] = &RemoteIoConnection::commandNew;
+    m_commandHandlers["setpartcolor"] = &RemoteIoConnection::commandSetPartColor;
     
     if (!DocumentWindow::documentWindows().empty()) {
         connectDocumentWindow(DocumentWindow::documentWindows().begin()->first);
@@ -589,6 +605,64 @@ QByteArray RemoteIoConnection::commandAddNode(const QByteArray &parameters, QStr
     return QByteArray();
 }
 
+QByteArray RemoteIoConnection::commandAddNodeWithId(const QByteArray &parameters, QString *errorMessage)
+{
+    COMMAND_PRECHECK();
+    
+    // QUuid nodeId, float x, float y, float z, float radius, QUuid fromNodeId
+    
+    int offset = 0;
+    
+    auto nodeIdString = nextParameter(parameters, &offset);
+    QUuid nodeId = QUuid(nodeIdString);
+    
+    auto xString = nextParameter(parameters, &offset);
+    if (xString.isEmpty()) {
+        *errorMessage = "Must specify x parameter";
+        return QByteArray();
+    }
+    float x = xString.toFloat();
+    
+    auto yString = nextParameter(parameters, &offset);
+    if (yString.isEmpty()) {
+        *errorMessage = "Must specify y parameter";
+        return QByteArray();
+    }
+    float y = yString.toFloat();
+    
+    auto zString = nextParameter(parameters, &offset);
+    if (zString.isEmpty()) {
+        *errorMessage = "Must specify z parameter";
+        return QByteArray();
+    }
+    float z = zString.toFloat();
+    
+    auto radiusString = nextParameter(parameters, &offset);
+    if (radiusString.isEmpty()) {
+        *errorMessage = "Must specify radius parameter";
+        return QByteArray();
+    }
+    float radius = radiusString.toFloat();
+    
+    auto fromNodeIdString = nextParameter(parameters, &offset);
+    QUuid fromNodeId = QUuid(fromNodeIdString);
+    
+    if (nullptr != m_currentDocumentWindow->document()->findNode(nodeId)) {
+        *errorMessage = "The specified nodeId already exists";
+        return QByteArray();
+    }
+    
+    if (!fromNodeId.isNull()) {
+        if (nullptr == m_currentDocumentWindow->document()->findNode(fromNodeId)) {
+            *errorMessage = "The specified fromNodeId does not exists";
+            return QByteArray();
+        }
+    }
+    
+    m_currentDocumentWindow->document()->addNodeWithId(nodeId, x, y, z, radius, fromNodeId);
+    return QByteArray();
+}
+
 QByteArray RemoteIoConnection::commandScaleNodeByAddRadius(const QByteArray &parameters, QString *errorMessage)
 {
     COMMAND_PRECHECK();
@@ -813,3 +887,272 @@ QByteArray RemoteIoConnection::commandAddEdge(const QByteArray &parameters, QStr
     return QByteArray();
 }
 
+QByteArray RemoteIoConnection::commandSetPartLockState(const QByteArray &parameters, QString *errorMessage)
+{
+    COMMAND_PRECHECK();
+    
+    // QUuid partId, bool locked
+    
+    int offset = 0;
+    
+    QUuid partId = QUuid(nextParameter(parameters, &offset));
+    if (partId.isNull()) {
+        *errorMessage = "Must specify partId parameter";
+        return QByteArray();
+    }
+    
+    QString lockedString = nextParameter(parameters, &offset);
+    if (lockedString.isEmpty()) {
+        *errorMessage = "Must specify lockState parameter";
+        return QByteArray();
+    }
+    bool locked = lockedString.toLower() == "locked";
+    
+    m_currentDocumentWindow->document()->setPartLockState(partId, locked);
+    return QByteArray();
+}
+
+QByteArray RemoteIoConnection::commandSetPartVisibleState(const QByteArray &parameters, QString *errorMessage)
+{
+    COMMAND_PRECHECK();
+    
+    // QUuid partId, bool visible
+    
+    int offset = 0;
+    
+    QUuid partId = QUuid(nextParameter(parameters, &offset));
+    if (partId.isNull()) {
+        *errorMessage = "Must specify partId parameter";
+        return QByteArray();
+    }
+    
+    QString visibleString = nextParameter(parameters, &offset);
+    if (visibleString.isEmpty()) {
+        *errorMessage = "Must specify visibleState parameter";
+        return QByteArray();
+    }
+    bool visible = visibleString.toLower() == "visible";
+    
+    m_currentDocumentWindow->document()->setPartVisibleState(partId, visible);
+    return QByteArray();
+}
+
+QByteArray RemoteIoConnection::commandSetPartSubdivState(const QByteArray &parameters, QString *errorMessage)
+{
+    COMMAND_PRECHECK();
+    
+    // QUuid partId, bool subdived
+    
+    int offset = 0;
+    
+    QUuid partId = QUuid(nextParameter(parameters, &offset));
+    if (partId.isNull()) {
+        *errorMessage = "Must specify partId parameter";
+        return QByteArray();
+    }
+    
+    QString subdivString = nextParameter(parameters, &offset);
+    if (subdivString.isEmpty()) {
+        *errorMessage = "Must specify subdivState parameter";
+        return QByteArray();
+    }
+    bool subdived = subdivString.toLower() == "subdived";
+    
+    m_currentDocumentWindow->document()->setPartSubdivState(partId, subdived);
+    return QByteArray();
+}
+
+QByteArray RemoteIoConnection::commandSetPartChamferState(const QByteArray &parameters, QString *errorMessage)
+{
+    COMMAND_PRECHECK();
+    
+    // QUuid partId, bool chamfered
+    
+    int offset = 0;
+    
+    QUuid partId = QUuid(nextParameter(parameters, &offset));
+    if (partId.isNull()) {
+        *errorMessage = "Must specify partId parameter";
+        return QByteArray();
+    }
+    
+    QString chamferString = nextParameter(parameters, &offset);
+    if (chamferString.isEmpty()) {
+        *errorMessage = "Must specify chamferState parameter";
+        return QByteArray();
+    }
+    bool chamfered = chamferString.toLower() == "chamfered";
+    
+    m_currentDocumentWindow->document()->setPartChamferState(partId, chamfered);
+    return QByteArray();
+}
+
+QByteArray RemoteIoConnection::commandSetPartRoundState(const QByteArray &parameters, QString *errorMessage)
+{
+    COMMAND_PRECHECK();
+    
+    // QUuid partId, bool rounded
+    
+    int offset = 0;
+    
+    QUuid partId = QUuid(nextParameter(parameters, &offset));
+    if (partId.isNull()) {
+        *errorMessage = "Must specify partId parameter";
+        return QByteArray();
+    }
+    
+    QString roundString = nextParameter(parameters, &offset);
+    if (roundString.isEmpty()) {
+        *errorMessage = "Must specify roundState parameter";
+        return QByteArray();
+    }
+    bool rounded = roundString.toLower() == "rounded";
+    
+    m_currentDocumentWindow->document()->setPartRoundState(partId, rounded);
+    return QByteArray();
+}
+
+QByteArray RemoteIoConnection::commandSetPartDisableState(const QByteArray &parameters, QString *errorMessage)
+{
+    COMMAND_PRECHECK();
+    
+    // QUuid partId, bool disabled
+    
+    int offset = 0;
+    
+    QUuid partId = QUuid(nextParameter(parameters, &offset));
+    if (partId.isNull()) {
+        *errorMessage = "Must specify partId parameter";
+        return QByteArray();
+    }
+    
+    QString disableString = nextParameter(parameters, &offset);
+    if (disableString.isEmpty()) {
+        *errorMessage = "Must specify disableState parameter";
+        return QByteArray();
+    }
+    bool disabled = disableString.toLower() == "disabled";
+    
+    m_currentDocumentWindow->document()->setPartDisableState(partId, disabled);
+    return QByteArray();
+}
+
+QByteArray RemoteIoConnection::commandSetPartXmirrorState(const QByteArray &parameters, QString *errorMessage)
+{
+    COMMAND_PRECHECK();
+    
+    // QUuid partId, bool xMirrored
+    
+    int offset = 0;
+    
+    QUuid partId = QUuid(nextParameter(parameters, &offset));
+    if (partId.isNull()) {
+        *errorMessage = "Must specify partId parameter";
+        return QByteArray();
+    }
+    
+    QString xMirrorString = nextParameter(parameters, &offset);
+    if (xMirrorString.isEmpty()) {
+        *errorMessage = "Must specify xMirrorState parameter";
+        return QByteArray();
+    }
+    bool xMirrored = xMirrorString.toLower() == "xmirrored";
+    
+    m_currentDocumentWindow->document()->setPartXmirrorState(partId, xMirrored);
+    return QByteArray();
+}
+
+QByteArray RemoteIoConnection::commandGetNodePartId(const QByteArray &parameters, QString *errorMessage)
+{
+    COMMAND_PRECHECK();
+    
+    // QUuid nodeId
+    
+    // return QUuid partId
+    
+    int offset = 0;
+    
+    QUuid nodeId = QUuid(nextParameter(parameters, &offset));
+    if (nodeId.isNull()) {
+        *errorMessage = "Must specify nodeId parameter";
+        return QByteArray();
+    }
+    
+    const SkeletonNode *node = m_currentDocumentWindow->document()->findNode(nodeId);
+    if (nullptr == node) {
+        *errorMessage = "The specified nodeId not found";
+        return QByteArray();
+    }
+    
+    return node->partId.toString().toUtf8();
+}
+
+QByteArray RemoteIoConnection::commandSaveSnapshot(const QByteArray &parameters, QString *errorMessage)
+{
+    COMMAND_PRECHECK();
+    
+    m_currentDocumentWindow->document()->saveSnapshot();
+    return QByteArray();
+}
+
+QByteArray RemoteIoConnection::commandGetSnapshot(const QByteArray &parameters, QString *errorMessage)
+{
+    COMMAND_PRECHECK();
+    
+    Snapshot snapshot;
+    m_currentDocumentWindow->document()->toSnapshot(&snapshot, std::set<QUuid>(), DocumentToSnapshotFor::Nodes);
+    QString snapshotXml;
+    QXmlStreamWriter xmlStreamWriter(&snapshotXml);
+    saveSkeletonToXmlStream(&snapshot, &xmlStreamWriter);
+    return snapshotXml.toUtf8();
+}
+
+QByteArray RemoteIoConnection::commandExportAsObj(const QByteArray &parameters, QString *errorMessage)
+{
+    COMMAND_PRECHECK();
+    
+    QString obj;
+    MeshLoader *resultMesh = m_currentDocumentWindow->document()->takeResultMesh();
+    if (nullptr != resultMesh) {
+        QTextStream stream(&obj);
+        resultMesh->exportAsObj(&stream);
+        delete resultMesh;
+    }
+    return obj.toUtf8();
+}
+
+QByteArray RemoteIoConnection::commandNew(const QByteArray &parameters, QString *errorMessage)
+{
+    COMMAND_PRECHECK();
+    
+    m_currentDocumentWindow->document()->clearHistories();
+    m_currentDocumentWindow->document()->reset();
+    m_currentDocumentWindow->document()->saveSnapshot();
+    return QByteArray();
+}
+
+QByteArray RemoteIoConnection::commandSetPartColor(const QByteArray &parameters, QString *errorMessage)
+{
+    COMMAND_PRECHECK();
+    
+    // QUuid partId, QString colorName
+    
+    int offset = 0;
+    
+    QUuid partId = QUuid(nextParameter(parameters, &offset));
+    if (partId.isNull()) {
+        *errorMessage = "Must specify partId parameter";
+        return QByteArray();
+    }
+    
+    bool hasColor = false;
+    QColor color;
+    QString colorNameString = nextParameter(parameters, &offset);
+    if (!colorNameString.isEmpty()) {
+        color = QColor(colorNameString);
+        hasColor = true;
+    }
+    
+    m_currentDocumentWindow->document()->setPartColorState(partId, hasColor, color);
+    return QByteArray();
+}

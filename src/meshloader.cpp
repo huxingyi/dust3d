@@ -296,21 +296,27 @@ void MeshLoader::setHasAmbientOcclusionInImage(bool hasInImage)
     m_hasAmbientOcclusionInImage = hasInImage;
 }
 
+void MeshLoader::exportAsObj(QTextStream *textStream)
+{
+    auto &stream = *textStream;
+    stream << "# " << Ds3FileReader::m_applicationName << endl;
+    for (std::vector<QVector3D>::const_iterator it = vertices().begin() ; it != vertices().end(); ++it) {
+        stream << "v " << (*it).x() << " " << (*it).y() << " " << (*it).z() << endl;
+    }
+    for (std::vector<std::vector<size_t>>::const_iterator it = faces().begin() ; it != faces().end(); ++it) {
+        stream << "f";
+        for (std::vector<size_t>::const_iterator subIt = (*it).begin() ; subIt != (*it).end(); ++subIt) {
+            stream << " " << (1 + *subIt);
+        }
+        stream << endl;
+    }
+}
+
 void MeshLoader::exportAsObj(const QString &filename)
 {
     QFile file(filename);
     if (file.open(QIODevice::WriteOnly)) {
         QTextStream stream(&file);
-        stream << "# " << Ds3FileReader::m_applicationName << endl;
-        for (std::vector<QVector3D>::const_iterator it = vertices().begin() ; it != vertices().end(); ++it) {
-            stream << "v " << (*it).x() << " " << (*it).y() << " " << (*it).z() << endl;
-        }
-        for (std::vector<std::vector<size_t>>::const_iterator it = faces().begin() ; it != faces().end(); ++it) {
-            stream << "f";
-            for (std::vector<size_t>::const_iterator subIt = (*it).begin() ; subIt != (*it).end(); ++subIt) {
-                stream << " " << (1 + *subIt);
-            }
-            stream << endl;
-        }
+        exportAsObj(&stream);
     }
 }

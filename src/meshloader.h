@@ -6,6 +6,7 @@
 #include <QVector3D>
 #include <QColor>
 #include <QImage>
+#include <QTextStream>
 #include "outcome.h"
 
 #pragma pack(push)
@@ -71,6 +72,7 @@ public:
     static float m_defaultMetalness;
     static float m_defaultRoughness;
     void exportAsObj(const QString &filename);
+    void exportAsObj(QTextStream *textStream);
 private:
     Vertex *m_triangleVertices = nullptr;
     int m_triangleVertexCount = 0;
