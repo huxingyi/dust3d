@@ -54,13 +54,16 @@ int main(int argc, char ** argv)
     
     DocumentWindow::createDocumentWindow();
     
-    QSettings settings;
-    QVariant remoteIoListenPort = settings.value("RemoteIo/ListenPort");
-    //if (remoteIoListenPort.isNull()) {
-    //    settings.setValue("RemoteIo/ListenPort", "53309");
-    //}
-    if (!remoteIoListenPort.isNull()) {
-        new RemoteIoServer(remoteIoListenPort.toInt());
+    bool remoteIoEnabled = false;
+    for (int i = 1; i < argc; ++i) {
+        if ('-' == argv[i][0] && 0 == strcmp(argv[i], "-remoteio")) {
+            remoteIoEnabled = true;
+            break;
+        }
+    }
+    if (remoteIoEnabled) {
+        qDebug() << "Remote IO enabled";
+        new RemoteIoServer(53309);
     }
     
     return app.exec();

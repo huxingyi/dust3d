@@ -140,7 +140,7 @@ QString RemoteIoConnection::nextParameter(const QByteArray &parameters, int *off
     for (int i = *offset; i < parameters.size(); ++i) {
         if (isWhitespace(parameters[i])) {
             int parameterEnd = i;
-            auto parameter = parameters.mid(*offset, parameterEnd);
+            auto parameter = parameters.mid(*offset, (parameterEnd - *offset) + 1);
             while (i < parameters.size() && isWhitespace(parameters[i]))
                 ++i;
             *offset = i;
@@ -548,6 +548,8 @@ QByteArray RemoteIoConnection::commandRemoveEdge(const QByteArray &parameters, Q
 QByteArray RemoteIoConnection::commandRemovePart(const QByteArray &parameters, QString *errorMessage)
 {
     COMMAND_PRECHECK();
+    
+    // QUuid partId
     
     if (parameters.isEmpty()) {
         *errorMessage = "Must specify part id";
@@ -1056,7 +1058,8 @@ QByteArray RemoteIoConnection::commandSetPartXmirrorState(const QByteArray &para
         *errorMessage = "Must specify xMirrorState parameter";
         return QByteArray();
     }
-    bool xMirrored = xMirrorString.toLower() == "xmirrored";
+    xMirrorString = xMirrorString.toLower();
+    bool xMirrored = xMirrorString == "mirrored" || xMirrorString == "xmirrored";
     
     m_currentDocumentWindow->document()->setPartXmirrorState(partId, xMirrored);
     return QByteArray();
