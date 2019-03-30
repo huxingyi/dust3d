@@ -56,6 +56,7 @@ after_test:
   - 7z a dust3d-%TAG%-%PLATFORM%.zip %QTDIR%\bin\Qt5Widgets.dll
   - 7z a dust3d-%TAG%-%PLATFORM%.zip %QTDIR%\bin\Qt5Gui.dll
   - 7z a dust3d-%TAG%-%PLATFORM%.zip %QTDIR%\bin\Qt5Core.dll
+  - 7z a dust3d-%TAG%-%PLATFORM%.zip %QTDIR%\bin\Qt5Network.dll
   - 7z a dust3d-%TAG%-%PLATFORM%.zip "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\redist\%PLATFORM%\Microsoft.VC140.CRT\msvcp140.dll"
   - 7z a dust3d-%TAG%-%PLATFORM%.zip "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\redist\%PLATFORM%\Microsoft.VC140.CRT\vcruntime140.dll"
   - mkdir platforms

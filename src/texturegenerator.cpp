@@ -10,7 +10,7 @@
 #include "material.h"
 
 int TextureGenerator::m_textureSize = 1024;
-QColor TextureGenerator::m_defaultTextureColor = Qt::darkGray;
+QColor TextureGenerator::m_defaultTextureColor = Qt::white; //Qt::darkGray;
 
 TextureGenerator::TextureGenerator(const Outcome &outcome, Snapshot *snapshot) :
     m_resultTextureGuideImage(nullptr),
