@@ -25,6 +25,7 @@ Python Example
     #   e.g.
     #        $ open ./dust3d.app --args -remoteio
     #        $ ./dust3d -remoteio
+    #        $ ./dust3d.AppImage -remoteio
 
     import socket
     import binascii

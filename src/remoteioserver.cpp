@@ -58,7 +58,7 @@ void RemoteIoServer::sessionOpened()
     }
 
     m_tcpServer = new QTcpServer(this);
-    if (!m_tcpServer->listen(QHostAddress::LocalHost, m_listenPort)) {
+    if (!m_tcpServer->listen(QHostAddress::Any, m_listenPort)) {
         qDebug() << "Unable to listen on remote io port, error:" << m_tcpServer->errorString();
         return;
     }
