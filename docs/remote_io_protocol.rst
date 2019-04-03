@@ -29,16 +29,23 @@ Python Example
 
     import socket
     import binascii
+    import uuid
 
     TCP_IP = '127.0.0.1'
     TCP_PORT = 53309
     BUFFER_SIZE = 4096
 
+    def genId():
+        return "{" + str(uuid.uuid4()) + "}"
+
+    firstNodeId = genId()
+    secondNodeId = genId()
+
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     s.connect((TCP_IP, TCP_PORT))
-    s.send(binascii.hexlify("addnodewithid {3dc475f6-dcda-45b8-bb76-59948db39968} 0.51 0.51 1.01 0.08") + "\0")
-    s.send(binascii.hexlify("addnodewithid {3dc475f6-dcda-45b8-bb76-59948db39969} 0.51 0.51 1.51 0.08") + "\0")
-    s.send(binascii.hexlify("addedge {3dc475f6-dcda-45b8-bb76-59948db39968} {3dc475f6-dcda-45b8-bb76-59948db39969}") + "\0")
+    s.send(binascii.hexlify("addnodewithid " + firstNodeId + " 0.51 0.51 1.01 0.08") + "\0")
+    s.send(binascii.hexlify("addnodewithid " + secondNodeId + " 0.51 0.51 1.51 0.08") + "\0")
+    s.send(binascii.hexlify("addedge " + firstNodeId + " " + secondNodeId + "") + "\0")
     s.send(binascii.hexlify("savesnapshot") + "\0")
     s.send(binascii.hexlify("exportAsObj") + "\0")
     #s.send(binascii.hexlify("getNodePartId {3dc475f6-dcda-45b8-bb76-59948db39968}") + "\0")
