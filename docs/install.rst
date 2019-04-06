@@ -26,6 +26,12 @@ Download and Install Dust3D
 
 .. _Build: http://docs.dust3d.org/en/latest/builds.html
 
+Next?
+
+Join Mailing List to get Updated:
+
+    https://www.freelists.org/list/dust3d
+
 Found BUG?
 
 If you have any thoughts while using Dust3D, please don't hesitate to share by drop it here,
