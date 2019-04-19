@@ -14,9 +14,9 @@ Calling for Posts
 --------------------
 Please share your work done in Dust3D to our [Forum](https://dust3d.discourse.group) and twitter by hashtag [#Dust3D](https://twitter.com/hashtag/Dust3D), the final 1.0 version is planned to release in 2019, your work may be picked as the featured cover of Dust3D 1.0 stable version show on the about window of software and the homepage of website.
 
-[Dust3D 1.0 Beta Is Now Available](https://youtu.be/BjkDoRC_BVc)
+[How to Create a Low Poly Character in 23 Minutes using Dust3D](https://youtu.be/o20vuammC6A)
 
-<a href="https://youtu.be/BjkDoRC_BVc" target="_blank"><image src="https://raw.githubusercontent.com/huxingyi/dust3d/master/docs/images/dust3d-1.0-beta-is-now-available-thumbnail.png" width="480" height="270"></a>
+<a href="https://youtu.be/o20vuammC6A" target="_blank"><image src="https://raw.githubusercontent.com/Dust3D-Modeling/10minuteseveryday/master/jeremyhu2016/medieval-horse/how-to-create-a-low-poly-character-in-23-minutes-using-dust3d.png" width="480" height="270"></a>
 
 Examples
 ----------------------
