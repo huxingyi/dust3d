@@ -41,7 +41,7 @@ Examples
 
 More Examples
 ---------------------
-<a href="https://github.com/huxingyi/free-dust3d-models"><image src="https://raw.githubusercontent.com/huxingyi/free-dust3d-models/master/free-dust3d-models.png" height="50"></a>
+<a href="https://github.com/Dust3D-Modeling/10minuteseveryday"><image src="https://dust3d.org/images/10minuteseveryday-preview.png" width="344" height="398"></a>
 
 External Links
 -------------
