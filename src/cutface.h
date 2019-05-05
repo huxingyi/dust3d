@@ -53,40 +53,40 @@ std::vector<QVector2D> CutFaceToPoints(CutFace cutFace)                     \
     switch (cutFace) {                                                      \
         case CutFace::Quad:                                                 \
             return {                                                        \
-                {-1.0, -1.0},                                               \
-                { 1.0, -1.0},                                               \
-                { 1.0,  1.0},                                               \
-                {-1.0,  1.0},                                               \
+                {(float)-1.0, (float)-1.0},                                 \
+                { (float)1.0, (float)-1.0},                                 \
+                { (float)1.0,  (float)1.0},                                 \
+                {(float)-1.0,  (float)1.0},                                 \
             };                                                              \
         case CutFace::Triangle:                                             \
             return {                                                        \
-                {-1.1547, -1.0},                                            \
-                { 1.1547, -1.0},                                            \
-                {    0.0,  1.0},                                            \
+                {(float)-1.1527, (float)-0.6655},                           \
+                { (float)1.1527, (float)-0.6655},                           \
+                {    (float)0.0,  (float)1.33447},                          \
             };                                                              \
         case CutFace::Pentagon:                                             \
             return {                                                        \
-                { -0.6498, -0.8944},                                        \
-                {  0.6498, -0.8944},                                        \
-                { 1.05146,  0.34164},                                       \
-                {     0.0,  1.10557},                                       \
-                {-1.05146,  0.34164},                                       \
+                { (float)-0.6498, (float)-0.8944},                          \
+                {  (float)0.6498, (float)-0.8944},                          \
+                { (float)1.05146,  (float)0.34164},                         \
+                {     (float)0.0,  (float)1.10557},                         \
+                {(float)-1.05146,  (float)0.34164},                         \
             };                                                              \
         case CutFace::Hexagon:                                              \
             return {                                                        \
-                { -0.577, -1.0},                                            \
-                {  0.577, -1.0},                                            \
-                { 1.1547,  0.0},                                            \
-                {  0.577,  1.0},                                            \
-                { -0.577,  1.0},                                            \
-                {-1.1547,  0.0},                                            \
+                { (float)-0.577, (float)-1.0},                              \
+                {  (float)0.577, (float)-1.0},                              \
+                { (float)1.1547,  (float)0.0},                              \
+                {  (float)0.577,  (float)1.0},                              \
+                { (float)-0.577,  (float)1.0},                              \
+                {(float)-1.1547,  (float)0.0},                              \
             };                                                              \
         default:                                                            \
             return {                                                        \
-                {-1.0, -1.0},                                               \
-                { 1.0, -1.0},                                               \
-                { 1.0,  1.0},                                               \
-                {-1.0,  1.0},                                               \
+                {(float)-1.0, (float)-1.0},                                 \
+                { (float)1.0, (float)-1.0},                                 \
+                { (float)1.0,  (float)1.0},                                 \
+                {(float)-1.0,  (float)1.0},                                 \
             };                                                              \
     }                                                                       \
 }
