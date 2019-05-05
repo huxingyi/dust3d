@@ -401,7 +401,7 @@ signals:
     void partRoundStateChanged(QUuid partId);
     void partColorStateChanged(QUuid partId);
     void partCutRotationChanged(QUuid partId);
-    void partCutTemplateChanged(QUuid partId);
+    void partCutFaceChanged(QUuid partId);
     void partMaterialIdChanged(QUuid partId);
     void partChamferStateChanged(QUuid partId);
     void componentCombineModeChanged(QUuid componentId);
@@ -557,7 +557,7 @@ public slots:
     void setPartRoundState(QUuid partId, bool rounded);
     void setPartColorState(QUuid partId, bool hasColor, QColor color);
     void setPartCutRotation(QUuid partId, float cutRotation);
-    void setPartCutTemplate(QUuid partId, std::vector<QVector2D> cutTemplate);
+    void setPartCutFace(QUuid partId, CutFace cutFace);
     void setPartMaterialId(QUuid partId, QUuid materialId);
     void setPartChamferState(QUuid partId, bool chamfered);
     void setComponentCombineMode(QUuid componentId, CombineMode combineMode);

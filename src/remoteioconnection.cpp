@@ -289,8 +289,8 @@ void RemoteIoConnection::connectDocumentSignals()
     m_documentConnections << connect(document, &Document::partCutRotationChanged, this, [&](QUuid partId) {
         respondEventWithId("partcutrotationchanged", partId);
     });
-    m_documentConnections << connect(document, &Document::partCutTemplateChanged, this, [&](QUuid partId) {
-        respondEventWithId("partcuttemplatechanged", partId);
+    m_documentConnections << connect(document, &Document::partCutFaceChanged, this, [&](QUuid partId) {
+        respondEventWithId("partcutfacechanged", partId);
     });
     m_documentConnections << connect(document, &Document::partMaterialIdChanged, this, [&](QUuid partId) {
         respondEventWithId("partmaterialidchanged", partId);

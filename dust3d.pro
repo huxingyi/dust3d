@@ -292,8 +292,8 @@ HEADERS += src/combinemode.h
 SOURCES += src/cutdocument.cpp
 HEADERS += src/cutdocument.h
 
-SOURCES += src/cuttemplate.cpp
-HEADERS += src/cuttemplate.h
+SOURCES += src/cutface.cpp
+HEADERS += src/cutface.h
 
 SOURCES += src/remoteioserver.cpp
 HEADERS += src/remoteioserver.h

@@ -619,10 +619,15 @@ void Builder::makeCut(const QVector3D &position,
     baseNormal = revisedBaseNormalAcordingToCutNormal(baseNormal, cutNormal);
     auto finalCutTemplate = cutTemplate;
     auto finalCutNormal = cutNormal;
+    float degree = 0;
+    if (!qFuzzyIsNull(m_cutRotation)) {
+        degree = m_cutRotation * 180;
+    }
     if (QVector3D::dotProduct(cutNormal, traverseDirection) <= 0) {
         baseNormal = -baseNormal;
         finalCutNormal = -finalCutNormal;
         std::reverse(finalCutTemplate.begin(), finalCutTemplate.end());
+        degree = ((int)degree + 180) % 360;
         //for (auto &it: finalCutTemplate) {
         //    it.setX(-it.x());
         //    it.setY(-it.y());
@@ -635,8 +640,7 @@ void Builder::makeCut(const QVector3D &position,
     for (const auto &t: finalCutTemplate) {
         resultCut.push_back(uFactor * t.x() + vFactor * t.y());
     }
-    if (!qFuzzyIsNull(m_cutRotation)) {
-        float degree = m_cutRotation * 180;
+    if (!qFuzzyIsNull(degree)) {
         QMatrix4x4 rotation;
         rotation.rotate(degree, traverseDirection);
         baseNormal = rotation * baseNormal;

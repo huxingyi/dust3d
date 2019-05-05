@@ -867,8 +867,8 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
             part["chamfered"] = partIt.second.chamfered ? "true" : "false";
             if (partIt.second.cutRotationAdjusted())
                 part["cutRotation"] = QString::number(partIt.second.cutRotation);
-            if (partIt.second.cutTemplateAdjusted())
-                part["cutTemplate"] = cutTemplatePointsToString(partIt.second.cutTemplate);
+            if (partIt.second.cutFaceAdjusted())
+                part["cutFace"] = CutFaceToString(partIt.second.cutFace);
             part["dirty"] = partIt.second.dirty ? "true" : "false";
             if (partIt.second.hasColor)
                 part["color"] = partIt.second.color.name();
@@ -1127,9 +1127,9 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
         const auto &cutRotationIt = partKv.second.find("cutRotation");
         if (cutRotationIt != partKv.second.end())
             part.setCutRotation(cutRotationIt->second.toFloat());
-        const auto &cutTemplateIt = partKv.second.find("cutTemplate");
-        if (cutTemplateIt != partKv.second.end())
-            part.setCutTemplate(cutTemplatePointsFromString(cutTemplateIt->second));
+        const auto &cutFaceIt = partKv.second.find("cutFace");
+        if (cutFaceIt != partKv.second.end())
+            part.setCutFace(CutFaceFromString(cutFaceIt->second.toUtf8().constData()));
         if (isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "inverse")))
             inversePartIds.insert(part.id);
         const auto &colorIt = partKv.second.find("color");
@@ -2235,18 +2235,18 @@ void Document::setPartCutRotation(QUuid partId, float cutRotation)
     emit skeletonChanged();
 }
 
-void Document::setPartCutTemplate(QUuid partId, std::vector<QVector2D> cutTemplate)
+void Document::setPartCutFace(QUuid partId, CutFace cutFace)
 {
     auto part = partMap.find(partId);
     if (part == partMap.end()) {
         qDebug() << "Part not found:" << partId;
         return;
     }
-    if (cutTemplatePointsCompare(cutTemplate, part->second.cutTemplate))
+    if (part->second.cutFace == cutFace)
         return;
-    part->second.setCutTemplate(cutTemplate);
+    part->second.setCutFace(cutFace);
     part->second.dirty = true;
-    emit partCutTemplateChanged(partId);
+    emit partCutFaceChanged(partId);
     emit skeletonChanged();
 }
 

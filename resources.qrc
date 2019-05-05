@@ -8,6 +8,11 @@
     <file>resources/tree-vline.png</file>
     <file>resources/material-demo-model.ds3</file>
     <file>resources/bob.ds3</file>
+    <file>resources/triangle.png</file>
+    <file>resources/quad.png</file>
+    <file>resources/pentagon.png</file>
+    <file>resources/hexagon.png</file>
+    <file>resources/heptagon.png</file>
     <file>shaders/default.vert</file>
     <file>shaders/default.frag</file>
     <file>shaders/default.core.vert</file>

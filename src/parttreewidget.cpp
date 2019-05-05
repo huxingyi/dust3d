@@ -943,16 +943,16 @@ void PartTreeWidget::partCutRotationChanged(QUuid partId)
     widget->updateCutRotationButton();
 }
 
-//void PartTreeWidget::partCutTemplateChanged(QUuid partId)
-//{
-//    auto item = m_partItemMap.find(partId);
-//    if (item == m_partItemMap.end()) {
-//        qDebug() << "Part item not found:" << partId;
-//        return;
-//    }
-//    PartWidget *widget = (PartWidget *)itemWidget(item->second, 0);
-//    widget->updateCutTemplateButton();
-//}
+void PartTreeWidget::partCutFaceChanged(QUuid partId)
+{
+    auto item = m_partItemMap.find(partId);
+    if (item == m_partItemMap.end()) {
+        qDebug() << "Part item not found:" << partId;
+        return;
+    }
+    PartWidget *widget = (PartWidget *)itemWidget(item->second, 0);
+    widget->updateCutRotationButton();
+}
 
 void PartTreeWidget::partMaterialIdChanged(QUuid partId)
 {

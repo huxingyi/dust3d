@@ -856,7 +856,7 @@ DocumentWindow::DocumentWindow() :
     connect(m_document, &Document::partChamferStateChanged, partTreeWidget, &PartTreeWidget::partChamferStateChanged);
     connect(m_document, &Document::partColorStateChanged, partTreeWidget, &PartTreeWidget::partColorStateChanged);
     connect(m_document, &Document::partCutRotationChanged, partTreeWidget, &PartTreeWidget::partCutRotationChanged);
-    //connect(m_document, &Document::partCutTemplateChanged, partTreeWidget, &PartTreeWidget::partCutTemplateChanged);
+    connect(m_document, &Document::partCutFaceChanged, partTreeWidget, &PartTreeWidget::partCutFaceChanged);
     connect(m_document, &Document::partMaterialIdChanged, partTreeWidget, &PartTreeWidget::partMaterialIdChanged);
     connect(m_document, &Document::partRemoved, partTreeWidget, &PartTreeWidget::partRemoved);
     connect(m_document, &Document::cleanup, partTreeWidget, &PartTreeWidget::removeAllContent);

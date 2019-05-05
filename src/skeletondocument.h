@@ -9,7 +9,7 @@
 #include "bonemark.h"
 #include "theme.h"
 #include "meshloader.h"
-#include "cuttemplate.h"
+#include "cutface.h"
 
 class SkeletonNode
 {
@@ -86,8 +86,7 @@ public:
     std::vector<QUuid> nodeIds;
     bool dirty;
     float cutRotation;
-    std::vector<QVector2D> cutTemplate;
-    bool cutTemplateChanged;
+    CutFace cutFace;
     QUuid materialId;
     SkeletonPart(const QUuid &withId=QUuid()) :
         visible(true),
@@ -104,8 +103,7 @@ public:
         hasColor(false),
         dirty(true),
         cutRotation(0.0),
-        cutTemplate(CutTemplateToPoints(CutTemplate::Quad)),
-        cutTemplateChanged(false)
+        cutFace(CutFace::Quad)
     {
         id = withId.isNull() ? QUuid::createUuid() : withId;
     }
@@ -133,10 +131,9 @@ public:
             toRotation = 1;
         cutRotation = toRotation;
     }
-    void setCutTemplate(std::vector<QVector2D> points)
+    void setCutFace(CutFace face)
     {
-        cutTemplate = points;
-        cutTemplateChanged = true;
+        cutFace = face;
     }
     bool deformThicknessAdjusted() const
     {
@@ -154,9 +151,13 @@ public:
     {
         return fabs(cutRotation - 0.0) >= 0.01;
     }
-    bool cutTemplateAdjusted() const
+    bool cutFaceAdjusted() const
     {
-        return cutTemplateChanged;
+        return cutFace != CutFace::Quad;
+    }
+    bool cutAdjusted() const
+    {
+        return cutRotationAdjusted() || cutFaceAdjusted();
     }
     bool materialAdjusted() const
     {
@@ -181,8 +182,7 @@ public:
         color = other.color;
         hasColor = other.hasColor;
         cutRotation = other.cutRotation;
-        cutTemplate = other.cutTemplate;
-        cutTemplateChanged = other.cutTemplateChanged;
+        cutFace = other.cutFace;
         componentId = other.componentId;
         dirty = other.dirty;
         materialId = other.materialId;
