@@ -585,9 +585,17 @@ nodemesh::Combiner::Mesh *MeshGenerator::combineComponentMesh(const QString &com
             std::vector<std::pair<nodemesh::Combiner::Mesh *, CombineMode>> multipleMeshes;
             for (const auto &it: componentIdStrings) {
                 nodemesh::Combiner::Mesh *childMesh = combineComponentChildGroupMesh(it, componentCache);
+                if (nullptr == childMesh)
+                    continue;
+                if (childMesh->isNull()) {
+                    delete childMesh;
+                    continue;
+                }
                 multipleMeshes.push_back({childMesh, CombineMode::Normal});
             }
             nodemesh::Combiner::Mesh *subGroupMesh = combineMultipleMeshes(multipleMeshes, false);
+            if (nullptr == subGroupMesh)
+                continue;
             groupMeshes.push_back({subGroupMesh, group.first});
         }
         mesh = combineMultipleMeshes(groupMeshes, false);
@@ -654,7 +662,12 @@ nodemesh::Combiner::Mesh *MeshGenerator::combineComponentChildGroupMesh(const st
     for (const auto &childIdString: componentIdStrings) {
         CombineMode childCombineMode = CombineMode::Normal;
         nodemesh::Combiner::Mesh *subMesh = combineComponentMesh(childIdString, &childCombineMode);
-    
+        
+        if (CombineMode::Uncombined == childCombineMode) {
+            delete subMesh;
+            continue;
+        }
+        
         const auto &childComponentCache = m_cacheContext->components[childIdString];
         for (const auto &vertex: childComponentCache.noneSeamVertices)
             componentCache.noneSeamVertices.insert(vertex);
@@ -832,6 +845,9 @@ void MeshGenerator::generate()
         m_outcome->triangles = combinedFaces;
     }
     
+    // Recursively check uncombined components
+    collectUncombinedComponent(QUuid().toString());
+    
     auto postprocessOutcome = [](Outcome *outcome) {
         std::vector<QVector3D> combinedFacesNormals;
         for (const auto &face: outcome->triangles) {
@@ -869,27 +885,6 @@ void MeshGenerator::generate()
         outcome->setTriangleVertexNormals(triangleVertexNormals);
     };
     
-    /*
-    Outcome *previewOutcome = new Outcome(*m_outcome);
-    for (const auto &partCache: m_cacheContext->parts) {
-        if (partCache.second.isSucceed)
-            continue;
-        size_t oldVerticesCount = previewOutcome->vertices.size();
-        for (const auto &vertex: partCache.second.vertices) {
-            previewOutcome->vertices.push_back(vertex);
-        }
-        for (const auto &face: partCache.second.previewTriangles) {
-            std::vector<size_t> newFace = face;
-            for (auto &index: newFace)
-                index += oldVerticesCount;
-            previewOutcome->triangles.push_back(newFace);
-        }
-    }
-    postprocessOutcome(previewOutcome);
-    m_resultMesh = new MeshLoader(*previewOutcome);
-    delete previewOutcome;
-    */
-    
     postprocessOutcome(m_outcome);
     
     m_resultMesh = new MeshLoader(*m_outcome);
@@ -902,6 +897,49 @@ void MeshGenerator::generate()
     }
     
     qDebug() << "The mesh generation took" << countTimeConsumed.elapsed() << "milliseconds";
+}
+
+void MeshGenerator::collectUncombinedComponent(const QString &componentIdString)
+{
+    const auto &component = findComponent(componentIdString);
+    if (CombineMode::Uncombined == componentCombineMode(component)) {
+        const auto &componentCache = m_cacheContext->components[componentIdString];
+        if (nullptr == componentCache.mesh || componentCache.mesh->isNull()) {
+            qDebug() << "Uncombined mesh is null";
+            m_isSucceed = false;
+            return;
+        }
+        
+        m_outcome->nodes.insert(m_outcome->nodes.end(), componentCache.outcomeNodes.begin(), componentCache.outcomeNodes.end());
+        m_outcome->nodeVertices.insert(m_outcome->nodeVertices.end(), componentCache.outcomeNodeVertices.begin(), componentCache.outcomeNodeVertices.end());
+        
+        std::vector<QVector3D> uncombinedVertices;
+        std::vector<std::vector<size_t>> uncombinedFaces;
+        componentCache.mesh->fetch(uncombinedVertices, uncombinedFaces);
+        std::vector<std::vector<size_t>> uncombinedTriangleAndQuads;
+        
+        recoverQuads(uncombinedVertices, uncombinedFaces, componentCache.sharedQuadEdges, uncombinedTriangleAndQuads);
+        
+        auto vertexStartIndex = m_outcome->vertices.size();
+        auto updateVertexIndices = [=](std::vector<std::vector<size_t>> &faces) {
+            for (auto &it: faces) {
+                for (auto &subIt: it)
+                    subIt += vertexStartIndex;
+            }
+        };
+        updateVertexIndices(uncombinedFaces);
+        updateVertexIndices(uncombinedTriangleAndQuads);
+        
+        m_outcome->vertices.insert(m_outcome->vertices.end(), uncombinedVertices.begin(), uncombinedVertices.end());
+        m_outcome->triangles.insert(m_outcome->triangles.end(), uncombinedFaces.begin(), uncombinedFaces.end());
+        m_outcome->triangleAndQuads.insert(m_outcome->triangleAndQuads.end(), uncombinedTriangleAndQuads.begin(), uncombinedTriangleAndQuads.end());
+        return;
+    }
+    for (const auto &childIdString: valueOfKeyInMapOrEmpty(*component, "children").split(",")) {
+        if (childIdString.isEmpty())
+            continue;
+        collectUncombinedComponent(childIdString);
+    }
 }
 
 void MeshGenerator::generateSmoothTriangleVertexNormals(const std::vector<QVector3D> &vertices, const std::vector<std::vector<size_t>> &triangles,

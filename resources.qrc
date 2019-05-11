@@ -13,6 +13,7 @@
     <file>resources/pentagon.png</file>
     <file>resources/hexagon.png</file>
     <file>resources/heptagon.png</file>
+    <file>resources/userdefined.png</file>
     <file>shaders/default.vert</file>
     <file>shaders/default.frag</file>
     <file>shaders/default.core.vert</file>

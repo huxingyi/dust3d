@@ -6,6 +6,7 @@ enum class CombineMode
 {
     Normal = 0,
     Inversion,
+    Uncombined,
     Count
 };
 CombineMode CombineModeFromString(const char *modeString);
@@ -17,6 +18,8 @@ CombineMode CombineModeFromString(const char *modeString)           \
         return CombineMode::Normal;                                 \
     if (mode == "Inversion")                                        \
         return CombineMode::Inversion;                              \
+    if (mode == "Uncombined")                                       \
+        return CombineMode::Uncombined;                             \
     return CombineMode::Normal;                                     \
 }
 const char *CombineModeToString(CombineMode mode);
@@ -28,6 +31,8 @@ const char *CombineModeToString(CombineMode mode)                   \
             return "Normal";                                        \
         case CombineMode::Inversion:                                \
             return "Inversion";                                     \
+        case CombineMode::Uncombined:                               \
+            return "Uncombined";                                    \
         default:                                                    \
             return "Normal";                                        \
     }                                                               \
@@ -41,6 +46,8 @@ QString CombineModeToDispName(CombineMode mode)                     \
             return QObject::tr("Normal");                           \
         case CombineMode::Inversion:                                \
             return QObject::tr("Inversion");                        \
+        case CombineMode::Uncombined:                               \
+            return QObject::tr("Uncombined");                       \
         default:                                                    \
             return QObject::tr("Normal");                           \
     }                                                               \

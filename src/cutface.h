@@ -11,6 +11,7 @@ enum class CutFace
     Pentagon,
     Hexagon,
     Triangle,
+    //UserDefined,
     Count
 };
 
