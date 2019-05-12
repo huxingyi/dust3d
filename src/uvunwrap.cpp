@@ -1,7 +1,12 @@
 #include <simpleuv/uvunwrapper.h>
+#include <QDebug>
+#include <QRectF>
 #include "uvunwrap.h"
 
-void uvUnwrap(const Outcome &outcome, std::vector<std::vector<QVector2D>> &triangleVertexUvs, std::set<int> &seamVertices)
+void uvUnwrap(const Outcome &outcome,
+    std::vector<std::vector<QVector2D>> &triangleVertexUvs,
+    std::set<int> &seamVertices,
+    std::map<QUuid, std::vector<QRectF>> &uvRects)
 {
     const auto &choosenVertices = outcome.vertices;
     const auto &choosenTriangles = outcome.triangles;
@@ -23,7 +28,7 @@ void uvUnwrap(const Outcome &outcome, std::vector<std::vector<QVector2D>> &trian
         inputMesh.vertices.push_back(v);
     }
     std::map<QUuid, int> partIdToPartitionMap;
-    int partitions = 0;
+    std::vector<QUuid> partitionPartUuids;
     for (decltype(choosenTriangles.size()) i = 0; i < choosenTriangles.size(); ++i) {
         const auto &triangle = choosenTriangles[i];
         const auto &sourceNode = triangleSourceNodes[i];
@@ -34,9 +39,9 @@ void uvUnwrap(const Outcome &outcome, std::vector<std::vector<QVector2D>> &trian
         inputMesh.faces.push_back(f);
         auto findPartitionResult = partIdToPartitionMap.find(sourceNode.first);
         if (findPartitionResult == partIdToPartitionMap.end()) {
-            ++partitions;
-            partIdToPartitionMap.insert({sourceNode.first, partitions});
-            inputMesh.facePartitions.push_back(partitions);
+            partitionPartUuids.push_back(sourceNode.first);
+            partIdToPartitionMap.insert({sourceNode.first, (int)partitionPartUuids.size()});
+            inputMesh.facePartitions.push_back((int)partitionPartUuids.size());
         } else {
             inputMesh.facePartitions.push_back(findPartitionResult->second);
         }
@@ -46,6 +51,8 @@ void uvUnwrap(const Outcome &outcome, std::vector<std::vector<QVector2D>> &trian
     uvUnwrapper.setMesh(inputMesh);
     uvUnwrapper.unwrap();
     const std::vector<simpleuv::FaceTextureCoords> &resultFaceUvs = uvUnwrapper.getFaceUvs();
+    const std::vector<QRectF> &resultChartRects = uvUnwrapper.getChartRects();
+    const std::vector<int> &resultChartSourcePartitions = uvUnwrapper.getChartSourcePartitions();
     std::map<int, QVector2D> vertexUvMap;
     for (decltype(choosenTriangles.size()) i = 0; i < choosenTriangles.size(); ++i) {
         const auto &triangle = choosenTriangles[i];
@@ -65,5 +72,14 @@ void uvUnwrap(const Outcome &outcome, std::vector<std::vector<QVector2D>> &trian
                 }
             }
         }
+    }
+    for (size_t i = 0; i < resultChartRects.size(); ++i) {
+        const auto &rect = resultChartRects[i];
+        const auto &source = resultChartSourcePartitions[i];
+        if (0 == source || source > (int)partitionPartUuids.size()) {
+            qDebug() << "Invalid UV chart source partition:" << source;
+            continue;
+        }
+        uvRects[partitionPartUuids[source - 1]].push_back(rect);
     }
 }

@@ -27,8 +27,10 @@ void MeshResultPostProcessor::poseProcess()
         {
             std::vector<std::vector<QVector2D>> triangleVertexUvs;
             std::set<int> seamVertices;
-            uvUnwrap(*m_outcome, triangleVertexUvs, seamVertices);
+            std::map<QUuid, std::vector<QRectF>> partUvRects;
+            uvUnwrap(*m_outcome, triangleVertexUvs, seamVertices, partUvRects);
             m_outcome->setTriangleVertexUvs(triangleVertexUvs);
+            m_outcome->setPartUvRects(partUvRects);
         }
         
         {

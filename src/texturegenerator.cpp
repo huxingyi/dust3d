@@ -211,6 +211,8 @@ void TextureGenerator::generate()
         return;
     if (nullptr == m_outcome->triangleSourceNodes())
         return;
+    if (nullptr == m_outcome->partUvRects())
+        return;
     
     QElapsedTimer countTimeConsumed;
     countTimeConsumed.start();
@@ -225,10 +227,13 @@ void TextureGenerator::generate()
     const auto &triangleVertexUvs = *m_outcome->triangleVertexUvs();
     const auto &triangleSourceNodes = *m_outcome->triangleSourceNodes();
     const auto &triangleNormals = m_outcome->triangleNormals;
+    const auto &partUvRects = *m_outcome->partUvRects();
     
+    std::map<QUuid, QColor> partColorMap;
     std::map<std::pair<QUuid, QUuid>, const OutcomeNode *> nodeMap;
     for (const auto &item: m_outcome->nodes) {
         nodeMap.insert({{item.partId, item.nodeId}, &item});
+        partColorMap.insert({item.partId, item.color});
     }
     
     auto createImageBeginTime = countTimeConsumed.elapsed();
@@ -291,6 +296,26 @@ void TextureGenerator::generate()
     
     auto paintTextureBeginTime = countTimeConsumed.elapsed();
     texturePainter.setPen(Qt::NoPen);
+    
+    for (const auto &it: partUvRects) {
+        const auto &partId = it.first;
+        const auto &rects = it.second;
+        auto findSourceColorResult = partColorMap.find(partId);
+        if (findSourceColorResult != partColorMap.end()) {
+            const auto &color = findSourceColorResult->second;
+            QBrush brush(color);
+            for (const auto &rect: rects) {
+                QRectF translatedRect = {
+                    rect.left() * TextureGenerator::m_textureSize,
+                    rect.top() * TextureGenerator::m_textureSize,
+                    rect.width() * TextureGenerator::m_textureSize,
+                    rect.height() * TextureGenerator::m_textureSize
+                };
+                texturePainter.fillRect(translatedRect, brush);
+            }
+        }
+    }
+    
     for (auto i = 0u; i < triangleVertexUvs.size(); i++) {
         QPainterPath path;
         const std::vector<QVector2D> &uv = triangleVertexUvs[i];

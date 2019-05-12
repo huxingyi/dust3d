@@ -17,9 +17,19 @@ void UvUnwrapper::setMesh(const Mesh &mesh)
     m_mesh = mesh;
 }
 
-const std::vector<FaceTextureCoords> &UvUnwrapper::getFaceUvs()
+const std::vector<FaceTextureCoords> &UvUnwrapper::getFaceUvs() const
 {
     return m_faceUvs;
+}
+
+const std::vector<QRectF> &UvUnwrapper::getChartRects() const
+{
+    return m_chartRects;
+}
+
+const std::vector<int> &UvUnwrapper::getChartSourcePartitions() const
+{
+    return m_chartSourcePartitions;
 }
 
 void UvUnwrapper::buildEdgeToFaceMap(const std::vector<Face> &faces, std::map<std::pair<size_t, size_t>, size_t> &edgeToFaceMap)
@@ -294,8 +304,11 @@ void UvUnwrapper::makeSeamAndCut(const std::vector<Vertex> &verticies,
 void UvUnwrapper::calculateSizeAndRemoveInvalidCharts()
 {
     auto charts = m_charts;
+    auto chartSourcePartitions = m_chartSourcePartitions;
     m_charts.clear();
-    for (auto &chart: charts) {
+    chartSourcePartitions.clear();
+    for (size_t chartIndex = 0; chartIndex < charts.size(); ++chartIndex) {
+        auto &chart = charts[chartIndex];
         float left, top, right, bottom;
         left = top = right = bottom = 0;
         calculateFaceTextureBoundingBox(chart.second, left, top, right, bottom);
@@ -315,6 +328,7 @@ void UvUnwrapper::calculateSizeAndRemoveInvalidCharts()
         //qDebug() << "width:" << size.first << "height:" << size.second;
         m_chartSizes.push_back(size);
         m_charts.push_back(chart);
+        m_chartSourcePartitions.push_back(chartSourcePartitions[chartIndex]);
     }
 }
 
@@ -323,6 +337,7 @@ void UvUnwrapper::packCharts()
     ChartPacker chartPacker;
     chartPacker.setCharts(m_chartSizes);
     chartPacker.pack();
+    m_chartRects.resize(m_chartSizes.size());
     const std::vector<std::tuple<float, float, float, float, bool>> &packedResult = chartPacker.getResult();
     for (decltype(m_charts.size()) i = 0; i < m_charts.size(); ++i) {
         const auto &chartSize = m_chartSizes[i];
@@ -342,6 +357,10 @@ void UvUnwrapper::packCharts()
         auto &width = std::get<2>(result);
         auto &height = std::get<3>(result);
         auto &flipped = std::get<4>(result);
+        if (flipped)
+            m_chartRects[i] = {left, top, height, width};
+        else
+            m_chartRects[i] = {left, top, width, height};
         if (flipped) {
             for (auto &item: chart.second) {
                 for (int i = 0; i < 3; ++i) {
@@ -388,7 +407,7 @@ void UvUnwrapper::partition()
     }
 }
 
-void UvUnwrapper::unwrapSingleIsland(const std::vector<size_t> &group, bool skipCheckHoles)
+void UvUnwrapper::unwrapSingleIsland(const std::vector<size_t> &group, int sourcePartition, bool skipCheckHoles)
 {
     if (group.empty())
         return;
@@ -424,7 +443,7 @@ void UvUnwrapper::unwrapSingleIsland(const std::vector<size_t> &group, bool skip
         return;
     }
     if (1 == remainingHoleNumAfterFix) {
-        parametrizeSingleGroup(localVertices, localFaces, localToGlobalFacesMap, faceNumBeforeFix);
+        parametrizeSingleGroup(localVertices, localFaces, localToGlobalFacesMap, faceNumBeforeFix, sourcePartition);
         return;
     }
     
@@ -436,8 +455,8 @@ void UvUnwrapper::unwrapSingleIsland(const std::vector<size_t> &group, bool skip
             qDebug() << "Cut mesh failed";
             return;
         }
-        unwrapSingleIsland(firstGroup, true);
-        unwrapSingleIsland(secondGroup, true);
+        unwrapSingleIsland(firstGroup, sourcePartition, true);
+        unwrapSingleIsland(secondGroup, sourcePartition, true);
         return;
     }
 }
@@ -445,7 +464,8 @@ void UvUnwrapper::unwrapSingleIsland(const std::vector<size_t> &group, bool skip
 void UvUnwrapper::parametrizeSingleGroup(const std::vector<Vertex> &verticies,
         const std::vector<Face> &faces,
         std::map<size_t, size_t> &localToGlobalFacesMap,
-        size_t faceNumToChart)
+        size_t faceNumToChart,
+        int sourcePartition)
 {
     std::vector<TextureCoord> localVertexUvs;
     if (!parametrize(verticies, faces, localVertexUvs))
@@ -467,6 +487,7 @@ void UvUnwrapper::parametrizeSingleGroup(const std::vector<Vertex> &verticies,
     if (chart.first.empty())
         return;
     m_charts.push_back(chart);
+    m_chartSourcePartitions.push_back(sourcePartition);
 }
 
 void UvUnwrapper::unwrap()
@@ -478,7 +499,7 @@ void UvUnwrapper::unwrap()
         std::vector<std::vector<size_t>> islands;
         splitPartitionToIslands(group.second, islands);
         for (const auto &island: islands)
-            unwrapSingleIsland(island);
+            unwrapSingleIsland(island, group.first);
     }
     
     calculateSizeAndRemoveInvalidCharts();
