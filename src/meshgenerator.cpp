@@ -192,7 +192,7 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
                 float radius = valueOfKeyInMapOrEmpty(node, "radius").toFloat();
                 float x = (valueOfKeyInMapOrEmpty(node, "x").toFloat() - m_mainProfileMiddleX);
                 float y = (m_mainProfileMiddleY - valueOfKeyInMapOrEmpty(node, "y").toFloat());
-                cutFaceNodeMap.insert({nodeIdString, {radius, x, y}});
+                cutFaceNodeMap.insert({nodeIdString, std::make_tuple(radius, x, y)});
             }
             // Build edge link
             std::map<QString, std::vector<QString>> cutFaceNodeLinkMap;
