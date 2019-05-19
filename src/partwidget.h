@@ -23,6 +23,7 @@ signals:
     void setPartColorState(QUuid partId, bool hasColor, QColor color);
     void setPartCutRotation(QUuid partId, float cutRotation);
     void setPartCutFace(QUuid partId, CutFace cutFace);
+    void setPartCutFaceLinkedId(QUuid partId, QUuid linkedId);
     void setPartMaterialId(QUuid partId, QUuid materialId);
     void movePartUp(QUuid partId);
     void movePartDown(QUuid partId);

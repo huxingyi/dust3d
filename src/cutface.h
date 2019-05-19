@@ -11,7 +11,7 @@ enum class CutFace
     Pentagon,
     Hexagon,
     Triangle,
-    //UserDefined,
+    UserDefined,
     Count
 };
 
@@ -28,6 +28,8 @@ CutFace CutFaceFromString(const char *faceString)                           \
         return CutFace::Hexagon;                                            \
     if (face == "Triangle")                                                 \
         return CutFace::Triangle;                                           \
+    if (face == "UserDefined")                                              \
+        return CutFace::UserDefined;                                        \
     return CutFace::Quad;                                                   \
 }
 QString CutFaceToString(CutFace cutFace);
@@ -43,6 +45,8 @@ QString CutFaceToString(CutFace cutFace)                                    \
             return "Hexagon";                                               \
         case CutFace::Triangle:                                             \
             return "Triangle";                                              \
+        case CutFace::UserDefined:                                          \
+            return "UserDefined";                                           \
         default:                                                            \
             return "";                                                      \
     }                                                                       \
@@ -93,5 +97,6 @@ std::vector<QVector2D> CutFaceToPoints(CutFace cutFace)                     \
 }
 
 void normalizeCutFacePoints(std::vector<QVector2D> *points);
+void cutFacePointsFromNodes(std::vector<QVector2D> &points, const std::vector<std::tuple<float, float, float>> &nodes);
 
 #endif

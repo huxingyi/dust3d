@@ -39,6 +39,7 @@ int Theme::miniIconFontSize = 0;
 int Theme::miniIconSize = 0;
 int Theme::partPreviewImageSize = 0;
 int Theme::materialPreviewImageSize = 0;
+int Theme::cutFacePreviewImageSize = 0;
 int Theme::posePreviewImageSize = 0;
 int Theme::motionPreviewImageSize = 0;
 int Theme::sidebarPreferredWidth = 0;
@@ -54,6 +55,7 @@ void Theme::initAwsomeBaseSizes()
     Theme::miniIconSize = (int)(Theme::miniIconFontSize * 1.67);
     Theme::partPreviewImageSize = (Theme::miniIconSize * 3);
     Theme::materialPreviewImageSize = 75;
+    Theme::cutFacePreviewImageSize = 75;
     Theme::posePreviewImageSize = 75;
     Theme::motionPreviewImageSize = 75;
     Theme::sidebarPreferredWidth = 200;

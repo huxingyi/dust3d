@@ -33,7 +33,7 @@ void main()
     vert = (modelMatrix * vertex).xyz;
     vertNormal = normalize((modelMatrix * vec4(normal, 1.0)).xyz);
     vertColor = color;
-    cameraPos = vec3(0, 0, -2.1);
+    cameraPos = vec3(0, 0, -4.0);
 
     firstLightPos = vec3(5.0, 5.0, 5.0);
     secondLightPos = vec3(-5.0, 5.0, 5.0);

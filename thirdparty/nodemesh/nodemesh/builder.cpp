@@ -616,7 +616,6 @@ void Builder::makeCut(const QVector3D &position,
         const QVector3D &traverseDirection,
         std::vector<QVector3D> &resultCut)
 {
-    baseNormal = revisedBaseNormalAcordingToCutNormal(baseNormal, cutNormal);
     auto finalCutTemplate = cutTemplate;
     auto finalCutNormal = cutNormal;
     float degree = 0;
@@ -624,14 +623,9 @@ void Builder::makeCut(const QVector3D &position,
         degree = m_cutRotation * 180;
     }
     if (QVector3D::dotProduct(cutNormal, traverseDirection) <= 0) {
-        baseNormal = -baseNormal;
         finalCutNormal = -finalCutNormal;
         std::reverse(finalCutTemplate.begin(), finalCutTemplate.end());
-        degree = ((int)degree + 180) % 360;
-        //for (auto &it: finalCutTemplate) {
-        //    it.setX(-it.x());
-        //    it.setY(-it.y());
-        //}
+        std::rotate(finalCutTemplate.begin(), finalCutTemplate.begin() + finalCutTemplate.size() - 1, finalCutTemplate.end());
     }
     QVector3D u = QVector3D::crossProduct(finalCutNormal, baseNormal).normalized();
     QVector3D v = QVector3D::crossProduct(u, finalCutNormal).normalized();

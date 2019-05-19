@@ -295,6 +295,15 @@ HEADERS += src/cutdocument.h
 SOURCES += src/cutface.cpp
 HEADERS += src/cutface.h
 
+SOURCES += src/parttarget.cpp
+HEADERS += src/parttarget.h
+
+SOURCES += src/cutfacewidget.cpp
+HEADERS += src/cutfacewidget.h
+
+SOURCES += src/cutfacelistwidget.cpp
+HEADERS += src/cutfacelistwidget.h
+
 SOURCES += src/remoteioserver.cpp
 HEADERS += src/remoteioserver.h
 

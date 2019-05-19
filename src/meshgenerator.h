@@ -87,6 +87,7 @@ private:
     void collectParts();
     bool checkIsComponentDirty(const QString &componentIdString);
     bool checkIsPartDirty(const QString &partIdString);
+    bool checkIsPartDependencyDirty(const QString &partIdString);
     void checkDirtyFlags();
     nodemesh::Combiner::Mesh *combinePartMesh(const QString &partIdString);
     nodemesh::Combiner::Mesh *combineComponentMesh(const QString &componentIdString, CombineMode *combineMode);

@@ -21,6 +21,7 @@ signals:
     void setComponentExpandState(QUuid componentId, bool expanded);
     void setComponentSmoothAll(QUuid componentId, float toSmoothAll);
     void setComponentSmoothSeam(QUuid componentId, float toSmoothSeam);
+    void setPartTarget(QUuid partId, PartTarget target);
     void moveComponent(QUuid componentId, QUuid toParentId);
     void removeComponent(QUuid componentId);
     void hideOtherComponents(QUuid componentId);
@@ -50,6 +51,7 @@ public slots:
     void componentAdded(QUuid componentId);
     void componentExpandStateChanged(QUuid componentId);
     void componentCombineModeChanged(QUuid componentId);
+    void componentTargetChanged(QUuid componentId);
     void partRemoved(QUuid partId);
     void partPreviewChanged(QUuid partid);
     void partLockStateChanged(QUuid partId);

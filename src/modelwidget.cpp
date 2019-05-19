@@ -35,6 +35,7 @@ ModelWidget::ModelWidget(QWidget *parent) :
         setFormat(fmt);
     }
     setContextMenuPolicy(Qt::CustomContextMenu);
+    zoom(200);
 }
 
 int ModelWidget::xRot()
@@ -128,7 +129,7 @@ void ModelWidget::initializeGL()
     // Our camera never changes in this example.
     m_camera.setToIdentity();
     // FIXME: if change here, please also change the camera pos in PBR shader
-    m_camera.translate(0, 0, -2.1);
+    m_camera.translate(0, 0, -4.0);
 
     // Light position is fixed.
     // FIXME: PBR render no longer use this parameter

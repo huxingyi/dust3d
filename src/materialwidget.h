@@ -21,8 +21,8 @@ protected:
     void resizeEvent(QResizeEvent *event) override;
 public slots:
     void reload();
-    void updatePreview();
-    void updateName();
+    void updatePreview(QUuid materialId);
+    void updateName(QUuid materialId);
     void updateCheckedState(bool checked);
     void setCornerButtonVisible(bool visible);
 private:

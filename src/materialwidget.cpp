@@ -63,12 +63,14 @@ int MaterialWidget::preferredHeight()
 
 void MaterialWidget::reload()
 {
-    updatePreview();
-    updateName();
+    updatePreview(m_materialId);
+    updateName(m_materialId);
 }
 
-void MaterialWidget::updatePreview()
+void MaterialWidget::updatePreview(QUuid materialId)
 {
+    if (materialId != m_materialId)
+        return;
     const Material *material = m_document->findMaterial(m_materialId);
     if (!material) {
         qDebug() << "Material not found:" << m_materialId;
@@ -78,8 +80,10 @@ void MaterialWidget::updatePreview()
     m_previewWidget->updateMesh(previewMesh);
 }
 
-void MaterialWidget::updateName()
+void MaterialWidget::updateName(QUuid materialId)
 {
+    if (materialId != m_materialId)
+        return;
     const Material *material = m_document->findMaterial(m_materialId);
     if (!material) {
         qDebug() << "Material not found:" << m_materialId;

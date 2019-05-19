@@ -35,6 +35,7 @@ public:
     static int toolIconFontSize;
     static int toolIconSize;
     static int materialPreviewImageSize;
+    static int cutFacePreviewImageSize;
     static int posePreviewImageSize;
     static int partPreviewImageSize;
     static int motionPreviewImageSize;

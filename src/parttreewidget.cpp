@@ -7,6 +7,7 @@
 #include <QBrush>
 #include <QGuiApplication>
 #include <QComboBox>
+#include <QFormLayout>
 #include "parttreewidget.h"
 #include "partwidget.h"
 #include "skeletongraphicswidget.h"
@@ -276,20 +277,37 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
             combineModeSelectBox->addItem(CombineModeToDispName(mode));
         }
         combineModeSelectBox->setCurrentIndex((int)component->combineMode);
-        
         connect(combineModeSelectBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [=](int index) {
             emit setComponentCombineMode(component->id, (CombineMode)index);
         });
         
-        QHBoxLayout *combineModeLayout = new QHBoxLayout;
-        combineModeLayout->setAlignment(Qt::AlignCenter);
-        combineModeLayout->setContentsMargins(0, 0, 0, 0);
-        combineModeLayout->setSpacing(0);
-        combineModeLayout->addWidget(combineModeSelectBox);
+        QComboBox *partTargetSelectBox = nullptr;
+        if (nullptr != part && nullptr != partWidget) {
+            partTargetSelectBox = new QComboBox;
+            for (size_t i = 0; i < (size_t)PartTarget::Count; ++i) {
+                PartTarget target = (PartTarget)i;
+                partTargetSelectBox->addItem(PartTargetToDispName(target));
+            }
+            partTargetSelectBox->setCurrentIndex((int)part->target);
+            connect(partTargetSelectBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [=](int index) {
+                emit setPartTarget(part->id, (PartTarget)index);
+            });
+        }
+        
+        //QHBoxLayout *combineModeLayout = new QHBoxLayout;
+        //combineModeLayout->setAlignment(Qt::AlignCenter);
+        //combineModeLayout->setContentsMargins(0, 0, 0, 0);
+        //combineModeLayout->setSpacing(0);
+        //combineModeLayout->addWidget(combineModeSelectBox);
+        
+        QFormLayout *componentSettingsLayout = new QFormLayout;
+        if (nullptr != partTargetSelectBox)
+            componentSettingsLayout->addRow(tr("Target"), partTargetSelectBox);
+        componentSettingsLayout->addRow(tr("Mode"), combineModeSelectBox);
     
         QVBoxLayout *newLayout = new QVBoxLayout;
         newLayout->addLayout(layout);
-        newLayout->addLayout(combineModeLayout);
+        newLayout->addLayout(componentSettingsLayout);
         widget->setLayout(newLayout);
     } else {
         widget->setLayout(layout);
@@ -683,6 +701,11 @@ void PartTreeWidget::componentExpandStateChanged(QUuid componentId)
 }
 
 void PartTreeWidget::componentCombineModeChanged(QUuid componentId)
+{
+    updateComponentAppearance(componentId);
+}
+
+void PartTreeWidget::componentTargetChanged(QUuid componentId)
 {
     updateComponentAppearance(componentId);
 }

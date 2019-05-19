@@ -11,6 +11,8 @@
 #include "util.h"
 #include "trianglesourcenoderesolve.h"
 #include "cutface.h"
+#include "parttarget.h"
+#include "theme.h"
 
 MeshGenerator::MeshGenerator(Snapshot *snapshot) :
     m_snapshot(snapshot)
@@ -83,6 +85,20 @@ bool MeshGenerator::checkIsPartDirty(const QString &partIdString)
     return isTrueValueString(valueOfKeyInMapOrEmpty(findPart->second, "dirty"));
 }
 
+bool MeshGenerator::checkIsPartDependencyDirty(const QString &partIdString)
+{
+    auto findPart = m_snapshot->parts.find(partIdString);
+    if (findPart == m_snapshot->parts.end()) {
+        qDebug() << "Find part failed:" << partIdString;
+        return false;
+    }
+    QString cutFaceString = valueOfKeyInMapOrEmpty(findPart->second, "cutFace");
+    QUuid cutFaceLinkedPartId = QUuid(cutFaceString);
+    if (cutFaceLinkedPartId.isNull())
+        return false;
+    return checkIsPartDirty(cutFaceString);
+}
+
 bool MeshGenerator::checkIsComponentDirty(const QString &componentIdString)
 {
     bool isDirty = false;
@@ -107,6 +123,11 @@ bool MeshGenerator::checkIsComponentDirty(const QString &componentIdString)
         if (checkIsPartDirty(partId)) {
             m_dirtyPartIds.insert(partId);
             isDirty = true;
+        }
+        if (!isDirty) {
+            if (checkIsPartDependencyDirty(partId)) {
+                isDirty = true;
+            }
         }
     }
     
@@ -149,12 +170,122 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
     float deformThickness = 1.0;
     float deformWidth = 1.0;
     float cutRotation = 0.0;
+    auto target = PartTargetFromString(valueOfKeyInMapOrEmpty(part, "target").toUtf8().constData());
     
-    CutFace cutFace = CutFaceFromString(valueOfKeyInMapOrEmpty(part, "cutFace").toUtf8().constData());
-    std::vector<QVector2D> cutTemplate = CutFaceToPoints(cutFace);
+    std::vector<QVector2D> cutTemplate;
+    QString cutFaceString = valueOfKeyInMapOrEmpty(part, "cutFace");
+    QUuid cutFaceLinkedPartId = QUuid(cutFaceString);
+    if (!cutFaceLinkedPartId.isNull()) {
+        auto findCutFaceLinkedPart = m_snapshot->parts.find(cutFaceString);
+        if (findCutFaceLinkedPart == m_snapshot->parts.end()) {
+            qDebug() << "Find cut face linked part failed:" << cutFaceString;
+        } else {
+            // Build node info map
+            std::map<QString, std::tuple<float, float, float>> cutFaceNodeMap;
+            for (const auto &nodeIdString: m_partNodeIds[cutFaceString]) {
+                auto findNode = m_snapshot->nodes.find(nodeIdString);
+                if (findNode == m_snapshot->nodes.end()) {
+                    qDebug() << "Find node failed:" << nodeIdString;
+                    continue;
+                }
+                auto &node = findNode->second;
+                float radius = valueOfKeyInMapOrEmpty(node, "radius").toFloat();
+                float x = (valueOfKeyInMapOrEmpty(node, "x").toFloat() - m_mainProfileMiddleX);
+                float y = (m_mainProfileMiddleY - valueOfKeyInMapOrEmpty(node, "y").toFloat());
+                cutFaceNodeMap.insert({nodeIdString, {radius, x, y}});
+            }
+            // Build edge link
+            std::map<QString, std::vector<QString>> cutFaceNodeLinkMap;
+            for (const auto &edgeIdString: m_partEdgeIds[cutFaceString]) {
+                auto findEdge = m_snapshot->edges.find(edgeIdString);
+                if (findEdge == m_snapshot->edges.end()) {
+                    qDebug() << "Find edge failed:" << edgeIdString;
+                    continue;
+                }
+                auto &edge = findEdge->second;
+                QString fromNodeIdString = valueOfKeyInMapOrEmpty(edge, "from");
+                QString toNodeIdString = valueOfKeyInMapOrEmpty(edge, "to");
+                cutFaceNodeLinkMap[fromNodeIdString].push_back(toNodeIdString);
+                cutFaceNodeLinkMap[toNodeIdString].push_back(fromNodeIdString);
+            }
+            // Find endpoint
+            QString endPointNodeIdString;
+            std::vector<std::pair<QString, std::tuple<float, float, float>>> endpointNodes;
+            for (const auto &it: cutFaceNodeLinkMap) {
+                if (1 == it.second.size()) {
+                    const auto &findNode = cutFaceNodeMap.find(it.first);
+                    if (findNode != cutFaceNodeMap.end())
+                        endpointNodes.push_back({it.first, findNode->second});
+                }
+            }
+            if (!endpointNodes.empty()) {
+                std::sort(endpointNodes.begin(), endpointNodes.end(), [](
+                        const std::pair<QString, std::tuple<float, float, float>> &first,
+                        const std::pair<QString, std::tuple<float, float, float>> &second) {
+                    const auto &firstX = std::get<1>(first.second);
+                    const auto &secondX = std::get<1>(second.second);
+                    if (firstX < secondX) {
+                        return true;
+                    } else if (firstX > secondX) {
+                        return false;
+                    } else {
+                        const auto &firstY = std::get<2>(first.second);
+                        const auto &secondY = std::get<2>(second.second);
+                        if (firstY > secondY) {
+                            return true;
+                        } else if (firstY < secondY) {
+                            return false;
+                        } else {
+                            const auto &firstRadius = std::get<0>(first.second);
+                            const auto &secondRadius = std::get<0>(second.second);
+                            if (firstRadius < secondRadius) {
+                                return true;
+                            } else if (firstRadius > secondRadius) {
+                                return false;
+                            } else {
+                                return true;
+                            }
+                        }
+                    }
+                });
+                endPointNodeIdString = endpointNodes[0].first;
+            }
+            // Loop all linked nodes
+            std::vector<std::tuple<float, float, float>> cutFaceNodes;
+            std::set<QString> cutFaceVisitedNodeIds;
+            std::function<void (const QString &)> loopNodeLink;
+            loopNodeLink = [&](const QString &fromNodeIdString) {
+                auto findCutFaceNode = cutFaceNodeMap.find(fromNodeIdString);
+                if (findCutFaceNode == cutFaceNodeMap.end())
+                    return;
+                if (cutFaceVisitedNodeIds.find(fromNodeIdString) != cutFaceVisitedNodeIds.end())
+                    return;
+                cutFaceVisitedNodeIds.insert(fromNodeIdString);
+                cutFaceNodes.push_back(findCutFaceNode->second);
+                auto findNeighbor = cutFaceNodeLinkMap.find(fromNodeIdString);
+                if (findNeighbor == cutFaceNodeLinkMap.end())
+                    return;
+                for (const auto &it: findNeighbor->second) {
+                    if (cutFaceVisitedNodeIds.find(it) == cutFaceVisitedNodeIds.end()) {
+                        loopNodeLink(it);
+                        break;
+                    }
+                }
+            };
+            if (!endPointNodeIdString.isEmpty()) {
+                loopNodeLink(endPointNodeIdString);
+            }
+            // Fetch points from linked nodes
+            cutFacePointsFromNodes(cutTemplate, cutFaceNodes);
+        }
+    }
+    if (cutTemplate.size() < 3) {
+        CutFace cutFace = CutFaceFromString(cutFaceString.toUtf8().constData());
+        cutTemplate = CutFaceToPoints(cutFace);
+    }
     if (chamfered)
         nodemesh::chamferFace2D(&cutTemplate);
-    //normalizeCutFacePoints(&cutTemplate);
+    
     QString cutRotationString = valueOfKeyInMapOrEmpty(part, "cutRotation");
     if (!cutRotationString.isEmpty()) {
         cutRotation = cutRotationString.toFloat();
@@ -327,6 +458,7 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
         partCache.outcomeNodeVertices.push_back({position, {partIdString, nodeIdString}});
     }
     
+    bool hasMeshError = false;
     nodemesh::Combiner::Mesh *mesh = nullptr;
     
     if (buildSucceed) {
@@ -360,17 +492,17 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
                     delete mesh;
                     mesh = newMesh;
                 } else {
-                    m_isSucceed = false;
+                    hasMeshError = true;
                     qDebug() << "Xmirrored mesh generate failed";
                     delete newMesh;
                 }
             }
         } else {
-            m_isSucceed = false;
+            hasMeshError = true;
             qDebug() << "Mesh built is uncombinable";
         }
     } else {
-        m_isSucceed = false;
+        hasMeshError = true;
         qDebug() << "Mesh build failed";
     }
     
@@ -392,6 +524,9 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
     }
     
     nodemesh::trim(&partPreviewVertices, true);
+    for (auto &it: partPreviewVertices) {
+        it *= 2.0;
+    }
     std::vector<QVector3D> partPreviewTriangleNormals;
     for (const auto &face: partCache.previewTriangles) {
         partPreviewTriangleNormals.push_back(QVector3D::normal(
@@ -406,6 +541,8 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
         partPreviewTriangleNormals,
         &partPreviewTriangleVertexNormals);
     if (!partCache.previewTriangles.empty()) {
+        if (target == PartTarget::CutFace)
+            partPreviewColor = Theme::red;
         m_partPreviewMeshes[partId] = new MeshLoader(partPreviewVertices,
             partCache.previewTriangles,
             partPreviewTriangleVertexNormals,
@@ -423,6 +560,15 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
     if (isDisabled) {
         delete mesh;
         mesh = nullptr;
+    }
+    
+    if (target != PartTarget::Model) {
+        delete mesh;
+        mesh = nullptr;
+    }
+    
+    if (hasMeshError && target == PartTarget::Model) {
+        m_isSucceed = false;
     }
     
     return mesh;
@@ -620,12 +766,10 @@ nodemesh::Combiner::Mesh *MeshGenerator::combineMultipleMeshes(const std::vector
         nodemesh::Combiner::Mesh *subMesh = it.first;
         qDebug() << "Combine mode:" << CombineModeToString(childCombineMode);
         if (nullptr == subMesh) {
-            m_isSucceed = false;
             qDebug() << "Child mesh is null";
             continue;
         }
         if (subMesh->isNull()) {
-            m_isSucceed = false;
             qDebug() << "Child mesh is uncombinable";
             delete subMesh;
             continue;
@@ -906,7 +1050,6 @@ void MeshGenerator::collectUncombinedComponent(const QString &componentIdString)
         const auto &componentCache = m_cacheContext->components[componentIdString];
         if (nullptr == componentCache.mesh || componentCache.mesh->isNull()) {
             qDebug() << "Uncombined mesh is null";
-            m_isSucceed = false;
             return;
         }
         
