@@ -11,6 +11,7 @@
 #include "meshloader.h"
 #include "cutface.h"
 #include "parttarget.h"
+#include "partbase.h"
 
 class SkeletonNode
 {
@@ -77,6 +78,7 @@ public:
     bool disabled;
     bool xMirrored;
     bool zMirrored;
+    PartBase base;
     float deformThickness;
     float deformWidth;
     bool rounded;
@@ -98,6 +100,7 @@ public:
         disabled(false),
         xMirrored(false),
         zMirrored(false),
+        base(PartBase::XYZ),
         deformThickness(1.0),
         deformWidth(1.0),
         rounded(false),
@@ -189,6 +192,7 @@ public:
         disabled = other.disabled;
         xMirrored = other.xMirrored;
         zMirrored = other.zMirrored;
+        base = other.base;
         deformThickness = other.deformThickness;
         deformWidth = other.deformWidth;
         rounded = other.rounded;

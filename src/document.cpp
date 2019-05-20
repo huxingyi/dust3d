@@ -893,7 +893,10 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
             part["subdived"] = partIt.second.subdived ? "true" : "false";
             part["disabled"] = partIt.second.disabled ? "true" : "false";
             part["xMirrored"] = partIt.second.xMirrored ? "true" : "false";
-            part["zMirrored"] = partIt.second.zMirrored ? "true" : "false";
+            if (partIt.second.zMirrored)
+                part["zMirrored"] = partIt.second.zMirrored ? "true" : "false";
+            if (partIt.second.base != PartBase::XYZ)
+                part["base"] = PartBaseToString(partIt.second.base);
             part["rounded"] = partIt.second.rounded ? "true" : "false";
             part["chamfered"] = partIt.second.chamfered ? "true" : "false";
             if (PartTarget::Model != partIt.second.target)
@@ -1163,6 +1166,7 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
         part.disabled = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "disabled"));
         part.xMirrored = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "xMirrored"));
         part.zMirrored = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "zMirrored"));
+        part.base = PartBaseFromString(valueOfKeyInMapOrEmpty(partKv.second, "base").toUtf8().constData());
         part.rounded = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "rounded"));
         part.chamfered = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "chamfered"));
         part.target = PartTargetFromString(valueOfKeyInMapOrEmpty(partKv.second, "target").toUtf8().constData());
@@ -2216,6 +2220,21 @@ void Document::setPartDeformThickness(QUuid partId, float thickness)
     part->second.setDeformThickness(thickness);
     part->second.dirty = true;
     emit partDeformThicknessChanged(partId);
+    emit skeletonChanged();
+}
+
+void Document::setPartBase(QUuid partId, PartBase base)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    if (part->second.base == base)
+        return;
+    part->second.base = base;
+    part->second.dirty = true;
+    emit partBaseChanged(partId);
     emit skeletonChanged();
 }
 

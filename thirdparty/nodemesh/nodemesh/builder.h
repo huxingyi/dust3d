@@ -17,6 +17,9 @@ public:
     void setDeformThickness(float thickness);
     void setDeformWidth(float width);
     void setCutRotation(float cutRotation);
+    void enableBaseNormalOnX(bool enabled);
+    void enableBaseNormalOnY(bool enabled);
+    void enableBaseNormalOnZ(bool enabled);
     const std::vector<QVector3D> &generatedVertices();
     const std::vector<std::vector<size_t>> &generatedFaces();
     const std::vector<size_t> &generatedVerticesSourceNodeIndices();
@@ -92,11 +95,14 @@ private:
     float m_deformThickness = 1.0;
     float m_deformWidth = 1.0;
     float m_cutRotation = 0.0;
+    bool m_baseNormalOnX = true;
+    bool m_baseNormalOnY = true;
+    bool m_baseNormalOnZ = true;
     
     void sortNodeIndices();
     void prepareNode(size_t nodeIndex);
-    std::pair<QVector3D, bool> calculateBaseNormal(const std::vector<QVector3D> &directs,
-        const std::vector<QVector3D> &positions,
+    std::pair<QVector3D, bool> calculateBaseNormal(const std::vector<QVector3D> &inputDirects,
+        const std::vector<QVector3D> &inputPositions,
         const std::vector<float> &weights);
     bool validateNormal(const QVector3D &normal);
     void resolveBaseNormalRecursively(size_t nodeIndex);

@@ -832,6 +832,7 @@ DocumentWindow::DocumentWindow() :
     connect(partTreeWidget, &PartTreeWidget::setPartVisibleState, m_document, &Document::setPartVisibleState);
     connect(partTreeWidget, &PartTreeWidget::setComponentCombineMode, m_document, &Document::setComponentCombineMode);
     connect(partTreeWidget, &PartTreeWidget::setPartTarget, m_document, &Document::setPartTarget);
+    connect(partTreeWidget, &PartTreeWidget::setPartBase, m_document, &Document::setPartBase);
     connect(partTreeWidget, &PartTreeWidget::hideDescendantComponents, m_document, &Document::hideDescendantComponents);
     connect(partTreeWidget, &PartTreeWidget::showDescendantComponents, m_document, &Document::showDescendantComponents);
     connect(partTreeWidget, &PartTreeWidget::lockDescendantComponents, m_document, &Document::lockDescendantComponents);

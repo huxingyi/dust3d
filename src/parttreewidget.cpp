@@ -294,6 +294,19 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
             });
         }
         
+        QComboBox *partBaseSelectBox = nullptr;
+        if (nullptr != part && nullptr != partWidget) {
+            partBaseSelectBox = new QComboBox;
+            for (size_t i = 0; i < (size_t)PartBase::Count; ++i) {
+                PartBase base = (PartBase)i;
+                partBaseSelectBox->addItem(PartBaseToDispName(base));
+            }
+            partBaseSelectBox->setCurrentIndex((int)part->base);
+            connect(partBaseSelectBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [=](int index) {
+                emit setPartBase(part->id, (PartBase)index);
+            });
+        }
+        
         //QHBoxLayout *combineModeLayout = new QHBoxLayout;
         //combineModeLayout->setAlignment(Qt::AlignCenter);
         //combineModeLayout->setContentsMargins(0, 0, 0, 0);
@@ -301,6 +314,8 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
         //combineModeLayout->addWidget(combineModeSelectBox);
         
         QFormLayout *componentSettingsLayout = new QFormLayout;
+        if (nullptr != partBaseSelectBox)
+            componentSettingsLayout->addRow(tr("Base"), partBaseSelectBox);
         if (nullptr != partTargetSelectBox)
             componentSettingsLayout->addRow(tr("Target"), partTargetSelectBox);
         componentSettingsLayout->addRow(tr("Mode"), combineModeSelectBox);

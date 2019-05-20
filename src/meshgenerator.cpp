@@ -13,6 +13,7 @@
 #include "cutface.h"
 #include "parttarget.h"
 #include "theme.h"
+#include "partbase.h"
 
 MeshGenerator::MeshGenerator(Snapshot *snapshot) :
     m_snapshot(snapshot)
@@ -171,6 +172,7 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
     float deformWidth = 1.0;
     float cutRotation = 0.0;
     auto target = PartTargetFromString(valueOfKeyInMapOrEmpty(part, "target").toUtf8().constData());
+    auto base = PartBaseFromString(valueOfKeyInMapOrEmpty(part, "base").toUtf8().constData());
     
     std::vector<QVector2D> cutTemplate;
     QString cutFaceString = valueOfKeyInMapOrEmpty(part, "cutFace");
@@ -441,6 +443,13 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
     builder->setDeformThickness(deformThickness);
     builder->setDeformWidth(deformWidth);
     builder->setCutRotation(cutRotation);
+    if (PartBase::YZ == base) {
+        builder->enableBaseNormalOnX(false);
+    } else if (PartBase::XY == base) {
+        builder->enableBaseNormalOnZ(false);
+    } else if (PartBase::ZX == base) {
+        builder->enableBaseNormalOnY(false);
+    }
     
     for (const auto &node: modifier->nodes())
         builder->addNode(node.position, node.radius, node.cutTemplate);
