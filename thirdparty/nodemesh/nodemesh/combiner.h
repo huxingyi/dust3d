@@ -38,6 +38,8 @@ public:
     private:
         void *m_privateData = nullptr;
         bool m_isSelfIntersected = false;
+        
+        void validate();
     };
     
     static Mesh *combine(const Mesh &firstMesh, const Mesh &secondMesh, Method method,

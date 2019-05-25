@@ -25,6 +25,7 @@ signals:
     void setPartCutFace(QUuid partId, CutFace cutFace);
     void setPartCutFaceLinkedId(QUuid partId, QUuid linkedId);
     void setPartMaterialId(QUuid partId, QUuid materialId);
+    void setPartColorSolubility(QUuid partId, float colorSolubility);
     void movePartUp(QUuid partId);
     void movePartDown(QUuid partId);
     void movePartToTop(QUuid partId);

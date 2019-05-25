@@ -308,6 +308,11 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
     if (!materialIdString.isEmpty())
         materialId = QUuid(materialIdString);
     
+    float colorSolubility = 0;
+    QString colorSolubilityString = valueOfKeyInMapOrEmpty(part, "colorSolubility");
+    if (!colorSolubilityString.isEmpty())
+        colorSolubility = colorSolubilityString.toFloat();
+    
     auto &partCache = m_cacheContext->parts[partIdString];
     partCache.outcomeNodes.clear();
     partCache.outcomeNodeVertices.clear();
@@ -400,6 +405,7 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
         outcomeNode.radius = nodeInfo.radius;
         outcomeNode.color = partColor;
         outcomeNode.materialId = materialId;
+        outcomeNode.colorSolubility = colorSolubility;
         outcomeNode.boneMark = nodeInfo.boneMark;
         outcomeNode.mirroredByPartId = mirroredPartIdString;
         partCache.outcomeNodes.push_back(outcomeNode);
@@ -622,6 +628,10 @@ QString MeshGenerator::componentColorName(const std::map<QString, QString> *comp
             return QString();
         }
         auto &part = findPart->second;
+        QString colorSolubility = valueOfKeyInMapOrEmpty(part, "colorSolubility");
+        if (!colorSolubility.isEmpty()) {
+            return QString("+");
+        }
         QString colorName = valueOfKeyInMapOrEmpty(part, "color");
         if (colorName.isEmpty())
             return QString("-");
@@ -682,11 +692,15 @@ nodemesh::Combiner::Mesh *MeshGenerator::combineComponentMesh(const QString &com
         // Firstly, group by combine mode
         int currentGroupIndex = -1;
         auto lastCombineMode = CombineMode::Count;
+        bool foundColorSolubilitySetting = false;
         for (const auto &childIdString: valueOfKeyInMapOrEmpty(*component, "children").split(",")) {
             if (childIdString.isEmpty())
                 continue;
             const auto &child = findComponent(childIdString);
             QString colorName = componentColorName(child);
+            if (colorName == "+") {
+                foundColorSolubilitySetting = true;
+            }
             auto combineMode = componentCombineMode(child);
             if (lastCombineMode != combineMode || lastCombineMode == CombineMode::Inversion) {
                 qDebug() << "New group[" << currentGroupIndex << "] for combine mode[" << CombineModeToString(combineMode) << "]";
@@ -748,7 +762,7 @@ nodemesh::Combiner::Mesh *MeshGenerator::combineComponentMesh(const QString &com
                 }
                 multipleMeshes.push_back({childMesh, CombineMode::Normal});
             }
-            nodemesh::Combiner::Mesh *subGroupMesh = combineMultipleMeshes(multipleMeshes, false);
+            nodemesh::Combiner::Mesh *subGroupMesh = combineMultipleMeshes(multipleMeshes, foundColorSolubilitySetting);
             if (nullptr == subGroupMesh)
                 continue;
             groupMeshes.push_back({subGroupMesh, group.first});
@@ -806,6 +820,10 @@ nodemesh::Combiner::Mesh *MeshGenerator::combineMultipleMeshes(const std::vector
             }
         }
     }
+    if (nullptr != mesh && mesh->isNull()) {
+        delete mesh;
+        mesh = nullptr;
+    }
     return mesh;
 }
 
@@ -830,6 +848,11 @@ nodemesh::Combiner::Mesh *MeshGenerator::combineComponentChildGroupMesh(const st
             componentCache.outcomeNodes.push_back(it);
         for (const auto &it: childComponentCache.outcomeNodeVertices)
             componentCache.outcomeNodeVertices.push_back(it);
+        
+        if (nullptr == subMesh || subMesh->isNull()) {
+            delete subMesh;
+            continue;
+        }
     
         multipleMeshes.push_back({subMesh, childCombineMode});
     }

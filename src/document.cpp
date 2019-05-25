@@ -915,6 +915,8 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
             part["dirty"] = partIt.second.dirty ? "true" : "false";
             if (partIt.second.hasColor)
                 part["color"] = partIt.second.color.name();
+            if (partIt.second.colorSolubilityAdjusted())
+                part["colorSolubility"] = QString::number(partIt.second.colorSolubility);
             if (partIt.second.deformThicknessAdjusted())
                 part["deformThickness"] = QString::number(partIt.second.deformThickness);
             if (partIt.second.deformWidthAdjusted())
@@ -1190,6 +1192,9 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
             part.color = QColor(colorIt->second);
             part.hasColor = true;
         }
+        const auto &colorSolubilityIt = partKv.second.find("colorSolubility");
+        if (colorSolubilityIt != partKv.second.end())
+            part.colorSolubility = colorSolubilityIt->second.toFloat();
         const auto &deformThicknessIt = partKv.second.find("deformThickness");
         if (deformThicknessIt != partKv.second.end())
             part.setDeformThickness(deformThicknessIt->second.toFloat());
@@ -2308,6 +2313,21 @@ void Document::setPartTarget(QUuid partId, PartTarget target)
     part->second.target = target;
     part->second.dirty = true;
     emit partTargetChanged(partId);
+    emit skeletonChanged();
+}
+
+void Document::setPartColorSolubility(QUuid partId, float solubility)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    if (qFuzzyCompare(part->second.colorSolubility, solubility))
+        return;
+    part->second.colorSolubility = solubility;
+    part->second.dirty = true;
+    emit partColorSolubilityChanged(partId);
     emit skeletonChanged();
 }
 

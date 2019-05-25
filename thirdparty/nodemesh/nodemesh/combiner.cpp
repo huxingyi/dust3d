@@ -47,12 +47,14 @@ Combiner::Mesh::Mesh(const std::vector<QVector3D> &vertices, const std::vector<s
         }
     }
     m_privateData = cgalMesh;
+    validate();
 }
 
 Combiner::Mesh::Mesh(const Mesh &other)
 {
     if (other.m_privateData) {
         m_privateData = new CgalMesh(*(CgalMesh *)other.m_privateData);
+        validate();
     }
 }
 
@@ -156,6 +158,18 @@ Combiner::Mesh *Combiner::combine(const Mesh &firstMesh, const Mesh &secondMesh,
     Mesh *mesh = new Mesh;
     mesh->m_privateData = resultCgalMesh;
     return mesh;
+}
+
+void Combiner::Mesh::validate()
+{
+    if (nullptr == m_privateData)
+        return;
+    
+    CgalMesh *exactMesh = (CgalMesh *)m_privateData;
+    if (isNullCgalMesh<CgalKernel>(exactMesh)) {
+        delete exactMesh;
+        m_privateData = nullptr;
+    }
 }
 
 }

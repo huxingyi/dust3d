@@ -18,6 +18,7 @@ struct OutcomeNode
     QVector3D origin;
     float radius = 0;
     QColor color;
+    float colorSolubility = 0;
     QUuid materialId;
     QUuid mirrorFromPartId;
     QUuid mirroredByPartId;

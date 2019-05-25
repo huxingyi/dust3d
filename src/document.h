@@ -406,6 +406,7 @@ signals:
     void partMaterialIdChanged(QUuid partId);
     void partChamferStateChanged(QUuid partId);
     void partTargetChanged(QUuid partId);
+    void partColorSolubilityChanged(QUuid partId);
     void componentCombineModeChanged(QUuid componentId);
     void cleanup();
     void originChanged();
@@ -565,6 +566,7 @@ public slots:
     void setPartMaterialId(QUuid partId, QUuid materialId);
     void setPartChamferState(QUuid partId, bool chamfered);
     void setPartTarget(QUuid partId, PartTarget target);
+    void setPartColorSolubility(QUuid partId, float solubility);
     void setComponentCombineMode(QUuid componentId, CombineMode combineMode);
     void moveComponentUp(QUuid componentId);
     void moveComponentDown(QUuid componentId);

@@ -3,6 +3,7 @@
 #include <QRegion>
 #include <QPolygon>
 #include <QElapsedTimer>
+#include <QRadialGradient>
 #include "texturegenerator.h"
 #include "theme.h"
 #include "util.h"
@@ -231,9 +232,11 @@ void TextureGenerator::generate()
     
     std::map<QUuid, QColor> partColorMap;
     std::map<std::pair<QUuid, QUuid>, const OutcomeNode *> nodeMap;
+    std::map<QUuid, float> partColorSolubilityMap;
     for (const auto &item: m_outcome->nodes) {
         nodeMap.insert({{item.partId, item.nodeId}, &item});
         partColorMap.insert({item.partId, item.color});
+        partColorSolubilityMap.insert({item.partId, item.colorSolubility});
     }
     
     auto createImageBeginTime = countTimeConsumed.elapsed();
@@ -316,6 +319,81 @@ void TextureGenerator::generate()
         }
     }
     
+    auto drawGradient = [&](const QUuid &partId, size_t triangleIndex, size_t firstVertexIndex, size_t secondVertexIndex,
+            const QUuid &neighborPartId) {
+        const std::vector<QVector2D> &uv = triangleVertexUvs[triangleIndex];
+        const auto &allRects = partUvRects.find(partId);
+        if (allRects == partUvRects.end()) {
+            qDebug() << "Found part uv rects failed";
+            return;
+        }
+        const auto &firstPoint = uv[firstVertexIndex];
+        const auto &secondPoint = uv[secondVertexIndex];
+        auto edgeLength = firstPoint.distanceToPoint(secondPoint);
+        auto middlePoint = (firstPoint + secondPoint) / 2.0;
+        const auto &findColor = partColorMap.find(partId);
+        if (findColor == partColorMap.end())
+            return;
+        const auto &findNeighborColorSolubility = partColorSolubilityMap.find(neighborPartId);
+        if (findNeighborColorSolubility == partColorSolubilityMap.end())
+            return;
+        if (qFuzzyIsNull(findNeighborColorSolubility->second))
+            return;
+        const auto &findNeighborColor = partColorMap.find(neighborPartId);
+        if (findNeighborColor == partColorMap.end())
+            return;
+        for (const auto &it: allRects->second) {
+            if (it.contains(firstPoint.x(), firstPoint.y()) ||
+                    it.contains(secondPoint.x(), secondPoint.y())) {
+                float finalRadius = (it.width() + it.height()) * 0.5 * findNeighborColorSolubility->second;
+                if (finalRadius < edgeLength)
+                    finalRadius = edgeLength;
+                QRadialGradient gradient(QPointF(middlePoint.x() * TextureGenerator::m_textureSize,
+                    middlePoint.y() * TextureGenerator::m_textureSize),
+                    finalRadius * TextureGenerator::m_textureSize);
+                gradient.setColorAt(0.0, findNeighborColor->second);
+                gradient.setColorAt(1.0, Qt::transparent);
+                QRectF fillTarget((middlePoint.x() - finalRadius),
+                    (middlePoint.y() - finalRadius),
+                    (finalRadius + finalRadius),
+                    (finalRadius + finalRadius));
+                auto clippedRect = it.intersected(fillTarget);
+                texturePainter.fillRect(clippedRect.left() * TextureGenerator::m_textureSize,
+                    clippedRect.top() * TextureGenerator::m_textureSize,
+                    clippedRect.width() * TextureGenerator::m_textureSize,
+                    clippedRect.height() * TextureGenerator::m_textureSize,
+                    gradient);
+                break;
+            }
+        }
+    };
+    
+    std::map<std::pair<size_t, size_t>, std::tuple<size_t, size_t, size_t>> halfEdgeToTriangleMap;
+    for (size_t i = 0; i < m_outcome->triangles.size(); ++i) {
+        const auto &triangleIndices = m_outcome->triangles[i];
+        if (triangleIndices.size() != 3) {
+            qDebug() << "Found invalid triangle indices";
+            continue;
+        }
+        for (size_t j = 0; j < triangleIndices.size(); ++j) {
+            size_t k = (j + 1) % triangleIndices.size();
+            halfEdgeToTriangleMap.insert(std::make_pair(std::make_pair(triangleIndices[j], triangleIndices[k]),
+                std::make_tuple(i, j, k)));
+        }
+    }
+    for (const auto &it: halfEdgeToTriangleMap) {
+        auto oppositeHalfEdge = std::make_pair(it.first.second, it.first.first);
+        const auto &opposite = halfEdgeToTriangleMap.find(oppositeHalfEdge);
+        if (opposite == halfEdgeToTriangleMap.end())
+            continue;
+        const std::pair<QUuid, QUuid> &source = triangleSourceNodes[std::get<0>(it.second)];
+        const std::pair<QUuid, QUuid> &oppositeSource = triangleSourceNodes[std::get<0>(opposite->second)];
+        if (source.first == oppositeSource.first)
+            continue;
+        drawGradient(source.first, std::get<0>(it.second), std::get<1>(it.second), std::get<2>(it.second), oppositeSource.first);
+        drawGradient(oppositeSource.first, std::get<0>(opposite->second), std::get<1>(opposite->second), std::get<2>(opposite->second), source.first);
+    }
+    
     for (auto i = 0u; i < triangleVertexUvs.size(); i++) {
         QPainterPath path;
         const std::vector<QVector2D> &uv = triangleVertexUvs[i];
@@ -337,12 +415,12 @@ void TextureGenerator::generate()
             texturePainter.drawImage(0, 0, findColorTextureResult->second);
             texturePainter.setClipping(false);
         } else {
-            auto findSourceNodeResult = nodeMap.find(source);
-            if (findSourceNodeResult != nodeMap.end() && nullptr != findSourceNodeResult->second) {
-                texturePainter.fillPath(path, QBrush(findSourceNodeResult->second->color));
-            } else {
-                texturePainter.fillPath(path, QBrush(m_defaultTextureColor));
-            }
+            //auto findSourceNodeResult = nodeMap.find(source);
+            //if (findSourceNodeResult != nodeMap.end() && nullptr != findSourceNodeResult->second) {
+            //    texturePainter.fillPath(path, QBrush(findSourceNodeResult->second->color));
+            //} else {
+            //    texturePainter.fillPath(path, QBrush(m_defaultTextureColor));
+            //}
         }
         // Copy normal texture if there is one
         auto findNormalTextureResult = m_partNormalTextureMap.find(source.first);

@@ -93,6 +93,7 @@ public:
     QUuid cutFaceLinkedId;
     QUuid materialId;
     PartTarget target;
+    float colorSolubility;
     SkeletonPart(const QUuid &withId=QUuid()) :
         visible(true),
         locked(false),
@@ -110,7 +111,8 @@ public:
         dirty(true),
         cutRotation(0.0),
         cutFace(CutFace::Quad),
-        target(PartTarget::Model)
+        target(PartTarget::Model),
+        colorSolubility(0.0)
     {
         id = withId.isNull() ? QUuid::createUuid() : withId;
     }
@@ -164,6 +166,10 @@ public:
     {
         return deformThicknessAdjusted() || deformWidthAdjusted();
     }
+    bool colorSolubilityAdjusted() const
+    {
+        return fabs(colorSolubility - 0.0) >= 0.01;
+    }
     bool cutRotationAdjusted() const
     {
         return fabs(cutRotation - 0.0) >= 0.01;
@@ -206,6 +212,7 @@ public:
         dirty = other.dirty;
         materialId = other.materialId;
         target = other.target;
+        colorSolubility = other.colorSolubility;
     }
     void updatePreviewMesh(MeshLoader *previewMesh)
     {

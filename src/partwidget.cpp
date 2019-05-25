@@ -166,6 +166,7 @@ PartWidget::PartWidget(const Document *document, QUuid partId) :
     connect(this, &PartWidget::setPartCutFaceLinkedId, m_document, &Document::setPartCutFaceLinkedId);
     connect(this, &PartWidget::setPartColorState, m_document, &Document::setPartColorState);
     connect(this, &PartWidget::setPartMaterialId, m_document, &Document::setPartMaterialId);
+    connect(this, &PartWidget::setPartColorSolubility, m_document, &Document::setPartColorSolubility);
     connect(this, &PartWidget::checkPart, m_document, &Document::checkPart);
     connect(this, &PartWidget::enableBackgroundBlur, m_document, &Document::enableBackgroundBlur);
     connect(this, &PartWidget::disableBackgroundBlur, m_document, &Document::disableBackgroundBlur);
@@ -375,8 +376,31 @@ void PartWidget::showColorSettingPopup(const QPoint &pos)
         }
     });
     
+    FloatNumberWidget *colorSolubilityWidget = new FloatNumberWidget;
+    colorSolubilityWidget->setItemName(tr("Solubility"));
+    colorSolubilityWidget->setRange(0.0, 1.0);
+    colorSolubilityWidget->setValue(part->colorSolubility);
+    
+    connect(colorSolubilityWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+        emit setPartColorSolubility(m_partId, value);
+        emit groupOperationAdded();
+    });
+    
+    QPushButton *colorSolubilityEraser = new QPushButton(QChar(fa::eraser));
+    initToolButton(colorSolubilityEraser);
+    
+    connect(colorSolubilityEraser, &QPushButton::clicked, [=]() {
+        colorSolubilityWidget->setValue(0.0);
+        emit groupOperationAdded();
+    });
+    
+    QHBoxLayout *colorSolubilityLayout = new QHBoxLayout;
+    colorSolubilityLayout->addWidget(colorSolubilityEraser);
+    colorSolubilityLayout->addWidget(colorSolubilityWidget);
+    
     QVBoxLayout *mainLayout = new QVBoxLayout;
     mainLayout->addLayout(colorLayout);
+    mainLayout->addLayout(colorSolubilityLayout);
     
     if (m_document->materialIdList.empty()) {
         InfoLabel *infoLabel = new InfoLabel;
@@ -712,7 +736,7 @@ void PartWidget::updateColorButton()
         qDebug() << "Part not found:" << m_partId;
         return;
     }
-    if (part->hasColor || part->materialAdjusted())
+    if (part->hasColor || part->materialAdjusted() || part->colorSolubilityAdjusted())
         updateButton(m_colorButton, QChar(fa::eyedropper), true);
     else
         updateButton(m_colorButton, QChar(fa::eyedropper), false);

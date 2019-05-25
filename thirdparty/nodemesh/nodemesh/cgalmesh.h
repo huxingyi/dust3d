@@ -84,5 +84,12 @@ void fetchFromCgalMesh(typename CGAL::Surface_mesh<typename Kernel::Point_3> *me
     }
 }
 
+template <class Kernel>
+bool isNullCgalMesh(typename CGAL::Surface_mesh<typename Kernel::Point_3> *mesh)
+{
+    typename CGAL::Surface_mesh<typename Kernel::Point_3>::Face_range faceRage = mesh->faces();
+    return faceRage.begin() == faceRage.end();
+}
+
 #endif
 
