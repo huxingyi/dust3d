@@ -456,15 +456,23 @@ bool Builder::tryWrapMultipleBranchesForNode(size_t nodeIndex, std::vector<float
     std::vector<std::pair<std::vector<size_t>, QVector3D>> cutsForEdges;
     bool directSwallowed = false;
     for (size_t i = 0; i < node.edges.size(); ++i) {
-        const QVector3D &cutNormal = node.raysToNeibors[i];
+        QVector3D cutNormal = node.raysToNeibors[i];
         size_t edgeIndex = node.edges[i];
         size_t neighborIndex = m_edges[edgeIndex].neiborOf(nodeIndex);
         const auto &neighbor = m_nodes[neighborIndex];
+        if (neighbor.edges.size() == 2) {
+            size_t anotherEdgeIndex = neighbor.anotherEdge(edgeIndex);
+            size_t neighborsNeighborIndex = m_edges[anotherEdgeIndex].neiborOf(neighborIndex);
+            const auto &neighborsNeighbor = m_nodes[neighborsNeighborIndex];
+            cutNormal = ((cutNormal + (neighborsNeighbor.position - neighbor.position).normalized()) * 0.5).normalized();
+        }
         float distance = (neighbor.position - node.position).length();
         if (qFuzzyIsNull(distance))
             distance = 0.0001f;
-        float radiusFactor = 1.0 - (node.radius / distance);
-        float radius = node.radius * radiusFactor + neighbor.radius * (1.0 - radiusFactor);
+        float radiusRate = neighbor.radius / node.radius;
+        float tangentTriangleLongEdgeLength = distance + (radiusRate * distance / (1.0 - radiusRate));
+        float segmentLength = node.radius * (tangentTriangleLongEdgeLength - node.radius) / tangentTriangleLongEdgeLength;
+        float radius = segmentLength / std::sin(std::acos(node.radius / tangentTriangleLongEdgeLength));
         std::vector<QVector3D> cut;
         float offsetDistance = 0;
         offsetDistance = offsets[i] * (distance - node.radius - neighbor.radius);

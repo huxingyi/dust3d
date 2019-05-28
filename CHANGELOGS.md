@@ -1,3 +1,12 @@
+Changes between 1.0.0-beta.16 and 1.0.0-beta.17:
+--------------------------------------------------
+- Remote IO Protocol
+- Uncombined Mode
+- User Defined Cut Face
+- Base Plane Constrain
+- Color Solubility
+- Crash Fix
+
 Changes between 1.0.0-beta.15 and 1.0.0-beta.16:
 --------------------------------------------------
 - Support onion skinning in pose editor  
