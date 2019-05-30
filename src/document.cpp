@@ -1558,6 +1558,9 @@ void Document::generateMesh()
     resetDirtyFlags();
     m_meshGenerator = new MeshGenerator(snapshot);
     m_meshGenerator->setGeneratedCacheContext(&m_generatedCacheContext);
+    if (!m_smoothNormal) {
+        m_meshGenerator->setSmoothShadingThresholdAngleDegrees(0);
+    }
     m_meshGenerator->moveToThread(thread);
     connect(thread, &QThread::started, m_meshGenerator, &MeshGenerator::process);
     connect(m_meshGenerator, &MeshGenerator::finished, this, &Document::meshReady);

@@ -930,6 +930,11 @@ void MeshGenerator::setGeneratedCacheContext(GeneratedCacheContext *cacheContext
     m_cacheContext = cacheContext;
 }
 
+void MeshGenerator::setSmoothShadingThresholdAngleDegrees(float degrees)
+{
+    m_smoothShadingThresholdAngleDegrees = degrees;
+}
+
 void MeshGenerator::process()
 {
     generate();
@@ -1024,7 +1029,7 @@ void MeshGenerator::generate()
     // Recursively check uncombined components
     collectUncombinedComponent(QUuid().toString());
     
-    auto postprocessOutcome = [](Outcome *outcome) {
+    auto postprocessOutcome = [this](Outcome *outcome) {
         std::vector<QVector3D> combinedFacesNormals;
         for (const auto &face: outcome->triangles) {
             combinedFacesNormals.push_back(QVector3D::normal(
@@ -1125,7 +1130,7 @@ void MeshGenerator::generateSmoothTriangleVertexNormals(const std::vector<QVecto
     nodemesh::angleSmooth(vertices,
         triangles,
         triangleNormals,
-        60,
+        m_smoothShadingThresholdAngleDegrees,
         smoothNormals);
     triangleVertexNormals->resize(triangles.size(), {
         QVector3D(), QVector3D(), QVector3D()

@@ -580,11 +580,11 @@ DocumentWindow::DocumentWindow() :
     });
     m_viewMenu->addAction(m_toggleWireframeAction);
     
-    //m_toggleSmoothNormalAction = new QAction(tr("Toggle Smooth Normal"), this);
-    //connect(m_toggleSmoothNormalAction, &QAction::triggered, [=]() {
-    //    m_document->toggleSmoothNormal();
-    //});
-    //m_viewMenu->addAction(m_toggleSmoothNormalAction);
+    m_toggleSmoothNormalAction = new QAction(tr("Toggle Smooth"), this);
+    connect(m_toggleSmoothNormalAction, &QAction::triggered, [=]() {
+        m_document->toggleSmoothNormal();
+    });
+    m_viewMenu->addAction(m_toggleSmoothNormalAction);
 
     connect(m_viewMenu, &QMenu::aboutToShow, [=]() {
         m_resetModelWidgetPosAction->setEnabled(!isModelSitInVisibleArea(m_modelRenderWidget));

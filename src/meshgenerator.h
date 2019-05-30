@@ -61,6 +61,7 @@ public:
     Outcome *takeOutcome();
     void generate();
     void setGeneratedCacheContext(GeneratedCacheContext *cacheContext);
+    void setSmoothShadingThresholdAngleDegrees(float degrees);
 signals:
     void finished();
 public slots:
@@ -83,6 +84,7 @@ private:
     std::map<QUuid, MeshLoader *> m_partPreviewMeshes;
     bool m_isSucceed = false;
     bool m_cacheEnabled = false;
+    float m_smoothShadingThresholdAngleDegrees = 60;
     
     void collectParts();
     bool checkIsComponentDirty(const QString &componentIdString);
@@ -98,7 +100,7 @@ private:
     nodemesh::Combiner::Mesh *combineTwoMeshes(const nodemesh::Combiner::Mesh &first, const nodemesh::Combiner::Mesh &second,
         nodemesh::Combiner::Method method,
         bool recombine=true);
-    static void generateSmoothTriangleVertexNormals(const std::vector<QVector3D> &vertices, const std::vector<std::vector<size_t>> &triangles,
+    void generateSmoothTriangleVertexNormals(const std::vector<QVector3D> &vertices, const std::vector<std::vector<size_t>> &triangles,
         const std::vector<QVector3D> &triangleNormals,
         std::vector<std::vector<QVector3D>> *triangleVertexNormals);
     const std::map<QString, QString> *findComponent(const QString &componentIdString);
