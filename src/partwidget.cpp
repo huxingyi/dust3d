@@ -351,7 +351,7 @@ void PartWidget::showColorSettingPopup(const QPoint &pos)
     QPushButton *pickButton = new QPushButton();
     initToolButtonWithoutFont(pickButton);
     QPalette palette = pickButton->palette();
-    QColor choosenColor = part->hasColor ? part->color : Qt::white;
+    QColor choosenColor = part->color;
     palette.setColor(QPalette::Window, choosenColor);
     palette.setColor(QPalette::Button, choosenColor);
     pickButton->setPalette(palette);
@@ -370,7 +370,7 @@ void PartWidget::showColorSettingPopup(const QPoint &pos)
         emit disableBackgroundBlur();
         QColor color = QColorDialog::getColor(part->color, this);
         emit enableBackgroundBlur();
-        if(color.isValid()) {
+        if (color.isValid()) {
             emit setPartColorState(m_partId, true, color);
             emit groupOperationAdded();
         }

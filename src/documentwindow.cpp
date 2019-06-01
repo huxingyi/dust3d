@@ -114,7 +114,7 @@ DocumentWindow::DocumentWindow() :
     m_firstShow(true),
     m_documentSaved(true),
     m_exportPreviewWidget(nullptr),
-    m_advanceSettingWidget(nullptr),
+    m_preferencesWidget(nullptr),
     m_isLastMeshGenerationSucceed(true)
 {
     if (!g_logBrowser) {
@@ -372,6 +372,12 @@ DocumentWindow::DocumentWindow() :
     m_fileMenu->addAction(m_saveAllAction);
 
     m_fileMenu->addSeparator();
+    
+    m_showPreferencesAction = new QAction(tr("Preferences..."), this);
+    connect(m_showPreferencesAction, &QAction::triggered, this, &DocumentWindow::showPreferences);
+    m_fileMenu->addAction(m_showPreferencesAction);
+    
+    m_fileMenu->addSeparator();
 
     //m_exportMenu = m_fileMenu->addMenu(tr("Export"));
 
@@ -580,11 +586,11 @@ DocumentWindow::DocumentWindow() :
     });
     m_viewMenu->addAction(m_toggleWireframeAction);
     
-    m_toggleSmoothNormalAction = new QAction(tr("Toggle Smooth"), this);
-    connect(m_toggleSmoothNormalAction, &QAction::triggered, [=]() {
-        m_document->toggleSmoothNormal();
-    });
-    m_viewMenu->addAction(m_toggleSmoothNormalAction);
+    //m_toggleSmoothNormalAction = new QAction(tr("Toggle Smooth"), this);
+    //connect(m_toggleSmoothNormalAction, &QAction::triggered, [=]() {
+    //    m_document->toggleSmoothNormal();
+    //});
+    //m_viewMenu->addAction(m_toggleSmoothNormalAction);
 
     connect(m_viewMenu, &QMenu::aboutToShow, [=]() {
         m_resetModelWidgetPosAction->setEnabled(!isModelSitInVisibleArea(m_modelRenderWidget));
@@ -647,12 +653,6 @@ DocumentWindow::DocumentWindow() :
     m_showDebugDialogAction = new QAction(tr("Debug"), this);
     connect(m_showDebugDialogAction, &QAction::triggered, g_logBrowser, &LogBrowser::showDialog);
     m_windowMenu->addAction(m_showDebugDialogAction);
-    
-    m_showAdvanceSettingAction = new QAction(tr("Advance"), this);
-    connect(m_showAdvanceSettingAction, &QAction::triggered, this, &DocumentWindow::showAdvanceSetting);
-#ifndef NDEBUG
-    m_windowMenu->addAction(m_showAdvanceSettingAction);
-#endif
 
     m_helpMenu = menuBar()->addMenu(tr("Help"));
     
@@ -1326,13 +1326,13 @@ void DocumentWindow::open()
     setCurrentFilename(filename);
 }
 
-void DocumentWindow::showAdvanceSetting()
+void DocumentWindow::showPreferences()
 {
-    if (nullptr == m_advanceSettingWidget) {
-        m_advanceSettingWidget = new AdvanceSettingWidget(m_document, this);
+    if (nullptr == m_preferencesWidget) {
+        m_preferencesWidget = new PreferencesWidget(m_document, this);
     }
-    m_advanceSettingWidget->show();
-    m_advanceSettingWidget->raise();
+    m_preferencesWidget->show();
+    m_preferencesWidget->raise();
 }
 
 void DocumentWindow::exportObjResult()

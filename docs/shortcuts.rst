@@ -92,9 +92,9 @@ Mouse
 +----------------------------+--------------------------------------------------------------------------+
 | WHEEL                      | Increase/Decrease Radius                                                 |
 +----------------------------+--------------------------------------------------------------------------+
-| SHIFT + WHEEL              | Increase/Decrease Radius (Reduced Scroll Scale)                          |
+| SHIFT + WHEEL              | Increase/Decrease Radius (Fast Scroll)                                   |
 +----------------------------+--------------------------------------------------------------------------+
 | CTRL + WHEEL               | Increase/Decrease Size                                                   |
 +----------------------------+--------------------------------------------------------------------------+
-| CTRL + SHIFT + WHEEL       | Increase/Decrease Size (Reduced Scroll Scale)                            |
+| CTRL + SHIFT + WHEEL       | Increase/Decrease Size (Fast Scroll Scale)                               |
 +----------------------------+--------------------------------------------------------------------------+

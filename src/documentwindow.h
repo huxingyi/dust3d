@@ -14,7 +14,7 @@
 #include "rigwidget.h"
 #include "bonemark.h"
 #include "posemanagewidget.h"
-#include "advancesettingwidget.h"
+#include "preferenceswidget.h"
 
 class SkeletonGraphicsWidget;
 
@@ -66,7 +66,7 @@ public slots:
     void updateRigWeightRenderWidget();
     void registerDialog(QWidget *widget);
     void unregisterDialog(QWidget *widget);
-    void showAdvanceSetting();
+    void showPreferences();
 private:
     void initLockButton(QPushButton *button);
     void setCurrentFilename(const QString &filename);
@@ -76,7 +76,7 @@ private:
     bool m_firstShow;
     bool m_documentSaved;
     ExportPreviewWidget *m_exportPreviewWidget;
-    AdvanceSettingWidget *m_advanceSettingWidget;
+    PreferencesWidget *m_preferencesWidget;
     std::vector<QWidget *> m_dialogs;
     bool m_isLastMeshGenerationSucceed;
 private:
@@ -94,6 +94,7 @@ private:
     QAction *m_saveAction;
     QAction *m_saveAsAction;
     QAction *m_saveAllAction;
+    QAction *m_showPreferencesAction;
     QMenu *m_exportMenu;
     QAction *m_changeTurnaroundAction;
     
@@ -137,7 +138,7 @@ private:
     QMenu *m_viewMenu;
     QAction *m_resetModelWidgetPosAction;
     QAction *m_toggleWireframeAction;
-    QAction *m_toggleSmoothNormalAction;
+    //QAction *m_toggleSmoothNormalAction;
     QAction *m_showMotionsListAction;
     
     QMenu *m_windowMenu;
@@ -147,7 +148,6 @@ private:
     QAction *m_showRigAction;
     QAction *m_showPosesAction;
     QAction *m_showMotionsAction;
-    QAction *m_showAdvanceSettingAction;
     
     QMenu *m_helpMenu;
     QAction *m_gotoHomepageAction;

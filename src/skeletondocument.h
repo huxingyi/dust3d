@@ -12,6 +12,7 @@
 #include "cutface.h"
 #include "parttarget.h"
 #include "partbase.h"
+#include "preferences.h"
 
 class SkeletonNode
 {
@@ -106,7 +107,7 @@ public:
         deformWidth(1.0),
         rounded(false),
         chamfered(false),
-        color(Qt::white),
+        color(Preferences::instance().partColor()),
         hasColor(false),
         dirty(true),
         cutRotation(0.0),

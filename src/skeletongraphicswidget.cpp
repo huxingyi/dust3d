@@ -1054,7 +1054,7 @@ void SkeletonGraphicsWidget::scaleSelected(float delta)
 bool SkeletonGraphicsWidget::wheel(QWheelEvent *event)
 {
     qreal delta = event->delta() / 10;
-    if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
+    if (!QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
         if (delta > 0)
             delta = 1;
         else

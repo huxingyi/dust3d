@@ -25,6 +25,7 @@
 #include "jointnodetree.h"
 #include "skeletondocument.h"
 #include "combinemode.h"
+#include "preferences.h"
 
 class MaterialPreviewsGenerator;
 class MotionsGenerator;
@@ -56,7 +57,7 @@ public:
     QUuid linkToPartId;
     QUuid parentId;
     bool expanded = true;
-    CombineMode combineMode = CombineMode::Normal;
+    CombineMode combineMode = Preferences::instance().componentCombineMode();
     bool dirty = true;
     float smoothAll = 0.0;
     float smoothSeam = 0.0;
@@ -624,6 +625,8 @@ public slots:
     void removeMaterial(QUuid materialId);
     void setMaterialLayers(QUuid materialId, std::vector<MaterialLayer> layers);
     void renameMaterial(QUuid materialId, QString name);
+    void applyPreferencePartColorChange();
+    void applyPreferenceFlatShadingChange();
 private:
     void splitPartByNode(std::vector<std::vector<QUuid>> *groups, QUuid nodeId);
     void joinNodeAndNeiborsToGroup(std::vector<QUuid> *group, QUuid nodeId, std::set<QUuid> *visitMap, QUuid noUseEdgeId=QUuid());
