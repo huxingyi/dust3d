@@ -97,6 +97,6 @@ std::vector<QVector2D> CutFaceToPoints(CutFace cutFace)                     \
 }
 
 void normalizeCutFacePoints(std::vector<QVector2D> *points);
-void cutFacePointsFromNodes(std::vector<QVector2D> &points, const std::vector<std::tuple<float, float, float>> &nodes);
+void cutFacePointsFromNodes(std::vector<QVector2D> &points, const std::vector<std::tuple<float, float, float>> &nodes, bool isRing=false);
 
 #endif

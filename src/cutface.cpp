@@ -41,8 +41,17 @@ void normalizeCutFacePoints(std::vector<QVector2D> *points)
     }
 }
 
-void cutFacePointsFromNodes(std::vector<QVector2D> &points, const std::vector<std::tuple<float, float, float>> &nodes)
+void cutFacePointsFromNodes(std::vector<QVector2D> &points, const std::vector<std::tuple<float, float, float>> &nodes, bool isRing)
 {
+    if (isRing) {
+        if (nodes.size() < 3)
+            return;
+        for (const auto &it: nodes) {
+            points.push_back(QVector2D(std::get<1>(it), std::get<2>(it)));
+        }
+        normalizeCutFacePoints(&points);
+        return;
+    }
     if (nodes.size() < 2)
         return;
     std::vector<QVector2D> edges;

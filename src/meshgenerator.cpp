@@ -220,6 +220,12 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
                         endpointNodes.push_back({it.first, findNode->second});
                 }
             }
+            bool isRing = endpointNodes.empty();
+            if (endpointNodes.empty()) {
+                for (const auto &it: cutFaceNodeMap) {
+                    endpointNodes.push_back({it.first, it.second});
+                }
+            }
             if (!endpointNodes.empty()) {
                 std::sort(endpointNodes.begin(), endpointNodes.end(), [](
                         const std::pair<QString, std::tuple<float, float, float>> &first,
@@ -278,7 +284,7 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
                 loopNodeLink(endPointNodeIdString);
             }
             // Fetch points from linked nodes
-            cutFacePointsFromNodes(cutTemplate, cutFaceNodes);
+            cutFacePointsFromNodes(cutTemplate, cutFaceNodes, isRing);
         }
     }
     if (cutTemplate.size() < 3) {
