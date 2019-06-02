@@ -282,7 +282,7 @@ vec4 metalRoughFunction(const in vec4 baseColor,
 void main() 
 {
     // FIXME: don't hard code here
-    exposure = 0.0;
+    exposure = 1.0;
     gamma = 2.2;
 
     // Light settings:
@@ -292,8 +292,8 @@ void main()
     // Key light 
     lights[0].type = TYPE_POINT;
     lights[0].position = firstLightPos;
-    lights[0].color = vec3(0.588, 0.588, 0.588);
-    lights[0].intensity = 5.0;
+    lights[0].color = vec3(1.0, 1.0, 1.0);
+    lights[0].intensity = 3.0;
     lights[0].constantAttenuation = 0.0;
     lights[0].linearAttenuation = 0.0;
     lights[0].quadraticAttenuation = 0.0;
@@ -301,8 +301,8 @@ void main()
     // Fill light
     lights[1].type = TYPE_POINT;
     lights[1].position = secondLightPos;
-    lights[1].color = vec3(0.588, 0.588, 0.588);
-    lights[1].intensity = 3.0;
+    lights[1].color = vec3(1.0, 1.0, 1.0);
+    lights[1].intensity = 1.0;
     lights[1].constantAttenuation = 0.0;
     lights[1].linearAttenuation = 0.0;
     lights[1].quadraticAttenuation = 0.0;
@@ -310,8 +310,8 @@ void main()
     // Rim light
     lights[2].type = TYPE_POINT;
     lights[2].position = thirdLightPos;
-    lights[2].color = vec3(0.588, 0.588, 0.588);
-    lights[2].intensity = 2.5;
+    lights[2].color = vec3(1.0, 1.0, 1.0);
+    lights[2].intensity = 0.5;
     lights[2].constantAttenuation = 0.0;
     lights[2].linearAttenuation = 0.0;
     lights[2].quadraticAttenuation = 0.0;
