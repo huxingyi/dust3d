@@ -259,16 +259,9 @@ bool ModelWidget::inputWheelEventFromOtherWidget(QWheelEvent *event)
         return true;
     if (!m_zoomEnabled)
         return false;
-    qreal delta = event->delta() / 10;
-    if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
-        if (delta > 0)
-            delta = 1;
-        else
-            delta = -1;
-    } else {
-        if (fabs(delta) < 1)
-            delta = delta < 0 ? -1.0 : 1.0;
-    }
+    qreal delta = event->delta() / 5;
+    if (fabs(delta) < 1)
+        delta = delta < 0 ? -1.0 : 1.0;
     zoom(delta);
     return true;
 }

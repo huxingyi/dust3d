@@ -394,6 +394,32 @@ void TextureGenerator::generate()
         drawGradient(oppositeSource.first, std::get<0>(opposite->second), std::get<1>(opposite->second), std::get<2>(opposite->second), source.first);
     }
     
+    auto drawTexture = [&](const std::map<QUuid, QImage> &map, QPainter &painter) {
+        for (const auto &it: partUvRects) {
+            const auto &partId = it.first;
+            const auto &rects = it.second;
+            auto findTextureResult = map.find(partId);
+            if (findTextureResult != map.end()) {
+                const auto &image = findTextureResult->second;
+                for (const auto &rect: rects) {
+                    QRectF translatedRect = {
+                        rect.left() * TextureGenerator::m_textureSize,
+                        rect.top() * TextureGenerator::m_textureSize,
+                        rect.width() * TextureGenerator::m_textureSize,
+                        rect.height() * TextureGenerator::m_textureSize
+                    };
+                    painter.drawImage(translatedRect, image, QRectF(0, 0, image.width(), image.height()));
+                }
+            }
+        }
+    };
+    
+    drawTexture(m_partColorTextureMap, texturePainter);
+    drawTexture(m_partNormalTextureMap, textureNormalPainter);
+    drawTexture(m_partMetalnessTextureMap, textureMetalnessPainter);
+    drawTexture(m_partRoughnessTextureMap, textureRoughnessPainter);
+    drawTexture(m_partAmbientOcclusionTextureMap, textureAmbientOcclusionPainter);
+    
     for (auto i = 0u; i < triangleVertexUvs.size(); i++) {
         QPainterPath path;
         const std::vector<QVector2D> &uv = triangleVertexUvs[i];
@@ -406,29 +432,14 @@ void TextureGenerator::generate()
         path.lineTo(points[1][0], points[1][1]);
         path.lineTo(points[2][0], points[2][1]);
         path = expandedPainterPath(path);
-        // Copy color texture if there is one
         const std::pair<QUuid, QUuid> &source = triangleSourceNodes[i];
-        auto findColorTextureResult = m_partColorTextureMap.find(source.first);
-        if (findColorTextureResult != m_partColorTextureMap.end()) {
-            texturePainter.setClipping(true);
-            texturePainter.setClipPath(path);
-            texturePainter.drawImage(0, 0, findColorTextureResult->second);
-            texturePainter.setClipping(false);
-        } else {
-            //auto findSourceNodeResult = nodeMap.find(source);
-            //if (findSourceNodeResult != nodeMap.end() && nullptr != findSourceNodeResult->second) {
-            //    texturePainter.fillPath(path, QBrush(findSourceNodeResult->second->color));
-            //} else {
-            //    texturePainter.fillPath(path, QBrush(m_defaultTextureColor));
-            //}
-        }
         // Copy normal texture if there is one
         auto findNormalTextureResult = m_partNormalTextureMap.find(source.first);
         if (findNormalTextureResult != m_partNormalTextureMap.end()) {
-            textureNormalPainter.setClipping(true);
-            textureNormalPainter.setClipPath(path);
-            textureNormalPainter.drawImage(0, 0, findNormalTextureResult->second);
-            textureNormalPainter.setClipping(false);
+            //textureNormalPainter.setClipping(true);
+            //textureNormalPainter.setClipPath(path);
+            //textureNormalPainter.drawImage(0, 0, findNormalTextureResult->second);
+            //textureNormalPainter.setClipping(false);
             hasNormalMap = true;
         } else {
             const auto &triangleNormal = triangleNormals[i];
@@ -441,28 +452,28 @@ void TextureGenerator::generate()
         // Copy metalness texture if there is one
         auto findMetalnessTextureResult = m_partMetalnessTextureMap.find(source.first);
         if (findMetalnessTextureResult != m_partMetalnessTextureMap.end()) {
-            textureMetalnessPainter.setClipping(true);
-            textureMetalnessPainter.setClipPath(path);
-            textureMetalnessPainter.drawImage(0, 0, findMetalnessTextureResult->second);
-            textureMetalnessPainter.setClipping(false);
+            //textureMetalnessPainter.setClipping(true);
+            //textureMetalnessPainter.setClipPath(path);
+            //textureMetalnessPainter.drawImage(0, 0, findMetalnessTextureResult->second);
+            //textureMetalnessPainter.setClipping(false);
             hasMetalnessMap = true;
         }
         // Copy roughness texture if there is one
         auto findRoughnessTextureResult = m_partRoughnessTextureMap.find(source.first);
         if (findRoughnessTextureResult != m_partRoughnessTextureMap.end()) {
-            textureRoughnessPainter.setClipping(true);
-            textureRoughnessPainter.setClipPath(path);
-            textureRoughnessPainter.drawImage(0, 0, findRoughnessTextureResult->second);
-            textureRoughnessPainter.setClipping(false);
+            //textureRoughnessPainter.setClipping(true);
+            //textureRoughnessPainter.setClipPath(path);
+            //textureRoughnessPainter.drawImage(0, 0, findRoughnessTextureResult->second);
+            //textureRoughnessPainter.setClipping(false);
             hasRoughnessMap = true;
         }
         // Copy ambient occlusion texture if there is one
         auto findAmbientOcclusionTextureResult = m_partAmbientOcclusionTextureMap.find(source.first);
         if (findAmbientOcclusionTextureResult != m_partAmbientOcclusionTextureMap.end()) {
-            textureAmbientOcclusionPainter.setClipping(true);
-            textureAmbientOcclusionPainter.setClipPath(path);
-            textureAmbientOcclusionPainter.drawImage(0, 0, findAmbientOcclusionTextureResult->second);
-            textureAmbientOcclusionPainter.setClipping(false);
+            //textureAmbientOcclusionPainter.setClipping(true);
+            //textureAmbientOcclusionPainter.setClipPath(path);
+            //textureAmbientOcclusionPainter.drawImage(0, 0, findAmbientOcclusionTextureResult->second);
+            //textureAmbientOcclusionPainter.setClipping(false);
             hasAmbientOcclusionMap = true;
         }
     }
