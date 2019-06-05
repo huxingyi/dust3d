@@ -1,11 +1,41 @@
 #include <QStringList>
 #include <QVector2D>
 #include <QVector3D>
+#include <QDebug>
 #include "cutface.h"
 
 IMPL_CutFaceFromString
 IMPL_CutFaceToString
 TMPL_CutFaceToPoints
+
+static void correctFlippedNormal(std::vector<QVector2D> *points)
+{
+    if (points->size() < 3)
+        return;
+    std::vector<QVector3D> referenceFacePoints = {
+        QVector3D((float)-1.0, (float)-1.0, (float)0.0),
+        QVector3D((float)1.0, (float)-1.0, (float)0.0),
+        QVector3D((float)1.0,  (float)1.0, (float)0.0)
+    };
+    QVector3D referenceNormal = QVector3D::normal(referenceFacePoints[0],
+        referenceFacePoints[1], referenceFacePoints[2]);
+    QVector3D normal;
+    for (size_t i = 0; i < points->size(); ++i) {
+        size_t j = (i + 1) % points->size();
+        size_t k = (j + 1) % points->size();
+        std::vector<QVector3D> facePoints = {
+            QVector3D(((*points)[i]).x(), ((*points)[i]).y(), (float)0.0),
+            QVector3D(((*points)[j]).x(), ((*points)[j]).y(), (float)0.0),
+            QVector3D(((*points)[k]).x(), ((*points)[k]).y(), (float)0.0)
+        };
+        normal += QVector3D::normal(facePoints[0],
+            facePoints[1], facePoints[2]);
+    }
+    normal.normalize();
+    if (QVector3D::dotProduct(referenceNormal, normal) > 0)
+        return;
+    std::reverse(points->begin() + 1, points->end());
+}
 
 void normalizeCutFacePoints(std::vector<QVector2D> *points)
 {
@@ -39,6 +69,7 @@ void normalizeCutFacePoints(std::vector<QVector2D> *points)
         position.setX((position.x() - xMiddle) * 2 / longSize);
         position.setY((position.y() - yMiddle) * 2 / longSize);
     }
+    correctFlippedNormal(points);
 }
 
 void cutFacePointsFromNodes(std::vector<QVector2D> &points, const std::vector<std::tuple<float, float, float>> &nodes, bool isRing)
