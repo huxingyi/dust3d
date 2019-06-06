@@ -85,8 +85,11 @@ float MotionsGenerator::calculatePoseDuration(const QUuid &poseId)
     if (nullptr == pose)
         return 0;
     float totalDuration = 0;
-    for (const auto &frame: *pose) {
-        totalDuration += valueOfKeyInMapOrEmpty(frame.first, "duration").toFloat();
+    if (pose->size() > 1) {
+        // Pose with only one frame has zero duration
+        for (const auto &frame: *pose) {
+            totalDuration += valueOfKeyInMapOrEmpty(frame.first, "duration").toFloat();
+        }
     }
     return totalDuration;
 }
@@ -149,6 +152,8 @@ void MotionsGenerator::generateMotion(const QUuid &motionId, std::set<QUuid> &vi
     
     float interval = 1.0 / m_fps;
     float lastProgress = 0;
+    if (totalDuration < interval)
+        totalDuration = interval;
     for (float progress = 0; progress < totalDuration; ) {
         int clipIndex = findClipIndexByProgress(progress);
         if (-1 == clipIndex) {

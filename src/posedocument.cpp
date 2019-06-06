@@ -158,8 +158,8 @@ void PoseDocument::reset()
     m_otherIds.clear();
     m_boneNameToIdsMap.clear();
     m_bonesPartId = QUuid();
-    m_groundPartId = QUuid();
-    m_groundEdgeId = QUuid();
+    //m_groundPartId = QUuid();
+    //m_groundEdgeId = QUuid();
     emit cleanup();
     emit parametersChanged();
 }
@@ -253,24 +253,24 @@ void PoseDocument::fromParameters(const std::vector<RiggerBone> *rigBones,
             otherParameters);
         
         std::map<QString, std::pair<QUuid, QUuid>> boneNameToIdsMap;
-        QUuid groundPartId;
+        //QUuid groundPartId;
         QUuid bonesPartId;
-        QUuid groundEdgeId;
+        //QUuid groundEdgeId;
         parametersToNodes(&otherBones,
             otherHeightAboveGroundLevel,
             &boneNameToIdsMap,
-            &groundPartId,
+            //&groundPartId,
             &bonesPartId,
-            &groundEdgeId,
+            //&groundEdgeId,
             true);
     }
     
     parametersToNodes(&bones,
         heightAboveGroundLevel,
         &m_boneNameToIdsMap,
-        &m_groundPartId,
+        //&m_groundPartId,
         &m_bonesPartId,
-        &m_groundEdgeId,
+        //&m_groundEdgeId,
         false);
     
     emit parametersChanged();
@@ -279,9 +279,9 @@ void PoseDocument::fromParameters(const std::vector<RiggerBone> *rigBones,
 void PoseDocument::parametersToNodes(const std::vector<RiggerBone> *rigBones,
     const float heightAboveGroundLevel,
     std::map<QString, std::pair<QUuid, QUuid>> *boneNameToIdsMap,
-    QUuid *groundPartId,
+    //QUuid *groundPartId,
     QUuid *bonesPartId,
-    QUuid *groundEdgeId,
+    //QUuid *groundEdgeId,
     bool isOther)
 {
     if (nullptr == rigBones || rigBones->empty()) {
@@ -402,6 +402,7 @@ void PoseDocument::parametersToNodes(const std::vector<RiggerBone> *rigBones,
         nodeMap[findRootNodeId->second].setRadius(m_nodeRadius * 2);
     }
     
+    /*
     if (!isOther) {
         *groundPartId = QUuid::createUuid();
         auto &groundPart = partMap[*groundPartId];
@@ -452,6 +453,7 @@ void PoseDocument::parametersToNodes(const std::vector<RiggerBone> *rigBones,
             nodeMap[groundNodesPair.second].edgeIds.push_back(edge.id);
         }
     }
+    */
     
     if (isOther) {
         for (const auto &nodeIt: newAddedNodeIds)
@@ -536,6 +538,7 @@ float PoseDocument::findFirstSpineY() const
 
 void PoseDocument::toParameters(std::map<QString, std::map<QString, QString>> &parameters, const std::set<QUuid> &limitNodeIds) const
 {
+    /*
     float heightAboveGroundLevel = 0;
     auto findGroundEdge = edgeMap.find(m_groundEdgeId);
     if (findGroundEdge != edgeMap.end()) {
@@ -559,6 +562,7 @@ void PoseDocument::toParameters(std::map<QString, std::map<QString, QString>> &p
         auto &boneParameter = parameters[Rigger::rootBoneName];
         boneParameter["heightAboveGroundLevel"] = QString::number(heightAboveGroundLevel);
     }
+    */
     for (const auto &item: m_boneNameToIdsMap) {
         const auto &boneNodeIdPair = item.second;
         auto findFirstNode = nodeMap.find(boneNodeIdPair.first);

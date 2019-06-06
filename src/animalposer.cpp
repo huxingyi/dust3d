@@ -54,7 +54,7 @@ void AnimalPoser::resolveTransform()
             mostBottomYBeforeTransform = bone.tailPosition.y();
     }
     
-    float legHeightBeforeTransform = std::abs(mostBottomYBeforeTransform - firstSpineBone.headPosition.y());
+    //float legHeightBeforeTransform = std::abs(mostBottomYBeforeTransform - firstSpineBone.headPosition.y());
     auto transformedJointNodeTree = m_jointNodeTree;
     transformedJointNodeTree.recalculateTransformMatrices();
     float mostBottomYAfterTransform = std::numeric_limits<float>::max();
@@ -70,11 +70,13 @@ void AnimalPoser::resolveTransform()
         if (newPosition.y() < mostBottomYAfterTransform)
             mostBottomYAfterTransform = newPosition.y();
     }
-    float legHeightAfterTransform = std::abs(mostBottomYAfterTransform - firstSpineBonePositionAfterTransform.y());
-    float translateY = legHeightAfterTransform - legHeightBeforeTransform;
+    //float legHeightAfterTransform = std::abs(mostBottomYAfterTransform - firstSpineBonePositionAfterTransform.y());
+    //float translateY = legHeightAfterTransform - legHeightBeforeTransform;
+    float translateY = mostBottomYBeforeTransform - mostBottomYAfterTransform;
     
     //qDebug() << "Leg height changed, translateY:" << translateY << "legHeightBeforeTransform:" << legHeightBeforeTransform << "legHeightAfterTransform:" << legHeightAfterTransform << "firstSpineBonePositionAfterTransform:" << firstSpineBonePositionAfterTransform << "firstSpineBone.headPosition:" << firstSpineBone.headPosition;
     
+    /*
     const auto &findRootParameters = parameters().find(Rigger::rootBoneName);
     if (findRootParameters != parameters().end()) {
         auto findHeightAboveGroundLevel = findRootParameters->second.find("heightAboveGroundLevel");
@@ -85,6 +87,7 @@ void AnimalPoser::resolveTransform()
             //qDebug() << "heightAboveGroundLevel:" << heightAboveGroundLevel << "myHeightAboveGroundLevel:" << myHeightAboveGroundLevel << "legHeightBeforeTransform:" << legHeightBeforeTransform << "applied translateY:" << translateY;
         }
     }
+    */
     
     if (!qFuzzyIsNull(translateY)) {
         int rootBoneIndex = findBoneIndex(Rigger::rootBoneName);

@@ -66,18 +66,18 @@ private:
     void parametersToNodes(const std::vector<RiggerBone> *rigBones,
         const float heightAboveGroundLevel,
         std::map<QString, std::pair<QUuid, QUuid>> *boneNameToIdsMap,
-        QUuid *groundPartId,
+        //QUuid *groundPartId,
         QUuid *bonesPartId,
-        QUuid *groundEdgeId,
+        //QUuid *groundEdgeId,
         bool isOther=false);
     void updateBonesAndHeightAboveGroundLevelFromParameters(std::vector<RiggerBone> *bones,
         float *heightAboveGroundLevel,
         const std::map<QString, std::map<QString, QString>> &parameters);
 
     std::map<QString, std::pair<QUuid, QUuid>> m_boneNameToIdsMap;
-    QUuid m_groundPartId;
+    //QUuid m_groundPartId;
     QUuid m_bonesPartId;
-    QUuid m_groundEdgeId;
+    //QUuid m_groundEdgeId;
     std::deque<PoseHistoryItem> m_undoItems;
     std::deque<PoseHistoryItem> m_redoItems;
     std::vector<RiggerBone> m_riggerBones;

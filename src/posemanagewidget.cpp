@@ -12,9 +12,8 @@ PoseManageWidget::PoseManageWidget(const Document *document, QWidget *parent) :
 {
     QPushButton *addPoseButton = new QPushButton(Theme::awesome()->icon(fa::plus), tr("Add Pose..."));
     addPoseButton->hide();
-    
     connect(addPoseButton, &QPushButton::clicked, this, &PoseManageWidget::showAddPoseDialog);
-    
+
     QHBoxLayout *toolsLayout = new QHBoxLayout;
     toolsLayout->addWidget(addPoseButton);
     
