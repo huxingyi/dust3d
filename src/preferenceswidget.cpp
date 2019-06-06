@@ -23,10 +23,6 @@ PreferencesWidget::PreferencesWidget(const Document *document, QWidget *parent) 
     colorLayout->addWidget(pickButton);
     colorLayout->addStretch();
     
-    connect(colorEraser, &QPushButton::clicked, [=]() {
-        Preferences::instance().setPartColor(Qt::white);
-    });
-    
     auto updatePickButtonColor = [=]() {
         QPalette palette = pickButton->palette();
         QColor choosenColor = Preferences::instance().partColor();
@@ -35,6 +31,11 @@ PreferencesWidget::PreferencesWidget(const Document *document, QWidget *parent) 
         pickButton->setPalette(palette);
         pickButton->update();
     };
+    
+    connect(colorEraser, &QPushButton::clicked, [=]() {
+        Preferences::instance().setPartColor(Qt::white);
+        updatePickButtonColor();
+    });
     
     connect(pickButton, &QPushButton::clicked, [=]() {
         QColor color = QColorDialog::getColor(Preferences::instance().partColor(), this);
