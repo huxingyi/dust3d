@@ -1151,3 +1151,8 @@ void MeshGenerator::generateSmoothTriangleVertexNormals(const std::vector<QVecto
         }
     }
 }
+
+void MeshGenerator::setDefaultPartColor(const QColor &color)
+{
+    m_defaultPartColor = color;
+}

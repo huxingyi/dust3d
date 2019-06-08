@@ -62,6 +62,7 @@ public:
     void generate();
     void setGeneratedCacheContext(GeneratedCacheContext *cacheContext);
     void setSmoothShadingThresholdAngleDegrees(float degrees);
+    void setDefaultPartColor(const QColor &color);
 signals:
     void finished();
 public slots:

@@ -65,13 +65,7 @@ Document::Document() :
 
 void Document::applyPreferencePartColorChange()
 {
-    for (auto &it: partMap) {
-        if (it.second.hasColor)
-            continue;
-        it.second.color = Preferences::instance().partColor();
-        it.second.dirty = true;
-    }
-    emit skeletonChanged();
+    regenerateMesh();
 }
 
 void Document::applyPreferenceFlatShadingChange()
@@ -932,7 +926,7 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
                 }
             }
             part["dirty"] = partIt.second.dirty ? "true" : "false";
-            //if (partIt.second.hasColor)
+            if (partIt.second.hasColor)
                 part["color"] = partIt.second.color.name();
             if (partIt.second.colorSolubilityAdjusted())
                 part["colorSolubility"] = QString::number(partIt.second.colorSolubility);
@@ -1576,6 +1570,7 @@ void Document::generateMesh()
     toSnapshot(snapshot);
     resetDirtyFlags();
     m_meshGenerator = new MeshGenerator(snapshot);
+    m_meshGenerator->setDefaultPartColor(Preferences::instance().partColor());
     m_meshGenerator->setGeneratedCacheContext(&m_generatedCacheContext);
     if (!m_smoothNormal) {
         m_meshGenerator->setSmoothShadingThresholdAngleDegrees(0);
