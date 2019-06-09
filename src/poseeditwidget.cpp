@@ -38,7 +38,7 @@ PoseEditWidget::PoseEditWidget(const Document *document, QWidget *parent) :
     
     SkeletonGraphicsWidget *graphicsWidget = new SkeletonGraphicsWidget(m_poseDocument);
     graphicsWidget->setNodePositionModifyOnly(true);
-    graphicsWidget->setBackgroundBlur(0.5);
+    graphicsWidget->setBackgroundBlur(1.0);
     m_poseGraphicsWidget = graphicsWidget;
     
     initShortCuts(this, graphicsWidget);

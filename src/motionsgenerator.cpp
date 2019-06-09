@@ -204,7 +204,7 @@ void MotionsGenerator::generateMotion(const QUuid &motionId, std::set<QUuid> &vi
                 const JointNodeTree nextJointNodeTree = poseJointNodeTree(progressClip.linkToId, nextFrame);
                 const JointNodeTree middleJointNodeTree = generateInterpolation(InterpolationType::Linear, previousJointNodeTree, nextJointNodeTree, 0.5);
                 outcomes.push_back({progress - lastProgress,
-                    generateInterpolation(InterpolationType::Linear, jointNodeTree, middleJointNodeTree, 0.5)});
+                    generateInterpolation(InterpolationType::Linear, jointNodeTree, middleJointNodeTree, 0.75)});
                 lastProgress = progress;
             }
             progress += interval;
