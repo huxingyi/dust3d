@@ -1029,6 +1029,20 @@ void SkeletonGraphicsWidget::zoomSelected(float delta)
     }
 }
 
+void SkeletonGraphicsWidget::getOtherProfileNodeItems(const std::set<SkeletonGraphicsNodeItem *> &nodeItemSet,
+        std::set<SkeletonGraphicsNodeItem *> *otherProfileNodeItemSet)
+{
+    for (const auto &nodeItem: nodeItemSet) {
+        auto findNodeItem = nodeItemMap.find(nodeItem->id());
+        if (findNodeItem == nodeItemMap.end())
+            continue;
+        if (nodeItem == findNodeItem->second.first)
+            otherProfileNodeItemSet->insert(findNodeItem->second.second);
+        else
+            otherProfileNodeItemSet->insert(findNodeItem->second.first);
+    }
+}
+
 void SkeletonGraphicsWidget::scaleSelected(float delta)
 {
     if (m_rangeSelectionSet.empty())
@@ -1037,17 +1051,36 @@ void SkeletonGraphicsWidget::scaleSelected(float delta)
     std::set<SkeletonGraphicsNodeItem *> nodeItems;
     readMergedSkeletonNodeSetFromRangeSelection(&nodeItems);
     
+    std::set<SkeletonGraphicsNodeItem *> otherProfileNodeItems;
+    getOtherProfileNodeItems(nodeItems, &otherProfileNodeItems);
+    
     QVector2D center = centerOfNodeItemSet(nodeItems);
+    QVector2D otherCenter = centerOfNodeItemSet(otherProfileNodeItems);
+    std::map<QUuid, std::tuple<float, float, float>> moveByMap;
+    float scale = 0.01 * delta;
     for (const auto &nodeItem: nodeItems) {
         QVector2D origin = QVector2D(nodeItem->origin());
-        QVector2D ray = (center - origin) * 0.01 * delta;
+        QVector2D ray = (center - origin) * scale;
         float byX = -sceneRadiusToUnified(ray.x());
         float byY = -sceneRadiusToUnified(ray.y());
         if (SkeletonProfile::Main == nodeItem->profile()) {
-            emit moveNodeBy(nodeItem->id(), byX, byY, 0);
+            moveByMap[nodeItem->id()] = std::make_tuple(byX, byY, 0.0);
         } else {
-            emit moveNodeBy(nodeItem->id(), 0, byY, byX);
+            moveByMap[nodeItem->id()] = std::make_tuple(0.0, byY, byX);
         }
+    }
+    for (const auto &nodeItem: otherProfileNodeItems) {
+        QVector2D origin = QVector2D(nodeItem->origin());
+        QVector2D ray = (otherCenter - origin) * scale;
+        float byX = -sceneRadiusToUnified(ray.x());
+        if (SkeletonProfile::Main == nodeItem->profile()) {
+            std::get<0>(moveByMap[nodeItem->id()]) = byX;
+        } else {
+            std::get<2>(moveByMap[nodeItem->id()]) = byX;
+        }
+    }
+    for (const auto &it: moveByMap) {
+        emit moveNodeBy(it.first, std::get<0>(it.second), std::get<1>(it.second), std::get<2>(it.second));
     }
 }
 

@@ -426,6 +426,8 @@ public:
     bool checkSkeletonItem(QGraphicsItem *item, bool checked);
     QUuid querySkeletonItemPartId(QGraphicsItem *item);
     static SkeletonProfile readSkeletonItemProfile(QGraphicsItem *item);
+    void getOtherProfileNodeItems(const std::set<SkeletonGraphicsNodeItem *> &nodeItemSet,
+        std::set<SkeletonGraphicsNodeItem *> *otherProfileNodeItemSet);
     void readMergedSkeletonNodeSetFromRangeSelection(std::set<SkeletonGraphicsNodeItem *> *nodeItemSet);
     void readSkeletonNodeAndEdgeIdSetFromRangeSelection(std::set<QUuid> *nodeIdSet, std::set<QUuid> *edgeIdSet=nullptr);
     bool readSkeletonNodeAndAnyEdgeOfNodeFromRangeSelection(SkeletonGraphicsNodeItem **nodeItem, SkeletonGraphicsEdgeItem **edgeItem);
