@@ -201,13 +201,17 @@ bool AnimalRigger::rig()
     
     std::set<int> bodyVerticies;
     bool isMainBodyVerticalAligned = false;
+    float bodyLength = 0;
     addTrianglesToVertices(bodyTriangles, bodyVerticies);
     {
         QVector3D xMin, xMax, yMin, yMax, zMin, zMax;
         resolveBoundingBox(bodyVerticies, xMin, xMax, yMin, yMax, zMin, zMax);
-        isMainBodyVerticalAligned = fabs(yMax.y() - yMin.y()) > fabs(zMax.z() - zMin.z());
+        float yLength = fabs(yMax.y() - yMin.y());
+        float zLength = fabs(zMax.z() - zMin.z());
+        isMainBodyVerticalAligned = yLength > zLength;
+        bodyLength = isMainBodyVerticalAligned ? yLength : zLength;
     }
-    qDebug() << "isMainBodyVerticalAligned:" << isMainBodyVerticalAligned;
+    qDebug() << "isMainBodyVerticalAligned:" << isMainBodyVerticalAligned << "bodyLength:" << bodyLength;
     
     // Collect all branchs
     auto neckIndices = m_marksMap.find(std::make_pair(BoneMark::Neck, SkeletonSide::None));
@@ -291,7 +295,7 @@ bool AnimalRigger::rig()
                 const auto &mark = m_marks[chainColumns[side]->at(sideIndices[side])];
                 const auto &coord = isMainBodyVerticalAligned ? mark.bonePosition.y() :
                         mark.bonePosition.z();
-                if (coord <= choosenCoord + 0.001) {
+                if (coord <= choosenCoord + bodyLength / 5) {
                     chainMarkIndices.insert(chainColumns[side]->at(sideIndices[side]));
                     sumOfChainPositions += mark.bonePosition;
                     ++countOfChains;
