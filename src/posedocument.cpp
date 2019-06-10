@@ -221,10 +221,10 @@ void PoseDocument::updateBonesFromParameters(std::vector<RiggerBone> *bones,
                     valueOfKeyInMapOrEmpty(map, "toZ").toFloat()
                 };
                 bone.tailPosition = toPosition;
-                for (const auto &child: bone.children) {
-                    auto &childBone = (*bones)[child];
-                    childBone.headPosition = toPosition;
-                }
+                //for (const auto &child: bone.children) {
+                //    auto &childBone = (*bones)[child];
+                //    childBone.headPosition = toPosition;
+                //}
             }
         }
     }
@@ -613,4 +613,3 @@ void PoseDocument::firstSpinePositionAndLengthFromParameters(const std::map<QStr
     *length = head.distanceToPoint(tail);
     *position = head;
 }
-
