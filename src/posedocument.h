@@ -68,7 +68,8 @@ private:
     void updateBonesFromParameters(std::vector<RiggerBone> *bones,
         const std::map<QString, std::map<QString, QString>> &parameters,
         float firstSpineBoneLength,
-        QVector3D firstSpineBonePosition);
+        const QVector3D &firstSpineBonePosition,
+        const QVector3D &neckJoint1BoneDirection);
 
     std::map<QString, std::pair<QUuid, QUuid>> m_boneNameToIdsMap;
     QUuid m_bonesPartId;
@@ -86,6 +87,8 @@ private:
     static float toOutcomeZ(float z);
     static void firstSpinePositionAndLengthFromParameters(const std::map<QString, std::map<QString, QString>> &parameters,
         float *length, QVector3D *position);
+    static void neckJoint1DirectionFromParameters(const std::map<QString, std::map<QString, QString>> &parameters,
+        QVector3D *direction);
 };
 
 #endif

@@ -171,7 +171,8 @@ void PoseDocument::clearHistories()
 void PoseDocument::updateBonesFromParameters(std::vector<RiggerBone> *bones,
     const std::map<QString, std::map<QString, QString>> &parameters,
     float firstSpineBoneLength,
-    QVector3D firstSpineBonePosition)
+    const QVector3D &firstSpineBonePosition,
+    const QVector3D &neckJoint1BoneDirection)
 {
     float firstSpineBoneLengthFromParameters = 0.0;
     QVector3D firstSpineBonePositionFromParameters;
@@ -184,6 +185,9 @@ void PoseDocument::updateBonesFromParameters(std::vector<RiggerBone> *bones,
         boneScaleFactor = firstSpineBoneLengthFromParameters / firstSpineBoneLength;
         firstSpineBonePositionOffset = firstSpineBonePositionFromParameters - firstSpineBonePosition;
     }
+    QVector3D neckJoint1DirectionInParameters;
+    neckJoint1DirectionFromParameters(parameters, &neckJoint1DirectionInParameters);
+    QQuaternion neckJoint1Rotation = QQuaternion::rotationTo(neckJoint1DirectionInParameters, neckJoint1BoneDirection);
     for (auto &bone: *bones) {
         const auto findParameterResult = parameters.find(bone.name);
         if (findParameterResult == parameters.end()) {
@@ -221,11 +225,11 @@ void PoseDocument::updateBonesFromParameters(std::vector<RiggerBone> *bones,
                     valueOfKeyInMapOrEmpty(map, "toZ").toFloat()
                 };
                 bone.tailPosition = toPosition;
-                //for (const auto &child: bone.children) {
-                //    auto &childBone = (*bones)[child];
-                //    childBone.headPosition = toPosition;
-                //}
             }
+        }
+        if (bone.name.startsWith("Neck_")) {
+            bone.tailPosition = bone.headPosition +
+                neckJoint1Rotation.rotatedVector(bone.tailPosition - bone.headPosition);
         }
     }
 }
@@ -243,11 +247,13 @@ void PoseDocument::fromParameters(const std::vector<RiggerBone> *rigBones,
     
     float firstSpineBoneLength = 0.0;
     QVector3D firstSpineBonePosition;
-    for (const auto &bone: m_riggerBones) {
+    QVector3D neckJoint1BoneDirection = QVector3D(0.0, 1.0, 0.0);
+    for (const auto &bone: *rigBones) {
         if ("Spine1" == bone.name) {
             firstSpineBonePosition = bone.headPosition;
             firstSpineBoneLength = bone.headPosition.distanceToPoint(bone.tailPosition);
-            break;
+        } else if ("Neck_Joint1" == bone.name) {
+            neckJoint1BoneDirection = (bone.tailPosition - bone.headPosition).normalized();
         }
     }
     
@@ -255,7 +261,8 @@ void PoseDocument::fromParameters(const std::vector<RiggerBone> *rigBones,
     updateBonesFromParameters(&bones,
         parameters,
         firstSpineBoneLength,
-        firstSpineBonePosition);
+        firstSpineBonePosition,
+        neckJoint1BoneDirection);
     
     reset();
     
@@ -264,7 +271,8 @@ void PoseDocument::fromParameters(const std::vector<RiggerBone> *rigBones,
         updateBonesFromParameters(&otherBones,
             otherParameters,
             firstSpineBoneLength,
-            firstSpineBonePosition);
+            firstSpineBonePosition,
+            neckJoint1BoneDirection);
         
         std::map<QString, std::pair<QUuid, QUuid>> boneNameToIdsMap;
         QUuid bonesPartId;
@@ -612,4 +620,20 @@ void PoseDocument::firstSpinePositionAndLengthFromParameters(const std::map<QStr
             valueOfKeyInMapOrEmpty(findFirstSpine->second, "toZ").toFloat());
     *length = head.distanceToPoint(tail);
     *position = head;
+}
+
+void PoseDocument::neckJoint1DirectionFromParameters(const std::map<QString, std::map<QString, QString>> &parameters,
+        QVector3D *direction)
+{
+    *direction = QVector3D(0.0, 1.0, 0.0);
+    const auto &findNeckJoint1 = parameters.find("Neck_Joint1");
+    if (findNeckJoint1 == parameters.end())
+        return;
+    QVector3D head = QVector3D(valueOfKeyInMapOrEmpty(findNeckJoint1->second, "fromX").toFloat(),
+            valueOfKeyInMapOrEmpty(findNeckJoint1->second, "fromY").toFloat(),
+            valueOfKeyInMapOrEmpty(findNeckJoint1->second, "fromZ").toFloat());
+    QVector3D tail = QVector3D(valueOfKeyInMapOrEmpty(findNeckJoint1->second, "toX").toFloat(),
+            valueOfKeyInMapOrEmpty(findNeckJoint1->second, "toY").toFloat(),
+            valueOfKeyInMapOrEmpty(findNeckJoint1->second, "toZ").toFloat());
+    *direction = (tail - head).normalized();
 }
