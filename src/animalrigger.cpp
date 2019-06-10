@@ -219,6 +219,7 @@ bool AnimalRigger::rig()
     auto tailIndices = m_marksMap.find(std::make_pair(BoneMark::Tail, SkeletonSide::None));
     auto leftLimbIndices = m_marksMap.find(std::make_pair(BoneMark::Limb, SkeletonSide::Left));
     auto rightLimbIndices = m_marksMap.find(std::make_pair(BoneMark::Limb, SkeletonSide::Right));
+    bool hasTail = false;
     std::vector<int> nosideMarkIndices;
     std::vector<int> leftMarkIndices;
     std::vector<int> righMarkIndices;
@@ -229,6 +230,7 @@ bool AnimalRigger::rig()
     if (tailIndices != m_marksMap.end()) {
         for (const auto &index: tailIndices->second)
             nosideMarkIndices.push_back(index);
+        hasTail = true;
     }
     if (leftLimbIndices != m_marksMap.end()) {
         for (const auto &index: leftLimbIndices->second)
@@ -421,7 +423,7 @@ bool AnimalRigger::rig()
             spineBoneHeadPosition.setY(averagePoint.y());
         }
         
-        QString spineName = namingSpine(spineGenerateOrder);
+        QString spineName = namingSpine(spineGenerateOrder, hasTail);
         
         m_resultBones.push_back(RiggerBone());
         RiggerBone &spineBone = m_resultBones.back();
@@ -439,8 +441,8 @@ bool AnimalRigger::rig()
             m_resultBones[boneIndexMap[Rigger::rootBoneName]].tailPosition = spineBone.headPosition;
             m_resultBones[boneIndexMap[Rigger::rootBoneName]].children.push_back(spineBone.index);
         } else {
-            m_resultBones[boneIndexMap[namingSpine(spineGenerateOrder - 1)]].tailPosition = spineBone.headPosition;
-            m_resultBones[boneIndexMap[namingSpine(spineGenerateOrder - 1)]].children.push_back(spineBone.index);
+            m_resultBones[boneIndexMap[namingSpine(spineGenerateOrder - 1, hasTail)]].tailPosition = spineBone.headPosition;
+            m_resultBones[boneIndexMap[namingSpine(spineGenerateOrder - 1, hasTail)]].children.push_back(spineBone.index);
         }
         
         for (const auto &chainMarkIndex: spineNode.chainMarkIndices) {
@@ -460,7 +462,7 @@ bool AnimalRigger::rig()
             if (1 == spineGenerateOrder) {
                 m_resultBones[boneIndexMap[Rigger::rootBoneName]].children.push_back(ribBone.index);
             } else {
-                m_resultBones[boneIndexMap[namingSpine(spineGenerateOrder)]].children.push_back(ribBone.index);
+                m_resultBones[boneIndexMap[namingSpine(spineGenerateOrder, hasTail)]].children.push_back(ribBone.index);
             }
             
             std::vector<int> jointMarkIndices;
@@ -619,10 +621,14 @@ QString AnimalRigger::namingChain(const QString &baseName, SkeletonSide side, in
     return namingChainPrefix(baseName, side, orderInSide, totalInSide) + "_Joint" + QString::number(jointOrder);
 }
 
-QString AnimalRigger::namingSpine(int spineOrder)
+QString AnimalRigger::namingSpine(int spineOrder, bool hasTail)
 {
-    if (1 == spineOrder)
-        return Rigger::firstSpineBoneName;
+    if (hasTail) {
+        if (spineOrder <= 2) {
+            return "Spine0" + QString::number(spineOrder);
+        }
+        spineOrder -= 2;
+    }
     return "Spine" + QString::number(spineOrder);
 }
 

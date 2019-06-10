@@ -7,7 +7,7 @@
 
 size_t Rigger::m_maxCutOffSplitterExpandRound = 3;
 QString Rigger::rootBoneName = "Body";
-QString Rigger::firstSpineBoneName = "Spine1";
+//QString Rigger::firstSpineBoneName = "Spine1";
 
 Rigger::Rigger(const std::vector<QVector3D> &verticesPositions,
         const std::set<MeshSplitterTriangle> &inputTriangles) :

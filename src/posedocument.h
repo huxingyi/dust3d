@@ -61,8 +61,8 @@ public:
 private:
     QString findBoneNameByNodeId(const QUuid &nodeId);
     float findFootBottomY() const;
-    float findFirstSpineY() const;
-    float findLegHeight() const;
+    //float findFirstSpineY() const;
+    //float findLegHeight() const;
     void parametersToNodes(const std::vector<RiggerBone> *rigBones,
         const float heightAboveGroundLevel,
         std::map<QString, std::pair<QUuid, QUuid>> *boneNameToIdsMap,

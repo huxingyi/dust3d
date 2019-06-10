@@ -130,7 +130,7 @@ public:
     const std::map<int, RiggerVertexWeights> &resultWeights();
     virtual bool rig() = 0;
     static QString rootBoneName;
-    static QString firstSpineBoneName;
+    //static QString firstSpineBoneName;
 protected:
     virtual bool validate() = 0;
     virtual bool isCutOffSplitter(BoneMark boneMark) = 0;

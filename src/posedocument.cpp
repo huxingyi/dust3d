@@ -514,13 +514,14 @@ float PoseDocument::findFootBottomY() const
     return maxY;
 }
 
-float PoseDocument::findLegHeight() const
-{
-    float firstSpineY = findFirstSpineY();
-    float footBottomY = findFootBottomY();
-    return std::abs(footBottomY - firstSpineY);
-}
+//float PoseDocument::findLegHeight() const
+//{
+//    float firstSpineY = findFirstSpineY();
+//    float footBottomY = findFootBottomY();
+//    return std::abs(footBottomY - firstSpineY);
+//}
 
+/*
 float PoseDocument::findFirstSpineY() const
 {
     const auto &findFirstSpine = m_boneNameToIdsMap.find(Rigger::firstSpineBoneName);
@@ -535,6 +536,7 @@ float PoseDocument::findFirstSpineY() const
     }
     return firstSpineNode->y;
 }
+*/
 
 void PoseDocument::toParameters(std::map<QString, std::map<QString, QString>> &parameters, const std::set<QUuid> &limitNodeIds) const
 {

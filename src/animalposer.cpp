@@ -20,13 +20,13 @@ void AnimalPoser::resolveTransform()
         resolveChainRotation(chain.second);
     }
     
-    int firstSpineBoneIndex = findBoneIndex(Rigger::firstSpineBoneName);
-    if (-1 == firstSpineBoneIndex) {
-        qDebug() << "Find first spine bone failed:" << Rigger::firstSpineBoneName;
-        return;
-    }
+    //int firstSpineBoneIndex = findBoneIndex(Rigger::firstSpineBoneName);
+    //if (-1 == firstSpineBoneIndex) {
+    //    qDebug() << "Find first spine bone failed:" << Rigger::firstSpineBoneName;
+    //    return;
+    //}
     
-    const auto &firstSpineBone = bones()[firstSpineBoneIndex];
+    //const auto &firstSpineBone = bones()[firstSpineBoneIndex];
     
     float mostBottomYBeforeTransform = std::numeric_limits<float>::max();
     for (const auto &bone: bones()) {
@@ -38,15 +38,15 @@ void AnimalPoser::resolveTransform()
     auto transformedJointNodeTree = m_jointNodeTree;
     transformedJointNodeTree.recalculateTransformMatrices();
     float mostBottomYAfterTransform = std::numeric_limits<float>::max();
-    QVector3D firstSpineBonePositionAfterTransform = firstSpineBone.headPosition;
+    //QVector3D firstSpineBonePositionAfterTransform = firstSpineBone.headPosition;
     for (int i = 0; i < (int)transformedJointNodeTree.nodes().size(); ++i) {
         const auto &bone = bones()[i];
         const auto &jointNode = transformedJointNodeTree.nodes()[i];
         QVector3D newPosition = jointNode.transformMatrix * bone.tailPosition;
-        if (0 == i) {
+        //if (0 == i) {
             // Root bone's tail position is the first spine bone's head position
-            firstSpineBonePositionAfterTransform = newPosition;
-        }
+        //    firstSpineBonePositionAfterTransform = newPosition;
+        //}
         if (newPosition.y() < mostBottomYAfterTransform)
             mostBottomYAfterTransform = newPosition.y();
     }
