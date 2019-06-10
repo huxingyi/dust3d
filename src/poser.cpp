@@ -1,4 +1,5 @@
 #include <QQuaternion>
+#include <QRegularExpression>
 #include "poser.h"
 
 Poser::Poser(const std::vector<RiggerBone> &bones) :
@@ -58,4 +59,32 @@ void Poser::reset()
 std::map<QString, std::map<QString, QString>> &Poser::parameters()
 {
     return m_parameters;
+}
+
+void Poser::fetchChains(const std::vector<QString> &boneNames, std::map<QString, std::vector<QString>> &chains)
+{
+    QRegularExpression reJoints("^([a-zA-Z]+\\d*)_Joint\\d+$");
+    QRegularExpression reSpine("^([a-zA-Z]+)\\d*$");
+    for (const auto &item: boneNames) {
+        QRegularExpressionMatch match = reJoints.match(item);
+        if (match.hasMatch()) {
+            QString name = match.captured(1);
+            chains[name].push_back(item);
+        } else {
+            match = reSpine.match(item);
+            if (match.hasMatch()) {
+                QString name = match.captured(1);
+                chains[name].push_back(item);
+            } else if (item.startsWith("Virtual_")) {
+                //qDebug() << "Ignore connector:" << item;
+            } else {
+                qDebug() << "Unrecognized bone name:" << item;
+            }
+        }
+    }
+    for (auto &chain: chains) {
+        std::sort(chain.second.begin(), chain.second.end(), [](const QString &first, const QString &second) {
+            return first < second;
+        });
+    }
 }

@@ -3,6 +3,7 @@
 #include <queue>
 #include <unordered_set>
 #include "animalrigger.h"
+#include "bonenameconverter.h"
 
 AnimalRigger::AnimalRigger(const std::vector<QVector3D> &verticesPositions,
         const std::set<MeshSplitterTriangle> &inputTriangles) :
@@ -571,8 +572,30 @@ bool AnimalRigger::rig()
         weights.second.finalizeWeights();
     }
     
+    //convertNames();
+    
     return true;
 }
+
+/*
+void AnimalRigger::convertNames()
+{
+    BoneNameConverter boneNameConverter;
+    for (auto &it: m_resultBones) {
+        boneNameConverter.addBoneName(it.name);
+        it.humanName = it.name;
+    }
+    if (boneNameConverter.convertToReadable()) {
+        const auto &map = boneNameConverter.converted();
+        for (auto &it: m_resultBones) {
+            auto findReadable = map.find(it.name);
+            if (findReadable != map.end()) {
+                it.humanName = findReadable->second;
+            }
+        }
+    }
+}
+*/
 
 QVector3D AnimalRigger::findExtremPointFrom(const std::set<int> &verticies, const QVector3D &from)
 {

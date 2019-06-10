@@ -1,6 +1,5 @@
 #include <cmath>
 #include <QtMath>
-#include <QRegularExpression>
 #include "animalposer.h"
 #include "util.h"
 
@@ -11,32 +10,13 @@ AnimalPoser::AnimalPoser(const std::vector<RiggerBone> &bones) :
 
 void AnimalPoser::resolveTransform()
 {
-    QRegularExpression reJoints("^([a-zA-Z]+\\d*)_Joint\\d+$");
-    QRegularExpression reSpine("^([a-zA-Z]+)\\d*$");
     std::map<QString, std::vector<QString>> chains;
+    std::vector<QString> boneNames;
     for (const auto &item: parameters()) {
-        QRegularExpressionMatch match = reJoints.match(item.first);
-        if (match.hasMatch()) {
-            QString name = match.captured(1);
-            chains[name].push_back(item.first);
-            //qDebug() << "chains[" << name << "]:" << item.first;
-        } else {
-            match = reSpine.match(item.first);
-            if (match.hasMatch()) {
-                QString name = match.captured(1);
-                chains[name].push_back(item.first);
-                //qDebug() << "chains[" << name << "]:" << item.first;
-            } else if (item.first.startsWith("Virtual_")) {
-                //qDebug() << "Ignore connector:" << item.first;
-            } else {
-                qDebug() << "Unrecognized bone name:" << item.first;
-            }
-        }
+        boneNames.push_back(item.first);
     }
+    Poser::fetchChains(boneNames, chains);
     for (auto &chain: chains) {
-        std::sort(chain.second.begin(), chain.second.end(), [](const QString &first, const QString &second) {
-            return first < second;
-        });
         resolveChainRotation(chain.second);
     }
     

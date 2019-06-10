@@ -19,6 +19,7 @@ public:
     std::map<QString, std::map<QString, QString>> &parameters();
     virtual void commit();
     void reset();
+    static void fetchChains(const std::vector<QString> &boneNames, std::map<QString, std::vector<QString>> &chains);
 protected:
     std::vector<RiggerBone> m_bones;
     std::map<QString, int> m_boneNameToIndexMap;

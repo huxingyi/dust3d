@@ -316,6 +316,9 @@ HEADERS += src/remoteioconnection.h
 SOURCES += src/preferences.cpp
 HEADERS += src/preferences.h
 
+SOURCES += src/bonenameconverter.cpp
+HEADERS += src/bonenameconverter.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h

@@ -70,6 +70,7 @@ class RiggerBone
 {
 public:
     QString name;
+    //QString humanName;
     int index = -1;
     QVector3D headPosition;
     QVector3D tailPosition;
