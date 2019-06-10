@@ -61,23 +61,17 @@ public:
 private:
     QString findBoneNameByNodeId(const QUuid &nodeId);
     float findFootBottomY() const;
-    //float findFirstSpineY() const;
-    //float findLegHeight() const;
     void parametersToNodes(const std::vector<RiggerBone> *rigBones,
-        const float heightAboveGroundLevel,
         std::map<QString, std::pair<QUuid, QUuid>> *boneNameToIdsMap,
-        //QUuid *groundPartId,
         QUuid *bonesPartId,
-        //QUuid *groundEdgeId,
         bool isOther=false);
-    void updateBonesAndHeightAboveGroundLevelFromParameters(std::vector<RiggerBone> *bones,
-        float *heightAboveGroundLevel,
-        const std::map<QString, std::map<QString, QString>> &parameters);
+    void updateBonesFromParameters(std::vector<RiggerBone> *bones,
+        const std::map<QString, std::map<QString, QString>> &parameters,
+        float firstSpineBoneLength,
+        QVector3D firstSpineBonePosition);
 
     std::map<QString, std::pair<QUuid, QUuid>> m_boneNameToIdsMap;
-    //QUuid m_groundPartId;
     QUuid m_bonesPartId;
-    //QUuid m_groundEdgeId;
     std::deque<PoseHistoryItem> m_undoItems;
     std::deque<PoseHistoryItem> m_redoItems;
     std::vector<RiggerBone> m_riggerBones;
@@ -90,6 +84,8 @@ private:
     static float toOutcomeY(float y);
     static float fromOutcomeZ(float z);
     static float toOutcomeZ(float z);
+    static void firstSpinePositionAndLengthFromParameters(const std::map<QString, std::map<QString, QString>> &parameters,
+        float *length, QVector3D *position);
 };
 
 #endif

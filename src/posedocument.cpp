@@ -158,8 +158,6 @@ void PoseDocument::reset()
     m_otherIds.clear();
     m_boneNameToIdsMap.clear();
     m_bonesPartId = QUuid();
-    //m_groundPartId = QUuid();
-    //m_groundEdgeId = QUuid();
     emit cleanup();
     emit parametersChanged();
 }
@@ -170,14 +168,31 @@ void PoseDocument::clearHistories()
     m_redoItems.clear();
 }
 
-void PoseDocument::updateBonesAndHeightAboveGroundLevelFromParameters(std::vector<RiggerBone> *bones,
-    float *heightAboveGroundLevel,
-    const std::map<QString, std::map<QString, QString>> &parameters)
+void PoseDocument::updateBonesFromParameters(std::vector<RiggerBone> *bones,
+    const std::map<QString, std::map<QString, QString>> &parameters,
+    float firstSpineBoneLength,
+    QVector3D firstSpineBonePosition)
 {
+    float firstSpineBoneLengthFromParameters = 0.0;
+    QVector3D firstSpineBonePositionFromParameters;
+    firstSpinePositionAndLengthFromParameters(parameters,
+        &firstSpineBoneLengthFromParameters,
+        &firstSpineBonePositionFromParameters);
+    float boneScaleFactor = 1.0;
+    QVector3D firstSpineBonePositionOffset;
+    if (firstSpineBoneLengthFromParameters > 0 && firstSpineBoneLength > 0) {
+        boneScaleFactor = firstSpineBoneLengthFromParameters / firstSpineBoneLength;
+        firstSpineBonePositionOffset = firstSpineBonePositionFromParameters - firstSpineBonePosition;
+    }
     for (auto &bone: *bones) {
         const auto findParameterResult = parameters.find(bone.name);
-        if (findParameterResult == parameters.end())
+        if (findParameterResult == parameters.end()) {
+            bone.headPosition *= boneScaleFactor;
+            bone.tailPosition *= boneScaleFactor;
+            bone.headPosition += firstSpineBonePositionOffset;
+            bone.tailPosition += firstSpineBonePositionOffset;
             continue;
+        }
         const auto &map = findParameterResult->second;
         {
             auto findXResult = map.find("fromX");
@@ -213,17 +228,6 @@ void PoseDocument::updateBonesAndHeightAboveGroundLevelFromParameters(std::vecto
             }
         }
     }
-    
-    const auto findRoot = parameters.find(Rigger::rootBoneName);
-    if (findRoot != parameters.end()) {
-        const auto &map = findRoot->second;
-        {
-            auto findHeightAboveGroundLevel = map.find("heightAboveGroundLevel");
-            if (findHeightAboveGroundLevel != map.end()) {
-                *heightAboveGroundLevel = valueOfKeyInMapOrEmpty(map, "heightAboveGroundLevel").toFloat();
-            }
-        }
-    }
 }
 
 void PoseDocument::fromParameters(const std::vector<RiggerBone> *rigBones,
@@ -237,51 +241,50 @@ void PoseDocument::fromParameters(const std::vector<RiggerBone> *rigBones,
     if (&m_riggerBones != rigBones)
         m_riggerBones = *rigBones;
     
-    float heightAboveGroundLevel = 0;
+    float firstSpineBoneLength = 0.0;
+    QVector3D firstSpineBonePosition;
+    for (const auto &bone: m_riggerBones) {
+        if ("Spine1" == bone.name) {
+            firstSpineBonePosition = bone.headPosition;
+            firstSpineBoneLength = bone.headPosition.distanceToPoint(bone.tailPosition);
+            break;
+        }
+    }
+    
     std::vector<RiggerBone> bones = *rigBones;
-    updateBonesAndHeightAboveGroundLevelFromParameters(&bones,
-        &heightAboveGroundLevel,
-        parameters);
+    updateBonesFromParameters(&bones,
+        parameters,
+        firstSpineBoneLength,
+        firstSpineBonePosition);
     
     reset();
     
     for (const auto &otherParameters: m_otherFramesParameters) {
-        float otherHeightAboveGroundLevel = 0;
         std::vector<RiggerBone> otherBones = *rigBones;
-        updateBonesAndHeightAboveGroundLevelFromParameters(&otherBones,
-            &otherHeightAboveGroundLevel,
-            otherParameters);
+        updateBonesFromParameters(&otherBones,
+            otherParameters,
+            firstSpineBoneLength,
+            firstSpineBonePosition);
         
         std::map<QString, std::pair<QUuid, QUuid>> boneNameToIdsMap;
-        //QUuid groundPartId;
         QUuid bonesPartId;
-        //QUuid groundEdgeId;
         parametersToNodes(&otherBones,
-            otherHeightAboveGroundLevel,
             &boneNameToIdsMap,
-            //&groundPartId,
             &bonesPartId,
-            //&groundEdgeId,
             true);
     }
     
     parametersToNodes(&bones,
-        heightAboveGroundLevel,
         &m_boneNameToIdsMap,
-        //&m_groundPartId,
         &m_bonesPartId,
-        //&m_groundEdgeId,
         false);
     
     emit parametersChanged();
 }
 
 void PoseDocument::parametersToNodes(const std::vector<RiggerBone> *rigBones,
-    const float heightAboveGroundLevel,
     std::map<QString, std::pair<QUuid, QUuid>> *boneNameToIdsMap,
-    //QUuid *groundPartId,
     QUuid *bonesPartId,
-    //QUuid *groundEdgeId,
     bool isOther)
 {
     if (nullptr == rigBones || rigBones->empty()) {
@@ -402,59 +405,6 @@ void PoseDocument::parametersToNodes(const std::vector<RiggerBone> *rigBones,
         nodeMap[findRootNodeId->second].setRadius(m_nodeRadius * 2);
     }
     
-    /*
-    if (!isOther) {
-        *groundPartId = QUuid::createUuid();
-        auto &groundPart = partMap[*groundPartId];
-        groundPart.id = *groundPartId;
-        
-        float footBottomY = findFootBottomY();
-        float legHeight = findLegHeight();
-        float myHeightAboveGroundLevel = heightAboveGroundLevel * legHeight;
-        float groundNodeY = footBottomY + m_groundPlaneHalfThickness + myHeightAboveGroundLevel;
-        
-        std::pair<QUuid, QUuid> groundNodesPair;
-        {
-            SkeletonNode node;
-            node.partId = *groundPartId;
-            node.id = QUuid::createUuid();
-            node.setRadius(m_groundPlaneHalfThickness);
-            node.x = -100;
-            node.y = groundNodeY;
-            node.z = -100;
-            nodeMap[node.id] = node;
-            newAddedNodeIds.insert(node.id);
-            groundNodesPair.first = node.id;
-        }
-        
-        {
-            SkeletonNode node;
-            node.partId = *groundPartId;
-            node.id = QUuid::createUuid();
-            node.setRadius(m_groundPlaneHalfThickness);
-            node.x = 100;
-            node.y = groundNodeY;
-            node.z = 100;
-            nodeMap[node.id] = node;
-            newAddedNodeIds.insert(node.id);
-            groundNodesPair.second = node.id;
-        }
-        
-        {
-            SkeletonEdge edge;
-            edge.partId = *groundPartId;
-            edge.id = QUuid::createUuid();
-            edge.nodeIds.push_back(groundNodesPair.first);
-            edge.nodeIds.push_back(groundNodesPair.second);
-            edgeMap[edge.id] = edge;
-            *groundEdgeId = edge.id;
-            newAddedEdgeIds.insert(edge.id);
-            nodeMap[groundNodesPair.first].edgeIds.push_back(edge.id);
-            nodeMap[groundNodesPair.second].edgeIds.push_back(edge.id);
-        }
-    }
-    */
-    
     if (isOther) {
         for (const auto &nodeIt: newAddedNodeIds)
             m_otherIds.insert(nodeIt);
@@ -514,57 +464,8 @@ float PoseDocument::findFootBottomY() const
     return maxY;
 }
 
-//float PoseDocument::findLegHeight() const
-//{
-//    float firstSpineY = findFirstSpineY();
-//    float footBottomY = findFootBottomY();
-//    return std::abs(footBottomY - firstSpineY);
-//}
-
-/*
-float PoseDocument::findFirstSpineY() const
-{
-    const auto &findFirstSpine = m_boneNameToIdsMap.find(Rigger::firstSpineBoneName);
-    if (findFirstSpine == m_boneNameToIdsMap.end()) {
-        qDebug() << "Find first spine bone failed:" << Rigger::firstSpineBoneName;
-        return 0;
-    }
-    const SkeletonNode *firstSpineNode = findNode(findFirstSpine->second.first);
-    if (nullptr == firstSpineNode) {
-        qDebug() << "Find first spine node failed";
-        return 0;
-    }
-    return firstSpineNode->y;
-}
-*/
-
 void PoseDocument::toParameters(std::map<QString, std::map<QString, QString>> &parameters, const std::set<QUuid> &limitNodeIds) const
 {
-    /*
-    float heightAboveGroundLevel = 0;
-    auto findGroundEdge = edgeMap.find(m_groundEdgeId);
-    if (findGroundEdge != edgeMap.end()) {
-        const auto &nodeIds = findGroundEdge->second.nodeIds;
-        if (nodeIds.size() == 2) {
-            auto findFirstNode = nodeMap.find(nodeIds[0]);
-            auto findSecondNode = nodeMap.find(nodeIds[1]);
-            if (findFirstNode != nodeMap.end() && findSecondNode != nodeMap.end()) {
-                if (limitNodeIds.empty() || limitNodeIds.find(findFirstNode->first) != limitNodeIds.end() ||
-                        limitNodeIds.find(findSecondNode->first) != limitNodeIds.end()) {
-                    float myHeightAboveGroundLevel = (findFirstNode->second.y + findSecondNode->second.y) / 2 -
-                        (findFootBottomY() + m_groundPlaneHalfThickness);
-                    float legHeight = findLegHeight();
-                    if (legHeight > 0)
-                        heightAboveGroundLevel = myHeightAboveGroundLevel / legHeight;
-                }
-            }
-        }
-    }
-    if (!qFuzzyIsNull(heightAboveGroundLevel)) {
-        auto &boneParameter = parameters[Rigger::rootBoneName];
-        boneParameter["heightAboveGroundLevel"] = QString::number(heightAboveGroundLevel);
-    }
-    */
     for (const auto &item: m_boneNameToIdsMap) {
         const auto &boneNodeIdPair = item.second;
         auto findFirstNode = nodeMap.find(boneNodeIdPair.first);
@@ -693,3 +594,23 @@ void PoseDocument::switchChainSide(const std::set<QUuid> nodeIds)
     if (!switchPairs.empty())
         emit parametersChanged();
 }
+
+void PoseDocument::firstSpinePositionAndLengthFromParameters(const std::map<QString, std::map<QString, QString>> &parameters,
+    float *length, QVector3D *position)
+{
+    *length = 0.0;
+    *position = QVector3D(0.0, 0.0, 0.0);
+    
+    const auto &findFirstSpine = parameters.find("Spine1");
+    if (findFirstSpine == parameters.end())
+        return;
+    QVector3D head = QVector3D(valueOfKeyInMapOrEmpty(findFirstSpine->second, "fromX").toFloat(),
+            valueOfKeyInMapOrEmpty(findFirstSpine->second, "fromY").toFloat(),
+            valueOfKeyInMapOrEmpty(findFirstSpine->second, "fromZ").toFloat());
+    QVector3D tail = QVector3D(valueOfKeyInMapOrEmpty(findFirstSpine->second, "toX").toFloat(),
+            valueOfKeyInMapOrEmpty(findFirstSpine->second, "toY").toFloat(),
+            valueOfKeyInMapOrEmpty(findFirstSpine->second, "toZ").toFloat());
+    *length = head.distanceToPoint(tail);
+    *position = head;
+}
+
