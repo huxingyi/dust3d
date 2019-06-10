@@ -355,9 +355,24 @@ DocumentWindow::DocumentWindow() :
     connect(m_openAction, &QAction::triggered, this, &DocumentWindow::open, Qt::QueuedConnection);
     m_fileMenu->addAction(m_openAction);
     
-    m_openExampleAction = new QAction(tr("Open Example"), this);
-    connect(m_openExampleAction, &QAction::triggered, this, &DocumentWindow::openExample, Qt::QueuedConnection);
-    m_fileMenu->addAction(m_openExampleAction);
+    m_openExampleMenu = new QMenu(tr("Open Example"));
+    std::vector<QString> exampleModels = {
+        "Addax",
+        "Bicycle",
+        "Bob",
+        "Dog head",
+        "Meerkat",
+        "Mosquito",
+    };
+    for (const auto &model: exampleModels) {
+        QAction *openModelAction = new QAction(model, this);
+        connect(openModelAction, &QAction::triggered, this, [this, model]() {
+            openExample("model-" + model.toLower().replace(QChar(' '), QChar('-')) + ".ds3");
+        });
+        m_openExampleMenu->addAction(openModelAction);
+    }
+    
+    m_fileMenu->addMenu(m_openExampleMenu);
 
     m_saveAction = new QAction(tr("Save"), this);
     connect(m_saveAction, &QAction::triggered, this, &DocumentWindow::save, Qt::QueuedConnection);
@@ -1203,7 +1218,7 @@ void DocumentWindow::saveTo(const QString &saveAsFilename)
     QApplication::restoreOverrideCursor();
 }
 
-void DocumentWindow::openExample()
+void DocumentWindow::openExample(const QString &modelName)
 {
     if (!m_documentSaved) {
         QMessageBox::StandardButton answer = QMessageBox::question(this,
@@ -1215,7 +1230,7 @@ void DocumentWindow::openExample()
     }
     
     QApplication::setOverrideCursor(Qt::WaitCursor);
-    Ds3FileReader ds3Reader(":/resources/bob.ds3");
+    Ds3FileReader ds3Reader(":/resources/" + modelName);
     
     m_document->clearHistories();
     m_document->reset();

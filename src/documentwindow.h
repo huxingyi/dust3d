@@ -42,7 +42,7 @@ public slots:
     void save();
     void saveTo(const QString &saveAsFilename);
     void open();
-    void openExample();
+    void openExample(const QString &modelName);
     void exportObjResult();
     void exportGlbResult();
     void exportFbxResult();
@@ -90,7 +90,8 @@ private:
     QAction *m_newWindowAction;
     QAction *m_newDocumentAction;
     QAction *m_openAction;
-    QAction *m_openExampleAction;
+    QMenu *m_openExampleMenu;
+    //QAction *m_openExampleAction;
     QAction *m_saveAction;
     QAction *m_saveAsAction;
     QAction *m_saveAllAction;

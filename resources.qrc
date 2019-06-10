@@ -7,7 +7,12 @@
     <file>resources/tree-branch-open.png</file>
     <file>resources/tree-vline.png</file>
     <file>resources/material-demo-model.ds3</file>
-    <file>resources/bob.ds3</file>
+    <file>resources/model-addax.ds3</file>
+    <file>resources/model-bicycle.ds3</file>
+    <file>resources/model-bob.ds3</file>
+    <file>resources/model-dog-head.ds3</file>
+    <file>resources/model-meerkat.ds3</file>
+    <file>resources/model-mosquito.ds3</file>
     <file>resources/triangle.png</file>
     <file>resources/quad.png</file>
     <file>resources/pentagon.png</file>
