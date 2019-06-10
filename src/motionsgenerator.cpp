@@ -4,6 +4,7 @@
 #include "motionsgenerator.h"
 #include "posemeshcreator.h"
 #include "poserconstruct.h"
+#include "posedocument.h"
 
 MotionsGenerator::MotionsGenerator(RigType rigType,
         const std::vector<RiggerBone> *rigBones,
@@ -234,7 +235,11 @@ const JointNodeTree &MotionsGenerator::poseJointNodeTree(const QUuid &poseId, in
     m_poser->reset();
     if (frame < (int)frames.size()) {
         const auto &parameters = frames[frame].second;
-        m_poser->parameters() = parameters;
+        PoseDocument postDocument;
+        postDocument.fromParameters(&m_rigBones, parameters);
+        std::map<QString, std::map<QString, QString>> translatedParameters;
+        postDocument.toParameters(translatedParameters);
+        m_poser->parameters() = translatedParameters;
     }
     m_poser->commit();
     auto insertResult = m_poseJointNodeTreeMap.insert({{poseId, frame}, m_poser->resultJointNodeTree()});

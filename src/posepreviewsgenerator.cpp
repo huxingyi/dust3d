@@ -3,6 +3,7 @@
 #include "posepreviewsgenerator.h"
 #include "posemeshcreator.h"
 #include "poserconstruct.h"
+#include "posedocument.h"
 
 PosePreviewsGenerator::PosePreviewsGenerator(RigType rigType,
         const std::vector<RiggerBone> *rigBones,
@@ -47,7 +48,11 @@ void PosePreviewsGenerator::process()
 
     Poser *poser = newPoser(m_rigType, m_rigBones);
     for (const auto &pose: m_poses) {
-        poser->parameters() = pose.second;
+        PoseDocument poseDocument;
+        poseDocument.fromParameters(&m_rigBones, pose.second);
+        std::map<QString, std::map<QString, QString>> translatedParameters;
+        poseDocument.toParameters(translatedParameters);
+        poser->parameters() = translatedParameters;
         poser->commit();
         
         PoseMeshCreator *poseMeshCreator = new PoseMeshCreator(poser->resultNodes(), *m_outcome, m_rigWeights);
