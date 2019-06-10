@@ -105,6 +105,8 @@ void Modifier::finalize()
         size_t newInsertNum = currentEdgeLength / targetEdgeLength;
         if (newInsertNum < 1)
             newInsertNum = 1;
+        if (newInsertNum > 100)
+            continue;
         float stepFactor = 1.0 / (newInsertNum + 1);
         std::vector<size_t> nodeIndices;
         nodeIndices.push_back(edge.firstNodeIndex);
