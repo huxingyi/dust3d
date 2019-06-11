@@ -1,245 +1,245 @@
 DUST3D 1.0 xml 0000000295
 <?xml version="1.0" encoding="UTF-8"?>
 <ds3>
-    <model name="model.xml" offset="0" size="190224"/>
-    <asset name="canvas.png" offset="190224" size="534206"/>
-    <asset name="images/{2f2388e0-b01a-43f8-81ca-846c14a7e4f3}.png" offset="724430" size="735382"/>
+    <model name="model.xml" offset="0" size="110050"/>
+    <asset name="canvas.png" offset="110050" size="534206"/>
+    <asset name="images/{2f2388e0-b01a-43f8-81ca-846c14a7e4f3}.png" offset="644256" size="735382"/>
 </ds3>
 <?xml version="1.0" encoding="UTF-8"?>
 <canvas originX="0.293069" originY="0.623762" originZ="1.20693" rigType="Animal">
     <nodes>
-        <node id="{0151500c-f95c-44ee-b1ca-6c20e7d04693}" partId="{b392dc3e-2bee-46db-b29a-fe6d9b9692fb}" radius="0.0079208" x="0.468977" y="0.967235" z="1.22968"/>
-        <node boneMark="Neck" id="{02b6c993-97cc-4d70-b9f8-4cfba740e89c}" partId="{f41c515f-9ace-4a4e-9921-77b145777b64}" radius="0.0554455" x="0.293069" y="0.172277" z="1.20792"/>
-        <node id="{06a02231-d0de-41f9-a141-5cf41a4d25c6}" partId="{f41c515f-9ace-4a4e-9921-77b145777b64}" radius="0.0158416" x="0.293069" y="0.0613861" z="1.01287"/>
-        <node boneMark="Joint" id="{0812fc32-9dd6-4276-9d46-981a95b48ce5}" partId="{7ef7efbc-c6af-42d9-8d41-14c32fedd8f5}" radius="0.019802" x="0.170124" y="0.897261" z="1.23367"/>
-        <node id="{0f492e81-b2e6-4019-9b41-768318026917}" partId="{f8cc0f6d-767f-4a95-822d-cce6f5803990}" radius="0.0118812" x="0.439604" y="0.524753" z="1.06634"/>
-        <node id="{133e51db-1e09-49eb-af45-87be2f9a9cec}" partId="{f8cc0f6d-767f-4a95-822d-cce6f5803990}" radius="0.0118812" x="0.439604" y="0.49703" z="1.08416"/>
-        <node id="{15c0a2f5-5163-4f60-babe-f97c05e3a373}" partId="{b392dc3e-2bee-46db-b29a-fe6d9b9692fb}" radius="0.00792081" x="0.447197" y="0.950644" z="1.20846"/>
-        <node id="{18b77cf3-fbcf-43f9-ba0c-6ffa093e5265}" partId="{f4e9dff3-3551-429c-a3f1-07dc62ce347e}" radius="0.0059406" x="0.10792" y="0.941265" z="1.20163"/>
-        <node boneMark="Limb" id="{1ddd1fe3-feb4-4cf8-bc12-b03f58e737b3}" partId="{26590cc4-b328-4342-a49f-30430261108a}" radius="0.0594059" x="0.427115" y="0.655402" z="1.22574"/>
-        <node id="{22654e03-9962-4a1e-b236-ddb3c68851a5}" partId="{bc862a4b-4efc-4f86-ac94-2308ae5acf3e}" radius="0.0079208" x="0.468977" y="0.965851" z="1.21069"/>
-        <node id="{2739c556-711c-4263-871d-28e51bdd0d9c}" partId="{6b54de1a-971a-4179-8cca-a6220e801d60}" radius="0.0118812" x="0.167517" y="0.516832" z="1.0901"/>
-        <node id="{27e27665-a84d-4f2b-8fc7-1075b41f3cf7}" partId="{e8ec7f03-6507-4d1a-87e8-9ed96e71e0eb}" radius="0.0079208" x="0.468977" y="0.963426" z="1.1784"/>
-        <node boneMark="Joint" id="{283f83d1-df90-4a74-8303-ed718c0c9891}" partId="{c9744c6c-d6b8-4d0b-a921-891339b7ba8a}" radius="0.019802" x="0.435658" y="0.494435" z="1.08619"/>
-        <node id="{2a110e23-ffd9-400c-89a8-bdca7e73e4ba}" partId="{7ef7efbc-c6af-42d9-8d41-14c32fedd8f5}" radius="0.0316832" x="0.145682" y="0.830619" z="1.22179"/>
-        <node boneMark="Neck" id="{2a6f4c81-d474-4c80-973b-e5be8b67c812}" partId="{b8b5f02e-525c-42f0-b32a-411a0745e9a0}" radius="0.0633663" x="0.293069" y="0.174257" z="1.20099"/>
-        <node id="{2ada202b-69a6-4dda-9723-b92260349f48}" partId="{f072d09d-fa51-4195-af8b-2f8028f9d347}" radius="0.0118812" x="0.187319" y="0.516832" z="1.0901"/>
-        <node id="{2d226726-5d82-4038-9fe5-d33b5b2c8b3e}" partId="{f41c515f-9ace-4a4e-9921-77b145777b64}" radius="0.0237624" x="0.293069" y="0.0653465" z="1.05149"/>
-        <node id="{2d4bdd0c-feac-457a-a38d-bdaf2ca4f4eb}" partId="{b8b5f02e-525c-42f0-b32a-411a0745e9a0}" radius="0.0910891" x="0.29505" y="0.69901" z="1.22772"/>
-        <node id="{35bfe345-429f-44d5-b3bf-19899985709c}" partId="{f7694588-d554-4ec6-9524-38ff293e4367}" radius="0.0079208" x="0.468977" y="0.966347" z="1.19721"/>
-        <node id="{36bc2d27-f229-4227-9058-3782dc1dd225}" partId="{ee77bfa8-8632-4756-aa6f-28f33ec6f026}" radius="0.0079208" x="0.0861396" y="0.953524" z="1.1784"/>
-        <node id="{37aefe96-c7b9-4ef8-a207-395614b0869b}" partId="{26590cc4-b328-4342-a49f-30430261108a}" radius="0.0316832" x="0.428869" y="0.838801" z="1.22178"/>
-        <node id="{3cedd934-bca0-4bec-b381-2148bda20561}" partId="{eb6e306a-30fd-429f-bc8c-1eb00d8f713a}" radius="0.0178218" x="0.330693" y="0.0495049" z="1.10792"/>
-        <node id="{3fc85fdd-7669-4d2d-b55d-da87927570ec}" partId="{eb6e306a-30fd-429f-bc8c-1eb00d8f713a}" radius="0.0237624" x="0.348515" y="0.0475248" z="1.13366"/>
-        <node id="{3ff26e36-8d4d-49a3-b13e-02d245287184}" partId="{26590cc4-b328-4342-a49f-30430261108a}" radius="0.019802" x="0.454833" y="0.953807" z="1.2099"/>
-        <node id="{424d7c40-3833-44dc-8073-9a0dcfd52ae7}" partId="{7ef7efbc-c6af-42d9-8d41-14c32fedd8f5}" radius="0.019802" x="0.109793" y="0.942925" z="1.20991"/>
-        <node id="{4250b96d-7d30-45e1-b7f1-d54704767a3b}" partId="{d1fe040a-fbc2-42a9-a51e-7893d6f5f25f}" radius="0.0237624" x="0.170358" y="0.454828" z="1.12124"/>
-        <node id="{4403a091-e87d-4e3c-b4ab-9c867ab9effe}" partId="{bc862a4b-4efc-4f86-ac94-2308ae5acf3e}" radius="0.00594061" x="0.447197" y="0.950065" z="1.2098"/>
-        <node id="{475047f9-b326-4129-971d-6f4488833173}" partId="{7ef7efbc-c6af-42d9-8d41-14c32fedd8f5}" radius="0.039604" x="0.254276" y="0.568263" z="1.20099"/>
-        <node id="{4bb132c2-f5d8-4678-963b-9d7a05307529}" partId="{287eb182-d4f6-4488-b54b-2f2f7bc09448}" radius="0.019802" x="0.293069" y="0.849505" z="1.45743"/>
-        <node boneMark="Joint" id="{4d740798-bda7-493f-aa0c-466e1aa80efd}" partId="{26590cc4-b328-4342-a49f-30430261108a}" radius="0.0594059" x="0.438783" y="0.770349" z="1.18812"/>
-        <node id="{5463dc0a-8735-4f48-9fc5-9e555080655e}" partId="{f4e9dff3-3551-429c-a3f1-07dc62ce347e}" radius="0.0079208" x="0.0861396" y="0.956445" z="1.19721"/>
-        <node id="{55529cb2-a778-4bb3-837f-006e66746e43}" partId="{e9017b79-8e99-4f68-bd06-fc16caf4ba06}" radius="0.0237624" x="0.380736" y="0.0716507" z="1.20297"/>
-        <node boneMark="Joint" id="{55fdd599-af25-4e06-b93a-5c80772706ab}" partId="{d1fe040a-fbc2-42a9-a51e-7893d6f5f25f}" radius="0.0277228" x="0.164036" y="0.414439" z="1.12743"/>
-        <node id="{576d245b-13c7-4cee-9f09-8f0be2536ba8}" partId="{c9744c6c-d6b8-4d0b-a921-891339b7ba8a}" radius="0.0237624" x="0.435583" y="0.466114" z="1.09675"/>
-        <node id="{5af7789b-56f1-4b49-85ba-c9f7a613544c}" partId="{f072d09d-fa51-4195-af8b-2f8028f9d347}" radius="0.005" x="0.191279" y="0.560396" z="1.10198"/>
-        <node id="{5c172840-2c4d-45d5-a3e3-c5d5222dc2d0}" partId="{287eb182-d4f6-4488-b54b-2f2f7bc09448}" radius="0.0475248" x="0.293069" y="0.746535" z="1.2604"/>
-        <node id="{61a00760-846e-4acd-9722-84f8d9fc8b85}" partId="{d1fe040a-fbc2-42a9-a51e-7893d6f5f25f}" radius="0.0277228" x="0.147864" y="0.372996" z="1.17367"/>
-        <node id="{627b7f8f-aeab-4784-a9b4-239dcedd4834}" partId="{e2c52a39-79a1-4911-9567-e7e2f3158a2a}" radius="0.00594061" x="0.10792" y="0.940163" z="1.2098"/>
-        <node id="{6b9caff1-c76e-4beb-a4f3-bca15def465a}" partId="{287eb182-d4f6-4488-b54b-2f2f7bc09448}" radius="0.00792079" x="0.293069" y="0.845545" z="1.48713"/>
-        <node id="{6bd858cc-f339-4121-8ecc-9edfb15ea87e}" partId="{b8b5f02e-525c-42f0-b32a-411a0745e9a0}" radius="0.10297" x="0.29505" y="0.59604" z="1.2198"/>
-        <node id="{6e264bb7-288c-48c7-821e-4e3b931a1463}" partId="{4ac8ccea-1d4a-4add-ba57-7f8a4e27a298}" radius="0.00792081" x="0.10792" y="0.940742" z="1.20846"/>
-        <node id="{70975535-554b-4423-880a-7ab9a7c5e86a}" partId="{058c9493-6015-42d2-9c6d-48b77901f5fa}" radius="0.005" x="0.149114" y="0.550135" z="1.09604"/>
-        <node id="{72147909-e35e-4fec-b725-8c5ca2c9e3ef}" partId="{0765c79c-1df2-4e09-9523-67fe5714af79}" radius="0.005" x="0.415842" y="0.568317" z="1.07822"/>
-        <node id="{73fe8262-12e7-44f0-bdb7-49d4ecc52037}" partId="{b8b5f02e-525c-42f0-b32a-411a0745e9a0}" radius="0.0792079" x="0.29505" y="0.287129" z="1.17624"/>
-        <node boneMark="Limb" id="{762f4db2-9c01-4a5f-88a4-f5b1da2eb8c1}" partId="{d1fe040a-fbc2-42a9-a51e-7893d6f5f25f}" radius="0.0316832" x="0.165257" y="0.326971" z="1.19516"/>
-        <node id="{7753f69a-7cd4-4e7c-8e39-e7d52313c684}" partId="{e9017b79-8e99-4f68-bd06-fc16caf4ba06}" radius="0.0237624" x="0.367058" y="0.0590543" z="1.19901"/>
-        <node boneMark="Joint" id="{7828969f-0f6f-4561-bf02-1adbf38fa667}" partId="{26590cc4-b328-4342-a49f-30430261108a}" radius="0.019802" x="0.398712" y="0.903059" z="1.23366"/>
-        <node id="{7d5a0494-f81c-4675-a6c1-46dc89dd6f7b}" partId="{6b54de1a-971a-4179-8cca-a6220e801d60}" radius="0.005" x="0.169497" y="0.542574" z="1.09604"/>
-        <node id="{82bcbf44-a453-4e61-84f3-15e264bb5a0c}" partId="{f41c515f-9ace-4a4e-9921-77b145777b64}" radius="0.0514851" x="0.293069" y="0.0594059" z="1.10693"/>
-        <node id="{852416e8-19a4-4f4c-99e4-f7db5f3d482a}" partId="{0765c79c-1df2-4e09-9523-67fe5714af79}" radius="0.005" x="0.415842" y="0.548515" z="1.07228"/>
-        <node id="{85d57f81-42ab-418d-95dc-310c174a1fa0}" partId="{7ef7efbc-c6af-42d9-8d41-14c32fedd8f5}" radius="0.019802" x="0.139614" y="0.922043" z="1.22377"/>
-        <node id="{8758c5d7-fd3f-461d-89e0-5c508f2254c7}" partId="{058c9493-6015-42d2-9c6d-48b77901f5fa}" radius="0.0079208" x="0.154306" y="0.516923" z="1.0901"/>
-        <node id="{8809dd23-22a8-4440-a664-cee27c495141}" partId="{d1fe040a-fbc2-42a9-a51e-7893d6f5f25f}" radius="0.039604" x="0.273291" y="0.263781" z="1.19061"/>
-        <node id="{882df3fd-d6dd-4470-bfb4-cbfd85adf2a7}" partId="{287eb182-d4f6-4488-b54b-2f2f7bc09448}" radius="0.0158416" x="0.293069" y="0.889109" z="1.39406"/>
-        <node id="{89c44059-487d-4930-a0c7-46ed28e01c47}" partId="{bc862a4b-4efc-4f86-ac94-2308ae5acf3e}" radius="0.005" x="0.474917" y="0.981808" z="1.21121"/>
-        <node id="{8a6b8dab-867d-4097-8c2b-1ab33de5ca9b}" partId="{6b54de1a-971a-4179-8cca-a6220e801d60}" radius="0.005" x="0.169497" y="0.562376" z="1.10198"/>
-        <node boneMark="Joint" id="{8ab72093-ec43-4473-8a2f-f66000152579}" partId="{d1fe040a-fbc2-42a9-a51e-7893d6f5f25f}" radius="0.019802" x="0.170283" y="0.483817" z="1.11268"/>
-        <node id="{8bbccf05-d775-4521-828a-3af10a57b1d2}" partId="{4ac8ccea-1d4a-4add-ba57-7f8a4e27a298}" radius="0.0079208" x="0.0861396" y="0.957333" z="1.22968"/>
-        <node boneMark="Joint" id="{8d2a8481-927d-46fc-b8f8-f6fc4d50b333}" partId="{7ef7efbc-c6af-42d9-8d41-14c32fedd8f5}" radius="0.0594059" x="0.128121" y="0.759157" z="1.18614"/>
-        <node id="{8e81ae2a-a0ed-4c67-a1ca-c51e25391c34}" partId="{b8b5f02e-525c-42f0-b32a-411a0745e9a0}" radius="0.0752475" x="0.29505" y="0.766337" z="1.23564"/>
-        <node id="{8fdb09e0-ab48-4445-93ab-25f16fbfdab6}" partId="{b8b5f02e-525c-42f0-b32a-411a0745e9a0}" radius="0.0871287" x="0.29505" y="0.508911" z="1.19406"/>
-        <node boneMark="Limb" id="{934ec578-7646-4d55-ad42-c15a46cb399e}" partId="{7ef7efbc-c6af-42d9-8d41-14c32fedd8f5}" radius="0.0594059" x="0.145463" y="0.652011" z="1.22575"/>
-        <node id="{99c37a2b-abce-4682-9d3a-c97add126155}" partId="{eb6e306a-30fd-429f-bc8c-1eb00d8f713a}" radius="0.0158416" x="0.348515" y="0.0534653" z="1.16238"/>
-        <node id="{9a23c830-ceac-43d4-8db2-0750030a0fff}" partId="{0765c79c-1df2-4e09-9523-67fe5714af79}" radius="0.0118812" x="0.431683" y="0.49703" z="1.08416"/>
-        <node id="{9be5d5ca-1e08-4580-8702-f4be99bb9477}" partId="{f072d09d-fa51-4195-af8b-2f8028f9d347}" radius="0.005" x="0.191279" y="0.540594" z="1.09604"/>
-        <node id="{9f03367f-8dad-448b-af0b-e32e9665b9b2}" partId="{67818f33-bad0-46bc-a0d0-3396d86585aa}" radius="0.0118812" x="0.439233" y="0.496215" z="1.08416"/>
-        <node id="{9f3bd1c1-1667-4af2-9a5f-370e3a9f25b2}" partId="{f4e9dff3-3551-429c-a3f1-07dc62ce347e}" radius="0.005" x="0.0801996" y="0.971876" z="1.19311"/>
-        <node id="{a5d4d89c-8518-4edf-98b0-32b10899f205}" partId="{67818f33-bad0-46bc-a0d0-3396d86585aa}" radius="0.005" x="0.458007" y="0.558056" z="1.07228"/>
-        <node id="{a688c511-46c4-4d96-a510-d6db80624857}" partId="{f7694588-d554-4ec6-9524-38ff293e4367}" radius="0.005" x="0.474917" y="0.981778" z="1.19311"/>
-        <node id="{a812109c-e7e3-4f07-9888-0ccc55203540}" partId="{e8ec7f03-6507-4d1a-87e8-9ed96e71e0eb}" radius="0.0079208" x="0.447197" y="0.952032" z="1.2028"/>
-        <node id="{a998949c-891d-4f13-8f4c-49019e4ee649}" partId="{e2c52a39-79a1-4911-9567-e7e2f3158a2a}" radius="0.0079208" x="0.0861396" y="0.955949" z="1.21069"/>
-        <node id="{af456e78-8eb0-48d4-b2c4-28b047e24c57}" partId="{b8b5f02e-525c-42f0-b32a-411a0745e9a0}" radius="0.0831683" x="0.29505" y="0.382178" z="1.17822"/>
-        <node id="{b39fc7b6-4ada-41bc-bc70-7f88378ab83a}" partId="{26590cc4-b328-4342-a49f-30430261108a}" radius="0.019802" x="0.426945" y="0.930406" z="1.22376"/>
-        <node id="{b90578f8-eede-4db1-8ca6-4136bab66547}" partId="{f072d09d-fa51-4195-af8b-2f8028f9d347}" radius="0.0118812" x="0.175438" y="0.489109" z="1.10792"/>
-        <node id="{bc56ff73-f7ba-4d65-833b-2d5fd6c7f45a}" partId="{e9017b79-8e99-4f68-bd06-fc16caf4ba06}" radius="0.0158416" x="0.376776" y="0.0963055" z="1.20198"/>
-        <node boneMark="Limb" id="{be44620e-a072-4be7-ae32-c406744865f9}" partId="{c9744c6c-d6b8-4d0b-a921-891339b7ba8a}" radius="0.0316832" x="0.418902" y="0.321923" z="1.17886"/>
-        <node id="{c1456b5f-d1fc-4b81-b12d-6b9dfd8d0215}" partId="{e8ec7f03-6507-4d1a-87e8-9ed96e71e0eb}" radius="0.005" x="0.474917" y="0.978599" z="1.17343"/>
-        <node id="{c2fdb72c-9d77-41e0-81c0-3ce6a8f6f0eb}" partId="{c9744c6c-d6b8-4d0b-a921-891339b7ba8a}" radius="0.039604" x="0.302946" y="0.26155" z="1.18956"/>
-        <node id="{c3551830-0d45-4ced-8836-defd541164f3}" partId="{e2c52a39-79a1-4911-9567-e7e2f3158a2a}" radius="0.005" x="0.0801996" y="0.971906" z="1.21121"/>
-        <node boneMark="Joint" id="{c43cb500-15b0-47b1-a5d7-8147c87058ba}" partId="{c9744c6c-d6b8-4d0b-a921-891339b7ba8a}" radius="0.0277228" x="0.441905" y="0.426255" z="1.10575"/>
-        <node id="{c61756b4-dca1-4057-b1ef-e6a072b8cadc}" partId="{ee77bfa8-8632-4756-aa6f-28f33ec6f026}" radius="0.005" x="0.0801996" y="0.968697" z="1.17343"/>
-        <node id="{c903bc71-adbb-4b9d-a32b-bd1e775c5a3c}" partId="{287eb182-d4f6-4488-b54b-2f2f7bc09448}" radius="0.019802" x="0.293069" y="0.873267" z="1.35842"/>
-        <node id="{ca523c07-ccab-4b4c-8d89-a1c6d464c60b}" partId="{6b54de1a-971a-4179-8cca-a6220e801d60}" radius="0.0118812" x="0.167517" y="0.489109" z="1.10792"/>
-        <node id="{cae3d9ad-2d4a-43c8-9bac-3850b2cbf2e8}" partId="{058c9493-6015-42d2-9c6d-48b77901f5fa}" radius="0.0118812" x="0.167888" y="0.488294" z="1.10792"/>
-        <node id="{cc89537c-b359-4965-85e6-b641d792488e}" partId="{287eb182-d4f6-4488-b54b-2f2f7bc09448}" radius="0.019802" x="0.293069" y="0.875248" z="1.42178"/>
-        <node id="{d4395f83-6252-44ba-9617-1db3c2c4ff46}" partId="{67818f33-bad0-46bc-a0d0-3396d86585aa}" radius="0.0079208" x="0.452815" y="0.524844" z="1.06634"/>
-        <node id="{d52788fa-d53a-403f-b2ac-bd13afd123c3}" partId="{f8cc0f6d-767f-4a95-822d-cce6f5803990}" radius="0.005" x="0.437624" y="0.550495" z="1.07228"/>
-        <node id="{d590a7f4-6db6-422b-8df7-604af06f3b3e}" partId="{ee77bfa8-8632-4756-aa6f-28f33ec6f026}" radius="0.0079208" x="0.10792" y="0.94213" z="1.2028"/>
-        <node id="{db689a44-0afa-4faf-9813-e47a1601ec58}" partId="{7460dafa-981d-4352-bf1c-351dae3bd5db}" radius="0.00990099" x="0.364357" y="0.0435644" z="1.13564"/>
-        <node id="{e0a57f91-68b6-499d-a38e-b6a13bee6a1d}" partId="{b392dc3e-2bee-46db-b29a-fe6d9b9692fb}" radius="0.005" x="0.474917" y="0.983137" z="1.2311"/>
-        <node id="{e3693f19-b531-48b2-879e-da8f4ba51ebf}" partId="{4ac8ccea-1d4a-4add-ba57-7f8a4e27a298}" radius="0.005" x="0.0801996" y="0.973235" z="1.2311"/>
-        <node id="{e40e15c5-5e77-4e9b-9054-06b2cf982b48}" partId="{0765c79c-1df2-4e09-9523-67fe5714af79}" radius="0.0118812" x="0.419802" y="0.524753" z="1.06634"/>
-        <node id="{e89d2626-3453-4440-9eef-59d6fe00ae98}" partId="{f41c515f-9ace-4a4e-9921-77b145777b64}" radius="0.0673267" x="0.293069" y="0.0772277" z="1.17228"/>
-        <node boneMark="Tail" id="{f173d300-648c-4cda-982c-129537669d08}" partId="{287eb182-d4f6-4488-b54b-2f2f7bc09448}" radius="0.0277228" x="0.293069" y="0.823762" z="1.31089"/>
-        <node id="{f2c0170d-876d-49bf-8a85-f8413f5522ee}" partId="{e9017b79-8e99-4f68-bd06-fc16caf4ba06}" radius="0.0118812" x="0.360579" y="0.107643" z="1.19604"/>
-        <node id="{f735d2d1-bfcd-498d-bd27-ad4053202497}" partId="{26590cc4-b328-4342-a49f-30430261108a}" radius="0.039604" x="0.343555" y="0.567979" z="1.20099"/>
-        <node id="{f87ce3f9-2631-4e73-a94f-1d2107f715f8}" partId="{f8cc0f6d-767f-4a95-822d-cce6f5803990}" radius="0.005" x="0.437624" y="0.570297" z="1.07822"/>
-        <node id="{fb8c58ac-23cb-45a8-b387-1f5beb4c3453}" partId="{f7694588-d554-4ec6-9524-38ff293e4367}" radius="0.0059406" x="0.447197" y="0.951167" z="1.20163"/>
-        <node id="{fecd6e3a-b725-451c-957c-ba206b0705be}" partId="{c9744c6c-d6b8-4d0b-a921-891339b7ba8a}" radius="0.0277228" x="0.458077" y="0.388138" z="1.15476"/>
+        <node id="{00da2bf5-53b1-495b-8f56-aaf78e74e9c2}" partId="{f91c020d-c342-4f19-b848-8c1254c3dda9}" radius="0.019802" x="0.293069" y="0.849505" z="1.45743"/>
+        <node id="{0369aab4-b9b7-4d53-bc43-118f226dadc9}" partId="{376d4ceb-2421-4379-9883-b26f87fbebcc}" radius="0.00594061" x="0.10792" y="0.940163" z="1.2098"/>
+        <node id="{05872b14-1e9a-4ba9-bbf8-0111c9100527}" partId="{55170a0c-ce15-4927-86d2-c063ec5dbf8e}" radius="0.0118812" x="0.360579" y="0.107643" z="1.19604"/>
+        <node id="{0891b311-79de-4ed7-8410-b3e43e675a9b}" partId="{63c8ff1f-4b6b-4f7f-95f1-327b3a70e007}" radius="0.0831683" x="0.29505" y="0.382178" z="1.17822"/>
+        <node boneMark="Limb" id="{08f7ae7b-869a-4f40-87a4-a575d78c2a60}" partId="{7ca78ca6-5cfd-4d2b-8db4-ee78cffe73ca}" radius="0.0594059" x="0.427115" y="0.655402" z="1.22574"/>
+        <node id="{0cecd379-b9d6-4568-9d5b-82720916a6e4}" partId="{67070663-8897-4b91-9885-c714173568b5}" radius="0.0118812" x="0.439604" y="0.524753" z="1.06634"/>
+        <node boneMark="Joint" id="{13bc43e1-b35e-4645-8fd5-e9e8b16d5fc8}" partId="{0d42f0c8-8799-4ad5-94bd-aa3df696b0db}" radius="0.0594059" x="0.128121" y="0.759157" z="1.18614"/>
+        <node id="{13d47f89-649c-4830-ba6d-fbf7f132793e}" partId="{15d827f2-6aa6-4d82-b86b-ee9aa8c7ea1e}" radius="0.0079208" x="0.154306" y="0.516923" z="1.0901"/>
+        <node id="{1e7e802c-3711-40c8-9dd6-bcded439cffe}" partId="{be69c229-6140-43bc-b0e3-477890ad14cd}" radius="0.0079208" x="0.468977" y="0.966347" z="1.19721"/>
+        <node id="{2073cdb1-77ef-4c51-8ca0-4ad4e0908d6c}" partId="{7ca78ca6-5cfd-4d2b-8db4-ee78cffe73ca}" radius="0.019802" x="0.454833" y="0.953807" z="1.2099"/>
+        <node boneMark="Limb" id="{22f4fc91-c657-497f-aef8-87d38a42e23f}" partId="{5c732d3a-4391-400b-902f-27ded165cc66}" radius="0.0316832" x="0.165257" y="0.326971" z="1.19516"/>
+        <node boneMark="Joint" id="{25b52681-7ee3-458e-8db2-bf784e1c101d}" partId="{7ca78ca6-5cfd-4d2b-8db4-ee78cffe73ca}" radius="0.019802" x="0.398712" y="0.903059" z="1.23366"/>
+        <node id="{25e5be7a-dbb8-4d8f-a0b7-441eef6c694f}" partId="{5c732d3a-4391-400b-902f-27ded165cc66}" radius="0.039604" x="0.273291" y="0.263781" z="1.19061"/>
+        <node id="{273c09b7-d466-496f-9d06-ef7fa267c9a7}" partId="{a4e12918-aa65-4ed4-a922-5bfc6df02299}" radius="0.0079208" x="0.452815" y="0.524844" z="1.06634"/>
+        <node id="{274f069c-1c6b-4837-8892-853ca652c07e}" partId="{45b44638-e0bc-4b2a-a457-2bf3e274d5a5}" radius="0.0079208" x="0.468977" y="0.963426" z="1.1784"/>
+        <node id="{27721191-b625-44bd-9253-cfc7df7b094b}" partId="{55170a0c-ce15-4927-86d2-c063ec5dbf8e}" radius="0.0158416" x="0.376776" y="0.0963055" z="1.20198"/>
+        <node id="{27fb4823-e857-4e61-a454-a12d30ecfb17}" partId="{be69c229-6140-43bc-b0e3-477890ad14cd}" radius="0.005" x="0.474917" y="0.981778" z="1.19311"/>
+        <node id="{286523f2-bf39-4f2c-aae7-dcf7223140e4}" partId="{9f5a0aac-b2ab-4aca-b64f-5e99f550454f}" radius="0.005" x="0.0801996" y="0.968697" z="1.17343"/>
+        <node id="{2b5dae5c-17e3-4632-ab54-36e21859fbca}" partId="{63c8ff1f-4b6b-4f7f-95f1-327b3a70e007}" radius="0.0792079" x="0.29505" y="0.287129" z="1.17624"/>
+        <node id="{2bec4749-11de-442a-862f-8d04d0c590ef}" partId="{63c8ff1f-4b6b-4f7f-95f1-327b3a70e007}" radius="0.0752475" x="0.29505" y="0.766337" z="1.23564"/>
+        <node boneMark="Joint" id="{2e54f33b-c879-4e40-83cc-75eeefaccdc3}" partId="{7ca78ca6-5cfd-4d2b-8db4-ee78cffe73ca}" radius="0.0594059" x="0.438783" y="0.770349" z="1.18812"/>
+        <node id="{37ad0424-3633-48a9-a2ea-bac83d140ec8}" partId="{7ca78ca6-5cfd-4d2b-8db4-ee78cffe73ca}" radius="0.0316832" x="0.428869" y="0.838801" z="1.22178"/>
+        <node id="{3c4fd98e-c829-43f2-9ae5-c3c1c064a0a8}" partId="{9c7c1196-60f9-4925-9eb2-eafc7a65c154}" radius="0.005" x="0.169497" y="0.542574" z="1.09604"/>
+        <node id="{3d6b06a7-af07-48e4-849b-204cb9af6a69}" partId="{0d42f0c8-8799-4ad5-94bd-aa3df696b0db}" radius="0.039604" x="0.254276" y="0.568263" z="1.20099"/>
+        <node boneMark="Limb" id="{3e59449e-b487-4708-8b3e-31242cb50d19}" partId="{0d42f0c8-8799-4ad5-94bd-aa3df696b0db}" radius="0.0594059" x="0.145463" y="0.652011" z="1.22575"/>
+        <node id="{419c8aca-4bb8-4bab-84e1-214b23a17a27}" partId="{be69c229-6140-43bc-b0e3-477890ad14cd}" radius="0.0059406" x="0.447197" y="0.951167" z="1.20163"/>
+        <node id="{457564d3-ccd0-465a-8d0b-b57c379666fd}" partId="{f91c020d-c342-4f19-b848-8c1254c3dda9}" radius="0.019802" x="0.293069" y="0.873267" z="1.35842"/>
+        <node id="{4946f825-7960-4653-9148-8d21e269c74e}" partId="{5c732d3a-4391-400b-902f-27ded165cc66}" radius="0.0277228" x="0.147864" y="0.372996" z="1.17367"/>
+        <node id="{4b8f93a6-db8f-47c8-8d37-777db444914c}" partId="{55170a0c-ce15-4927-86d2-c063ec5dbf8e}" radius="0.0237624" x="0.367058" y="0.0590543" z="1.19901"/>
+        <node id="{4c1029e5-c16d-442c-bc48-bdeed5d4706a}" partId="{0d42f0c8-8799-4ad5-94bd-aa3df696b0db}" radius="0.019802" x="0.109793" y="0.942925" z="1.20991"/>
+        <node boneMark="Joint" id="{50c1e61f-d968-4d2f-b4c2-9839326f49da}" partId="{5c732d3a-4391-400b-902f-27ded165cc66}" radius="0.0277228" x="0.164036" y="0.414439" z="1.12743"/>
+        <node id="{52a3dfd0-0bb7-4869-91b2-85c729e289b0}" partId="{15d827f2-6aa6-4d82-b86b-ee9aa8c7ea1e}" radius="0.0118812" x="0.167888" y="0.488294" z="1.10792"/>
+        <node id="{5492a461-1b28-47c8-811c-2542022eff84}" partId="{9c7c1196-60f9-4925-9eb2-eafc7a65c154}" radius="0.005" x="0.169497" y="0.562376" z="1.10198"/>
+        <node id="{5bad0bb7-9015-44cc-a57f-4200b20a84f0}" partId="{15d827f2-6aa6-4d82-b86b-ee9aa8c7ea1e}" radius="0.005" x="0.149114" y="0.550135" z="1.09604"/>
+        <node id="{5d85b12a-fdd1-42c7-83d4-027d77716fc8}" partId="{a4e12918-aa65-4ed4-a922-5bfc6df02299}" radius="0.0118812" x="0.439233" y="0.496215" z="1.08416"/>
+        <node id="{5eb58123-c8a7-4899-a34e-1c63df33e759}" partId="{9f5a0aac-b2ab-4aca-b64f-5e99f550454f}" radius="0.0079208" x="0.0861396" y="0.953524" z="1.1784"/>
+        <node id="{5ff7a560-b046-4ddd-b26e-7dfbcc1083b3}" partId="{99e075a7-5fd7-4a71-9227-9e20a59ea185}" radius="0.0118812" x="0.419802" y="0.524753" z="1.06634"/>
+        <node boneMark="Tail" id="{6186ebb3-84a4-4f2c-9992-b39a3831dea3}" partId="{f91c020d-c342-4f19-b848-8c1254c3dda9}" radius="0.0277228" x="0.293069" y="0.823762" z="1.31089"/>
+        <node id="{653c799b-da4a-4d0a-9be5-84bbe3ae7551}" partId="{67070663-8897-4b91-9885-c714173568b5}" radius="0.0118812" x="0.439604" y="0.49703" z="1.08416"/>
+        <node boneMark="Joint" id="{6954e176-c739-40d8-b1ef-8ce38884bba2}" partId="{0d42f0c8-8799-4ad5-94bd-aa3df696b0db}" radius="0.019802" x="0.170124" y="0.897261" z="1.23367"/>
+        <node id="{69d7c60a-eaa7-4d64-a09b-755fb3b4c9ae}" partId="{a21486ae-0033-493a-a368-97435ccb1cb4}" radius="0.0237624" x="0.435583" y="0.466114" z="1.09675"/>
+        <node id="{6b2d17cd-4fbe-4fd3-8f80-6c467d3811fd}" partId="{45b44638-e0bc-4b2a-a457-2bf3e274d5a5}" radius="0.0079208" x="0.447197" y="0.952032" z="1.2028"/>
+        <node id="{6e90e23a-c67b-4dc7-af76-2145793a9c3b}" partId="{45b44638-e0bc-4b2a-a457-2bf3e274d5a5}" radius="0.005" x="0.474917" y="0.978599" z="1.17343"/>
+        <node boneMark="Neck" id="{723a0584-b3a1-41a9-a9dc-96b21e733f1f}" partId="{63c8ff1f-4b6b-4f7f-95f1-327b3a70e007}" radius="0.0633663" x="0.293069" y="0.174257" z="1.20099"/>
+        <node id="{7305f345-84d5-44b5-af37-c48bf3925ca4}" partId="{63c8ff1f-4b6b-4f7f-95f1-327b3a70e007}" radius="0.0871287" x="0.29505" y="0.508911" z="1.19406"/>
+        <node boneMark="Neck" id="{78d00d69-b1b9-4fad-b0cc-87f9b6f1539f}" partId="{9e97fa08-dbba-426a-aa3b-6f29e8bb95d6}" radius="0.0554455" x="0.293069" y="0.172277" z="1.20792"/>
+        <node id="{78f63ac5-8fc8-40dd-80e4-b316b3b4b409}" partId="{55170a0c-ce15-4927-86d2-c063ec5dbf8e}" radius="0.0237624" x="0.380736" y="0.0716507" z="1.20297"/>
+        <node id="{79b757ee-5f39-4a71-8019-5e447daa9860}" partId="{f74fd24d-9ff2-41e7-92d2-cd35288dc3ed}" radius="0.0059406" x="0.10792" y="0.941265" z="1.20163"/>
+        <node id="{83e2e87a-2fd0-4df4-8278-28dd30482f67}" partId="{99e075a7-5fd7-4a71-9227-9e20a59ea185}" radius="0.005" x="0.415842" y="0.548515" z="1.07228"/>
+        <node boneMark="Joint" id="{8642cce7-c158-4559-99af-bf2caa121348}" partId="{a21486ae-0033-493a-a368-97435ccb1cb4}" radius="0.0277228" x="0.441905" y="0.426255" z="1.10575"/>
+        <node id="{8b71e1a2-e0bc-435d-9bd2-c096f60c7f23}" partId="{4ea0ecfd-c392-4507-8050-d06ad601af77}" radius="0.005" x="0.191279" y="0.560396" z="1.10198"/>
+        <node id="{8c4b6bea-3045-4b62-ba65-442c7c5548b9}" partId="{a21486ae-0033-493a-a368-97435ccb1cb4}" radius="0.0277228" x="0.458077" y="0.388138" z="1.15476"/>
+        <node id="{8f14d451-9613-48ef-8670-124223236475}" partId="{f4b4e0cc-7805-4239-a673-cb661f948655}" radius="0.00792081" x="0.10792" y="0.940742" z="1.20846"/>
+        <node id="{90b31f2b-f532-4402-b648-4d7717ce6853}" partId="{9c85058a-35a7-4cdc-97ea-046f5a5ca92e}" radius="0.00990099" x="0.364357" y="0.0435644" z="1.13564"/>
+        <node id="{944c7657-e978-4bb6-94ad-b03dbafae824}" partId="{5c732d3a-4391-400b-902f-27ded165cc66}" radius="0.0237624" x="0.170358" y="0.454828" z="1.12124"/>
+        <node id="{94c6dd69-3b99-4b25-b6dd-e8d80b579a7e}" partId="{78f6caf5-5d3a-418a-91aa-0f0fae24faeb}" radius="0.0158416" x="0.348515" y="0.0534653" z="1.16238"/>
+        <node id="{98e623f4-0c83-4da8-9ba8-c4d470f0c5f0}" partId="{b8d528e8-d65c-4d70-8021-ead11f6a743c}" radius="0.0079208" x="0.468977" y="0.967235" z="1.22968"/>
+        <node id="{9ad35b2b-3998-4822-9ecf-ff2425531106}" partId="{7ca78ca6-5cfd-4d2b-8db4-ee78cffe73ca}" radius="0.019802" x="0.426945" y="0.930406" z="1.22376"/>
+        <node id="{9bc24536-52b6-42c4-801e-6994069ae93b}" partId="{f4b4e0cc-7805-4239-a673-cb661f948655}" radius="0.0079208" x="0.0861396" y="0.957333" z="1.22968"/>
+        <node id="{9d2b664d-a090-4c9c-b8a3-6a07d8d0eb08}" partId="{9e97fa08-dbba-426a-aa3b-6f29e8bb95d6}" radius="0.0158416" x="0.293069" y="0.0613861" z="1.01287"/>
+        <node id="{a003f447-592d-45db-ac31-50e1b0dacb02}" partId="{a4e12918-aa65-4ed4-a922-5bfc6df02299}" radius="0.005" x="0.458007" y="0.558056" z="1.07228"/>
+        <node id="{a019b2a5-f245-4139-b1a2-6b9462326c51}" partId="{99e075a7-5fd7-4a71-9227-9e20a59ea185}" radius="0.0118812" x="0.431683" y="0.49703" z="1.08416"/>
+        <node id="{a43e38c8-aa79-4a6f-860b-65055bafcf62}" partId="{f4b4e0cc-7805-4239-a673-cb661f948655}" radius="0.005" x="0.0801996" y="0.973235" z="1.2311"/>
+        <node id="{a4935618-a165-4f84-aabf-c6d317c7a714}" partId="{67070663-8897-4b91-9885-c714173568b5}" radius="0.005" x="0.437624" y="0.550495" z="1.07228"/>
+        <node id="{a6567353-5b7a-4de0-8d0f-b916fd8a7287}" partId="{f74fd24d-9ff2-41e7-92d2-cd35288dc3ed}" radius="0.005" x="0.0801996" y="0.971876" z="1.19311"/>
+        <node id="{b078b7da-3fce-44fb-9dd0-9812f579991e}" partId="{376d4ceb-2421-4379-9883-b26f87fbebcc}" radius="0.005" x="0.0801996" y="0.971906" z="1.21121"/>
+        <node id="{b1a0502c-3215-461f-b003-4edd9a13562b}" partId="{99e075a7-5fd7-4a71-9227-9e20a59ea185}" radius="0.005" x="0.415842" y="0.568317" z="1.07822"/>
+        <node boneMark="Limb" id="{b1aec088-f56d-4b96-b34b-4602276b67f4}" partId="{a21486ae-0033-493a-a368-97435ccb1cb4}" radius="0.0316832" x="0.418902" y="0.321923" z="1.17886"/>
+        <node id="{b5c30ec3-4045-4502-911b-bc29b8a93496}" partId="{f74fd24d-9ff2-41e7-92d2-cd35288dc3ed}" radius="0.0079208" x="0.0861396" y="0.956445" z="1.19721"/>
+        <node id="{b5f2d7c5-24dd-41e3-9dce-47e8db05ca86}" partId="{63c8ff1f-4b6b-4f7f-95f1-327b3a70e007}" radius="0.10297" x="0.29505" y="0.59604" z="1.2198"/>
+        <node id="{b7f18151-9b31-4e34-ad41-3d7a0358b1cd}" partId="{b491ef4f-eb74-453a-b474-a7ae211f75c8}" radius="0.00594061" x="0.447197" y="0.950065" z="1.2098"/>
+        <node boneMark="Joint" id="{bb1434c7-51ad-4226-a6e0-2e0ee5c626d7}" partId="{5c732d3a-4391-400b-902f-27ded165cc66}" radius="0.019802" x="0.170283" y="0.483817" z="1.11268"/>
+        <node id="{bcb62c53-e5db-48ac-bbac-38159a42dfe3}" partId="{f91c020d-c342-4f19-b848-8c1254c3dda9}" radius="0.019802" x="0.293069" y="0.875248" z="1.42178"/>
+        <node id="{bfb08a33-feee-4741-9855-64add2915ec4}" partId="{4ea0ecfd-c392-4507-8050-d06ad601af77}" radius="0.005" x="0.191279" y="0.540594" z="1.09604"/>
+        <node id="{c03d7db7-dcba-4926-b22d-04bd37ed3b65}" partId="{b8d528e8-d65c-4d70-8021-ead11f6a743c}" radius="0.00792081" x="0.447197" y="0.950644" z="1.20846"/>
+        <node id="{c0535c22-dc84-4a77-84fc-d04b2d839575}" partId="{376d4ceb-2421-4379-9883-b26f87fbebcc}" radius="0.0079208" x="0.0861396" y="0.955949" z="1.21069"/>
+        <node id="{c0cb6b06-3876-4550-9c05-29110ae1f2d9}" partId="{b8d528e8-d65c-4d70-8021-ead11f6a743c}" radius="0.005" x="0.474917" y="0.983137" z="1.2311"/>
+        <node id="{c578f2fb-079d-43a6-873d-6e094e7df09a}" partId="{f91c020d-c342-4f19-b848-8c1254c3dda9}" radius="0.00792079" x="0.293069" y="0.845545" z="1.48713"/>
+        <node id="{ca7d354f-4221-4301-ba44-4ee63ac652de}" partId="{4ea0ecfd-c392-4507-8050-d06ad601af77}" radius="0.0118812" x="0.175438" y="0.489109" z="1.10792"/>
+        <node id="{cb6c4607-f520-4a2e-b282-e54e2cb8165a}" partId="{9e97fa08-dbba-426a-aa3b-6f29e8bb95d6}" radius="0.0673267" x="0.293069" y="0.0772277" z="1.17228"/>
+        <node id="{d00956a4-1164-40c6-b6f8-b601e504b7fd}" partId="{78f6caf5-5d3a-418a-91aa-0f0fae24faeb}" radius="0.0178218" x="0.330693" y="0.0495049" z="1.10792"/>
+        <node id="{d0250089-5e1a-43f7-b5f8-363642c7ae79}" partId="{0d42f0c8-8799-4ad5-94bd-aa3df696b0db}" radius="0.019802" x="0.139614" y="0.922043" z="1.22377"/>
+        <node id="{d2f082e0-13c8-4bc5-8c05-06cea9d46463}" partId="{9e97fa08-dbba-426a-aa3b-6f29e8bb95d6}" radius="0.0514851" x="0.293069" y="0.0594059" z="1.10693"/>
+        <node id="{d7dd0c55-e568-413d-99f0-cf91bcc4c534}" partId="{9c7c1196-60f9-4925-9eb2-eafc7a65c154}" radius="0.0118812" x="0.167517" y="0.516832" z="1.0901"/>
+        <node boneMark="Joint" id="{da8b7964-8659-41c2-aeee-aa3a1bf7d39c}" partId="{a21486ae-0033-493a-a368-97435ccb1cb4}" radius="0.019802" x="0.435658" y="0.494435" z="1.08619"/>
+        <node id="{df5207c8-afdb-4305-b322-33de580b7379}" partId="{63c8ff1f-4b6b-4f7f-95f1-327b3a70e007}" radius="0.0910891" x="0.29505" y="0.69901" z="1.22772"/>
+        <node id="{e73bbdbf-3ba8-4a70-99e0-bde3f7f1e5cd}" partId="{4ea0ecfd-c392-4507-8050-d06ad601af77}" radius="0.0118812" x="0.187319" y="0.516832" z="1.0901"/>
+        <node id="{e767a69a-e29d-4fbc-8e1d-615a443f40f5}" partId="{78f6caf5-5d3a-418a-91aa-0f0fae24faeb}" radius="0.0237624" x="0.348515" y="0.0475248" z="1.13366"/>
+        <node id="{ef8ef04c-4d5b-4663-a607-d1fa25995a0e}" partId="{a21486ae-0033-493a-a368-97435ccb1cb4}" radius="0.039604" x="0.302946" y="0.26155" z="1.18956"/>
+        <node id="{f06c29c3-080f-48d0-8ed5-e6fd3fabd51d}" partId="{9e97fa08-dbba-426a-aa3b-6f29e8bb95d6}" radius="0.0237624" x="0.293069" y="0.0653465" z="1.05149"/>
+        <node id="{f28a9edd-92c5-4e9e-9b69-e63ec9fd7f4f}" partId="{f91c020d-c342-4f19-b848-8c1254c3dda9}" radius="0.0158416" x="0.293069" y="0.889109" z="1.39406"/>
+        <node id="{f467cb17-e94e-43f1-822c-c95dcb59c4a1}" partId="{b491ef4f-eb74-453a-b474-a7ae211f75c8}" radius="0.005" x="0.474917" y="0.981808" z="1.21121"/>
+        <node id="{f53d85ae-0a06-47aa-8402-b5e0124cff66}" partId="{0d42f0c8-8799-4ad5-94bd-aa3df696b0db}" radius="0.0316832" x="0.145682" y="0.830619" z="1.22179"/>
+        <node id="{f700b2e2-8fa0-4ea7-87e7-9a668edc7749}" partId="{9f5a0aac-b2ab-4aca-b64f-5e99f550454f}" radius="0.0079208" x="0.10792" y="0.94213" z="1.2028"/>
+        <node id="{f89eea85-45e0-47d7-a009-96e2086d58fc}" partId="{f91c020d-c342-4f19-b848-8c1254c3dda9}" radius="0.0475248" x="0.293069" y="0.746535" z="1.2604"/>
+        <node id="{f94eabec-5f95-49f4-98ef-dd639838aaf0}" partId="{67070663-8897-4b91-9885-c714173568b5}" radius="0.005" x="0.437624" y="0.570297" z="1.07822"/>
+        <node id="{fa3fc46e-827d-47b3-b266-5ad5728d9247}" partId="{9c7c1196-60f9-4925-9eb2-eafc7a65c154}" radius="0.0118812" x="0.167517" y="0.489109" z="1.10792"/>
+        <node id="{fa9f59c1-5451-4e3f-839a-39ae13615edf}" partId="{b491ef4f-eb74-453a-b474-a7ae211f75c8}" radius="0.0079208" x="0.468977" y="0.965851" z="1.21069"/>
+        <node id="{feacc347-69c3-4789-b565-9ac8156fca41}" partId="{7ca78ca6-5cfd-4d2b-8db4-ee78cffe73ca}" radius="0.039604" x="0.343555" y="0.567979" z="1.20099"/>
     </nodes>
     <edges>
-        <edge from="{5c172840-2c4d-45d5-a3e3-c5d5222dc2d0}" id="{04ceec34-652e-4a9c-a0b2-b7cd13daa1a5}" partId="{287eb182-d4f6-4488-b54b-2f2f7bc09448}" to="{f173d300-648c-4cda-982c-129537669d08}"/>
-        <edge from="{c2fdb72c-9d77-41e0-81c0-3ce6a8f6f0eb}" id="{0cf7e942-6438-47d7-9c91-08e195a8546a}" partId="{c9744c6c-d6b8-4d0b-a921-891339b7ba8a}" to="{be44620e-a072-4be7-ae32-c406744865f9}"/>
-        <edge from="{3cedd934-bca0-4bec-b381-2148bda20561}" id="{0f842273-05dc-422a-8991-f6799a4670ca}" partId="{eb6e306a-30fd-429f-bc8c-1eb00d8f713a}" to="{3fc85fdd-7669-4d2d-b55d-da87927570ec}"/>
-        <edge from="{2ada202b-69a6-4dda-9723-b92260349f48}" id="{101325ca-f5cf-4215-898a-78cea463c441}" partId="{f072d09d-fa51-4195-af8b-2f8028f9d347}" to="{9be5d5ca-1e08-4580-8702-f4be99bb9477}"/>
-        <edge from="{e40e15c5-5e77-4e9b-9054-06b2cf982b48}" id="{12296b8f-5895-4a52-9bf6-329b0ed339c8}" partId="{0765c79c-1df2-4e09-9523-67fe5714af79}" to="{852416e8-19a4-4f4c-99e4-f7db5f3d482a}"/>
-        <edge from="{22654e03-9962-4a1e-b236-ddb3c68851a5}" id="{12dd6424-3b00-4944-8791-2c46d165f5cd}" partId="{bc862a4b-4efc-4f86-ac94-2308ae5acf3e}" to="{89c44059-487d-4930-a0c7-46ed28e01c47}"/>
-        <edge from="{a812109c-e7e3-4f07-9888-0ccc55203540}" id="{1330bc6c-73f2-490b-a23a-a4a2ac1d4b80}" partId="{e8ec7f03-6507-4d1a-87e8-9ed96e71e0eb}" to="{27e27665-a84d-4f2b-8fc7-1075b41f3cf7}"/>
-        <edge from="{35bfe345-429f-44d5-b3bf-19899985709c}" id="{145c1ea8-b97a-4a69-813f-4ad683860324}" partId="{f7694588-d554-4ec6-9524-38ff293e4367}" to="{a688c511-46c4-4d96-a510-d6db80624857}"/>
-        <edge from="{627b7f8f-aeab-4784-a9b4-239dcedd4834}" id="{18b978d0-0e74-44fa-975e-8ee95f560b23}" partId="{e2c52a39-79a1-4911-9567-e7e2f3158a2a}" to="{a998949c-891d-4f13-8f4c-49019e4ee649}"/>
-        <edge from="{c903bc71-adbb-4b9d-a32b-bd1e775c5a3c}" id="{1a32f63b-94da-4ddd-a274-b539a7489d16}" partId="{287eb182-d4f6-4488-b54b-2f2f7bc09448}" to="{882df3fd-d6dd-4470-bfb4-cbfd85adf2a7}"/>
-        <edge from="{475047f9-b326-4129-971d-6f4488833173}" id="{1e5a0d72-f1de-4d59-8b94-726a961911ae}" partId="{7ef7efbc-c6af-42d9-8d41-14c32fedd8f5}" to="{934ec578-7646-4d55-ad42-c15a46cb399e}"/>
-        <edge from="{8fdb09e0-ab48-4445-93ab-25f16fbfdab6}" id="{1f5c3b5b-4f96-4e6d-9e3b-6dba4431f445}" partId="{b8b5f02e-525c-42f0-b32a-411a0745e9a0}" to="{6bd858cc-f339-4121-8ecc-9edfb15ea87e}"/>
-        <edge from="{133e51db-1e09-49eb-af45-87be2f9a9cec}" id="{1f743df3-ed30-4309-b9a6-f2c2ddab14e7}" partId="{f8cc0f6d-767f-4a95-822d-cce6f5803990}" to="{0f492e81-b2e6-4019-9b41-768318026917}"/>
-        <edge from="{8bbccf05-d775-4521-828a-3af10a57b1d2}" id="{272f499c-ff96-4fed-9b08-e0e18b19b093}" partId="{4ac8ccea-1d4a-4add-ba57-7f8a4e27a298}" to="{e3693f19-b531-48b2-879e-da8f4ba51ebf}"/>
-        <edge from="{82bcbf44-a453-4e61-84f3-15e264bb5a0c}" id="{2b886273-74b1-4b97-832a-20a71c04620e}" partId="{f41c515f-9ace-4a4e-9921-77b145777b64}" to="{e89d2626-3453-4440-9eef-59d6fe00ae98}"/>
-        <edge from="{d52788fa-d53a-403f-b2ac-bd13afd123c3}" id="{2c6b81e2-1033-4a0d-9bfc-ff209c808905}" partId="{f8cc0f6d-767f-4a95-822d-cce6f5803990}" to="{f87ce3f9-2631-4e73-a94f-1d2107f715f8}"/>
-        <edge from="{55529cb2-a778-4bb3-837f-006e66746e43}" id="{34bbcfe9-ce12-4c05-96ed-85092aaf6416}" partId="{e9017b79-8e99-4f68-bd06-fc16caf4ba06}" to="{bc56ff73-f7ba-4d65-833b-2d5fd6c7f45a}"/>
-        <edge from="{fecd6e3a-b725-451c-957c-ba206b0705be}" id="{35c2e642-0460-49d3-af9e-fabec53ea213}" partId="{c9744c6c-d6b8-4d0b-a921-891339b7ba8a}" to="{c43cb500-15b0-47b1-a5d7-8147c87058ba}"/>
-        <edge from="{9a23c830-ceac-43d4-8db2-0750030a0fff}" id="{35d323f2-44f7-4483-9936-7549f5f5b2c9}" partId="{0765c79c-1df2-4e09-9523-67fe5714af79}" to="{e40e15c5-5e77-4e9b-9054-06b2cf982b48}"/>
-        <edge from="{882df3fd-d6dd-4470-bfb4-cbfd85adf2a7}" id="{395da14a-fae4-4ffb-9a70-7ae45f9a2a8e}" partId="{287eb182-d4f6-4488-b54b-2f2f7bc09448}" to="{cc89537c-b359-4965-85e6-b641d792488e}"/>
-        <edge from="{7828969f-0f6f-4561-bf02-1adbf38fa667}" id="{399364fd-6a19-420d-8cad-abdfa1e75c79}" partId="{26590cc4-b328-4342-a49f-30430261108a}" to="{b39fc7b6-4ada-41bc-bc70-7f88378ab83a}"/>
-        <edge from="{1ddd1fe3-feb4-4cf8-bc12-b03f58e737b3}" id="{481482ca-d387-4985-b88a-ab0259ebe821}" partId="{26590cc4-b328-4342-a49f-30430261108a}" to="{4d740798-bda7-493f-aa0c-466e1aa80efd}"/>
-        <edge from="{f173d300-648c-4cda-982c-129537669d08}" id="{4c938e56-cb2c-4335-b86a-c535fb1623d8}" partId="{287eb182-d4f6-4488-b54b-2f2f7bc09448}" to="{c903bc71-adbb-4b9d-a32b-bd1e775c5a3c}"/>
-        <edge from="{85d57f81-42ab-418d-95dc-310c174a1fa0}" id="{4ccd0864-f36f-4c0d-a39e-af876283f92d}" partId="{7ef7efbc-c6af-42d9-8d41-14c32fedd8f5}" to="{424d7c40-3833-44dc-8073-9a0dcfd52ae7}"/>
-        <edge from="{37aefe96-c7b9-4ef8-a207-395614b0869b}" id="{5155609e-c24b-4e94-aa42-404fa505a01b}" partId="{26590cc4-b328-4342-a49f-30430261108a}" to="{7828969f-0f6f-4561-bf02-1adbf38fa667}"/>
-        <edge from="{4bb132c2-f5d8-4678-963b-9d7a05307529}" id="{576248f3-d7d1-40e8-917c-ebeecac87eb9}" partId="{287eb182-d4f6-4488-b54b-2f2f7bc09448}" to="{6b9caff1-c76e-4beb-a4f3-bca15def465a}"/>
-        <edge from="{18b77cf3-fbcf-43f9-ba0c-6ffa093e5265}" id="{633d46e1-ee5c-48b0-925a-068923a1d2ee}" partId="{f4e9dff3-3551-429c-a3f1-07dc62ce347e}" to="{5463dc0a-8735-4f48-9fc5-9e555080655e}"/>
-        <edge from="{f735d2d1-bfcd-498d-bd27-ad4053202497}" id="{66e765f0-a131-4c78-8cf3-9e71763649ad}" partId="{26590cc4-b328-4342-a49f-30430261108a}" to="{1ddd1fe3-feb4-4cf8-bc12-b03f58e737b3}"/>
-        <edge from="{fb8c58ac-23cb-45a8-b387-1f5beb4c3453}" id="{6904a7ea-08b9-4fdc-9e25-89a5505369ab}" partId="{f7694588-d554-4ec6-9524-38ff293e4367}" to="{35bfe345-429f-44d5-b3bf-19899985709c}"/>
-        <edge from="{15c0a2f5-5163-4f60-babe-f97c05e3a373}" id="{6a667943-3e69-4ede-8f0c-41a931e1fd3b}" partId="{b392dc3e-2bee-46db-b29a-fe6d9b9692fb}" to="{0151500c-f95c-44ee-b1ca-6c20e7d04693}"/>
-        <edge from="{c43cb500-15b0-47b1-a5d7-8147c87058ba}" id="{6a704095-1fc9-494d-85cd-9ac183e28c4a}" partId="{c9744c6c-d6b8-4d0b-a921-891339b7ba8a}" to="{576d245b-13c7-4cee-9f09-8f0be2536ba8}"/>
-        <edge from="{3fc85fdd-7669-4d2d-b55d-da87927570ec}" id="{70b8ff43-8d44-4e86-9d2b-f6f910dda6e1}" partId="{eb6e306a-30fd-429f-bc8c-1eb00d8f713a}" to="{99c37a2b-abce-4682-9d3a-c97add126155}"/>
-        <edge from="{b39fc7b6-4ada-41bc-bc70-7f88378ab83a}" id="{74d65258-10ad-4247-83e6-a9aa6b861ff8}" partId="{26590cc4-b328-4342-a49f-30430261108a}" to="{3ff26e36-8d4d-49a3-b13e-02d245287184}"/>
-        <edge from="{55529cb2-a778-4bb3-837f-006e66746e43}" id="{78d3f20a-ce23-4591-8fe8-bfd857491caf}" partId="{e9017b79-8e99-4f68-bd06-fc16caf4ba06}" to="{7753f69a-7cd4-4e7c-8e39-e7d52313c684}"/>
-        <edge from="{576d245b-13c7-4cee-9f09-8f0be2536ba8}" id="{7aef6ae4-b4ad-4a91-80fa-bb6895142a7f}" partId="{c9744c6c-d6b8-4d0b-a921-891339b7ba8a}" to="{283f83d1-df90-4a74-8303-ed718c0c9891}"/>
-        <edge from="{6bd858cc-f339-4121-8ecc-9edfb15ea87e}" id="{82b7b2e9-7162-40a9-aade-8089948b2260}" partId="{b8b5f02e-525c-42f0-b32a-411a0745e9a0}" to="{2d4bdd0c-feac-457a-a38d-bdaf2ca4f4eb}"/>
-        <edge from="{2d4bdd0c-feac-457a-a38d-bdaf2ca4f4eb}" id="{83921edc-aec5-425b-9129-b3b56f684498}" partId="{b8b5f02e-525c-42f0-b32a-411a0745e9a0}" to="{8e81ae2a-a0ed-4c67-a1ca-c51e25391c34}"/>
-        <edge from="{5463dc0a-8735-4f48-9fc5-9e555080655e}" id="{8a78ada7-5795-49ff-94fa-6b3ce27b8edb}" partId="{f4e9dff3-3551-429c-a3f1-07dc62ce347e}" to="{9f3bd1c1-1667-4af2-9a5f-370e3a9f25b2}"/>
-        <edge from="{6e264bb7-288c-48c7-821e-4e3b931a1463}" id="{8cc7a69a-786e-430e-a980-860a7642822f}" partId="{4ac8ccea-1d4a-4add-ba57-7f8a4e27a298}" to="{8bbccf05-d775-4521-828a-3af10a57b1d2}"/>
-        <edge from="{bc56ff73-f7ba-4d65-833b-2d5fd6c7f45a}" id="{8f7824ca-20fd-4c28-ad55-131f872cb48e}" partId="{e9017b79-8e99-4f68-bd06-fc16caf4ba06}" to="{f2c0170d-876d-49bf-8a85-f8413f5522ee}"/>
-        <edge from="{cae3d9ad-2d4a-43c8-9bac-3850b2cbf2e8}" id="{96c4240e-70b9-44a6-9108-d75c370763ab}" partId="{058c9493-6015-42d2-9c6d-48b77901f5fa}" to="{8758c5d7-fd3f-461d-89e0-5c508f2254c7}"/>
-        <edge from="{a998949c-891d-4f13-8f4c-49019e4ee649}" id="{96f23805-db3c-4696-ba6b-520a1a567c2b}" partId="{e2c52a39-79a1-4911-9567-e7e2f3158a2a}" to="{c3551830-0d45-4ced-8836-defd541164f3}"/>
-        <edge from="{9be5d5ca-1e08-4580-8702-f4be99bb9477}" id="{9be833c5-cbe9-4f66-9859-ffb00e505e95}" partId="{f072d09d-fa51-4195-af8b-2f8028f9d347}" to="{5af7789b-56f1-4b49-85ba-c9f7a613544c}"/>
-        <edge from="{55fdd599-af25-4e06-b93a-5c80772706ab}" id="{9c5ec670-3455-428c-a107-bc5d67d20de9}" partId="{d1fe040a-fbc2-42a9-a51e-7893d6f5f25f}" to="{4250b96d-7d30-45e1-b7f1-d54704767a3b}"/>
-        <edge from="{8d2a8481-927d-46fc-b8f8-f6fc4d50b333}" id="{9e897071-3654-4267-955d-74d1a343245a}" partId="{7ef7efbc-c6af-42d9-8d41-14c32fedd8f5}" to="{2a110e23-ffd9-400c-89a8-bdca7e73e4ba}"/>
-        <edge from="{9f03367f-8dad-448b-af0b-e32e9665b9b2}" id="{9ffa1f4a-03f7-426b-ac78-edfb237fb38f}" partId="{67818f33-bad0-46bc-a0d0-3396d86585aa}" to="{d4395f83-6252-44ba-9617-1db3c2c4ff46}"/>
-        <edge from="{934ec578-7646-4d55-ad42-c15a46cb399e}" id="{a1566904-51f5-415d-bf86-e8e0defc0962}" partId="{7ef7efbc-c6af-42d9-8d41-14c32fedd8f5}" to="{8d2a8481-927d-46fc-b8f8-f6fc4d50b333}"/>
-        <edge from="{0151500c-f95c-44ee-b1ca-6c20e7d04693}" id="{a5980b98-e7e3-434a-a4d3-3ec7d81dc16b}" partId="{b392dc3e-2bee-46db-b29a-fe6d9b9692fb}" to="{e0a57f91-68b6-499d-a38e-b6a13bee6a1d}"/>
-        <edge from="{cc89537c-b359-4965-85e6-b641d792488e}" id="{ab7f8e48-604d-41d3-94b3-8f31fd071f00}" partId="{287eb182-d4f6-4488-b54b-2f2f7bc09448}" to="{4bb132c2-f5d8-4678-963b-9d7a05307529}"/>
-        <edge from="{2a110e23-ffd9-400c-89a8-bdca7e73e4ba}" id="{b10196be-40cb-482d-9a89-b3b7d2c523f8}" partId="{7ef7efbc-c6af-42d9-8d41-14c32fedd8f5}" to="{0812fc32-9dd6-4276-9d46-981a95b48ce5}"/>
-        <edge from="{8758c5d7-fd3f-461d-89e0-5c508f2254c7}" id="{b87af530-bba3-4550-b790-f929207461a6}" partId="{058c9493-6015-42d2-9c6d-48b77901f5fa}" to="{70975535-554b-4423-880a-7ab9a7c5e86a}"/>
-        <edge from="{36bc2d27-f229-4227-9058-3782dc1dd225}" id="{bcb44fd8-147f-4c3b-96b6-360c46f0d9ca}" partId="{ee77bfa8-8632-4756-aa6f-28f33ec6f026}" to="{c61756b4-dca1-4057-b1ef-e6a072b8cadc}"/>
-        <edge from="{06a02231-d0de-41f9-a141-5cf41a4d25c6}" id="{bdeb492a-369a-40f9-afde-4fc8136a8752}" partId="{f41c515f-9ace-4a4e-9921-77b145777b64}" to="{2d226726-5d82-4038-9fe5-d33b5b2c8b3e}"/>
-        <edge from="{af456e78-8eb0-48d4-b2c4-28b047e24c57}" id="{c0218200-6762-4845-a860-cd94d2277c93}" partId="{b8b5f02e-525c-42f0-b32a-411a0745e9a0}" to="{8fdb09e0-ab48-4445-93ab-25f16fbfdab6}"/>
-        <edge from="{73fe8262-12e7-44f0-bdb7-49d4ecc52037}" id="{c14ffb56-6ee8-4643-882e-68f6aa647ab8}" partId="{b8b5f02e-525c-42f0-b32a-411a0745e9a0}" to="{af456e78-8eb0-48d4-b2c4-28b047e24c57}"/>
-        <edge from="{7d5a0494-f81c-4675-a6c1-46dc89dd6f7b}" id="{c1ea0d90-77c2-430b-a718-0b9e1bad5fd6}" partId="{6b54de1a-971a-4179-8cca-a6220e801d60}" to="{8a6b8dab-867d-4097-8c2b-1ab33de5ca9b}"/>
-        <edge from="{e89d2626-3453-4440-9eef-59d6fe00ae98}" id="{c3b991fb-f69b-4143-acab-974775ae052b}" partId="{f41c515f-9ace-4a4e-9921-77b145777b64}" to="{02b6c993-97cc-4d70-b9f8-4cfba740e89c}"/>
-        <edge from="{d590a7f4-6db6-422b-8df7-604af06f3b3e}" id="{c58eca9f-194f-41e7-8cb4-5ec6668cccc3}" partId="{ee77bfa8-8632-4756-aa6f-28f33ec6f026}" to="{36bc2d27-f229-4227-9058-3782dc1dd225}"/>
-        <edge from="{ca523c07-ccab-4b4c-8d89-a1c6d464c60b}" id="{c7166bdc-7f76-4855-a82c-2149bd9fdd32}" partId="{6b54de1a-971a-4179-8cca-a6220e801d60}" to="{2739c556-711c-4263-871d-28e51bdd0d9c}"/>
-        <edge from="{be44620e-a072-4be7-ae32-c406744865f9}" id="{ccd55422-25f4-47c3-bda9-f5aaa3179aac}" partId="{c9744c6c-d6b8-4d0b-a921-891339b7ba8a}" to="{fecd6e3a-b725-451c-957c-ba206b0705be}"/>
-        <edge from="{4d740798-bda7-493f-aa0c-466e1aa80efd}" id="{cf1ef3bf-8827-453a-a345-c655c3203be0}" partId="{26590cc4-b328-4342-a49f-30430261108a}" to="{37aefe96-c7b9-4ef8-a207-395614b0869b}"/>
-        <edge from="{2739c556-711c-4263-871d-28e51bdd0d9c}" id="{d0d81cd5-a08e-4796-b59f-ee670472d7b6}" partId="{6b54de1a-971a-4179-8cca-a6220e801d60}" to="{7d5a0494-f81c-4675-a6c1-46dc89dd6f7b}"/>
-        <edge from="{8809dd23-22a8-4440-a664-cee27c495141}" id="{d6673318-e775-4dec-96bf-1fcf8a6f8954}" partId="{d1fe040a-fbc2-42a9-a51e-7893d6f5f25f}" to="{762f4db2-9c01-4a5f-88a4-f5b1da2eb8c1}"/>
-        <edge from="{0812fc32-9dd6-4276-9d46-981a95b48ce5}" id="{d67c78b5-d2bb-4c5d-b964-cf8f7d6c2785}" partId="{7ef7efbc-c6af-42d9-8d41-14c32fedd8f5}" to="{85d57f81-42ab-418d-95dc-310c174a1fa0}"/>
-        <edge from="{27e27665-a84d-4f2b-8fc7-1075b41f3cf7}" id="{d8257c98-d24d-423c-bcca-1924c40b86ab}" partId="{e8ec7f03-6507-4d1a-87e8-9ed96e71e0eb}" to="{c1456b5f-d1fc-4b81-b12d-6b9dfd8d0215}"/>
-        <edge from="{2d226726-5d82-4038-9fe5-d33b5b2c8b3e}" id="{ded162ea-5d32-4372-acfb-8c6b004afcd7}" partId="{f41c515f-9ace-4a4e-9921-77b145777b64}" to="{82bcbf44-a453-4e61-84f3-15e264bb5a0c}"/>
-        <edge from="{d4395f83-6252-44ba-9617-1db3c2c4ff46}" id="{e0e738cf-7828-4fb1-8727-b2af8b6e49ca}" partId="{67818f33-bad0-46bc-a0d0-3396d86585aa}" to="{a5d4d89c-8518-4edf-98b0-32b10899f205}"/>
-        <edge from="{b90578f8-eede-4db1-8ca6-4136bab66547}" id="{e553cea6-c68c-469c-a586-29a0ceed5c73}" partId="{f072d09d-fa51-4195-af8b-2f8028f9d347}" to="{2ada202b-69a6-4dda-9723-b92260349f48}"/>
-        <edge from="{852416e8-19a4-4f4c-99e4-f7db5f3d482a}" id="{e5a90790-1e71-42b0-9d8f-c2f1a306ca27}" partId="{0765c79c-1df2-4e09-9523-67fe5714af79}" to="{72147909-e35e-4fec-b725-8c5ca2c9e3ef}"/>
-        <edge from="{2a6f4c81-d474-4c80-973b-e5be8b67c812}" id="{e7cdb07d-8fbe-4172-a525-444125615d50}" partId="{b8b5f02e-525c-42f0-b32a-411a0745e9a0}" to="{73fe8262-12e7-44f0-bdb7-49d4ecc52037}"/>
-        <edge from="{4403a091-e87d-4e3c-b4ab-9c867ab9effe}" id="{e90f6efa-9619-471f-9e0c-057c2d8f7d4c}" partId="{bc862a4b-4efc-4f86-ac94-2308ae5acf3e}" to="{22654e03-9962-4a1e-b236-ddb3c68851a5}"/>
-        <edge from="{762f4db2-9c01-4a5f-88a4-f5b1da2eb8c1}" id="{f15a1513-b334-4d1e-8a60-9d78b93fd036}" partId="{d1fe040a-fbc2-42a9-a51e-7893d6f5f25f}" to="{61a00760-846e-4acd-9722-84f8d9fc8b85}"/>
-        <edge from="{0f492e81-b2e6-4019-9b41-768318026917}" id="{fe5600cc-035a-466f-8c87-80379b67b13d}" partId="{f8cc0f6d-767f-4a95-822d-cce6f5803990}" to="{d52788fa-d53a-403f-b2ac-bd13afd123c3}"/>
-        <edge from="{61a00760-846e-4acd-9722-84f8d9fc8b85}" id="{ff4927db-5752-45e2-b8b4-f6a3504e2ad3}" partId="{d1fe040a-fbc2-42a9-a51e-7893d6f5f25f}" to="{55fdd599-af25-4e06-b93a-5c80772706ab}"/>
-        <edge from="{4250b96d-7d30-45e1-b7f1-d54704767a3b}" id="{ffefb0e4-b078-43f1-a241-2b0031403a11}" partId="{d1fe040a-fbc2-42a9-a51e-7893d6f5f25f}" to="{8ab72093-ec43-4473-8a2f-f66000152579}"/>
+        <edge from="{b1aec088-f56d-4b96-b34b-4602276b67f4}" id="{03559a5e-eca9-4b9b-a085-1badd686158a}" partId="{a21486ae-0033-493a-a368-97435ccb1cb4}" to="{8c4b6bea-3045-4b62-ba65-442c7c5548b9}"/>
+        <edge from="{d00956a4-1164-40c6-b6f8-b601e504b7fd}" id="{0bc68793-fa92-4765-bf48-8479bc222295}" partId="{78f6caf5-5d3a-418a-91aa-0f0fae24faeb}" to="{e767a69a-e29d-4fbc-8e1d-615a443f40f5}"/>
+        <edge from="{e73bbdbf-3ba8-4a70-99e0-bde3f7f1e5cd}" id="{0c191a67-6941-4607-bbb6-2cfabf551aac}" partId="{4ea0ecfd-c392-4507-8050-d06ad601af77}" to="{bfb08a33-feee-4741-9855-64add2915ec4}"/>
+        <edge from="{0369aab4-b9b7-4d53-bc43-118f226dadc9}" id="{0c59cfdd-95a6-46f4-ab18-e088ed966657}" partId="{376d4ceb-2421-4379-9883-b26f87fbebcc}" to="{c0535c22-dc84-4a77-84fc-d04b2d839575}"/>
+        <edge from="{8f14d451-9613-48ef-8670-124223236475}" id="{0fb2cf45-efab-48dd-baa6-1ae968ac7dca}" partId="{f4b4e0cc-7805-4239-a673-cb661f948655}" to="{9bc24536-52b6-42c4-801e-6994069ae93b}"/>
+        <edge from="{a4935618-a165-4f84-aabf-c6d317c7a714}" id="{1df5cc4c-288a-4d34-bd8e-1f0eb01cba30}" partId="{67070663-8897-4b91-9885-c714173568b5}" to="{f94eabec-5f95-49f4-98ef-dd639838aaf0}"/>
+        <edge from="{b7f18151-9b31-4e34-ad41-3d7a0358b1cd}" id="{1fdac3a3-9ff7-4375-aa4c-aee852e9cba6}" partId="{b491ef4f-eb74-453a-b474-a7ae211f75c8}" to="{fa9f59c1-5451-4e3f-839a-39ae13615edf}"/>
+        <edge from="{653c799b-da4a-4d0a-9be5-84bbe3ae7551}" id="{23fea5bb-2593-477e-8518-756ac0ab113f}" partId="{67070663-8897-4b91-9885-c714173568b5}" to="{0cecd379-b9d6-4568-9d5b-82720916a6e4}"/>
+        <edge from="{f28a9edd-92c5-4e9e-9b69-e63ec9fd7f4f}" id="{2662a435-be76-40be-84b0-1632ffcf151a}" partId="{f91c020d-c342-4f19-b848-8c1254c3dda9}" to="{bcb62c53-e5db-48ac-bbac-38159a42dfe3}"/>
+        <edge from="{d0250089-5e1a-43f7-b5f8-363642c7ae79}" id="{27cad29d-2627-4b05-84d2-2750c54e60b5}" partId="{0d42f0c8-8799-4ad5-94bd-aa3df696b0db}" to="{4c1029e5-c16d-442c-bc48-bdeed5d4706a}"/>
+        <edge from="{5ff7a560-b046-4ddd-b26e-7dfbcc1083b3}" id="{29ef255d-fb26-46af-8acb-0731e1e182f3}" partId="{99e075a7-5fd7-4a71-9227-9e20a59ea185}" to="{83e2e87a-2fd0-4df4-8278-28dd30482f67}"/>
+        <edge from="{9d2b664d-a090-4c9c-b8a3-6a07d8d0eb08}" id="{339d89cb-a895-456a-8efe-9c80c47fa0fc}" partId="{9e97fa08-dbba-426a-aa3b-6f29e8bb95d6}" to="{f06c29c3-080f-48d0-8ed5-e6fd3fabd51d}"/>
+        <edge from="{d7dd0c55-e568-413d-99f0-cf91bcc4c534}" id="{39358088-3f7b-400e-886b-01576860291d}" partId="{9c7c1196-60f9-4925-9eb2-eafc7a65c154}" to="{3c4fd98e-c829-43f2-9ae5-c3c1c064a0a8}"/>
+        <edge from="{98e623f4-0c83-4da8-9ba8-c4d470f0c5f0}" id="{3e3290b7-49b3-47a2-9bed-325b13b8f13f}" partId="{b8d528e8-d65c-4d70-8021-ead11f6a743c}" to="{c0cb6b06-3876-4550-9c05-29110ae1f2d9}"/>
+        <edge from="{cb6c4607-f520-4a2e-b282-e54e2cb8165a}" id="{457abb0d-0c84-4d74-9e94-bf366c3c341b}" partId="{9e97fa08-dbba-426a-aa3b-6f29e8bb95d6}" to="{78d00d69-b1b9-4fad-b0cc-87f9b6f1539f}"/>
+        <edge from="{0cecd379-b9d6-4568-9d5b-82720916a6e4}" id="{47a88fde-5580-411f-afef-edb3742e6b5d}" partId="{67070663-8897-4b91-9885-c714173568b5}" to="{a4935618-a165-4f84-aabf-c6d317c7a714}"/>
+        <edge from="{4946f825-7960-4653-9148-8d21e269c74e}" id="{4ee5c0b3-ac1e-4918-92ea-957b4f996fcc}" partId="{5c732d3a-4391-400b-902f-27ded165cc66}" to="{50c1e61f-d968-4d2f-b4c2-9839326f49da}"/>
+        <edge from="{3e59449e-b487-4708-8b3e-31242cb50d19}" id="{5480ad4e-1ec3-496c-8841-517dee20eff1}" partId="{0d42f0c8-8799-4ad5-94bd-aa3df696b0db}" to="{13bc43e1-b35e-4645-8fd5-e9e8b16d5fc8}"/>
+        <edge from="{8642cce7-c158-4559-99af-bf2caa121348}" id="{57eeedc3-4844-42f5-90d3-176d8b9a0ded}" partId="{a21486ae-0033-493a-a368-97435ccb1cb4}" to="{69d7c60a-eaa7-4d64-a09b-755fb3b4c9ae}"/>
+        <edge from="{69d7c60a-eaa7-4d64-a09b-755fb3b4c9ae}" id="{5bdecde8-59e6-4c52-bf16-775df40f8207}" partId="{a21486ae-0033-493a-a368-97435ccb1cb4}" to="{da8b7964-8659-41c2-aeee-aa3a1bf7d39c}"/>
+        <edge from="{27721191-b625-44bd-9253-cfc7df7b094b}" id="{5de6c308-5fa9-48a8-b3c4-173fbeb3c4d7}" partId="{55170a0c-ce15-4927-86d2-c063ec5dbf8e}" to="{05872b14-1e9a-4ba9-bbf8-0111c9100527}"/>
+        <edge from="{a019b2a5-f245-4139-b1a2-6b9462326c51}" id="{604937ca-7961-439f-87a0-2979b2bba504}" partId="{99e075a7-5fd7-4a71-9227-9e20a59ea185}" to="{5ff7a560-b046-4ddd-b26e-7dfbcc1083b3}"/>
+        <edge from="{6954e176-c739-40d8-b1ef-8ce38884bba2}" id="{67791486-597e-407f-b7fa-fcdd952976d5}" partId="{0d42f0c8-8799-4ad5-94bd-aa3df696b0db}" to="{d0250089-5e1a-43f7-b5f8-363642c7ae79}"/>
+        <edge from="{79b757ee-5f39-4a71-8019-5e447daa9860}" id="{691fca9b-c174-480d-910a-084130308108}" partId="{f74fd24d-9ff2-41e7-92d2-cd35288dc3ed}" to="{b5c30ec3-4045-4502-911b-bc29b8a93496}"/>
+        <edge from="{5d85b12a-fdd1-42c7-83d4-027d77716fc8}" id="{69cf3563-054e-4b4e-88b3-9077aba0309c}" partId="{a4e12918-aa65-4ed4-a922-5bfc6df02299}" to="{273c09b7-d466-496f-9d06-ef7fa267c9a7}"/>
+        <edge from="{78f63ac5-8fc8-40dd-80e4-b316b3b4b409}" id="{69dd2419-2eae-4dad-9e0b-857099719a24}" partId="{55170a0c-ce15-4927-86d2-c063ec5dbf8e}" to="{27721191-b625-44bd-9253-cfc7df7b094b}"/>
+        <edge from="{ca7d354f-4221-4301-ba44-4ee63ac652de}" id="{71893b64-d141-4d64-a360-066f34d22cfe}" partId="{4ea0ecfd-c392-4507-8050-d06ad601af77}" to="{e73bbdbf-3ba8-4a70-99e0-bde3f7f1e5cd}"/>
+        <edge from="{fa9f59c1-5451-4e3f-839a-39ae13615edf}" id="{727a73c2-d792-449a-ad3d-2a2ea5807f3d}" partId="{b491ef4f-eb74-453a-b474-a7ae211f75c8}" to="{f467cb17-e94e-43f1-822c-c95dcb59c4a1}"/>
+        <edge from="{b5f2d7c5-24dd-41e3-9dce-47e8db05ca86}" id="{781b9387-2b6e-4aa2-b944-69b41906b89e}" partId="{63c8ff1f-4b6b-4f7f-95f1-327b3a70e007}" to="{df5207c8-afdb-4305-b322-33de580b7379}"/>
+        <edge from="{fa3fc46e-827d-47b3-b266-5ad5728d9247}" id="{783f01bb-a97c-4601-b1c0-5f6e17aa4e3a}" partId="{9c7c1196-60f9-4925-9eb2-eafc7a65c154}" to="{d7dd0c55-e568-413d-99f0-cf91bcc4c534}"/>
+        <edge from="{6186ebb3-84a4-4f2c-9992-b39a3831dea3}" id="{7846da51-81d8-434f-b461-08c0e56aeb40}" partId="{f91c020d-c342-4f19-b848-8c1254c3dda9}" to="{457564d3-ccd0-465a-8d0b-b57c379666fd}"/>
+        <edge from="{13bc43e1-b35e-4645-8fd5-e9e8b16d5fc8}" id="{7cc566fa-0f48-421c-bfa8-fe802bcf7837}" partId="{0d42f0c8-8799-4ad5-94bd-aa3df696b0db}" to="{f53d85ae-0a06-47aa-8402-b5e0124cff66}"/>
+        <edge from="{13d47f89-649c-4830-ba6d-fbf7f132793e}" id="{7cd31182-1d8a-4a5a-a860-8a57a92d780f}" partId="{15d827f2-6aa6-4d82-b86b-ee9aa8c7ea1e}" to="{5bad0bb7-9015-44cc-a57f-4200b20a84f0}"/>
+        <edge from="{feacc347-69c3-4789-b565-9ac8156fca41}" id="{7eab925b-db9e-4fe9-ae08-f953009c0cb2}" partId="{7ca78ca6-5cfd-4d2b-8db4-ee78cffe73ca}" to="{08f7ae7b-869a-4f40-87a4-a575d78c2a60}"/>
+        <edge from="{f700b2e2-8fa0-4ea7-87e7-9a668edc7749}" id="{80408bef-00bd-4a51-95a6-1960595f17ba}" partId="{9f5a0aac-b2ab-4aca-b64f-5e99f550454f}" to="{5eb58123-c8a7-4899-a34e-1c63df33e759}"/>
+        <edge from="{944c7657-e978-4bb6-94ad-b03dbafae824}" id="{80e8f33c-7074-4a24-85c0-47c2508c6349}" partId="{5c732d3a-4391-400b-902f-27ded165cc66}" to="{bb1434c7-51ad-4226-a6e0-2e0ee5c626d7}"/>
+        <edge from="{22f4fc91-c657-497f-aef8-87d38a42e23f}" id="{83113970-b08c-4f44-ad8f-f3ec8260fd73}" partId="{5c732d3a-4391-400b-902f-27ded165cc66}" to="{4946f825-7960-4653-9148-8d21e269c74e}"/>
+        <edge from="{83e2e87a-2fd0-4df4-8278-28dd30482f67}" id="{83308095-fe21-419b-8409-31ba40d9bb4f}" partId="{99e075a7-5fd7-4a71-9227-9e20a59ea185}" to="{b1a0502c-3215-461f-b003-4edd9a13562b}"/>
+        <edge from="{274f069c-1c6b-4837-8892-853ca652c07e}" id="{855fc650-6623-4dcf-a1cd-04fabd1ab5d3}" partId="{45b44638-e0bc-4b2a-a457-2bf3e274d5a5}" to="{6e90e23a-c67b-4dc7-af76-2145793a9c3b}"/>
+        <edge from="{6b2d17cd-4fbe-4fd3-8f80-6c467d3811fd}" id="{884e4588-1fd9-4a4a-8ded-7c571f02606a}" partId="{45b44638-e0bc-4b2a-a457-2bf3e274d5a5}" to="{274f069c-1c6b-4837-8892-853ca652c07e}"/>
+        <edge from="{f06c29c3-080f-48d0-8ed5-e6fd3fabd51d}" id="{8906f231-ed91-47ce-8959-3ea190eb7381}" partId="{9e97fa08-dbba-426a-aa3b-6f29e8bb95d6}" to="{d2f082e0-13c8-4bc5-8c05-06cea9d46463}"/>
+        <edge from="{c0535c22-dc84-4a77-84fc-d04b2d839575}" id="{91257c7b-4fc7-4dbf-baf7-d42b475856d4}" partId="{376d4ceb-2421-4379-9883-b26f87fbebcc}" to="{b078b7da-3fce-44fb-9dd0-9812f579991e}"/>
+        <edge from="{9bc24536-52b6-42c4-801e-6994069ae93b}" id="{94792102-b5f4-4986-9b3f-7ceed3d3f78a}" partId="{f4b4e0cc-7805-4239-a673-cb661f948655}" to="{a43e38c8-aa79-4a6f-860b-65055bafcf62}"/>
+        <edge from="{00da2bf5-53b1-495b-8f56-aaf78e74e9c2}" id="{97adbdb0-987f-46d3-815b-bb9c50f494d1}" partId="{f91c020d-c342-4f19-b848-8c1254c3dda9}" to="{c578f2fb-079d-43a6-873d-6e094e7df09a}"/>
+        <edge from="{bfb08a33-feee-4741-9855-64add2915ec4}" id="{98e36f0b-f0b7-4d76-b0ac-284d0c945aaa}" partId="{4ea0ecfd-c392-4507-8050-d06ad601af77}" to="{8b71e1a2-e0bc-435d-9bd2-c096f60c7f23}"/>
+        <edge from="{50c1e61f-d968-4d2f-b4c2-9839326f49da}" id="{9973a3e5-fc86-485c-84ac-c9bdddcef463}" partId="{5c732d3a-4391-400b-902f-27ded165cc66}" to="{944c7657-e978-4bb6-94ad-b03dbafae824}"/>
+        <edge from="{0891b311-79de-4ed7-8410-b3e43e675a9b}" id="{9baf5410-751e-44e2-a8dd-28f81d6b834b}" partId="{63c8ff1f-4b6b-4f7f-95f1-327b3a70e007}" to="{7305f345-84d5-44b5-af37-c48bf3925ca4}"/>
+        <edge from="{c03d7db7-dcba-4926-b22d-04bd37ed3b65}" id="{aa2acb4a-8151-44e4-83d9-af6588273f03}" partId="{b8d528e8-d65c-4d70-8021-ead11f6a743c}" to="{98e623f4-0c83-4da8-9ba8-c4d470f0c5f0}"/>
+        <edge from="{bcb62c53-e5db-48ac-bbac-38159a42dfe3}" id="{aae25104-da55-41df-a259-6124f8394c67}" partId="{f91c020d-c342-4f19-b848-8c1254c3dda9}" to="{00da2bf5-53b1-495b-8f56-aaf78e74e9c2}"/>
+        <edge from="{3d6b06a7-af07-48e4-849b-204cb9af6a69}" id="{b4182212-1b23-4672-b18f-99059a6e86e6}" partId="{0d42f0c8-8799-4ad5-94bd-aa3df696b0db}" to="{3e59449e-b487-4708-8b3e-31242cb50d19}"/>
+        <edge from="{25b52681-7ee3-458e-8db2-bf784e1c101d}" id="{b5b4b7f9-66bc-4312-b962-2e9b17431841}" partId="{7ca78ca6-5cfd-4d2b-8db4-ee78cffe73ca}" to="{9ad35b2b-3998-4822-9ecf-ff2425531106}"/>
+        <edge from="{08f7ae7b-869a-4f40-87a4-a575d78c2a60}" id="{b5d52537-0126-473f-b846-e9776e763d6f}" partId="{7ca78ca6-5cfd-4d2b-8db4-ee78cffe73ca}" to="{2e54f33b-c879-4e40-83cc-75eeefaccdc3}"/>
+        <edge from="{9ad35b2b-3998-4822-9ecf-ff2425531106}" id="{b5fcb83f-4aee-4d3d-a105-e22272e7556f}" partId="{7ca78ca6-5cfd-4d2b-8db4-ee78cffe73ca}" to="{2073cdb1-77ef-4c51-8ca0-4ad4e0908d6c}"/>
+        <edge from="{5eb58123-c8a7-4899-a34e-1c63df33e759}" id="{b84ac82e-48bb-4adb-bf52-d3fe98dc7fc3}" partId="{9f5a0aac-b2ab-4aca-b64f-5e99f550454f}" to="{286523f2-bf39-4f2c-aae7-dcf7223140e4}"/>
+        <edge from="{273c09b7-d466-496f-9d06-ef7fa267c9a7}" id="{b8aa3f35-e0e1-4490-98c3-d3edcc4234d7}" partId="{a4e12918-aa65-4ed4-a922-5bfc6df02299}" to="{a003f447-592d-45db-ac31-50e1b0dacb02}"/>
+        <edge from="{2b5dae5c-17e3-4632-ab54-36e21859fbca}" id="{bbe18ec3-0537-4d8f-8cdb-3bff15339b18}" partId="{63c8ff1f-4b6b-4f7f-95f1-327b3a70e007}" to="{0891b311-79de-4ed7-8410-b3e43e675a9b}"/>
+        <edge from="{25e5be7a-dbb8-4d8f-a0b7-441eef6c694f}" id="{bdb3e1c9-df23-4482-9acb-2ef1aaf4da86}" partId="{5c732d3a-4391-400b-902f-27ded165cc66}" to="{22f4fc91-c657-497f-aef8-87d38a42e23f}"/>
+        <edge from="{7305f345-84d5-44b5-af37-c48bf3925ca4}" id="{be288181-dd71-413e-a459-fbc568ebeacf}" partId="{63c8ff1f-4b6b-4f7f-95f1-327b3a70e007}" to="{b5f2d7c5-24dd-41e3-9dce-47e8db05ca86}"/>
+        <edge from="{ef8ef04c-4d5b-4663-a607-d1fa25995a0e}" id="{c174d83a-8896-4fc8-8263-7d3d45624d2f}" partId="{a21486ae-0033-493a-a368-97435ccb1cb4}" to="{b1aec088-f56d-4b96-b34b-4602276b67f4}"/>
+        <edge from="{b5c30ec3-4045-4502-911b-bc29b8a93496}" id="{c6dbe094-8524-4ddc-b4ee-50d4972c0d32}" partId="{f74fd24d-9ff2-41e7-92d2-cd35288dc3ed}" to="{a6567353-5b7a-4de0-8d0f-b916fd8a7287}"/>
+        <edge from="{78f63ac5-8fc8-40dd-80e4-b316b3b4b409}" id="{c9b8937c-b107-4b7d-bbca-ed9ff44511e6}" partId="{55170a0c-ce15-4927-86d2-c063ec5dbf8e}" to="{4b8f93a6-db8f-47c8-8d37-777db444914c}"/>
+        <edge from="{37ad0424-3633-48a9-a2ea-bac83d140ec8}" id="{cbc0c4f2-b380-4c9d-a558-ce0b8dc27df7}" partId="{7ca78ca6-5cfd-4d2b-8db4-ee78cffe73ca}" to="{25b52681-7ee3-458e-8db2-bf784e1c101d}"/>
+        <edge from="{3c4fd98e-c829-43f2-9ae5-c3c1c064a0a8}" id="{cc8fba76-684e-4dd1-bf89-4f7804bcd2b9}" partId="{9c7c1196-60f9-4925-9eb2-eafc7a65c154}" to="{5492a461-1b28-47c8-811c-2542022eff84}"/>
+        <edge from="{1e7e802c-3711-40c8-9dd6-bcded439cffe}" id="{cd25b802-82bf-4920-afa6-3f4e53b91467}" partId="{be69c229-6140-43bc-b0e3-477890ad14cd}" to="{27fb4823-e857-4e61-a454-a12d30ecfb17}"/>
+        <edge from="{8c4b6bea-3045-4b62-ba65-442c7c5548b9}" id="{d72ba288-db29-4126-a786-af95ba91ddc2}" partId="{a21486ae-0033-493a-a368-97435ccb1cb4}" to="{8642cce7-c158-4559-99af-bf2caa121348}"/>
+        <edge from="{f89eea85-45e0-47d7-a009-96e2086d58fc}" id="{de46426b-2eae-4d54-96de-edcd7d78c3b5}" partId="{f91c020d-c342-4f19-b848-8c1254c3dda9}" to="{6186ebb3-84a4-4f2c-9992-b39a3831dea3}"/>
+        <edge from="{df5207c8-afdb-4305-b322-33de580b7379}" id="{de74f905-1595-47cc-bc6f-fe10ce731622}" partId="{63c8ff1f-4b6b-4f7f-95f1-327b3a70e007}" to="{2bec4749-11de-442a-862f-8d04d0c590ef}"/>
+        <edge from="{457564d3-ccd0-465a-8d0b-b57c379666fd}" id="{e277cc73-c658-4704-896e-25ec0bd28d3d}" partId="{f91c020d-c342-4f19-b848-8c1254c3dda9}" to="{f28a9edd-92c5-4e9e-9b69-e63ec9fd7f4f}"/>
+        <edge from="{52a3dfd0-0bb7-4869-91b2-85c729e289b0}" id="{e68abb76-b443-44cc-8673-a54dba1a53ee}" partId="{15d827f2-6aa6-4d82-b86b-ee9aa8c7ea1e}" to="{13d47f89-649c-4830-ba6d-fbf7f132793e}"/>
+        <edge from="{e767a69a-e29d-4fbc-8e1d-615a443f40f5}" id="{e81d6458-fb42-4372-b45f-821f4e7869e3}" partId="{78f6caf5-5d3a-418a-91aa-0f0fae24faeb}" to="{94c6dd69-3b99-4b25-b6dd-e8d80b579a7e}"/>
+        <edge from="{419c8aca-4bb8-4bab-84e1-214b23a17a27}" id="{ede7f2e3-638d-4e9e-92ad-be7873d93dd4}" partId="{be69c229-6140-43bc-b0e3-477890ad14cd}" to="{1e7e802c-3711-40c8-9dd6-bcded439cffe}"/>
+        <edge from="{2e54f33b-c879-4e40-83cc-75eeefaccdc3}" id="{efe6dea3-8a74-4cb8-8185-b3f81abec92a}" partId="{7ca78ca6-5cfd-4d2b-8db4-ee78cffe73ca}" to="{37ad0424-3633-48a9-a2ea-bac83d140ec8}"/>
+        <edge from="{d2f082e0-13c8-4bc5-8c05-06cea9d46463}" id="{fe31b37d-778b-49a2-8e14-7d6fa7bf62b6}" partId="{9e97fa08-dbba-426a-aa3b-6f29e8bb95d6}" to="{cb6c4607-f520-4a2e-b282-e54e2cb8165a}"/>
+        <edge from="{f53d85ae-0a06-47aa-8402-b5e0124cff66}" id="{fefb02c4-a3b4-4a66-a909-9c0a44bd56d4}" partId="{0d42f0c8-8799-4ad5-94bd-aa3df696b0db}" to="{6954e176-c739-40d8-b1ef-8ce38884bba2}"/>
+        <edge from="{723a0584-b3a1-41a9-a9dc-96b21e733f1f}" id="{ffe15b4f-148a-4f9a-a782-7345734c42cf}" partId="{63c8ff1f-4b6b-4f7f-95f1-327b3a70e007}" to="{2b5dae5c-17e3-4632-ab54-36e21859fbca}"/>
     </edges>
     <parts>
-        <part chamfered="false" color="#b6afb4" disabled="false" id="{058c9493-6015-42d2-9c6d-48b77901f5fa}" locked="false" rounded="false" subdived="false" visible="true" xMirrored="false"/>
-        <part chamfered="false" color="#b6afb4" disabled="false" id="{0765c79c-1df2-4e09-9523-67fe5714af79}" locked="false" rounded="false" subdived="true" visible="true" xMirrored="false"/>
-        <part chamfered="false" color="#b6afb4" deformWidth="0.84" disabled="false" id="{26590cc4-b328-4342-a49f-30430261108a}" locked="false" rounded="false" subdived="true" visible="true" xMirrored="false"/>
-        <part chamfered="false" color="#b6afb4" deformThickness="0.84" disabled="false" id="{287eb182-d4f6-4488-b54b-2f2f7bc09448}" locked="false" rounded="false" subdived="true" visible="true" xMirrored="false"/>
-        <part chamfered="false" color="#b6afb4" disabled="false" id="{4ac8ccea-1d4a-4add-ba57-7f8a4e27a298}" locked="false" rounded="false" subdived="false" visible="true" xMirrored="false"/>
-        <part chamfered="false" color="#b6afb4" disabled="false" id="{67818f33-bad0-46bc-a0d0-3396d86585aa}" locked="false" rounded="false" subdived="false" visible="true" xMirrored="false"/>
-        <part chamfered="false" color="#b6afb4" disabled="false" id="{6b54de1a-971a-4179-8cca-a6220e801d60}" locked="false" rounded="false" subdived="true" visible="true" xMirrored="false"/>
-        <part chamfered="false" color="#2a292a" disabled="false" id="{7460dafa-981d-4352-bf1c-351dae3bd5db}" locked="false" rounded="false" subdived="true" visible="true" xMirrored="true"/>
-        <part chamfered="false" color="#b6afb4" deformWidth="0.84" disabled="false" id="{7ef7efbc-c6af-42d9-8d41-14c32fedd8f5}" locked="false" rounded="false" subdived="true" visible="true" xMirrored="false"/>
-        <part chamfered="false" color="#b6afb4" disabled="false" id="{b392dc3e-2bee-46db-b29a-fe6d9b9692fb}" locked="false" rounded="false" subdived="false" visible="true" xMirrored="false"/>
-        <part chamfered="false" color="#b6afb4" deformThickness="0.82" disabled="false" id="{b8b5f02e-525c-42f0-b32a-411a0745e9a0}" locked="false" rounded="true" subdived="true" visible="true" xMirrored="false"/>
-        <part chamfered="false" color="#b6afb4" disabled="false" id="{bc862a4b-4efc-4f86-ac94-2308ae5acf3e}" locked="false" rounded="false" subdived="false" visible="true" xMirrored="false"/>
-        <part chamfered="false" color="#b6afb4" deformWidth="0.91" disabled="false" id="{c9744c6c-d6b8-4d0b-a921-891339b7ba8a}" locked="false" rounded="true" subdived="true" visible="true" xMirrored="false"/>
-        <part chamfered="false" color="#b6afb4" deformWidth="0.91" disabled="false" id="{d1fe040a-fbc2-42a9-a51e-7893d6f5f25f}" locked="false" rounded="true" subdived="true" visible="true" xMirrored="false"/>
-        <part chamfered="false" color="#b6afb4" disabled="false" id="{e2c52a39-79a1-4911-9567-e7e2f3158a2a}" locked="false" rounded="false" subdived="false" visible="true" xMirrored="false"/>
-        <part chamfered="false" color="#b6afb4" disabled="false" id="{e8ec7f03-6507-4d1a-87e8-9ed96e71e0eb}" locked="false" rounded="false" subdived="false" visible="true" xMirrored="false"/>
-        <part chamfered="false" color="#b6afb4" cutRotation="0.26" deformWidth="0.38" disabled="false" id="{e9017b79-8e99-4f68-bd06-fc16caf4ba06}" locked="false" rounded="false" subdived="false" visible="true" xMirrored="true"/>
-        <part chamfered="false" color="#797477" disabled="false" id="{eb6e306a-30fd-429f-bc8c-1eb00d8f713a}" locked="false" rounded="true" subdived="true" visible="true" xMirrored="true"/>
-        <part chamfered="false" color="#b6afb4" disabled="false" id="{ee77bfa8-8632-4756-aa6f-28f33ec6f026}" locked="false" rounded="false" subdived="false" visible="true" xMirrored="false"/>
-        <part chamfered="false" color="#b6afb4" disabled="false" id="{f072d09d-fa51-4195-af8b-2f8028f9d347}" locked="false" rounded="false" subdived="true" visible="true" xMirrored="false"/>
-        <part chamfered="false" color="#b6afb4" deformThickness="1.16" disabled="false" id="{f41c515f-9ace-4a4e-9921-77b145777b64}" locked="false" rounded="true" subdived="true" visible="true" xMirrored="false"/>
-        <part chamfered="false" color="#b6afb4" disabled="false" id="{f4e9dff3-3551-429c-a3f1-07dc62ce347e}" locked="false" rounded="false" subdived="false" visible="true" xMirrored="false"/>
-        <part chamfered="false" color="#b6afb4" disabled="false" id="{f7694588-d554-4ec6-9524-38ff293e4367}" locked="false" rounded="false" subdived="false" visible="true" xMirrored="false"/>
-        <part chamfered="false" color="#b6afb4" disabled="false" id="{f8cc0f6d-767f-4a95-822d-cce6f5803990}" locked="false" rounded="false" subdived="true" visible="true" xMirrored="false"/>
+        <part chamfered="false" color="#b6afb4" deformWidth="0.84" disabled="false" id="{0d42f0c8-8799-4ad5-94bd-aa3df696b0db}" locked="false" rounded="false" subdived="true" visible="true" xMirrored="false"/>
+        <part chamfered="false" color="#b6afb4" disabled="false" id="{15d827f2-6aa6-4d82-b86b-ee9aa8c7ea1e}" locked="false" rounded="false" subdived="false" visible="true" xMirrored="false"/>
+        <part chamfered="false" color="#b6afb4" disabled="false" id="{376d4ceb-2421-4379-9883-b26f87fbebcc}" locked="false" rounded="false" subdived="false" visible="true" xMirrored="false"/>
+        <part chamfered="false" color="#b6afb4" disabled="false" id="{45b44638-e0bc-4b2a-a457-2bf3e274d5a5}" locked="false" rounded="false" subdived="false" visible="true" xMirrored="false"/>
+        <part chamfered="false" color="#b6afb4" disabled="false" id="{4ea0ecfd-c392-4507-8050-d06ad601af77}" locked="false" rounded="false" subdived="true" visible="true" xMirrored="false"/>
+        <part chamfered="false" color="#b6afb4" cutRotation="0.26" deformWidth="0.38" disabled="false" id="{55170a0c-ce15-4927-86d2-c063ec5dbf8e}" locked="false" rounded="false" subdived="false" visible="true" xMirrored="true"/>
+        <part chamfered="false" color="#b6afb4" deformWidth="0.91" disabled="false" id="{5c732d3a-4391-400b-902f-27ded165cc66}" locked="false" rounded="true" subdived="true" visible="true" xMirrored="false"/>
+        <part chamfered="false" color="#b6afb4" deformThickness="0.82" disabled="false" id="{63c8ff1f-4b6b-4f7f-95f1-327b3a70e007}" locked="false" rounded="true" subdived="true" visible="true" xMirrored="false"/>
+        <part chamfered="false" color="#b6afb4" disabled="false" id="{67070663-8897-4b91-9885-c714173568b5}" locked="false" rounded="false" subdived="true" visible="true" xMirrored="false"/>
+        <part chamfered="false" color="#797477" disabled="false" id="{78f6caf5-5d3a-418a-91aa-0f0fae24faeb}" locked="false" rounded="true" subdived="true" visible="true" xMirrored="true"/>
+        <part chamfered="false" color="#b6afb4" deformWidth="0.84" disabled="false" id="{7ca78ca6-5cfd-4d2b-8db4-ee78cffe73ca}" locked="false" rounded="false" subdived="true" visible="true" xMirrored="false"/>
+        <part chamfered="false" color="#b6afb4" disabled="false" id="{99e075a7-5fd7-4a71-9227-9e20a59ea185}" locked="false" rounded="false" subdived="true" visible="true" xMirrored="false"/>
+        <part chamfered="false" color="#b6afb4" disabled="false" id="{9c7c1196-60f9-4925-9eb2-eafc7a65c154}" locked="false" rounded="false" subdived="true" visible="true" xMirrored="false"/>
+        <part chamfered="false" color="#2a292a" disabled="false" id="{9c85058a-35a7-4cdc-97ea-046f5a5ca92e}" locked="false" rounded="false" subdived="true" visible="true" xMirrored="true"/>
+        <part chamfered="false" color="#b6afb4" deformThickness="1.16" disabled="false" id="{9e97fa08-dbba-426a-aa3b-6f29e8bb95d6}" locked="false" rounded="true" subdived="true" visible="true" xMirrored="false"/>
+        <part chamfered="false" color="#b6afb4" disabled="false" id="{9f5a0aac-b2ab-4aca-b64f-5e99f550454f}" locked="false" rounded="false" subdived="false" visible="true" xMirrored="false"/>
+        <part chamfered="false" color="#b6afb4" deformWidth="0.91" disabled="false" id="{a21486ae-0033-493a-a368-97435ccb1cb4}" locked="false" rounded="true" subdived="true" visible="true" xMirrored="false"/>
+        <part chamfered="false" color="#b6afb4" disabled="false" id="{a4e12918-aa65-4ed4-a922-5bfc6df02299}" locked="false" rounded="false" subdived="false" visible="true" xMirrored="false"/>
+        <part chamfered="false" color="#b6afb4" disabled="false" id="{b491ef4f-eb74-453a-b474-a7ae211f75c8}" locked="false" rounded="false" subdived="false" visible="true" xMirrored="false"/>
+        <part chamfered="false" color="#b6afb4" disabled="false" id="{b8d528e8-d65c-4d70-8021-ead11f6a743c}" locked="false" rounded="false" subdived="false" visible="true" xMirrored="false"/>
+        <part chamfered="false" color="#b6afb4" disabled="false" id="{be69c229-6140-43bc-b0e3-477890ad14cd}" locked="false" rounded="false" subdived="false" visible="true" xMirrored="false"/>
+        <part chamfered="false" color="#b6afb4" disabled="false" id="{f4b4e0cc-7805-4239-a673-cb661f948655}" locked="false" rounded="false" subdived="false" visible="true" xMirrored="false"/>
+        <part chamfered="false" color="#b6afb4" disabled="false" id="{f74fd24d-9ff2-41e7-92d2-cd35288dc3ed}" locked="false" rounded="false" subdived="false" visible="true" xMirrored="false"/>
+        <part chamfered="false" color="#b6afb4" deformThickness="0.84" disabled="false" id="{f91c020d-c342-4f19-b848-8c1254c3dda9}" locked="false" rounded="false" subdived="true" visible="true" xMirrored="false"/>
     </parts>
     <components>
-        <component combineMode="Normal" expanded="false" id="{2b00dbd2-d526-450b-a35a-92faac967fd8}" linkData="{f41c515f-9ace-4a4e-9921-77b145777b64}" linkDataType="partId"/>
-        <component combineMode="Normal" expanded="false" id="{9a175a3a-f93f-4c29-9728-e9919354e191}" linkData="{b8b5f02e-525c-42f0-b32a-411a0745e9a0}" linkDataType="partId"/>
-        <component combineMode="Normal" expanded="false" id="{3c42b6e3-7685-4de8-b2d1-aa3a37c5db6f}" linkData="{287eb182-d4f6-4488-b54b-2f2f7bc09448}" linkDataType="partId"/>
-        <component combineMode="Normal" expanded="false" id="{f9959bfa-1512-4458-a5bd-c20fe5ca2f85}" linkData="{d1fe040a-fbc2-42a9-a51e-7893d6f5f25f}" linkDataType="partId"/>
-        <component combineMode="Normal" expanded="false" id="{e78355fc-289b-40cf-9f22-88e85166cb06}" linkData="{c9744c6c-d6b8-4d0b-a921-891339b7ba8a}" linkDataType="partId"/>
-        <component combineMode="Normal" expanded="false" id="{84f038e6-1919-4ee5-90e8-a77a50b118b5}" linkData="{26590cc4-b328-4342-a49f-30430261108a}" linkDataType="partId"/>
-        <component combineMode="Normal" expanded="false" id="{4bbfa406-9174-415b-a462-ffed5a3c5cb2}" linkData="{7ef7efbc-c6af-42d9-8d41-14c32fedd8f5}" linkDataType="partId"/>
-        <component combineMode="Normal" expanded="false" id="{746772fc-d0ef-4ffa-a020-78f4413e2c9f}" linkData="{0765c79c-1df2-4e09-9523-67fe5714af79}" linkDataType="partId"/>
-        <component combineMode="Normal" expanded="false" id="{818591f7-29be-47f8-8191-fb65e8526f6a}" linkData="{f8cc0f6d-767f-4a95-822d-cce6f5803990}" linkDataType="partId"/>
-        <component combineMode="Normal" expanded="false" id="{450a257f-e3a4-4de1-95ce-402a858f925d}" linkData="{67818f33-bad0-46bc-a0d0-3396d86585aa}" linkDataType="partId"/>
-        <component combineMode="Normal" expanded="false" id="{31287100-c5e6-4a62-bd90-211051a784e5}" linkData="{f072d09d-fa51-4195-af8b-2f8028f9d347}" linkDataType="partId"/>
-        <component combineMode="Normal" expanded="false" id="{cc15ddd5-89a7-4c69-8cfd-fe91f0201050}" linkData="{6b54de1a-971a-4179-8cca-a6220e801d60}" linkDataType="partId"/>
-        <component combineMode="Normal" expanded="false" id="{8b03404f-a91f-43e8-928a-71d437ef6153}" linkData="{058c9493-6015-42d2-9c6d-48b77901f5fa}" linkDataType="partId"/>
-        <component combineMode="Normal" expanded="false" id="{bab6d9f4-8937-4f1f-b9a1-66e138a0dd32}" linkData="{b392dc3e-2bee-46db-b29a-fe6d9b9692fb}" linkDataType="partId"/>
-        <component combineMode="Normal" expanded="false" id="{6d311496-98b4-44c1-84c9-36486b31bdc2}" linkData="{bc862a4b-4efc-4f86-ac94-2308ae5acf3e}" linkDataType="partId"/>
-        <component combineMode="Normal" expanded="false" id="{4570c432-926a-44be-b3ab-7dde34c3d9b0}" linkData="{e8ec7f03-6507-4d1a-87e8-9ed96e71e0eb}" linkDataType="partId"/>
-        <component combineMode="Normal" expanded="false" id="{143f5227-3258-4684-95fe-3a75efcc0b7f}" linkData="{f7694588-d554-4ec6-9524-38ff293e4367}" linkDataType="partId"/>
-        <component combineMode="Normal" expanded="false" id="{e43b2bce-7042-46be-aee8-62a1eccf4e1a}" linkData="{4ac8ccea-1d4a-4add-ba57-7f8a4e27a298}" linkDataType="partId"/>
-        <component combineMode="Normal" expanded="false" id="{3319aaaa-f8ed-4e6a-80a2-f5633ddd784a}" linkData="{e2c52a39-79a1-4911-9567-e7e2f3158a2a}" linkDataType="partId"/>
-        <component combineMode="Normal" expanded="false" id="{8c80b32d-d214-4a49-8932-166c915eb3bd}" linkData="{ee77bfa8-8632-4756-aa6f-28f33ec6f026}" linkDataType="partId"/>
-        <component combineMode="Normal" expanded="false" id="{27973b64-3d8c-4a54-9462-ae4fa908ff13}" linkData="{f4e9dff3-3551-429c-a3f1-07dc62ce347e}" linkDataType="partId"/>
-        <component combineMode="Normal" expanded="false" id="{21133d63-4b2e-46d8-aac8-7bf1416053c1}" linkData="{eb6e306a-30fd-429f-bc8c-1eb00d8f713a}" linkDataType="partId"/>
-        <component combineMode="Normal" expanded="false" id="{91bc68a2-d9aa-47ff-a1f2-64c5f8dcfdb8}" linkData="{e9017b79-8e99-4f68-bd06-fc16caf4ba06}" linkDataType="partId"/>
-        <component combineMode="Normal" expanded="false" id="{a052c109-e667-4091-a225-4b8ccdc19a43}" linkData="{7460dafa-981d-4352-bf1c-351dae3bd5db}" linkDataType="partId"/>
+        <component combineMode="Normal" expanded="false" id="{e12c968c-f801-4c31-a880-edc21b3ff516}" linkData="{9e97fa08-dbba-426a-aa3b-6f29e8bb95d6}" linkDataType="partId"/>
+        <component combineMode="Normal" expanded="false" id="{5be12cb0-48b7-4930-9c4a-b1c0a166d789}" linkData="{63c8ff1f-4b6b-4f7f-95f1-327b3a70e007}" linkDataType="partId"/>
+        <component combineMode="Normal" expanded="false" id="{1194bdd3-f1ef-453b-8bc3-11165b3d9b76}" linkData="{f91c020d-c342-4f19-b848-8c1254c3dda9}" linkDataType="partId"/>
+        <component combineMode="Normal" expanded="false" id="{0ddec56c-b324-4b3e-96ff-57d74f5d34b4}" linkData="{5c732d3a-4391-400b-902f-27ded165cc66}" linkDataType="partId"/>
+        <component combineMode="Normal" expanded="false" id="{1d996918-b6a8-4af0-bea5-814e87994aaf}" linkData="{a21486ae-0033-493a-a368-97435ccb1cb4}" linkDataType="partId"/>
+        <component combineMode="Normal" expanded="false" id="{1b12f6d6-e364-4bb4-99f4-aeedab2701af}" linkData="{7ca78ca6-5cfd-4d2b-8db4-ee78cffe73ca}" linkDataType="partId"/>
+        <component combineMode="Normal" expanded="false" id="{23e47f95-efa1-42c5-aa7f-bb68371158b4}" linkData="{0d42f0c8-8799-4ad5-94bd-aa3df696b0db}" linkDataType="partId"/>
+        <component combineMode="Normal" expanded="false" id="{a208f721-62f2-43fd-87ac-df9f72810716}" linkData="{99e075a7-5fd7-4a71-9227-9e20a59ea185}" linkDataType="partId"/>
+        <component combineMode="Normal" expanded="false" id="{becb21df-638b-439d-8588-f15fcb3f9910}" linkData="{67070663-8897-4b91-9885-c714173568b5}" linkDataType="partId"/>
+        <component combineMode="Normal" expanded="false" id="{a49d5e40-b96f-4b29-9c68-858e438bca39}" linkData="{a4e12918-aa65-4ed4-a922-5bfc6df02299}" linkDataType="partId"/>
+        <component combineMode="Normal" expanded="false" id="{068d40fd-a6bd-4c49-b819-5ae2a2cd5bb8}" linkData="{4ea0ecfd-c392-4507-8050-d06ad601af77}" linkDataType="partId"/>
+        <component combineMode="Normal" expanded="false" id="{1034856c-a689-4cb6-a78f-27b48619a7b4}" linkData="{9c7c1196-60f9-4925-9eb2-eafc7a65c154}" linkDataType="partId"/>
+        <component combineMode="Normal" expanded="false" id="{6eb285d1-5f87-44f4-8e4a-92b7ddb7a917}" linkData="{15d827f2-6aa6-4d82-b86b-ee9aa8c7ea1e}" linkDataType="partId"/>
+        <component combineMode="Normal" expanded="false" id="{a16c1681-b49c-4314-9fb6-dae0a105b162}" linkData="{b8d528e8-d65c-4d70-8021-ead11f6a743c}" linkDataType="partId"/>
+        <component combineMode="Normal" expanded="false" id="{9eff8548-85d0-4475-a3e6-27ca1f3d7fc5}" linkData="{b491ef4f-eb74-453a-b474-a7ae211f75c8}" linkDataType="partId"/>
+        <component combineMode="Normal" expanded="false" id="{dfcc3d5b-2c05-4f86-839d-00210a10917b}" linkData="{45b44638-e0bc-4b2a-a457-2bf3e274d5a5}" linkDataType="partId"/>
+        <component combineMode="Normal" expanded="false" id="{e26ea8f0-d000-4597-942e-fc59a997e826}" linkData="{be69c229-6140-43bc-b0e3-477890ad14cd}" linkDataType="partId"/>
+        <component combineMode="Normal" expanded="false" id="{20e6874f-762a-4360-b829-675d4d5b362f}" linkData="{f4b4e0cc-7805-4239-a673-cb661f948655}" linkDataType="partId"/>
+        <component combineMode="Normal" expanded="false" id="{c0299d34-798d-4ffd-ae6b-5907c9c0f992}" linkData="{376d4ceb-2421-4379-9883-b26f87fbebcc}" linkDataType="partId"/>
+        <component combineMode="Normal" expanded="false" id="{9891ca32-deb1-43aa-9927-19b2b24901a1}" linkData="{9f5a0aac-b2ab-4aca-b64f-5e99f550454f}" linkDataType="partId"/>
+        <component combineMode="Normal" expanded="false" id="{03815598-6cbc-4685-8440-1b5f24ab6ceb}" linkData="{f74fd24d-9ff2-41e7-92d2-cd35288dc3ed}" linkDataType="partId"/>
+        <component combineMode="Normal" expanded="false" id="{77bb3ffd-7e96-4791-a3b9-34576e6450ed}" linkData="{78f6caf5-5d3a-418a-91aa-0f0fae24faeb}" linkDataType="partId"/>
+        <component combineMode="Normal" expanded="false" id="{955d2039-7998-4228-a075-9a64aa3e21bb}" linkData="{55170a0c-ce15-4927-86d2-c063ec5dbf8e}" linkDataType="partId"/>
+        <component combineMode="Normal" expanded="false" id="{854a8681-670e-4723-ba06-84f68df9409f}" linkData="{9c85058a-35a7-4cdc-97ea-046f5a5ca92e}" linkDataType="partId"/>
     </components>
     <materials/>
     <poses>
-        <pose canvasImageId="{2f2388e0-b01a-43f8-81ca-846c14a7e4f3}" id="{e82758b3-ab26-4c68-b010-1a9c41b8dbdf}" name="walk">
+        <pose canvasImageId="{2f2388e0-b01a-43f8-81ca-846c14a7e4f3}" id="{522d869d-5567-4048-8072-ac017f81ae71}" name="walk">
             <frames>
                 <frame duration="0.04">
                     <parameters>
@@ -768,612 +768,14 @@ DUST3D 1.0 xml 0000000295
                 </frame>
             </frames>
         </pose>
-        <pose canvasImageId="{2f2388e0-b01a-43f8-81ca-846c14a7e4f3}" id="{bd567942-e01c-4889-8d19-e140419b586a}" name="walk2">
-            <frames>
-                <frame duration="0.04">
-                    <parameters>
-                        <parameter for="LeftLimb1_Joint1" fromX="-0.828451" fromY="0.81357" fromZ="1.49812" toX="-0.828039" toY="0.703616" toZ="1.50824"/>
-                        <parameter for="LeftLimb1_Joint2" fromX="-0.828039" fromY="0.703616" fromZ="1.50824" toX="-0.839576" toY="0.611292" toZ="1.48365"/>
-                        <parameter for="LeftLimb1_Joint3" fromX="-0.839576" fromY="0.611292" fromZ="1.48365" toX="-0.838154" toY="0.595466" toZ="1.53676"/>
-                        <parameter for="LeftLimb2_Joint1" fromX="-0.805622" fromY="0.953164" fromZ="1.48926" toX="-0.791583" toY="0.899869" toZ="1.48931"/>
-                        <parameter for="LeftLimb2_Joint2" fromX="-0.791583" fromY="0.899869" fromZ="1.48931" toX="-0.785307" toY="0.829277" toZ="1.49525"/>
-                        <parameter for="LeftLimb2_Joint3" fromX="-0.785307" fromY="0.829277" fromZ="1.49525" toX="-0.788581" toY="0.780861" toZ="1.50364"/>
-                        <parameter for="Neck_Joint1" fromX="-0.85184" fromY="1.00253" fromZ="1.50543" toX="-0.85184" toY="1.03074" toZ="1.55991"/>
-                        <parameter for="RightLimb1_Joint1" fromX="-0.877674" fromY="0.816848" fromZ="1.49156" toX="-0.878087" toY="0.710201" toZ="1.50168"/>
-                        <parameter for="RightLimb1_Joint2" fromX="-0.878087" fromY="0.710201" fromZ="1.50168" toX="-0.873161" toY="0.611264" toZ="1.47709"/>
-                        <parameter for="RightLimb1_Joint3" fromX="-0.873161" fromY="0.611264" fromZ="1.47709" toX="-0.874583" toY="0.595438" toZ="1.5302"/>
-                        <parameter for="RightLimb2_Joint1" fromX="-0.905427" fromY="0.953585" fromZ="1.49261" toX="-0.918366" toY="0.899262" toZ="1.49252"/>
-                        <parameter for="RightLimb2_Joint2" fromX="-0.918366" fromY="0.899262" fromZ="1.49252" toX="-0.920181" toY="0.829312" toZ="1.49853"/>
-                        <parameter for="RightLimb2_Joint3" fromX="-0.920181" fromY="0.829312" fromZ="1.49853" toX="-0.909543" toY="0.790739" toZ="1.50692"/>
-                        <parameter for="Spine01" fromX="-0.846282" fromY="0.779501" fromZ="1.48696" toX="-0.847651" toY="0.813845" toZ="1.49236"/>
-                        <parameter for="Spine02" fromX="-0.847651" fromY="0.813845" fromZ="1.49236" toX="-0.853062" toY="0.830339" toZ="1.50431"/>
-                        <parameter for="Spine1" fromX="-0.853062" fromY="0.830339" fromZ="1.50431" toX="-0.853062" toY="0.896822" toZ="1.497"/>
-                        <parameter for="Spine2" fromX="-0.853062" fromY="0.896822" fromZ="1.497" toX="-0.853062" toY="0.963376" toZ="1.49101"/>
-                        <parameter for="Spine3" fromX="-0.853062" fromY="0.963376" fromZ="1.49101" toX="-0.852452" toY="0.982996" toZ="1.49261"/>
-                        <parameter for="Spine4" fromX="-0.852452" fromY="0.982996" fromZ="1.49261" toX="-0.846282" toY="1.04225" toZ="1.50298"/>
-                        <parameter for="Tail_Joint1" fromX="-0.846282" fromY="0.779501" fromZ="1.46099" toX="-0.846282" toY="0.767114" toZ="1.38933"/>
-                    </parameters>
-                </frame>
-                <frame duration="0.04">
-                    <parameters>
-                        <parameter for="LeftLimb1_Joint1" fromX="-0.116976" fromY="0.81357" fromZ="0.789923" toX="-0.116564" toY="0.703616" toZ="0.800043"/>
-                        <parameter for="LeftLimb1_Joint2" fromX="-0.116564" fromY="0.703616" fromZ="0.800043" toX="-0.128101" toY="0.611292" toZ="0.775453"/>
-                        <parameter for="LeftLimb1_Joint3" fromX="-0.128101" fromY="0.611292" fromZ="0.775453" toX="-0.126679" toY="0.595466" toZ="0.828563"/>
-                        <parameter for="LeftLimb2_Joint1" fromX="-0.0941466" fromY="0.948372" fromZ="0.780129" toX="-0.0801076" toY="0.897156" toZ="0.794867"/>
-                        <parameter for="LeftLimb2_Joint2" fromX="-0.0801076" fromY="0.897156" fromZ="0.794867" toX="-0.0738316" toY="0.830935" toZ="0.820035"/>
-                        <parameter for="LeftLimb2_Joint3" fromX="-0.0738316" fromY="0.830935" fromZ="0.820035" toX="-0.0771056" toY="0.786708" toZ="0.841445"/>
-                        <parameter for="Neck_Joint1" fromX="-0.140365" fromY="1.00253" fromZ="0.797233" toX="-0.140365" toY="1.03074" toZ="0.85171"/>
-                        <parameter for="RightLimb1_Joint1" fromX="-0.166198" fromY="0.816848" fromZ="0.786642" toX="-0.166611" toY="0.710201" toZ="0.819713"/>
-                        <parameter for="RightLimb1_Joint2" fromX="-0.166611" fromY="0.710201" fromZ="0.819713" toX="-0.15838" toY="0.637439" toZ="0.772172"/>
-                        <parameter for="RightLimb1_Joint3" fromX="-0.15838" fromY="0.637439" fromZ="0.772172" toX="-0.163108" toY="0.611696" toZ="0.812059"/>
-                        <parameter for="RightLimb2_Joint1" fromX="-0.193951" fromY="0.953585" fromZ="0.784413" toX="-0.206891" toY="0.899262" toZ="0.784323"/>
-                        <parameter for="RightLimb2_Joint2" fromX="-0.206891" fromY="0.899262" fromZ="0.784323" toX="-0.208706" toY="0.829312" toZ="0.790333"/>
-                        <parameter for="RightLimb2_Joint3" fromX="-0.208706" fromY="0.829312" fromZ="0.790333" toX="-0.198067" toY="0.790739" toZ="0.798723"/>
-                        <parameter for="Spine01" fromX="-0.134807" fromY="0.779217" fromZ="0.775094" toX="-0.136176" toY="0.813561" toZ="0.780499"/>
-                        <parameter for="Spine02" fromX="-0.136176" fromY="0.813561" fromZ="0.780499" toX="-0.141587" toY="0.830056" toZ="0.792448"/>
-                        <parameter for="Spine1" fromX="-0.141587" fromY="0.830056" fromZ="0.792448" toX="-0.141587" toY="0.896754" toZ="0.787463"/>
-                        <parameter for="Spine2" fromX="-0.141587" fromY="0.896754" fromZ="0.787463" toX="-0.141587" toY="0.963477" toZ="0.783798"/>
-                        <parameter for="Spine3" fromX="-0.141587" fromY="0.963477" fromZ="0.783798" toX="-0.140977" toY="0.983029" toZ="0.786087"/>
-                        <parameter for="Spine4" fromX="-0.140977" fromY="0.983029" fromZ="0.786087" toX="-0.134807" toY="1.04196" toZ="0.791118"/>
-                        <parameter for="Tail_Joint1" fromX="-0.134807" fromY="0.779217" fromZ="0.749127" toX="-0.134807" toY="0.766831" toZ="0.677462"/>
-                    </parameters>
-                </frame>
-                <frame duration="0.04">
-                    <parameters>
-                        <parameter for="LeftLimb1_Joint1" fromX="0.594499" fromY="0.816849" fromZ="0.071889" toX="0.594911" toY="0.706895" toZ="0.0820091"/>
-                        <parameter for="LeftLimb1_Joint2" fromX="0.594911" fromY="0.706895" fromZ="0.0820091" toX="0.583374" toY="0.614571" toZ="0.0508616"/>
-                        <parameter for="LeftLimb1_Joint3" fromX="0.583374" fromY="0.614571" fromZ="0.0508616" toX="0.584796" toY="0.598745" toZ="0.103972"/>
-                        <parameter for="LeftLimb2_Joint1" fromX="0.617329" fromY="0.951132" fromZ="0.0639368" toX="0.631368" toY="0.900181" toZ="0.0795667"/>
-                        <parameter for="LeftLimb2_Joint2" fromX="0.631368" fromY="0.900181" fromZ="0.0795667" toX="0.637643" toY="0.83441" toZ="0.105887"/>
-                        <parameter for="LeftLimb2_Joint3" fromX="0.637643" fromY="0.83441" fromZ="0.105887" toX="0.634369" toY="0.790563" toZ="0.128065"/>
-                        <parameter for="Neck_Joint1" fromX="0.57111" fromY="1.00581" fromZ="0.0791991" toX="0.57111" toY="1.03402" toZ="0.133676"/>
-                        <parameter for="RightLimb1_Joint1" fromX="0.545277" fromY="0.820127" fromZ="0.0686082" toX="0.544864" toY="0.71348" toZ="0.111515"/>
-                        <parameter for="RightLimb1_Joint2" fromX="0.544864" fromY="0.71348" fromZ="0.111515" toX="0.549789" toY="0.630882" toZ="0.0607501"/>
-                        <parameter for="RightLimb1_Joint3" fromX="0.549789" fromY="0.630882" fromZ="0.0607501" toX="0.548367" toY="0.611751" toZ="0.0841088"/>
-                        <parameter for="RightLimb2_Joint1" fromX="0.517524" fromY="0.956864" fromZ="0.0663791" toX="0.504584" toY="0.902541" toZ="0.0662891"/>
-                        <parameter for="RightLimb2_Joint2" fromX="0.504584" fromY="0.902541" fromZ="0.0662891" toX="0.502769" toY="0.832591" toZ="0.0722991"/>
-                        <parameter for="RightLimb2_Joint3" fromX="0.502769" fromY="0.832591" fromZ="0.0722991" toX="0.513408" toY="0.794018" toZ="0.0806891"/>
-                        <parameter for="Spine01" fromX="0.576668" fromY="0.782621" fromZ="0.0621989" toX="0.575299" toY="0.816965" toZ="0.0676038"/>
-                        <parameter for="Spine02" fromX="0.575299" fromY="0.816965" fromZ="0.0676038" toX="0.569888" toY="0.83346" toZ="0.0795531"/>
-                        <parameter for="Spine1" fromX="0.569888" fromY="0.83346" fromZ="0.0795531" toX="0.569888" toY="0.900061" toZ="0.073405"/>
-                        <parameter for="Spine2" fromX="0.569888" fromY="0.900061" fromZ="0.073405" toX="0.569888" toY="0.96671" toZ="0.0685761"/>
-                        <parameter for="Spine3" fromX="0.569888" fromY="0.96671" fromZ="0.0685761" toX="0.570498" toY="0.986299" toZ="0.0705237"/>
-                        <parameter for="Spine4" fromX="0.570498" fromY="0.986299" fromZ="0.0705237" toX="0.576668" toY="1.04537" toZ="0.0782235"/>
-                        <parameter for="Tail_Joint1" fromX="0.576668" fromY="0.782621" fromZ="0.0362321" toX="0.576668" toY="0.770234" toZ="-0.0354328"/>
-                    </parameters>
-                </frame>
-                <frame duration="0.04">
-                    <parameters>
-                        <parameter for="LeftLimb1_Joint1" fromX="1.30597" fromY="0.816849" fromZ="-0.639588" toX="1.30639" toY="0.706895" toZ="-0.629468"/>
-                        <parameter for="LeftLimb1_Joint2" fromX="1.30639" fromY="0.706895" fromZ="-0.629468" toX="1.29485" toY="0.607959" toZ="-0.657309"/>
-                        <parameter for="LeftLimb1_Joint3" fromX="1.29485" fromY="0.607959" fromZ="-0.657309" toX="1.29627" toY="0.598745" toZ="-0.617422"/>
-                        <parameter for="LeftLimb2_Joint1" fromX="1.32612" fromY="0.954183" fromZ="-0.644097" toX="1.34227" toY="0.904495" toZ="-0.622249"/>
-                        <parameter for="LeftLimb2_Joint2" fromX="1.34227" fromY="0.904495" fromZ="-0.622249" toX="1.33739" toY="0.84418" toZ="-0.588325"/>
-                        <parameter for="LeftLimb2_Joint3" fromX="1.33739" fromY="0.84418" fromZ="-0.588325" toX="1.32144" toY="0.806215" toZ="-0.56132"/>
-                        <parameter for="Neck_Joint1" fromX="1.28259" fromY="1.00581" fromZ="-0.632278" toX="1.28259" toY="1.03402" toZ="-0.577801"/>
-                        <parameter for="RightLimb1_Joint1" fromX="1.25675" fromY="0.824308" fromZ="-0.638272" toX="1.2465" toY="0.722731" toZ="-0.584452"/>
-                        <parameter for="RightLimb1_Joint2" fromX="1.2465" fromY="0.722731" fromZ="-0.584452" toX="1.25799" toY="0.65364" toZ="-0.652352"/>
-                        <parameter for="RightLimb1_Joint3" fromX="1.25799" fromY="0.65364" fromZ="-0.652352" toX="1.25656" toY="0.624932" toZ="-0.622872"/>
-                        <parameter for="RightLimb2_Joint1" fromX="1.2346" fromY="0.955565" fromZ="-0.645098" toX="1.21605" toY="0.902892" toZ="-0.645188"/>
-                        <parameter for="RightLimb2_Joint2" fromX="1.21605" fromY="0.902892" fromZ="-0.645188" toX="1.20694" toY="0.833515" toZ="-0.639178"/>
-                        <parameter for="RightLimb2_Joint3" fromX="1.20694" fromY="0.833515" fromZ="-0.639178" toX="1.21348" toY="0.794041" toZ="-0.630788"/>
-                        <parameter for="Spine01" fromX="1.28814" fromY="0.782622" fromZ="-0.649278" toX="1.28677" toY="0.816966" toZ="-0.643873"/>
-                        <parameter for="Spine02" fromX="1.28677" fromY="0.816966" fromZ="-0.643873" toX="1.28136" toY="0.833461" toZ="-0.631924"/>
-                        <parameter for="Spine1" fromX="1.28136" fromY="0.833461" fromZ="-0.631924" toX="1.28136" toY="0.900062" toZ="-0.638072"/>
-                        <parameter for="Spine2" fromX="1.28136" fromY="0.900062" fromZ="-0.638072" toX="1.28136" toY="0.963404" toZ="-0.642901"/>
-                        <parameter for="Spine3" fromX="1.28136" fromY="0.963404" fromZ="-0.642901" toX="1.28197" toY="0.986299" toZ="-0.640954"/>
-                        <parameter for="Spine4" fromX="1.28197" fromY="0.986299" fromZ="-0.640954" toX="1.28814" toY="1.04537" toZ="-0.633254"/>
-                        <parameter for="Tail_Joint1" fromX="1.28814" fromY="0.782622" fromZ="-0.675245" toX="1.28814" toY="0.770235" toZ="-0.74691"/>
-                    </parameters>
-                </frame>
-                <frame duration="0.04">
-                    <parameters>
-                        <parameter for="LeftLimb1_Joint1" fromX="2.02002" fromY="0.813543" fromZ="-1.35033" toX="2.02044" toY="0.703589" toZ="-1.34021"/>
-                        <parameter for="LeftLimb1_Joint2" fromX="2.02044" fromY="0.703589" fromZ="-1.34021" toX="2.0089" toY="0.607959" toZ="-1.36475"/>
-                        <parameter for="LeftLimb1_Joint3" fromX="2.0089" fromY="0.607959" fromZ="-1.36475" toX="2.01032" toY="0.595439" toZ="-1.31825"/>
-                        <parameter for="LeftLimb2_Joint1" fromX="2.0428" fromY="0.94941" fromZ="-1.35089" toX="2.05724" toY="0.900212" toZ="-1.32732"/>
-                        <parameter for="LeftLimb2_Joint2" fromX="2.05724" fromY="0.900212" fromZ="-1.32732" toX="2.04855" toY="0.847115" toZ="-1.29131"/>
-                        <parameter for="LeftLimb2_Joint3" fromX="2.04855" fromY="0.847115" fromZ="-1.29131" toX="2.02821" toY="0.812335" toZ="-1.263"/>
-                        <parameter for="Neck_Joint1" fromX="1.99664" fromY="1.0025" fromZ="-1.34302" toX="1.99664" toY="1.03071" toZ="-1.28854"/>
-                        <parameter for="RightLimb1_Joint1" fromX="1.9708" fromY="0.819962" fromZ="-1.34795" toX="1.96055" toY="0.721341" toZ="-1.28888"/>
-                        <parameter for="RightLimb1_Joint2" fromX="1.96055" fromY="0.721341" fromZ="-1.28888" toX="1.97865" toY="0.66859" toZ="-1.36107"/>
-                        <parameter for="RightLimb1_Joint3" fromX="1.97865" fromY="0.66859" fromZ="-1.36107" toX="1.9673" toY="0.632247" toZ="-1.33641"/>
-                        <parameter for="RightLimb2_Joint1" fromX="1.95734" fromY="0.953345" fromZ="-1.35584" toX="1.93339" toY="0.902899" toZ="-1.35593"/>
-                        <parameter for="RightLimb2_Joint2" fromX="1.93339" fromY="0.902899" fromZ="-1.35593" toX="1.91708" toY="0.834855" toZ="-1.34992"/>
-                        <parameter for="RightLimb2_Joint3" fromX="1.91708" fromY="0.834855" fromZ="-1.34992" toX="1.91946" toY="0.794913" toZ="-1.34153"/>
-                        <parameter for="Spine01" fromX="1.99741" fromY="0.779299" fromZ="-1.36003" toX="1.99604" toY="0.813655" toZ="-1.35462"/>
-                        <parameter for="Spine02" fromX="1.99604" fromY="0.813655" fromZ="-1.35462" toX="1.99063" toY="0.830165" toZ="-1.34267"/>
-                        <parameter for="Spine1" fromX="1.99063" fromY="0.830165" fromZ="-1.34267" toX="1.99277" toY="0.896755" toZ="-1.34881"/>
-                        <parameter for="Spine2" fromX="1.99277" fromY="0.896755" fromZ="-1.34881" toX="1.9916" toY="0.963393" toZ="-1.35364"/>
-                        <parameter for="Spine3" fromX="1.9916" fromY="0.963393" fromZ="-1.35364" toX="1.99188" toY="0.98299" toZ="-1.3517"/>
-                        <parameter for="Spine4" fromX="1.99188" fromY="0.98299" fromZ="-1.3517" toX="1.99741" toY="1.04213" toZ="-1.344"/>
-                        <parameter for="Tail_Joint1" fromX="1.99741" fromY="0.779299" fromZ="-1.386" toX="1.99741" toY="0.766908" toZ="-1.45769"/>
-                    </parameters>
-                </frame>
-                <frame duration="0.04">
-                    <parameters>
-                        <parameter for="LeftLimb1_Joint1" fromX="-0.826261" fromY="0.413543" fromZ="1.49265" toX="-0.825841" toY="0.303589" toZ="1.50277"/>
-                        <parameter for="LeftLimb1_Joint2" fromX="-0.825841" fromY="0.303589" fromZ="1.50277" toX="-0.840687" toY="0.20796" toZ="1.48154"/>
-                        <parameter for="LeftLimb1_Joint3" fromX="-0.840687" fromY="0.20796" fromZ="1.48154" toX="-0.829349" toY="0.198745" toZ="1.52804"/>
-                        <parameter for="LeftLimb2_Joint1" fromX="-0.803483" fromY="0.54941" fromZ="1.49209" toX="-0.789041" toY="0.500212" toZ="1.51566"/>
-                        <parameter for="LeftLimb2_Joint2" fromX="-0.789041" fromY="0.500212" fromZ="1.51566" toX="-0.797731" toY="0.447115" toZ="1.55167"/>
-                        <parameter for="LeftLimb2_Joint3" fromX="-0.797731" fromY="0.447115" fromZ="1.55167" toX="-0.818071" toY="0.412335" toZ="1.57998"/>
-                        <parameter for="Neck_Joint1" fromX="-0.849641" fromY="0.6025" fromZ="1.49996" toX="-0.849641" toY="0.630713" toZ="1.55444"/>
-                        <parameter for="RightLimb1_Joint1" fromX="-0.875481" fromY="0.419962" fromZ="1.49503" toX="-0.885731" toY="0.327953" toZ="1.5541"/>
-                        <parameter for="RightLimb1_Joint2" fromX="-0.885731" fromY="0.327953" fromZ="1.5541" toX="-0.867631" toY="0.26859" toZ="1.48191"/>
-                        <parameter for="RightLimb1_Joint3" fromX="-0.867631" fromY="0.26859" fromZ="1.48191" toX="-0.878981" toY="0.232247" toZ="1.50657"/>
-                        <parameter for="RightLimb2_Joint1" fromX="-0.893255" fromY="0.551263" fromZ="1.48714" toX="-0.914536" toY="0.499633" toZ="1.48705"/>
-                        <parameter for="RightLimb2_Joint2" fromX="-0.914536" fromY="0.499633" fromZ="1.48705" toX="-0.927264" toY="0.430828" toZ="1.49306"/>
-                        <parameter for="RightLimb2_Joint3" fromX="-0.927264" fromY="0.430828" fromZ="1.49306" toX="-0.922799" toY="0.391066" toZ="1.50145"/>
-                        <parameter for="Spine01" fromX="-0.845563" fromY="0.379171" fromZ="1.48443" toX="-0.846933" toY="0.413528" toZ="1.48984"/>
-                        <parameter for="Spine02" fromX="-0.846933" fromY="0.413528" fromZ="1.48984" toX="-0.852343" toY="0.430039" toZ="1.50179"/>
-                        <parameter for="Spine1" fromX="-0.852343" fromY="0.430039" fromZ="1.50179" toX="-0.850201" toY="0.496726" toZ="1.4968"/>
-                        <parameter for="Spine2" fromX="-0.850201" fromY="0.496726" fromZ="1.4968" toX="-0.851365" toY="0.563439" toZ="1.49314"/>
-                        <parameter for="Spine3" fromX="-0.851365" fromY="0.563439" fromZ="1.49314" toX="-0.851097" toY="0.582999" toZ="1.49543"/>
-                        <parameter for="Spine4" fromX="-0.851097" fromY="0.582999" fromZ="1.49543" toX="-0.845563" toY="0.642011" toZ="1.50046"/>
-                        <parameter for="Tail_Joint1" fromX="-0.845563" fromY="0.379171" fromZ="1.45845" toX="-0.845563" toY="0.366781" toZ="1.38676"/>
-                    </parameters>
-                </frame>
-                <frame duration="0.04">
-                    <parameters>
-                        <parameter for="LeftLimb1_Joint1" fromX="-0.118823" fromY="0.413543" fromZ="0.781906" toX="-0.118403" toY="0.303589" toZ="0.792026"/>
-                        <parameter for="LeftLimb1_Joint2" fromX="-0.118403" fromY="0.303589" fromZ="0.792026" toX="-0.133249" toY="0.204654" toZ="0.770792"/>
-                        <parameter for="LeftLimb1_Joint3" fromX="-0.133249" fromY="0.204654" fromZ="0.770792" toX="-0.121911" toY="0.198745" toZ="0.807374"/>
-                        <parameter for="LeftLimb2_Joint1" fromX="-0.0960447" fromY="0.55118" fromZ="0.78216" toX="-0.0816031" toY="0.502834" toZ="0.807433"/>
-                        <parameter for="LeftLimb2_Joint2" fromX="-0.0816031" fromY="0.502834" fromZ="0.807433" toX="-0.090293" toY="0.451026" toZ="0.845274"/>
-                        <parameter for="LeftLimb2_Joint3" fromX="-0.090293" fromY="0.451026" fromZ="0.845274" toX="-0.110633" toY="0.417255" toZ="0.87478"/>
-                        <parameter for="Neck_Joint1" fromX="-0.142203" fromY="0.6025" fromZ="0.789216" toX="-0.142203" toY="0.630713" toZ="0.843693"/>
-                        <parameter for="RightLimb1_Joint1" fromX="-0.168043" fromY="0.419962" fromZ="0.784286" toX="-0.178293" toY="0.321341" toZ="0.843356"/>
-                        <parameter for="RightLimb1_Joint2" fromX="-0.178293" fromY="0.321341" fromZ="0.843356" toX="-0.160193" toY="0.26859" toZ="0.771166"/>
-                        <parameter for="RightLimb1_Joint3" fromX="-0.160193" fromY="0.26859" fromZ="0.771166" toX="-0.171543" toY="0.232247" toZ="0.795826"/>
-                        <parameter for="RightLimb2_Joint1" fromX="-0.185817" fromY="0.551263" fromZ="0.776396" toX="-0.207098" toY="0.499633" toZ="0.776306"/>
-                        <parameter for="RightLimb2_Joint2" fromX="-0.207098" fromY="0.499633" fromZ="0.776306" toX="-0.219826" toY="0.430828" toZ="0.782316"/>
-                        <parameter for="RightLimb2_Joint3" fromX="-0.219826" fromY="0.430828" fromZ="0.782316" toX="-0.215361" toY="0.391066" toZ="0.790706"/>
-                        <parameter for="Spine01" fromX="-0.136653" fromY="0.379097" fromZ="0.768548" toX="-0.138022" toY="0.413441" toZ="0.773953"/>
-                        <parameter for="Spine02" fromX="-0.138022" fromY="0.413441" fromZ="0.773953" toX="-0.143433" toY="0.429936" toZ="0.785902"/>
-                        <parameter for="Spine1" fromX="-0.143433" fromY="0.429936" fromZ="0.785902" toX="-0.143433" toY="0.496711" toZ="0.782082"/>
-                        <parameter for="Spine2" fromX="-0.143433" fromY="0.496711" fromZ="0.782082" toX="-0.143433" toY="0.563487" toZ="0.779582"/>
-                        <parameter for="Spine3" fromX="-0.143433" fromY="0.563487" fromZ="0.779582" toX="-0.142823" toY="0.582996" toZ="0.782212"/>
-                        <parameter for="Spine4" fromX="-0.142823" fromY="0.582996" fromZ="0.782212" toX="-0.136653" toY="0.641843" toZ="0.784572"/>
-                        <parameter for="Tail_Joint1" fromX="-0.136653" fromY="0.379097" fromZ="0.742581" toX="-0.136653" toY="0.36671" toZ="0.670916"/>
-                    </parameters>
-                </frame>
-                <frame duration="0.04">
-                    <parameters>
-                        <parameter for="LeftLimb1_Joint1" fromX="0.591921" fromY="0.406932" fromZ="0.0744684" toX="0.592341" toY="0.296978" toZ="0.0845886"/>
-                        <parameter for="LeftLimb1_Joint2" fromX="0.592341" fromY="0.296978" fromZ="0.0845886" toX="0.577495" toY="0.204655" toZ="0.0567425"/>
-                        <parameter for="LeftLimb1_Joint3" fromX="0.577495" fromY="0.204655" fromZ="0.0567425" toX="0.588833" toY="0.19544" toZ="0.106548"/>
-                        <parameter for="LeftLimb2_Joint1" fromX="0.614699" fromY="0.544569" fromZ="0.0747225" toX="0.629141" toY="0.496223" toZ="0.0999953"/>
-                        <parameter for="LeftLimb2_Joint2" fromX="0.629141" fromY="0.496223" fromZ="0.0999953" toX="0.620451" toY="0.444415" toZ="0.137836"/>
-                        <parameter for="LeftLimb2_Joint3" fromX="0.620451" fromY="0.444415" fromZ="0.137836" toX="0.600111" toY="0.410644" toZ="0.167342"/>
-                        <parameter for="Neck_Joint1" fromX="0.568541" fromY="0.595888" fromZ="0.0817785" toX="0.568541" toY="0.624102" toZ="0.136256"/>
-                        <parameter for="RightLimb1_Joint1" fromX="0.542701" fromY="0.413351" fromZ="0.0768485" toX="0.532451" toY="0.324647" toZ="0.132612"/>
-                        <parameter for="RightLimb1_Joint2" fromX="0.532451" fromY="0.324647" fromZ="0.132612" toX="0.550551" toY="0.268591" toZ="0.0604228"/>
-                        <parameter for="RightLimb1_Joint3" fromX="0.550551" fromY="0.268591" fromZ="0.0604228" toX="0.539201" toY="0.232248" toZ="0.0850828"/>
-                        <parameter for="RightLimb2_Joint1" fromX="0.53067" fromY="0.552887" fromZ="0.0689585" toX="0.505839" toY="0.502868" toZ="0.0688684"/>
-                        <parameter for="RightLimb2_Joint2" fromX="0.505839" fromY="0.502868" fromZ="0.0688684" toX="0.488342" toY="0.435118" toZ="0.0748785"/>
-                        <parameter for="RightLimb2_Joint3" fromX="0.488342" fromY="0.435118" fromZ="0.0748785" toX="0.490023" toY="0.395141" toZ="0.0832685"/>
-                        <parameter for="Spine01" fromX="0.574091" fromY="0.372486" fromZ="0.0578042" toX="0.572722" toY="0.40683" toZ="0.0632092"/>
-                        <parameter for="Spine02" fromX="0.572722" fromY="0.40683" fromZ="0.0632092" toX="0.567311" toY="0.423325" toZ="0.0751584"/>
-                        <parameter for="Spine1" fromX="0.567311" fromY="0.423325" fromZ="0.0751584" toX="0.567311" toY="0.4901" toZ="0.0713384"/>
-                        <parameter for="Spine2" fromX="0.567311" fromY="0.4901" fromZ="0.0713384" toX="0.567311" toY="0.556875" toZ="0.0688384"/>
-                        <parameter for="Spine3" fromX="0.567311" fromY="0.556875" fromZ="0.0688384" toX="0.567921" toY="0.576385" toZ="0.0714684"/>
-                        <parameter for="Spine4" fromX="0.567921" fromY="0.576385" fromZ="0.0714684" toX="0.574091" toY="0.635233" toZ="0.0738287"/>
-                        <parameter for="Tail_Joint1" fromX="0.574091" fromY="0.372486" fromZ="0.0318375" toX="0.574091" toY="0.360099" toZ="-0.0398276"/>
-                    </parameters>
-                </frame>
-                <frame duration="0.04">
-                    <parameters>
-                        <parameter for="LeftLimb1_Joint1" fromX="1.29936" fromY="0.406932" fromZ="-0.639582" toX="1.29978" toY="0.296978" toZ="-0.629462"/>
-                        <parameter for="LeftLimb1_Joint2" fromX="1.29978" fromY="0.296978" fromZ="-0.629462" toX="1.28493" toY="0.20796" toZ="-0.654002"/>
-                        <parameter for="LeftLimb1_Joint3" fromX="1.28493" fromY="0.20796" fromZ="-0.654002" toX="1.29627" toY="0.202052" toZ="-0.604196"/>
-                        <parameter for="LeftLimb2_Joint1" fromX="1.32214" fromY="0.547875" fromZ="-0.639328" toX="1.33658" toY="0.496223" toZ="-0.614055"/>
-                        <parameter for="LeftLimb2_Joint2" fromX="1.33658" fromY="0.496223" fromZ="-0.614055" toX="1.32789" toY="0.444415" toZ="-0.576214"/>
-                        <parameter for="LeftLimb2_Joint3" fromX="1.32789" fromY="0.444415" fromZ="-0.576214" toX="1.30755" toY="0.410644" toZ="-0.546708"/>
-                        <parameter for="Neck_Joint1" fromX="1.27598" fromY="0.595888" fromZ="-0.632272" toX="1.27598" toY="0.624102" toZ="-0.577794"/>
-                        <parameter for="RightLimb1_Joint1" fromX="1.25014" fromY="0.413351" fromZ="-0.637202" toX="1.24981" toY="0.321341" toZ="-0.584743"/>
-                        <parameter for="RightLimb1_Joint2" fromX="1.24981" fromY="0.321341" fromZ="-0.584743" toX="1.2613" toY="0.248756" toZ="-0.647016"/>
-                        <parameter for="RightLimb1_Joint3" fromX="1.2613" fromY="0.248756" fromZ="-0.647016" toX="1.24995" toY="0.212413" toZ="-0.619051"/>
-                        <parameter for="RightLimb2_Joint1" fromX="1.23567" fromY="0.554569" fromZ="-0.645092" toX="1.21439" toY="0.502939" toZ="-0.645182"/>
-                        <parameter for="RightLimb2_Joint2" fromX="1.21439" fromY="0.502939" fromZ="-0.645182" toX="1.20166" toY="0.434134" toZ="-0.639172"/>
-                        <parameter for="RightLimb2_Joint3" fromX="1.20166" fromY="0.434134" fromZ="-0.639172" toX="1.20613" toY="0.394372" toZ="-0.630782"/>
-                        <parameter for="Spine01" fromX="1.28153" fromY="0.372486" fromZ="-0.656246" toX="1.28016" toY="0.40683" toZ="-0.650841"/>
-                        <parameter for="Spine02" fromX="1.28016" fromY="0.40683" fromZ="-0.650841" toX="1.27475" toY="0.423325" toZ="-0.638892"/>
-                        <parameter for="Spine1" fromX="1.27475" fromY="0.423325" fromZ="-0.638892" toX="1.27475" toY="0.4901" toZ="-0.642712"/>
-                        <parameter for="Spine2" fromX="1.27475" fromY="0.4901" fromZ="-0.642712" toX="1.27474" toY="0.556875" toZ="-0.645212"/>
-                        <parameter for="Spine3" fromX="1.27474" fromY="0.556875" fromZ="-0.645212" toX="1.27536" toY="0.576386" toZ="-0.642582"/>
-                        <parameter for="Spine4" fromX="1.27536" fromY="0.576386" fromZ="-0.642582" toX="1.28153" toY="0.635233" toZ="-0.640222"/>
-                        <parameter for="Tail_Joint1" fromX="1.28153" fromY="0.372486" fromZ="-0.682213" toX="1.28153" toY="0.360099" toZ="-0.753878"/>
-                    </parameters>
-                </frame>
-                <frame duration="0.04">
-                    <parameters>
-                        <parameter for="LeftLimb1_Joint1" fromX="2.0101" fromY="0.410238" fromZ="-1.35032" toX="2.01052" toY="0.30359" toZ="-1.34351"/>
-                        <parameter for="LeftLimb1_Joint2" fromX="2.01052" fromY="0.30359" fromZ="-1.34351" toX="1.99567" toY="0.207961" toZ="-1.36474"/>
-                        <parameter for="LeftLimb1_Joint3" fromX="1.99567" fromY="0.207961" fromZ="-1.36474" toX="2.00701" toY="0.198746" toZ="-1.31493"/>
-                        <parameter for="LeftLimb2_Joint1" fromX="2.03288" fromY="0.550146" fromZ="-1.35293" toX="2.04732" toY="0.500544" toZ="-1.33022"/>
-                        <parameter for="LeftLimb2_Joint2" fromX="2.04732" fromY="0.500544" fromZ="-1.33022" toX="2.03863" toY="0.446826" toZ="-1.29514"/>
-                        <parameter for="LeftLimb2_Joint3" fromX="2.03863" fromY="0.446826" fromZ="-1.29514" toX="2.01829" toY="0.411558" toZ="-1.26744"/>
-                        <parameter for="Neck_Joint1" fromX="1.98672" fromY="0.599194" fromZ="-1.34301" toX="1.98672" toY="0.627408" toZ="-1.28853"/>
-                        <parameter for="RightLimb1_Joint1" fromX="1.96088" fromY="0.416657" fromZ="-1.34794" toX="1.95394" toY="0.321341" toZ="-1.3054"/>
-                        <parameter for="RightLimb1_Joint2" fromX="1.95394" fromY="0.321341" fromZ="-1.3054" toX="1.97204" toY="0.225616" toZ="-1.35776"/>
-                        <parameter for="RightLimb1_Joint3" fromX="1.97204" fromY="0.225616" fromZ="-1.35776" toX="1.9673" toY="0.212414" toZ="-1.3331"/>
-                        <parameter for="RightLimb2_Joint1" fromX="1.93873" fromY="0.548954" fromZ="-1.35583" toX="1.92018" toY="0.496281" toZ="-1.35593"/>
-                        <parameter for="RightLimb2_Joint2" fromX="1.92018" fromY="0.496281" fromZ="-1.35593" toX="1.91107" toY="0.426904" toZ="-1.34992"/>
-                        <parameter for="RightLimb2_Joint3" fromX="1.91107" fromY="0.426904" fromZ="-1.34992" toX="1.91761" toY="0.38743" toZ="-1.34153"/>
-                        <parameter for="Spine01" fromX="1.99227" fromY="0.375791" fromZ="-1.36698" toX="1.9909" toY="0.410136" toZ="-1.36158"/>
-                        <parameter for="Spine02" fromX="1.9909" fromY="0.410136" fromZ="-1.36158" toX="1.98549" toY="0.426631" toZ="-1.34963"/>
-                        <parameter for="Spine1" fromX="1.98549" fromY="0.426631" fromZ="-1.34963" toX="1.98549" toY="0.493406" toZ="-1.35346"/>
-                        <parameter for="Spine2" fromX="1.98549" fromY="0.493406" fromZ="-1.35346" toX="1.98548" toY="0.560181" toZ="-1.35595"/>
-                        <parameter for="Spine3" fromX="1.98548" fromY="0.560181" fromZ="-1.35595" toX="1.9861" toY="0.579691" toZ="-1.35332"/>
-                        <parameter for="Spine4" fromX="1.9861" fromY="0.579691" fromZ="-1.35332" toX="1.99227" toY="0.63854" toZ="-1.35096"/>
-                        <parameter for="Tail_Joint1" fromX="1.99227" fromY="0.375791" fromZ="-1.39295" toX="1.99227" toY="0.363405" toZ="-1.46462"/>
-                    </parameters>
-                </frame>
-                <frame duration="0.04">
-                    <parameters>
-                        <parameter for="LeftLimb1_Joint1" fromX="-0.832875" fromY="0.000320673" fromZ="1.49596" toX="-0.832455" toY="-0.106328" toZ="1.50277"/>
-                        <parameter for="LeftLimb1_Joint2" fromX="-0.832455" fromY="-0.106328" fromZ="1.50277" toX="-0.847305" toY="-0.195134" toZ="1.47745"/>
-                        <parameter for="LeftLimb1_Joint3" fromX="-0.847305" fromY="-0.195134" fromZ="1.47745" toX="-0.835965" toY="-0.204772" toZ="1.52882"/>
-                        <parameter for="LeftLimb2_Joint1" fromX="-0.810097" fromY="0.143535" fromZ="1.49335" toX="-0.795655" toY="0.0906268" toZ="1.51606"/>
-                        <parameter for="LeftLimb2_Joint2" fromX="-0.795655" fromY="0.0906268" fromZ="1.51606" toX="-0.804345" toY="0.0369087" toZ="1.55114"/>
-                        <parameter for="LeftLimb2_Joint3" fromX="-0.804345" fromY="0.0369087" fromZ="1.55114" toX="-0.824685" toY="0.00164068" toZ="1.57884"/>
-                        <parameter for="Neck_Joint1" fromX="-0.856255" fromY="0.189277" fromZ="1.50327" toX="-0.856255" toY="0.217491" toZ="1.55775"/>
-                        <parameter for="RightLimb1_Joint1" fromX="-0.882095" fromY="0.00673962" fromZ="1.49834" toX="-0.889035" toY="-0.0885766" toZ="1.54087"/>
-                        <parameter for="RightLimb1_Joint2" fromX="-0.889035" fromY="-0.0885766" fromZ="1.54087" toX="-0.870935" toY="-0.164467" toZ="1.48522"/>
-                        <parameter for="RightLimb1_Joint3" fromX="-0.870935" fromY="-0.164467" fromZ="1.48522" toX="-0.875675" toY="-0.187587" toZ="1.50988"/>
-                        <parameter for="RightLimb2_Joint1" fromX="-0.904245" fromY="0.139037" fromZ="1.49045" toX="-0.922795" toY="0.0863638" toZ="1.49035"/>
-                        <parameter for="RightLimb2_Joint2" fromX="-0.922795" fromY="0.0863638" fromZ="1.49035" toX="-0.931905" toY="0.0169867" toZ="1.49636"/>
-                        <parameter for="RightLimb2_Joint3" fromX="-0.931905" fromY="0.0169867" fromZ="1.49636" toX="-0.925365" toY="-0.0224873" toZ="1.50475"/>
-                        <parameter for="Spine01" fromX="-0.854011" fromY="-0.0341263" fromZ="1.4793" toX="-0.85538" toY="0.000218332" toZ="1.4847"/>
-                        <parameter for="Spine02" fromX="-0.85538" fromY="0.000218332" fromZ="1.4847" toX="-0.860791" toY="0.0167137" toZ="1.49665"/>
-                        <parameter for="Spine1" fromX="-0.860791" fromY="0.0167137" fromZ="1.49665" toX="-0.860791" toY="0.0834888" toZ="1.49282"/>
-                        <parameter for="Spine2" fromX="-0.860791" fromY="0.0834888" fromZ="1.49282" toX="-0.860791" toY="0.150264" toZ="1.49033"/>
-                        <parameter for="Spine3" fromX="-0.860791" fromY="0.150264" fromZ="1.49033" toX="-0.860181" toY="0.169774" toZ="1.49296"/>
-                        <parameter for="Spine4" fromX="-0.860181" fromY="0.169774" fromZ="1.49296" toX="-0.854011" toY="0.228623" toZ="1.49532"/>
-                        <parameter for="Tail_Joint1" fromX="-0.854011" fromY="-0.0341263" fromZ="1.45333" toX="-0.854011" toY="-0.0465128" toZ="1.38166"/>
-                    </parameters>
-                </frame>
-                <frame duration="0.04">
-                    <parameters>
-                        <parameter for="LeftLimb1_Joint1" fromX="-0.128743" fromY="-0.00629091" fromZ="0.788522" toX="-0.128323" toY="-0.11294" toZ="0.795332"/>
-                        <parameter for="LeftLimb1_Joint2" fromX="-0.128323" fromY="-0.11294" fromZ="0.795332" toX="-0.12995" toY="-0.195346" toZ="0.767486"/>
-                        <parameter for="LeftLimb1_Joint3" fromX="-0.12995" fromY="-0.195346" fromZ="0.767486" toX="-0.11861" toY="-0.207867" toZ="0.820602"/>
-                        <parameter for="LeftLimb2_Joint1" fromX="-0.10927" fromY="0.140263" fromZ="0.78581" toX="-0.0915228" toY="0.085564" toZ="0.804111"/>
-                        <parameter for="LeftLimb2_Joint2" fromX="-0.0915228" fromY="0.085564" fromZ="0.804111" toX="-0.100213" toY="0.0289929" toZ="0.834375"/>
-                        <parameter for="LeftLimb2_Joint3" fromX="-0.100213" fromY="0.0289929" fromZ="0.834375" toX="-0.120553" toY="-0.00855505" toZ="0.845673"/>
-                        <parameter for="Neck_Joint1" fromX="-0.152123" fromY="0.182665" fromZ="0.795832" toX="-0.152123" toY="0.210879" toZ="0.850311"/>
-                        <parameter for="RightLimb1_Joint1" fromX="-0.177963" fromY="0.00012815" fromZ="0.790902" toX="-0.184903" toY="-0.0984939" toZ="0.8136"/>
-                        <parameter for="RightLimb1_Joint2" fromX="-0.184903" fromY="-0.0984939" fromZ="0.8136" toX="-0.166803" toY="-0.176213" toZ="0.779598"/>
-                        <parameter for="RightLimb1_Joint3" fromX="-0.166803" fromY="-0.176213" fromZ="0.779598" toX="-0.171543" toY="-0.189065" toZ="0.813847"/>
-                        <parameter for="RightLimb2_Joint1" fromX="-0.200113" fromY="0.132425" fromZ="0.783012" toX="-0.218663" toY="0.0797523" toZ="0.782912"/>
-                        <parameter for="RightLimb2_Joint2" fromX="-0.218663" fromY="0.0797523" fromZ="0.782912" toX="-0.227773" toY="0.0103752" toZ="0.788922"/>
-                        <parameter for="RightLimb2_Joint3" fromX="-0.227773" fromY="0.0103752" fromZ="0.788922" toX="-0.221233" toY="-0.0290989" toZ="0.797312"/>
-                        <parameter for="Spine01" fromX="-0.146573" fromY="-0.0373386" fromZ="0.776999" toX="-0.147942" toY="-0.00299406" toZ="0.782404"/>
-                        <parameter for="Spine02" fromX="-0.147942" fromY="-0.00299406" fromZ="0.782404" toX="-0.153353" toY="0.0135013" toZ="0.794353"/>
-                        <parameter for="Spine1" fromX="-0.153353" fromY="0.0135013" fromZ="0.794353" toX="-0.153353" toY="0.0801994" toZ="0.789358"/>
-                        <parameter for="Spine2" fromX="-0.153353" fromY="0.0801994" fromZ="0.789358" toX="-0.153353" toY="0.146921" toZ="0.785703"/>
-                        <parameter for="Spine3" fromX="-0.153353" fromY="0.146921" fromZ="0.785703" toX="-0.152743" toY="0.166473" toZ="0.787992"/>
-                        <parameter for="Spine4" fromX="-0.152743" fromY="0.166473" fromZ="0.787992" toX="-0.146573" toY="0.225411" toZ="0.793023"/>
-                        <parameter for="Tail_Joint1" fromX="-0.146573" fromY="-0.0373386" fromZ="0.751032" toX="-0.146573" toY="-0.0497253" toZ="0.679366"/>
-                    </parameters>
-                </frame>
-                <frame duration="0.04">
-                    <parameters>
-                        <parameter for="LeftLimb1_Joint1" fromX="0.582001" fromY="-0.00298512" fromZ="0.074472" toX="0.582421" toY="-0.109634" toZ="0.0812819"/>
-                        <parameter for="LeftLimb1_Joint2" fromX="0.582421" fromY="-0.109634" fromZ="0.0812819" toX="0.577488" toY="-0.182222" toZ="0.0555816"/>
-                        <parameter for="LeftLimb1_Joint3" fromX="0.577488" fromY="-0.182222" fromZ="0.0555816" toX="0.588828" toY="-0.194235" toZ="0.10757"/>
-                        <parameter for="LeftLimb2_Joint1" fromX="0.603405" fromY="0.150134" fromZ="0.0717599" toX="0.616564" toY="0.0998414" toZ="0.0900608"/>
-                        <parameter for="LeftLimb2_Joint2" fromX="0.616564" fromY="0.0998414" fromZ="0.0900608" toX="0.613835" toY="0.0426717" toZ="0.120325"/>
-                        <parameter for="LeftLimb2_Joint3" fromX="0.613835" fromY="0.0426717" fromZ="0.120325" toX="0.607448" toY="0.00320387" toZ="0.138235"/>
-                        <parameter for="Neck_Joint1" fromX="0.558621" fromY="0.185971" fromZ="0.0817819" toX="0.558621" toY="0.214185" toZ="0.136261"/>
-                        <parameter for="RightLimb1_Joint1" fromX="0.532781" fromY="0.00343394" fromZ="0.076852" toX="0.532453" toY="-0.1018" toZ="0.0896326"/>
-                        <parameter for="RightLimb1_Joint2" fromX="0.532453" fromY="-0.1018" fromZ="0.0896326" toX="0.543941" toY="-0.186135" toZ="0.0628561"/>
-                        <parameter for="RightLimb1_Joint3" fromX="0.543941" fromY="-0.186135" fromZ="0.0628561" toX="0.539201" toY="-0.192675" toZ="0.0960199"/>
-                        <parameter for="RightLimb2_Joint1" fromX="0.510631" fromY="0.135731" fromZ="0.0689619" toX="0.492081" toY="0.0830581" toZ="0.068862"/>
-                        <parameter for="RightLimb2_Joint2" fromX="0.492081" fromY="0.0830581" fromZ="0.068862" toX="0.482971" toY="0.0136811" toZ="0.074872"/>
-                        <parameter for="RightLimb2_Joint3" fromX="0.482971" fromY="0.0136811" fromZ="0.074872" toX="0.489511" toY="-0.0257931" toZ="0.083262"/>
-                        <parameter for="Spine01" fromX="0.564171" fromY="-0.0373383" fromZ="0.0629487" toX="0.562802" toY="-0.0029937" toZ="0.0683537"/>
-                        <parameter for="Spine02" fromX="0.562802" fromY="-0.0029937" fromZ="0.0683537" toX="0.557391" toY="0.0135015" toZ="0.080303"/>
-                        <parameter for="Spine1" fromX="0.557391" fromY="0.0135015" fromZ="0.080303" toX="0.557391" toY="0.0801994" toZ="0.0753081"/>
-                        <parameter for="Spine2" fromX="0.557391" fromY="0.0801994" fromZ="0.0753081" toX="0.557391" toY="0.146921" toZ="0.071653"/>
-                        <parameter for="Spine3" fromX="0.557391" fromY="0.146921" fromZ="0.071653" toX="0.558001" toY="0.166474" toZ="0.0739422"/>
-                        <parameter for="Spine4" fromX="0.558001" fromY="0.166474" fromZ="0.0739422" toX="0.564171" toY="0.22541" toZ="0.0789733"/>
-                        <parameter for="Tail_Joint1" fromX="0.564171" fromY="-0.0373383" fromZ="0.0369817" toX="0.564171" toY="-0.0497247" toZ="-0.0346837"/>
-                    </parameters>
-                </frame>
-                <frame duration="0.04">
-                    <parameters>
-                        <parameter for="LeftLimb1_Joint1" fromX="1.29605" fromY="-0.0129025" fromZ="-0.636272" toX="1.29317" toY="-0.0964109" toZ="-0.629462"/>
-                        <parameter for="LeftLimb1_Joint2" fromX="1.29317" fromY="-0.0964109" fromZ="-0.629462" toX="1.28823" toY="-0.188734" toZ="-0.650697"/>
-                        <parameter for="LeftLimb1_Joint3" fromX="1.28823" fromY="-0.188734" fromZ="-0.650697" toX="1.29957" toY="-0.201254" toZ="-0.600887"/>
-                        <parameter for="LeftLimb2_Joint1" fromX="1.31746" fromY="0.144848" fromZ="-0.635167" toX="1.33061" toY="0.0921416" toZ="-0.625878"/>
-                        <parameter for="LeftLimb2_Joint2" fromX="1.33061" fromY="0.0921416" fromZ="-0.625878" toX="1.32789" toY="0.0305852" toZ="-0.606001"/>
-                        <parameter for="LeftLimb2_Joint3" fromX="1.32789" fromY="0.0305852" fromZ="-0.606001" toX="1.3215" toY="-0.0080874" toZ="-0.595216"/>
-                        <parameter for="Neck_Joint1" fromX="1.27267" fromY="0.176054" fromZ="-0.628962" toX="1.27267" toY="0.204268" toZ="-0.574483"/>
-                        <parameter for="RightLimb1_Joint1" fromX="1.24683" fromY="-0.00648344" fromZ="-0.633892" toX="1.2465" toY="-0.111717" toZ="-0.627723"/>
-                        <parameter for="RightLimb1_Joint2" fromX="1.2465" fromY="-0.111717" fromZ="-0.627723" toX="1.25799" toY="-0.189436" toZ="-0.645196"/>
-                        <parameter for="RightLimb1_Joint3" fromX="1.25799" fromY="-0.189436" fromZ="-0.645196" toX="1.25325" toY="-0.195676" toZ="-0.607642"/>
-                        <parameter for="RightLimb2_Joint1" fromX="1.22468" fromY="0.15226" fromZ="-0.641782" toX="1.20613" toY="0.0995871" toZ="-0.641882"/>
-                        <parameter for="RightLimb2_Joint2" fromX="1.20613" fromY="0.0995871" fromZ="-0.641882" toX="1.19702" toY="0.0302101" toZ="-0.635872"/>
-                        <parameter for="RightLimb2_Joint3" fromX="1.19702" fromY="0.0302101" fromZ="-0.635872" toX="1.20356" toY="-0.00926411" toZ="-0.627482"/>
-                        <parameter for="Spine01" fromX="1.27491" fromY="-0.0438243" fromZ="-0.645962" toX="1.27354" toY="-0.00947988" toZ="-0.640557"/>
-                        <parameter for="Spine02" fromX="1.27354" fromY="-0.00947988" fromZ="-0.640557" toX="1.26813" toY="0.00701535" toZ="-0.628608"/>
-                        <parameter for="Spine1" fromX="1.26813" fromY="0.00701535" fromZ="-0.628608" toX="1.26813" toY="0.0736159" toZ="-0.634766"/>
-                        <parameter for="Spine2" fromX="1.26813" fromY="0.0736159" fromZ="-0.634766" toX="1.26813" toY="0.140264" toZ="-0.639585"/>
-                        <parameter for="Spine3" fromX="1.26813" fromY="0.140264" fromZ="-0.639585" toX="1.26874" toY="0.159854" toZ="-0.637637"/>
-                        <parameter for="Spine4" fromX="1.26874" fromY="0.159854" fromZ="-0.637637" toX="1.27491" toY="0.218924" toZ="-0.629938"/>
-                        <parameter for="Tail_Joint1" fromX="1.27491" fromY="-0.0438243" fromZ="-0.671929" toX="1.27491" toY="-0.0562109" toZ="-0.743595"/>
-                    </parameters>
-                </frame>
-                <frame duration="0.04">
-                    <parameters>
-                        <parameter for="LeftLimb1_Joint1" fromX="2.00349" fromY="-0.00959671" fromZ="-1.34702" toX="2.00061" toY="-0.0864935" toZ="-1.31707"/>
-                        <parameter for="LeftLimb1_Joint2" fromX="2.00061" fromY="-0.0864935" fromZ="-1.31707" toX="1.99567" toY="-0.188734" toZ="-1.35483"/>
-                        <parameter for="LeftLimb1_Joint3" fromX="1.99567" fromY="-0.188734" fromZ="-1.35483" toX="2.00701" toY="-0.201254" toZ="-1.30502"/>
-                        <parameter for="LeftLimb2_Joint1" fromX="2.0249" fromY="0.155465" fromZ="-1.35069" toX="2.03805" toY="0.102799" toZ="-1.34987"/>
-                        <parameter for="LeftLimb2_Joint2" fromX="2.03805" fromY="0.102799" fromZ="-1.34987" toX="2.03533" toY="0.033537" toZ="-1.34265"/>
-                        <parameter for="LeftLimb2_Joint3" fromX="2.03533" fromY="0.033537" fromZ="-1.34265" toX="2.02894" toY="-0.00578475" toZ="-1.33357"/>
-                        <parameter for="Neck_Joint1" fromX="1.98011" fromY="0.17936" fromZ="-1.33971" toX="1.98011" toY="0.207574" toZ="-1.28523"/>
-                        <parameter for="RightLimb1_Joint1" fromX="1.95427" fromY="-0.00317764" fromZ="-1.34464" toX="1.95394" toY="-0.095188" toZ="-1.33516"/>
-                        <parameter for="RightLimb1_Joint2" fromX="1.95394" fromY="-0.095188" fromZ="-1.33516" toX="1.96543" toY="-0.18613" toZ="-1.35594"/>
-                        <parameter for="RightLimb1_Joint3" fromX="1.96543" fromY="-0.18613" fromZ="-1.35594" toX="1.96069" toY="-0.19237" toZ="-1.3283"/>
-                        <parameter for="RightLimb2_Joint1" fromX="1.93212" fromY="0.147018" fromZ="-1.34346" toX="1.91357" toY="0.0948703" toZ="-1.33142"/>
-                        <parameter for="RightLimb2_Joint2" fromX="1.91357" fromY="0.0948703" fromZ="-1.33142" toX="1.90446" toY="0.0344384" toZ="-1.31166"/>
-                        <parameter for="RightLimb2_Joint3" fromX="1.90446" fromY="0.0344384" fromZ="-1.31166" toX="1.911" toY="0.00299501" toZ="-1.29887"/>
-                        <parameter for="Spine01" fromX="1.98454" fromY="-0.0372342" fromZ="-1.35341" toX="1.98317" toY="-0.002877" toZ="-1.348"/>
-                        <parameter for="Spine02" fromX="1.98317" fromY="-0.002877" fromZ="-1.348" toX="1.97776" toY="0.0136356" toZ="-1.33605"/>
-                        <parameter for="Spine1" fromX="1.97776" fromY="0.0136356" fromZ="-1.33605" toX="1.97758" toY="0.0802608" toZ="-1.34221"/>
-                        <parameter for="Spine2" fromX="1.97758" fromY="0.0802608" fromZ="-1.34221" toX="1.97409" toY="0.146933" toZ="-1.34703"/>
-                        <parameter for="Spine3" fromX="1.97409" fromY="0.146933" fromZ="-1.34703" toX="1.97368" toY="0.166412" toZ="-1.34508"/>
-                        <parameter for="Spine4" fromX="1.97368" fromY="0.166412" fromZ="-1.34508" toX="1.98454" toY="0.225612" toZ="-1.33738"/>
-                        <parameter for="Tail_Joint1" fromX="1.98454" fromY="-0.0372342" fromZ="-1.37939" toX="1.98454" toY="-0.0496254" toZ="-1.45108"/>
-                    </parameters>
-                </frame>
-                <frame duration="0.04">
-                    <parameters>
-                        <parameter for="LeftLimb1_Joint1" fromX="-0.84279" fromY="-0.396374" fromZ="1.49595" toX="-0.839058" toY="-0.479882" toZ="1.53913"/>
-                        <parameter for="LeftLimb1_Joint2" fromX="-0.839058" fromY="-0.479882" fromZ="1.53913" toX="-0.847304" toY="-0.578817" toZ="1.48154"/>
-                        <parameter for="LeftLimb1_Joint3" fromX="-0.847304" fromY="-0.578817" fromZ="1.48154" toX="-0.835964" toY="-0.60456" toZ="1.52474"/>
-                        <parameter for="LeftLimb2_Joint1" fromX="-0.82541" fromY="-0.237642" fromZ="1.49229" toX="-0.809549" toY="-0.290624" toZ="1.49311"/>
-                        <parameter for="LeftLimb2_Joint2" fromX="-0.809549" fromY="-0.290624" fromZ="1.49311" toX="-0.800019" toY="-0.360035" toZ="1.50033"/>
-                        <parameter for="LeftLimb2_Joint3" fromX="-0.800019" fromY="-0.360035" fromZ="1.50033" toX="-0.803087" toY="-0.399236" toZ="1.50941"/>
-                        <parameter for="Neck_Joint1" fromX="-0.86617" fromY="-0.207417" fromZ="1.50327" toX="-0.86617" toY="-0.179203" toZ="1.55775"/>
-                        <parameter for="RightLimb1_Joint1" fromX="-0.89201" fromY="-0.389955" fromZ="1.49834" toX="-0.89234" toY="-0.481965" toZ="1.50782"/>
-                        <parameter for="RightLimb1_Joint2" fromX="-0.89234" fromY="-0.481965" fromZ="1.50782" toX="-0.870933" toY="-0.592742" toZ="1.48704"/>
-                        <parameter for="RightLimb1_Joint3" fromX="-0.870933" fromY="-0.592742" fromZ="1.48704" toX="-0.88559" toY="-0.598982" toZ="1.5246"/>
-                        <parameter for="RightLimb2_Joint1" fromX="-0.912322" fromY="-0.240226" fromZ="1.49952" toX="-0.92995" toY="-0.291614" toZ="1.51156"/>
-                        <parameter for="RightLimb2_Joint2" fromX="-0.92995" fromY="-0.291614" fromZ="1.51156" toX="-0.93785" toY="-0.361921" toZ="1.53132"/>
-                        <parameter for="RightLimb2_Joint3" fromX="-0.93785" fromY="-0.361921" fromZ="1.53132" toX="-0.930625" toY="-0.39386" toZ="1.55403"/>
-                        <parameter for="Spine01" fromX="-0.86062" fromY="-0.430451" fromZ="1.48805" toX="-0.861989" toY="-0.396108" toZ="1.49345"/>
-                        <parameter for="Spine02" fromX="-0.861989" fromY="-0.396108" fromZ="1.49345" toX="-0.8674" toY="-0.379614" toZ="1.5054"/>
-                        <parameter for="Spine1" fromX="-0.8674" fromY="-0.379614" fromZ="1.5054" toX="-0.8674" toY="-0.313132" toZ="1.49809"/>
-                        <parameter for="Spine2" fromX="-0.8674" fromY="-0.313132" fromZ="1.49809" toX="-0.867399" toY="-0.239913" toZ="1.49233"/>
-                        <parameter for="Spine3" fromX="-0.867399" fromY="-0.239913" fromZ="1.49233" toX="-0.86679" toY="-0.226957" toZ="1.49371"/>
-                        <parameter for="Spine4" fromX="-0.86679" fromY="-0.226957" fromZ="1.49371" toX="-0.86062" toY="-0.167711" toZ="1.50407"/>
-                        <parameter for="Tail_Joint1" fromX="-0.86062" fromY="-0.430451" fromZ="1.46208" toX="-0.86062" toY="-0.442837" toZ="1.39042"/>
-                    </parameters>
-                </frame>
-                <frame duration="0.04">
-                    <parameters>
-                        <parameter for="LeftLimb1_Joint1" fromX="-0.12874" fromY="-0.406291" fromZ="0.7819" toX="-0.125008" toY="-0.483188" toZ="0.838304"/>
-                        <parameter for="LeftLimb1_Joint2" fromX="-0.125008" fromY="-0.483188" fromZ="0.838304" toX="-0.133254" toY="-0.555676" toZ="0.7741"/>
-                        <parameter for="LeftLimb1_Joint3" fromX="-0.133254" fromY="-0.555676" fromZ="0.7741" toX="-0.121914" toY="-0.584725" toZ="0.80738"/>
-                        <parameter for="LeftLimb2_Joint1" fromX="-0.114666" fromY="-0.247335" fromZ="0.776047" toX="-0.0954994" toY="-0.300287" toZ="0.774092"/>
-                        <parameter for="LeftLimb2_Joint2" fromX="-0.0954994" fromY="-0.300287" fromZ="0.774092" toX="-0.0859694" toY="-0.369981" toZ="0.77767"/>
-                        <parameter for="LeftLimb2_Joint3" fromX="-0.0859694" fromY="-0.369981" fromZ="0.77767" toX="-0.0890374" toY="-0.409603" toZ="0.784686"/>
-                        <parameter for="Neck_Joint1" fromX="-0.15212" fromY="-0.217334" fromZ="0.78922" toX="-0.15212" toY="-0.18912" toZ="0.843699"/>
-                        <parameter for="RightLimb1_Joint1" fromX="-0.17796" fromY="-0.399872" fromZ="0.78429" toX="-0.17829" toY="-0.491882" toZ="0.79377"/>
-                        <parameter for="RightLimb1_Joint2" fromX="-0.17829" fromY="-0.491882" fromZ="0.79377" toX="-0.156883" toY="-0.59337" toZ="0.771895"/>
-                        <parameter for="RightLimb1_Joint3" fromX="-0.156883" fromY="-0.59337" fromZ="0.771895" toX="-0.17154" toY="-0.598353" toZ="0.805031"/>
-                        <parameter for="RightLimb2_Joint1" fromX="-0.211496" fromY="-0.254361" fromZ="0.787566" toX="-0.222512" toY="-0.330019" toZ="0.813251"/>
-                        <parameter for="RightLimb2_Joint2" fromX="-0.222512" fromY="-0.330019" fromZ="0.813251" toX="-0.220494" toY="-0.370445" toZ="0.839298"/>
-                        <parameter for="RightLimb2_Joint3" fromX="-0.220494" fromY="-0.370445" fromZ="0.839298" toX="-0.216575" toY="-0.392301" toZ="0.856315"/>
-                        <parameter for="Spine01" fromX="-0.149555" fromY="-0.433512" fromZ="0.779178" toX="-0.150924" toY="-0.399167" toZ="0.784584"/>
-                        <parameter for="Spine02" fromX="-0.150924" fromY="-0.399167" fromZ="0.784584" toX="-0.156335" toY="-0.382671" toZ="0.796533"/>
-                        <parameter for="Spine1" fromX="-0.156335" fromY="-0.382671" fromZ="0.796533" toX="-0.158633" toY="-0.316364" toZ="0.788061"/>
-                        <parameter for="Spine2" fromX="-0.158633" fromY="-0.316364" fromZ="0.788061" toX="-0.160936" toY="-0.249967" toZ="0.780905"/>
-                        <parameter for="Spine3" fromX="-0.160936" fromY="-0.249967" fromZ="0.780905" toX="-0.161014" toY="-0.23031" toZ="0.782179"/>
-                        <parameter for="Spine4" fromX="-0.161014" fromY="-0.23031" fromZ="0.782179" toX="-0.149555" toY="-0.17076" toZ="0.795203"/>
-                        <parameter for="Tail_Joint1" fromX="-0.149555" fromY="-0.433512" fromZ="0.753211" toX="-0.149555" toY="-0.445899" toZ="0.681545"/>
-                    </parameters>
-                </frame>
-                <frame duration="0.04">
-                    <parameters>
-                        <parameter for="LeftLimb1_Joint1" fromX="0.578698" fromY="-0.402985" fromZ="0.0810734" toX="0.58243" toY="-0.479882" toZ="0.137478"/>
-                        <parameter for="LeftLimb1_Joint2" fromX="0.58243" fromY="-0.479882" fromZ="0.137478" toX="0.574184" toY="-0.558982" toZ="0.0699677"/>
-                        <parameter for="LeftLimb1_Joint3" fromX="0.574184" fromY="-0.558982" fromZ="0.0699677" toX="0.585524" toY="-0.588031" toZ="0.103248"/>
-                        <parameter for="LeftLimb2_Joint1" fromX="0.596078" fromY="-0.251356" fromZ="0.0554018" toX="0.611939" toY="-0.306656" toZ="0.0385756"/>
-                        <parameter for="LeftLimb2_Joint2" fromX="0.611939" fromY="-0.306656" fromZ="0.0385756" toX="0.621469" toY="-0.373626" toZ="0.0388995"/>
-                        <parameter for="LeftLimb2_Joint3" fromX="0.621469" fromY="-0.373626" fromZ="0.0388995" toX="0.618401" toY="-0.412097" toZ="0.0506923"/>
-                        <parameter for="Neck_Joint1" fromX="0.555318" fromY="-0.22064" fromZ="0.0850875" toX="0.555318" toY="-0.192426" toZ="0.139566"/>
-                        <parameter for="RightLimb1_Joint1" fromX="0.529478" fromY="-0.403178" fromZ="0.0801578" toX="0.529148" toY="-0.495188" toZ="0.0896378"/>
-                        <parameter for="RightLimb1_Joint2" fromX="0.529148" fromY="-0.495188" fromZ="0.0896378" toX="0.550555" toY="-0.58613" toZ="0.0655519"/>
-                        <parameter for="RightLimb1_Joint3" fromX="0.550555" fromY="-0.58613" fromZ="0.0655519" toX="0.535898" toY="-0.589064" toZ="0.0931917"/>
-                        <parameter for="RightLimb2_Joint1" fromX="0.502554" fromY="-0.251156" fromZ="0.0768181" toX="0.488232" toY="-0.32166" toZ="0.113332"/>
-                        <parameter for="RightLimb2_Joint2" fromX="0.488232" fromY="-0.32166" fromZ="0.113332" toX="0.49025" toY="-0.362578" toZ="0.135178"/>
-                        <parameter for="RightLimb2_Joint3" fromX="0.49025" fromY="-0.362578" fromZ="0.135178" toX="0.50078" toY="-0.385285" toZ="0.164491"/>
-                        <parameter for="Spine01" fromX="0.563048" fromY="-0.436977" fromZ="0.0681014" toX="0.561681" toY="-0.402679" toZ="0.0734991"/>
-                        <parameter for="Spine02" fromX="0.561681" fromY="-0.402679" fromZ="0.0734991" toX="0.556268" toY="-0.386248" toZ="0.0854338"/>
-                        <parameter for="Spine1" fromX="0.556268" fromY="-0.386248" fromZ="0.0854338" toX="0.556095" toY="-0.319739" toZ="0.079284"/>
-                        <parameter for="Spine2" fromX="0.556095" fromY="-0.319739" fromZ="0.079284" toX="0.552611" toY="-0.253182" toZ="0.0744536"/>
-                        <parameter for="Spine3" fromX="0.552611" fromY="-0.253182" fromZ="0.0744536" toX="0.552194" toY="-0.233588" toZ="0.0764114"/>
-                        <parameter for="Spine4" fromX="0.552194" fromY="-0.233588" fromZ="0.0764114" toX="0.563048" toY="-0.174589" toZ="0.0841042"/>
-                        <parameter for="Tail_Joint1" fromX="0.563048" fromY="-0.436977" fromZ="0.0421702" toX="0.563048" toY="-0.449346" toZ="-0.029397"/>
-                    </parameters>
-                </frame>
-                <frame duration="0.04">
-                    <parameters>
-                        <parameter for="LeftLimb1_Joint1" fromX="1.28944" fromY="-0.399679" fromZ="-0.632977" toX="1.29317" toY="-0.476576" toZ="-0.576572"/>
-                        <parameter for="LeftLimb1_Joint2" fromX="1.29317" fromY="-0.476576" fromZ="-0.576572" toX="1.28823" toY="-0.532536" toZ="-0.644083"/>
-                        <parameter for="LeftLimb1_Joint3" fromX="1.28823" fromY="-0.532536" fromZ="-0.644083" toX="1.29957" toY="-0.561585" toZ="-0.610803"/>
-                        <parameter for="LeftLimb2_Joint1" fromX="1.30682" fromY="-0.246735" fromZ="-0.658649" toX="1.32268" toY="-0.30395" toZ="-0.675475"/>
-                        <parameter for="LeftLimb2_Joint2" fromX="1.32268" fromY="-0.30395" fromZ="-0.675475" toX="1.33882" toY="-0.36145" toZ="-0.675151"/>
-                        <parameter for="LeftLimb2_Joint3" fromX="1.33882" fromY="-0.36145" fromZ="-0.675151" toX="1.34237" toY="-0.405153" toZ="-0.660053"/>
-                        <parameter for="Neck_Joint1" fromX="1.26606" fromY="-0.217334" fromZ="-0.628963" toX="1.26606" toY="-0.18912" toZ="-0.574484"/>
-                        <parameter for="RightLimb1_Joint1" fromX="1.24022" fromY="-0.399872" fromZ="-0.633893" toX="1.23989" toY="-0.491882" toZ="-0.624413"/>
-                        <parameter for="RightLimb1_Joint2" fromX="1.23989" fromY="-0.491882" fromZ="-0.624413" toX="1.2613" toY="-0.5897" toZ="-0.644029"/>
-                        <parameter for="RightLimb1_Joint3" fromX="1.2613" fromY="-0.5897" fromZ="-0.644029" toX="1.24664" toY="-0.592105" toZ="-0.612106"/>
-                        <parameter for="RightLimb2_Joint1" fromX="1.2113" fromY="-0.249574" fromZ="-0.635334" toX="1.20153" toY="-0.317384" toZ="-0.600609"/>
-                        <parameter for="RightLimb2_Joint2" fromX="1.20153" fromY="-0.317384" fromZ="-0.600609" toX="1.20965" toY="-0.363803" toZ="-0.564629"/>
-                        <parameter for="RightLimb2_Joint3" fromX="1.20965" fromY="-0.363803" fromZ="-0.564629" toX="1.21885" toY="-0.379998" toZ="-0.549285"/>
-                        <parameter for="Spine01" fromX="1.27525" fromY="-0.426448" fromZ="-0.643265" toX="1.27395" toY="-0.393782" toZ="-0.638124"/>
-                        <parameter for="Spine02" fromX="1.27395" fromY="-0.393782" fromZ="-0.638124" toX="1.26847" toY="-0.379555" toZ="-0.626694"/>
-                        <parameter for="Spine1" fromX="1.26847" fromY="-0.379555" fromZ="-0.626694" toX="1.26616" toY="-0.316415" toZ="-0.634121"/>
-                        <parameter for="Spine2" fromX="1.26616" fromY="-0.316415" fromZ="-0.634121" toX="1.26385" toY="-0.249902" toZ="-0.640113"/>
-                        <parameter for="Spine3" fromX="1.26385" fromY="-0.249902" fromZ="-0.640113" toX="1.26377" toY="-0.230272" toZ="-0.638497"/>
-                        <parameter for="Spine4" fromX="1.26377" fromY="-0.230272" fromZ="-0.638497" toX="1.27525" toY="-0.176535" toZ="-0.628024"/>
-                        <parameter for="Tail_Joint1" fromX="1.27525" fromY="-0.426448" fromZ="-0.667964" toX="1.27525" toY="-0.43823" toZ="-0.736128"/>
-                    </parameters>
-                </frame>
-                <frame duration="0.04">
-                    <parameters>
-                        <parameter for="LeftLimb1_Joint1" fromX="2.00018" fromY="-0.393067" fromZ="-1.34042" toX="2.00722" toY="-0.479882" toZ="-1.28401"/>
-                        <parameter for="LeftLimb1_Joint2" fromX="2.00722" fromY="-0.479882" fromZ="-1.28401" toX="1.99897" toY="-0.539148" toZ="-1.36805"/>
-                        <parameter for="LeftLimb1_Joint3" fromX="1.99897" fromY="-0.539148" fromZ="-1.36805" toX="2.01031" toY="-0.568197" toZ="-1.33477"/>
-                        <parameter for="LeftLimb2_Joint1" fromX="2.01756" fromY="-0.240244" fromZ="-1.36609" toX="2.03342" toY="-0.300175" toZ="-1.38953"/>
-                        <parameter for="LeftLimb2_Joint2" fromX="2.03342" fromY="-0.300175" fromZ="-1.38953" toX="2.04956" toY="-0.367765" toZ="-1.3892"/>
-                        <parameter for="LeftLimb2_Joint3" fromX="2.04956" fromY="-0.367765" fromZ="-1.3892" toX="2.0465" toY="-0.412409" toZ="-1.38071"/>
-                        <parameter for="Neck_Joint1" fromX="1.9768" fromY="-0.210722" fromZ="-1.3364" toX="1.9768" toY="-0.182508" toZ="-1.28192"/>
-                        <parameter for="RightLimb1_Joint1" fromX="1.95096" fromY="-0.39326" fromZ="-1.34133" toX="1.95063" toY="-0.48527" toZ="-1.33185"/>
-                        <parameter for="RightLimb1_Joint2" fromX="1.95063" fromY="-0.48527" fromZ="-1.33185" toX="1.97204" toY="-0.58859" toZ="-1.35796"/>
-                        <parameter for="RightLimb1_Joint3" fromX="1.97204" fromY="-0.58859" fromZ="-1.35796" toX="1.95738" toY="-0.593215" toZ="-1.32628"/>
-                        <parameter for="RightLimb2_Joint1" fromX="1.92305" fromY="-0.246268" fromZ="-1.35269" toX="1.91361" toY="-0.327301" toZ="-1.29813"/>
-                        <parameter for="RightLimb2_Joint2" fromX="1.91361" fromY="-0.327301" fromZ="-1.29813" toX="1.91541" toY="-0.357191" toZ="-1.26876"/>
-                        <parameter for="RightLimb2_Joint3" fromX="1.91541" fromY="-0.357191" fromZ="-1.26876" toX="1.9256" toY="-0.376692" toZ="-1.25342"/>
-                        <parameter for="Spine01" fromX="1.98634" fromY="-0.427014" fromZ="-1.3552" toX="1.98497" toY="-0.392745" toZ="-1.34981"/>
-                        <parameter for="Spine02" fromX="1.98497" fromY="-0.392745" fromZ="-1.34981" toX="1.97956" toY="-0.376352" toZ="-1.33788"/>
-                        <parameter for="Spine1" fromX="1.97956" fromY="-0.376352" fromZ="-1.33788" toX="1.97824" toY="-0.309814" toZ="-1.34287"/>
-                        <parameter for="Spine2" fromX="1.97824" fromY="-0.309814" fromZ="-1.34287" toX="1.97361" toY="-0.243255" toZ="-1.34655"/>
-                        <parameter for="Spine3" fromX="1.97361" fromY="-0.243255" fromZ="-1.34655" toX="1.97284" toY="-0.223707" toZ="-1.34425"/>
-                        <parameter for="Spine4" fromX="1.97284" fromY="-0.223707" fromZ="-1.34425" toX="1.98634" toY="-0.164842" toZ="-1.33921"/>
-                        <parameter for="Tail_Joint1" fromX="1.98634" fromY="-0.427014" fromZ="-1.38111" toX="1.98634" toY="-0.439374" toZ="-1.45262"/>
-                    </parameters>
-                </frame>
-                <frame duration="0.04">
-                    <parameters>
-                        <parameter for="LeftLimb1_Joint1" fromX="-0.842795" fromY="-0.799679" fromZ="1.50586" toX="-0.835755" toY="-0.876576" toZ="1.55897"/>
-                        <parameter for="LeftLimb1_Joint2" fromX="-0.835755" fromY="-0.876576" fromZ="1.55897" toX="-0.844005" toY="-0.955677" toZ="1.46831"/>
-                        <parameter for="LeftLimb1_Joint3" fromX="-0.844005" fromY="-0.955677" fromZ="1.46831" toX="-0.832665" toY="-0.984726" toZ="1.50159"/>
-                        <parameter for="LeftLimb2_Joint1" fromX="-0.825415" fromY="-0.640244" fromZ="1.47689" toX="-0.809555" toY="-0.716704" toZ="1.44683"/>
-                        <parameter for="LeftLimb2_Joint2" fromX="-0.809555" fromY="-0.716704" fromZ="1.44683" toX="-0.793415" toY="-0.771071" toZ="1.45708"/>
-                        <parameter for="LeftLimb2_Joint3" fromX="-0.793415" fromY="-0.771071" fromZ="1.45708" toX="-0.796475" toY="-0.809103" toZ="1.45896"/>
-                        <parameter for="Neck_Joint1" fromX="-0.866175" fromY="-0.617334" fromZ="1.50988" toX="-0.866175" toY="-0.58912" toZ="1.56436"/>
-                        <parameter for="RightLimb1_Joint1" fromX="-0.892015" fromY="-0.799872" fromZ="1.50495" toX="-0.892345" toY="-0.891882" toZ="1.50782"/>
-                        <parameter for="RightLimb1_Joint2" fromX="-0.892345" fromY="-0.891882" fromZ="1.50782" toX="-0.870935" toY="-0.989143" toZ="1.48164"/>
-                        <parameter for="RightLimb1_Joint3" fromX="-0.870935" fromY="-0.989143" fromZ="1.48164" toX="-0.885595" toY="-0.992662" toZ="1.51346"/>
-                        <parameter for="RightLimb2_Joint1" fromX="-0.919921" fromY="-0.642963" fromZ="1.49359" toX="-0.929365" toY="-0.684326" toZ="1.5217"/>
-                        <parameter for="RightLimb2_Joint2" fromX="-0.929365" fromY="-0.684326" fromZ="1.5217" toX="-0.930871" toY="-0.743968" toZ="1.5676"/>
-                        <parameter for="RightLimb2_Joint3" fromX="-0.930871" fromY="-0.743968" fromZ="1.5676" toX="-0.914071" toY="-0.773386" toZ="1.59947"/>
-                        <parameter for="Spine01" fromX="-0.858443" fromY="-0.833655" fromZ="1.48926" toX="-0.859808" toY="-0.799418" toZ="1.49464"/>
-                        <parameter for="Spine02" fromX="-0.859808" fromY="-0.799418" fromZ="1.49464" toX="-0.865223" toY="-0.783068" toZ="1.50656"/>
-                        <parameter for="Spine1" fromX="-0.865223" fromY="-0.783068" fromZ="1.50656" toX="-0.865398" toY="-0.716502" toZ="1.50274"/>
-                        <parameter for="Spine2" fromX="-0.865398" fromY="-0.716502" fromZ="1.50274" toX="-0.868882" toY="-0.649816" toZ="1.50023"/>
-                        <parameter for="Spine3" fromX="-0.868882" fromY="-0.649816" fromZ="1.50023" toX="-0.869301" toY="-0.6303" toZ="1.50287"/>
-                        <parameter for="Spine4" fromX="-0.869301" fromY="-0.6303" fromZ="1.50287" toX="-0.858443" toY="-0.571728" toZ="1.50523"/>
-                        <parameter for="Tail_Joint1" fromX="-0.858443" fromY="-0.833655" fromZ="1.46337" toX="-0.858443" toY="-0.846003" toZ="1.39193"/>
-                    </parameters>
-                </frame>
-                <frame duration="0.04">
-                    <parameters>
-                        <parameter for="LeftLimb1_Joint1" fromX="-0.125439" fromY="-0.802985" fromZ="0.795116" toX="-0.118399" toY="-0.879882" toZ="0.848226"/>
-                        <parameter for="LeftLimb1_Joint2" fromX="-0.118399" fromY="-0.879882" fromZ="0.848226" toX="-0.126649" toY="-0.949463" toZ="0.763949"/>
-                        <parameter for="LeftLimb1_Joint3" fromX="-0.126649" fromY="-0.949463" fromZ="0.763949" toX="-0.115309" toY="-0.984328" toZ="0.791075"/>
-                        <parameter for="LeftLimb2_Joint1" fromX="-0.108059" fromY="-0.640244" fromZ="0.766146" toX="-0.0921994" toY="-0.716704" toZ="0.736086"/>
-                        <parameter for="LeftLimb2_Joint2" fromX="-0.0921994" fromY="-0.716704" fromZ="0.736086" toX="-0.0760595" toY="-0.74793" toZ="0.746336"/>
-                        <parameter for="LeftLimb2_Joint3" fromX="-0.0760595" fromY="-0.74793" fromZ="0.746336" toX="-0.0791194" toY="-0.789268" toZ="0.748216"/>
-                        <parameter for="Neck_Joint1" fromX="-0.148819" fromY="-0.62064" fromZ="0.799136" toX="-0.148819" toY="-0.592426" toZ="0.853615"/>
-                        <parameter for="RightLimb1_Joint1" fromX="-0.174659" fromY="-0.803178" fromZ="0.794206" toX="-0.174989" toY="-0.895188" toZ="0.797076"/>
-                        <parameter for="RightLimb1_Joint2" fromX="-0.174989" fromY="-0.895188" fromZ="0.797076" toX="-0.153579" toY="-0.988589" toZ="0.76766"/>
-                        <parameter for="RightLimb1_Joint3" fromX="-0.153579" fromY="-0.988589" fromZ="0.76766" toX="-0.168239" toY="-0.993217" toZ="0.79934"/>
-                        <parameter for="RightLimb2_Joint1" fromX="-0.205871" fromY="-0.652881" fromZ="0.782846" toX="-0.215315" toY="-0.714078" toZ="0.820873"/>
-                        <parameter for="RightLimb2_Joint2" fromX="-0.215315" fromY="-0.714078" fromZ="0.820873" toX="-0.210209" toY="-0.75058" toZ="0.856856"/>
-                        <parameter for="RightLimb2_Joint3" fromX="-0.210209" fromY="-0.75058" fromZ="0.856856" toX="-0.196716" toY="-0.773387" toZ="0.885421"/>
-                        <parameter for="Spine01" fromX="-0.142929" fromY="-0.833697" fromZ="0.780655" toX="-0.144298" toY="-0.799353" toZ="0.78606"/>
-                        <parameter for="Spine02" fromX="-0.144298" fromY="-0.799353" fromZ="0.78606" toX="-0.149709" toY="-0.782858" toZ="0.798009"/>
-                        <parameter for="Spine1" fromX="-0.149709" fromY="-0.782858" fromZ="0.798009" toX="-0.15202" toY="-0.716415" toZ="0.790697"/>
-                        <parameter for="Spine2" fromX="-0.15202" fromY="-0.716415" fromZ="0.790697" toX="-0.154335" toY="-0.649904" toZ="0.784702"/>
-                        <parameter for="Spine3" fromX="-0.154335" fromY="-0.649904" fromZ="0.784702" toX="-0.154412" toY="-0.630273" toZ="0.786318"/>
-                        <parameter for="Spine4" fromX="-0.154412" fromY="-0.630273" fromZ="0.786318" toX="-0.142929" toY="-0.570951" toZ="0.796679"/>
-                        <parameter for="Tail_Joint1" fromX="-0.142929" fromY="-0.833697" fromZ="0.754688" toX="-0.142929" toY="-0.846083" toZ="0.683023"/>
-                    </parameters>
-                </frame>
-                <frame duration="0.04">
-                    <parameters>
-                        <parameter for="LeftLimb1_Joint1" fromX="0.581999" fromY="-0.793068" fromZ="0.0843719" toX="0.589039" toY="-0.886494" toZ="0.124259"/>
-                        <parameter for="LeftLimb1_Joint2" fromX="0.589039" fromY="-0.886494" fromZ="0.124259" toX="0.580789" toY="-0.971357" toZ="0.0515721"/>
-                        <parameter for="LeftLimb1_Joint3" fromX="0.580789" fromY="-0.971357" fromZ="0.0515721" toX="0.592129" toY="-0.995492" toZ="0.088572"/>
-                        <parameter for="LeftLimb2_Joint1" fromX="0.596073" fromY="-0.646856" fromZ="0.0554019" toX="0.615239" toY="-0.72001" toZ="0.0352594"/>
-                        <parameter for="LeftLimb2_Joint2" fromX="0.615239" fromY="-0.72001" fromZ="0.0352594" toX="0.631379" toY="-0.774376" toZ="0.0422035"/>
-                        <parameter for="LeftLimb2_Joint3" fromX="0.631379" fromY="-0.774376" fromZ="0.0422035" toX="0.628319" toY="-0.815714" toZ="0.0440835"/>
-                        <parameter for="Neck_Joint1" fromX="0.558619" fromY="-0.610723" fromZ="0.0883919" toX="0.558619" toY="-0.582509" toZ="0.142871"/>
-                        <parameter for="RightLimb1_Joint1" fromX="0.532779" fromY="-0.793261" fromZ="0.083462" toX="0.532449" toY="-0.885271" toZ="0.086332"/>
-                        <parameter for="RightLimb1_Joint2" fromX="0.532449" fromY="-0.885271" fromZ="0.086332" toX="0.553859" toY="-0.989979" toZ="0.0567749"/>
-                        <parameter for="RightLimb1_Joint3" fromX="0.553859" fromY="-0.989979" fromZ="0.0567749" toX="0.539199" toY="-0.991827" toZ="0.088737"/>
-                        <parameter for="RightLimb2_Joint1" fromX="0.505953" fromY="-0.640488" fromZ="0.0765095" toX="0.493151" toY="-0.712231" toZ="0.114468"/>
-                        <parameter for="RightLimb2_Joint2" fromX="0.493151" fromY="-0.712231" fromZ="0.114468" toX="0.505223" toY="-0.758374" toZ="0.157165"/>
-                        <parameter for="RightLimb2_Joint3" fromX="0.505223" fromY="-0.758374" fromZ="0.157165" toX="0.513843" toY="-0.779834" toZ="0.174712"/>
-                        <parameter for="Spine01" fromX="0.562677" fromY="-0.830589" fromZ="0.0713865" toX="0.561308" toY="-0.796245" toZ="0.0767914"/>
-                        <parameter for="Spine02" fromX="0.561308" fromY="-0.796245" fromZ="0.0767914" toX="0.555897" toY="-0.779751" toZ="0.0887405"/>
-                        <parameter for="Spine1" fromX="0.555897" fromY="-0.779751" fromZ="0.0887405" toX="0.554748" toY="-0.713161" toZ="0.0825888"/>
-                        <parameter for="Spine2" fromX="0.554748" fromY="-0.713161" fromZ="0.0825888" toX="0.553596" toY="-0.646525" toZ="0.077757"/>
-                        <parameter for="Spine3" fromX="0.553596" fromY="-0.646525" fromZ="0.077757" toX="0.553861" toY="-0.626926" toZ="0.0797148"/>
-                        <parameter for="Spine4" fromX="0.553861" fromY="-0.626926" fromZ="0.0797148" toX="0.562677" toY="-0.567845" toZ="0.0874108"/>
-                        <parameter for="Tail_Joint1" fromX="0.562677" fromY="-0.830589" fromZ="0.0454201" toX="0.562677" toY="-0.842976" toZ="-0.0262442"/>
-                    </parameters>
-                </frame>
-                <frame duration="0.04">
-                    <parameters>
-                        <parameter for="LeftLimb1_Joint1" fromX="1.29274" fromY="-0.783151" fromZ="-0.626371" toX="1.29978" toY="-0.893106" toZ="-0.589789"/>
-                        <parameter for="LeftLimb1_Joint2" fromX="1.29978" fromY="-0.893106" fromZ="-0.589789" toX="1.29153" toY="-0.987211" toZ="-0.655281"/>
-                        <parameter for="LeftLimb1_Joint3" fromX="1.29153" fromY="-0.987211" fromZ="-0.655281" toX="1.30287" toY="-0.999474" toZ="-0.612841"/>
-                        <parameter for="LeftLimb2_Joint1" fromX="1.30681" fromY="-0.640245" fromZ="-0.655341" toX="1.32598" toY="-0.710093" toZ="-0.675483"/>
-                        <parameter for="LeftLimb2_Joint2" fromX="1.32598" fromY="-0.710093" fromZ="-0.675483" toX="1.33882" toY="-0.738012" toZ="-0.668539"/>
-                        <parameter for="LeftLimb2_Joint3" fromX="1.33882" fromY="-0.738012" fromZ="-0.668539" toX="1.34237" toY="-0.77935" toZ="-0.666659"/>
-                        <parameter for="Neck_Joint1" fromX="1.26936" fromY="-0.600806" fromZ="-0.622351" toX="1.26936" toY="-0.572592" toZ="-0.567872"/>
-                        <parameter for="RightLimb1_Joint1" fromX="1.25013" fromY="-0.783344" fromZ="-0.627281" toX="1.24319" toY="-0.888577" toZ="-0.621105"/>
-                        <parameter for="RightLimb1_Joint2" fromX="1.24319" fromY="-0.888577" fromZ="-0.621105" toX="1.2646" toY="-0.98859" toZ="-0.653827"/>
-                        <parameter for="RightLimb1_Joint3" fromX="1.2646" fromY="-0.98859" fromZ="-0.653827" toX="1.24994" toY="-0.993217" toZ="-0.622147"/>
-                        <parameter for="RightLimb2_Joint1" fromX="1.22223" fromY="-0.642964" fromZ="-0.638641" toX="1.19956" toY="-0.717384" toZ="-0.60392"/>
-                        <parameter for="RightLimb2_Joint2" fromX="1.19956" fromY="-0.717384" fromZ="-0.60392" toX="1.21128" toY="-0.763803" toZ="-0.561325"/>
-                        <parameter for="RightLimb2_Joint3" fromX="1.21128" fromY="-0.763803" fromZ="-0.561325" toX="1.22477" toY="-0.776693" toZ="-0.545983"/>
-                        <parameter for="Spine01" fromX="1.27525" fromY="-0.82406" fromZ="-0.64119" toX="1.27388" toY="-0.789717" toZ="-0.635785"/>
-                        <parameter for="Spine02" fromX="1.27388" fromY="-0.789717" fromZ="-0.635785" toX="1.26847" toY="-0.773223" toZ="-0.623836"/>
-                        <parameter for="Spine1" fromX="1.26847" fromY="-0.773223" fromZ="-0.623836" toX="1.26615" toY="-0.706567" toZ="-0.628824"/>
-                        <parameter for="Spine2" fromX="1.26615" fromY="-0.706567" fromZ="-0.628824" toX="1.26383" toY="-0.639885" toZ="-0.632492"/>
-                        <parameter for="Spine3" fromX="1.26383" fromY="-0.639885" fromZ="-0.632492" toX="1.26376" toY="-0.620325" toZ="-0.630192"/>
-                        <parameter for="Spine4" fromX="1.26376" fromY="-0.620325" fromZ="-0.630192" toX="1.27525" toY="-0.56132" toZ="-0.625166"/>
-                        <parameter for="Tail_Joint1" fromX="1.27525" fromY="-0.82406" fromZ="-0.667156" toX="1.27525" toY="-0.836446" toZ="-0.738819"/>
-                    </parameters>
-                </frame>
-                <frame duration="0.04">
-                    <parameters>
-                        <parameter for="LeftLimb1_Joint1" fromX="2.01009" fromY="-0.796374" fromZ="-1.34042" toX="2.01713" toY="-0.896412" toZ="-1.32037"/>
-                        <parameter for="LeftLimb1_Joint2" fromX="2.01713" fromY="-0.896412" fromZ="-1.32037" toX="2.00888" toY="-0.993823" toZ="-1.36602"/>
-                        <parameter for="LeftLimb1_Joint3" fromX="2.00888" fromY="-0.993823" fromZ="-1.36602" toX="2.02022" toY="-1.00609" toZ="-1.32358"/>
-                        <parameter for="LeftLimb2_Joint1" fromX="2.02747" fromY="-0.640245" fromZ="-1.36939" toX="2.04333" toY="-0.729928" toZ="-1.38953"/>
-                        <parameter for="LeftLimb2_Joint2" fromX="2.04333" fromY="-0.729928" fromZ="-1.38953" toX="2.05617" toY="-0.767764" toZ="-1.38259"/>
-                        <parameter for="LeftLimb2_Joint3" fromX="2.05617" fromY="-0.767764" fromZ="-1.38259" toX="2.05972" toY="-0.802491" toZ="-1.3741"/>
-                        <parameter for="Neck_Joint1" fromX="1.98671" fromY="-0.620641" fromZ="-1.3364" toX="1.98671" toY="-0.592427" toZ="-1.28192"/>
-                        <parameter for="RightLimb1_Joint1" fromX="1.96087" fromY="-0.789956" fromZ="-1.34133" toX="1.96054" toY="-0.895189" toZ="-1.33515"/>
-                        <parameter for="RightLimb1_Joint2" fromX="1.96054" fromY="-0.895189" fromZ="-1.33515" toX="1.98195" toY="-0.999897" toZ="-1.36802"/>
-                        <parameter for="RightLimb1_Joint3" fromX="1.98195" fromY="-0.999897" fromZ="-1.36802" toX="1.96729" toY="-1.00175" toZ="-1.33606"/>
-                        <parameter for="RightLimb2_Joint1" fromX="1.93297" fromY="-0.642964" fromZ="-1.34608" toX="1.92022" toY="-0.704161" toZ="-1.32127"/>
-                        <parameter for="RightLimb2_Joint2" fromX="1.92022" fromY="-0.704161" fromZ="-1.32127" toX="1.92202" toY="-0.757191" toZ="-1.27537"/>
-                        <parameter for="RightLimb2_Joint3" fromX="1.92202" fromY="-0.757191" fromZ="-1.27537" toX="1.94212" toY="-0.783304" toZ="-1.26003"/>
-                        <parameter for="Spine01" fromX="1.99409" fromY="-0.843471" fromZ="-1.34975" toX="1.99272" toY="-0.809126" toZ="-1.34435"/>
-                        <parameter for="Spine02" fromX="1.99272" fromY="-0.809126" fromZ="-1.34435" toX="1.98731" toY="-0.79263" toZ="-1.3324"/>
-                        <parameter for="Spine1" fromX="1.98731" fromY="-0.79263" fromZ="-1.3324" toX="1.98614" toY="-0.726293" toZ="-1.34087"/>
-                        <parameter for="Spine2" fromX="1.98614" fromY="-0.726293" fromZ="-1.34087" toX="1.98499" toY="-0.659866" toZ="-1.34802"/>
-                        <parameter for="Spine3" fromX="1.98499" fromY="-0.659866" fromZ="-1.34802" toX="1.98525" toY="-0.640211" toZ="-1.34675"/>
-                        <parameter for="Spine4" fromX="1.98525" fromY="-0.640211" fromZ="-1.34675" toX="1.99409" toY="-0.580718" toZ="-1.33373"/>
-                        <parameter for="Tail_Joint1" fromX="1.99409" fromY="-0.843471" fromZ="-1.37572" toX="1.99409" toY="-0.855858" toZ="-1.44739"/>
-                    </parameters>
-                </frame>
-            </frames>
-        </pose>
     </poses>
-    <motions/>
+    <motions>
+        <motion id="{782377d2-d7c2-4482-8b02-8ca4a6f2c6b7}" name="walk">
+            <clips>
+                <clip duration="0" linkData="{522d869d-5567-4048-8072-ac017f81ae71}" linkDataType="poseId"/>
+            </clips>
+        </motion>
+    </motions>
 </canvas>
 ‰PNG
 
