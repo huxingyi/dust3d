@@ -1501,7 +1501,7 @@ void Document::meshReady()
     delete m_meshGenerator;
     m_meshGenerator = nullptr;
     
-    qDebug() << "MeshLoader generation done";
+    qDebug() << "Mesh generation done";
     
     m_isPostProcessResultObsolete = true;
     m_isRigObsolete = true;
@@ -1558,7 +1558,7 @@ void Document::generateMesh()
         return;
     }
     
-    qDebug() << "MeshLoader generating..";
+    qDebug() << "Mesh generating..";
     
     settleOrigin();
     

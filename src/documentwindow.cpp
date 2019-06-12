@@ -1118,6 +1118,7 @@ DocumentWindow::~DocumentWindow()
 {
     emit uninialized();
     g_documentWindows.erase(this);
+    delete m_document;
 }
 
 void DocumentWindow::showEvent(QShowEvent *event)
