@@ -3,6 +3,10 @@ CONFIG += release
 DEFINES += NDEBUG
 RESOURCES += resources.qrc
 
+win32 {
+	RC_FILE = dust3d.rc
+}
+
 macx {
 	ICON = dust3d.icns
 
