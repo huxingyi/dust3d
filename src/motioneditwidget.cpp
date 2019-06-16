@@ -24,8 +24,9 @@ MotionEditWidget::MotionEditWidget(const Document *document, QWidget *parent) :
     connect(m_timelineWidget, &MotionTimelineWidget::clipsChanged, this, &MotionEditWidget::generatePreviews);
     
     m_previewWidget = new ModelWidget(this);
-    m_previewWidget->setMinimumSize(128, 128);
-    m_previewWidget->resize(384, 384);
+    m_previewWidget->setFixedSize(384, 384);
+    m_previewWidget->enableMove(true);
+    m_previewWidget->enableZoom(false);
     m_previewWidget->move(-64, 0);
     
     connect(m_clipPlayer, &AnimationClipPlayer::frameReadyToShow, this, [=]() {

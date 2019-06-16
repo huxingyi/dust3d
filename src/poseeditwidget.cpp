@@ -8,6 +8,7 @@
 #include <QMessageBox>
 #include <QFileDialog>
 #include <QSpinBox>
+#include <QSlider>
 #include "theme.h"
 #include "poseeditwidget.h"
 #include "floatnumberwidget.h"
@@ -17,6 +18,8 @@
 #include "documentwindow.h"
 #include "shortcuts.h"
 #include "imageforever.h"
+
+float PoseEditWidget::m_defaultBlur = 0.5;
 
 PoseEditWidget::PoseEditWidget(const Document *document, QWidget *parent) :
     QDialog(parent),
@@ -38,7 +41,7 @@ PoseEditWidget::PoseEditWidget(const Document *document, QWidget *parent) :
     
     SkeletonGraphicsWidget *graphicsWidget = new SkeletonGraphicsWidget(m_poseDocument);
     graphicsWidget->setNodePositionModifyOnly(true);
-    graphicsWidget->setBackgroundBlur(1.0);
+    graphicsWidget->setBackgroundBlur(m_defaultBlur);
     m_poseGraphicsWidget = graphicsWidget;
     
     initShortCuts(this, graphicsWidget);
@@ -52,14 +55,11 @@ PoseEditWidget::PoseEditWidget(const Document *document, QWidget *parent) :
     containerWidget->setLayout(containerLayout);
     containerWidget->setMinimumSize(400, 400);
     
-    m_previewWidget = new ModelWidget(containerWidget);
-    m_previewWidget->setAttribute(Qt::WA_TransparentForMouseEvents);
-    m_previewWidget->setMinimumSize(DocumentWindow::m_modelRenderWidgetInitialSize, DocumentWindow::m_modelRenderWidgetInitialSize);
-    m_previewWidget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-    m_previewWidget->move(DocumentWindow::m_modelRenderWidgetInitialX, DocumentWindow::m_modelRenderWidgetInitialY);
-    
-    m_poseGraphicsWidget->setModelWidget(m_previewWidget);
-    containerWidget->setModelWidget(m_previewWidget);
+    m_previewWidget = new ModelWidget(this);
+    m_previewWidget->setFixedSize(384, 384);
+    m_previewWidget->enableMove(true);
+    m_previewWidget->enableZoom(false);
+    m_previewWidget->move(-64, 0);
     
     connect(containerWidget, &GraphicsContainerWidget::containerSizeChanged,
         graphicsWidget, &SkeletonGraphicsWidget::canvasResized);
@@ -85,8 +85,38 @@ PoseEditWidget::PoseEditWidget(const Document *document, QWidget *parent) :
         emit parametersAdjusted();
     });
     
+    QSlider *opacitySlider = new QSlider(Qt::Horizontal);
+    opacitySlider->setFixedWidth(100);
+    opacitySlider->setMaximum(10);
+    opacitySlider->setMinimum(0);
+    opacitySlider->setValue(m_defaultBlur * 10);
+
+    connect(opacitySlider, &QSlider::valueChanged, this, [=](int value) {
+        graphicsWidget->setBackgroundBlur((float)value / 10);
+    });
+
+    QHBoxLayout *sliderLayout = new QHBoxLayout;
+    sliderLayout->addStretch();
+    sliderLayout->addSpacing(50);
+    sliderLayout->addWidget(new QLabel(tr("Dark")));
+    sliderLayout->addWidget(opacitySlider);
+    sliderLayout->addWidget(new QLabel(tr("Bright")));
+    sliderLayout->addSpacing(50);
+    sliderLayout->addStretch();
+    
+    QVBoxLayout *previewLayout = new QVBoxLayout;
+    previewLayout->addStretch();
+    previewLayout->addLayout(sliderLayout);
+    previewLayout->addSpacing(20);
+    
     QHBoxLayout *paramtersLayout = new QHBoxLayout;
     paramtersLayout->addWidget(containerWidget);
+    
+    QHBoxLayout *topLayout = new QHBoxLayout;
+    topLayout->addLayout(previewLayout);
+    topLayout->addWidget(Theme::createVerticalLineWidget());
+    topLayout->addLayout(paramtersLayout);
+    topLayout->setStretch(2, 1);
     
     m_nameEdit = new QLineEdit;
     m_nameEdit->setFixedWidth(200);
@@ -180,7 +210,7 @@ PoseEditWidget::PoseEditWidget(const Document *document, QWidget *parent) :
     baseInfoLayout->addWidget(saveButton);
     
     QVBoxLayout *mainLayout = new QVBoxLayout;
-    mainLayout->addLayout(paramtersLayout);
+    mainLayout->addLayout(topLayout);
     mainLayout->addWidget(Theme::createHorizontalLineWidget());
     mainLayout->addLayout(timelineLayout);
     mainLayout->addLayout(baseInfoLayout);

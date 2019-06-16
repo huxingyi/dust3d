@@ -76,6 +76,7 @@ private:
     SkeletonGraphicsWidget *m_poseGraphicsWidget = nullptr;
     QPushButton *m_framesSettingButton = nullptr;
     QSlider *m_currentFrameSlider = nullptr;
+    static float m_defaultBlur;
 };
 
 #endif
