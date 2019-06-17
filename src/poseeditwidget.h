@@ -13,6 +13,7 @@
 #include "skeletongraphicswidget.h"
 #include "posedocument.h"
 #include "floatnumberwidget.h"
+#include "skeletonside.h"
 
 class PoseEditWidget : public QDialog
 {
@@ -77,6 +78,8 @@ private:
     QPushButton *m_framesSettingButton = nullptr;
     QSlider *m_currentFrameSlider = nullptr;
     static float m_defaultBlur;
+    void initSideButton(QPushButton *button);
+    void updateSideButtonState(QPushButton *button, bool visible);
 };
 
 #endif

@@ -16,6 +16,26 @@ const float PoseDocument::m_groundPlaneHalfThickness = 0.005 / 4;
 const bool PoseDocument::m_hideRootAndVirtual = true;
 const float PoseDocument::m_outcomeScaleFactor = 0.5;
 
+void PoseDocument::setSideVisiableState(SkeletonSide side, bool visible)
+{
+    bool isSideVisible = m_hiddenSides.find(side) == m_hiddenSides.end();
+    if (isSideVisible == visible)
+        return;
+    if (visible)
+        m_hiddenSides.erase(side);
+    else
+        m_hiddenSides.insert(side);
+    emit sideVisibleStateChanged(side);
+    const QUuid partId = m_partIdMap[side];
+    partMap[partId].visible = visible;
+    emit partVisibleStateChanged(partId);
+}
+
+bool PoseDocument::isSideVisible(SkeletonSide side)
+{
+    return m_hiddenSides.find(side) == m_hiddenSides.end();
+}
+
 bool PoseDocument::hasPastableNodesInClipboard() const
 {
     const QClipboard *clipboard = QApplication::clipboard();
@@ -157,7 +177,7 @@ void PoseDocument::reset()
     partMap.clear();
     m_otherIds.clear();
     m_boneNameToIdsMap.clear();
-    m_bonesPartId = QUuid();
+    m_partIdMap.clear();
     emit cleanup();
     emit parametersChanged();
 }
@@ -275,16 +295,15 @@ void PoseDocument::fromParameters(const std::vector<RiggerBone> *rigBones,
             neckJoint1BoneDirection);
         
         std::map<QString, std::pair<QUuid, QUuid>> boneNameToIdsMap;
-        QUuid bonesPartId;
         parametersToNodes(&otherBones,
             &boneNameToIdsMap,
-            &bonesPartId,
+            &m_partIdMap,
             true);
     }
     
     parametersToNodes(&bones,
         &m_boneNameToIdsMap,
-        &m_bonesPartId,
+        &m_partIdMap,
         false);
     
     emit parametersChanged();
@@ -292,7 +311,7 @@ void PoseDocument::fromParameters(const std::vector<RiggerBone> *rigBones,
 
 void PoseDocument::parametersToNodes(const std::vector<RiggerBone> *rigBones,
     std::map<QString, std::pair<QUuid, QUuid>> *boneNameToIdsMap,
-    QUuid *bonesPartId,
+    std::map<SkeletonSide, QUuid> *m_partIdMap,
     bool isOther)
 {
     if (nullptr == rigBones || rigBones->empty()) {
@@ -302,9 +321,19 @@ void PoseDocument::parametersToNodes(const std::vector<RiggerBone> *rigBones,
     std::set<QUuid> newAddedNodeIds;
     std::set<QUuid> newAddedEdgeIds;
     
-    *bonesPartId = QUuid::createUuid();
-    auto &bonesPart = partMap[*bonesPartId];
-    bonesPart.id = *bonesPartId;
+    auto addPartIdOfSide = [=](SkeletonSide side) {
+        if (m_partIdMap->find(side) != m_partIdMap->end())
+            return;
+        QUuid partId = QUuid::createUuid();
+        auto &bonesPart = this->partMap[partId];
+        bonesPart.id = partId;
+        bonesPart.visible = this->m_hiddenSides.find(side) == this->m_hiddenSides.end();
+        qDebug() << SkeletonSideToDispName(side) << "partId:" << partId << " visible:" << bonesPart.visible;
+        (*m_partIdMap)[side] = partId;
+    };
+    addPartIdOfSide(SkeletonSide::Left);
+    addPartIdOfSide(SkeletonSide::None);
+    addPartIdOfSide(SkeletonSide::Right);
     
     //qDebug() << "rigBones size:" << rigBones->size();
     
@@ -319,13 +348,16 @@ void PoseDocument::parametersToNodes(const std::vector<RiggerBone> *rigBones,
     std::map<int, QUuid> boneIndexToHeadNodeIdMap;
     for (const auto &edgePair: edgePairs) {
         QUuid firstNodeId, secondNodeId;
+        SkeletonSide firstNodeSide = SkeletonSideFromBoneName((*rigBones)[edgePair.first].name);
+        SkeletonSide secondNodeSide = SkeletonSideFromBoneName((*rigBones)[edgePair.second].name);
         auto findFirst = boneIndexToHeadNodeIdMap.find(edgePair.first);
         if (findFirst == boneIndexToHeadNodeIdMap.end()) {
             const auto &bone = (*rigBones)[edgePair.first];
             if (!bone.name.startsWith("Virtual_") || !m_hideRootAndVirtual) {
                 SkeletonNode node;
-                node.partId = *bonesPartId;
+                node.partId = (*m_partIdMap)[firstNodeSide];
                 node.id = QUuid::createUuid();
+                partMap[node.partId].nodeIds.push_back(node.id);
                 node.setRadius(m_nodeRadius);
                 node.x = fromOutcomeX(bone.headPosition.x());
                 node.y = fromOutcomeY(bone.headPosition.y());
@@ -343,8 +375,9 @@ void PoseDocument::parametersToNodes(const std::vector<RiggerBone> *rigBones,
             const auto &bone = (*rigBones)[edgePair.second];
             if (!bone.name.startsWith("Virtual_") || !m_hideRootAndVirtual) {
                 SkeletonNode node;
-                node.partId = *bonesPartId;
+                node.partId = (*m_partIdMap)[secondNodeSide];
                 node.id = QUuid::createUuid();
+                partMap[node.partId].nodeIds.push_back(node.id);
                 node.setRadius(m_nodeRadius);
                 node.x = fromOutcomeX(bone.headPosition.x());
                 node.y = fromOutcomeY(bone.headPosition.y());
@@ -361,8 +394,13 @@ void PoseDocument::parametersToNodes(const std::vector<RiggerBone> *rigBones,
         if (firstNodeId.isNull() || secondNodeId.isNull())
             continue;
         
+        if (firstNodeSide != secondNodeSide) {
+            qDebug() << "First node side:" << SkeletonSideToDispName(firstNodeSide) << "is different with second node side:" << SkeletonSideToDispName(secondNodeSide);
+            continue;
+        }
+        
         SkeletonEdge edge;
-        edge.partId = *bonesPartId;
+        edge.partId = (*m_partIdMap)[firstNodeSide];
         edge.id = QUuid::createUuid();
         edge.nodeIds.push_back(firstNodeId);
         edge.nodeIds.push_back(secondNodeId);
@@ -377,11 +415,14 @@ void PoseDocument::parametersToNodes(const std::vector<RiggerBone> *rigBones,
         if (m_hideRootAndVirtual && bone.name.startsWith("Virtual_"))
             continue;
         if (bone.children.empty()) {
+            SkeletonSide side = SkeletonSideFromBoneName(bone.name);
+            
             const QUuid &firstNodeId = boneIndexToHeadNodeIdMap[i];
             
             SkeletonNode node;
-            node.partId = *bonesPartId;
+            node.partId = (*m_partIdMap)[side];
             node.id = QUuid::createUuid();
+            partMap[node.partId].nodeIds.push_back(node.id);
             node.setRadius(m_nodeRadius / 2);
             node.x = fromOutcomeX(bone.tailPosition.x());
             node.y = fromOutcomeY(bone.tailPosition.y());
@@ -391,8 +432,9 @@ void PoseDocument::parametersToNodes(const std::vector<RiggerBone> *rigBones,
             (*boneNameToIdsMap)[bone.name] = {firstNodeId, node.id};
             
             SkeletonEdge edge;
-            edge.partId = *bonesPartId;
+            edge.partId = (*m_partIdMap)[side];
             edge.id = QUuid::createUuid();
+            partMap[node.partId].nodeIds.push_back(node.id);
             edge.nodeIds.push_back(firstNodeId);
             edge.nodeIds.push_back(node.id);
             edgeMap[edge.id] = edge;
@@ -425,6 +467,10 @@ void PoseDocument::parametersToNodes(const std::vector<RiggerBone> *rigBones,
     }
     for (const auto &edgeIt: newAddedEdgeIds) {
         emit edgeAdded(edgeIt);
+    }
+    
+    for (const auto &it: *m_partIdMap) {
+        emit partVisibleStateChanged(it.second);
     }
 }
 
@@ -463,8 +509,6 @@ float PoseDocument::findFootBottomY() const
 {
     auto maxY = std::numeric_limits<float>::lowest();
     for (const auto &nodeIt: nodeMap) {
-        if (nodeIt.second.partId != m_bonesPartId)
-            continue;
         auto y = nodeIt.second.y + nodeIt.second.radius;
         if (y > maxY)
             maxY = y;

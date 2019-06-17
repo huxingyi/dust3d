@@ -21,6 +21,8 @@ signals:
     void edgeAdded(QUuid edgeId);
     void nodeOriginChanged(QUuid nodeId);
     void parametersChanged();
+    void sideVisibleStateChanged(SkeletonSide side);
+    void partVisibleStateChanged(QUuid partId);
     
 public:
     bool undoable() const override;
@@ -41,6 +43,8 @@ public:
     void fromParameters(const std::vector<RiggerBone> *rigBones,
         const std::map<QString, std::map<QString, QString>> &parameters);
     
+    bool isSideVisible(SkeletonSide side);
+    
 public slots:
     void saveHistoryItem();
     void clearHistories();
@@ -51,6 +55,7 @@ public slots:
     void moveNodeBy(QUuid nodeId, float x, float y, float z);
     void setNodeOrigin(QUuid nodeId, float x, float y, float z);
     void switchChainSide(const std::set<QUuid> nodeIds);
+    void setSideVisiableState(SkeletonSide side, bool visible);
     
 public:
     static const float m_nodeRadius;
@@ -63,7 +68,7 @@ private:
     float findFootBottomY() const;
     void parametersToNodes(const std::vector<RiggerBone> *rigBones,
         std::map<QString, std::pair<QUuid, QUuid>> *boneNameToIdsMap,
-        QUuid *bonesPartId,
+        std::map<SkeletonSide, QUuid> *m_partIdMap,
         bool isOther=false);
     void updateBonesFromParameters(std::vector<RiggerBone> *bones,
         const std::map<QString, std::map<QString, QString>> &parameters,
@@ -72,12 +77,13 @@ private:
         const QVector3D &neckJoint1BoneDirection);
 
     std::map<QString, std::pair<QUuid, QUuid>> m_boneNameToIdsMap;
-    QUuid m_bonesPartId;
+    std::map<SkeletonSide, QUuid> m_partIdMap;
     std::deque<PoseHistoryItem> m_undoItems;
     std::deque<PoseHistoryItem> m_redoItems;
     std::vector<RiggerBone> m_riggerBones;
     std::vector<std::map<QString, std::map<QString, QString>>> m_otherFramesParameters;
     std::set<QUuid> m_otherIds;
+    std::set<SkeletonSide> m_hiddenSides;
     
     static float fromOutcomeX(float x);
     static float toOutcomeX(float x);

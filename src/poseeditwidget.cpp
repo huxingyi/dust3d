@@ -77,6 +77,7 @@ PoseEditWidget::PoseEditWidget(const Document *document, QWidget *parent) :
     connect(m_poseDocument, &PoseDocument::nodeAdded, graphicsWidget, &SkeletonGraphicsWidget::nodeAdded);
     connect(m_poseDocument, &PoseDocument::edgeAdded, graphicsWidget, &SkeletonGraphicsWidget::edgeAdded);
     connect(m_poseDocument, &PoseDocument::nodeOriginChanged, graphicsWidget, &SkeletonGraphicsWidget::nodeOriginChanged);
+    connect(m_poseDocument, &PoseDocument::partVisibleStateChanged, graphicsWidget, &SkeletonGraphicsWidget::partVisibleStateChanged);
     
     connect(m_poseDocument, &PoseDocument::parametersChanged, this, [&]() {
         m_currentParameters.clear();
@@ -94,6 +95,56 @@ PoseEditWidget::PoseEditWidget(const Document *document, QWidget *parent) :
     connect(opacitySlider, &QSlider::valueChanged, this, [=](int value) {
         graphicsWidget->setBackgroundBlur((float)value / 10);
     });
+    
+    auto updateSideVisibleButtonState = [=](QPushButton *button, SkeletonSide side) {
+        this->updateSideButtonState(button, m_poseDocument->isSideVisible(side));
+    };
+    
+    QPushButton *leftSideVisibleButton = new QPushButton(QChar('L'));
+    leftSideVisibleButton->setToolTip(tr("Toggle Left Side Visibility"));
+    initSideButton(leftSideVisibleButton);
+    updateSideVisibleButtonState(leftSideVisibleButton, SkeletonSide::Left);
+    connect(leftSideVisibleButton, &QPushButton::clicked, this, [=]() {
+        m_poseDocument->setSideVisiableState(SkeletonSide::Left, !m_poseDocument->isSideVisible(SkeletonSide::Left));
+    });
+    
+    QPushButton *middleSideVisibleButton = new QPushButton(QChar('M'));
+    middleSideVisibleButton->setToolTip(tr("Toggle Middle Side Visibility"));
+    initSideButton(middleSideVisibleButton);
+    updateSideVisibleButtonState(middleSideVisibleButton, SkeletonSide::None);
+    connect(middleSideVisibleButton, &QPushButton::clicked, this, [=]() {
+        m_poseDocument->setSideVisiableState(SkeletonSide::None, !m_poseDocument->isSideVisible(SkeletonSide::None));
+    });
+    
+    QPushButton *rightSideVisibleButton = new QPushButton(QChar('R'));
+    rightSideVisibleButton->setToolTip(tr("Toggle Right Side Visibility"));
+    initSideButton(rightSideVisibleButton);
+    updateSideVisibleButtonState(rightSideVisibleButton, SkeletonSide::Right);
+    connect(rightSideVisibleButton, &QPushButton::clicked, this, [=]() {
+        m_poseDocument->setSideVisiableState(SkeletonSide::Right, !m_poseDocument->isSideVisible(SkeletonSide::Right));
+    });
+    
+    connect(m_poseDocument, &PoseDocument::sideVisibleStateChanged, this, [=](SkeletonSide side) {
+        switch (side) {
+        case SkeletonSide::Left:
+            updateSideVisibleButtonState(leftSideVisibleButton, side);
+            break;
+        case SkeletonSide::None:
+            updateSideVisibleButtonState(middleSideVisibleButton, side);
+            break;
+        case SkeletonSide::Right:
+            updateSideVisibleButtonState(rightSideVisibleButton, side);
+            break;
+        }
+    });
+    
+    QHBoxLayout *sideButtonLayout = new QHBoxLayout;
+    sideButtonLayout->setSpacing(0);
+    sideButtonLayout->addStretch();
+    sideButtonLayout->addWidget(leftSideVisibleButton);
+    sideButtonLayout->addWidget(middleSideVisibleButton);
+    sideButtonLayout->addWidget(rightSideVisibleButton);
+    sideButtonLayout->addStretch();
 
     QHBoxLayout *sliderLayout = new QHBoxLayout;
     sliderLayout->addStretch();
@@ -106,6 +157,7 @@ PoseEditWidget::PoseEditWidget(const Document *document, QWidget *parent) :
     
     QVBoxLayout *previewLayout = new QVBoxLayout;
     previewLayout->addStretch();
+    previewLayout->addLayout(sideButtonLayout);
     previewLayout->addLayout(sliderLayout);
     previewLayout->addSpacing(20);
     
@@ -230,6 +282,27 @@ PoseEditWidget::PoseEditWidget(const Document *document, QWidget *parent) :
     updateTitle();
     updateFramesSettingButton();
     m_poseDocument->saveHistoryItem();
+}
+
+void PoseEditWidget::initSideButton(QPushButton *button)
+{
+    QFont font;
+    font.setWeight(QFont::Light);
+    font.setPixelSize(Theme::toolIconFontSize);
+    font.setBold(false);
+
+    button->setFont(font);
+    button->setFixedSize(Theme::toolIconSize, Theme::toolIconSize);
+    button->setStyleSheet("QPushButton {color: #f7d9c8}");
+    button->setFocusPolicy(Qt::NoFocus);
+}
+
+void PoseEditWidget::updateSideButtonState(QPushButton *button, bool visible)
+{
+    if (visible)
+        button->setStyleSheet("QPushButton {color: #f7d9c8}");
+    else
+        button->setStyleSheet("QPushButton {color: #252525}");
 }
 
 void PoseEditWidget::showFramesSettingPopup(const QPoint &pos)

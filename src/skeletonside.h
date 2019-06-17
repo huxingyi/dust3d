@@ -24,5 +24,6 @@ QString SkeletonSideToDispName(SkeletonSide side)                   \
             return "";                                              \
     }                                                               \
 }
+SkeletonSide SkeletonSideFromBoneName(const QString &boneName);
 
 #endif
