@@ -61,6 +61,9 @@ PoseEditWidget::PoseEditWidget(const Document *document, QWidget *parent) :
     m_previewWidget->enableZoom(false);
     m_previewWidget->move(-64, 0);
     
+    m_poseGraphicsWidget->setModelWidget(m_previewWidget);
+    containerWidget->setModelWidget(m_previewWidget);
+    
     connect(containerWidget, &GraphicsContainerWidget::containerSizeChanged,
         graphicsWidget, &SkeletonGraphicsWidget::canvasResized);
     
@@ -141,9 +144,9 @@ PoseEditWidget::PoseEditWidget(const Document *document, QWidget *parent) :
     QHBoxLayout *sideButtonLayout = new QHBoxLayout;
     sideButtonLayout->setSpacing(0);
     sideButtonLayout->addStretch();
-    sideButtonLayout->addWidget(leftSideVisibleButton);
-    sideButtonLayout->addWidget(middleSideVisibleButton);
     sideButtonLayout->addWidget(rightSideVisibleButton);
+    sideButtonLayout->addWidget(middleSideVisibleButton);
+    sideButtonLayout->addWidget(leftSideVisibleButton);
     sideButtonLayout->addStretch();
 
     QHBoxLayout *sliderLayout = new QHBoxLayout;
