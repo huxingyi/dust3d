@@ -170,7 +170,7 @@ void PoseDocument::updateOtherFramesParameters(const std::vector<std::map<QStrin
     m_otherFramesParameters = otherFramesParameters;
 }
 
-void PoseDocument::reset()
+void PoseDocument::resetWithoutNotifingParametersChanged()
 {
     nodeMap.clear();
     edgeMap.clear();
@@ -179,6 +179,11 @@ void PoseDocument::reset()
     m_boneNameToIdsMap.clear();
     m_partIdMap.clear();
     emit cleanup();
+}
+
+void PoseDocument::reset()
+{
+    resetWithoutNotifingParametersChanged();
     emit parametersChanged();
 }
 
@@ -284,7 +289,7 @@ void PoseDocument::fromParameters(const std::vector<RiggerBone> *rigBones,
         firstSpineBonePosition,
         neckJoint1BoneDirection);
     
-    reset();
+    resetWithoutNotifingParametersChanged();
     
     for (const auto &otherParameters: m_otherFramesParameters) {
         std::vector<RiggerBone> otherBones = *rigBones;
@@ -328,7 +333,6 @@ void PoseDocument::parametersToNodes(const std::vector<RiggerBone> *rigBones,
         auto &bonesPart = this->partMap[partId];
         bonesPart.id = partId;
         bonesPart.visible = this->m_hiddenSides.find(side) == this->m_hiddenSides.end();
-        qDebug() << SkeletonSideToDispName(side) << "partId:" << partId << " visible:" << bonesPart.visible;
         (*m_partIdMap)[side] = partId;
     };
     addPartIdOfSide(SkeletonSide::Left);

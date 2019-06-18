@@ -37,6 +37,7 @@ public:
     
     void updateTurnaround(const QImage &image);
     void updateOtherFramesParameters(const std::vector<std::map<QString, std::map<QString, QString>>> &otherFramesParameters);
+    void resetWithoutNotifingParametersChanged();
     void reset();
     
     void toParameters(std::map<QString, std::map<QString, QString>> &parameters, const std::set<QUuid> &limitNodeIds=std::set<QUuid>()) const;
