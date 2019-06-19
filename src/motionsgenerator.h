@@ -19,7 +19,7 @@ public:
         const std::map<int, RiggerVertexWeights> *rigWeights,
         const Outcome &outcome);
     ~MotionsGenerator();
-    void addPoseToLibrary(const QUuid &poseId, const std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> &frames);
+    void addPoseToLibrary(const QUuid &poseId, const std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> &frames, float yTranslationScale);
     void addMotionToLibrary(const QUuid &motionId, const std::vector<MotionClip> &clips);
     void addRequirement(const QUuid &motionId);
     std::vector<std::pair<float, MeshLoader *>> takeResultPreviewMeshs(const QUuid &motionId);
@@ -50,6 +50,7 @@ private:
     std::map<int, RiggerVertexWeights> m_rigWeights;
     Outcome m_outcome;
     std::map<QUuid, std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>>> m_poses;
+    std::map<QUuid, float> m_posesYtranslationScales;
     std::map<QUuid, std::vector<MotionClip>> m_motions;
     std::set<QUuid> m_requiredMotionIds;
     std::set<QUuid> m_generatedMotionIds;

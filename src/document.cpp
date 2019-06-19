@@ -356,7 +356,7 @@ QUuid Document::createNode(QUuid nodeId, float x, float y, float z, float radius
     return node.id;
 }
 
-void Document::addPose(QUuid poseId, QString name, std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> frames, QUuid turnaroundImageId)
+void Document::addPose(QUuid poseId, QString name, std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> frames, QUuid turnaroundImageId, float yTranslationScale)
 {
     QUuid newPoseId = poseId;
     auto &pose = poseMap[newPoseId];
@@ -365,6 +365,7 @@ void Document::addPose(QUuid poseId, QString name, std::vector<std::pair<std::ma
     pose.name = name;
     pose.frames = frames;
     pose.turnaroundImageId = turnaroundImageId;
+    pose.yTranslationScale = yTranslationScale;
     pose.dirty = true;
     
     poseIdList.push_back(newPoseId);
@@ -478,6 +479,19 @@ void Document::setPoseTurnaroundImageId(QUuid poseId, QUuid imageId)
     findPoseResult->second.turnaroundImageId = imageId;
     findPoseResult->second.dirty = true;
     emit poseTurnaroundImageIdChanged(poseId);
+    emit optionsChanged();
+}
+
+void Document::setPoseYtranslationScale(QUuid poseId, float scale)
+{
+    auto findPoseResult = poseMap.find(poseId);
+    if (findPoseResult == poseMap.end()) {
+        qDebug() << "Find pose failed:" << poseId;
+        return;
+    }
+    findPoseResult->second.yTranslationScale = scale;
+    findPoseResult->second.dirty = true;
+    emit poseYtranslationScaleChanged(poseId);
     emit optionsChanged();
 }
 
@@ -1061,6 +1075,8 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
                 pose["name"] = poseIt.second.name;
             if (!poseIt.second.turnaroundImageId.isNull())
                 pose["canvasImageId"] = poseIt.second.turnaroundImageId.toString();
+            if (poseIt.second.yTranslationScaleAdjusted())
+                pose["yTranslationScale"] = QString::number(poseIt.second.yTranslationScale);
             snapshot->poses.push_back(std::make_pair(pose, poseIt.second.frames));
         }
     }
@@ -1341,6 +1357,9 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
         auto findCanvasImageId = poseAttributes.find("canvasImageId");
         if (findCanvasImageId != poseAttributes.end())
             newPose.turnaroundImageId = QUuid(findCanvasImageId->second);
+        auto findYtranslationScale = poseAttributes.find("yTranslationScale");
+        if (findYtranslationScale != poseAttributes.end())
+            newPose.yTranslationScale = findYtranslationScale->second.toFloat();
         newPose.frames = poseIt.second;
         oldNewIdMap[QUuid(valueOfKeyInMapOrEmpty(poseAttributes, "id"))] = newPoseId;
         poseIdList.push_back(newPoseId);
@@ -2875,7 +2894,7 @@ void Document::generateMotions()
     m_motionsGenerator = new MotionsGenerator(rigType, rigBones, rigWeights, currentRiggedOutcome());
     bool hasDirtyMotion = false;
     for (const auto &pose: poseMap) {
-        m_motionsGenerator->addPoseToLibrary(pose.first, pose.second.frames);
+        m_motionsGenerator->addPoseToLibrary(pose.first, pose.second.frames, pose.second.yTranslationScale);
     }
     for (auto &motion: motionMap) {
         if (motion.second.dirty) {

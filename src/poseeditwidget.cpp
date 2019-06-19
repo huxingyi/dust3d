@@ -194,6 +194,11 @@ PoseEditWidget::PoseEditWidget(const Document *document, QWidget *parent) :
     connect(saveButton, &QPushButton::clicked, this, &PoseEditWidget::save);
     saveButton->setDefault(true);
     
+    QPushButton *setPoseSettingButton = new QPushButton(Theme::awesome()->icon(fa::gear), tr(""));
+    connect(setPoseSettingButton, &QPushButton::clicked, this, [=]() {
+        showPoseSettingPopup(mapFromGlobal(QCursor::pos()));
+    });
+    
     QPushButton *changeReferenceSheet = new QPushButton(tr("Change Reference Sheet..."));
     connect(changeReferenceSheet, &QPushButton::clicked, this, &PoseEditWidget::changeTurnaround);
     connect(m_poseDocument, &PoseDocument::turnaroundChanged,
@@ -261,6 +266,7 @@ PoseEditWidget::PoseEditWidget(const Document *document, QWidget *parent) :
     baseInfoLayout->addWidget(new QLabel(tr("Duration")));
     baseInfoLayout->addWidget(m_durationEdit);
     baseInfoLayout->addStretch();
+    baseInfoLayout->addWidget(setPoseSettingButton);
     baseInfoLayout->addWidget(changeReferenceSheet);
     baseInfoLayout->addWidget(saveButton);
     
@@ -280,6 +286,7 @@ PoseEditWidget::PoseEditWidget(const Document *document, QWidget *parent) :
     connect(this, &PoseEditWidget::renamePose, m_document, &Document::renamePose);
     connect(this, &PoseEditWidget::setPoseFrames, m_document, &Document::setPoseFrames);
     connect(this, &PoseEditWidget::setPoseTurnaroundImageId, m_document, &Document::setPoseTurnaroundImageId);
+    connect(this, &PoseEditWidget::setPoseYtranslationScale, m_document, &Document::setPoseYtranslationScale);
     
     updatePoseDocument();
     updateTitle();
@@ -308,6 +315,43 @@ void PoseEditWidget::updateSideButtonState(QPushButton *button, bool visible)
         button->setStyleSheet("QPushButton {color: #252525}");
 }
 
+void PoseEditWidget::showPoseSettingPopup(const QPoint &pos)
+{
+    QMenu popupMenu;
+    
+    QWidget *popup = new QWidget;
+    
+    FloatNumberWidget *yTranslationScaleWidget = new FloatNumberWidget;
+    yTranslationScaleWidget->setItemName(tr("Height Adjustment Scale"));
+    yTranslationScaleWidget->setRange(0, 1);
+    yTranslationScaleWidget->setValue(m_yTranslationScale);
+    
+    connect(yTranslationScaleWidget, &FloatNumberWidget::valueChanged, [&](float value) {
+        m_yTranslationScale = value;
+        setUnsaveState();
+    });
+    
+    QPushButton *yTranslationScaleEraser = new QPushButton(QChar(fa::eraser));
+    Theme::initAwesomeToolButton(yTranslationScaleEraser);
+    
+    connect(yTranslationScaleEraser, &QPushButton::clicked, [=]() {
+        yTranslationScaleWidget->setValue(1.0);
+    });
+    
+    QHBoxLayout *yTranslationScaleLayout = new QHBoxLayout;
+    yTranslationScaleLayout->addWidget(yTranslationScaleEraser);
+    yTranslationScaleLayout->addWidget(yTranslationScaleWidget);
+    
+    popup->setLayout(yTranslationScaleLayout);
+    
+    QWidgetAction *action = new QWidgetAction(this);
+    action->setDefaultWidget(popup);
+    
+    popupMenu.addAction(action);
+    
+    popupMenu.exec(mapToGlobal(pos));
+}
+
 void PoseEditWidget::showFramesSettingPopup(const QPoint &pos)
 {
     QMenu popupMenu;
@@ -315,13 +359,13 @@ void PoseEditWidget::showFramesSettingPopup(const QPoint &pos)
     QWidget *popup = new QWidget;
     
     QSpinBox *framesEdit = new QSpinBox();
-    framesEdit->setMaximum(60);
+    framesEdit->setMaximum(m_frames.size());
     framesEdit->setMinimum(1);
     framesEdit->setSingleStep(1);
     framesEdit->setValue(m_frames.size());
     
     connect(framesEdit, static_cast<void (QSpinBox::*)(int)>(&QSpinBox::valueChanged), this, [=](int value) {
-        setFrameCount(value);
+        setCurrentFrame(value);
     });
     
     QFormLayout *formLayout = new QFormLayout;
@@ -359,21 +403,6 @@ void PoseEditWidget::syncFrameFromCurrent()
     ensureEnoughFrames();
     m_frames[m_currentFrame] = {m_currentAttributes, m_currentParameters};
     updateFramesDurations();
-}
-
-void PoseEditWidget::setFrameCount(int count)
-{
-    if (count == (int)m_frames.size())
-        return;
-    
-    setUnsaveState();
-    count = std::max(count, 1);
-    m_frames.resize(count);
-    updateFramesDurations();
-    updateFramesSettingButton();
-    if (m_currentFrame >= count) {
-        setCurrentFrame(count - 1);
-    }
 }
 
 void PoseEditWidget::updateFramesDurations()
@@ -604,6 +633,11 @@ void PoseEditWidget::setEditPoseTurnaroundImageId(QUuid imageId)
     m_poseDocument->updateTurnaround(*image);
 }
 
+void PoseEditWidget::setEditPoseYtranslationScale(float yTranslationScale)
+{
+    m_yTranslationScale = yTranslationScale;
+}
+
 void PoseEditWidget::clearUnsaveState()
 {
     m_unsaved = false;
@@ -620,11 +654,12 @@ void PoseEditWidget::save()
 {
     if (m_poseId.isNull()) {
         m_poseId = QUuid::createUuid();
-        emit addPose(m_poseId, m_nameEdit->text(), m_frames, m_imageId);
+        emit addPose(m_poseId, m_nameEdit->text(), m_frames, m_imageId, m_yTranslationScale);
     } else if (m_unsaved) {
         emit renamePose(m_poseId, m_nameEdit->text());
         emit setPoseFrames(m_poseId, m_frames);
         emit setPoseTurnaroundImageId(m_poseId, m_imageId);
+        emit setPoseYtranslationScale(m_poseId, m_yTranslationScale);
     }
     clearUnsaveState();
 }

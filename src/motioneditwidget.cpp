@@ -251,7 +251,7 @@ void MotionEditWidget::generatePreviews()
     m_previewsGenerator = new MotionsGenerator(m_document->rigType, rigBones, rigWeights,
         m_document->currentRiggedOutcome());
     for (const auto &pose: m_document->poseMap)
-        m_previewsGenerator->addPoseToLibrary(pose.first, pose.second.frames);
+        m_previewsGenerator->addPoseToLibrary(pose.first, pose.second.frames, pose.second.yTranslationScale);
     for (const auto &motion: m_document->motionMap)
         m_previewsGenerator->addMotionToLibrary(motion.first, motion.second.clips);
     m_previewsGenerator->addMotionToLibrary(QUuid(), m_timelineWidget->clips());

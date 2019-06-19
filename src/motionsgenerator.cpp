@@ -27,9 +27,10 @@ MotionsGenerator::~MotionsGenerator()
     delete m_poser;
 }
 
-void MotionsGenerator::addPoseToLibrary(const QUuid &poseId, const std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> &frames)
+void MotionsGenerator::addPoseToLibrary(const QUuid &poseId, const std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> &frames, float yTranslationScale)
 {
     m_poses[poseId] = frames;
+    m_posesYtranslationScales[poseId] = yTranslationScale;
 }
 
 void MotionsGenerator::addMotionToLibrary(const QUuid &motionId, const std::vector<MotionClip> &clips)
@@ -231,6 +232,7 @@ const JointNodeTree &MotionsGenerator::poseJointNodeTree(const QUuid &poseId, in
         return findResult->second;
     
     const auto &frames = m_poses[poseId];
+    const auto &posesYtranslationScale = m_posesYtranslationScales[poseId];
     
     m_poser->reset();
     if (frame < (int)frames.size()) {
@@ -240,6 +242,7 @@ const JointNodeTree &MotionsGenerator::poseJointNodeTree(const QUuid &poseId, in
         std::map<QString, std::map<QString, QString>> translatedParameters;
         postDocument.toParameters(translatedParameters);
         m_poser->parameters() = translatedParameters;
+        m_poser->setYtranslationScale(posesYtranslationScale);
     }
     m_poser->commit();
     auto insertResult = m_poseJointNodeTreeMap.insert({{poseId, frame}, m_poser->resultJointNodeTree()});

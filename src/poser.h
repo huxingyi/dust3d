@@ -17,6 +17,7 @@ public:
     const std::vector<JointNode> &resultNodes() const;
     const JointNodeTree &resultJointNodeTree() const;
     std::map<QString, std::map<QString, QString>> &parameters();
+    void setYtranslationScale(float scale);
     virtual void commit();
     void reset();
     static void fetchChains(const std::vector<QString> &boneNames, std::map<QString, std::vector<QString>> &chains);
@@ -25,6 +26,7 @@ protected:
     std::map<QString, int> m_boneNameToIndexMap;
     JointNodeTree m_jointNodeTree;
     std::map<QString, std::map<QString, QString>> m_parameters;
+    float m_yTranslationScale = 1.0;
 };
 
 #endif

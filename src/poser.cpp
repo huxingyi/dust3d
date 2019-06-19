@@ -15,6 +15,11 @@ Poser::~Poser()
 {
 }
 
+void Poser::setYtranslationScale(float scale)
+{
+    m_yTranslationScale = scale;
+}
+
 int Poser::findBoneIndex(const QString &name)
 {
     auto findResult = m_boneNameToIndexMap.find(name);

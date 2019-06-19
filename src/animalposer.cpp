@@ -20,54 +20,23 @@ void AnimalPoser::resolveTransform()
         resolveChainRotation(chain.second);
     }
     
-    //int firstSpineBoneIndex = findBoneIndex(Rigger::firstSpineBoneName);
-    //if (-1 == firstSpineBoneIndex) {
-    //    qDebug() << "Find first spine bone failed:" << Rigger::firstSpineBoneName;
-    //    return;
-    //}
-    
-    //const auto &firstSpineBone = bones()[firstSpineBoneIndex];
-    
     float mostBottomYBeforeTransform = std::numeric_limits<float>::max();
     for (const auto &bone: bones()) {
         if (bone.tailPosition.y() < mostBottomYBeforeTransform)
             mostBottomYBeforeTransform = bone.tailPosition.y();
     }
     
-    //float legHeightBeforeTransform = std::abs(mostBottomYBeforeTransform - firstSpineBone.headPosition.y());
     auto transformedJointNodeTree = m_jointNodeTree;
     transformedJointNodeTree.recalculateTransformMatrices();
     float mostBottomYAfterTransform = std::numeric_limits<float>::max();
-    //QVector3D firstSpineBonePositionAfterTransform = firstSpineBone.headPosition;
     for (int i = 0; i < (int)transformedJointNodeTree.nodes().size(); ++i) {
         const auto &bone = bones()[i];
         const auto &jointNode = transformedJointNodeTree.nodes()[i];
         QVector3D newPosition = jointNode.transformMatrix * bone.tailPosition;
-        //if (0 == i) {
-            // Root bone's tail position is the first spine bone's head position
-        //    firstSpineBonePositionAfterTransform = newPosition;
-        //}
         if (newPosition.y() < mostBottomYAfterTransform)
             mostBottomYAfterTransform = newPosition.y();
     }
-    //float legHeightAfterTransform = std::abs(mostBottomYAfterTransform - firstSpineBonePositionAfterTransform.y());
-    //float translateY = legHeightAfterTransform - legHeightBeforeTransform;
     float translateY = mostBottomYBeforeTransform - mostBottomYAfterTransform;
-    
-    //qDebug() << "Leg height changed, translateY:" << translateY << "legHeightBeforeTransform:" << legHeightBeforeTransform << "legHeightAfterTransform:" << legHeightAfterTransform << "firstSpineBonePositionAfterTransform:" << firstSpineBonePositionAfterTransform << "firstSpineBone.headPosition:" << firstSpineBone.headPosition;
-    
-    /*
-    const auto &findRootParameters = parameters().find(Rigger::rootBoneName);
-    if (findRootParameters != parameters().end()) {
-        auto findHeightAboveGroundLevel = findRootParameters->second.find("heightAboveGroundLevel");
-        if (findHeightAboveGroundLevel != findRootParameters->second.end()) {
-            float heightAboveGroundLevel = findHeightAboveGroundLevel->second.toFloat();
-            float myHeightAboveGroundLevel = heightAboveGroundLevel * legHeightAfterTransform;
-            translateY += myHeightAboveGroundLevel;
-            //qDebug() << "heightAboveGroundLevel:" << heightAboveGroundLevel << "myHeightAboveGroundLevel:" << myHeightAboveGroundLevel << "legHeightBeforeTransform:" << legHeightBeforeTransform << "applied translateY:" << translateY;
-        }
-    }
-    */
     
     if (!qFuzzyIsNull(translateY)) {
         int rootBoneIndex = findBoneIndex(Rigger::rootBoneName);
@@ -75,7 +44,7 @@ void AnimalPoser::resolveTransform()
             qDebug() << "Find root bone failed:" << Rigger::rootBoneName;
             return;
         }
-        m_jointNodeTree.addTranslation(rootBoneIndex, QVector3D(0, translateY, 0));
+        m_jointNodeTree.addTranslation(rootBoneIndex, QVector3D(0, translateY * m_yTranslationScale, 0));
     }
 }
 
@@ -186,7 +155,7 @@ void AnimalPoser::resolveChainRotation(const std::vector<QString> &limbBoneNames
         
         QVector3D targetMiddleBoneStartPosition;
         {
-            //qDebug() << beginBoneName << "Angle:" << angleBetweenDistanceAndMiddleBones;
+            qDebug() << beginBoneName << "Angle:" << angleBetweenDistanceAndMiddleBones << "Distance:" << targetDistanceBetweenBeginAndEndBones;
             auto rotation = QQuaternion::fromAxisAndAngle(matchRotatePlaneNormal, angleBetweenDistanceAndMiddleBones);
             targetMiddleBoneStartPosition = targetEndBoneStartPosition + rotation.rotatedVector(-matchDirectionBetweenBeginAndEndPones).normalized() * targetMiddleBoneLength;
         }

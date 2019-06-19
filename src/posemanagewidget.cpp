@@ -78,6 +78,7 @@ void PoseManageWidget::showPoseDialog(QUuid poseId)
             poseEditWidget->setEditPoseName(pose->name);
             poseEditWidget->setEditPoseFrames(pose->frames);
             poseEditWidget->setEditPoseTurnaroundImageId(pose->turnaroundImageId);
+            poseEditWidget->setEditPoseYtranslationScale(pose->yTranslationScale);
             poseEditWidget->clearUnsaveState();
         }
     }

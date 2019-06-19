@@ -198,6 +198,7 @@ public:
     QString name;
     bool dirty = true;
     QUuid turnaroundImageId;
+    float yTranslationScale = 1.0;
     std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> frames; // pair<attributes, parameters>
     void updatePreviewMesh(MeshLoader *previewMesh)
     {
@@ -209,6 +210,10 @@ public:
         if (nullptr == m_previewMesh)
             return nullptr;
         return new MeshLoader(*m_previewMesh);
+    }
+    bool yTranslationScaleAdjusted() const
+    {
+        return fabs(yTranslationScale - 1.0) >= 0.01;
     }
 private:
     Q_DISABLE_COPY(Pose);
@@ -434,6 +439,7 @@ signals:
     void poseNameChanged(QUuid poseId);
     void poseFramesChanged(QUuid poseId);
     void poseTurnaroundImageIdChanged(QUuid poseId);
+    void poseYtranslationScaleChanged(QUuid poseId);
     void posePreviewChanged(QUuid poseId);
     void motionAdded(QUuid motionId);
     void motionRemoved(QUuid motionId);
@@ -612,10 +618,12 @@ public slots:
     void enableWeld(bool enabled);
     void setRigType(RigType toRigType);
     void addPose(QUuid poseId, QString name, std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> frames,
-        QUuid turnaroundImageId);
+        QUuid turnaroundImageId,
+        float yTranslationScale);
     void removePose(QUuid poseId);
     void setPoseFrames(QUuid poseId, std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> frames);
     void setPoseTurnaroundImageId(QUuid poseId, QUuid imageId);
+    void setPoseYtranslationScale(QUuid poseId, float scale);
     void renamePose(QUuid poseId, QString name);
     void addMotion(QUuid motionId, QString name, std::vector<MotionClip> clips);
     void removeMotion(QUuid motionId);
