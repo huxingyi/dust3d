@@ -48,6 +48,7 @@ External Links
 - [DUST3D–A NEW OPEN SOURCE 3D MODELLER](http://www.gamefromscratch.com/post/2018/04/20/Dust3D-A-New-Open-Source-3D-Modeller.aspx) **gamefromscratch.com**  
 - [Dust3D - простая система 3D моделирования для игр](https://www.linux.org.ru/news/opensource/14198146) **linux.org.ru**  
 - [Бета-выпуск Dust3D, нового открытого пакета для создания 3D-моделей](https://www.opennet.ru/opennews/art.shtml?num=49694) **opennet.ru**  
+- [Dust3D - ユニークなモデリングフローが印象的な無料の3Dモデリングソフト！Win＆Mac＆Linux！オープンソース！](https://3dnchu.com/archives/dust3d/) **3dnchu.com**  
 
 External Media
 -------------
