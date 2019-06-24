@@ -6,6 +6,7 @@
 enum class PartBase
 {
     XYZ = 0,
+    Average,
     YZ,
     XY,
     ZX,
@@ -18,6 +19,8 @@ PartBase PartBaseFromString(const char *baseString)                             
     QString base = baseString;                                                  \
     if (base == "XYZ")                                                          \
         return PartBase::XYZ;                                                   \
+    if (base == "Average")                                                      \
+        return PartBase::Average;                                               \
     if (base == "YZ")                                                           \
         return PartBase::YZ;                                                    \
     if (base == "XY")                                                           \
@@ -33,6 +36,8 @@ const char *PartBaseToString(PartBase base)                                     
     switch (base) {                                                             \
         case PartBase::XYZ:                                                     \
             return "XYZ";                                                       \
+        case PartBase::Average:                                                 \
+            return "Average";                                                   \
         case PartBase::YZ:                                                      \
             return "YZ";                                                        \
         case PartBase::XY:                                                      \
@@ -50,6 +55,8 @@ QString PartBaseToDispName(PartBase base)                                       
     switch (base) {                                                             \
         case PartBase::XYZ:                                                     \
             return QObject::tr("Dynamic");                                      \
+        case PartBase::Average:                                                 \
+            return QObject::tr("Average");                                      \
         case PartBase::YZ:                                                      \
             return QObject::tr("Side Plane");                                   \
         case PartBase::XY:                                                      \

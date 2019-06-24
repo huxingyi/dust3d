@@ -259,6 +259,22 @@ bool Builder::build()
     for (const auto &nodeIndex: m_sortedNodeIndices) {
         prepareNode(nodeIndex);
     }
+    if (m_baseNormalAverageEnabled) {
+        QVector3D sumNormal;
+        for (const auto &node: m_nodes) {
+            if (node.hasInitialBaseNormal) {
+                sumNormal += node.initialBaseNormal * node.radius;
+            }
+        }
+        QVector3D averageNormal = sumNormal.normalized();
+        if (!averageNormal.isNull()) {
+            for (auto &node: m_nodes) {
+                if (node.hasInitialBaseNormal) {
+                    node.initialBaseNormal = revisedBaseNormalAcordingToCutNormal(averageNormal, node.traverseDirection);
+                }
+            }
+        }
+    }
     for (const auto &nodeIndex: m_sortedNodeIndices) {
         resolveBaseNormalRecursively(nodeIndex);
     }
@@ -302,6 +318,11 @@ void Builder::enableBaseNormalOnY(bool enabled)
 void Builder::enableBaseNormalOnZ(bool enabled)
 {
     m_baseNormalOnZ = enabled;
+}
+
+void Builder::enableBaseNormalAverage(bool enabled)
+{
+    m_baseNormalAverageEnabled = enabled;
 }
 
 std::pair<QVector3D, bool> Builder::calculateBaseNormal(const std::vector<QVector3D> &inputDirects,

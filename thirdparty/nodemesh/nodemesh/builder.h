@@ -20,6 +20,7 @@ public:
     void enableBaseNormalOnX(bool enabled);
     void enableBaseNormalOnY(bool enabled);
     void enableBaseNormalOnZ(bool enabled);
+    void enableBaseNormalAverage(bool enabled);
     const std::vector<QVector3D> &generatedVertices();
     const std::vector<std::vector<size_t>> &generatedFaces();
     const std::vector<size_t> &generatedVerticesSourceNodeIndices();
@@ -98,6 +99,7 @@ private:
     bool m_baseNormalOnX = true;
     bool m_baseNormalOnY = true;
     bool m_baseNormalOnZ = true;
+    bool m_baseNormalAverageEnabled = false;
     
     void sortNodeIndices();
     void prepareNode(size_t nodeIndex);

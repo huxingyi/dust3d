@@ -457,6 +457,8 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
     builder->setCutRotation(cutRotation);
     if (PartBase::YZ == base) {
         builder->enableBaseNormalOnX(false);
+    } else if (PartBase::Average == base) {
+        builder->enableBaseNormalAverage(true);
     } else if (PartBase::XY == base) {
         builder->enableBaseNormalOnZ(false);
     } else if (PartBase::ZX == base) {
@@ -793,7 +795,7 @@ nodemesh::Combiner::Mesh *MeshGenerator::combineMultipleMeshes(const std::vector
     for (const auto &it: multipleMeshes) {
         const auto &childCombineMode = it.second;
         nodemesh::Combiner::Mesh *subMesh = it.first;
-        qDebug() << "Combine mode:" << CombineModeToString(childCombineMode);
+        //qDebug() << "Combine mode:" << CombineModeToString(childCombineMode);
         if (nullptr == subMesh) {
             qDebug() << "Child mesh is null";
             continue;

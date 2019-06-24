@@ -155,7 +155,7 @@ void AnimalPoser::resolveChainRotation(const std::vector<QString> &limbBoneNames
         
         QVector3D targetMiddleBoneStartPosition;
         {
-            qDebug() << beginBoneName << "Angle:" << angleBetweenDistanceAndMiddleBones << "Distance:" << targetDistanceBetweenBeginAndEndBones;
+            //qDebug() << beginBoneName << "Angle:" << angleBetweenDistanceAndMiddleBones << "Distance:" << targetDistanceBetweenBeginAndEndBones;
             auto rotation = QQuaternion::fromAxisAndAngle(matchRotatePlaneNormal, angleBetweenDistanceAndMiddleBones);
             targetMiddleBoneStartPosition = targetEndBoneStartPosition + rotation.rotatedVector(-matchDirectionBetweenBeginAndEndPones).normalized() * targetMiddleBoneLength;
         }
