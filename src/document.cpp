@@ -1250,8 +1250,9 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
                 nodeKv.second.find("z") == nodeKv.second.end() ||
                 nodeKv.second.find("partId") == nodeKv.second.end())
             continue;
-        SkeletonNode node;
-        oldNewIdMap[QUuid(nodeKv.first)] = node.id;
+        QUuid oldNodeId = QUuid(nodeKv.first);
+        SkeletonNode node(nodeMap.find(oldNodeId) == nodeMap.end() ? oldNodeId : QUuid::createUuid());
+        oldNewIdMap[oldNodeId] = node.id;
         node.name = valueOfKeyInMapOrEmpty(nodeKv.second, "name");
         node.radius = valueOfKeyInMapOrEmpty(nodeKv.second, "radius").toFloat();
         node.x = valueOfKeyInMapOrEmpty(nodeKv.second, "x").toFloat();
@@ -1267,8 +1268,9 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
                 edgeKv.second.find("to") == edgeKv.second.end() ||
                 edgeKv.second.find("partId") == edgeKv.second.end())
             continue;
-        SkeletonEdge edge;
-        oldNewIdMap[QUuid(edgeKv.first)] = edge.id;
+        QUuid oldEdgeId = QUuid(edgeKv.first);
+        SkeletonEdge edge(edgeMap.find(oldEdgeId) == edgeMap.end() ? oldEdgeId : QUuid::createUuid());
+        oldNewIdMap[oldEdgeId] = edge.id;
         edge.name = valueOfKeyInMapOrEmpty(edgeKv.second, "name");
         edge.partId = oldNewIdMap[QUuid(valueOfKeyInMapOrEmpty(edgeKv.second, "partId"))];
         QString fromNodeId = valueOfKeyInMapOrEmpty(edgeKv.second, "from");
