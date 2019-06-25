@@ -210,9 +210,9 @@ void PoseDocument::updateBonesFromParameters(std::vector<RiggerBone> *bones,
         boneScaleFactor = firstSpineBoneLengthFromParameters / firstSpineBoneLength;
         firstSpineBonePositionOffset = firstSpineBonePositionFromParameters - firstSpineBonePosition;
     }
-    QVector3D neckJoint1DirectionInParameters;
-    neckJoint1DirectionFromParameters(parameters, &neckJoint1DirectionInParameters);
-    QQuaternion neckJoint1Rotation = QQuaternion::rotationTo(neckJoint1DirectionInParameters, neckJoint1BoneDirection);
+    //QVector3D neckJoint1DirectionInParameters;
+    //neckJoint1DirectionFromParameters(parameters, &neckJoint1DirectionInParameters);
+    //QQuaternion neckJoint1Rotation = QQuaternion::rotationTo(neckJoint1DirectionInParameters, neckJoint1BoneDirection);
     for (auto &bone: *bones) {
         const auto findParameterResult = parameters.find(bone.name);
         if (findParameterResult == parameters.end()) {
@@ -252,10 +252,10 @@ void PoseDocument::updateBonesFromParameters(std::vector<RiggerBone> *bones,
                 bone.tailPosition = toPosition;
             }
         }
-        if (bone.name.startsWith("Neck_")) {
-            bone.tailPosition = bone.headPosition +
-                neckJoint1Rotation.rotatedVector(bone.tailPosition - bone.headPosition);
-        }
+        //if (bone.name.startsWith("Neck_")) {
+            //bone.tailPosition = bone.headPosition +
+            //    neckJoint1Rotation.rotatedVector(bone.tailPosition - bone.headPosition);
+        //}
     }
 }
 
