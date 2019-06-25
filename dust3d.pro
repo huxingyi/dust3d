@@ -1,6 +1,7 @@
 QT += core widgets opengl network
 CONFIG += release
 DEFINES += NDEBUG
+DEFINES += QT_MESSAGELOGCONTEXT
 RESOURCES += resources.qrc
 
 win32 {
