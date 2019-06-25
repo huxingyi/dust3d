@@ -240,12 +240,21 @@ void PoseListWidget::reload()
     for (int i = 0; i < columns; i++)
         setColumnWidth(i, columnWidth);
     
-    decltype(m_document->poseIdList.size()) poseIndex = 0;
-    while (poseIndex < m_document->poseIdList.size()) {
+    std::vector<QUuid> orderedPoseIdList = m_document->poseIdList;
+    std::sort(orderedPoseIdList.begin(), orderedPoseIdList.end(), [&](const QUuid &firstPoseId, const QUuid &secondPoseId) {
+        const auto *firstPose = m_document->findPose(firstPoseId);
+        const auto *secondPose = m_document->findPose(secondPoseId);
+        if (nullptr == firstPose || nullptr == secondPose)
+            return false;
+        return QString::compare(firstPose->name, secondPose->name, Qt::CaseInsensitive) < 0;
+    });
+    
+    decltype(orderedPoseIdList.size()) poseIndex = 0;
+    while (poseIndex < orderedPoseIdList.size()) {
         QTreeWidgetItem *item = new QTreeWidgetItem(this);
         item->setFlags((item->flags() | Qt::ItemIsEnabled) & ~(Qt::ItemIsSelectable) & ~(Qt::ItemIsEditable));
-        for (int col = 0; col < columns && poseIndex < m_document->poseIdList.size(); col++, poseIndex++) {
-            const auto &poseId = m_document->poseIdList[poseIndex];
+        for (int col = 0; col < columns && poseIndex < orderedPoseIdList.size(); col++, poseIndex++) {
+            const auto &poseId = orderedPoseIdList[poseIndex];
             item->setSizeHint(col, QSize(columnWidth, PoseWidget::preferredHeight() + 2));
             item->setData(col, Qt::UserRole, poseId.toString());
             PoseWidget *widget = new PoseWidget(m_document, poseId);

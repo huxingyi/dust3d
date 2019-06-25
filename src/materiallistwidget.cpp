@@ -249,13 +249,22 @@ void MaterialListWidget::reload()
     setColumnCount(columns);
     for (int i = 0; i < columns; i++)
         setColumnWidth(i, columnWidth);
+    
+    std::vector<QUuid> orderedMaterialIdList = m_document->materialIdList;
+    std::sort(orderedMaterialIdList.begin(), orderedMaterialIdList.end(), [&](const QUuid &firstMaterialId, const QUuid &secondMaterialId) {
+        const auto *firstMaterial = m_document->findMaterial(firstMaterialId);
+        const auto *secondMaterial = m_document->findMaterial(secondMaterialId);
+        if (nullptr == firstMaterial || nullptr == secondMaterial)
+            return false;
+        return QString::compare(firstMaterial->name, secondMaterial->name, Qt::CaseInsensitive) < 0;
+    });
 
-    decltype(m_document->materialIdList.size()) materialIndex = 0;
-    while (materialIndex < m_document->materialIdList.size()) {
+    decltype(orderedMaterialIdList.size()) materialIndex = 0;
+    while (materialIndex < orderedMaterialIdList.size()) {
         QTreeWidgetItem *item = new QTreeWidgetItem(this);
         item->setFlags((item->flags() | Qt::ItemIsEnabled) & ~(Qt::ItemIsSelectable) & ~(Qt::ItemIsEditable));
-        for (int col = 0; col < columns && materialIndex < m_document->materialIdList.size(); col++, materialIndex++) {
-            const auto &materialId = m_document->materialIdList[materialIndex];
+        for (int col = 0; col < columns && materialIndex < orderedMaterialIdList.size(); col++, materialIndex++) {
+            const auto &materialId = orderedMaterialIdList[materialIndex];
             item->setSizeHint(col, QSize(columnWidth, MaterialWidget::preferredHeight() + 2));
             item->setData(col, Qt::UserRole, materialId.toString());
             MaterialWidget *widget = new MaterialWidget(m_document, materialId);

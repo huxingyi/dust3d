@@ -240,12 +240,21 @@ void MotionListWidget::reload()
     for (int i = 0; i < columns; i++)
         setColumnWidth(i, columnWidth);
     
-    decltype(m_document->motionIdList.size()) motionIndex = 0;
-    while (motionIndex < m_document->motionIdList.size()) {
+    std::vector<QUuid> orderedMotionIdList = m_document->motionIdList;
+    std::sort(orderedMotionIdList.begin(), orderedMotionIdList.end(), [&](const QUuid &firstMotionId, const QUuid &secondMotionId) {
+        const auto *firstMotion = m_document->findMotion(firstMotionId);
+        const auto *secondMotion = m_document->findMotion(secondMotionId);
+        if (nullptr == firstMotion || nullptr == secondMotion)
+            return false;
+        return QString::compare(firstMotion->name, secondMotion->name, Qt::CaseInsensitive) < 0;
+    });
+    
+    decltype(orderedMotionIdList.size()) motionIndex = 0;
+    while (motionIndex < orderedMotionIdList.size()) {
         QTreeWidgetItem *item = new QTreeWidgetItem(this);
         item->setFlags((item->flags() | Qt::ItemIsEnabled) & ~(Qt::ItemIsSelectable) & ~(Qt::ItemIsEditable));
-        for (int col = 0; col < columns && motionIndex < m_document->motionIdList.size(); col++, motionIndex++) {
-            const auto &motionId = m_document->motionIdList[motionIndex];
+        for (int col = 0; col < columns && motionIndex < orderedMotionIdList.size(); col++, motionIndex++) {
+            const auto &motionId = orderedMotionIdList[motionIndex];
             item->setSizeHint(col, QSize(columnWidth, MotionWidget::preferredHeight() + 2));
             item->setData(col, Qt::UserRole, motionId.toString());
             MotionWidget *widget = new MotionWidget(m_document, motionId);

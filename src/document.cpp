@@ -435,6 +435,7 @@ void Document::renameMotion(QUuid motionId, QString name)
     
     findMotionResult->second.name = name;
     emit motionNameChanged(motionId);
+    emit motionListChanged();
     emit optionsChanged();
 }
 
@@ -507,6 +508,7 @@ void Document::renamePose(QUuid poseId, QString name)
     
     findPoseResult->second.name = name;
     emit poseNameChanged(poseId);
+    emit poseListChanged();
     emit optionsChanged();
 }
 
@@ -3067,6 +3069,7 @@ void Document::renameMaterial(QUuid materialId, QString name)
     
     findMaterialResult->second.name = name;
     emit materialNameChanged(materialId);
+    emit materialListChanged();
     emit optionsChanged();
 }
 
