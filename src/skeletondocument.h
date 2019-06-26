@@ -259,6 +259,7 @@ public:
     bool ylocked = false;
     bool zlocked = false;
     bool radiusLocked = false;
+    bool threeNodesBranchEnabled = Preferences::instance().threeNodesBranchEnabled();
     QImage turnaround;
     QByteArray turnaroundPngByteArray;
     std::map<QUuid, SkeletonPart> partMap;
@@ -270,6 +271,7 @@ public:
     const SkeletonPart *findPart(QUuid partId) const;
     const SkeletonEdge *findEdgeByNodes(QUuid firstNodeId, QUuid secondNodeId) const;
     void findAllNeighbors(QUuid nodeId, std::set<QUuid> &neighbors) const;
+    bool isNodeConnectable(QUuid nodeId) const;
     
     virtual bool undoable() const = 0;
     virtual bool redoable() const = 0;

@@ -71,3 +71,12 @@ void SkeletonDocument::findAllNeighbors(QUuid nodeId, std::set<QUuid> &neighbors
     }
 }
 
+bool SkeletonDocument::isNodeConnectable(QUuid nodeId) const
+{
+    if (threeNodesBranchEnabled)
+        return true;
+    const SkeletonNode *node = findNode(nodeId);
+    if (nullptr == node)
+        return false;
+    return node->edgeIds.size() < 2;
+}

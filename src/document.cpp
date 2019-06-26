@@ -61,6 +61,9 @@ Document::Document() :
 {
     connect(&Preferences::instance(), &Preferences::partColorChanged, this, &Document::applyPreferencePartColorChange);
     connect(&Preferences::instance(), &Preferences::flatShadingChanged, this, &Document::applyPreferenceFlatShadingChange);
+    connect(&Preferences::instance(), &Preferences::threeNodesBranchEnableStateChanged, this, [&]() {
+        threeNodesBranchEnabled = Preferences::instance().threeNodesBranchEnabled();
+    });
 }
 
 void Document::applyPreferencePartColorChange()

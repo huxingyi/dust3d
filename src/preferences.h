@@ -13,20 +13,24 @@ public:
     CombineMode componentCombineMode() const;
     const QColor &partColor() const;
     bool flatShading() const;
+    bool threeNodesBranchEnabled() const;
 signals:
     void componentCombineModeChanged();
     void partColorChanged();
     void flatShadingChanged();
+    void threeNodesBranchEnableStateChanged();
 public slots:
     void setComponentCombineMode(CombineMode mode);
     void setPartColor(const QColor &color);
     void setFlatShading(bool flatShading);
+    void setThreeNodesBranchEnableState(bool enabled);
     void reset();
 private:
     CombineMode m_componentCombineMode = CombineMode::Normal;
     QColor m_partColor;
     bool m_flatShading;
     QSettings m_settings;
+    bool m_threeNodesBranchEnabled;
 private:
     void loadDefault();
 };

@@ -346,6 +346,10 @@ bool SkeletonGraphicsWidget::hasTwoDisconnectedNodesSelection()
         return false;
     if (m_document->findEdgeByNodes(nodeIds[0], nodeIds[1]))
         return false;
+    if (!m_document->isNodeConnectable(nodeIds[0]))
+        return false;
+    if (!m_document->isNodeConnectable(nodeIds[1]))
+        return false;
     return true;
 }
 
@@ -377,6 +381,10 @@ void SkeletonGraphicsWidget::connectSelected()
     if (nodeIds.size() != 2)
         return;
     if (m_document->findEdgeByNodes(nodeIds[0], nodeIds[1]))
+        return;
+    if (!m_document->isNodeConnectable(nodeIds[0]))
+        return;
+    if (!m_document->isNodeConnectable(nodeIds[1]))
         return;
     emit addEdge(nodeIds[0], nodeIds[1]);
     emit groupOperationAdded();
@@ -581,8 +589,11 @@ void SkeletonGraphicsWidget::editModeChanged()
         if (!m_rangeSelectionSet.empty()) {
             std::set<SkeletonGraphicsNodeItem *> nodeItems;
             readMergedSkeletonNodeSetFromRangeSelection(&nodeItems);
-            if (nodeItems.size() == 1)
+            if (nodeItems.size() == 1) {
                 choosenNodeItem = *nodeItems.begin();
+                if (!m_document->isNodeConnectable(choosenNodeItem->id()))
+                    choosenNodeItem = nullptr;
+            }
         }
         m_addFromNodeItem = choosenNodeItem;
     }
@@ -1267,9 +1278,11 @@ bool SkeletonGraphicsWidget::mousePress(QMouseEvent *event)
                             m_hoveredNodeItem->profile() == m_addFromNodeItem->profile() &&
                             !m_document->findEdgeByNodes(m_addFromNodeItem->id(), m_hoveredNodeItem->id()) &&
                             m_document->isNodeEditable(m_hoveredNodeItem->id())) {
-                        emit addEdge(m_addFromNodeItem->id(), m_hoveredNodeItem->id());
-                        emit groupOperationAdded();
-                        return true;
+                        if (m_document->isNodeConnectable(m_hoveredNodeItem->id())) {
+                            emit addEdge(m_addFromNodeItem->id(), m_hoveredNodeItem->id());
+                            emit groupOperationAdded();
+                            return true;
+                        }
                     }
                 }
                 QPointF mainProfile = m_cursorNodeItem->origin();
