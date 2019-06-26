@@ -14,7 +14,7 @@ void Preferences::loadDefault()
 {
     m_componentCombineMode = CombineMode::Normal;
     m_partColor = Qt::white;
-    m_flatShading = false;
+    m_flatShading = true;
     m_threeNodesBranchEnabled = false;
 }
 
