@@ -1,3 +1,23 @@
+Changes between 1.0.0-beta.18 and 1.0.0-beta.19:
+- Improve Pose Editor UI
+- Add new pose setting: yTranslationScale
+- Add new base option: Average
+- Fix part mesh generation variation
+- Sort material, pose, and motion list by name
+- Disable three nodes branch by default, could be enabled from preferences window
+- Make flat shading as default
+
+Changes between 1.0.0-beta.17 and 1.0.0-beta.18:
+--------------------------------------------------
+- Add preferences settings, including flat shading, default color, and default combine mode
+- Fix user defined cut face flipped normal issues
+- Improve shader light
+- Fix motion editor issues
+- Improve nodes scaling experience
+- Fix rig generation
+- Add more built-in example models
+- Change application logo
+
 Changes between 1.0.0-beta.16 and 1.0.0-beta.17:
 --------------------------------------------------
 - Remote IO Protocol
