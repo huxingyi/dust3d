@@ -121,6 +121,7 @@ private:
 
 class Rigger : public QObject
 {
+    Q_OBJECT
 public:
     Rigger(const std::vector<QVector3D> &verticesPositions,
         const std::set<MeshSplitterTriangle> &inputTriangles);

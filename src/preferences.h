@@ -26,7 +26,7 @@ public slots:
     void setThreeNodesBranchEnableState(bool enabled);
     void reset();
 private:
-    CombineMode m_componentCombineMode = CombineMode::Normal;
+    CombineMode m_componentCombineMode;
     QColor m_partColor;
     bool m_flatShading;
     QSettings m_settings;

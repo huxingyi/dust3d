@@ -4,6 +4,49 @@ DEFINES += NDEBUG
 DEFINES += QT_MESSAGELOGCONTEXT
 RESOURCES += resources.qrc
 
+LANGUAGES = zh-CN
+
+############## Generate .qm from .ts #######################
+
+# parameters: var, prepend, append
+defineReplace(prependAll) {
+	for(a,$$1):result += $$2$${a}$$3
+	return($$result)
+}
+TRANSLATIONS = $$prependAll(LANGUAGES, $$PWD/languages/dust3d_, .ts)
+TRANSLATIONS_FILES =
+qtPrepareTool(LRELEASE, lrelease)
+for(tsfile, TRANSLATIONS) {
+	qmfile = $$shadowed($$tsfile)
+	qmfile ~= s,.ts$,.qm,
+	qmdir = $$dirname(qmfile)
+	!exists($$qmdir) {
+		mkpath($$qmdir)|error("Aborting.")
+	}
+	command = $$LRELEASE -removeidentical $$tsfile -qm $$qmfile
+	system($$command)|error("Failed to run: $$command")
+	TRANSLATIONS_FILES += $$qmfile
+}
+
+########################################################
+
+############## Generate .ts file #######################
+
+wd = $$replace(PWD, /, $$QMAKE_DIR_SEP)
+
+# Update the .ts file from source
+qtPrepareTool(LUPDATE, lupdate)
+LUPDATE += src/*.cpp src/*.h -locations none
+TSFILES = $$files($$PWD/languages/dust3d_??.ts)
+for(file, TSFILES) {
+	lang = $$replace(file, .*_([^/]*).ts, 1)
+	v = ts-$${lang}.commands
+	$$v = cd $$wd && $$LUPDATE $$SOURCES $$APP_FILES -ts $$file
+	QMAKE_EXTRA_TARGETS += ts-$$lang
+}
+
+##########################################################
+
 win32 {
 	RC_FILE = dust3d.rc
 }

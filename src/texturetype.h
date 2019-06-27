@@ -23,7 +23,7 @@ QString TextureTypeToDispName(TextureType type)                     \
         case TextureType::BaseColor:                                \
             return QObject::tr("Base Color");                       \
         case TextureType::Normal:                                   \
-            return QObject::tr("Normal");                           \
+            return QObject::tr("Normal Map");                       \
         case TextureType::Metalness:                                \
             return QObject::tr("Metalness");                        \
         case TextureType::Roughness:                                \

@@ -1,4 +1,5 @@
 Changes between 1.0.0-beta.18 and 1.0.0-beta.19:
+--------------------------------------------------
 - Improve Pose Editor UI
 - Add new pose setting: yTranslationScale
 - Add new base option: Average

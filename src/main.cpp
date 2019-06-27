@@ -6,6 +6,7 @@
 #include <QtGlobal>
 #include <QSurfaceFormat>
 #include <QSettings>
+#include <QTranslator>
 #include "documentwindow.h"
 #include "theme.h"
 #include "version.h"
@@ -14,6 +15,10 @@
 int main(int argc, char ** argv)
 {
     QApplication app(argc, argv);
+    
+    QTranslator translator;
+    if (translator.load(QLocale(), QLatin1String("dust3d"), QLatin1String("_"), QLatin1String(":/languages")))
+        app.installTranslator(&translator);
     
     QSurfaceFormat format = QSurfaceFormat::defaultFormat();
     format.setProfile(QSurfaceFormat::OpenGLContextProfile::CompatibilityProfile);
