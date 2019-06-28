@@ -59,6 +59,8 @@ int main(int argc, char ** argv)
     
     DocumentWindow::createDocumentWindow();
     
+    qDebug() << "Language:" << QLocale().name();
+    
     bool remoteIoEnabled = false;
     for (int i = 1; i < argc; ++i) {
         if ('-' == argv[i][0] && 0 == strcmp(argv[i], "-remoteio")) {

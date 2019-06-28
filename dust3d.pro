@@ -4,7 +4,7 @@ DEFINES += NDEBUG
 DEFINES += QT_MESSAGELOGCONTEXT
 RESOURCES += resources.qrc
 
-LANGUAGES = zh-CN
+LANGUAGES = zh_CN
 
 ############## Generate .qm from .ts #######################
 
