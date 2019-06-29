@@ -251,7 +251,7 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
                             } else if (firstRadius > secondRadius) {
                                 return false;
                             } else {
-                                return true;
+                                return false;
                             }
                         }
                     }
