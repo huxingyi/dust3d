@@ -5,6 +5,7 @@
 #include <vector>
 #include <map>
 #include <set>
+#include <QMatrix4x4>
 
 namespace nodemesh 
 {
@@ -12,6 +13,14 @@ namespace nodemesh
 class Builder
 {
 public:
+    struct CutFaceTransform
+    {
+        QMatrix4x4 rotation;
+        QVector3D uFactor;
+        QVector3D vFactor;
+        bool reverse = false;
+    };
+    
     size_t addNode(const QVector3D &position, float radius, const std::vector<QVector2D> &cutTemplate);
     size_t addEdge(size_t firstNodeIndex, size_t secondNodeIndex);
     void setDeformThickness(float thickness);
@@ -26,6 +35,7 @@ public:
     const std::vector<size_t> &generatedVerticesSourceNodeIndices();
     void exportAsObj(const QString &filename);
     bool build();
+    const CutFaceTransform *nodeAdjustableCutFaceTransform(size_t nodeIndex);
 
 private:
 
@@ -38,6 +48,7 @@ private:
         std::vector<size_t> edges;
         std::vector<QVector2D> cutTemplate;
         std::vector<QVector3D> raysToNeibors;
+        CutFaceTransform cutFaceTransform;
         QVector3D initialTraverseDirection;
         QVector3D traverseDirection;
         QVector3D growthDirection;
@@ -48,6 +59,7 @@ private:
         bool baseNormalResolved = false;
         bool baseNormalSearched = false;
         bool hasInitialTraverseDirection = false;
+        bool hasAdjustableCutFace = false;
         
         size_t anotherEdge(size_t edgeIndex) const
         {
@@ -122,7 +134,8 @@ private:
         QVector3D &baseNormal,
         const QVector3D &cutNormal,
         const QVector3D &traverseDirection,
-        std::vector<QVector3D> &resultCut);
+        std::vector<QVector3D> &resultCut,
+        CutFaceTransform *cutFaceTransform=nullptr);
     void insertCutVertices(const std::vector<QVector3D> &cut, std::vector<size_t> &vertices, size_t nodeIndex, const QVector3D &cutDirect);
     void stitchEdgeCuts();
     void applyWeld();

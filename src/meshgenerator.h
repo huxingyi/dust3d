@@ -5,6 +5,7 @@
 #include <QColor>
 #include <nodemesh/combiner.h>
 #include <nodemesh/positionkey.h>
+#include <nodemesh/builder.h>
 #include "outcome.h"
 #include "snapshot.h"
 #include "combinemode.h"
@@ -59,6 +60,7 @@ public:
     MeshLoader *takePartPreviewMesh(const QUuid &partId);
     const std::set<QUuid> &generatedPreviewPartIds();
     Outcome *takeOutcome();
+    std::map<QUuid, nodemesh::Builder::CutFaceTransform> *takeCutFaceTransforms();
     void generate();
     void setGeneratedCacheContext(GeneratedCacheContext *cacheContext);
     void setSmoothShadingThresholdAngleDegrees(float degrees);
@@ -86,6 +88,7 @@ private:
     bool m_isSucceed = false;
     bool m_cacheEnabled = false;
     float m_smoothShadingThresholdAngleDegrees = 60;
+    std::map<QUuid, nodemesh::Builder::CutFaceTransform> *m_cutFaceTransforms = nullptr;
     
     void collectParts();
     bool checkIsComponentDirty(const QString &componentIdString);

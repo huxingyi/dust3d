@@ -11,10 +11,11 @@ class Modifier
 public:
     struct Node
     {
+        bool isOriginal = false;
         QVector3D position;
-        float radius;
+        float radius = 0.0;
         std::vector<QVector2D> cutTemplate;
-        size_t originNodeIndex;
+        size_t originNodeIndex = 0;
     };
     
     struct Edge

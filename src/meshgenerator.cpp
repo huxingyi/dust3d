@@ -27,6 +27,7 @@ MeshGenerator::~MeshGenerator()
     delete m_resultMesh;
     delete m_snapshot;
     delete m_outcome;
+    delete m_cutFaceTransforms;
 }
 
 bool MeshGenerator::isSucceed()
@@ -58,6 +59,13 @@ Outcome *MeshGenerator::takeOutcome()
     Outcome *outcome = m_outcome;
     m_outcome = nullptr;
     return outcome;
+}
+
+std::map<QUuid, nodemesh::Builder::CutFaceTransform> *MeshGenerator::takeCutFaceTransforms()
+{
+    auto cutFaceTransforms = m_cutFaceTransforms;
+    m_cutFaceTransforms = nullptr;
+    return cutFaceTransforms;
 }
 
 void MeshGenerator::collectParts()
@@ -465,11 +473,22 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
         builder->enableBaseNormalOnY(false);
     }
     
+    std::vector<size_t> builderNodeIndices;
     for (const auto &node: modifier->nodes())
-        builder->addNode(node.position, node.radius, node.cutTemplate);
+        builderNodeIndices.push_back(builder->addNode(node.position, node.radius, node.cutTemplate));
     for (const auto &edge: modifier->edges())
         builder->addEdge(edge.firstNodeIndex, edge.secondNodeIndex);
     bool buildSucceed = builder->build();
+    
+    for (size_t i = 0; i < modifier->nodes().size(); ++i) {
+        const auto &node = modifier->nodes()[i];
+        if (!node.isOriginal)
+            continue;
+        const QString &nodeIdString = nodeIndexToIdStringMap[node.originNodeIndex];
+        const nodemesh::Builder::CutFaceTransform *cutFaceTransform = builder->nodeAdjustableCutFaceTransform(builderNodeIndices[i]);
+        if (nullptr != cutFaceTransform)
+            m_cutFaceTransforms->insert({QUuid(nodeIdString), *cutFaceTransform});
+    }
     
     partCache.vertices = builder->generatedVertices();
     partCache.faces = builder->generatedFaces();
@@ -962,6 +981,7 @@ void MeshGenerator::generate()
     countTimeConsumed.start();
     
     m_outcome = new Outcome;
+    m_cutFaceTransforms = new std::map<QUuid, nodemesh::Builder::CutFaceTransform>;
     
     bool needDeleteCacheContext = false;
     if (nullptr == m_cacheContext) {

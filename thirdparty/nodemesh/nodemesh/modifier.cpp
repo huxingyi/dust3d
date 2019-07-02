@@ -11,6 +11,7 @@ size_t Modifier::addNode(const QVector3D &position, float radius, const std::vec
     size_t nodeIndex = m_nodes.size();
     
     Node node;
+    node.isOriginal = true;
     node.position = position;
     node.radius = radius;
     node.cutTemplate = cutTemplate;
