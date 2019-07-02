@@ -61,6 +61,7 @@ public:
     const std::set<QUuid> &generatedPreviewPartIds();
     Outcome *takeOutcome();
     std::map<QUuid, nodemesh::Builder::CutFaceTransform> *takeCutFaceTransforms();
+    std::map<QUuid, std::map<QString, std::tuple<float, float, float>>> *takeNodesCutFaces();
     void generate();
     void setGeneratedCacheContext(GeneratedCacheContext *cacheContext);
     void setSmoothShadingThresholdAngleDegrees(float degrees);
@@ -89,6 +90,7 @@ private:
     bool m_cacheEnabled = false;
     float m_smoothShadingThresholdAngleDegrees = 60;
     std::map<QUuid, nodemesh::Builder::CutFaceTransform> *m_cutFaceTransforms = nullptr;
+    std::map<QUuid, std::map<QString, std::tuple<float, float, float>>> *m_nodesCutFaces = nullptr;
     
     void collectParts();
     bool checkIsComponentDirty(const QString &componentIdString);

@@ -28,6 +28,7 @@ MeshGenerator::~MeshGenerator()
     delete m_snapshot;
     delete m_outcome;
     delete m_cutFaceTransforms;
+    delete m_nodesCutFaces;
 }
 
 bool MeshGenerator::isSucceed()
@@ -66,6 +67,13 @@ std::map<QUuid, nodemesh::Builder::CutFaceTransform> *MeshGenerator::takeCutFace
     auto cutFaceTransforms = m_cutFaceTransforms;
     m_cutFaceTransforms = nullptr;
     return cutFaceTransforms;
+}
+
+std::map<QUuid, std::map<QString, std::tuple<float, float, float>>> *MeshGenerator::takeNodesCutFaces()
+{
+    auto nodesCutFaces = m_nodesCutFaces;
+    m_nodesCutFaces = nullptr;
+    return nodesCutFaces;
 }
 
 void MeshGenerator::collectParts()
@@ -182,6 +190,7 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
     auto target = PartTargetFromString(valueOfKeyInMapOrEmpty(part, "target").toUtf8().constData());
     auto base = PartBaseFromString(valueOfKeyInMapOrEmpty(part, "base").toUtf8().constData());
     
+    std::map<QString, std::tuple<float, float, float>> cutFaceNodeMap;
     std::vector<QVector2D> cutTemplate;
     QString cutFaceString = valueOfKeyInMapOrEmpty(part, "cutFace");
     QUuid cutFaceLinkedPartId = QUuid(cutFaceString);
@@ -191,7 +200,6 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
             qDebug() << "Find cut face linked part failed:" << cutFaceString;
         } else {
             // Build node info map
-            std::map<QString, std::tuple<float, float, float>> cutFaceNodeMap;
             for (const auto &nodeIdString: m_partNodeIds[cutFaceString]) {
                 auto findNode = m_snapshot->nodes.find(nodeIdString);
                 if (findNode == m_snapshot->nodes.end()) {
@@ -486,8 +494,11 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
             continue;
         const QString &nodeIdString = nodeIndexToIdStringMap[node.originNodeIndex];
         const nodemesh::Builder::CutFaceTransform *cutFaceTransform = builder->nodeAdjustableCutFaceTransform(builderNodeIndices[i]);
-        if (nullptr != cutFaceTransform)
-            m_cutFaceTransforms->insert({QUuid(nodeIdString), *cutFaceTransform});
+        if (nullptr != cutFaceTransform) {
+            QUuid nodeId = QUuid(nodeIdString);
+            m_cutFaceTransforms->insert({nodeId, *cutFaceTransform});
+            m_nodesCutFaces->insert({nodeId, cutFaceNodeMap});
+        }
     }
     
     partCache.vertices = builder->generatedVertices();
@@ -982,6 +993,7 @@ void MeshGenerator::generate()
     
     m_outcome = new Outcome;
     m_cutFaceTransforms = new std::map<QUuid, nodemesh::Builder::CutFaceTransform>;
+    m_nodesCutFaces = new std::map<QUuid, std::map<QString, std::tuple<float, float, float>>>;
     
     bool needDeleteCacheContext = false;
     if (nullptr == m_cacheContext) {
