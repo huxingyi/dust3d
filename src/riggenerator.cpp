@@ -200,7 +200,7 @@ void RigGenerator::generate()
     
     // Create mesh for demo
     
-    Vertex *triangleVertices = new Vertex[m_outcome->triangles.size() * 3];
+    ShaderVertex *triangleVertices = new ShaderVertex[m_outcome->triangles.size() * 3];
     int triangleVerticesNum = 0;
     const QVector3D defaultUv = QVector3D(0, 0, 0);
     const QVector3D defaultTangents = QVector3D(0, 0, 0);
@@ -210,7 +210,7 @@ void RigGenerator::generate()
         if (nullptr != triangleTangents)
             sourceTangent = &(*triangleTangents)[triangleIndex];
         for (int i = 0; i < 3; i++) {
-            Vertex &currentVertex = triangleVertices[triangleVerticesNum++];
+            ShaderVertex &currentVertex = triangleVertices[triangleVerticesNum++];
             const auto &sourcePosition = inputVerticesPositions[sourceTriangle[i]];
             const auto &sourceColor = inputVerticesColors[sourceTriangle[i]];
             const auto *sourceNormal = &defaultUv;

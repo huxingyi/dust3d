@@ -843,6 +843,7 @@ void Document::splitPartByNode(std::vector<std::vector<QUuid>> *groups, QUuid no
 {
     const SkeletonNode *node = findNode(nodeId);
     std::set<QUuid> visitMap;
+    visitMap.insert(nodeId);
     for (auto edgeIt = node->edgeIds.begin(); edgeIt != node->edgeIds.end(); edgeIt++) {
         std::vector<QUuid> group;
         const SkeletonEdge *edge = findEdge(*edgeIt);

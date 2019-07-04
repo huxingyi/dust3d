@@ -367,6 +367,11 @@ HEADERS += src/preferences.h
 SOURCES += src/bonenameconverter.cpp
 HEADERS += src/bonenameconverter.h
 
+SOURCES += src/toolmesh.cpp
+HEADERS += src/toolmesh.h
+
+HEADERS += src/shadervertex.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h

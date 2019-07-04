@@ -1,36 +1,13 @@
 #ifndef DUST3D_MESH_LOADER_H
 #define DUST3D_MESH_LOADER_H
 #include <QObject>
-#include <QOpenGLFunctions>
 #include <vector>
 #include <QVector3D>
 #include <QColor>
 #include <QImage>
 #include <QTextStream>
 #include "outcome.h"
-
-#pragma pack(push)
-#pragma pack(1)
-typedef struct
-{
-    GLfloat posX;
-    GLfloat posY;
-    GLfloat posZ;
-    GLfloat normX;
-    GLfloat normY;
-    GLfloat normZ;
-    GLfloat colorR;
-    GLfloat colorG;
-    GLfloat colorB;
-    GLfloat texU;
-    GLfloat texV;
-    GLfloat metalness;
-    GLfloat roughness;
-    GLfloat tangentX;
-    GLfloat tangentY;
-    GLfloat tangentZ;
-} Vertex;
-#pragma pack(pop)
+#include "shadervertex.h"
 
 struct TriangulatedFace
 {
@@ -45,14 +22,16 @@ public:
         const std::vector<std::vector<QVector3D>> &triangleVertexNormals,
         const QColor &color=Qt::white);
     MeshLoader(Outcome &outcome);
-    MeshLoader(Vertex *triangleVertices, int vertexNum);
+    MeshLoader(ShaderVertex *triangleVertices, int vertexNum);
     MeshLoader(const MeshLoader &mesh);
     MeshLoader();
     ~MeshLoader();
-    Vertex *triangleVertices();
+    ShaderVertex *triangleVertices();
     int triangleVertexCount();
-    Vertex *edgeVertices();
+    ShaderVertex *edgeVertices();
     int edgeVertexCount();
+    ShaderVertex *toolVertices();
+    int toolVertexCount();
     const std::vector<QVector3D> &vertices();
     const std::vector<std::vector<size_t>> &faces();
     const std::vector<QVector3D> &triangulatedVertices();
@@ -74,10 +53,12 @@ public:
     void exportAsObj(const QString &filename);
     void exportAsObj(QTextStream *textStream);
 private:
-    Vertex *m_triangleVertices = nullptr;
+    ShaderVertex *m_triangleVertices = nullptr;
     int m_triangleVertexCount = 0;
-    Vertex *m_edgeVertices = nullptr;
+    ShaderVertex *m_edgeVertices = nullptr;
     int m_edgeVertexCount = 0;
+    ShaderVertex *m_toolVertices = nullptr;
+    int m_toolVertexCount = 0;
     std::vector<QVector3D> m_vertices;
     std::vector<std::vector<size_t>> m_faces;
     std::vector<QVector3D> m_triangulatedVertices;

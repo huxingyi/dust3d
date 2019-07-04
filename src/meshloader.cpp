@@ -19,14 +19,14 @@ MeshLoader::MeshLoader(const MeshLoader &mesh) :
 {
     if (nullptr != mesh.m_triangleVertices &&
             mesh.m_triangleVertexCount > 0) {
-        this->m_triangleVertices = new Vertex[mesh.m_triangleVertexCount];
+        this->m_triangleVertices = new ShaderVertex[mesh.m_triangleVertexCount];
         this->m_triangleVertexCount = mesh.m_triangleVertexCount;
         for (int i = 0; i < mesh.m_triangleVertexCount; i++)
             this->m_triangleVertices[i] = mesh.m_triangleVertices[i];
     }
     if (nullptr != mesh.m_edgeVertices &&
             mesh.m_edgeVertexCount > 0) {
-        this->m_edgeVertices = new Vertex[mesh.m_edgeVertexCount];
+        this->m_edgeVertices = new ShaderVertex[mesh.m_edgeVertexCount];
         this->m_edgeVertexCount = mesh.m_edgeVertexCount;
         for (int i = 0; i < mesh.m_edgeVertexCount; i++)
             this->m_edgeVertices[i] = mesh.m_edgeVertices[i];
@@ -49,7 +49,7 @@ MeshLoader::MeshLoader(const MeshLoader &mesh) :
     this->m_triangulatedFaces = mesh.m_triangulatedFaces;
 }
 
-MeshLoader::MeshLoader(Vertex *triangleVertices, int vertexNum) :
+MeshLoader::MeshLoader(ShaderVertex *triangleVertices, int vertexNum) :
     m_triangleVertices(triangleVertices),
     m_triangleVertexCount(vertexNum),
     m_edgeVertices(nullptr),
@@ -63,14 +63,14 @@ MeshLoader::MeshLoader(const std::vector<QVector3D> &vertices, const std::vector
     const QColor &color)
 {
     m_triangleVertexCount = triangles.size() * 3;
-    m_triangleVertices = new Vertex[m_triangleVertexCount];
+    m_triangleVertices = new ShaderVertex[m_triangleVertexCount];
     int destIndex = 0;
     for (size_t i = 0; i < triangles.size(); ++i) {
         for (auto j = 0; j < 3; j++) {
             int vertexIndex = triangles[i][j];
             const QVector3D *srcVert = &vertices[vertexIndex];
             const QVector3D *srcNormal = &(triangleVertexNormals)[i][j];
-            Vertex *dest = &m_triangleVertices[destIndex];
+            ShaderVertex *dest = &m_triangleVertices[destIndex];
             dest->colorR = color.redF();
             dest->colorG = color.greenF();
             dest->colorB = color.blueF();
@@ -103,7 +103,7 @@ MeshLoader::MeshLoader(Outcome &outcome) :
     m_faces = outcome.triangleAndQuads;
     
     m_triangleVertexCount = outcome.triangles.size() * 3;
-    m_triangleVertices = new Vertex[m_triangleVertexCount];
+    m_triangleVertices = new ShaderVertex[m_triangleVertexCount];
     int destIndex = 0;
     const auto triangleVertexNormals = outcome.triangleVertexNormals();
     const auto triangleVertexUvs = outcome.triangleVertexUvs();
@@ -125,7 +125,7 @@ MeshLoader::MeshLoader(Outcome &outcome) :
             const QVector3D *srcTangent = &defaultTangent;
             if (triangleTangents)
                 srcTangent = &(*triangleTangents)[i];
-            Vertex *dest = &m_triangleVertices[destIndex];
+            ShaderVertex *dest = &m_triangleVertices[destIndex];
             dest->colorR = triangleColor->redF();
             dest->colorG = triangleColor->greenF();
             dest->colorB = triangleColor->blueF();
@@ -152,7 +152,7 @@ MeshLoader::MeshLoader(Outcome &outcome) :
         edgeCount += face.size();
     }
     m_edgeVertexCount = edgeCount * 2;
-    m_edgeVertices = new Vertex[m_edgeVertexCount];
+    m_edgeVertices = new ShaderVertex[m_edgeVertexCount];
     size_t edgeVertexIndex = 0;
     for (size_t faceIndex = 0; faceIndex < outcome.triangleAndQuads.size(); ++faceIndex) {
         const auto &face = outcome.triangleAndQuads[faceIndex];
@@ -160,8 +160,8 @@ MeshLoader::MeshLoader(Outcome &outcome) :
             for (size_t x = 0; x < 2; ++x) {
                 size_t sourceIndex = face[(i + x) % face.size()];
                 const QVector3D *srcVert = &outcome.vertices[sourceIndex];
-                Vertex *dest = &m_edgeVertices[edgeVertexIndex];
-                memset(dest, 0, sizeof(Vertex));
+                ShaderVertex *dest = &m_edgeVertices[edgeVertexIndex];
+                memset(dest, 0, sizeof(ShaderVertex));
                 dest->colorR = 0.0;
                 dest->colorG = 0.0;
                 dest->colorB = 0.0;
@@ -191,6 +191,8 @@ MeshLoader::~MeshLoader()
     m_triangleVertexCount = 0;
     delete[] m_edgeVertices;
     m_edgeVertexCount = 0;
+    delete[] m_toolVertices;
+    m_toolVertexCount = 0;
     delete m_textureImage;
     delete m_normalMapImage;
     delete m_metalnessRoughnessAmbientOcclusionImage;
@@ -216,7 +218,7 @@ const std::vector<TriangulatedFace> &MeshLoader::triangulatedFaces()
     return m_triangulatedFaces;
 }
 
-Vertex *MeshLoader::triangleVertices()
+ShaderVertex *MeshLoader::triangleVertices()
 {
     return m_triangleVertices;
 }
@@ -226,7 +228,7 @@ int MeshLoader::triangleVertexCount()
     return m_triangleVertexCount;
 }
 
-Vertex *MeshLoader::edgeVertices()
+ShaderVertex *MeshLoader::edgeVertices()
 {
     return m_edgeVertices;
 }
@@ -234,6 +236,16 @@ Vertex *MeshLoader::edgeVertices()
 int MeshLoader::edgeVertexCount()
 {
     return m_edgeVertexCount;
+}
+
+ShaderVertex *MeshLoader::toolVertices()
+{
+    return m_toolVertices;
+}
+
+int MeshLoader::toolVertexCount()
+{
+    return m_toolVertexCount;
 }
 
 void MeshLoader::setTextureImage(QImage *textureImage)
