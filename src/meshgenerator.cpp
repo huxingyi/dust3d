@@ -286,10 +286,10 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
                 if (cutFaceVisitedNodeIds.find(fromNodeIdString) != cutFaceVisitedNodeIds.end())
                     return;
                 cutFaceVisitedNodeIds.insert(fromNodeIdString);
-                cutFaceNodes.push_back({std::get<0>(findCutFaceNode->second),
+                cutFaceNodes.push_back(std::make_tuple(std::get<0>(findCutFaceNode->second),
                     std::get<1>(findCutFaceNode->second),
                     std::get<2>(findCutFaceNode->second),
-                    fromNodeIdString});
+                    fromNodeIdString));
                 auto findNeighbor = cutFaceNodeLinkMap.find(fromNodeIdString);
                 if (findNeighbor == cutFaceNodeLinkMap.end())
                     return;
