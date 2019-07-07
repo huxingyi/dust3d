@@ -208,6 +208,28 @@ void CutFaceListWidget::reload()
     setColumnCount(columns);
     for (int i = 0; i < columns; i++)
         setColumnWidth(i, columnWidth);
+    
+    // Sort cut face by center.x of front view
+    std::map<QUuid, float> centerOffsetMap;
+    for (const auto &partId: m_cutFacePartIdList) {
+        const SkeletonPart *part = m_document->findPart(partId);
+        if (nullptr == part)
+            continue;
+        float offsetSum = 0;
+        for (const auto &nodeId: part->nodeIds) {
+            const SkeletonNode *node = m_document->findNode(nodeId);
+            if (nullptr == node)
+                continue;
+            offsetSum += node->x;
+        }
+        if (qFuzzyIsNull(offsetSum))
+            continue;
+        centerOffsetMap[partId] = offsetSum / part->nodeIds.size();
+    }
+    std::sort(m_cutFacePartIdList.begin(), m_cutFacePartIdList.end(),
+            [&](const QUuid &firstPartId, const QUuid &secondPartId) {
+        return centerOffsetMap[firstPartId] < centerOffsetMap[secondPartId];
+    });
 
     decltype(m_cutFacePartIdList.size()) cutFaceIndex = 0;
     while (cutFaceIndex < m_cutFacePartIdList.size()) {
