@@ -711,6 +711,8 @@ void Builder::makeCut(const QVector3D &position,
     auto uFactor = u * radius;
     auto vFactor = v * radius;
     if (nullptr != cutFaceTransform) {
+        cutFaceTransform->scale = radius;
+        cutFaceTransform->translation = position;
         cutFaceTransform->uFactor = uFactor;
         cutFaceTransform->vFactor = vFactor;
     }

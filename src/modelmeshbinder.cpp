@@ -8,21 +8,8 @@
 #include "modelmeshbinder.h"
 #include "ds3file.h"
 
-ModelMeshBinder::ModelMeshBinder() :
-    m_mesh(nullptr),
-    m_newMesh(nullptr),
-    m_renderTriangleVertexCount(0),
-    m_renderEdgeVertexCount(0),
-    m_newMeshComing(false),
-    m_showWireframes(false),
-    m_hasTexture(false),
-    m_texture(nullptr),
-    m_hasNormalMap(false),
-    m_normalMap(nullptr),
-    m_hasMetalnessMap(false),
-    m_hasRoughnessMap(false),
-    m_hasAmbientOcclusionMap(false),
-    m_metalnessRoughnessAmbientOcclusionMap(nullptr)
+ModelMeshBinder::ModelMeshBinder(bool toolEnabled) :
+    m_toolEnabled(toolEnabled)
 {
 }
 
@@ -49,6 +36,8 @@ void ModelMeshBinder::initialize()
 {
     m_vaoTriangle.create();
     m_vaoEdge.create();
+    if (m_toolEnabled)
+        m_vaoTool.create();
 }
 
 void ModelMeshBinder::paint(ModelShaderProgram *program)
@@ -142,9 +131,37 @@ void ModelMeshBinder::paint(ModelShaderProgram *program)
                     f->glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, sizeof(ShaderVertex), reinterpret_cast<void *>(13 * sizeof(GLfloat)));
                     m_vboEdge.release();
                 }
+                if (m_toolEnabled) {
+                    QOpenGLVertexArrayObject::Binder vaoBinder(&m_vaoTool);
+                    if (m_vboTool.isCreated())
+                        m_vboTool.destroy();
+                    m_vboTool.create();
+                    m_vboTool.bind();
+                    m_vboTool.allocate(m_mesh->toolVertices(), m_mesh->toolVertexCount() * sizeof(ShaderVertex));
+                    m_renderToolVertexCount = m_mesh->toolVertexCount();
+                    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+                    f->glEnableVertexAttribArray(0);
+                    f->glEnableVertexAttribArray(1);
+                    f->glEnableVertexAttribArray(2);
+                    f->glEnableVertexAttribArray(3);
+                    f->glEnableVertexAttribArray(4);
+                    f->glEnableVertexAttribArray(5);
+                    f->glEnableVertexAttribArray(6);
+                    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(ShaderVertex), 0);
+                    f->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(ShaderVertex), reinterpret_cast<void *>(3 * sizeof(GLfloat)));
+                    f->glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(ShaderVertex), reinterpret_cast<void *>(6 * sizeof(GLfloat)));
+                    f->glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(ShaderVertex), reinterpret_cast<void *>(9 * sizeof(GLfloat)));
+                    f->glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(ShaderVertex), reinterpret_cast<void *>(11 * sizeof(GLfloat)));
+                    f->glVertexAttribPointer(5, 1, GL_FLOAT, GL_FALSE, sizeof(ShaderVertex), reinterpret_cast<void *>(12 * sizeof(GLfloat)));
+                    f->glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, sizeof(ShaderVertex), reinterpret_cast<void *>(13 * sizeof(GLfloat)));
+                    m_vboTool.release();
+                } else {
+                    m_renderToolVertexCount = 0;
+                }
             } else {
                 m_renderTriangleVertexCount = 0;
                 m_renderEdgeVertexCount = 0;
+                m_renderToolVertexCount = 0;
             }
         }
     }
@@ -190,6 +207,18 @@ void ModelMeshBinder::paint(ModelShaderProgram *program)
         program->setUniformValue(program->ambientOcclusionMapEnabledLoc(), m_hasAmbientOcclusionMap ? 1 : 0);
         f->glDrawArrays(GL_TRIANGLES, 0, m_renderTriangleVertexCount);
     }
+    if (m_toolEnabled) {
+        if (m_renderToolVertexCount > 0) {
+            QOpenGLVertexArrayObject::Binder vaoBinder(&m_vaoTool);
+            QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+            program->setUniformValue(program->textureEnabledLoc(), 0);
+            program->setUniformValue(program->normalMapEnabledLoc(), 0);
+            program->setUniformValue(program->metalnessMapEnabledLoc(), 0);
+            program->setUniformValue(program->roughnessMapEnabledLoc(), 0);
+            program->setUniformValue(program->ambientOcclusionMapEnabledLoc(), 0);
+            f->glDrawArrays(GL_TRIANGLES, 0, m_renderToolVertexCount);
+        }
+    }
 }
 
 void ModelMeshBinder::cleanup()
@@ -198,6 +227,10 @@ void ModelMeshBinder::cleanup()
         m_vboTriangle.destroy();
     if (m_vboEdge.isCreated())
         m_vboEdge.destroy();
+    if (m_toolEnabled) {
+        if (m_vboTool.isCreated())
+            m_vboTool.destroy();
+    }
     delete m_texture;
     m_texture = nullptr;
     delete m_normalMap;

@@ -11,7 +11,7 @@
 class ModelMeshBinder
 {
 public:
-    ModelMeshBinder();
+    ModelMeshBinder(bool toolEnabled=false);
     ~ModelMeshBinder();
     void updateMesh(MeshLoader *mesh);
     void initialize();
@@ -21,25 +21,29 @@ public:
     void hideWireframes();
     bool isWireframesVisible();
 private:
-    MeshLoader *m_mesh;
-    MeshLoader *m_newMesh;
-    int m_renderTriangleVertexCount;
-    int m_renderEdgeVertexCount;
-    bool m_newMeshComing;
-    bool m_showWireframes;
-    bool m_hasTexture;
-    QOpenGLTexture *m_texture;
-    bool m_hasNormalMap;
-    QOpenGLTexture *m_normalMap;
-    bool m_hasMetalnessMap;
-    bool m_hasRoughnessMap;
-    bool m_hasAmbientOcclusionMap;
-    QOpenGLTexture *m_metalnessRoughnessAmbientOcclusionMap;
+    MeshLoader *m_mesh = nullptr;
+    MeshLoader *m_newMesh = nullptr;
+    int m_renderTriangleVertexCount = 0;
+    int m_renderEdgeVertexCount = 0;
+    int m_renderToolVertexCount = 0;
+    bool m_newMeshComing = false;
+    bool m_showWireframes = false;
+    bool m_hasTexture = false;
+    QOpenGLTexture *m_texture = nullptr;
+    bool m_hasNormalMap = false;
+    QOpenGLTexture *m_normalMap = nullptr;
+    bool m_hasMetalnessMap = false;
+    bool m_hasRoughnessMap = false;
+    bool m_hasAmbientOcclusionMap = false;
+    QOpenGLTexture *m_metalnessRoughnessAmbientOcclusionMap = nullptr;
+    bool m_toolEnabled = false;
 private:
     QOpenGLVertexArrayObject m_vaoTriangle;
     QOpenGLBuffer m_vboTriangle;
     QOpenGLVertexArrayObject m_vaoEdge;
     QOpenGLBuffer m_vboEdge;
+    QOpenGLVertexArrayObject m_vaoTool;
+    QOpenGLBuffer m_vboTool;
     QMutex m_meshMutex;
     QMutex m_newMeshMutex;
 };

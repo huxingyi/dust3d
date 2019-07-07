@@ -3,12 +3,14 @@
 #include <QVector3D>
 #include <QMatrix4x4>
 #include <vector>
+#include <map>
 #include "shadervertex.h"
 
 class ToolMesh
 {
 public:
-    void addNode(const QVector3D &position, float radius, const QMatrix4x4 &transform);
+    ~ToolMesh();
+    void addNode(const QString &nodeId, const QVector3D &position);
     void generate();
     ShaderVertex *takeShaderVertices(int *shaderVertexCount);
     
@@ -16,12 +18,15 @@ private:
     struct Node
     {
         QVector3D position;
-        float radius;
-        QMatrix4x4 transform;
     };
 
-    std::vector<Node> m_nodes;
-    ShaderVertex *m_shaderVertices = nullptr;
+    std::map<QString, Node> m_nodes;
+    std::map<QString, std::vector<ShaderVertex>> m_nodesVertices;
+    
+    static const std::vector<QVector3D> m_predefinedPoints;
+    static const std::vector<QVector3D> m_predefinedNormals;
+    
+    void fillCube(std::vector<ShaderVertex> *vertices, const QVector3D &position);
 };
 
 #endif

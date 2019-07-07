@@ -35,6 +35,8 @@ Document::Document() :
     m_isResultMeshObsolete(false),
     m_meshGenerator(nullptr),
     m_resultMesh(nullptr),
+    m_resultMeshCutFaceTransforms(nullptr),
+    m_resultMeshNodesCutFaces(nullptr),
     m_isMeshGenerationSucceed(true),
     m_batchChangeRefCount(0),
     m_currentOutcome(nullptr),
@@ -80,6 +82,8 @@ void Document::applyPreferenceFlatShadingChange()
 Document::~Document()
 {
     delete m_resultMesh;
+    delete m_resultMeshCutFaceTransforms;
+    delete m_resultMeshNodesCutFaces;
     delete m_postProcessedOutcome;
     delete textureGuideImage;
     delete textureImage;
@@ -1516,6 +1520,14 @@ void Document::meshReady()
     delete m_resultMesh;
     m_resultMesh = resultMesh;
     
+    delete m_resultMeshCutFaceTransforms;
+    m_resultMeshCutFaceTransforms = m_meshGenerator->takeCutFaceTransforms();
+    
+    delete m_resultMeshNodesCutFaces;
+    m_resultMeshNodesCutFaces = m_meshGenerator->takeNodesCutFaces();
+    
+    //addToolToMesh(m_resultMesh);
+    
     m_isMeshGenerationSucceed = isSucceed;
     
     delete m_currentOutcome;
@@ -1539,6 +1551,36 @@ void Document::meshReady()
         generateMesh();
     }
 }
+
+//void Document::addToolToMesh(MeshLoader *mesh)
+//{
+//    if (nullptr == mesh)
+//        return;
+//
+//    if (nullptr == m_resultMeshCutFaceTransforms ||
+//            nullptr == m_resultMeshNodesCutFaces ||
+//            m_resultMeshCutFaceTransforms->empty() ||
+//            m_resultMeshNodesCutFaces->empty())
+//        return;
+//
+//    ToolMesh toolMesh;
+//    for (const auto &transformIt: *m_resultMeshCutFaceTransforms) {
+//        const auto &nodeId = transformIt.first;
+//        const auto &transform = transformIt.second;
+//        qDebug() << "nodeId:" << nodeId;
+//        for (const auto &cutFaceIt: (*m_resultMeshNodesCutFaces)[nodeId]) {
+//            const auto &cutFaceId = cutFaceIt.first;
+//            const auto &cutFace2d = cutFaceIt.second;
+//            QVector3D position = transform.translation + transform.rotation * (transform.uFactor * cutFace2d.x() + transform.vFactor * cutFace2d.y());
+//            qDebug() << "cutFaceId:" << cutFaceId;
+//            toolMesh.addNode(nodeId.toString() + cutFaceId, position);
+//        }
+//    }
+//    toolMesh.generate();
+//    int shaderVertexCount = 0;
+//    ShaderVertex *shaderVertices = toolMesh.takeShaderVertices(&shaderVertexCount);
+//    mesh->updateTool(shaderVertices, shaderVertexCount);
+//}
 
 bool Document::isPostProcessResultObsolete() const
 {
@@ -1667,6 +1709,8 @@ void Document::textureReady()
     
     delete m_resultTextureMesh;
     m_resultTextureMesh = m_textureGenerator->takeResultMesh();
+    
+    //addToolToMesh(m_resultTextureMesh);
     
     m_textureImageUpdateVersion++;
     

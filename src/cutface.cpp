@@ -72,13 +72,19 @@ void normalizeCutFacePoints(std::vector<QVector2D> *points)
     correctFlippedNormal(points);
 }
 
-void cutFacePointsFromNodes(std::vector<QVector2D> &points, const std::vector<std::tuple<float, float, float>> &nodes, bool isRing)
+void cutFacePointsFromNodes(std::vector<QVector2D> &points, const std::vector<std::tuple<float, float, float, QString>> &nodes, bool isRing,
+    std::vector<QString> *pointsIds)
 {
     if (isRing) {
         if (nodes.size() < 3)
             return;
         for (const auto &it: nodes) {
             points.push_back(QVector2D(std::get<1>(it), std::get<2>(it)));
+        }
+        if (nullptr != pointsIds) {
+            for (const auto &it: nodes) {
+                pointsIds->push_back(std::get<3>(it));
+            }
         }
         normalizeCutFacePoints(&points);
         return;
@@ -117,8 +123,18 @@ void cutFacePointsFromNodes(std::vector<QVector2D> &points, const std::vector<st
     for (const auto &it: cutPoints) {
         points.push_back(it.first);
     }
+    if (nullptr != pointsIds) {
+        for (const auto &it: nodes) {
+            pointsIds->push_back(std::get<3>(it) + QString("/1"));
+        }
+    }
     for (auto it = cutPoints.rbegin(); it != cutPoints.rend(); ++it) {
         points.push_back(it->second);
+    }
+    if (nullptr != pointsIds) {
+        for (auto it = nodes.rbegin(); it != nodes.rend(); ++it) {
+            pointsIds->push_back(std::get<3>(*it) + QString("/2"));
+        }
     }
     normalizeCutFacePoints(&points);
 }

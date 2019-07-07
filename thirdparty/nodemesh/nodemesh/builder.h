@@ -15,6 +15,8 @@ class Builder
 public:
     struct CutFaceTransform
     {
+        QVector3D translation;
+        float scale;
         QMatrix4x4 rotation;
         QVector3D uFactor;
         QVector3D vFactor;

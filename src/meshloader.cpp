@@ -31,6 +31,13 @@ MeshLoader::MeshLoader(const MeshLoader &mesh) :
         for (int i = 0; i < mesh.m_edgeVertexCount; i++)
             this->m_edgeVertices[i] = mesh.m_edgeVertices[i];
     }
+    if (nullptr != mesh.m_toolVertices &&
+            mesh.m_toolVertexCount > 0) {
+        this->m_toolVertices = new ShaderVertex[mesh.m_toolVertexCount];
+        this->m_toolVertexCount = mesh.m_toolVertexCount;
+        for (int i = 0; i < mesh.m_toolVertexCount; i++)
+            this->m_toolVertices[i] = mesh.m_toolVertices[i];
+    }
     if (nullptr != mesh.m_textureImage) {
         this->m_textureImage = new QImage(*mesh.m_textureImage);
     }
@@ -331,4 +338,14 @@ void MeshLoader::exportAsObj(const QString &filename)
         QTextStream stream(&file);
         exportAsObj(&stream);
     }
+}
+
+void MeshLoader::updateTool(ShaderVertex *toolVertices, int vertexNum)
+{
+    delete[] m_toolVertices;
+    m_toolVertices = nullptr;
+    m_toolVertexCount = 0;
+    
+    m_toolVertices = toolVertices;
+    m_toolVertexCount = vertexNum;
 }

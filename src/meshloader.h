@@ -8,6 +8,7 @@
 #include <QTextStream>
 #include "outcome.h"
 #include "shadervertex.h"
+#include "toolmesh.h"
 
 struct TriangulatedFace
 {
@@ -52,6 +53,7 @@ public:
     static float m_defaultRoughness;
     void exportAsObj(const QString &filename);
     void exportAsObj(QTextStream *textStream);
+    void updateTool(ShaderVertex *toolVertices, int vertexNum);
 private:
     ShaderVertex *m_triangleVertices = nullptr;
     int m_triangleVertexCount = 0;

@@ -7,6 +7,7 @@
 #include <QMatrix4x4>
 #include <QMutex>
 #include <QRubberBand>
+#include <QVector2D>
 #include "meshloader.h"
 #include "modelshaderprogram.h"
 #include "modelmeshbinder.h"

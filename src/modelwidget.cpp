@@ -3,6 +3,7 @@
 #include <QCoreApplication>
 #include <QGuiApplication>
 #include <math.h>
+#include <QVector4D>
 #include "modelwidget.h"
 #include "util.h"
 
