@@ -1,3 +1,9 @@
+Changes between 1.0.0-beta.19 and 1.0.0-beta.20:
+--------------------------------------------------
+- Support language: Simplified Chinese  
+- Fix crash on cut face nodes ordering  
+- Improve quality of mesh generation  
+
 Changes between 1.0.0-beta.18 and 1.0.0-beta.19:
 --------------------------------------------------
 - Improve Pose Editor UI
