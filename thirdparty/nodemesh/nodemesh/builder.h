@@ -25,6 +25,7 @@ public:
     
     size_t addNode(const QVector3D &position, float radius, const std::vector<QVector2D> &cutTemplate);
     size_t addEdge(size_t firstNodeIndex, size_t secondNodeIndex);
+    void setNodeOriginInfo(size_t nodeIndex, int nearOriginNodeIndex, int farOriginNodeIndex);
     void setDeformThickness(float thickness);
     void setDeformWidth(float width);
     void setCutRotation(float cutRotation);
@@ -50,6 +51,7 @@ private:
         std::vector<size_t> edges;
         std::vector<QVector2D> cutTemplate;
         std::vector<QVector3D> raysToNeibors;
+        QVector3D cutNormal;
         CutFaceTransform cutFaceTransform;
         QVector3D initialTraverseDirection;
         QVector3D traverseDirection;
@@ -62,6 +64,8 @@ private:
         bool baseNormalSearched = false;
         bool hasInitialTraverseDirection = false;
         bool hasAdjustableCutFace = false;
+        int nearOriginNodeIndex = -1;
+        int farOriginNodeIndex = -1;
         
         size_t anotherEdge(size_t edgeIndex) const
         {
@@ -134,7 +138,7 @@ private:
         float radius,
         const std::vector<QVector2D> &cutTemplate,
         QVector3D &baseNormal,
-        const QVector3D &cutNormal,
+        QVector3D &cutNormal,
         const QVector3D &traverseDirection,
         std::vector<QVector3D> &resultCut,
         CutFaceTransform *cutFaceTransform=nullptr);

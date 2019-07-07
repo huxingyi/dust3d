@@ -117,7 +117,15 @@ void Modifier::finalize()
             const Node &firstNode = m_nodes[edge.firstNodeIndex];
             const Node &secondNode = m_nodes[edge.secondNodeIndex];
             createIntermediateNode(firstNode, secondNode, factor, &intermediateNode);
-            intermediateNode.originNodeIndex = factor <= 0.5 ? firstNode.originNodeIndex : secondNode.originNodeIndex;
+            if (factor <= 0.5) {
+                intermediateNode.originNodeIndex = firstNode.originNodeIndex;
+                intermediateNode.nearOriginNodeIndex = firstNode.originNodeIndex;
+                intermediateNode.farOriginNodeIndex = secondNode.originNodeIndex;
+            } else {
+                intermediateNode.originNodeIndex = secondNode.originNodeIndex;
+                intermediateNode.nearOriginNodeIndex = secondNode.originNodeIndex;
+                intermediateNode.farOriginNodeIndex = firstNode.originNodeIndex;
+            }
             size_t intermedidateNodeIndex = m_nodes.size();
             nodeIndices.push_back(intermedidateNodeIndex);
             m_nodes.push_back(intermediateNode);

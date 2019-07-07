@@ -494,8 +494,11 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
     }
     
     std::vector<size_t> builderNodeIndices;
-    for (const auto &node: modifier->nodes())
-        builderNodeIndices.push_back(builder->addNode(node.position, node.radius, node.cutTemplate));
+    for (const auto &node: modifier->nodes()) {
+        auto nodeIndex = builder->addNode(node.position, node.radius, node.cutTemplate);
+        builder->setNodeOriginInfo(nodeIndex, node.nearOriginNodeIndex, node.farOriginNodeIndex);
+        builderNodeIndices.push_back(nodeIndex);
+    }
     for (const auto &edge: modifier->edges())
         builder->addEdge(edge.firstNodeIndex, edge.secondNodeIndex);
     bool buildSucceed = builder->build();

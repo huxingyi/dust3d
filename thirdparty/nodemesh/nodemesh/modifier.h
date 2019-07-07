@@ -15,7 +15,9 @@ public:
         QVector3D position;
         float radius = 0.0;
         std::vector<QVector2D> cutTemplate;
-        size_t originNodeIndex = 0;
+        int nearOriginNodeIndex = -1;
+        int farOriginNodeIndex = -1;
+        int originNodeIndex = 0;
     };
     
     struct Edge

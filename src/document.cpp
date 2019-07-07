@@ -1248,10 +1248,13 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
     for (const auto &it: cutFaceLinkedIdModifyMap) {
         SkeletonPart &part = partMap[it.first];
         auto findNewLinkedId = oldNewIdMap.find(it.second);
-        if (findNewLinkedId == oldNewIdMap.end())
-            part.setCutFaceLinkedId(QUuid());
-        else
+        if (oldNewIdMap.find(it.second) == oldNewIdMap.end()) {
+            if (partMap.find(it.second) == partMap.end()) {
+                part.setCutFaceLinkedId(QUuid());
+            }
+        } else {
             part.setCutFaceLinkedId(findNewLinkedId->second);
+        }
     }
     for (const auto &nodeKv: snapshot.nodes) {
         if (nodeKv.second.find("radius") == nodeKv.second.end() ||

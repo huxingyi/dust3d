@@ -99,6 +99,11 @@ void Builder::prepareNode(size_t nodeIndex)
         neighborPositions[i] = neighbor.position;
         neighborRadius[i] = neighbor.radius;
     }
+    if (node.edges.size() == 1) {
+        node.cutNormal = node.raysToNeibors[0];
+    } else if (node.edges.size() == 2) {
+        node.cutNormal = (node.raysToNeibors[0] - node.raysToNeibors[1]) * 0.5;
+    }
     auto baseNormalResult = calculateBaseNormal(node.raysToNeibors,
         neighborPositions,
         neighborRadius);
@@ -106,6 +111,13 @@ void Builder::prepareNode(size_t nodeIndex)
     node.hasInitialBaseNormal = baseNormalResult.second;
     if (node.hasInitialBaseNormal)
         node.initialBaseNormal = revisedBaseNormalAcordingToCutNormal(node.initialBaseNormal, node.traverseDirection);
+}
+
+void Builder::setNodeOriginInfo(size_t nodeIndex, int nearOriginNodeIndex, int farOriginNodeIndex)
+{
+    auto &node = m_nodes[nodeIndex];
+    node.nearOriginNodeIndex = nearOriginNodeIndex;
+    node.farOriginNodeIndex = farOriginNodeIndex;
 }
 
 void Builder::resolveBaseNormalRecursively(size_t nodeIndex)
@@ -438,7 +450,7 @@ bool Builder::generateCutsForNode(size_t nodeIndex)
     size_t neighborsCount = node.edges.size();
     //qDebug() << "Generate cuts for node" << nodeIndex << "with neighbor count" << neighborsCount;
     if (1 == neighborsCount) {
-        const QVector3D &cutNormal = node.raysToNeibors[0];
+        QVector3D cutNormal = node.cutNormal;
         std::vector<QVector3D> cut;
         makeCut(node.position, node.radius, node.cutTemplate, node.baseNormal, cutNormal, node.traverseDirection, cut, &node.cutFaceTransform);
         node.hasAdjustableCutFace = true;
@@ -447,7 +459,23 @@ bool Builder::generateCutsForNode(size_t nodeIndex)
         m_generatedFaces.push_back(vertices);
         m_edges[node.edges[0]].cuts.push_back({vertices, -cutNormal});
     } else if (2 == neighborsCount) {
-        const QVector3D cutNormal = (node.raysToNeibors[0].normalized() - node.raysToNeibors[1].normalized()) / 2;
+        QVector3D cutNormal = node.cutNormal;
+        if (-1 != node.nearOriginNodeIndex && -1 != node.farOriginNodeIndex) {
+            const auto &nearOriginNode = m_nodes[node.nearOriginNodeIndex];
+            const auto &farOriginNode = m_nodes[node.farOriginNodeIndex];
+            if (nearOriginNode.edges.size() <= 2 && farOriginNode.edges.size() <= 2) {
+                float nearDistance = node.position.distanceToPoint(nearOriginNode.position);
+                float farDistance = node.position.distanceToPoint(farOriginNode.position);
+                float totalDistance = nearDistance + farDistance;
+                float distanceFactor = nearDistance / totalDistance;
+                if (QVector3D::dotProduct(nearOriginNode.cutNormal, farOriginNode.cutNormal) <= 0)
+                    cutNormal = (nearOriginNode.cutNormal * (1.0 - distanceFactor) - farOriginNode.cutNormal * distanceFactor).normalized();
+                else
+                    cutNormal = (nearOriginNode.cutNormal * (1.0 - distanceFactor) + farOriginNode.cutNormal * distanceFactor).normalized();
+                if (QVector3D::dotProduct(cutNormal, node.cutNormal) <= 0)
+                    cutNormal = -cutNormal;
+            }
+        }
         std::vector<QVector3D> cut;
         makeCut(node.position, node.radius, node.cutTemplate, node.baseNormal, cutNormal, node.traverseDirection, cut, &node.cutFaceTransform);
         node.hasAdjustableCutFace = true;
@@ -688,26 +716,25 @@ void Builder::makeCut(const QVector3D &position,
         float radius,
         const std::vector<QVector2D> &cutTemplate,
         QVector3D &baseNormal,
-        const QVector3D &cutNormal,
+        QVector3D &cutNormal,
         const QVector3D &traverseDirection,
         std::vector<QVector3D> &resultCut,
         CutFaceTransform *cutFaceTransform)
 {
     auto finalCutTemplate = cutTemplate;
-    auto finalCutNormal = cutNormal;
     float degree = 0;
     if (!qFuzzyIsNull(m_cutRotation)) {
         degree = m_cutRotation * 180;
     }
     if (QVector3D::dotProduct(cutNormal, traverseDirection) <= 0) {
-        finalCutNormal = -finalCutNormal;
+        cutNormal = -cutNormal;
         std::reverse(finalCutTemplate.begin(), finalCutTemplate.end());
         std::rotate(finalCutTemplate.begin(), finalCutTemplate.begin() + finalCutTemplate.size() - 1, finalCutTemplate.end());
         if (nullptr != cutFaceTransform)
             cutFaceTransform->reverse = true;
     }
-    QVector3D u = QVector3D::crossProduct(finalCutNormal, baseNormal).normalized();
-    QVector3D v = QVector3D::crossProduct(u, finalCutNormal).normalized();
+    QVector3D u = QVector3D::crossProduct(cutNormal, baseNormal).normalized();
+    QVector3D v = QVector3D::crossProduct(u, cutNormal).normalized();
     auto uFactor = u * radius;
     auto vFactor = v * radius;
     if (nullptr != cutFaceTransform) {
@@ -721,7 +748,7 @@ void Builder::makeCut(const QVector3D &position,
     }
     if (!qFuzzyIsNull(degree)) {
         QMatrix4x4 rotation;
-        rotation.rotate(degree, traverseDirection);
+        rotation.rotate(degree, cutNormal);
         baseNormal = rotation * baseNormal;
         for (auto &positionOnCut: resultCut) {
             positionOnCut = rotation * positionOnCut;
