@@ -6,7 +6,7 @@
 namespace nodemesh
 {
 
-size_t Modifier::addNode(const QVector3D &position, float radius, const std::vector<QVector2D> &cutTemplate)
+size_t Modifier::addNode(const QVector3D &position, float radius, const std::vector<QVector2D> &cutTemplate, float cutRotation)
 {
     size_t nodeIndex = m_nodes.size();
     
@@ -15,6 +15,7 @@ size_t Modifier::addNode(const QVector3D &position, float radius, const std::vec
     node.position = position;
     node.radius = radius;
     node.cutTemplate = cutTemplate;
+    node.cutRotation = cutRotation;
     node.originNodeIndex = nodeIndex;
     m_nodes.push_back(node);
     
@@ -38,11 +39,18 @@ void Modifier::createIntermediateNode(const Node &firstNode, const Node &secondN
     float firstFactor = 1.0 - factor;
     resultNode->position = firstNode.position * firstFactor + secondNode.position * factor;
     resultNode->radius = firstNode.radius * firstFactor + secondNode.radius * factor;
-    resultNode->cutTemplate = firstNode.cutTemplate;
-    for (size_t i = 0; i < secondNode.cutTemplate.size(); ++i) {
-        if (i >= resultNode->cutTemplate.size())
-            break;
-        resultNode->cutTemplate[i] = resultNode->cutTemplate[i] * firstFactor + secondNode.cutTemplate[i] * factor;
+    if (factor <= 0.5) {
+        resultNode->originNodeIndex = firstNode.originNodeIndex;
+        resultNode->nearOriginNodeIndex = firstNode.originNodeIndex;
+        resultNode->farOriginNodeIndex = secondNode.originNodeIndex;
+        resultNode->cutRotation = firstNode.cutRotation;
+        resultNode->cutTemplate = firstNode.cutTemplate;
+    } else {
+        resultNode->originNodeIndex = secondNode.originNodeIndex;
+        resultNode->nearOriginNodeIndex = secondNode.originNodeIndex;
+        resultNode->farOriginNodeIndex = firstNode.originNodeIndex;
+        resultNode->cutRotation = secondNode.cutRotation;
+        resultNode->cutTemplate = secondNode.cutTemplate;
     }
 }
 
@@ -81,6 +89,7 @@ void Modifier::roundEnd()
             endNode.radius = currentNode.radius * 0.5;
             endNode.position = currentNode.position + (currentNode.position - neighborNode.position).normalized() * endNode.radius;
             endNode.cutTemplate = currentNode.cutTemplate;
+            endNode.cutRotation = currentNode.cutRotation;
             endNode.originNodeIndex = currentNode.originNodeIndex;
             size_t endNodeIndex = m_nodes.size();
             m_nodes.push_back(endNode);
@@ -117,15 +126,6 @@ void Modifier::finalize()
             const Node &firstNode = m_nodes[edge.firstNodeIndex];
             const Node &secondNode = m_nodes[edge.secondNodeIndex];
             createIntermediateNode(firstNode, secondNode, factor, &intermediateNode);
-            if (factor <= 0.5) {
-                intermediateNode.originNodeIndex = firstNode.originNodeIndex;
-                intermediateNode.nearOriginNodeIndex = firstNode.originNodeIndex;
-                intermediateNode.farOriginNodeIndex = secondNode.originNodeIndex;
-            } else {
-                intermediateNode.originNodeIndex = secondNode.originNodeIndex;
-                intermediateNode.nearOriginNodeIndex = secondNode.originNodeIndex;
-                intermediateNode.farOriginNodeIndex = firstNode.originNodeIndex;
-            }
             size_t intermedidateNodeIndex = m_nodes.size();
             nodeIndices.push_back(intermedidateNodeIndex);
             m_nodes.push_back(intermediateNode);

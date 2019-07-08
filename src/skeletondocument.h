@@ -22,7 +22,10 @@ public:
         y(0),
         z(0),
         radius(0),
-        boneMark(BoneMark::None)
+        boneMark(BoneMark::None),
+        cutRotation(0.0),
+        cutFace(CutFace::Quad),
+        hasCutFaceSettings(false)
     {
         id = withId.isNull() ? QUuid::createUuid() : withId;
     }
@@ -34,6 +37,38 @@ public:
             toRadius = 1;
         radius = toRadius;
     }
+    void setCutRotation(float toRotation)
+    {
+        if (toRotation < -1)
+            toRotation = -1;
+        else if (toRotation > 1)
+            toRotation = 1;
+        cutRotation = toRotation;
+        hasCutFaceSettings = true;
+    }
+    void setCutFace(CutFace face)
+    {
+        cutFace = face;
+        cutFaceLinkedId = QUuid();
+        hasCutFaceSettings = true;
+    }
+    void setCutFaceLinkedId(const QUuid &linkedId)
+    {
+        if (linkedId.isNull()) {
+            clearCutFaceSettings();
+            return;
+        }
+        cutFace = CutFace::UserDefined;
+        cutFaceLinkedId = linkedId;
+        hasCutFaceSettings = true;
+    }
+    void clearCutFaceSettings()
+    {
+        cutFace = CutFace::Quad;
+        cutFaceLinkedId = QUuid();
+        cutRotation = 0;
+        hasCutFaceSettings = false;
+    }
     QUuid id;
     QUuid partId;
     QString name;
@@ -42,6 +77,10 @@ public:
     float z;
     float radius;
     BoneMark boneMark;
+    float cutRotation;
+    CutFace cutFace;
+    QUuid cutFaceLinkedId;
+    bool hasCutFaceSettings;
     std::vector<QUuid> edgeIds;
 };
 

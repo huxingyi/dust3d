@@ -16,13 +16,14 @@
 namespace nodemesh 
 {
 
-size_t Builder::addNode(const QVector3D &position, float radius, const std::vector<QVector2D> &cutTemplate)
+size_t Builder::addNode(const QVector3D &position, float radius, const std::vector<QVector2D> &cutTemplate, float cutRotation)
 {
     size_t nodeIndex = m_nodes.size();
     Node node;
     node.position = position;
     node.radius = radius;
     node.cutTemplate = cutTemplate;
+    node.cutRotation = cutRotation;
     m_nodes.push_back(node);
     m_sortedNodeIndices.push_back(nodeIndex);
     //qDebug() << "addNode" << position << radius;
@@ -452,7 +453,7 @@ bool Builder::generateCutsForNode(size_t nodeIndex)
     if (1 == neighborsCount) {
         QVector3D cutNormal = node.cutNormal;
         std::vector<QVector3D> cut;
-        makeCut(node.position, node.radius, node.cutTemplate, node.baseNormal, cutNormal, node.traverseDirection, cut, &node.cutFaceTransform);
+        makeCut(node.position, node.radius, node.cutTemplate, node.cutRotation, node.baseNormal, cutNormal, node.traverseDirection, cut, &node.cutFaceTransform);
         node.hasAdjustableCutFace = true;
         std::vector<size_t> vertices;
         insertCutVertices(cut, vertices, nodeIndex, cutNormal);
@@ -477,7 +478,7 @@ bool Builder::generateCutsForNode(size_t nodeIndex)
             }
         }
         std::vector<QVector3D> cut;
-        makeCut(node.position, node.radius, node.cutTemplate, node.baseNormal, cutNormal, node.traverseDirection, cut, &node.cutFaceTransform);
+        makeCut(node.position, node.radius, node.cutTemplate, node.cutRotation, node.baseNormal, cutNormal, node.traverseDirection, cut, &node.cutFaceTransform);
         node.hasAdjustableCutFace = true;
         std::vector<size_t> vertices;
         insertCutVertices(cut, vertices, nodeIndex, cutNormal);
@@ -549,7 +550,7 @@ bool Builder::tryWrapMultipleBranchesForNode(size_t nodeIndex, std::vector<float
                 continue;
             }
         }
-        makeCut(node.position + cutNormal * finalDistance, radius, node.cutTemplate, node.baseNormal, cutNormal, neighbor.traverseDirection, cut);
+        makeCut(node.position + cutNormal * finalDistance, radius, node.cutTemplate, node.cutRotation, node.baseNormal, cutNormal, neighbor.traverseDirection, cut);
         std::vector<size_t> vertices;
         insertCutVertices(cut, vertices, nodeIndex, cutNormal);
         cutsForEdges.push_back({vertices, -cutNormal});
@@ -715,6 +716,7 @@ QVector3D Builder::revisedBaseNormalAcordingToCutNormal(const QVector3D &baseNor
 void Builder::makeCut(const QVector3D &position,
         float radius,
         const std::vector<QVector2D> &cutTemplate,
+        float cutRotation,
         QVector3D &baseNormal,
         QVector3D &cutNormal,
         const QVector3D &traverseDirection,
@@ -723,8 +725,8 @@ void Builder::makeCut(const QVector3D &position,
 {
     auto finalCutTemplate = cutTemplate;
     float degree = 0;
-    if (!qFuzzyIsNull(m_cutRotation)) {
-        degree = m_cutRotation * 180;
+    if (!qFuzzyIsNull(cutRotation)) {
+        degree = cutRotation * 180;
     }
     if (QVector3D::dotProduct(cutNormal, traverseDirection) <= 0) {
         cutNormal = -cutNormal;
@@ -832,11 +834,6 @@ void Builder::setDeformThickness(float thickness)
 void Builder::setDeformWidth(float width)
 {
     m_deformWidth = width;
-}
-
-void Builder::setCutRotation(float cutRotation)
-{
-    m_cutRotation = cutRotation;
 }
 
 QVector3D Builder::calculateDeformPosition(const QVector3D &vertexPosition, const QVector3D &ray, const QVector3D &deformNormal, float deformFactor)

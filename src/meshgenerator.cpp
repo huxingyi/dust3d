@@ -111,9 +111,24 @@ bool MeshGenerator::checkIsPartDependencyDirty(const QString &partIdString)
     }
     QString cutFaceString = valueOfKeyInMapOrEmpty(findPart->second, "cutFace");
     QUuid cutFaceLinkedPartId = QUuid(cutFaceString);
-    if (cutFaceLinkedPartId.isNull())
-        return false;
-    return checkIsPartDirty(cutFaceString);
+    if (!cutFaceLinkedPartId.isNull()) {
+        if (checkIsPartDirty(cutFaceString))
+            return true;
+    }
+    for (const auto &nodeIdString: m_partNodeIds[partIdString]) {
+        auto findNode = m_snapshot->nodes.find(nodeIdString);
+        if (findNode == m_snapshot->nodes.end()) {
+            qDebug() << "Find node failed:" << nodeIdString;
+            continue;
+        }
+        QString cutFaceString = valueOfKeyInMapOrEmpty(findNode->second, "cutFace");
+        QUuid cutFaceLinkedPartId = QUuid(cutFaceString);
+        if (!cutFaceLinkedPartId.isNull()) {
+            if (checkIsPartDirty(cutFaceString))
+                return true;
+        }
+    }
+    return false;
 }
 
 bool MeshGenerator::checkIsComponentDirty(const QString &componentIdString)
@@ -167,32 +182,9 @@ void MeshGenerator::checkDirtyFlags()
     checkIsComponentDirty(QUuid().toString());
 }
 
-nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString)
+void MeshGenerator::cutFaceStringToCutTemplate(const QString &cutFaceString, std::vector<QVector2D> &cutTemplate)
 {
-    auto findPart = m_snapshot->parts.find(partIdString);
-    if (findPart == m_snapshot->parts.end()) {
-        qDebug() << "Find part failed:" << partIdString;
-        return nullptr;
-    }
-    
-    QUuid partId = QUuid(partIdString);
-    auto &part = findPart->second;
-    bool isDisabled = isTrueValueString(valueOfKeyInMapOrEmpty(part, "disabled"));
-    bool xMirrored = isTrueValueString(valueOfKeyInMapOrEmpty(part, "xMirrored"));
-    bool subdived = isTrueValueString(valueOfKeyInMapOrEmpty(part, "subdived"));
-    bool rounded = isTrueValueString(valueOfKeyInMapOrEmpty(part, "rounded"));
-    bool chamfered = isTrueValueString(valueOfKeyInMapOrEmpty(part, "chamfered"));
-    QString colorString = valueOfKeyInMapOrEmpty(part, "color");
-    QColor partColor = colorString.isEmpty() ? m_defaultPartColor : QColor(colorString);
-    float deformThickness = 1.0;
-    float deformWidth = 1.0;
-    float cutRotation = 0.0;
-    auto target = PartTargetFromString(valueOfKeyInMapOrEmpty(part, "target").toUtf8().constData());
-    auto base = PartBaseFromString(valueOfKeyInMapOrEmpty(part, "base").toUtf8().constData());
-    
-    std::map<QString, QVector2D> cutTemplateMapByName;
-    std::vector<QVector2D> cutTemplate;
-    QString cutFaceString = valueOfKeyInMapOrEmpty(part, "cutFace");
+    //std::map<QString, QVector2D> cutTemplateMapByName;
     QUuid cutFaceLinkedPartId = QUuid(cutFaceString);
     if (!cutFaceLinkedPartId.isNull()) {
         std::map<QString, std::tuple<float, float, float>> cutFaceNodeMap;
@@ -306,19 +298,47 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
             // Fetch points from linked nodes
             std::vector<QString> cutTemplateNames;
             cutFacePointsFromNodes(cutTemplate, cutFaceNodes, isRing, &cutTemplateNames);
-            for (size_t i = 0; i < cutTemplateNames.size(); ++i) {
-                cutTemplateMapByName.insert({cutTemplateNames[i], cutTemplate[i]});
-            }
+            //for (size_t i = 0; i < cutTemplateNames.size(); ++i) {
+            //    cutTemplateMapByName.insert({cutTemplateNames[i], cutTemplate[i]});
+            //}
         }
     }
     if (cutTemplate.size() < 3) {
         CutFace cutFace = CutFaceFromString(cutFaceString.toUtf8().constData());
         cutTemplate = CutFaceToPoints(cutFace);
-        cutTemplateMapByName.clear();
-        for (size_t i = 0; i < cutTemplate.size(); ++i) {
-            cutTemplateMapByName.insert({cutFaceString + "/" + QString::number(i + 1), cutTemplate[i]});
-        }
+        //cutTemplateMapByName.clear();
+        //for (size_t i = 0; i < cutTemplate.size(); ++i) {
+        //    cutTemplateMapByName.insert({cutFaceString + "/" + QString::number(i + 1), cutTemplate[i]});
+        //}
     }
+}
+
+nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString)
+{
+    auto findPart = m_snapshot->parts.find(partIdString);
+    if (findPart == m_snapshot->parts.end()) {
+        qDebug() << "Find part failed:" << partIdString;
+        return nullptr;
+    }
+    
+    QUuid partId = QUuid(partIdString);
+    auto &part = findPart->second;
+    bool isDisabled = isTrueValueString(valueOfKeyInMapOrEmpty(part, "disabled"));
+    bool xMirrored = isTrueValueString(valueOfKeyInMapOrEmpty(part, "xMirrored"));
+    bool subdived = isTrueValueString(valueOfKeyInMapOrEmpty(part, "subdived"));
+    bool rounded = isTrueValueString(valueOfKeyInMapOrEmpty(part, "rounded"));
+    bool chamfered = isTrueValueString(valueOfKeyInMapOrEmpty(part, "chamfered"));
+    QString colorString = valueOfKeyInMapOrEmpty(part, "color");
+    QColor partColor = colorString.isEmpty() ? m_defaultPartColor : QColor(colorString);
+    float deformThickness = 1.0;
+    float deformWidth = 1.0;
+    float cutRotation = 0.0;
+    auto target = PartTargetFromString(valueOfKeyInMapOrEmpty(part, "target").toUtf8().constData());
+    auto base = PartBaseFromString(valueOfKeyInMapOrEmpty(part, "base").toUtf8().constData());
+    
+    QString cutFaceString = valueOfKeyInMapOrEmpty(part, "cutFace");
+    std::vector<QVector2D> cutTemplate;
+    cutFaceStringToCutTemplate(cutFaceString, cutTemplate);
     if (chamfered)
         nodemesh::chamferFace2D(&cutTemplate);
     
@@ -362,6 +382,9 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
         float radius = 0;
         QVector3D position;
         BoneMark boneMark = BoneMark::None;
+        bool hasCutFaceSettings = false;
+        float cutRotation = 0.0;
+        QString cutFace;
     };
     std::map<QString, NodeInfo> nodeInfos;
     for (const auto &nodeIdString: m_partNodeIds[partIdString]) {
@@ -379,10 +402,27 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
 
         BoneMark boneMark = BoneMarkFromString(valueOfKeyInMapOrEmpty(node, "boneMark").toUtf8().constData());
         
+        bool hasCutFaceSettings = false;
+        float cutRotation = 0.0;
+        QString cutFace;
+        
+        const auto &cutFaceIt = node.find("cutFace");
+        if (cutFaceIt != node.end()) {
+            cutFace = cutFaceIt->second;
+            hasCutFaceSettings = true;
+            const auto &cutRotationIt = node.find("cutRotation");
+            if (cutRotationIt != node.end()) {
+                cutRotation = cutRotationIt->second.toFloat();
+            }
+        }
+        
         auto &nodeInfo = nodeInfos[nodeIdString];
         nodeInfo.position = QVector3D(x, y, z);
         nodeInfo.radius = radius;
         nodeInfo.boneMark = boneMark;
+        nodeInfo.hasCutFaceSettings = hasCutFaceSettings;
+        nodeInfo.cutRotation = cutRotation;
+        nodeInfo.cutFace = cutFace;
     }
     
     std::set<std::pair<QString, QString>> edges;
@@ -428,7 +468,16 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
     for (const auto &nodeIt: nodeInfos) {
         const auto &nodeIdString = nodeIt.first;
         const auto &nodeInfo = nodeIt.second;
-        size_t nodeIndex = modifier->addNode(nodeInfo.position, nodeInfo.radius, cutTemplate);
+        size_t nodeIndex = 0;
+        if (nodeInfo.hasCutFaceSettings) {
+            std::vector<QVector2D> nodeCutTemplate;
+            cutFaceStringToCutTemplate(nodeInfo.cutFace, nodeCutTemplate);
+            if (chamfered)
+                nodemesh::chamferFace2D(&nodeCutTemplate);
+            nodeIndex = modifier->addNode(nodeInfo.position, nodeInfo.radius, nodeCutTemplate, nodeInfo.cutRotation);
+        } else {
+            nodeIndex = modifier->addNode(nodeInfo.position, nodeInfo.radius, cutTemplate, cutRotation);
+        }
         nodeIdStringToIndexMap[nodeIdString] = nodeIndex;
         nodeIndexToIdStringMap[nodeIndex] = nodeIdString;
         
@@ -482,7 +531,6 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
     nodemesh::Builder *builder = new nodemesh::Builder;
     builder->setDeformThickness(deformThickness);
     builder->setDeformWidth(deformWidth);
-    builder->setCutRotation(cutRotation);
     if (PartBase::YZ == base) {
         builder->enableBaseNormalOnX(false);
     } else if (PartBase::Average == base) {
@@ -495,7 +543,7 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
     
     std::vector<size_t> builderNodeIndices;
     for (const auto &node: modifier->nodes()) {
-        auto nodeIndex = builder->addNode(node.position, node.radius, node.cutTemplate);
+        auto nodeIndex = builder->addNode(node.position, node.radius, node.cutTemplate, node.cutRotation);
         builder->setNodeOriginInfo(nodeIndex, node.nearOriginNodeIndex, node.farOriginNodeIndex);
         builderNodeIndices.push_back(nodeIndex);
     }
@@ -503,19 +551,19 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
         builder->addEdge(edge.firstNodeIndex, edge.secondNodeIndex);
     bool buildSucceed = builder->build();
     
-    for (size_t i = 0; i < modifier->nodes().size(); ++i) {
-        const auto &node = modifier->nodes()[i];
-        if (!node.isOriginal)
-            continue;
-        const QString &nodeIdString = nodeIndexToIdStringMap[node.originNodeIndex];
-        const nodemesh::Builder::CutFaceTransform *cutFaceTransform = builder->nodeAdjustableCutFaceTransform(builderNodeIndices[i]);
-        if (nullptr != cutFaceTransform &&
-                PartTarget::Model == target) {
-            QUuid nodeId = QUuid(nodeIdString);
-            m_cutFaceTransforms->insert({nodeId, *cutFaceTransform});
-            m_nodesCutFaces->insert({nodeId, cutTemplateMapByName});
-        }
-    }
+    //for (size_t i = 0; i < modifier->nodes().size(); ++i) {
+    //    const auto &node = modifier->nodes()[i];
+    //    if (!node.isOriginal)
+    //        continue;
+    //    const QString &nodeIdString = nodeIndexToIdStringMap[node.originNodeIndex];
+    //    const nodemesh::Builder::CutFaceTransform *cutFaceTransform = builder->nodeAdjustableCutFaceTransform(builderNodeIndices[i]);
+    //    if (nullptr != cutFaceTransform &&
+    //            PartTarget::Model == target) {
+    //        QUuid nodeId = QUuid(nodeIdString);
+    //        m_cutFaceTransforms->insert({nodeId, *cutFaceTransform});
+    //        m_nodesCutFaces->insert({nodeId, cutTemplateMapByName});
+    //    }
+    //}
     
     partCache.vertices = builder->generatedVertices();
     partCache.faces = builder->generatedFaces();
@@ -531,7 +579,7 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
     nodemesh::Combiner::Mesh *mesh = nullptr;
     
     if (buildSucceed) {
-        mesh = new nodemesh::Combiner::Mesh(partCache.vertices, partCache.faces);
+        mesh = new nodemesh::Combiner::Mesh(partCache.vertices, partCache.faces, false);
         if (!mesh->isNull()) {
             if (xMirrored) {
                 std::vector<QVector3D> xMirroredVertices;
@@ -1008,8 +1056,8 @@ void MeshGenerator::generate()
     countTimeConsumed.start();
     
     m_outcome = new Outcome;
-    m_cutFaceTransforms = new std::map<QUuid, nodemesh::Builder::CutFaceTransform>;
-    m_nodesCutFaces = new std::map<QUuid, std::map<QString, QVector2D>>;
+    //m_cutFaceTransforms = new std::map<QUuid, nodemesh::Builder::CutFaceTransform>;
+    //m_nodesCutFaces = new std::map<QUuid, std::map<QString, QVector2D>>;
     
     bool needDeleteCacheContext = false;
     if (nullptr == m_cacheContext) {

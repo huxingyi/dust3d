@@ -383,6 +383,9 @@ signals:
     void edgeRemoved(QUuid edgeId);
     void nodeRadiusChanged(QUuid nodeId);
     void nodeBoneMarkChanged(QUuid nodeId);
+    void nodeColorStateChanged(QUuid nodeId);
+    void nodeCutRotationChanged(QUuid nodeId);
+    void nodeCutFaceChanged(QUuid nodeId);
     void nodeOriginChanged(QUuid nodeId);
     void edgeChanged(QUuid edgeId);
     void partPreviewChanged(QUuid partId);
@@ -536,6 +539,10 @@ public slots:
     void setNodeOrigin(QUuid nodeId, float x, float y, float z);
     void setNodeRadius(QUuid nodeId, float radius);
     void setNodeBoneMark(QUuid nodeId, BoneMark mark);
+    void setNodeCutRotation(QUuid nodeId, float cutRotation);
+    void setNodeCutFace(QUuid nodeId, CutFace cutFace);
+    void setNodeCutFaceLinkedId(QUuid nodeId, QUuid linkedId);
+    void clearNodeCutFaceSettings(QUuid nodeId);
     void switchNodeXZ(QUuid nodeId);
     void moveOriginBy(float x, float y, float z);
     void addEdge(QUuid fromNodeId, QUuid toNodeId);

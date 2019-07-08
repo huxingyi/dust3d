@@ -37,12 +37,9 @@ wd = $$replace(PWD, /, $$QMAKE_DIR_SEP)
 # Update the .ts file from source
 qtPrepareTool(LUPDATE, lupdate)
 LUPDATE += src/*.cpp src/*.h -locations none
-TSFILES = $$files($$PWD/languages/dust3d_??.ts)
-for(file, TSFILES) {
-	lang = $$replace(file, .*_([^/]*).ts, 1)
-	v = ts-$${lang}.commands
-	$$v = cd $$wd && $$LUPDATE $$SOURCES $$APP_FILES -ts $$file
-	QMAKE_EXTRA_TARGETS += ts-$$lang
+for(lang, LANGUAGES) {
+	command = $$LUPDATE -ts languages/dust3d_$${lang}.ts
+	system($$command)|error("Failed to run: $$command")
 }
 
 ##########################################################

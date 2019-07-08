@@ -614,6 +614,19 @@ void Document::updateLinkedPart(QUuid oldPartId, QUuid newPartId)
             partIt.second.setCutFaceLinkedId(newPartId);
         }
     }
+    std::set<QUuid> dirtyPartIds;
+    for (auto &nodeIt: nodeMap) {
+        if (nodeIt.second.cutFaceLinkedId == oldPartId) {
+            dirtyPartIds.insert(nodeIt.second.partId);
+            nodeIt.second.setCutFaceLinkedId(newPartId);
+        }
+    }
+    for (const auto &partId: dirtyPartIds) {
+        SkeletonPart *part = (SkeletonPart *)findPart(partId);
+        if (nullptr == part)
+            continue;
+        part->dirty = true;
+    }
 }
 
 const Component *Document::findComponent(QUuid componentId) const
@@ -799,6 +812,75 @@ void Document::setNodeBoneMark(QUuid nodeId, BoneMark mark)
     emit skeletonChanged();
 }
 
+void Document::setNodeCutRotation(QUuid nodeId, float cutRotation)
+{
+    auto node = nodeMap.find(nodeId);
+    if (node == nodeMap.end()) {
+        qDebug() << "Node not found:" << nodeId;
+        return;
+    }
+    if (qFuzzyCompare(cutRotation, node->second.cutRotation))
+        return;
+    node->second.setCutRotation(cutRotation);
+    auto part = partMap.find(node->second.partId);
+    if (part != partMap.end())
+        part->second.dirty = true;
+    emit nodeCutRotationChanged(nodeId);
+    emit skeletonChanged();
+}
+
+void Document::setNodeCutFace(QUuid nodeId, CutFace cutFace)
+{
+    auto node = nodeMap.find(nodeId);
+    if (node == nodeMap.end()) {
+        qDebug() << "Node not found:" << nodeId;
+        return;
+    }
+    if (node->second.cutFace == cutFace)
+        return;
+    node->second.setCutFace(cutFace);
+    auto part = partMap.find(node->second.partId);
+    if (part != partMap.end())
+        part->second.dirty = true;
+    emit nodeCutFaceChanged(nodeId);
+    emit skeletonChanged();
+}
+
+void Document::setNodeCutFaceLinkedId(QUuid nodeId, QUuid linkedId)
+{
+    auto node = nodeMap.find(nodeId);
+    if (node == nodeMap.end()) {
+        qDebug() << "Node not found:" << nodeId;
+        return;
+    }
+    if (node->second.cutFace == CutFace::UserDefined &&
+            node->second.cutFaceLinkedId == linkedId)
+        return;
+    node->second.setCutFaceLinkedId(linkedId);
+    auto part = partMap.find(node->second.partId);
+    if (part != partMap.end())
+        part->second.dirty = true;
+    emit nodeCutFaceChanged(nodeId);
+    emit skeletonChanged();
+}
+
+void Document::clearNodeCutFaceSettings(QUuid nodeId)
+{
+    auto node = nodeMap.find(nodeId);
+    if (node == nodeMap.end()) {
+        qDebug() << "Node not found:" << nodeId;
+        return;
+    }
+    if (!node->second.hasCutFaceSettings)
+        return;
+    node->second.clearCutFaceSettings();
+    auto part = partMap.find(node->second.partId);
+    if (part != partMap.end())
+        part->second.dirty = true;
+    emit nodeCutFaceChanged(nodeId);
+    emit skeletonChanged();
+}
+
 void Document::updateTurnaround(const QImage &image)
 {
     turnaround = image;
@@ -976,6 +1058,16 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
             node["partId"] = nodeIt.second.partId.toString();
             if (nodeIt.second.boneMark != BoneMark::None)
                 node["boneMark"] = BoneMarkToString(nodeIt.second.boneMark);
+            if (nodeIt.second.hasCutFaceSettings) {
+                node["cutRotation"] = QString::number(nodeIt.second.cutRotation);
+                if (CutFace::UserDefined == nodeIt.second.cutFace) {
+                    if (!nodeIt.second.cutFaceLinkedId.isNull()) {
+                        node["cutFace"] = nodeIt.second.cutFaceLinkedId.toString();
+                    }
+                } else {
+                    node["cutFace"] = CutFaceToString(nodeIt.second.cutFace);
+                }
+            }
             if (!nodeIt.second.name.isEmpty())
                 node["name"] = nodeIt.second.name;
             snapshot->nodes[node["id"]] = node;
@@ -1248,7 +1340,7 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
     for (const auto &it: cutFaceLinkedIdModifyMap) {
         SkeletonPart &part = partMap[it.first];
         auto findNewLinkedId = oldNewIdMap.find(it.second);
-        if (oldNewIdMap.find(it.second) == oldNewIdMap.end()) {
+        if (findNewLinkedId == oldNewIdMap.end()) {
             if (partMap.find(it.second) == partMap.end()) {
                 part.setCutFaceLinkedId(QUuid());
             }
@@ -1273,6 +1365,26 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
         node.z = valueOfKeyInMapOrEmpty(nodeKv.second, "z").toFloat();
         node.partId = oldNewIdMap[QUuid(valueOfKeyInMapOrEmpty(nodeKv.second, "partId"))];
         node.boneMark = BoneMarkFromString(valueOfKeyInMapOrEmpty(nodeKv.second, "boneMark").toUtf8().constData());
+        const auto &cutRotationIt = nodeKv.second.find("cutRotation");
+        if (cutRotationIt != nodeKv.second.end())
+            node.setCutRotation(cutRotationIt->second.toFloat());
+        const auto &cutFaceIt = nodeKv.second.find("cutFace");
+        if (cutFaceIt != nodeKv.second.end()) {
+            QUuid cutFaceLinkedId = QUuid(cutFaceIt->second);
+            if (cutFaceLinkedId.isNull()) {
+                node.setCutFace(CutFaceFromString(cutFaceIt->second.toUtf8().constData()));
+            } else {
+                node.setCutFaceLinkedId(cutFaceLinkedId);
+                auto findNewLinkedId = oldNewIdMap.find(cutFaceLinkedId);
+                if (findNewLinkedId == oldNewIdMap.end()) {
+                    if (partMap.find(cutFaceLinkedId) == partMap.end()) {
+                        node.setCutFaceLinkedId(QUuid());
+                    }
+                } else {
+                    node.setCutFaceLinkedId(findNewLinkedId->second);
+                }
+            }
+        }
         nodeMap[node.id] = node;
         newAddedNodeIds.insert(node.id);
     }

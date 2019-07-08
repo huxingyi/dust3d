@@ -116,6 +116,7 @@ private:
     nodemesh::Combiner::Mesh *combineMultipleMeshes(const std::vector<std::pair<nodemesh::Combiner::Mesh *, CombineMode>> &multipleMeshes, bool recombine=true);
     QString componentColorName(const std::map<QString, QString> *component);
     void collectUncombinedComponent(const QString &componentIdString);
+    void cutFaceStringToCutTemplate(const QString &cutFaceString, std::vector<QVector2D> &cutTemplate);
 };
 
 #endif

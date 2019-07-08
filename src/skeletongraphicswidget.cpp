@@ -219,6 +219,20 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
         contextMenu.addAction(&switchChainSideAction);
     }
     
+    QAction setCutFaceAction(tr("Cut Face..."), this);
+    if (!m_nodePositionModifyOnly && hasSelection()) {
+        connect(&setCutFaceAction, &QAction::triggered, this, [&]() {
+            showSelectedCutFaceSettingPopup(mapFromGlobal(QCursor::pos()));
+        });
+        contextMenu.addAction(&setCutFaceAction);
+    }
+    
+    QAction clearCutFaceAction(tr("Clear Cut Face"), this);
+    if (!m_nodePositionModifyOnly && hasCutFaceAdjustedNodesSelection()) {
+        connect(&clearCutFaceAction, &QAction::triggered, this, &SkeletonGraphicsWidget::clearSelectedCutFace);
+        contextMenu.addAction(&clearCutFaceAction);
+    }
+    
     QAction alignToLocalCenterAction(tr("Local Center"), this);
     QAction alignToLocalVerticalCenterAction(tr("Local Vertical Center"), this);
     QAction alignToLocalHorizontalCenterAction(tr("Local Horizontal Center"), this);
@@ -351,6 +365,23 @@ bool SkeletonGraphicsWidget::hasTwoDisconnectedNodesSelection()
     if (!m_document->isNodeConnectable(nodeIds[1]))
         return false;
     return true;
+}
+
+bool SkeletonGraphicsWidget::hasCutFaceAdjustedNodesSelection()
+{
+    for (const auto &it: m_rangeSelectionSet) {
+        if (it->data(0) == "node") {
+            const auto &nodeId = ((SkeletonGraphicsNodeItem *)it)->id();
+            const SkeletonNode *node = m_document->findNode(nodeId);
+            if (nullptr == node) {
+                qDebug() << "Find node failed:" << nodeId;
+                continue;
+            }
+            if (node->hasCutFaceSettings)
+                return true;
+        }
+    }
+    return false;
 }
 
 void SkeletonGraphicsWidget::breakSelected()
@@ -2611,6 +2642,40 @@ void SkeletonGraphicsWidget::setSelectedNodesBoneMark(BoneMark boneMark)
         emit batchChangeEnd();
         emit groupOperationAdded();
     }
+}
+
+void SkeletonGraphicsWidget::showSelectedCutFaceSettingPopup(const QPoint &pos)
+{
+    std::set<QUuid> nodeIdSet;
+    std::set<QUuid> edgeIdSet;
+    readSkeletonNodeAndEdgeIdSetFromRangeSelection(&nodeIdSet, &edgeIdSet);
+    emit showCutFaceSettingPopup(mapToGlobal(pos), nodeIdSet);
+}
+
+void SkeletonGraphicsWidget::clearSelectedCutFace()
+{
+    std::set<QUuid> nodeIdSet;
+    for (const auto &it: m_rangeSelectionSet) {
+        if (it->data(0) == "node") {
+            const auto &nodeId = ((SkeletonGraphicsNodeItem *)it)->id();
+            const SkeletonNode *node = m_document->findNode(nodeId);
+            if (nullptr == node) {
+                qDebug() << "Find node failed:" << nodeId;
+                continue;
+            }
+            if (node->hasCutFaceSettings) {
+                nodeIdSet.insert(nodeId);
+            }
+        }
+    }
+    if (nodeIdSet.empty())
+        return;
+    emit batchChangeBegin();
+    for (const auto &id: nodeIdSet) {
+        emit clearNodeCutFaceSettings(id);
+    }
+    emit batchChangeEnd();
+    emit groupOperationAdded();
 }
 
 void SkeletonGraphicsWidget::setNodePositionModifyOnly(bool nodePositionModifyOnly)

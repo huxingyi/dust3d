@@ -15,6 +15,7 @@ public:
         QVector3D position;
         float radius = 0.0;
         std::vector<QVector2D> cutTemplate;
+        float cutRotation = 0.0;
         int nearOriginNodeIndex = -1;
         int farOriginNodeIndex = -1;
         int originNodeIndex = 0;
@@ -26,7 +27,7 @@ public:
         size_t secondNodeIndex;
     };
     
-    size_t addNode(const QVector3D &position, float radius, const std::vector<QVector2D> &cutTemplate);
+    size_t addNode(const QVector3D &position, float radius, const std::vector<QVector2D> &cutTemplate, float cutRotation);
     size_t addEdge(size_t firstNodeIndex, size_t secondNodeIndex);
     void subdivide();
     void roundEnd();

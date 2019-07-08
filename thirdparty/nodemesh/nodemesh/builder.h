@@ -23,12 +23,11 @@ public:
         bool reverse = false;
     };
     
-    size_t addNode(const QVector3D &position, float radius, const std::vector<QVector2D> &cutTemplate);
+    size_t addNode(const QVector3D &position, float radius, const std::vector<QVector2D> &cutTemplate, float cutRotation);
     size_t addEdge(size_t firstNodeIndex, size_t secondNodeIndex);
     void setNodeOriginInfo(size_t nodeIndex, int nearOriginNodeIndex, int farOriginNodeIndex);
     void setDeformThickness(float thickness);
     void setDeformWidth(float width);
-    void setCutRotation(float cutRotation);
     void enableBaseNormalOnX(bool enabled);
     void enableBaseNormalOnY(bool enabled);
     void enableBaseNormalOnZ(bool enabled);
@@ -50,6 +49,7 @@ private:
         QVector3D position;
         std::vector<size_t> edges;
         std::vector<QVector2D> cutTemplate;
+        float cutRotation;
         std::vector<QVector3D> raysToNeibors;
         QVector3D cutNormal;
         CutFaceTransform cutFaceTransform;
@@ -137,6 +137,7 @@ private:
     void makeCut(const QVector3D &position,
         float radius,
         const std::vector<QVector2D> &cutTemplate,
+        float cutRotation,
         QVector3D &baseNormal,
         QVector3D &cutNormal,
         const QVector3D &traverseDirection,

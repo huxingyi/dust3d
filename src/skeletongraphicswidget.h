@@ -406,6 +406,8 @@ signals:
     void setZlockState(bool locked);
     void setNodeOrigin(QUuid nodeId, float x, float y, float z);
     void setNodeBoneMark(QUuid nodeId, BoneMark mark);
+    void clearNodeCutFaceSettings(QUuid nodeId);
+    void showCutFaceSettingPopup(const QPoint &globalPos, std::set<QUuid> nodeIds);
     void zoomRenderedModelBy(float delta);
     void switchNodeXZ(QUuid nodeId);
     void switchChainSide(std::set<QUuid> nodeIds);
@@ -437,6 +439,7 @@ public:
     bool hasEdgeSelection();
     bool hasNodeSelection();
     bool hasTwoDisconnectedNodesSelection();
+    bool hasCutFaceAdjustedNodesSelection();
     void setModelWidget(ModelWidget *modelWidget);
     void setNodePositionModifyOnly(bool nodePositionModifyOnly);
     void setMainProfileOnly(bool mainProfileOnly);
@@ -505,6 +508,8 @@ public slots:
     void timeToRemoveDeferredNodesAndEdges();
     void switchSelectedXZ();
     void switchSelectedChainSide();
+    void showSelectedCutFaceSettingPopup(const QPoint &pos);
+    void clearSelectedCutFace();
     void shortcutDelete();
     void shortcutAddMode();
     void shortcutUndo();

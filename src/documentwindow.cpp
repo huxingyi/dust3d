@@ -15,6 +15,7 @@
 #include <map>
 #include <QDesktopServices>
 #include <QDockWidget>
+#include <QWidgetAction>
 #include "documentwindow.h"
 #include "skeletongraphicswidget.h"
 #include "theme.h"
@@ -36,6 +37,8 @@
 #include "spinnableawesomebutton.h"
 #include "fbxfile.h"
 #include "shortcuts.h"
+#include "floatnumberwidget.h"
+#include "cutfacelistwidget.h"
 
 int DocumentWindow::m_modelRenderWidgetInitialX = 16;
 int DocumentWindow::m_modelRenderWidgetInitialY = 16;
@@ -492,6 +495,18 @@ DocumentWindow::DocumentWindow() :
         m_graphicsWidget->switchSelectedXZ();
     });
     m_editMenu->addAction(m_switchXzAction);
+    
+    m_setCutFaceAction = new QAction(tr("Cut Face..."), this);
+    connect(m_setCutFaceAction, &QAction::triggered, [=] {
+        m_graphicsWidget->showSelectedCutFaceSettingPopup(m_graphicsWidget->mapFromGlobal(QCursor::pos()));
+    });
+    m_editMenu->addAction(m_setCutFaceAction);
+    
+    m_clearCutFaceAction = new QAction(tr("Clear Cut Face"), this);
+    connect(m_clearCutFaceAction, &QAction::triggered, [=] {
+        m_graphicsWidget->clearSelectedCutFace();
+    });
+    m_editMenu->addAction(m_clearCutFaceAction);
 
     m_alignToMenu = new QMenu(tr("Align To"));
 
@@ -568,6 +583,8 @@ DocumentWindow::DocumentWindow() :
         m_rotateClockwiseAction->setEnabled(m_graphicsWidget->hasMultipleSelection());
         m_rotateCounterclockwiseAction->setEnabled(m_graphicsWidget->hasMultipleSelection());
         m_switchXzAction->setEnabled(m_graphicsWidget->hasSelection());
+        m_setCutFaceAction->setEnabled(m_graphicsWidget->hasSelection());
+        m_clearCutFaceAction->setEnabled(m_graphicsWidget->hasCutFaceAdjustedNodesSelection());
         m_alignToGlobalCenterAction->setEnabled(m_graphicsWidget->hasSelection() && m_document->originSettled());
         m_alignToGlobalVerticalCenterAction->setEnabled(m_graphicsWidget->hasSelection() && m_document->originSettled());
         m_alignToGlobalHorizontalCenterAction->setEnabled(m_graphicsWidget->hasSelection() && m_document->originSettled());
@@ -768,6 +785,7 @@ DocumentWindow::DocumentWindow() :
     connect(graphicsWidget, &SkeletonGraphicsWidget::moveNodeBy, m_document, &Document::moveNodeBy);
     connect(graphicsWidget, &SkeletonGraphicsWidget::setNodeOrigin, m_document, &Document::setNodeOrigin);
     connect(graphicsWidget, &SkeletonGraphicsWidget::setNodeBoneMark, m_document, &Document::setNodeBoneMark);
+    connect(graphicsWidget, &SkeletonGraphicsWidget::clearNodeCutFaceSettings, m_document, &Document::clearNodeCutFaceSettings);
     connect(graphicsWidget, &SkeletonGraphicsWidget::removeNode, m_document, &Document::removeNode);
     connect(graphicsWidget, &SkeletonGraphicsWidget::setEditMode, m_document, &Document::setEditMode);
     connect(graphicsWidget, &SkeletonGraphicsWidget::removeEdge, m_document, &Document::removeEdge);
@@ -802,6 +820,7 @@ DocumentWindow::DocumentWindow() :
     connect(graphicsWidget, &SkeletonGraphicsWidget::changeTurnaround, this, &DocumentWindow::changeTurnaround);
     connect(graphicsWidget, &SkeletonGraphicsWidget::save, this, &DocumentWindow::save);
     connect(graphicsWidget, &SkeletonGraphicsWidget::open, this, &DocumentWindow::open);
+    connect(graphicsWidget, &SkeletonGraphicsWidget::showCutFaceSettingPopup, this, &DocumentWindow::showCutFaceSettingPopup);
     
     connect(m_document, &Document::nodeAdded, graphicsWidget, &SkeletonGraphicsWidget::nodeAdded);
     connect(m_document, &Document::nodeRemoved, graphicsWidget, &SkeletonGraphicsWidget::nodeRemoved);
@@ -1493,4 +1512,134 @@ void DocumentWindow::registerDialog(QWidget *widget)
 void DocumentWindow::unregisterDialog(QWidget *widget)
 {
     m_dialogs.erase(std::remove(m_dialogs.begin(), m_dialogs.end(), widget), m_dialogs.end());
+}
+
+void DocumentWindow::showCutFaceSettingPopup(const QPoint &globalPos, std::set<QUuid> nodeIds)
+{
+    QMenu popupMenu;
+    
+    const SkeletonNode *node = nullptr;
+    if (1 == nodeIds.size()) {
+        node = m_document->findNode(*nodeIds.begin());
+    }
+    
+    QWidget *popup = new QWidget;
+    
+    FloatNumberWidget *rotationWidget = new FloatNumberWidget;
+    rotationWidget->setItemName(tr("Rotation"));
+    rotationWidget->setRange(-1, 1);
+    rotationWidget->setValue(0);
+    if (nullptr != node) {
+        rotationWidget->setValue(node->cutRotation);
+    }
+    
+    connect(rotationWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+        m_document->batchChangeBegin();
+        for (const auto &id: nodeIds) {
+            m_document->setNodeCutRotation(id, value);
+        }
+        m_document->batchChangeEnd();
+        m_document->saveSnapshot();
+    });
+    
+    QPushButton *rotationEraser = new QPushButton(QChar(fa::eraser));
+    Theme::initAwesomeToolButton(rotationEraser);
+    
+    connect(rotationEraser, &QPushButton::clicked, [=]() {
+        rotationWidget->setValue(0.0);
+        m_document->saveSnapshot();
+    });
+    
+    QHBoxLayout *rotationLayout = new QHBoxLayout;
+    rotationLayout->addWidget(rotationEraser);
+    rotationLayout->addWidget(rotationWidget);
+    
+    QHBoxLayout *standardFacesLayout = new QHBoxLayout;
+    QPushButton *buttons[(int)CutFace::Count] = {0};
+    
+    CutFaceListWidget *cutFaceListWidget = new CutFaceListWidget(m_document);
+    size_t cutFaceTypeCount = (size_t)CutFace::Count;
+    if (cutFaceListWidget->isEmpty())
+        cutFaceTypeCount = (size_t)CutFace::UserDefined;
+    
+    auto updateCutFaceButtonState = [&](size_t index) {
+        for (size_t i = 0; i < (size_t)cutFaceTypeCount; ++i) {
+            auto button = buttons[i];
+            if (i == index) {
+                button->setFlat(true);
+                button->setEnabled(false);
+            } else {
+                button->setFlat(false);
+                button->setEnabled(true);
+            }
+        }
+        if (index != (int)CutFace::UserDefined)
+            cutFaceListWidget->selectCutFace(QUuid());
+    };
+    
+    cutFaceListWidget->enableMultipleSelection(false);
+    if (nullptr != node) {
+        cutFaceListWidget->selectCutFace(node->cutFaceLinkedId);
+    }
+    connect(cutFaceListWidget, &CutFaceListWidget::currentSelectedCutFaceChanged, this, [=](QUuid partId) {
+        if (partId.isNull()) {
+            CutFace cutFace = CutFace::Quad;
+            updateCutFaceButtonState((int)cutFace);
+            m_document->batchChangeBegin();
+            for (const auto &id: nodeIds) {
+                m_document->setNodeCutFace(id, cutFace);
+            }
+            m_document->batchChangeEnd();
+            m_document->saveSnapshot();
+        } else {
+            updateCutFaceButtonState((int)CutFace::UserDefined);
+            m_document->batchChangeBegin();
+            for (const auto &id: nodeIds) {
+                m_document->setNodeCutFaceLinkedId(id, partId);
+            }
+            m_document->batchChangeEnd();
+            m_document->saveSnapshot();
+        }
+    });
+    if (cutFaceListWidget->isEmpty())
+        cutFaceListWidget->hide();
+    
+    for (size_t i = 0; i < (size_t)cutFaceTypeCount; ++i) {
+        CutFace cutFace = (CutFace)i;
+        QString iconFilename = ":/resources/" + CutFaceToString(cutFace).toLower() + ".png";
+        QPixmap pixmap(iconFilename);
+        QIcon buttonIcon(pixmap);
+        QPushButton *button = new QPushButton;
+        button->setIconSize(QSize(Theme::toolIconSize / 2, Theme::toolIconSize / 2));
+        button->setIcon(buttonIcon);
+        connect(button, &QPushButton::clicked, [=]() {
+            updateCutFaceButtonState(i);
+            m_document->batchChangeBegin();
+            for (const auto &id: nodeIds) {
+                m_document->setNodeCutFace(id, cutFace);
+            }
+            m_document->batchChangeEnd();
+            m_document->saveSnapshot();
+        });
+        standardFacesLayout->addWidget(button);
+        buttons[i] = button;
+    }
+    if (nullptr != node) {
+        updateCutFaceButtonState((size_t)node->cutFace);
+    }
+    
+    QVBoxLayout *popupLayout = new QVBoxLayout;
+    popupLayout->addLayout(rotationLayout);
+    popupLayout->addSpacing(10);
+    popupLayout->addLayout(standardFacesLayout);
+    popupLayout->addWidget(cutFaceListWidget);
+    
+    popup->setLayout(popupLayout);
+    
+    QWidgetAction action(this);
+    action.setDefaultWidget(popup);
+    
+    popupMenu.addAction(&action);
+    
+    popupMenu.exec(globalPos);
 }

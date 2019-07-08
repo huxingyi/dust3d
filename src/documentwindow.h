@@ -67,6 +67,7 @@ public slots:
     void registerDialog(QWidget *widget);
     void unregisterDialog(QWidget *widget);
     void showPreferences();
+    void showCutFaceSettingPopup(const QPoint &globalPos, std::set<QUuid> nodeIds);
 private:
     void initLockButton(QPushButton *button);
     void setCurrentFilename(const QString &filename);
@@ -119,6 +120,8 @@ private:
     QAction *m_rotateClockwiseAction;
     QAction *m_rotateCounterclockwiseAction;
     QAction *m_switchXzAction;
+    QAction *m_setCutFaceAction;
+    QAction *m_clearCutFaceAction;
     
     QMenu *m_alignToMenu;
     QAction *m_alignToGlobalCenterAction;

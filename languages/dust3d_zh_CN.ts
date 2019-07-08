@@ -342,6 +342,18 @@ Tips:
         <source>glTF Binary Format (.glb)</source>
         <translation>glb文档(.glb)</translation>
     </message>
+    <message>
+        <source>Rotation</source>
+        <translation>旋转</translation>
+    </message>
+    <message>
+        <source>Cut Face...</source>
+        <translation>切面...</translation>
+    </message>
+    <message>
+        <source>Clear Cut Face</source>
+        <translation>清除切面</translation>
+    </message>
 </context>
 <context>
     <name>ExportPreviewWidget</name>
@@ -1074,6 +1086,14 @@ Tips:
     <message>
         <source>Unselect All</source>
         <translation>取消全选</translation>
+    </message>
+    <message>
+        <source>Cut Face...</source>
+        <translation>切面...</translation>
+    </message>
+    <message>
+        <source>Clear Cut Face</source>
+        <translation>清除切面</translation>
     </message>
 </context>
 </TS>
