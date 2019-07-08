@@ -31,17 +31,17 @@ for(tsfile, TRANSLATIONS) {
 ########################################################
 
 ############## Generate .ts file #######################
+macx {
+	wd = $$replace(PWD, /, $$QMAKE_DIR_SEP)
 
-wd = $$replace(PWD, /, $$QMAKE_DIR_SEP)
-
-# Update the .ts file from source
-qtPrepareTool(LUPDATE, lupdate)
-LUPDATE += src/*.cpp src/*.h -locations none
-for(lang, LANGUAGES) {
-	command = $$LUPDATE -ts languages/dust3d_$${lang}.ts
-	system($$command)|error("Failed to run: $$command")
+	# Update the .ts file from source
+	qtPrepareTool(LUPDATE, lupdate)
+	LUPDATE += src/*.cpp src/*.h -locations none
+	for(lang, LANGUAGES) {
+		command = $$LUPDATE -ts languages/dust3d_$${lang}.ts
+		system($$command)|error("Failed to run: $$command")
+	}
 }
-
 ##########################################################
 
 win32 {
