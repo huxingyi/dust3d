@@ -54,6 +54,8 @@ public:
     void exportAsObj(const QString &filename);
     void exportAsObj(QTextStream *textStream);
     void updateTool(ShaderVertex *toolVertices, int vertexNum);
+    quint64 meshId() const;
+    void setMeshId(quint64 id);
 private:
     ShaderVertex *m_triangleVertices = nullptr;
     int m_triangleVertexCount = 0;
@@ -71,6 +73,7 @@ private:
     bool m_hasMetalnessInImage = false;
     bool m_hasRoughnessInImage = false;
     bool m_hasAmbientOcclusionInImage = false;
+    quint64 m_meshId = 0;
 };
 
 #endif

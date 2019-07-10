@@ -54,6 +54,7 @@ MeshLoader::MeshLoader(const MeshLoader &mesh) :
     this->m_faces = mesh.m_faces;
     this->m_triangulatedVertices = mesh.m_triangulatedVertices;
     this->m_triangulatedFaces = mesh.m_triangulatedFaces;
+    this->m_meshId = mesh.meshId();
 }
 
 MeshLoader::MeshLoader(ShaderVertex *triangleVertices, int vertexNum) :
@@ -106,6 +107,7 @@ MeshLoader::MeshLoader(Outcome &outcome) :
     m_edgeVertexCount(0),
     m_textureImage(nullptr)
 {
+    m_meshId = outcome.meshId;
     m_vertices = outcome.vertices;
     m_faces = outcome.triangleAndQuads;
     
@@ -348,4 +350,14 @@ void MeshLoader::updateTool(ShaderVertex *toolVertices, int vertexNum)
     
     m_toolVertices = toolVertices;
     m_toolVertexCount = vertexNum;
+}
+
+quint64 MeshLoader::meshId() const
+{
+    return m_meshId;
+}
+
+void MeshLoader::setMeshId(quint64 id)
+{
+    m_meshId = id;
 }

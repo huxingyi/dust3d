@@ -118,7 +118,8 @@ DocumentWindow::DocumentWindow() :
     m_documentSaved(true),
     m_exportPreviewWidget(nullptr),
     m_preferencesWidget(nullptr),
-    m_isLastMeshGenerationSucceed(true)
+    m_isLastMeshGenerationSucceed(true),
+    m_currentUpdatedMeshId(0)
 {
     if (!g_logBrowser) {
         g_logBrowser = new LogBrowser;
@@ -920,11 +921,21 @@ DocumentWindow::DocumentWindow() :
     connect(m_document, &Document::resultTextureChanged, [=]() {
         if (m_document->isMeshGenerating())
             return;
-        m_modelRenderWidget->updateMesh(m_document->takeResultTextureMesh());
+        auto resultTextureMesh = m_document->takeResultTextureMesh();
+        if (nullptr != resultTextureMesh) {
+            if (resultTextureMesh->meshId() < m_currentUpdatedMeshId) {
+                delete resultTextureMesh;
+                return;
+            }
+        }
+        m_modelRenderWidget->updateMesh(resultTextureMesh);
     });
     
     connect(m_document, &Document::resultMeshChanged, [=]() {
-        m_modelRenderWidget->updateMesh(m_document->takeResultMesh());
+        auto resultMesh = m_document->takeResultMesh();
+        if (nullptr != resultMesh)
+            m_currentUpdatedMeshId = resultMesh->meshId();
+        m_modelRenderWidget->updateMesh(resultMesh);
     });
     
     connect(m_document, &Document::posesChanged, m_document, &Document::generateMotions);

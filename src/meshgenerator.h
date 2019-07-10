@@ -66,6 +66,8 @@ public:
     void setGeneratedCacheContext(GeneratedCacheContext *cacheContext);
     void setSmoothShadingThresholdAngleDegrees(float degrees);
     void setDefaultPartColor(const QColor &color);
+    void setId(quint64 id);
+    quint64 id();
 signals:
     void finished();
 public slots:
@@ -91,6 +93,7 @@ private:
     float m_smoothShadingThresholdAngleDegrees = 60;
     std::map<QUuid, nodemesh::Builder::CutFaceTransform> *m_cutFaceTransforms = nullptr;
     std::map<QUuid, std::map<QString, QVector2D>> *m_nodesCutFaces = nullptr;
+    quint64 m_id = 0;
     
     void collectParts();
     bool checkIsComponentDirty(const QString &componentIdString);

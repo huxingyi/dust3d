@@ -31,6 +31,16 @@ MeshGenerator::~MeshGenerator()
     delete m_nodesCutFaces;
 }
 
+void MeshGenerator::setId(quint64 id)
+{
+    m_id = id;
+}
+
+quint64 MeshGenerator::id()
+{
+    return m_id;
+}
+
 bool MeshGenerator::isSucceed()
 {
     return m_isSucceed;
@@ -1056,6 +1066,7 @@ void MeshGenerator::generate()
     countTimeConsumed.start();
     
     m_outcome = new Outcome;
+    m_outcome->meshId = m_id;
     //m_cutFaceTransforms = new std::map<QUuid, nodemesh::Builder::CutFaceTransform>;
     //m_nodesCutFaces = new std::map<QUuid, std::map<QString, QVector2D>>;
     

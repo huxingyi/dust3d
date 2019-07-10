@@ -80,6 +80,7 @@ private:
     PreferencesWidget *m_preferencesWidget;
     std::vector<QWidget *> m_dialogs;
     bool m_isLastMeshGenerationSucceed;
+    quint64 m_currentUpdatedMeshId;
 private:
     QString m_currentFilename;
     

@@ -59,7 +59,9 @@ Document::Document() :
     m_posePreviewsGenerator(nullptr),
     m_currentRigSucceed(false),
     m_materialPreviewsGenerator(nullptr),
-    m_motionsGenerator(nullptr)
+    m_motionsGenerator(nullptr),
+    m_meshGenerationId(0),
+    m_nextMeshGenerationId(1)
 {
     connect(&Preferences::instance(), &Preferences::partColorChanged, this, &Document::applyPreferencePartColorChange);
     connect(&Preferences::instance(), &Preferences::flatShadingChanged, this, &Document::applyPreferenceFlatShadingChange);
@@ -1754,6 +1756,7 @@ void Document::generateMesh()
     toSnapshot(snapshot);
     resetDirtyFlags();
     m_meshGenerator = new MeshGenerator(snapshot);
+    m_meshGenerator->setId(m_nextMeshGenerationId++);
     m_meshGenerator->setDefaultPartColor(Preferences::instance().partColor());
     m_meshGenerator->setGeneratedCacheContext(&m_generatedCacheContext);
     if (!m_smoothNormal) {

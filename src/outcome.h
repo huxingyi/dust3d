@@ -35,6 +35,7 @@ public:
     std::vector<std::vector<size_t>> triangles;
     std::vector<QVector3D> triangleNormals;
     std::vector<QColor> triangleColors;
+    quint64 meshId = 0;
     
     const std::vector<std::pair<QUuid, QUuid>> *triangleSourceNodes() const
     {

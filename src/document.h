@@ -689,6 +689,8 @@ private: // need initialize
     bool m_currentRigSucceed;
     MaterialPreviewsGenerator *m_materialPreviewsGenerator;
     MotionsGenerator *m_motionsGenerator;
+    quint64 m_meshGenerationId;
+    quint64 m_nextMeshGenerationId;
 private:
     static unsigned long m_maxSnapshot;
     std::deque<HistoryItem> m_undoItems;
