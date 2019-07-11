@@ -469,10 +469,20 @@ bool Builder::generateCutsForNode(size_t nodeIndex)
                 float farDistance = node.position.distanceToPoint(farOriginNode.position);
                 float totalDistance = nearDistance + farDistance;
                 float distanceFactor = nearDistance / totalDistance;
-                if (QVector3D::dotProduct(nearOriginNode.cutNormal, farOriginNode.cutNormal) <= 0)
-                    cutNormal = (nearOriginNode.cutNormal * (1.0 - distanceFactor) - farOriginNode.cutNormal * distanceFactor).normalized();
+                const QVector3D *revisedNearCutNormal = nullptr;
+                const QVector3D *revisedFarCutNormal = nullptr;
+                if (distanceFactor <= 0.5) {
+                    revisedNearCutNormal = &nearOriginNode.cutNormal;
+                    revisedFarCutNormal = &node.cutNormal;
+                } else {
+                    distanceFactor = (1.0 - distanceFactor);
+                    revisedNearCutNormal = &farOriginNode.cutNormal;
+                    revisedFarCutNormal = &node.cutNormal;
+                }
+                if (QVector3D::dotProduct(*revisedNearCutNormal, *revisedFarCutNormal) <= 0)
+                    cutNormal = (*revisedNearCutNormal * (1.0 - distanceFactor) - *revisedFarCutNormal * distanceFactor).normalized();
                 else
-                    cutNormal = (nearOriginNode.cutNormal * (1.0 - distanceFactor) + farOriginNode.cutNormal * distanceFactor).normalized();
+                    cutNormal = (*revisedNearCutNormal * (1.0 - distanceFactor) + *revisedFarCutNormal * distanceFactor).normalized();
                 if (QVector3D::dotProduct(cutNormal, node.cutNormal) <= 0)
                     cutNormal = -cutNormal;
             }
