@@ -57,10 +57,10 @@ macx {
 }
 
 isEmpty(HUMAN_VERSION) {
-	HUMAN_VERSION = "1.0.0-beta.21"
+	HUMAN_VERSION = "1.0.0-beta.22"
 }
 isEmpty(VERSION) {
-	VERSION = 1.0.0.21
+	VERSION = 1.0.0.22
 }
 
 HOMEPAGE_URL = "https://dust3d.org/"
