@@ -1,3 +1,11 @@
+Changes between 1.0.0-beta.20 and 1.0.0-beta.21:
+--------------------------------------------------
+- Fix build for Raspberry Pi 3 Model B+  
+- Fix cut face direction for intermediate nodes  
+- Fix mesh render result flashback  
+- Sort cut face list by x position  
+- Support customizing cut face per each node   
+
 Changes between 1.0.0-beta.19 and 1.0.0-beta.20:
 --------------------------------------------------
 - Support language: Simplified Chinese  
