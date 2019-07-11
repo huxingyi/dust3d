@@ -490,6 +490,7 @@ bool Builder::generateCutsForNode(size_t nodeIndex)
                     revisedNearCutNormal = &farOriginNode.cutNormal;
                     revisedFarCutNormal = &node.cutNormal;
                 }
+                distanceFactor *= 1.75;
                 if (QVector3D::dotProduct(*revisedNearCutNormal, *revisedFarCutNormal) <= 0)
                     cutNormal = (*revisedNearCutNormal * (1.0 - distanceFactor) - *revisedFarCutNormal * distanceFactor).normalized();
                 else

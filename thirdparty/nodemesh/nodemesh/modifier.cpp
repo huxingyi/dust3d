@@ -105,12 +105,12 @@ void Modifier::finalize()
     for (const auto &edge: oldEdges) {
         const Node &firstNode = m_nodes[edge.firstNodeIndex];
         const Node &secondNode = m_nodes[edge.secondNodeIndex];
-        float edgeLengthThreshold = (firstNode.radius + secondNode.radius) * 0.75;
+        //float edgeLengthThreshold = (firstNode.radius + secondNode.radius) * 0.75;
         auto firstAverageCutTemplateEdgeLength = averageCutTemplateEdgeLength(firstNode.cutTemplate) * firstNode.radius;
         auto secondAverageCutTemplateEdgeLength = averageCutTemplateEdgeLength(secondNode.cutTemplate) * secondNode.radius;
         float targetEdgeLength = (firstAverageCutTemplateEdgeLength + secondAverageCutTemplateEdgeLength) * 0.5;
-        if (targetEdgeLength < edgeLengthThreshold)
-            targetEdgeLength = edgeLengthThreshold;
+        //if (targetEdgeLength < edgeLengthThreshold)
+        //    targetEdgeLength = edgeLengthThreshold;
         float currentEdgeLength = (firstNode.position - secondNode.position).length();
         if (targetEdgeLength >= currentEdgeLength) {
             addEdge(edge.firstNodeIndex, edge.secondNodeIndex);
