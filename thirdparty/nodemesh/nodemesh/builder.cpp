@@ -135,7 +135,18 @@ void Builder::resolveBaseNormalRecursively(size_t nodeIndex)
         if (searchResult.second) {
             resolveBaseNormalForLeavesRecursively(nodeIndex, searchResult.first);
         } else {
-            resolveBaseNormalForLeavesRecursively(nodeIndex, QVector3D {0, 0, 1});
+            const std::vector<QVector3D> axisList = {
+                QVector3D {0, 0, 1},
+                QVector3D {0, 1, 0},
+                QVector3D {1, 0, 0}
+            };
+            for (const auto &axis: axisList) {
+                if (validateNormal(QVector3D::crossProduct(axis, node.traverseDirection).normalized())) {
+                    resolveBaseNormalForLeavesRecursively(nodeIndex, axis);
+                    return;
+                }
+            }
+            resolveBaseNormalForLeavesRecursively(nodeIndex, axisList[0]);
         }
     }
 }
