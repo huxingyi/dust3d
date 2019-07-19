@@ -4,7 +4,10 @@
 
 Overview
 ----------
-Dust3D is a brand new 3D modeling software. It helps you create a 3D watertight model in seconds. Use it to speed up your character modeling in game making, 3D printing, and so on.
+
+Dust3D is a brand new 3D modeling software. It helps you create a 3D watertight model in seconds. Use it to speed up your character modeling in game making, 3D printing, and so on.  
+
+<a href="https://blogs.dust3d.org/2019/07/18/dust3d-awarded-epic-megagrants/"><img width="106" height="109" src="https://dust3d.org/images/EpicMegaGrants_Badge_Dark.png" /></a>  
 
 - [Download Dust3D Software](http://docs.dust3d.org/en/latest/install.html)  
 - [Quick Start](http://docs.dust3d.org)  
