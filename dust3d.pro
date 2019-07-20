@@ -369,9 +369,40 @@ HEADERS += src/toolmesh.h
 
 HEADERS += src/shadervertex.h
 
+SOURCES += src/scripteditwidget.cpp
+HEADERS += src/scripteditwidget.h
+
+SOURCES += src/scriptvariableswidget.cpp
+HEADERS += src/scriptvariableswidget.h
+
+SOURCES += src/scriptwidget.cpp
+HEADERS += src/scriptwidget.h
+
+SOURCES += src/scriptrunner.cpp
+HEADERS += src/scriptrunner.h
+
+SOURCES += src/variablesxml.cpp
+HEADERS += src/variablesxml.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h
+
+INCLUDEPATH += thirdparty/quickjs/quickjs-2019-07-09
+
+DEFINES += "CONFIG_VERSION=\"\\\"2019-07-09\\\"\""
+
+SOURCES += thirdparty/quickjs/quickjs-2019-07-09/quickjs.c
+HEADERS += thirdparty/quickjs/quickjs-2019-07-09/quickjs.h
+
+SOURCES += thirdparty/quickjs/quickjs-2019-07-09/cutils.c
+HEADERS += thirdparty/quickjs/quickjs-2019-07-09/cutils.h
+
+SOURCES += thirdparty/quickjs/quickjs-2019-07-09/libunicode.c
+HEADERS += thirdparty/quickjs/quickjs-2019-07-09/libunicode.h
+
+SOURCES += thirdparty/quickjs/quickjs-2019-07-09/libregexp.c
+HEADERS += thirdparty/quickjs/quickjs-2019-07-09/libregexp.h
 
 INCLUDEPATH += thirdparty/nodemesh
 

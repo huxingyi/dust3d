@@ -39,6 +39,8 @@
 #include "shortcuts.h"
 #include "floatnumberwidget.h"
 #include "cutfacelistwidget.h"
+#include "scriptwidget.h"
+#include "variablesxml.h"
 
 int DocumentWindow::m_modelRenderWidgetInitialX = 16;
 int DocumentWindow::m_modelRenderWidgetInitialY = 16;
@@ -325,10 +327,17 @@ DocumentWindow::DocumentWindow() :
     connect(motionManageWidget, &MotionManageWidget::unregisterDialog, this, &DocumentWindow::unregisterDialog);
     addDockWidget(Qt::RightDockWidgetArea, motionDocker);
     
+    QDockWidget *scriptDocker = new QDockWidget(tr("Script"), this);
+    scriptDocker->setAllowedAreas(Qt::RightDockWidgetArea);
+    ScriptWidget *scriptWidget = new ScriptWidget(m_document, scriptDocker);
+    scriptDocker->setWidget(scriptWidget);
+    addDockWidget(Qt::RightDockWidgetArea, scriptDocker);
+    
     tabifyDockWidget(partTreeDocker, materialDocker);
     tabifyDockWidget(materialDocker, rigDocker);
     tabifyDockWidget(rigDocker, poseDocker);
     tabifyDockWidget(poseDocker, motionDocker);
+    tabifyDockWidget(motionDocker, scriptDocker);
     
     partTreeDocker->raise();
 
@@ -618,12 +627,6 @@ DocumentWindow::DocumentWindow() :
         m_modelRenderWidget->toggleWireframe();
     });
     m_viewMenu->addAction(m_toggleWireframeAction);
-    
-    //m_toggleSmoothNormalAction = new QAction(tr("Toggle Smooth"), this);
-    //connect(m_toggleSmoothNormalAction, &QAction::triggered, [=]() {
-    //    m_document->toggleSmoothNormal();
-    //});
-    //m_viewMenu->addAction(m_toggleSmoothNormalAction);
 
     connect(m_viewMenu, &QMenu::aboutToShow, [=]() {
         m_resetModelWidgetPosAction->setEnabled(!isModelSitInVisibleArea(m_modelRenderWidget));
@@ -665,6 +668,13 @@ DocumentWindow::DocumentWindow() :
         motionDocker->raise();
     });
     m_windowMenu->addAction(m_showMotionsAction);
+    
+    m_showScriptAction = new QAction(tr("Script"), this);
+    connect(m_showScriptAction, &QAction::triggered, [=]() {
+        scriptDocker->show();
+        scriptDocker->raise();
+    });
+    m_windowMenu->addAction(m_showScriptAction);
     
     QMenu *dialogsMenu = m_windowMenu->addMenu(tr("Dialogs"));
     connect(dialogsMenu, &QMenu::aboutToShow, [=]() {
@@ -950,6 +960,7 @@ DocumentWindow::DocumentWindow() :
     connect(m_document, &Document::turnaroundChanged, this, &DocumentWindow::documentChanged);
     connect(m_document, &Document::optionsChanged, this, &DocumentWindow::documentChanged);
     connect(m_document, &Document::rigChanged, this, &DocumentWindow::documentChanged);
+    connect(m_document, &Document::scriptChanged, this, &DocumentWindow::documentChanged);
 
     connect(m_modelRenderWidget, &ModelWidget::customContextMenuRequested, [=](const QPoint &pos) {
         graphicsWidget->showContextMenu(graphicsWidget->mapFromGlobal(m_modelRenderWidget->mapToGlobal(pos)));
@@ -988,6 +999,9 @@ DocumentWindow::DocumentWindow() :
         Q_UNUSED(materialId);
         m_document->generateMaterialPreviews();
     });
+    
+    connect(m_document, &Document::scriptChanged, m_document, &Document::runScript);
+    connect(m_document, &Document::scriptModifiedFromExternal, m_document, &Document::runScript);
     
     initShortCuts(this, m_graphicsWidget);
 
@@ -1067,6 +1081,7 @@ void DocumentWindow::newDocument()
             return;
     }
     m_document->clearHistories();
+    m_document->resetScript();
     m_document->reset();
     m_document->saveSnapshot();
 }
@@ -1213,6 +1228,20 @@ void DocumentWindow::saveTo(const QString &saveAsFilename)
         ds3Writer.add("canvas.png", "asset", &m_document->turnaroundPngByteArray);
     }
     
+    if (!m_document->script().isEmpty()) {
+        auto script = m_document->script().toUtf8();
+        ds3Writer.add("model.js", "script", &script);
+    }
+    
+    const auto &variables = m_document->variables();
+    if (!variables.empty()) {
+        QByteArray variablesXml;
+        QXmlStreamWriter variablesXmlStream(&variablesXml);
+        saveVariablesToXmlStream(variables, &variablesXmlStream);
+        if (variablesXml.size() > 0)
+            ds3Writer.add("variables.xml", "variable", &variablesXml);
+    }
+    
     std::set<QUuid> imageIds;
     for (const auto &material: snapshot.materials) {
         for (auto &layer: material.second) {
@@ -1264,6 +1293,7 @@ void DocumentWindow::openExample(const QString &modelName)
     Ds3FileReader ds3Reader(":/resources/" + modelName);
     
     m_document->clearHistories();
+    m_document->resetScript();
     m_document->reset();
     m_document->saveSnapshot();
     
@@ -1328,6 +1358,7 @@ void DocumentWindow::open()
     Ds3FileReader ds3Reader(filename);
     
     m_document->clearHistories();
+    m_document->resetScript();
     m_document->reset();
     m_document->saveSnapshot();
     
@@ -1364,6 +1395,22 @@ void DocumentWindow::open()
                 ds3Reader.loadItem(item.name, &data);
                 QImage image = QImage::fromData(data, "PNG");
                 m_document->updateTurnaround(image);
+            }
+        } else if (item.type == "script") {
+            if (item.name == "model.js") {
+                QByteArray script;
+                ds3Reader.loadItem(item.name, &script);
+                m_document->initScript(QString::fromUtf8(script.constData()));
+            }
+        } else if (item.type == "variable") {
+            if (item.name == "variables.xml") {
+                QByteArray data;
+                ds3Reader.loadItem(item.name, &data);
+                QXmlStreamReader stream(data);
+                std::map<QString, std::map<QString, QString>> variables;
+                loadVariablesFromXmlStream(&variables, stream);
+                for (const auto &it: variables)
+                    m_document->updateVariable(it.first, it.second);
             }
         }
     }

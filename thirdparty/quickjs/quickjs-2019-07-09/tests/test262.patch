@@ -1,0 +1,683 @@
+diff --git a/harness/doneprintHandle.js b/harness/doneprintHandle.js
+index 2b4ab88..6c95f9f 100644
+--- a/harness/doneprintHandle.js
++++ b/harness/doneprintHandle.js
+@@ -11,7 +11,7 @@ function __consolePrintHandle__(msg){
+ 
+ function $DONE(){
+   if(!arguments[0])
+-    __consolePrintHandle__('Test262:AsyncTestComplete');
++    $async_done = true;
+   else
+-    __consolePrintHandle__('Test262:AsyncTestFailure:' + arguments[0]);
++    __consolePrintHandle__('Error:' + arguments[0]);
+ }
+diff --git a/harness/regExpUtils.js b/harness/regExpUtils.js
+index 362a6d16..d3dde03 100644
+--- a/harness/regExpUtils.js
++++ b/harness/regExpUtils.js
+@@ -5,6 +5,7 @@ description: |
+     Collection of functions used to assert the correctness of RegExp objects.
+ ---*/
+ 
++/*
+ function buildString({ loneCodePoints, ranges }) {
+   const CHUNK_SIZE = 10000;
+   let result = String.fromCodePoint(...loneCodePoints);
+@@ -21,6 +22,32 @@ function buildString({ loneCodePoints, ranges }) {
+   }
+   return result;
+ }
++*/
++
++var codePointRange;
++
++if ($262 && typeof $262.codePointRange === "function") {
++    /* use C function to build the codePointRange (much faster with
++       slow JS engines) */
++    codePointRange = $262.codePointRange;
++} else {
++    codePointRange = function codePointRange(start, end) {
++        const codePoints = [];
++        let length = 0;
++        for (codePoint = start; codePoint < end; codePoint++) {
++            codePoints[length++] = codePoint;
++        }
++        return String.fromCodePoint.apply(null, codePoints);
++    }
++}
++
++function buildString({ loneCodePoints, ranges }) {
++    let result = String.fromCodePoint.apply(null, loneCodePoints);
++    for (const [start, end] of ranges) {
++        result += codePointRange(start, end + 1);
++    }
++    return result;
++}
+ 
+ function testPropertyEscapes(regex, string, expression) {
+   if (!regex.test(string)) {
+diff --git a/test/built-ins/RegExp/CharacterClassEscapes/character-class-digit-class-escape-flags-u.js b/test/built-ins/RegExp/CharacterClassEscapes/character-class-digit-class-escape-flags-u.js
+index 652ef43..8d1a7ed 100644
+--- a/test/built-ins/RegExp/CharacterClassEscapes/character-class-digit-class-escape-flags-u.js
++++ b/test/built-ins/RegExp/CharacterClassEscapes/character-class-digit-class-escape-flags-u.js
+@@ -33,14 +33,16 @@ info: |
+     The production CharacterClassEscape :: W evaluates as follows:
+         Return the set of all characters not included in the set returned by CharacterClassEscape :: w.
+ features: [String.fromCodePoint]
++includes: [regExpUtils.js]
+ ---*/
+ 
+ const chunks = [];
+-const totalChunks = Math.ceil(0x10ffff / 0x10000);
+-
+-for (let codePoint = 0; codePoint < 0x10FFFF; codePoint++) {
+-    // split strings to avoid a super long one;
+-    chunks[codePoint % totalChunks] += String.fromCodePoint(codePoint);
++const lastCodePoint = 0x10ffff;
++let codePoint = 0;
++while (codePoint <= lastCodePoint) {
++   let n = Math.min(0x10000, lastCodePoint - codePoint + 1);
++   chunks.push(codePointRange(codePoint, codePoint + n));
++   codePoint += n;
+ }
+ 
+ const re = /\d/ug;
+diff --git a/test/built-ins/RegExp/CharacterClassEscapes/character-class-digit-class-escape-plus-quantifier-flags-u.js b/test/built-ins/RegExp/CharacterClassEscapes/character-class-digit-class-escape-plus-quantifier-flags-u.js
+index 8683600..36d9f1c 100644
+--- a/test/built-ins/RegExp/CharacterClassEscapes/character-class-digit-class-escape-plus-quantifier-flags-u.js
++++ b/test/built-ins/RegExp/CharacterClassEscapes/character-class-digit-class-escape-plus-quantifier-flags-u.js
+@@ -33,14 +33,16 @@ info: |
+     The production CharacterClassEscape :: W evaluates as follows:
+         Return the set of all characters not included in the set returned by CharacterClassEscape :: w.
+ features: [String.fromCodePoint]
++includes: [regExpUtils.js]
+ ---*/
+ 
+ const chunks = [];
+-const totalChunks = Math.ceil(0x10ffff / 0x10000);
+-
+-for (let codePoint = 0; codePoint < 0x10FFFF; codePoint++) {
+-    // split strings to avoid a super long one;
+-    chunks[codePoint % totalChunks] += String.fromCodePoint(codePoint);
++const lastCodePoint = 0x10ffff;
++let codePoint = 0;
++while (codePoint <= lastCodePoint) {
++   let n = Math.min(0x10000, lastCodePoint - codePoint + 1);
++   chunks.push(codePointRange(codePoint, codePoint + n));
++   codePoint += n;
+ }
+ 
+ const re = /\d+/ug;
+diff --git a/test/built-ins/RegExp/CharacterClassEscapes/character-class-digit-class-escape-plus-quantifier.js b/test/built-ins/RegExp/CharacterClassEscapes/character-class-digit-class-escape-plus-quantifier.js
+index 20d6b38..e9c91f8 100644
+--- a/test/built-ins/RegExp/CharacterClassEscapes/character-class-digit-class-escape-plus-quantifier.js
++++ b/test/built-ins/RegExp/CharacterClassEscapes/character-class-digit-class-escape-plus-quantifier.js
+@@ -33,14 +33,16 @@ info: |
+     The production CharacterClassEscape :: W evaluates as follows:
+         Return the set of all characters not included in the set returned by CharacterClassEscape :: w.
+ features: [String.fromCodePoint]
++includes: [regExpUtils.js]
+ ---*/
+ 
+ const chunks = [];
+-const totalChunks = Math.ceil(0xffff / 0x10000);
+-
+-for (let codePoint = 0; codePoint < 0xFFFF; codePoint++) {
+-    // split strings to avoid a super long one;
+-    chunks[codePoint % totalChunks] += String.fromCodePoint(codePoint);
++const lastCodePoint = 0xffff;
++let codePoint = 0;
++while (codePoint <= lastCodePoint) {
++   let n = Math.min(0x10000, lastCodePoint - codePoint + 1);
++   chunks.push(codePointRange(codePoint, codePoint + n));
++   codePoint += n;
+ }
+ 
+ const re = /\d+/g;
+diff --git a/test/built-ins/RegExp/CharacterClassEscapes/character-class-digit-class-escape.js b/test/built-ins/RegExp/CharacterClassEscapes/character-class-digit-class-escape.js
+index d3aef45..b2c949b 100644
+--- a/test/built-ins/RegExp/CharacterClassEscapes/character-class-digit-class-escape.js
++++ b/test/built-ins/RegExp/CharacterClassEscapes/character-class-digit-class-escape.js
+@@ -33,14 +33,16 @@ info: |
+     The production CharacterClassEscape :: W evaluates as follows:
+         Return the set of all characters not included in the set returned by CharacterClassEscape :: w.
+ features: [String.fromCodePoint]
++includes: [regExpUtils.js]
+ ---*/
+ 
+ const chunks = [];
+-const totalChunks = Math.ceil(0xffff / 0x10000);
+-
+-for (let codePoint = 0; codePoint < 0xFFFF; codePoint++) {
+-    // split strings to avoid a super long one;
+-    chunks[codePoint % totalChunks] += String.fromCodePoint(codePoint);
++const lastCodePoint = 0xffff;
++let codePoint = 0;
++while (codePoint <= lastCodePoint) {
++   let n = Math.min(0x10000, lastCodePoint - codePoint + 1);
++   chunks.push(codePointRange(codePoint, codePoint + n));
++   codePoint += n;
+ }
+ 
+ const re = /\d/g;
+diff --git a/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-digit-class-escape-flags-u.js b/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-digit-class-escape-flags-u.js
+index ead3d68..beaf9cf 100644
+--- a/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-digit-class-escape-flags-u.js
++++ b/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-digit-class-escape-flags-u.js
+@@ -33,14 +33,16 @@ info: |
+     The production CharacterClassEscape :: W evaluates as follows:
+         Return the set of all characters not included in the set returned by CharacterClassEscape :: w.
+ features: [String.fromCodePoint]
++includes: [regExpUtils.js]
+ ---*/
+ 
+ const chunks = [];
+-const totalChunks = Math.ceil(0x10ffff / 0x10000);
+-
+-for (let codePoint = 0; codePoint < 0x10FFFF; codePoint++) {
+-    // split strings to avoid a super long one;
+-    chunks[codePoint % totalChunks] += String.fromCodePoint(codePoint);
++const lastCodePoint = 0x10ffff;
++let codePoint = 0;
++while (codePoint <= lastCodePoint) {
++   let n = Math.min(0x10000, lastCodePoint - codePoint + 1);
++   chunks.push(codePointRange(codePoint, codePoint + n));
++   codePoint += n;
+ }
+ 
+ const re = /\D/ug;
+diff --git a/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-digit-class-escape-plus-quantifier-flags-u.js b/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-digit-class-escape-plus-quantifier-flags-u.js
+index 5c02690..0030b23 100644
+--- a/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-digit-class-escape-plus-quantifier-flags-u.js
++++ b/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-digit-class-escape-plus-quantifier-flags-u.js
+@@ -33,14 +33,16 @@ info: |
+     The production CharacterClassEscape :: W evaluates as follows:
+         Return the set of all characters not included in the set returned by CharacterClassEscape :: w.
+ features: [String.fromCodePoint]
++includes: [regExpUtils.js]
+ ---*/
+ 
+ const chunks = [];
+-const totalChunks = Math.ceil(0x10ffff / 0x10000);
+-
+-for (let codePoint = 0; codePoint < 0x10FFFF; codePoint++) {
+-    // split strings to avoid a super long one;
+-    chunks[codePoint % totalChunks] += String.fromCodePoint(codePoint);
++const lastCodePoint = 0x10ffff;
++let codePoint = 0;
++while (codePoint <= lastCodePoint) {
++   let n = Math.min(0x10000, lastCodePoint - codePoint + 1);
++   chunks.push(codePointRange(codePoint, codePoint + n));
++   codePoint += n;
+ }
+ 
+ const re = /\D+/ug;
+diff --git a/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-digit-class-escape-plus-quantifier.js b/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-digit-class-escape-plus-quantifier.js
+index 960d9cf..b663be0 100644
+--- a/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-digit-class-escape-plus-quantifier.js
++++ b/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-digit-class-escape-plus-quantifier.js
+@@ -33,14 +33,16 @@ info: |
+     The production CharacterClassEscape :: W evaluates as follows:
+         Return the set of all characters not included in the set returned by CharacterClassEscape :: w.
+ features: [String.fromCodePoint]
++includes: [regExpUtils.js]
+ ---*/
+ 
+ const chunks = [];
+-const totalChunks = Math.ceil(0xffff / 0x10000);
+-
+-for (let codePoint = 0; codePoint < 0xFFFF; codePoint++) {
+-    // split strings to avoid a super long one;
+-    chunks[codePoint % totalChunks] += String.fromCodePoint(codePoint);
++const lastCodePoint = 0xffff;
++let codePoint = 0;
++while (codePoint <= lastCodePoint) {
++   let n = Math.min(0x10000, lastCodePoint - codePoint + 1);
++   chunks.push(codePointRange(codePoint, codePoint + n));
++   codePoint += n;
+ }
+ 
+ const re = /\D+/g;
+diff --git a/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-digit-class-escape.js b/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-digit-class-escape.js
+index 85b1dcc..dcbd2eb 100644
+--- a/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-digit-class-escape.js
++++ b/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-digit-class-escape.js
+@@ -33,14 +33,16 @@ info: |
+     The production CharacterClassEscape :: W evaluates as follows:
+         Return the set of all characters not included in the set returned by CharacterClassEscape :: w.
+ features: [String.fromCodePoint]
++includes: [regExpUtils.js]
+ ---*/
+ 
+ const chunks = [];
+-const totalChunks = Math.ceil(0xffff / 0x10000);
+-
+-for (let codePoint = 0; codePoint < 0xFFFF; codePoint++) {
+-    // split strings to avoid a super long one;
+-    chunks[codePoint % totalChunks] += String.fromCodePoint(codePoint);
++const lastCodePoint = 0xffff;
++let codePoint = 0;
++while (codePoint <= lastCodePoint) {
++   let n = Math.min(0x10000, lastCodePoint - codePoint + 1);
++   chunks.push(codePointRange(codePoint, codePoint + n));
++   codePoint += n;
+ }
+ 
+ const re = /\D/g;
+diff --git a/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-whitespace-class-escape-flags-u.js b/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-whitespace-class-escape-flags-u.js
+index eda913b..cb57074 100644
+--- a/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-whitespace-class-escape-flags-u.js
++++ b/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-whitespace-class-escape-flags-u.js
+@@ -33,14 +33,16 @@ info: |
+     The production CharacterClassEscape :: W evaluates as follows:
+         Return the set of all characters not included in the set returned by CharacterClassEscape :: w.
+ features: [String.fromCodePoint]
++includes: [regExpUtils.js]
+ ---*/
+ 
+ const chunks = [];
+-const totalChunks = Math.ceil(0x10ffff / 0x10000);
+-
+-for (let codePoint = 0; codePoint < 0x10FFFF; codePoint++) {
+-    // split strings to avoid a super long one;
+-    chunks[codePoint % totalChunks] += String.fromCodePoint(codePoint);
++const lastCodePoint = 0x10ffff;
++let codePoint = 0;
++while (codePoint <= lastCodePoint) {
++   let n = Math.min(0x10000, lastCodePoint - codePoint + 1);
++   chunks.push(codePointRange(codePoint, codePoint + n));
++   codePoint += n;
+ }
+ 
+ const re = /\S/ug;
+diff --git a/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-whitespace-class-escape-plus-quantifier-flags-u.js b/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-whitespace-class-escape-plus-quantifier-flags-u.js
+index 8e21a55..026309c 100644
+--- a/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-whitespace-class-escape-plus-quantifier-flags-u.js
++++ b/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-whitespace-class-escape-plus-quantifier-flags-u.js
+@@ -33,14 +33,16 @@ info: |
+     The production CharacterClassEscape :: W evaluates as follows:
+         Return the set of all characters not included in the set returned by CharacterClassEscape :: w.
+ features: [String.fromCodePoint]
++includes: [regExpUtils.js]
+ ---*/
+ 
+ const chunks = [];
+-const totalChunks = Math.ceil(0x10ffff / 0x10000);
+-
+-for (let codePoint = 0; codePoint < 0x10FFFF; codePoint++) {
+-    // split strings to avoid a super long one;
+-    chunks[codePoint % totalChunks] += String.fromCodePoint(codePoint);
++const lastCodePoint = 0x10ffff;
++let codePoint = 0;
++while (codePoint <= lastCodePoint) {
++   let n = Math.min(0x10000, lastCodePoint - codePoint + 1);
++   chunks.push(codePointRange(codePoint, codePoint + n));
++   codePoint += n;
+ }
+ 
+ const re = /\S+/ug;
+diff --git a/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-whitespace-class-escape-plus-quantifier.js b/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-whitespace-class-escape-plus-quantifier.js
+index f7cc4a3..98cfdff 100644
+--- a/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-whitespace-class-escape-plus-quantifier.js
++++ b/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-whitespace-class-escape-plus-quantifier.js
+@@ -33,14 +33,16 @@ info: |
+     The production CharacterClassEscape :: W evaluates as follows:
+         Return the set of all characters not included in the set returned by CharacterClassEscape :: w.
+ features: [String.fromCodePoint]
++includes: [regExpUtils.js]
+ ---*/
+ 
+ const chunks = [];
+-const totalChunks = Math.ceil(0xffff / 0x10000);
+-
+-for (let codePoint = 0; codePoint < 0xFFFF; codePoint++) {
+-    // split strings to avoid a super long one;
+-    chunks[codePoint % totalChunks] += String.fromCodePoint(codePoint);
++const lastCodePoint = 0xffff;
++let codePoint = 0;
++while (codePoint <= lastCodePoint) {
++   let n = Math.min(0x10000, lastCodePoint - codePoint + 1);
++   chunks.push(codePointRange(codePoint, codePoint + n));
++   codePoint += n;
+ }
+ 
+ const re = /\S+/g;
+diff --git a/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-whitespace-class-escape.js b/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-whitespace-class-escape.js
+index 3bca8ae..4ec88be 100644
+--- a/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-whitespace-class-escape.js
++++ b/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-whitespace-class-escape.js
+@@ -33,14 +33,16 @@ info: |
+     The production CharacterClassEscape :: W evaluates as follows:
+         Return the set of all characters not included in the set returned by CharacterClassEscape :: w.
+ features: [String.fromCodePoint]
++includes: [regExpUtils.js]
+ ---*/
+ 
+ const chunks = [];
+-const totalChunks = Math.ceil(0xffff / 0x10000);
+-
+-for (let codePoint = 0; codePoint < 0xFFFF; codePoint++) {
+-    // split strings to avoid a super long one;
+-    chunks[codePoint % totalChunks] += String.fromCodePoint(codePoint);
++const lastCodePoint = 0xffff;
++let codePoint = 0;
++while (codePoint <= lastCodePoint) {
++   let n = Math.min(0x10000, lastCodePoint - codePoint + 1);
++   chunks.push(codePointRange(codePoint, codePoint + n));
++   codePoint += n;
+ }
+ 
+ const re = /\S/g;
+diff --git a/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-word-class-escape-flags-u.js b/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-word-class-escape-flags-u.js
+index 3da454a..0a94a16 100644
+--- a/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-word-class-escape-flags-u.js
++++ b/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-word-class-escape-flags-u.js
+@@ -33,14 +33,16 @@ info: |
+     The production CharacterClassEscape :: W evaluates as follows:
+         Return the set of all characters not included in the set returned by CharacterClassEscape :: w.
+ features: [String.fromCodePoint]
++includes: [regExpUtils.js]
+ ---*/
+ 
+ const chunks = [];
+-const totalChunks = Math.ceil(0x10ffff / 0x10000);
+-
+-for (let codePoint = 0; codePoint < 0x10FFFF; codePoint++) {
+-    // split strings to avoid a super long one;
+-    chunks[codePoint % totalChunks] += String.fromCodePoint(codePoint);
++const lastCodePoint = 0x10ffff;
++let codePoint = 0;
++while (codePoint <= lastCodePoint) {
++   let n = Math.min(0x10000, lastCodePoint - codePoint + 1);
++   chunks.push(codePointRange(codePoint, codePoint + n));
++   codePoint += n;
+ }
+ 
+ const re = /\W/ug;
+diff --git a/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-word-class-escape-plus-quantifier-flags-u.js b/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-word-class-escape-plus-quantifier-flags-u.js
+index 7e7faad..0a10667 100644
+--- a/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-word-class-escape-plus-quantifier-flags-u.js
++++ b/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-word-class-escape-plus-quantifier-flags-u.js
+@@ -33,14 +33,16 @@ info: |
+     The production CharacterClassEscape :: W evaluates as follows:
+         Return the set of all characters not included in the set returned by CharacterClassEscape :: w.
+ features: [String.fromCodePoint]
++includes: [regExpUtils.js]
+ ---*/
+ 
+ const chunks = [];
+-const totalChunks = Math.ceil(0x10ffff / 0x10000);
+-
+-for (let codePoint = 0; codePoint < 0x10FFFF; codePoint++) {
+-    // split strings to avoid a super long one;
+-    chunks[codePoint % totalChunks] += String.fromCodePoint(codePoint);
++const lastCodePoint = 0x10ffff;
++let codePoint = 0;
++while (codePoint <= lastCodePoint) {
++   let n = Math.min(0x10000, lastCodePoint - codePoint + 1);
++   chunks.push(codePointRange(codePoint, codePoint + n));
++   codePoint += n;
+ }
+ 
+ const re = /\W+/ug;
+diff --git a/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-word-class-escape-plus-quantifier.js b/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-word-class-escape-plus-quantifier.js
+index 41ffa53..55447f8 100644
+--- a/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-word-class-escape-plus-quantifier.js
++++ b/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-word-class-escape-plus-quantifier.js
+@@ -33,14 +33,16 @@ info: |
+     The production CharacterClassEscape :: W evaluates as follows:
+         Return the set of all characters not included in the set returned by CharacterClassEscape :: w.
+ features: [String.fromCodePoint]
++includes: [regExpUtils.js]
+ ---*/
+ 
+ const chunks = [];
+-const totalChunks = Math.ceil(0xffff / 0x10000);
+-
+-for (let codePoint = 0; codePoint < 0xFFFF; codePoint++) {
+-    // split strings to avoid a super long one;
+-    chunks[codePoint % totalChunks] += String.fromCodePoint(codePoint);
++const lastCodePoint = 0xffff;
++let codePoint = 0;
++while (codePoint <= lastCodePoint) {
++   let n = Math.min(0x10000, lastCodePoint - codePoint + 1);
++   chunks.push(codePointRange(codePoint, codePoint + n));
++   codePoint += n;
+ }
+ 
+ const re = /\W+/g;
+diff --git a/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-word-class-escape.js b/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-word-class-escape.js
+index ca47608..c1580cb 100644
+--- a/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-word-class-escape.js
++++ b/test/built-ins/RegExp/CharacterClassEscapes/character-class-non-word-class-escape.js
+@@ -33,14 +33,16 @@ info: |
+     The production CharacterClassEscape :: W evaluates as follows:
+         Return the set of all characters not included in the set returned by CharacterClassEscape :: w.
+ features: [String.fromCodePoint]
++includes: [regExpUtils.js]
+ ---*/
+ 
+ const chunks = [];
+-const totalChunks = Math.ceil(0xffff / 0x10000);
+-
+-for (let codePoint = 0; codePoint < 0xFFFF; codePoint++) {
+-    // split strings to avoid a super long one;
+-    chunks[codePoint % totalChunks] += String.fromCodePoint(codePoint);
++const lastCodePoint = 0xffff;
++let codePoint = 0;
++while (codePoint <= lastCodePoint) {
++   let n = Math.min(0x10000, lastCodePoint - codePoint + 1);
++   chunks.push(codePointRange(codePoint, codePoint + n));
++   codePoint += n;
+ }
+ 
+ const re = /\W/g;
+diff --git a/test/built-ins/RegExp/CharacterClassEscapes/character-class-whitespace-class-escape-flags-u.js b/test/built-ins/RegExp/CharacterClassEscapes/character-class-whitespace-class-escape-flags-u.js
+index 82bb950..ac17d3b 100644
+--- a/test/built-ins/RegExp/CharacterClassEscapes/character-class-whitespace-class-escape-flags-u.js
++++ b/test/built-ins/RegExp/CharacterClassEscapes/character-class-whitespace-class-escape-flags-u.js
+@@ -33,14 +33,16 @@ info: |
+     The production CharacterClassEscape :: W evaluates as follows:
+         Return the set of all characters not included in the set returned by CharacterClassEscape :: w.
+ features: [String.fromCodePoint]
++includes: [regExpUtils.js]
+ ---*/
+ 
+ const chunks = [];
+-const totalChunks = Math.ceil(0x10ffff / 0x10000);
+-
+-for (let codePoint = 0; codePoint < 0x10FFFF; codePoint++) {
+-    // split strings to avoid a super long one;
+-    chunks[codePoint % totalChunks] += String.fromCodePoint(codePoint);
++const lastCodePoint = 0x10ffff;
++let codePoint = 0;
++while (codePoint <= lastCodePoint) {
++   let n = Math.min(0x10000, lastCodePoint - codePoint + 1);
++   chunks.push(codePointRange(codePoint, codePoint + n));
++   codePoint += n;
+ }
+ 
+ const re = /\s/ug;
+diff --git a/test/built-ins/RegExp/CharacterClassEscapes/character-class-whitespace-class-escape-plus-quantifier-flags-u.js b/test/built-ins/RegExp/CharacterClassEscapes/character-class-whitespace-class-escape-plus-quantifier-flags-u.js
+index 7a3b57d..f74a350 100644
+--- a/test/built-ins/RegExp/CharacterClassEscapes/character-class-whitespace-class-escape-plus-quantifier-flags-u.js
++++ b/test/built-ins/RegExp/CharacterClassEscapes/character-class-whitespace-class-escape-plus-quantifier-flags-u.js
+@@ -33,14 +33,16 @@ info: |
+     The production CharacterClassEscape :: W evaluates as follows:
+         Return the set of all characters not included in the set returned by CharacterClassEscape :: w.
+ features: [String.fromCodePoint]
++includes: [regExpUtils.js]
+ ---*/
+ 
+ const chunks = [];
+-const totalChunks = Math.ceil(0x10ffff / 0x10000);
+-
+-for (let codePoint = 0; codePoint < 0x10FFFF; codePoint++) {
+-    // split strings to avoid a super long one;
+-    chunks[codePoint % totalChunks] += String.fromCodePoint(codePoint);
++const lastCodePoint = 0x10ffff;
++let codePoint = 0;
++while (codePoint <= lastCodePoint) {
++   let n = Math.min(0x10000, lastCodePoint - codePoint + 1);
++   chunks.push(codePointRange(codePoint, codePoint + n));
++   codePoint += n;
+ }
+ 
+ const re = /\s+/ug;
+diff --git a/test/built-ins/RegExp/CharacterClassEscapes/character-class-whitespace-class-escape-plus-quantifier.js b/test/built-ins/RegExp/CharacterClassEscapes/character-class-whitespace-class-escape-plus-quantifier.js
+index e1084ff..ba93158 100644
+--- a/test/built-ins/RegExp/CharacterClassEscapes/character-class-whitespace-class-escape-plus-quantifier.js
++++ b/test/built-ins/RegExp/CharacterClassEscapes/character-class-whitespace-class-escape-plus-quantifier.js
+@@ -33,14 +33,16 @@ info: |
+     The production CharacterClassEscape :: W evaluates as follows:
+         Return the set of all characters not included in the set returned by CharacterClassEscape :: w.
+ features: [String.fromCodePoint]
++includes: [regExpUtils.js]
+ ---*/
+ 
+ const chunks = [];
+-const totalChunks = Math.ceil(0xffff / 0x10000);
+-
+-for (let codePoint = 0; codePoint < 0xFFFF; codePoint++) {
+-    // split strings to avoid a super long one;
+-    chunks[codePoint % totalChunks] += String.fromCodePoint(codePoint);
++const lastCodePoint = 0xffff;
++let codePoint = 0;
++while (codePoint <= lastCodePoint) {
++   let n = Math.min(0x10000, lastCodePoint - codePoint + 1);
++   chunks.push(codePointRange(codePoint, codePoint + n));
++   codePoint += n;
+ }
+ 
+ const re = /\s+/g;
+diff --git a/test/built-ins/RegExp/CharacterClassEscapes/character-class-whitespace-class-escape.js b/test/built-ins/RegExp/CharacterClassEscapes/character-class-whitespace-class-escape.js
+index d1a3fda..0de155f 100644
+--- a/test/built-ins/RegExp/CharacterClassEscapes/character-class-whitespace-class-escape.js
++++ b/test/built-ins/RegExp/CharacterClassEscapes/character-class-whitespace-class-escape.js
+@@ -33,14 +33,16 @@ info: |
+     The production CharacterClassEscape :: W evaluates as follows:
+         Return the set of all characters not included in the set returned by CharacterClassEscape :: w.
+ features: [String.fromCodePoint]
++includes: [regExpUtils.js]
+ ---*/
+ 
+ const chunks = [];
+-const totalChunks = Math.ceil(0xffff / 0x10000);
+-
+-for (let codePoint = 0; codePoint < 0xFFFF; codePoint++) {
+-    // split strings to avoid a super long one;
+-    chunks[codePoint % totalChunks] += String.fromCodePoint(codePoint);
++const lastCodePoint = 0xffff;
++let codePoint = 0;
++while (codePoint <= lastCodePoint) {
++   let n = Math.min(0x10000, lastCodePoint - codePoint + 1);
++   chunks.push(codePointRange(codePoint, codePoint + n));
++   codePoint += n;
+ }
+ 
+ const re = /\s/g;
+diff --git a/test/built-ins/RegExp/CharacterClassEscapes/character-class-word-class-escape-flags-u.js b/test/built-ins/RegExp/CharacterClassEscapes/character-class-word-class-escape-flags-u.js
+index 0b8b183..2ccf8bf 100644
+--- a/test/built-ins/RegExp/CharacterClassEscapes/character-class-word-class-escape-flags-u.js
++++ b/test/built-ins/RegExp/CharacterClassEscapes/character-class-word-class-escape-flags-u.js
+@@ -33,14 +33,16 @@ info: |
+     The production CharacterClassEscape :: W evaluates as follows:
+         Return the set of all characters not included in the set returned by CharacterClassEscape :: w.
+ features: [String.fromCodePoint]
++includes: [regExpUtils.js]
+ ---*/
+ 
+ const chunks = [];
+-const totalChunks = Math.ceil(0x10ffff / 0x10000);
+-
+-for (let codePoint = 0; codePoint < 0x10FFFF; codePoint++) {
+-    // split strings to avoid a super long one;
+-    chunks[codePoint % totalChunks] += String.fromCodePoint(codePoint);
++const lastCodePoint = 0x10ffff;
++let codePoint = 0;
++while (codePoint <= lastCodePoint) {
++   let n = Math.min(0x10000, lastCodePoint - codePoint + 1);
++   chunks.push(codePointRange(codePoint, codePoint + n));
++   codePoint += n;
+ }
+ 
+ const re = /\w/ug;
+diff --git a/test/built-ins/RegExp/CharacterClassEscapes/character-class-word-class-escape-plus-quantifier-flags-u.js b/test/built-ins/RegExp/CharacterClassEscapes/character-class-word-class-escape-plus-quantifier-flags-u.js
+index d824426..b389118 100644
+--- a/test/built-ins/RegExp/CharacterClassEscapes/character-class-word-class-escape-plus-quantifier-flags-u.js
++++ b/test/built-ins/RegExp/CharacterClassEscapes/character-class-word-class-escape-plus-quantifier-flags-u.js
+@@ -33,14 +33,16 @@ info: |
+     The production CharacterClassEscape :: W evaluates as follows:
+         Return the set of all characters not included in the set returned by CharacterClassEscape :: w.
+ features: [String.fromCodePoint]
++includes: [regExpUtils.js]
+ ---*/
+ 
+ const chunks = [];
+-const totalChunks = Math.ceil(0x10ffff / 0x10000);
+-
+-for (let codePoint = 0; codePoint < 0x10FFFF; codePoint++) {
+-    // split strings to avoid a super long one;
+-    chunks[codePoint % totalChunks] += String.fromCodePoint(codePoint);
++const lastCodePoint = 0x10ffff;
++let codePoint = 0;
++while (codePoint <= lastCodePoint) {
++   let n = Math.min(0x10000, lastCodePoint - codePoint + 1);
++   chunks.push(codePointRange(codePoint, codePoint + n));
++   codePoint += n;
+ }
+ 
+ const re = /\w+/ug;
+diff --git a/test/built-ins/RegExp/CharacterClassEscapes/character-class-word-class-escape-plus-quantifier.js b/test/built-ins/RegExp/CharacterClassEscapes/character-class-word-class-escape-plus-quantifier.js
+index bafffd7..334290d 100644
+--- a/test/built-ins/RegExp/CharacterClassEscapes/character-class-word-class-escape-plus-quantifier.js
++++ b/test/built-ins/RegExp/CharacterClassEscapes/character-class-word-class-escape-plus-quantifier.js
+@@ -33,14 +33,16 @@ info: |
+     The production CharacterClassEscape :: W evaluates as follows:
+         Return the set of all characters not included in the set returned by CharacterClassEscape :: w.
+ features: [String.fromCodePoint]
++includes: [regExpUtils.js]
+ ---*/
+ 
+ const chunks = [];
+-const totalChunks = Math.ceil(0xffff / 0x10000);
+-
+-for (let codePoint = 0; codePoint < 0xFFFF; codePoint++) {
+-    // split strings to avoid a super long one;
+-    chunks[codePoint % totalChunks] += String.fromCodePoint(codePoint);
++const lastCodePoint = 0xffff;
++let codePoint = 0;
++while (codePoint <= lastCodePoint) {
++   let n = Math.min(0x10000, lastCodePoint - codePoint + 1);
++   chunks.push(codePointRange(codePoint, codePoint + n));
++   codePoint += n;
+ }
+ 
+ const re = /\w+/g;
+diff --git a/test/built-ins/RegExp/CharacterClassEscapes/character-class-word-class-escape.js b/test/built-ins/RegExp/CharacterClassEscapes/character-class-word-class-escape.js
+index cba30b0..afc5615 100644
+--- a/test/built-ins/RegExp/CharacterClassEscapes/character-class-word-class-escape.js
++++ b/test/built-ins/RegExp/CharacterClassEscapes/character-class-word-class-escape.js
+@@ -33,14 +33,16 @@ info: |
+     The production CharacterClassEscape :: W evaluates as follows:
+         Return the set of all characters not included in the set returned by CharacterClassEscape :: w.
+ features: [String.fromCodePoint]
++includes: [regExpUtils.js]
+ ---*/
+ 
+ const chunks = [];
+-const totalChunks = Math.ceil(0xffff / 0x10000);
+-
+-for (let codePoint = 0; codePoint < 0xFFFF; codePoint++) {
+-    // split strings to avoid a super long one;
+-    chunks[codePoint % totalChunks] += String.fromCodePoint(codePoint);
++const lastCodePoint = 0xffff;
++let codePoint = 0;
++while (codePoint <= lastCodePoint) {
++   let n = Math.min(0x10000, lastCodePoint - codePoint + 1);
++   chunks.push(codePointRange(codePoint, codePoint + n));
++   codePoint += n;
+ }
+ 
+ const re = /\w/g;

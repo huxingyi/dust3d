@@ -143,7 +143,6 @@ private:
     QMenu *m_viewMenu;
     QAction *m_resetModelWidgetPosAction;
     QAction *m_toggleWireframeAction;
-    //QAction *m_toggleSmoothNormalAction;
     QAction *m_showMotionsListAction;
     
     QMenu *m_windowMenu;
@@ -153,6 +152,7 @@ private:
     QAction *m_showRigAction;
     QAction *m_showPosesAction;
     QAction *m_showMotionsAction;
+    QAction *m_showScriptAction;
     
     QMenu *m_helpMenu;
     QAction *m_gotoHomepageAction;

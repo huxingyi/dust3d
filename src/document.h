@@ -26,6 +26,7 @@
 #include "skeletondocument.h"
 #include "combinemode.h"
 #include "preferences.h"
+#include "scriptrunner.h"
 
 class MaterialPreviewsGenerator;
 class MotionsGenerator;
@@ -418,6 +419,7 @@ signals:
     void partColorSolubilityChanged(QUuid partId);
     void componentCombineModeChanged(QUuid componentId);
     void cleanup();
+    void cleanupScript();
     void originChanged();
     void xlockStateChanged();
     void ylockStateChanged();
@@ -461,6 +463,12 @@ signals:
     void postProcessing();
     void textureGenerating();
     void textureChanged();
+    void scriptChanged();
+    void scriptModifiedFromExternal();
+    void mergedVaraiblesChanged();
+    void scriptRunning();
+    void scriptErrorChanged();
+    void scriptConsoleLogChanged();
 public: // need initialize
     QImage *textureGuideImage;
     QImage *textureImage;
@@ -525,6 +533,10 @@ public:
     const Outcome &currentRiggedOutcome() const;
     bool currentRigSucceed() const;
     bool isMeshGenerating() const;
+    const QString &script() const;
+    const std::map<QString, std::map<QString, QString>> &variables() const;
+    const QString &scriptError() const;
+    const QString &scriptConsoleLog() const;
 public slots:
     void undo() override;
     void redo() override;
@@ -612,8 +624,10 @@ public slots:
     void batchChangeBegin();
     void batchChangeEnd();
     void reset();
+    void resetScript();
     void clearHistories();
     void silentReset();
+    void silentResetScript();
     void breakEdge(QUuid edgeId);
     void setXlockState(bool locked);
     void setYlockState(bool locked);
@@ -642,6 +656,13 @@ public slots:
     void renameMaterial(QUuid materialId, QString name);
     void applyPreferencePartColorChange();
     void applyPreferenceFlatShadingChange();
+    void initScript(const QString &script);
+    void updateScript(const QString &script);
+    void updateDefaultVariables(const std::map<QString, std::map<QString, QString>> &defaultVariables);
+    void runScript();
+    void scriptResultReady();
+    void updateVariable(const QString &name, const std::map<QString, QString> &value);
+    void updateVariableValue(const QString &name, const QString &value);
 private:
     void splitPartByNode(std::vector<std::vector<QUuid>> *groups, QUuid nodeId);
     void joinNodeAndNeiborsToGroup(std::vector<QUuid> *group, QUuid nodeId, std::set<QUuid> *visitMap, QUuid noUseEdgeId=QUuid());
@@ -691,6 +712,13 @@ private: // need initialize
     MotionsGenerator *m_motionsGenerator;
     quint64 m_meshGenerationId;
     quint64 m_nextMeshGenerationId;
+    QString m_script;
+    std::map<QString, std::map<QString, QString>> m_cachedVariables;
+    std::map<QString, std::map<QString, QString>> m_mergedVariables;
+    ScriptRunner *m_scriptRunner;
+    bool m_isScriptResultObsolete;
+    QString m_scriptError;
+    QString m_scriptConsoleLog;
 private:
     static unsigned long m_maxSnapshot;
     std::deque<HistoryItem> m_undoItems;
