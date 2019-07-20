@@ -31,6 +31,7 @@ public:
     size_t addEdge(size_t firstNodeIndex, size_t secondNodeIndex);
     void subdivide();
     void roundEnd();
+    void enableIntermediateAddition();
     const std::vector<Node> &nodes();
     const std::vector<Edge> &edges();
     void finalize();
@@ -39,6 +40,7 @@ private:
     
     std::vector<Node> m_nodes;
     std::vector<Edge> m_edges;
+    bool m_intermediateAdditionEnabled = false;
     
     void createIntermediateNode(const Node &firstNode, const Node &secondNode, float factor, Node *resultNode);
     float averageCutTemplateEdgeLength(const std::vector<QVector2D> &cutTemplate);

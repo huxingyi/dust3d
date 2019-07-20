@@ -100,7 +100,7 @@ private:
     bool checkIsPartDirty(const QString &partIdString);
     bool checkIsPartDependencyDirty(const QString &partIdString);
     void checkDirtyFlags();
-    nodemesh::Combiner::Mesh *combinePartMesh(const QString &partIdString);
+    nodemesh::Combiner::Mesh *combinePartMesh(const QString &partIdString, bool *hasError, bool addIntermediateNodes=true);
     nodemesh::Combiner::Mesh *combineComponentMesh(const QString &componentIdString, CombineMode *combineMode);
     void makeXmirror(const std::vector<QVector3D> &sourceVertices, const std::vector<std::vector<size_t>> &sourceFaces,
         std::vector<QVector3D> *destVertices, std::vector<std::vector<size_t>> *destFaces);

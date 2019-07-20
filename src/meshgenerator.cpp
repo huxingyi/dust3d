@@ -323,7 +323,7 @@ void MeshGenerator::cutFaceStringToCutTemplate(const QString &cutFaceString, std
     }
 }
 
-nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString)
+nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, bool *hasError, bool addIntermediateNodes)
 {
     auto findPart = m_snapshot->parts.find(partIdString);
     if (findPart == m_snapshot->parts.end()) {
@@ -467,6 +467,9 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
     
     nodemesh::Modifier *modifier = new nodemesh::Modifier;
     
+    if (addIntermediateNodes)
+        modifier->enableIntermediateAddition();
+    
     QString mirroredPartIdString;
     QUuid mirroredPartId;
     if (xMirrored) {
@@ -561,20 +564,6 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
         builder->addEdge(edge.firstNodeIndex, edge.secondNodeIndex);
     bool buildSucceed = builder->build();
     
-    //for (size_t i = 0; i < modifier->nodes().size(); ++i) {
-    //    const auto &node = modifier->nodes()[i];
-    //    if (!node.isOriginal)
-    //        continue;
-    //    const QString &nodeIdString = nodeIndexToIdStringMap[node.originNodeIndex];
-    //    const nodemesh::Builder::CutFaceTransform *cutFaceTransform = builder->nodeAdjustableCutFaceTransform(builderNodeIndices[i]);
-    //    if (nullptr != cutFaceTransform &&
-    //            PartTarget::Model == target) {
-    //        QUuid nodeId = QUuid(nodeIdString);
-    //        m_cutFaceTransforms->insert({nodeId, *cutFaceTransform});
-    //        m_nodesCutFaces->insert({nodeId, cutTemplateMapByName});
-    //    }
-    //}
-    
     partCache.vertices = builder->generatedVertices();
     partCache.faces = builder->generatedFaces();
     for (size_t i = 0; i < partCache.vertices.size(); ++i) {
@@ -633,6 +622,7 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
         qDebug() << "Mesh build failed";
     }
     
+    delete m_partPreviewMeshes[partId];
     m_partPreviewMeshes[partId] = nullptr;
     m_generatedPreviewPartIds.insert(partId);
     
@@ -695,7 +685,8 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
     }
     
     if (hasMeshError && target == PartTarget::Model) {
-        m_isSucceed = false;
+        *hasError = true;
+        //m_isSucceed = false;
     }
     
     return mesh;
@@ -789,7 +780,17 @@ nodemesh::Combiner::Mesh *MeshGenerator::combineComponentMesh(const QString &com
     QString linkDataType = valueOfKeyInMapOrEmpty(*component, "linkDataType");
     if ("partId" == linkDataType) {
         QString partIdString = valueOfKeyInMapOrEmpty(*component, "linkData");
-        mesh = combinePartMesh(partIdString);
+        bool hasError = false;
+        mesh = combinePartMesh(partIdString, &hasError);
+        if (hasError) {
+            delete mesh;
+            hasError = false;
+            qDebug() << "Try combine part again without adding intermediate nodes";
+            mesh = combinePartMesh(partIdString, &hasError, false);
+            if (hasError) {
+                m_isSucceed = false;
+            }
+        }
         
         const auto &partCache = m_cacheContext->parts[partIdString];
         for (const auto &vertex: partCache.vertices)

@@ -6,6 +6,11 @@
 namespace nodemesh
 {
 
+void Modifier::enableIntermediateAddition()
+{
+    m_intermediateAdditionEnabled = true;
+}
+
 size_t Modifier::addNode(const QVector3D &position, float radius, const std::vector<QVector2D> &cutTemplate, float cutRotation)
 {
     size_t nodeIndex = m_nodes.size();
@@ -100,6 +105,8 @@ void Modifier::roundEnd()
 
 void Modifier::finalize()
 {
+    if (!m_intermediateAdditionEnabled)
+        return;
     auto oldEdges = m_edges;
     m_edges.clear();
     for (const auto &edge: oldEdges) {
