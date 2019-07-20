@@ -14,6 +14,7 @@
 #include "materialpreviewsgenerator.h"
 #include "motionsgenerator.h"
 #include "skeletonside.h"
+#include "scriptrunner.h"
 
 unsigned long Document::m_maxSnapshot = 1000;
 

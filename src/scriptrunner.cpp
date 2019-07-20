@@ -283,9 +283,6 @@ static void js_componentFinalizer(JSRuntime *runtime, JSValue value)
 static JSClassDef js_componentClass = {
     "Component",
     js_componentFinalizer,
-    nullptr,
-    nullptr,
-    nullptr,
 };
 
 static void js_nodeFinalizer(JSRuntime *runtime, JSValue value)
@@ -299,7 +296,7 @@ static void js_nodeFinalizer(JSRuntime *runtime, JSValue value)
 
 static JSClassDef js_nodeClass = {
     "Node",
-    .finalizer = js_nodeFinalizer,
+    js_nodeFinalizer,
 };
 
 static void js_partFinalizer(JSRuntime *runtime, JSValue value)
@@ -313,7 +310,7 @@ static void js_partFinalizer(JSRuntime *runtime, JSValue value)
 
 static JSClassDef js_partClass = {
     "Part",
-    .finalizer = js_partFinalizer,
+    js_partFinalizer,
 };
 
 void ScriptRunner::run()

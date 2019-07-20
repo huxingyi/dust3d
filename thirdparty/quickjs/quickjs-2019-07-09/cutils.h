@@ -31,10 +31,31 @@
 /* set if CPU is big endian */
 #undef WORDS_BIGENDIAN
 
+#if defined(_MSC_VER)
+#define likely(x)       (x)
+#define unlikely(x)     (x)
+#else
 #define likely(x)       __builtin_expect(!!(x), 1)
 #define unlikely(x)     __builtin_expect(!!(x), 0)
+#endif
+#if defined(_MSC_VER)
+#define force_inline inline
+#else
 #define force_inline inline __attribute__((always_inline))
+#endif
+#if defined(_MSC_VER)
+#define no_inline
+#else
 #define no_inline __attribute__((noinline))
+#endif
+#if defined(_MSC_VER)
+#define _Atomic(type) type
+#endif
+
+#if defined(_MSC_VER)
+#include <BaseTsd.h>
+typedef SSIZE_T ssize_t;
+#endif
 
 #define xglue(x, y) x ## y
 #define glue(x, y) xglue(x, y)
@@ -134,17 +155,41 @@ static inline int ctz64(uint64_t a)
     return __builtin_ctzll(a);
 }
 
+#if defined(_MSC_VER)
+#pragma pack(push,1)
+struct packed_u64 {
+    uint64_t v;
+};
+#pragma pack(pop)
+#else
 struct __attribute__((packed)) packed_u64 {
     uint64_t v;
 };
+#endif
 
+#if defined(_MSC_VER)
+#pragma pack(push,1)
+struct packed_u32 {
+    uint32_t v;
+};
+#pragma pack(pop)
+#else
 struct __attribute__((packed)) packed_u32 {
     uint32_t v;
 };
+#endif
 
+#if defined(_MSC_VER)
+#pragma pack(push,1)
+struct packed_u16 {
+    uint16_t v;
+};
+#pragma pack(pop)
+#else
 struct __attribute__((packed)) packed_u16 {
     uint16_t v;
 };
+#endif
 
 static inline uint64_t get_u64(const uint8_t *tab)
 {
@@ -261,8 +306,14 @@ static inline int dbuf_put_u64(DynBuf *s, uint64_t val)
 {
     return dbuf_put(s, (uint8_t *)&val, 8);
 }
+
+#if defined(_MSC_VER)
+int dbuf_printf(DynBuf *s, const char *fmt, ...);
+#else
 int __attribute__((format(printf, 2, 3))) dbuf_printf(DynBuf *s,
                                                       const char *fmt, ...);
+#endif
+
 void dbuf_free(DynBuf *s);
 static inline BOOL dbuf_error(DynBuf *s) {
     return s->error;
@@ -288,5 +339,45 @@ static inline int from_hex(int c)
 void rqsort(void *base, size_t nmemb, size_t size,
             int (*cmp)(const void *, const void *, void *),
             void *arg);
+			
+/* Definitions for builtins unavailable on MSVC */
+#if defined(_MSC_VER) && !defined(__clang__)
+#include <intrin.h>
+
+uint32_t __inline __builtin_ctz(uint32_t value) {
+  unsigned long trailing_zero = 0;
+  if (_BitScanForward(&trailing_zero, value))
+    return trailing_zero;
+  return 32;
+}
+
+uint32_t __inline __builtin_clz(uint32_t value) {
+  unsigned long leading_zero = 0;
+  if (_BitScanReverse(&leading_zero, value))
+    return 31 - leading_zero;
+  return 32;
+}
+
+#if defined(_M_ARM) || defined(_M_X64)
+uint32_t __inline __builtin_clzll(uint64_t value) {
+  unsigned long leading_zero = 0;
+  if (_BitScanReverse64(&leading_zero, value))
+    return 63 - leading_zero;
+  return 64;
+}
+#else
+uint32_t __inline __builtin_clzll(uint64_t value) {
+  if (value == 0)
+    return 64;
+  uint32_t msh = (uint32_t)(value >> 32);
+  uint32_t lsh = (uint32_t)(value & 0xFFFFFFFF);
+  if (msh != 0)
+    return __builtin_clz(msh);
+  return 32 + __builtin_clz(lsh);
+}
+#endif
+
+#define __builtin_clzl __builtin_clzll
+#endif /* defined(_MSC_VER) && !defined(__clang__) */
 
 #endif  /* CUTILS_H */

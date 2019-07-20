@@ -26,10 +26,10 @@
 #include "skeletondocument.h"
 #include "combinemode.h"
 #include "preferences.h"
-#include "scriptrunner.h"
 
 class MaterialPreviewsGenerator;
 class MotionsGenerator;
+class ScriptRunner;
 
 class HistoryItem
 {

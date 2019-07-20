@@ -270,8 +270,11 @@ BOOL lre_is_case_ignorable(uint32_t c)
 }
 
 /* character range */
-
+#if defined(_MSC_VER)
+static void cr_dump(CharRange *cr)
+#else
 static __attribute__((unused)) void cr_dump(CharRange *cr)
+#endif
 {
     int i;
     for(i = 0; i < cr->len; i++)
@@ -526,8 +529,7 @@ static int unicode_decomp_entry(uint32_t *res, uint32_t c,
         return 1;
     } else {
         d = unicode_decomp_data + unicode_decomp_table2[idx];
-        switch(type) {
-        case DECOMP_TYPE_L1 ... DECOMP_TYPE_L7:
+        if (type >= DECOMP_TYPE_L1 && type <= DECOMP_TYPE_L7) {
             l = type - DECOMP_TYPE_L1 + 1;
             d += (c - code) * l * 2;
             for(i = 0; i < l; i++) {
@@ -535,7 +537,7 @@ static int unicode_decomp_entry(uint32_t *res, uint32_t c,
                     return 0;
             }
             return l;
-        case DECOMP_TYPE_LL1 ... DECOMP_TYPE_LL2:
+        } else if (type >= DECOMP_TYPE_LL1 && type <= DECOMP_TYPE_LL2) {
             {
                 uint32_t k, p;
                 l = type - DECOMP_TYPE_LL1 + 1;
@@ -551,7 +553,7 @@ static int unicode_decomp_entry(uint32_t *res, uint32_t c,
                 }
             }
             return l;
-        case DECOMP_TYPE_S1 ... DECOMP_TYPE_S5:
+        } else if (type >= DECOMP_TYPE_S1 && type <= DECOMP_TYPE_S5) {
             l = type - DECOMP_TYPE_S1 + 1;
             d += (c - code) * l;
             for(i = 0; i < l; i++) {
@@ -559,16 +561,16 @@ static int unicode_decomp_entry(uint32_t *res, uint32_t c,
                     return 0;
             }
             return l;
-        case DECOMP_TYPE_I1:
+        } else if (type == DECOMP_TYPE_I1) {
             l = 1;
             p = 0;
             goto decomp_type_i;
-        case DECOMP_TYPE_I2_0:
-        case DECOMP_TYPE_I2_1:
-        case DECOMP_TYPE_I3_1:
-        case DECOMP_TYPE_I3_2:
-        case DECOMP_TYPE_I4_1:
-        case DECOMP_TYPE_I4_2:
+        } else if (type == DECOMP_TYPE_I2_0 ||
+				type == DECOMP_TYPE_I2_1 ||
+				type == DECOMP_TYPE_I3_1 ||
+				type == DECOMP_TYPE_I3_2 ||
+				type == DECOMP_TYPE_I4_1 ||
+				type == DECOMP_TYPE_I4_2) {
             l = 2 + ((type - DECOMP_TYPE_I2_0) >> 1);
             p = ((type - DECOMP_TYPE_I2_0) & 1) + (l > 2);
         decomp_type_i:
@@ -579,10 +581,10 @@ static int unicode_decomp_entry(uint32_t *res, uint32_t c,
                 res[i] = c1;
             }
             return l;
-        case DECOMP_TYPE_B18:
+        } else if (type == DECOMP_TYPE_B18) {
             l = 18;
             goto decomp_type_b;
-        case DECOMP_TYPE_B1 ... DECOMP_TYPE_B8:
+        } else if (type >= DECOMP_TYPE_B1 && type <= DECOMP_TYPE_B8) {
             l = type - DECOMP_TYPE_B1 + 1;
         decomp_type_b:
             {
@@ -599,20 +601,20 @@ static int unicode_decomp_entry(uint32_t *res, uint32_t c,
                 }
             }
             return l;
-        case DECOMP_TYPE_LS2:
+        } else if (type == DECOMP_TYPE_LS2) {
             d += (c - code) * 3;
             if (!(res[0] = unicode_get16(d)))
                 return 0;
             res[1] = unicode_get_short_code(d[2]);
             return 2;
-        case DECOMP_TYPE_PAT3:
+        } else if (type == DECOMP_TYPE_PAT3) {
             res[0] = unicode_get16(d);
             res[2] = unicode_get16(d + 2);
             d += 4 + (c - code) * 2;
             res[1] = unicode_get16(d);
             return 3;
-        case DECOMP_TYPE_S2_UL:
-        case DECOMP_TYPE_LS2_UL:
+        } else if (type == DECOMP_TYPE_S2_UL ||
+				type == DECOMP_TYPE_LS2_UL) {
             c1 = c - code;
             if (type == DECOMP_TYPE_S2_UL) {
                 d += c1 & ~1;
