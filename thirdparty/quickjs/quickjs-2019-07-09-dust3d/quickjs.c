@@ -72,7 +72,7 @@
 /* define to include Atomics.* operations which depend on the OS
    threads */
 #if !defined(EMSCRIPTEN)
-#if !defined(_MSC_VER)
+#if !defined(_MSC_VER) && !defined(__linux__)
 #define CONFIG_ATOMICS
 #endif
 #endif

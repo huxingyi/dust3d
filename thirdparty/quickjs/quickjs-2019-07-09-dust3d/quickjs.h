@@ -201,12 +201,37 @@ typedef struct JSValue {
 #define JS_VALUE_GET_FLOAT64(v) ((v).u.float64)
 #define JS_VALUE_GET_PTR(v) ((v).u.ptr)
 
-#define JS_MKVAL(tag, val) (JSValue){ .u.int32 = val, tag }
-#define JS_MKPTR(tag, p) (JSValue){ .u.ptr = p, tag }
+//#define JS_MKVAL(tag, val) (JSValue){ .u.int32 = val, tag }
+static inline JSValue JS_MKVAL(uint64_t tag, int32_t val)
+{
+    JSValue value = {};
+    value.u.int32 = val;
+    value.tag = tag;
+    return value;
+    
+}
+//#define JS_MKPTR(tag, p) (JSValue){ .u.ptr = p, tag }
+static inline JSValue JS_MKPTR(uint64_t tag, void *ptr)
+{
+    JSValue value = {};
+    value.u.ptr = ptr;
+    value.tag = tag;
+    return value;
+}
 
 #define JS_TAG_IS_FLOAT64(tag) ((unsigned)(tag) == JS_TAG_FLOAT64)
 
 #define JS_NAN (JSValue){ .u.float64 = JS_FLOAT64_NAN, JS_TAG_FLOAT64 }
+/*
+static inline JSValue JS_NAN_()
+{
+    JSValue value = {};
+    value.u.float64 = JS_FLOAT64_NAN;
+    value.tag = JS_TAG_FLOAT64;
+    return value;
+}
+#define JS_NAN JS_NAN_()
+*/
 
 static inline JSValue __JS_NewFloat64(JSContext *ctx, double d)
 {
