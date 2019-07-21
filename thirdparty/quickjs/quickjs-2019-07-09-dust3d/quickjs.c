@@ -109,8 +109,8 @@
 //#define FORCE_GC_AT_MALLOC
 
 #ifdef CONFIG_ATOMICS
-//#include <pthread.h>
-//#include <stdatomic.h>
+#include <pthread.h>
+#include <stdatomic.h>
 #include <errno.h>
 #endif
 

@@ -388,21 +388,21 @@ SOURCES += src/main.cpp
 
 HEADERS += src/version.h
 
-INCLUDEPATH += thirdparty/quickjs/quickjs-2019-07-09
+INCLUDEPATH += thirdparty/quickjs/quickjs-2019-07-09-dust3d
 
 DEFINES += "CONFIG_VERSION=\"\\\"2019-07-09\\\"\""
 
-SOURCES += thirdparty/quickjs/quickjs-2019-07-09/quickjs.c
-HEADERS += thirdparty/quickjs/quickjs-2019-07-09/quickjs.h
+SOURCES += thirdparty/quickjs/quickjs-2019-07-09-dust3d/quickjs.c
+HEADERS += thirdparty/quickjs/quickjs-2019-07-09-dust3d/quickjs.h
 
-SOURCES += thirdparty/quickjs/quickjs-2019-07-09/cutils.c
-HEADERS += thirdparty/quickjs/quickjs-2019-07-09/cutils.h
+SOURCES += thirdparty/quickjs/quickjs-2019-07-09-dust3d/cutils.c
+HEADERS += thirdparty/quickjs/quickjs-2019-07-09-dust3d/cutils.h
 
-SOURCES += thirdparty/quickjs/quickjs-2019-07-09/libunicode.c
-HEADERS += thirdparty/quickjs/quickjs-2019-07-09/libunicode.h
+SOURCES += thirdparty/quickjs/quickjs-2019-07-09-dust3d/libunicode.c
+HEADERS += thirdparty/quickjs/quickjs-2019-07-09-dust3d/libunicode.h
 
-SOURCES += thirdparty/quickjs/quickjs-2019-07-09/libregexp.c
-HEADERS += thirdparty/quickjs/quickjs-2019-07-09/libregexp.h
+SOURCES += thirdparty/quickjs/quickjs-2019-07-09-dust3d/libregexp.c
+HEADERS += thirdparty/quickjs/quickjs-2019-07-09-dust3d/libregexp.h
 
 INCLUDEPATH += thirdparty/nodemesh
 
