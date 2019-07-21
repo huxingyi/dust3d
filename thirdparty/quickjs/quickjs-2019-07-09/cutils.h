@@ -48,9 +48,9 @@
 #else
 #define no_inline __attribute__((noinline))
 #endif
-#if defined(_MSC_VER)
-#define _Atomic(type) type
-#endif
+//#if defined(_MSC_VER)
+//#define _Atomic(type) type
+//#endif
 
 #if defined(_MSC_VER)
 #include <BaseTsd.h>

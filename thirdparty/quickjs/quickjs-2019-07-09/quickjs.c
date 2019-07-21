@@ -655,8 +655,10 @@ typedef struct JSShapeProperty {
 } JSShapeProperty;
 
 struct JSShape {
-    uint32_t prop_hash_end[1]; /* hash table of size hash_mask + 1
+#if !defined(_MSC_VER)
+    uint32_t prop_hash_end[0]; /* hash table of size hash_mask + 1
                                   before the start of the structure. */
+#endif
     JSRefCountHeader header; /* must come first, 32-bit */
     JSGCHeader gc_header; /* must come after JSRefCountHeader, 8-bit */
     /* true if the shape is inserted in the shape hash table. If not,
@@ -674,6 +676,11 @@ struct JSShape {
     JSObject *proto;
     JSShapeProperty prop[0]; /* prop_size elements */
 };
+#if defined(_MSC_VER)
+#define prop_hash_end_field_of_shape(shape) ((uint32_t *)(shape))
+#else
+#define prop_hash_end_field_of_shape(shape) (shape)->prop_hash_end
+#endif
 struct JSObject {
     JSRefCountHeader header; /* must come first, 32-bit */
     JSGCHeader gc_header; /* must come after JSRefCountHeader, 8-bit */
@@ -3814,7 +3821,7 @@ static inline JSShape *get_shape_from_alloc(void *sh_alloc, size_t hash_size)
 
 static inline void *get_alloc_from_shape(JSShape *sh)
 {
-    return sh->prop_hash_end - ((intptr_t)sh->prop_hash_mask + 1);
+    return prop_hash_end_field_of_shape(sh) - ((intptr_t)sh->prop_hash_mask + 1);
 }
 
 static inline JSShapeProperty *get_shape_prop(JSShape *sh)
@@ -3925,7 +3932,7 @@ static no_inline JSShape *js_new_shape2(JSContext *ctx, JSObject *proto,
     if (proto)
         JS_DupValue(ctx, JS_MKPTR(JS_TAG_OBJECT, proto));
     sh->proto = proto;
-    memset(sh->prop_hash_end - hash_size, 0, sizeof(sh->prop_hash_end[0]) *
+    memset(prop_hash_end_field_of_shape(sh) - hash_size, 0, sizeof(prop_hash_end_field_of_shape(sh)[0]) *
            hash_size);
     sh->prop_hash_mask = hash_size - 1;
     sh->prop_count = 0;
@@ -4045,13 +4052,13 @@ static no_inline int resize_properties(JSContext *ctx, JSShape **psh,
                sizeof(JSShape) + sizeof(sh->prop[0]) * old_sh->prop_count);
         new_hash_mask = new_hash_size - 1;
         sh->prop_hash_mask = new_hash_mask;
-        memset(sh->prop_hash_end - new_hash_size, 0,
-               sizeof(sh->prop_hash_end[0]) * new_hash_size);
+        memset(prop_hash_end_field_of_shape(sh) - new_hash_size, 0,
+               sizeof(prop_hash_end_field_of_shape(sh)[0]) * new_hash_size);
         for(i = 0, pr = sh->prop; i < sh->prop_count; i++, pr++) {
             if (pr->atom != JS_ATOM_NULL) {
                 h = ((uintptr_t)pr->atom & new_hash_mask);
-                pr->hash_next = sh->prop_hash_end[-h - 1];
-                sh->prop_hash_end[-h - 1] = i + 1;
+                pr->hash_next = prop_hash_end_field_of_shape(sh)[-h - 1];
+                prop_hash_end_field_of_shape(sh)[-h - 1] = i + 1;
             }
         }
         js_free(ctx, get_alloc_from_shape(old_sh));
@@ -4107,8 +4114,8 @@ static int add_shape_property(JSContext *ctx, JSShape **psh,
     /* add in hash table */
     hash_mask = sh->prop_hash_mask;
     h = atom & hash_mask;
-    pr->hash_next = sh->prop_hash_end[-h - 1];
-    sh->prop_hash_end[-h - 1] = sh->prop_count;
+    pr->hash_next = prop_hash_end_field_of_shape(sh)[-h - 1];
+    prop_hash_end_field_of_shape(sh)[-h - 1] = sh->prop_count;
     return 0;
 }
 
@@ -4662,7 +4669,7 @@ static force_inline JSShapeProperty *find_own_property1(JSObject *p,
     intptr_t h;
     sh = p->shape;
     h = (uintptr_t)atom & sh->prop_hash_mask;
-    h = sh->prop_hash_end[-h - 1];
+    h = prop_hash_end_field_of_shape(sh)[-h - 1];
     prop = get_shape_prop(sh);
     while (h) {
         pr = &prop[h - 1];
@@ -4683,7 +4690,7 @@ static force_inline JSShapeProperty *find_own_property(JSProperty **ppr,
     intptr_t h;
     sh = p->shape;
     h = (uintptr_t)atom & sh->prop_hash_mask;
-    h = sh->prop_hash_end[-h - 1];
+    h = prop_hash_end_field_of_shape(sh)[-h - 1];
     prop = get_shape_prop(sh);
     while (h) {
         pr = &prop[h - 1];
@@ -7205,7 +7212,7 @@ static int delete_property(JSContext *ctx, JSObject *p, JSAtom atom)
  redo:
     sh = p->shape;
     h1 = atom & sh->prop_hash_mask;
-    h = sh->prop_hash_end[-h1 - 1];
+    h = prop_hash_end_field_of_shape(sh)[-h1 - 1];
     prop = get_shape_prop(sh);
     lpr = NULL;
     lpr_idx = 0;   /* prevent warning */
@@ -7226,7 +7233,7 @@ static int delete_property(JSContext *ctx, JSObject *p, JSAtom atom)
                 lpr = get_shape_prop(sh) + lpr_idx;
                 lpr->hash_next = pr->hash_next;
             } else {
-                sh->prop_hash_end[-h1 - 1] = pr->hash_next;
+                prop_hash_end_field_of_shape(sh)[-h1 - 1] = pr->hash_next;
             }
             /* free the entry */
             pr1 = &p->prop[h - 1];
@@ -45231,10 +45238,10 @@ void JS_AddIntrinsicBaseObjects(JSContext *ctx)
 {
     int i;
     JSValueConst obj, number_obj;
-    JSValue obj1;
+    JSValue obj1;	
 
     ctx->throw_type_error = JS_NewCFunction(ctx, js_throw_type_error, NULL, 0);
-
+	
     /* add caller and arguments properties to throw a TypeError */
     obj1 = JS_NewCFunction(ctx, js_function_proto_caller, "get caller", 0);
     JS_DefineProperty(ctx, ctx->function_proto, JS_ATOM_caller, JS_UNDEFINED,
