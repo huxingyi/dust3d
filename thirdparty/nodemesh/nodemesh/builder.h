@@ -83,7 +83,7 @@ private:
         std::vector<size_t> nodes;
         std::vector<std::pair<std::vector<size_t>, QVector3D>> cuts;
         
-        size_t neiborOf(size_t nodeIndex)
+        size_t neiborOf(size_t nodeIndex) const
         {
             const auto &otherIndex = nodes[0];
             if (otherIndex == nodeIndex)
@@ -131,6 +131,7 @@ private:
     QVector3D revisedBaseNormalAcordingToCutNormal(const QVector3D &baseNormal, const QVector3D &cutNormal);
     void resolveInitialTraverseDirectionRecursively(size_t nodeIndex, const QVector3D *from, std::set<size_t> *visited);
     void unifyBaseNormals();
+    void localAverageBaseNormals();
     void resolveTraverseDirection(size_t nodeIndex);
     bool generateCutsForNode(size_t nodeIndex);
     bool tryWrapMultipleBranchesForNode(size_t nodeIndex, std::vector<float> &offsets, bool &offsetsChanged);

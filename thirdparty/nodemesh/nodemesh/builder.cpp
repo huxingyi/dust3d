@@ -304,6 +304,7 @@ bool Builder::build()
     }
     
     unifyBaseNormals();
+    localAverageBaseNormals();
     
     for (const auto &nodeIndex: m_sortedNodeIndices) {
         if (!generateCutsForNode(nodeIndex))
@@ -316,6 +317,25 @@ bool Builder::build()
     applyDeform();
     
     return succeed;
+}
+
+void Builder::localAverageBaseNormals()
+{
+    std::vector<QVector3D> localAverageNormals;
+    for (size_t nodeIndex = 0; nodeIndex < m_nodes.size(); ++nodeIndex) {
+        const auto &node = m_nodes[nodeIndex];
+        QVector3D sumOfNormals = node.baseNormal;
+        for (const auto &edgeIndex: node.edges) {
+            const auto &edge = m_edges[edgeIndex];
+            size_t neighborIndex = edge.neiborOf(nodeIndex);
+            const auto &neighbor = m_nodes[neighborIndex];
+            sumOfNormals += neighbor.baseNormal;
+        }
+        localAverageNormals.push_back(sumOfNormals.normalized());
+    }
+    for (size_t nodeIndex = 0; nodeIndex < m_nodes.size(); ++nodeIndex) {
+        m_nodes[nodeIndex].baseNormal = localAverageNormals[nodeIndex];
+    }
 }
 
 bool Builder::validateNormal(const QVector3D &normal)
