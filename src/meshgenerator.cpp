@@ -246,36 +246,30 @@ void MeshGenerator::cutFaceStringToCutTemplate(const QString &cutFaceString, std
                 }
             }
             if (!endpointNodes.empty()) {
-                std::sort(endpointNodes.begin(), endpointNodes.end(), [](
-                        const std::pair<QString, std::tuple<float, float, float>> &first,
-                        const std::pair<QString, std::tuple<float, float, float>> &second) {
-                    const auto &firstX = std::get<1>(first.second);
-                    const auto &secondX = std::get<1>(second.second);
-                    if (firstX < secondX) {
-                        return true;
-                    } else if (firstX > secondX) {
-                        return false;
-                    } else {
-                        const auto &firstY = std::get<2>(first.second);
-                        const auto &secondY = std::get<2>(second.second);
-                        if (firstY > secondY) {
-                            return true;
-                        } else if (firstY < secondY) {
-                            return false;
-                        } else {
-                            const auto &firstRadius = std::get<0>(first.second);
-                            const auto &secondRadius = std::get<0>(second.second);
-                            if (firstRadius < secondRadius) {
-                                return true;
-                            } else if (firstRadius > secondRadius) {
-                                return false;
-                            } else {
-                                return false;
-                            }
-                        }
+                // Calculate the center points
+                QVector2D sumOfPositions;
+                for (const auto &it: endpointNodes) {
+                    sumOfPositions += QVector2D(std::get<1>(it.second), std::get<2>(it.second));
+                }
+                QVector2D center = sumOfPositions / endpointNodes.size();
+                
+                // Calculate all the directions emit from center to the endpoint,
+                // choose the minimal angle, angle: (0, 0 -> -1, -1) to the direction
+                const QVector3D referenceDirection = QVector3D(-1, -1, 0).normalized();
+                int choosenEndpoint = -1;
+                float choosenRadian = 0;
+                for (int i = 0; i < (int)endpointNodes.size(); ++i) {
+                    const auto &it = endpointNodes[i];
+                    QVector2D direction2d = (QVector2D(std::get<1>(it.second), std::get<2>(it.second)) -
+                        center);
+                    QVector3D direction = QVector3D(direction2d.x(), direction2d.y(), 0).normalized();
+                    float radian = radianBetweenVectors(referenceDirection, direction);
+                    if (-1 == choosenEndpoint || radian < choosenRadian) {
+                        choosenRadian = radian;
+                        choosenEndpoint = i;
                     }
-                });
-                endPointNodeIdString = endpointNodes[0].first;
+                }
+                endPointNodeIdString = endpointNodes[choosenEndpoint].first;
             }
             // Loop all linked nodes
             std::vector<std::tuple<float, float, float, QString>> cutFaceNodes;
