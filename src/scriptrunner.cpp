@@ -199,7 +199,7 @@ static JSValue js_createVariable(JSContext *context, JSValueConst thisValue,
     JS_FreeCString(context, name);
     JS_FreeCString(context, defaultValue);
     
-    return JS_NewString(context, mergedValue.toUtf8().constData());
+    return JS_NewFloat64(context, mergedValue.toDouble());
     
 fail:
     JS_FreeCString(context, name);
