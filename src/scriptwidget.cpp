@@ -34,6 +34,9 @@ ScriptWidget::ScriptWidget(const Document *document, QWidget *parent) :
     
     connect(m_document, &Document::mergedVaraiblesChanged, scriptVariablesWidget, &ScriptVariablesWidget::reload);
     
+    scriptEditWidget->setStyleSheet("color: white;");
+    m_consoleEdit->setStyleSheet("color: white;");
+    
     QSplitter *splitter = new QSplitter;
     splitter->setOrientation(Qt::Vertical);
     splitter->addWidget(scriptEditWidget);

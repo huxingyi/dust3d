@@ -1,6 +1,7 @@
 #ifndef DUST3D_SCRIPT_RUNNER_H
 #define DUST3D_SCRIPT_RUNNER_H
 #include <QObject>
+#include <QUuid>
 #include "snapshot.h"
 extern "C" {
 #include "quickjs.h"
@@ -20,9 +21,10 @@ public:
 
     struct DocumentElement
     {
+        QString id = QUuid::createUuid().toString();
         DocumentElementType type = DocumentElementType::Unknown;
         bool deleted = false;
-        std::map<QString, QString> attributes;
+        std::map<QString, QString> attributes = {std::make_pair("id", id)};
     };
     
     struct DocumentComponent : DocumentElement
@@ -66,6 +68,7 @@ public:
     DocumentComponent *createComponent(DocumentComponent *parentComponent);
     DocumentNode *createNode(DocumentPart *part);
     bool setAttribute(DocumentElement *element, const QString &name, const QString &value);
+    QString attribute(DocumentElement *element, const QString &name);
     void connect(DocumentNode *firstNode, DocumentNode *secondNode);
     QString &consoleLog();
 signals:

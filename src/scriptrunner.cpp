@@ -28,6 +28,33 @@ static JSValue js_print(JSContext *context, JSValueConst thisValue,
     return JS_UNDEFINED;
 }
 
+static ScriptRunner::DocumentElement *GetElementFromArg(JSValueConst arg)
+{
+    ScriptRunner::DocumentElement *element = nullptr;
+    if (nullptr == element) {
+        ScriptRunner::DocumentNode *node = (ScriptRunner::DocumentNode *)JS_GetOpaque(arg,
+            ScriptRunner::js_nodeClassId);
+        if (nullptr != node) {
+            element = (ScriptRunner::DocumentElement *)node;
+        }
+    }
+    if (nullptr == element) {
+        ScriptRunner::DocumentPart *part = (ScriptRunner::DocumentPart *)JS_GetOpaque(arg,
+            ScriptRunner::js_partClassId);
+        if (nullptr != part) {
+            element = (ScriptRunner::DocumentElement *)part;
+        }
+    }
+    if (nullptr == element) {
+        ScriptRunner::DocumentComponent *component = (ScriptRunner::DocumentComponent *)JS_GetOpaque(arg,
+            ScriptRunner::js_componentClassId);
+        if (nullptr != component) {
+            element = (ScriptRunner::DocumentComponent *)component;
+        }
+    }
+    return element;
+}
+
 static JSValue js_setAttribute(JSContext *context, JSValueConst thisValue,
     int argc, JSValueConst *argv)
 {
@@ -36,28 +63,7 @@ static JSValue js_setAttribute(JSContext *context, JSValueConst thisValue,
         runner->consoleLog() += "Incomplete parameters, expect: element, attributeName, attributeValue\r\n";
         return JS_EXCEPTION;
     }
-    ScriptRunner::DocumentElement *element = nullptr;
-    if (nullptr == element) {
-        ScriptRunner::DocumentNode *node = (ScriptRunner::DocumentNode *)JS_GetOpaque(argv[0],
-            ScriptRunner::js_nodeClassId);
-        if (nullptr != node) {
-            element = (ScriptRunner::DocumentElement *)node;
-        }
-    }
-    if (nullptr == element) {
-        ScriptRunner::DocumentPart *part = (ScriptRunner::DocumentPart *)JS_GetOpaque(argv[0],
-            ScriptRunner::js_partClassId);
-        if (nullptr != part) {
-            element = (ScriptRunner::DocumentElement *)part;
-        }
-    }
-    if (nullptr == element) {
-        ScriptRunner::DocumentComponent *component = (ScriptRunner::DocumentComponent *)JS_GetOpaque(argv[0],
-            ScriptRunner::js_componentClassId);
-        if (nullptr != component) {
-            element = (ScriptRunner::DocumentComponent *)component;
-        }
-    }
+    ScriptRunner::DocumentElement *element = GetElementFromArg(argv[0]);
     if (nullptr == element) {
         runner->consoleLog() += "Parameters error\r\n";
         return JS_EXCEPTION;
@@ -77,6 +83,32 @@ static JSValue js_setAttribute(JSContext *context, JSValueConst thisValue,
 fail:
     JS_FreeCString(context, attributeName);
     JS_FreeCString(context, attributeValue);
+    return JS_EXCEPTION;
+}
+
+static JSValue js_attribute(JSContext *context, JSValueConst thisValue,
+    int argc, JSValueConst *argv)
+{
+    ScriptRunner *runner = (ScriptRunner *)JS_GetContextOpaque(context);
+    if (argc < 2) {
+        runner->consoleLog() += "Incomplete parameters, expect: element, attributeName\r\n";
+        return JS_EXCEPTION;
+    }
+    ScriptRunner::DocumentElement *element = GetElementFromArg(argv[0]);
+    if (nullptr == element) {
+        runner->consoleLog() += "Parameters error\r\n";
+        return JS_EXCEPTION;
+    }
+    QString attributeValue;
+    const char *attributeName = nullptr;
+    attributeName = JS_ToCString(context, argv[1]);
+    if (!attributeName)
+        goto fail;
+    attributeValue = runner->attribute(element, attributeName);
+    JS_FreeCString(context, attributeName);
+    return JS_NewString(context, attributeValue.toUtf8().constData());
+fail:
+    JS_FreeCString(context, attributeName);
     return JS_EXCEPTION;
 }
 
@@ -266,6 +298,14 @@ bool ScriptRunner::setAttribute(DocumentElement *element, const QString &name, c
     return true;
 }
 
+QString ScriptRunner::attribute(DocumentElement *element, const QString &name)
+{
+    auto findAttribute = element->attributes.find(name);
+    if (findAttribute == element->attributes.end())
+        return QString();
+    return findAttribute->second;
+}
+
 void ScriptRunner::connect(DocumentNode *firstNode, DocumentNode *secondNode)
 {
     m_edges.push_back(std::make_pair(firstNode, secondNode));
@@ -359,6 +399,9 @@ void ScriptRunner::run()
         JS_SetPropertyStr(context,
             document, "setAttribute",
             JS_NewCFunction(context, js_setAttribute, "setAttribute", 3));
+        JS_SetPropertyStr(context,
+            document, "attribute",
+            JS_NewCFunction(context, js_attribute, "attribute", 2));
         JS_SetPropertyStr(context, globalObject, "document", document);
         
         JSValue console = JS_NewObject(context);
@@ -417,7 +460,7 @@ void ScriptRunner::generateSnapshot()
     QStringList rootChildren;
     
     for (const auto &it: m_components) {
-        QString idString = QUuid::createUuid().toString();
+        QString idString = it->id;
         pointerToIdMap[it] = idString;
         auto &component = m_resultSnapshot->components[idString];
         component = it->attributes;
@@ -443,7 +486,7 @@ void ScriptRunner::generateSnapshot()
             continue;
         }
         
-        QString idString = QUuid::createUuid().toString();
+        QString idString = it->id;
         pointerToIdMap[it] = idString;
         auto &part = m_resultSnapshot->parts[idString];
         part = it->attributes;
@@ -460,7 +503,7 @@ void ScriptRunner::generateSnapshot()
             m_scriptError += "Find part pointer failed, part maybe deleted\r\n";
             continue;
         }
-        QString idString = QUuid::createUuid().toString();
+        QString idString = it->id;
         pointerToIdMap[it] = idString;
         auto &node = m_resultSnapshot->nodes[idString];
         node = it->attributes;
@@ -513,7 +556,7 @@ QString ScriptRunner::createVariable(const QString &name, const QString &default
 {
     if (nullptr != m_defaultVariables) {
         if (m_defaultVariables->find(name) != m_defaultVariables->end()) {
-            m_scriptError += "Repeated variable name found: \"" + name + "\"";
+            m_scriptError += "Repeated variable name found: \"" + name + "\"\r\n";
         }
         (*m_defaultVariables)[name]["value"] = defaultValue;
     }
