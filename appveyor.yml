@@ -65,6 +65,27 @@ after_test:
   - mkdir imageformats
   - copy %QTDIR%\plugins\imageformats\qjpeg.dll %APPVEYOR_BUILD_FOLDER%\imageformats\qjpeg.dll
   - 7z a dust3d-%TAG%-%PLATFORM%.zip -r %APPVEYOR_BUILD_FOLDER%\imageformats\
+  - mkdir test
+  - 7z e dust3d-%TAG%-%PLATFORM%.zip -o%APPVEYOR_BUILD_FOLDER%\test *.* -r
+  - cd /d %APPVEYOR_BUILD_FOLDER%\test
+  - dust3d.exe :/resources/model-addax.ds3 -o addax.obj
+  - dust3d.exe :/resources/model-addax.ds3 -o addax.fbx
+  - dust3d.exe :/resources/model-addax.ds3 -o addax.glb
+  - dust3d.exe :/resources/model-bicycle.ds3 -o bicycle.obj
+  - dust3d.exe :/resources/model-bicycle.ds3 -o bicycle.fbx
+  - dust3d.exe :/resources/model-bicycle.ds3 -o bicycle.glb
+  - dust3d.exe :/resources/model-bob.ds3 -o bob.obj
+  - dust3d.exe :/resources/model-bob.ds3 -o bob.fbx
+  - dust3d.exe :/resources/model-bob.ds3 -o bob.glb
+  - dust3d.exe :/resources/model-dog-head.ds3 -o dog-head.obj
+  - dust3d.exe :/resources/model-dog-head.ds3 -o dog-head.fbx
+  - dust3d.exe :/resources/model-dog-head.ds3 -o dog-head.glb
+  - dust3d.exe :/resources/model-meerkat.ds3 -o meerkat.obj
+  - dust3d.exe :/resources/model-meerkat.ds3 -o meerkat.fbx
+  - dust3d.exe :/resources/model-meerkat.ds3 -o meerkat.glb
+  - dust3d.exe :/resources/model-mosquito.ds3 -o mosquito.obj
+  - dust3d.exe :/resources/model-mosquito.ds3 -o mosquito.fbx
+  - dust3d.exe :/resources/model-mosquito.ds3 -o mosquito.glb
 
 artifacts:
   - path: '*.zip'
