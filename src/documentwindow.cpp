@@ -1278,84 +1278,10 @@ void DocumentWindow::saveTo(const QString &saveAsFilename)
     QApplication::restoreOverrideCursor();
 }
 
-void DocumentWindow::openExample(const QString &modelName)
+void DocumentWindow::openPathAs(const QString &path, const QString &asName)
 {
-    if (!m_documentSaved) {
-        QMessageBox::StandardButton answer = QMessageBox::question(this,
-            APP_NAME,
-            tr("Do you really want to open example and lose the unsaved changes?"),
-            QMessageBox::Yes | QMessageBox::No);
-        if (answer != QMessageBox::Yes)
-            return;
-    }
-    
     QApplication::setOverrideCursor(Qt::WaitCursor);
-    Ds3FileReader ds3Reader(":/resources/" + modelName);
-    
-    m_document->clearHistories();
-    m_document->resetScript();
-    m_document->reset();
-    m_document->saveSnapshot();
-    
-    for (int i = 0; i < ds3Reader.items().size(); ++i) {
-        Ds3ReaderItem item = ds3Reader.items().at(i);
-        if (item.type == "asset") {
-            if (item.name.startsWith("images/")) {
-                QString filename = item.name.split("/")[1];
-                QString imageIdString = filename.split(".")[0];
-                QUuid imageId = QUuid(imageIdString);
-                if (!imageId.isNull()) {
-                    QByteArray data;
-                    ds3Reader.loadItem(item.name, &data);
-                    QImage image = QImage::fromData(data, "PNG");
-                    (void)ImageForever::add(&image, imageId);
-                }
-            }
-        }
-    }
-    
-    for (int i = 0; i < ds3Reader.items().size(); ++i) {
-        Ds3ReaderItem item = ds3Reader.items().at(i);
-        if (item.type == "model") {
-            QByteArray data;
-            ds3Reader.loadItem(item.name, &data);
-            QXmlStreamReader stream(data);
-            Snapshot snapshot;
-            loadSkeletonFromXmlStream(&snapshot, stream);
-            m_document->fromSnapshot(snapshot);
-            m_document->saveSnapshot();
-        } else if (item.type == "asset") {
-            if (item.name == "canvas.png") {
-                QByteArray data;
-                ds3Reader.loadItem(item.name, &data);
-                QImage image = QImage::fromData(data, "PNG");
-                m_document->updateTurnaround(image);
-            }
-        }
-    }
-    QApplication::restoreOverrideCursor();
-
-    setCurrentFilename("");
-}
-
-void DocumentWindow::open()
-{
-    if (!m_documentSaved) {
-        QMessageBox::StandardButton answer = QMessageBox::question(this,
-            APP_NAME,
-            tr("Do you really want to open another file and lose the unsaved changes?"),
-            QMessageBox::Yes | QMessageBox::No);
-        if (answer != QMessageBox::Yes)
-            return;
-    }
-
-    QString filename = QFileDialog::getOpenFileName(this, QString(), QString(),
-        tr("Dust3D Document (*.ds3)"));
-    if (filename.isEmpty())
-        return;
-
-    QApplication::setOverrideCursor(Qt::WaitCursor);
-    Ds3FileReader ds3Reader(filename);
+    Ds3FileReader ds3Reader(path);
     
     m_document->clearHistories();
     m_document->resetScript();
@@ -1416,7 +1342,40 @@ void DocumentWindow::open()
     }
     QApplication::restoreOverrideCursor();
 
-    setCurrentFilename(filename);
+    setCurrentFilename(asName);
+}
+
+void DocumentWindow::openExample(const QString &modelName)
+{
+    if (!m_documentSaved) {
+        QMessageBox::StandardButton answer = QMessageBox::question(this,
+            APP_NAME,
+            tr("Do you really want to open example and lose the unsaved changes?"),
+            QMessageBox::Yes | QMessageBox::No);
+        if (answer != QMessageBox::Yes)
+            return;
+    }
+    
+    openPathAs(":/resources/" + modelName, "");
+}
+
+void DocumentWindow::open()
+{
+    if (!m_documentSaved) {
+        QMessageBox::StandardButton answer = QMessageBox::question(this,
+            APP_NAME,
+            tr("Do you really want to open another file and lose the unsaved changes?"),
+            QMessageBox::Yes | QMessageBox::No);
+        if (answer != QMessageBox::Yes)
+            return;
+    }
+
+    QString filename = QFileDialog::getOpenFileName(this, QString(), QString(),
+        tr("Dust3D Document (*.ds3)"));
+    if (filename.isEmpty())
+        return;
+    
+    openPathAs(filename, filename);
 }
 
 void DocumentWindow::showPreferences()
@@ -1435,6 +1394,11 @@ void DocumentWindow::exportObjResult()
     if (filename.isEmpty()) {
         return;
     }
+    exportObjToFilename(filename);
+}
+
+void DocumentWindow::exportObjToFilename(const QString &filename)
+{
     QApplication::setOverrideCursor(Qt::WaitCursor);
     MeshLoader *resultMesh = m_document->takeResultMesh();
     if (nullptr != resultMesh) {
@@ -1468,6 +1432,11 @@ void DocumentWindow::exportFbxResult()
     if (filename.isEmpty()) {
         return;
     }
+    exportFbxToFilename(filename);
+}
+
+void DocumentWindow::exportFbxToFilename(const QString &filename)
+{
     if (!m_document->isExportReady()) {
         qDebug() << "Export but document is not export ready";
         return;
@@ -1499,6 +1468,11 @@ void DocumentWindow::exportGlbResult()
     if (filename.isEmpty()) {
         return;
     }
+    exportGlbToFilename(filename);
+}
+
+void DocumentWindow::exportGlbToFilename(const QString &filename)
+{
     if (!m_document->isExportReady()) {
         qDebug() << "Export but document is not export ready";
         return;
@@ -1700,4 +1674,34 @@ void DocumentWindow::showCutFaceSettingPopup(const QPoint &globalPos, std::set<Q
     popupMenu.addAction(&action);
     
     popupMenu.exec(globalPos);
+}
+
+void DocumentWindow::setExportWaitingList(const QStringList &filenames)
+{
+    m_waitingForExportToFilenames = filenames;
+}
+
+void DocumentWindow::checkExportWaitingList()
+{
+    if (m_waitingForExportToFilenames.empty())
+        return;
+    
+    auto list = m_waitingForExportToFilenames;
+    m_waitingForExportToFilenames.clear();
+    
+    bool isSucceed = m_document->isMeshGenerationSucceed();
+    for (const auto &filename: list) {
+        if (filename.endsWith(".obj")) {
+            exportObjToFilename(filename);
+            emit waitingExportFinished(filename, isSucceed);
+        } else if (filename.endsWith(".fbx")) {
+            exportFbxToFilename(filename);
+            emit waitingExportFinished(filename, isSucceed);
+        } else if (filename.endsWith(".glb")) {
+            exportGlbToFilename(filename);
+            emit waitingExportFinished(filename, isSucceed);
+        } else {
+            emit waitingExportFinished(filename, false);
+        }
+    }
 }

@@ -8,6 +8,7 @@
 #include <QAction>
 #include <QTextBrowser>
 #include <map>
+#include <QStringList>
 #include "document.h"
 #include "modelwidget.h"
 #include "exportpreviewwidget.h"
@@ -24,6 +25,7 @@ class DocumentWindow : public QMainWindow
 signals:
     void initialized();
     void uninialized();
+    void waitingExportFinished(const QString &filename, bool succeed);
 public:
     DocumentWindow();
     ~DocumentWindow();
@@ -43,6 +45,7 @@ public slots:
     void saveTo(const QString &saveAsFilename);
     void open();
     void openExample(const QString &modelName);
+    void openPathAs(const QString &path, const QString &asName);
     void exportObjResult();
     void exportGlbResult();
     void exportFbxResult();
@@ -68,6 +71,11 @@ public slots:
     void unregisterDialog(QWidget *widget);
     void showPreferences();
     void showCutFaceSettingPopup(const QPoint &globalPos, std::set<QUuid> nodeIds);
+    void setExportWaitingList(const QStringList &filenames);
+    void checkExportWaitingList();
+    void exportObjToFilename(const QString &filename);
+    void exportFbxToFilename(const QString &filename);
+    void exportGlbToFilename(const QString &filename);
 private:
     void initLockButton(QPushButton *button);
     void setCurrentFilename(const QString &filename);
@@ -81,6 +89,7 @@ private:
     std::vector<QWidget *> m_dialogs;
     bool m_isLastMeshGenerationSucceed;
     quint64 m_currentUpdatedMeshId;
+    QStringList m_waitingForExportToFilenames;
 private:
     QString m_currentFilename;
     

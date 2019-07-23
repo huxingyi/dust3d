@@ -412,7 +412,7 @@ void ScriptRunner::run()
         
         JS_FreeValue(context, globalObject);
         
-        JSValue object = JS_Eval(context, buffer.constData(), buffer.size(), "",
+        JSValue object = JS_Eval(context, buffer.constData(), buffer.size(), "<input>",
             JS_EVAL_TYPE_GLOBAL);
         if (JS_IsException(object)) {
             JSValue exceptionValue = JS_GetException(context);
