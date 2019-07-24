@@ -57,6 +57,7 @@ public slots:
     void gotoHomepage();
     void viewSource();
     void about();
+    void checkForUpdates();
     void reportIssues();
     void seeAcknowlegements();
     void seeContributors();
@@ -167,6 +168,7 @@ private:
     QAction *m_gotoHomepageAction;
     QAction *m_viewSourceAction;
     QAction *m_aboutAction;
+    QAction *m_checkForUpdatesAction;
     QAction *m_reportIssuesAction;
     QAction *m_seeContributorsAction;
     QAction *m_seeAcknowlegementsAction;

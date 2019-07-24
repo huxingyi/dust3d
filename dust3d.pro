@@ -67,6 +67,18 @@ HOMEPAGE_URL = "https://dust3d.org/"
 REPOSITORY_URL = "https://github.com/huxingyi/dust3d"
 ISSUES_URL = "https://github.com/huxingyi/dust3d/issues"
 REFERENCE_GUIDE_URL = "http://docs.dust3d.org"
+UPDATES_CHECKER_URL = "https://dust3d.org/dust3d-updateinfo.xml"
+
+PLATFORM = "Unknown"
+macx {
+	PLATFORM = "MacOS"
+}
+win32 {
+	PLATFORM = "Win32"
+}
+unix:!macx {
+	PLATFORM = "Linux"
+}
 
 QMAKE_TARGET_COMPANY = Dust3D
 QMAKE_TARGET_PRODUCT = Dust3D
@@ -81,6 +93,8 @@ DEFINES += "PROJECT_DEFINED_APP_HOMEPAGE_URL=\"\\\"$$HOMEPAGE_URL\\\"\""
 DEFINES += "PROJECT_DEFINED_APP_REPOSITORY_URL=\"\\\"$$REPOSITORY_URL\\\"\""
 DEFINES += "PROJECT_DEFINED_APP_ISSUES_URL=\"\\\"$$ISSUES_URL\\\"\""
 DEFINES += "PROJECT_DEFINED_APP_REFERENCE_GUIDE_URL=\"\\\"$$REFERENCE_GUIDE_URL\\\"\""
+DEFINES += "PROJECT_DEFINED_APP_UPDATES_CHECKER_URL=\"\\\"$$UPDATES_CHECKER_URL\\\"\""
+DEFINES += "PROJECT_DEFINED_APP_PLATFORM=\"\\\"$$PLATFORM\\\"\""
 
 QMAKE_CXXFLAGS_RELEASE -= -O
 QMAKE_CXXFLAGS_RELEASE -= -O1
@@ -383,6 +397,12 @@ HEADERS += src/scriptrunner.h
 
 SOURCES += src/variablesxml.cpp
 HEADERS += src/variablesxml.h
+
+SOURCES += src/updateschecker.cpp
+HEADERS += src/updateschecker.h
+
+SOURCES += src/updatescheckwidget.cpp
+HEADERS += src/updatescheckwidget.h
 
 SOURCES += src/main.cpp
 

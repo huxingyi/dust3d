@@ -41,6 +41,7 @@
 #include "cutfacelistwidget.h"
 #include "scriptwidget.h"
 #include "variablesxml.h"
+#include "updatescheckwidget.h"
 
 int DocumentWindow::m_modelRenderWidgetInitialX = 16;
 int DocumentWindow::m_modelRenderWidgetInitialY = 16;
@@ -54,6 +55,7 @@ std::map<DocumentWindow *, QUuid> g_documentWindows;
 QTextBrowser *g_acknowlegementsWidget = nullptr;
 AboutWidget *g_aboutWidget = nullptr;
 QTextBrowser *g_contributorsWidget = nullptr;
+UpdatesCheckWidget *g_updatesCheckWidget = nullptr;
 
 void outputMessage(QtMsgType type, const QMessageLogContext &context, const QString &msg)
 {
@@ -112,6 +114,17 @@ void DocumentWindow::showAbout()
     g_aboutWidget->show();
     g_aboutWidget->activateWindow();
     g_aboutWidget->raise();
+}
+
+void DocumentWindow::checkForUpdates()
+{
+    if (!g_updatesCheckWidget) {
+        g_updatesCheckWidget = new UpdatesCheckWidget;
+    }
+    g_updatesCheckWidget->check();
+    g_updatesCheckWidget->show();
+    g_updatesCheckWidget->activateWindow();
+    g_updatesCheckWidget->raise();
 }
 
 DocumentWindow::DocumentWindow() :
@@ -706,6 +719,10 @@ DocumentWindow::DocumentWindow() :
     m_viewSourceAction = new QAction(tr("Source Code"), this);
     connect(m_viewSourceAction, &QAction::triggered, this, &DocumentWindow::viewSource);
     m_helpMenu->addAction(m_viewSourceAction);
+    
+    m_checkForUpdatesAction = new QAction(tr("Check for Updates..."), this);
+    connect(m_checkForUpdatesAction, &QAction::triggered, this, &DocumentWindow::checkForUpdates);
+    m_helpMenu->addAction(m_checkForUpdatesAction);
 
     m_helpMenu->addSeparator();
 

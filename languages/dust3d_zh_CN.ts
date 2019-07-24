@@ -358,6 +358,10 @@ Tips:
         <source>Script</source>
         <translation>脚本</translation>
     </message>
+    <message>
+        <source>Check for Updates...</source>
+        <translation>检查新版本...</translation>
+    </message>
 </context>
 <context>
     <name>ExportPreviewWidget</name>
@@ -1098,6 +1102,36 @@ Tips:
     <message>
         <source>Clear Cut Face</source>
         <translation>清除切面</translation>
+    </message>
+</context>
+<context>
+    <name>UpdatesCheckWidget</name>
+    <message>
+        <source>Check for Updates</source>
+        <translation>检查新版本</translation>
+    </message>
+    <message>
+        <source>Checking for updates...</source>
+        <translation>正在检查新版本...</translation>
+    </message>
+    <message>
+        <source>View</source>
+        <translation>查看</translation>
+    </message>
+</context>
+<context>
+    <name>UpdatesChecker</name>
+    <message>
+        <source>Fetch update info failed, please retry later</source>
+        <translation>获取更新信息失败，请稍后重试</translation>
+    </message>
+    <message>
+        <source>%1 %2 is currently the newest version available</source>
+        <translation>%1 %2 已经是当前最新可用版本</translation>
+    </message>
+    <message>
+        <source>An update is available: %1 %2</source>
+        <translation>有新版本可用：%1 %2</translation>
     </message>
 </context>
 </TS>
