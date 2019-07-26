@@ -158,6 +158,7 @@ void ScriptVariablesWidget::reload()
             updatePickButtonColor(QColor(value));
 
             connect(colorEraser, &QPushButton::clicked, [=]() {
+                updatePickButtonColor(defaultValue);
                 emit updateVariableValue(name, defaultValue);
             });
             

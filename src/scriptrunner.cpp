@@ -335,7 +335,7 @@ static JSValue js_createCheckInput(JSContext *context, JSValueConst thisValue,
     JS_FreeCString(context, name);
     JS_FreeCString(context, value);
     
-    return JS_NewInt64(context, mergedValue);
+    return JS_NewBool(context, mergedValue);
     
 fail:
     JS_FreeCString(context, name);
