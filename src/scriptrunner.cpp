@@ -1,6 +1,7 @@
 #include <QDebug>
 #include <QElapsedTimer>
 #include <QUuid>
+#include <QFile>
 #include "scriptrunner.h"
 #include "util.h"
 
@@ -580,7 +581,24 @@ void ScriptRunner::run()
         JS_SetPropertyStr(context,
             console, "log",
             JS_NewCFunction(context, js_print, "log", 1));
+        JS_SetPropertyStr(context,
+            console, "warn",
+            JS_NewCFunction(context, js_print, "warn", 1));
+        JS_SetPropertyStr(context,
+            console, "error",
+            JS_NewCFunction(context, js_print, "error", 1));
         JS_SetPropertyStr(context, globalObject, "console", console);
+        
+        QFile file(":/thirdparty/three.js/dust3d.three.js");
+        if (file.open(QIODevice::ReadOnly)) {
+            QByteArray fileContent = file.readAll();
+            JSValue three = JS_NewObject(context);
+            JS_SetPropertyStr(context, globalObject, "THREE", three);
+            JSValue object = JS_Eval(context, (char *)fileContent.constData(), fileContent.size(), "<thirdparty/three.js/dust3d.three.js>",
+                  JS_EVAL_TYPE_GLOBAL);
+            JS_FreeValue(context, object);
+            file.close();
+        }
         
         JS_FreeValue(context, globalObject);
         

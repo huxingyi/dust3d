@@ -25,6 +25,7 @@
     <file>shaders/default.core.frag</file>
     <file>shaders/pbr-qt.frag</file>
     <file>shaders/pbr-joey.frag</file>
+    <file>thirdparty/three.js/dust3d.three.js</file>
     <file>languages/dust3d_zh_CN.qm</file>
     <file>ACKNOWLEDGEMENTS.html</file>
     <file>AUTHORS</file>
