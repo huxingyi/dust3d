@@ -42,6 +42,7 @@ ScriptWidget::ScriptWidget(const Document *document, QWidget *parent) :
     splitter->addWidget(scriptEditWidget);
     splitter->addWidget(m_consoleEdit);
     splitter->addWidget(scriptVariablesWidget);
+    splitter->setStretchFactor(2, 1);
     
     QVBoxLayout *mainLayout = new QVBoxLayout;
     mainLayout->addWidget(splitter);

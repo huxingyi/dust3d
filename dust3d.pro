@@ -404,6 +404,9 @@ HEADERS += src/updateschecker.h
 SOURCES += src/updatescheckwidget.cpp
 HEADERS += src/updatescheckwidget.h
 
+SOURCES += src/intnumberwidget.cpp
+HEADERS += src/intnumberwidget.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h

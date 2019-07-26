@@ -2,6 +2,8 @@
 #define DUST3D_SCRIPT_RUNNER_H
 #include <QObject>
 #include <QUuid>
+#include <QColor>
+#include <QStringList>
 #include "snapshot.h"
 extern "C" {
 #include "quickjs.h"
@@ -63,7 +65,6 @@ public:
     std::map<QString, std::map<QString, QString>> *takeDefaultVariables();
     const QString &scriptError();
     static void mergeVaraibles(std::map<QString, std::map<QString, QString>> *target, const std::map<QString, std::map<QString, QString>> &source);
-    QString createVariable(const QString &name, const QString &defaultValue);
     DocumentPart *createPart(DocumentComponent *component);
     DocumentComponent *createComponent(DocumentComponent *parentComponent);
     DocumentNode *createNode(DocumentPart *part);
@@ -71,6 +72,12 @@ public:
     QString attribute(DocumentElement *element, const QString &name);
     void connect(DocumentNode *firstNode, DocumentNode *secondNode);
     QString &consoleLog();
+    QString createInput(const QString &name, const std::map<QString, QString> &attributes);
+    float createFloatInput(const QString &name, float defaultValue, float minValue, float maxValue);
+    int createIntInput(const QString &name, int defaultValue, int minValue, int maxValue);
+    QColor createColorInput(const QString &name, const QColor &defaultValue);
+    bool createCheckInput(const QString &name, bool checked);
+    int createSelectInput(const QString &name, int defaultSelectedIndex, const QStringList &options);
 signals:
     void finished();
 public slots:

@@ -894,4 +894,8 @@ int JS_SetModuleExportList(JSContext *ctx, JSModuleDef *m,
 #undef js_unlikely
 #undef js_force_inline
 
+// https://www.freelists.org/post/quickjs-devel/how-to-iterator-over-a-JSValue-object,1
+int js_get_fast_array(JSContext *ctx, JSValueConst obj,
+                              JSValue **arrpp, uint32_t *countp);
+
 #endif /* QUICKJS_H */

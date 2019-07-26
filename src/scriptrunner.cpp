@@ -2,6 +2,7 @@
 #include <QElapsedTimer>
 #include <QUuid>
 #include "scriptrunner.h"
+#include "util.h"
 
 JSClassID ScriptRunner::js_partClassId = 0;
 JSClassID ScriptRunner::js_componentClassId = 0;
@@ -206,16 +207,82 @@ static JSValue js_createNode(JSContext *context, JSValueConst thisValue,
     return node;
 }
 
-static JSValue js_createVariable(JSContext *context, JSValueConst thisValue,
+static JSValue js_createFloatInput(JSContext *context, JSValueConst thisValue,
+    int argc, JSValueConst *argv)
+{
+    ScriptRunner *runner = (ScriptRunner *)JS_GetContextOpaque(context);
+    if (argc < 4) {
+        runner->consoleLog() += "Incomplete parameters, expect: name, defaultValue, minValue, maxValue\r\n";
+        return JS_EXCEPTION;
+    }
+    
+    double mergedValue = 0.0;
+    
+    const char *name = nullptr;
+    double defaultValue = 0.0;
+    double minValue = 0.0;
+    double maxValue = 0.0;
+    
+    name = JS_ToCString(context, argv[0]);
+    if (!name)
+        goto fail;
+    JS_ToFloat64(context, &defaultValue, argv[1]);
+    JS_ToFloat64(context, &minValue, argv[2]);
+    JS_ToFloat64(context, &maxValue, argv[3]);
+    
+    mergedValue = runner->createFloatInput(name, defaultValue, minValue, maxValue);
+    JS_FreeCString(context, name);
+    
+    return JS_NewFloat64(context, mergedValue);
+    
+fail:
+    JS_FreeCString(context, name);
+    return JS_EXCEPTION;
+}
+
+static JSValue js_createIntInput(JSContext *context, JSValueConst thisValue,
+    int argc, JSValueConst *argv)
+{
+    ScriptRunner *runner = (ScriptRunner *)JS_GetContextOpaque(context);
+    if (argc < 4) {
+        runner->consoleLog() += "Incomplete parameters, expect: name, defaultValue, minValue, maxValue\r\n";
+        return JS_EXCEPTION;
+    }
+    
+    int64_t mergedValue = 0.0;
+    
+    const char *name = nullptr;
+    int64_t defaultValue = 0;
+    int64_t minValue = 0;
+    int64_t maxValue = 0;
+    
+    name = JS_ToCString(context, argv[0]);
+    if (!name)
+        goto fail;
+    JS_ToInt64(context, &defaultValue, argv[1]);
+    JS_ToInt64(context, &minValue, argv[2]);
+    JS_ToInt64(context, &maxValue, argv[3]);
+    
+    mergedValue = runner->createIntInput(name, defaultValue, minValue, maxValue);
+    JS_FreeCString(context, name);
+    
+    return JS_NewInt64(context, mergedValue);
+    
+fail:
+    JS_FreeCString(context, name);
+    return JS_EXCEPTION;
+}
+
+static JSValue js_createColorInput(JSContext *context, JSValueConst thisValue,
     int argc, JSValueConst *argv)
 {
     ScriptRunner *runner = (ScriptRunner *)JS_GetContextOpaque(context);
     if (argc < 2) {
-        runner->consoleLog() += "Incomplete parameters, expect: name, value\r\n";
+        runner->consoleLog() += "Incomplete parameters, expect: name, defaultValue\r\n";
         return JS_EXCEPTION;
     }
     
-    QString mergedValue;
+    QColor mergeValue;
     
     const char *name = nullptr;
     const char *defaultValue = nullptr;
@@ -227,15 +294,108 @@ static JSValue js_createVariable(JSContext *context, JSValueConst thisValue,
     if (!defaultValue)
         goto fail;
     
-    mergedValue = runner->createVariable(name, defaultValue);
+    mergeValue = runner->createColorInput(name, defaultValue);
+    
     JS_FreeCString(context, name);
     JS_FreeCString(context, defaultValue);
     
-    return JS_NewFloat64(context, mergedValue.toDouble());
+    return JS_NewString(context, mergeValue.name().toUtf8().constData());
     
 fail:
     JS_FreeCString(context, name);
     JS_FreeCString(context, defaultValue);
+    return JS_EXCEPTION;
+}
+
+static JSValue js_createCheckInput(JSContext *context, JSValueConst thisValue,
+    int argc, JSValueConst *argv)
+{
+    ScriptRunner *runner = (ScriptRunner *)JS_GetContextOpaque(context);
+    if (argc < 2) {
+        runner->consoleLog() += "Incomplete parameters, expect: name, defaultValue\r\n";
+        return JS_EXCEPTION;
+    }
+    
+    bool mergedValue = false;
+    
+    const char *name = nullptr;
+    const char *value = nullptr;
+    bool defaultValue = false;
+    
+    name = JS_ToCString(context, argv[0]);
+    if (!name)
+        goto fail;
+    value = JS_ToCString(context, argv[1]);
+    if (!value)
+        goto fail;
+    
+    defaultValue = isTrueValueString(value);
+    mergedValue = runner->createCheckInput(name, defaultValue);
+    JS_FreeCString(context, name);
+    JS_FreeCString(context, value);
+    
+    return JS_NewInt64(context, mergedValue);
+    
+fail:
+    JS_FreeCString(context, name);
+    JS_FreeCString(context, value);
+    return JS_EXCEPTION;
+}
+
+static JSValue js_createSelectInput(JSContext *context, JSValueConst thisValue,
+    int argc, JSValueConst *argv)
+{
+    ScriptRunner *runner = (ScriptRunner *)JS_GetContextOpaque(context);
+    if (argc < 3) {
+        runner->consoleLog() += "Incomplete parameters, expect: name, defaultValue, options\r\n";
+        return JS_EXCEPTION;
+    }
+    
+    const char *name = nullptr;
+    int32_t defaultValue = 0;
+    int32_t mergedValue = 0;
+    JSValue *arrayItems = nullptr;
+    uint32_t arrayLength = 0;
+    QStringList options;
+    
+    name = JS_ToCString(context, argv[0]);
+    if (!name)
+        goto fail;
+    
+    JS_ToInt32(context, &defaultValue, argv[1]);
+    
+    if (true != JS_IsArray(context, argv[2])) {
+        runner->consoleLog() += "Expect array as the third parameter\r\n";
+        goto fail;
+    }
+    
+    if (!js_get_fast_array(context, argv[2], &arrayItems, &arrayLength)) {
+        runner->consoleLog() += "Read third parameter as array failed\r\n";
+        goto fail;
+    }
+    
+    for (uint32_t i = 0; i < arrayLength; ++i) {
+        const char *optionValue = JS_ToCString(context, arrayItems[i]);
+        if (nullptr != optionValue) {
+            options.append(optionValue);
+            JS_FreeCString(context, optionValue);
+        } else {
+            options.append("");
+        }
+    }
+    
+    mergedValue = runner->createSelectInput(name, defaultValue, options);
+    if (mergedValue < 0)
+        mergedValue = 0;
+    else if (mergedValue >= options.size())
+        mergedValue = options.size() - 1;
+    
+    JS_FreeCString(context, name);
+
+    return JS_NewInt32(context, mergedValue);
+    
+fail:
+    JS_FreeCString(context, name);
     return JS_EXCEPTION;
 }
 
@@ -375,7 +535,7 @@ void ScriptRunner::run()
     JS_SetContextOpaque(context, this);
     
     if (nullptr != m_script &&
-            !m_script->isEmpty()) {
+            !m_script->trimmed().isEmpty()) {
         auto buffer = m_script->toUtf8();
         
         JSValue globalObject = JS_GetGlobalObject(context);
@@ -391,8 +551,20 @@ void ScriptRunner::run()
             document, "createNode",
             JS_NewCFunction(context, js_createNode, "createNode", 1));
         JS_SetPropertyStr(context,
-            document, "createVariable",
-            JS_NewCFunction(context, js_createVariable, "createVariable", 2));
+            document, "createFloatInput",
+            JS_NewCFunction(context, js_createFloatInput, "createFloatInput", 4));
+        JS_SetPropertyStr(context,
+            document, "createIntInput",
+            JS_NewCFunction(context, js_createIntInput, "createIntInput", 4));
+        JS_SetPropertyStr(context,
+            document, "createColorInput",
+            JS_NewCFunction(context, js_createColorInput, "createColorInput", 2));
+        JS_SetPropertyStr(context,
+            document, "createCheckInput",
+            JS_NewCFunction(context, js_createCheckInput, "createCheckInput", 2));
+        JS_SetPropertyStr(context,
+            document, "createSelectInput",
+            JS_NewCFunction(context, js_createSelectInput, "createSelectInput", 3));
         JS_SetPropertyStr(context,
             document, "connect",
             JS_NewCFunction(context, js_connect, "connect", 2));
@@ -552,13 +724,13 @@ void ScriptRunner::generateSnapshot()
     }
 }
 
-QString ScriptRunner::createVariable(const QString &name, const QString &defaultValue)
+QString ScriptRunner::createInput(const QString &name, const std::map<QString, QString> &attributes)
 {
     if (nullptr != m_defaultVariables) {
         if (m_defaultVariables->find(name) != m_defaultVariables->end()) {
             m_scriptError += "Repeated variable name found: \"" + name + "\"\r\n";
         }
-        (*m_defaultVariables)[name]["value"] = defaultValue;
+        (*m_defaultVariables)[name] = attributes;
     }
     if (nullptr != m_variables) {
         auto findVariable = m_variables->find(name);
@@ -568,7 +740,73 @@ QString ScriptRunner::createVariable(const QString &name, const QString &default
                 return findValue->second;
         }
     }
-    return defaultValue;
+    auto findValue = attributes.find("value");
+    if (findValue != attributes.end())
+        return findValue->second;
+    return QString();
+}
+
+float ScriptRunner::createFloatInput(const QString &name, float defaultValue, float minValue, float maxValue)
+{
+    std::map<QString, QString> attributes;
+    attributes["input"] = "Float";
+    attributes["value"] = QString::number(defaultValue);
+    attributes["defaultValue"] = attributes["value"];
+    attributes["minValue"] = QString::number(minValue);
+    attributes["maxValue"] = QString::number(maxValue);
+    auto inputValue = createInput(name, attributes);
+    return inputValue.toFloat();
+}
+
+int ScriptRunner::createIntInput(const QString &name, int defaultValue, int minValue, int maxValue)
+{
+    std::map<QString, QString> attributes;
+    attributes["input"] = "Int";
+    attributes["value"] = QString::number(defaultValue);
+    attributes["defaultValue"] = attributes["value"];
+    attributes["minValue"] = QString::number(minValue);
+    attributes["maxValue"] = QString::number(maxValue);
+    auto inputValue = createInput(name, attributes);
+    return inputValue.toInt();
+}
+
+QColor ScriptRunner::createColorInput(const QString &name, const QColor &defaultValue)
+{
+    std::map<QString, QString> attributes;
+    attributes["input"] = "Color";
+    attributes["value"] = defaultValue.name();
+    attributes["defaultValue"] = attributes["value"];
+    auto inputValue = createInput(name, attributes);
+    return QColor(inputValue);
+}
+
+bool ScriptRunner::createCheckInput(const QString &name, bool checked)
+{
+    std::map<QString, QString> attributes;
+    attributes["input"] = "Check";
+    attributes["value"] = checked ? "true" : "false";
+    attributes["defaultValue"] = attributes["value"];
+    auto inputValue = createInput(name, attributes);
+    return isTrueValueString(inputValue);
+}
+
+int ScriptRunner::createSelectInput(const QString &name, int defaultSelectedIndex, const QStringList &options)
+{
+    std::map<QString, QString> attributes;
+    attributes["input"] = "Select";
+    attributes["value"] = QString::number(defaultSelectedIndex);
+    attributes["defaultValue"] = attributes["value"];
+    attributes["length"] = QString::number(options.size());
+    for (int i = 0; i < options.size(); ++i) {
+        attributes["option" + QString::number(i)] = options[i];
+    }
+    auto inputValue = createInput(name, attributes);
+    int selectedIndex = inputValue.toInt();
+    if (selectedIndex >= options.size()) {
+        m_scriptError += QString("Selected index of select input \"%1\" is been reset to 0 because of out of range\r\n").arg(name);
+        selectedIndex = 0;
+    }
+    return selectedIndex;
 }
 
 void ScriptRunner::process()

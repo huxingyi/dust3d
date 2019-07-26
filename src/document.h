@@ -658,7 +658,6 @@ public slots:
     void applyPreferenceFlatShadingChange();
     void initScript(const QString &script);
     void updateScript(const QString &script);
-    void updateDefaultVariables(const std::map<QString, std::map<QString, QString>> &defaultVariables);
     void runScript();
     void scriptResultReady();
     void updateVariable(const QString &name, const std::map<QString, QString> &value);
@@ -680,6 +679,7 @@ private:
     void removeRigResults();
     void updateLinkedPart(QUuid oldPartId, QUuid newPartId);
     //void addToolToMesh(MeshLoader *mesh);
+    bool updateDefaultVariables(const std::map<QString, std::map<QString, QString>> &defaultVariables);
 private: // need initialize
     bool m_isResultMeshObsolete;
     MeshGenerator *m_meshGenerator;

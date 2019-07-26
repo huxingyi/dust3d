@@ -32,7 +32,7 @@ bool ChartPacker::tryPack(float textureSize)
     std::vector<maxRectsSize> rects;
     int width = textureSize * m_floatToIntFactor;
     int height = width;
-    if (m_tryNum > 3) {
+    if (m_tryNum > 50) {
         qDebug() << "Try the " << m_tryNum << "nth times pack with factor:" << m_textureSizeFactor << " size:" << width << "x" << height;
     }
     for (const auto &chartSize: m_chartSizes) {

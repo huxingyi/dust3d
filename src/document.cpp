@@ -3346,16 +3346,20 @@ void Document::updateScript(const QString &script)
 
 void Document::updateVariable(const QString &name, const std::map<QString, QString> &value)
 {
+    bool needRunScript = false;
     auto variable = m_cachedVariables.find(name);
     if (variable == m_cachedVariables.end()) {
-        qDebug() << "Update a nonexist variable:" << name << "value:" << value;
+        m_cachedVariables[name] = value;
+        needRunScript = true;
+    } else if (variable->second != value) {
+        variable->second = value;
+    } else {
         return;
     }
-    if (variable->second == value)
-        return;
-    variable->second = value;
     m_mergedVariables[name] = value;
     emit mergedVaraiblesChanged();
+    if (needRunScript)
+        runScript();
 }
 
 void Document::updateVariableValue(const QString &name, const QString &value)
@@ -3368,22 +3372,36 @@ void Document::updateVariableValue(const QString &name, const QString &value)
     auto &variableValue = variable->second["value"];
     if (variableValue == value)
         return;
-    qDebug() << "Update variable:" << name << "from:" << variableValue << "to:" << value;
     variableValue = value;
     m_mergedVariables[name] = variable->second;
     runScript();
 }
 
-void Document::updateDefaultVariables(const std::map<QString, std::map<QString, QString>> &defaultVariables)
+bool Document::updateDefaultVariables(const std::map<QString, std::map<QString, QString>> &defaultVariables)
 {
     bool updated = false;
     for (const auto &it: defaultVariables) {
-        if (m_mergedVariables.find(it.first) != m_mergedVariables.end())
-            continue;
+        auto findMergedVariable = m_mergedVariables.find(it.first);
+        if (findMergedVariable != m_mergedVariables.end()) {
+            bool hasChangedAttribute = false;
+            for (const auto &attribute: it.second) {
+                if (attribute.first == "value")
+                    continue;
+                const auto &findMatch = findMergedVariable->second.find(attribute.first);
+                if (findMatch != findMergedVariable->second.end()) {
+                    if (findMatch->second == attribute.second)
+                        continue;
+                }
+                hasChangedAttribute = true;
+            }
+            if (!hasChangedAttribute)
+                continue;
+        }
         updated = true;
         auto findCached = m_cachedVariables.find(it.first);
         if (findCached != m_cachedVariables.end()) {
-            m_mergedVariables[it.first] = findCached->second;
+            m_mergedVariables[it.first] = it.second;
+            m_mergedVariables[it.first]["value"] = valueOfKeyInMapOrEmpty(findCached->second, "value");
         } else {
             m_mergedVariables[it.first] = it.second;
             m_cachedVariables[it.first] = it.second;
@@ -3402,6 +3420,7 @@ void Document::updateDefaultVariables(const std::map<QString, std::map<QString, 
     if (updated) {
         emit mergedVaraiblesChanged();
     }
+    return updated;
 }
 
 void Document::runScript()
@@ -3420,7 +3439,9 @@ void Document::runScript()
     m_scriptRunner = new ScriptRunner();
     m_scriptRunner->moveToThread(thread);
     m_scriptRunner->setScript(new QString(m_script));
-    m_scriptRunner->setVariables(new std::map<QString, std::map<QString, QString>>(m_mergedVariables));
+    m_scriptRunner->setVariables(new std::map<QString, std::map<QString, QString>>(
+        m_mergedVariables.empty() ? m_cachedVariables : m_mergedVariables
+        ));
     connect(thread, &QThread::started, m_scriptRunner, &ScriptRunner::process);
     connect(m_scriptRunner, &ScriptRunner::finished, this, &Document::scriptResultReady);
     connect(m_scriptRunner, &ScriptRunner::finished, thread, &QThread::quit);
@@ -3435,6 +3456,7 @@ void Document::scriptResultReady()
     std::map<QString, std::map<QString, QString>> *defaultVariables = m_scriptRunner->takeDefaultVariables();
     bool errorChanged = false;
     bool consoleLogChanged = false;
+    bool mergedVariablesChanged = false;
     
     const QString &scriptError = m_scriptRunner->scriptError();
     if (m_scriptError != scriptError) {
@@ -3455,7 +3477,7 @@ void Document::scriptResultReady()
     }
     
     if (nullptr != defaultVariables) {
-        updateDefaultVariables(*defaultVariables);
+        mergedVariablesChanged = updateDefaultVariables(*defaultVariables);
         delete defaultVariables;
     }
 
@@ -3470,7 +3492,7 @@ void Document::scriptResultReady()
     
     qDebug() << "Script run done";
 
-    if (m_isScriptResultObsolete) {
+    if (m_isScriptResultObsolete || mergedVariablesChanged) {
         runScript();
     }
 }

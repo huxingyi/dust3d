@@ -13632,7 +13632,7 @@ static JSValue JS_GetIterator2(JSContext *ctx, JSValueConst obj,
     return enum_obj;
 }
 
-static JSValue JS_GetIterator(JSContext *ctx, JSValueConst obj, BOOL is_async)
+JSValue JS_GetIterator(JSContext *ctx, JSValueConst obj, BOOL is_async)
 {
     JSValue method, ret, sync_iter;
 
@@ -13707,7 +13707,7 @@ static JSValue JS_IteratorNext2(JSContext *ctx, JSValueConst enum_obj,
     return JS_EXCEPTION;
 }
 
-static JSValue JS_IteratorNext(JSContext *ctx, JSValueConst enum_obj,
+JSValue JS_IteratorNext(JSContext *ctx, JSValueConst enum_obj,
                                JSValueConst method,
                                int argc, JSValueConst *argv, BOOL *pdone)
 {
@@ -13898,7 +13898,7 @@ static JSValue js_create_array_iterator(JSContext *ctx, JSValueConst this_val,
                                         int argc, JSValueConst *argv, int magic);
 
 /* Access an Array's internal JSValue array if available */
-static BOOL js_get_fast_array(JSContext *ctx, JSValueConst obj,
+int js_get_fast_array(JSContext *ctx, JSValueConst obj,
                               JSValue **arrpp, uint32_t *countp)
 {
     /* Try and handle fast arrays explicitly */
