@@ -150,6 +150,7 @@ private:
     void applyDeform();
     QVector3D calculateDeformPosition(const QVector3D &vertexPosition, const QVector3D &ray, const QVector3D &deformNormal, float deformFactor);
     bool swallowEdgeForNode(size_t nodeIndex, size_t edgeOrder);
+    static QVector3D calculateBaseNormalFromTraverseDirection(const QVector3D &traverseDirection);
 };
     
 }

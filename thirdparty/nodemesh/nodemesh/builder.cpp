@@ -121,6 +121,33 @@ void Builder::setNodeOriginInfo(size_t nodeIndex, int nearOriginNodeIndex, int f
     node.farOriginNodeIndex = farOriginNodeIndex;
 }
 
+QVector3D Builder::calculateBaseNormalFromTraverseDirection(const QVector3D &traverseDirection)
+{
+    const std::vector<QVector3D> axisList = {
+        QVector3D {1, 0, 0},
+        QVector3D {0, 1, 0},
+        QVector3D {0, 0, 1},
+    };
+    float maxDot = -1;
+    size_t nearAxisIndex = 0;
+    bool reversed = false;
+    for (size_t i = 0; i < axisList.size(); ++i) {
+        const auto axis = axisList[i];
+        auto dot = QVector3D::dotProduct(axis, traverseDirection);
+        auto positiveDot = abs(dot);
+        if (positiveDot >= maxDot) {
+            reversed = dot < 0;
+            maxDot = positiveDot;
+            nearAxisIndex = i;
+        }
+    }
+    // axisList[nearAxisIndex] align with the traverse direction,
+    // So we pick the next axis to do cross product with traverse direction
+    const auto& choosenAxis = axisList[(nearAxisIndex + 1) % 3];
+    auto baseNormal = QVector3D::crossProduct(traverseDirection, choosenAxis).normalized();
+    return reversed ? -baseNormal : baseNormal;
+}
+
 void Builder::resolveBaseNormalRecursively(size_t nodeIndex)
 {
     auto &node = m_nodes[nodeIndex];
@@ -135,18 +162,8 @@ void Builder::resolveBaseNormalRecursively(size_t nodeIndex)
         if (searchResult.second) {
             resolveBaseNormalForLeavesRecursively(nodeIndex, searchResult.first);
         } else {
-            const std::vector<QVector3D> axisList = {
-                QVector3D {0, 0, 1},
-                QVector3D {0, 1, 0},
-                QVector3D {1, 0, 0}
-            };
-            for (const auto &axis: axisList) {
-                if (validateNormal(QVector3D::crossProduct(axis, node.traverseDirection).normalized())) {
-                    resolveBaseNormalForLeavesRecursively(nodeIndex, axis);
-                    return;
-                }
-            }
-            resolveBaseNormalForLeavesRecursively(nodeIndex, axisList[0]);
+            resolveBaseNormalForLeavesRecursively(nodeIndex,
+                calculateBaseNormalFromTraverseDirection(node.traverseDirection));
         }
     }
 }
@@ -746,11 +763,7 @@ QVector3D Builder::revisedBaseNormalAcordingToCutNormal(const QVector3D &baseNor
         baseNormal : -baseNormal;
     // 0.966: < 15 degress
     if (QVector3D::dotProduct(cutNormal, orientedBaseNormal) > 0.966) {
-        if (QVector3D::dotProduct(cutNormal, QVector3D(1, 0, 0)) > 0.966) {
-            orientedBaseNormal = QVector3D(0, 1, 0);
-        } else {
-            orientedBaseNormal = QVector3D(1, 0, 0);
-        }
+        orientedBaseNormal = calculateBaseNormalFromTraverseDirection(cutNormal);
     }
     return orientedBaseNormal.normalized();
 }
