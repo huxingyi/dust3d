@@ -389,6 +389,7 @@ DocumentWindow::DocumentWindow() :
         "Dog head",
         "Meerkat",
         "Mosquito",
+        "Procedural Tree",
     };
     for (const auto &model: exampleModels) {
         QAction *openModelAction = new QAction(model, this);
