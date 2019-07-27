@@ -3,7 +3,9 @@ Script Panel
 
 .. image:: https://raw.githubusercontent.com/huxingyi/dust3d/master/docs/images/dust3d-ui-script.png
 
-Dust3D supports JavaScript language to generate the source document, which then been fed into the mesh generator to construct the final model.
+Dust3D supports JavaScript language to generate the source document, which then been fed into the mesh generator to construct the final model. Please check `Dust3D Script Reference`_ for details.
+
+.. _Dust3D Script Reference: http://docs.dust3d.org/en/latest/script_reference.html
 
 1. Rendered Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
