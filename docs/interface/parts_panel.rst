@@ -75,7 +75,9 @@ Right click on Parts List Panel to trigger Context Menu.
 
 * Base
 
-Mesh layout and thickness adjustment are depend on base plane calculation. This release introduce the constrain settings: Dynamic, Average, Side Plane, Front Plane, and Top Plane.
+Mesh layout and thickness adjustment are depend on base plane calculation. There are five type of options: Dynamic, Average, Side Plane, Front Plane, and Top Plane, see the demo below.
+
+.. image:: https://raw.githubusercontent.com/huxingyi/dust3d/master/docs/images/dust3d-ui-base-plane-demo.gif
 
 * Target
 
@@ -93,14 +95,10 @@ Check mini button **Visible/(H)idden**.
 
 Check mini button **_(L)ock/Unlock**.
 
-* Invert Part / Cancel Inverse
-
-Inverting a part means subtract this part from other parts which sit before this part.
-
 * Move Up / Move Down / Move To Top / Move To Bottom
 
 The process of mesh generation is mainly combining all the parts in listed order, so move up and down may affect the generated result. The order is especially important for inverse part been placed, if the inverse part sit in the first place of the list, the inverse operation would never happen, because nothing to invert before it.
 
 * New Group / Move To
 
-Parts can be grouped as component, component can contains sub components. During the mesh generating progress, component's mesh is been cached, so make multiple level of components can reduce the total mesh generating time.
+Parts can be grouped as component, component can contain sub components. During the mesh generating progress, component's mesh is been cached, so make multiple level of components can reduce the total mesh generating time.
