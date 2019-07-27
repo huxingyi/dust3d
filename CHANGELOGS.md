@@ -1,3 +1,14 @@
+Changes between 1.0.0-beta.21 and 1.0.0-beta.22:
+--------------------------------------------------
+- Imporve intermediate nodes generation  
+- Add JavaScript language support for procedural nodes generation  
+- Optimize cut face enpoints sort algorithm  
+- Local average base normal to keep mesh flow  
+- Support Open and Export from command line  
+- Add check for updates to menu  
+- Fix inconsistent base normal when shape is too straight  
+- Add procedural tree example model  
+
 Changes between 1.0.0-beta.20 and 1.0.0-beta.21:
 --------------------------------------------------
 - Fix build for Raspberry Pi 3 Model B+  
