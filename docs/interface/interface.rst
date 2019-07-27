@@ -16,9 +16,10 @@ You can have multiple windows, the document title shows what version of Dust3D y
 3. Dock Panel
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Dock panel contains multiple tabs, including `Parts Tree`_, Material List, Rig Weight View, Pose List, Motion List, and Script Editor.
+Dock panel contains multiple tabs, including `Parts Tree`_, Material List, Rig Weight View, Pose List, Motion List, and `Script Panel`_.
 
 .. _Parts Tree: http://docs.dust3d.org/en/latest/interface/parts_panel.html
+.. _Script Panel: http://docs.dust3d.org/en/latest/interface/script_panel.html
 
 4. Rendered Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
