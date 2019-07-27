@@ -16,6 +16,7 @@ public:
     enum class DocumentElementType
     {
         Unknown = 0,
+        Canvas,
         Component,
         Part,
         Node
@@ -56,6 +57,14 @@ public:
         DocumentPart *part = nullptr;
     };
     
+    struct DocumentCanvas : DocumentElement
+    {
+        DocumentCanvas()
+        {
+            type = DocumentElementType::Canvas;
+        }
+    };
+    
     ScriptRunner();
     ~ScriptRunner();
     void run();
@@ -93,8 +102,10 @@ private:
     std::vector<std::pair<DocumentNode *, DocumentNode *>> m_edges;
     QString m_scriptError;
     QString m_consoleLog;
+    DocumentCanvas m_canvas;
     void generateSnapshot();
 public:
+    static JSClassID js_canvasClassId;
     static JSClassID js_partClassId;
     static JSClassID js_componentClassId;
     static JSClassID js_nodeClassId;

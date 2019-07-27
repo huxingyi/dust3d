@@ -5,6 +5,7 @@
 #include "scriptrunner.h"
 #include "util.h"
 
+JSClassID ScriptRunner::js_canvasClassId = 0;
 JSClassID ScriptRunner::js_partClassId = 0;
 JSClassID ScriptRunner::js_componentClassId = 0;
 JSClassID ScriptRunner::js_nodeClassId = 0;
@@ -51,7 +52,14 @@ static ScriptRunner::DocumentElement *GetElementFromArg(JSValueConst arg)
         ScriptRunner::DocumentComponent *component = (ScriptRunner::DocumentComponent *)JS_GetOpaque(arg,
             ScriptRunner::js_componentClassId);
         if (nullptr != component) {
-            element = (ScriptRunner::DocumentComponent *)component;
+            element = (ScriptRunner::DocumentElement *)component;
+        }
+    }
+    if (nullptr == element) {
+        ScriptRunner::DocumentCanvas *canvas = (ScriptRunner::DocumentCanvas *)JS_GetOpaque(arg,
+            ScriptRunner::js_canvasClassId);
+        if (nullptr != canvas) {
+            element = (ScriptRunner::DocumentElement *)canvas;
         }
     }
     return element;
@@ -520,6 +528,7 @@ void ScriptRunner::run()
     countTimeConsumed.start();
     
     // Warning: Not thread safe, but we have only one script instance running, so it doesn't matter
+    js_canvasClassId = JS_NewClassID(&js_canvasClassId);
     js_partClassId = JS_NewClassID(&js_partClassId);
     js_componentClassId = JS_NewClassID(&js_componentClassId);
     js_nodeClassId = JS_NewClassID(&js_nodeClassId);
@@ -542,39 +551,47 @@ void ScriptRunner::run()
         JSValue globalObject = JS_GetGlobalObject(context);
         
         JSValue document = JS_NewObject(context);
-        JS_SetPropertyStr(context,
-            document, "createComponent",
-            JS_NewCFunction(context, js_createComponent, "createComponent", 1));
-        JS_SetPropertyStr(context,
-            document, "createPart",
-            JS_NewCFunction(context, js_createPart, "createPart", 1));
-        JS_SetPropertyStr(context,
-            document, "createNode",
-            JS_NewCFunction(context, js_createNode, "createNode", 1));
-        JS_SetPropertyStr(context,
-            document, "createFloatInput",
-            JS_NewCFunction(context, js_createFloatInput, "createFloatInput", 4));
-        JS_SetPropertyStr(context,
-            document, "createIntInput",
-            JS_NewCFunction(context, js_createIntInput, "createIntInput", 4));
-        JS_SetPropertyStr(context,
-            document, "createColorInput",
-            JS_NewCFunction(context, js_createColorInput, "createColorInput", 2));
-        JS_SetPropertyStr(context,
-            document, "createCheckInput",
-            JS_NewCFunction(context, js_createCheckInput, "createCheckInput", 2));
-        JS_SetPropertyStr(context,
-            document, "createSelectInput",
-            JS_NewCFunction(context, js_createSelectInput, "createSelectInput", 3));
-        JS_SetPropertyStr(context,
-            document, "connect",
-            JS_NewCFunction(context, js_connect, "connect", 2));
-        JS_SetPropertyStr(context,
-            document, "setAttribute",
-            JS_NewCFunction(context, js_setAttribute, "setAttribute", 3));
-        JS_SetPropertyStr(context,
-            document, "attribute",
-            JS_NewCFunction(context, js_attribute, "attribute", 2));
+        
+            JS_SetPropertyStr(context,
+                document, "createComponent",
+                JS_NewCFunction(context, js_createComponent, "createComponent", 1));
+            JS_SetPropertyStr(context,
+                document, "createPart",
+                JS_NewCFunction(context, js_createPart, "createPart", 1));
+            JS_SetPropertyStr(context,
+                document, "createNode",
+                JS_NewCFunction(context, js_createNode, "createNode", 1));
+            JS_SetPropertyStr(context,
+                document, "createFloatInput",
+                JS_NewCFunction(context, js_createFloatInput, "createFloatInput", 4));
+            JS_SetPropertyStr(context,
+                document, "createIntInput",
+                JS_NewCFunction(context, js_createIntInput, "createIntInput", 4));
+            JS_SetPropertyStr(context,
+                document, "createColorInput",
+                JS_NewCFunction(context, js_createColorInput, "createColorInput", 2));
+            JS_SetPropertyStr(context,
+                document, "createCheckInput",
+                JS_NewCFunction(context, js_createCheckInput, "createCheckInput", 2));
+            JS_SetPropertyStr(context,
+                document, "createSelectInput",
+                JS_NewCFunction(context, js_createSelectInput, "createSelectInput", 3));
+            JS_SetPropertyStr(context,
+                document, "connect",
+                JS_NewCFunction(context, js_connect, "connect", 2));
+            JS_SetPropertyStr(context,
+                document, "setAttribute",
+                JS_NewCFunction(context, js_setAttribute, "setAttribute", 3));
+            JS_SetPropertyStr(context,
+                document, "attribute",
+                JS_NewCFunction(context, js_attribute, "attribute", 2));
+        
+            JSValue canvas = JS_NewObjectClass(context, ScriptRunner::js_canvasClassId);
+            JS_SetOpaque(canvas, &m_canvas);
+            JS_SetPropertyStr(context,
+                document, "canvas",
+                canvas);
+        
         JS_SetPropertyStr(context, globalObject, "document", document);
         
         JSValue console = JS_NewObject(context);
@@ -648,6 +665,8 @@ void ScriptRunner::generateSnapshot()
     std::map<void *, QStringList> componentChildrensMap;
     
     QStringList rootChildren;
+    
+    m_resultSnapshot->canvas = m_canvas.attributes;
     
     for (const auto &it: m_components) {
         QString idString = it->id;
