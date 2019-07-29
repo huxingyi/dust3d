@@ -2,6 +2,7 @@
 #include "skeletonside.h"
 
 IMPL_SkeletonSideToDispName
+IMPL_SkeletonSideToString
 
 SkeletonSide SkeletonSideFromBoneName(const QString &boneName)
 {

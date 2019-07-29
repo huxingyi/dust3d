@@ -24,6 +24,21 @@ QString SkeletonSideToDispName(SkeletonSide side)                   \
             return "";                                              \
     }                                                               \
 }
+QString SkeletonSideToString(SkeletonSide side);
+#define IMPL_SkeletonSideToString                                   \
+QString SkeletonSideToString(SkeletonSide side)                     \
+{                                                                   \
+    switch (side) {                                                 \
+        case SkeletonSide::Left:                                    \
+            return "Left";                                          \
+        case SkeletonSide::Right:                                   \
+            return "Right";                                         \
+        case SkeletonSide::None:                                    \
+            return "";                                              \
+        default:                                                    \
+            return "";                                              \
+    }                                                               \
+}
 SkeletonSide SkeletonSideFromBoneName(const QString &boneName);
 
 #endif

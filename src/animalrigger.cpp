@@ -639,5 +639,5 @@ QString AnimalRigger::namingConnector(const QString &spineName, const QString &c
 
 QString AnimalRigger::namingChainPrefix(const QString &baseName, SkeletonSide side, int orderInSide, int totalInSide)
 {
-    return SkeletonSideToDispName(side) + baseName + (totalInSide == 1 ? QString() : QString::number(orderInSide));
+    return SkeletonSideToString(side) + baseName + (totalInSide == 1 ? QString() : QString::number(orderInSide));
 }
