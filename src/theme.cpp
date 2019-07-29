@@ -61,7 +61,7 @@ void Theme::initAwsomeBaseSizes()
     Theme::sidebarPreferredWidth = 200;
     Theme::normalButtonSize = Theme::toolIconSize * 2;
     
-    qDebug() << "Theme::toolIconFontSize:" << Theme::toolIconFontSize;
+    //qDebug() << "Theme::toolIconFontSize:" << Theme::toolIconFontSize;
 }
 
 QtAwesome *Theme::awesome()

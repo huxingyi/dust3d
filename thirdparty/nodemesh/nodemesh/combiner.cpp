@@ -99,9 +99,9 @@ Combiner::Mesh *Combiner::combine(const Mesh &firstMesh, const Mesh &secondMesh,
             float y = (float)CGAL::to_double(point.y());
             float z = (float)CGAL::to_double(point.z());
             auto insertResult = verticesSourceMap.insert({{x, y, z}, {source, vertexIndex}});
-            if (!insertResult.second) {
-                qDebug() << "Position key conflict:" << QVector3D {x, y, z} << "with:" << insertResult.first->first.position();
-            }
+            //if (!insertResult.second) {
+            //    qDebug() << "Position key conflict:" << QVector3D {x, y, z} << "with:" << insertResult.first->first.position();
+            //}
             ++vertexIndex;
         }
     };
