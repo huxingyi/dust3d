@@ -1054,7 +1054,8 @@ void DocumentWindow::closeEvent(QCloseEvent *event)
     QMessageBox::StandardButton answer = QMessageBox::question(this,
         APP_NAME,
         tr("Do you really want to close while there are unsaved changes?"),
-        QMessageBox::Yes | QMessageBox::No);
+        QMessageBox::Yes | QMessageBox::No,
+        QMessageBox::No);
     if (answer == QMessageBox::Yes)
         event->accept();
     else
@@ -1094,7 +1095,8 @@ void DocumentWindow::newDocument()
         QMessageBox::StandardButton answer = QMessageBox::question(this,
             APP_NAME,
             tr("Do you really want to create new document and lose the unsaved changes?"),
-            QMessageBox::Yes | QMessageBox::No);
+            QMessageBox::Yes | QMessageBox::No,
+            QMessageBox::No);
         if (answer != QMessageBox::Yes)
             return;
     }
@@ -1369,7 +1371,8 @@ void DocumentWindow::openExample(const QString &modelName)
         QMessageBox::StandardButton answer = QMessageBox::question(this,
             APP_NAME,
             tr("Do you really want to open example and lose the unsaved changes?"),
-            QMessageBox::Yes | QMessageBox::No);
+            QMessageBox::Yes | QMessageBox::No,
+            QMessageBox::No);
         if (answer != QMessageBox::Yes)
             return;
     }
@@ -1383,7 +1386,8 @@ void DocumentWindow::open()
         QMessageBox::StandardButton answer = QMessageBox::question(this,
             APP_NAME,
             tr("Do you really want to open another file and lose the unsaved changes?"),
-            QMessageBox::Yes | QMessageBox::No);
+            QMessageBox::Yes | QMessageBox::No,
+            QMessageBox::No);
         if (answer != QMessageBox::Yes)
             return;
     }

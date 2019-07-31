@@ -102,7 +102,7 @@ void Theme::initAwesomeButton(QPushButton *button)
 {
     button->setFont(Theme::awesome()->font(Theme::toolIconFontSize));
     button->setFixedSize(Theme::toolIconSize, Theme::toolIconSize);
-    button->setStyleSheet("QPushButton {color: #f7d9c8}");
+    button->setStyleSheet("QPushButton {color: " + Theme::white.name() + "}");
     button->setFocusPolicy(Qt::NoFocus);
 }
 
@@ -110,14 +110,14 @@ void Theme::initAwesomeSmallButton(QPushButton *button)
 {
     button->setFont(Theme::awesome()->font(Theme::toolIconFontSize * 0.7));
     button->setFixedSize(Theme::toolIconSize * 0.75, Theme::toolIconSize * 0.75);
-    button->setStyleSheet("QPushButton {color: #f7d9c8}");
+    button->setStyleSheet("QPushButton {color: " + Theme::white.name() + "}");
     button->setFocusPolicy(Qt::NoFocus);
 }
 
 void Theme::initAwesomeLabel(QLabel *label)
 {
     label->setFont(Theme::awesome()->font(Theme::toolIconFontSize));
-    label->setStyleSheet("QLabel {color: #f7d9c8}");
+    label->setStyleSheet("QLabel {color: " + Theme::white.name() + "}");
 }
 
 void Theme::initAwesomeMiniButton(QPushButton *button)
@@ -156,7 +156,7 @@ void Theme::updateAwesomeMiniButton(QPushButton *button, QChar icon, bool highli
 void Theme::initAwesomeToolButtonWithoutFont(QPushButton *button)
 {
     button->setFixedSize(Theme::toolIconSize / 2, Theme::toolIconSize / 2);
-    button->setStyleSheet("QPushButton {color: #f7d9c8}");
+    button->setStyleSheet("QPushButton {color: " + Theme::white.name() + "}");
     button->setFocusPolicy(Qt::NoFocus);
 }
 
@@ -173,7 +173,7 @@ void Theme::initToolButton(QPushButton *button)
     font.setBold(false);
     button->setFont(font);
     button->setFixedHeight(Theme::toolIconSize * 0.75);
-    button->setStyleSheet("QPushButton {color: #f7d9c8}");
+    button->setStyleSheet("QPushButton {color: " + Theme::white.name() + "}");
     button->setFocusPolicy(Qt::NoFocus);
 }
 

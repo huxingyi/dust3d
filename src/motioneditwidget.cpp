@@ -159,7 +159,8 @@ void MotionEditWidget::closeEvent(QCloseEvent *event)
         QMessageBox::StandardButton answer = QMessageBox::question(this,
             APP_NAME,
             tr("Do you really want to close while there are unsaved changes?"),
-            QMessageBox::Yes | QMessageBox::No);
+            QMessageBox::Yes | QMessageBox::No,
+            QMessageBox::No);
         if (answer != QMessageBox::Yes) {
             event->ignore();
             return;
