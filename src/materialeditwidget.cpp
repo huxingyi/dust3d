@@ -16,12 +16,10 @@
 #include "imageforever.h"
 #include "util.h"
 
-QPushButton *MaterialEditWidget::createMapButton()
+ImagePreviewWidget *MaterialEditWidget::createMapButton()
 {
-    QPushButton *mapButton = new QPushButton;
+    ImagePreviewWidget *mapButton = new ImagePreviewWidget;
     mapButton->setFixedSize(Theme::partPreviewImageSize * 2, Theme::partPreviewImageSize * 2);
-    mapButton->setFlat(true);
-    mapButton->setAutoFillBackground(true);
     updateMapButtonBackground(mapButton, nullptr);
     return mapButton;
 }
@@ -64,8 +62,8 @@ MaterialEditWidget::MaterialEditWidget(const Document *document, QWidget *parent
         item.forWhat = (TextureType)i;
         m_layers[0].maps.push_back(item);
         
-        QPushButton *imageButton = createMapButton();
-        connect(imageButton, &QPushButton::clicked, [=]() {
+        ImagePreviewWidget *imageButton = createMapButton();
+        connect(imageButton, &ImagePreviewWidget::clicked, [=]() {
             QImage *image = pickImage();
             if (nullptr == image)
                 return;
@@ -149,14 +147,12 @@ MaterialEditWidget::MaterialEditWidget(const Document *document, QWidget *parent
     updateTitle();
 }
 
-void MaterialEditWidget::updateMapButtonBackground(QPushButton *button, const QImage *image)
+void MaterialEditWidget::updateMapButtonBackground(ImagePreviewWidget *button, const QImage *image)
 {
-    QPalette palette;
-    if (nullptr != image)
-        palette.setBrush(button->backgroundRole(), QBrush(QPixmap::fromImage(*image)));
+    if (nullptr == image)
+        button->updateImage(QImage());
     else
-        palette.setBrush(button->backgroundRole(), QBrush(Qt::black));
-    button->setPalette(palette);
+        button->updateImage(*image);
 }
 
 void MaterialEditWidget::reject()

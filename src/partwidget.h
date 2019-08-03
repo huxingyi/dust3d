@@ -18,6 +18,8 @@ signals:
     void setPartZmirrorState(QUuid partId, bool mirrored);
     void setPartDeformThickness(QUuid partId, float thickness);
     void setPartDeformWidth(QUuid partId, float width);
+    void setPartDeformMapImageId(QUuid partId, QUuid imageId);
+    void setPartDeformMapScale(QUuid partId, float scale);
     void setPartRoundState(QUuid partId, bool rounded);
     void setPartChamferState(QUuid partId, bool chamfered);
     void setPartColorState(QUuid partId, bool hasColor, QColor color);

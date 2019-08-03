@@ -917,6 +917,8 @@ DocumentWindow::DocumentWindow() :
     connect(m_document, &Document::partXmirrorStateChanged, partTreeWidget, &PartTreeWidget::partXmirrorStateChanged);
     connect(m_document, &Document::partDeformThicknessChanged, partTreeWidget, &PartTreeWidget::partDeformChanged);
     connect(m_document, &Document::partDeformWidthChanged, partTreeWidget, &PartTreeWidget::partDeformChanged);
+    connect(m_document, &Document::partDeformMapImageIdChanged, partTreeWidget, &PartTreeWidget::partDeformChanged);
+    connect(m_document, &Document::partDeformMapScaleChanged, partTreeWidget, &PartTreeWidget::partDeformChanged);
     connect(m_document, &Document::partRoundStateChanged, partTreeWidget, &PartTreeWidget::partRoundStateChanged);
     connect(m_document, &Document::partChamferStateChanged, partTreeWidget, &PartTreeWidget::partChamferStateChanged);
     connect(m_document, &Document::partColorStateChanged, partTreeWidget, &PartTreeWidget::partColorStateChanged);
@@ -1263,6 +1265,7 @@ void DocumentWindow::saveTo(const QString &saveAsFilename)
     }
     
     std::set<QUuid> imageIds;
+    
     for (const auto &material: snapshot.materials) {
         for (auto &layer: material.second) {
             for (auto &mapItem: layer.second) {
@@ -1273,6 +1276,13 @@ void DocumentWindow::saveTo(const QString &saveAsFilename)
                 imageIds.insert(imageId);
             }
         }
+    }
+    for (const auto &part: snapshot.parts) {
+        auto findImageIdString = part.second.find("deformMapImageId");
+        if (findImageIdString == part.second.end())
+            continue;
+        QUuid imageId = QUuid(findImageIdString->second);
+        imageIds.insert(imageId);
     }
     
     for (auto &pose: snapshot.poses) {

@@ -407,6 +407,9 @@ HEADERS += src/updatescheckwidget.h
 SOURCES += src/intnumberwidget.cpp
 HEADERS += src/intnumberwidget.h
 
+SOURCES += src/imagepreviewwidget.cpp
+HEADERS += src/imagepreviewwidget.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h

@@ -6,6 +6,7 @@
 #include <map>
 #include <set>
 #include <QMatrix4x4>
+#include <QImage>
 
 namespace nodemesh 
 {
@@ -28,6 +29,8 @@ public:
     void setNodeOriginInfo(size_t nodeIndex, int nearOriginNodeIndex, int farOriginNodeIndex);
     void setDeformThickness(float thickness);
     void setDeformWidth(float width);
+    void setDeformMapImage(const QImage *image);
+    void setDeformMapScale(float scale);
     void enableBaseNormalOnX(bool enabled);
     void enableBaseNormalOnY(bool enabled);
     void enableBaseNormalOnZ(bool enabled);
@@ -101,11 +104,18 @@ private:
         }
     };
     
+    struct GeneratedVertexInfo
+    {
+        size_t orderInCut;
+        size_t cutSize;
+    };
+    
     std::vector<Node> m_nodes;
     std::vector<Edge> m_edges;
     std::vector<QVector3D> m_generatedVertices;
     std::vector<QVector3D> m_generatedVerticesCutDirects;
     std::vector<size_t> m_generatedVerticesSourceNodeIndices;
+    std::vector<GeneratedVertexInfo> m_generatedVerticesInfos;
     std::vector<std::vector<size_t>> m_generatedFaces;
     std::vector<size_t> m_sortedNodeIndices;
     std::map<size_t, size_t> m_weldMap;
@@ -118,6 +128,8 @@ private:
     bool m_baseNormalOnY = true;
     bool m_baseNormalOnZ = true;
     bool m_baseNormalAverageEnabled = false;
+    const QImage *m_deformMapImage = nullptr;
+    float m_deformMapScale = 0.0;
     
     void sortNodeIndices();
     void prepareNode(size_t nodeIndex);
@@ -143,8 +155,13 @@ private:
         QVector3D &cutNormal,
         const QVector3D &traverseDirection,
         std::vector<QVector3D> &resultCut,
-        CutFaceTransform *cutFaceTransform=nullptr);
-    void insertCutVertices(const std::vector<QVector3D> &cut, std::vector<size_t> &vertices, size_t nodeIndex, const QVector3D &cutDirect);
+        CutFaceTransform *cutFaceTransform=nullptr,
+        bool *cutFlipped=nullptr);
+    void insertCutVertices(const std::vector<QVector3D> &cut,
+        std::vector<size_t> &vertices,
+        size_t nodeIndex,
+        const QVector3D &cutDirect,
+        bool cutFlipped);
     void stitchEdgeCuts();
     void applyWeld();
     void applyDeform();

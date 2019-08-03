@@ -7,6 +7,7 @@
 #include "document.h"
 #include "modelwidget.h"
 #include "materialpreviewsgenerator.h"
+#include "imagepreviewwidget.h"
 
 enum class PopupWidgetType
 {
@@ -40,8 +41,8 @@ protected:
     void closeEvent(QCloseEvent *event) override;
     void reject() override;
 private:
-    void updateMapButtonBackground(QPushButton *button, const QImage *image);
-    QPushButton *createMapButton();
+    void updateMapButtonBackground(ImagePreviewWidget *button, const QImage *image);
+    ImagePreviewWidget *createMapButton();
     QImage *pickImage();
     const Document *m_document = nullptr;
     MaterialPreviewsGenerator *m_materialPreviewsGenerator = nullptr;
@@ -52,7 +53,7 @@ private:
     bool m_unsaved = false;
     QLineEdit *m_nameEdit = nullptr;
     std::vector<MaterialLayer> m_layers;
-    QPushButton *m_textureMapButtons[(int)TextureType::Count - 1] = {nullptr};
+    ImagePreviewWidget *m_textureMapButtons[(int)TextureType::Count - 1] = {nullptr};
 };
 
 #endif

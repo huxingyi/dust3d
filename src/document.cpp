@@ -1045,6 +1045,10 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
                 part["deformThickness"] = QString::number(partIt.second.deformThickness);
             if (partIt.second.deformWidthAdjusted())
                 part["deformWidth"] = QString::number(partIt.second.deformWidth);
+            if (!partIt.second.deformMapImageId.isNull())
+                part["deformMapImageId"] = partIt.second.deformMapImageId.toString();
+            if (partIt.second.deformMapScaleAdjusted())
+                part["deformMapScale"] = QString::number(partIt.second.deformMapScale);
             if (!partIt.second.name.isEmpty())
                 part["name"] = partIt.second.name;
             if (partIt.second.materialAdjusted())
@@ -1337,6 +1341,12 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
         const auto &deformWidthIt = partKv.second.find("deformWidth");
         if (deformWidthIt != partKv.second.end())
             part.setDeformWidth(deformWidthIt->second.toFloat());
+        const auto &deformMapImageIdIt = partKv.second.find("deformMapImageId");
+        if (deformMapImageIdIt != partKv.second.end())
+            part.deformMapImageId = QUuid(deformMapImageIdIt->second);
+        const auto &deformMapScaleIt = partKv.second.find("deformMapScale");
+        if (deformMapScaleIt != partKv.second.end())
+            part.deformMapScale = deformMapScaleIt->second.toFloat();
         const auto &materialIdIt = partKv.second.find("materialId");
         if (materialIdIt != partKv.second.end())
             part.materialId = oldNewIdMap[QUuid(materialIdIt->second)];
@@ -2481,6 +2491,36 @@ void Document::setPartDeformWidth(QUuid partId, float width)
     part->second.setDeformWidth(width);
     part->second.dirty = true;
     emit partDeformWidthChanged(partId);
+    emit skeletonChanged();
+}
+
+void Document::setPartDeformMapImageId(QUuid partId, QUuid imageId)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    if (part->second.deformMapImageId == imageId)
+        return;
+    part->second.deformMapImageId = imageId;
+    part->second.dirty = true;
+    emit partDeformMapImageIdChanged(partId);
+    emit skeletonChanged();
+}
+
+void Document::setPartDeformMapScale(QUuid partId, float scale)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    if (qFuzzyCompare(part->second.deformMapScale, scale))
+        return;
+    part->second.deformMapScale = scale;
+    part->second.dirty = true;
+    emit partDeformMapScaleChanged(partId);
     emit skeletonChanged();
 }
 

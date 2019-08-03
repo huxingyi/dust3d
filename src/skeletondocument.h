@@ -134,6 +134,8 @@ public:
     QUuid materialId;
     PartTarget target;
     float colorSolubility;
+    float deformMapScale;
+    QUuid deformMapImageId;
     SkeletonPart(const QUuid &withId=QUuid()) :
         visible(true),
         locked(false),
@@ -152,7 +154,8 @@ public:
         cutRotation(0.0),
         cutFace(CutFace::Quad),
         target(PartTarget::Model),
-        colorSolubility(0.0)
+        colorSolubility(0.0),
+        deformMapScale(0.5)
     {
         id = withId.isNull() ? QUuid::createUuid() : withId;
     }
@@ -205,6 +208,14 @@ public:
     bool deformAdjusted() const
     {
         return deformThicknessAdjusted() || deformWidthAdjusted();
+    }
+    bool deformMapScaleAdjusted() const
+    {
+        return fabs(deformMapScale - 0.5) >= 0.01;
+    }
+    bool deformMapAdjusted() const
+    {
+        return deformMapScaleAdjusted() || !deformMapImageId.isNull();
     }
     bool colorSolubilityAdjusted() const
     {

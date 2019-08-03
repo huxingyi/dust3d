@@ -735,6 +735,14 @@ Tips:
         <source>Width</source>
         <translation>宽度</translation>
     </message>
+    <message>
+        <source>Image Files (*.png *.jpg *.bmp)</source>
+        <translation>图片文件(*.png *.jpg *.bmp)</translation>
+    </message>
+    <message>
+        <source>Map Scale</source>
+        <translation>映像缩放比</translation>
+    </message>
 </context>
 <context>
     <name>PoseEditWidget</name>

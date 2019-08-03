@@ -467,14 +467,27 @@ std::pair<QVector3D, bool> Builder::calculateBaseNormal(const std::vector<QVecto
     }
 }
 
-void Builder::insertCutVertices(const std::vector<QVector3D> &cut, std::vector<size_t> &vertices, size_t nodeIndex, const QVector3D &cutDirect)
+void Builder::insertCutVertices(const std::vector<QVector3D> &cut,
+    std::vector<size_t> &vertices,
+    size_t nodeIndex,
+    const QVector3D &cutDirect,
+    bool cutFlipped)
 {
+    size_t indexInCut = 0;
     for (const auto &position: cut) {
         size_t vertexIndex = m_generatedVertices.size();
         m_generatedVertices.push_back(position);
         m_generatedVerticesSourceNodeIndices.push_back(nodeIndex);
         m_generatedVerticesCutDirects.push_back(cutDirect);
+        
+        GeneratedVertexInfo info;
+        info.orderInCut = cutFlipped ? ((cut.size() - indexInCut) % cut.size()) : indexInCut;
+        info.cutSize = cut.size();
+        m_generatedVerticesInfos.push_back(info);
+        
         vertices.push_back(vertexIndex);
+        
+        ++indexInCut;
     }
 }
 
@@ -501,10 +514,11 @@ bool Builder::generateCutsForNode(size_t nodeIndex)
     if (1 == neighborsCount) {
         QVector3D cutNormal = node.cutNormal;
         std::vector<QVector3D> cut;
-        makeCut(node.position, node.radius, node.cutTemplate, node.cutRotation, node.baseNormal, cutNormal, node.traverseDirection, cut, &node.cutFaceTransform);
+        bool cutFlipped = false;
+        makeCut(node.position, node.radius, node.cutTemplate, node.cutRotation, node.baseNormal, cutNormal, node.traverseDirection, cut, &node.cutFaceTransform, &cutFlipped);
         node.hasAdjustableCutFace = true;
         std::vector<size_t> vertices;
-        insertCutVertices(cut, vertices, nodeIndex, cutNormal);
+        insertCutVertices(cut, vertices, nodeIndex, cutNormal, cutFlipped);
         m_generatedFaces.push_back(vertices);
         m_edges[node.edges[0]].cuts.push_back({vertices, -cutNormal});
     } else if (2 == neighborsCount) {
@@ -537,10 +551,11 @@ bool Builder::generateCutsForNode(size_t nodeIndex)
             }
         }
         std::vector<QVector3D> cut;
-        makeCut(node.position, node.radius, node.cutTemplate, node.cutRotation, node.baseNormal, cutNormal, node.traverseDirection, cut, &node.cutFaceTransform);
+        bool cutFlipped = false;
+        makeCut(node.position, node.radius, node.cutTemplate, node.cutRotation, node.baseNormal, cutNormal, node.traverseDirection, cut, &node.cutFaceTransform, &cutFlipped);
         node.hasAdjustableCutFace = true;
         std::vector<size_t> vertices;
-        insertCutVertices(cut, vertices, nodeIndex, cutNormal);
+        insertCutVertices(cut, vertices, nodeIndex, cutNormal, cutFlipped);
         std::vector<size_t> verticesReversed;
         verticesReversed = vertices;
         std::reverse(verticesReversed.begin(), verticesReversed.end());
@@ -571,6 +586,7 @@ bool Builder::tryWrapMultipleBranchesForNode(size_t nodeIndex, std::vector<float
     auto backupFaces = m_generatedFaces;
     auto backupSourceIndices = m_generatedVerticesSourceNodeIndices;
     auto backupVerticesCutDirects = m_generatedVerticesCutDirects;
+    auto backupVerticesInfos = m_generatedVerticesInfos;
     
     auto &node = m_nodes[nodeIndex];
     std::vector<std::pair<std::vector<size_t>, QVector3D>> cutsForWrapping;
@@ -609,9 +625,10 @@ bool Builder::tryWrapMultipleBranchesForNode(size_t nodeIndex, std::vector<float
                 continue;
             }
         }
-        makeCut(node.position + cutNormal * finalDistance, radius, node.cutTemplate, node.cutRotation, node.baseNormal, cutNormal, neighbor.traverseDirection, cut);
+        bool cutFlipped = false;
+        makeCut(node.position + cutNormal * finalDistance, radius, node.cutTemplate, node.cutRotation, node.baseNormal, cutNormal, neighbor.traverseDirection, cut, nullptr, &cutFlipped);
         std::vector<size_t> vertices;
-        insertCutVertices(cut, vertices, nodeIndex, cutNormal);
+        insertCutVertices(cut, vertices, nodeIndex, cutNormal, cutFlipped);
         cutsForEdges.push_back({vertices, -cutNormal});
         std::vector<size_t> verticesReversed;
         verticesReversed = vertices;
@@ -623,6 +640,7 @@ bool Builder::tryWrapMultipleBranchesForNode(size_t nodeIndex, std::vector<float
         m_generatedFaces = backupFaces;
         m_generatedVerticesSourceNodeIndices = backupSourceIndices;
         m_generatedVerticesCutDirects = backupVerticesCutDirects;
+        m_generatedVerticesInfos = backupVerticesInfos;
         return false;
     }
     Stitcher stitcher;
@@ -676,6 +694,7 @@ bool Builder::tryWrapMultipleBranchesForNode(size_t nodeIndex, std::vector<float
         m_generatedFaces = backupFaces;
         m_generatedVerticesSourceNodeIndices = backupSourceIndices;
         m_generatedVerticesCutDirects = backupVerticesCutDirects;
+        m_generatedVerticesInfos = backupVerticesInfos;
         return false;
     }
     
@@ -776,7 +795,8 @@ void Builder::makeCut(const QVector3D &position,
         QVector3D &cutNormal,
         const QVector3D &traverseDirection,
         std::vector<QVector3D> &resultCut,
-        CutFaceTransform *cutFaceTransform)
+        CutFaceTransform *cutFaceTransform,
+        bool *cutFlipped)
 {
     auto finalCutTemplate = cutTemplate;
     float degree = 0;
@@ -789,6 +809,11 @@ void Builder::makeCut(const QVector3D &position,
         std::rotate(finalCutTemplate.begin(), finalCutTemplate.begin() + finalCutTemplate.size() - 1, finalCutTemplate.end());
         if (nullptr != cutFaceTransform)
             cutFaceTransform->reverse = true;
+        if (nullptr != cutFlipped)
+            *cutFlipped = true;
+    } else {
+        if (nullptr != cutFlipped)
+            *cutFlipped = false;
     }
     QVector3D u = QVector3D::crossProduct(cutNormal, baseNormal).normalized();
     QVector3D v = QVector3D::crossProduct(u, cutNormal).normalized();
@@ -842,6 +867,7 @@ void Builder::applyWeld()
     std::vector<size_t> newSourceIndices;
     std::vector<std::vector<size_t>> newFaces;
     std::vector<QVector3D> newVerticesCutDirects;
+    std::vector<GeneratedVertexInfo> newVerticesInfos;
     std::map<size_t, size_t> oldVertexToNewMap;
     for (const auto &face: m_generatedFaces) {
         std::vector<size_t> newIndices;
@@ -860,6 +886,7 @@ void Builder::applyWeld()
                 newVertices.push_back(m_generatedVertices[useOldVertex]);
                 newSourceIndices.push_back(m_generatedVerticesSourceNodeIndices[useOldVertex]);
                 newVerticesCutDirects.push_back(m_generatedVerticesCutDirects[useOldVertex]);
+                newVerticesInfos.push_back(m_generatedVerticesInfos[useOldVertex]);
             } else {
                 newIndex = findResult->second;
             }
@@ -879,6 +906,7 @@ void Builder::applyWeld()
     m_generatedFaces = newFaces;
     m_generatedVerticesSourceNodeIndices = newSourceIndices;
     m_generatedVerticesCutDirects = newVerticesCutDirects;
+    m_generatedVerticesInfos = newVerticesInfos;
 }
 
 void Builder::setDeformThickness(float thickness)
@@ -889,6 +917,16 @@ void Builder::setDeformThickness(float thickness)
 void Builder::setDeformWidth(float width)
 {
     m_deformWidth = width;
+}
+
+void Builder::setDeformMapImage(const QImage *image)
+{
+    m_deformMapImage = image;
+}
+
+void Builder::setDeformMapScale(float scale)
+{
+    m_deformMapScale = scale;
 }
 
 QVector3D Builder::calculateDeformPosition(const QVector3D &vertexPosition, const QVector3D &ray, const QVector3D &deformNormal, float deformFactor)
@@ -906,6 +944,14 @@ void Builder::applyDeform()
         const auto &node = m_nodes[m_generatedVerticesSourceNodeIndices[i]];
         const auto &cutDirect = m_generatedVerticesCutDirects[i];
         auto ray = position - node.position;
+        if (nullptr != m_deformMapImage) {
+            const auto &info = m_generatedVerticesInfos[i];
+            int x = node.reversedTraverseOrder * m_deformMapImage->width() / m_nodes.size();
+            int y = info.orderInCut * m_deformMapImage->height() / info.cutSize;
+            float gray = (float)(qGray(m_deformMapImage->pixelColor(x, y).rgb()) - 127) / 127;
+            position += m_deformMapScale * gray * ray;
+            ray = position - node.position;
+        }
         QVector3D sum;
         size_t count = 0;
         if (!qFuzzyCompare(m_deformThickness, (float)1.0)) {

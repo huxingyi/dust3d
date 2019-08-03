@@ -14,6 +14,7 @@
 #include "parttarget.h"
 #include "theme.h"
 #include "partbase.h"
+#include "imageforever.h"
 
 MeshGenerator::MeshGenerator(Snapshot *snapshot) :
     m_snapshot(snapshot)
@@ -361,6 +362,20 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
         deformWidth = widthString.toFloat();
     }
     
+    const QImage *deformImage = nullptr;
+    QString deformMapImageIdString = valueOfKeyInMapOrEmpty(part, "deformMapImageId");
+    if (!deformMapImageIdString.isEmpty()) {
+        deformImage = ImageForever::get(QUuid(deformMapImageIdString));
+        if (nullptr == deformImage) {
+            qDebug() << "Deform image id not found:" << deformMapImageIdString;
+        }
+    }
+    
+    float deformMapScale = 0.5;
+    QString deformMapScaleString = valueOfKeyInMapOrEmpty(part, "deformMapScale");
+    if (!deformMapScaleString.isEmpty())
+        deformMapScale = deformMapScaleString.toFloat();
+    
     QUuid materialId;
     QString materialIdString = valueOfKeyInMapOrEmpty(part, "materialId");
     if (!materialIdString.isEmpty())
@@ -538,6 +553,9 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
     nodemesh::Builder *builder = new nodemesh::Builder;
     builder->setDeformThickness(deformThickness);
     builder->setDeformWidth(deformWidth);
+    builder->setDeformMapScale(deformMapScale);
+    if (nullptr != deformImage)
+        builder->setDeformMapImage(deformImage);
     if (PartBase::YZ == base) {
         builder->enableBaseNormalOnX(false);
     } else if (PartBase::Average == base) {

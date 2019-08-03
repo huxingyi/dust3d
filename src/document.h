@@ -409,6 +409,8 @@ signals:
     void partBaseChanged(QUuid partId);
     void partDeformThicknessChanged(QUuid partId);
     void partDeformWidthChanged(QUuid partId);
+    void partDeformMapImageIdChanged(QUuid partId);
+    void partDeformMapScaleChanged(QUuid partId);
     void partRoundStateChanged(QUuid partId);
     void partColorStateChanged(QUuid partId);
     void partCutRotationChanged(QUuid partId);
@@ -584,6 +586,8 @@ public slots:
     void setPartBase(QUuid partId, PartBase base);
     void setPartDeformThickness(QUuid partId, float thickness);
     void setPartDeformWidth(QUuid partId, float width);
+    void setPartDeformMapImageId(QUuid partId, QUuid imageId);
+    void setPartDeformMapScale(QUuid partId, float scale);
     void setPartRoundState(QUuid partId, bool rounded);
     void setPartColorState(QUuid partId, bool hasColor, QColor color);
     void setPartCutRotation(QUuid partId, float cutRotation);

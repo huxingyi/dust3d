@@ -20,6 +20,8 @@
 #include "graphicscontainerwidget.h"
 #include "flowlayout.h"
 #include "cutfacelistwidget.h"
+#include "imageforever.h"
+#include "imagepreviewwidget.h"
 
 PartWidget::PartWidget(const Document *document, QUuid partId) :
     m_document(document),
@@ -159,6 +161,8 @@ PartWidget::PartWidget(const Document *document, QUuid partId) :
     connect(this, &PartWidget::setPartXmirrorState, m_document, &Document::setPartXmirrorState);
     connect(this, &PartWidget::setPartDeformThickness, m_document, &Document::setPartDeformThickness);
     connect(this, &PartWidget::setPartDeformWidth, m_document, &Document::setPartDeformWidth);
+    connect(this, &PartWidget::setPartDeformMapImageId, m_document, &Document::setPartDeformMapImageId);
+    connect(this, &PartWidget::setPartDeformMapScale, m_document, &Document::setPartDeformMapScale);
     connect(this, &PartWidget::setPartRoundState, m_document, &Document::setPartRoundState);
     connect(this, &PartWidget::setPartChamferState, m_document, &Document::setPartChamferState);
     connect(this, &PartWidget::setPartCutRotation, m_document, &Document::setPartCutRotation);
@@ -583,17 +587,95 @@ void PartWidget::showDeformSettingPopup(const QPoint &pos)
         emit groupOperationAdded();
     });
     
-    QVBoxLayout *layout = new QVBoxLayout;
+    QVBoxLayout *mainLayout = new QVBoxLayout;
+    
     QHBoxLayout *thicknessLayout = new QHBoxLayout;
     QHBoxLayout *widthLayout = new QHBoxLayout;
     thicknessLayout->addWidget(thicknessEraser);
     thicknessLayout->addWidget(thicknessWidget);
     widthLayout->addWidget(widthEraser);
     widthLayout->addWidget(widthWidget);
-    layout->addLayout(thicknessLayout);
-    layout->addLayout(widthLayout);
     
-    popup->setLayout(layout);
+    auto pickImage = [this]() {
+        QString fileName = QFileDialog::getOpenFileName(this, QString(), QString(),
+            tr("Image Files (*.png *.jpg *.bmp)")).trimmed();
+        if (fileName.isEmpty())
+            return (QImage *)nullptr;
+        QImage *image = new QImage();
+        if (!image->load(fileName))
+            return (QImage *)nullptr;
+        return image;
+    };
+    
+    ImagePreviewWidget *deformImageButton = new ImagePreviewWidget;
+    deformImageButton->setFixedHeight(Theme::partPreviewImageSize * 2);
+    deformImageButton->updateBackgroundColor(QColor(127, 127, 127));
+    
+    QPushButton *deformImageEraser = new QPushButton(QChar(fa::eraser));
+    initToolButton(deformImageEraser);
+    
+    auto updateImageButtonBackground = [=](const QImage *image) {
+        if (nullptr == image) {
+            deformImageButton->updateImage(QImage());
+        } else {
+            deformImageButton->updateImage(*image);
+        }
+    };
+    
+    if (!part->deformMapImageId.isNull())
+        updateImageButtonBackground(ImageForever::get(part->deformMapImageId));
+    else
+        updateImageButtonBackground(nullptr);
+    
+    connect(deformImageEraser, &QPushButton::clicked, [=]() {
+        updateImageButtonBackground(nullptr);
+        emit setPartDeformMapImageId(m_partId, QUuid());
+    });
+    
+    connect(deformImageButton, &ImagePreviewWidget::clicked, [=]() {
+        QImage *image = pickImage();
+        if (nullptr == image)
+            return;
+        QUuid imageId = ImageForever::add(image);
+        updateImageButtonBackground(image);
+        delete image;
+        emit setPartDeformMapImageId(m_partId, imageId);
+    });
+    
+    QHBoxLayout *deformImageLayout = new QHBoxLayout;
+    deformImageLayout->addWidget(deformImageEraser);
+    deformImageLayout->addWidget(deformImageButton);
+    deformImageLayout->setStretch(1, 1);
+    
+    FloatNumberWidget *deformMapScaleWidget = new FloatNumberWidget;
+    deformMapScaleWidget->setItemName(tr("Map Scale"));
+    deformMapScaleWidget->setRange(0, 1.0);
+    deformMapScaleWidget->setValue(part->deformMapScale);
+    
+    connect(deformMapScaleWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+        emit setPartDeformMapScale(m_partId, value);
+        emit groupOperationAdded();
+    });
+
+    QPushButton *deformMapScaleEraser = new QPushButton(QChar(fa::eraser));
+    initToolButton(deformMapScaleEraser);
+    
+    connect(deformMapScaleEraser, &QPushButton::clicked, [=]() {
+        deformMapScaleWidget->setValue(0.5);
+        emit groupOperationAdded();
+    });
+    
+    QHBoxLayout *deformMapScaleLayout = new QHBoxLayout;
+    deformMapScaleLayout->addWidget(deformMapScaleEraser);
+    deformMapScaleLayout->addWidget(deformMapScaleWidget);
+    
+    mainLayout->addLayout(thicknessLayout);
+    mainLayout->addLayout(widthLayout);
+    mainLayout->addWidget(Theme::createHorizontalLineWidget());
+    mainLayout->addLayout(deformMapScaleLayout);
+    mainLayout->addLayout(deformImageLayout);
+    
+    popup->setLayout(mainLayout);
     
     QWidgetAction action(this);
     action.setDefaultWidget(popup);
@@ -697,7 +779,7 @@ void PartWidget::updateDeformButton()
         qDebug() << "Part not found:" << m_partId;
         return;
     }
-    if (part->deformAdjusted())
+    if (part->deformAdjusted() || part->deformMapAdjusted())
         updateButton(m_deformButton, QChar(fa::handlizardo), true);
     else
         updateButton(m_deformButton, QChar(fa::handlizardo), false);
