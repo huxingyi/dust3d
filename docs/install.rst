@@ -11,6 +11,17 @@ Download and Install Dust3D
 
     https://github.com/huxingyi/dust3d/releases/download/1.0.0-beta.22/dust3d-1.0.0-beta.22.dmg
 
+    If "The following disk images could't be opened" popped up, that means the downloaded file was broken, please retry.
+
+
+    If "can't be opened because its integrity cannot be verified" popped up, please follow ni_kush's answer in this reddit post_.
+
+
+    (Thanks `@jimmygunawanapp`_ for testing)
+
+.. _@jimmygunawanapp: https://twitter.com/jimmygunawanapp
+.. _post: https://www.reddit.com/r/applehelp/comments/ccld6v/how_to_fix_cant_be_opened_because_its_integrity/
+
 * For Linux:
 
     https://github.com/huxingyi/dust3d/releases/download/1.0.0-beta.22/dust3d-1.0.0-beta.22-x86_64.AppImage
