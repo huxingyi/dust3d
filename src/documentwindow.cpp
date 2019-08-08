@@ -156,6 +156,10 @@ DocumentWindow::DocumentWindow() :
     QPushButton *selectButton = new QPushButton(QChar(fa::mousepointer));
     selectButton->setToolTip(tr("Select node on canvas"));
     Theme::initAwesomeButton(selectButton);
+    
+    QPushButton *paintButton = new QPushButton(QChar(fa::paintbrush));
+    paintButton->setToolTip(tr("Paint brush"));
+    Theme::initAwesomeButton(paintButton);
 
     QPushButton *dragButton = new QPushButton(QChar(fa::handrocko));
     dragButton->setToolTip(tr("Enter drag mode"));
@@ -228,6 +232,7 @@ DocumentWindow::DocumentWindow() :
 
     toolButtonLayout->addWidget(addButton);
     toolButtonLayout->addWidget(selectButton);
+    toolButtonLayout->addWidget(paintButton);
     toolButtonLayout->addWidget(dragButton);
     toolButtonLayout->addWidget(zoomInButton);
     toolButtonLayout->addWidget(zoomOutButton);
@@ -277,6 +282,11 @@ DocumentWindow::DocumentWindow() :
     m_modelRenderWidget->setMinimumSize(DocumentWindow::m_modelRenderWidgetInitialSize, DocumentWindow::m_modelRenderWidgetInitialSize);
     m_modelRenderWidget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     m_modelRenderWidget->move(DocumentWindow::m_modelRenderWidgetInitialX, DocumentWindow::m_modelRenderWidgetInitialY);
+    
+    connect(m_modelRenderWidget, &ModelWidget::mouseRayChanged, m_document, &Document::pickMouseTarget);
+    connect(m_document, &Document::mouseTargetChanged, this, [=]() {
+        m_modelRenderWidget->setMousePickTargetPositionInModelSpace(m_document->mouseTargetPosition());
+    });
     
     m_graphicsWidget->setModelWidget(m_modelRenderWidget);
     containerWidget->setModelWidget(m_modelRenderWidget);
@@ -767,6 +777,10 @@ DocumentWindow::DocumentWindow() :
     connect(selectButton, &QPushButton::clicked, [=]() {
         m_document->setEditMode(SkeletonDocumentEditMode::Select);
     });
+    
+    connect(paintButton, &QPushButton::clicked, [=]() {
+        m_document->setEditMode(SkeletonDocumentEditMode::Paint);
+    });
 
     connect(dragButton, &QPushButton::clicked, [=]() {
         m_document->setEditMode(SkeletonDocumentEditMode::Drag);
@@ -791,6 +805,10 @@ DocumentWindow::DocumentWindow() :
     });
     connect(m_radiusLockButton, &QPushButton::clicked, [=]() {
         m_document->setRadiusLockState(!m_document->radiusLocked);
+    });
+    
+    connect(m_document, &Document::editModeChanged, this, [=]() {
+        m_modelRenderWidget->enableMousePicking(SkeletonDocumentEditMode::Paint == m_document->editMode);
     });
 
     m_partListDockerVisibleSwitchConnection = connect(m_document, &Document::skeletonChanged, [=]() {
@@ -973,6 +991,7 @@ DocumentWindow::DocumentWindow() :
 
     connect(graphicsWidget, &SkeletonGraphicsWidget::cursorChanged, [=]() {
         m_modelRenderWidget->setCursor(graphicsWidget->cursor());
+        containerWidget->setCursor(graphicsWidget->cursor());
         //m_skeletonRenderWidget->setCursor(graphicsWidget->cursor());
     });
 

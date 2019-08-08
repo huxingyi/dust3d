@@ -410,6 +410,9 @@ HEADERS += src/intnumberwidget.h
 SOURCES += src/imagepreviewwidget.cpp
 HEADERS += src/imagepreviewwidget.h
 
+SOURCES += src/mousepicker.cpp
+HEADERS += src/mousepicker.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h

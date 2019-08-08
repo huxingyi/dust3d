@@ -362,6 +362,10 @@ Tips:
         <source>Check for Updates...</source>
         <translation>检查新版本...</translation>
     </message>
+    <message>
+        <source>Paint brush</source>
+        <translation>画刷</translation>
+    </message>
 </context>
 <context>
     <name>ExportPreviewWidget</name>

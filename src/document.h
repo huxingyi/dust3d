@@ -30,6 +30,7 @@
 class MaterialPreviewsGenerator;
 class MotionsGenerator;
 class ScriptRunner;
+class MousePicker;
 
 class HistoryItem
 {
@@ -471,6 +472,7 @@ signals:
     void scriptRunning();
     void scriptErrorChanged();
     void scriptConsoleLogChanged();
+    void mouseTargetChanged();
 public: // need initialize
     QImage *textureGuideImage;
     QImage *textureImage;
@@ -539,6 +541,7 @@ public:
     const std::map<QString, std::map<QString, QString>> &variables() const;
     const QString &scriptError() const;
     const QString &scriptConsoleLog() const;
+    const QVector3D &mouseTargetPosition() const;
 public slots:
     void undo() override;
     void redo() override;
@@ -577,6 +580,8 @@ public slots:
     void materialPreviewsReady();
     void generateMotions();
     void motionsReady();
+    void pickMouseTarget(const QVector3D &nearPosition, const QVector3D &farPosition);
+    void mouseTargetReady();
     void setPartLockState(QUuid partId, bool locked);
     void setPartVisibleState(QUuid partId, bool visible);
     void setPartSubdivState(QUuid partId, bool subdived);
@@ -721,6 +726,11 @@ private: // need initialize
     std::map<QString, std::map<QString, QString>> m_mergedVariables;
     ScriptRunner *m_scriptRunner;
     bool m_isScriptResultObsolete;
+    MousePicker *m_mousePicker;
+    bool m_isMouseTargetResultObsolete;
+    QVector3D m_mouseRayNear;
+    QVector3D m_mouseRayFar;
+    QVector3D m_mouseTargetPosition;
     QString m_scriptError;
     QString m_scriptConsoleLog;
 private:

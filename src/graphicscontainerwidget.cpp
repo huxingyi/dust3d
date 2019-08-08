@@ -2,6 +2,7 @@
 
 GraphicsContainerWidget::GraphicsContainerWidget()
 {
+    setMouseTracking(true);
 }
 
 void GraphicsContainerWidget::resizeEvent(QResizeEvent *event)

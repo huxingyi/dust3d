@@ -15,6 +15,7 @@
 #include "motionsgenerator.h"
 #include "skeletonside.h"
 #include "scriptrunner.h"
+#include "mousepicker.h"
 
 unsigned long Document::m_maxSnapshot = 1000;
 
@@ -64,7 +65,9 @@ Document::Document() :
     m_meshGenerationId(0),
     m_nextMeshGenerationId(1),
     m_scriptRunner(nullptr),
-    m_isScriptResultObsolete(false)
+    m_isScriptResultObsolete(false),
+    m_mousePicker(nullptr),
+    m_isMouseTargetResultObsolete(false)
 {
     connect(&Preferences::instance(), &Preferences::partColorChanged, this, &Document::applyPreferencePartColorChange);
     connect(&Preferences::instance(), &Preferences::flatShadingChanged, this, &Document::applyPreferenceFlatShadingChange);
@@ -1920,6 +1923,56 @@ void Document::postProcessedMeshResultReady()
     if (m_isPostProcessResultObsolete) {
         postProcess();
     }
+}
+
+void Document::pickMouseTarget(const QVector3D &nearPosition, const QVector3D &farPosition)
+{
+    m_mouseRayNear = nearPosition;
+    m_mouseRayFar = farPosition;
+    
+    if (nullptr != m_mousePicker) {
+        m_isMouseTargetResultObsolete = true;
+        return;
+    }
+    
+    m_isMouseTargetResultObsolete = false;
+    
+    if (!m_currentOutcome) {
+        qDebug() << "MeshLoader is null";
+        return;
+    }
+    
+    qDebug() << "Mouse picking..";
+
+    QThread *thread = new QThread;
+    m_mousePicker = new MousePicker(*m_currentOutcome, m_mouseRayNear, m_mouseRayFar);
+    m_mousePicker->moveToThread(thread);
+    connect(thread, &QThread::started, m_mousePicker, &MousePicker::process);
+    connect(m_mousePicker, &MousePicker::finished, this, &Document::mouseTargetReady);
+    connect(m_mousePicker, &MousePicker::finished, thread, &QThread::quit);
+    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+    thread->start();
+}
+
+void Document::mouseTargetReady()
+{
+    m_mouseTargetPosition = m_mousePicker->targetPosition();
+    
+    delete m_mousePicker;
+    m_mousePicker = nullptr;
+    
+    emit mouseTargetChanged();
+
+    qDebug() << "Mouse pick done";
+
+    if (m_isMouseTargetResultObsolete) {
+        pickMouseTarget(m_mouseRayNear, m_mouseRayFar);
+    }
+}
+
+const QVector3D &Document::mouseTargetPosition() const
+{
+    return m_mouseTargetPosition;
 }
 
 const Outcome &Document::currentPostProcessedOutcome() const

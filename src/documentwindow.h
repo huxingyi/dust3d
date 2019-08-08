@@ -26,6 +26,7 @@ signals:
     void initialized();
     void uninialized();
     void waitingExportFinished(const QString &filename, bool succeed);
+    void mouseTargetVertexPositionChanged(const QVector3D &position);
 public:
     DocumentWindow();
     ~DocumentWindow();

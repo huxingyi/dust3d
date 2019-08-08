@@ -53,6 +53,8 @@ ModelShaderProgram::ModelShaderProgram(bool usePBR)
     m_roughnessMapEnabledLoc = this->uniformLocation("roughnessMapEnabled");
     m_ambientOcclusionMapEnabledLoc = this->uniformLocation("ambientOcclusionMapEnabled");
     m_metalnessRoughnessAmbientOcclusionMapIdLoc = this->uniformLocation("metalnessRoughnessAmbientOcclusionMapId");
+    m_mousePickEnabledLoc = this->uniformLocation("mousePickEnabled");
+    m_mousePickTargetPositionLoc = this->uniformLocation("mousePickTargetPosition");
 }
 
 int ModelShaderProgram::projectionMatrixLoc()
@@ -120,3 +122,12 @@ int ModelShaderProgram::metalnessRoughnessAmbientOcclusionMapIdLoc()
     return m_metalnessRoughnessAmbientOcclusionMapIdLoc;
 }
 
+int ModelShaderProgram::mousePickEnabledLoc()
+{
+    return m_mousePickEnabledLoc;
+}
+
+int ModelShaderProgram::mousePickTargetPositionLoc()
+{
+    return m_mousePickTargetPositionLoc;
+}

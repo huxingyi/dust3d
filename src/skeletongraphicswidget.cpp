@@ -598,6 +598,9 @@ void SkeletonGraphicsWidget::updateCursor()
         case SkeletonDocumentEditMode::Select:
             setCursor(QCursor(Theme::awesome()->icon(fa::mousepointer).pixmap(Theme::toolIconFontSize, Theme::toolIconFontSize), Theme::toolIconFontSize / 5, 0));
             break;
+        case SkeletonDocumentEditMode::Paint:
+            setCursor(QCursor(Theme::awesome()->icon(fa::paintbrush).pixmap(Theme::toolIconFontSize, Theme::toolIconFontSize)));
+            break;
         case SkeletonDocumentEditMode::Drag:
             setCursor(QCursor(Theme::awesome()->icon(m_dragStarted ? fa::handrocko : fa::handpapero).pixmap(Theme::toolIconFontSize, Theme::toolIconFontSize)));
             break;

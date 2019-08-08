@@ -10,6 +10,7 @@
 // Modifed from http://doc.qt.io/qt-5/qtopengl-hellogl2-glwidget-cpp.html
 
 bool ModelWidget::m_transparent = true;
+const QVector3D ModelWidget::m_cameraPosition = QVector3D(0, 0, -4.0);
 
 ModelWidget::ModelWidget(QWidget *parent) :
     QOpenGLWidget(parent),
@@ -19,7 +20,8 @@ ModelWidget::ModelWidget(QWidget *parent) :
     m_program(nullptr),
     m_moveStarted(false),
     m_moveEnabled(true),
-    m_zoomEnabled(true)
+    m_zoomEnabled(true),
+    m_mousePickingEnabled(false)
 {
     // --transparent causes the clear color to be transparent. Therefore, on systems that
     // support it, the widget will become transparent apart from the logo.
@@ -130,7 +132,7 @@ void ModelWidget::initializeGL()
     // Our camera never changes in this example.
     m_camera.setToIdentity();
     // FIXME: if change here, please also change the camera pos in PBR shader
-    m_camera.translate(0, 0, -4.0);
+    m_camera.translate(m_cameraPosition.x(), m_cameraPosition.y(), m_cameraPosition.z());
 
     // Light position is fixed.
     // FIXME: PBR render no longer use this parameter
@@ -162,6 +164,15 @@ void ModelWidget::paintGL()
     m_program->setUniformValue(m_program->textureEnabledLoc(), 0);
     m_program->setUniformValue(m_program->normalMapEnabledLoc(), 0);
     
+    if (m_mousePickingEnabled && !m_mousePickTargetPositionInModelSpace.isNull()) {
+        m_program->setUniformValue(m_program->mousePickEnabledLoc(), 1);
+        m_program->setUniformValue(m_program->mousePickTargetPositionLoc(),
+            m_world * m_mousePickTargetPositionInModelSpace);
+    } else {
+        m_program->setUniformValue(m_program->mousePickEnabledLoc(), 0);
+        m_program->setUniformValue(m_program->mousePickTargetPositionLoc(), QVector3D());
+    }
+    
     m_meshBinder.paint(m_program);
 
     m_program->release();
@@ -171,6 +182,20 @@ void ModelWidget::resizeGL(int w, int h)
 {
     m_projection.setToIdentity();
     m_projection.perspective(45.0f, GLfloat(w) / h, 0.01f, 100.0f);
+}
+
+std::pair<QVector3D, QVector3D> ModelWidget::screenPositionToMouseRay(const QPoint &screenPosition)
+{
+    auto modelView = m_camera * m_world;
+    float x = qMax(qMin(screenPosition.x(), width() - 1), 0);
+    float y = qMax(qMin(screenPosition.y(), height() - 1), 0);
+    QVector3D nearScreen = QVector3D(x, height() - y, 0.0);
+    QVector3D farScreen = QVector3D(x, height() - y, 1.0);
+    auto viewPort = QRect(0, 0, width(), height());
+    auto nearPosition = nearScreen.unproject(modelView, m_projection, viewPort);
+    auto farPosition = farScreen.unproject(modelView, m_projection, viewPort);
+    qDebug() << "near:" << nearPosition << "far:" << farPosition << "x:" << x << "y:" << y;
+    return std::make_pair(nearPosition, farPosition);
 }
 
 void ModelWidget::toggleWireframe()
@@ -217,11 +242,17 @@ bool ModelWidget::inputMouseReleaseEventFromOtherWidget(QMouseEvent *event)
 
 bool ModelWidget::inputMouseMoveEventFromOtherWidget(QMouseEvent *event)
 {
+    QPoint pos = convertInputPosFromOtherWidget(event);
+    
+    if (m_mousePickingEnabled) {
+        auto segment = screenPositionToMouseRay(pos);
+        emit mouseRayChanged(segment.first, segment.second);
+    }
+
     if (!m_moveStarted) {
         return false;
     }
     
-    QPoint pos = convertInputPosFromOtherWidget(event);
     int dx = pos.x() - m_lastPos.x();
     int dy = pos.y() - m_lastPos.y();
 
@@ -275,6 +306,12 @@ void ModelWidget::zoom(float delta)
     setGeometry(geometry().marginsAdded(margins));
 }
 
+void ModelWidget::setMousePickTargetPositionInModelSpace(QVector3D position)
+{
+    m_mousePickTargetPositionInModelSpace = position;
+    update();
+}
+
 void ModelWidget::updateMesh(MeshLoader *mesh)
 {
     m_meshBinder.updateMesh(mesh);
@@ -289,6 +326,11 @@ void ModelWidget::enableMove(bool enabled)
 void ModelWidget::enableZoom(bool enabled)
 {
     m_zoomEnabled = enabled;
+}
+
+void ModelWidget::enableMousePicking(bool enabled)
+{
+    m_mousePickingEnabled = enabled;
 }
 
 void ModelWidget::mousePressEvent(QMouseEvent *event)

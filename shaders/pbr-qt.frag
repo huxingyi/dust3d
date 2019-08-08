@@ -75,6 +75,8 @@ uniform highp sampler2D metalnessRoughnessAmbientOcclusionMapId;
 uniform highp int metalnessMapEnabled;
 uniform highp int roughnessMapEnabled;
 uniform highp int ambientOcclusionMapEnabled;
+uniform highp int mousePickEnabled;
+uniform highp vec3 mousePickTargetPosition;
 
 const int MAX_LIGHTS = 8;
 const int TYPE_POINT = 0;
@@ -319,6 +321,11 @@ void main()
     highp vec3 color = vertColor;
     if (textureEnabled == 1) {
         color = texture2D(textureId, vertTexCoord).rgb;
+    }
+    if (mousePickEnabled == 1) {
+        if (distance(mousePickTargetPosition, vert) <= 0.1) {
+            color = color + vec3(0.99, 0.4, 0.13);
+        }
     }
     color = pow(color, vec3(gamma));
 

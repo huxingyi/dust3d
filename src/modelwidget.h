@@ -17,6 +17,8 @@ class SkeletonGraphicsFunctions;
 class ModelWidget : public QOpenGLWidget, protected QOpenGLFunctions
 {
     Q_OBJECT
+signals:
+    void mouseRayChanged(const QVector3D &near, const QVector3D &far);
 public:
     ModelWidget(QWidget *parent = 0);
     ~ModelWidget();
@@ -33,6 +35,7 @@ public:
     void toggleWireframe();
     void enableMove(bool enabled);
     void enableZoom(bool enabled);
+    void enableMousePicking(bool enabled);
     bool inputMousePressEventFromOtherWidget(QMouseEvent *event);
     bool inputMouseMoveEventFromOtherWidget(QMouseEvent *event);
     bool inputWheelEventFromOtherWidget(QWheelEvent *event);
@@ -44,6 +47,7 @@ public slots:
     void setZRotation(int angle);
     void cleanup();
     void zoom(float delta);
+    void setMousePickTargetPositionInModelSpace(QVector3D position);
 signals:
     void xRotationChanged(int angle);
     void yRotationChanged(int angle);
@@ -68,6 +72,8 @@ private:
     bool m_moveStarted;
     bool m_moveEnabled;
     bool m_zoomEnabled;
+    bool m_mousePickingEnabled;
+    QVector3D m_mousePickTargetPositionInModelSpace;
 private:
     QPoint m_lastPos;
     ModelMeshBinder m_meshBinder;
@@ -75,8 +81,10 @@ private:
     QMatrix4x4 m_camera;
     QMatrix4x4 m_world;
     static bool m_transparent;
+    static const QVector3D m_cameraPosition;
     QPoint m_moveStartPos;
     QRect m_moveStartGeometry;
+    std::pair<QVector3D, QVector3D> screenPositionToMouseRay(const QPoint &screenPosition);
 };
 
 #endif
