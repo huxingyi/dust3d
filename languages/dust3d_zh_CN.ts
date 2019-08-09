@@ -366,6 +366,10 @@ Tips:
         <source>Paint brush</source>
         <translation>画刷</translation>
     </message>
+    <message>
+        <source>Toggle UV Check</source>
+        <translation>切换UV检查</translation>
+    </message>
 </context>
 <context>
     <name>ExportPreviewWidget</name>

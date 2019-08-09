@@ -60,6 +60,7 @@ private:
     float m_segmentDotProductThreshold = 0.00;
     float m_texelSizePerUnit = 1.0;
     float m_resultTextureSize = 0;
+    bool m_segmentPreferMorePieces = false;
 };
 
 }

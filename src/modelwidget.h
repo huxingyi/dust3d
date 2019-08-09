@@ -33,6 +33,7 @@ public:
     void updateMesh(MeshLoader *mesh);
     void setGraphicsFunctions(SkeletonGraphicsFunctions *graphicsFunctions);
     void toggleWireframe();
+    void toggleUvCheck();
     void enableMove(bool enabled);
     void enableZoom(bool enabled);
     void enableMousePicking(bool enabled);

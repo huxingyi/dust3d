@@ -194,7 +194,6 @@ std::pair<QVector3D, QVector3D> ModelWidget::screenPositionToMouseRay(const QPoi
     auto viewPort = QRect(0, 0, width(), height());
     auto nearPosition = nearScreen.unproject(modelView, m_projection, viewPort);
     auto farPosition = farScreen.unproject(modelView, m_projection, viewPort);
-    qDebug() << "near:" << nearPosition << "far:" << farPosition << "x:" << x << "y:" << y;
     return std::make_pair(nearPosition, farPosition);
 }
 
@@ -204,6 +203,16 @@ void ModelWidget::toggleWireframe()
         m_meshBinder.hideWireframes();
     else
         m_meshBinder.showWireframes();
+    update();
+}
+
+void ModelWidget::toggleUvCheck()
+{
+    if (m_meshBinder.isCheckUvEnabled())
+        m_meshBinder.disableCheckUv();
+    else
+        m_meshBinder.enableCheckUv();
+    m_meshBinder.reloadMesh();
     update();
 }
 

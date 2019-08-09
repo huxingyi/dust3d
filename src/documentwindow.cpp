@@ -651,6 +651,12 @@ DocumentWindow::DocumentWindow() :
         m_modelRenderWidget->toggleWireframe();
     });
     m_viewMenu->addAction(m_toggleWireframeAction);
+    
+    m_toggleUvCheckAction = new QAction(tr("Toggle UV Check"), this);
+    connect(m_toggleUvCheckAction, &QAction::triggered, [=]() {
+        m_modelRenderWidget->toggleUvCheck();
+    });
+    m_viewMenu->addAction(m_toggleUvCheckAction);
 
     connect(m_viewMenu, &QMenu::aboutToShow, [=]() {
         m_resetModelWidgetPosAction->setEnabled(!isModelSitInVisibleArea(m_modelRenderWidget));

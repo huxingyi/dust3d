@@ -154,6 +154,7 @@ private:
     QMenu *m_viewMenu;
     QAction *m_resetModelWidgetPosAction;
     QAction *m_toggleWireframeAction;
+    QAction *m_toggleUvCheckAction;
     QAction *m_showMotionsListAction;
     
     QMenu *m_windowMenu;

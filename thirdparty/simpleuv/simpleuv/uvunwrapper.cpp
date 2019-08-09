@@ -83,7 +83,7 @@ void UvUnwrapper::splitPartitionToIslands(const std::vector<size_t> &group, std:
                     continue;
                 if (segmentByNormal) {
                     if (dotProduct(m_mesh.faceNormals[findOppositeFaceResult->second],
-                            m_mesh.faceNormals[index]) < m_segmentDotProductThreshold) {
+                            m_mesh.faceNormals[m_segmentPreferMorePieces ? indexInGroup : index]) < m_segmentDotProductThreshold) {
                         continue;
                     }
                 }

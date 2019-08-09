@@ -20,6 +20,10 @@ public:
     void showWireframes();
     void hideWireframes();
     bool isWireframesVisible();
+    void enableCheckUv();
+    void disableCheckUv();
+    bool isCheckUvEnabled();
+    void reloadMesh();
 private:
     MeshLoader *m_mesh = nullptr;
     MeshLoader *m_newMesh = nullptr;
@@ -37,6 +41,7 @@ private:
     bool m_hasAmbientOcclusionMap = false;
     QOpenGLTexture *m_metalnessRoughnessAmbientOcclusionMap = nullptr;
     bool m_toolEnabled = false;
+    bool m_checkUvEnabled = false;
 private:
     QOpenGLVertexArrayObject m_vaoTriangle;
     QOpenGLBuffer m_vboTriangle;

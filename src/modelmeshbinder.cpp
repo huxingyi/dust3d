@@ -32,6 +32,19 @@ void ModelMeshBinder::updateMesh(MeshLoader *mesh)
     }
 }
 
+void ModelMeshBinder::reloadMesh()
+{
+    MeshLoader *mesh = nullptr;
+    {
+        QMutexLocker lock(&m_newMeshMutex);
+        if (nullptr == m_mesh)
+            return;
+        mesh = new MeshLoader(*m_mesh);
+    }
+    if (nullptr != mesh)
+        updateMesh(mesh);
+}
+
 void ModelMeshBinder::initialize()
 {
     m_vaoTriangle.create();
@@ -63,8 +76,16 @@ void ModelMeshBinder::paint(ModelShaderProgram *program)
                 m_hasTexture = nullptr != m_mesh->textureImage();
                 delete m_texture;
                 m_texture = nullptr;
-                if (m_hasTexture)
-                    m_texture = new QOpenGLTexture(*m_mesh->textureImage());
+                if (m_hasTexture) {
+                    if (m_checkUvEnabled) {
+                        static QImage *s_checkUv = nullptr;
+                        if (nullptr == s_checkUv)
+                            s_checkUv = new QImage(":/resources/checkuv.png");
+                        m_texture = new QOpenGLTexture(*s_checkUv);
+                    } else {
+                        m_texture = new QOpenGLTexture(*m_mesh->textureImage());
+                    }
+                }
                 
                 m_hasNormalMap = nullptr != m_mesh->normalMapImage();
                 delete m_normalMap;
@@ -252,4 +273,19 @@ void ModelMeshBinder::hideWireframes()
 bool ModelMeshBinder::isWireframesVisible()
 {
     return m_showWireframes;
+}
+
+void ModelMeshBinder::enableCheckUv()
+{
+    m_checkUvEnabled = true;
+}
+
+void ModelMeshBinder::disableCheckUv()
+{
+    m_checkUvEnabled = false;
+}
+
+bool ModelMeshBinder::isCheckUvEnabled()
+{
+    return m_checkUvEnabled;
 }
