@@ -37,6 +37,7 @@ private:
     void buildEdgeToFaceMap(const std::vector<size_t> &group, std::map<std::pair<size_t, size_t>, size_t> &edgeToFaceMap);
     void buildEdgeToFaceMap(const std::vector<Face> &faces, std::map<std::pair<size_t, size_t>, size_t> &edgeToFaceMap);
     double distanceBetweenVertices(const Vertex &first, const Vertex &second);
+    double dotProduct(const Vertex &first, const Vertex &second);
     void triangulateRing(const std::vector<Vertex> &verticies,
         std::vector<Face> &faces, const std::vector<size_t> &ring);
     void calculateFaceTextureBoundingBox(const std::vector<FaceTextureCoords> &faceTextureCoords,
@@ -49,6 +50,8 @@ private:
     std::vector<std::pair<float, float>> m_chartSizes;
     std::vector<QRectF> m_chartRects;
     std::vector<int> m_chartSourcePartitions;
+    bool m_segmentByNormal = true;
+    float m_segmentDotProductThreshold = 0.00;
 };
 
 }

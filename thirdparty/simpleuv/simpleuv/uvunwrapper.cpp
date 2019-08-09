@@ -8,6 +8,7 @@
 #include <simpleuv/chartpacker.h>
 #include <simpleuv/triangulate.h>
 #include <QDebug>
+#include <QVector3D>
 
 namespace simpleuv 
 {
@@ -60,6 +61,7 @@ void UvUnwrapper::splitPartitionToIslands(const std::vector<size_t> &group, std:
 {
     std::map<std::pair<size_t, size_t>, size_t> edgeToFaceMap;
     buildEdgeToFaceMap(group, edgeToFaceMap);
+    bool segmentByNormal = !m_mesh.faceNormals.empty() && m_segmentByNormal;
     
     std::unordered_set<size_t> processedFaces;
     std::queue<size_t> waitFaces;
@@ -79,6 +81,12 @@ void UvUnwrapper::splitPartitionToIslands(const std::vector<size_t> &group, std:
                 auto findOppositeFaceResult = edgeToFaceMap.find({face.indices[j], face.indices[i]});
                 if (findOppositeFaceResult == edgeToFaceMap.end())
                     continue;
+                if (segmentByNormal) {
+                    if (dotProduct(m_mesh.faceNormals[findOppositeFaceResult->second],
+                            m_mesh.faceNormals[index]) < m_segmentDotProductThreshold) {
+                        continue;
+                    }
+                }
                 waitFaces.push(findOppositeFaceResult->second);
             }
             island.push_back(index);
@@ -96,6 +104,13 @@ double UvUnwrapper::distanceBetweenVertices(const Vertex &first, const Vertex &s
     float y = first.xyz[1] - second.xyz[1];
     float z = first.xyz[2] - second.xyz[2];
     return std::sqrt(x*x + y*y + z*z);
+}
+
+double UvUnwrapper::dotProduct(const Vertex &first, const Vertex &second)
+{
+    const QVector3D &firstVector = QVector3D(first.xyz[0], first.xyz[1], first.xyz[2]);
+    const QVector3D &secondVector = QVector3D(second.xyz[0], second.xyz[1], second.xyz[2]);
+    return QVector3D::dotProduct(firstVector, secondVector);
 }
 
 void UvUnwrapper::calculateFaceTextureBoundingBox(const std::vector<FaceTextureCoords> &faceTextureCoords,

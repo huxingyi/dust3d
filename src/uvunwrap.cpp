@@ -10,6 +10,7 @@ void uvUnwrap(const Outcome &outcome,
 {
     const auto &choosenVertices = outcome.vertices;
     const auto &choosenTriangles = outcome.triangles;
+    const auto &choosenTriangleNormals = outcome.triangleNormals;
     triangleVertexUvs.resize(choosenTriangles.size(), {
         QVector2D(), QVector2D(), QVector2D()
     });
@@ -32,11 +33,17 @@ void uvUnwrap(const Outcome &outcome,
     for (decltype(choosenTriangles.size()) i = 0; i < choosenTriangles.size(); ++i) {
         const auto &triangle = choosenTriangles[i];
         const auto &sourceNode = triangleSourceNodes[i];
+        const auto &normal = choosenTriangleNormals[i];
         simpleuv::Face f;
         f.indices[0] = triangle[0];
         f.indices[1] = triangle[1];
         f.indices[2] = triangle[2];
         inputMesh.faces.push_back(f);
+        simpleuv::Vector3 n;
+        n.xyz[0] = normal.x();
+        n.xyz[1] = normal.y();
+        n.xyz[2] = normal.z();
+        inputMesh.faceNormals.push_back(n);
         auto findPartitionResult = partIdToPartitionMap.find(sourceNode.first);
         if (findPartitionResult == partIdToPartitionMap.end()) {
             partitionPartUuids.push_back(sourceNode.first);

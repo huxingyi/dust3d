@@ -25,6 +25,7 @@ private:
     size_t m_tryNum = 0;
     float m_textureSizeFactor = 1.0;
     size_t m_maxTryNum = 100;
+    float m_texelSizePerUnit = 1.0f;
 };
 
 }
