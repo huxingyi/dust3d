@@ -316,6 +316,20 @@ void UvUnwrapper::makeSeamAndCut(const std::vector<Vertex> &verticies,
     }
 }
 
+float UvUnwrapper::areaOf3dTriangle(const QVector3D &a, const QVector3D &b, const QVector3D &c)
+{
+    auto ab = b - a;
+    auto ac = c - a;
+    return 0.5 * QVector3D::crossProduct(ab, ac).length();
+}
+
+float UvUnwrapper::areaOf2dTriangle(const QVector2D &a, const QVector2D &b, const QVector2D &c)
+{
+    return areaOf3dTriangle(QVector3D(a.x(), a.y(), 0),
+        QVector3D(b.x(), b.y(), 0),
+        QVector3D(c.x(), c.y(), 0));
+}
+
 void UvUnwrapper::calculateSizeAndRemoveInvalidCharts()
 {
     auto charts = m_charts;
@@ -333,15 +347,35 @@ void UvUnwrapper::calculateSizeAndRemoveInvalidCharts()
             qDebug() << "Found invalid chart size:" << size.first << "x" << size.second;
             continue;
         }
+        float surfaceArea = 0;
+        for (const auto &item: chart.first) {
+            const auto &face = m_mesh.faces[item];
+            surfaceArea += areaOf3dTriangle(QVector3D(m_mesh.vertices[face.indices[0]].xyz[0],
+                    m_mesh.vertices[face.indices[0]].xyz[1],
+                    m_mesh.vertices[face.indices[0]].xyz[2]),
+                QVector3D(m_mesh.vertices[face.indices[1]].xyz[0],
+                    m_mesh.vertices[face.indices[1]].xyz[1],
+                    m_mesh.vertices[face.indices[1]].xyz[2]),
+                QVector3D(m_mesh.vertices[face.indices[2]].xyz[0],
+                    m_mesh.vertices[face.indices[2]].xyz[1],
+                    m_mesh.vertices[face.indices[2]].xyz[2]));
+        }
+        float uvArea = 0;
         for (auto &item: chart.second) {
             for (int i = 0; i < 3; ++i) {
                 item.coords[i].uv[0] -= left;
                 item.coords[i].uv[1] -= top;
             }
+            uvArea += areaOf2dTriangle(QVector2D(item.coords[0].uv[0], item.coords[0].uv[1]),
+                QVector2D(item.coords[1].uv[0], item.coords[1].uv[1]),
+                QVector2D(item.coords[2].uv[0], item.coords[2].uv[1]));
         }
         //qDebug() << "left:" << left << "top:" << top << "right:" << right << "bottom:" << bottom;
         //qDebug() << "width:" << size.first << "height:" << size.second;
+        float ratioOfSurfaceAreaAndUvArea = uvArea > 0 ? surfaceArea / uvArea : 1.0;
+        float scale = ratioOfSurfaceAreaAndUvArea * m_texelSizePerUnit;
         m_chartSizes.push_back(size);
+        m_scaledChartSizes.push_back(std::make_pair(size.first * scale, size.second * scale));
         m_charts.push_back(chart);
         m_chartSourcePartitions.push_back(chartSourcePartitions[chartIndex]);
     }
@@ -350,8 +384,8 @@ void UvUnwrapper::calculateSizeAndRemoveInvalidCharts()
 void UvUnwrapper::packCharts()
 {
     ChartPacker chartPacker;
-    chartPacker.setCharts(m_chartSizes);
-    chartPacker.pack();
+    chartPacker.setCharts(m_scaledChartSizes);
+    m_resultTextureSize = chartPacker.pack();
     m_chartRects.resize(m_chartSizes.size());
     const std::vector<std::tuple<float, float, float, float, bool>> &packedResult = chartPacker.getResult();
     for (decltype(m_charts.size()) i = 0; i < m_charts.size(); ++i) {
@@ -503,6 +537,11 @@ void UvUnwrapper::parametrizeSingleGroup(const std::vector<Vertex> &verticies,
         return;
     m_charts.push_back(chart);
     m_chartSourcePartitions.push_back(sourcePartition);
+}
+
+float UvUnwrapper::textureSize() const
+{
+    return m_resultTextureSize;
 }
 
 void UvUnwrapper::unwrap()

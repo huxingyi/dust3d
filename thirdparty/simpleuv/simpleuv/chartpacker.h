@@ -11,7 +11,7 @@ class ChartPacker
 public:
     void setCharts(const std::vector<std::pair<float, float>> &chartSizes);
     const std::vector<std::tuple<float, float, float, float, bool>> &getResult();
-    void pack();
+    float pack();
     bool tryPack(float textureSize);
 
 private:
@@ -25,7 +25,6 @@ private:
     size_t m_tryNum = 0;
     float m_textureSizeFactor = 1.0;
     size_t m_maxTryNum = 100;
-    float m_texelSizePerUnit = 1.0f;
 };
 
 }

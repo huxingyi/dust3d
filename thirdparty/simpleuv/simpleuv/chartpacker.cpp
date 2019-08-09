@@ -82,11 +82,12 @@ bool ChartPacker::tryPack(float textureSize)
     return true;
 }
 
-void ChartPacker::pack()
+float ChartPacker::pack()
 {
+    float textureSize = 0;
     float initialGuessSize = std::sqrt(calculateTotalArea() * m_initialAreaGuessFactor);
     while (true) {
-        float textureSize = initialGuessSize * m_textureSizeFactor;
+        textureSize = initialGuessSize * m_textureSizeFactor;
         ++m_tryNum;
         if (tryPack(textureSize))
             break;
@@ -96,6 +97,7 @@ void ChartPacker::pack()
             break;
         }
     }
+    return textureSize;
 }
 
 }
