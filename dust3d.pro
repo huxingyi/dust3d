@@ -506,6 +506,7 @@ SOURCES += thirdparty/simpleuv/simpleuv/triangulate.cpp
 HEADERS += thirdparty/simpleuv/simpleuv/triangulate.h
 
 HEADERS += thirdparty/simpleuv/simpleuv/meshdatatype.h
+SOURCES += thirdparty/simpleuv/simpleuv/meshdatatype.cpp
 
 SOURCES += thirdparty/simpleuv/thirdparty/squeezer/maxrects.c
 HEADERS += thirdparty/simpleuv/thirdparty/squeezer/maxrects.h

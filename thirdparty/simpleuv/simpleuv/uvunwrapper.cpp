@@ -7,9 +7,8 @@
 #include <simpleuv/parametrize.h>
 #include <simpleuv/chartpacker.h>
 #include <simpleuv/triangulate.h>
-#include <QDebug>
-#include <QVector3D>
-#include <QMatrix4x4>
+#include <Eigen/Dense>
+#include <Eigen/Geometry>
 
 namespace simpleuv 
 {
@@ -26,7 +25,7 @@ const std::vector<FaceTextureCoords> &UvUnwrapper::getFaceUvs() const
     return m_faceUvs;
 }
 
-const std::vector<QRectF> &UvUnwrapper::getChartRects() const
+const std::vector<Rect> &UvUnwrapper::getChartRects() const
 {
     return m_chartRects;
 }
@@ -109,13 +108,6 @@ double UvUnwrapper::distanceBetweenVertices(const Vertex &first, const Vertex &s
     return std::sqrt(x*x + y*y + z*z);
 }
 
-double UvUnwrapper::dotProduct(const Vertex &first, const Vertex &second)
-{
-    const QVector3D &firstVector = QVector3D(first.xyz[0], first.xyz[1], first.xyz[2]);
-    const QVector3D &secondVector = QVector3D(second.xyz[0], second.xyz[1], second.xyz[2]);
-    return QVector3D::dotProduct(firstVector, secondVector);
-}
-
 void UvUnwrapper::calculateFaceTextureBoundingBox(const std::vector<FaceTextureCoords> &faceTextureCoords,
         float &left, float &top, float &right, float &bottom)
 {
@@ -189,7 +181,7 @@ bool UvUnwrapper::fixHolesExceptTheLongestRing(const std::vector<Vertex> &vertic
             while (true) {
                 auto findLinkResult = holeVertexLink.find(index);
                 if (findLinkResult == holeVertexLink.end()) {
-                    qDebug() << "Search ring failed";
+                    //qDebug() << "Search ring failed";
                     return false;
                 }
                 for (const auto &item: findLinkResult->second) {
@@ -210,7 +202,7 @@ bool UvUnwrapper::fixHolesExceptTheLongestRing(const std::vector<Vertex> &vertic
                         }
                     }
                     if (!foundNewPath) {
-                        qDebug() << "No new path to try";
+                        //qDebug() << "No new path to try";
                         return false;
                     }
                     visitedPath.insert({prev, index});
@@ -230,7 +222,7 @@ bool UvUnwrapper::fixHolesExceptTheLongestRing(const std::vector<Vertex> &vertic
             }
         }
         if (ring.size() < 3) {
-            qDebug() << "Ring too short, size:" << ring.size();
+            //qDebug() << "Ring too short, size:" << ring.size();
             return false;
         }
         holeRings.push_back({ring, ringLength});
@@ -319,18 +311,18 @@ void UvUnwrapper::makeSeamAndCut(const std::vector<Vertex> &verticies,
     }
 }
 
-float UvUnwrapper::areaOf3dTriangle(const QVector3D &a, const QVector3D &b, const QVector3D &c)
+float UvUnwrapper::areaOf3dTriangle(const Eigen::Vector3d &a, const Eigen::Vector3d &b, const Eigen::Vector3d &c)
 {
     auto ab = b - a;
     auto ac = c - a;
-    return 0.5 * QVector3D::crossProduct(ab, ac).length();
+    return 0.5 * (ab.cross(ac)).norm();
 }
 
-float UvUnwrapper::areaOf2dTriangle(const QVector2D &a, const QVector2D &b, const QVector2D &c)
+float UvUnwrapper::areaOf2dTriangle(const Eigen::Vector2d &a, const Eigen::Vector2d &b, const Eigen::Vector2d &c)
 {
-    return areaOf3dTriangle(QVector3D(a.x(), a.y(), 0),
-        QVector3D(b.x(), b.y(), 0),
-        QVector3D(c.x(), c.y(), 0));
+    return areaOf3dTriangle(Eigen::Vector3d(a.x(), a.y(), 0),
+        Eigen::Vector3d(b.x(), b.y(), 0),
+        Eigen::Vector3d(c.x(), c.y(), 0));
 }
 
 void UvUnwrapper::calculateSizeAndRemoveInvalidCharts()
@@ -347,19 +339,19 @@ void UvUnwrapper::calculateSizeAndRemoveInvalidCharts()
         std::pair<float, float> size = {right - left, bottom - top};
         if (size.first <= 0 || std::isnan(size.first) || std::isinf(size.first) ||
                 size.second <= 0 || std::isnan(size.second) || std::isinf(size.second)) {
-            qDebug() << "Found invalid chart size:" << size.first << "x" << size.second;
+            //qDebug() << "Found invalid chart size:" << size.first << "x" << size.second;
             continue;
         }
         float surfaceArea = 0;
         for (const auto &item: chart.first) {
             const auto &face = m_mesh.faces[item];
-            surfaceArea += areaOf3dTriangle(QVector3D(m_mesh.vertices[face.indices[0]].xyz[0],
+            surfaceArea += areaOf3dTriangle(Eigen::Vector3d(m_mesh.vertices[face.indices[0]].xyz[0],
                     m_mesh.vertices[face.indices[0]].xyz[1],
                     m_mesh.vertices[face.indices[0]].xyz[2]),
-                QVector3D(m_mesh.vertices[face.indices[1]].xyz[0],
+                Eigen::Vector3d(m_mesh.vertices[face.indices[1]].xyz[0],
                     m_mesh.vertices[face.indices[1]].xyz[1],
                     m_mesh.vertices[face.indices[1]].xyz[2]),
-                QVector3D(m_mesh.vertices[face.indices[2]].xyz[0],
+                Eigen::Vector3d(m_mesh.vertices[face.indices[2]].xyz[0],
                     m_mesh.vertices[face.indices[2]].xyz[1],
                     m_mesh.vertices[face.indices[2]].xyz[2]));
         }
@@ -369,25 +361,24 @@ void UvUnwrapper::calculateSizeAndRemoveInvalidCharts()
                 item.coords[i].uv[0] -= left;
                 item.coords[i].uv[1] -= top;
             }
-            uvArea += areaOf2dTriangle(QVector2D(item.coords[0].uv[0], item.coords[0].uv[1]),
-                QVector2D(item.coords[1].uv[0], item.coords[1].uv[1]),
-                QVector2D(item.coords[2].uv[0], item.coords[2].uv[1]));
+            uvArea += areaOf2dTriangle(Eigen::Vector2d(item.coords[0].uv[0], item.coords[0].uv[1]),
+                Eigen::Vector2d(item.coords[1].uv[0], item.coords[1].uv[1]),
+                Eigen::Vector2d(item.coords[2].uv[0], item.coords[2].uv[1]));
         }
         if (m_enableRotation) {
-            QVector3D center(size.first * 0.5, size.second * 0.5, 0);
+            Eigen::Vector3d center(size.first * 0.5, size.second * 0.5, 0);
             float minRectArea = size.first * size.second;
             float minRectLeft = 0;
             float minRectTop = 0;
             bool rotated = false;
-            float choosenDegree = 0;
             for (const auto &degree: m_rotateDegrees) {
-                QMatrix4x4 matrix;
-                matrix.rotate(degree, 0, 0, 1);
+                Eigen::Matrix3d matrix;
+                matrix = Eigen::AngleAxisd(degree * 180.0 / 3.1415926, Eigen::Vector3d::UnitZ());
                 std::vector<FaceTextureCoords> rotatedUvs;
                 for (auto &item: chart.second) {
                     FaceTextureCoords rotatedCoords;
                     for (int i = 0; i < 3; ++i) {
-                        QVector3D point(item.coords[i].uv[0], item.coords[i].uv[1], 0);
+                        Eigen::Vector3d point(item.coords[i].uv[0], item.coords[i].uv[1], 0);
                         point -= center;
                         point = matrix * point;
                         rotatedCoords.coords[i].uv[0] = point.x();
@@ -404,13 +395,11 @@ void UvUnwrapper::calculateSizeAndRemoveInvalidCharts()
                     size = newSize;
                     minRectLeft = left;
                     minRectTop = top;
-                    choosenDegree = degree;
                     rotated = true;
                     chart.second = rotatedUvs;
                 }
             }
             if (rotated) {
-                //qDebug() << "Choosen degree:" << choosenDegree;
                 for (auto &item: chart.second) {
                     for (int i = 0; i < 3; ++i) {
                         item.coords[i].uv[0] -= minRectLeft;
@@ -537,7 +526,7 @@ void UvUnwrapper::unwrapSingleIsland(const std::vector<size_t> &group, int sourc
     decltype(localFaces.size()) faceNumBeforeFix = localFaces.size();
     size_t remainingHoleNumAfterFix = 0;
     if (!fixHolesExceptTheLongestRing(localVertices, localFaces, &remainingHoleNumAfterFix)) {
-        qDebug() << "fixHolesExceptTheLongestRing failed";
+        //qDebug() << "fixHolesExceptTheLongestRing failed";
         return;
     }
     if (1 == remainingHoleNumAfterFix) {
@@ -550,7 +539,7 @@ void UvUnwrapper::unwrapSingleIsland(const std::vector<size_t> &group, int sourc
         std::vector<size_t> secondGroup;
         makeSeamAndCut(localVertices, localFaces, localToGlobalFacesMap, firstGroup, secondGroup);
         if (firstGroup.empty() || secondGroup.empty()) {
-            qDebug() << "Cut mesh failed";
+            //qDebug() << "Cut mesh failed";
             return;
         }
         unwrapSingleIsland(firstGroup, sourcePartition, true);

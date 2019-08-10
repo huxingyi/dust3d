@@ -3,7 +3,6 @@
 extern "C" {
 #include <maxrects.h>
 }
-#include <QDebug>
 
 namespace simpleuv
 {
@@ -33,7 +32,7 @@ bool ChartPacker::tryPack(float textureSize)
     int width = textureSize * m_floatToIntFactor;
     int height = width;
     if (m_tryNum > 50) {
-        qDebug() << "Try the " << m_tryNum << "nth times pack with factor:" << m_textureSizeFactor << " size:" << width << "x" << height;
+        //qDebug() << "Try the " << m_tryNum << "nth times pack with factor:" << m_textureSizeFactor << " size:" << width << "x" << height;
     }
     for (const auto &chartSize: m_chartSizes) {
         maxRectsSize r;
@@ -93,7 +92,7 @@ float ChartPacker::pack()
             break;
         m_textureSizeFactor += m_textureSizeGrowFactor;
         if (m_tryNum >= m_maxTryNum) {
-            qDebug() << "Tried too many times:" << m_tryNum;
+            //qDebug() << "Tried too many times:" << m_tryNum;
             break;
         }
     }

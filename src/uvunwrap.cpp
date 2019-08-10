@@ -59,7 +59,7 @@ void uvUnwrap(const Outcome &outcome,
     uvUnwrapper.unwrap();
     qDebug() << "Texture size:" << uvUnwrapper.textureSize();
     const std::vector<simpleuv::FaceTextureCoords> &resultFaceUvs = uvUnwrapper.getFaceUvs();
-    const std::vector<QRectF> &resultChartRects = uvUnwrapper.getChartRects();
+    const std::vector<simpleuv::Rect> &resultChartRects = uvUnwrapper.getChartRects();
     const std::vector<int> &resultChartSourcePartitions = uvUnwrapper.getChartSourcePartitions();
     std::map<int, QVector2D> vertexUvMap;
     for (decltype(choosenTriangles.size()) i = 0; i < choosenTriangles.size(); ++i) {
@@ -88,6 +88,6 @@ void uvUnwrap(const Outcome &outcome,
             qDebug() << "Invalid UV chart source partition:" << source;
             continue;
         }
-        uvRects[partitionPartUuids[source - 1]].push_back(rect);
+        uvRects[partitionPartUuids[source - 1]].push_back({rect.left, rect.top, rect.width, rect.height});
     }
 }

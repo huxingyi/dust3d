@@ -4,7 +4,6 @@
 #include <igl/harmonic.h>
 #include <igl/map_vertices_to_circle.h>
 #include <simpleuv/parametrize.h>
-#include <QDebug>
 
 namespace simpleuv
 {
@@ -56,7 +55,7 @@ bool extractResult(const std::vector<Vertex> &verticies, const Eigen::MatrixXd &
         return true;
     };
     if ((decltype(verticies.size()))V_uv.size() < verticies.size() * 2) {
-        qDebug() << "Invalid V_uv.size:" << V_uv.size() << "Expected:" << verticies.size() * 2;
+        //qDebug() << "Invalid V_uv.size:" << V_uv.size() << "Expected:" << verticies.size() * 2;
         return false;
     }
     for (decltype(verticies.size()) i = 0; i < verticies.size(); i++) {
