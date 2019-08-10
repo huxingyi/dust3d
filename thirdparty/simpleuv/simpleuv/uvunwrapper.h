@@ -57,10 +57,12 @@ private:
     std::vector<QRectF> m_chartRects;
     std::vector<int> m_chartSourcePartitions;
     bool m_segmentByNormal = true;
-    float m_segmentDotProductThreshold = -0.5;    //120 degrees
+    float m_segmentDotProductThreshold = 0.0;    //90 degrees
     float m_texelSizePerUnit = 1.0;
     float m_resultTextureSize = 0;
     bool m_segmentPreferMorePieces = true;
+    bool m_enableRotation = true;
+    static const std::vector<float> m_rotateDegrees;
 };
 
 }

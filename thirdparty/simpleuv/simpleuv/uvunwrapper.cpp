@@ -9,9 +9,12 @@
 #include <simpleuv/triangulate.h>
 #include <QDebug>
 #include <QVector3D>
+#include <QMatrix4x4>
 
 namespace simpleuv 
 {
+
+const std::vector<float> UvUnwrapper::m_rotateDegrees = {5, 15, 20, 25, 30, 35, 40, 45};
 
 void UvUnwrapper::setMesh(const Mesh &mesh)
 {
@@ -369,6 +372,52 @@ void UvUnwrapper::calculateSizeAndRemoveInvalidCharts()
             uvArea += areaOf2dTriangle(QVector2D(item.coords[0].uv[0], item.coords[0].uv[1]),
                 QVector2D(item.coords[1].uv[0], item.coords[1].uv[1]),
                 QVector2D(item.coords[2].uv[0], item.coords[2].uv[1]));
+        }
+        if (m_enableRotation) {
+            QVector3D center(size.first * 0.5, size.second * 0.5, 0);
+            float minRectArea = size.first * size.second;
+            float minRectLeft = 0;
+            float minRectTop = 0;
+            bool rotated = false;
+            float choosenDegree = 0;
+            for (const auto &degree: m_rotateDegrees) {
+                QMatrix4x4 matrix;
+                matrix.rotate(degree, 0, 0, 1);
+                std::vector<FaceTextureCoords> rotatedUvs;
+                for (auto &item: chart.second) {
+                    FaceTextureCoords rotatedCoords;
+                    for (int i = 0; i < 3; ++i) {
+                        QVector3D point(item.coords[i].uv[0], item.coords[i].uv[1], 0);
+                        point -= center;
+                        point = matrix * point;
+                        rotatedCoords.coords[i].uv[0] = point.x();
+                        rotatedCoords.coords[i].uv[1] = point.y();
+                    }
+                    rotatedUvs.push_back(rotatedCoords);
+                }
+                left = top = right = bottom = 0;
+                calculateFaceTextureBoundingBox(rotatedUvs, left, top, right, bottom);
+                std::pair<float, float> newSize = {right - left, bottom - top};
+                float newRectArea = newSize.first * newSize.second;
+                if (newRectArea < minRectArea) {
+                    minRectArea = newRectArea;
+                    size = newSize;
+                    minRectLeft = left;
+                    minRectTop = top;
+                    choosenDegree = degree;
+                    rotated = true;
+                    chart.second = rotatedUvs;
+                }
+            }
+            if (rotated) {
+                //qDebug() << "Choosen degree:" << choosenDegree;
+                for (auto &item: chart.second) {
+                    for (int i = 0; i < 3; ++i) {
+                        item.coords[i].uv[0] -= minRectLeft;
+                        item.coords[i].uv[1] -= minRectTop;
+                    }
+                }
+            }
         }
         //qDebug() << "left:" << left << "top:" << top << "right:" << right << "bottom:" << bottom;
         //qDebug() << "width:" << size.first << "height:" << size.second;
