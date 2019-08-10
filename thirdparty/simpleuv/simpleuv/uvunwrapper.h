@@ -4,6 +4,7 @@
 #include <map>
 #include <simpleuv/meshdatatype.h>
 #include <Eigen/Dense>
+#include <tuple>
 
 namespace simpleuv 
 {

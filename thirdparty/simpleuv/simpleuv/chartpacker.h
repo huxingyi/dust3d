@@ -2,6 +2,7 @@
 #define SIMPLEUV_CHART_PACKER_H
 #include <vector>
 #include <cstdlib>
+#include <tuple>
 
 namespace simpleuv
 {
