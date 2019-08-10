@@ -12,11 +12,12 @@ class UvUnwrapper
 {
 public:
     void setMesh(const Mesh &mesh);
+    void setTexelSize(float texelSize);
     void unwrap();
     const std::vector<FaceTextureCoords> &getFaceUvs() const;
     const std::vector<Rect> &getChartRects() const;
     const std::vector<int> &getChartSourcePartitions() const;
-    float textureSize() const;
+    float getTextureSize() const;
 
 private:
     void partition();

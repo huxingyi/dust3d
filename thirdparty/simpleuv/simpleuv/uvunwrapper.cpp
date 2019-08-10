@@ -20,6 +20,11 @@ void UvUnwrapper::setMesh(const Mesh &mesh)
     m_mesh = mesh;
 }
 
+void UvUnwrapper::setTexelSize(float texelSize)
+{
+    m_texelSizePerUnit = texelSize;
+}
+
 const std::vector<FaceTextureCoords> &UvUnwrapper::getFaceUvs() const
 {
     return m_faceUvs;
@@ -577,7 +582,7 @@ void UvUnwrapper::parametrizeSingleGroup(const std::vector<Vertex> &verticies,
     m_chartSourcePartitions.push_back(sourcePartition);
 }
 
-float UvUnwrapper::textureSize() const
+float UvUnwrapper::getTextureSize() const
 {
     return m_resultTextureSize;
 }

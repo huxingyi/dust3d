@@ -57,7 +57,7 @@ void uvUnwrap(const Outcome &outcome,
     simpleuv::UvUnwrapper uvUnwrapper;
     uvUnwrapper.setMesh(inputMesh);
     uvUnwrapper.unwrap();
-    qDebug() << "Texture size:" << uvUnwrapper.textureSize();
+    qDebug() << "Texture size:" << uvUnwrapper.getTextureSize();
     const std::vector<simpleuv::FaceTextureCoords> &resultFaceUvs = uvUnwrapper.getFaceUvs();
     const std::vector<simpleuv::Rect> &resultChartRects = uvUnwrapper.getChartRects();
     const std::vector<int> &resultChartSourcePartitions = uvUnwrapper.getChartSourcePartitions();
