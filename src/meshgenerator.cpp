@@ -840,7 +840,7 @@ nodemesh::Combiner::Mesh *MeshGenerator::combineComponentMesh(const QString &com
             combineGroups[currentGroupIndex].second.push_back({childIdString, colorName});
         }
         // Secondly, sub group by color
-        std::vector<std::pair<nodemesh::Combiner::Mesh *, CombineMode>> groupMeshes;
+        std::vector<std::tuple<nodemesh::Combiner::Mesh *, CombineMode, QString>> groupMeshes;
         for (const auto &group: combineGroups) {
             std::set<size_t> used;
             std::vector<std::vector<QString>> componentIdStrings;
@@ -851,7 +851,7 @@ nodemesh::Combiner::Mesh *MeshGenerator::combineComponentMesh(const QString &com
                     continue;
                 const auto &colorName = group.second[i].second;
                 if (lastColorName != colorName || lastColorName.isEmpty()) {
-                    qDebug() << "New sub group[" << currentSubGroupIndex << "] for color[" << colorName << "]";
+                    //qDebug() << "New sub group[" << currentSubGroupIndex << "] for color[" << colorName << "]";
                     componentIdStrings.push_back({});
                     ++currentSubGroupIndex;
                     lastColorName = colorName;
@@ -876,8 +876,12 @@ nodemesh::Combiner::Mesh *MeshGenerator::combineComponentMesh(const QString &com
                     componentIdStrings[currentSubGroupIndex].push_back(group.second[j].first);
                 }
             }
-            std::vector<std::pair<nodemesh::Combiner::Mesh *, CombineMode>> multipleMeshes;
+            std::vector<std::tuple<nodemesh::Combiner::Mesh *, CombineMode, QString>> multipleMeshes;
+            QStringList subGroupMeshIdStringList;
             for (const auto &it: componentIdStrings) {
+                QStringList componentChildGroupIdStringList;
+                for (const auto &componentChildGroupIdString: it)
+                    componentChildGroupIdStringList += componentChildGroupIdString;
                 nodemesh::Combiner::Mesh *childMesh = combineComponentChildGroupMesh(it, componentCache);
                 if (nullptr == childMesh)
                     continue;
@@ -885,12 +889,14 @@ nodemesh::Combiner::Mesh *MeshGenerator::combineComponentMesh(const QString &com
                     delete childMesh;
                     continue;
                 }
-                multipleMeshes.push_back({childMesh, CombineMode::Normal});
+                QString componentChildGroupIdStringListString = componentChildGroupIdStringList.join("|");
+                subGroupMeshIdStringList += componentChildGroupIdStringListString;
+                multipleMeshes.push_back({childMesh, CombineMode::Normal, componentChildGroupIdStringListString});
             }
             nodemesh::Combiner::Mesh *subGroupMesh = combineMultipleMeshes(multipleMeshes, foundColorSolubilitySetting);
             if (nullptr == subGroupMesh)
                 continue;
-            groupMeshes.push_back({subGroupMesh, group.first});
+            groupMeshes.push_back({subGroupMesh, group.first, subGroupMeshIdStringList.join("&")});
         }
         mesh = combineMultipleMeshes(groupMeshes, false);
     }
@@ -906,12 +912,14 @@ nodemesh::Combiner::Mesh *MeshGenerator::combineComponentMesh(const QString &com
     return mesh;
 }
 
-nodemesh::Combiner::Mesh *MeshGenerator::combineMultipleMeshes(const std::vector<std::pair<nodemesh::Combiner::Mesh *, CombineMode>> &multipleMeshes, bool recombine)
+nodemesh::Combiner::Mesh *MeshGenerator::combineMultipleMeshes(const std::vector<std::tuple<nodemesh::Combiner::Mesh *, CombineMode, QString>> &multipleMeshes, bool recombine)
 {
     nodemesh::Combiner::Mesh *mesh = nullptr;
+    QString meshIdStrings;
     for (const auto &it: multipleMeshes) {
-        const auto &childCombineMode = it.second;
-        nodemesh::Combiner::Mesh *subMesh = it.first;
+        const auto &childCombineMode = std::get<1>(it);
+        nodemesh::Combiner::Mesh *subMesh = std::get<0>(it);
+        const QString &subMeshIdString = std::get<2>(it);
         //qDebug() << "Combine mode:" << CombineModeToString(childCombineMode);
         if (nullptr == subMesh) {
             qDebug() << "Child mesh is null";
@@ -923,18 +931,35 @@ nodemesh::Combiner::Mesh *MeshGenerator::combineMultipleMeshes(const std::vector
             continue;
         }
         if (nullptr == mesh) {
-            //if (childCombineMode == CombineMode::Inversion) {
-            //    delete subMesh;
-            //} else {
-                mesh = subMesh;
-            //}
+            mesh = subMesh;
+            meshIdStrings = subMeshIdString;
         } else {
-            nodemesh::Combiner::Mesh *newMesh = combineTwoMeshes(*mesh,
-                *subMesh,
-                childCombineMode == CombineMode::Inversion ?
-                    nodemesh::Combiner::Method::Diff : nodemesh::Combiner::Method::Union,
-                recombine);
-            delete subMesh;
+            auto combinerMethod = childCombineMode == CombineMode::Inversion ?
+                    nodemesh::Combiner::Method::Diff : nodemesh::Combiner::Method::Union;
+            auto combinerMethodString = combinerMethod == nodemesh::Combiner::Method::Union ?
+                "+" : "-";
+            meshIdStrings += combinerMethodString + subMeshIdString;
+            if (recombine)
+                meshIdStrings += "!";
+            nodemesh::Combiner::Mesh *newMesh = nullptr;
+            auto findCached = m_cacheContext->cachedCombination.find(meshIdStrings);
+            if (findCached != m_cacheContext->cachedCombination.end()) {
+                if (nullptr != findCached->second) {
+                    //qDebug() << "Use cached combination:" << meshIdStrings;
+                    newMesh = new nodemesh::Combiner::Mesh(*findCached->second);
+                }
+            } else {
+                newMesh = combineTwoMeshes(*mesh,
+                    *subMesh,
+                    combinerMethod,
+                    recombine);
+                delete subMesh;
+                if (nullptr != newMesh)
+                    m_cacheContext->cachedCombination.insert({meshIdStrings, new nodemesh::Combiner::Mesh(*newMesh)});
+                else
+                    m_cacheContext->cachedCombination.insert({meshIdStrings, nullptr});
+                //qDebug() << "Add cached combination:" << meshIdStrings;
+            }
             if (newMesh && !newMesh->isNull()) {
                 delete mesh;
                 mesh = newMesh;
@@ -954,7 +979,7 @@ nodemesh::Combiner::Mesh *MeshGenerator::combineMultipleMeshes(const std::vector
 
 nodemesh::Combiner::Mesh *MeshGenerator::combineComponentChildGroupMesh(const std::vector<QString> &componentIdStrings, GeneratedComponent &componentCache)
 {
-    std::vector<std::pair<nodemesh::Combiner::Mesh *, CombineMode>> multipleMeshes;
+    std::vector<std::tuple<nodemesh::Combiner::Mesh *, CombineMode, QString>> multipleMeshes;
     for (const auto &childIdString: componentIdStrings) {
         CombineMode childCombineMode = CombineMode::Normal;
         nodemesh::Combiner::Mesh *subMesh = combineComponentMesh(childIdString, &childCombineMode);
@@ -979,7 +1004,7 @@ nodemesh::Combiner::Mesh *MeshGenerator::combineComponentChildGroupMesh(const st
             continue;
         }
     
-        multipleMeshes.push_back({subMesh, childCombineMode});
+        multipleMeshes.push_back({subMesh, childCombineMode, childIdString});
     }
     return combineMultipleMeshes(multipleMeshes);
 }
@@ -1106,6 +1131,15 @@ void MeshGenerator::generate()
         }
         for (auto it = m_cacheContext->components.begin(); it != m_cacheContext->components.end(); ) {
             if (m_snapshot->components.find(it->first) == m_snapshot->components.end()) {
+                for (auto combinationIt = m_cacheContext->cachedCombination.begin(); combinationIt != m_cacheContext->cachedCombination.end(); ) {
+                    if (-1 != combinationIt->first.indexOf(it->first)) {
+                        //qDebug() << "Removed cached combination:" << combinationIt->first;
+                        delete combinationIt->second;
+                        combinationIt = m_cacheContext->cachedCombination.erase(combinationIt);
+                        continue;
+                    }
+                    combinationIt++;
+                }
                 it = m_cacheContext->components.erase(it);
                 continue;
             }
@@ -1115,6 +1149,18 @@ void MeshGenerator::generate()
     
     collectParts();
     checkDirtyFlags();
+    
+    for (const auto &dirtyComponentId: m_dirtyComponentIds) {
+        for (auto combinationIt = m_cacheContext->cachedCombination.begin(); combinationIt != m_cacheContext->cachedCombination.end(); ) {
+            if (-1 != combinationIt->first.indexOf(dirtyComponentId)) {
+                //qDebug() << "Removed dirty cached combination:" << combinationIt->first;
+                delete combinationIt->second;
+                combinationIt = m_cacheContext->cachedCombination.erase(combinationIt);
+                continue;
+            }
+            combinationIt++;
+        }
+    }
     
     m_dirtyComponentIds.insert(QUuid().toString());
     

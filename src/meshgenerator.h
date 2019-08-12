@@ -6,6 +6,7 @@
 #include <nodemesh/combiner.h>
 #include <nodemesh/positionkey.h>
 #include <nodemesh/builder.h>
+#include <tuple>
 #include "outcome.h"
 #include "snapshot.h"
 #include "combinemode.h"
@@ -47,6 +48,7 @@ public:
     std::map<QString, GeneratedComponent> components;
     std::map<QString, GeneratedPart> parts;
     std::map<QString, QString> partMirrorIdMap;
+    std::map<QString, nodemesh::Combiner::Mesh *> cachedCombination;
 };
 
 class MeshGenerator : public QObject
@@ -116,7 +118,7 @@ private:
     CombineMode componentCombineMode(const std::map<QString, QString> *component);
     nodemesh::Combiner::Mesh *combineComponentChildGroupMesh(const std::vector<QString> &componentIdStrings,
         GeneratedComponent &componentCache);
-    nodemesh::Combiner::Mesh *combineMultipleMeshes(const std::vector<std::pair<nodemesh::Combiner::Mesh *, CombineMode>> &multipleMeshes, bool recombine=true);
+    nodemesh::Combiner::Mesh *combineMultipleMeshes(const std::vector<std::tuple<nodemesh::Combiner::Mesh *, CombineMode, QString>> &multipleMeshes, bool recombine=true);
     QString componentColorName(const std::map<QString, QString> *component);
     void collectUncombinedComponent(const QString &componentIdString);
     void cutFaceStringToCutTemplate(const QString &cutFaceString, std::vector<QVector2D> &cutTemplate);
