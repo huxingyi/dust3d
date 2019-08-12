@@ -891,12 +891,12 @@ nodemesh::Combiner::Mesh *MeshGenerator::combineComponentMesh(const QString &com
                 }
                 QString componentChildGroupIdStringListString = componentChildGroupIdStringList.join("|");
                 subGroupMeshIdStringList += componentChildGroupIdStringListString;
-                multipleMeshes.push_back({childMesh, CombineMode::Normal, componentChildGroupIdStringListString});
+                multipleMeshes.push_back(std::make_tuple(childMesh, CombineMode::Normal, componentChildGroupIdStringListString));
             }
             nodemesh::Combiner::Mesh *subGroupMesh = combineMultipleMeshes(multipleMeshes, foundColorSolubilitySetting);
             if (nullptr == subGroupMesh)
                 continue;
-            groupMeshes.push_back({subGroupMesh, group.first, subGroupMeshIdStringList.join("&")});
+            groupMeshes.push_back(std::make_tuple(subGroupMesh, group.first, subGroupMeshIdStringList.join("&")));
         }
         mesh = combineMultipleMeshes(groupMeshes, false);
     }
@@ -1004,7 +1004,7 @@ nodemesh::Combiner::Mesh *MeshGenerator::combineComponentChildGroupMesh(const st
             continue;
         }
     
-        multipleMeshes.push_back({subMesh, childCombineMode, childIdString});
+        multipleMeshes.push_back(std::make_tuple(subMesh, childCombineMode, childIdString));
     }
     return combineMultipleMeshes(multipleMeshes);
 }
