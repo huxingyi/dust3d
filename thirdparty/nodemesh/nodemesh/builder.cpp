@@ -9,6 +9,8 @@
 #include <nodemesh/combiner.h>
 #include <nodemesh/misc.h>
 #include <QMatrix4x4>
+#include <unordered_set>
+#include <queue>
 
 #define WRAP_STEP_BACK_FACTOR   0.1     // 0.1 ~ 0.9
 #define WRAP_WELD_FACTOR        0.01    // Allowed distance: WELD_FACTOR * radius
@@ -57,9 +59,90 @@ const std::vector<size_t> &Builder::generatedVerticesSourceNodeIndices()
     return m_generatedVerticesSourceNodeIndices;
 }
 
-void Builder::sortNodeIndices()
+void Builder::layoutNodes()
 {
-    std::sort(m_sortedNodeIndices.begin(), m_sortedNodeIndices.end(), [&](const size_t &firstIndex,
+    std::unordered_set<size_t> processedNodes;
+    std::queue<size_t> waitNodes;
+    std::vector<size_t> threeBranchNodes;
+    for (size_t i = 0; i < m_nodes.size(); ++i) {
+        if (m_nodes[i].edges.size() == 1) {
+            waitNodes.push(i);
+            break;
+        }
+    }
+    if (waitNodes.empty())
+        return;
+    m_sortedNodeIndices.clear();
+    while (!waitNodes.empty()) {
+        auto index = waitNodes.front();
+        waitNodes.pop();
+        if (processedNodes.find(index) != processedNodes.end())
+            continue;
+        const auto &node = m_nodes[index];
+        for (const auto &edgeIndex: node.edges) {
+            const auto &edge = m_edges[edgeIndex];
+            for (const auto &nodeIndex: edge.nodes) {
+                if (processedNodes.find(nodeIndex) == processedNodes.end())
+                    waitNodes.push(nodeIndex);
+            }
+        }
+        if (node.edges.size() < 3) {
+            m_sortedNodeIndices.push_back(index);
+        } else {
+            threeBranchNodes.push_back(index);
+        }
+        processedNodes.insert(index);
+    }
+    
+    if (m_sortedNodeIndices.size() > 1) {
+        QVector3D sumOfDirections;
+        for (size_t i = 1; i < m_sortedNodeIndices.size(); ++i) {
+            auto firstNodeIndex = m_sortedNodeIndices[i - 1];
+            auto nextNodeIndex = m_sortedNodeIndices[i];
+            sumOfDirections += (m_nodes[nextNodeIndex].position - m_nodes[firstNodeIndex].position);
+        }
+       
+        QVector3D layoutDirection = sumOfDirections.normalized();
+        const std::vector<QVector3D> axisList = {
+            QVector3D(1, 0, 0),
+            QVector3D(0, 1, 0),
+            QVector3D(0, 0, 1),
+        };
+        std::vector<std::pair<float, size_t>> dots;
+        for (size_t i = 0; i < axisList.size(); ++i) {
+            dots.push_back(std::make_pair(qAbs(QVector3D::dotProduct(layoutDirection, axisList[i])), i));
+        }
+        std::sort(dots.begin(), dots.end(), [](const std::pair<float, size_t> &first,
+                const std::pair<float, size_t> &second) {
+            return first.first > second.first;
+        });
+        
+        const auto &headNode = m_nodes[m_sortedNodeIndices[0]];
+        const auto &tailNode = m_nodes[m_sortedNodeIndices[m_sortedNodeIndices.size() - 1]];
+        
+        bool needReverse = false;
+        const auto &choosenAxis = dots[0].second;
+        switch (choosenAxis) {
+        case 0: // x
+            if (headNode.position.x() * headNode.position.x() < tailNode.position.x() * tailNode.position.x())
+                needReverse = true;
+            break;
+        case 1: // y
+            if (headNode.position.y() * headNode.position.y() < tailNode.position.y() * tailNode.position.y())
+                needReverse = true;
+            break;
+        case 2: // z
+        default:
+            if (headNode.position.z() * headNode.position.z() < tailNode.position.z() * tailNode.position.z())
+                needReverse = true;
+            break;
+        }
+        
+        if (needReverse)
+            std::reverse(m_sortedNodeIndices.begin(), m_sortedNodeIndices.end());
+    }
+    
+    std::sort(threeBranchNodes.begin(), threeBranchNodes.end(), [&](const size_t &firstIndex,
             const size_t &secondIndex) {
         const Node &firstNode = m_nodes[firstIndex];
         const Node &secondNode = m_nodes[secondIndex];
@@ -85,6 +168,13 @@ void Builder::sortNodeIndices()
             return false;
         return false;
     });
+    
+    m_sortedNodeIndices.insert(m_sortedNodeIndices.begin(), threeBranchNodes.begin(), threeBranchNodes.end());
+}
+
+void Builder::sortNodeIndices()
+{
+    layoutNodes();
 }
 
 void Builder::prepareNode(size_t nodeIndex)
