@@ -124,16 +124,16 @@ void Builder::layoutNodes()
         const auto &choosenAxis = dots[0].second;
         switch (choosenAxis) {
         case 0: // x
-            if (headNode.position.x() * headNode.position.x() < tailNode.position.x() * tailNode.position.x())
+            if (headNode.position.x() * headNode.position.x() > tailNode.position.x() * tailNode.position.x())
                 needReverse = true;
             break;
         case 1: // y
-            if (headNode.position.y() * headNode.position.y() < tailNode.position.y() * tailNode.position.y())
+            if (headNode.position.y() * headNode.position.y() > tailNode.position.y() * tailNode.position.y())
                 needReverse = true;
             break;
         case 2: // z
         default:
-            if (headNode.position.z() * headNode.position.z() < tailNode.position.z() * tailNode.position.z())
+            if (headNode.position.z() * headNode.position.z() > tailNode.position.z() * tailNode.position.z())
                 needReverse = true;
             break;
         }
