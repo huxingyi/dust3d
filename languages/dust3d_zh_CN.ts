@@ -41,10 +41,6 @@
         <translation>从画布选择节点</translation>
     </message>
     <message>
-        <source>Enter drag mode</source>
-        <translation>进入拖动模式</translation>
-    </message>
-    <message>
         <source>Enter zoom in mode</source>
         <translation>进入放大模式</translation>
     </message>

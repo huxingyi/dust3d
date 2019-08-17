@@ -57,6 +57,7 @@ highp float exposure;
 highp float gamma;
 
 varying highp vec3 vert;
+varying highp vec3 vertRaw;
 varying highp vec3 vertNormal;
 varying highp vec3 vertColor;
 varying highp vec2 vertTexCoord;
@@ -324,7 +325,7 @@ void main()
         color = texture2D(textureId, vertTexCoord).rgb;
     }
     if (mousePickEnabled == 1) {
-        if (distance(mousePickTargetPosition, vert) <= mousePickRadius) {
+        if (distance(mousePickTargetPosition, vertRaw) <= mousePickRadius) {
             color = color + vec3(0.99, 0.4, 0.13);
         }
     }

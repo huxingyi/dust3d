@@ -6,6 +6,7 @@ attribute float metalness;
 attribute float roughness;
 attribute vec3 tangent;
 varying vec3 vert;
+varying vec3 vertRaw;
 varying vec3 vertNormal;
 varying vec3 vertColor;
 varying vec2 vertTexCoord;
@@ -31,6 +32,7 @@ mat3 transpose(mat3 m)
 void main()
 {
     vert = (modelMatrix * vertex).xyz;
+    vertRaw = vert;
     vertNormal = normalize((modelMatrix * vec4(normal, 1.0)).xyz);
     vertColor = color;
     cameraPos = vec3(0, 0, -4.0);
