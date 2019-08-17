@@ -69,7 +69,7 @@ Document::Document() :
     m_mousePicker(nullptr),
     m_isMouseTargetResultObsolete(false),
     m_paintMode(PaintMode::None),
-    m_mousePickRadius(0.1),
+    m_mousePickRadius(0.2),
     m_saveNextSnapshot(false)
 {
     connect(&Preferences::instance(), &Preferences::partColorChanged, this, &Document::applyPreferencePartColorChange);

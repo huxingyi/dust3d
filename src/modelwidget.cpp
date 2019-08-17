@@ -225,9 +225,8 @@ bool ModelWidget::inputMousePressEventFromOtherWidget(QMouseEvent *event)
                 !QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
             shouldStartMove = m_moveEnabled;
         }
-        if (!shouldStartMove) {
+        if (!shouldStartMove && !m_mousePickTargetPositionInModelSpace.isNull())
             emit mousePressed();
-        }
     } else if (event->button() == Qt::MidButton) {
         shouldStartMove = m_moveEnabled;
     }

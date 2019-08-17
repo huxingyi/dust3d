@@ -1102,7 +1102,7 @@ void SkeletonGraphicsWidget::scaleSelected(float delta)
     QVector2D center = centerOfNodeItemSet(nodeItems);
     QVector2D otherCenter = centerOfNodeItemSet(otherProfileNodeItems);
     std::map<QUuid, std::tuple<float, float, float>> moveByMap;
-    float scale = 0.01 * delta;
+    float scale = sceneRadiusToUnified(delta);
     for (const auto &nodeItem: nodeItems) {
         QVector2D origin = QVector2D(nodeItem->origin());
         QVector2D ray = (center - origin) * scale;
@@ -1131,16 +1131,11 @@ void SkeletonGraphicsWidget::scaleSelected(float delta)
 
 bool SkeletonGraphicsWidget::wheel(QWheelEvent *event)
 {
-    qreal delta = event->delta() / 10;
-    if (!QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
-        if (delta > 0)
-            delta = 1;
-        else
-            delta = -1;
-    } else {
-        if (fabs(delta) < 1)
-            delta = delta < 0 ? -1.0 : 1.0;
-    }
+    float delta = 0;
+    if (event->delta() > 0)
+        delta = 1;
+    else
+        delta = -1;
     if (SkeletonDocumentEditMode::Add == m_document->editMode) {
         if (m_cursorNodeItem->isVisible()) {
             m_cursorNodeItem->setRadius(m_cursorNodeItem->radius() + delta);
