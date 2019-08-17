@@ -77,6 +77,7 @@ uniform highp int roughnessMapEnabled;
 uniform highp int ambientOcclusionMapEnabled;
 uniform highp int mousePickEnabled;
 uniform highp vec3 mousePickTargetPosition;
+uniform highp float mousePickRadius;
 
 const int MAX_LIGHTS = 8;
 const int TYPE_POINT = 0;
@@ -323,7 +324,7 @@ void main()
         color = texture2D(textureId, vertTexCoord).rgb;
     }
     if (mousePickEnabled == 1) {
-        if (distance(mousePickTargetPosition, vert) <= 0.1) {
+        if (distance(mousePickTargetPosition, vert) <= mousePickRadius) {
             color = color + vec3(0.99, 0.4, 0.13);
         }
     }

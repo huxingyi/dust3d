@@ -1,5 +1,11 @@
 #include <QDebug>
+#include <QQuaternion>
+#include <QRadialGradient>
+#include <QBrush>
+#include <QPainter>
 #include "mousepicker.h"
+#include "util.h"
+#include "imageforever.h"
 
 MousePicker::MousePicker(const Outcome &outcome, const QVector3D &mouseRayNear, const QVector3D &mouseRayFar) :
     m_outcome(outcome),
@@ -8,12 +14,33 @@ MousePicker::MousePicker(const Outcome &outcome, const QVector3D &mouseRayNear, 
 {
 }
 
+const std::set<QUuid> &MousePicker::changedPartIds()
+{
+    return m_changedPartIds;
+}
+
+void MousePicker::setPaintMode(PaintMode paintMode)
+{
+    m_paintMode = paintMode;
+}
+
+void MousePicker::setMaskNodeIds(const std::set<QUuid> &nodeIds)
+{
+    m_mousePickMaskNodeIds = nodeIds;
+}
+
+void MousePicker::setRadius(float radius)
+{
+    m_radius = radius;
+}
+
 MousePicker::~MousePicker()
 {
 }
 
-void MousePicker::process()
+bool MousePicker::calculateMouseModelPosition(QVector3D &mouseModelPosition)
 {
+    bool foundPosition = false;
     float minDistance2 = std::numeric_limits<float>::max();
     for (size_t i = 0; i < m_outcome.triangles.size(); ++i) {
         const auto &triangleIndices = m_outcome.triangles[i];
@@ -30,13 +57,97 @@ void MousePicker::process()
                 &intersection)) {
             float distance2 = (intersection - m_mouseRayNear).lengthSquared();
             if (distance2 < minDistance2) {
-                m_targetPosition = intersection;
+                mouseModelPosition = intersection;
                 minDistance2 = distance2;
+                foundPosition = true;
             }
         }
     }
+    return true;
+}
+
+void MousePicker::pick()
+{
+    if (!calculateMouseModelPosition(m_targetPosition))
+        return;
+    
+    if (PaintMode::None == m_paintMode)
+        return;
+    
+    float distance2 = m_radius * m_radius;
+    
+    for (const auto &map: m_outcome.paintMaps) {
+        for (const auto &node: map.paintNodes) {
+            if (!m_mousePickMaskNodeIds.empty() && m_mousePickMaskNodeIds.find(node.originNodeId) == m_mousePickMaskNodeIds.end())
+                continue;
+            float sumOfDistance = 0;
+            size_t intersectedNum = 0;
+            QVector3D sumOfDirection;
+            QVector3D referenceDirection = (m_targetPosition - node.origin).normalized();
+            for (const auto &vertexPosition: node.vertices) {
+                if (QVector3D::dotProduct(referenceDirection, (vertexPosition - node.origin).normalized()) > 0 &&
+                        (vertexPosition - m_targetPosition).lengthSquared() <= distance2) {
+                    sumOfDistance += vertexPosition.distanceToPoint(m_targetPosition);
+                    sumOfDirection += (vertexPosition - node.origin).normalized();
+                    ++intersectedNum;
+                }
+            }
+            if (intersectedNum > 0) {
+                float averageDistance = sumOfDistance / intersectedNum;
+                float paintRadius = (m_radius - averageDistance) / node.radius;
+                QVector3D paintDirection = sumOfDirection.normalized();
+                float degrees = angleInRangle360BetweenTwoVectors(node.baseNormal, paintDirection, node.direction);
+                float offset = (float)node.order / map.paintNodes.size();
+                m_changedPartIds.insert(map.partId);
+                paintToImage(map.partId, offset, degrees / 360.0, paintRadius, PaintMode::Push == m_paintMode);
+            }
+        }
+    }
+}
+
+void MousePicker::process()
+{
+    pick();
 
     emit finished();
+}
+
+void MousePicker::paintToImage(const QUuid &partId, float x, float y, float radius, bool inverted)
+{
+    QUuid oldImageId;
+    QImage image(72, 36, QImage::Format_Grayscale8);
+    image.fill(QColor(127, 127, 127));
+    const auto &findImageId = m_paintImages.find(partId);
+    if (findImageId != m_paintImages.end()) {
+        const QImage *oldImage = ImageForever::get(findImageId->second);
+        if (nullptr != oldImage) {
+            if (oldImage->size() == image.size() &&
+                    oldImage->format() == image.format()) {
+                image = *oldImage;
+            }
+        }
+    }
+    float destX = image.width() * x;
+    float destY = image.height() * y;
+    float destRadius = image.height() * radius;
+    {
+        QRadialGradient gradient(destX, destY, destRadius / 2);
+        if (inverted) {
+            gradient.setColorAt(0, QColor(0, 0, 0, 3));
+            gradient.setColorAt(1, Qt::transparent);
+        } else {
+            gradient.setColorAt(0, QColor(255, 255, 255, 3));
+            gradient.setColorAt(1, Qt::transparent);
+        }
+        QBrush brush(gradient);
+        QPainter paint(&image);
+        paint.setRenderHint(QPainter::HighQualityAntialiasing);
+        paint.setBrush(brush);
+        paint.setPen(Qt::NoPen);
+        paint.drawEllipse(destX - destRadius / 2, destY - destRadius / 2, destRadius, destRadius);
+    }
+    QUuid imageId = ImageForever::add(&image);
+    m_paintImages[partId] = imageId;
 }
 
 const QVector3D &MousePicker::targetPosition()
@@ -87,4 +198,14 @@ bool MousePicker::intersectSegmentAndTriangle(const QVector3D &segmentPoint0, co
     if (nullptr != intersection)
         *intersection = possibleIntersection;
     return true;
+}
+
+void MousePicker::setPaintImages(const std::map<QUuid, QUuid> &paintImages)
+{
+    m_paintImages = paintImages;
+}
+
+const std::map<QUuid, QUuid> &MousePicker::resultPaintImages()
+{
+    return m_paintImages;
 }

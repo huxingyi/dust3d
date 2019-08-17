@@ -25,6 +25,7 @@ public:
     std::vector<OutcomeNode> outcomeNodes;
     std::vector<std::pair<QVector3D, std::pair<QUuid, QUuid>>> outcomeNodeVertices;
     std::vector<std::vector<size_t>> previewTriangles;
+    OutcomePaintMap outcomePaintMap;
     bool isSucceed = false;
 };
 
@@ -40,6 +41,7 @@ public:
     std::set<nodemesh::PositionKey> noneSeamVertices;
     std::vector<OutcomeNode> outcomeNodes;
     std::vector<std::pair<QVector3D, std::pair<QUuid, QUuid>>> outcomeNodeVertices;
+    std::vector<OutcomePaintMap> outcomePaintMaps;
 };
 
 class GeneratedCacheContext

@@ -522,7 +522,7 @@ public slots:
     void shortcutPaste();
     void shortcutSave();
     void shortcutSelectMode();
-    void shortcutDragMode();
+    void shortcutPaintMode();
     void shortcutZoomRenderedModelByMinus10();
     void shortcutZoomSelectedByMinus1();
     void shortcutZoomRenderedModelBy10();

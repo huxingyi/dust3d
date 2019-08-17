@@ -22,6 +22,7 @@ public:
     int metalnessRoughnessAmbientOcclusionMapIdLoc();
     int mousePickEnabledLoc();
     int mousePickTargetPositionLoc();
+    int mousePickRadiusLoc();
     static const QString &loadShaderSource(const QString &name);
 private:
     int m_projectionMatrixLoc;
@@ -39,6 +40,7 @@ private:
     int m_metalnessRoughnessAmbientOcclusionMapIdLoc;
     int m_mousePickEnabledLoc;
     int m_mousePickTargetPositionLoc;
+    int m_mousePickRadiusLoc;
 };
 
 #endif

@@ -26,6 +26,7 @@
 #include "skeletondocument.h"
 #include "combinemode.h"
 #include "preferences.h"
+#include "paintmode.h"
 
 class MaterialPreviewsGenerator;
 class MotionsGenerator;
@@ -394,6 +395,7 @@ signals:
     void resultMeshChanged();
     void turnaroundChanged();
     void editModeChanged();
+    void paintModeChanged();
     void skeletonChanged();
     //void resultSkeletonChanged();
     void resultTextureChanged();
@@ -473,6 +475,7 @@ signals:
     void scriptErrorChanged();
     void scriptConsoleLogChanged();
     void mouseTargetChanged();
+    void mousePickRadiusChanged();
 public: // need initialize
     QImage *textureGuideImage;
     QImage *textureImage;
@@ -542,6 +545,7 @@ public:
     const QString &scriptError() const;
     const QString &scriptConsoleLog() const;
     const QVector3D &mouseTargetPosition() const;
+    float mousePickRadius() const;
 public slots:
     void undo() override;
     void redo() override;
@@ -564,6 +568,8 @@ public slots:
     void moveOriginBy(float x, float y, float z);
     void addEdge(QUuid fromNodeId, QUuid toNodeId);
     void setEditMode(SkeletonDocumentEditMode mode);
+    void setPaintMode(PaintMode mode);
+    void setMousePickRadius(float radius);
     void uiReady();
     void generateMesh();
     void regenerateMesh();
@@ -581,6 +587,7 @@ public slots:
     void generateMotions();
     void motionsReady();
     void pickMouseTarget(const QVector3D &nearPosition, const QVector3D &farPosition);
+    void doPickMouseTarget();
     void mouseTargetReady();
     void setPartLockState(QUuid partId, bool locked);
     void setPartVisibleState(QUuid partId, bool visible);
@@ -671,6 +678,8 @@ public slots:
     void scriptResultReady();
     void updateVariable(const QString &name, const std::map<QString, QString> &value);
     void updateVariableValue(const QString &name, const QString &value);
+    void saveNextSnapshot(void);
+    void setMousePickMaskNodeIds(const std::set<QUuid> &nodeIds);
 private:
     void splitPartByNode(std::vector<std::vector<QUuid>> *groups, QUuid nodeId);
     void joinNodeAndNeiborsToGroup(std::vector<QUuid> *group, QUuid nodeId, std::set<QUuid> *visitMap, QUuid noUseEdgeId=QUuid());
@@ -721,24 +730,28 @@ private: // need initialize
     MotionsGenerator *m_motionsGenerator;
     quint64 m_meshGenerationId;
     quint64 m_nextMeshGenerationId;
-    QString m_script;
     std::map<QString, std::map<QString, QString>> m_cachedVariables;
     std::map<QString, std::map<QString, QString>> m_mergedVariables;
     ScriptRunner *m_scriptRunner;
     bool m_isScriptResultObsolete;
     MousePicker *m_mousePicker;
     bool m_isMouseTargetResultObsolete;
-    QVector3D m_mouseRayNear;
-    QVector3D m_mouseRayFar;
-    QVector3D m_mouseTargetPosition;
-    QString m_scriptError;
-    QString m_scriptConsoleLog;
+    PaintMode m_paintMode;
+    float m_mousePickRadius;
+    bool m_saveNextSnapshot;
 private:
     static unsigned long m_maxSnapshot;
     std::deque<HistoryItem> m_undoItems;
     std::deque<HistoryItem> m_redoItems;
     GeneratedCacheContext m_generatedCacheContext;
     std::vector<std::pair<QtMsgType, QString>> m_resultRigMessages;
+    QVector3D m_mouseRayNear;
+    QVector3D m_mouseRayFar;
+    QVector3D m_mouseTargetPosition;
+    QString m_scriptError;
+    QString m_scriptConsoleLog;
+    QString m_script;
+    std::set<QUuid> m_mousePickMaskNodeIds;
 };
 
 #endif

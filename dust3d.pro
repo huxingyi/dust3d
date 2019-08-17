@@ -413,6 +413,9 @@ HEADERS += src/imagepreviewwidget.h
 SOURCES += src/mousepicker.cpp
 HEADERS += src/mousepicker.h
 
+SOURCES += src/paintmode.cpp
+HEADERS += src/paintmode.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h

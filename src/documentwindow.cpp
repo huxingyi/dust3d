@@ -161,9 +161,9 @@ DocumentWindow::DocumentWindow() :
     paintButton->setToolTip(tr("Paint brush"));
     Theme::initAwesomeButton(paintButton);
 
-    QPushButton *dragButton = new QPushButton(QChar(fa::handrocko));
-    dragButton->setToolTip(tr("Enter drag mode"));
-    Theme::initAwesomeButton(dragButton);
+    //QPushButton *dragButton = new QPushButton(QChar(fa::handrocko));
+    //dragButton->setToolTip(tr("Enter drag mode"));
+    //Theme::initAwesomeButton(dragButton);
 
     QPushButton *zoomInButton = new QPushButton(QChar(fa::searchplus));
     zoomInButton->setToolTip(tr("Enter zoom in mode"));
@@ -233,7 +233,7 @@ DocumentWindow::DocumentWindow() :
     toolButtonLayout->addWidget(addButton);
     toolButtonLayout->addWidget(selectButton);
     toolButtonLayout->addWidget(paintButton);
-    toolButtonLayout->addWidget(dragButton);
+    //toolButtonLayout->addWidget(dragButton);
     toolButtonLayout->addWidget(zoomInButton);
     toolButtonLayout->addWidget(zoomOutButton);
     toolButtonLayout->addSpacing(10);
@@ -283,7 +283,31 @@ DocumentWindow::DocumentWindow() :
     m_modelRenderWidget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     m_modelRenderWidget->move(DocumentWindow::m_modelRenderWidgetInitialX, DocumentWindow::m_modelRenderWidgetInitialY);
     
-    connect(m_modelRenderWidget, &ModelWidget::mouseRayChanged, m_document, &Document::pickMouseTarget);
+    m_modelRenderWidget->setMousePickRadius(m_document->mousePickRadius());
+    
+    connect(m_modelRenderWidget, &ModelWidget::mouseRayChanged, m_document,
+            [=](const QVector3D &nearPosition, const QVector3D &farPosition) {
+        std::set<QUuid> nodeIdSet;
+        graphicsWidget->readSkeletonNodeAndEdgeIdSetFromRangeSelection(&nodeIdSet);
+        m_document->setMousePickMaskNodeIds(nodeIdSet);
+        m_document->pickMouseTarget(nearPosition, farPosition);
+    });
+    connect(m_modelRenderWidget, &ModelWidget::mousePressed, m_document, [=]() {
+        if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier))
+            m_document->setPaintMode(PaintMode::Push);
+        else
+            m_document->setPaintMode(PaintMode::Pull);
+    });
+    connect(m_modelRenderWidget, &ModelWidget::mouseReleased, m_document, [=]() {
+        m_document->setPaintMode(PaintMode::None);
+        m_document->saveNextSnapshot();
+    });
+    connect(m_modelRenderWidget, &ModelWidget::addMouseRadius, m_document, [=](float radius) {
+        m_document->setMousePickRadius(m_document->mousePickRadius() + radius);
+    });
+    connect(m_document, &Document::mousePickRadiusChanged, this, [=]() {
+        m_modelRenderWidget->setMousePickRadius(m_document->mousePickRadius());
+    });
     connect(m_document, &Document::mouseTargetChanged, this, [=]() {
         m_modelRenderWidget->setMousePickTargetPositionInModelSpace(m_document->mouseTargetPosition());
     });
@@ -788,9 +812,9 @@ DocumentWindow::DocumentWindow() :
         m_document->setEditMode(SkeletonDocumentEditMode::Paint);
     });
 
-    connect(dragButton, &QPushButton::clicked, [=]() {
-        m_document->setEditMode(SkeletonDocumentEditMode::Drag);
-    });
+    //connect(dragButton, &QPushButton::clicked, [=]() {
+    //    m_document->setEditMode(SkeletonDocumentEditMode::Drag);
+    //});
 
     connect(zoomInButton, &QPushButton::clicked, [=]() {
         m_document->setEditMode(SkeletonDocumentEditMode::ZoomIn);

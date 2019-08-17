@@ -389,6 +389,8 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
     auto &partCache = m_cacheContext->parts[partIdString];
     partCache.outcomeNodes.clear();
     partCache.outcomeNodeVertices.clear();
+    partCache.outcomePaintMap.clear();
+    partCache.outcomePaintMap.partId = partId;
     partCache.vertices.clear();
     partCache.faces.clear();
     partCache.previewTriangles.clear();
@@ -571,6 +573,15 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
         auto nodeIndex = builder->addNode(node.position, node.radius, node.cutTemplate, node.cutRotation);
         builder->setNodeOriginInfo(nodeIndex, node.nearOriginNodeIndex, node.farOriginNodeIndex);
         builderNodeIndices.push_back(nodeIndex);
+        
+        const auto &originNodeIdString = nodeIndexToIdStringMap[node.originNodeIndex];
+        
+        OutcomePaintNode paintNode;
+        paintNode.originNodeId = QUuid(originNodeIdString);
+        paintNode.radius = node.radius;
+        paintNode.origin = node.position;
+        
+        partCache.outcomePaintMap.paintNodes.push_back(paintNode);
     }
     for (const auto &edge: modifier->edges())
         builder->addEdge(edge.firstNodeIndex, edge.secondNodeIndex);
@@ -584,6 +595,16 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
         size_t nodeIndex = modifier->nodes()[source].originNodeIndex;
         const auto &nodeIdString = nodeIndexToIdStringMap[nodeIndex];
         partCache.outcomeNodeVertices.push_back({position, {partIdString, nodeIdString}});
+        
+        auto &paintNode = partCache.outcomePaintMap.paintNodes[source];
+        paintNode.vertices.push_back(position);
+    }
+    
+    for (size_t i = 0; i < partCache.outcomePaintMap.paintNodes.size(); ++i) {
+        auto &paintNode = partCache.outcomePaintMap.paintNodes[i];
+        paintNode.baseNormal = builder->nodeBaseNormal(i);
+        paintNode.direction = builder->nodeTraverseDirection(i);
+        paintNode.order = builder->nodeTraverseOrder(i);
     }
     
     bool hasMeshError = false;
@@ -786,6 +807,7 @@ nodemesh::Combiner::Mesh *MeshGenerator::combineComponentMesh(const QString &com
     componentCache.noneSeamVertices.clear();
     componentCache.outcomeNodes.clear();
     componentCache.outcomeNodeVertices.clear();
+    componentCache.outcomePaintMaps.clear();
     delete componentCache.mesh;
     componentCache.mesh = nullptr;
     
@@ -812,6 +834,7 @@ nodemesh::Combiner::Mesh *MeshGenerator::combineComponentMesh(const QString &com
             componentCache.outcomeNodes.push_back(it);
         for (const auto &it: partCache.outcomeNodeVertices)
             componentCache.outcomeNodeVertices.push_back(it);
+        componentCache.outcomePaintMaps.push_back(partCache.outcomePaintMap);
     } else {
         std::vector<std::pair<CombineMode, std::vector<std::pair<QString, QString>>>> combineGroups;
         // Firstly, group by combine mode
@@ -998,6 +1021,8 @@ nodemesh::Combiner::Mesh *MeshGenerator::combineComponentChildGroupMesh(const st
             componentCache.outcomeNodes.push_back(it);
         for (const auto &it: childComponentCache.outcomeNodeVertices)
             componentCache.outcomeNodeVertices.push_back(it);
+        for (const auto &it: childComponentCache.outcomePaintMaps)
+            componentCache.outcomePaintMaps.push_back(it);
         
         if (nullptr == subMesh || subMesh->isNull()) {
             delete subMesh;
@@ -1198,6 +1223,7 @@ void MeshGenerator::generate()
         m_outcome->nodeVertices = componentCache.outcomeNodeVertices;
         m_outcome->vertices = combinedVertices;
         m_outcome->triangles = combinedFaces;
+        m_outcome->paintMaps = componentCache.outcomePaintMaps;
     }
     
     // Recursively check uncombined components
@@ -1266,6 +1292,7 @@ void MeshGenerator::collectUncombinedComponent(const QString &componentIdString)
         
         m_outcome->nodes.insert(m_outcome->nodes.end(), componentCache.outcomeNodes.begin(), componentCache.outcomeNodes.end());
         m_outcome->nodeVertices.insert(m_outcome->nodeVertices.end(), componentCache.outcomeNodeVertices.begin(), componentCache.outcomeNodeVertices.end());
+        m_outcome->paintMaps.insert(m_outcome->paintMaps.end(), componentCache.outcomePaintMaps.begin(), componentCache.outcomePaintMaps.end());
         
         std::vector<QVector3D> uncombinedVertices;
         std::vector<std::vector<size_t>> uncombinedFaces;

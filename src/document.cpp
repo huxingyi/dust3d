@@ -67,7 +67,10 @@ Document::Document() :
     m_scriptRunner(nullptr),
     m_isScriptResultObsolete(false),
     m_mousePicker(nullptr),
-    m_isMouseTargetResultObsolete(false)
+    m_isMouseTargetResultObsolete(false),
+    m_paintMode(PaintMode::None),
+    m_mousePickRadius(0.1),
+    m_saveNextSnapshot(false)
 {
     connect(&Preferences::instance(), &Preferences::partColorChanged, this, &Document::applyPreferencePartColorChange);
     connect(&Preferences::instance(), &Preferences::flatShadingChanged, this, &Document::applyPreferenceFlatShadingChange);
@@ -905,7 +908,20 @@ void Document::setEditMode(SkeletonDocumentEditMode mode)
         return;
     
     editMode = mode;
+    if (editMode != SkeletonDocumentEditMode::Paint)
+        m_paintMode = PaintMode::None;
     emit editModeChanged();
+}
+
+void Document::setPaintMode(PaintMode mode)
+{
+    if (m_paintMode == mode)
+        return;
+    
+    m_paintMode = mode;
+    emit paintModeChanged();
+    
+    doPickMouseTarget();
 }
 
 void Document::joinNodeAndNeiborsToGroup(std::vector<QUuid> *group, QUuid nodeId, std::set<QUuid> *visitMap, QUuid noUseEdgeId)
@@ -1930,6 +1946,11 @@ void Document::pickMouseTarget(const QVector3D &nearPosition, const QVector3D &f
     m_mouseRayNear = nearPosition;
     m_mouseRayFar = farPosition;
     
+    doPickMouseTarget();
+}
+
+void Document::doPickMouseTarget()
+{
     if (nullptr != m_mousePicker) {
         m_isMouseTargetResultObsolete = true;
         return;
@@ -1942,10 +1963,24 @@ void Document::pickMouseTarget(const QVector3D &nearPosition, const QVector3D &f
         return;
     }
     
-    qDebug() << "Mouse picking..";
+    //qDebug() << "Mouse picking..";
 
     QThread *thread = new QThread;
     m_mousePicker = new MousePicker(*m_currentOutcome, m_mouseRayNear, m_mouseRayFar);
+    
+    std::map<QUuid, QUuid> paintImages;
+    for (const auto &it: partMap) {
+        if (!it.second.deformMapImageId.isNull()) {
+            paintImages[it.first] = it.second.deformMapImageId;
+        }
+    }
+    if (SkeletonDocumentEditMode::Paint == editMode) {
+        m_mousePicker->setPaintImages(paintImages);
+        m_mousePicker->setPaintMode(m_paintMode);
+        m_mousePicker->setRadius(m_mousePickRadius);
+        m_mousePicker->setMaskNodeIds(m_mousePickMaskNodeIds);
+    }
+    
     m_mousePicker->moveToThread(thread);
     connect(thread, &QThread::started, m_mousePicker, &MousePicker::process);
     connect(m_mousePicker, &MousePicker::finished, this, &Document::mouseTargetReady);
@@ -1957,13 +1992,26 @@ void Document::pickMouseTarget(const QVector3D &nearPosition, const QVector3D &f
 void Document::mouseTargetReady()
 {
     m_mouseTargetPosition = m_mousePicker->targetPosition();
+    const auto &changedPartIds = m_mousePicker->changedPartIds();
+    for (const auto &it: m_mousePicker->resultPaintImages()) {
+        const auto &partId = it.first;
+        if (changedPartIds.find(partId) == changedPartIds.end())
+            continue;
+        const auto &imageId = it.second;
+        setPartDeformMapImageId(partId, imageId);
+    }
     
     delete m_mousePicker;
     m_mousePicker = nullptr;
     
+    if (!m_isMouseTargetResultObsolete && m_saveNextSnapshot) {
+        m_saveNextSnapshot = false;
+        saveSnapshot();
+    }
+    
     emit mouseTargetChanged();
 
-    qDebug() << "Mouse pick done";
+    //qDebug() << "Mouse pick done";
 
     if (m_isMouseTargetResultObsolete) {
         pickMouseTarget(m_mouseRayNear, m_mouseRayFar);
@@ -1973,6 +2021,17 @@ void Document::mouseTargetReady()
 const QVector3D &Document::mouseTargetPosition() const
 {
     return m_mouseTargetPosition;
+}
+
+float Document::mousePickRadius() const
+{
+    return m_mousePickRadius;
+}
+
+void Document::setMousePickRadius(float radius)
+{
+    m_mousePickRadius = radius;
+    emit mousePickRadiusChanged();
 }
 
 const Outcome &Document::currentPostProcessedOutcome() const
@@ -2554,8 +2613,8 @@ void Document::setPartDeformMapImageId(QUuid partId, QUuid imageId)
         qDebug() << "Part not found:" << partId;
         return;
     }
-    if (part->second.deformMapImageId == imageId)
-        return;
+    //if (part->second.deformMapImageId == imageId)
+    //    return;
     part->second.deformMapImageId = imageId;
     part->second.dirty = true;
     emit partDeformMapImageIdChanged(partId);
@@ -3608,4 +3667,18 @@ const QString &Document::scriptError() const
 const QString &Document::scriptConsoleLog() const
 {
     return m_scriptConsoleLog;
+}
+
+void Document::saveNextSnapshot(void)
+{
+    if (m_mousePicker || m_isMouseTargetResultObsolete) {
+        m_saveNextSnapshot = true;
+        return;
+    }
+    saveSnapshot();
+}
+
+void Document::setMousePickMaskNodeIds(const std::set<QUuid> &nodeIds)
+{
+    m_mousePickMaskNodeIds = nodeIds;
 }

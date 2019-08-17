@@ -1,0 +1,2 @@
+#include "paintmode.h"
+

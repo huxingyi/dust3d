@@ -155,7 +155,7 @@ public:
         cutFace(CutFace::Quad),
         target(PartTarget::Model),
         colorSolubility(0.0),
-        deformMapScale(0.5)
+        deformMapScale(1.0)
     {
         id = withId.isNull() ? QUuid::createUuid() : withId;
     }
@@ -211,7 +211,7 @@ public:
     }
     bool deformMapScaleAdjusted() const
     {
-        return fabs(deformMapScale - 0.5) >= 0.01;
+        return fabs(deformMapScale - 1.0) >= 0.01;
     }
     bool deformMapAdjusted() const
     {

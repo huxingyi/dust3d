@@ -172,6 +172,7 @@ void ModelWidget::paintGL()
         m_program->setUniformValue(m_program->mousePickEnabledLoc(), 0);
         m_program->setUniformValue(m_program->mousePickTargetPositionLoc(), QVector3D());
     }
+    m_program->setUniformValue(m_program->mousePickRadiusLoc(), m_mousePickRadius);
     
     m_meshBinder.paint(m_program);
 
@@ -224,6 +225,9 @@ bool ModelWidget::inputMousePressEventFromOtherWidget(QMouseEvent *event)
                 !QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
             shouldStartMove = m_moveEnabled;
         }
+        if (!shouldStartMove) {
+            emit mousePressed();
+        }
     } else if (event->button() == Qt::MidButton) {
         shouldStartMove = m_moveEnabled;
     }
@@ -245,6 +249,10 @@ bool ModelWidget::inputMouseReleaseEventFromOtherWidget(QMouseEvent *event)
     if (m_moveStarted) {
         m_moveStarted = false;
         return true;
+    }
+    if (event->button() == Qt::LeftButton) {
+        if (m_mousePickingEnabled)
+            emit mouseReleased();
     }
     return false;
 }
@@ -291,15 +299,16 @@ QPoint ModelWidget::convertInputPosFromOtherWidget(QMouseEvent *event)
 
 bool ModelWidget::inputWheelEventFromOtherWidget(QWheelEvent *event)
 {
-    //QPoint globalPos = event->globalPos();
-    //QPoint zero;
-    //QPoint leftTop = mapToGlobal(zero);
-    //QRect globalRect(leftTop.x(), leftTop.y(), width(), height());
-    //if (!globalRect.contains(globalPos))
-    //    return false;
-    
     if (m_moveStarted)
         return true;
+    
+    if (m_mousePickingEnabled) {
+        if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
+            emit addMouseRadius((float)event->delta() / 40 / height());
+            return true;
+        }
+    }
+    
     if (!m_zoomEnabled)
         return false;
     qreal delta = event->delta() / 5;
@@ -318,6 +327,12 @@ void ModelWidget::zoom(float delta)
 void ModelWidget::setMousePickTargetPositionInModelSpace(QVector3D position)
 {
     m_mousePickTargetPositionInModelSpace = position;
+    update();
+}
+
+void ModelWidget::setMousePickRadius(float radius)
+{
+    m_mousePickRadius = radius;
     update();
 }
 

@@ -19,6 +19,9 @@ class ModelWidget : public QOpenGLWidget, protected QOpenGLFunctions
     Q_OBJECT
 signals:
     void mouseRayChanged(const QVector3D &near, const QVector3D &far);
+    void mousePressed();
+    void mouseReleased();
+    void addMouseRadius(float radius);
 public:
     ModelWidget(QWidget *parent = 0);
     ~ModelWidget();
@@ -49,6 +52,7 @@ public slots:
     void cleanup();
     void zoom(float delta);
     void setMousePickTargetPositionInModelSpace(QVector3D position);
+    void setMousePickRadius(float radius);
 signals:
     void xRotationChanged(int angle);
     void yRotationChanged(int angle);
@@ -81,6 +85,7 @@ private:
     QMatrix4x4 m_projection;
     QMatrix4x4 m_camera;
     QMatrix4x4 m_world;
+    float m_mousePickRadius = 0.0;
     static bool m_transparent;
     static const QVector3D m_cameraPosition;
     QPoint m_moveStartPos;

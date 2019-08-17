@@ -25,6 +25,28 @@ struct OutcomeNode
     BoneMark boneMark;
 };
 
+struct OutcomePaintNode
+{
+    QUuid originNodeId;
+    QVector3D origin;
+    float radius = 0;
+    QVector3D baseNormal;
+    QVector3D direction;
+    size_t order;
+    std::vector<QVector3D> vertices;
+};
+
+struct OutcomePaintMap
+{
+    QUuid partId;
+    std::vector<OutcomePaintNode> paintNodes;
+    
+    void clear()
+    {
+        paintNodes.clear();
+    };
+};
+
 class Outcome
 {
 public:
@@ -35,6 +57,7 @@ public:
     std::vector<std::vector<size_t>> triangles;
     std::vector<QVector3D> triangleNormals;
     std::vector<QColor> triangleColors;
+    std::vector<OutcomePaintMap> paintMaps;
     quint64 meshId = 0;
     
     const std::vector<std::pair<QUuid, QUuid>> *triangleSourceNodes() const

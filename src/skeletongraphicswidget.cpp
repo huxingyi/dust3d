@@ -1577,9 +1577,9 @@ void SkeletonGraphicsWidget::shortcutSelectMode()
     emit setEditMode(SkeletonDocumentEditMode::Select);
 }
 
-void SkeletonGraphicsWidget::shortcutDragMode()
+void SkeletonGraphicsWidget::shortcutPaintMode()
 {
-    emit setEditMode(SkeletonDocumentEditMode::Drag);
+    emit setEditMode(SkeletonDocumentEditMode::Paint);
 }
 
 void SkeletonGraphicsWidget::shortcutZoomRenderedModelByMinus10()

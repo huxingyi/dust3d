@@ -1,5 +1,5 @@
-#ifndef CUT_FACE_H
-#define CUT_FACE_H
+#ifndef DUST3D_CUT_FACE_H
+#define DUST3D_CUT_FACE_H
 #include <QObject>
 #include <QString>
 #include <QVector2D>

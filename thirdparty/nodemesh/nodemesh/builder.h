@@ -41,6 +41,9 @@ public:
     void exportAsObj(const QString &filename);
     bool build();
     const CutFaceTransform *nodeAdjustableCutFaceTransform(size_t nodeIndex);
+    const QVector3D &nodeTraverseDirection(size_t nodeIndex) const;
+    const QVector3D &nodeBaseNormal(size_t nodeIndex) const;
+    size_t nodeTraverseOrder(size_t nodeIndex) const;
 
 private:
 

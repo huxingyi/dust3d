@@ -1035,9 +1035,9 @@ void Builder::applyDeform()
         const auto &cutDirect = m_generatedVerticesCutDirects[i];
         auto ray = position - node.position;
         if (nullptr != m_deformMapImage) {
-            const auto &info = m_generatedVerticesInfos[i];
+            float degrees = degreeBetweenIn360(node.baseNormal, ray.normalized(), node.traverseDirection);
             int x = node.reversedTraverseOrder * m_deformMapImage->width() / m_nodes.size();
-            int y = info.orderInCut * m_deformMapImage->height() / info.cutSize;
+            int y = degrees * m_deformMapImage->height() / 360.0;
             float gray = (float)(qGray(m_deformMapImage->pixelColor(x, y).rgb()) - 127) / 127;
             position += m_deformMapScale * gray * ray;
             ray = position - node.position;
@@ -1057,6 +1057,21 @@ void Builder::applyDeform()
         if (count > 0)
             position = sum / count;
     }
+}
+
+const QVector3D &Builder::nodeTraverseDirection(size_t nodeIndex) const
+{
+    return m_nodes[nodeIndex].traverseDirection;
+}
+
+const QVector3D &Builder::nodeBaseNormal(size_t nodeIndex) const
+{
+    return m_nodes[nodeIndex].baseNormal;
+}
+
+size_t Builder::nodeTraverseOrder(size_t nodeIndex) const
+{
+    return m_nodes[nodeIndex].reversedTraverseOrder;
 }
 
 }
