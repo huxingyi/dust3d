@@ -1,3 +1,14 @@
+Changes between 1.0.0-beta.22 and 1.0.0-beta.23:
+--------------------------------------------------
+- Fix rig bone name issue because of translation  
+- Update application logo  
+- Add deforming map  
+- Improve UV quality  
+- Speed up mesh generation by adding more caches  
+- Add deforming brush  
+- Remove drag mode icon  
+- Add hollow modifier  
+
 Changes between 1.0.0-beta.21 and 1.0.0-beta.22:
 --------------------------------------------------
 - Improve intermediate nodes generation  
