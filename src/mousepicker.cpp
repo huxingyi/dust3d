@@ -133,10 +133,10 @@ void MousePicker::paintToImage(const QUuid &partId, float x, float y, float radi
     {
         QRadialGradient gradient(destX, destY, destRadius / 2);
         if (inverted) {
-            gradient.setColorAt(0, QColor(0, 0, 0, 3));
+            gradient.setColorAt(0, QColor(0, 0, 0, 2));
             gradient.setColorAt(1, Qt::transparent);
         } else {
-            gradient.setColorAt(0, QColor(255, 255, 255, 3));
+            gradient.setColorAt(0, QColor(255, 255, 255, 2));
             gradient.setColorAt(1, Qt::transparent);
         }
         QBrush brush(gradient);
