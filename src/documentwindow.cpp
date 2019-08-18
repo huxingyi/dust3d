@@ -293,6 +293,7 @@ DocumentWindow::DocumentWindow() :
         m_document->pickMouseTarget(nearPosition, farPosition);
     });
     connect(m_modelRenderWidget, &ModelWidget::mousePressed, m_document, [=]() {
+        m_document->startPaint();
         if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier))
             m_document->setPaintMode(PaintMode::Push);
         else
@@ -300,7 +301,7 @@ DocumentWindow::DocumentWindow() :
     });
     connect(m_modelRenderWidget, &ModelWidget::mouseReleased, m_document, [=]() {
         m_document->setPaintMode(PaintMode::None);
-        m_document->saveNextSnapshot();
+        m_document->stopPaint();
     });
     connect(m_modelRenderWidget, &ModelWidget::addMouseRadius, m_document, [=](float radius) {
         m_document->setMousePickRadius(m_document->mousePickRadius() + radius);

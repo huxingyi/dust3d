@@ -362,10 +362,13 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
         deformWidth = widthString.toFloat();
     }
     
+    QImage deformImageStruct;
     const QImage *deformImage = nullptr;
     QString deformMapImageIdString = valueOfKeyInMapOrEmpty(part, "deformMapImageId");
     if (!deformMapImageIdString.isEmpty()) {
-        deformImage = ImageForever::get(QUuid(deformMapImageIdString));
+        ImageForever::copy(QUuid(deformMapImageIdString), deformImageStruct);
+        if (!deformImageStruct.isNull())
+            deformImage = &deformImageStruct;
         if (nullptr == deformImage) {
             qDebug() << "Deform image id not found:" << deformMapImageIdString;
         }

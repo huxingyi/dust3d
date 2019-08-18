@@ -16,6 +16,7 @@
 #include "skeletonside.h"
 #include "scriptrunner.h"
 #include "mousepicker.h"
+#include "imageforever.h"
 
 unsigned long Document::m_maxSnapshot = 1000;
 
@@ -70,7 +71,7 @@ Document::Document() :
     m_isMouseTargetResultObsolete(false),
     m_paintMode(PaintMode::None),
     m_mousePickRadius(0.2),
-    m_saveNextSnapshot(false)
+    m_saveNextPaintSnapshot(false)
 {
     connect(&Preferences::instance(), &Preferences::partColorChanged, this, &Document::applyPreferencePartColorChange);
     connect(&Preferences::instance(), &Preferences::flatShadingChanged, this, &Document::applyPreferenceFlatShadingChange);
@@ -1998,15 +1999,16 @@ void Document::mouseTargetReady()
         if (changedPartIds.find(partId) == changedPartIds.end())
             continue;
         const auto &imageId = it.second;
+        m_intermediatePaintImageIds.insert(imageId);
         setPartDeformMapImageId(partId, imageId);
     }
     
     delete m_mousePicker;
     m_mousePicker = nullptr;
     
-    if (!m_isMouseTargetResultObsolete && m_saveNextSnapshot) {
-        m_saveNextSnapshot = false;
-        saveSnapshot();
+    if (!m_isMouseTargetResultObsolete && m_saveNextPaintSnapshot) {
+        m_saveNextPaintSnapshot = false;
+        stopPaint();
     }
     
     emit mouseTargetChanged();
@@ -2613,8 +2615,8 @@ void Document::setPartDeformMapImageId(QUuid partId, QUuid imageId)
         qDebug() << "Part not found:" << partId;
         return;
     }
-    //if (part->second.deformMapImageId == imageId)
-    //    return;
+    if (part->second.deformMapImageId == imageId)
+        return;
     part->second.deformMapImageId = imageId;
     part->second.dirty = true;
     emit partDeformMapImageIdChanged(partId);
@@ -3669,13 +3671,25 @@ const QString &Document::scriptConsoleLog() const
     return m_scriptConsoleLog;
 }
 
-void Document::saveNextSnapshot(void)
+void Document::startPaint(void)
+{
+}
+
+void Document::stopPaint(void)
 {
     if (m_mousePicker || m_isMouseTargetResultObsolete) {
-        m_saveNextSnapshot = true;
+        m_saveNextPaintSnapshot = true;
         return;
     }
     saveSnapshot();
+    for (const auto &it: partMap) {
+        m_intermediatePaintImageIds.erase(it.second.deformMapImageId);
+    }
+    for (const auto &it: m_intermediatePaintImageIds) {
+        //qDebug() << "Remove intermediate image:" << it;
+        ImageForever::remove(it);
+    }
+    m_intermediatePaintImageIds.clear();
 }
 
 void Document::setMousePickMaskNodeIds(const std::set<QUuid> &nodeIds)

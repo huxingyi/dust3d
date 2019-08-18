@@ -678,7 +678,8 @@ public slots:
     void scriptResultReady();
     void updateVariable(const QString &name, const std::map<QString, QString> &value);
     void updateVariableValue(const QString &name, const QString &value);
-    void saveNextSnapshot(void);
+    void startPaint(void);
+    void stopPaint(void);
     void setMousePickMaskNodeIds(const std::set<QUuid> &nodeIds);
 private:
     void splitPartByNode(std::vector<std::vector<QUuid>> *groups, QUuid nodeId);
@@ -738,7 +739,7 @@ private: // need initialize
     bool m_isMouseTargetResultObsolete;
     PaintMode m_paintMode;
     float m_mousePickRadius;
-    bool m_saveNextSnapshot;
+    bool m_saveNextPaintSnapshot;
 private:
     static unsigned long m_maxSnapshot;
     std::deque<HistoryItem> m_undoItems;
@@ -752,6 +753,7 @@ private:
     QString m_scriptConsoleLog;
     QString m_script;
     std::set<QUuid> m_mousePickMaskNodeIds;
+    std::set<QUuid> m_intermediatePaintImageIds;
 };
 
 #endif

@@ -8,8 +8,10 @@ class ImageForever
 {
 public:
     static const QImage *get(const QUuid &id);
+    static void copy(const QUuid &id, QImage &image);
     static const QByteArray *getPngByteArray(const QUuid &id);
     static QUuid add(const QImage *image, QUuid toId=QUuid());
+    static void remove(const QUuid &id);
 };
 
 #endif

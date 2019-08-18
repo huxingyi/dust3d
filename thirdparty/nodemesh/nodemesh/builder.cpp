@@ -1038,6 +1038,8 @@ void Builder::applyDeform()
             float degrees = degreeBetweenIn360(node.baseNormal, ray.normalized(), node.traverseDirection);
             int x = node.reversedTraverseOrder * m_deformMapImage->width() / m_nodes.size();
             int y = degrees * m_deformMapImage->height() / 360.0;
+            if (y >= m_deformMapImage->height())
+                y = m_deformMapImage->height() - 1;
             float gray = (float)(qGray(m_deformMapImage->pixelColor(x, y).rgb()) - 127) / 127;
             position += m_deformMapScale * gray * ray;
             ray = position - node.position;
