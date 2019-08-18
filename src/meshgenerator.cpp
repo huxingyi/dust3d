@@ -374,7 +374,7 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
         }
     }
     
-    float deformMapScale = 0.5;
+    float deformMapScale = 1.0;
     QString deformMapScaleString = valueOfKeyInMapOrEmpty(part, "deformMapScale");
     if (!deformMapScaleString.isEmpty())
         deformMapScale = deformMapScaleString.toFloat();
