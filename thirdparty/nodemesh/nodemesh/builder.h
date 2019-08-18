@@ -31,6 +31,7 @@ public:
     void setDeformWidth(float width);
     void setDeformMapImage(const QImage *image);
     void setDeformMapScale(float scale);
+    void setHollowThickness(float hollowThickness);
     void enableBaseNormalOnX(bool enabled);
     void enableBaseNormalOnY(bool enabled);
     void enableBaseNormalOnZ(bool enabled);
@@ -133,6 +134,8 @@ private:
     bool m_baseNormalAverageEnabled = false;
     const QImage *m_deformMapImage = nullptr;
     float m_deformMapScale = 0.0;
+    float m_hollowThickness = 0.2;
+    std::vector<std::vector<size_t>> m_endCuts;
     
     void sortNodeIndices();
     void prepareNode(size_t nodeIndex);
@@ -168,6 +171,7 @@ private:
     void stitchEdgeCuts();
     void applyWeld();
     void applyDeform();
+    void finalizeHollow();
     QVector3D calculateDeformPosition(const QVector3D &vertexPosition, const QVector3D &ray, const QVector3D &deformNormal, float deformFactor);
     bool swallowEdgeForNode(size_t nodeIndex, size_t edgeOrder);
     static QVector3D calculateBaseNormalFromTraverseDirection(const QVector3D &traverseDirection);

@@ -338,6 +338,7 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
     float deformThickness = 1.0;
     float deformWidth = 1.0;
     float cutRotation = 0.0;
+    float hollowThickness = 0.0;
     auto target = PartTargetFromString(valueOfKeyInMapOrEmpty(part, "target").toUtf8().constData());
     auto base = PartBaseFromString(valueOfKeyInMapOrEmpty(part, "base").toUtf8().constData());
     
@@ -350,6 +351,11 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
     QString cutRotationString = valueOfKeyInMapOrEmpty(part, "cutRotation");
     if (!cutRotationString.isEmpty()) {
         cutRotation = cutRotationString.toFloat();
+    }
+    
+    QString hollowThicknessString = valueOfKeyInMapOrEmpty(part, "hollowThickness");
+    if (!hollowThicknessString.isEmpty()) {
+        hollowThickness = hollowThicknessString.toFloat();
     }
     
     QString thicknessString = valueOfKeyInMapOrEmpty(part, "deformThickness");
@@ -559,6 +565,7 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
     builder->setDeformThickness(deformThickness);
     builder->setDeformWidth(deformWidth);
     builder->setDeformMapScale(deformMapScale);
+    builder->setHollowThickness(hollowThickness);
     if (nullptr != deformImage)
         builder->setDeformMapImage(deformImage);
     if (PartBase::YZ == base) {

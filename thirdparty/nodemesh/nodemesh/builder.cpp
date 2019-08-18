@@ -422,6 +422,7 @@ bool Builder::build()
     
     applyWeld();
     applyDeform();
+    finalizeHollow();
     
     return succeed;
 }
@@ -609,7 +610,11 @@ bool Builder::generateCutsForNode(size_t nodeIndex)
         node.hasAdjustableCutFace = true;
         std::vector<size_t> vertices;
         insertCutVertices(cut, vertices, nodeIndex, cutNormal, cutFlipped);
-        m_generatedFaces.push_back(vertices);
+        if (qFuzzyIsNull(m_hollowThickness)) {
+            m_generatedFaces.push_back(vertices);
+        } else {
+            m_endCuts.push_back(vertices);
+        }
         m_edges[node.edges[0]].cuts.push_back({vertices, -cutNormal});
     } else if (2 == neighborsCount) {
         QVector3D cutNormal = node.cutNormal;
@@ -1014,6 +1019,11 @@ void Builder::setDeformMapImage(const QImage *image)
     m_deformMapImage = image;
 }
 
+void Builder::setHollowThickness(float hollowThickness)
+{
+    m_hollowThickness = hollowThickness;
+}
+
 void Builder::setDeformMapScale(float scale)
 {
     m_deformMapScale = scale;
@@ -1025,6 +1035,46 @@ QVector3D Builder::calculateDeformPosition(const QVector3D &vertexPosition, cons
     QVector3D projectRayOnRevisedNormal = revisedNormal * (QVector3D::dotProduct(ray, revisedNormal) / revisedNormal.lengthSquared());
     auto scaledProjct = projectRayOnRevisedNormal * deformFactor;
     return vertexPosition + (scaledProjct - projectRayOnRevisedNormal);
+}
+
+void Builder::finalizeHollow()
+{
+    if (qFuzzyIsNull(m_hollowThickness))
+        return;
+    
+    size_t startVertexIndex = m_generatedVertices.size();
+    for (size_t i = 0; i < startVertexIndex; ++i) {
+        const auto &position = m_generatedVertices[i];
+        const auto &node = m_nodes[m_generatedVerticesSourceNodeIndices[i]];
+        auto ray = position - node.position;
+        
+        auto newPosition = position - ray * m_hollowThickness;
+        m_generatedVertices.push_back(newPosition);
+        m_generatedVerticesCutDirects.push_back(m_generatedVerticesCutDirects[i]);
+        m_generatedVerticesSourceNodeIndices.push_back(m_generatedVerticesSourceNodeIndices[i]);
+        m_generatedVerticesInfos.push_back(m_generatedVerticesInfos[i]);
+    }
+    
+    size_t oldFaceNum = m_generatedFaces.size();
+    for (size_t i = 0; i < oldFaceNum; ++i) {
+        auto newFace = m_generatedFaces[i];
+        std::reverse(newFace.begin(), newFace.end());
+        for (auto &it: newFace)
+            it += startVertexIndex;
+        m_generatedFaces.push_back(newFace);
+    }
+    
+    for (const auto &cut: m_endCuts) {
+        for (size_t i = 0; i < cut.size(); ++i) {
+            size_t j = (i + 1) % cut.size();
+            std::vector<size_t> quad;
+            quad.push_back(cut[i]);
+            quad.push_back(cut[j]);
+            quad.push_back(startVertexIndex + cut[j]);
+            quad.push_back(startVertexIndex + cut[i]);
+            m_generatedFaces.push_back(quad);
+        }
+    }
 }
 
 void Builder::applyDeform()

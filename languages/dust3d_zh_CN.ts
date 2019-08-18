@@ -747,6 +747,10 @@ Tips:
         <source>Map Scale</source>
         <translation>映像缩放比</translation>
     </message>
+    <message>
+        <source>Hollow</source>
+        <translation>空心</translation>
+    </message>
 </context>
 <context>
     <name>PoseEditWidget</name>

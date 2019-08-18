@@ -171,6 +171,7 @@ PartWidget::PartWidget(const Document *document, QUuid partId) :
     connect(this, &PartWidget::setPartColorState, m_document, &Document::setPartColorState);
     connect(this, &PartWidget::setPartMaterialId, m_document, &Document::setPartMaterialId);
     connect(this, &PartWidget::setPartColorSolubility, m_document, &Document::setPartColorSolubility);
+    connect(this, &PartWidget::setPartHollowThickness, m_document, &Document::setPartHollowThickness);
     connect(this, &PartWidget::checkPart, m_document, &Document::checkPart);
     connect(this, &PartWidget::enableBackgroundBlur, m_document, &Document::enableBackgroundBlur);
     connect(this, &PartWidget::disableBackgroundBlur, m_document, &Document::disableBackgroundBlur);
@@ -465,6 +466,28 @@ void PartWidget::showCutRotationSettingPopup(const QPoint &pos)
     rotationLayout->addWidget(rotationEraser);
     rotationLayout->addWidget(rotationWidget);
     
+    FloatNumberWidget *hollowThicknessWidget = new FloatNumberWidget;
+    hollowThicknessWidget->setItemName(tr("Hollow"));
+    hollowThicknessWidget->setRange(0.0, 1.0);
+    hollowThicknessWidget->setValue(part->hollowThickness);
+    
+    connect(hollowThicknessWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+        emit setPartHollowThickness(m_partId, value);
+        emit groupOperationAdded();
+    });
+    
+    QPushButton *hollowThicknessEraser = new QPushButton(QChar(fa::eraser));
+    initToolButton(hollowThicknessEraser);
+    
+    connect(hollowThicknessEraser, &QPushButton::clicked, [=]() {
+        hollowThicknessWidget->setValue(0.0);
+        emit groupOperationAdded();
+    });
+    
+    QHBoxLayout *hollowThicknessLayout = new QHBoxLayout;
+    hollowThicknessLayout->addWidget(hollowThicknessEraser);
+    hollowThicknessLayout->addWidget(hollowThicknessWidget);
+    
     QHBoxLayout *standardFacesLayout = new QHBoxLayout;
     QPushButton *buttons[(int)CutFace::Count] = {0};
     
@@ -525,6 +548,7 @@ void PartWidget::showCutRotationSettingPopup(const QPoint &pos)
     
     QVBoxLayout *popupLayout = new QVBoxLayout;
     popupLayout->addLayout(rotationLayout);
+    popupLayout->addLayout(hollowThicknessLayout);
     popupLayout->addSpacing(10);
     popupLayout->addLayout(standardFacesLayout);
     popupLayout->addWidget(cutFaceListWidget);

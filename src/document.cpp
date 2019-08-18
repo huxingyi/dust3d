@@ -1069,6 +1069,8 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
                 part["deformMapImageId"] = partIt.second.deformMapImageId.toString();
             if (partIt.second.deformMapScaleAdjusted())
                 part["deformMapScale"] = QString::number(partIt.second.deformMapScale);
+            if (partIt.second.hollowThicknessAdjusted())
+                part["hollowThickness"] = QString::number(partIt.second.hollowThickness);
             if (!partIt.second.name.isEmpty())
                 part["name"] = partIt.second.name;
             if (partIt.second.materialAdjusted())
@@ -1367,6 +1369,9 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
         const auto &deformMapScaleIt = partKv.second.find("deformMapScale");
         if (deformMapScaleIt != partKv.second.end())
             part.deformMapScale = deformMapScaleIt->second.toFloat();
+        const auto &hollowThicknessIt = partKv.second.find("hollowThickness");
+        if (hollowThicknessIt != partKv.second.end())
+            part.hollowThickness = hollowThicknessIt->second.toFloat();
         const auto &materialIdIt = partKv.second.find("materialId");
         if (materialIdIt != partKv.second.end())
             part.materialId = oldNewIdMap[QUuid(materialIdIt->second)];
@@ -2710,6 +2715,21 @@ void Document::setPartColorSolubility(QUuid partId, float solubility)
     part->second.colorSolubility = solubility;
     part->second.dirty = true;
     emit partColorSolubilityChanged(partId);
+    emit skeletonChanged();
+}
+
+void Document::setPartHollowThickness(QUuid partId, float hollowThickness)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    if (qFuzzyCompare(part->second.hollowThickness, hollowThickness))
+        return;
+    part->second.hollowThickness = hollowThickness;
+    part->second.dirty = true;
+    emit partHollowThicknessChanged(partId);
     emit skeletonChanged();
 }
 
