@@ -237,7 +237,7 @@ public:
     }
     bool cutAdjusted() const
     {
-        return cutRotationAdjusted() || cutFaceAdjusted();
+        return cutRotationAdjusted() || cutFaceAdjusted() || hollowThicknessAdjusted();
     }
     bool materialAdjusted() const
     {

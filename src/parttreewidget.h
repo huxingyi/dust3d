@@ -66,6 +66,7 @@ public slots:
     void partColorStateChanged(QUuid partId);
     void partCutRotationChanged(QUuid partId);
     void partCutFaceChanged(QUuid partId);
+    void partHollowThicknessChanged(QUuid partId);
     void partMaterialIdChanged(QUuid partId);
     void partColorSolubilityChanged(QUuid partId);
     void partChecked(QUuid partId);
