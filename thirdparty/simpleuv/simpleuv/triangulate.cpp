@@ -18,7 +18,7 @@ static float angle360(const Eigen::Vector3d &a, const Eigen::Vector3d &b, const 
     auto angle = atan2((a.cross(b)).norm(), a.dot(b)) * 180.0 / 3.1415926;
     auto c = a.cross(b);
     if (c.dot(direct) < 0) {
-        angle += 180;
+        angle = 360 - angle;
     }
     return angle;
 }

@@ -412,6 +412,7 @@ bool Builder::build()
     
     unifyBaseNormals();
     localAverageBaseNormals();
+    unifyBaseNormals();
     
     for (const auto &nodeIndex: m_sortedNodeIndices) {
         if (!generateCutsForNode(nodeIndex))

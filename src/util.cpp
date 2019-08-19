@@ -43,7 +43,7 @@ float angleInRangle360BetweenTwoVectors(QVector3D a, QVector3D b, QVector3D plan
     float degrees = acos(QVector3D::dotProduct(a, b)) * 180.0 / M_PI;
     QVector3D direct = QVector3D::crossProduct(a, b);
     if (QVector3D::dotProduct(direct, planeNormal) < 0)
-        return 180 + degrees;
+        return 360 - degrees;
     return degrees;
 }
 

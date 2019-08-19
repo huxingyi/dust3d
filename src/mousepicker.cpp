@@ -41,6 +41,7 @@ MousePicker::~MousePicker()
 bool MousePicker::calculateMouseModelPosition(QVector3D &mouseModelPosition)
 {
     bool foundPosition = false;
+    auto ray = (m_mouseRayNear - m_mouseRayFar).normalized();
     float minDistance2 = std::numeric_limits<float>::max();
     for (size_t i = 0; i < m_outcome.triangles.size(); ++i) {
         const auto &triangleIndices = m_outcome.triangles[i];
@@ -50,6 +51,8 @@ bool MousePicker::calculateMouseModelPosition(QVector3D &mouseModelPosition)
             m_outcome.vertices[triangleIndices[2]],
         };
         const auto &triangleNormal = m_outcome.triangleNormals[i];
+        if (QVector3D::dotProduct(triangleNormal, ray) <= 0)
+            continue;
         QVector3D intersection;
         if (intersectSegmentAndTriangle(m_mouseRayNear, m_mouseRayFar,
                 triangle,
@@ -63,7 +66,7 @@ bool MousePicker::calculateMouseModelPosition(QVector3D &mouseModelPosition)
             }
         }
     }
-    return true;
+    return foundPosition;
 }
 
 void MousePicker::pick()
@@ -80,21 +83,24 @@ void MousePicker::pick()
         for (const auto &node: map.paintNodes) {
             if (!m_mousePickMaskNodeIds.empty() && m_mousePickMaskNodeIds.find(node.originNodeId) == m_mousePickMaskNodeIds.end())
                 continue;
-            float sumOfDistance = 0;
             size_t intersectedNum = 0;
             QVector3D sumOfDirection;
             QVector3D referenceDirection = (m_targetPosition - node.origin).normalized();
+            float sumOfRadius = 0;
             for (const auto &vertexPosition: node.vertices) {
-                if (QVector3D::dotProduct(referenceDirection, (vertexPosition - node.origin).normalized()) > 0 &&
+                // >0.866 = <30 degrees
+                auto direction = (vertexPosition - node.origin).normalized();
+                if (QVector3D::dotProduct(referenceDirection, direction) > 0.866 &&
                         (vertexPosition - m_targetPosition).lengthSquared() <= distance2) {
-                    sumOfDistance += vertexPosition.distanceToPoint(m_targetPosition);
-                    sumOfDirection += (vertexPosition - node.origin).normalized();
+                    float distance = vertexPosition.distanceToPoint(m_targetPosition);
+                    float radius = (m_radius - distance) / node.radius;
+                    sumOfRadius += radius;
+                    sumOfDirection += direction * radius;
                     ++intersectedNum;
                 }
             }
             if (intersectedNum > 0) {
-                float averageDistance = sumOfDistance / intersectedNum;
-                float paintRadius = (m_radius - averageDistance) / node.radius;
+                float paintRadius = sumOfRadius / intersectedNum;
                 QVector3D paintDirection = sumOfDirection.normalized();
                 float degrees = angleInRangle360BetweenTwoVectors(node.baseNormal, paintDirection, node.direction);
                 float offset = (float)node.order / map.paintNodes.size();
@@ -133,10 +139,10 @@ void MousePicker::paintToImage(const QUuid &partId, float x, float y, float radi
     {
         QRadialGradient gradient(destX, destY, destRadius / 2);
         if (inverted) {
-            gradient.setColorAt(0, QColor(0, 0, 0, 2));
+            gradient.setColorAt(0, QColor(0, 0, 0, 3));
             gradient.setColorAt(1, Qt::transparent);
         } else {
-            gradient.setColorAt(0, QColor(255, 255, 255, 2));
+            gradient.setColorAt(0, QColor(255, 255, 255, 3));
             gradient.setColorAt(1, Qt::transparent);
         }
         QBrush brush(gradient);
