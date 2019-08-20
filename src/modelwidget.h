@@ -88,8 +88,11 @@ private:
     float m_mousePickRadius = 0.0;
     static bool m_transparent;
     static const QVector3D m_cameraPosition;
+    static float m_minZoomRatio;
+    static float m_maxZoomRatio;
     QPoint m_moveStartPos;
     QRect m_moveStartGeometry;
+    int m_modelInitialHeight = 0;
     std::pair<QVector3D, QVector3D> screenPositionToMouseRay(const QPoint &screenPosition);
 };
 

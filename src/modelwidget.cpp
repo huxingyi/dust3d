@@ -11,6 +11,8 @@
 
 bool ModelWidget::m_transparent = true;
 const QVector3D ModelWidget::m_cameraPosition = QVector3D(0, 0, -4.0);
+float ModelWidget::m_minZoomRatio = 5.0;
+float ModelWidget::m_maxZoomRatio = 90.0;
 
 ModelWidget::ModelWidget(QWidget *parent) :
     QOpenGLWidget(parent),
@@ -320,6 +322,18 @@ bool ModelWidget::inputWheelEventFromOtherWidget(QWheelEvent *event)
 void ModelWidget::zoom(float delta)
 {
     QMargins margins(delta, delta, delta, delta);
+    if (0 == m_modelInitialHeight) {
+        m_modelInitialHeight = height();
+    } else {
+        float ratio = (float)height() / m_modelInitialHeight;
+        if (ratio <= m_minZoomRatio) {
+            if (delta < 0)
+                return;
+        } else if (ratio >= m_maxZoomRatio) {
+            if (delta > 0)
+                return;
+        }
+    }
     setGeometry(geometry().marginsAdded(margins));
 }
 
