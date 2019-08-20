@@ -66,8 +66,8 @@ MotionEditWidget::MotionEditWidget(const Document *document, QWidget *parent) :
     });
     
     std::vector<QString> tabs = {
-        QString("Poses"),
-        QString("Motions")
+        tr("Poses"),
+        tr("Motions")
     };
     TabWidget *tabWidget = new TabWidget(tabs);
     tabWidget->setCurrentIndex(0);

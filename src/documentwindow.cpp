@@ -942,6 +942,7 @@ DocumentWindow::DocumentWindow() :
     connect(partTreeWidget, &PartTreeWidget::unlockAllComponents, m_document, &Document::unlockAllComponents);
     connect(partTreeWidget, &PartTreeWidget::setPartLockState, m_document, &Document::setPartLockState);
     connect(partTreeWidget, &PartTreeWidget::setPartVisibleState, m_document, &Document::setPartVisibleState);
+    connect(partTreeWidget, &PartTreeWidget::setPartColorState, m_document, &Document::setPartColorState);
     connect(partTreeWidget, &PartTreeWidget::setComponentCombineMode, m_document, &Document::setComponentCombineMode);
     connect(partTreeWidget, &PartTreeWidget::setPartTarget, m_document, &Document::setPartTarget);
     connect(partTreeWidget, &PartTreeWidget::setPartBase, m_document, &Document::setPartBase);

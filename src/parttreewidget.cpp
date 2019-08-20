@@ -8,6 +8,9 @@
 #include <QGuiApplication>
 #include <QComboBox>
 #include <QFormLayout>
+#include <QClipboard>
+#include <QMimeData>
+#include <QApplication>
 #include "parttreewidget.h"
 #include "partwidget.h"
 #include "skeletongraphicswidget.h"
@@ -342,12 +345,39 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
     QAction unlockAction(tr("Unlock"), this);
     unlockAction.setIcon(Theme::awesome()->icon(fa::unlock));
     QAction selectAction(tr("Select"), this);
+    QAction copyColorAction(tr("Copy Color"), this);
+    QAction pasteColorAction(tr("Paste Color"), this);
+    
+    QColor colorInClipboard;
+    bool hasColorInClipboard = false;
+    const QClipboard *clipboard = QApplication::clipboard();
+    const QMimeData *mimeData = clipboard->mimeData();
+    if (mimeData->hasText()) {
+        auto text = mimeData->text();
+        if (text.startsWith("#")) {
+            colorInClipboard.setNamedColor(text);
+            hasColorInClipboard = colorInClipboard.isValid();
+        }
+    }
     
     if (nullptr != component && nullptr != part) {
         connect(&selectAction, &QAction::triggered, [=]() {
             emit addPartToSelection(component->linkToPartId);
         });
         contextMenu.addAction(&selectAction);
+        
+        connect(&copyColorAction, &QAction::triggered, [=]() {
+            QClipboard *clipboard = QApplication::clipboard();
+            clipboard->setText(part->color.name());
+        });
+        contextMenu.addAction(&copyColorAction);
+        
+        if (hasColorInClipboard) {
+            connect(&pasteColorAction, &QAction::triggered, [=]() {
+                emit setPartColorState(component->linkToPartId, true, colorInClipboard);
+            });
+            contextMenu.addAction(&pasteColorAction);
+        }
         
         if (part->visible) {
             connect(&hideAction, &QAction::triggered, [=]() {
@@ -383,6 +413,19 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
             }
         });
         contextMenu.addAction(&selectAction);
+        
+        if (hasColorInClipboard) {
+            connect(&pasteColorAction, &QAction::triggered, [=]() {
+                for (const auto &componentId: componentIds) {
+                    std::vector<QUuid> partIds;
+                    m_document->collectComponentDescendantParts(componentId, partIds);
+                    for (const auto &partId: partIds) {
+                        emit setPartColorState(partId, true, colorInClipboard);
+                    }
+                }
+            });
+            contextMenu.addAction(&pasteColorAction);
+        }
 
         connect(&showAction, &QAction::triggered, [=]() {
             for (const auto &componentId: componentIds)
@@ -409,51 +452,7 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
         contextMenu.addAction(&unlockAction);
     }
     
-    /*
-    if (component && !component->inverse) {
-        connect(&invertAction, &QAction::triggered, [=]() {
-            emit setComponentInverseState(component->id, true);
-        });
-        contextMenu.addAction(&invertAction);
-    }
-
-    if (component && component->inverse) {
-        connect(&cancelInverseAction, &QAction::triggered, [=]() {
-            emit setComponentInverseState(component->id, false);
-        });
-        contextMenu.addAction(&cancelInverseAction);
-    }
-    */
-    
     contextMenu.addSeparator();
-    
-    /*
-    QWidgetAction smoothAction(this);
-    QAction hideOthersAction(tr("Hide Others"), this);
-    QAction lockOthersAction(tr("Lock Others"), this);
-    if (nullptr != component) {
-        QMenu *smoothMenu = contextMenu.addMenu(tr("Smooth"));
-        
-        smoothAction.setDefaultWidget(createSmoothMenuWidget(component->id));
-        smoothMenu->addAction(&smoothAction);
-        
-        contextMenu.addSeparator();
-    
-        hideOthersAction.setIcon(Theme::awesome()->icon(fa::eyeslash));
-        connect(&hideOthersAction, &QAction::triggered, [=]() {
-            emit hideOtherComponents(component->id);
-        });
-        contextMenu.addAction(&hideOthersAction);
-        
-        lockOthersAction.setIcon(Theme::awesome()->icon(fa::lock));
-        connect(&lockOthersAction, &QAction::triggered, [=]() {
-            emit lockOtherComponents(component->id);
-        });
-        contextMenu.addAction(&lockOthersAction);
-        
-        contextMenu.addSeparator();
-    }
-    */
     
     QAction collapseAllAction(tr("Collapse All"), this);
     connect(&collapseAllAction, &QAction::triggered, [=]() {

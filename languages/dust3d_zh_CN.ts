@@ -512,6 +512,14 @@ Tips:
         <source>New</source>
         <translation>新建</translation>
     </message>
+    <message>
+        <source>Poses</source>
+        <translation>姿势</translation>
+    </message>
+    <message>
+        <source>Motions</source>
+        <translation>动作</translation>
+    </message>
 </context>
 <context>
     <name>MotionListWidget</name>
@@ -675,6 +683,14 @@ Tips:
     <message>
         <source>Seam</source>
         <translation>缝</translation>
+    </message>
+    <message>
+        <source>Copy Color</source>
+        <translation>复制颜色</translation>
+    </message>
+    <message>
+        <source>Paste Color</source>
+        <translation>粘贴颜色</translation>
     </message>
 </context>
 <context>

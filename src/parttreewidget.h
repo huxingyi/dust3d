@@ -35,6 +35,7 @@ signals:
     void unlockAllComponents();
     void setPartLockState(QUuid partId, bool locked);
     void setPartVisibleState(QUuid partId, bool visible);
+    void setPartColorState(QUuid partId, bool hasColor, QColor color);
     void setComponentCombineMode(QUuid componentId, CombineMode combineMode);
     void hideDescendantComponents(QUuid componentId);
     void showDescendantComponents(QUuid componentId);
