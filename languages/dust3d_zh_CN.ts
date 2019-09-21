@@ -520,6 +520,10 @@ Tips:
         <source>Motions</source>
         <translation>动作</translation>
     </message>
+    <message>
+        <source>Procedural Animations</source>
+        <translation>程序化动画</translation>
+    </message>
 </context>
 <context>
     <name>MotionListWidget</name>
@@ -989,6 +993,10 @@ Tips:
     <message>
         <source>Ambient Occlusion</source>
         <translation>环境光遮蔽</translation>
+    </message>
+    <message>
+        <source>Fall to Death</source>
+        <translation>倒地死亡</translation>
     </message>
 </context>
 <context>

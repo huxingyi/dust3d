@@ -36,6 +36,7 @@ RigWidget::RigWidget(const Document *document, QWidget *parent) :
     m_rigWeightRenderWidget->setXRotation(0);
     m_rigWeightRenderWidget->setYRotation(0);
     m_rigWeightRenderWidget->setZRotation(0);
+    //m_rigWeightRenderWidget->toggleWireframe();
     
     m_infoLabel = new InfoLabel;
     m_infoLabel->hide();

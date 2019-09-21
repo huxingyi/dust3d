@@ -424,6 +424,7 @@ DocumentWindow::DocumentWindow() :
         "Dog head",
         "Meerkat",
         "Mosquito",
+        "Seagull",
         "Procedural Tree",
     };
     for (const auto &model: exampleModels) {

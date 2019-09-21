@@ -113,6 +113,17 @@ void MotionTimelineWidget::addMotion(QUuid motionId)
     reload();
 }
 
+void MotionTimelineWidget::addProceduralAnimation(ProceduralAnimation proceduralAnimation)
+{
+    MotionClip clip;
+    clip.clipType = MotionClipType::ProceduralAnimation;
+    clip.duration = 0;
+    clip.proceduralAnimation = proceduralAnimation;
+    addClipAfterCurrentIndex(clip);
+    emit clipsChanged();
+    reload();
+}
+
 void MotionTimelineWidget::setClipInterpolationType(int index, InterpolationType type)
 {
     if (index >= (int)m_clips.size())

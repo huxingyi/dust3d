@@ -40,6 +40,8 @@ MaterialEditWidget::MaterialEditWidget(const Document *document, QWidget *parent
     QDialog(parent),
     m_document(document)
 {
+    setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint);
+    
     m_layers.resize(1);
 
     m_previewWidget = new ModelWidget(this);

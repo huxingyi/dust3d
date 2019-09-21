@@ -57,11 +57,11 @@ MeshLoader::MeshLoader(const MeshLoader &mesh) :
     this->m_meshId = mesh.meshId();
 }
 
-MeshLoader::MeshLoader(ShaderVertex *triangleVertices, int vertexNum) :
+MeshLoader::MeshLoader(ShaderVertex *triangleVertices, int vertexNum, ShaderVertex *edgeVertices, int edgeVertexCount) :
     m_triangleVertices(triangleVertices),
     m_triangleVertexCount(vertexNum),
-    m_edgeVertices(nullptr),
-    m_edgeVertexCount(0),
+    m_edgeVertices(edgeVertices),
+    m_edgeVertexCount(edgeVertexCount),
     m_textureImage(nullptr)
 {
 }
@@ -350,6 +350,26 @@ void MeshLoader::updateTool(ShaderVertex *toolVertices, int vertexNum)
     
     m_toolVertices = toolVertices;
     m_toolVertexCount = vertexNum;
+}
+
+void MeshLoader::updateEdges(ShaderVertex *edgeVertices, int edgeVertexCount)
+{
+    delete[] m_edgeVertices;
+    m_edgeVertices = nullptr;
+    m_edgeVertexCount = 0;
+    
+    m_edgeVertices = edgeVertices;
+    m_edgeVertexCount = edgeVertexCount;
+}
+
+void MeshLoader::updateTriangleVertices(ShaderVertex *triangleVertices, int triangleVertexCount)
+{
+    delete[] m_triangleVertices;
+    m_triangleVertices = 0;
+    m_triangleVertexCount = 0;
+    
+    m_triangleVertices = triangleVertices;
+    m_triangleVertexCount = triangleVertexCount;
 }
 
 quint64 MeshLoader::meshId() const

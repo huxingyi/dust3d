@@ -23,6 +23,12 @@ QSize MotionClipWidget::preferredSize()
     case MotionClipType::Pose:
         preferredWidth = Theme::posePreviewImageSize;
         break;
+    case MotionClipType::ProceduralAnimation:
+        {
+            QPushButton testButton(ProceduralAnimationToDispName(m_clip.proceduralAnimation));
+            preferredWidth = testButton.sizeHint().width();
+        }
+        break;
     case MotionClipType::Interpolation:
         preferredWidth = Theme::normalButtonSize;
         break;
@@ -72,6 +78,13 @@ void MotionClipWidget::reload()
             PoseWidget *poseWidget = new PoseWidget(m_document, m_clip.linkToId);
             poseWidget->reload();
             layout->addWidget(poseWidget);
+        }
+        break;
+    case MotionClipType::ProceduralAnimation:
+        {
+            QPushButton *proceduralAnimationButton = new QPushButton(ProceduralAnimationToDispName(m_clip.proceduralAnimation));
+            proceduralAnimationButton->setFocusPolicy(Qt::NoFocus);
+            layout->addWidget(proceduralAnimationButton);
         }
         break;
     case MotionClipType::Interpolation:

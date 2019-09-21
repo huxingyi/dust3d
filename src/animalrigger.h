@@ -24,7 +24,9 @@ private:
     static QString namingChain(const QString &baseName, SkeletonSide side, int orderInSide, int totalInSide, int jointOrder);
     static QString namingChainPrefix(const QString &baseName, SkeletonSide side, int orderInSide, int totalInSide);
     QVector3D findExtremPointFrom(const std::set<int> &verticies, const QVector3D &from);
-    //void convertNames();
+    float calculateSpineRadius(const std::vector<float> &leftXs,
+        const std::vector<float> &rightXs,
+        const std::vector<float> &middleRadiusCollection);
 };
 
 #endif

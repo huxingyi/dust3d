@@ -70,10 +70,11 @@ class RiggerBone
 {
 public:
     QString name;
-    //QString humanName;
     int index = -1;
     QVector3D headPosition;
     QVector3D tailPosition;
+    float headRadius = 0.0;
+    float tailRadius = 0.0;
     QColor color;
     QVector3D baseNormal;
     std::vector<int> children;

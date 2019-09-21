@@ -5,6 +5,8 @@
 #include "posemeshcreator.h"
 #include "poserconstruct.h"
 #include "posedocument.h"
+#include "ragdoll.h"
+#include "boundingboxmesh.h"
 
 MotionsGenerator::MotionsGenerator(RigType rigType,
         const std::vector<RiggerBone> *rigBones,
@@ -22,6 +24,11 @@ MotionsGenerator::~MotionsGenerator()
     for (auto &item: m_resultPreviewMeshs) {
         for (auto &subItem: item.second) {
             delete subItem.second;
+        }
+    }
+    for (const auto &item: m_proceduralPreviews) {
+        for (const auto &subItem: item.second) {
+            delete subItem;
         }
     }
     delete m_poser;
@@ -96,6 +103,37 @@ float MotionsGenerator::calculatePoseDuration(const QUuid &poseId)
     return totalDuration;
 }
 
+const std::vector<std::pair<float, JointNodeTree>> &MotionsGenerator::getProceduralAnimation(ProceduralAnimation proceduralAnimation)
+{
+    auto findResult = m_proceduralAnimations.find((int)proceduralAnimation);
+    if (findResult != m_proceduralAnimations.end())
+        return findResult->second;
+    std::vector<std::pair<float, JointNodeTree>> &resultFrames = m_proceduralAnimations[(int)proceduralAnimation];
+    //std::vector<MeshLoader *> &resultPreviews = m_proceduralPreviews[(int)proceduralAnimation];
+    RagDoll ragdoll(&m_rigBones);
+    float stepSeconds = 1.0 / 60;
+    float maxSeconds = 1.5;
+    int maxSteps = maxSeconds / stepSeconds;
+    int steps = 0;
+    while (steps < maxSteps && ragdoll.stepSimulation(stepSeconds)) {
+        resultFrames.push_back(std::make_pair(stepSeconds * 2, ragdoll.getStepJointNodeTree()));
+        //MeshLoader *preview = buildBoundingBoxMesh(ragdoll.getStepBonePositions());
+        //resultPreviews.push_back(preview);
+        ++steps;
+    }
+    return resultFrames;
+}
+
+float MotionsGenerator::calculateProceduralAnimationDuration(ProceduralAnimation proceduralAnimation)
+{
+    const auto &result = getProceduralAnimation(proceduralAnimation);
+    float totalDuration = 0;
+    for (const auto &it: result) {
+        totalDuration += it.first;
+    }
+    return totalDuration;
+}
+
 float MotionsGenerator::calculateMotionDuration(const QUuid &motionId, std::set<QUuid> &visited)
 {
     const std::vector<MotionClip> *motionClips = findMotionClips(motionId);
@@ -112,13 +150,15 @@ float MotionsGenerator::calculateMotionDuration(const QUuid &motionId, std::set<
             totalDuration += clip.duration;
         else if (clip.clipType == MotionClipType::Pose)
             totalDuration += calculatePoseDuration(clip.linkToId);
+        else if (clip.clipType == MotionClipType::ProceduralAnimation)
+            totalDuration += calculateProceduralAnimationDuration(clip.proceduralAnimation);
         else if (clip.clipType == MotionClipType::Motion)
             totalDuration += calculateMotionDuration(clip.linkToId, visited);
     }
     return totalDuration;
 }
 
-void MotionsGenerator::generateMotion(const QUuid &motionId, std::set<QUuid> &visited, std::vector<std::pair<float, JointNodeTree>> &outcomes)
+void MotionsGenerator::generateMotion(const QUuid &motionId, std::set<QUuid> &visited, std::vector<std::pair<float, JointNodeTree>> &outcomes, std::vector<MeshLoader *> *previews)
 {
     if (visited.find(motionId) != visited.end()) {
         qDebug() << "Found recursive motion link";
@@ -139,6 +179,8 @@ void MotionsGenerator::generateMotion(const QUuid &motionId, std::set<QUuid> &vi
             clip.duration = calculateMotionDuration(clip.linkToId, subVisited);
         } else if (clip.clipType == MotionClipType::Pose) {
             clip.duration = calculatePoseDuration(clip.linkToId);
+        } else if (clip.clipType == MotionClipType::ProceduralAnimation) {
+            clip.duration = calculateProceduralAnimationDuration(clip.proceduralAnimation);
         }
         timePoints.push_back(totalDuration);
         totalDuration += clip.duration;
@@ -215,6 +257,20 @@ void MotionsGenerator::generateMotion(const QUuid &motionId, std::set<QUuid> &vi
             generateMotion(progressClip.linkToId, visited, outcomes);
             progress += progressClip.duration;
             continue;
+        } else if (MotionClipType::ProceduralAnimation == progressClip.clipType) {
+            const auto &frames = getProceduralAnimation(progressClip.proceduralAnimation);
+            float clipDuration = std::max((float)0.0001, progressClip.duration);
+            int frame = clipLocalProgress * frames.size() / clipDuration;
+            if (frame >= (int)frames.size())
+                frame = frames.size() - 1;
+            if (frame >= 0 && frame < (int)frames.size()) {
+                //if (nullptr != previews)
+                //    previews->push_back(m_proceduralPreviews[(int)progressClip.proceduralAnimation][frame]);
+                outcomes.push_back({progress - lastProgress, frames[frame].second});
+                lastProgress = progress;
+            }
+            progress += interval;
+            continue;
         }
         progress += interval;
     }
@@ -260,6 +316,11 @@ const JointNodeTree *MotionsGenerator::findClipBeginJointNodeTree(const MotionCl
             return findClipBeginJointNodeTree((*motionClips)[0]);
         }
         return nullptr;
+    } else if (MotionClipType::ProceduralAnimation == clip.clipType) {
+        const auto &result = getProceduralAnimation(clip.proceduralAnimation);
+        if (!result.empty())
+            return &result[0].second;
+        return nullptr;
     }
     return nullptr;
 }
@@ -277,6 +338,11 @@ const JointNodeTree *MotionsGenerator::findClipEndJointNodeTree(const MotionClip
         if (nullptr != motionClips && !motionClips->empty()) {
             return findClipEndJointNodeTree((*motionClips)[motionClips->size() - 1]);
         }
+        return nullptr;
+    } else if (MotionClipType::ProceduralAnimation == clip.clipType) {
+        const auto &result = getProceduralAnimation(clip.proceduralAnimation);
+        if (!result.empty())
+            return &result[result.size() - 1].second;
         return nullptr;
     }
     return nullptr;
@@ -308,8 +374,26 @@ void MotionsGenerator::generate()
     
     for (const auto &motionId: m_requiredMotionIds) {
         std::set<QUuid> visited;
+        //std::vector<MeshLoader *> previews;
         generateMotion(motionId, visited, m_resultJointNodeTrees[motionId]);
         generatePreviewsForOutcomes(m_resultJointNodeTrees[motionId], m_resultPreviewMeshs[motionId]);
+        /*
+        if (!previews.empty()) {
+            const auto &tree = m_resultJointNodeTrees[motionId];
+            auto &target = m_resultPreviewMeshs[motionId];
+            for (size_t i = 0; i < tree.size() && i < previews.size(); ++i) {
+                int edgeVertexCount = previews[i]->edgeVertexCount();
+                if (0 == edgeVertexCount)
+                    continue;
+                ShaderVertex *source = previews[i]->edgeVertices();
+                ShaderVertex *edgeVertices = new ShaderVertex[edgeVertexCount];
+                for (int j = 0; j < edgeVertexCount; ++j) {
+                    edgeVertices[j] = source[j];
+                }
+                target[i].second->updateEdges(edgeVertices, edgeVertexCount);
+                target[i].second->updateTriangleVertices(nullptr, 0);
+            }
+        }*/
         m_generatedMotionIds.insert(motionId);
     }
 }

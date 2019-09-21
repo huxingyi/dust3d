@@ -12,6 +12,8 @@ PreferencesWidget::PreferencesWidget(const Document *document, QWidget *parent) 
     QDialog(parent),
     m_document(document)
 {
+    setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint);
+    
     QPushButton *colorEraser = new QPushButton(QChar(fa::eraser));
     Theme::initAwesomeToolButton(colorEraser);
     

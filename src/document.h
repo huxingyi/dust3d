@@ -27,6 +27,7 @@
 #include "combinemode.h"
 #include "preferences.h"
 #include "paintmode.h"
+#include "proceduralanimation.h"
 
 class MaterialPreviewsGenerator;
 class MotionsGenerator;
@@ -227,7 +228,8 @@ enum class MotionClipType
 {
     Pose,
     Interpolation,
-    Motion
+    Motion,
+    ProceduralAnimation
 };
 
 class MotionClip
@@ -244,6 +246,9 @@ public:
         } else if ("InterpolationType" == linkDataType) {
             clipType = MotionClipType::Interpolation;
             interpolationType = InterpolationTypeFromString(linkData.toUtf8().constData());
+        } else if ("ProceduralAnimation" == linkDataType) {
+            clipType = MotionClipType::ProceduralAnimation;
+            proceduralAnimation = ProceduralAnimationFromString(linkData.toUtf8().constData());
         } else if ("motionId" == linkDataType) {
             clipType = MotionClipType::Motion;
             linkToId = QUuid(linkData);
@@ -255,6 +260,8 @@ public:
             return "poseId";
         if (MotionClipType::Interpolation == clipType)
             return "InterpolationType";
+        if (MotionClipType::ProceduralAnimation == clipType)
+            return "ProceduralAnimation";
         if (MotionClipType::Motion == clipType)
             return "motionId";
         return "poseId";
@@ -265,6 +272,8 @@ public:
             return linkToId.toString();
         if (MotionClipType::Interpolation == clipType)
             return InterpolationTypeToString(interpolationType);
+        if (MotionClipType::ProceduralAnimation == clipType)
+            return ProceduralAnimationToString(proceduralAnimation);
         if (MotionClipType::Motion == clipType)
             return linkToId.toString();
         return linkToId.toString();
@@ -273,6 +282,7 @@ public:
     MotionClipType clipType = MotionClipType::Pose;
     QUuid linkToId;
     InterpolationType interpolationType;
+    ProceduralAnimation proceduralAnimation;
 };
 
 class Motion

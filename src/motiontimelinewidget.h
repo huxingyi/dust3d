@@ -5,6 +5,7 @@
 #include <QMouseEvent>
 #include "document.h"
 #include "interpolationtype.h"
+#include "proceduralanimation.h"
 
 class MotionTimelineWidget : public QListWidget
 {
@@ -19,6 +20,7 @@ public slots:
     void setClips(std::vector<MotionClip> clips);
     void addPose(QUuid poseId);
     void addMotion(QUuid motionId);
+    void addProceduralAnimation(ProceduralAnimation proceduralAnimation);
     void reload();
     void setClipInterpolationType(int index, InterpolationType type);
     void setClipDuration(int index, float duration);

@@ -17,6 +17,8 @@
 LogBrowserDialog::LogBrowserDialog(QWidget *parent) :
     QDialog(parent)
 {
+    setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint);
+    
     QVBoxLayout *layout = new QVBoxLayout;
     setLayout(layout);
 

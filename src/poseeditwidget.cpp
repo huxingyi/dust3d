@@ -26,6 +26,8 @@ PoseEditWidget::PoseEditWidget(const Document *document, QWidget *parent) :
     m_document(document),
     m_poseDocument(new PoseDocument)
 {
+    setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint);
+    
     m_posePreviewManager = new PosePreviewManager();
     connect(m_posePreviewManager, &PosePreviewManager::renderDone, [=]() {
         if (m_closed) {

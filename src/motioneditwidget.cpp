@@ -11,11 +11,15 @@
 #include "motionlistwidget.h"
 #include "version.h"
 #include "tabwidget.h"
+#include "flowlayout.h"
+#include "proceduralanimation.h"
 
 MotionEditWidget::MotionEditWidget(const Document *document, QWidget *parent) :
     QDialog(parent),
     m_document(document)
 {
+    setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint);
+    
     m_clipPlayer = new AnimationClipPlayer;
 
     m_timelineWidget = new MotionTimelineWidget(document, this);
@@ -28,6 +32,7 @@ MotionEditWidget::MotionEditWidget(const Document *document, QWidget *parent) :
     m_previewWidget->enableMove(true);
     m_previewWidget->enableZoom(false);
     m_previewWidget->move(-64, 0);
+    m_previewWidget->toggleWireframe();
     
     connect(m_clipPlayer, &AnimationClipPlayer::frameReadyToShow, this, [=]() {
         m_previewWidget->updateMesh(m_clipPlayer->takeFrameMesh());
@@ -47,6 +52,21 @@ MotionEditWidget::MotionEditWidget(const Document *document, QWidget *parent) :
         m_timelineWidget->addPose(poseId);
     });
     
+    FlowLayout *proceduralAnimationListLayout = new FlowLayout;
+    for (size_t i = 0; i < (int)ProceduralAnimation::Count - 1; ++i) {
+        auto proceduralAnimation = (ProceduralAnimation)(i + 1);
+        QString dispName = ProceduralAnimationToDispName(proceduralAnimation);
+        QPushButton *addButton = new QPushButton(Theme::awesome()->icon(fa::plus), dispName);
+        connect(addButton, &QPushButton::clicked, this, [=]() {
+            m_timelineWidget->addProceduralAnimation(proceduralAnimation);
+        });
+        proceduralAnimationListLayout->addWidget(addButton);
+    }
+    QWidget *proceduralAnimationListContainerWidget = new QWidget;
+    proceduralAnimationListContainerWidget->setLayout(proceduralAnimationListLayout);
+    
+    proceduralAnimationListContainerWidget->resize(512, Theme::motionPreviewImageSize);
+    
     MotionListWidget *motionListWidget = new MotionListWidget(document);
     motionListWidget->setCornerButtonVisible(true);
     motionListWidget->setHasContextMenu(false);
@@ -59,6 +79,7 @@ MotionEditWidget::MotionEditWidget(const Document *document, QWidget *parent) :
     
     QStackedWidget *stackedWidget = new QStackedWidget;
     stackedWidget->addWidget(poseListContainerWidget);
+    stackedWidget->addWidget(proceduralAnimationListContainerWidget);
     stackedWidget->addWidget(motionListContainerWidget);
     
     connect(motionListWidget, &MotionListWidget::cornerButtonClicked, this, [=](QUuid motionId) {
@@ -67,6 +88,7 @@ MotionEditWidget::MotionEditWidget(const Document *document, QWidget *parent) :
     
     std::vector<QString> tabs = {
         tr("Poses"),
+        tr("Procedural Animations"),
         tr("Motions")
     };
     TabWidget *tabWidget = new TabWidget(tabs);
@@ -145,7 +167,7 @@ MotionEditWidget::~MotionEditWidget()
 
 QSize MotionEditWidget::sizeHint() const
 {
-    return QSize(800, 600);
+    return QSize(1024, 768);
 }
 
 void MotionEditWidget::reject()

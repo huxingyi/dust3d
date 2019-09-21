@@ -8,7 +8,6 @@
 #include <QTextStream>
 #include "outcome.h"
 #include "shadervertex.h"
-#include "toolmesh.h"
 
 struct TriangulatedFace
 {
@@ -23,7 +22,7 @@ public:
         const std::vector<std::vector<QVector3D>> &triangleVertexNormals,
         const QColor &color=Qt::white);
     MeshLoader(Outcome &outcome);
-    MeshLoader(ShaderVertex *triangleVertices, int vertexNum);
+    MeshLoader(ShaderVertex *triangleVertices, int vertexNum, ShaderVertex *edgeVertices=nullptr, int edgeVertexCount=0);
     MeshLoader(const MeshLoader &mesh);
     MeshLoader();
     ~MeshLoader();
@@ -54,6 +53,8 @@ public:
     void exportAsObj(const QString &filename);
     void exportAsObj(QTextStream *textStream);
     void updateTool(ShaderVertex *toolVertices, int vertexNum);
+    void updateEdges(ShaderVertex *edgeVertices, int edgeVertexCount);
+    void updateTriangleVertices(ShaderVertex *triangleVertices, int triangleVertexCount);
     quint64 meshId() const;
     void setMeshId(quint64 id);
 private:

@@ -15,6 +15,8 @@ ExportPreviewWidget::ExportPreviewWidget(Document *document, QWidget *parent) :
     m_colorPreviewLabel(nullptr),
     m_spinnerWidget(nullptr)
 {
+    setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint);
+    
     QHBoxLayout *toolButtonLayout = new QHBoxLayout;
     toolButtonLayout->setSpacing(0);
     //toolButtonLayout->setContentsMargins(5, 10, 4, 0);
