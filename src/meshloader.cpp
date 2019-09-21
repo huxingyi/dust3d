@@ -3,7 +3,7 @@
 #include <QFile>
 #include <cmath>
 #include "meshloader.h"
-#include "ds3file.h"
+#include "version.h"
 
 #define MAX_VERTICES_PER_FACE   100
 
@@ -320,7 +320,8 @@ void MeshLoader::setHasAmbientOcclusionInImage(bool hasInImage)
 void MeshLoader::exportAsObj(QTextStream *textStream)
 {
     auto &stream = *textStream;
-    stream << "# " << Ds3FileReader::m_applicationName << endl;
+    stream << "# " << APP_NAME << " " << APP_HUMAN_VER << endl;
+    stream << "# " << APP_HOMEPAGE_URL << endl;
     for (std::vector<QVector3D>::const_iterator it = vertices().begin() ; it != vertices().end(); ++it) {
         stream << "v " << (*it).x() << " " << (*it).y() << " " << (*it).z() << endl;
     }
