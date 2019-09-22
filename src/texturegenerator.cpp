@@ -307,12 +307,13 @@ void TextureGenerator::generate()
         if (findSourceColorResult != partColorMap.end()) {
             const auto &color = findSourceColorResult->second;
             QBrush brush(color);
+            float fillExpandSize = 2;
             for (const auto &rect: rects) {
                 QRectF translatedRect = {
-                    rect.left() * TextureGenerator::m_textureSize,
-                    rect.top() * TextureGenerator::m_textureSize,
-                    rect.width() * TextureGenerator::m_textureSize,
-                    rect.height() * TextureGenerator::m_textureSize
+                    rect.left() * TextureGenerator::m_textureSize - fillExpandSize,
+                    rect.top() * TextureGenerator::m_textureSize - fillExpandSize,
+                    rect.width() * TextureGenerator::m_textureSize + fillExpandSize * 2,
+                    rect.height() * TextureGenerator::m_textureSize + fillExpandSize * 2
                 };
                 texturePainter.fillRect(translatedRect, brush);
             }
