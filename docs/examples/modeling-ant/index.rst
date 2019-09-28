@@ -30,7 +30,6 @@ Export Mesh
 ===============
 
 After finished modeling, Export the result mesh from Menu: File > Export...
-Only supports Wavefront(.obj) format in the current stage.
 
 Download
 ==============
