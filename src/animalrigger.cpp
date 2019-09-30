@@ -31,7 +31,7 @@ BoneMark AnimalRigger::translateBoneMark(BoneMark boneMark)
     return boneMark;
 }
 
-bool AnimalRigger::collectJontsForChain(int markIndex, std::vector<int> &jointMarkIndices)
+bool AnimalRigger::collectJointsForChain(int markIndex, std::vector<int> &jointMarkIndices)
 {
     const auto &mark = m_marks[markIndex];
     
@@ -484,7 +484,7 @@ bool AnimalRigger::rig()
             }
             
             std::vector<int> jointMarkIndices;
-            if (!collectJontsForChain(chainMarkIndex, jointMarkIndices)) {
+            if (!collectJointsForChain(chainMarkIndex, jointMarkIndices)) {
                 m_jointErrorItems.push_back(chainName);
             }
             

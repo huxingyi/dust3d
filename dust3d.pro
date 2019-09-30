@@ -419,6 +419,12 @@ HEADERS += src/proceduralanimation.h
 SOURCES += src/boundingboxmesh.cpp
 HEADERS += src/boundingboxmesh.h
 
+SOURCES += src/triangleislandsresolve.cpp
+HEADERS += src/triangleislandsresolve.h
+
+SOURCES += src/triangleislandslink.cpp
+HEADERS += src/triangleislandslink.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h
