@@ -5,8 +5,9 @@
 #include "animalrigger.h"
 
 AnimalRigger::AnimalRigger(const std::vector<QVector3D> &verticesPositions,
-        const std::set<MeshSplitterTriangle> &inputTriangles) :
-    Rigger(verticesPositions, inputTriangles)
+        const std::set<MeshSplitterTriangle> &inputTriangles,
+        const std::vector<std::pair<std::pair<size_t, size_t>, std::pair<size_t, size_t>>> &triangleLinks) :
+    Rigger(verticesPositions, inputTriangles, triangleLinks)
 {
 }
 

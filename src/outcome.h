@@ -124,6 +124,18 @@ public:
         m_hasPartUvRects = true;
     }
     
+    const std::vector<std::pair<std::pair<size_t, size_t>, std::pair<size_t, size_t>>> *triangleLinks() const
+    {
+        if (!m_hasTriangleLinks)
+            return nullptr;
+        return &m_triangleLinks;
+    }
+    void setTriangleLinks(const std::vector<std::pair<std::pair<size_t, size_t>, std::pair<size_t, size_t>>> &triangleLinks)
+    {
+        m_triangleLinks = triangleLinks;
+        m_hasTriangleLinks = true;
+    }
+    
 private:
     bool m_hasTriangleSourceNodes = false;
     std::vector<std::pair<QUuid, QUuid>> m_triangleSourceNodes;
@@ -139,6 +151,9 @@ private:
     
     bool m_hasPartUvRects = false;
     std::map<QUuid, std::vector<QRectF>> m_partUvRects;
+    
+    bool m_hasTriangleLinks = false;
+    std::vector<std::pair<std::pair<size_t, size_t>, std::pair<size_t, size_t>>> m_triangleLinks;
 };
 
 #endif

@@ -10,9 +10,11 @@ QString Rigger::rootBoneName = "Body";
 //QString Rigger::firstSpineBoneName = "Spine1";
 
 Rigger::Rigger(const std::vector<QVector3D> &verticesPositions,
-        const std::set<MeshSplitterTriangle> &inputTriangles) :
+        const std::set<MeshSplitterTriangle> &inputTriangles,
+        const std::vector<std::pair<std::pair<size_t, size_t>, std::pair<size_t, size_t>>> &triangleLinks) :
     m_verticesPositions(verticesPositions),
     m_inputTriangles(inputTriangles),
+    m_triangleLinks(triangleLinks),
     m_extraMessagedAdded(false)
 {
 }
@@ -83,7 +85,7 @@ bool Rigger::addMarkGroup(BoneMark boneMark, SkeletonSide boneSide, QVector3D bo
     mark.markTriangles = markTriangles;
     
     if (isCutOffSplitter(mark.boneMark)) {
-        if (!mark.split(m_verticesPositions, m_inputTriangles, m_maxCutOffSplitterExpandRound)) {
+        if (!mark.split(m_verticesPositions, m_inputTriangles, m_triangleLinks, m_maxCutOffSplitterExpandRound)) {
             m_cutoffErrorItems.push_back(SkeletonSideToDispName(mark.boneSide) + " " + BoneMarkToDispName(mark.boneMark));
             return false;
         }

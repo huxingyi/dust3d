@@ -27,13 +27,14 @@ public:
     {
         return m_isFirstBiggerThenSecond ? m_secondGroup : m_firstGroup;
     }
-    bool split(const std::vector<QVector3D> &verticesPositions, const std::set<MeshSplitterTriangle> &input, int expandRound=0)
+    bool split(const std::vector<QVector3D> &verticesPositions, const std::set<MeshSplitterTriangle> &input,
+            const std::vector<std::pair<std::pair<size_t, size_t>, std::pair<size_t, size_t>>> &triangleLinks, int expandRound=0)
     {
         int totalRound = 1 + expandRound;
         for (int round = 0; round < totalRound; ++round) {
             m_firstGroup.clear();
             m_secondGroup.clear();
-            bool splitResult = MeshSplitter::split(input, markTriangles, m_firstGroup, m_secondGroup, round > 0);
+            bool splitResult = MeshSplitter::split(input, triangleLinks, markTriangles, m_firstGroup, m_secondGroup, round > 0);
             if (splitResult) {
                 sortByDistanceFromOrigin(verticesPositions);
                 return true;
@@ -125,7 +126,8 @@ class Rigger : public QObject
     Q_OBJECT
 public:
     Rigger(const std::vector<QVector3D> &verticesPositions,
-        const std::set<MeshSplitterTriangle> &inputTriangles);
+        const std::set<MeshSplitterTriangle> &inputTriangles,
+        const std::vector<std::pair<std::pair<size_t, size_t>, std::pair<size_t, size_t>>> &triangleLinks);
     bool addMarkGroup(BoneMark boneMark, SkeletonSide boneSide, QVector3D bonePosition, float nodeRadius, const std::set<MeshSplitterTriangle> &markTriangles);
     const std::vector<std::pair<QtMsgType, QString>> &messages();
     const std::vector<RiggerBone> &resultBones();
@@ -155,6 +157,7 @@ protected:
     std::vector<std::pair<QtMsgType, QString>> m_messages;
     std::vector<QVector3D> m_verticesPositions;
     std::set<MeshSplitterTriangle> m_inputTriangles;
+    std::vector<std::pair<std::pair<size_t, size_t>, std::pair<size_t, size_t>>> m_triangleLinks;
     std::vector<RiggerMark> m_marks;
     std::map<std::pair<BoneMark, SkeletonSide>, std::vector<int>> m_marksMap;
     std::vector<RiggerBone> m_resultBones;

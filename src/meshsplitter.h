@@ -1,6 +1,7 @@
 #ifndef DUST3D_MESH_SPLITTER_H
 #define DUST3D_MESH_SPLITTER_H
 #include <set>
+#include <vector>
 
 class MeshSplitterTriangle
 {
@@ -17,7 +18,8 @@ public:
 class MeshSplitter
 {
 public:
-    static bool split(const std::set<MeshSplitterTriangle> &input, 
+    static bool split(const std::set<MeshSplitterTriangle> &input,
+        const std::vector<std::pair<std::pair<size_t, size_t>, std::pair<size_t, size_t>>> &triangleLinks,
         std::set<MeshSplitterTriangle> &splitter,
         std::set<MeshSplitterTriangle> &firstGroup,
         std::set<MeshSplitterTriangle> &secondGroup,

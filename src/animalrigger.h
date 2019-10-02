@@ -11,7 +11,8 @@ class AnimalRigger: public Rigger
     Q_OBJECT
 public:
     AnimalRigger(const std::vector<QVector3D> &verticesPositions,
-        const std::set<MeshSplitterTriangle> &inputTriangles);
+        const std::set<MeshSplitterTriangle> &inputTriangles,
+        const std::vector<std::pair<std::pair<size_t, size_t>, std::pair<size_t, size_t>>> &triangleLinks);
 protected:
     bool validate() override;
     bool isCutOffSplitter(BoneMark boneMark) override;

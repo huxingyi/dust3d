@@ -6,6 +6,7 @@
 #include "riggenerator.h"
 #include "riggerconstruct.h"
 #include "boundingboxmesh.h"
+#include "triangleislandslink.h"
 
 RigGenerator::RigGenerator(RigType rigType, const Outcome &outcome) :
     m_rigType(rigType),
@@ -141,7 +142,11 @@ void RigGenerator::generate()
         combinedMarkedNodesList.push_back(newNodes);
     }
     
-    m_autoRigger = newRigger(m_rigType, inputVerticesPositions, inputTriangles);
+    std::vector<std::pair<std::pair<size_t, size_t>, std::pair<size_t, size_t>>> triangleLinks;
+    triangleIslandsLink(*m_outcome, triangleLinks);
+    m_outcome->setTriangleLinks(triangleLinks);
+    
+    m_autoRigger = newRigger(m_rigType, inputVerticesPositions, inputTriangles, triangleLinks);
     if (nullptr == m_autoRigger) {
         qDebug() << "Unsupported rig type:" << RigTypeToString(m_rigType);
     } else {

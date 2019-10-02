@@ -140,31 +140,30 @@ static bool fetchCgalMeshCenter(CgalMesh *cgalMesh, QVector3D &center)
     return true;
 }
 
-static size_t findNearestTriangle(const Outcome &outcome,
+static std::pair<size_t, size_t> findNearestTriangleEdge(const Outcome &outcome,
         const std::vector<size_t> &group,
         const QVector3D &point)
 {
     float minLength2 = std::numeric_limits<float>::max();
-    size_t choosenIndex = 0;
+    std::pair<size_t, size_t> choosenEdge = std::make_pair(0, 0);
     for (const auto &triangleIndex: group) {
-        QVector3D sumOfPositions;
         const auto &indices = outcome.triangles[triangleIndex];
-        for (const auto &it: indices) {
-            sumOfPositions += outcome.vertices[it];
-        }
-        QVector3D triangleCenter = sumOfPositions / indices.size();
-        float length2 = (point - triangleCenter).lengthSquared();
-        if (length2 < minLength2) {
-            minLength2 = length2;
-            choosenIndex = triangleIndex;
+        for (size_t i = 0; i < indices.size(); ++i) {
+            size_t j = (i + 1) % indices.size();
+            QVector3D edgeMiddle = (outcome.vertices[indices[i]] + outcome.vertices[indices[j]]) / 2;
+            float length2 = (point - edgeMiddle).lengthSquared();
+            if (length2 < minLength2) {
+                minLength2 = length2;
+                choosenEdge = std::make_pair(indices[i], indices[j]);
+            }
         }
     }
-    return choosenIndex;
+    return choosenEdge;
 }
 
 static bool mergeIntersectedConvexMeshesAndLinkTriangles(const Outcome &outcome,
         std::map<QString, std::pair<CgalMesh *, std::vector<size_t>>> &convexMeshes,
-        std::vector<std::pair<size_t, size_t>> &links)
+        std::vector<std::pair<std::pair<size_t, size_t>, std::pair<size_t, size_t>>> &links)
 {
     if (convexMeshes.size() <= 1)
         return false;
@@ -181,8 +180,8 @@ static bool mergeIntersectedConvexMeshesAndLinkTriangles(const Outcome &outcome,
             QString secondGroupName = it.first;
             std::vector<size_t> firstGroupTriangleIndices = head.second.second;
             std::vector<size_t> secondGroupTriangleIndices = it.second.second;
-            size_t firstGroupChoosenIndex = findNearestTriangle(outcome, firstGroupTriangleIndices, center);
-            size_t secondGroupChoosenIndex = findNearestTriangle(outcome, secondGroupTriangleIndices, center);
+            std::pair<size_t, size_t> firstGroupChoosenIndex = findNearestTriangleEdge(outcome, firstGroupTriangleIndices, center);
+            std::pair<size_t, size_t> secondGroupChoosenIndex = findNearestTriangleEdge(outcome, secondGroupTriangleIndices, center);
             links.push_back(std::make_pair(firstGroupChoosenIndex, secondGroupChoosenIndex));
             std::vector<size_t> triangleIndices(firstGroupTriangleIndices);
             triangleIndices.insert(triangleIndices.end(), secondGroupTriangleIndices.begin(), secondGroupTriangleIndices.end());
@@ -201,7 +200,7 @@ static bool mergeIntersectedConvexMeshesAndLinkTriangles(const Outcome &outcome,
 }
 
 void triangleIslandsLink(const Outcome &outcome,
-        std::vector<std::pair<size_t, size_t>> &links)
+        std::vector<std::pair<std::pair<size_t, size_t>, std::pair<size_t, size_t>>> &links)
 {
     std::vector<size_t> group;
     std::vector<std::vector<size_t>> islands;

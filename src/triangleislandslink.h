@@ -4,6 +4,6 @@
 #include "outcome.h"
 
 void triangleIslandsLink(const Outcome &outcome,
-        std::vector<std::pair<size_t, size_t>> &links);
+        std::vector<std::pair<std::pair<size_t, size_t>, std::pair<size_t, size_t>>> &links);
 
 #endif
