@@ -1,3 +1,10 @@
+Changes between 1.0.0-beta.23 and 1.0.0-beta.24:
+--------------------------------------------------
+- Support part color copy and paste  
+- Add auto ragdoll animation, powered by bullet3  
+- Fix texture generation  
+- Fix optimized compiling options for windows  
+
 Changes between 1.0.0-beta.22 and 1.0.0-beta.23:
 --------------------------------------------------
 - Fix rig bone name issue because of translation  
