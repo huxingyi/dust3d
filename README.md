@@ -52,6 +52,7 @@ External Links
 - [Dust3D - простая система 3D моделирования для игр](https://www.linux.org.ru/news/opensource/14198146) **linux.org.ru**  
 - [Бета-выпуск Dust3D, нового открытого пакета для создания 3D-моделей](https://www.opennet.ru/opennews/art.shtml?num=49694) **opennet.ru**  
 - [Dust3D - ユニークなモデリングフローが印象的な無料の3Dモデリングソフト！Win＆Mac＆Linux！オープンソース！](https://3dnchu.com/archives/dust3d/) **3dnchu.com**  
+- [Review: Free and easy 3d modeling with Dust3D](https://magazine.renderosity.com/article/5482/review-free-and-easy-3d-modeling-with-dust3d) **renderosity.com**  
 
 External Media
 -------------
