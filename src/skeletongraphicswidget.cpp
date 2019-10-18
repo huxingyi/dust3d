@@ -2386,6 +2386,23 @@ void SkeletonGraphicsWidget::selectPartAll()
     }
 }
 
+void SkeletonGraphicsWidget::shortcutCheckPartComponent()
+{
+    QUuid choosenPartId;
+    if (m_hoveredNodeItem) {
+        const SkeletonNode *node = m_document->findNode(m_hoveredNodeItem->id());
+        if (node)
+            choosenPartId = node->partId;
+    } else if (m_hoveredEdgeItem) {
+        const SkeletonEdge *edge = m_document->findEdge(m_hoveredEdgeItem->id());
+        if (edge)
+            choosenPartId = edge->partId;
+    }
+    if (!choosenPartId.isNull()) {
+        emit partComponentChecked(choosenPartId);
+    }
+}
+
 void SkeletonGraphicsWidget::selectAll()
 {
     unselectAll();
