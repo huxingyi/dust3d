@@ -730,12 +730,14 @@ void PartTreeWidget::addComponentChildrenToItem(QUuid componentId, QTreeWidgetIt
     if (nullptr == parentComponent)
         return;
     
+    const QTreeWidgetItem *scrollToItem = nullptr;
     for (const auto &childId: parentComponent->childrenIds) {
         const Component *component = m_document->findComponent(childId);
         if (nullptr == component)
             continue;
         if (!component->linkToPartId.isNull()) {
             QTreeWidgetItem *item = new QTreeWidgetItem();
+            scrollToItem = item;
             parentItem->addChild(item);
             item->setData(0, Qt::UserRole, QVariant(component->id.toString()));
             item->setFlags(item->flags() & ~(Qt::ItemIsEditable | Qt::ItemIsEnabled | Qt::ItemIsSelectable));
@@ -747,6 +749,7 @@ void PartTreeWidget::addComponentChildrenToItem(QUuid componentId, QTreeWidgetIt
             m_partItemMap[partId] = item;
         } else {
             QTreeWidgetItem *item = new QTreeWidgetItem(QStringList(component->name));
+            scrollToItem = item;
             parentItem->addChild(item);
             item->setData(0, Qt::UserRole, QVariant(component->id.toString()));
             item->setChildIndicatorPolicy(QTreeWidgetItem::ShowIndicator);
@@ -757,6 +760,9 @@ void PartTreeWidget::addComponentChildrenToItem(QUuid componentId, QTreeWidgetIt
         }
         updateComponentSelectState(childId, isComponentSelected(childId));
     }
+    
+    if (nullptr != scrollToItem)
+        QTreeWidget::scrollToItem(scrollToItem);
 }
 
 void PartTreeWidget::deleteItemChildren(QTreeWidgetItem *item)
