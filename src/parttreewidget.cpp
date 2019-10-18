@@ -765,6 +765,15 @@ void PartTreeWidget::addComponentChildrenToItem(QUuid componentId, QTreeWidgetIt
         QTreeWidget::scrollToItem(scrollToItem);
 }
 
+void PartTreeWidget::partComponentChecked(QUuid partId)
+{
+    auto item = m_partItemMap.find(partId);
+    if (item == m_partItemMap.end()) {
+        return;
+    }
+    QTreeWidget::scrollToItem(item->second);
+}
+
 void PartTreeWidget::deleteItemChildren(QTreeWidgetItem *item)
 {
     auto children = item->takeChildren();

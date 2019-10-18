@@ -2381,6 +2381,9 @@ void SkeletonGraphicsWidget::selectPartAll()
             continue;
         addItemToRangeSelection(item);
     }
+    if (!choosenPartId.isNull()) {
+        emit partComponentChecked(choosenPartId);
+    }
 }
 
 void SkeletonGraphicsWidget::selectAll()

@@ -954,6 +954,8 @@ DocumentWindow::DocumentWindow() :
     
     connect(partTreeWidget, &PartTreeWidget::addPartToSelection, graphicsWidget, &SkeletonGraphicsWidget::addPartToSelection);
     
+    connect(graphicsWidget, &SkeletonGraphicsWidget::partComponentChecked, partTreeWidget, &PartTreeWidget::partComponentChecked);
+    
     connect(m_document, &Document::componentNameChanged, partTreeWidget, &PartTreeWidget::componentNameChanged);
     connect(m_document, &Document::componentChildrenChanged, partTreeWidget, &PartTreeWidget::componentChildrenChanged);
     connect(m_document, &Document::componentRemoved, partTreeWidget, &PartTreeWidget::componentRemoved);

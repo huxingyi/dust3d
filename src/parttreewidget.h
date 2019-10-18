@@ -72,6 +72,7 @@ public slots:
     void partColorSolubilityChanged(QUuid partId);
     void partChecked(QUuid partId);
     void partUnchecked(QUuid partId);
+    void partComponentChecked(QUuid partId);
     void groupChanged(QTreeWidgetItem *item, int column);
     void groupExpanded(QTreeWidgetItem *item);
     void groupCollapsed(QTreeWidgetItem *item);
