@@ -1756,6 +1756,16 @@ void SkeletonGraphicsWidget::shortcutSubdivedOrNotSelectedPart()
     }
 }
 
+void SkeletonGraphicsWidget::shortcutChamferedOrNotSelectedPart()
+{
+    if (SkeletonDocumentEditMode::Select == m_document->editMode && !m_lastCheckedPart.isNull()) {
+        const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
+        bool partChamfered = part && part->chamfered;
+        emit setPartChamferState(m_lastCheckedPart, !partChamfered);
+        emit groupOperationAdded();
+    }
+}
+
 void SkeletonGraphicsWidget::shortcutRoundEndOrNotSelectedPart()
 {
     if (SkeletonDocumentEditMode::Select == m_document->editMode && !m_lastCheckedPart.isNull()) {

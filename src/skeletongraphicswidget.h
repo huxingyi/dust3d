@@ -401,6 +401,7 @@ signals:
     void setPartXmirrorState(QUuid partId, bool mirrored);
     void setPartRoundState(QUuid partId, bool rounded);
     void setPartWrapState(QUuid partId, bool wrapped);
+    void setPartChamferState(QUuid partId, bool chamfered);
     void setXlockState(bool locked);
     void setYlockState(bool locked);
     void setZlockState(bool locked);
@@ -545,6 +546,7 @@ public slots:
     void shortcutSubdivedOrNotSelectedPart();
     void shortcutRoundEndOrNotSelectedPart();
     void shortcutCheckPartComponent();
+    void shortcutChamferedOrNotSelectedPart();
 private slots:
     void turnaroundImageReady();
 private:
