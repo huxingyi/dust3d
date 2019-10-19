@@ -366,6 +366,10 @@ Tips:
         <source>Toggle UV Check</source>
         <translation>切换UV检查</translation>
     </message>
+    <message>
+        <source>Toggle rotation</source>
+        <translation>旋转视角</translation>
+    </message>
 </context>
 <context>
     <name>ExportPreviewWidget</name>

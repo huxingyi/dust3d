@@ -363,9 +363,9 @@ void PoseDocument::parametersToNodes(const std::vector<RiggerBone> *rigBones,
                 node.id = QUuid::createUuid();
                 partMap[node.partId].nodeIds.push_back(node.id);
                 node.setRadius(m_nodeRadius);
-                node.x = fromOutcomeX(bone.headPosition.x());
-                node.y = fromOutcomeY(bone.headPosition.y());
-                node.z = fromOutcomeZ(bone.headPosition.z());
+                node.setX(fromOutcomeX(bone.headPosition.x()));
+                node.setY(fromOutcomeY(bone.headPosition.y()));
+                node.setZ(fromOutcomeZ(bone.headPosition.z()));
                 nodeMap[node.id] = node;
                 newAddedNodeIds.insert(node.id);
                 boneIndexToHeadNodeIdMap[edgePair.first] = node.id;
@@ -383,9 +383,9 @@ void PoseDocument::parametersToNodes(const std::vector<RiggerBone> *rigBones,
                 node.id = QUuid::createUuid();
                 partMap[node.partId].nodeIds.push_back(node.id);
                 node.setRadius(m_nodeRadius);
-                node.x = fromOutcomeX(bone.headPosition.x());
-                node.y = fromOutcomeY(bone.headPosition.y());
-                node.z = fromOutcomeZ(bone.headPosition.z());
+                node.setX(fromOutcomeX(bone.headPosition.x()));
+                node.setY(fromOutcomeY(bone.headPosition.y()));
+                node.setZ(fromOutcomeZ(bone.headPosition.z()));
                 nodeMap[node.id] = node;
                 newAddedNodeIds.insert(node.id);
                 boneIndexToHeadNodeIdMap[edgePair.second] = node.id;
@@ -428,9 +428,9 @@ void PoseDocument::parametersToNodes(const std::vector<RiggerBone> *rigBones,
             node.id = QUuid::createUuid();
             partMap[node.partId].nodeIds.push_back(node.id);
             node.setRadius(m_nodeRadius / 2);
-            node.x = fromOutcomeX(bone.tailPosition.x());
-            node.y = fromOutcomeY(bone.tailPosition.y());
-            node.z = fromOutcomeZ(bone.tailPosition.z());
+            node.setX(fromOutcomeX(bone.tailPosition.x()));
+            node.setY(fromOutcomeY(bone.tailPosition.y()));
+            node.setZ(fromOutcomeZ(bone.tailPosition.z()));
             nodeMap[node.id] = node;
             newAddedNodeIds.insert(node.id);
             (*boneNameToIdsMap)[bone.name] = {firstNodeId, node.id};
@@ -485,9 +485,9 @@ void PoseDocument::moveNodeBy(QUuid nodeId, float x, float y, float z)
         qDebug() << "Find node failed:" << nodeId;
         return;
     }
-    it->second.x += x;
-    it->second.y += y;
-    it->second.z += z;
+    it->second.addX(x);
+    it->second.addY(y);
+    it->second.addZ(z);
     emit nodeOriginChanged(it->first);
     emit parametersChanged();
 }
@@ -499,9 +499,9 @@ void PoseDocument::setNodeOrigin(QUuid nodeId, float x, float y, float z)
         qDebug() << "Find node failed:" << nodeId;
         return;
     }
-    it->second.x = x;
-    it->second.y = y;
-    it->second.z = z;
+    it->second.setX(x);
+    it->second.setY(y);
+    it->second.setZ(z);
     auto part = partMap.find(it->second.partId);
     if (part != partMap.end())
         part->second.dirty = true;
@@ -513,7 +513,7 @@ float PoseDocument::findFootBottomY() const
 {
     auto maxY = std::numeric_limits<float>::lowest();
     for (const auto &nodeIt: nodeMap) {
-        auto y = nodeIt.second.y + nodeIt.second.radius;
+        auto y = nodeIt.second.getY() + nodeIt.second.radius;
         if (y > maxY)
             maxY = y;
     }
@@ -533,12 +533,12 @@ void PoseDocument::toParameters(std::map<QString, std::map<QString, QString>> &p
         if (limitNodeIds.empty() || limitNodeIds.find(boneNodeIdPair.first) != limitNodeIds.end() ||
                 limitNodeIds.find(boneNodeIdPair.second) != limitNodeIds.end()) {
             auto &boneParameter = parameters[item.first];
-            boneParameter["fromX"] = QString::number(toOutcomeX(findFirstNode->second.x));
-            boneParameter["fromY"] = QString::number(toOutcomeY(findFirstNode->second.y));
-            boneParameter["fromZ"] = QString::number(toOutcomeZ(findFirstNode->second.z));
-            boneParameter["toX"] = QString::number(toOutcomeX(findSecondNode->second.x));
-            boneParameter["toY"] = QString::number(toOutcomeY(findSecondNode->second.y));
-            boneParameter["toZ"] = QString::number(toOutcomeZ(findSecondNode->second.z));
+            boneParameter["fromX"] = QString::number(toOutcomeX(findFirstNode->second.getX()));
+            boneParameter["fromY"] = QString::number(toOutcomeY(findFirstNode->second.getY()));
+            boneParameter["fromZ"] = QString::number(toOutcomeZ(findFirstNode->second.getZ()));
+            boneParameter["toX"] = QString::number(toOutcomeX(findSecondNode->second.getX()));
+            boneParameter["toY"] = QString::number(toOutcomeY(findSecondNode->second.getY()));
+            boneParameter["toZ"] = QString::number(toOutcomeZ(findSecondNode->second.getZ()));
         }
     }
 }
@@ -611,8 +611,20 @@ void PoseDocument::switchChainSide(const std::set<QUuid> nodeIds)
         auto findSecondNode = nodeMap.find(second);
         if (findSecondNode == nodeMap.end())
             return;
-        std::swap(findFirstNode->second.y, findSecondNode->second.y);
-        std::swap(findFirstNode->second.z, findSecondNode->second.z);
+        {
+            float firstNodeY = findFirstNode->second.getY();
+            float secondNodeY = findSecondNode->second.getY();
+            findFirstNode->second.setY(secondNodeY);
+            findSecondNode->second.setY(firstNodeY);
+        }
+        //std::swap(findFirstNode->second.y, findSecondNode->second.y);
+        {
+            float firstNodeZ = findFirstNode->second.getZ();
+            float secondNodeZ = findSecondNode->second.getZ();
+            findFirstNode->second.setZ(secondNodeZ);
+            findSecondNode->second.setZ(firstNodeZ);
+        }
+        //std::swap(findFirstNode->second.z, findSecondNode->second.z);
         emit nodeOriginChanged(first);
         emit nodeOriginChanged(second);
     };

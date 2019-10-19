@@ -64,6 +64,7 @@ public slots:
     void seeContributors();
     void seeReferenceGuide();
     void documentChanged();
+    void updateRotationButtonState();
     void updateXlockButtonState();
     void updateYlockButtonState();
     void updateZlockButtonState();
@@ -78,6 +79,7 @@ public slots:
     void exportObjToFilename(const QString &filename);
     void exportFbxToFilename(const QString &filename);
     void exportGlbToFilename(const QString &filename);
+    void toggleRotation();
 private:
     void initLockButton(QPushButton *button);
     void setCurrentFilename(const QString &filename);
@@ -175,6 +177,8 @@ private:
     QAction *m_seeContributorsAction;
     QAction *m_seeAcknowlegementsAction;
     QAction *m_seeReferenceGuideAction;
+    
+    QPushButton *m_rotationButton;
 
     QPushButton *m_xlockButton;
     QPushButton *m_ylockButton;

@@ -48,7 +48,8 @@ SkeletonGraphicsWidget::SkeletonGraphicsWidget(const SkeletonDocument *document)
     m_modeBeforeEnterTempDragMode(SkeletonDocumentEditMode::Select),
     m_nodePositionModifyOnly(false),
     m_mainProfileOnly(false),
-    m_turnaroundOpacity(0.25)
+    m_turnaroundOpacity(0.25),
+    m_rotated(false)
 {
     setRenderHint(QPainter::Antialiasing, false);
     setBackgroundBrush(QBrush(QWidget::palette().color(QWidget::backgroundRole()), Qt::SolidPattern));
@@ -78,6 +79,7 @@ SkeletonGraphicsWidget::SkeletonGraphicsWidget(const SkeletonDocument *document)
     scene()->addItem(m_selectionItem);
     
     m_mainOriginItem = new SkeletonGraphicsOriginItem(SkeletonProfile::Main);
+    m_mainOriginItem->setRotated(m_rotated);
     m_mainOriginItem->hide();
     scene()->addItem(m_mainOriginItem);
     
@@ -91,6 +93,16 @@ SkeletonGraphicsWidget::SkeletonGraphicsWidget(const SkeletonDocument *document)
     
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, &SkeletonGraphicsWidget::customContextMenuRequested, this, &SkeletonGraphicsWidget::showContextMenu);
+}
+
+void SkeletonGraphicsWidget::setRotated(bool rotated)
+{
+    if (m_rotated == rotated)
+        return;
+    m_rotated = rotated;
+    if (nullptr != m_mainOriginItem)
+        m_mainOriginItem->setRotated(m_rotated);
+    updateItems();
 }
 
 void SkeletonGraphicsWidget::setModelWidget(ModelWidget *modelWidget)
@@ -439,9 +451,15 @@ void SkeletonGraphicsWidget::alignSelectedToLocal(bool alignToVerticalCenter, bo
         float byX = alignToHorizontalCenter ? sceneRadiusToUnified(center.x() - nodeOrigin.x()) : 0;
         float byY = alignToVerticalCenter ? sceneRadiusToUnified(center.y() - nodeOrigin.y()) : 0;
         if (SkeletonProfile::Main == nodeItem->profile()) {
-            emit moveNodeBy(nodeItem->id(), byX, byY, 0);
+            if (m_rotated)
+                emit moveNodeBy(nodeItem->id(), byY, byX, 0);
+            else
+                emit moveNodeBy(nodeItem->id(), byX, byY, 0);
         } else {
-            emit moveNodeBy(nodeItem->id(), 0, byY, byX);
+            if (m_rotated)
+                emit moveNodeBy(nodeItem->id(), byY, 0, byX);
+            else
+                emit moveNodeBy(nodeItem->id(), 0, byY, byX);
         }
     }
     emit batchChangeEnd();
@@ -465,23 +483,32 @@ void SkeletonGraphicsWidget::alignSelectedToGlobal(bool alignToVerticalCenter, b
             qDebug() << "Find node id failed:" << nodeItem->id();
             continue;
         }
+        float byX = 0;
+        float byY = 0;
+        float byZ = 0;
         if (SkeletonProfile::Main == nodeItem->profile()) {
             if (alignToVerticalCenter && alignToHorizontalCenter) {
-                emit moveNodeBy(node->id, m_document->originX - node->x, m_document->originY - node->y, 0);
+                byX = m_document->getOriginX(m_rotated) - node->getX(m_rotated);
+                byY = m_document->getOriginY(m_rotated) - node->getY(m_rotated);
             } else if (alignToVerticalCenter) {
-                emit moveNodeBy(node->id, 0, m_document->originY - node->y, 0);
+                byY = m_document->getOriginY(m_rotated) - node->getY(m_rotated);
             } else if (alignToHorizontalCenter) {
-                emit moveNodeBy(node->id, m_document->originX - node->x, 0, 0);
+                byX = m_document->getOriginX(m_rotated) - node->getX(m_rotated);
             }
         } else {
             if (alignToVerticalCenter && alignToHorizontalCenter) {
-                emit moveNodeBy(node->id, 0, m_document->originY - node->y, m_document->originZ - node->z);
+                byY = m_document->getOriginY(m_rotated) - node->getY(m_rotated);
+                byZ = m_document->getOriginZ(m_rotated) - node->getZ(m_rotated);
             } else if (alignToVerticalCenter) {
-                emit moveNodeBy(node->id, 0, m_document->originY - node->y, 0);
+                byY = m_document->getOriginY(m_rotated) - node->getY(m_rotated);
             } else if (alignToHorizontalCenter) {
-                emit moveNodeBy(node->id, 0, 0, m_document->originZ - node->z);
+                byZ = m_document->getOriginZ(m_rotated) - node->getZ(m_rotated);
             }
         }
+        if (m_rotated)
+            emit moveNodeBy(node->id, byY, byX, byZ);
+        else
+            emit moveNodeBy(node->id, byX, byY, byZ);
     }
     emit batchChangeEnd();
     emit groupOperationAdded();
@@ -640,6 +667,11 @@ void SkeletonGraphicsWidget::mouseMoveEvent(QMouseEvent *event)
     
     QGraphicsView::mouseMoveEvent(event);
     mouseMove(event);
+}
+
+bool SkeletonGraphicsWidget::rotated(void)
+{
+    return m_rotated;
 }
 
 bool SkeletonGraphicsWidget::inputWheelEventFromOtherWidget(QWheelEvent *event)
@@ -858,7 +890,7 @@ bool SkeletonGraphicsWidget::mouseMove(QMouseEvent *event)
                             byY = mouseScenePos.y() - origin.y();
                             byX = sceneRadiusToUnified(byX);
                             byY = sceneRadiusToUnified(byY);
-                            QVector3D target = QVector3D(node->x, node->y, node->z);
+                            QVector3D target = QVector3D(node->getX(m_rotated), node->getY(m_rotated), node->getZ(m_rotated));
                             if (SkeletonProfile::Main == nodeItem->profile()) {
                                 target.setX(target.x() + byX);
                                 target.setY(target.y() + byY);
@@ -899,7 +931,7 @@ void SkeletonGraphicsWidget::rotateSelected(int degree)
         // Rotate all children nodes around this node
         // 1. Pick who is the parent from neighbors
         // 2. Rotate all the remaining neighbor nodes and their children exlucde the picked parent
-        QVector3D worldOrigin = QVector3D(m_document->originX, m_document->originY, m_document->originZ);
+        QVector3D worldOrigin = QVector3D(m_document->getOriginX(m_rotated), m_document->getOriginY(m_rotated), m_document->getOriginZ(m_rotated));
         SkeletonGraphicsNodeItem *centerNodeItem = *nodeItems.begin();
         const auto &centerNode = m_document->findNode(centerNodeItem->id());
         if (nullptr == centerNode) {
@@ -919,7 +951,7 @@ void SkeletonGraphicsWidget::rotateSelected(int degree)
                 qDebug() << "findNode:" << neighborNodeId << " failed while rotate";
                 continue;
             }
-            QVector3D nodeOrigin(neighborNode->x, neighborNode->y, neighborNode->z);
+            QVector3D nodeOrigin(neighborNode->getX(m_rotated), neighborNode->getY(m_rotated), neighborNode->getZ(m_rotated));
             directNeighborDists.push_back(std::make_pair(neighborNodeId, (nodeOrigin - worldOrigin).lengthSquared()));
         }
         std::sort(directNeighborDists.begin(), directNeighborDists.end(), [](const std::pair<QUuid, float> &a, const std::pair<QUuid, float> &b) {
@@ -974,9 +1006,15 @@ void SkeletonGraphicsWidget::rotateItems(const std::set<SkeletonGraphicsNodeItem
         float byX = sceneRadiusToUnified(finalPoint.x() - nodeOrigin.x());
         float byY = sceneRadiusToUnified(finalPoint.y() - nodeOrigin.y());
         if (SkeletonProfile::Main == nodeItem->profile()) {
-            emit moveNodeBy(nodeItem->id(), byX, byY, 0);
+            if (m_rotated)
+                emit moveNodeBy(nodeItem->id(), byY, byX, 0);
+            else
+                emit moveNodeBy(nodeItem->id(), byX, byY, 0);
         } else {
-            emit moveNodeBy(nodeItem->id(), 0, byY, byX);
+            if (m_rotated)
+                emit moveNodeBy(nodeItem->id(), byY, 0, byX);
+            else
+                emit moveNodeBy(nodeItem->id(), 0, byY, byX);
         }
     }
     emit enableAllPositionRelatedLocks();
@@ -988,7 +1026,7 @@ void SkeletonGraphicsWidget::rotateAllSideProfile(int degree)
     for (const auto &item: nodeItemMap) {
         items.insert(item.second.second);
     }
-    QVector2D center(scenePosFromUnified(QPointF(m_document->originZ, m_document->originY)));
+    QVector2D center(scenePosFromUnified(QPointF(m_document->getOriginZ(m_rotated), m_document->getOriginY(m_rotated))));
     rotateItems(items, degree, center);
 }
 
@@ -999,9 +1037,15 @@ void SkeletonGraphicsWidget::moveCheckedOrigin(float byX, float byY)
     byX = sceneRadiusToUnified(byX);
     byY = sceneRadiusToUnified(byY);
     if (SkeletonProfile::Main == m_checkedOriginItem->profile()) {
-        emit moveOriginBy(byX, byY, 0);
+        if (m_rotated)
+            emit moveOriginBy(byY, byX, 0);
+        else
+            emit moveOriginBy(byX, byY, 0);
     } else {
-        emit moveOriginBy(0, byY, byX);
+        if (m_rotated)
+            emit moveOriginBy(byY, 0, byX);
+        else
+            emit moveOriginBy(0, byY, byX);
     }
 }
 
@@ -1020,9 +1064,15 @@ void SkeletonGraphicsWidget::moveSelected(float byX, float byY)
     for (const auto &it: nodeItems) {
         SkeletonGraphicsNodeItem *nodeItem = it;
         if (SkeletonProfile::Main == nodeItem->profile()) {
-            emit moveNodeBy(nodeItem->id(), byX, byY, 0);
+            if (m_rotated)
+                emit moveNodeBy(nodeItem->id(), byY, byX, 0);
+            else
+                emit moveNodeBy(nodeItem->id(), byX, byY, 0);
         } else {
-            emit moveNodeBy(nodeItem->id(), 0, byY, byX);
+            if (m_rotated)
+                emit moveNodeBy(nodeItem->id(), byY, 0, byX);
+            else
+                emit moveNodeBy(nodeItem->id(), 0, byY, byX);
         }
     }
 }
@@ -1125,7 +1175,10 @@ void SkeletonGraphicsWidget::scaleSelected(float delta)
         }
     }
     for (const auto &it: moveByMap) {
-        emit moveNodeBy(it.first, std::get<0>(it.second), std::get<1>(it.second), std::get<2>(it.second));
+        if (m_rotated)
+            emit moveNodeBy(it.first, std::get<1>(it.second), std::get<0>(it.second), std::get<2>(it.second));
+        else
+            emit moveNodeBy(it.first, std::get<0>(it.second), std::get<1>(it.second), std::get<2>(it.second));
     }
 }
 
@@ -1183,7 +1236,10 @@ void SkeletonGraphicsWidget::flipHorizontally()
         float offset = origin.x() - center.x();
         float unifiedOffset = -sceneRadiusToUnified(offset * 2);
         if (SkeletonProfile::Main == nodeItem->profile()) {
-            emit moveNodeBy(nodeItem->id(), unifiedOffset, 0, 0);
+            if (m_rotated)
+                emit moveNodeBy(nodeItem->id(), 0, unifiedOffset, 0);
+            else
+                emit moveNodeBy(nodeItem->id(), unifiedOffset, 0, 0);
         } else {
             emit moveNodeBy(nodeItem->id(), 0, 0, unifiedOffset);
         }
@@ -1204,7 +1260,10 @@ void SkeletonGraphicsWidget::flipVertically()
         QPointF origin = nodeItem->origin();
         float offset = origin.y() - center.y();
         float unifiedOffset = -sceneRadiusToUnified(offset * 2);
-        emit moveNodeBy(nodeItem->id(), 0, unifiedOffset, 0);
+        if (m_rotated)
+            emit moveNodeBy(nodeItem->id(), unifiedOffset, 0, 0);
+        else
+            emit moveNodeBy(nodeItem->id(), 0, unifiedOffset, 0);
     }
     emit batchChangeEnd();
     emit groupOperationAdded();
@@ -1336,7 +1395,10 @@ bool SkeletonGraphicsWidget::mousePress(QMouseEvent *event)
                 m_lastAddedX = unifiedMainPos.x();
                 m_lastAddedY = unifiedMainPos.y();
                 m_lastAddedZ = unifiedSidePos.x();
-                emit addNode(unifiedMainPos.x(), unifiedMainPos.y(), unifiedSidePos.x(), sceneRadiusToUnified(m_cursorNodeItem->radius()), nullptr == m_addFromNodeItem ? QUuid() : m_addFromNodeItem->id());
+                if (m_rotated)
+                    emit addNode(unifiedMainPos.y(), unifiedMainPos.x(), unifiedSidePos.x(), sceneRadiusToUnified(m_cursorNodeItem->radius()), nullptr == m_addFromNodeItem ? QUuid() : m_addFromNodeItem->id());
+                else
+                    emit addNode(unifiedMainPos.x(), unifiedMainPos.y(), unifiedSidePos.x(), sceneRadiusToUnified(m_cursorNodeItem->radius()), nullptr == m_addFromNodeItem ? QUuid() : m_addFromNodeItem->id());
                 emit groupOperationAdded();
                 return true;
             }
@@ -1813,8 +1875,8 @@ void SkeletonGraphicsWidget::originChanged()
         m_sideOriginItem->hide();
         return;
     }
-    m_mainOriginItem->setOrigin(scenePosFromUnified(QPointF(m_document->originX, m_document->originY)));
-    m_sideOriginItem->setOrigin(scenePosFromUnified(QPointF(m_document->originZ, m_document->originY)));
+    m_mainOriginItem->setOrigin(scenePosFromUnified(QPointF(m_document->getOriginX(m_rotated), m_document->getOriginY(m_rotated))));
+    m_sideOriginItem->setOrigin(scenePosFromUnified(QPointF(m_document->getOriginZ(m_rotated), m_document->getOriginY(m_rotated))));
     m_mainOriginItem->show();
     m_sideOriginItem->show();
 }
@@ -1832,9 +1894,11 @@ void SkeletonGraphicsWidget::nodeAdded(QUuid nodeId)
     }
     QColor markColor = BoneMarkToColor(node->boneMark);
     SkeletonGraphicsNodeItem *mainProfileItem = new SkeletonGraphicsNodeItem(SkeletonProfile::Main);
+    mainProfileItem->setRotated(m_rotated);
     SkeletonGraphicsNodeItem *sideProfileItem = new SkeletonGraphicsNodeItem(SkeletonProfile::Side);
-    mainProfileItem->setOrigin(scenePosFromUnified(QPointF(node->x, node->y)));
-    sideProfileItem->setOrigin(scenePosFromUnified(QPointF(node->z, node->y)));
+    sideProfileItem->setRotated(m_rotated);
+    mainProfileItem->setOrigin(scenePosFromUnified(QPointF(node->getX(m_rotated), node->getY(m_rotated))));
+    sideProfileItem->setOrigin(scenePosFromUnified(QPointF(node->getZ(m_rotated), node->getY(m_rotated))));
     mainProfileItem->setRadius(sceneRadiusFromUnified(node->radius));
     sideProfileItem->setRadius(sceneRadiusFromUnified(node->radius));
     mainProfileItem->setMarkColor(markColor);
@@ -1891,7 +1955,9 @@ void SkeletonGraphicsWidget::edgeAdded(QUuid edgeId)
         return;
     }
     SkeletonGraphicsEdgeItem *mainProfileEdgeItem = new SkeletonGraphicsEdgeItem();
+    mainProfileEdgeItem->setRotated(m_rotated);
     SkeletonGraphicsEdgeItem *sideProfileEdgeItem = new SkeletonGraphicsEdgeItem();
+    sideProfileEdgeItem->setRotated(m_rotated);
     mainProfileEdgeItem->setId(edgeId);
     sideProfileEdgeItem->setId(edgeId);
     mainProfileEdgeItem->setEndpoints(fromIt->second.first, toIt->second.first);
@@ -1995,17 +2061,23 @@ void SkeletonGraphicsWidget::nodeOriginChanged(QUuid nodeId)
         qDebug() << "Node not found:" << nodeId;
         return;
     }
-    QPointF mainPos = scenePosFromUnified(QPointF(node->x, node->y));
-    QPointF sidePos = scenePosFromUnified(QPointF(node->z, node->y));
+    QPointF mainPos = scenePosFromUnified(QPointF(node->getX(m_rotated), node->getY(m_rotated)));
+    QPointF sidePos = scenePosFromUnified(QPointF(node->getZ(m_rotated), node->getY(m_rotated)));
     it->second.first->setOrigin(mainPos);
+    it->second.first->setRotated(m_rotated);
+    it->second.first->updateAppearance();
     it->second.second->setOrigin(sidePos);
+    it->second.second->setRotated(m_rotated);
+    it->second.second->updateAppearance();
     for (auto edgeIt = node->edgeIds.begin(); edgeIt != node->edgeIds.end(); edgeIt++) {
         auto edgeItemIt = edgeItemMap.find(*edgeIt);
         if (edgeItemIt == edgeItemMap.end()) {
             qDebug() << "Edge item not found:" << *edgeIt;
             continue;
         }
+        edgeItemIt->second.first->setRotated(m_rotated);
         edgeItemIt->second.first->updateAppearance();
+        edgeItemIt->second.second->setRotated(m_rotated);
         edgeItemIt->second.second->updateAppearance();
     }
 }
@@ -2592,7 +2664,10 @@ void SkeletonGraphicsWidget::ikMoveReady()
             !m_ikMoveEndEffectorId.isNull()) {
         emit batchChangeBegin();
         for (const auto &it: m_ikMover->ikNodes()) {
-            emit setNodeOrigin(it.id, it.newPosition.x(), it.newPosition.y(), it.newPosition.z());
+            if (m_rotated)
+                emit setNodeOrigin(it.id, it.newPosition.y(), it.newPosition.x(), it.newPosition.z());
+            else
+                emit setNodeOrigin(it.id, it.newPosition.x(), it.newPosition.y(), it.newPosition.z());
         }
         emit batchChangeEnd();
         emit groupOperationAdded();
@@ -2629,7 +2704,7 @@ void SkeletonGraphicsWidget::ikMove(QUuid endEffectorId, QVector3D target)
         const auto node = m_document->findNode(nodeId);
         if (nullptr == node)
             break;
-        appendNodes.push_back(std::make_pair(nodeId, QVector3D(node->x, node->y, node->z)));
+        appendNodes.push_back(std::make_pair(nodeId, QVector3D(node->getX(m_rotated), node->getY(m_rotated), node->getZ(m_rotated))));
         if (node->edgeIds.size() < 1 || node->edgeIds.size() > 2)
             break;
         QUuid choosenNodeId;

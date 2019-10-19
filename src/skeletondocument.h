@@ -18,14 +18,14 @@ class SkeletonNode
 {
 public:
     SkeletonNode(const QUuid &withId=QUuid()) :
-        x(0),
-        y(0),
-        z(0),
         radius(0),
         boneMark(BoneMark::None),
         cutRotation(0.0),
         cutFace(CutFace::Quad),
-        hasCutFaceSettings(false)
+        hasCutFaceSettings(false),
+        m_x(0),
+        m_y(0),
+        m_z(0)
     {
         id = withId.isNull() ? QUuid::createUuid() : withId;
     }
@@ -69,12 +69,49 @@ public:
         cutRotation = 0;
         hasCutFaceSettings = false;
     }
+    float getX(bool rotated=false) const
+    {
+        if (rotated)
+            return m_y;
+        return m_x;
+    }
+    float getY(bool rotated=false) const
+    {
+        if (rotated)
+            return m_x;
+        return m_y;
+    }
+    float getZ(bool rotated=false) const
+    {
+        return m_z;
+    }
+    void setX(float x)
+    {
+        m_x = x;
+    }
+    void setY(float y)
+    {
+        m_y = y;
+    }
+    void setZ(float z)
+    {
+        m_z = z;
+    }
+    void addX(float x)
+    {
+        m_x += x;
+    }
+    void addY(float y)
+    {
+        m_y += y;
+    }
+    void addZ(float z)
+    {
+        m_z += z;
+    }
     QUuid id;
     QUuid partId;
     QString name;
-    float x;
-    float y;
-    float z;
     float radius;
     BoneMark boneMark;
     float cutRotation;
@@ -82,6 +119,10 @@ public:
     QUuid cutFaceLinkedId;
     bool hasCutFaceSettings;
     std::vector<QUuid> edgeIds;
+private:
+    float m_x;
+    float m_y;
+    float m_z;
 };
 
 class SkeletonEdge
@@ -308,9 +349,6 @@ class SkeletonDocument : public QObject
 {
     Q_OBJECT
 public:
-    float originX = 0;
-    float originY = 0;
-    float originZ = 0;
     SkeletonDocumentEditMode editMode = SkeletonDocumentEditMode::Select;
     bool xlocked = false;
     bool ylocked = false;
@@ -346,10 +384,56 @@ public:
     };
     virtual void copyNodes(std::set<QUuid> nodeIdSet) const = 0;
     
+    float getOriginX(bool rotated=false) const
+    {
+        if (rotated)
+            return m_originY;
+        return m_originX;
+    }
+    float getOriginY(bool rotated=false) const
+    {
+        if (rotated)
+            return m_originX;
+        return m_originY;
+    }
+    float getOriginZ(bool rotated=false) const
+    {
+        return m_originZ;
+    }
+    void setOriginX(float originX)
+    {
+        m_originX = originX;
+    }
+    void setOriginY(float originY)
+    {
+        m_originY = originY;
+    }
+    void setOriginZ(float originZ)
+    {
+        m_originZ = originZ;
+    }
+    void addOriginX(float originX)
+    {
+        m_originX += originX;
+    }
+    void addOriginY(float originY)
+    {
+        m_originY += originY;
+    }
+    void addOriginZ(float originZ)
+    {
+        m_originZ += originZ;
+    }
+    
 public slots:
     virtual void undo() = 0;
     virtual void redo() = 0;
     virtual void paste() = 0;
+    
+private:
+    float m_originX = 0;
+    float m_originY = 0;
+    float m_originZ = 0;
 };
 
 #endif

@@ -96,9 +96,9 @@ void CutDocument::toCutTemplate(std::vector<QVector2D> &cutTemplate)
         auto findNode = nodeMap.find(nodeId);
         if (findNode == nodeMap.end())
             continue;
-        QVector2D position = nodeToCutPosition({findNode->second.x,
-            findNode->second.y,
-            findNode->second.z
+        QVector2D position = nodeToCutPosition({findNode->second.getX(),
+            findNode->second.getY(),
+            findNode->second.getZ()
         });
         cutTemplate.push_back(position);
     }
@@ -134,9 +134,9 @@ void CutDocument::fromCutTemplate(const std::vector<QVector2D> &cutTemplate)
         node.id = QUuid::createUuid();
         node.setRadius(m_nodeRadius);
         auto nodePosition = cutToNodePosition(position);
-        node.x = nodePosition.x();
-        node.y = nodePosition.y();
-        node.z = nodePosition.z();
+        node.setX(nodePosition.x());
+        node.setY(nodePosition.y());
+        node.setZ(nodePosition.z());
         nodeMap[node.id] = node;
         newAddedNodeIds.insert(node.id);
         m_cutNodeIds.push_back(node.id);
@@ -175,9 +175,9 @@ void CutDocument::moveNodeBy(QUuid nodeId, float x, float y, float z)
         qDebug() << "Find node failed:" << nodeId;
         return;
     }
-    it->second.x += x;
-    it->second.y += y;
-    it->second.z += z;
+    it->second.addX(x);
+    it->second.addY(y);
+    it->second.addZ(z);
     emit nodeOriginChanged(it->first);
     emit cutTemplateChanged();
 }
@@ -189,9 +189,9 @@ void CutDocument::setNodeOrigin(QUuid nodeId, float x, float y, float z)
         qDebug() << "Find node failed:" << nodeId;
         return;
     }
-    it->second.x = x;
-    it->second.y = y;
-    it->second.z = z;
+    it->second.setX(x);
+    it->second.setY(y);
+    it->second.setZ(z);
     auto part = partMap.find(it->second.partId);
     if (part != partMap.end())
         part->second.dirty = true;

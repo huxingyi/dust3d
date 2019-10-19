@@ -144,6 +144,9 @@ DocumentWindow::DocumentWindow() :
     g_documentWindows.insert({this, QUuid::createUuid()});
 
     m_document = new Document;
+    
+    SkeletonGraphicsWidget *graphicsWidget = new SkeletonGraphicsWidget(m_document);
+    m_graphicsWidget = graphicsWidget;
 
     QVBoxLayout *toolButtonLayout = new QVBoxLayout;
     toolButtonLayout->setSpacing(0);
@@ -172,6 +175,11 @@ DocumentWindow::DocumentWindow() :
     QPushButton *zoomOutButton = new QPushButton(QChar(fa::searchminus));
     zoomOutButton->setToolTip(tr("Enter zoom out mode"));
     Theme::initAwesomeButton(zoomOutButton);
+    
+    m_rotationButton = new QPushButton(QChar(fa::caretsquareoup));
+    m_rotationButton->setToolTip(tr("Toggle rotation"));
+    Theme::initAwesomeButton(m_rotationButton);
+    updateRotationButtonState();
 
     m_xlockButton = new QPushButton(QChar('X'));
     m_xlockButton->setToolTip(tr("X axis locker"));
@@ -237,6 +245,8 @@ DocumentWindow::DocumentWindow() :
     toolButtonLayout->addWidget(zoomInButton);
     toolButtonLayout->addWidget(zoomOutButton);
     toolButtonLayout->addSpacing(10);
+    toolButtonLayout->addWidget(m_rotationButton);
+    toolButtonLayout->addSpacing(10);
     toolButtonLayout->addWidget(m_xlockButton);
     toolButtonLayout->addWidget(m_ylockButton);
     toolButtonLayout->addWidget(m_zlockButton);
@@ -264,9 +274,6 @@ DocumentWindow::DocumentWindow() :
     mainLeftLayout->addStretch();
     mainLeftLayout->addLayout(logoLayout);
     mainLeftLayout->addSpacing(10);
-
-    SkeletonGraphicsWidget *graphicsWidget = new SkeletonGraphicsWidget(m_document);
-    m_graphicsWidget = graphicsWidget;
 
     GraphicsContainerWidget *containerWidget = new GraphicsContainerWidget;
     containerWidget->setGraphicsWidget(graphicsWidget);
@@ -825,6 +832,8 @@ DocumentWindow::DocumentWindow() :
     connect(zoomOutButton, &QPushButton::clicked, [=]() {
         m_document->setEditMode(SkeletonDocumentEditMode::ZoomOut);
     });
+    
+    connect(m_rotationButton, &QPushButton::clicked, this, &DocumentWindow::toggleRotation);
 
     connect(m_xlockButton, &QPushButton::clicked, [=]() {
         m_document->setXlockState(!m_document->xlocked);
@@ -860,6 +869,8 @@ DocumentWindow::DocumentWindow() :
     connect(graphicsWidget, &SkeletonGraphicsWidget::shortcutToggleFlatShading, [=]() {
         Preferences::instance().setFlatShading(!Preferences::instance().flatShading());
     });
+    
+    connect(graphicsWidget, &SkeletonGraphicsWidget::shortcutToggleRotation, this, &DocumentWindow::toggleRotation);
 
     connect(graphicsWidget, &SkeletonGraphicsWidget::zoomRenderedModelBy, m_modelRenderWidget, &ModelWidget::zoom);
 
@@ -1098,6 +1109,14 @@ DocumentWindow::DocumentWindow() :
             graphicsWidget->setFocus();
     });
     timer->start();
+}
+
+void DocumentWindow::toggleRotation()
+{
+    if (nullptr == m_graphicsWidget)
+        return;
+    m_graphicsWidget->setRotated(!m_graphicsWidget->rotated());
+    updateRotationButtonState();
 }
 
 DocumentWindow *DocumentWindow::createDocumentWindow()
@@ -1591,7 +1610,20 @@ void DocumentWindow::updateXlockButtonState()
     if (m_document->xlocked)
         m_xlockButton->setStyleSheet("QPushButton {color: #252525}");
     else
-        m_xlockButton->setStyleSheet("QPushButton {color: #fc6621}");
+        m_xlockButton->setStyleSheet("QPushButton {color: " + Theme::red.name() + "}");
+}
+
+void DocumentWindow::updateRotationButtonState()
+{
+    if (nullptr == m_graphicsWidget)
+        return;
+    if (m_graphicsWidget->rotated()) {
+        m_rotationButton->setText(QChar(fa::caretsquareoleft));
+        m_rotationButton->setStyleSheet("QPushButton {color: " + Theme::blue.name() + "}");
+    } else {
+        m_rotationButton->setText(QChar(fa::caretsquareoup));
+        m_rotationButton->setStyleSheet("QPushButton {color: " + Theme::white.name() + "}");
+    }
 }
 
 void DocumentWindow::updateYlockButtonState()
@@ -1599,7 +1631,7 @@ void DocumentWindow::updateYlockButtonState()
     if (m_document->ylocked)
         m_ylockButton->setStyleSheet("QPushButton {color: #252525}");
     else
-        m_ylockButton->setStyleSheet("QPushButton {color: #2a5aac}");
+        m_ylockButton->setStyleSheet("QPushButton {color: " + Theme::blue.name() + "}");
 }
 
 void DocumentWindow::updateZlockButtonState()
@@ -1607,7 +1639,7 @@ void DocumentWindow::updateZlockButtonState()
     if (m_document->zlocked)
         m_zlockButton->setStyleSheet("QPushButton {color: #252525}");
     else
-        m_zlockButton->setStyleSheet("QPushButton {color: #aaebc4}");
+        m_zlockButton->setStyleSheet("QPushButton {color: " + Theme::green.name() + "}");
 }
 
 void DocumentWindow::updateRadiusLockButtonState()

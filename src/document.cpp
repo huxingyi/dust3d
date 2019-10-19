@@ -148,8 +148,8 @@ void Document::breakEdge(QUuid edgeId)
         qDebug() << "Find node failed:" << secondNodeId;
         return;
     }
-    QVector3D firstOrigin(firstNode->x, firstNode->y, firstNode->z);
-    QVector3D secondOrigin(secondNode->x, secondNode->y, secondNode->z);
+    QVector3D firstOrigin(firstNode->getX(), firstNode->getY(), firstNode->getZ());
+    QVector3D secondOrigin(secondNode->getX(), secondNode->getY(), secondNode->getZ());
     QVector3D middleOrigin = (firstOrigin + secondOrigin) / 2;
     float middleRadius = (firstNode->radius + secondNode->radius) / 2;
     removeEdge(edgeId);
@@ -346,9 +346,9 @@ QUuid Document::createNode(QUuid nodeId, float x, float y, float z, float radius
     SkeletonNode node(nodeId);
     node.partId = partId;
     node.setRadius(radius);
-    node.x = x;
-    node.y = y;
-    node.z = z;
+    node.setX(x);
+    node.setY(y);
+    node.setZ(z);
     nodeMap[node.id] = node;
     partMap[partId].nodeIds.push_back(node.id);
     
@@ -533,7 +533,7 @@ void Document::renamePose(QUuid poseId, QString name)
 
 bool Document::originSettled() const
 {
-    return !qFuzzyIsNull(originX) && !qFuzzyIsNull(originY) && !qFuzzyIsNull(originZ);
+    return !qFuzzyIsNull(getOriginX()) && !qFuzzyIsNull(getOriginY()) && !qFuzzyIsNull(getOriginZ());
 }
 
 void Document::addEdge(QUuid fromNodeId, QUuid toNodeId)
@@ -715,15 +715,15 @@ void Document::moveNodeBy(QUuid nodeId, float x, float y, float z)
         return;
     bool changed = false;
     if (!(m_allPositionRelatedLocksEnabled && xlocked)) {
-        it->second.x += x;
+        it->second.addX(x);
         changed = true;
     }
     if (!(m_allPositionRelatedLocksEnabled && ylocked)) {
-        it->second.y += y;
+        it->second.addY(y);
         changed = true;
     }
     if (!(m_allPositionRelatedLocksEnabled && zlocked)) {
-        it->second.z += z;
+        it->second.addZ(z);
         changed = true;
     }
     if (!changed)
@@ -738,11 +738,11 @@ void Document::moveNodeBy(QUuid nodeId, float x, float y, float z)
 void Document::moveOriginBy(float x, float y, float z)
 {
     if (!(m_allPositionRelatedLocksEnabled && xlocked))
-        originX += x;
+        addOriginX(x);
     if (!(m_allPositionRelatedLocksEnabled && ylocked))
-        originY += y;
+        addOriginY(y);
     if (!(m_allPositionRelatedLocksEnabled && zlocked))
-        originZ += z;
+        addOriginZ(z);
     markAllDirty();
     emit originChanged();
     emit skeletonChanged();
@@ -758,11 +758,11 @@ void Document::setNodeOrigin(QUuid nodeId, float x, float y, float z)
     if ((m_allPositionRelatedLocksEnabled && isPartReadonly(it->second.partId)))
         return;
     if (!(m_allPositionRelatedLocksEnabled && xlocked))
-        it->second.x = x;
+        it->second.setX(x);
     if (!(m_allPositionRelatedLocksEnabled && ylocked))
-        it->second.y = y;
+        it->second.setY(y);
     if (!(m_allPositionRelatedLocksEnabled && zlocked))
-        it->second.z = z;
+        it->second.setZ(z);
     auto part = partMap.find(it->second.partId);
     if (part != partMap.end())
         part->second.dirty = true;
@@ -797,7 +797,12 @@ void Document::switchNodeXZ(QUuid nodeId)
     }
     if (isPartReadonly(it->second.partId))
         return;
-    std::swap(it->second.x, it->second.z);
+    {
+        float oldX = it->second.getX();
+        float oldZ = it->second.getZ();
+        it->second.setX(oldZ);
+        it->second.setZ(oldX);
+    }
     auto part = partMap.find(it->second.partId);
     if (part != partMap.end())
         part->second.dirty = true;
@@ -1083,9 +1088,9 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
             std::map<QString, QString> node;
             node["id"] = nodeIt.second.id.toString();
             node["radius"] = QString::number(nodeIt.second.radius);
-            node["x"] = QString::number(nodeIt.second.x);
-            node["y"] = QString::number(nodeIt.second.y);
-            node["z"] = QString::number(nodeIt.second.z);
+            node["x"] = QString::number(nodeIt.second.getX());
+            node["y"] = QString::number(nodeIt.second.getY());
+            node["z"] = QString::number(nodeIt.second.getZ());
             node["partId"] = nodeIt.second.partId.toString();
             if (nodeIt.second.boneMark != BoneMark::None)
                 node["boneMark"] = BoneMarkToString(nodeIt.second.boneMark);
@@ -1241,9 +1246,9 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
     }
     if (DocumentToSnapshotFor::Document == forWhat) {
         std::map<QString, QString> canvas;
-        canvas["originX"] = QString::number(originX);
-        canvas["originY"] = QString::number(originY);
-        canvas["originZ"] = QString::number(originZ);
+        canvas["originX"] = QString::number(getOriginX());
+        canvas["originY"] = QString::number(getOriginY());
+        canvas["originZ"] = QString::number(getOriginZ());
         canvas["rigType"] = RigTypeToString(rigType);
         snapshot->canvas = canvas;
     }
@@ -1260,9 +1265,9 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
         if (originXit != snapshot.canvas.end() &&
                 originYit != snapshot.canvas.end() &&
                 originZit != snapshot.canvas.end()) {
-            originX = originXit->second.toFloat();
-            originY = originYit->second.toFloat();
-            originZ = originZit->second.toFloat();
+            setOriginX(originXit->second.toFloat());
+            setOriginY(originYit->second.toFloat());
+            setOriginZ(originZit->second.toFloat());
             isOriginChanged = true;
         }
         const auto &rigTypeIt = snapshot.canvas.find("rigType");
@@ -1400,9 +1405,9 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
         oldNewIdMap[oldNodeId] = node.id;
         node.name = valueOfKeyInMapOrEmpty(nodeKv.second, "name");
         node.radius = valueOfKeyInMapOrEmpty(nodeKv.second, "radius").toFloat();
-        node.x = valueOfKeyInMapOrEmpty(nodeKv.second, "x").toFloat();
-        node.y = valueOfKeyInMapOrEmpty(nodeKv.second, "y").toFloat();
-        node.z = valueOfKeyInMapOrEmpty(nodeKv.second, "z").toFloat();
+        node.setX(valueOfKeyInMapOrEmpty(nodeKv.second, "x").toFloat());
+        node.setY(valueOfKeyInMapOrEmpty(nodeKv.second, "y").toFloat());
+        node.setZ(valueOfKeyInMapOrEmpty(nodeKv.second, "z").toFloat());
         node.partId = oldNewIdMap[QUuid(valueOfKeyInMapOrEmpty(nodeKv.second, "partId"))];
         node.boneMark = BoneMarkFromString(valueOfKeyInMapOrEmpty(nodeKv.second, "boneMark").toUtf8().constData());
         const auto &cutRotationIt = nodeKv.second.find("cutRotation");
@@ -1596,9 +1601,9 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
 
 void Document::silentReset()
 {
-    originX = 0.0;
-    originY = 0.0;
-    originZ = 0.0;
+    setOriginX(0.0);
+    setOriginY(0.0);
+    setOriginZ(0.0);
     rigType = RigType::None;
     nodeMap.clear();
     edgeMap.clear();
@@ -2533,9 +2538,9 @@ void Document::settleOrigin()
     QRectF mainProfile;
     QRectF sideProfile;
     snapshot.resolveBoundingBox(&mainProfile, &sideProfile);
-    originX = mainProfile.x() + mainProfile.width() / 2;
-    originY = mainProfile.y() + mainProfile.height() / 2;
-    originZ = sideProfile.x() + sideProfile.width() / 2;
+    setOriginX(mainProfile.x() + mainProfile.width() / 2);
+    setOriginY(mainProfile.y() + mainProfile.height() / 2);
+    setOriginZ(sideProfile.x() + sideProfile.width() / 2);
     markAllDirty();
     emit originChanged();
 }

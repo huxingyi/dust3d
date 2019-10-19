@@ -49,4 +49,5 @@ void initShortCuts(QWidget *widget, SkeletonGraphicsWidget *graphicsWidget)
     defineKey(Qt::Key_F, &SkeletonGraphicsWidget::shortcutCheckPartComponent);
     defineKey(Qt::Key_C, &SkeletonGraphicsWidget::shortcutChamferedOrNotSelectedPart);
     defineKey(Qt::Key_O, &SkeletonGraphicsWidget::shortcutToggleFlatShading);
+    defineKey(Qt::Key_R, &SkeletonGraphicsWidget::shortcutToggleRotation);
 }

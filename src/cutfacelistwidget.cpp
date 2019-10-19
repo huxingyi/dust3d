@@ -220,7 +220,7 @@ void CutFaceListWidget::reload()
             const SkeletonNode *node = m_document->findNode(nodeId);
             if (nullptr == node)
                 continue;
-            offsetSum += node->x;
+            offsetSum += node->getX();
         }
         if (qFuzzyIsNull(offsetSum))
             continue;
