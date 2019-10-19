@@ -1704,11 +1704,15 @@ void SkeletonGraphicsWidget::shortcutSwitchProfileOnSelected()
 
 void SkeletonGraphicsWidget::shortcutShowOrHideSelectedPart()
 {
-    if (SkeletonDocumentEditMode::Select == m_document->editMode && !m_lastCheckedPart.isNull()) {
-        const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
-        bool partVisible = part && part->visible;
-        emit setPartVisibleState(m_lastCheckedPart, !partVisible);
-        emit groupOperationAdded();
+    if (SkeletonDocumentEditMode::Select == m_document->editMode) {
+        if (!m_lastCheckedPart.isNull()) {
+            const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
+            bool partVisible = part && part->visible;
+            emit setPartVisibleState(m_lastCheckedPart, !partVisible);
+            emit groupOperationAdded();
+        } else {
+            emit showOrHideAllComponents();
+        }
     }
 }
 

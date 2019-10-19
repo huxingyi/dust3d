@@ -415,6 +415,7 @@ signals:
     void disableAllPositionRelatedLocks();
     void shortcutToggleWireframe();
     void partComponentChecked(QUuid partId);
+    void showOrHideAllComponents();
 public:
     SkeletonGraphicsWidget(const SkeletonDocument *document);
     std::map<QUuid, std::pair<SkeletonGraphicsNodeItem *, SkeletonGraphicsNodeItem *>> nodeItemMap;

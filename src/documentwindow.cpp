@@ -901,6 +901,8 @@ DocumentWindow::DocumentWindow() :
     connect(graphicsWidget, &SkeletonGraphicsWidget::open, this, &DocumentWindow::open);
     connect(graphicsWidget, &SkeletonGraphicsWidget::showCutFaceSettingPopup, this, &DocumentWindow::showCutFaceSettingPopup);
     
+    connect(graphicsWidget, &SkeletonGraphicsWidget::showOrHideAllComponents, m_document, &Document::showOrHideAllComponents);
+    
     connect(m_document, &Document::nodeAdded, graphicsWidget, &SkeletonGraphicsWidget::nodeAdded);
     connect(m_document, &Document::nodeRemoved, graphicsWidget, &SkeletonGraphicsWidget::nodeRemoved);
     connect(m_document, &Document::edgeAdded, graphicsWidget, &SkeletonGraphicsWidget::edgeAdded);

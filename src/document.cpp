@@ -3058,6 +3058,20 @@ void Document::showAllComponents()
     }
 }
 
+void Document::showOrHideAllComponents()
+{
+    bool foundVisiblePart = false;
+    for (const auto &part: partMap) {
+        if (part.second.visible) {
+            foundVisiblePart = true;
+        }
+    }
+    if (foundVisiblePart)
+        hideAllComponents();
+    else
+        showAllComponents();
+}
+
 void Document::collapseAllComponents()
 {
     for (const auto &component: componentMap) {

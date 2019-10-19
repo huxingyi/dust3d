@@ -29,6 +29,7 @@ signals:
     void lockOtherComponents(QUuid componentId);
     void hideAllComponents();
     void showAllComponents();
+    void showOrHideAllComponents();
     void collapseAllComponents();
     void expandAllComponents();
     void lockAllComponents();
