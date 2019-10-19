@@ -53,17 +53,15 @@ void Theme::initAwsomeBaseSizes()
     Theme::toolIconFontSize = fontMetrics.height();
     
     Theme::toolIconSize = (int)(Theme::toolIconFontSize * 1.5);
-    Theme::miniIconFontSize = (int)(Theme::toolIconFontSize * 0.64);
+    Theme::miniIconFontSize = (int)(Theme::toolIconFontSize * 0.7);
     Theme::miniIconSize = (int)(Theme::miniIconFontSize * 1.67);
     Theme::partPreviewImageSize = (Theme::miniIconSize * 3);
-    Theme::materialPreviewImageSize = 75;
-    Theme::cutFacePreviewImageSize = 75;
-    Theme::posePreviewImageSize = 75;
-    Theme::motionPreviewImageSize = 75;
-    Theme::sidebarPreferredWidth = 200;
+    Theme::sidebarPreferredWidth = Theme::partPreviewImageSize * 3.7;
+    Theme::materialPreviewImageSize = Theme::sidebarPreferredWidth * 0.4;
+    Theme::cutFacePreviewImageSize = Theme::materialPreviewImageSize;
+    Theme::posePreviewImageSize = Theme::materialPreviewImageSize;
+    Theme::motionPreviewImageSize = Theme::materialPreviewImageSize;
     Theme::normalButtonSize = Theme::toolIconSize * 2;
-    
-    //qDebug() << "Theme::toolIconFontSize:" << Theme::toolIconFontSize;
 }
 
 QtAwesome *Theme::awesome()
