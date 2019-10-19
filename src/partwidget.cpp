@@ -462,9 +462,27 @@ void PartWidget::showCutRotationSettingPopup(const QPoint &pos)
         emit groupOperationAdded();
     });
     
+    QPushButton *rotationMinus5Button = new QPushButton(QChar(fa::rotateleft));
+    initToolButton(rotationMinus5Button);
+    
+    connect(rotationMinus5Button, &QPushButton::clicked, [=]() {
+        rotationWidget->setValue(-0.5);
+        emit groupOperationAdded();
+    });
+    
+    QPushButton *rotation5Button = new QPushButton(QChar(fa::rotateright));
+    initToolButton(rotation5Button);
+    
+    connect(rotation5Button, &QPushButton::clicked, [=]() {
+        rotationWidget->setValue(0.5);
+        emit groupOperationAdded();
+    });
+    
     QHBoxLayout *rotationLayout = new QHBoxLayout;
     rotationLayout->addWidget(rotationEraser);
     rotationLayout->addWidget(rotationWidget);
+    rotationLayout->addWidget(rotationMinus5Button);
+    rotationLayout->addWidget(rotation5Button);
     
     FloatNumberWidget *hollowThicknessWidget = new FloatNumberWidget;
     hollowThicknessWidget->setItemName(tr("Hollow"));
