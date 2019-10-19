@@ -856,6 +856,10 @@ DocumentWindow::DocumentWindow() :
     connect(graphicsWidget, &SkeletonGraphicsWidget::shortcutToggleWireframe, [=]() {
         m_modelRenderWidget->toggleWireframe();
     });
+    
+    connect(graphicsWidget, &SkeletonGraphicsWidget::shortcutToggleFlatShading, [=]() {
+        Preferences::instance().setFlatShading(!Preferences::instance().flatShading());
+    });
 
     connect(graphicsWidget, &SkeletonGraphicsWidget::zoomRenderedModelBy, m_modelRenderWidget, &ModelWidget::zoom);
 
