@@ -1,3 +1,14 @@
+Changes between 1.0.0-beta.24 and 1.0.0-beta.25:
+--------------------------------------------------
+- Add shortcuts key F: bring part widget of hovered part to visible area
+- Add shortcut key C: toggle chamfer state  
+- Add shortcut key O: toggle flat shading  
+- Add shortcut key R: toggle viewport rotation  
+- Change behaviour of shortcut key H: toggle all nodes when there is no selection  
+- Add mini buttons to quick set cut face rotation  
+- Add one tool button to toggle viewport rotation  
+- Increase the icon size of mini buttons  
+
 Changes between 1.0.0-beta.23 and 1.0.0-beta.24:
 --------------------------------------------------
 - Support part color copy and paste  
