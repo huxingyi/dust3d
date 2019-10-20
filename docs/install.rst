@@ -3,13 +3,13 @@ Download and Install Dust3D
 
 * For Windows:
 
-    https://github.com/huxingyi/dust3d/releases/download/1.0.0-beta.24/dust3d-1.0.0-beta.24-x86.zip
+    https://github.com/huxingyi/dust3d/releases/download/1.0.0-beta.25/dust3d-1.0.0-beta.25-x86.zip
 
     No need to install, unzip and run the exe.
 
 * For Mac OS X:
 
-    https://github.com/huxingyi/dust3d/releases/download/1.0.0-beta.24/dust3d-1.0.0-beta.24.dmg
+    https://github.com/huxingyi/dust3d/releases/download/1.0.0-beta.25/dust3d-1.0.0-beta.25.dmg
 
     If "The following disk images could't be opened" popped up, that means the downloaded file was broken, please retry.
 
@@ -24,12 +24,12 @@ Download and Install Dust3D
 
 * For Linux:
 
-    https://github.com/huxingyi/dust3d/releases/download/1.0.0-beta.24/dust3d-1.0.0-beta.24-x86_64.AppImage
+    https://github.com/huxingyi/dust3d/releases/download/1.0.0-beta.25/dust3d-1.0.0-beta.25-x86_64.AppImage
 
     .. code-block:: none
 
-        $ chmod a+x ./dust3d-1.0.0-beta.24-x86_64.AppImage
-        $ ./dust3d-1.0.0-beta.24-x86_64.AppImage
+        $ chmod a+x ./dust3d-1.0.0-beta.25-x86_64.AppImage
+        $ ./dust3d-1.0.0-beta.25-x86_64.AppImage
 
 * Build on Your Own:
 
@@ -42,6 +42,10 @@ Next?
 Join Mailing List to get Updated:
 
     https://www.freelists.org/list/dust3d
+
+Follow the News on Twitter:
+
+    https://twitter.com/jeremyhu2016
 
 Found BUG?
 
