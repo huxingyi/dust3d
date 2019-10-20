@@ -13,38 +13,12 @@ Dust3D is a brand new 3D modeling software. It helps you create a 3D watertight 
 - [Quick Start](http://docs.dust3d.org)  
 - __[Join Mailing List to get Updated](https://www.freelists.org/list/dust3d)__  
 
-Calling for Posts
---------------------
-Please share your work done in Dust3D to our [Forum](https://dust3d.discourse.group) and twitter by hashtag [#Dust3D](https://twitter.com/hashtag/Dust3D), the final 1.0 version is planned to release in 2019, your work may be picked as the featured cover of Dust3D 1.0 stable version show on the about window of software and the homepage of website.
-
-[How to Create a Low Poly Character in 23 Minutes using Dust3D](https://youtu.be/o20vuammC6A)
-
-<a href="https://youtu.be/o20vuammC6A" target="_blank"><image src="https://raw.githubusercontent.com/Dust3D-Modeling/10minuteseveryday/master/jeremyhu2016/medieval-horse/how-to-create-a-low-poly-character-in-23-minutes-using-dust3d.png" width="480" height="270"></a>
-
-Examples
+Screenshots
 ----------------------
-[Make a 3D model from scratch using Dust3D](https://youtu.be/wQerDObDjOs)
+<a href="https://github.com/Dust3D-Modeling/10minuteseveryday/tree/master/jeremyhu2016/audi-80-1990"><image src="https://raw.githubusercontent.com/Dust3D-Modeling/10minuteseveryday/master/jeremyhu2016/audi-80-1990/audi-80-1990.png" width="358" height="216"></a>
 
-<a href="https://youtu.be/wQerDObDjOs" target="_blank"><image src="https://raw.githubusercontent.com/huxingyi/dust3d/master/docs/examples/modeling-mosquito/make-a-3d-model-from-scratch-using-dust3d-video-thumbnail.png" width="480" height="270"></a>
 
-[Modeling Ant using Dust3D](http://docs.dust3d.org/en/latest/examples/modeling-ant/index.html)  
-
-<a href="http://docs.dust3d.org/en/latest/examples/modeling-ant/index.html">
-<image src="https://raw.githubusercontent.com/huxingyi/dust3d/master/docs/examples/modeling-ant/modeling-ant-dust3d-screenshot.png" width="320" height="192"></a>
-
-[Modeling Camel using Dust3D](http://docs.dust3d.org/en/latest/examples/modeling-camel/index.html)  
-
-<a href="http://docs.dust3d.org/en/latest/examples/modeling-camel/index.html">
-<image src="https://raw.githubusercontent.com/huxingyi/dust3d/master/docs/examples/modeling-camel/modeling-camel-dust3d-screenshot.png" width="320" height="192"></a>
-
-[Modeling Horse using Dust3D](http://docs.dust3d.org/en/latest/examples/modeling-horse/index.html)  
-
-<a href="http://docs.dust3d.org/en/latest/examples/modeling-horse/index.html">
-<image src="https://raw.githubusercontent.com/huxingyi/dust3d/master/docs/examples/modeling-horse/modeling-horse-dust3d-screenshot.png" width="320" height="192"></a>
-
-More Examples
----------------------
-<a href="https://github.com/Dust3D-Modeling/10minuteseveryday"><image src="https://dust3d.org/images/10minuteseveryday-preview.png" width="344" height="398"></a>
+<a href="https://github.com/Dust3D-Modeling/10minuteseveryday/tree/master/jeremyhu2016/honda-monkey"><image src="https://raw.githubusercontent.com/Dust3D-Modeling/10minuteseveryday/master/jeremyhu2016/honda-monkey/honda-monkey.png" width="358" height="216"></a>
 
 External Links
 -------------
