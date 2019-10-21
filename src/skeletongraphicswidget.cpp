@@ -851,14 +851,16 @@ bool SkeletonGraphicsWidget::mouseMove(QMouseEvent *event)
     if (SkeletonDocumentEditMode::Add == m_document->editMode) {
         QPointF mouseScenePos = mouseEventScenePos(event);
         m_cursorNodeItem->setOrigin(mouseScenePos);
-        if (!m_cursorNodeItem->isVisible()) {
-            m_cursorNodeItem->show();
-        }
         if (m_addFromNodeItem) {
             m_cursorEdgeItem->setEndpoints(m_addFromNodeItem, m_cursorNodeItem);
+            if (!m_cursorNodeItem->isVisible())
+                m_cursorNodeItem->setRadius(m_addFromNodeItem->radius());
             if (!m_cursorEdgeItem->isVisible()) {
                 m_cursorEdgeItem->show();
             }
+        }
+        if (!m_cursorNodeItem->isVisible()) {
+            m_cursorNodeItem->show();
         }
         return true;
     }

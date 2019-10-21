@@ -525,24 +525,28 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
             moveToTopAction.setIcon(Theme::awesome()->icon(fa::angledoubleup));
             connect(&moveToTopAction, &QAction::triggered, [=]() {
                 emit moveComponentToTop(component->id);
+                emit groupOperationAdded();
             });
             moveToMenu->addAction(&moveToTopAction);
             
             moveUpAction.setIcon(Theme::awesome()->icon(fa::angleup));
             connect(&moveUpAction, &QAction::triggered, [=]() {
                 emit moveComponentUp(component->id);
+                emit groupOperationAdded();
             });
             moveToMenu->addAction(&moveUpAction);
             
             moveDownAction.setIcon(Theme::awesome()->icon(fa::angledown));
             connect(&moveDownAction, &QAction::triggered, [=]() {
                 emit moveComponentDown(component->id);
+                emit groupOperationAdded();
             });
             moveToMenu->addAction(&moveDownAction);
             
             moveToBottomAction.setIcon(Theme::awesome()->icon(fa::angledoubledown));
             connect(&moveToBottomAction, &QAction::triggered, [=]() {
                 emit moveComponentToBottom(component->id);
+                emit groupOperationAdded();
             });
             moveToMenu->addAction(&moveToBottomAction);
             
@@ -552,6 +556,7 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
             moveToMenu->addAction(&moveToNewGroupAction);
             connect(&moveToNewGroupAction, &QAction::triggered, [=]() {
                 emit createNewComponentAndMoveThisIn(component->id);
+                emit groupOperationAdded();
             });
             
             moveToMenu->addSeparator();
@@ -572,6 +577,7 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
                 connect(action, &QAction::triggered, [=]() {
                     for (const auto &componentId: componentIds)
                         emit moveComponent(componentId, current->id);
+                    emit groupOperationAdded();
                 });
                 groupsActions.push_back(action);
                 moveToMenu->addAction(action);
@@ -588,6 +594,7 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
         connect(&deleteAction, &QAction::triggered, [=]() {
             for (const auto &componentId: componentIds)
                 emit removeComponent(componentId);
+            emit groupOperationAdded();
         });
         contextMenu.addAction(&deleteAction);
     }

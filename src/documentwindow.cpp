@@ -969,6 +969,7 @@ DocumentWindow::DocumentWindow() :
     connect(partTreeWidget, &PartTreeWidget::showDescendantComponents, m_document, &Document::showDescendantComponents);
     connect(partTreeWidget, &PartTreeWidget::lockDescendantComponents, m_document, &Document::lockDescendantComponents);
     connect(partTreeWidget, &PartTreeWidget::unlockDescendantComponents, m_document, &Document::unlockDescendantComponents);
+    connect(partTreeWidget, &PartTreeWidget::groupOperationAdded, m_document, &Document::saveSnapshot);
     
     connect(partTreeWidget, &PartTreeWidget::addPartToSelection, graphicsWidget, &SkeletonGraphicsWidget::addPartToSelection);
     
