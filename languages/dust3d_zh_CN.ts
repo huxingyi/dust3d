@@ -370,6 +370,18 @@ Tips:
         <source>Toggle rotation</source>
         <translation>旋转视角</translation>
     </message>
+    <message>
+        <source>Colorize</source>
+        <translation>着色</translation>
+    </message>
+    <message>
+        <source>Blank</source>
+        <translation>空白</translation>
+    </message>
+    <message>
+        <source>Auto Color</source>
+        <translation>自动着色</translation>
+    </message>
 </context>
 <context>
     <name>ExportPreviewWidget</name>

@@ -153,6 +153,10 @@ private:
     QAction *m_markAsNoneAction;
     QAction *m_markAsActions[(int)BoneMark::Count - 1];
     
+    QMenu *m_colorizeAsMenu;
+    QAction *m_colorizeAsBlankAction;
+    QAction *m_colorizeAsAutoAction;
+    
     QMenu *m_viewMenu;
     QAction *m_resetModelWidgetPosAction;
     QAction *m_toggleWireframeAction;

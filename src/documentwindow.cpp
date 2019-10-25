@@ -623,6 +623,22 @@ DocumentWindow::DocumentWindow() :
     }
 
     m_editMenu->addMenu(m_markAsMenu);
+    
+    m_colorizeAsMenu = new QMenu(tr("Colorize"));
+    
+    m_colorizeAsBlankAction = new QAction(tr("Blank"), this);
+    connect(m_colorizeAsBlankAction, &QAction::triggered, [=]() {
+        m_graphicsWidget->fadeSelected();
+    });
+    m_colorizeAsMenu->addAction(m_colorizeAsBlankAction);
+    
+    m_colorizeAsAutoAction = new QAction(tr("Auto Color"), this);
+    connect(m_colorizeAsAutoAction, &QAction::triggered, [=]() {
+        m_graphicsWidget->colorizeSelected();
+    });
+    m_colorizeAsMenu->addAction(m_colorizeAsAutoAction);
+    
+    m_editMenu->addMenu(m_colorizeAsMenu);
 
     m_selectAllAction = new QAction(tr("Select All"), this);
     connect(m_selectAllAction, &QAction::triggered, m_graphicsWidget, &SkeletonGraphicsWidget::selectAll);
@@ -652,6 +668,8 @@ DocumentWindow::DocumentWindow() :
         m_switchXzAction->setEnabled(m_graphicsWidget->hasSelection());
         m_setCutFaceAction->setEnabled(m_graphicsWidget->hasSelection());
         m_clearCutFaceAction->setEnabled(m_graphicsWidget->hasCutFaceAdjustedNodesSelection());
+        m_colorizeAsBlankAction->setEnabled(m_graphicsWidget->hasSelection());
+        m_colorizeAsAutoAction->setEnabled(m_graphicsWidget->hasSelection());
         m_alignToGlobalCenterAction->setEnabled(m_graphicsWidget->hasSelection() && m_document->originSettled());
         m_alignToGlobalVerticalCenterAction->setEnabled(m_graphicsWidget->hasSelection() && m_document->originSettled());
         m_alignToGlobalHorizontalCenterAction->setEnabled(m_graphicsWidget->hasSelection() && m_document->originSettled());
