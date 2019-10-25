@@ -49,7 +49,8 @@ SkeletonGraphicsWidget::SkeletonGraphicsWidget(const SkeletonDocument *document)
     m_nodePositionModifyOnly(false),
     m_mainProfileOnly(false),
     m_turnaroundOpacity(0.25),
-    m_rotated(false)
+    m_rotated(false),
+    m_backgroundImage(nullptr)
 {
     setRenderHint(QPainter::Antialiasing, false);
     setBackgroundBrush(QBrush(QWidget::palette().color(QWidget::backgroundRole()), Qt::SolidPattern));
@@ -95,6 +96,11 @@ SkeletonGraphicsWidget::SkeletonGraphicsWidget(const SkeletonDocument *document)
     connect(this, &SkeletonGraphicsWidget::customContextMenuRequested, this, &SkeletonGraphicsWidget::showContextMenu);
 }
 
+SkeletonGraphicsWidget::~SkeletonGraphicsWidget()
+{
+    delete m_backgroundImage;
+}
+
 void SkeletonGraphicsWidget::setRotated(bool rotated)
 {
     if (m_rotated == rotated)
@@ -124,6 +130,14 @@ void SkeletonGraphicsWidget::setBackgroundBlur(float turnaroundOpacity)
 {
     m_turnaroundOpacity = turnaroundOpacity;
     m_backgroundItem->setOpacity(m_turnaroundOpacity);
+}
+
+void SkeletonGraphicsWidget::shortcutEscape()
+{
+    if (SkeletonDocumentEditMode::Add == m_document->editMode) {
+        emit setEditMode(SkeletonDocumentEditMode::Select);
+        return;
+    }
 }
 
 void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
@@ -302,6 +316,18 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
         }
     }
     
+    QAction colorizeAsBlankAction(tr("Blank"), this);
+    QAction colorizeAsAutoColorAction(tr("Auto Color"), this);
+    if (!m_nodePositionModifyOnly && hasNodeSelection()) {
+        QMenu *subMenu = contextMenu.addMenu(tr("Colorize"));
+        
+        connect(&colorizeAsBlankAction, &QAction::triggered, this, &SkeletonGraphicsWidget::fadeSelected);
+        subMenu->addAction(&colorizeAsBlankAction);
+        
+        connect(&colorizeAsAutoColorAction, &QAction::triggered, this, &SkeletonGraphicsWidget::colorizeSelected);
+        subMenu->addAction(&colorizeAsAutoColorAction);
+    }
+    
     QAction selectAllAction(tr("Select All"), this);
     if (hasItems()) {
         connect(&selectAllAction, &QAction::triggered, this, &SkeletonGraphicsWidget::selectAll);
@@ -394,6 +420,72 @@ bool SkeletonGraphicsWidget::hasCutFaceAdjustedNodesSelection()
         }
     }
     return false;
+}
+
+void SkeletonGraphicsWidget::fadeSelected()
+{
+    std::set<QUuid> partIds;
+    for (const auto &it: m_rangeSelectionSet) {
+        if (it->data(0) == "node") {
+            SkeletonGraphicsNodeItem *nodeItem = (SkeletonGraphicsNodeItem *)it;
+            const SkeletonNode *node = m_document->findNode(nodeItem->id());
+            if (nullptr == node)
+                continue;
+            if (partIds.find(node->partId) != partIds.end())
+                continue;
+            partIds.insert(node->partId);
+        }
+    }
+    if (partIds.empty())
+        return;
+    emit batchChangeBegin();
+    for (const auto &it: partIds) {
+        emit setPartColorState(it, false, Qt::white);
+    }
+    emit batchChangeEnd();
+    emit groupOperationAdded();
+}
+
+void SkeletonGraphicsWidget::colorizeSelected()
+{
+    if (nullptr == m_backgroundImage)
+        return;
+    std::map<QUuid, std::map<QString, size_t>> sumOfColor;
+    for (const auto &it: m_rangeSelectionSet) {
+        if (it->data(0) == "node") {
+            SkeletonGraphicsNodeItem *nodeItem = (SkeletonGraphicsNodeItem *)it;
+            const SkeletonNode *node = m_document->findNode(nodeItem->id());
+            if (nullptr == node)
+                continue;
+            const auto &position = nodeItem->origin();
+            sumOfColor[node->partId][m_backgroundImage->pixelColor(position.x(), position.y()).name()]++;
+        } else if (it->data(0) == "edge") {
+            SkeletonGraphicsEdgeItem *edgeItem = (SkeletonGraphicsEdgeItem *)it;
+            const SkeletonEdge *edge = m_document->findEdge(edgeItem->id());
+            if (nullptr == edge)
+                continue;
+            const auto position = (edgeItem->firstItem()->origin() + edgeItem->secondItem()->origin()) / 2;
+            sumOfColor[edge->partId][m_backgroundImage->pixelColor(position.x(), position.y()).name()]++;
+        }
+    }
+    if (sumOfColor.empty())
+        return;
+    emit batchChangeBegin();
+    for (const auto &it: sumOfColor) {
+        int r = 0;
+        int g = 0;
+        int b = 0;
+        for (const auto &freq: it.second) {
+            QColor color(freq.first);
+            r += color.red();
+            g += color.green();
+            b += color.blue();
+        }
+        QColor color(r / it.second.size(), g / it.second.size(), b / it.second.size());
+        emit setPartColorState(it.first, true, color);
+    }
+    emit batchChangeEnd();
+    emit groupOperationAdded();
 }
 
 void SkeletonGraphicsWidget::breakSelected()
@@ -592,17 +684,17 @@ void SkeletonGraphicsWidget::updateTurnaround()
 
 void SkeletonGraphicsWidget::turnaroundImageReady()
 {
-    QImage *backgroundImage = m_turnaroundLoader->takeResultImage();
-    if (backgroundImage && backgroundImage->width() > 0 && backgroundImage->height() > 0) {
+    delete m_backgroundImage;
+    m_backgroundImage = m_turnaroundLoader->takeResultImage();
+    if (m_backgroundImage && m_backgroundImage->width() > 0 && m_backgroundImage->height() > 0) {
         //qDebug() << "Fit turnaround finished with image size:" << backgroundImage->size();
-        setFixedSize(backgroundImage->size());
+        setFixedSize(m_backgroundImage->size());
         scene()->setSceneRect(rect());
-        m_backgroundItem->setPixmap(QPixmap::fromImage(*backgroundImage));
+        m_backgroundItem->setPixmap(QPixmap::fromImage(*m_backgroundImage));
         updateItems();
     } else {
         qDebug() << "Fit turnaround failed";
     }
-    delete backgroundImage;
     delete m_turnaroundLoader;
     m_turnaroundLoader = nullptr;
 
@@ -1828,6 +1920,11 @@ void SkeletonGraphicsWidget::shortcutChamferedOrNotSelectedPart()
         emit setPartChamferState(m_lastCheckedPart, !partChamfered);
         emit groupOperationAdded();
     }
+}
+
+void SkeletonGraphicsWidget::shortcutSelectAll()
+{
+    selectAll();
 }
 
 void SkeletonGraphicsWidget::shortcutRoundEndOrNotSelectedPart()

@@ -1147,6 +1147,18 @@ Tips:
         <source>Clear Cut Face</source>
         <translation>清除切面</translation>
     </message>
+    <message>
+        <source>Blank</source>
+        <translation>空白</translation>
+    </message>
+    <message>
+        <source>Auto Color</source>
+        <translation>自动着色</translation>
+    </message>
+    <message>
+        <source>Colorize</source>
+        <translation>着色</translation>
+    </message>
 </context>
 <context>
     <name>UpdatesCheckWidget</name>

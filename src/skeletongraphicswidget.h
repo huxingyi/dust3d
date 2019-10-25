@@ -389,6 +389,8 @@ private:
 class SkeletonGraphicsWidget : public QGraphicsView
 {
     Q_OBJECT
+public:
+    ~SkeletonGraphicsWidget();
 signals:
     void addNode(float x, float y, float z, float radius, QUuid fromNodeId);
     void scaleNodeByAddRadius(QUuid nodeId, float amount);
@@ -420,6 +422,7 @@ signals:
     void setPartRoundState(QUuid partId, bool rounded);
     void setPartWrapState(QUuid partId, bool wrapped);
     void setPartChamferState(QUuid partId, bool chamfered);
+    void setPartColorState(QUuid partId, bool hasColor, QColor color);
     void setXlockState(bool locked);
     void setYlockState(bool locked);
     void setZlockState(bool locked);
@@ -506,6 +509,8 @@ public slots:
     void rotateAllMainProfileClockwise90DegreeAlongOrigin();
     void rotateAllMainProfileCounterclockwise90DegreeAlongOrigin();
     void removeAllContent();
+    void fadeSelected();
+    void colorizeSelected();
     void breakSelected();
     void connectSelected();
     void rotateSelected(int degree);
@@ -569,6 +574,8 @@ public slots:
     void shortcutRoundEndOrNotSelectedPart();
     void shortcutCheckPartComponent();
     void shortcutChamferedOrNotSelectedPart();
+    void shortcutSelectAll();
+    void shortcutEscape();
 private slots:
     void turnaroundImageReady();
 private:
@@ -628,6 +635,7 @@ private: //need initalize
     bool m_mainProfileOnly;
     float m_turnaroundOpacity;
     bool m_rotated;
+    QImage *m_backgroundImage;
 private:
     QVector3D m_ikMoveTarget;
     QUuid m_ikMoveEndEffectorId;

@@ -11,9 +11,11 @@
 
 void initShortCuts(QWidget *widget, SkeletonGraphicsWidget *graphicsWidget)
 {
+    defineKey(Qt::Key_Escape, &SkeletonGraphicsWidget::shortcutEscape);
     defineKey(Qt::Key_Delete, &SkeletonGraphicsWidget::shortcutDelete);
     defineKey(Qt::Key_Backspace, &SkeletonGraphicsWidget::shortcutDelete);
     defineKey(Qt::Key_A, &SkeletonGraphicsWidget::shortcutAddMode);
+    defineKey(Qt::CTRL + Qt::Key_A, &SkeletonGraphicsWidget::shortcutSelectAll);
     defineKey(Qt::CTRL + Qt::Key_Z, &SkeletonGraphicsWidget::shortcutUndo);
     defineKey(Qt::CTRL + Qt::SHIFT + Qt::Key_Z, &SkeletonGraphicsWidget::shortcutRedo);
     defineKey(Qt::CTRL + Qt::Key_Y, &SkeletonGraphicsWidget::shortcutRedo);
