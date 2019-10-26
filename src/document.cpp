@@ -8,6 +8,7 @@
 #include <QVector3D>
 #include <functional>
 #include <QBuffer>
+#include <QElapsedTimer>
 #include "document.h"
 #include "util.h"
 #include "snapshotxml.h"
@@ -2803,16 +2804,18 @@ void Document::setPartColorState(QUuid partId, bool hasColor, QColor color)
 void Document::saveSnapshot()
 {
     HistoryItem item;
+    QElapsedTimer elapsedTimer;
+    elapsedTimer.start();
     toSnapshot(&item.snapshot);
-    item.hash = item.snapshot.hash();
-    if (!m_undoItems.empty() && item.hash == m_undoItems[m_undoItems.size() - 1].hash) {
-        qDebug() << "Snapshot has the same hash:" << item.hash << "skipped";
-        return;
-    }
+    //item.hash = item.snapshot.hash();
+    //if (!m_undoItems.empty() && item.hash == m_undoItems[m_undoItems.size() - 1].hash) {
+    //    qDebug() << "Snapshot has the same hash:" << item.hash << "skipped";
+    //    return;
+    //}
     if (m_undoItems.size() + 1 > m_maxSnapshot)
         m_undoItems.pop_front();
     m_undoItems.push_back(item);
-    qDebug() << "Snapshot saved with hash:" << item.hash << " History count:" << m_undoItems.size();
+    qDebug() << "Snapshot saved with hash:" << item.hash << " Time consumed:" << elapsedTimer.elapsed() << "History count:" << m_undoItems.size();
 }
 
 void Document::undo()
