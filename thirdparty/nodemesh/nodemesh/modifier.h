@@ -19,6 +19,7 @@ public:
         int nearOriginNodeIndex = -1;
         int farOriginNodeIndex = -1;
         int originNodeIndex = 0;
+        float averageCutTemplateLength;
     };
     
     struct Edge
@@ -44,6 +45,7 @@ private:
     
     void createIntermediateNode(const Node &firstNode, const Node &secondNode, float factor, Node *resultNode);
     float averageCutTemplateEdgeLength(const std::vector<QVector2D> &cutTemplate);
+    void createIntermediateCutTemplateEdges(std::vector<QVector2D> &cutTemplate, float averageCutTemplateLength);
 };
 
 }

@@ -103,18 +103,50 @@ void Modifier::roundEnd()
     }
 }
 
+void Modifier::createIntermediateCutTemplateEdges(std::vector<QVector2D> &cutTemplate, float averageCutTemplateLength)
+{
+    std::vector<QVector2D> newCutTemplate;
+    auto pointCount = cutTemplate.size();
+    float targetLength = averageCutTemplateLength * 1.2;
+    for (size_t index = 0; index < pointCount; ++index) {
+        size_t nextIndex = (index + 1) % pointCount;
+        newCutTemplate.push_back(cutTemplate[index]);
+        float oldEdgeLength = (cutTemplate[index] - cutTemplate[nextIndex]).length();
+        if (targetLength >= oldEdgeLength)
+            continue;
+        size_t newInsertNum = oldEdgeLength / targetLength;
+        if (newInsertNum < 1)
+            newInsertNum = 1;
+        if (newInsertNum > 100)
+            continue;
+        float stepFactor = 1.0 / (newInsertNum + 1);
+        float factor = stepFactor;
+        for (size_t i = 0; i < newInsertNum && factor < 1.0; factor += stepFactor, ++i) {
+            float firstFactor = 1.0 - factor;
+            newCutTemplate.push_back(cutTemplate[index] * firstFactor + cutTemplate[nextIndex] * factor);
+        }
+    }
+    cutTemplate = newCutTemplate;
+}
+
 void Modifier::finalize()
 {
     if (!m_intermediateAdditionEnabled)
         return;
+    
+    for (auto &node: m_nodes) {
+        node.averageCutTemplateLength = averageCutTemplateEdgeLength(node.cutTemplate);
+        createIntermediateCutTemplateEdges(node.cutTemplate, node.averageCutTemplateLength);
+    }
+    
     auto oldEdges = m_edges;
     m_edges.clear();
     for (const auto &edge: oldEdges) {
         const Node &firstNode = m_nodes[edge.firstNodeIndex];
         const Node &secondNode = m_nodes[edge.secondNodeIndex];
         //float edgeLengthThreshold = (firstNode.radius + secondNode.radius) * 0.75;
-        auto firstAverageCutTemplateEdgeLength = averageCutTemplateEdgeLength(firstNode.cutTemplate) * firstNode.radius;
-        auto secondAverageCutTemplateEdgeLength = averageCutTemplateEdgeLength(secondNode.cutTemplate) * secondNode.radius;
+        auto firstAverageCutTemplateEdgeLength = firstNode.averageCutTemplateLength * firstNode.radius;
+        auto secondAverageCutTemplateEdgeLength = secondNode.averageCutTemplateLength * secondNode.radius;
         float targetEdgeLength = (firstAverageCutTemplateEdgeLength + secondAverageCutTemplateEdgeLength) * 0.5;
         //if (targetEdgeLength < edgeLengthThreshold)
         //    targetEdgeLength = edgeLengthThreshold;
