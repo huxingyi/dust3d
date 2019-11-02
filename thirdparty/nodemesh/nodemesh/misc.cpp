@@ -533,14 +533,12 @@ void nodemesh::trim(std::vector<QVector3D> *vertices, bool normalize)
 void nodemesh::subdivideFace2D(std::vector<QVector2D> *face)
 {
     auto oldFace = *face;
-    float scaleFactor = oldFace.size() == 4 ? 0.8 : 1.0;
-    face->clear();
-    for (size_t i = 0; i < oldFace.size(); ++i) {
+    face->resize(oldFace.size() * 2);
+    for (size_t i = 0, n = 0; i < oldFace.size(); ++i) {
+        size_t h = (i + oldFace.size() - 1) % oldFace.size();
         size_t j = (i + 1) % oldFace.size();
-        QVector2D direct = (oldFace[i] + oldFace[j]).normalized();
-        float length = (oldFace[i].length() + oldFace[j].length()) * 0.5 * scaleFactor;
-        face->push_back(oldFace[i] * scaleFactor);
-        face->push_back(direct * length);
+        (*face)[n++] = oldFace[h] * 0.125 + oldFace[i] * 0.75 + oldFace[j] * 0.125;
+        (*face)[n++] = (oldFace[i] + oldFace[j]) * 0.5;
     }
 }
 

@@ -175,6 +175,7 @@ MeshLoader::MeshLoader(Outcome &outcome) :
                 dest->colorR = 0.0;
                 dest->colorG = 0.0;
                 dest->colorB = 0.0;
+                dest->alpha = 1.0;
                 dest->posX = srcVert->x();
                 dest->posY = srcVert->y();
                 dest->posZ = srcVert->z();
