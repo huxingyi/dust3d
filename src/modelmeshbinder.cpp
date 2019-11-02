@@ -118,6 +118,7 @@ void ModelMeshBinder::paint(ModelShaderProgram *program)
                     f->glEnableVertexAttribArray(4);
                     f->glEnableVertexAttribArray(5);
                     f->glEnableVertexAttribArray(6);
+                    f->glEnableVertexAttribArray(7);
                     f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(ShaderVertex), 0);
                     f->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(ShaderVertex), reinterpret_cast<void *>(3 * sizeof(GLfloat)));
                     f->glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(ShaderVertex), reinterpret_cast<void *>(6 * sizeof(GLfloat)));
@@ -125,6 +126,7 @@ void ModelMeshBinder::paint(ModelShaderProgram *program)
                     f->glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(ShaderVertex), reinterpret_cast<void *>(11 * sizeof(GLfloat)));
                     f->glVertexAttribPointer(5, 1, GL_FLOAT, GL_FALSE, sizeof(ShaderVertex), reinterpret_cast<void *>(12 * sizeof(GLfloat)));
                     f->glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, sizeof(ShaderVertex), reinterpret_cast<void *>(13 * sizeof(GLfloat)));
+                    f->glVertexAttribPointer(7, 1, GL_FLOAT, GL_FALSE, sizeof(ShaderVertex), reinterpret_cast<void *>(16 * sizeof(GLfloat)));
                     m_vboTriangle.release();
                 }
                 {
@@ -143,6 +145,7 @@ void ModelMeshBinder::paint(ModelShaderProgram *program)
                     f->glEnableVertexAttribArray(4);
                     f->glEnableVertexAttribArray(5);
                     f->glEnableVertexAttribArray(6);
+                    f->glEnableVertexAttribArray(7);
                     f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(ShaderVertex), 0);
                     f->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(ShaderVertex), reinterpret_cast<void *>(3 * sizeof(GLfloat)));
                     f->glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(ShaderVertex), reinterpret_cast<void *>(6 * sizeof(GLfloat)));
@@ -150,6 +153,7 @@ void ModelMeshBinder::paint(ModelShaderProgram *program)
                     f->glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(ShaderVertex), reinterpret_cast<void *>(11 * sizeof(GLfloat)));
                     f->glVertexAttribPointer(5, 1, GL_FLOAT, GL_FALSE, sizeof(ShaderVertex), reinterpret_cast<void *>(12 * sizeof(GLfloat)));
                     f->glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, sizeof(ShaderVertex), reinterpret_cast<void *>(13 * sizeof(GLfloat)));
+                    f->glVertexAttribPointer(7, 1, GL_FLOAT, GL_FALSE, sizeof(ShaderVertex), reinterpret_cast<void *>(16 * sizeof(GLfloat)));
                     m_vboEdge.release();
                 }
                 if (m_toolEnabled) {
@@ -168,6 +172,7 @@ void ModelMeshBinder::paint(ModelShaderProgram *program)
                     f->glEnableVertexAttribArray(4);
                     f->glEnableVertexAttribArray(5);
                     f->glEnableVertexAttribArray(6);
+                    f->glEnableVertexAttribArray(7);
                     f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(ShaderVertex), 0);
                     f->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(ShaderVertex), reinterpret_cast<void *>(3 * sizeof(GLfloat)));
                     f->glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(ShaderVertex), reinterpret_cast<void *>(6 * sizeof(GLfloat)));
@@ -175,6 +180,7 @@ void ModelMeshBinder::paint(ModelShaderProgram *program)
                     f->glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(ShaderVertex), reinterpret_cast<void *>(11 * sizeof(GLfloat)));
                     f->glVertexAttribPointer(5, 1, GL_FLOAT, GL_FALSE, sizeof(ShaderVertex), reinterpret_cast<void *>(12 * sizeof(GLfloat)));
                     f->glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, sizeof(ShaderVertex), reinterpret_cast<void *>(13 * sizeof(GLfloat)));
+                    f->glVertexAttribPointer(7, 1, GL_FLOAT, GL_FALSE, sizeof(ShaderVertex), reinterpret_cast<void *>(16 * sizeof(GLfloat)));
                     m_vboTool.release();
                 } else {
                     m_renderToolVertexCount = 0;

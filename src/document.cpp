@@ -1064,7 +1064,7 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
             }
             part["dirty"] = partIt.second.dirty ? "true" : "false";
             if (partIt.second.hasColor)
-                part["color"] = partIt.second.color.name();
+                part["color"] = partIt.second.color.name(QColor::HexArgb);
             if (partIt.second.colorSolubilityAdjusted())
                 part["colorSolubility"] = QString::number(partIt.second.colorSolubility);
             if (partIt.second.deformThicknessAdjusted())

@@ -1,25 +1,27 @@
-attribute vec4 vertex;
-attribute vec3 normal;
-attribute vec3 color;
-attribute vec2 texCoord;
-attribute float metalness;
-attribute float roughness;
-attribute vec3 tangent;
-varying vec3 vert;
-varying vec3 vertRaw;
-varying vec3 vertNormal;
-varying vec3 vertColor;
-varying vec2 vertTexCoord;
-varying float vertMetalness;
-varying float vertRoughness;
-varying vec3 cameraPos;
-varying vec3 firstLightPos;
-varying vec3 secondLightPos;
-varying vec3 thirdLightPos;
-uniform mat4 projectionMatrix;
-uniform mat4 modelMatrix;
-uniform mat3 normalMatrix;
-uniform mat4 viewMatrix;
+attribute highp vec4 vertex;
+attribute highp vec3 normal;
+attribute highp vec3 color;
+attribute highp vec2 texCoord;
+attribute highp float metalness;
+attribute highp float roughness;
+attribute highp vec3 tangent;
+attribute highp float alpha;
+varying highp vec3 vert;
+varying highp vec3 vertRaw;
+varying highp vec3 vertNormal;
+varying highp vec3 vertColor;
+varying highp vec2 vertTexCoord;
+varying highp float vertMetalness;
+varying highp float vertRoughness;
+varying highp vec3 cameraPos;
+varying highp vec3 firstLightPos;
+varying highp vec3 secondLightPos;
+varying highp vec3 thirdLightPos;
+varying highp float vertAlpha;
+uniform highp mat4 projectionMatrix;
+uniform highp mat4 modelMatrix;
+uniform highp mat3 normalMatrix;
+uniform highp mat4 viewMatrix;
 uniform highp int normalMapEnabled;
 
 mat3 transpose(mat3 m) 
@@ -35,6 +37,7 @@ void main()
     vertRaw = vert;
     vertNormal = normalize((modelMatrix * vec4(normal, 1.0)).xyz);
     vertColor = color;
+    vertAlpha = alpha;
     cameraPos = vec3(0, 0, -4.0);
 
     firstLightPos = vec3(5.0, 5.0, 5.0);

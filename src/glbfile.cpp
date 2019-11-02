@@ -169,6 +169,7 @@ GlbFileWriter::GlbFileWriter(Outcome &outcome,
         m_json["materials"][primitiveIndex]["pbrMetallicRoughness"]["baseColorTexture"]["index"] = textureIndex++;
         m_json["materials"][primitiveIndex]["pbrMetallicRoughness"]["metallicFactor"] = MeshLoader::m_defaultMetalness;
         m_json["materials"][primitiveIndex]["pbrMetallicRoughness"]["roughnessFactor"] = MeshLoader::m_defaultRoughness;
+        m_json["materials"][primitiveIndex]["alphaMode"] = "BLEND";
         if (normalImage) {
             m_json["materials"][primitiveIndex]["normalTexture"]["index"] = textureIndex++;
         }

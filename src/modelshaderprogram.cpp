@@ -37,6 +37,7 @@ ModelShaderProgram::ModelShaderProgram(bool usePBR)
     this->bindAttributeLocation("metalness", 4);
     this->bindAttributeLocation("roughness", 5);
     this->bindAttributeLocation("tangent", 6);
+    this->bindAttributeLocation("alpha", 7);
     this->link();
 
     this->bind();

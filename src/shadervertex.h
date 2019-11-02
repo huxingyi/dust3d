@@ -22,6 +22,7 @@ typedef struct
     GLfloat tangentX;
     GLfloat tangentY;
     GLfloat tangentZ;
+    GLfloat alpha = 1.0;
 } ShaderVertex;
 #pragma pack(pop)
 

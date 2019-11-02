@@ -67,6 +67,7 @@ varying highp vec3 cameraPos;
 varying highp vec3 firstLightPos;
 varying highp vec3 secondLightPos;
 varying highp vec3 thirdLightPos;
+varying highp float vertAlpha;
 uniform highp vec3 lightPos;
 uniform highp sampler2D textureId;
 uniform highp int textureEnabled;
@@ -280,7 +281,7 @@ highp vec4 metalRoughFunction(const in highp vec4 baseColor,
     // Apply gamma correction prior to display
     highp vec3 cGamma = gammaCorrect(cToneMapped);
 
-    return vec4(cGamma, 1.0);
+    return vec4(cGamma, baseColor.a);
 }
 
 void main() 
@@ -321,8 +322,11 @@ void main()
     lights[2].quadraticAttenuation = 0.0;
 
     highp vec3 color = vertColor;
+    highp float alpha = vertAlpha;
     if (textureEnabled == 1) {
-        color = texture2D(textureId, vertTexCoord).rgb;
+        highp vec4 textColor = texture2D(textureId, vertTexCoord);
+        color = textColor.rgb;
+        alpha = textColor.a;
     }
     if (mousePickEnabled == 1) {
         if (distance(mousePickTargetPosition, vertRaw) <= mousePickRadius) {
@@ -358,7 +362,7 @@ void main()
     
     roughness = min(0.99, roughness);
 
-    gl_FragColor = metalRoughFunction(vec4(color, 1.0),
+    gl_FragColor = metalRoughFunction(vec4(color, alpha),
                                       metalness,
                                       roughness,
                                       ambientOcclusion,

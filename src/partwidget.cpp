@@ -376,10 +376,43 @@ void PartWidget::showColorSettingPopup(const QPoint &pos)
         QColor color = QColorDialog::getColor(part->color, this);
         emit enableBackgroundBlur();
         if (color.isValid()) {
+            const SkeletonPart *part = m_document->findPart(m_partId);
+            if (nullptr == part) {
+                return;
+            }
+            color.setAlphaF(part->color.alphaF());
             emit setPartColorState(m_partId, true, color);
             emit groupOperationAdded();
         }
     });
+    
+    FloatNumberWidget *colorTransparencyWidget = new FloatNumberWidget;
+    colorTransparencyWidget->setItemName(tr("Transparency"));
+    colorTransparencyWidget->setRange(0.0, 1.0);
+    colorTransparencyWidget->setValue(1.0 - part->color.alphaF());
+    
+    connect(colorTransparencyWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+        const SkeletonPart *part = m_document->findPart(m_partId);
+        if (nullptr == part) {
+            return;
+        }
+        QColor color = part->color;
+        color.setAlphaF(1.0 - value);
+        emit setPartColorState(m_partId, true, color);
+        emit groupOperationAdded();
+    });
+    
+    QPushButton *colorTransparencyEraser = new QPushButton(QChar(fa::eraser));
+    initToolButton(colorTransparencyEraser);
+    
+    connect(colorTransparencyEraser, &QPushButton::clicked, [=]() {
+        colorTransparencyWidget->setValue(0.0);
+        emit groupOperationAdded();
+    });
+    
+    QHBoxLayout *colorTransparencyLayout = new QHBoxLayout;
+    colorTransparencyLayout->addWidget(colorTransparencyEraser);
+    colorTransparencyLayout->addWidget(colorTransparencyWidget);
     
     FloatNumberWidget *colorSolubilityWidget = new FloatNumberWidget;
     colorSolubilityWidget->setItemName(tr("Solubility"));
@@ -405,6 +438,7 @@ void PartWidget::showColorSettingPopup(const QPoint &pos)
     
     QVBoxLayout *mainLayout = new QVBoxLayout;
     mainLayout->addLayout(colorLayout);
+    mainLayout->addLayout(colorTransparencyLayout);
     mainLayout->addLayout(colorSolubilityLayout);
     
     if (m_document->materialIdList.empty()) {

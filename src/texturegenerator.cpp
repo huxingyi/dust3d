@@ -11,7 +11,7 @@
 #include "material.h"
 
 int TextureGenerator::m_textureSize = 1024;
-QColor TextureGenerator::m_defaultTextureColor = Qt::white; //Qt::darkGray;
+QColor TextureGenerator::m_defaultTextureColor = Qt::transparent; //Qt::darkGray;
 
 TextureGenerator::TextureGenerator(const Outcome &outcome, Snapshot *snapshot) :
     m_resultTextureGuideImage(nullptr),
@@ -540,11 +540,22 @@ void TextureGenerator::generate()
     
     m_resultTextureImage = new QImage(*m_resultTextureColorImage);
     
+    QImage uvCheckImage(":/resources/checkuv.png");
+    
     m_resultTextureGuideImage = new QImage(*m_resultTextureImage);
-    QPainter mergeTextureGuidePainter(m_resultTextureGuideImage);
-    mergeTextureGuidePainter.setCompositionMode(QPainter::CompositionMode_Multiply);
-    mergeTextureGuidePainter.drawImage(0, 0, *m_resultTextureBorderImage);
-    mergeTextureGuidePainter.end();
+    {
+        QPainter mergeTextureGuidePainter(m_resultTextureGuideImage);
+        mergeTextureGuidePainter.setCompositionMode(QPainter::CompositionMode_DestinationOver);
+        mergeTextureGuidePainter.drawImage(0, 0, uvCheckImage);
+        mergeTextureGuidePainter.end();
+    }
+    
+    {
+        QPainter mergeTextureGuidePainter(m_resultTextureGuideImage);
+        mergeTextureGuidePainter.setCompositionMode(QPainter::CompositionMode_Multiply);
+        mergeTextureGuidePainter.drawImage(0, 0, *m_resultTextureBorderImage);
+        mergeTextureGuidePainter.end();
+    }
     
     auto createResultBeginTime = countTimeConsumed.elapsed();
     m_resultMesh = new MeshLoader(*m_outcome);

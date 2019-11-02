@@ -787,6 +787,10 @@ Tips:
         <source>Hollow</source>
         <translation>空心</translation>
     </message>
+    <message>
+        <source>Transparency</source>
+        <translation>透明度</translation>
+    </message>
 </context>
 <context>
     <name>PoseEditWidget</name>

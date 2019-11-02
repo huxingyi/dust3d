@@ -82,6 +82,7 @@ MeshLoader::MeshLoader(const std::vector<QVector3D> &vertices, const std::vector
             dest->colorR = color.redF();
             dest->colorG = color.greenF();
             dest->colorB = color.blueF();
+            dest->alpha = color.alphaF();
             dest->posX = srcVert->x();
             dest->posY = srcVert->y();
             dest->posZ = srcVert->z();
@@ -138,6 +139,7 @@ MeshLoader::MeshLoader(Outcome &outcome) :
             dest->colorR = triangleColor->redF();
             dest->colorG = triangleColor->greenF();
             dest->colorB = triangleColor->blueF();
+            dest->alpha = triangleColor->alphaF();
             dest->posX = srcVert->x();
             dest->posY = srcVert->y();
             dest->posZ = srcVert->z();
@@ -155,7 +157,6 @@ MeshLoader::MeshLoader(Outcome &outcome) :
         }
     }
     
-    // Uncomment out to show wireframes
     size_t edgeCount = 0;
     for (const auto &face: outcome.triangleAndQuads) {
         edgeCount += face.size();
