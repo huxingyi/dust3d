@@ -368,7 +368,7 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
         
         connect(&copyColorAction, &QAction::triggered, [=]() {
             QClipboard *clipboard = QApplication::clipboard();
-            clipboard->setText(part->color.name());
+            clipboard->setText(part->color.name(QColor::HexArgb));
         });
         contextMenu.addAction(&copyColorAction);
         
