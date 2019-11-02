@@ -1,7 +1,7 @@
 [Desktop Entry]
 Type=Application
 Name=Dust3D
-Icon=icon
+Icon=dust3d
 Exec=dust3d
 Categories=Graphics;
 Comment=A quick 3D modeling tool
