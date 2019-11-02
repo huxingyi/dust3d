@@ -110,7 +110,7 @@ script:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo ls /usr/lib/x86_64-linux-gnu/ | grep libstdc; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cp /usr/lib/x86_64-linux-gnu/libstdc++.so.6 appdir/usr/optional/libstdc++/libstdc++.so.6 || travis_terminate 1; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cp ./ci/exec-x86_64.so appdir/usr/optional/exec.so || travis_terminate 1; fi
-  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cp ./ci/icon.png appdir/icon.png || travis_terminate 1; fi
+  - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cp ./ci/dust3d.png appdir/dust3d.png || travis_terminate 1; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cp ./ci/dust3d.appdata.xml appdir/usr/share/metainfo/dust3d.appdata.xml || travis_terminate 1; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cp ./dust3d appdir/usr/bin/dust3d || travis_terminate 1; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then cp ./ci/dust3d.desktop appdir/usr/share/applications/dust3d.desktop || travis_terminate 1; fi
