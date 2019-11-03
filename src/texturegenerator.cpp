@@ -337,9 +337,9 @@ void TextureGenerator::generate()
                         rect.height() * TextureGenerator::m_textureSize
                     };
                     if (translatedRect.width() < translatedRect.height()) {
-                        painter.drawTiledPixmap(translatedRect, rotatedPixmap);
+                        painter.drawTiledPixmap(translatedRect, rotatedPixmap, QPointF(rect.top(), rect.left()));
                     } else {
-                        painter.drawTiledPixmap(translatedRect, pixmap);
+                        painter.drawTiledPixmap(translatedRect, pixmap, rect.topLeft());
                     }
                 }
                 painter.setOpacity(1.0);
@@ -358,7 +358,7 @@ void TextureGenerator::generate()
             QMatrix matrix;
             matrix.translate(center.x(), center.y());
             matrix.rotate(90);
-            auto rotatedImage = scaledImage.transformed(matrix);
+            auto rotatedImage = scaledImage.transformed(matrix).mirrored(true, false);
             targetMap[it.first] = std::make_pair(QPixmap::fromImage(scaledImage),
                 QPixmap::fromImage(rotatedImage));
         }
