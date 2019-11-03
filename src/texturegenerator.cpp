@@ -158,14 +158,6 @@ void TextureGenerator::addPartAmbientOcclusionMap(QUuid partId, const QImage *im
     m_partAmbientOcclusionTextureMap[partId] = std::make_pair(*image, tileScale);
 }
 
-QPainterPath TextureGenerator::expandedPainterPath(const QPainterPath &painterPath, int expandSize)
-{
-    QPainterPathStroker stroker;
-    stroker.setWidth(expandSize);
-    stroker.setJoinStyle(Qt::RoundJoin);
-    return (stroker.createStroke(painterPath) + painterPath).simplified();
-}
-
 void TextureGenerator::prepare()
 {
     if (nullptr == m_snapshot)
@@ -320,6 +312,76 @@ void TextureGenerator::generate()
         }
     }
     
+    auto drawTexture = [&](const std::map<QUuid, std::pair<QPixmap, QPixmap>> &map, QPainter &painter, bool useAlpha) {
+        for (const auto &it: partUvRects) {
+            const auto &partId = it.first;
+            const auto &rects = it.second;
+            float alpha = 1.0;
+            if (useAlpha) {
+                auto findSourceColorResult = partColorMap.find(partId);
+                if (findSourceColorResult != partColorMap.end()) {
+                    const auto &color = findSourceColorResult->second;
+                    alpha = color.alphaF();
+                }
+            }
+            auto findTextureResult = map.find(partId);
+            if (findTextureResult != map.end()) {
+                const auto &pixmap = findTextureResult->second.first;
+                const auto &rotatedPixmap = findTextureResult->second.second;
+                painter.setOpacity(alpha);
+                for (const auto &rect: rects) {
+                    QRectF translatedRect = {
+                        rect.left() * TextureGenerator::m_textureSize,
+                        rect.top() * TextureGenerator::m_textureSize,
+                        rect.width() * TextureGenerator::m_textureSize,
+                        rect.height() * TextureGenerator::m_textureSize
+                    };
+                    if (translatedRect.width() < translatedRect.height()) {
+                        painter.drawTiledPixmap(translatedRect, rotatedPixmap);
+                    } else {
+                        painter.drawTiledPixmap(translatedRect, pixmap);
+                    }
+                }
+                painter.setOpacity(1.0);
+            }
+        }
+    };
+    
+    auto convertTextureImageToPixmap = [&](const std::map<QUuid, std::pair<QImage, float>> &sourceMap,
+            std::map<QUuid, std::pair<QPixmap, QPixmap>> &targetMap) {
+        for (const auto &it: sourceMap) {
+            float tileScale = it.second.second;
+            const auto &image = it.second.first;
+            auto newSize = image.size() * tileScale;
+            QImage scaledImage = image.scaled(newSize);
+            QPoint center = scaledImage.rect().center();
+            QMatrix matrix;
+            matrix.translate(center.x(), center.y());
+            matrix.rotate(90);
+            auto rotatedImage = scaledImage.transformed(matrix);
+            targetMap[it.first] = std::make_pair(QPixmap::fromImage(scaledImage),
+                QPixmap::fromImage(rotatedImage));
+        }
+    };
+    
+    std::map<QUuid, std::pair<QPixmap, QPixmap>> partColorTexturePixmaps;
+    std::map<QUuid, std::pair<QPixmap, QPixmap>> partNormalTexturePixmaps;
+    std::map<QUuid, std::pair<QPixmap, QPixmap>> partMetalnessTexturePixmaps;
+    std::map<QUuid, std::pair<QPixmap, QPixmap>> partRoughnessTexturePixmaps;
+    std::map<QUuid, std::pair<QPixmap, QPixmap>> partAmbientOcclusionTexturePixmaps;
+    
+    convertTextureImageToPixmap(m_partColorTextureMap, partColorTexturePixmaps);
+    convertTextureImageToPixmap(m_partNormalTextureMap, partNormalTexturePixmaps);
+    convertTextureImageToPixmap(m_partMetalnessTextureMap, partMetalnessTexturePixmaps);
+    convertTextureImageToPixmap(m_partRoughnessTextureMap, partRoughnessTexturePixmaps);
+    convertTextureImageToPixmap(m_partAmbientOcclusionTextureMap, partAmbientOcclusionTexturePixmaps);
+    
+    drawTexture(partColorTexturePixmaps, texturePainter, true);
+    drawTexture(partNormalTexturePixmaps, textureNormalPainter, false);
+    drawTexture(partMetalnessTexturePixmaps, textureMetalnessPainter, false);
+    drawTexture(partRoughnessTexturePixmaps, textureRoughnessPainter, false);
+    drawTexture(partAmbientOcclusionTexturePixmaps, textureAmbientOcclusionPainter, false);
+    
     auto drawGradient = [&](const QUuid &partId, size_t triangleIndex, size_t firstVertexIndex, size_t secondVertexIndex,
             const QUuid &neighborPartId) {
         const std::vector<QVector2D> &uv = triangleVertexUvs[triangleIndex];
@@ -332,9 +394,11 @@ void TextureGenerator::generate()
         const auto &secondPoint = uv[secondVertexIndex];
         auto edgeLength = firstPoint.distanceToPoint(secondPoint);
         auto middlePoint = (firstPoint + secondPoint) / 2.0;
+        float alpha = 1.0;
         const auto &findColor = partColorMap.find(partId);
         if (findColor == partColorMap.end())
             return;
+        alpha = findColor->second.alphaF();
         const auto &findNeighborColorSolubility = partColorSolubilityMap.find(neighborPartId);
         if (findNeighborColorSolubility == partColorSolubilityMap.end())
             return;
@@ -359,11 +423,34 @@ void TextureGenerator::generate()
                     (finalRadius + finalRadius),
                     (finalRadius + finalRadius));
                 auto clippedRect = it.intersected(fillTarget);
-                texturePainter.fillRect(clippedRect.left() * TextureGenerator::m_textureSize,
+                QRectF translatedRect = {
+                    clippedRect.left() * TextureGenerator::m_textureSize,
                     clippedRect.top() * TextureGenerator::m_textureSize,
                     clippedRect.width() * TextureGenerator::m_textureSize,
-                    clippedRect.height() * TextureGenerator::m_textureSize,
-                    gradient);
+                    clippedRect.height() * TextureGenerator::m_textureSize
+                };
+                texturePainter.setOpacity(alpha);
+                auto findTextureResult = partColorTexturePixmaps.find(neighborPartId);
+                if (findTextureResult != partColorTexturePixmaps.end()) {
+                    //const auto &pixmap = findTextureResult->second.first;
+                    //const auto &rotatedPixmap = findTextureResult->second.second;
+                    //if (it.width() < it.height()) {
+                        //texturePainter.drawTiledPixmap(translatedRect, rotatedPixmap);
+                    //} else {
+                        //texturePainter.drawTiledPixmap(translatedRect, pixmap);
+                    //}
+                    //QImage mask(translatedRect.width(), translatedRect.height(), QImage::Format_ARGB32);
+                    //QPainter maskPainter;
+                    //maskPainter.begin(&mask);
+                    //maskPainter.setCompositionMode(QPainter::CompositionMode_SourceIn);
+                    //maskPainter.fillRect(translatedRect, gradient);
+                    //maskPainter.end();
+                    
+                    // FIXME: fix gradient fill by image
+                } else {
+                    texturePainter.fillRect(translatedRect, gradient);
+                }
+                texturePainter.setOpacity(1.0);
                 break;
             }
         }
@@ -395,77 +482,11 @@ void TextureGenerator::generate()
         drawGradient(oppositeSource.first, std::get<0>(opposite->second), std::get<1>(opposite->second), std::get<2>(opposite->second), source.first);
     }
     
-    auto drawTexture = [&](const std::map<QUuid, std::pair<QImage, float>> &map, QPainter &painter, bool useAlpha) {
-        for (const auto &it: partUvRects) {
-            const auto &partId = it.first;
-            const auto &rects = it.second;
-            float alpha = 1.0;
-            if (useAlpha) {
-                auto findSourceColorResult = partColorMap.find(partId);
-                if (findSourceColorResult != partColorMap.end()) {
-                    const auto &color = findSourceColorResult->second;
-                    alpha = color.alphaF();
-                }
-            }
-            auto findTextureResult = map.find(partId);
-            if (findTextureResult != map.end()) {
-                float tileScale = findTextureResult->second.second;
-                const auto &image = findTextureResult->second.first;
-                auto newSize = image.size() * tileScale;
-                QImage scaledImage = image.scaled(newSize);
-                auto pixmap = QPixmap::fromImage(scaledImage);
-                QPixmap rotatedPixmap;
-                painter.setOpacity(alpha);
-                for (const auto &rect: rects) {
-                    QRectF translatedRect = {
-                        rect.left() * TextureGenerator::m_textureSize,
-                        rect.top() * TextureGenerator::m_textureSize,
-                        rect.width() * TextureGenerator::m_textureSize,
-                        rect.height() * TextureGenerator::m_textureSize
-                    };
-                    if (translatedRect.width() < translatedRect.height()) {
-                        if (rotatedPixmap.isNull()) {
-                            QPoint center = scaledImage.rect().center();
-                            QMatrix matrix;
-                            matrix.translate(center.x(), center.y());
-                            matrix.rotate(90);
-                            auto rotatedImage = scaledImage.transformed(matrix);
-                            rotatedPixmap = QPixmap::fromImage(rotatedImage);
-                        }
-                        painter.drawTiledPixmap(translatedRect, rotatedPixmap);
-                    } else {
-                        painter.drawTiledPixmap(translatedRect, pixmap);
-                    }
-                }
-            }
-        }
-    };
+    hasNormalMap = !m_partNormalTextureMap.empty();
+    hasMetalnessMap = !m_partMetalnessTextureMap.empty();
+    hasRoughnessMap = !m_partRoughnessTextureMap.empty();
+    hasAmbientOcclusionMap = !m_partAmbientOcclusionTextureMap.empty();
     
-    drawTexture(m_partColorTextureMap, texturePainter, true);
-    drawTexture(m_partNormalTextureMap, textureNormalPainter, false);
-    drawTexture(m_partMetalnessTextureMap, textureMetalnessPainter, false);
-    drawTexture(m_partRoughnessTextureMap, textureRoughnessPainter, false);
-    drawTexture(m_partAmbientOcclusionTextureMap, textureAmbientOcclusionPainter, false);
-    
-    for (auto i = 0u; i < triangleVertexUvs.size(); i++) {
-        const std::pair<QUuid, QUuid> &source = triangleSourceNodes[i];
-        auto findNormalTextureResult = m_partNormalTextureMap.find(source.first);
-        if (findNormalTextureResult != m_partNormalTextureMap.end()) {
-            hasNormalMap = true;
-        }
-        auto findMetalnessTextureResult = m_partMetalnessTextureMap.find(source.first);
-        if (findMetalnessTextureResult != m_partMetalnessTextureMap.end()) {
-            hasMetalnessMap = true;
-        }
-        auto findRoughnessTextureResult = m_partRoughnessTextureMap.find(source.first);
-        if (findRoughnessTextureResult != m_partRoughnessTextureMap.end()) {
-            hasRoughnessMap = true;
-        }
-        auto findAmbientOcclusionTextureResult = m_partAmbientOcclusionTextureMap.find(source.first);
-        if (findAmbientOcclusionTextureResult != m_partAmbientOcclusionTextureMap.end()) {
-            hasAmbientOcclusionMap = true;
-        }
-    }
     auto paintTextureEndTime = countTimeConsumed.elapsed();
     
     pen.setWidth(0);

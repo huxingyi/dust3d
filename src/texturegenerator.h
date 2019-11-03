@@ -4,6 +4,7 @@
 #include <vector>
 #include <QImage>
 #include <QColor>
+#include <QPixmap>
 #include "outcome.h"
 #include "meshloader.h"
 #include "snapshot.h"
@@ -40,7 +41,6 @@ public:
     static QColor m_defaultTextureColor;
 private:
     void prepare();
-    QPainterPath expandedPainterPath(const QPainterPath &painterPath, int expandSize=7);
 private:
     Outcome *m_outcome;
     QImage *m_resultTextureGuideImage;
