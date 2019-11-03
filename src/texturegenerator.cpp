@@ -249,7 +249,7 @@ void TextureGenerator::generate()
     m_resultTextureBorderImage->fill(Qt::transparent);
     
     m_resultTextureNormalImage = new QImage(TextureGenerator::m_textureSize, TextureGenerator::m_textureSize, QImage::Format_ARGB32);
-    m_resultTextureNormalImage->fill(QColor(127, 127, 127));
+    m_resultTextureNormalImage->fill(QColor(128, 128, 255));
     
     m_resultTextureMetalnessRoughnessAmbientOcclusionImage = new QImage(TextureGenerator::m_textureSize, TextureGenerator::m_textureSize, QImage::Format_ARGB32);
     m_resultTextureMetalnessRoughnessAmbientOcclusionImage->fill(QColor(255, 255, 0));
@@ -460,14 +460,14 @@ void TextureGenerator::generate()
             //textureNormalPainter.drawImage(0, 0, findNormalTextureResult->second);
             //textureNormalPainter.setClipping(false);
             hasNormalMap = true;
-        } else {
+        }/* else {
             const auto &triangleNormal = triangleNormals[i];
             QColor brushColor;
             brushColor.setRedF((triangleNormal.x() + 1) / 2);
             brushColor.setGreenF((triangleNormal.y() + 1) / 2);
             brushColor.setBlueF((triangleNormal.z() + 1) / 2);
             textureNormalPainter.fillPath(path, brushColor);
-        }
+        }*/
         // Copy metalness texture if there is one
         auto findMetalnessTextureResult = m_partMetalnessTextureMap.find(source.first);
         if (findMetalnessTextureResult != m_partMetalnessTextureMap.end()) {
