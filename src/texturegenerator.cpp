@@ -413,11 +413,6 @@ void TextureGenerator::generate()
                 float finalRadius = (it.width() + it.height()) * 0.5 * findNeighborColorSolubility->second;
                 if (finalRadius < edgeLength)
                     finalRadius = edgeLength;
-                QRadialGradient gradient(QPointF(middlePoint.x() * TextureGenerator::m_textureSize,
-                    middlePoint.y() * TextureGenerator::m_textureSize),
-                    finalRadius * TextureGenerator::m_textureSize);
-                gradient.setColorAt(0.0, findNeighborColor->second);
-                gradient.setColorAt(1.0, Qt::transparent);
                 QRectF fillTarget((middlePoint.x() - finalRadius),
                     (middlePoint.y() - finalRadius),
                     (finalRadius + finalRadius),
@@ -432,22 +427,44 @@ void TextureGenerator::generate()
                 texturePainter.setOpacity(alpha);
                 auto findTextureResult = partColorTexturePixmaps.find(neighborPartId);
                 if (findTextureResult != partColorTexturePixmaps.end()) {
-                    //const auto &pixmap = findTextureResult->second.first;
-                    //const auto &rotatedPixmap = findTextureResult->second.second;
-                    //if (it.width() < it.height()) {
-                        //texturePainter.drawTiledPixmap(translatedRect, rotatedPixmap);
-                    //} else {
-                        //texturePainter.drawTiledPixmap(translatedRect, pixmap);
-                    //}
-                    //QImage mask(translatedRect.width(), translatedRect.height(), QImage::Format_ARGB32);
-                    //QPainter maskPainter;
-                    //maskPainter.begin(&mask);
-                    //maskPainter.setCompositionMode(QPainter::CompositionMode_SourceIn);
-                    //maskPainter.fillRect(translatedRect, gradient);
-                    //maskPainter.end();
+                    const auto &pixmap = findTextureResult->second.first;
+                    const auto &rotatedPixmap = findTextureResult->second.second;
                     
-                    // FIXME: fix gradient fill by image
+                    QImage tmpImage(translatedRect.width(), translatedRect.height(), QImage::Format_ARGB32);
+                    QPixmap tmpPixmap = QPixmap::fromImage(tmpImage);
+                    QPainter tmpPainter;
+                    QRectF tmpImageFrame = QRectF(0, 0, translatedRect.width(), translatedRect.height());
+                    
+                    // Fill tiled texture
+                    tmpPainter.begin(&tmpPixmap);
+                    tmpPainter.setOpacity(alpha);
+                    if (it.width() < it.height()) {
+                        tmpPainter.drawTiledPixmap(tmpImageFrame, rotatedPixmap, QPointF(translatedRect.top(), translatedRect.left()));
+                    } else {
+                        tmpPainter.drawTiledPixmap(tmpImageFrame, pixmap, translatedRect.topLeft());
+                    }
+                    tmpPainter.setOpacity(1.0);
+                    tmpPainter.end();
+                    
+                    // Apply gradient
+                    QRadialGradient gradient(QPointF(middlePoint.x() * TextureGenerator::m_textureSize - translatedRect.left(),
+                        middlePoint.y() * TextureGenerator::m_textureSize - translatedRect.top()),
+                        finalRadius * TextureGenerator::m_textureSize);
+                    gradient.setColorAt(0.0, findNeighborColor->second);
+                    gradient.setColorAt(1.0, Qt::transparent);
+                    
+                    tmpPainter.begin(&tmpPixmap);
+                    tmpPainter.setCompositionMode(QPainter::CompositionMode_DestinationIn);
+                    tmpPainter.fillRect(tmpImageFrame, gradient);
+                    tmpPainter.end();
+                    
+                    texturePainter.drawPixmap(translatedRect, tmpPixmap, tmpImageFrame);
                 } else {
+                    QRadialGradient gradient(QPointF(middlePoint.x() * TextureGenerator::m_textureSize,
+                        middlePoint.y() * TextureGenerator::m_textureSize),
+                        finalRadius * TextureGenerator::m_textureSize);
+                    gradient.setColorAt(0.0, findNeighborColor->second);
+                    gradient.setColorAt(1.0, Qt::transparent);
                     texturePainter.fillRect(translatedRect, gradient);
                 }
                 texturePainter.setOpacity(1.0);
