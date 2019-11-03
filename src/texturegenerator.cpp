@@ -228,7 +228,6 @@ void TextureGenerator::generate()
     
     const auto &triangleVertexUvs = *m_outcome->triangleVertexUvs();
     const auto &triangleSourceNodes = *m_outcome->triangleSourceNodes();
-    const auto &triangleNormals = m_outcome->triangleNormals;
     const auto &partUvRects = *m_outcome->partUvRects();
     
     std::map<QUuid, QColor> partColorMap;
@@ -396,10 +395,18 @@ void TextureGenerator::generate()
         drawGradient(oppositeSource.first, std::get<0>(opposite->second), std::get<1>(opposite->second), std::get<2>(opposite->second), source.first);
     }
     
-    auto drawTexture = [&](const std::map<QUuid, std::pair<QImage, float>> &map, QPainter &painter) {
+    auto drawTexture = [&](const std::map<QUuid, std::pair<QImage, float>> &map, QPainter &painter, bool useAlpha) {
         for (const auto &it: partUvRects) {
             const auto &partId = it.first;
             const auto &rects = it.second;
+            float alpha = 1.0;
+            if (useAlpha) {
+                auto findSourceColorResult = partColorMap.find(partId);
+                if (findSourceColorResult != partColorMap.end()) {
+                    const auto &color = findSourceColorResult->second;
+                    alpha = color.alphaF();
+                }
+            }
             auto findTextureResult = map.find(partId);
             if (findTextureResult != map.end()) {
                 float tileScale = findTextureResult->second.second;
@@ -408,6 +415,7 @@ void TextureGenerator::generate()
                 QImage scaledImage = image.scaled(newSize);
                 auto pixmap = QPixmap::fromImage(scaledImage);
                 QPixmap rotatedPixmap;
+                painter.setOpacity(alpha);
                 for (const auto &rect: rects) {
                     QRectF translatedRect = {
                         rect.left() * TextureGenerator::m_textureSize,
@@ -433,66 +441,28 @@ void TextureGenerator::generate()
         }
     };
     
-    drawTexture(m_partColorTextureMap, texturePainter);
-    drawTexture(m_partNormalTextureMap, textureNormalPainter);
-    drawTexture(m_partMetalnessTextureMap, textureMetalnessPainter);
-    drawTexture(m_partRoughnessTextureMap, textureRoughnessPainter);
-    drawTexture(m_partAmbientOcclusionTextureMap, textureAmbientOcclusionPainter);
+    drawTexture(m_partColorTextureMap, texturePainter, true);
+    drawTexture(m_partNormalTextureMap, textureNormalPainter, false);
+    drawTexture(m_partMetalnessTextureMap, textureMetalnessPainter, false);
+    drawTexture(m_partRoughnessTextureMap, textureRoughnessPainter, false);
+    drawTexture(m_partAmbientOcclusionTextureMap, textureAmbientOcclusionPainter, false);
     
     for (auto i = 0u; i < triangleVertexUvs.size(); i++) {
-        QPainterPath path;
-        const std::vector<QVector2D> &uv = triangleVertexUvs[i];
-        float points[][2] = {
-            {uv[0][0] * TextureGenerator::m_textureSize, uv[0][1] * TextureGenerator::m_textureSize},
-            {uv[1][0] * TextureGenerator::m_textureSize, uv[1][1] * TextureGenerator::m_textureSize},
-            {uv[2][0] * TextureGenerator::m_textureSize, uv[2][1] * TextureGenerator::m_textureSize}
-        };
-        path.moveTo(points[0][0], points[0][1]);
-        path.lineTo(points[1][0], points[1][1]);
-        path.lineTo(points[2][0], points[2][1]);
-        path = expandedPainterPath(path);
         const std::pair<QUuid, QUuid> &source = triangleSourceNodes[i];
-        // Copy normal texture if there is one
         auto findNormalTextureResult = m_partNormalTextureMap.find(source.first);
         if (findNormalTextureResult != m_partNormalTextureMap.end()) {
-            //textureNormalPainter.setClipping(true);
-            //textureNormalPainter.setClipPath(path);
-            //textureNormalPainter.drawImage(0, 0, findNormalTextureResult->second);
-            //textureNormalPainter.setClipping(false);
             hasNormalMap = true;
-        }/* else {
-            const auto &triangleNormal = triangleNormals[i];
-            QColor brushColor;
-            brushColor.setRedF((triangleNormal.x() + 1) / 2);
-            brushColor.setGreenF((triangleNormal.y() + 1) / 2);
-            brushColor.setBlueF((triangleNormal.z() + 1) / 2);
-            textureNormalPainter.fillPath(path, brushColor);
-        }*/
-        // Copy metalness texture if there is one
+        }
         auto findMetalnessTextureResult = m_partMetalnessTextureMap.find(source.first);
         if (findMetalnessTextureResult != m_partMetalnessTextureMap.end()) {
-            //textureMetalnessPainter.setClipping(true);
-            //textureMetalnessPainter.setClipPath(path);
-            //textureMetalnessPainter.drawImage(0, 0, findMetalnessTextureResult->second);
-            //textureMetalnessPainter.setClipping(false);
             hasMetalnessMap = true;
         }
-        // Copy roughness texture if there is one
         auto findRoughnessTextureResult = m_partRoughnessTextureMap.find(source.first);
         if (findRoughnessTextureResult != m_partRoughnessTextureMap.end()) {
-            //textureRoughnessPainter.setClipping(true);
-            //textureRoughnessPainter.setClipPath(path);
-            //textureRoughnessPainter.drawImage(0, 0, findRoughnessTextureResult->second);
-            //textureRoughnessPainter.setClipping(false);
             hasRoughnessMap = true;
         }
-        // Copy ambient occlusion texture if there is one
         auto findAmbientOcclusionTextureResult = m_partAmbientOcclusionTextureMap.find(source.first);
         if (findAmbientOcclusionTextureResult != m_partAmbientOcclusionTextureMap.end()) {
-            //textureAmbientOcclusionPainter.setClipping(true);
-            //textureAmbientOcclusionPainter.setClipPath(path);
-            //textureAmbientOcclusionPainter.drawImage(0, 0, findAmbientOcclusionTextureResult->second);
-            //textureAmbientOcclusionPainter.setClipping(false);
             hasAmbientOcclusionMap = true;
         }
     }
