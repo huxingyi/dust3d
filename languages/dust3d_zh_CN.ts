@@ -791,6 +791,10 @@ Tips:
         <source>Transparency</source>
         <translation>透明度</translation>
     </message>
+    <message>
+        <source>Tile Scale</source>
+        <translation>平铺缩放</translation>
+    </message>
 </context>
 <context>
     <name>PoseEditWidget</name>

@@ -336,6 +336,7 @@ class MaterialLayer
 {
 public:
     std::vector<MaterialMap> maps;
+    float tileScale = 1.0;
 };
 
 class Material

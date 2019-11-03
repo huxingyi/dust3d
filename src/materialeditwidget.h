@@ -8,6 +8,7 @@
 #include "modelwidget.h"
 #include "materialpreviewsgenerator.h"
 #include "imagepreviewwidget.h"
+#include "floatnumberwidget.h"
 
 enum class PopupWidgetType
 {
@@ -47,6 +48,7 @@ private:
     const Document *m_document = nullptr;
     MaterialPreviewsGenerator *m_materialPreviewsGenerator = nullptr;
     ModelWidget *m_previewWidget = nullptr;
+    FloatNumberWidget *m_tileScaleSlider = nullptr;
     bool m_isPreviewDirty = false;
     bool m_closed = false;
     QUuid m_materialId;

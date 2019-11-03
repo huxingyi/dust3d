@@ -123,39 +123,39 @@ MeshLoader *TextureGenerator::takeResultMesh()
     return resultMesh;
 }
 
-void TextureGenerator::addPartColorMap(QUuid partId, const QImage *image)
+void TextureGenerator::addPartColorMap(QUuid partId, const QImage *image, float tileScale)
 {
     if (nullptr == image)
         return;
-    m_partColorTextureMap[partId] = *image;
+    m_partColorTextureMap[partId] = std::make_pair(*image, tileScale);
 }
 
-void TextureGenerator::addPartNormalMap(QUuid partId, const QImage *image)
+void TextureGenerator::addPartNormalMap(QUuid partId, const QImage *image, float tileScale)
 {
     if (nullptr == image)
         return;
-    m_partNormalTextureMap[partId] = *image;
+    m_partNormalTextureMap[partId] = std::make_pair(*image, tileScale);
 }
 
-void TextureGenerator::addPartMetalnessMap(QUuid partId, const QImage *image)
+void TextureGenerator::addPartMetalnessMap(QUuid partId, const QImage *image, float tileScale)
 {
     if (nullptr == image)
         return;
-    m_partMetalnessTextureMap[partId] = *image;
+    m_partMetalnessTextureMap[partId] = std::make_pair(*image, tileScale);
 }
 
-void TextureGenerator::addPartRoughnessMap(QUuid partId, const QImage *image)
+void TextureGenerator::addPartRoughnessMap(QUuid partId, const QImage *image, float tileScale)
 {
     if (nullptr == image)
         return;
-    m_partRoughnessTextureMap[partId] = *image;
+    m_partRoughnessTextureMap[partId] = std::make_pair(*image, tileScale);
 }
 
-void TextureGenerator::addPartAmbientOcclusionMap(QUuid partId, const QImage *image)
+void TextureGenerator::addPartAmbientOcclusionMap(QUuid partId, const QImage *image, float tileScale)
 {
     if (nullptr == image)
         return;
-    m_partAmbientOcclusionTextureMap[partId] = *image;
+    m_partAmbientOcclusionTextureMap[partId] = std::make_pair(*image, tileScale);
 }
 
 QPainterPath TextureGenerator::expandedPainterPath(const QPainterPath &painterPath, int expandSize)
@@ -188,19 +188,20 @@ void TextureGenerator::prepare()
             auto findUpdatedMaterialIdResult = updatedMaterialIdMap.find(bmeshNode.mirrorFromPartId.isNull() ? bmeshNode.partId : bmeshNode.mirrorFromPartId);
             if (findUpdatedMaterialIdResult != updatedMaterialIdMap.end())
                 materialId = findUpdatedMaterialIdResult->second;
-            initializeMaterialTexturesFromSnapshot(*m_snapshot, materialId, materialTextures);
+            float tileScale = 1.0;
+            initializeMaterialTexturesFromSnapshot(*m_snapshot, materialId, materialTextures, tileScale);
             const QImage *image = materialTextures.textureImages[i];
             if (nullptr != image) {
                 if (TextureType::BaseColor == forWhat)
-                    addPartColorMap(bmeshNode.partId, image);
+                    addPartColorMap(bmeshNode.partId, image, tileScale);
                 else if (TextureType::Normal == forWhat)
-                    addPartNormalMap(bmeshNode.partId, image);
+                    addPartNormalMap(bmeshNode.partId, image, tileScale);
                 else if (TextureType::Metalness == forWhat)
-                    addPartMetalnessMap(bmeshNode.partId, image);
+                    addPartMetalnessMap(bmeshNode.partId, image, tileScale);
                 else if (TextureType::Roughness == forWhat)
-                    addPartRoughnessMap(bmeshNode.partId, image);
+                    addPartRoughnessMap(bmeshNode.partId, image, tileScale);
                 else if (TextureType::AmbientOcclusion == forWhat)
-                    addPartAmbientOcclusionMap(bmeshNode.partId, image);
+                    addPartAmbientOcclusionMap(bmeshNode.partId, image, tileScale);
             }
         }
     }
@@ -395,13 +396,18 @@ void TextureGenerator::generate()
         drawGradient(oppositeSource.first, std::get<0>(opposite->second), std::get<1>(opposite->second), std::get<2>(opposite->second), source.first);
     }
     
-    auto drawTexture = [&](const std::map<QUuid, QImage> &map, QPainter &painter) {
+    auto drawTexture = [&](const std::map<QUuid, std::pair<QImage, float>> &map, QPainter &painter) {
         for (const auto &it: partUvRects) {
             const auto &partId = it.first;
             const auto &rects = it.second;
             auto findTextureResult = map.find(partId);
             if (findTextureResult != map.end()) {
-                const auto &image = findTextureResult->second;
+                float tileScale = findTextureResult->second.second;
+                const auto &image = findTextureResult->second.first;
+                auto newSize = image.size() * tileScale;
+                QImage scaledImage = image.scaled(newSize);
+                auto pixmap = QPixmap::fromImage(scaledImage);
+                QPixmap rotatedPixmap;
                 for (const auto &rect: rects) {
                     QRectF translatedRect = {
                         rect.left() * TextureGenerator::m_textureSize,
@@ -409,7 +415,19 @@ void TextureGenerator::generate()
                         rect.width() * TextureGenerator::m_textureSize,
                         rect.height() * TextureGenerator::m_textureSize
                     };
-                    painter.drawImage(translatedRect, image, QRectF(0, 0, image.width(), image.height()));
+                    if (translatedRect.width() < translatedRect.height()) {
+                        if (rotatedPixmap.isNull()) {
+                            QPoint center = scaledImage.rect().center();
+                            QMatrix matrix;
+                            matrix.translate(center.x(), center.y());
+                            matrix.rotate(90);
+                            auto rotatedImage = scaledImage.transformed(matrix);
+                            rotatedPixmap = QPixmap::fromImage(rotatedImage);
+                        }
+                        painter.drawTiledPixmap(translatedRect, rotatedPixmap);
+                    } else {
+                        painter.drawTiledPixmap(translatedRect, pixmap);
+                    }
                 }
             }
         }

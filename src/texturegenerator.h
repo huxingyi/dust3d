@@ -25,11 +25,11 @@ public:
     QImage *takeResultTextureAmbientOcclusionImage();
     Outcome *takeOutcome();
     MeshLoader *takeResultMesh();
-    void addPartColorMap(QUuid partId, const QImage *image);
-    void addPartNormalMap(QUuid partId, const QImage *image);
-    void addPartMetalnessMap(QUuid partId, const QImage *image);
-    void addPartRoughnessMap(QUuid partId, const QImage *image);
-    void addPartAmbientOcclusionMap(QUuid partId, const QImage *image);
+    void addPartColorMap(QUuid partId, const QImage *image, float tileScale);
+    void addPartNormalMap(QUuid partId, const QImage *image, float tileScale);
+    void addPartMetalnessMap(QUuid partId, const QImage *image, float tileScale);
+    void addPartRoughnessMap(QUuid partId, const QImage *image, float tileScale);
+    void addPartAmbientOcclusionMap(QUuid partId, const QImage *image, float tileScale);
     void generate();
 signals:
     void finished();
@@ -53,11 +53,11 @@ private:
     QImage *m_resultTextureMetalnessImage;
     QImage *m_resultTextureAmbientOcclusionImage;
     MeshLoader *m_resultMesh;
-    std::map<QUuid, QImage> m_partColorTextureMap;
-    std::map<QUuid, QImage> m_partNormalTextureMap;
-    std::map<QUuid, QImage> m_partMetalnessTextureMap;
-    std::map<QUuid, QImage> m_partRoughnessTextureMap;
-    std::map<QUuid, QImage> m_partAmbientOcclusionTextureMap;
+    std::map<QUuid, std::pair<QImage, float>> m_partColorTextureMap;
+    std::map<QUuid, std::pair<QImage, float>> m_partNormalTextureMap;
+    std::map<QUuid, std::pair<QImage, float>> m_partMetalnessTextureMap;
+    std::map<QUuid, std::pair<QImage, float>> m_partRoughnessTextureMap;
+    std::map<QUuid, std::pair<QImage, float>> m_partAmbientOcclusionTextureMap;
     Snapshot *m_snapshot;
 };
 

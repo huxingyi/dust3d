@@ -82,15 +82,15 @@ void MaterialPreviewsGenerator::generate()
                     continue;
                 for (const auto &partId: partIds) {
                     if (TextureType::BaseColor == mapItem.forWhat)
-                        textureGenerator->addPartColorMap(partId, image);
+                        textureGenerator->addPartColorMap(partId, image, layer.tileScale);
                     else if (TextureType::Normal == mapItem.forWhat)
-                        textureGenerator->addPartNormalMap(partId, image);
+                        textureGenerator->addPartNormalMap(partId, image, layer.tileScale);
                     else if (TextureType::Metalness == mapItem.forWhat)
-                        textureGenerator->addPartMetalnessMap(partId, image);
+                        textureGenerator->addPartMetalnessMap(partId, image, layer.tileScale);
                     else if (TextureType::Roughness == mapItem.forWhat)
-                        textureGenerator->addPartRoughnessMap(partId, image);
+                        textureGenerator->addPartRoughnessMap(partId, image, layer.tileScale);
                     else if (TextureType::AmbientOcclusion == mapItem.forWhat)
-                        textureGenerator->addPartAmbientOcclusionMap(partId, image);
+                        textureGenerator->addPartAmbientOcclusionMap(partId, image, layer.tileScale);
                 }
             }
         }

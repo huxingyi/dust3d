@@ -121,6 +121,30 @@ MaterialEditWidget::MaterialEditWidget(const Document *document, QWidget *parent
     QPushButton *saveButton = new QPushButton(tr("Save"));
     connect(saveButton, &QPushButton::clicked, this, &MaterialEditWidget::save);
     saveButton->setDefault(true);
+    
+    FloatNumberWidget *tileScaleWidget = new FloatNumberWidget;
+    tileScaleWidget->setItemName(tr("Tile Scale"));
+    tileScaleWidget->setRange(0.01, 1.0);
+    tileScaleWidget->setValue(m_layers[0].tileScale);
+    
+    m_tileScaleSlider = tileScaleWidget;
+    
+    connect(tileScaleWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+        m_layers[0].tileScale = value;
+        emit layersAdjusted();
+    });
+    
+    QPushButton *tileScaleEraser = new QPushButton(QChar(fa::eraser));
+    Theme::initAwesomeToolButton(tileScaleEraser);
+    
+    connect(tileScaleEraser, &QPushButton::clicked, [=]() {
+        tileScaleWidget->setValue(1.0);
+    });
+    
+    QHBoxLayout *tileScaleLayout = new QHBoxLayout;
+    tileScaleLayout->addWidget(tileScaleEraser);
+    tileScaleLayout->addWidget(tileScaleWidget);
+    tileScaleLayout->addStretch();
 
     QHBoxLayout *baseInfoLayout = new QHBoxLayout;
     baseInfoLayout->addWidget(new QLabel(tr("Name")));
@@ -132,6 +156,7 @@ MaterialEditWidget::MaterialEditWidget(const Document *document, QWidget *parent
     mainLayout->addLayout(paramtersLayout);
     mainLayout->addStretch();
     mainLayout->addWidget(Theme::createHorizontalLineWidget());
+    mainLayout->addLayout(tileScaleLayout);
     mainLayout->addLayout(baseInfoLayout);
 
     setLayout(mainLayout);
@@ -273,6 +298,7 @@ void MaterialEditWidget::setEditMaterialLayers(std::vector<MaterialLayer> layers
     }
     if (!layers.empty()) {
         for (const auto &layer: layers) {
+            m_layers[0].tileScale = layer.tileScale;
             for (const auto &mapItem: layer.maps) {
                 int index = (int)mapItem.forWhat - 1;
                 if (index >= 0 && index < (int)TextureType::Count - 1) {
@@ -280,6 +306,7 @@ void MaterialEditWidget::setEditMaterialLayers(std::vector<MaterialLayer> layers
                 }
             }
         }
+        m_tileScaleSlider->setValue(m_layers[0].tileScale);
     }
     for (int i = 1; i < (int)TextureType::Count; i++) {
         updateMapButtonBackground(m_textureMapButtons[i - 1], ImageForever::get(m_layers[0].maps[i - 1].imageId));

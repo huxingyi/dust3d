@@ -57,10 +57,10 @@ void Theme::initAwsomeBaseSizes()
     Theme::miniIconSize = (int)(Theme::miniIconFontSize * 1.67);
     Theme::partPreviewImageSize = (Theme::miniIconSize * 3);
     Theme::sidebarPreferredWidth = Theme::partPreviewImageSize * 3.7;
-    Theme::materialPreviewImageSize = Theme::sidebarPreferredWidth * 0.4;
-    Theme::cutFacePreviewImageSize = Theme::materialPreviewImageSize;
-    Theme::posePreviewImageSize = Theme::materialPreviewImageSize;
-    Theme::motionPreviewImageSize = Theme::materialPreviewImageSize;
+    Theme::posePreviewImageSize = Theme::sidebarPreferredWidth * 0.4;
+    Theme::materialPreviewImageSize = Theme::posePreviewImageSize;
+    Theme::cutFacePreviewImageSize = Theme::posePreviewImageSize;
+    Theme::motionPreviewImageSize = Theme::posePreviewImageSize;
     Theme::normalButtonSize = Theme::toolIconSize * 2;
 }
 

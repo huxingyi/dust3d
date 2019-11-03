@@ -2,7 +2,10 @@
 #include "imageforever.h"
 #include "util.h"
 
-void initializeMaterialTexturesFromSnapshot(const Snapshot &snapshot, const QUuid &materialId, MaterialTextures &materialTextures)
+void initializeMaterialTexturesFromSnapshot(const Snapshot &snapshot,
+    const QUuid &materialId,
+    MaterialTextures &materialTextures,
+    float &tileScale)
 {
     QString materialIdString = materialId.toString();
     for (const auto &materialItem: snapshot.materials) {
@@ -10,6 +13,9 @@ void initializeMaterialTexturesFromSnapshot(const Snapshot &snapshot, const QUui
             continue;
         for (const auto &layer: materialItem.second) {
             //FIXME: Only support one layer currently
+            auto findTileScale = layer.first.find("tileScale");
+            if (findTileScale != layer.first.end())
+                tileScale = findTileScale->second.toFloat();
             for (const auto &mapItem: layer.second) {
                 auto textureType = TextureTypeFromString(valueOfKeyInMapOrEmpty(mapItem, "for").toUtf8().constData());
                 if (textureType != TextureType::None) {

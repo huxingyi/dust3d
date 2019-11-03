@@ -1192,6 +1192,8 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
                     maps.push_back(textureMap);
                 }
                 std::map<QString, QString> layerAttributes;
+                if (!qFuzzyCompare((float)layer.tileScale, (float)1.0))
+                    layerAttributes["tileScale"] = QString::number(layer.tileScale);
                 layers.push_back({layerAttributes, maps});
             }
             snapshot->materials.push_back(std::make_pair(material, layers));
@@ -1300,6 +1302,9 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
         oldNewIdMap[QUuid(valueOfKeyInMapOrEmpty(materialAttributes, "id"))] = newMaterialId;
         for (const auto &layerIt: materialIt.second) {
             MaterialLayer layer;
+            auto findTileScale = layerIt.first.find("tileScale");
+            if (findTileScale != layerIt.first.end())
+                layer.tileScale = findTileScale->second.toFloat();
             for (const auto &mapItem: layerIt.second) {
                 auto textureTypeString = valueOfKeyInMapOrEmpty(mapItem, "for");
                 auto textureType = TextureTypeFromString(textureTypeString.toUtf8().constData());

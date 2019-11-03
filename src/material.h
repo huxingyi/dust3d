@@ -10,6 +10,9 @@ struct MaterialTextures
     const QImage *textureImages[(int)TextureType::Count - 1] = {nullptr};
 };
 
-void initializeMaterialTexturesFromSnapshot(const Snapshot &snapshot, const QUuid &materialId, MaterialTextures &materialTextures);
+void initializeMaterialTexturesFromSnapshot(const Snapshot &snapshot,
+    const QUuid &materialId,
+    MaterialTextures &materialTextures,
+    float &tileScale);
 
 #endif
