@@ -15,7 +15,7 @@ Dust3D is a brand new 3D modeling software. It helps you create a 3D watertight 
 
 Screenshots
 ----------------------
-<a href="https://github.com/Dust3D-Modeling/10minuteseveryday/tree/master/jeremyhu2016/audi-80-1990"><image src="https://raw.githubusercontent.com/Dust3D-Modeling/10minuteseveryday/master/jeremyhu2016/audi-80-1990/audi-80-1990.png" width="358" height="216"></a>
+<a href="https://github.com/Dust3D-Modeling/10minuteseveryday/tree/master/jeremyhu2016/giraffe"><image src="https://raw.githubusercontent.com/Dust3D-Modeling/10minuteseveryday/master/jeremyhu2016/giraffe/giraffe.png" width="358" height="216"></a>
 
 
 <a href="https://github.com/Dust3D-Modeling/10minuteseveryday/tree/master/jeremyhu2016/honda-monkey"><image src="https://raw.githubusercontent.com/Dust3D-Modeling/10minuteseveryday/master/jeremyhu2016/honda-monkey/honda-monkey.png" width="358" height="216"></a>

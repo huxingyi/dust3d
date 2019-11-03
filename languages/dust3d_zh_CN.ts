@@ -475,6 +475,10 @@ Tips:
         <source>New</source>
         <translation>新建</translation>
     </message>
+    <message>
+        <source>Tile Scale</source>
+        <translation>平铺缩放</translation>
+    </message>
 </context>
 <context>
     <name>MaterialListWidget</name>
@@ -790,10 +794,6 @@ Tips:
     <message>
         <source>Transparency</source>
         <translation>透明度</translation>
-    </message>
-    <message>
-        <source>Tile Scale</source>
-        <translation>平铺缩放</translation>
     </message>
 </context>
 <context>

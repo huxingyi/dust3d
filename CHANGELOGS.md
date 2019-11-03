@@ -1,3 +1,14 @@
+Changes between 1.0.0-beta.25 and 1.0.0-beta.26:
+--------------------------------------------------
+- Fix undo for part tree widget  
+- Add experiment auto colorizing (Thanks @enzyme69)  
+- Improve mesh generation, more average edge length    
+- Fix icon naming issue for icon themes (Thanks @creepertron95)  
+- Add tile scale setting for texture generator  
+- Add color transparency support  
+- Remove built-in example model: Bob  
+- Add built-in example model: Giraffe  
+
 Changes between 1.0.0-beta.24 and 1.0.0-beta.25:
 --------------------------------------------------
 - Add shortcuts key F: bring part widget of hovered part to visible area

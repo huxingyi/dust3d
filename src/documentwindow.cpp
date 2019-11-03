@@ -428,6 +428,7 @@ DocumentWindow::DocumentWindow() :
         "Addax",
         "Bicycle",
         "Dog head",
+        "Giraffe",
         "Meerkat",
         "Mosquito",
         "Seagull",
