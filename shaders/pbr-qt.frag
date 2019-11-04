@@ -361,6 +361,7 @@ void main()
     }
     
     roughness = min(0.99, roughness);
+    metalness = min(0.99, metalness);
 
     gl_FragColor = metalRoughFunction(vec4(color, alpha),
                                       metalness,
