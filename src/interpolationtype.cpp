@@ -14,32 +14,65 @@ float calculateInterpolation(InterpolationType type, float knot)
     return easing.valueForProgress(knot);
 }
 
+bool InterpolationIsLinear(InterpolationType type)
+{
+    return QEasingCurve::Linear == InterpolationTypeToEasingCurveType(type);
+}
+
+bool InterpolationHasAccelerating(InterpolationType type)
+{
+    QString name = InterpolationTypeToString(type);
+    if (-1 != name.indexOf("In"))
+        return true;
+    return false;
+}
+
+bool InterpolationHasDecelerating(InterpolationType type)
+{
+    QString name = InterpolationTypeToString(type);
+    if (-1 != name.indexOf("Out"))
+        return true;
+    return false;
+}
+
 bool InterpolationIsBouncingBegin(InterpolationType type)
 {
     QString name = InterpolationTypeToString(type);
-    if (-1 == name.indexOf("InBack") && -1 == name.indexOf("InOutBack"))
-        return false;
-    return true;
+    if (-1 != name.indexOf("InBack") || -1 != name.indexOf("InOutBack"))
+        return true;
+    return false;
 }
 
 bool InterpolationIsBouncingEnd(InterpolationType type)
 {
     QString name = InterpolationTypeToString(type);
-    if (-1 == name.indexOf("OutBack") && -1 == name.indexOf("InOutBack"))
-        return false;
-    return true;
+    if (-1 != name.indexOf("OutBack") || -1 != name.indexOf("InOutBack"))
+        return true;
+    return false;
 }
 
-InterpolationType InterpolationMakeBouncingType(InterpolationType type, bool boucingBegin, bool bouncingEnd)
+InterpolationType InterpolationMakeFromOptions(bool isLinear,
+    bool hasAccelerating, bool hasDecelerating,
+    bool boucingBegin, bool bouncingEnd)
 {
-    Q_UNUSED(type);
-    if (boucingBegin && bouncingEnd)
+    if (isLinear)
+        return InterpolationType::Linear;
+    if (boucingBegin && bouncingEnd) {
         return InterpolationType::EaseInOutBack;
-    else if (boucingBegin)
+    } else if (boucingBegin) {
         return InterpolationType::EaseInBack;
-    else if (bouncingEnd)
+    } else if (bouncingEnd) {
         return InterpolationType::EaseOutBack;
-    else
-        return InterpolationType::EaseInOutCubic;
+    } else {
+        if (hasAccelerating && hasDecelerating) {
+            return InterpolationType::EaseInOutCubic;
+        } else if (hasAccelerating) {
+            return InterpolationType::EaseInCubic;
+        } else if (hasDecelerating) {
+            return InterpolationType::EaseOutCubic;
+        } else {
+            return InterpolationType::EaseInOutCubic;
+        }
+    }
 }
 

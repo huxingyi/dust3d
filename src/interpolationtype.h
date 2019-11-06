@@ -215,9 +215,14 @@ QEasingCurve::Type InterpolationTypeToEasingCurveType(InterpolationType type)\
         return s_types[index];                                               \
     return QEasingCurve::Linear;                                             \
 }
+bool InterpolationIsLinear(InterpolationType type);
+bool InterpolationHasAccelerating(InterpolationType type);
+bool InterpolationHasDecelerating(InterpolationType type);
 bool InterpolationIsBouncingBegin(InterpolationType type);
 bool InterpolationIsBouncingEnd(InterpolationType type);
-InterpolationType InterpolationMakeBouncingType(InterpolationType type, bool boucingBegin, bool bouncingEnd);
+InterpolationType InterpolationMakeFromOptions(bool isLinear,
+    bool hasAccelerating, bool hasDecelerating,
+    bool boucingBegin, bool bouncingEnd);
 
 float calculateInterpolation(InterpolationType type, float knot);
 

@@ -5,11 +5,15 @@
 #include <QCheckBox>
 #include <QFormLayout>
 #include <QDoubleSpinBox>
+#include <QVBoxLayout>
+#include <QHBoxLayout>
+#include <QStackedWidget>
 #include "motiontimelinewidget.h"
 #include "motionclipwidget.h"
 #include "theme.h"
 #include "posewidget.h"
 #include "motionwidget.h"
+#include "tabwidget.h"
 
 MotionTimelineWidget::MotionTimelineWidget(const Document *document, QWidget *parent) :
     QListWidget(parent),
@@ -132,6 +136,9 @@ void MotionTimelineWidget::setClipInterpolationType(int index, InterpolationType
     if (m_clips[index].clipType != MotionClipType::Interpolation)
         return;
     
+    if (m_clips[index].interpolationType == type)
+        return;
+    
     m_clips[index].interpolationType = type;
     emit clipsChanged();
 }
@@ -182,25 +189,71 @@ void MotionTimelineWidget::showInterpolationSettingPopup(int clipIndex, const QP
     
     QWidget *popup = new QWidget;
     
+    QWidget *linearWidget = new QWidget;
+    QWidget *cubicWidget = new QWidget;
+    
+    QCheckBox *hasAcceleratingBox = new QCheckBox();
+    QCheckBox *hasDeceleratingBox = new QCheckBox();
     QCheckBox *bouncingBeginBox = new QCheckBox();
-    bouncingBeginBox->setChecked(InterpolationIsBouncingBegin(clips()[clipIndex].interpolationType));
-    connect(bouncingBeginBox, &QCheckBox::stateChanged, this, [=]() {
+    QCheckBox *bouncingEndBox = new QCheckBox();
+    
+    QStackedWidget *stackedWidget = new QStackedWidget;
+    stackedWidget->addWidget(linearWidget);
+    stackedWidget->addWidget(cubicWidget);
+    
+    bool currentIsLinear = InterpolationIsLinear(clips()[clipIndex].interpolationType);
+    
+    std::vector<QString> tabs = {
+        tr("Linear"),
+        tr("Cubic")
+    };
+    TabWidget *tabWidget = new TabWidget(tabs);
+    tabWidget->setCurrentIndex(currentIsLinear ? 0 : 1);
+    stackedWidget->setCurrentIndex(currentIsLinear ? 0 : 1);
+    
+    auto updateBoxes = [=](InterpolationType type) {
+        hasAcceleratingBox->setChecked(InterpolationHasAccelerating(type));
+        hasDeceleratingBox->setChecked(InterpolationHasDecelerating(type));
+        bouncingBeginBox->setChecked(InterpolationIsBouncingBegin(type));
+        bouncingEndBox->setChecked(InterpolationIsBouncingEnd(type));
+    };
+    updateBoxes(clips()[clipIndex].interpolationType);
+    
+    auto updateInterpolation = [=]() {
+        bool isLinear = 0 == tabWidget->currentIndex();
         bool bouncingBegin = bouncingBeginBox->isChecked();
-        const auto &oldType = clips()[clipIndex].interpolationType;
-        bool bouncingEnd = InterpolationIsBouncingEnd(oldType);
-        InterpolationType newType = InterpolationMakeBouncingType(oldType, bouncingBegin, bouncingEnd);
+        bool bouncingEnd = bouncingEndBox->isChecked();
+        bool hasAccelerating = bouncingBegin || hasAcceleratingBox->isChecked();
+        bool hasDecelerating = bouncingEnd || hasDeceleratingBox->isChecked();
+        InterpolationType newType = InterpolationMakeFromOptions(isLinear,
+            hasAccelerating, hasDecelerating,
+            bouncingBegin, bouncingEnd);
         setClipInterpolationType(clipIndex, newType);
+        updateBoxes(newType);
+    };
+    
+    connect(tabWidget, &TabWidget::currentIndexChanged, this, [=](int index) {
+        stackedWidget->setCurrentIndex(index);
+        updateInterpolation();
     });
     
-    QCheckBox *bouncingEndBox = new QCheckBox();
-    bouncingEndBox->setChecked(InterpolationIsBouncingEnd(clips()[clipIndex].interpolationType));
-    connect(bouncingEndBox, &QCheckBox::stateChanged, this, [=]() {
-        bool bouncingEnd = bouncingEndBox->isChecked();
-        const auto &oldType = clips()[clipIndex].interpolationType;
-        bool bouncingBegin = InterpolationIsBouncingBegin(oldType);
-        InterpolationType newType = InterpolationMakeBouncingType(oldType, bouncingBegin, bouncingEnd);
-        setClipInterpolationType(clipIndex, newType);
+    connect(hasAcceleratingBox, &QCheckBox::stateChanged, this, [=]() {
+        updateInterpolation();
     });
+    
+    connect(hasDeceleratingBox, &QCheckBox::stateChanged, this, [=]() {
+        updateInterpolation();
+    });
+    
+    connect(bouncingBeginBox, &QCheckBox::stateChanged, this, [=]() {
+        updateInterpolation();
+    });
+    
+    connect(bouncingEndBox, &QCheckBox::stateChanged, this, [=]() {
+        updateInterpolation();
+    });
+    
+    updateInterpolation();
     
     QDoubleSpinBox *durationEdit = new QDoubleSpinBox();
     durationEdit->setDecimals(2);
@@ -213,12 +266,48 @@ void MotionTimelineWidget::showInterpolationSettingPopup(int clipIndex, const QP
         setClipDuration(clipIndex, (float)value);
     });
     
-    QFormLayout *formLayout = new QFormLayout;
-    formLayout->addRow(tr("Bouncing Begin:"), bouncingBeginBox);
-    formLayout->addRow(tr("Bouncing End:"), bouncingEndBox);
-    formLayout->addRow(tr("Duration:"), durationEdit);
+    QVBoxLayout *mainLayout = new QVBoxLayout;
     
-    popup->setLayout(formLayout);
+    QVBoxLayout *cubicLayout = new QVBoxLayout;
+    
+    QHBoxLayout *acceleratingLayout = new QHBoxLayout;
+    {
+        QFormLayout *formLayout = new QFormLayout;
+        formLayout->addRow(tr("Accelerating:"), hasAcceleratingBox);
+        acceleratingLayout->addLayout(formLayout);
+    }
+    {
+        QFormLayout *formLayout = new QFormLayout;
+        formLayout->addRow(tr("Bouncing:"), bouncingBeginBox);
+        acceleratingLayout->addLayout(formLayout);
+    }
+    cubicLayout->addLayout(acceleratingLayout);
+    
+    QHBoxLayout *deceleratingLayout = new QHBoxLayout;
+    {
+        QFormLayout *formLayout = new QFormLayout;
+        formLayout->addRow(tr("Decelerating:"), hasDeceleratingBox);
+        deceleratingLayout->addLayout(formLayout);
+    }
+    {
+        QFormLayout *formLayout = new QFormLayout;
+        formLayout->addRow(tr("Bouncing:"), bouncingEndBox);
+        deceleratingLayout->addLayout(formLayout);
+    }
+    cubicLayout->addLayout(deceleratingLayout);
+    
+    cubicWidget->setLayout(cubicLayout);
+    
+    mainLayout->addWidget(tabWidget);
+    mainLayout->addWidget(stackedWidget);
+    
+    {
+        QFormLayout *formLayout = new QFormLayout;
+        formLayout->addRow(tr("Duration:"), durationEdit);
+        mainLayout->addLayout(formLayout);
+    }
+    
+    popup->setLayout(mainLayout);
     
     QWidgetAction *action = new QWidgetAction(this);
     action->setDefaultWidget(popup);

@@ -582,14 +582,6 @@ Tips:
 <context>
     <name>MotionTimelineWidget</name>
     <message>
-        <source>Bouncing Begin:</source>
-        <translation>在开始时回弹</translation>
-    </message>
-    <message>
-        <source>Bouncing End:</source>
-        <translation>在结束时回弹</translation>
-    </message>
-    <message>
         <source>Duration:</source>
         <translation>持续时间：</translation>
     </message>
@@ -604,6 +596,26 @@ Tips:
     <message>
         <source>Delete</source>
         <translation>删除</translation>
+    </message>
+    <message>
+        <source>Linear</source>
+        <translation>直线</translation>
+    </message>
+    <message>
+        <source>Cubic</source>
+        <translation>曲线</translation>
+    </message>
+    <message>
+        <source>Accelerating:</source>
+        <translation>加速：</translation>
+    </message>
+    <message>
+        <source>Bouncing:</source>
+        <translation>回弹：</translation>
+    </message>
+    <message>
+        <source>Decelerating:</source>
+        <translation>减速：</translation>
     </message>
 </context>
 <context>
