@@ -10,7 +10,6 @@
 #include "documentwindow.h"
 #include "theme.h"
 #include "version.h"
-#include "remoteioserver.h"
 
 int main(int argc, char ** argv)
 {
@@ -63,13 +62,8 @@ int main(int argc, char ** argv)
     
     QStringList openFileList;
     QStringList waitingExportList;
-    bool remoteIoEnabled = false;
     for (int i = 1; i < argc; ++i) {
         if ('-' == argv[i][0]) {
-            if (0 == strcmp(argv[i], "-remoteio")) {
-                remoteIoEnabled = true;
-                continue;
-            }
             if (0 == strcmp(argv[i], "-output") ||
                     0 == strcmp(argv[i], "-o")) {
                 ++i;
@@ -85,10 +79,6 @@ int main(int argc, char ** argv)
             openFileList.append(arg);
             continue;
         }
-    }
-    if (remoteIoEnabled) {
-        qDebug() << "Remote IO enabled";
-        new RemoteIoServer(53309);
     }
     
     int finishedExportFileNum = 0;

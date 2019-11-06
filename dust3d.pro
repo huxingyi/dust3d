@@ -382,12 +382,6 @@ HEADERS += src/cutfacewidget.h
 SOURCES += src/cutfacelistwidget.cpp
 HEADERS += src/cutfacelistwidget.h
 
-SOURCES += src/remoteioserver.cpp
-HEADERS += src/remoteioserver.h
-
-SOURCES += src/remoteioconnection.cpp
-HEADERS += src/remoteioconnection.h
-
 SOURCES += src/preferences.cpp
 HEADERS += src/preferences.h
 
