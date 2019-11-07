@@ -164,6 +164,7 @@ void TextureGenerator::prepare()
         return;
     
     std::map<QUuid, QUuid> updatedMaterialIdMap;
+    std::map<QUuid, bool> updatedCountershadedMap;
     for (const auto &partIt: m_snapshot->parts) {
         QUuid materialId;
         auto materialIdIt = partIt.second.find("materialId");
@@ -171,10 +172,19 @@ void TextureGenerator::prepare()
             materialId = QUuid(materialIdIt->second);
         QUuid partId = QUuid(partIt.first);
         updatedMaterialIdMap.insert({partId, materialId});
-        if (isTrueValueString(valueOfKeyInMapOrEmpty(partIt.second, "countershaded")))
-            m_countershadedPartIds.insert(partId);
+        auto countershadedIt = partIt.second.find("countershaded");
+        if (countershadedIt != partIt.second.end())
+            updatedCountershadedMap.insert({partId, isTrueValueString(countershadedIt->second)});
     }
     for (const auto &bmeshNode: m_outcome->nodes) {
+    
+        bool countershaded = bmeshNode.countershaded;
+        auto findUpdatedCountershadedMap = updatedCountershadedMap.find(bmeshNode.mirrorFromPartId.isNull() ? bmeshNode.partId : bmeshNode.mirrorFromPartId);
+        if (findUpdatedCountershadedMap != updatedCountershadedMap.end())
+            countershaded = findUpdatedCountershadedMap->second;
+        if (countershaded)
+            m_countershadedPartIds.insert(bmeshNode.partId);
+        
         for (size_t i = 0; i < (int)TextureType::Count - 1; ++i) {
             TextureType forWhat = (TextureType)(i + 1);
             MaterialTextures materialTextures;

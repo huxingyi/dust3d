@@ -20,6 +20,7 @@ struct OutcomeNode
     QColor color;
     float colorSolubility = 0;
     QUuid materialId;
+    bool countershaded = false;
     QUuid mirrorFromPartId;
     QUuid mirroredByPartId;
     BoneMark boneMark;

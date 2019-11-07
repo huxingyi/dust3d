@@ -333,6 +333,7 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
     bool subdived = isTrueValueString(valueOfKeyInMapOrEmpty(part, "subdived"));
     bool rounded = isTrueValueString(valueOfKeyInMapOrEmpty(part, "rounded"));
     bool chamfered = isTrueValueString(valueOfKeyInMapOrEmpty(part, "chamfered"));
+    bool countershaded = isTrueValueString(valueOfKeyInMapOrEmpty(part, "countershaded"));
     QString colorString = valueOfKeyInMapOrEmpty(part, "color");
     QColor partColor = colorString.isEmpty() ? m_defaultPartColor : QColor(colorString);
     float deformThickness = 1.0;
@@ -521,6 +522,7 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
         outcomeNode.radius = nodeInfo.radius;
         outcomeNode.color = partColor;
         outcomeNode.materialId = materialId;
+        outcomeNode.countershaded = countershaded;
         outcomeNode.colorSolubility = colorSolubility;
         outcomeNode.boneMark = nodeInfo.boneMark;
         outcomeNode.mirroredByPartId = mirroredPartIdString;
