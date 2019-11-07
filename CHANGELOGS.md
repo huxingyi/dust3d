@@ -1,3 +1,13 @@
+Changes between 1.0.0-beta.26 and 1.0.0-beta.27:
+--------------------------------------------------
+- Fix normal map generation  
+- Fix transparency and solubility setting for texture generation  
+- Fix shader for metallic parameter  
+- Remove remote IO protocol  
+- Add linear interpolation to motion timeline editor  
+- Add countershading setting for texture generation  
+- Update built-in example models  
+
 Changes between 1.0.0-beta.25 and 1.0.0-beta.26:
 --------------------------------------------------
 - Fix undo for part tree widget  
