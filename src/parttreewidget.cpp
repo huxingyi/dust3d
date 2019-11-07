@@ -1046,6 +1046,17 @@ void PartTreeWidget::partColorSolubilityChanged(QUuid partId)
     widget->updateColorButton();
 }
 
+void PartTreeWidget::partCountershadeStateChanged(QUuid partId)
+{
+    auto item = m_partItemMap.find(partId);
+    if (item == m_partItemMap.end()) {
+        qDebug() << "Part item not found:" << partId;
+        return;
+    }
+    PartWidget *widget = (PartWidget *)itemWidget(item->second, 0);
+    widget->updateColorButton();
+}
+
 void PartTreeWidget::partChecked(QUuid partId)
 {
     auto item = m_partItemMap.find(partId);

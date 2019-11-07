@@ -434,6 +434,7 @@ signals:
     void partTargetChanged(QUuid partId);
     void partColorSolubilityChanged(QUuid partId);
     void partHollowThicknessChanged(QUuid partId);
+    void partCountershadeStateChanged(QUuid partId);
     void componentCombineModeChanged(QUuid componentId);
     void cleanup();
     void cleanupScript();
@@ -622,6 +623,7 @@ public slots:
     void setPartTarget(QUuid partId, PartTarget target);
     void setPartColorSolubility(QUuid partId, float solubility);
     void setPartHollowThickness(QUuid partId, float hollowThickness);
+    void setPartCountershaded(QUuid partId, bool countershaded);
     void setComponentCombineMode(QUuid componentId, CombineMode combineMode);
     void moveComponentUp(QUuid componentId);
     void moveComponentDown(QUuid componentId);

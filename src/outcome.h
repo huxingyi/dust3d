@@ -23,10 +23,12 @@ struct OutcomeNode
     QUuid mirrorFromPartId;
     QUuid mirroredByPartId;
     BoneMark boneMark;
+    QVector3D direction;
 };
 
 struct OutcomePaintNode
 {
+    int originNodeIndex;
     QUuid originNodeId;
     QVector3D origin;
     float radius = 0;

@@ -87,6 +87,7 @@ void ScriptVariablesWidget::reload()
             auto defaultValue = isTrueValueString(valueOfKeyInMapOrEmpty(variable.second, "defaultValue"));
             
             QCheckBox *checkBox = new QCheckBox;
+            Theme::initCheckbox(checkBox);
             checkBox->setText(name);
             checkBox->setChecked(value);
             

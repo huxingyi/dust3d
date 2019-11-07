@@ -29,6 +29,7 @@ signals:
     void setPartMaterialId(QUuid partId, QUuid materialId);
     void setPartColorSolubility(QUuid partId, float colorSolubility);
     void setPartHollowThickness(QUuid partId, float hollowThickness);
+    void setPartCountershaded(QUuid partId, bool countershaded);
     void movePartUp(QUuid partId);
     void movePartDown(QUuid partId);
     void movePartToTop(QUuid partId);

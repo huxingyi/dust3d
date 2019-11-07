@@ -58,6 +58,7 @@ private:
     std::map<QUuid, std::pair<QImage, float>> m_partMetalnessTextureMap;
     std::map<QUuid, std::pair<QImage, float>> m_partRoughnessTextureMap;
     std::map<QUuid, std::pair<QImage, float>> m_partAmbientOcclusionTextureMap;
+    std::set<QUuid> m_countershadedPartIds;
     Snapshot *m_snapshot;
 };
 

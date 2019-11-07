@@ -1018,6 +1018,7 @@ DocumentWindow::DocumentWindow() :
     connect(m_document, &Document::partHollowThicknessChanged, partTreeWidget, &PartTreeWidget::partHollowThicknessChanged);
     connect(m_document, &Document::partMaterialIdChanged, partTreeWidget, &PartTreeWidget::partMaterialIdChanged);
     connect(m_document, &Document::partColorSolubilityChanged, partTreeWidget, &PartTreeWidget::partColorSolubilityChanged);
+    connect(m_document, &Document::partCountershadeStateChanged, partTreeWidget, &PartTreeWidget::partCountershadeStateChanged);
     connect(m_document, &Document::partRemoved, partTreeWidget, &PartTreeWidget::partRemoved);
     connect(m_document, &Document::cleanup, partTreeWidget, &PartTreeWidget::removeAllContent);
     connect(m_document, &Document::partChecked, partTreeWidget, &PartTreeWidget::partChecked);

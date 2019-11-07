@@ -606,16 +606,16 @@ Tips:
         <translation>曲线</translation>
     </message>
     <message>
-        <source>Accelerating:</source>
-        <translation>加速：</translation>
+        <source>Accelerating</source>
+        <translation>加速</translation>
     </message>
     <message>
-        <source>Bouncing:</source>
-        <translation>回弹：</translation>
+        <source>Decelerating</source>
+        <translation>减速</translation>
     </message>
     <message>
-        <source>Decelerating:</source>
-        <translation>减速：</translation>
+        <source>Bouncing</source>
+        <translation>回弹</translation>
     </message>
 </context>
 <context>
@@ -806,6 +806,10 @@ Tips:
     <message>
         <source>Transparency</source>
         <translation>透明度</translation>
+    </message>
+    <message>
+        <source>Countershaded</source>
+        <translation>肚白效果</translation>
     </message>
 </context>
 <context>

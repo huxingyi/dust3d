@@ -171,6 +171,8 @@ void TextureGenerator::prepare()
             materialId = QUuid(materialIdIt->second);
         QUuid partId = QUuid(partIt.first);
         updatedMaterialIdMap.insert({partId, materialId});
+        if (isTrueValueString(valueOfKeyInMapOrEmpty(partIt.second, "countershaded")))
+            m_countershadedPartIds.insert(partId);
     }
     for (const auto &bmeshNode: m_outcome->nodes) {
         for (size_t i = 0; i < (int)TextureType::Count - 1; ++i) {
@@ -221,6 +223,7 @@ void TextureGenerator::generate()
     const auto &triangleVertexUvs = *m_outcome->triangleVertexUvs();
     const auto &triangleSourceNodes = *m_outcome->triangleSourceNodes();
     const auto &partUvRects = *m_outcome->partUvRects();
+    const auto &triangleNormals = m_outcome->triangleNormals;
     
     std::map<QUuid, QColor> partColorMap;
     std::map<std::pair<QUuid, QUuid>, const OutcomeNode *> nodeMap;
@@ -382,7 +385,7 @@ void TextureGenerator::generate()
     drawTexture(partRoughnessTexturePixmaps, textureRoughnessPainter, false);
     drawTexture(partAmbientOcclusionTexturePixmaps, textureAmbientOcclusionPainter, false);
     
-    auto drawGradient = [&](const QUuid &partId, size_t triangleIndex, size_t firstVertexIndex, size_t secondVertexIndex,
+    auto drawBySolubility = [&](const QUuid &partId, size_t triangleIndex, size_t firstVertexIndex, size_t secondVertexIndex,
             const QUuid &neighborPartId) {
         const std::vector<QVector2D> &uv = triangleVertexUvs[triangleIndex];
         const auto &allRects = partUvRects.find(partId);
@@ -495,8 +498,110 @@ void TextureGenerator::generate()
         const std::pair<QUuid, QUuid> &oppositeSource = triangleSourceNodes[std::get<0>(opposite->second)];
         if (source.first == oppositeSource.first)
             continue;
-        drawGradient(source.first, std::get<0>(it.second), std::get<1>(it.second), std::get<2>(it.second), oppositeSource.first);
-        drawGradient(oppositeSource.first, std::get<0>(opposite->second), std::get<1>(opposite->second), std::get<2>(opposite->second), source.first);
+        drawBySolubility(source.first, std::get<0>(it.second), std::get<1>(it.second), std::get<2>(it.second), oppositeSource.first);
+        drawBySolubility(oppositeSource.first, std::get<0>(opposite->second), std::get<1>(opposite->second), std::get<2>(opposite->second), source.first);
+    }
+    
+    // Draw belly white
+    texturePainter.setCompositionMode(QPainter::CompositionMode_SoftLight);
+    for (size_t triangleIndex = 0; triangleIndex < m_outcome->triangles.size(); ++triangleIndex) {
+        const auto &normal = triangleNormals[triangleIndex];
+        const std::pair<QUuid, QUuid> &source = triangleSourceNodes[triangleIndex];
+        const auto &partId = source.first;
+        if (m_countershadedPartIds.find(partId) == m_countershadedPartIds.end())
+            continue;
+        
+        const auto &allRects = partUvRects.find(partId);
+        if (allRects == partUvRects.end()) {
+            qDebug() << "Found part uv rects failed";
+            continue;
+        }
+        
+        const auto &findOutcomeNode = nodeMap.find(source);
+        if (findOutcomeNode == nodeMap.end())
+            continue;
+        const OutcomeNode *outcomeNode = findOutcomeNode->second;
+        if (qAbs(QVector3D::dotProduct(outcomeNode->direction, QVector3D(0, 1, 0))) >= 0.707) {
+            if (QVector3D::dotProduct(normal, QVector3D(0, 0, 1)) <= 0.0)
+                continue;
+        } else {
+            if (QVector3D::dotProduct(normal, QVector3D(0, -1, 0)) <= 0.0)
+                continue;
+        }
+        
+        const auto &triangleIndices = m_outcome->triangles[triangleIndex];
+        if (triangleIndices.size() != 3) {
+            qDebug() << "Found invalid triangle indices";
+            continue;
+        }
+        
+        const std::vector<QVector2D> &uv = triangleVertexUvs[triangleIndex];
+        QVector2D middlePoint = (uv[0] + uv[1] + uv[2]) / 3.0;
+        float finalRadius = (uv[0].distanceToPoint(uv[1]) +
+            uv[1].distanceToPoint(uv[2]) +
+            uv[2].distanceToPoint(uv[0])) / 3.0;
+        QRadialGradient gradient(QPointF(middlePoint.x() * TextureGenerator::m_textureSize,
+            middlePoint.y() * TextureGenerator::m_textureSize),
+            finalRadius * TextureGenerator::m_textureSize);
+        gradient.setColorAt(0.0, Qt::white);
+        gradient.setColorAt(1.0, Qt::transparent);
+        for (const auto &it: allRects->second) {
+            if (it.contains(middlePoint.x(), middlePoint.y())) {
+                QRectF fillTarget((middlePoint.x() - finalRadius),
+                    (middlePoint.y() - finalRadius),
+                    (finalRadius + finalRadius),
+                    (finalRadius + finalRadius));
+                auto clippedRect = it.intersected(fillTarget);
+                QRectF translatedRect = {
+                    clippedRect.left() * TextureGenerator::m_textureSize,
+                    clippedRect.top() * TextureGenerator::m_textureSize,
+                    clippedRect.width() * TextureGenerator::m_textureSize,
+                    clippedRect.height() * TextureGenerator::m_textureSize
+                };
+                texturePainter.fillRect(translatedRect, gradient);
+            }
+        }
+        
+        // Fill the neighbor halfedges
+        for (int i = 0; i < 3; ++i) {
+            int j = (i + 1) % 3;
+            auto oppositeHalfEdge = std::make_pair(triangleIndices[j], triangleIndices[i]);
+            const auto &opposite = halfEdgeToTriangleMap.find(oppositeHalfEdge);
+            if (opposite == halfEdgeToTriangleMap.end())
+                continue;
+            auto oppositeTriangleIndex = std::get<0>(opposite->second);
+            const std::pair<QUuid, QUuid> &oppositeSource = triangleSourceNodes[oppositeTriangleIndex];
+            if (partId == oppositeSource.first)
+                continue;
+            const auto &oppositeAllRects = partUvRects.find(oppositeSource.first);
+            if (oppositeAllRects == partUvRects.end()) {
+                qDebug() << "Found part uv rects failed";
+                continue;
+            }
+            const std::vector<QVector2D> &oppositeUv = triangleVertexUvs[oppositeTriangleIndex];
+            QVector2D oppositeMiddlePoint = (oppositeUv[std::get<1>(opposite->second)] + oppositeUv[std::get<2>(opposite->second)]) * 0.5;
+            QRadialGradient oppositeGradient(QPointF(oppositeMiddlePoint.x() * TextureGenerator::m_textureSize,
+                oppositeMiddlePoint.y() * TextureGenerator::m_textureSize),
+                finalRadius * TextureGenerator::m_textureSize);
+            oppositeGradient.setColorAt(0.0, Qt::white);
+            oppositeGradient.setColorAt(1.0, Qt::transparent);
+            for (const auto &it: oppositeAllRects->second) {
+                if (it.contains(oppositeMiddlePoint.x(), oppositeMiddlePoint.y())) {
+                    QRectF fillTarget((oppositeMiddlePoint.x() - finalRadius),
+                        (oppositeMiddlePoint.y() - finalRadius),
+                        (finalRadius + finalRadius),
+                        (finalRadius + finalRadius));
+                    auto clippedRect = it.intersected(fillTarget);
+                    QRectF translatedRect = {
+                        clippedRect.left() * TextureGenerator::m_textureSize,
+                        clippedRect.top() * TextureGenerator::m_textureSize,
+                        clippedRect.width() * TextureGenerator::m_textureSize,
+                        clippedRect.height() * TextureGenerator::m_textureSize
+                    };
+                    texturePainter.fillRect(translatedRect, oppositeGradient);
+                }
+            }
+        }
     }
     
     hasNormalMap = !m_partNormalTextureMap.empty();

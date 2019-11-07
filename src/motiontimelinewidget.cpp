@@ -193,9 +193,20 @@ void MotionTimelineWidget::showInterpolationSettingPopup(int clipIndex, const QP
     QWidget *cubicWidget = new QWidget;
     
     QCheckBox *hasAcceleratingBox = new QCheckBox();
+    hasAcceleratingBox->setText(tr("Accelerating"));
+    Theme::initCheckbox(hasAcceleratingBox);
+    
     QCheckBox *hasDeceleratingBox = new QCheckBox();
+    hasDeceleratingBox->setText(tr("Decelerating"));
+    Theme::initCheckbox(hasDeceleratingBox);
+    
     QCheckBox *bouncingBeginBox = new QCheckBox();
+    bouncingBeginBox->setText(tr("Bouncing"));
+    Theme::initCheckbox(bouncingBeginBox);
+    
     QCheckBox *bouncingEndBox = new QCheckBox();
+    bouncingEndBox->setText(tr("Bouncing"));
+    Theme::initCheckbox(bouncingEndBox);
     
     QStackedWidget *stackedWidget = new QStackedWidget;
     stackedWidget->addWidget(linearWidget);
@@ -271,29 +282,13 @@ void MotionTimelineWidget::showInterpolationSettingPopup(int clipIndex, const QP
     QVBoxLayout *cubicLayout = new QVBoxLayout;
     
     QHBoxLayout *acceleratingLayout = new QHBoxLayout;
-    {
-        QFormLayout *formLayout = new QFormLayout;
-        formLayout->addRow(tr("Accelerating:"), hasAcceleratingBox);
-        acceleratingLayout->addLayout(formLayout);
-    }
-    {
-        QFormLayout *formLayout = new QFormLayout;
-        formLayout->addRow(tr("Bouncing:"), bouncingBeginBox);
-        acceleratingLayout->addLayout(formLayout);
-    }
+    acceleratingLayout->addWidget(hasAcceleratingBox);
+    acceleratingLayout->addWidget(bouncingBeginBox);
     cubicLayout->addLayout(acceleratingLayout);
     
     QHBoxLayout *deceleratingLayout = new QHBoxLayout;
-    {
-        QFormLayout *formLayout = new QFormLayout;
-        formLayout->addRow(tr("Decelerating:"), hasDeceleratingBox);
-        deceleratingLayout->addLayout(formLayout);
-    }
-    {
-        QFormLayout *formLayout = new QFormLayout;
-        formLayout->addRow(tr("Bouncing:"), bouncingEndBox);
-        deceleratingLayout->addLayout(formLayout);
-    }
+    deceleratingLayout->addWidget(hasDeceleratingBox);
+    deceleratingLayout->addWidget(bouncingEndBox);
     cubicLayout->addLayout(deceleratingLayout);
     
     cubicWidget->setLayout(cubicLayout);

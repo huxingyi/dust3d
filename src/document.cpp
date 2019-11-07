@@ -1081,6 +1081,8 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
                 part["name"] = partIt.second.name;
             if (partIt.second.materialAdjusted())
                 part["materialId"] = partIt.second.materialId.toString();
+            if (partIt.second.countershaded)
+                part["countershaded"] = "true";
             snapshot->parts[part["id"]] = part;
         }
         for (const auto &nodeIt: nodeMap) {
@@ -1386,6 +1388,7 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
         const auto &materialIdIt = partKv.second.find("materialId");
         if (materialIdIt != partKv.second.end())
             part.materialId = oldNewIdMap[QUuid(materialIdIt->second)];
+        part.countershaded = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "countershaded"));
         newAddedPartIds.insert(part.id);
     }
     for (const auto &it: cutFaceLinkedIdModifyMap) {
@@ -2742,6 +2745,21 @@ void Document::setPartHollowThickness(QUuid partId, float hollowThickness)
     part->second.dirty = true;
     emit partHollowThicknessChanged(partId);
     emit skeletonChanged();
+}
+
+void Document::setPartCountershaded(QUuid partId, bool countershaded)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    if (part->second.countershaded == countershaded)
+        return;
+    part->second.countershaded = countershaded;
+    part->second.dirty = true;
+    emit partCountershadeStateChanged(partId);
+    emit textureChanged();
 }
 
 void Document::setPartCutRotation(QUuid partId, float cutRotation)

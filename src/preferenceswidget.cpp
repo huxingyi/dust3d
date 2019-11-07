@@ -58,11 +58,13 @@ PreferencesWidget::PreferencesWidget(const Document *document, QWidget *parent) 
     });
     
     QCheckBox *flatShadingBox = new QCheckBox();
+    Theme::initCheckbox(flatShadingBox);
     connect(flatShadingBox, &QCheckBox::stateChanged, this, [=]() {
         Preferences::instance().setFlatShading(flatShadingBox->isChecked());
     });
     
     QCheckBox *threeNodesBranchEnabledBox = new QCheckBox();
+    Theme::initCheckbox(threeNodesBranchEnabledBox);
     connect(threeNodesBranchEnabledBox, &QCheckBox::stateChanged, this, [=]() {
         Preferences::instance().setThreeNodesBranchEnableState(threeNodesBranchEnabledBox->isChecked());
     });

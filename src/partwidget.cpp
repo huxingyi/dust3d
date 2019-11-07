@@ -7,6 +7,7 @@
 #include <QSizePolicy>
 #include <QFileDialog>
 #include <QSizePolicy>
+#include <QCheckBox>
 #include <nodemesh/misc.h>
 #include "partwidget.h"
 #include "theme.h"
@@ -172,6 +173,7 @@ PartWidget::PartWidget(const Document *document, QUuid partId) :
     connect(this, &PartWidget::setPartMaterialId, m_document, &Document::setPartMaterialId);
     connect(this, &PartWidget::setPartColorSolubility, m_document, &Document::setPartColorSolubility);
     connect(this, &PartWidget::setPartHollowThickness, m_document, &Document::setPartHollowThickness);
+    connect(this, &PartWidget::setPartCountershaded, m_document, &Document::setPartCountershaded);
     connect(this, &PartWidget::checkPart, m_document, &Document::checkPart);
     connect(this, &PartWidget::enableBackgroundBlur, m_document, &Document::enableBackgroundBlur);
     connect(this, &PartWidget::disableBackgroundBlur, m_document, &Document::disableBackgroundBlur);
@@ -361,10 +363,21 @@ void PartWidget::showColorSettingPopup(const QPoint &pos)
     palette.setColor(QPalette::Button, choosenColor);
     pickButton->setPalette(palette);
     
+    QCheckBox *countershadeStateBox = new QCheckBox();
+    Theme::initCheckbox(countershadeStateBox);
+    countershadeStateBox->setText(tr("Countershaded"));
+    countershadeStateBox->setChecked(part->countershaded);
+    
+    connect(countershadeStateBox, &QCheckBox::stateChanged, this, [=]() {
+        emit setPartCountershaded(m_partId, countershadeStateBox->isChecked());
+        emit groupOperationAdded();
+    });
+    
     QHBoxLayout *colorLayout = new QHBoxLayout;
     colorLayout->addWidget(colorEraser);
     colorLayout->addWidget(pickButton);
     colorLayout->addStretch();
+    colorLayout->addWidget(countershadeStateBox);
     
     connect(colorEraser, &QPushButton::clicked, [=]() {
         emit setPartColorState(m_partId, false, Qt::white);
@@ -894,7 +907,7 @@ void PartWidget::updateColorButton()
         qDebug() << "Part not found:" << m_partId;
         return;
     }
-    if (part->hasColor || part->materialAdjusted() || part->colorSolubilityAdjusted())
+    if (part->hasColor || part->materialAdjusted() || part->colorSolubilityAdjusted() || part->countershaded)
         updateButton(m_colorButton, QChar(fa::eyedropper), true);
     else
         updateButton(m_colorButton, QChar(fa::eyedropper), false);

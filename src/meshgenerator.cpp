@@ -587,6 +587,7 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
         const auto &originNodeIdString = nodeIndexToIdStringMap[node.originNodeIndex];
         
         OutcomePaintNode paintNode;
+        paintNode.originNodeIndex = node.originNodeIndex;
         paintNode.originNodeId = QUuid(originNodeIdString);
         paintNode.radius = node.radius;
         paintNode.origin = node.position;
@@ -615,6 +616,8 @@ nodemesh::Combiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdSt
         paintNode.baseNormal = builder->nodeBaseNormal(i);
         paintNode.direction = builder->nodeTraverseDirection(i);
         paintNode.order = builder->nodeTraverseOrder(i);
+        
+        partCache.outcomeNodes[paintNode.originNodeIndex].direction = paintNode.direction;
     }
     
     bool hasMeshError = false;

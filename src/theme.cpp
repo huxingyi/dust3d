@@ -177,6 +177,13 @@ void Theme::initToolButton(QPushButton *button)
     button->setFocusPolicy(Qt::NoFocus);
 }
 
+void Theme::initCheckbox(QCheckBox *checkbox)
+{
+    QPalette palette = checkbox->palette();
+    palette.setColor(QPalette::Background, Theme::white);
+    checkbox->setPalette(palette);
+}
+
 QWidget *Theme::createHorizontalLineWidget()
 {
     QWidget *hrLightWidget = new QWidget;

@@ -5,6 +5,7 @@
 #include <map>
 #include <QPushButton>
 #include <QLabel>
+#include <QCheckBox>
 #include "QtAwesome.h"
 
 class Theme
@@ -53,6 +54,7 @@ public:
     static void initAwesomeToolButtonWithoutFont(QPushButton *button);
     static void initAwsomeBaseSizes();
     static void initToolButton(QPushButton *button);
+    static void initCheckbox(QCheckBox *checkbox);
 };
 
 #endif

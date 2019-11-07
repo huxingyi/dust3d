@@ -178,6 +178,7 @@ public:
     float deformMapScale;
     QUuid deformMapImageId;
     float hollowThickness;
+    bool countershaded;
     SkeletonPart(const QUuid &withId=QUuid()) :
         visible(true),
         locked(false),
@@ -198,7 +199,8 @@ public:
         target(PartTarget::Model),
         colorSolubility(0.0),
         deformMapScale(1.0),
-        hollowThickness(0.0)
+        hollowThickness(0.0),
+        countershaded(false)
     {
         id = withId.isNull() ? QUuid::createUuid() : withId;
     }
@@ -311,6 +313,7 @@ public:
         materialId = other.materialId;
         target = other.target;
         colorSolubility = other.colorSolubility;
+        countershaded = other.countershaded;
     }
     void updatePreviewMesh(MeshLoader *previewMesh)
     {
