@@ -215,14 +215,14 @@ void MotionsGenerator::generateMotion(const QUuid &motionId, std::set<QUuid> &vi
                 qDebug() << "Clip type is interpolation, but clip sit at end";
                 break;
             }
-            const JointNodeTree *beginJointNodeTree = findClipBeginJointNodeTree((*motionClips)[clipIndex - 1]);
+            const JointNodeTree *beginJointNodeTree = findClipEndJointNodeTree((*motionClips)[clipIndex - 1]);
             if (nullptr == beginJointNodeTree) {
-                qDebug() << "findClipBeginJointNodeTree failed";
+                qDebug() << "findClipEndJointNodeTree failed";
                 break;
             }
-            const JointNodeTree *endJointNodeTree = findClipEndJointNodeTree((*motionClips)[clipIndex + 1]);
+            const JointNodeTree *endJointNodeTree = findClipBeginJointNodeTree((*motionClips)[clipIndex + 1]);
             if (nullptr == endJointNodeTree) {
-                qDebug() << "findClipEndJointNodeTree failed";
+                qDebug() << "findClipBeginJointNodeTree failed";
                 break;
             }
             outcomes.push_back({progress - lastProgress,
