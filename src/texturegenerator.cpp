@@ -172,9 +172,8 @@ void TextureGenerator::prepare()
             materialId = QUuid(materialIdIt->second);
         QUuid partId = QUuid(partIt.first);
         updatedMaterialIdMap.insert({partId, materialId});
-        auto countershadedIt = partIt.second.find("countershaded");
-        if (countershadedIt != partIt.second.end())
-            updatedCountershadedMap.insert({partId, isTrueValueString(countershadedIt->second)});
+        updatedCountershadedMap.insert({partId,
+            isTrueValueString(valueOfKeyInMapOrEmpty(partIt.second, "countershaded"))});
     }
     for (const auto &bmeshNode: m_outcome->nodes) {
     
