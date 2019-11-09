@@ -103,30 +103,38 @@ float MotionsGenerator::calculatePoseDuration(const QUuid &poseId)
     return totalDuration;
 }
 
-const std::vector<std::pair<float, JointNodeTree>> &MotionsGenerator::getProceduralAnimation(ProceduralAnimation proceduralAnimation)
+const std::vector<std::pair<float, JointNodeTree>> &MotionsGenerator::getProceduralAnimation(ProceduralAnimation proceduralAnimation,
+    const JointNodeTree *initialJointNodeTree)
 {
     auto findResult = m_proceduralAnimations.find((int)proceduralAnimation);
     if (findResult != m_proceduralAnimations.end())
         return findResult->second;
     std::vector<std::pair<float, JointNodeTree>> &resultFrames = m_proceduralAnimations[(int)proceduralAnimation];
-    //std::vector<MeshLoader *> &resultPreviews = m_proceduralPreviews[(int)proceduralAnimation];
-    RagDoll ragdoll(&m_rigBones);
-    float stepSeconds = 1.0 / 60;
-    float maxSeconds = 1.5;
-    int maxSteps = maxSeconds / stepSeconds;
-    int steps = 0;
-    while (steps < maxSteps && ragdoll.stepSimulation(stepSeconds)) {
-        resultFrames.push_back(std::make_pair(stepSeconds * 2, ragdoll.getStepJointNodeTree()));
-        //MeshLoader *preview = buildBoundingBoxMesh(ragdoll.getStepBonePositions());
-        //resultPreviews.push_back(preview);
-        ++steps;
+    if (ProceduralAnimation::FallToDeath == proceduralAnimation) {
+        //std::vector<MeshLoader *> &resultPreviews = m_proceduralPreviews[(int)proceduralAnimation];
+        RagDoll ragdoll(&m_rigBones, initialJointNodeTree);
+        float stepSeconds = 1.0 / 60;
+        float maxSeconds = 1.5;
+        int maxSteps = maxSeconds / stepSeconds;
+        int steps = 0;
+        while (steps < maxSteps && ragdoll.stepSimulation(stepSeconds)) {
+            resultFrames.push_back(std::make_pair(stepSeconds * 2, ragdoll.getStepJointNodeTree()));
+            //MeshLoader *preview = buildBoundingBoxMesh(ragdoll.getStepBonePositions());
+            //resultPreviews.push_back(preview);
+            ++steps;
+        }
+    }
+    if (resultFrames.empty()) {
+        resultFrames.push_back(std::make_pair(0, JointNodeTree(&m_rigBones)));
     }
     return resultFrames;
 }
 
-float MotionsGenerator::calculateProceduralAnimationDuration(ProceduralAnimation proceduralAnimation)
+float MotionsGenerator::calculateProceduralAnimationDuration(ProceduralAnimation proceduralAnimation,
+    const JointNodeTree *initialJointNodeTree)
 {
-    const auto &result = getProceduralAnimation(proceduralAnimation);
+    const auto &result = getProceduralAnimation(proceduralAnimation,
+        initialJointNodeTree);
     float totalDuration = 0;
     for (const auto &it: result) {
         totalDuration += it.first;
@@ -145,14 +153,20 @@ float MotionsGenerator::calculateMotionDuration(const QUuid &motionId, std::set<
     }
     float totalDuration = 0;
     visited.insert(motionId);
-    for (const auto &clip: *motionClips) {
+    for (int clipIndex = 0; clipIndex < (int)(*motionClips).size(); ++clipIndex) {
+        const auto &clip = (*motionClips)[clipIndex];
         if (clip.clipType == MotionClipType::Interpolation)
             totalDuration += clip.duration;
         else if (clip.clipType == MotionClipType::Pose)
             totalDuration += calculatePoseDuration(clip.linkToId);
-        else if (clip.clipType == MotionClipType::ProceduralAnimation)
-            totalDuration += calculateProceduralAnimationDuration(clip.proceduralAnimation);
-        else if (clip.clipType == MotionClipType::Motion)
+        else if (clip.clipType == MotionClipType::ProceduralAnimation) {
+            const JointNodeTree *previousJointNodeTree = nullptr;
+            if (clipIndex > 1) {
+                previousJointNodeTree = findClipEndJointNodeTree((*motionClips)[clipIndex - 2]);
+            }
+            totalDuration += calculateProceduralAnimationDuration(clip.proceduralAnimation,
+                previousJointNodeTree);
+        } else if (clip.clipType == MotionClipType::Motion)
             totalDuration += calculateMotionDuration(clip.linkToId, visited);
     }
     return totalDuration;
@@ -173,14 +187,20 @@ void MotionsGenerator::generateMotion(const QUuid &motionId, std::set<QUuid> &vi
     
     std::vector<float> timePoints;
     float totalDuration = 0;
-    for (auto &clip: *motionClips) {
+    for (int clipIndex = 0; clipIndex < (int)(*motionClips).size(); ++clipIndex) {
+        auto &clip = (*motionClips)[clipIndex];
         if (clip.clipType == MotionClipType::Motion) {
             std::set<QUuid> subVisited;
             clip.duration = calculateMotionDuration(clip.linkToId, subVisited);
         } else if (clip.clipType == MotionClipType::Pose) {
             clip.duration = calculatePoseDuration(clip.linkToId);
         } else if (clip.clipType == MotionClipType::ProceduralAnimation) {
-            clip.duration = calculateProceduralAnimationDuration(clip.proceduralAnimation);
+            const JointNodeTree *previousJointNodeTree = nullptr;
+            if (clipIndex > 1) {
+                previousJointNodeTree = findClipEndJointNodeTree((*motionClips)[clipIndex - 2]);
+            }
+            clip.duration = calculateProceduralAnimationDuration(clip.proceduralAnimation,
+                previousJointNodeTree);
         }
         timePoints.push_back(totalDuration);
         totalDuration += clip.duration;
@@ -220,10 +240,15 @@ void MotionsGenerator::generateMotion(const QUuid &motionId, std::set<QUuid> &vi
                 qDebug() << "findClipEndJointNodeTree failed";
                 break;
             }
-            const JointNodeTree *endJointNodeTree = findClipBeginJointNodeTree((*motionClips)[clipIndex + 1]);
-            if (nullptr == endJointNodeTree) {
-                qDebug() << "findClipBeginJointNodeTree failed";
-                break;
+            const JointNodeTree *endJointNodeTree = nullptr;
+            if (MotionClipType::ProceduralAnimation == (*motionClips)[clipIndex + 1].clipType) {
+                endJointNodeTree = beginJointNodeTree;
+            } else {
+                endJointNodeTree = findClipBeginJointNodeTree((*motionClips)[clipIndex + 1]);
+                if (nullptr == endJointNodeTree) {
+                    qDebug() << "findClipBeginJointNodeTree failed";
+                    break;
+                }
             }
             outcomes.push_back({progress - lastProgress,
                 generateInterpolation(progressClip.interpolationType, *beginJointNodeTree, *endJointNodeTree, clipLocalProgress / std::max((float)0.0001, progressClip.duration))});
@@ -258,7 +283,12 @@ void MotionsGenerator::generateMotion(const QUuid &motionId, std::set<QUuid> &vi
             progress += progressClip.duration;
             continue;
         } else if (MotionClipType::ProceduralAnimation == progressClip.clipType) {
-            const auto &frames = getProceduralAnimation(progressClip.proceduralAnimation);
+            const JointNodeTree *beginJointNodeTree = nullptr;
+            if (clipIndex > 0) {
+                beginJointNodeTree = findClipEndJointNodeTree((*motionClips)[clipIndex - 1]);
+            }
+            const auto &frames = getProceduralAnimation(progressClip.proceduralAnimation,
+                beginJointNodeTree);
             float clipDuration = std::max((float)0.0001, progressClip.duration);
             int frame = clipLocalProgress * frames.size() / clipDuration;
             if (frame >= (int)frames.size())

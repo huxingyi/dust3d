@@ -28,6 +28,8 @@ public:
     void addTranslation(int index, QVector3D translation);
     void reset();
     void recalculateTransformMatrices();
+    void calculateBonePositions(std::vector<std::pair<QVector3D, QVector3D>> *bonePositions,
+        const std::vector<RiggerBone> *rigBones) const;
     static JointNodeTree slerp(const JointNodeTree &first, const JointNodeTree &second, float t);
 private:
     std::vector<JointNode> m_boneNodes;

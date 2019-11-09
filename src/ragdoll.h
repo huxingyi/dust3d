@@ -23,7 +23,8 @@ class RagDoll : public QObject
 {
     Q_OBJECT
 public:
-    RagDoll(const std::vector<RiggerBone> *rigBones);
+    RagDoll(const std::vector<RiggerBone> *rigBones,
+        const JointNodeTree *initialJointNodeTree=nullptr);
     ~RagDoll();
     bool stepSimulation(float amount);
     const JointNodeTree &getStepJointNodeTree();

@@ -45,8 +45,10 @@ private:
     void generatePreviewsForOutcomes(const std::vector<std::pair<float, JointNodeTree>> &outcomes, std::vector<std::pair<float, MeshLoader *>> &previews);
     float calculateMotionDuration(const QUuid &motionId, std::set<QUuid> &visited);
     float calculatePoseDuration(const QUuid &poseId);
-    float calculateProceduralAnimationDuration(ProceduralAnimation proceduralAnimation);
-    const std::vector<std::pair<float, JointNodeTree>> &getProceduralAnimation(ProceduralAnimation proceduralAnimation);
+    float calculateProceduralAnimationDuration(ProceduralAnimation proceduralAnimation,
+        const JointNodeTree *initialJointNodeTree=nullptr);
+    const std::vector<std::pair<float, JointNodeTree>> &getProceduralAnimation(ProceduralAnimation proceduralAnimation,
+        const JointNodeTree *initialJointNodeTree=nullptr);
     
     RigType m_rigType = RigType::None;
     std::vector<RiggerBone> m_rigBones;

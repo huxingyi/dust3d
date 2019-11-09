@@ -367,6 +367,7 @@ void PoseDocument::parametersToNodes(const std::vector<RiggerBone> *rigBones,
                 node.setY(fromOutcomeY(bone.headPosition.y()));
                 node.setZ(fromOutcomeZ(bone.headPosition.z()));
                 nodeMap[node.id] = node;
+                qDebug() << "Add first node:" << (*rigBones)[edgePair.first].name;
                 newAddedNodeIds.insert(node.id);
                 boneIndexToHeadNodeIdMap[edgePair.first] = node.id;
                 firstNodeId = node.id;
@@ -376,6 +377,7 @@ void PoseDocument::parametersToNodes(const std::vector<RiggerBone> *rigBones,
         }
         auto findSecond = boneIndexToHeadNodeIdMap.find(edgePair.second);
         if (findSecond == boneIndexToHeadNodeIdMap.end()) {
+            const auto &firstBone = (*rigBones)[edgePair.first];
             const auto &bone = (*rigBones)[edgePair.second];
             if (!bone.name.startsWith("Virtual_") || !m_hideRootAndVirtual) {
                 SkeletonNode node;
@@ -383,10 +385,11 @@ void PoseDocument::parametersToNodes(const std::vector<RiggerBone> *rigBones,
                 node.id = QUuid::createUuid();
                 partMap[node.partId].nodeIds.push_back(node.id);
                 node.setRadius(m_nodeRadius);
-                node.setX(fromOutcomeX(bone.headPosition.x()));
-                node.setY(fromOutcomeY(bone.headPosition.y()));
-                node.setZ(fromOutcomeZ(bone.headPosition.z()));
+                node.setX(fromOutcomeX(firstBone.tailPosition.x()));
+                node.setY(fromOutcomeY(firstBone.tailPosition.y()));
+                node.setZ(fromOutcomeZ(firstBone.tailPosition.z()));
                 nodeMap[node.id] = node;
+                qDebug() << "Add second node:" << (*rigBones)[edgePair.second].name;
                 newAddedNodeIds.insert(node.id);
                 boneIndexToHeadNodeIdMap[edgePair.second] = node.id;
                 secondNodeId = node.id;
@@ -395,8 +398,9 @@ void PoseDocument::parametersToNodes(const std::vector<RiggerBone> *rigBones,
             secondNodeId = findSecond->second;
         }
         
-        if (firstNodeId.isNull() || secondNodeId.isNull())
+        if (firstNodeId.isNull() || secondNodeId.isNull()) {
             continue;
+        }
         
         if (firstNodeSide != secondNodeSide) {
             qDebug() << "First node side:" << SkeletonSideToDispName(firstNodeSide) << "is different with second node side:" << SkeletonSideToDispName(secondNodeSide);

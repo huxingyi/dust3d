@@ -14,7 +14,8 @@
 #include "ragdoll.h"
 #include "poser.h"
 
-RagDoll::RagDoll(const std::vector<RiggerBone> *rigBones) :
+RagDoll::RagDoll(const std::vector<RiggerBone> *rigBones,
+        const JointNodeTree *initialJointNodeTree) :
     m_jointNodeTree(rigBones),
     m_stepJointNodeTree(rigBones)
 {
@@ -22,6 +23,18 @@ RagDoll::RagDoll(const std::vector<RiggerBone> *rigBones) :
         return;
     
     m_bones = *rigBones;
+    
+    std::vector<std::pair<QVector3D, QVector3D>> bonePositions;
+    if (nullptr != initialJointNodeTree) {
+        m_jointNodeTree.calculateBonePositions(&bonePositions,
+            rigBones);
+    } else {
+        bonePositions.resize(m_bones.size());
+        for (size_t i = 0; i < m_bones.size(); ++i) {
+            const auto &bone = m_bones[i];
+            bonePositions[i] = std::make_pair(bone.headPosition, bone.tailPosition);
+        }
+    }
     
     for (const auto &bone: m_bones) {
         auto radius = qMax(bone.headRadius, bone.tailRadius);
@@ -44,9 +57,11 @@ RagDoll::RagDoll(const std::vector<RiggerBone> *rigBones) :
     Poser::fetchChains(boneNames, m_chains);
     
     for (const auto &bone: *rigBones) {
+        const auto &headPosition = bonePositions[bone.index].first;
+        const auto &tailPosition = bonePositions[bone.index].second;
         float radius = (bone.headRadius + bone.tailRadius) * 0.5;
-        float height = bone.headPosition.distanceToPoint(bone.tailPosition);
-        QVector3D middlePosition = (bone.headPosition + bone.tailPosition) * 0.5;
+        float height = headPosition.distanceToPoint(tailPosition);
+        QVector3D middlePosition = (headPosition + tailPosition) * 0.5;
         m_boneLengthMap[bone.name] = height;
         m_boneRadiusMap[bone.name] = radius;
         m_boneMiddleMap[bone.name] = middlePosition;
@@ -55,6 +70,8 @@ RagDoll::RagDoll(const std::vector<RiggerBone> *rigBones) :
     std::set<std::pair<QString, QString>> constraintPairs;
     
     for (const auto &bone: m_bones) {
+        const auto &headPosition = bonePositions[bone.index].first;
+        const auto &tailPosition = bonePositions[bone.index].second;
         float height = m_boneLengthMap[bone.name];
         float radius = m_boneRadiusMap[bone.name];
         float mass = 1.0;
@@ -72,7 +89,7 @@ RagDoll::RagDoll(const std::vector<RiggerBone> *rigBones) :
             btScalar(middlePosition.y()),
             btScalar(middlePosition.z())
         ));
-        QVector3D to = (bone.tailPosition - bone.headPosition).normalized();
+        QVector3D to = (tailPosition - headPosition).normalized();
         QVector3D from = QVector3D(0, 1, 0);
         QQuaternion rotation = QQuaternion::rotationTo(from, to);
         btQuaternion btRotation(btScalar(rotation.x()), btScalar(rotation.y()), btScalar(rotation.z()),
