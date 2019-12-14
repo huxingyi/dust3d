@@ -1,14 +1,11 @@
-#ifndef NODEMESH_WRAPPER_H
-#define NODEMESH_WRAPPER_H
+#ifndef DUST3D_WRAPPER_H
+#define DUST3D_WRAPPER_H
 #include <QVector3D>
 #include <vector>
 #include <map>
 #include <deque>
 
-namespace nodemesh 
-{
-
-class Wrapper
+class MeshWrapper
 {
 public:
     void setVertices(const std::vector<QVector3D> *vertices);
@@ -101,7 +98,5 @@ private:
     void finalize();
     bool almostEqual(const QVector3D &v1, const QVector3D &v2);
 };
-
-}
 
 #endif

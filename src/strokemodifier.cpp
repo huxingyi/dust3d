@@ -1,17 +1,14 @@
-#include <nodemesh/modifier.h>
-#include <nodemesh/misc.h>
 #include <QVector2D>
 #include <QDebug>
+#include "strokemodifier.h"
+#include "util.h"
 
-namespace nodemesh
-{
-
-void Modifier::enableIntermediateAddition()
+void StrokeModifier::enableIntermediateAddition()
 {
     m_intermediateAdditionEnabled = true;
 }
 
-size_t Modifier::addNode(const QVector3D &position, float radius, const std::vector<QVector2D> &cutTemplate, float cutRotation)
+size_t StrokeModifier::addNode(const QVector3D &position, float radius, const std::vector<QVector2D> &cutTemplate, float cutRotation)
 {
     size_t nodeIndex = m_nodes.size();
     
@@ -27,7 +24,7 @@ size_t Modifier::addNode(const QVector3D &position, float radius, const std::vec
     return nodeIndex;
 }
 
-size_t Modifier::addEdge(size_t firstNodeIndex, size_t secondNodeIndex)
+size_t StrokeModifier::addEdge(size_t firstNodeIndex, size_t secondNodeIndex)
 {
     size_t edgeIndex = m_edges.size();
     
@@ -39,7 +36,7 @@ size_t Modifier::addEdge(size_t firstNodeIndex, size_t secondNodeIndex)
     return edgeIndex;
 }
 
-void Modifier::createIntermediateNode(const Node &firstNode, const Node &secondNode, float factor, Node *resultNode)
+void StrokeModifier::createIntermediateNode(const Node &firstNode, const Node &secondNode, float factor, Node *resultNode)
 {
     float firstFactor = 1.0 - factor;
     resultNode->position = firstNode.position * firstFactor + secondNode.position * factor;
@@ -59,14 +56,14 @@ void Modifier::createIntermediateNode(const Node &firstNode, const Node &secondN
     }
 }
 
-void Modifier::subdivide()
+void StrokeModifier::subdivide()
 {
     for (auto &node: m_nodes) {
         subdivideFace2D(&node.cutTemplate);
     }
 }
 
-float Modifier::averageCutTemplateEdgeLength(const std::vector<QVector2D> &cutTemplate)
+float StrokeModifier::averageCutTemplateEdgeLength(const std::vector<QVector2D> &cutTemplate)
 {
     if (cutTemplate.empty())
         return 0;
@@ -79,7 +76,7 @@ float Modifier::averageCutTemplateEdgeLength(const std::vector<QVector2D> &cutTe
     return sum / cutTemplate.size();
 }
 
-void Modifier::roundEnd()
+void StrokeModifier::roundEnd()
 {
     std::map<size_t, std::vector<size_t>> neighbors;
     for (const auto &edge: m_edges) {
@@ -103,7 +100,7 @@ void Modifier::roundEnd()
     }
 }
 
-void Modifier::createIntermediateCutTemplateEdges(std::vector<QVector2D> &cutTemplate, float averageCutTemplateLength)
+void StrokeModifier::createIntermediateCutTemplateEdges(std::vector<QVector2D> &cutTemplate, float averageCutTemplateLength)
 {
     std::vector<QVector2D> newCutTemplate;
     auto pointCount = cutTemplate.size();
@@ -129,7 +126,7 @@ void Modifier::createIntermediateCutTemplateEdges(std::vector<QVector2D> &cutTem
     cutTemplate = newCutTemplate;
 }
 
-void Modifier::finalize()
+void StrokeModifier::finalize()
 {
     if (!m_intermediateAdditionEnabled)
         return;
@@ -180,14 +177,13 @@ void Modifier::finalize()
     }
 }
 
-const std::vector<Modifier::Node> &Modifier::nodes()
+const std::vector<StrokeModifier::Node> &StrokeModifier::nodes()
 {
     return m_nodes;
 }
 
-const std::vector<Modifier::Edge> &Modifier::edges()
+const std::vector<StrokeModifier::Edge> &StrokeModifier::edges()
 {
     return m_edges;
 }
 
-}

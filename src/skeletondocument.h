@@ -179,6 +179,7 @@ public:
     QUuid deformMapImageId;
     float hollowThickness;
     bool countershaded;
+    bool gridded;
     SkeletonPart(const QUuid &withId=QUuid()) :
         visible(true),
         locked(false),
@@ -200,7 +201,8 @@ public:
         colorSolubility(0.0),
         deformMapScale(1.0),
         hollowThickness(0.0),
-        countershaded(false)
+        countershaded(false),
+        gridded(false)
     {
         id = withId.isNull() ? QUuid::createUuid() : withId;
     }
@@ -357,7 +359,6 @@ public:
     bool ylocked = false;
     bool zlocked = false;
     bool radiusLocked = false;
-    bool threeNodesBranchEnabled = Preferences::instance().threeNodesBranchEnabled();
     QImage turnaround;
     QByteArray turnaroundPngByteArray;
     std::map<QUuid, SkeletonPart> partMap;

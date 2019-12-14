@@ -212,6 +212,8 @@ void TextureGenerator::prepare()
 
 void TextureGenerator::generate()
 {
+    m_resultMesh = new MeshLoader(*m_outcome);
+    
     if (nullptr == m_outcome->triangleVertexUvs())
         return;
     if (nullptr == m_outcome->triangleSourceNodes())
@@ -698,7 +700,6 @@ void TextureGenerator::generate()
     }
     
     auto createResultBeginTime = countTimeConsumed.elapsed();
-    m_resultMesh = new MeshLoader(*m_outcome);
     m_resultMesh->setTextureImage(new QImage(*m_resultTextureImage));
     if (nullptr != m_resultTextureNormalImage)
         m_resultMesh->setNormalMapImage(new QImage(*m_resultTextureNormalImage));

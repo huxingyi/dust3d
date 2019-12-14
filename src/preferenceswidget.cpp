@@ -63,23 +63,15 @@ PreferencesWidget::PreferencesWidget(const Document *document, QWidget *parent) 
         Preferences::instance().setFlatShading(flatShadingBox->isChecked());
     });
     
-    QCheckBox *threeNodesBranchEnabledBox = new QCheckBox();
-    Theme::initCheckbox(threeNodesBranchEnabledBox);
-    connect(threeNodesBranchEnabledBox, &QCheckBox::stateChanged, this, [=]() {
-        Preferences::instance().setThreeNodesBranchEnableState(threeNodesBranchEnabledBox->isChecked());
-    });
-    
     QFormLayout *formLayout = new QFormLayout;
     formLayout->addRow(tr("Part color:"), colorLayout);
     formLayout->addRow(tr("Combine mode:"), combineModeSelectBox);
     formLayout->addRow(tr("Flat shading:"), flatShadingBox);
-    formLayout->addRow(tr("Three nodes branch:"), threeNodesBranchEnabledBox);
     
     auto loadFromPreferences = [=]() {
         updatePickButtonColor();
         combineModeSelectBox->setCurrentIndex((int)Preferences::instance().componentCombineMode());
         flatShadingBox->setChecked(Preferences::instance().flatShading());
-        threeNodesBranchEnabledBox->setChecked(Preferences::instance().threeNodesBranchEnabled());
     };
     
     loadFromPreferences();

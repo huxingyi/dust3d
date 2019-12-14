@@ -1,17 +1,14 @@
-#include <nodemesh/wrapper.h>
-#include <nodemesh/misc.h>
 #include <cmath>
 #include <set>
+#include "meshwrapper.h"
+#include "util.h"
 
-namespace nodemesh
-{
-
-void Wrapper::setVertices(const std::vector<QVector3D> *vertices)
+void MeshWrapper::setVertices(const std::vector<QVector3D> *vertices)
 {
     m_positions = vertices;
 }
 
-void Wrapper::wrap(const std::vector<std::pair<std::vector<size_t>, QVector3D>> &edgeLoops)
+void MeshWrapper::wrap(const std::vector<std::pair<std::vector<size_t>, QVector3D>> &edgeLoops)
 {
     size_t nextPlaneId = 1;
     for (const auto &it: edgeLoops) {
@@ -21,12 +18,12 @@ void Wrapper::wrap(const std::vector<std::pair<std::vector<size_t>, QVector3D>> 
     finalize();
 }
 
-const std::vector<std::vector<size_t>> &Wrapper::newlyGeneratedFaces()
+const std::vector<std::vector<size_t>> &MeshWrapper::newlyGeneratedFaces()
 {
     return m_newlyGeneratedfaces;
 }
 
-bool Wrapper::finished()
+bool MeshWrapper::finished()
 {
     if (!m_finalizeFinished)
         return false;
@@ -39,7 +36,7 @@ bool Wrapper::finished()
     return true;
 }
 
-void Wrapper::getFailedEdgeLoops(std::vector<size_t> &failedEdgeLoops)
+void MeshWrapper::getFailedEdgeLoops(std::vector<size_t> &failedEdgeLoops)
 {
     std::set<size_t> edgeLoopIndices;
     for (const auto &it: m_candidates) {
@@ -52,7 +49,7 @@ void Wrapper::getFailedEdgeLoops(std::vector<size_t> &failedEdgeLoops)
     }
 }
 
-void Wrapper::addCandidateVertices(const std::vector<size_t> &vertices, const QVector3D &planeNormal, size_t planeId)
+void MeshWrapper::addCandidateVertices(const std::vector<size_t> &vertices, const QVector3D &planeNormal, size_t planeId)
 {
     std::map<size_t, size_t> verticesIndexSet;
     for (const auto &oldVertId: vertices) {
@@ -70,7 +67,7 @@ void Wrapper::addCandidateVertices(const std::vector<size_t> &vertices, const QV
     }
 }
 
-size_t Wrapper::addSourceVertex(const QVector3D &position, size_t sourcePlane, size_t tag)
+size_t MeshWrapper::addSourceVertex(const QVector3D &position, size_t sourcePlane, size_t tag)
 {
     auto addedIndex = m_sourceVertices.size();
 
@@ -86,14 +83,14 @@ size_t Wrapper::addSourceVertex(const QVector3D &position, size_t sourcePlane, s
     return addedIndex;
 }
 
-void Wrapper::addStartup(size_t p1, size_t p2, const QVector3D &baseNormal)
+void MeshWrapper::addStartup(size_t p1, size_t p2, const QVector3D &baseNormal)
 {
     if (m_items.empty())
         addItem(p1, p2, baseNormal);
     m_generatedFaceEdgesMap.insert({WrapItemKey {p2, p1}, {0, false}});
 }
 
-QVector3D Wrapper::calculateFaceVector(size_t p1, size_t p2, const QVector3D &baseNormal)
+QVector3D MeshWrapper::calculateFaceVector(size_t p1, size_t p2, const QVector3D &baseNormal)
 {
     const auto &v1 = m_sourceVertices[p1];
     const auto &v2 = m_sourceVertices[p2];
@@ -101,7 +98,7 @@ QVector3D Wrapper::calculateFaceVector(size_t p1, size_t p2, const QVector3D &ba
     return QVector3D::crossProduct(seg, baseNormal);
 }
 
-void Wrapper::addItem(size_t p1, size_t p2, const QVector3D &baseNormal)
+void MeshWrapper::addItem(size_t p1, size_t p2, const QVector3D &baseNormal)
 {
     const auto &v1 = m_sourceVertices[p1];
     const auto &v2 = m_sourceVertices[p2];
@@ -123,7 +120,7 @@ void Wrapper::addItem(size_t p1, size_t p2, const QVector3D &baseNormal)
     m_itemsList.push_front(index);
 }
 
-std::pair<size_t, bool> Wrapper::findItem(size_t p1, size_t p2)
+std::pair<size_t, bool> MeshWrapper::findItem(size_t p1, size_t p2)
 {
     auto key = WrapItemKey {p1, p2};
     auto findResult = m_itemsMap.find(key);
@@ -133,7 +130,7 @@ std::pair<size_t, bool> Wrapper::findItem(size_t p1, size_t p2)
     return {findResult->second, true};
 }
 
-bool Wrapper::isEdgeGenerated(size_t p1, size_t p2)
+bool MeshWrapper::isEdgeGenerated(size_t p1, size_t p2)
 {
     auto key = WrapItemKey {p1, p2};
     if (m_generatedFaceEdgesMap.find(key) == m_generatedFaceEdgesMap.end())
@@ -141,7 +138,7 @@ bool Wrapper::isEdgeGenerated(size_t p1, size_t p2)
     return true;
 }
 
-float Wrapper::angleOfBaseFaceAndPoint(size_t itemIndex, size_t vertexIndex)
+float MeshWrapper::angleOfBaseFaceAndPoint(size_t itemIndex, size_t vertexIndex)
 {
     const auto &item = m_items[itemIndex];
     if (item.p1 == vertexIndex || item.p2 == vertexIndex)
@@ -154,10 +151,10 @@ float Wrapper::angleOfBaseFaceAndPoint(size_t itemIndex, size_t vertexIndex)
     auto vd1 = calculateFaceVector(item.p1, item.p2, item.baseNormal);
     auto normal = QVector3D::normal(v2.position, v1.position, vp.position);
     auto vd2 = calculateFaceVector(item.p1, item.p2, normal);
-    return radianToDegree(angleBetween(vd2, vd1));
+    return angleBetweenVectors(vd2, vd1);
 }
 
-std::pair<size_t, bool> Wrapper::findBestVertexOnTheLeft(size_t itemIndex)
+std::pair<size_t, bool> MeshWrapper::findBestVertexOnTheLeft(size_t itemIndex)
 {
     auto p1 = m_items[itemIndex].p1;
     auto p2 = m_items[itemIndex].p2;
@@ -181,7 +178,7 @@ std::pair<size_t, bool> Wrapper::findBestVertexOnTheLeft(size_t itemIndex)
     return result;
 }
 
-std::pair<size_t, bool> Wrapper::peekItem()
+std::pair<size_t, bool> MeshWrapper::peekItem()
 {
     for (const auto &itemIndex : m_itemsList) {
         if (!m_items[itemIndex].processed) {
@@ -191,13 +188,13 @@ std::pair<size_t, bool> Wrapper::peekItem()
     return {0, false};
 }
 
-bool Wrapper::isEdgeClosed(size_t p1, size_t p2)
+bool MeshWrapper::isEdgeClosed(size_t p1, size_t p2)
 {
     return m_generatedFaceEdgesMap.find(WrapItemKey {p1, p2}) != m_generatedFaceEdgesMap.end() &&
         m_generatedFaceEdgesMap.find(WrapItemKey {p2, p1}) != m_generatedFaceEdgesMap.end();
 }
 
-bool Wrapper::isVertexClosed(size_t vertexIndex)
+bool MeshWrapper::isVertexClosed(size_t vertexIndex)
 {
     auto findResult = m_generatedVertexEdgesMap.find(vertexIndex);
     if (findResult == m_generatedVertexEdgesMap.end())
@@ -209,7 +206,7 @@ bool Wrapper::isVertexClosed(size_t vertexIndex)
     return true;
 }
 
-void Wrapper::generate()
+void MeshWrapper::generate()
 {
     for (;;) {
         auto findItem = peekItem();
@@ -245,7 +242,7 @@ void Wrapper::generate()
     }
 }
 
-size_t Wrapper::anotherVertexIndexOfFace3(const Face3 &f, size_t p1, size_t p2)
+size_t MeshWrapper::anotherVertexIndexOfFace3(const Face3 &f, size_t p1, size_t p2)
 {
     std::vector<size_t> indices = {f.p1, f.p2, f.p3};
     for (const auto &index : indices) {
@@ -255,7 +252,7 @@ size_t Wrapper::anotherVertexIndexOfFace3(const Face3 &f, size_t p1, size_t p2)
     return 0;
 }
 
-std::pair<size_t, bool> Wrapper::findPairFace3(const Face3 &f, std::map<size_t, bool> &usedIds, std::vector<Face4> &q)
+std::pair<size_t, bool> MeshWrapper::findPairFace3(const Face3 &f, std::map<size_t, bool> &usedIds, std::vector<Face4> &q)
 {
     std::vector<size_t> indices = {f.p1, f.p2, f.p3};
     for (size_t i = 0; i < indices.size(); ++i) {
@@ -278,14 +275,14 @@ std::pair<size_t, bool> Wrapper::findPairFace3(const Face3 &f, std::map<size_t, 
     return {0, false};
 }
 
-bool Wrapper::almostEqual(const QVector3D &v1, const QVector3D &v2)
+bool MeshWrapper::almostEqual(const QVector3D &v1, const QVector3D &v2)
 {
     return abs(v1.x() - v2.x()) <= 0.01 &&
         abs(v1.y() - v2.y()) <= 0.01 &&
         abs(v1.z() - v2.z()) <= 0.01;
 }
 
-void Wrapper::finalize()
+void MeshWrapper::finalize()
 {
     std::vector<Face4> quads;
     std::map<size_t, bool> usedIds;
@@ -315,7 +312,4 @@ void Wrapper::finalize()
         };
         m_newlyGeneratedfaces.push_back(addedVertices);
     }
-}
-
-
 }

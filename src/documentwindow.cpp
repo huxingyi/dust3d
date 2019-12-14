@@ -16,6 +16,7 @@
 #include <QDesktopServices>
 #include <QDockWidget>
 #include <QWidgetAction>
+#include <QGraphicsOpacityEffect>
 #include "documentwindow.h"
 #include "skeletongraphicswidget.h"
 #include "theme.h"
@@ -27,7 +28,6 @@
 #include "aboutwidget.h"
 #include "version.h"
 #include "glbfile.h"
-#include "graphicscontainerwidget.h"
 #include "parttreewidget.h"
 #include "rigwidget.h"
 #include "markiconcreator.h"
@@ -283,6 +283,17 @@ DocumentWindow::DocumentWindow() :
     containerLayout->addWidget(graphicsWidget);
     containerWidget->setLayout(containerLayout);
     containerWidget->setMinimumSize(400, 400);
+    
+    m_graphicsContainerWidget = containerWidget;
+    
+    //m_infoWidget = new QLabel(containerWidget);
+    //m_infoWidget->setAttribute(Qt::WA_TransparentForMouseEvents);
+    //QGraphicsOpacityEffect *graphicsOpacityEffect = new QGraphicsOpacityEffect(m_infoWidget);
+    //graphicsOpacityEffect->setOpacity(0.5);
+    //m_infoWidget->setGraphicsEffect(graphicsOpacityEffect);
+    //updateInfoWidgetPosition();
+    
+    //connect(containerWidget, &GraphicsContainerWidget::containerSizeChanged, this, &DocumentWindow::updateInfoWidgetPosition);
 
     m_modelRenderWidget = new ModelWidget(containerWidget);
     m_modelRenderWidget->setAttribute(Qt::WA_TransparentForMouseEvents);
@@ -574,6 +585,12 @@ DocumentWindow::DocumentWindow() :
         m_graphicsWidget->clearSelectedCutFace();
     });
     m_editMenu->addAction(m_clearCutFaceAction);
+    
+    m_createWrapPartsAction = new QAction(tr("Create Wrap Parts"), this);
+    connect(m_createWrapPartsAction, &QAction::triggered, [=] {
+        m_graphicsWidget->createWrapParts();
+    });
+    m_editMenu->addAction(m_createWrapPartsAction);
 
     m_alignToMenu = new QMenu(tr("Align To"));
 
@@ -668,6 +685,7 @@ DocumentWindow::DocumentWindow() :
         m_switchXzAction->setEnabled(m_graphicsWidget->hasSelection());
         m_setCutFaceAction->setEnabled(m_graphicsWidget->hasSelection());
         m_clearCutFaceAction->setEnabled(m_graphicsWidget->hasCutFaceAdjustedNodesSelection());
+        m_createWrapPartsAction->setEnabled(m_graphicsWidget->hasSelection());
         m_colorizeAsBlankAction->setEnabled(m_graphicsWidget->hasSelection());
         m_colorizeAsAutoAction->setEnabled(m_graphicsWidget->hasSelection());
         m_alignToGlobalCenterAction->setEnabled(m_graphicsWidget->hasSelection() && m_document->originSettled());
@@ -923,6 +941,7 @@ DocumentWindow::DocumentWindow() :
     connect(graphicsWidget, &SkeletonGraphicsWidget::setPartXmirrorState, m_document, &Document::setPartXmirrorState);
     connect(graphicsWidget, &SkeletonGraphicsWidget::setPartRoundState, m_document, &Document::setPartRoundState);
     connect(graphicsWidget, &SkeletonGraphicsWidget::setPartWrapState, m_document, &Document::setPartCutRotation);
+    connect(graphicsWidget, &SkeletonGraphicsWidget::createGriddedPartsFromNodes, m_document, &Document::createGriddedPartsFromNodes);
 
     connect(graphicsWidget, &SkeletonGraphicsWidget::setXlockState, m_document, &Document::setXlockState);
     connect(graphicsWidget, &SkeletonGraphicsWidget::setYlockState, m_document, &Document::setYlockState);
@@ -1852,3 +1871,9 @@ void DocumentWindow::checkExportWaitingList()
         }
     }
 }
+
+//void DocumentWindow::updateInfoWidgetPosition()
+//{
+//    m_infoWidget->move(0, m_graphicsContainerWidget->height() - m_infoWidget->height() - 5);
+//}
+

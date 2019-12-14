@@ -9,6 +9,7 @@
 #include <functional>
 #include <QBuffer>
 #include <QElapsedTimer>
+#include <queue>
 #include "document.h"
 #include "util.h"
 #include "snapshotxml.h"
@@ -76,9 +77,6 @@ Document::Document() :
 {
     connect(&Preferences::instance(), &Preferences::partColorChanged, this, &Document::applyPreferencePartColorChange);
     connect(&Preferences::instance(), &Preferences::flatShadingChanged, this, &Document::applyPreferenceFlatShadingChange);
-    connect(&Preferences::instance(), &Preferences::threeNodesBranchEnableStateChanged, this, [&]() {
-        threeNodesBranchEnabled = Preferences::instance().threeNodesBranchEnabled();
-    });
 }
 
 void Document::applyPreferencePartColorChange()
@@ -181,6 +179,7 @@ void Document::removeEdge(QUuid edgeId)
     std::vector<std::vector<QUuid>> groups;
     splitPartByEdge(&groups, edgeId);
     std::vector<std::pair<QUuid, size_t>> newPartNodeNumMap;
+    std::vector<QUuid> newPartIds;
     for (auto groupIt = groups.begin(); groupIt != groups.end(); groupIt++) {
         const auto newUuid = QUuid::createUuid();
         SkeletonPart &part = partMap[newUuid];
@@ -206,6 +205,7 @@ void Document::removeEdge(QUuid edgeId)
         }
         addPartToComponent(part.id, findComponentParentId(part.componentId));
         newPartNodeNumMap.push_back({part.id, part.nodeIds.size()});
+        newPartIds.push_back(part.id);
         emit partAdded(part.id);
     }
     for (auto nodeIdIt = edge->nodeIds.begin(); nodeIdIt != edge->nodeIds.end(); nodeIdIt++) {
@@ -227,6 +227,10 @@ void Document::removeEdge(QUuid edgeId)
             return first.second > second.second;
         });
         updateLinkedPart(oldPartId, newPartNodeNumMap[0].first);
+    }
+    
+    for (const auto &partId: newPartIds) {
+        checkPartGrid(partId);
     }
     
     emit skeletonChanged();
@@ -251,6 +255,7 @@ void Document::removeNode(QUuid nodeId)
     std::vector<std::vector<QUuid>> groups;
     splitPartByNode(&groups, nodeId);
     std::vector<std::pair<QUuid, size_t>> newPartNodeNumMap;
+    std::vector<QUuid> newPartIds;
     for (auto groupIt = groups.begin(); groupIt != groups.end(); groupIt++) {
         const auto newUuid = QUuid::createUuid();
         SkeletonPart &part = partMap[newUuid];
@@ -276,6 +281,7 @@ void Document::removeNode(QUuid nodeId)
         }
         addPartToComponent(part.id, findComponentParentId(part.componentId));
         newPartNodeNumMap.push_back({part.id, part.nodeIds.size()});
+        newPartIds.push_back(part.id);
         emit partAdded(part.id);
     }
     for (auto edgeIdIt = node->edgeIds.begin(); edgeIdIt != node->edgeIds.end(); edgeIdIt++) {
@@ -304,6 +310,10 @@ void Document::removeNode(QUuid nodeId)
             return first.second > second.second;
         });
         updateLinkedPart(oldPartId, newPartNodeNumMap[0].first);
+    }
+    
+    for (const auto &partId: newPartIds) {
+        checkPartGrid(partId);
     }
     
     emit skeletonChanged();
@@ -371,6 +381,7 @@ QUuid Document::createNode(QUuid nodeId, float x, float y, float z, float radius
     if (newPartAdded)
         addPartToComponent(partId, m_currentCanvasComponentId);
     
+    checkPartGrid(partId);
     emit skeletonChanged();
     
     return node.id;
@@ -616,7 +627,31 @@ void Document::addEdge(QUuid fromNodeId, QUuid toNodeId)
         removePart(toPartId);
     }
     
+    checkPartGrid(fromNode->partId);
+    
     emit skeletonChanged();
+}
+
+void Document::checkPartGrid(QUuid partId)
+{
+    SkeletonPart *part = (SkeletonPart *)findPart(partId);
+    if (nullptr == part)
+        return;
+    bool isGrid = false;
+    for (const auto &nodeId: part->nodeIds) {
+        const SkeletonNode *node = findNode(nodeId);
+        if (nullptr == node)
+            continue;
+        if (node->edgeIds.size() >= 3) {
+            isGrid = true;
+            break;
+        }
+    }
+    if (part->gridded == isGrid)
+        return;
+    part->gridded = isGrid;
+    part->dirty = true;
+    emit partGridStateChanged(partId);
 }
 
 void Document::updateLinkedPart(QUuid oldPartId, QUuid newPartId)
@@ -1083,6 +1118,8 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
                 part["materialId"] = partIt.second.materialId.toString();
             if (partIt.second.countershaded)
                 part["countershaded"] = "true";
+            if (partIt.second.gridded)
+                part["gridded"] = "true";
             snapshot->parts[part["id"]] = part;
         }
         for (const auto &nodeIt: nodeMap) {
@@ -1259,6 +1296,154 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
     }
 }
 
+void Document::createSinglePartFromEdges(const std::vector<QVector3D> &nodes,
+        const std::vector<std::pair<size_t, size_t>> &edges)
+{
+    std::vector<QUuid> newAddedNodeIds;
+    std::vector<QUuid> newAddedEdgeIds;
+    std::vector<QUuid> newAddedPartIds;
+    std::map<size_t, QUuid> nodeIndexToIdMap;
+    
+    QUuid partId = QUuid::createUuid();
+    
+    Component component(QUuid(), partId.toString(), "partId");
+    component.combineMode = CombineMode::Normal;
+    componentMap[component.id] = component;
+    rootComponent.addChild(component.id);
+    
+    auto &newPart = partMap[partId];
+    newPart.id = partId;
+    newPart.componentId = component.id;
+    newAddedPartIds.push_back(newPart.id);
+    
+    auto nodeToId = [&](size_t nodeIndex) {
+        auto findId = nodeIndexToIdMap.find(nodeIndex);
+        if (findId != nodeIndexToIdMap.end())
+            return findId->second;
+        const auto &position = nodes[nodeIndex];
+        SkeletonNode newNode;
+        newNode.partId = newPart.id;
+        newNode.setX(getOriginX() + position.x());
+        newNode.setY(getOriginY() - position.y());
+        newNode.setZ(getOriginZ() - position.z());
+        newNode.setRadius(0);
+        nodeMap[newNode.id] = newNode;
+        newPart.nodeIds.push_back(newNode.id);
+        newAddedNodeIds.push_back(newNode.id);
+        nodeIndexToIdMap.insert({nodeIndex, newNode.id});
+        return newNode.id;
+    };
+    
+    for (const auto &edge: edges) {
+        QUuid firstNodeId = nodeToId(edge.first);
+        QUuid secondNodeId = nodeToId(edge.second);
+        
+        SkeletonEdge newEdge;
+        newEdge.nodeIds.push_back(firstNodeId);
+        newEdge.nodeIds.push_back(secondNodeId);
+        newEdge.partId = newPart.id;
+        
+        nodeMap[firstNodeId].edgeIds.push_back(newEdge.id);
+        nodeMap[secondNodeId].edgeIds.push_back(newEdge.id);
+        
+        newAddedEdgeIds.push_back(newEdge.id);
+        
+        edgeMap[newEdge.id] = newEdge;
+    }
+    
+    for (const auto &nodeIt: newAddedNodeIds) {
+        qDebug() << "new node:" << nodeIt;
+        emit nodeAdded(nodeIt);
+    }
+    for (const auto &edgeIt: newAddedEdgeIds) {
+        qDebug() << "new edge:" << edgeIt;
+        emit edgeAdded(edgeIt);
+    }
+    for (const auto &partIt: newAddedPartIds) {
+        qDebug() << "new part:" << partIt;
+        emit partAdded(partIt);
+    }
+    
+    for (const auto &partIt : newAddedPartIds) {
+        checkPartGrid(partIt);
+        emit partVisibleStateChanged(partIt);
+    }
+    
+    emit uncheckAll();
+    for (const auto &nodeIt: newAddedNodeIds) {
+        emit checkNode(nodeIt);
+    }
+    for (const auto &edgeIt: newAddedEdgeIds) {
+        emit checkEdge(edgeIt);
+    }
+    
+    emit componentChildrenChanged(QUuid());
+    emit skeletonChanged();
+}
+
+void Document::createFromNodesAndEdges(const std::vector<QVector3D> &nodes,
+        const std::vector<std::pair<size_t, size_t>> &edges)
+{
+    std::map<size_t, std::vector<size_t>> edgeLinks;
+    for (const auto &it: edges) {
+        edgeLinks[it.first].push_back(it.second);
+        edgeLinks[it.second].push_back(it.first);
+    }
+    if (edgeLinks.empty())
+        return;
+    std::vector<std::set<size_t>> islands;
+    std::set<size_t> visited;
+    for (size_t i = 0; i < nodes.size(); ++i) {
+        std::set<size_t> island;
+        std::queue<size_t> waitVertices;
+        waitVertices.push(i);
+        while (!waitVertices.empty()) {
+            size_t vertexIndex = waitVertices.front();
+            waitVertices.pop();
+            if (visited.find(vertexIndex) == visited.end()) {
+                visited.insert(vertexIndex);
+                island.insert(vertexIndex);
+            }
+            auto findLink = edgeLinks.find(vertexIndex);
+            if (findLink == edgeLinks.end()) {
+                continue;
+            }
+            for (const auto &it: findLink->second) {
+                if (visited.find(it) == visited.end())
+                    waitVertices.push(it);
+            }
+        }
+        if (!island.empty())
+            islands.push_back(island);
+    }
+    
+    std::map<size_t, size_t> vertexIslandMap;
+    for (size_t islandIndex = 0; islandIndex < islands.size(); ++islandIndex) {
+        const auto &island = islands[islandIndex];
+        for (const auto &it: island)
+            vertexIslandMap.insert({it, islandIndex});
+    }
+    
+    std::vector<std::vector<std::pair<size_t, size_t>>> edgesGroupByIsland(islands.size());
+    for (const auto &it: edges) {
+        auto findFirstVertex = vertexIslandMap.find(it.first);
+        if (findFirstVertex != vertexIslandMap.end()) {
+            edgesGroupByIsland[findFirstVertex->second].push_back(it);
+            continue;
+        }
+        auto findSecondVertex = vertexIslandMap.find(it.second);
+        if (findSecondVertex != vertexIslandMap.end()) {
+            edgesGroupByIsland[findSecondVertex->second].push_back(it);
+            continue;
+        }
+    }
+    
+    for (size_t islandIndex = 0; islandIndex < islands.size(); ++islandIndex) {
+        const auto &islandEdges = edgesGroupByIsland[islandIndex];
+        createSinglePartFromEdges(nodes, islandEdges);
+    }
+}
+
 void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
 {
     bool isOriginChanged = false;
@@ -1389,6 +1574,7 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
         if (materialIdIt != partKv.second.end())
             part.materialId = oldNewIdMap[QUuid(materialIdIt->second)];
         part.countershaded = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "countershaded"));
+        part.gridded = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "gridded"));;
         newAddedPartIds.insert(part.id);
     }
     for (const auto &it: cutFaceLinkedIdModifyMap) {
@@ -1589,6 +1775,7 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
     emit skeletonChanged();
     
     for (const auto &partIt : newAddedPartIds) {
+        checkPartGrid(partIt);
         emit partVisibleStateChanged(partIt);
     }
     
@@ -3760,4 +3947,61 @@ void Document::stopPaint(void)
 void Document::setMousePickMaskNodeIds(const std::set<QUuid> &nodeIds)
 {
     m_mousePickMaskNodeIds = nodeIds;
+}
+
+void Document::createGriddedPartsFromNodes(const std::set<QUuid> &nodeIds)
+{
+    if (nullptr == m_currentOutcome)
+        return;
+    
+    const auto &vertices = m_currentOutcome->vertices;
+    const auto &vertexSourceNodes = m_currentOutcome->vertexSourceNodes;
+    std::set<size_t> selectedVertices;
+    for (size_t i = 0; i < vertexSourceNodes.size(); ++i) {
+        if (nodeIds.find(vertexSourceNodes[i].second) == nodeIds.end())
+            continue;
+        selectedVertices.insert(i);
+    }
+    
+    std::vector<QVector3D> newVertices;
+    std::map<size_t, size_t> oldToNewMap;
+    std::vector<std::pair<size_t, size_t>> newEdges;
+    
+    auto oldToNew = [&](size_t oldIndex) {
+        auto findNewIndex = oldToNewMap.find(oldIndex);
+        if (findNewIndex != oldToNewMap.end())
+            return findNewIndex->second;
+        size_t newIndex = newVertices.size();
+        newVertices.push_back(vertices[oldIndex]);
+        oldToNewMap.insert({oldIndex, newIndex});
+        return newIndex;
+    };
+    
+    std::set<std::pair<size_t, size_t>> visitedOldEdges;
+    const auto &faces = m_currentOutcome->triangleAndQuads;
+    for (const auto &face: faces) {
+        bool isFaceSelected = false;
+        for (size_t i = 0; i < face.size(); ++i) {
+            if (selectedVertices.find(face[i]) != selectedVertices.end()) {
+                isFaceSelected = true;
+                break;
+            }
+        }
+        if (!isFaceSelected)
+            continue;
+        for (size_t i = 0; i < face.size(); ++i) {
+            size_t j = (i + 1) % face.size();
+            auto oldEdge = std::make_pair(face[i], face[j]);
+            if (visitedOldEdges.find(oldEdge) != visitedOldEdges.end())
+                continue;
+            visitedOldEdges.insert(oldEdge);
+            visitedOldEdges.insert(std::make_pair(oldEdge.second, oldEdge.first));
+            newEdges.push_back({
+                oldToNew(oldEdge.first),
+                oldToNew(oldEdge.second)
+            });
+        }
+    }
+    
+    createFromNodesAndEdges(newVertices, newEdges);
 }

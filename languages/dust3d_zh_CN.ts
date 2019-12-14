@@ -382,6 +382,10 @@ Tips:
         <source>Auto Color</source>
         <translation>自动着色</translation>
     </message>
+    <message>
+        <source>Create Wrap Parts</source>
+        <translation>创建包裹部件</translation>
+    </message>
 </context>
 <context>
     <name>ExportPreviewWidget</name>
@@ -924,10 +928,6 @@ Tips:
         <translation>未平滑：</translation>
     </message>
     <message>
-        <source>Three nodes branch:</source>
-        <translation>三结点分枝：</translation>
-    </message>
-    <message>
         <source>Reset</source>
         <translation>重置</translation>
     </message>
@@ -1194,6 +1194,10 @@ Tips:
     <message>
         <source>Colorize</source>
         <translation>着色</translation>
+    </message>
+    <message>
+        <source>Create Wrap Parts</source>
+        <translation>创建包裹部件</translation>
     </message>
 </context>
 <context>

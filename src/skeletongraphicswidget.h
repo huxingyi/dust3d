@@ -440,6 +440,7 @@ signals:
     void showOrHideAllComponents();
     void shortcutToggleFlatShading();
     void shortcutToggleRotation();
+    void createGriddedPartsFromNodes(const std::set<QUuid> &nodeIds);
 public:
     SkeletonGraphicsWidget(const SkeletonDocument *document);
     std::map<QUuid, std::pair<SkeletonGraphicsNodeItem *, SkeletonGraphicsNodeItem *>> nodeItemMap;
@@ -540,6 +541,7 @@ public slots:
     void showSelectedCutFaceSettingPopup(const QPoint &pos);
     void clearSelectedCutFace();
     void setRotated(bool rotated);
+    void createWrapParts();
     void shortcutDelete();
     void shortcutAddMode();
     void shortcutUndo();

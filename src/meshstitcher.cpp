@@ -1,22 +1,18 @@
-#include <nodemesh/stitcher.h>
-#include <nodemesh/misc.h>
 #include <memory>
 #include <QDebug>
+#include "meshstitcher.h"
 
-namespace nodemesh
-{
-
-Stitcher::~Stitcher()
+MeshStitcher::~MeshStitcher()
 {
     delete m_wrapper;
 }
 
-void Stitcher::setVertices(const std::vector<QVector3D> *vertices)
+void MeshStitcher::setVertices(const std::vector<QVector3D> *vertices)
 {
     m_positions = vertices;
 }
 
-const std::vector<std::vector<size_t>> &Stitcher::newlyGeneratedFaces()
+const std::vector<std::vector<size_t>> &MeshStitcher::newlyGeneratedFaces()
 {
     if (m_wrapper)
         return m_wrapper->newlyGeneratedFaces();
@@ -24,13 +20,13 @@ const std::vector<std::vector<size_t>> &Stitcher::newlyGeneratedFaces()
     return m_newlyGeneratedFaces;
 }
 
-void Stitcher::getFailedEdgeLoops(std::vector<size_t> &failedEdgeLoops)
+void MeshStitcher::getFailedEdgeLoops(std::vector<size_t> &failedEdgeLoops)
 {
     if (m_wrapper)
         m_wrapper->getFailedEdgeLoops(failedEdgeLoops);
 }
 
-bool Stitcher::stitchByQuads(const std::vector<std::pair<std::vector<size_t>, QVector3D>> &edgeLoops)
+bool MeshStitcher::stitchByQuads(const std::vector<std::pair<std::vector<size_t>, QVector3D>> &edgeLoops)
 {
     if (2 != edgeLoops.size())
         return false;
@@ -65,13 +61,13 @@ bool Stitcher::stitchByQuads(const std::vector<std::pair<std::vector<size_t>, QV
     return true;
 }
 
-bool Stitcher::stitch(const std::vector<std::pair<std::vector<size_t>, QVector3D>> &edgeLoops)
+bool MeshStitcher::stitch(const std::vector<std::pair<std::vector<size_t>, QVector3D>> &edgeLoops)
 {
     if (edgeLoops.size() == 2 &&
             edgeLoops[0].first.size() == edgeLoops[1].first.size())
         return stitchByQuads(edgeLoops);
     
-    m_wrapper = new Wrapper;
+    m_wrapper = new MeshWrapper;
     m_wrapper->setVertices(m_positions);
     m_wrapper->wrap(edgeLoops);
     if (!m_wrapper->finished()) {
@@ -80,7 +76,4 @@ bool Stitcher::stitch(const std::vector<std::pair<std::vector<size_t>, QVector3D
     }
     return true;
 }
-
-}
-
 

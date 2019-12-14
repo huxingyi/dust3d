@@ -259,6 +259,14 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
         contextMenu.addAction(&clearCutFaceAction);
     }
     
+    QAction createWrapPartsAction(tr("Create Wrap Parts"), this);
+    if (!m_nodePositionModifyOnly && hasSelection()) {
+        connect(&createWrapPartsAction, &QAction::triggered, this, [&]() {
+            createWrapParts();
+        });
+        contextMenu.addAction(&createWrapPartsAction);
+    }
+    
     QAction alignToLocalCenterAction(tr("Local Center"), this);
     QAction alignToLocalVerticalCenterAction(tr("Local Vertical Center"), this);
     QAction alignToLocalHorizontalCenterAction(tr("Local Horizontal Center"), this);
@@ -2894,4 +2902,14 @@ void SkeletonGraphicsWidget::setMainProfileOnly(bool mainProfileOnly)
     m_mainProfileOnly = mainProfileOnly;
 }
 
+void SkeletonGraphicsWidget::createWrapParts()
+{
+    std::set<SkeletonGraphicsNodeItem *> nodeItemSet;
+    readMergedSkeletonNodeSetFromRangeSelection(&nodeItemSet);
+    std::set<QUuid> nodeIds;
+    for (const auto &it: nodeItemSet) {
+        nodeIds.insert(it->id());
+    }
+    emit createGriddedPartsFromNodes(nodeIds);
+}
 

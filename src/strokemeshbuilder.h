@@ -1,5 +1,5 @@
-#ifndef NODEMESH_BUILDER_H
-#define NODEMESH_BUILDER_H
+#ifndef DUST3D_BUILDER_H
+#define DUST3D_BUILDER_H
 #include <QVector3D>
 #include <QVector2D>
 #include <vector>
@@ -7,11 +7,9 @@
 #include <set>
 #include <QMatrix4x4>
 #include <QImage>
+#include "positionkey.h"
 
-namespace nodemesh 
-{
-    
-class Builder
+class StrokeMeshBuilder
 {
 public:
     struct CutFaceTransform
@@ -177,7 +175,5 @@ private:
     static QVector3D calculateBaseNormalFromTraverseDirection(const QVector3D &traverseDirection);
     void layoutNodes();
 };
-    
-}
 
 #endif

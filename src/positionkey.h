@@ -1,9 +1,6 @@
-#ifndef NODEMESH_POSITION_KEY_H
-#define NODEMESH_POSITION_KEY_H
+#ifndef DUST3D_POSITION_KEY_H
+#define DUST3D_POSITION_KEY_H
 #include <QVector3D>
-
-namespace nodemesh
-{
 
 class PositionKey
 {
@@ -21,8 +18,6 @@ private:
     QVector3D m_position;
 
     static long m_toIntFactor;
-};
-
 };
 
 #endif

@@ -1,4 +1,3 @@
-#include <nodemesh/cgalmesh.h>
 #include <CGAL/convex_hull_3.h>
 #include <CGAL/Polygon_mesh_processing/corefinement.h>
 #include <QVector3D>
@@ -9,6 +8,7 @@
 #include <QString>
 #include "triangleislandslink.h"
 #include "triangleislandsresolve.h"
+#include "booleanmesh.h"
 
 template <class InputIterator, class Kernel>
 bool precheckForConvexHull(InputIterator first, InputIterator beyond)

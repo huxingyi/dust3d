@@ -12,7 +12,7 @@
 bool ModelWidget::m_transparent = true;
 const QVector3D ModelWidget::m_cameraPosition = QVector3D(0, 0, -4.0);
 float ModelWidget::m_minZoomRatio = 5.0;
-float ModelWidget::m_maxZoomRatio = 90.0;
+float ModelWidget::m_maxZoomRatio = 80.0;
 
 ModelWidget::ModelWidget(QWidget *parent) :
     QOpenGLWidget(parent),
@@ -314,10 +314,12 @@ bool ModelWidget::inputWheelEventFromOtherWidget(QWheelEvent *event)
     
     if (!m_zoomEnabled)
         return false;
-    qreal delta = event->delta() / 5;
-    if (fabs(delta) < 1)
-        delta = delta < 0 ? -1.0 : 1.0;
+
+    qreal delta = geometry().height() * 0.1f;
+    if (event->delta() < 0)
+        delta = -delta;
     zoom(delta);
+    
     return true;
 }
 

@@ -8,7 +8,6 @@
 #include <QFileDialog>
 #include <QSizePolicy>
 #include <QCheckBox>
-#include <nodemesh/misc.h>
 #include "partwidget.h"
 #include "theme.h"
 #include "floatnumberwidget.h"

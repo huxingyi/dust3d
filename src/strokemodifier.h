@@ -1,12 +1,9 @@
-#ifndef NODEMESH_MODIFIER_H
-#define NODEMESH_MODIFIER_H
+#ifndef DUST3D_MODIFIER_H
+#define DUST3D_MODIFIER_H
 #include <QVector3D>
 #include <vector>
 
-namespace nodemesh 
-{
-
-class Modifier
+class StrokeModifier
 {
 public:
     struct Node
@@ -47,7 +44,5 @@ private:
     float averageCutTemplateEdgeLength(const std::vector<QVector2D> &cutTemplate);
     void createIntermediateCutTemplateEdges(std::vector<QVector2D> &cutTemplate, float averageCutTemplateLength);
 };
-
-}
 
 #endif

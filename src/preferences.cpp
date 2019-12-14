@@ -15,7 +15,6 @@ void Preferences::loadDefault()
     m_componentCombineMode = CombineMode::Normal;
     m_partColor = Qt::white;
     m_flatShading = true;
-    m_threeNodesBranchEnabled = false;
 }
 
 Preferences::Preferences()
@@ -34,14 +33,9 @@ Preferences::Preferences()
     {
         QString value = m_settings.value("flatShading").toString();
         if (value.isEmpty())
-            m_flatShading = true;
+            m_flatShading = false;
         else
             m_flatShading = isTrueValueString(value);
-    }
-    {
-        QString value = m_settings.value("threeNodesBranchEnabled").toString();
-        if (!value.isEmpty())
-            m_threeNodesBranchEnabled = isTrueValueString(value);
     }
 }
 
@@ -58,11 +52,6 @@ const QColor &Preferences::partColor() const
 bool Preferences::flatShading() const
 {
     return m_flatShading;
-}
-
-bool Preferences::threeNodesBranchEnabled() const
-{
-    return m_threeNodesBranchEnabled;
 }
 
 void Preferences::setComponentCombineMode(CombineMode mode)
@@ -92,15 +81,6 @@ void Preferences::setFlatShading(bool flatShading)
     emit flatShadingChanged();
 }
 
-void Preferences::setThreeNodesBranchEnableState(bool enabled)
-{
-    if (m_threeNodesBranchEnabled == enabled)
-        return;
-    m_threeNodesBranchEnabled = enabled;
-    m_settings.setValue("threeNodesBranchEnabled", enabled ? "true" : "false");
-    emit threeNodesBranchEnableStateChanged();
-}
-
 void Preferences::reset()
 {
     m_settings.clear();
@@ -108,5 +88,4 @@ void Preferences::reset()
     emit componentCombineModeChanged();
     emit partColorChanged();
     emit flatShadingChanged();
-    emit threeNodesBranchEnableStateChanged();
 }

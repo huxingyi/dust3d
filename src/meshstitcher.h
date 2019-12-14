@@ -1,16 +1,13 @@
-#ifndef NODEMESH_STITCHER_H
-#define NODEMESH_STITCHER_H
+#ifndef DUST3D_STITCHER_H
+#define DUST3D_STITCHER_H
 #include <QVector3D>
 #include <vector>
-#include <nodemesh/wrapper.h>
+#include "meshwrapper.h"
 
-namespace nodemesh
-{
-
-class Stitcher
+class MeshStitcher
 {
 public:
-    ~Stitcher();
+    ~MeshStitcher();
     void setVertices(const std::vector<QVector3D> *vertices);
     bool stitch(const std::vector<std::pair<std::vector<size_t>, QVector3D>> &edgeLoops);
     const std::vector<std::vector<size_t>> &newlyGeneratedFaces();
@@ -19,13 +16,10 @@ public:
 private:
     const std::vector<QVector3D> *m_positions;
     std::vector<std::vector<size_t>> m_newlyGeneratedFaces;
-    Wrapper *m_wrapper = nullptr;
+    MeshWrapper *m_wrapper = nullptr;
     
     bool stitchByQuads(const std::vector<std::pair<std::vector<size_t>, QVector3D>> &edgeLoops);
 };
-
-}
-
 
 #endif
 

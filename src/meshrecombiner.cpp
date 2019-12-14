@@ -1,30 +1,27 @@
-#include <nodemesh/recombiner.h>
-#include <nodemesh/positionkey.h>
-#include <nodemesh/misc.h>
-#include <nodemesh/wrapper.h>
 #include <set>
 #include <QDebug>
 #include <cmath>
 #include <queue>
+#include "meshrecombiner.h"
+#include "positionkey.h"
+#include "meshwrapper.h"
+#include "util.h"
 
 #define MAX_EDGE_LOOP_LENGTH            1000
 
-namespace nodemesh
-{
-
-void Recombiner::setVertices(const std::vector<QVector3D> *vertices,
-    const std::vector<std::pair<nodemesh::Combiner::Source, size_t>> *verticesSourceIndices)
+void MeshRecombiner::setVertices(const std::vector<QVector3D> *vertices,
+    const std::vector<std::pair<MeshCombiner::Source, size_t>> *verticesSourceIndices)
 {
     m_vertices = vertices;
     m_verticesSourceIndices = verticesSourceIndices;
 }
 
-void Recombiner::setFaces(const std::vector<std::vector<size_t>> *faces)
+void MeshRecombiner::setFaces(const std::vector<std::vector<size_t>> *faces)
 {
     m_faces = faces;
 }
 
-bool Recombiner::convertHalfEdgesToEdgeLoops(const std::vector<std::pair<size_t, size_t>> &halfEdges,
+bool MeshRecombiner::convertHalfEdgesToEdgeLoops(const std::vector<std::pair<size_t, size_t>> &halfEdges,
     std::vector<std::vector<size_t>> *edgeLoops)
 {
     std::map<size_t, size_t> vertexLinkMap;
@@ -68,7 +65,7 @@ bool Recombiner::convertHalfEdgesToEdgeLoops(const std::vector<std::pair<size_t,
     return true;
 }
 
-size_t Recombiner::splitSeamVerticesToIslands(const std::map<size_t, std::vector<size_t>> &seamEdges,
+size_t MeshRecombiner::splitSeamVerticesToIslands(const std::map<size_t, std::vector<size_t>> &seamEdges,
         std::map<size_t, size_t> *vertexToIslandMap)
 {
     std::set<size_t> visited;
@@ -98,7 +95,7 @@ size_t Recombiner::splitSeamVerticesToIslands(const std::map<size_t, std::vector
     return nextIslandId;
 }
 
-bool Recombiner::buildHalfEdgeToFaceMap(std::map<std::pair<size_t, size_t>, size_t> &halfEdgeToFaceMap)
+bool MeshRecombiner::buildHalfEdgeToFaceMap(std::map<std::pair<size_t, size_t>, size_t> &halfEdgeToFaceMap)
 {
     bool succeed = true;
     for (size_t faceIndex = 0; faceIndex < m_faces->size(); ++faceIndex) {
@@ -115,7 +112,7 @@ bool Recombiner::buildHalfEdgeToFaceMap(std::map<std::pair<size_t, size_t>, size
     return succeed;
 }
 
-bool Recombiner::recombine()
+bool MeshRecombiner::recombine()
 {
     buildHalfEdgeToFaceMap(m_halfEdgeToFaceMap);
     
@@ -124,10 +121,10 @@ bool Recombiner::recombine()
         for (size_t i = 0; i < face.size(); ++i) {
             const auto &index = face[i];
             auto source = (*m_verticesSourceIndices)[index];
-            if (Combiner::Source::None == source.first) {
+            if (MeshCombiner::Source::None == source.first) {
                 auto next = face[(i + 1) % face.size()];
                 auto nextSource = (*m_verticesSourceIndices)[next];
-                if (Combiner::Source::None == nextSource.first) {
+                if (MeshCombiner::Source::None == nextSource.first) {
                     seamLink[index].push_back(next);
                 }
             }
@@ -146,13 +143,13 @@ bool Recombiner::recombine()
         for (size_t i = 0; i < face.size(); ++i) {
             const auto &index = face[i];
             auto source = (*m_verticesSourceIndices)[index];
-            if (Combiner::Source::None == source.first) {
+            if (MeshCombiner::Source::None == source.first) {
                 const auto &findIsland = seamVertexToIslandMap.find(index);
                 if (findIsland != seamVertexToIslandMap.end()) {
                     containsSeamVertex = true;
                     island = findIsland->second;
                 }
-            } else if (Combiner::Source::First == source.first) {
+            } else if (MeshCombiner::Source::First == source.first) {
                 inFirstGroup = true;
             }
         }
@@ -222,7 +219,7 @@ bool Recombiner::recombine()
     return true;
 }
 
-size_t Recombiner::adjustTrianglesFromSeam(std::vector<size_t> &edgeLoop, size_t seamIndex)
+size_t MeshRecombiner::adjustTrianglesFromSeam(std::vector<size_t> &edgeLoop, size_t seamIndex)
 {
     if (edgeLoop.size() <= 3)
         return 0;
@@ -267,7 +264,7 @@ size_t Recombiner::adjustTrianglesFromSeam(std::vector<size_t> &edgeLoop, size_t
     return ignored.size();
 }
 
-size_t Recombiner::otherVertexOfTriangle(const std::vector<size_t> &face, const std::vector<size_t> &indices)
+size_t MeshRecombiner::otherVertexOfTriangle(const std::vector<size_t> &face, const std::vector<size_t> &indices)
 {
     for (const auto &v: face) {
         for (const auto &u: indices) {
@@ -278,7 +275,7 @@ size_t Recombiner::otherVertexOfTriangle(const std::vector<size_t> &face, const 
     return face[0];
 }
 
-void Recombiner::copyNonSeamFacesAsRegenerated()
+void MeshRecombiner::copyNonSeamFacesAsRegenerated()
 {
     for (size_t faceIndex = 0; faceIndex < m_faces->size(); ++faceIndex) {
         const auto &findFaceInSeam = m_facesInSeamArea.find(faceIndex);
@@ -289,22 +286,22 @@ void Recombiner::copyNonSeamFacesAsRegenerated()
     }
 }
 
-const std::vector<QVector3D> &Recombiner::regeneratedVertices()
+const std::vector<QVector3D> &MeshRecombiner::regeneratedVertices()
 {
     return m_regeneratedVertices;
 }
 
-const std::vector<std::pair<nodemesh::Combiner::Source, size_t>> &Recombiner::regeneratedVerticesSourceIndices()
+const std::vector<std::pair<MeshCombiner::Source, size_t>> &MeshRecombiner::regeneratedVerticesSourceIndices()
 {
     return m_regeneratedVerticesSourceIndices;
 }
 
-const std::vector<std::vector<size_t>> &Recombiner::regeneratedFaces()
+const std::vector<std::vector<size_t>> &MeshRecombiner::regeneratedFaces()
 {
     return m_regeneratedFaces;
 }
 
-size_t Recombiner::nearestIndex(const QVector3D &position, const std::vector<size_t> &edgeLoop)
+size_t MeshRecombiner::nearestIndex(const QVector3D &position, const std::vector<size_t> &edgeLoop)
 {
     float minDist2 = std::numeric_limits<float>::max();
     size_t choosenIndex = 0;
@@ -318,7 +315,7 @@ size_t Recombiner::nearestIndex(const QVector3D &position, const std::vector<siz
     return choosenIndex;
 }
 
-bool Recombiner::bridge(const std::vector<size_t> &first, const std::vector<size_t> &second)
+bool MeshRecombiner::bridge(const std::vector<size_t> &first, const std::vector<size_t> &second)
 {
     const std::vector<size_t> *large = &first;
     const std::vector<size_t> *small = &second;
@@ -373,16 +370,16 @@ bool Recombiner::bridge(const std::vector<size_t> &first, const std::vector<size
     return true;
 }
 
-void Recombiner::fillPairs(const std::vector<size_t> &small, const std::vector<size_t> &large)
+void MeshRecombiner::fillPairs(const std::vector<size_t> &small, const std::vector<size_t> &large)
 {
     size_t smallIndex = 0;
     size_t largeIndex = 0;
     while (smallIndex + 1 < small.size() ||
             largeIndex + 1 < large.size()) {
         if (smallIndex + 1 < small.size() && largeIndex + 1 < large.size()) {
-            float angleOnSmallEdgeLoop = angleBetween((*m_vertices)[large[largeIndex]] - (*m_vertices)[small[smallIndex]],
+            float angleOnSmallEdgeLoop = radianBetweenVectors((*m_vertices)[large[largeIndex]] - (*m_vertices)[small[smallIndex]],
                 (*m_vertices)[small[smallIndex + 1]] - (*m_vertices)[small[smallIndex]]);
-            float angleOnLargeEdgeLoop = angleBetween((*m_vertices)[small[smallIndex]] - (*m_vertices)[large[largeIndex]],
+            float angleOnLargeEdgeLoop = radianBetweenVectors((*m_vertices)[small[smallIndex]] - (*m_vertices)[large[largeIndex]],
                 (*m_vertices)[large[largeIndex + 1]] - (*m_vertices)[large[largeIndex]]);
             if (angleOnSmallEdgeLoop < angleOnLargeEdgeLoop) {
                 m_regeneratedFaces.push_back({
@@ -423,7 +420,7 @@ void Recombiner::fillPairs(const std::vector<size_t> &small, const std::vector<s
     }
 }
 
-void Recombiner::removeReluctantVertices()
+void MeshRecombiner::removeReluctantVertices()
 {
     std::vector<std::vector<size_t>> rearrangedFaces;
     std::map<size_t, size_t> oldToNewIndexMap;
@@ -444,6 +441,4 @@ void Recombiner::removeReluctantVertices()
         rearrangedFaces.push_back(newFace);
     }
     m_regeneratedFaces = rearrangedFaces;
-}
-
 }

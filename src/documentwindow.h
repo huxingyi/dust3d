@@ -9,6 +9,7 @@
 #include <QTextBrowser>
 #include <map>
 #include <QStringList>
+#include <QLabel>
 #include "document.h"
 #include "modelwidget.h"
 #include "exportpreviewwidget.h"
@@ -16,6 +17,7 @@
 #include "bonemark.h"
 #include "posemanagewidget.h"
 #include "preferenceswidget.h"
+#include "graphicscontainerwidget.h"
 
 class SkeletonGraphicsWidget;
 
@@ -80,6 +82,7 @@ public slots:
     void exportFbxToFilename(const QString &filename);
     void exportGlbToFilename(const QString &filename);
     void toggleRotation();
+    //void updateInfoWidgetPosition();
 private:
     void initLockButton(QPushButton *button);
     void setCurrentFilename(const QString &filename);
@@ -100,6 +103,8 @@ private:
     ModelWidget *m_modelRenderWidget;
     SkeletonGraphicsWidget *m_graphicsWidget;
     RigWidget *m_rigWidget;
+    //QLabel *m_infoWidget;
+    GraphicsContainerWidget *m_graphicsContainerWidget;
     
     QMenu *m_fileMenu;
     QAction *m_newWindowAction;
@@ -136,6 +141,7 @@ private:
     QAction *m_switchXzAction;
     QAction *m_setCutFaceAction;
     QAction *m_clearCutFaceAction;
+    QAction *m_createWrapPartsAction;
     
     QMenu *m_alignToMenu;
     QAction *m_alignToGlobalCenterAction;

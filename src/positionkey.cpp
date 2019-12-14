@@ -1,7 +1,4 @@
-#include <nodemesh/positionkey.h>
-
-namespace nodemesh
-{
+#include "positionkey.h"
 
 long PositionKey::m_toIntFactor = 100000;
 
@@ -48,6 +45,4 @@ bool PositionKey::operator ==(const PositionKey &right) const
     return m_intX == right.m_intX &&
         m_intY == right.m_intY &&
         m_intZ == right.m_intZ;
-}
-
 }

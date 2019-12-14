@@ -435,6 +435,48 @@ HEADERS += src/triangleislandsresolve.h
 SOURCES += src/triangleislandslink.cpp
 HEADERS += src/triangleislandslink.h
 
+SOURCES += src/gridmeshbuilder.cpp
+HEADERS += src/gridmeshbuilder.h
+
+SOURCES += src/regionfiller.cpp
+HEADERS += src/regionfiller.h
+
+SOURCES += src/cyclefinder.cpp
+HEADERS += src/cyclefinder.h
+
+SOURCES += src/shortestpath.cpp
+HEADERS += src/shortestpath.h
+
+SOURCES += src/meshwrapper.cpp
+HEADERS += src/meshwrapper.h
+
+SOURCES += src/meshstitcher.cpp
+HEADERS += src/meshstitcher.h
+
+SOURCES += src/strokemeshbuilder.cpp
+HEADERS += src/strokemeshbuilder.h
+
+SOURCES += src/meshcombiner.cpp
+HEADERS += src/meshcombiner.h
+
+SOURCES += src/positionkey.cpp
+HEADERS += src/positionkey.h
+
+SOURCES += src/strokemodifier.cpp
+HEADERS += src/strokemodifier.h
+
+SOURCES += src/boxmesh.cpp
+HEADERS += src/boxmesh.h
+
+SOURCES += src/meshrecombiner.cpp
+HEADERS += src/meshrecombiner.h
+
+SOURCES += src/triangulate.cpp
+HEADERS += src/triangulate.h
+
+SOURCES += src/booleanmesh.cpp
+HEADERS += src/booleanmesh.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h
@@ -665,37 +707,6 @@ HEADERS += thirdparty/quickjs/quickjs-2019-07-09-dust3d/libunicode.h
 
 SOURCES += thirdparty/quickjs/quickjs-2019-07-09-dust3d/libregexp.c
 HEADERS += thirdparty/quickjs/quickjs-2019-07-09-dust3d/libregexp.h
-
-INCLUDEPATH += thirdparty/nodemesh
-
-SOURCES += thirdparty/nodemesh/nodemesh/wrapper.cpp
-HEADERS += thirdparty/nodemesh/nodemesh/wrapper.h
-
-SOURCES += thirdparty/nodemesh/nodemesh/stitcher.cpp
-HEADERS += thirdparty/nodemesh/nodemesh/stitcher.h
-
-SOURCES += thirdparty/nodemesh/nodemesh/builder.cpp
-HEADERS += thirdparty/nodemesh/nodemesh/builder.h
-
-SOURCES += thirdparty/nodemesh/nodemesh/combiner.cpp
-HEADERS += thirdparty/nodemesh/nodemesh/combiner.h
-
-SOURCES += thirdparty/nodemesh/nodemesh/misc.cpp
-HEADERS += thirdparty/nodemesh/nodemesh/misc.h
-
-SOURCES += thirdparty/nodemesh/nodemesh/positionkey.cpp
-HEADERS += thirdparty/nodemesh/nodemesh/positionkey.h
-
-SOURCES += thirdparty/nodemesh/nodemesh/modifier.cpp
-HEADERS += thirdparty/nodemesh/nodemesh/modifier.h
-
-SOURCES += thirdparty/nodemesh/nodemesh/box.cpp
-HEADERS += thirdparty/nodemesh/nodemesh/box.h
-
-SOURCES += thirdparty/nodemesh/nodemesh/recombiner.cpp
-HEADERS += thirdparty/nodemesh/nodemesh/recombiner.h
-
-HEADERS += thirdparty/nodemesh/nodemesh/cgalmesh.h
 
 INCLUDEPATH += thirdparty/crc64
 

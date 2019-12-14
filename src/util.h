@@ -4,7 +4,10 @@
 #include <map>
 #include <cmath>
 #include <QVector3D>
+#include <QVector2D>
 #include <QQuaternion>
+#include <set>
+#include "positionkey.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -25,5 +28,20 @@ float areaOfTriangle(const QVector3D &a, const QVector3D &b, const QVector3D &c)
 QQuaternion eulerAnglesToQuaternion(double pitch, double yaw, double roll);
 void quaternionToEulerAngles(const QQuaternion &q, double *pitch, double *yaw, double *roll);
 void quaternionToEulerAnglesXYZ(const QQuaternion &q, double *pitch, double *yaw, double *roll);
+bool pointInTriangle(const QVector3D &a, const QVector3D &b, const QVector3D &c, const QVector3D &p);
+QVector3D polygonNormal(const std::vector<QVector3D> &vertices, const std::vector<size_t> &polygon);
+void angleSmooth(const std::vector<QVector3D> &vertices,
+    const std::vector<std::vector<size_t>> &triangles,
+    const std::vector<QVector3D> &triangleNormals,
+    float thresholdAngleDegrees,
+    std::vector<QVector3D> &triangleVertexNormals);
+void recoverQuads(const std::vector<QVector3D> &vertices, const std::vector<std::vector<size_t>> &triangles, const std::set<std::pair<PositionKey, PositionKey>> &sharedQuadEdges, std::vector<std::vector<size_t>> &triangleAndQuads);
+size_t weldSeam(const std::vector<QVector3D> &sourceVertices, const std::vector<std::vector<size_t>> &sourceTriangles,
+    float allowedSmallestDistance, const std::set<PositionKey> &excludePositions,
+    std::vector<QVector3D> &destVertices, std::vector<std::vector<size_t>> &destTriangles);
+bool isManifold(const std::vector<std::vector<size_t>> &faces);
+void trim(std::vector<QVector3D> *vertices, bool normalize=false);
+void chamferFace2D(std::vector<QVector2D> *face);
+void subdivideFace2D(std::vector<QVector2D> *face);
 
 #endif
