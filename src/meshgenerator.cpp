@@ -15,7 +15,7 @@
 #include "partbase.h"
 #include "imageforever.h"
 #include "gridmeshbuilder.h"
-#include "triangulate.h"
+#include "triangulatefaces.h"
 
 MeshGenerator::MeshGenerator(Snapshot *snapshot) :
     m_snapshot(snapshot)
@@ -770,7 +770,7 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, 
     }
     if (partCache.previewTriangles.empty()) {
         partPreviewVertices = partCache.vertices;
-        triangulate(partPreviewVertices, partCache.faces, partCache.previewTriangles);
+        triangulateFacesWithoutKeepVertices(partPreviewVertices, partCache.faces, partCache.previewTriangles);
 #ifdef IN_DEVELOPMENT
         {
             QFile file("/Users/jeremy/Desktop/dust3d_debug.obj");

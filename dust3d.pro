@@ -471,8 +471,8 @@ HEADERS += src/boxmesh.h
 SOURCES += src/meshrecombiner.cpp
 HEADERS += src/meshrecombiner.h
 
-SOURCES += src/triangulate.cpp
-HEADERS += src/triangulate.h
+SOURCES += src/triangulatefaces.cpp
+HEADERS += src/triangulatefaces.h
 
 SOURCES += src/booleanmesh.cpp
 HEADERS += src/booleanmesh.h

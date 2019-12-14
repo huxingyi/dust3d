@@ -123,16 +123,16 @@ private:
     std::map<size_t, size_t> m_weldMap;
     std::set<size_t> m_swallowedEdges;
     std::set<size_t> m_swallowedNodes;
-    float m_deformThickness = 1.0;
-    float m_deformWidth = 1.0;
-    float m_cutRotation = 0.0;
+    float m_deformThickness = 1.0f;
+    float m_deformWidth = 1.0f;
+    float m_cutRotation = 0.0f;
     bool m_baseNormalOnX = true;
     bool m_baseNormalOnY = true;
     bool m_baseNormalOnZ = true;
     bool m_baseNormalAverageEnabled = false;
     const QImage *m_deformMapImage = nullptr;
-    float m_deformMapScale = 0.0;
-    float m_hollowThickness = 0.2;
+    float m_deformMapScale = 0.0f;
+    float m_hollowThickness = 0.2f;
     std::vector<std::vector<size_t>> m_endCuts;
     
     void sortNodeIndices();
