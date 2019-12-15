@@ -1,3 +1,10 @@
+Changes between 1.0.0-beta.27 and 1.0.0-beta.28:
+--------------------------------------------------
+- Add new generated mesh type: Grid mesh  
+- Include non-manifold geometry in result  
+- Fix smooth angle  
+- Fix preview model zoom scale  
+
 Changes between 1.0.0-beta.26 and 1.0.0-beta.27:
 --------------------------------------------------
 - Fix normal map generation  
