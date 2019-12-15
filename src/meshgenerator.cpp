@@ -580,8 +580,7 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, 
         
         if (subdived)
             gridMeshBuilder->setSubdived(true);
-        gridMeshBuilder->build();
-        buildSucceed = true;
+        buildSucceed = gridMeshBuilder->build();
         
         partCache.vertices = gridMeshBuilder->getGeneratedPositions();
         partCache.faces = gridMeshBuilder->getGeneratedFaces();

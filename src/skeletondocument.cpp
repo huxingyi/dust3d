@@ -73,5 +73,13 @@ void SkeletonDocument::findAllNeighbors(QUuid nodeId, std::set<QUuid> &neighbors
 
 bool SkeletonDocument::isNodeConnectable(QUuid nodeId) const
 {
-    return true;
+    const auto &node = findNode(nodeId);
+    if (nullptr == node)
+        return false;
+    if (node->edgeIds.size() < 2)
+        return true;
+    const SkeletonPart *part = findPart(node->partId);
+    if (nullptr == part)
+        return false;
+    return part->gridded;
 }

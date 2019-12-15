@@ -421,14 +421,17 @@ void GridMeshBuilder::setSubdived(bool subdived)
     m_subdived = subdived;
 }
 
-void GridMeshBuilder::build()
+bool GridMeshBuilder::build()
 {
     if (m_subdived)
         applyModifiers();
     prepareNodeVertices();
     findCycles();
+    if (m_cycles.empty())
+        return false;
     generateFaces();
     extrude();
+    return true;
 }
 
 void GridMeshBuilder::findCycles()
@@ -442,3 +445,4 @@ void GridMeshBuilder::findCycles()
     cycleFinder.find();
     m_cycles = cycleFinder.getCycles();
 }
+

@@ -25,7 +25,7 @@ public:
     size_t addNode(const QVector3D &position, float radius);
     size_t addEdge(size_t firstNodeIndex, size_t secondNodeIndex);
     void setSubdived(bool subdived);
-    void build();
+    bool build();
     const std::vector<QVector3D> &getGeneratedPositions();
     const std::vector<size_t> &getGeneratedSources();
     const std::vector<std::vector<size_t>> &getGeneratedFaces();
