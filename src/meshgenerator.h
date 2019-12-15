@@ -24,6 +24,7 @@ public:
     std::vector<std::vector<size_t>> faces;
     std::vector<OutcomeNode> outcomeNodes;
     std::vector<std::pair<QVector3D, std::pair<QUuid, QUuid>>> outcomeNodeVertices;
+    std::vector<QVector3D> previewVertices;
     std::vector<std::vector<size_t>> previewTriangles;
     OutcomePaintMap outcomePaintMap;
     bool isSucceed = false;

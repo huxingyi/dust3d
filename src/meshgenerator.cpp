@@ -319,27 +319,6 @@ void MeshGenerator::cutFaceStringToCutTemplate(const QString &cutFaceString, std
     }
 }
 
-#ifdef IN_DEVELOPMENT
-#include <QTextStream>
-#include <QFile>
-static void exportAsObj(const std::vector<QVector3D> &positions,
-    const std::vector<std::vector<size_t>> &faces,
-    QTextStream *textStream)
-{
-    auto &stream = *textStream;
-    for (std::vector<QVector3D>::const_iterator it = positions.begin() ; it != positions.end(); ++it) {
-        stream << "v " << (*it).x() << " " << (*it).y() << " " << (*it).z() << endl;
-    }
-    for (std::vector<std::vector<size_t>>::const_iterator it = faces.begin() ; it != faces.end(); ++it) {
-        stream << "f";
-        for (std::vector<size_t>::const_iterator subIt = (*it).begin() ; subIt != (*it).end(); ++subIt) {
-            stream << " " << (1 + *subIt);
-        }
-        stream << endl;
-    }
-}
-#endif
-
 MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, bool *hasError, bool addIntermediateNodes)
 {
     auto findPart = m_snapshot->parts.find(partIdString);
@@ -427,6 +406,7 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, 
     partCache.vertices.clear();
     partCache.faces.clear();
     partCache.previewTriangles.clear();
+    partCache.previewVertices.clear();
     partCache.isSucceed = false;
     delete partCache.mesh;
     partCache.mesh = nullptr;
@@ -765,22 +745,13 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, 
     if (nullptr != mesh) {
         partCache.mesh = new MeshCombiner::Mesh(*mesh);
         mesh->fetch(partPreviewVertices, partCache.previewTriangles);
+        partCache.previewVertices = partPreviewVertices;
         partCache.isSucceed = true;
     }
     if (partCache.previewTriangles.empty()) {
         partPreviewVertices = partCache.vertices;
         triangulateFacesWithoutKeepVertices(partPreviewVertices, partCache.faces, partCache.previewTriangles);
-#ifdef IN_DEVELOPMENT
-        {
-            QFile file("/Users/jeremy/Desktop/dust3d_debug.obj");
-            if (file.open(QIODevice::WriteOnly)) {
-                QTextStream stream(&file);
-                exportAsObj(partPreviewVertices,
-                    partCache.previewTriangles,
-                    &stream);
-            }
-        }
-#endif
+        partCache.previewVertices = partPreviewVertices;
         partPreviewColor = Qt::red;
         partCache.isSucceed = false;
     }
@@ -1332,19 +1303,7 @@ void MeshGenerator::generate()
         qDebug() << "Total weld affected triangles:" << totalAffectedNum;
         
         recoverQuads(combinedVertices, combinedFaces, componentCache.sharedQuadEdges, m_outcome->triangleAndQuads);
-        
-#ifdef IN_DEVELOPMENT
-        {
-            QFile file("/Users/jeremy/Desktop/dust3d_debug.obj");
-            if (file.open(QIODevice::WriteOnly)) {
-                QTextStream stream(&file);
-                exportAsObj(combinedVertices,
-                    m_outcome->triangleAndQuads,
-                    &stream);
-            }
-        }
-#endif
-        
+
         m_outcome->nodes = componentCache.outcomeNodes;
         m_outcome->nodeVertices = componentCache.outcomeNodeVertices;
         m_outcome->vertices = combinedVertices;
@@ -1358,8 +1317,7 @@ void MeshGenerator::generate()
     // Collect errored parts
     for (const auto &it: m_cacheContext->parts) {
         if (!it.second.isSucceed) {
-            auto vertexStartIndex = m_outcome->vertices.size();
-            auto updateVertexIndices = [=](std::vector<std::vector<size_t>> &faces) {
+            auto updateVertexIndices = [=](std::vector<std::vector<size_t>> &faces, size_t vertexStartIndex) {
                 for (auto &it: faces) {
                     for (auto &subIt: it)
                         subIt += vertexStartIndex;
@@ -1367,10 +1325,14 @@ void MeshGenerator::generate()
             };
             
             auto errorTriangleAndQuads = it.second.faces;
-            updateVertexIndices(errorTriangleAndQuads);
-        
+            updateVertexIndices(errorTriangleAndQuads, m_outcome->vertices.size());
             m_outcome->vertices.insert(m_outcome->vertices.end(), it.second.vertices.begin(), it.second.vertices.end());
             m_outcome->triangleAndQuads.insert(m_outcome->triangleAndQuads.end(), errorTriangleAndQuads.begin(), errorTriangleAndQuads.end());
+            
+            auto errorTriangles = it.second.previewTriangles;
+            updateVertexIndices(errorTriangles, m_outcome->vertices.size());
+            m_outcome->vertices.insert(m_outcome->vertices.end(), it.second.previewVertices.begin(), it.second.previewVertices.end());
+            m_outcome->triangles.insert(m_outcome->triangles.end(), errorTriangles.begin(), errorTriangles.end());
         }
     }
     
