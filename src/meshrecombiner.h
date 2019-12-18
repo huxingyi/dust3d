@@ -42,6 +42,7 @@ private:
     size_t nearestIndex(const QVector3D &position, const std::vector<size_t> &edgeLoop);
     void removeReluctantVertices();
     void fillPairs(const std::vector<size_t> &small, const std::vector<size_t> &large);
+    void updateEdgeLoopNeighborVertices(const std::vector<size_t> &edgeLoop);
 };
 
 #endif

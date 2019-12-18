@@ -202,6 +202,8 @@ bool MeshRecombiner::recombine()
     for (auto &it: islandsMap) {
         if (1 == it.second.edgeLoops[0].size() &&
                 it.second.edgeLoops[0].size() == it.second.edgeLoops[1].size()) {
+            //updateEdgeLoopNeighborVertices(it.second.edgeLoops[0][0]);
+            //updateEdgeLoopNeighborVertices(it.second.edgeLoops[1][0]);
             if (bridge(it.second.edgeLoops[0][0], it.second.edgeLoops[1][0])) {
                 m_goodSeams.insert(it.first);
             }
@@ -218,6 +220,63 @@ bool MeshRecombiner::recombine()
     
     return true;
 }
+
+/*
+void MeshRecombiner::updateEdgeLoopNeighborVertices(const std::vector<size_t> &edgeLoop)
+{
+    std::map<size_t, std::vector<std::pair<QVector3D, float>>> neighborPositionMap;
+    float sumOfDistance = 0.0f;
+    size_t countOfDistance = 0;
+    for (size_t i = 0; i < edgeLoop.size(); ++i) {
+        size_t j = (i + 1) % edgeLoop.size();
+        auto edge = std::make_pair(edgeLoop[i], edgeLoop[j]);
+        auto findFace = m_halfEdgeToFaceMap.find(edge);
+        if (findFace == m_halfEdgeToFaceMap.end()) {
+            continue;
+        }
+        const auto &face = (*m_faces)[findFace->second];
+        for (const auto &vertexIndex: face) {
+            if (edge.first == vertexIndex || edge.second == vertexIndex)
+                continue;
+            const auto &otherPosition = (*m_vertices)[vertexIndex];
+            const auto &firstPosition = (*m_vertices)[edge.first];
+            {
+                auto distance = (firstPosition - otherPosition).length();
+                sumOfDistance += distance;
+                ++countOfDistance;
+                neighborPositionMap[edge.first].push_back(std::make_pair(otherPosition, distance));
+            }
+            const auto &secondPosition = (*m_vertices)[edge.second];
+            {
+                auto distance = (secondPosition - otherPosition).length();
+                sumOfDistance += distance;
+                ++countOfDistance;
+                neighborPositionMap[edge.second].push_back(std::make_pair(otherPosition, distance));
+            }
+            break;
+        }
+    }
+    if (0 == countOfDistance)
+        return;
+    auto averageDistance = sumOfDistance / countOfDistance;
+    for (const auto &vertex: neighborPositionMap) {
+        const auto &originalPosition = (*m_vertices)[vertex.first];
+        if (qFuzzyIsNull(originalPosition.x()))
+            continue;
+        QVector3D sumOfPosition;
+        size_t countOfPosition = 0;
+        for (const auto &line: vertex.second) {
+            if (line.second > averageDistance) {
+                sumOfPosition += originalPosition + (line.first - originalPosition).normalized() * (line.second - averageDistance) * 0.5;
+                ++countOfPosition;
+            }
+        }
+        if (0 == countOfPosition)
+            continue;
+        (*m_vertices)[vertex.first] = sumOfPosition / countOfPosition;
+    }
+}
+*/
 
 size_t MeshRecombiner::adjustTrianglesFromSeam(std::vector<size_t> &edgeLoop, size_t seamIndex)
 {
