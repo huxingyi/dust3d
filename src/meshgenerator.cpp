@@ -408,6 +408,7 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, 
     partCache.previewTriangles.clear();
     partCache.previewVertices.clear();
     partCache.isSucceed = false;
+    partCache.joined = (target == PartTarget::Model && !isDisabled);
     delete partCache.mesh;
     partCache.mesh = nullptr;
     
@@ -1317,6 +1318,9 @@ void MeshGenerator::generate()
     // Collect errored parts
     for (const auto &it: m_cacheContext->parts) {
         if (!it.second.isSucceed) {
+            if (!it.second.joined)
+                continue;
+            
             auto updateVertexIndices = [=](std::vector<std::vector<size_t>> &faces, size_t vertexStartIndex) {
                 for (auto &it: faces) {
                     for (auto &subIt: it)

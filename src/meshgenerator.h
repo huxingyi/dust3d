@@ -28,6 +28,7 @@ public:
     std::vector<std::vector<size_t>> previewTriangles;
     OutcomePaintMap outcomePaintMap;
     bool isSucceed = false;
+    bool joined = true;
 };
 
 class GeneratedComponent
