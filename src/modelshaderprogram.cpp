@@ -17,18 +17,14 @@ const QString &ModelShaderProgram::loadShaderSource(const QString &name)
     return insertResult.first->second;
 }
 
-ModelShaderProgram::ModelShaderProgram(bool usePBR)
+ModelShaderProgram::ModelShaderProgram()
 {
     if (QSurfaceFormat::defaultFormat().profile() == QSurfaceFormat::CoreProfile) {
         this->addShaderFromSourceCode(QOpenGLShader::Vertex, loadShaderSource(":/shaders/default.core.vert"));
         this->addShaderFromSourceCode(QOpenGLShader::Fragment, loadShaderSource(":/shaders/default.core.frag"));
     } else {
         this->addShaderFromSourceCode(QOpenGLShader::Vertex, loadShaderSource(":/shaders/default.vert"));
-        if (usePBR) {
-            this->addShaderFromSourceCode(QOpenGLShader::Fragment, loadShaderSource(":/shaders/pbr-qt.frag"));
-        } else {
-            this->addShaderFromSourceCode(QOpenGLShader::Fragment, loadShaderSource(":/shaders/default.frag"));
-        }
+        this->addShaderFromSourceCode(QOpenGLShader::Fragment, loadShaderSource(":/shaders/default.frag"));
     }
     this->bindAttributeLocation("vertex", 0);
     this->bindAttributeLocation("normal", 1);

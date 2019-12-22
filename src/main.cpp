@@ -20,7 +20,8 @@ int main(int argc, char ** argv)
         app.installTranslator(&translator);
     
     QSurfaceFormat format = QSurfaceFormat::defaultFormat();
-    format.setProfile(QSurfaceFormat::OpenGLContextProfile::CompatibilityProfile);
+    format.setProfile(QSurfaceFormat::OpenGLContextProfile::CoreProfile);
+    format.setVersion(3, 3);
     QSurfaceFormat::setDefaultFormat(format);
     
     // QuantumCD/Qt 5 Dark Fusion Palette
