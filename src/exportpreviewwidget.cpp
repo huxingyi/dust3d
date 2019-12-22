@@ -36,6 +36,7 @@ ExportPreviewWidget::ExportPreviewWidget(Document *document, QWidget *parent) :
     //QPushButton *regenerateButton = new QPushButton(QChar(fa::recycle));
     //initAwesomeButton(regenerateButton);
     QPushButton *regenerateButton = new QPushButton(tr("Regenerate"));
+    regenerateButton->hide();
     connect(this, &ExportPreviewWidget::regenerate, this, &ExportPreviewWidget::checkSpinner);
     connect(regenerateButton, &QPushButton::clicked, this, &ExportPreviewWidget::regenerate);
     
