@@ -151,7 +151,7 @@ float MeshWrapper::angleOfBaseFaceAndPoint(size_t itemIndex, size_t vertexIndex)
     auto vd1 = calculateFaceVector(item.p1, item.p2, item.baseNormal);
     auto normal = QVector3D::normal(v2.position, v1.position, vp.position);
     auto vd2 = calculateFaceVector(item.p1, item.p2, normal);
-    return angleBetweenVectors(vd2, vd1);
+    return degreesBetweenVectors(vd2, vd1);
 }
 
 std::pair<size_t, bool> MeshWrapper::findBestVertexOnTheLeft(size_t itemIndex)

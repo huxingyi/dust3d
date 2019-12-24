@@ -155,8 +155,10 @@ void StrokeModifier::finalize()
         size_t newInsertNum = currentEdgeLength / targetEdgeLength;
         if (newInsertNum < 1)
             newInsertNum = 1;
-        if (newInsertNum > 100)
+        if (newInsertNum > 100) {
+            addEdge(edge.firstNodeIndex, edge.secondNodeIndex);
             continue;
+        }
         float stepFactor = 1.0 / (newInsertNum + 1);
         std::vector<size_t> nodeIndices;
         nodeIndices.push_back(edge.firstNodeIndex);

@@ -73,35 +73,37 @@ void MaterialPreviewsGenerator::generate()
         delete poseProcessor;
     }
     
-    for (const auto &material: m_materials) {
-        TextureGenerator *textureGenerator = new TextureGenerator(*outcome);
-        for (const auto &layer: material.second) {
-            for (const auto &mapItem: layer.maps) {
-                const QImage *image = ImageForever::get(mapItem.imageId);
-                if (nullptr == image)
-                    continue;
-                for (const auto &partId: partIds) {
-                    if (TextureType::BaseColor == mapItem.forWhat)
-                        textureGenerator->addPartColorMap(partId, image, layer.tileScale);
-                    else if (TextureType::Normal == mapItem.forWhat)
-                        textureGenerator->addPartNormalMap(partId, image, layer.tileScale);
-                    else if (TextureType::Metalness == mapItem.forWhat)
-                        textureGenerator->addPartMetalnessMap(partId, image, layer.tileScale);
-                    else if (TextureType::Roughness == mapItem.forWhat)
-                        textureGenerator->addPartRoughnessMap(partId, image, layer.tileScale);
-                    else if (TextureType::AmbientOcclusion == mapItem.forWhat)
-                        textureGenerator->addPartAmbientOcclusionMap(partId, image, layer.tileScale);
+    if (nullptr != outcome) {
+        for (const auto &material: m_materials) {
+            TextureGenerator *textureGenerator = new TextureGenerator(*outcome);
+            for (const auto &layer: material.second) {
+                for (const auto &mapItem: layer.maps) {
+                    const QImage *image = ImageForever::get(mapItem.imageId);
+                    if (nullptr == image)
+                        continue;
+                    for (const auto &partId: partIds) {
+                        if (TextureType::BaseColor == mapItem.forWhat)
+                            textureGenerator->addPartColorMap(partId, image, layer.tileScale);
+                        else if (TextureType::Normal == mapItem.forWhat)
+                            textureGenerator->addPartNormalMap(partId, image, layer.tileScale);
+                        else if (TextureType::Metalness == mapItem.forWhat)
+                            textureGenerator->addPartMetalnessMap(partId, image, layer.tileScale);
+                        else if (TextureType::Roughness == mapItem.forWhat)
+                            textureGenerator->addPartRoughnessMap(partId, image, layer.tileScale);
+                        else if (TextureType::AmbientOcclusion == mapItem.forWhat)
+                            textureGenerator->addPartAmbientOcclusionMap(partId, image, layer.tileScale);
+                    }
                 }
             }
+            textureGenerator->generate();
+            MeshLoader *texturedResultMesh = textureGenerator->takeResultMesh();
+            if (nullptr != texturedResultMesh) {
+                m_previews[material.first] = new MeshLoader(*texturedResultMesh);
+                m_generatedMaterialIds.insert(material.first);
+                delete texturedResultMesh;
+            }
+            delete textureGenerator;
         }
-        textureGenerator->generate();
-        MeshLoader *texturedResultMesh = textureGenerator->takeResultMesh();
-        if (nullptr != texturedResultMesh) {
-            m_previews[material.first] = new MeshLoader(*texturedResultMesh);
-            m_generatedMaterialIds.insert(material.first);
-            delete texturedResultMesh;
-        }
-        delete textureGenerator;
     }
     
     delete outcome;

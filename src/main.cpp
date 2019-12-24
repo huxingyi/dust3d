@@ -19,10 +19,10 @@ int main(int argc, char ** argv)
     if (translator.load(QLocale(), QLatin1String("dust3d"), QLatin1String("_"), QLatin1String(":/languages")))
         app.installTranslator(&translator);
     
-    QSurfaceFormat format = QSurfaceFormat::defaultFormat();
-    format.setProfile(QSurfaceFormat::OpenGLContextProfile::CoreProfile);
-    format.setVersion(3, 3);
-    QSurfaceFormat::setDefaultFormat(format);
+    //QSurfaceFormat format = QSurfaceFormat::defaultFormat();
+    //format.setProfile(QSurfaceFormat::OpenGLContextProfile::CoreProfile);
+    //format.setVersion(3, 3);
+    //QSurfaceFormat::setDefaultFormat(format);
     
     // QuantumCD/Qt 5 Dark Fusion Palette
     // https://gist.github.com/QuantumCD/6245215

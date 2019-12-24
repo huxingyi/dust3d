@@ -23,6 +23,9 @@ Outcome *MeshResultPostProcessor::takePostProcessedOutcome()
 
 void MeshResultPostProcessor::poseProcess()
 {
+#ifndef NDEBUG
+    return;
+#endif
     if (!m_outcome->nodes.empty()) {
         {
             std::vector<std::vector<QVector2D>> triangleVertexUvs;

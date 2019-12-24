@@ -386,6 +386,10 @@ Tips:
         <source>Create Wrap Parts</source>
         <translation>创建包裹部件</translation>
     </message>
+    <message>
+        <source>Marker pen</source>
+        <translation>马克笔</translation>
+    </message>
 </context>
 <context>
     <name>ExportPreviewWidget</name>

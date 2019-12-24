@@ -61,7 +61,7 @@ void GridMeshBuilder::splitCycleToPolylines(const std::vector<size_t> &cycle,
         size_t j = (i + 1) % cycle.size();
         QVector3D hi = m_nodeVertices[cycle[i]].position - m_nodeVertices[cycle[h]].position;
         QVector3D ij = m_nodeVertices[cycle[j]].position - m_nodeVertices[cycle[i]].position;
-        auto angle = angleBetweenVectors(hi, ij);
+        auto angle = degreesBetweenVectors(hi, ij);
         //qDebug() << "angle[" << i << "]:" << angle;
         if (angle >= m_polylineAngleChangeThreshold)
             cornerIndices.push_back(i);

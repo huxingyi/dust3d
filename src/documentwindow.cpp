@@ -160,6 +160,10 @@ DocumentWindow::DocumentWindow() :
     selectButton->setToolTip(tr("Select node on canvas"));
     Theme::initAwesomeButton(selectButton);
     
+    QPushButton *markerButton = new QPushButton(QChar(fa::edit));
+    markerButton->setToolTip(tr("Marker pen"));
+    Theme::initAwesomeButton(markerButton);
+    
     QPushButton *paintButton = new QPushButton(QChar(fa::paintbrush));
     paintButton->setToolTip(tr("Paint brush"));
     Theme::initAwesomeButton(paintButton);
@@ -240,6 +244,7 @@ DocumentWindow::DocumentWindow() :
 
     toolButtonLayout->addWidget(addButton);
     toolButtonLayout->addWidget(selectButton);
+    toolButtonLayout->addWidget(markerButton);
     toolButtonLayout->addWidget(paintButton);
     //toolButtonLayout->addWidget(dragButton);
     toolButtonLayout->addWidget(zoomInButton);
@@ -853,6 +858,10 @@ DocumentWindow::DocumentWindow() :
         m_document->setEditMode(SkeletonDocumentEditMode::Select);
     });
     
+    connect(markerButton, &QPushButton::clicked, [=]() {
+        m_document->setEditMode(SkeletonDocumentEditMode::Mark);
+    });
+    
     connect(paintButton, &QPushButton::clicked, [=]() {
         m_document->setEditMode(SkeletonDocumentEditMode::Paint);
     });
@@ -942,6 +951,7 @@ DocumentWindow::DocumentWindow() :
     connect(graphicsWidget, &SkeletonGraphicsWidget::setPartRoundState, m_document, &Document::setPartRoundState);
     connect(graphicsWidget, &SkeletonGraphicsWidget::setPartWrapState, m_document, &Document::setPartCutRotation);
     connect(graphicsWidget, &SkeletonGraphicsWidget::createGriddedPartsFromNodes, m_document, &Document::createGriddedPartsFromNodes);
+    connect(graphicsWidget, &SkeletonGraphicsWidget::addPartByPolygons, m_document, &Document::addPartByPolygons);
 
     connect(graphicsWidget, &SkeletonGraphicsWidget::setXlockState, m_document, &Document::setXlockState);
     connect(graphicsWidget, &SkeletonGraphicsWidget::setYlockState, m_document, &Document::setYlockState);

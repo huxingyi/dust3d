@@ -480,6 +480,9 @@ HEADERS += src/booleanmesh.h
 SOURCES += src/imageskeletonextractor.cpp
 HEADERS += src/imageskeletonextractor.h
 
+SOURCES += src/contourtopartconverter.cpp
+HEADERS += src/contourtopartconverter.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h

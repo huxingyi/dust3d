@@ -10,6 +10,7 @@
 #include <cmath>
 #include <algorithm>
 #include <QOpenGLWidget>
+#include <QPolygon>
 #include "snapshot.h"
 #include "meshloader.h"
 #include "meshgenerator.h"
@@ -567,6 +568,7 @@ public slots:
     void removeNode(QUuid nodeId);
     void removeEdge(QUuid edgeId);
     void removePart(QUuid partId);
+    void addPartByPolygons(const QPolygonF &mainProfile, const QPolygonF &sideProfile, const QSizeF &canvasSize);
     void addNodeWithId(QUuid nodeId, float x, float y, float z, float radius, QUuid fromNodeId);
     void addNode(float x, float y, float z, float radius, QUuid fromNodeId);
     void scaleNodeByAddRadius(QUuid nodeId, float amount);

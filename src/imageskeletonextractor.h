@@ -3,6 +3,7 @@
 #include <QImage>
 #include <QObject>
 #include <vector>
+#include <set>
 
 class ImageSkeletonExtractor : QObject
 {
@@ -33,10 +34,14 @@ public:
     void setImage(QImage *image);
     void extract();
     QImage *takeResultGrayscaleImage();
+    void getSkeleton(std::vector<std::pair<int, int>> *skeleton);
+    int getArea();
+    const std::set<std::pair<int, int>> &getBlackPixels();
 private:
     QImage *m_image = nullptr;
     QImage *m_grayscaleImage = nullptr;
-    static const int m_targetHeight;
+    int m_area = 0;
+    std::set<std::pair<int, int>> m_blackPixels;
     
     bool isBlack(int i, int j)
     {
@@ -78,6 +83,7 @@ private:
     
     bool firstSubiterationSatisfied(int i, int j);
     bool secondSubiterationSatisfied(int i, int j);
+    void calculateAreaAndBlackPixels();
 };
 
 #endif
