@@ -1,3 +1,9 @@
+Changes between 1.0.0-beta.28 and 1.0.0-beta.29:
+--------------------------------------------------
+- Add marker pen: A new way of modeling from contour  
+- Fix crash when nodes are extremely small  
+- Fix shader for core profile  
+
 Changes between 1.0.0-beta.27 and 1.0.0-beta.28:
 --------------------------------------------------
 - Add new generated mesh type: Grid mesh  
