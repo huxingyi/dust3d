@@ -321,6 +321,24 @@ struct functor_traits<scalar_opposite_op<Scalar> >
     PacketAccess = packet_traits<Scalar>::HasNegate };
 };
 
+// Add for QuadriFlow
+/** \internal
+  * \brief Template functor to compute the signum of a scalar
+  * \sa class CwiseUnaryOp, Cwise::sign()
+  */
+template<typename Scalar,bool iscpx=(NumTraits<Scalar>::IsComplex!=0) > struct scalar_sign_op;
+template<typename Scalar>
+struct scalar_sign_op<Scalar,false> {
+  EIGEN_EMPTY_STRUCT_CTOR(scalar_sign_op)
+  EIGEN_STRONG_INLINE const Scalar operator() (const Scalar& a) const
+  {
+      return Scalar( (a>Scalar(0)) - (a<Scalar(0)) );
+  }
+  //TODO
+  //template <typename Packet>
+  //EIGEN_DEVICE_FUNC inline Packet packetOp(const Packet& a) const { return internal::psign(a); }
+};
+
 /** \internal
   * \brief Template functor to compute the absolute value of a scalar
   *

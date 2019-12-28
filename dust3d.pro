@@ -483,9 +483,63 @@ HEADERS += src/imageskeletonextractor.h
 SOURCES += src/contourtopartconverter.cpp
 HEADERS += src/contourtopartconverter.h
 
+SOURCES += src/remesher.cpp
+HEADERS += src/remesher.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h
+
+INCLUDEPATH += thirdparty/QuadriFlow
+INCLUDEPATH += thirdparty/QuadriFlow/3rd/pcg32
+INCLUDEPATH += thirdparty/QuadriFlow/3rd/pss
+INCLUDEPATH += thirdparty/QuadriFlow/3rd/lemon-1.3.1
+
+SOURCES += thirdparty/QuadriFlow/src/adjacent-matrix.cpp
+HEADERS += thirdparty/QuadriFlow/src/adjacent-matrix.hpp
+
+HEADERS += thirdparty/QuadriFlow/src/compare-key.hpp
+
+HEADERS += thirdparty/QuadriFlow/src/config.hpp
+
+SOURCES += thirdparty/QuadriFlow/src/dedge.cpp
+HEADERS += thirdparty/QuadriFlow/src/dedge.hpp
+
+HEADERS += thirdparty/QuadriFlow/src/disajoint-tree.hpp
+
+HEADERS += thirdparty/QuadriFlow/src/dset.hpp
+
+HEADERS += thirdparty/QuadriFlow/src/field-math.hpp
+
+HEADERS += thirdparty/QuadriFlow/src/flow.hpp
+
+SOURCES += thirdparty/QuadriFlow/src/hierarchy.cpp
+HEADERS += thirdparty/QuadriFlow/src/hierarchy.hpp
+
+SOURCES += thirdparty/QuadriFlow/src/loader.cpp
+HEADERS += thirdparty/QuadriFlow/src/loader.hpp
+
+SOURCES += thirdparty/QuadriFlow/src/localsat.cpp
+HEADERS += thirdparty/QuadriFlow/src/localsat.hpp
+
+SOURCES += thirdparty/QuadriFlow/src/merge-vertex.cpp
+HEADERS += thirdparty/QuadriFlow/src/merge-vertex.hpp
+
+SOURCES += thirdparty/QuadriFlow/src/optimizer.cpp
+HEADERS += thirdparty/QuadriFlow/src/optimizer.hpp
+
+SOURCES += thirdparty/QuadriFlow/src/parametrizer.cpp
+SOURCES += thirdparty/QuadriFlow/src/parametrizer-flip.cpp
+SOURCES += thirdparty/QuadriFlow/src/parametrizer-int.cpp
+SOURCES += thirdparty/QuadriFlow/src/parametrizer-mesh.cpp
+SOURCES += thirdparty/QuadriFlow/src/parametrizer-scale.cpp
+SOURCES += thirdparty/QuadriFlow/src/parametrizer-sing.cpp
+HEADERS += thirdparty/QuadriFlow/src/parametrizer.hpp
+
+HEADERS += thirdparty/QuadriFlow/src/serialize.hpp
+
+SOURCES += thirdparty/QuadriFlow/src/subdivide.cpp
+HEADERS += thirdparty/QuadriFlow/src/subdivide.hpp
 
 INCLUDEPATH += thirdparty/bullet3/src
 

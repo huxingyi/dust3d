@@ -16,6 +16,7 @@
 #include "imageforever.h"
 #include "gridmeshbuilder.h"
 #include "triangulatefaces.h"
+#include "remesher.h"
 
 MeshGenerator::MeshGenerator(Snapshot *snapshot) :
     m_snapshot(snapshot)
@@ -1310,6 +1311,25 @@ void MeshGenerator::generate()
         m_outcome->vertices = combinedVertices;
         m_outcome->triangles = combinedFaces;
         m_outcome->paintMaps = componentCache.outcomePaintMaps;
+        
+        /*
+        Remesher remesher;
+        remesher.setMesh(combinedVertices, combinedFaces);
+        remesher.remesh();
+        m_outcome->vertices = remesher.getRemeshedVertices();
+        const auto &remeshedFaces = remesher.getRemeshedFaces();
+        m_outcome->triangleAndQuads = remeshedFaces;
+        m_outcome->triangles.clear();
+        m_outcome->triangles.reserve(remeshedFaces.size() * 2);
+        for (const auto &it: remeshedFaces) {
+            m_outcome->triangles.push_back(std::vector<size_t> {
+                it[0], it[1], it[2]
+            });
+            m_outcome->triangles.push_back(std::vector<size_t> {
+                it[2], it[3], it[0]
+            });
+        }
+        */
     }
     
     // Recursively check uncombined components

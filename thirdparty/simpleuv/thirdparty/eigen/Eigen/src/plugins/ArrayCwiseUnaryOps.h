@@ -1,4 +1,9 @@
-
+// Add for QuadriFlow
+EIGEN_STRONG_INLINE const CwiseUnaryOp<internal::scalar_sign_op<Scalar>, const Derived>
+sign() const
+{
+  return derived();
+}
 
 /** \returns an expression of the coefficient-wise absolute value of \c *this
   *
