@@ -32,6 +32,7 @@ unsigned long long inline GetCurrentTime64() {
 } // namespace qflow
 
 // The following make_unique is to fix CXX14 in CXX11
+#ifndef _WIN32
 #include <memory>
 namespace std {
 template<typename T, typename... Args>
@@ -40,5 +41,6 @@ std::unique_ptr<T> make_unique(Args&&... args)
     return std::unique_ptr<T>(new T(std::forward<Args>(args)...));
 }
 }
+#endif
 
 #endif
