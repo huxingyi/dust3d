@@ -81,6 +81,16 @@ void Preferences::setFlatShading(bool flatShading)
     emit flatShadingChanged();
 }
 
+QSize Preferences::documentWindowSize() const
+{
+    return m_settings.value("documentWindowSize", QSize()).toSize();
+}
+
+void Preferences::setDocumentWindowSize(const QSize& size)
+{
+    m_settings.setValue("documentWindowSize", size);
+}
+
 void Preferences::reset()
 {
     m_settings.clear();
