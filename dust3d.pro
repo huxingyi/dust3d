@@ -6,6 +6,9 @@ RESOURCES += resources.qrc
 
 LANGUAGES = zh_CN
 
+OBJECTS_DIR=obj
+MOC_DIR=moc
+
 ############## Generate .qm from .ts #######################
 
 # parameters: var, prepend, append
