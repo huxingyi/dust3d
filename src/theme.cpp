@@ -56,7 +56,7 @@ void Theme::initAwsomeBaseSizes()
     Theme::miniIconFontSize = (int)(Theme::toolIconFontSize * 0.7);
     Theme::miniIconSize = (int)(Theme::miniIconFontSize * 1.67);
     Theme::partPreviewImageSize = (Theme::miniIconSize * 3);
-    Theme::sidebarPreferredWidth = Theme::partPreviewImageSize * 3.7;
+    Theme::sidebarPreferredWidth = Theme::partPreviewImageSize * 4; //3.7;
     Theme::posePreviewImageSize = Theme::sidebarPreferredWidth * 0.4;
     Theme::materialPreviewImageSize = Theme::posePreviewImageSize;
     Theme::cutFacePreviewImageSize = Theme::posePreviewImageSize;

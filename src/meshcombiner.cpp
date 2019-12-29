@@ -10,7 +10,7 @@
 typedef CGAL::Exact_predicates_inexact_constructions_kernel CgalKernel;
 typedef CGAL::Surface_mesh<CgalKernel::Point_3> CgalMesh;
 
-MeshCombiner::Mesh::Mesh(const std::vector<QVector3D> &vertices, const std::vector<std::vector<size_t>> &faces, bool removeSelfIntersects)
+MeshCombiner::Mesh::Mesh(const std::vector<QVector3D> &vertices, const std::vector<std::vector<size_t>> &faces, bool disableSelfIntersects)
 {
     CgalMesh *cgalMesh = nullptr;
     if (!faces.empty()) {
@@ -21,15 +21,9 @@ MeshCombiner::Mesh::Mesh(const std::vector<QVector3D> &vertices, const std::vect
             cgalMesh = nullptr;
         } else {
             if (CGAL::Polygon_mesh_processing::triangulate_faces(*cgalMesh)) {
-                if (CGAL::Polygon_mesh_processing::does_self_intersect(*cgalMesh)) {
-                    m_isSelfIntersected = true;
-                    if (removeSelfIntersects) {
-                        if (!CGAL::Polygon_mesh_processing::remove_self_intersections(*cgalMesh)) {
-                            qDebug() << "Mesh remove_self_intersections failed";
-                            delete cgalMesh;
-                            cgalMesh = nullptr;
-                        }
-                    } else {
+                if (!disableSelfIntersects) {
+                    if (CGAL::Polygon_mesh_processing::does_self_intersect(*cgalMesh)) {
+                        m_isSelfIntersected = true;
                         qDebug() << "Mesh does_self_intersect";
                         delete cgalMesh;
                         cgalMesh = nullptr;

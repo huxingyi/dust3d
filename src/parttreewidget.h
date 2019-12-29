@@ -3,6 +3,7 @@
 #include <QTreeWidget>
 #include <QUuid>
 #include <QMouseEvent>
+#include <QTreeWidgetItem>
 #include "document.h"
 
 class PartTreeWidget : public QTreeWidget
@@ -21,6 +22,7 @@ signals:
     void setComponentExpandState(QUuid componentId, bool expanded);
     void setComponentSmoothAll(QUuid componentId, float toSmoothAll);
     void setComponentSmoothSeam(QUuid componentId, float toSmoothSeam);
+    void setComponentRemeshState(QUuid componentId, bool remeshed);
     void setPartTarget(QUuid partId, PartTarget target);
     void setPartBase(QUuid partId, PartBase base);
     void moveComponent(QUuid componentId, QUuid toParentId);
@@ -93,6 +95,8 @@ private:
     bool isComponentSelected(QUuid componentId);
 private:
     const Document *m_document = nullptr;
+    QTreeWidgetItem *m_rootItem = nullptr;
+    bool m_firstSelect = true;
     std::map<QUuid, QTreeWidgetItem *> m_partItemMap;
     std::map<QUuid, QTreeWidgetItem *> m_componentItemMap;
     QFont m_normalFont;

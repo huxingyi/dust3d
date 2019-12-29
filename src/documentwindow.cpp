@@ -997,6 +997,7 @@ DocumentWindow::DocumentWindow() :
     connect(partTreeWidget, &PartTreeWidget::setComponentExpandState, m_document, &Document::setComponentExpandState);
     connect(partTreeWidget, &PartTreeWidget::setComponentSmoothAll, m_document, &Document::setComponentSmoothAll);
     connect(partTreeWidget, &PartTreeWidget::setComponentSmoothSeam, m_document, &Document::setComponentSmoothSeam);
+    connect(partTreeWidget, &PartTreeWidget::setComponentRemeshState, m_document, &Document::setComponentRemeshState);
     connect(partTreeWidget, &PartTreeWidget::moveComponent, m_document, &Document::moveComponent);
     connect(partTreeWidget, &PartTreeWidget::removeComponent, m_document, &Document::removeComponent);
     connect(partTreeWidget, &PartTreeWidget::hideOtherComponents, m_document, &Document::hideOtherComponents);

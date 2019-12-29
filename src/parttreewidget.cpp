@@ -11,6 +11,7 @@
 #include <QClipboard>
 #include <QMimeData>
 #include <QApplication>
+#include <QCheckBox>
 #include "parttreewidget.h"
 #include "partwidget.h"
 #include "skeletongraphicswidget.h"
@@ -30,8 +31,6 @@ PartTreeWidget::PartTreeWidget(const Document *document, QWidget *parent) :
     
     setColumnCount(1);
     setHeaderHidden(true);
-    
-    m_componentItemMap[QUuid()] = invisibleRootItem();
     
     setContextMenuPolicy(Qt::CustomContextMenu);
     //setIconSize(QSize(Theme::miniIconFontSize, Theme::miniIconFontSize));
@@ -61,6 +60,17 @@ PartTreeWidget::PartTreeWidget(const Document *document, QWidget *parent) :
     gradient.setColorAt(1, Qt::transparent);
     m_hightlightedPartBackground = QBrush(gradient);
     
+    QTreeWidgetItem *item = new QTreeWidgetItem(QStringList(tr("Root")));
+    invisibleRootItem()->addChild(item);
+    item->setData(0, Qt::UserRole, QVariant(QUuid().toString()));
+    item->setChildIndicatorPolicy(QTreeWidgetItem::ShowIndicator);
+    item->setExpanded(true);
+    item->setFlags((item->flags() | Qt::ItemIsEnabled) & ~(Qt::ItemIsSelectable));
+    m_rootItem = item;
+    m_componentItemMap[QUuid()] = item;
+    m_firstSelect = true;
+    selectComponent(QUuid());
+    
     connect(this, &QTreeWidget::customContextMenuRequested, this, &PartTreeWidget::showContextMenu);
     connect(this, &QTreeWidget::itemChanged, this, &PartTreeWidget::groupChanged);
     connect(this, &QTreeWidget::itemExpanded, this, &PartTreeWidget::groupExpanded);
@@ -69,6 +79,11 @@ PartTreeWidget::PartTreeWidget(const Document *document, QWidget *parent) :
 
 void PartTreeWidget::selectComponent(QUuid componentId, bool multiple)
 {
+    if (m_firstSelect) {
+        m_firstSelect = false;
+        updateComponentSelectState(QUuid(), true);
+        return;
+    }
     if (multiple) {
         if (!m_currentSelectedComponentId.isNull()) {
             m_selectedComponentIds.insert(m_currentSelectedComponentId);
@@ -97,13 +112,13 @@ void PartTreeWidget::selectComponent(QUuid componentId, bool multiple)
         m_selectedComponentIds.clear();
     }
     if (m_currentSelectedComponentId != componentId) {
-        if (!m_currentSelectedComponentId.isNull()) {
+        //if (!m_currentSelectedComponentId.isNull()) {
             updateComponentSelectState(m_currentSelectedComponentId, false);
-        }
+        //}
         m_currentSelectedComponentId = componentId;
-        if (!m_currentSelectedComponentId.isNull()) {
+        //if (!m_currentSelectedComponentId.isNull()) {
             updateComponentSelectState(m_currentSelectedComponentId, true);
-        }
+        //}
         emit currentComponentChanged(m_currentSelectedComponentId);
     }
 }
@@ -269,8 +284,29 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
             previewLabel->setText(component->name);
         } else if (!componentIds.empty()) {
             previewLabel->setText(tr("(%1 items)").arg(QString::number(componentIds.size())));
+        } else {
+            previewLabel->hide();
         }
         layout->addWidget(previewLabel);
+    }
+    QCheckBox *remeshBox = nullptr;
+    if (componentIds.size() <= 1) {
+        remeshBox = new QCheckBox();
+        remeshBox->setText(tr("Remeshed"));
+        if (nullptr == component) {
+            if (m_document->remeshed)
+                remeshBox->setChecked(true);
+            connect(remeshBox, &QCheckBox::stateChanged, this, [=]() {
+                emit setComponentRemeshState(QUuid(), remeshBox->isChecked());
+            });
+        } else {
+            if (component->remeshed)
+                remeshBox->setChecked(true);
+            connect(remeshBox, &QCheckBox::stateChanged, this, [=]() {
+                emit setComponentRemeshState(component->id, remeshBox->isChecked());
+            });
+        }
+        Theme::initCheckbox(remeshBox);
     }
     QWidget *widget = new QWidget;
     if (nullptr != component) {
@@ -325,16 +361,22 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
     
         QVBoxLayout *newLayout = new QVBoxLayout;
         newLayout->addLayout(layout);
+        if (nullptr != remeshBox)
+            newLayout->addWidget(remeshBox);
         newLayout->addLayout(componentSettingsLayout);
         widget->setLayout(newLayout);
     } else {
-        widget->setLayout(layout);
+        QVBoxLayout *newLayout = new QVBoxLayout;
+        newLayout->addLayout(layout);
+        if (nullptr != remeshBox)
+            newLayout->addWidget(remeshBox);
+        widget->setLayout(newLayout);
     }
     forDisplayPartImage.setDefaultWidget(widget);
-    if (!componentIds.empty()) {
+    //if (!componentIds.empty()) {
         contextMenu.addAction(&forDisplayPartImage);
         contextMenu.addSeparator();
-    }
+    //}
     
     QAction showAction(tr("Show"), this);
     showAction.setIcon(Theme::awesome()->icon(fa::eye));
@@ -456,12 +498,14 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
     
     QAction collapseAllAction(tr("Collapse All"), this);
     connect(&collapseAllAction, &QAction::triggered, [=]() {
+        m_rootItem->setExpanded(false);
         emit collapseAllComponents();
     });
     contextMenu.addAction(&collapseAllAction);
     
     QAction expandAllAction(tr("Expand All"), this);
     connect(&expandAllAction, &QAction::triggered, [=]() {
+        m_rootItem->setExpanded(true);
         emit expandAllComponents();
     });
     contextMenu.addAction(&expandAllAction);
@@ -810,9 +854,9 @@ void PartTreeWidget::componentChildrenChanged(QUuid componentId)
     addComponentChildrenToItem(componentId, parentItem);
     
     // Fix the last item show in the wrong place sometimes
-    int childCount = invisibleRootItem()->childCount();
+    int childCount = m_rootItem->childCount();
     if (childCount > 0) {
-        QTreeWidgetItem *lastItem = invisibleRootItem()->child(childCount - 1);
+        QTreeWidgetItem *lastItem = m_rootItem->child(childCount - 1);
         bool isExpanded = lastItem->isExpanded();
         lastItem->setExpanded(!isExpanded);
         lastItem->setExpanded(isExpanded);
@@ -821,10 +865,10 @@ void PartTreeWidget::componentChildrenChanged(QUuid componentId)
 
 void PartTreeWidget::removeAllContent()
 {
-    qDeleteAll(invisibleRootItem()->takeChildren());
+    qDeleteAll(m_rootItem->takeChildren());
     m_partItemMap.clear();
     m_componentItemMap.clear();
-    m_componentItemMap[QUuid()] = invisibleRootItem();
+    m_componentItemMap[QUuid()] = m_rootItem;
 }
 
 void PartTreeWidget::componentRemoved(QUuid componentId)

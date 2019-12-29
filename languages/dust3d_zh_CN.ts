@@ -736,6 +736,10 @@ Tips:
         <source>Paste Color</source>
         <translation>粘贴颜色</translation>
     </message>
+    <message>
+        <source>Remeshed</source>
+        <translation>重新网格化</translation>
+    </message>
 </context>
 <context>
     <name>PartWidget</name>

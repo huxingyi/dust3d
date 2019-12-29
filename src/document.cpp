@@ -37,6 +37,7 @@ Document::Document() :
     textureAmbientOcclusionImage(nullptr),
     rigType(RigType::None),
     weldEnabled(true),
+    remeshed(false),
     // private
     m_isResultMeshObsolete(false),
     m_meshGenerator(nullptr),
@@ -1201,6 +1202,8 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
                 component["smoothAll"] = QString::number(componentIt.second.smoothAll);
             if (componentIt.second.smoothSeamAdjusted())
                 component["smoothSeam"] = QString::number(componentIt.second.smoothSeam);
+            if (componentIt.second.remeshed)
+                component["remeshed"] = "true";
             QStringList childIdList;
             for (const auto &childId: componentIt.second.childrenIds) {
                 childIdList.append(childId.toString());
@@ -1315,6 +1318,8 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
         canvas["originY"] = QString::number(getOriginY());
         canvas["originZ"] = QString::number(getOriginZ());
         canvas["rigType"] = RigTypeToString(rigType);
+        if (this->remeshed)
+            canvas["remeshed"] = "true";
         snapshot->canvas = canvas;
     }
 }
@@ -1472,6 +1477,7 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
     bool isOriginChanged = false;
     bool isRigTypeChanged = false;
     if (!fromPaste) {
+        this->remeshed = isTrueValueString(valueOfKeyInMapOrEmpty(snapshot.canvas, "remeshed"));
         const auto &originXit = snapshot.canvas.find("originX");
         const auto &originYit = snapshot.canvas.find("originY");
         const auto &originZit = snapshot.canvas.find("originZ");
@@ -1704,6 +1710,7 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
         const auto &smoothSeamIt = componentKv.second.find("smoothSeam");
         if (smoothSeamIt != componentKv.second.end())
             component.setSmoothSeam(smoothSeamIt->second.toFloat());
+        component.remeshed = isTrueValueString(valueOfKeyInMapOrEmpty(componentKv.second, "remeshed"));
         //qDebug() << "Add component:" << component.id << " old:" << componentKv.first << "name:" << component.name;
         if ("partId" == linkDataType) {
             QUuid partId = oldNewIdMap[QUuid(linkData)];
@@ -2486,6 +2493,29 @@ void Document::setComponentExpandState(QUuid componentId, bool expanded)
     component->second.expanded = expanded;
     emit componentExpandStateChanged(componentId);
     emit optionsChanged();
+}
+
+void Document::setComponentRemeshState(QUuid componentId, bool remeshed)
+{
+    if (componentId.isNull()) {
+        if (this->remeshed == remeshed)
+            return;
+        this->remeshed = remeshed;
+        emit componentRemeshStateChanged(componentId);
+        emit skeletonChanged();
+        return;
+    }
+
+    Component *component = (Component *)findComponent(componentId);
+    if (nullptr == component)
+        return;
+    if (component->remeshed == remeshed)
+        return;
+    
+    component->remeshed = remeshed;
+    component->dirty = true;
+    emit componentRemeshStateChanged(componentId);
+    emit skeletonChanged();
 }
 
 void Document::createNewComponentAndMoveThisIn(QUuid componentId)

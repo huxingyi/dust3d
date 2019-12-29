@@ -2,6 +2,7 @@
 #include <field-math.hpp>
 #include <optimizer.hpp>
 #include <parametrizer.hpp>
+#include <cmath>
 #ifdef WITH_CUDA
 #include <cuda_runtime.h>
 #endif
@@ -20,13 +21,19 @@ void Remesher::setMesh(const std::vector<QVector3D> &vertices,
     m_triangles = triangles;
 }
 
-const std::vector<QVector3D> &Remesher::getRemeshedVertices()
+const std::vector<QVector3D> &Remesher::getRemeshedVertices() const
 {
     return m_remeshedVertices;
 }
-const std::vector<std::vector<size_t>> &Remesher::getRemeshedFaces()
+
+const std::vector<std::vector<size_t>> &Remesher::getRemeshedFaces() const
 {
     return m_remeshedFaces;
+}
+
+const std::vector<std::pair<QUuid, QUuid>> &Remesher::getRemeshedVertexSources() const
+{
+    return m_remeshedVertexSources;
 }
 
 void Remesher::remesh()
@@ -104,6 +111,39 @@ void Remesher::remesh()
         });
     }
     
-    printf("m_remeshedVertices.size:%lu\r\n", m_remeshedVertices.size());
-    printf("m_remeshedFaces.size:%lu\r\n", m_remeshedFaces.size());
+    resolveSources();
+}
+
+void Remesher::setNodes(const std::vector<std::pair<QVector3D, float>> &nodes,
+        const std::vector<std::pair<QUuid, QUuid>> &sourceIds)
+{
+    m_nodes = nodes;
+    m_sourceIds = sourceIds;
+}
+
+void Remesher::resolveSources()
+{
+    m_remeshedVertexSources.resize(m_remeshedVertices.size());
+    std::vector<float> nodeRadius2(m_nodes.size());
+    for (size_t nodeIndex = 0; nodeIndex < m_nodes.size(); ++nodeIndex) {
+        nodeRadius2[nodeIndex] = std::pow(m_nodes[nodeIndex].second, 2);
+    }
+    for (size_t vertexIndex = 0; vertexIndex < m_remeshedVertices.size(); ++vertexIndex) {
+        std::vector<std::pair<float, size_t>> matches;
+        const auto &vertexPosition = m_remeshedVertices[vertexIndex];
+        for (size_t nodeIndex = 0; nodeIndex < m_nodes.size(); ++nodeIndex) {
+            const auto &nodePosition = m_nodes[nodeIndex].first;
+            auto length2 = (vertexPosition - nodePosition).lengthSquared();
+            if (length2 > nodeRadius2[nodeIndex])
+                continue;
+            matches.push_back(std::make_pair(length2, nodeIndex));
+        }
+        std::sort(matches.begin(), matches.end(), [](const std::pair<float, size_t> &first,
+                const std::pair<float, size_t> &second) {
+            return first.first < second.first;
+        });
+        if (matches.empty())
+            continue;
+        m_remeshedVertexSources[vertexIndex] = m_sourceIds[matches[0].second];
+    }
 }
