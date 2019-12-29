@@ -2,6 +2,7 @@
 #define PREFERENCES_H
 #include <QSettings>
 #include <QColor>
+#include <QSize>
 #include "combinemode.h"
 
 class Preferences : public QObject
@@ -13,6 +14,8 @@ public:
     CombineMode componentCombineMode() const;
     const QColor &partColor() const;
     bool flatShading() const;
+    QSize documentWindowSize() const;
+    void setDocumentWindowSize(const QSize&);
 signals:
     void componentCombineModeChanged();
     void partColorChanged();

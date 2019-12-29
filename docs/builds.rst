@@ -67,3 +67,14 @@ Here is the snapshot of the command line of one build, you may use different def
     $ qmake -qt=5 -makefile
     $ make
     $ ./dust3d
+
+* Fedora
+
+.. code-block:: sh
+
+    $ sudo dnf install qt5-qtbase-devel CGAL-devel
+    $ git clone https://github.com/huxingyi/dust3d.git
+    $ cd dust3d
+    $ qmake-qt5 -makefile
+    $ make
+    $ ./dust3d

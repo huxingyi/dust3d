@@ -506,6 +506,10 @@ DocumentWindow::DocumentWindow() :
     
     m_fileMenu->addSeparator();
 
+    m_quitAction = m_fileMenu->addAction(tr("&Quit"),
+                                         this, &DocumentWindow::close,
+                                         QKeySequence::Quit);
+
     connect(m_fileMenu, &QMenu::aboutToShow, [=]() {
         m_exportAsObjAction->setEnabled(m_graphicsWidget->hasItems());
         //m_exportAsObjPlusMaterialsAction->setEnabled(m_graphicsWidget->hasItems());
@@ -1174,26 +1178,38 @@ DocumentWindow *DocumentWindow::createDocumentWindow()
 {
     DocumentWindow *documentWindow = new DocumentWindow();
     documentWindow->setAttribute(Qt::WA_DeleteOnClose);
-    documentWindow->showMaximized();
+
+    QSize size = Preferences::instance().documentWindowSize();
+    if (size.isValid()) {
+        documentWindow->resize(size);
+        documentWindow->show();
+    } else {
+        documentWindow->showMaximized();
+    }
+
     return documentWindow;
 }
 
 void DocumentWindow::closeEvent(QCloseEvent *event)
 {
-    if (m_documentSaved) {
-        event->accept();
-        return;
+    if (! m_documentSaved) {
+        QMessageBox::StandardButton answer = QMessageBox::question(this,
+            APP_NAME,
+            tr("Do you really want to close while there are unsaved changes?"),
+            QMessageBox::Yes | QMessageBox::No,
+            QMessageBox::No);
+        if (answer == QMessageBox::No) {
+            event->ignore();
+            return;
+        }
     }
 
-    QMessageBox::StandardButton answer = QMessageBox::question(this,
-        APP_NAME,
-        tr("Do you really want to close while there are unsaved changes?"),
-        QMessageBox::Yes | QMessageBox::No,
-        QMessageBox::No);
-    if (answer == QMessageBox::Yes)
-        event->accept();
-    else
-        event->ignore();
+    QSize saveSize;
+    if (!isMaximized())
+        saveSize = size();
+    Preferences::instance().setDocumentWindowSize(saveSize);
+
+    event->accept();
 }
 
 void DocumentWindow::setCurrentFilename(const QString &filename)

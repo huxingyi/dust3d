@@ -118,6 +118,7 @@ private:
     QAction *m_showPreferencesAction;
     QMenu *m_exportMenu;
     QAction *m_changeTurnaroundAction;
+    QAction *m_quitAction;
     
     QAction *m_exportAsObjAction;
     QAction *m_exportAsObjPlusMaterialsAction;
