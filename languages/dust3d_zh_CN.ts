@@ -390,6 +390,10 @@ Tips:
         <source>Marker pen</source>
         <translation>马克笔</translation>
     </message>
+    <message>
+        <source>&amp;Quit</source>
+        <translation>退出(&amp;Q)</translation>
+    </message>
 </context>
 <context>
     <name>ExportPreviewWidget</name>
