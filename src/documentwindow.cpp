@@ -506,6 +506,10 @@ DocumentWindow::DocumentWindow() :
     
     m_fileMenu->addSeparator();
 
+    m_quitAction = m_fileMenu->addAction(tr("&Quit"),
+                                         this, &DocumentWindow::close,
+                                         QKeySequence::Quit);
+
     connect(m_fileMenu, &QMenu::aboutToShow, [=]() {
         m_exportAsObjAction->setEnabled(m_graphicsWidget->hasItems());
         //m_exportAsObjPlusMaterialsAction->setEnabled(m_graphicsWidget->hasItems());
