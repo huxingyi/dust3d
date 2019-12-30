@@ -137,7 +137,7 @@ void PartTreeWidget::updateComponentSelectState(QUuid componentId, bool selected
     }
     if (!component->linkToPartId.isNull()) {
         auto item = m_partItemMap.find(component->linkToPartId);
-        if (item != m_componentItemMap.end()) {
+        if (item != m_partItemMap.end()) {
             PartWidget *widget = (PartWidget *)itemWidget(item->second, 0);
             // Unnormal state updating call should be called before check state updating call
             widget->updateUnnormalState(component->combineMode != CombineMode::Normal);

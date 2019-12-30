@@ -335,7 +335,7 @@ void UvUnwrapper::calculateSizeAndRemoveInvalidCharts()
     auto charts = m_charts;
     auto chartSourcePartitions = m_chartSourcePartitions;
     m_charts.clear();
-    chartSourcePartitions.clear();
+    m_chartSourcePartitions.clear();
     for (size_t chartIndex = 0; chartIndex < charts.size(); ++chartIndex) {
         auto &chart = charts[chartIndex];
         float left, top, right, bottom;
