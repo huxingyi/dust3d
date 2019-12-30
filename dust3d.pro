@@ -1,5 +1,6 @@
 QT += core widgets opengl network
 CONFIG += release
+CONFIG += force_debug_info
 DEFINES += NDEBUG
 DEFINES += QT_MESSAGELOGCONTEXT
 RESOURCES += resources.qrc
