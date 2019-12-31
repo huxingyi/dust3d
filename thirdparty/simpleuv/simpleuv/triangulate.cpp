@@ -51,7 +51,7 @@ static bool pointInTriangle(const Eigen::Vector3d &a, const Eigen::Vector3d &b, 
 
 static Eigen::Vector3d ringNorm(const std::vector<Vertex> &vertices, const std::vector<size_t> &ring)
 {
-    Eigen::Vector3d normal;
+    Eigen::Vector3d normal(0.0, 0.0, 0.0);
     for (size_t i = 0; i < ring.size(); ++i) {
         auto j = (i + 1) % ring.size();
         auto k = (i + 2) % ring.size();
