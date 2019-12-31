@@ -48,7 +48,8 @@ after_test:
   - set TAG=%APPVEYOR_REPO_TAG_NAME%
   - if "%TAG%" == ""
     set TAG=unstable
-  - 7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\release\dust3d.pdb
+  - if "%TAG%" == "unstable"
+    7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\release\dust3d.pdb
   - 7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\release\dust3d.exe
   - 7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-4.13\build\bin\Release\CGAL-vc140-mt-4.13.dll
   - 7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-4.13\auxiliary\gmp\lib\libgmp-10.dll

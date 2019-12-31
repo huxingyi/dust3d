@@ -1,6 +1,5 @@
 QT += core widgets opengl network
 CONFIG += release
-CONFIG += force_debug_info
 DEFINES += NDEBUG
 DEFINES += QT_MESSAGELOGCONTEXT
 RESOURCES += resources.qrc
@@ -47,6 +46,10 @@ macx {
 	}
 }
 ##########################################################
+
+win32 {
+	CONFIG += force_debug_info
+}
 
 win32 {
 	RC_FILE = dust3d.rc
@@ -121,7 +124,8 @@ unix:!macx {
 }
 
 win32 {
-	QMAKE_CXXFLAGS += /O2
+	#QMAKE_CXXFLAGS += /O2
+	QMAKE_CXXFLAGS += /Od
 }
 
 include(thirdparty/QtAwesome/QtAwesome/QtAwesome.pri)
