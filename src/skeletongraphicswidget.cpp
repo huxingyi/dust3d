@@ -1782,11 +1782,6 @@ void SkeletonGraphicsWidget::shortcutPaste()
     emit paste();
 }
 
-void SkeletonGraphicsWidget::shortcutSave()
-{
-    emit save();
-}
-
 void SkeletonGraphicsWidget::shortcutSelectMode()
 {
     emit setEditMode(SkeletonDocumentEditMode::Select);

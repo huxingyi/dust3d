@@ -425,19 +425,19 @@ DocumentWindow::DocumentWindow() :
     setCentralWidget(centralWidget);
     setWindowTitle(APP_NAME);
 
-    m_fileMenu = menuBar()->addMenu(tr("File"));
+    m_fileMenu = menuBar()->addMenu(tr("&File"));
 
     m_newWindowAction = new QAction(tr("New Window"), this);
     connect(m_newWindowAction, &QAction::triggered, this, &DocumentWindow::newWindow, Qt::QueuedConnection);
     m_fileMenu->addAction(m_newWindowAction);
 
-    m_newDocumentAction = new QAction(tr("New"), this);
-    connect(m_newDocumentAction, &QAction::triggered, this, &DocumentWindow::newDocument);
-    m_fileMenu->addAction(m_newDocumentAction);
+    m_newDocumentAction = m_fileMenu->addAction(tr("&New"),
+                                         this, &DocumentWindow::newDocument,
+                                         QKeySequence::New);
 
-    m_openAction = new QAction(tr("Open..."), this);
-    connect(m_openAction, &QAction::triggered, this, &DocumentWindow::open, Qt::QueuedConnection);
-    m_fileMenu->addAction(m_openAction);
+    m_openAction = m_fileMenu->addAction(tr("&Open..."),
+                                         this, &DocumentWindow::open,
+                                         QKeySequence::Open);
     
     m_openExampleMenu = new QMenu(tr("Open Example"));
     std::vector<QString> exampleModels = {
@@ -460,9 +460,9 @@ DocumentWindow::DocumentWindow() :
     
     m_fileMenu->addMenu(m_openExampleMenu);
 
-    m_saveAction = new QAction(tr("Save"), this);
-    connect(m_saveAction, &QAction::triggered, this, &DocumentWindow::save, Qt::QueuedConnection);
-    m_fileMenu->addAction(m_saveAction);
+    m_saveAction = m_fileMenu->addAction(tr("&Save"),
+                                         this, &DocumentWindow::save,
+                                         QKeySequence::Save);
 
     m_saveAsAction = new QAction(tr("Save As..."), this);
     connect(m_saveAsAction, &QAction::triggered, this, &DocumentWindow::saveAs, Qt::QueuedConnection);
@@ -517,7 +517,7 @@ DocumentWindow::DocumentWindow() :
         //m_exportRenderedAsImageAction->setEnabled(m_graphicsWidget->hasItems());
     });
 
-    m_editMenu = menuBar()->addMenu(tr("Edit"));
+    m_editMenu = menuBar()->addMenu(tr("&Edit"));
 
     m_addAction = new QAction(tr("Add..."), this);
     connect(m_addAction, &QAction::triggered, [=]() {
@@ -709,7 +709,7 @@ DocumentWindow::DocumentWindow() :
         m_unselectAllAction->setEnabled(m_graphicsWidget->hasSelection());
     });
 
-    m_viewMenu = menuBar()->addMenu(tr("View"));
+    m_viewMenu = menuBar()->addMenu(tr("&View"));
 
     auto isModelSitInVisibleArea = [](ModelWidget *modelWidget) {
         QRect parentRect = QRect(QPoint(0, 0), modelWidget->parentWidget()->size());
@@ -740,7 +740,7 @@ DocumentWindow::DocumentWindow() :
         m_resetModelWidgetPosAction->setEnabled(!isModelSitInVisibleArea(m_modelRenderWidget));
     });
     
-    m_windowMenu = menuBar()->addMenu(tr("Window"));
+    m_windowMenu = menuBar()->addMenu(tr("&Window"));
     
     m_showPartsListAction = new QAction(tr("Parts"), this);
     connect(m_showPartsListAction, &QAction::triggered, [=]() {
@@ -805,7 +805,7 @@ DocumentWindow::DocumentWindow() :
     connect(m_showDebugDialogAction, &QAction::triggered, g_logBrowser, &LogBrowser::showDialog);
     m_windowMenu->addAction(m_showDebugDialogAction);
 
-    m_helpMenu = menuBar()->addMenu(tr("Help"));
+    m_helpMenu = menuBar()->addMenu(tr("&Help"));
     
     m_gotoHomepageAction = new QAction(tr("Dust3D Homepage"), this);
     connect(m_gotoHomepageAction, &QAction::triggered, this, &DocumentWindow::gotoHomepage);
@@ -965,7 +965,6 @@ DocumentWindow::DocumentWindow() :
     connect(graphicsWidget, &SkeletonGraphicsWidget::disableAllPositionRelatedLocks, m_document, &Document::disableAllPositionRelatedLocks);
 
     connect(graphicsWidget, &SkeletonGraphicsWidget::changeTurnaround, this, &DocumentWindow::changeTurnaround);
-    connect(graphicsWidget, &SkeletonGraphicsWidget::save, this, &DocumentWindow::save);
     connect(graphicsWidget, &SkeletonGraphicsWidget::open, this, &DocumentWindow::open);
     connect(graphicsWidget, &SkeletonGraphicsWidget::showCutFaceSettingPopup, this, &DocumentWindow::showCutFaceSettingPopup);
     

@@ -469,7 +469,6 @@ signals:
     void changeTurnaround();
     void batchChangeBegin();
     void batchChangeEnd();
-    void save();
     void open();
     void exportResult();
     void breakEdge(QUuid edgeId);
@@ -616,7 +615,6 @@ public slots:
     void shortcutCut();
     void shortcutCopy();
     void shortcutPaste();
-    void shortcutSave();
     void shortcutSelectMode();
     void shortcutPaintMode();
     void shortcutZoomRenderedModelByMinus10();
