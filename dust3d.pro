@@ -124,8 +124,7 @@ unix:!macx {
 }
 
 win32 {
-	#QMAKE_CXXFLAGS += /O2
-	QMAKE_CXXFLAGS += /Od
+	QMAKE_CXXFLAGS_RELEASE += /O2
 }
 
 include(thirdparty/QtAwesome/QtAwesome/QtAwesome.pri)

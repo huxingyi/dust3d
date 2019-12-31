@@ -116,4 +116,15 @@ deploy:
     draft: false
     prerelease: false
     on:
+      branch: ci
+
+  - provider: GitHub
+    release: $(TAG)
+    force_update: true
+    auth_token:
+      secure: Rhzhefjk89WN2tDht8vVKYAojGfR23LhDPKPxhQwbT7k3qswSWjmoFoDTpIHNfc0
+    artifact: platform_zips
+    draft: false
+    prerelease: false
+    on:
       APPVEYOR_REPO_TAG: true

@@ -90,7 +90,7 @@ namespace igl {
     std::function< void(const ChildrenType, const int) > helper;
     helper = [&helper,&translate_center,&get_octant,&m,
               &zero_to_seven,&neg_ones,&P,
-              &point_indices,&children,&centers,&widths]
+              &point_indices,&children,&centers,&widths,&MAX_DEPTH]
     (const ChildrenType index, const int depth)-> void
     {
       if(point_indices.at(index).size() > 1 && depth < MAX_DEPTH){
@@ -106,7 +106,7 @@ namespace igl {
         for(ChildrenType i = 0; i < 8; i++){
           children.emplace_back(neg_ones);
           point_indices.emplace_back(std::vector<IndexType>());
-          centers.emplace_back(translate_center(curr_center,h,i));
+          centers.emplace_back(translate_center(curr_center,h/2,i));
           widths.emplace_back(h);
         }
 
@@ -174,3 +174,7 @@ namespace igl {
   }
 }
 
+#ifdef IGL_STATIC_LIBRARY
+// Explicit template instantiation
+template void igl::octree<Eigen::Matrix<double, -1, -1, 0, -1, -1>, int, Eigen::Matrix<int, -1, 8, 0, -1, 8>, Eigen::Matrix<double, -1, 3, 0, -1, 3>, Eigen::Matrix<double, -1, 1, 0, -1, 1> >(Eigen::MatrixBase<Eigen::Matrix<double, -1, -1, 0, -1, -1> > const&, std::vector<std::vector<int, std::allocator<int> >, std::allocator<std::vector<int, std::allocator<int> > > >&, Eigen::PlainObjectBase<Eigen::Matrix<int, -1, 8, 0, -1, 8> >&, Eigen::PlainObjectBase<Eigen::Matrix<double, -1, 3, 0, -1, 3> >&, Eigen::PlainObjectBase<Eigen::Matrix<double, -1, 1, 0, -1, 1> >&);
+#endif
