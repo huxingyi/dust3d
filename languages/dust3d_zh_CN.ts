@@ -99,28 +99,12 @@ Tips:
         <translation>动作</translation>
     </message>
     <message>
-        <source>File</source>
-        <translation>文件</translation>
-    </message>
-    <message>
         <source>New Window</source>
         <translation>新建窗口</translation>
     </message>
     <message>
-        <source>New</source>
-        <translation>新建</translation>
-    </message>
-    <message>
-        <source>Open...</source>
-        <translation>打开...</translation>
-    </message>
-    <message>
         <source>Open Example</source>
         <translation>打开例子</translation>
-    </message>
-    <message>
-        <source>Save</source>
-        <translation>保存</translation>
     </message>
     <message>
         <source>Save As...</source>
@@ -145,10 +129,6 @@ Tips:
     <message>
         <source>Change Reference Sheet...</source>
         <translation>修改参考图...</translation>
-    </message>
-    <message>
-        <source>Edit</source>
-        <translation>编辑</translation>
     </message>
     <message>
         <source>Add...</source>
@@ -255,10 +235,6 @@ Tips:
         <translation>取消全选</translation>
     </message>
     <message>
-        <source>View</source>
-        <translation>视图</translation>
-    </message>
-    <message>
         <source>Show Model</source>
         <translation>显示模型</translation>
     </message>
@@ -267,20 +243,12 @@ Tips:
         <translation>切换网格线</translation>
     </message>
     <message>
-        <source>Window</source>
-        <translation>窗口</translation>
-    </message>
-    <message>
         <source>Dialogs</source>
         <translation>对话框</translation>
     </message>
     <message>
         <source>Debug</source>
         <translation>调试</translation>
-    </message>
-    <message>
-        <source>Help</source>
-        <translation>帮助</translation>
     </message>
     <message>
         <source>Dust3D Homepage</source>
@@ -393,6 +361,38 @@ Tips:
     <message>
         <source>&amp;Quit</source>
         <translation>退出(&amp;Q)</translation>
+    </message>
+    <message>
+        <source>&amp;File</source>
+        <translation>文件(&amp;F)</translation>
+    </message>
+    <message>
+        <source>&amp;New</source>
+        <translation>新建(&amp;N)</translation>
+    </message>
+    <message>
+        <source>&amp;Open...</source>
+        <translation>打开(&amp;O)</translation>
+    </message>
+    <message>
+        <source>&amp;Save</source>
+        <translation>保存(&amp;S)</translation>
+    </message>
+    <message>
+        <source>&amp;Edit</source>
+        <translation>编辑(&amp;E)</translation>
+    </message>
+    <message>
+        <source>&amp;View</source>
+        <translation>查看(&amp;V)</translation>
+    </message>
+    <message>
+        <source>&amp;Window</source>
+        <translation>窗口(&amp;W)</translation>
+    </message>
+    <message>
+        <source>&amp;Help</source>
+        <translation>帮助(&amp;H)</translation>
     </message>
 </context>
 <context>
