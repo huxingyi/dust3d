@@ -503,13 +503,18 @@ INCLUDEPATH += thirdparty/QuadriFlow/3rd/pss
 INCLUDEPATH += thirdparty/QuadriFlow/3rd/lemon-1.3.1
 
 macx: {
-	exists(/usr/local/opt/libomp) {
-#       Install OpenMP: brew install libomp
-		DEFINES += WITH_OMP
-		QMAKE_CXXFLAGS += -Xpreprocessor -fopenmp
-		INCLUDEPATH += /usr/local/opt/libomp/include
-		LIBS += -L/usr/local/opt/libomp/lib -lomp
+	!exists(/usr/local/opt/libomp) {
+		error("Please install OpenMP: brew install libomp")
 	}
+	DEFINES += WITH_OMP
+	QMAKE_CXXFLAGS += -Xpreprocessor -fopenmp
+	INCLUDEPATH += /usr/local/opt/libomp/include
+	LIBS += -L/usr/local/opt/libomp/lib -lomp
+}
+
+win32 {
+	QMAKE_CXXFLAGS += /openmp
+	DEFINES += WITH_OMP
 }
 
 win32 {

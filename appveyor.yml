@@ -36,6 +36,7 @@ after_test:
   # Check Qt plugins by following https://wiki.qt.io/Deploy_an_Application_on_Windows
   - set /p VCRedistVersion=<"C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\Microsoft.VCRedistVersion.default.txt"
   - set VCREDIST_CRT_DIR=C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Redist\MSVC\%VCRedistVersion%\%PLATFORM%\Microsoft.VC141.CRT
+  - set VCREDIST_OPENMP_DIR=C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Redist\MSVC\%VCRedistVersion%\%PLATFORM%\Microsoft.VC141.OPENMP
 
   - set TAG=%APPVEYOR_REPO_TAG_NAME%
   - if "%TAG%" == ""
@@ -55,6 +56,7 @@ after_test:
   - 7z a dust3d-%TAG%-%PLATFORM%.zip %QTDIR%\bin\Qt5Network.dll
   - 7z a dust3d-%TAG%-%PLATFORM%.zip "%VCREDIST_CRT_DIR%\msvcp140.dll"
   - 7z a dust3d-%TAG%-%PLATFORM%.zip "%VCREDIST_CRT_DIR%\vcruntime140.dll"
+  - 7z a dust3d-%TAG%-%PLATFORM%.zip "%VCREDIST_OPENMP_DIR%\vcomp140.dll"
   - mkdir platforms
   - copy %QTDIR%\plugins\platforms\qwindows.dll %APPVEYOR_BUILD_FOLDER%\platforms\qwindows.dll
   - 7z a dust3d-%TAG%-%PLATFORM%.zip -r %APPVEYOR_BUILD_FOLDER%\platforms\
