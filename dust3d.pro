@@ -517,6 +517,12 @@ win32 {
 	DEFINES += WITH_OMP
 }
 
+unix:!macx {
+	QMAKE_CXXFLAGS += -fopenmp
+	DEFINES += WITH_OMP
+	LIBS += -lgomp
+}
+
 win32 {
 #   Fix error LNK2001: unresolved external symbol "struct lemon::Invalid const lemon::INVALID" (?INVALID@lemon@@3UInvalid@1@B)
 	DEFINES += LEMON_ONLY_TEMPLATES
