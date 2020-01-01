@@ -305,8 +305,11 @@ DocumentWindow::DocumentWindow() :
     m_modelRenderWidget->setMinimumSize(DocumentWindow::m_modelRenderWidgetInitialSize, DocumentWindow::m_modelRenderWidgetInitialSize);
     m_modelRenderWidget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     m_modelRenderWidget->move(DocumentWindow::m_modelRenderWidgetInitialX, DocumentWindow::m_modelRenderWidgetInitialY);
-    
     m_modelRenderWidget->setMousePickRadius(m_document->mousePickRadius());
+#ifndef __linux__
+    // FIXME: Toggle wireframe crash on linux/MesaGL
+    m_modelRenderWidget->toggleWireframe();
+#endif
     
     connect(m_modelRenderWidget, &ModelWidget::mouseRayChanged, m_document,
             [=](const QVector3D &nearPosition, const QVector3D &farPosition) {
