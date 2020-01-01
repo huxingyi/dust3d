@@ -1,15 +1,10 @@
-os: Visual Studio 2015
+os: Visual Studio 2017
 
 environment:
   matrix:
-    #- platform: x64
-    #  target: x86_64-pc-windows-msvc
-    #  qtdir: C:\Qt\5.10.1\msvc2015_64
-    #  sysdirname: SysWOW64
-
     - platform: x86
       target: i686-pc-windows-msvc
-      qtdir: C:\Qt\5.10.1\msvc2015
+      qtdir: C:\Qt\5.13.2\msvc2017
       sysdirname: system32
 
 cache:
@@ -17,11 +12,7 @@ cache:
 
 install:
   - if "%PLATFORM%" == "x86"
-    call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86
-  - if "%PLATFORM%" == "x64"
-    call "C:\Program Files\Microsoft SDKs\Windows\v7.1\Bin\SetEnv.cmd" /x64
-  - if "%PLATFORM%" == "x64"
-    call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" x86_amd64
+    call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars32.bat"
   - if not exist CGAL-4.13-Setup.exe
       appveyor DownloadFile https://github.com/CGAL/cgal/releases/download/releases/CGAL-4.13/CGAL-4.13-Setup.exe -FileName CGAL-4.13-Setup.exe
   - CGAL-4.13-Setup.exe /S /D=%APPVEYOR_BUILD_FOLDER%\CGAL-4.13
@@ -29,9 +20,7 @@ install:
   - mkdir build
   - cd build
   - if "%PLATFORM%" == "x86"
-    cmake -G "Visual Studio 14 2015" ../ -DBOOST_INCLUDEDIR=C:\Libraries\boost_1_66_0
-  - if "%PLATFORM%" == "x64"
-    cmake -G "Visual Studio 14 2015 Win64" ../ -DBOOST_INCLUDEDIR=C:\Libraries\boost_1_66_0
+    cmake -G "Visual Studio 15 2017" ../ -DBOOST_INCLUDEDIR=C:\Libraries\boost_1_66_0
   - msbuild /p:Configuration=Release ALL_BUILD.vcxproj
   - cd %APPVEYOR_BUILD_FOLDER%
 
@@ -45,6 +34,9 @@ test_script:
 after_test:
   # Check deps by Dependency Walker
   # Check Qt plugins by following https://wiki.qt.io/Deploy_an_Application_on_Windows
+  - set /p VCRedistVersion=<"C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\Microsoft.VCRedistVersion.default.txt"
+  - set VCREDIST_CRT_DIR=C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Redist\MSVC\%VCRedistVersion%\%PLATFORM%\Microsoft.VC141.CRT
+
   - set TAG=%APPVEYOR_REPO_TAG_NAME%
   - if "%TAG%" == ""
     set TAG=unstable
@@ -61,8 +53,8 @@ after_test:
   - 7z a dust3d-%TAG%-%PLATFORM%.zip %QTDIR%\bin\Qt5Gui.dll
   - 7z a dust3d-%TAG%-%PLATFORM%.zip %QTDIR%\bin\Qt5Core.dll
   - 7z a dust3d-%TAG%-%PLATFORM%.zip %QTDIR%\bin\Qt5Network.dll
-  - 7z a dust3d-%TAG%-%PLATFORM%.zip "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\redist\%PLATFORM%\Microsoft.VC140.CRT\msvcp140.dll"
-  - 7z a dust3d-%TAG%-%PLATFORM%.zip "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\redist\%PLATFORM%\Microsoft.VC140.CRT\vcruntime140.dll"
+  - 7z a dust3d-%TAG%-%PLATFORM%.zip "%VCREDIST_CRT_DIR%\msvcp140.dll"
+  - 7z a dust3d-%TAG%-%PLATFORM%.zip "%VCREDIST_CRT_DIR%\vcruntime140.dll"
   - mkdir platforms
   - copy %QTDIR%\plugins\platforms\qwindows.dll %APPVEYOR_BUILD_FOLDER%\platforms\qwindows.dll
   - 7z a dust3d-%TAG%-%PLATFORM%.zip -r %APPVEYOR_BUILD_FOLDER%\platforms\
