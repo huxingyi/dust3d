@@ -502,6 +502,16 @@ INCLUDEPATH += thirdparty/QuadriFlow/3rd/pcg32
 INCLUDEPATH += thirdparty/QuadriFlow/3rd/pss
 INCLUDEPATH += thirdparty/QuadriFlow/3rd/lemon-1.3.1
 
+macx: {
+	exists(/usr/local/opt/libomp) {
+#       Install OpenMP: brew install libomp
+		DEFINES += WITH_OMP
+		QMAKE_CXXFLAGS += -Xpreprocessor -fopenmp
+		INCLUDEPATH += /usr/local/opt/libomp/include
+		LIBS += -L/usr/local/opt/libomp/lib -lomp
+	}
+}
+
 win32 {
 #   Fix error LNK2001: unresolved external symbol "struct lemon::Invalid const lemon::INVALID" (?INVALID@lemon@@3UInvalid@1@B)
 	DEFINES += LEMON_ONLY_TEMPLATES

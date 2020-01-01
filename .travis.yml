@@ -55,6 +55,9 @@ install:
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get install qt59base qt59tools --force-yes; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then source /opt/qt59/bin/qt59-env.sh; fi
 
+  # (Mac) Install OpenMP
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then HOMEBREW_VERBOSE_USING_DOTS=1 brew reinstall --verbose libomp; fi
+
 script:
 
   # Build Dust3D
