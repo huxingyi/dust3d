@@ -47,13 +47,13 @@ after_test:
   - 7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-4.13\build\bin\Release\CGAL-vc140-mt-4.13.dll
   - 7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-4.13\auxiliary\gmp\lib\libgmp-10.dll
   - 7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-4.13\auxiliary\gmp\lib\libmpfr-4.dll
-  - 7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\ci\opengl32sw.dll
-  - 7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\ci\libeay32.dll
-  - 7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\ci\ssleay32.dll
+  - 7z a dust3d-%TAG%-%PLATFORM%.zip C:\OpenSSL-v111-Win32\bin\libcrypto-1_1.dll
+  - 7z a dust3d-%TAG%-%PLATFORM%.zip C:\OpenSSL-v111-Win32\bin\libssl-1_1.dll
   - 7z a dust3d-%TAG%-%PLATFORM%.zip %QTDIR%\bin\Qt5Widgets.dll
   - 7z a dust3d-%TAG%-%PLATFORM%.zip %QTDIR%\bin\Qt5Gui.dll
   - 7z a dust3d-%TAG%-%PLATFORM%.zip %QTDIR%\bin\Qt5Core.dll
   - 7z a dust3d-%TAG%-%PLATFORM%.zip %QTDIR%\bin\Qt5Network.dll
+  - 7z a dust3d-%TAG%-%PLATFORM%.zip %QTDIR%\bin\opengl32sw.dll
   - 7z a dust3d-%TAG%-%PLATFORM%.zip "%VCREDIST_CRT_DIR%\msvcp140.dll"
   - 7z a dust3d-%TAG%-%PLATFORM%.zip "%VCREDIST_CRT_DIR%\vcruntime140.dll"
   - 7z a dust3d-%TAG%-%PLATFORM%.zip "%VCREDIST_OPENMP_DIR%\vcomp140.dll"
