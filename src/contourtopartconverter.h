@@ -34,6 +34,8 @@ private:
         const std::set<std::pair<int, int>> &black);
     void nodesToSnapshot();
     void smoothRadius(std::vector<std::pair<QVector2D, float>> *skeleton);
+    void alignSkeleton(const std::vector<std::pair<QVector2D, float>> &referenceSkeleton,
+        std::vector<std::pair<QVector2D, float>> &adjustSkeleton);
     void optimizeNodes();
 };
 

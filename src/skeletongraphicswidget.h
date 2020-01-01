@@ -171,6 +171,10 @@ public:
     {
         m_previousPolygon.clear();
         clear();
+        if (!m_mainProfile) {
+            m_mainProfile = true;
+            updateAppearance();
+        }
     }
 private:
     QPolygonF m_polygon;

@@ -141,7 +141,8 @@ void SkeletonGraphicsWidget::setBackgroundBlur(float turnaroundOpacity)
 
 void SkeletonGraphicsWidget::shortcutEscape()
 {
-    if (SkeletonDocumentEditMode::Add == m_document->editMode) {
+    if (SkeletonDocumentEditMode::Add == m_document->editMode ||
+            SkeletonDocumentEditMode::Mark == m_document->editMode) {
         emit setEditMode(SkeletonDocumentEditMode::Select);
         return;
     }
@@ -723,6 +724,10 @@ void SkeletonGraphicsWidget::updateCursor()
     if (SkeletonDocumentEditMode::Add != m_document->editMode) {
         m_cursorEdgeItem->hide();
         m_cursorNodeItem->hide();
+    }
+    
+    if (SkeletonDocumentEditMode::Mark != m_document->editMode) {
+        m_markerItem->reset();
     }
     
     switch (m_document->editMode) {
@@ -1455,6 +1460,7 @@ bool SkeletonGraphicsWidget::mouseRelease(QMouseEvent *event)
                 const QPolygonF &previousPolygon = m_markerItem->previousPolygon();
                 if (previousPolygon.empty()) {
                     m_markerItem->save();
+                    m_markerItem->toggleProfile();
                 } else {
                     if (m_markerItem->isMainProfile()) {
                         emit addPartByPolygons(m_markerItem->polygon(), previousPolygon, sceneRect().size());
@@ -1464,7 +1470,6 @@ bool SkeletonGraphicsWidget::mouseRelease(QMouseEvent *event)
                     m_markerItem->reset();
                 }
                 m_markerItem->hide();
-                m_markerItem->toggleProfile();
                 updateCursor();
             } else {
                 m_markerItem->clear();

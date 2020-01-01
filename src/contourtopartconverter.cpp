@@ -187,16 +187,43 @@ void ContourToPartConverter::optimizeNodes()
     }
 }
 
+void ContourToPartConverter::alignSkeleton(const std::vector<std::pair<QVector2D, float>> &referenceSkeleton,
+        std::vector<std::pair<QVector2D, float>> &adjustSkeleton)
+{
+    if (referenceSkeleton.empty() || adjustSkeleton.empty())
+        return;
+    float sumOfDistance2 = 0.0;
+    float reversedSumOfDistance2 = 0.0;
+    for (size_t i = 0; i < adjustSkeleton.size(); ++i) {
+        size_t j = ((float)i / adjustSkeleton.size()) * referenceSkeleton.size();
+        if (j >= referenceSkeleton.size())
+            continue;
+        size_t k = referenceSkeleton.size() - 1 - j;
+        sumOfDistance2 += std::pow(adjustSkeleton[i].first.y() - referenceSkeleton[j].first.y(), 2.0f);
+        reversedSumOfDistance2 += std::pow(adjustSkeleton[i].first.y() - referenceSkeleton[k].first.y(), 2.0f);
+    }
+    if (sumOfDistance2 <= reversedSumOfDistance2)
+        return;
+    std::reverse(adjustSkeleton.begin(), adjustSkeleton.end());
+}
+
 void ContourToPartConverter::convert()
 {
     std::vector<std::pair<QVector2D, float>> sideSkeleton;
+    std::vector<std::pair<QVector2D, float>> mainSkeleton;
     auto mainBoundingBox = m_mainProfile.boundingRect();
     extractSkeleton(m_sideProfile, &sideSkeleton);
+    extractSkeleton(m_mainProfile, &mainSkeleton);
+    smoothRadius(&sideSkeleton);
+    smoothRadius(&mainSkeleton);
     if (!sideSkeleton.empty()) {
-        float x = mainBoundingBox.center().x() / m_canvasSize.height();
+        alignSkeleton(sideSkeleton, mainSkeleton);
+        float defaultX = mainBoundingBox.center().x() / m_canvasSize.height();
         m_nodes.reserve(sideSkeleton.size());
         for (size_t i = 0; i < sideSkeleton.size(); ++i) {
             const auto &it = sideSkeleton[i];
+            size_t j = ((float)i / sideSkeleton.size()) * mainSkeleton.size();
+            float x = j < mainSkeleton.size() ? mainSkeleton[j].first.x() : defaultX;
             m_nodes.push_back(std::make_pair(QVector3D(x, it.first.y(), it.first.x()),
                 it.second));
         }
