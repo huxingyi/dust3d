@@ -27,7 +27,7 @@ private:
     std::vector<std::pair<QVector3D, float>> m_nodes;
     std::vector<std::pair<QUuid, QUuid>> m_sourceIds;
     void resolveSources();
-    void isotropicRemesh(float targetEdgeLength=0.021, unsigned int iterationNum=3);
+    void isotropicRemesh(float targetEdgeLength=0.02f, unsigned int iterationNum=3);
 };
 
 #endif
