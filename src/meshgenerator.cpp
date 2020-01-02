@@ -1010,12 +1010,12 @@ MeshCombiner::Mesh *MeshGenerator::combineComponentMesh(const QString &component
                 subGroupMeshIdStringList += componentChildGroupIdStringListString;
                 multipleMeshes.push_back(std::make_tuple(childMesh, CombineMode::Normal, componentChildGroupIdStringListString));
             }
-            MeshCombiner::Mesh *subGroupMesh = combineMultipleMeshes(multipleMeshes, foundColorSolubilitySetting);
+            MeshCombiner::Mesh *subGroupMesh = combineMultipleMeshes(multipleMeshes, true/*foundColorSolubilitySetting*/);
             if (nullptr == subGroupMesh)
                 continue;
             groupMeshes.push_back(std::make_tuple(subGroupMesh, group.first, subGroupMeshIdStringList.join("&")));
         }
-        mesh = combineMultipleMeshes(groupMeshes, false);
+        mesh = combineMultipleMeshes(groupMeshes, true);
     }
     
     if (nullptr != mesh)

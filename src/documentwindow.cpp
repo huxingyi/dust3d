@@ -238,7 +238,11 @@ DocumentWindow::DocumentWindow() :
         regenerateButton->showSpinner(true);
     });
     connect(m_document, &Document::resultTextureChanged, this, [=]() {
-        regenerateButton->showSpinner(false);
+        if (!m_document->isMeshGenerating() &&
+                !m_document->isPostProcessing() &&
+                !m_document->isTextureGenerating()) {
+            regenerateButton->showSpinner(false);
+        }
     });
     connect(regenerateButton->button(), &QPushButton::clicked, m_document, &Document::regenerateMesh);
 

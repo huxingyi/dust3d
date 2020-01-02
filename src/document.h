@@ -558,6 +558,8 @@ public:
     const Outcome &currentRiggedOutcome() const;
     bool currentRigSucceed() const;
     bool isMeshGenerating() const;
+    bool isPostProcessing() const;
+    bool isTextureGenerating() const;
     const QString &script() const;
     const std::map<QString, std::map<QString, QString>> &variables() const;
     const QString &scriptError() const;

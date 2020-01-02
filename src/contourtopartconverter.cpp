@@ -219,11 +219,18 @@ void ContourToPartConverter::convert()
     if (!sideSkeleton.empty()) {
         alignSkeleton(sideSkeleton, mainSkeleton);
         float defaultX = mainBoundingBox.center().x() / m_canvasSize.height();
+        float area = mainBoundingBox.width() * mainBoundingBox.height();
+        float mainBoundingBoxWidthHeightOffset = std::abs(mainBoundingBox.width() - mainBoundingBox.height());
+        float rectRadius = std::sqrt(area) * 0.5;
+        bool useCalculatedX = mainBoundingBoxWidthHeightOffset >= rectRadius;
         m_nodes.reserve(sideSkeleton.size());
         for (size_t i = 0; i < sideSkeleton.size(); ++i) {
             const auto &it = sideSkeleton[i];
-            size_t j = ((float)i / sideSkeleton.size()) * mainSkeleton.size();
-            float x = j < mainSkeleton.size() ? mainSkeleton[j].first.x() : defaultX;
+            float x = defaultX;
+            if (useCalculatedX) {
+                size_t j = ((float)i / sideSkeleton.size()) * mainSkeleton.size();
+                x = j < mainSkeleton.size() ? mainSkeleton[j].first.x() : defaultX;
+            }
             m_nodes.push_back(std::make_pair(QVector3D(x, it.first.y(), it.first.x()),
                 it.second));
         }
@@ -243,6 +250,7 @@ void ContourToPartConverter::nodesToSnapshot()
     snapshotPart["id"] = partIdString;
     snapshotPart["subdived"] = "true";
     snapshotPart["rounded"] = "true";
+    snapshotPart["base"] = "YZ";
     m_snapshot.parts[partIdString] = snapshotPart;
     
     auto componentId = QUuid::createUuid();

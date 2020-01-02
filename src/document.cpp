@@ -2037,6 +2037,8 @@ void Document::generateMesh()
         return;
     }
     
+    emit meshGenerating();
+    
     qDebug() << "Mesh generating..";
     
     settleOrigin();
@@ -2060,7 +2062,6 @@ void Document::generateMesh()
     connect(m_meshGenerator, &MeshGenerator::finished, this, &Document::meshReady);
     connect(m_meshGenerator, &MeshGenerator::finished, thread, &QThread::quit);
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
-    emit meshGenerating();
     thread->start();
 }
 
@@ -2072,6 +2073,7 @@ void Document::generateTexture()
     }
     
     qDebug() << "Texture guide generating..";
+    emit textureGenerating();
     
     m_isTextureObsolete = false;
     
@@ -2085,7 +2087,6 @@ void Document::generateTexture()
     connect(m_textureGenerator, &TextureGenerator::finished, this, &Document::textureReady);
     connect(m_textureGenerator, &TextureGenerator::finished, thread, &QThread::quit);
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
-    emit textureGenerating();
     thread->start();
 }
 
@@ -2154,6 +2155,7 @@ void Document::postProcess()
     }
 
     qDebug() << "Post processing..";
+    emit postProcessing();
 
     QThread *thread = new QThread;
     m_postProcessor = new MeshResultPostProcessor(*m_currentOutcome);
@@ -2162,7 +2164,6 @@ void Document::postProcess()
     connect(m_postProcessor, &MeshResultPostProcessor::finished, this, &Document::postProcessedMeshResultReady);
     connect(m_postProcessor, &MeshResultPostProcessor::finished, thread, &QThread::quit);
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
-    emit postProcessing();
     thread->start();
 }
 
@@ -3780,6 +3781,16 @@ void Document::materialPreviewsReady()
 bool Document::isMeshGenerating() const
 {
     return nullptr != m_meshGenerator;
+}
+
+bool Document::isPostProcessing() const
+{
+    return nullptr != m_postProcessor;
+}
+
+bool Document::isTextureGenerating() const
+{
+    return nullptr != m_textureGenerator;
 }
 
 void Document::copyNodes(std::set<QUuid> nodeIdSet) const
