@@ -319,10 +319,6 @@ Tips:
         <translation>清除切面</translation>
     </message>
     <message>
-        <source>Script</source>
-        <translation>脚本</translation>
-    </message>
-    <message>
         <source>Check for Updates...</source>
         <translation>检查新版本...</translation>
     </message>

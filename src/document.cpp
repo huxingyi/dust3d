@@ -16,7 +16,6 @@
 #include "materialpreviewsgenerator.h"
 #include "motionsgenerator.h"
 #include "skeletonside.h"
-#include "scriptrunner.h"
 #include "mousepicker.h"
 #include "imageforever.h"
 #include "contourtopartconverter.h"
@@ -69,8 +68,6 @@ Document::Document() :
     m_motionsGenerator(nullptr),
     m_meshGenerationId(0),
     m_nextMeshGenerationId(1),
-    m_scriptRunner(nullptr),
-    m_isScriptResultObsolete(false),
     m_mousePicker(nullptr),
     m_isMouseTargetResultObsolete(false),
     m_paintMode(PaintMode::None),
@@ -1850,30 +1847,11 @@ void Document::silentReset()
     removeRigResults();
 }
 
-void Document::silentResetScript()
-{
-    m_script.clear();
-    m_mergedVariables.clear();
-    m_cachedVariables.clear();
-    m_scriptError.clear();
-    m_scriptConsoleLog.clear();
-}
-
 void Document::reset()
 {
     silentReset();
     emit cleanup();
     emit skeletonChanged();
-}
-
-void Document::resetScript()
-{
-    silentResetScript();
-    emit cleanupScript();
-    emit scriptChanged();
-    emit scriptErrorChanged();
-    emit scriptConsoleLogChanged();
-    emit mergedVaraiblesChanged();
 }
 
 void Document::fromSnapshot(const Snapshot &snapshot)
@@ -3802,194 +3780,6 @@ void Document::copyNodes(std::set<QUuid> nodeIdSet) const
     saveSkeletonToXmlStream(&snapshot, &xmlStreamWriter);
     QClipboard *clipboard = QApplication::clipboard();
     clipboard->setText(snapshotXml);
-}
-
-void Document::initScript(const QString &script)
-{
-    m_script = script;
-    emit scriptModifiedFromExternal();
-}
-
-void Document::updateScript(const QString &script)
-{
-    if (m_script == script)
-        return;
-    
-    m_script = script;
-    emit scriptChanged();
-}
-
-void Document::updateVariable(const QString &name, const std::map<QString, QString> &value)
-{
-    bool needRunScript = false;
-    auto variable = m_cachedVariables.find(name);
-    if (variable == m_cachedVariables.end()) {
-        m_cachedVariables[name] = value;
-        needRunScript = true;
-    } else if (variable->second != value) {
-        variable->second = value;
-    } else {
-        return;
-    }
-    m_mergedVariables[name] = value;
-    emit mergedVaraiblesChanged();
-    if (needRunScript)
-        runScript();
-}
-
-void Document::updateVariableValue(const QString &name, const QString &value)
-{
-    auto variable = m_cachedVariables.find(name);
-    if (variable == m_cachedVariables.end()) {
-        qDebug() << "Update a nonexist variable:" << name << "value:" << value;
-        return;
-    }
-    auto &variableValue = variable->second["value"];
-    if (variableValue == value)
-        return;
-    variableValue = value;
-    m_mergedVariables[name] = variable->second;
-    runScript();
-}
-
-bool Document::updateDefaultVariables(const std::map<QString, std::map<QString, QString>> &defaultVariables)
-{
-    bool updated = false;
-    for (const auto &it: defaultVariables) {
-        auto findMergedVariable = m_mergedVariables.find(it.first);
-        if (findMergedVariable != m_mergedVariables.end()) {
-            bool hasChangedAttribute = false;
-            for (const auto &attribute: it.second) {
-                if (attribute.first == "value")
-                    continue;
-                const auto &findMatch = findMergedVariable->second.find(attribute.first);
-                if (findMatch != findMergedVariable->second.end()) {
-                    if (findMatch->second == attribute.second)
-                        continue;
-                }
-                hasChangedAttribute = true;
-            }
-            if (!hasChangedAttribute)
-                continue;
-        }
-        updated = true;
-        auto findCached = m_cachedVariables.find(it.first);
-        if (findCached != m_cachedVariables.end()) {
-            m_mergedVariables[it.first] = it.second;
-            m_mergedVariables[it.first]["value"] = valueOfKeyInMapOrEmpty(findCached->second, "value");
-        } else {
-            m_mergedVariables[it.first] = it.second;
-            m_cachedVariables[it.first] = it.second;
-        }
-    }
-    std::vector<QString> eraseList;
-    for (const auto &it: m_mergedVariables) {
-        if (defaultVariables.end() == defaultVariables.find(it.first)) {
-            eraseList.push_back(it.first);
-            updated = true;
-        }
-    }
-    for (const auto &it: eraseList) {
-        m_mergedVariables.erase(it);
-    }
-    if (updated) {
-        emit mergedVaraiblesChanged();
-    }
-    return updated;
-}
-
-void Document::runScript()
-{
-    if (nullptr != m_scriptRunner) {
-        m_isScriptResultObsolete = true;
-        return;
-    }
-    
-    m_isScriptResultObsolete = false;
-    
-    qDebug() << "Script running..";
-    
-    QThread *thread = new QThread;
-
-    m_scriptRunner = new ScriptRunner();
-    m_scriptRunner->moveToThread(thread);
-    m_scriptRunner->setScript(new QString(m_script));
-    m_scriptRunner->setVariables(new std::map<QString, std::map<QString, QString>>(
-        m_mergedVariables.empty() ? m_cachedVariables : m_mergedVariables
-        ));
-    connect(thread, &QThread::started, m_scriptRunner, &ScriptRunner::process);
-    connect(m_scriptRunner, &ScriptRunner::finished, this, &Document::scriptResultReady);
-    connect(m_scriptRunner, &ScriptRunner::finished, thread, &QThread::quit);
-    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
-    emit scriptRunning();
-    thread->start();
-}
-
-void Document::scriptResultReady()
-{
-    Snapshot *snapshot = m_scriptRunner->takeResultSnapshot();
-    std::map<QString, std::map<QString, QString>> *defaultVariables = m_scriptRunner->takeDefaultVariables();
-    bool errorChanged = false;
-    bool consoleLogChanged = false;
-    bool mergedVariablesChanged = false;
-    
-    const QString &scriptError = m_scriptRunner->scriptError();
-    if (m_scriptError != scriptError) {
-        m_scriptError = scriptError;
-        errorChanged = true;
-    }
-    
-    const QString &consoleLog = m_scriptRunner->consoleLog();
-    if (m_scriptConsoleLog != consoleLog) {
-        m_scriptConsoleLog = consoleLog;
-        consoleLogChanged = true;
-    }
-    
-    if (nullptr != snapshot) {
-        fromSnapshot(*snapshot);
-        delete snapshot;
-        saveSnapshot();
-    }
-    
-    if (nullptr != defaultVariables) {
-        mergedVariablesChanged = updateDefaultVariables(*defaultVariables);
-        delete defaultVariables;
-    }
-
-    delete m_scriptRunner;
-    m_scriptRunner = nullptr;
-    
-    if (errorChanged)
-        emit scriptErrorChanged();
-    
-    if (consoleLogChanged)
-        emit scriptConsoleLogChanged();
-    
-    qDebug() << "Script run done";
-
-    if (m_isScriptResultObsolete || mergedVariablesChanged) {
-        runScript();
-    }
-}
-
-const QString &Document::script() const
-{
-    return m_script;
-}
-
-const std::map<QString, std::map<QString, QString>> &Document::variables() const
-{
-    return m_mergedVariables;
-}
-
-const QString &Document::scriptError() const
-{
-    return m_scriptError;
-}
-
-const QString &Document::scriptConsoleLog() const
-{
-    return m_scriptConsoleLog;
 }
 
 void Document::startPaint(void)

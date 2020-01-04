@@ -15,24 +15,24 @@ MeshCombiner::Mesh::Mesh(const std::vector<QVector3D> &vertices, const std::vect
     CgalMesh *cgalMesh = nullptr;
     if (!faces.empty()) {
         cgalMesh = buildCgalMesh<CgalKernel>(vertices, faces);
-        if (!CGAL::is_valid_polygon_mesh(*cgalMesh)) {
-            qDebug() << "Mesh is not valid polygon";
-            delete cgalMesh;
-            cgalMesh = nullptr;
-        } else {
-            if (CGAL::Polygon_mesh_processing::triangulate_faces(*cgalMesh)) {
-                if (!disableSelfIntersects) {
+        if (!disableSelfIntersects) {
+            if (!CGAL::is_valid_polygon_mesh(*cgalMesh)) {
+                qDebug() << "Mesh is not valid polygon";
+                delete cgalMesh;
+                cgalMesh = nullptr;
+            } else {
+                if (CGAL::Polygon_mesh_processing::triangulate_faces(*cgalMesh)) {
                     if (CGAL::Polygon_mesh_processing::does_self_intersect(*cgalMesh)) {
                         m_isSelfIntersected = true;
                         qDebug() << "Mesh does_self_intersect";
                         delete cgalMesh;
                         cgalMesh = nullptr;
                     }
+                } else {
+                    qDebug() << "Mesh triangulate failed";
+                    delete cgalMesh;
+                    cgalMesh = nullptr;
                 }
-            } else {
-                qDebug() << "Mesh triangulate failed";
-                delete cgalMesh;
-                cgalMesh = nullptr;
             }
         }
     }

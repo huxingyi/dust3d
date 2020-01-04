@@ -23,7 +23,7 @@ public:
     {
     public:
         Mesh() = default;
-        Mesh(const std::vector<QVector3D> &vertices, const std::vector<std::vector<size_t>> &faces, bool disableSelfIntersects=true);
+        Mesh(const std::vector<QVector3D> &vertices, const std::vector<std::vector<size_t>> &faces, bool disableSelfIntersects=false);
         Mesh(const Mesh &other);
         ~Mesh();
         void fetch(std::vector<QVector3D> &vertices, std::vector<std::vector<size_t>> &faces) const;

@@ -2,33 +2,33 @@ os: Visual Studio 2017
 
 environment:
   matrix:
-    - platform: x86
-      target: i686-pc-windows-msvc
-      qtdir: C:\Qt\5.13.2\msvc2017
-      sysdirname: system32
-
-cache:
-  CGAL-4.13-Setup.exe -> appveyor.yml
+    - platform: x64
+      target: x86_64-pc-windows-msvc
+      qtdir: C:\Qt\5.13.2\msvc2017_64
+      sysdirname: SysWOW64
 
 install:
-  - if "%PLATFORM%" == "x86"
-    call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars32.bat"
-  - if not exist CGAL-4.13-Setup.exe
-      appveyor DownloadFile https://github.com/CGAL/cgal/releases/download/releases/CGAL-4.13/CGAL-4.13-Setup.exe -FileName CGAL-4.13-Setup.exe
-  - CGAL-4.13-Setup.exe /S /D=%APPVEYOR_BUILD_FOLDER%\CGAL-4.13
-  - cd CGAL-4.13
+  - call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
+  
+  - cd thirdparty/cgal/CGAL-4.13
   - mkdir build
   - cd build
-  - if "%PLATFORM%" == "x86"
-    cmake -G "Visual Studio 15 2017" ../ -DBOOST_INCLUDEDIR=C:\Libraries\boost_1_66_0
+  - cmake -G "Visual Studio 15 2017" -A %PLATFORM% ../ -DBOOST_INCLUDEDIR=C:\Libraries\boost_1_66_0
   - msbuild /p:Configuration=Release ALL_BUILD.vcxproj
+  - cd %APPVEYOR_BUILD_FOLDER%
+
+  - cd thirdparty/instant-meshes
+  - mkdir build
+  - cd build
+  - cmake -G "Visual Studio 15 2017" -A %PLATFORM% ../
+  - msbuild /p:Configuration=RelWithDebInfo ALL_BUILD.vcxproj
   - cd %APPVEYOR_BUILD_FOLDER%
 
 build: false
 
 test_script:
   - set PATH=%PATH%;%QTDIR%\bin
-  - qmake "BOOST_INCLUDEDIR=C:\Libraries\boost_1_66_0" "CGAL_DIR=%APPVEYOR_BUILD_FOLDER%\CGAL-4.13"
+  - qmake "BOOST_INCLUDEDIR=C:\Libraries\boost_1_66_0" "CGAL_DIR=%APPVEYOR_BUILD_FOLDER%\thirdparty\cgal\CGAL-4.13"
   - nmake -f Makefile.Release
 
 after_test:
@@ -36,7 +36,6 @@ after_test:
   # Check Qt plugins by following https://wiki.qt.io/Deploy_an_Application_on_Windows
   - set /p VCRedistVersion=<"C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\Microsoft.VCRedistVersion.default.txt"
   - set VCREDIST_CRT_DIR=C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Redist\MSVC\%VCRedistVersion%\%PLATFORM%\Microsoft.VC141.CRT
-  - set VCREDIST_OPENMP_DIR=C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Redist\MSVC\%VCRedistVersion%\%PLATFORM%\Microsoft.VC141.OPENMP
 
   - set TAG=%APPVEYOR_REPO_TAG_NAME%
   - if "%TAG%" == ""
@@ -44,11 +43,17 @@ after_test:
   - if "%TAG%" == "unstable"
     7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\release\dust3d.pdb
   - 7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\release\dust3d.exe
-  - 7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-4.13\build\bin\Release\CGAL-vc140-mt-4.13.dll
-  - 7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-4.13\auxiliary\gmp\lib\libgmp-10.dll
-  - 7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-4.13\auxiliary\gmp\lib\libmpfr-4.dll
-  - 7z a dust3d-%TAG%-%PLATFORM%.zip C:\OpenSSL-v111-Win32\bin\libcrypto-1_1.dll
-  - 7z a dust3d-%TAG%-%PLATFORM%.zip C:\OpenSSL-v111-Win32\bin\libssl-1_1.dll
+  - if "%TAG%" == "unstable"
+    7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\thirdparty\instant-meshes\build\RelWithDebInfo\instant-meshes.pdb
+  - 7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\thirdparty\instant-meshes\build\RelWithDebInfo\instant-meshes.dll
+  - if "%TAG%" == "unstable"
+    7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\thirdparty\instant-meshes\build\ext_build\tbb\RelWithDebInfo\tbb.pdb
+  - 7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\thirdparty\instant-meshes\build\ext_build\tbb\RelWithDebInfo\tbb.dll
+  - 7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\thirdparty\cgal\CGAL-4.13\build\bin\Release\CGAL-vc140-mt-4.13.dll
+  - 7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\thirdparty\cgal\CGAL-4.13\auxiliary\gmp\lib\libgmp-10.dll
+  - 7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\thirdparty\cgal\CGAL-4.13\auxiliary\gmp\lib\libmpfr-4.dll
+  - 7z a dust3d-%TAG%-%PLATFORM%.zip C:\OpenSSL-v111-Win64\bin\libcrypto-1_1-x64.dll
+  - 7z a dust3d-%TAG%-%PLATFORM%.zip C:\OpenSSL-v111-Win64\bin\libssl-1_1-x64.dll
   - 7z a dust3d-%TAG%-%PLATFORM%.zip %QTDIR%\bin\Qt5Widgets.dll
   - 7z a dust3d-%TAG%-%PLATFORM%.zip %QTDIR%\bin\Qt5Gui.dll
   - 7z a dust3d-%TAG%-%PLATFORM%.zip %QTDIR%\bin\Qt5Core.dll
@@ -56,7 +61,6 @@ after_test:
   - 7z a dust3d-%TAG%-%PLATFORM%.zip %QTDIR%\bin\opengl32sw.dll
   - 7z a dust3d-%TAG%-%PLATFORM%.zip "%VCREDIST_CRT_DIR%\msvcp140.dll"
   - 7z a dust3d-%TAG%-%PLATFORM%.zip "%VCREDIST_CRT_DIR%\vcruntime140.dll"
-  - 7z a dust3d-%TAG%-%PLATFORM%.zip "%VCREDIST_OPENMP_DIR%\vcomp140.dll"
   - mkdir platforms
   - copy %QTDIR%\plugins\platforms\qwindows.dll %APPVEYOR_BUILD_FOLDER%\platforms\qwindows.dll
   - 7z a dust3d-%TAG%-%PLATFORM%.zip -r %APPVEYOR_BUILD_FOLDER%\platforms\

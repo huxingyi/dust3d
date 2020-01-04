@@ -716,7 +716,7 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, 
                         it += xMirrorStart;
                     partCache.faces.push_back(newFace);
                 }
-                MeshCombiner::Mesh *xMirroredMesh = new MeshCombiner::Mesh(xMirroredVertices, xMirroredFaces);
+                MeshCombiner::Mesh *xMirroredMesh = new MeshCombiner::Mesh(xMirroredVertices, xMirroredFaces, false);
                 MeshCombiner::Mesh *newMesh = combineTwoMeshes(*mesh,
                     *xMirroredMesh, MeshCombiner::Method::Union);
                 delete xMirroredMesh;
@@ -1359,23 +1359,6 @@ void MeshGenerator::generate()
             m_outcome->nodeVertices = componentCache.outcomeNodeVertices;
             m_outcome->vertices = combinedVertices;
             m_outcome->triangles = combinedFaces;
-        
-        /*
-        if (remeshed) {
-            remesh(componentCache.outcomeNodes,
-                combinedVertices,
-                combinedFaces,
-                &m_outcome->vertices,
-                &m_outcome->triangleAndQuads,
-                &m_outcome->triangles,
-                &m_outcome->nodeVertices);
-        } else {
-            recoverQuads(combinedVertices, combinedFaces, componentCache.sharedQuadEdges, m_outcome->triangleAndQuads);
-            m_outcome->nodeVertices = componentCache.outcomeNodeVertices;
-            m_outcome->vertices = combinedVertices;
-            m_outcome->triangles = combinedFaces;
-        }
-        */
     }
     
     // Recursively check uncombined components
@@ -1486,9 +1469,11 @@ void MeshGenerator::remesh(const std::vector<OutcomeNode> &inputNodes,
         outputTriangles->push_back(std::vector<size_t> {
             it[0], it[1], it[2]
         });
-        outputTriangles->push_back(std::vector<size_t> {
-            it[2], it[3], it[0]
-        });
+        if (4 == it.size()) {
+            outputTriangles->push_back(std::vector<size_t> {
+                it[2], it[3], it[0]
+            });
+        }
     }
     const auto &remeshedVertexSources = remesher.getRemeshedVertexSources();
     outputNodeVertices->clear();

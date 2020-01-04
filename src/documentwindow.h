@@ -177,7 +177,6 @@ private:
     QAction *m_showRigAction;
     QAction *m_showPosesAction;
     QAction *m_showMotionsAction;
-    QAction *m_showScriptAction;
     
     QMenu *m_helpMenu;
     QAction *m_gotoHomepageAction;

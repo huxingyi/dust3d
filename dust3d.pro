@@ -125,6 +125,7 @@ unix:!macx {
 
 win32 {
 	QMAKE_CXXFLAGS += /O2
+	QMAKE_CXXFLAGS += /bigobj
 }
 
 include(thirdparty/QtAwesome/QtAwesome/QtAwesome.pri)
@@ -394,21 +395,6 @@ HEADERS += src/preferences.h
 
 HEADERS += src/shadervertex.h
 
-SOURCES += src/scripteditwidget.cpp
-HEADERS += src/scripteditwidget.h
-
-SOURCES += src/scriptvariableswidget.cpp
-HEADERS += src/scriptvariableswidget.h
-
-SOURCES += src/scriptwidget.cpp
-HEADERS += src/scriptwidget.h
-
-SOURCES += src/scriptrunner.cpp
-HEADERS += src/scriptrunner.h
-
-SOURCES += src/variablesxml.cpp
-HEADERS += src/variablesxml.h
-
 SOURCES += src/updateschecker.cpp
 HEADERS += src/updateschecker.h
 
@@ -497,82 +483,27 @@ SOURCES += src/main.cpp
 
 HEADERS += src/version.h
 
-INCLUDEPATH += thirdparty/QuadriFlow/src
-INCLUDEPATH += thirdparty/QuadriFlow/3rd/pcg32
-INCLUDEPATH += thirdparty/QuadriFlow/3rd/pss
-INCLUDEPATH += thirdparty/QuadriFlow/3rd/lemon-1.3.1
-
-macx: {
-	!exists(/usr/local/opt/libomp) {
-		error("Please install OpenMP: brew install libomp")
+INCLUDEPATH += thirdparty/instant-meshes
+INCLUDEPATH += thirdparty/instant-meshes/instant-meshes-dust3d/src
+INCLUDEPATH += thirdparty/instant-meshes/instant-meshes-dust3d/ext/tbb/include
+INCLUDEPATH += thirdparty/instant-meshes/instant-meshes-dust3d/ext/dset
+INCLUDEPATH += thirdparty/instant-meshes/instant-meshes-dust3d/ext/pss
+INCLUDEPATH += thirdparty/instant-meshes/instant-meshes-dust3d/ext/pcg32
+INCLUDEPATH += thirdparty/instant-meshes/instant-meshes-dust3d/ext/rply
+INCLUDEPATH += thirdparty/instant-meshes/instant-meshes-dust3d/ext/half
+unix {
+	SOURCES += thirdparty/instant-meshes/instant-meshes-api.cpp
+	LIBS += -Lthirdparty/instant-meshes/build -linstant-meshes
+	LIBS += -Lthirdparty/instant-meshes/build/ext_build/tbb -ltbb_static
+	unix:!macx {
+		LIBS += -ldl
 	}
-	DEFINES += WITH_OMP
-	QMAKE_CXXFLAGS += -Xpreprocessor -fopenmp
-	INCLUDEPATH += /usr/local/opt/libomp/include
-	LIBS += -L/usr/local/opt/libomp/lib -lomp
 }
-
 win32 {
-	QMAKE_CXXFLAGS += /openmp
-	DEFINES += WITH_OMP
+	DEFINES += _USE_MATH_DEFINES
+	LIBS += -Lthirdparty/instant-meshes/build/RelWithDebInfo -linstant-meshes
+	LIBS += -Lthirdparty/instant-meshes/build/ext_build/tbb/RelWithDebInfo -ltbb
 }
-
-unix:!macx {
-	QMAKE_CXXFLAGS += -fopenmp
-	DEFINES += WITH_OMP
-	LIBS += -lgomp
-}
-
-win32 {
-#   Fix error LNK2001: unresolved external symbol "struct lemon::Invalid const lemon::INVALID" (?INVALID@lemon@@3UInvalid@1@B)
-	DEFINES += LEMON_ONLY_TEMPLATES
-}
-
-SOURCES += thirdparty/QuadriFlow/src/adjacent-matrix.cpp
-HEADERS += thirdparty/QuadriFlow/src/adjacent-matrix.hpp
-
-HEADERS += thirdparty/QuadriFlow/src/compare-key.hpp
-
-HEADERS += thirdparty/QuadriFlow/src/config.hpp
-
-SOURCES += thirdparty/QuadriFlow/src/dedge.cpp
-HEADERS += thirdparty/QuadriFlow/src/dedge.hpp
-
-HEADERS += thirdparty/QuadriFlow/src/disajoint-tree.hpp
-
-HEADERS += thirdparty/QuadriFlow/src/dset.hpp
-
-HEADERS += thirdparty/QuadriFlow/src/field-math.hpp
-
-HEADERS += thirdparty/QuadriFlow/src/flow.hpp
-
-SOURCES += thirdparty/QuadriFlow/src/hierarchy.cpp
-HEADERS += thirdparty/QuadriFlow/src/hierarchy.hpp
-
-SOURCES += thirdparty/QuadriFlow/src/loader.cpp
-HEADERS += thirdparty/QuadriFlow/src/loader.hpp
-
-SOURCES += thirdparty/QuadriFlow/src/localsat.cpp
-HEADERS += thirdparty/QuadriFlow/src/localsat.hpp
-
-SOURCES += thirdparty/QuadriFlow/src/merge-vertex.cpp
-HEADERS += thirdparty/QuadriFlow/src/merge-vertex.hpp
-
-SOURCES += thirdparty/QuadriFlow/src/optimizer.cpp
-HEADERS += thirdparty/QuadriFlow/src/optimizer.hpp
-
-SOURCES += thirdparty/QuadriFlow/src/parametrizer.cpp
-SOURCES += thirdparty/QuadriFlow/src/parametrizer-flip.cpp
-SOURCES += thirdparty/QuadriFlow/src/parametrizer-int.cpp
-SOURCES += thirdparty/QuadriFlow/src/parametrizer-mesh.cpp
-SOURCES += thirdparty/QuadriFlow/src/parametrizer-scale.cpp
-SOURCES += thirdparty/QuadriFlow/src/parametrizer-sing.cpp
-HEADERS += thirdparty/QuadriFlow/src/parametrizer.hpp
-
-HEADERS += thirdparty/QuadriFlow/src/serialize.hpp
-
-SOURCES += thirdparty/QuadriFlow/src/subdivide.cpp
-HEADERS += thirdparty/QuadriFlow/src/subdivide.hpp
 
 INCLUDEPATH += thirdparty/bullet3/src
 
@@ -784,22 +715,6 @@ HEADERS += thirdparty/bullet3/src/BulletCollision/NarrowPhaseCollision/btGjkEpa2
 
 SOURCES += thirdparty/bullet3/src/BulletCollision/CollisionShapes/btBoxShape.cpp
 HEADERS += thirdparty/bullet3/src/BulletCollision/CollisionShapes/btBoxShape.h
-
-INCLUDEPATH += thirdparty/quickjs/quickjs-2019-07-09-dust3d
-
-DEFINES += "CONFIG_VERSION=\"\\\"2019-07-09\\\"\""
-
-SOURCES += thirdparty/quickjs/quickjs-2019-07-09-dust3d/quickjs.c
-HEADERS += thirdparty/quickjs/quickjs-2019-07-09-dust3d/quickjs.h
-
-SOURCES += thirdparty/quickjs/quickjs-2019-07-09-dust3d/cutils.c
-HEADERS += thirdparty/quickjs/quickjs-2019-07-09-dust3d/cutils.h
-
-SOURCES += thirdparty/quickjs/quickjs-2019-07-09-dust3d/libunicode.c
-HEADERS += thirdparty/quickjs/quickjs-2019-07-09-dust3d/libunicode.h
-
-SOURCES += thirdparty/quickjs/quickjs-2019-07-09-dust3d/libregexp.c
-HEADERS += thirdparty/quickjs/quickjs-2019-07-09-dust3d/libregexp.h
 
 INCLUDEPATH += thirdparty/crc64
 
