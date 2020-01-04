@@ -120,7 +120,7 @@ private:
         std::vector<std::vector<QVector3D>> *triangleVertexNormals);
     const std::map<QString, QString> *findComponent(const QString &componentIdString);
     CombineMode componentCombineMode(const std::map<QString, QString> *component);
-    bool componentRemeshed(const std::map<QString, QString> *component);
+    bool componentRemeshed(const std::map<QString, QString> *component, float *polyCountValue=nullptr);
     MeshCombiner::Mesh *combineComponentChildGroupMesh(const std::vector<QString> &componentIdStrings,
         GeneratedComponent &componentCache);
     MeshCombiner::Mesh *combineMultipleMeshes(const std::vector<std::tuple<MeshCombiner::Mesh *, CombineMode, QString>> &multipleMeshes, bool recombine=true);
@@ -130,6 +130,7 @@ private:
     void remesh(const std::vector<OutcomeNode> &inputNodes,
         const std::vector<QVector3D> &inputVertices,
         const std::vector<std::vector<size_t>> &inputFaces,
+        float targetVertexMultiplyFactor,
         std::vector<QVector3D> *outputVertices,
         std::vector<std::vector<size_t>> *outputQuads,
         std::vector<std::vector<size_t>> *outputTriangles,

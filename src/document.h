@@ -26,6 +26,7 @@
 #include "jointnodetree.h"
 #include "skeletondocument.h"
 #include "combinemode.h"
+#include "polycount.h"
 #include "preferences.h"
 #include "paintmode.h"
 #include "proceduralanimation.h"
@@ -65,7 +66,7 @@ public:
     bool dirty = true;
     float smoothAll = 0.0;
     float smoothSeam = 0.0;
-    bool remeshed = false;
+    PolyCount polyCount = PolyCount::Original;
     std::vector<QUuid> childrenIds;
     QString linkData() const
     {
@@ -394,7 +395,7 @@ signals:
     void componentExpandStateChanged(QUuid componentId);
     void componentSmoothAllChanged(QUuid componentId);
     void componentSmoothSeamChanged(QUuid componentId);
-    void componentRemeshStateChanged(QUuid componentId);
+    void componentPolyCountChanged(QUuid componentId);
     void nodeRemoved(QUuid nodeId);
     void edgeRemoved(QUuid edgeId);
     void nodeRadiusChanged(QUuid nodeId);
@@ -497,7 +498,7 @@ public: // need initialize
     QImage *textureAmbientOcclusionImage;
     RigType rigType;
     bool weldEnabled;
-    bool remeshed;
+    PolyCount polyCount;
 public:
     Document();
     ~Document();
@@ -640,7 +641,7 @@ public slots:
     void setComponentExpandState(QUuid componentId, bool expanded);
     void setComponentSmoothAll(QUuid componentId, float toSmoothAll);
     void setComponentSmoothSeam(QUuid componentId, float toSmoothSeam);
-    void setComponentRemeshState(QUuid componentId, bool remeshed);
+    void setComponentPolyCount(QUuid componentId, PolyCount count);
     void hideOtherComponents(QUuid componentId);
     void lockOtherComponents(QUuid componentId);
     void hideAllComponents();

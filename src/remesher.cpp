@@ -32,7 +32,7 @@ const std::vector<std::pair<QUuid, QUuid>> &Remesher::getRemeshedVertexSources()
     return m_remeshedVertexSources;
 }
 
-void Remesher::remesh()
+void Remesher::remesh(float targetVertexMultiplyFactor)
 {
     std::vector<Dust3D_InstantMeshesVertex> inputVertices(m_vertices.size());
     for (size_t i = 0; i < m_vertices.size(); ++i) {
@@ -61,7 +61,7 @@ void Remesher::remesh()
     size_t nResultQuads = 0;
     Dust3D_instantMeshesRemesh(inputVertices.data(), inputVertices.size(),
         inputTriangles.data(), inputTriangles.size(),
-        (size_t)(inputVertices.size() * 1.0f),
+        (size_t)(inputVertices.size() * targetVertexMultiplyFactor),
         &resultVertices,
         &nResultVertices,
         &resultTriangles,

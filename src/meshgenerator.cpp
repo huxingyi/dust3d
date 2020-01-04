@@ -17,6 +17,7 @@
 #include "gridmeshbuilder.h"
 #include "triangulatefaces.h"
 #include "remesher.h"
+#include "polycount.h"
 
 MeshGenerator::MeshGenerator(Snapshot *snapshot) :
     m_snapshot(snapshot)
@@ -843,11 +844,14 @@ CombineMode MeshGenerator::componentCombineMode(const std::map<QString, QString>
     return combineMode;
 }
 
-bool MeshGenerator::componentRemeshed(const std::map<QString, QString> *component)
+bool MeshGenerator::componentRemeshed(const std::map<QString, QString> *component, float *polyCountValue)
 {
     if (nullptr == component)
         return false;
-    return isTrueValueString(valueOfKeyInMapOrEmpty(*component, "remeshed"));
+    auto polyCount = PolyCountFromString(valueOfKeyInMapOrEmpty(*component, "polyCount").toUtf8().constData());
+    if (nullptr != polyCountValue)
+        *polyCountValue = PolyCountToValue(polyCount);
+    return polyCount != PolyCount::Original;
 }
 
 QString MeshGenerator::componentColorName(const std::map<QString, QString> *component)
@@ -1032,7 +1036,8 @@ MeshCombiner::Mesh *MeshGenerator::combineComponentMesh(const QString &component
     }
     
     if (nullptr != mesh) {
-        bool remeshed = componentId.isNull() ? componentRemeshed(&m_snapshot->canvas) : componentRemeshed(component);
+        float polyCountValue = 1.0f;
+        bool remeshed = componentId.isNull() ? componentRemeshed(&m_snapshot->canvas, &polyCountValue) : componentRemeshed(component, &polyCountValue);
         if (remeshed) {
             std::vector<QVector3D> combinedVertices;
             std::vector<std::vector<size_t>> combinedFaces;
@@ -1043,6 +1048,7 @@ MeshCombiner::Mesh *MeshGenerator::combineComponentMesh(const QString &component
             remesh(componentCache.outcomeNodes,
                 combinedVertices,
                 combinedFaces,
+                polyCountValue,
                 &newVertices,
                 &newQuads,
                 &newTriangles,
@@ -1460,6 +1466,7 @@ void MeshGenerator::generate()
 void MeshGenerator::remesh(const std::vector<OutcomeNode> &inputNodes,
         const std::vector<QVector3D> &inputVertices,
         const std::vector<std::vector<size_t>> &inputFaces,
+        float targetVertexMultiplyFactor,
         std::vector<QVector3D> *outputVertices,
         std::vector<std::vector<size_t>> *outputQuads,
         std::vector<std::vector<size_t>> *outputTriangles,
@@ -1476,7 +1483,7 @@ void MeshGenerator::remesh(const std::vector<OutcomeNode> &inputNodes,
     Remesher remesher;
     remesher.setMesh(inputVertices, inputFaces);
     remesher.setNodes(nodes, sourceIds);
-    remesher.remesh();
+    remesher.remesh(targetVertexMultiplyFactor);
     *outputVertices = remesher.getRemeshedVertices();
     const auto &remeshedFaces = remesher.getRemeshedFaces();
     *outputQuads = remeshedFaces;

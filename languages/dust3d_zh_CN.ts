@@ -738,7 +738,11 @@ Tips:
     </message>
     <message>
         <source>Remeshed</source>
-        <translation>重新网格化</translation>
+        <translation type="vanished">重新网格化</translation>
+    </message>
+    <message>
+        <source>Poly</source>
+        <translation>面数</translation>
     </message>
 </context>
 <context>
@@ -1045,6 +1049,22 @@ Tips:
     <message>
         <source>Fall to Death</source>
         <translation>倒地死亡</translation>
+    </message>
+    <message>
+        <source>Low Poly</source>
+        <translation>低面</translation>
+    </message>
+    <message>
+        <source>Original</source>
+        <translation>原样</translation>
+    </message>
+    <message>
+        <source>High Poly</source>
+        <translation>高面</translation>
+    </message>
+    <message>
+        <source>Extreme High Poly</source>
+        <translation>极高面</translation>
     </message>
 </context>
 <context>

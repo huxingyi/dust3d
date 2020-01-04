@@ -36,7 +36,7 @@ Document::Document() :
     textureAmbientOcclusionImage(nullptr),
     rigType(RigType::None),
     weldEnabled(true),
-    remeshed(false),
+    polyCount(PolyCount::Original),
     // private
     m_isResultMeshObsolete(false),
     m_meshGenerator(nullptr),
@@ -1199,8 +1199,8 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
                 component["smoothAll"] = QString::number(componentIt.second.smoothAll);
             if (componentIt.second.smoothSeamAdjusted())
                 component["smoothSeam"] = QString::number(componentIt.second.smoothSeam);
-            if (componentIt.second.remeshed)
-                component["remeshed"] = "true";
+            if (componentIt.second.polyCount != PolyCount::Original)
+                component["polyCount"] = PolyCountToString(componentIt.second.polyCount);
             QStringList childIdList;
             for (const auto &childId: componentIt.second.childrenIds) {
                 childIdList.append(childId.toString());
@@ -1315,8 +1315,8 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
         canvas["originY"] = QString::number(getOriginY());
         canvas["originZ"] = QString::number(getOriginZ());
         canvas["rigType"] = RigTypeToString(rigType);
-        if (this->remeshed)
-            canvas["remeshed"] = "true";
+        if (this->polyCount != PolyCount::Original)
+            canvas["polyCount"] = PolyCountToString(this->polyCount);
         snapshot->canvas = canvas;
     }
 }
@@ -1474,7 +1474,7 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
     bool isOriginChanged = false;
     bool isRigTypeChanged = false;
     if (!fromPaste) {
-        this->remeshed = isTrueValueString(valueOfKeyInMapOrEmpty(snapshot.canvas, "remeshed"));
+        this->polyCount = PolyCountFromString(valueOfKeyInMapOrEmpty(snapshot.canvas, "polyCount").toUtf8().constData());
         const auto &originXit = snapshot.canvas.find("originX");
         const auto &originYit = snapshot.canvas.find("originY");
         const auto &originZit = snapshot.canvas.find("originZ");
@@ -1707,7 +1707,7 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
         const auto &smoothSeamIt = componentKv.second.find("smoothSeam");
         if (smoothSeamIt != componentKv.second.end())
             component.setSmoothSeam(smoothSeamIt->second.toFloat());
-        component.remeshed = isTrueValueString(valueOfKeyInMapOrEmpty(componentKv.second, "remeshed"));
+        component.polyCount = PolyCountFromString(valueOfKeyInMapOrEmpty(componentKv.second, "polyCount").toUtf8().constData());
         //qDebug() << "Add component:" << component.id << " old:" << componentKv.first << "name:" << component.name;
         if ("partId" == linkDataType) {
             QUuid partId = oldNewIdMap[QUuid(linkData)];
@@ -2474,13 +2474,13 @@ void Document::setComponentExpandState(QUuid componentId, bool expanded)
     emit optionsChanged();
 }
 
-void Document::setComponentRemeshState(QUuid componentId, bool remeshed)
+void Document::setComponentPolyCount(QUuid componentId, PolyCount count)
 {
     if (componentId.isNull()) {
-        if (this->remeshed == remeshed)
+        if (polyCount == count)
             return;
-        this->remeshed = remeshed;
-        emit componentRemeshStateChanged(componentId);
+        polyCount = count;
+        emit componentPolyCountChanged(componentId);
         emit skeletonChanged();
         return;
     }
@@ -2488,12 +2488,12 @@ void Document::setComponentRemeshState(QUuid componentId, bool remeshed)
     Component *component = (Component *)findComponent(componentId);
     if (nullptr == component)
         return;
-    if (component->remeshed == remeshed)
+    if (component->polyCount == count)
         return;
     
-    component->remeshed = remeshed;
+    component->polyCount = count;
     component->dirty = true;
-    emit componentRemeshStateChanged(componentId);
+    emit componentPolyCountChanged(componentId);
     emit skeletonChanged();
 }
 

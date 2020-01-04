@@ -372,6 +372,9 @@ HEADERS += src/posedocument.h
 SOURCES += src/combinemode.cpp
 HEADERS += src/combinemode.h
 
+SOURCES += src/polycount.cpp
+HEADERS += src/polycount.h
+
 SOURCES += src/cutdocument.cpp
 HEADERS += src/cutdocument.h
 

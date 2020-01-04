@@ -15,7 +15,7 @@ public:
         const std::vector<std::vector<size_t>> &triangles);
     void setNodes(const std::vector<std::pair<QVector3D, float>> &nodes,
         const std::vector<std::pair<QUuid, QUuid>> &sourceIds);
-    void remesh();
+    void remesh(float targetVertexMultiplyFactor);
     const std::vector<QVector3D> &getRemeshedVertices() const;
     const std::vector<std::vector<size_t>> &getRemeshedFaces() const;
     const std::vector<std::pair<QUuid, QUuid>> &getRemeshedVertexSources() const;

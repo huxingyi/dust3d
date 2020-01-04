@@ -11,7 +11,6 @@
 #include <QClipboard>
 #include <QMimeData>
 #include <QApplication>
-#include <QCheckBox>
 #include "parttreewidget.h"
 #include "partwidget.h"
 #include "skeletongraphicswidget.h"
@@ -289,24 +288,30 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
         }
         layout->addWidget(previewLabel);
     }
-    QCheckBox *remeshBox = nullptr;
+    QComboBox *polyCountSelectBox = nullptr;
     if (componentIds.size() <= 1) {
-        remeshBox = new QCheckBox();
-        remeshBox->setText(tr("Remeshed"));
+        polyCountSelectBox = new QComboBox;
         if (nullptr == component) {
-            if (m_document->remeshed)
-                remeshBox->setChecked(true);
-            connect(remeshBox, &QCheckBox::stateChanged, this, [=]() {
-                emit setComponentRemeshState(QUuid(), remeshBox->isChecked());
+            for (size_t i = 0; i < (size_t)PolyCount::Count; ++i) {
+                PolyCount count = (PolyCount)i;
+                polyCountSelectBox->addItem(PolyCountToDispName(count));
+            }
+            polyCountSelectBox->setCurrentIndex((int)m_document->polyCount);
+            connect(polyCountSelectBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [=](int index) {
+                emit setComponentPolyCount(QUuid(), (PolyCount)index);
+                emit groupOperationAdded();
             });
         } else {
-            if (component->remeshed)
-                remeshBox->setChecked(true);
-            connect(remeshBox, &QCheckBox::stateChanged, this, [=]() {
-                emit setComponentRemeshState(component->id, remeshBox->isChecked());
+            for (size_t i = 0; i < (size_t)PolyCount::Count; ++i) {
+                PolyCount count = (PolyCount)i;
+                polyCountSelectBox->addItem(PolyCountToDispName(count));
+            }
+            polyCountSelectBox->setCurrentIndex((int)component->polyCount);
+            connect(polyCountSelectBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [=](int index) {
+                emit setComponentPolyCount(component->id, (PolyCount)index);
+                emit groupOperationAdded();
             });
         }
-        Theme::initCheckbox(remeshBox);
     }
     QWidget *widget = new QWidget;
     if (nullptr != component) {
@@ -318,6 +323,7 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
         combineModeSelectBox->setCurrentIndex((int)component->combineMode);
         connect(combineModeSelectBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [=](int index) {
             emit setComponentCombineMode(component->id, (CombineMode)index);
+            emit groupOperationAdded();
         });
         
         QComboBox *partTargetSelectBox = nullptr;
@@ -330,6 +336,7 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
             partTargetSelectBox->setCurrentIndex((int)part->target);
             connect(partTargetSelectBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [=](int index) {
                 emit setPartTarget(part->id, (PartTarget)index);
+                emit groupOperationAdded();
             });
         }
         
@@ -343,6 +350,7 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
             partBaseSelectBox->setCurrentIndex((int)part->base);
             connect(partBaseSelectBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [=](int index) {
                 emit setPartBase(part->id, (PartBase)index);
+                emit groupOperationAdded();
             });
         }
         
@@ -353,6 +361,8 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
         //combineModeLayout->addWidget(combineModeSelectBox);
         
         QFormLayout *componentSettingsLayout = new QFormLayout;
+        if (nullptr != polyCountSelectBox)
+            componentSettingsLayout->addRow(tr("Poly"), polyCountSelectBox);
         if (nullptr != partBaseSelectBox)
             componentSettingsLayout->addRow(tr("Base"), partBaseSelectBox);
         if (nullptr != partTargetSelectBox)
@@ -361,15 +371,16 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
     
         QVBoxLayout *newLayout = new QVBoxLayout;
         newLayout->addLayout(layout);
-        if (nullptr != remeshBox)
-            newLayout->addWidget(remeshBox);
         newLayout->addLayout(componentSettingsLayout);
         widget->setLayout(newLayout);
     } else {
+        QFormLayout *componentSettingsLayout = new QFormLayout;
+        if (nullptr != polyCountSelectBox)
+            componentSettingsLayout->addRow(tr("Poly"), polyCountSelectBox);
+        
         QVBoxLayout *newLayout = new QVBoxLayout;
         newLayout->addLayout(layout);
-        if (nullptr != remeshBox)
-            newLayout->addWidget(remeshBox);
+        newLayout->addLayout(componentSettingsLayout);
         widget->setLayout(newLayout);
     }
     forDisplayPartImage.setDefaultWidget(widget);
