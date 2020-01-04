@@ -716,9 +716,12 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, 
                         it += xMirrorStart;
                     partCache.faces.push_back(newFace);
                 }
+                MeshCombiner::Mesh *newMesh = nullptr;
                 MeshCombiner::Mesh *xMirroredMesh = new MeshCombiner::Mesh(xMirroredVertices, xMirroredFaces, false);
-                MeshCombiner::Mesh *newMesh = combineTwoMeshes(*mesh,
-                    *xMirroredMesh, MeshCombiner::Method::Union);
+                if (!xMirroredMesh->isNull()) {
+                    newMesh = combineTwoMeshes(*mesh,
+                        *xMirroredMesh, MeshCombiner::Method::Union);
+                }
                 delete xMirroredMesh;
                 if (newMesh && !newMesh->isNull()) {
                     delete mesh;
@@ -834,6 +837,8 @@ CombineMode MeshGenerator::componentCombineMode(const std::map<QString, QString>
     if (combineMode == CombineMode::Normal) {
         if (isTrueValueString(valueOfKeyInMapOrEmpty(*component, "inverse")))
             combineMode = CombineMode::Inversion;
+        if (componentRemeshed(component))
+            combineMode = CombineMode::Uncombined;
     }
     return combineMode;
 }
@@ -1058,8 +1063,16 @@ MeshCombiner::Mesh *MeshGenerator::combineComponentMesh(const QString &component
             delete mesh;
             mesh = new MeshCombiner::Mesh(newVertices, newTriangles, componentId.isNull());
             if (nullptr != mesh) {
+                if (!componentId.isNull()) {
+                    if (mesh->isNull()) {
+                        delete mesh;
+                        mesh = nullptr;
+                    }
+                }
                 delete componentCache.mesh;
-                componentCache.mesh = new MeshCombiner::Mesh(*mesh);
+                componentCache.mesh = nullptr;
+                if (nullptr != mesh)
+                    componentCache.mesh = new MeshCombiner::Mesh(*mesh);
             }
         }
     }
@@ -1197,6 +1210,10 @@ MeshCombiner::Mesh *MeshGenerator::combineTwoMeshes(const MeshCombiner::Mesh &fi
                 }
             }
         }
+    }
+    if (newMesh->isNull()) {
+        delete newMesh;
+        return nullptr;
     }
     return newMesh;
 }
