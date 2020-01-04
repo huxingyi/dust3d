@@ -8,6 +8,7 @@
 #include <QMutex>
 #include <QRubberBand>
 #include <QVector2D>
+#include <QTimer>
 #include "meshloader.h"
 #include "modelshaderprogram.h"
 #include "modelmeshbinder.h"
@@ -36,6 +37,7 @@ public:
     void updateMesh(MeshLoader *mesh);
     void setGraphicsFunctions(SkeletonGraphicsFunctions *graphicsFunctions);
     void toggleWireframe();
+    void toggleRotation();
     void toggleUvCheck();
     void enableMove(bool enabled);
     void enableZoom(bool enabled);
@@ -93,6 +95,7 @@ private:
     QPoint m_moveStartPos;
     QRect m_moveStartGeometry;
     int m_modelInitialHeight = 0;
+    QTimer *m_rotationTimer = nullptr;
     std::pair<QVector3D, QVector3D> screenPositionToMouseRay(const QPoint &screenPosition);
 };
 

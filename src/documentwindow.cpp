@@ -727,6 +727,12 @@ DocumentWindow::DocumentWindow() :
     });
     m_viewMenu->addAction(m_toggleWireframeAction);
     
+    m_toggleRotationAction = new QAction(tr("Toggle Rotation"), this);
+    connect(m_toggleRotationAction, &QAction::triggered, [=]() {
+        m_modelRenderWidget->toggleRotation();
+    });
+    m_viewMenu->addAction(m_toggleRotationAction);
+    
     m_toggleUvCheckAction = new QAction(tr("Toggle UV Check"), this);
     connect(m_toggleUvCheckAction, &QAction::triggered, [=]() {
         m_modelRenderWidget->toggleUvCheck();

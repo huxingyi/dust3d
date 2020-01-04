@@ -211,6 +211,22 @@ void ModelWidget::toggleWireframe()
     update();
 }
 
+void ModelWidget::toggleRotation()
+{
+    if (nullptr != m_rotationTimer) {
+        delete m_rotationTimer;
+        m_rotationTimer = nullptr;
+    } else {
+        m_rotationTimer = new QTimer(this);
+        m_rotationTimer->setInterval(42);
+        m_rotationTimer->setSingleShot(false);
+        connect(m_rotationTimer, &QTimer::timeout, this, [&]() {
+            setYRotation(m_yRot - 8);
+        });
+        m_rotationTimer->start();
+    }
+}
+
 void ModelWidget::toggleUvCheck()
 {
     if (m_meshBinder.isCheckUvEnabled())

@@ -390,6 +390,10 @@ Tips:
         <source>&amp;Help</source>
         <translation>帮助(&amp;H)</translation>
     </message>
+    <message>
+        <source>Toggle Rotation</source>
+        <translation>打开/关闭自动旋转</translation>
+    </message>
 </context>
 <context>
     <name>ExportPreviewWidget</name>
@@ -735,10 +739,6 @@ Tips:
     <message>
         <source>Paste Color</source>
         <translation>粘贴颜色</translation>
-    </message>
-    <message>
-        <source>Remeshed</source>
-        <translation type="vanished">重新网格化</translation>
     </message>
     <message>
         <source>Poly</source>

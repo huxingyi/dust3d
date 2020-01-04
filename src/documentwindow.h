@@ -168,7 +168,7 @@ private:
     QAction *m_resetModelWidgetPosAction;
     QAction *m_toggleWireframeAction;
     QAction *m_toggleUvCheckAction;
-    QAction *m_showMotionsListAction;
+    QAction *m_toggleRotationAction;
     
     QMenu *m_windowMenu;
     QAction *m_showPartsListAction;
