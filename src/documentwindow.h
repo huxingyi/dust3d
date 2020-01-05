@@ -169,6 +169,8 @@ private:
     QAction *m_toggleWireframeAction;
     QAction *m_toggleUvCheckAction;
     QAction *m_toggleRotationAction;
+    QAction *m_toggleColorAction;
+    bool m_modelRemoveColor = false;
     
     QMenu *m_windowMenu;
     QAction *m_showPartsListAction;

@@ -179,7 +179,7 @@ DocumentWindow::DocumentWindow() :
     Theme::initAwesomeButton(zoomOutButton);
     
     m_rotationButton = new QPushButton(QChar(fa::caretsquareoup));
-    m_rotationButton->setToolTip(tr("Toggle rotation"));
+    m_rotationButton->setToolTip(tr("Toggle viewport"));
     Theme::initAwesomeButton(m_rotationButton);
     updateRotationButtonState();
 
@@ -733,6 +733,23 @@ DocumentWindow::DocumentWindow() :
     });
     m_viewMenu->addAction(m_toggleRotationAction);
     
+    m_toggleColorAction = new QAction(tr("Toggle Color"), this);
+    connect(m_toggleColorAction, &QAction::triggered, [&]() {
+        m_modelRemoveColor = !m_modelRemoveColor;
+        MeshLoader *mesh = nullptr;
+        if (m_document->isMeshGenerating() &&
+                m_document->isPostProcessing() &&
+                m_document->isTextureGenerating()) {
+            mesh = m_document->takeResultMesh();
+        } else {
+            mesh = m_document->takeResultTextureMesh();
+        }
+        if (m_modelRemoveColor && mesh)
+            mesh->removeColor();
+        m_modelRenderWidget->updateMesh(mesh);
+    });
+    m_viewMenu->addAction(m_toggleColorAction);
+    
     m_toggleUvCheckAction = new QAction(tr("Toggle UV Check"), this);
     connect(m_toggleUvCheckAction, &QAction::triggered, [=]() {
         m_modelRenderWidget->toggleUvCheck();
@@ -1080,6 +1097,8 @@ DocumentWindow::DocumentWindow() :
                 return;
             }
         }
+        if (m_modelRemoveColor && resultTextureMesh)
+            resultTextureMesh->removeColor();
         m_modelRenderWidget->updateMesh(resultTextureMesh);
     });
     
@@ -1087,6 +1106,8 @@ DocumentWindow::DocumentWindow() :
         auto resultMesh = m_document->takeResultMesh();
         if (nullptr != resultMesh)
             m_currentUpdatedMeshId = resultMesh->meshId();
+        if (m_modelRemoveColor && resultMesh)
+            resultMesh->removeColor();
         m_modelRenderWidget->updateMesh(resultMesh);
     });
     

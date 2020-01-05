@@ -57,6 +57,7 @@ public:
     void updateTriangleVertices(ShaderVertex *triangleVertices, int triangleVertexCount);
     quint64 meshId() const;
     void setMeshId(quint64 id);
+    void removeColor();
 private:
     ShaderVertex *m_triangleVertices = nullptr;
     int m_triangleVertexCount = 0;

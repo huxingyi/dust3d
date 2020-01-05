@@ -331,10 +331,6 @@ Tips:
         <translation>切换UV检查</translation>
     </message>
     <message>
-        <source>Toggle rotation</source>
-        <translation>旋转视角</translation>
-    </message>
-    <message>
         <source>Colorize</source>
         <translation>着色</translation>
     </message>
@@ -393,6 +389,14 @@ Tips:
     <message>
         <source>Toggle Rotation</source>
         <translation>打开/关闭自动旋转</translation>
+    </message>
+    <message>
+        <source>Toggle viewport</source>
+        <translation>切换视图</translation>
+    </message>
+    <message>
+        <source>Toggle Color</source>
+        <translation>打开/关闭颜色</translation>
     </message>
 </context>
 <context>

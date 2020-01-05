@@ -57,6 +57,29 @@ MeshLoader::MeshLoader(const MeshLoader &mesh) :
     this->m_meshId = mesh.meshId();
 }
 
+void MeshLoader::removeColor()
+{
+    delete this->m_textureImage;
+    this->m_textureImage = nullptr;
+    
+    delete this->m_normalMapImage;
+    this->m_normalMapImage = nullptr;
+    
+    delete this->m_metalnessRoughnessAmbientOcclusionImage;
+    this->m_metalnessRoughnessAmbientOcclusionImage = nullptr;
+    
+    this->m_hasMetalnessInImage = false;
+    this->m_hasRoughnessInImage = false;
+    this->m_hasAmbientOcclusionInImage = false;
+    
+    for (int i = 0; i < this->m_triangleVertexCount; ++i) {
+        auto &vertex = this->m_triangleVertices[i];
+        vertex.colorR = 1.0;
+        vertex.colorG = 1.0;
+        vertex.colorB = 1.0;
+    }
+}
+
 MeshLoader::MeshLoader(ShaderVertex *triangleVertices, int vertexNum, ShaderVertex *edgeVertices, int edgeVertexCount) :
     m_triangleVertices(triangleVertices),
     m_triangleVertexCount(vertexNum),
