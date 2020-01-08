@@ -1201,6 +1201,8 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
                 component["smoothSeam"] = QString::number(componentIt.second.smoothSeam);
             if (componentIt.second.polyCount != PolyCount::Original)
                 component["polyCount"] = PolyCountToString(componentIt.second.polyCount);
+            if (componentIt.second.layer != ComponentLayer::Body)
+                component["layer"] = ComponentLayerToString(componentIt.second.layer);
             QStringList childIdList;
             for (const auto &childId: componentIt.second.childrenIds) {
                 childIdList.append(childId.toString());
@@ -1708,6 +1710,7 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
         if (smoothSeamIt != componentKv.second.end())
             component.setSmoothSeam(smoothSeamIt->second.toFloat());
         component.polyCount = PolyCountFromString(valueOfKeyInMapOrEmpty(componentKv.second, "polyCount").toUtf8().constData());
+        component.layer = ComponentLayerFromString(valueOfKeyInMapOrEmpty(componentKv.second, "layer").toUtf8().constData());
         //qDebug() << "Add component:" << component.id << " old:" << componentKv.first << "name:" << component.name;
         if ("partId" == linkDataType) {
             QUuid partId = oldNewIdMap[QUuid(linkData)];
@@ -2494,6 +2497,20 @@ void Document::setComponentPolyCount(QUuid componentId, PolyCount count)
     component->polyCount = count;
     component->dirty = true;
     emit componentPolyCountChanged(componentId);
+    emit skeletonChanged();
+}
+
+void Document::setComponentLayer(QUuid componentId, ComponentLayer layer)
+{
+    Component *component = (Component *)findComponent(componentId);
+    if (nullptr == component)
+        return;
+    if (component->layer == layer)
+        return;
+    
+    component->layer = layer;
+    component->dirty = true;
+    emit componentLayerChanged(componentId);
     emit skeletonChanged();
 }
 

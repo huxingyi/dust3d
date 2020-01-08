@@ -482,9 +482,19 @@ HEADERS += src/contourtopartconverter.h
 SOURCES += src/remesher.cpp
 HEADERS += src/remesher.h
 
+SOURCES += src/clothsimulator.cpp
+HEADERS += src/clothsimulator.h
+
+SOURCES += src/componentlayer.cpp
+HEADERS += src/componentlayer.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h
+
+INCLUDEPATH += thirdparty/FastMassSpring/ClothApp
+SOURCES += thirdparty/FastMassSpring/ClothApp/MassSpringSolver.cpp
+HEADERS += thirdparty/FastMassSpring/ClothApp/MassSpringSolver.h
 
 INCLUDEPATH += thirdparty/instant-meshes
 INCLUDEPATH += thirdparty/instant-meshes/instant-meshes-dust3d/src

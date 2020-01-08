@@ -11,6 +11,7 @@
 #include "snapshot.h"
 #include "combinemode.h"
 #include "meshloader.h"
+#include "componentlayer.h"
 
 class GeneratedPart
 {
@@ -100,6 +101,8 @@ private:
     std::map<QUuid, StrokeMeshBuilder::CutFaceTransform> *m_cutFaceTransforms = nullptr;
     std::map<QUuid, std::map<QString, QVector2D>> *m_nodesCutFaces = nullptr;
     quint64 m_id = 0;
+    std::vector<QVector3D> m_clothCollisionVertices;
+    std::vector<std::vector<size_t>> m_clothCollisionTriangles;
     
     void collectParts();
     bool checkIsComponentDirty(const QString &componentIdString);
@@ -125,7 +128,9 @@ private:
         GeneratedComponent &componentCache);
     MeshCombiner::Mesh *combineMultipleMeshes(const std::vector<std::tuple<MeshCombiner::Mesh *, CombineMode, QString>> &multipleMeshes, bool recombine=true);
     QString componentColorName(const std::map<QString, QString> *component);
+    ComponentLayer componentLayer(const std::map<QString, QString> *component);
     void collectUncombinedComponent(const QString &componentIdString);
+    void collectClothComponent(const QString &componentIdString);
     void cutFaceStringToCutTemplate(const QString &cutFaceString, std::vector<QVector2D> &cutTemplate);
     void remesh(const std::vector<OutcomeNode> &inputNodes,
         const std::vector<QVector3D> &inputVertices,

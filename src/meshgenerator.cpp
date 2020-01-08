@@ -18,6 +18,7 @@
 #include "triangulatefaces.h"
 #include "remesher.h"
 #include "polycount.h"
+#include "clothsimulator.h"
 
 MeshGenerator::MeshGenerator(Snapshot *snapshot) :
     m_snapshot(snapshot)
@@ -840,6 +841,11 @@ CombineMode MeshGenerator::componentCombineMode(const std::map<QString, QString>
             combineMode = CombineMode::Inversion;
         if (componentRemeshed(component))
             combineMode = CombineMode::Uncombined;
+        if (combineMode == CombineMode::Normal) {
+            if (ComponentLayer::Body != ComponentLayerFromString(valueOfKeyInMapOrEmpty(*component, "layer").toUtf8().constData())) {
+                combineMode = CombineMode::Uncombined;
+            }
+        }
     }
     return combineMode;
 }
@@ -877,6 +883,13 @@ QString MeshGenerator::componentColorName(const std::map<QString, QString> *comp
         return colorName;
     }
     return QString();
+}
+
+ComponentLayer MeshGenerator::componentLayer(const std::map<QString, QString> *component)
+{
+    if (nullptr == component)
+        return ComponentLayer::Body;
+    return ComponentLayerFromString(valueOfKeyInMapOrEmpty(*component, "layer").toUtf8().constData());
 }
 
 MeshCombiner::Mesh *MeshGenerator::combineComponentMesh(const QString &componentIdString, CombineMode *combineMode)
@@ -1033,6 +1046,16 @@ MeshCombiner::Mesh *MeshGenerator::combineComponentMesh(const QString &component
     if (nullptr != mesh && mesh->isNull()) {
         delete mesh;
         mesh = nullptr;
+    }
+    
+    if (componentId.isNull()) {
+        // Prepare cloth collision shap
+        if (nullptr != mesh && !mesh->isNull()) {
+            mesh->fetch(m_clothCollisionVertices, m_clothCollisionTriangles);
+        } else {
+            // TODO: when no body is valid, may add ground plane as collision shape
+            // ... ...
+        }
     }
     
     if (nullptr != mesh) {
@@ -1386,6 +1409,7 @@ void MeshGenerator::generate()
     
     // Recursively check uncombined components
     collectUncombinedComponent(QUuid().toString());
+    collectClothComponent(QUuid().toString());
     
     // Collect errored parts
     for (const auto &it: m_cacheContext->parts) {
@@ -1514,6 +1538,8 @@ void MeshGenerator::collectUncombinedComponent(const QString &componentIdString)
 {
     const auto &component = findComponent(componentIdString);
     if (CombineMode::Uncombined == componentCombineMode(component)) {
+        if (ComponentLayer::Body != componentLayer(component))
+            return;
         const auto &componentCache = m_cacheContext->components[componentIdString];
         if (nullptr == componentCache.mesh || componentCache.mesh->isNull()) {
             qDebug() << "Uncombined mesh is null";
@@ -1550,6 +1576,71 @@ void MeshGenerator::collectUncombinedComponent(const QString &componentIdString)
         if (childIdString.isEmpty())
             continue;
         collectUncombinedComponent(childIdString);
+    }
+}
+
+void MeshGenerator::collectClothComponent(const QString &componentIdString)
+{
+    const auto &component = findComponent(componentIdString);
+    if (ComponentLayer::Cloth == componentLayer(component)) {
+        const auto &componentCache = m_cacheContext->components[componentIdString];
+        if (nullptr == componentCache.mesh || componentCache.mesh->isNull()) {
+            return;
+        }
+        if (m_clothCollisionTriangles.empty())
+            return;
+        
+        std::vector<QVector3D> uncombinedVertices;
+        std::vector<std::vector<size_t>> uncombinedFaces;
+        componentCache.mesh->fetch(uncombinedVertices, uncombinedFaces);
+        
+        std::map<PositionKey, std::pair<QUuid, QUuid>> positionMap;
+        for (const auto &it: componentCache.outcomeNodeVertices) {
+            positionMap.insert({PositionKey(it.first), it.second});
+        }
+        std::vector<std::pair<QUuid, QUuid>> uncombinedVertexSources(uncombinedVertices.size());
+        for (size_t i = 0; i < uncombinedVertices.size(); ++i) {
+            auto findSource = positionMap.find(PositionKey(uncombinedVertices[i]));
+            if (findSource == positionMap.end())
+                continue;
+            uncombinedVertexSources[i] = findSource->second;
+        }
+        
+        ClothSimulator clothSimulator(uncombinedVertices,
+            uncombinedFaces,
+            m_clothCollisionVertices,
+            m_clothCollisionTriangles);
+        clothSimulator.create();
+        for (size_t i = 0; i < 30; ++i)
+            clothSimulator.step();
+        clothSimulator.getCurrentVertices(&uncombinedVertices);
+    
+        auto vertexStartIndex = m_outcome->vertices.size();
+        auto updateVertexIndices = [=](std::vector<std::vector<size_t>> &faces) {
+            for (auto &it: faces) {
+                for (auto &subIt: it)
+                    subIt += vertexStartIndex;
+            }
+        };
+        updateVertexIndices(uncombinedFaces);
+        
+        m_outcome->vertices.insert(m_outcome->vertices.end(), uncombinedVertices.begin(), uncombinedVertices.end());
+        m_outcome->triangles.insert(m_outcome->triangles.end(), uncombinedFaces.begin(), uncombinedFaces.end());
+        m_outcome->triangleAndQuads.insert(m_outcome->triangleAndQuads.end(), uncombinedFaces.begin(), uncombinedFaces.end());
+        
+        m_outcome->nodes.insert(m_outcome->nodes.end(), componentCache.outcomeNodes.begin(), componentCache.outcomeNodes.end());
+        for (size_t i = 0; i < uncombinedVertices.size(); ++i) {
+            const auto &source = uncombinedVertexSources[i];
+            if (source.first.isNull())
+                continue;
+            m_outcome->nodeVertices.push_back(std::make_pair(uncombinedVertices[i], source));
+        }
+        return;
+    }
+    for (const auto &childIdString: valueOfKeyInMapOrEmpty(*component, "children").split(",")) {
+        if (childIdString.isEmpty())
+            continue;
+        collectClothComponent(childIdString);
     }
 }
 

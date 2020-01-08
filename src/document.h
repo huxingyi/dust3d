@@ -30,6 +30,7 @@
 #include "preferences.h"
 #include "paintmode.h"
 #include "proceduralanimation.h"
+#include "componentlayer.h"
 
 class MaterialPreviewsGenerator;
 class MotionsGenerator;
@@ -67,6 +68,7 @@ public:
     float smoothAll = 0.0;
     float smoothSeam = 0.0;
     PolyCount polyCount = PolyCount::Original;
+    ComponentLayer layer = ComponentLayer::Body;
     std::vector<QUuid> childrenIds;
     QString linkData() const
     {
@@ -396,6 +398,7 @@ signals:
     void componentSmoothAllChanged(QUuid componentId);
     void componentSmoothSeamChanged(QUuid componentId);
     void componentPolyCountChanged(QUuid componentId);
+    void componentLayerChanged(QUuid componentId);
     void nodeRemoved(QUuid nodeId);
     void edgeRemoved(QUuid edgeId);
     void nodeRadiusChanged(QUuid nodeId);
@@ -642,6 +645,7 @@ public slots:
     void setComponentSmoothAll(QUuid componentId, float toSmoothAll);
     void setComponentSmoothSeam(QUuid componentId, float toSmoothSeam);
     void setComponentPolyCount(QUuid componentId, PolyCount count);
+    void setComponentLayer(QUuid componentId, ComponentLayer layer);
     void hideOtherComponents(QUuid componentId);
     void lockOtherComponents(QUuid componentId);
     void hideAllComponents();

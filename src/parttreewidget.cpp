@@ -315,6 +315,17 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
     }
     QWidget *widget = new QWidget;
     if (nullptr != component) {
+        QComboBox *componentLayerSelectBox = new QComboBox;
+        for (size_t i = 0; i < (size_t)ComponentLayer::Count; ++i) {
+            ComponentLayer layer = (ComponentLayer)i;
+            componentLayerSelectBox->addItem(ComponentLayerToDispName(layer));
+        }
+        componentLayerSelectBox->setCurrentIndex((int)component->layer);
+        connect(componentLayerSelectBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [=](int index) {
+            emit setComponentLayer(component->id, (ComponentLayer)index);
+            emit groupOperationAdded();
+        });
+        
         QComboBox *combineModeSelectBox = new QComboBox;
         for (size_t i = 0; i < (size_t)CombineMode::Count; ++i) {
             CombineMode mode = (CombineMode)i;
@@ -368,6 +379,7 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
         if (nullptr != partTargetSelectBox)
             componentSettingsLayout->addRow(tr("Target"), partTargetSelectBox);
         componentSettingsLayout->addRow(tr("Mode"), combineModeSelectBox);
+        componentSettingsLayout->addRow(tr("Layer"), componentLayerSelectBox);
     
         QVBoxLayout *newLayout = new QVBoxLayout;
         newLayout->addLayout(layout);

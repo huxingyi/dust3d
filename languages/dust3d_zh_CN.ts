@@ -748,6 +748,10 @@ Tips:
         <source>Poly</source>
         <translation>面数</translation>
     </message>
+    <message>
+        <source>Layer</source>
+        <translation>层</translation>
+    </message>
 </context>
 <context>
     <name>PartWidget</name>
@@ -1069,6 +1073,14 @@ Tips:
     <message>
         <source>Extreme High Poly</source>
         <translation>极高面</translation>
+    </message>
+    <message>
+        <source>Body</source>
+        <translation>身体</translation>
+    </message>
+    <message>
+        <source>Cloth</source>
+        <translation>衣服</translation>
     </message>
 </context>
 <context>
