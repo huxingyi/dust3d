@@ -19,6 +19,7 @@
 #include "remesher.h"
 #include "polycount.h"
 #include "clothsimulator.h"
+#include "isotropicremesh.h"
 
 MeshGenerator::MeshGenerator(Snapshot *snapshot) :
     m_snapshot(snapshot)
@@ -1090,9 +1091,11 @@ MeshCombiner::Mesh *MeshGenerator::combineComponentMesh(const QString &component
                 });
             }
             delete mesh;
-            mesh = new MeshCombiner::Mesh(newVertices, newTriangles, componentId.isNull());
+            bool disableSelfIntersectionTest = componentId.isNull() ||
+                CombineMode::Uncombined == componentCombineMode(component);
+            mesh = new MeshCombiner::Mesh(newVertices, newTriangles, disableSelfIntersectionTest);
             if (nullptr != mesh) {
-                if (!componentId.isNull()) {
+                if (!disableSelfIntersectionTest) {
                     if (mesh->isNull()) {
                         delete mesh;
                         mesh = nullptr;
@@ -1584,15 +1587,30 @@ void MeshGenerator::collectClothComponent(const QString &componentIdString)
     const auto &component = findComponent(componentIdString);
     if (ComponentLayer::Cloth == componentLayer(component)) {
         const auto &componentCache = m_cacheContext->components[componentIdString];
-        if (nullptr == componentCache.mesh || componentCache.mesh->isNull()) {
+        if (nullptr == componentCache.mesh) {
             return;
         }
         if (m_clothCollisionTriangles.empty())
             return;
         
         std::vector<QVector3D> uncombinedVertices;
+        std::vector<std::vector<size_t>> uncombinedOriginalFaces;
         std::vector<std::vector<size_t>> uncombinedFaces;
-        componentCache.mesh->fetch(uncombinedVertices, uncombinedFaces);
+        componentCache.mesh->fetch(uncombinedVertices, uncombinedOriginalFaces);
+        uncombinedFaces.reserve(uncombinedOriginalFaces.size());
+        for (const auto &it: uncombinedOriginalFaces) {
+            if (4 == it.size()) {
+                uncombinedFaces.push_back(std::vector<size_t> {
+                    it[0], it[1], it[2]
+                });
+                uncombinedFaces.push_back(std::vector<size_t> {
+                    it[2], it[3], it[0]
+                });
+            } else if (3 == it.size()) {
+                uncombinedFaces.push_back(it);
+            }
+        }
+        isotropicRemesh(uncombinedVertices, uncombinedFaces, uncombinedVertices, uncombinedFaces, 0.02f, 3);
         
         std::map<PositionKey, std::pair<QUuid, QUuid>> positionMap;
         for (const auto &it: componentCache.outcomeNodeVertices) {
@@ -1625,7 +1643,18 @@ void MeshGenerator::collectClothComponent(const QString &componentIdString)
         updateVertexIndices(uncombinedFaces);
         
         m_outcome->vertices.insert(m_outcome->vertices.end(), uncombinedVertices.begin(), uncombinedVertices.end());
-        m_outcome->triangles.insert(m_outcome->triangles.end(), uncombinedFaces.begin(), uncombinedFaces.end());
+        for (const auto &it: uncombinedFaces) {
+            if (4 == it.size()) {
+                m_outcome->triangles.push_back(std::vector<size_t> {
+                    it[0], it[1], it[2]
+                });
+                m_outcome->triangles.push_back(std::vector<size_t> {
+                    it[2], it[3], it[0]
+                });
+            } else if (3 == it.size()) {
+                m_outcome->triangles.push_back(it);
+            }
+        }
         m_outcome->triangleAndQuads.insert(m_outcome->triangleAndQuads.end(), uncombinedFaces.begin(), uncombinedFaces.end());
         
         m_outcome->nodes.insert(m_outcome->nodes.end(), componentCache.outcomeNodes.begin(), componentCache.outcomeNodes.end());

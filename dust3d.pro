@@ -488,6 +488,9 @@ HEADERS += src/clothsimulator.h
 SOURCES += src/componentlayer.cpp
 HEADERS += src/componentlayer.h
 
+SOURCES += src/isotropicremesh.cpp
+HEADERS += src/isotropicremesh.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h
