@@ -9,6 +9,7 @@ class MassSpringSolver;
 class CgRootNode;
 class CgSpringDeformationNode;
 class CgMeshCollisionNode;
+class CgPointFixNode;
 
 class ClothSimulator : public QObject
 {
@@ -37,6 +38,7 @@ private:
     CgRootNode *m_rootNode = nullptr;
     CgSpringDeformationNode *m_deformationNode = nullptr;
     CgMeshCollisionNode *m_meshCollisionNode = nullptr;
+    CgPointFixNode *m_fixNode = nullptr;
     void convertMeshToCloth();
 };
 

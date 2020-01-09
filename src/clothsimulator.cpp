@@ -111,6 +111,19 @@ public:
             }
         }
     }
+    
+    void fixPoints(CgPointFixNode *fixNode) {
+        for (unsigned int i = 0; i < system->n_points; i++) {
+            auto offset = 3 * i;
+            Point point(vbuff[offset + 0],
+                vbuff[offset + 1],
+                vbuff[offset + 2]);
+            if (nullptr != m_insideTester &&
+                    (*m_insideTester)(point) != CGAL::ON_UNBOUNDED_SIDE) {
+                fixNode->fixPoint(i);
+            }
+        }
+    }
 };
 
 ClothSimulator::ClothSimulator(const std::vector<QVector3D> &vertices,
@@ -131,6 +144,7 @@ ClothSimulator::~ClothSimulator()
     delete m_rootNode;
     delete m_deformationNode;
     delete m_meshCollisionNode;
+    delete m_fixNode;
 }
 
 void ClothSimulator::setStiffness(float stiffness)
@@ -239,9 +253,14 @@ void ClothSimulator::create()
     
     m_rootNode = new CgRootNode(m_massSpringSystem, m_clothPointBuffer.data());
     m_rootNode->addChild(m_deformationNode);
-    
+
     m_meshCollisionNode = new CgMeshCollisionNode(m_massSpringSystem, m_clothPointBuffer.data(),
         m_collisionVertices,
         m_collisionTriangles);
+    
+    m_fixNode = new CgPointFixNode(m_massSpringSystem, m_clothPointBuffer.data());
+    m_meshCollisionNode->fixPoints(m_fixNode);
+    m_deformationNode->addChild(m_fixNode);
+    
     m_rootNode->addChild(m_meshCollisionNode);
 }

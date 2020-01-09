@@ -754,7 +754,7 @@ Tips:
     </message>
     <message>
         <source>Stiffness</source>
-        <translation type="unfinished"></translation>
+        <translation>硬度</translation>
     </message>
 </context>
 <context>
