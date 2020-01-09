@@ -55,16 +55,13 @@ private:
 };
 
 // System parameters
-namespace SystemParam {
-    static const int n = 61; // must be odd, n * n = n_vertices | 61
-    static const float w = 2.0f; // width | 2.0f
-    static const float h = 0.008f; // time step, smaller for better results | 0.008f = 0.016f/2
-    static const float r = w / (n - 1) * 1.05f; // spring rest legnth
-    static const float k = 1.0f; // spring stiffness | 1.0f;
-    static const float m = 0.25f / (n * n); // point mass | 0.25f
-    static const float a = 0.993f; // damping, close to 1.0 | 0.993f
-    static const float g = 9.8f * m; // gravitational force | 9.8f
-}
+//namespace SystemParam {
+//    static const int n = 61; // must be odd, n * n = n_vertices | 61
+//    static const float h = 0.001f; // time step, smaller for better results | 0.008f = 0.016f/2
+//    static const float m = 0.25f / (n * n); // point mass | 0.25f
+//    static const float a = 0.993f; // damping, close to 1.0 | 0.993f
+//    static const float g = 9.8f * m; // gravitational force | 9.8f
+//}
 
 // Point - mesh collision node
 class CgMeshCollisionNode : public CgPointNode {
@@ -136,6 +133,11 @@ ClothSimulator::~ClothSimulator()
     delete m_meshCollisionNode;
 }
 
+void ClothSimulator::setStiffness(float stiffness)
+{
+    m_stiffness = 1.0f + 5.0f * stiffness;
+}
+
 void ClothSimulator::convertMeshToCloth()
 {
     m_clothPointSources.reserve(m_vertices.size());
@@ -176,7 +178,7 @@ void ClothSimulator::getCurrentVertices(std::vector<QVector3D> *currentVertices)
         size_t oldIndex = m_clothPointSources[newIndex];
         auto offset = newIndex * 3;
         (*currentVertices)[oldIndex] = QVector3D(m_clothPointBuffer[offset + 0],
-            m_clothPointBuffer[offset + 1],
+            m_clothPointBuffer[offset + 1] + 0.01,
             m_clothPointBuffer[offset + 2]);
     }
 }
@@ -200,7 +202,12 @@ void ClothSimulator::create()
     if (m_clothPointSources.empty())
         return;
     
-    mass_spring_system::VectorXf masses(SystemParam::m * mass_spring_system::VectorXf::Ones((unsigned int)m_clothSprings.size()));
+    float mass = 0.25f / m_clothPointSources.size();
+    float gravitationalForce = 9.8f * mass;
+    float damping = 0.993f; // damping, close to 1.0 | 0.993f;
+    float timeStep = 0.001f; //smaller for better results | 0.008f = 0.016f/2;
+    
+    mass_spring_system::VectorXf masses(mass * mass_spring_system::VectorXf::Ones((unsigned int)m_clothSprings.size()));
     
     mass_spring_system::EdgeList springList(m_clothSprings.size());
     mass_spring_system::VectorXf restLengths(m_clothSprings.size());
@@ -210,13 +217,13 @@ void ClothSimulator::create()
         const auto &source = m_clothSprings[i];
         springList[i] = mass_spring_system::Edge(source.first, source.second);
         restLengths[i] = (m_vertices[m_clothPointSources[source.first]] - m_vertices[m_clothPointSources[source.second]]).length();
-        stiffnesses[i] = SystemParam::k;
+        stiffnesses[i] = m_stiffness;
     }
     
-    mass_spring_system::VectorXf fext = Eigen::Vector3f(0, -SystemParam::g, 0).replicate(m_clothPointSources.size(), 1);
+    mass_spring_system::VectorXf fext = Eigen::Vector3f(0, -gravitationalForce, 0).replicate(m_clothPointSources.size(), 1);
     
-    m_massSpringSystem = new mass_spring_system(m_clothPointSources.size(), m_clothSprings.size(), SystemParam::h, springList, restLengths,
-        stiffnesses, masses, fext, SystemParam::a);
+    m_massSpringSystem = new mass_spring_system(m_clothPointSources.size(), m_clothSprings.size(), timeStep, springList, restLengths,
+        stiffnesses, masses, fext, damping);
 
     m_massSpringSolver = new MassSpringSolver(m_massSpringSystem, m_clothPointBuffer.data());
     

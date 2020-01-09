@@ -19,6 +19,7 @@ public:
         const std::vector<QVector3D> &collisionVertices,
         const std::vector<std::vector<size_t>> &collisionTriangles);
     ~ClothSimulator();
+    void setStiffness(float stiffness);
     void create();
     void step();
     void getCurrentVertices(std::vector<QVector3D> *currentVertices);
@@ -30,6 +31,7 @@ private:
     std::vector<float> m_clothPointBuffer;
     std::vector<size_t> m_clothPointSources;
     std::vector<std::pair<size_t, size_t>> m_clothSprings;
+    float m_stiffness = 1.0f;
     mass_spring_system *m_massSpringSystem = nullptr;
     MassSpringSolver *m_massSpringSolver = nullptr;
     CgRootNode *m_rootNode = nullptr;

@@ -129,6 +129,7 @@ private:
     MeshCombiner::Mesh *combineMultipleMeshes(const std::vector<std::tuple<MeshCombiner::Mesh *, CombineMode, QString>> &multipleMeshes, bool recombine=true);
     QString componentColorName(const std::map<QString, QString> *component);
     ComponentLayer componentLayer(const std::map<QString, QString> *component);
+    float componentClothStiffness(const std::map<QString, QString> *component);
     void collectUncombinedComponent(const QString &componentIdString);
     void collectClothComponent(const QString &componentIdString);
     void cutFaceStringToCutTemplate(const QString &cutFaceString, std::vector<QVector2D> &cutTemplate);

@@ -1203,6 +1203,8 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
                 component["polyCount"] = PolyCountToString(componentIt.second.polyCount);
             if (componentIt.second.layer != ComponentLayer::Body)
                 component["layer"] = ComponentLayerToString(componentIt.second.layer);
+            if (componentIt.second.clothStiffnessAdjusted())
+                component["clothStiffness"] = QString::number(componentIt.second.clothStiffness);
             QStringList childIdList;
             for (const auto &childId: componentIt.second.childrenIds) {
                 childIdList.append(childId.toString());
@@ -1711,6 +1713,9 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
             component.setSmoothSeam(smoothSeamIt->second.toFloat());
         component.polyCount = PolyCountFromString(valueOfKeyInMapOrEmpty(componentKv.second, "polyCount").toUtf8().constData());
         component.layer = ComponentLayerFromString(valueOfKeyInMapOrEmpty(componentKv.second, "layer").toUtf8().constData());
+        auto findClothStiffness = componentKv.second.find("clothStiffness");
+        if (findClothStiffness != componentKv.second.end())
+            component.clothStiffness = findClothStiffness->second.toFloat();
         //qDebug() << "Add component:" << component.id << " old:" << componentKv.first << "name:" << component.name;
         if ("partId" == linkDataType) {
             QUuid partId = oldNewIdMap[QUuid(linkData)];
@@ -2511,6 +2516,20 @@ void Document::setComponentLayer(QUuid componentId, ComponentLayer layer)
     component->layer = layer;
     component->dirty = true;
     emit componentLayerChanged(componentId);
+    emit skeletonChanged();
+}
+
+void Document::setComponentClothStiffness(QUuid componentId, float stiffness)
+{
+    Component *component = (Component *)findComponent(componentId);
+    if (nullptr == component)
+        return;
+    if (qFuzzyCompare(component->clothStiffness, stiffness))
+        return;
+    
+    component->clothStiffness = stiffness;
+    component->dirty = true;
+    emit componentClothStiffnessChanged(componentId);
     emit skeletonChanged();
 }
 

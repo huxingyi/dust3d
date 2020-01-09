@@ -1029,6 +1029,7 @@ DocumentWindow::DocumentWindow() :
     connect(partTreeWidget, &PartTreeWidget::setPartVisibleState, m_document, &Document::setPartVisibleState);
     connect(partTreeWidget, &PartTreeWidget::setPartColorState, m_document, &Document::setPartColorState);
     connect(partTreeWidget, &PartTreeWidget::setComponentCombineMode, m_document, &Document::setComponentCombineMode);
+    connect(partTreeWidget, &PartTreeWidget::setComponentClothStiffness, m_document, &Document::setComponentClothStiffness);
     connect(partTreeWidget, &PartTreeWidget::setPartTarget, m_document, &Document::setPartTarget);
     connect(partTreeWidget, &PartTreeWidget::setPartBase, m_document, &Document::setPartBase);
     connect(partTreeWidget, &PartTreeWidget::hideDescendantComponents, m_document, &Document::hideDescendantComponents);

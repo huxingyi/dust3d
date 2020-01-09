@@ -214,6 +214,51 @@ void PartTreeWidget::mousePressEvent(QMouseEvent *event)
     }
 }
 
+void PartTreeWidget::showClothSettingMenu(const QPoint &pos, const QUuid &componentId)
+{
+    const Component *component = nullptr;
+    
+    if (componentId.isNull())
+        return;
+    
+    component = m_document->findComponent(componentId);
+    if (nullptr == component)
+        return;
+    
+    QMenu popupMenu;
+    
+    QWidget *popup = new QWidget;
+    
+    FloatNumberWidget *clothStiffnessWidget = new FloatNumberWidget;
+    clothStiffnessWidget->setItemName(tr("Stiffness"));
+    clothStiffnessWidget->setRange(0.0f, 1.0f);
+    clothStiffnessWidget->setValue(component->clothStiffness);
+    
+    connect(clothStiffnessWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+        emit setComponentClothStiffness(componentId, value);
+        emit groupOperationAdded();
+    });
+    
+    QPushButton *clothStiffnessEraser = new QPushButton(QChar(fa::eraser));
+    Theme::initAwesomeToolButton(clothStiffnessEraser);
+    
+    QHBoxLayout *clothStiffnessLayout = new QHBoxLayout;
+    clothStiffnessLayout->addWidget(clothStiffnessEraser);
+    clothStiffnessLayout->addWidget(clothStiffnessWidget);
+    
+    QVBoxLayout *mainLayout = new QVBoxLayout;
+    mainLayout->addLayout(clothStiffnessLayout);
+    
+    popup->setLayout(mainLayout);
+    
+    QWidgetAction action(this);
+    action.setDefaultWidget(popup);
+    
+    popupMenu.addAction(&action);
+    
+    popupMenu.exec(mapToGlobal(pos));
+}
+
 void PartTreeWidget::showContextMenu(const QPoint &pos)
 {
     const Component *component = nullptr;
@@ -315,6 +360,13 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
     }
     QWidget *widget = new QWidget;
     if (nullptr != component) {
+        QPushButton *clothSettingButton = new QPushButton();
+        connect(clothSettingButton, &QPushButton::clicked, this, [=]() {
+            showClothSettingMenu(mapFromGlobal(QCursor::pos()), component->id);
+        });
+        clothSettingButton->setIcon(Theme::awesome()->icon(fa::gear));
+        if (ComponentLayer::Cloth != component->layer)
+            clothSettingButton->hide();
         QComboBox *componentLayerSelectBox = new QComboBox;
         for (size_t i = 0; i < (size_t)ComponentLayer::Count; ++i) {
             ComponentLayer layer = (ComponentLayer)i;
@@ -322,9 +374,14 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
         }
         componentLayerSelectBox->setCurrentIndex((int)component->layer);
         connect(componentLayerSelectBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [=](int index) {
+            clothSettingButton->setVisible(ComponentLayer::Cloth == (ComponentLayer)index);
             emit setComponentLayer(component->id, (ComponentLayer)index);
             emit groupOperationAdded();
         });
+        QHBoxLayout *componentLayerLayout = new QHBoxLayout;
+        componentLayerLayout->addWidget(componentLayerSelectBox);
+        componentLayerLayout->addWidget(clothSettingButton);
+        componentLayerLayout->setStretch(0, 1);
         
         QComboBox *combineModeSelectBox = new QComboBox;
         for (size_t i = 0; i < (size_t)CombineMode::Count; ++i) {
@@ -379,7 +436,7 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
         if (nullptr != partTargetSelectBox)
             componentSettingsLayout->addRow(tr("Target"), partTargetSelectBox);
         componentSettingsLayout->addRow(tr("Mode"), combineModeSelectBox);
-        componentSettingsLayout->addRow(tr("Layer"), componentLayerSelectBox);
+        componentSettingsLayout->addRow(tr("Layer"), componentLayerLayout);
     
         QVBoxLayout *newLayout = new QVBoxLayout;
         newLayout->addLayout(layout);

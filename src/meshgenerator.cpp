@@ -893,6 +893,16 @@ ComponentLayer MeshGenerator::componentLayer(const std::map<QString, QString> *c
     return ComponentLayerFromString(valueOfKeyInMapOrEmpty(*component, "layer").toUtf8().constData());
 }
 
+float MeshGenerator::componentClothStiffness(const std::map<QString, QString> *component)
+{
+    if (nullptr == component)
+        return 1.0f;
+    auto findClothStiffness = component->find("clothStiffness");
+    if (findClothStiffness == component->end())
+        return 1.0f;
+    return findClothStiffness->second.toFloat();
+}
+
 MeshCombiner::Mesh *MeshGenerator::combineComponentMesh(const QString &componentIdString, CombineMode *combineMode)
 {
     MeshCombiner::Mesh *mesh = nullptr;
@@ -1613,10 +1623,13 @@ void MeshGenerator::collectClothComponent(const QString &componentIdString)
         isotropicRemesh(uncombinedVertices, uncombinedFaces, uncombinedVertices, uncombinedFaces, 0.02f, 3);
         
         std::map<PositionKey, std::pair<QUuid, QUuid>> positionMap;
+        std::pair<QUuid, QUuid> defaultSource;
         for (const auto &it: componentCache.outcomeNodeVertices) {
+            if (!it.second.first.isNull())
+                defaultSource.first = it.second.first;
             positionMap.insert({PositionKey(it.first), it.second});
         }
-        std::vector<std::pair<QUuid, QUuid>> uncombinedVertexSources(uncombinedVertices.size());
+        std::vector<std::pair<QUuid, QUuid>> uncombinedVertexSources(uncombinedVertices.size(), defaultSource);
         for (size_t i = 0; i < uncombinedVertices.size(); ++i) {
             auto findSource = positionMap.find(PositionKey(uncombinedVertices[i]));
             if (findSource == positionMap.end())
@@ -1628,8 +1641,9 @@ void MeshGenerator::collectClothComponent(const QString &componentIdString)
             uncombinedFaces,
             m_clothCollisionVertices,
             m_clothCollisionTriangles);
+        clothSimulator.setStiffness(componentClothStiffness(component));
         clothSimulator.create();
-        for (size_t i = 0; i < 30; ++i)
+        for (size_t i = 0; i < 400; ++i)
             clothSimulator.step();
         clothSimulator.getCurrentVertices(&uncombinedVertices);
     

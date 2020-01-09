@@ -69,6 +69,7 @@ public:
     float smoothSeam = 0.0;
     PolyCount polyCount = PolyCount::Original;
     ComponentLayer layer = ComponentLayer::Body;
+    float clothStiffness = 1.0f;
     std::vector<QUuid> childrenIds;
     QString linkData() const
     {
@@ -187,6 +188,10 @@ public:
     bool smoothAdjusted() const
     {
         return smoothAllAdjusted() || smoothSeamAdjusted();
+    }
+    bool clothStiffnessAdjusted() const
+    {
+        return fabs(clothStiffness - 1.0) >= 0.01;
     }
 private:
     std::set<QUuid> m_childrenIdSet;
@@ -399,6 +404,7 @@ signals:
     void componentSmoothSeamChanged(QUuid componentId);
     void componentPolyCountChanged(QUuid componentId);
     void componentLayerChanged(QUuid componentId);
+    void componentClothStiffnessChanged(QUuid componentId);
     void nodeRemoved(QUuid nodeId);
     void edgeRemoved(QUuid edgeId);
     void nodeRadiusChanged(QUuid nodeId);
@@ -646,6 +652,7 @@ public slots:
     void setComponentSmoothSeam(QUuid componentId, float toSmoothSeam);
     void setComponentPolyCount(QUuid componentId, PolyCount count);
     void setComponentLayer(QUuid componentId, ComponentLayer layer);
+    void setComponentClothStiffness(QUuid componentId, float stiffness);
     void hideOtherComponents(QUuid componentId);
     void lockOtherComponents(QUuid componentId);
     void hideAllComponents();

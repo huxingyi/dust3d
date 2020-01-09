@@ -752,6 +752,10 @@ Tips:
         <source>Layer</source>
         <translation>层</translation>
     </message>
+    <message>
+        <source>Stiffness</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>PartWidget</name>
