@@ -1030,6 +1030,8 @@ DocumentWindow::DocumentWindow() :
     connect(partTreeWidget, &PartTreeWidget::setPartColorState, m_document, &Document::setPartColorState);
     connect(partTreeWidget, &PartTreeWidget::setComponentCombineMode, m_document, &Document::setComponentCombineMode);
     connect(partTreeWidget, &PartTreeWidget::setComponentClothStiffness, m_document, &Document::setComponentClothStiffness);
+    connect(partTreeWidget, &PartTreeWidget::setComponentClothForce, m_document, &Document::setComponentClothForce);
+    connect(partTreeWidget, &PartTreeWidget::setComponentClothOffset, m_document, &Document::setComponentClothOffset);
     connect(partTreeWidget, &PartTreeWidget::setPartTarget, m_document, &Document::setPartTarget);
     connect(partTreeWidget, &PartTreeWidget::setPartBase, m_document, &Document::setPartBase);
     connect(partTreeWidget, &PartTreeWidget::hideDescendantComponents, m_document, &Document::hideDescendantComponents);
@@ -1544,6 +1546,8 @@ void DocumentWindow::showPreferences()
 {
     if (nullptr == m_preferencesWidget) {
         m_preferencesWidget = new PreferencesWidget(m_document, this);
+        connect(m_preferencesWidget, &PreferencesWidget::enableBackgroundBlur, m_document, &Document::enableBackgroundBlur);
+        connect(m_preferencesWidget, &PreferencesWidget::disableBackgroundBlur, m_document, &Document::disableBackgroundBlur);
     }
     m_preferencesWidget->show();
     m_preferencesWidget->raise();

@@ -112,7 +112,8 @@ public:
         }
     }
     
-    void fixPoints(CgPointFixNode *fixNode) {
+    void fixPoints(CgPointFixNode *fixNode)
+    {
         for (unsigned int i = 0; i < system->n_points; i++) {
             auto offset = 3 * i;
             Point point(vbuff[offset + 0],
@@ -124,16 +125,32 @@ public:
             }
         }
     }
+    
+    void collectErrorPoints(std::vector<size_t> *points)
+    {
+        for (unsigned int i = 0; i < system->n_points; i++) {
+            auto offset = 3 * i;
+            Point point(vbuff[offset + 0],
+                vbuff[offset + 1],
+                vbuff[offset + 2]);
+            if (nullptr != m_insideTester &&
+                    (*m_insideTester)(point) != CGAL::ON_UNBOUNDED_SIDE) {
+                points->push_back(i);
+            }
+        }
+    }
 };
 
 ClothSimulator::ClothSimulator(const std::vector<QVector3D> &vertices,
         const std::vector<std::vector<size_t>> &faces,
         const std::vector<QVector3D> &collisionVertices,
-        const std::vector<std::vector<size_t>> &collisionTriangles) :
+        const std::vector<std::vector<size_t>> &collisionTriangles,
+        const std::vector<QVector3D> &externalForces) :
     m_vertices(vertices),
     m_faces(faces),
     m_collisionVertices(collisionVertices),
-    m_collisionTriangles(collisionTriangles)
+    m_collisionTriangles(collisionTriangles),
+    m_externalForces(externalForces)
 {
 }
 
@@ -192,7 +209,7 @@ void ClothSimulator::getCurrentVertices(std::vector<QVector3D> *currentVertices)
         size_t oldIndex = m_clothPointSources[newIndex];
         auto offset = newIndex * 3;
         (*currentVertices)[oldIndex] = QVector3D(m_clothPointBuffer[offset + 0],
-            m_clothPointBuffer[offset + 1] + 0.01,
+            m_clothPointBuffer[offset + 1],
             m_clothPointBuffer[offset + 2]);
     }
 }
@@ -230,11 +247,18 @@ void ClothSimulator::create()
     for (size_t i = 0; i < m_clothSprings.size(); ++i) {
         const auto &source = m_clothSprings[i];
         springList[i] = mass_spring_system::Edge(source.first, source.second);
-        restLengths[i] = (m_vertices[m_clothPointSources[source.first]] - m_vertices[m_clothPointSources[source.second]]).length();
+        restLengths[i] = (m_vertices[m_clothPointSources[source.first]] - m_vertices[m_clothPointSources[source.second]]).length() * 0.8;
         stiffnesses[i] = m_stiffness;
     }
     
-    mass_spring_system::VectorXf fext = Eigen::Vector3f(0, -gravitationalForce, 0).replicate(m_clothPointSources.size(), 1);
+    mass_spring_system::VectorXf fext(m_clothPointSources.size() * 3);
+    for (size_t i = 0; i < m_clothPointSources.size(); ++i) {
+        const auto &externalForce = m_externalForces[i] * gravitationalForce;
+        auto offset = i * 3;
+        fext[offset + 0] = externalForce.x();
+        fext[offset + 1] = externalForce.y();
+        fext[offset + 2] = externalForce.z();
+    }
     
     m_massSpringSystem = new mass_spring_system(m_clothPointSources.size(), m_clothSprings.size(), timeStep, springList, restLengths,
         stiffnesses, masses, fext, damping);

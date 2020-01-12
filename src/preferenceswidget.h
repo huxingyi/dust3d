@@ -8,6 +8,8 @@ class PreferencesWidget : public QDialog
     Q_OBJECT
 signals:
     void enableWeld(bool enabled);
+    void enableBackgroundBlur();
+    void disableBackgroundBlur();
 public:
     PreferencesWidget(const Document *document, QWidget *parent=nullptr);
 private:

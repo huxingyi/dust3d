@@ -756,6 +756,14 @@ Tips:
         <source>Stiffness</source>
         <translation>硬度</translation>
     </message>
+    <message>
+        <source>Force</source>
+        <translation>力</translation>
+    </message>
+    <message>
+        <source>Offset</source>
+        <translation>偏移</translation>
+    </message>
 </context>
 <context>
     <name>PartWidget</name>
@@ -1085,6 +1093,14 @@ Tips:
     <message>
         <source>Cloth</source>
         <translation>衣服</translation>
+    </message>
+    <message>
+        <source>Gravitational</source>
+        <translation>重力</translation>
+    </message>
+    <message>
+        <source>Centripetal</source>
+        <translation>向心力</translation>
     </message>
 </context>
 <context>

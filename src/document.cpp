@@ -21,6 +21,7 @@
 #include "contourtopartconverter.h"
 
 unsigned long Document::m_maxSnapshot = 1000;
+const float Component::defaultStiffness = 0.5f;
 
 Document::Document() :
     SkeletonDocument(),
@@ -1205,6 +1206,10 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
                 component["layer"] = ComponentLayerToString(componentIt.second.layer);
             if (componentIt.second.clothStiffnessAdjusted())
                 component["clothStiffness"] = QString::number(componentIt.second.clothStiffness);
+            if (componentIt.second.clothForceAdjusted())
+                component["clothForce"] = ClothForceToString(componentIt.second.clothForce);
+            if (componentIt.second.clothOffsetAdjusted())
+                component["clothOffset"] = QString::number(componentIt.second.clothOffset);
             QStringList childIdList;
             for (const auto &childId: componentIt.second.childrenIds) {
                 childIdList.append(childId.toString());
@@ -1716,6 +1721,12 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
         auto findClothStiffness = componentKv.second.find("clothStiffness");
         if (findClothStiffness != componentKv.second.end())
             component.clothStiffness = findClothStiffness->second.toFloat();
+        auto findClothForce = componentKv.second.find("clothForce");
+        if (findClothForce != componentKv.second.end())
+            component.clothForce = ClothForceFromString(valueOfKeyInMapOrEmpty(componentKv.second, "clothForce").toUtf8().constData());
+        auto findClothOffset = componentKv.second.find("clothOffset");
+        if (findClothOffset != componentKv.second.end())
+            component.clothOffset = valueOfKeyInMapOrEmpty(componentKv.second, "clothOffset").toFloat();
         //qDebug() << "Add component:" << component.id << " old:" << componentKv.first << "name:" << component.name;
         if ("partId" == linkDataType) {
             QUuid partId = oldNewIdMap[QUuid(linkData)];
@@ -2530,6 +2541,34 @@ void Document::setComponentClothStiffness(QUuid componentId, float stiffness)
     component->clothStiffness = stiffness;
     component->dirty = true;
     emit componentClothStiffnessChanged(componentId);
+    emit skeletonChanged();
+}
+
+void Document::setComponentClothForce(QUuid componentId, ClothForce force)
+{
+    Component *component = (Component *)findComponent(componentId);
+    if (nullptr == component)
+        return;
+    if (component->clothForce == force)
+        return;
+    
+    component->clothForce = force;
+    component->dirty = true;
+    emit componentClothForceChanged(componentId);
+    emit skeletonChanged();
+}
+
+void Document::setComponentClothOffset(QUuid componentId, float offset)
+{
+    Component *component = (Component *)findComponent(componentId);
+    if (nullptr == component)
+        return;
+    if (qFuzzyCompare(component->clothOffset, offset))
+        return;
+    
+    component->clothOffset = offset;
+    component->dirty = true;
+    emit componentClothOffsetChanged(componentId);
     emit skeletonChanged();
 }
 

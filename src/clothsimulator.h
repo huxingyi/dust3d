@@ -18,7 +18,8 @@ public:
     ClothSimulator(const std::vector<QVector3D> &vertices,
         const std::vector<std::vector<size_t>> &faces,
         const std::vector<QVector3D> &collisionVertices,
-        const std::vector<std::vector<size_t>> &collisionTriangles);
+        const std::vector<std::vector<size_t>> &collisionTriangles,
+        const std::vector<QVector3D> &externalForces);
     ~ClothSimulator();
     void setStiffness(float stiffness);
     void create();
@@ -29,10 +30,12 @@ private:
     std::vector<std::vector<size_t>> m_faces;
     std::vector<QVector3D> m_collisionVertices;
     std::vector<std::vector<size_t>> m_collisionTriangles;
+    std::vector<QVector3D> m_externalForces;
     std::vector<float> m_clothPointBuffer;
     std::vector<size_t> m_clothPointSources;
     std::vector<std::pair<size_t, size_t>> m_clothSprings;
     float m_stiffness = 1.0f;
+    QVector3D m_offset;
     mass_spring_system *m_massSpringSystem = nullptr;
     MassSpringSolver *m_massSpringSolver = nullptr;
     CgRootNode *m_rootNode = nullptr;

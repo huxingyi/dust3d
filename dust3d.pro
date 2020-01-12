@@ -491,6 +491,12 @@ HEADERS += src/componentlayer.h
 SOURCES += src/isotropicremesh.cpp
 HEADERS += src/isotropicremesh.h
 
+SOURCES += src/clothforce.cpp
+HEADERS += src/clothforce.h
+
+SOURCES += src/projectfacestonodes.cpp
+HEADERS += src/projectfacestonodes.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h

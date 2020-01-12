@@ -20,6 +20,8 @@
 #include "polycount.h"
 #include "clothsimulator.h"
 #include "isotropicremesh.h"
+#include "projectfacestonodes.h"
+#include "document.h"
 
 MeshGenerator::MeshGenerator(Snapshot *snapshot) :
     m_snapshot(snapshot)
@@ -404,6 +406,7 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, 
     
     auto &partCache = m_cacheContext->parts[partIdString];
     partCache.outcomeNodes.clear();
+    partCache.outcomeEdges.clear();
     partCache.outcomeNodeVertices.clear();
     partCache.outcomePaintMap.clear();
     partCache.outcomePaintMap.partId = partId;
@@ -527,6 +530,18 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, 
             partCache.outcomeNodes.push_back(outcomeNode);
         }
     };
+    auto addEdge = [&](const QString &firstNodeIdString, const QString &secondNodeIdString) {
+        partCache.outcomeEdges.push_back({
+            {QUuid(partIdString), QUuid(firstNodeIdString)},
+            {QUuid(partIdString), QUuid(secondNodeIdString)}
+        });
+        if (xMirrored) {
+            partCache.outcomeEdges.push_back({
+                {mirroredPartId, QUuid(firstNodeIdString)},
+                {mirroredPartId, QUuid(secondNodeIdString)}
+            });
+        }
+    };
     
     if (gridded) {
         gridMeshBuilder = new GridMeshBuilder;
@@ -561,6 +576,7 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, 
             }
             
             gridMeshBuilder->addEdge(findFromNodeIndex->second, findToNodeIndex->second);
+            addEdge(fromNodeIdString, toNodeIdString);
         }
         
         if (subdived)
@@ -618,6 +634,7 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, 
             }
             
             nodeMeshModifier->addEdge(findFromNodeIndex->second, findToNodeIndex->second);
+            addEdge(fromNodeIdString, toNodeIdString);
         }
         
         if (subdived)
@@ -855,6 +872,11 @@ bool MeshGenerator::componentRemeshed(const std::map<QString, QString> *componen
 {
     if (nullptr == component)
         return false;
+    if (ComponentLayer::Cloth == ComponentLayerFromString(valueOfKeyInMapOrEmpty(*component, "layer").toUtf8().constData())) {
+        if (nullptr != polyCountValue)
+            *polyCountValue = PolyCountToValue(PolyCount::ExtremeHighPoly);
+        return true;
+    }
     auto polyCount = PolyCountFromString(valueOfKeyInMapOrEmpty(*component, "polyCount").toUtf8().constData());
     if (nullptr != polyCountValue)
         *polyCountValue = PolyCountToValue(polyCount);
@@ -896,11 +918,25 @@ ComponentLayer MeshGenerator::componentLayer(const std::map<QString, QString> *c
 float MeshGenerator::componentClothStiffness(const std::map<QString, QString> *component)
 {
     if (nullptr == component)
-        return 1.0f;
+        return Component::defaultStiffness;
     auto findClothStiffness = component->find("clothStiffness");
     if (findClothStiffness == component->end())
-        return 1.0f;
+        return Component::defaultStiffness;
     return findClothStiffness->second.toFloat();
+}
+
+ClothForce MeshGenerator::componentClothForce(const std::map<QString, QString> *component)
+{
+    if (nullptr == component)
+        return ClothForce::Gravitational;
+    return ClothForceFromString(valueOfKeyInMapOrEmpty(*component, "clothForce").toUtf8().constData());
+}
+
+float MeshGenerator::componentClothOffset(const std::map<QString, QString> *component)
+{
+    if (nullptr == component)
+        return 0.0f;
+    return valueOfKeyInMapOrEmpty(*component, "clothOffset").toFloat();
 }
 
 MeshCombiner::Mesh *MeshGenerator::combineComponentMesh(const QString &componentIdString, CombineMode *combineMode)
@@ -933,6 +969,7 @@ MeshCombiner::Mesh *MeshGenerator::combineComponentMesh(const QString &component
     componentCache.sharedQuadEdges.clear();
     componentCache.noneSeamVertices.clear();
     componentCache.outcomeNodes.clear();
+    componentCache.outcomeEdges.clear();
     componentCache.outcomeNodeVertices.clear();
     componentCache.outcomePaintMaps.clear();
     delete componentCache.mesh;
@@ -959,6 +996,8 @@ MeshCombiner::Mesh *MeshGenerator::combineComponentMesh(const QString &component
         collectSharedQuadEdges(partCache.vertices, partCache.faces, &componentCache.sharedQuadEdges);
         for (const auto &it: partCache.outcomeNodes)
             componentCache.outcomeNodes.push_back(it);
+        for (const auto &it: partCache.outcomeEdges)
+            componentCache.outcomeEdges.push_back(it);
         for (const auto &it: partCache.outcomeNodeVertices)
             componentCache.outcomeNodeVertices.push_back(it);
         componentCache.outcomePaintMaps.push_back(partCache.outcomePaintMap);
@@ -1062,7 +1101,12 @@ MeshCombiner::Mesh *MeshGenerator::combineComponentMesh(const QString &component
     if (componentId.isNull()) {
         // Prepare cloth collision shap
         if (nullptr != mesh && !mesh->isNull()) {
+            m_clothCollisionVertices.clear();
+            m_clothCollisionTriangles.clear();
             mesh->fetch(m_clothCollisionVertices, m_clothCollisionTriangles);
+            buildClothTargetNodes(componentCache.outcomeNodes,
+                componentCache.outcomeEdges,
+                &m_clothTargetNodes);
         } else {
             // TODO: when no body is valid, may add ground plane as collision shape
             // ... ...
@@ -1120,6 +1164,45 @@ MeshCombiner::Mesh *MeshGenerator::combineComponentMesh(const QString &component
     }
     
     return mesh;
+}
+
+void MeshGenerator::buildClothTargetNodes(const std::vector<OutcomeNode> &nodes,
+        const std::vector<std::pair<std::pair<QUuid, QUuid>, std::pair<QUuid, QUuid>>> &edges,
+        std::vector<std::pair<QVector3D, float>> *targetNodes)
+{
+    targetNodes->clear();
+    std::map<std::pair<QUuid, QUuid>, size_t> nodeMap;
+    for (size_t nodeIndex = 0; nodeIndex < nodes.size(); ++nodeIndex) {
+        const auto &it = nodes[nodeIndex];
+        nodeMap.insert({{it.partId, it.nodeId}, nodeIndex});
+        targetNodes->push_back(std::make_pair(it.origin, it.radius * 3.0f));
+    }
+    for (const auto &it: edges) {
+        auto findFirst = nodeMap.find(it.first);
+        if (findFirst == nodeMap.end())
+            continue;
+        auto findSecond = nodeMap.find(it.second);
+        if (findSecond == nodeMap.end())
+            continue;
+        const auto &firstNode = nodes[findFirst->second];
+        const auto &secondNode = nodes[findSecond->second];
+        float length = (firstNode.origin - secondNode.origin).length();
+        float segments = length / 0.02;
+        if (qFuzzyIsNull(segments))
+            continue;
+        if (segments > 100)
+            segments = 100;
+        float segmentLength = 1.0f / segments;
+        float offset = segmentLength;
+        while (offset < 1.0f) {
+            float radius = firstNode.radius * (1.0f - offset) + secondNode.radius * offset;
+            targetNodes->push_back(std::make_pair(
+                firstNode.origin * (1.0f - offset) + secondNode.origin * offset,
+                radius * 3.0
+            ));
+            offset += segmentLength;
+        }
+    }
 }
 
 MeshCombiner::Mesh *MeshGenerator::combineMultipleMeshes(const std::vector<std::tuple<MeshCombiner::Mesh *, CombineMode, QString>> &multipleMeshes, bool recombine)
@@ -1206,6 +1289,8 @@ MeshCombiner::Mesh *MeshGenerator::combineComponentChildGroupMesh(const std::vec
             componentCache.sharedQuadEdges.insert(it);
         for (const auto &it: childComponentCache.outcomeNodes)
             componentCache.outcomeNodes.push_back(it);
+        for (const auto &it: childComponentCache.outcomeEdges)
+            componentCache.outcomeEdges.push_back(it);
         for (const auto &it: childComponentCache.outcomeNodeVertices)
             componentCache.outcomeNodeVertices.push_back(it);
         for (const auto &it: childComponentCache.outcomePaintMaps)
@@ -1600,9 +1685,8 @@ void MeshGenerator::collectClothComponent(const QString &componentIdString)
         if (nullptr == componentCache.mesh) {
             return;
         }
-        if (m_clothCollisionTriangles.empty())
+        if (m_clothCollisionTriangles.empty() || m_clothTargetNodes.empty())
             return;
-        
         std::vector<QVector3D> uncombinedVertices;
         std::vector<std::vector<size_t>> uncombinedOriginalFaces;
         std::vector<std::vector<size_t>> uncombinedFaces;
@@ -1620,7 +1704,6 @@ void MeshGenerator::collectClothComponent(const QString &componentIdString)
                 uncombinedFaces.push_back(it);
             }
         }
-        isotropicRemesh(uncombinedVertices, uncombinedFaces, uncombinedVertices, uncombinedFaces, 0.02f, 3);
         
         std::map<PositionKey, std::pair<QUuid, QUuid>> positionMap;
         std::pair<QUuid, QUuid> defaultSource;
@@ -1637,15 +1720,37 @@ void MeshGenerator::collectClothComponent(const QString &componentIdString)
             uncombinedVertexSources[i] = findSource->second;
         }
         
-        ClothSimulator clothSimulator(uncombinedVertices,
-            uncombinedFaces,
+        std::vector<QVector3D> &filteredClothVertices = uncombinedVertices;
+        std::vector<std::vector<size_t>> &filteredClothFaces = uncombinedFaces;
+        std::vector<QVector3D> externalForces;
+        ClothForce clothForce = componentClothForce(component);
+        float clothOffset = 0.015f + (componentClothOffset(component) * 0.05f);
+        if (ClothForce::Centripetal == clothForce) {
+            externalForces.resize(filteredClothVertices.size());
+            for (size_t i = 0; i < filteredClothFaces.size(); ++i) {
+                const auto &face = filteredClothFaces[i];
+                auto faceForceDirection = -polygonNormal(uncombinedVertices, face);
+                for (const auto &vertex: face)
+                    externalForces[vertex] += faceForceDirection;
+            }
+            for (auto &it: externalForces)
+                it = (it.normalized() + QVector3D(0.0f, -1.0f, 0.0f)).normalized();
+        } else {
+            externalForces.resize(filteredClothVertices.size(), QVector3D(0.0f, -1.0f, 0.0f));
+        }
+        ClothSimulator clothSimulator(filteredClothVertices,
+            filteredClothFaces,
             m_clothCollisionVertices,
-            m_clothCollisionTriangles);
+            m_clothCollisionTriangles,
+            externalForces);
         clothSimulator.setStiffness(componentClothStiffness(component));
         clothSimulator.create();
-        for (size_t i = 0; i < 400; ++i)
+        for (size_t i = 0; i < 350; ++i)
             clothSimulator.step();
-        clothSimulator.getCurrentVertices(&uncombinedVertices);
+        clothSimulator.getCurrentVertices(&filteredClothVertices);
+        for (size_t i = 0; i < filteredClothVertices.size(); ++i) {
+            filteredClothVertices[i] -= externalForces[i] * clothOffset;
+        }
     
         auto vertexStartIndex = m_outcome->vertices.size();
         auto updateVertexIndices = [=](std::vector<std::vector<size_t>> &faces) {
@@ -1654,10 +1759,10 @@ void MeshGenerator::collectClothComponent(const QString &componentIdString)
                     subIt += vertexStartIndex;
             }
         };
-        updateVertexIndices(uncombinedFaces);
+        updateVertexIndices(filteredClothFaces);
         
-        m_outcome->vertices.insert(m_outcome->vertices.end(), uncombinedVertices.begin(), uncombinedVertices.end());
-        for (const auto &it: uncombinedFaces) {
+        m_outcome->vertices.insert(m_outcome->vertices.end(), filteredClothVertices.begin(), filteredClothVertices.end());
+        for (const auto &it: filteredClothFaces) {
             if (4 == it.size()) {
                 m_outcome->triangles.push_back(std::vector<size_t> {
                     it[0], it[1], it[2]
@@ -1669,14 +1774,13 @@ void MeshGenerator::collectClothComponent(const QString &componentIdString)
                 m_outcome->triangles.push_back(it);
             }
         }
-        m_outcome->triangleAndQuads.insert(m_outcome->triangleAndQuads.end(), uncombinedFaces.begin(), uncombinedFaces.end());
+        m_outcome->triangleAndQuads.insert(m_outcome->triangleAndQuads.end(), filteredClothFaces.begin(), filteredClothFaces.end());
         
         m_outcome->nodes.insert(m_outcome->nodes.end(), componentCache.outcomeNodes.begin(), componentCache.outcomeNodes.end());
+        Q_ASSERT(uncombinedVertices.size() == filteredClothVertices.size());
         for (size_t i = 0; i < uncombinedVertices.size(); ++i) {
             const auto &source = uncombinedVertexSources[i];
-            if (source.first.isNull())
-                continue;
-            m_outcome->nodeVertices.push_back(std::make_pair(uncombinedVertices[i], source));
+            m_outcome->nodeVertices.push_back(std::make_pair(filteredClothVertices[i], source));
         }
         return;
     }

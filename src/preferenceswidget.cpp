@@ -40,12 +40,14 @@ PreferencesWidget::PreferencesWidget(const Document *document, QWidget *parent) 
     });
     
     connect(pickButton, &QPushButton::clicked, [=]() {
+        emit disableBackgroundBlur();
         QColor color = QColorDialog::getColor(Preferences::instance().partColor(), this);
         if (color.isValid()) {
             Preferences::instance().setPartColor(color);
             updatePickButtonColor();
             raise();
         }
+        emit enableBackgroundBlur();
     });
     
     QComboBox *combineModeSelectBox = new QComboBox;

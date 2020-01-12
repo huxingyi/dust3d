@@ -12,6 +12,7 @@
 #include "combinemode.h"
 #include "meshloader.h"
 #include "componentlayer.h"
+#include "clothforce.h"
 
 class GeneratedPart
 {
@@ -24,6 +25,7 @@ public:
     std::vector<QVector3D> vertices;
     std::vector<std::vector<size_t>> faces;
     std::vector<OutcomeNode> outcomeNodes;
+    std::vector<std::pair<std::pair<QUuid, QUuid>, std::pair<QUuid, QUuid>>> outcomeEdges;
     std::vector<std::pair<QVector3D, std::pair<QUuid, QUuid>>> outcomeNodeVertices;
     std::vector<QVector3D> previewVertices;
     std::vector<std::vector<size_t>> previewTriangles;
@@ -43,6 +45,7 @@ public:
     std::set<std::pair<PositionKey, PositionKey>> sharedQuadEdges;
     std::set<PositionKey> noneSeamVertices;
     std::vector<OutcomeNode> outcomeNodes;
+    std::vector<std::pair<std::pair<QUuid, QUuid>, std::pair<QUuid, QUuid>>> outcomeEdges;
     std::vector<std::pair<QVector3D, std::pair<QUuid, QUuid>>> outcomeNodeVertices;
     std::vector<OutcomePaintMap> outcomePaintMaps;
 };
@@ -103,6 +106,7 @@ private:
     quint64 m_id = 0;
     std::vector<QVector3D> m_clothCollisionVertices;
     std::vector<std::vector<size_t>> m_clothCollisionTriangles;
+    std::vector<std::pair<QVector3D, float>> m_clothTargetNodes;
     
     void collectParts();
     bool checkIsComponentDirty(const QString &componentIdString);
@@ -130,6 +134,8 @@ private:
     QString componentColorName(const std::map<QString, QString> *component);
     ComponentLayer componentLayer(const std::map<QString, QString> *component);
     float componentClothStiffness(const std::map<QString, QString> *component);
+    ClothForce componentClothForce(const std::map<QString, QString> *component);
+    float componentClothOffset(const std::map<QString, QString> *component);
     void collectUncombinedComponent(const QString &componentIdString);
     void collectClothComponent(const QString &componentIdString);
     void cutFaceStringToCutTemplate(const QString &cutFaceString, std::vector<QVector2D> &cutTemplate);
@@ -141,6 +147,9 @@ private:
         std::vector<std::vector<size_t>> *outputQuads,
         std::vector<std::vector<size_t>> *outputTriangles,
         std::vector<std::pair<QVector3D, std::pair<QUuid, QUuid>>> *outputNodeVertices);
+    void buildClothTargetNodes(const std::vector<OutcomeNode> &nodes,
+        const std::vector<std::pair<std::pair<QUuid, QUuid>, std::pair<QUuid, QUuid>>> &edges,
+        std::vector<std::pair<QVector3D, float>> *targetNodes);
 };
 
 #endif

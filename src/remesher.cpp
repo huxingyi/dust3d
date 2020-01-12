@@ -1,6 +1,9 @@
 #include <instant-meshes-api.h>
 #include <cmath>
+#include <QElapsedTimer>
 #include "remesher.h"
+#include "util.h"
+#include "projectfacestonodes.h"
 
 Remesher::Remesher()
 {
@@ -43,6 +46,7 @@ void Remesher::remesh(float targetVertexMultiplyFactor)
     }
     std::vector<Dust3D_InstantMeshesTriangle> inputTriangles;
     inputTriangles.reserve(m_triangles.size());
+    float totalArea = 0.0f;
     for (size_t i = 0; i < m_triangles.size(); ++i) {
         const auto &triangle = m_triangles[i];
         if (triangle.size() != 3)
@@ -52,6 +56,7 @@ void Remesher::remesh(float targetVertexMultiplyFactor)
             triangle[1],
             triangle[2]
         }});
+        totalArea += areaOfTriangle(m_vertices[triangle[0]], m_vertices[triangle[1]], m_vertices[triangle[2]]);
     }
     const Dust3D_InstantMeshesVertex *resultVertices = nullptr;
     size_t nResultVertices = 0;
@@ -61,7 +66,7 @@ void Remesher::remesh(float targetVertexMultiplyFactor)
     size_t nResultQuads = 0;
     Dust3D_instantMeshesRemesh(inputVertices.data(), inputVertices.size(),
         inputTriangles.data(), inputTriangles.size(),
-        (size_t)(inputVertices.size() * targetVertexMultiplyFactor),
+        (size_t)(targetVertexMultiplyFactor * 30 * std::sqrt(totalArea) / 0.02f),
         &resultVertices,
         &nResultVertices,
         &resultTriangles,
@@ -100,27 +105,25 @@ void Remesher::setNodes(const std::vector<std::pair<QVector3D, float>> &nodes,
 
 void Remesher::resolveSources()
 {
-    m_remeshedVertexSources.resize(m_remeshedVertices.size());
-    std::vector<float> nodeRadius2(m_nodes.size());
-    for (size_t nodeIndex = 0; nodeIndex < m_nodes.size(); ++nodeIndex) {
-        nodeRadius2[nodeIndex] = std::pow(m_nodes[nodeIndex].second, 2);
+    QElapsedTimer timer;
+    timer.start();
+    std::vector<size_t> faceSources;
+    auto projectFacesToNodesStartTime = timer.elapsed();
+    projectFacesToNodes(m_remeshedVertices, m_remeshedFaces, m_nodes, &faceSources);
+    auto projectFacesToNodesStopTime = timer.elapsed();
+    qDebug() << "Project faces to nodes took" << (projectFacesToNodesStopTime - projectFacesToNodesStartTime) << "milliseconds";
+    std::map<size_t, std::map<size_t, size_t>> vertexToNodeVotes;
+    for (size_t i = 0; i < m_remeshedFaces.size(); ++i) {
+        const auto &face = m_remeshedFaces[i];
+        const auto &source = faceSources[i];
+        for (const auto &vertexIndex: face)
+            vertexToNodeVotes[vertexIndex][source]++;
     }
-    for (size_t vertexIndex = 0; vertexIndex < m_remeshedVertices.size(); ++vertexIndex) {
-        std::vector<std::pair<float, size_t>> matches;
-        const auto &vertexPosition = m_remeshedVertices[vertexIndex];
-        for (size_t nodeIndex = 0; nodeIndex < m_nodes.size(); ++nodeIndex) {
-            const auto &nodePosition = m_nodes[nodeIndex].first;
-            auto length2 = (vertexPosition - nodePosition).lengthSquared();
-            if (length2 > nodeRadius2[nodeIndex])
-                continue;
-            matches.push_back(std::make_pair(length2, nodeIndex));
-        }
-        std::sort(matches.begin(), matches.end(), [](const std::pair<float, size_t> &first,
-                const std::pair<float, size_t> &second) {
-            return first.first < second.first;
-        });
-        if (matches.empty())
-            continue;
-        m_remeshedVertexSources[vertexIndex] = m_sourceIds[matches[0].second];
+    m_remeshedVertexSources.resize(m_remeshedVertices.size());
+    for (const auto &it: vertexToNodeVotes) {
+        auto sourceIndex = std::max_element(it.second.begin(), it.second.end(), [](const std::pair<size_t, size_t> &first, const std::pair<size_t, size_t> &second) {
+            return first.second < second.second;
+        })->first;
+        m_remeshedVertexSources[it.first] = m_sourceIds[sourceIndex];
     }
 }

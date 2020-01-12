@@ -246,8 +246,43 @@ void PartTreeWidget::showClothSettingMenu(const QPoint &pos, const QUuid &compon
     clothStiffnessLayout->addWidget(clothStiffnessEraser);
     clothStiffnessLayout->addWidget(clothStiffnessWidget);
     
+    FloatNumberWidget *clothOffsetWidget = new FloatNumberWidget;
+    clothOffsetWidget->setItemName(tr("Offset"));
+    clothOffsetWidget->setRange(0.0f, 1.0f);
+    clothOffsetWidget->setValue(component->clothOffset);
+    
+    connect(clothOffsetWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+        emit setComponentClothOffset(componentId, value);
+        emit groupOperationAdded();
+    });
+    
+    QPushButton *clothOffsetEraser = new QPushButton(QChar(fa::eraser));
+    Theme::initAwesomeToolButton(clothOffsetEraser);
+    
+    QHBoxLayout *clothOffsetLayout = new QHBoxLayout;
+    clothOffsetLayout->addWidget(clothOffsetEraser);
+    clothOffsetLayout->addWidget(clothOffsetWidget);
+    
+    QComboBox *clothForceSelectBox = new QComboBox;
+    for (size_t i = 0; i < (size_t)ClothForce::Count; ++i) {
+        ClothForce force = (ClothForce)i;
+        clothForceSelectBox->addItem(ClothForceToDispName(force));
+    }
+    clothForceSelectBox->setCurrentIndex((int)component->clothForce);
+    connect(clothForceSelectBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [=](int index) {
+        emit setComponentClothForce(component->id, (ClothForce)index);
+        emit groupOperationAdded();
+    });
+    QFormLayout *clothForceFormLayout = new QFormLayout;
+    clothForceFormLayout->addRow(tr("Force"), clothForceSelectBox);
+    QHBoxLayout *clothForceLayout = new QHBoxLayout;
+    clothForceLayout->addLayout(clothForceFormLayout);
+    clothForceLayout->addStretch();
+    
     QVBoxLayout *mainLayout = new QVBoxLayout;
     mainLayout->addLayout(clothStiffnessLayout);
+    mainLayout->addLayout(clothOffsetLayout);
+    mainLayout->addLayout(clothForceLayout);
     
     popup->setLayout(mainLayout);
     
