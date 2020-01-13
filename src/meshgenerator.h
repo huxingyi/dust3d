@@ -138,6 +138,8 @@ private:
     float componentClothOffset(const std::map<QString, QString> *component);
     void collectUncombinedComponent(const QString &componentIdString);
     void collectClothComponent(const QString &componentIdString);
+    void collectClothComponentIdStrings(const QString &componentIdString,
+        std::vector<QString> *componentIdStrings);
     void cutFaceStringToCutTemplate(const QString &cutFaceString, std::vector<QVector2D> &cutTemplate);
     void remesh(const std::vector<OutcomeNode> &inputNodes,
         const std::vector<QVector3D> &inputVertices,

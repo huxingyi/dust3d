@@ -497,6 +497,9 @@ HEADERS += src/clothforce.h
 SOURCES += src/projectfacestonodes.cpp
 HEADERS += src/projectfacestonodes.h
 
+SOURCES += src/simulateclothmeshes.cpp
+HEADERS += src/simulateclothmeshes.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h
