@@ -41,7 +41,7 @@ If you have done programming code changes, including the example code listed in 
 
 License
 -----------
-Dust3D software binaries and source code use MIT License, which means you can use it freely no matter for personal or for commercial purpose.
+Dust3D software source code use MIT license, however, some of the third party libraries are not MIT license compatible, such as CGAL. Which means you can use the released Dust3D software freely no matter for personal or for commercial purpose, and you can integrate the source code of Dust3D to your project as MIT licensed, but with the third party libraries on the specified license respectively.
 
 Acknowledgements
 -------------------
