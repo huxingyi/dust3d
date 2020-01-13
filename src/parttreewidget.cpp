@@ -284,6 +284,11 @@ void PartTreeWidget::showClothSettingMenu(const QPoint &pos, const QUuid &compon
     QPushButton *clothStiffnessEraser = new QPushButton(QChar(fa::eraser));
     Theme::initAwesomeToolButton(clothStiffnessEraser);
     
+    connect(clothStiffnessEraser, &QPushButton::clicked, [=]() {
+        clothStiffnessWidget->setValue(Component::defaultStiffness);
+        emit groupOperationAdded();
+    });
+    
     QHBoxLayout *clothStiffnessLayout = new QHBoxLayout;
     clothStiffnessLayout->addWidget(clothStiffnessEraser);
     clothStiffnessLayout->addWidget(clothStiffnessWidget);
@@ -300,6 +305,11 @@ void PartTreeWidget::showClothSettingMenu(const QPoint &pos, const QUuid &compon
     
     QPushButton *clothOffsetEraser = new QPushButton(QChar(fa::eraser));
     Theme::initAwesomeToolButton(clothOffsetEraser);
+    
+    connect(clothOffsetEraser, &QPushButton::clicked, [=]() {
+        clothOffsetWidget->setValue(0.0);
+        emit groupOperationAdded();
+    });
     
     QHBoxLayout *clothOffsetLayout = new QHBoxLayout;
     clothOffsetLayout->addWidget(clothOffsetEraser);
