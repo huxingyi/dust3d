@@ -4,6 +4,7 @@
 #include <QUuid>
 #include <QMouseEvent>
 #include <QTreeWidgetItem>
+#include <QTimer>
 #include "document.h"
 
 class PartTreeWidget : public QTreeWidget
@@ -85,11 +86,12 @@ public slots:
     void groupExpanded(QTreeWidgetItem *item);
     void groupCollapsed(QTreeWidgetItem *item);
     void removeAllContent();
-    void showContextMenu(const QPoint &pos);
+    void showContextMenu(const QPoint &pos, bool shorted=false);
     void showClothSettingMenu(const QPoint &pos, const QUuid &componentId);
 protected:
     QSize sizeHint() const override;
     void mousePressEvent(QMouseEvent *event) override;
+    void mouseDoubleClickEvent(QMouseEvent *event) override;
 private:
     void addComponentChildrenToItem(QUuid componentId, QTreeWidgetItem *parentItem);
     void deleteItemChildren(QTreeWidgetItem *item);
@@ -98,9 +100,12 @@ private:
     void updateComponentSelectState(QUuid componentId, bool selected);
     void updateComponentAppearance(QUuid componentId);
     bool isComponentSelected(QUuid componentId);
+    std::vector<QUuid> collectSelectedComponentIds(const QPoint &pos);
+    void handleSingleClick(const QPoint &pos);
 private:
     const Document *m_document = nullptr;
     QTreeWidgetItem *m_rootItem = nullptr;
+    QTimer *m_delayedMousePressTimer = nullptr;
     bool m_firstSelect = true;
     std::map<QUuid, QTreeWidgetItem *> m_partItemMap;
     std::map<QUuid, QTreeWidgetItem *> m_componentItemMap;

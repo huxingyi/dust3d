@@ -70,7 +70,9 @@ PartTreeWidget::PartTreeWidget(const Document *document, QWidget *parent) :
     m_firstSelect = true;
     selectComponent(QUuid());
     
-    connect(this, &QTreeWidget::customContextMenuRequested, this, &PartTreeWidget::showContextMenu);
+    connect(this, &QTreeWidget::customContextMenuRequested, this, [&](const QPoint &pos) {
+        showContextMenu(pos);
+    });
     connect(this, &QTreeWidget::itemChanged, this, &PartTreeWidget::groupChanged);
     connect(this, &QTreeWidget::itemExpanded, this, &PartTreeWidget::groupExpanded);
     connect(this, &QTreeWidget::itemCollapsed, this, &PartTreeWidget::groupCollapsed);
@@ -154,64 +156,104 @@ void PartTreeWidget::updateComponentSelectState(QUuid componentId, bool selected
     }
 }
 
-void PartTreeWidget::mousePressEvent(QMouseEvent *event)
+void PartTreeWidget::mouseDoubleClickEvent(QMouseEvent *event)
 {
-    QModelIndex itemIndex = indexAt(event->pos());
-    QTreeView::mousePressEvent(event);
-    if (event->button() == Qt::LeftButton) {
-        bool multiple = QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier);
-        if (itemIndex.isValid()) {
-            QTreeWidgetItem *item = itemFromIndex(itemIndex);
-            auto componentId = QUuid(item->data(0, Qt::UserRole).toString());
-            if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
-                if (!m_shiftStartComponentId.isNull()) {
-                    const Component *parent = m_document->findComponentParent(m_shiftStartComponentId);
-                    if (parent) {
-                        if (!parent->childrenIds.empty()) {
-                            bool startAdd = false;
-                            bool stopAdd = false;
-                            std::vector<QUuid> waitQueue;
-                            for (const auto &childId: parent->childrenIds) {
-                                if (m_shiftStartComponentId == childId || componentId == childId) {
-                                    if (startAdd) {
-                                        stopAdd = true;
-                                    } else {
-                                        startAdd = true;
-                                    }
+    delete m_delayedMousePressTimer;
+    m_delayedMousePressTimer = nullptr;
+    
+    QWidget::mouseDoubleClickEvent(event);
+    auto componentIds = collectSelectedComponentIds(event->pos());
+    for (const auto &componentId: componentIds) {
+        std::vector<QUuid> partIds;
+        m_document->collectComponentDescendantParts(componentId, partIds);
+        for (const auto &partId: partIds) {
+            emit addPartToSelection(partId);
+        }
+    }
+    event->accept();
+}
+
+void PartTreeWidget::handleSingleClick(const QPoint &pos)
+{
+    QModelIndex itemIndex = indexAt(pos);
+    
+    auto showMenu = [=]() {
+        delete m_delayedMousePressTimer;
+        m_delayedMousePressTimer = new QTimer(this);
+        m_delayedMousePressTimer->setSingleShot(true);
+        m_delayedMousePressTimer->setInterval(200);
+        connect(m_delayedMousePressTimer, &QTimer::timeout, this, [=]() {
+            showContextMenu(pos, true);
+        });
+        m_delayedMousePressTimer->start();
+    };
+    
+    bool multiple = QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier);
+    if (itemIndex.isValid()) {
+        QTreeWidgetItem *item = itemFromIndex(itemIndex);
+        auto componentId = QUuid(item->data(0, Qt::UserRole).toString());
+        if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
+            if (!m_shiftStartComponentId.isNull()) {
+                const Component *parent = m_document->findComponentParent(m_shiftStartComponentId);
+                if (parent) {
+                    if (!parent->childrenIds.empty()) {
+                        bool startAdd = false;
+                        bool stopAdd = false;
+                        std::vector<QUuid> waitQueue;
+                        for (const auto &childId: parent->childrenIds) {
+                            if (m_shiftStartComponentId == childId || componentId == childId) {
+                                if (startAdd) {
+                                    stopAdd = true;
+                                } else {
+                                    startAdd = true;
                                 }
-                                if (startAdd)
-                                    waitQueue.push_back(childId);
-                                if (stopAdd)
-                                    break;
                             }
-                            if (stopAdd && !waitQueue.empty()) {
-                                if (!m_selectedComponentIds.empty()) {
-                                    for (const auto &id: m_selectedComponentIds) {
-                                        updateComponentSelectState(id, false);
-                                    }
-                                    m_selectedComponentIds.clear();
+                            if (startAdd)
+                                waitQueue.push_back(childId);
+                            if (stopAdd)
+                                break;
+                        }
+                        if (stopAdd && !waitQueue.empty()) {
+                            if (!m_selectedComponentIds.empty()) {
+                                for (const auto &id: m_selectedComponentIds) {
+                                    updateComponentSelectState(id, false);
                                 }
-                                if (!m_currentSelectedComponentId.isNull()) {
-                                    m_currentSelectedComponentId = QUuid();
-                                    emit currentComponentChanged(m_currentSelectedComponentId);
-                                }
-                                for (const auto &waitId: waitQueue) {
-                                    selectComponent(waitId, true);
-                                }
+                                m_selectedComponentIds.clear();
+                            }
+                            if (!m_currentSelectedComponentId.isNull()) {
+                                m_currentSelectedComponentId = QUuid();
+                                emit currentComponentChanged(m_currentSelectedComponentId);
+                            }
+                            for (const auto &waitId: waitQueue) {
+                                selectComponent(waitId, true);
                             }
                         }
                     }
                 }
-                return;
-            } else {
-                m_shiftStartComponentId = componentId;
             }
-            selectComponent(componentId, multiple);
+            showMenu();
             return;
+        } else {
+            m_shiftStartComponentId = componentId;
         }
-        if (!multiple)
-            selectComponent(QUuid());
+        selectComponent(componentId, multiple);
+        showMenu();
+        return;
     }
+    if (!multiple)
+        selectComponent(QUuid());
+    
+    showMenu();
+}
+
+void PartTreeWidget::mousePressEvent(QMouseEvent *event)
+{
+    QTreeView::mousePressEvent(event);
+    
+    if (event->button() != Qt::LeftButton)
+        return;
+    
+    handleSingleClick(event->pos());
 }
 
 void PartTreeWidget::showClothSettingMenu(const QPoint &pos, const QUuid &componentId)
@@ -294,12 +336,8 @@ void PartTreeWidget::showClothSettingMenu(const QPoint &pos, const QUuid &compon
     popupMenu.exec(mapToGlobal(pos));
 }
 
-void PartTreeWidget::showContextMenu(const QPoint &pos)
+std::vector<QUuid> PartTreeWidget::collectSelectedComponentIds(const QPoint &pos)
 {
-    const Component *component = nullptr;
-    const SkeletonPart *part = nullptr;
-    PartWidget *partWidget = nullptr;
-    
     std::set<QUuid> unorderedComponentIds = m_selectedComponentIds;
     if (!m_currentSelectedComponentId.isNull())
         unorderedComponentIds.insert(m_currentSelectedComponentId);
@@ -318,6 +356,25 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
     for (const auto &cand: candidates) {
         if (unorderedComponentIds.find(cand) != unorderedComponentIds.end())
             componentIds.push_back(cand);
+    }
+    
+    return componentIds;
+}
+
+void PartTreeWidget::showContextMenu(const QPoint &pos, bool shorted)
+{
+    delete m_delayedMousePressTimer;
+    m_delayedMousePressTimer = nullptr;
+
+    const Component *component = nullptr;
+    const SkeletonPart *part = nullptr;
+    PartWidget *partWidget = nullptr;
+    
+    std::vector<QUuid> componentIds = collectSelectedComponentIds(pos);
+    
+    if (shorted) {
+        if (componentIds.size() != 1)
+            return;
     }
     
     QMenu contextMenu(this);
@@ -492,6 +549,13 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
         contextMenu.addAction(&forDisplayPartImage);
         contextMenu.addSeparator();
     //}
+    
+    if (shorted) {
+        auto globalPos = mapToGlobal(pos);
+        globalPos.setX(globalPos.x() - contextMenu.sizeHint().width() - pos.x());
+        contextMenu.exec(globalPos);
+        return;
+    }
     
     QAction showAction(tr("Show"), this);
     showAction.setIcon(Theme::awesome()->icon(fa::eye));
@@ -758,7 +822,9 @@ void PartTreeWidget::showContextMenu(const QPoint &pos)
         contextMenu.addAction(&deleteAction);
     }
     
-    contextMenu.exec(mapToGlobal(pos));
+    auto globalPos = mapToGlobal(pos);
+    globalPos.setX(globalPos.x() - contextMenu.sizeHint().width() - pos.x());
+    contextMenu.exec(globalPos);
     
     for (const auto &action: groupsActions) {
         delete action;

@@ -323,11 +323,11 @@ void PartWidget::updateUnnormalState(bool unnormal)
     updateAllButtons();
 }
 
-void PartWidget::mouseDoubleClickEvent(QMouseEvent *event)
-{
-    QWidget::mouseDoubleClickEvent(event);
-    emit checkPart(m_partId);
-}
+//void PartWidget::mouseDoubleClickEvent(QMouseEvent *event)
+//{
+//    QWidget::mouseDoubleClickEvent(event);
+//    emit checkPart(m_partId);
+//}
 
 void PartWidget::initToolButtonWithoutFont(QPushButton *button)
 {
