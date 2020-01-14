@@ -197,12 +197,26 @@ void ModelMeshBinder::paint(ModelShaderProgram *program)
         if (m_renderEdgeVertexCount > 0) {
             QOpenGLVertexArrayObject::Binder vaoBinder(&m_vaoEdge);
 			QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
-            program->setUniformValue(program->textureEnabledLoc(), 0);
-            program->setUniformValue(program->normalMapEnabledLoc(), 0);
-            program->setUniformValue(program->metalnessMapEnabledLoc(), 0);
-            program->setUniformValue(program->roughnessMapEnabledLoc(), 0);
-            program->setUniformValue(program->ambientOcclusionMapEnabledLoc(), 0);
-            f->glDrawArrays(GL_LINES, 0, m_renderEdgeVertexCount);
+            // glDrawArrays GL_LINES crashs on Mesa GL
+            static int s_softwareGlState = 0;
+            if (0 == s_softwareGlState) {
+                const char *versionString = (const char *)f->glGetString(GL_VERSION);
+                if (nullptr != versionString &&
+                        '\0' != versionString[0] &&
+                        0 == strstr(versionString, "Mesa")) {
+                    s_softwareGlState = 2;
+                } else {
+                    s_softwareGlState = 1;
+                }
+            }
+            if (2 == s_softwareGlState) {
+                program->setUniformValue(program->textureEnabledLoc(), 0);
+                program->setUniformValue(program->normalMapEnabledLoc(), 0);
+                program->setUniformValue(program->metalnessMapEnabledLoc(), 0);
+                program->setUniformValue(program->roughnessMapEnabledLoc(), 0);
+                program->setUniformValue(program->ambientOcclusionMapEnabledLoc(), 0);
+                f->glDrawArrays(GL_LINES, 0, m_renderEdgeVertexCount);
+            }
         }
     }
     if (m_renderTriangleVertexCount > 0) {
