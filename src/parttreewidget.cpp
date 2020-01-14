@@ -1036,6 +1036,32 @@ void PartTreeWidget::deleteItemChildren(QTreeWidgetItem *item)
 
 void PartTreeWidget::componentChildrenChanged(QUuid componentId)
 {
+    removeComponentDelayedTimer(componentId);
+    
+    QTimer *delayedTimer = new QTimer(this);
+    delayedTimer->setSingleShot(true);
+    delayedTimer->setInterval(200);
+    
+    connect(delayedTimer, &QTimer::timeout, this, [=]() {
+        removeComponentDelayedTimer(componentId);
+        reloadComponentChildren(componentId);
+    });
+    
+    m_delayedComponentTimers.insert({componentId, delayedTimer});
+    delayedTimer->start();
+}
+
+void PartTreeWidget::removeComponentDelayedTimer(const QUuid &componentId)
+{
+    auto findTimer = m_delayedComponentTimers.find(componentId);
+    if (findTimer != m_delayedComponentTimers.end()) {
+        delete findTimer->second;
+        m_delayedComponentTimers.erase(findTimer);
+    }
+}
+
+void PartTreeWidget::reloadComponentChildren(const QUuid &componentId)
+{
     QTreeWidgetItem *parentItem = findComponentItem(componentId);
     if (nullptr == parentItem) {
         qDebug() << "Find component item failed:" << componentId;

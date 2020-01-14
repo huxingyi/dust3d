@@ -102,6 +102,8 @@ private:
     bool isComponentSelected(QUuid componentId);
     std::vector<QUuid> collectSelectedComponentIds(const QPoint &pos);
     void handleSingleClick(const QPoint &pos);
+    void reloadComponentChildren(const QUuid &componentId);
+    void removeComponentDelayedTimer(const QUuid &componentId);
 private:
     const Document *m_document = nullptr;
     QTreeWidgetItem *m_rootItem = nullptr;
@@ -115,6 +117,7 @@ private:
     QBrush m_hightlightedPartBackground;
     QUuid m_shiftStartComponentId;
     std::set<QUuid> m_selectedComponentIds;
+    std::map<QUuid, QTimer *> m_delayedComponentTimers;
 };
 
 #endif
