@@ -20,19 +20,7 @@ public:
     }
     void simulate(ClothMesh *clothMesh) const
     {
-        std::vector<std::vector<size_t>> filteredClothFaces;
-        for (const auto &it: clothMesh->faces) {
-            if (4 == it.size()) {
-                filteredClothFaces.push_back(std::vector<size_t> {
-                    it[0], it[1], it[2]
-                });
-                filteredClothFaces.push_back(std::vector<size_t> {
-                    it[2], it[3], it[0]
-                });
-            } else if (3 == it.size()) {
-                filteredClothFaces.push_back(it);
-            }
-        }
+        const auto &filteredClothFaces = clothMesh->faces;
         std::map<PositionKey, std::pair<QUuid, QUuid>> positionMap;
         std::pair<QUuid, QUuid> defaultSource;
         for (const auto &it: *clothMesh->outcomeNodeVertices) {
