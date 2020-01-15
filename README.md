@@ -27,6 +27,7 @@ External Links
 - [Бета-выпуск Dust3D, нового открытого пакета для создания 3D-моделей](https://www.opennet.ru/opennews/art.shtml?num=49694) **opennet.ru**  
 - [Dust3D - ユニークなモデリングフローが印象的な無料の3Dモデリングソフト！Win＆Mac＆Linux！オープンソース！](https://3dnchu.com/archives/dust3d/) **3dnchu.com**  
 - [Review: Free and easy 3d modeling with Dust3D](https://magazine.renderosity.com/article/5482/review-free-and-easy-3d-modeling-with-dust3d) **renderosity.com**  
+- [Get promising free low-poly 3D modeling tool Dust3D](http://www.cgchannel.com/2020/01/get-promising-free-low-poly-3d-modeling-tool-dust3d/) **cgchannel.com**  
 
 External Media
 -------------
