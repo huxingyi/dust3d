@@ -35,6 +35,7 @@
 
 class MaterialPreviewsGenerator;
 class MotionsGenerator;
+class ScriptRunner;
 class MousePicker;
 
 class HistoryItem
@@ -464,6 +465,7 @@ signals:
     void partGridStateChanged(QUuid partId);
     void componentCombineModeChanged(QUuid componentId);
     void cleanup();
+    void cleanupScript();
     void originChanged();
     void xlockStateChanged();
     void ylockStateChanged();
@@ -507,6 +509,12 @@ signals:
     void postProcessing();
     void textureGenerating();
     void textureChanged();
+    void scriptChanged();
+    void scriptModifiedFromExternal();
+    void mergedVaraiblesChanged();
+    void scriptRunning();
+    void scriptErrorChanged();
+    void scriptConsoleLogChanged();
     void mouseTargetChanged();
     void mousePickRadiusChanged();
 public: // need initialize
@@ -576,6 +584,10 @@ public:
     bool isMeshGenerating() const;
     bool isPostProcessing() const;
     bool isTextureGenerating() const;
+    const QString &script() const;
+    const std::map<QString, std::map<QString, QString>> &variables() const;
+    const QString &scriptError() const;
+    const QString &scriptConsoleLog() const;
     const QVector3D &mouseTargetPosition() const;
     float mousePickRadius() const;
 public slots:
@@ -686,8 +698,10 @@ public slots:
     void batchChangeBegin();
     void batchChangeEnd();
     void reset();
+    void resetScript();
     void clearHistories();
     void silentReset();
+    void silentResetScript();
     void breakEdge(QUuid edgeId);
     void setXlockState(bool locked);
     void setYlockState(bool locked);
@@ -716,6 +730,12 @@ public slots:
     void renameMaterial(QUuid materialId, QString name);
     void applyPreferencePartColorChange();
     void applyPreferenceFlatShadingChange();
+    void initScript(const QString &script);
+    void updateScript(const QString &script);
+    void runScript();
+    void scriptResultReady();
+    void updateVariable(const QString &name, const std::map<QString, QString> &value);
+    void updateVariableValue(const QString &name, const QString &value);
     void startPaint(void);
     void stopPaint(void);
     void setMousePickMaskNodeIds(const std::set<QUuid> &nodeIds);
@@ -772,6 +792,8 @@ private: // need initialize
     quint64 m_nextMeshGenerationId;
     std::map<QString, std::map<QString, QString>> m_cachedVariables;
     std::map<QString, std::map<QString, QString>> m_mergedVariables;
+    ScriptRunner *m_scriptRunner;
+    bool m_isScriptResultObsolete;
     MousePicker *m_mousePicker;
     bool m_isMouseTargetResultObsolete;
     PaintMode m_paintMode;
@@ -786,6 +808,9 @@ private:
     QVector3D m_mouseRayNear;
     QVector3D m_mouseRayFar;
     QVector3D m_mouseTargetPosition;
+    QString m_scriptError;
+    QString m_scriptConsoleLog;
+    QString m_script;
     std::set<QUuid> m_mousePickMaskNodeIds;
     std::set<QUuid> m_intermediatePaintImageIds;
 };

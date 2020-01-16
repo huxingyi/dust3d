@@ -398,6 +398,21 @@ HEADERS += src/preferences.h
 
 HEADERS += src/shadervertex.h
 
+SOURCES += src/scripteditwidget.cpp
+HEADERS += src/scripteditwidget.h
+
+SOURCES += src/scriptvariableswidget.cpp
+HEADERS += src/scriptvariableswidget.h
+
+SOURCES += src/scriptwidget.cpp
+HEADERS += src/scriptwidget.h
+
+SOURCES += src/scriptrunner.cpp
+HEADERS += src/scriptrunner.h
+
+SOURCES += src/variablesxml.cpp
+HEADERS += src/variablesxml.h
+
 SOURCES += src/updateschecker.cpp
 HEADERS += src/updateschecker.h
 
@@ -740,6 +755,22 @@ HEADERS += thirdparty/bullet3/src/BulletCollision/NarrowPhaseCollision/btGjkEpa2
 
 SOURCES += thirdparty/bullet3/src/BulletCollision/CollisionShapes/btBoxShape.cpp
 HEADERS += thirdparty/bullet3/src/BulletCollision/CollisionShapes/btBoxShape.h
+
+INCLUDEPATH += thirdparty/quickjs/quickjs-2019-07-09-dust3d
+
+DEFINES += "CONFIG_VERSION=\"\\\"2019-07-09\\\"\""
+
+SOURCES += thirdparty/quickjs/quickjs-2019-07-09-dust3d/quickjs.c
+HEADERS += thirdparty/quickjs/quickjs-2019-07-09-dust3d/quickjs.h
+
+SOURCES += thirdparty/quickjs/quickjs-2019-07-09-dust3d/cutils.c
+HEADERS += thirdparty/quickjs/quickjs-2019-07-09-dust3d/cutils.h
+
+SOURCES += thirdparty/quickjs/quickjs-2019-07-09-dust3d/libunicode.c
+HEADERS += thirdparty/quickjs/quickjs-2019-07-09-dust3d/libunicode.h
+
+SOURCES += thirdparty/quickjs/quickjs-2019-07-09-dust3d/libregexp.c
+HEADERS += thirdparty/quickjs/quickjs-2019-07-09-dust3d/libregexp.h
 
 INCLUDEPATH += thirdparty/crc64
 

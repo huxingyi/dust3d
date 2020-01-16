@@ -14,6 +14,7 @@
     <file>resources/model-meerkat.ds3</file>
     <file>resources/model-mosquito.ds3</file>
     <file>resources/model-seagull.ds3</file>
+    <file>resources/model-procedural-tree.ds3</file>
     <file>resources/triangle.png</file>
     <file>resources/quad.png</file>
     <file>resources/pentagon.png</file>
@@ -25,6 +26,7 @@
     <file>shaders/default.frag</file>
     <file>shaders/default.core.vert</file>
     <file>shaders/default.core.frag</file>
+    <file>thirdparty/three.js/dust3d.three.js</file>
     <file>languages/dust3d_zh_CN.qm</file>
     <file>ACKNOWLEDGEMENTS.html</file>
     <file>AUTHORS</file>

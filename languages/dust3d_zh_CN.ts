@@ -398,6 +398,10 @@ Tips:
         <source>Toggle Color</source>
         <translation>打开/关闭颜色</translation>
     </message>
+    <message>
+        <source>Script</source>
+        <translation>脚本</translation>
+    </message>
 </context>
 <context>
     <name>ExportPreviewWidget</name>
