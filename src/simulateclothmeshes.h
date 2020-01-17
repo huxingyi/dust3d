@@ -18,7 +18,6 @@ struct ClothMesh
 
 void simulateClothMeshes(std::vector<ClothMesh> *clothMeshes,
     const std::vector<QVector3D> *clothCollisionVertices,
-    const std::vector<std::vector<size_t>> *clothCollisionTriangles,
-    const std::vector<std::pair<QVector3D, float>> *clothTargetNodes);
+    const std::vector<std::vector<size_t>> *clothCollisionTriangles);
 
 #endif

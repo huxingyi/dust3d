@@ -10,12 +10,10 @@ class ClothMeshesSimulator
 public:
     ClothMeshesSimulator(std::vector<ClothMesh> *clothMeshes,
             const std::vector<QVector3D> *clothCollisionVertices,
-            const std::vector<std::vector<size_t>> *clothCollisionTriangles,
-            const std::vector<std::pair<QVector3D, float>> *clothTargetNodes) :
+            const std::vector<std::vector<size_t>> *clothCollisionTriangles) :
         m_clothMeshes(clothMeshes),
         m_clothCollisionVertices(clothCollisionVertices),
-        m_clothCollisionTriangles(clothCollisionTriangles),
-        m_clothTargetNodes(clothTargetNodes)
+        m_clothCollisionTriangles(clothCollisionTriangles)
     {
     }
     void simulate(ClothMesh *clothMesh) const
@@ -77,17 +75,14 @@ private:
     std::vector<ClothMesh> *m_clothMeshes = nullptr;
     const std::vector<QVector3D> *m_clothCollisionVertices = nullptr;
     const std::vector<std::vector<size_t>> *m_clothCollisionTriangles = nullptr;
-    const std::vector<std::pair<QVector3D, float>> *m_clothTargetNodes = nullptr;
 };
 
 void simulateClothMeshes(std::vector<ClothMesh> *clothMeshes,
     const std::vector<QVector3D> *clothCollisionVertices,
-    const std::vector<std::vector<size_t>> *clothCollisionTriangles,
-    const std::vector<std::pair<QVector3D, float>> *clothTargetNodes)
+    const std::vector<std::vector<size_t>> *clothCollisionTriangles)
 {
     tbb::parallel_for(tbb::blocked_range<size_t>(0, clothMeshes->size()),
         ClothMeshesSimulator(clothMeshes,
             clothCollisionVertices,
-            clothCollisionTriangles,
-            clothTargetNodes));
+            clothCollisionTriangles));
 }

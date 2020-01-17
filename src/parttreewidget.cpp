@@ -383,7 +383,7 @@ void PartTreeWidget::showContextMenu(const QPoint &pos, bool shorted)
     std::vector<QUuid> componentIds = collectSelectedComponentIds(pos);
     
     if (shorted) {
-        if (componentIds.size() != 1)
+        if (componentIds.size() > 1)
             return;
     }
     

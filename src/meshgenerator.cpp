@@ -1105,9 +1105,6 @@ MeshCombiner::Mesh *MeshGenerator::combineComponentMesh(const QString &component
             m_clothCollisionVertices.clear();
             m_clothCollisionTriangles.clear();
             mesh->fetch(m_clothCollisionVertices, m_clothCollisionTriangles);
-            buildClothTargetNodes(componentCache.outcomeNodes,
-                componentCache.outcomeEdges,
-                &m_clothTargetNodes);
         } else {
             // TODO: when no body is valid, may add ground plane as collision shape
             // ... ...
@@ -1124,7 +1121,12 @@ MeshCombiner::Mesh *MeshGenerator::combineComponentMesh(const QString &component
             std::vector<QVector3D> newVertices;
             std::vector<std::vector<size_t>> newQuads;
             std::vector<std::vector<size_t>> newTriangles;
+            std::vector<std::tuple<QVector3D, float, size_t>> interpolatedNodes;
+            buildInterpolatedNodes(componentCache.outcomeNodes,
+                componentCache.outcomeEdges,
+                &interpolatedNodes);
             remesh(componentCache.outcomeNodes,
+                interpolatedNodes,
                 combinedVertices,
                 combinedFaces,
                 polyCountValue,
@@ -1167,16 +1169,16 @@ MeshCombiner::Mesh *MeshGenerator::combineComponentMesh(const QString &component
     return mesh;
 }
 
-void MeshGenerator::buildClothTargetNodes(const std::vector<OutcomeNode> &nodes,
+void MeshGenerator::buildInterpolatedNodes(const std::vector<OutcomeNode> &nodes,
         const std::vector<std::pair<std::pair<QUuid, QUuid>, std::pair<QUuid, QUuid>>> &edges,
-        std::vector<std::pair<QVector3D, float>> *targetNodes)
+        std::vector<std::tuple<QVector3D, float, size_t>> *targetNodes)
 {
     targetNodes->clear();
     std::map<std::pair<QUuid, QUuid>, size_t> nodeMap;
     for (size_t nodeIndex = 0; nodeIndex < nodes.size(); ++nodeIndex) {
         const auto &it = nodes[nodeIndex];
         nodeMap.insert({{it.partId, it.nodeId}, nodeIndex});
-        targetNodes->push_back(std::make_pair(it.origin, it.radius * 3.0f));
+        targetNodes->push_back(std::make_tuple(it.origin, it.radius, nodeIndex));
     }
     for (const auto &it: edges) {
         auto findFirst = nodeMap.find(it.first);
@@ -1197,9 +1199,10 @@ void MeshGenerator::buildClothTargetNodes(const std::vector<OutcomeNode> &nodes,
         float offset = segmentLength;
         while (offset < 1.0f) {
             float radius = firstNode.radius * (1.0f - offset) + secondNode.radius * offset;
-            targetNodes->push_back(std::make_pair(
+            targetNodes->push_back(std::make_tuple(
                 firstNode.origin * (1.0f - offset) + secondNode.origin * offset,
-                radius * 3.0
+                radius * 3.0,
+                offset <= 0.5 ? findFirst->second : findSecond->second
             ));
             offset += segmentLength;
         }
@@ -1587,6 +1590,7 @@ void MeshGenerator::generate()
 }
 
 void MeshGenerator::remesh(const std::vector<OutcomeNode> &inputNodes,
+        const std::vector<std::tuple<QVector3D, float, size_t>> &interpolatedNodes,
         const std::vector<QVector3D> &inputVertices,
         const std::vector<std::vector<size_t>> &inputFaces,
         float targetVertexMultiplyFactor,
@@ -1597,11 +1601,12 @@ void MeshGenerator::remesh(const std::vector<OutcomeNode> &inputNodes,
 {
     std::vector<std::pair<QVector3D, float>> nodes;
     std::vector<std::pair<QUuid, QUuid>> sourceIds;
-    nodes.reserve(inputNodes.size());
-    sourceIds.reserve(inputNodes.size());
-    for (const auto &it: inputNodes) {
-        nodes.push_back(std::make_pair(it.origin, it.radius));
-        sourceIds.push_back(std::make_pair(it.partId, it.nodeId));
+    nodes.reserve(interpolatedNodes.size());
+    sourceIds.reserve(interpolatedNodes.size());
+    for (const auto &it: interpolatedNodes) {
+        nodes.push_back(std::make_pair(std::get<0>(it), std::get<1>(it)));
+        const auto &sourceNode = inputNodes[std::get<2>(it)];
+        sourceIds.push_back(std::make_pair(sourceNode.partId, sourceNode.nodeId));
     }
     Remesher remesher;
     remesher.setMesh(inputVertices, inputFaces);
@@ -1699,7 +1704,7 @@ void MeshGenerator::collectClothComponentIdStrings(const QString &componentIdStr
 
 void MeshGenerator::collectClothComponent(const QString &componentIdString)
 {
-    if (m_clothCollisionTriangles.empty() || m_clothTargetNodes.empty())
+    if (m_clothCollisionTriangles.empty())
         return;
     
     std::vector<QString> componentIdStrings;
@@ -1723,8 +1728,7 @@ void MeshGenerator::collectClothComponent(const QString &componentIdString)
     }
     simulateClothMeshes(&clothMeshes,
         &m_clothCollisionVertices,
-        &m_clothCollisionTriangles,
-        &m_clothTargetNodes);
+        &m_clothCollisionTriangles);
     for (auto &clothMesh: clothMeshes) {
         auto vertexStartIndex = m_outcome->vertices.size();
         auto updateVertexIndices = [=](std::vector<std::vector<size_t>> &faces) {

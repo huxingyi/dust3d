@@ -106,7 +106,6 @@ private:
     quint64 m_id = 0;
     std::vector<QVector3D> m_clothCollisionVertices;
     std::vector<std::vector<size_t>> m_clothCollisionTriangles;
-    std::vector<std::pair<QVector3D, float>> m_clothTargetNodes;
     
     void collectParts();
     bool checkIsComponentDirty(const QString &componentIdString);
@@ -142,6 +141,7 @@ private:
         std::vector<QString> *componentIdStrings);
     void cutFaceStringToCutTemplate(const QString &cutFaceString, std::vector<QVector2D> &cutTemplate);
     void remesh(const std::vector<OutcomeNode> &inputNodes,
+        const std::vector<std::tuple<QVector3D, float, size_t>> &interpolatedNodes,
         const std::vector<QVector3D> &inputVertices,
         const std::vector<std::vector<size_t>> &inputFaces,
         float targetVertexMultiplyFactor,
@@ -149,9 +149,9 @@ private:
         std::vector<std::vector<size_t>> *outputQuads,
         std::vector<std::vector<size_t>> *outputTriangles,
         std::vector<std::pair<QVector3D, std::pair<QUuid, QUuid>>> *outputNodeVertices);
-    void buildClothTargetNodes(const std::vector<OutcomeNode> &nodes,
+    void buildInterpolatedNodes(const std::vector<OutcomeNode> &nodes,
         const std::vector<std::pair<std::pair<QUuid, QUuid>, std::pair<QUuid, QUuid>>> &edges,
-        std::vector<std::pair<QVector3D, float>> *targetNodes);
+        std::vector<std::tuple<QVector3D, float, size_t>> *targetNodes);
 };
 
 #endif

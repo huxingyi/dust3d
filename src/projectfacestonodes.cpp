@@ -69,7 +69,7 @@ void projectFacesToNodes(const std::vector<QVector3D> &vertices,
     const std::vector<std::pair<QVector3D, float>> &sourceNodes,
     std::vector<size_t> *faceSources)
 {
-    faceSources->resize(faces.size());
+    faceSources->resize(faces.size(), std::numeric_limits<size_t>::max());
     tbb::parallel_for(tbb::blocked_range<size_t>(0, faces.size()),
         FacesToNodesProjector(&vertices, &faces, &sourceNodes, faceSources));
 }

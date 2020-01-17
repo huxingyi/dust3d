@@ -116,6 +116,8 @@ void Remesher::resolveSources()
     for (size_t i = 0; i < m_remeshedFaces.size(); ++i) {
         const auto &face = m_remeshedFaces[i];
         const auto &source = faceSources[i];
+        if (source >= m_nodes.size())
+            continue;
         for (const auto &vertexIndex: face)
             vertexToNodeVotes[vertexIndex][source]++;
     }
