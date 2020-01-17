@@ -32,6 +32,8 @@ public:
         auto B = -polygonNormal(*m_vertices, face);
         auto a = QVector3D::dotProduct(B, B);
         auto b = 2.0f * QVector3D::dotProduct(B, A - C);
+        if (b >= 0.0)
+            return false;
         const auto &r = nodeRadius;
         auto c = QVector3D::dotProduct(A - C, A - C) - r * r;
         if (b * b - 4 * a * c <= 0)
