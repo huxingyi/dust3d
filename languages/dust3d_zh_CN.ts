@@ -1076,7 +1076,7 @@ Tips:
     </message>
     <message>
         <source>Low Poly</source>
-        <translation>低面</translation>
+        <translation>低面数</translation>
     </message>
     <message>
         <source>Original</source>
@@ -1084,11 +1084,7 @@ Tips:
     </message>
     <message>
         <source>High Poly</source>
-        <translation>高面</translation>
-    </message>
-    <message>
-        <source>Extreme High Poly</source>
-        <translation>极高面</translation>
+        <translation>高面数</translation>
     </message>
     <message>
         <source>Body</source>
@@ -1105,6 +1101,18 @@ Tips:
     <message>
         <source>Centripetal</source>
         <translation>向心力</translation>
+    </message>
+    <message>
+        <source>Extremely High Poly</source>
+        <translation>极高面数</translation>
+    </message>
+    <message>
+        <source>Ultra High Poly</source>
+        <translation>超高面数</translation>
+    </message>
+    <message>
+        <source>Tremendously High Poly</source>
+        <translation>巨多面数</translation>
     </message>
 </context>
 <context>

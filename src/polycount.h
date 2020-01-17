@@ -7,7 +7,9 @@ enum class PolyCount
     LowPoly,
     Original,
     HighPoly,
-    ExtremeHighPoly,
+    UltraHighPoly,
+    ExtremelyHighPoly,
+    TremendouslyHighPoly,
     Count
 };
 PolyCount PolyCountFromString(const char *countString);
@@ -21,8 +23,12 @@ PolyCount PolyCountFromString(const char *countString)              \
         return PolyCount::Original;                                 \
     if (count == "HighPoly")                                        \
         return PolyCount::HighPoly;                                 \
-    if (count == "ExtremeHighPoly")                                 \
-        return PolyCount::ExtremeHighPoly;                          \
+    if (count == "UltraHighPoly")                                   \
+        return PolyCount::UltraHighPoly;                            \
+    if (count == "ExtremelyHighPoly")                               \
+        return PolyCount::ExtremelyHighPoly;                        \
+    if (count == "TremendouslyHighPoly")                            \
+        return PolyCount::TremendouslyHighPoly;                     \
     return PolyCount::Original;                                     \
 }
 const char *PolyCountToString(PolyCount count);
@@ -36,8 +42,12 @@ const char *PolyCountToString(PolyCount count)                      \
             return "Original";                                      \
         case PolyCount::HighPoly:                                   \
             return "HighPoly";                                      \
-        case PolyCount::ExtremeHighPoly:                            \
-            return "ExtremeHighPoly";                               \
+        case PolyCount::UltraHighPoly:                              \
+            return "UltraHighPoly";                                 \
+        case PolyCount::ExtremelyHighPoly:                          \
+            return "ExtremelyHighPoly";                             \
+        case PolyCount::TremendouslyHighPoly:                       \
+            return "TremendouslyHighPoly";                          \
         default:                                                    \
             return "Original";                                      \
     }                                                               \
@@ -53,8 +63,12 @@ QString PolyCountToDispName(PolyCount count)                        \
             return QObject::tr("Original");                         \
         case PolyCount::HighPoly:                                   \
             return QObject::tr("High Poly");                        \
-        case PolyCount::ExtremeHighPoly:                            \
-            return QObject::tr("Extreme High Poly");                \
+        case PolyCount::UltraHighPoly:                              \
+            return QObject::tr("Ultra High Poly");                  \
+        case PolyCount::ExtremelyHighPoly:                          \
+            return QObject::tr("Extremely High Poly");              \
+        case PolyCount::TremendouslyHighPoly:                       \
+            return QObject::tr("Tremendously High Poly");           \
         default:                                                    \
             return QObject::tr("Original");                         \
     }                                                               \
@@ -70,8 +84,12 @@ float PolyCountToValue(PolyCount count)                             \
             return 1.0f;                                            \
         case PolyCount::HighPoly:                                   \
             return 1.2f;                                            \
-        case PolyCount::ExtremeHighPoly:                            \
+        case PolyCount::UltraHighPoly:                              \
             return 1.8f;                                            \
+        case PolyCount::ExtremelyHighPoly:                          \
+            return 2.4f;                                            \
+        case PolyCount::TremendouslyHighPoly:                       \
+            return 3.0f;                                            \
         default:                                                    \
             return 1.0f;                                            \
     }                                                               \
