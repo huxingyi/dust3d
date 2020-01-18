@@ -873,14 +873,17 @@ bool MeshGenerator::componentRemeshed(const std::map<QString, QString> *componen
 {
     if (nullptr == component)
         return false;
+    bool isCloth = false;
     if (ComponentLayer::Cloth == ComponentLayerFromString(valueOfKeyInMapOrEmpty(*component, "layer").toUtf8().constData())) {
         if (nullptr != polyCountValue)
             *polyCountValue = PolyCountToValue(PolyCount::UltraHighPoly);
-        return true;
+        isCloth = true;
     }
     auto polyCount = PolyCountFromString(valueOfKeyInMapOrEmpty(*component, "polyCount").toUtf8().constData());
     if (nullptr != polyCountValue)
         *polyCountValue = PolyCountToValue(polyCount);
+    if (isCloth)
+        return true;
     return polyCount != PolyCount::Original;
 }
 

@@ -36,19 +36,26 @@ public:
         
         std::vector<QVector3D> &filteredClothVertices = clothMesh->vertices;
         std::vector<QVector3D> externalForces;
+        std::vector<QVector3D> postProcessDirections;
         const auto &clothForce = clothMesh->clothForce;
-        float clothOffset = 0.015f + (clothMesh->clothOffset * 0.05f);
+        float clothOffset = 0.01f + (clothMesh->clothOffset * 0.05f);
         if (ClothForce::Centripetal == clothForce) {
             externalForces.resize(filteredClothVertices.size());
+            postProcessDirections.resize(filteredClothVertices.size());
             for (size_t i = 0; i < filteredClothFaces.size(); ++i) {
                 const auto &face = filteredClothFaces[i];
                 auto faceForceDirection = -polygonNormal(filteredClothVertices, face);
                 for (const auto &vertex: face)
                     externalForces[vertex] += faceForceDirection;
             }
-            for (auto &it: externalForces)
-                it = (it.normalized() + QVector3D(0.0f, -1.0f, 0.0f)).normalized();
+            for (size_t i = 0; i < externalForces.size(); ++i) {
+                auto &it = externalForces[i];
+                it.normalize();
+                postProcessDirections[i] = it * clothOffset;
+                it = (it + QVector3D(0.0f, -1.0f, 0.0f)).normalized();
+            }
         } else {
+            postProcessDirections.resize(filteredClothVertices.size(), QVector3D(0.0f, -1.0f, 0.0f) * clothOffset);
             externalForces.resize(filteredClothVertices.size(), QVector3D(0.0f, -1.0f, 0.0f));
         }
         ClothSimulator clothSimulator(filteredClothVertices,
@@ -62,7 +69,7 @@ public:
             clothSimulator.step();
         clothSimulator.getCurrentVertices(&filteredClothVertices);
         for (size_t i = 0; i < filteredClothVertices.size(); ++i) {
-            filteredClothVertices[i] -= externalForces[i] * clothOffset;
+            filteredClothVertices[i] -= postProcessDirections[i];
         }
     }
     void operator()(const tbb::blocked_range<size_t> &range) const
