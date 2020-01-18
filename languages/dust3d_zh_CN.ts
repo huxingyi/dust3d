@@ -772,6 +772,10 @@ Tips:
         <source>Iteration</source>
         <translation>迭代</translation>
     </message>
+    <message>
+        <source>Rename</source>
+        <translation>重命名</translation>
+    </message>
 </context>
 <context>
     <name>PartWidget</name>

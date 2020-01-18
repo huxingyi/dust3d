@@ -767,6 +767,7 @@ void PartTreeWidget::showContextMenu(const QPoint &pos, bool shorted)
     contextMenu.addSeparator();
     
     std::vector<QAction *> groupsActions;
+    QAction renameAction(tr("Rename"), this);
     QAction deleteAction(tr("Delete"), this);
     QAction moveToTopAction(tr("Top"), this);
     QAction moveUpAction(tr("Up"), this);
@@ -844,6 +845,17 @@ void PartTreeWidget::showContextMenu(const QPoint &pos, bool shorted)
             }
         };
         addChildGroupsFunc(QUuid(), 0);
+        
+        if (nullptr != component && nullptr == part) {
+            auto componentId = component->id;
+            connect(&renameAction, &QAction::triggered, [=]() {
+                auto findItem = m_componentItemMap.find(componentId);
+                if (findItem != m_componentItemMap.end()) {
+                    editItem(findItem->second);
+                }
+            });
+            contextMenu.addAction(&renameAction);
+        }
         
         contextMenu.addSeparator();
         
