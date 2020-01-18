@@ -15,6 +15,7 @@
 #include "partwidget.h"
 #include "skeletongraphicswidget.h"
 #include "floatnumberwidget.h"
+#include "intnumberwidget.h"
 
 PartTreeWidget::PartTreeWidget(const Document *document, QWidget *parent) :
     QTreeWidget(parent),
@@ -285,13 +286,35 @@ void PartTreeWidget::showClothSettingMenu(const QPoint &pos, const QUuid &compon
     Theme::initAwesomeToolButton(clothStiffnessEraser);
     
     connect(clothStiffnessEraser, &QPushButton::clicked, [=]() {
-        clothStiffnessWidget->setValue(Component::defaultStiffness);
+        clothStiffnessWidget->setValue(Component::defaultClothStiffness);
         emit groupOperationAdded();
     });
     
     QHBoxLayout *clothStiffnessLayout = new QHBoxLayout;
     clothStiffnessLayout->addWidget(clothStiffnessEraser);
     clothStiffnessLayout->addWidget(clothStiffnessWidget);
+    
+    IntNumberWidget *clothIterationWidget = new IntNumberWidget;
+    clothIterationWidget->setItemName(tr("Iteration"));
+    clothIterationWidget->setRange(0, 1000);
+    clothIterationWidget->setValue(component->clothIteration);
+    
+    connect(clothIterationWidget, &IntNumberWidget::valueChanged, [=](int value) {
+        //emit setComponentClothIteration(componentId, value);
+        //emit groupOperationAdded();
+    });
+    
+    QPushButton *clothIterationEraser = new QPushButton(QChar(fa::eraser));
+    Theme::initAwesomeToolButton(clothIterationEraser);
+    
+    connect(clothIterationEraser, &QPushButton::clicked, [=]() {
+        clothIterationWidget->setValue(Component::defaultClothIteration);
+        emit groupOperationAdded();
+    });
+    
+    QHBoxLayout *clothIterationLayout = new QHBoxLayout;
+    clothIterationLayout->addWidget(clothIterationEraser);
+    clothIterationLayout->addWidget(clothIterationWidget);
     
     FloatNumberWidget *clothOffsetWidget = new FloatNumberWidget;
     clothOffsetWidget->setItemName(tr("Offset"));
@@ -333,6 +356,7 @@ void PartTreeWidget::showClothSettingMenu(const QPoint &pos, const QUuid &compon
     
     QVBoxLayout *mainLayout = new QVBoxLayout;
     mainLayout->addLayout(clothStiffnessLayout);
+    //mainLayout->addLayout(clothIterationLayout);
     mainLayout->addLayout(clothOffsetLayout);
     mainLayout->addLayout(clothForceLayout);
     

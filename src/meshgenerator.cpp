@@ -919,11 +919,21 @@ ComponentLayer MeshGenerator::componentLayer(const std::map<QString, QString> *c
 float MeshGenerator::componentClothStiffness(const std::map<QString, QString> *component)
 {
     if (nullptr == component)
-        return Component::defaultStiffness;
+        return Component::defaultClothStiffness;
     auto findClothStiffness = component->find("clothStiffness");
     if (findClothStiffness == component->end())
-        return Component::defaultStiffness;
+        return Component::defaultClothStiffness;
     return findClothStiffness->second.toFloat();
+}
+
+size_t MeshGenerator::componentClothIteration(const std::map<QString, QString> *component)
+{
+    if (nullptr == component)
+        return Component::defaultClothIteration;
+    auto findClothIteration = component->find("clothIteration");
+    if (findClothIteration == component->end())
+        return Component::defaultClothIteration;
+    return findClothIteration->second.toUInt();
 }
 
 ClothForce MeshGenerator::componentClothForce(const std::map<QString, QString> *component)
@@ -1723,6 +1733,7 @@ void MeshGenerator::collectClothComponent(const QString &componentIdString)
         clothMesh.clothForce = componentClothForce(component);
         clothMesh.clothOffset = componentClothOffset(component);
         clothMesh.clothStiffness = componentClothStiffness(component);
+        clothMesh.clothIteration = componentClothIteration(component);
         clothMesh.outcomeNodeVertices = &componentCache.outcomeNodeVertices;
         m_outcome->nodes.insert(m_outcome->nodes.end(), componentCache.outcomeNodes.begin(), componentCache.outcomeNodes.end());
     }

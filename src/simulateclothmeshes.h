@@ -14,6 +14,7 @@ struct ClothMesh
     ClothForce clothForce;
     float clothOffset;
     float clothStiffness;
+    size_t clothIteration;
 };
 
 void simulateClothMeshes(std::vector<ClothMesh> *clothMeshes,

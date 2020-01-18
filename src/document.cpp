@@ -22,7 +22,8 @@
 #include "contourtopartconverter.h"
 
 unsigned long Document::m_maxSnapshot = 1000;
-const float Component::defaultStiffness = 0.5f;
+const float Component::defaultClothStiffness = 0.5f;
+const size_t Component::defaultClothIteration = 350;
 
 Document::Document() :
     SkeletonDocument(),
@@ -1209,6 +1210,8 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
                 component["layer"] = ComponentLayerToString(componentIt.second.layer);
             if (componentIt.second.clothStiffnessAdjusted())
                 component["clothStiffness"] = QString::number(componentIt.second.clothStiffness);
+            if (componentIt.second.clothIterationAdjusted())
+                component["clothIteration"] = QString::number(componentIt.second.clothIteration);
             if (componentIt.second.clothForceAdjusted())
                 component["clothForce"] = ClothForceToString(componentIt.second.clothForce);
             if (componentIt.second.clothOffsetAdjusted())
@@ -1724,6 +1727,9 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
         auto findClothStiffness = componentKv.second.find("clothStiffness");
         if (findClothStiffness != componentKv.second.end())
             component.clothStiffness = findClothStiffness->second.toFloat();
+        auto findClothIteration = componentKv.second.find("clothIteration");
+        if (findClothIteration != componentKv.second.end())
+            component.clothIteration = findClothIteration->second.toUInt();
         auto findClothForce = componentKv.second.find("clothForce");
         if (findClothForce != componentKv.second.end())
             component.clothForce = ClothForceFromString(valueOfKeyInMapOrEmpty(componentKv.second, "clothForce").toUtf8().constData());
@@ -2563,6 +2569,20 @@ void Document::setComponentClothStiffness(QUuid componentId, float stiffness)
     component->clothStiffness = stiffness;
     component->dirty = true;
     emit componentClothStiffnessChanged(componentId);
+    emit skeletonChanged();
+}
+
+void Document::setComponentClothIteration(QUuid componentId, size_t iteration)
+{
+    Component *component = (Component *)findComponent(componentId);
+    if (nullptr == component)
+        return;
+    if (component->clothIteration == iteration)
+        return;
+    
+    component->clothIteration = iteration;
+    component->dirty = true;
+    emit componentClothIterationChanged(componentId);
     emit skeletonChanged();
 }
 

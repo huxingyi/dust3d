@@ -1044,6 +1044,7 @@ DocumentWindow::DocumentWindow() :
     connect(partTreeWidget, &PartTreeWidget::setPartColorState, m_document, &Document::setPartColorState);
     connect(partTreeWidget, &PartTreeWidget::setComponentCombineMode, m_document, &Document::setComponentCombineMode);
     connect(partTreeWidget, &PartTreeWidget::setComponentClothStiffness, m_document, &Document::setComponentClothStiffness);
+    connect(partTreeWidget, &PartTreeWidget::setComponentClothIteration, m_document, &Document::setComponentClothIteration);
     connect(partTreeWidget, &PartTreeWidget::setComponentClothForce, m_document, &Document::setComponentClothForce);
     connect(partTreeWidget, &PartTreeWidget::setComponentClothOffset, m_document, &Document::setComponentClothOffset);
     connect(partTreeWidget, &PartTreeWidget::setPartTarget, m_document, &Document::setPartTarget);

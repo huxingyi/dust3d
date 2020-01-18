@@ -58,7 +58,7 @@ public:
             externalForces);
         clothSimulator.setStiffness(clothMesh->clothStiffness);
         clothSimulator.create();
-        for (size_t i = 0; i < 350; ++i)
+        for (size_t i = 0; i < clothMesh->clothIteration; ++i)
             clothSimulator.step();
         clothSimulator.getCurrentVertices(&filteredClothVertices);
         for (size_t i = 0; i < filteredClothVertices.size(); ++i) {

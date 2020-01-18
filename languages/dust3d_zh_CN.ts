@@ -768,6 +768,10 @@ Tips:
         <source>Offset</source>
         <translation>偏移</translation>
     </message>
+    <message>
+        <source>Iteration</source>
+        <translation>迭代</translation>
+    </message>
 </context>
 <context>
     <name>PartWidget</name>

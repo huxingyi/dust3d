@@ -48,7 +48,8 @@ public:
 class Component
 {
 public:
-    static const float defaultStiffness;
+    static const float defaultClothStiffness;
+    static const size_t defaultClothIteration;
     Component()
     {
     }
@@ -72,9 +73,10 @@ public:
     float smoothSeam = 0.0;
     PolyCount polyCount = PolyCount::Original;
     ComponentLayer layer = ComponentLayer::Body;
-    float clothStiffness = defaultStiffness;
+    float clothStiffness = defaultClothStiffness;
     ClothForce clothForce = ClothForce::Gravitational;
     float clothOffset = 0.0f;
+    size_t clothIteration = defaultClothIteration;
     std::vector<QUuid> childrenIds;
     QString linkData() const
     {
@@ -196,7 +198,11 @@ public:
     }
     bool clothStiffnessAdjusted() const
     {
-        return fabs(clothStiffness - Component::defaultStiffness) >= 0.01;
+        return fabs(clothStiffness - Component::defaultClothStiffness) >= 0.01;
+    }
+    bool clothIterationAdjusted() const
+    {
+        return clothIteration != defaultClothIteration;
     }
     bool clothForceAdjusted() const
     {
@@ -418,6 +424,7 @@ signals:
     void componentPolyCountChanged(QUuid componentId);
     void componentLayerChanged(QUuid componentId);
     void componentClothStiffnessChanged(QUuid componentId);
+    void componentClothIterationChanged(QUuid componentId);
     void componentClothForceChanged(QUuid componentId);
     void componentClothOffsetChanged(QUuid componentId);
     void nodeRemoved(QUuid nodeId);
@@ -679,6 +686,7 @@ public slots:
     void setComponentPolyCount(QUuid componentId, PolyCount count);
     void setComponentLayer(QUuid componentId, ComponentLayer layer);
     void setComponentClothStiffness(QUuid componentId, float stiffness);
+    void setComponentClothIteration(QUuid componentId, size_t iteration);
     void setComponentClothForce(QUuid componentId, ClothForce force);
     void setComponentClothOffset(QUuid componentId, float offset);
     void hideOtherComponents(QUuid componentId);

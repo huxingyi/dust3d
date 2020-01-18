@@ -133,6 +133,7 @@ private:
     QString componentColorName(const std::map<QString, QString> *component);
     ComponentLayer componentLayer(const std::map<QString, QString> *component);
     float componentClothStiffness(const std::map<QString, QString> *component);
+    size_t componentClothIteration(const std::map<QString, QString> *component);
     ClothForce componentClothForce(const std::map<QString, QString> *component);
     float componentClothOffset(const std::map<QString, QString> *component);
     void collectUncombinedComponent(const QString &componentIdString);
