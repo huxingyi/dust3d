@@ -343,10 +343,6 @@ Tips:
         <translation>自动着色</translation>
     </message>
     <message>
-        <source>Create Wrap Parts</source>
-        <translation>创建包裹部件</translation>
-    </message>
-    <message>
         <source>Marker pen</source>
         <translation>马克笔</translation>
     </message>
@@ -1278,10 +1274,6 @@ Tips:
     <message>
         <source>Colorize</source>
         <translation>着色</translation>
-    </message>
-    <message>
-        <source>Create Wrap Parts</source>
-        <translation>创建包裹部件</translation>
     </message>
 </context>
 <context>

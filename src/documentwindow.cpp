@@ -599,11 +599,11 @@ DocumentWindow::DocumentWindow() :
     });
     m_editMenu->addAction(m_clearCutFaceAction);
     
-    m_createWrapPartsAction = new QAction(tr("Create Wrap Parts"), this);
-    connect(m_createWrapPartsAction, &QAction::triggered, [=] {
-        m_graphicsWidget->createWrapParts();
-    });
-    m_editMenu->addAction(m_createWrapPartsAction);
+    //m_createWrapPartsAction = new QAction(tr("Create Wrap Parts"), this);
+    //connect(m_createWrapPartsAction, &QAction::triggered, [=] {
+    //    m_graphicsWidget->createWrapParts();
+    //});
+    //m_editMenu->addAction(m_createWrapPartsAction);
 
     m_alignToMenu = new QMenu(tr("Align To"));
 
@@ -698,7 +698,7 @@ DocumentWindow::DocumentWindow() :
         m_switchXzAction->setEnabled(m_graphicsWidget->hasSelection());
         m_setCutFaceAction->setEnabled(m_graphicsWidget->hasSelection());
         m_clearCutFaceAction->setEnabled(m_graphicsWidget->hasCutFaceAdjustedNodesSelection());
-        m_createWrapPartsAction->setEnabled(m_graphicsWidget->hasSelection());
+        //m_createWrapPartsAction->setEnabled(m_graphicsWidget->hasSelection());
         m_colorizeAsBlankAction->setEnabled(m_graphicsWidget->hasSelection());
         m_colorizeAsAutoAction->setEnabled(m_graphicsWidget->hasSelection());
         m_alignToGlobalCenterAction->setEnabled(m_graphicsWidget->hasSelection() && m_document->originSettled());

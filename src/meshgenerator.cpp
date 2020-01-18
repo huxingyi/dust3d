@@ -14,7 +14,6 @@
 #include "theme.h"
 #include "partbase.h"
 #include "imageforever.h"
-#include "gridmeshbuilder.h"
 #include "triangulatefaces.h"
 #include "remesher.h"
 #include "polycount.h"
@@ -350,7 +349,7 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, 
     float hollowThickness = 0.0;
     auto target = PartTargetFromString(valueOfKeyInMapOrEmpty(part, "target").toUtf8().constData());
     auto base = PartBaseFromString(valueOfKeyInMapOrEmpty(part, "base").toUtf8().constData());
-    bool gridded = isTrueValueString(valueOfKeyInMapOrEmpty(part, "gridded"));
+    //bool gridded = isTrueValueString(valueOfKeyInMapOrEmpty(part, "gridded"));
 
     QString cutFaceString = valueOfKeyInMapOrEmpty(part, "cutFace");
     std::vector<QVector2D> cutTemplate;
@@ -500,7 +499,6 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, 
     std::map<int, QString> nodeIndexToIdStringMap;
     StrokeModifier *nodeMeshModifier = nullptr;
     StrokeMeshBuilder *nodeMeshBuilder = nullptr;
-    GridMeshBuilder *gridMeshBuilder = nullptr;
     
     QString mirroredPartIdString;
     QUuid mirroredPartId;
@@ -544,166 +542,115 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, 
         }
     };
     
-    if (gridded) {
-        gridMeshBuilder = new GridMeshBuilder;
+    nodeMeshModifier = new StrokeModifier;
+    
+    if (addIntermediateNodes)
+        nodeMeshModifier->enableIntermediateAddition();
+    
+    for (const auto &nodeIt: nodeInfos) {
+        const auto &nodeIdString = nodeIt.first;
+        const auto &nodeInfo = nodeIt.second;
+        size_t nodeIndex = 0;
+        if (nodeInfo.hasCutFaceSettings) {
+            std::vector<QVector2D> nodeCutTemplate;
+            cutFaceStringToCutTemplate(nodeInfo.cutFace, nodeCutTemplate);
+            if (chamfered)
+                chamferFace2D(&nodeCutTemplate);
+            nodeIndex = nodeMeshModifier->addNode(nodeInfo.position, nodeInfo.radius, nodeCutTemplate, nodeInfo.cutRotation);
+        } else {
+            nodeIndex = nodeMeshModifier->addNode(nodeInfo.position, nodeInfo.radius, cutTemplate, cutRotation);
+        }
+        nodeIdStringToIndexMap[nodeIdString] = nodeIndex;
+        nodeIndexToIdStringMap[nodeIndex] = nodeIdString;
         
-        for (const auto &nodeIt: nodeInfos) {
-            const auto &nodeIdString = nodeIt.first;
-            const auto &nodeInfo = nodeIt.second;
-            size_t nodeIndex = 0;
-            
-            nodeIndex = gridMeshBuilder->addNode(nodeInfo.position, nodeInfo.radius);
-            
-            nodeIdStringToIndexMap[nodeIdString] = nodeIndex;
-            nodeIndexToIdStringMap[nodeIndex] = nodeIdString;
-            
-            addNode(nodeIdString, nodeInfo);
+        addNode(nodeIdString, nodeInfo);
+    }
+    
+    for (const auto &edgeIt: edges) {
+        const QString &fromNodeIdString = edgeIt.first;
+        const QString &toNodeIdString = edgeIt.second;
+        
+        auto findFromNodeIndex = nodeIdStringToIndexMap.find(fromNodeIdString);
+        if (findFromNodeIndex == nodeIdStringToIndexMap.end()) {
+            qDebug() << "Find from-node failed:" << fromNodeIdString;
+            continue;
         }
         
-        for (const auto &edgeIt: edges) {
-            const QString &fromNodeIdString = edgeIt.first;
-            const QString &toNodeIdString = edgeIt.second;
-            
-            auto findFromNodeIndex = nodeIdStringToIndexMap.find(fromNodeIdString);
-            if (findFromNodeIndex == nodeIdStringToIndexMap.end()) {
-                qDebug() << "Find from-node failed:" << fromNodeIdString;
-                continue;
-            }
-            
-            auto findToNodeIndex = nodeIdStringToIndexMap.find(toNodeIdString);
-            if (findToNodeIndex == nodeIdStringToIndexMap.end()) {
-                qDebug() << "Find to-node failed:" << toNodeIdString;
-                continue;
-            }
-            
-            gridMeshBuilder->addEdge(findFromNodeIndex->second, findToNodeIndex->second);
-            addEdge(fromNodeIdString, toNodeIdString);
+        auto findToNodeIndex = nodeIdStringToIndexMap.find(toNodeIdString);
+        if (findToNodeIndex == nodeIdStringToIndexMap.end()) {
+            qDebug() << "Find to-node failed:" << toNodeIdString;
+            continue;
         }
         
-        if (subdived)
-            gridMeshBuilder->setSubdived(true);
-        buildSucceed = gridMeshBuilder->build();
+        nodeMeshModifier->addEdge(findFromNodeIndex->second, findToNodeIndex->second);
+        addEdge(fromNodeIdString, toNodeIdString);
+    }
+    
+    if (subdived)
+        nodeMeshModifier->subdivide();
+    
+    if (rounded)
+        nodeMeshModifier->roundEnd();
+    
+    nodeMeshModifier->finalize();
+    
+    nodeMeshBuilder = new StrokeMeshBuilder;
+    nodeMeshBuilder->setDeformThickness(deformThickness);
+    nodeMeshBuilder->setDeformWidth(deformWidth);
+    nodeMeshBuilder->setDeformMapScale(deformMapScale);
+    nodeMeshBuilder->setHollowThickness(hollowThickness);
+    if (nullptr != deformImage)
+        nodeMeshBuilder->setDeformMapImage(deformImage);
+    if (PartBase::YZ == base) {
+        nodeMeshBuilder->enableBaseNormalOnX(false);
+    } else if (PartBase::Average == base) {
+        nodeMeshBuilder->enableBaseNormalAverage(true);
+    } else if (PartBase::XY == base) {
+        nodeMeshBuilder->enableBaseNormalOnZ(false);
+    } else if (PartBase::ZX == base) {
+        nodeMeshBuilder->enableBaseNormalOnY(false);
+    }
+    
+    std::vector<size_t> builderNodeIndices;
+    for (const auto &node: nodeMeshModifier->nodes()) {
+        auto nodeIndex = nodeMeshBuilder->addNode(node.position, node.radius, node.cutTemplate, node.cutRotation);
+        nodeMeshBuilder->setNodeOriginInfo(nodeIndex, node.nearOriginNodeIndex, node.farOriginNodeIndex);
+        builderNodeIndices.push_back(nodeIndex);
         
-        partCache.vertices = gridMeshBuilder->getGeneratedPositions();
-        partCache.faces = gridMeshBuilder->getGeneratedFaces();
+        const auto &originNodeIdString = nodeIndexToIdStringMap[node.originNodeIndex];
         
-        for (size_t i = 0; i < partCache.vertices.size(); ++i) {
-            const auto &position = partCache.vertices[i];
-            const auto &nodeIndex = gridMeshBuilder->getGeneratedSources()[i];
-            const auto &nodeIdString = nodeIndexToIdStringMap[nodeIndex];
-            partCache.outcomeNodeVertices.push_back({position, {partIdString, nodeIdString}});
-        }
-    } else {
-        nodeMeshModifier = new StrokeModifier;
+        OutcomePaintNode paintNode;
+        paintNode.originNodeIndex = node.originNodeIndex;
+        paintNode.originNodeId = QUuid(originNodeIdString);
+        paintNode.radius = node.radius;
+        paintNode.origin = node.position;
         
-        if (addIntermediateNodes)
-            nodeMeshModifier->enableIntermediateAddition();
+        partCache.outcomePaintMap.paintNodes.push_back(paintNode);
+    }
+    for (const auto &edge: nodeMeshModifier->edges())
+        nodeMeshBuilder->addEdge(edge.firstNodeIndex, edge.secondNodeIndex);
+    buildSucceed = nodeMeshBuilder->build();
+    
+    partCache.vertices = nodeMeshBuilder->generatedVertices();
+    partCache.faces = nodeMeshBuilder->generatedFaces();
+    for (size_t i = 0; i < partCache.vertices.size(); ++i) {
+        const auto &position = partCache.vertices[i];
+        const auto &source = nodeMeshBuilder->generatedVerticesSourceNodeIndices()[i];
+        size_t nodeIndex = nodeMeshModifier->nodes()[source].originNodeIndex;
+        const auto &nodeIdString = nodeIndexToIdStringMap[nodeIndex];
+        partCache.outcomeNodeVertices.push_back({position, {partIdString, nodeIdString}});
         
-        for (const auto &nodeIt: nodeInfos) {
-            const auto &nodeIdString = nodeIt.first;
-            const auto &nodeInfo = nodeIt.second;
-            size_t nodeIndex = 0;
-            if (nodeInfo.hasCutFaceSettings) {
-                std::vector<QVector2D> nodeCutTemplate;
-                cutFaceStringToCutTemplate(nodeInfo.cutFace, nodeCutTemplate);
-                if (chamfered)
-                    chamferFace2D(&nodeCutTemplate);
-                nodeIndex = nodeMeshModifier->addNode(nodeInfo.position, nodeInfo.radius, nodeCutTemplate, nodeInfo.cutRotation);
-            } else {
-                nodeIndex = nodeMeshModifier->addNode(nodeInfo.position, nodeInfo.radius, cutTemplate, cutRotation);
-            }
-            nodeIdStringToIndexMap[nodeIdString] = nodeIndex;
-            nodeIndexToIdStringMap[nodeIndex] = nodeIdString;
-            
-            addNode(nodeIdString, nodeInfo);
-        }
+        auto &paintNode = partCache.outcomePaintMap.paintNodes[source];
+        paintNode.vertices.push_back(position);
+    }
+    
+    for (size_t i = 0; i < partCache.outcomePaintMap.paintNodes.size(); ++i) {
+        auto &paintNode = partCache.outcomePaintMap.paintNodes[i];
+        paintNode.baseNormal = nodeMeshBuilder->nodeBaseNormal(i);
+        paintNode.direction = nodeMeshBuilder->nodeTraverseDirection(i);
+        paintNode.order = nodeMeshBuilder->nodeTraverseOrder(i);
         
-        for (const auto &edgeIt: edges) {
-            const QString &fromNodeIdString = edgeIt.first;
-            const QString &toNodeIdString = edgeIt.second;
-            
-            auto findFromNodeIndex = nodeIdStringToIndexMap.find(fromNodeIdString);
-            if (findFromNodeIndex == nodeIdStringToIndexMap.end()) {
-                qDebug() << "Find from-node failed:" << fromNodeIdString;
-                continue;
-            }
-            
-            auto findToNodeIndex = nodeIdStringToIndexMap.find(toNodeIdString);
-            if (findToNodeIndex == nodeIdStringToIndexMap.end()) {
-                qDebug() << "Find to-node failed:" << toNodeIdString;
-                continue;
-            }
-            
-            nodeMeshModifier->addEdge(findFromNodeIndex->second, findToNodeIndex->second);
-            addEdge(fromNodeIdString, toNodeIdString);
-        }
-        
-        if (subdived)
-            nodeMeshModifier->subdivide();
-        
-        if (rounded)
-            nodeMeshModifier->roundEnd();
-        
-        nodeMeshModifier->finalize();
-        
-        nodeMeshBuilder = new StrokeMeshBuilder;
-        nodeMeshBuilder->setDeformThickness(deformThickness);
-        nodeMeshBuilder->setDeformWidth(deformWidth);
-        nodeMeshBuilder->setDeformMapScale(deformMapScale);
-        nodeMeshBuilder->setHollowThickness(hollowThickness);
-        if (nullptr != deformImage)
-            nodeMeshBuilder->setDeformMapImage(deformImage);
-        if (PartBase::YZ == base) {
-            nodeMeshBuilder->enableBaseNormalOnX(false);
-        } else if (PartBase::Average == base) {
-            nodeMeshBuilder->enableBaseNormalAverage(true);
-        } else if (PartBase::XY == base) {
-            nodeMeshBuilder->enableBaseNormalOnZ(false);
-        } else if (PartBase::ZX == base) {
-            nodeMeshBuilder->enableBaseNormalOnY(false);
-        }
-        
-        std::vector<size_t> builderNodeIndices;
-        for (const auto &node: nodeMeshModifier->nodes()) {
-            auto nodeIndex = nodeMeshBuilder->addNode(node.position, node.radius, node.cutTemplate, node.cutRotation);
-            nodeMeshBuilder->setNodeOriginInfo(nodeIndex, node.nearOriginNodeIndex, node.farOriginNodeIndex);
-            builderNodeIndices.push_back(nodeIndex);
-            
-            const auto &originNodeIdString = nodeIndexToIdStringMap[node.originNodeIndex];
-            
-            OutcomePaintNode paintNode;
-            paintNode.originNodeIndex = node.originNodeIndex;
-            paintNode.originNodeId = QUuid(originNodeIdString);
-            paintNode.radius = node.radius;
-            paintNode.origin = node.position;
-            
-            partCache.outcomePaintMap.paintNodes.push_back(paintNode);
-        }
-        for (const auto &edge: nodeMeshModifier->edges())
-            nodeMeshBuilder->addEdge(edge.firstNodeIndex, edge.secondNodeIndex);
-        buildSucceed = nodeMeshBuilder->build();
-        
-        partCache.vertices = nodeMeshBuilder->generatedVertices();
-        partCache.faces = nodeMeshBuilder->generatedFaces();
-        for (size_t i = 0; i < partCache.vertices.size(); ++i) {
-            const auto &position = partCache.vertices[i];
-            const auto &source = nodeMeshBuilder->generatedVerticesSourceNodeIndices()[i];
-            size_t nodeIndex = nodeMeshModifier->nodes()[source].originNodeIndex;
-            const auto &nodeIdString = nodeIndexToIdStringMap[nodeIndex];
-            partCache.outcomeNodeVertices.push_back({position, {partIdString, nodeIdString}});
-            
-            auto &paintNode = partCache.outcomePaintMap.paintNodes[source];
-            paintNode.vertices.push_back(position);
-        }
-        
-        for (size_t i = 0; i < partCache.outcomePaintMap.paintNodes.size(); ++i) {
-            auto &paintNode = partCache.outcomePaintMap.paintNodes[i];
-            paintNode.baseNormal = nodeMeshBuilder->nodeBaseNormal(i);
-            paintNode.direction = nodeMeshBuilder->nodeTraverseDirection(i);
-            paintNode.order = nodeMeshBuilder->nodeTraverseOrder(i);
-            
-            partCache.outcomeNodes[paintNode.originNodeIndex].direction = paintNode.direction;
-        }
+        partCache.outcomeNodes[paintNode.originNodeIndex].direction = paintNode.direction;
     }
     
     bool hasMeshError = false;
@@ -719,12 +666,8 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, 
                 for (size_t i = 0; i < xMirroredVertices.size(); ++i) {
                     const auto &position = xMirroredVertices[i];
                     size_t nodeIndex = 0;
-                    if (gridded) {
-                        nodeIndex = gridMeshBuilder->getGeneratedSources()[i];
-                    } else {
-                        const auto &source = nodeMeshBuilder->generatedVerticesSourceNodeIndices()[i];
-                        nodeIndex = nodeMeshModifier->nodes()[source].originNodeIndex;
-                    }
+                    const auto &source = nodeMeshBuilder->generatedVerticesSourceNodeIndices()[i];
+                    nodeIndex = nodeMeshModifier->nodes()[source].originNodeIndex;
                     const auto &nodeIdString = nodeIndexToIdStringMap[nodeIndex];
                     partCache.outcomeNodeVertices.push_back({position, {mirroredPartIdString, nodeIdString}});
                 }
@@ -810,8 +753,6 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, 
     
     delete nodeMeshBuilder;
     delete nodeMeshModifier;
-    
-    delete gridMeshBuilder;
     
     if (mesh && mesh->isNull()) {
         delete mesh;

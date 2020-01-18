@@ -267,13 +267,13 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
         contextMenu.addAction(&clearCutFaceAction);
     }
     
-    QAction createWrapPartsAction(tr("Create Wrap Parts"), this);
-    if (!m_nodePositionModifyOnly && hasSelection()) {
-        connect(&createWrapPartsAction, &QAction::triggered, this, [&]() {
-            createWrapParts();
-        });
-        contextMenu.addAction(&createWrapPartsAction);
-    }
+    //QAction createWrapPartsAction(tr("Create Wrap Parts"), this);
+    //if (!m_nodePositionModifyOnly && hasSelection()) {
+    //    connect(&createWrapPartsAction, &QAction::triggered, this, [&]() {
+    //        createWrapParts();
+    //    });
+    //    contextMenu.addAction(&createWrapPartsAction);
+    //}
     
     QAction alignToLocalCenterAction(tr("Local Center"), this);
     QAction alignToLocalVerticalCenterAction(tr("Local Vertical Center"), this);
@@ -1522,6 +1522,7 @@ bool SkeletonGraphicsWidget::mousePress(QMouseEvent *event)
                         if (m_document->isNodeConnectable(m_hoveredNodeItem->id())) {
                             emit addEdge(m_addFromNodeItem->id(), m_hoveredNodeItem->id());
                             emit groupOperationAdded();
+                            emit setEditMode(SkeletonDocumentEditMode::Select);
                             return true;
                         }
                     }

@@ -660,6 +660,8 @@ void Document::addEdge(QUuid fromNodeId, QUuid toNodeId)
 
 void Document::checkPartGrid(QUuid partId)
 {
+    return;
+    /*
     SkeletonPart *part = (SkeletonPart *)findPart(partId);
     if (nullptr == part)
         return;
@@ -678,6 +680,7 @@ void Document::checkPartGrid(QUuid partId)
     part->gridded = isGrid;
     part->dirty = true;
     emit partGridStateChanged(partId);
+    */
 }
 
 void Document::updateLinkedPart(QUuid oldPartId, QUuid newPartId)
@@ -1144,8 +1147,8 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
                 part["materialId"] = partIt.second.materialId.toString();
             if (partIt.second.countershaded)
                 part["countershaded"] = "true";
-            if (partIt.second.gridded)
-                part["gridded"] = "true";
+            //if (partIt.second.gridded)
+            //    part["gridded"] = "true";
             snapshot->parts[part["id"]] = part;
         }
         for (const auto &nodeIt: nodeMap) {
@@ -1620,7 +1623,7 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
         if (materialIdIt != partKv.second.end())
             part.materialId = oldNewIdMap[QUuid(materialIdIt->second)];
         part.countershaded = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "countershaded"));
-        part.gridded = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "gridded"));;
+        //part.gridded = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "gridded"));;
         newAddedPartIds.insert(part.id);
     }
     for (const auto &it: cutFaceLinkedIdModifyMap) {
