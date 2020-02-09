@@ -1,5 +1,6 @@
 #include <QQuaternion>
 #include <QRegularExpression>
+#include <iostream>
 #include "poser.h"
 
 Poser::Poser(const std::vector<RiggerBone> &bones) :
@@ -79,7 +80,10 @@ void Poser::fetchChains(const std::vector<QString> &boneNames, std::map<QString,
             match = reSpine.match(item);
             if (match.hasMatch()) {
                 QString name = match.captured(1);
-                chains[name].push_back(item);
+                if (item.startsWith(name + "0"))
+                    chains[name + "0"].push_back(item);
+                else
+                    chains[name].push_back(item);
             } else if (item.startsWith("Virtual_")) {
                 //qDebug() << "Ignore connector:" << item;
             } else {
@@ -92,4 +96,12 @@ void Poser::fetchChains(const std::vector<QString> &boneNames, std::map<QString,
             return first < second;
         });
     }
+    //std::cout << "======= poser begin ================" << std::endl;
+    //for (const auto &chain: chains) {
+    //    std::cout << "poser chain:" << chain.first.toUtf8().constData() << std::endl;
+    //    for (const auto &it: chain.second) {
+    //        std::cout << "   poser name:" << it.toUtf8().constData() << std::endl;
+    //    }
+    //}
+    //std::cout << "======= poser end ================" << std::endl;
 }

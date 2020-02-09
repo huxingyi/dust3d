@@ -43,5 +43,6 @@ bool isManifold(const std::vector<std::vector<size_t>> &faces);
 void trim(std::vector<QVector3D> *vertices, bool normalize=false);
 void chamferFace2D(std::vector<QVector2D> *face);
 void subdivideFace2D(std::vector<QVector2D> *face);
+QVector3D choosenBaseAxis(const QVector3D &layoutDirection);
 
 #endif

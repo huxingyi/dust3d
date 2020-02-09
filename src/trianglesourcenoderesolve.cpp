@@ -163,4 +163,21 @@ void triangleSourceNodeResolve(const Outcome &outcome, std::vector<std::pair<QUu
             }
         }
     }
+    if (nullptr != vertexSourceNodes) {
+        std::map<size_t, std::map<std::pair<QUuid, QUuid>, size_t>> remainVertexSourcesMap;
+        for (size_t faceIndex = 0; faceIndex < outcome.triangles.size(); ++faceIndex) {
+            for (const auto &vertexIndex: outcome.triangles[faceIndex]) {
+                if (!(*vertexSourceNodes)[vertexIndex].second.isNull())
+                    continue;
+                remainVertexSourcesMap[vertexIndex][triangleSourceNodes[faceIndex]]++;
+            }
+        }
+        for (const auto &it: remainVertexSourcesMap) {
+            (*vertexSourceNodes)[it.first] = std::max_element(it.second.begin(), it.second.end(), [](
+                    const std::map<std::pair<QUuid, QUuid>, size_t>::value_type &first,
+                    const std::map<std::pair<QUuid, QUuid>, size_t>::value_type &second) {
+                return first.second < second.second;
+            })->first;
+        }
+    }
 }

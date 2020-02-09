@@ -25,6 +25,7 @@ struct OutcomeNode
     QUuid mirroredByPartId;
     BoneMark boneMark;
     QVector3D direction;
+    bool joined = true;
 };
 
 struct OutcomePaintNode
@@ -54,6 +55,9 @@ class Outcome
 {
 public:
     std::vector<OutcomeNode> nodes;
+    std::vector<OutcomeNode> bodyNodes;
+    std::vector<std::pair<std::pair<QUuid, QUuid>, std::pair<QUuid, QUuid>>> edges;
+    std::vector<std::pair<std::pair<QUuid, QUuid>, std::pair<QUuid, QUuid>>> bodyEdges;
     std::vector<std::pair<QVector3D, std::pair<QUuid, QUuid>>> nodeVertices;
     std::vector<QVector3D> vertices;
     std::vector<std::pair<QUuid, QUuid>> vertexSourceNodes;
@@ -140,6 +144,9 @@ public:
         m_hasTriangleLinks = true;
     }
     
+    static void buildInterpolatedNodes(const std::vector<OutcomeNode> &nodes,
+        const std::vector<std::pair<std::pair<QUuid, QUuid>, std::pair<QUuid, QUuid>>> &edges,
+        std::vector<std::tuple<QVector3D, float, size_t>> *targetNodes);
 private:
     bool m_hasTriangleSourceNodes = false;
     std::vector<std::pair<QUuid, QUuid>> m_triangleSourceNodes;

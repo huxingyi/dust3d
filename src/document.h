@@ -622,9 +622,6 @@ public slots:
     void setEditMode(SkeletonDocumentEditMode mode);
     void setPaintMode(PaintMode mode);
     void setMousePickRadius(float radius);
-    void createGriddedPartsFromNodes(const std::set<QUuid> &nodeIds);
-    void createFromNodesAndEdges(const std::vector<QVector3D> &nodes,
-        const std::vector<std::pair<size_t, size_t>> &edges);
     void createSinglePartFromEdges(const std::vector<QVector3D> &nodes,
         const std::vector<std::pair<size_t, size_t>> &edges);
     void uiReady();

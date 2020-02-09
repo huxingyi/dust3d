@@ -150,9 +150,6 @@ private:
         std::vector<std::vector<size_t>> *outputQuads,
         std::vector<std::vector<size_t>> *outputTriangles,
         std::vector<std::pair<QVector3D, std::pair<QUuid, QUuid>>> *outputNodeVertices);
-    void buildInterpolatedNodes(const std::vector<OutcomeNode> &nodes,
-        const std::vector<std::pair<std::pair<QUuid, QUuid>, std::pair<QUuid, QUuid>>> &edges,
-        std::vector<std::tuple<QVector3D, float, size_t>> *targetNodes);
 };
 
 #endif

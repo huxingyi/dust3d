@@ -9,13 +9,6 @@
     </message>
 </context>
 <context>
-    <name>AnimalRigger</name>
-    <message>
-        <source>Please mark the neck, limbs and joints from the context menu</source>
-        <translation>请从右键菜单中选择，标记脖子，胳膊以及关节的结点</translation>
-    </message>
-</context>
-<context>
     <name>Document</name>
     <message>
         <source>Group</source>
@@ -1118,31 +1111,39 @@ Tips:
         <source>Tremendously High Poly</source>
         <translation>巨多面数</translation>
     </message>
+    <message>
+        <source>Medium Poly</source>
+        <translation>中面数</translation>
+    </message>
+    <message>
+        <source>Very High Poly</source>
+        <translation>很高面数</translation>
+    </message>
+</context>
+<context>
+    <name>RigGenerator</name>
+    <message>
+        <source>Imbalanced left and right limbs</source>
+        <translation>左右臂数目不平衡</translation>
+    </message>
+    <message>
+        <source>No limbs found</source>
+        <translation>没有发现胳膊标记</translation>
+    </message>
+    <message>
+        <source>No body found</source>
+        <translation>计算身体失败</translation>
+    </message>
+    <message>
+        <source>Please mark the neck, limbs and joints from the context menu</source>
+        <translation>请从右键菜单中选择，标记脖子，胳膊以及关节的结点</translation>
+    </message>
 </context>
 <context>
     <name>RigWidget</name>
     <message>
         <source>Type</source>
         <translation>类型</translation>
-    </message>
-</context>
-<context>
-    <name>Rigger</name>
-    <message>
-        <source>Calculate body from marks failed, try to move the center anchor around</source>
-        <translation>从标记中计算身体失败，尝试移动中心锚点</translation>
-    </message>
-    <message>
-        <source>The center anchor is not located in the center of the model</source>
-        <translation>中心锚点不在模型中央</translation>
-    </message>
-    <message>
-        <source>The following marks couldn&apos;t cut off the mesh, pelease try mark more nearby nodes for them: %1</source>
-        <translation>下列标记的结点不能分割模型，请尝试标记更多附近的结点：%1</translation>
-    </message>
-    <message>
-        <source>The following marks looks like don&apos;t contain any vertices, pelease try mark other nearby nodes for them: %1</source>
-        <translation>下列标记的结点看起来好像没有参与模型生成，请尝试标记其它附近的结点：%1</translation>
     </message>
 </context>
 <context>

@@ -464,3 +464,20 @@ void subdivideFace2D(std::vector<QVector2D> *face)
         (*face)[n++] = (oldFace[i] + oldFace[j]) * 0.5;
     }
 }
+
+QVector3D choosenBaseAxis(const QVector3D &layoutDirection)
+{
+    const std::vector<QVector3D> axisList = {
+        QVector3D(1, 0, 0),
+        QVector3D(0, 1, 0),
+        QVector3D(0, 0, 1),
+    };
+    std::vector<std::pair<float, size_t>> dots;
+    for (size_t i = 0; i < axisList.size(); ++i) {
+        dots.push_back(std::make_pair(qAbs(QVector3D::dotProduct(layoutDirection, axisList[i])), i));
+    }
+    return axisList[std::min_element(dots.begin(), dots.end(), [](const std::pair<float, size_t> &first,
+            const std::pair<float, size_t> &second) {
+        return first.first < second.first;
+    })->second];
+}

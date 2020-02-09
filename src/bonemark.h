@@ -13,6 +13,11 @@ enum class BoneMark
     Count
 };
 #define BoneMarkHasSide(mark) ((mark) == BoneMark::Limb)
+#define BoneMarkIsBranchNode(mark) (                                \
+    (mark) == BoneMark::Neck ||                                     \
+    (mark) == BoneMark::Limb ||                                     \
+    (mark) == BoneMark::Tail                                        \
+)
 QColor BoneMarkToColor(BoneMark mark);
 #define IMPL_BoneMarkToColor                                        \
 QColor BoneMarkToColor(BoneMark mark)                               \

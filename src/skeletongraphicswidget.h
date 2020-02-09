@@ -607,7 +607,6 @@ public slots:
     void showSelectedCutFaceSettingPopup(const QPoint &pos);
     void clearSelectedCutFace();
     void setRotated(bool rotated);
-    void createWrapParts();
     void shortcutDelete();
     void shortcutAddMode();
     void shortcutMarkMode();

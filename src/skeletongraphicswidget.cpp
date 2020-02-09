@@ -2970,14 +2970,4 @@ void SkeletonGraphicsWidget::setMainProfileOnly(bool mainProfileOnly)
     m_mainProfileOnly = mainProfileOnly;
 }
 
-void SkeletonGraphicsWidget::createWrapParts()
-{
-    std::set<SkeletonGraphicsNodeItem *> nodeItemSet;
-    readMergedSkeletonNodeSetFromRangeSelection(&nodeItemSet);
-    std::set<QUuid> nodeIds;
-    for (const auto &it: nodeItemSet) {
-        nodeIds.insert(it->id());
-    }
-    emit createGriddedPartsFromNodes(nodeIds);
-}
 
