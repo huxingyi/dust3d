@@ -79,9 +79,9 @@ after_test:
   - dust3d.exe :/resources/model-bob.ds3 -o bob.obj
   - dust3d.exe :/resources/model-bob.ds3 -o bob.fbx
   - dust3d.exe :/resources/model-bob.ds3 -o bob.glb
-  - dust3d.exe :/resources/model-dog-head.ds3 -o dog-head.obj
-  - dust3d.exe :/resources/model-dog-head.ds3 -o dog-head.fbx
-  - dust3d.exe :/resources/model-dog-head.ds3 -o dog-head.glb
+  - dust3d.exe :/resources/model-dog.ds3 -o dog.obj
+  - dust3d.exe :/resources/model-dog.ds3 -o dog.fbx
+  - dust3d.exe :/resources/model-dog.ds3 -o dog.glb
   - dust3d.exe :/resources/model-meerkat.ds3 -o meerkat.obj
   - dust3d.exe :/resources/model-meerkat.ds3 -o meerkat.fbx
   - dust3d.exe :/resources/model-meerkat.ds3 -o meerkat.glb

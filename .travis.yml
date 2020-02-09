@@ -87,9 +87,9 @@ script:
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then dust3d.app/Contents/MacOS/dust3d :/resources/model-bob.ds3 -o bob.obj || travis_terminate 1; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then dust3d.app/Contents/MacOS/dust3d :/resources/model-bob.ds3 -o bob.glb || travis_terminate 1; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then dust3d.app/Contents/MacOS/dust3d :/resources/model-bob.ds3 -o bob.fbx || travis_terminate 1; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then dust3d.app/Contents/MacOS/dust3d :/resources/model-dog-head.ds3 -o dog-head.obj || travis_terminate 1; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then dust3d.app/Contents/MacOS/dust3d :/resources/model-dog-head.ds3 -o dog-head.glb || travis_terminate 1; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then dust3d.app/Contents/MacOS/dust3d :/resources/model-dog-head.ds3 -o dog-head.fbx || travis_terminate 1; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then dust3d.app/Contents/MacOS/dust3d :/resources/model-dog.ds3 -o dog.obj || travis_terminate 1; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then dust3d.app/Contents/MacOS/dust3d :/resources/model-dog.ds3 -o dog.glb || travis_terminate 1; fi
+  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then dust3d.app/Contents/MacOS/dust3d :/resources/model-dog.ds3 -o dog.fbx || travis_terminate 1; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then dust3d.app/Contents/MacOS/dust3d :/resources/model-meerkat.ds3 -o meerkat.obj || travis_terminate 1; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then dust3d.app/Contents/MacOS/dust3d :/resources/model-meerkat.ds3 -o meerkat.glb || travis_terminate 1; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then dust3d.app/Contents/MacOS/dust3d :/resources/model-meerkat.ds3 -o meerkat.fbx || travis_terminate 1; fi
