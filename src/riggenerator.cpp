@@ -236,7 +236,7 @@ void RigGenerator::buildBoneNodeChain()
             std::swap(left, right);
         for (const auto &it: right)
             middle.insert(it);
-        segments.push_back({nodeIndex, left, false});
+        segments.push_back(std::make_tuple(nodeIndex, left, false));
     }
     for (const auto &it: segments) {
         const auto &nodeIndex = std::get<0>(it);
@@ -247,7 +247,7 @@ void RigGenerator::buildBoneNodeChain()
     }
     middle.erase(middleStartNodeIndex);
     if (middleStartNodeIndex != m_outcome->bodyNodes.size())
-        segments.push_back({middleStartNodeIndex, middle, true});
+        segments.push_back(std::make_tuple(middleStartNodeIndex, middle, true));
     for (const auto &it: segments) {
         const auto &fromNodeIndex = std::get<0>(it);
         const auto &left = std::get<1>(it);
