@@ -714,9 +714,6 @@ HEADERS += thirdparty/bullet3/src/BulletCollision/CollisionDispatch/SphereTriang
 SOURCES += thirdparty/bullet3/src/BulletCollision/CollisionDispatch/btHashedSimplePairCache.cpp
 HEADERS += thirdparty/bullet3/src/BulletCollision/CollisionDispatch/btHashedSimplePairCache.h
 
-SOURCES += thirdparty/bullet3/src/BulletDynamics/ConstraintSolver/btGeneric6DofConstraint.cpp
-HEADERS += thirdparty/bullet3/src/BulletDynamics/ConstraintSolver/btGeneric6DofConstraint.h
-
 SOURCES += thirdparty/bullet3/src/BulletDynamics/ConstraintSolver/btPoint2PointConstraint.cpp
 HEADERS += thirdparty/bullet3/src/BulletDynamics/ConstraintSolver/btPoint2PointConstraint.h
 
