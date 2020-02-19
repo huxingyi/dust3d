@@ -16,6 +16,7 @@
 #include <map>
 #include <tuple>
 #include <QStringList>
+#include <QColor>
 #include "rigger.h"
 #include "jointnodetree.h"
 
@@ -28,7 +29,7 @@ public:
     ~RagDoll();
     bool stepSimulation(float amount);
     const JointNodeTree &getStepJointNodeTree();
-    const std::vector<std::tuple<QVector3D, QVector3D, float>> &getStepBonePositions();
+    const std::vector<std::tuple<QVector3D, QVector3D, float, float, QColor>> &getStepBonePositions();
 
 private:
     btDefaultCollisionConfiguration *m_collisionConfiguration = nullptr;
@@ -39,6 +40,7 @@ private:
     btCollisionShape *m_groundShape = nullptr;
     btRigidBody *m_groundBody = nullptr;
     float m_groundY = 0;
+    std::vector<std::pair<QVector3D, QVector3D>> m_boneInitialPositions;
     
     std::map<QString, btCollisionShape *> m_boneShapes;
     std::map<QString, btRigidBody *> m_boneBodies;
@@ -51,15 +53,14 @@ private:
     JointNodeTree m_jointNodeTree;
     JointNodeTree m_stepJointNodeTree;
     std::vector<RiggerBone> m_bones;
-    std::vector<std::tuple<QVector3D, QVector3D, float>> m_stepBonePositions;
+    std::vector<std::tuple<QVector3D, QVector3D, float, float, QColor>> m_stepBonePositions;
     
     std::map<QString, int> m_boneNameToIndexMap;
     std::map<QString, std::vector<QString>> m_chains;
  
     btRigidBody *createRigidBody(btScalar mass, const btTransform &startTransform, btCollisionShape *shape);
     void createDynamicsWorld();
-    void addFixedConstraint(const RiggerBone &parent, const RiggerBone &child);
-    void addFreeConstraint(const RiggerBone &parent, const RiggerBone &child);
+    void addConstraint(const RiggerBone &child, const RiggerBone &parent, bool isBorrowedParent=false);
 };
 
 #endif

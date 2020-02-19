@@ -549,10 +549,6 @@ Tips:
         <source>Motions</source>
         <translation>动作</translation>
     </message>
-    <message>
-        <source>Procedural Animations</source>
-        <translation>程序化动画</translation>
-    </message>
 </context>
 <context>
     <name>MotionListWidget</name>

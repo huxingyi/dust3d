@@ -56,6 +56,7 @@ class Outcome
 public:
     std::vector<OutcomeNode> nodes;
     std::vector<OutcomeNode> bodyNodes;
+    std::vector<OutcomeNode> clothNodes;
     std::vector<std::pair<std::pair<QUuid, QUuid>, std::pair<QUuid, QUuid>>> edges;
     std::vector<std::pair<std::pair<QUuid, QUuid>, std::pair<QUuid, QUuid>>> bodyEdges;
     std::vector<std::pair<QVector3D, std::pair<QUuid, QUuid>>> nodeVertices;
