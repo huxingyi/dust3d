@@ -4,7 +4,8 @@ DEFINES += NDEBUG
 DEFINES += QT_MESSAGELOGCONTEXT
 RESOURCES += resources.qrc
 
-LANGUAGES = zh_CN
+LANGUAGES = zh_CN\
+            es_AR
 
 OBJECTS_DIR=obj
 MOC_DIR=moc
