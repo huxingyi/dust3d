@@ -52,20 +52,20 @@ MotionEditWidget::MotionEditWidget(const Document *document, QWidget *parent) :
         m_timelineWidget->addPose(poseId);
     });
     
-    FlowLayout *proceduralAnimationListLayout = new FlowLayout;
-    for (size_t i = 0; i < (int)ProceduralAnimation::Count - 1; ++i) {
-        auto proceduralAnimation = (ProceduralAnimation)(i + 1);
-        QString dispName = ProceduralAnimationToDispName(proceduralAnimation);
-        QPushButton *addButton = new QPushButton(Theme::awesome()->icon(fa::plus), dispName);
-        connect(addButton, &QPushButton::clicked, this, [=]() {
-            m_timelineWidget->addProceduralAnimation(proceduralAnimation);
-        });
-        proceduralAnimationListLayout->addWidget(addButton);
-    }
-    QWidget *proceduralAnimationListContainerWidget = new QWidget;
-    proceduralAnimationListContainerWidget->setLayout(proceduralAnimationListLayout);
+    //FlowLayout *proceduralAnimationListLayout = new FlowLayout;
+    //for (size_t i = 0; i < (int)ProceduralAnimation::Count - 1; ++i) {
+    //    auto proceduralAnimation = (ProceduralAnimation)(i + 1);
+    //    QString dispName = ProceduralAnimationToDispName(proceduralAnimation);
+    //    QPushButton *addButton = new QPushButton(Theme::awesome()->icon(fa::plus), dispName);
+    //    connect(addButton, &QPushButton::clicked, this, [=]() {
+    //        m_timelineWidget->addProceduralAnimation(proceduralAnimation);
+    //    });
+    //    proceduralAnimationListLayout->addWidget(addButton);
+    //}
+    //QWidget *proceduralAnimationListContainerWidget = new QWidget;
+    //proceduralAnimationListContainerWidget->setLayout(proceduralAnimationListLayout);
     
-    proceduralAnimationListContainerWidget->resize(512, Theme::motionPreviewImageSize);
+    //proceduralAnimationListContainerWidget->resize(512, Theme::motionPreviewImageSize);
     
     MotionListWidget *motionListWidget = new MotionListWidget(document);
     motionListWidget->setCornerButtonVisible(true);
@@ -79,7 +79,7 @@ MotionEditWidget::MotionEditWidget(const Document *document, QWidget *parent) :
     
     QStackedWidget *stackedWidget = new QStackedWidget;
     stackedWidget->addWidget(poseListContainerWidget);
-    stackedWidget->addWidget(proceduralAnimationListContainerWidget);
+    //stackedWidget->addWidget(proceduralAnimationListContainerWidget);
     stackedWidget->addWidget(motionListContainerWidget);
     
     connect(motionListWidget, &MotionListWidget::cornerButtonClicked, this, [=](QUuid motionId) {
@@ -88,7 +88,7 @@ MotionEditWidget::MotionEditWidget(const Document *document, QWidget *parent) :
     
     std::vector<QString> tabs = {
         tr("Poses"),
-        tr("Procedural Animations"),
+        //tr("Procedural Animations"),
         tr("Motions")
     };
     TabWidget *tabWidget = new TabWidget(tabs);

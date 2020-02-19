@@ -26,11 +26,13 @@ MotionsGenerator::~MotionsGenerator()
             delete subItem.second;
         }
     }
-    for (const auto &item: m_proceduralPreviews) {
+#if ENABLE_PROCEDURAL_DEBUG
+    for (const auto &item: m_proceduralDebugPreviews) {
         for (const auto &subItem: item.second) {
             delete subItem;
         }
     }
+#endif
     delete m_poser;
 }
 
@@ -111,7 +113,9 @@ const std::vector<std::pair<float, JointNodeTree>> &MotionsGenerator::getProcedu
         return findResult->second;
     std::vector<std::pair<float, JointNodeTree>> &resultFrames = m_proceduralAnimations[(int)proceduralAnimation];
     if (ProceduralAnimation::FallToDeath == proceduralAnimation) {
-        //std::vector<MeshLoader *> &resultPreviews = m_proceduralPreviews[(int)proceduralAnimation];
+#if ENABLE_PROCEDURAL_DEBUG
+        std::vector<MeshLoader *> &resultPreviews = m_proceduralDebugPreviews[(int)proceduralAnimation];
+#endif
         RagDoll ragdoll(&m_rigBones, initialJointNodeTree);
         float stepSeconds = 1.0 / 60;
         float maxSeconds = 1.5;
@@ -119,8 +123,10 @@ const std::vector<std::pair<float, JointNodeTree>> &MotionsGenerator::getProcedu
         int steps = 0;
         while (steps < maxSteps && ragdoll.stepSimulation(stepSeconds)) {
             resultFrames.push_back(std::make_pair(stepSeconds * 2, ragdoll.getStepJointNodeTree()));
-            //MeshLoader *preview = buildBoundingBoxMesh(ragdoll.getStepBonePositions());
-            //resultPreviews.push_back(preview);
+#if ENABLE_PROCEDURAL_DEBUG
+            MeshLoader *preview = buildBoundingBoxMesh(ragdoll.getStepBonePositions());
+            resultPreviews.push_back(preview);
+#endif
             ++steps;
         }
     }
@@ -294,8 +300,10 @@ void MotionsGenerator::generateMotion(const QUuid &motionId, std::set<QUuid> &vi
             if (frame >= (int)frames.size())
                 frame = frames.size() - 1;
             if (frame >= 0 && frame < (int)frames.size()) {
-                //if (nullptr != previews)
-                //    previews->push_back(m_proceduralPreviews[(int)progressClip.proceduralAnimation][frame]);
+#if ENABLE_PROCEDURAL_DEBUG
+                if (nullptr != previews)
+                    previews->push_back(m_proceduralDebugPreviews[(int)progressClip.proceduralAnimation][frame]);
+#endif
                 outcomes.push_back({progress - lastProgress, frames[frame].second});
                 lastProgress = progress;
             }
@@ -404,10 +412,14 @@ void MotionsGenerator::generate()
     
     for (const auto &motionId: m_requiredMotionIds) {
         std::set<QUuid> visited;
-        //std::vector<MeshLoader *> previews;
+#if ENABLE_PROCEDURAL_DEBUG
+        std::vector<MeshLoader *> previews;
+        generateMotion(motionId, visited, m_resultJointNodeTrees[motionId], &previews);
+#else
         generateMotion(motionId, visited, m_resultJointNodeTrees[motionId]);
+#endif
         generatePreviewsForOutcomes(m_resultJointNodeTrees[motionId], m_resultPreviewMeshs[motionId]);
-        /*
+#if ENABLE_PROCEDURAL_DEBUG
         if (!previews.empty()) {
             const auto &tree = m_resultJointNodeTrees[motionId];
             auto &target = m_resultPreviewMeshs[motionId];
@@ -421,9 +433,10 @@ void MotionsGenerator::generate()
                     edgeVertices[j] = source[j];
                 }
                 target[i].second->updateEdges(edgeVertices, edgeVertexCount);
-                target[i].second->updateTriangleVertices(nullptr, 0);
+                //target[i].second->updateTriangleVertices(nullptr, 0);
             }
-        }*/
+        }
+#endif
         m_generatedMotionIds.insert(motionId);
     }
 }

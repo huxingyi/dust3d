@@ -10,6 +10,8 @@
 #include "document.h"
 #include "poser.h"
 
+#define ENABLE_PROCEDURAL_DEBUG     1
+
 class MotionsGenerator : public QObject
 {
     Q_OBJECT
@@ -54,7 +56,9 @@ private:
     std::vector<RiggerBone> m_rigBones;
     std::map<int, RiggerVertexWeights> m_rigWeights;
     std::map<int, std::vector<std::pair<float, JointNodeTree>>> m_proceduralAnimations;
-    std::map<int, std::vector<MeshLoader *>> m_proceduralPreviews;
+#if ENABLE_PROCEDURAL_DEBUG
+    std::map<int, std::vector<MeshLoader *>> m_proceduralDebugPreviews;
+#endif
     Outcome m_outcome;
     std::map<QUuid, std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>>> m_poses;
     std::map<QUuid, float> m_posesYtranslationScales;

@@ -64,10 +64,10 @@ macx {
 }
 
 isEmpty(HUMAN_VERSION) {
-	HUMAN_VERSION = "1.0.0-beta.30"
+	HUMAN_VERSION = "1.0.0-rc.1"
 }
 isEmpty(VERSION) {
-	VERSION = 1.0.0.30
+	VERSION = 1.0.0.31
 }
 
 HOMEPAGE_URL = "https://dust3d.org/"
@@ -567,8 +567,8 @@ HEADERS += thirdparty/bullet3/src/BulletCollision/CollisionShapes/btConvexShape.
 SOURCES += thirdparty/bullet3/src/BulletCollision/CollisionShapes/btConvexInternalShape.cpp
 HEADERS += thirdparty/bullet3/src/BulletCollision/CollisionShapes/btConvexInternalShape.h
 
-SOURCES += thirdparty/bullet3/src/BulletDynamics/ConstraintSolver/btHingeConstraint.cpp
-HEADERS += thirdparty/bullet3/src/BulletDynamics/ConstraintSolver/btHingeConstraint.h
+SOURCES += thirdparty/bullet3/src/BulletDynamics/ConstraintSolver/btGeneric6DofConstraint.cpp
+HEADERS += thirdparty/bullet3/src/BulletDynamics/ConstraintSolver/btGeneric6DofConstraint.h
 
 SOURCES += thirdparty/bullet3/src/BulletDynamics/ConstraintSolver/btConeTwistConstraint.cpp
 HEADERS += thirdparty/bullet3/src/BulletDynamics/ConstraintSolver/btConeTwistConstraint.h

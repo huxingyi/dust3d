@@ -17,6 +17,28 @@ struct CandidateEdge
     float length;
 };
 
+static void fixRemainVertexSourceNodes(const Outcome &outcome, std::vector<std::pair<QUuid, QUuid>> &triangleSourceNodes,
+    std::vector<std::pair<QUuid, QUuid>> *vertexSourceNodes)
+{
+    if (nullptr != vertexSourceNodes) {
+        std::map<size_t, std::map<std::pair<QUuid, QUuid>, size_t>> remainVertexSourcesMap;
+        for (size_t faceIndex = 0; faceIndex < outcome.triangles.size(); ++faceIndex) {
+            for (const auto &vertexIndex: outcome.triangles[faceIndex]) {
+                if (!(*vertexSourceNodes)[vertexIndex].second.isNull())
+                    continue;
+                remainVertexSourcesMap[vertexIndex][triangleSourceNodes[faceIndex]]++;
+            }
+        }
+        for (const auto &it: remainVertexSourcesMap) {
+            (*vertexSourceNodes)[it.first] = std::max_element(it.second.begin(), it.second.end(), [](
+                    const std::map<std::pair<QUuid, QUuid>, size_t>::value_type &first,
+                    const std::map<std::pair<QUuid, QUuid>, size_t>::value_type &second) {
+                return first.second < second.second;
+            })->first;
+        }
+    }
+}
+
 void triangleSourceNodeResolve(const Outcome &outcome, std::vector<std::pair<QUuid, QUuid>> &triangleSourceNodes,
     std::vector<std::pair<QUuid, QUuid>> *vertexSourceNodes)
 {
@@ -128,8 +150,10 @@ void triangleSourceNodeResolve(const Outcome &outcome, std::vector<std::pair<QUu
             candidateEdges.push_back(candidate);
         }
     }
-    if (candidateEdges.empty())
+    if (candidateEdges.empty()) {
+        fixRemainVertexSourceNodes(outcome, triangleSourceNodes, vertexSourceNodes);
         return;
+    }
     std::sort(candidateEdges.begin(), candidateEdges.end(), [](const CandidateEdge &a, const CandidateEdge &b) -> bool {
         if (a.dot > b.dot)
             return true;
@@ -163,21 +187,5 @@ void triangleSourceNodeResolve(const Outcome &outcome, std::vector<std::pair<QUu
             }
         }
     }
-    if (nullptr != vertexSourceNodes) {
-        std::map<size_t, std::map<std::pair<QUuid, QUuid>, size_t>> remainVertexSourcesMap;
-        for (size_t faceIndex = 0; faceIndex < outcome.triangles.size(); ++faceIndex) {
-            for (const auto &vertexIndex: outcome.triangles[faceIndex]) {
-                if (!(*vertexSourceNodes)[vertexIndex].second.isNull())
-                    continue;
-                remainVertexSourcesMap[vertexIndex][triangleSourceNodes[faceIndex]]++;
-            }
-        }
-        for (const auto &it: remainVertexSourcesMap) {
-            (*vertexSourceNodes)[it.first] = std::max_element(it.second.begin(), it.second.end(), [](
-                    const std::map<std::pair<QUuid, QUuid>, size_t>::value_type &first,
-                    const std::map<std::pair<QUuid, QUuid>, size_t>::value_type &second) {
-                return first.second < second.second;
-            })->first;
-        }
-    }
+    fixRemainVertexSourceNodes(outcome, triangleSourceNodes, vertexSourceNodes);
 }
