@@ -1,35 +1,36 @@
-<!DOCTYPE RCC><RCC version="1.0">
-<qresource>
-    <file>resources/dust3d-vertical.png</file>
-    <file>resources/tree-branch-closed.png</file>
-    <file>resources/tree-branch-end.png</file>
-    <file>resources/tree-branch-more.png</file>
-    <file>resources/tree-branch-open.png</file>
-    <file>resources/tree-vline.png</file>
-    <file>resources/material-demo-model.ds3</file>
-    <file>resources/model-addax.ds3</file>
-    <file>resources/model-bicycle.ds3</file>
-    <file>resources/model-dog.ds3</file>
-    <file>resources/model-giraffe.ds3</file>
-    <file>resources/model-meerkat.ds3</file>
-    <file>resources/model-mosquito.ds3</file>
-    <file>resources/model-seagull.ds3</file>
-    <file>resources/model-procedural-tree.ds3</file>
-    <file>resources/triangle.png</file>
-    <file>resources/quad.png</file>
-    <file>resources/pentagon.png</file>
-    <file>resources/hexagon.png</file>
-    <file>resources/heptagon.png</file>
-    <file>resources/userdefined.png</file>
-    <file>resources/checkuv.png</file>
-    <file>shaders/default.vert</file>
-    <file>shaders/default.frag</file>
-    <file>shaders/default.core.vert</file>
-    <file>shaders/default.core.frag</file>
-    <file>thirdparty/three.js/dust3d.three.js</file>
-    <file>languages/dust3d_zh_CN.qm</file>
-    <file>ACKNOWLEDGEMENTS.html</file>
-    <file>AUTHORS</file>
-    <file>CONTRIBUTORS</file>
-</qresource>
+<RCC>
+    <qresource prefix="/">
+        <file>resources/dust3d-vertical.png</file>
+        <file>resources/tree-branch-closed.png</file>
+        <file>resources/tree-branch-end.png</file>
+        <file>resources/tree-branch-more.png</file>
+        <file>resources/tree-branch-open.png</file>
+        <file>resources/tree-vline.png</file>
+        <file>resources/material-demo-model.ds3</file>
+        <file>resources/model-addax.ds3</file>
+        <file>resources/model-bicycle.ds3</file>
+        <file>resources/model-dog.ds3</file>
+        <file>resources/model-giraffe.ds3</file>
+        <file>resources/model-meerkat.ds3</file>
+        <file>resources/model-mosquito.ds3</file>
+        <file>resources/model-seagull.ds3</file>
+        <file>resources/model-procedural-tree.ds3</file>
+        <file>resources/triangle.png</file>
+        <file>resources/quad.png</file>
+        <file>resources/pentagon.png</file>
+        <file>resources/hexagon.png</file>
+        <file>resources/heptagon.png</file>
+        <file>resources/userdefined.png</file>
+        <file>resources/checkuv.png</file>
+        <file>shaders/default.vert</file>
+        <file>shaders/default.frag</file>
+        <file>shaders/default.core.vert</file>
+        <file>shaders/default.core.frag</file>
+        <file>thirdparty/three.js/dust3d.three.js</file>
+        <file>languages/dust3d_zh_CN.qm</file>
+        <file>ACKNOWLEDGEMENTS.html</file>
+        <file>AUTHORS</file>
+        <file>CONTRIBUTORS</file>
+        <file>languages/dust3d_es_AR.qm</file>
+    </qresource>
 </RCC>
