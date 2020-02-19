@@ -32,5 +32,6 @@
         <file>AUTHORS</file>
         <file>CONTRIBUTORS</file>
         <file>languages/dust3d_es_AR.qm</file>
+        <file>languages/dust3d_it_IT.qm</file>
     </qresource>
 </RCC>

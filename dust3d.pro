@@ -5,7 +5,8 @@ DEFINES += QT_MESSAGELOGCONTEXT
 RESOURCES += resources.qrc
 
 LANGUAGES = zh_CN\
-            es_AR
+            es_AR\
+			it_IT
 
 OBJECTS_DIR=obj
 MOC_DIR=moc

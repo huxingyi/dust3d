@@ -1,379 +1,294 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!DOCTYPE TS>
-<TS version="2.1" language="es_AR">
+<TS version="2.1" language="it_IT">
 <context>
     <name>AboutWidget</name>
     <message>
         <source>About</source>
-        <translation>Acerca de</translation>
+        <translation>Riguardo al programma</translation>
+    </message>
+</context>
+<context>
+    <name>AnimalRigger</name>
+    <message>
+        <source>Please mark the neck, limbs and joints from the context menu</source>
+        <translation type="vanished">Si prega di contrassegnare il collo, gli arti e le articolazioni dal menu contestuale</translation>
     </message>
 </context>
 <context>
     <name>Document</name>
     <message>
         <source>Group</source>
-        <translation>Grupo</translation>
+        <translation>Raggruppa</translation>
     </message>
 </context>
 <context>
     <name>DocumentWindow</name>
     <message>
         <source>Acknowlegements</source>
-        <translation>Reconocimientos</translation>
+        <translation>Ringraziamenti</translation>
     </message>
     <message>
         <source>Contributors</source>
-        <translation>Contribuidores</translation>
+        <translation>Contributori</translation>
     </message>
     <message>
         <source>Add node to canvas</source>
-        <translation>Agregar nodo al lienzo</translation>
+        <translation>Aggiungi nodo alla tela</translation>
     </message>
     <message>
         <source>Select node on canvas</source>
-        <translation>Seleccionar nodo en lienzo</translation>
-    </message>
-    <message>
-        <source>Marker pen</source>
-        <translation>Marcador</translation>
-    </message>
-    <message>
-        <source>Paint brush</source>
-        <translation>Pincel</translation>
+        <translation>Seleziona nodo sulla tela</translation>
     </message>
     <message>
         <source>Enter zoom in mode</source>
-        <translation>Entrar en modo zoom-in</translation>
-    </message>
-    <message>
-        <source>Enter zoom out mode</source>
-        <translation>Entrar en modo zoom-out</translation>
-    </message>
-    <message>
-        <source>Toggle viewport</source>
-        <translation>Alternar viewport</translation>
+        <translation>Entra nella modalità zoom-in</translation>
     </message>
     <message>
         <source>X axis locker</source>
-        <translation>Bloqueo de eje X</translation>
+        <translation>Blocca l&apos;asse X</translation>
     </message>
     <message>
         <source>Y axis locker</source>
-        <translation>Bloqueo de eje Y</translation>
+        <translation>Blocca l&apos;asse Y</translation>
     </message>
     <message>
         <source>Z axis locker</source>
-        <translation>Bloqueo de eje Z</translation>
+        <translation>Blocca l&apos;asse Z</translation>
     </message>
     <message>
         <source>Node radius locker</source>
-        <translation>Bloqueo del radio del nodo</translation>
+        <translation>Blocca il raggio del nodo</translation>
     </message>
     <message>
         <source>Regenerate</source>
-        <translation>Regenerar</translation>
+        <translation>Rigenera</translation>
     </message>
     <message>
         <source>Mesh generation failed, please undo or adjust recent changed nodes
 Tips:
   - Don&apos;t let generated mesh self-intersect
   - Make multiple parts instead of one single part for whole model</source>
-        <translation>La generación de la malla ha fallado, por favor deshace o ajusta los nodos cambiados recientemente
-Consejos:
- - No permitas que las mallas generadas auto-intersecten.
- - Haz partes múltiples en lugar de una única parte para todo el modelo</translation>
+        <translation>Generazione mesh non riuscita, annulla o modifica i nodi modificati di recente
+Suggerimenti:
+   - Non lasciare che la mesh generata si intersechi in se stessa
+   - Crea più parti invece di una singola parte per l&apos;intero modello</translation>
     </message>
     <message>
         <source>Parts</source>
-        <translation>Partes</translation>
+        <translation>Parti</translation>
     </message>
     <message>
         <source>Materials</source>
-        <translation>Materiales</translation>
+        <translation>Materiali</translation>
     </message>
     <message>
         <source>Rig</source>
-        <translation>Rig</translation>
+        <translation>Manipola</translation>
     </message>
     <message>
         <source>Poses</source>
-        <translation>Poses</translation>
+        <translation>Posa</translation>
     </message>
     <message>
         <source>Motions</source>
-        <translation>Movimientos</translation>
-    </message>
-    <message>
-        <source>Script</source>
-        <translation>Script</translation>
-    </message>
-    <message>
-        <source>&amp;File</source>
-        <translation>&amp;Archivo</translation>
+        <translation>Movimenti</translation>
     </message>
     <message>
         <source>New Window</source>
-        <translation>Nueva Ventana</translation>
-    </message>
-    <message>
-        <source>&amp;New</source>
-        <translation>&amp;Nuevo</translation>
-    </message>
-    <message>
-        <source>&amp;Open...</source>
-        <translation>&amp;Abrir...</translation>
+        <translation>Nuova finestra</translation>
     </message>
     <message>
         <source>Open Example</source>
-        <translation>Abrir Ejemplo</translation>
-    </message>
-    <message>
-        <source>&amp;Save</source>
-        <translation>&amp;Guardar</translation>
+        <translation>Apri esempio</translation>
     </message>
     <message>
         <source>Save As...</source>
-        <translation>Guardar Como...</translation>
+        <translation>Salva come...</translation>
     </message>
     <message>
         <source>Save All</source>
-        <translation>Guardar Todo</translation>
+        <translation>Salva tutto</translation>
     </message>
     <message>
         <source>Preferences...</source>
-        <translation>Preferencias...</translation>
+        <translation>Preferenze...</translation>
     </message>
     <message>
         <source>Export...</source>
-        <translation>Exportar...</translation>
+        <translation>Esporta...</translation>
     </message>
     <message>
         <source>Export as OBJ...</source>
-        <translation>Exportar como OBJ...</translation>
+        <translation>Esporta come OBJ...</translation>
     </message>
     <message>
         <source>Change Reference Sheet...</source>
-        <translation>Cambiar Hoja de Referencia...</translation>
-    </message>
-    <message>
-        <source>&amp;Quit</source>
-        <translation>&amp;Salir</translation>
-    </message>
-    <message>
-        <source>&amp;Edit</source>
-        <translation>&amp;Editar</translation>
+        <translation>Cambia foglio di riferimento...</translation>
     </message>
     <message>
         <source>Add...</source>
-        <translation>Agregar...</translation>
+        <translation>Aggiungi...</translation>
     </message>
     <message>
         <source>Undo</source>
-        <translation>Deshacer</translation>
+        <translation>Disfa</translation>
     </message>
     <message>
         <source>Redo</source>
-        <translation>Rehacer</translation>
+        <translation>Rifai</translation>
     </message>
     <message>
         <source>Delete</source>
-        <translation>Eliminar</translation>
+        <translation>Elimina</translation>
     </message>
     <message>
         <source>Break</source>
-        <translation>Romper</translation>
+        <translation>Rompi</translation>
     </message>
     <message>
         <source>Connect</source>
-        <translation>Conectar</translation>
+        <translation>Connetti</translation>
     </message>
     <message>
         <source>Cut</source>
-        <translation>Cortar</translation>
+        <translation>Taglia</translation>
     </message>
     <message>
         <source>Copy</source>
-        <translation>Copiar</translation>
+        <translation>Copia</translation>
     </message>
     <message>
         <source>Paste</source>
-        <translation>Pegar</translation>
+        <translation>Incolla</translation>
     </message>
     <message>
         <source>H Flip</source>
-        <translation>Volteo H</translation>
+        <translation>Inverti l&apos;asse X</translation>
     </message>
     <message>
         <source>V Flip</source>
-        <translation>Volteo V</translation>
+        <translation>Inverti l&apos;asse V</translation>
     </message>
     <message>
         <source>Rotate 90D CW</source>
-        <translation>Rotar 90D Horario</translation>
+        <translation>Ruota di 90° in senso orario</translation>
     </message>
     <message>
         <source>Rotate 90D CCW</source>
-        <translation>Rotar 90D Anti Horario</translation>
+        <translation>Ruota di 90° in senso anti-orario</translation>
     </message>
     <message>
         <source>Switch XZ</source>
-        <translation>Intercambiar XZ</translation>
-    </message>
-    <message>
-        <source>Cut Face...</source>
-        <translation>Cortar Cara...</translation>
-    </message>
-    <message>
-        <source>Clear Cut Face</source>
-        <translation>Limpiar corte de cara</translation>
+        <translation>Scambia XZ</translation>
     </message>
     <message>
         <source>Align To</source>
-        <translation>Alienar A</translation>
+        <translation>Allinea a</translation>
     </message>
     <message>
         <source>Local Center</source>
-        <translation>Centro Local</translation>
+        <translation>Centro locale</translation>
     </message>
     <message>
         <source>Local Vertical Center</source>
-        <translation>Centro Vertical Local</translation>
+        <translation>Centro verticale locale</translation>
     </message>
     <message>
         <source>Local Horizontal Center</source>
-        <translation>Centro Horizontal Local</translation>
+        <translation>Centro orizzontale locale</translation>
     </message>
     <message>
         <source>Global Center</source>
-        <translation>Centro Global</translation>
+        <translation>Centro globale</translation>
     </message>
     <message>
         <source>Global Vertical Center</source>
-        <translation>Centro Vertical Global</translation>
+        <translation>Centro verticale globable</translation>
     </message>
     <message>
         <source>Global Horizontal Center</source>
-        <translation>Centro Horizontal Global</translation>
+        <translation>Centro orizzontale Globale</translation>
     </message>
     <message>
         <source>Mark As</source>
-        <translation>Marcar como</translation>
+        <translation>Segna come</translation>
     </message>
     <message>
         <source>None</source>
-        <translation>Ninguno</translation>
-    </message>
-    <message>
-        <source>Colorize</source>
-        <translation>Colorear</translation>
-    </message>
-    <message>
-        <source>Blank</source>
-        <translation>Blanquear</translation>
-    </message>
-    <message>
-        <source>Auto Color</source>
-        <translation>Color automático</translation>
+        <translation>无</translation>
     </message>
     <message>
         <source>Select All</source>
-        <translation>Seleccionar Todo</translation>
+        <translation>Seleziona tutto</translation>
     </message>
     <message>
         <source>Select Part</source>
-        <translation>Seleccionar Parte</translation>
+        <translation>Seleziona parte</translation>
     </message>
     <message>
         <source>Unselect All</source>
-        <translation>Deseleccionar Todo</translation>
-    </message>
-    <message>
-        <source>&amp;View</source>
-        <translation>&amp;Ver</translation>
+        <translation>De-Seleziona tutto</translation>
     </message>
     <message>
         <source>Show Model</source>
-        <translation>Mostrar Modelo</translation>
+        <translation>Mostra modello</translation>
     </message>
     <message>
         <source>Toggle Wireframe</source>
-        <translation>Mostrar Wireframe</translation>
-    </message>
-    <message>
-        <source>Toggle Rotation</source>
-        <translation>Alternar Rotación</translation>
-    </message>
-    <message>
-        <source>Toggle Color</source>
-        <translation>Alternar Color</translation>
-    </message>
-    <message>
-        <source>Toggle UV Check</source>
-        <translation>Alternar chequeo UV</translation>
-    </message>
-    <message>
-        <source>&amp;Window</source>
-        <translation>V&amp;entana</translation>
+        <translation>Alterna Wireframe</translation>
     </message>
     <message>
         <source>Dialogs</source>
-        <translation>Diálogos</translation>
+        <translation>Dialoghi</translation>
     </message>
     <message>
         <source>Debug</source>
-        <translation>Depurar</translation>
-    </message>
-    <message>
-        <source>&amp;Help</source>
-        <translation>A&amp;yuda</translation>
+        <translation>Debug</translation>
     </message>
     <message>
         <source>Dust3D Homepage</source>
-        <translation>Página de inicio de Dust3D</translation>
+        <translation>Homepage di Dust3D</translation>
     </message>
     <message>
         <source>Source Code</source>
-        <translation>Código Fuente</translation>
-    </message>
-    <message>
-        <source>Check for Updates...</source>
-        <translation>Buscar Actualizaciones...</translation>
+        <translation>Codice sorgente</translation>
     </message>
     <message>
         <source>Reference Guide</source>
-        <translation>Guía de Referencia</translation>
+        <translation>Guida di riferimento</translation>
     </message>
     <message>
         <source>About</source>
-        <translation>Acerca de</translation>
+        <translation>Riguardo a questo programma</translation>
     </message>
     <message>
         <source>Report Issues</source>
-        <translation>Reportar Problemas</translation>
+        <translation>Segnala problemi</translation>
     </message>
     <message>
         <source>Do you really want to close while there are unsaved changes?</source>
-        <translation>¿Realmente quiere cerrar mientras hay cambios sin guardar?</translation>
+        <translation>Vuoi davvero chiudere mentre ci sono modifiche non salvate?</translation>
     </message>
     <message>
         <source>Do you really want to create new document and lose the unsaved changes?</source>
-        <translation>¿Realmente quiere crear un nuevo documento y perder los cambios sin guardar?</translation>
+        <translation>Vuoi davvero creare un nuovo documento e perdere le modifiche non salvate?</translation>
     </message>
     <message>
         <source>Dust3D Document (*.ds3)</source>
-        <translation>Documento Dust3D (*.ds3)</translation>
+        <translation>Documento di Dust3D(*.ds3)</translation>
     </message>
     <message>
         <source>Image Files (*.png *.jpg *.bmp)</source>
-        <translation>Archivos de Imagen (*.png *.jpg *.bmp)</translation>
+        <translation>File immagine(*.png *.jpg *.bmp)</translation>
     </message>
     <message>
         <source>Do you really want to open example and lose the unsaved changes?</source>
-        <translation>¿Realmente quiere abrir un ejemplo y perder los cambios no guardados?</translation>
+        <translation>Vuoi davvero aprire l&apos;esempio e perdere le modifiche non salvate?</translation>
     </message>
     <message>
         <source>Do you really want to open another file and lose the unsaved changes?</source>
-        <translation>¿Realmente quiere abrir otro archivo y perder los cambios no guardados?</translation>
+        <translation>Vuoi davvero aprire un altro file e perdere le modifiche non salvate?</translation>
     </message>
     <message>
         <source>Wavefront (*.obj)</source>
@@ -381,926 +296,1018 @@ Consejos:
     </message>
     <message>
         <source>Autodesk FBX (.fbx)</source>
-        <translation></translation>
+        <translation>Autodesk FBX (.fbx)</translation>
     </message>
     <message>
         <source>glTF Binary Format (.glb)</source>
-        <translation>Formato Binario glTF (.glb)</translation>
+        <translation>glTF Binary Format (.glb)</translation>
     </message>
     <message>
         <source>Rotation</source>
-        <translation>Rotación</translation>
+        <translation>Rotazione</translation>
+    </message>
+    <message>
+        <source>Cut Face...</source>
+        <translation>Taglia la faccia...</translation>
+    </message>
+    <message>
+        <source>Clear Cut Face</source>
+        <translation>Taglia la faccia in modo pulito</translation>
+    </message>
+    <message>
+        <source>Check for Updates...</source>
+        <translation>Controlla aggiornamenti...</translation>
+    </message>
+    <message>
+        <source>Paint brush</source>
+        <translation>Pennello</translation>
+    </message>
+    <message>
+        <source>Toggle UV Check</source>
+        <translation>Alterna il check per gli UV</translation>
+    </message>
+    <message>
+        <source>Colorize</source>
+        <translation>Colorizza</translation>
+    </message>
+    <message>
+        <source>Blank</source>
+        <translation>Vuoto</translation>
+    </message>
+    <message>
+        <source>Auto Color</source>
+        <translation>Auto-Colora</translation>
+    </message>
+    <message>
+        <source>Marker pen</source>
+        <translation>Penna per marcare</translation>
+    </message>
+    <message>
+        <source>&amp;Quit</source>
+        <translation>Esci(&amp;Q)</translation>
+    </message>
+    <message>
+        <source>&amp;File</source>
+        <translation>File(&amp;F)</translation>
+    </message>
+    <message>
+        <source>&amp;New</source>
+        <translation>Nuovo(&amp;N)</translation>
+    </message>
+    <message>
+        <source>&amp;Open...</source>
+        <translation>Apri(&amp;O)</translation>
+    </message>
+    <message>
+        <source>&amp;Save</source>
+        <translation>Salva(&amp;S)</translation>
+    </message>
+    <message>
+        <source>&amp;Edit</source>
+        <translation>Edita(&amp;E)</translation>
+    </message>
+    <message>
+        <source>&amp;View</source>
+        <translation>Vista(&amp;V)</translation>
+    </message>
+    <message>
+        <source>&amp;Window</source>
+        <translation>Finestra(&amp;W)</translation>
+    </message>
+    <message>
+        <source>&amp;Help</source>
+        <translation>Aiuto(&amp;H)</translation>
+    </message>
+    <message>
+        <source>Toggle Rotation</source>
+        <translation>Alterna la rotazione</translation>
+    </message>
+    <message>
+        <source>Toggle viewport</source>
+        <translation>Alterna il viewport</translation>
+    </message>
+    <message>
+        <source>Toggle Color</source>
+        <translation>Alterna il colore</translation>
+    </message>
+    <message>
+        <source>Script</source>
+        <translation>Script</translation>
+    </message>
+    <message>
+        <source>Enter zoom out mode</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>ExportPreviewWidget</name>
     <message>
         <source>Regenerate</source>
-        <translation>Regenerar</translation>
+        <translation>Rigenera</translation>
     </message>
     <message>
         <source>.glb</source>
-        <translation></translation>
+        <translation>.glb</translation>
     </message>
     <message>
         <source>.fbx</source>
-        <translation></translation>
+        <translation>.fbx</translation>
     </message>
     <message>
         <source>Save</source>
-        <translation>Guardar</translation>
+        <translation>Salva</translation>
     </message>
     <message>
         <source>Export</source>
-        <translation>Exportar</translation>
+        <translation>Esporta</translation>
     </message>
 </context>
 <context>
     <name>LogBrowserDialog</name>
     <message>
         <source>Debug</source>
-        <translation>Depurar</translation>
+        <translation type="unfinished">Debug</translation>
     </message>
     <message>
         <source>— DEBUG: %1 - %2:%3</source>
-        <translation>— DEPURAR: %1 - %2:%3</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>— WARNING: %1 - %2:%3</source>
-        <translation>— ADVERTENCIA: %1 - %2:%3</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>— CRITICAL: %1 - %2:%3</source>
-        <translation>— CRÍTICO: %1 - %2:%3</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>— INFO: %1 - %2:%3</source>
-        <translation></translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>— FATAL: %1 - %2:%3</source>
-        <translation></translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Save Log Output</source>
-        <translation>Guardar Log</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>%1/logfile.txt</source>
-        <translation></translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Text Files (*.txt);;All Files (*)</source>
-        <translation>Archivos de Texto (.txt);;Todos los Archivos (*)</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Error</source>
-        <translation>Error</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>&lt;nobr&gt;File &apos;%1&apos;&lt;br/&gt;cannot be opened for writing.&lt;br/&gt;&lt;br/&gt;The log output could &lt;b&gt;not&lt;/b&gt; be saved!&lt;/nobr&gt;</source>
-        <translation>&lt;nobr&gt;Archivo &apos;%1&apos;&lt;br/&gt;no puede ser abierto para escritura.&lt;br/&gt;&lt;br/&gt;La salida del log pudo &lt;b&gt;no&lt;/b&gt; haber sido guardada!&lt;/nobr&gt;</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>MaterialEditWidget</name>
     <message>
         <source>Image Files (*.png *.jpg *.bmp)</source>
-        <translation>Archivos de Imagen (*.png *.jpg *.bmp)</translation>
+        <translation type="unfinished">File immagine(*.png *.jpg *.bmp)</translation>
     </message>
     <message>
         <source>Save</source>
-        <translation>Guardar</translation>
+        <translation type="unfinished">Salva</translation>
     </message>
     <message>
         <source>Tile Scale</source>
-        <translation>Escala de mozaico</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Name</source>
-        <translation>Nombre</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Do you really want to close while there are unsaved changes?</source>
-        <translation>¿Realmente quiere cerrar mientras hay cambios sin guardar?</translation>
+        <translation type="unfinished">Vuoi davvero chiudere mentre ci sono modifiche non salvate?</translation>
     </message>
     <message>
         <source>New</source>
-        <translation>Nuevo</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>MaterialListWidget</name>
     <message>
         <source>Modify</source>
-        <translation>Modificar</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Copy</source>
-        <translation>Copiar</translation>
+        <translation type="unfinished">Copia</translation>
     </message>
     <message>
         <source>Paste</source>
-        <translation>Pegar</translation>
+        <translation type="unfinished">Incolla</translation>
     </message>
     <message>
         <source>Delete</source>
-        <translation>Eliminar</translation>
+        <translation type="unfinished">Elimina</translation>
     </message>
 </context>
 <context>
     <name>MaterialManageWidget</name>
     <message>
         <source>Add Material...</source>
-        <translation>Agregar Material...</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>MotionEditWidget</name>
     <message>
         <source>Poses</source>
-        <translation>Poses</translation>
+        <translation type="unfinished">Posa</translation>
     </message>
     <message>
         <source>Motions</source>
-        <translation>Movimientos</translation>
+        <translation type="unfinished">Movimenti</translation>
     </message>
     <message>
         <source>Slow</source>
-        <translation>Lento</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Fast</source>
-        <translation>Rápido</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Save</source>
-        <translation>Guardar</translation>
+        <translation type="unfinished">Salva</translation>
     </message>
     <message>
         <source>Name</source>
-        <translation>Nombre</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Do you really want to close while there are unsaved changes?</source>
-        <translation>Realmente quiere cerrar mientras hay cambios sin guardar?</translation>
+        <translation type="unfinished">Vuoi davvero chiudere mentre ci sono modifiche non salvate?</translation>
     </message>
     <message>
         <source>New</source>
-        <translation>Nuevo</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>MotionListWidget</name>
     <message>
         <source>Modify</source>
-        <translation>Modificar</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Copy</source>
-        <translation>Copiar</translation>
+        <translation type="unfinished">Copia</translation>
     </message>
     <message>
         <source>Paste</source>
-        <translation>Pegar</translation>
+        <translation type="unfinished">Incolla</translation>
     </message>
     <message>
         <source>Delete</source>
-        <translation>Eliminar</translation>
+        <translation type="unfinished">Elimina</translation>
     </message>
 </context>
 <context>
     <name>MotionManageWidget</name>
     <message>
         <source>Add Motion...</source>
-        <translation>Agregar Movimiento...</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Motion editor doesn&apos;t support this rig type yet: </source>
-        <translation>El editor de moviemiento no soporta este tipo de rig aún: </translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Missing Rig</source>
-        <translation>Rig Faltante</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>MotionTimelineWidget</name>
     <message>
         <source>Accelerating</source>
-        <translation>Acelerando</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Decelerating</source>
-        <translation>Desacelerando</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Bouncing</source>
-        <translation>Rebotando</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Linear</source>
-        <translation>Lienal</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Cubic</source>
-        <translation>Cúbica</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Duration:</source>
-        <translation>Duración:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Double Duration</source>
-        <translation>Duplicar Duración</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Halve Duration</source>
-        <translation>Duración a la mitad</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Delete</source>
-        <translation>Eliminar</translation>
+        <translation type="unfinished">Elimina</translation>
     </message>
 </context>
 <context>
     <name>PartTreeWidget</name>
     <message>
         <source>Root</source>
-        <translation>Raíz</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Stiffness</source>
-        <translation>Rigidez</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Iteration</source>
-        <translation>Iteración</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Offset</source>
-        <translation>Compensación</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Force</source>
-        <translation>Fuerza</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>(%1 items)</source>
-        <translation></translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Poly</source>
-        <translation></translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Base</source>
-        <translation></translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Target</source>
-        <translation>Objetivo</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Mode</source>
-        <translation>Modo</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Layer</source>
-        <translation>Capa</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Show</source>
-        <translation>Mostrar</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Hide</source>
-        <translation>Ocultar</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Lock</source>
-        <translation>Bloquear</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Unlock</source>
-        <translation>Desbloquear</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Select</source>
-        <translation>Seleccionar</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Copy Color</source>
-        <translation>Copiar Color</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Paste Color</source>
-        <translation>Pegar Color</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Collapse All</source>
-        <translation>Colapsar Todo</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Expand All</source>
-        <translation>Expandir todo</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Hide All</source>
-        <translation>Ocultar Todo</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Show All</source>
-        <translation>Mostrar Todo</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Lock All</source>
-        <translation>Bloquear Todo</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Unlock All</source>
-        <translation>Desbloquear Todo</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>New Group</source>
-        <translation>Nuevo Grupo</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Rename</source>
-        <translation>Renombrar</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Delete</source>
-        <translation>Eliminar</translation>
+        <translation type="unfinished">Elimina</translation>
     </message>
     <message>
         <source>Top</source>
-        <translation>Superior</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Up</source>
-        <translation>Arriba</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Down</source>
-        <translation>Abajo</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Bottom</source>
-        <translation>Inferior</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Move To</source>
-        <translation>Mover A</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>All</source>
-        <translation>Todo</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Seam</source>
-        <translation>Costura</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>PartWidget</name>
     <message>
         <source>Show/hide nodes</source>
-        <translation>Mostrar/ocultar nodos</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Lock/unlock nodes</source>
-        <translation>Bloquear/desbloquear nodos</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Subdivide</source>
-        <translation>Subdividir</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Join/Remove from final result</source>
-        <translation>Unir/Remover del resultado final</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Toggle mirror</source>
-        <translation>Alternar reflejo</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Deform</source>
-        <translation>Deformar</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Toggle round end</source>
-        <translation>Alternar fin redondeado</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Chamfer</source>
-        <translation>Chaflán</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Color and material picker</source>
-        <translation>Selector de color y material</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Cut face</source>
-        <translation>Cortar Cara</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Countershaded</source>
-        <translation>Sombreado</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Transparency</source>
-        <translation>Transparencia</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Solubility</source>
-        <translation>Solubilidad</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Missing Materials</source>
-        <translation>Materiales Faltantes</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Rotation</source>
-        <translation>Rotación</translation>
+        <translation type="unfinished">Rotazione</translation>
     </message>
     <message>
         <source>Hollow</source>
-        <translation>Hueco</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Thickness</source>
-        <translation>Grosor</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Width</source>
-        <translation>Ancho</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Image Files (*.png *.jpg *.bmp)</source>
-        <translation>Archivos de Imagen (*.png *.jpg *.bmp)</translation>
+        <translation type="unfinished">File immagine(*.png *.jpg *.bmp)</translation>
     </message>
     <message>
         <source>Map Scale</source>
-        <translation>Escala de Mapa</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>PoseEditWidget</name>
     <message>
         <source>Toggle Left Side Visibility</source>
-        <translation>Alternar Visibilidad del lado Izquierdo</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Toggle Middle Side Visibility</source>
-        <translation>Alternar visibilidad del Medio</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Toggle Right Side Visibility</source>
-        <translation>Alternar visibilidad del lado Derecho</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Dark</source>
-        <translation>Oscuro</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Bright</source>
-        <translation>Brillante</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Save</source>
-        <translation>Guardar</translation>
+        <translation type="unfinished">Salva</translation>
     </message>
     <message>
         <source>Change Reference Sheet...</source>
-        <translation>Cambiar Hoja de Referencia...</translation>
+        <translation type="unfinished">Cambia foglio di riferimento...</translation>
     </message>
     <message>
         <source>Name</source>
-        <translation>Nombre</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Duration</source>
-        <translation>Duración</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Height Adjustment Scale</source>
-        <translation>Escala de ajuste de Altura</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Frames:</source>
-        <translation>Fotogramas:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Frame: %1 / %2</source>
-        <translation>Fotograma: %1 / %2</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Image Files (*.png *.jpg *.bmp)</source>
-        <translation>Archivos de Imagen (*.png *.jpg *.bmp)</translation>
+        <translation type="unfinished">File immagine(*.png *.jpg *.bmp)</translation>
     </message>
     <message>
         <source>Do you really want to close while there are unsaved changes?</source>
-        <translation>¿Realmente quiere cerrar mientras hay cambios sin guardar?</translation>
+        <translation type="unfinished">Vuoi davvero chiudere mentre ci sono modifiche non salvate?</translation>
     </message>
     <message>
         <source>New</source>
-        <translation>Nuevo</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>PoseListWidget</name>
     <message>
         <source>Modify</source>
-        <translation>Modificar</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Copy</source>
-        <translation>Copiar</translation>
+        <translation type="unfinished">Copia</translation>
     </message>
     <message>
         <source>Paste</source>
-        <translation>Pegar</translation>
+        <translation type="unfinished">Incolla</translation>
     </message>
     <message>
         <source>Delete</source>
-        <translation>Eliminar</translation>
+        <translation type="unfinished">Elimina</translation>
     </message>
 </context>
 <context>
     <name>PoseManageWidget</name>
     <message>
         <source>Add Pose...</source>
-        <translation>Agregar Pose...</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Pose editor doesn&apos;t support this rig type yet: </source>
-        <translation>El editor de pose no soporta este tipo de rig aun: </translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Missing Rig</source>
-        <translation>Rig Faltante</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>PreferencesWidget</name>
     <message>
         <source>Part color:</source>
-        <translation>Color de parte:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Combine mode:</source>
-        <translation>Modo combinar:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Flat shading:</source>
-        <translation>Sombreado plano:</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Reset</source>
-        <translation>Resetear</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Preferences</source>
-        <translation>Preferencias</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>QObject</name>
     <message>
+        <source> - </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Neck</source>
-        <translation>Cuello</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Limb</source>
-        <translation>Limb</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Tail</source>
-        <translation>Cola</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Joint</source>
-        <translation>Unión</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>None</source>
-        <translation>Ninguno</translation>
+        <translation type="unfinished">无</translation>
     </message>
     <message>
         <source>Gravitational</source>
-        <translation>Gravitacional</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Centripetal</source>
-        <translation>Centrípeto</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Normal</source>
-        <translation></translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Inversion</source>
-        <translation>Inversión</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Uncombined</source>
-        <translation>Sin combinar</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Body</source>
-        <translation>Cuerpo</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Cloth</source>
-        <translation>Tela</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Dynamic</source>
-        <translation>Dinámico</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Average</source>
-        <translation>Promedio</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Side Plane</source>
-        <translation>Plano Lateral</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Front Plane</source>
-        <translation>Plano Frontal</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Top Plane</source>
-        <translation>Plano Superior</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Model</source>
-        <translation>Modelo</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Cut Face</source>
-        <translation>Cortar Cara</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Low Poly</source>
-        <translation></translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Original</source>
-        <translation></translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Medium Poly</source>
-        <translation>Poly Medio</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>High Poly</source>
-        <translation></translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Very High Poly</source>
-        <translation>Poly Muy alto</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Ultra High Poly</source>
-        <translation>Poly Ultra Alto</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Extremely High Poly</source>
-        <translation>Poly Extremadamente Alto</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Tremendously High Poly</source>
-        <translation>Poly Tremendamente Alto</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Fall to Death</source>
-        <translation>Caer hasta Morir</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Animal</source>
-        <translation></translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Left</source>
-        <translation>Izquierda</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Right</source>
-        <translation>Derecha</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Base Color</source>
-        <translation>Color de Base</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Normal Map</source>
-        <translation>Mapa Normal</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Metalness</source>
-        <translation>Metálico</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Roughness</source>
-        <translation>Aspereza</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Ambient Occlusion</source>
-        <translation>Oclusión del Ambiente</translation>
-    </message>
-    <message>
-        <source> - </source>
-        <translation> - </translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>RigGenerator</name>
     <message>
         <source>Imbalanced left and right limbs</source>
-        <translation>Limbs derecho e izquierdo desbalanceados</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>No limbs found</source>
-        <translation>No se encontraron limbs</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>No body found</source>
-        <translation>No cuerpo encontrado</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Please mark the neck, limbs and joints from the context menu</source>
-        <translation>Por favor, marque el cuello, limbs y uniones del menú contextual</translation>
+        <translation type="unfinished">Si prega di contrassegnare il collo, gli arti e le articolazioni dal menu contestuale</translation>
     </message>
 </context>
 <context>
     <name>RigWidget</name>
     <message>
         <source>Type</source>
-        <translation>Tipo</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>SkeletonGraphicsWidget</name>
     <message>
         <source>Add...</source>
-        <translation></translation>
+        <translation type="unfinished">Aggiungi...</translation>
     </message>
     <message>
         <source>Undo</source>
-        <translation>Deshacer</translation>
+        <translation type="unfinished">Disfa</translation>
     </message>
     <message>
         <source>Redo</source>
-        <translation>Rehacer</translation>
+        <translation type="unfinished">Rifai</translation>
     </message>
     <message>
         <source>Delete</source>
-        <translation>Eliminar</translation>
+        <translation type="unfinished">Elimina</translation>
     </message>
     <message>
         <source>Break</source>
-        <translation>Romper</translation>
+        <translation type="unfinished">Rompi</translation>
     </message>
     <message>
         <source>Connect</source>
-        <translation>Conectar</translation>
+        <translation type="unfinished">Connetti</translation>
     </message>
     <message>
         <source>Cut</source>
-        <translation>Cortar</translation>
+        <translation type="unfinished">Taglia</translation>
     </message>
     <message>
         <source>Copy</source>
-        <translation>Copiar</translation>
+        <translation type="unfinished">Copia</translation>
     </message>
     <message>
         <source>Paste</source>
-        <translation>Pegar</translation>
+        <translation type="unfinished">Incolla</translation>
     </message>
     <message>
         <source>H Flip</source>
-        <translation>Voltear H</translation>
+        <translation type="unfinished">Inverti l&apos;asse X</translation>
     </message>
     <message>
         <source>V Flip</source>
-        <translation>Voltear V</translation>
+        <translation type="unfinished">Inverti l&apos;asse V</translation>
     </message>
     <message>
         <source>Rotate 90D CW</source>
-        <translation>Rotar 90D Horario</translation>
+        <translation type="unfinished">Ruota di 90° in senso orario</translation>
     </message>
     <message>
         <source>Rotate 90D CCW</source>
-        <translation>Rotar 90D Anti Horario</translation>
+        <translation type="unfinished">Ruota di 90° in senso anti-orario</translation>
     </message>
     <message>
         <source>Switch XZ</source>
-        <translation>Intercambiar XZ</translation>
+        <translation type="unfinished">Scambia XZ</translation>
     </message>
     <message>
         <source>Switch Chain Side</source>
-        <translation>Intercambiar Lado de Cadena</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Cut Face...</source>
-        <translation>Cortar Cara...</translation>
+        <translation type="unfinished">Taglia la faccia...</translation>
     </message>
     <message>
         <source>Clear Cut Face</source>
-        <translation>Limpiar corte de cara</translation>
+        <translation type="unfinished">Taglia la faccia in modo pulito</translation>
     </message>
     <message>
         <source>Local Center</source>
-        <translation>Centro Local</translation>
+        <translation type="unfinished">Centro locale</translation>
     </message>
     <message>
         <source>Local Vertical Center</source>
-        <translation>Centro Vertical Local</translation>
+        <translation type="unfinished">Centro verticale locale</translation>
     </message>
     <message>
         <source>Local Horizontal Center</source>
-        <translation>Centro Horizontal Local</translation>
+        <translation type="unfinished">Centro orizzontale locale</translation>
     </message>
     <message>
         <source>Global Center</source>
-        <translation>Centro Global</translation>
+        <translation type="unfinished">Centro globale</translation>
     </message>
     <message>
         <source>Global Vertical Center</source>
-        <translation>Centro Vertical Global</translation>
+        <translation type="unfinished">Centro verticale globable</translation>
     </message>
     <message>
         <source>Global Horizontal Center</source>
-        <translation>Centro Horizontal Global</translation>
+        <translation type="unfinished">Centro orizzontale Globale</translation>
     </message>
     <message>
         <source>Align To</source>
-        <translation>Alinear A</translation>
+        <translation type="unfinished">Allinea a</translation>
     </message>
     <message>
         <source>None</source>
-        <translation>Ninguno</translation>
+        <translation type="unfinished">无</translation>
     </message>
     <message>
         <source>Mark As</source>
-        <translation>Marcar como</translation>
+        <translation type="unfinished">Segna come</translation>
     </message>
     <message>
         <source>Blank</source>
-        <translation>Blanquear</translation>
+        <translation type="unfinished">Vuoto</translation>
     </message>
     <message>
         <source>Auto Color</source>
-        <translation>Color automático</translation>
+        <translation type="unfinished">Auto-Colora</translation>
     </message>
     <message>
         <source>Colorize</source>
-        <translation>Colorear</translation>
+        <translation type="unfinished">Colorizza</translation>
     </message>
     <message>
         <source>Select All</source>
-        <translation>Seleccionar Todo</translation>
+        <translation type="unfinished">Seleziona tutto</translation>
     </message>
     <message>
         <source>Select Part</source>
-        <translation>Seleccionar Parte</translation>
+        <translation type="unfinished">Seleziona parte</translation>
     </message>
     <message>
         <source>Unselect All</source>
-        <translation>Deseleccionar Todo</translation>
+        <translation type="unfinished">De-Seleziona tutto</translation>
     </message>
 </context>
 <context>
     <name>UpdatesCheckWidget</name>
     <message>
         <source>Check for Updates</source>
-        <translation>Buscar Actualizaciones</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>Checking for updates...</source>
-        <translation>Buscando actualizaciones...</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>View</source>
-        <translation>Vista</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>UpdatesChecker</name>
     <message>
         <source>Fetch update info failed, please retry later</source>
-        <translation>Falló la obtención de información de la actualización, por favor, reintente más tarde</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>%1 %2 is currently the newest version available</source>
-        <translation>%1 %2 es actualmente la versión más nueva disponible</translation>
+        <translation type="unfinished"></translation>
     </message>
     <message>
         <source>An update is available: %1 %2</source>
-        <translation>Actualización disponible: %1 %2</translation>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 </TS>
