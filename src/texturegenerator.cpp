@@ -261,7 +261,7 @@ void TextureGenerator::generate()
     auto createImageBeginTime = countTimeConsumed.elapsed();
     
     m_resultTextureColorImage = new QImage(TextureGenerator::m_textureSize, TextureGenerator::m_textureSize, QImage::Format_ARGB32);
-    m_resultTextureColorImage->fill(m_defaultTextureColor);
+    m_resultTextureColorImage->fill(m_hasTransparencySettings ? m_defaultTextureColor : Qt::white);
     
     m_resultTextureBorderImage = new QImage(TextureGenerator::m_textureSize, TextureGenerator::m_textureSize, QImage::Format_ARGB32);
     m_resultTextureBorderImage->fill(Qt::transparent);
