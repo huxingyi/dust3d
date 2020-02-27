@@ -37,6 +37,7 @@ Document::Document() :
     textureMetalnessImage(nullptr),
     textureRoughnessImage(nullptr),
     textureAmbientOcclusionImage(nullptr),
+    textureHasTransparencySettings(false),
     rigType(RigType::None),
     weldEnabled(true),
     polyCount(PolyCount::Original),
@@ -2086,6 +2087,8 @@ void Document::textureReady()
     
     delete m_resultTextureMesh;
     m_resultTextureMesh = m_textureGenerator->takeResultMesh();
+    
+    textureHasTransparencySettings = m_textureGenerator->hasTransparencySettings();
     
     //addToolToMesh(m_resultTextureMesh);
     

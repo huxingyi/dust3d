@@ -534,6 +534,7 @@ public: // need initialize
     QImage *textureMetalnessImage;
     QImage *textureRoughnessImage;
     QImage *textureAmbientOcclusionImage;
+    bool textureHasTransparencySettings;
     RigType rigType;
     bool weldEnabled;
     PolyCount polyCount;
