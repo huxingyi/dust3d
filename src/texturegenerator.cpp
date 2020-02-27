@@ -9,8 +9,8 @@
 #include "util.h"
 #include "texturetype.h"
 #include "material.h"
+#include "preferences.h"
 
-int TextureGenerator::m_textureSize = 1024;
 QColor TextureGenerator::m_defaultTextureColor = Qt::transparent;
 
 TextureGenerator::TextureGenerator(const Outcome &outcome, Snapshot *snapshot) :
@@ -25,10 +25,13 @@ TextureGenerator::TextureGenerator(const Outcome &outcome, Snapshot *snapshot) :
     m_resultTextureAmbientOcclusionImage(nullptr),
     m_resultMesh(nullptr),
     m_snapshot(snapshot),
-    m_hasTransparencySettings(false)
+    m_hasTransparencySettings(false),
+    m_textureSize(Preferences::instance().textureSize())
 {
     m_outcome = new Outcome();
     *m_outcome = outcome;
+    if (m_textureSize <= 0)
+        m_textureSize = 1024;
 }
 
 TextureGenerator::~TextureGenerator()

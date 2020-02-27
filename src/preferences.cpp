@@ -15,6 +15,7 @@ void Preferences::loadDefault()
     m_componentCombineMode = CombineMode::Normal;
     m_partColor = Qt::white;
     m_flatShading = true;
+    m_textureSize = 1024;
 }
 
 Preferences::Preferences()
@@ -37,6 +38,11 @@ Preferences::Preferences()
         else
             m_flatShading = isTrueValueString(value);
     }
+    {
+        QString value = m_settings.value("textureSize").toString();
+        if (!value.isEmpty())
+            m_textureSize = value.toInt();
+    }
 }
 
 CombineMode Preferences::componentCombineMode() const
@@ -52,6 +58,11 @@ const QColor &Preferences::partColor() const
 bool Preferences::flatShading() const
 {
     return m_flatShading;
+}
+
+int Preferences::textureSize() const
+{
+    return m_textureSize;
 }
 
 void Preferences::setComponentCombineMode(CombineMode mode)
@@ -81,6 +92,15 @@ void Preferences::setFlatShading(bool flatShading)
     emit flatShadingChanged();
 }
 
+void Preferences::setTextureSize(int textureSize)
+{
+    if (m_textureSize == textureSize)
+        return;
+    m_textureSize = textureSize;
+    m_settings.setValue("textureSize", QString::number(m_textureSize));
+    emit textureSizeChanged();
+}
+
 QSize Preferences::documentWindowSize() const
 {
     return m_settings.value("documentWindowSize", QSize()).toSize();
@@ -98,4 +118,5 @@ void Preferences::reset()
     emit componentCombineModeChanged();
     emit partColorChanged();
     emit flatShadingChanged();
+    emit textureSizeChanged();
 }

@@ -736,6 +736,7 @@ public slots:
     void renameMaterial(QUuid materialId, QString name);
     void applyPreferencePartColorChange();
     void applyPreferenceFlatShadingChange();
+    void applyPreferenceTextureSizeChange();
     void initScript(const QString &script);
     void updateScript(const QString &script);
     void runScript();

@@ -38,7 +38,6 @@ signals:
 public slots:
     void process();
 public:
-    static int m_textureSize;
     static QColor m_defaultTextureColor;
 private:
     void prepare();
@@ -62,6 +61,7 @@ private:
     std::set<QUuid> m_countershadedPartIds;
     Snapshot *m_snapshot;
     bool m_hasTransparencySettings;
+    int m_textureSize;
 };
 
 #endif

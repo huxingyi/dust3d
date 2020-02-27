@@ -65,15 +65,28 @@ PreferencesWidget::PreferencesWidget(const Document *document, QWidget *parent) 
         Preferences::instance().setFlatShading(flatShadingBox->isChecked());
     });
     
+    QComboBox *textureSizeSelectBox = new QComboBox;
+    textureSizeSelectBox->addItem("512");
+    textureSizeSelectBox->addItem("1024");
+    textureSizeSelectBox->addItem("2048");
+    textureSizeSelectBox->addItem("4096");
+    connect(textureSizeSelectBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [=](int index) {
+        Preferences::instance().setTextureSize(textureSizeSelectBox->itemText(index).toInt());
+    });
+    
     QFormLayout *formLayout = new QFormLayout;
     formLayout->addRow(tr("Part color:"), colorLayout);
     formLayout->addRow(tr("Combine mode:"), combineModeSelectBox);
     formLayout->addRow(tr("Flat shading:"), flatShadingBox);
+    formLayout->addRow(tr("Texture size:"), textureSizeSelectBox);
     
     auto loadFromPreferences = [=]() {
         updatePickButtonColor();
         combineModeSelectBox->setCurrentIndex((int)Preferences::instance().componentCombineMode());
         flatShadingBox->setChecked(Preferences::instance().flatShading());
+        textureSizeSelectBox->setCurrentIndex(
+            textureSizeSelectBox->findText(QString::number(Preferences::instance().textureSize()))
+        );
     };
     
     loadFromPreferences();

@@ -82,6 +82,7 @@ Document::Document() :
 {
     connect(&Preferences::instance(), &Preferences::partColorChanged, this, &Document::applyPreferencePartColorChange);
     connect(&Preferences::instance(), &Preferences::flatShadingChanged, this, &Document::applyPreferenceFlatShadingChange);
+    connect(&Preferences::instance(), &Preferences::textureSizeChanged, this, &Document::applyPreferenceTextureSizeChange);
 }
 
 void Document::applyPreferencePartColorChange()
@@ -93,6 +94,11 @@ void Document::applyPreferenceFlatShadingChange()
 {
     m_smoothNormal = !Preferences::instance().flatShading();
     regenerateMesh();
+}
+
+void Document::applyPreferenceTextureSizeChange()
+{
+    generateTexture();
 }
 
 Document::~Document()
