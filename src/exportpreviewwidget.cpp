@@ -49,8 +49,10 @@ ExportPreviewWidget::ExportPreviewWidget(Document *document, QWidget *parent) :
     connect(m_saveButton, &QPushButton::clicked, this, [=]() {
         auto currentIndex = exportFormatSelectBox->currentIndex();
         if (0 == currentIndex) {
+            this->hide();
             emit saveAsGlb();
         } else if (1 == currentIndex) {
+            this->hide();
             emit saveAsFbx();
         }
     });
