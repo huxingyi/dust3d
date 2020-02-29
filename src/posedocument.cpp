@@ -11,7 +11,7 @@
 #include "snapshot.h"
 #include "snapshotxml.h"
 
-const float PoseDocument::m_nodeRadius = 0.02;
+const float PoseDocument::m_nodeRadius = 0.01;
 const float PoseDocument::m_groundPlaneHalfThickness = 0.005 / 4;
 const bool PoseDocument::m_hideRootAndVirtual = true;
 const float PoseDocument::m_outcomeScaleFactor = 0.5;
@@ -366,6 +366,7 @@ void PoseDocument::parametersToNodes(const std::vector<RiggerBone> *rigBones,
                 node.setX(fromOutcomeX(bone.headPosition.x()));
                 node.setY(fromOutcomeY(bone.headPosition.y()));
                 node.setZ(fromOutcomeZ(bone.headPosition.z()));
+                node.name = bone.name + "Start";
                 nodeMap[node.id] = node;
                 //qDebug() << "Add first node:" << (*rigBones)[edgePair.first].name;
                 newAddedNodeIds.insert(node.id);
@@ -377,7 +378,6 @@ void PoseDocument::parametersToNodes(const std::vector<RiggerBone> *rigBones,
         }
         auto findSecond = boneIndexToHeadNodeIdMap.find(edgePair.second);
         if (findSecond == boneIndexToHeadNodeIdMap.end()) {
-            const auto &firstBone = (*rigBones)[edgePair.first];
             const auto &bone = (*rigBones)[edgePair.second];
             if (!bone.name.startsWith("Virtual_") || !m_hideRootAndVirtual) {
                 SkeletonNode node;
@@ -385,9 +385,10 @@ void PoseDocument::parametersToNodes(const std::vector<RiggerBone> *rigBones,
                 node.id = QUuid::createUuid();
                 partMap[node.partId].nodeIds.push_back(node.id);
                 node.setRadius(m_nodeRadius);
-                node.setX(fromOutcomeX(firstBone.tailPosition.x()));
-                node.setY(fromOutcomeY(firstBone.tailPosition.y()));
-                node.setZ(fromOutcomeZ(firstBone.tailPosition.z()));
+                node.setX(fromOutcomeX(bone.headPosition.x()));
+                node.setY(fromOutcomeY(bone.headPosition.y()));
+                node.setZ(fromOutcomeZ(bone.headPosition.z()));
+                node.name = bone.name;
                 nodeMap[node.id] = node;
                 //qDebug() << "Add second node:" << (*rigBones)[edgePair.second].name;
                 newAddedNodeIds.insert(node.id);
@@ -435,6 +436,7 @@ void PoseDocument::parametersToNodes(const std::vector<RiggerBone> *rigBones,
             node.setX(fromOutcomeX(bone.headPosition.x()));
             node.setY(fromOutcomeY(bone.headPosition.y()));
             node.setZ(fromOutcomeZ(bone.headPosition.z()));
+            
             nodeMap[node.id] = node;
             newAddedNodeIds.insert(node.id);
             boneIndexToHeadNodeIdMap[i] = node.id;
