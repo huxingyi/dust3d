@@ -527,9 +527,22 @@ void Document::setPoseFrames(QUuid poseId, std::vector<std::pair<std::map<QStrin
     }
     findPoseResult->second.frames = frames;
     findPoseResult->second.dirty = true;
+    bool foundMotion = false;
+    for (auto &it: motionMap) {
+        for (const auto &clip: it.second.clips) {
+            if (poseId == clip.linkToId) {
+                it.second.dirty = true;
+                foundMotion = true;
+                break;
+            }
+        }
+    }
     emit posesChanged();
     emit poseFramesChanged(poseId);
     emit optionsChanged();
+    if (foundMotion) {
+        emit motionsChanged();
+    }
 }
 
 void Document::setPoseTurnaroundImageId(QUuid poseId, QUuid imageId)
