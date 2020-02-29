@@ -964,6 +964,10 @@ Tips:
         <source>Preferences</source>
         <translation>偏好设定</translation>
     </message>
+    <message>
+        <source>Texture size:</source>
+        <translation>纹理大小：</translation>
+    </message>
 </context>
 <context>
     <name>QObject</name>

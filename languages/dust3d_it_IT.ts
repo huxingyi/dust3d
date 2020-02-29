@@ -971,6 +971,10 @@ Suggerimenti:
         <source>Preferences</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Texture size:</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>QObject</name>
