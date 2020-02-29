@@ -1,3 +1,17 @@
+Changes between 1.0.0-beta.29 and 1.0.0-rc.1:
+--------------------------------------------------
+- Add shortcuts for menu items  
+- Preserve window size between runs  
+- Drop win32 support  
+- Add win64 support  
+- Add remesh by integrating Instant-Meshes  
+- Add cloth simulation by integrating FastMassSpring  
+- New rig generator  
+- Add Spanish and Italian language  
+- Fix glb exporting alpha mode setting  
+- Add texture size preference setting  
+- Add example model: Cat  
+
 Changes between 1.0.0-beta.28 and 1.0.0-beta.29:
 --------------------------------------------------
 - Add marker pen: A new way of modeling from contour  
