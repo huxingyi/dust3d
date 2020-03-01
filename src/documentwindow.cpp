@@ -447,8 +447,8 @@ DocumentWindow::DocumentWindow() :
     std::vector<QString> exampleModels = {
         "Addax",
         "Bicycle",
-        "Dog",
         "Cat",
+        "Dog",
         "Giraffe",
         "Meerkat",
         "Mosquito",
