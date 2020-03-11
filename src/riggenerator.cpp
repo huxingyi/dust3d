@@ -6,7 +6,6 @@
 #include <cmath>
 #include <QVector2D>
 #include <queue>
-#include <iostream>
 #include <unordered_map>
 #include "riggenerator.h"
 #include "util.h"
@@ -166,7 +165,6 @@ void RigGenerator::buildNeighborMap()
     }
     
     //std::vector<std::tuple<QVector3D, QVector3D, float, float, QColor>> debugBoxes;
-    
     while (true) {
         std::vector<std::unordered_set<size_t>> groups;
         groupNodeIndices(m_neighborMap, &groups);
@@ -422,6 +420,7 @@ void RigGenerator::buildSkeleton()
         bone.tailPosition = firstSpineNode.origin;
         bone.headRadius = 0;
         bone.tailRadius = firstSpineNode.radius;
+        bone.color = Theme::white;
         bone.name = QString("Body");
         bone.index = m_resultBones->size();
         bone.parent = -1;
@@ -788,6 +787,8 @@ void RigGenerator::computeBranchSkinWeights(size_t fromBoneIndex,
             if (QVector3D::dotProduct(direction, cutNormal) > 0) {
                 float angle = radianBetweenVectors(direction, currentDirection);
                 auto projectedLength = std::cos(angle) * (position - currentBone.headPosition).length();
+                if (projectedLength < 0)
+					projectedLength = 0;
                 if (projectedLength <= endGradientLength) {
                     auto factor = 0.5 * (1.0 - projectedLength / endGradientLength);
                     (*m_resultWeights)[vertexIndex].addBone(previousBoneIndex, factor);
@@ -804,6 +805,8 @@ void RigGenerator::computeBranchSkinWeights(size_t fromBoneIndex,
             }
             float angle = radianBetweenVectors(direction, -parentDirection);
             auto projectedLength = std::cos(angle) * (position - currentBone.headPosition).length();
+            if (projectedLength < 0)
+				projectedLength = 0;
             if (projectedLength <= endGradientLength) {
                 (*m_resultWeights)[vertexIndex].addBone(previousBoneIndex, 0.5 + 0.5 * projectedLength / endGradientLength);
                 (*m_resultWeights)[vertexIndex].addBone(currentBoneIndex, 0.5 * (1.0 - projectedLength / endGradientLength));
@@ -1039,12 +1042,10 @@ void RigGenerator::buildDemoMesh()
             int blendR = 0, blendG = 0, blendB = 0;
             for (int i = 0; i < 4; i++) {
                 int boneIndex = weight.boneIndices[i];
-                if (boneIndex > 0) {
-                    const auto &bone = resultBones[boneIndex];
-                    blendR += bone.color.red() * weight.boneWeights[i];
-                    blendG += bone.color.green() * weight.boneWeights[i];
-                    blendB += bone.color.blue() * weight.boneWeights[i];
-                }
+				const auto &bone = resultBones[boneIndex];
+				blendR += bone.color.red() * weight.boneWeights[i];
+				blendG += bone.color.green() * weight.boneWeights[i];
+				blendB += bone.color.blue() * weight.boneWeights[i];
             }
             QColor blendColor = QColor(blendR, blendG, blendB, 255);
             inputVerticesColors[vertexIndex] = blendColor;

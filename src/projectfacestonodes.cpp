@@ -1,7 +1,6 @@
 #include <tbb/parallel_for.h>
 #include <tbb/blocked_range.h>
 #include <cmath>
-#include <iostream>
 #include "projectfacestonodes.h"
 #include "util.h"
 

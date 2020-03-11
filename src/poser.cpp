@@ -1,6 +1,5 @@
 #include <QQuaternion>
 #include <QRegularExpression>
-#include <iostream>
 #include "poser.h"
 
 Poser::Poser(const std::vector<RiggerBone> &bones) :
@@ -96,12 +95,4 @@ void Poser::fetchChains(const std::vector<QString> &boneNames, std::map<QString,
             return first < second;
         });
     }
-    //std::cout << "======= poser begin ================" << std::endl;
-    //for (const auto &chain: chains) {
-    //    std::cout << "poser chain:" << chain.first.toUtf8().constData() << std::endl;
-    //    for (const auto &it: chain.second) {
-    //        std::cout << "   poser name:" << it.toUtf8().constData() << std::endl;
-    //    }
-    //}
-    //std::cout << "======= poser end ================" << std::endl;
 }
