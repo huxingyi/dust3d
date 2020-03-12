@@ -1105,15 +1105,6 @@ void PartTreeWidget::reloadComponentChildren(const QUuid &componentId)
     }
     deleteItemChildren(parentItem);
     addComponentChildrenToItem(componentId, parentItem);
-    
-    // Fix the last item show in the wrong place sometimes
-    int childCount = m_rootItem->childCount();
-    if (childCount > 0) {
-        QTreeWidgetItem *lastItem = m_rootItem->child(childCount - 1);
-        bool isExpanded = lastItem->isExpanded();
-        lastItem->setExpanded(!isExpanded);
-        lastItem->setExpanded(isExpanded);
-    }
 }
 
 void PartTreeWidget::removeAllContent()
