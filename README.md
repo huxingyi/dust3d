@@ -1,6 +1,6 @@
 <a href="https://dust3d.org" target="_blank"><image src="https://dust3d.org/images/dust3d-logo-wide.png" width="94" height="30"></a>
 
-[![appveyor status](https://ci.appveyor.com/api/projects/status/github/huxingyi/dust3d?branch=master&svg=true)](https://ci.appveyor.com/project/huxingyi/dust3d) [![travis status](https://travis-ci.org/huxingyi/dust3d.svg?branch=master)](https://travis-ci.org/huxingyi/dust3d) [![readthedocs status](https://readthedocs.org/projects/dust3d/badge/?version=latest)](http://docs.dust3d.org/en/latest/?badge=latest) [![](https://img.shields.io/twitter/follow/jeremyhu2016.svg?label=%20%40follow&style=social)](https://twitter.com/jeremyhu2016) [![](https://img.shields.io/badge/mailing%20list%20-join-blue.svg)](https://www.freelists.org/list/dust3d) [![](https://img.shields.io/discourse/https/dust3d.discourse.group/status.svg)](https://dust3d.discourse.group/) [![](https://img.shields.io/github/downloads/huxingyi/dust3d/total.svg)](http://docs.dust3d.org/en/latest/install.html)
+[![appveyor status](https://ci.appveyor.com/api/projects/status/github/huxingyi/dust3d?branch=master&svg=true)](https://ci.appveyor.com/project/huxingyi/dust3d) [![travis status](https://travis-ci.org/huxingyi/dust3d.svg?branch=master)](https://travis-ci.org/huxingyi/dust3d) [![readthedocs status](https://readthedocs.org/projects/dust3d/badge/?version=latest)](https://docs.dust3d.org/en/latest/?badge=latest) [![](https://img.shields.io/twitter/follow/jeremyhu2016.svg?label=%20%40follow&style=social)](https://twitter.com/jeremyhu2016) [![](https://img.shields.io/badge/mailing%20list%20-join-blue.svg)](https://www.freelists.org/list/dust3d) [![](https://img.shields.io/discourse/https/dust3d.discourse.group/status.svg)](https://dust3d.discourse.group/) [![](https://img.shields.io/github/downloads/huxingyi/dust3d/total.svg)](https://docs.dust3d.org/en/latest/install.html)
 
 Overview
 ----------
@@ -9,8 +9,8 @@ Dust3D is a brand new 3D modeling software. It helps you create a 3D watertight 
 
 <a href="https://blogs.dust3d.org/2019/07/18/dust3d-awarded-epic-megagrants/"><img width="106" height="109" src="https://dust3d.org/images/EpicMegaGrants_Badge_Dark.png" /></a>  
 
-- [Download Dust3D Software](http://docs.dust3d.org/en/latest/install.html)  
-- [Quick Start](http://docs.dust3d.org)  
+- [Download Dust3D Software](https://docs.dust3d.org/en/latest/install.html)  
+- [Quick Start](https://docs.dust3d.org)  
 - __[Join Mailing List to get Updated](https://www.freelists.org/list/dust3d)__  
 
 Screenshots

@@ -75,7 +75,7 @@ isEmpty(VERSION) {
 HOMEPAGE_URL = "https://dust3d.org/"
 REPOSITORY_URL = "https://github.com/huxingyi/dust3d"
 ISSUES_URL = "https://github.com/huxingyi/dust3d/issues"
-REFERENCE_GUIDE_URL = "http://docs.dust3d.org"
+REFERENCE_GUIDE_URL = "https://docs.dust3d.org"
 UPDATES_CHECKER_URL = "https://dust3d.org/dust3d-updateinfo.xml"
 
 PLATFORM = "Unknown"
