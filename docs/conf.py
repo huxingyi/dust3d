@@ -20,13 +20,13 @@
 # -- Project information -----------------------------------------------------
 
 project = u'dust3d'
-copyright = u'2018, Xingyi HU'
-author = u'Xingyi HU'
+copyright = u'2020, Jeremyi HU'
+author = u'Jeremyi HU'
 
 # The short X.Y version
 version = u''
 # The full version, including alpha/beta/rc tags
-release = u'1.0.0-beta'
+release = u'1.0.0-rc.1'
 
 
 # -- General configuration ---------------------------------------------------
@@ -129,7 +129,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'dust3d.tex', u'dust3d Documentation',
-     u'Xingyi HU', 'manual'),
+     u'Jeremyi HU', 'manual'),
 ]
 
 
@@ -150,6 +150,6 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, 'dust3d', u'dust3d Documentation',
-     author, 'dust3d', 'One line description of project.',
+     author, 'dust3d', 'dust3d Documentation',
      'Miscellaneous'),
 ]
