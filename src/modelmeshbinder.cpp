@@ -212,7 +212,11 @@ void ModelMeshBinder::paint(ModelShaderProgram *program)
             }
         }
     }
-    
+    program->setUniformValue(program->textureIdLoc(), 0);
+    program->setUniformValue(program->normalMapIdLoc(), 1);
+    program->setUniformValue(program->metalnessRoughnessAmbientOcclusionMapIdLoc(), 2);
+    program->setUniformValue(program->environmentIrradianceMapIdLoc(), 3);
+    program->setUniformValue(program->environmentSpecularMapIdLoc(), 4);
     if (m_showWireframes) {
         if (m_renderEdgeVertexCount > 0) {
             QOpenGLVertexArrayObject::Binder vaoBinder(&m_vaoEdge);
@@ -249,7 +253,6 @@ void ModelMeshBinder::paint(ModelShaderProgram *program)
         if (m_hasTexture) {
             if (m_texture)
                 m_texture->bind(0);
-            program->setUniformValue(program->textureIdLoc(), 0);
             program->setUniformValue(program->textureEnabledLoc(), 1);
         } else {
             program->setUniformValue(program->textureEnabledLoc(), 0);
@@ -257,7 +260,6 @@ void ModelMeshBinder::paint(ModelShaderProgram *program)
         if (m_hasNormalMap) {
             if (m_normalMap)
                 m_normalMap->bind(1);
-            program->setUniformValue(program->normalMapIdLoc(), 1);
             program->setUniformValue(program->normalMapEnabledLoc(), 1);
         } else {
             program->setUniformValue(program->normalMapEnabledLoc(), 0);
@@ -265,22 +267,19 @@ void ModelMeshBinder::paint(ModelShaderProgram *program)
         if (m_hasMetalnessMap || m_hasRoughnessMap || m_hasAmbientOcclusionMap) {
             if (m_metalnessRoughnessAmbientOcclusionMap)
                 m_metalnessRoughnessAmbientOcclusionMap->bind(2);
-            program->setUniformValue(program->metalnessRoughnessAmbientOcclusionMapIdLoc(), 2);
-        }
+		}
         program->setUniformValue(program->metalnessMapEnabledLoc(), m_hasMetalnessMap ? 1 : 0);
         program->setUniformValue(program->roughnessMapEnabledLoc(), m_hasRoughnessMap ? 1 : 0);
         program->setUniformValue(program->ambientOcclusionMapEnabledLoc(), m_hasAmbientOcclusionMap ? 1 : 0);
         if (program->isCoreProfile()) {
             if (nullptr != m_environmentIrradianceMap) {
                 m_environmentIrradianceMap->bind(3);
-                program->setUniformValue(program->environmentIrradianceMapIdLoc(), 3);
                 program->setUniformValue(program->environmentIrradianceMapEnabledLoc(), 1);
             } else {
                 program->setUniformValue(program->environmentIrradianceMapEnabledLoc(), 0);
             }
             if (nullptr != m_environmentSpecularMap) {
                 m_environmentSpecularMap->bind(4);
-                program->setUniformValue(program->environmentSpecularMapIdLoc(), 4);
                 program->setUniformValue(program->environmentSpecularMapEnabledLoc(), 1);
             } else {
                 program->setUniformValue(program->environmentSpecularMapEnabledLoc(), 0);
