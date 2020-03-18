@@ -6,7 +6,7 @@
 #include <QPushButton>
 #include <QFileDialog>
 #include <QTabWidget>
-#include <QBuffer>
+#include <QtCore/qbuffer.h>
 #include <QMessageBox>
 #include <QTimer>
 #include <QMenuBar>
@@ -311,6 +311,7 @@ DocumentWindow::DocumentWindow() :
     m_modelRenderWidget->move(DocumentWindow::m_modelRenderWidgetInitialX, DocumentWindow::m_modelRenderWidgetInitialY);
     m_modelRenderWidget->setMousePickRadius(m_document->mousePickRadius());
     m_modelRenderWidget->toggleWireframe();
+    m_modelRenderWidget->enableEnvironmentLight();
     
     connect(m_modelRenderWidget, &ModelWidget::mouseRayChanged, m_document,
             [=](const QVector3D &nearPosition, const QVector3D &farPosition) {
@@ -342,8 +343,6 @@ DocumentWindow::DocumentWindow() :
     
     m_graphicsWidget->setModelWidget(m_modelRenderWidget);
     containerWidget->setModelWidget(m_modelRenderWidget);
-    
-    m_document->setSharedContextWidget(m_modelRenderWidget);
     
     setTabPosition(Qt::RightDockWidgetArea, QTabWidget::East);
 

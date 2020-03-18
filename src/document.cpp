@@ -7,7 +7,7 @@
 #include <QApplication>
 #include <QVector3D>
 #include <functional>
-#include <QBuffer>
+#include <QtCore/qbuffer.h>
 #include <QElapsedTimer>
 #include <queue>
 #include "document.h"
@@ -57,7 +57,6 @@ Document::Document() :
     m_postProcessedOutcome(new Outcome),
     m_resultTextureMesh(nullptr),
     m_textureImageUpdateVersion(0),
-    m_sharedContextWidget(nullptr),
     m_allPositionRelatedLocksEnabled(true),
     m_smoothNormal(!Preferences::instance().flatShading()),
     m_rigGenerator(nullptr),
@@ -3309,11 +3308,6 @@ void Document::checkExportReadyState()
 {
     if (isExportReady())
         emit exportReady();
-}
-
-void Document::setSharedContextWidget(QOpenGLWidget *sharedContextWidget)
-{
-    m_sharedContextWidget = sharedContextWidget;
 }
 
 void Document::collectComponentDescendantParts(QUuid componentId, std::vector<QUuid> &partIds) const

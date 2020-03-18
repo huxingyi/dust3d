@@ -505,6 +505,9 @@ HEADERS += src/projectfacestonodes.h
 SOURCES += src/simulateclothmeshes.cpp
 HEADERS += src/simulateclothmeshes.h
 
+SOURCES += src/ddsfile.cpp
+HEADERS += src/ddsfile.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h

@@ -1,29 +1,29 @@
 #version 330
-layout(location = 0) in highp vec4 vertex;
-layout(location = 1) in highp vec3 normal;
-layout(location = 2) in highp vec3 color;
-layout(location = 3) in highp vec2 texCoord;
-layout(location = 4) in highp float metalness;
-layout(location = 5) in highp float roughness;
-layout(location = 6) in highp vec3 tangent;
-layout(location = 7) in highp float alpha;
-out highp vec3 vert;
-out highp vec3 vertRaw;
-out highp vec3 vertNormal;
-out highp vec3 vertColor;
-out highp vec2 vertTexCoord;
-out highp float vertMetalness;
-out highp float vertRoughness;
-out highp vec3 cameraPos;
-out highp vec3 firstLightPos;
-out highp vec3 secondLightPos;
-out highp vec3 thirdLightPos;
-out highp float vertAlpha;
-uniform highp mat4 projectionMatrix;
-uniform highp mat4 modelMatrix;
-uniform highp mat3 normalMatrix;
-uniform highp mat4 viewMatrix;
-uniform highp int normalMapEnabled;
+layout(location = 0) in vec4 vertex;
+layout(location = 1) in vec3 normal;
+layout(location = 2) in vec3 color;
+layout(location = 3) in vec2 texCoord;
+layout(location = 4) in float metalness;
+layout(location = 5) in float roughness;
+layout(location = 6) in vec3 tangent;
+layout(location = 7) in float alpha;
+out vec3 vert;
+out vec3 vertRaw;
+out vec3 vertNormal;
+out vec3 vertColor;
+out vec2 vertTexCoord;
+out float vertMetalness;
+out float vertRoughness;
+out vec3 cameraPos;
+out vec3 firstLightPos;
+out vec3 secondLightPos;
+out vec3 thirdLightPos;
+out float vertAlpha;
+uniform mat4 projectionMatrix;
+uniform mat4 modelMatrix;
+uniform mat3 normalMatrix;
+uniform mat4 viewMatrix;
+uniform int normalMapEnabled;
 
 mat3 transpose(mat3 m) 
 {

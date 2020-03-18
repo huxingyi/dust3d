@@ -23,6 +23,8 @@
         <file>resources/heptagon.png</file>
         <file>resources/userdefined.png</file>
         <file>resources/checkuv.png</file>
+        <file>resources/cedar_bridge_irradiance.dds</file>
+        <file>resources/cedar_bridge_specular.dds</file>
         <file>shaders/default.vert</file>
         <file>shaders/default.frag</file>
         <file>shaders/default.core.vert</file>

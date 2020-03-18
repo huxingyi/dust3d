@@ -211,6 +211,12 @@ void ModelWidget::toggleWireframe()
     update();
 }
 
+void ModelWidget::enableEnvironmentLight()
+{
+    m_meshBinder.enableEnvironmentLight();
+    update();
+}
+
 void ModelWidget::toggleRotation()
 {
     if (nullptr != m_rotationTimer) {

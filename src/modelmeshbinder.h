@@ -22,6 +22,7 @@ public:
     bool isWireframesVisible();
     void enableCheckUv();
     void disableCheckUv();
+    void enableEnvironmentLight();
     bool isCheckUvEnabled();
     void reloadMesh();
 private:
@@ -42,6 +43,9 @@ private:
     QOpenGLTexture *m_metalnessRoughnessAmbientOcclusionMap = nullptr;
     bool m_toolEnabled = false;
     bool m_checkUvEnabled = false;
+    bool m_environmentLightEnabled = false;
+    QOpenGLTexture *m_environmentIrradianceMap = nullptr;
+    QOpenGLTexture *m_environmentSpecularMap = nullptr;
 private:
     QOpenGLVertexArrayObject m_vaoTriangle;
     QOpenGLBuffer m_vboTriangle;

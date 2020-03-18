@@ -17,11 +17,17 @@ const QString &ModelShaderProgram::loadShaderSource(const QString &name)
     return insertResult.first->second;
 }
 
+bool ModelShaderProgram::isCoreProfile()
+{
+    return m_isCoreProfile;
+}
+
 ModelShaderProgram::ModelShaderProgram()
 {
     if (QSurfaceFormat::defaultFormat().profile() == QSurfaceFormat::CoreProfile) {
         this->addShaderFromSourceCode(QOpenGLShader::Vertex, loadShaderSource(":/shaders/default.core.vert"));
         this->addShaderFromSourceCode(QOpenGLShader::Fragment, loadShaderSource(":/shaders/default.core.frag"));
+        m_isCoreProfile = true;
     } else {
         this->addShaderFromSourceCode(QOpenGLShader::Vertex, loadShaderSource(":/shaders/default.vert"));
         this->addShaderFromSourceCode(QOpenGLShader::Fragment, loadShaderSource(":/shaders/default.frag"));
@@ -53,6 +59,12 @@ ModelShaderProgram::ModelShaderProgram()
     m_mousePickEnabledLoc = this->uniformLocation("mousePickEnabled");
     m_mousePickTargetPositionLoc = this->uniformLocation("mousePickTargetPosition");
     m_mousePickRadiusLoc = this->uniformLocation("mousePickRadius");
+    if (m_isCoreProfile) {
+        m_environmentIrradianceMapIdLoc = this->uniformLocation("environmentIrradianceMapId");
+        m_environmentIrradianceMapEnabledLoc = this->uniformLocation("environmentIrradianceMapEnabled");
+        m_environmentSpecularMapIdLoc = this->uniformLocation("environmentSpecularMapId");
+        m_environmentSpecularMapEnabledLoc = this->uniformLocation("environmentSpecularMapEnabled");
+    }
 }
 
 int ModelShaderProgram::projectionMatrixLoc()
@@ -134,3 +146,24 @@ int ModelShaderProgram::mousePickRadiusLoc()
 {
     return m_mousePickRadiusLoc;
 }
+
+int ModelShaderProgram::environmentIrradianceMapIdLoc()
+{
+    return m_environmentIrradianceMapIdLoc;
+}
+
+int ModelShaderProgram::environmentIrradianceMapEnabledLoc()
+{
+    return m_environmentIrradianceMapEnabledLoc;
+}
+
+int ModelShaderProgram::environmentSpecularMapIdLoc()
+{
+    return m_environmentSpecularMapIdLoc;
+}
+
+int ModelShaderProgram::environmentSpecularMapEnabledLoc()
+{
+    return m_environmentSpecularMapEnabledLoc;
+}
+

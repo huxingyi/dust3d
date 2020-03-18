@@ -48,6 +48,7 @@ MaterialEditWidget::MaterialEditWidget(const Document *document, QWidget *parent
     m_previewWidget->setMinimumSize(128, 128);
     m_previewWidget->resize(512, 512);
     m_previewWidget->move(-128, -128);
+    m_previewWidget->enableEnvironmentLight();
     
     QFont nameFont;
     nameFont.setWeight(QFont::Light);

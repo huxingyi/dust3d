@@ -2,7 +2,7 @@
 #include <fbxproperty.h>
 #include <QDateTime>
 #include <QtMath>
-#include <QBuffer>
+#include <QtCore/qbuffer.h>
 #include <QByteArray>
 #include <QFileInfo>
 #include "fbxfile.h"

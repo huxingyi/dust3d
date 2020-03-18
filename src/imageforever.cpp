@@ -1,7 +1,7 @@
 #include <map>
 #include <QMutex>
 #include <QMutexLocker>
-#include <QBuffer>
+#include <QtCore/qbuffer.h>
 #include "imageforever.h"
 
 struct ImageForeverItem

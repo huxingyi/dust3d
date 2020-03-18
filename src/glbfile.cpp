@@ -4,7 +4,7 @@
 #include <QDataStream>
 #include <QFileInfo>
 #include <QDir>
-#include <QBuffer>
+#include <QtCore/qbuffer.h>
 #include "glbfile.h"
 #include "version.h"
 #include "util.h"

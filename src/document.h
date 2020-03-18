@@ -9,7 +9,6 @@
 #include <QImage>
 #include <cmath>
 #include <algorithm>
-#include <QOpenGLWidget>
 #include <QPolygon>
 #include "snapshot.h"
 #include "meshloader.h"
@@ -577,7 +576,6 @@ public:
     const std::vector<RiggerBone> *resultRigBones() const;
     const std::map<int, RiggerVertexWeights> *resultRigWeights() const;
     void updateTurnaround(const QImage &image);
-    void setSharedContextWidget(QOpenGLWidget *sharedContextWidget);
     bool hasPastableMaterialsInClipboard() const;
     bool hasPastablePosesInClipboard() const;
     bool hasPastableMotionsInClipboard() const;
@@ -781,7 +779,6 @@ private: // need initialize
     Outcome *m_postProcessedOutcome;
     MeshLoader *m_resultTextureMesh;
     unsigned long long m_textureImageUpdateVersion;
-    QOpenGLWidget *m_sharedContextWidget;
     QUuid m_currentCanvasComponentId;
     bool m_allPositionRelatedLocksEnabled;
     bool m_smoothNormal;

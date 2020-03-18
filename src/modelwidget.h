@@ -39,6 +39,7 @@ public:
     void toggleWireframe();
     void toggleRotation();
     void toggleUvCheck();
+    void enableEnvironmentLight();
     void enableMove(bool enabled);
     void enableZoom(bool enabled);
     void enableMousePicking(bool enabled);
