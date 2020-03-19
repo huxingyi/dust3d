@@ -63,6 +63,18 @@ void ModelMeshBinder::enableEnvironmentLight()
 
 void ModelMeshBinder::paint(ModelShaderProgram *program)
 {
+    static int s_softwareGlState = 0;
+    if (0 == s_softwareGlState) {
+        QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+        const char *versionString = (const char *)f->glGetString(GL_VERSION);
+        if (nullptr != versionString &&
+                '\0' != versionString[0] &&
+                0 == strstr(versionString, "Mesa")) {
+            s_softwareGlState = 2;
+        } else {
+            s_softwareGlState = 1;
+        }
+    }
     MeshLoader *newMesh = nullptr;
     bool hasNewMesh = false;
     if (m_newMeshComing) {
@@ -113,7 +125,9 @@ void ModelMeshBinder::paint(ModelShaderProgram *program)
                 m_environmentIrradianceMap = nullptr;
                 delete m_environmentSpecularMap;
                 m_environmentSpecularMap = nullptr;
-                if (program->isCoreProfile() && m_environmentLightEnabled &&
+                if (program->isCoreProfile() && 
+                        m_environmentLightEnabled &&
+                        2 == s_softwareGlState &&
                         (m_hasMetalnessMap || m_hasRoughnessMap)) {
                     DdsFileReader irradianceFile(":/resources/cedar_bridge_irradiance.dds");
                     m_environmentIrradianceMap = irradianceFile.createOpenGLTexture();
@@ -222,17 +236,6 @@ void ModelMeshBinder::paint(ModelShaderProgram *program)
             QOpenGLVertexArrayObject::Binder vaoBinder(&m_vaoEdge);
 			QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
             // glDrawArrays GL_LINES crashs on Mesa GL
-            static int s_softwareGlState = 0;
-            if (0 == s_softwareGlState) {
-                const char *versionString = (const char *)f->glGetString(GL_VERSION);
-                if (nullptr != versionString &&
-                        '\0' != versionString[0] &&
-                        0 == strstr(versionString, "Mesa")) {
-                    s_softwareGlState = 2;
-                } else {
-                    s_softwareGlState = 1;
-                }
-            }
             if (2 == s_softwareGlState) {
                 program->setUniformValue(program->textureEnabledLoc(), 0);
                 program->setUniformValue(program->normalMapEnabledLoc(), 0);
