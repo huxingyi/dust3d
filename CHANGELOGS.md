@@ -1,3 +1,7 @@
+Changes between 1.0.0-rc.1 and 1.0.0-rc.2:
+- Fix negative skinning weight  
+- Fix IBL shader  
+
 Changes between 1.0.0-beta.29 and 1.0.0-rc.1:
 --------------------------------------------------
 - Add shortcuts for menu items  
