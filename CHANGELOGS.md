@@ -1,6 +1,8 @@
-Changes between 1.0.0-rc.1 and 1.0.0-rc.2:
+Changes between 1.0.0-rc.1 and 1.0.0-rc.3:
+--------------------------------------------------
 - Fix negative skinning weight  
 - Fix IBL shader  
+- Add win32 release  
 
 Changes between 1.0.0-beta.29 and 1.0.0-rc.1:
 --------------------------------------------------

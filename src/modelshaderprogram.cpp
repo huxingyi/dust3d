@@ -1,4 +1,3 @@
-#include <QSurfaceFormat>
 #include <QFile>
 #include <map>
 #include "modelshaderprogram.h"
@@ -22,9 +21,9 @@ bool ModelShaderProgram::isCoreProfile()
     return m_isCoreProfile;
 }
 
-ModelShaderProgram::ModelShaderProgram()
+ModelShaderProgram::ModelShaderProgram(bool isCoreProfile)
 {
-    if (QSurfaceFormat::defaultFormat().profile() == QSurfaceFormat::CoreProfile) {
+    if (isCoreProfile) {
         this->addShaderFromSourceCode(QOpenGLShader::Vertex, loadShaderSource(":/shaders/default.core.vert"));
         this->addShaderFromSourceCode(QOpenGLShader::Fragment, loadShaderSource(":/shaders/default.core.frag"));
         m_isCoreProfile = true;

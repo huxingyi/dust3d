@@ -4,6 +4,7 @@
 #include <QGuiApplication>
 #include <math.h>
 #include <QVector4D>
+#include <QSurfaceFormat>
 #include "modelwidget.h"
 #include "util.h"
 
@@ -122,8 +123,16 @@ void ModelWidget::initializeGL()
         QColor bgcolor = QWidget::palette().color(QWidget::backgroundRole());
         glClearColor(bgcolor.redF(), bgcolor.greenF(), bgcolor.blueF(), 1);
     }
-
-    m_program = new ModelShaderProgram;
+    
+    bool isCoreProfile = false;
+    const char *versionString = (const char *)glGetString(GL_VERSION);
+    if (nullptr != versionString &&
+            '\0' != versionString[0] &&
+            0 == strstr(versionString, "Mesa")) {
+        isCoreProfile = QSurfaceFormat::defaultFormat().profile() == QSurfaceFormat::CoreProfile;
+    }
+        
+    m_program = new ModelShaderProgram(isCoreProfile);
     
     // Create a vertex array object. In OpenGL ES 2.0 and OpenGL 2.x
     // implementations this is optional and support may not be present
