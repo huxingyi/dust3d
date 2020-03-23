@@ -29,6 +29,7 @@ External Links
 - [Review: Free and easy 3d modeling with Dust3D](https://magazine.renderosity.com/article/5482/review-free-and-easy-3d-modeling-with-dust3d) **renderosity.com**  
 - [Get promising free low-poly 3D modeling tool Dust3D](http://www.cgchannel.com/2020/01/get-promising-free-low-poly-3d-modeling-tool-dust3d/) **cgchannel.com**  
 - [Dust3D, new free modeling tool](https://www.3dvf.com/dust3d-nouvel-outil-de-modelisation-gratuit/) **3dvf.com**  
+- [Epic MegaGrantsも受賞したオープンソースの無料3Dモデリングソフトウェア「Dust3D」](https://cginterest.com/2020/03/23/epic-megagrants%e3%82%92%e5%8f%97%e8%b3%9e%e3%81%97%e3%81%9f%e3%82%aa%e3%83%bc%e3%83%97%e3%83%b3%e3%82%bd%e3%83%bc%e3%82%b9%e3%81%ae%e7%84%a1%e6%96%993d%e3%83%a2%e3%83%87%e3%83%aa%e3%83%b3%e3%82%b0/) **cginterest.com**  
 
 External Media
 -------------
