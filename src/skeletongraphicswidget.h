@@ -376,7 +376,8 @@ public:
         float dy = 2 * cos(radAngle);
         QPointF offset1 = QPointF(dx, dy);
         QPointF offset2 = QPointF(-dx, -dy);
-        polygon << line.p1() + offset1 << line.p1() + offset2 << line.p2() + offset2 << line.p2() + offset1;
+        //polygon << line.p1() + offset1 << line.p1() + offset2 << line.p2() + offset2 << line.p2() + offset1;
+        polygon << line.p1() + offset1 << line.p1() + offset2 << line.p2();
         setPolygon(polygon);
         
         QColor color = Qt::gray;
