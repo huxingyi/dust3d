@@ -8,6 +8,7 @@
 #include <QFileDialog>
 #include <QSizePolicy>
 #include <QCheckBox>
+#include <QLabel>
 #include "partwidget.h"
 #include "theme.h"
 #include "floatnumberwidget.h"
@@ -608,12 +609,13 @@ void PartWidget::showCutRotationSettingPopup(const QPoint &pos)
         standardFacesLayout->addWidget(button);
         buttons[i] = button;
     }
+    standardFacesLayout->addStretch();
     updateCutFaceButtonState((size_t)part->cutFace);
     
     QVBoxLayout *popupLayout = new QVBoxLayout;
     popupLayout->addLayout(rotationLayout);
     popupLayout->addLayout(hollowThicknessLayout);
-    popupLayout->addSpacing(10);
+    popupLayout->addWidget(Theme::createHorizontalLineWidget());
     popupLayout->addLayout(standardFacesLayout);
     popupLayout->addWidget(cutFaceListWidget);
     

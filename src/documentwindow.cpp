@@ -1886,13 +1886,14 @@ void DocumentWindow::showCutFaceSettingPopup(const QPoint &globalPos, std::set<Q
         standardFacesLayout->addWidget(button);
         buttons[i] = button;
     }
+    standardFacesLayout->addStretch();
     if (nullptr != node) {
         updateCutFaceButtonState((size_t)node->cutFace);
     }
     
     QVBoxLayout *popupLayout = new QVBoxLayout;
     popupLayout->addLayout(rotationLayout);
-    popupLayout->addSpacing(10);
+    popupLayout->addWidget(Theme::createHorizontalLineWidget());
     popupLayout->addLayout(standardFacesLayout);
     popupLayout->addWidget(cutFaceListWidget);
     
