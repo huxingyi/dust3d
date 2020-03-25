@@ -11,6 +11,9 @@ CutFaceWidget::CutFaceWidget(const Document *document, QUuid partId) :
     m_previewWidget->setFixedSize(Theme::cutFacePreviewImageSize, Theme::cutFacePreviewImageSize);
     m_previewWidget->enableMove(false);
     m_previewWidget->enableZoom(false);
+    m_previewWidget->setXRotation(0);
+    m_previewWidget->setYRotation(0);
+    m_previewWidget->setZRotation(0);
 
     setFixedSize(Theme::cutFacePreviewImageSize, CutFaceWidget::preferredHeight());
 

@@ -15,11 +15,15 @@ const QVector3D ModelWidget::m_cameraPosition = QVector3D(0, 0, -4.0);
 float ModelWidget::m_minZoomRatio = 5.0;
 float ModelWidget::m_maxZoomRatio = 80.0;
 
+int ModelWidget::m_defaultXRotation = 30 * 16;
+int ModelWidget::m_defaultYRotation = -45 * 16;
+int ModelWidget::m_defaultZRotation = 0;
+
 ModelWidget::ModelWidget(QWidget *parent) :
     QOpenGLWidget(parent),
-    m_xRot(30 * 16),
-    m_yRot(-45 * 16),
-    m_zRot(0),
+    m_xRot(m_defaultXRotation),
+    m_yRot(m_defaultYRotation),
+    m_zRot(m_defaultZRotation),
     m_program(nullptr),
     m_moveStarted(false),
     m_moveEnabled(true),

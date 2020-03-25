@@ -98,6 +98,10 @@ private:
     int m_modelInitialHeight = 0;
     QTimer *m_rotationTimer = nullptr;
     std::pair<QVector3D, QVector3D> screenPositionToMouseRay(const QPoint &screenPosition);
+public:
+    static int m_defaultXRotation;
+    static int m_defaultYRotation;
+    static int m_defaultZRotation;
 };
 
 #endif

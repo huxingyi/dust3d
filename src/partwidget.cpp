@@ -9,6 +9,7 @@
 #include <QSizePolicy>
 #include <QCheckBox>
 #include <QLabel>
+#include <QRadioButton>
 #include "partwidget.h"
 #include "theme.h"
 #include "floatnumberwidget.h"
@@ -795,6 +796,19 @@ void PartWidget::updatePreview()
     //m_previewLabel->setPixmap(QPixmap::fromImage(part->preview));
     MeshLoader *previewMesh = part->takePreviewMesh();
     m_previewWidget->updateMesh(previewMesh);
+    if (PartTarget::CutFace == part->target) {
+        if (0 != m_previewWidget->xRot()) {
+            m_previewWidget->setXRotation(0);
+            m_previewWidget->setYRotation(0);
+            m_previewWidget->setZRotation(0);
+        }
+    } else {
+        if (0 == m_previewWidget->xRot()) {
+            m_previewWidget->setXRotation(ModelWidget::m_defaultXRotation);
+            m_previewWidget->setYRotation(ModelWidget::m_defaultYRotation);
+            m_previewWidget->setZRotation(ModelWidget::m_defaultZRotation);
+        }
+    }
 }
 
 void PartWidget::updateLockButton()
