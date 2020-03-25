@@ -1820,11 +1820,11 @@ void DocumentWindow::showCutFaceSettingPopup(const QPoint &globalPos, std::set<Q
     QPushButton *buttons[(int)CutFace::Count] = {0};
     
     CutFaceListWidget *cutFaceListWidget = new CutFaceListWidget(m_document);
-    size_t cutFaceTypeCount = (size_t)CutFace::Count;
-    if (cutFaceListWidget->isEmpty())
-        cutFaceTypeCount = (size_t)CutFace::UserDefined;
+    size_t cutFaceTypeCount = (size_t)CutFace::UserDefined;
     
     auto updateCutFaceButtonState = [&](size_t index) {
+        if (index != (int)CutFace::UserDefined)
+            cutFaceListWidget->selectCutFace(QUuid());
         for (size_t i = 0; i < (size_t)cutFaceTypeCount; ++i) {
             auto button = buttons[i];
             if (i == index) {
@@ -1835,8 +1835,6 @@ void DocumentWindow::showCutFaceSettingPopup(const QPoint &globalPos, std::set<Q
                 button->setEnabled(true);
             }
         }
-        if (index != (int)CutFace::UserDefined)
-            cutFaceListWidget->selectCutFace(QUuid());
     };
     
     cutFaceListWidget->enableMultipleSelection(false);
