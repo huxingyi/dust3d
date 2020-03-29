@@ -968,6 +968,10 @@ Tips:
         <source>Texture size:</source>
         <translation>纹理大小：</translation>
     </message>
+    <message>
+        <source>Tong shading:</source>
+        <translation>卡通渲染</translation>
+    </message>
 </context>
 <context>
     <name>QObject</name>
