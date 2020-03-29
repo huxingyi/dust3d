@@ -7,6 +7,7 @@
 #include <QSurfaceFormat>
 #include "modelwidget.h"
 #include "util.h"
+#include "preferences.h"
 
 // Modifed from http://doc.qt.io/qt-5/qtopengl-hellogl2-glwidget-cpp.html
 
@@ -46,6 +47,13 @@ ModelWidget::ModelWidget(QWidget *parent) :
     }
     setContextMenuPolicy(Qt::CustomContextMenu);
     zoom(200);
+    
+    connect(&Preferences::instance(), &Preferences::tongShadingChanged, this, &ModelWidget::reRender);
+}
+
+void ModelWidget::reRender()
+{
+    update();
 }
 
 int ModelWidget::xRot()
@@ -173,6 +181,7 @@ void ModelWidget::paintGL()
     m_world.rotate(m_zRot / 16.0f, 0, 0, 1);
 
     m_program->bind();
+    m_program->setUniformValue(m_program->tongShadingEnabledLoc(), Preferences::instance().tongShading() ? 1 : 0);
     m_program->setUniformValue(m_program->projectionMatrixLoc(), m_projection);
     m_program->setUniformValue(m_program->modelMatrixLoc(), m_world);
     QMatrix3x3 normalMatrix = m_world.normalMatrix();

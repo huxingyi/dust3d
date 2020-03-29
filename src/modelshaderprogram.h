@@ -27,6 +27,7 @@ public:
     int environmentIrradianceMapEnabledLoc();
     int environmentSpecularMapIdLoc();
     int environmentSpecularMapEnabledLoc();
+    int tongShadingEnabledLoc();
     bool isCoreProfile();
     static const QString &loadShaderSource(const QString &name);
 private:
@@ -51,6 +52,7 @@ private:
     int m_environmentIrradianceMapEnabledLoc = 0;
     int m_environmentSpecularMapIdLoc = 0;
     int m_environmentSpecularMapEnabledLoc = 0;
+    int m_tongShadingEnabledLoc = 0;
 };
 
 #endif

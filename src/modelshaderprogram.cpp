@@ -58,6 +58,7 @@ ModelShaderProgram::ModelShaderProgram(bool isCoreProfile)
     m_mousePickEnabledLoc = this->uniformLocation("mousePickEnabled");
     m_mousePickTargetPositionLoc = this->uniformLocation("mousePickTargetPosition");
     m_mousePickRadiusLoc = this->uniformLocation("mousePickRadius");
+    m_tongShadingEnabledLoc = this->uniformLocation("tongShadingEnabled");
     if (m_isCoreProfile) {
         m_environmentIrradianceMapIdLoc = this->uniformLocation("environmentIrradianceMapId");
         m_environmentIrradianceMapEnabledLoc = this->uniformLocation("environmentIrradianceMapEnabled");
@@ -166,3 +167,7 @@ int ModelShaderProgram::environmentSpecularMapEnabledLoc()
     return m_environmentSpecularMapEnabledLoc;
 }
 
+int ModelShaderProgram::tongShadingEnabledLoc()
+{
+    return m_tongShadingEnabledLoc;
+}

@@ -56,6 +56,7 @@ public slots:
     void zoom(float delta);
     void setMousePickTargetPositionInModelSpace(QVector3D position);
     void setMousePickRadius(float radius);
+    void reRender();
 signals:
     void xRotationChanged(int angle);
     void yRotationChanged(int angle);

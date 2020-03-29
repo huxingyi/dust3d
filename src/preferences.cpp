@@ -15,6 +15,7 @@ void Preferences::loadDefault()
     m_componentCombineMode = CombineMode::Normal;
     m_partColor = Qt::white;
     m_flatShading = true;
+    m_tongShading = false;
     m_textureSize = 1024;
 }
 
@@ -39,6 +40,13 @@ Preferences::Preferences()
             m_flatShading = isTrueValueString(value);
     }
     {
+        QString value = m_settings.value("tongShading").toString();
+        if (value.isEmpty())
+            m_tongShading = false;
+        else
+            m_tongShading = isTrueValueString(value);
+    }
+    {
         QString value = m_settings.value("textureSize").toString();
         if (!value.isEmpty())
             m_textureSize = value.toInt();
@@ -58,6 +66,11 @@ const QColor &Preferences::partColor() const
 bool Preferences::flatShading() const
 {
     return m_flatShading;
+}
+
+bool Preferences::tongShading() const
+{
+    return m_tongShading;
 }
 
 int Preferences::textureSize() const
@@ -92,6 +105,15 @@ void Preferences::setFlatShading(bool flatShading)
     emit flatShadingChanged();
 }
 
+void Preferences::setTongShading(bool tongShading)
+{
+    if (m_tongShading == tongShading)
+        return;
+    m_tongShading = tongShading;
+    m_settings.setValue("tongShading", tongShading ? "true" : "false");
+    emit tongShadingChanged();
+}
+
 void Preferences::setTextureSize(int textureSize)
 {
     if (m_textureSize == textureSize)
@@ -118,5 +140,6 @@ void Preferences::reset()
     emit componentCombineModeChanged();
     emit partColorChanged();
     emit flatShadingChanged();
+    emit tongShadingChanged();
     emit textureSizeChanged();
 }
