@@ -14,8 +14,8 @@ void Preferences::loadDefault()
 {
     m_componentCombineMode = CombineMode::Normal;
     m_partColor = Qt::white;
-    m_flatShading = true;
-    m_tongShading = false;
+    m_flatShading = false;
+    m_toonShading = false;
     m_textureSize = 1024;
 }
 
@@ -40,11 +40,11 @@ Preferences::Preferences()
             m_flatShading = isTrueValueString(value);
     }
     {
-        QString value = m_settings.value("tongShading").toString();
+        QString value = m_settings.value("toonShading").toString();
         if (value.isEmpty())
-            m_tongShading = false;
+            m_toonShading = false;
         else
-            m_tongShading = isTrueValueString(value);
+            m_toonShading = isTrueValueString(value);
     }
     {
         QString value = m_settings.value("textureSize").toString();
@@ -68,9 +68,9 @@ bool Preferences::flatShading() const
     return m_flatShading;
 }
 
-bool Preferences::tongShading() const
+bool Preferences::toonShading() const
 {
-    return m_tongShading;
+    return m_toonShading;
 }
 
 int Preferences::textureSize() const
@@ -105,13 +105,13 @@ void Preferences::setFlatShading(bool flatShading)
     emit flatShadingChanged();
 }
 
-void Preferences::setTongShading(bool tongShading)
+void Preferences::setToonShading(bool toonShading)
 {
-    if (m_tongShading == tongShading)
+    if (m_toonShading == toonShading)
         return;
-    m_tongShading = tongShading;
-    m_settings.setValue("tongShading", tongShading ? "true" : "false");
-    emit tongShadingChanged();
+    m_toonShading = toonShading;
+    m_settings.setValue("toonShading", toonShading ? "true" : "false");
+    emit toonShadingChanged();
 }
 
 void Preferences::setTextureSize(int textureSize)
@@ -140,6 +140,6 @@ void Preferences::reset()
     emit componentCombineModeChanged();
     emit partColorChanged();
     emit flatShadingChanged();
-    emit tongShadingChanged();
+    emit toonShadingChanged();
     emit textureSizeChanged();
 }

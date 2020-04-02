@@ -27,7 +27,13 @@ public:
     int environmentIrradianceMapEnabledLoc();
     int environmentSpecularMapIdLoc();
     int environmentSpecularMapEnabledLoc();
-    int tongShadingEnabledLoc();
+    int toonShadingEnabledLoc();
+    int renderPurposeLoc();
+    int toonEdgeEnabledLoc();
+    int screenWidthLoc();
+    int screenHeightLoc();
+    int toonNormalMapIdLoc();
+    int toonDepthMapIdLoc();
     bool isCoreProfile();
     static const QString &loadShaderSource(const QString &name);
 private:
@@ -52,7 +58,13 @@ private:
     int m_environmentIrradianceMapEnabledLoc = 0;
     int m_environmentSpecularMapIdLoc = 0;
     int m_environmentSpecularMapEnabledLoc = 0;
-    int m_tongShadingEnabledLoc = 0;
+    int m_toonShadingEnabledLoc = 0;
+    int m_renderPurposeLoc = 0;
+    int m_toonEdgeEnabledLoc = 0;
+    int m_screenWidthLoc = 0;
+    int m_screenHeightLoc = 0;
+    int m_toonNormalMapIdLoc = 0;
+    int m_toonDepthMapIdLoc = 0;
 };
 
 #endif

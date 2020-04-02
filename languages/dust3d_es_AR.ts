@@ -391,6 +391,14 @@ Consejos:
         <source>Rotation</source>
         <translation>Rotación</translation>
     </message>
+    <message>
+        <source>Export as Image...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Image (*.png)</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ExportPreviewWidget</name>
@@ -969,7 +977,7 @@ Consejos:
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <source>Tong shading:</source>
+        <source>Toon shading:</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

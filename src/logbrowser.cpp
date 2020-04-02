@@ -1,6 +1,7 @@
 #include "logbrowser.h"
 // Modified from https://wiki.qt.io/Browser_for_QDebug_output
 #include <QMetaType>
+#include <stdio.h>
 #include "logbrowserdialog.h"
 
 LogBrowser::LogBrowser(QObject *parent) :

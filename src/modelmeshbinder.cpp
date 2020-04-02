@@ -23,6 +23,12 @@ ModelMeshBinder::~ModelMeshBinder()
     delete m_metalnessRoughnessAmbientOcclusionMap;
     delete m_environmentIrradianceMap;
     delete m_environmentSpecularMap;
+    delete m_toonNormalMap;
+    delete m_toonDepthMap;
+    delete m_newToonNormalMap;
+    delete m_newToonDepthMap;
+    delete m_currentToonNormalMap;
+    delete m_currentToonDepthMap;
 }
 
 void ModelMeshBinder::updateMesh(MeshLoader *mesh)
@@ -61,6 +67,14 @@ void ModelMeshBinder::enableEnvironmentLight()
     m_environmentLightEnabled = true;
 }
 
+MeshLoader *ModelMeshBinder::fetchCurrentMesh()
+{
+    QMutexLocker lock(&m_meshMutex);
+    if (nullptr == m_mesh)
+        return nullptr;
+    return new MeshLoader(*m_mesh);
+}
+
 void ModelMeshBinder::paint(ModelShaderProgram *program)
 {
     MeshLoader *newMesh = nullptr;
@@ -72,6 +86,33 @@ void ModelMeshBinder::paint(ModelShaderProgram *program)
             m_newMesh = nullptr;
             m_newMeshComing = false;
             hasNewMesh = true;
+        }
+    }
+    if (m_newToonMapsComing) {
+        QMutexLocker lock(&m_toonNormalAndDepthMapMutex);
+        if (m_newToonMapsComing) {
+            
+            delete m_toonNormalMap;
+            m_toonNormalMap = nullptr;
+            delete m_currentToonNormalMap;
+            m_currentToonNormalMap = nullptr;
+            if (nullptr != m_newToonNormalMap) {
+				m_toonNormalMap = new QOpenGLTexture(*m_newToonNormalMap);
+				m_currentToonNormalMap = m_newToonNormalMap;
+				m_newToonNormalMap = nullptr;
+			}
+            
+            delete m_toonDepthMap;
+            m_toonDepthMap = nullptr;
+            delete m_currentToonDepthMap;
+            m_currentToonDepthMap = nullptr;
+            if (nullptr != m_newToonDepthMap) {
+				m_toonDepthMap = new QOpenGLTexture(*m_newToonDepthMap);
+				m_currentToonDepthMap = m_newToonDepthMap;
+				m_newToonDepthMap = nullptr;
+            }
+            
+            m_newToonMapsComing = false;
         }
     }
     {
@@ -218,6 +259,8 @@ void ModelMeshBinder::paint(ModelShaderProgram *program)
     program->setUniformValue(program->metalnessRoughnessAmbientOcclusionMapIdLoc(), 2);
     program->setUniformValue(program->environmentIrradianceMapIdLoc(), 3);
     program->setUniformValue(program->environmentSpecularMapIdLoc(), 4);
+    program->setUniformValue(program->toonNormalMapIdLoc(), 5);
+    program->setUniformValue(program->toonDepthMapIdLoc(), 6);
     if (m_showWireframes) {
         if (m_renderEdgeVertexCount > 0) {
             QOpenGLVertexArrayObject::Binder vaoBinder(&m_vaoEdge);
@@ -275,6 +318,11 @@ void ModelMeshBinder::paint(ModelShaderProgram *program)
                 program->setUniformValue(program->environmentSpecularMapEnabledLoc(), 0);
             }
         }
+        if (nullptr != m_toonNormalMap && nullptr != m_toonDepthMap) {
+            m_toonNormalMap->bind(5);
+            m_toonDepthMap->bind(6);
+            program->setUniformValue(program->toonEdgeEnabledLoc(), 1);
+        }
         f->glDrawArrays(GL_TRIANGLES, 0, m_renderTriangleVertexCount);
     }
     if (m_toolEnabled) {
@@ -293,6 +341,28 @@ void ModelMeshBinder::paint(ModelShaderProgram *program)
             f->glDrawArrays(GL_TRIANGLES, 0, m_renderToolVertexCount);
         }
     }
+}
+
+void ModelMeshBinder::fetchCurrentToonNormalAndDepthMaps(QImage *normalMap, QImage *depthMap)
+{
+    QMutexLocker lock(&m_toonNormalAndDepthMapMutex);
+    if (nullptr != normalMap && nullptr != m_currentToonNormalMap)
+        *normalMap = *m_currentToonNormalMap;
+    if (nullptr != depthMap && nullptr != m_currentToonDepthMap)
+        *depthMap = *m_currentToonDepthMap;
+}
+
+void ModelMeshBinder::updateToonNormalAndDepthMaps(QImage *normalMap, QImage *depthMap)
+{
+    QMutexLocker lock(&m_toonNormalAndDepthMapMutex);
+    
+    delete m_newToonNormalMap;
+    m_newToonNormalMap = normalMap;
+    
+    delete m_newToonDepthMap;
+    m_newToonDepthMap = depthMap;
+    
+    m_newToonMapsComing = true;
 }
 
 void ModelMeshBinder::cleanup()
@@ -315,6 +385,10 @@ void ModelMeshBinder::cleanup()
     m_environmentIrradianceMap = nullptr;
     delete m_environmentSpecularMap;
     m_environmentSpecularMap = nullptr;
+    delete m_toonNormalMap;
+    m_toonNormalMap = nullptr;
+    delete m_toonDepthMap;
+    m_toonDepthMap = nullptr;
 }
 
 void ModelMeshBinder::showWireframes()

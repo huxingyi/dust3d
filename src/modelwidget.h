@@ -23,6 +23,7 @@ signals:
     void mousePressed();
     void mouseReleased();
     void addMouseRadius(float radius);
+    void renderParametersChanged();
 public:
     ModelWidget(QWidget *parent = 0);
     ~ModelWidget();
@@ -34,6 +35,7 @@ public:
     {
         m_transparent = t;
     }
+    MeshLoader *fetchCurrentMesh();
     void updateMesh(MeshLoader *mesh);
     void setGraphicsFunctions(SkeletonGraphicsFunctions *graphicsFunctions);
     void toggleWireframe();
@@ -48,6 +50,10 @@ public:
     bool inputWheelEventFromOtherWidget(QWheelEvent *event);
     bool inputMouseReleaseEventFromOtherWidget(QMouseEvent *event);
     QPoint convertInputPosFromOtherWidget(QMouseEvent *event);
+    void fetchCurrentToonNormalAndDepthMaps(QImage *normalMap, QImage *depthMap);
+    void updateToonNormalAndDepthMaps(QImage *normalMap, QImage *depthMap);
+    int widthInPixels();
+    int heightInPixels();
 public slots:
     void setXRotation(int angle);
     void setYRotation(int angle);
@@ -98,6 +104,8 @@ private:
     QRect m_moveStartGeometry;
     int m_modelInitialHeight = 0;
     QTimer *m_rotationTimer = nullptr;
+    int m_widthInPixels = 0;
+    int m_heightInPixels = 0;
     std::pair<QVector3D, QVector3D> screenPositionToMouseRay(const QPoint &screenPosition);
 public:
     static int m_defaultXRotation;

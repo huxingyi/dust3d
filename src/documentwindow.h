@@ -10,6 +10,7 @@
 #include <map>
 #include <QStringList>
 #include <QLabel>
+#include <QTimer>
 #include "document.h"
 #include "modelwidget.h"
 #include "exportpreviewwidget.h"
@@ -18,6 +19,7 @@
 #include "posemanagewidget.h"
 #include "preferenceswidget.h"
 #include "graphicscontainerwidget.h"
+#include "normalanddepthmapsgenerator.h"
 
 class SkeletonGraphicsWidget;
 
@@ -49,6 +51,7 @@ public slots:
     void open();
     void openExample(const QString &modelName);
     void openPathAs(const QString &path, const QString &asName);
+    void exportRenderedResult();
     void exportObjResult();
     void exportGlbResult();
     void exportFbxResult();
@@ -78,11 +81,15 @@ public slots:
     void showCutFaceSettingPopup(const QPoint &globalPos, std::set<QUuid> nodeIds);
     void setExportWaitingList(const QStringList &filenames);
     void checkExportWaitingList();
+    void exportImageToFilename(const QString &filename);
     void exportObjToFilename(const QString &filename);
     void exportFbxToFilename(const QString &filename);
     void exportGlbToFilename(const QString &filename);
     void toggleRotation();
     //void updateInfoWidgetPosition();
+    void generateNormalAndDepthMaps();
+    void delayedGenerateNormalAndDepthMaps();
+    void normalAndDepthMapsReady();
 private:
     void initLockButton(QPushButton *button);
     void setCurrentFilename(const QString &filename);
@@ -199,6 +206,10 @@ private:
     QPushButton *m_radiusLockButton;
     
     QMetaObject::Connection m_partListDockerVisibleSwitchConnection;
+    
+    NormalAndDepthMapsGenerator *m_normalAndDepthMapsGenerator = nullptr;
+    QTimer *m_normalAndDepthMapsDelayTimer = nullptr;
+    bool m_isNormalAndDepthMapsObsolete = false;
 public:
     static int m_modelRenderWidgetInitialX;
     static int m_modelRenderWidgetInitialY;

@@ -391,6 +391,14 @@ Tips:
         <source>Script</source>
         <translation>脚本</translation>
     </message>
+    <message>
+        <source>Export as Image...</source>
+        <translation>导出成图片...</translation>
+    </message>
+    <message>
+        <source>Image (*.png)</source>
+        <translation>图片 (*.png)</translation>
+    </message>
 </context>
 <context>
     <name>ExportPreviewWidget</name>
@@ -969,7 +977,7 @@ Tips:
         <translation>纹理大小：</translation>
     </message>
     <message>
-        <source>Tong shading:</source>
+        <source>Toon shading:</source>
         <translation>卡通渲染</translation>
     </message>
 </context>

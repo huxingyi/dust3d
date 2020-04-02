@@ -65,10 +65,10 @@ PreferencesWidget::PreferencesWidget(const Document *document, QWidget *parent) 
         Preferences::instance().setFlatShading(flatShadingBox->isChecked());
     });
     
-    QCheckBox *tongShadingBox = new QCheckBox();
-    Theme::initCheckbox(tongShadingBox);
-    connect(tongShadingBox, &QCheckBox::stateChanged, this, [=]() {
-        Preferences::instance().setTongShading(tongShadingBox->isChecked());
+    QCheckBox *toonShadingBox = new QCheckBox();
+    Theme::initCheckbox(toonShadingBox);
+    connect(toonShadingBox, &QCheckBox::stateChanged, this, [=]() {
+        Preferences::instance().setToonShading(toonShadingBox->isChecked());
     });
     
     QComboBox *textureSizeSelectBox = new QComboBox;
@@ -84,14 +84,14 @@ PreferencesWidget::PreferencesWidget(const Document *document, QWidget *parent) 
     formLayout->addRow(tr("Part color:"), colorLayout);
     formLayout->addRow(tr("Combine mode:"), combineModeSelectBox);
     formLayout->addRow(tr("Flat shading:"), flatShadingBox);
-    formLayout->addRow(tr("Tong shading:"), tongShadingBox);
+    formLayout->addRow(tr("Toon shading:"), toonShadingBox);
     formLayout->addRow(tr("Texture size:"), textureSizeSelectBox);
     
     auto loadFromPreferences = [=]() {
         updatePickButtonColor();
         combineModeSelectBox->setCurrentIndex((int)Preferences::instance().componentCombineMode());
         flatShadingBox->setChecked(Preferences::instance().flatShading());
-        tongShadingBox->setChecked(Preferences::instance().tongShading());
+        toonShadingBox->setChecked(Preferences::instance().toonShading());
         textureSizeSelectBox->setCurrentIndex(
             textureSizeSelectBox->findText(QString::number(Preferences::instance().textureSize()))
         );

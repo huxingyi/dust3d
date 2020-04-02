@@ -42,6 +42,7 @@
 #include "scriptwidget.h"
 #include "variablesxml.h"
 #include "updatescheckwidget.h"
+#include "modelofflinerender.h"
 
 int DocumentWindow::m_modelRenderWidgetInitialX = 16;
 int DocumentWindow::m_modelRenderWidgetInitialY = 16;
@@ -310,7 +311,8 @@ DocumentWindow::DocumentWindow() :
     m_modelRenderWidget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
     m_modelRenderWidget->move(DocumentWindow::m_modelRenderWidgetInitialX, DocumentWindow::m_modelRenderWidgetInitialY);
     m_modelRenderWidget->setMousePickRadius(m_document->mousePickRadius());
-    m_modelRenderWidget->toggleWireframe();
+    if (!Preferences::instance().toonShading())
+		m_modelRenderWidget->toggleWireframe();
     m_modelRenderWidget->enableEnvironmentLight();
     
     connect(m_modelRenderWidget, &ModelWidget::mouseRayChanged, m_document,
@@ -340,6 +342,8 @@ DocumentWindow::DocumentWindow() :
     connect(m_document, &Document::mouseTargetChanged, this, [=]() {
         m_modelRenderWidget->setMousePickTargetPositionInModelSpace(m_document->mouseTargetPosition());
     });
+    
+    connect(m_modelRenderWidget, &ModelWidget::renderParametersChanged, this, &DocumentWindow::delayedGenerateNormalAndDepthMaps);
     
     m_graphicsWidget->setModelWidget(m_modelRenderWidget);
     containerWidget->setModelWidget(m_modelRenderWidget);
@@ -494,9 +498,9 @@ DocumentWindow::DocumentWindow() :
     connect(m_exportAsObjAction, &QAction::triggered, this, &DocumentWindow::exportObjResult, Qt::QueuedConnection);
     m_fileMenu->addAction(m_exportAsObjAction);
     
-    //m_exportRenderedAsImageAction = new QAction(tr("Export as PNG..."), this);
-    //connect(m_exportRenderedAsImageAction, &QAction::triggered, this, &SkeletonDocumentWindow::exportRenderedResult, Qt::QueuedConnection);
-    //m_fileMenu->addAction(m_exportRenderedAsImageAction);
+    m_exportRenderedAsImageAction = new QAction(tr("Export as Image..."), this);
+    connect(m_exportRenderedAsImageAction, &QAction::triggered, this, &DocumentWindow::exportRenderedResult, Qt::QueuedConnection);
+    m_fileMenu->addAction(m_exportRenderedAsImageAction);
     
     //m_exportAsObjPlusMaterialsAction = new QAction(tr("Wavefront (.obj + .mtl)..."), this);
     //connect(m_exportAsObjPlusMaterialsAction, &QAction::triggered, this, &SkeletonDocumentWindow::exportObjPlusMaterialsResult, Qt::QueuedConnection);
@@ -518,7 +522,7 @@ DocumentWindow::DocumentWindow() :
         m_exportAsObjAction->setEnabled(m_graphicsWidget->hasItems());
         //m_exportAsObjPlusMaterialsAction->setEnabled(m_graphicsWidget->hasItems());
         m_exportAction->setEnabled(m_graphicsWidget->hasItems());
-        //m_exportRenderedAsImageAction->setEnabled(m_graphicsWidget->hasItems());
+        m_exportRenderedAsImageAction->setEnabled(m_graphicsWidget->hasItems());
     });
 
     m_editMenu = menuBar()->addMenu(tr("&Edit"));
@@ -1603,6 +1607,16 @@ void DocumentWindow::showPreferences()
     m_preferencesWidget->raise();
 }
 
+void DocumentWindow::exportRenderedResult()
+{
+    QString filename = QFileDialog::getSaveFileName(this, QString(), QString(),
+       tr("Image (*.png)"));
+    if (filename.isEmpty()) {
+        return;
+    }
+    exportImageToFilename(filename);
+}
+
 void DocumentWindow::exportObjResult()
 {
     QString filename = QFileDialog::getSaveFileName(this, QString(), QString(),
@@ -1940,3 +1954,92 @@ void DocumentWindow::checkExportWaitingList()
 //    m_infoWidget->move(0, m_graphicsContainerWidget->height() - m_infoWidget->height() - 5);
 //}
 
+void DocumentWindow::normalAndDepthMapsReady()
+{
+    QImage *normalMap = m_normalAndDepthMapsGenerator->takeNormalMap();
+    QImage *depthMap = m_normalAndDepthMapsGenerator->takeDepthMap();
+    
+    m_modelRenderWidget->updateToonNormalAndDepthMaps(normalMap, depthMap);
+    
+    //m_normalAndDepthMapsGenerator->setRenderThread(QGuiApplication::instance()->thread());
+    
+    delete m_normalAndDepthMapsGenerator;
+    m_normalAndDepthMapsGenerator = nullptr;
+    
+    if (m_isNormalAndDepthMapsObsolete) {
+        generateNormalAndDepthMaps();
+    }
+}
+
+void DocumentWindow::generateNormalAndDepthMaps()
+{
+    if (nullptr != m_normalAndDepthMapsGenerator) {
+        m_isNormalAndDepthMapsObsolete = true;
+        return;
+    }
+    
+    m_isNormalAndDepthMapsObsolete = false;
+    
+    auto resultMesh = m_document->takeResultMesh();
+    if (nullptr == resultMesh)
+		return;
+    
+    QThread *thread = new QThread;
+    m_normalAndDepthMapsGenerator = new NormalAndDepthMapsGenerator(m_modelRenderWidget);
+    m_normalAndDepthMapsGenerator->updateMesh(resultMesh);
+    m_normalAndDepthMapsGenerator->moveToThread(thread);
+    //m_normalAndDepthMapsGenerator->setRenderThread(thread);
+    connect(thread, &QThread::started, m_normalAndDepthMapsGenerator, &NormalAndDepthMapsGenerator::process);
+    connect(m_normalAndDepthMapsGenerator, &NormalAndDepthMapsGenerator::finished, this, &DocumentWindow::normalAndDepthMapsReady);
+    connect(m_normalAndDepthMapsGenerator, &NormalAndDepthMapsGenerator::finished, thread, &QThread::quit);
+    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+    thread->start();
+    
+    //m_normalAndDepthMapsGenerator = new NormalAndDepthMapsGenerator(m_modelRenderWidget);
+    //m_normalAndDepthMapsGenerator->updateMesh(resultMesh);
+    //connect(m_normalAndDepthMapsGenerator, &NormalAndDepthMapsGenerator::finished, this, &DocumentWindow::normalAndDepthMapsReady);
+    //m_normalAndDepthMapsGenerator->process();
+}
+
+void DocumentWindow::delayedGenerateNormalAndDepthMaps()
+{
+    if (!Preferences::instance().toonShading())
+        return;
+    
+    //delete m_normalAndDepthMapsDelayTimer;
+    //m_normalAndDepthMapsDelayTimer = new QTimer(this);
+    //m_normalAndDepthMapsDelayTimer->setSingleShot(true);
+    //m_normalAndDepthMapsDelayTimer->setInterval(250);
+    //connect(m_normalAndDepthMapsDelayTimer, &QTimer::timeout, [=] {
+        generateNormalAndDepthMaps();
+    //});
+    //m_normalAndDepthMapsDelayTimer->start();
+}
+
+void DocumentWindow::exportImageToFilename(const QString &filename)
+{
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    MeshLoader *resultMesh = m_modelRenderWidget->fetchCurrentMesh();
+    if (nullptr != resultMesh) {
+        ModelOfflineRender *offlineRender = new ModelOfflineRender(m_modelRenderWidget->format());
+        offlineRender->setXRotation(m_modelRenderWidget->xRot());
+        offlineRender->setYRotation(m_modelRenderWidget->yRot());
+        offlineRender->setZRotation(m_modelRenderWidget->zRot());
+        offlineRender->setRenderPurpose(0);
+        QImage *normalMap = new QImage();
+        QImage *depthMap = new QImage();
+        m_modelRenderWidget->fetchCurrentToonNormalAndDepthMaps(normalMap, depthMap);
+        if (!normalMap->isNull() && !depthMap->isNull()) {
+            offlineRender->updateToonNormalAndDepthMaps(normalMap, depthMap);
+        } else {
+            delete normalMap;
+            delete depthMap;
+        }
+        offlineRender->updateMesh(resultMesh);
+        if (Preferences::instance().toonShading())
+            offlineRender->setToonShading(true);
+        offlineRender->toImage(QSize(m_modelRenderWidget->widthInPixels(),
+            m_modelRenderWidget->heightInPixels())).save(filename);
+    }
+    QApplication::restoreOverrideCursor();
+}

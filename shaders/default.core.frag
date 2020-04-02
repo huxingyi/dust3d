@@ -86,7 +86,13 @@ uniform samplerCube environmentIrradianceMapId;
 uniform int environmentIrradianceMapEnabled;
 uniform samplerCube environmentSpecularMapId;
 uniform int environmentSpecularMapEnabled;
-uniform int tongShadingEnabled;
+uniform int toonShadingEnabled;
+uniform int renderPurpose;
+uniform int toonEdgeEnabled;
+uniform float screenWidth;
+uniform float screenHeight;
+uniform sampler2D toonNormalMapId;
+uniform sampler2D toonDepthMapId;
 
 const int MAX_LIGHTS = 8;
 const int TYPE_POINT = 0;
@@ -105,6 +111,122 @@ struct Light {
 };
 int lightCount;
 Light lights[MAX_LIGHTS];
+
+float sobel_v[9];
+float sobel_h[9];
+
+float normalEdgeSobel()
+{
+    sobel_v[0] = -1.0;
+    sobel_v[1] = 0.0;
+    sobel_v[2] = 1.0;
+    sobel_v[3] = -2.0; 
+    sobel_v[4] = 0.0;  
+    sobel_v[5] = 2.0;
+    sobel_v[6] = -1.0;  
+    sobel_v[7] = 0.0;  
+    sobel_v[8] = 1.0;
+
+    sobel_h[0] = -1.0;
+    sobel_h[1] = -2.0;
+    sobel_h[2] = -1.0;
+    sobel_h[3] = 0.0; 
+    sobel_h[4] = 0.0;  
+    sobel_h[5] = 0.0;
+    sobel_h[6] = 1.0;  
+    sobel_h[7] = 2.0; 
+    sobel_h[8] = 1.0;
+
+    // vec2 coord = gl_TexCoord[0].st;
+    vec2 coord = vec2(gl_FragCoord.x / screenWidth, 1.0 - gl_FragCoord.y / screenHeight);
+    //float len = length(coord);
+    
+    float sx = 1.0 / screenWidth;
+	float sy = 1.0 / screenHeight;
+    float n[9];
+    vec3 ref = vec3(1.0, 1.0, 1.0);
+    
+    n[0] = dot(texture(toonNormalMapId, vec2(coord.x - sx, coord.y - sy)).rgb, ref);
+    n[1] = dot(texture(toonNormalMapId, vec2(coord.x, coord.y - sy)).rgb, ref);
+    n[2] = dot(texture(toonNormalMapId, vec2(coord.x + sx, coord.y - sy)).rgb, ref);
+    n[3] = dot(texture(toonNormalMapId, vec2(coord.x - sx, coord.y)).rgb, ref);
+    n[4] = dot(texture(toonNormalMapId, vec2(coord.x, coord.y)).rgb, ref);
+    n[5] = dot(texture(toonNormalMapId, vec2(coord.x + sx, coord.y)).rgb, ref);
+    n[6] = dot(texture(toonNormalMapId, vec2(coord.x - sx, coord.y + sy)).rgb, ref);
+    n[7] = dot(texture(toonNormalMapId, vec2(coord.x, coord.y + sy)).rgb, ref);
+    n[8] = dot(texture(toonNormalMapId, vec2(coord.x + sx, coord.y + sy)).rgb, ref);
+    
+    float v, h;
+
+    v = 0.0;
+    h = 0.0;
+    
+    for (int i = 0; i < 9; ++i) {
+        v += sobel_v[i] * n[i];
+        h += sobel_h[i] * n[i];
+    }
+    
+    float enhanceFactor = 1.0;
+    
+    float r = sqrt(v * v * enhanceFactor + h * h * enhanceFactor);
+    return smoothstep(0.0, 1.0, r);
+}
+                         
+float depthEdgeSobel()
+{
+    sobel_v[0] = -1;
+    sobel_v[1] = 0;
+    sobel_v[2] = 1;
+    sobel_v[3] = -2; 
+    sobel_v[4] = 0;  
+    sobel_v[5] = 2;
+    sobel_v[6] = -1;  
+    sobel_v[7] = 0;  
+    sobel_v[8] = 1;
+
+    sobel_h[0] = -1;
+    sobel_h[1] = -2;
+    sobel_h[2] = -1;
+    sobel_h[3] = 0; 
+    sobel_h[4] = 0;  
+    sobel_h[5] = 0;
+    sobel_h[6] = 1;  
+    sobel_h[7] = 2; 
+    sobel_h[8] = 1;
+
+    // vec2 coord = gl_TexCoord[0].st;
+    vec2 coord = vec2(gl_FragCoord.x / screenWidth, 1.0 - gl_FragCoord.y / screenHeight);
+    //float len = length(coord);
+    
+    float sx = 1.0 / screenWidth;
+	float sy = 1.0 / screenHeight;
+    float n[9];
+    
+    n[0] = texture(toonDepthMapId, vec2(coord.x - sx, coord.y - sy)).r;
+    n[1] = texture(toonDepthMapId, vec2(coord.x, coord.y - sy)).r;
+    n[2] = texture(toonDepthMapId, vec2(coord.x + sx, coord.y - sy)).r;
+    n[3] = texture(toonDepthMapId, vec2(coord.x - sx, coord.y)).r;
+    n[4] = texture(toonDepthMapId, vec2(coord.x, coord.y)).r;
+    n[5] = texture(toonDepthMapId, vec2(coord.x + sx, coord.y)).r;
+    n[6] = texture(toonDepthMapId, vec2(coord.x - sx, coord.y + sy)).r;
+    n[7] = texture(toonDepthMapId, vec2(coord.x, coord.y + sy)).r;
+    n[8] = texture(toonDepthMapId, vec2(coord.x + sx, coord.y + sy)).r;
+    
+    float v, h;
+
+    v = 0.0;
+    h = 0.0;
+    
+    for (int i = 0; i < 9; ++i) {
+        v += sobel_v[i] * n[i];
+        h += sobel_h[i] * n[i];
+    }
+    
+    float enhanceFactor = 10.0;
+    
+    float r = sqrt(v * v * enhanceFactor + h * h * enhanceFactor);
+    return smoothstep(0.0, 1.0, r);
+}
 
 int mipLevelCount(const in samplerCube cube)
 {
@@ -385,7 +507,7 @@ vec4 metalRoughFunction(const in vec4 baseColor,
     // Remap roughness for a perceptually more linear correspondence
     float alpha = remapRoughness(roughness);
     
-    if (tongShadingEnabled != 1) {
+    if (toonShadingEnabled != 1) {
         if (environmentIrradianceMapEnabled == 1) {
             cLinear += pbrIblModel(worldNormal,
                 worldView,
@@ -414,6 +536,14 @@ vec4 metalRoughFunction(const in vec4 baseColor,
             cLinear = hsv2rgb(vec3(hsv.r, hsv.g, hsv.b * 2.0));
         else
             cLinear = hsv2rgb(vec3(hsv.r, hsv.g, hsv.b * 0.1));
+        
+        if (toonEdgeEnabled == 1) {
+            float depthEdge = depthEdgeSobel();
+            float normalEdge = normalEdgeSobel();
+            if (depthEdge >= 0.009 || normalEdge >= 0.6) {
+                cLinear = hsv2rgb(vec3(hsv.r, hsv.g, hsv.b * 0.02));
+            }
+        }
     }
 
     // Apply exposure correction
@@ -508,12 +638,18 @@ void main()
         roughness = min(0.99, roughness);
         metalness = min(0.99, metalness);
     }
-
-    fragColor = metalRoughFunction(vec4(color, alpha),
-                                      metalness,
-                                      roughness,
-                                      ambientOcclusion,
-                                      vert,
-                                      normalize(cameraPos - vert),
-                                      normal);
+    
+    if (renderPurpose == 0) {
+        fragColor = metalRoughFunction(vec4(color, alpha),
+                                          metalness,
+                                          roughness,
+                                          ambientOcclusion,
+                                          vert,
+                                          normalize(cameraPos - vert),
+                                          normal);
+    } else if (renderPurpose == 1) {
+        fragColor = vec4(normal, 1.0);
+    } else if (renderPurpose == 2) {
+        fragColor = vec4(vec3(gl_FragCoord.w), 1.0);
+    }
 }
