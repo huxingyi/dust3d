@@ -17,6 +17,8 @@
 #include <QDockWidget>
 #include <QWidgetAction>
 #include <QGraphicsOpacityEffect>
+#include <QDir>
+#include <QFileInfo>
 #include "documentwindow.h"
 #include "skeletongraphicswidget.h"
 #include "theme.h"
@@ -50,6 +52,8 @@ int DocumentWindow::m_modelRenderWidgetInitialSize = 128;
 int DocumentWindow::m_skeletonRenderWidgetInitialX = DocumentWindow::m_modelRenderWidgetInitialX + DocumentWindow::m_modelRenderWidgetInitialSize + 16;
 int DocumentWindow::m_skeletonRenderWidgetInitialY = DocumentWindow::m_modelRenderWidgetInitialY;
 int DocumentWindow::m_skeletonRenderWidgetInitialSize = DocumentWindow::m_modelRenderWidgetInitialSize;
+
+int DocumentWindow::m_total = 0;
 
 LogBrowser *g_logBrowser = nullptr;
 std::map<DocumentWindow *, QUuid> g_documentWindows;
@@ -137,6 +141,8 @@ DocumentWindow::DocumentWindow() :
     m_isLastMeshGenerationSucceed(true),
     m_currentUpdatedMeshId(0)
 {
+    ++DocumentWindow::m_total;
+    
     if (!g_logBrowser) {
         g_logBrowser = new LogBrowser;
         qInstallMessageHandler(&outputMessage);
@@ -1192,6 +1198,9 @@ DocumentWindow::DocumentWindow() :
     initShortCuts(this, m_graphicsWidget);
 
     connect(this, &DocumentWindow::initialized, m_document, &Document::uiReady);
+    connect(this, &DocumentWindow::initialized, this, &DocumentWindow::autoRecover);
+    
+    m_autoSaver = new AutoSaver(m_document);
     
     QTimer *timer = new QTimer(this);
     timer->setInterval(250);
@@ -1241,6 +1250,8 @@ void DocumentWindow::closeEvent(QCloseEvent *event)
             return;
         }
     }
+    
+    m_autoSaver->stop();
 
     QSize saveSize;
     if (!isMaximized())
@@ -1270,6 +1281,8 @@ void DocumentWindow::documentChanged()
         m_documentSaved = false;
         updateTitle();
     }
+    
+    m_autoSaver->documentChanged();
 }
 
 void DocumentWindow::newWindow()
@@ -1372,6 +1385,8 @@ DocumentWindow::~DocumentWindow()
     emit uninialized();
     g_documentWindows.erase(this);
     delete m_document;
+    
+    --DocumentWindow::m_total;
 }
 
 void DocumentWindow::showEvent(QShowEvent *event)
@@ -1384,6 +1399,26 @@ void DocumentWindow::showEvent(QShowEvent *event)
         m_graphicsWidget->setFocus();
         emit initialized();
     }
+}
+
+void DocumentWindow::autoRecover()
+{
+    if (1 != DocumentWindow::m_total)
+        return;
+    
+    QString dir = AutoSaver::autoSavedDir();
+    if (dir.isEmpty())
+        return;
+    
+    QDir recoverFromDir(dir, "*.d3b");
+    recoverFromDir.setSorting(QDir::Name);
+    auto autoSavedFiles = recoverFromDir.entryList();
+    if (autoSavedFiles.isEmpty())
+        return;
+    
+    auto filename = dir + QDir::separator() + autoSavedFiles.last();
+    openPathAs(filename, "");
+    QFile::remove(filename);
 }
 
 void DocumentWindow::mousePressEvent(QMouseEvent *event)
@@ -1419,6 +1454,8 @@ void DocumentWindow::saveTo(const QString &saveAsFilename)
             return;
         }
     }
+    
+    // FIXME: Merge code here and the code in documentsaver.cpp
 
     QApplication::setOverrideCursor(Qt::WaitCursor);
 

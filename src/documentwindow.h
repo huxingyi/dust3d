@@ -20,6 +20,7 @@
 #include "preferenceswidget.h"
 #include "graphicscontainerwidget.h"
 #include "normalanddepthmapsgenerator.h"
+#include "autosaver.h"
 
 class SkeletonGraphicsWidget;
 
@@ -90,6 +91,7 @@ public slots:
     void generateNormalAndDepthMaps();
     void delayedGenerateNormalAndDepthMaps();
     void normalAndDepthMapsReady();
+    void autoRecover();
 private:
     void initLockButton(QPushButton *button);
     void setCurrentFilename(const QString &filename);
@@ -210,6 +212,8 @@ private:
     NormalAndDepthMapsGenerator *m_normalAndDepthMapsGenerator = nullptr;
     QTimer *m_normalAndDepthMapsDelayTimer = nullptr;
     bool m_isNormalAndDepthMapsObsolete = false;
+    
+    AutoSaver *m_autoSaver = nullptr;
 public:
     static int m_modelRenderWidgetInitialX;
     static int m_modelRenderWidgetInitialY;
@@ -217,6 +221,7 @@ public:
     static int m_skeletonRenderWidgetInitialX;
     static int m_skeletonRenderWidgetInitialY;
     static int m_skeletonRenderWidgetInitialSize;
+    static int m_total;
 };
 
 #endif

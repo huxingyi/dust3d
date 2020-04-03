@@ -13,6 +13,7 @@
 #include <QKeyEvent>
 #include "version.h"
 #include "util.h"
+#include "documentwindow.h"
 
 LogBrowserDialog::LogBrowserDialog(QWidget *parent) :
     QDialog(parent)
@@ -108,6 +109,10 @@ void LogBrowserDialog::save()
 
 void LogBrowserDialog::closeEvent(QCloseEvent *e)
 {
+    if (0 == DocumentWindow::m_total) {
+        e->accept();
+        return;
+    }
     e->ignore();
     hide();
 }

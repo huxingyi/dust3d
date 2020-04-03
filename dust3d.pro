@@ -134,6 +134,12 @@ include(thirdparty/QtAwesome/QtAwesome/QtAwesome.pri)
 
 INCLUDEPATH += src
 
+SOURCES += src/autosaver.cpp
+HEADERS += src/autosaver.h
+
+SOURCES += src/documentsaver.cpp
+HEADERS += src/documentsaver.h
+
 SOURCES += src/normalanddepthmapsgenerator.cpp
 HEADERS += src/normalanddepthmapsgenerator.h
 
