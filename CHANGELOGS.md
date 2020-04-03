@@ -1,3 +1,9 @@
+Changes between 1.0.0-rc.3 and 1.0.0-rc.4:
+--------------------------------------------------
+- Add toon shader  
+- Add menu: Export as Image  
+- Add auto saving  
+
 Changes between 1.0.0-rc.1 and 1.0.0-rc.3:
 --------------------------------------------------
 - Fix negative skinning weight  
