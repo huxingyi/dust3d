@@ -1418,6 +1418,8 @@ void DocumentWindow::autoRecover()
     
     auto filename = dir + QDir::separator() + autoSavedFiles.last();
     openPathAs(filename, "");
+    m_documentSaved = false;
+    updateTitle();
     QFile::remove(filename);
 }
 
