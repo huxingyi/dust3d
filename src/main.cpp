@@ -7,13 +7,16 @@
 #include <QSurfaceFormat>
 #include <QSettings>
 #include <QTranslator>
+#include <qtsingleapplication.h>
 #include "documentwindow.h"
 #include "theme.h"
 #include "version.h"
 
 int main(int argc, char ** argv)
 {
-    QApplication app(argc, argv);
+    QtSingleApplication app(argc, argv);
+    if (app.sendMessage("activateFromAnotherInstance"))
+        return 0;
     
     QTranslator translator;
     if (translator.load(QLocale(), QLatin1String("dust3d"), QLatin1String("_"), QLatin1String(":/languages")))

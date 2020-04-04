@@ -41,6 +41,7 @@ public:
     static void showAcknowlegements();
     static void showContributors();
     static void showAbout();
+    static size_t total();
 protected:
     void showEvent(QShowEvent *event);
     void closeEvent(QCloseEvent *event);
@@ -221,7 +222,7 @@ public:
     static int m_skeletonRenderWidgetInitialX;
     static int m_skeletonRenderWidgetInitialY;
     static int m_skeletonRenderWidgetInitialSize;
-    static int m_total;
+    static int m_autoRecovered;
 };
 
 #endif

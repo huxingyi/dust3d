@@ -109,7 +109,7 @@ void LogBrowserDialog::save()
 
 void LogBrowserDialog::closeEvent(QCloseEvent *e)
 {
-    if (0 == DocumentWindow::m_total) {
+    if (0 == DocumentWindow::total()) {
         e->accept();
         return;
     }

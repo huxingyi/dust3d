@@ -19,6 +19,7 @@
 #include <QGraphicsOpacityEffect>
 #include <QDir>
 #include <QFileInfo>
+#include <qtsingleapplication.h>
 #include "documentwindow.h"
 #include "skeletongraphicswidget.h"
 #include "theme.h"
@@ -53,7 +54,7 @@ int DocumentWindow::m_skeletonRenderWidgetInitialX = DocumentWindow::m_modelRend
 int DocumentWindow::m_skeletonRenderWidgetInitialY = DocumentWindow::m_modelRenderWidgetInitialY;
 int DocumentWindow::m_skeletonRenderWidgetInitialSize = DocumentWindow::m_modelRenderWidgetInitialSize;
 
-int DocumentWindow::m_total = 0;
+int DocumentWindow::m_autoRecovered = false;
 
 LogBrowser *g_logBrowser = nullptr;
 std::map<DocumentWindow *, QUuid> g_documentWindows;
@@ -132,6 +133,11 @@ void DocumentWindow::checkForUpdates()
     g_updatesCheckWidget->raise();
 }
 
+size_t DocumentWindow::total()
+{
+    return g_documentWindows.size();
+}
+
 DocumentWindow::DocumentWindow() :
     m_document(nullptr),
     m_firstShow(true),
@@ -141,8 +147,15 @@ DocumentWindow::DocumentWindow() :
     m_isLastMeshGenerationSucceed(true),
     m_currentUpdatedMeshId(0)
 {
-    ++DocumentWindow::m_total;
-    
+    QObject::connect((QtSingleApplication *)QGuiApplication::instance(), 
+            &QtSingleApplication::messageReceived, this, [this](const QString &message) {
+        if ("activateFromAnotherInstance" == message) {
+            show();
+            activateWindow();
+            raise();
+        }
+    });
+             
     if (!g_logBrowser) {
         g_logBrowser = new LogBrowser;
         qInstallMessageHandler(&outputMessage);
@@ -1385,8 +1398,6 @@ DocumentWindow::~DocumentWindow()
     emit uninialized();
     g_documentWindows.erase(this);
     delete m_document;
-    
-    --DocumentWindow::m_total;
 }
 
 void DocumentWindow::showEvent(QShowEvent *event)
@@ -1403,8 +1414,10 @@ void DocumentWindow::showEvent(QShowEvent *event)
 
 void DocumentWindow::autoRecover()
 {
-    if (1 != DocumentWindow::m_total)
+    if (m_autoRecovered)
         return;
+    
+    m_autoRecovered = true;
     
     QString dir = AutoSaver::autoSavedDir();
     if (dir.isEmpty())

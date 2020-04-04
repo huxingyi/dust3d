@@ -92,7 +92,7 @@ unix:!macx {
 QMAKE_TARGET_COMPANY = Dust3D
 QMAKE_TARGET_PRODUCT = Dust3D
 QMAKE_TARGET_DESCRIPTION = "Dust3D is a cross-platform open-source 3D modeling software"
-QMAKE_TARGET_COPYRIGHT = "Copyright (C) 2018-2019 Dust3D Project. All Rights Reserved."
+QMAKE_TARGET_COPYRIGHT = "Copyright (C) 2018-2020 Dust3D Project. All Rights Reserved."
 
 DEFINES += "PROJECT_DEFINED_APP_COMPANY=\"\\\"$$QMAKE_TARGET_COMPANY\\\"\""
 DEFINES += "PROJECT_DEFINED_APP_NAME=\"\\\"$$QMAKE_TARGET_PRODUCT\\\"\""
@@ -131,6 +131,7 @@ win32 {
 }
 
 include(thirdparty/QtAwesome/QtAwesome/QtAwesome.pri)
+include(thirdparty/qtsingleapplication/src/qtsingleapplication.pri)
 
 INCLUDEPATH += src
 
