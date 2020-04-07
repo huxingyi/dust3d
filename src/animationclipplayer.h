@@ -3,7 +3,7 @@
 #include <QObject>
 #include <QTimer>
 #include <QTime>
-#include "meshloader.h"
+#include "model.h"
 
 class AnimationClipPlayer : public QObject
 {
@@ -21,8 +21,8 @@ public:
     };
     
     ~AnimationClipPlayer();
-    MeshLoader *takeFrameMesh();
-    void updateFrameMeshes(std::vector<std::pair<float, MeshLoader *>> &frameMeshes);
+    Model *takeFrameMesh();
+    void updateFrameMeshes(std::vector<std::pair<float, Model *>> &frameMeshes);
     void clear();
     
 public slots:
@@ -32,9 +32,9 @@ private:
     void freeFrames();
     int getFrameDurationMillis(int frame);
 
-    MeshLoader *m_lastFrameMesh = nullptr;
+    Model *m_lastFrameMesh = nullptr;
     int m_currentPlayIndex = 0;
-    std::vector<std::pair<float, MeshLoader *>> m_frameMeshes;
+    std::vector<std::pair<float, Model *>> m_frameMeshes;
     QTime m_countForFrame;
     QTimer m_timerForFrame;
     SpeedMode m_speedMode = SpeedMode::Normal;

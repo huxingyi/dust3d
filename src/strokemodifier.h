@@ -30,8 +30,8 @@ public:
     void subdivide();
     void roundEnd();
     void enableIntermediateAddition();
-    const std::vector<Node> &nodes();
-    const std::vector<Edge> &edges();
+    const std::vector<Node> &nodes() const;
+    const std::vector<Edge> &edges() const;
     void finalize();
     
 private:

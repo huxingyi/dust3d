@@ -114,7 +114,7 @@ void ModelWidget::setZRotation(int angle)
     }
 }
 
-MeshLoader *ModelWidget::fetchCurrentMesh()
+Model *ModelWidget::fetchCurrentMesh()
 {
     return m_meshBinder.fetchCurrentMesh();
 }
@@ -422,7 +422,7 @@ void ModelWidget::setMousePickRadius(float radius)
     update();
 }
 
-void ModelWidget::updateMesh(MeshLoader *mesh)
+void ModelWidget::updateMesh(Model *mesh)
 {
     m_meshBinder.updateMesh(mesh);
     emit renderParametersChanged();

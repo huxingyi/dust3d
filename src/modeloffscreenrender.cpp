@@ -1,9 +1,9 @@
 #include <QOpenGLFramebufferObjectFormat>
 #include <QThread>
 #include <QDebug>
-#include "modelofflinerender.h"
+#include "modeloffscreenrender.h"
 
-ModelOfflineRender::ModelOfflineRender(const QSurfaceFormat &format, QScreen *targetScreen) :
+ModelOffscreenRender::ModelOffscreenRender(const QSurfaceFormat &format, QScreen *targetScreen) :
     QOffscreenSurface(targetScreen),
     m_context(nullptr),
     m_mesh(nullptr)
@@ -11,10 +11,10 @@ ModelOfflineRender::ModelOfflineRender(const QSurfaceFormat &format, QScreen *ta
     setFormat(format);
     create();
     if (!isValid())
-        qDebug() << "ModelOfflineRender is invalid";
+        qDebug() << "ModelOffscreenRender is invalid";
 }
 
-ModelOfflineRender::~ModelOfflineRender()
+ModelOffscreenRender::~ModelOffscreenRender()
 {
     destroy();
     delete m_mesh;
@@ -22,43 +22,43 @@ ModelOfflineRender::~ModelOfflineRender()
     delete m_depthMap;
 }
 
-void ModelOfflineRender::updateMesh(MeshLoader *mesh)
+void ModelOffscreenRender::updateMesh(Model *mesh)
 {
     delete m_mesh;
     m_mesh = mesh;
 }
 
-void ModelOfflineRender::setRenderThread(QThread *thread)
+void ModelOffscreenRender::setRenderThread(QThread *thread)
 {
-	//this->moveToThread(thread);
+	this->moveToThread(thread);
 }
 
-void ModelOfflineRender::setXRotation(int angle)
+void ModelOffscreenRender::setXRotation(int angle)
 {
     m_xRot = angle;
 }
 
-void ModelOfflineRender::setYRotation(int angle)
+void ModelOffscreenRender::setYRotation(int angle)
 {
     m_yRot = angle;
 }
 
-void ModelOfflineRender::setZRotation(int angle)
+void ModelOffscreenRender::setZRotation(int angle)
 {
     m_zRot = angle;
 }
 
-void ModelOfflineRender::setRenderPurpose(int purpose)
+void ModelOffscreenRender::setRenderPurpose(int purpose)
 {
     m_renderPurpose = purpose;
 }
 
-void ModelOfflineRender::setToonShading(bool toonShading)
+void ModelOffscreenRender::setToonShading(bool toonShading)
 {
     m_toonShading = toonShading;
 }
 
-void ModelOfflineRender::updateToonNormalAndDepthMaps(QImage *normalMap, QImage *depthMap)
+void ModelOffscreenRender::updateToonNormalAndDepthMaps(QImage *normalMap, QImage *depthMap)
 {
     delete m_normalMap;
     m_normalMap = normalMap;
@@ -67,7 +67,7 @@ void ModelOfflineRender::updateToonNormalAndDepthMaps(QImage *normalMap, QImage 
     m_depthMap = depthMap;
 }
 
-QImage ModelOfflineRender::toImage(const QSize &size)
+QImage ModelOffscreenRender::toImage(const QSize &size)
 {
 	QImage image;
 	
@@ -110,7 +110,7 @@ QImage ModelOfflineRender::toImage(const QSize &size)
                 0 == strstr(versionString, "Mesa")) {
             isCoreProfile = m_context->format().profile() == QSurfaceFormat::CoreProfile;
         }
-
+        
         ModelShaderProgram *program = new ModelShaderProgram(isCoreProfile);
         ModelMeshBinder meshBinder;
         meshBinder.initialize();
@@ -170,14 +170,16 @@ QImage ModelOfflineRender::toImage(const QSize &size)
 
         m_mesh = nullptr;
     }
-
+    
     m_context->functions()->glFlush();
-
+    
     image = renderFbo->toImage();
-
+    
+    qDebug() << "bindDefault begin...";
     renderFbo->bindDefault();
+    qDebug() << "bindDefault end";
     delete renderFbo;
-
+    
     m_context->doneCurrent();
     delete m_context;
     m_context = nullptr;

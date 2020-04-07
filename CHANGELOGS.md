@@ -4,6 +4,10 @@ Changes between 1.0.0-rc.3 and 1.0.0-rc.4:
 - Add menu: Export as Image  
 - Add auto saving  
 - Change to single instance with multiple windows  
+- Refactor stroke mesh builder  
+- Add menu: Import  
+- Show edge direction on canvas  
+- Add example model: Backpacker  
 
 Changes between 1.0.0-rc.1 and 1.0.0-rc.3:
 --------------------------------------------------

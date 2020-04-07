@@ -193,6 +193,12 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
         contextMenu.addAction(&breakAction);
     }
     
+    QAction reverseAction(tr("Reverse"), this);
+    if (!m_nodePositionModifyOnly && hasEdgeSelection()) {
+        connect(&reverseAction, &QAction::triggered, this, &SkeletonGraphicsWidget::reverseSelectedEdges);
+        contextMenu.addAction(&reverseAction);
+    }
+    
     QAction connectAction(tr("Connect"), this);
     if (!m_nodePositionModifyOnly && hasTwoDisconnectedNodesSelection()) {
         connect(&connectAction, &QAction::triggered, this, &SkeletonGraphicsWidget::connectSelected);
@@ -516,6 +522,23 @@ void SkeletonGraphicsWidget::breakSelected()
     emit batchChangeBegin();
     for (const auto &it: edgeIds) {
         emit breakEdge(it);
+    }
+    emit batchChangeEnd();
+    emit groupOperationAdded();
+}
+
+void SkeletonGraphicsWidget::reverseSelectedEdges()
+{
+    std::set<QUuid> edgeIds;
+    for (const auto &it: m_rangeSelectionSet) {
+        if (it->data(0) == "edge")
+            edgeIds.insert(((SkeletonGraphicsEdgeItem *)it)->id());
+    }
+    if (edgeIds.empty())
+        return;
+    emit batchChangeBegin();
+    for (const auto &it: edgeIds) {
+        emit reverseEdge(it);
     }
     emit batchChangeEnd();
     emit groupOperationAdded();
@@ -2102,6 +2125,22 @@ void SkeletonGraphicsWidget::nodeAdded(QUuid nodeId)
     }
 }
 
+void SkeletonGraphicsWidget::edgeReversed(QUuid edgeId)
+{
+    const SkeletonEdge *edge = m_document->findEdge(edgeId);
+    if (nullptr == edge) {
+        qDebug() << "Edge changed but edge id not exist:" << edgeId;
+        return;
+    }
+    auto edgeItemIt = edgeItemMap.find(edgeId);
+    if (edgeItemIt == edgeItemMap.end()) {
+        qDebug() << "Edge removed but edge id not exist:" << edgeId;
+        return;
+    }
+    edgeItemIt->second.first->reverse();
+    edgeItemIt->second.second->reverse();
+}
+
 void SkeletonGraphicsWidget::edgeAdded(QUuid edgeId)
 {
     const SkeletonEdge *edge = m_document->findEdge(edgeId);
@@ -2255,10 +2294,6 @@ void SkeletonGraphicsWidget::nodeOriginChanged(QUuid nodeId)
         edgeItemIt->second.second->setRotated(m_rotated);
         edgeItemIt->second.second->updateAppearance();
     }
-}
-
-void SkeletonGraphicsWidget::edgeChanged(QUuid edgeId)
-{
 }
 
 void SkeletonGraphicsWidget::partVisibleStateChanged(QUuid partId)

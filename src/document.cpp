@@ -170,6 +170,24 @@ void Document::breakEdge(QUuid edgeId)
     addEdge(middleNodeId, secondNodeId);
 }
 
+void Document::reverseEdge(QUuid edgeId)
+{
+    SkeletonEdge *edge = (SkeletonEdge *)findEdge(edgeId);
+    if (nullptr == edge) {
+        qDebug() << "Find edge failed:" << edgeId;
+        return;
+    }
+    if (edge->nodeIds.size() != 2) {
+        return;
+    }
+    std::swap(edge->nodeIds[0], edge->nodeIds[1]);
+    auto part = partMap.find(edge->partId);
+    if (part != partMap.end())
+        part->second.dirty = true;
+    emit edgeReversed(edgeId);
+    emit skeletonChanged();
+}
+
 void Document::removeEdge(QUuid edgeId)
 {
     const SkeletonEdge *edge = findEdge(edgeId);
@@ -346,7 +364,7 @@ void Document::addPartByPolygons(const QPolygonF &mainProfile, const QPolygonF &
     connect(contourToPartConverter, &ContourToPartConverter::finished, this, [=]() {
         const auto &snapshot = contourToPartConverter->getSnapshot();
         if (!snapshot.nodes.empty()) {
-            addFromSnapshot(snapshot, true);
+            addFromSnapshot(snapshot, SnapshotSource::Paste);
             saveSnapshot();
         }
         delete contourToPartConverter;
@@ -1145,6 +1163,8 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
                     part["cutFace"] = CutFaceToString(partIt.second.cutFace);
                 }
             }
+            if (!partIt.second.fillMeshLinkedId.isNull())
+                part["fillMesh"] = partIt.second.fillMeshLinkedId.toString();
             part["dirty"] = partIt.second.dirty ? "true" : "false";
             if (partIt.second.hasColor)
                 part["color"] = partIt.second.color.name(QColor::HexArgb);
@@ -1443,11 +1463,11 @@ void Document::createSinglePartFromEdges(const std::vector<QVector3D> &nodes,
     emit skeletonChanged();
 }
 
-void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
+void Document::addFromSnapshot(const Snapshot &snapshot, enum SnapshotSource source)
 {
     bool isOriginChanged = false;
     bool isRigTypeChanged = false;
-    if (!fromPaste) {
+    if (SnapshotSource::Paste != source) {
         this->polyCount = PolyCountFromString(valueOfKeyInMapOrEmpty(snapshot.canvas, "polyCount").toUtf8().constData());
         const auto &originXit = snapshot.canvas.find("originX");
         const auto &originYit = snapshot.canvas.find("originY");
@@ -1482,38 +1502,41 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
             qDebug() << "Unsupported material type:" << materialType;
             continue;
         }
-        QUuid newMaterialId = QUuid::createUuid();
-        auto &newMaterial = materialMap[newMaterialId];
-        newMaterial.id = newMaterialId;
-        newMaterial.name = valueOfKeyInMapOrEmpty(materialAttributes, "name");
-        oldNewIdMap[QUuid(valueOfKeyInMapOrEmpty(materialAttributes, "id"))] = newMaterialId;
-        for (const auto &layerIt: materialIt.second) {
-            MaterialLayer layer;
-            auto findTileScale = layerIt.first.find("tileScale");
-            if (findTileScale != layerIt.first.end())
-                layer.tileScale = findTileScale->second.toFloat();
-            for (const auto &mapItem: layerIt.second) {
-                auto textureTypeString = valueOfKeyInMapOrEmpty(mapItem, "for");
-                auto textureType = TextureTypeFromString(textureTypeString.toUtf8().constData());
-                if (TextureType::None == textureType) {
-                    qDebug() << "Unsupported texture type:" << textureTypeString;
-                    continue;
+        QUuid oldMaterialId = QUuid(valueOfKeyInMapOrEmpty(materialAttributes, "id"));
+        QUuid newMaterialId = SnapshotSource::Import == source ? oldMaterialId : QUuid::createUuid();
+        oldNewIdMap[oldMaterialId] = newMaterialId;
+        if (materialMap.end() == materialMap.find(newMaterialId)) {
+            auto &newMaterial = materialMap[newMaterialId];
+            newMaterial.id = newMaterialId;
+            newMaterial.name = valueOfKeyInMapOrEmpty(materialAttributes, "name");
+            for (const auto &layerIt: materialIt.second) {
+                MaterialLayer layer;
+                auto findTileScale = layerIt.first.find("tileScale");
+                if (findTileScale != layerIt.first.end())
+                    layer.tileScale = findTileScale->second.toFloat();
+                for (const auto &mapItem: layerIt.second) {
+                    auto textureTypeString = valueOfKeyInMapOrEmpty(mapItem, "for");
+                    auto textureType = TextureTypeFromString(textureTypeString.toUtf8().constData());
+                    if (TextureType::None == textureType) {
+                        qDebug() << "Unsupported texture type:" << textureTypeString;
+                        continue;
+                    }
+                    auto linkTypeString = valueOfKeyInMapOrEmpty(mapItem, "linkDataType");
+                    if ("imageId" != linkTypeString) {
+                        qDebug() << "Unsupported link data type:" << linkTypeString;
+                        continue;
+                    }
+                    auto imageId = QUuid(valueOfKeyInMapOrEmpty(mapItem, "linkData"));
+                    MaterialMap materialMap;
+                    materialMap.imageId = imageId;
+                    materialMap.forWhat = textureType;
+                    layer.maps.push_back(materialMap);
                 }
-                auto linkTypeString = valueOfKeyInMapOrEmpty(mapItem, "linkDataType");
-                if ("imageId" != linkTypeString) {
-                    qDebug() << "Unsupported link data type:" << linkTypeString;
-                    continue;
-                }
-                auto imageId = QUuid(valueOfKeyInMapOrEmpty(mapItem, "linkData"));
-                MaterialMap materialMap;
-                materialMap.imageId = imageId;
-                materialMap.forWhat = textureType;
-                layer.maps.push_back(materialMap);
+                newMaterial.layers.push_back(layer);
             }
-            newMaterial.layers.push_back(layer);
+            materialIdList.push_back(newMaterialId);
+            emit materialAdded(newMaterialId);
         }
-        materialIdList.push_back(newMaterialId);
-        emit materialAdded(newMaterialId);
     }
     std::map<QUuid, QUuid> cutFaceLinkedIdModifyMap;
     for (const auto &partKv: snapshot.parts) {
@@ -1549,6 +1572,12 @@ void Document::addFromSnapshot(const Snapshot &snapshot, bool fromPaste)
                 part.setCutFaceLinkedId(cutFaceLinkedId);
                 cutFaceLinkedIdModifyMap.insert({part.id, cutFaceLinkedId});
             }
+        }
+        const auto &fillMeshIt = partKv.second.find("fillMesh");
+        if (fillMeshIt != partKv.second.end()) {
+            QUuid fillMeshLinkedId = QUuid(fillMeshIt->second);
+            if (!fillMeshLinkedId.isNull())
+                part.fillMeshLinkedId = fillMeshLinkedId;
         }
         if (isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "inverse")))
             inversePartIds.insert(part.id);
@@ -1863,15 +1892,15 @@ void Document::resetScript()
 void Document::fromSnapshot(const Snapshot &snapshot)
 {
     reset();
-    addFromSnapshot(snapshot, false);
+    addFromSnapshot(snapshot, SnapshotSource::Unknown);
     emit uncheckAll();
 }
 
-MeshLoader *Document::takeResultMesh()
+Model *Document::takeResultMesh()
 {
     if (nullptr == m_resultMesh)
         return nullptr;
-    MeshLoader *resultMesh = new MeshLoader(*m_resultMesh);
+    Model *resultMesh = new Model(*m_resultMesh);
     return resultMesh;
 }
 
@@ -1880,32 +1909,32 @@ bool Document::isMeshGenerationSucceed()
     return m_isMeshGenerationSucceed;
 }
 
-MeshLoader *Document::takeResultTextureMesh()
+Model *Document::takeResultTextureMesh()
 {
     if (nullptr == m_resultTextureMesh)
         return nullptr;
-    MeshLoader *resultTextureMesh = new MeshLoader(*m_resultTextureMesh);
+    Model *resultTextureMesh = new Model(*m_resultTextureMesh);
     return resultTextureMesh;
 }
 
-MeshLoader *Document::takeResultRigWeightMesh()
+Model *Document::takeResultRigWeightMesh()
 {
     if (nullptr == m_resultRigWeightMesh)
         return nullptr;
-    MeshLoader *resultMesh = new MeshLoader(*m_resultRigWeightMesh);
+    Model *resultMesh = new Model(*m_resultRigWeightMesh);
     return resultMesh;
 }
 
 void Document::meshReady()
 {
-    MeshLoader *resultMesh = m_meshGenerator->takeResultMesh();
+    Model *resultMesh = m_meshGenerator->takeResultMesh();
     Outcome *outcome = m_meshGenerator->takeOutcome();
-    bool isSucceed = m_meshGenerator->isSucceed();
+    bool isSuccessful = m_meshGenerator->isSuccessful();
     
     for (auto &partId: m_meshGenerator->generatedPreviewPartIds()) {
         auto part = partMap.find(partId);
         if (part != partMap.end()) {
-            MeshLoader *resultPartPreviewMesh = m_meshGenerator->takePartPreviewMesh(partId);
+            Model *resultPartPreviewMesh = m_meshGenerator->takePartPreviewMesh(partId);
             part->second.updatePreviewMesh(resultPartPreviewMesh);
             emit partPreviewChanged(partId);
         }
@@ -1922,7 +1951,7 @@ void Document::meshReady()
     
     //addToolToMesh(m_resultMesh);
     
-    m_isMeshGenerationSucceed = isSucceed;
+    m_isMeshGenerationSucceed = isSuccessful;
     
     delete m_currentOutcome;
     m_currentOutcome = outcome;
@@ -1946,7 +1975,7 @@ void Document::meshReady()
     }
 }
 
-//void Document::addToolToMesh(MeshLoader *mesh)
+//void Document::addToolToMesh(Model *mesh)
 //{
 //    if (nullptr == mesh)
 //        return;
@@ -2136,7 +2165,7 @@ void Document::postProcess()
     m_isPostProcessResultObsolete = false;
 
     if (!m_currentOutcome) {
-        qDebug() << "MeshLoader is null";
+        qDebug() << "Model is null";
         return;
     }
 
@@ -2188,7 +2217,7 @@ void Document::doPickMouseTarget()
     m_isMouseTargetResultObsolete = false;
     
     if (!m_currentOutcome) {
-        qDebug() << "MeshLoader is null";
+        qDebug() << "Model is null";
         return;
     }
     
@@ -3179,7 +3208,7 @@ void Document::paste()
         QXmlStreamReader xmlStreamReader(mimeData->text());
         Snapshot snapshot;
         loadSkeletonFromXmlStream(&snapshot, xmlStreamReader);
-        addFromSnapshot(snapshot, true);
+        addFromSnapshot(snapshot, SnapshotSource::Paste);
     }
 }
 
@@ -3496,7 +3525,7 @@ void Document::generateRig()
 
 void Document::rigReady()
 {
-    m_currentRigSucceed = m_rigGenerator->isSucceed();
+    m_currentRigSucceed = m_rigGenerator->isSuccessful();
 
     delete m_resultRigWeightMesh;
     m_resultRigWeightMesh = m_rigGenerator->takeResultMesh();
@@ -3701,7 +3730,7 @@ void Document::posePreviewsReady()
     for (const auto &poseIdAndFrame: m_posePreviewsGenerator->generatedPreviewPoseIdAndFrames()) {
         auto pose = poseMap.find(poseIdAndFrame.first);
         if (pose != poseMap.end()) {
-            MeshLoader *resultPartPreviewMesh = m_posePreviewsGenerator->takePreview(poseIdAndFrame);
+            Model *resultPartPreviewMesh = m_posePreviewsGenerator->takePreview(poseIdAndFrame);
             pose->second.updatePreviewMesh(resultPartPreviewMesh);
             emit posePreviewChanged(poseIdAndFrame.first);
         }
@@ -3717,6 +3746,12 @@ void Document::posePreviewsReady()
 
 void Document::addMaterial(QUuid materialId, QString name, std::vector<MaterialLayer> layers)
 {
+    auto findMaterialResult = materialMap.find(materialId);
+    if (findMaterialResult != materialMap.end()) {
+        qDebug() << "Material already exist:" << materialId;
+        return;
+    }
+    
     QUuid newMaterialId = materialId;
     auto &material = materialMap[newMaterialId];
     material.id = newMaterialId;
@@ -3815,7 +3850,7 @@ void Document::materialPreviewsReady()
     for (const auto &materialId: m_materialPreviewsGenerator->generatedPreviewMaterialIds()) {
         auto material = materialMap.find(materialId);
         if (material != materialMap.end()) {
-            MeshLoader *resultPartPreviewMesh = m_materialPreviewsGenerator->takePreview(materialId);
+            Model *resultPartPreviewMesh = m_materialPreviewsGenerator->takePreview(materialId);
             material->second.updatePreviewMesh(resultPartPreviewMesh);
             emit materialPreviewChanged(materialId);
         }

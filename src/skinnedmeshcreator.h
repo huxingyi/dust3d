@@ -4,7 +4,7 @@
 #include <vector>
 #include <QVector3D>
 #include <QColor>
-#include "meshloader.h"
+#include "model.h"
 #include "outcome.h"
 #include "jointnodetree.h"
 
@@ -13,7 +13,7 @@ class SkinnedMeshCreator
 public:
     SkinnedMeshCreator(const Outcome &outcome,
         const std::map<int, RiggerVertexWeights> &resultWeights);
-    MeshLoader *createMeshFromTransform(const std::vector<QMatrix4x4> &matricies);
+    Model *createMeshFromTransform(const std::vector<QMatrix4x4> &matricies);
 private:
     Outcome m_outcome;
     std::map<int, RiggerVertexWeights> m_resultWeights;

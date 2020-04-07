@@ -4,7 +4,7 @@
 #include <vector>
 #include <map>
 #include <set>
-#include "meshloader.h"
+#include "model.h"
 #include "rigger.h"
 #include "jointnodetree.h"
 #include "document.h"
@@ -24,7 +24,7 @@ public:
     void addPoseToLibrary(const QUuid &poseId, const std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> &frames, float yTranslationScale);
     void addMotionToLibrary(const QUuid &motionId, const std::vector<MotionClip> &clips);
     void addRequirement(const QUuid &motionId);
-    std::vector<std::pair<float, MeshLoader *>> takeResultPreviewMeshs(const QUuid &motionId);
+    std::vector<std::pair<float, Model *>> takeResultPreviewMeshs(const QUuid &motionId);
     std::vector<std::pair<float, JointNodeTree>> takeResultJointNodeTrees(const QUuid &motionId);
     const std::set<QUuid> &requiredMotionIds();
     const std::set<QUuid> &generatedMotionIds();
@@ -37,14 +37,14 @@ public slots:
     
 private:
     void generateMotion(const QUuid &motionId, std::set<QUuid> &visited, std::vector<std::pair<float, JointNodeTree>> &outcomes,
-            std::vector<MeshLoader *> *previews=nullptr);
+            std::vector<Model *> *previews=nullptr);
     const JointNodeTree &poseJointNodeTree(const QUuid &poseId, int frame);
     JointNodeTree generateInterpolation(InterpolationType interpolationType, const JointNodeTree &first, const JointNodeTree &second, float progress);
     const JointNodeTree *findClipBeginJointNodeTree(const MotionClip &clip);
     const JointNodeTree *findClipEndJointNodeTree(const MotionClip &clip);
     std::vector<MotionClip> *findMotionClips(const QUuid &motionId);
     std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> *findPoseFrames(const QUuid &poseId);
-    void generatePreviewsForOutcomes(const std::vector<std::pair<float, JointNodeTree>> &outcomes, std::vector<std::pair<float, MeshLoader *>> &previews);
+    void generatePreviewsForOutcomes(const std::vector<std::pair<float, JointNodeTree>> &outcomes, std::vector<std::pair<float, Model *>> &previews);
     float calculateMotionDuration(const QUuid &motionId, std::set<QUuid> &visited);
     float calculatePoseDuration(const QUuid &poseId);
     float calculateProceduralAnimationDuration(ProceduralAnimation proceduralAnimation,
@@ -57,7 +57,7 @@ private:
     std::map<int, RiggerVertexWeights> m_rigWeights;
     std::map<int, std::vector<std::pair<float, JointNodeTree>>> m_proceduralAnimations;
 #if ENABLE_PROCEDURAL_DEBUG
-    std::map<int, std::vector<MeshLoader *>> m_proceduralDebugPreviews;
+    std::map<int, std::vector<Model *>> m_proceduralDebugPreviews;
 #endif
     Outcome m_outcome;
     std::map<QUuid, std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>>> m_poses;
@@ -65,7 +65,7 @@ private:
     std::map<QUuid, std::vector<MotionClip>> m_motions;
     std::set<QUuid> m_requiredMotionIds;
     std::set<QUuid> m_generatedMotionIds;
-    std::map<QUuid, std::vector<std::pair<float, MeshLoader *>>> m_resultPreviewMeshs;
+    std::map<QUuid, std::vector<std::pair<float, Model *>>> m_resultPreviewMeshs;
     std::map<QUuid, std::vector<std::pair<float, JointNodeTree>>> m_resultJointNodeTrees;
     std::map<std::pair<QUuid, int>, JointNodeTree> m_poseJointNodeTreeMap;
     Poser *m_poser = nullptr;

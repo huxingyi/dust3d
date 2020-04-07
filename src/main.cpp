@@ -97,10 +97,10 @@ int main(int argc, char ** argv)
                 openFileList.size() == 1) {
             totalExportFileNum = openFileList.size() * waitingExportList.size();
             for (int i = 0; i < openFileList.size(); ++i) {
-                QObject::connect(windowList[i], &DocumentWindow::waitingExportFinished, &app, [&](const QString &filename, bool succeed) {
-                    qDebug() << "Export to" << filename << (succeed ? "succeed" : "failed");
+                QObject::connect(windowList[i], &DocumentWindow::waitingExportFinished, &app, [&](const QString &filename, bool isSuccessful) {
+                    qDebug() << "Export to" << filename << (isSuccessful ? "isSuccessful" : "failed");
                     ++finishedExportFileNum;
-                    if (succeed)
+                    if (isSuccessful)
                         ++succeedExportNum;
                     if (finishedExportFileNum == totalExportFileNum) {
                         if (succeedExportNum == totalExportFileNum) {

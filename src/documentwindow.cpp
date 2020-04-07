@@ -45,7 +45,9 @@
 #include "scriptwidget.h"
 #include "variablesxml.h"
 #include "updatescheckwidget.h"
-#include "modelofflinerender.h"
+#include "modeloffscreenrender.h"
+#include "fileforever.h"
+#include "documentsaver.h"
 
 int DocumentWindow::m_modelRenderWidgetInitialX = 16;
 int DocumentWindow::m_modelRenderWidgetInitialY = 16;
@@ -233,12 +235,12 @@ DocumentWindow::DocumentWindow() :
     //rotateClockwiseButton->setToolTip(tr("Rotate whole model"));
     //Theme::initAwesomeButton(rotateClockwiseButton);
     
-    auto updateRegenerateIconAndTips = [&](SpinnableAwesomeButton *regenerateButton, bool isSucceed, bool forceUpdate=false) {
+    auto updateRegenerateIconAndTips = [&](SpinnableAwesomeButton *regenerateButton, bool isSuccessful, bool forceUpdate=false) {
         if (!forceUpdate) {
-            if (m_isLastMeshGenerationSucceed == isSucceed)
+            if (m_isLastMeshGenerationSucceed == isSuccessful)
                 return;
         }
-        m_isLastMeshGenerationSucceed = isSucceed;
+        m_isLastMeshGenerationSucceed = isSuccessful;
         regenerateButton->setToolTip(m_isLastMeshGenerationSucceed ? tr("Regenerate") : tr("Mesh generation failed, please undo or adjust recent changed nodes\nTips:\n  - Don't let generated mesh self-intersect\n  - Make multiple parts instead of one single part for whole model"));
         regenerateButton->setAwesomeIcon(m_isLastMeshGenerationSucceed ? QChar(fa::recycle) : QChar(fa::warning));
     };
@@ -468,6 +470,7 @@ DocumentWindow::DocumentWindow() :
     m_openExampleMenu = new QMenu(tr("Open Example"));
     std::vector<QString> exampleModels = {
         "Addax",
+        "Backpacker",
         "Bicycle",
         "Cat",
         "Dog",
@@ -504,6 +507,12 @@ DocumentWindow::DocumentWindow() :
     m_showPreferencesAction = new QAction(tr("Preferences..."), this);
     connect(m_showPreferencesAction, &QAction::triggered, this, &DocumentWindow::showPreferences);
     m_fileMenu->addAction(m_showPreferencesAction);
+    
+    m_fileMenu->addSeparator();
+    
+    m_importAction = new QAction(tr("Import..."), this);
+    connect(m_importAction, &QAction::triggered, this, &DocumentWindow::import, Qt::QueuedConnection);
+    m_fileMenu->addAction(m_importAction);
     
     m_fileMenu->addSeparator();
 
@@ -567,6 +576,10 @@ DocumentWindow::DocumentWindow() :
     m_breakAction = new QAction(tr("Break"), this);
     connect(m_breakAction, &QAction::triggered, m_graphicsWidget, &SkeletonGraphicsWidget::breakSelected);
     m_editMenu->addAction(m_breakAction);
+
+    m_reverseAction = new QAction(tr("Reverse"), this);
+    connect(m_reverseAction, &QAction::triggered, m_graphicsWidget, &SkeletonGraphicsWidget::reverseSelectedEdges);
+    m_editMenu->addAction(m_reverseAction);
 
     m_connectAction = new QAction(tr("Connect"), this);
     connect(m_connectAction, &QAction::triggered, m_graphicsWidget, &SkeletonGraphicsWidget::connectSelected);
@@ -710,6 +723,7 @@ DocumentWindow::DocumentWindow() :
         m_redoAction->setEnabled(m_document->redoable());
         m_deleteAction->setEnabled(m_graphicsWidget->hasSelection());
         m_breakAction->setEnabled(m_graphicsWidget->hasEdgeSelection());
+        m_reverseAction->setEnabled(m_graphicsWidget->hasEdgeSelection());
         m_connectAction->setEnabled(m_graphicsWidget->hasTwoDisconnectedNodesSelection());
         m_cutAction->setEnabled(m_graphicsWidget->hasSelection());
         m_copyAction->setEnabled(m_graphicsWidget->hasSelection());
@@ -766,7 +780,7 @@ DocumentWindow::DocumentWindow() :
     m_toggleColorAction = new QAction(tr("Toggle Color"), this);
     connect(m_toggleColorAction, &QAction::triggered, [&]() {
         m_modelRemoveColor = !m_modelRemoveColor;
-        MeshLoader *mesh = nullptr;
+        Model *mesh = nullptr;
         if (m_document->isMeshGenerating() &&
                 m_document->isPostProcessing() &&
                 m_document->isTextureGenerating()) {
@@ -990,6 +1004,7 @@ DocumentWindow::DocumentWindow() :
     connect(graphicsWidget, &SkeletonGraphicsWidget::batchChangeBegin, m_document, &Document::batchChangeBegin);
     connect(graphicsWidget, &SkeletonGraphicsWidget::batchChangeEnd, m_document, &Document::batchChangeEnd);
     connect(graphicsWidget, &SkeletonGraphicsWidget::breakEdge, m_document, &Document::breakEdge);
+    connect(graphicsWidget, &SkeletonGraphicsWidget::reverseEdge, m_document, &Document::reverseEdge);
     connect(graphicsWidget, &SkeletonGraphicsWidget::moveOriginBy, m_document, &Document::moveOriginBy);
     connect(graphicsWidget, &SkeletonGraphicsWidget::partChecked, m_document, &Document::partChecked);
     connect(graphicsWidget, &SkeletonGraphicsWidget::partUnchecked, m_document, &Document::partUnchecked);
@@ -1026,6 +1041,7 @@ DocumentWindow::DocumentWindow() :
     connect(m_document, &Document::nodeRadiusChanged, graphicsWidget, &SkeletonGraphicsWidget::nodeRadiusChanged);
     connect(m_document, &Document::nodeBoneMarkChanged, graphicsWidget, &SkeletonGraphicsWidget::nodeBoneMarkChanged);
     connect(m_document, &Document::nodeOriginChanged, graphicsWidget, &SkeletonGraphicsWidget::nodeOriginChanged);
+    connect(m_document, &Document::edgeReversed, graphicsWidget, &SkeletonGraphicsWidget::edgeReversed);
     connect(m_document, &Document::partVisibleStateChanged, graphicsWidget, &SkeletonGraphicsWidget::partVisibleStateChanged);
     connect(m_document, &Document::partDisableStateChanged, graphicsWidget, &SkeletonGraphicsWidget::partVisibleStateChanged);
     connect(m_document, &Document::cleanup, graphicsWidget, &SkeletonGraphicsWidget::removeAllContent);
@@ -1470,80 +1486,136 @@ void DocumentWindow::saveTo(const QString &saveAsFilename)
         }
     }
     
-    // FIXME: Merge code here and the code in documentsaver.cpp
-
     QApplication::setOverrideCursor(Qt::WaitCursor);
-
-    Ds3FileWriter ds3Writer;
-
-    QByteArray modelXml;
-    QXmlStreamWriter stream(&modelXml);
     Snapshot snapshot;
     m_document->toSnapshot(&snapshot);
-    saveSkeletonToXmlStream(&snapshot, &stream);
-    if (modelXml.size() > 0)
-        ds3Writer.add("model.xml", "model", &modelXml);
+    if (DocumentSaver::save(&filename, 
+            &snapshot, 
+            (!m_document->turnaround.isNull() && m_document->turnaroundPngByteArray.size() > 0) ? 
+                &m_document->turnaroundPngByteArray : nullptr,
+            (!m_document->script().isEmpty()) ? &m_document->script() : nullptr,
+            (!m_document->variables().empty()) ? &m_document->variables() : nullptr)) {
+        setCurrentFilename(filename);
+    }
+    QApplication::restoreOverrideCursor();
+}
 
-    if (!m_document->turnaround.isNull() && m_document->turnaroundPngByteArray.size() > 0) {
-        ds3Writer.add("canvas.png", "asset", &m_document->turnaroundPngByteArray);
-    }
+void DocumentWindow::importPath(const QString &path)
+{
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    Ds3FileReader ds3Reader(path);
+    bool documentChanged = false;
     
-    if (!m_document->script().isEmpty()) {
-        auto script = m_document->script().toUtf8();
-        ds3Writer.add("model.js", "script", &script);
-    }
-    
-    const auto &variables = m_document->variables();
-    if (!variables.empty()) {
-        QByteArray variablesXml;
-        QXmlStreamWriter variablesXmlStream(&variablesXml);
-        saveVariablesToXmlStream(variables, &variablesXmlStream);
-        if (variablesXml.size() > 0)
-            ds3Writer.add("variables.xml", "variable", &variablesXml);
-    }
-    
-    std::set<QUuid> imageIds;
-    
-    for (const auto &material: snapshot.materials) {
-        for (auto &layer: material.second) {
-            for (auto &mapItem: layer.second) {
-                auto findImageIdString = mapItem.find("linkData");
-                if (findImageIdString == mapItem.end())
-                    continue;
-                QUuid imageId = QUuid(findImageIdString->second);
-                imageIds.insert(imageId);
+    for (int i = 0; i < ds3Reader.items().size(); ++i) {
+        Ds3ReaderItem item = ds3Reader.items().at(i);
+        if (item.type == "asset") {
+            if (item.name.startsWith("images/")) {
+                QString filename = item.name.split("/")[1];
+                QString imageIdString = filename.split(".")[0];
+                QUuid imageId = QUuid(imageIdString);
+                if (!imageId.isNull()) {
+                    QByteArray data;
+                    ds3Reader.loadItem(item.name, &data);
+                    QImage image = QImage::fromData(data, "PNG");
+                    (void)ImageForever::add(&image, imageId);
+                }
             }
         }
     }
-    for (const auto &part: snapshot.parts) {
-        auto findImageIdString = part.second.find("deformMapImageId");
-        if (findImageIdString == part.second.end())
-            continue;
-        QUuid imageId = QUuid(findImageIdString->second);
-        imageIds.insert(imageId);
-    }
     
-    for (auto &pose: snapshot.poses) {
-        auto findCanvasImageId = pose.first.find("canvasImageId");
-        if (findCanvasImageId != pose.first.end()) {
-            QUuid imageId = QUuid(findCanvasImageId->second);
-            imageIds.insert(imageId);
+    for (int i = 0; i < ds3Reader.items().size(); ++i) {
+        Ds3ReaderItem item = ds3Reader.items().at(i);
+        if (item.type == "model") {
+            {
+                QByteArray data;
+                ds3Reader.loadItem(item.name, &data);
+                QXmlStreamReader stream(data);
+            
+                Snapshot snapshot;
+                loadSkeletonFromXmlStream(&snapshot, stream, SNAPSHOT_ITEM_MATERIAL);
+                m_document->addFromSnapshot(snapshot, Document::SnapshotSource::Import);
+                documentChanged = true;
+            }
+            {
+                QByteArray data;
+                ds3Reader.loadItem(item.name, &data);
+                QXmlStreamReader stream(data);
+                
+                Snapshot snapshot;
+                loadSkeletonFromXmlStream(&snapshot, stream, SNAPSHOT_ITEM_CANVAS | SNAPSHOT_ITEM_COMPONENT);
+
+                QByteArray modelXml;
+                QXmlStreamWriter modelStream(&modelXml);
+                saveSkeletonToXmlStream(&snapshot, &modelStream);
+                if (modelXml.size() > 0) {
+                    QUuid fillMeshFileId = FileForever::add(item.name, modelXml);
+                    if (!fillMeshFileId.isNull()) {
+                        Snapshot partSnapshot;
+                        createPartSnapshotForFillMesh(fillMeshFileId, &partSnapshot);
+                        m_document->addFromSnapshot(partSnapshot, Document::SnapshotSource::Paste);
+                        documentChanged = true;
+                    }
+                }
+            }
         }
     }
     
-    for (const auto &imageId: imageIds) {
-        const QByteArray *pngByteArray = ImageForever::getPngByteArray(imageId);
-        if (nullptr == pngByteArray)
-            continue;
-        if (pngByteArray->size() > 0)
-            ds3Writer.add("images/" + imageId.toString() + ".png", "asset", pngByteArray);
-    }
-
-    if (ds3Writer.save(filename)) {
-        setCurrentFilename(filename);
-    }
-
+    if (documentChanged)
+        m_document->saveSnapshot();
+    
     QApplication::restoreOverrideCursor();
+}
+
+void DocumentWindow::createPartSnapshotForFillMesh(const QUuid &fillMeshFileId, Snapshot *snapshot)
+{
+    if (fillMeshFileId.isNull())
+        return;
+    
+    auto partId = QUuid::createUuid();
+    auto partIdString = partId.toString();
+    std::map<QString, QString> snapshotPart;
+    snapshotPart["id"] = partIdString;
+    snapshotPart["fillMesh"] = fillMeshFileId.toString();
+    snapshot->parts[partIdString] = snapshotPart;
+    
+    auto componentId = QUuid::createUuid();
+    auto componentIdString = componentId.toString();
+    std::map<QString, QString> snapshotComponent;
+    snapshotComponent["id"] = componentIdString;
+    snapshotComponent["combineMode"] = "Uncombined";
+    snapshotComponent["linkDataType"] = "partId";
+    snapshotComponent["linkData"] = partIdString;
+    snapshot->components[componentIdString] = snapshotComponent;
+    
+    snapshot->rootComponent["children"] = componentIdString;
+    
+    auto createNode = [&](const QVector3D &position, float radius) {
+        auto nodeId = QUuid::createUuid();
+        auto nodeIdString = nodeId.toString();
+        std::map<QString, QString> snapshotNode;
+        snapshotNode["id"] = nodeIdString;
+        snapshotNode["x"] = QString::number(position.x());
+        snapshotNode["y"] = QString::number(position.y());
+        snapshotNode["z"] = QString::number(position.z());
+        snapshotNode["radius"] = QString::number(radius);
+        snapshotNode["partId"] = partIdString;
+        snapshot->nodes[nodeIdString] = snapshotNode;
+        return nodeIdString;
+    };
+    
+    auto createEdge = [&](const QString &fromNode, const QString &toNode) {
+        auto edgeId = QUuid::createUuid();
+        auto edgeIdString = edgeId.toString();
+        std::map<QString, QString> snapshotEdge;
+        snapshotEdge["id"] = edgeIdString;
+        snapshotEdge["from"] = fromNode;
+        snapshotEdge["to"] = toNode;
+        snapshotEdge["partId"] = partIdString;
+        snapshot->edges[edgeIdString] = snapshotEdge;
+    };
+    
+    createEdge(createNode(QVector3D(0.5, 0.5, 1.0), 0.1), 
+        createNode(QVector3D(0.5, 0.3, 1.0), 0.1));
 }
 
 void DocumentWindow::openPathAs(const QString &path, const QString &asName)
@@ -1568,6 +1640,15 @@ void DocumentWindow::openPathAs(const QString &path, const QString &asName)
                     ds3Reader.loadItem(item.name, &data);
                     QImage image = QImage::fromData(data, "PNG");
                     (void)ImageForever::add(&image, imageId);
+                }
+            } else if (item.name.startsWith("files/")) {
+                QString filename = item.name.split("/")[1];
+                QString fileIdString = filename.split(".")[0];
+                QUuid fileId = QUuid(fileIdString);
+                if (!fileId.isNull()) {
+                    QByteArray data;
+                    ds3Reader.loadItem(item.name, &data);
+                    (void)FileForever::add(item.name, data, fileId);
                 }
             }
         }
@@ -1682,7 +1763,7 @@ void DocumentWindow::exportObjResult()
 void DocumentWindow::exportObjToFilename(const QString &filename)
 {
     QApplication::setOverrideCursor(Qt::WaitCursor);
-    MeshLoader *resultMesh = m_document->takeResultMesh();
+    Model *resultMesh = m_document->takeResultMesh();
     if (nullptr != resultMesh) {
         resultMesh->exportAsObj(filename);
         delete resultMesh;
@@ -1822,7 +1903,7 @@ void DocumentWindow::updateRadiusLockButtonState()
 
 void DocumentWindow::updateRigWeightRenderWidget()
 {
-    MeshLoader *resultRigWeightMesh = m_document->takeResultRigWeightMesh();
+    Model *resultRigWeightMesh = m_document->takeResultRigWeightMesh();
     if (nullptr == resultRigWeightMesh) {
         m_rigWidget->rigWeightRenderWidget()->hide();
     } else {
@@ -1984,17 +2065,17 @@ void DocumentWindow::checkExportWaitingList()
     auto list = m_waitingForExportToFilenames;
     m_waitingForExportToFilenames.clear();
     
-    bool isSucceed = m_document->isMeshGenerationSucceed();
+    bool isSuccessful = m_document->isMeshGenerationSucceed();
     for (const auto &filename: list) {
         if (filename.endsWith(".obj")) {
             exportObjToFilename(filename);
-            emit waitingExportFinished(filename, isSucceed);
+            emit waitingExportFinished(filename, isSuccessful);
         } else if (filename.endsWith(".fbx")) {
             exportFbxToFilename(filename);
-            emit waitingExportFinished(filename, isSucceed);
+            emit waitingExportFinished(filename, isSuccessful);
         } else if (filename.endsWith(".glb")) {
             exportGlbToFilename(filename);
-            emit waitingExportFinished(filename, isSucceed);
+            emit waitingExportFinished(filename, isSuccessful);
         } else {
             emit waitingExportFinished(filename, false);
         }
@@ -2010,13 +2091,13 @@ void DocumentWindow::normalAndDepthMapsReady()
 {
     QImage *normalMap = m_normalAndDepthMapsGenerator->takeNormalMap();
     QImage *depthMap = m_normalAndDepthMapsGenerator->takeDepthMap();
-    
+
     m_modelRenderWidget->updateToonNormalAndDepthMaps(normalMap, depthMap);
-    
-    //m_normalAndDepthMapsGenerator->setRenderThread(QGuiApplication::instance()->thread());
-    
+
     delete m_normalAndDepthMapsGenerator;
     m_normalAndDepthMapsGenerator = nullptr;
+    
+    qDebug() << "Normal and depth maps generation done";
     
     if (m_isNormalAndDepthMapsObsolete) {
         generateNormalAndDepthMaps();
@@ -2036,21 +2117,18 @@ void DocumentWindow::generateNormalAndDepthMaps()
     if (nullptr == resultMesh)
 		return;
     
+    qDebug() << "Normal and depth maps generating...";
+    
     QThread *thread = new QThread;
     m_normalAndDepthMapsGenerator = new NormalAndDepthMapsGenerator(m_modelRenderWidget);
     m_normalAndDepthMapsGenerator->updateMesh(resultMesh);
     m_normalAndDepthMapsGenerator->moveToThread(thread);
-    //m_normalAndDepthMapsGenerator->setRenderThread(thread);
+    m_normalAndDepthMapsGenerator->setRenderThread(thread);
     connect(thread, &QThread::started, m_normalAndDepthMapsGenerator, &NormalAndDepthMapsGenerator::process);
     connect(m_normalAndDepthMapsGenerator, &NormalAndDepthMapsGenerator::finished, this, &DocumentWindow::normalAndDepthMapsReady);
     connect(m_normalAndDepthMapsGenerator, &NormalAndDepthMapsGenerator::finished, thread, &QThread::quit);
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
     thread->start();
-    
-    //m_normalAndDepthMapsGenerator = new NormalAndDepthMapsGenerator(m_modelRenderWidget);
-    //m_normalAndDepthMapsGenerator->updateMesh(resultMesh);
-    //connect(m_normalAndDepthMapsGenerator, &NormalAndDepthMapsGenerator::finished, this, &DocumentWindow::normalAndDepthMapsReady);
-    //m_normalAndDepthMapsGenerator->process();
 }
 
 void DocumentWindow::delayedGenerateNormalAndDepthMaps()
@@ -2058,22 +2136,15 @@ void DocumentWindow::delayedGenerateNormalAndDepthMaps()
     if (!Preferences::instance().toonShading())
         return;
     
-    //delete m_normalAndDepthMapsDelayTimer;
-    //m_normalAndDepthMapsDelayTimer = new QTimer(this);
-    //m_normalAndDepthMapsDelayTimer->setSingleShot(true);
-    //m_normalAndDepthMapsDelayTimer->setInterval(250);
-    //connect(m_normalAndDepthMapsDelayTimer, &QTimer::timeout, [=] {
-        generateNormalAndDepthMaps();
-    //});
-    //m_normalAndDepthMapsDelayTimer->start();
+    generateNormalAndDepthMaps();
 }
 
 void DocumentWindow::exportImageToFilename(const QString &filename)
 {
     QApplication::setOverrideCursor(Qt::WaitCursor);
-    MeshLoader *resultMesh = m_modelRenderWidget->fetchCurrentMesh();
+    Model *resultMesh = m_modelRenderWidget->fetchCurrentMesh();
     if (nullptr != resultMesh) {
-        ModelOfflineRender *offlineRender = new ModelOfflineRender(m_modelRenderWidget->format());
+        ModelOffscreenRender *offlineRender = new ModelOffscreenRender(m_modelRenderWidget->format());
         offlineRender->setXRotation(m_modelRenderWidget->xRot());
         offlineRender->setYRotation(m_modelRenderWidget->yRot());
         offlineRender->setZRotation(m_modelRenderWidget->zRot());
@@ -2094,4 +2165,13 @@ void DocumentWindow::exportImageToFilename(const QString &filename)
             m_modelRenderWidget->heightInPixels())).save(filename);
     }
     QApplication::restoreOverrideCursor();
+}
+
+void DocumentWindow::import()
+{
+    QString fileName = QFileDialog::getOpenFileName(this, QString(), QString(),
+        tr("Dust3D Document (*.ds3)")).trimmed();
+    if (fileName.isEmpty())
+        return;
+    importPath(fileName);
 }

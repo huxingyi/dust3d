@@ -792,7 +792,7 @@ void PartWidget::updatePreview()
         return;
     }
     //m_previewLabel->setPixmap(QPixmap::fromImage(part->preview));
-    MeshLoader *previewMesh = part->takePreviewMesh();
+    Model *previewMesh = part->takePreviewMesh();
     m_previewWidget->updateMesh(previewMesh);
     if (PartTarget::CutFace == part->target) {
         if (0 != m_previewWidget->xRot()) {

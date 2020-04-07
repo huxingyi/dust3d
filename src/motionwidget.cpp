@@ -82,7 +82,7 @@ void MotionWidget::updatePreview()
         qDebug() << "Motion not found:" << m_motionId;
         return;
     }
-    MeshLoader *previewMesh = motion->takePreviewMesh();
+    Model *previewMesh = motion->takePreviewMesh();
     m_previewWidget->updateMesh(previewMesh);
 }
 

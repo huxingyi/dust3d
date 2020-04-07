@@ -13,8 +13,8 @@ typedef CGAL::Surface_mesh<InexactKernel::Point_3> InexactMesh;
 bool triangulateFacesWithoutKeepVertices(std::vector<QVector3D> &vertices, const std::vector<std::vector<size_t>> &faces, std::vector<std::vector<size_t>> &triangles)
 {
     auto cgalMesh = buildCgalMesh<InexactKernel>(vertices, faces);
-    bool isSucceed = CGAL::Polygon_mesh_processing::triangulate_faces(*cgalMesh);
-    if (isSucceed) {
+    bool isSuccessful = CGAL::Polygon_mesh_processing::triangulate_faces(*cgalMesh);
+    if (isSuccessful) {
         vertices.clear();
         fetchFromCgalMesh<InexactKernel>(cgalMesh, vertices, triangles);
         delete cgalMesh;
@@ -24,7 +24,7 @@ bool triangulateFacesWithoutKeepVertices(std::vector<QVector3D> &vertices, const
     
     // fallback to our own imeplementation
 
-    isSucceed = true;
+    isSuccessful = true;
     std::vector<std::vector<size_t>> rings;
     for (const auto &face: faces) {
         if (face.size() > 3) {
@@ -79,8 +79,8 @@ bool triangulateFacesWithoutKeepVertices(std::vector<QVector3D> &vertices, const
             triangles.push_back(newFace);
         } else {
             qDebug() << "Triangulate failed, ring size:" << fillRing.size();
-            isSucceed = false;
+            isSuccessful = false;
         }
     }
-    return isSucceed;
+    return isSuccessful;
 }

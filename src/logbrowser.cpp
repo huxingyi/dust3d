@@ -1,8 +1,10 @@
-#include "logbrowser.h"
 // Modified from https://wiki.qt.io/Browser_for_QDebug_output
 #include <QMetaType>
-#include <stdio.h>
+#include <QDir>
+#include "logbrowser.h"
 #include "logbrowserdialog.h"
+
+bool LogBrowser::m_enableOutputToFile = false;
 
 LogBrowser::LogBrowser(QObject *parent) :
     QObject(parent)
@@ -10,11 +12,18 @@ LogBrowser::LogBrowser(QObject *parent) :
     qRegisterMetaType<QtMsgType>("QtMsgType");
     m_browserDialog = new LogBrowserDialog;
     connect(this, &LogBrowser::sendMessage, m_browserDialog, &LogBrowserDialog::outputMessage, Qt::QueuedConnection);
+    
+    if (m_enableOutputToFile) {
+        QString filePath = "dust3d.log";
+        m_outputTo = fopen(filePath.toUtf8().constData(), "w");
+    }
 }
 
 LogBrowser::~LogBrowser()
 {
     delete m_browserDialog;
+    if (m_outputTo)
+        fclose(m_outputTo);
 }
 
 void LogBrowser::showDialog()
@@ -36,5 +45,9 @@ bool LogBrowser::isDialogVisible()
 
 void LogBrowser::outputMessage(QtMsgType type, const QString &msg, const QString &source, int line)
 {
+    if (m_outputTo) {
+        fprintf(m_outputTo, "[%s:%d]: %s\n", source.toUtf8().constData(), line, msg.toUtf8().constData());
+        fflush(m_outputTo);
+    }
     emit sendMessage(type, msg, source, line);
 }

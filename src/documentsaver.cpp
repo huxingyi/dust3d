@@ -1,10 +1,12 @@
 #include <QXmlStreamWriter>
 #include <set>
+#include <QGuiApplication>
 #include "documentsaver.h"
 #include "imageforever.h"
 #include "ds3file.h"
 #include "snapshotxml.h"
 #include "variablesxml.h"
+#include "fileforever.h"
 
 DocumentSaver::DocumentSaver(const QString *filename, 
         Snapshot *snapshot, 
@@ -34,6 +36,7 @@ void DocumentSaver::process()
         m_turnaroundPngByteArray,
         m_script,
         m_variables);
+    this->moveToThread(QGuiApplication::instance()->thread());
     emit finished();
 }
 
@@ -68,6 +71,7 @@ bool DocumentSaver::save(const QString *filename,
     }
     
     std::set<QUuid> imageIds;
+    std::set<QUuid> fileIds;
     
     for (const auto &material: snapshot->materials) {
         for (auto &layer: material.second) {
@@ -80,12 +84,23 @@ bool DocumentSaver::save(const QString *filename,
             }
         }
     }
+    
     for (const auto &part: snapshot->parts) {
         auto findImageIdString = part.second.find("deformMapImageId");
         if (findImageIdString == part.second.end())
             continue;
         QUuid imageId = QUuid(findImageIdString->second);
         imageIds.insert(imageId);
+    }
+    
+    for (const auto &part: snapshot->parts) {
+        auto fillMeshLinkedIdString = part.second.find("fillMesh");
+        if (fillMeshLinkedIdString == part.second.end())
+            continue;
+        QUuid fileId = QUuid(fillMeshLinkedIdString->second);
+        if (fileId.isNull())
+            continue;
+        fileIds.insert(fileId);
     }
     
     for (auto &pose: snapshot->poses) {
@@ -102,6 +117,21 @@ bool DocumentSaver::save(const QString *filename,
             continue;
         if (pngByteArray->size() > 0)
             ds3Writer.add("images/" + imageId.toString() + ".png", "asset", pngByteArray);
+    }
+    
+    for (const auto &fileId: fileIds) {
+        const QByteArray *byteArray = FileForever::getContent(fileId);
+        if (nullptr == byteArray)
+            continue;
+        QString suffix = ".bin";
+        const QString *name = FileForever::getName(fileId);
+        if (nullptr != name) {
+            int suffixBegin = name->lastIndexOf(".");
+            if (-1 != suffixBegin)
+                suffix = name->mid(suffixBegin);
+        }
+        if (byteArray->size() > 0)
+            ds3Writer.add("files/" + fileId.toString() + suffix, "asset", byteArray);
     }
     
     return ds3Writer.save(*filename);

@@ -3,15 +3,15 @@
 #include <QObject>
 #include <QImage>
 #include "modelwidget.h"
-#include "modelofflinerender.h"
-#include "meshloader.h"
+#include "modeloffscreenrender.h"
+#include "model.h"
 
 class NormalAndDepthMapsGenerator : public QObject
 {
     Q_OBJECT
 public:
     NormalAndDepthMapsGenerator(ModelWidget *modelWidget);
-    void updateMesh(MeshLoader *mesh);
+    void updateMesh(Model *mesh);
     void setRenderThread(QThread *thread);
     ~NormalAndDepthMapsGenerator();
     QImage *takeNormalMap();
@@ -21,13 +21,13 @@ signals:
 public slots:
     void process();
 private:
-    ModelOfflineRender *m_normalMapRender = nullptr;
-    ModelOfflineRender *m_depthMapRender = nullptr;
+    ModelOffscreenRender *m_normalMapRender = nullptr;
+    ModelOffscreenRender *m_depthMapRender = nullptr;
     QSize m_viewPortSize;
     QImage *m_normalMap = nullptr;
     QImage *m_depthMap = nullptr;
     
-    ModelOfflineRender *createOfflineRender(ModelWidget *modelWidget, int purpose);
+    ModelOffscreenRender *createOfflineRender(ModelWidget *modelWidget, int purpose);
     void generate();
 };
 

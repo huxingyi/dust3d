@@ -29,9 +29,9 @@ const std::set<QUuid> &MaterialPreviewsGenerator::generatedPreviewMaterialIds()
     return m_generatedMaterialIds;
 }
 
-MeshLoader *MaterialPreviewsGenerator::takePreview(QUuid materialId)
+Model *MaterialPreviewsGenerator::takePreview(QUuid materialId)
 {
-    MeshLoader *resultMesh = m_previews[materialId];
+    Model *resultMesh = m_previews[materialId];
     m_previews[materialId] = nullptr;
     return resultMesh;
 }
@@ -96,9 +96,9 @@ void MaterialPreviewsGenerator::generate()
                 }
             }
             textureGenerator->generate();
-            MeshLoader *texturedResultMesh = textureGenerator->takeResultMesh();
+            Model *texturedResultMesh = textureGenerator->takeResultMesh();
             if (nullptr != texturedResultMesh) {
-                m_previews[material.first] = new MeshLoader(*texturedResultMesh);
+                m_previews[material.first] = new Model(*texturedResultMesh);
                 m_generatedMaterialIds.insert(material.first);
                 delete texturedResultMesh;
             }

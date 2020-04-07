@@ -16,9 +16,9 @@ PoseMeshCreator::~PoseMeshCreator()
     delete m_resultMesh;
 }
 
-MeshLoader *PoseMeshCreator::takeResultMesh()
+Model *PoseMeshCreator::takeResultMesh()
 {
-    MeshLoader *resultMesh = m_resultMesh;
+    Model *resultMesh = m_resultMesh;
     m_resultMesh = nullptr;
     return resultMesh;
 }

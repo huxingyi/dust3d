@@ -406,6 +406,14 @@ Suggerimenti:
         <source>Image (*.png)</source>
         <translation type="unfinished"></translation>
     </message>
+    <message>
+        <source>Import...</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Reverse</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>ExportPreviewWidget</name>
@@ -1294,6 +1302,10 @@ Suggerimenti:
     <message>
         <source>Unselect All</source>
         <translation type="unfinished">De-Seleziona tutto</translation>
+    </message>
+    <message>
+        <source>Reverse</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>

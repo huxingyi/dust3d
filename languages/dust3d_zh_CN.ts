@@ -399,6 +399,14 @@ Tips:
         <source>Image (*.png)</source>
         <translation>图片 (*.png)</translation>
     </message>
+    <message>
+        <source>Import...</source>
+        <translation>导入...</translation>
+    </message>
+    <message>
+        <source>Reverse</source>
+        <translation>反向</translation>
+    </message>
 </context>
 <context>
     <name>ExportPreviewWidget</name>
@@ -1287,6 +1295,10 @@ Tips:
     <message>
         <source>Colorize</source>
         <translation>着色</translation>
+    </message>
+    <message>
+        <source>Reverse</source>
+        <translation>反向</translation>
     </message>
 </context>
 <context>

@@ -11,7 +11,7 @@
 #include <algorithm>
 #include <QPolygon>
 #include "snapshot.h"
-#include "meshloader.h"
+#include "model.h"
 #include "meshgenerator.h"
 #include "theme.h"
 #include "texturegenerator.h"
@@ -231,16 +231,16 @@ public:
     QUuid turnaroundImageId;
     float yTranslationScale = 1.0;
     std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> frames; // pair<attributes, parameters>
-    void updatePreviewMesh(MeshLoader *previewMesh)
+    void updatePreviewMesh(Model *previewMesh)
     {
         delete m_previewMesh;
         m_previewMesh = previewMesh;
     }
-    MeshLoader *takePreviewMesh() const
+    Model *takePreviewMesh() const
     {
         if (nullptr == m_previewMesh)
             return nullptr;
-        return new MeshLoader(*m_previewMesh);
+        return new Model(*m_previewMesh);
     }
     bool yTranslationScaleAdjusted() const
     {
@@ -248,7 +248,7 @@ public:
     }
 private:
     Q_DISABLE_COPY(Pose);
-    MeshLoader *m_previewMesh = nullptr;
+    Model *m_previewMesh = nullptr;
 };
 
 enum class MotionClipType
@@ -327,18 +327,18 @@ public:
     bool dirty = true;
     std::vector<MotionClip> clips;
     std::vector<std::pair<float, JointNodeTree>> jointNodeTrees;
-    void updatePreviewMeshs(std::vector<std::pair<float, MeshLoader *>> &previewMeshs)
+    void updatePreviewMeshs(std::vector<std::pair<float, Model *>> &previewMeshs)
     {
         releasePreviewMeshs();
         m_previewMeshs = previewMeshs;
         previewMeshs.clear();
     }
-    MeshLoader *takePreviewMesh() const
+    Model *takePreviewMesh() const
     {
         if (m_previewMeshs.empty())
             return nullptr;
         int middle = std::max((int)m_previewMeshs.size() / 2 - 1, (int)0);
-        return new MeshLoader(*m_previewMeshs[middle].second);
+        return new Model(*m_previewMeshs[middle].second);
     }
 private:
     Q_DISABLE_COPY(Motion);
@@ -349,7 +349,7 @@ private:
         }
         m_previewMeshs.clear();
     }
-    std::vector<std::pair<float, MeshLoader *>> m_previewMeshs;
+    std::vector<std::pair<float, Model *>> m_previewMeshs;
 };
 
 class MaterialMap
@@ -380,20 +380,20 @@ public:
     QString name;
     bool dirty = true;
     std::vector<MaterialLayer> layers;
-    void updatePreviewMesh(MeshLoader *previewMesh)
+    void updatePreviewMesh(Model *previewMesh)
     {
         delete m_previewMesh;
         m_previewMesh = previewMesh;
     }
-    MeshLoader *takePreviewMesh() const
+    Model *takePreviewMesh() const
     {
         if (nullptr == m_previewMesh)
             return nullptr;
-        return new MeshLoader(*m_previewMesh);
+        return new Model(*m_previewMesh);
     }
 private:
     Q_DISABLE_COPY(Material);
-    MeshLoader *m_previewMesh = nullptr;
+    Model *m_previewMesh = nullptr;
 };
 
 enum class DocumentToSnapshotFor
@@ -434,7 +434,7 @@ signals:
     void nodeCutRotationChanged(QUuid nodeId);
     void nodeCutFaceChanged(QUuid nodeId);
     void nodeOriginChanged(QUuid nodeId);
-    void edgeChanged(QUuid edgeId);
+    void edgeReversed(QUuid edgeId);
     void partPreviewChanged(QUuid partId);
     void resultMeshChanged();
     void turnaroundChanged();
@@ -562,17 +562,23 @@ public:
         const std::set<QUuid> &limitMotionIds=std::set<QUuid>(),
         const std::set<QUuid> &limitMaterialIds=std::set<QUuid>()) const;
     void fromSnapshot(const Snapshot &snapshot);
-    void addFromSnapshot(const Snapshot &snapshot, bool fromPaste=true);
+    enum class SnapshotSource
+    {
+        Unknown,
+        Paste,
+        Import
+    };
+    void addFromSnapshot(const Snapshot &snapshot, enum SnapshotSource source=SnapshotSource::Paste);
     const Component *findComponent(QUuid componentId) const;
     const Component *findComponentParent(QUuid componentId) const;
     QUuid findComponentParentId(QUuid componentId) const;
     const Material *findMaterial(QUuid materialId) const;
     const Pose *findPose(QUuid poseId) const;
     const Motion *findMotion(QUuid motionId) const;
-    MeshLoader *takeResultMesh();
+    Model *takeResultMesh();
     bool isMeshGenerationSucceed();
-    MeshLoader *takeResultTextureMesh();
-    MeshLoader *takeResultRigWeightMesh();
+    Model *takeResultTextureMesh();
+    Model *takeResultRigWeightMesh();
     const std::vector<RiggerBone> *resultRigBones() const;
     const std::map<int, RiggerVertexWeights> *resultRigWeights() const;
     void updateTurnaround(const QImage &image);
@@ -707,6 +713,7 @@ public slots:
     void silentReset();
     void silentResetScript();
     void breakEdge(QUuid edgeId);
+    void reverseEdge(QUuid edgeId);
     void setXlockState(bool locked);
     void setYlockState(bool locked);
     void setZlockState(bool locked);
@@ -760,13 +767,13 @@ private:
     void markAllDirty();
     void removeRigResults();
     void updateLinkedPart(QUuid oldPartId, QUuid newPartId);
-    //void addToolToMesh(MeshLoader *mesh);
+    //void addToolToMesh(Model *mesh);
     bool updateDefaultVariables(const std::map<QString, std::map<QString, QString>> &defaultVariables);
     void checkPartGrid(QUuid partId);
 private: // need initialize
     bool m_isResultMeshObsolete;
     MeshGenerator *m_meshGenerator;
-    MeshLoader *m_resultMesh;
+    Model *m_resultMesh;
     std::map<QUuid, StrokeMeshBuilder::CutFaceTransform> *m_resultMeshCutFaceTransforms;
     std::map<QUuid, std::map<QString, QVector2D>> *m_resultMeshNodesCutFaces;
     bool m_isMeshGenerationSucceed;
@@ -777,13 +784,13 @@ private: // need initialize
     bool m_isPostProcessResultObsolete;
     MeshResultPostProcessor *m_postProcessor;
     Outcome *m_postProcessedOutcome;
-    MeshLoader *m_resultTextureMesh;
+    Model *m_resultTextureMesh;
     unsigned long long m_textureImageUpdateVersion;
     QUuid m_currentCanvasComponentId;
     bool m_allPositionRelatedLocksEnabled;
     bool m_smoothNormal;
     RigGenerator *m_rigGenerator;
-    MeshLoader *m_resultRigWeightMesh;
+    Model *m_resultRigWeightMesh;
     std::vector<RiggerBone> *m_resultRigBones;
     std::map<int, RiggerVertexWeights> *m_resultRigWeights;
     bool m_isRigObsolete;

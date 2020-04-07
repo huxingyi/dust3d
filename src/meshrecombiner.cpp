@@ -97,7 +97,7 @@ size_t MeshRecombiner::splitSeamVerticesToIslands(const std::map<size_t, std::ve
 
 bool MeshRecombiner::buildHalfEdgeToFaceMap(std::map<std::pair<size_t, size_t>, size_t> &halfEdgeToFaceMap)
 {
-    bool succeed = true;
+    bool isSuccessful = true;
     for (size_t faceIndex = 0; faceIndex < m_faces->size(); ++faceIndex) {
         const auto &face = (*m_faces)[faceIndex];
         for (size_t i = 0; i < face.size(); ++i) {
@@ -105,11 +105,11 @@ bool MeshRecombiner::buildHalfEdgeToFaceMap(std::map<std::pair<size_t, size_t>, 
             const auto insertResult = halfEdgeToFaceMap.insert({{face[i], face[j]}, faceIndex});
             if (!insertResult.second) {
                 //qDebug() << "Non manifold edge found:" << face[i] << face[j];
-                succeed = false;
+                isSuccessful = false;
             }
         }
     }
-    return succeed;
+    return isSuccessful;
 }
 
 bool MeshRecombiner::recombine()

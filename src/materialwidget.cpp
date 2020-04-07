@@ -77,7 +77,7 @@ void MaterialWidget::updatePreview(QUuid materialId)
         qDebug() << "Material not found:" << m_materialId;
         return;
     }
-    MeshLoader *previewMesh = material->takePreviewMesh();
+    Model *previewMesh = material->takePreviewMesh();
     m_previewWidget->updateMesh(previewMesh);
 }
 

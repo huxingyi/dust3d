@@ -179,12 +179,12 @@ void StrokeModifier::finalize()
     }
 }
 
-const std::vector<StrokeModifier::Node> &StrokeModifier::nodes()
+const std::vector<StrokeModifier::Node> &StrokeModifier::nodes() const
 {
     return m_nodes;
 }
 
-const std::vector<StrokeModifier::Edge> &StrokeModifier::edges()
+const std::vector<StrokeModifier::Edge> &StrokeModifier::edges() const
 {
     return m_edges;
 }

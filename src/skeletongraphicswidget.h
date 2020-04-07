@@ -429,6 +429,11 @@ public:
         m_deactivated = deactivated;
         updateAppearance();
     }
+    void reverse()
+    {
+        std::swap(m_firstItem, m_secondItem);
+        updateAppearance();
+    }
     bool deactivated()
     {
         return m_deactivated;
@@ -477,6 +482,7 @@ signals:
     void open();
     void exportResult();
     void breakEdge(QUuid edgeId);
+    void reverseEdge(QUuid edgeId);
     void moveOriginBy(float x, float y, float z);
     void partChecked(QUuid partId);
     void partUnchecked(QUuid partId);
@@ -555,7 +561,7 @@ public slots:
     void nodeRadiusChanged(QUuid nodeId);
     void nodeBoneMarkChanged(QUuid nodeId);
     void nodeOriginChanged(QUuid nodeId);
-    void edgeChanged(QUuid edgeId);
+    void edgeReversed(QUuid edgeId);
     void turnaroundChanged();
     void canvasResized();
     void editModeChanged();
@@ -580,6 +586,7 @@ public slots:
     void fadeSelected();
     void colorizeSelected();
     void breakSelected();
+    void reverseSelectedEdges();
     void connectSelected();
     void rotateSelected(int degree);
     void zoomSelected(float delta);

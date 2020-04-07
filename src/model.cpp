@@ -2,15 +2,15 @@
 #include <QTextStream>
 #include <QFile>
 #include <cmath>
-#include "meshloader.h"
+#include "model.h"
 #include "version.h"
 
 #define MAX_VERTICES_PER_FACE   100
 
-float MeshLoader::m_defaultMetalness = 0.0;
-float MeshLoader::m_defaultRoughness = 1.0;
+float Model::m_defaultMetalness = 0.0;
+float Model::m_defaultRoughness = 1.0;
 
-MeshLoader::MeshLoader(const MeshLoader &mesh) :
+Model::Model(const Model &mesh) :
     m_triangleVertices(nullptr),
     m_triangleVertexCount(0),
     m_edgeVertices(nullptr),
@@ -57,7 +57,7 @@ MeshLoader::MeshLoader(const MeshLoader &mesh) :
     this->m_meshId = mesh.meshId();
 }
 
-void MeshLoader::removeColor()
+void Model::removeColor()
 {
     delete this->m_textureImage;
     this->m_textureImage = nullptr;
@@ -80,7 +80,7 @@ void MeshLoader::removeColor()
     }
 }
 
-MeshLoader::MeshLoader(ShaderVertex *triangleVertices, int vertexNum, ShaderVertex *edgeVertices, int edgeVertexCount) :
+Model::Model(ShaderVertex *triangleVertices, int vertexNum, ShaderVertex *edgeVertices, int edgeVertexCount) :
     m_triangleVertices(triangleVertices),
     m_triangleVertexCount(vertexNum),
     m_edgeVertices(edgeVertices),
@@ -89,7 +89,7 @@ MeshLoader::MeshLoader(ShaderVertex *triangleVertices, int vertexNum, ShaderVert
 {
 }
 
-MeshLoader::MeshLoader(const std::vector<QVector3D> &vertices, const std::vector<std::vector<size_t>> &triangles,
+Model::Model(const std::vector<QVector3D> &vertices, const std::vector<std::vector<size_t>> &triangles,
     const std::vector<std::vector<QVector3D>> &triangleVertexNormals,
     const QColor &color)
 {
@@ -124,7 +124,7 @@ MeshLoader::MeshLoader(const std::vector<QVector3D> &vertices, const std::vector
     }
 }
 
-MeshLoader::MeshLoader(Outcome &outcome) :
+Model::Model(Outcome &outcome) :
     m_triangleVertices(nullptr),
     m_triangleVertexCount(0),
     m_edgeVertices(nullptr),
@@ -210,7 +210,7 @@ MeshLoader::MeshLoader(Outcome &outcome) :
     }
 }
 
-MeshLoader::MeshLoader() :
+Model::Model() :
     m_triangleVertices(nullptr),
     m_triangleVertexCount(0),
     m_edgeVertices(nullptr),
@@ -219,7 +219,7 @@ MeshLoader::MeshLoader() :
 {
 }
 
-MeshLoader::~MeshLoader()
+Model::~Model()
 {
     delete[] m_triangleVertices;
     m_triangleVertexCount = 0;
@@ -232,117 +232,117 @@ MeshLoader::~MeshLoader()
     delete m_metalnessRoughnessAmbientOcclusionImage;
 }
 
-const std::vector<QVector3D> &MeshLoader::vertices()
+const std::vector<QVector3D> &Model::vertices()
 {
     return m_vertices;
 }
 
-const std::vector<std::vector<size_t>> &MeshLoader::faces()
+const std::vector<std::vector<size_t>> &Model::faces()
 {
     return m_faces;
 }
 
-const std::vector<QVector3D> &MeshLoader::triangulatedVertices()
+const std::vector<QVector3D> &Model::triangulatedVertices()
 {
     return m_triangulatedVertices;
 }
 
-const std::vector<TriangulatedFace> &MeshLoader::triangulatedFaces()
+const std::vector<TriangulatedFace> &Model::triangulatedFaces()
 {
     return m_triangulatedFaces;
 }
 
-ShaderVertex *MeshLoader::triangleVertices()
+ShaderVertex *Model::triangleVertices()
 {
     return m_triangleVertices;
 }
 
-int MeshLoader::triangleVertexCount()
+int Model::triangleVertexCount()
 {
     return m_triangleVertexCount;
 }
 
-ShaderVertex *MeshLoader::edgeVertices()
+ShaderVertex *Model::edgeVertices()
 {
     return m_edgeVertices;
 }
 
-int MeshLoader::edgeVertexCount()
+int Model::edgeVertexCount()
 {
     return m_edgeVertexCount;
 }
 
-ShaderVertex *MeshLoader::toolVertices()
+ShaderVertex *Model::toolVertices()
 {
     return m_toolVertices;
 }
 
-int MeshLoader::toolVertexCount()
+int Model::toolVertexCount()
 {
     return m_toolVertexCount;
 }
 
-void MeshLoader::setTextureImage(QImage *textureImage)
+void Model::setTextureImage(QImage *textureImage)
 {
     m_textureImage = textureImage;
 }
 
-const QImage *MeshLoader::textureImage()
+const QImage *Model::textureImage()
 {
     return m_textureImage;
 }
 
-void MeshLoader::setNormalMapImage(QImage *normalMapImage)
+void Model::setNormalMapImage(QImage *normalMapImage)
 {
     m_normalMapImage = normalMapImage;
 }
 
-const QImage *MeshLoader::normalMapImage()
+const QImage *Model::normalMapImage()
 {
     return m_normalMapImage;
 }
 
-const QImage *MeshLoader::metalnessRoughnessAmbientOcclusionImage()
+const QImage *Model::metalnessRoughnessAmbientOcclusionImage()
 {
     return m_metalnessRoughnessAmbientOcclusionImage;
 }
 
-void MeshLoader::setMetalnessRoughnessAmbientOcclusionImage(QImage *image)
+void Model::setMetalnessRoughnessAmbientOcclusionImage(QImage *image)
 {
     m_metalnessRoughnessAmbientOcclusionImage = image;
 }
 
-bool MeshLoader::hasMetalnessInImage()
+bool Model::hasMetalnessInImage()
 {
     return m_hasMetalnessInImage;
 }
 
-void MeshLoader::setHasMetalnessInImage(bool hasInImage)
+void Model::setHasMetalnessInImage(bool hasInImage)
 {
     m_hasMetalnessInImage = hasInImage;
 }
 
-bool MeshLoader::hasRoughnessInImage()
+bool Model::hasRoughnessInImage()
 {
     return m_hasRoughnessInImage;
 }
 
-void MeshLoader::setHasRoughnessInImage(bool hasInImage)
+void Model::setHasRoughnessInImage(bool hasInImage)
 {
     m_hasRoughnessInImage = hasInImage;
 }
 
-bool MeshLoader::hasAmbientOcclusionInImage()
+bool Model::hasAmbientOcclusionInImage()
 {
     return m_hasAmbientOcclusionInImage;
 }
 
-void MeshLoader::setHasAmbientOcclusionInImage(bool hasInImage)
+void Model::setHasAmbientOcclusionInImage(bool hasInImage)
 {
     m_hasAmbientOcclusionInImage = hasInImage;
 }
 
-void MeshLoader::exportAsObj(QTextStream *textStream)
+void Model::exportAsObj(QTextStream *textStream)
 {
     auto &stream = *textStream;
     stream << "# " << APP_NAME << " " << APP_HUMAN_VER << endl;
@@ -359,7 +359,7 @@ void MeshLoader::exportAsObj(QTextStream *textStream)
     }
 }
 
-void MeshLoader::exportAsObj(const QString &filename)
+void Model::exportAsObj(const QString &filename)
 {
     QFile file(filename);
     if (file.open(QIODevice::WriteOnly)) {
@@ -368,7 +368,7 @@ void MeshLoader::exportAsObj(const QString &filename)
     }
 }
 
-void MeshLoader::updateTool(ShaderVertex *toolVertices, int vertexNum)
+void Model::updateTool(ShaderVertex *toolVertices, int vertexNum)
 {
     delete[] m_toolVertices;
     m_toolVertices = nullptr;
@@ -378,7 +378,7 @@ void MeshLoader::updateTool(ShaderVertex *toolVertices, int vertexNum)
     m_toolVertexCount = vertexNum;
 }
 
-void MeshLoader::updateEdges(ShaderVertex *edgeVertices, int edgeVertexCount)
+void Model::updateEdges(ShaderVertex *edgeVertices, int edgeVertexCount)
 {
     delete[] m_edgeVertices;
     m_edgeVertices = nullptr;
@@ -388,7 +388,7 @@ void MeshLoader::updateEdges(ShaderVertex *edgeVertices, int edgeVertexCount)
     m_edgeVertexCount = edgeVertexCount;
 }
 
-void MeshLoader::updateTriangleVertices(ShaderVertex *triangleVertices, int triangleVertexCount)
+void Model::updateTriangleVertices(ShaderVertex *triangleVertices, int triangleVertexCount)
 {
     delete[] m_triangleVertices;
     m_triangleVertices = 0;
@@ -398,12 +398,12 @@ void MeshLoader::updateTriangleVertices(ShaderVertex *triangleVertices, int tria
     m_triangleVertexCount = triangleVertexCount;
 }
 
-quint64 MeshLoader::meshId() const
+quint64 Model::meshId() const
 {
     return m_meshId;
 }
 
-void MeshLoader::setMeshId(quint64 id)
+void Model::setMeshId(quint64 id)
 {
     m_meshId = id;
 }

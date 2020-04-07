@@ -10,9 +10,10 @@
 #include "outcome.h"
 #include "snapshot.h"
 #include "combinemode.h"
-#include "meshloader.h"
+#include "model.h"
 #include "componentlayer.h"
 #include "clothforce.h"
+#include "strokemodifier.h"
 
 class GeneratedPart
 {
@@ -30,7 +31,7 @@ public:
     std::vector<QVector3D> previewVertices;
     std::vector<std::vector<size_t>> previewTriangles;
     OutcomePaintMap outcomePaintMap;
-    bool isSucceed = false;
+    bool isSuccessful = false;
     bool joined = true;
 };
 
@@ -65,9 +66,9 @@ class MeshGenerator : public QObject
 public:
     MeshGenerator(Snapshot *snapshot);
     ~MeshGenerator();
-    bool isSucceed();
-    MeshLoader *takeResultMesh();
-    MeshLoader *takePartPreviewMesh(const QUuid &partId);
+    bool isSuccessful();
+    Model *takeResultMesh();
+    Model *takePartPreviewMesh(const QUuid &partId);
     const std::set<QUuid> &generatedPreviewPartIds();
     Outcome *takeOutcome();
     std::map<QUuid, StrokeMeshBuilder::CutFaceTransform> *takeCutFaceTransforms();
@@ -77,6 +78,7 @@ public:
     void setSmoothShadingThresholdAngleDegrees(float degrees);
     void setDefaultPartColor(const QColor &color);
     void setId(quint64 id);
+    void setWeldEnabled(bool enabled);
     quint64 id();
 signals:
     void finished();
@@ -96,9 +98,9 @@ private:
     std::map<QString, std::set<QString>> m_partNodeIds;
     std::map<QString, std::set<QString>> m_partEdgeIds;
     std::set<QUuid> m_generatedPreviewPartIds;
-    MeshLoader *m_resultMesh = nullptr;
-    std::map<QUuid, MeshLoader *> m_partPreviewMeshes;
-    bool m_isSucceed = false;
+    Model *m_resultMesh = nullptr;
+    std::map<QUuid, Model *> m_partPreviewMeshes;
+    bool m_isSuccessful = false;
     bool m_cacheEnabled = false;
     float m_smoothShadingThresholdAngleDegrees = 60;
     std::map<QUuid, StrokeMeshBuilder::CutFaceTransform> *m_cutFaceTransforms = nullptr;
@@ -106,13 +108,18 @@ private:
     quint64 m_id = 0;
     std::vector<QVector3D> m_clothCollisionVertices;
     std::vector<std::vector<size_t>> m_clothCollisionTriangles;
+    bool m_weldEnabled = true;
     
     void collectParts();
     bool checkIsComponentDirty(const QString &componentIdString);
     bool checkIsPartDirty(const QString &partIdString);
     bool checkIsPartDependencyDirty(const QString &partIdString);
     void checkDirtyFlags();
-    MeshCombiner::Mesh *combinePartMesh(const QString &partIdString, bool *hasError, bool addIntermediateNodes=true);
+    bool fillPartWithMesh(GeneratedPart &partCache, 
+        const QUuid &fillMeshFileId,
+        float cutRotation,
+        const StrokeMeshBuilder *strokeMeshBuilder);
+    MeshCombiner::Mesh *combinePartMesh(const QString &partIdString, bool *hasError, bool *retryable, bool addIntermediateNodes=true);
     MeshCombiner::Mesh *combineComponentMesh(const QString &componentIdString, CombineMode *combineMode);
     void makeXmirror(const std::vector<QVector3D> &sourceVertices, const std::vector<std::vector<size_t>> &sourceFaces,
         std::vector<QVector3D> *destVertices, std::vector<std::vector<size_t>> *destFaces);
@@ -150,6 +157,8 @@ private:
         std::vector<std::vector<size_t>> *outputQuads,
         std::vector<std::vector<size_t>> *outputTriangles,
         std::vector<std::pair<QVector3D, std::pair<QUuid, QUuid>>> *outputNodeVertices);
+    void postprocessOutcome(Outcome *outcome);
+    void collectErroredParts();
 };
 
 #endif

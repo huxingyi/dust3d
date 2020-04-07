@@ -1,5 +1,5 @@
-#ifndef DUST3D_MESH_LOADER_H
-#define DUST3D_MESH_LOADER_H
+#ifndef DUST3D_MODEL_H
+#define DUST3D_MODEL_H
 #include <QObject>
 #include <vector>
 #include <QVector3D>
@@ -15,17 +15,17 @@ struct TriangulatedFace
     QColor color;
 };
 
-class MeshLoader
+class Model
 {
 public:
-    MeshLoader(const std::vector<QVector3D> &vertices, const std::vector<std::vector<size_t>> &triangles,
+    Model(const std::vector<QVector3D> &vertices, const std::vector<std::vector<size_t>> &triangles,
         const std::vector<std::vector<QVector3D>> &triangleVertexNormals,
         const QColor &color=Qt::white);
-    MeshLoader(Outcome &outcome);
-    MeshLoader(ShaderVertex *triangleVertices, int vertexNum, ShaderVertex *edgeVertices=nullptr, int edgeVertexCount=0);
-    MeshLoader(const MeshLoader &mesh);
-    MeshLoader();
-    ~MeshLoader();
+    Model(Outcome &outcome);
+    Model(ShaderVertex *triangleVertices, int vertexNum, ShaderVertex *edgeVertices=nullptr, int edgeVertexCount=0);
+    Model(const Model &mesh);
+    Model();
+    ~Model();
     ShaderVertex *triangleVertices();
     int triangleVertexCount();
     ShaderVertex *edgeVertices();

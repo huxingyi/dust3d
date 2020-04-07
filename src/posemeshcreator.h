@@ -1,7 +1,7 @@
 #ifndef DUST3D_POSE_MESH_CREATOR_H
 #define DUST3D_POSE_MESH_CREATOR_H
 #include <QObject>
-#include "meshloader.h"
+#include "model.h"
 #include "jointnodetree.h"
 #include "outcome.h"
 
@@ -16,14 +16,14 @@ public:
         const std::map<int, RiggerVertexWeights> &resultWeights);
     ~PoseMeshCreator();
     void createMesh();
-    MeshLoader *takeResultMesh();
+    Model *takeResultMesh();
 public slots:
     void process();
 private:
     std::vector<JointNode> m_resultNodes;
     Outcome m_outcome;
     std::map<int, RiggerVertexWeights> m_resultWeights;
-    MeshLoader *m_resultMesh = nullptr;
+    Model *m_resultMesh = nullptr;
 };
 
 #endif

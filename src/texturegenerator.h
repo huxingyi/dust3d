@@ -6,7 +6,7 @@
 #include <QColor>
 #include <QPixmap>
 #include "outcome.h"
-#include "meshloader.h"
+#include "model.h"
 #include "snapshot.h"
 
 class TextureGenerator : public QObject
@@ -25,7 +25,7 @@ public:
     QImage *takeResultTextureMetalnessImage();
     QImage *takeResultTextureAmbientOcclusionImage();
     Outcome *takeOutcome();
-    MeshLoader *takeResultMesh();
+    Model *takeResultMesh();
     bool hasTransparencySettings();
     void addPartColorMap(QUuid partId, const QImage *image, float tileScale);
     void addPartNormalMap(QUuid partId, const QImage *image, float tileScale);
@@ -52,7 +52,7 @@ private:
     QImage *m_resultTextureRoughnessImage;
     QImage *m_resultTextureMetalnessImage;
     QImage *m_resultTextureAmbientOcclusionImage;
-    MeshLoader *m_resultMesh;
+    Model *m_resultMesh;
     std::map<QUuid, std::pair<QImage, float>> m_partColorTextureMap;
     std::map<QUuid, std::pair<QImage, float>> m_partNormalTextureMap;
     std::map<QUuid, std::pair<QImage, float>> m_partMetalnessTextureMap;

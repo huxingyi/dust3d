@@ -1,4 +1,5 @@
 #include <QXmlStreamReader>
+#include <QGuiApplication>
 #include "updateschecker.h"
 #include "version.h"
 
@@ -143,6 +144,6 @@ void UpdatesChecker::downloadFinished(QNetworkReply *reply)
         }
     }
     reply->deleteLater();
-    
+    this->moveToThread(QGuiApplication::instance()->thread());
     emit finished();
 }

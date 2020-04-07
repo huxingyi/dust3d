@@ -3,6 +3,7 @@
 #include <QRadialGradient>
 #include <QBrush>
 #include <QPainter>
+#include <QGuiApplication>
 #include "mousepicker.h"
 #include "util.h"
 #include "imageforever.h"
@@ -114,7 +115,7 @@ void MousePicker::pick()
 void MousePicker::process()
 {
     pick();
-
+    this->moveToThread(QGuiApplication::instance()->thread());
     emit finished();
 }
 

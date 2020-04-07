@@ -120,9 +120,9 @@ Outcome *TextureGenerator::takeOutcome()
     return outcome;
 }
 
-MeshLoader *TextureGenerator::takeResultMesh()
+Model *TextureGenerator::takeResultMesh()
 {
-    MeshLoader *resultMesh = m_resultMesh;
+    Model *resultMesh = m_resultMesh;
     m_resultMesh = nullptr;
     return resultMesh;
 }
@@ -221,7 +221,7 @@ bool TextureGenerator::hasTransparencySettings()
 
 void TextureGenerator::generate()
 {
-    m_resultMesh = new MeshLoader(*m_outcome);
+    m_resultMesh = new Model(*m_outcome);
     
     if (nullptr == m_outcome->triangleVertexUvs())
         return;

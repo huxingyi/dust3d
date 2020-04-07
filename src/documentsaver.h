@@ -16,6 +16,11 @@ public:
         QString *script,
         std::map<QString, std::map<QString, QString>> *variables);
     ~DocumentSaver();
+    static bool save(const QString *filename, 
+        Snapshot *snapshot, 
+        const QByteArray *turnaroundPngByteArray,
+        const QString *script,
+        const std::map<QString, std::map<QString, QString>> *variables);
 signals:
     void finished();
 public slots:
@@ -26,12 +31,6 @@ private:
     QByteArray *m_turnaroundPngByteArray = nullptr;
     QString *m_script = nullptr;
     std::map<QString, std::map<QString, QString>> *m_variables = nullptr;
-
-    static bool save(const QString *filename, 
-        Snapshot *snapshot, 
-        const QByteArray *turnaroundPngByteArray,
-        const QString *script,
-        const std::map<QString, std::map<QString, QString>> *variables);
 };
 
 #endif

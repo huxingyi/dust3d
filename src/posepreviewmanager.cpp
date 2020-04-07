@@ -37,11 +37,11 @@ bool PosePreviewManager::postUpdate(const Poser &poser,
     return true;
 }
 
-MeshLoader *PosePreviewManager::takeResultPreviewMesh()
+Model *PosePreviewManager::takeResultPreviewMesh()
 {
     if (nullptr == m_previewMesh)
         return nullptr;
-    return new MeshLoader(*m_previewMesh);
+    return new Model(*m_previewMesh);
 }
 
 void PosePreviewManager::poseMeshReady()

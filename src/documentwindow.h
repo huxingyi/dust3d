@@ -10,7 +10,6 @@
 #include <map>
 #include <QStringList>
 #include <QLabel>
-#include <QTimer>
 #include "document.h"
 #include "modelwidget.h"
 #include "exportpreviewwidget.h"
@@ -30,7 +29,7 @@ class DocumentWindow : public QMainWindow
 signals:
     void initialized();
     void uninialized();
-    void waitingExportFinished(const QString &filename, bool succeed);
+    void waitingExportFinished(const QString &filename, bool isSuccessful);
     void mouseTargetVertexPositionChanged(const QVector3D &position);
 public:
     DocumentWindow();
@@ -93,10 +92,13 @@ public slots:
     void delayedGenerateNormalAndDepthMaps();
     void normalAndDepthMapsReady();
     void autoRecover();
+    void import();
+    void importPath(const QString &filename);
 private:
     void initLockButton(QPushButton *button);
     void setCurrentFilename(const QString &filename);
     void updateTitle();
+    void createPartSnapshotForFillMesh(const QUuid &fillMeshFileId, Snapshot *snapshot);
 private:
     Document *m_document;
     bool m_firstShow;
@@ -130,6 +132,8 @@ private:
     QAction *m_changeTurnaroundAction;
     QAction *m_quitAction;
     
+    QAction *m_importAction;
+    
     QAction *m_exportAsObjAction;
     QAction *m_exportAsObjPlusMaterialsAction;
     QAction *m_exportAction;
@@ -141,6 +145,7 @@ private:
     QAction *m_redoAction;
     QAction *m_deleteAction;
     QAction *m_breakAction;
+    QAction *m_reverseAction;
     QAction *m_connectAction;
     QAction *m_cutAction;
     QAction *m_copyAction;
@@ -211,7 +216,6 @@ private:
     QMetaObject::Connection m_partListDockerVisibleSwitchConnection;
     
     NormalAndDepthMapsGenerator *m_normalAndDepthMapsGenerator = nullptr;
-    QTimer *m_normalAndDepthMapsDelayTimer = nullptr;
     bool m_isNormalAndDepthMapsObsolete = false;
     
     AutoSaver *m_autoSaver = nullptr;

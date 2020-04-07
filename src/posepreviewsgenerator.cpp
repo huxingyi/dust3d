@@ -34,9 +34,9 @@ const std::set<std::pair<QUuid, int>> &PosePreviewsGenerator::generatedPreviewPo
     return m_generatedPoseIdAndFrames;
 }
 
-MeshLoader *PosePreviewsGenerator::takePreview(std::pair<QUuid, int> idAndFrame)
+Model *PosePreviewsGenerator::takePreview(std::pair<QUuid, int> idAndFrame)
 {
-    MeshLoader *resultMesh = m_previews[idAndFrame];
+    Model *resultMesh = m_previews[idAndFrame];
     m_previews[idAndFrame] = nullptr;
     return resultMesh;
 }

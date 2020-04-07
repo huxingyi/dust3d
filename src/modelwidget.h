@@ -9,7 +9,7 @@
 #include <QRubberBand>
 #include <QVector2D>
 #include <QTimer>
-#include "meshloader.h"
+#include "model.h"
 #include "modelshaderprogram.h"
 #include "modelmeshbinder.h"
 
@@ -35,8 +35,8 @@ public:
     {
         m_transparent = t;
     }
-    MeshLoader *fetchCurrentMesh();
-    void updateMesh(MeshLoader *mesh);
+    Model *fetchCurrentMesh();
+    void updateMesh(Model *mesh);
     void setGraphicsFunctions(SkeletonGraphicsFunctions *graphicsFunctions);
     void toggleWireframe();
     void toggleRotation();

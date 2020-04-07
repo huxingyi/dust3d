@@ -5,7 +5,7 @@
 #include <QDebug>
 #include <unordered_set>
 #include "outcome.h"
-#include "meshloader.h"
+#include "model.h"
 #include "rigger.h"
 #include "rigtype.h"
 
@@ -15,12 +15,12 @@ class RigGenerator : public QObject
 public:
     RigGenerator(RigType rigType, const Outcome &outcome);
     ~RigGenerator();
-    MeshLoader *takeResultMesh();
+    Model *takeResultMesh();
     std::vector<RiggerBone> *takeResultBones();
     std::map<int, RiggerVertexWeights> *takeResultWeights();
     const std::vector<std::pair<QtMsgType, QString>> &messages();
     Outcome *takeOutcome();
-    bool isSucceed();
+    bool isSuccessful();
     void generate();
 signals:
     void finished();
@@ -37,7 +37,7 @@ private:
     
     RigType m_rigType = RigType::None;
     Outcome *m_outcome = nullptr;
-    MeshLoader *m_resultMesh = nullptr;
+    Model *m_resultMesh = nullptr;
     std::vector<RiggerBone> *m_resultBones = nullptr;
     std::map<int, RiggerVertexWeights> *m_resultWeights = nullptr;
     std::vector<std::pair<QtMsgType, QString>> m_messages;
@@ -61,7 +61,7 @@ private:
     ShaderVertex *m_debugEdgeVertices = nullptr;
     int m_debugEdgeVerticesNum = 0;
     bool m_isSpineVertical = false;
-    bool m_isSucceed = false;
+    bool m_isSuccessful = false;
     void buildNeighborMap();
     void buildBoneNodeChain();
     void buildSkeleton();

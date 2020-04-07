@@ -45,7 +45,7 @@ void CutFaceWidget::updatePreview(QUuid partId)
         qDebug() << "Part not found:" << m_partId;
         return;
     }
-    MeshLoader *previewMesh = part->takePreviewMesh();
+    Model *previewMesh = part->takePreviewMesh();
     m_previewWidget->updateMesh(previewMesh);
 }
 

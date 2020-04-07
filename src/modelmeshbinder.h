@@ -5,7 +5,7 @@
 #include <QOpenGLBuffer>
 #include <QString>
 #include <QOpenGLTexture>
-#include "meshloader.h"
+#include "model.h"
 #include "modelshaderprogram.h"
 
 class ModelMeshBinder
@@ -13,8 +13,8 @@ class ModelMeshBinder
 public:
     ModelMeshBinder(bool toolEnabled=false);
     ~ModelMeshBinder();
-    MeshLoader *fetchCurrentMesh();
-    void updateMesh(MeshLoader *mesh);
+    Model *fetchCurrentMesh();
+    void updateMesh(Model *mesh);
     void initialize();
     void paint(ModelShaderProgram *program);
     void cleanup();
@@ -29,8 +29,8 @@ public:
     void fetchCurrentToonNormalAndDepthMaps(QImage *normalMap, QImage *depthMap);
     void updateToonNormalAndDepthMaps(QImage *normalMap, QImage *depthMap);
 private:
-    MeshLoader *m_mesh = nullptr;
-    MeshLoader *m_newMesh = nullptr;
+    Model *m_mesh = nullptr;
+    Model *m_newMesh = nullptr;
     int m_renderTriangleVertexCount = 0;
     int m_renderEdgeVertexCount = 0;
     int m_renderToolVertexCount = 0;

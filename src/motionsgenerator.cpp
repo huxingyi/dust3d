@@ -80,7 +80,7 @@ std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QSt
     return &frames;
 }
 
-void MotionsGenerator::generatePreviewsForOutcomes(const std::vector<std::pair<float, JointNodeTree>> &outcomes, std::vector<std::pair<float, MeshLoader *>> &previews)
+void MotionsGenerator::generatePreviewsForOutcomes(const std::vector<std::pair<float, JointNodeTree>> &outcomes, std::vector<std::pair<float, Model *>> &previews)
 {
     for (const auto &item: outcomes) {
         PoseMeshCreator *poseMeshCreator = new PoseMeshCreator(item.second.nodes(), m_outcome, m_rigWeights);
@@ -114,7 +114,7 @@ const std::vector<std::pair<float, JointNodeTree>> &MotionsGenerator::getProcedu
     std::vector<std::pair<float, JointNodeTree>> &resultFrames = m_proceduralAnimations[(int)proceduralAnimation];
     if (ProceduralAnimation::FallToDeath == proceduralAnimation) {
 #if ENABLE_PROCEDURAL_DEBUG
-        std::vector<MeshLoader *> &resultPreviews = m_proceduralDebugPreviews[(int)proceduralAnimation];
+        std::vector<Model *> &resultPreviews = m_proceduralDebugPreviews[(int)proceduralAnimation];
 #endif
         RagDoll ragdoll(&m_rigBones, initialJointNodeTree);
         float stepSeconds = 1.0 / 60;
@@ -124,7 +124,7 @@ const std::vector<std::pair<float, JointNodeTree>> &MotionsGenerator::getProcedu
         while (steps < maxSteps && ragdoll.stepSimulation(stepSeconds)) {
             resultFrames.push_back(std::make_pair(stepSeconds * 2, ragdoll.getStepJointNodeTree()));
 #if ENABLE_PROCEDURAL_DEBUG
-            MeshLoader *preview = buildBoundingBoxMesh(ragdoll.getStepBonePositions());
+            Model *preview = buildBoundingBoxMesh(ragdoll.getStepBonePositions());
             resultPreviews.push_back(preview);
 #endif
             ++steps;
@@ -178,7 +178,7 @@ float MotionsGenerator::calculateMotionDuration(const QUuid &motionId, std::set<
     return totalDuration;
 }
 
-void MotionsGenerator::generateMotion(const QUuid &motionId, std::set<QUuid> &visited, std::vector<std::pair<float, JointNodeTree>> &outcomes, std::vector<MeshLoader *> *previews)
+void MotionsGenerator::generateMotion(const QUuid &motionId, std::set<QUuid> &visited, std::vector<std::pair<float, JointNodeTree>> &outcomes, std::vector<Model *> *previews)
 {
     if (visited.find(motionId) != visited.end()) {
         qDebug() << "Found recursive motion link";
@@ -386,7 +386,7 @@ const JointNodeTree *MotionsGenerator::findClipEndJointNodeTree(const MotionClip
     return nullptr;
 }
 
-std::vector<std::pair<float, MeshLoader *>> MotionsGenerator::takeResultPreviewMeshs(const QUuid &motionId)
+std::vector<std::pair<float, Model *>> MotionsGenerator::takeResultPreviewMeshs(const QUuid &motionId)
 {
     auto findResult = m_resultPreviewMeshs.find(motionId);
     if (findResult == m_resultPreviewMeshs.end())
@@ -413,7 +413,7 @@ void MotionsGenerator::generate()
     for (const auto &motionId: m_requiredMotionIds) {
         std::set<QUuid> visited;
 #if ENABLE_PROCEDURAL_DEBUG
-        std::vector<MeshLoader *> previews;
+        std::vector<Model *> previews;
         generateMotion(motionId, visited, m_resultJointNodeTrees[motionId], &previews);
 #else
         generateMotion(motionId, visited, m_resultJointNodeTrees[motionId]);

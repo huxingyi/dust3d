@@ -4,7 +4,7 @@
 #include "document.h"
 #include "poser.h"
 #include "posemeshcreator.h"
-#include "meshloader.h"
+#include "model.h"
 
 class PosePreviewManager : public QObject
 {
@@ -16,7 +16,7 @@ public:
     bool postUpdate(const Poser &poser,
         const Outcome &outcome,
         const std::map<int, RiggerVertexWeights> &resultWeights);
-    MeshLoader *takeResultPreviewMesh();
+    Model *takeResultPreviewMesh();
 private slots:
     void poseMeshReady();
 signals:
@@ -24,7 +24,7 @@ signals:
     void renderDone();
 private:
     PoseMeshCreator *m_poseMeshCreator = nullptr;
-    MeshLoader *m_previewMesh = nullptr;
+    Model *m_previewMesh = nullptr;
 };
 
 #endif

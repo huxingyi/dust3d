@@ -1,7 +1,7 @@
 #include <QVector2D>
 #include <iostream>
 #include "boundingboxmesh.h"
-#include "meshloader.h"
+#include "model.h"
 #include "util.h"
 
 ShaderVertex *buildBoundingBoxMeshEdges(const std::vector<std::tuple<QVector3D, QVector3D, float, float, QColor>> &boxes,
@@ -73,8 +73,8 @@ ShaderVertex *buildBoundingBoxMeshEdges(const std::vector<std::tuple<QVector3D, 
             currentVertex.normX = 0;
             currentVertex.normY = 1;
             currentVertex.normZ = 0;
-            currentVertex.metalness = MeshLoader::m_defaultMetalness;
-            currentVertex.roughness = MeshLoader::m_defaultRoughness;
+            currentVertex.metalness = Model::m_defaultMetalness;
+            currentVertex.roughness = Model::m_defaultRoughness;
             currentVertex.tangentX = 0;
             currentVertex.tangentY = 0;
             currentVertex.tangentZ = 0;
@@ -93,9 +93,9 @@ ShaderVertex *buildBoundingBoxMeshEdges(const std::vector<std::tuple<QVector3D, 
     return edgeVertices;
 }
 
-MeshLoader *buildBoundingBoxMesh(const std::vector<std::tuple<QVector3D, QVector3D, float, float, QColor>> &boxes)
+Model *buildBoundingBoxMesh(const std::vector<std::tuple<QVector3D, QVector3D, float, float, QColor>> &boxes)
 {
     int edgeVerticesNum = 0;
     ShaderVertex *edgeVertices = buildBoundingBoxMeshEdges(boxes, &edgeVerticesNum);
-    return new MeshLoader(nullptr, 0, edgeVertices, edgeVerticesNum);
+    return new Model(nullptr, 0, edgeVertices, edgeVerticesNum);
 }

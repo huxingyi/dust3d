@@ -94,16 +94,16 @@ std::map<int, RiggerVertexWeights> *RigGenerator::takeResultWeights()
     return resultWeights;
 }
 
-MeshLoader *RigGenerator::takeResultMesh()
+Model *RigGenerator::takeResultMesh()
 {
-    MeshLoader *resultMesh = m_resultMesh;
+    Model *resultMesh = m_resultMesh;
     m_resultMesh = nullptr;
     return resultMesh;
 }
 
-bool RigGenerator::isSucceed()
+bool RigGenerator::isSuccessful()
 {
-    return m_isSucceed;
+    return m_isSuccessful;
 }
 
 const std::vector<std::pair<QtMsgType, QString>> &RigGenerator::messages()
@@ -603,7 +603,7 @@ void RigGenerator::buildSkeleton()
         }
     }
     
-    m_isSucceed = true;
+    m_isSuccessful = true;
     
     //for (size_t i = 0; i < m_resultBones->size(); ++i) {
     //    const auto &bone = (*m_resultBones)[i];
@@ -617,7 +617,7 @@ void RigGenerator::buildSkeleton()
 
 void RigGenerator::computeSkinWeights()
 {
-    if (!m_isSucceed)
+    if (!m_isSuccessful)
         return;
 
     auto collectNodeIndices = [&](size_t chainIndex,
@@ -1026,7 +1026,7 @@ void RigGenerator::buildDemoMesh()
     // Blend vertices colors according to bone weights
     
     std::vector<QColor> inputVerticesColors(m_outcome->vertices.size(), Qt::black);
-    if (m_isSucceed) {
+    if (m_isSuccessful) {
         const auto &resultWeights = *m_resultWeights;
         const auto &resultBones = *m_resultBones;
         
@@ -1060,7 +1060,7 @@ void RigGenerator::buildDemoMesh()
     
     ShaderVertex *triangleVertices = nullptr;
     int triangleVerticesNum = 0;
-    if (m_isSucceed) {
+    if (m_isSuccessful) {
         triangleVertices = new ShaderVertex[m_outcome->triangles.size() * 3];
         const QVector3D defaultUv = QVector3D(0, 0, 0);
         const QVector3D defaultTangents = QVector3D(0, 0, 0);
@@ -1087,8 +1087,8 @@ void RigGenerator::buildDemoMesh()
                 currentVertex.normX = sourceNormal->x();
                 currentVertex.normY = sourceNormal->y();
                 currentVertex.normZ = sourceNormal->z();
-                currentVertex.metalness = MeshLoader::m_defaultMetalness;
-                currentVertex.roughness = MeshLoader::m_defaultRoughness;
+                currentVertex.metalness = Model::m_defaultMetalness;
+                currentVertex.roughness = Model::m_defaultRoughness;
                 currentVertex.tangentX = sourceTangent->x();
                 currentVertex.tangentY = sourceTangent->y();
                 currentVertex.tangentZ = sourceTangent->z();
@@ -1101,7 +1101,7 @@ void RigGenerator::buildDemoMesh()
     ShaderVertex *edgeVertices = nullptr;
     int edgeVerticesNum = 0;
     
-    if (m_isSucceed) {
+    if (m_isSuccessful) {
         const auto &resultBones = *m_resultBones;
         std::vector<std::tuple<QVector3D, QVector3D, float, float, QColor>> boxes;
         for (const auto &bone: resultBones) {
@@ -1122,7 +1122,7 @@ void RigGenerator::buildDemoMesh()
         m_debugEdgeVerticesNum = 0;
     }
     
-    m_resultMesh = new MeshLoader(triangleVertices, triangleVerticesNum,
+    m_resultMesh = new Model(triangleVertices, triangleVerticesNum,
         edgeVertices, edgeVerticesNum);
 }
 

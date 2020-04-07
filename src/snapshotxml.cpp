@@ -194,7 +194,7 @@ void saveSkeletonToXmlStream(Snapshot *snapshot, QXmlStreamWriter *writer)
     writer->writeEndDocument();
 }
 
-void loadSkeletonFromXmlStream(Snapshot *snapshot, QXmlStreamReader &reader)
+void loadSkeletonFromXmlStream(Snapshot *snapshot, QXmlStreamReader &reader, quint32 flags)
 {
     std::stack<QString> componentStack;
     std::vector<QString> elementNameStack;
@@ -223,46 +223,56 @@ void loadSkeletonFromXmlStream(Snapshot *snapshot, QXmlStreamReader &reader)
         //qDebug() << (reader.isStartElement() ? "<" : ">") << "fullName:" << fullName << "baseName:" << baseName;
         if (reader.isStartElement()) {
             if (fullName == "canvas") {
-                foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
-                    snapshot->canvas[attr.name().toString()] = attr.value().toString();
+                if (flags & SNAPSHOT_ITEM_CANVAS) {
+                    foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
+                        snapshot->canvas[attr.name().toString()] = attr.value().toString();
+                    }
                 }
             } else if (fullName == "canvas.nodes.node") {
                 QString nodeId = reader.attributes().value("id").toString();
                 if (nodeId.isEmpty())
                     continue;
-                std::map<QString, QString> *nodeMap = &snapshot->nodes[nodeId];
-                foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
-                    (*nodeMap)[attr.name().toString()] = attr.value().toString();
+                if (flags & SNAPSHOT_ITEM_COMPONENT) {
+                    std::map<QString, QString> *nodeMap = &snapshot->nodes[nodeId];
+                    foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
+                        (*nodeMap)[attr.name().toString()] = attr.value().toString();
+                    }
                 }
             } else if (fullName == "canvas.edges.edge") {
                 QString edgeId = reader.attributes().value("id").toString();
                 if (edgeId.isEmpty())
                     continue;
-                std::map<QString, QString> *edgeMap = &snapshot->edges[edgeId];
-                foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
-                    (*edgeMap)[attr.name().toString()] = attr.value().toString();
+                if (flags & SNAPSHOT_ITEM_COMPONENT) {
+                    std::map<QString, QString> *edgeMap = &snapshot->edges[edgeId];
+                    foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
+                        (*edgeMap)[attr.name().toString()] = attr.value().toString();
+                    }
                 }
             } else if (fullName == "canvas.parts.part") {
                 QString partId = reader.attributes().value("id").toString();
                 if (partId.isEmpty())
                     continue;
-                std::map<QString, QString> *partMap = &snapshot->parts[partId];
-                foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
-                    (*partMap)[attr.name().toString()] = attr.value().toString();
+                if (flags & SNAPSHOT_ITEM_COMPONENT) {
+                    std::map<QString, QString> *partMap = &snapshot->parts[partId];
+                    foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
+                        (*partMap)[attr.name().toString()] = attr.value().toString();
+                    }
                 }
             } else if (fullName == "canvas.partIdList.partId") {
                 QString partId = reader.attributes().value("id").toString();
                 if (partId.isEmpty())
                     continue;
-                QString componentId = QUuid::createUuid().toString();
-                auto &component = snapshot->components[componentId];
-                component["id"] = componentId;
-                component["linkData"] = partId;
-                component["linkDataType"] = "partId";
-                auto &childrenIds = snapshot->rootComponent["children"];
-                if (!childrenIds.isEmpty())
-                    childrenIds += ",";
-                childrenIds += componentId;
+                if (flags & SNAPSHOT_ITEM_COMPONENT) {
+                    QString componentId = QUuid::createUuid().toString();
+                    auto &component = snapshot->components[componentId];
+                    component["id"] = componentId;
+                    component["linkData"] = partId;
+                    component["linkDataType"] = "partId";
+                    auto &childrenIds = snapshot->rootComponent["children"];
+                    if (!childrenIds.isEmpty())
+                        childrenIds += ",";
+                    childrenIds += componentId;
+                }
             } else if (fullName.startsWith("canvas.components.component")) {
                 QString componentId = reader.attributes().value("id").toString();
                 QString parentId;
@@ -271,14 +281,16 @@ void loadSkeletonFromXmlStream(Snapshot *snapshot, QXmlStreamReader &reader)
                 componentStack.push(componentId);
                 if (componentId.isEmpty())
                     continue;
-                std::map<QString, QString> *componentMap = &snapshot->components[componentId];
-                foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
-                    (*componentMap)[attr.name().toString()] = attr.value().toString();
+                if (flags & SNAPSHOT_ITEM_COMPONENT) {
+                    std::map<QString, QString> *componentMap = &snapshot->components[componentId];
+                    foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
+                        (*componentMap)[attr.name().toString()] = attr.value().toString();
+                    }
+                    auto &parentChildrenIds = parentId.isEmpty() ? snapshot->rootComponent["children"] : snapshot->components[parentId]["children"];
+                    if (!parentChildrenIds.isEmpty())
+                        parentChildrenIds += ",";
+                    parentChildrenIds += componentId;
                 }
-                auto &parentChildrenIds = parentId.isEmpty() ? snapshot->rootComponent["children"] : snapshot->components[parentId]["children"];
-                if (!parentChildrenIds.isEmpty())
-                    parentChildrenIds += ",";
-                parentChildrenIds += componentId;
             } else if (fullName == "canvas.materials.material.layers.layer") {
                 currentMaterialLayer = decltype(currentMaterialLayer)();
                 foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
@@ -340,13 +352,19 @@ void loadSkeletonFromXmlStream(Snapshot *snapshot, QXmlStreamReader &reader)
             } else if (fullName == "canvas.materials.material.layers.layer") {
                 currentMaterial.second.push_back(currentMaterialLayer);
             } else if (fullName == "canvas.materials.material") {
-                snapshot->materials.push_back(currentMaterial);
+                if (flags & SNAPSHOT_ITEM_MATERIAL) {
+                    snapshot->materials.push_back(currentMaterial);
+                }
             } else if (fullName == "canvas.poses.pose.frames.frame") {
                 currentPose.second.push_back(currentPoseFrame);
             } else if (fullName == "canvas.poses.pose") {
-                snapshot->poses.push_back(currentPose);
+                if (flags & SNAPSHOT_ITEM_POSE) {
+                    snapshot->poses.push_back(currentPose);
+                }
             } else if (fullName == "canvas.motions.motion") {
-                snapshot->motions.push_back(currentMotion);
+                if (flags & SNAPSHOT_ITEM_MOTION) {
+                    snapshot->motions.push_back(currentMotion);
+                }
             }
         }
     }

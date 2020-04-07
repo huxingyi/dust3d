@@ -31,7 +31,7 @@ ModelMeshBinder::~ModelMeshBinder()
     delete m_currentToonDepthMap;
 }
 
-void ModelMeshBinder::updateMesh(MeshLoader *mesh)
+void ModelMeshBinder::updateMesh(Model *mesh)
 {
     QMutexLocker lock(&m_newMeshMutex);
     if (mesh != m_mesh) {
@@ -43,12 +43,12 @@ void ModelMeshBinder::updateMesh(MeshLoader *mesh)
 
 void ModelMeshBinder::reloadMesh()
 {
-    MeshLoader *mesh = nullptr;
+    Model *mesh = nullptr;
     {
         QMutexLocker lock(&m_newMeshMutex);
         if (nullptr == m_mesh)
             return;
-        mesh = new MeshLoader(*m_mesh);
+        mesh = new Model(*m_mesh);
     }
     if (nullptr != mesh)
         updateMesh(mesh);
@@ -67,17 +67,17 @@ void ModelMeshBinder::enableEnvironmentLight()
     m_environmentLightEnabled = true;
 }
 
-MeshLoader *ModelMeshBinder::fetchCurrentMesh()
+Model *ModelMeshBinder::fetchCurrentMesh()
 {
     QMutexLocker lock(&m_meshMutex);
     if (nullptr == m_mesh)
         return nullptr;
-    return new MeshLoader(*m_mesh);
+    return new Model(*m_mesh);
 }
 
 void ModelMeshBinder::paint(ModelShaderProgram *program)
 {
-    MeshLoader *newMesh = nullptr;
+    Model *newMesh = nullptr;
     bool hasNewMesh = false;
     if (m_newMeshComing) {
         QMutexLocker lock(&m_newMeshMutex);

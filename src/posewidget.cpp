@@ -82,7 +82,7 @@ void PoseWidget::updatePreview()
         qDebug() << "Pose not found:" << m_poseId;
         return;
     }
-    MeshLoader *previewMesh = pose->takePreviewMesh();
+    Model *previewMesh = pose->takePreviewMesh();
     m_previewWidget->updateMesh(previewMesh);
 }
 
