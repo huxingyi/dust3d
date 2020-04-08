@@ -4,6 +4,7 @@
 #include <QColor>
 #include <QSize>
 #include "combinemode.h"
+#include "toonline.h"
 
 class Preferences : public QObject
 {
@@ -15,6 +16,7 @@ public:
     const QColor &partColor() const;
     bool flatShading() const;
     bool toonShading() const;
+    ToonLine toonLine() const;
     QSize documentWindowSize() const;
     void setDocumentWindowSize(const QSize&);
     int textureSize() const;
@@ -23,12 +25,14 @@ signals:
     void partColorChanged();
     void flatShadingChanged();
     void toonShadingChanged();
+    void toonLineChanged();
     void textureSizeChanged();
 public slots:
     void setComponentCombineMode(CombineMode mode);
     void setPartColor(const QColor &color);
     void setFlatShading(bool flatShading);
     void setToonShading(bool toonShading);
+    void setToonLine(ToonLine toonLine);
     void setTextureSize(int textureSize);
     void reset();
 private:
@@ -36,6 +40,7 @@ private:
     QColor m_partColor;
     bool m_flatShading;
     bool m_toonShading;
+    ToonLine m_toonLine;
     QSettings m_settings;
     int m_textureSize;
 private:

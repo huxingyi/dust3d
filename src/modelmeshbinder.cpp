@@ -8,6 +8,7 @@
 #include <QSurfaceFormat>
 #include "modelmeshbinder.h"
 #include "ddsfile.h"
+#include "preferences.h"
 
 ModelMeshBinder::ModelMeshBinder(bool toolEnabled) :
     m_toolEnabled(toolEnabled)
@@ -321,7 +322,7 @@ void ModelMeshBinder::paint(ModelShaderProgram *program)
         if (nullptr != m_toonNormalMap && nullptr != m_toonDepthMap) {
             m_toonNormalMap->bind(5);
             m_toonDepthMap->bind(6);
-            program->setUniformValue(program->toonEdgeEnabledLoc(), 1);
+            program->setUniformValue(program->toonEdgeEnabledLoc(), (int)Preferences::instance().toonLine());
         }
         f->glDrawArrays(GL_TRIANGLES, 0, m_renderTriangleVertexCount);
     }

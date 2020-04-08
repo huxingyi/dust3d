@@ -180,7 +180,9 @@ QImage ModelOffscreenRender::toImage(const QSize &size)
     qDebug() << "bindDefault end";
     delete renderFbo;
     
+    qDebug() << "doneCurrent begin...";
     m_context->doneCurrent();
+    qDebug() << "doneCurrent end";
     delete m_context;
     m_context = nullptr;
 

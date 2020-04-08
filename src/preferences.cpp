@@ -16,6 +16,7 @@ void Preferences::loadDefault()
     m_partColor = Qt::white;
     m_flatShading = false;
     m_toonShading = false;
+    m_toonLine = ToonLine::WithoutLine;
     m_textureSize = 1024;
 }
 
@@ -47,6 +48,11 @@ Preferences::Preferences()
             m_toonShading = isTrueValueString(value);
     }
     {
+        QString value = m_settings.value("toonLine").toString();
+        if (!value.isEmpty())
+            m_toonLine = ToonLineFromString(value.toUtf8().constData());
+    }
+    {
         QString value = m_settings.value("textureSize").toString();
         if (!value.isEmpty())
             m_textureSize = value.toInt();
@@ -71,6 +77,11 @@ bool Preferences::flatShading() const
 bool Preferences::toonShading() const
 {
     return m_toonShading;
+}
+
+ToonLine Preferences::toonLine() const
+{
+    return m_toonLine;
 }
 
 int Preferences::textureSize() const
@@ -114,6 +125,15 @@ void Preferences::setToonShading(bool toonShading)
     emit toonShadingChanged();
 }
 
+void Preferences::setToonLine(ToonLine toonLine)
+{
+    if (m_toonLine == toonLine)
+        return;
+    m_toonLine = toonLine;
+    m_settings.setValue("toonLine", ToonLineToString(m_toonLine));
+    emit toonLineChanged();
+}
+
 void Preferences::setTextureSize(int textureSize)
 {
     if (m_textureSize == textureSize)
@@ -141,5 +161,6 @@ void Preferences::reset()
     emit partColorChanged();
     emit flatShadingChanged();
     emit toonShadingChanged();
+    emit toonLineChanged();
     emit textureSizeChanged();
 }

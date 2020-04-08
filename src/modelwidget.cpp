@@ -53,6 +53,7 @@ ModelWidget::ModelWidget(QWidget *parent) :
     zoom(200);
     
     connect(&Preferences::instance(), &Preferences::toonShadingChanged, this, &ModelWidget::reRender);
+    connect(&Preferences::instance(), &Preferences::toonLineChanged, this, &ModelWidget::reRender);
 }
 
 void ModelWidget::reRender()

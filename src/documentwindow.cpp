@@ -2135,7 +2135,8 @@ void DocumentWindow::delayedGenerateNormalAndDepthMaps()
 {
     if (!Preferences::instance().toonShading())
         return;
-    
+    if (ToonLine::WithoutLine == Preferences::instance().toonLine())
+        return;
     generateNormalAndDepthMaps();
 }
 

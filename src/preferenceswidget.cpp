@@ -71,6 +71,20 @@ PreferencesWidget::PreferencesWidget(const Document *document, QWidget *parent) 
         Preferences::instance().setToonShading(toonShadingBox->isChecked());
     });
     
+    QComboBox *toonLineSelectBox = new QComboBox;
+    for (size_t i = 0; i < (size_t)ToonLine::Count; ++i) {
+        ToonLine toonLine = (ToonLine)i;
+        toonLineSelectBox->addItem(ToonLineToDispName(toonLine));
+    }
+    connect(toonLineSelectBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [=](int index) {
+        Preferences::instance().setToonLine((ToonLine)index);
+    });
+    
+    QHBoxLayout *toonShadingLayout = new QHBoxLayout;
+    toonShadingLayout->addWidget(toonShadingBox);
+    toonShadingLayout->addWidget(toonLineSelectBox);
+    toonShadingLayout->addStretch();
+    
     QComboBox *textureSizeSelectBox = new QComboBox;
     textureSizeSelectBox->addItem("512");
     textureSizeSelectBox->addItem("1024");
@@ -84,13 +98,14 @@ PreferencesWidget::PreferencesWidget(const Document *document, QWidget *parent) 
     formLayout->addRow(tr("Part color:"), colorLayout);
     formLayout->addRow(tr("Combine mode:"), combineModeSelectBox);
     formLayout->addRow(tr("Flat shading:"), flatShadingBox);
-    formLayout->addRow(tr("Toon shading:"), toonShadingBox);
+    formLayout->addRow(tr("Toon shading:"), toonShadingLayout);
     formLayout->addRow(tr("Texture size:"), textureSizeSelectBox);
     
     auto loadFromPreferences = [=]() {
         updatePickButtonColor();
         combineModeSelectBox->setCurrentIndex((int)Preferences::instance().componentCombineMode());
         flatShadingBox->setChecked(Preferences::instance().flatShading());
+        toonLineSelectBox->setCurrentIndex((int)Preferences::instance().toonLine());
         toonShadingBox->setChecked(Preferences::instance().toonShading());
         textureSizeSelectBox->setCurrentIndex(
             textureSizeSelectBox->findText(QString::number(Preferences::instance().textureSize()))

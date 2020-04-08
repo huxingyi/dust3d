@@ -135,6 +135,9 @@ include(thirdparty/qtsingleapplication/src/qtsingleapplication.pri)
 
 INCLUDEPATH += src
 
+SOURCES += src/toonline.cpp
+HEADERS += src/toonline.h
+
 SOURCES += src/meshstroketifier.cpp
 HEADERS += src/meshstroketifier.h
 
