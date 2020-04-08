@@ -55,6 +55,13 @@ QVector3D projectLineOnPlane(QVector3D line, QVector3D planeNormal)
     return line - verticalOffset;
 }
 
+QVector3D projectPointOnLine(const QVector3D &point, const QVector3D &linePointA, const QVector3D &linePointB)
+{
+    auto aToPoint = point - linePointA;
+    auto aToB = linePointB - linePointA;
+    return linePointA + QVector3D::dotProduct(aToPoint, aToB) / QVector3D::dotProduct(aToB, aToB) * aToB;
+}
+
 QString unifiedWindowTitle(const QString &text)
 {
     return text + QObject::tr(" - ") + APP_NAME;

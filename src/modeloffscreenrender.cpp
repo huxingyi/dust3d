@@ -16,6 +16,11 @@ ModelOffscreenRender::ModelOffscreenRender(const QSurfaceFormat &format, QScreen
 
 ModelOffscreenRender::~ModelOffscreenRender()
 {
+    // FIXME: If delete m_renderFbo inside toImage, 
+    // sometimes, the application will freeze, maybe there are dead locks inside the desctruction call
+    // move it here can make sure it will be deleted on the main GUI thread to avoid dead locks
+    delete m_renderFbo;
+    
     destroy();
     delete m_mesh;
     delete m_normalMap;
@@ -94,8 +99,8 @@ QImage ModelOffscreenRender::toImage(const QSize &size)
     format.setSamples(4);
     format.setTextureTarget(GL_TEXTURE_2D);
     format.setInternalTextureFormat(GL_RGBA32F_ARB);
-    QOpenGLFramebufferObject *renderFbo = new QOpenGLFramebufferObject(size, format);
-    renderFbo->bind();
+    m_renderFbo = new QOpenGLFramebufferObject(size, format);
+    m_renderFbo->bind();
     m_context->functions()->glViewport(0, 0, size.width(), size.height());
     
     if (nullptr != m_mesh) {
@@ -173,16 +178,11 @@ QImage ModelOffscreenRender::toImage(const QSize &size)
     
     m_context->functions()->glFlush();
     
-    image = renderFbo->toImage();
+    image = m_renderFbo->toImage();
     
-    qDebug() << "bindDefault begin...";
-    renderFbo->bindDefault();
-    qDebug() << "bindDefault end";
-    delete renderFbo;
-    
-    qDebug() << "doneCurrent begin...";
+    m_renderFbo->release();
+
     m_context->doneCurrent();
-    qDebug() << "doneCurrent end";
     delete m_context;
     m_context = nullptr;
 

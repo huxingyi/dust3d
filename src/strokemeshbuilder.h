@@ -64,7 +64,9 @@ public:
     const std::vector<QVector3D> &generatedVertices();
     const std::vector<std::vector<size_t>> &generatedFaces();
     const std::vector<size_t> &generatedVerticesSourceNodeIndices();
-
+    
+    static QVector3D calculateDeformPosition(const QVector3D &vertexPosition, const QVector3D &ray, const QVector3D &deformNormal, float deformFactor);
+    static QVector3D calculateBaseNormalFromTraverseDirection(const QVector3D &traverseDirection);
 private:
     struct GeneratedVertexInfo
     {
@@ -93,7 +95,6 @@ private:
     std::vector<std::vector<size_t>> m_generatedFaces;
     
     bool prepare();
-    QVector3D calculateBaseNormalFromTraverseDirection(const QVector3D &traverseDirection);
     std::vector<QVector3D> makeCut(const QVector3D &cutCenter, 
         float radius, 
         const std::vector<QVector2D> &cutTemplate, 
@@ -112,7 +113,6 @@ private:
     void unifyBaseNormals();
     std::vector<size_t> edgeloopFlipped(const std::vector<size_t> &edgeLoop);
     void reviseNodeBaseNormal(Node &node);
-    static QVector3D calculateDeformPosition(const QVector3D &vertexPosition, const QVector3D &ray, const QVector3D &deformNormal, float deformFactor);
     void applyDeform();
 };
 

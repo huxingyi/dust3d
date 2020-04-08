@@ -2,10 +2,22 @@
 #include <QQuaternion>
 #include <set>
 #include "meshstroketifier.h"
+#include "util.h"
+#include "strokemeshbuilder.h"
 
 void MeshStroketifier::setCutRotation(float cutRotation)
 {
 	m_cutRotation = cutRotation;
+}
+
+void MeshStroketifier::setDeformThickness(float deformThickness)
+{
+    m_deformThickness = deformThickness;
+}
+
+void MeshStroketifier::setDeformWidth(float deformWidth)
+{
+    m_deformWidth = deformWidth;
 }
 
 bool MeshStroketifier::prepare(const std::vector<Node> &strokeNodes, 
@@ -33,6 +45,7 @@ bool MeshStroketifier::prepare(const std::vector<Node> &strokeNodes,
             boundingBoxMinY, 
             (boundingBoxMinZ + boundingBoxMaxZ) * 0.5);
         m_modelAlignDirection = QVector3D(0.0, 1.0, 0.0);
+        m_modelBaseNormal = StrokeMeshBuilder::calculateBaseNormalFromTraverseDirection(m_modelAlignDirection);
         m_modelLength = yLength;
     } else if (zLength >= xLength && zLength >= yLength) {
         // Z-axis
@@ -40,6 +53,7 @@ bool MeshStroketifier::prepare(const std::vector<Node> &strokeNodes,
             (boundingBoxMinY + boundingBoxMaxY) * 0.5, 
             boundingBoxMinZ);
         m_modelAlignDirection = QVector3D(0.0, 0.0, 1.0);
+        m_modelBaseNormal = StrokeMeshBuilder::calculateBaseNormalFromTraverseDirection(m_modelAlignDirection);
         m_modelLength = zLength;
     } else {
         // X-axis
@@ -47,6 +61,7 @@ bool MeshStroketifier::prepare(const std::vector<Node> &strokeNodes,
             (boundingBoxMinY + boundingBoxMaxY) * 0.5, 
             (boundingBoxMinZ + boundingBoxMaxZ) * 0.5);
         m_modelAlignDirection = QVector3D(1.0, 0.0, 0.0);
+        m_modelBaseNormal = StrokeMeshBuilder::calculateBaseNormalFromTraverseDirection(m_modelAlignDirection);
         m_modelLength = xLength;
     }
     
@@ -56,6 +71,10 @@ bool MeshStroketifier::prepare(const std::vector<Node> &strokeNodes,
     if (strokeLength > 0)
         m_scaleAmount = strokeLength / (m_modelLength + std::numeric_limits<float>::epsilon());
     
+    if (!qFuzzyIsNull(m_cutRotation)) {
+    	m_modelRotation.rotate(m_cutRotation * 180, m_modelAlignDirection);
+    }
+    
     if (!strokeSegmentLengths.empty()) {
         float offset = 0;
         for (size_t i = 0; i < strokeSegmentLengths.size(); ++i) {
@@ -64,13 +83,7 @@ bool MeshStroketifier::prepare(const std::vector<Node> &strokeNodes,
         }
 
         QMatrix4x4 matrix;
-        
-        if (!qFuzzyIsNull(m_cutRotation)) {
-			QMatrix4x4 cutRotationMatrix;
-			cutRotationMatrix.rotate(m_cutRotation * 180, m_modelAlignDirection);
-			matrix *= cutRotationMatrix;
-		}
-        
+
         QVector3D rotateFromDirection = m_modelAlignDirection;
         for (size_t i = 1; i < strokeNodes.size(); ++i) {
             size_t h = i - 1;
@@ -95,7 +108,9 @@ void MeshStroketifier::stroketify(std::vector<QVector3D> *vertices)
 {
     translate(vertices);
     scale(vertices);
+    rotate(vertices);
     deform(vertices);
+    transform(vertices);
 }
 
 void MeshStroketifier::stroketify(std::vector<Node> *nodes)
@@ -162,7 +177,36 @@ void MeshStroketifier::scale(std::vector<QVector3D> *vertices)
         it *= m_scaleAmount;
 }
 
+void MeshStroketifier::rotate(std::vector<QVector3D> *vertices)
+{
+    for (auto &it: *vertices)
+        it = m_modelRotation * it;
+}
+
 void MeshStroketifier::deform(std::vector<QVector3D> *vertices)
+{
+    for (auto &position: *vertices) {
+        const auto &cutDirect = m_modelAlignDirection;
+        auto nodePosition = projectPointOnLine(position, QVector3D(0.0, 0.0, 0.0), cutDirect);
+        auto ray = position - nodePosition;
+        QVector3D sum;
+        size_t count = 0;
+        if (!qFuzzyCompare(m_deformThickness, (float)1.0)) {
+            auto deformedPosition = StrokeMeshBuilder::calculateDeformPosition(position, ray, m_modelBaseNormal, m_deformThickness);
+            sum += deformedPosition;
+            ++count;
+        }
+        if (!qFuzzyCompare(m_deformWidth, (float)1.0)) {
+            auto deformedPosition = StrokeMeshBuilder::calculateDeformPosition(position, ray, QVector3D::crossProduct(m_modelBaseNormal, cutDirect), m_deformWidth);
+            sum += deformedPosition;
+            ++count;
+        }
+        if (count > 0)
+            position = sum / count;
+    }
+}
+
+void MeshStroketifier::transform(std::vector<QVector3D> *vertices)
 {
     if (m_modelJointPositions.empty() || 
             m_modelTransforms.empty() ||

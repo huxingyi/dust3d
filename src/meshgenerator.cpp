@@ -684,7 +684,8 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, 
         }
     } else {
         if (strokeMeshBuilder->buildBaseNormalsOnly())
-            buildSucceed = fillPartWithMesh(partCache, fillMeshFileId, cutRotation, strokeMeshBuilder);
+            buildSucceed = fillPartWithMesh(partCache, fillMeshFileId, 
+                deformThickness, deformWidth, cutRotation, strokeMeshBuilder);
     }
     
     delete strokeMeshBuilder;
@@ -814,6 +815,8 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, 
 
 bool MeshGenerator::fillPartWithMesh(GeneratedPart &partCache, 
     const QUuid &fillMeshFileId,
+    float deformThickness,
+    float deformWidth,
     float cutRotation,
     const StrokeMeshBuilder *strokeMeshBuilder)
 {
@@ -844,6 +847,8 @@ bool MeshGenerator::fillPartWithMesh(GeneratedPart &partCache,
             strokeNodes.push_back(strokeNode);
         }
         stroketifier.setCutRotation(cutRotation);
+        stroketifier.setDeformWidth(deformWidth);
+        stroketifier.setDeformThickness(deformThickness);
         if (stroketifier.prepare(strokeNodes, outcome->vertices)) {
             stroketifier.stroketify(&outcome->vertices);
             std::vector<MeshStroketifier::Node> agentNodes(outcome->nodes.size());

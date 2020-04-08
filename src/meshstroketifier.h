@@ -15,19 +15,25 @@ public:
         float radius;
     };
 	void setCutRotation(float cutRotation);
+    void setDeformThickness(float deformThickness);
+    void setDeformWidth(float deformWidth);
     bool prepare(const std::vector<Node> &strokeNodes, 
         const std::vector<QVector3D> &vertices);
     void stroketify(std::vector<QVector3D> *vertices);
     void stroketify(std::vector<Node> *nodes);
 private:
 	float m_cutRotation = 0.0;
+    float m_deformThickness = 1.0;
+    float m_deformWidth = 1.0;
 
     QVector3D m_modelOrigin;
     float m_modelLength = 0.0;
     float m_scaleAmount = 1.0;
     QVector3D m_modelAlignDirection;
+    QVector3D m_modelBaseNormal;
     std::vector<QVector3D> m_modelJointPositions;
     std::vector<QMatrix4x4> m_modelTransforms;
+    QMatrix4x4 m_modelRotation;
 
     static float calculateStrokeLengths(const std::vector<Node> &strokeNodes,
         std::vector<float> *lengths);
@@ -38,6 +44,8 @@ private:
         
     void translate(std::vector<QVector3D> *vertices);
     void scale(std::vector<QVector3D> *vertices);
+    void transform(std::vector<QVector3D> *vertices);
+    void rotate(std::vector<QVector3D> *vertices);
     void deform(std::vector<QVector3D> *vertices);
 };
 

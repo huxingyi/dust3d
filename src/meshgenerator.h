@@ -117,6 +117,8 @@ private:
     void checkDirtyFlags();
     bool fillPartWithMesh(GeneratedPart &partCache, 
         const QUuid &fillMeshFileId,
+        float deformThickness,
+        float deformWidth,
         float cutRotation,
         const StrokeMeshBuilder *strokeMeshBuilder);
     MeshCombiner::Mesh *combinePartMesh(const QString &partIdString, bool *hasError, bool *retryable, bool addIntermediateNodes=true);

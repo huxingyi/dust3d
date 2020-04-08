@@ -20,6 +20,7 @@ void qNormalizeAngle(int &angle);
 QVector3D pointInHermiteCurve(float t, QVector3D p0, QVector3D m0, QVector3D p1, QVector3D m1);
 float angleInRangle360BetweenTwoVectors(QVector3D a, QVector3D b, QVector3D planeNormal);
 QVector3D projectLineOnPlane(QVector3D line, QVector3D planeNormal);
+QVector3D projectPointOnLine(const QVector3D &point, const QVector3D &linePointA, const QVector3D &linePointB);
 QString unifiedWindowTitle(const QString &text);
 QQuaternion quaternionOvershootSlerp(const QQuaternion &q0, const QQuaternion &q1, float t);
 float radianBetweenVectors(const QVector3D &first, const QVector3D &second);

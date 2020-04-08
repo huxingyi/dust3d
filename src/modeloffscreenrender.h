@@ -6,6 +6,7 @@
 #include <QOpenGLContext>
 #include <QImage>
 #include <QThread>
+#include <QOpenGLFramebufferObject>
 #include "modelshaderprogram.h"
 #include "modelmeshbinder.h"
 #include "model.h"
@@ -30,6 +31,7 @@ private:
     int m_zRot = 0;
     int m_renderPurpose = 0;
     QOpenGLContext *m_context = nullptr;
+    QOpenGLFramebufferObject *m_renderFbo = nullptr;
     Model *m_mesh = nullptr;
     QImage *m_normalMap = nullptr;
     QImage *m_depthMap = nullptr;
