@@ -1139,6 +1139,18 @@ Consejos:
         <source> - </source>
         <translation> - </translation>
     </message>
+    <message>
+        <source>Without Line</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>With Line</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Line Only</source>
+        <translation type="unfinished"></translation>
+    </message>
 </context>
 <context>
     <name>RigGenerator</name>
