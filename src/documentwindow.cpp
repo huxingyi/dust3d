@@ -1122,6 +1122,15 @@ DocumentWindow::DocumentWindow() :
     connect(m_document, &Document::partMaterialIdChanged, partTreeWidget, &PartTreeWidget::partMaterialIdChanged);
     connect(m_document, &Document::partColorSolubilityChanged, partTreeWidget, &PartTreeWidget::partColorSolubilityChanged);
     connect(m_document, &Document::partCountershadeStateChanged, partTreeWidget, &PartTreeWidget::partCountershadeStateChanged);
+    
+    connect(m_document, &Document::partTargetChanged, partTreeWidget, &PartTreeWidget::partXmirrorStateChanged);
+    connect(m_document, &Document::partTargetChanged, partTreeWidget, &PartTreeWidget::partColorStateChanged);
+    connect(m_document, &Document::partTargetChanged, partTreeWidget, &PartTreeWidget::partSubdivStateChanged);
+    connect(m_document, &Document::partTargetChanged, partTreeWidget, &PartTreeWidget::partRoundStateChanged);
+    connect(m_document, &Document::partTargetChanged, partTreeWidget, &PartTreeWidget::partChamferStateChanged);
+    connect(m_document, &Document::partTargetChanged, partTreeWidget, &PartTreeWidget::partCutRotationChanged);
+    connect(m_document, &Document::partTargetChanged, partTreeWidget, &PartTreeWidget::partDeformChanged);
+    
     connect(m_document, &Document::partRemoved, partTreeWidget, &PartTreeWidget::partRemoved);
     connect(m_document, &Document::cleanup, partTreeWidget, &PartTreeWidget::removeAllContent);
     connect(m_document, &Document::partChecked, partTreeWidget, &PartTreeWidget::partChecked);

@@ -85,7 +85,7 @@ private:
     void initToolButton(QPushButton *button);
     void initToolButtonWithoutFont(QPushButton *button);
     void initButton(QPushButton *button);
-    void updateButton(QPushButton *button, QChar icon, bool highlighted);
+    void updateButton(QPushButton *button, QChar icon, bool highlighted, bool enabled=true);
     void updateAllButtons();
 };
 

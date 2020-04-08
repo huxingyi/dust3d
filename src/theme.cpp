@@ -127,7 +127,7 @@ void Theme::initAwesomeMiniButton(QPushButton *button)
     button->setFocusPolicy(Qt::NoFocus);
 }
 
-void Theme::updateAwesomeMiniButton(QPushButton *button, QChar icon, bool highlighted, bool unnormal)
+void Theme::updateAwesomeMiniButton(QPushButton *button, QChar icon, bool highlighted, bool enabled, bool unnormal)
 {
     button->setText(icon);
     QColor color;
@@ -148,6 +148,10 @@ void Theme::updateAwesomeMiniButton(QPushButton *button, QChar icon, bool highli
         color = color.toHsv();
         color.setHsv(color.hue(), color.saturation() / 5, color.value() * 2 / 3);
         color = color.toRgb();
+    }
+    
+    if (!enabled) {
+        color = QColor(42, 42, 42);
     }
 
     button->setStyleSheet("QPushButton {border: none; background: none; color: " + color.name() + ";}");

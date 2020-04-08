@@ -209,6 +209,66 @@ public:
     {
         id = withId.isNull() ? QUuid::createUuid() : withId;
     }
+    bool hasPolyFunction() const
+    {
+        return PartTarget::Model == target;
+    }
+    bool hasSubdivFunction() const
+    {
+        return PartTarget::Model == target && fillMeshLinkedId.isNull();
+    }
+    bool hasRoundEndFunction() const
+    {
+        return PartTarget::Model == target && fillMeshLinkedId.isNull();
+    }
+    bool hasMirrorFunction() const
+    {
+        return PartTarget::Model == target && fillMeshLinkedId.isNull();
+    }
+    bool hasChamferFunction() const
+    {
+        return PartTarget::Model == target && fillMeshLinkedId.isNull();
+    }
+    bool hasRotationFunction() const
+    {
+        return PartTarget::Model == target;
+    }
+    bool hasHollowFunction() const
+    {
+        return PartTarget::Model == target && fillMeshLinkedId.isNull();
+    }
+    bool hasCutFaceFunction() const
+    {
+        return PartTarget::Model == target && fillMeshLinkedId.isNull();
+    }
+    bool hasLayerFunction() const
+    {
+        return PartTarget::Model == target;
+    }
+    bool hasTargetFunction() const
+    {
+        return fillMeshLinkedId.isNull();
+    }
+    bool hasBaseFunction() const
+    {
+        return PartTarget::Model == target && fillMeshLinkedId.isNull();
+    }
+    bool hasCombineModeFunction() const
+    {
+        return PartTarget::Model == target;
+    }
+    bool hasDeformFunction() const
+    {
+        return PartTarget::Model == target;
+    }
+    bool hasDeformImageFunction() const
+    {
+        return hasDeformFunction() && fillMeshLinkedId.isNull();
+    }
+    bool hasColorFunction() const
+    {
+        return PartTarget::Model == target && fillMeshLinkedId.isNull();
+    }
     void setDeformThickness(float toThickness)
     {
         if (toThickness < 0)

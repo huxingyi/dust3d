@@ -49,7 +49,7 @@ public:
     static void initAwesomeLabel(QLabel *label);
     static void initAwesomeSmallButton(QPushButton *button);
     static void initAwesomeMiniButton(QPushButton *button);
-    static void updateAwesomeMiniButton(QPushButton *button, QChar icon, bool highlighted, bool unnormal=false);
+    static void updateAwesomeMiniButton(QPushButton *button, QChar icon, bool highlighted, bool enabled, bool unnormal=false);
     static void initAwesomeToolButton(QPushButton *button);
     static void initAwesomeToolButtonWithoutFont(QPushButton *button);
     static void initAwsomeBaseSizes();

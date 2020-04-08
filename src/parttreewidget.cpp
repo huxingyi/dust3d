@@ -461,8 +461,8 @@ void PartTreeWidget::showContextMenu(const QPoint &pos, bool shorted)
     }
     QComboBox *polyCountSelectBox = nullptr;
     if (componentIds.size() <= 1) {
-        polyCountSelectBox = new QComboBox;
         if (nullptr == component) {
+            polyCountSelectBox = new QComboBox;
             for (size_t i = 0; i < (size_t)PolyCount::Count; ++i) {
                 PolyCount count = (PolyCount)i;
                 polyCountSelectBox->addItem(PolyCountToDispName(count));
@@ -472,7 +472,8 @@ void PartTreeWidget::showContextMenu(const QPoint &pos, bool shorted)
                 emit setComponentPolyCount(QUuid(), (PolyCount)index);
                 emit groupOperationAdded();
             });
-        } else {
+        } else if (nullptr == part || part->hasPolyFunction()) {
+            polyCountSelectBox = new QComboBox;
             for (size_t i = 0; i < (size_t)PolyCount::Count; ++i) {
                 PolyCount count = (PolyCount)i;
                 polyCountSelectBox->addItem(PolyCountToDispName(count));
@@ -486,39 +487,45 @@ void PartTreeWidget::showContextMenu(const QPoint &pos, bool shorted)
     }
     QWidget *widget = new QWidget;
     if (nullptr != component) {
-        QPushButton *clothSettingButton = new QPushButton();
-        connect(clothSettingButton, &QPushButton::clicked, this, [=]() {
-            showClothSettingMenu(mapFromGlobal(QCursor::pos()), component->id);
-        });
-        clothSettingButton->setIcon(Theme::awesome()->icon(fa::gear));
-        if (ComponentLayer::Cloth != component->layer)
-            clothSettingButton->hide();
-        QComboBox *componentLayerSelectBox = new QComboBox;
-        for (size_t i = 0; i < (size_t)ComponentLayer::Count; ++i) {
-            ComponentLayer layer = (ComponentLayer)i;
-            componentLayerSelectBox->addItem(ComponentLayerToDispName(layer));
+        QHBoxLayout *componentLayerLayout = nullptr;
+        if (nullptr == part || part->hasLayerFunction()) {
+            QPushButton *clothSettingButton = new QPushButton();
+            connect(clothSettingButton, &QPushButton::clicked, this, [=]() {
+                showClothSettingMenu(mapFromGlobal(QCursor::pos()), component->id);
+            });
+            clothSettingButton->setIcon(Theme::awesome()->icon(fa::gear));
+            if (ComponentLayer::Cloth != component->layer)
+                clothSettingButton->hide();
+            QComboBox *componentLayerSelectBox = new QComboBox;
+            for (size_t i = 0; i < (size_t)ComponentLayer::Count; ++i) {
+                ComponentLayer layer = (ComponentLayer)i;
+                componentLayerSelectBox->addItem(ComponentLayerToDispName(layer));
+            }
+            componentLayerSelectBox->setCurrentIndex((int)component->layer);
+            connect(componentLayerSelectBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [=](int index) {
+                clothSettingButton->setVisible(ComponentLayer::Cloth == (ComponentLayer)index);
+                emit setComponentLayer(component->id, (ComponentLayer)index);
+                emit groupOperationAdded();
+            });
+            componentLayerLayout = new QHBoxLayout;
+            componentLayerLayout->addWidget(componentLayerSelectBox);
+            componentLayerLayout->addWidget(clothSettingButton);
+            componentLayerLayout->setStretch(0, 1);
         }
-        componentLayerSelectBox->setCurrentIndex((int)component->layer);
-        connect(componentLayerSelectBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [=](int index) {
-            clothSettingButton->setVisible(ComponentLayer::Cloth == (ComponentLayer)index);
-            emit setComponentLayer(component->id, (ComponentLayer)index);
-            emit groupOperationAdded();
-        });
-        QHBoxLayout *componentLayerLayout = new QHBoxLayout;
-        componentLayerLayout->addWidget(componentLayerSelectBox);
-        componentLayerLayout->addWidget(clothSettingButton);
-        componentLayerLayout->setStretch(0, 1);
         
-        QComboBox *combineModeSelectBox = new QComboBox;
-        for (size_t i = 0; i < (size_t)CombineMode::Count; ++i) {
-            CombineMode mode = (CombineMode)i;
-            combineModeSelectBox->addItem(CombineModeToDispName(mode));
+        QComboBox *combineModeSelectBox = nullptr;
+        if (nullptr == part || part->hasCombineModeFunction()) {
+            combineModeSelectBox = new QComboBox;
+            for (size_t i = 0; i < (size_t)CombineMode::Count; ++i) {
+                CombineMode mode = (CombineMode)i;
+                combineModeSelectBox->addItem(CombineModeToDispName(mode));
+            }
+            combineModeSelectBox->setCurrentIndex((int)component->combineMode);
+            connect(combineModeSelectBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [=](int index) {
+                emit setComponentCombineMode(component->id, (CombineMode)index);
+                emit groupOperationAdded();
+            });
         }
-        combineModeSelectBox->setCurrentIndex((int)component->combineMode);
-        connect(combineModeSelectBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [=](int index) {
-            emit setComponentCombineMode(component->id, (CombineMode)index);
-            emit groupOperationAdded();
-        });
         
         QComboBox *partTargetSelectBox = nullptr;
         if (nullptr != part && nullptr != partWidget) {
@@ -535,7 +542,7 @@ void PartTreeWidget::showContextMenu(const QPoint &pos, bool shorted)
         }
         
         QComboBox *partBaseSelectBox = nullptr;
-        if (nullptr != part && nullptr != partWidget) {
+        if (nullptr != part && part->hasBaseFunction() && nullptr != partWidget) {
             partBaseSelectBox = new QComboBox;
             for (size_t i = 0; i < (size_t)PartBase::Count; ++i) {
                 PartBase base = (PartBase)i;
@@ -561,8 +568,10 @@ void PartTreeWidget::showContextMenu(const QPoint &pos, bool shorted)
             componentSettingsLayout->addRow(tr("Base"), partBaseSelectBox);
         if (nullptr != partTargetSelectBox)
             componentSettingsLayout->addRow(tr("Target"), partTargetSelectBox);
-        componentSettingsLayout->addRow(tr("Mode"), combineModeSelectBox);
-        componentSettingsLayout->addRow(tr("Layer"), componentLayerLayout);
+        if (nullptr != combineModeSelectBox)
+            componentSettingsLayout->addRow(tr("Mode"), combineModeSelectBox);
+        if (nullptr != componentLayerLayout)
+            componentSettingsLayout->addRow(tr("Layer"), componentLayerLayout);
     
         QVBoxLayout *newLayout = new QVBoxLayout;
         newLayout->addLayout(layout);
