@@ -1582,7 +1582,7 @@ void DocumentWindow::createPartSnapshotForFillMesh(const QUuid &fillMeshFileId, 
     auto componentIdString = componentId.toString();
     std::map<QString, QString> snapshotComponent;
     snapshotComponent["id"] = componentIdString;
-    snapshotComponent["combineMode"] = "Uncombined";
+    snapshotComponent["combineMode"] = CombineModeToString(Preferences::instance().componentCombineMode());
     snapshotComponent["linkDataType"] = "partId";
     snapshotComponent["linkData"] = partIdString;
     snapshot->components[componentIdString] = snapshotComponent;
