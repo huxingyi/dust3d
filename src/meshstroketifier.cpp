@@ -108,8 +108,8 @@ void MeshStroketifier::stroketify(std::vector<QVector3D> *vertices)
 {
     translate(vertices);
     scale(vertices);
-    rotate(vertices);
     deform(vertices);
+    rotate(vertices);
     transform(vertices);
 }
 
