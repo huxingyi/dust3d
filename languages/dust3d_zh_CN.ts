@@ -1139,6 +1139,18 @@ Tips:
         <source>Very High Poly</source>
         <translation>很高面数</translation>
     </message>
+    <message>
+        <source>Without Line</source>
+        <translation>没有线</translation>
+    </message>
+    <message>
+        <source>With Line</source>
+        <translation>有线</translation>
+    </message>
+    <message>
+        <source>Line Only</source>
+        <translation>只有线</translation>
+    </message>
 </context>
 <context>
     <name>RigGenerator</name>
