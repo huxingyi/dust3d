@@ -1,4 +1,4 @@
-Changes between 1.0.0-rc.3 and 1.0.0-rc.4:
+Changes between 1.0.0-rc.3 and 1.0.0-rc.5:
 --------------------------------------------------
 - Add preference: Toon Shader  
 - Add menu: Export as Image  

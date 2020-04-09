@@ -574,9 +574,10 @@ void PartWidget::showCutRotationSettingPopup(const QPoint &pos)
         hollowThicknessLayout->addWidget(hollowThicknessWidget);
     }
     
+    QPushButton *buttons[(int)CutFace::Count] = {0};
+    
     if (part->hasCutFaceFunction()) {
         standardFacesLayout = new QHBoxLayout;
-        QPushButton *buttons[(int)CutFace::Count] = {0};
         
         cutFaceListWidget = new CutFaceListWidget(m_document);
         size_t cutFaceTypeCount = (size_t)CutFace::UserDefined;
