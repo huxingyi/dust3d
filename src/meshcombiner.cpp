@@ -73,9 +73,18 @@ bool MeshCombiner::Mesh::isSelfIntersected() const
     return m_isSelfIntersected;
 }
 
+void MeshCombiner::Mesh::markAsSelfIntersected()
+{
+	m_isSelfIntersected = true;
+}
+
 MeshCombiner::Mesh *MeshCombiner::combine(const Mesh &firstMesh, const Mesh &secondMesh, Method method,
     std::vector<std::pair<Source, size_t>> *combinedVerticesComeFrom)
 {
+	if (firstMesh.isNull() || firstMesh.isSelfIntersected() ||
+			secondMesh.isNull() || secondMesh.isSelfIntersected())
+		return nullptr;
+	
     CgalMesh *resultCgalMesh = nullptr;
     CgalMesh *firstCgalMesh = (CgalMesh *)firstMesh.m_privateData;
     CgalMesh *secondCgalMesh = (CgalMesh *)secondMesh.m_privateData;
@@ -147,6 +156,9 @@ MeshCombiner::Mesh *MeshCombiner::combine(const Mesh &firstMesh, const Mesh &sec
     
     Mesh *mesh = new Mesh;
     mesh->m_privateData = resultCgalMesh;
+    if (CGAL::Polygon_mesh_processing::does_self_intersect(*resultCgalMesh)) {
+		mesh->markAsSelfIntersected();
+	}
     return mesh;
 }
 

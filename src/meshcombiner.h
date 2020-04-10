@@ -29,6 +29,7 @@ public:
         void fetch(std::vector<QVector3D> &vertices, std::vector<std::vector<size_t>> &faces) const;
         bool isNull() const;
         bool isSelfIntersected() const;
+        void markAsSelfIntersected();
         
         friend MeshCombiner;
         
