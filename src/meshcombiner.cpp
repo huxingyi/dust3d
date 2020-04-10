@@ -43,6 +43,7 @@ MeshCombiner::Mesh::Mesh(const std::vector<QVector3D> &vertices, const std::vect
 MeshCombiner::Mesh::Mesh(const Mesh &other)
 {
     if (other.m_privateData) {
+		m_isSelfIntersected = other.m_isSelfIntersected;
         m_privateData = new CgalMesh(*(CgalMesh *)other.m_privateData);
         validate();
     }
