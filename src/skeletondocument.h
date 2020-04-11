@@ -190,7 +190,7 @@ public:
         disabled(false),
         xMirrored(false),
         zMirrored(false),
-        base(PartBase::XYZ),
+        base(PartBase::Average),
         deformThickness(1.0),
         deformWidth(1.0),
         rounded(false),

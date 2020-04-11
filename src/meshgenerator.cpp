@@ -1711,10 +1711,14 @@ void MeshGenerator::remesh(const std::vector<OutcomeNode> &inputNodes,
 
 void MeshGenerator::collectIncombinableComponentMeshes(const QString &componentIdString)
 {
-    const auto &componentCache = m_cacheContext->components[componentIdString];
-    for (const auto &mesh: componentCache.incombinableMeshes)
-        collectIncombinableMesh(mesh, componentCache);
     const auto &component = findComponent(componentIdString);
+    if (CombineMode::Uncombined == componentCombineMode(component))
+        return;
+    const auto &componentCache = m_cacheContext->components[componentIdString];
+    for (const auto &mesh: componentCache.incombinableMeshes) {
+        m_isSuccessful = false;
+        collectIncombinableMesh(mesh, componentCache);
+    }
     for (const auto &childIdString: valueOfKeyInMapOrEmpty(*component, "children").split(",")) {
         if (childIdString.isEmpty())
             continue;
@@ -1726,8 +1730,6 @@ void MeshGenerator::collectIncombinableMesh(const MeshCombiner::Mesh *mesh, cons
 {
     if (nullptr == mesh)
         return;
-    
-    m_isSuccessful = false;
 
     std::vector<QVector3D> uncombinedVertices;
     std::vector<std::vector<size_t>> uncombinedFaces;
