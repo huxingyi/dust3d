@@ -431,8 +431,7 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, 
     partCache.previewVertices.clear();
     partCache.isSuccessful = false;
     partCache.joined = (target == PartTarget::Model && !isDisabled);
-    delete partCache.mesh;
-    partCache.mesh = nullptr;
+    partCache.releaseMeshes();
     
     struct NodeInfo
     {
@@ -1471,6 +1470,7 @@ void MeshGenerator::generate()
                     }
                     m_cacheContext->partMirrorIdMap.erase(mirrorFrom);
                 }
+                it->second.releaseMeshes();
                 it = m_cacheContext->parts.erase(it);
                 continue;
             }
@@ -1487,6 +1487,7 @@ void MeshGenerator::generate()
                     }
                     combinationIt++;
                 }
+                it->second.releaseMeshes();
                 it = m_cacheContext->components.erase(it);
                 continue;
             }

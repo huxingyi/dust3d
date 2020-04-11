@@ -20,8 +20,13 @@ class GeneratedPart
 public:
     ~GeneratedPart()
     {
-        delete mesh;
+        releaseMeshes();
     };
+    void releaseMeshes()
+    {
+        delete mesh;
+        mesh = nullptr;
+    }
     MeshCombiner::Mesh *mesh = nullptr;
     std::vector<QVector3D> vertices;
     std::vector<std::vector<size_t>> faces;
@@ -63,6 +68,15 @@ public:
 class GeneratedCacheContext
 {
 public:
+    ~GeneratedCacheContext()
+    {
+        for (auto &it: cachedCombination)
+            delete it.second;
+        for (auto &it: parts)
+            it.second.releaseMeshes();
+        for (auto &it: components)
+            it.second.releaseMeshes();
+    }
     std::map<QString, GeneratedComponent> components;
     std::map<QString, GeneratedPart> parts;
     std::map<QString, QString> partMirrorIdMap;
