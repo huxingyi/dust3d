@@ -6,6 +6,7 @@
 #include "meshcombiner.h"
 #include "positionkey.h"
 #include "booleanmesh.h"
+#include "util.h"
 
 typedef CGAL::Exact_predicates_inexact_constructions_kernel CgalKernel;
 typedef CGAL::Surface_mesh<CgalKernel::Point_3> CgalMesh;
@@ -153,7 +154,13 @@ MeshCombiner::Mesh *MeshCombiner::combine(const Mesh &firstMesh, const Mesh &sec
     
     Mesh *mesh = new Mesh;
     mesh->m_privateData = resultCgalMesh;
-    mesh->m_isCombinable = true;
+    {
+        std::vector<QVector3D> vertices;
+        std::vector<std::vector<size_t>> faces;
+        fetchFromCgalMesh<CgalKernel>(resultCgalMesh, vertices, faces);
+        mesh->m_isCombinable = isManifold(faces);
+    }
+    mesh->validate();
     return mesh;
 }
 
