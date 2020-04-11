@@ -28,7 +28,16 @@ MeshCombiner::Mesh::Mesh(const std::vector<QVector3D> &vertices, const std::vect
                         delete cgalMesh;
                         cgalMesh = nullptr;
                     } else {
-                        m_isCombinable = true;
+						std::vector<QVector3D> fetchedVertices;
+						std::vector<std::vector<size_t>> fetchedFaces;
+						fetchFromCgalMesh<CgalKernel>(cgalMesh, fetchedVertices, fetchedFaces);
+						if (!isManifold(fetchedFaces)) {
+							qDebug() << "Mesh does not self intersect but is not manifold";
+							delete cgalMesh;
+							cgalMesh = nullptr;
+						} else {
+							m_isCombinable = true;
+						}
                     }
                 } else {
                     qDebug() << "Mesh triangulate failed";

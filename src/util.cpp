@@ -1,5 +1,6 @@
 #include <cmath>
 #include <QtMath>
+#include <QFile>
 #include <unordered_set>
 #include <unordered_map>
 #include "util.h"
@@ -487,4 +488,25 @@ QVector3D choosenBaseAxis(const QVector3D &layoutDirection)
             const std::pair<float, size_t> &second) {
         return first.first < second.first;
     })->second];
+}
+
+void saveAsObj(const char *filename, const std::vector<QVector3D> &vertices,
+	const std::vector<std::vector<size_t>> &faces)
+{
+	QFile file(filename);
+    if (!file.open(QIODevice::WriteOnly))
+		return;
+	
+	QTextStream stream(&file);
+		
+	for (std::vector<QVector3D>::const_iterator it = vertices.begin() ; it != vertices.end(); ++it) {
+        stream << "v " << (*it).x() << " " << (*it).y() << " " << (*it).z() << endl;
+    }
+    for (std::vector<std::vector<size_t>>::const_iterator it = faces.begin() ; it != faces.end(); ++it) {
+        stream << "f";
+        for (std::vector<size_t>::const_iterator subIt = (*it).begin() ; subIt != (*it).end(); ++subIt) {
+            stream << " " << (1 + *subIt);
+        }
+        stream << endl;
+    }
 }

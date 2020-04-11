@@ -311,6 +311,9 @@ void DUST3D_INSTANT_MESHES_FUNCTION_CONVENTION Dust3D_instantMeshesRemesh(const 
         }
     };
     outputMesh(O_extr, F_extr);
+    
+    if (bvh)
+        delete bvh;
 
     *nResultVertices = g_resultVertices.size();
     *resultVertices = g_resultVertices.data();
