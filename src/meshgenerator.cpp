@@ -1035,8 +1035,7 @@ MeshCombiner::Mesh *MeshGenerator::combineComponentMesh(const QString &component
     componentCache.outcomeEdges.clear();
     componentCache.outcomeNodeVertices.clear();
     componentCache.outcomePaintMaps.clear();
-    delete componentCache.mesh;
-    componentCache.mesh = nullptr;
+    componentCache.releaseMeshes();
     
     QString linkDataType = valueOfKeyInMapOrEmpty(*component, "linkDataType");
     if ("partId" == linkDataType) {
@@ -1084,10 +1083,10 @@ MeshCombiner::Mesh *MeshGenerator::combineComponentMesh(const QString &component
             }
             auto combineMode = componentCombineMode(child);
             if (lastCombineMode != combineMode || lastCombineMode == CombineMode::Inversion) {
-                qDebug() << "New group[" << currentGroupIndex << "] for combine mode[" << CombineModeToString(combineMode) << "]";
                 combineGroups.push_back({combineMode, {}});
                 ++currentGroupIndex;
                 lastCombineMode = combineMode;
+                qDebug() << "New group[" << currentGroupIndex << "] for combine mode[" << CombineModeToString(combineMode) << "]";
             }
             if (-1 == currentGroupIndex) {
                 qDebug() << "Should not happen: -1 == currentGroupIndex";
@@ -1214,9 +1213,19 @@ MeshCombiner::Mesh *MeshGenerator::combineComponentMesh(const QString &component
                 });
             }
             delete mesh;
+            mesh = nullptr;
             bool disableSelfIntersectionTest = componentId.isNull() ||
                 CombineMode::Uncombined == componentCombineMode(component);
-            mesh = new MeshCombiner::Mesh(newVertices, newTriangles, disableSelfIntersectionTest);
+            if (!disableSelfIntersectionTest) {
+                if (isManifold(newTriangles)) {
+                    mesh = new MeshCombiner::Mesh(newVertices, newTriangles, disableSelfIntersectionTest);
+                } else {
+                    disableSelfIntersectionTest = true;
+                    mesh = new MeshCombiner::Mesh(newVertices, newTriangles, disableSelfIntersectionTest);
+                }
+            } else {
+                mesh = new MeshCombiner::Mesh(newVertices, newTriangles, disableSelfIntersectionTest);
+            }
             if (nullptr != mesh) {
                 if (!disableSelfIntersectionTest) {
                     if (mesh->isNull()) {
@@ -1244,12 +1253,14 @@ MeshCombiner::Mesh *MeshGenerator::combineMultipleMeshes(const std::vector<std::
         MeshCombiner::Mesh *subMesh = std::get<0>(it);
         const QString &subMeshIdString = std::get<2>(it);
         //qDebug() << "Combine mode:" << CombineModeToString(childCombineMode);
-        if (nullptr == subMesh) {
+        if (nullptr == subMesh || subMesh->isNull()) {
+            delete subMesh;
             qDebug() << "Child mesh is null";
             continue;
         }
-        if (subMesh->isNull()) {
+        if (!subMesh->isCombinable()) {
             qDebug() << "Child mesh is uncombinable";
+            // TODO: Collect vertices
             delete subMesh;
             continue;
         }
@@ -1330,6 +1341,11 @@ MeshCombiner::Mesh *MeshGenerator::combineComponentChildGroupMesh(const std::vec
             delete subMesh;
             continue;
         }
+        
+        if (!subMesh->isCombinable()) {
+            componentCache.incombinableMeshes.push_back(subMesh);
+            continue;
+        }
     
         multipleMeshes.push_back(std::make_tuple(subMesh, childCombineMode, childIdString));
     }
@@ -1359,7 +1375,7 @@ MeshCombiner::Mesh *MeshGenerator::combineTwoMeshes(const MeshCombiner::Mesh &fi
         if (recombiner.recombine()) {
             if (isManifold(recombiner.regeneratedFaces())) {
                 MeshCombiner::Mesh *reMesh = new MeshCombiner::Mesh(recombiner.regeneratedVertices(), recombiner.regeneratedFaces(), false);
-                if (!reMesh->isNull() && !reMesh->isSelfIntersected()) {
+                if (!reMesh->isNull() && reMesh->isCombinable()) {
                     delete newMesh;
                     newMesh = reMesh;
                 } else {
@@ -1537,6 +1553,7 @@ void MeshGenerator::generate()
     
     // Recursively check uncombined components
     collectUncombinedComponent(QUuid().toString());
+    collectIncombinableComponentMeshes(QUuid().toString());
     
     // Fetch nodes as body nodes before cloth nodes collecting
     std::set<std::pair<QUuid, QUuid>> bodyNodeMap;
@@ -1691,6 +1708,48 @@ void MeshGenerator::remesh(const std::vector<OutcomeNode> &inputNodes,
     }
 }
 
+void MeshGenerator::collectIncombinableComponentMeshes(const QString &componentIdString)
+{
+    const auto &componentCache = m_cacheContext->components[componentIdString];
+    for (const auto &mesh: componentCache.incombinableMeshes)
+        collectIncombinableMesh(mesh, componentCache);
+    const auto &component = findComponent(componentIdString);
+    for (const auto &childIdString: valueOfKeyInMapOrEmpty(*component, "children").split(",")) {
+        if (childIdString.isEmpty())
+            continue;
+        collectIncombinableComponentMeshes(childIdString);
+    }
+}
+
+void MeshGenerator::collectIncombinableMesh(const MeshCombiner::Mesh *mesh, const GeneratedComponent &componentCache)
+{
+    if (nullptr == mesh)
+        return;
+    
+    m_isSuccessful = false;
+
+    std::vector<QVector3D> uncombinedVertices;
+    std::vector<std::vector<size_t>> uncombinedFaces;
+    mesh->fetch(uncombinedVertices, uncombinedFaces);
+    std::vector<std::vector<size_t>> uncombinedTriangleAndQuads;
+    
+    recoverQuads(uncombinedVertices, uncombinedFaces, componentCache.sharedQuadEdges, uncombinedTriangleAndQuads);
+    
+    auto vertexStartIndex = m_outcome->vertices.size();
+    auto updateVertexIndices = [=](std::vector<std::vector<size_t>> &faces) {
+        for (auto &it: faces) {
+            for (auto &subIt: it)
+                subIt += vertexStartIndex;
+        }
+    };
+    updateVertexIndices(uncombinedFaces);
+    updateVertexIndices(uncombinedTriangleAndQuads);
+    
+    m_outcome->vertices.insert(m_outcome->vertices.end(), uncombinedVertices.begin(), uncombinedVertices.end());
+    m_outcome->triangles.insert(m_outcome->triangles.end(), uncombinedFaces.begin(), uncombinedFaces.end());
+    m_outcome->triangleAndQuads.insert(m_outcome->triangleAndQuads.end(), uncombinedTriangleAndQuads.begin(), uncombinedTriangleAndQuads.end());
+}
+
 void MeshGenerator::collectUncombinedComponent(const QString &componentIdString)
 {
     const auto &component = findComponent(componentIdString);
@@ -1708,26 +1767,7 @@ void MeshGenerator::collectUncombinedComponent(const QString &componentIdString)
         m_outcome->nodeVertices.insert(m_outcome->nodeVertices.end(), componentCache.outcomeNodeVertices.begin(), componentCache.outcomeNodeVertices.end());
         m_outcome->paintMaps.insert(m_outcome->paintMaps.end(), componentCache.outcomePaintMaps.begin(), componentCache.outcomePaintMaps.end());
         
-        std::vector<QVector3D> uncombinedVertices;
-        std::vector<std::vector<size_t>> uncombinedFaces;
-        componentCache.mesh->fetch(uncombinedVertices, uncombinedFaces);
-        std::vector<std::vector<size_t>> uncombinedTriangleAndQuads;
-        
-        recoverQuads(uncombinedVertices, uncombinedFaces, componentCache.sharedQuadEdges, uncombinedTriangleAndQuads);
-        
-        auto vertexStartIndex = m_outcome->vertices.size();
-        auto updateVertexIndices = [=](std::vector<std::vector<size_t>> &faces) {
-            for (auto &it: faces) {
-                for (auto &subIt: it)
-                    subIt += vertexStartIndex;
-            }
-        };
-        updateVertexIndices(uncombinedFaces);
-        updateVertexIndices(uncombinedTriangleAndQuads);
-        
-        m_outcome->vertices.insert(m_outcome->vertices.end(), uncombinedVertices.begin(), uncombinedVertices.end());
-        m_outcome->triangles.insert(m_outcome->triangles.end(), uncombinedFaces.begin(), uncombinedFaces.end());
-        m_outcome->triangleAndQuads.insert(m_outcome->triangleAndQuads.end(), uncombinedTriangleAndQuads.begin(), uncombinedTriangleAndQuads.end());
+        collectIncombinableMesh(componentCache.mesh, componentCache);
         return;
     }
     for (const auto &childIdString: valueOfKeyInMapOrEmpty(*component, "children").split(",")) {

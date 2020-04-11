@@ -23,10 +23,11 @@ MeshCombiner::Mesh::Mesh(const std::vector<QVector3D> &vertices, const std::vect
             } else {
                 if (CGAL::Polygon_mesh_processing::triangulate_faces(*cgalMesh)) {
                     if (CGAL::Polygon_mesh_processing::does_self_intersect(*cgalMesh)) {
-                        m_isSelfIntersected = true;
                         qDebug() << "Mesh does_self_intersect";
                         delete cgalMesh;
                         cgalMesh = nullptr;
+                    } else {
+                        m_isCombinable = true;
                     }
                 } else {
                     qDebug() << "Mesh triangulate failed";
@@ -43,7 +44,7 @@ MeshCombiner::Mesh::Mesh(const std::vector<QVector3D> &vertices, const std::vect
 MeshCombiner::Mesh::Mesh(const Mesh &other)
 {
     if (other.m_privateData) {
-		m_isSelfIntersected = other.m_isSelfIntersected;
+		m_isCombinable = other.m_isCombinable;
         m_privateData = new CgalMesh(*(CgalMesh *)other.m_privateData);
         validate();
     }
@@ -69,21 +70,16 @@ bool MeshCombiner::Mesh::isNull() const
     return nullptr == m_privateData;
 }
 
-bool MeshCombiner::Mesh::isSelfIntersected() const
+bool MeshCombiner::Mesh::isCombinable() const
 {
-    return m_isSelfIntersected;
-}
-
-void MeshCombiner::Mesh::markAsSelfIntersected()
-{
-	m_isSelfIntersected = true;
+    return m_isCombinable;
 }
 
 MeshCombiner::Mesh *MeshCombiner::combine(const Mesh &firstMesh, const Mesh &secondMesh, Method method,
     std::vector<std::pair<Source, size_t>> *combinedVerticesComeFrom)
 {
-	if (firstMesh.isNull() || firstMesh.isSelfIntersected() ||
-			secondMesh.isNull() || secondMesh.isSelfIntersected())
+	if (firstMesh.isNull() || !firstMesh.isCombinable() ||
+			secondMesh.isNull() || !secondMesh.isCombinable())
 		return nullptr;
 	
     CgalMesh *resultCgalMesh = nullptr;
@@ -157,9 +153,7 @@ MeshCombiner::Mesh *MeshCombiner::combine(const Mesh &firstMesh, const Mesh &sec
     
     Mesh *mesh = new Mesh;
     mesh->m_privateData = resultCgalMesh;
-    if (CGAL::Polygon_mesh_processing::does_self_intersect(*resultCgalMesh)) {
-		mesh->markAsSelfIntersected();
-	}
+    mesh->m_isCombinable = true;
     return mesh;
 }
 
@@ -172,5 +166,6 @@ void MeshCombiner::Mesh::validate()
     if (isNullCgalMesh<CgalKernel>(exactMesh)) {
         delete exactMesh;
         m_privateData = nullptr;
+        m_isCombinable = false;
     }
 }

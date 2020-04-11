@@ -28,14 +28,13 @@ public:
         ~Mesh();
         void fetch(std::vector<QVector3D> &vertices, std::vector<std::vector<size_t>> &faces) const;
         bool isNull() const;
-        bool isSelfIntersected() const;
-        void markAsSelfIntersected();
+        bool isCombinable() const;
         
         friend MeshCombiner;
         
     private:
         void *m_privateData = nullptr;
-        bool m_isSelfIntersected = false;
+        bool m_isCombinable = false;
         
         void validate();
     };

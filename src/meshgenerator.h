@@ -40,9 +40,18 @@ class GeneratedComponent
 public:
     ~GeneratedComponent()
     {
-        delete mesh;
+        releaseMeshes();
     };
+    void releaseMeshes()
+    {
+        delete mesh;
+        mesh = nullptr;
+        for (auto &it: incombinableMeshes)
+            delete it;
+        incombinableMeshes.clear();
+    }
     MeshCombiner::Mesh *mesh = nullptr;
+    std::vector<MeshCombiner::Mesh *> incombinableMeshes;
     std::set<std::pair<PositionKey, PositionKey>> sharedQuadEdges;
     std::set<PositionKey> noneSeamVertices;
     std::vector<OutcomeNode> outcomeNodes;
@@ -111,6 +120,8 @@ private:
     bool m_weldEnabled = true;
     
     void collectParts();
+    void collectIncombinableComponentMeshes(const QString &componentIdString);
+    void collectIncombinableMesh(const MeshCombiner::Mesh *mesh, const GeneratedComponent &componentCache);
     bool checkIsComponentDirty(const QString &componentIdString);
     bool checkIsPartDirty(const QString &partIdString);
     bool checkIsPartDependencyDirty(const QString &partIdString);
