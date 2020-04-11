@@ -1,3 +1,8 @@
+Changes between 1.0.0-rc.5 and 1.0.0-rc.6:
+--------------------------------------------------
+- Fix crash after remesh  
+- Fix remesh memory leak  
+
 Changes between 1.0.0-rc.3 and 1.0.0-rc.5:
 --------------------------------------------------
 - Add preference: Toon Shader  
