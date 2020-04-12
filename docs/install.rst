@@ -3,19 +3,19 @@ Download and Install Dust3D
 
 * For Windows (64 Bit):
 
-    https://github.com/huxingyi/dust3d/releases/download/1.0.0-rc.5/dust3d-1.0.0-rc.5.zip
+    https://github.com/huxingyi/dust3d/releases/download/1.0.0-rc.6/dust3d-1.0.0-rc.6.zip
 
     No need to install, unzip and run the exe.
     
 * For Windows (32 Bit):
 
-    https://github.com/huxingyi/dust3d/releases/download/1.0.0-rc.5/dust3d-1.0.0-rc.5-x86.zip
+    https://github.com/huxingyi/dust3d/releases/download/1.0.0-rc.6/dust3d-1.0.0-rc.6-x86.zip
 
     No need to install, unzip and run the exe.
 
 * For Mac OS X:
 
-    https://github.com/huxingyi/dust3d/releases/download/1.0.0-rc.5/dust3d-1.0.0-rc.5.dmg
+    https://github.com/huxingyi/dust3d/releases/download/1.0.0-rc.6/dust3d-1.0.0-rc.6.dmg
 
     If "The following disk images could't be opened" popped up, that means the downloaded file was broken, please retry.
 
@@ -30,12 +30,12 @@ Download and Install Dust3D
 
 * For Linux:
 
-    https://github.com/huxingyi/dust3d/releases/download/1.0.0-rc.5/dust3d-1.0.0-rc.5.AppImage
+    https://github.com/huxingyi/dust3d/releases/download/1.0.0-rc.6/dust3d-1.0.0-rc.6.AppImage
 
     .. code-block:: none
 
-        $ chmod a+x ./dust3d-1.0.0-rc.5.AppImage
-        $ ./dust3d-1.0.0-rc.5.AppImage
+        $ chmod a+x ./dust3d-1.0.0-rc.6.AppImage
+        $ ./dust3d-1.0.0-rc.6.AppImage
 
 * Build on Your Own:
 
