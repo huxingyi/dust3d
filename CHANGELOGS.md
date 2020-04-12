@@ -7,7 +7,9 @@ Changes between 1.0.0-rc.5 and 1.0.0-rc.6:
 - Remove short menu from Parts Tree  
 - Fix part widget display at wrong place  
 - Fix deformMap of imported document not saved  
-- Fix UV not generated if only uncombined or errored components  
+- Fix UV not generated if only uncombined or errored components exist  
+- Optimize nodes deletion  
+- Remove Mark Pen  
 
 Changes between 1.0.0-rc.3 and 1.0.0-rc.5:
 --------------------------------------------------
