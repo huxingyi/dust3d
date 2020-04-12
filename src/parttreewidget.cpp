@@ -459,7 +459,12 @@ void PartTreeWidget::showContextMenu(const QPoint &pos, bool shorted)
         }
         layout->addWidget(previewLabel);
     }
+    
     QComboBox *polyCountSelectBox = nullptr;
+    QComboBox *combineModeSelectBox = nullptr;
+    QComboBox *partTargetSelectBox = nullptr;
+    QComboBox *partBaseSelectBox = nullptr;
+    
     if (componentIds.size() <= 1) {
         if (nullptr == component) {
             polyCountSelectBox = new QComboBox;
@@ -485,9 +490,10 @@ void PartTreeWidget::showContextMenu(const QPoint &pos, bool shorted)
             });
         }
     }
-    QWidget *widget = new QWidget;
+    
+    QHBoxLayout *componentLayerLayout = nullptr;
+
     if (nullptr != component) {
-        QHBoxLayout *componentLayerLayout = nullptr;
         if (nullptr == part || part->hasLayerFunction()) {
             QPushButton *clothSettingButton = new QPushButton();
             connect(clothSettingButton, &QPushButton::clicked, this, [=]() {
@@ -513,7 +519,6 @@ void PartTreeWidget::showContextMenu(const QPoint &pos, bool shorted)
             componentLayerLayout->setStretch(0, 1);
         }
         
-        QComboBox *combineModeSelectBox = nullptr;
         if (nullptr == part || part->hasCombineModeFunction()) {
             combineModeSelectBox = new QComboBox;
             for (size_t i = 0; i < (size_t)CombineMode::Count; ++i) {
@@ -526,8 +531,7 @@ void PartTreeWidget::showContextMenu(const QPoint &pos, bool shorted)
                 emit groupOperationAdded();
             });
         }
-        
-        QComboBox *partTargetSelectBox = nullptr;
+
         if (nullptr != part && nullptr != partWidget) {
             partTargetSelectBox = new QComboBox;
             for (size_t i = 0; i < (size_t)PartTarget::Count; ++i) {
@@ -540,8 +544,7 @@ void PartTreeWidget::showContextMenu(const QPoint &pos, bool shorted)
                 emit groupOperationAdded();
             });
         }
-        
-        QComboBox *partBaseSelectBox = nullptr;
+
         if (nullptr != part && part->hasBaseFunction() && nullptr != partWidget) {
             partBaseSelectBox = new QComboBox;
             for (size_t i = 0; i < (size_t)PartBase::Count; ++i) {
@@ -554,39 +557,131 @@ void PartTreeWidget::showContextMenu(const QPoint &pos, bool shorted)
                 emit groupOperationAdded();
             });
         }
-        
-        //QHBoxLayout *combineModeLayout = new QHBoxLayout;
-        //combineModeLayout->setAlignment(Qt::AlignCenter);
-        //combineModeLayout->setContentsMargins(0, 0, 0, 0);
-        //combineModeLayout->setSpacing(0);
-        //combineModeLayout->addWidget(combineModeSelectBox);
-        
-        QFormLayout *componentSettingsLayout = new QFormLayout;
-        if (nullptr != polyCountSelectBox)
-            componentSettingsLayout->addRow(tr("Poly"), polyCountSelectBox);
-        if (nullptr != partBaseSelectBox)
-            componentSettingsLayout->addRow(tr("Base"), partBaseSelectBox);
-        if (nullptr != partTargetSelectBox)
-            componentSettingsLayout->addRow(tr("Target"), partTargetSelectBox);
-        if (nullptr != combineModeSelectBox)
-            componentSettingsLayout->addRow(tr("Mode"), combineModeSelectBox);
-        if (nullptr != componentLayerLayout)
-            componentSettingsLayout->addRow(tr("Layer"), componentLayerLayout);
-    
-        QVBoxLayout *newLayout = new QVBoxLayout;
-        newLayout->addLayout(layout);
-        newLayout->addLayout(componentSettingsLayout);
-        widget->setLayout(newLayout);
-    } else {
-        QFormLayout *componentSettingsLayout = new QFormLayout;
-        if (nullptr != polyCountSelectBox)
-            componentSettingsLayout->addRow(tr("Poly"), polyCountSelectBox);
-        
-        QVBoxLayout *newLayout = new QVBoxLayout;
-        newLayout->addLayout(layout);
-        newLayout->addLayout(componentSettingsLayout);
-        widget->setLayout(newLayout);
     }
+    
+    if (componentIds.size() > 1) {
+        if (nullptr == polyCountSelectBox) {
+            std::set<PolyCount> polyCounts;
+            for (const auto &componentId: componentIds) {
+                const Component *oneComponent = m_document->findComponent(componentId);
+                if (nullptr == oneComponent)
+                    continue;
+                polyCounts.insert(oneComponent->polyCount);
+            }
+            if (!polyCounts.empty()) {
+                int startIndex = (1 == polyCounts.size()) ? 0 : 1;
+                polyCountSelectBox = new QComboBox;
+                if (0 != startIndex)
+                    polyCountSelectBox->addItem(tr("Not Change"));
+                for (size_t i = 0; i < (size_t)PolyCount::Count; ++i) {
+                    PolyCount count = (PolyCount)i;
+                    polyCountSelectBox->addItem(PolyCountToDispName(count));
+                }
+                if (0 != startIndex)
+                    polyCountSelectBox->setCurrentIndex(0);
+                else
+                    polyCountSelectBox->setCurrentIndex((int)*polyCounts.begin());
+                connect(polyCountSelectBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [=](int index) {
+                    if (index < startIndex)
+                        return;
+                    for (const auto &componentId: componentIds) {
+                        emit setComponentPolyCount(componentId, (PolyCount)(index - startIndex));
+                    }
+                    emit groupOperationAdded();
+                });
+            }
+        }
+        
+        if (nullptr == partBaseSelectBox) {
+            std::set<PartBase> partBases;
+            for (const auto &componentId: componentIds) {
+                const Component *oneComponent = m_document->findComponent(componentId);
+                if (nullptr == oneComponent || oneComponent->linkToPartId.isNull())
+                    continue;
+                const SkeletonPart *onePart = m_document->findPart(oneComponent->linkToPartId);
+                if (nullptr == onePart)
+                    continue;
+                partBases.insert(onePart->base);
+            }
+            if (!partBases.empty()) {
+                int startIndex = (1 == partBases.size()) ? 0 : 1;
+                partBaseSelectBox = new QComboBox;
+                if (0 != startIndex)
+                    partBaseSelectBox->addItem(tr("Not Change"));
+                for (size_t i = 0; i < (size_t)PartBase::Count; ++i) {
+                    PartBase base = (PartBase)i;
+                    partBaseSelectBox->addItem(PartBaseToDispName(base));
+                }
+                if (0 != startIndex)
+                    partBaseSelectBox->setCurrentIndex(0);
+                else
+                    partBaseSelectBox->setCurrentIndex((int)*partBases.begin());
+                connect(partBaseSelectBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [=](int index) {
+                    if (index < startIndex)
+                        return;
+                    for (const auto &componentId: componentIds) {
+                        const Component *oneComponent = m_document->findComponent(componentId);
+                        if (nullptr == oneComponent || oneComponent->linkToPartId.isNull())
+                            continue;
+                        emit setPartBase(oneComponent->linkToPartId, (PartBase)(index - startIndex));
+                    }
+                    emit groupOperationAdded();
+                });
+            }
+        }
+        
+        if (nullptr == combineModeSelectBox) {
+            std::set<CombineMode> combineModes;
+            for (const auto &componentId: componentIds) {
+                const Component *oneComponent = m_document->findComponent(componentId);
+                if (nullptr == oneComponent)
+                    continue;
+                combineModes.insert(oneComponent->combineMode);
+            }
+            if (!combineModes.empty()) {
+                int startIndex = (1 == combineModes.size()) ? 0 : 1;
+                combineModeSelectBox = new QComboBox;
+                if (0 != startIndex)
+                    combineModeSelectBox->addItem(tr("Not Change"));
+                for (size_t i = 0; i < (size_t)CombineMode::Count; ++i) {
+                    CombineMode mode = (CombineMode)i;
+                    combineModeSelectBox->addItem(CombineModeToDispName(mode));
+                }
+                if (0 != startIndex)
+                    combineModeSelectBox->setCurrentIndex(0);
+                else
+                    combineModeSelectBox->setCurrentIndex((int)*combineModes.begin());
+                connect(combineModeSelectBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [=](int index) {
+                    if (index < startIndex)
+                        return;
+                    for (const auto &componentId: componentIds) {
+                        emit setComponentCombineMode(componentId, (CombineMode)(index - startIndex));
+                    }
+                    emit groupOperationAdded();
+                });
+            }
+        }
+    }
+    
+    QWidget *widget = new QWidget;
+    QFormLayout *componentSettingsLayout = new QFormLayout;
+    
+    if (nullptr != polyCountSelectBox)
+        componentSettingsLayout->addRow(tr("Poly"), polyCountSelectBox);
+    if (nullptr != partBaseSelectBox)
+        componentSettingsLayout->addRow(tr("Base"), partBaseSelectBox);
+    if (nullptr != partTargetSelectBox)
+        componentSettingsLayout->addRow(tr("Target"), partTargetSelectBox);
+    if (nullptr != combineModeSelectBox)
+        componentSettingsLayout->addRow(tr("Mode"), combineModeSelectBox);
+    if (nullptr != componentLayerLayout)
+        componentSettingsLayout->addRow(tr("Layer"), componentLayerLayout);
+    
+    QVBoxLayout *newLayout = new QVBoxLayout;
+    newLayout->addLayout(layout);
+    newLayout->addLayout(componentSettingsLayout);
+    widget->setLayout(newLayout);
+        
     forDisplayPartImage.setDefaultWidget(widget);
     //if (!componentIds.empty()) {
         contextMenu.addAction(&forDisplayPartImage);
