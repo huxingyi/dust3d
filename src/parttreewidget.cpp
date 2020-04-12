@@ -232,19 +232,19 @@ void PartTreeWidget::handleSingleClick(const QPoint &pos)
                     }
                 }
             }
-            showMenu();
+            //showMenu();
             return;
         } else {
             m_shiftStartComponentId = componentId;
         }
         selectComponent(componentId, multiple);
-        showMenu();
+        //showMenu();
         return;
     }
     if (!multiple)
         selectComponent(QUuid());
     
-    showMenu();
+    //showMenu();
 }
 
 void PartTreeWidget::mousePressEvent(QMouseEvent *event)
@@ -609,6 +609,7 @@ void PartTreeWidget::showContextMenu(const QPoint &pos, bool shorted)
     QAction unlockAction(tr("Unlock"), this);
     unlockAction.setIcon(Theme::awesome()->icon(fa::unlock));
     QAction selectAction(tr("Select"), this);
+    QAction refreshAction(tr("Refresh"), this);
     QAction copyColorAction(tr("Copy Color"), this);
     QAction pasteColorAction(tr("Paste Color"), this);
     
@@ -623,6 +624,11 @@ void PartTreeWidget::showContextMenu(const QPoint &pos, bool shorted)
             hasColorInClipboard = colorInClipboard.isValid();
         }
     }
+    
+    connect(&refreshAction, &QAction::triggered, [=]() {
+        componentChildrenChanged(QUuid());
+    });
+    contextMenu.addAction(&refreshAction);
     
     if (nullptr != component && nullptr != part) {
         connect(&selectAction, &QAction::triggered, [=]() {
@@ -1017,14 +1023,12 @@ void PartTreeWidget::addComponentChildrenToItem(QUuid componentId, QTreeWidgetIt
     if (nullptr == parentComponent)
         return;
     
-    const QTreeWidgetItem *scrollToItem = nullptr;
     for (const auto &childId: parentComponent->childrenIds) {
         const Component *component = m_document->findComponent(childId);
         if (nullptr == component)
             continue;
         if (!component->linkToPartId.isNull()) {
             QTreeWidgetItem *item = new QTreeWidgetItem();
-            scrollToItem = item;
             parentItem->addChild(item);
             item->setData(0, Qt::UserRole, QVariant(component->id.toString()));
             item->setFlags(item->flags() & ~(Qt::ItemIsEditable | Qt::ItemIsEnabled | Qt::ItemIsSelectable));
@@ -1036,7 +1040,6 @@ void PartTreeWidget::addComponentChildrenToItem(QUuid componentId, QTreeWidgetIt
             m_partItemMap[partId] = item;
         } else {
             QTreeWidgetItem *item = new QTreeWidgetItem(QStringList(component->name));
-            scrollToItem = item;
             parentItem->addChild(item);
             item->setData(0, Qt::UserRole, QVariant(component->id.toString()));
             item->setChildIndicatorPolicy(QTreeWidgetItem::ShowIndicator);
@@ -1047,9 +1050,6 @@ void PartTreeWidget::addComponentChildrenToItem(QUuid componentId, QTreeWidgetIt
         }
         updateComponentSelectState(childId, isComponentSelected(childId));
     }
-    
-    if (nullptr != scrollToItem)
-        QTreeWidget::scrollToItem(scrollToItem);
 }
 
 void PartTreeWidget::partComponentChecked(QUuid partId)
@@ -1100,8 +1100,8 @@ void PartTreeWidget::removeComponentDelayedTimer(const QUuid &componentId)
 {
     auto findTimer = m_delayedComponentTimers.find(componentId);
     if (findTimer != m_delayedComponentTimers.end()) {
-        delete findTimer->second;
         m_delayedComponentTimers.erase(findTimer);
+        findTimer->second->deleteLater();
     }
 }
 
@@ -1114,6 +1114,15 @@ void PartTreeWidget::reloadComponentChildren(const QUuid &componentId)
     }
     deleteItemChildren(parentItem);
     addComponentChildrenToItem(componentId, parentItem);
+    
+    // Fix the last item show in the wrong place sometimes
+    int childCount = invisibleRootItem()->childCount();
+    if (childCount > 0) {
+        QTreeWidgetItem *lastItem = invisibleRootItem()->child(childCount - 1);
+        bool isExpanded = lastItem->isExpanded();
+        lastItem->setExpanded(!isExpanded);
+        lastItem->setExpanded(isExpanded);
+    }
 }
 
 void PartTreeWidget::removeAllContent()
@@ -1137,7 +1146,7 @@ void PartTreeWidget::componentRemoved(QUuid componentId)
 
 void PartTreeWidget::componentAdded(QUuid componentId)
 {
-    // ignore
+    // void
 }
 
 void PartTreeWidget::partRemoved(QUuid partId)

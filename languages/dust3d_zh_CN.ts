@@ -678,6 +678,10 @@ Tips:
         <translation>选择</translation>
     </message>
     <message>
+        <source>Refresh</source>
+        <translation>刷新</translation>
+    </message>
+    <message>
         <source>Collapse All</source>
         <translation>收起所有</translation>
     </message>

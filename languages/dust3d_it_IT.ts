@@ -713,6 +713,10 @@ Suggerimenti:
         <translation type="unfinished"></translation>
     </message>
     <message>
+        <source>Refresh</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Copy Color</source>
         <translation type="unfinished"></translation>
     </message>
