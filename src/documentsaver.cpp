@@ -40,6 +40,56 @@ void DocumentSaver::process()
     emit finished();
 }
 
+void DocumentSaver::collectUsedResourceIds(const Snapshot *snapshot,
+    std::set<QUuid> &imageIds,
+    std::set<QUuid> &fileIds)
+{
+    for (const auto &material: snapshot->materials) {
+        for (auto &layer: material.second) {
+            for (auto &mapItem: layer.second) {
+                auto findImageIdString = mapItem.find("linkData");
+                if (findImageIdString == mapItem.end())
+                    continue;
+                QUuid imageId = QUuid(findImageIdString->second);
+                imageIds.insert(imageId);
+            }
+        }
+    }
+    
+    for (const auto &part: snapshot->parts) {
+        auto findImageIdString = part.second.find("deformMapImageId");
+        if (findImageIdString == part.second.end())
+            continue;
+        QUuid imageId = QUuid(findImageIdString->second);
+        imageIds.insert(imageId);
+    }
+    
+    for (const auto &part: snapshot->parts) {
+        auto fillMeshLinkedIdString = part.second.find("fillMesh");
+        if (fillMeshLinkedIdString == part.second.end())
+            continue;
+        QUuid fileId = QUuid(fillMeshLinkedIdString->second);
+        if (fileId.isNull())
+            continue;
+        fileIds.insert(fileId);
+        const QByteArray *byteArray = FileForever::getContent(fileId);
+        if (nullptr == byteArray)
+            continue;
+        QXmlStreamReader stream(*byteArray);
+        Snapshot fileSnapshot;
+        loadSkeletonFromXmlStream(&fileSnapshot, stream, SNAPSHOT_ITEM_CANVAS | SNAPSHOT_ITEM_COMPONENT);
+        collectUsedResourceIds(&fileSnapshot, imageIds, fileIds);
+    }
+    
+    for (auto &pose: snapshot->poses) {
+        auto findCanvasImageId = pose.first.find("canvasImageId");
+        if (findCanvasImageId != pose.first.end()) {
+            QUuid imageId = QUuid(findCanvasImageId->second);
+            imageIds.insert(imageId);
+        }
+    }
+}
+
 bool DocumentSaver::save(const QString *filename, 
         Snapshot *snapshot, 
         const QByteArray *turnaroundPngByteArray,
@@ -72,45 +122,8 @@ bool DocumentSaver::save(const QString *filename,
     
     std::set<QUuid> imageIds;
     std::set<QUuid> fileIds;
-    
-    for (const auto &material: snapshot->materials) {
-        for (auto &layer: material.second) {
-            for (auto &mapItem: layer.second) {
-                auto findImageIdString = mapItem.find("linkData");
-                if (findImageIdString == mapItem.end())
-                    continue;
-                QUuid imageId = QUuid(findImageIdString->second);
-                imageIds.insert(imageId);
-            }
-        }
-    }
-    
-    for (const auto &part: snapshot->parts) {
-        auto findImageIdString = part.second.find("deformMapImageId");
-        if (findImageIdString == part.second.end())
-            continue;
-        QUuid imageId = QUuid(findImageIdString->second);
-        imageIds.insert(imageId);
-    }
-    
-    for (const auto &part: snapshot->parts) {
-        auto fillMeshLinkedIdString = part.second.find("fillMesh");
-        if (fillMeshLinkedIdString == part.second.end())
-            continue;
-        QUuid fileId = QUuid(fillMeshLinkedIdString->second);
-        if (fileId.isNull())
-            continue;
-        fileIds.insert(fileId);
-    }
-    
-    for (auto &pose: snapshot->poses) {
-        auto findCanvasImageId = pose.first.find("canvasImageId");
-        if (findCanvasImageId != pose.first.end()) {
-            QUuid imageId = QUuid(findCanvasImageId->second);
-            imageIds.insert(imageId);
-        }
-    }
-    
+    collectUsedResourceIds(snapshot, imageIds, fileIds);
+
     for (const auto &imageId: imageIds) {
         const QByteArray *pngByteArray = ImageForever::getPngByteArray(imageId);
         if (nullptr == pngByteArray)

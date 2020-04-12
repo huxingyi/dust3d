@@ -4,6 +4,8 @@
 #include <QObject>
 #include <QByteArray>
 #include <map>
+#include <set>
+#include <QUuid>
 #include "snapshot.h"
 
 class DocumentSaver : public QObject
@@ -21,6 +23,9 @@ public:
         const QByteArray *turnaroundPngByteArray,
         const QString *script,
         const std::map<QString, std::map<QString, QString>> *variables);
+    static void collectUsedResourceIds(const Snapshot *snapshot,
+        std::set<QUuid> &imageIds,
+        std::set<QUuid> &fileIds);
 signals:
     void finished();
 public slots:

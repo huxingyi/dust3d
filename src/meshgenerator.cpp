@@ -1523,6 +1523,11 @@ void MeshGenerator::generate()
     
     const auto &componentCache = m_cacheContext->components[QUuid().toString()];
     
+    m_outcome->nodes = componentCache.outcomeNodes;
+    m_outcome->edges = componentCache.outcomeEdges;
+    m_outcome->paintMaps = componentCache.outcomePaintMaps;
+    m_outcome->nodeVertices = componentCache.outcomeNodeVertices;
+        
     std::vector<QVector3D> combinedVertices;
     std::vector<std::vector<size_t>> combinedFaces;
     if (nullptr != combinedMesh) {
@@ -1543,13 +1548,9 @@ void MeshGenerator::generate()
                 } while (affectedNum > 0);
             }
         }
-        m_outcome->nodes = componentCache.outcomeNodes;
-        m_outcome->edges = componentCache.outcomeEdges;
-        m_outcome->paintMaps = componentCache.outcomePaintMaps;
         recoverQuads(combinedVertices, combinedFaces, componentCache.sharedQuadEdges, m_outcome->triangleAndQuads);
-            m_outcome->nodeVertices = componentCache.outcomeNodeVertices;
-            m_outcome->vertices = combinedVertices;
-            m_outcome->triangles = combinedFaces;
+        m_outcome->vertices = combinedVertices;
+        m_outcome->triangles = combinedFaces;
     }
     
     // Recursively check uncombined components
