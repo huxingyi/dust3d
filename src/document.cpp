@@ -3209,6 +3209,7 @@ void Document::paste()
         Snapshot snapshot;
         loadSkeletonFromXmlStream(&snapshot, xmlStreamReader);
         addFromSnapshot(snapshot, SnapshotSource::Paste);
+        saveSnapshot();
     }
 }
 

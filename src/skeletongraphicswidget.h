@@ -468,6 +468,7 @@ signals:
     void scaleNodeByAddRadius(QUuid nodeId, float amount);
     void moveNodeBy(QUuid nodeId, float x, float y, float z);
     void removeNode(QUuid nodeId);
+    void removePart(QUuid partId);
     void setEditMode(SkeletonDocumentEditMode mode);
     void removeEdge(QUuid edgeId);
     void addEdge(QUuid fromNodeId, QUuid toNodeId);

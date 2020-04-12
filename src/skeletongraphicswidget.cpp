@@ -1732,6 +1732,59 @@ void SkeletonGraphicsWidget::deleteSelected()
     std::set<QUuid> nodeIdSet;
     std::set<QUuid> edgeIdSet;
     readSkeletonNodeAndEdgeIdSetFromRangeSelection(&nodeIdSet, &edgeIdSet);
+    
+    std::set<QUuid> partIds;
+    for (const auto &it: nodeIdSet) {
+        const SkeletonNode *node = m_document->findNode(it);
+        if (nullptr == node)
+            continue;
+        partIds.insert(node->partId);
+    }
+    for (const auto &it: edgeIdSet) {
+        const SkeletonEdge *edge = m_document->findEdge(it);
+        if (nullptr == edge)
+            continue;
+        partIds.insert(edge->partId);
+    }
+    std::set<QUuid> cleanupPartIds;
+    for (const auto &partId: partIds) {
+        const SkeletonPart *part = m_document->findPart(partId);
+        if (nullptr != part) {
+            bool allNodesSelected = true;
+            for (const auto &it: part->nodeIds) {
+                if (nodeIdSet.find(it) == nodeIdSet.end()) {
+                    allNodesSelected = false;
+                    break;
+                }
+            }
+            if (allNodesSelected) {
+                cleanupPartIds.insert(partId);
+            }
+        }
+    }
+    for (const auto &partId: cleanupPartIds) {
+        for (auto it = nodeIdSet.begin(); it != nodeIdSet.end(); ) {
+            const SkeletonNode *node = m_document->findNode(*it);
+            if (nullptr != node && node->partId == partId) {
+                it = nodeIdSet.erase(it);
+                continue;
+            }
+            ++it;
+        }
+        for (auto it = edgeIdSet.begin(); it != edgeIdSet.end(); ) {
+            const SkeletonEdge *edge = m_document->findEdge(*it);
+            if (nullptr != edge && edge->partId == partId) {
+                it = edgeIdSet.erase(it);
+                continue;
+            }
+            ++it;
+        }
+    }
+    
+    for (const auto &partId: cleanupPartIds) {
+        emit removePart(partId);
+    }
+    
     for (const auto &it: nodeIdSet) {
         m_deferredRemoveNodeIds.insert(it);
     }
@@ -1739,8 +1792,10 @@ void SkeletonGraphicsWidget::deleteSelected()
         m_deferredRemoveEdgeIds.insert(it);
     }
     
-    if (nullptr == m_deferredRemoveTimer) {
-        timeToRemoveDeferredNodesAndEdges();
+    if (!nodeIdSet.empty() || !edgeIdSet.empty()) {
+        if (nullptr == m_deferredRemoveTimer) {
+            timeToRemoveDeferredNodesAndEdges();
+        }
     }
 }
 

@@ -994,6 +994,7 @@ DocumentWindow::DocumentWindow() :
     connect(graphicsWidget, &SkeletonGraphicsWidget::setNodeBoneMark, m_document, &Document::setNodeBoneMark);
     connect(graphicsWidget, &SkeletonGraphicsWidget::clearNodeCutFaceSettings, m_document, &Document::clearNodeCutFaceSettings);
     connect(graphicsWidget, &SkeletonGraphicsWidget::removeNode, m_document, &Document::removeNode);
+    connect(graphicsWidget, &SkeletonGraphicsWidget::removePart, m_document, &Document::removePart);
     connect(graphicsWidget, &SkeletonGraphicsWidget::setEditMode, m_document, &Document::setEditMode);
     connect(graphicsWidget, &SkeletonGraphicsWidget::removeEdge, m_document, &Document::removeEdge);
     connect(graphicsWidget, &SkeletonGraphicsWidget::addEdge, m_document, &Document::addEdge);
