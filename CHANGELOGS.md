@@ -2,6 +2,12 @@ Changes between 1.0.0-rc.5 and 1.0.0-rc.6:
 --------------------------------------------------
 - Fix crash after remesh  
 - Fix remesh memory leak  
+- Change default part base as PartBase::Average  
+- Add menu to Parts Tree: Refresh  
+- Remove short menu from Parts Tree  
+- Fix part widget display at wrong place  
+- Fix deformMap of imported document not saved  
+- Fix UV not generated if only uncombined or errored components  
 
 Changes between 1.0.0-rc.3 and 1.0.0-rc.5:
 --------------------------------------------------
