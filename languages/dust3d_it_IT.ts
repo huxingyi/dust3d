@@ -340,7 +340,7 @@ Suggerimenti:
     </message>
     <message>
         <source>Marker pen</source>
-        <translation>Penna per marcare</translation>
+        <translation type="vanished">Penna per marcare</translation>
     </message>
     <message>
         <source>&amp;Quit</source>
@@ -786,6 +786,10 @@ Suggerimenti:
     </message>
     <message>
         <source>Seam</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <source>Not Change</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

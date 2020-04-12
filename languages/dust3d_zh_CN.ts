@@ -336,10 +336,6 @@ Tips:
         <translation>自动着色</translation>
     </message>
     <message>
-        <source>Marker pen</source>
-        <translation>马克笔</translation>
-    </message>
-    <message>
         <source>&amp;Quit</source>
         <translation>退出(&amp;Q)</translation>
     </message>
@@ -780,6 +776,10 @@ Tips:
     <message>
         <source>Rename</source>
         <translation>重命名</translation>
+    </message>
+    <message>
+        <source>Not Change</source>
+        <translation>不修改</translation>
     </message>
 </context>
 <context>

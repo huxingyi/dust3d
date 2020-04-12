@@ -35,7 +35,7 @@
     </message>
     <message>
         <source>Marker pen</source>
-        <translation>Marcador</translation>
+        <translation type="vanished">Marcador</translation>
     </message>
     <message>
         <source>Paint brush</source>
@@ -780,6 +780,10 @@ Consejos:
     <message>
         <source>Seam</source>
         <translation>Costura</translation>
+    </message>
+    <message>
+        <source>Not Change</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
