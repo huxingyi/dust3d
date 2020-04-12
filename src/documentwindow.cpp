@@ -182,9 +182,9 @@ DocumentWindow::DocumentWindow() :
     selectButton->setToolTip(tr("Select node on canvas"));
     Theme::initAwesomeButton(selectButton);
     
-    QPushButton *markerButton = new QPushButton(QChar(fa::edit));
-    markerButton->setToolTip(tr("Marker pen"));
-    Theme::initAwesomeButton(markerButton);
+    //QPushButton *markerButton = new QPushButton(QChar(fa::edit));
+    //markerButton->setToolTip(tr("Marker pen"));
+    //Theme::initAwesomeButton(markerButton);
     
     QPushButton *paintButton = new QPushButton(QChar(fa::paintbrush));
     paintButton->setToolTip(tr("Paint brush"));
@@ -270,7 +270,7 @@ DocumentWindow::DocumentWindow() :
 
     toolButtonLayout->addWidget(addButton);
     toolButtonLayout->addWidget(selectButton);
-    toolButtonLayout->addWidget(markerButton);
+    //toolButtonLayout->addWidget(markerButton);
     toolButtonLayout->addWidget(paintButton);
     //toolButtonLayout->addWidget(dragButton);
     toolButtonLayout->addWidget(zoomInButton);
@@ -926,9 +926,9 @@ DocumentWindow::DocumentWindow() :
         m_document->setEditMode(SkeletonDocumentEditMode::Select);
     });
     
-    connect(markerButton, &QPushButton::clicked, [=]() {
-        m_document->setEditMode(SkeletonDocumentEditMode::Mark);
-    });
+    //connect(markerButton, &QPushButton::clicked, [=]() {
+    //    m_document->setEditMode(SkeletonDocumentEditMode::Mark);
+    //});
     
     connect(paintButton, &QPushButton::clicked, [=]() {
         m_document->setEditMode(SkeletonDocumentEditMode::Paint);

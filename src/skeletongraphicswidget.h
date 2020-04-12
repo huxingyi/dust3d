@@ -618,7 +618,7 @@ public slots:
     void setRotated(bool rotated);
     void shortcutDelete();
     void shortcutAddMode();
-    void shortcutMarkMode();
+    //void shortcutMarkMode();
     void shortcutUndo();
     void shortcutRedo();
     void shortcutXlock();

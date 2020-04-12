@@ -142,7 +142,8 @@ void SkeletonGraphicsWidget::setBackgroundBlur(float turnaroundOpacity)
 void SkeletonGraphicsWidget::shortcutEscape()
 {
     if (SkeletonDocumentEditMode::Add == m_document->editMode ||
-            SkeletonDocumentEditMode::Mark == m_document->editMode) {
+            SkeletonDocumentEditMode::Mark == m_document->editMode ||
+            SkeletonDocumentEditMode::Paint == m_document->editMode) {
         emit setEditMode(SkeletonDocumentEditMode::Select);
         return;
     }
@@ -1821,10 +1822,10 @@ void SkeletonGraphicsWidget::shortcutAddMode()
     }
 }
 
-void SkeletonGraphicsWidget::shortcutMarkMode()
-{
-    emit setEditMode(SkeletonDocumentEditMode::Mark);
-}
+//void SkeletonGraphicsWidget::shortcutMarkMode()
+//{
+//    emit setEditMode(SkeletonDocumentEditMode::Mark);
+//}
 
 void SkeletonGraphicsWidget::shortcutUndo()
 {
