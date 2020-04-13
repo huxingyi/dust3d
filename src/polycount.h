@@ -99,15 +99,15 @@ float PolyCountToValue(PolyCount count)                             \
         case PolyCount::MediumPoly:                                 \
             return 1.2f;                                            \
         case PolyCount::HighPoly:                                   \
-            return 1.8f;                                            \
-        case PolyCount::VeryHighPoly:                               \
             return 2.4f;                                            \
+        case PolyCount::VeryHighPoly:                               \
+            return 4.8f;                                            \
         case PolyCount::UltraHighPoly:                              \
-            return 3.0f;                                            \
+            return 9.6f;                                            \
         case PolyCount::ExtremelyHighPoly:                          \
-            return 3.6f;                                            \
+            return 19.2f;                                           \
         case PolyCount::TremendouslyHighPoly:                       \
-            return 4.2f;                                            \
+            return 38.4f;                                           \
         default:                                                    \
             return 1.0f;                                            \
     }                                                               \
