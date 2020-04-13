@@ -12,13 +12,13 @@
 // Modifed from http://doc.qt.io/qt-5/qtopengl-hellogl2-glwidget-cpp.html
 
 bool ModelWidget::m_transparent = true;
-const QVector3D ModelWidget::m_cameraPosition = QVector3D(0, 0, -4.0);
 float ModelWidget::m_minZoomRatio = 5.0;
 float ModelWidget::m_maxZoomRatio = 80.0;
 
 int ModelWidget::m_defaultXRotation = 30 * 16;
 int ModelWidget::m_defaultYRotation = -45 * 16;
 int ModelWidget::m_defaultZRotation = 0;
+QVector3D ModelWidget::m_defaultEyePosition = QVector3D(0, 0, -4.0);
 
 ModelWidget::ModelWidget(QWidget *parent) :
     QOpenGLWidget(parent),
@@ -54,6 +54,11 @@ ModelWidget::ModelWidget(QWidget *parent) :
     
     connect(&Preferences::instance(), &Preferences::toonShadingChanged, this, &ModelWidget::reRender);
     connect(&Preferences::instance(), &Preferences::toonLineChanged, this, &ModelWidget::reRender);
+}
+
+const QVector3D &ModelWidget::eyePosition()
+{
+	return m_eyePosition;
 }
 
 void ModelWidget::reRender()
@@ -166,15 +171,6 @@ void ModelWidget::initializeGL()
     // sure there is a VAO when one is needed.
     m_meshBinder.initialize();
 
-    // Our camera never changes in this example.
-    m_camera.setToIdentity();
-    // FIXME: if change here, please also change the camera pos in PBR shader
-    m_camera.translate(m_cameraPosition.x(), m_cameraPosition.y(), m_cameraPosition.z());
-
-    // Light position is fixed.
-    // FIXME: PBR render no longer use this parameter
-    m_program->setUniformValue(m_program->lightPosLoc(), QVector3D(0, 0, 70));
-
     m_program->release();
 }
 
@@ -194,8 +190,12 @@ void ModelWidget::paintGL()
     m_world.rotate(m_xRot / 16.0f, 1, 0, 0);
     m_world.rotate(m_yRot / 16.0f, 0, 1, 0);
     m_world.rotate(m_zRot / 16.0f, 0, 0, 1);
+    
+    m_camera.setToIdentity();
+    m_camera.translate(m_eyePosition.x(), m_eyePosition.y(), m_eyePosition.z());
 
     m_program->bind();
+    m_program->setUniformValue(m_program->eyePosLoc(), m_eyePosition);
     m_program->setUniformValue(m_program->toonShadingEnabledLoc(), Preferences::instance().toonShading() ? 1 : 0);
     m_program->setUniformValue(m_program->projectionMatrixLoc(), m_projection);
     m_program->setUniformValue(m_program->modelMatrixLoc(), m_world);
@@ -409,6 +409,7 @@ void ModelWidget::zoom(float delta)
     }
     setGeometry(geometry().marginsAdded(margins));
     emit renderParametersChanged();
+	update();
 }
 
 void ModelWidget::setMousePickTargetPositionInModelSpace(QVector3D position)

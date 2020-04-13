@@ -69,7 +69,6 @@ varying vec3 firstLightPos;
 varying vec3 secondLightPos;
 varying vec3 thirdLightPos;
 varying float vertAlpha;
-uniform vec3 lightPos;
 uniform sampler2D textureId;
 uniform int textureEnabled;
 uniform sampler2D normalMapId;

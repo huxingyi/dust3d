@@ -33,6 +33,7 @@ ModelOffscreenRender *NormalAndDepthMapsGenerator::createOfflineRender(ModelWidg
     offlineRender->setXRotation(modelWidget->xRot());
     offlineRender->setYRotation(modelWidget->yRot());
     offlineRender->setZRotation(modelWidget->zRot());
+    offlineRender->setEyePosition(modelWidget->eyePosition());
     offlineRender->setRenderPurpose(purpose);
     return offlineRender;
 }

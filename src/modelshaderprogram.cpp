@@ -46,7 +46,7 @@ ModelShaderProgram::ModelShaderProgram(bool isCoreProfile)
     m_modelMatrixLoc = this->uniformLocation("modelMatrix");
     m_normalMatrixLoc = this->uniformLocation("normalMatrix");
     m_viewMatrixLoc = this->uniformLocation("viewMatrix");
-    m_lightPosLoc = this->uniformLocation("lightPos");
+    m_eyePosLoc = this->uniformLocation("eyePos");
     m_textureIdLoc = this->uniformLocation("textureId");
     m_textureEnabledLoc = this->uniformLocation("textureEnabled");
     m_normalMapIdLoc = this->uniformLocation("normalMapId");
@@ -93,9 +93,9 @@ int ModelShaderProgram::viewMatrixLoc()
     return m_viewMatrixLoc;
 }
 
-int ModelShaderProgram::lightPosLoc()
+int ModelShaderProgram::eyePosLoc()
 {
-    return m_lightPosLoc;
+    return m_eyePosLoc;
 }
 
 int ModelShaderProgram::textureEnabledLoc()

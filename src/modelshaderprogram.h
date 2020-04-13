@@ -11,7 +11,7 @@ public:
     int modelMatrixLoc();
     int normalMatrixLoc();
     int viewMatrixLoc();
-    int lightPosLoc();
+    int eyePosLoc();
     int textureIdLoc();
     int textureEnabledLoc();
     int normalMapEnabledLoc();
@@ -42,7 +42,7 @@ private:
     int m_modelMatrixLoc = 0;
     int m_normalMatrixLoc = 0;
     int m_viewMatrixLoc = 0;
-    int m_lightPosLoc = 0;
+    int m_eyePosLoc = 0;
     int m_textureIdLoc = 0;
     int m_textureEnabledLoc = 0;
     int m_normalMapEnabledLoc = 0;

@@ -2,6 +2,7 @@
 #define DUST3D_NORMAL_AND_DEPTH_MAPS_GENERATOR_H
 #include <QObject>
 #include <QImage>
+#include <QVector3D>
 #include "modelwidget.h"
 #include "modeloffscreenrender.h"
 #include "model.h"

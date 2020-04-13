@@ -2159,6 +2159,7 @@ void DocumentWindow::exportImageToFilename(const QString &filename)
         offlineRender->setXRotation(m_modelRenderWidget->xRot());
         offlineRender->setYRotation(m_modelRenderWidget->yRot());
         offlineRender->setZRotation(m_modelRenderWidget->zRot());
+        offlineRender->setEyePosition(m_modelRenderWidget->eyePosition());
         offlineRender->setRenderPurpose(0);
         QImage *normalMap = new QImage();
         QImage *depthMap = new QImage();

@@ -53,6 +53,11 @@ void ModelOffscreenRender::setZRotation(int angle)
     m_zRot = angle;
 }
 
+void ModelOffscreenRender::setEyePosition(const QVector3D &eyePosition)
+{
+	m_eyePosition = eyePosition;
+}
+
 void ModelOffscreenRender::setRenderPurpose(int purpose)
 {
     m_renderPurpose = purpose;
@@ -144,10 +149,10 @@ QImage ModelOffscreenRender::toImage(const QSize &size)
         projection.perspective(45.0f, GLfloat(size.width()) / size.height(), 0.01f, 100.0f);
         
         camera.setToIdentity();
-        camera.translate(QVector3D(0, 0, -4.0));
+        camera.translate(m_eyePosition);
         
         program->bind();
-        program->setUniformValue(program->lightPosLoc(), QVector3D(0, 0, 70));
+        program->setUniformValue(program->eyePosLoc(), m_eyePosition);
         program->setUniformValue(program->toonShadingEnabledLoc(), m_toonShading ? 1 : 0);
         program->setUniformValue(program->projectionMatrixLoc(), projection);
         program->setUniformValue(program->modelMatrixLoc(), world);

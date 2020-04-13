@@ -79,6 +79,7 @@ public:
     int xRot();
     int yRot();
     int zRot();
+    const QVector3D &eyePosition();
 private:
     int m_xRot;
     int m_yRot;
@@ -96,8 +97,8 @@ private:
     QMatrix4x4 m_camera;
     QMatrix4x4 m_world;
     float m_mousePickRadius = 0.0;
+    QVector3D m_eyePosition = m_defaultEyePosition;
     static bool m_transparent;
-    static const QVector3D m_cameraPosition;
     static float m_minZoomRatio;
     static float m_maxZoomRatio;
     QPoint m_moveStartPos;
@@ -111,6 +112,7 @@ public:
     static int m_defaultXRotation;
     static int m_defaultYRotation;
     static int m_defaultZRotation;
+    static QVector3D m_defaultEyePosition;
 };
 
 #endif

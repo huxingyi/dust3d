@@ -24,6 +24,7 @@ uniform mat4 modelMatrix;
 uniform mat3 normalMatrix;
 uniform mat4 viewMatrix;
 uniform int normalMapEnabled;
+uniform vec3 eyePos;
 
 mat3 transpose(mat3 m) 
 {
@@ -39,7 +40,7 @@ void main()
     vertNormal = normalize((modelMatrix * vec4(normal, 1.0)).xyz);
     vertColor = color;
     vertAlpha = alpha;
-    cameraPos = vec3(0, 0, -4.0);
+    cameraPos = eyePos;
 
     firstLightPos = vec3(5.0, 5.0, 5.0);
     secondLightPos = vec3(-5.0, 5.0, 5.0);

@@ -70,7 +70,6 @@ in vec3 secondLightPos;
 in vec3 thirdLightPos;
 in float vertAlpha;
 out vec4 fragColor;
-uniform vec3 lightPos;
 uniform sampler2D textureId;
 uniform int textureEnabled;
 uniform sampler2D normalMapId;
