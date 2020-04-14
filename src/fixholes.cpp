@@ -39,6 +39,33 @@ void fixHoles(const std::vector<QVector3D> &verticies, std::vector<std::vector<s
         }
     }
     
+    std::unordered_set<size_t> newInvalidFaces;
+    for (size_t index = 0; index < faces.size(); ++index) {
+        if (invalidFaces.find(index) != invalidFaces.end())
+            continue;
+        const auto &face = faces[index];
+        size_t validNeighborNum = 0;
+        for (size_t i = 0; i < face.size(); i++) {
+            size_t j = (i + 1) % face.size();
+            auto findOppositeFaceResult = edgeToFaceMap.find({face[j], face[i]});
+            if (findOppositeFaceResult != edgeToFaceMap.end())
+                ++validNeighborNum;
+        }
+        if (validNeighborNum < face.size() - validNeighborNum) {
+            invalidFaces.insert(index);
+            newInvalidFaces.insert(index);
+            continue;
+        }
+    }
+    
+    for (const auto &index: newInvalidFaces) {
+        const auto &face = faces[index];
+        for (size_t i = 0; i < face.size(); i++) {
+            size_t j = (i + 1) % face.size();
+            edgeToFaceMap.erase({face[i], face[j]});
+        }
+    }
+    
     std::map<size_t, std::vector<size_t>> holeVertexLink;
     std::vector<size_t> startVertices;
     for (size_t index = 0; index < faces.size(); ++index) {
