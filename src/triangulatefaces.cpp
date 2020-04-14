@@ -49,7 +49,7 @@ bool triangulateFacesWithoutKeepVertices(std::vector<QVector3D> &vertices, const
                     bool isEar = true;
                     for (size_t x = 0; x < fillRing.size() - 3; ++x) {
                         auto h = (i + 3 + x) % fillRing.size();
-                        auto fourth = vertexToEigenVector3d(vertices[fillRing[h]]);
+                        auto fourth = vertices[fillRing[h]];
                         if (pointInTriangle(enter, cone, leave, fourth)) {
                             isEar = false;
                             break;

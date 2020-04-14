@@ -2,29 +2,49 @@
 #include <set>
 #include <QDebug>
 #include <simpleuv/triangulate.h>
+#include <unordered_set>
+#include <unordered_map>
 #include "fixholes.h"
 #include "util.h"
 
-static void buildEdgeToFaceMap(const std::vector<std::vector<size_t>> &faces, std::map<std::pair<size_t, size_t>, size_t> &edgeToFaceMap)
+void fixHoles(const std::vector<QVector3D> &verticies, std::vector<std::vector<size_t>> &faces)
 {
-    edgeToFaceMap.clear();
+    std::map<std::pair<size_t, size_t>, std::unordered_set<size_t>> edgeToFaceSetMap;
+
     for (decltype(faces.size()) index = 0; index < faces.size(); ++index) {
         const auto &face = faces[index];
         for (size_t i = 0; i < face.size(); i++) {
             size_t j = (i + 1) % face.size();
-            edgeToFaceMap[{face[i], face[j]}] = index;
+            edgeToFaceSetMap[{face[i], face[j]}].insert(index);
         }
     }
-}
-
-void fixHoles(const std::vector<QVector3D> &verticies, std::vector<std::vector<size_t>> &faces)
-{
+    
+    std::unordered_set<size_t> invalidFaces;
+    
     std::map<std::pair<size_t, size_t>, size_t> edgeToFaceMap;
-    buildEdgeToFaceMap(faces, edgeToFaceMap);
+    for (const auto &it: edgeToFaceSetMap) {
+        if (1 == it.second.size()) {
+            continue;
+        }
+        for (const auto &loopFaceIndex: it.second) {
+            invalidFaces.insert(loopFaceIndex);
+        }
+    }
+    for (const auto &it: edgeToFaceSetMap) {
+        if (1 == it.second.size()) {
+            size_t index = *it.second.begin();
+            if (invalidFaces.find(index) == invalidFaces.end()) {
+                edgeToFaceMap.insert({it.first, index});
+            }
+        }
+    }
     
     std::map<size_t, std::vector<size_t>> holeVertexLink;
     std::vector<size_t> startVertices;
-    for (const auto &face: faces) {
+    for (size_t index = 0; index < faces.size(); ++index) {
+        if (invalidFaces.find(index) != invalidFaces.end())
+            continue;
+        const auto &face = faces[index];
         for (size_t i = 0; i < face.size(); i++) {
             size_t j = (i + 1) % face.size();
             auto findOppositeFaceResult = edgeToFaceMap.find({face[j], face[i]});
@@ -130,14 +150,27 @@ void fixHoles(const std::vector<QVector3D> &verticies, std::vector<std::vector<s
         simpleuv::triangulate(simpleuvVertices, newFaces, holeRings[i].first);
     }
     
-    //saveAsObj("fixholes_input.obj", verticies, faces);
+    saveAsObj("fixholes_input.obj", verticies, faces);
     //std::vector<std::vector<size_t>> addedFaces;
+    //std::vector<std::vector<size_t>> removedFaces;
+    std::vector<std::vector<size_t>> fixedFaces;
+    for (size_t i = 0; i < faces.size(); ++i) {
+        if (invalidFaces.find(i) != invalidFaces.end()) {
+            //removedFaces.push_back(faces[i]);
+            continue;
+        }
+        fixedFaces.push_back(faces[i]);
+    }
+    //saveAsObj("fixholes_output_without_newfaces.obj", verticies, fixedFaces);
     for (const auto &it: newFaces) {
-        faces.push_back(std::vector<size_t> {it.indices[0], it.indices[1], it.indices[2]});
+        fixedFaces.push_back(std::vector<size_t> {it.indices[0], it.indices[1], it.indices[2]});
         //addedFaces.push_back(std::vector<size_t> {it.indices[0], it.indices[1], it.indices[2]});
     }
-    //saveAsObj("fixholes_output.obj", verticies, faces);
+    //saveAsObj("fixholes_output.obj", verticies, fixedFaces);
     //saveAsObj("fixholes_added.obj", verticies, addedFaces);
+    //saveAsObj("fixholes_removed.obj", verticies, removedFaces);
     
-    qDebug() << "fixHoles holeRings:" << holeRings.size() << "newFaces:" << newFaces.size();
+    faces = fixedFaces;
+    
+    //qDebug() << "fixHoles holeRings:" << holeRings.size() << "newFaces:" << newFaces.size() << "removedFaces:" << removedFaces.size();
 }
