@@ -81,7 +81,8 @@ void triangulate(const std::vector<Vertex> &vertices, std::vector<Face> &faces, 
             if (angle >= 1.0 && angle <= 179.0) {
                 bool isEar = true;
                 for (size_t x = 0; x < fillRing.size() - 3; ++x) {
-                    auto fourth = vertexToEigenVector3d(vertices[(i + 3 + k) % fillRing.size()]);
+                    auto h = (i + 3 + x) % fillRing.size();
+                    auto fourth = vertexToEigenVector3d(vertices[fillRing[h]]);
                     if (pointInTriangle(enter, cone, leave, fourth)) {
                         isEar = false;
                         break;

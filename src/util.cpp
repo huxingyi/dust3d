@@ -232,7 +232,7 @@ void recoverQuads(const std::vector<QVector3D> &vertices, const std::vector<std:
         if (sharedQuadEdges.find(pair) != sharedQuadEdges.end()) {
             auto oppositeEdge = triangleEdgeMap.find(std::make_pair(edge.first.second, edge.first.first));
             if (oppositeEdge == triangleEdgeMap.end()) {
-                qDebug() << "Find opposite edge failed";
+                //qDebug() << "Find opposite edge failed";
             } else {
                 if (unionedFaces.find(oppositeEdge->second.first) == unionedFaces.end()) {
                     unionedFaces.insert(edge.second.first);
@@ -300,7 +300,7 @@ size_t weldSeam(const std::vector<QVector3D> &sourceVertices, const std::vector<
                         auto oppositeEdge = std::make_pair(edge.second, edge.first);
                         auto findOppositeFace = triangleEdgeMap.find(oppositeEdge);
                         if (findOppositeFace == triangleEdgeMap.end()) {
-                            qDebug() << "Find opposite edge failed";
+                            //qDebug() << "Find opposite edge failed";
                             continue;
                         }
                         int oppositeFaceIndex = findOppositeFace->second.first;

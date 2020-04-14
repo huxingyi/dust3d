@@ -135,6 +135,9 @@ include(thirdparty/qtsingleapplication/src/qtsingleapplication.pri)
 
 INCLUDEPATH += src
 
+SOURCES += src/fixholes.cpp
+HEADERS += src/fixholes.h
+
 SOURCES += src/toonline.cpp
 HEADERS += src/toonline.h
 

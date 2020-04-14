@@ -25,6 +25,7 @@
 #include "meshstroketifier.h"
 #include "fileforever.h"
 #include "snapshotxml.h"
+#include "fixholes.h"
 
 MeshGenerator::MeshGenerator(Snapshot *snapshot) :
     m_snapshot(snapshot)
@@ -1219,10 +1220,12 @@ MeshCombiner::Mesh *MeshGenerator::combineComponentMesh(const QString &component
                 if (isManifold(newTriangles)) {
                     mesh = new MeshCombiner::Mesh(newVertices, newTriangles, disableSelfIntersectionTest);
                 } else {
+                    fixHoles(newVertices, newTriangles);
                     disableSelfIntersectionTest = true;
                     mesh = new MeshCombiner::Mesh(newVertices, newTriangles, disableSelfIntersectionTest);
                 }
             } else {
+                fixHoles(newVertices, newTriangles);
                 mesh = new MeshCombiner::Mesh(newVertices, newTriangles, disableSelfIntersectionTest);
             }
             if (nullptr != mesh) {
