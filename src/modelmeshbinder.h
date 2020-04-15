@@ -18,12 +18,13 @@ public:
     void initialize();
     void paint(ModelShaderProgram *program);
     void cleanup();
-    void showWireframes();
-    void hideWireframes();
-    bool isWireframesVisible();
+    void showWireframe();
+    void hideWireframe();
+    bool isWireframeVisible();
     void enableCheckUv();
     void disableCheckUv();
     void enableEnvironmentLight();
+    bool isEnvironmentLightEnabled();
     bool isCheckUvEnabled();
     void reloadMesh();
     void fetchCurrentToonNormalAndDepthMaps(QImage *normalMap, QImage *depthMap);
@@ -35,7 +36,7 @@ private:
     int m_renderEdgeVertexCount = 0;
     int m_renderToolVertexCount = 0;
     bool m_newMeshComing = false;
-    bool m_showWireframes = false;
+    bool m_showWireframe = false;
     bool m_hasTexture = false;
     QOpenGLTexture *m_texture = nullptr;
     bool m_hasNormalMap = false;

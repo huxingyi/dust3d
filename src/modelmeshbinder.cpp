@@ -68,6 +68,11 @@ void ModelMeshBinder::enableEnvironmentLight()
     m_environmentLightEnabled = true;
 }
 
+bool ModelMeshBinder::isEnvironmentLightEnabled()
+{
+    return m_environmentLightEnabled;
+}
+
 Model *ModelMeshBinder::fetchCurrentMesh()
 {
     QMutexLocker lock(&m_meshMutex);
@@ -262,7 +267,7 @@ void ModelMeshBinder::paint(ModelShaderProgram *program)
     program->setUniformValue(program->environmentSpecularMapIdLoc(), 4);
     program->setUniformValue(program->toonNormalMapIdLoc(), 5);
     program->setUniformValue(program->toonDepthMapIdLoc(), 6);
-    if (m_showWireframes) {
+    if (m_showWireframe) {
         if (m_renderEdgeVertexCount > 0) {
             QOpenGLVertexArrayObject::Binder vaoBinder(&m_vaoEdge);
 			QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
@@ -392,19 +397,19 @@ void ModelMeshBinder::cleanup()
     m_toonDepthMap = nullptr;
 }
 
-void ModelMeshBinder::showWireframes()
+void ModelMeshBinder::showWireframe()
 {
-    m_showWireframes = true;
+    m_showWireframe = true;
 }
 
-void ModelMeshBinder::hideWireframes()
+void ModelMeshBinder::hideWireframe()
 {
-    m_showWireframes = false;
+    m_showWireframe = false;
 }
 
-bool ModelMeshBinder::isWireframesVisible()
+bool ModelMeshBinder::isWireframeVisible()
 {
-    return m_showWireframes;
+    return m_showWireframe;
 }
 
 void ModelMeshBinder::enableCheckUv()

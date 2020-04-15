@@ -58,6 +58,16 @@ void ModelOffscreenRender::setEyePosition(const QVector3D &eyePosition)
 	m_eyePosition = eyePosition;
 }
 
+void ModelOffscreenRender::setMoveToPosition(const QVector3D &moveToPosition)
+{
+	m_moveToPosition = moveToPosition;
+}
+
+void ModelOffscreenRender::enableWireframe()
+{
+    m_isWireframeVisible = true;
+}
+
 void ModelOffscreenRender::setRenderPurpose(int purpose)
 {
     m_renderPurpose = purpose;
@@ -66,6 +76,11 @@ void ModelOffscreenRender::setRenderPurpose(int purpose)
 void ModelOffscreenRender::setToonShading(bool toonShading)
 {
     m_toonShading = toonShading;
+}
+
+void ModelOffscreenRender::enableEnvironmentLight()
+{
+    m_isEnvironmentLightEnabled = true;
 }
 
 void ModelOffscreenRender::updateToonNormalAndDepthMaps(QImage *normalMap, QImage *depthMap)
@@ -124,7 +139,12 @@ QImage ModelOffscreenRender::toImage(const QSize &size)
         ModelShaderProgram *program = new ModelShaderProgram(isCoreProfile);
         ModelMeshBinder meshBinder;
         meshBinder.initialize();
-        meshBinder.hideWireframes();
+        if (m_isWireframeVisible)
+            meshBinder.showWireframe();
+        else
+            meshBinder.hideWireframe();
+        if (m_isEnvironmentLightEnabled)
+            meshBinder.enableEnvironmentLight();
         if (nullptr != m_normalMap && nullptr != m_depthMap) {
             meshBinder.updateToonNormalAndDepthMaps(m_normalMap, m_depthMap);
             m_normalMap = nullptr;
@@ -135,7 +155,7 @@ QImage ModelOffscreenRender::toImage(const QSize &size)
         m_context->functions()->glEnable(GL_BLEND);
         m_context->functions()->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         m_context->functions()->glEnable(GL_DEPTH_TEST);
-        m_context->functions()->glEnable(GL_CULL_FACE);
+        //m_context->functions()->glEnable(GL_CULL_FACE);
 #ifdef GL_LINE_SMOOTH
         m_context->functions()->glEnable(GL_LINE_SMOOTH);
 #endif
@@ -146,6 +166,7 @@ QImage ModelOffscreenRender::toImage(const QSize &size)
         world.rotate(m_zRot / 16.0f, 0, 0, 1);
 
         projection.setToIdentity();
+        projection.translate(m_moveToPosition.x(), m_moveToPosition.y(), m_moveToPosition.z());
         projection.perspective(45.0f, GLfloat(size.width()) / size.height(), 0.01f, 100.0f);
         
         camera.setToIdentity();
