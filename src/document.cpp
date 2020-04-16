@@ -1467,7 +1467,8 @@ void Document::addFromSnapshot(const Snapshot &snapshot, enum SnapshotSource sou
 {
     bool isOriginChanged = false;
     bool isRigTypeChanged = false;
-    if (SnapshotSource::Paste != source) {
+    if (SnapshotSource::Paste != source &&
+            SnapshotSource::Import != source) {
         this->polyCount = PolyCountFromString(valueOfKeyInMapOrEmpty(snapshot.canvas, "polyCount").toUtf8().constData());
         const auto &originXit = snapshot.canvas.find("originX");
         const auto &originYit = snapshot.canvas.find("originY");
