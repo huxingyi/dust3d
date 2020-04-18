@@ -1,9 +1,8 @@
 {
     "app-id": "org.dust3d.dust3d",
     "runtime": "org.kde.Platform",
-    "runtime-version": "5.13",
+    "runtime-version": "5.14",
     "sdk": "org.kde.Sdk",
-    "branch": "stable",
     "command": "dust3d",
     "finish-args": [
         "--share=ipc",
@@ -57,7 +56,7 @@
             "build-commands": [
                 "mkdir -p thirdparty/instant-meshes/build",
                 "cd thirdparty/instant-meshes/build && cmake ../",
-                "cd thirdparty/instant-meshes/build && make -j 4",
+                "cd thirdparty/instant-meshes/build && make -j $FLATPAK_BUILDER_N_JOBS",
                 "qmake -config release",
                 "make CXX=\"g++ -fext-numeric-literals\"",
                 "install -D dust3d /app/bin/dust3d"
