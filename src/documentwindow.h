@@ -180,7 +180,7 @@ private:
     QAction *m_colorizeAsAutoAction;
     
     QMenu *m_viewMenu;
-    QAction *m_resetModelWidgetPosAction;
+    //QAction *m_resetModelWidgetPosAction;
     QAction *m_toggleWireframeAction;
     QAction *m_toggleUvCheckAction;
     QAction *m_toggleRotationAction;
@@ -220,12 +220,6 @@ private:
     
     AutoSaver *m_autoSaver = nullptr;
 public:
-    static int m_modelRenderWidgetInitialX;
-    static int m_modelRenderWidgetInitialY;
-    static int m_modelRenderWidgetInitialSize;
-    static int m_skeletonRenderWidgetInitialX;
-    static int m_skeletonRenderWidgetInitialY;
-    static int m_skeletonRenderWidgetInitialSize;
     static int m_autoRecovered;
 };
 

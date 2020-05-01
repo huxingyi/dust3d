@@ -63,6 +63,7 @@
                 "install -Dm644 ./ci/org.dust3d.dust3d.appdata.xml -t /app/share/metainfo",
                 "install -Dm644 ./ci/dust3d.desktop /app/share/applications/${FLATPAK_ID}.desktop",
                 "install -Dm644 ./ci/dust3d.png /app/share/icons/hicolor/scalable/apps/${FLATPAK_ID}.png"
+
             ],
             "sources": [
                 {

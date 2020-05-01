@@ -20,8 +20,11 @@ public:
     void setYRotation(int angle);
     void setZRotation(int angle);
     void setEyePosition(const QVector3D &eyePosition);
+    void setMoveToPosition(const QVector3D &moveToPosition);
     void setRenderPurpose(int purpose);
     void setRenderThread(QThread *thread);
+    void enableWireframe();
+    void enableEnvironmentLight();
     void updateMesh(Model *mesh);
     void updateToonNormalAndDepthMaps(QImage *normalMap, QImage *depthMap);
     void setToonShading(bool toonShading);
@@ -31,6 +34,7 @@ private:
     int m_yRot = 0;
     int m_zRot = 0;
     QVector3D m_eyePosition;
+    QVector3D m_moveToPosition;
     int m_renderPurpose = 0;
     QOpenGLContext *m_context = nullptr;
     QOpenGLFramebufferObject *m_renderFbo = nullptr;
@@ -38,6 +42,8 @@ private:
     QImage *m_normalMap = nullptr;
     QImage *m_depthMap = nullptr;
     bool m_toonShading = false;
+    bool m_isWireframeVisible = false;
+    bool m_isEnvironmentLightEnabled = false;
 };
 
 #endif

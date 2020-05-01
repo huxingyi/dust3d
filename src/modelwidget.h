@@ -24,6 +24,11 @@ signals:
     void mouseReleased();
     void addMouseRadius(float radius);
     void renderParametersChanged();
+    void xRotationChanged(int angle);
+    void yRotationChanged(int angle);
+    void zRotationChanged(int angle);
+    void eyePositionChanged(const QVector3D &eyePosition);
+    void moveToPositionChanged(const QVector3D &moveToPosition);
 public:
     ModelWidget(QWidget *parent = 0);
     ~ModelWidget();
@@ -39,12 +44,17 @@ public:
     void updateMesh(Model *mesh);
     void setGraphicsFunctions(SkeletonGraphicsFunctions *graphicsFunctions);
     void toggleWireframe();
+    bool isWireframeVisible();
     void toggleRotation();
     void toggleUvCheck();
     void enableEnvironmentLight();
+    bool isEnvironmentLightEnabled();
     void enableMove(bool enabled);
     void enableZoom(bool enabled);
     void enableMousePicking(bool enabled);
+    void setMoveAndZoomByWindow(bool byWindow);
+    void disableCullFace();
+    void setMoveToPosition(const QVector3D &moveToPosition);
     bool inputMousePressEventFromOtherWidget(QMouseEvent *event);
     bool inputMouseMoveEventFromOtherWidget(QMouseEvent *event);
     bool inputWheelEventFromOtherWidget(QWheelEvent *event);
@@ -58,15 +68,13 @@ public slots:
     void setXRotation(int angle);
     void setYRotation(int angle);
     void setZRotation(int angle);
+    void setEyePosition(const QVector3D &eyePosition);
     void cleanup();
     void zoom(float delta);
     void setMousePickTargetPositionInModelSpace(QVector3D position);
     void setMousePickRadius(float radius);
     void reRender();
-signals:
-    void xRotationChanged(int angle);
-    void yRotationChanged(int angle);
-    void zRotationChanged(int angle);
+    void canvasResized();
 protected:
     void initializeGL() override;
     void paintGL() override;
@@ -80,6 +88,7 @@ public:
     int yRot();
     int zRot();
     const QVector3D &eyePosition();
+    const QVector3D &moveToPosition();
 private:
     int m_xRot;
     int m_yRot;
@@ -107,7 +116,11 @@ private:
     QTimer *m_rotationTimer = nullptr;
     int m_widthInPixels = 0;
     int m_heightInPixels = 0;
+    QVector3D m_moveToPosition;
+    bool m_moveAndZoomByWindow = true;
+    bool m_enableCullFace = true;
     std::pair<QVector3D, QVector3D> screenPositionToMouseRay(const QPoint &screenPosition);
+    void updateProjectionMatrix();
 public:
     static int m_defaultXRotation;
     static int m_defaultYRotation;
