@@ -17,7 +17,8 @@
   <launchable type="desktop-id">org.dust3d.dust3d.desktop</launchable>
   <screenshots>
     <screenshot type="default">
-      <image>https://raw.githubusercontent.com/huxingyi/dust3d/master/ci/screenshot.png</image>
+      <image>https://blogs.dust3d.org/public/blogs-image.png</image>
     </screenshot>
   </screenshots>
+
 </component>
