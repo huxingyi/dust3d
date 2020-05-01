@@ -4,7 +4,7 @@ Type=Application
 
 Name=Dust3D
 Comment=A quick 3D modeling tool
-Categories=Graphics;Engineering
+Categories=Graphics;
 Icon=dust3d
 Exec=dust3d
 Terminal=false
