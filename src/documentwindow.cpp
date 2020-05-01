@@ -49,13 +49,6 @@
 #include "fileforever.h"
 #include "documentsaver.h"
 
-int DocumentWindow::m_modelRenderWidgetInitialX = 16;
-int DocumentWindow::m_modelRenderWidgetInitialY = 16;
-int DocumentWindow::m_modelRenderWidgetInitialSize = 128;
-int DocumentWindow::m_skeletonRenderWidgetInitialX = DocumentWindow::m_modelRenderWidgetInitialX + DocumentWindow::m_modelRenderWidgetInitialSize + 16;
-int DocumentWindow::m_skeletonRenderWidgetInitialY = DocumentWindow::m_modelRenderWidgetInitialY;
-int DocumentWindow::m_skeletonRenderWidgetInitialSize = DocumentWindow::m_modelRenderWidgetInitialSize;
-
 int DocumentWindow::m_autoRecovered = false;
 
 LogBrowser *g_logBrowser = nullptr;
@@ -327,14 +320,19 @@ DocumentWindow::DocumentWindow() :
     //connect(containerWidget, &GraphicsContainerWidget::containerSizeChanged, this, &DocumentWindow::updateInfoWidgetPosition);
 
     m_modelRenderWidget = new ModelWidget(containerWidget);
+    m_modelRenderWidget->setMoveAndZoomByWindow(false);
+    m_modelRenderWidget->move(0, 0);
     m_modelRenderWidget->setAttribute(Qt::WA_TransparentForMouseEvents);
-    m_modelRenderWidget->setMinimumSize(DocumentWindow::m_modelRenderWidgetInitialSize, DocumentWindow::m_modelRenderWidgetInitialSize);
-    m_modelRenderWidget->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-    m_modelRenderWidget->move(DocumentWindow::m_modelRenderWidgetInitialX, DocumentWindow::m_modelRenderWidgetInitialY);
     m_modelRenderWidget->setMousePickRadius(m_document->mousePickRadius());
     if (!Preferences::instance().toonShading())
 		m_modelRenderWidget->toggleWireframe();
     m_modelRenderWidget->enableEnvironmentLight();
+    m_modelRenderWidget->disableCullFace();
+    m_modelRenderWidget->setEyePosition(QVector3D(0.0, 0.0, -4.0));
+    m_modelRenderWidget->setMoveToPosition(QVector3D(-0.5, -0.5, 0.0));
+    
+    connect(containerWidget, &GraphicsContainerWidget::containerSizeChanged,
+        m_modelRenderWidget, &ModelWidget::canvasResized);
     
     connect(m_modelRenderWidget, &ModelWidget::mouseRayChanged, m_document,
             [=](const QVector3D &nearPosition, const QVector3D &farPosition) {
@@ -752,18 +750,18 @@ DocumentWindow::DocumentWindow() :
 
     m_viewMenu = menuBar()->addMenu(tr("&View"));
 
-    auto isModelSitInVisibleArea = [](ModelWidget *modelWidget) {
-        QRect parentRect = QRect(QPoint(0, 0), modelWidget->parentWidget()->size());
-        return parentRect.contains(modelWidget->geometry().center());
-    };
+    //auto isModelSitInVisibleArea = [](ModelWidget *modelWidget) {
+    //    QRect parentRect = QRect(QPoint(0, 0), modelWidget->parentWidget()->size());
+    //    return parentRect.contains(modelWidget->geometry().center());
+    //};
 
-    m_resetModelWidgetPosAction = new QAction(tr("Show Model"), this);
-    connect(m_resetModelWidgetPosAction, &QAction::triggered, [=]() {
-        if (!isModelSitInVisibleArea(m_modelRenderWidget)) {
-            m_modelRenderWidget->move(DocumentWindow::m_modelRenderWidgetInitialX, DocumentWindow::m_modelRenderWidgetInitialY);
-        }
-    });
-    m_viewMenu->addAction(m_resetModelWidgetPosAction);
+    //m_resetModelWidgetPosAction = new QAction(tr("Show Model"), this);
+    //connect(m_resetModelWidgetPosAction, &QAction::triggered, [=]() {
+    //    if (!isModelSitInVisibleArea(m_modelRenderWidget)) {
+    //        m_modelRenderWidget->move(DocumentWindow::m_modelRenderWidgetInitialX, DocumentWindow::m_modelRenderWidgetInitialY);
+    //    }
+    //});
+    //m_viewMenu->addAction(m_resetModelWidgetPosAction);
 
     m_toggleWireframeAction = new QAction(tr("Toggle Wireframe"), this);
     connect(m_toggleWireframeAction, &QAction::triggered, [=]() {
@@ -800,9 +798,9 @@ DocumentWindow::DocumentWindow() :
     });
     m_viewMenu->addAction(m_toggleUvCheckAction);
 
-    connect(m_viewMenu, &QMenu::aboutToShow, [=]() {
-        m_resetModelWidgetPosAction->setEnabled(!isModelSitInVisibleArea(m_modelRenderWidget));
-    });
+    //connect(m_viewMenu, &QMenu::aboutToShow, [=]() {
+    //    m_resetModelWidgetPosAction->setEnabled(!isModelSitInVisibleArea(m_modelRenderWidget));
+    //});
     
     m_windowMenu = menuBar()->addMenu(tr("&Window"));
     
@@ -2160,6 +2158,11 @@ void DocumentWindow::exportImageToFilename(const QString &filename)
         offlineRender->setYRotation(m_modelRenderWidget->yRot());
         offlineRender->setZRotation(m_modelRenderWidget->zRot());
         offlineRender->setEyePosition(m_modelRenderWidget->eyePosition());
+        offlineRender->setMoveToPosition(m_modelRenderWidget->moveToPosition());
+        if (m_modelRenderWidget->isWireframeVisible())
+            offlineRender->enableWireframe();
+        if (m_modelRenderWidget->isEnvironmentLightEnabled())
+            offlineRender->enableEnvironmentLight();
         offlineRender->setRenderPurpose(0);
         QImage *normalMap = new QImage();
         QImage *depthMap = new QImage();

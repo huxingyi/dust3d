@@ -61,6 +61,18 @@ const QVector3D &ModelWidget::eyePosition()
 	return m_eyePosition;
 }
 
+const QVector3D &ModelWidget::moveToPosition()
+{
+    return m_moveToPosition;
+}
+
+void ModelWidget::setEyePosition(const QVector3D &eyePosition)
+{
+    m_eyePosition = eyePosition;
+    emit eyePositionChanged(m_eyePosition);
+    update();
+}
+
 void ModelWidget::reRender()
 {
     emit renderParametersChanged();
@@ -174,13 +186,24 @@ void ModelWidget::initializeGL()
     m_program->release();
 }
 
+void ModelWidget::disableCullFace()
+{
+    m_enableCullFace = false;
+}
+
+void ModelWidget::setMoveToPosition(const QVector3D &moveToPosition)
+{
+    m_moveToPosition = moveToPosition;
+}
+
 void ModelWidget::paintGL()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
+    if (m_enableCullFace)
+        glEnable(GL_CULL_FACE);
 #ifdef GL_LINE_SMOOTH
     glEnable(GL_LINE_SMOOTH);
 #endif
@@ -227,12 +250,18 @@ void ModelWidget::paintGL()
     m_program->release();
 }
 
+void ModelWidget::updateProjectionMatrix()
+{
+    m_projection.setToIdentity();
+    m_projection.translate(m_moveToPosition.x(), m_moveToPosition.y(), m_moveToPosition.z());
+    m_projection.perspective(45.0f, GLfloat(width()) / height(), 0.01f, 100.0f);
+}
+
 void ModelWidget::resizeGL(int w, int h)
 {
 	m_widthInPixels = w * window()->devicePixelRatio();
 	m_heightInPixels = h * window()->devicePixelRatio();
-    m_projection.setToIdentity();
-    m_projection.perspective(45.0f, GLfloat(w) / h, 0.01f, 100.0f);
+    updateProjectionMatrix();
     emit renderParametersChanged();
 }
 
@@ -251,17 +280,27 @@ std::pair<QVector3D, QVector3D> ModelWidget::screenPositionToMouseRay(const QPoi
 
 void ModelWidget::toggleWireframe()
 {
-    if (m_meshBinder.isWireframesVisible())
-        m_meshBinder.hideWireframes();
+    if (m_meshBinder.isWireframeVisible())
+        m_meshBinder.hideWireframe();
     else
-        m_meshBinder.showWireframes();
+        m_meshBinder.showWireframe();
     update();
+}
+
+bool ModelWidget::isWireframeVisible()
+{
+    return m_meshBinder.isWireframeVisible();
 }
 
 void ModelWidget::enableEnvironmentLight()
 {
     m_meshBinder.enableEnvironmentLight();
     update();
+}
+
+bool ModelWidget::isEnvironmentLightEnabled()
+{
+    return m_meshBinder.isEnvironmentLightEnabled();
 }
 
 void ModelWidget::toggleRotation()
@@ -329,6 +368,11 @@ bool ModelWidget::inputMouseReleaseEventFromOtherWidget(QMouseEvent *event)
     return false;
 }
 
+void ModelWidget::canvasResized()
+{
+    resize(parentWidget()->size());
+}
+
 bool ModelWidget::inputMouseMoveEventFromOtherWidget(QMouseEvent *event)
 {
     QPoint pos = convertInputPosFromOtherWidget(event);
@@ -349,10 +393,27 @@ bool ModelWidget::inputMouseMoveEventFromOtherWidget(QMouseEvent *event)
             (m_moveStarted && (event->buttons() & Qt::LeftButton))) {
         if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
             if (m_moveStarted) {
-                QRect rect = m_moveStartGeometry;
-                QPoint posInParent = mapToParent(pos);
-                rect.translate(posInParent.x() - m_moveStartPos.x(), posInParent.y() - m_moveStartPos.y());
-                setGeometry(rect);
+                if (m_moveAndZoomByWindow) {
+                    QPoint posInParent = mapToParent(pos);
+                    QRect rect = m_moveStartGeometry;
+                    rect.translate(posInParent.x() - m_moveStartPos.x(), posInParent.y() - m_moveStartPos.y());
+                    setGeometry(rect);
+                } else {
+                    m_moveToPosition.setX(m_moveToPosition.x() + (float)2 * dx / width());
+                    m_moveToPosition.setY(m_moveToPosition.y() + (float)2 * -dy / height());
+                    if (m_moveToPosition.x() < -1.0)
+                        m_moveToPosition.setX(-1.0);
+                    if (m_moveToPosition.x() > 1.0)
+                        m_moveToPosition.setX(1.0);
+                    if (m_moveToPosition.y() < -1.0)
+                        m_moveToPosition.setY(-1.0);
+                    if (m_moveToPosition.y() > 1.0)
+                        m_moveToPosition.setY(1.0);
+                    updateProjectionMatrix();
+                    emit moveToPositionChanged(m_moveToPosition);
+                    emit renderParametersChanged();
+                    update();
+                }
             }
         } else {
             setXRotation(m_xRot + 8 * dy);
@@ -394,22 +455,34 @@ bool ModelWidget::inputWheelEventFromOtherWidget(QWheelEvent *event)
 
 void ModelWidget::zoom(float delta)
 {
-    QMargins margins(delta, delta, delta, delta);
-    if (0 == m_modelInitialHeight) {
-        m_modelInitialHeight = height();
-    } else {
-        float ratio = (float)height() / m_modelInitialHeight;
-        if (ratio <= m_minZoomRatio) {
-            if (delta < 0)
-                return;
-        } else if (ratio >= m_maxZoomRatio) {
-            if (delta > 0)
-                return;
+    if (m_moveAndZoomByWindow) {
+        QMargins margins(delta, delta, delta, delta);
+        if (0 == m_modelInitialHeight) {
+            m_modelInitialHeight = height();
+        } else {
+            float ratio = (float)height() / m_modelInitialHeight;
+            if (ratio <= m_minZoomRatio) {
+                if (delta < 0)
+                    return;
+            } else if (ratio >= m_maxZoomRatio) {
+                if (delta > 0)
+                    return;
+            }
         }
+        setGeometry(geometry().marginsAdded(margins));
+        emit renderParametersChanged();
+        update();
+        return;
+    } else {
+        m_eyePosition += QVector3D(0, 0, m_eyePosition.z() * (delta > 0 ? -0.1 : 0.1));
+        if (m_eyePosition.z() < -15)
+            m_eyePosition.setZ(-15);
+        else if (m_eyePosition.z() > -0.1)
+            m_eyePosition.setZ(-0.1);
+        emit eyePositionChanged(m_eyePosition);
+        emit renderParametersChanged();
+        update();
     }
-    setGeometry(geometry().marginsAdded(margins));
-    emit renderParametersChanged();
-	update();
 }
 
 void ModelWidget::setMousePickTargetPositionInModelSpace(QVector3D position)
@@ -465,6 +538,11 @@ void ModelWidget::enableZoom(bool enabled)
 void ModelWidget::enableMousePicking(bool enabled)
 {
     m_mousePickingEnabled = enabled;
+}
+
+void ModelWidget::setMoveAndZoomByWindow(bool byWindow)
+{
+    m_moveAndZoomByWindow = byWindow;
 }
 
 void ModelWidget::mousePressEvent(QMouseEvent *event)

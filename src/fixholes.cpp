@@ -177,7 +177,7 @@ void fixHoles(const std::vector<QVector3D> &verticies, std::vector<std::vector<s
         simpleuv::triangulate(simpleuvVertices, newFaces, holeRings[i].first);
     }
     
-    saveAsObj("fixholes_input.obj", verticies, faces);
+    //saveAsObj("fixholes_input.obj", verticies, faces);
     //std::vector<std::vector<size_t>> addedFaces;
     //std::vector<std::vector<size_t>> removedFaces;
     std::vector<std::vector<size_t>> fixedFaces;
