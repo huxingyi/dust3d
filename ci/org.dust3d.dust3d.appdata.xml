@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>org.dust3d.dust3d</id>
+  
+  <name>Dust3D</name>
+  <summary>A quick 3D modeling tool</summary>
+  
+  <metadata_license>FSFAP</metadata_license>
+  <project_license>MIT</project_license>
+  
+  <description>
+    <p>
+      Dust3D is a brand new 3D modeling software. It helps you create a 3D watertight base model in seconds. Use it to speed up your character modeling in game making, 3D printing, and so on.
+    </p>
+  </description>
+  
+  <launchable type="desktop-id">org.dust3d.dust3d.desktop</launchable>
+  <screenshots>
+    <screenshot type="default">
+      <image>https://raw.githubusercontent.com/huxingyi/dust3d/master/ci/screenshot.png</image>
+    </screenshot>
+  </screenshots>
+</component>

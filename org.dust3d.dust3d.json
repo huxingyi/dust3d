@@ -59,7 +59,10 @@
                 "cd thirdparty/instant-meshes/build && make -j $FLATPAK_BUILDER_N_JOBS",
                 "qmake -config release",
                 "make CXX=\"g++ -fext-numeric-literals\"",
-                "install -D dust3d /app/bin/dust3d"
+                "install -Dm755 dust3d -t /app/bin",
+                "install -Dm644 ./ci/org.dust3d.dust3d.appdata.xml -t /app/share/metainfo",
+                "install -Dm644 ./ci/dust3d.desktop /app/share/applications/${FLATPAK_ID}.desktop",
+                "install -Dm644 ./ci/dust3d.png /app/share/icons/hicolor/scalable/apps/${FLATPAK_ID}.png"
             ],
             "sources": [
                 {
