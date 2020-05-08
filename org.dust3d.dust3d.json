@@ -68,7 +68,7 @@
                 {
                     "type": "git",
                     "url": "https://github.com/jeteokeeffe/dust3d.git",
-                    "commit": "d2ad330f3263b2acc767412d282462a500e0749f"
+                    "commit": "949a8c09d4b4be1fbf331f08bbbcb3c8218c41f3"
                 },
                 {
                     "type": "patch",
