@@ -68,7 +68,7 @@
                 {
                     "type": "git",
                     "url": "https://github.com/huxingyi/dust3d.git",
-                    "commit": "949a8c09d4b4be1fbf331f08bbbcb3c8218c41f3"
+                    "commit": "f63131956bdfa865a02945adcecbeb7c79e8ecac"
                 },
                 {
                     "type": "patch",
