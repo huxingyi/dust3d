@@ -67,8 +67,8 @@
             "sources": [
                 {
                     "type": "git",
-                    "url": "https://github.com/huxingyi/dust3d.git",
-                    "commit": "31957c07002c4b67440680a26b20fec60998da3e"
+                    "url": "https://github.com/jeteokeeffe/dust3d.git",
+                    "commit": "d2ad330f3263b2acc767412d282462a500e0749f"
                 },
                 {
                     "type": "patch",
