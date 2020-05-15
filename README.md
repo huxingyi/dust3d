@@ -14,6 +14,12 @@ Dust3D is fundamentally new 3D modeling software. It lets you create watertight 
 - [Quick Start](https://docs.dust3d.org)  
 - __[Join Mailing List to get Updated](https://www.freelists.org/list/dust3d)__  
 
+Examples
+-------------
+
+<a href="https://github.com/Dust3D-Modeling/10minuteseveryday/tree/master/jeremyhu2016/giraffe"><image src="https://raw.githubusercontent.com/Dust3D-Modeling/10minuteseveryday/master/jeremyhu2016/giraffe/giraffe.png" width="358" height="216"></a> <a href="https://github.com/Dust3D-Modeling/10minuteseveryday/tree/master/jeremyhu2016/honda-monkey"><image src="https://raw.githubusercontent.com/Dust3D-Modeling/10minuteseveryday/master/jeremyhu2016/honda-monkey/honda-monkey.png" width="358" height="216"></a>
+
+
 Installation
 ----------------------
 
@@ -39,12 +45,6 @@ We provide a `.AppImage` file in the [releases tab](https://github.com/huxingyi/
 chmod a+x ./dust3d-1.0.0-rc.6.AppImage
 ./dust3d-1.0.0-rc.6.AppImage
 ```
-
-Examples
--------------
-
-<a href="https://github.com/Dust3D-Modeling/10minuteseveryday/tree/master/jeremyhu2016/giraffe"><image src="https://raw.githubusercontent.com/Dust3D-Modeling/10minuteseveryday/master/jeremyhu2016/giraffe/giraffe.png" width="358" height="216"></a> <a href="https://github.com/Dust3D-Modeling/10minuteseveryday/tree/master/jeremyhu2016/honda-monkey"><image src="https://raw.githubusercontent.com/Dust3D-Modeling/10minuteseveryday/master/jeremyhu2016/honda-monkey/honda-monkey.png" width="358" height="216"></a>
- 
 
 External Links
 -------------
