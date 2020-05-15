@@ -1,11 +1,11 @@
-<a href="https://dust3d.org" target="_blank"><image src="https://dust3d.org/images/dust3d-logo-wide.png" width="94" height="30"></a>
+<a href="https://dust3d.org" target="_blank"><image src="https://dust3d.org/images/dust3d-logo-wide.png" width="320" height="102"></a>
 
 [![appveyor status](https://ci.appveyor.com/api/projects/status/github/huxingyi/dust3d?branch=master&svg=true)](https://ci.appveyor.com/project/huxingyi/dust3d) [![travis status](https://travis-ci.org/huxingyi/dust3d.svg?branch=master)](https://travis-ci.org/huxingyi/dust3d) [![readthedocs status](https://readthedocs.org/projects/dust3d/badge/?version=latest)](https://docs.dust3d.org/en/latest/?badge=latest) [![](https://img.shields.io/twitter/follow/jeremyhu2016.svg?label=%20%40follow&style=social)](https://twitter.com/jeremyhu2016) [![](https://img.shields.io/badge/mailing%20list%20-join-blue.svg)](https://www.freelists.org/list/dust3d) [![](https://img.shields.io/discourse/https/dust3d.discourse.group/status.svg)](https://dust3d.discourse.group/) [![](https://img.shields.io/github/downloads/huxingyi/dust3d/total.svg)](https://docs.dust3d.org/en/latest/install.html)
 
 Overview
 ----------
 
-Dust3D is fundamentally new 3D modeling software. It helps you create a 3D watertight model in seconds. Use it to speed up your character modeling in game making, 3D printing, and so on.
+Dust3D is fundamentally new 3D modeling software. It lets you create watertight 3D models in seconds. Use it to speed up character modeling for games, 3D printing, and so on.
 
 <a href="https://blogs.dust3d.org/2019/07/18/dust3d-awarded-epic-megagrants/"><img width="128" height="128" src="https://dust3d.org/images/Epic_MegaGrants_Recipient_logo.png" /></a>  
 
@@ -18,7 +18,7 @@ Installation
 
 Dust3D is available for Windows, macOS, and Linux.
 
-You can get the <a href="https://github.com/huxingyi/dust3d/releases">latest version</a> in the Releases tab of this GitHub repo. If you're feeling adventurous, you can also <a href="https://docs.dust3d.org/en/latest/builds.html">build from source</a>.
+You can get the <a href="https://github.com/huxingyi/dust3d/releases">latest version</a> in the Releases tab of this GitHub repository. If you're feeling adventurous, you can also <a href="https://docs.dust3d.org/en/latest/builds.html">build from source</a>.
 
 ### Windows
 
@@ -42,10 +42,7 @@ chmod a+x ./dust3d-1.0.0-rc.6.AppImage
 
 Screenshots
 ----------------------
-<a href="https://github.com/Dust3D-Modeling/10minuteseveryday/tree/master/jeremyhu2016/giraffe"><image src="https://raw.githubusercontent.com/Dust3D-Modeling/10minuteseveryday/master/jeremyhu2016/giraffe/giraffe.png" width="358" height="216"></a>
-
-
-<a href="https://github.com/Dust3D-Modeling/10minuteseveryday/tree/master/jeremyhu2016/honda-monkey"><image src="https://raw.githubusercontent.com/Dust3D-Modeling/10minuteseveryday/master/jeremyhu2016/honda-monkey/honda-monkey.png" width="358" height="216"></a>
+<a href="https://github.com/Dust3D-Modeling/10minuteseveryday/tree/master/jeremyhu2016/giraffe"><image src="https://raw.githubusercontent.com/Dust3D-Modeling/10minuteseveryday/master/jeremyhu2016/giraffe/giraffe.png" width="358" height="216"></a> <a href="https://github.com/Dust3D-Modeling/10minuteseveryday/tree/master/jeremyhu2016/honda-monkey"><image src="https://raw.githubusercontent.com/Dust3D-Modeling/10minuteseveryday/master/jeremyhu2016/honda-monkey/honda-monkey.png" width="358" height="216"></a>
 
 External Links
 -------------
