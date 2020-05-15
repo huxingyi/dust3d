@@ -7,6 +7,7 @@ Overview
 
 Dust3D is fundamentally new 3D modeling software. It lets you create watertight 3D models in seconds. Use it to speed up character modeling for games, 3D printing, and so on.
 
+
 <a href="https://blogs.dust3d.org/2019/07/18/dust3d-awarded-epic-megagrants/"><img width="128" height="128" src="https://dust3d.org/images/Epic_MegaGrants_Recipient_logo.png" /></a>  
 
 - [Download Dust3D](https://docs.dust3d.org/en/latest/install.html)  
@@ -39,8 +40,11 @@ chmod a+x ./dust3d-1.0.0-rc.6.AppImage
 ./dust3d-1.0.0-rc.6.AppImage
 ```
 
+Examples
+-------------
 
 <a href="https://github.com/Dust3D-Modeling/10minuteseveryday/tree/master/jeremyhu2016/giraffe"><image src="https://raw.githubusercontent.com/Dust3D-Modeling/10minuteseveryday/master/jeremyhu2016/giraffe/giraffe.png" width="358" height="216"></a> <a href="https://github.com/Dust3D-Modeling/10minuteseveryday/tree/master/jeremyhu2016/honda-monkey"><image src="https://raw.githubusercontent.com/Dust3D-Modeling/10minuteseveryday/master/jeremyhu2016/honda-monkey/honda-monkey.png" width="358" height="216"></a>
+ 
 
 External Links
 -------------
@@ -56,6 +60,7 @@ External Links
 External Media
 -------------
 [Dust3D -- Free Open Source 3D Modelling Application](https://www.youtube.com/watch?v=YBnEQk_5D70)
+
 
 <a href="https://www.youtube.com/watch?v=YBnEQk_5D70" target="_blank"><image src="https://raw.githubusercontent.com/huxingyi/dust3d/master/docs/images/dust3d-free-open-source-3d-modelling-application-video-thumbnail.png" width="480" height="270"></a>
 
