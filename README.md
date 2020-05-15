@@ -16,9 +16,9 @@ Dust3D is fundamentally new 3D modeling software. It lets you create watertight 
 Installation
 ----------------------
 
-Dust3D is available for Windows, macOS, and Linux.
+Dust3D is available for Windows, macOS, and Linux under the [MIT license](https://github.com/huxingyi/dust3d/blob/master/LICENSE). Its completely free and [open source](#license)
 
-You can get the <a href="https://github.com/huxingyi/dust3d/releases">latest version</a> in the Releases tab of this GitHub repository. If you're feeling adventurous, you can also <a href="https://docs.dust3d.org/en/latest/builds.html">build from source</a>.
+You can get the <strong><a href="https://github.com/huxingyi/dust3d/releases">latest version</a></strong> in the Releases tab of this GitHub repository. If you're feeling adventurous, you can also <a href="https://docs.dust3d.org/en/latest/builds.html">build from source</a>.
 
 ### Windows
 
@@ -40,8 +40,6 @@ chmod a+x ./dust3d-1.0.0-rc.6.AppImage
 ```
 
 
-Screenshots
-----------------------
 <a href="https://github.com/Dust3D-Modeling/10minuteseveryday/tree/master/jeremyhu2016/giraffe"><image src="https://raw.githubusercontent.com/Dust3D-Modeling/10minuteseveryday/master/jeremyhu2016/giraffe/giraffe.png" width="358" height="216"></a> <a href="https://github.com/Dust3D-Modeling/10minuteseveryday/tree/master/jeremyhu2016/honda-monkey"><image src="https://raw.githubusercontent.com/Dust3D-Modeling/10minuteseveryday/master/jeremyhu2016/honda-monkey/honda-monkey.png" width="358" height="216"></a>
 
 External Links
@@ -63,12 +61,15 @@ External Media
 
 Contributing
 ---------------
-Any contributions are welcome, including fix bug, correct typo, test functionality, propose new features, make post to introduce and let more people know Dust3D. If you have done any of these, and cannot find your name in CONTRIBUTORS, please feel free to make a pull request to add your name, or email me.
-If you have done programming code changes, including the example code listed in the docs folder, please don’t forget to add your name to AUTHORS in your pull request.
+Any contributions are welcome including bugfixes, fixing typos, adding tests, proposing new features, and letting more people know about Dust3D.
+
+If you write or post about Dust3D online, please add your name in CONTRIBUTORS.
+
+If you've submitted any PRs with code changes, including the example code listed in the docs folder, please don’t forget to add your name to AUTHORS in your pull request.
 
 License
 -----------
-Dust3D software source code use MIT license, however, some of the third party libraries are not MIT license compatible, such as CGAL. Which means you can use the released Dust3D software freely no matter for personal or for commercial purpose, and you can integrate the source code of Dust3D to your project as MIT licensed, but with the third party libraries on the specified license respectively.
+Dust3D's source code is available under the MIT license, however, some third party libraries we use are not MIT license compatible, such as CGAL. You can use the released Dust3D software freely no matter for personal or for commercial purpose, and you can integrate the source code of Dust3D to your project as MIT licensed, but with the third party libraries on the specified license respectively.
 
 Acknowledgements
 -------------------
