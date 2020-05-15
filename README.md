@@ -5,13 +5,40 @@
 Overview
 ----------
 
-Dust3D is a brand new 3D modeling software. It helps you create a 3D watertight model in seconds. Use it to speed up your character modeling in game making, 3D printing, and so on.  
+Dust3D is fundamentally new 3D modeling software. It helps you create a 3D watertight model in seconds. Use it to speed up your character modeling in game making, 3D printing, and so on.
 
 <a href="https://blogs.dust3d.org/2019/07/18/dust3d-awarded-epic-megagrants/"><img width="128" height="128" src="https://dust3d.org/images/Epic_MegaGrants_Recipient_logo.png" /></a>  
 
-- [Download Dust3D Software](https://docs.dust3d.org/en/latest/install.html)  
+- [Download Dust3D](https://docs.dust3d.org/en/latest/install.html)  
 - [Quick Start](https://docs.dust3d.org)  
 - __[Join Mailing List to get Updated](https://www.freelists.org/list/dust3d)__  
+
+Installation
+----------------------
+
+Dust3D is available for Windows, macOS, and Linux.
+
+You can get the <a href="https://github.com/huxingyi/dust3d/releases">latest version</a> in the Releases tab of this GitHub repo. If you're feeling adventurous, you can also <a href="https://docs.dust3d.org/en/latest/builds.html">build from source</a>.
+
+### Windows
+
+[Download the .exe](https://github.com/huxingyi/dust3d/releases) – no installation necessary.
+
+### macOS
+
+On macOS, you can download the `.dmg` file or with homebrew:
+```sh
+brew cask install dust3d
+```
+
+### Linux
+
+We provide a `.AppImage` file in the [releases tab](https://github.com/huxingyi/dust3d/releases):
+```sh
+chmod a+x ./dust3d-1.0.0-rc.6.AppImage
+./dust3d-1.0.0-rc.6.AppImage
+```
+
 
 Screenshots
 ----------------------
