@@ -4,7 +4,6 @@
     "runtime-version": "5.14",
     "sdk": "org.kde.Sdk",
     "command": "dust3d",
-    "only-arches": ["x86_64"],
     "finish-args": [
         "--share=ipc",
         "--socket=x11",
