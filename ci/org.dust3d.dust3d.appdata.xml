@@ -13,12 +13,22 @@
       Dust3D is a brand new 3D modeling software. It helps you create a 3D watertight base model in seconds. Use it to speed up your character modeling in game making, 3D printing, and so on.
     </p>
   </description>
-  
+  <url type="homepage">https://dust3d.org/</url>
+  <url type="bugtracker">https://github.com/huxingyi/dust3d/issues</url>
   <launchable type="desktop-id">org.dust3d.dust3d.desktop</launchable>
   <screenshots>
     <screenshot type="default">
       <image>https://blogs.dust3d.org/public/blogs-image.png</image>
     </screenshot>
   </screenshots>
-
+  <releases>
+    <release version="1.0 RC7" date="2020-05-19">
+      <description>
+        <p>
+          First commit to flatpak/flathub.
+        </p>
+      </description>
+    </release>
+  </releases>
+  <content_rating type="oars-1.1" />
 </component>
