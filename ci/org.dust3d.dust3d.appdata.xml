@@ -22,7 +22,7 @@
     </screenshot>
   </screenshots>
   <releases>
-    <release version="1.0 RC7" date="2020-05-19">
+    <release version="1.0 RC6" date="2020-05-19">
       <description>
         <p>
           First commit to flatpak/flathub.
