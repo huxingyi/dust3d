@@ -41,6 +41,10 @@
         },
         {
             "name": "cgal",
+            "build-options": {
+                "WITH_CGAL_Qt5": "0",
+                "WITH_CGAL_ImageIO": "0"
+            },
             "buildsystem": "cmake",
             "sources": [
                 {
