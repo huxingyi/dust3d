@@ -40,6 +40,8 @@ brew cask install dust3d
 
 ### Linux
 
+[<img width="240" src="https://flathub.org/assets/badges/flathub-badge-i-en.png">](https://flathub.org/apps/details/org.dust3d.dust3d)
+
 We provide a `.AppImage` file in the [releases tab](https://github.com/huxingyi/dust3d/releases):
 ```sh
 chmod a+x ./dust3d-1.0.0-rc.6.AppImage
