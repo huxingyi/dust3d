@@ -2,6 +2,9 @@
 
 [![appveyor status](https://ci.appveyor.com/api/projects/status/github/huxingyi/dust3d?branch=master&svg=true)](https://ci.appveyor.com/project/huxingyi/dust3d) [![travis status](https://travis-ci.org/huxingyi/dust3d.svg?branch=master)](https://travis-ci.org/huxingyi/dust3d) [![readthedocs status](https://readthedocs.org/projects/dust3d/badge/?version=latest)](https://docs.dust3d.org/en/latest/?badge=latest) [![](https://img.shields.io/twitter/follow/jeremyhu2016.svg?label=%20%40follow&style=social)](https://twitter.com/jeremyhu2016) [![](https://img.shields.io/badge/mailing%20list%20-join-blue.svg)](https://www.freelists.org/list/dust3d) [![](https://img.shields.io/discourse/https/dust3d.discourse.group/status.svg)](https://dust3d.discourse.group/) [![](https://img.shields.io/github/downloads/huxingyi/dust3d/total.svg)](https://docs.dust3d.org/en/latest/install.html)
 
+
+Buy me a coffee for staying up late coding :-) [![](https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business=GHALWLWXYGCU6&item_name=Support+me+coding+in+my+spare+time&currency_code=AUD&source=url)  
+
 Overview
 ----------
 
