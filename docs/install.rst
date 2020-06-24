@@ -1,3 +1,7 @@
+.. raw:: html
+
+    <iframe src="https://github.com/sponsors/huxingyi/button" title="Sponsor huxingyi" height="35" width="107" style="border: 0;"></iframe>
+
 Download and Install Dust3D
 -----------------------------
 
@@ -6,7 +10,7 @@ Download and Install Dust3D
     https://github.com/huxingyi/dust3d/releases/download/1.0.0-rc.6/dust3d-1.0.0-rc.6.zip
 
     No need to install, unzip and run the exe.
-    
+
 * For Windows (32 Bit):
 
     https://github.com/huxingyi/dust3d/releases/download/1.0.0-rc.6/dust3d-1.0.0-rc.6-x86.zip
