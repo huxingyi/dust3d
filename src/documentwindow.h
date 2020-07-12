@@ -39,6 +39,7 @@ public:
     static const std::map<DocumentWindow *, QUuid> &documentWindows();
     static void showAcknowlegements();
     static void showContributors();
+    static void showSupporters();
     static void showAbout();
     static size_t total();
 protected:
@@ -68,6 +69,7 @@ public slots:
     void reportIssues();
     void seeAcknowlegements();
     void seeContributors();
+    void seeSupporters();
     void seeReferenceGuide();
     void documentChanged();
     void updateRotationButtonState();
@@ -203,6 +205,7 @@ private:
     QAction *m_checkForUpdatesAction;
     QAction *m_reportIssuesAction;
     QAction *m_seeContributorsAction;
+    QAction *m_seeSupportersAction;
     QAction *m_seeAcknowlegementsAction;
     QAction *m_seeReferenceGuideAction;
     

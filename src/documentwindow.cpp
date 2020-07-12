@@ -56,6 +56,7 @@ std::map<DocumentWindow *, QUuid> g_documentWindows;
 QTextBrowser *g_acknowlegementsWidget = nullptr;
 AboutWidget *g_aboutWidget = nullptr;
 QTextBrowser *g_contributorsWidget = nullptr;
+QTextBrowser *g_supportersWidget = nullptr;
 UpdatesCheckWidget *g_updatesCheckWidget = nullptr;
 
 void outputMessage(QtMsgType type, const QMessageLogContext &context, const QString &msg)
@@ -105,6 +106,21 @@ void DocumentWindow::showContributors()
     g_contributorsWidget->show();
     g_contributorsWidget->activateWindow();
     g_contributorsWidget->raise();
+}
+
+void DocumentWindow::showSupporters()
+{
+    if (!g_supportersWidget) {
+        g_supportersWidget = new QTextBrowser;
+        g_supportersWidget->setWindowTitle(unifiedWindowTitle(tr("Supporters")));
+        g_supportersWidget->setMinimumSize(QSize(400, 300));
+        QFile supporters(":/SUPPORTERS");
+        supporters.open(QFile::ReadOnly | QFile::Text);
+        g_supportersWidget->setHtml("<h1>SUPPORTERS</h1><pre>" + supporters.readAll() + "</pre>");
+    }
+    g_supportersWidget->show();
+    g_supportersWidget->activateWindow();
+    g_supportersWidget->raise();
 }
 
 void DocumentWindow::showAbout()
@@ -902,6 +918,10 @@ DocumentWindow::DocumentWindow() :
     m_seeContributorsAction = new QAction(tr("Contributors"), this);
     connect(m_seeContributorsAction, &QAction::triggered, this, &DocumentWindow::seeContributors);
     m_helpMenu->addAction(m_seeContributorsAction);
+    
+    m_seeSupportersAction = new QAction(tr("Supporters"), this);
+    connect(m_seeSupportersAction, &QAction::triggered, this, &DocumentWindow::seeSupporters);
+    m_helpMenu->addAction(m_seeSupportersAction);
 
     m_seeAcknowlegementsAction = new QAction(tr("Acknowlegements"), this);
     connect(m_seeAcknowlegementsAction, &QAction::triggered, this, &DocumentWindow::seeAcknowlegements);
@@ -1402,6 +1422,11 @@ void DocumentWindow::seeAcknowlegements()
 void DocumentWindow::seeContributors()
 {
     DocumentWindow::showContributors();
+}
+
+void DocumentWindow::seeSupporters()
+{
+    DocumentWindow::showSupporters();
 }
 
 void DocumentWindow::initLockButton(QPushButton *button)
