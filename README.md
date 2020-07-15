@@ -64,10 +64,11 @@ External Links
 
 External Media
 -------------
-[Dust3D -- Free Open Source 3D Modelling Application](https://www.youtube.com/watch?v=YBnEQk_5D70)
+<a href="https://www.youtube.com/watch?v=YBnEQk_5D70" target="_blank"><image src="https://raw.githubusercontent.com/huxingyi/dust3d/master/docs/images/dust3d-free-open-source-3d-modelling-application-video-thumbnail.png" width="480" height="270"></a>  
 
-
-<a href="https://www.youtube.com/watch?v=YBnEQk_5D70" target="_blank"><image src="https://raw.githubusercontent.com/huxingyi/dust3d/master/docs/images/dust3d-free-open-source-3d-modelling-application-video-thumbnail.png" width="480" height="270"></a>
+- [Dust3D -- Free Open Source 3D Modelling Application](https://www.youtube.com/watch?v=YBnEQk_5D70) **gamefromscratch.com**  
+- [Dust3D -- Incredibly Unique, Easy and Free Open Source 3D Modeller](https://www.youtube.com/watch?v=MytN8t4guuM&feature=emb_logo) **gamefromscratch.com**  
+- [EASILY MAKE 3D MODELS FROM SCRATCH! - WITH THIS FREE OPEN SOURCE TOOL](https://www.youtube.com/watch?v=6hf2yJ8CiW4&feature=youtu.be) **askNK**  
 
 Contributing
 ---------------
