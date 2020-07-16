@@ -65,6 +65,12 @@ void outputMessage(QtMsgType type, const QMessageLogContext &context, const QStr
         g_logBrowser->outputMessage(type, msg, context.file, context.line);
 }
 
+void ensureFileExtension(QString* filename, const QString extension) {
+    if (!filename->endsWith(extension)) {
+        filename->append(extension);
+    }
+}
+
 const std::map<DocumentWindow *, QUuid> &DocumentWindow::documentWindows()
 {
     return g_documentWindows;
@@ -1371,6 +1377,7 @@ void DocumentWindow::saveAs()
     if (filename.isEmpty()) {
         return;
     }
+    ensureFileExtension(&filename, ".ds3");
     saveTo(filename);
 }
 
@@ -1517,6 +1524,7 @@ void DocumentWindow::saveTo(const QString &saveAsFilename)
         if (filename.isEmpty()) {
             return;
         }
+        ensureFileExtension(&filename, ".ds3");
     }
     
     QApplication::setOverrideCursor(Qt::WaitCursor);
@@ -1780,6 +1788,7 @@ void DocumentWindow::exportRenderedResult()
     if (filename.isEmpty()) {
         return;
     }
+    ensureFileExtension(&filename, ".png");
     exportImageToFilename(filename);
 }
 
@@ -1790,6 +1799,7 @@ void DocumentWindow::exportObjResult()
     if (filename.isEmpty()) {
         return;
     }
+    ensureFileExtension(&filename, ".obj");
     exportObjToFilename(filename);
 }
 
@@ -1828,6 +1838,7 @@ void DocumentWindow::exportFbxResult()
     if (filename.isEmpty()) {
         return;
     }
+    ensureFileExtension(&filename, ".fbx");
     exportFbxToFilename(filename);
 }
 
@@ -1864,6 +1875,7 @@ void DocumentWindow::exportGlbResult()
     if (filename.isEmpty()) {
         return;
     }
+    ensureFileExtension(&filename, ".glb");
     exportGlbToFilename(filename);
 }
 
