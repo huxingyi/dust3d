@@ -1,5 +1,6 @@
 #include <QImage>
 #include <QPainter>
+#include <QPainterPath>
 #include <cmath>
 #include <QUuid>
 #include <cmath>
