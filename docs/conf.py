@@ -21,7 +21,7 @@
 
 project = u'dust3d'
 copyright = u'2020, Jeremyi HU'
-author = u'Jeremyi HU'
+author = u'Jeremy HU'
 
 # The short X.Y version
 version = u''
