@@ -51,11 +51,21 @@ build: false
 
 test_script:
   - set PATH=%PATH%;%QTDIR%\bin
+  
   - if "%PLATFORM%" == "x64"
     qmake "BOOST_INCLUDEDIR=C:\Libraries\boost_1_66_0" "CGAL_DIR=%APPVEYOR_BUILD_FOLDER%\thirdparty\cgal\CGAL-4.13"
   - if "%PLATFORM%" == "x86"
     qmake "BOOST_INCLUDEDIR=C:\Libraries\boost_1_66_0" "CGAL_DIR=%APPVEYOR_BUILD_FOLDER%\CGAL-4.13"
   - nmake -f Makefile.Release
+  
+  - cd lib
+  - if "%PLATFORM%" == "x64"
+    qmake "BOOST_INCLUDEDIR=C:\Libraries\boost_1_66_0" "CGAL_DIR=%APPVEYOR_BUILD_FOLDER%\thirdparty\cgal\CGAL-4.13"
+  - if "%PLATFORM%" == "x86"
+    qmake "BOOST_INCLUDEDIR=C:\Libraries\boost_1_66_0" "CGAL_DIR=%APPVEYOR_BUILD_FOLDER%\CGAL-4.13"
+  - nmake -f Makefile.Release
+  
+  - cd %APPVEYOR_BUILD_FOLDER%
 
 after_test:
   # Check deps by Dependency Walker
@@ -73,6 +83,8 @@ after_test:
   - if "%TAG%" == "unstable"
     7z a %RELEASE_FILENAME% %APPVEYOR_BUILD_FOLDER%\release\dust3d.pdb
   - 7z a %RELEASE_FILENAME% %APPVEYOR_BUILD_FOLDER%\release\dust3d.exe
+  - 7z a %RELEASE_FILENAME% %APPVEYOR_BUILD_FOLDER%\lib\release\libdust3d.dll
+  - 7z a %RELEASE_FILENAME% %APPVEYOR_BUILD_FOLDER%\lib\release\libdust3d.lib
   - if "%TAG%" == "unstable"
     7z a %RELEASE_FILENAME% %APPVEYOR_BUILD_FOLDER%\thirdparty\instant-meshes\build\RelWithDebInfo\instant-meshes.pdb
   - 7z a %RELEASE_FILENAME% %APPVEYOR_BUILD_FOLDER%\thirdparty\instant-meshes\build\RelWithDebInfo\instant-meshes.dll

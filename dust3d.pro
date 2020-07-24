@@ -54,11 +54,11 @@ win32 {
 }
 
 win32 {
-	RC_FILE = dust3d.rc
+	RC_FILE = $${SOURCE_ROOT}dust3d.rc
 }
 
 macx {
-	ICON = dust3d.icns
+	ICON = $${SOURCE_ROOT}dust3d.icns
 
 	RESOURCE_FILES.files = $$ICON
 	RESOURCE_FILES.path = Contents/Resources
@@ -551,16 +551,16 @@ INCLUDEPATH += thirdparty/instant-meshes/instant-meshes-dust3d/ext/rply
 INCLUDEPATH += thirdparty/instant-meshes/instant-meshes-dust3d/ext/half
 unix {
 	SOURCES += thirdparty/instant-meshes/instant-meshes-api.cpp
-	LIBS += -Lthirdparty/instant-meshes/build -linstant-meshes
-	LIBS += -Lthirdparty/instant-meshes/build/ext_build/tbb -ltbb_static
+	LIBS += -L$${SOURCE_ROOT}thirdparty/instant-meshes/build -linstant-meshes
+	LIBS += -L$${SOURCE_ROOT}thirdparty/instant-meshes/build/ext_build/tbb -ltbb_static
 	unix:!macx {
 		LIBS += -ldl
 	}
 }
 win32 {
 	DEFINES += _USE_MATH_DEFINES
-	LIBS += -Lthirdparty/instant-meshes/build/RelWithDebInfo -linstant-meshes
-	LIBS += -Lthirdparty/instant-meshes/build/ext_build/tbb/RelWithDebInfo -ltbb
+	LIBS += -L$${SOURCE_ROOT}thirdparty/instant-meshes/build/RelWithDebInfo -linstant-meshes
+	LIBS += -L$${SOURCE_ROOT}thirdparty/instant-meshes/build/ext_build/tbb/RelWithDebInfo -ltbb
 }
 
 INCLUDEPATH += thirdparty/bullet3/src
