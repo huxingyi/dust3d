@@ -724,6 +724,8 @@ private:
     QUuid m_lastCheckedPart;
     std::set<QUuid> m_deferredRemoveNodeIds;
     std::set<QUuid> m_deferredRemoveEdgeIds;
+    QPoint m_lastScalePos;
+    bool m_scaleStarted;
 };
 
 class SkeletonGraphicsContainerWidget : public QWidget

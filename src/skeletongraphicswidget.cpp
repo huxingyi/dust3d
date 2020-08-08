@@ -910,6 +910,36 @@ bool SkeletonGraphicsWidget::mouseMove(QMouseEvent *event)
         }
     }
     
+    if (SkeletonDocumentEditMode::Select == m_document->editMode) {
+        if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
+            if(m_scaleStarted) {
+                QPoint currentPos = event->globalPos();
+                QPoint deltaPos = currentPos - m_lastScalePos;
+                m_lastScalePos = currentPos;
+                float delta = deltaPos.x() * 0.05;
+                if (!m_rangeSelectionSet.empty()) {
+                    if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
+                        scaleSelected(delta);
+                    } else {
+                        zoomSelected(delta);
+                    }
+                    emit groupOperationAdded();
+                    return true;
+                } else if (m_hoveredNodeItem) {
+                    float unifiedDelta = sceneRadiusToUnified(delta);
+                    emit scaleNodeByAddRadius(m_hoveredNodeItem->id(), unifiedDelta);
+                    emit groupOperationAdded();
+                    return true;
+                }
+            } else {
+                m_lastScalePos = event->globalPos();
+                m_scaleStarted = true;
+            }
+        } else {
+            m_scaleStarted = false;
+        }
+    }
+    
     if (SkeletonDocumentEditMode::Select == m_document->editMode ||
             SkeletonDocumentEditMode::Add == m_document->editMode) {
         
