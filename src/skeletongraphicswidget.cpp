@@ -53,7 +53,8 @@ SkeletonGraphicsWidget::SkeletonGraphicsWidget(const SkeletonDocument *document)
     m_mainProfileOnly(false),
     m_turnaroundOpacity(0.25),
     m_rotated(false),
-    m_backgroundImage(nullptr)
+    m_backgroundImage(nullptr),
+    m_scaleStarted(false)
 {
     setRenderHint(QPainter::Antialiasing, false);
     setBackgroundBrush(QBrush(QWidget::palette().color(QWidget::backgroundRole()), Qt::SolidPattern));
@@ -912,7 +913,7 @@ bool SkeletonGraphicsWidget::mouseMove(QMouseEvent *event)
     
     if (SkeletonDocumentEditMode::Select == m_document->editMode) {
         if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
-            if(m_scaleStarted) {
+            if (m_scaleStarted) {
                 QPoint currentPos = event->globalPos();
                 QPoint deltaPos = currentPos - m_lastScalePos;
                 m_lastScalePos = currentPos;
@@ -923,12 +924,10 @@ bool SkeletonGraphicsWidget::mouseMove(QMouseEvent *event)
                     } else {
                         zoomSelected(delta);
                     }
-                    emit groupOperationAdded();
                     return true;
                 } else if (m_hoveredNodeItem) {
                     float unifiedDelta = sceneRadiusToUnified(delta);
                     emit scaleNodeByAddRadius(m_hoveredNodeItem->id(), unifiedDelta);
-                    emit groupOperationAdded();
                     return true;
                 }
             } else {
@@ -936,7 +935,10 @@ bool SkeletonGraphicsWidget::mouseMove(QMouseEvent *event)
                 m_scaleStarted = true;
             }
         } else {
-            m_scaleStarted = false;
+            if (m_scaleStarted) {
+                m_scaleStarted = false;
+                emit groupOperationAdded();
+            }   
         }
     }
     
