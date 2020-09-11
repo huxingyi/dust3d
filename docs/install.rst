@@ -21,7 +21,7 @@ Download and Install Dust3D
 
     https://github.com/huxingyi/dust3d/releases/download/1.0.0-rc.6/dust3d-1.0.0-rc.6.dmg
 
-    If "The following disk images could't be opened" popped up, that means the downloaded file was broken, please retry.
+    If "The following disk images couldn't be opened" popped up, that means the downloaded file was broken, please retry.
 
 
     If "can't be opened because its integrity cannot be verified" popped up, please follow ni_kush's answer in this reddit post_.

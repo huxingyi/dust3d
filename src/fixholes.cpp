@@ -7,7 +7,7 @@
 #include "fixholes.h"
 #include "util.h"
 
-void fixHoles(const std::vector<QVector3D> &verticies, std::vector<std::vector<size_t>> &faces)
+void fixHoles(const std::vector<QVector3D> &vertices, std::vector<std::vector<size_t>> &faces)
 {
     std::map<std::pair<size_t, size_t>, std::unordered_set<size_t>> edgeToFaceSetMap;
 
@@ -139,7 +139,7 @@ void fixHoles(const std::vector<QVector3D> &verticies, std::vector<std::vector<s
                     }
                     ring.push_back(index);
                     visited.insert(index);
-                    //ringLength += (verticies[index] - verticies[prev]).length();
+                    //ringLength += (vertices[index] - vertices[prev]).length();
                     prev = index;
                 }
             }
@@ -167,9 +167,9 @@ void fixHoles(const std::vector<QVector3D> &verticies, std::vector<std::vector<s
     for (const auto &startVertex: startVertices)
         findRing(startVertex);
     
-    std::vector<simpleuv::Vertex> simpleuvVertices(verticies.size());
+    std::vector<simpleuv::Vertex> simpleuvVertices(vertices.size());
     for (size_t i = 0; i < simpleuvVertices.size(); ++i) {
-        const auto &src = verticies[i];
+        const auto &src = vertices[i];
         simpleuvVertices[i] = simpleuv::Vertex {{src.x(), src.y(), src.z()}};
     }
     std::vector<simpleuv::Face> newFaces;
@@ -177,7 +177,7 @@ void fixHoles(const std::vector<QVector3D> &verticies, std::vector<std::vector<s
         simpleuv::triangulate(simpleuvVertices, newFaces, holeRings[i].first);
     }
     
-    //saveAsObj("fixholes_input.obj", verticies, faces);
+    //saveAsObj("fixholes_input.obj", vertices, faces);
     //std::vector<std::vector<size_t>> addedFaces;
     //std::vector<std::vector<size_t>> removedFaces;
     std::vector<std::vector<size_t>> fixedFaces;
@@ -188,14 +188,14 @@ void fixHoles(const std::vector<QVector3D> &verticies, std::vector<std::vector<s
         }
         fixedFaces.push_back(faces[i]);
     }
-    //saveAsObj("fixholes_output_without_newfaces.obj", verticies, fixedFaces);
+    //saveAsObj("fixholes_output_without_newfaces.obj", vertices, fixedFaces);
     for (const auto &it: newFaces) {
         fixedFaces.push_back(std::vector<size_t> {it.indices[0], it.indices[1], it.indices[2]});
         //addedFaces.push_back(std::vector<size_t> {it.indices[0], it.indices[1], it.indices[2]});
     }
-    //saveAsObj("fixholes_output.obj", verticies, fixedFaces);
-    //saveAsObj("fixholes_added.obj", verticies, addedFaces);
-    //saveAsObj("fixholes_removed.obj", verticies, removedFaces);
+    //saveAsObj("fixholes_output.obj", vertices, fixedFaces);
+    //saveAsObj("fixholes_added.obj", vertices, addedFaces);
+    //saveAsObj("fixholes_removed.obj", vertices, removedFaces);
     
     faces = fixedFaces;
     

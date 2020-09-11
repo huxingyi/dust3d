@@ -271,7 +271,7 @@ void ModelMeshBinder::paint(ModelShaderProgram *program)
         if (m_renderEdgeVertexCount > 0) {
             QOpenGLVertexArrayObject::Binder vaoBinder(&m_vaoEdge);
 			QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
-            // glDrawArrays GL_LINES crashs on Mesa GL
+            // glDrawArrays GL_LINES crashes on Mesa GL
             if (program->isCoreProfile()) {
                 program->setUniformValue(program->textureEnabledLoc(), 0);
                 program->setUniformValue(program->normalMapEnabledLoc(), 0);

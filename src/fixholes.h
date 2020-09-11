@@ -3,6 +3,6 @@
 #include <QVector3D>
 #include <vector>
 
-void fixHoles(const std::vector<QVector3D> &verticies, std::vector<std::vector<size_t>> &faces);
+void fixHoles(const std::vector<QVector3D> &vertices, std::vector<std::vector<size_t>> &faces);
 
 #endif

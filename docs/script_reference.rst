@@ -2,7 +2,7 @@ Dust3D Script Reference
 ---------------------------------------
 Introduction
 ===============
-| The most important function of Dust3D is to generate mesh from the source document, which contains the position, radius and connectivity informations of all the nodes.
+| The most important function of Dust3D is to generate mesh from the source document, which contains the position, radius and connectivity information of all the nodes.
 |
 | Normally, the nodes are drawn by user on the canvas. The scripting system, which we introduce in this document, is to provide a way to procedurally generate nodes, and then the mesh can be generated from these nodes.
 |
