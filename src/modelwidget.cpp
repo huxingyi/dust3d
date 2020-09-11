@@ -9,7 +9,7 @@
 #include "util.h"
 #include "preferences.h"
 
-// Modifed from http://doc.qt.io/qt-5/qtopengl-hellogl2-glwidget-cpp.html
+// Modified from http://doc.qt.io/qt-5/qtopengl-hellogl2-glwidget-cpp.html
 
 bool ModelWidget::m_transparent = true;
 float ModelWidget::m_minZoomRatio = 5.0;

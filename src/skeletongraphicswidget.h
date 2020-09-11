@@ -676,7 +676,7 @@ private:
     void alignSelectedToLocal(bool alignToVerticalCenter, bool alignToHorizontalCenter);
     void rotateItems(const std::set<SkeletonGraphicsNodeItem *> &nodeItems, int degree, QVector2D center);
     void rotateAllSideProfile(int degree);
-private: //need initalize
+private: //need initialize
     const SkeletonDocument *m_document;
     QGraphicsPixmapItem *m_backgroundItem;
     bool m_turnaroundChanged;

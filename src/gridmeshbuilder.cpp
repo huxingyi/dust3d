@@ -316,7 +316,7 @@ void GridMeshBuilder::extrude()
     }
     
     bool pickSecondMesh = false;
-    // The outter faces should have longer edges
+    // The outer faces should have longer edges
     float sumOfFirstMeshEdgeLength = 0;
     float sumOfSecondMeshEdgeLength = 0;
     for (size_t i = 0; i < m_generatedFaces.size(); ++i) {

@@ -17,7 +17,7 @@ ModelOffscreenRender::ModelOffscreenRender(const QSurfaceFormat &format, QScreen
 ModelOffscreenRender::~ModelOffscreenRender()
 {
     // FIXME: If delete m_renderFbo inside toImage, 
-    // sometimes, the application will freeze, maybe there are dead locks inside the desctruction call
+    // sometimes, the application will freeze, maybe there are dead locks inside the destruction call
     // move it here can make sure it will be deleted on the main GUI thread to avoid dead locks
     delete m_renderFbo;
     

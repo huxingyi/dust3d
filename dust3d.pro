@@ -853,11 +853,11 @@ win32 {
 	}
 
 	isEmpty(BOOST_INCLUDEDIR) {
-		error("No BOOST_INCLUDEDIR define found in enviroment variables")
+		error("No BOOST_INCLUDEDIR define found in environment variables")
 	}
 
 	isEmpty(CGAL_DIR) {
-		error("No CGAL_DIR define found in enviroment variables")
+		error("No CGAL_DIR define found in environment variables")
 	}
 
 	GMP_LIBNAME = libgmp-10

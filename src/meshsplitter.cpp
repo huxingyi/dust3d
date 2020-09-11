@@ -66,7 +66,7 @@ bool MeshSplitter::split(const std::set<MeshSplitterTriangle> &input,
         }
     }
     
-    // Find one triangle wich is direct neighbor of one splitter
+    // Find one triangle which is direct neighbor of one splitter
     MeshSplitterTriangle startTriangle;
     bool foundStartTriangle = false;
     for (const auto &triangle: splitter) {
