@@ -22,7 +22,7 @@ install:
     call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars32.bat"
     
   - if not exist CGAL-5.1-Setup.exe
-      appveyor DownloadFile https://github.com/CGAL/cgal/releases/download/releases/CGAL-5.1/CGAL-5.1-Setup.exe -FileName CGAL-5.1-Setup.exe
+      appveyor DownloadFile https://github.com/CGAL/cgal/releases/download/v5.1/CGAL-5.1-Setup.exe -FileName CGAL-5.1-Setup.exe
   - if "%PLATFORM%" == "x86"
     CGAL-5.1-Setup.exe /S /D=%APPVEYOR_BUILD_FOLDER%\CGAL-5.1
   - cd %APPVEYOR_BUILD_FOLDER%
