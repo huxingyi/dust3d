@@ -105,14 +105,14 @@ DEFINES += "PROJECT_DEFINED_APP_REFERENCE_GUIDE_URL=\"\\\"$$REFERENCE_GUIDE_URL\
 DEFINES += "PROJECT_DEFINED_APP_UPDATES_CHECKER_URL=\"\\\"$$UPDATES_CHECKER_URL\\\"\""
 DEFINES += "PROJECT_DEFINED_APP_PLATFORM=\"\\\"$$PLATFORM\\\"\""
 
+CONFIG += c++14
+
 macx {
 	QMAKE_CXXFLAGS_RELEASE -= -O
 	QMAKE_CXXFLAGS_RELEASE -= -O1
 	QMAKE_CXXFLAGS_RELEASE -= -O2
 
 	QMAKE_CXXFLAGS_RELEASE += -O3
-
-	QMAKE_CXXFLAGS += -std=c++11
 }
 
 unix:!macx {
@@ -121,14 +121,14 @@ unix:!macx {
 	QMAKE_CXXFLAGS_RELEASE -= -O2
 
 	QMAKE_CXXFLAGS_RELEASE += -O3
-
-	QMAKE_CXXFLAGS += -std=c++11
 }
 
 win32 {
 	QMAKE_CXXFLAGS += /O2
 	QMAKE_CXXFLAGS += /bigobj
 }
+
+DEFINES += NOMINMAX
 
 include(thirdparty/QtAwesome/QtAwesome/QtAwesome.pri)
 include(thirdparty/qtsingleapplication/src/qtsingleapplication.pri)
