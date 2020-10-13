@@ -1195,8 +1195,8 @@ void PartTreeWidget::removeComponentDelayedTimer(const QUuid &componentId)
 {
     auto findTimer = m_delayedComponentTimers.find(componentId);
     if (findTimer != m_delayedComponentTimers.end()) {
-        m_delayedComponentTimers.erase(findTimer);
         findTimer->second->deleteLater();
+        m_delayedComponentTimers.erase(findTimer);
     }
 }
 

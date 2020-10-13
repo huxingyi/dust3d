@@ -736,6 +736,5 @@ void TextureGenerator::process()
 {
     generate();
 
-    this->moveToThread(QGuiApplication::instance()->thread());
     emit finished();
 }

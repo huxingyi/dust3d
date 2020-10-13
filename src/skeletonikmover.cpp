@@ -43,7 +43,6 @@ void SkeletonIkMover::process()
 {
     resolve();
     
-    this->moveToThread(QGuiApplication::instance()->thread());
     emit finished();
 }
 

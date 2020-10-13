@@ -115,7 +115,6 @@ void MousePicker::pick()
 void MousePicker::process()
 {
     pick();
-    this->moveToThread(QGuiApplication::instance()->thread());
     emit finished();
 }
 

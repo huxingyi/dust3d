@@ -862,10 +862,7 @@ win32 {
 
 	GMP_LIBNAME = libgmp-10
 	MPFR_LIBNAME = libmpfr-4
-	CGAL_LIBNAME = CGAL-vc140-mt-4.13
 	CGAL_INCLUDEDIR = $$CGAL_DIR\include
-	CGAL_BUILDINCLUDEDIR = $$CGAL_DIR\build\include
-	CGAL_LIBDIR = $$CGAL_DIR\build\lib\Release
 	GMP_INCLUDEDIR = $$CGAL_DIR\auxiliary\gmp\include
 	GMP_LIBDIR = $$CGAL_DIR\auxiliary\gmp\lib
 	MPFR_INCLUDEDIR = $$GMP_INCLUDEDIR
@@ -875,11 +872,8 @@ win32 {
 macx {
 	GMP_LIBNAME = gmp
 	MPFR_LIBNAME = mpfr
-	CGAL_LIBNAME = cgal
 	BOOST_INCLUDEDIR = /usr/local/opt/boost/include
 	CGAL_INCLUDEDIR = /usr/local/opt/cgal/include
-	CGAL_BUILDINCLUDEDIR = /usr/local/opt/cgal/include
-	CGAL_LIBDIR = /usr/local/opt/cgal/lib
 	GMP_INCLUDEDIR = /usr/local/opt/gmp/include
 	GMP_LIBDIR = /usr/local/opt/gmp/lib
 	MPFR_INCLUDEDIR = /usr/local/opt/mpfr/include
@@ -889,11 +883,8 @@ macx {
 unix:!macx {
 	GMP_LIBNAME = gmp
 	MPFR_LIBNAME = mpfr
-	CGAL_LIBNAME = CGAL
 	BOOST_INCLUDEDIR = /usr/local/include
 	CGAL_INCLUDEDIR = /usr/local/include
-	CGAL_BUILDINCLUDEDIR = /usr/local/include
-	CGAL_LIBDIR = /usr/local/lib
 	GMP_INCLUDEDIR = /usr/local/include
 	GMP_LIBDIR = /usr/local/lib
 	MPFR_INCLUDEDIR = /usr/local/include
@@ -909,8 +900,6 @@ INCLUDEPATH += $$MPFR_INCLUDEDIR
 LIBS += -L$$MPFR_LIBDIR -l$$MPFR_LIBNAME
 
 INCLUDEPATH += $$CGAL_INCLUDEDIR
-INCLUDEPATH += $$CGAL_BUILDINCLUDEDIR
-LIBS += -L$$CGAL_LIBDIR -l$$CGAL_LIBNAME
 
 target.path = ./
 INSTALLS += target

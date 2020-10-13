@@ -144,6 +144,5 @@ void UpdatesChecker::downloadFinished(QNetworkReply *reply)
         }
     }
     reply->deleteLater();
-    this->moveToThread(QGuiApplication::instance()->thread());
     emit finished();
 }

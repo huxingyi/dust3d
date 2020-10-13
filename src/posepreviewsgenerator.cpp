@@ -68,6 +68,5 @@ void PosePreviewsGenerator::process()
     
     qDebug() << "The pose previews generation took" << countTimeConsumed.elapsed() << "milliseconds";
     
-    this->moveToThread(QGuiApplication::instance()->thread());
     emit finished();
 }

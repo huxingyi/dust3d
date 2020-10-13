@@ -1144,6 +1144,5 @@ void RigGenerator::process()
     
     qDebug() << "The rig generation took" << countTimeConsumed.elapsed() << "milliseconds";
     
-    this->moveToThread(QGuiApplication::instance()->thread());
     emit finished();
 }

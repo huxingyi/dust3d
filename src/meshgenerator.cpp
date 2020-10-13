@@ -1438,7 +1438,6 @@ void MeshGenerator::process()
 {
     generate();
     
-    this->moveToThread(QGuiApplication::instance()->thread());
     emit finished();
 }
 

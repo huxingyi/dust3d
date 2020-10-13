@@ -42,6 +42,5 @@ void PoseMeshCreator::process()
 {
     createMesh();
     
-    this->moveToThread(QGuiApplication::instance()->thread());
     emit finished();
 }

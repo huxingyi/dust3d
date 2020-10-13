@@ -121,6 +121,5 @@ void MaterialPreviewsGenerator::process()
 
     qDebug() << "The material previews generation took" << countTimeConsumed.elapsed() << "milliseconds";
 
-    this->moveToThread(QGuiApplication::instance()->thread());
     emit finished();
 }

@@ -25,7 +25,6 @@ ContourToPartConverter::ContourToPartConverter(const QPolygonF &mainProfile,
 void ContourToPartConverter::process()
 {
     convert();
-    this->moveToThread(QGuiApplication::instance()->thread());
     emit finished();
 }
 

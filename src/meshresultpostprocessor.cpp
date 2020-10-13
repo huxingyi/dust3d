@@ -48,6 +48,5 @@ void MeshResultPostProcessor::process()
 {
     poseProcess();
 
-    this->moveToThread(QGuiApplication::instance()->thread());
     emit finished();
 }

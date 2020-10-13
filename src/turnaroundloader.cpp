@@ -34,6 +34,5 @@ void TurnaroundLoader::process()
     } else {
         m_resultImage = new QImage(m_inputImage.scaled(m_viewSize, Qt::KeepAspectRatio));
     }
-    this->moveToThread(QGuiApplication::instance()->thread());
     emit finished();
 }

@@ -36,7 +36,6 @@ void DocumentSaver::process()
         m_turnaroundPngByteArray,
         m_script,
         m_variables);
-    this->moveToThread(QGuiApplication::instance()->thread());
     emit finished();
 }
 
