@@ -13,28 +13,18 @@ environment:
       sysdirname: system32
 
 cache:
-  CGAL-4.13-Setup.exe -> appveyor.yml
+  CGAL-5.1-Setup.exe -> appveyor.yml
 
 install:
   - if "%PLATFORM%" == "x64"
     call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars64.bat"
   - if "%PLATFORM%" == "x86"
     call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvars32.bat"
-  - if not exist CGAL-4.13-Setup.exe
-      appveyor DownloadFile https://github.com/CGAL/cgal/releases/download/releases/CGAL-4.13/CGAL-4.13-Setup.exe -FileName CGAL-4.13-Setup.exe
-  - if "%PLATFORM%" == "x64"
-    cd thirdparty/cgal/CGAL-4.13
+    
+  - if not exist CGAL-5.1-Setup.exe
+      appveyor DownloadFile https://github.com/CGAL/cgal/releases/download/releases/CGAL-5.1/CGAL-5.1-Setup.exe -FileName CGAL-5.1-Setup.exe
   - if "%PLATFORM%" == "x86"
-    CGAL-4.13-Setup.exe /S /D=%APPVEYOR_BUILD_FOLDER%\CGAL-4.13
-  - if "%PLATFORM%" == "x86"
-    cd CGAL-4.13
-  - mkdir build
-  - cd build
-  - if "%PLATFORM%" == "x64"
-    cmake -G "Visual Studio 15 2017" -A %PLATFORM% ../ -DBOOST_INCLUDEDIR=C:\Libraries\boost_1_66_0
-  - if "%PLATFORM%" == "x86"
-    cmake -G "Visual Studio 15 2017" ../ -DBOOST_INCLUDEDIR=C:\Libraries\boost_1_66_0
-  - msbuild /p:Configuration=Release ALL_BUILD.vcxproj
+    CGAL-5.1-Setup.exe /S /D=%APPVEYOR_BUILD_FOLDER%\CGAL-5.1
   - cd %APPVEYOR_BUILD_FOLDER%
 
   - cd thirdparty/instant-meshes
@@ -53,16 +43,16 @@ test_script:
   - set PATH=%PATH%;%QTDIR%\bin
   
   - if "%PLATFORM%" == "x64"
-    qmake "BOOST_INCLUDEDIR=C:\Libraries\boost_1_66_0" "CGAL_DIR=%APPVEYOR_BUILD_FOLDER%\thirdparty\cgal\CGAL-4.13"
+    qmake "BOOST_INCLUDEDIR=C:\Libraries\boost_1_66_0" "CGAL_DIR=%APPVEYOR_BUILD_FOLDER%\thirdparty\cgal\CGAL-5.1"
   - if "%PLATFORM%" == "x86"
-    qmake "BOOST_INCLUDEDIR=C:\Libraries\boost_1_66_0" "CGAL_DIR=%APPVEYOR_BUILD_FOLDER%\CGAL-4.13"
+    qmake "BOOST_INCLUDEDIR=C:\Libraries\boost_1_66_0" "CGAL_DIR=%APPVEYOR_BUILD_FOLDER%\CGAL-5.1"
   - nmake -f Makefile.Release
   
   - cd lib
   - if "%PLATFORM%" == "x64"
-    qmake "BOOST_INCLUDEDIR=C:\Libraries\boost_1_66_0" "CGAL_DIR=%APPVEYOR_BUILD_FOLDER%\thirdparty\cgal\CGAL-4.13"
+    qmake "BOOST_INCLUDEDIR=C:\Libraries\boost_1_66_0" "CGAL_DIR=%APPVEYOR_BUILD_FOLDER%\thirdparty\cgal\CGAL-5.1"
   - if "%PLATFORM%" == "x86"
-    qmake "BOOST_INCLUDEDIR=C:\Libraries\boost_1_66_0" "CGAL_DIR=%APPVEYOR_BUILD_FOLDER%\CGAL-4.13"
+    qmake "BOOST_INCLUDEDIR=C:\Libraries\boost_1_66_0" "CGAL_DIR=%APPVEYOR_BUILD_FOLDER%\CGAL-5.1"
   - nmake -f Makefile.Release
   
   - cd %APPVEYOR_BUILD_FOLDER%
@@ -92,17 +82,13 @@ after_test:
     7z a %RELEASE_FILENAME% %APPVEYOR_BUILD_FOLDER%\thirdparty\instant-meshes\build\ext_build\tbb\RelWithDebInfo\tbb.pdb
   - 7z a %RELEASE_FILENAME% %APPVEYOR_BUILD_FOLDER%\thirdparty\instant-meshes\build\ext_build\tbb\RelWithDebInfo\tbb.dll
   - if "%PLATFORM%" == "x64"
-    7z a %RELEASE_FILENAME% %APPVEYOR_BUILD_FOLDER%\thirdparty\cgal\CGAL-4.13\build\bin\Release\CGAL-vc140-mt-4.13.dll
+    7z a %RELEASE_FILENAME% %APPVEYOR_BUILD_FOLDER%\thirdparty\cgal\CGAL-5.1\auxiliary\gmp\lib\libgmp-10.dll
   - if "%PLATFORM%" == "x86"
-    7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-4.13\build\bin\Release\CGAL-vc140-mt-4.13.dll
+    7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-5.1\auxiliary\gmp\lib\libgmp-10.dll
   - if "%PLATFORM%" == "x64"
-    7z a %RELEASE_FILENAME% %APPVEYOR_BUILD_FOLDER%\thirdparty\cgal\CGAL-4.13\auxiliary\gmp\lib\libgmp-10.dll
+    7z a %RELEASE_FILENAME% %APPVEYOR_BUILD_FOLDER%\thirdparty\cgal\CGAL-5.1\auxiliary\gmp\lib\libmpfr-4.dll
   - if "%PLATFORM%" == "x86"
-    7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-4.13\auxiliary\gmp\lib\libgmp-10.dll
-  - if "%PLATFORM%" == "x64"
-    7z a %RELEASE_FILENAME% %APPVEYOR_BUILD_FOLDER%\thirdparty\cgal\CGAL-4.13\auxiliary\gmp\lib\libmpfr-4.dll
-  - if "%PLATFORM%" == "x86"
-    7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-4.13\auxiliary\gmp\lib\libmpfr-4.dll
+    7z a dust3d-%TAG%-%PLATFORM%.zip %APPVEYOR_BUILD_FOLDER%\CGAL-5.1\auxiliary\gmp\lib\libmpfr-4.dll
   - if "%PLATFORM%" == "x64"
     7z a %RELEASE_FILENAME% C:\OpenSSL-v111-Win64\bin\libcrypto-1_1-x64.dll
   - if "%PLATFORM%" == "x86"
