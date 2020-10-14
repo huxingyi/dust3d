@@ -74,10 +74,6 @@ Contributing
 ---------------
 Any contributions are welcome including bugfixes, fixing typos, adding tests, proposing new features, and letting more people know about Dust3D.
 
-If you write or post about Dust3D online, please add your name in CONTRIBUTORS.
-
-If you've submitted any PRs with code changes, including the example code listed in the docs folder, please don’t forget to add your name to AUTHORS in your pull request.
-
 License
 -----------
 Dust3D's source code is available under the MIT license, however, some third party libraries we use are not MIT license compatible, such as CGAL. You can use the released Dust3D software freely no matter for personal or for commercial purpose, and you can integrate the source code of Dust3D to your project as MIT licensed, but with the third party libraries on the specified license respectively.
