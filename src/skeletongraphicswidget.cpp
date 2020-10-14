@@ -1516,18 +1516,18 @@ bool SkeletonGraphicsWidget::mousePress(QMouseEvent *event)
         if (SkeletonDocumentEditMode::ZoomIn == m_document->editMode) {
             ViewportAnchor lastAnchor = transformationAnchor();
             setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
-            scale(1.5, 1.5);
+            scale(1.25, 1.25);
             setTransformationAnchor(lastAnchor);
             return true;
         } else if (SkeletonDocumentEditMode::ZoomOut == m_document->editMode) {
             ViewportAnchor lastAnchor = transformationAnchor();
             setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
-            scale(0.5, 0.5);
+            scale(0.8, 0.8);
             setTransformationAnchor(lastAnchor);
-            if ((!verticalScrollBar() || !verticalScrollBar()->isVisible()) &&
-                    (!horizontalScrollBar() || !horizontalScrollBar()->isVisible())) {
-                setTransform(QTransform());
-            }
+            //if ((!verticalScrollBar() || !verticalScrollBar()->isVisible()) &&
+            //        (!horizontalScrollBar() || !horizontalScrollBar()->isVisible())) {
+            //    setTransform(QTransform());
+            //}
             return true;
         } else if (SkeletonDocumentEditMode::Drag == m_document->editMode) {
             if (!m_dragStarted) {
