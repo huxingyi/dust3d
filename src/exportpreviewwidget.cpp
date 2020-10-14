@@ -147,7 +147,7 @@ void ExportPreviewWidget::initAwesomeButton(QPushButton *button)
 {
     button->setFont(Theme::awesome()->font(Theme::toolIconFontSize));
     button->setFixedSize(Theme::toolIconSize, Theme::toolIconSize);
-    button->setStyleSheet("QPushButton {color: #f7d9c8}");
+    button->setStyleSheet("QPushButton {color: " + Theme::white.name() + "}");
     button->setFocusPolicy(Qt::NoFocus);
 }
 

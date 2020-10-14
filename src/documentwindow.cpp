@@ -1445,7 +1445,7 @@ void DocumentWindow::initLockButton(QPushButton *button)
 
     button->setFont(font);
     button->setFixedSize(Theme::toolIconSize, Theme::toolIconSize);
-    button->setStyleSheet("QPushButton {color: #f7d9c8}");
+    button->setStyleSheet("QPushButton {color: " + Theme::white.name() + "}");
     button->setFocusPolicy(Qt::NoFocus);
 }
 

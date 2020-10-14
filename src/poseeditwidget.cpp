@@ -305,16 +305,16 @@ void PoseEditWidget::initSideButton(QPushButton *button)
 
     button->setFont(font);
     button->setFixedSize(Theme::toolIconSize, Theme::toolIconSize);
-    button->setStyleSheet("QPushButton {color: #f7d9c8}");
+    button->setStyleSheet("QPushButton {color: " + Theme::white.name() + "}");
     button->setFocusPolicy(Qt::NoFocus);
 }
 
 void PoseEditWidget::updateSideButtonState(QPushButton *button, bool visible)
 {
     if (visible)
-        button->setStyleSheet("QPushButton {color: #f7d9c8}");
+        button->setStyleSheet("QPushButton {color: " + Theme::white.name() + "}");
     else
-        button->setStyleSheet("QPushButton {color: #252525}");
+        button->setStyleSheet("QPushButton {color: " + Theme::black.name() + "}");
 }
 
 void PoseEditWidget::showPoseSettingPopup(const QPoint &pos)
