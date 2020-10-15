@@ -26,6 +26,7 @@
 #include "fileforever.h"
 #include "snapshotxml.h"
 #include "fixholes.h"
+#include "modeloffscreenrender.h"
 
 MeshGenerator::MeshGenerator(Snapshot *snapshot) :
     m_snapshot(snapshot)

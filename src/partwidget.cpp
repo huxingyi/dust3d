@@ -83,11 +83,14 @@ PartWidget::PartWidget(const Document *document, QUuid partId) :
     m_cutRotationButton->setSizePolicy(retainSizePolicy);
     initButton(m_cutRotationButton);
     
-    m_previewWidget = new ModelWidget;
-    m_previewWidget->setAttribute(Qt::WA_TransparentForMouseEvents);
-    m_previewWidget->enableMove(false);
-    m_previewWidget->enableZoom(false);
-    m_previewWidget->setFixedSize(Theme::partPreviewImageSize, Theme::partPreviewImageSize);
+    m_previewLabel = new QLabel;
+    m_previewLabel->setFixedSize(Theme::partPreviewImageSize, Theme::partPreviewImageSize);
+    
+    //m_previewWidget = new ModelWidget;
+    //m_previewWidget->setAttribute(Qt::WA_TransparentForMouseEvents);
+    //m_previewWidget->enableMove(false);
+    //m_previewWidget->enableZoom(false);
+    //m_previewWidget->setFixedSize(Theme::partPreviewImageSize, Theme::partPreviewImageSize);
     
     QWidget *hrLightWidget = new QWidget;
     hrLightWidget->setFixedHeight(1);
@@ -126,7 +129,8 @@ PartWidget::PartWidget(const Document *document, QUuid partId) :
     previewAndToolsLayout->setSpacing(0);
     previewAndToolsLayout->setContentsMargins(0, 0, 0, 0);
     //previewAndToolsLayout->addWidget(m_visibleButton);
-    previewAndToolsLayout->addWidget(m_previewWidget);
+    //previewAndToolsLayout->addWidget(m_previewWidget);
+    previewAndToolsLayout->addWidget(m_previewLabel);
     previewAndToolsLayout->addLayout(toolsLayout);
     previewAndToolsLayout->setStretch(0, 0);
     previewAndToolsLayout->setStretch(1, 0);
@@ -300,7 +304,8 @@ PartWidget::PartWidget(const Document *document, QUuid partId) :
 
 ModelWidget *PartWidget::previewWidget()
 {
-    return m_previewWidget;
+    //return m_previewWidget;
+    return nullptr;
 }
 
 QSize PartWidget::preferredSize()
@@ -826,22 +831,7 @@ void PartWidget::updatePreview()
         qDebug() << "Part not found:" << m_partId;
         return;
     }
-    //m_previewLabel->setPixmap(QPixmap::fromImage(part->preview));
-    Model *previewMesh = part->takePreviewMesh();
-    m_previewWidget->updateMesh(previewMesh);
-    if (PartTarget::CutFace == part->target) {
-        if (0 != m_previewWidget->xRot()) {
-            m_previewWidget->setXRotation(0);
-            m_previewWidget->setYRotation(0);
-            m_previewWidget->setZRotation(0);
-        }
-    } else {
-        if (0 == m_previewWidget->xRot()) {
-            m_previewWidget->setXRotation(ModelWidget::m_defaultXRotation);
-            m_previewWidget->setYRotation(ModelWidget::m_defaultYRotation);
-            m_previewWidget->setZRotation(ModelWidget::m_defaultZRotation);
-        }
-    }
+    m_previewLabel->setPixmap(part->previewPixmap);
 }
 
 void PartWidget::updateLockButton()

@@ -1937,7 +1937,7 @@ void Document::meshReady()
         if (part != partMap.end()) {
             Model *resultPartPreviewMesh = m_meshGenerator->takePartPreviewMesh(partId);
             part->second.updatePreviewMesh(resultPartPreviewMesh);
-            emit partPreviewChanged(partId);
+            //emit partPreviewChanged(partId);
         }
     }
     

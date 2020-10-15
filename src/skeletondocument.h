@@ -183,6 +183,8 @@ public:
     bool countershaded;
     bool gridded;
     QUuid fillMeshLinkedId;
+    bool isPreviewMeshObsolete;
+    QPixmap previewPixmap;
     SkeletonPart(const QUuid &withId=QUuid()) :
         visible(true),
         locked(false),
@@ -205,7 +207,8 @@ public:
         deformMapScale(1.0),
         hollowThickness(0.0),
         countershaded(false),
-        gridded(false)
+        gridded(false),
+        isPreviewMeshObsolete(false)
     {
         id = withId.isNull() ? QUuid::createUuid() : withId;
     }
@@ -384,6 +387,7 @@ public:
     {
         delete m_previewMesh;
         m_previewMesh = previewMesh;
+        isPreviewMeshObsolete = true;
     }
     Model *takePreviewMesh() const
     {

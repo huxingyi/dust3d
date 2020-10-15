@@ -20,8 +20,10 @@
 #include "graphicscontainerwidget.h"
 #include "normalanddepthmapsgenerator.h"
 #include "autosaver.h"
+#include "partpreviewimagesgenerator.h"
 
 class SkeletonGraphicsWidget;
+class PartTreeWidget;
 
 class DocumentWindow : public QMainWindow
 {
@@ -96,6 +98,8 @@ public slots:
     void autoRecover();
     void import();
     void importPath(const QString &filename);
+    void generatePartPreviewImages();
+    void partPreviewImagesReady();
 private:
     void initLockButton(QPushButton *button);
     void setCurrentFilename(const QString &filename);
@@ -222,6 +226,11 @@ private:
     bool m_isNormalAndDepthMapsObsolete = false;
     
     AutoSaver *m_autoSaver = nullptr;
+    
+    PartPreviewImagesGenerator *m_partPreviewImagesGenerator = nullptr;
+    bool m_isPartPreviewImagesObsolete = false;
+    
+    PartTreeWidget *m_partTreeWidget = nullptr;
 public:
     static int m_autoRecovered;
 };

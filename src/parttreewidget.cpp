@@ -437,15 +437,10 @@ void PartTreeWidget::showContextMenu(const QPoint &pos, bool shorted)
         }
     }
     if (nullptr != part && nullptr != partWidget) {
-        ModelWidget *previewWidget = new ModelWidget;
-        previewWidget->enableMove(false);
-        previewWidget->enableZoom(false);
-        previewWidget->setFixedSize(Theme::partPreviewImageSize, Theme::partPreviewImageSize);
-        previewWidget->setXRotation(partWidget->previewWidget()->xRot());
-        previewWidget->setYRotation(partWidget->previewWidget()->yRot());
-        previewWidget->setZRotation(partWidget->previewWidget()->zRot());
-        previewWidget->updateMesh(part->takePreviewMesh());
-        layout->addWidget(previewWidget);
+        QLabel *previewLabel = new QLabel;
+        previewLabel->setFixedSize(Theme::partPreviewImageSize, Theme::partPreviewImageSize);
+        previewLabel->setPixmap(part->previewPixmap);
+        layout->addWidget(previewLabel);
     } else {
         QLabel *previewLabel = new QLabel;
         previewLabel->setFixedHeight(Theme::partPreviewImageSize);

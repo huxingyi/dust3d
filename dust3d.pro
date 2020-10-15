@@ -533,6 +533,9 @@ HEADERS += src/ddsfile.h
 SOURCES += src/fileforever.cpp
 HEADERS += src/fileforever.h
 
+SOURCES += src/partpreviewimagesgenerator.cpp
+HEADERS += src/partpreviewimagesgenerator.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h

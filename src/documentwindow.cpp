@@ -267,6 +267,7 @@ DocumentWindow::DocumentWindow() :
     });
     connect(m_document, &Document::resultMeshChanged, this, [=]() {
         updateRegenerateIconAndTips(regenerateButton, m_document->isMeshGenerationSucceed());
+        generatePartPreviewImages();
     });
     connect(m_document, &Document::postProcessing, this, [=]() {
         regenerateButton->showSpinner(true);
@@ -393,14 +394,14 @@ DocumentWindow::DocumentWindow() :
 
     QDockWidget *partTreeDocker = new QDockWidget(tr("Parts"), this);
     partTreeDocker->setAllowedAreas(Qt::RightDockWidgetArea);
-    PartTreeWidget *partTreeWidget = new PartTreeWidget(m_document, partTreeDocker);
-    partTreeDocker->setWidget(partTreeWidget);
+    m_partTreeWidget = new PartTreeWidget(m_document, partTreeDocker);
+    partTreeDocker->setWidget(m_partTreeWidget);
     addDockWidget(Qt::RightDockWidgetArea, partTreeDocker);
-    connect(partTreeDocker, &QDockWidget::topLevelChanged, [=](bool topLevel) {
-        Q_UNUSED(topLevel);
-        for (const auto &part: m_document->partMap)
-            partTreeWidget->partPreviewChanged(part.first);
-    });
+    //connect(partTreeDocker, &QDockWidget::topLevelChanged, [=](bool topLevel) {
+    //    Q_UNUSED(topLevel);
+    //    for (const auto &part: m_document->partMap)
+    //        m_partTreeWidget->partPreviewChanged(part.first);
+    //});
     
     QDockWidget *materialDocker = new QDockWidget(tr("Materials"), this);
     materialDocker->setAllowedAreas(Qt::RightDockWidgetArea);
@@ -1078,88 +1079,88 @@ DocumentWindow::DocumentWindow() :
     connect(m_document, &Document::checkNode, graphicsWidget, &SkeletonGraphicsWidget::addSelectNode);
     connect(m_document, &Document::checkEdge, graphicsWidget, &SkeletonGraphicsWidget::addSelectEdge);
     
-    connect(partTreeWidget, &PartTreeWidget::currentComponentChanged, m_document, &Document::setCurrentCanvasComponentId);
-    connect(partTreeWidget, &PartTreeWidget::moveComponentUp, m_document, &Document::moveComponentUp);
-    connect(partTreeWidget, &PartTreeWidget::moveComponentDown, m_document, &Document::moveComponentDown);
-    connect(partTreeWidget, &PartTreeWidget::moveComponentToTop, m_document, &Document::moveComponentToTop);
-    connect(partTreeWidget, &PartTreeWidget::moveComponentToBottom, m_document, &Document::moveComponentToBottom);
-    connect(partTreeWidget, &PartTreeWidget::checkPart, m_document, &Document::checkPart);
-    connect(partTreeWidget, &PartTreeWidget::createNewComponentAndMoveThisIn, m_document, &Document::createNewComponentAndMoveThisIn);
-    connect(partTreeWidget, &PartTreeWidget::createNewChildComponent, m_document, &Document::createNewChildComponent);
-    connect(partTreeWidget, &PartTreeWidget::renameComponent, m_document, &Document::renameComponent);
-    connect(partTreeWidget, &PartTreeWidget::setComponentExpandState, m_document, &Document::setComponentExpandState);
-    connect(partTreeWidget, &PartTreeWidget::setComponentSmoothAll, m_document, &Document::setComponentSmoothAll);
-    connect(partTreeWidget, &PartTreeWidget::setComponentSmoothSeam, m_document, &Document::setComponentSmoothSeam);
-    connect(partTreeWidget, &PartTreeWidget::setComponentPolyCount, m_document, &Document::setComponentPolyCount);
-    connect(partTreeWidget, &PartTreeWidget::setComponentLayer, m_document, &Document::setComponentLayer);
-    connect(partTreeWidget, &PartTreeWidget::moveComponent, m_document, &Document::moveComponent);
-    connect(partTreeWidget, &PartTreeWidget::removeComponent, m_document, &Document::removeComponent);
-    connect(partTreeWidget, &PartTreeWidget::hideOtherComponents, m_document, &Document::hideOtherComponents);
-    connect(partTreeWidget, &PartTreeWidget::lockOtherComponents, m_document, &Document::lockOtherComponents);
-    connect(partTreeWidget, &PartTreeWidget::hideAllComponents, m_document, &Document::hideAllComponents);
-    connect(partTreeWidget, &PartTreeWidget::showAllComponents, m_document, &Document::showAllComponents);
-    connect(partTreeWidget, &PartTreeWidget::collapseAllComponents, m_document, &Document::collapseAllComponents);
-    connect(partTreeWidget, &PartTreeWidget::expandAllComponents, m_document, &Document::expandAllComponents);
-    connect(partTreeWidget, &PartTreeWidget::lockAllComponents, m_document, &Document::lockAllComponents);
-    connect(partTreeWidget, &PartTreeWidget::unlockAllComponents, m_document, &Document::unlockAllComponents);
-    connect(partTreeWidget, &PartTreeWidget::setPartLockState, m_document, &Document::setPartLockState);
-    connect(partTreeWidget, &PartTreeWidget::setPartVisibleState, m_document, &Document::setPartVisibleState);
-    connect(partTreeWidget, &PartTreeWidget::setPartColorState, m_document, &Document::setPartColorState);
-    connect(partTreeWidget, &PartTreeWidget::setComponentCombineMode, m_document, &Document::setComponentCombineMode);
-    connect(partTreeWidget, &PartTreeWidget::setComponentClothStiffness, m_document, &Document::setComponentClothStiffness);
-    connect(partTreeWidget, &PartTreeWidget::setComponentClothIteration, m_document, &Document::setComponentClothIteration);
-    connect(partTreeWidget, &PartTreeWidget::setComponentClothForce, m_document, &Document::setComponentClothForce);
-    connect(partTreeWidget, &PartTreeWidget::setComponentClothOffset, m_document, &Document::setComponentClothOffset);
-    connect(partTreeWidget, &PartTreeWidget::setPartTarget, m_document, &Document::setPartTarget);
-    connect(partTreeWidget, &PartTreeWidget::setPartBase, m_document, &Document::setPartBase);
-    connect(partTreeWidget, &PartTreeWidget::hideDescendantComponents, m_document, &Document::hideDescendantComponents);
-    connect(partTreeWidget, &PartTreeWidget::showDescendantComponents, m_document, &Document::showDescendantComponents);
-    connect(partTreeWidget, &PartTreeWidget::lockDescendantComponents, m_document, &Document::lockDescendantComponents);
-    connect(partTreeWidget, &PartTreeWidget::unlockDescendantComponents, m_document, &Document::unlockDescendantComponents);
-    connect(partTreeWidget, &PartTreeWidget::groupOperationAdded, m_document, &Document::saveSnapshot);
+    connect(m_partTreeWidget, &PartTreeWidget::currentComponentChanged, m_document, &Document::setCurrentCanvasComponentId);
+    connect(m_partTreeWidget, &PartTreeWidget::moveComponentUp, m_document, &Document::moveComponentUp);
+    connect(m_partTreeWidget, &PartTreeWidget::moveComponentDown, m_document, &Document::moveComponentDown);
+    connect(m_partTreeWidget, &PartTreeWidget::moveComponentToTop, m_document, &Document::moveComponentToTop);
+    connect(m_partTreeWidget, &PartTreeWidget::moveComponentToBottom, m_document, &Document::moveComponentToBottom);
+    connect(m_partTreeWidget, &PartTreeWidget::checkPart, m_document, &Document::checkPart);
+    connect(m_partTreeWidget, &PartTreeWidget::createNewComponentAndMoveThisIn, m_document, &Document::createNewComponentAndMoveThisIn);
+    connect(m_partTreeWidget, &PartTreeWidget::createNewChildComponent, m_document, &Document::createNewChildComponent);
+    connect(m_partTreeWidget, &PartTreeWidget::renameComponent, m_document, &Document::renameComponent);
+    connect(m_partTreeWidget, &PartTreeWidget::setComponentExpandState, m_document, &Document::setComponentExpandState);
+    connect(m_partTreeWidget, &PartTreeWidget::setComponentSmoothAll, m_document, &Document::setComponentSmoothAll);
+    connect(m_partTreeWidget, &PartTreeWidget::setComponentSmoothSeam, m_document, &Document::setComponentSmoothSeam);
+    connect(m_partTreeWidget, &PartTreeWidget::setComponentPolyCount, m_document, &Document::setComponentPolyCount);
+    connect(m_partTreeWidget, &PartTreeWidget::setComponentLayer, m_document, &Document::setComponentLayer);
+    connect(m_partTreeWidget, &PartTreeWidget::moveComponent, m_document, &Document::moveComponent);
+    connect(m_partTreeWidget, &PartTreeWidget::removeComponent, m_document, &Document::removeComponent);
+    connect(m_partTreeWidget, &PartTreeWidget::hideOtherComponents, m_document, &Document::hideOtherComponents);
+    connect(m_partTreeWidget, &PartTreeWidget::lockOtherComponents, m_document, &Document::lockOtherComponents);
+    connect(m_partTreeWidget, &PartTreeWidget::hideAllComponents, m_document, &Document::hideAllComponents);
+    connect(m_partTreeWidget, &PartTreeWidget::showAllComponents, m_document, &Document::showAllComponents);
+    connect(m_partTreeWidget, &PartTreeWidget::collapseAllComponents, m_document, &Document::collapseAllComponents);
+    connect(m_partTreeWidget, &PartTreeWidget::expandAllComponents, m_document, &Document::expandAllComponents);
+    connect(m_partTreeWidget, &PartTreeWidget::lockAllComponents, m_document, &Document::lockAllComponents);
+    connect(m_partTreeWidget, &PartTreeWidget::unlockAllComponents, m_document, &Document::unlockAllComponents);
+    connect(m_partTreeWidget, &PartTreeWidget::setPartLockState, m_document, &Document::setPartLockState);
+    connect(m_partTreeWidget, &PartTreeWidget::setPartVisibleState, m_document, &Document::setPartVisibleState);
+    connect(m_partTreeWidget, &PartTreeWidget::setPartColorState, m_document, &Document::setPartColorState);
+    connect(m_partTreeWidget, &PartTreeWidget::setComponentCombineMode, m_document, &Document::setComponentCombineMode);
+    connect(m_partTreeWidget, &PartTreeWidget::setComponentClothStiffness, m_document, &Document::setComponentClothStiffness);
+    connect(m_partTreeWidget, &PartTreeWidget::setComponentClothIteration, m_document, &Document::setComponentClothIteration);
+    connect(m_partTreeWidget, &PartTreeWidget::setComponentClothForce, m_document, &Document::setComponentClothForce);
+    connect(m_partTreeWidget, &PartTreeWidget::setComponentClothOffset, m_document, &Document::setComponentClothOffset);
+    connect(m_partTreeWidget, &PartTreeWidget::setPartTarget, m_document, &Document::setPartTarget);
+    connect(m_partTreeWidget, &PartTreeWidget::setPartBase, m_document, &Document::setPartBase);
+    connect(m_partTreeWidget, &PartTreeWidget::hideDescendantComponents, m_document, &Document::hideDescendantComponents);
+    connect(m_partTreeWidget, &PartTreeWidget::showDescendantComponents, m_document, &Document::showDescendantComponents);
+    connect(m_partTreeWidget, &PartTreeWidget::lockDescendantComponents, m_document, &Document::lockDescendantComponents);
+    connect(m_partTreeWidget, &PartTreeWidget::unlockDescendantComponents, m_document, &Document::unlockDescendantComponents);
+    connect(m_partTreeWidget, &PartTreeWidget::groupOperationAdded, m_document, &Document::saveSnapshot);
     
-    connect(partTreeWidget, &PartTreeWidget::addPartToSelection, graphicsWidget, &SkeletonGraphicsWidget::addPartToSelection);
+    connect(m_partTreeWidget, &PartTreeWidget::addPartToSelection, graphicsWidget, &SkeletonGraphicsWidget::addPartToSelection);
     
-    connect(graphicsWidget, &SkeletonGraphicsWidget::partComponentChecked, partTreeWidget, &PartTreeWidget::partComponentChecked);
+    connect(graphicsWidget, &SkeletonGraphicsWidget::partComponentChecked, m_partTreeWidget, &PartTreeWidget::partComponentChecked);
     
-    connect(m_document, &Document::componentNameChanged, partTreeWidget, &PartTreeWidget::componentNameChanged);
-    connect(m_document, &Document::componentChildrenChanged, partTreeWidget, &PartTreeWidget::componentChildrenChanged);
-    connect(m_document, &Document::componentRemoved, partTreeWidget, &PartTreeWidget::componentRemoved);
-    connect(m_document, &Document::componentAdded, partTreeWidget, &PartTreeWidget::componentAdded);
-    connect(m_document, &Document::componentExpandStateChanged, partTreeWidget, &PartTreeWidget::componentExpandStateChanged);
-    connect(m_document, &Document::componentCombineModeChanged, partTreeWidget, &PartTreeWidget::componentCombineModeChanged);
-    connect(m_document, &Document::partPreviewChanged, partTreeWidget, &PartTreeWidget::partPreviewChanged);
-    connect(m_document, &Document::partLockStateChanged, partTreeWidget, &PartTreeWidget::partLockStateChanged);
-    connect(m_document, &Document::partVisibleStateChanged, partTreeWidget, &PartTreeWidget::partVisibleStateChanged);
-    connect(m_document, &Document::partSubdivStateChanged, partTreeWidget, &PartTreeWidget::partSubdivStateChanged);
-    connect(m_document, &Document::partDisableStateChanged, partTreeWidget, &PartTreeWidget::partDisableStateChanged);
-    connect(m_document, &Document::partXmirrorStateChanged, partTreeWidget, &PartTreeWidget::partXmirrorStateChanged);
-    connect(m_document, &Document::partDeformThicknessChanged, partTreeWidget, &PartTreeWidget::partDeformChanged);
-    connect(m_document, &Document::partDeformWidthChanged, partTreeWidget, &PartTreeWidget::partDeformChanged);
-    connect(m_document, &Document::partDeformMapImageIdChanged, partTreeWidget, &PartTreeWidget::partDeformChanged);
-    connect(m_document, &Document::partDeformMapScaleChanged, partTreeWidget, &PartTreeWidget::partDeformChanged);
-    connect(m_document, &Document::partRoundStateChanged, partTreeWidget, &PartTreeWidget::partRoundStateChanged);
-    connect(m_document, &Document::partChamferStateChanged, partTreeWidget, &PartTreeWidget::partChamferStateChanged);
-    connect(m_document, &Document::partColorStateChanged, partTreeWidget, &PartTreeWidget::partColorStateChanged);
-    connect(m_document, &Document::partCutRotationChanged, partTreeWidget, &PartTreeWidget::partCutRotationChanged);
-    connect(m_document, &Document::partCutFaceChanged, partTreeWidget, &PartTreeWidget::partCutFaceChanged);
-    connect(m_document, &Document::partHollowThicknessChanged, partTreeWidget, &PartTreeWidget::partHollowThicknessChanged);
-    connect(m_document, &Document::partMaterialIdChanged, partTreeWidget, &PartTreeWidget::partMaterialIdChanged);
-    connect(m_document, &Document::partColorSolubilityChanged, partTreeWidget, &PartTreeWidget::partColorSolubilityChanged);
-    connect(m_document, &Document::partCountershadeStateChanged, partTreeWidget, &PartTreeWidget::partCountershadeStateChanged);
+    connect(m_document, &Document::componentNameChanged, m_partTreeWidget, &PartTreeWidget::componentNameChanged);
+    connect(m_document, &Document::componentChildrenChanged, m_partTreeWidget, &PartTreeWidget::componentChildrenChanged);
+    connect(m_document, &Document::componentRemoved, m_partTreeWidget, &PartTreeWidget::componentRemoved);
+    connect(m_document, &Document::componentAdded, m_partTreeWidget, &PartTreeWidget::componentAdded);
+    connect(m_document, &Document::componentExpandStateChanged, m_partTreeWidget, &PartTreeWidget::componentExpandStateChanged);
+    connect(m_document, &Document::componentCombineModeChanged, m_partTreeWidget, &PartTreeWidget::componentCombineModeChanged);
+    //connect(m_document, &Document::partPreviewChanged, m_partTreeWidget, &PartTreeWidget::partPreviewChanged);
+    connect(m_document, &Document::partLockStateChanged, m_partTreeWidget, &PartTreeWidget::partLockStateChanged);
+    connect(m_document, &Document::partVisibleStateChanged, m_partTreeWidget, &PartTreeWidget::partVisibleStateChanged);
+    connect(m_document, &Document::partSubdivStateChanged, m_partTreeWidget, &PartTreeWidget::partSubdivStateChanged);
+    connect(m_document, &Document::partDisableStateChanged, m_partTreeWidget, &PartTreeWidget::partDisableStateChanged);
+    connect(m_document, &Document::partXmirrorStateChanged, m_partTreeWidget, &PartTreeWidget::partXmirrorStateChanged);
+    connect(m_document, &Document::partDeformThicknessChanged, m_partTreeWidget, &PartTreeWidget::partDeformChanged);
+    connect(m_document, &Document::partDeformWidthChanged, m_partTreeWidget, &PartTreeWidget::partDeformChanged);
+    connect(m_document, &Document::partDeformMapImageIdChanged, m_partTreeWidget, &PartTreeWidget::partDeformChanged);
+    connect(m_document, &Document::partDeformMapScaleChanged, m_partTreeWidget, &PartTreeWidget::partDeformChanged);
+    connect(m_document, &Document::partRoundStateChanged, m_partTreeWidget, &PartTreeWidget::partRoundStateChanged);
+    connect(m_document, &Document::partChamferStateChanged, m_partTreeWidget, &PartTreeWidget::partChamferStateChanged);
+    connect(m_document, &Document::partColorStateChanged, m_partTreeWidget, &PartTreeWidget::partColorStateChanged);
+    connect(m_document, &Document::partCutRotationChanged, m_partTreeWidget, &PartTreeWidget::partCutRotationChanged);
+    connect(m_document, &Document::partCutFaceChanged, m_partTreeWidget, &PartTreeWidget::partCutFaceChanged);
+    connect(m_document, &Document::partHollowThicknessChanged, m_partTreeWidget, &PartTreeWidget::partHollowThicknessChanged);
+    connect(m_document, &Document::partMaterialIdChanged, m_partTreeWidget, &PartTreeWidget::partMaterialIdChanged);
+    connect(m_document, &Document::partColorSolubilityChanged, m_partTreeWidget, &PartTreeWidget::partColorSolubilityChanged);
+    connect(m_document, &Document::partCountershadeStateChanged, m_partTreeWidget, &PartTreeWidget::partCountershadeStateChanged);
     
-    connect(m_document, &Document::partTargetChanged, partTreeWidget, &PartTreeWidget::partXmirrorStateChanged);
-    connect(m_document, &Document::partTargetChanged, partTreeWidget, &PartTreeWidget::partColorStateChanged);
-    connect(m_document, &Document::partTargetChanged, partTreeWidget, &PartTreeWidget::partSubdivStateChanged);
-    connect(m_document, &Document::partTargetChanged, partTreeWidget, &PartTreeWidget::partRoundStateChanged);
-    connect(m_document, &Document::partTargetChanged, partTreeWidget, &PartTreeWidget::partChamferStateChanged);
-    connect(m_document, &Document::partTargetChanged, partTreeWidget, &PartTreeWidget::partCutRotationChanged);
-    connect(m_document, &Document::partTargetChanged, partTreeWidget, &PartTreeWidget::partDeformChanged);
+    connect(m_document, &Document::partTargetChanged, m_partTreeWidget, &PartTreeWidget::partXmirrorStateChanged);
+    connect(m_document, &Document::partTargetChanged, m_partTreeWidget, &PartTreeWidget::partColorStateChanged);
+    connect(m_document, &Document::partTargetChanged, m_partTreeWidget, &PartTreeWidget::partSubdivStateChanged);
+    connect(m_document, &Document::partTargetChanged, m_partTreeWidget, &PartTreeWidget::partRoundStateChanged);
+    connect(m_document, &Document::partTargetChanged, m_partTreeWidget, &PartTreeWidget::partChamferStateChanged);
+    connect(m_document, &Document::partTargetChanged, m_partTreeWidget, &PartTreeWidget::partCutRotationChanged);
+    connect(m_document, &Document::partTargetChanged, m_partTreeWidget, &PartTreeWidget::partDeformChanged);
     
-    connect(m_document, &Document::partRemoved, partTreeWidget, &PartTreeWidget::partRemoved);
-    connect(m_document, &Document::cleanup, partTreeWidget, &PartTreeWidget::removeAllContent);
-    connect(m_document, &Document::partChecked, partTreeWidget, &PartTreeWidget::partChecked);
-    connect(m_document, &Document::partUnchecked, partTreeWidget, &PartTreeWidget::partUnchecked);
+    connect(m_document, &Document::partRemoved, m_partTreeWidget, &PartTreeWidget::partRemoved);
+    connect(m_document, &Document::cleanup, m_partTreeWidget, &PartTreeWidget::removeAllContent);
+    connect(m_document, &Document::partChecked, m_partTreeWidget, &PartTreeWidget::partChecked);
+    connect(m_document, &Document::partUnchecked, m_partTreeWidget, &PartTreeWidget::partUnchecked);
 
     connect(m_document, &Document::skeletonChanged, m_document, &Document::generateMesh);
     //connect(m_document, &SkeletonDocument::resultMeshChanged, [=]() {
@@ -2226,4 +2227,52 @@ void DocumentWindow::import()
     if (fileName.isEmpty())
         return;
     importPath(fileName);
+}
+
+void DocumentWindow::generatePartPreviewImages()
+{
+    if (nullptr != m_partPreviewImagesGenerator) {
+        m_isPartPreviewImagesObsolete = true;
+        return;
+    }
+    
+    m_isPartPreviewImagesObsolete = false;
+     
+    QThread *thread = new QThread;
+    
+    m_partPreviewImagesGenerator = new PartPreviewImagesGenerator(new ModelOffscreenRender(m_modelRenderWidget->format()));
+    for (const auto &part: m_document->partMap) {
+        if (!part.second.isPreviewMeshObsolete)
+            continue;
+        m_partPreviewImagesGenerator->addPart(part.first, part.second.takePreviewMesh(), PartTarget::CutFace == part.second.target);
+    }
+    m_partPreviewImagesGenerator->moveToThread(thread);
+    connect(thread, &QThread::started, m_partPreviewImagesGenerator, &PartPreviewImagesGenerator::process);
+    connect(m_partPreviewImagesGenerator, &PartPreviewImagesGenerator::finished, this, &DocumentWindow::partPreviewImagesReady);
+    connect(m_partPreviewImagesGenerator, &PartPreviewImagesGenerator::finished, thread, &QThread::quit);
+    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+    thread->start();
+}
+
+void DocumentWindow::partPreviewImagesReady()
+{
+    std::map<QUuid, QImage> *partImages = m_partPreviewImagesGenerator->takePartImages();
+    if (nullptr != partImages) {
+        for (const auto &it: *partImages) {
+            SkeletonPart *part = (SkeletonPart *)m_document->findPart(it.first);
+            if (nullptr != part) {
+                part->isPreviewMeshObsolete = false;
+                part->previewPixmap = QPixmap::fromImage(it.second);
+            }
+        }
+        for (const auto &it: *partImages)
+            m_partTreeWidget->partPreviewChanged(it.first);
+    }
+    delete partImages;
+    
+    delete m_partPreviewImagesGenerator;
+    m_partPreviewImagesGenerator = nullptr;
+    
+    if (m_isPartPreviewImagesObsolete)
+        generatePartPreviewImages();
 }

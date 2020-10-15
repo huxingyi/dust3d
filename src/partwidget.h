@@ -68,19 +68,20 @@ private: // need initialize
     QUuid m_partId;
     bool m_unnormal;
 private:
-    ModelWidget *m_previewWidget;
-    QPushButton *m_visibleButton;
-    QPushButton *m_lockButton;
-    QPushButton *m_subdivButton;
-    QPushButton *m_disableButton;
-    QPushButton *m_xMirrorButton;
-    QPushButton *m_zMirrorButton;
-    QPushButton *m_deformButton;
-    QPushButton *m_roundButton;
-    QPushButton *m_chamferButton;
-    QPushButton *m_colorButton;
-    QPushButton *m_cutRotationButton;
-    QWidget *m_backgroundWidget;
+    ModelWidget *m_previewWidget = nullptr;
+    QPushButton *m_visibleButton = nullptr;
+    QPushButton *m_lockButton = nullptr;
+    QPushButton *m_subdivButton = nullptr;
+    QPushButton *m_disableButton = nullptr;
+    QPushButton *m_xMirrorButton = nullptr;
+    QPushButton *m_zMirrorButton = nullptr;
+    QPushButton *m_deformButton = nullptr;
+    QPushButton *m_roundButton = nullptr;
+    QPushButton *m_chamferButton = nullptr;
+    QPushButton *m_colorButton = nullptr;
+    QPushButton *m_cutRotationButton = nullptr;
+    QWidget *m_backgroundWidget = nullptr;
+    QLabel *m_previewLabel = nullptr;
 private:
     void initToolButton(QPushButton *button);
     void initToolButtonWithoutFont(QPushButton *button);
