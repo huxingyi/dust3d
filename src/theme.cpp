@@ -53,7 +53,7 @@ void Theme::initAwsomeBaseSizes()
     Theme::toolIconFontSize = fontMetrics.height();
     
     Theme::toolIconSize = (int)(Theme::toolIconFontSize * 1.5);
-    Theme::miniIconFontSize = (int)(Theme::toolIconFontSize * 0.7);
+    Theme::miniIconFontSize = (int)(Theme::toolIconFontSize * 0.85);
     Theme::miniIconSize = (int)(Theme::miniIconFontSize * 1.67);
     Theme::partPreviewImageSize = (Theme::miniIconSize * 3);
     Theme::sidebarPreferredWidth = Theme::partPreviewImageSize * 4; //3.7;
@@ -106,14 +106,6 @@ void Theme::initAwesomeButton(QPushButton *button)
     button->setFocusPolicy(Qt::NoFocus);
 }
 
-void Theme::initAwesomeSmallButton(QPushButton *button)
-{
-    button->setFont(Theme::awesome()->font(Theme::toolIconFontSize * 0.7));
-    button->setFixedSize(Theme::toolIconSize * 0.75, Theme::toolIconSize * 0.75);
-    button->setStyleSheet("QPushButton {color: " + Theme::white.name() + "}");
-    button->setFocusPolicy(Qt::NoFocus);
-}
-
 void Theme::initAwesomeLabel(QLabel *label)
 {
     label->setFont(Theme::awesome()->font(Theme::toolIconFontSize));
@@ -159,14 +151,14 @@ void Theme::updateAwesomeMiniButton(QPushButton *button, QChar icon, bool highli
 
 void Theme::initAwesomeToolButtonWithoutFont(QPushButton *button)
 {
-    button->setFixedSize(Theme::toolIconSize / 2, Theme::toolIconSize / 2);
+    button->setFixedSize(Theme::toolIconSize * 0.75, Theme::toolIconSize * 0.75);
     button->setStyleSheet("QPushButton {color: " + Theme::white.name() + "}");
     button->setFocusPolicy(Qt::NoFocus);
 }
 
 void Theme::initAwesomeToolButton(QPushButton *button)
 {
-    button->setFont(Theme::awesome()->font(Theme::toolIconFontSize / 2));
+    button->setFont(Theme::awesome()->font(Theme::toolIconFontSize * 0.75));
     Theme::initAwesomeToolButtonWithoutFont(button);
 }
 
