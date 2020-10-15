@@ -1,5 +1,7 @@
 os: Visual Studio 2017
 
+skip_non_tags: true
+
 environment:
   matrix:
     - platform: x64
@@ -11,8 +13,6 @@ environment:
       target: i686-pc-windows-msvc
       qtdir: C:\Qt\5.13.2\msvc2017
       sysdirname: system32
-      
-  skip_non_tags: true
 
 cache:
   CGAL-5.1-Setup.exe -> appveyor.yml
