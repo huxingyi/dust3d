@@ -186,6 +186,8 @@ private:
         std::vector<std::pair<QVector3D, std::pair<QUuid, QUuid>>> *outputNodeVertices);
     void postprocessOutcome(Outcome *outcome);
     void collectErroredParts();
+    void preprocessMirror();
+    QString reverseUuid(const QString &uuidString);
 };
 
 #endif
