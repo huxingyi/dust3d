@@ -1165,7 +1165,7 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
             }
             if (!partIt.second.fillMeshLinkedId.isNull())
                 part["fillMesh"] = partIt.second.fillMeshLinkedId.toString();
-            part["dirty"] = partIt.second.dirty ? "true" : "false";
+            part["__dirty"] = partIt.second.dirty ? "true" : "false";
             if (partIt.second.hasColor)
                 part["color"] = partIt.second.color.name(QColor::HexArgb);
             if (partIt.second.colorSolubilityAdjusted())
@@ -1241,7 +1241,7 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
                 component["name"] = componentIt.second.name;
             component["expanded"] = componentIt.second.expanded ? "true" : "false";
             component["combineMode"] = CombineModeToString(componentIt.second.combineMode);
-            component["dirty"] = componentIt.second.dirty ? "true" : "false";
+            component["__dirty"] = componentIt.second.dirty ? "true" : "false";
             if (componentIt.second.smoothAllAdjusted())
                 component["smoothAll"] = QString::number(componentIt.second.smoothAll);
             if (componentIt.second.smoothSeamAdjusted())

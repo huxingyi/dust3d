@@ -17,7 +17,7 @@ static void saveSkeletonComponent(Snapshot *snapshot, QXmlStreamWriter *writer, 
             children = componentAttributeIterator->second;
             continue;
         }
-        if ("dirty" == componentAttributeIterator->first)
+        if (componentAttributeIterator->first.startsWith("__"))
             continue;
         writer->writeAttribute(componentAttributeIterator->first, componentAttributeIterator->second);
     }
@@ -72,7 +72,7 @@ void saveSkeletonToXmlStream(Snapshot *snapshot, QXmlStreamWriter *writer)
             std::map<QString, QString>::iterator partAttributeIterator;
             writer->writeStartElement("part");
             for (partAttributeIterator = partIterator->second.begin(); partAttributeIterator != partIterator->second.end(); partAttributeIterator++) {
-                if ("dirty" == partAttributeIterator->first)
+                if (partAttributeIterator->first.startsWith("__"))
                     continue;
                 writer->writeAttribute(partAttributeIterator->first, partAttributeIterator->second);
             }
