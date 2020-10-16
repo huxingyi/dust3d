@@ -1728,7 +1728,12 @@ void MeshGenerator::setDefaultPartColor(const QColor &color)
 QString MeshGenerator::reverseUuid(const QString &uuidString)
 {
     QUuid uuid(uuidString);
-    QString newRawId = uuid.toString(QUuid::Id128);
+    QString newIdString = uuid.toString();
+    QString newRawId = newIdString.mid(1, 8) +
+        newIdString.mid(10, 4) +
+        newIdString.mid(15, 4) +
+        newIdString.mid(20, 4) +
+        newIdString.mid(25, 12);
     std::reverse(newRawId.begin(), newRawId.end());
     return "{" + newRawId.mid(0, 8) + "-" +
         newRawId.mid(8, 4) + "-" +
@@ -1840,6 +1845,10 @@ void MeshGenerator::generate()
         m_cacheContext = new GeneratedCacheContext;
         needDeleteCacheContext = true;
     } else {
+        //qDebug() << "m_cacheContext->parts.size:" << m_cacheContext->parts.size();
+        //qDebug() << "m_cacheContext->components.size:" << m_cacheContext->components.size();
+        //qDebug() << "m_cacheContext->cachedCombination.size:" << m_cacheContext->cachedCombination.size();
+        
         m_cacheEnabled = true;
         for (auto it = m_cacheContext->parts.begin(); it != m_cacheContext->parts.end(); ) {
             if (m_snapshot->parts.find(it->first) == m_snapshot->parts.end()) {
