@@ -1663,74 +1663,87 @@ void DocumentWindow::createPartSnapshotForFillMesh(const QUuid &fillMeshFileId, 
 void DocumentWindow::openPathAs(const QString &path, const QString &asName)
 {
     QApplication::setOverrideCursor(Qt::WaitCursor);
-    Ds3FileReader ds3Reader(path);
-    
+
     m_document->clearHistories();
     m_document->resetScript();
     m_document->reset();
     m_document->saveSnapshot();
     
-    for (int i = 0; i < ds3Reader.items().size(); ++i) {
-        Ds3ReaderItem item = ds3Reader.items().at(i);
-        if (item.type == "asset") {
-            if (item.name.startsWith("images/")) {
-                QString filename = item.name.split("/")[1];
-                QString imageIdString = filename.split(".")[0];
-                QUuid imageId = QUuid(imageIdString);
-                if (!imageId.isNull()) {
+    if (path.endsWith(".xml")) {
+        QFile file(path);
+        file.open(QIODevice::ReadOnly);
+        QXmlStreamReader stream(&file);
+        
+        Snapshot snapshot;
+        loadSkeletonFromXmlStream(&snapshot, stream);
+        m_document->fromSnapshot(snapshot);
+        m_document->saveSnapshot();
+    } else {
+        Ds3FileReader ds3Reader(path);
+        
+        for (int i = 0; i < ds3Reader.items().size(); ++i) {
+            Ds3ReaderItem item = ds3Reader.items().at(i);
+            if (item.type == "asset") {
+                if (item.name.startsWith("images/")) {
+                    QString filename = item.name.split("/")[1];
+                    QString imageIdString = filename.split(".")[0];
+                    QUuid imageId = QUuid(imageIdString);
+                    if (!imageId.isNull()) {
+                        QByteArray data;
+                        ds3Reader.loadItem(item.name, &data);
+                        QImage image = QImage::fromData(data, "PNG");
+                        (void)ImageForever::add(&image, imageId);
+                    }
+                } else if (item.name.startsWith("files/")) {
+                    QString filename = item.name.split("/")[1];
+                    QString fileIdString = filename.split(".")[0];
+                    QUuid fileId = QUuid(fileIdString);
+                    if (!fileId.isNull()) {
+                        QByteArray data;
+                        ds3Reader.loadItem(item.name, &data);
+                        (void)FileForever::add(item.name, data, fileId);
+                    }
+                }
+            }
+        }
+        
+        for (int i = 0; i < ds3Reader.items().size(); ++i) {
+            Ds3ReaderItem item = ds3Reader.items().at(i);
+            if (item.type == "model") {
+                QByteArray data;
+                ds3Reader.loadItem(item.name, &data);
+                QXmlStreamReader stream(data);
+                Snapshot snapshot;
+                loadSkeletonFromXmlStream(&snapshot, stream);
+                m_document->fromSnapshot(snapshot);
+                m_document->saveSnapshot();
+            } else if (item.type == "asset") {
+                if (item.name == "canvas.png") {
                     QByteArray data;
                     ds3Reader.loadItem(item.name, &data);
                     QImage image = QImage::fromData(data, "PNG");
-                    (void)ImageForever::add(&image, imageId);
+                    m_document->updateTurnaround(image);
                 }
-            } else if (item.name.startsWith("files/")) {
-                QString filename = item.name.split("/")[1];
-                QString fileIdString = filename.split(".")[0];
-                QUuid fileId = QUuid(fileIdString);
-                if (!fileId.isNull()) {
+            } else if (item.type == "script") {
+                if (item.name == "model.js") {
+                    QByteArray script;
+                    ds3Reader.loadItem(item.name, &script);
+                    m_document->initScript(QString::fromUtf8(script.constData()));
+                }
+            } else if (item.type == "variable") {
+                if (item.name == "variables.xml") {
                     QByteArray data;
                     ds3Reader.loadItem(item.name, &data);
-                    (void)FileForever::add(item.name, data, fileId);
+                    QXmlStreamReader stream(data);
+                    std::map<QString, std::map<QString, QString>> variables;
+                    loadVariablesFromXmlStream(&variables, stream);
+                    for (const auto &it: variables)
+                        m_document->updateVariable(it.first, it.second);
                 }
             }
         }
     }
     
-    for (int i = 0; i < ds3Reader.items().size(); ++i) {
-        Ds3ReaderItem item = ds3Reader.items().at(i);
-        if (item.type == "model") {
-            QByteArray data;
-            ds3Reader.loadItem(item.name, &data);
-            QXmlStreamReader stream(data);
-            Snapshot snapshot;
-            loadSkeletonFromXmlStream(&snapshot, stream);
-            m_document->fromSnapshot(snapshot);
-            m_document->saveSnapshot();
-        } else if (item.type == "asset") {
-            if (item.name == "canvas.png") {
-                QByteArray data;
-                ds3Reader.loadItem(item.name, &data);
-                QImage image = QImage::fromData(data, "PNG");
-                m_document->updateTurnaround(image);
-            }
-        } else if (item.type == "script") {
-            if (item.name == "model.js") {
-                QByteArray script;
-                ds3Reader.loadItem(item.name, &script);
-                m_document->initScript(QString::fromUtf8(script.constData()));
-            }
-        } else if (item.type == "variable") {
-            if (item.name == "variables.xml") {
-                QByteArray data;
-                ds3Reader.loadItem(item.name, &data);
-                QXmlStreamReader stream(data);
-                std::map<QString, std::map<QString, QString>> variables;
-                loadVariablesFromXmlStream(&variables, stream);
-                for (const auto &it: variables)
-                    m_document->updateVariable(it.first, it.second);
-            }
-        }
-    }
     QApplication::restoreOverrideCursor();
 
     setCurrentFilename(asName);
@@ -2121,6 +2134,9 @@ void DocumentWindow::checkExportWaitingList()
             emit waitingExportFinished(filename, isSuccessful);
         } else if (filename.endsWith(".glb")) {
             exportGlbToFilename(filename);
+            emit waitingExportFinished(filename, isSuccessful);
+        } else if (filename.endsWith(".png")) {
+            exportImageToFilename(filename);
             emit waitingExportFinished(filename, isSuccessful);
         } else {
             emit waitingExportFinished(filename, false);

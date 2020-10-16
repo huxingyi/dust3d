@@ -79,7 +79,7 @@ int main(int argc, char ** argv)
             continue;
         }
         QString arg = argv[i];
-        if (arg.endsWith(".ds3")) {
+        if (arg.endsWith(".ds3") || arg.endsWith(".xml")) {
             openFileList.append(arg);
             continue;
         }

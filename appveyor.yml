@@ -1,6 +1,6 @@
 os: Visual Studio 2017
 
-skip_non_tags: true
+skip_non_tags: false
 
 environment:
   matrix:
