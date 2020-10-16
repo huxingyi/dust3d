@@ -2292,3 +2292,8 @@ void DocumentWindow::partPreviewImagesReady()
     if (m_isPartPreviewImagesObsolete)
         generatePartPreviewImages();
 }
+
+ModelWidget *DocumentWindow::modelWidget()
+{
+    return m_modelRenderWidget;
+}

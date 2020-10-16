@@ -37,6 +37,7 @@ public:
     DocumentWindow();
     ~DocumentWindow();
     Document *document();
+    ModelWidget *modelWidget();
     static DocumentWindow *createDocumentWindow();
     static const std::map<DocumentWindow *, QUuid> &documentWindows();
     static void showAcknowlegements();
