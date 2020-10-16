@@ -72,26 +72,6 @@ script:
   - export BRANCH="$TRAVIS_BRANCH"
   - if [[ "$BRANCH" == "$TAG" ]]; then export BRANCH=master; fi
 
-  # (Mac) Test
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then dust3d.app/Contents/MacOS/dust3d :/resources/model-addax.ds3 -o addax.obj || travis_terminate 1; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then dust3d.app/Contents/MacOS/dust3d :/resources/model-addax.ds3 -o addax.glb || travis_terminate 1; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then dust3d.app/Contents/MacOS/dust3d :/resources/model-addax.ds3 -o addax.fbx || travis_terminate 1; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then dust3d.app/Contents/MacOS/dust3d :/resources/model-bicycle.ds3 -o bicycle.obj || travis_terminate 1; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then dust3d.app/Contents/MacOS/dust3d :/resources/model-bicycle.ds3 -o bicycle.glb || travis_terminate 1; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then dust3d.app/Contents/MacOS/dust3d :/resources/model-bicycle.ds3 -o bicycle.fbx || travis_terminate 1; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then dust3d.app/Contents/MacOS/dust3d :/resources/model-bob.ds3 -o bob.obj || travis_terminate 1; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then dust3d.app/Contents/MacOS/dust3d :/resources/model-bob.ds3 -o bob.glb || travis_terminate 1; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then dust3d.app/Contents/MacOS/dust3d :/resources/model-bob.ds3 -o bob.fbx || travis_terminate 1; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then dust3d.app/Contents/MacOS/dust3d :/resources/model-dog.ds3 -o dog.obj || travis_terminate 1; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then dust3d.app/Contents/MacOS/dust3d :/resources/model-dog.ds3 -o dog.glb || travis_terminate 1; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then dust3d.app/Contents/MacOS/dust3d :/resources/model-dog.ds3 -o dog.fbx || travis_terminate 1; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then dust3d.app/Contents/MacOS/dust3d :/resources/model-meerkat.ds3 -o meerkat.obj || travis_terminate 1; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then dust3d.app/Contents/MacOS/dust3d :/resources/model-meerkat.ds3 -o meerkat.glb || travis_terminate 1; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then dust3d.app/Contents/MacOS/dust3d :/resources/model-meerkat.ds3 -o meerkat.fbx || travis_terminate 1; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then dust3d.app/Contents/MacOS/dust3d :/resources/model-mosquito.ds3 -o mosquito.obj || travis_terminate 1; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then dust3d.app/Contents/MacOS/dust3d :/resources/model-mosquito.ds3 -o mosquito.glb || travis_terminate 1; fi
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then dust3d.app/Contents/MacOS/dust3d :/resources/model-mosquito.ds3 -o mosquito.fbx || travis_terminate 1; fi
-
   # (Mac) Prepare dmg
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then mv dust3d.app dust3d-$TAG.app || travis_terminate 1; fi
   - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then macdeployqt dust3d-$TAG.app -dmg || travis_terminate 1; fi
