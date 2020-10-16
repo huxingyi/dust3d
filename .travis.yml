@@ -21,9 +21,6 @@ matrix:
       osx_image: xcode9.3
 
 install:
-  - if [[ $TRAVIS_BRANCH != "ci" && $TRAVIS_TAG == "" ]]; then echo "Not branch ci and no tag, cancel build"; fi
-  - if [[ $TRAVIS_BRANCH != "ci" && $TRAVIS_TAG == "" ]]; then travis_terminate 0; fi
-  
   # (Linux) Prepare build environment
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo add-apt-repository --yes ppa:beineri/opt-qt591-xenial; fi
   - if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then sudo apt-get update; fi
