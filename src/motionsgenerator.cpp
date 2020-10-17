@@ -5,7 +5,6 @@
 #include "posemeshcreator.h"
 #include "poserconstruct.h"
 #include "posedocument.h"
-#include "ragdoll.h"
 #include "boundingboxmesh.h"
 
 MotionsGenerator::MotionsGenerator(RigType rigType,
@@ -105,49 +104,6 @@ float MotionsGenerator::calculatePoseDuration(const QUuid &poseId)
     return totalDuration;
 }
 
-const std::vector<std::pair<float, JointNodeTree>> &MotionsGenerator::getProceduralAnimation(ProceduralAnimation proceduralAnimation,
-    const JointNodeTree *initialJointNodeTree)
-{
-    auto findResult = m_proceduralAnimations.find((int)proceduralAnimation);
-    if (findResult != m_proceduralAnimations.end())
-        return findResult->second;
-    std::vector<std::pair<float, JointNodeTree>> &resultFrames = m_proceduralAnimations[(int)proceduralAnimation];
-    if (ProceduralAnimation::FallToDeath == proceduralAnimation) {
-#if ENABLE_PROCEDURAL_DEBUG
-        std::vector<Model *> &resultPreviews = m_proceduralDebugPreviews[(int)proceduralAnimation];
-#endif
-        RagDoll ragdoll(&m_rigBones, initialJointNodeTree);
-        float stepSeconds = 1.0 / 60;
-        float maxSeconds = 1.5;
-        int maxSteps = maxSeconds / stepSeconds;
-        int steps = 0;
-        while (steps < maxSteps && ragdoll.stepSimulation(stepSeconds)) {
-            resultFrames.push_back(std::make_pair(stepSeconds * 2, ragdoll.getStepJointNodeTree()));
-#if ENABLE_PROCEDURAL_DEBUG
-            Model *preview = buildBoundingBoxMesh(ragdoll.getStepBonePositions());
-            resultPreviews.push_back(preview);
-#endif
-            ++steps;
-        }
-    }
-    if (resultFrames.empty()) {
-        resultFrames.push_back(std::make_pair(0, JointNodeTree(&m_rigBones)));
-    }
-    return resultFrames;
-}
-
-float MotionsGenerator::calculateProceduralAnimationDuration(ProceduralAnimation proceduralAnimation,
-    const JointNodeTree *initialJointNodeTree)
-{
-    const auto &result = getProceduralAnimation(proceduralAnimation,
-        initialJointNodeTree);
-    float totalDuration = 0;
-    for (const auto &it: result) {
-        totalDuration += it.first;
-    }
-    return totalDuration;
-}
-
 float MotionsGenerator::calculateMotionDuration(const QUuid &motionId, std::set<QUuid> &visited)
 {
     const std::vector<MotionClip> *motionClips = findMotionClips(motionId);
@@ -165,14 +121,7 @@ float MotionsGenerator::calculateMotionDuration(const QUuid &motionId, std::set<
             totalDuration += clip.duration;
         else if (clip.clipType == MotionClipType::Pose)
             totalDuration += calculatePoseDuration(clip.linkToId);
-        else if (clip.clipType == MotionClipType::ProceduralAnimation) {
-            const JointNodeTree *previousJointNodeTree = nullptr;
-            if (clipIndex > 1) {
-                previousJointNodeTree = findClipEndJointNodeTree((*motionClips)[clipIndex - 2]);
-            }
-            totalDuration += calculateProceduralAnimationDuration(clip.proceduralAnimation,
-                previousJointNodeTree);
-        } else if (clip.clipType == MotionClipType::Motion)
+        else if (clip.clipType == MotionClipType::Motion)
             totalDuration += calculateMotionDuration(clip.linkToId, visited);
     }
     return totalDuration;
@@ -200,13 +149,6 @@ void MotionsGenerator::generateMotion(const QUuid &motionId, std::set<QUuid> &vi
             clip.duration = calculateMotionDuration(clip.linkToId, subVisited);
         } else if (clip.clipType == MotionClipType::Pose) {
             clip.duration = calculatePoseDuration(clip.linkToId);
-        } else if (clip.clipType == MotionClipType::ProceduralAnimation) {
-            const JointNodeTree *previousJointNodeTree = nullptr;
-            if (clipIndex > 1) {
-                previousJointNodeTree = findClipEndJointNodeTree((*motionClips)[clipIndex - 2]);
-            }
-            clip.duration = calculateProceduralAnimationDuration(clip.proceduralAnimation,
-                previousJointNodeTree);
         }
         timePoints.push_back(totalDuration);
         totalDuration += clip.duration;
@@ -288,27 +230,6 @@ void MotionsGenerator::generateMotion(const QUuid &motionId, std::set<QUuid> &vi
             generateMotion(progressClip.linkToId, visited, outcomes);
             progress += progressClip.duration;
             continue;
-        } else if (MotionClipType::ProceduralAnimation == progressClip.clipType) {
-            const JointNodeTree *beginJointNodeTree = nullptr;
-            if (clipIndex > 0) {
-                beginJointNodeTree = findClipEndJointNodeTree((*motionClips)[clipIndex - 1]);
-            }
-            const auto &frames = getProceduralAnimation(progressClip.proceduralAnimation,
-                beginJointNodeTree);
-            float clipDuration = std::max((float)0.0001, progressClip.duration);
-            int frame = clipLocalProgress * frames.size() / clipDuration;
-            if (frame >= (int)frames.size())
-                frame = frames.size() - 1;
-            if (frame >= 0 && frame < (int)frames.size()) {
-#if ENABLE_PROCEDURAL_DEBUG
-                if (nullptr != previews)
-                    previews->push_back(m_proceduralDebugPreviews[(int)progressClip.proceduralAnimation][frame]);
-#endif
-                outcomes.push_back({progress - lastProgress, frames[frame].second});
-                lastProgress = progress;
-            }
-            progress += interval;
-            continue;
         }
         progress += interval;
     }
@@ -354,11 +275,6 @@ const JointNodeTree *MotionsGenerator::findClipBeginJointNodeTree(const MotionCl
             return findClipBeginJointNodeTree((*motionClips)[0]);
         }
         return nullptr;
-    } else if (MotionClipType::ProceduralAnimation == clip.clipType) {
-        const auto &result = getProceduralAnimation(clip.proceduralAnimation);
-        if (!result.empty())
-            return &result[0].second;
-        return nullptr;
     }
     return nullptr;
 }
@@ -376,11 +292,6 @@ const JointNodeTree *MotionsGenerator::findClipEndJointNodeTree(const MotionClip
         if (nullptr != motionClips && !motionClips->empty()) {
             return findClipEndJointNodeTree((*motionClips)[motionClips->size() - 1]);
         }
-        return nullptr;
-    } else if (MotionClipType::ProceduralAnimation == clip.clipType) {
-        const auto &result = getProceduralAnimation(clip.proceduralAnimation);
-        if (!result.empty())
-            return &result[result.size() - 1].second;
         return nullptr;
     }
     return nullptr;
