@@ -893,8 +893,8 @@ CombineMode MeshGenerator::componentCombineMode(const std::map<QString, QString>
     if (combineMode == CombineMode::Normal) {
         if (isTrueValueString(valueOfKeyInMapOrEmpty(*component, "inverse")))
             combineMode = CombineMode::Inversion;
-        //if (componentRemeshed(component))
-        //    combineMode = CombineMode::Uncombined;
+        if (componentRemeshed(component))
+            combineMode = CombineMode::Uncombined;
         if (combineMode == CombineMode::Normal) {
             if (ComponentLayer::Body != ComponentLayerFromString(valueOfKeyInMapOrEmpty(*component, "layer").toUtf8().constData())) {
                 combineMode = CombineMode::Uncombined;
