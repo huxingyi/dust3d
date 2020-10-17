@@ -108,7 +108,7 @@ private:
 private:
     const Document *m_document = nullptr;
     QTreeWidgetItem *m_rootItem = nullptr;
-    QTimer *m_delayedMousePressTimer = nullptr;
+    //QTimer *m_delayedMousePressTimer = nullptr;
     bool m_firstSelect = true;
     std::map<QUuid, QTreeWidgetItem *> m_partItemMap;
     std::map<QUuid, QTreeWidgetItem *> m_componentItemMap;

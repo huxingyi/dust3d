@@ -130,7 +130,7 @@ void Theme::updateAwesomeMiniButton(QPushButton *button, QChar icon, bool highli
             color = Theme::blue;
             needDesaturation = false;
         } else {
-            color = Theme::red;
+            color = Theme::white;
         }
     } else {
         color = QColor("#525252");

@@ -460,7 +460,7 @@ DocumentWindow::DocumentWindow() :
     tabifyDockWidget(motionDocker, scriptDocker);
     
     partTreeDocker->raise();
-
+    
     QHBoxLayout *mainLayout = new QHBoxLayout;
     mainLayout->setSpacing(0);
     mainLayout->setContentsMargins(0, 0, 0, 0);
@@ -815,11 +815,11 @@ DocumentWindow::DocumentWindow() :
     });
     m_viewMenu->addAction(m_toggleColorAction);
     
-    m_toggleUvCheckAction = new QAction(tr("Toggle UV Check"), this);
-    connect(m_toggleUvCheckAction, &QAction::triggered, [=]() {
-        m_modelRenderWidget->toggleUvCheck();
-    });
-    m_viewMenu->addAction(m_toggleUvCheckAction);
+    //m_toggleUvCheckAction = new QAction(tr("Toggle UV Check"), this);
+    //connect(m_toggleUvCheckAction, &QAction::triggered, [=]() {
+    //    m_modelRenderWidget->toggleUvCheck();
+    //});
+    //m_viewMenu->addAction(m_toggleUvCheckAction);
 
     //connect(m_viewMenu, &QMenu::aboutToShow, [=]() {
     //    m_resetModelWidgetPosAction->setEnabled(!isModelSitInVisibleArea(m_modelRenderWidget));

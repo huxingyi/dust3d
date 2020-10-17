@@ -159,8 +159,8 @@ void PartTreeWidget::updateComponentSelectState(QUuid componentId, bool selected
 
 void PartTreeWidget::mouseDoubleClickEvent(QMouseEvent *event)
 {
-    delete m_delayedMousePressTimer;
-    m_delayedMousePressTimer = nullptr;
+    //delete m_delayedMousePressTimer;
+    //m_delayedMousePressTimer = nullptr;
     
     QWidget::mouseDoubleClickEvent(event);
     auto componentIds = collectSelectedComponentIds(event->pos());
@@ -178,16 +178,16 @@ void PartTreeWidget::handleSingleClick(const QPoint &pos)
 {
     QModelIndex itemIndex = indexAt(pos);
     
-    auto showMenu = [=]() {
-        delete m_delayedMousePressTimer;
-        m_delayedMousePressTimer = new QTimer(this);
-        m_delayedMousePressTimer->setSingleShot(true);
-        m_delayedMousePressTimer->setInterval(200);
-        connect(m_delayedMousePressTimer, &QTimer::timeout, this, [=]() {
-            showContextMenu(pos, true);
-        });
-        m_delayedMousePressTimer->start();
-    };
+    //auto showMenu = [=]() {
+    //    delete m_delayedMousePressTimer;
+    //    m_delayedMousePressTimer = new QTimer(this);
+    //    m_delayedMousePressTimer->setSingleShot(true);
+    //    m_delayedMousePressTimer->setInterval(200);
+    //    connect(m_delayedMousePressTimer, &QTimer::timeout, this, [=]() {
+            //showContextMenu(pos, true);
+    //    });
+    //    m_delayedMousePressTimer->start();
+    //};
     
     bool multiple = QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier);
     if (itemIndex.isValid()) {
@@ -397,8 +397,8 @@ std::vector<QUuid> PartTreeWidget::collectSelectedComponentIds(const QPoint &pos
 
 void PartTreeWidget::showContextMenu(const QPoint &pos, bool shorted)
 {
-    delete m_delayedMousePressTimer;
-    m_delayedMousePressTimer = nullptr;
+    //delete m_delayedMousePressTimer;
+    //m_delayedMousePressTimer = nullptr;
 
     const Component *component = nullptr;
     const SkeletonPart *part = nullptr;
