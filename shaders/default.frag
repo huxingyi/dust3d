@@ -427,7 +427,7 @@ vec4 metalRoughFunction(const in vec4 baseColor,
         if (toonEdgeEnabled > 0) {
             float depthEdge = depthEdgeSobel();
             float normalEdge = normalEdgeSobel();
-            if (depthEdge >= 0.009 || normalEdge >= 0.6) {
+            if (depthEdge >= 0.009 || normalEdge >= 0.7) {
                 cLinear = hsv2rgb(vec3(hsv.r, hsv.g, hsv.b * 0.02));
             } else if (toonEdgeEnabled == 2) {
                 return vec4(0.0, 0.0, 0.0, 0.0);
