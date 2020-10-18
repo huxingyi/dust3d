@@ -389,6 +389,8 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, 
         deformWidth = widthString.toFloat();
     }
     
+    bool deformUnified = isTrueValueString(valueOfKeyInMapOrEmpty(part, "deformUnified"));
+    
     QImage deformImageStruct;
     const QImage *deformImage = nullptr;
     QString deformMapImageIdString = valueOfKeyInMapOrEmpty(part, "deformMapImageId");
@@ -636,6 +638,7 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, 
     strokeMeshBuilder->setDeformThickness(deformThickness);
     strokeMeshBuilder->setDeformWidth(deformWidth);
     strokeMeshBuilder->setDeformMapScale(deformMapScale);
+    strokeMeshBuilder->setDeformUnified(deformUnified);
     strokeMeshBuilder->setHollowThickness(hollowThickness);
     if (nullptr != deformImage)
         strokeMeshBuilder->setDeformMapImage(deformImage);

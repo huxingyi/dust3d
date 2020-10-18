@@ -164,6 +164,7 @@ public:
     PartBase base;
     float deformThickness;
     float deformWidth;
+    bool deformUnified;
     bool rounded;
     bool chamfered;
     QColor color;
@@ -197,6 +198,7 @@ public:
         base(PartBase::Average),
         deformThickness(1.0),
         deformWidth(1.0),
+        deformUnified(false),
         rounded(false),
         chamfered(false),
         color(Preferences::instance().partColor()),
@@ -324,7 +326,7 @@ public:
     }
     bool deformAdjusted() const
     {
-        return deformThicknessAdjusted() || deformWidthAdjusted();
+        return deformThicknessAdjusted() || deformWidthAdjusted() || deformUnified;
     }
     bool deformMapScaleAdjusted() const
     {

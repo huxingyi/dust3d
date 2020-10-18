@@ -18,6 +18,7 @@ signals:
     void setPartZmirrorState(QUuid partId, bool mirrored);
     void setPartDeformThickness(QUuid partId, float thickness);
     void setPartDeformWidth(QUuid partId, float width);
+    void setPartDeformUnified(QUuid partId, bool unified);
     void setPartDeformMapImageId(QUuid partId, QUuid imageId);
     void setPartDeformMapScale(QUuid partId, float scale);
     void setPartRoundState(QUuid partId, bool rounded);

@@ -47,6 +47,11 @@ void StrokeMeshBuilder::setDeformWidth(float width)
     m_deformWidth = width;
 }
 
+void StrokeMeshBuilder::setDeformUnified(bool unified)
+{
+    m_deformUnified = unified;
+}
+
 void StrokeMeshBuilder::setDeformMapImage(const QImage *image)
 {
     m_deformMapImage = image;
@@ -665,6 +670,13 @@ QVector3D StrokeMeshBuilder::calculateDeformPosition(const QVector3D &vertexPosi
 
 void StrokeMeshBuilder::applyDeform()
 {
+    float maxRadius = 0.0;
+    if (m_deformUnified) {
+        for (const auto &node: m_nodes) {
+            if (node.radius > maxRadius)
+                maxRadius = node.radius;
+        }
+    }
     for (size_t i = 0; i < m_generatedVertices.size(); ++i) {
         auto &position = m_generatedVertices[i];
         const auto &node = m_nodes[m_generatedVerticesSourceNodeIndices[i]];
@@ -682,13 +694,14 @@ void StrokeMeshBuilder::applyDeform()
         }
         QVector3D sum;
         size_t count = 0;
+        float deformUnifyFactor = m_deformUnified ? maxRadius / node.radius : 1.0;
         if (!qFuzzyCompare(m_deformThickness, (float)1.0)) {
-            auto deformedPosition = calculateDeformPosition(position, ray, node.baseNormal, m_deformThickness);
+            auto deformedPosition = calculateDeformPosition(position, ray, node.baseNormal, m_deformThickness * deformUnifyFactor);
             sum += deformedPosition;
             ++count;
         }
         if (!qFuzzyCompare(m_deformWidth, (float)1.0)) {
-            auto deformedPosition = calculateDeformPosition(position, ray, QVector3D::crossProduct(node.baseNormal, cutDirect), m_deformWidth);
+            auto deformedPosition = calculateDeformPosition(position, ray, QVector3D::crossProduct(node.baseNormal, cutDirect), m_deformWidth * deformUnifyFactor);
             sum += deformedPosition;
             ++count;
         }

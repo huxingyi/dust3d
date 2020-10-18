@@ -1181,6 +1181,8 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
                 part["deformThickness"] = QString::number(partIt.second.deformThickness);
             if (partIt.second.deformWidthAdjusted())
                 part["deformWidth"] = QString::number(partIt.second.deformWidth);
+            if (partIt.second.deformUnified)
+                part["deformUnified"] = "true";
             if (!partIt.second.deformMapImageId.isNull())
                 part["deformMapImageId"] = partIt.second.deformMapImageId.toString();
             if (partIt.second.deformMapScaleAdjusted())
@@ -1609,6 +1611,9 @@ void Document::addFromSnapshot(const Snapshot &snapshot, enum SnapshotSource sou
         const auto &deformWidthIt = partKv.second.find("deformWidth");
         if (deformWidthIt != partKv.second.end())
             part.setDeformWidth(deformWidthIt->second.toFloat());
+        const auto &deformUnifiedIt = partKv.second.find("deformUnified");
+        if (deformUnifiedIt != partKv.second.end())
+            part.deformUnified = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "deformUnified"));
         const auto &deformMapImageIdIt = partKv.second.find("deformMapImageId");
         if (deformMapImageIdIt != partKv.second.end())
             part.deformMapImageId = QUuid(deformMapImageIdIt->second);
@@ -2974,6 +2979,21 @@ void Document::setPartDeformWidth(QUuid partId, float width)
     part->second.setDeformWidth(width);
     part->second.dirty = true;
     emit partDeformWidthChanged(partId);
+    emit skeletonChanged();
+}
+
+void Document::setPartDeformUnified(QUuid partId, bool unified)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    if (part->second.deformUnified == unified)
+        return;
+    part->second.deformUnified = unified;
+    part->second.dirty = true;
+    emit partDeformUnifyStateChanged(partId);
     emit skeletonChanged();
 }
 

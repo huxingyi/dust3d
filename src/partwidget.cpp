@@ -167,6 +167,7 @@ PartWidget::PartWidget(const Document *document, QUuid partId) :
     connect(this, &PartWidget::setPartXmirrorState, m_document, &Document::setPartXmirrorState);
     connect(this, &PartWidget::setPartDeformThickness, m_document, &Document::setPartDeformThickness);
     connect(this, &PartWidget::setPartDeformWidth, m_document, &Document::setPartDeformWidth);
+    connect(this, &PartWidget::setPartDeformUnified, m_document, &Document::setPartDeformUnified);
     connect(this, &PartWidget::setPartDeformMapImageId, m_document, &Document::setPartDeformMapImageId);
     connect(this, &PartWidget::setPartDeformMapScale, m_document, &Document::setPartDeformMapScale);
     connect(this, &PartWidget::setPartRoundState, m_document, &Document::setPartRoundState);
@@ -765,9 +766,24 @@ void PartWidget::showDeformSettingPopup(const QPoint &pos)
     thicknessLayout->addWidget(thicknessWidget);
     widthLayout->addWidget(widthEraser);
     widthLayout->addWidget(widthWidget);
+    
+    QCheckBox *deformUnifyStateBox = new QCheckBox();
+    Theme::initCheckbox(deformUnifyStateBox);
+    deformUnifyStateBox->setText(tr("Unified"));
+    deformUnifyStateBox->setChecked(part->deformUnified);
+    
+    connect(deformUnifyStateBox, &QCheckBox::stateChanged, this, [=]() {
+        emit setPartDeformUnified(m_partId, deformUnifyStateBox->isChecked());
+        emit groupOperationAdded();
+    });
+    
+    QHBoxLayout *deformUnifyLayout = new QHBoxLayout;
+    deformUnifyLayout->addStretch();
+    deformUnifyLayout->addWidget(deformUnifyStateBox);
 
     mainLayout->addLayout(thicknessLayout);
     mainLayout->addLayout(widthLayout);
+    mainLayout->addLayout(deformUnifyLayout);
     
     popup->setLayout(mainLayout);
     
@@ -871,7 +887,7 @@ void PartWidget::updateDeformButton()
         qDebug() << "Part not found:" << m_partId;
         return;
     }
-    if (part->deformAdjusted() || part->deformMapAdjusted())
+    if (part->deformAdjusted() || part->deformMapAdjusted() || part->deformUnified)
         updateButton(m_deformButton, QChar(fa::handlizardo), true, part->hasDeformFunction());
     else
         updateButton(m_deformButton, QChar(fa::handlizardo), false, part->hasDeformFunction());

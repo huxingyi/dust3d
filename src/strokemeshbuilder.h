@@ -47,6 +47,7 @@ public:
     void setNodeOriginInfo(size_t nodeIndex, int nearOriginNodeIndex, int farOriginNodeIndex);
     void setDeformThickness(float thickness);
     void setDeformWidth(float width);
+    void setDeformUnified(bool unified);
     void setDeformMapImage(const QImage *image);
     void setDeformMapScale(float scale);
     void setHollowThickness(float hollowThickness);
@@ -85,6 +86,7 @@ private:
     const QImage *m_deformMapImage = nullptr;
     float m_deformMapScale = 0.0f;
     float m_hollowThickness = 0.0f;
+    bool m_deformUnified = false;
     
     bool m_isRing = false;
     std::vector<size_t> m_nodeIndices;

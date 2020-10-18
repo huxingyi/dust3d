@@ -124,6 +124,7 @@ unix:!macx {
 }
 
 win32 {
+    QMAKE_CXXFLAGS += /MP
 	QMAKE_CXXFLAGS += /O2
 	QMAKE_CXXFLAGS += /bigobj
 }
