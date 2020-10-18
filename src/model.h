@@ -20,7 +20,9 @@ class Model
 public:
     Model(const std::vector<QVector3D> &vertices, const std::vector<std::vector<size_t>> &triangles,
         const std::vector<std::vector<QVector3D>> &triangleVertexNormals,
-        const QColor &color=Qt::white);
+        const QColor &color=Qt::white,
+        float metalness=0.0,
+        float roughness=0.0);
     Model(Outcome &outcome);
     Model(ShaderVertex *triangleVertices, int vertexNum, ShaderVertex *edgeVertices=nullptr, int edgeVertexCount=0);
     Model(const Model &mesh);

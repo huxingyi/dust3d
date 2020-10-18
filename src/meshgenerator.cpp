@@ -784,7 +784,9 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, 
         m_partPreviewMeshes[partId] = new Model(partPreviewVertices,
             partCache.previewTriangles,
             partPreviewTriangleVertexNormals,
-            partPreviewColor);
+            partPreviewColor,
+            metalness,
+            roughness);
     }
     
     delete strokeModifier;

@@ -89,7 +89,9 @@ Model::Model(ShaderVertex *triangleVertices, int vertexNum, ShaderVertex *edgeVe
 
 Model::Model(const std::vector<QVector3D> &vertices, const std::vector<std::vector<size_t>> &triangles,
     const std::vector<std::vector<QVector3D>> &triangleVertexNormals,
-    const QColor &color)
+    const QColor &color,
+    float metalness,
+    float roughness)
 {
     m_triangleVertexCount = triangles.size() * 3;
     m_triangleVertices = new ShaderVertex[m_triangleVertexCount];
@@ -112,8 +114,8 @@ Model::Model(const std::vector<QVector3D> &vertices, const std::vector<std::vect
             dest->normX = srcNormal->x();
             dest->normY = srcNormal->y();
             dest->normZ = srcNormal->z();
-            dest->metalness = m_defaultMetalness;
-            dest->roughness = m_defaultRoughness;
+            dest->metalness = metalness;
+            dest->roughness = roughness;
             dest->tangentX = 0;
             dest->tangentY = 0;
             dest->tangentZ = 0;
