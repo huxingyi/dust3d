@@ -40,12 +40,12 @@ void StrokeMeshBuilder::enableBaseNormalAverage(bool enabled)
 
 void StrokeMeshBuilder::setDeformThickness(float thickness)
 {
-    m_deformThickness = thickness;
+    m_deformThickness = std::max((float)0.01, thickness);
 }
 
 void StrokeMeshBuilder::setDeformWidth(float width)
 {
-    m_deformWidth = width;
+    m_deformWidth = std::max((float)0.01, width);
 }
 
 void StrokeMeshBuilder::setDeformUnified(bool unified)
@@ -249,49 +249,65 @@ void StrokeMeshBuilder::buildMesh()
 
 void StrokeMeshBuilder::interpolateCutEdges()
 {
-    std::vector<std::vector<size_t>> interpolatedCuts;
+    if (m_cuts.empty())
+        return;
     
-    for (const auto &cut: m_cuts) {
-        double sumOfLegnth = 0;
-        std::vector<double> edgeLengths;
-        edgeLengths.reserve(cut.size());
-        for (size_t i = 0; i < cut.size(); ++i) {
-            size_t j = (i + 1) % cut.size();
-            double length = (m_generatedVertices[cut[i]] - m_generatedVertices[cut[j]]).length();
-            edgeLengths.push_back(length);
-            sumOfLegnth += length;
+    size_t bigCutIndex = 0;
+    double maxRadius = 0.0;
+    for (size_t i = 0; i < m_cuts.size(); ++i) {
+        size_t j = (i + 1) % m_cuts.size();
+        if (m_cuts[i].size() != m_cuts[j].size())
+            return;
+        const auto &nodeIndex = m_generatedVerticesSourceNodeIndices[m_cuts[i][0]];
+        if (m_nodes[nodeIndex].radius > maxRadius) {
+            maxRadius = m_nodes[nodeIndex].radius;
+            bigCutIndex = i;
         }
-        double targetLength = 1.2 * sumOfLegnth / cut.size();
-        std::vector<size_t> newCut;
-        for (size_t index = 0; index < cut.size(); ++index) {
-            size_t nextIndex = (index + 1) % cut.size();
-            newCut.push_back(cut[index]);
-            const auto &oldEdgeLength = edgeLengths[index];
-            if (targetLength >= oldEdgeLength)
-                continue;
-            size_t newInsertNum = oldEdgeLength / targetLength;
-            qDebug() << "oldEdgeLength:" << oldEdgeLength << "targetLength:" << targetLength << "newInsertNum:" << newInsertNum;
-            if (newInsertNum < 1)
-                newInsertNum = 1;
-            if (newInsertNum > 100)
-                continue;
-            float stepFactor = 1.0 / (newInsertNum + 1);
-            float factor = stepFactor;
-            for (size_t i = 0; i < newInsertNum && factor < 1.0; factor += stepFactor, ++i) {
-                float firstFactor = 1.0 - factor;
-                auto newPosition = m_generatedVertices[cut[index]] * firstFactor + m_generatedVertices[cut[nextIndex]] * factor;
-                newCut.push_back(m_generatedVertices.size());
+    }
+    
+    const auto &cut = m_cuts[bigCutIndex];
+    double sumOfLegnth = 0;
+    std::vector<double> edgeLengths;
+    edgeLengths.reserve(cut.size());
+    for (size_t i = 0; i < cut.size(); ++i) {
+        size_t j = (i + 1) % cut.size();
+        double length = (m_generatedVertices[cut[i]] - m_generatedVertices[cut[j]]).length();
+        edgeLengths.push_back(length);
+        sumOfLegnth += length;
+    }
+    double targetLength = 1.2 * sumOfLegnth / cut.size();
+    std::vector<std::vector<size_t>> newCuts(m_cuts.size());
+    for (size_t index = 0; index < cut.size(); ++index) {
+        size_t nextIndex = (index + 1) % cut.size();
+        for (size_t cutIndex = 0; cutIndex < m_cuts.size(); ++cutIndex) {
+            newCuts[cutIndex].push_back(m_cuts[cutIndex][index]);
+        }
+        const auto &oldEdgeLength = edgeLengths[index];
+        if (targetLength >= oldEdgeLength)
+            continue;
+        size_t newInsertNum = oldEdgeLength / targetLength;
+        qDebug() << "oldEdgeLength:" << oldEdgeLength << "targetLength:" << targetLength << "newInsertNum:" << newInsertNum;
+        if (newInsertNum < 1)
+            newInsertNum = 1;
+        if (newInsertNum > 100)
+            continue;
+        float stepFactor = 1.0 / (newInsertNum + 1);
+        float factor = stepFactor;
+        for (size_t i = 0; i < newInsertNum && factor < 1.0; factor += stepFactor, ++i) {
+            float firstFactor = 1.0 - factor;
+            for (size_t cutIndex = 0; cutIndex < m_cuts.size(); ++cutIndex) {
+                auto newPosition = m_generatedVertices[m_cuts[cutIndex][index]] * firstFactor + m_generatedVertices[m_cuts[cutIndex][nextIndex]] * factor;
+                newCuts[cutIndex].push_back(m_generatedVertices.size());
                 m_generatedVertices.push_back(newPosition);
-                const auto &oldIndex = cut[index];
+                const auto &oldIndex = m_cuts[cutIndex][index];
                 m_generatedVerticesCutDirects.push_back(m_generatedVerticesCutDirects[oldIndex]);
                 m_generatedVerticesSourceNodeIndices.push_back(m_generatedVerticesSourceNodeIndices[oldIndex]);
                 m_generatedVerticesInfos.push_back(m_generatedVerticesInfos[oldIndex]);
             }
         }
-        interpolatedCuts.push_back(newCut);
     }
-    
-    m_cuts = interpolatedCuts;
+
+    m_cuts = newCuts;
 }
 
 void StrokeMeshBuilder::stitchCuts()
