@@ -118,6 +118,7 @@ private:
     std::vector<size_t> edgeloopFlipped(const std::vector<size_t> &edgeLoop);
     void reviseNodeBaseNormal(Node &node);
     void applyDeform();
+    void interpolateCutEdges();
     void stitchCuts();
 };
 

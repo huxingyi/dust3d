@@ -12,7 +12,6 @@
 #include <QPolygon>
 #include "snapshot.h"
 #include "model.h"
-#include "meshgenerator.h"
 #include "theme.h"
 #include "texturegenerator.h"
 #include "meshresultpostprocessor.h"
@@ -37,6 +36,8 @@
 class MaterialPreviewsGenerator;
 class MotionsGenerator;
 class ScriptRunner;
+class MeshGenerator;
+class GeneratedCacheContext;
 
 class HistoryItem
 {
@@ -787,7 +788,7 @@ private: // need initialize
     MeshGenerator *m_meshGenerator;
     Model *m_resultMesh;
     Model *m_paintedMesh;
-    std::map<QUuid, StrokeMeshBuilder::CutFaceTransform> *m_resultMeshCutFaceTransforms;
+    //std::map<QUuid, StrokeMeshBuilder::CutFaceTransform> *m_resultMeshCutFaceTransforms;
     std::map<QUuid, std::map<QString, QVector2D>> *m_resultMeshNodesCutFaces;
     bool m_isMeshGenerationSucceed;
     int m_batchChangeRefCount;
@@ -824,11 +825,11 @@ private: // need initialize
     float m_mousePickRadius;
     bool m_saveNextPaintSnapshot;
     VoxelGrid<PaintColor> *m_vertexColorVoxelGrid;
+    GeneratedCacheContext *m_generatedCacheContext;
 private:
     static unsigned long m_maxSnapshot;
     std::deque<HistoryItem> m_undoItems;
     std::deque<HistoryItem> m_redoItems;
-    GeneratedCacheContext m_generatedCacheContext;
     std::vector<std::pair<QtMsgType, QString>> m_resultRigMessages;
     QVector3D m_mouseRayNear;
     QVector3D m_mouseRayFar;

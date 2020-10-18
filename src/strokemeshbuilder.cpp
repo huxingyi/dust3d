@@ -247,6 +247,53 @@ void StrokeMeshBuilder::buildMesh()
     }
 }
 
+void StrokeMeshBuilder::interpolateCutEdges()
+{
+    std::vector<std::vector<size_t>> interpolatedCuts;
+    
+    for (const auto &cut: m_cuts) {
+        double sumOfLegnth = 0;
+        std::vector<double> edgeLengths;
+        edgeLengths.reserve(cut.size());
+        for (size_t i = 0; i < cut.size(); ++i) {
+            size_t j = (i + 1) % cut.size();
+            double length = (m_generatedVertices[cut[i]] - m_generatedVertices[cut[j]]).length();
+            edgeLengths.push_back(length);
+            sumOfLegnth += length;
+        }
+        double targetLength = 1.2 * sumOfLegnth / cut.size();
+        std::vector<size_t> newCut;
+        for (size_t index = 0; index < cut.size(); ++index) {
+            size_t nextIndex = (index + 1) % cut.size();
+            newCut.push_back(cut[index]);
+            const auto &oldEdgeLength = edgeLengths[index];
+            if (targetLength >= oldEdgeLength)
+                continue;
+            size_t newInsertNum = oldEdgeLength / targetLength;
+            qDebug() << "oldEdgeLength:" << oldEdgeLength << "targetLength:" << targetLength << "newInsertNum:" << newInsertNum;
+            if (newInsertNum < 1)
+                newInsertNum = 1;
+            if (newInsertNum > 100)
+                continue;
+            float stepFactor = 1.0 / (newInsertNum + 1);
+            float factor = stepFactor;
+            for (size_t i = 0; i < newInsertNum && factor < 1.0; factor += stepFactor, ++i) {
+                float firstFactor = 1.0 - factor;
+                auto newPosition = m_generatedVertices[cut[index]] * firstFactor + m_generatedVertices[cut[nextIndex]] * factor;
+                newCut.push_back(m_generatedVertices.size());
+                m_generatedVertices.push_back(newPosition);
+                const auto &oldIndex = cut[index];
+                m_generatedVerticesCutDirects.push_back(m_generatedVerticesCutDirects[oldIndex]);
+                m_generatedVerticesSourceNodeIndices.push_back(m_generatedVerticesSourceNodeIndices[oldIndex]);
+                m_generatedVerticesInfos.push_back(m_generatedVerticesInfos[oldIndex]);
+            }
+        }
+        interpolatedCuts.push_back(newCut);
+    }
+    
+    m_cuts = interpolatedCuts;
+}
+
 void StrokeMeshBuilder::stitchCuts()
 {
     for (size_t i = m_isRing ? 0 : 1; i < m_nodeIndices.size(); ++i) {
@@ -744,6 +791,7 @@ bool StrokeMeshBuilder::build()
     
     buildMesh();
     applyDeform();
+    interpolateCutEdges();
     stitchCuts();
     return true;
 }

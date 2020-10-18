@@ -39,10 +39,12 @@ void remeshHole(std::vector<QVector3D> &vertices,
     Mesh mesh;
     
     double targetEdgeLength = 0;
-    for (size_t i = 1; i < hole.size(); ++i) {
-        targetEdgeLength += (vertices[hole[i - 1]] - vertices[hole[i]]).length();
+    for (size_t i = 0; i < hole.size(); ++i) {
+        size_t j = (i + 1) % hole.size();
+        targetEdgeLength += (vertices[hole[i]] - vertices[hole[j]]).length();
     }
     targetEdgeLength /= hole.size();
+    targetEdgeLength *= 1.2;
     
     std::vector<typename CGAL::Surface_mesh<typename Kernel::Point_3>::Vertex_index> meshFace;
     std::vector<size_t> originalIndices;

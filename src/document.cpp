@@ -19,6 +19,7 @@
 #include "scriptrunner.h"
 #include "imageforever.h"
 #include "contourtopartconverter.h"
+#include "meshgenerator.h"
 
 unsigned long Document::m_maxSnapshot = 1000;
 const float Component::defaultClothStiffness = 0.5f;
@@ -46,7 +47,7 @@ Document::Document() :
     m_meshGenerator(nullptr),
     m_resultMesh(nullptr),
     m_paintedMesh(nullptr),
-    m_resultMeshCutFaceTransforms(nullptr),
+    //m_resultMeshCutFaceTransforms(nullptr),
     m_resultMeshNodesCutFaces(nullptr),
     m_isMeshGenerationSucceed(true),
     m_batchChangeRefCount(0),
@@ -79,7 +80,8 @@ Document::Document() :
     m_paintMode(PaintMode::None),
     m_mousePickRadius(0.05),
     m_saveNextPaintSnapshot(false),
-    m_vertexColorVoxelGrid(nullptr)
+    m_vertexColorVoxelGrid(nullptr),
+    m_generatedCacheContext(nullptr)
 {
     connect(&Preferences::instance(), &Preferences::partColorChanged, this, &Document::applyPreferencePartColorChange);
     connect(&Preferences::instance(), &Preferences::flatShadingChanged, this, &Document::applyPreferenceFlatShadingChange);
@@ -106,7 +108,7 @@ Document::~Document()
 {
     delete m_resultMesh;
     delete m_paintedMesh;
-    delete m_resultMeshCutFaceTransforms;
+    //delete m_resultMeshCutFaceTransforms;
     delete m_resultMeshNodesCutFaces;
     delete m_postProcessedOutcome;
     delete textureGuideImage;
@@ -1970,8 +1972,8 @@ void Document::meshReady()
     delete m_resultMesh;
     m_resultMesh = resultMesh;
     
-    delete m_resultMeshCutFaceTransforms;
-    m_resultMeshCutFaceTransforms = m_meshGenerator->takeCutFaceTransforms();
+    //delete m_resultMeshCutFaceTransforms;
+    //m_resultMeshCutFaceTransforms = m_meshGenerator->takeCutFaceTransforms();
     
     delete m_resultMeshNodesCutFaces;
     m_resultMeshNodesCutFaces = m_meshGenerator->takeNodesCutFaces();
@@ -2093,7 +2095,9 @@ void Document::generateMesh()
     m_meshGenerator = new MeshGenerator(snapshot);
     m_meshGenerator->setId(m_nextMeshGenerationId++);
     m_meshGenerator->setDefaultPartColor(Preferences::instance().partColor());
-    m_meshGenerator->setGeneratedCacheContext(&m_generatedCacheContext);
+    if (nullptr == m_generatedCacheContext)
+        m_generatedCacheContext = new GeneratedCacheContext;
+    m_meshGenerator->setGeneratedCacheContext(m_generatedCacheContext);
     if (!m_smoothNormal) {
         m_meshGenerator->setSmoothShadingThresholdAngleDegrees(0);
     }
