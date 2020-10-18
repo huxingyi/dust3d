@@ -1102,7 +1102,8 @@ MeshCombiner::Mesh *MeshGenerator::combineComponentMesh(const QString &component
             for (size_t i = 0; i < group.second.size(); ++i) {
                 if (used.find(i) != used.end())
                     continue;
-                const auto &colorName = group.second[i].second;
+                //const auto &colorName = group.second[i].second;
+                const QString colorName = "white"; // Force to use the same color = deactivate combine by color
                 if (lastColorName != colorName || lastColorName.isEmpty()) {
                     //qDebug() << "New sub group[" << currentSubGroupIndex << "] for color[" << colorName << "]";
                     componentIdStrings.push_back({});
