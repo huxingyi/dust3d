@@ -79,6 +79,8 @@ public slots:
     void partHollowThicknessChanged(QUuid partId);
     void partMaterialIdChanged(QUuid partId);
     void partColorSolubilityChanged(QUuid partId);
+    void partMetalnessChanged(QUuid partId);
+    void partRoughnessChanged(QUuid partId);
     void partCountershadeStateChanged(QUuid partId);
     void partChecked(QUuid partId);
     void partUnchecked(QUuid partId);

@@ -34,6 +34,11 @@ FloatNumberWidget::FloatNumberWidget(QWidget *parent, bool singleLine) :
     }
 }
 
+void FloatNumberWidget::setSliderFixedWidth(float width)
+{
+    m_slider->setFixedWidth(width);
+}
+
 void FloatNumberWidget::updateValueLabel(float value)
 {
     QString valueString = QString().sprintf("%.2f", value);

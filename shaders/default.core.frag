@@ -573,16 +573,16 @@ void main()
     lights[0].type = TYPE_POINT;
     lights[0].position = firstLightPos;
     lights[0].color = vec3(1.0, 1.0, 1.0);
-    lights[0].intensity = 3.0;
-    lights[0].constantAttenuation = 0.0;
+    lights[0].intensity = 1.0;
+    lights[0].constantAttenuation = 1.0;
     lights[0].linearAttenuation = 0.0;
-    lights[0].quadraticAttenuation = 0.0;
+    lights[0].quadraticAttenuation = 0.0025;
 
     // Fill light
     lights[1].type = TYPE_POINT;
     lights[1].position = secondLightPos;
     lights[1].color = vec3(1.0, 1.0, 1.0);
-    lights[1].intensity = 1.0;
+    lights[1].intensity = 0.1;
     lights[1].constantAttenuation = 0.0;
     lights[1].linearAttenuation = 0.0;
     lights[1].quadraticAttenuation = 0.0;
@@ -591,7 +591,7 @@ void main()
     lights[2].type = TYPE_POINT;
     lights[2].position = thirdLightPos;
     lights[2].color = vec3(1.0, 1.0, 1.0);
-    lights[2].intensity = 0.5;
+    lights[2].intensity = 0.05;
     lights[2].constantAttenuation = 0.0;
     lights[2].linearAttenuation = 0.0;
     lights[2].quadraticAttenuation = 0.0;
@@ -635,8 +635,8 @@ void main()
         ambientOcclusion = texture(metalnessRoughnessAmbientOcclusionMapId, vertTexCoord).r;
     }
     
+    roughness = min(0.99, roughness);
     if (environmentIrradianceMapEnabled != 1) {
-        roughness = min(0.99, roughness);
         metalness = min(0.99, metalness);
     }
     

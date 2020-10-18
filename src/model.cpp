@@ -5,8 +5,6 @@
 #include "model.h"
 #include "version.h"
 
-#define MAX_VERTICES_PER_FACE   100
-
 float Model::m_defaultMetalness = 0.0;
 float Model::m_defaultRoughness = 1.0;
 

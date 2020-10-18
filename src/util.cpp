@@ -510,3 +510,87 @@ void saveAsObj(const char *filename, const std::vector<QVector3D> &vertices,
         stream << endl;
     }
 }
+
+bool intersectSegmentAndPlane(const QVector3D &segmentPoint0, const QVector3D &segmentPoint1,
+    const QVector3D &pointOnPlane, const QVector3D &planeNormal,
+    QVector3D *intersection)
+{
+    auto u = segmentPoint1 - segmentPoint0;
+    auto w = segmentPoint0 - pointOnPlane;
+    auto d = QVector3D::dotProduct(planeNormal, u);
+    auto n = QVector3D::dotProduct(-planeNormal, w);
+    if (qAbs(d) < 0.00000001)
+        return false;
+    auto s = n / d;
+    if (s < 0 || s > 1 || qIsNaN(s) || qIsInf(s))
+        return false;
+    if (nullptr != intersection)
+        *intersection = segmentPoint0 + s * u;
+    return true;
+}
+
+bool intersectSegmentAndTriangle(const QVector3D &segmentPoint0, const QVector3D &segmentPoint1,
+    const std::vector<QVector3D> &triangle,
+    const QVector3D &triangleNormal,
+    QVector3D *intersection)
+{
+    QVector3D possibleIntersection;
+    if (!intersectSegmentAndPlane(segmentPoint0, segmentPoint1,
+            triangle[0], triangleNormal, &possibleIntersection)) {
+        return false;
+    }
+    auto ray = (segmentPoint0 - segmentPoint1).normalized();
+    std::vector<QVector3D> normals;
+    for (size_t i = 0; i < 3; ++i) {
+        size_t j = (i + 1) % 3;
+        normals.push_back(QVector3D::normal(possibleIntersection, triangle[i], triangle[j]));
+    }
+    if (QVector3D::dotProduct(normals[0], ray) <= 0)
+        return false;
+    if (QVector3D::dotProduct(normals[0], normals[1]) <= 0)
+        return false;
+    if (QVector3D::dotProduct(normals[0], normals[2]) <= 0)
+        return false;
+    if (nullptr != intersection)
+        *intersection = possibleIntersection;
+    return true;
+}
+
+bool intersectRayAndPolyhedron(const QVector3D &rayNear,
+    const QVector3D &rayFar,
+    const std::vector<QVector3D> &vertices,
+    const std::vector<std::vector<size_t>> &triangles,
+    const std::vector<QVector3D> &triangleNormals,
+    QVector3D *intersection)
+{
+    bool foundPosition = false;
+    auto ray = (rayNear - rayFar).normalized();
+    float minDistance2 = std::numeric_limits<float>::max();
+    for (size_t i = 0; i < triangles.size(); ++i) {
+        const auto &triangleIndices = triangles[i];
+        std::vector<QVector3D> triangle = {
+            vertices[triangleIndices[0]],
+            vertices[triangleIndices[1]],
+            vertices[triangleIndices[2]],
+        };
+        const auto &triangleNormal = triangleNormals[i];
+        if (QVector3D::dotProduct(triangleNormal, ray) <= 0)
+            continue;
+        QVector3D point;
+        if (intersectSegmentAndTriangle(rayNear, rayFar,
+                triangle,
+                triangleNormal,
+                &point)) {
+            float distance2 = (point - rayNear).lengthSquared();
+            if (distance2 < minDistance2) {
+                if (nullptr != intersection)
+                    *intersection = point;
+                minDistance2 = distance2;
+                foundPosition = true;
+            }
+        }
+    }
+    return foundPosition;
+}
+
+

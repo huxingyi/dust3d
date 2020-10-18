@@ -177,6 +177,8 @@ PartWidget::PartWidget(const Document *document, QUuid partId) :
     connect(this, &PartWidget::setPartColorState, m_document, &Document::setPartColorState);
     connect(this, &PartWidget::setPartMaterialId, m_document, &Document::setPartMaterialId);
     connect(this, &PartWidget::setPartColorSolubility, m_document, &Document::setPartColorSolubility);
+    connect(this, &PartWidget::setPartMetalness, m_document, &Document::setPartMetalness);
+    connect(this, &PartWidget::setPartRoughness, m_document, &Document::setPartRoughness);
     connect(this, &PartWidget::setPartHollowThickness, m_document, &Document::setPartHollowThickness);
     connect(this, &PartWidget::setPartCountershaded, m_document, &Document::setPartCountershaded);
     connect(this, &PartWidget::checkPart, m_document, &Document::checkPart);
@@ -469,10 +471,57 @@ void PartWidget::showColorSettingPopup(const QPoint &pos)
     colorSolubilityLayout->addWidget(colorSolubilityEraser);
     colorSolubilityLayout->addWidget(colorSolubilityWidget);
     
+    FloatNumberWidget *metalnessWidget = new FloatNumberWidget;
+    metalnessWidget->setItemName(tr("Metallic"));
+    metalnessWidget->setRange(0.0, 1.0);
+    metalnessWidget->setValue(part->metalness);
+    
+    connect(metalnessWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+        emit setPartMetalness(m_partId, value);
+        emit groupOperationAdded();
+    });
+    
+    QPushButton *metalnessEraser = new QPushButton(QChar(fa::eraser));
+    initToolButton(metalnessEraser);
+    
+    connect(metalnessEraser, &QPushButton::clicked, [=]() {
+        metalnessWidget->setValue(0.0);
+        emit groupOperationAdded();
+    });
+    
+    QHBoxLayout *metalnessLayout = new QHBoxLayout;
+    metalnessLayout->addWidget(metalnessEraser);
+    metalnessLayout->addWidget(metalnessWidget);
+    
+    FloatNumberWidget *roughnessWidget = new FloatNumberWidget;
+    roughnessWidget->setItemName(tr("Roughness"));
+    roughnessWidget->setRange(0.0, 1.0);
+    roughnessWidget->setValue(part->roughness);
+    
+    connect(roughnessWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+        emit setPartRoughness(m_partId, value);
+        emit groupOperationAdded();
+    });
+    
+    QPushButton *roughnessEraser = new QPushButton(QChar(fa::eraser));
+    initToolButton(roughnessEraser);
+    
+    connect(roughnessEraser, &QPushButton::clicked, [=]() {
+        roughnessWidget->setValue(1.0);
+        emit groupOperationAdded();
+    });
+    
+    QHBoxLayout *roughnessLayout = new QHBoxLayout;
+    roughnessLayout->addWidget(roughnessEraser);
+    roughnessLayout->addWidget(roughnessWidget);
+    
     QVBoxLayout *mainLayout = new QVBoxLayout;
     mainLayout->addLayout(colorLayout);
     mainLayout->addLayout(colorTransparencyLayout);
     mainLayout->addLayout(colorSolubilityLayout);
+    mainLayout->addWidget(Theme::createHorizontalLineWidget());
+    mainLayout->addLayout(metalnessLayout);
+    mainLayout->addLayout(roughnessLayout);
     
     if (m_document->materialIdList.empty()) {
         InfoLabel *infoLabel = new InfoLabel;
@@ -861,10 +910,16 @@ void PartWidget::updateColorButton()
         qDebug() << "Part not found:" << m_partId;
         return;
     }
-    if (part->hasColor || part->materialAdjusted() || part->colorSolubilityAdjusted() || part->countershaded)
+    if (part->hasColor || 
+            part->materialAdjusted() || 
+            part->colorSolubilityAdjusted() || 
+            part->countershaded ||
+            part->metalnessAdjusted() ||
+            part->roughnessAdjusted()) {
         updateButton(m_colorButton, QChar(fa::eyedropper), true, part->hasColorFunction());
-    else
+    } else {
         updateButton(m_colorButton, QChar(fa::eyedropper), false, part->hasColorFunction());
+    }
 }
 
 void PartWidget::updateCutRotationButton()

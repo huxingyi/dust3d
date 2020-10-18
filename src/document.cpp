@@ -17,7 +17,6 @@
 #include "motionsgenerator.h"
 #include "skeletonside.h"
 #include "scriptrunner.h"
-#include "mousepicker.h"
 #include "imageforever.h"
 #include "contourtopartconverter.h"
 
@@ -41,10 +40,12 @@ Document::Document() :
     rigType(RigType::None),
     weldEnabled(true),
     polyCount(PolyCount::Original),
+    brushColor(Qt::white),
     // private
     m_isResultMeshObsolete(false),
     m_meshGenerator(nullptr),
     m_resultMesh(nullptr),
+    m_paintedMesh(nullptr),
     m_resultMeshCutFaceTransforms(nullptr),
     m_resultMeshNodesCutFaces(nullptr),
     m_isMeshGenerationSucceed(true),
@@ -73,11 +74,12 @@ Document::Document() :
     m_nextMeshGenerationId(1),
     m_scriptRunner(nullptr),
     m_isScriptResultObsolete(false),
-    m_mousePicker(nullptr),
+    m_vertexColorPainter(nullptr),
     m_isMouseTargetResultObsolete(false),
     m_paintMode(PaintMode::None),
-    m_mousePickRadius(0.2),
-    m_saveNextPaintSnapshot(false)
+    m_mousePickRadius(0.05),
+    m_saveNextPaintSnapshot(false),
+    m_vertexColorVoxelGrid(nullptr)
 {
     connect(&Preferences::instance(), &Preferences::partColorChanged, this, &Document::applyPreferencePartColorChange);
     connect(&Preferences::instance(), &Preferences::flatShadingChanged, this, &Document::applyPreferenceFlatShadingChange);
@@ -103,6 +105,7 @@ void Document::applyPreferenceTextureSizeChange()
 Document::~Document()
 {
     delete m_resultMesh;
+    delete m_paintedMesh;
     delete m_resultMeshCutFaceTransforms;
     delete m_resultMeshNodesCutFaces;
     delete m_postProcessedOutcome;
@@ -1029,7 +1032,7 @@ void Document::setPaintMode(PaintMode mode)
     m_paintMode = mode;
     emit paintModeChanged();
     
-    doPickMouseTarget();
+    paintVertexColors();
 }
 
 void Document::joinNodeAndNeiborsToGroup(std::vector<QUuid> *group, QUuid nodeId, std::set<QUuid> *visitMap, QUuid noUseEdgeId)
@@ -1170,6 +1173,10 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
                 part["color"] = partIt.second.color.name(QColor::HexArgb);
             if (partIt.second.colorSolubilityAdjusted())
                 part["colorSolubility"] = QString::number(partIt.second.colorSolubility);
+            if (partIt.second.metalnessAdjusted())
+                part["metalness"] = QString::number(partIt.second.metalness);
+            if (partIt.second.roughnessAdjusted())
+                part["roughness"] = QString::number(partIt.second.roughness);
             if (partIt.second.deformThicknessAdjusted())
                 part["deformThickness"] = QString::number(partIt.second.deformThickness);
             if (partIt.second.deformWidthAdjusted())
@@ -1590,6 +1597,12 @@ void Document::addFromSnapshot(const Snapshot &snapshot, enum SnapshotSource sou
         const auto &colorSolubilityIt = partKv.second.find("colorSolubility");
         if (colorSolubilityIt != partKv.second.end())
             part.colorSolubility = colorSolubilityIt->second.toFloat();
+        const auto &metalnessIt = partKv.second.find("metalness");
+        if (metalnessIt != partKv.second.end())
+            part.metalness = metalnessIt->second.toFloat();
+        const auto &roughnessIt = partKv.second.find("roughness");
+        if (roughnessIt != partKv.second.end())
+            part.roughness = roughnessIt->second.toFloat();
         const auto &deformThicknessIt = partKv.second.find("deformThickness");
         if (deformThicknessIt != partKv.second.end())
             part.setDeformThickness(deformThicknessIt->second.toFloat());
@@ -1905,6 +1918,14 @@ Model *Document::takeResultMesh()
     return resultMesh;
 }
 
+Model *Document::takePaintedMesh()
+{
+    if (nullptr == m_paintedMesh)
+        return nullptr;
+    Model *paintedMesh = new Model(*m_paintedMesh);
+    return paintedMesh;
+}
+
 bool Document::isMeshGenerationSucceed()
 {
     return m_isMeshGenerationSucceed;
@@ -2205,12 +2226,12 @@ void Document::pickMouseTarget(const QVector3D &nearPosition, const QVector3D &f
     m_mouseRayNear = nearPosition;
     m_mouseRayFar = farPosition;
     
-    doPickMouseTarget();
+    paintVertexColors();
 }
 
-void Document::doPickMouseTarget()
+void Document::paintVertexColors()
 {
-    if (nullptr != m_mousePicker) {
+    if (nullptr != m_vertexColorPainter) {
         m_isMouseTargetResultObsolete = true;
         return;
     }
@@ -2225,44 +2246,41 @@ void Document::doPickMouseTarget()
     //qDebug() << "Mouse picking..";
 
     QThread *thread = new QThread;
-    m_mousePicker = new MousePicker(*m_currentOutcome, m_mouseRayNear, m_mouseRayFar);
-    
-    std::map<QUuid, QUuid> paintImages;
-    for (const auto &it: partMap) {
-        if (!it.second.deformMapImageId.isNull()) {
-            paintImages[it.first] = it.second.deformMapImageId;
-        }
-    }
+    m_vertexColorPainter = new VertexColorPainter(*m_currentOutcome, m_mouseRayNear, m_mouseRayFar);
+    m_vertexColorPainter->setBrushColor(brushColor);
+    m_vertexColorPainter->setBrushMetalness(brushMetalness);
+    m_vertexColorPainter->setBrushRoughness(brushRoughness);
     if (SkeletonDocumentEditMode::Paint == editMode) {
-        m_mousePicker->setPaintImages(paintImages);
-        m_mousePicker->setPaintMode(m_paintMode);
-        m_mousePicker->setRadius(m_mousePickRadius);
-        m_mousePicker->setMaskNodeIds(m_mousePickMaskNodeIds);
+        if (nullptr == m_vertexColorVoxelGrid) {
+            m_vertexColorVoxelGrid = new VoxelGrid<PaintColor>();
+        }
+        m_vertexColorPainter->setVoxelGrid(m_vertexColorVoxelGrid);
+        m_vertexColorPainter->setPaintMode(m_paintMode);
+        m_vertexColorPainter->setRadius(m_mousePickRadius);
+        m_vertexColorPainter->setMaskNodeIds(m_mousePickMaskNodeIds);
     }
     
-    m_mousePicker->moveToThread(thread);
-    connect(thread, &QThread::started, m_mousePicker, &MousePicker::process);
-    connect(m_mousePicker, &MousePicker::finished, this, &Document::mouseTargetReady);
-    connect(m_mousePicker, &MousePicker::finished, thread, &QThread::quit);
+    m_vertexColorPainter->moveToThread(thread);
+    connect(thread, &QThread::started, m_vertexColorPainter, &VertexColorPainter::process);
+    connect(m_vertexColorPainter, &VertexColorPainter::finished, this, &Document::vertexColorsReady);
+    connect(m_vertexColorPainter, &VertexColorPainter::finished, thread, &QThread::quit);
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
     thread->start();
 }
 
-void Document::mouseTargetReady()
+void Document::vertexColorsReady()
 {
-    m_mouseTargetPosition = m_mousePicker->targetPosition();
-    const auto &changedPartIds = m_mousePicker->changedPartIds();
-    for (const auto &it: m_mousePicker->resultPaintImages()) {
-        const auto &partId = it.first;
-        if (changedPartIds.find(partId) == changedPartIds.end())
-            continue;
-        const auto &imageId = it.second;
-        m_intermediatePaintImageIds.insert(imageId);
-        setPartDeformMapImageId(partId, imageId);
+    m_mouseTargetPosition = m_vertexColorPainter->targetPosition();
+    
+    Model *model = m_vertexColorPainter->takePaintedModel();
+    if (nullptr != model) {
+        delete m_paintedMesh;
+        m_paintedMesh = model;
+        emit paintedMeshChanged();
     }
     
-    delete m_mousePicker;
-    m_mousePicker = nullptr;
+    delete m_vertexColorPainter;
+    m_vertexColorPainter = nullptr;
     
     if (!m_isMouseTargetResultObsolete && m_saveNextPaintSnapshot) {
         m_saveNextPaintSnapshot = false;
@@ -3061,6 +3079,36 @@ void Document::setPartColorSolubility(QUuid partId, float solubility)
     part->second.colorSolubility = solubility;
     part->second.dirty = true;
     emit partColorSolubilityChanged(partId);
+    emit skeletonChanged();
+}
+
+void Document::setPartMetalness(QUuid partId, float metalness)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    if (qFuzzyCompare(part->second.metalness, metalness))
+        return;
+    part->second.metalness = metalness;
+    part->second.dirty = true;
+    emit partMetalnessChanged(partId);
+    emit skeletonChanged();
+}
+
+void Document::setPartRoughness(QUuid partId, float roughness)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    if (qFuzzyCompare(part->second.roughness, roughness))
+        return;
+    part->second.roughness = roughness;
+    part->second.dirty = true;
+    emit partRoughnessChanged(partId);
     emit skeletonChanged();
 }
 
@@ -4086,19 +4134,11 @@ void Document::startPaint(void)
 
 void Document::stopPaint(void)
 {
-    if (m_mousePicker || m_isMouseTargetResultObsolete) {
+    if (m_vertexColorPainter || m_isMouseTargetResultObsolete) {
         m_saveNextPaintSnapshot = true;
         return;
     }
-    saveSnapshot();
-    for (const auto &it: partMap) {
-        m_intermediatePaintImageIds.erase(it.second.deformMapImageId);
-    }
-    for (const auto &it: m_intermediatePaintImageIds) {
-        //qDebug() << "Remove intermediate image:" << it;
-        ImageForever::remove(it);
-    }
-    m_intermediatePaintImageIds.clear();
+    //saveSnapshot();
 }
 
 void Document::setMousePickMaskNodeIds(const std::set<QUuid> &nodeIds)

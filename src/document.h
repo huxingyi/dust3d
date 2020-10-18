@@ -31,11 +31,12 @@
 #include "proceduralanimation.h"
 #include "componentlayer.h"
 #include "clothforce.h"
+#include "voxelgrid.h"
+#include "vertexcolorpainter.h"
 
 class MaterialPreviewsGenerator;
 class MotionsGenerator;
 class ScriptRunner;
-class MousePicker;
 
 class HistoryItem
 {
@@ -437,6 +438,7 @@ signals:
     void edgeReversed(QUuid edgeId);
     void partPreviewChanged(QUuid partId);
     void resultMeshChanged();
+    void paintedMeshChanged();
     void turnaroundChanged();
     void editModeChanged();
     void paintModeChanged();
@@ -466,6 +468,8 @@ signals:
     void partChamferStateChanged(QUuid partId);
     void partTargetChanged(QUuid partId);
     void partColorSolubilityChanged(QUuid partId);
+    void partMetalnessChanged(QUuid partId);
+    void partRoughnessChanged(QUuid partId);
     void partHollowThicknessChanged(QUuid partId);
     void partCountershadeStateChanged(QUuid partId);
     void partGridStateChanged(QUuid partId);
@@ -537,6 +541,9 @@ public: // need initialize
     RigType rigType;
     bool weldEnabled;
     PolyCount polyCount;
+    QColor brushColor;
+    float brushMetalness = Model::m_defaultMetalness;
+    float brushRoughness = Model::m_defaultRoughness;
 public:
     Document();
     ~Document();
@@ -576,6 +583,7 @@ public:
     const Pose *findPose(QUuid poseId) const;
     const Motion *findMotion(QUuid motionId) const;
     Model *takeResultMesh();
+    Model *takePaintedMesh();
     bool isMeshGenerationSucceed();
     Model *takeResultTextureMesh();
     Model *takeResultRigWeightMesh();
@@ -646,8 +654,8 @@ public slots:
     void generateMotions();
     void motionsReady();
     void pickMouseTarget(const QVector3D &nearPosition, const QVector3D &farPosition);
-    void doPickMouseTarget();
-    void mouseTargetReady();
+    void paintVertexColors();
+    void vertexColorsReady();
     void setPartLockState(QUuid partId, bool locked);
     void setPartVisibleState(QUuid partId, bool visible);
     void setPartSubdivState(QUuid partId, bool subdived);
@@ -668,6 +676,8 @@ public slots:
     void setPartChamferState(QUuid partId, bool chamfered);
     void setPartTarget(QUuid partId, PartTarget target);
     void setPartColorSolubility(QUuid partId, float solubility);
+    void setPartMetalness(QUuid partId, float metalness);
+    void setPartRoughness(QUuid partId, float roughness);
     void setPartHollowThickness(QUuid partId, float hollowThickness);
     void setPartCountershaded(QUuid partId, bool countershaded);
     void setComponentCombineMode(QUuid componentId, CombineMode combineMode);
@@ -774,6 +784,7 @@ private: // need initialize
     bool m_isResultMeshObsolete;
     MeshGenerator *m_meshGenerator;
     Model *m_resultMesh;
+    Model *m_paintedMesh;
     std::map<QUuid, StrokeMeshBuilder::CutFaceTransform> *m_resultMeshCutFaceTransforms;
     std::map<QUuid, std::map<QString, QVector2D>> *m_resultMeshNodesCutFaces;
     bool m_isMeshGenerationSucceed;
@@ -805,11 +816,12 @@ private: // need initialize
     std::map<QString, std::map<QString, QString>> m_mergedVariables;
     ScriptRunner *m_scriptRunner;
     bool m_isScriptResultObsolete;
-    MousePicker *m_mousePicker;
+    VertexColorPainter *m_vertexColorPainter;
     bool m_isMouseTargetResultObsolete;
     PaintMode m_paintMode;
     float m_mousePickRadius;
     bool m_saveNextPaintSnapshot;
+    VoxelGrid<PaintColor> *m_vertexColorVoxelGrid;
 private:
     static unsigned long m_maxSnapshot;
     std::deque<HistoryItem> m_undoItems;
@@ -823,7 +835,6 @@ private:
     QString m_scriptConsoleLog;
     QString m_script;
     std::set<QUuid> m_mousePickMaskNodeIds;
-    std::set<QUuid> m_intermediatePaintImageIds;
 };
 
 #endif

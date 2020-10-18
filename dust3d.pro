@@ -132,6 +132,7 @@ DEFINES += NOMINMAX
 
 include(thirdparty/QtAwesome/QtAwesome/QtAwesome.pri)
 include(thirdparty/qtsingleapplication/src/qtsingleapplication.pri)
+include(thirdparty/Qt-Color-Widgets/color_widgets.pri)
 
 INCLUDEPATH += src
 
@@ -443,8 +444,11 @@ HEADERS += src/intnumberwidget.h
 SOURCES += src/imagepreviewwidget.cpp
 HEADERS += src/imagepreviewwidget.h
 
-SOURCES += src/mousepicker.cpp
-HEADERS += src/mousepicker.h
+SOURCES += src/vertexcolorpainter.cpp
+HEADERS += src/vertexcolorpainter.h
+
+SOURCES += src/voxelgrid.cpp
+HEADERS += src/voxelgrid.h
 
 SOURCES += src/paintmode.cpp
 HEADERS += src/paintmode.h

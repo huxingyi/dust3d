@@ -19,6 +19,8 @@ struct OutcomeNode
     float radius = 0;
     QColor color;
     float colorSolubility = 0;
+    float metalness = 0;
+    float roughness = 1.0;
     QUuid materialId;
     bool countershaded = false;
     QUuid mirrorFromPartId;

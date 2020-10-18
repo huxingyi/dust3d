@@ -416,6 +416,16 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, 
     if (!colorSolubilityString.isEmpty())
         colorSolubility = colorSolubilityString.toFloat();
     
+    float metalness = 0;
+    QString metalnessString = valueOfKeyInMapOrEmpty(part, "metalness");
+    if (!metalnessString.isEmpty())
+        metalness = metalnessString.toFloat();
+    
+    float roughness = 1.0;
+    QString roughnessString = valueOfKeyInMapOrEmpty(part, "roughness");
+    if (!roughnessString.isEmpty())
+        roughness = roughnessString.toFloat();
+    
     QUuid fillMeshFileId;
     QString fillMeshString = valueOfKeyInMapOrEmpty(part, "fillMesh");
     if (!fillMeshString.isEmpty()) {
@@ -538,6 +548,8 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, 
         outcomeNode.materialId = materialId;
         outcomeNode.countershaded = countershaded;
         outcomeNode.colorSolubility = colorSolubility;
+        outcomeNode.metalness = metalness;
+        outcomeNode.roughness = roughness;
         outcomeNode.boneMark = nodeInfo.boneMark;
         if (!__mirroredByPartId.isEmpty())
             outcomeNode.mirroredByPartId = QUuid(__mirroredByPartId);

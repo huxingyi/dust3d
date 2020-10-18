@@ -248,6 +248,8 @@ void TextureGenerator::generate()
     std::map<QUuid, QColor> partColorMap;
     std::map<std::pair<QUuid, QUuid>, const OutcomeNode *> nodeMap;
     std::map<QUuid, float> partColorSolubilityMap;
+    std::map<QUuid, float> partMetalnessMap;
+    std::map<QUuid, float> partRoughnessMap;
     for (const auto &item: m_outcome->nodes) {
         if (!m_hasTransparencySettings) {
             if (!qFuzzyCompare(1.0, item.color.alphaF()))
@@ -256,6 +258,8 @@ void TextureGenerator::generate()
         nodeMap.insert({{item.partId, item.nodeId}, &item});
         partColorMap.insert({item.partId, item.color});
         partColorSolubilityMap.insert({item.partId, item.colorSolubility});
+        partMetalnessMap.insert({item.partId, item.metalness});
+        partRoughnessMap.insert({item.partId, item.roughness});
     }
     
     auto createImageBeginTime = countTimeConsumed.elapsed();
@@ -335,6 +339,56 @@ void TextureGenerator::generate()
                     rect.height() * TextureGenerator::m_textureSize + fillExpandSize * 2
                 };
                 texturePainter.fillRect(translatedRect, brush);
+            }
+        }
+    }
+    
+    for (const auto &it: partUvRects) {
+        const auto &partId = it.first;
+        const auto &rects = it.second;
+        auto findMetalnessResult = partMetalnessMap.find(partId);
+        if (findMetalnessResult != partMetalnessMap.end()) {
+            if (qFuzzyCompare(findMetalnessResult->second, (float)0.0))
+                continue;
+            const auto &color = QColor(findMetalnessResult->second * 255,
+                findMetalnessResult->second * 255,
+                findMetalnessResult->second * 255);
+            QBrush brush(color);
+            float fillExpandSize = 2;
+            for (const auto &rect: rects) {
+                QRectF translatedRect = {
+                    rect.left() * TextureGenerator::m_textureSize - fillExpandSize,
+                    rect.top() * TextureGenerator::m_textureSize - fillExpandSize,
+                    rect.width() * TextureGenerator::m_textureSize + fillExpandSize * 2,
+                    rect.height() * TextureGenerator::m_textureSize + fillExpandSize * 2
+                };
+                textureMetalnessPainter.fillRect(translatedRect, brush);
+                hasMetalnessMap = true;
+            }
+        }
+    }
+    
+    for (const auto &it: partUvRects) {
+        const auto &partId = it.first;
+        const auto &rects = it.second;
+        auto findRoughnessResult = partRoughnessMap.find(partId);
+        if (findRoughnessResult != partRoughnessMap.end()) {
+            if (qFuzzyCompare(findRoughnessResult->second, (float)1.0))
+                continue;
+            const auto &color = QColor(findRoughnessResult->second * 255,
+                findRoughnessResult->second * 255,
+                findRoughnessResult->second * 255);
+            QBrush brush(color);
+            float fillExpandSize = 2;
+            for (const auto &rect: rects) {
+                QRectF translatedRect = {
+                    rect.left() * TextureGenerator::m_textureSize - fillExpandSize,
+                    rect.top() * TextureGenerator::m_textureSize - fillExpandSize,
+                    rect.width() * TextureGenerator::m_textureSize + fillExpandSize * 2,
+                    rect.height() * TextureGenerator::m_textureSize + fillExpandSize * 2
+                };
+                textureRoughnessPainter.fillRect(translatedRect, brush);
+                hasRoughnessMap = true;
             }
         }
     }
@@ -629,8 +683,10 @@ void TextureGenerator::generate()
     }
     
     hasNormalMap = !m_partNormalTextureMap.empty();
-    hasMetalnessMap = !m_partMetalnessTextureMap.empty();
-    hasRoughnessMap = !m_partRoughnessTextureMap.empty();
+    if (!m_partMetalnessTextureMap.empty())
+        hasMetalnessMap = true;
+    if (!m_partRoughnessTextureMap.empty())
+        hasRoughnessMap = true;
     hasAmbientOcclusionMap = !m_partAmbientOcclusionTextureMap.empty();
     
     auto paintTextureEndTime = countTimeConsumed.elapsed();

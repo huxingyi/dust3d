@@ -25,7 +25,7 @@ QString TextureTypeToDispName(TextureType type)                     \
         case TextureType::Normal:                                   \
             return QObject::tr("Normal Map");                       \
         case TextureType::Metalness:                                \
-            return QObject::tr("Metalness");                        \
+            return QObject::tr("Metallic");                         \
         case TextureType::Roughness:                                \
             return QObject::tr("Roughness");                        \
         case TextureType::AmbientOcclusion:                         \

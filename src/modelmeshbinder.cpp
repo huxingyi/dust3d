@@ -156,18 +156,22 @@ void ModelMeshBinder::paint(ModelShaderProgram *program)
                         (m_hasMetalnessMap || m_hasRoughnessMap || m_hasAmbientOcclusionMap))
                     m_metalnessRoughnessAmbientOcclusionMap = new QOpenGLTexture(*m_mesh->metalnessRoughnessAmbientOcclusionImage());
                 
-                delete m_environmentIrradianceMap;
-                m_environmentIrradianceMap = nullptr;
-                delete m_environmentSpecularMap;
-                m_environmentSpecularMap = nullptr;
+                //delete m_environmentIrradianceMap;
+                //m_environmentIrradianceMap = nullptr;
+                //delete m_environmentSpecularMap;
+                //m_environmentSpecularMap = nullptr;
                 if (program->isCoreProfile() && 
-                        m_environmentLightEnabled &&
-                        (m_hasMetalnessMap || m_hasRoughnessMap)) {
-                    DdsFileReader irradianceFile(":/resources/cedar_bridge_irradiance.dds");
-                    m_environmentIrradianceMap = irradianceFile.createOpenGLTexture();
+                        m_environmentLightEnabled/* &&
+                        (m_hasMetalnessMap || m_hasRoughnessMap)*/) {
+                    if (nullptr == m_environmentIrradianceMap) {
+                        DdsFileReader irradianceFile(":/resources/cedar_bridge_irradiance.dds");
+                        m_environmentIrradianceMap = irradianceFile.createOpenGLTexture();
+                    }
                     
-                    DdsFileReader specularFile(":/resources/cedar_bridge_specular.dds");
-                    m_environmentSpecularMap = specularFile.createOpenGLTexture();
+                    if (nullptr == m_environmentSpecularMap) {
+                        DdsFileReader specularFile(":/resources/cedar_bridge_specular.dds");
+                        m_environmentSpecularMap = specularFile.createOpenGLTexture();
+                    }
                 }
                 
                 {

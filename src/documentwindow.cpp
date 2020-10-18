@@ -162,7 +162,8 @@ DocumentWindow::DocumentWindow() :
     m_exportPreviewWidget(nullptr),
     m_preferencesWidget(nullptr),
     m_isLastMeshGenerationSucceed(true),
-    m_currentUpdatedMeshId(0)
+    m_currentUpdatedMeshId(0),
+    m_colorWheelWidget(nullptr)
 {
     QObject::connect((QtSingleApplication *)QGuiApplication::instance(), 
             &QtSingleApplication::messageReceived, this, [this](const QString &message) {
@@ -201,9 +202,9 @@ DocumentWindow::DocumentWindow() :
     //markerButton->setToolTip(tr("Marker pen"));
     //Theme::initAwesomeButton(markerButton);
     
-    QPushButton *paintButton = new QPushButton(QChar(fa::paintbrush));
-    paintButton->setToolTip(tr("Paint brush"));
-    Theme::initAwesomeButton(paintButton);
+    //QPushButton *paintButton = new QPushButton(QChar(fa::paintbrush));
+    //paintButton->setToolTip(tr("Paint brush"));
+    //Theme::initAwesomeButton(paintButton);
 
     //QPushButton *dragButton = new QPushButton(QChar(fa::handrocko));
     //dragButton->setToolTip(tr("Enter drag mode"));
@@ -269,6 +270,10 @@ DocumentWindow::DocumentWindow() :
         updateRegenerateIconAndTips(regenerateButton, m_document->isMeshGenerationSucceed());
         generatePartPreviewImages();
     });
+    connect(m_document, &Document::paintedMeshChanged, [=]() {
+        auto paintedMesh = m_document->takePaintedMesh();
+        m_modelRenderWidget->updateMesh(paintedMesh);
+    });
     connect(m_document, &Document::postProcessing, this, [=]() {
         regenerateButton->showSpinner(true);
     });
@@ -287,7 +292,7 @@ DocumentWindow::DocumentWindow() :
     toolButtonLayout->addWidget(addButton);
     toolButtonLayout->addWidget(selectButton);
     //toolButtonLayout->addWidget(markerButton);
-    toolButtonLayout->addWidget(paintButton);
+    //toolButtonLayout->addWidget(paintButton);
     //toolButtonLayout->addWidget(dragButton);
     toolButtonLayout->addWidget(zoomInButton);
     toolButtonLayout->addWidget(zoomOutButton);
@@ -392,16 +397,80 @@ DocumentWindow::DocumentWindow() :
     
     setTabPosition(Qt::RightDockWidgetArea, QTabWidget::East);
 
-    QDockWidget *partTreeDocker = new QDockWidget(tr("Parts"), this);
-    partTreeDocker->setAllowedAreas(Qt::RightDockWidgetArea);
-    m_partTreeWidget = new PartTreeWidget(m_document, partTreeDocker);
-    partTreeDocker->setWidget(m_partTreeWidget);
-    addDockWidget(Qt::RightDockWidgetArea, partTreeDocker);
-    //connect(partTreeDocker, &QDockWidget::topLevelChanged, [=](bool topLevel) {
-    //    Q_UNUSED(topLevel);
-    //    for (const auto &part: m_document->partMap)
-    //        m_partTreeWidget->partPreviewChanged(part.first);
-    //});
+    QDockWidget *partsDocker = new QDockWidget(tr("Parts"), this);
+    partsDocker->setAllowedAreas(Qt::RightDockWidgetArea);
+    m_colorWheelWidget = new color_widgets::ColorWheel(nullptr);
+    m_colorWheelWidget->setContentsMargins(0, 5, 0, 5);
+    m_colorWheelWidget->hide();
+    m_document->brushColor = m_colorWheelWidget->color();
+    connect(m_colorWheelWidget, &color_widgets::ColorWheel::colorChanged, this, [=](QColor color) {
+        m_document->brushColor = color;
+    });
+    
+    FloatNumberWidget *metalnessWidget = new FloatNumberWidget;
+    metalnessWidget->setSliderFixedWidth(Theme::sidebarPreferredWidth * 0.4);
+    metalnessWidget->setItemName(tr("Metallic"));
+    metalnessWidget->setRange(0.0, 1.0);
+    metalnessWidget->setValue(m_document->brushMetalness);
+    
+    connect(metalnessWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+        m_document->brushMetalness = value;
+    });
+    
+    QPushButton *metalnessEraser = new QPushButton(QChar(fa::eraser));
+    Theme::initAwesomeToolButtonWithoutFont(metalnessEraser);
+    
+    connect(metalnessEraser, &QPushButton::clicked, [=]() {
+        metalnessWidget->setValue(Model::m_defaultMetalness);
+    });
+    
+    QHBoxLayout *metalnessLayout = new QHBoxLayout;
+    metalnessLayout->addWidget(metalnessEraser);
+    metalnessLayout->addWidget(metalnessWidget);
+    
+    FloatNumberWidget *roughnessWidget = new FloatNumberWidget;
+    roughnessWidget->setSliderFixedWidth(Theme::sidebarPreferredWidth * 0.35);
+    roughnessWidget->setItemName(tr("Roughness"));
+    roughnessWidget->setRange(0.0, 1.0);
+    roughnessWidget->setValue(m_document->brushRoughness);
+    
+    connect(roughnessWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+        m_document->brushRoughness = value;
+    });
+    
+    QPushButton *roughnessEraser = new QPushButton(QChar(fa::eraser));
+    Theme::initAwesomeToolButtonWithoutFont(roughnessEraser);
+    
+    connect(roughnessEraser, &QPushButton::clicked, [=]() {
+        roughnessWidget->setValue(Model::m_defaultRoughness);
+    });
+    
+    QHBoxLayout *roughnessLayout = new QHBoxLayout;
+    roughnessLayout->addWidget(roughnessEraser);
+    roughnessLayout->addWidget(roughnessWidget);
+    
+    QWidget *metalnessAndRoughnessWidget = new QWidget;
+    QVBoxLayout *metalnessAndRoughnessLayout = new QVBoxLayout;
+    metalnessAndRoughnessLayout->addLayout(metalnessLayout);
+    metalnessAndRoughnessLayout->addLayout(roughnessLayout);
+    metalnessAndRoughnessWidget->setLayout(metalnessAndRoughnessLayout);
+    metalnessAndRoughnessWidget->hide();
+    
+    connect(m_document, &Document::editModeChanged, this, [=]() {
+        m_colorWheelWidget->setVisible(SkeletonDocumentEditMode::Paint == m_document->editMode);
+        metalnessAndRoughnessWidget->setVisible(SkeletonDocumentEditMode::Paint == m_document->editMode);
+    });
+    
+    m_partTreeWidget = new PartTreeWidget(m_document, nullptr);
+    QWidget *partsWidget = new QWidget(partsDocker);
+    QVBoxLayout *partsLayout = new QVBoxLayout;
+    partsLayout->setContentsMargins(0, 0, 0, 0);
+    partsLayout->addWidget(m_colorWheelWidget);
+    partsLayout->addWidget(metalnessAndRoughnessWidget);
+    partsLayout->addWidget(m_partTreeWidget);
+    partsWidget->setLayout(partsLayout);
+    partsDocker->setWidget(partsWidget);
+    addDockWidget(Qt::RightDockWidgetArea, partsDocker);
     
     QDockWidget *materialDocker = new QDockWidget(tr("Materials"), this);
     materialDocker->setAllowedAreas(Qt::RightDockWidgetArea);
@@ -453,13 +522,13 @@ DocumentWindow::DocumentWindow() :
     scriptDocker->setWidget(scriptWidget);
     addDockWidget(Qt::RightDockWidgetArea, scriptDocker);
     
-    tabifyDockWidget(partTreeDocker, materialDocker);
+    tabifyDockWidget(partsDocker, materialDocker);
     tabifyDockWidget(materialDocker, rigDocker);
     tabifyDockWidget(rigDocker, poseDocker);
     tabifyDockWidget(poseDocker, motionDocker);
     tabifyDockWidget(motionDocker, scriptDocker);
     
-    partTreeDocker->raise();
+    partsDocker->raise();
     
     QHBoxLayout *mainLayout = new QHBoxLayout;
     mainLayout->setSpacing(0);
@@ -829,8 +898,8 @@ DocumentWindow::DocumentWindow() :
     
     m_showPartsListAction = new QAction(tr("Parts"), this);
     connect(m_showPartsListAction, &QAction::triggered, [=]() {
-        partTreeDocker->show();
-        partTreeDocker->raise();
+        partsDocker->show();
+        partsDocker->raise();
     });
     m_windowMenu->addAction(m_showPartsListAction);
     
@@ -955,9 +1024,9 @@ DocumentWindow::DocumentWindow() :
     //    m_document->setEditMode(SkeletonDocumentEditMode::Mark);
     //});
     
-    connect(paintButton, &QPushButton::clicked, [=]() {
-        m_document->setEditMode(SkeletonDocumentEditMode::Paint);
-    });
+    //connect(paintButton, &QPushButton::clicked, [=]() {
+    //    m_document->setEditMode(SkeletonDocumentEditMode::Paint);
+    //});
 
     //connect(dragButton, &QPushButton::clicked, [=]() {
     //    m_document->setEditMode(SkeletonDocumentEditMode::Drag);
@@ -992,8 +1061,8 @@ DocumentWindow::DocumentWindow() :
 
     m_partListDockerVisibleSwitchConnection = connect(m_document, &Document::skeletonChanged, [=]() {
         if (m_graphicsWidget->hasItems()) {
-            if (partTreeDocker->isHidden())
-                partTreeDocker->show();
+            if (partsDocker->isHidden())
+                partsDocker->show();
             disconnect(m_partListDockerVisibleSwitchConnection);
         }
     });
@@ -1147,6 +1216,8 @@ DocumentWindow::DocumentWindow() :
     connect(m_document, &Document::partHollowThicknessChanged, m_partTreeWidget, &PartTreeWidget::partHollowThicknessChanged);
     connect(m_document, &Document::partMaterialIdChanged, m_partTreeWidget, &PartTreeWidget::partMaterialIdChanged);
     connect(m_document, &Document::partColorSolubilityChanged, m_partTreeWidget, &PartTreeWidget::partColorSolubilityChanged);
+    connect(m_document, &Document::partMetalnessChanged, m_partTreeWidget, &PartTreeWidget::partMetalnessChanged);
+    connect(m_document, &Document::partRoughnessChanged, m_partTreeWidget, &PartTreeWidget::partRoughnessChanged);
     connect(m_document, &Document::partCountershadeStateChanged, m_partTreeWidget, &PartTreeWidget::partCountershadeStateChanged);
     
     connect(m_document, &Document::partTargetChanged, m_partTreeWidget, &PartTreeWidget::partXmirrorStateChanged);

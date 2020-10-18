@@ -177,6 +177,8 @@ public:
     QUuid materialId;
     PartTarget target;
     float colorSolubility;
+    float metalness;
+    float roughness;
     float deformMapScale;
     QUuid deformMapImageId;
     float hollowThickness;
@@ -204,6 +206,8 @@ public:
         cutFace(CutFace::Quad),
         target(PartTarget::Model),
         colorSolubility(0.0),
+        metalness(0.0),
+        roughness(1.0),
         deformMapScale(1.0),
         hollowThickness(0.0),
         countershaded(false),
@@ -333,6 +337,14 @@ public:
     bool colorSolubilityAdjusted() const
     {
         return fabs(colorSolubility - 0.0) >= 0.01;
+    }
+    bool metalnessAdjusted() const
+    {
+        return fabs(metalness - 0.0) >= 0.01;
+    }
+    bool roughnessAdjusted() const
+    {
+        return fabs(roughness - 1.0) >= 0.01;
     }
     bool cutRotationAdjusted() const
     {

@@ -21,6 +21,7 @@
 #include "normalanddepthmapsgenerator.h"
 #include "autosaver.h"
 #include "partpreviewimagesgenerator.h"
+#include "QtColorWidgets/ColorWheel"
 
 class SkeletonGraphicsWidget;
 class PartTreeWidget;
@@ -116,6 +117,7 @@ private:
     bool m_isLastMeshGenerationSucceed;
     quint64 m_currentUpdatedMeshId;
     QStringList m_waitingForExportToFilenames;
+    color_widgets::ColorWheel *m_colorWheelWidget;
 private:
     QString m_currentFilename;
     

@@ -28,6 +28,8 @@ signals:
     void setPartCutFaceLinkedId(QUuid partId, QUuid linkedId);
     void setPartMaterialId(QUuid partId, QUuid materialId);
     void setPartColorSolubility(QUuid partId, float colorSolubility);
+    void setPartMetalness(QUuid partId, float metalness);
+    void setPartRoughness(QUuid partId, float roughness);
     void setPartHollowThickness(QUuid partId, float hollowThickness);
     void setPartCountershaded(QUuid partId, bool countershaded);
     void movePartUp(QUuid partId);

@@ -47,5 +47,18 @@ void subdivideFace2D(std::vector<QVector2D> *face);
 QVector3D choosenBaseAxis(const QVector3D &layoutDirection);
 void saveAsObj(const char *filename, const std::vector<QVector3D> &vertices,
 	const std::vector<std::vector<size_t>> &faces);
-
+bool intersectSegmentAndPlane(const QVector3D &segmentPoint0, const QVector3D &segmentPoint1,
+    const QVector3D &pointOnPlane, const QVector3D &planeNormal,
+    QVector3D *intersection=nullptr);
+bool intersectSegmentAndTriangle(const QVector3D &segmentPoint0, const QVector3D &segmentPoint1,
+    const std::vector<QVector3D> &triangle,
+    const QVector3D &triangleNormal,
+    QVector3D *intersection=nullptr);
+bool intersectRayAndPolyhedron(const QVector3D &rayNear,
+    const QVector3D &rayFar,
+    const std::vector<QVector3D> &vertices,
+    const std::vector<std::vector<size_t>> &triangles,
+    const std::vector<QVector3D> &triangleNormals,
+    QVector3D *intersection=nullptr);
+    
 #endif
