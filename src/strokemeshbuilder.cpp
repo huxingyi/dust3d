@@ -5,6 +5,7 @@
 #include "meshstitcher.h"
 #include "util.h"
 #include "boxmesh.h"
+#include "remeshhole.h"
 
 size_t StrokeMeshBuilder::Node::nextOrNeighborOtherThan(size_t neighborIndex) const
 {
@@ -230,7 +231,6 @@ void StrokeMeshBuilder::buildMesh()
         return;
     }
     
-    std::vector<std::vector<size_t>> cuts;
     for (size_t i = 0; i < m_nodeIndices.size(); ++i) {
         auto &node = m_nodes[m_nodeIndices[i]];
         if (!qFuzzyIsNull(node.cutRotation)) {
@@ -243,16 +243,18 @@ void StrokeMeshBuilder::buildMesh()
             node.traverseDirection, node.baseNormal);
         std::vector<size_t> cut;
         insertCutVertices(cutVertices, &cut, node.index, node.traverseDirection);
-        cuts.push_back(cut);
+        m_cuts.push_back(cut);
     }
-    
-    // Stich cuts
+}
+
+void StrokeMeshBuilder::stitchCuts()
+{
     for (size_t i = m_isRing ? 0 : 1; i < m_nodeIndices.size(); ++i) {
         size_t h = (i + m_nodeIndices.size() - 1) % m_nodeIndices.size();
         const auto &nodeH = m_nodes[m_nodeIndices[h]];
         const auto &nodeI = m_nodes[m_nodeIndices[i]];
-        const auto &cutH = cuts[h];
-        auto reversedCutI = edgeloopFlipped(cuts[i]);
+        const auto &cutH = m_cuts[h];
+        auto reversedCutI = edgeloopFlipped(m_cuts[i]);
         std::vector<std::pair<std::vector<size_t>, QVector3D>> edgeLoops = {
             {cutH, -nodeH.traverseDirection},
             {reversedCutI, nodeI.traverseDirection},
@@ -267,7 +269,7 @@ void StrokeMeshBuilder::buildMesh()
     
     // Fill endpoints
     if (!m_isRing) {
-        if (cuts.size() < 2)
+        if (m_cuts.size() < 2)
             return;
         if (!qFuzzyIsNull(m_hollowThickness)) {
             // Generate mesh for hollow
@@ -293,8 +295,8 @@ void StrokeMeshBuilder::buildMesh()
                 m_generatedFaces.push_back(newFace);
             }
             
-            std::vector<std::vector<size_t>> revisedCuts = {cuts[0],
-                edgeloopFlipped(cuts[cuts.size() - 1])};
+            std::vector<std::vector<size_t>> revisedCuts = {m_cuts[0],
+                edgeloopFlipped(m_cuts[m_cuts.size() - 1])};
             for (const auto &cut: revisedCuts) {
                 for (size_t i = 0; i < cut.size(); ++i) {
                     size_t j = (i + 1) % cut.size();
@@ -307,8 +309,28 @@ void StrokeMeshBuilder::buildMesh()
                 }
             }
         } else {
-            m_generatedFaces.push_back(cuts[0]);
-            m_generatedFaces.push_back(edgeloopFlipped(cuts[cuts.size() - 1]));
+            if (m_cuts[0].size() <= 4) {
+                m_generatedFaces.push_back(m_cuts[0]);
+                m_generatedFaces.push_back(edgeloopFlipped(m_cuts[m_cuts.size() - 1]));
+            } else {
+                auto remeshAndAddCut = [&](const std::vector<size_t> &inputFace) {
+                    std::vector<std::vector<size_t>> remeshedFaces;
+                    size_t oldVertexCount = m_generatedVertices.size();
+                    remeshHole(m_generatedVertices,
+                        inputFace,
+                        remeshedFaces);
+                    size_t oldIndex = inputFace[0];
+                    for (size_t i = oldVertexCount; i < m_generatedVertices.size(); ++i) {
+                        m_generatedVerticesCutDirects.push_back(m_generatedVerticesCutDirects[oldIndex]);
+                        m_generatedVerticesSourceNodeIndices.push_back(m_generatedVerticesSourceNodeIndices[oldIndex]);
+                        m_generatedVerticesInfos.push_back(m_generatedVerticesInfos[oldIndex]);
+                    }
+                    for (const auto &it: remeshedFaces)
+                        m_generatedFaces.push_back(it);
+                };
+                remeshAndAddCut(m_cuts[0]);
+                remeshAndAddCut(edgeloopFlipped(m_cuts[m_cuts.size() - 1]));
+            }
         }
     }
 }
@@ -722,5 +744,6 @@ bool StrokeMeshBuilder::build()
     
     buildMesh();
     applyDeform();
+    stitchCuts();
     return true;
 }

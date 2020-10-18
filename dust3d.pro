@@ -538,6 +538,9 @@ HEADERS += src/fileforever.h
 SOURCES += src/partpreviewimagesgenerator.cpp
 HEADERS += src/partpreviewimagesgenerator.h
 
+SOURCES += src/remeshhole.cpp
+HEADERS += src/remeshhole.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h

@@ -96,6 +96,8 @@ private:
     std::vector<GeneratedVertexInfo> m_generatedVerticesInfos;
     std::vector<std::vector<size_t>> m_generatedFaces;
     
+    std::vector<std::vector<size_t>> m_cuts;
+    
     bool prepare();
     std::vector<QVector3D> makeCut(const QVector3D &cutCenter, 
         float radius, 
@@ -116,6 +118,7 @@ private:
     std::vector<size_t> edgeloopFlipped(const std::vector<size_t> &edgeLoop);
     void reviseNodeBaseNormal(Node &node);
     void applyDeform();
+    void stitchCuts();
 };
 
 #endif
