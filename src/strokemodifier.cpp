@@ -246,7 +246,6 @@ void StrokeModifier::smooth()
         const auto &nodeIndex = loop[i];
         const auto &node = m_nodes[nodeIndex];
         bool isKnot = node.originNodeIndex == nodeIndex;
-        qDebug() << "Loop[" << i << "]: isKnot:" << (isKnot ? "TRUE" : "false") << "nodeIndex:" << nodeIndex;
         spline.addPoint((int)nodeIndex, node.position, isKnot);
     }
     if (!spline.interpolate())
@@ -257,114 +256,6 @@ void StrokeModifier::smooth()
         auto &node = m_nodes[it.source];
         node.position = it.position;
     }
-    
-    /*
-    auto atKnot = [](float t, const QVector3D &p0, const QVector3D &p1) {
-        const float alpha = 0.5f;
-	    QVector3D d = p1 - p0;
-        float a = QVector3D::dotProduct(d, d);
-        float b = std::pow(a, alpha * 0.5f);
-	    return (b + t);
-	};
-    
-    auto centripetalCatmullRom = [&](std::vector<int> &knots,
-            size_t segment, const std::vector<float> &times, const std::vector<size_t> &nodeIndices) {
-        const QVector3D &p0 = m_nodes[knots[0]].position;
-		const QVector3D &p1 = m_nodes[knots[1]].position;
-		const QVector3D &p2 = m_nodes[knots[2]].position;
-		const QVector3D &p3 = m_nodes[knots[3]].position;
-
-		float t0 = 0.0f;
-		float t1 = atKnot(t0, p0, p1);
-		float t2 = atKnot(t1, p1, p2);
-		float t3 = atKnot(t2, p2, p3);
-        
-        qDebug() << "t0:" << t0;
-        qDebug() << "t1:" << t1;
-        qDebug() << "t2:" << t2;
-        qDebug() << "t3:" << t3;
-        
-        qDebug() << "p0:" << p0;
-        qDebug() << "p1:" << p1;
-        qDebug() << "p2:" << p2;
-        qDebug() << "p3:" << p3;
-        
-        for (size_t i = 0; i < times.size(); ++i) {
-            const auto &factor = times[i];
-            float t = 0.0;
-            if (0 == segment)
-                t = t0 * (1.0f - factor) + t1 * factor;
-            else if (1 == segment)
-                t = t1 * (1.0f - factor) + t2 * factor;
-            else
-                t = t2 * (1.0f - factor) + t3 * factor;
-            QVector3D a1 = (t1 - t) / (t1 - t0) * p0 + (t - t0) / (t1 - t0) * p1;
-		    QVector3D a2 = (t2 - t) / (t2 - t1) * p1 + (t - t1) / (t2 - t1) * p2;
-		    QVector3D a3 = (t3 - t) / (t3 - t2) * p2 + (t - t2) / (t3 - t2) * p3;
-		    
-		    QVector3D b1 = (t2 - t) / (t2 - t0) * a1 + (t - t0) / (t2 - t0) * a2;
-		    QVector3D b2 = (t3 - t) / (t3 - t1) * a2 + (t - t1) / (t3 - t1) * a3;
-		    
-		    m_nodes[nodeIndices[i]].position = ((t2 - t) / (t2 - t1) * b1 + (t - t1) / (t2 - t1) * b2);
-            
-            qDebug() << "Update node position:" << m_nodes[nodeIndices[i]].position << "factor:" << factor << "t:" << t;
-        }
-    };
-    
-    struct SplineNode
-    {
-        size_t order;
-        int nodeIndex;
-        float distance;
-    };
-    std::vector<SplineNode> splineNodes;
-    std::vector<size_t> splineKnots;
-    float distance = 0;
-    for (size_t i = 0; i < loop.size(); ++i) {
-        const auto &nodeIndex = loop[i];
-        const auto &node = m_nodes[nodeIndex];
-        if (i > 0)
-            distance += (m_nodes[loop[i - 1]].position - node.position).length();
-        if (node.originNodeIndex == nodeIndex)
-            splineKnots.push_back(splineNodes.size());
-        splineNodes.push_back({
-            i, nodeIndex, distance
-        });
-    }
-    
-    qDebug() << "splineNodes.size():" << splineNodes.size();
-    qDebug() << "splineKnots.size():" << splineKnots.size();
-    
-    for (size_t i = 0; i < splineKnots.size(); ++i) {
-        size_t h = i > 0 ? i - 1 : i;
-        size_t j = i + 1 < splineKnots.size() ? i + 1 : i;
-        size_t k = i + 2 < splineKnots.size() ? i + 2 : j;
-        qDebug() << "h:" << h;
-        qDebug() << "i:" << i;
-        qDebug() << "j:" << j;
-        qDebug() << "k:" << k;
-        if (h == i || i == j || j == k)
-            continue;
-        float beginDistance = splineNodes[splineKnots[i]].distance;
-        float endDistance = splineNodes[splineKnots[j]].distance;
-        float totalDistance = endDistance - beginDistance;
-        std::vector<float> times;
-        std::vector<size_t> nodeIndices;
-        for (size_t splineNodeIndex = splineKnots[i] + 1; 
-                splineNodeIndex < splineKnots[j]; ++splineNodeIndex) {
-            qDebug() << "splineNodeIndex:" << splineNodeIndex;
-            times.push_back((splineNodes[splineNodeIndex].distance - beginDistance) / totalDistance);
-            nodeIndices.push_back(splineNodes[splineNodeIndex].nodeIndex);
-        }
-        std::vector<int> knots = {
-            splineNodes[splineKnots[h]].nodeIndex,
-            splineNodes[splineKnots[i]].nodeIndex,
-            splineNodes[splineKnots[j]].nodeIndex,
-            splineNodes[splineKnots[k]].nodeIndex
-        };
-        centripetalCatmullRom(knots, 1, times, nodeIndices);
-    }
-    */
 }
 
 const std::vector<StrokeModifier::Node> &StrokeModifier::nodes() const
