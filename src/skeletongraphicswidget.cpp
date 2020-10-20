@@ -194,6 +194,12 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
         contextMenu.addAction(&breakAction);
     }
     
+    QAction reduceAction(tr("Reduce"), this);
+    if (!m_nodePositionModifyOnly && hasSelection()) {
+        connect(&reduceAction, &QAction::triggered, this, &SkeletonGraphicsWidget::reduceSelected);
+        contextMenu.addAction(&reduceAction);
+    }
+    
     QAction reverseAction(tr("Reverse"), this);
     if (!m_nodePositionModifyOnly && hasEdgeSelection()) {
         connect(&reverseAction, &QAction::triggered, this, &SkeletonGraphicsWidget::reverseSelectedEdges);
@@ -523,6 +529,23 @@ void SkeletonGraphicsWidget::breakSelected()
     emit batchChangeBegin();
     for (const auto &it: edgeIds) {
         emit breakEdge(it);
+    }
+    emit batchChangeEnd();
+    emit groupOperationAdded();
+}
+
+void SkeletonGraphicsWidget::reduceSelected()
+{
+    std::set<QUuid> nodeIds;
+    for (const auto &it: m_rangeSelectionSet) {
+        if (it->data(0) == "node")
+            nodeIds.insert(((SkeletonGraphicsNodeItem *)it)->id());
+    }
+    if (nodeIds.empty())
+        return;
+    emit batchChangeBegin();
+    for (const auto &it: nodeIds) {
+        emit reduceNode(it);
     }
     emit batchChangeEnd();
     emit groupOperationAdded();

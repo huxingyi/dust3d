@@ -483,6 +483,7 @@ signals:
     void open();
     void exportResult();
     void breakEdge(QUuid edgeId);
+    void reduceNode(QUuid nodeId);
     void reverseEdge(QUuid edgeId);
     void moveOriginBy(float x, float y, float z);
     void partChecked(QUuid partId);
@@ -587,6 +588,7 @@ public slots:
     void fadeSelected();
     void colorizeSelected();
     void breakSelected();
+    void reduceSelected();
     void reverseSelectedEdges();
     void connectSelected();
     void rotateSelected(int degree);

@@ -140,6 +140,34 @@ void Document::Document::disableAllPositionRelatedLocks()
     m_allPositionRelatedLocksEnabled = false;
 }
 
+void Document::reduceNode(QUuid nodeId)
+{
+    const SkeletonNode *node = findNode(nodeId);
+    if (nullptr == node) {
+        qDebug() << "Find node failed:" << nodeId;
+        return;
+    }
+    if (node->edgeIds.size() != 2) {
+        return;
+    }
+    QUuid firstEdgeId = node->edgeIds[0];
+    QUuid secondEdgeId = node->edgeIds[1];
+    const SkeletonEdge *firstEdge = findEdge(firstEdgeId);
+    if (nullptr == firstEdge) {
+        qDebug() << "Find edge failed:" << firstEdgeId;
+        return;
+    }
+    const SkeletonEdge *secondEdge = findEdge(secondEdgeId);
+    if (nullptr == secondEdge) {
+        qDebug() << "Find edge failed:" << secondEdgeId;
+        return;
+    }
+    QUuid firstNeighborNodeId = firstEdge->neighborOf(nodeId);
+    QUuid secondNeighborNodeId = secondEdge->neighborOf(nodeId);
+    removeNode(nodeId);
+    addEdge(firstNeighborNodeId, secondNeighborNodeId);
+}
+
 void Document::breakEdge(QUuid edgeId)
 {
     const SkeletonEdge *edge = findEdge(edgeId);

@@ -728,6 +728,7 @@ public slots:
     void silentReset();
     void silentResetScript();
     void breakEdge(QUuid edgeId);
+    void reduceNode(QUuid nodeId);
     void reverseEdge(QUuid edgeId);
     void setXlockState(bool locked);
     void setYlockState(bool locked);

@@ -666,6 +666,10 @@ DocumentWindow::DocumentWindow() :
     m_breakAction = new QAction(tr("Break"), this);
     connect(m_breakAction, &QAction::triggered, m_graphicsWidget, &SkeletonGraphicsWidget::breakSelected);
     m_editMenu->addAction(m_breakAction);
+    
+    m_reduceAction = new QAction(tr("Reduce"), this);
+    connect(m_reduceAction, &QAction::triggered, m_graphicsWidget, &SkeletonGraphicsWidget::reduceSelected);
+    m_editMenu->addAction(m_reduceAction);
 
     m_reverseAction = new QAction(tr("Reverse"), this);
     connect(m_reverseAction, &QAction::triggered, m_graphicsWidget, &SkeletonGraphicsWidget::reverseSelectedEdges);
@@ -813,6 +817,7 @@ DocumentWindow::DocumentWindow() :
         m_redoAction->setEnabled(m_document->redoable());
         m_deleteAction->setEnabled(m_graphicsWidget->hasSelection());
         m_breakAction->setEnabled(m_graphicsWidget->hasEdgeSelection());
+        m_reduceAction->setEnabled(m_graphicsWidget->hasSelection());
         m_reverseAction->setEnabled(m_graphicsWidget->hasEdgeSelection());
         m_connectAction->setEnabled(m_graphicsWidget->hasTwoDisconnectedNodesSelection());
         m_cutAction->setEnabled(m_graphicsWidget->hasSelection());
@@ -1099,6 +1104,7 @@ DocumentWindow::DocumentWindow() :
     connect(graphicsWidget, &SkeletonGraphicsWidget::batchChangeBegin, m_document, &Document::batchChangeBegin);
     connect(graphicsWidget, &SkeletonGraphicsWidget::batchChangeEnd, m_document, &Document::batchChangeEnd);
     connect(graphicsWidget, &SkeletonGraphicsWidget::breakEdge, m_document, &Document::breakEdge);
+    connect(graphicsWidget, &SkeletonGraphicsWidget::reduceNode, m_document, &Document::reduceNode);
     connect(graphicsWidget, &SkeletonGraphicsWidget::reverseEdge, m_document, &Document::reverseEdge);
     connect(graphicsWidget, &SkeletonGraphicsWidget::moveOriginBy, m_document, &Document::moveOriginBy);
     connect(graphicsWidget, &SkeletonGraphicsWidget::partChecked, m_document, &Document::partChecked);
