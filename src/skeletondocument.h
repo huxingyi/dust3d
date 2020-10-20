@@ -402,6 +402,7 @@ public:
         roughness = other.roughness;
         deformUnified = other.deformUnified;
         smooth = other.smooth;
+        hollowThickness = other.hollowThickness;
     }
     void updatePreviewMesh(Model *previewMesh)
     {
