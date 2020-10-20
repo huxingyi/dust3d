@@ -1219,6 +1219,7 @@ DocumentWindow::DocumentWindow() :
     connect(m_document, &Document::partMetalnessChanged, m_partTreeWidget, &PartTreeWidget::partMetalnessChanged);
     connect(m_document, &Document::partRoughnessChanged, m_partTreeWidget, &PartTreeWidget::partRoughnessChanged);
     connect(m_document, &Document::partCountershadeStateChanged, m_partTreeWidget, &PartTreeWidget::partCountershadeStateChanged);
+    connect(m_document, &Document::partSmoothStateChanged, m_partTreeWidget, &PartTreeWidget::partSmoothStateChanged);
     
     connect(m_document, &Document::partTargetChanged, m_partTreeWidget, &PartTreeWidget::partXmirrorStateChanged);
     connect(m_document, &Document::partTargetChanged, m_partTreeWidget, &PartTreeWidget::partColorStateChanged);

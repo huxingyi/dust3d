@@ -188,6 +188,7 @@ public:
     QUuid fillMeshLinkedId;
     bool isPreviewMeshObsolete;
     QPixmap previewPixmap;
+    bool smooth;
     SkeletonPart(const QUuid &withId=QUuid()) :
         visible(true),
         locked(false),
@@ -214,7 +215,8 @@ public:
         hollowThickness(0.0),
         countershaded(false),
         gridded(false),
-        isPreviewMeshObsolete(false)
+        isPreviewMeshObsolete(false),
+        smooth(true)
     {
         id = withId.isNull() ? QUuid::createUuid() : withId;
     }
@@ -396,6 +398,10 @@ public:
         target = other.target;
         colorSolubility = other.colorSolubility;
         countershaded = other.countershaded;
+        metalness = other.metalness;
+        roughness = other.roughness;
+        deformUnified = other.deformUnified;
+        smooth = other.smooth;
     }
     void updatePreviewMesh(Model *previewMesh)
     {

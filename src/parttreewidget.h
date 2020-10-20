@@ -82,6 +82,7 @@ public slots:
     void partMetalnessChanged(QUuid partId);
     void partRoughnessChanged(QUuid partId);
     void partCountershadeStateChanged(QUuid partId);
+    void partSmoothStateChanged(QUuid partId);
     void partChecked(QUuid partId);
     void partUnchecked(QUuid partId);
     void partComponentChecked(QUuid partId);

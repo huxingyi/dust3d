@@ -13,7 +13,6 @@
 #include "model.h"
 #include "componentlayer.h"
 #include "clothforce.h"
-#include "strokemodifier.h"
 
 class GeneratedPart
 {

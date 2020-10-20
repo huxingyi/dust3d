@@ -474,6 +474,7 @@ signals:
     void partRoughnessChanged(QUuid partId);
     void partHollowThicknessChanged(QUuid partId);
     void partCountershadeStateChanged(QUuid partId);
+    void partSmoothStateChanged(QUuid partId);
     void partGridStateChanged(QUuid partId);
     void componentCombineModeChanged(QUuid componentId);
     void cleanup();
@@ -683,6 +684,7 @@ public slots:
     void setPartRoughness(QUuid partId, float roughness);
     void setPartHollowThickness(QUuid partId, float hollowThickness);
     void setPartCountershaded(QUuid partId, bool countershaded);
+    void setPartSmoothState(QUuid partId, bool smooth);
     void setComponentCombineMode(QUuid componentId, CombineMode combineMode);
     void moveComponentUp(QUuid componentId);
     void moveComponentDown(QUuid componentId);

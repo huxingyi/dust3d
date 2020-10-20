@@ -38,6 +38,11 @@ PartWidget::PartWidget(const Document *document, QUuid partId) :
     m_visibleButton->setSizePolicy(retainSizePolicy);
     initButton(m_visibleButton);
     
+    m_smoothButton = new QPushButton();
+    m_smoothButton->setToolTip(tr("Toggle smooth"));
+    m_smoothButton->setSizePolicy(retainSizePolicy);
+    initButton(m_smoothButton);
+    
     m_lockButton = new QPushButton();
     m_lockButton->setToolTip(tr("Lock/unlock nodes"));
     m_lockButton->setSizePolicy(retainSizePolicy);
@@ -109,7 +114,7 @@ PartWidget::PartWidget(const Document *document, QUuid partId) :
     toolsLayout->setContentsMargins(0, 0, 5, 0);
     int row = 0;
     int col = 0;
-    toolsLayout->addWidget(m_visibleButton, row, col++, Qt::AlignBottom);
+    toolsLayout->addWidget(m_smoothButton, row, col++, Qt::AlignBottom);
     toolsLayout->addWidget(m_lockButton, row, col++, Qt::AlignBottom);
     toolsLayout->addWidget(m_disableButton, row, col++, Qt::AlignBottom);
     toolsLayout->addWidget(m_xMirrorButton, row, col++, Qt::AlignBottom);
@@ -128,7 +133,7 @@ PartWidget::PartWidget(const Document *document, QUuid partId) :
     QHBoxLayout *previewAndToolsLayout = new QHBoxLayout;
     previewAndToolsLayout->setSpacing(0);
     previewAndToolsLayout->setContentsMargins(0, 0, 0, 0);
-    //previewAndToolsLayout->addWidget(m_visibleButton);
+    previewAndToolsLayout->addWidget(m_visibleButton);
     //previewAndToolsLayout->addWidget(m_previewWidget);
     previewAndToolsLayout->addWidget(m_previewLabel);
     previewAndToolsLayout->addLayout(toolsLayout);
@@ -182,11 +187,22 @@ PartWidget::PartWidget(const Document *document, QUuid partId) :
     connect(this, &PartWidget::setPartRoughness, m_document, &Document::setPartRoughness);
     connect(this, &PartWidget::setPartHollowThickness, m_document, &Document::setPartHollowThickness);
     connect(this, &PartWidget::setPartCountershaded, m_document, &Document::setPartCountershaded);
+    connect(this, &PartWidget::setPartSmoothState, m_document, &Document::setPartSmoothState);
     connect(this, &PartWidget::checkPart, m_document, &Document::checkPart);
     connect(this, &PartWidget::enableBackgroundBlur, m_document, &Document::enableBackgroundBlur);
     connect(this, &PartWidget::disableBackgroundBlur, m_document, &Document::disableBackgroundBlur);
     
     connect(this, &PartWidget::groupOperationAdded, m_document, &Document::saveSnapshot);
+    
+    connect(m_smoothButton, &QPushButton::clicked, [=]() {
+        const SkeletonPart *part = m_document->findPart(m_partId);
+        if (!part) {
+            qDebug() << "Part not found:" << m_partId;
+            return;
+        }
+        emit setPartSmoothState(m_partId, !part->smooth);
+        emit groupOperationAdded();
+    });
     
     connect(m_lockButton, &QPushButton::clicked, [=]() {
         const SkeletonPart *part = m_document->findPart(m_partId);
@@ -313,12 +329,13 @@ ModelWidget *PartWidget::previewWidget()
 
 QSize PartWidget::preferredSize()
 {
-    return QSize(Theme::miniIconSize + Theme::partPreviewImageSize + Theme::miniIconSize * 4 + 5 + 2, Theme::partPreviewImageSize + 6);
+    return QSize(Theme::miniIconSize + Theme::partPreviewImageSize + Theme::miniIconSize * 5 + 5 + 2, Theme::partPreviewImageSize + 6);
 }
 
 void PartWidget::updateAllButtons()
 {
     updateVisibleButton();
+    updateSmoothButton();
     updateLockButton();
     updateSubdivButton();
     updateDisableButton();
@@ -826,6 +843,19 @@ void PartWidget::updateLockButton()
         updateButton(m_lockButton, QChar(fa::lock), true);
     else
         updateButton(m_lockButton, QChar(fa::unlock), false);
+}
+
+void PartWidget::updateSmoothButton()
+{
+    const SkeletonPart *part = m_document->findPart(m_partId);
+    if (!part) {
+        qDebug() << "Part not found:" << m_partId;
+        return;
+    }
+    if (part->smooth)
+        updateButton(m_smoothButton, QChar(fa::headphones), true);
+    else
+        updateButton(m_smoothButton, QChar(fa::headphones), false);
 }
 
 void PartWidget::updateVisibleButton()

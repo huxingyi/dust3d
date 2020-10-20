@@ -30,6 +30,7 @@ public:
     void subdivide();
     void roundEnd();
     void enableIntermediateAddition();
+    void enableSmooth();
     const std::vector<Node> &nodes() const;
     const std::vector<Edge> &edges() const;
     void finalize();
@@ -39,10 +40,12 @@ private:
     std::vector<Node> m_nodes;
     std::vector<Edge> m_edges;
     bool m_intermediateAdditionEnabled = false;
+    bool m_smooth = false;
     
     void createIntermediateNode(const Node &firstNode, const Node &secondNode, float factor, Node *resultNode);
     float averageCutTemplateEdgeLength(const std::vector<QVector2D> &cutTemplate);
     void createIntermediateCutTemplateEdges(std::vector<QVector2D> &cutTemplate, float averageCutTemplateLength);
+    void smooth();
 };
 
 #endif

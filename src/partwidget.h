@@ -33,6 +33,7 @@ signals:
     void setPartRoughness(QUuid partId, float roughness);
     void setPartHollowThickness(QUuid partId, float hollowThickness);
     void setPartCountershaded(QUuid partId, bool countershaded);
+    void setPartSmoothState(QUuid partId, bool smooth);
     void movePartUp(QUuid partId);
     void movePartDown(QUuid partId);
     void movePartToTop(QUuid partId);
@@ -46,6 +47,7 @@ public:
     void reload();
     void updatePreview();
     void updateLockButton();
+    void updateSmoothButton();
     void updateVisibleButton();
     void updateSubdivButton();
     void updateDisableButton();
@@ -73,6 +75,7 @@ private: // need initialize
 private:
     ModelWidget *m_previewWidget = nullptr;
     QPushButton *m_visibleButton = nullptr;
+    QPushButton *m_smoothButton = nullptr;
     QPushButton *m_lockButton = nullptr;
     QPushButton *m_subdivButton = nullptr;
     QPushButton *m_disableButton = nullptr;

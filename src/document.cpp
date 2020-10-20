@@ -1197,6 +1197,8 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
                 part["materialId"] = partIt.second.materialId.toString();
             if (partIt.second.countershaded)
                 part["countershaded"] = "true";
+            if (partIt.second.smooth)
+                part["smooth"] = "true";
             //if (partIt.second.gridded)
             //    part["gridded"] = "true";
             snapshot->parts[part["id"]] = part;
@@ -1629,6 +1631,7 @@ void Document::addFromSnapshot(const Snapshot &snapshot, enum SnapshotSource sou
         if (materialIdIt != partKv.second.end())
             part.materialId = oldNewIdMap[QUuid(materialIdIt->second)];
         part.countershaded = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "countershaded"));
+        part.smooth = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "smooth"));
         //part.gridded = isTrueValueString(valueOfKeyInMapOrEmpty(partKv.second, "gridded"));;
         newAddedPartIds.insert(part.id);
     }
@@ -3164,6 +3167,21 @@ void Document::setPartCountershaded(QUuid partId, bool countershaded)
     part->second.dirty = true;
     emit partCountershadeStateChanged(partId);
     emit textureChanged();
+}
+
+void Document::setPartSmoothState(QUuid partId, bool smooth)
+{
+    auto part = partMap.find(partId);
+    if (part == partMap.end()) {
+        qDebug() << "Part not found:" << partId;
+        return;
+    }
+    if (part->second.smooth == smooth)
+        return;
+    part->second.smooth = smooth;
+    part->second.dirty = true;
+    emit partSmoothStateChanged(partId);
+    emit skeletonChanged();
 }
 
 void Document::setPartCutRotation(QUuid partId, float cutRotation)

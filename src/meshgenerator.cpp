@@ -352,6 +352,7 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, 
     bool rounded = isTrueValueString(valueOfKeyInMapOrEmpty(part, "rounded"));
     bool chamfered = isTrueValueString(valueOfKeyInMapOrEmpty(part, "chamfered"));
     bool countershaded = isTrueValueString(valueOfKeyInMapOrEmpty(part, "countershaded"));
+    bool smooth = isTrueValueString(valueOfKeyInMapOrEmpty(part, "smooth"));
     QString colorString = valueOfKeyInMapOrEmpty(part, "color");
     QColor partColor = colorString.isEmpty() ? m_defaultPartColor : QColor(colorString);
     float deformThickness = 1.0;
@@ -584,6 +585,8 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, 
     
     strokeModifier = new StrokeModifier;
     
+    if (smooth)
+        strokeModifier->enableSmooth();
     if (addIntermediateNodes)
         strokeModifier->enableIntermediateAddition();
     
