@@ -4,15 +4,15 @@
 #include <QVector3D>
 #include <QQuaternion>
 
-struct CCDIKNode
+struct CcdIkNode
 {
     QVector3D position;
 };
 
-class CCDIKSolver
+class CcdIkSolver
 {
 public:
-    CCDIKSolver();
+    CcdIkSolver();
     void setMaxRound(int maxRound);
     void setDistanceThreshod(float threshold);
     int addNodeInOrder(const QVector3D &position);
@@ -22,7 +22,7 @@ public:
 private:
     void iterate();
 private:
-    std::vector<CCDIKNode> m_nodes;
+    std::vector<CcdIkNode> m_nodes;
     QVector3D m_destination;
     int m_maxRound;
     float m_distanceThreshold2;

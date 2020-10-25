@@ -544,6 +544,42 @@ HEADERS += src/remeshhole.h
 SOURCES += src/centripetalcatmullromspline.cpp
 HEADERS += src/centripetalcatmullromspline.h
 
+SOURCES += src/simpleshadermesh.cpp
+HEADERS += src/simpleshadermesh.h
+
+SOURCES += src/simpleshadermeshbinder.cpp
+HEADERS += src/simpleshadermeshbinder.h
+
+SOURCES += src/simpleshaderwidget.cpp
+HEADERS += src/simpleshaderwidget.h
+
+SOURCES += src/blockmesh.cpp
+HEADERS += src/blockmesh.h
+
+SOURCES += src/planemesh.cpp
+HEADERS += src/planemesh.h
+
+SOURCES += src/hermitecurveinterpolation.cpp
+HEADERS += src/hermitecurveinterpolation.h
+
+SOURCES += src/genericspineandpseudophysics.cpp
+HEADERS += src/genericspineandpseudophysics.h
+
+SOURCES += src/chainsimulator.cpp
+HEADERS += src/chainsimulator.h
+
+SOURCES += src/vertebratamotion.cpp
+HEADERS += src/vertebratamotion.h
+
+SOURCES += src/motionpreviewgenerator.cpp
+HEADERS += src/motionpreviewgenerator.h
+
+SOURCES += src/simplerendermeshgenerator.cpp
+HEADERS += src/simplerendermeshgenerator.h
+
+SOURCES += src/motionpropertywidget.cpp
+HEADERS += src/motionpropertywidget.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h

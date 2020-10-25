@@ -5,6 +5,7 @@
 #include "motioneditwidget.h"
 #include "theme.h"
 #include "infolabel.h"
+#include "motionpropertywidget.h"
 
 MotionManageWidget::MotionManageWidget(const Document *document, QWidget *parent) :
     QWidget(parent),
@@ -60,7 +61,14 @@ QSize MotionManageWidget::sizeHint() const
 
 void MotionManageWidget::showAddMotionDialog()
 {
-    showMotionDialog(QUuid());
+    MotionPropertyWidget *motionPropertyWidget = new MotionPropertyWidget();
+    connect(m_document, &Document::resultRigChanged, [=]() {
+        motionPropertyWidget->updateBones(m_document->resultRigBones());
+    });
+    motionPropertyWidget->updateBones(m_document->resultRigBones());
+    motionPropertyWidget->setAttribute(Qt::WA_DeleteOnClose);
+    motionPropertyWidget->show();
+    //showMotionDialog(QUuid());
 }
 
 void MotionManageWidget::showMotionDialog(QUuid motionId)

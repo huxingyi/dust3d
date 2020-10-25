@@ -5,33 +5,33 @@
 #include "ccdikresolver.h"
 #include "util.h"
 
-CCDIKSolver::CCDIKSolver() :
+CcdIkSolver::CcdIkSolver() :
     m_maxRound(4),
     m_distanceThreshold2(0.001 * 0.001),
     m_distanceCeaseThreshold2(0.001 * 0.001)
 {
 }
 
-void CCDIKSolver::setMaxRound(int maxRound)
+void CcdIkSolver::setMaxRound(int maxRound)
 {
     m_maxRound = maxRound;
 }
 
-void CCDIKSolver::setDistanceThreshod(float threshold)
+void CcdIkSolver::setDistanceThreshod(float threshold)
 {
     m_distanceThreshold2 = threshold * threshold;
 }
 
-int CCDIKSolver::addNodeInOrder(const QVector3D &position)
+int CcdIkSolver::addNodeInOrder(const QVector3D &position)
 {
-    CCDIKNode node;
+    CcdIkNode node;
     node.position = position;
     int nodeCount = m_nodes.size();
     m_nodes.push_back(node);
     return nodeCount;
 }
 
-void CCDIKSolver::solveTo(const QVector3D &position)
+void CcdIkSolver::solveTo(const QVector3D &position)
 {
     //qDebug() << "solveTo:" << position;
     m_destination = position;
@@ -49,18 +49,18 @@ void CCDIKSolver::solveTo(const QVector3D &position)
     }
 }
 
-const QVector3D &CCDIKSolver::getNodeSolvedPosition(int index)
+const QVector3D &CcdIkSolver::getNodeSolvedPosition(int index)
 {
     Q_ASSERT(index >= 0 && index < (int)m_nodes.size());
     return m_nodes[index].position;
 }
 
-int CCDIKSolver::getNodeCount(void)
+int CcdIkSolver::getNodeCount(void)
 {
     return m_nodes.size();
 }
 
-void CCDIKSolver::iterate()
+void CcdIkSolver::iterate()
 {
     for (int i = m_nodes.size() - 2; i >= 0; i--) {
         const auto &origin = m_nodes[i];

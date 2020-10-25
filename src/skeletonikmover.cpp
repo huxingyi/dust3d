@@ -48,7 +48,7 @@ void SkeletonIkMover::process()
 
 void SkeletonIkMover::resolve()
 {
-    CCDIKSolver solver;
+    CcdIkSolver solver;
     for (auto i = 0u; i < m_ikNodes.size(); i++) {
         solver.addNodeInOrder(m_ikNodes[i].position);
     }

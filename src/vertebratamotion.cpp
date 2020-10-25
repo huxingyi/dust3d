@@ -1,0 +1,229 @@
+#include "vertebratamotion.h"
+#include "blockmesh.h"
+#include "planemesh.h"
+#include "genericspineandpseudophysics.h"
+#include "hermitecurveinterpolation.h"
+#include "chainsimulator.h"
+#include "ccdikresolver.h"
+#include <QDebug>
+
+void VertebrataMotion::prepareLegHeights()
+{
+    GenericSpineAndPseudoPhysics physics;
+    physics.calculateFootHeights(m_parameters.preferredHeight, 
+        m_parameters.stanceTime, m_parameters.swingTime, &m_legHeights, &m_legMoveOffsets);
+}
+
+void VertebrataMotion::prepareLegs()
+{
+    m_legs.clear();
+    for (size_t spineNodeIndex = 0; 
+            spineNodeIndex < m_spineNodes.size(); ++spineNodeIndex) {
+        std::vector<std::vector<Node>> nodesBySide = {
+            std::vector<Node>(),
+            std::vector<Node>(),
+            std::vector<Node>()
+        };
+        bool foundLeg = false;
+        for (int side = 0; side < 3; ++side) {
+            auto findLegNodes = m_legNodes.find({spineNodeIndex, (Side)side});
+            if (findLegNodes == m_legNodes.end())
+                continue;
+            nodesBySide[side] = findLegNodes->second;
+            foundLeg = true;
+        }
+        if (!foundLeg)
+            continue;
+        
+        Leg leg;
+        leg.nodes = leg.updatedNodes = nodesBySide;
+        leg.spineNodeIndex = spineNodeIndex;
+        m_legs.push_back(leg);
+    }
+}
+
+void VertebrataMotion::prepareLegHeightIndices()
+{
+    int balancedStart = 0;
+    for (int side = 0; side < 3; ++side) {
+        bool foundSide = false;
+        int heightIndex = balancedStart;
+        for (size_t legIndex = 0; legIndex < m_legs.size(); ++legIndex) {
+            auto &leg = m_legs[legIndex];
+            if (leg.nodes[side].empty())
+                continue;
+            foundSide = true;
+            leg.heightIndices[side] = heightIndex;
+            heightIndex += m_parameters.legSideIntval;
+        }
+        if (!foundSide)
+            continue;
+        balancedStart += m_parameters.legBalanceIntval;
+    }
+}
+
+void VertebrataMotion::calculateLegMoves(size_t heightIndex)
+{
+    auto calculateAverageTop = [&](size_t legIndex) {
+        double sumTop = 0.0;
+        size_t countForAverageTop = 0;
+        auto &leg = m_legs[legIndex];
+        for (int side = 0; side < 3; ++side) {
+            if (leg.nodes[side].empty())
+                continue;
+            sumTop += m_legHeights[(heightIndex + leg.heightIndices[side]) % m_legHeights.size()];
+            ++countForAverageTop;
+        }
+        if (0 == countForAverageTop)
+            return 0.0;
+        return sumTop / countForAverageTop;
+    };
+    
+    HermiteCurveInterpolation spineInterpolation;
+    
+    m_updatedSpineNodes = m_spineNodes;
+    
+    if (m_spineNodes.size() >= 2) {
+        spineInterpolation.addPerpendicularDirection(0, QVector2D(0.0, -1.0));
+        spineInterpolation.addPerpendicularDirection(m_spineNodes.size() - 1, QVector2D(0.0, -1.0));
+    }
+            
+    for (size_t legIndex = 0; legIndex < m_legs.size(); ++legIndex) {
+        auto &leg = m_legs[legIndex];
+        double averageTop = calculateAverageTop(legIndex);
+        for (int side = 0; side < 3; ++side) {
+            if (leg.nodes[side].empty())
+                continue;
+            double offset = averageTop - leg.nodes[side][0].position.y();
+            leg.updatedNodes[side] = leg.nodes[side];
+            auto &nodes = leg.updatedNodes[side];
+            for (auto &node: nodes)
+                node.position.setY(node.position.y() + offset);
+            double bottom = std::max(averageTop - m_parameters.preferredHeight, m_groundY);
+            
+            double legLength = (nodes[0].position - nodes[nodes.size() - 1].position).length();
+            auto moveOffset = m_legMoveOffsets[(heightIndex + leg.heightIndices[side]) % m_legHeights.size()] * 0.5 * legLength;
+            
+            CcdIkSolver ccdIkSolver;
+            for (const auto &node: nodes)
+                ccdIkSolver.addNodeInOrder(node.position);
+            const auto &bottomNodePosition = nodes[nodes.size() - 1].position;
+            ccdIkSolver.solveTo(QVector3D(bottomNodePosition.x(), bottom, bottomNodePosition.z() + moveOffset));
+            for (size_t i = 0; i < nodes.size(); ++i) {
+                nodes[i].position = ccdIkSolver.getNodeSolvedPosition(i);
+            }
+            
+            QVector3D legDirection = nodes[nodes.size() - 1].position - nodes[0].position;
+            legDirection = legDirection.normalized() * (1.0 - m_parameters.spineStability) + 
+                QVector3D(0.0, -1.0, 0.0) * m_parameters.spineStability;
+            QVector2D legDirection2 = QVector2D(legDirection.z(), legDirection.y());
+            spineInterpolation.addPerpendicularDirection(leg.spineNodeIndex, legDirection2.normalized());
+        }
+        
+        if (0 == legIndex && 0 != leg.spineNodeIndex) {
+            m_updatedSpineNodes[0].position.setY(m_updatedSpineNodes[0].position.y() +
+                averageTop - m_updatedSpineNodes[leg.spineNodeIndex].position.y());
+        }
+        if (m_legs.size() - 1 == legIndex && m_updatedSpineNodes.size() - 1 != leg.spineNodeIndex) {
+            m_updatedSpineNodes[m_updatedSpineNodes.size() - 1].position.setY(m_updatedSpineNodes[m_updatedSpineNodes.size() - 1].position.y() +
+                averageTop - m_updatedSpineNodes[leg.spineNodeIndex].position.y());
+        }
+        m_updatedSpineNodes[leg.spineNodeIndex].position.setY(averageTop);
+    }
+    
+    for (size_t nodeIndex = 0; nodeIndex < m_spineNodes.size(); ++nodeIndex) {
+        const auto &node = m_updatedSpineNodes[nodeIndex];
+        const auto &originalNode = m_spineNodes[nodeIndex];
+        spineInterpolation.addNode(QVector2D(node.position.z(), node.position.y()), originalNode.position);
+    }
+    
+    spineInterpolation.update();
+    
+    for (size_t spineNodexIndex = 0; spineNodexIndex < m_spineNodes.size(); ++spineNodexIndex) {
+        auto &node = m_updatedSpineNodes[spineNodexIndex];
+        const auto &updatedPosition2 = spineInterpolation.getUpdatedPosition(spineNodexIndex);
+        node.position.setZ(updatedPosition2.x());
+        node.position.setY(updatedPosition2.y());
+    }
+}
+    
+void VertebrataMotion::generate()
+{
+    auto addNodesToMesh = [&](BlockMesh &blockMesh, const std::vector<Node> &nodes) {
+        for (size_t i = 0; i + 1 < nodes.size(); ++i) {
+            size_t j = i + 1;
+            const auto &currentNode = nodes[i];
+            const auto &nextNode = nodes[j];
+            blockMesh.addBlock(currentNode.position * m_scale, currentNode.radius * m_scale,
+                nextNode.position * m_scale, nextNode.radius * m_scale);
+        }
+    };
+    
+    prepareLegHeights();
+    prepareLegs();
+    prepareLegHeightIndices();
+    
+    ChainSimulator *tailSimulator = nullptr;
+    
+    int tailNodeIndex = -1;
+    
+    if (!m_legs.empty())
+        tailNodeIndex = m_legs[m_legs.size() - 1].spineNodeIndex;
+    QVector3D tailSpineOffset;
+    
+    for (size_t cycle = 0; cycle < m_parameters.cycles; ++cycle) {
+        for (size_t heightIndex = 0; heightIndex < m_legHeights.size(); ++heightIndex) {
+            BlockMesh blockMesh;
+            
+            // Ground
+            blockMesh.addBlock(
+                QVector3D(0.0, m_groundY, 0.0), 100.0,
+                QVector3D(0.0, m_groundY - 0.02, 0.0), 100.0);
+            
+            calculateLegMoves(heightIndex);
+            
+            for (size_t legIndex = 0; legIndex < m_legs.size(); ++legIndex) {
+                auto &leg = m_legs[legIndex];
+                for (int side = 0; side < 3; ++side) {
+                    if (leg.nodes[side].empty())
+                        continue;
+                    addNodesToMesh(blockMesh, leg.updatedNodes[side]);
+                }
+            }
+            
+            if (nullptr == tailSimulator && -1 != tailNodeIndex) {
+                std::vector<QVector3D> ropeVertices(m_spineNodes.size() - tailNodeIndex);
+                for (size_t nodeIndex = tailNodeIndex; nodeIndex < m_spineNodes.size(); ++nodeIndex) {
+                    ropeVertices[nodeIndex - tailNodeIndex] = m_spineNodes[nodeIndex].position;
+                }
+                tailSimulator = new ChainSimulator(&ropeVertices);
+                tailSimulator->setExternalForce(QVector3D(0.0, -9.80665 / 10 + 9.80665, -9.80665 * 4));
+                tailSimulator->fixVertexPosition(0);
+                tailSimulator->start();
+                
+                tailSpineOffset = m_updatedSpineNodes[tailNodeIndex].position - m_spineNodes[tailNodeIndex].position;
+            }
+            
+            if (nullptr != tailSimulator) {
+                tailSimulator->updateVertexPosition(0, m_updatedSpineNodes[tailNodeIndex].position - tailSpineOffset);
+                tailSimulator->simulate(1.0 / 60);
+                for (size_t nodeIndex = tailNodeIndex; nodeIndex < m_spineNodes.size(); ++nodeIndex) {
+                    m_updatedSpineNodes[nodeIndex].position = tailSimulator->getVertexMotion(nodeIndex - tailNodeIndex).position + tailSpineOffset;
+                }
+            }
+            
+            addNodesToMesh(blockMesh, m_updatedSpineNodes);
+            
+            blockMesh.build();
+            std::vector<QVector3D> *resultVertices = blockMesh.takeResultVertices();
+            std::vector<std::vector<size_t>> *resultFaces = blockMesh.takeResultFaces();
+            FrameMesh frame = {*resultVertices, *resultFaces};
+            delete resultFaces;
+            delete resultVertices;
+            
+            m_frames.push_back(frame);
+        }
+    }
+    
+    delete tailSimulator;
+}
