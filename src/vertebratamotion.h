@@ -12,9 +12,9 @@ public:
     {
         double stanceTime = 0.35;
         double swingTime = 0.23;
-        double preferredHeight = 0.19;
+        double preferredHeight = 0.39;
         int legSideIntval = 12;
-        int legBalanceIntval = 7;
+        int legBalanceIntval = 12;
         double spineStability = 0.5;
         size_t cycles = 5;
     };

@@ -7,6 +7,9 @@
 struct CcdIkNode
 {
     QVector3D position;
+    QVector3D axis;
+    double minLimitDegrees;
+    double maxLimitDegrees;
 };
 
 class CcdIkSolver
@@ -19,6 +22,8 @@ public:
     void solveTo(const QVector3D &position);
     const QVector3D &getNodeSolvedPosition(int index);
     int getNodeCount(void);
+    void setNodeHingeConstraint(int nodeIndex,
+        const QVector3D &axis, double minLimitDegrees, double maxLimitDegrees);
 private:
     void iterate();
 private:

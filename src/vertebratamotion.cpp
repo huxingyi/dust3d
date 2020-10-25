@@ -105,10 +105,25 @@ void VertebrataMotion::calculateLegMoves(size_t heightIndex)
             auto moveOffset = m_legMoveOffsets[(heightIndex + leg.heightIndices[side]) % m_legHeights.size()] * 0.5 * legLength;
             
             CcdIkSolver ccdIkSolver;
-            for (const auto &node: nodes)
-                ccdIkSolver.addNodeInOrder(node.position);
+            for (const auto &node: nodes) {
+                int nodeIndex = ccdIkSolver.addNodeInOrder(node.position);
+                if (0 == nodeIndex)
+                    continue;
+                if (Side::Left != (Side)side && Side::Right != (Side)side)
+                    continue;
+                if (nodeIndex == nodes.size() - 2) {
+                    ccdIkSolver.setNodeHingeConstraint(nodeIndex, QVector3D(1.0, 0.0, 0.0), 90 - 15, 90 + 15);
+                    continue;
+                }
+                if (nodeIndex == nodes.size() - 3) {
+                    ccdIkSolver.setNodeHingeConstraint(nodeIndex, QVector3D(1.0, 0.0, 0.0), 270 - 15, 270 + 15);
+                    continue;
+                }
+                ccdIkSolver.setNodeHingeConstraint(nodeIndex, QVector3D(1.0, 0.0, 0.0), 0, 360);
+            }
+            const auto &topNodePosition = nodes[0].position;
             const auto &bottomNodePosition = nodes[nodes.size() - 1].position;
-            ccdIkSolver.solveTo(QVector3D(bottomNodePosition.x(), bottom, bottomNodePosition.z() + moveOffset));
+            ccdIkSolver.solveTo(QVector3D(bottomNodePosition.x(), bottom, topNodePosition.z() + moveOffset));
             for (size_t i = 0; i < nodes.size(); ++i) {
                 nodes[i].position = ccdIkSolver.getNodeSolvedPosition(i);
             }
