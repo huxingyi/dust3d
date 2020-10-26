@@ -62,9 +62,9 @@ QSize MotionManageWidget::sizeHint() const
 void MotionManageWidget::showAddMotionDialog()
 {
     MotionPropertyWidget *motionPropertyWidget = new MotionPropertyWidget();
-    connect(m_document, &Document::resultRigChanged, [=]() {
-        motionPropertyWidget->updateBones(m_document->resultRigBones());
-    });
+    //connect(m_document, &Document::resultRigChanged, [=]() {
+    //    motionPropertyWidget->updateBones(m_document->resultRigBones());
+    //});
     motionPropertyWidget->updateBones(m_document->resultRigBones());
     motionPropertyWidget->setAttribute(Qt::WA_DeleteOnClose);
     motionPropertyWidget->show();

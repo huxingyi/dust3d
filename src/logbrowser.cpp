@@ -4,7 +4,7 @@
 #include "logbrowser.h"
 #include "logbrowserdialog.h"
 
-bool LogBrowser::m_enableOutputToFile = false;
+bool LogBrowser::m_enableOutputToFile = true;
 
 LogBrowser::LogBrowser(QObject *parent) :
     QObject(parent)

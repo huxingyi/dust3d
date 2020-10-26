@@ -92,12 +92,13 @@ MotionPropertyWidget::MotionPropertyWidget()
     connect(timer, &QTimer::timeout, [this] {
         if (m_renderQueue.size() > 600)
             return;
+        if (this->m_frames.empty())
+            return;
         if (this->m_frameIndex < this->m_frames.size()) {
             m_renderQueue.push(this->m_frames[this->m_frameIndex]);
             checkRenderQueue();
         }
-        if (!this->m_frames.empty())
-            this->m_frameIndex = (this->m_frameIndex + 1) % this->m_frames.size();
+        this->m_frameIndex = (this->m_frameIndex + 1) % this->m_frames.size();
     });
     timer->start();
     
@@ -169,7 +170,7 @@ void MotionPropertyWidget::checkRenderQueue()
     if (m_renderQueue.empty())
         return;
     
-    qDebug() << "Generate render mesh...";
+    //qDebug() << "Generate render mesh...";
     
     QThread *thread = new QThread;
     
@@ -188,7 +189,7 @@ void MotionPropertyWidget::renderMeshReady()
 {
     SimpleShaderMesh *renderMesh = m_renderMeshGenerator->takeRenderMesh();
     
-    qDebug() << "Render mesh ready";
+    //qDebug() << "Render mesh ready";
     
     delete m_renderMeshGenerator;
     m_renderMeshGenerator = nullptr;

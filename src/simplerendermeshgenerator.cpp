@@ -10,7 +10,7 @@ void SimpleRenderMeshGenerator::process()
 
 void SimpleRenderMeshGenerator::generate()
 {
-    qDebug() << "SimpleRenderMeshGenerator generating...";
+    //qDebug() << "SimpleRenderMeshGenerator generating...";
     
     std::vector<std::vector<QVector3D>> *triangleCornerNormals = 
         new std::vector<std::vector<QVector3D>>(m_triangles->size());
@@ -30,5 +30,5 @@ void SimpleRenderMeshGenerator::generate()
     m_vertices = nullptr;
     m_triangles = nullptr;
     
-    qDebug() << "SimpleRenderMeshGenerator generation done";
+    //qDebug() << "SimpleRenderMeshGenerator generation done";
 }
