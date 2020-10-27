@@ -232,7 +232,15 @@ void VertebrataMotion::generate()
             blockMesh.build();
             std::vector<QVector3D> *resultVertices = blockMesh.takeResultVertices();
             std::vector<std::vector<size_t>> *resultFaces = blockMesh.takeResultFaces();
-            FrameMesh frame = {*resultVertices, *resultFaces};
+            FrameMesh frame;
+            frame.vertices = *resultVertices;
+            frame.faces = *resultFaces;
+            frame.nodes = m_updatedSpineNodes;
+            for (const auto &it: m_legs) {
+                for (const auto &nodes: it.updatedNodes)
+                    for (const auto &node: nodes)
+                        frame.nodes.push_back(node);
+            }
             delete resultFaces;
             delete resultVertices;
             

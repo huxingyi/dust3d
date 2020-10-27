@@ -23,6 +23,8 @@ public:
     {
         QVector3D position;
         double radius;
+        int boneIndex = -1;
+        bool isTail = false;
     };
     
     enum class Side
@@ -53,11 +55,12 @@ public:
     {
         m_legNodes[{spineNodeIndex, side}] = nodes;
     }
-    
+
     struct FrameMesh
     {
         std::vector<QVector3D> vertices;
         std::vector<std::vector<size_t>> faces;
+        std::vector<Node> nodes;
     };
     
     const std::vector<FrameMesh> &frames()
@@ -77,7 +80,7 @@ public:
     
     void generate();
 private:
-    double m_scale = 3.0;
+    double m_scale = 1.0;
     std::vector<FrameMesh> m_frames;
     Parameters m_parameters;
     std::vector<Node> m_spineNodes;

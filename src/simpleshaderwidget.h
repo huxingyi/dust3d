@@ -20,6 +20,7 @@ public:
     ~SimpleShaderWidget();
     
     void updateMesh(SimpleShaderMesh *mesh);
+    void zoom(float delta);
     
 protected:
     void resizeEvent(QResizeEvent *event) override;
@@ -53,7 +54,6 @@ private:
     void setRotationY(int angle);
     void renderToShadowMap();
     void renderToScreen();
-    void zoom(float delta);
     void normalizeAngle(int &angle);
 };
 

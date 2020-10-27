@@ -13,6 +13,8 @@
 MotionPropertyWidget::~MotionPropertyWidget()
 {
     delete m_bones;
+    delete m_rigWeights;
+    delete m_outcome;
 }
 
 MotionPropertyWidget::MotionPropertyWidget()
@@ -112,13 +114,26 @@ QSize MotionPropertyWidget::sizeHint() const
     return QSize(600, 360);
 }
 
-void MotionPropertyWidget::updateBones(const std::vector<RiggerBone> *rigBones)
+void MotionPropertyWidget::updateBones(const std::vector<RiggerBone> *rigBones,
+    const std::map<int, RiggerVertexWeights> *rigWeights,
+    const Outcome *outcome)
 {
     delete m_bones;
     m_bones = nullptr;
     
-    if (nullptr != rigBones) {
+    delete m_rigWeights;
+    m_rigWeights = nullptr;
+    
+    delete m_outcome;
+    m_outcome = nullptr;
+    
+    if (nullptr != rigBones &&
+            nullptr != rigWeights &&
+            nullptr != outcome) {
         m_bones = new std::vector<RiggerBone>(*rigBones);
+        m_rigWeights = new std::map<int, RiggerVertexWeights>(*rigWeights);
+        m_outcome = new Outcome(*outcome);
+        
         generatePreview();
     }
 }
@@ -132,12 +147,12 @@ void MotionPropertyWidget::generatePreview()
     
     m_isPreviewObsolete = false;
     
-    if (nullptr == m_bones)
+    if (nullptr == m_bones || nullptr == m_rigWeights || nullptr == m_outcome)
         return;
     
     QThread *thread = new QThread;
     
-    m_previewGenerator = new MotionPreviewGenerator(*m_bones, m_parameters);
+    m_previewGenerator = new MotionPreviewGenerator(*m_bones, *m_rigWeights, *m_outcome, m_parameters);
     m_previewGenerator->moveToThread(thread);
     connect(thread, &QThread::started, m_previewGenerator, &MotionPreviewGenerator::process);
     connect(m_previewGenerator, &MotionPreviewGenerator::finished, this, &MotionPropertyWidget::previewReady);

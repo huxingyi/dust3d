@@ -65,7 +65,9 @@ void MotionManageWidget::showAddMotionDialog()
     //connect(m_document, &Document::resultRigChanged, [=]() {
     //    motionPropertyWidget->updateBones(m_document->resultRigBones());
     //});
-    motionPropertyWidget->updateBones(m_document->resultRigBones());
+    motionPropertyWidget->updateBones(m_document->resultRigBones(),
+        m_document->resultRigWeights(),
+        &m_document->currentRiggedOutcome());
     motionPropertyWidget->setAttribute(Qt::WA_DeleteOnClose);
     motionPropertyWidget->show();
     //showMotionDialog(QUuid());

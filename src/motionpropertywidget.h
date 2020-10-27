@@ -5,6 +5,7 @@
 #include <queue>
 #include "vertebratamotion.h"
 #include "rigger.h"
+#include "outcome.h"
 
 class SimpleShaderWidget;
 class SimpleRenderMeshGenerator;
@@ -31,7 +32,9 @@ public slots:
     void renderMeshReady();
     void generatePreview();
     void previewReady();
-    void updateBones(const std::vector<RiggerBone> *rigBones);
+    void updateBones(const std::vector<RiggerBone> *rigBones,
+        const std::map<int, RiggerVertexWeights> *rigWeights,
+        const Outcome *outcome);
 private:
     VertebrataMotion::Parameters m_parameters;
     SimpleShaderWidget *m_modelRenderWidget = nullptr;
@@ -42,6 +45,8 @@ private:
     std::vector<ResultMesh> m_frames;
     size_t m_frameIndex = 0;
     std::vector<RiggerBone> *m_bones = nullptr;
+    std::map<int, RiggerVertexWeights> *m_rigWeights = nullptr;
+    Outcome *m_outcome = nullptr;
 };
 
 #endif
