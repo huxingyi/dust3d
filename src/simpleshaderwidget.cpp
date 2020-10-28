@@ -2,6 +2,7 @@
 // since it's based on Prashanth N Udupa's work: https://stackoverflow.com/questions/35134270/how-to-use-qopenglframebufferobject-for-shadow-mapping
 #include <QOpenGLTexture>
 #include <QOpenGLFramebufferObject>
+#include <QGuiApplication>
 #include "simpleshaderwidget.h"
 
 static const int SHADOW_WIDTH = 2048;
@@ -158,7 +159,8 @@ void SimpleShaderWidget::renderToScreen()
 
 void SimpleShaderWidget::mousePressEvent(QMouseEvent *event)
 {
-    if (event->button() == Qt::MidButton) {
+    if ((event->button() == Qt::LeftButton && QGuiApplication::queryKeyboardModifiers().testFlag(Qt::AltModifier)) ||
+            event->button() == Qt::MidButton) {
         m_lastPos = mapFromGlobal(event->globalPos());
         if (!m_moveStarted) {
             m_moveStarted = true;
