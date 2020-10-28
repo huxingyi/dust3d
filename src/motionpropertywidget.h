@@ -19,6 +19,7 @@ public:
     {
         std::vector<QVector3D> vertices;
         std::vector<std::vector<size_t>> faces;
+        std::vector<std::vector<QVector3D>> cornerNormals;
     };
     
     MotionPropertyWidget();

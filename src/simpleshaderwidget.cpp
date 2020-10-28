@@ -159,7 +159,7 @@ void SimpleShaderWidget::renderToScreen()
 
 void SimpleShaderWidget::mousePressEvent(QMouseEvent *event)
 {
-    if ((event->button() == Qt::LeftButton && QGuiApplication::queryKeyboardModifiers().testFlag(Qt::AltModifier)) ||
+    if ((event->button() == Qt::LeftButton/* && QGuiApplication::queryKeyboardModifiers().testFlag(Qt::AltModifier)*/) ||
             event->button() == Qt::MidButton) {
         m_lastPos = mapFromGlobal(event->globalPos());
         if (!m_moveStarted) {

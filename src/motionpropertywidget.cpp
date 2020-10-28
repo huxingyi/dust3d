@@ -176,7 +176,7 @@ void MotionPropertyWidget::previewReady()
 
     const auto &frames = m_previewGenerator->frames();
     for (const auto &frame: frames) {
-        m_frames.push_back({frame.vertices, frame.faces});
+        m_frames.push_back({frame.vertices, frame.faces, frame.cornerNormals});
     }
     
     delete m_previewGenerator;
@@ -199,7 +199,7 @@ void MotionPropertyWidget::checkRenderQueue()
     QThread *thread = new QThread;
     
     const auto &item = m_renderQueue.front();
-    m_renderMeshGenerator = new SimpleRenderMeshGenerator(item.vertices, item.faces);
+    m_renderMeshGenerator = new SimpleRenderMeshGenerator(item.vertices, item.faces, &item.cornerNormals);
     m_renderQueue.pop();
     m_renderMeshGenerator->moveToThread(thread);
     connect(thread, &QThread::started, m_renderMeshGenerator, &SimpleRenderMeshGenerator::process);

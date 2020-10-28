@@ -250,6 +250,12 @@ void MotionPreviewGenerator::makeSkinnedMesh()
         VertebrataMotion::FrameMesh frameMesh;
         frameMesh.vertices = transformedVertices;
         frameMesh.faces = m_outcome->triangles;
+        const std::vector<std::vector<QVector3D>> *cornerNormals = m_outcome->triangleVertexNormals();
+        bool addNormal = false;
+        if (nullptr != cornerNormals) {
+            frameMesh.cornerNormals = *cornerNormals;
+            addNormal = true;
+        }
         {
             BlockMesh blockMesh;
             blockMesh.addBlock(
@@ -272,6 +278,16 @@ void MotionPreviewGenerator::makeSkinnedMesh()
                 for (auto &v: newF)
                     v += oldVertexCount;
                 frameMesh.faces.push_back(newF);
+                if (addNormal) {
+                    QVector3D triangleNormal = QVector3D::normal(
+                        (*resultVertices)[f[0]],
+                        (*resultVertices)[f[1]],
+                        (*resultVertices)[f[2]]
+                    );
+                    frameMesh.cornerNormals.push_back({
+                        triangleNormal, triangleNormal, triangleNormal
+                    });
+                }
             }
             delete resultFaces;
             delete resultVertices;
