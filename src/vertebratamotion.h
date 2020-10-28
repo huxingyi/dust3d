@@ -17,6 +17,7 @@ public:
         int legBalanceIntval = 12;
         double spineStability = 0.5;
         size_t cycles = 5;
+        double groundOffset = 0.4;
     };
     
     struct Node

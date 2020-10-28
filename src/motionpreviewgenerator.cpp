@@ -247,21 +247,14 @@ void MotionPreviewGenerator::makeSkinnedMesh()
             }
         }
         
-        VertebrataMotion::FrameMesh frameMesh = frame;
-        //frameMesh.vertices = transformedVertices;
-        //frameMesh.faces = m_outcome->triangles;
-        size_t oldVertexCount = frameMesh.vertices.size();
-        for (const auto &v: transformedVertices)
-            frameMesh.vertices.push_back(QVector3D(v.x() - 0.5, v.y(), v.z()));
-        for (const auto &f: m_outcome->triangles) {
-            std::vector<size_t> newF = f;
-            for (auto &v: newF)
-                v += oldVertexCount;
-            frameMesh.faces.push_back(newF);
-        }
-        /*
+        VertebrataMotion::FrameMesh frameMesh;
+        frameMesh.vertices = transformedVertices;
+        frameMesh.faces = m_outcome->triangles;
         {
             BlockMesh blockMesh;
+            blockMesh.addBlock(
+                QVector3D(0.0, m_groundY + m_parameters.groundOffset, 0.0), 100.0,
+                QVector3D(0.0, m_groundY + m_parameters.groundOffset - 0.02, 0.0), 100.0);
             for (const auto &bone: transformedBones) {
                 if (0 == bone.index)
                     continue;
@@ -283,7 +276,6 @@ void MotionPreviewGenerator::makeSkinnedMesh()
             delete resultFaces;
             delete resultVertices;
         }
-        */
         m_skinnedFrames.push_back(frameMesh);
     }
 }

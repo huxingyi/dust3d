@@ -47,7 +47,7 @@ private:
     bool m_moveStarted = false;
     int m_rotationX = 0;
     int m_rotationY = 0;
-    float m_zoom = 10.5f;
+    float m_zoom = 2.5f;
     QVector3D m_eyePosition = QVector3D(0.0, 0.0, 1.0);
     
     void setRotationX(int angle);

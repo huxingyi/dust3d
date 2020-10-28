@@ -74,6 +74,15 @@ MotionPropertyWidget::MotionPropertyWidget()
         emit parametersChanged();
     });
     
+    QDoubleSpinBox *groundOffsetBox = new QDoubleSpinBox;
+    groundOffsetBox->setRange(-2.0, 2.0);
+    groundOffsetBox->setValue(m_parameters.groundOffset);
+    parametersLayout->addRow(tr("Ground offset: "), groundOffsetBox);
+    connect(groundOffsetBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double value){
+        m_parameters.groundOffset = value;
+        emit parametersChanged();
+    });
+    
     QHBoxLayout *canvasLayout = new QHBoxLayout;
     canvasLayout->setSpacing(0);
     canvasLayout->setContentsMargins(0, 0, 0, 0);
