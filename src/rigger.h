@@ -64,6 +64,10 @@ public:
             }
         }
     }
+    const std::vector<std::pair<int, float>> &boneRawWeights() const
+    {
+        return m_boneRawWeights;
+    }
 private:
     std::vector<std::pair<int, float>> m_boneRawWeights;
 };

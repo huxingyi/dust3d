@@ -329,11 +329,11 @@ void ModelWidget::toggleUvCheck()
     update();
 }
 
-bool ModelWidget::inputMousePressEventFromOtherWidget(QMouseEvent *event)
+bool ModelWidget::inputMousePressEventFromOtherWidget(QMouseEvent *event, bool notGraphics)
 {
     bool shouldStartMove = false;
     if (event->button() == Qt::LeftButton) {
-        if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::AltModifier) &&
+        if ((notGraphics || QGuiApplication::queryKeyboardModifiers().testFlag(Qt::AltModifier)) &&
                 !QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
             shouldStartMove = m_moveEnabled;
         }
@@ -547,7 +547,7 @@ void ModelWidget::setMoveAndZoomByWindow(bool byWindow)
 
 void ModelWidget::mousePressEvent(QMouseEvent *event)
 {
-    inputMousePressEventFromOtherWidget(event);
+    inputMousePressEventFromOtherWidget(event, m_notGraphics);
 }
 
 void ModelWidget::mouseMoveEvent(QMouseEvent *event)
@@ -565,3 +565,7 @@ void ModelWidget::mouseReleaseEvent(QMouseEvent *event)
     inputMouseReleaseEventFromOtherWidget(event);
 }
 
+void ModelWidget::setNotGraphics(bool notGraphics)
+{
+    m_notGraphics = notGraphics;
+}

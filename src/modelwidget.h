@@ -55,7 +55,7 @@ public:
     void setMoveAndZoomByWindow(bool byWindow);
     void disableCullFace();
     void setMoveToPosition(const QVector3D &moveToPosition);
-    bool inputMousePressEventFromOtherWidget(QMouseEvent *event);
+    bool inputMousePressEventFromOtherWidget(QMouseEvent *event, bool notGraphics=false);
     bool inputMouseMoveEventFromOtherWidget(QMouseEvent *event);
     bool inputWheelEventFromOtherWidget(QWheelEvent *event);
     bool inputMouseReleaseEventFromOtherWidget(QMouseEvent *event);
@@ -64,6 +64,7 @@ public:
     void updateToonNormalAndDepthMaps(QImage *normalMap, QImage *depthMap);
     int widthInPixels();
     int heightInPixels();
+    void setNotGraphics(bool notGraphics);
 public slots:
     void setXRotation(int angle);
     void setYRotation(int angle);
@@ -119,6 +120,7 @@ private:
     QVector3D m_moveToPosition;
     bool m_moveAndZoomByWindow = true;
     bool m_enableCullFace = true;
+    bool m_notGraphics = false;
     std::pair<QVector3D, QVector3D> screenPositionToMouseRay(const QPoint &screenPosition);
     void updateProjectionMatrix();
 public:

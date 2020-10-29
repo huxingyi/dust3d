@@ -62,6 +62,9 @@ private:
     int m_debugEdgeVerticesNum = 0;
     bool m_isSpineVertical = false;
     bool m_isSuccessful = false;
+    size_t m_rootSpineJointIndex = 0;
+    size_t m_lastSpineJointIndex = 0;
+    
     void buildNeighborMap();
     void buildBoneNodeChain();
     void buildSkeleton();
@@ -96,6 +99,8 @@ private:
         std::unordered_set<size_t> *visited);
     void removeBranchsFromNodes(const std::vector<std::vector<size_t>> *boneNodeIndices,
         std::vector<size_t> *resultNodes);
+    void fixVirtualBoneSkinWeights();
+    int attachedBoneIndex(size_t spineJointIndex);
 };
 
 #endif
