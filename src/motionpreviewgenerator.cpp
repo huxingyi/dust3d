@@ -261,12 +261,14 @@ void MotionPreviewGenerator::makeSkinnedMesh()
             blockMesh.addBlock(
                 QVector3D(0.0, m_groundY + m_parameters.groundOffset, 0.0), 100.0,
                 QVector3D(0.0, m_groundY + m_parameters.groundOffset - 0.02, 0.0), 100.0);
+            /*
             for (const auto &bone: transformedBones) {
                 if (0 == bone.index)
                     continue;
                 blockMesh.addBlock(bone.headPosition, bone.headRadius * 0.5,
                     bone.tailPosition, bone.tailRadius * 0.5);
             }
+            */
             blockMesh.build();
             std::vector<QVector3D> *resultVertices = blockMesh.takeResultVertices();
             std::vector<std::vector<size_t>> *resultFaces = blockMesh.takeResultFaces();
