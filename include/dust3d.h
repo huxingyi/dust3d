@@ -39,7 +39,7 @@ DUST3D_DLL int          DUST3D_API dust3dGetMeshTriangleAndQuadCount(dust3d *ds3
 DUST3D_DLL void         DUST3D_API dust3dGetMeshTriangleAndQuadIndices(dust3d *ds3, int *indices);
 DUST3D_DLL void         DUST3D_API dust3dClose(dust3d *ds3);
 DUST3D_DLL int          DUST3D_API dust3dError(dust3d *ds3);
-DUST3D_DLL const char * DUST3D_API dust3dVersion(void);
+DUST3D_DLL const char * DUST3D_API dust3dVersion();
 
 #ifdef __cplusplus
 }

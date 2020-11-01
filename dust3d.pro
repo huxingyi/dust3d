@@ -526,11 +526,11 @@ HEADERS += src/vertebratamotion.h
 SOURCES += src/simplerendermeshgenerator.cpp
 HEADERS += src/simplerendermeshgenerator.h
 
-SOURCES += src/motionpropertywidget.cpp
-HEADERS += src/motionpropertywidget.h
+SOURCES += src/motioneditwidget.cpp
+HEADERS += src/motioneditwidget.h
 
-SOURCES += src/motionpreviewimagesgenerator.cpp
-HEADERS += src/motionpreviewimagesgenerator.h
+SOURCES += src/vertebratamotionparameterswidget.cpp
+HEADERS += src/vertebratamotionparameterswidget.h
 
 SOURCES += src/main.cpp
 

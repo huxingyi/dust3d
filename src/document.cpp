@@ -3923,11 +3923,11 @@ const QString &Document::scriptConsoleLog() const
     return m_scriptConsoleLog;
 }
 
-void Document::startPaint(void)
+void Document::startPaint()
 {
 }
 
-void Document::stopPaint(void)
+void Document::stopPaint()
 {
     if (m_vertexColorPainter || m_isMouseTargetResultObsolete) {
         m_saveNextPaintSnapshot = true;

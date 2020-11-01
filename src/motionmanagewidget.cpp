@@ -4,7 +4,7 @@
 #include "motionmanagewidget.h"
 #include "theme.h"
 #include "infolabel.h"
-#include "motionpropertywidget.h"
+#include "motioneditwidget.h"
 
 MotionManageWidget::MotionManageWidget(const Document *document, QWidget *parent) :
     QWidget(parent),
@@ -60,38 +60,33 @@ QSize MotionManageWidget::sizeHint() const
 
 void MotionManageWidget::showAddMotionDialog()
 {
-    MotionPropertyWidget *motionPropertyWidget = new MotionPropertyWidget();
-    //connect(m_document, &Document::resultRigChanged, [=]() {
-    //    motionPropertyWidget->updateBones(m_document->resultRigBones());
-    //});
-    motionPropertyWidget->updateBones(m_document->rigType,
-        m_document->resultRigBones(),
-        m_document->resultRigWeights(),
-        &m_document->currentRiggedOutcome());
-    motionPropertyWidget->setAttribute(Qt::WA_DeleteOnClose);
-    motionPropertyWidget->show();
-    //showMotionDialog(QUuid());
+    showMotionDialog(QUuid());
 }
 
 void MotionManageWidget::showMotionDialog(QUuid motionId)
 {
-    /*
-    MotionEditWidget *motionEditWidget = new MotionEditWidget(m_document);
+    MotionEditWidget *motionEditWidget = new MotionEditWidget;
     motionEditWidget->setAttribute(Qt::WA_DeleteOnClose);
+    motionEditWidget->updateBones(m_document->rigType,
+        m_document->resultRigBones(),
+        m_document->resultRigWeights(),
+        &m_document->currentRiggedOutcome());
     if (!motionId.isNull()) {
         const Motion *motion = m_document->findMotion(motionId);
         if (nullptr != motion) {
             motionEditWidget->setEditMotionId(motionId);
             motionEditWidget->setEditMotionName(motion->name);
-            motionEditWidget->setEditMotionClips(motion->clips);
+            motionEditWidget->setEditMotionParameters(motion->parameters);
             motionEditWidget->clearUnsaveState();
-            motionEditWidget->generatePreviews();
+            motionEditWidget->generatePreview();
         }
     }
     motionEditWidget->show();
-    connect(motionEditWidget, &QDialog::destroyed, [=]() {
+    connect(motionEditWidget, &QMainWindow::destroyed, [=]() {
         emit unregisterDialog((QWidget *)motionEditWidget);
     });
+    connect(motionEditWidget, &MotionEditWidget::addMotion, m_document, &Document::addMotion);
+    connect(motionEditWidget, &MotionEditWidget::renameMotion, m_document, &Document::renameMotion);
+    connect(motionEditWidget, &MotionEditWidget::setMotionParameters, m_document, &Document::setMotionParameters);
     emit registerDialog((QWidget *)motionEditWidget);
-    */
 }

@@ -546,7 +546,7 @@ public:
     void setNodePositionModifyOnly(bool nodePositionModifyOnly);
     void setMainProfileOnly(bool mainProfileOnly);
     bool inputWheelEventFromOtherWidget(QWheelEvent *event);
-    bool rotated(void);
+    bool rotated();
 protected:
     void mouseMoveEvent(QMouseEvent *event) override;
     void wheelEvent(QWheelEvent *event) override;

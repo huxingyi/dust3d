@@ -18,7 +18,7 @@ float ModelWidget::m_maxZoomRatio = 80.0;
 int ModelWidget::m_defaultXRotation = 30 * 16;
 int ModelWidget::m_defaultYRotation = -45 * 16;
 int ModelWidget::m_defaultZRotation = 0;
-QVector3D ModelWidget::m_defaultEyePosition = QVector3D(0, 0, -4.0);
+QVector3D ModelWidget::m_defaultEyePosition = QVector3D(0, 0, -2.5);
 
 ModelWidget::ModelWidget(QWidget *parent) :
     QOpenGLWidget(parent),

@@ -21,7 +21,7 @@ public:
     int addNodeInOrder(const QVector3D &position);
     void solveTo(const QVector3D &position);
     const QVector3D &getNodeSolvedPosition(int index);
-    int getNodeCount(void);
+    int getNodeCount();
     void setNodeHingeConstraint(int nodeIndex,
         const QVector3D &axis, double minLimitDegrees, double maxLimitDegrees);
 private:

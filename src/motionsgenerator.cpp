@@ -6,6 +6,7 @@
 #include "motionsgenerator.h"
 #include "vertebratamotion.h"
 #include "blockmesh.h"
+#include "vertebratamotionparameterswidget.h"
 
 MotionsGenerator::MotionsGenerator(RigType rigType,
         const std::vector<RiggerBone> &bones,
@@ -76,12 +77,6 @@ std::vector<std::pair<float, JointNodeTree>> MotionsGenerator::takeResultJointNo
     if (findResult == m_resultJointNodeTrees.end())
         return {};
     return findResult->second;
-}
-
-static void constructVertebrataParameters(const std::map<QString, QString> &input,
-    VertebrataMotion::Parameters *output)
-{
-    // TODO:
 }
         
 void MotionsGenerator::generateMotion(const QUuid &motionId)
@@ -181,8 +176,8 @@ void MotionsGenerator::generateMotion(const QUuid &motionId)
     
     VertebrataMotion *vertebrataMotion = new VertebrataMotion;
     
-    VertebrataMotion::Parameters parameters;
-    constructVertebrataParameters(m_motions[motionId], &parameters);
+    VertebrataMotion::Parameters parameters = 
+        VertebrataMotionParametersWidget::toVertebrataMotionParameters(m_motions[motionId]);
     vertebrataMotion->setParameters(parameters);
     vertebrataMotion->setSpineNodes(spineNodes);
     

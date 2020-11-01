@@ -630,8 +630,8 @@ public slots:
     void scriptResultReady();
     void updateVariable(const QString &name, const std::map<QString, QString> &value);
     void updateVariableValue(const QString &name, const QString &value);
-    void startPaint(void);
-    void stopPaint(void);
+    void startPaint();
+    void stopPaint();
     void setMousePickMaskNodeIds(const std::set<QUuid> &nodeIds);
 private:
     void splitPartByNode(std::vector<std::vector<QUuid>> *groups, QUuid nodeId);

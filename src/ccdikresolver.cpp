@@ -65,7 +65,7 @@ const QVector3D &CcdIkSolver::getNodeSolvedPosition(int index)
     return m_nodes[index].position;
 }
 
-int CcdIkSolver::getNodeCount(void)
+int CcdIkSolver::getNodeCount()
 {
     return (int)m_nodes.size();
 }
