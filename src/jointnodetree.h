@@ -10,9 +10,11 @@ struct JointNode
     int parentIndex;
     QString name;
     QVector3D position;
+    QVector3D bindTranslation;
     QVector3D translation;
-    QMatrix4x4 transformMatrix;
     QQuaternion rotation;
+    QMatrix4x4 bindMatrix;
+    QMatrix4x4 inverseBindMatrix;
     std::vector<int> children;
 };
 

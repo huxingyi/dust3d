@@ -292,18 +292,13 @@ void MotionsGenerator::generateMotion(const QUuid &motionId)
             poseRotations[i] = rotationMatrix;
         }
         
-        std::vector<QMatrix4x4> transforms(m_bones.size());
-        for (size_t i = 0; i < m_bones.size(); ++i) {
-            transforms[i] = poseTransforms[i] * bindTransforms[i].inverted();
-        }
-        
         JointNodeTree jointNodeTree(&m_bones);
         for (size_t i = 0; i < m_bones.size(); ++i) {
             const auto &bone = transformedBones[i];
             if (-1 != bone.parent) {
-                jointNodeTree.updateMatrix(i, transforms[bone.parent].inverted() * transforms[i]);
+                jointNodeTree.updateMatrix(i, poseTransforms[bone.parent].inverted() * poseTransforms[i]);
             } else {
-                jointNodeTree.updateMatrix(i, transforms[i]);
+                jointNodeTree.updateMatrix(i, poseTransforms[i]);
             }
         }
         
@@ -322,6 +317,8 @@ void MotionsGenerator::generateMotion(const QUuid &motionId)
             }
             jointNodeMatrices[i] *= translationMatrix * rotationMatrix;
         }
+        for (size_t i = 0; i < m_bones.size(); ++i)
+            jointNodeMatrices[i] = jointNodeMatrices[i] * bindTransforms[i].inverted();
         
         std::vector<QVector3D> transformedVertices(m_outcome.vertices.size());
         for (size_t i = 0; i < m_outcome.vertices.size(); ++i) {

@@ -2602,8 +2602,8 @@ FbxFileWriter::FbxFileWriter(Outcome &outcome,
                 deformer.addChild(userData);
                 deformer.addPropertyNode("Indexes", bindPerBone[i].first);
                 deformer.addPropertyNode("Weights", bindPerBone[i].second);
-                deformer.addPropertyNode("Transform", matrixToVector(jointNode.transformMatrix.inverted()));
-                deformer.addPropertyNode("TransformLink", matrixToVector(jointNode.transformMatrix));
+                deformer.addPropertyNode("Transform", matrixToVector(jointNode.inverseBindMatrix));
+                deformer.addPropertyNode("TransformLink", matrixToVector(jointNode.bindMatrix));
                 deformer.addPropertyNode("TransformAssociateModel", m_identityMatrix);
                 deformer.addChild(FBXNode());
             }
@@ -2774,7 +2774,7 @@ FbxFileWriter::FbxFileWriter(Outcome &outcome,
             const auto &boneNode = boneNodes[i];
             FBXNode poseNode("PoseNode");
             poseNode.addPropertyNode("Node", (int64_t)limbNodeIds[1 + i]);
-            poseNode.addPropertyNode("Matrix", matrixToVector(boneNode.transformMatrix));
+            poseNode.addPropertyNode("Matrix", matrixToVector(boneNode.bindMatrix));
             poseNode.addChild(FBXNode());
             pose.addChild(poseNode);
         }

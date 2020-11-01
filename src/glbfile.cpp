@@ -92,20 +92,22 @@ GlbFileWriter::GlbFileWriter(Outcome &outcome,
         m_json["nodes"][1]["skin"] = 0;
         
         m_json["skins"][0]["joints"] = {};
+        const QQuaternion noneRotation;
         for (size_t i = 0; i < boneNodes.size(); i++) {
+            const auto &bone = (*resultRigBones)[i];
             m_json["skins"][0]["joints"] += skeletonNodeStartIndex + i;
             
             m_json["nodes"][skeletonNodeStartIndex + i]["name"] = boneNodes[i].name.toUtf8().constData();
             m_json["nodes"][skeletonNodeStartIndex + i]["translation"] = {
-                boneNodes[i].translation.x(),
-                boneNodes[i].translation.y(),
-                boneNodes[i].translation.z()
+                boneNodes[i].bindTranslation.x(),
+                boneNodes[i].bindTranslation.y(),
+                boneNodes[i].bindTranslation.z()
             };
             m_json["nodes"][skeletonNodeStartIndex + i]["rotation"] = {
-                boneNodes[i].rotation.x(),
-                boneNodes[i].rotation.y(),
-                boneNodes[i].rotation.z(),
-                boneNodes[i].rotation.scalar()
+                noneRotation.x(),
+                noneRotation.y(),
+                noneRotation.z(),
+                noneRotation.scalar()
             };
             
             if (!boneNodes[i].children.empty()) {
@@ -121,9 +123,8 @@ GlbFileWriter::GlbFileWriter(Outcome &outcome,
         bufferViewFromOffset = (int)m_binByteArray.size();
         m_json["bufferViews"][bufferViewIndex]["buffer"] = 0;
         m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
-        QMatrix4x4 identityMatrix;
-        const float *floatArray = identityMatrix.constData();
         for (auto i = 0u; i < boneNodes.size(); i++) {
+            const float *floatArray = boneNodes[i].inverseBindMatrix.constData();
             for (auto j = 0u; j < 16; j++) {
                 binStream << (float)floatArray[j];
             }
