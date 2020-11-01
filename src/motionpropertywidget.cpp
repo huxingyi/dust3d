@@ -7,11 +7,17 @@
 #include <QFormLayout>
 #include "motionpropertywidget.h"
 #include "simpleshaderwidget.h"
-#include "motionpreviewgenerator.h"
 #include "simplerendermeshgenerator.h"
+#include "motionsgenerator.h"
 
 MotionPropertyWidget::~MotionPropertyWidget()
 {
+    for (auto &it: m_frames)
+        delete it;
+    while (!m_renderQueue.empty()) {
+        delete m_renderQueue.front();
+        m_renderQueue.pop();
+    }
     delete m_bones;
     delete m_rigWeights;
     delete m_outcome;
@@ -101,12 +107,14 @@ MotionPropertyWidget::MotionPropertyWidget()
     QTimer *timer = new QTimer(this);
     timer->setInterval(17);
     connect(timer, &QTimer::timeout, [this] {
-        if (m_renderQueue.size() > 600)
+        if (m_renderQueue.size() > 600) {
+            checkRenderQueue();
             return;
+        }
         if (this->m_frames.empty())
             return;
         if (this->m_frameIndex < this->m_frames.size()) {
-            m_renderQueue.push(this->m_frames[this->m_frameIndex]);
+            m_renderQueue.push(new SimpleShaderMesh(*this->m_frames[this->m_frameIndex]));
             checkRenderQueue();
         }
         this->m_frameIndex = (this->m_frameIndex + 1) % this->m_frames.size();
@@ -123,10 +131,13 @@ QSize MotionPropertyWidget::sizeHint() const
     return QSize(600, 360);
 }
 
-void MotionPropertyWidget::updateBones(const std::vector<RiggerBone> *rigBones,
+void MotionPropertyWidget::updateBones(RigType rigType,
+    const std::vector<RiggerBone> *rigBones,
     const std::map<int, RiggerVertexWeights> *rigWeights,
     const Outcome *outcome)
 {
+    m_rigType = rigType;
+    
     delete m_bones;
     m_bones = nullptr;
     
@@ -156,27 +167,31 @@ void MotionPropertyWidget::generatePreview()
     
     m_isPreviewObsolete = false;
     
-    if (nullptr == m_bones || nullptr == m_rigWeights || nullptr == m_outcome)
+    if (RigType::None == m_rigType || nullptr == m_bones || nullptr == m_rigWeights || nullptr == m_outcome)
         return;
     
     QThread *thread = new QThread;
     
-    m_previewGenerator = new MotionPreviewGenerator(*m_bones, *m_rigWeights, *m_outcome, m_parameters);
+    m_previewGenerator = new MotionsGenerator(m_rigType, *m_bones, *m_rigWeights, *m_outcome);
+    m_previewGenerator->enablePreviewMeshes();
+    m_previewGenerator->addMotion(QUuid(), std::map<QString, QString>());
     m_previewGenerator->moveToThread(thread);
-    connect(thread, &QThread::started, m_previewGenerator, &MotionPreviewGenerator::process);
-    connect(m_previewGenerator, &MotionPreviewGenerator::finished, this, &MotionPropertyWidget::previewReady);
-    connect(m_previewGenerator, &MotionPreviewGenerator::finished, thread, &QThread::quit);
+    connect(thread, &QThread::started, m_previewGenerator, &MotionsGenerator::process);
+    connect(m_previewGenerator, &MotionsGenerator::finished, this, &MotionPropertyWidget::previewReady);
+    connect(m_previewGenerator, &MotionsGenerator::finished, thread, &QThread::quit);
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
     thread->start();
 }
 
 void MotionPropertyWidget::previewReady()
 {
+    for (auto &it: m_frames)
+        delete it;
     m_frames.clear();
-
-    const auto &frames = m_previewGenerator->frames();
+    
+    std::vector<std::pair<float, SimpleShaderMesh *>> frames = m_previewGenerator->takeResultPreviewMeshes(QUuid());
     for (const auto &frame: frames) {
-        m_frames.push_back({frame.vertices, frame.faces, frame.cornerNormals});
+        m_frames.push_back(frame.second);
     }
     
     delete m_previewGenerator;
@@ -188,37 +203,10 @@ void MotionPropertyWidget::previewReady()
 
 void MotionPropertyWidget::checkRenderQueue()
 {
-    if (nullptr != m_renderMeshGenerator)
-        return;
-    
     if (m_renderQueue.empty())
         return;
     
-    //qDebug() << "Generate render mesh...";
-    
-    QThread *thread = new QThread;
-    
-    const auto &item = m_renderQueue.front();
-    m_renderMeshGenerator = new SimpleRenderMeshGenerator(item.vertices, item.faces, &item.cornerNormals);
+    SimpleShaderMesh *mesh = m_renderQueue.front();
     m_renderQueue.pop();
-    m_renderMeshGenerator->moveToThread(thread);
-    connect(thread, &QThread::started, m_renderMeshGenerator, &SimpleRenderMeshGenerator::process);
-    connect(m_renderMeshGenerator, &SimpleRenderMeshGenerator::finished, this, &MotionPropertyWidget::renderMeshReady);
-    connect(m_renderMeshGenerator, &SimpleRenderMeshGenerator::finished, thread, &QThread::quit);
-    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
-    thread->start();
-}
-
-void MotionPropertyWidget::renderMeshReady()
-{
-    SimpleShaderMesh *renderMesh = m_renderMeshGenerator->takeRenderMesh();
-    
-    //qDebug() << "Render mesh ready";
-    
-    delete m_renderMeshGenerator;
-    m_renderMeshGenerator = nullptr;
-    
-    m_modelRenderWidget->updateMesh(renderMesh);
-    
-    checkRenderQueue();
+    m_modelRenderWidget->updateMesh(mesh);
 }

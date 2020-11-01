@@ -67,7 +67,6 @@ Document::Document() :
     m_resultRigWeights(nullptr),
     m_isRigObsolete(false),
     m_riggedOutcome(new Outcome),
-    m_posePreviewsGenerator(nullptr),
     m_currentRigSucceed(false),
     m_materialPreviewsGenerator(nullptr),
     m_motionsGenerator(nullptr),
@@ -470,37 +469,15 @@ QUuid Document::createNode(QUuid nodeId, float x, float y, float z, float radius
     return node.id;
 }
 
-void Document::addPose(QUuid poseId, QString name, std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> frames, QUuid turnaroundImageId, float yTranslationScale)
-{
-    QUuid newPoseId = poseId;
-    auto &pose = poseMap[newPoseId];
-    pose.id = newPoseId;
-    
-    pose.name = name;
-    pose.frames = frames;
-    pose.turnaroundImageId = turnaroundImageId;
-    pose.yTranslationScale = yTranslationScale;
-    pose.dirty = true;
-    
-    poseIdList.push_back(newPoseId);
-    
-    emit posesChanged();
-    emit poseAdded(newPoseId);
-    emit poseListChanged();
-    emit optionsChanged();
-}
-
-void Document::addMotion(QUuid motionId, QString name, std::vector<MotionClip> clips)
+void Document::addMotion(QUuid motionId, QString name, std::map<QString, QString> parameters)
 {
     QUuid newMotionId = motionId;
     auto &motion = motionMap[newMotionId];
     motion.id = newMotionId;
     
     motion.name = name;
-    motion.clips = clips;
+    motion.parameters = parameters;
     motion.dirty = true;
-    
-    motionIdList.push_back(newMotionId);
     
     emit motionsChanged();
     emit motionAdded(newMotionId);
@@ -515,7 +492,6 @@ void Document::removeMotion(QUuid motionId)
         qDebug() << "Remove a none exist motion:" << motionId;
         return;
     }
-    motionIdList.erase(std::remove(motionIdList.begin(), motionIdList.end(), motionId), motionIdList.end());
     motionMap.erase(findMotionResult);
     emit motionsChanged();
     emit motionListChanged();
@@ -523,17 +499,17 @@ void Document::removeMotion(QUuid motionId)
     emit optionsChanged();
 }
 
-void Document::setMotionClips(QUuid motionId, std::vector<MotionClip> clips)
+void Document::setMotionParameters(QUuid motionId, std::map<QString, QString> parameters)
 {
     auto findMotionResult = motionMap.find(motionId);
     if (findMotionResult == motionMap.end()) {
         qDebug() << "Find motion failed:" << motionId;
         return;
     }
-    findMotionResult->second.clips = clips;
+    findMotionResult->second.parameters = parameters;
     findMotionResult->second.dirty = true;
     emit motionsChanged();
-    emit motionClipsChanged(motionId);
+    emit motionParametersChanged(motionId);
     emit optionsChanged();
 }
 
@@ -550,92 +526,6 @@ void Document::renameMotion(QUuid motionId, QString name)
     findMotionResult->second.name = name;
     emit motionNameChanged(motionId);
     emit motionListChanged();
-    emit optionsChanged();
-}
-
-void Document::removePose(QUuid poseId)
-{
-    auto findPoseResult = poseMap.find(poseId);
-    if (findPoseResult == poseMap.end()) {
-        qDebug() << "Remove a none exist pose:" << poseId;
-        return;
-    }
-    poseIdList.erase(std::remove(poseIdList.begin(), poseIdList.end(), poseId), poseIdList.end());
-    poseMap.erase(findPoseResult);
-    emit posesChanged();
-    emit poseListChanged();
-    emit poseRemoved(poseId);
-    emit optionsChanged();
-}
-
-void Document::setPoseFrames(QUuid poseId, std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> frames)
-{
-    auto findPoseResult = poseMap.find(poseId);
-    if (findPoseResult == poseMap.end()) {
-        qDebug() << "Find pose failed:" << poseId;
-        return;
-    }
-    findPoseResult->second.frames = frames;
-    findPoseResult->second.dirty = true;
-    bool foundMotion = false;
-    for (auto &it: motionMap) {
-        for (const auto &clip: it.second.clips) {
-            if (poseId == clip.linkToId) {
-                it.second.dirty = true;
-                foundMotion = true;
-                break;
-            }
-        }
-    }
-    emit posesChanged();
-    emit poseFramesChanged(poseId);
-    emit optionsChanged();
-    if (foundMotion) {
-        emit motionsChanged();
-    }
-}
-
-void Document::setPoseTurnaroundImageId(QUuid poseId, QUuid imageId)
-{
-    auto findPoseResult = poseMap.find(poseId);
-    if (findPoseResult == poseMap.end()) {
-        qDebug() << "Find pose failed:" << poseId;
-        return;
-    }
-    if (findPoseResult->second.turnaroundImageId == imageId)
-        return;
-    findPoseResult->second.turnaroundImageId = imageId;
-    findPoseResult->second.dirty = true;
-    emit poseTurnaroundImageIdChanged(poseId);
-    emit optionsChanged();
-}
-
-void Document::setPoseYtranslationScale(QUuid poseId, float scale)
-{
-    auto findPoseResult = poseMap.find(poseId);
-    if (findPoseResult == poseMap.end()) {
-        qDebug() << "Find pose failed:" << poseId;
-        return;
-    }
-    findPoseResult->second.yTranslationScale = scale;
-    findPoseResult->second.dirty = true;
-    emit poseYtranslationScaleChanged(poseId);
-    emit optionsChanged();
-}
-
-void Document::renamePose(QUuid poseId, QString name)
-{
-    auto findPoseResult = poseMap.find(poseId);
-    if (findPoseResult == poseMap.end()) {
-        qDebug() << "Find pose failed:" << poseId;
-        return;
-    }
-    if (findPoseResult->second.name == name)
-        return;
-    
-    findPoseResult->second.name = name;
-    emit poseNameChanged(poseId);
-    emit poseListChanged();
     emit optionsChanged();
 }
 
@@ -782,14 +672,6 @@ const Component *Document::findComponent(QUuid componentId) const
         return &rootComponent;
     auto it = componentMap.find(componentId);
     if (it == componentMap.end())
-        return nullptr;
-    return &it->second;
-}
-
-const Pose *Document::findPose(QUuid poseId) const
-{
-    auto it = poseMap.find(poseId);
-    if (it == poseMap.end())
         return nullptr;
     return &it->second;
 }
@@ -1143,7 +1025,6 @@ void Document::markAllDirty()
 
 void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeIds,
     DocumentToSnapshotFor forWhat,
-    const std::set<QUuid> &limitPoseIds,
     const std::set<QUuid> &limitMotionIds,
     const std::set<QUuid> &limitMaterialIds) const
 {
@@ -1360,51 +1241,15 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
         }
     }
     if (DocumentToSnapshotFor::Document == forWhat ||
-            DocumentToSnapshotFor::Poses == forWhat) {
-        for (const auto &poseId: poseIdList) {
-            if (!limitPoseIds.empty() && limitPoseIds.find(poseId) == limitPoseIds.end())
-                continue;
-            auto findPoseResult = poseMap.find(poseId);
-            if (findPoseResult == poseMap.end()) {
-                qDebug() << "Find pose failed:" << poseId;
-                continue;
-            }
-            auto &poseIt = *findPoseResult;
-            std::map<QString, QString> pose;
-            pose["id"] = poseIt.second.id.toString();
-            if (!poseIt.second.name.isEmpty())
-                pose["name"] = poseIt.second.name;
-            if (!poseIt.second.turnaroundImageId.isNull())
-                pose["canvasImageId"] = poseIt.second.turnaroundImageId.toString();
-            if (poseIt.second.yTranslationScaleAdjusted())
-                pose["yTranslationScale"] = QString::number(poseIt.second.yTranslationScale);
-            snapshot->poses.push_back(std::make_pair(pose, poseIt.second.frames));
-        }
-    }
-    if (DocumentToSnapshotFor::Document == forWhat ||
             DocumentToSnapshotFor::Motions == forWhat) {
-        for (const auto &motionId: motionIdList) {
-            if (!limitMotionIds.empty() && limitMotionIds.find(motionId) == limitMotionIds.end())
+        for (const auto &motionIt: motionMap) {
+            if (!limitMotionIds.empty() && limitMotionIds.find(motionIt.first) == limitMotionIds.end())
                 continue;
-            auto findMotionResult = motionMap.find(motionId);
-            if (findMotionResult == motionMap.end()) {
-                qDebug() << "Find motion failed:" << motionId;
-                continue;
-            }
-            auto &motionIt = *findMotionResult;
-            std::map<QString, QString> motion;
+            std::map<QString, QString> motion = motionIt.second.parameters;
             motion["id"] = motionIt.second.id.toString();
             if (!motionIt.second.name.isEmpty())
                 motion["name"] = motionIt.second.name;
-            std::vector<std::map<QString, QString>> clips;
-            for (const auto &clip: motionIt.second.clips) {
-                std::map<QString, QString> attributes;
-                attributes["duration"] = QString::number(clip.duration);
-                attributes["linkDataType"] = clip.linkDataType();
-                attributes["linkData"] = clip.linkData();
-                clips.push_back(attributes);
-            }
-            snapshot->motions.push_back(std::make_pair(motion, clips));
+            snapshot->motions[motion["id"]] = motion;
         }
     }
     if (DocumentToSnapshotFor::Document == forWhat) {
@@ -1815,45 +1660,14 @@ void Document::addFromSnapshot(const Snapshot &snapshot, enum SnapshotSource sou
             componentMap[childComponentId].parentId = componentId;
         }
     }
-    for (const auto &poseIt: snapshot.poses) {
-        QUuid newPoseId = QUuid::createUuid();
-        auto &newPose = poseMap[newPoseId];
-        newPose.id = newPoseId;
-        const auto &poseAttributes = poseIt.first;
-        newPose.name = valueOfKeyInMapOrEmpty(poseAttributes, "name");
-        auto findCanvasImageId = poseAttributes.find("canvasImageId");
-        if (findCanvasImageId != poseAttributes.end())
-            newPose.turnaroundImageId = QUuid(findCanvasImageId->second);
-        auto findYtranslationScale = poseAttributes.find("yTranslationScale");
-        if (findYtranslationScale != poseAttributes.end())
-            newPose.yTranslationScale = findYtranslationScale->second.toFloat();
-        newPose.frames = poseIt.second;
-        oldNewIdMap[QUuid(valueOfKeyInMapOrEmpty(poseAttributes, "id"))] = newPoseId;
-        poseIdList.push_back(newPoseId);
-        emit poseAdded(newPoseId);
-    }
-    for (const auto &motionIt: snapshot.motions) {
+    for (const auto &motionKv: snapshot.motions) {
+        QUuid oldMotionId = QUuid(motionKv.first);
         QUuid newMotionId = QUuid::createUuid();
-        auto &newMotion = motionMap[newMotionId];
-        newMotion.id = newMotionId;
-        const auto &motionAttributes = motionIt.first;
-        newMotion.name = valueOfKeyInMapOrEmpty(motionAttributes, "name");
-        for (const auto &attributes: motionIt.second) {
-            auto linkData = valueOfKeyInMapOrEmpty(attributes, "linkData");
-            QUuid testId = QUuid(linkData);
-            if (!testId.isNull()) {
-                auto findInOldNewIdMapResult = oldNewIdMap.find(testId);
-                if (findInOldNewIdMapResult != oldNewIdMap.end()) {
-                    linkData = findInOldNewIdMapResult->second.toString();
-                }
-            }
-            MotionClip clip(linkData,
-                valueOfKeyInMapOrEmpty(attributes, "linkDataType"));
-            clip.duration = valueOfKeyInMapOrEmpty(attributes, "duration").toFloat();
-            newMotion.clips.push_back(clip);
-        }
-        oldNewIdMap[QUuid(valueOfKeyInMapOrEmpty(motionAttributes, "id"))] = newMotionId;
-        motionIdList.push_back(newMotionId);
+        auto &motion = motionMap[newMotionId];
+        motion.id = newMotionId;
+        oldNewIdMap[oldMotionId] = motion.id;
+        motion.name = valueOfKeyInMapOrEmpty(motionKv.second, "name");
+        motion.parameters = motionKv.second;
         emit motionAdded(newMotionId);
     }
     
@@ -1889,8 +1703,6 @@ void Document::addFromSnapshot(const Snapshot &snapshot, enum SnapshotSource sou
     
     if (!snapshot.materials.empty())
         emit materialListChanged();
-    if (!snapshot.poses.empty())
-        emit poseListChanged();
     if (!snapshot.motions.empty())
         emit motionListChanged();
 }
@@ -1907,10 +1719,7 @@ void Document::silentReset()
     componentMap.clear();
     materialMap.clear();
     materialIdList.clear();
-    poseMap.clear();
-    poseIdList.clear();
     motionMap.clear();
-    motionIdList.clear();
     rootComponent = Component();
     removeRigResults();
 }
@@ -3280,15 +3089,9 @@ void Document::saveSnapshot()
     QElapsedTimer elapsedTimer;
     elapsedTimer.start();
     toSnapshot(&item.snapshot);
-    //item.hash = item.snapshot.hash();
-    //if (!m_undoItems.empty() && item.hash == m_undoItems[m_undoItems.size() - 1].hash) {
-    //    qDebug() << "Snapshot has the same hash:" << item.hash << "skipped";
-    //    return;
-    //}
     if (m_undoItems.size() + 1 > m_maxSnapshot)
         m_undoItems.pop_front();
     m_undoItems.push_back(item);
-    qDebug() << "Snapshot saved with hash:" << item.hash << " Time consumed:" << elapsedTimer.elapsed() << "History count:" << m_undoItems.size();
 }
 
 void Document::undo()
@@ -3349,17 +3152,6 @@ bool Document::hasPastableMaterialsInClipboard() const
     const QMimeData *mimeData = clipboard->mimeData();
     if (mimeData->hasText()) {
         if (-1 != mimeData->text().indexOf("<material "))
-            return true;
-    }
-    return false;
-}
-
-bool Document::hasPastablePosesInClipboard() const
-{
-    const QClipboard *clipboard = QApplication::clipboard();
-    const QMimeData *mimeData = clipboard->mimeData();
-    if (mimeData->hasText()) {
-        if (-1 != mimeData->text().indexOf("<pose "))
             return true;
     }
     return false;
@@ -3748,18 +3540,15 @@ void Document::generateMotions()
         return;
     }
     
-    m_motionsGenerator = new MotionsGenerator(rigType, rigBones, rigWeights, currentRiggedOutcome());
+    m_motionsGenerator = new MotionsGenerator(rigType, *rigBones, *rigWeights, currentRiggedOutcome());
+    m_motionsGenerator->enableSnapshotMeshes();
     bool hasDirtyMotion = false;
-    for (const auto &pose: poseMap) {
-        m_motionsGenerator->addPoseToLibrary(pose.first, pose.second.frames, pose.second.yTranslationScale);
-    }
     for (auto &motion: motionMap) {
         if (motion.second.dirty) {
             hasDirtyMotion = true;
             motion.second.dirty = false;
-            m_motionsGenerator->addRequirement(motion.first);
+            m_motionsGenerator->addMotion(motion.first, motion.second.parameters);
         }
-        m_motionsGenerator->addMotionToLibrary(motion.first, motion.second.clips);
     }
     if (!hasDirtyMotion) {
         delete m_motionsGenerator;
@@ -3784,8 +3573,8 @@ void Document::motionsReady()
     for (auto &motionId: m_motionsGenerator->generatedMotionIds()) {
         auto motion = motionMap.find(motionId);
         if (motion != motionMap.end()) {
-            auto resultPreviewMeshs = m_motionsGenerator->takeResultPreviewMeshs(motionId);
-            motion->second.updatePreviewMeshs(resultPreviewMeshs);
+            auto resultPreviewMesh = m_motionsGenerator->takeResultSnapshotMesh(motionId);
+            motion->second.updatePreviewMesh(resultPreviewMesh);
             motion->second.jointNodeTrees = m_motionsGenerator->takeResultJointNodeTrees(motionId);
             emit motionPreviewChanged(motionId);
             emit motionResultChanged(motionId);
@@ -3798,70 +3587,6 @@ void Document::motionsReady()
     qDebug() << "Motions generation done";
     
     generateMotions();
-}
-
-void Document::generatePosePreviews()
-{
-    if (nullptr != m_posePreviewsGenerator) {
-        return;
-    }
-    
-    const std::vector<RiggerBone> *rigBones = resultRigBones();
-    const std::map<int, RiggerVertexWeights> *rigWeights = resultRigWeights();
-    
-    if (nullptr == rigBones || nullptr == rigWeights) {
-        return;
-    }
-
-    m_posePreviewsGenerator = new PosePreviewsGenerator(rigType, rigBones,
-        rigWeights, *m_riggedOutcome);
-    bool hasDirtyPose = false;
-    for (auto &poseIt: poseMap) {
-        if (!poseIt.second.dirty)
-            continue;
-        if (poseIt.second.frames.empty())
-            continue;
-        int middle = poseIt.second.frames.size() / 2;
-        if (middle >= (int)poseIt.second.frames.size())
-            middle = 0;
-        m_posePreviewsGenerator->addPose({poseIt.first, middle}, poseIt.second.frames[middle].second);
-        poseIt.second.dirty = false;
-        hasDirtyPose = true;
-    }
-    if (!hasDirtyPose) {
-        delete m_posePreviewsGenerator;
-        m_posePreviewsGenerator = nullptr;
-        return;
-    }
-    
-    qDebug() << "Pose previews generating..";
-    
-    QThread *thread = new QThread;
-    m_posePreviewsGenerator->moveToThread(thread);
-    connect(thread, &QThread::started, m_posePreviewsGenerator, &PosePreviewsGenerator::process);
-    connect(m_posePreviewsGenerator, &PosePreviewsGenerator::finished, this, &Document::posePreviewsReady);
-    connect(m_posePreviewsGenerator, &PosePreviewsGenerator::finished, thread, &QThread::quit);
-    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
-    thread->start();
-}
-
-void Document::posePreviewsReady()
-{
-    for (const auto &poseIdAndFrame: m_posePreviewsGenerator->generatedPreviewPoseIdAndFrames()) {
-        auto pose = poseMap.find(poseIdAndFrame.first);
-        if (pose != poseMap.end()) {
-            Model *resultPartPreviewMesh = m_posePreviewsGenerator->takePreview(poseIdAndFrame);
-            pose->second.updatePreviewMesh(resultPartPreviewMesh);
-            emit posePreviewChanged(poseIdAndFrame.first);
-        }
-    }
-
-    delete m_posePreviewsGenerator;
-    m_posePreviewsGenerator = nullptr;
-    
-    qDebug() << "Pose previews generation done";
-    
-    generatePosePreviews();
 }
 
 void Document::addMaterial(QUuid materialId, QString name, std::vector<MaterialLayer> layers)

@@ -32,8 +32,8 @@ public:
     }
     void setRadius(float toRadius)
     {
-        if (toRadius < 0.005)
-            toRadius = 0.005;
+        if (toRadius < 0.005f)
+            toRadius = 0.005f;
         else if (toRadius > 1)
             toRadius = 1;
         radius = toRadius;

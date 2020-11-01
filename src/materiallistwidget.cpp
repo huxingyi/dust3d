@@ -308,7 +308,7 @@ void MaterialListWidget::copy()
 
     Snapshot snapshot;
     m_document->toSnapshot(&snapshot, emptySet, DocumentToSnapshotFor::Materials,
-        emptySet, emptySet, limitMaterialIds);
+        emptySet, limitMaterialIds);
     QString snapshotXml;
     QXmlStreamWriter xmlStreamWriter(&snapshotXml);
     saveSkeletonToXmlStream(&snapshot, &xmlStreamWriter);

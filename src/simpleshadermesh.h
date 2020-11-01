@@ -15,6 +15,16 @@ public:
     {
     }
     
+    SimpleShaderMesh(const SimpleShaderMesh &mesh)
+    {
+        if (nullptr != mesh.m_vertices)
+            m_vertices = new std::vector<QVector3D>(*mesh.m_vertices);
+        if (nullptr != mesh.m_triangles)
+            m_triangles = new std::vector<std::vector<size_t>>(*mesh.m_triangles);
+        if (nullptr != mesh.m_triangleCornerNormals)
+            m_triangleCornerNormals = new std::vector<std::vector<QVector3D>>(*mesh.m_triangleCornerNormals);
+    }
+    
     ~SimpleShaderMesh()
     {
         delete m_vertices;

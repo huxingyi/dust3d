@@ -495,19 +495,6 @@ DocumentWindow::DocumentWindow() :
         updateRigWeightRenderWidget();
     });
     
-    QDockWidget *poseDocker = new QDockWidget(tr("Poses"), this);
-    poseDocker->setAllowedAreas(Qt::RightDockWidgetArea);
-    PoseManageWidget *poseManageWidget = new PoseManageWidget(m_document, poseDocker);
-    poseDocker->setWidget(poseManageWidget);
-    connect(poseManageWidget, &PoseManageWidget::registerDialog, this, &DocumentWindow::registerDialog);
-    connect(poseManageWidget, &PoseManageWidget::unregisterDialog, this, &DocumentWindow::unregisterDialog);
-    addDockWidget(Qt::RightDockWidgetArea, poseDocker);
-    connect(poseDocker, &QDockWidget::topLevelChanged, [=](bool topLevel) {
-        Q_UNUSED(topLevel);
-        for (const auto &pose: m_document->poseMap)
-            emit m_document->posePreviewChanged(pose.first);
-    });
-    
     QDockWidget *motionDocker = new QDockWidget(tr("Motions"), this);
     motionDocker->setAllowedAreas(Qt::RightDockWidgetArea);
     MotionManageWidget *motionManageWidget = new MotionManageWidget(m_document, motionDocker);
@@ -524,8 +511,7 @@ DocumentWindow::DocumentWindow() :
     
     tabifyDockWidget(partsDocker, materialDocker);
     tabifyDockWidget(materialDocker, rigDocker);
-    tabifyDockWidget(rigDocker, poseDocker);
-    tabifyDockWidget(poseDocker, motionDocker);
+    tabifyDockWidget(rigDocker, motionDocker);
     tabifyDockWidget(motionDocker, scriptDocker);
     
     partsDocker->raise();
@@ -922,13 +908,6 @@ DocumentWindow::DocumentWindow() :
     });
     m_windowMenu->addAction(m_showRigAction);
     
-    m_showPosesAction = new QAction(tr("Poses"), this);
-    connect(m_showPosesAction, &QAction::triggered, [=]() {
-        poseDocker->show();
-        poseDocker->raise();
-    });
-    m_windowMenu->addAction(m_showPosesAction);
-    
     m_showMotionsAction = new QAction(tr("Motions"), this);
     connect(m_showMotionsAction, &QAction::triggered, [=]() {
         motionDocker->show();
@@ -1281,7 +1260,6 @@ DocumentWindow::DocumentWindow() :
         m_modelRenderWidget->updateMesh(resultMesh);
     });
     
-    connect(m_document, &Document::posesChanged, m_document, &Document::generateMotions);
     connect(m_document, &Document::motionsChanged, m_document, &Document::generateMotions);
 
     connect(graphicsWidget, &SkeletonGraphicsWidget::cursorChanged, [=]() {
@@ -1312,16 +1290,6 @@ DocumentWindow::DocumentWindow() :
     connect(m_document, &Document::resultRigChanged, this, &DocumentWindow::updateRigWeightRenderWidget);
     
     //connect(m_document, &SkeletonDocument::resultRigChanged, tetrapodPoseEditWidget, &TetrapodPoseEditWidget::updatePreview);
-    
-    connect(m_document, &Document::poseAdded, this, [=](QUuid poseId) {
-        Q_UNUSED(poseId);
-        m_document->generatePosePreviews();
-    });
-    connect(m_document, &Document::poseFramesChanged, this, [=](QUuid poseId) {
-        Q_UNUSED(poseId);
-        m_document->generatePosePreviews();
-    });
-    connect(m_document, &Document::resultRigChanged, m_document, &Document::generatePosePreviews);
     
     connect(m_document, &Document::resultRigChanged, m_document, &Document::generateMotions);
     
@@ -1943,11 +1911,8 @@ void DocumentWindow::exportFbxToFilename(const QString &filename)
     QApplication::setOverrideCursor(Qt::WaitCursor);
     Outcome skeletonResult = m_document->currentPostProcessedOutcome();
     std::vector<std::pair<QString, std::vector<std::pair<float, JointNodeTree>>>> exportMotions;
-    for (const auto &motionId: m_document->motionIdList) {
-        const Motion *motion = m_document->findMotion(motionId);
-        if (nullptr == motion)
-            continue;
-        exportMotions.push_back({motion->name, motion->jointNodeTrees});
+    for (const auto &motionIt: m_document->motionMap) {
+        exportMotions.push_back({motionIt.second.name, motionIt.second.jointNodeTrees});
     }
     FbxFileWriter fbxFileWriter(skeletonResult, m_document->resultRigBones(), m_document->resultRigWeights(), filename,
         m_document->textureImage,
@@ -1980,11 +1945,8 @@ void DocumentWindow::exportGlbToFilename(const QString &filename)
     QApplication::setOverrideCursor(Qt::WaitCursor);
     Outcome skeletonResult = m_document->currentPostProcessedOutcome();
     std::vector<std::pair<QString, std::vector<std::pair<float, JointNodeTree>>>> exportMotions;
-    for (const auto &motionId: m_document->motionIdList) {
-        const Motion *motion = m_document->findMotion(motionId);
-        if (nullptr == motion)
-            continue;
-        exportMotions.push_back({motion->name, motion->jointNodeTrees});
+    for (const auto &motionIt: m_document->motionMap) {
+        exportMotions.push_back({motionIt.second.name, motionIt.second.jointNodeTrees});
     }
     GlbFileWriter glbFileWriter(skeletonResult, m_document->resultRigBones(), m_document->resultRigWeights(), filename,
         m_document->textureHasTransparencySettings,

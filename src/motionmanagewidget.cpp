@@ -2,7 +2,6 @@
 #include <QVBoxLayout>
 #include <QPushButton>
 #include "motionmanagewidget.h"
-#include "motioneditwidget.h"
 #include "theme.h"
 #include "infolabel.h"
 #include "motionpropertywidget.h"
@@ -65,7 +64,8 @@ void MotionManageWidget::showAddMotionDialog()
     //connect(m_document, &Document::resultRigChanged, [=]() {
     //    motionPropertyWidget->updateBones(m_document->resultRigBones());
     //});
-    motionPropertyWidget->updateBones(m_document->resultRigBones(),
+    motionPropertyWidget->updateBones(m_document->rigType,
+        m_document->resultRigBones(),
         m_document->resultRigWeights(),
         &m_document->currentRiggedOutcome());
     motionPropertyWidget->setAttribute(Qt::WA_DeleteOnClose);
@@ -75,6 +75,7 @@ void MotionManageWidget::showAddMotionDialog()
 
 void MotionManageWidget::showMotionDialog(QUuid motionId)
 {
+    /*
     MotionEditWidget *motionEditWidget = new MotionEditWidget(m_document);
     motionEditWidget->setAttribute(Qt::WA_DeleteOnClose);
     if (!motionId.isNull()) {
@@ -92,4 +93,5 @@ void MotionManageWidget::showMotionDialog(QUuid motionId)
         emit unregisterDialog((QWidget *)motionEditWidget);
     });
     emit registerDialog((QWidget *)motionEditWidget);
+    */
 }

@@ -121,8 +121,9 @@ GlbFileWriter::GlbFileWriter(Outcome &outcome,
         bufferViewFromOffset = (int)m_binByteArray.size();
         m_json["bufferViews"][bufferViewIndex]["buffer"] = 0;
         m_json["bufferViews"][bufferViewIndex]["byteOffset"] = bufferViewFromOffset;
+        QMatrix4x4 identityMatrix;
+        const float *floatArray = identityMatrix.constData();
         for (auto i = 0u; i < boneNodes.size(); i++) {
-            const float *floatArray = boneNodes[i].inverseBindMatrix.constData();
             for (auto j = 0u; j < 16; j++) {
                 binStream << (float)floatArray[j];
             }

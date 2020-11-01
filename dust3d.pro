@@ -278,35 +278,8 @@ HEADERS += src/skinnedmeshcreator.h
 SOURCES += src/jointnodetree.cpp
 HEADERS += src/jointnodetree.h
 
-SOURCES += src/poser.cpp
-HEADERS += src/poser.h
-
-SOURCES += src/posemeshcreator.cpp
-HEADERS += src/posemeshcreator.h
-
-SOURCES += src/posepreviewmanager.cpp
-HEADERS += src/posepreviewmanager.h
-
-SOURCES += src/poseeditwidget.cpp
-HEADERS += src/poseeditwidget.h
-
-SOURCES += src/poselistwidget.cpp
-HEADERS += src/poselistwidget.h
-
-SOURCES += src/posemanagewidget.cpp
-HEADERS += src/posemanagewidget.h
-
-SOURCES += src/posepreviewsgenerator.cpp
-HEADERS += src/posepreviewsgenerator.h
-
-SOURCES += src/posewidget.cpp
-HEADERS += src/posewidget.h
-
 SOURCES += src/preferenceswidget.cpp
 HEADERS += src/preferenceswidget.h
-
-SOURCES += src/motioneditwidget.cpp
-HEADERS += src/motioneditwidget.h
 
 SOURCES += src/motionmanagewidget.cpp
 HEADERS += src/motionmanagewidget.h
@@ -319,9 +292,6 @@ HEADERS += src/motionwidget.h
 
 SOURCES += src/motionsgenerator.cpp
 HEADERS += src/motionsgenerator.h
-
-SOURCES += src/animationclipplayer.cpp
-HEADERS += src/animationclipplayer.h
 
 SOURCES += src/texturetype.cpp
 HEADERS += src/texturetype.h
@@ -350,15 +320,6 @@ HEADERS += src/material.h
 SOURCES += src/fbxfile.cpp
 HEADERS += src/fbxfile.h
 
-SOURCES += src/motiontimelinewidget.cpp
-HEADERS += src/motiontimelinewidget.h
-
-SOURCES += src/interpolationtype.cpp
-HEADERS += src/interpolationtype.h
-
-SOURCES += src/motionclipwidget.cpp
-HEADERS += src/motionclipwidget.h
-
 SOURCES += src/tabwidget.cpp
 HEADERS += src/tabwidget.h
 
@@ -377,17 +338,8 @@ HEADERS += src/uvunwrap.h
 SOURCES += src/triangletangentresolve.cpp
 HEADERS += src/triangletangentresolve.h
 
-SOURCES += src/animalposer.cpp
-HEADERS += src/animalposer.h
-
-SOURCES += src/poserconstruct.cpp
-HEADERS += src/poserconstruct.h
-
 SOURCES += src/skeletondocument.cpp
 HEADERS += src/skeletondocument.h
-
-SOURCES += src/posedocument.cpp
-HEADERS += src/posedocument.h
 
 SOURCES += src/combinemode.cpp
 HEADERS += src/combinemode.h
@@ -571,14 +523,14 @@ HEADERS += src/chainsimulator.h
 SOURCES += src/vertebratamotion.cpp
 HEADERS += src/vertebratamotion.h
 
-SOURCES += src/motionpreviewgenerator.cpp
-HEADERS += src/motionpreviewgenerator.h
-
 SOURCES += src/simplerendermeshgenerator.cpp
 HEADERS += src/simplerendermeshgenerator.h
 
 SOURCES += src/motionpropertywidget.cpp
 HEADERS += src/motionpropertywidget.h
+
+SOURCES += src/motionpreviewimagesgenerator.cpp
+HEADERS += src/motionpreviewimagesgenerator.h
 
 SOURCES += src/main.cpp
 

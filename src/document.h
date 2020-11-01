@@ -18,9 +18,7 @@
 #include "bonemark.h"
 #include "riggenerator.h"
 #include "rigtype.h"
-#include "posepreviewsgenerator.h"
 #include "texturetype.h"
-#include "interpolationtype.h"
 #include "jointnodetree.h"
 #include "skeletondocument.h"
 #include "combinemode.h"
@@ -42,7 +40,6 @@ class GeneratedCacheContext;
 class HistoryItem
 {
 public:
-    uint32_t hash;
     Snapshot snapshot;
 };
 
@@ -217,103 +214,6 @@ private:
     std::set<QUuid> m_childrenIdSet;
 };
 
-class Pose
-{
-public:
-    Pose()
-    {
-    }
-    ~Pose()
-    {
-        delete m_previewMesh;
-    }
-    QUuid id;
-    QString name;
-    bool dirty = true;
-    QUuid turnaroundImageId;
-    float yTranslationScale = 1.0;
-    std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> frames; // pair<attributes, parameters>
-    void updatePreviewMesh(Model *previewMesh)
-    {
-        delete m_previewMesh;
-        m_previewMesh = previewMesh;
-    }
-    Model *takePreviewMesh() const
-    {
-        if (nullptr == m_previewMesh)
-            return nullptr;
-        return new Model(*m_previewMesh);
-    }
-    bool yTranslationScaleAdjusted() const
-    {
-        return fabs(yTranslationScale - 1.0) >= 0.01;
-    }
-private:
-    Q_DISABLE_COPY(Pose);
-    Model *m_previewMesh = nullptr;
-};
-
-enum class MotionClipType
-{
-    Pose,
-    Interpolation,
-    Motion,
-    ProceduralAnimation
-};
-
-class MotionClip
-{
-public:
-    MotionClip()
-    {
-    }
-    MotionClip(const QString &linkData, const QString &linkDataType)
-    {
-        if ("poseId" == linkDataType) {
-            clipType = MotionClipType::Pose;
-            linkToId = QUuid(linkData);
-        } else if ("InterpolationType" == linkDataType) {
-            clipType = MotionClipType::Interpolation;
-            interpolationType = InterpolationTypeFromString(linkData.toUtf8().constData());
-        } else if ("ProceduralAnimation" == linkDataType) {
-            clipType = MotionClipType::ProceduralAnimation;
-            proceduralAnimation = ProceduralAnimationFromString(linkData.toUtf8().constData());
-        } else if ("motionId" == linkDataType) {
-            clipType = MotionClipType::Motion;
-            linkToId = QUuid(linkData);
-        }
-    }
-    QString linkDataType() const
-    {
-        if (MotionClipType::Pose == clipType)
-            return "poseId";
-        if (MotionClipType::Interpolation == clipType)
-            return "InterpolationType";
-        if (MotionClipType::ProceduralAnimation == clipType)
-            return "ProceduralAnimation";
-        if (MotionClipType::Motion == clipType)
-            return "motionId";
-        return "poseId";
-    }
-    QString linkData() const
-    {
-        if (MotionClipType::Pose == clipType)
-            return linkToId.toString();
-        if (MotionClipType::Interpolation == clipType)
-            return InterpolationTypeToString(interpolationType);
-        if (MotionClipType::ProceduralAnimation == clipType)
-            return ProceduralAnimationToString(proceduralAnimation);
-        if (MotionClipType::Motion == clipType)
-            return linkToId.toString();
-        return linkToId.toString();
-    }
-    float duration = 0.0;
-    MotionClipType clipType = MotionClipType::Pose;
-    QUuid linkToId;
-    InterpolationType interpolationType;
-    ProceduralAnimation proceduralAnimation;
-};
-
 class Motion
 {
 public:
@@ -322,36 +222,28 @@ public:
     }
     ~Motion()
     {
-        releasePreviewMeshs();
+        delete m_previewMesh;
     }
     QUuid id;
     QString name;
     bool dirty = true;
-    std::vector<MotionClip> clips;
+    std::map<QString, QString> parameters;
     std::vector<std::pair<float, JointNodeTree>> jointNodeTrees;
-    void updatePreviewMeshs(std::vector<std::pair<float, Model *>> &previewMeshs)
+    void updatePreviewMesh(Model *mesh)
     {
-        releasePreviewMeshs();
-        m_previewMeshs = previewMeshs;
-        previewMeshs.clear();
+        delete m_previewMesh;
+        m_previewMesh = mesh;
     }
     Model *takePreviewMesh() const
     {
-        if (m_previewMeshs.empty())
+        if (nullptr == m_previewMesh)
             return nullptr;
-        int middle = std::max((int)m_previewMeshs.size() / 2 - 1, (int)0);
-        return new Model(*m_previewMeshs[middle].second);
+        
+        return new Model(*m_previewMesh);
     }
 private:
     Q_DISABLE_COPY(Motion);
-    void releasePreviewMeshs()
-    {
-        for (const auto &item: m_previewMeshs) {
-            delete item.second;
-        }
-        m_previewMeshs.clear();
-    }
-    std::vector<std::pair<float, Model *>> m_previewMeshs;
+    Model *m_previewMesh = nullptr;
 };
 
 class MaterialMap
@@ -403,7 +295,6 @@ enum class DocumentToSnapshotFor
     Document = 0,
     Nodes,
     Materials,
-    Poses,
     Motions
 };
 
@@ -495,23 +386,14 @@ signals:
     void checkEdge(QUuid edgeId);
     void optionsChanged();
     void rigTypeChanged();
-    void posesChanged();
     void motionsChanged();
-    void poseAdded(QUuid poseId);
-    void poseRemoved(QUuid);
-    void poseListChanged();
-    void poseNameChanged(QUuid poseId);
-    void poseFramesChanged(QUuid poseId);
-    void poseTurnaroundImageIdChanged(QUuid poseId);
-    void poseYtranslationScaleChanged(QUuid poseId);
-    void posePreviewChanged(QUuid poseId);
     void motionAdded(QUuid motionId);
     void motionRemoved(QUuid motionId);
-    void motionListChanged();
     void motionNameChanged(QUuid motionId);
-    void motionClipsChanged(QUuid motionId);
+    void motionParametersChanged(QUuid motionId);
     void motionPreviewChanged(QUuid motionId);
     void motionResultChanged(QUuid motionId);
+    void motionListChanged();
     void materialAdded(QUuid materialId);
     void materialRemoved(QUuid materialId);
     void materialListChanged();
@@ -553,10 +435,7 @@ public:
     std::map<QUuid, Component> componentMap;
     std::map<QUuid, Material> materialMap;
     std::vector<QUuid> materialIdList;
-    std::map<QUuid, Pose> poseMap;
-    std::vector<QUuid> poseIdList;
     std::map<QUuid, Motion> motionMap;
-    std::vector<QUuid> motionIdList;
     Component rootComponent;
     QImage preview;
     bool undoable() const override;
@@ -568,7 +447,6 @@ public:
     void copyNodes(std::set<QUuid> nodeIdSet) const override;
     void toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeIds=std::set<QUuid>(),
         DocumentToSnapshotFor forWhat=DocumentToSnapshotFor::Document,
-        const std::set<QUuid> &limitPoseIds=std::set<QUuid>(),
         const std::set<QUuid> &limitMotionIds=std::set<QUuid>(),
         const std::set<QUuid> &limitMaterialIds=std::set<QUuid>()) const;
     void fromSnapshot(const Snapshot &snapshot);
@@ -583,7 +461,6 @@ public:
     const Component *findComponentParent(QUuid componentId) const;
     QUuid findComponentParentId(QUuid componentId) const;
     const Material *findMaterial(QUuid materialId) const;
-    const Pose *findPose(QUuid poseId) const;
     const Motion *findMotion(QUuid motionId) const;
     Model *takeResultMesh();
     Model *takePaintedMesh();
@@ -594,7 +471,6 @@ public:
     const std::map<int, RiggerVertexWeights> *resultRigWeights() const;
     void updateTurnaround(const QImage &image);
     bool hasPastableMaterialsInClipboard() const;
-    bool hasPastablePosesInClipboard() const;
     bool hasPastableMotionsInClipboard() const;
     const Outcome &currentPostProcessedOutcome() const;
     bool isExportReady() const;
@@ -650,8 +526,6 @@ public slots:
     void postProcessedMeshResultReady();
     void generateRig();
     void rigReady();
-    void generatePosePreviews();
-    void posePreviewsReady();
     void generateMaterialPreviews();
     void materialPreviewsReady();
     void generateMotions();
@@ -739,17 +613,9 @@ public slots:
     void toggleSmoothNormal();
     void enableWeld(bool enabled);
     void setRigType(RigType toRigType);
-    void addPose(QUuid poseId, QString name, std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> frames,
-        QUuid turnaroundImageId,
-        float yTranslationScale);
-    void removePose(QUuid poseId);
-    void setPoseFrames(QUuid poseId, std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> frames);
-    void setPoseTurnaroundImageId(QUuid poseId, QUuid imageId);
-    void setPoseYtranslationScale(QUuid poseId, float scale);
-    void renamePose(QUuid poseId, QString name);
-    void addMotion(QUuid motionId, QString name, std::vector<MotionClip> clips);
+    void addMotion(QUuid motionId, QString name, std::map<QString, QString> parameters);
     void removeMotion(QUuid motionId);
-    void setMotionClips(QUuid motionId, std::vector<MotionClip> clips);
+    void setMotionParameters(QUuid motionId, std::map<QString, QString> parameters);
     void renameMotion(QUuid motionId, QString name);
     void addMaterial(QUuid materialId, QString name, std::vector<MaterialLayer>);
     void removeMaterial(QUuid materialId);
@@ -812,7 +678,6 @@ private: // need initialize
     std::map<int, RiggerVertexWeights> *m_resultRigWeights;
     bool m_isRigObsolete;
     Outcome *m_riggedOutcome;
-    PosePreviewsGenerator *m_posePreviewsGenerator;
     bool m_currentRigSucceed;
     MaterialPreviewsGenerator *m_materialPreviewsGenerator;
     MotionsGenerator *m_motionsGenerator;

@@ -1,6 +1,4 @@
 #include "vertebratamotion.h"
-#include "blockmesh.h"
-#include "planemesh.h"
 #include "genericspineandpseudophysics.h"
 #include "hermitecurveinterpolation.h"
 #include "chainsimulator.h"
@@ -164,16 +162,6 @@ void VertebrataMotion::calculateLegMoves(size_t heightIndex)
     
 void VertebrataMotion::generate()
 {
-    auto addNodesToMesh = [&](BlockMesh &blockMesh, const std::vector<Node> &nodes) {
-        for (size_t i = 0; i + 1 < nodes.size(); ++i) {
-            size_t j = i + 1;
-            const auto &currentNode = nodes[i];
-            const auto &nextNode = nodes[j];
-            blockMesh.addBlock(currentNode.position * m_scale, currentNode.radius * m_scale,
-                nextNode.position * m_scale, nextNode.radius * m_scale);
-        }
-    };
-    
     prepareLegHeights();
     prepareLegs();
     prepareLegHeightIndices();
@@ -188,24 +176,8 @@ void VertebrataMotion::generate()
     
     for (size_t cycle = 0; cycle < m_parameters.cycles; ++cycle) {
         for (size_t heightIndex = 0; heightIndex < m_legHeights.size(); ++heightIndex) {
-            BlockMesh blockMesh;
-            
-            // Ground
-            blockMesh.addBlock(
-                QVector3D(0.0, m_groundY, 0.0), 100.0,
-                QVector3D(0.0, m_groundY - 0.02, 0.0), 100.0);
-            
             calculateLegMoves(heightIndex);
-            
-            for (size_t legIndex = 0; legIndex < m_legs.size(); ++legIndex) {
-                auto &leg = m_legs[legIndex];
-                for (int side = 0; side < 3; ++side) {
-                    if (leg.nodes[side].empty())
-                        continue;
-                    addNodesToMesh(blockMesh, leg.updatedNodes[side]);
-                }
-            }
-            
+
             if (nullptr == tailSimulator && -1 != tailNodeIndex) {
                 std::vector<QVector3D> ropeVertices(m_spineNodes.size() - tailNodeIndex);
                 for (size_t nodeIndex = tailNodeIndex; nodeIndex < m_spineNodes.size(); ++nodeIndex) {
@@ -226,23 +198,13 @@ void VertebrataMotion::generate()
                     m_updatedSpineNodes[nodeIndex].position = tailSimulator->getVertexMotion(nodeIndex - tailNodeIndex).position + tailSpineOffset;
                 }
             }
-            
-            addNodesToMesh(blockMesh, m_updatedSpineNodes);
-            
-            blockMesh.build();
-            std::vector<QVector3D> *resultVertices = blockMesh.takeResultVertices();
-            std::vector<std::vector<size_t>> *resultFaces = blockMesh.takeResultFaces();
-            FrameMesh frame;
-            frame.vertices = *resultVertices;
-            frame.faces = *resultFaces;
-            frame.nodes = m_updatedSpineNodes;
+
+            auto frame = m_updatedSpineNodes;
             for (const auto &it: m_legs) {
                 for (const auto &nodes: it.updatedNodes)
                     for (const auto &node: nodes)
-                        frame.nodes.push_back(node);
+                        frame.push_back(node);
             }
-            delete resultFaces;
-            delete resultVertices;
             
             m_frames.push_back(frame);
         }
