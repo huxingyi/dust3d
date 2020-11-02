@@ -16,6 +16,8 @@ std::map<QString, QString> VertebrataMotionParametersWidget::fromVertebrataMotio
     parameters["spineStability"] = QString::number(from.spineStability);
     parameters["cycles"] = QString::number(from.cycles);
     parameters["groundOffset"] = QString::number(from.groundOffset);
+    parameters["tailLiftForce"] = QString::number(from.tailLiftForce);
+    parameters["tailDragForce"] = QString::number(from.tailDragForce);
     
     return parameters;
 }
@@ -40,6 +42,10 @@ VertebrataMotion::Parameters VertebrataMotionParametersWidget::toVertebrataMotio
         vertebrataMotionParameters.cycles = valueOfKeyInMapOrEmpty(parameters, "cycles").toInt();
     if (parameters.end() != parameters.find("groundOffset"))
         vertebrataMotionParameters.groundOffset = valueOfKeyInMapOrEmpty(parameters, "groundOffset").toDouble();
+    if (parameters.end() != parameters.find("tailLiftForce"))
+        vertebrataMotionParameters.tailLiftForce = valueOfKeyInMapOrEmpty(parameters, "tailLiftForce").toDouble();
+    if (parameters.end() != parameters.find("tailDragForce"))
+        vertebrataMotionParameters.tailDragForce = valueOfKeyInMapOrEmpty(parameters, "tailDragForce").toDouble();
     
     return vertebrataMotionParameters;
 }
@@ -123,6 +129,27 @@ VertebrataMotionParametersWidget::VertebrataMotionParametersWidget(const std::ma
     parametersLayout->addRow(tr("Ground offset: "), groundOffsetBox);
     connect(groundOffsetBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double value){
         m_vertebrataMotionParameters.groundOffset = value;
+        m_parameters = fromVertebrataMotionParameters(m_vertebrataMotionParameters);
+        emit parametersChanged();
+    });
+    
+    QDoubleSpinBox *tailLiftForceBox = new QDoubleSpinBox;
+    tailLiftForceBox->setRange(-10.0, 10.0);
+    tailLiftForceBox->setValue(m_vertebrataMotionParameters.tailLiftForce);
+    tailLiftForceBox->setSuffix(" g");
+    parametersLayout->addRow(tr("Tail lift force: "), tailLiftForceBox);
+    connect(tailLiftForceBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double value){
+        m_vertebrataMotionParameters.tailLiftForce = value;
+        m_parameters = fromVertebrataMotionParameters(m_vertebrataMotionParameters);
+        emit parametersChanged();
+    });
+    
+    QDoubleSpinBox *tailDragForceBox = new QDoubleSpinBox;
+    tailDragForceBox->setValue(m_vertebrataMotionParameters.tailDragForce);
+    tailDragForceBox->setSuffix(" g");
+    parametersLayout->addRow(tr("Tail drag force: "), tailDragForceBox);
+    connect(tailDragForceBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double value){
+        m_vertebrataMotionParameters.tailDragForce = value;
         m_parameters = fromVertebrataMotionParameters(m_vertebrataMotionParameters);
         emit parametersChanged();
     });

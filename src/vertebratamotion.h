@@ -18,6 +18,8 @@ public:
         double spineStability = 0.5;
         size_t cycles = 5;
         double groundOffset = 0.4;
+        double tailLiftForce = 0.0;
+        double tailDragForce = 4.0;
     };
     
     struct Node

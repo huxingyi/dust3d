@@ -184,8 +184,9 @@ void VertebrataMotion::generate()
                     ropeVertices[nodeIndex - tailNodeIndex] = m_spineNodes[nodeIndex].position;
                 }
                 tailSimulator = new ChainSimulator(&ropeVertices);
-                tailSimulator->setExternalForce(QVector3D(0.0, -9.80665 / 10 + 9.80665, -9.80665 * 4));
+                tailSimulator->setExternalForce(QVector3D(0.0, 9.80665 * m_parameters.tailLiftForce, -9.80665 * m_parameters.tailDragForce));
                 tailSimulator->fixVertexPosition(0);
+                tailSimulator->setGroundY(m_groundY);
                 tailSimulator->start();
                 
                 tailSpineOffset = m_updatedSpineNodes[tailNodeIndex].position - m_spineNodes[tailNodeIndex].position;

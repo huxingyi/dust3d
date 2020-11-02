@@ -38,6 +38,11 @@ public:
         m_externalForce = externalForce;
     }
     
+    void setGroundY(double groundY)
+    {
+        m_groundY = groundY;
+    }
+    
     void start();
     void simulate(double stepSize);
     const VertexMotion &getVertexMotion(size_t vertexIndex);
