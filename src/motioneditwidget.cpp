@@ -104,7 +104,7 @@ void MotionEditWidget::updateParametersArea()
 
 QSize MotionEditWidget::sizeHint() const
 {
-    return QSize(600, 360);
+    return QSize(650, 460);
 }
 
 void MotionEditWidget::updateParameters()

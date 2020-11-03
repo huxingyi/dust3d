@@ -12,14 +12,16 @@ public:
     {
         double stanceTime = 0.35;
         double swingTime = 0.23;
-        double preferredHeight = 0.39;
-        int legSideIntval = 12;
-        int legBalanceIntval = 12;
+        double hipHeight = 0.39;
+        double armLength = 0.29;
+        double legSideIntval = 0.5;
+        double legBalanceIntval = 0.5;
         double spineStability = 0.5;
         size_t cycles = 5;
         double groundOffset = 0.4;
-        double tailLiftForce = 0.0;
+        double tailLiftForce = 2.0;
         double tailDragForce = 4.0;
+        bool biped = false;
     };
     
     struct Node
@@ -43,6 +45,7 @@ public:
         std::vector<std::vector<Node>> updatedNodes;
         size_t heightIndices[3] = {0, 0, 0};
         size_t spineNodeIndex = 0;
+        double top = 0.0;
     };
 
     VertebrataMotion()
@@ -90,6 +93,7 @@ private:
     void prepareLegs();
     void prepareLegHeightIndices();
     void calculateLegMoves(size_t heightIndex);
+    void calculateSpineJoints();
 };
 
 #endif

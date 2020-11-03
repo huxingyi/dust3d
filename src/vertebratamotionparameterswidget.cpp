@@ -10,7 +10,7 @@ std::map<QString, QString> VertebrataMotionParametersWidget::fromVertebrataMotio
     
     parameters["stanceTime"] = QString::number(from.stanceTime);
     parameters["swingTime"] = QString::number(from.swingTime);
-    parameters["preferredHeight"] = QString::number(from.preferredHeight);
+    parameters["hipHeight"] = QString::number(from.hipHeight);
     parameters["legSideIntval"] = QString::number(from.legSideIntval);
     parameters["legBalanceIntval"] = QString::number(from.legBalanceIntval);
     parameters["spineStability"] = QString::number(from.spineStability);
@@ -30,12 +30,12 @@ VertebrataMotion::Parameters VertebrataMotionParametersWidget::toVertebrataMotio
         vertebrataMotionParameters.stanceTime = valueOfKeyInMapOrEmpty(parameters, "stanceTime").toDouble();
     if (parameters.end() != parameters.find("swingTime"))
         vertebrataMotionParameters.swingTime = valueOfKeyInMapOrEmpty(parameters, "swingTime").toDouble();
-    if (parameters.end() != parameters.find("preferredHeight"))
-        vertebrataMotionParameters.preferredHeight = valueOfKeyInMapOrEmpty(parameters, "preferredHeight").toDouble();
+    if (parameters.end() != parameters.find("hipHeight"))
+        vertebrataMotionParameters.hipHeight = valueOfKeyInMapOrEmpty(parameters, "hipHeight").toDouble();
     if (parameters.end() != parameters.find("legSideIntval"))
-        vertebrataMotionParameters.legSideIntval = valueOfKeyInMapOrEmpty(parameters, "legSideIntval").toInt();
+        vertebrataMotionParameters.legSideIntval = valueOfKeyInMapOrEmpty(parameters, "legSideIntval").toDouble();
     if (parameters.end() != parameters.find("legBalanceIntval"))
-        vertebrataMotionParameters.legBalanceIntval = valueOfKeyInMapOrEmpty(parameters, "legBalanceIntval").toInt();
+        vertebrataMotionParameters.legBalanceIntval = valueOfKeyInMapOrEmpty(parameters, "legBalanceIntval").toDouble();
     if (parameters.end() != parameters.find("spineStability"))
         vertebrataMotionParameters.spineStability = valueOfKeyInMapOrEmpty(parameters, "spineStability").toDouble();
     if (parameters.end() != parameters.find("cycles"))
@@ -78,28 +78,37 @@ VertebrataMotionParametersWidget::VertebrataMotionParametersWidget(const std::ma
         emit parametersChanged();
     });
     
-    QDoubleSpinBox *preferredHeightBox = new QDoubleSpinBox;
-    preferredHeightBox->setValue(m_vertebrataMotionParameters.preferredHeight);
-    parametersLayout->addRow(tr("Preferred height: "), preferredHeightBox);
-    connect(preferredHeightBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double value){
-        m_vertebrataMotionParameters.preferredHeight = value;
+    QDoubleSpinBox *hipHeightBox = new QDoubleSpinBox;
+    hipHeightBox->setValue(m_vertebrataMotionParameters.hipHeight);
+    parametersLayout->addRow(tr("Hip height: "), hipHeightBox);
+    connect(hipHeightBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double value){
+        m_vertebrataMotionParameters.hipHeight = value;
         m_parameters = fromVertebrataMotionParameters(m_vertebrataMotionParameters);
         emit parametersChanged();
     });
     
-    QSpinBox *legSideIntvalBox = new QSpinBox;
+    QDoubleSpinBox *armLengthBox = new QDoubleSpinBox;
+    armLengthBox->setValue(m_vertebrataMotionParameters.armLength);
+    parametersLayout->addRow(tr("Arm length: "), armLengthBox);
+    connect(armLengthBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double value){
+        m_vertebrataMotionParameters.armLength = value;
+        m_parameters = fromVertebrataMotionParameters(m_vertebrataMotionParameters);
+        emit parametersChanged();
+    });
+    
+    QDoubleSpinBox *legSideIntvalBox = new QDoubleSpinBox;
     legSideIntvalBox->setValue(m_vertebrataMotionParameters.legSideIntval);
     parametersLayout->addRow(tr("Leg side intval: "), legSideIntvalBox);
-    connect(legSideIntvalBox, QOverload<int>::of(&QSpinBox::valueChanged), [&](int value){
+    connect(legSideIntvalBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double value){
         m_vertebrataMotionParameters.legSideIntval = value;
         m_parameters = fromVertebrataMotionParameters(m_vertebrataMotionParameters);
         emit parametersChanged();
     });
     
-    QSpinBox *legBalanceIntvalBox = new QSpinBox;
+    QDoubleSpinBox *legBalanceIntvalBox = new QDoubleSpinBox;
     legBalanceIntvalBox->setValue(m_vertebrataMotionParameters.legBalanceIntval);
     parametersLayout->addRow(tr("Leg balance intval: "), legBalanceIntvalBox);
-    connect(legBalanceIntvalBox, QOverload<int>::of(&QSpinBox::valueChanged), [&](int value){
+    connect(legBalanceIntvalBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double value){
         m_vertebrataMotionParameters.legBalanceIntval = value;
         m_parameters = fromVertebrataMotionParameters(m_vertebrataMotionParameters);
         emit parametersChanged();

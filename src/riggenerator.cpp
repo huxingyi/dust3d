@@ -381,6 +381,7 @@ void RigGenerator::buildSkeleton()
         return;
     
     calculateSpineDirection(&m_isSpineVertical);
+    qDebug() << "Spine:" << (m_isSpineVertical ? "Vertical" : "Horizontal");
     
     auto sortLimbChains = [&](std::vector<size_t> &chains) {
         std::sort(chains.begin(), chains.end(), [&](const size_t &first,
@@ -431,7 +432,7 @@ void RigGenerator::buildSkeleton()
         bone.tailPosition = nextNode.origin;
         bone.headRadius = currentNode.radius;
         bone.tailRadius = nextNode.radius;
-        bone.color = 0 == (spineJointIndex - m_rootSpineJointIndex) % 2 ? Theme::white : BoneMarkToColor(BoneMark::Joint);
+        bone.color = 0 == (spineJointIndex - m_rootSpineJointIndex) % 2 ? Theme::white : Qt::blue; //BoneMarkToColor(BoneMark::Joint);
         bone.name = QString("Spine") + QString::number(spineJointIndex + 1 - m_rootSpineJointIndex);
         bone.index = m_resultBones->size();
         bone.parent = attachedBoneIndex(spineJointIndex);
@@ -590,6 +591,13 @@ void RigGenerator::buildSkeleton()
     }
     
     m_isSuccessful = true;
+    
+    if (nullptr != m_resultBones) {
+        for (size_t i = 0; i < m_resultBones->size(); ++i) {
+            const auto &bone = (*m_resultBones)[i];
+            qDebug() << "Bone[" << i << "]: name:" << bone.name << "parent:" << (-1 == bone.parent ? "(null)" : (*m_resultBones)[bone.parent].name);
+        }
+    }
 }
 
 void RigGenerator::computeSkinWeights()
@@ -723,7 +731,8 @@ void RigGenerator::computeSkinWeights()
             QString("Spine"), backSpineVertices);
     }
     
-    fixVirtualBoneSkinWeights();
+    if (!m_isSpineVertical)
+        fixVirtualBoneSkinWeights();
     
     for (auto &it: *m_resultWeights)
         it.second.finalizeWeights();
