@@ -416,6 +416,7 @@ void RigGenerator::buildSkeleton()
         bone.tailRadius = firstSpineNode.radius;
         bone.color = Theme::white;
         bone.name = QString("Body");
+        bone.attributes["spineDirection"] = m_isSpineVertical ? "Vertical" : "Horizontal";
         bone.index = m_resultBones->size();
         bone.parent = -1;
         m_boneNameToIndexMap.insert({bone.name, (int)bone.index});

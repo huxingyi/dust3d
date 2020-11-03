@@ -27,6 +27,7 @@ public:
     float headRadius = 0.0;
     float tailRadius = 0.0;
     QColor color;
+    std::map<QString, QString> attributes;
     std::vector<int> children;
 };
 

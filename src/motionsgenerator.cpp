@@ -7,6 +7,7 @@
 #include "vertebratamotion.h"
 #include "blockmesh.h"
 #include "vertebratamotionparameterswidget.h"
+#include "util.h"
 
 MotionsGenerator::MotionsGenerator(RigType rigType,
         const std::vector<RiggerBone> &bones,
@@ -178,6 +179,8 @@ void MotionsGenerator::generateMotion(const QUuid &motionId)
     
     VertebrataMotion::Parameters parameters = 
         VertebrataMotionParametersWidget::toVertebrataMotionParameters(m_motions[motionId]);
+    if ("Vertical" == valueOfKeyInMapOrEmpty(m_bones[0].attributes, "spineDirection"))
+        parameters.biped = true;
     vertebrataMotion->setParameters(parameters);
     vertebrataMotion->setSpineNodes(spineNodes);
     
