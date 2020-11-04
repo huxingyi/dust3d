@@ -19,15 +19,15 @@ SimpleShaderWidget::SimpleShaderWidget(QWidget *parent) :
 
 SimpleShaderWidget::~SimpleShaderWidget()
 {
-    if (m_shadowMapInitialized) {
-        glDeleteTextures(1, &m_shadowMapTextureId);
-        glDeleteFramebuffers(1, &m_shadowMapFrameBufferId);
-    }
 }
 
 void SimpleShaderWidget::updateMesh(SimpleShaderMesh *mesh)
 {
-    m_meshBinder.updateMesh(mesh);
+    if (nullptr == m_meshBinder) {
+        delete mesh;
+        return;
+    }
+    m_meshBinder->updateMesh(mesh);
     update();
 }
 
@@ -51,8 +51,22 @@ void SimpleShaderWidget::resizeGL(int w, int h)
     m_projectionMatrix.perspective(45.0, float(w)/float(h), 0.1f, 1000.0f);
 }
 
+void SimpleShaderWidget::cleanup()
+{
+    makeCurrent();
+    if (m_shadowMapInitialized) {
+        glDeleteTextures(1, &m_shadowMapTextureId);
+        glDeleteFramebuffers(1, &m_shadowMapFrameBufferId);
+    }
+    delete m_meshBinder;
+    m_meshBinder = nullptr;
+    doneCurrent();
+}
+
 void SimpleShaderWidget::initializeGL()
 {
+    connect(context(), &QOpenGLContext::aboutToBeDestroyed, this, &SimpleShaderWidget::cleanup);
+    
     QOpenGLFunctions::initializeOpenGLFunctions();
     
     constexpr float color = (float)0x25 / 255;
@@ -70,6 +84,8 @@ void SimpleShaderWidget::initializeGL()
 
 void SimpleShaderWidget::paintGL()
 {
+    if (nullptr == m_meshBinder)
+        m_meshBinder = new SimpleShaderMeshBinder;
     renderToShadowMap();
     renderToScreen();
 }
@@ -119,8 +135,8 @@ void SimpleShaderWidget::renderToShadowMap()
         QVector3D(), 
         m_lightPositionMatrix.map(QVector3D(0, 1, 0)).normalized());
 
-    m_meshBinder.setShadowMapTextureId(0);
-    m_meshBinder.renderShadow(m_projectionMatrix, m_lightViewMatrix);
+    m_meshBinder->setShadowMapTextureId(0);
+    m_meshBinder->renderShadow(m_projectionMatrix, m_lightViewMatrix);
 
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
@@ -152,9 +168,9 @@ void SimpleShaderWidget::renderToScreen()
     m_viewMatrix.lookAt(zoomedMatrix.map(QVector3D(0, 0, 0)),
         QVector3D(), zoomedMatrix.map(QVector3D(0, 1, 0)).normalized());
 
-    m_meshBinder.setShadowMapTextureId(m_shadowMapTextureId);
-    m_meshBinder.setSceneMatrix(m_sceneMatrix);
-    m_meshBinder.renderScene(eye, lightDirection, m_projectionMatrix, m_viewMatrix, m_lightViewMatrix);
+    m_meshBinder->setShadowMapTextureId(m_shadowMapTextureId);
+    m_meshBinder->setSceneMatrix(m_sceneMatrix);
+    m_meshBinder->renderScene(eye, lightDirection, m_projectionMatrix, m_viewMatrix, m_lightViewMatrix);
 }
 
 void SimpleShaderWidget::mousePressEvent(QMouseEvent *event)

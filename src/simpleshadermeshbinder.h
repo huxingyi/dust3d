@@ -39,7 +39,7 @@ public:
     void renderScene(const QVector3D &eyePosition, const QVector3D &lightDirection,
                 const QMatrix4x4 &projectionMatrix, const QMatrix4x4 &viewMatrix,
                 const QMatrix4x4 &lightViewMatrix);
-                
+        
 private:
     QMatrix4x4 m_sceneMatrix;
     QMatrix4x4 m_matrix;

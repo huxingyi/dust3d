@@ -32,6 +32,9 @@ protected:
     void wheelEvent(QWheelEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
     
+public slots:
+    void cleanup();
+    
 private:
     uint m_shadowMapFrameBufferId = 0;
     uint m_shadowMapTextureId = 0;
@@ -42,7 +45,7 @@ private:
     QMatrix4x4 m_cameraPositionMatrix;
     QMatrix4x4 m_lightPositionMatrix;
     QMatrix4x4 m_lightViewMatrix;
-    SimpleShaderMeshBinder m_meshBinder;
+    SimpleShaderMeshBinder *m_meshBinder = nullptr;
     QPoint m_lastPos;
     bool m_moveStarted = false;
     int m_rotationX = 0;
