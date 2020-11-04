@@ -433,7 +433,7 @@ void RigGenerator::buildSkeleton()
         bone.tailPosition = nextNode.origin;
         bone.headRadius = currentNode.radius;
         bone.tailRadius = nextNode.radius;
-        bone.color = 0 == (spineJointIndex - m_rootSpineJointIndex) % 2 ? Theme::white : Qt::blue; //BoneMarkToColor(BoneMark::Joint);
+        bone.color = 0 == (spineJointIndex - m_rootSpineJointIndex) % 2 ? Theme::red : Qt::blue; //BoneMarkToColor(BoneMark::Joint);
         bone.name = QString("Spine") + QString::number(spineJointIndex + 1 - m_rootSpineJointIndex);
         bone.index = m_resultBones->size();
         bone.parent = attachedBoneIndex(spineJointIndex);
@@ -732,8 +732,7 @@ void RigGenerator::computeSkinWeights()
             QString("Spine"), backSpineVertices);
     }
     
-    if (!m_isSpineVertical)
-        fixVirtualBoneSkinWeights();
+    fixVirtualBoneSkinWeights();
     
     for (auto &it: *m_resultWeights)
         it.second.finalizeWeights();
@@ -742,10 +741,7 @@ void RigGenerator::computeSkinWeights()
     //    auto findWeights = m_resultWeights->find(i);
     //    if (findWeights == m_resultWeights->end()) {
     //        const auto &sourceNode = m_outcome->vertexSourceNodes[i];
-    //        printf("NoWeight vertex index:%lu Source:%s %s\r\n",
-    //            i,
-    //            sourceNode.first.toString().toUtf8().constData(),
-    //            sourceNode.second.toString().toUtf8().constData());
+    //        qDebug() << "NoWeight vertex index:" << i << sourceNode.first << sourceNode.second;
     //    }
     //}
 }
@@ -825,15 +821,45 @@ void RigGenerator::fixVirtualBoneSkinWeights()
         
         double boneLength = (bone.tailPosition - bone.headPosition).length() * 0.75;
         
-        QVector3D boundaryLineTailForParentOnZ = QVector3D(bone.tailPosition.x(),
-            bone.tailPosition.y(), bone.tailPosition.z() - bone.tailRadius);
-        QVector3D boundaryLineHeadForParentOnZ = QVector3D(bone.headPosition.x(),
-            bone.headPosition.y(), bone.headPosition.z() - bone.headRadius);
-            
-        QVector3D boundaryLineTailForParentNextOnZ = QVector3D(bone.tailPosition.x(),
-            bone.tailPosition.y(), bone.tailPosition.z() + bone.tailRadius);
-        QVector3D boundaryLineHeadForParentNextOnZ = QVector3D(bone.headPosition.x(),
-            bone.headPosition.y(), bone.headPosition.z() + bone.headRadius);
+        QVector3D boundaryLineTailForParentOnZ;
+        QVector3D boundaryLineHeadForParentOnZ;
+        QVector3D boundaryLineTailForParentNextOnZ;
+        QVector3D boundaryLineHeadForParentNextOnZ;
+        
+        QVector3D boundaryLineTailForParentOnX;
+        QVector3D boundaryLineHeadForParentOnX;
+        QVector3D boundaryLineTailForParentNextOnX;
+        QVector3D boundaryLineHeadForParentNextOnX;
+        
+        if (m_isSpineVertical) {
+            boundaryLineTailForParentOnX = QVector3D(bone.tailPosition.x(),
+                bone.tailPosition.y() - bone.tailRadius, 
+                bone.tailPosition.z());
+            boundaryLineHeadForParentOnX = QVector3D(bone.headPosition.x(),
+                bone.headPosition.y() - bone.headRadius, 
+                bone.headPosition.z());
+                
+            boundaryLineTailForParentNextOnX = QVector3D(bone.tailPosition.x(),
+                bone.tailPosition.y() + bone.tailRadius, 
+                bone.tailPosition.z());
+            boundaryLineHeadForParentNextOnX = QVector3D(bone.headPosition.x(),
+                bone.headPosition.y() + bone.headRadius, 
+                bone.headPosition.z());
+        } else {
+            boundaryLineTailForParentOnZ = QVector3D(bone.tailPosition.x(),
+                bone.tailPosition.y(), 
+                bone.tailPosition.z() - bone.tailRadius);
+            boundaryLineHeadForParentOnZ = QVector3D(bone.headPosition.x(),
+                bone.headPosition.y(), 
+                bone.headPosition.z() - bone.headRadius);
+                
+            boundaryLineTailForParentNextOnZ = QVector3D(bone.tailPosition.x(),
+                bone.tailPosition.y(), 
+                bone.tailPosition.z() + bone.tailRadius);
+            boundaryLineHeadForParentNextOnZ = QVector3D(bone.headPosition.x(),
+                bone.headPosition.y(), 
+                bone.headPosition.z() + bone.headRadius);
+        }
             
         float angleInRangle360BetweenTwoVectors(QVector3D a, QVector3D b, QVector3D planeNormal);
         for (const auto &vertexIndex: boneVerticesMap[it.parentIndex]) {
@@ -842,11 +868,19 @@ void RigGenerator::fixVirtualBoneSkinWeights()
             QVector3D projectedPosition = projectPointOnLine(m_outcome->vertices[vertexIndex], bone.tailPosition, bone.headPosition);
             if ((projectedPosition - bone.tailPosition).length() > boneLength)
                 continue;
-            double angle = angleInRangle360BetweenTwoVectors((boundaryLineHeadForParentOnZ - boundaryLineTailForParentOnZ).normalized(),
-                (m_outcome->vertices[vertexIndex] - boundaryLineTailForParentOnZ).normalized(),
-                QVector3D(1.0, 0.0, 0.0));
-            if (angle > 180)
-                continue;
+            if (m_isSpineVertical) {
+                double angle = angleInRangle360BetweenTwoVectors((boundaryLineHeadForParentOnX - boundaryLineTailForParentOnX).normalized(),
+                    (m_outcome->vertices[vertexIndex] - boundaryLineTailForParentOnX).normalized(),
+                    QVector3D(0.0, 0.0, -it.side));
+                if (angle > 180)
+                    continue;
+            } else {
+                double angle = angleInRangle360BetweenTwoVectors((boundaryLineHeadForParentOnZ - boundaryLineTailForParentOnZ).normalized(),
+                    (m_outcome->vertices[vertexIndex] - boundaryLineTailForParentOnZ).normalized(),
+                    QVector3D(1.0, 0.0, 0.0));
+                if (angle > 180)
+                    continue;
+            }
             (*m_resultWeights)[vertexIndex].addBone(it.index, 1.0);
         }
         for (const auto &vertexIndex: boneVerticesMap[it.parentNextIndex]) {
@@ -855,11 +889,19 @@ void RigGenerator::fixVirtualBoneSkinWeights()
             QVector3D projectedPosition = projectPointOnLine(m_outcome->vertices[vertexIndex], bone.tailPosition, bone.headPosition);
             if ((projectedPosition - bone.tailPosition).length() > boneLength)
                 continue;
-            double angle = angleInRangle360BetweenTwoVectors((m_outcome->vertices[vertexIndex] - boundaryLineTailForParentNextOnZ).normalized(),
-                (boundaryLineHeadForParentNextOnZ - boundaryLineTailForParentNextOnZ).normalized(),
-                QVector3D(1.0, 0.0, 0.0));
-            if (angle > 180)
-                continue;
+            if (m_isSpineVertical) {
+                double angle = angleInRangle360BetweenTwoVectors((m_outcome->vertices[vertexIndex] - boundaryLineTailForParentNextOnX).normalized(),
+                    (boundaryLineHeadForParentNextOnX - boundaryLineTailForParentNextOnX).normalized(),
+                    QVector3D(0.0, 0.0, -it.side));
+                if (angle > 180)
+                    continue;
+            } else {
+                double angle = angleInRangle360BetweenTwoVectors((m_outcome->vertices[vertexIndex] - boundaryLineTailForParentNextOnZ).normalized(),
+                    (boundaryLineHeadForParentNextOnZ - boundaryLineTailForParentNextOnZ).normalized(),
+                    QVector3D(1.0, 0.0, 0.0));
+                if (angle > 180)
+                    continue;
+            }
             (*m_resultWeights)[vertexIndex].addBone(it.index, 1.0);
         }
     }
@@ -896,7 +938,7 @@ void RigGenerator::computeBranchSkinWeights(size_t fromBoneIndex,
                 if (projectedLength < 0)
 					projectedLength = 0;
                 if (projectedLength <= endGradientLength) {
-                    auto factor = 0.5 * (1.0 - projectedLength / endGradientLength);
+                    auto factor = 0.1 + 0.4 * (1.0 - projectedLength / endGradientLength);
                     (*m_resultWeights)[vertexIndex].addBone(previousBoneIndex, factor);
                 }
                 newRemainVertexIndices.push_back(vertexIndex);
@@ -927,7 +969,7 @@ void RigGenerator::computeBranchSkinWeights(size_t fromBoneIndex,
                 (*m_resultWeights)[vertexIndex].addBone(previousBoneIndex, factor);
                 continue;
             }
-            auto factor = 0.5 * (1.0 - (projectedLength - parentLength) / beginGradientLength);
+            auto factor = 0.1 + 0.4 * (1.0 - (projectedLength - parentLength) / beginGradientLength);
             (*m_resultWeights)[vertexIndex].addBone(previousBoneIndex, factor);
             continue;
         }

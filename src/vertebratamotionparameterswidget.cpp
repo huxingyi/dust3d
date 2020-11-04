@@ -11,6 +11,7 @@ std::map<QString, QString> VertebrataMotionParametersWidget::fromVertebrataMotio
     parameters["stanceTime"] = QString::number(from.stanceTime);
     parameters["swingTime"] = QString::number(from.swingTime);
     parameters["hipHeight"] = QString::number(from.hipHeight);
+    parameters["armLength"] = QString::number(from.armLength);
     parameters["legSideIntval"] = QString::number(from.legSideIntval);
     parameters["legBalanceIntval"] = QString::number(from.legBalanceIntval);
     parameters["spineStability"] = QString::number(from.spineStability);
@@ -32,6 +33,8 @@ VertebrataMotion::Parameters VertebrataMotionParametersWidget::toVertebrataMotio
         vertebrataMotionParameters.swingTime = valueOfKeyInMapOrEmpty(parameters, "swingTime").toDouble();
     if (parameters.end() != parameters.find("hipHeight"))
         vertebrataMotionParameters.hipHeight = valueOfKeyInMapOrEmpty(parameters, "hipHeight").toDouble();
+    if (parameters.end() != parameters.find("armLength"))
+        vertebrataMotionParameters.armLength = valueOfKeyInMapOrEmpty(parameters, "armLength").toDouble();
     if (parameters.end() != parameters.find("legSideIntval"))
         vertebrataMotionParameters.legSideIntval = valueOfKeyInMapOrEmpty(parameters, "legSideIntval").toDouble();
     if (parameters.end() != parameters.find("legBalanceIntval"))

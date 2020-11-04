@@ -6,11 +6,13 @@
 #include "ccdikresolver.h"
 #include "util.h"
 
-CcdIkSolver::CcdIkSolver() :
-    m_maxRound(4),
-    m_distanceThreshold2(0.001 * 0.001),
-    m_distanceCeaseThreshold2(0.001 * 0.001)
+CcdIkSolver::CcdIkSolver()
 {
+}
+
+void CcdIkSolver::setSolveFrom(int fromNodeIndex)
+{
+    m_fromNodeIndex = fromNodeIndex;
 }
 
 void CcdIkSolver::setNodeHingeConstraint(int nodeIndex,
@@ -81,7 +83,7 @@ void CcdIkSolver::iterate()
         }
     };
     
-    for (int i = m_nodes.size() - 2; i >= 0; i--) {
+    for (int i = m_nodes.size() - 2; i >= m_fromNodeIndex; i--) {
         const auto &origin = m_nodes[i];
         const auto &endEffector = m_nodes[m_nodes.size() - 1];
         QVector3D from = (endEffector.position - origin.position).normalized();

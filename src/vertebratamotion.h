@@ -46,6 +46,7 @@ public:
         size_t heightIndices[3] = {0, 0, 0};
         size_t spineNodeIndex = 0;
         double top = 0.0;
+        double move[3] = {0, 0, 0};
     };
 
     VertebrataMotion()
