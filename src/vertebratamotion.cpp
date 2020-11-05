@@ -188,6 +188,7 @@ void VertebrataMotion::calculateLegMoves(size_t heightIndex)
             CcdIkSolver ccdIkSolver;
             if (m_parameters.biped && legIndex != m_legs.size() - 1) {
                 nodes[1].position.setZ(nodes[1].position.z() + moveOffset * 0.15);
+                nodes[1].position.setY(nodes[1].position.y() + moveOffset * 0.05);
                 ccdIkSolver.setSolveFrom(1);
             }
             for (const auto &node: nodes) {
@@ -210,9 +211,16 @@ void VertebrataMotion::calculateLegMoves(size_t heightIndex)
                         ccdIkSolver.setNodeHingeConstraint(nodeIndex, QVector3D(1.0, 0.0, 0.0), 90 - 15, 90 + 15);
                         continue;
                     }
-                    if (nodeIndex == nodes.size() - 3) {
-                        ccdIkSolver.setNodeHingeConstraint(nodeIndex, QVector3D(1.0, 0.0, 0.0), 270 - 15, 270 + 15);
-                        continue;
+                    if (m_parameters.biped) {
+                        if (nodeIndex == nodes.size() - 3) {
+                            ccdIkSolver.setNodeHingeConstraint(nodeIndex, QVector3D(1.0, 0.0, 0.0), 240 - 15, 240 + 15);
+                            continue;
+                        }
+                    } else {
+                        if (nodeIndex == nodes.size() - 3) {
+                            ccdIkSolver.setNodeHingeConstraint(nodeIndex, QVector3D(1.0, 0.0, 0.0), 270 - 15, 270 + 15);
+                            continue;
+                        }
                     }
                 }
                 ccdIkSolver.setNodeHingeConstraint(nodeIndex, QVector3D(1.0, 0.0, 0.0), 0, 360);
