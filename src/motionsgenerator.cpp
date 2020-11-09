@@ -1,59 +1,50 @@
 #include <QGuiApplication>
 #include <QElapsedTimer>
 #include <cmath>
+#include <QRegularExpression>
+#include <QMatrix4x4>
 #include "motionsgenerator.h"
-#include "posemeshcreator.h"
-#include "poserconstruct.h"
-#include "posedocument.h"
-#include "boundingboxmesh.h"
+#include "vertebratamotion.h"
+#include "blockmesh.h"
+#include "vertebratamotionparameterswidget.h"
+#include "util.h"
 
 MotionsGenerator::MotionsGenerator(RigType rigType,
-        const std::vector<RiggerBone> *rigBones,
-        const std::map<int, RiggerVertexWeights> *rigWeights,
+        const std::vector<RiggerBone> &bones,
+        const std::map<int, RiggerVertexWeights> &rigWeights,
         const Outcome &outcome) :
     m_rigType(rigType),
-    m_rigBones(*rigBones),
-    m_rigWeights(*rigWeights),
+    m_bones(bones),
+    m_rigWeights(rigWeights),
     m_outcome(outcome)
 {
 }
 
 MotionsGenerator::~MotionsGenerator()
 {
-    for (auto &item: m_resultPreviewMeshs) {
+    for (auto &it: m_resultSnapshotMeshes)
+        delete it.second;
+    
+    for (auto &item: m_resultPreviewMeshes) {
         for (auto &subItem: item.second) {
             delete subItem.second;
         }
     }
-#if ENABLE_PROCEDURAL_DEBUG
-    for (const auto &item: m_proceduralDebugPreviews) {
-        for (const auto &subItem: item.second) {
-            delete subItem;
-        }
-    }
-#endif
-    delete m_poser;
 }
 
-void MotionsGenerator::addPoseToLibrary(const QUuid &poseId, const std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> &frames, float yTranslationScale)
+void MotionsGenerator::enablePreviewMeshes()
 {
-    m_poses[poseId] = frames;
-    m_posesYtranslationScales[poseId] = yTranslationScale;
+    m_previewMeshesEnabled = true;
 }
 
-void MotionsGenerator::addMotionToLibrary(const QUuid &motionId, const std::vector<MotionClip> &clips)
+void MotionsGenerator::enableSnapshotMeshes()
 {
-    m_motions[motionId] = clips;
+    m_snapshotMeshesEnabled = true;
 }
 
-void MotionsGenerator::addRequirement(const QUuid &motionId)
+void MotionsGenerator::addMotion(const QUuid &motionId, const std::map<QString, QString> &parameters)
 {
-    m_requiredMotionIds.insert(motionId);
-}
-
-const std::set<QUuid> &MotionsGenerator::requiredMotionIds()
-{
-    return m_requiredMotionIds;
+    m_motions[motionId] = parameters;
 }
 
 const std::set<QUuid> &MotionsGenerator::generatedMotionIds()
@@ -61,249 +52,23 @@ const std::set<QUuid> &MotionsGenerator::generatedMotionIds()
     return m_generatedMotionIds;
 }
 
-std::vector<MotionClip> *MotionsGenerator::findMotionClips(const QUuid &motionId)
+Model *MotionsGenerator::takeResultSnapshotMesh(const QUuid &motionId)
 {
-    auto findMotionResult = m_motions.find(motionId);
-    if (findMotionResult == m_motions.end())
+    auto findResult = m_resultSnapshotMeshes.find(motionId);
+    if (findResult == m_resultSnapshotMeshes.end())
         return nullptr;
-    std::vector<MotionClip> &clips = findMotionResult->second;
-    return &clips;
+    auto result = findResult->second;
+    m_resultSnapshotMeshes.erase(findResult);
+    return result;
 }
 
-std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> *MotionsGenerator::findPoseFrames(const QUuid &poseId)
+std::vector<std::pair<float, SimpleShaderMesh *>> MotionsGenerator::takeResultPreviewMeshes(const QUuid &motionId)
 {
-    auto findPoseResult = m_poses.find(poseId);
-    if (findPoseResult == m_poses.end())
-        return nullptr;
-    std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> &frames = findPoseResult->second;
-    return &frames;
-}
-
-void MotionsGenerator::generatePreviewsForOutcomes(const std::vector<std::pair<float, JointNodeTree>> &outcomes, std::vector<std::pair<float, Model *>> &previews)
-{
-    for (const auto &item: outcomes) {
-        PoseMeshCreator *poseMeshCreator = new PoseMeshCreator(item.second.nodes(), m_outcome, m_rigWeights);
-        poseMeshCreator->createMesh();
-        previews.push_back({item.first, poseMeshCreator->takeResultMesh()});
-        delete poseMeshCreator;
-    }
-}
-
-float MotionsGenerator::calculatePoseDuration(const QUuid &poseId)
-{
-    const std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> *pose = findPoseFrames(poseId);
-    if (nullptr == pose)
-        return 0;
-    float totalDuration = 0;
-    if (pose->size() > 1) {
-        // Pose with only one frame has zero duration
-        for (const auto &frame: *pose) {
-            totalDuration += valueOfKeyInMapOrEmpty(frame.first, "duration").toFloat();
-        }
-    }
-    return totalDuration;
-}
-
-float MotionsGenerator::calculateMotionDuration(const QUuid &motionId, std::set<QUuid> &visited)
-{
-    const std::vector<MotionClip> *motionClips = findMotionClips(motionId);
-    if (!motionClips || motionClips->empty())
-        return 0;
-    if (visited.find(motionId) != visited.end()) {
-        qDebug() << "Found recursive motion link";
-        return 0;
-    }
-    float totalDuration = 0;
-    visited.insert(motionId);
-    for (int clipIndex = 0; clipIndex < (int)(*motionClips).size(); ++clipIndex) {
-        const auto &clip = (*motionClips)[clipIndex];
-        if (clip.clipType == MotionClipType::Interpolation)
-            totalDuration += clip.duration;
-        else if (clip.clipType == MotionClipType::Pose)
-            totalDuration += calculatePoseDuration(clip.linkToId);
-        else if (clip.clipType == MotionClipType::Motion)
-            totalDuration += calculateMotionDuration(clip.linkToId, visited);
-    }
-    return totalDuration;
-}
-
-void MotionsGenerator::generateMotion(const QUuid &motionId, std::set<QUuid> &visited, std::vector<std::pair<float, JointNodeTree>> &outcomes, std::vector<Model *> *previews)
-{
-    if (visited.find(motionId) != visited.end()) {
-        qDebug() << "Found recursive motion link";
-        return;
-    }
-    
-    visited.insert(motionId);
-    
-    std::vector<MotionClip> *motionClips = findMotionClips(motionId);
-    if (!motionClips || motionClips->empty())
-        return;
-    
-    std::vector<float> timePoints;
-    float totalDuration = 0;
-    for (int clipIndex = 0; clipIndex < (int)(*motionClips).size(); ++clipIndex) {
-        auto &clip = (*motionClips)[clipIndex];
-        if (clip.clipType == MotionClipType::Motion) {
-            std::set<QUuid> subVisited;
-            clip.duration = calculateMotionDuration(clip.linkToId, subVisited);
-        } else if (clip.clipType == MotionClipType::Pose) {
-            clip.duration = calculatePoseDuration(clip.linkToId);
-        }
-        timePoints.push_back(totalDuration);
-        totalDuration += clip.duration;
-    }
-    
-    auto findClipIndexByProgress = [=](float progress) {
-        for (size_t i = 0; i < timePoints.size(); ++i) {
-            if (progress >= timePoints[i] && i + 1 < timePoints.size() && progress <= timePoints[i + 1])
-                return (int)i;
-        }
-        return (int)timePoints.size() - 1;
-    };
-    
-    float interval = 1.0 / m_fps;
-    float lastProgress = 0;
-    if (totalDuration < interval)
-        totalDuration = interval;
-    for (float progress = 0; progress < totalDuration; ) {
-        int clipIndex = findClipIndexByProgress(progress);
-        if (-1 == clipIndex) {
-            qDebug() << "findClipIndexByProgress failed, progress:" << progress << "total duration:" << totalDuration << "interval:" << interval;
-            break;
-        }
-        float clipLocalProgress = progress - timePoints[clipIndex];
-        const MotionClip &progressClip = (*motionClips)[clipIndex];
-        if (MotionClipType::Interpolation == progressClip.clipType) {
-            if (clipIndex <= 0) {
-                qDebug() << "Clip type is interpolation, but clip sit at begin";
-                break;
-            }
-            if (clipIndex >= (int)motionClips->size() - 1) {
-                qDebug() << "Clip type is interpolation, but clip sit at end";
-                break;
-            }
-            const JointNodeTree *beginJointNodeTree = findClipEndJointNodeTree((*motionClips)[clipIndex - 1]);
-            if (nullptr == beginJointNodeTree) {
-                qDebug() << "findClipEndJointNodeTree failed";
-                break;
-            }
-            const JointNodeTree *endJointNodeTree = nullptr;
-            if (MotionClipType::ProceduralAnimation == (*motionClips)[clipIndex + 1].clipType) {
-                endJointNodeTree = beginJointNodeTree;
-            } else {
-                endJointNodeTree = findClipBeginJointNodeTree((*motionClips)[clipIndex + 1]);
-                if (nullptr == endJointNodeTree) {
-                    qDebug() << "findClipBeginJointNodeTree failed";
-                    break;
-                }
-            }
-            outcomes.push_back({progress - lastProgress,
-                generateInterpolation(progressClip.interpolationType, *beginJointNodeTree, *endJointNodeTree, clipLocalProgress / std::max((float)0.0001, progressClip.duration))});
-            lastProgress = progress;
-            progress += interval;
-            continue;
-        } else if (MotionClipType::Pose == progressClip.clipType) {
-            const auto &frames = findPoseFrames(progressClip.linkToId);
-            float clipDuration = std::max((float)0.0001, progressClip.duration);
-            int frame = clipLocalProgress * frames->size() / clipDuration;
-            if (frame >= (int)frames->size())
-                frame = frames->size() - 1;
-            int previousFrame = frame - 1;
-            if (previousFrame < 0)
-                previousFrame = frames->size() - 1;
-            int nextFrame = frame + 1;
-            if (nextFrame >= (int)frames->size())
-                nextFrame = 0;
-            if (frame >= 0 && frame < (int)frames->size()) {
-                const JointNodeTree previousJointNodeTree = poseJointNodeTree(progressClip.linkToId, previousFrame);
-                const JointNodeTree jointNodeTree = poseJointNodeTree(progressClip.linkToId, frame);
-                const JointNodeTree nextJointNodeTree = poseJointNodeTree(progressClip.linkToId, nextFrame);
-                const JointNodeTree middleJointNodeTree = generateInterpolation(InterpolationType::Linear, previousJointNodeTree, nextJointNodeTree, 0.5);
-                outcomes.push_back({progress - lastProgress,
-                    generateInterpolation(InterpolationType::Linear, jointNodeTree, middleJointNodeTree, 0.75)});
-                lastProgress = progress;
-            }
-            progress += interval;
-            continue;
-        } else if (MotionClipType::Motion == progressClip.clipType) {
-            generateMotion(progressClip.linkToId, visited, outcomes);
-            progress += progressClip.duration;
-            continue;
-        }
-        progress += interval;
-    }
-}
-
-JointNodeTree MotionsGenerator::generateInterpolation(InterpolationType interpolationType, const JointNodeTree &first, const JointNodeTree &second, float progress)
-{
-    return JointNodeTree::slerp(first, second, calculateInterpolation(interpolationType, progress));
-}
-
-const JointNodeTree &MotionsGenerator::poseJointNodeTree(const QUuid &poseId, int frame)
-{
-    auto findResult = m_poseJointNodeTreeMap.find({poseId, frame});
-    if (findResult != m_poseJointNodeTreeMap.end())
-        return findResult->second;
-    
-    const auto &frames = m_poses[poseId];
-    const auto &posesYtranslationScale = m_posesYtranslationScales[poseId];
-    
-    m_poser->reset();
-    if (frame < (int)frames.size()) {
-        const auto &parameters = frames[frame].second;
-        PoseDocument postDocument;
-        postDocument.fromParameters(&m_rigBones, parameters);
-        std::map<QString, std::map<QString, QString>> translatedParameters;
-        postDocument.toParameters(translatedParameters);
-        m_poser->parameters() = translatedParameters;
-        m_poser->setYtranslationScale(posesYtranslationScale);
-    }
-    m_poser->commit();
-    auto insertResult = m_poseJointNodeTreeMap.insert({{poseId, frame}, m_poser->resultJointNodeTree()});
-    return insertResult.first->second;
-}
-
-const JointNodeTree *MotionsGenerator::findClipBeginJointNodeTree(const MotionClip &clip)
-{
-    if (MotionClipType::Pose == clip.clipType) {
-        const JointNodeTree &jointNodeTree = poseJointNodeTree(clip.linkToId, 0);
-        return &jointNodeTree;
-    } else if (MotionClipType::Motion == clip.clipType) {
-        const std::vector<MotionClip> *motionClips = findMotionClips(clip.linkToId);
-        if (nullptr != motionClips && !motionClips->empty()) {
-            return findClipBeginJointNodeTree((*motionClips)[0]);
-        }
-        return nullptr;
-    }
-    return nullptr;
-}
-
-const JointNodeTree *MotionsGenerator::findClipEndJointNodeTree(const MotionClip &clip)
-{
-    if (MotionClipType::Pose == clip.clipType) {
-        const std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>> *poseFrames = findPoseFrames(clip.linkToId);
-        if (nullptr != poseFrames && !poseFrames->empty()) {
-            return &poseJointNodeTree(clip.linkToId, poseFrames->size() - 1);
-        }
-        return nullptr;
-    } else if (MotionClipType::Motion == clip.clipType) {
-        const std::vector<MotionClip> *motionClips = findMotionClips(clip.linkToId);
-        if (nullptr != motionClips && !motionClips->empty()) {
-            return findClipEndJointNodeTree((*motionClips)[motionClips->size() - 1]);
-        }
-        return nullptr;
-    }
-    return nullptr;
-}
-
-std::vector<std::pair<float, Model *>> MotionsGenerator::takeResultPreviewMeshs(const QUuid &motionId)
-{
-    auto findResult = m_resultPreviewMeshs.find(motionId);
-    if (findResult == m_resultPreviewMeshs.end())
+    auto findResult = m_resultPreviewMeshes.find(motionId);
+    if (findResult == m_resultPreviewMeshes.end())
         return {};
     auto result = findResult->second;
-    m_resultPreviewMeshs.erase(findResult);
+    m_resultPreviewMeshes.erase(findResult);
     return result;
 }
 
@@ -314,41 +79,342 @@ std::vector<std::pair<float, JointNodeTree>> MotionsGenerator::takeResultJointNo
         return {};
     return findResult->second;
 }
+        
+void MotionsGenerator::generateMotion(const QUuid &motionId)
+{
+    if (m_bones.empty())
+        return;
+    
+    std::map<QString, std::vector<int>> chains;
+    
+    QRegularExpression reJoints("^([a-zA-Z]+\\d*)_Joint\\d+$");
+    QRegularExpression reSpine("^([a-zA-Z]+)\\d*$");
+    for (int index = 0; index < (int)m_bones.size(); ++index) {
+        const auto &bone = m_bones[index];
+        const auto &item = bone.name;
+        QRegularExpressionMatch match = reJoints.match(item);
+        if (match.hasMatch()) {
+            QString name = match.captured(1);
+            chains[name].push_back(index);
+        } else {
+            match = reSpine.match(item);
+            if (match.hasMatch()) {
+                QString name = match.captured(1);
+                if (item.startsWith(name + "0"))
+                    chains[name + "0"].push_back(index);
+                else
+                    chains[name].push_back(index);
+            } else if (item.startsWith("Virtual_")) {
+                //qDebug() << "Ignore connector:" << item;
+            } else {
+                qDebug() << "Unrecognized bone name:" << item;
+            }
+        }
+    }
+    
+    std::vector<std::pair<int, bool>> spineBones;
+    auto findSpine = chains.find("Spine");
+    if (findSpine != chains.end()) {
+        for (const auto &it: findSpine->second) {
+            spineBones.push_back({it, true});
+        }
+    }
+    auto findNeck = chains.find("Neck");
+    if (findNeck != chains.end()) {
+        for (const auto &it: findNeck->second) {
+            spineBones.push_back({it, true});
+        }
+    }
+    std::reverse(spineBones.begin(), spineBones.end());
+    auto findSpine0 = chains.find("Spine0");
+    if (findSpine0 != chains.end()) {
+        for (const auto &it: findSpine0->second) {
+            spineBones.push_back({it, false});
+        }
+    }
+    auto findTail = chains.find("Tail");
+    if (findTail != chains.end()) {
+        for (const auto &it: findTail->second) {
+            spineBones.push_back({it, false});
+        }
+    }
+    
+    double radiusScale = 0.5;
+    
+    std::vector<VertebrataMotion::Node> spineNodes;
+    if (!spineBones.empty()) {
+        const auto &it = spineBones[0];
+        if (it.second) {
+            spineNodes.push_back({m_bones[it.first].tailPosition,
+                m_bones[it.first].tailRadius * radiusScale,
+                it.first, 
+                true});
+        } else {
+            spineNodes.push_back({m_bones[it.first].headPosition,
+                m_bones[it.first].headRadius * radiusScale,
+                it.first,
+                false});
+        }
+    }
+    std::map<int, size_t> spineBoneToNodeMap;
+    for (size_t i = 0; i < spineBones.size(); ++i) {
+        const auto &it = spineBones[i];
+        if (it.second) {
+            spineBoneToNodeMap[it.first] = i;
+            if (m_bones[it.first].name == "Spine1")
+                spineBoneToNodeMap[0] = spineNodes.size();
+            spineNodes.push_back({m_bones[it.first].headPosition,
+                m_bones[it.first].headRadius * radiusScale,
+                it.first,
+                false});
+        } else {
+            spineNodes.push_back({m_bones[it.first].tailPosition,
+                m_bones[it.first].tailRadius * radiusScale,
+                it.first,
+                true});
+        }
+    }
+    
+    VertebrataMotion *vertebrataMotion = new VertebrataMotion;
+    
+    VertebrataMotion::Parameters parameters = 
+        VertebrataMotionParametersWidget::toVertebrataMotionParameters(m_motions[motionId]);
+    if ("Vertical" == valueOfKeyInMapOrEmpty(m_bones[0].attributes, "spineDirection"))
+        parameters.biped = true;
+    vertebrataMotion->setParameters(parameters);
+    vertebrataMotion->setSpineNodes(spineNodes);
+    
+    double groundY = std::numeric_limits<double>::max();
+    for (const auto &it: spineNodes) {
+        if (it.position.y() - it.radius < groundY)
+            groundY = it.position.y() - it.radius;
+    }
+    
+    for (const auto &chain: chains) {
+        std::vector<VertebrataMotion::Node> legNodes;
+        VertebrataMotion::Side side;
+        if (chain.first.startsWith("LeftLimb")) {
+            side = VertebrataMotion::Side::Left;
+        } else if (chain.first.startsWith("RightLimb")) {
+            side = VertebrataMotion::Side::Right;
+        } else {
+            continue;
+        }
+        int virtualBoneIndex = m_bones[chain.second[0]].parent;
+        if (-1 == virtualBoneIndex)
+            continue;
+        int spineBoneIndex = m_bones[virtualBoneIndex].parent;
+        auto findSpine = spineBoneToNodeMap.find(spineBoneIndex);
+        if (findSpine == spineBoneToNodeMap.end())
+            continue;
+        legNodes.push_back({m_bones[virtualBoneIndex].headPosition,
+            m_bones[virtualBoneIndex].headRadius * radiusScale,
+            virtualBoneIndex, 
+            false});
+        legNodes.push_back({m_bones[virtualBoneIndex].tailPosition,
+            m_bones[virtualBoneIndex].tailRadius * radiusScale,
+            virtualBoneIndex,
+            true});
+        for (const auto &it: chain.second) {
+            legNodes.push_back({m_bones[it].tailPosition,
+                m_bones[it].tailRadius * radiusScale,
+                it,
+                true});
+        }
+        vertebrataMotion->setLegNodes(findSpine->second, side, legNodes);
+        for (const auto &it: legNodes) {
+            if (it.position.y() - it.radius < groundY)
+                groundY = it.position.y() - it.radius;
+        }
+    }
+    vertebrataMotion->setGroundY(groundY);
+    vertebrataMotion->generate();
+    
+    std::vector<std::pair<float, JointNodeTree>> jointNodeTrees;
+    std::vector<std::pair<float, SimpleShaderMesh *>> previewMeshes;
+    Model *snapshotMesh = nullptr;
+    
+    std::vector<QMatrix4x4> bindTransforms(m_bones.size());
+    for (size_t i = 0; i < m_bones.size(); ++i) {
+        const auto &bone = m_bones[i];
+        QMatrix4x4 parentMatrix;
+        QMatrix4x4 translationMatrix;
+        if (-1 != bone.parent) {
+            const auto &parentBone = m_bones[bone.parent];
+            parentMatrix = bindTransforms[bone.parent];
+            translationMatrix.translate(bone.headPosition - parentBone.headPosition);
+        } else {
+            translationMatrix.translate(bone.headPosition);
+        }
+        bindTransforms[i] = parentMatrix * translationMatrix;
+    }
+    
+    const auto &vertebrataMotionFrames = vertebrataMotion->frames();
+    for (size_t frameIndex = 0; frameIndex < vertebrataMotionFrames.size(); ++frameIndex) {
+        const auto &frame = vertebrataMotionFrames[frameIndex];
+        std::vector<RiggerBone> transformedBones = m_bones;
+        for (const auto &node: frame) {
+            if (-1 == node.boneIndex)
+                continue;
+            if (node.isTail) {
+                transformedBones[node.boneIndex].tailPosition = node.position;
+                for (const auto &childIndex: m_bones[node.boneIndex].children)
+                    transformedBones[childIndex].headPosition = node.position;
+            } else {
+                transformedBones[node.boneIndex].headPosition = node.position;
+                auto parentIndex = m_bones[node.boneIndex].parent;
+                if (-1 != parentIndex) {
+                    transformedBones[parentIndex].tailPosition = node.position;
+                    for (const auto &childIndex: m_bones[parentIndex].children)
+                        transformedBones[childIndex].headPosition = node.position;
+                }
+            }
+        }
+        
+        std::vector<QMatrix4x4> poseTransforms(transformedBones.size());
+        std::vector<QMatrix4x4> poseRotations(transformedBones.size());
+        for (size_t i = 0; i < transformedBones.size(); ++i) {
+            const auto &oldBone = m_bones[i];
+            const auto &bone = transformedBones[i];
+            QMatrix4x4 parentMatrix;
+            QMatrix4x4 translationMatrix;
+            QMatrix4x4 rotationMatrix;
+            QMatrix4x4 parentRotation;
+            if (-1 != bone.parent) {
+                const auto &oldParentBone = m_bones[oldBone.parent];
+                parentMatrix = poseTransforms[bone.parent];
+                parentRotation = poseRotations[bone.parent];
+                translationMatrix.translate(oldBone.headPosition - oldParentBone.headPosition);
+                QQuaternion rotation = QQuaternion::rotationTo((oldBone.tailPosition - oldBone.headPosition).normalized(),
+                    (bone.tailPosition - bone.headPosition).normalized());
+                rotationMatrix.rotate(rotation);
+            } else {
+                translationMatrix.translate(bone.headPosition + (bone.tailPosition - oldBone.tailPosition));
+            }
+            poseTransforms[i] = parentMatrix * translationMatrix * parentRotation.inverted() * rotationMatrix;
+            poseRotations[i] = rotationMatrix;
+        }
+        
+        JointNodeTree jointNodeTree(&m_bones);
+        for (size_t i = 0; i < m_bones.size(); ++i) {
+            const auto &bone = transformedBones[i];
+            if (-1 != bone.parent) {
+                jointNodeTree.updateMatrix(i, poseTransforms[bone.parent].inverted() * poseTransforms[i]);
+            } else {
+                jointNodeTree.updateMatrix(i, poseTransforms[i]);
+            }
+        }
+        
+        jointNodeTrees.push_back({0.017f, jointNodeTree});
+        
+        const std::vector<JointNode> &jointNodes = jointNodeTree.nodes();
+        std::vector<QMatrix4x4> jointNodeMatrices(m_bones.size());
+        for (size_t i = 0; i < m_bones.size(); ++i) {
+            const auto &bone = transformedBones[i];
+            QMatrix4x4 translationMatrix;
+            translationMatrix.translate(jointNodes[i].translation);
+            QMatrix4x4 rotationMatrix;
+            rotationMatrix.rotate(jointNodes[i].rotation);
+            if (-1 != bone.parent) {
+                jointNodeMatrices[i] *= jointNodeMatrices[bone.parent];
+            }
+            jointNodeMatrices[i] *= translationMatrix * rotationMatrix;
+        }
+        for (size_t i = 0; i < m_bones.size(); ++i)
+            jointNodeMatrices[i] = jointNodeMatrices[i] * bindTransforms[i].inverted();
+        
+        std::vector<QVector3D> transformedVertices(m_outcome.vertices.size());
+        for (size_t i = 0; i < m_outcome.vertices.size(); ++i) {
+            const auto &weight = m_rigWeights[i];
+            for (int x = 0; x < 4; x++) {
+                float factor = weight.boneWeights[x];
+                if (factor > 0) {
+                    transformedVertices[i] += jointNodeMatrices[weight.boneIndices[x]] * m_outcome.vertices[i] * factor;
+                }
+            }
+        }
+        
+        std::vector<QVector3D> frameVertices = transformedVertices;
+        std::vector<std::vector<size_t>> frameFaces = m_outcome.triangles;
+        std::vector<std::vector<QVector3D>> frameCornerNormals;
+        const std::vector<std::vector<QVector3D>> *triangleVertexNormals = m_outcome.triangleVertexNormals();
+        if (nullptr == triangleVertexNormals) {
+            frameCornerNormals.resize(frameFaces.size());
+            for (size_t i = 0; i < m_outcome.triangles.size(); ++i) {
+                const auto &triangle = m_outcome.triangles[i];
+                QVector3D triangleNormal = QVector3D::normal(
+                    transformedVertices[triangle[0]],
+                    transformedVertices[triangle[1]],
+                    transformedVertices[triangle[2]]
+                );
+                frameCornerNormals[i] = {
+                    triangleNormal, triangleNormal, triangleNormal
+                };
+            }
+        } else {
+            frameCornerNormals = *triangleVertexNormals;
+        }
+        
+        if (m_snapshotMeshesEnabled) {
+            if (frameIndex == vertebrataMotionFrames.size() / 2) {
+                delete snapshotMesh;
+                snapshotMesh = new Model(frameVertices, frameFaces, frameCornerNormals);
+            }
+        }
+        
+        if (m_previewMeshesEnabled) {
+            BlockMesh blockMesh;
+            blockMesh.addBlock(
+                QVector3D(0.0, groundY + parameters.groundOffset, 0.0), 100.0,
+                QVector3D(0.0, groundY + parameters.groundOffset - 0.02, 0.0), 100.0);
+            for (const auto &bone: transformedBones) {
+                if (0 == bone.index)
+                    continue;
+                blockMesh.addBlock(bone.headPosition, bone.headRadius * 0.5,
+                    bone.tailPosition, bone.tailRadius * 0.5);
+            }
+            blockMesh.build();
+            std::vector<QVector3D> *resultVertices = blockMesh.takeResultVertices();
+            std::vector<std::vector<size_t>> *resultFaces = blockMesh.takeResultFaces();
+            size_t oldVertexCount = frameVertices.size();
+            for (const auto &v: *resultVertices)
+                frameVertices.push_back(QVector3D(v.x() - 0.5, v.y(), v.z()));
+            for (const auto &f: *resultFaces) {
+                std::vector<size_t> newF = f;
+                for (auto &v: newF)
+                    v += oldVertexCount;
+                frameFaces.push_back(newF);
+
+                QVector3D triangleNormal = QVector3D::normal(
+                    (*resultVertices)[f[0]],
+                    (*resultVertices)[f[1]],
+                    (*resultVertices)[f[2]]
+                );
+                frameCornerNormals.push_back({
+                    triangleNormal, triangleNormal, triangleNormal
+                });
+            }
+            delete resultFaces;
+            delete resultVertices;
+            
+            previewMeshes.push_back({0.017f, new SimpleShaderMesh(
+                new std::vector<QVector3D>(frameVertices), 
+                new std::vector<std::vector<size_t>>(frameFaces),
+                new std::vector<std::vector<QVector3D>>(frameCornerNormals))});
+        }
+    }
+    
+    if (m_previewMeshesEnabled)
+        m_resultPreviewMeshes[motionId] = previewMeshes;
+    m_resultJointNodeTrees[motionId] = jointNodeTrees;
+    m_resultSnapshotMeshes[motionId] = snapshotMesh;
+}
 
 void MotionsGenerator::generate()
 {
-    m_poser = newPoser(m_rigType, m_rigBones);
-    if (nullptr == m_poser)
-        return;
-    
-    for (const auto &motionId: m_requiredMotionIds) {
-        std::set<QUuid> visited;
-#if ENABLE_PROCEDURAL_DEBUG
-        std::vector<Model *> previews;
-        generateMotion(motionId, visited, m_resultJointNodeTrees[motionId], &previews);
-#else
-        generateMotion(motionId, visited, m_resultJointNodeTrees[motionId]);
-#endif
-        generatePreviewsForOutcomes(m_resultJointNodeTrees[motionId], m_resultPreviewMeshs[motionId]);
-#if ENABLE_PROCEDURAL_DEBUG
-        if (!previews.empty()) {
-            const auto &tree = m_resultJointNodeTrees[motionId];
-            auto &target = m_resultPreviewMeshs[motionId];
-            for (size_t i = 0; i < tree.size() && i < previews.size(); ++i) {
-                int edgeVertexCount = previews[i]->edgeVertexCount();
-                if (0 == edgeVertexCount)
-                    continue;
-                ShaderVertex *source = previews[i]->edgeVertices();
-                ShaderVertex *edgeVertices = new ShaderVertex[edgeVertexCount];
-                for (int j = 0; j < edgeVertexCount; ++j) {
-                    edgeVertices[j] = source[j];
-                }
-                target[i].second->updateEdges(edgeVertices, edgeVertexCount);
-                //target[i].second->updateTriangleVertices(nullptr, 0);
-            }
-        }
-#endif
-        m_generatedMotionIds.insert(motionId);
+    for (const auto &it: m_motions) {
+        generateMotion(it.first);
+        m_generatedMotionIds.insert(it.first);
     }
 }
 

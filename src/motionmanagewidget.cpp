@@ -2,9 +2,9 @@
 #include <QVBoxLayout>
 #include <QPushButton>
 #include "motionmanagewidget.h"
-#include "motioneditwidget.h"
 #include "theme.h"
 #include "infolabel.h"
+#include "motioneditwidget.h"
 
 MotionManageWidget::MotionManageWidget(const Document *document, QWidget *parent) :
     QWidget(parent),
@@ -65,21 +65,28 @@ void MotionManageWidget::showAddMotionDialog()
 
 void MotionManageWidget::showMotionDialog(QUuid motionId)
 {
-    MotionEditWidget *motionEditWidget = new MotionEditWidget(m_document);
+    MotionEditWidget *motionEditWidget = new MotionEditWidget;
     motionEditWidget->setAttribute(Qt::WA_DeleteOnClose);
+    motionEditWidget->updateBones(m_document->rigType,
+        m_document->resultRigBones(),
+        m_document->resultRigWeights(),
+        &m_document->currentRiggedOutcome());
     if (!motionId.isNull()) {
         const Motion *motion = m_document->findMotion(motionId);
         if (nullptr != motion) {
             motionEditWidget->setEditMotionId(motionId);
             motionEditWidget->setEditMotionName(motion->name);
-            motionEditWidget->setEditMotionClips(motion->clips);
+            motionEditWidget->setEditMotionParameters(motion->parameters);
             motionEditWidget->clearUnsaveState();
-            motionEditWidget->generatePreviews();
+            motionEditWidget->generatePreview();
         }
     }
     motionEditWidget->show();
-    connect(motionEditWidget, &QDialog::destroyed, [=]() {
+    connect(motionEditWidget, &QMainWindow::destroyed, [=]() {
         emit unregisterDialog((QWidget *)motionEditWidget);
     });
+    connect(motionEditWidget, &MotionEditWidget::addMotion, m_document, &Document::addMotion);
+    connect(motionEditWidget, &MotionEditWidget::renameMotion, m_document, &Document::renameMotion);
+    connect(motionEditWidget, &MotionEditWidget::setMotionParameters, m_document, &Document::setMotionParameters);
     emit registerDialog((QWidget *)motionEditWidget);
 }

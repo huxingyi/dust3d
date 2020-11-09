@@ -126,65 +126,14 @@ void saveSkeletonToXmlStream(Snapshot *snapshot, QXmlStreamWriter *writer)
         }
         writer->writeEndElement();
     
-        writer->writeStartElement("poses");
-        //std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>>::iterator poseIterator;
-        std::vector<std::pair<std::map<QString, QString>, std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>>>>::iterator poseIterator;
-        for (poseIterator = snapshot->poses.begin(); poseIterator != snapshot->poses.end(); poseIterator++) {
-            std::map<QString, QString>::iterator poseAttributeIterator;
-            writer->writeStartElement("pose");
-                for (poseAttributeIterator = poseIterator->first.begin(); poseAttributeIterator != poseIterator->first.end(); poseAttributeIterator++) {
-                    writer->writeAttribute(poseAttributeIterator->first, poseAttributeIterator->second);
-                }
-                writer->writeStartElement("frames");
-                    std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>>::iterator frameIterator;
-                    for (frameIterator = poseIterator->second.begin(); frameIterator != poseIterator->second.end(); frameIterator++) {
-                        std::map<QString, QString>::iterator frameAttributeIterator;
-                        writer->writeStartElement("frame");
-                            for (frameAttributeIterator = frameIterator->first.begin(); frameAttributeIterator != frameIterator->first.end(); frameAttributeIterator++) {
-                                writer->writeAttribute(frameAttributeIterator->first, frameAttributeIterator->second);
-                            }
-                            writer->writeStartElement("parameters");
-                            std::map<QString, std::map<QString, QString>>::iterator itemsIterator;
-                            for (itemsIterator = frameIterator->second.begin(); itemsIterator != frameIterator->second.end(); itemsIterator++) {
-                                std::map<QString, QString>::iterator parametersIterator;
-                                writer->writeStartElement("parameter");
-                                writer->writeAttribute("for", itemsIterator->first);
-                                for (parametersIterator = itemsIterator->second.begin(); parametersIterator != itemsIterator->second.end();
-                                        parametersIterator++) {
-                                    writer->writeAttribute(parametersIterator->first, parametersIterator->second);
-                                }
-                                writer->writeEndElement();
-                            }
-                            writer->writeEndElement();
-                        writer->writeEndElement();
-                    }
-                writer->writeEndElement();
-            writer->writeEndElement();
-        }
-        writer->writeEndElement();
-    
         writer->writeStartElement("motions");
-        std::vector<std::pair<std::map<QString, QString>, std::vector<std::map<QString, QString>>>>::iterator motionIterator;
+        std::map<QString, std::map<QString, QString>>::iterator motionIterator;
         for (motionIterator = snapshot->motions.begin(); motionIterator != snapshot->motions.end(); motionIterator++) {
             std::map<QString, QString>::iterator motionAttributeIterator;
             writer->writeStartElement("motion");
-                for (motionAttributeIterator = std::get<0>(*motionIterator).begin(); motionAttributeIterator != std::get<0>(*motionIterator).end(); motionAttributeIterator++) {
-                    writer->writeAttribute(motionAttributeIterator->first, motionAttributeIterator->second);
-                }
-                writer->writeStartElement("clips");
-                {
-                    std::vector<std::map<QString, QString>>::iterator itemsIterator;
-                    for (itemsIterator = std::get<1>(*motionIterator).begin(); itemsIterator != std::get<1>(*motionIterator).end(); itemsIterator++) {
-                        std::map<QString, QString>::iterator attributesIterator;
-                        writer->writeStartElement("clip");
-                        for (attributesIterator = itemsIterator->begin(); attributesIterator != itemsIterator->end();
-                                attributesIterator++) {
-                            writer->writeAttribute(attributesIterator->first, attributesIterator->second);
-                        }
-                        writer->writeEndElement();
-                    }
-                }
-                writer->writeEndElement();
+            for (motionAttributeIterator = motionIterator->second.begin(); motionAttributeIterator != motionIterator->second.end(); motionAttributeIterator++) {
+                writer->writeAttribute(motionAttributeIterator->first, motionAttributeIterator->second);
+            }
             writer->writeEndElement();
         }
         writer->writeEndElement();
@@ -200,9 +149,6 @@ void loadSkeletonFromXmlStream(Snapshot *snapshot, QXmlStreamReader &reader, qui
     std::vector<QString> elementNameStack;
     std::pair<std::map<QString, QString>, std::vector<std::map<QString, QString>>> currentMaterialLayer;
     std::pair<std::map<QString, QString>, std::vector<std::pair<std::map<QString, QString>, std::vector<std::map<QString, QString>>>>> currentMaterial;
-    std::pair<std::map<QString, QString>, std::vector<std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>>>> currentPose;
-    std::pair<std::map<QString, QString>, std::map<QString, std::map<QString, QString>>> currentPoseFrame;
-    std::pair<std::map<QString, QString>, std::vector<std::map<QString, QString>>> currentMotion;
     while (!reader.atEnd()) {
         reader.readNext();
         if (!reader.isStartElement() && !reader.isEndElement()) {
@@ -310,41 +256,16 @@ void loadSkeletonFromXmlStream(Snapshot *snapshot, QXmlStreamReader &reader, qui
                 foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
                     currentMaterial.first[attr.name().toString()] = attr.value().toString();
                 }
-            } else if (fullName == "canvas.poses.pose") {
-                QString poseId = reader.attributes().value("id").toString();
-                if (poseId.isEmpty())
-                    continue;
-                currentPose = decltype(currentPose)();
-                foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
-                    currentPose.first[attr.name().toString()] = attr.value().toString();
-                }
-            } else if (fullName == "canvas.poses.pose.frames.frame") {
-                foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
-                    currentPoseFrame.first[attr.name().toString()] = attr.value().toString();
-                }
-            } else if (fullName == "canvas.poses.pose.frames.frame.parameters.parameter") {
-                QString forWhat = reader.attributes().value("for").toString();
-                if (forWhat.isEmpty())
-                    continue;
-                foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
-                    if ("for" == attr.name().toString())
-                        continue;
-                    currentPoseFrame.second[forWhat][attr.name().toString()] = attr.value().toString();
-                }
             } else if (fullName == "canvas.motions.motion") {
-               QString motionId = reader.attributes().value("id").toString();
-               if (motionId.isEmpty())
-                   continue;
-               currentMotion = decltype(currentMotion)();
-               foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
-                   currentMotion.first[attr.name().toString()] = attr.value().toString();
-               }
-           } else if (fullName == "canvas.motions.motion.clips.clip") {
-                std::map<QString, QString> attributes;
-                foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
-                    attributes[attr.name().toString()] = attr.value().toString();
+                QString motionId = reader.attributes().value("id").toString();
+                if (motionId.isEmpty())
+                    continue;
+                if (flags & SNAPSHOT_ITEM_MOTION) {
+                    std::map<QString, QString> *motionMap = &snapshot->motions[motionId];
+                    foreach(const QXmlStreamAttribute &attr, reader.attributes()) {
+                        (*motionMap)[attr.name().toString()] = attr.value().toString();
+                    }
                 }
-                currentMotion.second.push_back(attributes);
             }
         } else if (reader.isEndElement()) {
             if (fullName.startsWith("canvas.components.component")) {
@@ -354,16 +275,6 @@ void loadSkeletonFromXmlStream(Snapshot *snapshot, QXmlStreamReader &reader, qui
             } else if (fullName == "canvas.materials.material") {
                 if (flags & SNAPSHOT_ITEM_MATERIAL) {
                     snapshot->materials.push_back(currentMaterial);
-                }
-            } else if (fullName == "canvas.poses.pose.frames.frame") {
-                currentPose.second.push_back(currentPoseFrame);
-            } else if (fullName == "canvas.poses.pose") {
-                if (flags & SNAPSHOT_ITEM_POSE) {
-                    snapshot->poses.push_back(currentPose);
-                }
-            } else if (fullName == "canvas.motions.motion") {
-                if (flags & SNAPSHOT_ITEM_MOTION) {
-                    snapshot->motions.push_back(currentMotion);
                 }
             }
         }

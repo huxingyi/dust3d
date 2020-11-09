@@ -30,6 +30,10 @@
         <file>shaders/default.frag</file>
         <file>shaders/default.core.vert</file>
         <file>shaders/default.core.frag</file>
+        <file>shaders/scene.vert</file>
+        <file>shaders/scene.frag</file>
+        <file>shaders/shadow.vert</file>
+        <file>shaders/shadow.frag</file>
         <file>thirdparty/three.js/dust3d.three.js</file>
         <file>languages/dust3d_zh_CN.qm</file>
         <file>ACKNOWLEDGEMENTS.html</file>

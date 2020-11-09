@@ -1,50 +1,68 @@
 #ifndef DUST3D_MOTION_EDIT_WIDGET_H
 #define DUST3D_MOTION_EDIT_WIDGET_H
-#include <QDialog>
-#include <QLineEdit>
+#include <QMainWindow>
 #include <QCloseEvent>
-#include "document.h"
-#include "motiontimelinewidget.h"
-#include "modelwidget.h"
-#include "motionsgenerator.h"
-#include "animationclipplayer.h"
+#include <queue>
+#include <QLineEdit>
+#include <QUuid>
+#include "vertebratamotion.h"
+#include "rigger.h"
+#include "outcome.h"
 
-class MotionEditWidget : public QDialog
+class SimpleShaderWidget;
+class MotionsGenerator;
+class SimpleShaderMesh;
+class QScrollArea;
+
+class MotionEditWidget : public QMainWindow
 {
     Q_OBJECT
-signals:
-    void addMotion(QUuid motionId, QString name, std::vector<MotionClip> clips);
-    void setMotionClips(QUuid motionId, std::vector<MotionClip> clips);
-    void renameMotion(QUuid motionId, QString name);
 public:
-    MotionEditWidget(const Document *document, QWidget *parent=nullptr);
+    MotionEditWidget();
     ~MotionEditWidget();
-protected:
-    void closeEvent(QCloseEvent *event) override;
-    void reject() override;
-    QSize sizeHint() const override;
+signals:
+    void parametersChanged();
+    void addMotion(const QUuid &motionId, const QString &name, const std::map<QString, QString> &parameters);
+    void removeMotion(const QUuid &motionId);
+    void setMotionParameters(const QUuid &motionId, const std::map<QString, QString> &parameters);
+    void renameMotion(const QUuid &motionId, const QString &name);
 public slots:
+    void checkRenderQueue();
+    void generatePreview();
+    void previewReady();
+    void updateBones(RigType rigType,
+        const std::vector<RiggerBone> *rigBones,
+        const std::map<int, RiggerVertexWeights> *rigWeights,
+        const Outcome *outcome);
+    void setEditMotionName(const QString &name);
+    void setEditMotionId(const QUuid &motionId);
+    void setEditMotionParameters(const std::map<QString, QString> &parameters);
     void updateTitle();
     void save();
     void clearUnsaveState();
-    void setEditMotionId(QUuid poseId);
-    void setEditMotionName(QString name);
-    void setEditMotionClips(std::vector<MotionClip> clips);
-    void setUnsavedState();
-    void generatePreviews();
-    void previewsReady();
+    void updateParameters();
+    void updateParametersArea();
+protected:
+    QSize sizeHint() const override;
+    void closeEvent(QCloseEvent *event) override;
 private:
-    const Document *m_document = nullptr;
-    MotionTimelineWidget *m_timelineWidget = nullptr;
-    ModelWidget *m_previewWidget = nullptr;
-    QUuid m_motionId;
+    QString m_name;
+    std::map<QString, QString> m_parameters;
+    SimpleShaderWidget *m_modelRenderWidget = nullptr;
+    std::queue<SimpleShaderMesh *> m_renderQueue;
+    MotionsGenerator *m_previewGenerator = nullptr;
+    bool m_isPreviewObsolete = false;
+    std::vector<SimpleShaderMesh *> m_frames;
+    size_t m_frameIndex = 0;
+    RigType m_rigType = RigType::None;
+    std::vector<RiggerBone> *m_bones = nullptr;
+    std::map<int, RiggerVertexWeights> *m_rigWeights = nullptr;
+    Outcome *m_outcome = nullptr;
     QLineEdit *m_nameEdit = nullptr;
-    std::vector<std::pair<float, QUuid>> m_keyframes;
     bool m_unsaved = false;
     bool m_closed = false;
-    bool m_isPreviewsObsolete = false;
-    MotionsGenerator *m_previewsGenerator = nullptr;
-    AnimationClipPlayer *m_clipPlayer = nullptr;
+    QUuid m_motionId;
+    QScrollArea *m_parametersArea = nullptr;
 };
 
 #endif

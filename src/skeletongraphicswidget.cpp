@@ -835,7 +835,7 @@ void SkeletonGraphicsWidget::mouseMoveEvent(QMouseEvent *event)
     mouseMove(event);
 }
 
-bool SkeletonGraphicsWidget::rotated(void)
+bool SkeletonGraphicsWidget::rotated()
 {
     return m_rotated;
 }

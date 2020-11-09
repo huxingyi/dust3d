@@ -112,7 +112,8 @@ void MotionListWidget::mousePressEvent(QMouseEvent *event)
                 bool startAdd = false;
                 bool stopAdd = false;
                 std::vector<QUuid> waitQueue;
-                for (const auto &childId: m_document->motionIdList) {
+                for (const auto &motionIt: m_document->motionMap) {
+                    const auto &childId = motionIt.first;
                     if (m_shiftStartMotionId == childId || motionId == childId) {
                         if (startAdd) {
                             stopAdd = true;
@@ -169,9 +170,9 @@ void MotionListWidget::showContextMenu(const QPoint &pos)
         unorderedMotionIds.insert(m_currentSelectedMotionId);
     
     std::vector<QUuid> motionIds;
-    for (const auto &cand: m_document->motionIdList) {
-        if (unorderedMotionIds.find(cand) != unorderedMotionIds.end())
-            motionIds.push_back(cand);
+    for (const auto &cand: m_document->motionMap) {
+        if (unorderedMotionIds.find(cand.first) != unorderedMotionIds.end())
+            motionIds.push_back(cand.first);
     }
     
     QAction modifyAction(tr("Modify"), this);
@@ -240,7 +241,9 @@ void MotionListWidget::reload()
     for (int i = 0; i < columns; i++)
         setColumnWidth(i, columnWidth);
     
-    std::vector<QUuid> orderedMotionIdList = m_document->motionIdList;
+    std::vector<QUuid> orderedMotionIdList;
+    for (const auto &motionIt: m_document->motionMap)
+        orderedMotionIdList.push_back(motionIt.first);
     std::sort(orderedMotionIdList.begin(), orderedMotionIdList.end(), [&](const QUuid &firstMotionId, const QUuid &secondMotionId) {
         const auto *firstMotion = m_document->findMotion(firstMotionId);
         const auto *secondMotion = m_document->findMotion(secondMotionId);

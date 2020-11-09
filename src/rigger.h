@@ -27,6 +27,7 @@ public:
     float headRadius = 0.0;
     float tailRadius = 0.0;
     QColor color;
+    std::map<QString, QString> attributes;
     std::vector<int> children;
 };
 
@@ -63,6 +64,10 @@ public:
                 boneWeights[i] = item.second / totalWeight;
             }
         }
+    }
+    const std::vector<std::pair<int, float>> &boneRawWeights() const
+    {
+        return m_boneRawWeights;
     }
 private:
     std::vector<std::pair<int, float>> m_boneRawWeights;

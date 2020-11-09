@@ -116,7 +116,7 @@ DUST3D_DLL void * DUST3D_API dust3dGetUserData(dust3d *ds3)
     return ds3->userData;
 }
 
-DUST3D_DLL const char * DUST3D_API dust3dVersion(void)
+DUST3D_DLL const char * DUST3D_API dust3dVersion()
 {
     return APP_NAME " " APP_HUMAN_VER;
 }

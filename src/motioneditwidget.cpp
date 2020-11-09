@@ -1,141 +1,54 @@
+#include <QSpinBox>
+#include <QDoubleSpinBox>
 #include <QHBoxLayout>
 #include <QVBoxLayout>
-#include <QGridLayout>
-#include <QSlider>
+#include <QThread>
+#include <QTimer>
+#include <QFormLayout>
 #include <QMessageBox>
-#include <QDebug>
-#include <QStackedWidget>
+#include <QScrollArea>
 #include "motioneditwidget.h"
+#include "simpleshaderwidget.h"
+#include "simplerendermeshgenerator.h"
+#include "motionsgenerator.h"
 #include "util.h"
-#include "poselistwidget.h"
-#include "motionlistwidget.h"
 #include "version.h"
-#include "tabwidget.h"
-#include "flowlayout.h"
-#include "proceduralanimation.h"
+#include "vertebratamotionparameterswidget.h"
 
-MotionEditWidget::MotionEditWidget(const Document *document, QWidget *parent) :
-    QDialog(parent),
-    m_document(document)
+MotionEditWidget::~MotionEditWidget()
 {
-    setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint);
-    
-    m_clipPlayer = new AnimationClipPlayer;
+    for (auto &it: m_frames)
+        delete it;
+    while (!m_renderQueue.empty()) {
+        delete m_renderQueue.front();
+        m_renderQueue.pop();
+    }
+    delete m_bones;
+    delete m_rigWeights;
+    delete m_outcome;
+}
 
-    m_timelineWidget = new MotionTimelineWidget(document, this);
+MotionEditWidget::MotionEditWidget()
+{ 
+    m_modelRenderWidget = new SimpleShaderWidget;
     
-    connect(m_timelineWidget, &MotionTimelineWidget::clipsChanged, this, &MotionEditWidget::setUnsavedState);
-    connect(m_timelineWidget, &MotionTimelineWidget::clipsChanged, this, &MotionEditWidget::generatePreviews);
+    m_parametersArea = new QScrollArea;
+    m_parametersArea->setFrameShape(QFrame::NoFrame);
     
-    m_previewWidget = new ModelWidget(this);
-    m_previewWidget->setFixedSize(384, 384);
-    m_previewWidget->enableMove(true);
-    m_previewWidget->enableZoom(false);
-    m_previewWidget->move(-64, 0);
-    m_previewWidget->toggleWireframe();
-    
-    connect(m_clipPlayer, &AnimationClipPlayer::frameReadyToShow, this, [=]() {
-        m_previewWidget->updateMesh(m_clipPlayer->takeFrameMesh());
-    });
-    
-    PoseListWidget *poseListWidget = new PoseListWidget(document);
-    poseListWidget->setCornerButtonVisible(true);
-    poseListWidget->setHasContextMenu(false);
-    QWidget *poseListContainerWidget = new QWidget;
-    QGridLayout *poseListLayoutForContainer = new QGridLayout;
-    poseListLayoutForContainer->addWidget(poseListWidget);
-    poseListContainerWidget->setLayout(poseListLayoutForContainer);
-    
-    poseListContainerWidget->resize(512, Theme::posePreviewImageSize);
-    
-    connect(poseListWidget, &PoseListWidget::cornerButtonClicked, this, [=](QUuid poseId) {
-        m_timelineWidget->addPose(poseId);
-    });
-    
-    //FlowLayout *proceduralAnimationListLayout = new FlowLayout;
-    //for (size_t i = 0; i < (int)ProceduralAnimation::Count - 1; ++i) {
-    //    auto proceduralAnimation = (ProceduralAnimation)(i + 1);
-    //    QString dispName = ProceduralAnimationToDispName(proceduralAnimation);
-    //    QPushButton *addButton = new QPushButton(Theme::awesome()->icon(fa::plus), dispName);
-    //    connect(addButton, &QPushButton::clicked, this, [=]() {
-    //        m_timelineWidget->addProceduralAnimation(proceduralAnimation);
-    //    });
-    //    proceduralAnimationListLayout->addWidget(addButton);
-    //}
-    //QWidget *proceduralAnimationListContainerWidget = new QWidget;
-    //proceduralAnimationListContainerWidget->setLayout(proceduralAnimationListLayout);
-    
-    //proceduralAnimationListContainerWidget->resize(512, Theme::motionPreviewImageSize);
-    
-    MotionListWidget *motionListWidget = new MotionListWidget(document);
-    motionListWidget->setCornerButtonVisible(true);
-    motionListWidget->setHasContextMenu(false);
-    QWidget *motionListContainerWidget = new QWidget;
-    QGridLayout *motionListLayoutForContainer = new QGridLayout;
-    motionListLayoutForContainer->addWidget(motionListWidget);
-    motionListContainerWidget->setLayout(motionListLayoutForContainer);
-    
-    motionListContainerWidget->resize(512, Theme::motionPreviewImageSize);
-    
-    QStackedWidget *stackedWidget = new QStackedWidget;
-    stackedWidget->addWidget(poseListContainerWidget);
-    //stackedWidget->addWidget(proceduralAnimationListContainerWidget);
-    stackedWidget->addWidget(motionListContainerWidget);
-    
-    connect(motionListWidget, &MotionListWidget::cornerButtonClicked, this, [=](QUuid motionId) {
-        m_timelineWidget->addMotion(motionId);
-    });
-    
-    std::vector<QString> tabs = {
-        tr("Poses"),
-        //tr("Procedural Animations"),
-        tr("Motions")
-    };
-    TabWidget *tabWidget = new TabWidget(tabs);
-    tabWidget->setCurrentIndex(0);
-    
-    connect(tabWidget, &TabWidget::currentIndexChanged, stackedWidget, &QStackedWidget::setCurrentIndex);
-    
-    QVBoxLayout *motionEditLayout = new QVBoxLayout;
-    motionEditLayout->addWidget(tabWidget);
-    motionEditLayout->addWidget(stackedWidget);
-    motionEditLayout->addStretch();
-    motionEditLayout->addWidget(Theme::createHorizontalLineWidget());
-    motionEditLayout->addWidget(m_timelineWidget);
-    
-    QSlider *speedModeSlider = new QSlider(Qt::Horizontal);
-    speedModeSlider->setFixedWidth(100);
-    speedModeSlider->setMaximum(2);
-    speedModeSlider->setMinimum(0);
-    speedModeSlider->setValue(1);
-    
-    connect(speedModeSlider, &QSlider::valueChanged, this, [=](int value) {
-        m_clipPlayer->setSpeedMode((AnimationClipPlayer::SpeedMode)value);
-    });
-    
-    QHBoxLayout *sliderLayout = new QHBoxLayout;
-    sliderLayout->addStretch();
-    sliderLayout->addSpacing(50);
-    sliderLayout->addWidget(new QLabel(tr("Slow")));
-    sliderLayout->addWidget(speedModeSlider);
-    sliderLayout->addWidget(new QLabel(tr("Fast")));
-    sliderLayout->addSpacing(50);
-    sliderLayout->addStretch();
-    
-    QVBoxLayout *previewLayout = new QVBoxLayout;
-    previewLayout->addStretch();
-    previewLayout->addLayout(sliderLayout);
-    previewLayout->addSpacing(20);
-    
-    QHBoxLayout *topLayout = new QHBoxLayout;
-    topLayout->addLayout(previewLayout);
-    topLayout->addWidget(Theme::createVerticalLineWidget());
-    topLayout->addLayout(motionEditLayout);
-    topLayout->setStretch(2, 1);
+    QHBoxLayout *canvasLayout = new QHBoxLayout;
+    canvasLayout->setSpacing(0);
+    canvasLayout->setContentsMargins(0, 0, 0, 0);
+    canvasLayout->addWidget(m_modelRenderWidget);
+    canvasLayout->addWidget(m_parametersArea);
+    canvasLayout->addSpacing(3);
+    canvasLayout->setStretch(0, 1);
     
     m_nameEdit = new QLineEdit;
-    m_nameEdit->setFixedWidth(200);
-    connect(m_nameEdit, &QLineEdit::textChanged, this, &MotionEditWidget::setUnsavedState);
+    connect(m_nameEdit, &QLineEdit::textChanged, this, [=]() {
+        m_name = m_nameEdit->text();
+        m_unsaved = true;
+        updateTitle();
+    });
     QPushButton *saveButton = new QPushButton(tr("Save"));
     connect(saveButton, &QPushButton::clicked, this, &MotionEditWidget::save);
     saveButton->setDefault(true);
@@ -147,32 +60,67 @@ MotionEditWidget::MotionEditWidget(const Document *document, QWidget *parent) :
     baseInfoLayout->addWidget(saveButton);
     
     QVBoxLayout *mainLayout = new QVBoxLayout;
-    mainLayout->addLayout(topLayout);
+    mainLayout->addLayout(canvasLayout);
     mainLayout->addWidget(Theme::createHorizontalLineWidget());
     mainLayout->addLayout(baseInfoLayout);
     
-    setLayout(mainLayout);
+    QWidget *centralWidget = new QWidget;
+    centralWidget->setLayout(mainLayout);
+    setCentralWidget(centralWidget);
     
-    connect(this, &MotionEditWidget::addMotion, m_document, &Document::addMotion);
-    connect(this, &MotionEditWidget::renameMotion, m_document, &Document::renameMotion);
-    connect(this, &MotionEditWidget::setMotionClips, m_document, &Document::setMotionClips);
+    QTimer *timer = new QTimer(this);
+    timer->setInterval(17);
+    connect(timer, &QTimer::timeout, [this] {
+        if (m_renderQueue.size() > 600) {
+            checkRenderQueue();
+            return;
+        }
+        if (this->m_frames.empty())
+            return;
+        if (this->m_frameIndex < this->m_frames.size()) {
+            m_renderQueue.push(new SimpleShaderMesh(*this->m_frames[this->m_frameIndex]));
+            checkRenderQueue();
+        }
+        this->m_frameIndex = (this->m_frameIndex + 1) % this->m_frames.size();
+    });
+    timer->start();
     
+    connect(this, &MotionEditWidget::parametersChanged, this, &MotionEditWidget::updateParameters);
+    
+    updateParametersArea();
+    generatePreview();
     updateTitle();
 }
 
-MotionEditWidget::~MotionEditWidget()
+void MotionEditWidget::updateParametersArea()
 {
-    delete m_clipPlayer;
+    VertebrataMotionParametersWidget *widget = new VertebrataMotionParametersWidget(m_parameters);
+    connect(widget, &VertebrataMotionParametersWidget::parametersChanged, this, [=]() {
+        this->m_parameters = widget->getParameters();
+        emit parametersChanged();
+    });
+    m_parametersArea->setWidget(widget);
 }
 
 QSize MotionEditWidget::sizeHint() const
 {
-    return QSize(1024, 768);
+    return QSize(650, 460);
 }
 
-void MotionEditWidget::reject()
+void MotionEditWidget::updateParameters()
 {
-    close();
+    m_unsaved = true;
+    generatePreview();
+    updateTitle();
+}
+
+void MotionEditWidget::updateTitle()
+{
+    if (m_motionId.isNull()) {
+        setWindowTitle(unifiedWindowTitle(tr("New") + (m_unsaved ? "*" : "")));
+        return;
+    }
+    setWindowTitle(unifiedWindowTitle(m_name + (m_unsaved ? "*" : "")));
 }
 
 void MotionEditWidget::closeEvent(QCloseEvent *event)
@@ -190,23 +138,18 @@ void MotionEditWidget::closeEvent(QCloseEvent *event)
     }
     m_closed = true;
     hide();
-    if (nullptr != m_previewsGenerator) {
+    if (nullptr != m_previewGenerator) {
         event->ignore();
         return;
     }
     event->accept();
 }
 
-void MotionEditWidget::save()
+void MotionEditWidget::setEditMotionName(const QString &name)
 {
-    if (m_motionId.isNull()) {
-        m_motionId = QUuid::createUuid();
-        emit addMotion(m_motionId, m_nameEdit->text(), m_timelineWidget->clips());
-    } else if (m_unsaved) {
-        emit renameMotion(m_motionId, m_nameEdit->text());
-        emit setMotionClips(m_motionId, m_timelineWidget->clips());
-    }
-    clearUnsaveState();
+    m_name = name;
+    m_nameEdit->setText(name);
+    updateTitle();
 }
 
 void MotionEditWidget::clearUnsaveState()
@@ -215,92 +158,115 @@ void MotionEditWidget::clearUnsaveState()
     updateTitle();
 }
 
-void MotionEditWidget::setUnsavedState()
-{
-    m_unsaved = true;
-    updateTitle();
-}
-
-void MotionEditWidget::setEditMotionId(QUuid motionId)
+void MotionEditWidget::setEditMotionId(const QUuid &motionId)
 {
     if (m_motionId == motionId)
         return;
-    
+
     m_motionId = motionId;
     updateTitle();
 }
 
-void MotionEditWidget::setEditMotionName(QString name)
+void MotionEditWidget::setEditMotionParameters(const std::map<QString, QString> &parameters)
 {
-    m_nameEdit->setText(name);
-    updateTitle();
+    m_parameters = parameters;
+    updateParametersArea();
+    generatePreview();
 }
 
-void MotionEditWidget::updateTitle()
+void MotionEditWidget::save()
 {
     if (m_motionId.isNull()) {
-        setWindowTitle(unifiedWindowTitle(tr("New") + (m_unsaved ? "*" : "")));
-        return;
+        m_motionId = QUuid::createUuid();
+        emit addMotion(m_motionId, m_name, m_parameters);
+    } else if (m_unsaved) {
+        emit renameMotion(m_motionId, m_name);
+        emit setMotionParameters(m_motionId, m_parameters);
     }
-    const Motion *motion = m_document->findMotion(m_motionId);
-    if (nullptr == motion) {
-        qDebug() << "Find motion failed:" << m_motionId;
-        return;
-    }
-    setWindowTitle(unifiedWindowTitle(motion->name + (m_unsaved ? "*" : "")));
+    clearUnsaveState();
 }
 
-void MotionEditWidget::setEditMotionClips(std::vector<MotionClip> clips)
+void MotionEditWidget::updateBones(RigType rigType,
+    const std::vector<RiggerBone> *rigBones,
+    const std::map<int, RiggerVertexWeights> *rigWeights,
+    const Outcome *outcome)
 {
-    m_timelineWidget->setClips(clips);
+    m_rigType = rigType;
+    
+    delete m_bones;
+    m_bones = nullptr;
+    
+    delete m_rigWeights;
+    m_rigWeights = nullptr;
+    
+    delete m_outcome;
+    m_outcome = nullptr;
+    
+    if (nullptr != rigBones &&
+            nullptr != rigWeights &&
+            nullptr != outcome) {
+        m_bones = new std::vector<RiggerBone>(*rigBones);
+        m_rigWeights = new std::map<int, RiggerVertexWeights>(*rigWeights);
+        m_outcome = new Outcome(*outcome);
+        
+        generatePreview();
+    }
 }
 
-void MotionEditWidget::generatePreviews()
+void MotionEditWidget::generatePreview()
 {
-    if (nullptr != m_previewsGenerator) {
-        m_isPreviewsObsolete = true;
+    if (nullptr != m_previewGenerator) {
+        m_isPreviewObsolete = true;
         return;
     }
     
-    m_isPreviewsObsolete = false;
+    m_isPreviewObsolete = false;
     
-    const std::vector<RiggerBone> *rigBones = m_document->resultRigBones();
-    const std::map<int, RiggerVertexWeights> *rigWeights = m_document->resultRigWeights();
-    
-    if (nullptr == rigBones || nullptr == rigWeights) {
+    if (RigType::None == m_rigType || nullptr == m_bones || nullptr == m_rigWeights || nullptr == m_outcome)
         return;
-    }
     
-    m_previewsGenerator = new MotionsGenerator(m_document->rigType, rigBones, rigWeights,
-        m_document->currentRiggedOutcome());
-    for (const auto &pose: m_document->poseMap)
-        m_previewsGenerator->addPoseToLibrary(pose.first, pose.second.frames, pose.second.yTranslationScale);
-    for (const auto &motion: m_document->motionMap)
-        m_previewsGenerator->addMotionToLibrary(motion.first, motion.second.clips);
-    m_previewsGenerator->addMotionToLibrary(QUuid(), m_timelineWidget->clips());
-    m_previewsGenerator->addRequirement(QUuid());
     QThread *thread = new QThread;
-    m_previewsGenerator->moveToThread(thread);
-    connect(thread, &QThread::started, m_previewsGenerator, &MotionsGenerator::process);
-    connect(m_previewsGenerator, &MotionsGenerator::finished, this, &MotionEditWidget::previewsReady);
-    connect(m_previewsGenerator, &MotionsGenerator::finished, thread, &QThread::quit);
+    
+    m_previewGenerator = new MotionsGenerator(m_rigType, *m_bones, *m_rigWeights, *m_outcome);
+    m_previewGenerator->enablePreviewMeshes();
+    m_previewGenerator->addMotion(QUuid(), m_parameters);
+    m_previewGenerator->moveToThread(thread);
+    connect(thread, &QThread::started, m_previewGenerator, &MotionsGenerator::process);
+    connect(m_previewGenerator, &MotionsGenerator::finished, this, &MotionEditWidget::previewReady);
+    connect(m_previewGenerator, &MotionsGenerator::finished, thread, &QThread::quit);
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
     thread->start();
 }
 
-void MotionEditWidget::previewsReady()
+void MotionEditWidget::previewReady()
 {
-    auto resultPreviewMeshs = m_previewsGenerator->takeResultPreviewMeshs(QUuid());
-    m_clipPlayer->updateFrameMeshes(resultPreviewMeshs);
-
-    delete m_previewsGenerator;
-    m_previewsGenerator = nullptr;
+    for (auto &it: m_frames)
+        delete it;
+    m_frames.clear();
+    
+    std::vector<std::pair<float, SimpleShaderMesh *>> frames = m_previewGenerator->takeResultPreviewMeshes(QUuid());
+    for (const auto &frame: frames) {
+        m_frames.push_back(frame.second);
+    }
+    
+    delete m_previewGenerator;
+    m_previewGenerator = nullptr;
     
     if (m_closed) {
         close();
         return;
     }
     
-    if (m_isPreviewsObsolete)
-        generatePreviews();
+    if (m_isPreviewObsolete)
+        generatePreview();
+}
+
+void MotionEditWidget::checkRenderQueue()
+{
+    if (m_renderQueue.empty())
+        return;
+    
+    SimpleShaderMesh *mesh = m_renderQueue.front();
+    m_renderQueue.pop();
+    m_modelRenderWidget->updateMesh(mesh);
 }

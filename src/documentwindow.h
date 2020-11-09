@@ -15,7 +15,6 @@
 #include "exportpreviewwidget.h"
 #include "rigwidget.h"
 #include "bonemark.h"
-#include "posemanagewidget.h"
 #include "preferenceswidget.h"
 #include "graphicscontainerwidget.h"
 #include "normalanddepthmapsgenerator.h"
@@ -202,7 +201,6 @@ private:
     QAction *m_showDebugDialogAction;
     QAction *m_showMaterialsAction;
     QAction *m_showRigAction;
-    QAction *m_showPosesAction;
     QAction *m_showMotionsAction;
     QAction *m_showScriptAction;
     

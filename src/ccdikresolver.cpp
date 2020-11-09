@@ -2,36 +2,48 @@
 #include <QMatrix4x4>
 #include <QDebug>
 #include <cmath>
+#include <QtMath>
 #include "ccdikresolver.h"
 #include "util.h"
 
-CCDIKSolver::CCDIKSolver() :
-    m_maxRound(4),
-    m_distanceThreshold2(0.001 * 0.001),
-    m_distanceCeaseThreshold2(0.001 * 0.001)
+CcdIkSolver::CcdIkSolver()
 {
 }
 
-void CCDIKSolver::setMaxRound(int maxRound)
+void CcdIkSolver::setSolveFrom(int fromNodeIndex)
+{
+    m_fromNodeIndex = fromNodeIndex;
+}
+
+void CcdIkSolver::setNodeHingeConstraint(int nodeIndex,
+        const QVector3D &axis, double minLimitDegrees, double maxLimitDegrees)
+{
+    auto &node = m_nodes[nodeIndex];
+    node.axis = axis;
+    node.minLimitDegrees = minLimitDegrees;
+    node.maxLimitDegrees = maxLimitDegrees;
+}
+
+void CcdIkSolver::setMaxRound(int maxRound)
 {
     m_maxRound = maxRound;
 }
 
-void CCDIKSolver::setDistanceThreshod(float threshold)
+void CcdIkSolver::setDistanceThreshod(float threshold)
 {
     m_distanceThreshold2 = threshold * threshold;
 }
 
-int CCDIKSolver::addNodeInOrder(const QVector3D &position)
+int CcdIkSolver::addNodeInOrder(const QVector3D &position)
 {
-    CCDIKNode node;
+    CcdIkNode node;
     node.position = position;
     int nodeCount = m_nodes.size();
     m_nodes.push_back(node);
     return nodeCount;
 }
 
-void CCDIKSolver::solveTo(const QVector3D &position)
+void CcdIkSolver::solveTo(const QVector3D &position)
 {
     //qDebug() << "solveTo:" << position;
     m_destination = position;
@@ -49,29 +61,61 @@ void CCDIKSolver::solveTo(const QVector3D &position)
     }
 }
 
-const QVector3D &CCDIKSolver::getNodeSolvedPosition(int index)
+const QVector3D &CcdIkSolver::getNodeSolvedPosition(int index)
 {
     Q_ASSERT(index >= 0 && index < (int)m_nodes.size());
     return m_nodes[index].position;
 }
 
-int CCDIKSolver::getNodeCount(void)
+int CcdIkSolver::getNodeCount()
 {
-    return m_nodes.size();
+    return (int)m_nodes.size();
 }
 
-void CCDIKSolver::iterate()
+void CcdIkSolver::iterate()
 {
-    for (int i = m_nodes.size() - 2; i >= 0; i--) {
+    auto rotateChildren = [&](const QQuaternion &quaternion, int i) {
+        const auto &origin = m_nodes[i];
+        for (size_t j = i + 1; j <= m_nodes.size() - 1; j++) {
+            auto &next = m_nodes[j];
+            const auto offset = next.position - origin.position;
+            next.position = origin.position + quaternion.rotatedVector(offset);
+        }
+    };
+    
+    for (int i = m_nodes.size() - 2; i >= m_fromNodeIndex; i--) {
         const auto &origin = m_nodes[i];
         const auto &endEffector = m_nodes[m_nodes.size() - 1];
         QVector3D from = (endEffector.position - origin.position).normalized();
         QVector3D to = (m_destination - origin.position).normalized();
         auto quaternion = QQuaternion::rotationTo(from, to);
-        for (size_t j = i + 1; j <= m_nodes.size() - 1; j++) {
-            auto &next = m_nodes[j];
-            const auto offset = next.position - origin.position;
-            next.position = origin.position + quaternion.rotatedVector(offset);
+        rotateChildren(quaternion, i);
+        if (origin.axis.isNull())
+            continue;
+        QVector3D oldAxis = origin.axis;
+        QVector3D newAxis = quaternion.rotatedVector(oldAxis);
+        auto hingQuaternion = QQuaternion::rotationTo(newAxis, oldAxis);
+        rotateChildren(hingQuaternion, i);
+        // TODO: Support angle limit for other axis
+        int parentIndex = i - 1;
+        if (parentIndex < 0)
+            continue;
+        int childIndex = i + 1;
+        if (childIndex >= m_nodes.size())
+            continue;
+        const auto &parent = m_nodes[parentIndex];
+        const auto &child = m_nodes[childIndex];
+        QVector3D angleFrom = (QVector3D(0.0, parent.position.y(), parent.position.z()) - 
+            QVector3D(0.0, origin.position.y(), origin.position.z())).normalized();
+        QVector3D angleTo = (QVector3D(0.0, child.position.y(), child.position.z()) - 
+            QVector3D(0.0, origin.position.y(), origin.position.z())).normalized();
+        float degrees = angleInRangle360BetweenTwoVectors(angleFrom, angleTo, QVector3D(1.0, 0.0, 0.0));
+        if (degrees < origin.minLimitDegrees) {
+            auto quaternion = QQuaternion::fromAxisAndAngle(QVector3D(1.0, 0.0, 0.0), origin.minLimitDegrees - degrees);
+            rotateChildren(quaternion, i);
+        } else if (degrees > origin.maxLimitDegrees) {
+            auto quaternion = QQuaternion::fromAxisAndAngle(QVector3D(-1.0, 0.0, 0.0), degrees - origin.maxLimitDegrees);
+            rotateChildren(quaternion, i);
         }
     }
 }

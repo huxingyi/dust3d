@@ -79,14 +79,6 @@ void DocumentSaver::collectUsedResourceIds(const Snapshot *snapshot,
         loadSkeletonFromXmlStream(&fileSnapshot, stream, SNAPSHOT_ITEM_CANVAS | SNAPSHOT_ITEM_COMPONENT);
         collectUsedResourceIds(&fileSnapshot, imageIds, fileIds);
     }
-    
-    for (auto &pose: snapshot->poses) {
-        auto findCanvasImageId = pose.first.find("canvasImageId");
-        if (findCanvasImageId != pose.first.end()) {
-            QUuid imageId = QUuid(findCanvasImageId->second);
-            imageIds.insert(imageId);
-        }
-    }
 }
 
 bool DocumentSaver::save(const QString *filename, 

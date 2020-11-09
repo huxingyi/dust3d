@@ -18,7 +18,7 @@ float ModelWidget::m_maxZoomRatio = 80.0;
 int ModelWidget::m_defaultXRotation = 30 * 16;
 int ModelWidget::m_defaultYRotation = -45 * 16;
 int ModelWidget::m_defaultZRotation = 0;
-QVector3D ModelWidget::m_defaultEyePosition = QVector3D(0, 0, -4.0);
+QVector3D ModelWidget::m_defaultEyePosition = QVector3D(0, 0, -2.5);
 
 ModelWidget::ModelWidget(QWidget *parent) :
     QOpenGLWidget(parent),
@@ -329,11 +329,11 @@ void ModelWidget::toggleUvCheck()
     update();
 }
 
-bool ModelWidget::inputMousePressEventFromOtherWidget(QMouseEvent *event)
+bool ModelWidget::inputMousePressEventFromOtherWidget(QMouseEvent *event, bool notGraphics)
 {
     bool shouldStartMove = false;
     if (event->button() == Qt::LeftButton) {
-        if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::AltModifier) &&
+        if ((notGraphics || QGuiApplication::queryKeyboardModifiers().testFlag(Qt::AltModifier)) &&
                 !QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
             shouldStartMove = m_moveEnabled;
         }
@@ -547,7 +547,7 @@ void ModelWidget::setMoveAndZoomByWindow(bool byWindow)
 
 void ModelWidget::mousePressEvent(QMouseEvent *event)
 {
-    inputMousePressEventFromOtherWidget(event);
+    inputMousePressEventFromOtherWidget(event, m_notGraphics);
 }
 
 void ModelWidget::mouseMoveEvent(QMouseEvent *event)
@@ -565,3 +565,7 @@ void ModelWidget::mouseReleaseEvent(QMouseEvent *event)
     inputMouseReleaseEventFromOtherWidget(event);
 }
 
+void ModelWidget::setNotGraphics(bool notGraphics)
+{
+    m_notGraphics = notGraphics;
+}

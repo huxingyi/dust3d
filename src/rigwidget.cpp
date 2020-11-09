@@ -38,6 +38,7 @@ RigWidget::RigWidget(const Document *document, QWidget *parent) :
     m_rigWeightRenderWidget->setZRotation(0);
     m_rigWeightRenderWidget->setEyePosition(QVector3D(0.0, 0.0, -2.0));
     m_rigWeightRenderWidget->toggleWireframe();
+    m_rigWeightRenderWidget->setNotGraphics(true);
     
     m_infoLabel = new InfoLabel;
     m_infoLabel->hide();
