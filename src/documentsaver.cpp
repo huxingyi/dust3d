@@ -109,7 +109,7 @@ bool DocumentSaver::save(const QString *filename,
             ds3Writer.add("model.xml", "model", &modelXml);
     }
     
-    {
+    if (nullptr != object) {
         QByteArray objectXml;
         QXmlStreamWriter stream(&objectXml);
         saveObjectToXmlStream(object, &stream);
@@ -117,7 +117,7 @@ bool DocumentSaver::save(const QString *filename,
             ds3Writer.add("object.xml", "object", &objectXml);
     }
     
-    if (nullptr != textures) {
+    if (nullptr != object && nullptr != textures) {
         if (nullptr != textures->textureImage && !textures->textureImage->isNull()) {
             if (nullptr == textures->textureImageByteArray) {
                 textures->textureImageByteArray = new QByteArray;

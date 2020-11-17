@@ -1584,59 +1584,63 @@ void DocumentWindow::saveTo(const QString &saveAsFilename)
     QApplication::setOverrideCursor(Qt::WaitCursor);
     Snapshot snapshot;
     m_document->toSnapshot(&snapshot);
+    bool saveObject = m_document->objectLocked;
     DocumentSaver::Textures textures;
-    textures.textureImage = m_document->textureImage;
-    textures.textureImageByteArray = m_document->textureImageByteArray;
-    textures.textureNormalImage = m_document->textureNormalImage;
-    textures.textureNormalImageByteArray = m_document->textureNormalImageByteArray;
-    textures.textureMetalnessImage = m_document->textureMetalnessImage;
-    textures.textureMetalnessImageByteArray = m_document->textureMetalnessImageByteArray;
-    textures.textureRoughnessImage = m_document->textureRoughnessImage;
-    textures.textureRoughnessImageByteArray = m_document->textureRoughnessImageByteArray;
-    textures.textureAmbientOcclusionImage = m_document->textureAmbientOcclusionImage;
-    textures.textureAmbientOcclusionImageByteArray = m_document->textureAmbientOcclusionImageByteArray;
-    textures.textureHasTransparencySettings = m_document->textureHasTransparencySettings;
+    if (saveObject) {
+        textures.textureImage = m_document->textureImage;
+        textures.textureImageByteArray = m_document->textureImageByteArray;
+        textures.textureNormalImage = m_document->textureNormalImage;
+        textures.textureNormalImageByteArray = m_document->textureNormalImageByteArray;
+        textures.textureMetalnessImage = m_document->textureMetalnessImage;
+        textures.textureMetalnessImageByteArray = m_document->textureMetalnessImageByteArray;
+        textures.textureRoughnessImage = m_document->textureRoughnessImage;
+        textures.textureRoughnessImageByteArray = m_document->textureRoughnessImageByteArray;
+        textures.textureAmbientOcclusionImage = m_document->textureAmbientOcclusionImage;
+        textures.textureAmbientOcclusionImageByteArray = m_document->textureAmbientOcclusionImageByteArray;
+        textures.textureHasTransparencySettings = m_document->textureHasTransparencySettings;
+    }
     if (DocumentSaver::save(&filename, 
             &snapshot, 
-            &m_document->currentPostProcessedObject(),
-            &textures,
+            saveObject ? &m_document->currentPostProcessedObject() : nullptr,
+            saveObject ? &textures : nullptr,
             (!m_document->turnaround.isNull() && m_document->turnaroundPngByteArray.size() > 0) ? 
                 &m_document->turnaroundPngByteArray : nullptr,
             (!m_document->script().isEmpty()) ? &m_document->script() : nullptr,
             (!m_document->variables().empty()) ? &m_document->variables() : nullptr)) {
         setCurrentFilename(filename);
     }
-    textures.textureImage = nullptr;
-    textures.textureNormalImage = nullptr;
-    textures.textureMetalnessImage = nullptr;
-    textures.textureRoughnessImage = nullptr;
-    textures.textureAmbientOcclusionImage = nullptr;
-    
-    if (textures.textureImageByteArray != m_document->textureImageByteArray)
-        std::swap(textures.textureImageByteArray, m_document->textureImageByteArray);
-    else
-        textures.textureImageByteArray = nullptr;
-    
-    if (textures.textureNormalImageByteArray != m_document->textureNormalImageByteArray)
-        std::swap(textures.textureNormalImageByteArray, m_document->textureNormalImageByteArray);
-    else
-        textures.textureNormalImageByteArray = nullptr;
-    
-    if (textures.textureMetalnessImageByteArray != m_document->textureMetalnessImageByteArray)
-        std::swap(textures.textureMetalnessImageByteArray, m_document->textureMetalnessImageByteArray);
-    else
-        textures.textureMetalnessImageByteArray = nullptr;
-    
-    if (textures.textureRoughnessImageByteArray != m_document->textureRoughnessImageByteArray)
-        std::swap(textures.textureRoughnessImageByteArray, m_document->textureRoughnessImageByteArray);
-    else
-        textures.textureRoughnessImageByteArray = nullptr;
-    
-    if (textures.textureAmbientOcclusionImageByteArray != m_document->textureAmbientOcclusionImageByteArray)
-        std::swap(textures.textureAmbientOcclusionImageByteArray, m_document->textureAmbientOcclusionImageByteArray);
-    else
-        textures.textureAmbientOcclusionImageByteArray = nullptr;
-    
+    if (saveObject) {
+        textures.textureImage = nullptr;
+        textures.textureNormalImage = nullptr;
+        textures.textureMetalnessImage = nullptr;
+        textures.textureRoughnessImage = nullptr;
+        textures.textureAmbientOcclusionImage = nullptr;
+        
+        if (textures.textureImageByteArray != m_document->textureImageByteArray)
+            std::swap(textures.textureImageByteArray, m_document->textureImageByteArray);
+        else
+            textures.textureImageByteArray = nullptr;
+        
+        if (textures.textureNormalImageByteArray != m_document->textureNormalImageByteArray)
+            std::swap(textures.textureNormalImageByteArray, m_document->textureNormalImageByteArray);
+        else
+            textures.textureNormalImageByteArray = nullptr;
+        
+        if (textures.textureMetalnessImageByteArray != m_document->textureMetalnessImageByteArray)
+            std::swap(textures.textureMetalnessImageByteArray, m_document->textureMetalnessImageByteArray);
+        else
+            textures.textureMetalnessImageByteArray = nullptr;
+        
+        if (textures.textureRoughnessImageByteArray != m_document->textureRoughnessImageByteArray)
+            std::swap(textures.textureRoughnessImageByteArray, m_document->textureRoughnessImageByteArray);
+        else
+            textures.textureRoughnessImageByteArray = nullptr;
+        
+        if (textures.textureAmbientOcclusionImageByteArray != m_document->textureAmbientOcclusionImageByteArray)
+            std::swap(textures.textureAmbientOcclusionImageByteArray, m_document->textureAmbientOcclusionImageByteArray);
+        else
+            textures.textureAmbientOcclusionImageByteArray = nullptr;
+    }
     QApplication::restoreOverrideCursor();
 }
 
