@@ -7,7 +7,7 @@
 #include <vector>
 #include <QQuaternion>
 #include <QImage>
-#include "outcome.h"
+#include "object.h"
 #include "json.hpp"
 #include "document.h"
 
@@ -15,7 +15,7 @@ class GlbFileWriter : public QObject
 {
     Q_OBJECT
 public:
-    GlbFileWriter(Outcome &outcome,
+    GlbFileWriter(Object &object,
         const std::vector<RiggerBone> *resultRigBones,
         const std::map<int, RiggerVertexWeights> *resultRigWeights,
         const QString &filename,

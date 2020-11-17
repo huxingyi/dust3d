@@ -3,22 +3,22 @@
 #include <QRectF>
 #include "uvunwrap.h"
 
-void uvUnwrap(const Outcome &outcome,
+void uvUnwrap(const Object &object,
     std::vector<std::vector<QVector2D>> &triangleVertexUvs,
     std::set<int> &seamVertices,
     std::map<QUuid, std::vector<QRectF>> &uvRects)
 {
-    const auto &choosenVertices = outcome.vertices;
-    const auto &choosenTriangles = outcome.triangles;
-    const auto &choosenTriangleNormals = outcome.triangleNormals;
+    const auto &choosenVertices = object.vertices;
+    const auto &choosenTriangles = object.triangles;
+    const auto &choosenTriangleNormals = object.triangleNormals;
     triangleVertexUvs.resize(choosenTriangles.size(), {
         QVector2D(), QVector2D(), QVector2D()
     });
     
-    if (nullptr == outcome.triangleSourceNodes())
+    if (nullptr == object.triangleSourceNodes())
         return;
     
-    const std::vector<std::pair<QUuid, QUuid>> &triangleSourceNodes = *outcome.triangleSourceNodes();
+    const std::vector<std::pair<QUuid, QUuid>> &triangleSourceNodes = *object.triangleSourceNodes();
     
     simpleuv::Mesh inputMesh;
     for (const auto &vertex: choosenVertices) {

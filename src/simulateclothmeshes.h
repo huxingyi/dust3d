@@ -10,7 +10,7 @@ struct ClothMesh
     std::vector<QVector3D> vertices;
     std::vector<std::vector<size_t>> faces;
     std::vector<std::pair<QUuid, QUuid>> vertexSources;
-    const std::vector<std::pair<QVector3D, std::pair<QUuid, QUuid>>> *outcomeNodeVertices;
+    const std::vector<std::pair<QVector3D, std::pair<QUuid, QUuid>>> *objectNodeVertices;
     ClothForce clothForce;
     float clothOffset;
     float clothStiffness;

@@ -94,12 +94,19 @@ PreferencesWidget::PreferencesWidget(const Document *document, QWidget *parent) 
         Preferences::instance().setTextureSize(textureSizeSelectBox->itemText(index).toInt());
     });
     
+    QCheckBox *scriptEnabledBox = new QCheckBox();
+    Theme::initCheckbox(scriptEnabledBox);
+    connect(scriptEnabledBox, &QCheckBox::stateChanged, this, [=]() {
+        Preferences::instance().setScriptEnabled(scriptEnabledBox->isChecked());
+    });
+    
     QFormLayout *formLayout = new QFormLayout;
     formLayout->addRow(tr("Part color:"), colorLayout);
     formLayout->addRow(tr("Combine mode:"), combineModeSelectBox);
     formLayout->addRow(tr("Flat shading:"), flatShadingBox);
     formLayout->addRow(tr("Toon shading:"), toonShadingLayout);
     formLayout->addRow(tr("Texture size:"), textureSizeSelectBox);
+    formLayout->addRow(tr("Script:"), scriptEnabledBox);
     
     auto loadFromPreferences = [=]() {
         updatePickButtonColor();
@@ -110,6 +117,7 @@ PreferencesWidget::PreferencesWidget(const Document *document, QWidget *parent) 
         textureSizeSelectBox->setCurrentIndex(
             textureSizeSelectBox->findText(QString::number(Preferences::instance().textureSize()))
         );
+        scriptEnabledBox->setChecked(Preferences::instance().scriptEnabled());
     };
     
     loadFromPreferences();

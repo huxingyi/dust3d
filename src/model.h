@@ -6,7 +6,7 @@
 #include <QColor>
 #include <QImage>
 #include <QTextStream>
-#include "outcome.h"
+#include "object.h"
 #include "shadervertex.h"
 
 struct TriangulatedFace
@@ -23,7 +23,7 @@ public:
         const QColor &color=Qt::white,
         float metalness=0.0,
         float roughness=0.0);
-    Model(Outcome &outcome);
+    Model(Object &object);
     Model(ShaderVertex *triangleVertices, int vertexNum, ShaderVertex *edgeVertices=nullptr, int edgeVertexCount=0);
     Model(const Model &mesh);
     Model();

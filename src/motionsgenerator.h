@@ -17,7 +17,7 @@ public:
     MotionsGenerator(RigType rigType,
         const std::vector<RiggerBone> &bones,
         const std::map<int, RiggerVertexWeights> &rigWeights,
-        const Outcome &outcome);
+        const Object &object);
     ~MotionsGenerator();
     void addMotion(const QUuid &motionId, const std::map<QString, QString> &parameters);
     Model *takeResultSnapshotMesh(const QUuid &motionId);
@@ -37,7 +37,7 @@ private:
     RigType m_rigType = RigType::None;
     std::vector<RiggerBone> m_bones;
     std::map<int, RiggerVertexWeights> m_rigWeights;
-    Outcome m_outcome;
+    Object m_object;
     std::map<QUuid, std::map<QString, QString>> m_motions;
     std::set<QUuid> m_generatedMotionIds;
     std::map<QUuid, Model *> m_resultSnapshotMeshes;

@@ -17,13 +17,13 @@ struct CandidateEdge
     float length;
 };
 
-static void fixRemainVertexSourceNodes(const Outcome &outcome, std::vector<std::pair<QUuid, QUuid>> &triangleSourceNodes,
+static void fixRemainVertexSourceNodes(const Object &object, std::vector<std::pair<QUuid, QUuid>> &triangleSourceNodes,
     std::vector<std::pair<QUuid, QUuid>> *vertexSourceNodes)
 {
     if (nullptr != vertexSourceNodes) {
         std::map<size_t, std::map<std::pair<QUuid, QUuid>, size_t>> remainVertexSourcesMap;
-        for (size_t faceIndex = 0; faceIndex < outcome.triangles.size(); ++faceIndex) {
-            for (const auto &vertexIndex: outcome.triangles[faceIndex]) {
+        for (size_t faceIndex = 0; faceIndex < object.triangles.size(); ++faceIndex) {
+            for (const auto &vertexIndex: object.triangles[faceIndex]) {
                 if (!(*vertexSourceNodes)[vertexIndex].second.isNull())
                     continue;
                 remainVertexSourcesMap[vertexIndex][triangleSourceNodes[faceIndex]]++;
@@ -39,20 +39,22 @@ static void fixRemainVertexSourceNodes(const Outcome &outcome, std::vector<std::
     }
 }
 
-void triangleSourceNodeResolve(const Outcome &outcome, std::vector<std::pair<QUuid, QUuid>> &triangleSourceNodes,
+void triangleSourceNodeResolve(const Object &object, 
+    const std::vector<std::pair<QVector3D, std::pair<QUuid, QUuid>>> &nodeVertices,
+    std::vector<std::pair<QUuid, QUuid>> &triangleSourceNodes,
     std::vector<std::pair<QUuid, QUuid>> *vertexSourceNodes)
 {
     std::map<int, std::pair<QUuid, QUuid>> vertexSourceMap;
     std::map<PositionKey, std::pair<QUuid, QUuid>> positionMap;
     std::map<std::pair<int, int>, HalfColorEdge> halfColorEdgeMap;
     std::set<int> brokenTriangleSet;
-    for (const auto &it: outcome.nodeVertices) {
+    for (const auto &it: nodeVertices) {
         positionMap.insert({PositionKey(it.first), it.second});
     }
     if (nullptr != vertexSourceNodes)
-        vertexSourceNodes->resize(outcome.vertices.size());
-    for (auto x = 0u; x < outcome.vertices.size(); x++) {
-        const QVector3D *resultVertex = &outcome.vertices[x];
+        vertexSourceNodes->resize(object.vertices.size());
+    for (auto x = 0u; x < object.vertices.size(); x++) {
+        const QVector3D *resultVertex = &object.vertices[x];
         std::pair<QUuid, QUuid> source;
         auto findPosition = positionMap.find(PositionKey(*resultVertex));
         if (findPosition != positionMap.end()) {
@@ -60,8 +62,8 @@ void triangleSourceNodeResolve(const Outcome &outcome, std::vector<std::pair<QUu
             vertexSourceMap[x] = findPosition->second;
         }
     }
-    for (auto x = 0u; x < outcome.triangles.size(); x++) {
-        const auto triangle = outcome.triangles[x];
+    for (auto x = 0u; x < object.triangles.size(); x++) {
+        const auto triangle = object.triangles[x];
         std::vector<std::pair<std::pair<QUuid, QUuid>, int>> colorTypes;
         for (int i = 0; i < 3; i++) {
             int index = triangle[i];
@@ -112,7 +114,7 @@ void triangleSourceNodeResolve(const Outcome &outcome, std::vector<std::pair<QUu
     std::map<std::pair<int, int>, int> brokenTriangleMapByEdge;
     std::vector<CandidateEdge> candidateEdges;
     for (const auto &x: brokenTriangleSet) {
-        const auto triangle = outcome.triangles[x];
+        const auto triangle = object.triangles[x];
         for (int i = 0; i < 3; i++) {
             int oppositeStartIndex = triangle[(i + 1) % 3];
             int oppositeStopIndex = triangle[i];
@@ -123,11 +125,11 @@ void triangleSourceNodeResolve(const Outcome &outcome, std::vector<std::pair<QUu
             if (findOpposite == halfColorEdgeMap.end())
                 continue;
             QVector3D selfPositions[3] = {
-                outcome.vertices[triangle[i]], // A
-                outcome.vertices[triangle[(i + 1) % 3]], // B
-                outcome.vertices[triangle[(i + 2) % 3]] // C
+                object.vertices[triangle[i]], // A
+                object.vertices[triangle[(i + 1) % 3]], // B
+                object.vertices[triangle[(i + 2) % 3]] // C
             };
-            QVector3D oppositeCornPosition = outcome.vertices[findOpposite->second.cornVertexIndex]; // D
+            QVector3D oppositeCornPosition = object.vertices[findOpposite->second.cornVertexIndex]; // D
             QVector3D AB = selfPositions[1] - selfPositions[0];
             float length = AB.length();
             QVector3D AC = selfPositions[2] - selfPositions[0];
@@ -151,7 +153,7 @@ void triangleSourceNodeResolve(const Outcome &outcome, std::vector<std::pair<QUu
         }
     }
     if (candidateEdges.empty()) {
-        fixRemainVertexSourceNodes(outcome, triangleSourceNodes, vertexSourceNodes);
+        fixRemainVertexSourceNodes(object, triangleSourceNodes, vertexSourceNodes);
         return;
     }
     std::sort(candidateEdges.begin(), candidateEdges.end(), [](const CandidateEdge &a, const CandidateEdge &b) -> bool {
@@ -178,7 +180,7 @@ void triangleSourceNodeResolve(const Outcome &outcome, std::vector<std::pair<QUu
             brokenTriangleSet.erase(x);
             triangleSourceNodes[x] = candidate.source;
             //qDebug() << "resolved triangle:" << x;
-            const auto triangle = outcome.triangles[x];
+            const auto triangle = object.triangles[x];
             for (int i = 0; i < 3; i++) {
                 int oppositeStartIndex = triangle[(i + 1) % 3];
                 int oppositeStopIndex = triangle[i];
@@ -187,5 +189,5 @@ void triangleSourceNodeResolve(const Outcome &outcome, std::vector<std::pair<QUu
             }
         }
     }
-    fixRemainVertexSourceNodes(outcome, triangleSourceNodes, vertexSourceNodes);
+    fixRemainVertexSourceNodes(object, triangleSourceNodes, vertexSourceNodes);
 }

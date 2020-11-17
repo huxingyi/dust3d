@@ -548,7 +548,7 @@ vec4 metalRoughFunction(const in vec4 baseColor,
     }
 
     // Apply exposure correction
-    cLinear *= pow(2.0, exposure);
+    //cLinear *= pow(2.0, exposure);
 
     // Apply simple (Reinhard) tonemap transform to get into LDR range [0, 1]
     vec3 cToneMapped = toneMap(cLinear);
@@ -573,7 +573,7 @@ void main()
     lights[0].type = TYPE_POINT;
     lights[0].position = firstLightPos;
     lights[0].color = vec3(1.0, 1.0, 1.0);
-    lights[0].intensity = 1.0;
+    lights[0].intensity = 3.0;
     lights[0].constantAttenuation = 1.0;
     lights[0].linearAttenuation = 0.0;
     lights[0].quadraticAttenuation = 0.0025;
@@ -604,7 +604,8 @@ void main()
         alpha = textColor.a;
     }
     if (mousePickEnabled == 1) {
-        if (distance(mousePickTargetPosition, vertRaw) <= mousePickRadius) {
+        float dist = distance(mousePickTargetPosition, vertRaw);
+        if (dist <= mousePickRadius && dist >= mousePickRadius * 0.9) {
             color = color + vec3(0.99, 0.4, 0.13);
         }
     }

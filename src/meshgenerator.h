@@ -7,7 +7,7 @@
 #include "meshcombiner.h"
 #include "positionkey.h"
 #include "strokemeshbuilder.h"
-#include "outcome.h"
+#include "object.h"
 #include "snapshot.h"
 #include "combinemode.h"
 #include "model.h"
@@ -29,12 +29,11 @@ public:
     MeshCombiner::Mesh *mesh = nullptr;
     std::vector<QVector3D> vertices;
     std::vector<std::vector<size_t>> faces;
-    std::vector<OutcomeNode> outcomeNodes;
-    std::vector<std::pair<std::pair<QUuid, QUuid>, std::pair<QUuid, QUuid>>> outcomeEdges;
-    std::vector<std::pair<QVector3D, std::pair<QUuid, QUuid>>> outcomeNodeVertices;
+    std::vector<ObjectNode> objectNodes;
+    std::vector<std::pair<std::pair<QUuid, QUuid>, std::pair<QUuid, QUuid>>> objectEdges;
+    std::vector<std::pair<QVector3D, std::pair<QUuid, QUuid>>> objectNodeVertices;
     std::vector<QVector3D> previewVertices;
     std::vector<std::vector<size_t>> previewTriangles;
-    OutcomePaintMap outcomePaintMap;
     bool isSuccessful = false;
     bool joined = true;
 };
@@ -58,10 +57,9 @@ public:
     std::vector<MeshCombiner::Mesh *> incombinableMeshes;
     std::set<std::pair<PositionKey, PositionKey>> sharedQuadEdges;
     std::set<PositionKey> noneSeamVertices;
-    std::vector<OutcomeNode> outcomeNodes;
-    std::vector<std::pair<std::pair<QUuid, QUuid>, std::pair<QUuid, QUuid>>> outcomeEdges;
-    std::vector<std::pair<QVector3D, std::pair<QUuid, QUuid>>> outcomeNodeVertices;
-    std::vector<OutcomePaintMap> outcomePaintMaps;
+    std::vector<ObjectNode> objectNodes;
+    std::vector<std::pair<std::pair<QUuid, QUuid>, std::pair<QUuid, QUuid>>> objectEdges;
+    std::vector<std::pair<QVector3D, std::pair<QUuid, QUuid>>> objectNodeVertices;
 };
 
 class GeneratedCacheContext
@@ -92,7 +90,7 @@ public:
     Model *takeResultMesh();
     Model *takePartPreviewMesh(const QUuid &partId);
     const std::set<QUuid> &generatedPreviewPartIds();
-    Outcome *takeOutcome();
+    Object *takeObject();
     std::map<QUuid, StrokeMeshBuilder::CutFaceTransform> *takeCutFaceTransforms();
     std::map<QUuid, std::map<QString, QVector2D>> *takeNodesCutFaces();
     void generate();
@@ -116,7 +114,8 @@ private:
     float m_mainProfileMiddleX = 0;
     float m_sideProfileMiddleX = 0;
     float m_mainProfileMiddleY = 0;
-    Outcome *m_outcome = nullptr;
+    Object *m_object = nullptr;
+    std::vector<std::pair<QVector3D, std::pair<QUuid, QUuid>>> m_nodeVertices;
     std::map<QString, std::set<QString>> m_partNodeIds;
     std::map<QString, std::set<QString>> m_partEdgeIds;
     std::set<QUuid> m_generatedPreviewPartIds;
@@ -174,7 +173,7 @@ private:
     void collectClothComponentIdStrings(const QString &componentIdString,
         std::vector<QString> *componentIdStrings);
     void cutFaceStringToCutTemplate(const QString &cutFaceString, std::vector<QVector2D> &cutTemplate);
-    void remesh(const std::vector<OutcomeNode> &inputNodes,
+    void remesh(const std::vector<ObjectNode> &inputNodes,
         const std::vector<std::tuple<QVector3D, float, size_t>> &interpolatedNodes,
         const std::vector<QVector3D> &inputVertices,
         const std::vector<std::vector<size_t>> &inputFaces,
@@ -183,7 +182,7 @@ private:
         std::vector<std::vector<size_t>> *outputQuads,
         std::vector<std::vector<size_t>> *outputTriangles,
         std::vector<std::pair<QVector3D, std::pair<QUuid, QUuid>>> *outputNodeVertices);
-    void postprocessOutcome(Outcome *outcome);
+    void postprocessObject(Object *object);
     void collectErroredParts();
     void preprocessMirror();
     QString reverseUuid(const QString &uuidString);

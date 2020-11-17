@@ -12,7 +12,6 @@
 #include <QLabel>
 #include "document.h"
 #include "modelwidget.h"
-#include "exportpreviewwidget.h"
 #include "rigwidget.h"
 #include "bonemark.h"
 #include "preferenceswidget.h"
@@ -24,6 +23,7 @@
 
 class SkeletonGraphicsWidget;
 class PartTreeWidget;
+class SpinnableAwesomeButton;
 
 class DocumentWindow : public QMainWindow
 {
@@ -60,7 +60,6 @@ public slots:
     void exportObjResult();
     void exportGlbResult();
     void exportFbxResult();
-    void showExportPreview();
     void newWindow();
     void newDocument();
     void saveAs();
@@ -101,6 +100,7 @@ public slots:
     void importPath(const QString &filename);
     void generatePartPreviewImages();
     void partPreviewImagesReady();
+    void updateRegenerateIcon();
 private:
     void initLockButton(QPushButton *button);
     void setCurrentFilename(const QString &filename);
@@ -110,7 +110,6 @@ private:
     Document *m_document;
     bool m_firstShow;
     bool m_documentSaved;
-    ExportPreviewWidget *m_exportPreviewWidget;
     PreferencesWidget *m_preferencesWidget;
     std::vector<QWidget *> m_dialogs;
     bool m_isLastMeshGenerationSucceed;
@@ -136,15 +135,14 @@ private:
     QAction *m_saveAsAction;
     QAction *m_saveAllAction;
     QAction *m_showPreferencesAction;
-    QMenu *m_exportMenu;
     QAction *m_changeTurnaroundAction;
     QAction *m_quitAction;
     
     QAction *m_importAction;
     
     QAction *m_exportAsObjAction;
-    QAction *m_exportAsObjPlusMaterialsAction;
-    QAction *m_exportAction;
+    QAction *m_exportAsGlbAction;
+    QAction *m_exportAsFbxAction;
     QAction *m_exportRenderedAsImageAction;
     
     QMenu *m_editMenu;
@@ -202,6 +200,7 @@ private:
     QAction *m_showMaterialsAction;
     QAction *m_showRigAction;
     QAction *m_showMotionsAction;
+    QAction *m_showPaintAction;
     QAction *m_showScriptAction;
     
     QMenu *m_helpMenu;
@@ -233,6 +232,10 @@ private:
     bool m_isPartPreviewImagesObsolete = false;
     
     PartTreeWidget *m_partTreeWidget = nullptr;
+    
+    SpinnableAwesomeButton *m_regenerateButton = nullptr;
+    
+    QWidget *m_paintWidget = nullptr;
 public:
     static int m_autoRecovered;
 };

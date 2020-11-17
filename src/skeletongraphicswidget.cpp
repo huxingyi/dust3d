@@ -792,7 +792,7 @@ void SkeletonGraphicsWidget::updateCursor()
                 setCursor(QCursor(replacedPixmap, Theme::toolIconFontSize / 5, Theme::toolIconFontSize * 4 / 5));
             } break;
         case SkeletonDocumentEditMode::Paint:
-            setCursor(QCursor(Theme::awesome()->icon(fa::paintbrush).pixmap(Theme::toolIconFontSize, Theme::toolIconFontSize)));
+            setCursor(QCursor(Theme::awesome()->icon(fa::paintbrush).pixmap(Theme::toolIconFontSize, Theme::toolIconFontSize), Theme::toolIconFontSize * 0.2, Theme::toolIconFontSize * 0.8));
             break;
         case SkeletonDocumentEditMode::Drag:
             setCursor(QCursor(Theme::awesome()->icon(m_dragStarted ? fa::handrocko : fa::handpapero).pixmap(Theme::toolIconFontSize, Theme::toolIconFontSize)));

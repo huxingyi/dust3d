@@ -1,25 +1,25 @@
 #include <QDebug>
 #include "triangletangentresolve.h"
 
-void triangleTangentResolve(const Outcome &outcome, std::vector<QVector3D> &tangents)
+void triangleTangentResolve(const Object &object, std::vector<QVector3D> &tangents)
 {
-    tangents.resize(outcome.triangles.size());
+    tangents.resize(object.triangles.size());
     
-    if (nullptr == outcome.triangleVertexUvs())
+    if (nullptr == object.triangleVertexUvs())
         return;
     
-    const std::vector<std::vector<QVector2D>> &triangleVertexUvs = *outcome.triangleVertexUvs();
+    const std::vector<std::vector<QVector2D>> &triangleVertexUvs = *object.triangleVertexUvs();
     
-    for (decltype(outcome.triangles.size()) i = 0; i < outcome.triangles.size(); i++) {
+    for (decltype(object.triangles.size()) i = 0; i < object.triangles.size(); i++) {
         tangents[i] = {0, 0, 0};
         const auto &uv = triangleVertexUvs[i];
         QVector2D uv1 = {uv[0][0], uv[0][1]};
         QVector2D uv2 = {uv[1][0], uv[1][1]};
         QVector2D uv3 = {uv[2][0], uv[2][1]};
-        const auto &triangle = outcome.triangles[i];
-        const QVector3D &pos1 = outcome.vertices[triangle[0]];
-        const QVector3D &pos2 = outcome.vertices[triangle[1]];
-        const QVector3D &pos3 = outcome.vertices[triangle[2]];
+        const auto &triangle = object.triangles[i];
+        const QVector3D &pos1 = object.vertices[triangle[0]];
+        const QVector3D &pos2 = object.vertices[triangle[1]];
+        const QVector3D &pos3 = object.vertices[triangle[2]];
         QVector3D edge1 = pos2 - pos1;
         QVector3D edge2 = pos3 - pos1;
         QVector2D deltaUv1 = uv2 - uv1;

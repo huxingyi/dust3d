@@ -25,7 +25,7 @@ MotionEditWidget::~MotionEditWidget()
     }
     delete m_bones;
     delete m_rigWeights;
-    delete m_outcome;
+    delete m_object;
 }
 
 MotionEditWidget::MotionEditWidget()
@@ -189,7 +189,7 @@ void MotionEditWidget::save()
 void MotionEditWidget::updateBones(RigType rigType,
     const std::vector<RiggerBone> *rigBones,
     const std::map<int, RiggerVertexWeights> *rigWeights,
-    const Outcome *outcome)
+    const Object *object)
 {
     m_rigType = rigType;
     
@@ -199,15 +199,15 @@ void MotionEditWidget::updateBones(RigType rigType,
     delete m_rigWeights;
     m_rigWeights = nullptr;
     
-    delete m_outcome;
-    m_outcome = nullptr;
+    delete m_object;
+    m_object = nullptr;
     
     if (nullptr != rigBones &&
             nullptr != rigWeights &&
-            nullptr != outcome) {
+            nullptr != object) {
         m_bones = new std::vector<RiggerBone>(*rigBones);
         m_rigWeights = new std::map<int, RiggerVertexWeights>(*rigWeights);
-        m_outcome = new Outcome(*outcome);
+        m_object = new Object(*object);
         
         generatePreview();
     }
@@ -222,12 +222,12 @@ void MotionEditWidget::generatePreview()
     
     m_isPreviewObsolete = false;
     
-    if (RigType::None == m_rigType || nullptr == m_bones || nullptr == m_rigWeights || nullptr == m_outcome)
+    if (RigType::None == m_rigType || nullptr == m_bones || nullptr == m_rigWeights || nullptr == m_object)
         return;
     
     QThread *thread = new QThread;
     
-    m_previewGenerator = new MotionsGenerator(m_rigType, *m_bones, *m_rigWeights, *m_outcome);
+    m_previewGenerator = new MotionsGenerator(m_rigType, *m_bones, *m_rigWeights, *m_object);
     m_previewGenerator->enablePreviewMeshes();
     m_previewGenerator->addMotion(QUuid(), m_parameters);
     m_previewGenerator->moveToThread(thread);

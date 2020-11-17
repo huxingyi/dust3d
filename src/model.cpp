@@ -124,31 +124,31 @@ Model::Model(const std::vector<QVector3D> &vertices, const std::vector<std::vect
     }
 }
 
-Model::Model(Outcome &outcome) :
+Model::Model(Object &object) :
     m_triangleVertices(nullptr),
     m_triangleVertexCount(0),
     m_edgeVertices(nullptr),
     m_edgeVertexCount(0),
     m_textureImage(nullptr)
 {
-    m_meshId = outcome.meshId;
-    m_vertices = outcome.vertices;
-    m_faces = outcome.triangleAndQuads;
+    m_meshId = object.meshId;
+    m_vertices = object.vertices;
+    m_faces = object.triangleAndQuads;
     
-    m_triangleVertexCount = outcome.triangles.size() * 3;
+    m_triangleVertexCount = object.triangles.size() * 3;
     m_triangleVertices = new ShaderVertex[m_triangleVertexCount];
     int destIndex = 0;
-    const auto triangleVertexNormals = outcome.triangleVertexNormals();
-    const auto triangleVertexUvs = outcome.triangleVertexUvs();
-    const auto triangleTangents = outcome.triangleTangents();
+    const auto triangleVertexNormals = object.triangleVertexNormals();
+    const auto triangleVertexUvs = object.triangleVertexUvs();
+    const auto triangleTangents = object.triangleTangents();
     const QVector3D defaultNormal = QVector3D(0, 0, 0);
     const QVector2D defaultUv = QVector2D(0, 0);
     const QVector3D defaultTangent = QVector3D(0, 0, 0);
-    for (size_t i = 0; i < outcome.triangles.size(); ++i) {
-        const auto &triangleColor = &outcome.triangleColors[i];
+    for (size_t i = 0; i < object.triangles.size(); ++i) {
+        const auto &triangleColor = &object.triangleColors[i];
         for (auto j = 0; j < 3; j++) {
-            int vertexIndex = outcome.triangles[i][j];
-            const QVector3D *srcVert = &outcome.vertices[vertexIndex];
+            int vertexIndex = object.triangles[i][j];
+            const QVector3D *srcVert = &object.vertices[vertexIndex];
             const QVector3D *srcNormal = &defaultNormal;
             if (triangleVertexNormals)
                 srcNormal = &(*triangleVertexNormals)[i][j];
@@ -181,18 +181,18 @@ Model::Model(Outcome &outcome) :
     }
     
     size_t edgeCount = 0;
-    for (const auto &face: outcome.triangleAndQuads) {
+    for (const auto &face: object.triangleAndQuads) {
         edgeCount += face.size();
     }
     m_edgeVertexCount = edgeCount * 2;
     m_edgeVertices = new ShaderVertex[m_edgeVertexCount];
     size_t edgeVertexIndex = 0;
-    for (size_t faceIndex = 0; faceIndex < outcome.triangleAndQuads.size(); ++faceIndex) {
-        const auto &face = outcome.triangleAndQuads[faceIndex];
+    for (size_t faceIndex = 0; faceIndex < object.triangleAndQuads.size(); ++faceIndex) {
+        const auto &face = object.triangleAndQuads[faceIndex];
         for (size_t i = 0; i < face.size(); ++i) {
             for (size_t x = 0; x < 2; ++x) {
                 size_t sourceIndex = face[(i + x) % face.size()];
-                const QVector3D *srcVert = &outcome.vertices[sourceIndex];
+                const QVector3D *srcVert = &object.vertices[sourceIndex];
                 ShaderVertex *dest = &m_edgeVertices[edgeVertexIndex];
                 memset(dest, 0, sizeof(ShaderVertex));
                 dest->colorR = 0.0;

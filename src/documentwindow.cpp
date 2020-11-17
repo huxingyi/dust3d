@@ -48,6 +48,7 @@
 #include "modeloffscreenrender.h"
 #include "fileforever.h"
 #include "documentsaver.h"
+#include "objectxml.h"
 
 int DocumentWindow::m_autoRecovered = false;
 
@@ -159,7 +160,6 @@ DocumentWindow::DocumentWindow() :
     m_document(nullptr),
     m_firstShow(true),
     m_documentSaved(true),
-    m_exportPreviewWidget(nullptr),
     m_preferencesWidget(nullptr),
     m_isLastMeshGenerationSucceed(true),
     m_currentUpdatedMeshId(0),
@@ -202,9 +202,13 @@ DocumentWindow::DocumentWindow() :
     //markerButton->setToolTip(tr("Marker pen"));
     //Theme::initAwesomeButton(markerButton);
     
-    //QPushButton *paintButton = new QPushButton(QChar(fa::paintbrush));
-    //paintButton->setToolTip(tr("Paint brush"));
-    //Theme::initAwesomeButton(paintButton);
+    QPushButton *paintButton = new QPushButton(QChar(fa::paintbrush));
+    paintButton->setToolTip(tr("Paint brush"));
+    paintButton->setVisible(m_document->objectLocked);
+    Theme::initAwesomeButton(paintButton);
+    connect(m_document, &Document::objectLockStateChanged, this, [=]() {
+        paintButton->setVisible(m_document->objectLocked);
+    });
 
     //QPushButton *dragButton = new QPushButton(QChar(fa::handrocko));
     //dragButton->setToolTip(tr("Enter drag mode"));
@@ -251,48 +255,32 @@ DocumentWindow::DocumentWindow() :
     //rotateClockwiseButton->setToolTip(tr("Rotate whole model"));
     //Theme::initAwesomeButton(rotateClockwiseButton);
     
-    auto updateRegenerateIconAndTips = [&](SpinnableAwesomeButton *regenerateButton, bool isSuccessful, bool forceUpdate=false) {
-        if (!forceUpdate) {
-            if (m_isLastMeshGenerationSucceed == isSuccessful)
-                return;
-        }
-        m_isLastMeshGenerationSucceed = isSuccessful;
-        regenerateButton->setToolTip(m_isLastMeshGenerationSucceed ? tr("Regenerate") : tr("Mesh generation failed, please undo or adjust recent changed nodes\nTips:\n  - Don't let generated mesh self-intersect\n  - Make multiple parts instead of one single part for whole model"));
-        regenerateButton->setAwesomeIcon(m_isLastMeshGenerationSucceed ? QChar(fa::recycle) : QChar(fa::warning));
-    };
+    m_regenerateButton = new SpinnableAwesomeButton();
+    updateRegenerateIcon();
+    connect(m_regenerateButton->button(), &QPushButton::clicked, m_document, &Document::regenerateMesh);
     
-    SpinnableAwesomeButton *regenerateButton = new SpinnableAwesomeButton();
-    updateRegenerateIconAndTips(regenerateButton, m_isLastMeshGenerationSucceed, true);
-    connect(m_document, &Document::meshGenerating, this, [=]() {
-        regenerateButton->showSpinner(true);
-    });
+    connect(m_document, &Document::meshGenerating, this, &DocumentWindow::updateRegenerateIcon);
     connect(m_document, &Document::resultMeshChanged, this, [=]() {
-        updateRegenerateIconAndTips(regenerateButton, m_document->isMeshGenerationSucceed());
+        m_isLastMeshGenerationSucceed = m_document->isMeshGenerationSucceed();
+        updateRegenerateIcon();
+    });
+    connect(m_document, &Document::resultPartPreviewsChanged, this, [=]() {
         generatePartPreviewImages();
     });
     connect(m_document, &Document::paintedMeshChanged, [=]() {
         auto paintedMesh = m_document->takePaintedMesh();
         m_modelRenderWidget->updateMesh(paintedMesh);
     });
-    connect(m_document, &Document::postProcessing, this, [=]() {
-        regenerateButton->showSpinner(true);
-    });
-    connect(m_document, &Document::textureGenerating, this, [=]() {
-        regenerateButton->showSpinner(true);
-    });
-    connect(m_document, &Document::resultTextureChanged, this, [=]() {
-        if (!m_document->isMeshGenerating() &&
-                !m_document->isPostProcessing() &&
-                !m_document->isTextureGenerating()) {
-            regenerateButton->showSpinner(false);
-        }
-    });
-    connect(regenerateButton->button(), &QPushButton::clicked, m_document, &Document::regenerateMesh);
+    connect(m_document, &Document::postProcessing, this, &DocumentWindow::updateRegenerateIcon);
+    connect(m_document, &Document::textureGenerating, this, &DocumentWindow::updateRegenerateIcon);
+    connect(m_document, &Document::resultTextureChanged, this, &DocumentWindow::updateRegenerateIcon);
+    connect(m_document, &Document::postProcessedResultChanged, this, &DocumentWindow::updateRegenerateIcon);
+    connect(m_document, &Document::objectLockStateChanged, this, &DocumentWindow::updateRegenerateIcon);
 
     toolButtonLayout->addWidget(addButton);
     toolButtonLayout->addWidget(selectButton);
     //toolButtonLayout->addWidget(markerButton);
-    //toolButtonLayout->addWidget(paintButton);
+    toolButtonLayout->addWidget(paintButton);
     //toolButtonLayout->addWidget(dragButton);
     toolButtonLayout->addWidget(zoomInButton);
     toolButtonLayout->addWidget(zoomOutButton);
@@ -307,7 +295,7 @@ DocumentWindow::DocumentWindow() :
     //toolButtonLayout->addWidget(rotateCounterclockwiseButton);
     //toolButtonLayout->addWidget(rotateClockwiseButton);
     //toolButtonLayout->addSpacing(10);
-    toolButtonLayout->addWidget(regenerateButton);
+    toolButtonLayout->addWidget(m_regenerateButton);
     
 
     QLabel *verticalLogoLabel = new QLabel;
@@ -399,79 +387,10 @@ DocumentWindow::DocumentWindow() :
 
     QDockWidget *partsDocker = new QDockWidget(tr("Parts"), this);
     partsDocker->setAllowedAreas(Qt::RightDockWidgetArea);
-    m_colorWheelWidget = new color_widgets::ColorWheel(nullptr);
-    m_colorWheelWidget->setContentsMargins(0, 5, 0, 5);
-    m_colorWheelWidget->hide();
-    m_document->brushColor = m_colorWheelWidget->color();
-    connect(m_colorWheelWidget, &color_widgets::ColorWheel::colorChanged, this, [=](QColor color) {
-        m_document->brushColor = color;
-    });
-    
-    FloatNumberWidget *metalnessWidget = new FloatNumberWidget;
-    metalnessWidget->setSliderFixedWidth(Theme::sidebarPreferredWidth * 0.4);
-    metalnessWidget->setItemName(tr("Metallic"));
-    metalnessWidget->setRange(0.0, 1.0);
-    metalnessWidget->setValue(m_document->brushMetalness);
-    
-    connect(metalnessWidget, &FloatNumberWidget::valueChanged, [=](float value) {
-        m_document->brushMetalness = value;
-    });
-    
-    QPushButton *metalnessEraser = new QPushButton(QChar(fa::eraser));
-    Theme::initAwesomeToolButtonWithoutFont(metalnessEraser);
-    
-    connect(metalnessEraser, &QPushButton::clicked, [=]() {
-        metalnessWidget->setValue(Model::m_defaultMetalness);
-    });
-    
-    QHBoxLayout *metalnessLayout = new QHBoxLayout;
-    metalnessLayout->addWidget(metalnessEraser);
-    metalnessLayout->addWidget(metalnessWidget);
-    
-    FloatNumberWidget *roughnessWidget = new FloatNumberWidget;
-    roughnessWidget->setSliderFixedWidth(Theme::sidebarPreferredWidth * 0.35);
-    roughnessWidget->setItemName(tr("Roughness"));
-    roughnessWidget->setRange(0.0, 1.0);
-    roughnessWidget->setValue(m_document->brushRoughness);
-    
-    connect(roughnessWidget, &FloatNumberWidget::valueChanged, [=](float value) {
-        m_document->brushRoughness = value;
-    });
-    
-    QPushButton *roughnessEraser = new QPushButton(QChar(fa::eraser));
-    Theme::initAwesomeToolButtonWithoutFont(roughnessEraser);
-    
-    connect(roughnessEraser, &QPushButton::clicked, [=]() {
-        roughnessWidget->setValue(Model::m_defaultRoughness);
-    });
-    
-    QHBoxLayout *roughnessLayout = new QHBoxLayout;
-    roughnessLayout->addWidget(roughnessEraser);
-    roughnessLayout->addWidget(roughnessWidget);
-    
-    QWidget *metalnessAndRoughnessWidget = new QWidget;
-    QVBoxLayout *metalnessAndRoughnessLayout = new QVBoxLayout;
-    metalnessAndRoughnessLayout->addLayout(metalnessLayout);
-    metalnessAndRoughnessLayout->addLayout(roughnessLayout);
-    metalnessAndRoughnessWidget->setLayout(metalnessAndRoughnessLayout);
-    metalnessAndRoughnessWidget->hide();
-    
-    connect(m_document, &Document::editModeChanged, this, [=]() {
-        m_colorWheelWidget->setVisible(SkeletonDocumentEditMode::Paint == m_document->editMode);
-        metalnessAndRoughnessWidget->setVisible(SkeletonDocumentEditMode::Paint == m_document->editMode);
-    });
-    
     m_partTreeWidget = new PartTreeWidget(m_document, nullptr);
-    QWidget *partsWidget = new QWidget(partsDocker);
-    QVBoxLayout *partsLayout = new QVBoxLayout;
-    partsLayout->setContentsMargins(0, 0, 0, 0);
-    partsLayout->addWidget(m_colorWheelWidget);
-    partsLayout->addWidget(metalnessAndRoughnessWidget);
-    partsLayout->addWidget(m_partTreeWidget);
-    partsWidget->setLayout(partsLayout);
-    partsDocker->setWidget(partsWidget);
+    partsDocker->setWidget(m_partTreeWidget);
     addDockWidget(Qt::RightDockWidgetArea, partsDocker);
-    
+
     QDockWidget *materialDocker = new QDockWidget(tr("Materials"), this);
     materialDocker->setAllowedAreas(Qt::RightDockWidgetArea);
     MaterialManageWidget *materialManageWidget = new MaterialManageWidget(m_document, materialDocker);
@@ -503,16 +422,73 @@ DocumentWindow::DocumentWindow() :
     connect(motionManageWidget, &MotionManageWidget::unregisterDialog, this, &DocumentWindow::unregisterDialog);
     addDockWidget(Qt::RightDockWidgetArea, motionDocker);
     
+    QDockWidget *paintDocker = new QDockWidget(tr("Paint"), this);
+    paintDocker->setMinimumWidth(Theme::sidebarPreferredWidth);
+    paintDocker->setAllowedAreas(Qt::RightDockWidgetArea);
+    QPushButton *lockMeshButton = new QPushButton(Theme::awesome()->icon(fa::lock), tr("Lock Object for Painting"));
+    QPushButton *unlockMeshButton = new QPushButton(Theme::awesome()->icon(fa::unlock), tr("Remove Painting"));
+    connect(lockMeshButton, &QPushButton::clicked, this, [=]() {
+        m_document->setMeshLockState(true);
+    });
+    connect(unlockMeshButton, &QPushButton::clicked, this, [this]() {
+        QMessageBox::StandardButton answer = QMessageBox::question(this,
+            APP_NAME,
+            tr("Do you really want to remove painting?"),
+            QMessageBox::Yes | QMessageBox::No,
+            QMessageBox::No);
+        if (answer == QMessageBox::No) {
+            return;
+        }
+        this->m_document->setMeshLockState(false);
+        this->m_document->regenerateMesh();
+    });
+    m_colorWheelWidget = new color_widgets::ColorWheel(nullptr);
+    m_colorWheelWidget->setContentsMargins(0, 5, 0, 5);
+    m_colorWheelWidget->setColor(m_document->brushColor);
+    m_paintWidget = new QWidget(paintDocker);
+    QVBoxLayout *paintLayout = new QVBoxLayout;
+    paintLayout->setContentsMargins(5, 5, 5, 5);
+    paintLayout->addWidget(lockMeshButton);
+    paintLayout->addWidget(unlockMeshButton);
+    paintLayout->addWidget(m_colorWheelWidget);
+    paintLayout->addStretch();
+    m_paintWidget->setLayout(paintLayout);
+    paintDocker->setWidget(m_paintWidget);
+    connect(m_colorWheelWidget, &color_widgets::ColorWheel::colorChanged, this, [=](QColor color) {
+        m_document->brushColor = color;
+    });
+    connect(m_document, &Document::editModeChanged, this, [=]() {
+        if (SkeletonDocumentEditMode::Paint == m_document->editMode) {
+            paintDocker->show();
+            paintDocker->raise();
+        }
+    });
+    auto updatePaintWidgets = [=]() {
+        m_colorWheelWidget->setVisible(m_document->objectLocked);
+        lockMeshButton->setVisible(!m_document->objectLocked);
+        unlockMeshButton->setVisible(m_document->objectLocked);
+    };
+    updatePaintWidgets();
+    connect(m_document, &Document::objectLockStateChanged, this, [=]() {
+        updatePaintWidgets();
+    });
+    addDockWidget(Qt::RightDockWidgetArea, paintDocker);
+    
     QDockWidget *scriptDocker = new QDockWidget(tr("Script"), this);
     scriptDocker->setAllowedAreas(Qt::RightDockWidgetArea);
     ScriptWidget *scriptWidget = new ScriptWidget(m_document, scriptDocker);
+    scriptDocker->setVisible(Preferences::instance().scriptEnabled());
+    connect(&Preferences::instance(), &Preferences::scriptEnabledChanged, this, [=]() {
+        scriptDocker->setVisible(Preferences::instance().scriptEnabled());
+    });
     scriptDocker->setWidget(scriptWidget);
     addDockWidget(Qt::RightDockWidgetArea, scriptDocker);
     
     tabifyDockWidget(partsDocker, materialDocker);
     tabifyDockWidget(materialDocker, rigDocker);
     tabifyDockWidget(rigDocker, motionDocker);
-    tabifyDockWidget(motionDocker, scriptDocker);
+    tabifyDockWidget(motionDocker, paintDocker);
+    tabifyDockWidget(paintDocker, scriptDocker);
     
     partsDocker->raise();
     
@@ -592,23 +568,21 @@ DocumentWindow::DocumentWindow() :
     
     m_fileMenu->addSeparator();
 
-    //m_exportMenu = m_fileMenu->addMenu(tr("Export"));
-
-    m_exportAction = new QAction(tr("Export..."), this);
-    connect(m_exportAction, &QAction::triggered, this, &DocumentWindow::showExportPreview, Qt::QueuedConnection);
-    m_fileMenu->addAction(m_exportAction);
-    
     m_exportAsObjAction = new QAction(tr("Export as OBJ..."), this);
     connect(m_exportAsObjAction, &QAction::triggered, this, &DocumentWindow::exportObjResult, Qt::QueuedConnection);
     m_fileMenu->addAction(m_exportAsObjAction);
     
+    m_exportAsGlbAction = new QAction(tr("Export as GLB..."), this);
+    connect(m_exportAsGlbAction, &QAction::triggered, this, &DocumentWindow::exportGlbResult, Qt::QueuedConnection);
+    m_fileMenu->addAction(m_exportAsGlbAction);
+    
+    m_exportAsFbxAction = new QAction(tr("Export as FBX..."), this);
+    connect(m_exportAsFbxAction, &QAction::triggered, this, &DocumentWindow::exportFbxResult, Qt::QueuedConnection);
+    m_fileMenu->addAction(m_exportAsFbxAction);
+    
     m_exportRenderedAsImageAction = new QAction(tr("Export as Image..."), this);
     connect(m_exportRenderedAsImageAction, &QAction::triggered, this, &DocumentWindow::exportRenderedResult, Qt::QueuedConnection);
     m_fileMenu->addAction(m_exportRenderedAsImageAction);
-    
-    //m_exportAsObjPlusMaterialsAction = new QAction(tr("Wavefront (.obj + .mtl)..."), this);
-    //connect(m_exportAsObjPlusMaterialsAction, &QAction::triggered, this, &SkeletonDocumentWindow::exportObjPlusMaterialsResult, Qt::QueuedConnection);
-    //m_exportMenu->addAction(m_exportAsObjPlusMaterialsAction);
     
     m_fileMenu->addSeparator();
 
@@ -624,8 +598,8 @@ DocumentWindow::DocumentWindow() :
 
     connect(m_fileMenu, &QMenu::aboutToShow, [=]() {
         m_exportAsObjAction->setEnabled(m_graphicsWidget->hasItems());
-        //m_exportAsObjPlusMaterialsAction->setEnabled(m_graphicsWidget->hasItems());
-        m_exportAction->setEnabled(m_graphicsWidget->hasItems());
+        m_exportAsGlbAction->setEnabled(m_graphicsWidget->hasItems() && m_document->isExportReady());
+        m_exportAsFbxAction->setEnabled(m_graphicsWidget->hasItems() && m_document->isExportReady());
         m_exportRenderedAsImageAction->setEnabled(m_graphicsWidget->hasItems());
     });
 
@@ -862,8 +836,8 @@ DocumentWindow::DocumentWindow() :
     connect(m_toggleColorAction, &QAction::triggered, [&]() {
         m_modelRemoveColor = !m_modelRemoveColor;
         Model *mesh = nullptr;
-        if (m_document->isMeshGenerating() &&
-                m_document->isPostProcessing() &&
+        if (m_document->isMeshGenerating() ||
+                m_document->isPostProcessing() ||
                 m_document->isTextureGenerating()) {
             mesh = m_document->takeResultMesh();
         } else {
@@ -914,6 +888,13 @@ DocumentWindow::DocumentWindow() :
         motionDocker->raise();
     });
     m_windowMenu->addAction(m_showMotionsAction);
+    
+    m_showPaintAction = new QAction(tr("Paint"), this);
+    connect(m_showPaintAction, &QAction::triggered, [=]() {
+        paintDocker->show();
+        paintDocker->raise();
+    });
+    m_windowMenu->addAction(m_showPaintAction);
     
     m_showScriptAction = new QAction(tr("Script"), this);
     connect(m_showScriptAction, &QAction::triggered, [=]() {
@@ -1008,9 +989,9 @@ DocumentWindow::DocumentWindow() :
     //    m_document->setEditMode(SkeletonDocumentEditMode::Mark);
     //});
     
-    //connect(paintButton, &QPushButton::clicked, [=]() {
-    //    m_document->setEditMode(SkeletonDocumentEditMode::Paint);
-    //});
+    connect(paintButton, &QPushButton::clicked, [=]() {
+        m_document->setEditMode(SkeletonDocumentEditMode::Paint);
+    });
 
     //connect(dragButton, &QPushButton::clicked, [=]() {
     //    m_document->setEditMode(SkeletonDocumentEditMode::Drag);
@@ -1250,6 +1231,10 @@ DocumentWindow::DocumentWindow() :
             resultTextureMesh->removeColor();
         m_modelRenderWidget->updateMesh(resultTextureMesh);
     });
+    connect(m_document, &Document::resultColorTextureChanged, [=]() {
+        if (nullptr != m_document->textureImage)
+            m_modelRenderWidget->updateColorTexture(new QImage(*m_document->textureImage));
+    });
     
     connect(m_document, &Document::resultMeshChanged, [=]() {
         auto resultMesh = m_document->takeResultMesh();
@@ -1321,6 +1306,28 @@ DocumentWindow::DocumentWindow() :
             graphicsWidget->setFocus();
     });
     timer->start();
+}
+
+void DocumentWindow::updateRegenerateIcon()
+{
+    if (m_document->isMeshGenerating() ||
+            m_document->isPostProcessing() ||
+            m_document->isTextureGenerating()) {
+        m_regenerateButton->showSpinner(true);
+        if (nullptr != m_paintWidget)
+            m_paintWidget->hide();
+    } else {
+        m_regenerateButton->showSpinner(false);
+        if (m_document->objectLocked) {
+            m_regenerateButton->setToolTip(tr("Object locked for painting"));
+            m_regenerateButton->setAwesomeIcon(QChar(fa::lock));
+        } else {
+            m_regenerateButton->setToolTip(m_isLastMeshGenerationSucceed ? tr("Regenerate") : tr("Mesh generation failed, please undo or adjust recent changed nodes\nTips:\n  - Don't let generated mesh self-intersect\n  - Make multiple parts instead of one single part for whole model"));
+            m_regenerateButton->setAwesomeIcon(m_isLastMeshGenerationSucceed ? QChar(fa::recycle) : QChar(fa::warning));
+        }
+        if (nullptr != m_paintWidget)
+            m_paintWidget->show();
+    }
 }
 
 void DocumentWindow::toggleRotation()
@@ -1577,14 +1584,59 @@ void DocumentWindow::saveTo(const QString &saveAsFilename)
     QApplication::setOverrideCursor(Qt::WaitCursor);
     Snapshot snapshot;
     m_document->toSnapshot(&snapshot);
+    DocumentSaver::Textures textures;
+    textures.textureImage = m_document->textureImage;
+    textures.textureImageByteArray = m_document->textureImageByteArray;
+    textures.textureNormalImage = m_document->textureNormalImage;
+    textures.textureNormalImageByteArray = m_document->textureNormalImageByteArray;
+    textures.textureMetalnessImage = m_document->textureMetalnessImage;
+    textures.textureMetalnessImageByteArray = m_document->textureMetalnessImageByteArray;
+    textures.textureRoughnessImage = m_document->textureRoughnessImage;
+    textures.textureRoughnessImageByteArray = m_document->textureRoughnessImageByteArray;
+    textures.textureAmbientOcclusionImage = m_document->textureAmbientOcclusionImage;
+    textures.textureAmbientOcclusionImageByteArray = m_document->textureAmbientOcclusionImageByteArray;
+    textures.textureHasTransparencySettings = m_document->textureHasTransparencySettings;
     if (DocumentSaver::save(&filename, 
             &snapshot, 
+            &m_document->currentPostProcessedObject(),
+            &textures,
             (!m_document->turnaround.isNull() && m_document->turnaroundPngByteArray.size() > 0) ? 
                 &m_document->turnaroundPngByteArray : nullptr,
             (!m_document->script().isEmpty()) ? &m_document->script() : nullptr,
             (!m_document->variables().empty()) ? &m_document->variables() : nullptr)) {
         setCurrentFilename(filename);
     }
+    textures.textureImage = nullptr;
+    textures.textureNormalImage = nullptr;
+    textures.textureMetalnessImage = nullptr;
+    textures.textureRoughnessImage = nullptr;
+    textures.textureAmbientOcclusionImage = nullptr;
+    
+    if (textures.textureImageByteArray != m_document->textureImageByteArray)
+        std::swap(textures.textureImageByteArray, m_document->textureImageByteArray);
+    else
+        textures.textureImageByteArray = nullptr;
+    
+    if (textures.textureNormalImageByteArray != m_document->textureNormalImageByteArray)
+        std::swap(textures.textureNormalImageByteArray, m_document->textureNormalImageByteArray);
+    else
+        textures.textureNormalImageByteArray = nullptr;
+    
+    if (textures.textureMetalnessImageByteArray != m_document->textureMetalnessImageByteArray)
+        std::swap(textures.textureMetalnessImageByteArray, m_document->textureMetalnessImageByteArray);
+    else
+        textures.textureMetalnessImageByteArray = nullptr;
+    
+    if (textures.textureRoughnessImageByteArray != m_document->textureRoughnessImageByteArray)
+        std::swap(textures.textureRoughnessImageByteArray, m_document->textureRoughnessImageByteArray);
+    else
+        textures.textureRoughnessImageByteArray = nullptr;
+    
+    if (textures.textureAmbientOcclusionImageByteArray != m_document->textureAmbientOcclusionImageByteArray)
+        std::swap(textures.textureAmbientOcclusionImageByteArray, m_document->textureAmbientOcclusionImageByteArray);
+    else
+        textures.textureAmbientOcclusionImageByteArray = nullptr;
+    
     QApplication::restoreOverrideCursor();
 }
 
@@ -1767,8 +1819,27 @@ void DocumentWindow::openPathAs(const QString &path, const QString &asName)
                 if (item.name == "canvas.png") {
                     QByteArray data;
                     ds3Reader.loadItem(item.name, &data);
-                    QImage image = QImage::fromData(data, "PNG");
-                    m_document->updateTurnaround(image);
+                    m_document->updateTurnaround(QImage::fromData(data, "PNG"));
+                } else if (item.name == "object_color.png") {
+                    QByteArray data;
+                    ds3Reader.loadItem(item.name, &data);
+                    m_document->updateTextureImage(new QImage(QImage::fromData(data, "PNG")));
+                } else if (item.name == "object_normal.png") {
+                    QByteArray data;
+                    ds3Reader.loadItem(item.name, &data);
+                    m_document->updateTextureNormalImage(new QImage(QImage::fromData(data, "PNG")));
+                } else if (item.name == "object_metallic.png") {
+                    QByteArray data;
+                    ds3Reader.loadItem(item.name, &data);
+                    m_document->updateTextureMetalnessImage(new QImage(QImage::fromData(data, "PNG")));
+                } else if (item.name == "object_roughness.png") {
+                    QByteArray data;
+                    ds3Reader.loadItem(item.name, &data);
+                    m_document->updateTextureRoughnessImage(new QImage(QImage::fromData(data, "PNG")));
+                } else if (item.name == "object_ao.png") {
+                    QByteArray data;
+                    ds3Reader.loadItem(item.name, &data);
+                    m_document->updateTextureAmbientOcclusionImage(new QImage(QImage::fromData(data, "PNG")));
                 }
             } else if (item.type == "script") {
                 if (item.name == "model.js") {
@@ -1786,6 +1857,18 @@ void DocumentWindow::openPathAs(const QString &path, const QString &asName)
                     for (const auto &it: variables)
                         m_document->updateVariable(it.first, it.second);
                 }
+            }
+        }
+        
+        for (int i = 0; i < ds3Reader.items().size(); ++i) {
+            Ds3ReaderItem item = ds3Reader.items().at(i);
+            if (item.type == "object") {
+                QByteArray data;
+                ds3Reader.loadItem(item.name, &data);
+                QXmlStreamReader stream(data);
+                Object *object = new Object;
+                loadObjectFromXmlStream(object, stream);
+                m_document->updateObject(object);
             }
         }
     }
@@ -1874,23 +1957,6 @@ void DocumentWindow::exportObjToFilename(const QString &filename)
     QApplication::restoreOverrideCursor();
 }
 
-void DocumentWindow::showExportPreview()
-{
-    if (nullptr == m_exportPreviewWidget) {
-        m_exportPreviewWidget = new ExportPreviewWidget(m_document, this);
-        connect(m_exportPreviewWidget, &ExportPreviewWidget::regenerate, m_document, &Document::regenerateMesh);
-        connect(m_exportPreviewWidget, &ExportPreviewWidget::saveAsGlb, this, &DocumentWindow::exportGlbResult);
-        connect(m_exportPreviewWidget, &ExportPreviewWidget::saveAsFbx, this, &DocumentWindow::exportFbxResult);
-        connect(m_document, &Document::resultMeshChanged, m_exportPreviewWidget, &ExportPreviewWidget::checkSpinner);
-        connect(m_document, &Document::exportReady, m_exportPreviewWidget, &ExportPreviewWidget::checkSpinner);
-        connect(m_document, &Document::resultTextureChanged, m_exportPreviewWidget, &ExportPreviewWidget::updateTexturePreview);
-        //connect(m_document, &Document::resultBakedTextureChanged, m_exportPreviewWidget, &ExportPreviewWidget::updateTexturePreview);
-        registerDialog(m_exportPreviewWidget);
-    }
-    m_exportPreviewWidget->show();
-    m_exportPreviewWidget->raise();
-}
-
 void DocumentWindow::exportFbxResult()
 {
     QString filename = QFileDialog::getSaveFileName(this, QString(), QString(),
@@ -1909,7 +1975,7 @@ void DocumentWindow::exportFbxToFilename(const QString &filename)
         return;
     }
     QApplication::setOverrideCursor(Qt::WaitCursor);
-    Outcome skeletonResult = m_document->currentPostProcessedOutcome();
+    Object skeletonResult = m_document->currentPostProcessedObject();
     std::vector<std::pair<QString, std::vector<std::pair<float, JointNodeTree>>>> exportMotions;
     for (const auto &motionIt: m_document->motionMap) {
         exportMotions.push_back({motionIt.second.name, motionIt.second.jointNodeTrees});
@@ -1943,15 +2009,20 @@ void DocumentWindow::exportGlbToFilename(const QString &filename)
         return;
     }
     QApplication::setOverrideCursor(Qt::WaitCursor);
-    Outcome skeletonResult = m_document->currentPostProcessedOutcome();
+    Object skeletonResult = m_document->currentPostProcessedObject();
     std::vector<std::pair<QString, std::vector<std::pair<float, JointNodeTree>>>> exportMotions;
     for (const auto &motionIt: m_document->motionMap) {
         exportMotions.push_back({motionIt.second.name, motionIt.second.jointNodeTrees});
     }
+    QImage *textureMetalnessRoughnessAmbientOcclusionImage = 
+        TextureGenerator::combineMetalnessRoughnessAmbientOcclusionImages(m_document->textureMetalnessImage,
+            m_document->textureRoughnessImage,
+            m_document->textureAmbientOcclusionImage);
     GlbFileWriter glbFileWriter(skeletonResult, m_document->resultRigBones(), m_document->resultRigWeights(), filename,
         m_document->textureHasTransparencySettings,
-        m_document->textureImage, m_document->textureNormalImage, m_document->textureMetalnessRoughnessAmbientOcclusionImage, exportMotions.empty() ? nullptr : &exportMotions);
+        m_document->textureImage, m_document->textureNormalImage, textureMetalnessRoughnessAmbientOcclusionImage, exportMotions.empty() ? nullptr : &exportMotions);
     glbFileWriter.save();
+    delete textureMetalnessRoughnessAmbientOcclusionImage;
     QApplication::restoreOverrideCursor();
 }
 

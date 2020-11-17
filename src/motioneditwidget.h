@@ -7,7 +7,7 @@
 #include <QUuid>
 #include "vertebratamotion.h"
 #include "rigger.h"
-#include "outcome.h"
+#include "object.h"
 
 class SimpleShaderWidget;
 class MotionsGenerator;
@@ -33,7 +33,7 @@ public slots:
     void updateBones(RigType rigType,
         const std::vector<RiggerBone> *rigBones,
         const std::map<int, RiggerVertexWeights> *rigWeights,
-        const Outcome *outcome);
+        const Object *object);
     void setEditMotionName(const QString &name);
     void setEditMotionId(const QUuid &motionId);
     void setEditMotionParameters(const std::map<QString, QString> &parameters);
@@ -57,7 +57,7 @@ private:
     RigType m_rigType = RigType::None;
     std::vector<RiggerBone> *m_bones = nullptr;
     std::map<int, RiggerVertexWeights> *m_rigWeights = nullptr;
-    Outcome *m_outcome = nullptr;
+    Object *m_object = nullptr;
     QLineEdit *m_nameEdit = nullptr;
     bool m_unsaved = false;
     bool m_closed = false;

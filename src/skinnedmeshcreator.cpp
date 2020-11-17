@@ -1,20 +1,20 @@
 #include "skinnedmeshcreator.h"
 #include "theme.h"
 
-SkinnedMeshCreator::SkinnedMeshCreator(const Outcome &outcome,
+SkinnedMeshCreator::SkinnedMeshCreator(const Object &object,
         const std::map<int, RiggerVertexWeights> &resultWeights) :
-    m_outcome(outcome),
+    m_object(object),
     m_resultWeights(resultWeights)
 {
-    m_verticesOldIndices.resize(m_outcome.triangles.size());
-    m_verticesBindNormals.resize(m_outcome.triangles.size());
-    m_verticesBindPositions.resize(m_outcome.triangles.size());
-    const std::vector<std::vector<QVector3D>> *triangleVertexNormals = m_outcome.triangleVertexNormals();
-    for (size_t triangleIndex = 0; triangleIndex < m_outcome.triangles.size(); triangleIndex++) {
+    m_verticesOldIndices.resize(m_object.triangles.size());
+    m_verticesBindNormals.resize(m_object.triangles.size());
+    m_verticesBindPositions.resize(m_object.triangles.size());
+    const std::vector<std::vector<QVector3D>> *triangleVertexNormals = m_object.triangleVertexNormals();
+    for (size_t triangleIndex = 0; triangleIndex < m_object.triangles.size(); triangleIndex++) {
         for (int j = 0; j < 3; j++) {
-            int oldIndex = m_outcome.triangles[triangleIndex][j];
+            int oldIndex = m_object.triangles[triangleIndex][j];
             m_verticesOldIndices[triangleIndex].push_back(oldIndex);
-            m_verticesBindPositions[triangleIndex].push_back(m_outcome.vertices[oldIndex]);
+            m_verticesBindPositions[triangleIndex].push_back(m_object.vertices[oldIndex]);
             if (nullptr != triangleVertexNormals)
                 m_verticesBindNormals[triangleIndex].push_back((*triangleVertexNormals)[triangleIndex][j]);
             else
@@ -23,13 +23,13 @@ SkinnedMeshCreator::SkinnedMeshCreator(const Outcome &outcome,
     }
     
     std::map<std::pair<QUuid, QUuid>, QColor> sourceNodeToColorMap;
-    for (const auto &node: outcome.nodes)
+    for (const auto &node: object.nodes)
         sourceNodeToColorMap.insert({{node.partId, node.nodeId}, node.color});
     
-    m_triangleColors.resize(m_outcome.triangles.size(), Theme::white);
-    const std::vector<std::pair<QUuid, QUuid>> *triangleSourceNodes = outcome.triangleSourceNodes();
+    m_triangleColors.resize(m_object.triangles.size(), Theme::white);
+    const std::vector<std::pair<QUuid, QUuid>> *triangleSourceNodes = object.triangleSourceNodes();
     if (nullptr != triangleSourceNodes) {
-        for (size_t triangleIndex = 0; triangleIndex < m_outcome.triangles.size(); triangleIndex++) {
+        for (size_t triangleIndex = 0; triangleIndex < m_object.triangles.size(); triangleIndex++) {
             const auto &source = (*triangleSourceNodes)[triangleIndex];
             m_triangleColors[triangleIndex] = sourceNodeToColorMap[source];
         }
@@ -59,9 +59,9 @@ Model *SkinnedMeshCreator::createMeshFromTransform(const std::vector<QMatrix4x4>
         }
     }
     
-    ShaderVertex *triangleVertices = new ShaderVertex[m_outcome.triangles.size() * 3];
+    ShaderVertex *triangleVertices = new ShaderVertex[m_object.triangles.size() * 3];
     int triangleVerticesNum = 0;
-    for (size_t triangleIndex = 0; triangleIndex < m_outcome.triangles.size(); triangleIndex++) {
+    for (size_t triangleIndex = 0; triangleIndex < m_object.triangles.size(); triangleIndex++) {
         for (int i = 0; i < 3; i++) {
             ShaderVertex &currentVertex = triangleVertices[triangleVerticesNum++];
             const auto &sourcePosition = transformedPositions[triangleIndex][i];

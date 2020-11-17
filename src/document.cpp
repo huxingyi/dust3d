@@ -28,20 +28,22 @@ const size_t Component::defaultClothIteration = 350;
 Document::Document() :
     SkeletonDocument(),
     // public
-    textureGuideImage(nullptr),
     textureImage(nullptr),
-    textureBorderImage(nullptr),
-    textureColorImage(nullptr),
+    textureImageByteArray(nullptr),
     textureNormalImage(nullptr),
-    textureMetalnessRoughnessAmbientOcclusionImage(nullptr),
+    textureNormalImageByteArray(nullptr),
     textureMetalnessImage(nullptr),
+    textureMetalnessImageByteArray(nullptr),
     textureRoughnessImage(nullptr),
+    textureRoughnessImageByteArray(nullptr),
     textureAmbientOcclusionImage(nullptr),
+    textureAmbientOcclusionImageByteArray(nullptr),
     textureHasTransparencySettings(false),
     rigType(RigType::None),
     weldEnabled(true),
     polyCount(PolyCount::Original),
     brushColor(Qt::white),
+    objectLocked(false),
     // private
     m_isResultMeshObsolete(false),
     m_meshGenerator(nullptr),
@@ -51,12 +53,12 @@ Document::Document() :
     m_resultMeshNodesCutFaces(nullptr),
     m_isMeshGenerationSucceed(true),
     m_batchChangeRefCount(0),
-    m_currentOutcome(nullptr),
+    m_currentObject(nullptr),
     m_isTextureObsolete(false),
     m_textureGenerator(nullptr),
     m_isPostProcessResultObsolete(false),
     m_postProcessor(nullptr),
-    m_postProcessedOutcome(new Outcome),
+    m_postProcessedObject(new Object),
     m_resultTextureMesh(nullptr),
     m_textureImageUpdateVersion(0),
     m_allPositionRelatedLocksEnabled(true),
@@ -66,7 +68,7 @@ Document::Document() :
     m_resultRigBones(nullptr),
     m_resultRigWeights(nullptr),
     m_isRigObsolete(false),
-    m_riggedOutcome(new Outcome),
+    m_riggedObject(new Object),
     m_currentRigSucceed(false),
     m_materialPreviewsGenerator(nullptr),
     m_motionsGenerator(nullptr),
@@ -74,13 +76,13 @@ Document::Document() :
     m_nextMeshGenerationId(1),
     m_scriptRunner(nullptr),
     m_isScriptResultObsolete(false),
-    m_vertexColorPainter(nullptr),
+    m_texturePainter(nullptr),
     m_isMouseTargetResultObsolete(false),
     m_paintMode(PaintMode::None),
-    m_mousePickRadius(0.05),
+    m_mousePickRadius(0.02),
     m_saveNextPaintSnapshot(false),
-    m_vertexColorVoxelGrid(nullptr),
-    m_generatedCacheContext(nullptr)
+    m_generatedCacheContext(nullptr),
+    m_texturePainterContext(nullptr)
 {
     connect(&Preferences::instance(), &Preferences::partColorChanged, this, &Document::applyPreferencePartColorChange);
     connect(&Preferences::instance(), &Preferences::flatShadingChanged, this, &Document::applyPreferenceFlatShadingChange);
@@ -109,16 +111,17 @@ Document::~Document()
     delete m_paintedMesh;
     //delete m_resultMeshCutFaceTransforms;
     delete m_resultMeshNodesCutFaces;
-    delete m_postProcessedOutcome;
-    delete textureGuideImage;
+    delete m_postProcessedObject;
     delete textureImage;
-    delete textureColorImage;
+    delete textureImageByteArray;
     delete textureNormalImage;
-    delete textureMetalnessRoughnessAmbientOcclusionImage;
+    delete textureNormalImageByteArray;
     delete textureMetalnessImage;
+    delete textureMetalnessImageByteArray;
     delete textureRoughnessImage;
+    delete textureRoughnessImageByteArray;
     delete textureAmbientOcclusionImage;
-    delete textureBorderImage;
+    delete textureAmbientOcclusionImageByteArray;
     delete m_resultTextureMesh;
     delete m_resultRigWeightMesh;
 }
@@ -925,15 +928,84 @@ void Document::updateTurnaround(const QImage &image)
     emit turnaroundChanged();
 }
 
+void Document::updateTextureImage(QImage *image)
+{
+    delete textureImageByteArray;
+    textureImageByteArray = nullptr;
+    
+    delete textureImage;
+    textureImage = image;
+}
+
+void Document::updateTextureNormalImage(QImage *image)
+{
+    delete textureNormalImageByteArray;
+    textureNormalImageByteArray = nullptr;
+    
+    delete textureNormalImage;
+    textureNormalImage = image;
+}
+
+void Document::updateTextureMetalnessImage(QImage *image)
+{
+    delete textureMetalnessImageByteArray;
+    textureMetalnessImageByteArray = nullptr;
+    
+    delete textureMetalnessImage;
+    textureMetalnessImage = image;
+}
+
+void Document::updateTextureRoughnessImage(QImage *image)
+{
+    delete textureRoughnessImageByteArray;
+    textureRoughnessImageByteArray = nullptr;
+    
+    delete textureRoughnessImage;
+    textureRoughnessImage = image;
+}
+
+void Document::updateTextureAmbientOcclusionImage(QImage *image)
+{
+    delete textureAmbientOcclusionImageByteArray;
+    textureAmbientOcclusionImageByteArray = nullptr;
+    
+    delete textureAmbientOcclusionImage;
+    textureAmbientOcclusionImage = image;
+}
+
 void Document::setEditMode(SkeletonDocumentEditMode mode)
 {
     if (editMode == mode)
+        return;
+    
+    if (SkeletonDocumentEditMode::Paint == mode && !objectLocked)
         return;
     
     editMode = mode;
     if (editMode != SkeletonDocumentEditMode::Paint)
         m_paintMode = PaintMode::None;
     emit editModeChanged();
+}
+
+void Document::setMeshLockState(bool locked)
+{
+    if (objectLocked == locked)
+        return;
+    
+    objectLocked = locked;
+    if (locked) {
+        if (SkeletonDocumentEditMode::Paint != editMode) {
+            editMode = SkeletonDocumentEditMode::Paint;
+            emit editModeChanged();
+        }
+    } else {
+        if (SkeletonDocumentEditMode::Paint == editMode) {
+            editMode = SkeletonDocumentEditMode::Select;
+            emit editModeChanged();
+        }
+    }
+    emit objectLockStateChanged();
+    emit textureChanged();
 }
 
 void Document::setPaintMode(PaintMode mode)
@@ -944,7 +1016,7 @@ void Document::setPaintMode(PaintMode mode)
     m_paintMode = mode;
     emit paintModeChanged();
     
-    paintVertexColors();
+    paint();
 }
 
 void Document::joinNodeAndNeiborsToGroup(std::vector<QUuid> *group, QUuid nodeId, std::set<QUuid> *visitMap, QUuid noUseEdgeId)
@@ -1085,7 +1157,7 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
             if (partIt.second.colorSolubilityAdjusted())
                 part["colorSolubility"] = QString::number(partIt.second.colorSolubility);
             if (partIt.second.metalnessAdjusted())
-                part["metalness"] = QString::number(partIt.second.metalness);
+                part["metallic"] = QString::number(partIt.second.metalness);
             if (partIt.second.roughnessAdjusted())
                 part["roughness"] = QString::number(partIt.second.roughness);
             if (partIt.second.deformThicknessAdjusted())
@@ -1260,6 +1332,8 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
         canvas["rigType"] = RigTypeToString(rigType);
         if (this->polyCount != PolyCount::Original)
             canvas["polyCount"] = PolyCountToString(this->polyCount);
+        if (this->objectLocked)
+            canvas["objectLocked"] = "true";
         snapshot->canvas = canvas;
     }
 }
@@ -1349,10 +1423,17 @@ void Document::createSinglePartFromEdges(const std::vector<QVector3D> &nodes,
     emit skeletonChanged();
 }
 
+void Document::updateObject(Object *object)
+{
+    delete m_postProcessedObject;
+    m_postProcessedObject = object;
+}
+
 void Document::addFromSnapshot(const Snapshot &snapshot, enum SnapshotSource source)
 {
     bool isOriginChanged = false;
     bool isRigTypeChanged = false;
+    bool isMeshLockedChanged = false;
     if (SnapshotSource::Paste != source &&
             SnapshotSource::Import != source) {
         this->polyCount = PolyCountFromString(valueOfKeyInMapOrEmpty(snapshot.canvas, "polyCount").toUtf8().constData());
@@ -1370,6 +1451,11 @@ void Document::addFromSnapshot(const Snapshot &snapshot, enum SnapshotSource sou
         const auto &rigTypeIt = snapshot.canvas.find("rigType");
         if (rigTypeIt != snapshot.canvas.end()) {
             rigType = RigTypeFromString(rigTypeIt->second.toUtf8().constData());
+        }
+        bool setMeshLocked = isTrueValueString(valueOfKeyInMapOrEmpty(snapshot.canvas, "objectLocked"));
+        if (this->objectLocked != setMeshLocked) {
+            this->objectLocked = setMeshLocked;
+            isMeshLockedChanged = true;
         }
         isRigTypeChanged = true;
     }
@@ -1476,7 +1562,7 @@ void Document::addFromSnapshot(const Snapshot &snapshot, enum SnapshotSource sou
         const auto &colorSolubilityIt = partKv.second.find("colorSolubility");
         if (colorSolubilityIt != partKv.second.end())
             part.colorSolubility = colorSolubilityIt->second.toFloat();
-        const auto &metalnessIt = partKv.second.find("metalness");
+        const auto &metalnessIt = partKv.second.find("metallic");
         if (metalnessIt != partKv.second.end())
             part.metalness = metalnessIt->second.toFloat();
         const auto &roughnessIt = partKv.second.find("roughness");
@@ -1705,6 +1791,9 @@ void Document::addFromSnapshot(const Snapshot &snapshot, enum SnapshotSource sou
         emit materialListChanged();
     if (!snapshot.motions.empty())
         emit motionListChanged();
+    
+    if (isMeshLockedChanged)
+        emit objectLockStateChanged();
 }
 
 void Document::silentReset()
@@ -1797,17 +1886,21 @@ Model *Document::takeResultRigWeightMesh()
 void Document::meshReady()
 {
     Model *resultMesh = m_meshGenerator->takeResultMesh();
-    Outcome *outcome = m_meshGenerator->takeOutcome();
+    Object *object = m_meshGenerator->takeObject();
     bool isSuccessful = m_meshGenerator->isSuccessful();
     
+    bool partPreviewsChanged = false;
     for (auto &partId: m_meshGenerator->generatedPreviewPartIds()) {
         auto part = partMap.find(partId);
         if (part != partMap.end()) {
             Model *resultPartPreviewMesh = m_meshGenerator->takePartPreviewMesh(partId);
             part->second.updatePreviewMesh(resultPartPreviewMesh);
+            partPreviewsChanged = true;
             //emit partPreviewChanged(partId);
         }
     }
+    if (partPreviewsChanged)
+        emit resultPartPreviewsChanged();
     
     delete m_resultMesh;
     m_resultMesh = resultMesh;
@@ -1822,8 +1915,8 @@ void Document::meshReady()
     
     m_isMeshGenerationSucceed = isSuccessful;
     
-    delete m_currentOutcome;
-    m_currentOutcome = outcome;
+    delete m_currentObject;
+    m_currentObject = object;
     
     if (nullptr == m_resultMesh) {
         qDebug() << "Result mesh is null";
@@ -1836,11 +1929,35 @@ void Document::meshReady()
     
     m_isPostProcessResultObsolete = true;
     m_isRigObsolete = true;
-    
     emit resultMeshChanged();
     
     if (m_isResultMeshObsolete) {
         generateMesh();
+    } else {
+        if (objectLocked) {
+            emit postProcessedResultChanged();
+            
+            if (nullptr != m_postProcessedObject) {
+                Model *model = new Model(*m_postProcessedObject);
+                if (nullptr != textureImage)
+                    model->setTextureImage(new QImage(*textureImage));
+                if (nullptr != textureNormalImage)
+                    model->setNormalMapImage(new QImage(*textureNormalImage));
+                if (nullptr != textureMetalnessImage || nullptr != textureRoughnessImage || nullptr != textureAmbientOcclusionImage) {
+                    model->setMetalnessRoughnessAmbientOcclusionImage(TextureGenerator::combineMetalnessRoughnessAmbientOcclusionImages(
+                        textureMetalnessImage,
+                        textureRoughnessImage,
+                        textureAmbientOcclusionImage));
+                    model->setHasMetalnessInImage(nullptr != textureMetalnessImage);
+                    model->setHasRoughnessInImage(nullptr != textureRoughnessImage);
+                    model->setHasAmbientOcclusionInImage(nullptr != textureAmbientOcclusionImage);
+                }
+                model->setMeshId(m_nextMeshGenerationId++);
+                delete m_resultTextureMesh;
+                m_resultTextureMesh = model;
+                emit resultTextureChanged();
+            }
+        }
     }
 }
 
@@ -1896,6 +2013,9 @@ void Document::batchChangeEnd()
 
 void Document::regenerateMesh()
 {
+    if (objectLocked)
+        return;
+    
     markAllDirty();
     generateMesh();
 }
@@ -1951,6 +2071,9 @@ void Document::generateMesh()
 
 void Document::generateTexture()
 {
+    if (objectLocked)
+        return;
+    
     if (nullptr != m_textureGenerator) {
         m_isTextureObsolete = true;
         return;
@@ -1965,7 +2088,7 @@ void Document::generateTexture()
     toSnapshot(snapshot);
     
     QThread *thread = new QThread;
-    m_textureGenerator = new TextureGenerator(*m_postProcessedOutcome, snapshot);
+    m_textureGenerator = new TextureGenerator(*m_postProcessedObject, snapshot);
     m_textureGenerator->moveToThread(thread);
     connect(thread, &QThread::started, m_textureGenerator, &TextureGenerator::process);
     connect(m_textureGenerator, &TextureGenerator::finished, this, &Document::textureReady);
@@ -1976,40 +2099,17 @@ void Document::generateTexture()
 
 void Document::textureReady()
 {
-    delete textureGuideImage;
-    textureGuideImage = m_textureGenerator->takeResultTextureGuideImage();
-    
-    delete textureImage;
-    textureImage = m_textureGenerator->takeResultTextureImage();
-    
-    delete textureBorderImage;
-    textureBorderImage = m_textureGenerator->takeResultTextureBorderImage();
-    
-    delete textureColorImage;
-    textureColorImage = m_textureGenerator->takeResultTextureColorImage();
-    
-    delete textureNormalImage;
-    textureNormalImage = m_textureGenerator->takeResultTextureNormalImage();
-    
-    delete textureMetalnessRoughnessAmbientOcclusionImage;
-    textureMetalnessRoughnessAmbientOcclusionImage = m_textureGenerator->takeResultTextureMetalnessRoughnessAmbientOcclusionImage();
-    
-    delete textureMetalnessImage;
-    textureMetalnessImage = m_textureGenerator->takeResultTextureMetalnessImage();
-    
-    delete textureRoughnessImage;
-    textureRoughnessImage = m_textureGenerator->takeResultTextureRoughnessImage();
-    
-    delete textureAmbientOcclusionImage;
-    textureAmbientOcclusionImage = m_textureGenerator->takeResultTextureAmbientOcclusionImage();
+    updateTextureImage(m_textureGenerator->takeResultTextureColorImage());
+    updateTextureNormalImage(m_textureGenerator->takeResultTextureNormalImage());
+    updateTextureMetalnessImage(m_textureGenerator->takeResultTextureMetalnessImage());
+    updateTextureRoughnessImage(m_textureGenerator->takeResultTextureRoughnessImage());
+    updateTextureAmbientOcclusionImage(m_textureGenerator->takeResultTextureAmbientOcclusionImage());
     
     delete m_resultTextureMesh;
     m_resultTextureMesh = m_textureGenerator->takeResultMesh();
     
     textureHasTransparencySettings = m_textureGenerator->hasTransparencySettings();
-    
-    //addToolToMesh(m_resultTextureMesh);
-    
+
     m_textureImageUpdateVersion++;
     
     delete m_textureGenerator;
@@ -2028,6 +2128,11 @@ void Document::textureReady()
 
 void Document::postProcess()
 {
+    if (objectLocked) {
+        m_isPostProcessResultObsolete = true;
+        return;
+    }
+    
     if (nullptr != m_postProcessor) {
         m_isPostProcessResultObsolete = true;
         return;
@@ -2035,7 +2140,7 @@ void Document::postProcess()
 
     m_isPostProcessResultObsolete = false;
 
-    if (!m_currentOutcome) {
+    if (!m_currentObject) {
         qDebug() << "Model is null";
         return;
     }
@@ -2044,7 +2149,7 @@ void Document::postProcess()
     emit postProcessing();
 
     QThread *thread = new QThread;
-    m_postProcessor = new MeshResultPostProcessor(*m_currentOutcome);
+    m_postProcessor = new MeshResultPostProcessor(*m_currentObject);
     m_postProcessor->moveToThread(thread);
     connect(thread, &QThread::started, m_postProcessor, &MeshResultPostProcessor::process);
     connect(m_postProcessor, &MeshResultPostProcessor::finished, this, &Document::postProcessedMeshResultReady);
@@ -2055,8 +2160,8 @@ void Document::postProcess()
 
 void Document::postProcessedMeshResultReady()
 {
-    delete m_postProcessedOutcome;
-    m_postProcessedOutcome = m_postProcessor->takePostProcessedOutcome();
+    delete m_postProcessedObject;
+    m_postProcessedObject = m_postProcessor->takePostProcessedObject();
 
     delete m_postProcessor;
     m_postProcessor = nullptr;
@@ -2075,61 +2180,67 @@ void Document::pickMouseTarget(const QVector3D &nearPosition, const QVector3D &f
     m_mouseRayNear = nearPosition;
     m_mouseRayFar = farPosition;
     
-    paintVertexColors();
+    paint();
 }
 
-void Document::paintVertexColors()
+void Document::paint()
 {
-    if (nullptr != m_vertexColorPainter) {
+    if (nullptr != m_texturePainter) {
         m_isMouseTargetResultObsolete = true;
         return;
     }
     
     m_isMouseTargetResultObsolete = false;
     
-    if (!m_currentOutcome) {
+    if (!m_postProcessedObject) {
         qDebug() << "Model is null";
         return;
     }
     
+    if (nullptr == textureImage)
+        return;
+    
     //qDebug() << "Mouse picking..";
 
     QThread *thread = new QThread;
-    m_vertexColorPainter = new VertexColorPainter(*m_currentOutcome, m_mouseRayNear, m_mouseRayFar);
-    m_vertexColorPainter->setBrushColor(brushColor);
-    m_vertexColorPainter->setBrushMetalness(brushMetalness);
-    m_vertexColorPainter->setBrushRoughness(brushRoughness);
-    if (SkeletonDocumentEditMode::Paint == editMode) {
-        if (nullptr == m_vertexColorVoxelGrid) {
-            m_vertexColorVoxelGrid = new VoxelGrid<PaintColor>();
-        }
-        m_vertexColorPainter->setVoxelGrid(m_vertexColorVoxelGrid);
-        m_vertexColorPainter->setPaintMode(m_paintMode);
-        m_vertexColorPainter->setRadius(m_mousePickRadius);
-        m_vertexColorPainter->setMaskNodeIds(m_mousePickMaskNodeIds);
+    m_texturePainter = new TexturePainter(m_mouseRayNear, m_mouseRayFar);
+    if (nullptr == m_texturePainterContext) {
+        m_texturePainterContext = new TexturePainterContext;
+        m_texturePainterContext->object = new Object(*m_postProcessedObject);
+        m_texturePainterContext->colorImage = new QImage(*textureImage);
+    } else if (m_texturePainterContext->object->meshId != m_postProcessedObject->meshId) {
+        delete m_texturePainterContext->object;
+        m_texturePainterContext->object = new Object(*m_postProcessedObject);
+        delete m_texturePainterContext->colorImage;
+        m_texturePainterContext->colorImage = new QImage(*textureImage);
     }
-    
-    m_vertexColorPainter->moveToThread(thread);
-    connect(thread, &QThread::started, m_vertexColorPainter, &VertexColorPainter::process);
-    connect(m_vertexColorPainter, &VertexColorPainter::finished, this, &Document::vertexColorsReady);
-    connect(m_vertexColorPainter, &VertexColorPainter::finished, thread, &QThread::quit);
+    m_texturePainter->setContext(m_texturePainterContext);
+    m_texturePainter->setBrushColor(brushColor);
+    if (SkeletonDocumentEditMode::Paint == editMode) {
+        m_texturePainter->setPaintMode(m_paintMode);
+        m_texturePainter->setRadius(m_mousePickRadius);
+        m_texturePainter->setMaskNodeIds(m_mousePickMaskNodeIds);
+    }
+    m_texturePainter->moveToThread(thread);
+    connect(thread, &QThread::started, m_texturePainter, &TexturePainter::process);
+    connect(m_texturePainter, &TexturePainter::finished, this, &Document::paintReady);
+    connect(m_texturePainter, &TexturePainter::finished, thread, &QThread::quit);
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
     thread->start();
 }
 
-void Document::vertexColorsReady()
+void Document::paintReady()
 {
-    m_mouseTargetPosition = m_vertexColorPainter->targetPosition();
+    m_mouseTargetPosition = m_texturePainter->targetPosition();
     
-    Model *model = m_vertexColorPainter->takePaintedModel();
-    if (nullptr != model) {
-        delete m_paintedMesh;
-        m_paintedMesh = model;
-        emit paintedMeshChanged();
+    QImage *paintedTextureImage = m_texturePainter->takeColorImage();
+    if (nullptr != paintedTextureImage) {
+        updateTextureImage(paintedTextureImage);
+        emit resultColorTextureChanged();
     }
     
-    delete m_vertexColorPainter;
-    m_vertexColorPainter = nullptr;
+    delete m_texturePainter;
+    m_texturePainter = nullptr;
     
     if (!m_isMouseTargetResultObsolete && m_saveNextPaintSnapshot) {
         m_saveNextPaintSnapshot = false;
@@ -2137,8 +2248,6 @@ void Document::vertexColorsReady()
     }
     
     emit mouseTargetChanged();
-
-    //qDebug() << "Mouse pick done";
 
     if (m_isMouseTargetResultObsolete) {
         pickMouseTarget(m_mouseRayNear, m_mouseRayFar);
@@ -2161,9 +2270,9 @@ void Document::setMousePickRadius(float radius)
     emit mousePickRadiusChanged();
 }
 
-const Outcome &Document::currentPostProcessedOutcome() const
+const Object &Document::currentPostProcessedObject() const
 {
-    return *m_postProcessedOutcome;
+    return *m_postProcessedObject;
 }
 
 void Document::setPartLockState(QUuid partId, bool locked)
@@ -3418,7 +3527,7 @@ void Document::generateRig()
     
     m_isRigObsolete = false;
     
-    if (RigType::None == rigType || nullptr == m_currentOutcome) {
+    if (RigType::None == rigType || nullptr == m_currentObject) {
         removeRigResults();
         return;
     }
@@ -3426,7 +3535,7 @@ void Document::generateRig()
     qDebug() << "Rig generating..";
     
     QThread *thread = new QThread;
-    m_rigGenerator = new RigGenerator(rigType, *m_postProcessedOutcome);
+    m_rigGenerator = new RigGenerator(rigType, *m_postProcessedObject);
     m_rigGenerator->moveToThread(thread);
     connect(thread, &QThread::started, m_rigGenerator, &RigGenerator::process);
     connect(m_rigGenerator, &RigGenerator::finished, this, &Document::rigReady);
@@ -3450,10 +3559,10 @@ void Document::rigReady()
     
     m_resultRigMessages = m_rigGenerator->messages();
     
-    delete m_riggedOutcome;
-    m_riggedOutcome = m_rigGenerator->takeOutcome();
-    if (nullptr == m_riggedOutcome)
-        m_riggedOutcome = new Outcome;
+    delete m_riggedObject;
+    m_riggedObject = m_rigGenerator->takeObject();
+    if (nullptr == m_riggedObject)
+        m_riggedObject = new Object;
     
     delete m_rigGenerator;
     m_rigGenerator = nullptr;
@@ -3517,9 +3626,9 @@ const std::vector<std::pair<QtMsgType, QString>> &Document::resultRigMessages() 
     return m_resultRigMessages;
 }
 
-const Outcome &Document::currentRiggedOutcome() const
+const Object &Document::currentRiggedObject() const
 {
-    return *m_riggedOutcome;
+    return *m_riggedObject;
 }
 
 bool Document::currentRigSucceed() const
@@ -3540,7 +3649,7 @@ void Document::generateMotions()
         return;
     }
     
-    m_motionsGenerator = new MotionsGenerator(rigType, *rigBones, *rigWeights, currentRiggedOutcome());
+    m_motionsGenerator = new MotionsGenerator(rigType, *rigBones, *rigWeights, currentRiggedObject());
     m_motionsGenerator->enableSnapshotMeshes();
     bool hasDirtyMotion = false;
     for (auto &motion: motionMap) {
@@ -3929,7 +4038,7 @@ void Document::startPaint()
 
 void Document::stopPaint()
 {
-    if (m_vertexColorPainter || m_isMouseTargetResultObsolete) {
+    if (m_texturePainter || m_isMouseTargetResultObsolete) {
         m_saveNextPaintSnapshot = true;
         return;
     }

@@ -5,7 +5,7 @@
 #include <QImage>
 #include <QColor>
 #include <QPixmap>
-#include "outcome.h"
+#include "object.h"
 #include "model.h"
 #include "snapshot.h"
 
@@ -13,18 +13,14 @@ class TextureGenerator : public QObject
 {
     Q_OBJECT
 public:
-    TextureGenerator(const Outcome &outcome, Snapshot *snapshot=nullptr);
+    TextureGenerator(const Object &object, Snapshot *snapshot=nullptr);
     ~TextureGenerator();
-    QImage *takeResultTextureGuideImage();
-    QImage *takeResultTextureImage();
-    QImage *takeResultTextureBorderImage();
     QImage *takeResultTextureColorImage();
     QImage *takeResultTextureNormalImage();
-    QImage *takeResultTextureMetalnessRoughnessAmbientOcclusionImage();
     QImage *takeResultTextureRoughnessImage();
     QImage *takeResultTextureMetalnessImage();
     QImage *takeResultTextureAmbientOcclusionImage();
-    Outcome *takeOutcome();
+    Object *takeObject();
     Model *takeResultMesh();
     bool hasTransparencySettings();
     void addPartColorMap(QUuid partId, const QImage *image, float tileScale);
@@ -33,6 +29,9 @@ public:
     void addPartRoughnessMap(QUuid partId, const QImage *image, float tileScale);
     void addPartAmbientOcclusionMap(QUuid partId, const QImage *image, float tileScale);
     void generate();
+    static QImage *combineMetalnessRoughnessAmbientOcclusionImages(QImage *metalnessImage,
+            QImage *roughnessImage,
+            QImage *ambientOcclusionImage);
 signals:
     void finished();
 public slots:
@@ -42,13 +41,9 @@ public:
 private:
     void prepare();
 private:
-    Outcome *m_outcome;
-    QImage *m_resultTextureGuideImage;
-    QImage *m_resultTextureImage;
-    QImage *m_resultTextureBorderImage;
+    Object *m_object;
     QImage *m_resultTextureColorImage;
     QImage *m_resultTextureNormalImage;
-    QImage *m_resultTextureMetalnessRoughnessAmbientOcclusionImage;
     QImage *m_resultTextureRoughnessImage;
     QImage *m_resultTextureMetalnessImage;
     QImage *m_resultTextureAmbientOcclusionImage;

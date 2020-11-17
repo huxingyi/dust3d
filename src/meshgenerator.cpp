@@ -39,7 +39,7 @@ MeshGenerator::~MeshGenerator()
         delete it.second;
     delete m_resultMesh;
     delete m_snapshot;
-    delete m_outcome;
+    delete m_object;
     delete m_cutFaceTransforms;
     delete m_nodesCutFaces;
 }
@@ -78,11 +78,11 @@ const std::set<QUuid> &MeshGenerator::generatedPreviewPartIds()
     return m_generatedPreviewPartIds;
 }
 
-Outcome *MeshGenerator::takeOutcome()
+Object *MeshGenerator::takeObject()
 {
-    Outcome *outcome = m_outcome;
-    m_outcome = nullptr;
-    return outcome;
+    Object *object = m_object;
+    m_object = nullptr;
+    return object;
 }
 
 std::map<QUuid, StrokeMeshBuilder::CutFaceTransform> *MeshGenerator::takeCutFaceTransforms()
@@ -420,7 +420,7 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, 
         colorSolubility = colorSolubilityString.toFloat();
     
     float metalness = 0;
-    QString metalnessString = valueOfKeyInMapOrEmpty(part, "metalness");
+    QString metalnessString = valueOfKeyInMapOrEmpty(part, "metallic");
     if (!metalnessString.isEmpty())
         metalness = metalnessString.toFloat();
     
@@ -440,11 +440,9 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, 
     }
     
     auto &partCache = m_cacheContext->parts[partIdString];
-    partCache.outcomeNodes.clear();
-    partCache.outcomeEdges.clear();
-    partCache.outcomeNodeVertices.clear();
-    partCache.outcomePaintMap.clear();
-    partCache.outcomePaintMap.partId = partId;
+    partCache.objectNodes.clear();
+    partCache.objectEdges.clear();
+    partCache.objectNodeVertices.clear();
     partCache.vertices.clear();
     partCache.faces.clear();
     partCache.previewTriangles.clear();
@@ -542,41 +540,41 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, 
     //}
     
     auto addNodeToPartCache = [&](const QString &nodeIdString, const NodeInfo &nodeInfo) {
-        OutcomeNode outcomeNode;
-        outcomeNode.partId = QUuid(partIdString);
-        outcomeNode.nodeId = QUuid(nodeIdString);
-        outcomeNode.origin = nodeInfo.position;
-        outcomeNode.radius = nodeInfo.radius;
-        outcomeNode.color = partColor;
-        outcomeNode.materialId = materialId;
-        outcomeNode.countershaded = countershaded;
-        outcomeNode.colorSolubility = colorSolubility;
-        outcomeNode.metalness = metalness;
-        outcomeNode.roughness = roughness;
-        outcomeNode.boneMark = nodeInfo.boneMark;
+        ObjectNode objectNode;
+        objectNode.partId = QUuid(partIdString);
+        objectNode.nodeId = QUuid(nodeIdString);
+        objectNode.origin = nodeInfo.position;
+        objectNode.radius = nodeInfo.radius;
+        objectNode.color = partColor;
+        objectNode.materialId = materialId;
+        objectNode.countershaded = countershaded;
+        objectNode.colorSolubility = colorSolubility;
+        objectNode.metalness = metalness;
+        objectNode.roughness = roughness;
+        objectNode.boneMark = nodeInfo.boneMark;
         if (!__mirroredByPartId.isEmpty())
-            outcomeNode.mirroredByPartId = QUuid(__mirroredByPartId);
+            objectNode.mirroredByPartId = QUuid(__mirroredByPartId);
         if (!__mirrorFromPartId.isEmpty()) {
-            outcomeNode.mirrorFromPartId = QUuid(__mirrorFromPartId);
-            outcomeNode.origin.setX(-nodeInfo.position.x());
+            objectNode.mirrorFromPartId = QUuid(__mirrorFromPartId);
+            objectNode.origin.setX(-nodeInfo.position.x());
         }
-        outcomeNode.joined = partCache.joined;
-        partCache.outcomeNodes.push_back(outcomeNode);
+        objectNode.joined = partCache.joined;
+        partCache.objectNodes.push_back(objectNode);
         //if (xMirrored) {
-        //    outcomeNode.partId = mirroredPartId;
-        //    outcomeNode.mirrorFromPartId = QUuid(partId);
-        //    outcomeNode.mirroredByPartId = QUuid();
-        //    outcomeNode.origin.setX(-nodeInfo.position.x());
-        //    partCache.outcomeNodes.push_back(outcomeNode);
+        //    objectNode.partId = mirroredPartId;
+        //    objectNode.mirrorFromPartId = QUuid(partId);
+        //    objectNode.mirroredByPartId = QUuid();
+        //    objectNode.origin.setX(-nodeInfo.position.x());
+        //    partCache.objectNodes.push_back(objectNode);
         //}
     };
     auto addEdgeToPartCache = [&](const QString &firstNodeIdString, const QString &secondNodeIdString) {
-        partCache.outcomeEdges.push_back({
+        partCache.objectEdges.push_back({
             {QUuid(partIdString), QUuid(firstNodeIdString)},
             {QUuid(partIdString), QUuid(secondNodeIdString)}
         });
         //if (xMirrored) {
-        //    partCache.outcomeEdges.push_back({
+        //    partCache.objectEdges.push_back({
         //        {mirroredPartId, QUuid(firstNodeIdString)},
         //        {mirroredPartId, QUuid(secondNodeIdString)}
         //    });
@@ -674,18 +672,6 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, 
             const QString &toNodeIdString = edgeIt.second;
             addEdgeToPartCache(fromNodeIdString, toNodeIdString);
         }
-        
-        for (const auto &node: strokeModifier->nodes()) {
-            const auto &originNodeIdString = nodeIndexToIdStringMap[node.originNodeIndex];
-            
-            OutcomePaintNode paintNode;
-            paintNode.originNodeIndex = node.originNodeIndex;
-            paintNode.originNodeId = QUuid(originNodeIdString);
-            paintNode.radius = node.radius;
-            paintNode.origin = node.position;
-            
-            partCache.outcomePaintMap.paintNodes.push_back(paintNode);
-        }
 
         buildSucceed = strokeMeshBuilder->build();
         
@@ -703,19 +689,7 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, 
             const auto &source = strokeMeshBuilder->generatedVerticesSourceNodeIndices()[i];
             size_t nodeIndex = strokeModifier->nodes()[source].originNodeIndex;
             const auto &nodeIdString = nodeIndexToIdStringMap[nodeIndex];
-            partCache.outcomeNodeVertices.push_back({position, {partIdString, nodeIdString}});
-            
-            auto &paintNode = partCache.outcomePaintMap.paintNodes[source];
-            paintNode.vertices.push_back(position);
-        }
-        
-        for (size_t i = 0; i < partCache.outcomePaintMap.paintNodes.size(); ++i) {
-            auto &paintNode = partCache.outcomePaintMap.paintNodes[i];
-            paintNode.baseNormal = strokeMeshBuilder->nodeBaseNormal(i);
-            paintNode.direction = strokeMeshBuilder->nodeTraverseDirection(i);
-            paintNode.order = strokeMeshBuilder->nodeTraverseOrder(i);
-            
-            partCache.outcomeNodes[paintNode.originNodeIndex].direction = paintNode.direction;
+            partCache.objectNodeVertices.push_back({position, {partIdString, nodeIdString}});
         }
     } else {
         if (strokeMeshBuilder->buildBaseNormalsOnly()) {
@@ -841,8 +815,8 @@ bool MeshGenerator::fillPartWithMesh(GeneratedPart &partCache,
     meshGenerator->setGeneratedCacheContext(fillMeshCacheContext);
     meshGenerator->generate();
     fillIsSucessful = meshGenerator->isSuccessful();
-    Outcome *outcome = meshGenerator->takeOutcome();
-    if (nullptr != outcome) {
+    Object *object = meshGenerator->takeObject();
+    if (nullptr != object) {
         MeshStroketifier stroketifier;
         std::vector<MeshStroketifier::Node> strokeNodes;
         for (const auto &nodeIndex: strokeMeshBuilder->nodeIndices()) {
@@ -855,36 +829,36 @@ bool MeshGenerator::fillPartWithMesh(GeneratedPart &partCache,
         stroketifier.setCutRotation(cutRotation);
         stroketifier.setDeformWidth(deformWidth);
         stroketifier.setDeformThickness(deformThickness);
-        if (stroketifier.prepare(strokeNodes, outcome->vertices)) {
-            stroketifier.stroketify(&outcome->vertices);
-            std::vector<MeshStroketifier::Node> agentNodes(outcome->nodes.size());
-            for (size_t i = 0; i < outcome->nodes.size(); ++i) {
+        if (stroketifier.prepare(strokeNodes, object->vertices)) {
+            stroketifier.stroketify(&object->vertices);
+            std::vector<MeshStroketifier::Node> agentNodes(object->nodes.size());
+            for (size_t i = 0; i < object->nodes.size(); ++i) {
                 auto &dest = agentNodes[i];
-                const auto &src = outcome->nodes[i];
+                const auto &src = object->nodes[i];
                 dest.position = src.origin;
                 dest.radius = src.radius;
             }
             stroketifier.stroketify(&agentNodes);
-            for (size_t i = 0; i < outcome->nodes.size(); ++i) {
+            for (size_t i = 0; i < object->nodes.size(); ++i) {
                 const auto &src = agentNodes[i];
-                auto &dest = outcome->nodes[i];
+                auto &dest = object->nodes[i];
                 dest.origin = src.position;
                 dest.radius = src.radius;
             }
         }
-        partCache.outcomeNodes.insert(partCache.outcomeNodes.end(), outcome->nodes.begin(), outcome->nodes.end());
-        partCache.outcomeEdges.insert(partCache.outcomeEdges.end(), outcome->edges.begin(), outcome->edges.end());
-        partCache.vertices.insert(partCache.vertices.end(), outcome->vertices.begin(), outcome->vertices.end());
+        partCache.objectNodes.insert(partCache.objectNodes.end(), object->nodes.begin(), object->nodes.end());
+        partCache.objectEdges.insert(partCache.objectEdges.end(), object->edges.begin(), object->edges.end());
+        partCache.vertices.insert(partCache.vertices.end(), object->vertices.begin(), object->vertices.end());
         if (!strokeNodes.empty()) {
             for (auto &it: partCache.vertices)
                 it += strokeNodes.front().position;
         }
-        for (size_t i = 0; i < outcome->vertexSourceNodes.size(); ++i)
-            partCache.outcomeNodeVertices.push_back({partCache.vertices[i], outcome->vertexSourceNodes[i]});
-        partCache.faces.insert(partCache.faces.end(), outcome->triangleAndQuads.begin(), outcome->triangleAndQuads.end());
+        for (size_t i = 0; i < object->vertexSourceNodes.size(); ++i)
+            partCache.objectNodeVertices.push_back({partCache.vertices[i], object->vertexSourceNodes[i]});
+        partCache.faces.insert(partCache.faces.end(), object->triangleAndQuads.begin(), object->triangleAndQuads.end());
         fillIsSucessful = true;
     }
-    delete outcome;
+    delete object;
     delete meshGenerator;
     delete fillMeshCacheContext;
 
@@ -1037,10 +1011,9 @@ MeshCombiner::Mesh *MeshGenerator::combineComponentMesh(const QString &component
     
     componentCache.sharedQuadEdges.clear();
     componentCache.noneSeamVertices.clear();
-    componentCache.outcomeNodes.clear();
-    componentCache.outcomeEdges.clear();
-    componentCache.outcomeNodeVertices.clear();
-    componentCache.outcomePaintMaps.clear();
+    componentCache.objectNodes.clear();
+    componentCache.objectEdges.clear();
+    componentCache.objectNodeVertices.clear();
     componentCache.releaseMeshes();
     
     QString linkDataType = valueOfKeyInMapOrEmpty(*component, "linkDataType");
@@ -1066,13 +1039,12 @@ MeshCombiner::Mesh *MeshGenerator::combineComponentMesh(const QString &component
         for (const auto &vertex: partCache.vertices)
             componentCache.noneSeamVertices.insert(vertex);
         collectSharedQuadEdges(partCache.vertices, partCache.faces, &componentCache.sharedQuadEdges);
-        for (const auto &it: partCache.outcomeNodes)
-            componentCache.outcomeNodes.push_back(it);
-        for (const auto &it: partCache.outcomeEdges)
-            componentCache.outcomeEdges.push_back(it);
-        for (const auto &it: partCache.outcomeNodeVertices)
-            componentCache.outcomeNodeVertices.push_back(it);
-        componentCache.outcomePaintMaps.push_back(partCache.outcomePaintMap);
+        for (const auto &it: partCache.objectNodes)
+            componentCache.objectNodes.push_back(it);
+        for (const auto &it: partCache.objectEdges)
+            componentCache.objectEdges.push_back(it);
+        for (const auto &it: partCache.objectNodeVertices)
+            componentCache.objectNodeVertices.push_back(it);
     } else {
         std::vector<std::pair<CombineMode, std::vector<std::pair<QString, QString>>>> combineGroups;
         // Firstly, group by combine mode
@@ -1194,10 +1166,10 @@ MeshCombiner::Mesh *MeshGenerator::combineComponentMesh(const QString &component
             std::vector<std::vector<size_t>> newQuads;
             std::vector<std::vector<size_t>> newTriangles;
             std::vector<std::tuple<QVector3D, float, size_t>> interpolatedNodes;
-            Outcome::buildInterpolatedNodes(componentCache.outcomeNodes,
-                componentCache.outcomeEdges,
+            Object::buildInterpolatedNodes(componentCache.objectNodes,
+                componentCache.objectEdges,
                 &interpolatedNodes);
-            remesh(componentCache.outcomeNodes,
+            remesh(componentCache.objectNodes,
                 interpolatedNodes,
                 combinedVertices,
                 combinedFaces,
@@ -1205,7 +1177,7 @@ MeshCombiner::Mesh *MeshGenerator::combineComponentMesh(const QString &component
                 &newVertices,
                 &newQuads,
                 &newTriangles,
-                &componentCache.outcomeNodeVertices);
+                &componentCache.objectNodeVertices);
             componentCache.sharedQuadEdges.clear();
             for (const auto &face: newQuads) {
                 if (face.size() != 4)
@@ -1337,14 +1309,12 @@ MeshCombiner::Mesh *MeshGenerator::combineComponentChildGroupMesh(const std::vec
             componentCache.noneSeamVertices.insert(vertex);
         for (const auto &it: childComponentCache.sharedQuadEdges)
             componentCache.sharedQuadEdges.insert(it);
-        for (const auto &it: childComponentCache.outcomeNodes)
-            componentCache.outcomeNodes.push_back(it);
-        for (const auto &it: childComponentCache.outcomeEdges)
-            componentCache.outcomeEdges.push_back(it);
-        for (const auto &it: childComponentCache.outcomeNodeVertices)
-            componentCache.outcomeNodeVertices.push_back(it);
-        for (const auto &it: childComponentCache.outcomePaintMaps)
-            componentCache.outcomePaintMaps.push_back(it);
+        for (const auto &it: childComponentCache.objectNodes)
+            componentCache.objectNodes.push_back(it);
+        for (const auto &it: childComponentCache.objectEdges)
+            componentCache.objectEdges.push_back(it);
+        for (const auto &it: childComponentCache.objectNodeVertices)
+            componentCache.objectNodeVertices.push_back(it);
         
         if (nullptr == subMesh || subMesh->isNull()) {
             delete subMesh;
@@ -1468,57 +1438,57 @@ void MeshGenerator::collectErroredParts()
             };
             
             auto errorTriangleAndQuads = it.second.faces;
-            updateVertexIndices(errorTriangleAndQuads, m_outcome->vertices.size());
-            m_outcome->vertices.insert(m_outcome->vertices.end(), it.second.vertices.begin(), it.second.vertices.end());
-            m_outcome->triangleAndQuads.insert(m_outcome->triangleAndQuads.end(), errorTriangleAndQuads.begin(), errorTriangleAndQuads.end());
+            updateVertexIndices(errorTriangleAndQuads, m_object->vertices.size());
+            m_object->vertices.insert(m_object->vertices.end(), it.second.vertices.begin(), it.second.vertices.end());
+            m_object->triangleAndQuads.insert(m_object->triangleAndQuads.end(), errorTriangleAndQuads.begin(), errorTriangleAndQuads.end());
             
             auto errorTriangles = it.second.previewTriangles;
-            updateVertexIndices(errorTriangles, m_outcome->vertices.size());
-            m_outcome->vertices.insert(m_outcome->vertices.end(), it.second.previewVertices.begin(), it.second.previewVertices.end());
-            m_outcome->triangles.insert(m_outcome->triangles.end(), errorTriangles.begin(), errorTriangles.end());
+            updateVertexIndices(errorTriangles, m_object->vertices.size());
+            m_object->vertices.insert(m_object->vertices.end(), it.second.previewVertices.begin(), it.second.previewVertices.end());
+            m_object->triangles.insert(m_object->triangles.end(), errorTriangles.begin(), errorTriangles.end());
         }
     }
 }
 
-void MeshGenerator::postprocessOutcome(Outcome *outcome) 
+void MeshGenerator::postprocessObject(Object *object) 
 {
     std::vector<QVector3D> combinedFacesNormals;
-    for (const auto &face: outcome->triangles) {
+    for (const auto &face: object->triangles) {
         combinedFacesNormals.push_back(QVector3D::normal(
-            outcome->vertices[face[0]],
-            outcome->vertices[face[1]],
-            outcome->vertices[face[2]]
+            object->vertices[face[0]],
+            object->vertices[face[1]],
+            object->vertices[face[2]]
         ));
     }
     
-    outcome->triangleNormals = combinedFacesNormals;
+    object->triangleNormals = combinedFacesNormals;
     
     std::vector<std::pair<QUuid, QUuid>> sourceNodes;
-    triangleSourceNodeResolve(*outcome, sourceNodes, &outcome->vertexSourceNodes);
-    outcome->setTriangleSourceNodes(sourceNodes);
+    triangleSourceNodeResolve(*object, m_nodeVertices, sourceNodes, &object->vertexSourceNodes);
+    object->setTriangleSourceNodes(sourceNodes);
     
     std::map<std::pair<QUuid, QUuid>, QColor> sourceNodeToColorMap;
-    for (const auto &node: outcome->nodes)
+    for (const auto &node: object->nodes)
         sourceNodeToColorMap.insert({{node.partId, node.nodeId}, node.color});
     
-    outcome->triangleColors.resize(outcome->triangles.size(), Qt::white);
-    const std::vector<std::pair<QUuid, QUuid>> *triangleSourceNodes = outcome->triangleSourceNodes();
+    object->triangleColors.resize(object->triangles.size(), Qt::white);
+    const std::vector<std::pair<QUuid, QUuid>> *triangleSourceNodes = object->triangleSourceNodes();
     if (nullptr != triangleSourceNodes) {
-        for (size_t triangleIndex = 0; triangleIndex < outcome->triangles.size(); triangleIndex++) {
+        for (size_t triangleIndex = 0; triangleIndex < object->triangles.size(); triangleIndex++) {
             const auto &source = (*triangleSourceNodes)[triangleIndex];
-            outcome->triangleColors[triangleIndex] = sourceNodeToColorMap[source];
+            object->triangleColors[triangleIndex] = sourceNodeToColorMap[source];
         }
     }
     
     std::vector<std::vector<QVector3D>> triangleVertexNormals;
-    generateSmoothTriangleVertexNormals(outcome->vertices,
-        outcome->triangles,
-        outcome->triangleNormals,
+    generateSmoothTriangleVertexNormals(object->vertices,
+        object->triangles,
+        object->triangleNormals,
         &triangleVertexNormals);
-    outcome->setTriangleVertexNormals(triangleVertexNormals);
+    object->setTriangleVertexNormals(triangleVertexNormals);
 }
 
-void MeshGenerator::remesh(const std::vector<OutcomeNode> &inputNodes,
+void MeshGenerator::remesh(const std::vector<ObjectNode> &inputNodes,
         const std::vector<std::tuple<QVector3D, float, size_t>> &interpolatedNodes,
         const std::vector<QVector3D> &inputVertices,
         const std::vector<std::vector<size_t>> &inputFaces,
@@ -1596,7 +1566,7 @@ void MeshGenerator::collectIncombinableMesh(const MeshCombiner::Mesh *mesh, cons
     
     recoverQuads(uncombinedVertices, uncombinedFaces, componentCache.sharedQuadEdges, uncombinedTriangleAndQuads);
     
-    auto vertexStartIndex = m_outcome->vertices.size();
+    auto vertexStartIndex = m_object->vertices.size();
     auto updateVertexIndices = [=](std::vector<std::vector<size_t>> &faces) {
         for (auto &it: faces) {
             for (auto &subIt: it)
@@ -1606,9 +1576,9 @@ void MeshGenerator::collectIncombinableMesh(const MeshCombiner::Mesh *mesh, cons
     updateVertexIndices(uncombinedFaces);
     updateVertexIndices(uncombinedTriangleAndQuads);
     
-    m_outcome->vertices.insert(m_outcome->vertices.end(), uncombinedVertices.begin(), uncombinedVertices.end());
-    m_outcome->triangles.insert(m_outcome->triangles.end(), uncombinedFaces.begin(), uncombinedFaces.end());
-    m_outcome->triangleAndQuads.insert(m_outcome->triangleAndQuads.end(), uncombinedTriangleAndQuads.begin(), uncombinedTriangleAndQuads.end());
+    m_object->vertices.insert(m_object->vertices.end(), uncombinedVertices.begin(), uncombinedVertices.end());
+    m_object->triangles.insert(m_object->triangles.end(), uncombinedFaces.begin(), uncombinedFaces.end());
+    m_object->triangleAndQuads.insert(m_object->triangleAndQuads.end(), uncombinedTriangleAndQuads.begin(), uncombinedTriangleAndQuads.end());
 }
 
 void MeshGenerator::collectUncombinedComponent(const QString &componentIdString)
@@ -1623,10 +1593,9 @@ void MeshGenerator::collectUncombinedComponent(const QString &componentIdString)
             return;
         }
         
-        m_outcome->nodes.insert(m_outcome->nodes.end(), componentCache.outcomeNodes.begin(), componentCache.outcomeNodes.end());
-        m_outcome->edges.insert(m_outcome->edges.end(), componentCache.outcomeEdges.begin(), componentCache.outcomeEdges.end());
-        m_outcome->nodeVertices.insert(m_outcome->nodeVertices.end(), componentCache.outcomeNodeVertices.begin(), componentCache.outcomeNodeVertices.end());
-        m_outcome->paintMaps.insert(m_outcome->paintMaps.end(), componentCache.outcomePaintMaps.begin(), componentCache.outcomePaintMaps.end());
+        m_object->nodes.insert(m_object->nodes.end(), componentCache.objectNodes.begin(), componentCache.objectNodes.end());
+        m_object->edges.insert(m_object->edges.end(), componentCache.objectEdges.begin(), componentCache.objectEdges.end());
+        m_nodeVertices.insert(m_nodeVertices.end(), componentCache.objectNodeVertices.begin(), componentCache.objectNodeVertices.end());
         
         collectIncombinableMesh(componentCache.mesh, componentCache);
         return;
@@ -1679,16 +1648,21 @@ void MeshGenerator::collectClothComponent(const QString &componentIdString)
         clothMesh.clothOffset = componentClothOffset(component);
         clothMesh.clothStiffness = componentClothStiffness(component);
         clothMesh.clothIteration = componentClothIteration(component);
-        clothMesh.outcomeNodeVertices = &componentCache.outcomeNodeVertices;
-        m_outcome->clothNodes.insert(m_outcome->clothNodes.end(), componentCache.outcomeNodes.begin(), componentCache.outcomeNodes.end());
-        m_outcome->nodes.insert(m_outcome->nodes.end(), componentCache.outcomeNodes.begin(), componentCache.outcomeNodes.end());
-        m_outcome->edges.insert(m_outcome->edges.end(), componentCache.outcomeEdges.begin(), componentCache.outcomeEdges.end());
+        clothMesh.objectNodeVertices = &componentCache.objectNodeVertices;
+        //m_object->clothNodes.insert(m_object->clothNodes.end(), componentCache.objectNodes.begin(), componentCache.objectNodes.end());
+        //m_object->nodes.insert(m_object->nodes.end(), componentCache.objectNodes.begin(), componentCache.objectNodes.end());
+        for (const auto &objectNode: componentCache.objectNodes) {
+            auto newNode = objectNode;
+            newNode.layer = ComponentLayer::Cloth; 
+            m_object->nodes.push_back(newNode);
+        }
+        m_object->edges.insert(m_object->edges.end(), componentCache.objectEdges.begin(), componentCache.objectEdges.end());
     }
     simulateClothMeshes(&clothMeshes,
         &m_clothCollisionVertices,
         &m_clothCollisionTriangles);
     for (auto &clothMesh: clothMeshes) {
-        auto vertexStartIndex = m_outcome->vertices.size();
+        auto vertexStartIndex = m_object->vertices.size();
         auto updateVertexIndices = [=](std::vector<std::vector<size_t>> &faces) {
             for (auto &it: faces) {
                 for (auto &subIt: it)
@@ -1696,23 +1670,23 @@ void MeshGenerator::collectClothComponent(const QString &componentIdString)
             }
         };
         updateVertexIndices(clothMesh.faces);
-        m_outcome->vertices.insert(m_outcome->vertices.end(), clothMesh.vertices.begin(), clothMesh.vertices.end());
+        m_object->vertices.insert(m_object->vertices.end(), clothMesh.vertices.begin(), clothMesh.vertices.end());
         for (const auto &it: clothMesh.faces) {
             if (4 == it.size()) {
-                m_outcome->triangles.push_back(std::vector<size_t> {
+                m_object->triangles.push_back(std::vector<size_t> {
                     it[0], it[1], it[2]
                 });
-                m_outcome->triangles.push_back(std::vector<size_t> {
+                m_object->triangles.push_back(std::vector<size_t> {
                     it[2], it[3], it[0]
                 });
             } else if (3 == it.size()) {
-                m_outcome->triangles.push_back(it);
+                m_object->triangles.push_back(it);
             }
         }
-        m_outcome->triangleAndQuads.insert(m_outcome->triangleAndQuads.end(), clothMesh.faces.begin(), clothMesh.faces.end());
+        m_object->triangleAndQuads.insert(m_object->triangleAndQuads.end(), clothMesh.faces.begin(), clothMesh.faces.end());
         for (size_t i = 0; i < clothMesh.vertices.size(); ++i) {
             const auto &source = clothMesh.vertexSources[i];
-            m_outcome->nodeVertices.push_back(std::make_pair(clothMesh.vertices[i], source));
+            m_nodeVertices.push_back(std::make_pair(clothMesh.vertices[i], source));
         }
     }
 }
@@ -1856,8 +1830,8 @@ void MeshGenerator::generate()
     
     preprocessMirror();
     
-    m_outcome = new Outcome;
-    m_outcome->meshId = m_id;
+    m_object = new Object;
+    m_object->meshId = m_id;
     //m_cutFaceTransforms = new std::map<QUuid, nodemesh::Builder::CutFaceTransform>;
     //m_nodesCutFaces = new std::map<QUuid, std::map<QString, QVector2D>>;
     
@@ -1930,10 +1904,9 @@ void MeshGenerator::generate()
     
     const auto &componentCache = m_cacheContext->components[QUuid().toString()];
     
-    m_outcome->nodes = componentCache.outcomeNodes;
-    m_outcome->edges = componentCache.outcomeEdges;
-    m_outcome->paintMaps = componentCache.outcomePaintMaps;
-    m_outcome->nodeVertices = componentCache.outcomeNodeVertices;
+    m_object->nodes = componentCache.objectNodes;
+    m_object->edges = componentCache.objectEdges;
+    m_nodeVertices = componentCache.objectNodeVertices;
         
     std::vector<QVector3D> combinedVertices;
     std::vector<std::vector<size_t>> combinedFaces;
@@ -1955,9 +1928,9 @@ void MeshGenerator::generate()
                 } while (affectedNum > 0);
             }
         }
-        recoverQuads(combinedVertices, combinedFaces, componentCache.sharedQuadEdges, m_outcome->triangleAndQuads);
-        m_outcome->vertices = combinedVertices;
-        m_outcome->triangles = combinedFaces;
+        recoverQuads(combinedVertices, combinedFaces, componentCache.sharedQuadEdges, m_object->triangleAndQuads);
+        m_object->vertices = combinedVertices;
+        m_object->triangles = combinedFaces;
     }
     
     // Recursively check uncombined components
@@ -1965,28 +1938,28 @@ void MeshGenerator::generate()
     collectIncombinableComponentMeshes(QUuid().toString());
     
     // Fetch nodes as body nodes before cloth nodes collecting
-    std::set<std::pair<QUuid, QUuid>> bodyNodeMap;
-    m_outcome->bodyNodes.reserve(m_outcome->nodes.size());
-    for (const auto &it: m_outcome->nodes) {
-        if (it.joined) {
-            bodyNodeMap.insert({it.partId, it.nodeId});
-            m_outcome->bodyNodes.push_back(it);
-        }
-    }
-    m_outcome->bodyEdges.reserve(m_outcome->edges.size());
-    for (const auto &it: m_outcome->edges) {
-        if (bodyNodeMap.find(it.first) == bodyNodeMap.end())
-            continue;
-        if (bodyNodeMap.find(it.second) == bodyNodeMap.end())
-            continue;
-        m_outcome->bodyEdges.push_back(it);
-    }
+    //std::set<std::pair<QUuid, QUuid>> bodyNodeMap;
+    //m_object->bodyNodes.reserve(m_object->nodes.size());
+    //for (const auto &it: m_object->nodes) {
+    //    if (it.joined) {
+    //        bodyNodeMap.insert({it.partId, it.nodeId});
+    //        m_object->bodyNodes.push_back(it);
+    //    }
+    //}
+    //m_object->bodyEdges.reserve(m_object->edges.size());
+    //for (const auto &it: m_object->edges) {
+    //    if (bodyNodeMap.find(it.first) == bodyNodeMap.end())
+    //        continue;
+    //    if (bodyNodeMap.find(it.second) == bodyNodeMap.end())
+    //        continue;
+    //    m_object->bodyEdges.push_back(it);
+    //}
     
     collectClothComponent(QUuid().toString());
     collectErroredParts();
-    postprocessOutcome(m_outcome);
+    postprocessObject(m_object);
     
-    m_resultMesh = new Model(*m_outcome);
+    m_resultMesh = new Model(*m_object);
     
     delete combinedMesh;
 

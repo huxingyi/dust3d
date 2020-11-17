@@ -28,8 +28,7 @@
 #include "proceduralanimation.h"
 #include "componentlayer.h"
 #include "clothforce.h"
-#include "voxelgrid.h"
-#include "vertexcolorpainter.h"
+#include "texturepainter.h"
 
 class MaterialPreviewsGenerator;
 class MotionsGenerator;
@@ -330,6 +329,7 @@ signals:
     void edgeReversed(QUuid edgeId);
     void partPreviewChanged(QUuid partId);
     void resultMeshChanged();
+    void resultPartPreviewsChanged();
     void paintedMeshChanged();
     void turnaroundChanged();
     void editModeChanged();
@@ -337,6 +337,7 @@ signals:
     void skeletonChanged();
     //void resultSkeletonChanged();
     void resultTextureChanged();
+    void resultColorTextureChanged();
     //void resultBakedTextureChanged();
     void postProcessedResultChanged();
     void resultRigChanged();
@@ -412,21 +413,24 @@ signals:
     void scriptConsoleLogChanged();
     void mouseTargetChanged();
     void mousePickRadiusChanged();
+    void objectLockStateChanged();
 public: // need initialize
-    QImage *textureGuideImage;
     QImage *textureImage;
-    QImage *textureBorderImage;
-    QImage *textureColorImage;
+    QByteArray *textureImageByteArray;
     QImage *textureNormalImage;
-    QImage *textureMetalnessRoughnessAmbientOcclusionImage;
+    QByteArray *textureNormalImageByteArray;
     QImage *textureMetalnessImage;
+    QByteArray *textureMetalnessImageByteArray;
     QImage *textureRoughnessImage;
+    QByteArray *textureRoughnessImageByteArray;
     QImage *textureAmbientOcclusionImage;
+    QByteArray *textureAmbientOcclusionImageByteArray;
     bool textureHasTransparencySettings;
     RigType rigType;
     bool weldEnabled;
     PolyCount polyCount;
     QColor brushColor;
+    bool objectLocked;
     float brushMetalness = Model::m_defaultMetalness;
     float brushRoughness = Model::m_defaultRoughness;
 public:
@@ -470,15 +474,20 @@ public:
     const std::vector<RiggerBone> *resultRigBones() const;
     const std::map<int, RiggerVertexWeights> *resultRigWeights() const;
     void updateTurnaround(const QImage &image);
+    void updateTextureImage(QImage *image);
+    void updateTextureNormalImage(QImage *image);
+    void updateTextureMetalnessImage(QImage *image);
+    void updateTextureRoughnessImage(QImage *image);
+    void updateTextureAmbientOcclusionImage(QImage *image);
     bool hasPastableMaterialsInClipboard() const;
     bool hasPastableMotionsInClipboard() const;
-    const Outcome &currentPostProcessedOutcome() const;
+    const Object &currentPostProcessedObject() const;
     bool isExportReady() const;
     bool isPostProcessResultObsolete() const;
     void collectComponentDescendantParts(QUuid componentId, std::vector<QUuid> &partIds) const;
     void collectComponentDescendantComponents(QUuid componentId, std::vector<QUuid> &componentIds) const;
     const std::vector<std::pair<QtMsgType, QString>> &resultRigMessages() const;
-    const Outcome &currentRiggedOutcome() const;
+    const Object &currentRiggedObject() const;
     bool currentRigSucceed() const;
     bool isMeshGenerating() const;
     bool isPostProcessing() const;
@@ -512,6 +521,7 @@ public slots:
     void moveOriginBy(float x, float y, float z);
     void addEdge(QUuid fromNodeId, QUuid toNodeId);
     void setEditMode(SkeletonDocumentEditMode mode);
+    void setMeshLockState(bool locked);
     void setPaintMode(PaintMode mode);
     void setMousePickRadius(float radius);
     void createSinglePartFromEdges(const std::vector<QVector3D> &nodes,
@@ -531,8 +541,8 @@ public slots:
     void generateMotions();
     void motionsReady();
     void pickMouseTarget(const QVector3D &nearPosition, const QVector3D &farPosition);
-    void paintVertexColors();
-    void vertexColorsReady();
+    void paint();
+    void paintReady();
     void setPartLockState(QUuid partId, bool locked);
     void setPartVisibleState(QUuid partId, bool visible);
     void setPartSubdivState(QUuid partId, bool subdived);
@@ -633,6 +643,7 @@ public slots:
     void startPaint();
     void stopPaint();
     void setMousePickMaskNodeIds(const std::set<QUuid> &nodeIds);
+    void updateObject(Object *object);
 private:
     void splitPartByNode(std::vector<std::vector<QUuid>> *groups, QUuid nodeId);
     void joinNodeAndNeiborsToGroup(std::vector<QUuid> *group, QUuid nodeId, std::set<QUuid> *visitMap, QUuid noUseEdgeId=QUuid());
@@ -661,12 +672,12 @@ private: // need initialize
     std::map<QUuid, std::map<QString, QVector2D>> *m_resultMeshNodesCutFaces;
     bool m_isMeshGenerationSucceed;
     int m_batchChangeRefCount;
-    Outcome *m_currentOutcome;
+    Object *m_currentObject;
     bool m_isTextureObsolete;
     TextureGenerator *m_textureGenerator;
     bool m_isPostProcessResultObsolete;
     MeshResultPostProcessor *m_postProcessor;
-    Outcome *m_postProcessedOutcome;
+    Object *m_postProcessedObject;
     Model *m_resultTextureMesh;
     unsigned long long m_textureImageUpdateVersion;
     QUuid m_currentCanvasComponentId;
@@ -677,7 +688,7 @@ private: // need initialize
     std::vector<RiggerBone> *m_resultRigBones;
     std::map<int, RiggerVertexWeights> *m_resultRigWeights;
     bool m_isRigObsolete;
-    Outcome *m_riggedOutcome;
+    Object *m_riggedObject;
     bool m_currentRigSucceed;
     MaterialPreviewsGenerator *m_materialPreviewsGenerator;
     MotionsGenerator *m_motionsGenerator;
@@ -687,13 +698,13 @@ private: // need initialize
     std::map<QString, std::map<QString, QString>> m_mergedVariables;
     ScriptRunner *m_scriptRunner;
     bool m_isScriptResultObsolete;
-    VertexColorPainter *m_vertexColorPainter;
+    TexturePainter *m_texturePainter;
     bool m_isMouseTargetResultObsolete;
     PaintMode m_paintMode;
     float m_mousePickRadius;
     bool m_saveNextPaintSnapshot;
-    VoxelGrid<PaintColor> *m_vertexColorVoxelGrid;
     GeneratedCacheContext *m_generatedCacheContext;
+    TexturePainterContext *m_texturePainterContext;
 private:
     static unsigned long m_maxSnapshot;
     std::deque<HistoryItem> m_undoItems;

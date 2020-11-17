@@ -15,6 +15,7 @@ public:
     CombineMode componentCombineMode() const;
     const QColor &partColor() const;
     bool flatShading() const;
+    bool scriptEnabled() const;
     bool toonShading() const;
     ToonLine toonLine() const;
     QSize documentWindowSize() const;
@@ -27,6 +28,7 @@ signals:
     void toonShadingChanged();
     void toonLineChanged();
     void textureSizeChanged();
+    void scriptEnabledChanged();
 public slots:
     void setComponentCombineMode(CombineMode mode);
     void setPartColor(const QColor &color);
@@ -34,6 +36,7 @@ public slots:
     void setToonShading(bool toonShading);
     void setToonLine(ToonLine toonLine);
     void setTextureSize(int textureSize);
+    void setScriptEnabled(bool enabled);
     void reset();
 private:
     CombineMode m_componentCombineMode;
@@ -43,6 +46,7 @@ private:
     ToonLine m_toonLine;
     QSettings m_settings;
     int m_textureSize;
+    bool m_scriptEnabled;
 private:
     void loadDefault();
 };

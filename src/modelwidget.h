@@ -42,6 +42,7 @@ public:
     }
     Model *fetchCurrentMesh();
     void updateMesh(Model *mesh);
+    void updateColorTexture(QImage *colorTextureImage);
     void setGraphicsFunctions(SkeletonGraphicsFunctions *graphicsFunctions);
     void toggleWireframe();
     bool isWireframeVisible();

@@ -64,18 +64,18 @@ void MaterialPreviewsGenerator::generate()
         partIds.push_back(QUuid(mirror.first));
     }
     
-    Outcome *outcome = meshGenerator->takeOutcome();
-    if (nullptr != outcome) {
-        MeshResultPostProcessor *poseProcessor = new MeshResultPostProcessor(*outcome);
+    Object *object = meshGenerator->takeObject();
+    if (nullptr != object) {
+        MeshResultPostProcessor *poseProcessor = new MeshResultPostProcessor(*object);
         poseProcessor->poseProcess();
-        delete outcome;
-        outcome = poseProcessor->takePostProcessedOutcome();
+        delete object;
+        object = poseProcessor->takePostProcessedObject();
         delete poseProcessor;
     }
     
-    if (nullptr != outcome) {
+    if (nullptr != object) {
         for (const auto &material: m_materials) {
-            TextureGenerator *textureGenerator = new TextureGenerator(*outcome);
+            TextureGenerator *textureGenerator = new TextureGenerator(*object);
             for (const auto &layer: material.second) {
                 for (const auto &mapItem: layer.maps) {
                     const QImage *image = ImageForever::get(mapItem.imageId);
@@ -106,7 +106,7 @@ void MaterialPreviewsGenerator::generate()
         }
     }
     
-    delete outcome;
+    delete object;
     
     delete meshGenerator;
     delete cacheContext;

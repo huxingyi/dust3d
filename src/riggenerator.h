@@ -4,7 +4,7 @@
 #include <QThread>
 #include <QDebug>
 #include <unordered_set>
-#include "outcome.h"
+#include "object.h"
 #include "model.h"
 #include "rigger.h"
 #include "rigtype.h"
@@ -13,13 +13,13 @@ class RigGenerator : public QObject
 {
     Q_OBJECT
 public:
-    RigGenerator(RigType rigType, const Outcome &outcome);
+    RigGenerator(RigType rigType, const Object &object);
     ~RigGenerator();
     Model *takeResultMesh();
     std::vector<RiggerBone> *takeResultBones();
     std::map<int, RiggerVertexWeights> *takeResultWeights();
     const std::vector<std::pair<QtMsgType, QString>> &messages();
-    Outcome *takeOutcome();
+    Object *takeObject();
     bool isSuccessful();
     void generate();
 signals:
@@ -36,7 +36,7 @@ private:
     };
     
     RigType m_rigType = RigType::None;
-    Outcome *m_outcome = nullptr;
+    Object *m_object = nullptr;
     Model *m_resultMesh = nullptr;
     std::vector<RiggerBone> *m_resultBones = nullptr;
     std::map<int, RiggerVertexWeights> *m_resultWeights = nullptr;

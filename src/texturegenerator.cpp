@@ -13,13 +13,9 @@
 
 QColor TextureGenerator::m_defaultTextureColor = Qt::transparent;
 
-TextureGenerator::TextureGenerator(const Outcome &outcome, Snapshot *snapshot) :
-    m_resultTextureGuideImage(nullptr),
-    m_resultTextureImage(nullptr),
-    m_resultTextureBorderImage(nullptr),
+TextureGenerator::TextureGenerator(const Object &object, Snapshot *snapshot) :
     m_resultTextureColorImage(nullptr),
     m_resultTextureNormalImage(nullptr),
-    m_resultTextureMetalnessRoughnessAmbientOcclusionImage(nullptr),
     m_resultTextureRoughnessImage(nullptr),
     m_resultTextureMetalnessImage(nullptr),
     m_resultTextureAmbientOcclusionImage(nullptr),
@@ -28,47 +24,22 @@ TextureGenerator::TextureGenerator(const Outcome &outcome, Snapshot *snapshot) :
     m_hasTransparencySettings(false),
     m_textureSize(Preferences::instance().textureSize())
 {
-    m_outcome = new Outcome();
-    *m_outcome = outcome;
+    m_object = new Object();
+    *m_object = object;
     if (m_textureSize <= 0)
         m_textureSize = 1024;
 }
 
 TextureGenerator::~TextureGenerator()
 {
-    delete m_outcome;
-    delete m_resultTextureGuideImage;
-    delete m_resultTextureImage;
-    delete m_resultTextureBorderImage;
+    delete m_object;
     delete m_resultTextureColorImage;
     delete m_resultTextureNormalImage;
-    delete m_resultTextureMetalnessRoughnessAmbientOcclusionImage;
     delete m_resultTextureRoughnessImage;
     delete m_resultTextureMetalnessImage;
     delete m_resultTextureAmbientOcclusionImage;
     delete m_resultMesh;
     delete m_snapshot;
-}
-
-QImage *TextureGenerator::takeResultTextureGuideImage()
-{
-    QImage *resultTextureGuideImage = m_resultTextureGuideImage;
-    m_resultTextureGuideImage = nullptr;
-    return resultTextureGuideImage;
-}
-
-QImage *TextureGenerator::takeResultTextureImage()
-{
-    QImage *resultTextureImage = m_resultTextureImage;
-    m_resultTextureImage = nullptr;
-    return resultTextureImage;
-}
-
-QImage *TextureGenerator::takeResultTextureBorderImage()
-{
-    QImage *resultTextureBorderImage = m_resultTextureBorderImage;
-    m_resultTextureBorderImage = nullptr;
-    return resultTextureBorderImage;
 }
 
 QImage *TextureGenerator::takeResultTextureColorImage()
@@ -83,13 +54,6 @@ QImage *TextureGenerator::takeResultTextureNormalImage()
     QImage *resultTextureNormalImage = m_resultTextureNormalImage;
     m_resultTextureNormalImage = nullptr;
     return resultTextureNormalImage;
-}
-
-QImage *TextureGenerator::takeResultTextureMetalnessRoughnessAmbientOcclusionImage()
-{
-    QImage *resultTextureMetalnessRoughnessAmbientOcclusionImage = m_resultTextureMetalnessRoughnessAmbientOcclusionImage;
-    m_resultTextureMetalnessRoughnessAmbientOcclusionImage = nullptr;
-    return resultTextureMetalnessRoughnessAmbientOcclusionImage;
 }
 
 QImage *TextureGenerator::takeResultTextureRoughnessImage()
@@ -113,11 +77,11 @@ QImage *TextureGenerator::takeResultTextureAmbientOcclusionImage()
     return resultTextureAmbientOcclusionImage;
 }
 
-Outcome *TextureGenerator::takeOutcome()
+Object *TextureGenerator::takeObject()
 {
-    Outcome *outcome = m_outcome;
-    m_resultTextureImage = nullptr;
-    return outcome;
+    Object *object = m_object;
+    m_object = nullptr;
+    return object;
 }
 
 Model *TextureGenerator::takeResultMesh()
@@ -179,7 +143,7 @@ void TextureGenerator::prepare()
         updatedCountershadedMap.insert({partId,
             isTrueValueString(valueOfKeyInMapOrEmpty(partIt.second, "countershaded"))});
     }
-    for (const auto &bmeshNode: m_outcome->nodes) {
+    for (const auto &bmeshNode: m_object->nodes) {
     
         bool countershaded = bmeshNode.countershaded;
         auto findUpdatedCountershadedMap = updatedCountershadedMap.find(bmeshNode.mirrorFromPartId.isNull() ? bmeshNode.partId : bmeshNode.mirrorFromPartId);
@@ -221,13 +185,13 @@ bool TextureGenerator::hasTransparencySettings()
 
 void TextureGenerator::generate()
 {
-    m_resultMesh = new Model(*m_outcome);
+    m_resultMesh = new Model(*m_object);
     
-    if (nullptr == m_outcome->triangleVertexUvs())
+    if (nullptr == m_object->triangleVertexUvs())
         return;
-    if (nullptr == m_outcome->triangleSourceNodes())
+    if (nullptr == m_object->triangleSourceNodes())
         return;
-    if (nullptr == m_outcome->partUvRects())
+    if (nullptr == m_object->partUvRects())
         return;
     
     QElapsedTimer countTimeConsumed;
@@ -240,17 +204,17 @@ void TextureGenerator::generate()
     bool hasRoughnessMap = false;
     bool hasAmbientOcclusionMap = false;
     
-    const auto &triangleVertexUvs = *m_outcome->triangleVertexUvs();
-    const auto &triangleSourceNodes = *m_outcome->triangleSourceNodes();
-    const auto &partUvRects = *m_outcome->partUvRects();
-    const auto &triangleNormals = m_outcome->triangleNormals;
+    const auto &triangleVertexUvs = *m_object->triangleVertexUvs();
+    const auto &triangleSourceNodes = *m_object->triangleSourceNodes();
+    const auto &partUvRects = *m_object->partUvRects();
+    const auto &triangleNormals = m_object->triangleNormals;
     
     std::map<QUuid, QColor> partColorMap;
-    std::map<std::pair<QUuid, QUuid>, const OutcomeNode *> nodeMap;
+    std::map<std::pair<QUuid, QUuid>, const ObjectNode *> nodeMap;
     std::map<QUuid, float> partColorSolubilityMap;
     std::map<QUuid, float> partMetalnessMap;
     std::map<QUuid, float> partRoughnessMap;
-    for (const auto &item: m_outcome->nodes) {
+    for (const auto &item: m_object->nodes) {
         if (!m_hasTransparencySettings) {
             if (!qFuzzyCompare(1.0, item.color.alphaF()))
                 m_hasTransparencySettings = true;
@@ -267,14 +231,8 @@ void TextureGenerator::generate()
     m_resultTextureColorImage = new QImage(TextureGenerator::m_textureSize, TextureGenerator::m_textureSize, QImage::Format_ARGB32);
     m_resultTextureColorImage->fill(m_hasTransparencySettings ? m_defaultTextureColor : Qt::white);
     
-    m_resultTextureBorderImage = new QImage(TextureGenerator::m_textureSize, TextureGenerator::m_textureSize, QImage::Format_ARGB32);
-    m_resultTextureBorderImage->fill(Qt::transparent);
-    
     m_resultTextureNormalImage = new QImage(TextureGenerator::m_textureSize, TextureGenerator::m_textureSize, QImage::Format_ARGB32);
     m_resultTextureNormalImage->fill(QColor(128, 128, 255));
-    
-    m_resultTextureMetalnessRoughnessAmbientOcclusionImage = new QImage(TextureGenerator::m_textureSize, TextureGenerator::m_textureSize, QImage::Format_ARGB32);
-    m_resultTextureMetalnessRoughnessAmbientOcclusionImage->fill(QColor(255, 255, 0));
     
     m_resultTextureMetalnessImage = new QImage(TextureGenerator::m_textureSize, TextureGenerator::m_textureSize, QImage::Format_ARGB32);
     m_resultTextureMetalnessImage->fill(Qt::black);
@@ -294,11 +252,6 @@ void TextureGenerator::generate()
     texturePainter.begin(m_resultTextureColorImage);
     texturePainter.setRenderHint(QPainter::Antialiasing);
     texturePainter.setRenderHint(QPainter::HighQualityAntialiasing);
-    
-    QPainter textureBorderPainter;
-    textureBorderPainter.begin(m_resultTextureBorderImage);
-    textureBorderPainter.setRenderHint(QPainter::Antialiasing);
-    textureBorderPainter.setRenderHint(QPainter::HighQualityAntialiasing);
     
     QPainter textureNormalPainter;
     textureNormalPainter.begin(m_resultTextureNormalImage);
@@ -555,8 +508,8 @@ void TextureGenerator::generate()
     };
     
     std::map<std::pair<size_t, size_t>, std::tuple<size_t, size_t, size_t>> halfEdgeToTriangleMap;
-    for (size_t i = 0; i < m_outcome->triangles.size(); ++i) {
-        const auto &triangleIndices = m_outcome->triangles[i];
+    for (size_t i = 0; i < m_object->triangles.size(); ++i) {
+        const auto &triangleIndices = m_object->triangles[i];
         if (triangleIndices.size() != 3) {
             qDebug() << "Found invalid triangle indices";
             continue;
@@ -582,7 +535,7 @@ void TextureGenerator::generate()
     
     // Draw belly white
     texturePainter.setCompositionMode(QPainter::CompositionMode_SoftLight);
-    for (size_t triangleIndex = 0; triangleIndex < m_outcome->triangles.size(); ++triangleIndex) {
+    for (size_t triangleIndex = 0; triangleIndex < m_object->triangles.size(); ++triangleIndex) {
         const auto &normal = triangleNormals[triangleIndex];
         const std::pair<QUuid, QUuid> &source = triangleSourceNodes[triangleIndex];
         const auto &partId = source.first;
@@ -595,11 +548,11 @@ void TextureGenerator::generate()
             continue;
         }
         
-        const auto &findOutcomeNode = nodeMap.find(source);
-        if (findOutcomeNode == nodeMap.end())
+        const auto &findObjectNode = nodeMap.find(source);
+        if (findObjectNode == nodeMap.end())
             continue;
-        const OutcomeNode *outcomeNode = findOutcomeNode->second;
-        if (qAbs(QVector3D::dotProduct(outcomeNode->direction, QVector3D(0, 1, 0))) >= 0.707) {
+        const ObjectNode *objectNode = findObjectNode->second;
+        if (qAbs(QVector3D::dotProduct(objectNode->direction, QVector3D(0, 1, 0))) >= 0.707) {
             if (QVector3D::dotProduct(normal, QVector3D(0, 0, 1)) <= 0.0)
                 continue;
         } else {
@@ -607,7 +560,7 @@ void TextureGenerator::generate()
                 continue;
         }
         
-        const auto &triangleIndices = m_outcome->triangles[triangleIndex];
+        const auto &triangleIndices = m_object->triangles[triangleIndex];
         if (triangleIndices.size() != 3) {
             qDebug() << "Found invalid triangle indices";
             continue;
@@ -690,23 +643,8 @@ void TextureGenerator::generate()
     hasAmbientOcclusionMap = !m_partAmbientOcclusionTextureMap.empty();
     
     auto paintTextureEndTime = countTimeConsumed.elapsed();
-    
-    pen.setWidth(0);
-    textureBorderPainter.setPen(pen);
-    auto paintBorderBeginTime = countTimeConsumed.elapsed();
-    for (auto i = 0u; i < triangleVertexUvs.size(); i++) {
-        const std::vector<QVector2D> &uv = triangleVertexUvs[i];
-        for (auto j = 0; j < 3; j++) {
-            int from = j;
-            int to = (j + 1) % 3;
-            textureBorderPainter.drawLine(uv[from][0] * TextureGenerator::m_textureSize, uv[from][1] * TextureGenerator::m_textureSize,
-                uv[to][0] * TextureGenerator::m_textureSize, uv[to][1] * TextureGenerator::m_textureSize);
-        }
-    }
-    auto paintBorderEndTime = countTimeConsumed.elapsed();
-    
+
     texturePainter.end();
-    textureBorderPainter.end();
     textureNormalPainter.end();
     textureMetalnessPainter.end();
     textureRoughnessPainter.end();
@@ -717,63 +655,26 @@ void TextureGenerator::generate()
         m_resultTextureNormalImage = nullptr;
     }
     
-    auto mergeMetalnessRoughnessAmbientOcclusionBeginTime = countTimeConsumed.elapsed();
     if (!hasMetalnessMap && !hasRoughnessMap && !hasAmbientOcclusionMap) {
-        delete m_resultTextureMetalnessRoughnessAmbientOcclusionImage;
-        m_resultTextureMetalnessRoughnessAmbientOcclusionImage = nullptr;
-    } else {
-        for (int row = 0; row < m_resultTextureMetalnessRoughnessAmbientOcclusionImage->height(); ++row) {
-            for (int col = 0; col < m_resultTextureMetalnessRoughnessAmbientOcclusionImage->width(); ++col) {
-                QColor color(255, 255, 0);
-                if (hasMetalnessMap)
-                    color.setBlue(qGray(m_resultTextureMetalnessImage->pixel(col, row)));
-                if (hasRoughnessMap)
-                    color.setGreen(qGray(m_resultTextureRoughnessImage->pixel(col, row)));
-                if (hasAmbientOcclusionMap)
-                    color.setRed(qGray(m_resultTextureAmbientOcclusionImage->pixel(col, row)));
-                m_resultTextureMetalnessRoughnessAmbientOcclusionImage->setPixelColor(col, row, color);
-            }
-        }
-        if (!hasMetalnessMap) {
-            delete m_resultTextureMetalnessImage;
-            m_resultTextureMetalnessImage = nullptr;
-        }
-        if (!hasRoughnessMap) {
-            delete m_resultTextureRoughnessImage;
-            m_resultTextureRoughnessImage = nullptr;
-        }
-        if (!hasAmbientOcclusionMap) {
-            delete m_resultTextureAmbientOcclusionImage;
-            m_resultTextureAmbientOcclusionImage = nullptr;
-        }
-    }
-    auto mergeMetalnessRoughnessAmbientOcclusionEndTime = countTimeConsumed.elapsed();
-    
-    m_resultTextureImage = new QImage(*m_resultTextureColorImage);
-    
-    QImage uvCheckImage(":/resources/checkuv.png");
-    
-    m_resultTextureGuideImage = new QImage(*m_resultTextureImage);
-    {
-        QPainter mergeTextureGuidePainter(m_resultTextureGuideImage);
-        mergeTextureGuidePainter.setCompositionMode(QPainter::CompositionMode_DestinationOver);
-        mergeTextureGuidePainter.drawImage(0, 0, uvCheckImage);
-        mergeTextureGuidePainter.end();
-    }
-    
-    {
-        QPainter mergeTextureGuidePainter(m_resultTextureGuideImage);
-        mergeTextureGuidePainter.setCompositionMode(QPainter::CompositionMode_Multiply);
-        mergeTextureGuidePainter.drawImage(0, 0, *m_resultTextureBorderImage);
-        mergeTextureGuidePainter.end();
+        delete m_resultTextureMetalnessImage;
+        m_resultTextureMetalnessImage = nullptr;
+
+        delete m_resultTextureRoughnessImage;
+        m_resultTextureRoughnessImage = nullptr;
+
+        delete m_resultTextureAmbientOcclusionImage;
+        m_resultTextureAmbientOcclusionImage = nullptr;
     }
     
     auto createResultBeginTime = countTimeConsumed.elapsed();
-    m_resultMesh->setTextureImage(new QImage(*m_resultTextureImage));
+    m_resultMesh->setTextureImage(new QImage(*m_resultTextureColorImage));
     if (nullptr != m_resultTextureNormalImage)
         m_resultMesh->setNormalMapImage(new QImage(*m_resultTextureNormalImage));
-    if (nullptr != m_resultTextureMetalnessRoughnessAmbientOcclusionImage) {
-        m_resultMesh->setMetalnessRoughnessAmbientOcclusionImage(new QImage(*m_resultTextureMetalnessRoughnessAmbientOcclusionImage));
+    if (hasMetalnessMap || hasRoughnessMap || hasAmbientOcclusionMap) {
+        m_resultMesh->setMetalnessRoughnessAmbientOcclusionImage(combineMetalnessRoughnessAmbientOcclusionImages(
+            m_resultTextureMetalnessImage,
+            m_resultTextureRoughnessImage,
+            m_resultTextureAmbientOcclusionImage));
         m_resultMesh->setHasMetalnessInImage(hasMetalnessMap);
         m_resultMesh->setHasRoughnessInImage(hasRoughnessMap);
         m_resultMesh->setHasAmbientOcclusionInImage(hasAmbientOcclusionMap);
@@ -781,11 +682,41 @@ void TextureGenerator::generate()
     auto createResultEndTime = countTimeConsumed.elapsed();
     
     qDebug() << "The texture[" << TextureGenerator::m_textureSize << "x" << TextureGenerator::m_textureSize << "] generation took" << countTimeConsumed.elapsed() << "milliseconds";
-    qDebug() << "   :create image took" << (createImageEndTime - createImageBeginTime) << "milliseconds";
-    qDebug() << "   :paint texture took" << (paintTextureEndTime - paintTextureBeginTime) << "milliseconds";
-    qDebug() << "   :paint border took" << (paintBorderEndTime - paintBorderBeginTime) << "milliseconds";
-    qDebug() << "   :merge metalness, roughness, and ambient occlusion texture took" << (mergeMetalnessRoughnessAmbientOcclusionEndTime - mergeMetalnessRoughnessAmbientOcclusionBeginTime) << "milliseconds";
-    qDebug() << "   :create result took" << (createResultEndTime - createResultBeginTime) << "milliseconds";
+}
+
+QImage *TextureGenerator::combineMetalnessRoughnessAmbientOcclusionImages(QImage *metalnessImage,
+        QImage *roughnessImage,
+        QImage *ambientOcclusionImage)
+{
+    QImage *textureMetalnessRoughnessAmbientOcclusionImage = nullptr;
+    if (nullptr != metalnessImage ||
+            nullptr != roughnessImage ||
+            nullptr != ambientOcclusionImage) {
+        int textureSize = 0;
+        if (nullptr != metalnessImage)
+            textureSize = metalnessImage->height();
+        if (nullptr != roughnessImage)
+            textureSize = roughnessImage->height();
+        if (nullptr != ambientOcclusionImage)
+            textureSize = ambientOcclusionImage->height();
+        if (textureSize > 0) {
+            textureMetalnessRoughnessAmbientOcclusionImage = new QImage(textureSize, textureSize, QImage::Format_ARGB32);
+            textureMetalnessRoughnessAmbientOcclusionImage->fill(QColor(255, 255, 0));
+            for (int row = 0; row < textureMetalnessRoughnessAmbientOcclusionImage->height(); ++row) {
+                for (int col = 0; col < textureMetalnessRoughnessAmbientOcclusionImage->width(); ++col) {
+                    QColor color(255, 255, 0);
+                    if (nullptr != metalnessImage)
+                        color.setBlue(qGray(metalnessImage->pixel(col, row)));
+                    if (nullptr != roughnessImage)
+                        color.setGreen(qGray(roughnessImage->pixel(col, row)));
+                    if (nullptr != ambientOcclusionImage)
+                        color.setRed(qGray(ambientOcclusionImage->pixel(col, row)));
+                    textureMetalnessRoughnessAmbientOcclusionImage->setPixelColor(col, row, color);
+                }
+            }
+        }
+    }
+    return textureMetalnessRoughnessAmbientOcclusionImage;
 }
 
 void TextureGenerator::process()

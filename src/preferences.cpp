@@ -18,6 +18,7 @@ void Preferences::loadDefault()
     m_toonShading = false;
     m_toonLine = ToonLine::WithoutLine;
     m_textureSize = 1024;
+    m_scriptEnabled = false;
 }
 
 Preferences::Preferences()
@@ -57,6 +58,13 @@ Preferences::Preferences()
         if (!value.isEmpty())
             m_textureSize = value.toInt();
     }
+    {
+        QString value = m_settings.value("scriptEnabled").toString();
+        if (value.isEmpty())
+            m_scriptEnabled = false;
+        else
+            m_scriptEnabled = isTrueValueString(value);
+    }
 }
 
 CombineMode Preferences::componentCombineMode() const
@@ -72,6 +80,11 @@ const QColor &Preferences::partColor() const
 bool Preferences::flatShading() const
 {
     return m_flatShading;
+}
+
+bool Preferences::scriptEnabled() const
+{
+    return m_scriptEnabled;
 }
 
 bool Preferences::toonShading() const
@@ -114,6 +127,15 @@ void Preferences::setFlatShading(bool flatShading)
     m_flatShading = flatShading;
     m_settings.setValue("flatShading", flatShading ? "true" : "false");
     emit flatShadingChanged();
+}
+
+void Preferences::setScriptEnabled(bool enabled)
+{
+    if (m_scriptEnabled == enabled)
+        return;
+    m_scriptEnabled = enabled;
+    m_settings.setValue("scriptEnabled", enabled ? "true" : "false");
+    emit scriptEnabledChanged();
 }
 
 void Preferences::setToonShading(bool toonShading)
@@ -163,4 +185,5 @@ void Preferences::reset()
     emit toonShadingChanged();
     emit toonLineChanged();
     emit textureSizeChanged();
+    emit scriptEnabledChanged();
 }

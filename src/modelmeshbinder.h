@@ -15,6 +15,7 @@ public:
     ~ModelMeshBinder();
     Model *fetchCurrentMesh();
     void updateMesh(Model *mesh);
+    void updateColorTexture(QImage *colorTextureImage);
     void initialize();
     void paint(ModelShaderProgram *program);
     void cleanup();
@@ -56,6 +57,7 @@ private:
     QImage *m_newToonDepthMap = nullptr;
     QImage *m_currentToonNormalMap = nullptr;
     QImage *m_currentToonDepthMap = nullptr;
+    QImage *m_colorTextureImage = nullptr;
     bool m_newToonMapsComing = false;
 private:
     QOpenGLVertexArrayObject m_vaoTriangle;
@@ -67,6 +69,7 @@ private:
     QMutex m_meshMutex;
     QMutex m_newMeshMutex;
     QMutex m_toonNormalAndDepthMapMutex;
+    QMutex m_colorTextureMutex;
 };
 
 #endif

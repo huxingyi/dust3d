@@ -3,22 +3,22 @@
 #include "uvunwrap.h"
 #include "triangletangentresolve.h"
 
-MeshResultPostProcessor::MeshResultPostProcessor(const Outcome &outcome)
+MeshResultPostProcessor::MeshResultPostProcessor(const Object &object)
 {
-    m_outcome = new Outcome;
-    *m_outcome = outcome;
+    m_object = new Object;
+    *m_object = object;
 }
 
 MeshResultPostProcessor::~MeshResultPostProcessor()
 {
-    delete m_outcome;
+    delete m_object;
 }
 
-Outcome *MeshResultPostProcessor::takePostProcessedOutcome()
+Object *MeshResultPostProcessor::takePostProcessedObject()
 {
-    Outcome *outcome = m_outcome;
-    m_outcome = nullptr;
-    return outcome;
+    Object *object = m_object;
+    m_object = nullptr;
+    return object;
 }
 
 void MeshResultPostProcessor::poseProcess()
@@ -26,20 +26,20 @@ void MeshResultPostProcessor::poseProcess()
 #ifndef NDEBUG
     return;
 #endif
-    if (!m_outcome->nodes.empty()) {
+    if (!m_object->nodes.empty()) {
         {
             std::vector<std::vector<QVector2D>> triangleVertexUvs;
             std::set<int> seamVertices;
             std::map<QUuid, std::vector<QRectF>> partUvRects;
-            uvUnwrap(*m_outcome, triangleVertexUvs, seamVertices, partUvRects);
-            m_outcome->setTriangleVertexUvs(triangleVertexUvs);
-            m_outcome->setPartUvRects(partUvRects);
+            uvUnwrap(*m_object, triangleVertexUvs, seamVertices, partUvRects);
+            m_object->setTriangleVertexUvs(triangleVertexUvs);
+            m_object->setPartUvRects(partUvRects);
         }
         
         {
             std::vector<QVector3D> triangleTangents;
-            triangleTangentResolve(*m_outcome, triangleTangents);
-            m_outcome->setTriangleTangents(triangleTangents);
+            triangleTangentResolve(*m_object, triangleTangents);
+            m_object->setTriangleTangents(triangleTangents);
         }
     }
 }

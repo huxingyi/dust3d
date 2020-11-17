@@ -1,5 +1,5 @@
-#ifndef DUST3D_OUTCOME_H
-#define DUST3D_OUTCOME_H
+#ifndef DUST3D_OBJECT_H
+#define DUST3D_OBJECT_H
 #include <vector>
 #include <set>
 #include <QVector3D>
@@ -8,10 +8,11 @@
 #include <QVector2D>
 #include <QRectF>
 #include "bonemark.h"
+#include "componentlayer.h"
 
 #define MAX_WEIGHT_NUM  4
 
-struct OutcomeNode
+struct ObjectNode
 {
     QUuid partId;
     QUuid nodeId;
@@ -25,50 +26,23 @@ struct OutcomeNode
     bool countershaded = false;
     QUuid mirrorFromPartId;
     QUuid mirroredByPartId;
-    BoneMark boneMark;
+    BoneMark boneMark = BoneMark::None;
     QVector3D direction;
+    ComponentLayer layer = ComponentLayer::Body;
     bool joined = true;
 };
 
-struct OutcomePaintNode
-{
-    int originNodeIndex;
-    QUuid originNodeId;
-    QVector3D origin;
-    float radius = 0;
-    QVector3D baseNormal;
-    QVector3D direction;
-    size_t order;
-    std::vector<QVector3D> vertices;
-};
-
-struct OutcomePaintMap
-{
-    QUuid partId;
-    std::vector<OutcomePaintNode> paintNodes;
-    
-    void clear()
-    {
-        paintNodes.clear();
-    };
-};
-
-class Outcome
+class Object
 {
 public:
-    std::vector<OutcomeNode> nodes;
-    std::vector<OutcomeNode> bodyNodes;
-    std::vector<OutcomeNode> clothNodes;
+    std::vector<ObjectNode> nodes;
     std::vector<std::pair<std::pair<QUuid, QUuid>, std::pair<QUuid, QUuid>>> edges;
-    std::vector<std::pair<std::pair<QUuid, QUuid>, std::pair<QUuid, QUuid>>> bodyEdges;
-    std::vector<std::pair<QVector3D, std::pair<QUuid, QUuid>>> nodeVertices;
     std::vector<QVector3D> vertices;
     std::vector<std::pair<QUuid, QUuid>> vertexSourceNodes;
     std::vector<std::vector<size_t>> triangleAndQuads;
     std::vector<std::vector<size_t>> triangles;
     std::vector<QVector3D> triangleNormals;
     std::vector<QColor> triangleColors;
-    std::vector<OutcomePaintMap> paintMaps;
     quint64 meshId = 0;
     
     const std::vector<std::pair<QUuid, QUuid>> *triangleSourceNodes() const
@@ -147,7 +121,7 @@ public:
         m_hasTriangleLinks = true;
     }
     
-    static void buildInterpolatedNodes(const std::vector<OutcomeNode> &nodes,
+    static void buildInterpolatedNodes(const std::vector<ObjectNode> &nodes,
         const std::vector<std::pair<std::pair<QUuid, QUuid>, std::pair<QUuid, QUuid>>> &edges,
         std::vector<std::tuple<QVector3D, float, size_t>> *targetNodes);
 private:

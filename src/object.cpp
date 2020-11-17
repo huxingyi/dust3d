@@ -1,6 +1,6 @@
-#include "outcome.h"
+#include "object.h"
 
-void Outcome::buildInterpolatedNodes(const std::vector<OutcomeNode> &nodes,
+void Object::buildInterpolatedNodes(const std::vector<ObjectNode> &nodes,
         const std::vector<std::pair<std::pair<QUuid, QUuid>, std::pair<QUuid, QUuid>>> &edges,
         std::vector<std::tuple<QVector3D, float, size_t>> *targetNodes)
 {

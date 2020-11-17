@@ -12,11 +12,11 @@
 MotionsGenerator::MotionsGenerator(RigType rigType,
         const std::vector<RiggerBone> &bones,
         const std::map<int, RiggerVertexWeights> &rigWeights,
-        const Outcome &outcome) :
+        const Object &object) :
     m_rigType(rigType),
     m_bones(bones),
     m_rigWeights(rigWeights),
-    m_outcome(outcome)
+    m_object(object)
 {
 }
 
@@ -323,25 +323,25 @@ void MotionsGenerator::generateMotion(const QUuid &motionId)
         for (size_t i = 0; i < m_bones.size(); ++i)
             jointNodeMatrices[i] = jointNodeMatrices[i] * bindTransforms[i].inverted();
         
-        std::vector<QVector3D> transformedVertices(m_outcome.vertices.size());
-        for (size_t i = 0; i < m_outcome.vertices.size(); ++i) {
+        std::vector<QVector3D> transformedVertices(m_object.vertices.size());
+        for (size_t i = 0; i < m_object.vertices.size(); ++i) {
             const auto &weight = m_rigWeights[i];
             for (int x = 0; x < 4; x++) {
                 float factor = weight.boneWeights[x];
                 if (factor > 0) {
-                    transformedVertices[i] += jointNodeMatrices[weight.boneIndices[x]] * m_outcome.vertices[i] * factor;
+                    transformedVertices[i] += jointNodeMatrices[weight.boneIndices[x]] * m_object.vertices[i] * factor;
                 }
             }
         }
         
         std::vector<QVector3D> frameVertices = transformedVertices;
-        std::vector<std::vector<size_t>> frameFaces = m_outcome.triangles;
+        std::vector<std::vector<size_t>> frameFaces = m_object.triangles;
         std::vector<std::vector<QVector3D>> frameCornerNormals;
-        const std::vector<std::vector<QVector3D>> *triangleVertexNormals = m_outcome.triangleVertexNormals();
+        const std::vector<std::vector<QVector3D>> *triangleVertexNormals = m_object.triangleVertexNormals();
         if (nullptr == triangleVertexNormals) {
             frameCornerNormals.resize(frameFaces.size());
-            for (size_t i = 0; i < m_outcome.triangles.size(); ++i) {
-                const auto &triangle = m_outcome.triangles[i];
+            for (size_t i = 0; i < m_object.triangles.size(); ++i) {
+                const auto &triangle = m_object.triangles[i];
                 QVector3D triangleNormal = QVector3D::normal(
                     transformedVertices[triangle[0]],
                     transformedVertices[triangle[1]],

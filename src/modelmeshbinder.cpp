@@ -30,6 +30,7 @@ ModelMeshBinder::~ModelMeshBinder()
     delete m_newToonDepthMap;
     delete m_currentToonNormalMap;
     delete m_currentToonDepthMap;
+    delete m_colorTextureImage;
 }
 
 void ModelMeshBinder::updateMesh(Model *mesh)
@@ -40,6 +41,13 @@ void ModelMeshBinder::updateMesh(Model *mesh)
         m_newMesh = mesh;
         m_newMeshComing = true;
     }
+}
+
+void ModelMeshBinder::updateColorTexture(QImage *colorTextureImage)
+{
+    QMutexLocker lock(&m_colorTextureMutex);
+    delete m_colorTextureImage;
+    m_colorTextureImage = colorTextureImage;
 }
 
 void ModelMeshBinder::reloadMesh()
@@ -294,6 +302,15 @@ void ModelMeshBinder::paint(ModelShaderProgram *program)
         QOpenGLVertexArrayObject::Binder vaoBinder(&m_vaoTriangle);
 		QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
         if (m_hasTexture) {
+            {
+                QMutexLocker lock(&m_colorTextureMutex);
+                if (m_colorTextureImage) {
+                    delete m_texture;
+                    m_texture = new QOpenGLTexture(*m_colorTextureImage);
+                    delete m_colorTextureImage;
+                    m_colorTextureImage = nullptr;
+                }
+            }
             if (m_texture)
                 m_texture->bind(0);
             program->setUniformValue(program->textureEnabledLoc(), 1);

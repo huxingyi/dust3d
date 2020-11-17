@@ -215,8 +215,8 @@ HEADERS += src/model.h
 SOURCES += src/texturegenerator.cpp
 HEADERS += src/texturegenerator.h
 
-SOURCES += src/outcome.cpp
-HEADERS += src/outcome.h
+SOURCES += src/object.cpp
+HEADERS += src/object.h
 
 SOURCES += src/meshresultpostprocessor.cpp
 HEADERS += src/meshresultpostprocessor.h
@@ -229,9 +229,6 @@ HEADERS += src/logbrowserdialog.h
 
 SOURCES += src/floatnumberwidget.cpp
 HEADERS += src/floatnumberwidget.h
-
-SOURCES += src/exportpreviewwidget.cpp
-HEADERS += src/exportpreviewwidget.h
 
 SOURCES += src/ccdikresolver.cpp
 HEADERS += src/ccdikresolver.h
@@ -397,11 +394,8 @@ HEADERS += src/intnumberwidget.h
 SOURCES += src/imagepreviewwidget.cpp
 HEADERS += src/imagepreviewwidget.h
 
-SOURCES += src/vertexcolorpainter.cpp
-HEADERS += src/vertexcolorpainter.h
-
-SOURCES += src/voxelgrid.cpp
-HEADERS += src/voxelgrid.h
+SOURCES += src/texturepainter.cpp
+HEADERS += src/texturepainter.h
 
 SOURCES += src/paintmode.cpp
 HEADERS += src/paintmode.h
@@ -411,9 +405,6 @@ HEADERS += src/proceduralanimation.h
 
 SOURCES += src/boundingboxmesh.cpp
 HEADERS += src/boundingboxmesh.h
-
-SOURCES += src/gridmeshbuilder.cpp
-HEADERS += src/gridmeshbuilder.h
 
 SOURCES += src/regionfiller.cpp
 HEADERS += src/regionfiller.h
@@ -531,6 +522,9 @@ HEADERS += src/motioneditwidget.h
 
 SOURCES += src/vertebratamotionparameterswidget.cpp
 HEADERS += src/vertebratamotionparameterswidget.h
+
+SOURCES += src/objectxml.cpp
+HEADERS += src/objectxml.h
 
 SOURCES += src/main.cpp
 

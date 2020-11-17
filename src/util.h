@@ -59,6 +59,9 @@ bool intersectRayAndPolyhedron(const QVector3D &rayNear,
     const std::vector<QVector3D> &vertices,
     const std::vector<std::vector<size_t>> &triangles,
     const std::vector<QVector3D> &triangleNormals,
-    QVector3D *intersection=nullptr);
+    QVector3D *intersection=nullptr,
+    size_t *intersectedTriangleIndex=nullptr);
+QVector3D barycentricCoordinates(const QVector3D &a, const QVector3D &b, const QVector3D &c, 
+    const QVector3D &point);
     
 #endif

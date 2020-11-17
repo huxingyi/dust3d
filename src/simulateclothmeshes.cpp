@@ -21,7 +21,7 @@ public:
         const auto &filteredClothFaces = clothMesh->faces;
         std::map<PositionKey, std::pair<QUuid, QUuid>> positionMap;
         std::pair<QUuid, QUuid> defaultSource;
-        for (const auto &it: *clothMesh->outcomeNodeVertices) {
+        for (const auto &it: *clothMesh->objectNodeVertices) {
             if (!it.second.first.isNull())
                 defaultSource.first = it.second.first;
             positionMap.insert({PositionKey(it.first), it.second});

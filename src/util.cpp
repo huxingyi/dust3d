@@ -561,7 +561,8 @@ bool intersectRayAndPolyhedron(const QVector3D &rayNear,
     const std::vector<QVector3D> &vertices,
     const std::vector<std::vector<size_t>> &triangles,
     const std::vector<QVector3D> &triangleNormals,
-    QVector3D *intersection)
+    QVector3D *intersection,
+    size_t *intersectedTriangleIndex)
 {
     bool foundPosition = false;
     auto ray = (rayNear - rayFar).normalized();
@@ -585,6 +586,8 @@ bool intersectRayAndPolyhedron(const QVector3D &rayNear,
             if (distance2 < minDistance2) {
                 if (nullptr != intersection)
                     *intersection = point;
+                if (nullptr != intersectedTriangleIndex)
+                    *intersectedTriangleIndex = i;
                 minDistance2 = distance2;
                 foundPosition = true;
             }
@@ -593,4 +596,13 @@ bool intersectRayAndPolyhedron(const QVector3D &rayNear,
     return foundPosition;
 }
 
-
+QVector3D barycentricCoordinates(const QVector3D &a, const QVector3D &b, const QVector3D &c, 
+    const QVector3D &point)
+{
+    auto invertedAreaOfAbc = 1.0 / areaOfTriangle(a, b, c);
+    auto areaOfPbc = areaOfTriangle(point, b, c);
+    auto areaOfPca = areaOfTriangle(point, c, a);
+    auto alpha = areaOfPbc * invertedAreaOfAbc;
+    auto beta = areaOfPca * invertedAreaOfAbc;
+    return QVector3D(alpha, beta, 1.0 - alpha - beta);
+}

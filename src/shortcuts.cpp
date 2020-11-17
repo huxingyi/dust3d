@@ -27,7 +27,7 @@ void initShortCuts(QWidget *widget, SkeletonGraphicsWidget *graphicsWidget)
     defineKey(Qt::CTRL + Qt::Key_C, &SkeletonGraphicsWidget::shortcutCopy);
     defineKey(Qt::CTRL + Qt::Key_V, &SkeletonGraphicsWidget::shortcutPaste);
     defineKey(Qt::Key_S, &SkeletonGraphicsWidget::shortcutSelectMode);
-    //defineKey(Qt::Key_D, &SkeletonGraphicsWidget::shortcutPaintMode);
+    defineKey(Qt::Key_D, &SkeletonGraphicsWidget::shortcutPaintMode);
     defineKey(Qt::ALT + Qt::Key_Minus, &SkeletonGraphicsWidget::shortcutZoomRenderedModelByMinus10);
     defineKey(Qt::Key_Minus, &SkeletonGraphicsWidget::shortcutZoomSelectedByMinus1);
     defineKey(Qt::ALT + Qt::Key_Equal, &SkeletonGraphicsWidget::shortcutZoomRenderedModelBy10);

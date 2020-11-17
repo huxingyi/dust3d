@@ -22,7 +22,7 @@
 
 bool GlbFileWriter::m_enableComment = false;
 
-GlbFileWriter::GlbFileWriter(Outcome &outcome,
+GlbFileWriter::GlbFileWriter(Object &object,
         const std::vector<RiggerBone> *resultRigBones,
         const std::map<int, RiggerVertexWeights> *resultRigWeights,
         const QString &filename,
@@ -36,12 +36,12 @@ GlbFileWriter::GlbFileWriter(Outcome &outcome,
     m_outputAnimation(true),
     m_outputUv(true)
 {
-    const std::vector<std::vector<QVector3D>> *triangleVertexNormals = outcome.triangleVertexNormals();
+    const std::vector<std::vector<QVector3D>> *triangleVertexNormals = object.triangleVertexNormals();
     if (m_outputNormal) {
         m_outputNormal = nullptr != triangleVertexNormals;
     }
     
-    const std::vector<std::vector<QVector2D>> *triangleVertexUvs = outcome.triangleVertexUvs();
+    const std::vector<std::vector<QVector2D>> *triangleVertexUvs = object.triangleVertexUvs();
     if (m_outputUv) {
         m_outputUv = nullptr != triangleVertexUvs;
     }
@@ -146,10 +146,10 @@ GlbFileWriter::GlbFileWriter(Outcome &outcome,
 
     std::vector<QVector3D> triangleVertexPositions;
     std::vector<size_t> triangleVertexOldIndices;
-    for (const auto &triangleIndices: outcome.triangles) {
+    for (const auto &triangleIndices: object.triangles) {
         for (size_t j = 0; j < 3; ++j) {
             triangleVertexOldIndices.push_back(triangleIndices[j]);
-            triangleVertexPositions.push_back(outcome.vertices[triangleIndices[j]]);
+            triangleVertexPositions.push_back(object.vertices[triangleIndices[j]]);
         }
     }
 

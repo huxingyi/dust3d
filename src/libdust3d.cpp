@@ -18,7 +18,7 @@ struct _dust3d
     GeneratedCacheContext *cacheContext = nullptr;
     Model *resultMesh = nullptr;
     Snapshot *snapshot = nullptr;
-    Outcome *outcome = nullptr;
+    Object *object = nullptr;
     int error = DUST3D_ERROR;
 };
 
@@ -38,8 +38,8 @@ DUST3D_DLL void DUST3D_API dust3dClose(dust3d *ds3)
     delete ds3->snapshot;
     ds3->snapshot = nullptr;
     
-    delete ds3->outcome;
-    ds3->outcome = nullptr;
+    delete ds3->object;
+    ds3->object = nullptr;
     
     delete ds3;
 }
@@ -56,8 +56,8 @@ DUST3D_DLL dust3d * DUST3D_API dust3dOpenFromMemory(const char *documentType, co
     
     ds3->error = DUST3D_ERROR;
     
-    delete ds3->outcome;
-    ds3->outcome = new Outcome;
+    delete ds3->object;
+    ds3->object = new Object;
     
     if (0 == strcmp(documentType, "xml")) {
         QByteArray data(buffer, size);
@@ -138,10 +138,10 @@ DUST3D_DLL int DUST3D_API dust3dGenerateMesh(dust3d *ds3)
     meshGenerator->setGeneratedCacheContext(ds3->cacheContext);
     meshGenerator->generate();
     
-    delete ds3->outcome;
-    ds3->outcome = meshGenerator->takeOutcome();
-    if (nullptr == ds3->outcome)
-        ds3->outcome = new Outcome;
+    delete ds3->object;
+    ds3->object = meshGenerator->takeObject();
+    if (nullptr == ds3->object)
+        ds3->object = new Object;
     
     if (meshGenerator->isSuccessful())
         ds3->error = DUST3D_OK;
@@ -153,17 +153,17 @@ DUST3D_DLL int DUST3D_API dust3dGenerateMesh(dust3d *ds3)
 
 DUST3D_DLL int DUST3D_API dust3dGetMeshVertexCount(dust3d *ds3)
 {
-    return (int)ds3->outcome->vertices.size();
+    return (int)ds3->object->vertices.size();
 }
 
 DUST3D_DLL int DUST3D_API dust3dGetMeshTriangleCount(dust3d *ds3)
 {
-    return (int)ds3->outcome->triangles.size();
+    return (int)ds3->object->triangles.size();
 }
 
 DUST3D_DLL void DUST3D_API dust3dGetMeshTriangleIndices(dust3d *ds3, int *indices)
 {
-    for (const auto &it: ds3->outcome->triangles) {
+    for (const auto &it: ds3->object->triangles) {
         *(indices++) = (int)it[0];
         *(indices++) = (int)it[1];
         *(indices++) = (int)it[2];
@@ -172,15 +172,15 @@ DUST3D_DLL void DUST3D_API dust3dGetMeshTriangleIndices(dust3d *ds3, int *indice
 
 DUST3D_DLL void DUST3D_API dust3dGetMeshTriangleColors(dust3d *ds3, unsigned int *colors)
 {
-    for (const auto &it: ds3->outcome->triangleColors) {
+    for (const auto &it: ds3->object->triangleColors) {
         *(colors++) = ((unsigned int)it.red() << 16) | ((unsigned int)it.green() << 8) | ((unsigned int)it.blue() << 0);
     }
 }
 
 DUST3D_DLL void DUST3D_API dust3dGetMeshVertexPosition(dust3d *ds3, int vertexIndex, float *x, float *y, float *z)
 {
-    if (vertexIndex >= 0 && vertexIndex < ds3->outcome->vertices.size()) {
-        const auto &v = ds3->outcome->vertices[vertexIndex];
+    if (vertexIndex >= 0 && vertexIndex < ds3->object->vertices.size()) {
+        const auto &v = ds3->object->vertices[vertexIndex];
         *x = v.x();
         *y = v.y();
         *z = v.z();
@@ -189,8 +189,8 @@ DUST3D_DLL void DUST3D_API dust3dGetMeshVertexPosition(dust3d *ds3, int vertexIn
 
 DUST3D_DLL void DUST3D_API dust3dGetMeshVertexSource(dust3d *ds3, int vertexIndex, unsigned char partId[16], unsigned char nodeId[16])
 {
-    if (vertexIndex >= 0 && vertexIndex < ds3->outcome->vertices.size()) {
-        const auto &source = ds3->outcome->vertexSourceNodes[vertexIndex];
+    if (vertexIndex >= 0 && vertexIndex < ds3->object->vertices.size()) {
+        const auto &source = ds3->object->vertexSourceNodes[vertexIndex];
         
         auto sourcePartUuid = source.first.toByteArray(QUuid::Id128);
         memcpy(partId, sourcePartUuid.constData(), sizeof(partId));
@@ -202,12 +202,12 @@ DUST3D_DLL void DUST3D_API dust3dGetMeshVertexSource(dust3d *ds3, int vertexInde
 
 DUST3D_DLL int DUST3D_API dust3dGetMeshTriangleAndQuadCount(dust3d *ds3)
 {
-    return (int)ds3->outcome->triangleAndQuads.size();
+    return (int)ds3->object->triangleAndQuads.size();
 }
 
 DUST3D_DLL void DUST3D_API dust3dGetMeshTriangleAndQuadIndices(dust3d *ds3, int *indices)
 {
-    for (const auto &it: ds3->outcome->triangleAndQuads) {
+    for (const auto &it: ds3->object->triangleAndQuads) {
         *(indices++) = (int)it[0];
         *(indices++) = (int)it[1];
         *(indices++) = (int)it[2];

@@ -70,7 +70,7 @@ void MotionManageWidget::showMotionDialog(QUuid motionId)
     motionEditWidget->updateBones(m_document->rigType,
         m_document->resultRigBones(),
         m_document->resultRigWeights(),
-        &m_document->currentRiggedOutcome());
+        &m_document->currentRiggedObject());
     if (!motionId.isNull()) {
         const Motion *motion = m_document->findMotion(motionId);
         if (nullptr != motion) {

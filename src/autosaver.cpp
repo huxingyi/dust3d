@@ -85,6 +85,8 @@ void AutoSaver::check()
     Snapshot *snapshot = new Snapshot;
     m_document->toSnapshot(snapshot);
     
+    Object *object = new Object(m_document->currentPostProcessedObject());
+    
     QByteArray *turnaroundPngByteArray = nullptr;
     if (!m_document->turnaround.isNull() && m_document->turnaroundPngByteArray.size() > 0) {
         turnaroundPngByteArray = new QByteArray(m_document->turnaroundPngByteArray);
@@ -101,9 +103,29 @@ void AutoSaver::check()
         scriptVariables = new std::map<QString, std::map<QString, QString>>(variables);
     }
     
+    DocumentSaver::Textures *textures = new DocumentSaver::Textures;
+    if (nullptr != m_document->textureImage) {
+        textures->textureImage = new QImage(*m_document->textureImage);
+    }
+    if (nullptr != m_document->textureNormalImage) {
+        textures->textureNormalImage = new QImage(*m_document->textureNormalImage);
+    }
+    if (nullptr != m_document->textureMetalnessImage) {
+        textures->textureMetalnessImage = new QImage(*m_document->textureMetalnessImage);
+    }
+    if (nullptr != m_document->textureRoughnessImage) {
+        textures->textureRoughnessImage = new QImage(*m_document->textureRoughnessImage);
+    }
+    if (nullptr != m_document->textureAmbientOcclusionImage) {
+        textures->textureAmbientOcclusionImage = new QImage(*m_document->textureAmbientOcclusionImage);
+    }
+    textures->textureHasTransparencySettings = m_document->textureHasTransparencySettings;
+    
     QThread *thread = new QThread;
     m_documentSaver = new DocumentSaver(&m_filename,
         snapshot,
+        object,
+        textures,
         turnaroundPngByteArray,
         script,
         scriptVariables);
