@@ -86,7 +86,7 @@ void MaterialPreviewsGenerator::generate()
                             textureGenerator->addPartColorMap(partId, image, layer.tileScale);
                         else if (TextureType::Normal == mapItem.forWhat)
                             textureGenerator->addPartNormalMap(partId, image, layer.tileScale);
-                        else if (TextureType::Metalness == mapItem.forWhat)
+                        else if (TextureType::Metallic == mapItem.forWhat)
                             textureGenerator->addPartMetalnessMap(partId, image, layer.tileScale);
                         else if (TextureType::Roughness == mapItem.forWhat)
                             textureGenerator->addPartRoughnessMap(partId, image, layer.tileScale);

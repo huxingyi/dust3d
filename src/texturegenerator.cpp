@@ -167,7 +167,7 @@ void TextureGenerator::prepare()
                     addPartColorMap(bmeshNode.partId, image, tileScale);
                 else if (TextureType::Normal == forWhat)
                     addPartNormalMap(bmeshNode.partId, image, tileScale);
-                else if (TextureType::Metalness == forWhat)
+                else if (TextureType::Metallic == forWhat)
                     addPartMetalnessMap(bmeshNode.partId, image, tileScale);
                 else if (TextureType::Roughness == forWhat)
                     addPartRoughnessMap(bmeshNode.partId, image, tileScale);

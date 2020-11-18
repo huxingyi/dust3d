@@ -9,7 +9,7 @@ enum class TextureType
     None,
     BaseColor,
     Normal,
-    Metalness,
+    Metallic,
     Roughness,
     AmbientOcclusion,
     Count
@@ -24,7 +24,7 @@ QString TextureTypeToDispName(TextureType type)                     \
             return QObject::tr("Base Color");                       \
         case TextureType::Normal:                                   \
             return QObject::tr("Normal Map");                       \
-        case TextureType::Metalness:                                \
+        case TextureType::Metallic:                                 \
             return QObject::tr("Metallic");                         \
         case TextureType::Roughness:                                \
             return QObject::tr("Roughness");                        \
@@ -46,8 +46,8 @@ const char *TextureTypeToString(TextureType type)                   \
             return "BaseColor";                                     \
         case TextureType::Normal:                                   \
             return "Normal";                                        \
-        case TextureType::Metalness:                                \
-            return "Metalness";                                     \
+        case TextureType::Metallic:                                 \
+            return "Metallic";                                      \
         case TextureType::Roughness:                                \
             return "Roughness";                                     \
         case TextureType::AmbientOcclusion:                         \
@@ -67,8 +67,10 @@ TextureType TextureTypeFromString(const char *typeString)           \
         return TextureType::BaseColor;                              \
     if (type == "Normal")                                           \
         return TextureType::Normal;                                 \
+    if (type == "Metallic")                                         \
+        return TextureType::Metallic;                               \
     if (type == "Metalness")                                        \
-        return TextureType::Metalness;                              \
+        return TextureType::Metallic;                               \
     if (type == "Roughness")                                        \
         return TextureType::Roughness;                              \
     if (type == "AmbientOcclusion")                                 \
