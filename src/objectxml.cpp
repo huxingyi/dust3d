@@ -18,6 +18,8 @@ void saveObjectToXmlStream(const Object *object, QXmlStreamWriter *writer)
     writer->writeStartDocument();
     
     writer->writeStartElement("object");
+        if (object->alphaEnabled)
+            writer->writeAttribute("alphaEnabled", "true");
         writer->writeStartElement("nodes");
         for (const auto &node: object->nodes) {
             writer->writeStartElement("node");
@@ -226,7 +228,9 @@ void loadObjectFromXmlStream(Object *object, QXmlStreamReader &reader)
         if (reader.isEndElement())
             elementNameStack.pop_back();
         if (reader.isStartElement()) {
-            if (fullName == "object.nodes.node") {
+            if (fullName == "object") {
+                object->alphaEnabled = isTrueValueString(reader.attributes().value("alphaEnabled").toString());
+            } else if (fullName == "object.nodes.node") {
                 QString nodeId = reader.attributes().value("id").toString();
                 if (nodeId.isEmpty())
                     continue;

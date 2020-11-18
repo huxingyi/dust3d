@@ -122,7 +122,6 @@ void AutoSaver::check()
         if (nullptr != m_document->textureAmbientOcclusionImage) {
             textures->textureAmbientOcclusionImage = new QImage(*m_document->textureAmbientOcclusionImage);
         }
-        textures->textureHasTransparencySettings = m_document->textureHasTransparencySettings;
     }
     QThread *thread = new QThread;
     m_documentSaver = new DocumentSaver(&m_filename,

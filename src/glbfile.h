@@ -19,7 +19,6 @@ public:
         const std::vector<RiggerBone> *resultRigBones,
         const std::map<int, RiggerVertexWeights> *resultRigWeights,
         const QString &filename,
-        bool textureHasTransparencySettings,
         QImage *textureImage=nullptr,
         QImage *normalImage=nullptr,
         QImage *ormImage=nullptr,

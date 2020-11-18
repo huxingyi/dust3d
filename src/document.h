@@ -425,7 +425,6 @@ public: // need initialize
     QByteArray *textureRoughnessImageByteArray;
     QImage *textureAmbientOcclusionImage;
     QByteArray *textureAmbientOcclusionImageByteArray;
-    bool textureHasTransparencySettings;
     RigType rigType;
     bool weldEnabled;
     PolyCount polyCount;

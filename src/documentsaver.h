@@ -26,7 +26,6 @@ public:
         QByteArray *textureRoughnessImageByteArray = nullptr;
         QImage *textureAmbientOcclusionImage = nullptr;
         QByteArray *textureAmbientOcclusionImageByteArray = nullptr;
-        bool textureHasTransparencySettings = false;
         
         ~Textures()
         {

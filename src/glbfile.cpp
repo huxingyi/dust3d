@@ -26,7 +26,6 @@ GlbFileWriter::GlbFileWriter(Object &object,
         const std::vector<RiggerBone> *resultRigBones,
         const std::map<int, RiggerVertexWeights> *resultRigWeights,
         const QString &filename,
-        bool textureHasTransparencySettings,
         QImage *textureImage,
         QImage *normalImage,
         QImage *ormImage,
@@ -172,7 +171,7 @@ GlbFileWriter::GlbFileWriter(Object &object,
         m_json["materials"][primitiveIndex]["pbrMetallicRoughness"]["baseColorTexture"]["index"] = textureIndex++;
         m_json["materials"][primitiveIndex]["pbrMetallicRoughness"]["metallicFactor"] = Model::m_defaultMetalness;
         m_json["materials"][primitiveIndex]["pbrMetallicRoughness"]["roughnessFactor"] = Model::m_defaultRoughness;
-        if (textureHasTransparencySettings)
+        if (object.alphaEnabled)
             m_json["materials"][primitiveIndex]["alphaMode"] = "BLEND";
         if (normalImage) {
             m_json["materials"][primitiveIndex]["normalTexture"]["index"] = textureIndex++;

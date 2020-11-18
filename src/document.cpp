@@ -38,7 +38,6 @@ Document::Document() :
     textureRoughnessImageByteArray(nullptr),
     textureAmbientOcclusionImage(nullptr),
     textureAmbientOcclusionImageByteArray(nullptr),
-    textureHasTransparencySettings(false),
     rigType(RigType::None),
     weldEnabled(true),
     polyCount(PolyCount::Original),
@@ -2108,7 +2107,7 @@ void Document::textureReady()
     delete m_resultTextureMesh;
     m_resultTextureMesh = m_textureGenerator->takeResultMesh();
     
-    textureHasTransparencySettings = m_textureGenerator->hasTransparencySettings();
+    m_postProcessedObject->alphaEnabled = m_textureGenerator->hasTransparencySettings();
 
     m_textureImageUpdateVersion++;
     
@@ -2129,7 +2128,6 @@ void Document::textureReady()
 void Document::postProcess()
 {
     if (objectLocked) {
-        m_isPostProcessResultObsolete = true;
         return;
     }
     
@@ -3341,11 +3339,7 @@ void Document::setRadiusLockState(bool locked)
 
 bool Document::isExportReady() const
 {
-    if (m_isResultMeshObsolete ||
-            m_isTextureObsolete ||
-            m_isPostProcessResultObsolete ||
-            m_isRigObsolete ||
-            m_meshGenerator ||
+    if (m_meshGenerator ||
             m_textureGenerator ||
             m_postProcessor ||
             m_rigGenerator ||

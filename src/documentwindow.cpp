@@ -1597,7 +1597,6 @@ void DocumentWindow::saveTo(const QString &saveAsFilename)
         textures.textureRoughnessImageByteArray = m_document->textureRoughnessImageByteArray;
         textures.textureAmbientOcclusionImage = m_document->textureAmbientOcclusionImage;
         textures.textureAmbientOcclusionImageByteArray = m_document->textureAmbientOcclusionImageByteArray;
-        textures.textureHasTransparencySettings = m_document->textureHasTransparencySettings;
     }
     if (DocumentSaver::save(&filename, 
             &snapshot, 
@@ -2023,7 +2022,6 @@ void DocumentWindow::exportGlbToFilename(const QString &filename)
             m_document->textureRoughnessImage,
             m_document->textureAmbientOcclusionImage);
     GlbFileWriter glbFileWriter(skeletonResult, m_document->resultRigBones(), m_document->resultRigWeights(), filename,
-        m_document->textureHasTransparencySettings,
         m_document->textureImage, m_document->textureNormalImage, textureMetalnessRoughnessAmbientOcclusionImage, exportMotions.empty() ? nullptr : &exportMotions);
     glbFileWriter.save();
     delete textureMetalnessRoughnessAmbientOcclusionImage;
