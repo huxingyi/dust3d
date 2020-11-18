@@ -1956,6 +1956,8 @@ void Document::meshReady()
                 m_resultTextureMesh = model;
                 emit resultTextureChanged();
             }
+            
+            checkExportReadyState();
         }
     }
 }
@@ -3345,6 +3347,16 @@ bool Document::isExportReady() const
             m_rigGenerator ||
             m_motionsGenerator)
         return false;
+    
+    if (objectLocked)
+        return true;
+    
+    if (m_isResultMeshObsolete ||
+            m_isTextureObsolete ||
+            m_isPostProcessResultObsolete ||
+            m_isRigObsolete)
+        return false;
+        
     return true;
 }
 
