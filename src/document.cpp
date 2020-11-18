@@ -79,7 +79,6 @@ Document::Document() :
     m_isMouseTargetResultObsolete(false),
     m_paintMode(PaintMode::None),
     m_mousePickRadius(0.02),
-    m_saveNextPaintSnapshot(false),
     m_generatedCacheContext(nullptr),
     m_texturePainterContext(nullptr)
 {
@@ -2237,15 +2236,11 @@ void Document::paintReady()
     if (nullptr != paintedTextureImage) {
         updateTextureImage(paintedTextureImage);
         emit resultColorTextureChanged();
+        emit optionsChanged();
     }
     
     delete m_texturePainter;
     m_texturePainter = nullptr;
-    
-    if (!m_isMouseTargetResultObsolete && m_saveNextPaintSnapshot) {
-        m_saveNextPaintSnapshot = false;
-        stopPaint();
-    }
     
     emit mouseTargetChanged();
 
@@ -4044,11 +4039,6 @@ void Document::startPaint()
 
 void Document::stopPaint()
 {
-    if (m_texturePainter || m_isMouseTargetResultObsolete) {
-        m_saveNextPaintSnapshot = true;
-        return;
-    }
-    //saveSnapshot();
 }
 
 void Document::setMousePickMaskNodeIds(const std::set<QUuid> &nodeIds)

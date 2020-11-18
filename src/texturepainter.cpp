@@ -73,7 +73,7 @@ void TexturePainter::collectNearbyTriangles(size_t triangleIndex, std::unordered
 }
 */
 
-void TexturePainter::paintStroke(QPainter &painter, const TexturePainterStroke &stroke)
+bool TexturePainter::paintStroke(QPainter &painter, const TexturePainterStroke &stroke)
 {
     size_t targetTriangleIndex = 0;
     if (!intersectRayAndPolyhedron(stroke.mouseRayNear,
@@ -83,32 +83,32 @@ void TexturePainter::paintStroke(QPainter &painter, const TexturePainterStroke &
             m_context->object->triangleNormals,
             &m_targetPosition,
             &targetTriangleIndex)) {
-        return; 
+        return false; 
     }
     
     if (PaintMode::None == m_paintMode)
-        return;
+        return false;
     
     if (nullptr == m_context->colorImage) {
         qDebug() << "TexturePainter paint color image is null";
-        return;
+        return false;
     }
 
     const std::vector<std::vector<QVector2D>> *uvs = m_context->object->triangleVertexUvs();
     if (nullptr == uvs) {
         qDebug() << "TexturePainter paint uvs is null";
-        return;
+        return false;
     }
     
     const std::vector<std::pair<QUuid, QUuid>> *sourceNodes = m_context->object->triangleSourceNodes();
     if (nullptr == sourceNodes) {
         qDebug() << "TexturePainter paint source nodes is null";
-        return;
+        return false;
     }
     
     const std::map<QUuid, std::vector<QRectF>> *uvRects = m_context->object->partUvRects();
     if (nullptr == uvRects)
-        return;
+        return false;
     
     const auto &triangle = m_context->object->triangles[targetTriangleIndex];
     QVector3D coordinates = barycentricCoordinates(m_context->object->vertices[triangle[0]],
@@ -175,6 +175,7 @@ void TexturePainter::paintStroke(QPainter &painter, const TexturePainterStroke &
         radius + radius, 
         radius + radius,
         gradient);
+    return true;
 }
 
 void TexturePainter::paint()
@@ -188,7 +189,8 @@ void TexturePainter::paint()
     painter.setPen(Qt::NoPen);
     
     TexturePainterStroke stroke = {m_mouseRayNear, m_mouseRayFar};
-    paintStroke(painter, stroke);
+    if (!paintStroke(painter, stroke))
+        return;
     
     m_colorImage = new QImage(*m_context->colorImage);
 }

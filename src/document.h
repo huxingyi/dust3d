@@ -701,7 +701,6 @@ private: // need initialize
     bool m_isMouseTargetResultObsolete;
     PaintMode m_paintMode;
     float m_mousePickRadius;
-    bool m_saveNextPaintSnapshot;
     GeneratedCacheContext *m_generatedCacheContext;
     TexturePainterContext *m_texturePainterContext;
 private:

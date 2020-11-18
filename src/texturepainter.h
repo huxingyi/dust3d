@@ -67,7 +67,7 @@ private:
     
     //void buildFaceAroundVertexMap();
     //void collectNearbyTriangles(size_t triangleIndex, std::unordered_set<size_t> *triangleIndices);
-    void paintStroke(QPainter &painter, const TexturePainterStroke &stroke);
+    bool paintStroke(QPainter &painter, const TexturePainterStroke &stroke);
 };
 
 #endif
