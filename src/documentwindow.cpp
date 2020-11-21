@@ -580,6 +580,10 @@ DocumentWindow::DocumentWindow() :
     connect(m_exportAsFbxAction, &QAction::triggered, this, &DocumentWindow::exportFbxResult, Qt::QueuedConnection);
     m_fileMenu->addAction(m_exportAsFbxAction);
     
+    m_exportTexturesAction = new QAction(tr("Export Textures..."), this);
+    connect(m_exportTexturesAction, &QAction::triggered, this, &DocumentWindow::exportTextures, Qt::QueuedConnection);
+    m_fileMenu->addAction(m_exportTexturesAction);
+    
     m_exportRenderedAsImageAction = new QAction(tr("Export as Image..."), this);
     connect(m_exportRenderedAsImageAction, &QAction::triggered, this, &DocumentWindow::exportRenderedResult, Qt::QueuedConnection);
     m_fileMenu->addAction(m_exportRenderedAsImageAction);
@@ -600,6 +604,7 @@ DocumentWindow::DocumentWindow() :
         m_exportAsObjAction->setEnabled(m_graphicsWidget->hasItems());
         m_exportAsGlbAction->setEnabled(m_graphicsWidget->hasItems() && m_document->isExportReady());
         m_exportAsFbxAction->setEnabled(m_graphicsWidget->hasItems() && m_document->isExportReady());
+        m_exportTexturesAction->setEnabled(m_graphicsWidget->hasItems() && m_document->isExportReady());
         m_exportRenderedAsImageAction->setEnabled(m_graphicsWidget->hasItems());
     });
 
@@ -1969,6 +1974,41 @@ void DocumentWindow::exportFbxResult()
     }
     ensureFileExtension(&filename, ".fbx");
     exportFbxToFilename(filename);
+}
+
+void DocumentWindow::exportTextures()
+{
+    QString directory = QFileDialog::getExistingDirectory(this, QString(), QString(),
+        QFileDialog::ShowDirsOnly | QFileDialog::DontResolveSymlinks);
+    if (directory.isEmpty()) {
+        return;
+    }
+    exportTexturesToDirectory(directory);
+}
+
+void DocumentWindow::exportTexturesToDirectory(const QString &directory)
+{
+    if (!m_document->isExportReady()) {
+        qDebug() << "Export but document is not export ready";
+        return;
+    }
+    
+    QDir dir(directory);
+    
+    auto exportTextureImage = [&](const QString &filename, const QImage *image) {
+        if (nullptr == image)
+            return;
+        QString fullFilename = dir.absoluteFilePath(filename);
+        image->save(fullFilename);
+    };
+    
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    exportTextureImage("color.png", m_document->textureImage);
+    exportTextureImage("normal.png", m_document->textureNormalImage);
+    exportTextureImage("metallic.png", m_document->textureMetalnessImage);
+    exportTextureImage("roughness.png", m_document->textureRoughnessImage);
+    exportTextureImage("ao.png", m_document->textureAmbientOcclusionImage);
+    QApplication::restoreOverrideCursor();
 }
 
 void DocumentWindow::exportFbxToFilename(const QString &filename)
