@@ -6,7 +6,7 @@
 #include <unordered_set>
 #include "object.h"
 #include "model.h"
-#include "rigger.h"
+#include "rig.h"
 #include "rigtype.h"
 
 class RigGenerator : public QObject
@@ -16,8 +16,8 @@ public:
     RigGenerator(RigType rigType, const Object &object);
     ~RigGenerator();
     Model *takeResultMesh();
-    std::vector<RiggerBone> *takeResultBones();
-    std::map<int, RiggerVertexWeights> *takeResultWeights();
+    std::vector<RigBone> *takeResultBones();
+    std::map<int, RigVertexWeights> *takeResultWeights();
     const std::vector<std::pair<QtMsgType, QString>> &messages();
     Object *takeObject();
     bool isSuccessful();
@@ -38,8 +38,8 @@ private:
     RigType m_rigType = RigType::None;
     Object *m_object = nullptr;
     Model *m_resultMesh = nullptr;
-    std::vector<RiggerBone> *m_resultBones = nullptr;
-    std::map<int, RiggerVertexWeights> *m_resultWeights = nullptr;
+    std::vector<RigBone> *m_resultBones = nullptr;
+    std::map<int, RigVertexWeights> *m_resultWeights = nullptr;
     std::vector<std::pair<QtMsgType, QString>> m_messages;
     std::map<size_t, std::unordered_set<size_t>> m_neighborMap;
     std::vector<BoneNodeChain> m_boneNodeChain;

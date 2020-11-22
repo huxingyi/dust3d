@@ -6,7 +6,7 @@
 #include <QLineEdit>
 #include <QUuid>
 #include "vertebratamotion.h"
-#include "rigger.h"
+#include "rig.h"
 #include "object.h"
 
 class SimpleShaderWidget;
@@ -31,8 +31,8 @@ public slots:
     void generatePreview();
     void previewReady();
     void updateBones(RigType rigType,
-        const std::vector<RiggerBone> *rigBones,
-        const std::map<int, RiggerVertexWeights> *rigWeights,
+        const std::vector<RigBone> *rigBones,
+        const std::map<int, RigVertexWeights> *rigWeights,
         const Object *object);
     void setEditMotionName(const QString &name);
     void setEditMotionId(const QUuid &motionId);
@@ -55,8 +55,8 @@ private:
     std::vector<SimpleShaderMesh *> m_frames;
     size_t m_frameIndex = 0;
     RigType m_rigType = RigType::None;
-    std::vector<RiggerBone> *m_bones = nullptr;
-    std::map<int, RiggerVertexWeights> *m_rigWeights = nullptr;
+    std::vector<RigBone> *m_bones = nullptr;
+    std::map<int, RigVertexWeights> *m_rigWeights = nullptr;
     Object *m_object = nullptr;
     QLineEdit *m_nameEdit = nullptr;
     bool m_unsaved = false;

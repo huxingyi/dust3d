@@ -36,7 +36,7 @@ void JointNodeTree::updateMatrix(int index, const QMatrix4x4 &matrix)
         QQuaternion(scalar / length, x / length, y / length, z / length));
 }
 
-JointNodeTree::JointNodeTree(const std::vector<RiggerBone> *resultRigBones)
+JointNodeTree::JointNodeTree(const std::vector<RigBone> *resultRigBones)
 {
     if (nullptr == resultRigBones || resultRigBones->empty())
         return;

@@ -273,7 +273,7 @@ void loadObjectFromXmlStream(Object *object, QXmlStreamReader &reader)
                 }
             }
         } else if (reader.isEndElement()) {
-            if (fullName.startsWith("object.uvAreas")) {
+            if (fullName == "object.uvAreas") {
                 object->setPartUvRects(partUvRects);
             }
         } else if (reader.isCharacters()) {

@@ -49,6 +49,7 @@
 #include "fileforever.h"
 #include "documentsaver.h"
 #include "objectxml.h"
+#include "rigxml.h"
 
 int DocumentWindow::m_autoRecovered = false;
 
@@ -584,6 +585,10 @@ DocumentWindow::DocumentWindow() :
     connect(m_exportTexturesAction, &QAction::triggered, this, &DocumentWindow::exportTextures, Qt::QueuedConnection);
     m_fileMenu->addAction(m_exportTexturesAction);
     
+    m_exportDs3objAction = new QAction(tr("Export DS3OBJ..."), this);
+    connect(m_exportDs3objAction, &QAction::triggered, this, &DocumentWindow::exportDs3objResult, Qt::QueuedConnection);
+    m_fileMenu->addAction(m_exportDs3objAction);
+    
     m_exportRenderedAsImageAction = new QAction(tr("Export as Image..."), this);
     connect(m_exportRenderedAsImageAction, &QAction::triggered, this, &DocumentWindow::exportRenderedResult, Qt::QueuedConnection);
     m_fileMenu->addAction(m_exportRenderedAsImageAction);
@@ -605,6 +610,7 @@ DocumentWindow::DocumentWindow() :
         m_exportAsGlbAction->setEnabled(m_graphicsWidget->hasItems() && m_document->isExportReady());
         m_exportAsFbxAction->setEnabled(m_graphicsWidget->hasItems() && m_document->isExportReady());
         m_exportTexturesAction->setEnabled(m_graphicsWidget->hasItems() && m_document->isExportReady());
+        m_exportDs3objAction->setEnabled(m_graphicsWidget->hasItems() && m_document->isExportReady());
         m_exportRenderedAsImageAction->setEnabled(m_graphicsWidget->hasItems());
     });
 
@@ -1871,12 +1877,14 @@ void DocumentWindow::openPathAs(const QString &path, const QString &asName)
         for (int i = 0; i < ds3Reader.items().size(); ++i) {
             Ds3ReaderItem item = ds3Reader.items().at(i);
             if (item.type == "object") {
-                QByteArray data;
-                ds3Reader.loadItem(item.name, &data);
-                QXmlStreamReader stream(data);
-                Object *object = new Object;
-                loadObjectFromXmlStream(object, stream);
-                m_document->updateObject(object);
+                if (item.name == "object.xml") {
+                    QByteArray data;
+                    ds3Reader.loadItem(item.name, &data);
+                    QXmlStreamReader stream(data);
+                    Object *object = new Object;
+                    loadObjectFromXmlStream(object, stream);
+                    m_document->updateObject(object);
+                }
             }
         }
     }
@@ -2045,6 +2053,17 @@ void DocumentWindow::exportGlbResult()
     exportGlbToFilename(filename);
 }
 
+void DocumentWindow::exportDs3objResult()
+{
+    QString filename = QFileDialog::getSaveFileName(this, QString(), QString(),
+       tr("Dust3D Object (.ds3obj)"));
+    if (filename.isEmpty()) {
+        return;
+    }
+    ensureFileExtension(&filename, ".ds3obj");
+    exportDs3objToFilename(filename);
+}
+
 void DocumentWindow::exportGlbToFilename(const QString &filename)
 {
     if (!m_document->isExportReady()) {
@@ -2065,6 +2084,101 @@ void DocumentWindow::exportGlbToFilename(const QString &filename)
         m_document->textureImage, m_document->textureNormalImage, textureMetalnessRoughnessAmbientOcclusionImage, exportMotions.empty() ? nullptr : &exportMotions);
     glbFileWriter.save();
     delete textureMetalnessRoughnessAmbientOcclusionImage;
+    QApplication::restoreOverrideCursor();
+}
+
+void DocumentWindow::exportDs3objToFilename(const QString &filename)
+{
+    if (!m_document->isExportReady()) {
+        qDebug() << "Export but document is not export ready";
+        return;
+    }
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    Ds3FileWriter ds3Writer;
+
+    {
+        QByteArray objectXml;
+        QXmlStreamWriter stream(&objectXml);
+        saveObjectToXmlStream(&m_document->currentPostProcessedObject(), &stream);
+        if (objectXml.size() > 0)
+            ds3Writer.add("object.xml", "object", &objectXml);
+    }
+    
+    const std::vector<RigBone> *rigBones = m_document->resultRigBones();
+    const std::map<int, RigVertexWeights> *rigWeights = m_document->resultRigWeights();
+    if (nullptr != rigBones && nullptr != rigWeights) {
+        QByteArray rigXml;
+        QXmlStreamWriter stream(&rigXml);
+        saveRigToXmlStream(&m_document->currentPostProcessedObject(), rigBones, rigWeights, &stream);
+        if (rigXml.size() > 0)
+            ds3Writer.add("rig.xml", "rig", &rigXml);
+    }
+    
+    {
+        QByteArray motionsXml;
+        {
+            QXmlStreamWriter stream(&motionsXml);
+            QXmlStreamWriter *writer = &stream;
+            writer->setAutoFormatting(true);
+            writer->writeStartDocument();
+            writer->writeStartElement("motions");
+            for (const auto &motionIt: m_document->motionMap) {
+                writer->writeStartElement("motion");
+                    writer->writeAttribute("name", motionIt.second.name);
+                    writer->writeStartElement("frames");
+                        for (const auto &it: motionIt.second.jointNodeTrees) {
+                            writer->writeStartElement("frame");
+                                writer->writeAttribute("duration", QString::number(it.first));
+                                writer->writeStartElement("bones");
+                                    const auto &nodes = it.second.nodes();
+                                    for (size_t boneIndex = 0; boneIndex < nodes.size(); ++boneIndex) {
+                                        const auto &node = nodes[boneIndex];
+                                        writer->writeStartElement("bone");
+                                        writer->writeAttribute("index", QString::number(boneIndex));
+                                        QMatrix4x4 translationMatrix;
+                                        translationMatrix.translate(node.translation);
+                                        QMatrix4x4 rotationMatrix;
+                                        rotationMatrix.rotate(node.rotation);
+                                        QMatrix4x4 matrix = translationMatrix * rotationMatrix;
+                                        const float *floatArray = matrix.constData();
+                                        QStringList matrixItemList;
+                                        for (auto j = 0u; j < 16; j++) {
+                                            matrixItemList += QString::number(floatArray[j]);
+                                        }
+                                        writer->writeAttribute("matrix", matrixItemList.join(","));
+                                        writer->writeEndElement();
+                                    }
+                                writer->writeEndElement();
+                            writer->writeEndElement();
+                        }
+                    writer->writeEndElement();
+                writer->writeEndElement();
+            }
+            writer->writeEndElement();
+            writer->writeEndDocument();
+        }
+        if (motionsXml.size() > 0)
+            ds3Writer.add("motions.xml", "motions", &motionsXml);
+    }
+    
+    auto saveTexture = [&](const QString &filename, const QImage *image) {
+        if (nullptr == image)
+            return;
+        QByteArray byteArray;
+        QBuffer pngBuffer(&byteArray);
+        pngBuffer.open(QIODevice::WriteOnly);
+        image->save(&pngBuffer, "PNG");
+        ds3Writer.add(filename, "asset", &byteArray);
+    };
+    
+    saveTexture("object_color.png", m_document->textureImage);
+    saveTexture("object_normal.png", m_document->textureNormalImage);
+    saveTexture("object_metallic.png", m_document->textureMetalnessImage);
+    saveTexture("object_roughness.png", m_document->textureRoughnessImage);
+    saveTexture("object_ao.png", m_document->textureAmbientOcclusionImage);
+    
+    ds3Writer.save(filename);
+    
     QApplication::restoreOverrideCursor();
 }
 

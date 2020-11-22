@@ -260,8 +260,8 @@ HEADERS += src/skeletonside.h
 SOURCES += src/meshsplitter.cpp
 HEADERS += src/meshsplitter.h
 
-SOURCES += src/rigger.cpp
-HEADERS += src/rigger.h
+SOURCES += src/rig.cpp
+HEADERS += src/rig.h
 
 SOURCES += src/rigtype.cpp
 HEADERS += src/rigtype.h
@@ -525,6 +525,9 @@ HEADERS += src/vertebratamotionparameterswidget.h
 
 SOURCES += src/objectxml.cpp
 HEADERS += src/objectxml.h
+
+SOURCES += src/rigxml.cpp
+HEADERS += src/rigxml.h
 
 SOURCES += src/main.cpp
 

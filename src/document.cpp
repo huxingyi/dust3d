@@ -3579,12 +3579,12 @@ void Document::rigReady()
     }
 }
 
-const std::vector<RiggerBone> *Document::resultRigBones() const
+const std::vector<RigBone> *Document::resultRigBones() const
 {
     return m_resultRigBones;
 }
 
-const std::map<int, RiggerVertexWeights> *Document::resultRigWeights() const
+const std::map<int, RigVertexWeights> *Document::resultRigWeights() const
 {
     return m_resultRigWeights;
 }
@@ -3643,8 +3643,8 @@ void Document::generateMotions()
         return;
     }
     
-    const std::vector<RiggerBone> *rigBones = resultRigBones();
-    const std::map<int, RiggerVertexWeights> *rigWeights = resultRigWeights();
+    const std::vector<RigBone> *rigBones = resultRigBones();
+    const std::map<int, RigVertexWeights> *rigWeights = resultRigWeights();
     
     if (nullptr == rigBones || nullptr == rigWeights) {
         return;

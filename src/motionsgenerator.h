@@ -6,7 +6,7 @@
 #include <set>
 #include "model.h"
 #include "simpleshadermesh.h"
-#include "rigger.h"
+#include "rig.h"
 #include "jointnodetree.h"
 #include "document.h"
 
@@ -15,8 +15,8 @@ class MotionsGenerator : public QObject
     Q_OBJECT
 public:
     MotionsGenerator(RigType rigType,
-        const std::vector<RiggerBone> &bones,
-        const std::map<int, RiggerVertexWeights> &rigWeights,
+        const std::vector<RigBone> &bones,
+        const std::map<int, RigVertexWeights> &rigWeights,
         const Object &object);
     ~MotionsGenerator();
     void addMotion(const QUuid &motionId, const std::map<QString, QString> &parameters);
@@ -35,8 +35,8 @@ public slots:
     
 private:
     RigType m_rigType = RigType::None;
-    std::vector<RiggerBone> m_bones;
-    std::map<int, RiggerVertexWeights> m_rigWeights;
+    std::vector<RigBone> m_bones;
+    std::map<int, RigVertexWeights> m_rigWeights;
     Object m_object;
     std::map<QUuid, std::map<QString, QString>> m_motions;
     std::set<QUuid> m_generatedMotionIds;

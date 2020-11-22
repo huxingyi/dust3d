@@ -2,7 +2,7 @@
 #include "theme.h"
 
 SkinnedMeshCreator::SkinnedMeshCreator(const Object &object,
-        const std::map<int, RiggerVertexWeights> &resultWeights) :
+        const std::map<int, RigVertexWeights> &resultWeights) :
     m_object(object),
     m_resultWeights(resultWeights)
 {
@@ -48,7 +48,7 @@ Model *SkinnedMeshCreator::createMeshFromTransform(const std::vector<QMatrix4x4>
                 QMatrix4x4 mixedMatrix;
                 transformedPositions[i][j] = QVector3D();
                 transformedPoseNormals[i][j] = QVector3D();
-                for (int x = 0; x < 4; x++) {
+                for (int x = 0; x < MAX_WEIGHT_NUM; x++) {
                     float factor = weight.boneWeights[x];
                     if (factor > 0) {
                         transformedPositions[i][j] += matricies[weight.boneIndices[x]] * m_verticesBindPositions[i][j] * factor;

@@ -10,8 +10,6 @@
 #include "bonemark.h"
 #include "componentlayer.h"
 
-#define MAX_WEIGHT_NUM  4
-
 struct ObjectNode
 {
     QUuid partId;

@@ -10,8 +10,8 @@
 #include "util.h"
 
 MotionsGenerator::MotionsGenerator(RigType rigType,
-        const std::vector<RiggerBone> &bones,
-        const std::map<int, RiggerVertexWeights> &rigWeights,
+        const std::vector<RigBone> &bones,
+        const std::map<int, RigVertexWeights> &rigWeights,
         const Object &object) :
     m_rigType(rigType),
     m_bones(bones),
@@ -252,7 +252,7 @@ void MotionsGenerator::generateMotion(const QUuid &motionId)
     const auto &vertebrataMotionFrames = vertebrataMotion->frames();
     for (size_t frameIndex = 0; frameIndex < vertebrataMotionFrames.size(); ++frameIndex) {
         const auto &frame = vertebrataMotionFrames[frameIndex];
-        std::vector<RiggerBone> transformedBones = m_bones;
+        std::vector<RigBone> transformedBones = m_bones;
         for (const auto &node: frame) {
             if (-1 == node.boneIndex)
                 continue;
@@ -326,7 +326,7 @@ void MotionsGenerator::generateMotion(const QUuid &motionId)
         std::vector<QVector3D> transformedVertices(m_object.vertices.size());
         for (size_t i = 0; i < m_object.vertices.size(); ++i) {
             const auto &weight = m_rigWeights[i];
-            for (int x = 0; x < 4; x++) {
+            for (int x = 0; x < MAX_WEIGHT_NUM; x++) {
                 float factor = weight.boneWeights[x];
                 if (factor > 0) {
                     transformedVertices[i] += jointNodeMatrices[weight.boneIndices[x]] * m_object.vertices[i] * factor;

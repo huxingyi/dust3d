@@ -470,8 +470,8 @@ public:
     bool isMeshGenerationSucceed();
     Model *takeResultTextureMesh();
     Model *takeResultRigWeightMesh();
-    const std::vector<RiggerBone> *resultRigBones() const;
-    const std::map<int, RiggerVertexWeights> *resultRigWeights() const;
+    const std::vector<RigBone> *resultRigBones() const;
+    const std::map<int, RigVertexWeights> *resultRigWeights() const;
     void updateTurnaround(const QImage &image);
     void updateTextureImage(QImage *image);
     void updateTextureNormalImage(QImage *image);
@@ -684,8 +684,8 @@ private: // need initialize
     bool m_smoothNormal;
     RigGenerator *m_rigGenerator;
     Model *m_resultRigWeightMesh;
-    std::vector<RiggerBone> *m_resultRigBones;
-    std::map<int, RiggerVertexWeights> *m_resultRigWeights;
+    std::vector<RigBone> *m_resultRigBones;
+    std::map<int, RigVertexWeights> *m_resultRigWeights;
     bool m_isRigObsolete;
     Object *m_riggedObject;
     bool m_currentRigSucceed;

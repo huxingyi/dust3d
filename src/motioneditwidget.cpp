@@ -187,8 +187,8 @@ void MotionEditWidget::save()
 }
 
 void MotionEditWidget::updateBones(RigType rigType,
-    const std::vector<RiggerBone> *rigBones,
-    const std::map<int, RiggerVertexWeights> *rigWeights,
+    const std::vector<RigBone> *rigBones,
+    const std::map<int, RigVertexWeights> *rigWeights,
     const Object *object)
 {
     m_rigType = rigType;
@@ -205,8 +205,8 @@ void MotionEditWidget::updateBones(RigType rigType,
     if (nullptr != rigBones &&
             nullptr != rigWeights &&
             nullptr != object) {
-        m_bones = new std::vector<RiggerBone>(*rigBones);
-        m_rigWeights = new std::map<int, RiggerVertexWeights>(*rigWeights);
+        m_bones = new std::vector<RigBone>(*rigBones);
+        m_rigWeights = new std::map<int, RigVertexWeights>(*rigWeights);
         m_object = new Object(*object);
         
         generatePreview();

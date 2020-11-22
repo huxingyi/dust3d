@@ -16,8 +16,8 @@ class GlbFileWriter : public QObject
     Q_OBJECT
 public:
     GlbFileWriter(Object &object,
-        const std::vector<RiggerBone> *resultRigBones,
-        const std::map<int, RiggerVertexWeights> *resultRigWeights,
+        const std::vector<RigBone> *resultRigBones,
+        const std::map<int, RigVertexWeights> *resultRigWeights,
         const QString &filename,
         QImage *textureImage=nullptr,
         QImage *normalImage=nullptr,

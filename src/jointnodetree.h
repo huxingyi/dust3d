@@ -3,7 +3,7 @@
 #include <QMatrix4x4>
 #include <vector>
 #include <QQuaternion>
-#include "rigger.h"
+#include "rig.h"
 
 struct JointNode
 {
@@ -22,7 +22,7 @@ class JointNodeTree
 {
 public:
     const std::vector<JointNode> &nodes() const;
-    JointNodeTree(const std::vector<RiggerBone> *resultRigBones);
+    JointNodeTree(const std::vector<RigBone> *resultRigBones);
     void updateRotation(int index, const QQuaternion &rotation);
     void updateTranslation(int index, const QVector3D &translation);
     void updateMatrix(int index, const QMatrix4x4 &matrix);

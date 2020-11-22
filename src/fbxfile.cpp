@@ -2201,8 +2201,8 @@ void FbxFileWriter::createDefinitions(size_t deformerCount,
 }
 
 FbxFileWriter::FbxFileWriter(Object &object,
-        const std::vector<RiggerBone> *resultRigBones,
-        const std::map<int, RiggerVertexWeights> *resultRigWeights,
+        const std::vector<RigBone> *resultRigBones,
+        const std::map<int, RigVertexWeights> *resultRigWeights,
         const QString &filename,
         QImage *textureImage,
         QImage *normalImage,
@@ -2415,7 +2415,7 @@ FbxFileWriter::FbxFileWriter(Object &object,
         std::vector<std::pair<std::vector<int32_t>, std::vector<double>>> bindPerBone(resultRigBones->size());
         if (resultRigWeights && !resultRigWeights->empty()) {
             for (const auto &item: *resultRigWeights) {
-                for (int i = 0; i < 4; ++i) {
+                for (int i = 0; i < MAX_WEIGHT_NUM; ++i) {
                     const auto &boneIndex = item.second.boneIndices[i];
                     Q_ASSERT(boneIndex < bindPerBone.size());
                     if (0 == boneIndex)

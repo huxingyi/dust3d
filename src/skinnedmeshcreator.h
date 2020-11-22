@@ -12,11 +12,11 @@ class SkinnedMeshCreator
 {
 public:
     SkinnedMeshCreator(const Object &object,
-        const std::map<int, RiggerVertexWeights> &resultWeights);
+        const std::map<int, RigVertexWeights> &resultWeights);
     Model *createMeshFromTransform(const std::vector<QMatrix4x4> &matricies);
 private:
     Object m_object;
-    std::map<int, RiggerVertexWeights> m_resultWeights;
+    std::map<int, RigVertexWeights> m_resultWeights;
     std::vector<std::vector<int>> m_verticesOldIndices;
     std::vector<std::vector<QVector3D>> m_verticesBindPositions;
     std::vector<std::vector<QVector3D>> m_verticesBindNormals;

@@ -80,16 +80,16 @@ Object *RigGenerator::takeObject()
     return object;
 }
 
-std::vector<RiggerBone> *RigGenerator::takeResultBones()
+std::vector<RigBone> *RigGenerator::takeResultBones()
 {
-    std::vector<RiggerBone> *resultBones = m_resultBones;
+    std::vector<RigBone> *resultBones = m_resultBones;
     m_resultBones = nullptr;
     return resultBones;
 }
 
-std::map<int, RiggerVertexWeights> *RigGenerator::takeResultWeights()
+std::map<int, RigVertexWeights> *RigGenerator::takeResultWeights()
 {
-    std::map<int, RiggerVertexWeights> *resultWeights = m_resultWeights;
+    std::map<int, RigVertexWeights> *resultWeights = m_resultWeights;
     m_resultWeights = nullptr;
     return resultWeights;
 }
@@ -408,12 +408,12 @@ void RigGenerator::buildSkeleton()
     m_rootSpineJointIndex = m_attachLimbsToSpineJointIndices[0];
     m_lastSpineJointIndex = m_spineJoints.size() - 1;
     
-    m_resultBones = new std::vector<RiggerBone>;
-    m_resultWeights = new std::map<int, RiggerVertexWeights>;
+    m_resultBones = new std::vector<RigBone>;
+    m_resultWeights = new std::map<int, RigVertexWeights>;
     
     {
         const auto &firstSpineNode = m_object->nodes[m_spineJoints[m_rootSpineJointIndex]];
-        RiggerBone bone;
+        RigBone bone;
         bone.headPosition = QVector3D(0.0, 0.0, 0.0);
         bone.tailPosition = firstSpineNode.origin;
         bone.headRadius = 0;
@@ -432,7 +432,7 @@ void RigGenerator::buildSkeleton()
             ++spineJointIndex) {
         const auto &currentNode = m_object->nodes[m_spineJoints[spineJointIndex]];
         const auto &nextNode = m_object->nodes[m_spineJoints[spineJointIndex + 1]];
-        RiggerBone bone;
+        RigBone bone;
         bone.headPosition = currentNode.origin;
         bone.tailPosition = nextNode.origin;
         bone.headRadius = currentNode.radius;
@@ -454,7 +454,7 @@ void RigGenerator::buildSkeleton()
         const auto &spineNode = m_object->nodes[m_spineJoints[spineJointIndex]];
         const auto &limbFirstNode = m_object->nodes[limbJoints[limbIndex][0]];
         const auto &parentIndex = attachedBoneIndex(spineJointIndex);
-        RiggerBone bone;
+        RigBone bone;
         bone.headPosition = spineNode.origin;
         bone.tailPosition = limbFirstNode.origin;
         bone.headRadius = spineNode.radius;
@@ -478,7 +478,7 @@ void RigGenerator::buildSkeleton()
                 ++limbJointIndex) {
             const auto &currentNode = m_object->nodes[joints[limbJointIndex]];
             const auto &nextNode = m_object->nodes[joints[limbJointIndex + 1]];
-            RiggerBone bone;
+            RigBone bone;
             bone.headPosition = currentNode.origin;
             bone.tailPosition = nextNode.origin;
             bone.headRadius = currentNode.radius;
@@ -516,7 +516,7 @@ void RigGenerator::buildSkeleton()
                 ++neckJointIndex) {
             const auto &currentNode = m_object->nodes[m_neckJoints[neckJointIndex]];
             const auto &nextNode = m_object->nodes[m_neckJoints[neckJointIndex + 1]];
-            RiggerBone bone;
+            RigBone bone;
             bone.headPosition = currentNode.origin;
             bone.tailPosition = nextNode.origin;
             bone.headRadius = currentNode.radius;
@@ -548,7 +548,7 @@ void RigGenerator::buildSkeleton()
             const auto &nextNode = spineJointIndex > 0 ?
                 m_object->nodes[m_spineJoints[spineJointIndex - 1]] :
                 m_object->nodes[m_tailJoints[0]];
-            RiggerBone bone;
+            RigBone bone;
             bone.headPosition = currentNode.origin;
             bone.tailPosition = nextNode.origin;
             bone.headRadius = currentNode.radius;
@@ -574,7 +574,7 @@ void RigGenerator::buildSkeleton()
                 ++tailJointIndex) {
             const auto &currentNode = m_object->nodes[m_tailJoints[tailJointIndex]];
             const auto &nextNode = m_object->nodes[m_tailJoints[tailJointIndex + 1]];
-            RiggerBone bone;
+            RigBone bone;
             bone.headPosition = currentNode.origin;
             bone.tailPosition = nextNode.origin;
             bone.headRadius = currentNode.radius;
@@ -1190,17 +1190,17 @@ void RigGenerator::buildDemoMesh()
         const auto &resultWeights = *m_resultWeights;
         const auto &resultBones = *m_resultBones;
         
-        m_resultWeights = new std::map<int, RiggerVertexWeights>;
+        m_resultWeights = new std::map<int, RigVertexWeights>;
         *m_resultWeights = resultWeights;
         
-        m_resultBones = new std::vector<RiggerBone>;
+        m_resultBones = new std::vector<RigBone>;
         *m_resultBones = resultBones;
         
         for (const auto &weightItem: resultWeights) {
             size_t vertexIndex = weightItem.first;
             const auto &weight = weightItem.second;
             int blendR = 0, blendG = 0, blendB = 0;
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < MAX_WEIGHT_NUM; i++) {
                 int boneIndex = weight.boneIndices[i];
 				const auto &bone = resultBones[boneIndex];
 				blendR += bone.color.red() * weight.boneWeights[i];

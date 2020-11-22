@@ -3,4 +3,4 @@
 #include "theme.h"
 #include "bonemark.h"
 #include "skeletonside.h"
-#include "rigger.h"
+#include "rig.h"

@@ -61,6 +61,7 @@ public slots:
     void exportGlbResult();
     void exportFbxResult();
     void exportTextures();
+    void exportDs3objResult();
     void newWindow();
     void newDocument();
     void saveAs();
@@ -92,6 +93,7 @@ public slots:
     void exportFbxToFilename(const QString &filename);
     void exportGlbToFilename(const QString &filename);
     void exportTexturesToDirectory(const QString &directory);
+    void exportDs3objToFilename(const QString &filename);
     void toggleRotation();
     //void updateInfoWidgetPosition();
     void generateNormalAndDepthMaps();
@@ -146,6 +148,7 @@ private:
     QAction *m_exportAsGlbAction;
     QAction *m_exportAsFbxAction;
     QAction *m_exportTexturesAction;
+    QAction *m_exportDs3objAction;
     QAction *m_exportRenderedAsImageAction;
     
     QMenu *m_editMenu;

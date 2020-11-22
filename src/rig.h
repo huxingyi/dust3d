@@ -1,5 +1,5 @@
-#ifndef DUST3D_RIGGER_H
-#define DUST3D_RIGGER_H
+#ifndef DUST3D_RIG_H
+#define DUST3D_RIG_H
 #include <QtGlobal>
 #include <QVector3D>
 #include <QObject>
@@ -11,12 +11,9 @@
 #include "rigtype.h"
 #include "skeletonside.h"
 
-namespace Rigger
-{
-    const QString rootBoneName = "Body";
-};
+#define MAX_WEIGHT_NUM  4
 
-class RiggerBone
+class RigBone
 {
 public:
     QString name;
@@ -31,11 +28,11 @@ public:
     std::vector<int> children;
 };
 
-class RiggerVertexWeights
+class RigVertexWeights
 {
 public:
-    int boneIndices[4] = {0, 0, 0, 0};
-    float boneWeights[4] = {0, 0, 0, 0};
+    int boneIndices[MAX_WEIGHT_NUM] = {0};
+    float boneWeights[MAX_WEIGHT_NUM] = {0};
     void addBone(int boneIndex, float weight)
     {
         for (auto &it: m_boneRawWeights) {
@@ -53,12 +50,12 @@ public:
             return a.second > b.second;
         });
         float totalWeight = 0;
-        for (size_t i = 0; i < m_boneRawWeights.size() && i < 4; i++) {
+        for (size_t i = 0; i < m_boneRawWeights.size() && i < MAX_WEIGHT_NUM; i++) {
             const auto &item = m_boneRawWeights[i];
             totalWeight += item.second;
         }
         if (totalWeight > 0) {
-            for (size_t i = 0; i < m_boneRawWeights.size() && i < 4; i++) {
+            for (size_t i = 0; i < m_boneRawWeights.size() && i < MAX_WEIGHT_NUM; i++) {
                 const auto &item = m_boneRawWeights[i];
                 boneIndices[i] = item.first;
                 boneWeights[i] = item.second / totalWeight;
