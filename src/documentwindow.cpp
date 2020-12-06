@@ -1976,7 +1976,7 @@ void DocumentWindow::exportObjToFilename(const QString &filename)
 void DocumentWindow::exportFbxResult()
 {
     QString filename = QFileDialog::getSaveFileName(this, QString(), QString(),
-       tr("Autodesk FBX (.fbx)"));
+       tr("Autodesk FBX (*.fbx)"));
     if (filename.isEmpty()) {
         return;
     }
@@ -2045,7 +2045,7 @@ void DocumentWindow::exportFbxToFilename(const QString &filename)
 void DocumentWindow::exportGlbResult()
 {
     QString filename = QFileDialog::getSaveFileName(this, QString(), QString(),
-       tr("glTF Binary Format (.glb)"));
+       tr("glTF Binary Format (*.glb)"));
     if (filename.isEmpty()) {
         return;
     }
@@ -2056,7 +2056,7 @@ void DocumentWindow::exportGlbResult()
 void DocumentWindow::exportDs3objResult()
 {
     QString filename = QFileDialog::getSaveFileName(this, QString(), QString(),
-       tr("Dust3D Object (.ds3obj)"));
+       tr("Dust3D Object (*.ds3obj)"));
     if (filename.isEmpty()) {
         return;
     }
@@ -2135,17 +2135,32 @@ void DocumentWindow::exportDs3objToFilename(const QString &filename)
                                         const auto &node = nodes[boneIndex];
                                         writer->writeStartElement("bone");
                                         writer->writeAttribute("index", QString::number(boneIndex));
-                                        QMatrix4x4 translationMatrix;
-                                        translationMatrix.translate(node.translation);
-                                        QMatrix4x4 rotationMatrix;
-                                        rotationMatrix.rotate(node.rotation);
-                                        QMatrix4x4 matrix = translationMatrix * rotationMatrix;
-                                        const float *floatArray = matrix.constData();
-                                        QStringList matrixItemList;
-                                        for (auto j = 0u; j < 16; j++) {
-                                            matrixItemList += QString::number(floatArray[j]);
+                                        {
+                                            QMatrix4x4 translationMatrix;
+                                            translationMatrix.translate(node.translation);
+                                            QMatrix4x4 rotationMatrix;
+                                            rotationMatrix.rotate(node.rotation);
+                                            QMatrix4x4 matrix = translationMatrix * rotationMatrix;
+                                            const float *floatArray = matrix.constData();
+                                            QStringList matrixItemList;
+                                            for (auto j = 0u; j < 16; j++) {
+                                                matrixItemList += QString::number(floatArray[j]);
+                                            }
+                                            writer->writeAttribute("matrix", matrixItemList.join(","));
                                         }
-                                        writer->writeAttribute("matrix", matrixItemList.join(","));
+                                        {
+                                            writer->writeAttribute("translation", 
+                                                QString::number(node.translation.x()) + "," +
+                                                QString::number(node.translation.y()) + "," +
+                                                QString::number(node.translation.z()));
+                                        }
+                                        {
+                                            writer->writeAttribute("rotation", 
+                                                QString::number(node.rotation.x()) + "," +
+                                                QString::number(node.rotation.y()) + "," +
+                                                QString::number(node.rotation.z()) + "," +
+                                                QString::number(node.rotation.scalar()));
+                                        }
                                         writer->writeEndElement();
                                     }
                                 writer->writeEndElement();
