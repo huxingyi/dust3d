@@ -19,6 +19,7 @@ void Preferences::loadDefault()
     m_toonLine = ToonLine::WithoutLine;
     m_textureSize = 1024;
     m_scriptEnabled = false;
+    m_interpolationEnabled = true;
 }
 
 Preferences::Preferences()
@@ -65,6 +66,13 @@ Preferences::Preferences()
         else
             m_scriptEnabled = isTrueValueString(value);
     }
+    {
+        QString value = m_settings.value("interpolationEnabled").toString();
+        if (value.isEmpty())
+            m_interpolationEnabled = true;
+        else
+            m_interpolationEnabled = isTrueValueString(value);
+    }
 }
 
 CombineMode Preferences::componentCombineMode() const
@@ -85,6 +93,11 @@ bool Preferences::flatShading() const
 bool Preferences::scriptEnabled() const
 {
     return m_scriptEnabled;
+}
+
+bool Preferences::interpolationEnabled() const
+{
+    return m_interpolationEnabled;
 }
 
 bool Preferences::toonShading() const
@@ -138,6 +151,15 @@ void Preferences::setScriptEnabled(bool enabled)
     emit scriptEnabledChanged();
 }
 
+void Preferences::setInterpolationEnabled(bool enabled)
+{
+    if (m_interpolationEnabled == enabled)
+        return;
+    m_interpolationEnabled = enabled;
+    m_settings.setValue("interpolationEnabled", enabled ? "true" : "false");
+    emit interpolationEnabledChanged();
+}
+
 void Preferences::setToonShading(bool toonShading)
 {
     if (m_toonShading == toonShading)
@@ -186,4 +208,5 @@ void Preferences::reset()
     emit toonLineChanged();
     emit textureSizeChanged();
     emit scriptEnabledChanged();
+    emit interpolationEnabledChanged();
 }

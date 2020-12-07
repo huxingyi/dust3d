@@ -633,6 +633,7 @@ public slots:
     void applyPreferencePartColorChange();
     void applyPreferenceFlatShadingChange();
     void applyPreferenceTextureSizeChange();
+    void applyPreferenceInterpolationChange();
     void initScript(const QString &script);
     void updateScript(const QString &script);
     void runScript();

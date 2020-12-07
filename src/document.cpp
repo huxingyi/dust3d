@@ -85,6 +85,7 @@ Document::Document() :
     connect(&Preferences::instance(), &Preferences::partColorChanged, this, &Document::applyPreferencePartColorChange);
     connect(&Preferences::instance(), &Preferences::flatShadingChanged, this, &Document::applyPreferenceFlatShadingChange);
     connect(&Preferences::instance(), &Preferences::textureSizeChanged, this, &Document::applyPreferenceTextureSizeChange);
+    connect(&Preferences::instance(), &Preferences::interpolationEnabledChanged, this, &Document::applyPreferenceInterpolationChange);
 }
 
 void Document::applyPreferencePartColorChange()
@@ -101,6 +102,11 @@ void Document::applyPreferenceFlatShadingChange()
 void Document::applyPreferenceTextureSizeChange()
 {
     generateTexture();
+}
+
+void Document::applyPreferenceInterpolationChange()
+{
+    regenerateMesh();
 }
 
 Document::~Document()
@@ -2055,6 +2061,7 @@ void Document::generateMesh()
     m_meshGenerator = new MeshGenerator(snapshot);
     m_meshGenerator->setId(m_nextMeshGenerationId++);
     m_meshGenerator->setDefaultPartColor(Preferences::instance().partColor());
+    m_meshGenerator->setInterpolationEnabled(Preferences::instance().interpolationEnabled());
     if (nullptr == m_generatedCacheContext)
         m_generatedCacheContext = new GeneratedCacheContext;
     m_meshGenerator->setGeneratedCacheContext(m_generatedCacheContext);

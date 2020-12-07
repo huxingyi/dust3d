@@ -85,6 +85,12 @@ PreferencesWidget::PreferencesWidget(const Document *document, QWidget *parent) 
     toonShadingLayout->addWidget(toonLineSelectBox);
     toonShadingLayout->addStretch();
     
+    QCheckBox *interpolationEnabledBox = new QCheckBox();
+    Theme::initCheckbox(interpolationEnabledBox);
+    connect(interpolationEnabledBox, &QCheckBox::stateChanged, this, [=]() {
+        Preferences::instance().setInterpolationEnabled(interpolationEnabledBox->isChecked());
+    });
+    
     QComboBox *textureSizeSelectBox = new QComboBox;
     textureSizeSelectBox->addItem("512");
     textureSizeSelectBox->addItem("1024");
@@ -104,6 +110,7 @@ PreferencesWidget::PreferencesWidget(const Document *document, QWidget *parent) 
     formLayout->addRow(tr("Part color:"), colorLayout);
     formLayout->addRow(tr("Combine mode:"), combineModeSelectBox);
     formLayout->addRow(tr("Flat shading:"), flatShadingBox);
+    formLayout->addRow(tr("Interpolation:"), interpolationEnabledBox);
     formLayout->addRow(tr("Toon shading:"), toonShadingLayout);
     formLayout->addRow(tr("Texture size:"), textureSizeSelectBox);
     formLayout->addRow(tr("Script:"), scriptEnabledBox);
@@ -117,6 +124,7 @@ PreferencesWidget::PreferencesWidget(const Document *document, QWidget *parent) 
         textureSizeSelectBox->setCurrentIndex(
             textureSizeSelectBox->findText(QString::number(Preferences::instance().textureSize()))
         );
+        interpolationEnabledBox->setChecked(Preferences::instance().interpolationEnabled());
         scriptEnabledBox->setChecked(Preferences::instance().scriptEnabled());
     };
     

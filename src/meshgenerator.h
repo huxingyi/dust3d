@@ -96,6 +96,7 @@ public:
     void generate();
     void setGeneratedCacheContext(GeneratedCacheContext *cacheContext);
     void setSmoothShadingThresholdAngleDegrees(float degrees);
+    void setInterpolationEnabled(bool interpolationEnabled);
     void setDefaultPartColor(const QColor &color);
     void setId(quint64 id);
     void setWeldEnabled(bool enabled);
@@ -130,6 +131,7 @@ private:
     std::vector<QVector3D> m_clothCollisionVertices;
     std::vector<std::vector<size_t>> m_clothCollisionTriangles;
     bool m_weldEnabled = true;
+    bool m_interpolationEnabled = true;
     
     void collectParts();
     void collectIncombinableComponentMeshes(const QString &componentIdString);

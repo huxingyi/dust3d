@@ -16,6 +16,7 @@ public:
     const QColor &partColor() const;
     bool flatShading() const;
     bool scriptEnabled() const;
+    bool interpolationEnabled() const;
     bool toonShading() const;
     ToonLine toonLine() const;
     QSize documentWindowSize() const;
@@ -28,6 +29,7 @@ signals:
     void toonShadingChanged();
     void toonLineChanged();
     void textureSizeChanged();
+    void interpolationEnabledChanged();
     void scriptEnabledChanged();
 public slots:
     void setComponentCombineMode(CombineMode mode);
@@ -37,6 +39,7 @@ public slots:
     void setToonLine(ToonLine toonLine);
     void setTextureSize(int textureSize);
     void setScriptEnabled(bool enabled);
+    void setInterpolationEnabled(bool enabled);
     void reset();
 private:
     CombineMode m_componentCombineMode;
@@ -47,6 +50,7 @@ private:
     QSettings m_settings;
     int m_textureSize;
     bool m_scriptEnabled;
+    bool m_interpolationEnabled;
 private:
     void loadDefault();
 };

@@ -1021,11 +1021,11 @@ MeshCombiner::Mesh *MeshGenerator::combineComponentMesh(const QString &component
         QString partIdString = valueOfKeyInMapOrEmpty(*component, "linkData");
         bool hasError = false;
         bool retryable = true;
-        mesh = combinePartMesh(partIdString, &hasError, &retryable);
+        mesh = combinePartMesh(partIdString, &hasError, &retryable, m_interpolationEnabled);
         if (hasError) {
             delete mesh;
             mesh = nullptr;
-            if (retryable) {
+            if (retryable && m_interpolationEnabled) {
                 hasError = false;
                 qDebug() << "Try combine part again without adding intermediate nodes";
                 mesh = combinePartMesh(partIdString, &hasError, &retryable, false);
@@ -1409,6 +1409,11 @@ void MeshGenerator::setGeneratedCacheContext(GeneratedCacheContext *cacheContext
 void MeshGenerator::setSmoothShadingThresholdAngleDegrees(float degrees)
 {
     m_smoothShadingThresholdAngleDegrees = degrees;
+}
+
+void MeshGenerator::setInterpolationEnabled(bool interpolationEnabled)
+{
+    m_interpolationEnabled = interpolationEnabled;
 }
 
 void MeshGenerator::process()
