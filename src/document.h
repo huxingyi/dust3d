@@ -473,6 +473,7 @@ public:
     const std::vector<RigBone> *resultRigBones() const;
     const std::map<int, RigVertexWeights> *resultRigWeights() const;
     void updateTurnaround(const QImage &image);
+    void clearTurnaround();
     void updateTextureImage(QImage *image);
     void updateTextureNormalImage(QImage *image);
     void updateTextureMetalnessImage(QImage *image);

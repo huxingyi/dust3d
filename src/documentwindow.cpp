@@ -1432,6 +1432,7 @@ void DocumentWindow::newDocument()
     m_document->clearHistories();
     m_document->resetScript();
     m_document->reset();
+    m_document->clearTurnaround();
     m_document->saveSnapshot();
 }
 
@@ -1779,6 +1780,7 @@ void DocumentWindow::openPathAs(const QString &path, const QString &asName)
     m_document->clearHistories();
     m_document->resetScript();
     m_document->reset();
+    m_document->clearTurnaround();
     m_document->saveSnapshot();
     
     if (path.endsWith(".xml")) {

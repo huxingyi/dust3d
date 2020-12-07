@@ -932,6 +932,13 @@ void Document::updateTurnaround(const QImage &image)
     emit turnaroundChanged();
 }
 
+void Document::clearTurnaround()
+{
+    turnaround = QImage();
+    turnaroundPngByteArray.clear();
+    emit turnaroundChanged();
+}
+
 void Document::updateTextureImage(QImage *image)
 {
     delete textureImageByteArray;

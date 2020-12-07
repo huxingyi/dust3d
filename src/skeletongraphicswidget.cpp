@@ -722,7 +722,7 @@ void SkeletonGraphicsWidget::turnaroundChanged()
 void SkeletonGraphicsWidget::updateTurnaround()
 {
     const QImage *turnaroundImage = &m_document->turnaround;
-    QImage onePixel(16, 10, QImage::Format_ARGB32);
+    QImage onePixel(2, 1, QImage::Format_ARGB32);
     if (turnaroundImage->isNull()) {
         onePixel.fill(Qt::transparent);
         turnaroundImage = &onePixel;
