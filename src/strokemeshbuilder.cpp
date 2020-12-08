@@ -286,7 +286,6 @@ void StrokeMeshBuilder::interpolateCutEdges()
         if (targetLength >= oldEdgeLength)
             continue;
         size_t newInsertNum = oldEdgeLength / targetLength;
-        qDebug() << "oldEdgeLength:" << oldEdgeLength << "targetLength:" << targetLength << "newInsertNum:" << newInsertNum;
         if (newInsertNum < 1)
             newInsertNum = 1;
         if (newInsertNum > 100)
@@ -497,7 +496,7 @@ bool StrokeMeshBuilder::prepare()
     
     if (m_nodeIndices.empty())
         return false;
-    
+
     std::vector<QVector3D> edgeDirections;
     for (size_t i = 0; i < m_nodeIndices.size(); ++i) {
         m_nodes[m_nodeIndices[i]].traverseOrder = i;
@@ -670,7 +669,7 @@ bool StrokeMeshBuilder::calculateStartingNodeIndex(size_t *startingNodeIndex,
     }
     
     auto findNearestNodeWithWorldCenter = [&](const std::vector<size_t> &nodeIndices) {
-        std::vector<std::pair<size_t, float>> dist2Array(m_nodes.size());
+        std::vector<std::pair<size_t, float>> dist2Array;
         for (const auto &i: nodeIndices) {
             dist2Array.push_back({i, (float)m_nodes[i].position.lengthSquared()});
         }
