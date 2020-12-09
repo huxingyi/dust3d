@@ -2,24 +2,24 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <QDebug>
-#include "chainsimulator.h"
+#include "ragdoll.h"
+#include "util.h"
 
-void ChainSimulator::prepareChains()
+void Ragdoll::prepareChains()
 {
-    for (size_t i = 1; i < m_vertices->size(); ++i) {
-        size_t h = i - 1;
-        m_chains.push_back({h, i,
-            ((*m_vertices)[h] - (*m_vertices)[i]).length()});
+    for (const auto &it: *m_links) {
+        m_chains.push_back({it.first, it.second,
+            ((*m_vertices)[it.first] - (*m_vertices)[it.second]).length()});
     }
 }
 
-void ChainSimulator::initializeVertexMotions()
+void Ragdoll::initializeVertexMotions()
 {
     for (size_t i = 0; i < m_vertices->size(); ++i)
         m_vertexMotions[i].position = m_vertexMotions[i].lastPosition = (*m_vertices)[i];
 }
 
-void ChainSimulator::outputChainsForDebug(const char *filename, const std::vector<Chain> &springs)
+void Ragdoll::outputChainsForDebug(const char *filename, const std::vector<Chain> &springs)
 {
     FILE *fp = fopen(filename, "wb");
     for (const auto &it: *m_vertices) {
@@ -31,7 +31,7 @@ void ChainSimulator::outputChainsForDebug(const char *filename, const std::vecto
     fclose(fp);
 }
 
-void ChainSimulator::start()
+void Ragdoll::start()
 {
     initializeVertexMotions();
     prepareChains();
@@ -39,12 +39,12 @@ void ChainSimulator::start()
     //outputChainsForDebug("debug-chains.obj", m_chains);
 }
 
-const ChainSimulator::VertexMotion &ChainSimulator::getVertexMotion(size_t vertexIndex)
+const Ragdoll::VertexMotion &Ragdoll::getVertexMotion(size_t vertexIndex)
 {
     return m_vertexMotions[vertexIndex];
 }
 
-void ChainSimulator::updateVertexForces()
+void Ragdoll::updateVertexForces()
 {
     for (auto &it: m_vertexMotions)
         it.second.force = QVector3D();
@@ -55,7 +55,7 @@ void ChainSimulator::updateVertexForces()
     }
 }
 
-void ChainSimulator::doVerletIntegration(double stepSize)
+void Ragdoll::doVerletIntegration(double stepSize)
 {
     for (auto &it: m_vertexMotions) {
         if (it.second.fixed)
@@ -63,19 +63,20 @@ void ChainSimulator::doVerletIntegration(double stepSize)
         QVector3D &x = it.second.position;
         QVector3D temp = x;
         QVector3D &oldX = it.second.lastPosition;
-        QVector3D a = it.second.force / m_parameters.particleMass;
+        QVector3D a = it.second.force;
         x += x - oldX + a * stepSize * stepSize;
         oldX = temp;
+        applyBoundingConstraints(&it.second);
     }
 }
 
-void ChainSimulator::applyBoundingConstraints(QVector3D *position)
+void Ragdoll::applyBoundingConstraints(VertexMotion *vertexMotion)
 {
-    if (position->y() < m_groundY)
-        position->setY(m_groundY);
+    if (vertexMotion->position.y() < m_groundY + vertexMotion->radius)
+        vertexMotion->position.setY(m_groundY + vertexMotion->radius);
 }
 
-void ChainSimulator::applyConstraints()
+void Ragdoll::applyConstraints()
 {
     for (size_t iteration = 0; iteration < m_parameters.iterations; ++iteration) {
         for (auto &it: m_chains) {
@@ -83,33 +84,53 @@ void ChainSimulator::applyConstraints()
             auto &to = m_vertexMotions[it.to];
             auto delta = from.position - to.position;
             auto deltaLength = delta.length();
-            if (qFuzzyIsNull(deltaLength))
+            if (qFuzzyCompare(deltaLength, 0.0f))
                 continue;
             auto diff = (it.restLength - deltaLength) / deltaLength;
             auto offset = delta * 0.5 * diff;
             if (!from.fixed) {
                 from.position += offset;
-                applyBoundingConstraints(&from.position);
+                applyBoundingConstraints(&from);
             }
             if (!to.fixed) {
                 to.position += -offset;
-                applyBoundingConstraints(&to.position);
+                applyBoundingConstraints(&to);
+            }
+        }
+        
+        for (const auto &it: m_jointConstraints) {
+            auto &from = m_vertexMotions[it.first];
+            auto &to = m_vertexMotions[it.second];
+            auto &joint = m_vertexMotions[it.joint];
+            double degrees = degreesBetweenVectors(from.position - joint.position,
+                to.position - joint.position);
+            if (degrees < it.minDegrees) {
+                QVector3D straightPosition = (from.position + to.position) * 0.5;
+                joint.position += (it.minDegrees - degrees) * (straightPosition - joint.position) / (180 - degrees);
+                applyBoundingConstraints(&joint);
+            } else if (degrees > it.maxDegrees) {
+                // TODO:
             }
         }
     }
 }
 
-void ChainSimulator::updateVertexPosition(size_t vertexIndex, const QVector3D &position)
+void Ragdoll::updateVertexPosition(size_t vertexIndex, const QVector3D &position)
 {
     m_vertexMotions[vertexIndex].position = position;
 }
 
-void ChainSimulator::fixVertexPosition(size_t vertexIndex)
+void Ragdoll::fixVertexPosition(size_t vertexIndex)
 {
     m_vertexMotions[vertexIndex].fixed = true;
 }
 
-void ChainSimulator::simulate(double stepSize)
+void Ragdoll::updateVertexRadius(size_t vertexIndex, double radius)
+{
+    m_vertexMotions[vertexIndex].radius = radius;
+}
+
+void Ragdoll::simulate(double stepSize)
 {
     updateVertexForces();
     doVerletIntegration(stepSize);

@@ -1,10 +1,10 @@
 #include <QFormLayout>
 #include <QDoubleSpinBox>
 #include <QSpinBox>
-#include "vertebratamotionparameterswidget.h"
+#include "vertebratamovemotionparameterswidget.h"
 #include "util.h"
 
-std::map<QString, QString> VertebrataMotionParametersWidget::fromVertebrataMotionParameters(const VertebrataMotion::Parameters &from)
+std::map<QString, QString> VertebrataMoveMotionParametersWidget::fromVertebrataMoveMotionParameters(const VertebrataMoveMotionBuilder::Parameters &from)
 {
     std::map<QString, QString> parameters;
     
@@ -23,9 +23,9 @@ std::map<QString, QString> VertebrataMotionParametersWidget::fromVertebrataMotio
     return parameters;
 }
 
-VertebrataMotion::Parameters VertebrataMotionParametersWidget::toVertebrataMotionParameters(const std::map<QString, QString> &parameters)
+VertebrataMoveMotionBuilder::Parameters VertebrataMoveMotionParametersWidget::toVertebrataMoveMotionParameters(const std::map<QString, QString> &parameters)
 {
-    VertebrataMotion::Parameters vertebrataMotionParameters;
+    VertebrataMoveMotionBuilder::Parameters vertebrataMotionParameters;
     
     if (parameters.end() != parameters.find("stanceTime"))
         vertebrataMotionParameters.stanceTime = valueOfKeyInMapOrEmpty(parameters, "stanceTime").toDouble();
@@ -53,10 +53,10 @@ VertebrataMotion::Parameters VertebrataMotionParametersWidget::toVertebrataMotio
     return vertebrataMotionParameters;
 }
 
-VertebrataMotionParametersWidget::VertebrataMotionParametersWidget(const std::map<QString, QString> &parameters) :
+VertebrataMoveMotionParametersWidget::VertebrataMoveMotionParametersWidget(const std::map<QString, QString> &parameters) :
     m_parameters(parameters)
 {
-    m_vertebrataMotionParameters = toVertebrataMotionParameters(m_parameters);
+    m_vertebrataMotionParameters = toVertebrataMoveMotionParameters(m_parameters);
     
     QFormLayout *parametersLayout = new QFormLayout;
     parametersLayout->setSpacing(0);
@@ -67,7 +67,7 @@ VertebrataMotionParametersWidget::VertebrataMotionParametersWidget(const std::ma
     parametersLayout->addRow(tr("Stance time: "), stanceTimeBox);
     connect(stanceTimeBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double value){
         m_vertebrataMotionParameters.stanceTime = value;
-        m_parameters = fromVertebrataMotionParameters(m_vertebrataMotionParameters);
+        m_parameters = fromVertebrataMoveMotionParameters(m_vertebrataMotionParameters);
         emit parametersChanged();
     });
     
@@ -77,7 +77,7 @@ VertebrataMotionParametersWidget::VertebrataMotionParametersWidget(const std::ma
     parametersLayout->addRow(tr("Swing time: "), swingTimeBox);
     connect(swingTimeBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double value){
         m_vertebrataMotionParameters.swingTime = value;
-        m_parameters = fromVertebrataMotionParameters(m_vertebrataMotionParameters);
+        m_parameters = fromVertebrataMoveMotionParameters(m_vertebrataMotionParameters);
         emit parametersChanged();
     });
     
@@ -86,7 +86,7 @@ VertebrataMotionParametersWidget::VertebrataMotionParametersWidget(const std::ma
     parametersLayout->addRow(tr("Hip height: "), hipHeightBox);
     connect(hipHeightBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double value){
         m_vertebrataMotionParameters.hipHeight = value;
-        m_parameters = fromVertebrataMotionParameters(m_vertebrataMotionParameters);
+        m_parameters = fromVertebrataMoveMotionParameters(m_vertebrataMotionParameters);
         emit parametersChanged();
     });
     
@@ -95,7 +95,7 @@ VertebrataMotionParametersWidget::VertebrataMotionParametersWidget(const std::ma
     parametersLayout->addRow(tr("Arm length: "), armLengthBox);
     connect(armLengthBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double value){
         m_vertebrataMotionParameters.armLength = value;
-        m_parameters = fromVertebrataMotionParameters(m_vertebrataMotionParameters);
+        m_parameters = fromVertebrataMoveMotionParameters(m_vertebrataMotionParameters);
         emit parametersChanged();
     });
     
@@ -104,7 +104,7 @@ VertebrataMotionParametersWidget::VertebrataMotionParametersWidget(const std::ma
     parametersLayout->addRow(tr("Leg side intval: "), legSideIntvalBox);
     connect(legSideIntvalBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double value){
         m_vertebrataMotionParameters.legSideIntval = value;
-        m_parameters = fromVertebrataMotionParameters(m_vertebrataMotionParameters);
+        m_parameters = fromVertebrataMoveMotionParameters(m_vertebrataMotionParameters);
         emit parametersChanged();
     });
     
@@ -113,7 +113,7 @@ VertebrataMotionParametersWidget::VertebrataMotionParametersWidget(const std::ma
     parametersLayout->addRow(tr("Leg balance intval: "), legBalanceIntvalBox);
     connect(legBalanceIntvalBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double value){
         m_vertebrataMotionParameters.legBalanceIntval = value;
-        m_parameters = fromVertebrataMotionParameters(m_vertebrataMotionParameters);
+        m_parameters = fromVertebrataMoveMotionParameters(m_vertebrataMotionParameters);
         emit parametersChanged();
     });
     
@@ -122,7 +122,7 @@ VertebrataMotionParametersWidget::VertebrataMotionParametersWidget(const std::ma
     parametersLayout->addRow(tr("Spine stability: "), spineStabilityBox);
     connect(spineStabilityBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double value){
         m_vertebrataMotionParameters.spineStability = value;
-        m_parameters = fromVertebrataMotionParameters(m_vertebrataMotionParameters);
+        m_parameters = fromVertebrataMoveMotionParameters(m_vertebrataMotionParameters);
         emit parametersChanged();
     });
     
@@ -131,7 +131,7 @@ VertebrataMotionParametersWidget::VertebrataMotionParametersWidget(const std::ma
     parametersLayout->addRow(tr("Cycles: "), cyclesBox);
     connect(cyclesBox, QOverload<int>::of(&QSpinBox::valueChanged), [&](int value){
         m_vertebrataMotionParameters.cycles = value;
-        m_parameters = fromVertebrataMotionParameters(m_vertebrataMotionParameters);
+        m_parameters = fromVertebrataMoveMotionParameters(m_vertebrataMotionParameters);
         emit parametersChanged();
     });
     
@@ -141,7 +141,7 @@ VertebrataMotionParametersWidget::VertebrataMotionParametersWidget(const std::ma
     parametersLayout->addRow(tr("Ground offset: "), groundOffsetBox);
     connect(groundOffsetBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double value){
         m_vertebrataMotionParameters.groundOffset = value;
-        m_parameters = fromVertebrataMotionParameters(m_vertebrataMotionParameters);
+        m_parameters = fromVertebrataMoveMotionParameters(m_vertebrataMotionParameters);
         emit parametersChanged();
     });
     
@@ -152,7 +152,7 @@ VertebrataMotionParametersWidget::VertebrataMotionParametersWidget(const std::ma
     parametersLayout->addRow(tr("Tail lift force: "), tailLiftForceBox);
     connect(tailLiftForceBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double value){
         m_vertebrataMotionParameters.tailLiftForce = value;
-        m_parameters = fromVertebrataMotionParameters(m_vertebrataMotionParameters);
+        m_parameters = fromVertebrataMoveMotionParameters(m_vertebrataMotionParameters);
         emit parametersChanged();
     });
     
@@ -162,7 +162,7 @@ VertebrataMotionParametersWidget::VertebrataMotionParametersWidget(const std::ma
     parametersLayout->addRow(tr("Tail drag force: "), tailDragForceBox);
     connect(tailDragForceBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), [&](double value){
         m_vertebrataMotionParameters.tailDragForce = value;
-        m_parameters = fromVertebrataMotionParameters(m_vertebrataMotionParameters);
+        m_parameters = fromVertebrataMoveMotionParameters(m_vertebrataMotionParameters);
         emit parametersChanged();
     });
     

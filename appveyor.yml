@@ -121,9 +121,6 @@ after_test:
   - dust3d.exe :/resources/model-bicycle.ds3 -o bicycle.obj
   - dust3d.exe :/resources/model-bicycle.ds3 -o bicycle.fbx
   - dust3d.exe :/resources/model-bicycle.ds3 -o bicycle.glb
-  - dust3d.exe :/resources/model-bob.ds3 -o bob.obj
-  - dust3d.exe :/resources/model-bob.ds3 -o bob.fbx
-  - dust3d.exe :/resources/model-bob.ds3 -o bob.glb
   - dust3d.exe :/resources/model-dog.ds3 -o dog.obj
   - dust3d.exe :/resources/model-dog.ds3 -o dog.fbx
   - dust3d.exe :/resources/model-dog.ds3 -o dog.glb

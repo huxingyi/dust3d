@@ -13,7 +13,7 @@
 #include "motionsgenerator.h"
 #include "util.h"
 #include "version.h"
-#include "vertebratamotionparameterswidget.h"
+#include "vertebratamovemotionparameterswidget.h"
 
 MotionEditWidget::~MotionEditWidget()
 {
@@ -94,8 +94,8 @@ MotionEditWidget::MotionEditWidget()
 
 void MotionEditWidget::updateParametersArea()
 {
-    VertebrataMotionParametersWidget *widget = new VertebrataMotionParametersWidget(m_parameters);
-    connect(widget, &VertebrataMotionParametersWidget::parametersChanged, this, [=]() {
+    VertebrataMoveMotionParametersWidget *widget = new VertebrataMoveMotionParametersWidget(m_parameters);
+    connect(widget, &VertebrataMoveMotionParametersWidget::parametersChanged, this, [=]() {
         this->m_parameters = widget->getParameters();
         emit parametersChanged();
     });

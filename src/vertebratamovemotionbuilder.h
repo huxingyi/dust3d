@@ -1,11 +1,12 @@
-#ifndef DUST3D_VERTEBRATA_MOTION_H
-#define DUST3D_VERTEBRATA_MOTION_H
+#ifndef DUST3D_VERTEBRATA_MOVE_MOTION_H
+#define DUST3D_VERTEBRATA_MOVE_MOTION_H
 #include <QVector3D>
 #include <vector>
 #include <map>
 #include <unordered_map>
+#include "motionbuilder.h"
    
-class VertebrataMotion
+class VertebrataMoveMotionBuilder : public MotionBuilder
 {
 public:
     struct Parameters
@@ -23,22 +24,7 @@ public:
         double tailDragForce = 4.0;
         bool biped = false;
     };
-    
-    struct Node
-    {
-        QVector3D position;
-        double radius;
-        int boneIndex = -1;
-        bool isTail = false;
-    };
-    
-    enum class Side
-    {
-        Middle = 0,
-        Left,
-        Right,
-    };
-    
+
     struct Leg
     {
         std::vector<std::vector<Node>> nodes;
@@ -49,7 +35,8 @@ public:
         double move[3] = {0, 0, 0};
     };
 
-    VertebrataMotion()
+    VertebrataMoveMotionBuilder() :
+        MotionBuilder()
     {
     }
     

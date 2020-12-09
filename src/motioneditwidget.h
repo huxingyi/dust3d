@@ -5,7 +5,6 @@
 #include <queue>
 #include <QLineEdit>
 #include <QUuid>
-#include "vertebratamotion.h"
 #include "rig.h"
 #include "object.h"
 

@@ -1,18 +1,18 @@
-#include "vertebratamotion.h"
+#include "vertebratamovemotionbuilder.h"
 #include "genericspineandpseudophysics.h"
 #include "hermitecurveinterpolation.h"
 #include "chainsimulator.h"
 #include "ccdikresolver.h"
 #include <QDebug>
 
-void VertebrataMotion::prepareLegHeights()
+void VertebrataMoveMotionBuilder::prepareLegHeights()
 {
     GenericSpineAndPseudoPhysics physics;
     physics.calculateFootHeights(m_parameters.hipHeight, 
         m_parameters.stanceTime, m_parameters.swingTime, &m_legHeights, &m_legMoveOffsets);
 }
 
-void VertebrataMotion::prepareLegs()
+void VertebrataMoveMotionBuilder::prepareLegs()
 {
     m_legs.clear();
     for (size_t spineNodeIndex = 0; 
@@ -40,7 +40,7 @@ void VertebrataMotion::prepareLegs()
     }
 }
 
-void VertebrataMotion::prepareLegHeightIndices()
+void VertebrataMoveMotionBuilder::prepareLegHeightIndices()
 {
     int balancedStart = 0;
     for (int side = 0; side < 3; ++side) {
@@ -60,7 +60,7 @@ void VertebrataMotion::prepareLegHeightIndices()
     }
 }
 
-void VertebrataMotion::calculateSpineJoints()
+void VertebrataMoveMotionBuilder::calculateSpineJoints()
 {
     HermiteCurveInterpolation spineInterpolation;
     
@@ -112,7 +112,7 @@ void VertebrataMotion::calculateSpineJoints()
     }
 }
 
-void VertebrataMotion::calculateLegMoves(size_t heightIndex)
+void VertebrataMoveMotionBuilder::calculateLegMoves(size_t heightIndex)
 {
     auto calculateLegTargetTop = [&](size_t legIndex) {
         double sumTop = 0.0;
@@ -240,7 +240,7 @@ void VertebrataMotion::calculateLegMoves(size_t heightIndex)
     }
 }
     
-void VertebrataMotion::generate()
+void VertebrataMoveMotionBuilder::generate()
 {
     prepareLegHeights();
     prepareLegs();

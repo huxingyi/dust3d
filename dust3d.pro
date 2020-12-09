@@ -511,8 +511,8 @@ HEADERS += src/genericspineandpseudophysics.h
 SOURCES += src/chainsimulator.cpp
 HEADERS += src/chainsimulator.h
 
-SOURCES += src/vertebratamotion.cpp
-HEADERS += src/vertebratamotion.h
+SOURCES += src/vertebratamovemotionbuilder.cpp
+HEADERS += src/vertebratamovemotionbuilder.h
 
 SOURCES += src/simplerendermeshgenerator.cpp
 HEADERS += src/simplerendermeshgenerator.h
@@ -520,14 +520,20 @@ HEADERS += src/simplerendermeshgenerator.h
 SOURCES += src/motioneditwidget.cpp
 HEADERS += src/motioneditwidget.h
 
-SOURCES += src/vertebratamotionparameterswidget.cpp
-HEADERS += src/vertebratamotionparameterswidget.h
+SOURCES += src/vertebratamovemotionparameterswidget.cpp
+HEADERS += src/vertebratamovemotionparameterswidget.h
 
 SOURCES += src/objectxml.cpp
 HEADERS += src/objectxml.h
 
 SOURCES += src/rigxml.cpp
 HEADERS += src/rigxml.h
+
+SOURCES += src/ragdoll.cpp
+HEADERS += src/ragdoll.h
+
+SOURCES += src/motionbuilder.cpp
+HEADERS += src/motionbuilder.h
 
 SOURCES += src/main.cpp
 

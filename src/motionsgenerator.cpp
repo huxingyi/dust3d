@@ -4,9 +4,9 @@
 #include <QRegularExpression>
 #include <QMatrix4x4>
 #include "motionsgenerator.h"
-#include "vertebratamotion.h"
+#include "vertebratamovemotionbuilder.h"
 #include "blockmesh.h"
-#include "vertebratamotionparameterswidget.h"
+#include "vertebratamovemotionparameterswidget.h"
 #include "util.h"
 
 MotionsGenerator::MotionsGenerator(RigType rigType,
@@ -141,7 +141,7 @@ void MotionsGenerator::generateMotion(const QUuid &motionId)
     
     double radiusScale = 0.5;
     
-    std::vector<VertebrataMotion::Node> spineNodes;
+    std::vector<MotionBuilder::Node> spineNodes;
     if (!spineBones.empty()) {
         const auto &it = spineBones[0];
         if (it.second) {
@@ -175,14 +175,14 @@ void MotionsGenerator::generateMotion(const QUuid &motionId)
         }
     }
     
-    VertebrataMotion *vertebrataMotion = new VertebrataMotion;
+    VertebrataMoveMotionBuilder *vertebrataMoveMotionBuilder = new VertebrataMoveMotionBuilder;
     
-    VertebrataMotion::Parameters parameters = 
-        VertebrataMotionParametersWidget::toVertebrataMotionParameters(m_motions[motionId]);
+    VertebrataMoveMotionBuilder::Parameters parameters = 
+        VertebrataMoveMotionParametersWidget::toVertebrataMoveMotionParameters(m_motions[motionId]);
     if ("Vertical" == valueOfKeyInMapOrEmpty(m_bones[0].attributes, "spineDirection"))
         parameters.biped = true;
-    vertebrataMotion->setParameters(parameters);
-    vertebrataMotion->setSpineNodes(spineNodes);
+    vertebrataMoveMotionBuilder->setParameters(parameters);
+    vertebrataMoveMotionBuilder->setSpineNodes(spineNodes);
     
     double groundY = std::numeric_limits<double>::max();
     for (const auto &it: spineNodes) {
@@ -191,12 +191,12 @@ void MotionsGenerator::generateMotion(const QUuid &motionId)
     }
     
     for (const auto &chain: chains) {
-        std::vector<VertebrataMotion::Node> legNodes;
-        VertebrataMotion::Side side;
+        std::vector<MotionBuilder::Node> legNodes;
+        MotionBuilder::Side side;
         if (chain.first.startsWith("LeftLimb")) {
-            side = VertebrataMotion::Side::Left;
+            side = MotionBuilder::Side::Left;
         } else if (chain.first.startsWith("RightLimb")) {
-            side = VertebrataMotion::Side::Right;
+            side = MotionBuilder::Side::Right;
         } else {
             continue;
         }
@@ -221,14 +221,14 @@ void MotionsGenerator::generateMotion(const QUuid &motionId)
                 it,
                 true});
         }
-        vertebrataMotion->setLegNodes(findSpine->second, side, legNodes);
+        vertebrataMoveMotionBuilder->setLegNodes(findSpine->second, side, legNodes);
         for (const auto &it: legNodes) {
             if (it.position.y() - it.radius < groundY)
                 groundY = it.position.y() - it.radius;
         }
     }
-    vertebrataMotion->setGroundY(groundY);
-    vertebrataMotion->generate();
+    vertebrataMoveMotionBuilder->setGroundY(groundY);
+    vertebrataMoveMotionBuilder->generate();
     
     std::vector<std::pair<float, JointNodeTree>> jointNodeTrees;
     std::vector<std::pair<float, SimpleShaderMesh *>> previewMeshes;
@@ -249,9 +249,9 @@ void MotionsGenerator::generateMotion(const QUuid &motionId)
         bindTransforms[i] = parentMatrix * translationMatrix;
     }
     
-    const auto &vertebrataMotionFrames = vertebrataMotion->frames();
-    for (size_t frameIndex = 0; frameIndex < vertebrataMotionFrames.size(); ++frameIndex) {
-        const auto &frame = vertebrataMotionFrames[frameIndex];
+    const auto &vertebrataMoveMotionBuilderFrames = vertebrataMoveMotionBuilder->frames();
+    for (size_t frameIndex = 0; frameIndex < vertebrataMoveMotionBuilderFrames.size(); ++frameIndex) {
+        const auto &frame = vertebrataMoveMotionBuilderFrames[frameIndex];
         std::vector<RigBone> transformedBones = m_bones;
         for (const auto &node: frame) {
             if (-1 == node.boneIndex)
@@ -356,7 +356,7 @@ void MotionsGenerator::generateMotion(const QUuid &motionId)
         }
         
         if (m_snapshotMeshesEnabled) {
-            if (frameIndex == vertebrataMotionFrames.size() / 2) {
+            if (frameIndex == vertebrataMoveMotionBuilderFrames.size() / 2) {
                 delete snapshotMesh;
                 snapshotMesh = new Model(frameVertices, frameFaces, frameCornerNormals);
             }
