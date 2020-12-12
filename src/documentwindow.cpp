@@ -325,6 +325,13 @@ DocumentWindow::DocumentWindow() :
     containerWidget->setLayout(containerLayout);
     containerWidget->setMinimumSize(400, 400);
     
+    {
+        QPalette palette = containerWidget->palette();
+        palette.setColor(QPalette::Background, QColor(25, 25, 25));
+        containerWidget->setAutoFillBackground(true);
+        containerWidget->setPalette(palette);
+    }
+    
     m_graphicsContainerWidget = containerWidget;
     
     //m_infoWidget = new QLabel(containerWidget);
@@ -493,11 +500,32 @@ DocumentWindow::DocumentWindow() :
     
     partsDocker->raise();
     
+    QWidget *titleBarWidget = new QWidget;
+    titleBarWidget->setFixedHeight(3);
+    
+    QHBoxLayout *titleBarLayout = new QHBoxLayout;
+    titleBarLayout->addStretch();
+    titleBarWidget->setLayout(titleBarLayout);
+    
+    QWidget *statusBarWidget = new QWidget;
+    statusBarWidget->setFixedHeight(30);
+    
+    QHBoxLayout *statusBarLayout = new QHBoxLayout;
+    statusBarLayout->addStretch();
+    statusBarWidget->setLayout(statusBarLayout);
+
+    QVBoxLayout *canvasLayout = new QVBoxLayout;
+    canvasLayout->setSpacing(0);
+    canvasLayout->setContentsMargins(0, 0, 0, 0);
+    canvasLayout->addWidget(titleBarWidget);
+    canvasLayout->addWidget(containerWidget);
+    canvasLayout->addWidget(statusBarWidget);
+    
     QHBoxLayout *mainLayout = new QHBoxLayout;
     mainLayout->setSpacing(0);
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->addLayout(mainLeftLayout);
-    mainLayout->addWidget(containerWidget);
+    mainLayout->addLayout(canvasLayout);
     mainLayout->addSpacing(3);
 
     QWidget *centralWidget = new QWidget;

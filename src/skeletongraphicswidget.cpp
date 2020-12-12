@@ -724,7 +724,7 @@ void SkeletonGraphicsWidget::updateTurnaround()
     const QImage *turnaroundImage = &m_document->turnaround;
     QImage onePixel(2, 1, QImage::Format_ARGB32);
     if (turnaroundImage->isNull()) {
-        onePixel.fill(Qt::transparent);
+        onePixel.fill(Qt::white);
         turnaroundImage = &onePixel;
     }
     
