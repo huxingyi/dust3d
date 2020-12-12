@@ -58,7 +58,7 @@ int main(int argc, char ** argv)
     font.setBold(false);
     QApplication::setFont(font);
     
-    Theme::initAwsomeBaseSizes();
+    Theme::initAwsome();
     
     DocumentWindow *firstWindow = DocumentWindow::createDocumentWindow();
     

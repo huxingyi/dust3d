@@ -20,6 +20,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <qtsingleapplication.h>
+#include <QFormLayout>
 #include "documentwindow.h"
 #include "skeletongraphicswidget.h"
 #include "theme.h"
@@ -50,6 +51,7 @@
 #include "documentsaver.h"
 #include "objectxml.h"
 #include "rigxml.h"
+#include "statusbarlabel.h"
 
 int DocumentWindow::m_autoRecovered = false;
 
@@ -325,12 +327,8 @@ DocumentWindow::DocumentWindow() :
     containerWidget->setLayout(containerLayout);
     containerWidget->setMinimumSize(400, 400);
     
-    {
-        QPalette palette = containerWidget->palette();
-        palette.setColor(QPalette::Background, QColor(25, 25, 25));
-        containerWidget->setAutoFillBackground(true);
-        containerWidget->setPalette(palette);
-    }
+    containerWidget->setAutoFillBackground(true);
+    containerWidget->setPalette(Theme::statusBarActivePalette);
     
     m_graphicsContainerWidget = containerWidget;
     
@@ -501,17 +499,43 @@ DocumentWindow::DocumentWindow() :
     partsDocker->raise();
     
     QWidget *titleBarWidget = new QWidget;
-    titleBarWidget->setFixedHeight(3);
+    titleBarWidget->setFixedHeight(1);
     
     QHBoxLayout *titleBarLayout = new QHBoxLayout;
     titleBarLayout->addStretch();
     titleBarWidget->setLayout(titleBarLayout);
+
+    /////////////////////// Status Bar Begin ////////////////////////////
     
     QWidget *statusBarWidget = new QWidget;
-    statusBarWidget->setFixedHeight(30);
+    statusBarWidget->setContentsMargins(0, 0, 0, 0);
+    
+    StatusBarLabel *boneLabel = new StatusBarLabel;
+    boneLabel->updateText(tr("Bone"));
+    
+    StatusBarLabel *shapeLabel = new StatusBarLabel;
+    shapeLabel->setSelected(true);
+    shapeLabel->updateText(tr("Shape"));
+    
+    connect(boneLabel, &StatusBarLabel::clicked, this, [=]() {
+        boneLabel->setSelected(true);
+        shapeLabel->setSelected(false);
+        // TODO:
+    });
+    connect(shapeLabel, &StatusBarLabel::clicked, this, [=]() {
+        shapeLabel->setSelected(true);
+        boneLabel->setSelected(false);
+        // TODO:
+    });
+    
+    /////////////////////// Status Bar End ////////////////////////////
     
     QHBoxLayout *statusBarLayout = new QHBoxLayout;
+    statusBarLayout->setSpacing(0);
+    statusBarLayout->setContentsMargins(0, 0, 0, 0);
     statusBarLayout->addStretch();
+    statusBarLayout->addWidget(boneLabel);
+    statusBarLayout->addWidget(shapeLabel);
     statusBarWidget->setLayout(statusBarLayout);
 
     QVBoxLayout *canvasLayout = new QVBoxLayout;
@@ -520,6 +544,7 @@ DocumentWindow::DocumentWindow() :
     canvasLayout->addWidget(titleBarWidget);
     canvasLayout->addWidget(containerWidget);
     canvasLayout->addWidget(statusBarWidget);
+    canvasLayout->setStretch(1, 1);
     
     QHBoxLayout *mainLayout = new QHBoxLayout;
     mainLayout->setSpacing(0);

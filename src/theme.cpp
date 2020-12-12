@@ -47,7 +47,11 @@ int Theme::motionPreviewImageSize = 0;
 int Theme::sidebarPreferredWidth = 0;
 int Theme::normalButtonSize = 0;
 
-void Theme::initAwsomeBaseSizes()
+QPalette Theme::statusBarActivePalette;
+QPalette Theme::statusBarHoverPalette;
+QPalette Theme::statusBarNormalPalette;
+
+void Theme::initAwsome()
 {
     QFontMetrics fontMetrics(QApplication::font());
     Theme::toolIconFontSize = fontMetrics.height();
@@ -62,6 +66,15 @@ void Theme::initAwsomeBaseSizes()
     Theme::cutFacePreviewImageSize = Theme::posePreviewImageSize;
     Theme::motionPreviewImageSize = Theme::posePreviewImageSize;
     Theme::normalButtonSize = Theme::toolIconSize * 2;
+    
+    Theme::statusBarActivePalette.setColor(QPalette::Window, QColor(25, 25, 25));
+    Theme::statusBarActivePalette.setColor(QPalette::WindowText, QColor(0x91, 0x91, 0x91));
+    
+    Theme::statusBarHoverPalette.setColor(QPalette::Window, Theme::black);
+    Theme::statusBarHoverPalette.setColor(QPalette::WindowText, Qt::white);
+    
+    Theme::statusBarNormalPalette.setColor(QPalette::Window, Theme::black);
+    Theme::statusBarNormalPalette.setColor(QPalette::WindowText, QColor(0x91, 0x91, 0x91));
 }
 
 QtAwesome *Theme::awesome()

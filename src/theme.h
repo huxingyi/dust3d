@@ -6,6 +6,7 @@
 #include <QPushButton>
 #include <QLabel>
 #include <QCheckBox>
+#include <QPalette>
 #include "QtAwesome.h"
 
 class Theme
@@ -44,6 +45,9 @@ public:
     static int miniIconSize;
     static int sidebarPreferredWidth;
     static int normalButtonSize;
+    static QPalette statusBarActivePalette;
+    static QPalette statusBarHoverPalette;
+    static QPalette statusBarNormalPalette;
 public:
     static void initAwesomeButton(QPushButton *button);
     static void initAwesomeLabel(QLabel *label);
@@ -51,7 +55,7 @@ public:
     static void updateAwesomeMiniButton(QPushButton *button, QChar icon, bool highlighted, bool enabled, bool unnormal=false);
     static void initAwesomeToolButton(QPushButton *button);
     static void initAwesomeToolButtonWithoutFont(QPushButton *button);
-    static void initAwsomeBaseSizes();
+    static void initAwsome();
     static void initToolButton(QPushButton *button);
     static void initCheckbox(QCheckBox *checkbox);
 };
