@@ -760,10 +760,17 @@ void SkeletonGraphicsWidget::turnaroundImageReady()
     }
     delete m_turnaroundLoader;
     m_turnaroundLoader = nullptr;
+    
+    emit loadedTurnaroundImageChanged();
 
     if (m_turnaroundChanged) {
         updateTurnaround();
     }
+}
+
+const QImage *SkeletonGraphicsWidget::loadedTurnaroundImage() const
+{
+    return m_backgroundImage;
 }
 
 void SkeletonGraphicsWidget::updateCursor()

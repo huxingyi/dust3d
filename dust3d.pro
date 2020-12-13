@@ -538,6 +538,9 @@ HEADERS += src/motionbuilder.h
 SOURCES += src/statusbarlabel.cpp
 HEADERS += src/statusbarlabel.h
 
+SOURCES += src/silhouetteimagegenerator.cpp
+HEADERS += src/silhouetteimagegenerator.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h

@@ -24,6 +24,7 @@
 class SkeletonGraphicsWidget;
 class PartTreeWidget;
 class SpinnableAwesomeButton;
+class SilhouetteImageGenerator;
 
 class DocumentWindow : public QMainWindow
 {
@@ -33,11 +34,19 @@ signals:
     void uninialized();
     void waitingExportFinished(const QString &filename, bool isSuccessful);
     void mouseTargetVertexPositionChanged(const QVector3D &position);
+    void graphicsViewEditTargetChanged();
 public:
+    enum class GraphicsViewEditTarget
+    {
+        Shape,
+        Bone
+    };
+
     DocumentWindow();
     ~DocumentWindow();
     Document *document();
     ModelWidget *modelWidget();
+    GraphicsViewEditTarget graphicsViewEditTarget();
     static DocumentWindow *createDocumentWindow();
     static const std::map<DocumentWindow *, QUuid> &documentWindows();
     static void showAcknowlegements();
@@ -105,6 +114,9 @@ public slots:
     void generatePartPreviewImages();
     void partPreviewImagesReady();
     void updateRegenerateIcon();
+    void updateGraphicsViewEditTarget(GraphicsViewEditTarget target);
+    void generateSilhouetteImage();
+    void silhouetteImageReady();
 private:
     void initLockButton(QPushButton *button);
     void setCurrentFilename(const QString &filename);
@@ -242,6 +254,10 @@ private:
     SpinnableAwesomeButton *m_regenerateButton = nullptr;
     
     QWidget *m_paintWidget = nullptr;
+    
+    GraphicsViewEditTarget m_graphicsViewEditTarget = GraphicsViewEditTarget::Shape;
+    bool m_isSilhouetteImageObsolete = false;
+    SilhouetteImageGenerator *m_silhouetteImageGenerator = nullptr;
 public:
     static int m_autoRecovered;
 };

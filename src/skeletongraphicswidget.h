@@ -516,6 +516,7 @@ signals:
     void shortcutToggleRotation();
     void createGriddedPartsFromNodes(const std::set<QUuid> &nodeIds);
     void addPartByPolygons(const QPolygonF &mainProfile, const QPolygonF &sideProfile, const QSizeF &canvasSize);
+    void loadedTurnaroundImageChanged();
 public:
     SkeletonGraphicsWidget(const SkeletonDocument *document);
     std::map<QUuid, std::pair<SkeletonGraphicsNodeItem *, SkeletonGraphicsNodeItem *>> nodeItemMap;
@@ -547,6 +548,7 @@ public:
     void setMainProfileOnly(bool mainProfileOnly);
     bool inputWheelEventFromOtherWidget(QWheelEvent *event);
     bool rotated();
+    const QImage *loadedTurnaroundImage() const;
 protected:
     void mouseMoveEvent(QMouseEvent *event) override;
     void wheelEvent(QWheelEvent *event) override;

@@ -52,6 +52,7 @@
 #include "objectxml.h"
 #include "rigxml.h"
 #include "statusbarlabel.h"
+#include "silhouetteimagegenerator.h"
 
 int DocumentWindow::m_autoRecovered = false;
 
@@ -78,6 +79,22 @@ void ensureFileExtension(QString* filename, const QString extension) {
 const std::map<DocumentWindow *, QUuid> &DocumentWindow::documentWindows()
 {
     return g_documentWindows;
+}
+
+DocumentWindow::GraphicsViewEditTarget DocumentWindow::graphicsViewEditTarget()
+{
+    return m_graphicsViewEditTarget;
+}
+
+void DocumentWindow::updateGraphicsViewEditTarget(GraphicsViewEditTarget target)
+{
+    if (m_graphicsViewEditTarget == target)
+        return;
+    
+    m_graphicsViewEditTarget = target;
+    if (GraphicsViewEditTarget::Bone == m_graphicsViewEditTarget)
+        generateSilhouetteImage();
+    emit graphicsViewEditTargetChanged();
 }
 
 Document *DocumentWindow::document()
@@ -520,12 +537,12 @@ DocumentWindow::DocumentWindow() :
     connect(boneLabel, &StatusBarLabel::clicked, this, [=]() {
         boneLabel->setSelected(true);
         shapeLabel->setSelected(false);
-        // TODO:
+        updateGraphicsViewEditTarget(GraphicsViewEditTarget::Bone);
     });
     connect(shapeLabel, &StatusBarLabel::clicked, this, [=]() {
         shapeLabel->setSelected(true);
         boneLabel->setSelected(false);
-        // TODO:
+        updateGraphicsViewEditTarget(GraphicsViewEditTarget::Shape);
     });
     
     /////////////////////// Status Bar End ////////////////////////////
@@ -1353,6 +1370,9 @@ DocumentWindow::DocumentWindow() :
     
     connect(m_document, &Document::scriptChanged, m_document, &Document::runScript);
     connect(m_document, &Document::scriptModifiedFromExternal, m_document, &Document::runScript);
+    
+    connect(m_document, &Document::skeletonChanged, this, &DocumentWindow::generateSilhouetteImage);
+    connect(m_graphicsWidget, &SkeletonGraphicsWidget::loadedTurnaroundImageChanged, this, &DocumentWindow::generateSilhouetteImage);
     
     initShortCuts(this, m_graphicsWidget);
 
@@ -2633,4 +2653,48 @@ void DocumentWindow::partPreviewImagesReady()
 ModelWidget *DocumentWindow::modelWidget()
 {
     return m_modelRenderWidget;
+}
+
+void DocumentWindow::generateSilhouetteImage()
+{
+    if (GraphicsViewEditTarget::Bone != m_graphicsViewEditTarget ||
+            nullptr != m_silhouetteImageGenerator) {
+        m_isSilhouetteImageObsolete = true;
+        return;
+    }
+    
+    m_isSilhouetteImageObsolete = false;
+    
+    const QImage *loadedTurnaroundImage = m_graphicsWidget->loadedTurnaroundImage();
+    if (nullptr == loadedTurnaroundImage) {
+        return;
+    }
+    
+    QThread *thread = new QThread;
+    
+    Snapshot *snapshot = new Snapshot;
+    m_document->toSnapshot(snapshot);
+    
+    m_silhouetteImageGenerator = new SilhouetteImageGenerator(loadedTurnaroundImage->width(), 
+        loadedTurnaroundImage->height(), snapshot);
+    m_silhouetteImageGenerator->moveToThread(thread);
+    connect(thread, &QThread::started, m_silhouetteImageGenerator, &SilhouetteImageGenerator::process);
+    connect(m_silhouetteImageGenerator, &SilhouetteImageGenerator::finished, this, &DocumentWindow::silhouetteImageReady);
+    connect(m_silhouetteImageGenerator, &SilhouetteImageGenerator::finished, thread, &QThread::quit);
+    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+    thread->start();
+}
+
+void DocumentWindow::silhouetteImageReady()
+{
+    QImage *image = m_silhouetteImageGenerator->takeResultImage();
+    if (nullptr != image)
+        image->save("test.png");
+    delete image;
+    
+    delete m_silhouetteImageGenerator;
+    m_silhouetteImageGenerator = nullptr;
+    
+    if (m_isSilhouetteImageObsolete)
+        generateSilhouetteImage();
 }
