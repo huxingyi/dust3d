@@ -163,47 +163,6 @@ private:
     QAction *m_exportDs3objAction;
     QAction *m_exportRenderedAsImageAction;
     
-    QMenu *m_editMenu;
-    QAction *m_addAction;
-    QAction *m_undoAction;
-    QAction *m_redoAction;
-    QAction *m_deleteAction;
-    QAction *m_breakAction;
-    QAction *m_reduceAction;
-    QAction *m_reverseAction;
-    QAction *m_connectAction;
-    QAction *m_cutAction;
-    QAction *m_copyAction;
-    QAction *m_pasteAction;
-    QAction *m_flipHorizontallyAction;
-    QAction *m_flipVerticallyAction;
-    QAction *m_rotateClockwiseAction;
-    QAction *m_rotateCounterclockwiseAction;
-    QAction *m_switchXzAction;
-    QAction *m_setCutFaceAction;
-    QAction *m_clearCutFaceAction;
-    QAction *m_createWrapPartsAction;
-    
-    QMenu *m_alignToMenu;
-    QAction *m_alignToGlobalCenterAction;
-    QAction *m_alignToGlobalVerticalCenterAction;
-    QAction *m_alignToGlobalHorizontalCenterAction;
-    QAction *m_alignToLocalCenterAction;
-    QAction *m_alignToLocalVerticalCenterAction;
-    QAction *m_alignToLocalHorizontalCenterAction;
-    
-    QAction *m_selectAllAction;
-    QAction *m_selectPartAllAction;
-    QAction *m_unselectAllAction;
-    
-    QMenu *m_markAsMenu;
-    QAction *m_markAsNoneAction;
-    QAction *m_markAsActions[(int)BoneMark::Count - 1];
-    
-    QMenu *m_colorizeAsMenu;
-    QAction *m_colorizeAsBlankAction;
-    QAction *m_colorizeAsAutoAction;
-    
     QMenu *m_viewMenu;
     //QAction *m_resetModelWidgetPosAction;
     QAction *m_toggleWireframeAction;
