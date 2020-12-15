@@ -4,6 +4,7 @@
 #include <set>
 #include <QColor>
 #include <tuple>
+#include <QImage>
 #include "meshcombiner.h"
 #include "positionkey.h"
 #include "strokemeshbuilder.h"
@@ -89,7 +90,9 @@ public:
     bool isSuccessful();
     Model *takeResultMesh();
     Model *takePartPreviewMesh(const QUuid &partId);
+    QImage *takePartPreviewImage(const QUuid &partId);
     const std::set<QUuid> &generatedPreviewPartIds();
+    const std::set<QUuid> &generatedPreviewImagePartIds();
     Object *takeObject();
     std::map<QUuid, StrokeMeshBuilder::CutFaceTransform> *takeCutFaceTransforms();
     std::map<QUuid, std::map<QString, QVector2D>> *takeNodesCutFaces();
@@ -120,8 +123,10 @@ private:
     std::map<QString, std::set<QString>> m_partNodeIds;
     std::map<QString, std::set<QString>> m_partEdgeIds;
     std::set<QUuid> m_generatedPreviewPartIds;
+    std::set<QUuid> m_generatedPreviewImagePartIds;
     Model *m_resultMesh = nullptr;
     std::map<QUuid, Model *> m_partPreviewMeshes;
+    std::map<QUuid, QImage *> m_partPreviewImages;
     bool m_isSuccessful = false;
     bool m_cacheEnabled = false;
     float m_smoothShadingThresholdAngleDegrees = 60;

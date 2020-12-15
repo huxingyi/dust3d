@@ -53,6 +53,7 @@
 #include "rigxml.h"
 #include "statusbarlabel.h"
 #include "silhouetteimagegenerator.h"
+#include "flowlayout.h"
 
 int DocumentWindow::m_autoRecovered = false;
 
@@ -1043,7 +1044,7 @@ DocumentWindow::DocumentWindow() :
     connect(m_document, &Document::componentAdded, m_partTreeWidget, &PartTreeWidget::componentAdded);
     connect(m_document, &Document::componentExpandStateChanged, m_partTreeWidget, &PartTreeWidget::componentExpandStateChanged);
     connect(m_document, &Document::componentCombineModeChanged, m_partTreeWidget, &PartTreeWidget::componentCombineModeChanged);
-    //connect(m_document, &Document::partPreviewChanged, m_partTreeWidget, &PartTreeWidget::partPreviewChanged);
+    connect(m_document, &Document::partPreviewChanged, m_partTreeWidget, &PartTreeWidget::partPreviewChanged);
     connect(m_document, &Document::partLockStateChanged, m_partTreeWidget, &PartTreeWidget::partLockStateChanged);
     connect(m_document, &Document::partVisibleStateChanged, m_partTreeWidget, &PartTreeWidget::partVisibleStateChanged);
     connect(m_document, &Document::partSubdivStateChanged, m_partTreeWidget, &PartTreeWidget::partSubdivStateChanged);
@@ -2177,16 +2178,15 @@ void DocumentWindow::showCutFaceSettingPopup(const QPoint &globalPos, std::set<Q
     rotationLayout->addWidget(rotationEraser);
     rotationLayout->addWidget(rotationWidget);
     
-    QHBoxLayout *standardFacesLayout = new QHBoxLayout;
-    QPushButton *buttons[(int)CutFace::Count] = {0};
+    FlowLayout *cutFaceLayout = nullptr;
     
-    CutFaceListWidget *cutFaceListWidget = new CutFaceListWidget(m_document);
-    size_t cutFaceTypeCount = (size_t)CutFace::UserDefined;
+    std::vector<QPushButton *> buttons;
+    std::vector<QString> cutFaceList;
     
+    cutFaceLayout = new FlowLayout;
+
     auto updateCutFaceButtonState = [&](size_t index) {
-        if (index != (int)CutFace::UserDefined)
-            cutFaceListWidget->selectCutFace(QUuid());
-        for (size_t i = 0; i < (size_t)cutFaceTypeCount; ++i) {
+        for (size_t i = 0; i < cutFaceList.size(); ++i) {
             auto button = buttons[i];
             if (i == index) {
                 button->setFlat(true);
@@ -2197,64 +2197,61 @@ void DocumentWindow::showCutFaceSettingPopup(const QPoint &globalPos, std::set<Q
             }
         }
     };
-    
-    cutFaceListWidget->enableMultipleSelection(false);
-    if (nullptr != node) {
-        cutFaceListWidget->selectCutFace(node->cutFaceLinkedId);
-    }
-    connect(cutFaceListWidget, &CutFaceListWidget::currentSelectedCutFaceChanged, this, [=](QUuid partId) {
-        if (partId.isNull()) {
-            CutFace cutFace = CutFace::Quad;
-            updateCutFaceButtonState((int)cutFace);
-            m_document->batchChangeBegin();
-            for (const auto &id: nodeIds) {
-                m_document->setNodeCutFace(id, cutFace);
-            }
-            m_document->batchChangeEnd();
-            m_document->saveSnapshot();
-        } else {
-            updateCutFaceButtonState((int)CutFace::UserDefined);
-            m_document->batchChangeBegin();
-            for (const auto &id: nodeIds) {
-                m_document->setNodeCutFaceLinkedId(id, partId);
-            }
-            m_document->batchChangeEnd();
-            m_document->saveSnapshot();
-        }
-    });
-    if (cutFaceListWidget->isEmpty())
-        cutFaceListWidget->hide();
-    
-    for (size_t i = 0; i < (size_t)cutFaceTypeCount; ++i) {
-        CutFace cutFace = (CutFace)i;
-        QString iconFilename = ":/resources/" + CutFaceToString(cutFace).toLower() + ".png";
-        QPixmap pixmap(iconFilename);
-        QIcon buttonIcon(pixmap);
+    m_document->collectCutFaceList(cutFaceList);
+    buttons.resize(cutFaceList.size());
+    for (size_t i = 0; i < cutFaceList.size(); ++i) {
+        QString cutFaceString = cutFaceList[i];
+        CutFace cutFace;
+        QUuid cutFacePartId(cutFaceString);
         QPushButton *button = new QPushButton;
-        button->setIconSize(QSize(Theme::toolIconSize / 2, Theme::toolIconSize / 2));
-        button->setIcon(buttonIcon);
+        button->setIconSize(QSize(Theme::toolIconSize * 0.75, Theme::toolIconSize * 0.75));
+        if (cutFacePartId.isNull()) {
+            cutFace = CutFaceFromString(cutFaceString.toUtf8().constData());
+            button->setIcon(QIcon(QPixmap::fromImage(*cutFacePreviewImage(cutFace))));
+        } else {
+            const SkeletonPart *part = m_document->findPart(cutFacePartId);
+            if (nullptr != part) {
+                button->setIcon(QIcon(part->previewPixmap));
+            }
+        }
         connect(button, &QPushButton::clicked, [=]() {
             updateCutFaceButtonState(i);
             m_document->batchChangeBegin();
-            for (const auto &id: nodeIds) {
-                m_document->setNodeCutFace(id, cutFace);
+            if (cutFacePartId.isNull()) {
+                for (const auto &id: nodeIds) {
+                    m_document->setNodeCutFace(id, cutFace);
+                }
+            } else {
+                for (const auto &id: nodeIds) {
+                    m_document->setNodeCutFaceLinkedId(id, cutFacePartId);
+                }
             }
             m_document->batchChangeEnd();
             m_document->saveSnapshot();
         });
-        standardFacesLayout->addWidget(button);
+        cutFaceLayout->addWidget(button);
         buttons[i] = button;
     }
-    standardFacesLayout->addStretch();
     if (nullptr != node) {
-        updateCutFaceButtonState((size_t)node->cutFace);
+        for (size_t i = 0; i < cutFaceList.size(); ++i) {
+            if (CutFace::UserDefined == node->cutFace) {
+                if (node->cutFaceLinkedId.toString() == cutFaceList[i]) {
+                    updateCutFaceButtonState(i);
+                    break;
+                }
+            } else if (i < (int)CutFace::UserDefined) {
+                if ((size_t)node->cutFace == i) {
+                    updateCutFaceButtonState(i);
+                    break;
+                }
+            }
+        }
     }
     
     QVBoxLayout *popupLayout = new QVBoxLayout;
     popupLayout->addLayout(rotationLayout);
     popupLayout->addWidget(Theme::createHorizontalLineWidget());
-    popupLayout->addLayout(standardFacesLayout);
-    popupLayout->addWidget(cutFaceListWidget);
+    popupLayout->addLayout(cutFaceLayout);
     
     popup->setLayout(popupLayout);
     

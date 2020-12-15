@@ -1900,6 +1900,18 @@ void Document::meshReady()
     Object *object = m_meshGenerator->takeObject();
     bool isSuccessful = m_meshGenerator->isSuccessful();
     
+    for (auto &partId: m_meshGenerator->generatedPreviewImagePartIds()) {
+        auto part = partMap.find(partId);
+        if (part != partMap.end()) {
+            part->second.isPreviewMeshObsolete = false;
+            QImage *resultPartPreviewImage = m_meshGenerator->takePartPreviewImage(partId);
+            if (nullptr != resultPartPreviewImage)
+                part->second.previewPixmap = QPixmap::fromImage(*resultPartPreviewImage);
+            delete resultPartPreviewImage;
+            emit partPreviewChanged(partId);
+        }
+    }
+    
     bool partPreviewsChanged = false;
     for (auto &partId: m_meshGenerator->generatedPreviewPartIds()) {
         auto part = partMap.find(partId);
@@ -1907,7 +1919,6 @@ void Document::meshReady()
             Model *resultPartPreviewMesh = m_meshGenerator->takePartPreviewMesh(partId);
             part->second.updatePreviewMesh(resultPartPreviewMesh);
             partPreviewsChanged = true;
-            //emit partPreviewChanged(partId);
         }
     }
     if (partPreviewsChanged)
@@ -4058,4 +4069,58 @@ void Document::stopPaint()
 void Document::setMousePickMaskNodeIds(const std::set<QUuid> &nodeIds)
 {
     m_mousePickMaskNodeIds = nodeIds;
+}
+
+void Document::collectCutFaceList(std::vector<QString> &cutFaces) const
+{
+    cutFaces.clear();
+    
+    std::vector<QUuid> cutFacePartIdList;
+    
+    std::set<QUuid> cutFacePartIds;
+    for (const auto &it: partMap) {
+        if (PartTarget::CutFace == it.second.target) {
+            if (cutFacePartIds.find(it.first) != cutFacePartIds.end())
+                continue;
+            cutFacePartIds.insert(it.first);
+            cutFacePartIdList.push_back(it.first);
+        }
+        if (!it.second.cutFaceLinkedId.isNull()) {
+            if (cutFacePartIds.find(it.second.cutFaceLinkedId) != cutFacePartIds.end())
+                continue;
+            cutFacePartIds.insert(it.second.cutFaceLinkedId);
+            cutFacePartIdList.push_back(it.second.cutFaceLinkedId);
+        }
+    }
+    
+    // Sort cut face by center.x of front view
+    std::map<QUuid, float> centerOffsetMap;
+    for (const auto &partId: cutFacePartIdList) {
+        const SkeletonPart *part = findPart(partId);
+        if (nullptr == part)
+            continue;
+        float offsetSum = 0;
+        for (const auto &nodeId: part->nodeIds) {
+            const SkeletonNode *node = findNode(nodeId);
+            if (nullptr == node)
+                continue;
+            offsetSum += node->getX();
+        }
+        if (qFuzzyIsNull(offsetSum))
+            continue;
+        centerOffsetMap[partId] = offsetSum / part->nodeIds.size();
+    }
+    std::sort(cutFacePartIdList.begin(), cutFacePartIdList.end(),
+            [&](const QUuid &firstPartId, const QUuid &secondPartId) {
+        return centerOffsetMap[firstPartId] < centerOffsetMap[secondPartId];
+    });
+    
+    size_t cutFaceTypeCount = (size_t)CutFace::UserDefined;
+    for (size_t i = 0; i < (size_t)cutFaceTypeCount; ++i) {
+        CutFace cutFace = (CutFace)i;
+        cutFaces.push_back(CutFaceToString(cutFace));
+    }
+    
+    for (const auto &it: cutFacePartIdList)
+        cutFaces.push_back(it.toString());
 }

@@ -498,6 +498,7 @@ public:
     const QString &scriptConsoleLog() const;
     const QVector3D &mouseTargetPosition() const;
     float mousePickRadius() const;
+    void collectCutFaceList(std::vector<QString> &cutFaces) const;
 public slots:
     void undo() override;
     void redo() override;

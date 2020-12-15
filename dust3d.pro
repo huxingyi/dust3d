@@ -356,12 +356,6 @@ HEADERS += src/parttarget.h
 SOURCES += src/partbase.cpp
 HEADERS += src/partbase.h
 
-SOURCES += src/cutfacewidget.cpp
-HEADERS += src/cutfacewidget.h
-
-SOURCES += src/cutfacelistwidget.cpp
-HEADERS += src/cutfacelistwidget.h
-
 SOURCES += src/preferences.cpp
 HEADERS += src/preferences.h
 

@@ -35,6 +35,8 @@ MeshGenerator::MeshGenerator(Snapshot *snapshot) :
 
 MeshGenerator::~MeshGenerator()
 {
+    for (auto &it: m_partPreviewImages)
+        delete it.second;
     for (auto &it: m_partPreviewMeshes)
         delete it.second;
     delete m_resultMesh;
@@ -73,9 +75,21 @@ Model *MeshGenerator::takePartPreviewMesh(const QUuid &partId)
     return resultMesh;
 }
 
+QImage *MeshGenerator::takePartPreviewImage(const QUuid &partId)
+{
+    QImage *image = m_partPreviewImages[partId];
+    m_partPreviewImages[partId] = nullptr;
+    return image;
+}
+
 const std::set<QUuid> &MeshGenerator::generatedPreviewPartIds()
 {
     return m_generatedPreviewPartIds;
+}
+
+const std::set<QUuid> &MeshGenerator::generatedPreviewImagePartIds()
+{
+    return m_generatedPreviewImagePartIds;
 }
 
 Object *MeshGenerator::takeObject()
@@ -721,10 +735,6 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, 
         qDebug() << "Mesh build failed";
     }
     
-    delete m_partPreviewMeshes[partId];
-    m_partPreviewMeshes[partId] = nullptr;
-    m_generatedPreviewPartIds.insert(partId);
-    
     std::vector<QVector3D> partPreviewVertices;
     QColor partPreviewColor = partColor;
     if (nullptr != mesh) {
@@ -759,6 +769,21 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, 
         partPreviewTriangleNormals,
         &partPreviewTriangleVertexNormals);
     if (!partCache.previewTriangles.empty()) {
+        if (PartTarget::CutFace == target) {
+            std::vector<QVector2D> cutTemplate;
+            cutFaceStringToCutTemplate(partIdString, cutTemplate);
+            m_partPreviewImages[partId] = buildCutFaceTemplatePreviewImage(cutTemplate);
+            m_generatedPreviewImagePartIds.insert(partId);
+        } else {
+            m_partPreviewMeshes[partId] = new Model(partPreviewVertices,
+                partCache.previewTriangles,
+                partPreviewTriangleVertexNormals,
+                partPreviewColor,
+                metalness,
+                roughness);
+            m_generatedPreviewPartIds.insert(partId);
+        }
+        /*
         if (target == PartTarget::CutFace)
             partPreviewColor = Theme::red;
         m_partPreviewMeshes[partId] = new Model(partPreviewVertices,
@@ -767,6 +792,7 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const QString &partIdString, 
             partPreviewColor,
             metalness,
             roughness);
+        */
     }
     
     delete strokeModifier;

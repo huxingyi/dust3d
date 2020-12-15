@@ -41,7 +41,6 @@ int Theme::miniIconFontSize = 0;
 int Theme::miniIconSize = 0;
 int Theme::partPreviewImageSize = 0;
 int Theme::materialPreviewImageSize = 0;
-int Theme::cutFacePreviewImageSize = 0;
 int Theme::posePreviewImageSize = 0;
 int Theme::motionPreviewImageSize = 0;
 int Theme::sidebarPreferredWidth = 0;
@@ -63,7 +62,6 @@ void Theme::initAwsome()
     Theme::sidebarPreferredWidth = Theme::partPreviewImageSize * 4; //3.7;
     Theme::posePreviewImageSize = Theme::sidebarPreferredWidth * 0.4;
     Theme::materialPreviewImageSize = Theme::posePreviewImageSize;
-    Theme::cutFacePreviewImageSize = Theme::posePreviewImageSize;
     Theme::motionPreviewImageSize = Theme::posePreviewImageSize;
     Theme::normalButtonSize = Theme::toolIconSize * 2;
     

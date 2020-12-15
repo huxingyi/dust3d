@@ -4,6 +4,7 @@
 #include <QString>
 #include <QVector2D>
 #include <vector>
+#include <QImage>
 
 enum class CutFace
 {
@@ -99,5 +100,7 @@ std::vector<QVector2D> CutFaceToPoints(CutFace cutFace)                     \
 void normalizeCutFacePoints(std::vector<QVector2D> *points);
 void cutFacePointsFromNodes(std::vector<QVector2D> &points, const std::vector<std::tuple<float, float, float, QString>> &nodes, bool isRing=false,
     std::vector<QString> *pointsIds=nullptr);
+QImage *buildCutFaceTemplatePreviewImage(const std::vector<QVector2D> &cutTemplate);
+const QImage *cutFacePreviewImage(CutFace cutFace);
 
 #endif

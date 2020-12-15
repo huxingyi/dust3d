@@ -224,6 +224,10 @@ public:
     {
         return PartTarget::Model == target;
     }
+    bool hasSmoothFunction() const
+    {
+        return PartTarget::Model == target && fillMeshLinkedId.isNull();
+    }
     bool hasSubdivFunction() const
     {
         return PartTarget::Model == target && fillMeshLinkedId.isNull();

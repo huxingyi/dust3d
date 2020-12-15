@@ -506,7 +506,6 @@ signals:
     void showCutFaceSettingPopup(const QPoint &globalPos, std::set<QUuid> nodeIds);
     void zoomRenderedModelBy(float delta);
     void switchNodeXZ(QUuid nodeId);
-    void switchChainSide(std::set<QUuid> nodeIds);
     void enableAllPositionRelatedLocks();
     void disableAllPositionRelatedLocks();
     void shortcutToggleWireframe();
@@ -544,8 +543,6 @@ public:
     bool hasTwoDisconnectedNodesSelection();
     bool hasCutFaceAdjustedNodesSelection();
     void setModelWidget(ModelWidget *modelWidget);
-    void setNodePositionModifyOnly(bool nodePositionModifyOnly);
-    void setMainProfileOnly(bool mainProfileOnly);
     bool inputWheelEventFromOtherWidget(QWheelEvent *event);
     bool rotated();
     const QImage *loadedTurnaroundImage() const;
@@ -616,7 +613,6 @@ public slots:
     void setSelectedNodesBoneMark(BoneMark boneMark);
     void timeToRemoveDeferredNodesAndEdges();
     void switchSelectedXZ();
-    void switchSelectedChainSide();
     void showSelectedCutFaceSettingPopup(const QPoint &pos);
     void clearSelectedCutFace();
     void setRotated(bool rotated);
@@ -713,8 +709,6 @@ private: //need initialize
     ModelWidget *m_modelWidget;
     bool m_inTempDragMode;
     SkeletonDocumentEditMode m_modeBeforeEnterTempDragMode;
-    bool m_nodePositionModifyOnly;
-    bool m_mainProfileOnly;
     float m_turnaroundOpacity;
     bool m_rotated;
     QImage *m_backgroundImage;
