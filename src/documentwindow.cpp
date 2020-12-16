@@ -54,6 +54,7 @@
 #include "statusbarlabel.h"
 #include "silhouetteimagegenerator.h"
 #include "flowlayout.h"
+#include "bonedocument.h"
 
 int DocumentWindow::m_autoRecovered = false;
 
@@ -206,6 +207,11 @@ DocumentWindow::DocumentWindow() :
     
     SkeletonGraphicsWidget *shapeGraphicsWidget = new SkeletonGraphicsWidget(m_document);
     m_shapeGraphicsWidget = shapeGraphicsWidget;
+    
+    m_boneDocument = new BoneDocument;
+    
+    SkeletonGraphicsWidget *boneGraphicsWidget = new SkeletonGraphicsWidget(m_boneDocument);
+    m_boneGraphicsWidget = boneGraphicsWidget;
 
     QVBoxLayout *toolButtonLayout = new QVBoxLayout;
     toolButtonLayout->setSpacing(0);
@@ -323,8 +329,18 @@ DocumentWindow::DocumentWindow() :
     shapeGraphicsLayout->addWidget(shapeGraphicsWidget);
     shapeWidget->setLayout(shapeGraphicsLayout);
     
+    QWidget *boneWidget = new QWidget;
+    
+    QGridLayout *boneGraphicsLayout = new QGridLayout;
+    boneGraphicsLayout->setSpacing(0);
+    boneGraphicsLayout->setContentsMargins(0, 0, 0, 0);
+    boneGraphicsLayout->addWidget(boneGraphicsWidget);
+    boneWidget->setLayout(boneGraphicsLayout);
+    
     QStackedWidget *canvasStackedWidget = new QStackedWidget;
+    canvasStackedWidget->addWidget(boneWidget);
     canvasStackedWidget->addWidget(shapeWidget);
+    canvasStackedWidget->setCurrentIndex(1);
 
     GraphicsContainerWidget *containerWidget = new GraphicsContainerWidget;
     containerWidget->setGraphicsWidget(shapeGraphicsWidget);
@@ -337,6 +353,17 @@ DocumentWindow::DocumentWindow() :
     
     containerWidget->setAutoFillBackground(true);
     containerWidget->setPalette(Theme::statusBarActivePalette);
+    
+    auto setGraphicsIndex = [=](int index) {
+        canvasStackedWidget->setCurrentIndex(index);
+        if (0 == index) {
+            containerWidget->setGraphicsWidget(boneGraphicsWidget);
+            boneGraphicsWidget->canvasResized();
+        } else if (1 == index) {
+            containerWidget->setGraphicsWidget(shapeGraphicsWidget);
+            shapeGraphicsWidget->canvasResized();
+        }
+    };
     
     m_graphicsContainerWidget = containerWidget;
 
@@ -386,6 +413,7 @@ DocumentWindow::DocumentWindow() :
     connect(m_modelRenderWidget, &ModelWidget::renderParametersChanged, this, &DocumentWindow::delayedGenerateNormalAndDepthMaps);
     
     m_shapeGraphicsWidget->setModelWidget(m_modelRenderWidget);
+    m_boneGraphicsWidget->setModelWidget(m_modelRenderWidget);
     containerWidget->setModelWidget(m_modelRenderWidget);
     
     setTabPosition(Qt::RightDockWidgetArea, QTabWidget::East);
@@ -519,11 +547,13 @@ DocumentWindow::DocumentWindow() :
     connect(boneLabel, &StatusBarLabel::clicked, this, [=]() {
         boneLabel->setSelected(true);
         shapeLabel->setSelected(false);
+        setGraphicsIndex(0);
         updateGraphicsViewEditTarget(GraphicsViewEditTarget::Bone);
     });
     connect(shapeLabel, &StatusBarLabel::clicked, this, [=]() {
         shapeLabel->setSelected(true);
         boneLabel->setSelected(false);
+        setGraphicsIndex(1);
         updateGraphicsViewEditTarget(GraphicsViewEditTarget::Shape);
     });
     
@@ -808,9 +838,13 @@ DocumentWindow::DocumentWindow() :
 
     connect(containerWidget, &GraphicsContainerWidget::containerSizeChanged,
         shapeGraphicsWidget, &SkeletonGraphicsWidget::canvasResized);
+    connect(containerWidget, &GraphicsContainerWidget::containerSizeChanged,
+        boneGraphicsWidget, &SkeletonGraphicsWidget::canvasResized);
 
     connect(m_document, &Document::turnaroundChanged,
         shapeGraphicsWidget, &SkeletonGraphicsWidget::turnaroundChanged);
+    connect(m_boneDocument, &BoneDocument::turnaroundChanged,
+        boneGraphicsWidget, &SkeletonGraphicsWidget::turnaroundChanged);
 
     connect(addButton, &QPushButton::clicked, [=]() {
         m_document->setEditMode(SkeletonDocumentEditMode::Add);
@@ -2411,7 +2445,7 @@ void DocumentWindow::silhouetteImageReady()
 {
     QImage *image = m_silhouetteImageGenerator->takeResultImage();
     if (nullptr != image)
-        image->save("test.png");
+        m_boneDocument->updateTurnaround(*image);
     delete image;
     
     delete m_silhouetteImageGenerator;

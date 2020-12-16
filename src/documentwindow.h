@@ -25,6 +25,7 @@ class SkeletonGraphicsWidget;
 class PartTreeWidget;
 class SpinnableAwesomeButton;
 class SilhouetteImageGenerator;
+class BoneDocument;
 
 class DocumentWindow : public QMainWindow
 {
@@ -123,6 +124,7 @@ private:
     void createPartSnapshotForFillMesh(const QUuid &fillMeshFileId, Snapshot *snapshot);
 private:
     Document *m_document;
+    BoneDocument *m_boneDocument;
     bool m_firstShow;
     bool m_documentSaved;
     PreferencesWidget *m_preferencesWidget;
@@ -136,6 +138,7 @@ private:
     
     ModelWidget *m_modelRenderWidget;
     SkeletonGraphicsWidget *m_shapeGraphicsWidget;
+    SkeletonGraphicsWidget *m_boneGraphicsWidget;
     RigWidget *m_rigWidget;
     GraphicsContainerWidget *m_graphicsContainerWidget;
     

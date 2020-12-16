@@ -535,6 +535,9 @@ HEADERS += src/statusbarlabel.h
 SOURCES += src/silhouetteimagegenerator.cpp
 HEADERS += src/silhouetteimagegenerator.h
 
+SOURCES += src/bonedocument.cpp
+HEADERS += src/bonedocument.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h
