@@ -21,7 +21,6 @@
 #include "shortcuts.h"
 #include "graphicscontainerwidget.h"
 #include "flowlayout.h"
-#include "cutfacelistwidget.h"
 #include "imageforever.h"
 #include "imagepreviewwidget.h"
 
@@ -649,7 +648,7 @@ void PartWidget::showCutRotationSettingPopup(const QPoint &pos)
     std::vector<QString> cutFaceList;
     
     if (part->hasCutFaceFunction()) {
-        cutFaceLayout = new FlowLayout;
+        cutFaceLayout = new FlowLayout(nullptr, 0, 0);
 
         auto updateCutFaceButtonState = [&](size_t index) {
             for (size_t i = 0; i < cutFaceList.size(); ++i) {

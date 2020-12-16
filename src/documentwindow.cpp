@@ -42,7 +42,6 @@
 #include "fbxfile.h"
 #include "shortcuts.h"
 #include "floatnumberwidget.h"
-#include "cutfacelistwidget.h"
 #include "scriptwidget.h"
 #include "variablesxml.h"
 #include "updatescheckwidget.h"
@@ -2183,7 +2182,7 @@ void DocumentWindow::showCutFaceSettingPopup(const QPoint &globalPos, std::set<Q
     std::vector<QPushButton *> buttons;
     std::vector<QString> cutFaceList;
     
-    cutFaceLayout = new FlowLayout;
+    cutFaceLayout = new FlowLayout(nullptr, 0, 0);
 
     auto updateCutFaceButtonState = [&](size_t index) {
         for (size_t i = 0; i < cutFaceList.size(); ++i) {
