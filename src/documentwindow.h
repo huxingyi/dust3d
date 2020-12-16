@@ -104,7 +104,6 @@ public slots:
     void exportTexturesToDirectory(const QString &directory);
     void exportDs3objToFilename(const QString &filename);
     void toggleRotation();
-    //void updateInfoWidgetPosition();
     void generateNormalAndDepthMaps();
     void delayedGenerateNormalAndDepthMaps();
     void normalAndDepthMapsReady();
@@ -136,9 +135,8 @@ private:
     QString m_currentFilename;
     
     ModelWidget *m_modelRenderWidget;
-    SkeletonGraphicsWidget *m_graphicsWidget;
+    SkeletonGraphicsWidget *m_shapeGraphicsWidget;
     RigWidget *m_rigWidget;
-    //QLabel *m_infoWidget;
     GraphicsContainerWidget *m_graphicsContainerWidget;
     
     QMenu *m_fileMenu;
@@ -146,7 +144,6 @@ private:
     QAction *m_newDocumentAction;
     QAction *m_openAction;
     QMenu *m_openExampleMenu;
-    //QAction *m_openExampleAction;
     QAction *m_saveAction;
     QAction *m_saveAsAction;
     QAction *m_saveAllAction;
@@ -164,7 +161,6 @@ private:
     QAction *m_exportRenderedAsImageAction;
     
     QMenu *m_viewMenu;
-    //QAction *m_resetModelWidgetPosAction;
     QAction *m_toggleWireframeAction;
     QAction *m_toggleUvCheckAction;
     QAction *m_toggleRotationAction;
