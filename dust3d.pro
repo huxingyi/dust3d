@@ -341,9 +341,6 @@ HEADERS += src/skeletondocument.h
 SOURCES += src/combinemode.cpp
 HEADERS += src/combinemode.h
 
-SOURCES += src/polycount.cpp
-HEADERS += src/polycount.h
-
 SOURCES += src/cutface.cpp
 HEADERS += src/cutface.h
 
@@ -430,14 +427,8 @@ HEADERS += src/triangulatefaces.h
 SOURCES += src/booleanmesh.cpp
 HEADERS += src/booleanmesh.h
 
-SOURCES += src/remesher.cpp
-HEADERS += src/remesher.h
-
 SOURCES += src/isotropicremesh.cpp
 HEADERS += src/isotropicremesh.h
-
-SOURCES += src/projectfacestonodes.cpp
-HEADERS += src/projectfacestonodes.h
 
 SOURCES += src/ddsfile.cpp
 HEADERS += src/ddsfile.h

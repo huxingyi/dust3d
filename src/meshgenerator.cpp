@@ -15,10 +15,7 @@
 #include "partbase.h"
 #include "imageforever.h"
 #include "triangulatefaces.h"
-#include "remesher.h"
-#include "polycount.h"
 #include "isotropicremesh.h"
-#include "projectfacestonodes.h"
 #include "document.h"
 #include "meshstroketifier.h"
 #include "fileforever.h"
@@ -911,20 +908,8 @@ CombineMode MeshGenerator::componentCombineMode(const std::map<QString, QString>
     if (combineMode == CombineMode::Normal) {
         if (isTrueValueString(valueOfKeyInMapOrEmpty(*component, "inverse")))
             combineMode = CombineMode::Inversion;
-        if (componentRemeshed(component))
-            combineMode = CombineMode::Uncombined;
     }
     return combineMode;
-}
-
-bool MeshGenerator::componentRemeshed(const std::map<QString, QString> *component, float *polyCountValue)
-{
-    if (nullptr == component)
-        return false;
-    auto polyCount = PolyCountFromString(valueOfKeyInMapOrEmpty(*component, "polyCount").toUtf8().constData());
-    if (nullptr != polyCountValue)
-        *polyCountValue = PolyCountToValue(polyCount);
-    return polyCount != PolyCount::Original;
 }
 
 QString MeshGenerator::componentColorName(const std::map<QString, QString> *component)
@@ -1122,73 +1107,6 @@ MeshCombiner::Mesh *MeshGenerator::combineComponentMesh(const QString &component
         } else {
             // TODO: when no body is valid, may add ground plane as collision shape
             // ... ...
-        }
-    }
-    
-    if (nullptr != mesh) {
-        float polyCountValue = 1.0f;
-        bool remeshed = componentId.isNull() ? componentRemeshed(&m_snapshot->canvas, &polyCountValue) : componentRemeshed(component, &polyCountValue);
-        if (remeshed) {
-            std::vector<QVector3D> combinedVertices;
-            std::vector<std::vector<size_t>> combinedFaces;
-            mesh->fetch(combinedVertices, combinedFaces);
-            std::vector<QVector3D> newVertices;
-            std::vector<std::vector<size_t>> newQuads;
-            std::vector<std::vector<size_t>> newTriangles;
-            std::vector<std::tuple<QVector3D, float, size_t>> interpolatedNodes;
-            Object::buildInterpolatedNodes(componentCache.objectNodes,
-                componentCache.objectEdges,
-                &interpolatedNodes);
-            remesh(componentCache.objectNodes,
-                interpolatedNodes,
-                combinedVertices,
-                combinedFaces,
-                polyCountValue,
-                &newVertices,
-                &newQuads,
-                &newTriangles,
-                &componentCache.objectNodeVertices);
-            componentCache.sharedQuadEdges.clear();
-            for (const auto &face: newQuads) {
-                if (face.size() != 4)
-                    continue;
-                componentCache.sharedQuadEdges.insert({
-                    PositionKey(newVertices[face[0]]),
-                    PositionKey(newVertices[face[2]])
-                });
-                componentCache.sharedQuadEdges.insert({
-                    PositionKey(newVertices[face[1]]),
-                    PositionKey(newVertices[face[3]])
-                });
-            }
-            delete mesh;
-            mesh = nullptr;
-            bool disableSelfIntersectionTest = componentId.isNull() ||
-                CombineMode::Uncombined == componentCombineMode(component);
-            if (!disableSelfIntersectionTest) {
-                if (isManifold(newTriangles)) {
-                    mesh = new MeshCombiner::Mesh(newVertices, newTriangles, disableSelfIntersectionTest);
-                } else {
-                    fixHoles(newVertices, newTriangles);
-                    disableSelfIntersectionTest = true;
-                    mesh = new MeshCombiner::Mesh(newVertices, newTriangles, disableSelfIntersectionTest);
-                }
-            } else {
-                fixHoles(newVertices, newTriangles);
-                mesh = new MeshCombiner::Mesh(newVertices, newTriangles, disableSelfIntersectionTest);
-            }
-            if (nullptr != mesh) {
-                if (!disableSelfIntersectionTest) {
-                    if (mesh->isNull()) {
-                        delete mesh;
-                        mesh = nullptr;
-                    }
-                }
-                delete componentCache.mesh;
-                componentCache.mesh = nullptr;
-                if (nullptr != mesh)
-                    componentCache.mesh = new MeshCombiner::Mesh(*mesh);
-            }
         }
     }
     
@@ -1461,55 +1379,6 @@ void MeshGenerator::postprocessObject(Object *object)
         object->triangleNormals,
         &triangleVertexNormals);
     object->setTriangleVertexNormals(triangleVertexNormals);
-}
-
-void MeshGenerator::remesh(const std::vector<ObjectNode> &inputNodes,
-        const std::vector<std::tuple<QVector3D, float, size_t>> &interpolatedNodes,
-        const std::vector<QVector3D> &inputVertices,
-        const std::vector<std::vector<size_t>> &inputFaces,
-        float targetVertexMultiplyFactor,
-        std::vector<QVector3D> *outputVertices,
-        std::vector<std::vector<size_t>> *outputQuads,
-        std::vector<std::vector<size_t>> *outputTriangles,
-        std::vector<std::pair<QVector3D, std::pair<QUuid, QUuid>>> *outputNodeVertices)
-{
-    std::vector<std::pair<QVector3D, float>> nodes;
-    std::vector<std::pair<QUuid, QUuid>> sourceIds;
-    nodes.reserve(interpolatedNodes.size());
-    sourceIds.reserve(interpolatedNodes.size());
-    for (const auto &it: interpolatedNodes) {
-        nodes.push_back(std::make_pair(std::get<0>(it), std::get<1>(it)));
-        const auto &sourceNode = inputNodes[std::get<2>(it)];
-        sourceIds.push_back(std::make_pair(sourceNode.partId, sourceNode.nodeId));
-    }
-    Remesher remesher;
-    remesher.setMesh(inputVertices, inputFaces);
-    remesher.setNodes(nodes, sourceIds);
-    remesher.remesh(targetVertexMultiplyFactor);
-    *outputVertices = remesher.getRemeshedVertices();
-    const auto &remeshedFaces = remesher.getRemeshedFaces();
-    *outputQuads = remeshedFaces;
-    outputTriangles->clear();
-    outputTriangles->reserve(remeshedFaces.size() * 2);
-    for (const auto &it: remeshedFaces) {
-        outputTriangles->push_back(std::vector<size_t> {
-            it[0], it[1], it[2]
-        });
-        if (4 == it.size()) {
-            outputTriangles->push_back(std::vector<size_t> {
-                it[2], it[3], it[0]
-            });
-        }
-    }
-    const auto &remeshedVertexSources = remesher.getRemeshedVertexSources();
-    outputNodeVertices->clear();
-    outputNodeVertices->reserve(outputVertices->size());
-    for (size_t i = 0; i < outputVertices->size(); ++i) {
-        const auto &vertexSource = remeshedVertexSources[i];
-        if (vertexSource.first.isNull())
-            continue;
-        outputNodeVertices->push_back(std::make_pair((*outputVertices)[i], vertexSource));
-    }
 }
 
 void MeshGenerator::collectIncombinableComponentMeshes(const QString &componentIdString)
@@ -1786,8 +1655,6 @@ void MeshGenerator::generate()
     
     m_dirtyComponentIds.insert(QUuid().toString());
     
-    bool remeshed = componentRemeshed(&m_snapshot->canvas);
-    
     CombineMode combineMode;
     auto combinedMesh = combineComponentMesh(QUuid().toString(), &combineMode);
     
@@ -1802,20 +1669,18 @@ void MeshGenerator::generate()
     if (nullptr != combinedMesh) {
         combinedMesh->fetch(combinedVertices, combinedFaces);
         if (m_weldEnabled) {
-            if (!remeshed) {
-                size_t totalAffectedNum = 0;
-                size_t affectedNum = 0;
-                do {
-                    std::vector<QVector3D> weldedVertices;
-                    std::vector<std::vector<size_t>> weldedFaces;
-                    affectedNum = weldSeam(combinedVertices, combinedFaces,
-                        0.025, componentCache.noneSeamVertices,
-                        weldedVertices, weldedFaces);
-                    combinedVertices = weldedVertices;
-                    combinedFaces = weldedFaces;
-                    totalAffectedNum += affectedNum;
-                } while (affectedNum > 0);
-            }
+            size_t totalAffectedNum = 0;
+            size_t affectedNum = 0;
+            do {
+                std::vector<QVector3D> weldedVertices;
+                std::vector<std::vector<size_t>> weldedFaces;
+                affectedNum = weldSeam(combinedVertices, combinedFaces,
+                    0.025, componentCache.noneSeamVertices,
+                    weldedVertices, weldedFaces);
+                combinedVertices = weldedVertices;
+                combinedFaces = weldedFaces;
+                totalAffectedNum += affectedNum;
+            } while (affectedNum > 0);
         }
         recoverQuads(combinedVertices, combinedFaces, componentCache.sharedQuadEdges, m_object->triangleAndQuads);
         m_object->vertices = combinedVertices;

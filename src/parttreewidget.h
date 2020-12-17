@@ -23,7 +23,6 @@ signals:
     void setComponentExpandState(QUuid componentId, bool expanded);
     void setComponentSmoothAll(QUuid componentId, float toSmoothAll);
     void setComponentSmoothSeam(QUuid componentId, float toSmoothSeam);
-    void setComponentPolyCount(QUuid componentId, PolyCount count);
     void setPartTarget(QUuid partId, PartTarget target);
     void setPartBase(QUuid partId, PartBase base);
     void moveComponent(QUuid componentId, QUuid toParentId);

@@ -163,22 +163,12 @@ private:
         std::vector<std::vector<QVector3D>> *triangleVertexNormals);
     const std::map<QString, QString> *findComponent(const QString &componentIdString);
     CombineMode componentCombineMode(const std::map<QString, QString> *component);
-    bool componentRemeshed(const std::map<QString, QString> *component, float *polyCountValue=nullptr);
     MeshCombiner::Mesh *combineComponentChildGroupMesh(const std::vector<QString> &componentIdStrings,
         GeneratedComponent &componentCache);
     MeshCombiner::Mesh *combineMultipleMeshes(const std::vector<std::tuple<MeshCombiner::Mesh *, CombineMode, QString>> &multipleMeshes, bool recombine=true);
     QString componentColorName(const std::map<QString, QString> *component);
     void collectUncombinedComponent(const QString &componentIdString);
     void cutFaceStringToCutTemplate(const QString &cutFaceString, std::vector<QVector2D> &cutTemplate);
-    void remesh(const std::vector<ObjectNode> &inputNodes,
-        const std::vector<std::tuple<QVector3D, float, size_t>> &interpolatedNodes,
-        const std::vector<QVector3D> &inputVertices,
-        const std::vector<std::vector<size_t>> &inputFaces,
-        float targetVertexMultiplyFactor,
-        std::vector<QVector3D> *outputVertices,
-        std::vector<std::vector<size_t>> *outputQuads,
-        std::vector<std::vector<size_t>> *outputTriangles,
-        std::vector<std::pair<QVector3D, std::pair<QUuid, QUuid>>> *outputNodeVertices);
     void postprocessObject(Object *object);
     void collectErroredParts();
     void preprocessMirror();

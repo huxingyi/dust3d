@@ -342,36 +342,9 @@ void PartTreeWidget::showContextMenu(const QPoint &pos, bool shorted)
         layout->addWidget(previewLabel);
     }
     
-    QComboBox *polyCountSelectBox = nullptr;
     QComboBox *combineModeSelectBox = nullptr;
     QComboBox *partTargetSelectBox = nullptr;
     QComboBox *partBaseSelectBox = nullptr;
-    
-    if (componentIds.size() <= 1) {
-        if (nullptr == component) {
-            polyCountSelectBox = new QComboBox;
-            for (size_t i = 0; i < (size_t)PolyCount::Count; ++i) {
-                PolyCount count = (PolyCount)i;
-                polyCountSelectBox->addItem(PolyCountToDispName(count));
-            }
-            polyCountSelectBox->setCurrentIndex((int)m_document->polyCount);
-            connect(polyCountSelectBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [=](int index) {
-                emit setComponentPolyCount(QUuid(), (PolyCount)index);
-                emit groupOperationAdded();
-            });
-        } else if (nullptr == part || part->hasPolyFunction()) {
-            polyCountSelectBox = new QComboBox;
-            for (size_t i = 0; i < (size_t)PolyCount::Count; ++i) {
-                PolyCount count = (PolyCount)i;
-                polyCountSelectBox->addItem(PolyCountToDispName(count));
-            }
-            polyCountSelectBox->setCurrentIndex((int)component->polyCount);
-            connect(polyCountSelectBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [=](int index) {
-                emit setComponentPolyCount(component->id, (PolyCount)index);
-                emit groupOperationAdded();
-            });
-        }
-    }
     
     if (nullptr != component) {
         
@@ -416,37 +389,6 @@ void PartTreeWidget::showContextMenu(const QPoint &pos, bool shorted)
     }
     
     if (componentIds.size() > 1) {
-        if (nullptr == polyCountSelectBox) {
-            std::set<PolyCount> polyCounts;
-            for (const auto &componentId: componentIds) {
-                const Component *oneComponent = m_document->findComponent(componentId);
-                if (nullptr == oneComponent)
-                    continue;
-                polyCounts.insert(oneComponent->polyCount);
-            }
-            if (!polyCounts.empty()) {
-                int startIndex = (1 == polyCounts.size()) ? 0 : 1;
-                polyCountSelectBox = new QComboBox;
-                if (0 != startIndex)
-                    polyCountSelectBox->addItem(tr("Not Change"));
-                for (size_t i = 0; i < (size_t)PolyCount::Count; ++i) {
-                    PolyCount count = (PolyCount)i;
-                    polyCountSelectBox->addItem(PolyCountToDispName(count));
-                }
-                if (0 != startIndex)
-                    polyCountSelectBox->setCurrentIndex(0);
-                else
-                    polyCountSelectBox->setCurrentIndex((int)*polyCounts.begin());
-                connect(polyCountSelectBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [=](int index) {
-                    if (index < startIndex)
-                        return;
-                    for (const auto &componentId: componentIds) {
-                        emit setComponentPolyCount(componentId, (PolyCount)(index - startIndex));
-                    }
-                    emit groupOperationAdded();
-                });
-            }
-        }
         
         if (nullptr == partBaseSelectBox) {
             std::set<PartBase> partBases;
@@ -522,8 +464,6 @@ void PartTreeWidget::showContextMenu(const QPoint &pos, bool shorted)
     QWidget *widget = new QWidget;
     QFormLayout *componentSettingsLayout = new QFormLayout;
     
-    if (nullptr != polyCountSelectBox)
-        componentSettingsLayout->addRow(tr("Poly"), polyCountSelectBox);
     if (nullptr != partBaseSelectBox)
         componentSettingsLayout->addRow(tr("Base"), partBaseSelectBox);
     if (nullptr != partTargetSelectBox)

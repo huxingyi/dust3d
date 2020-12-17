@@ -37,7 +37,6 @@ Document::Document() :
     textureAmbientOcclusionImageByteArray(nullptr),
     rigType(RigType::None),
     weldEnabled(true),
-    polyCount(PolyCount::Original),
     brushColor(Qt::white),
     objectLocked(false),
     // private
@@ -1226,8 +1225,6 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
                 component["smoothAll"] = QString::number(componentIt.second.smoothAll);
             if (componentIt.second.smoothSeamAdjusted())
                 component["smoothSeam"] = QString::number(componentIt.second.smoothSeam);
-            if (componentIt.second.polyCount != PolyCount::Original)
-                component["polyCount"] = PolyCountToString(componentIt.second.polyCount);
             QStringList childIdList;
             for (const auto &childId: componentIt.second.childrenIds) {
                 childIdList.append(childId.toString());
@@ -1306,8 +1303,6 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
         canvas["originY"] = QString::number(getOriginY());
         canvas["originZ"] = QString::number(getOriginZ());
         canvas["rigType"] = RigTypeToString(rigType);
-        if (this->polyCount != PolyCount::Original)
-            canvas["polyCount"] = PolyCountToString(this->polyCount);
         if (this->objectLocked)
             canvas["objectLocked"] = "true";
         snapshot->canvas = canvas;
@@ -1412,7 +1407,6 @@ void Document::addFromSnapshot(const Snapshot &snapshot, enum SnapshotSource sou
     bool isMeshLockedChanged = false;
     if (SnapshotSource::Paste != source &&
             SnapshotSource::Import != source) {
-        this->polyCount = PolyCountFromString(valueOfKeyInMapOrEmpty(snapshot.canvas, "polyCount").toUtf8().constData());
         const auto &originXit = snapshot.canvas.find("originX");
         const auto &originYit = snapshot.canvas.find("originY");
         const auto &originZit = snapshot.canvas.find("originZ");
@@ -1669,7 +1663,6 @@ void Document::addFromSnapshot(const Snapshot &snapshot, enum SnapshotSource sou
         const auto &smoothSeamIt = componentKv.second.find("smoothSeam");
         if (smoothSeamIt != componentKv.second.end())
             component.setSmoothSeam(smoothSeamIt->second.toFloat());
-        component.polyCount = PolyCountFromString(valueOfKeyInMapOrEmpty(componentKv.second, "polyCount").toUtf8().constData());
         //qDebug() << "Add component:" << component.id << " old:" << componentKv.first << "name:" << component.name;
         if ("partId" == linkDataType) {
             QUuid partId = oldNewIdMap[QUuid(linkData)];
@@ -2458,29 +2451,6 @@ void Document::setComponentExpandState(QUuid componentId, bool expanded)
     component->second.expanded = expanded;
     emit componentExpandStateChanged(componentId);
     emit optionsChanged();
-}
-
-void Document::setComponentPolyCount(QUuid componentId, PolyCount count)
-{
-    if (componentId.isNull()) {
-        if (polyCount == count)
-            return;
-        polyCount = count;
-        emit componentPolyCountChanged(componentId);
-        emit skeletonChanged();
-        return;
-    }
-
-    Component *component = (Component *)findComponent(componentId);
-    if (nullptr == component)
-        return;
-    if (component->polyCount == count)
-        return;
-    
-    component->polyCount = count;
-    component->dirty = true;
-    emit componentPolyCountChanged(componentId);
-    emit skeletonChanged();
 }
 
 void Document::createNewComponentAndMoveThisIn(QUuid componentId)
