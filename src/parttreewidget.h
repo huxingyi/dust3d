@@ -24,7 +24,6 @@ signals:
     void setComponentSmoothAll(QUuid componentId, float toSmoothAll);
     void setComponentSmoothSeam(QUuid componentId, float toSmoothSeam);
     void setComponentPolyCount(QUuid componentId, PolyCount count);
-    void setComponentLayer(QUuid componentId, ComponentLayer layer);
     void setPartTarget(QUuid partId, PartTarget target);
     void setPartBase(QUuid partId, PartBase base);
     void moveComponent(QUuid componentId, QUuid toParentId);
@@ -42,10 +41,6 @@ signals:
     void setPartVisibleState(QUuid partId, bool visible);
     void setPartColorState(QUuid partId, bool hasColor, QColor color);
     void setComponentCombineMode(QUuid componentId, CombineMode combineMode);
-    void setComponentClothStiffness(QUuid componentId, float clothStiffness);
-    void setComponentClothIteration(QUuid componentId, size_t iteration);
-    void setComponentClothForce(QUuid componentId, ClothForce force);
-    void setComponentClothOffset(QUuid componentId, float offset);
     void hideDescendantComponents(QUuid componentId);
     void showDescendantComponents(QUuid componentId);
     void lockDescendantComponents(QUuid componentId);
@@ -91,7 +86,6 @@ public slots:
     void groupCollapsed(QTreeWidgetItem *item);
     void removeAllContent();
     void showContextMenu(const QPoint &pos, bool shorted=false);
-    void showClothSettingMenu(const QPoint &pos, const QUuid &componentId);
 protected:
     QSize sizeHint() const override;
     void mousePressEvent(QMouseEvent *event) override;

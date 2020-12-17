@@ -987,7 +987,6 @@ DocumentWindow::DocumentWindow() :
     connect(m_partTreeWidget, &PartTreeWidget::setComponentSmoothAll, m_document, &Document::setComponentSmoothAll);
     connect(m_partTreeWidget, &PartTreeWidget::setComponentSmoothSeam, m_document, &Document::setComponentSmoothSeam);
     connect(m_partTreeWidget, &PartTreeWidget::setComponentPolyCount, m_document, &Document::setComponentPolyCount);
-    connect(m_partTreeWidget, &PartTreeWidget::setComponentLayer, m_document, &Document::setComponentLayer);
     connect(m_partTreeWidget, &PartTreeWidget::moveComponent, m_document, &Document::moveComponent);
     connect(m_partTreeWidget, &PartTreeWidget::removeComponent, m_document, &Document::removeComponent);
     connect(m_partTreeWidget, &PartTreeWidget::hideOtherComponents, m_document, &Document::hideOtherComponents);
@@ -1002,10 +1001,6 @@ DocumentWindow::DocumentWindow() :
     connect(m_partTreeWidget, &PartTreeWidget::setPartVisibleState, m_document, &Document::setPartVisibleState);
     connect(m_partTreeWidget, &PartTreeWidget::setPartColorState, m_document, &Document::setPartColorState);
     connect(m_partTreeWidget, &PartTreeWidget::setComponentCombineMode, m_document, &Document::setComponentCombineMode);
-    connect(m_partTreeWidget, &PartTreeWidget::setComponentClothStiffness, m_document, &Document::setComponentClothStiffness);
-    connect(m_partTreeWidget, &PartTreeWidget::setComponentClothIteration, m_document, &Document::setComponentClothIteration);
-    connect(m_partTreeWidget, &PartTreeWidget::setComponentClothForce, m_document, &Document::setComponentClothForce);
-    connect(m_partTreeWidget, &PartTreeWidget::setComponentClothOffset, m_document, &Document::setComponentClothOffset);
     connect(m_partTreeWidget, &PartTreeWidget::setPartTarget, m_document, &Document::setPartTarget);
     connect(m_partTreeWidget, &PartTreeWidget::setPartBase, m_document, &Document::setPartBase);
     connect(m_partTreeWidget, &PartTreeWidget::hideDescendantComponents, m_document, &Document::hideDescendantComponents);

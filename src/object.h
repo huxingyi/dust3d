@@ -8,7 +8,6 @@
 #include <QVector2D>
 #include <QRectF>
 #include "bonemark.h"
-#include "componentlayer.h"
 
 struct ObjectNode
 {
@@ -26,7 +25,6 @@ struct ObjectNode
     QUuid mirroredByPartId;
     BoneMark boneMark = BoneMark::None;
     QVector3D direction;
-    ComponentLayer layer = ComponentLayer::Body;
     bool joined = true;
 };
 

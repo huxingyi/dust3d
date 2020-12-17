@@ -26,8 +26,6 @@
 #include "preferences.h"
 #include "paintmode.h"
 #include "proceduralanimation.h"
-#include "componentlayer.h"
-#include "clothforce.h"
 #include "texturepainter.h"
 
 class MaterialPreviewsGenerator;
@@ -45,8 +43,6 @@ public:
 class Component
 {
 public:
-    static const float defaultClothStiffness;
-    static const size_t defaultClothIteration;
     Component()
     {
     }
@@ -69,11 +65,6 @@ public:
     float smoothAll = 0.0;
     float smoothSeam = 0.0;
     PolyCount polyCount = PolyCount::Original;
-    ComponentLayer layer = ComponentLayer::Body;
-    float clothStiffness = defaultClothStiffness;
-    ClothForce clothForce = ClothForce::Gravitational;
-    float clothOffset = 0.0f;
-    size_t clothIteration = defaultClothIteration;
     std::vector<QUuid> childrenIds;
     QString linkData() const
     {
@@ -193,22 +184,6 @@ public:
     {
         return smoothAllAdjusted() || smoothSeamAdjusted();
     }
-    bool clothStiffnessAdjusted() const
-    {
-        return fabs(clothStiffness - Component::defaultClothStiffness) >= 0.01;
-    }
-    bool clothIterationAdjusted() const
-    {
-        return clothIteration != defaultClothIteration;
-    }
-    bool clothForceAdjusted() const
-    {
-        return ClothForce::Gravitational != clothForce;
-    }
-    bool clothOffsetAdjusted() const
-    {
-        return fabs(clothOffset - 0.0) >= 0.01;
-    }
 private:
     std::set<QUuid> m_childrenIdSet;
 };
@@ -314,10 +289,6 @@ signals:
     void componentSmoothSeamChanged(QUuid componentId);
     void componentPolyCountChanged(QUuid componentId);
     void componentLayerChanged(QUuid componentId);
-    void componentClothStiffnessChanged(QUuid componentId);
-    void componentClothIterationChanged(QUuid componentId);
-    void componentClothForceChanged(QUuid componentId);
-    void componentClothOffsetChanged(QUuid componentId);
     void nodeRemoved(QUuid nodeId);
     void edgeRemoved(QUuid edgeId);
     void nodeRadiusChanged(QUuid nodeId);
@@ -585,11 +556,6 @@ public slots:
     void setComponentSmoothAll(QUuid componentId, float toSmoothAll);
     void setComponentSmoothSeam(QUuid componentId, float toSmoothSeam);
     void setComponentPolyCount(QUuid componentId, PolyCount count);
-    void setComponentLayer(QUuid componentId, ComponentLayer layer);
-    void setComponentClothStiffness(QUuid componentId, float stiffness);
-    void setComponentClothIteration(QUuid componentId, size_t iteration);
-    void setComponentClothForce(QUuid componentId, ClothForce force);
-    void setComponentClothOffset(QUuid componentId, float offset);
     void hideOtherComponents(QUuid componentId);
     void lockOtherComponents(QUuid componentId);
     void hideAllComponents();

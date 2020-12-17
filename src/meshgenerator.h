@@ -12,8 +12,6 @@
 #include "snapshot.h"
 #include "combinemode.h"
 #include "model.h"
-#include "componentlayer.h"
-#include "clothforce.h"
 
 class GeneratedPart
 {
@@ -170,15 +168,7 @@ private:
         GeneratedComponent &componentCache);
     MeshCombiner::Mesh *combineMultipleMeshes(const std::vector<std::tuple<MeshCombiner::Mesh *, CombineMode, QString>> &multipleMeshes, bool recombine=true);
     QString componentColorName(const std::map<QString, QString> *component);
-    ComponentLayer componentLayer(const std::map<QString, QString> *component);
-    float componentClothStiffness(const std::map<QString, QString> *component);
-    size_t componentClothIteration(const std::map<QString, QString> *component);
-    ClothForce componentClothForce(const std::map<QString, QString> *component);
-    float componentClothOffset(const std::map<QString, QString> *component);
     void collectUncombinedComponent(const QString &componentIdString);
-    void collectClothComponent(const QString &componentIdString);
-    void collectClothComponentIdStrings(const QString &componentIdString,
-        std::vector<QString> *componentIdStrings);
     void cutFaceStringToCutTemplate(const QString &cutFaceString, std::vector<QVector2D> &cutTemplate);
     void remesh(const std::vector<ObjectNode> &inputNodes,
         const std::vector<std::tuple<QVector3D, float, size_t>> &interpolatedNodes,

@@ -257,119 +257,6 @@ void PartTreeWidget::mousePressEvent(QMouseEvent *event)
     handleSingleClick(event->pos());
 }
 
-void PartTreeWidget::showClothSettingMenu(const QPoint &pos, const QUuid &componentId)
-{
-    const Component *component = nullptr;
-    
-    if (componentId.isNull())
-        return;
-    
-    component = m_document->findComponent(componentId);
-    if (nullptr == component)
-        return;
-    
-    QMenu popupMenu;
-    
-    QWidget *popup = new QWidget;
-    
-    FloatNumberWidget *clothStiffnessWidget = new FloatNumberWidget;
-    clothStiffnessWidget->setItemName(tr("Stiffness"));
-    clothStiffnessWidget->setRange(0.0f, 1.0f);
-    clothStiffnessWidget->setValue(component->clothStiffness);
-    
-    connect(clothStiffnessWidget, &FloatNumberWidget::valueChanged, [=](float value) {
-        emit setComponentClothStiffness(componentId, value);
-        emit groupOperationAdded();
-    });
-    
-    QPushButton *clothStiffnessEraser = new QPushButton(QChar(fa::eraser));
-    Theme::initAwesomeToolButton(clothStiffnessEraser);
-    
-    connect(clothStiffnessEraser, &QPushButton::clicked, [=]() {
-        clothStiffnessWidget->setValue(Component::defaultClothStiffness);
-        emit groupOperationAdded();
-    });
-    
-    QHBoxLayout *clothStiffnessLayout = new QHBoxLayout;
-    clothStiffnessLayout->addWidget(clothStiffnessEraser);
-    clothStiffnessLayout->addWidget(clothStiffnessWidget);
-    
-    IntNumberWidget *clothIterationWidget = new IntNumberWidget;
-    clothIterationWidget->setItemName(tr("Iteration"));
-    clothIterationWidget->setRange(0, 1000);
-    clothIterationWidget->setValue(component->clothIteration);
-    
-    connect(clothIterationWidget, &IntNumberWidget::valueChanged, [=](int value) {
-        //emit setComponentClothIteration(componentId, value);
-        //emit groupOperationAdded();
-    });
-    
-    QPushButton *clothIterationEraser = new QPushButton(QChar(fa::eraser));
-    Theme::initAwesomeToolButton(clothIterationEraser);
-    
-    connect(clothIterationEraser, &QPushButton::clicked, [=]() {
-        clothIterationWidget->setValue(Component::defaultClothIteration);
-        emit groupOperationAdded();
-    });
-    
-    QHBoxLayout *clothIterationLayout = new QHBoxLayout;
-    clothIterationLayout->addWidget(clothIterationEraser);
-    clothIterationLayout->addWidget(clothIterationWidget);
-    
-    FloatNumberWidget *clothOffsetWidget = new FloatNumberWidget;
-    clothOffsetWidget->setItemName(tr("Offset"));
-    clothOffsetWidget->setRange(0.0f, 1.0f);
-    clothOffsetWidget->setValue(component->clothOffset);
-    
-    connect(clothOffsetWidget, &FloatNumberWidget::valueChanged, [=](float value) {
-        emit setComponentClothOffset(componentId, value);
-        emit groupOperationAdded();
-    });
-    
-    QPushButton *clothOffsetEraser = new QPushButton(QChar(fa::eraser));
-    Theme::initAwesomeToolButton(clothOffsetEraser);
-    
-    connect(clothOffsetEraser, &QPushButton::clicked, [=]() {
-        clothOffsetWidget->setValue(0.0);
-        emit groupOperationAdded();
-    });
-    
-    QHBoxLayout *clothOffsetLayout = new QHBoxLayout;
-    clothOffsetLayout->addWidget(clothOffsetEraser);
-    clothOffsetLayout->addWidget(clothOffsetWidget);
-    
-    QComboBox *clothForceSelectBox = new QComboBox;
-    for (size_t i = 0; i < (size_t)ClothForce::Count; ++i) {
-        ClothForce force = (ClothForce)i;
-        clothForceSelectBox->addItem(ClothForceToDispName(force));
-    }
-    clothForceSelectBox->setCurrentIndex((int)component->clothForce);
-    connect(clothForceSelectBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [=](int index) {
-        emit setComponentClothForce(component->id, (ClothForce)index);
-        emit groupOperationAdded();
-    });
-    QFormLayout *clothForceFormLayout = new QFormLayout;
-    clothForceFormLayout->addRow(tr("Force"), clothForceSelectBox);
-    QHBoxLayout *clothForceLayout = new QHBoxLayout;
-    clothForceLayout->addLayout(clothForceFormLayout);
-    clothForceLayout->addStretch();
-    
-    QVBoxLayout *mainLayout = new QVBoxLayout;
-    mainLayout->addLayout(clothStiffnessLayout);
-    //mainLayout->addLayout(clothIterationLayout);
-    mainLayout->addLayout(clothOffsetLayout);
-    mainLayout->addLayout(clothForceLayout);
-    
-    popup->setLayout(mainLayout);
-    
-    QWidgetAction action(this);
-    action.setDefaultWidget(popup);
-    
-    popupMenu.addAction(&action);
-    
-    popupMenu.exec(mapToGlobal(pos));
-}
-
 std::vector<QUuid> PartTreeWidget::collectSelectedComponentIds(const QPoint &pos)
 {
     std::set<QUuid> unorderedComponentIds = m_selectedComponentIds;
@@ -486,33 +373,7 @@ void PartTreeWidget::showContextMenu(const QPoint &pos, bool shorted)
         }
     }
     
-    QHBoxLayout *componentLayerLayout = nullptr;
-
     if (nullptr != component) {
-        if (nullptr == part || part->hasLayerFunction()) {
-            QPushButton *clothSettingButton = new QPushButton();
-            connect(clothSettingButton, &QPushButton::clicked, this, [=]() {
-                showClothSettingMenu(mapFromGlobal(QCursor::pos()), component->id);
-            });
-            clothSettingButton->setIcon(Theme::awesome()->icon(fa::gear));
-            if (ComponentLayer::Cloth != component->layer)
-                clothSettingButton->hide();
-            QComboBox *componentLayerSelectBox = new QComboBox;
-            for (size_t i = 0; i < (size_t)ComponentLayer::Count; ++i) {
-                ComponentLayer layer = (ComponentLayer)i;
-                componentLayerSelectBox->addItem(ComponentLayerToDispName(layer));
-            }
-            componentLayerSelectBox->setCurrentIndex((int)component->layer);
-            connect(componentLayerSelectBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [=](int index) {
-                clothSettingButton->setVisible(ComponentLayer::Cloth == (ComponentLayer)index);
-                emit setComponentLayer(component->id, (ComponentLayer)index);
-                emit groupOperationAdded();
-            });
-            componentLayerLayout = new QHBoxLayout;
-            componentLayerLayout->addWidget(componentLayerSelectBox);
-            componentLayerLayout->addWidget(clothSettingButton);
-            componentLayerLayout->setStretch(0, 1);
-        }
         
         if (nullptr == part || part->hasCombineModeFunction()) {
             combineModeSelectBox = new QComboBox;
@@ -669,8 +530,6 @@ void PartTreeWidget::showContextMenu(const QPoint &pos, bool shorted)
         componentSettingsLayout->addRow(tr("Target"), partTargetSelectBox);
     if (nullptr != combineModeSelectBox)
         componentSettingsLayout->addRow(tr("Mode"), combineModeSelectBox);
-    if (nullptr != componentLayerLayout)
-        componentSettingsLayout->addRow(tr("Layer"), componentLayerLayout);
     
     QVBoxLayout *newLayout = new QVBoxLayout;
     newLayout->addLayout(layout);

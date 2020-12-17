@@ -344,9 +344,6 @@ HEADERS += src/combinemode.h
 SOURCES += src/polycount.cpp
 HEADERS += src/polycount.h
 
-SOURCES += src/cutdocument.cpp
-HEADERS += src/cutdocument.h
-
 SOURCES += src/cutface.cpp
 HEADERS += src/cutface.h
 
@@ -403,12 +400,6 @@ HEADERS += src/boundingboxmesh.h
 SOURCES += src/regionfiller.cpp
 HEADERS += src/regionfiller.h
 
-SOURCES += src/cyclefinder.cpp
-HEADERS += src/cyclefinder.h
-
-SOURCES += src/shortestpath.cpp
-HEADERS += src/shortestpath.h
-
 SOURCES += src/meshwrapper.cpp
 HEADERS += src/meshwrapper.h
 
@@ -442,23 +433,11 @@ HEADERS += src/booleanmesh.h
 SOURCES += src/remesher.cpp
 HEADERS += src/remesher.h
 
-SOURCES += src/clothsimulator.cpp
-HEADERS += src/clothsimulator.h
-
-SOURCES += src/componentlayer.cpp
-HEADERS += src/componentlayer.h
-
 SOURCES += src/isotropicremesh.cpp
 HEADERS += src/isotropicremesh.h
 
-SOURCES += src/clothforce.cpp
-HEADERS += src/clothforce.h
-
 SOURCES += src/projectfacestonodes.cpp
 HEADERS += src/projectfacestonodes.h
-
-SOURCES += src/simulateclothmeshes.cpp
-HEADERS += src/simulateclothmeshes.h
 
 SOURCES += src/ddsfile.cpp
 HEADERS += src/ddsfile.h

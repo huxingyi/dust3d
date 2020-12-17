@@ -21,8 +21,6 @@
 #include "meshgenerator.h"
 
 unsigned long Document::m_maxSnapshot = 1000;
-const float Component::defaultClothStiffness = 0.5f;
-const size_t Component::defaultClothIteration = 350;
 
 Document::Document() :
     SkeletonDocument(),
@@ -1230,16 +1228,6 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
                 component["smoothSeam"] = QString::number(componentIt.second.smoothSeam);
             if (componentIt.second.polyCount != PolyCount::Original)
                 component["polyCount"] = PolyCountToString(componentIt.second.polyCount);
-            if (componentIt.second.layer != ComponentLayer::Body)
-                component["layer"] = ComponentLayerToString(componentIt.second.layer);
-            if (componentIt.second.clothStiffnessAdjusted())
-                component["clothStiffness"] = QString::number(componentIt.second.clothStiffness);
-            if (componentIt.second.clothIterationAdjusted())
-                component["clothIteration"] = QString::number(componentIt.second.clothIteration);
-            if (componentIt.second.clothForceAdjusted())
-                component["clothForce"] = ClothForceToString(componentIt.second.clothForce);
-            if (componentIt.second.clothOffsetAdjusted())
-                component["clothOffset"] = QString::number(componentIt.second.clothOffset);
             QStringList childIdList;
             for (const auto &childId: componentIt.second.childrenIds) {
                 childIdList.append(childId.toString());
@@ -1682,19 +1670,6 @@ void Document::addFromSnapshot(const Snapshot &snapshot, enum SnapshotSource sou
         if (smoothSeamIt != componentKv.second.end())
             component.setSmoothSeam(smoothSeamIt->second.toFloat());
         component.polyCount = PolyCountFromString(valueOfKeyInMapOrEmpty(componentKv.second, "polyCount").toUtf8().constData());
-        component.layer = ComponentLayerFromString(valueOfKeyInMapOrEmpty(componentKv.second, "layer").toUtf8().constData());
-        auto findClothStiffness = componentKv.second.find("clothStiffness");
-        if (findClothStiffness != componentKv.second.end())
-            component.clothStiffness = findClothStiffness->second.toFloat();
-        auto findClothIteration = componentKv.second.find("clothIteration");
-        if (findClothIteration != componentKv.second.end())
-            component.clothIteration = findClothIteration->second.toUInt();
-        auto findClothForce = componentKv.second.find("clothForce");
-        if (findClothForce != componentKv.second.end())
-            component.clothForce = ClothForceFromString(valueOfKeyInMapOrEmpty(componentKv.second, "clothForce").toUtf8().constData());
-        auto findClothOffset = componentKv.second.find("clothOffset");
-        if (findClothOffset != componentKv.second.end())
-            component.clothOffset = valueOfKeyInMapOrEmpty(componentKv.second, "clothOffset").toFloat();
         //qDebug() << "Add component:" << component.id << " old:" << componentKv.first << "name:" << component.name;
         if ("partId" == linkDataType) {
             QUuid partId = oldNewIdMap[QUuid(linkData)];
@@ -2505,76 +2480,6 @@ void Document::setComponentPolyCount(QUuid componentId, PolyCount count)
     component->polyCount = count;
     component->dirty = true;
     emit componentPolyCountChanged(componentId);
-    emit skeletonChanged();
-}
-
-void Document::setComponentLayer(QUuid componentId, ComponentLayer layer)
-{
-    Component *component = (Component *)findComponent(componentId);
-    if (nullptr == component)
-        return;
-    if (component->layer == layer)
-        return;
-    
-    component->layer = layer;
-    component->dirty = true;
-    emit componentLayerChanged(componentId);
-    emit skeletonChanged();
-}
-
-void Document::setComponentClothStiffness(QUuid componentId, float stiffness)
-{
-    Component *component = (Component *)findComponent(componentId);
-    if (nullptr == component)
-        return;
-    if (qFuzzyCompare(component->clothStiffness, stiffness))
-        return;
-    
-    component->clothStiffness = stiffness;
-    component->dirty = true;
-    emit componentClothStiffnessChanged(componentId);
-    emit skeletonChanged();
-}
-
-void Document::setComponentClothIteration(QUuid componentId, size_t iteration)
-{
-    Component *component = (Component *)findComponent(componentId);
-    if (nullptr == component)
-        return;
-    if (component->clothIteration == iteration)
-        return;
-    
-    component->clothIteration = iteration;
-    component->dirty = true;
-    emit componentClothIterationChanged(componentId);
-    emit skeletonChanged();
-}
-
-void Document::setComponentClothForce(QUuid componentId, ClothForce force)
-{
-    Component *component = (Component *)findComponent(componentId);
-    if (nullptr == component)
-        return;
-    if (component->clothForce == force)
-        return;
-    
-    component->clothForce = force;
-    component->dirty = true;
-    emit componentClothForceChanged(componentId);
-    emit skeletonChanged();
-}
-
-void Document::setComponentClothOffset(QUuid componentId, float offset)
-{
-    Component *component = (Component *)findComponent(componentId);
-    if (nullptr == component)
-        return;
-    if (qFuzzyCompare(component->clothOffset, offset))
-        return;
-    
-    component->clothOffset = offset;
-    component->dirty = true;
-    emit componentClothOffsetChanged(componentId);
     emit skeletonChanged();
 }
 

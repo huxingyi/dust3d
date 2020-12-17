@@ -149,8 +149,6 @@ void RigGenerator::buildNeighborMap()
     std::map<std::pair<QUuid, QUuid>, size_t> nodeIdToIndexMap;
     for (size_t i = 0; i < m_object->nodes.size(); ++i) {
         const auto &node = m_object->nodes[i];
-        if (ComponentLayer::Body != node.layer)
-            continue;
         nodeIdToIndexMap.insert({{node.partId, node.nodeId}, i});
         m_neighborMap.insert({i, {}});
     }
@@ -220,8 +218,6 @@ void RigGenerator::buildBoneNodeChain()
     size_t middleStartNodeIndex = m_object->nodes.size();
     for (size_t nodeIndex = 0; nodeIndex < m_object->nodes.size(); ++nodeIndex) {
         const auto &node = m_object->nodes[nodeIndex];
-        if (ComponentLayer::Body != node.layer)
-            continue;
         if (!BoneMarkIsBranchNode(node.boneMark))
             continue;
         m_branchNodesMapByMark[(int)node.boneMark].push_back(nodeIndex);
@@ -655,21 +651,15 @@ void RigGenerator::computeSkinWeights()
     std::map<std::pair<QUuid, QUuid>, size_t> nodeIdToIndexMap;
     for (size_t nodeIndex = 0; nodeIndex < m_object->nodes.size(); ++nodeIndex) {
         const auto &node = m_object->nodes[nodeIndex];
-        if (ComponentLayer::Body != node.layer)
-            continue;
         nodeIdToIndexMap[{node.partId, node.nodeId}] = nodeIndex;
     }
     if (!nodeIdToIndexMap.empty()) {
         for (size_t nonBodyNodeIndex = 0; nonBodyNodeIndex < m_object->nodes.size(); ++nonBodyNodeIndex) {
             const auto &nonBodyNode = m_object->nodes[nonBodyNodeIndex];
-            if (ComponentLayer::Body == nonBodyNode.layer)
-                continue;
             std::vector<std::pair<size_t, float>> distance2s;
             distance2s.reserve(m_object->nodes.size());
             for (size_t nodeIndex = 0; nodeIndex < m_object->nodes.size(); ++nodeIndex) {
                 const auto &node = m_object->nodes[nodeIndex];
-                if (ComponentLayer::Body != node.layer)
-                    continue;
                 distance2s.push_back(std::make_pair(nodeIndex,
                     (nonBodyNode.origin - node.origin).lengthSquared()));
             }

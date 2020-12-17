@@ -43,8 +43,6 @@ void saveObjectToXmlStream(const Object *object, QXmlStreamWriter *writer)
                 writer->writeAttribute("mirroredByPartId", node.mirroredByPartId.toString());
             if (node.boneMark != BoneMark::None)
                 writer->writeAttribute("boneMark", BoneMarkToString(node.boneMark));
-            if (ComponentLayer::Body != node.layer)
-                writer->writeAttribute("layer", ComponentLayerToString(node.layer));
             if (!node.joined)
                 writer->writeAttribute("joined", "false");
             writer->writeEndElement();
@@ -250,7 +248,6 @@ void loadObjectFromXmlStream(Object *object, QXmlStreamReader &reader)
                 node.mirrorFromPartId = QUuid(reader.attributes().value("mirrorFromPartId").toString());
                 node.mirroredByPartId = QUuid(reader.attributes().value("mirroredByPartId").toString());
                 node.boneMark = BoneMarkFromString(reader.attributes().value("boneMark").toString().toUtf8().constData());
-                node.layer = ComponentLayerFromString(reader.attributes().value("layer").toString().toUtf8().constData());
                 QString joinedString = reader.attributes().value("joined").toString();
                 if (!joinedString.isEmpty())
                     node.joined = isTrueValueString(joinedString);

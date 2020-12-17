@@ -16,7 +16,6 @@
 #include "materiallistwidget.h"
 #include "infolabel.h"
 #include "cutface.h"
-#include "cutdocument.h"
 #include "skeletongraphicswidget.h"
 #include "shortcuts.h"
 #include "graphicscontainerwidget.h"
