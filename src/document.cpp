@@ -18,7 +18,6 @@
 #include "skeletonside.h"
 #include "scriptrunner.h"
 #include "imageforever.h"
-#include "contourtopartconverter.h"
 #include "meshgenerator.h"
 
 unsigned long Document::m_maxSnapshot = 1000;
@@ -389,28 +388,6 @@ void Document::removeNode(QUuid nodeId)
 void Document::addNode(float x, float y, float z, float radius, QUuid fromNodeId)
 {
     createNode(QUuid::createUuid(), x, y, z, radius, fromNodeId);
-}
-
-void Document::addPartByPolygons(const QPolygonF &mainProfile, const QPolygonF &sideProfile, const QSizeF &canvasSize)
-{
-    if (mainProfile.empty() || sideProfile.empty())
-        return;
-    
-    QThread *thread = new QThread;
-    ContourToPartConverter *contourToPartConverter = new ContourToPartConverter(mainProfile, sideProfile, canvasSize);
-    contourToPartConverter->moveToThread(thread);
-    connect(thread, &QThread::started, contourToPartConverter, &ContourToPartConverter::process);
-    connect(contourToPartConverter, &ContourToPartConverter::finished, this, [=]() {
-        const auto &snapshot = contourToPartConverter->getSnapshot();
-        if (!snapshot.nodes.empty()) {
-            addFromSnapshot(snapshot, SnapshotSource::Paste);
-            saveSnapshot();
-        }
-        delete contourToPartConverter;
-    });
-    connect(contourToPartConverter, &ContourToPartConverter::finished, thread, &QThread::quit);
-    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
-    thread->start();
 }
 
 void Document::addNodeWithId(QUuid nodeId, float x, float y, float z, float radius, QUuid fromNodeId)

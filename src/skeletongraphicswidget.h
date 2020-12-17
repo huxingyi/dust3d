@@ -124,72 +124,6 @@ public:
     }
 };
 
-class SkeletonGraphicsMarkerItem : public QGraphicsPolygonItem
-{
-public:
-    SkeletonGraphicsMarkerItem()
-    {
-        updateAppearance();
-    }
-    void addPoint(const QPointF &point)
-    {
-        m_polygon.append(point);
-        setPolygon(m_polygon);
-    }
-    void clear()
-    {
-        m_polygon.clear();
-        setPolygon(m_polygon);
-    }
-    QColor color()
-    {
-        return m_mainProfile ? Theme::red : Theme::green;
-    }
-    bool isMainProfile()
-    {
-        return m_mainProfile;
-    }
-    void toggleProfile()
-    {
-        m_mainProfile = !m_mainProfile;
-        updateAppearance();
-    }
-    void save()
-    {
-        m_previousPolygon = m_polygon;
-        clear();
-    }
-    const QPolygonF &previousPolygon()
-    {
-        return m_previousPolygon;
-    }
-    const QPolygonF &polygon()
-    {
-        return m_polygon;
-    }
-    void reset()
-    {
-        m_previousPolygon.clear();
-        clear();
-        if (!m_mainProfile) {
-            m_mainProfile = true;
-            updateAppearance();
-        }
-    }
-private:
-    QPolygonF m_polygon;
-    QPolygonF m_previousPolygon;
-    bool m_mainProfile = true;
-    void updateAppearance()
-    {
-        QColor penColor(color());
-        QPen pen(penColor);
-        pen.setWidth(2);
-        pen.setStyle(Qt::SolidLine);
-        setPen(pen);
-    }
-};
-
 class SkeletonGraphicsNodeItem : public QGraphicsEllipseItem
 {
 public:
@@ -513,8 +447,6 @@ signals:
     void showOrHideAllComponents();
     void shortcutToggleFlatShading();
     void shortcutToggleRotation();
-    void createGriddedPartsFromNodes(const std::set<QUuid> &nodeIds);
-    void addPartByPolygons(const QPolygonF &mainProfile, const QPolygonF &sideProfile, const QSizeF &canvasSize);
     void loadedTurnaroundImageChanged();
 public:
     SkeletonGraphicsWidget(const SkeletonDocument *document);
@@ -692,9 +624,7 @@ private: //need initialize
     float m_lastAddedY;
     float m_lastAddedZ;
     SkeletonGraphicsSelectionItem *m_selectionItem;
-    SkeletonGraphicsMarkerItem *m_markerItem;
     bool m_rangeSelectionStarted;
-    bool m_markerStarted;
     bool m_mouseEventFromSelf;
     bool m_moveHappened;
     int m_lastRot;

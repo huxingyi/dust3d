@@ -941,7 +941,6 @@ DocumentWindow::DocumentWindow() :
     connect(shapeGraphicsWidget, &SkeletonGraphicsWidget::setPartXmirrorState, m_document, &Document::setPartXmirrorState);
     connect(shapeGraphicsWidget, &SkeletonGraphicsWidget::setPartRoundState, m_document, &Document::setPartRoundState);
     connect(shapeGraphicsWidget, &SkeletonGraphicsWidget::setPartWrapState, m_document, &Document::setPartCutRotation);
-    connect(shapeGraphicsWidget, &SkeletonGraphicsWidget::addPartByPolygons, m_document, &Document::addPartByPolygons);
 
     connect(shapeGraphicsWidget, &SkeletonGraphicsWidget::setXlockState, m_document, &Document::setXlockState);
     connect(shapeGraphicsWidget, &SkeletonGraphicsWidget::setYlockState, m_document, &Document::setYlockState);

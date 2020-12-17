@@ -439,12 +439,6 @@ HEADERS += src/triangulatefaces.h
 SOURCES += src/booleanmesh.cpp
 HEADERS += src/booleanmesh.h
 
-SOURCES += src/imageskeletonextractor.cpp
-HEADERS += src/imageskeletonextractor.h
-
-SOURCES += src/contourtopartconverter.cpp
-HEADERS += src/contourtopartconverter.h
-
 SOURCES += src/remesher.cpp
 HEADERS += src/remesher.h
 

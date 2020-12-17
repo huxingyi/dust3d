@@ -429,7 +429,6 @@ enum class SkeletonDocumentEditMode
 {
     Add = 0,
     Select,
-    Mark,
     Paint,
     Drag,
     ZoomIn,
