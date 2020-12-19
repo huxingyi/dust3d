@@ -1,7 +1,8 @@
 #ifndef DUST3D_PREFERENCES_WIDGET_H
 #define DUST3D_PREFERENCES_WIDGET_H
 #include <QDialog>
-#include "document.h"
+
+class Document;
 
 class PreferencesWidget : public QDialog
 {

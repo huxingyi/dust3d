@@ -10,6 +10,7 @@
 #include "theme.h"
 #include "floatnumberwidget.h"
 #include "intnumberwidget.h"
+#include "document.h"
 
 ScriptVariablesWidget::ScriptVariablesWidget(const Document *document,
         QWidget *parent) :

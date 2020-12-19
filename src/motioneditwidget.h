@@ -5,6 +5,8 @@
 #include <queue>
 #include <QLineEdit>
 #include <QUuid>
+#include <QPushButton>
+#include <QLabel>
 #include "rig.h"
 #include "object.h"
 

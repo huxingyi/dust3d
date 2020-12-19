@@ -5,7 +5,12 @@
 #include <QMouseEvent>
 #include <QTreeWidgetItem>
 #include <QTimer>
-#include "document.h"
+#include <set>
+#include "parttarget.h"
+#include "partbase.h"
+#include "combinemode.h"
+
+class Document;
 
 class PartTreeWidget : public QTreeWidget
 {
@@ -21,8 +26,6 @@ signals:
     void createNewChildComponent(QUuid parentComponentId);
     void renameComponent(QUuid componentId, QString name);
     void setComponentExpandState(QUuid componentId, bool expanded);
-    void setComponentSmoothAll(QUuid componentId, float toSmoothAll);
-    void setComponentSmoothSeam(QUuid componentId, float toSmoothSeam);
     void setPartTarget(QUuid partId, PartTarget target);
     void setPartBase(QUuid partId, PartBase base);
     void moveComponent(QUuid componentId, QUuid toParentId);
@@ -93,7 +96,6 @@ private:
     void addComponentChildrenToItem(QUuid componentId, QTreeWidgetItem *parentItem);
     void deleteItemChildren(QTreeWidgetItem *item);
     void selectComponent(QUuid componentId, bool multiple=false);
-    QWidget *createSmoothMenuWidget(QUuid componentId);
     void updateComponentSelectState(QUuid componentId, bool selected);
     void updateComponentAppearance(QUuid componentId);
     bool isComponentSelected(QUuid componentId);

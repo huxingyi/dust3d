@@ -3,8 +3,9 @@
 #include <QTreeWidget>
 #include <map>
 #include <QMouseEvent>
-#include "document.h"
 #include "motionwidget.h"
+
+class Document;
 
 class MotionListWidget : public QTreeWidget
 {

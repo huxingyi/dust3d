@@ -11,6 +11,7 @@
 #include "documentwindow.h"
 #include "theme.h"
 #include "version.h"
+#include "document.h"
 
 int main(int argc, char ** argv)
 {

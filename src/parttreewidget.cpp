@@ -16,6 +16,7 @@
 #include "skeletongraphicswidget.h"
 #include "floatnumberwidget.h"
 #include "intnumberwidget.h"
+#include "document.h"
 
 PartTreeWidget::PartTreeWidget(const Document *document, QWidget *parent) :
     QTreeWidget(parent),
@@ -779,78 +780,6 @@ void PartTreeWidget::showContextMenu(const QPoint &pos, bool shorted)
     for (const auto &action: groupsActions) {
         delete action;
     }
-}
-
-QWidget *PartTreeWidget::createSmoothMenuWidget(QUuid componentId)
-{
-    QWidget *popup = new QWidget;
-    
-    const Component *component = m_document->findComponent(componentId);
-    if (!component) {
-        qDebug() << "Find component failed:" << componentId;
-        return popup;
-    }
-    
-    bool showSeamControl = component->linkToPartId.isNull();
-    
-    FloatNumberWidget *smoothAllWidget = new FloatNumberWidget;
-    smoothAllWidget->setItemName(tr("All"));
-    smoothAllWidget->setRange(0, 1);
-    smoothAllWidget->setValue(component->smoothAll);
-    
-    connect(smoothAllWidget, &FloatNumberWidget::valueChanged, [=](float value) {
-        emit setComponentSmoothAll(componentId, value);
-        emit groupOperationAdded();
-    });
-    
-    QPushButton *smoothAllEraser = new QPushButton(QChar(fa::eraser));
-    Theme::initAwesomeToolButton(smoothAllEraser);
-    
-    connect(smoothAllEraser, &QPushButton::clicked, [=]() {
-        smoothAllWidget->setValue(0.0);
-    });
-    
-    FloatNumberWidget *smoothSeamWidget = nullptr;
-    QPushButton *smoothSeamEraser = nullptr;
-    
-    if (showSeamControl) {
-        smoothSeamWidget = new FloatNumberWidget;
-        smoothSeamWidget->setItemName(tr("Seam"));
-        smoothSeamWidget->setRange(0, 1);
-        smoothSeamWidget->setValue(component->smoothSeam);
-        
-        connect(smoothSeamWidget, &FloatNumberWidget::valueChanged, [=](float value) {
-            emit setComponentSmoothSeam(componentId, value);
-            emit groupOperationAdded();
-        });
-    
-        smoothSeamEraser = new QPushButton(QChar(fa::eraser));
-        Theme::initAwesomeToolButton(smoothSeamEraser);
-        
-        connect(smoothSeamEraser, &QPushButton::clicked, [=]() {
-            smoothSeamWidget->setValue(0.0);
-        });
-    }
-    
-    QHBoxLayout *smoothSeamLayout = nullptr;
-    
-    QVBoxLayout *layout = new QVBoxLayout;
-    QHBoxLayout *smoothAllLayout = new QHBoxLayout;
-    if (showSeamControl)
-        smoothSeamLayout = new QHBoxLayout;
-    smoothAllLayout->addWidget(smoothAllEraser);
-    smoothAllLayout->addWidget(smoothAllWidget);
-    if (showSeamControl) {
-        smoothSeamLayout->addWidget(smoothSeamEraser);
-        smoothSeamLayout->addWidget(smoothSeamWidget);
-    }
-    layout->addLayout(smoothAllLayout);
-    if (showSeamControl)
-        layout->addLayout(smoothSeamLayout);
-    
-    popup->setLayout(layout);
-    
-    return popup;
 }
 
 QTreeWidgetItem *PartTreeWidget::findComponentItem(QUuid componentId)

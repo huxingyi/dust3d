@@ -55,6 +55,7 @@
 #include "silhouetteimagegenerator.h"
 #include "flowlayout.h"
 #include "bonedocument.h"
+#include "document.h"
 
 int DocumentWindow::m_autoRecovered = false;
 
@@ -884,6 +885,22 @@ DocumentWindow::DocumentWindow() :
     connect(m_document, &Document::editModeChanged, this, [=]() {
         m_modelRenderWidget->enableMousePicking(SkeletonDocumentEditMode::Paint == m_document->editMode);
     });
+    connect(m_document, &Document::editModeChanged, this, [=]() {
+        m_boneDocument->setEditMode(m_document->editMode);
+    });
+    
+    connect(m_document, &Document::xlockStateChanged, this, [=]() {
+        m_boneDocument->setXlockState(m_document->xlocked);
+    });
+    connect(m_document, &Document::ylockStateChanged, this, [=]() {
+        m_boneDocument->setYlockState(m_document->ylocked);
+    });
+    connect(m_document, &Document::zlockStateChanged, this, [=]() {
+        m_boneDocument->setZlockState(m_document->zlocked);
+    });
+    connect(m_document, &Document::radiusLockStateChanged, this, [=]() {
+        m_boneDocument->setRadiusLockState(m_document->radiusLocked);
+    });
 
     m_partListDockerVisibleSwitchConnection = connect(m_document, &Document::skeletonChanged, [=]() {
         if (m_shapeGraphicsWidget->hasItems()) {
@@ -894,6 +911,7 @@ DocumentWindow::DocumentWindow() :
     });
 
     connect(m_document, &Document::editModeChanged, shapeGraphicsWidget, &SkeletonGraphicsWidget::editModeChanged);
+    connect(m_boneDocument, &BoneDocument::editModeChanged, boneGraphicsWidget, &SkeletonGraphicsWidget::editModeChanged);
     
     connect(shapeGraphicsWidget, &SkeletonGraphicsWidget::shortcutToggleWireframe, [=]() {
         m_modelRenderWidget->toggleWireframe();
@@ -984,8 +1002,6 @@ DocumentWindow::DocumentWindow() :
     connect(m_partTreeWidget, &PartTreeWidget::createNewChildComponent, m_document, &Document::createNewChildComponent);
     connect(m_partTreeWidget, &PartTreeWidget::renameComponent, m_document, &Document::renameComponent);
     connect(m_partTreeWidget, &PartTreeWidget::setComponentExpandState, m_document, &Document::setComponentExpandState);
-    connect(m_partTreeWidget, &PartTreeWidget::setComponentSmoothAll, m_document, &Document::setComponentSmoothAll);
-    connect(m_partTreeWidget, &PartTreeWidget::setComponentSmoothSeam, m_document, &Document::setComponentSmoothSeam);
     connect(m_partTreeWidget, &PartTreeWidget::moveComponent, m_document, &Document::moveComponent);
     connect(m_partTreeWidget, &PartTreeWidget::removeComponent, m_document, &Document::removeComponent);
     connect(m_partTreeWidget, &PartTreeWidget::hideOtherComponents, m_document, &Document::hideOtherComponents);
@@ -1177,6 +1193,7 @@ void DocumentWindow::toggleRotation()
     if (nullptr == m_shapeGraphicsWidget)
         return;
     m_shapeGraphicsWidget->setRotated(!m_shapeGraphicsWidget->rotated());
+    m_boneGraphicsWidget->setRotated(m_shapeGraphicsWidget->rotated());
     updateRotationButtonState();
 }
 

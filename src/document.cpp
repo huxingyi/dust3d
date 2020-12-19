@@ -44,7 +44,6 @@ Document::Document() :
     m_meshGenerator(nullptr),
     m_resultMesh(nullptr),
     m_paintedMesh(nullptr),
-    //m_resultMeshCutFaceTransforms(nullptr),
     m_resultMeshNodesCutFaces(nullptr),
     m_isMeshGenerationSucceed(true),
     m_batchChangeRefCount(0),
@@ -109,7 +108,6 @@ Document::~Document()
 {
     delete m_resultMesh;
     delete m_paintedMesh;
-    //delete m_resultMeshCutFaceTransforms;
     delete m_resultMeshNodesCutFaces;
     delete m_postProcessedObject;
     delete textureImage;
@@ -292,10 +290,6 @@ void Document::removeEdge(QUuid edgeId)
         updateLinkedPart(oldPartId, newPartNodeNumMap[0].first);
     }
     
-    for (const auto &partId: newPartIds) {
-        checkPartGrid(partId);
-    }
-    
     emit skeletonChanged();
 }
 
@@ -375,10 +369,6 @@ void Document::removeNode(QUuid nodeId)
         updateLinkedPart(oldPartId, newPartNodeNumMap[0].first);
     }
     
-    for (const auto &partId: newPartIds) {
-        checkPartGrid(partId);
-    }
-    
     emit skeletonChanged();
 }
 
@@ -444,7 +434,6 @@ QUuid Document::createNode(QUuid nodeId, float x, float y, float z, float radius
     if (newPartAdded)
         addPartToComponent(partId, m_currentCanvasComponentId);
     
-    checkPartGrid(partId);
     emit skeletonChanged();
     
     return node.id;
@@ -594,34 +583,7 @@ void Document::addEdge(QUuid fromNodeId, QUuid toNodeId)
         removePart(toPartId);
     }
     
-    checkPartGrid(fromNode->partId);
-    
     emit skeletonChanged();
-}
-
-void Document::checkPartGrid(QUuid partId)
-{
-    return;
-    /*
-    SkeletonPart *part = (SkeletonPart *)findPart(partId);
-    if (nullptr == part)
-        return;
-    bool isGrid = false;
-    for (const auto &nodeId: part->nodeIds) {
-        const SkeletonNode *node = findNode(nodeId);
-        if (nullptr == node)
-            continue;
-        if (node->edgeIds.size() >= 3) {
-            isGrid = true;
-            break;
-        }
-    }
-    if (part->gridded == isGrid)
-        return;
-    part->gridded = isGrid;
-    part->dirty = true;
-    emit partGridStateChanged(partId);
-    */
 }
 
 void Document::updateLinkedPart(QUuid oldPartId, QUuid newPartId)
@@ -1221,10 +1183,6 @@ void Document::toSnapshot(Snapshot *snapshot, const std::set<QUuid> &limitNodeId
             component["expanded"] = componentIt.second.expanded ? "true" : "false";
             component["combineMode"] = CombineModeToString(componentIt.second.combineMode);
             component["__dirty"] = componentIt.second.dirty ? "true" : "false";
-            if (componentIt.second.smoothAllAdjusted())
-                component["smoothAll"] = QString::number(componentIt.second.smoothAll);
-            if (componentIt.second.smoothSeamAdjusted())
-                component["smoothSeam"] = QString::number(componentIt.second.smoothSeam);
             QStringList childIdList;
             for (const auto &childId: componentIt.second.childrenIds) {
                 childIdList.append(childId.toString());
@@ -1378,7 +1336,6 @@ void Document::createSinglePartFromEdges(const std::vector<QVector3D> &nodes,
     }
     
     for (const auto &partIt : newAddedPartIds) {
-        checkPartGrid(partIt);
         emit partVisibleStateChanged(partIt);
     }
     
@@ -1657,12 +1614,6 @@ void Document::addFromSnapshot(const Snapshot &snapshot, enum SnapshotSource sou
             if (isTrueValueString(valueOfKeyInMapOrEmpty(componentKv.second, "inverse")))
                 component.combineMode = CombineMode::Inversion;
         }
-        const auto &smoothAllIt = componentKv.second.find("smoothAll");
-        if (smoothAllIt != componentKv.second.end())
-            component.setSmoothAll(smoothAllIt->second.toFloat());
-        const auto &smoothSeamIt = componentKv.second.find("smoothSeam");
-        if (smoothSeamIt != componentKv.second.end())
-            component.setSmoothSeam(smoothSeamIt->second.toFloat());
         //qDebug() << "Add component:" << component.id << " old:" << componentKv.first << "name:" << component.name;
         if ("partId" == linkDataType) {
             QUuid partId = oldNewIdMap[QUuid(linkData)];
@@ -1731,7 +1682,6 @@ void Document::addFromSnapshot(const Snapshot &snapshot, enum SnapshotSource sou
     emit skeletonChanged();
     
     for (const auto &partIt : newAddedPartIds) {
-        checkPartGrid(partIt);
         emit partVisibleStateChanged(partIt);
     }
     
@@ -1872,13 +1822,8 @@ void Document::meshReady()
     delete m_resultMesh;
     m_resultMesh = resultMesh;
     
-    //delete m_resultMeshCutFaceTransforms;
-    //m_resultMeshCutFaceTransforms = m_meshGenerator->takeCutFaceTransforms();
-    
     delete m_resultMeshNodesCutFaces;
     m_resultMeshNodesCutFaces = m_meshGenerator->takeNodesCutFaces();
-    
-    //addToolToMesh(m_resultMesh);
     
     m_isMeshGenerationSucceed = isSuccessful;
     
@@ -1929,36 +1874,6 @@ void Document::meshReady()
         }
     }
 }
-
-//void Document::addToolToMesh(Model *mesh)
-//{
-//    if (nullptr == mesh)
-//        return;
-//
-//    if (nullptr == m_resultMeshCutFaceTransforms ||
-//            nullptr == m_resultMeshNodesCutFaces ||
-//            m_resultMeshCutFaceTransforms->empty() ||
-//            m_resultMeshNodesCutFaces->empty())
-//        return;
-//
-//    ToolMesh toolMesh;
-//    for (const auto &transformIt: *m_resultMeshCutFaceTransforms) {
-//        const auto &nodeId = transformIt.first;
-//        const auto &transform = transformIt.second;
-//        qDebug() << "nodeId:" << nodeId;
-//        for (const auto &cutFaceIt: (*m_resultMeshNodesCutFaces)[nodeId]) {
-//            const auto &cutFaceId = cutFaceIt.first;
-//            const auto &cutFace2d = cutFaceIt.second;
-//            QVector3D position = transform.translation + transform.rotation * (transform.uFactor * cutFace2d.x() + transform.vFactor * cutFace2d.y());
-//            qDebug() << "cutFaceId:" << cutFaceId;
-//            toolMesh.addNode(nodeId.toString() + cutFaceId, position);
-//        }
-//    }
-//    toolMesh.generate();
-//    int shaderVertexCount = 0;
-//    ShaderVertex *shaderVertices = toolMesh.takeShaderVertices(&shaderVertexCount);
-//    mesh->updateTool(shaderVertices, shaderVertexCount);
-//}
 
 bool Document::isPostProcessResultObsolete() const
 {
@@ -2280,32 +2195,6 @@ void Document::setComponentCombineMode(QUuid componentId, CombineMode combineMod
     component->second.combineMode = combineMode;
     component->second.dirty = true;
     emit componentCombineModeChanged(componentId);
-    emit skeletonChanged();
-}
-
-void Document::setComponentSmoothAll(QUuid componentId, float toSmoothAll)
-{
-    auto component = componentMap.find(componentId);
-    if (component == componentMap.end()) {
-        qDebug() << "Component not found:" << componentId;
-        return;
-    }
-    component->second.setSmoothAll(toSmoothAll);
-    component->second.dirty = true;
-    emit componentSmoothAllChanged(componentId);
-    emit skeletonChanged();
-}
-
-void Document::setComponentSmoothSeam(QUuid componentId, float toSmoothSeam)
-{
-    auto component = componentMap.find(componentId);
-    if (component == componentMap.end()) {
-        qDebug() << "Component not found:" << componentId;
-        return;
-    }
-    component->second.setSmoothSeam(toSmoothSeam);
-    component->second.dirty = true;
-    emit componentSmoothSeamChanged(componentId);
     emit skeletonChanged();
 }
 

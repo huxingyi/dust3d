@@ -7,6 +7,7 @@
 #include "util.h"
 #include "preferences.h"
 #include "theme.h"
+#include "document.h"
 
 PreferencesWidget::PreferencesWidget(const Document *document, QWidget *parent) :
     QDialog(parent),

@@ -22,6 +22,7 @@
 #include "flowlayout.h"
 #include "imageforever.h"
 #include "imagepreviewwidget.h"
+#include "document.h"
 
 PartWidget::PartWidget(const Document *document, QUuid partId) :
     m_document(document),

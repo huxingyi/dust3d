@@ -5,7 +5,7 @@
 #include <QUuid>
 #include <vector>
 #include "model.h"
-#include "document.h"
+#include "materiallayer.h"
 
 class MaterialPreviewsGenerator : public QObject
 {

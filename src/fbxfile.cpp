@@ -10,6 +10,7 @@
 #include "jointnodetree.h"
 #include "util.h"
 #include "modelshaderprogram.h"
+#include "document.h"
 
 using namespace fbx;
 

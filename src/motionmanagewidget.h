@@ -1,8 +1,9 @@
 #ifndef DUST3D_MOTION_MANAGE_WIDGET_H
 #define DUST3D_MOTION_MANAGE_WIDGET_H
 #include <QWidget>
-#include "document.h"
 #include "motionlistwidget.h"
+
+class Document;
 
 class MotionManageWidget : public QWidget
 {

@@ -15,6 +15,7 @@
 #include "version.h"
 #include "imageforever.h"
 #include "util.h"
+#include "document.h"
 
 ImagePreviewWidget *MaterialEditWidget::createMapButton()
 {

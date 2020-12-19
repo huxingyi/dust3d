@@ -7,7 +7,8 @@
 #include <QQuaternion>
 #include <QImage>
 #include "object.h"
-#include "document.h"
+#include "rig.h"
+#include "jointnodetree.h"
 
 class FbxFileWriter : public QObject
 {

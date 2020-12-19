@@ -1,4 +1,3 @@
-
 #ifndef DUST3D_SKELETON_DOCUMENT_H
 #define DUST3D_SKELETON_DOCUMENT_H
 #include <QUuid>

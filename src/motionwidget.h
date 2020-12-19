@@ -3,8 +3,10 @@
 #include <QFrame>
 #include <QLabel>
 #include <QIcon>
-#include "document.h"
+#include <QPushButton>
 #include "modelwidget.h"
+
+class Document;
 
 class MotionWidget : public QFrame
 {

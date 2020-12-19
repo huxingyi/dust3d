@@ -1,5 +1,6 @@
 #include <QVBoxLayout>
 #include "materialwidget.h"
+#include "document.h"
 
 MaterialWidget::MaterialWidget(const Document *document, QUuid materialId) :
     m_materialId(materialId),

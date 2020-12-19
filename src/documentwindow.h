@@ -10,7 +10,6 @@
 #include <map>
 #include <QStringList>
 #include <QLabel>
-#include "document.h"
 #include "modelwidget.h"
 #include "rigwidget.h"
 #include "bonemark.h"
@@ -21,11 +20,13 @@
 #include "partpreviewimagesgenerator.h"
 #include "QtColorWidgets/ColorWheel"
 
+class Document;
 class SkeletonGraphicsWidget;
 class PartTreeWidget;
 class SpinnableAwesomeButton;
 class SilhouetteImageGenerator;
 class BoneDocument;
+class Snapshot;
 
 class DocumentWindow : public QMainWindow
 {

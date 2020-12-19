@@ -4,11 +4,13 @@
 #include <map>
 #include <QCloseEvent>
 #include <QLineEdit>
-#include "document.h"
 #include "modelwidget.h"
 #include "materialpreviewsgenerator.h"
 #include "imagepreviewwidget.h"
 #include "floatnumberwidget.h"
+#include "materiallayer.h"
+
+class Document;
 
 enum class PopupWidgetType
 {

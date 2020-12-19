@@ -5,6 +5,7 @@
 #include "rigtype.h"
 #include "infolabel.h"
 #include "theme.h"
+#include "document.h"
 
 RigWidget::RigWidget(const Document *document, QWidget *parent) :
     QWidget(parent),

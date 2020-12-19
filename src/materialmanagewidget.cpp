@@ -5,6 +5,7 @@
 #include "theme.h"
 #include "materialeditwidget.h"
 #include "infolabel.h"
+#include "document.h"
 
 MaterialManageWidget::MaterialManageWidget(const Document *document, QWidget *parent) :
     QWidget(parent),

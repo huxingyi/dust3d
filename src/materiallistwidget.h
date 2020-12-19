@@ -3,8 +3,9 @@
 #include <QTreeWidget>
 #include <map>
 #include <QMouseEvent>
-#include "document.h"
 #include "materialwidget.h"
+
+class Document;
 
 class MaterialListWidget : public QTreeWidget
 {

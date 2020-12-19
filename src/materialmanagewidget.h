@@ -1,8 +1,9 @@
 #ifndef DUST3D_MATERIAL_MANAGE_WIDGET_H
 #define DUST3D_MATERIAL_MANAGE_WIDGET_H
 #include <QWidget>
-#include "document.h"
 #include "materiallistwidget.h"
+
+class Document;
 
 class MaterialManageWidget : public QWidget
 {

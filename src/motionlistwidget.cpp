@@ -5,6 +5,7 @@
 #include <QApplication>
 #include "snapshotxml.h"
 #include "motionlistwidget.h"
+#include "document.h"
 
 MotionListWidget::MotionListWidget(const Document *document, QWidget *parent) :
     QTreeWidget(parent),

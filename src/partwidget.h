@@ -3,8 +3,10 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QMouseEvent>
-#include "document.h"
 #include "modelwidget.h"
+#include "cutface.h"
+
+class Document;
 
 class PartWidget : public QWidget
 {

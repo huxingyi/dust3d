@@ -2,8 +2,8 @@
 #define DUST3D_AUTO_SAVER_H
 #include <QObject>
 #include <QString>
-#include "document.h"
 
+class Document;
 class DocumentSaver;
 
 class AutoSaver : public QObject

@@ -3,10 +3,11 @@
 #include <QWidget>
 #include <QComboBox>
 #include <QPushButton>
-#include "document.h"
 #include "rigtype.h"
 #include "modelwidget.h"
 #include "infolabel.h"
+
+class Document;
 
 class RigWidget : public QWidget
 {

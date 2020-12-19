@@ -5,6 +5,7 @@
 #include <QApplication>
 #include "snapshotxml.h"
 #include "materiallistwidget.h"
+#include "document.h"
 
 MaterialListWidget::MaterialListWidget(const Document *document, QWidget *parent) :
     QTreeWidget(parent),

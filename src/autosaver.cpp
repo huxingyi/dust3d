@@ -9,6 +9,7 @@
 #include "autosaver.h"
 #include "documentsaver.h"
 #include "snapshotxml.h"
+#include "document.h"
 
 AutoSaver::AutoSaver(Document *document) :
     m_document(document)

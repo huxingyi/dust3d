@@ -14,6 +14,7 @@
 #include "util.h"
 #include "version.h"
 #include "vertebratamovemotionparameterswidget.h"
+#include "theme.h"
 
 MotionEditWidget::~MotionEditWidget()
 {

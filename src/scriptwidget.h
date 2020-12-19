@@ -2,8 +2,9 @@
 #define SCRIPT_WIDGET_H
 #include <QWidget>
 #include <QPlainTextEdit>
-#include "document.h"
 #include "scriptvariableswidget.h"
+
+class Document;
 
 class ScriptWidget : public QWidget
 {

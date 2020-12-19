@@ -3,6 +3,7 @@
 #include "scriptwidget.h"
 #include "scripteditwidget.h"
 #include "theme.h"
+#include "document.h"
 
 ScriptWidget::ScriptWidget(const Document *document, QWidget *parent) :
     QWidget(parent),

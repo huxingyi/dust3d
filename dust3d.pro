@@ -502,6 +502,9 @@ HEADERS += src/silhouetteimagegenerator.h
 SOURCES += src/bonedocument.cpp
 HEADERS += src/bonedocument.h
 
+SOURCES += src/materiallayer.cpp
+HEADERS += src/materiallayer.h
+
 SOURCES += src/main.cpp
 
 HEADERS += src/version.h

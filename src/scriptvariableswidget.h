@@ -4,7 +4,8 @@
 #include <QString>
 #include <map>
 #include <QScrollArea>
-#include "document.h"
+
+class Document;
 
 class ScriptVariablesWidget : public QScrollArea
 {

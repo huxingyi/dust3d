@@ -8,7 +8,6 @@
 #include "simpleshadermesh.h"
 #include "rig.h"
 #include "jointnodetree.h"
-#include "document.h"
 
 class MotionsGenerator : public QObject
 {

@@ -26,6 +26,7 @@
 #include "paintmode.h"
 #include "proceduralanimation.h"
 #include "texturepainter.h"
+#include "materiallayer.h"
 
 class MaterialPreviewsGenerator;
 class MotionsGenerator;
@@ -218,20 +219,6 @@ private:
     Model *m_previewMesh = nullptr;
 };
 
-class MaterialMap
-{
-public:
-    TextureType forWhat;
-    QUuid imageId;
-};
-
-class MaterialLayer
-{
-public:
-    std::vector<MaterialMap> maps;
-    float tileScale = 1.0;
-};
-
 class Material
 {
 public:
@@ -283,8 +270,6 @@ signals:
     void componentRemoved(QUuid componentId);
     void componentAdded(QUuid componentId);
     void componentExpandStateChanged(QUuid componentId);
-    void componentSmoothAllChanged(QUuid componentId);
-    void componentSmoothSeamChanged(QUuid componentId);
     void componentLayerChanged(QUuid componentId);
     void nodeRemoved(QUuid nodeId);
     void edgeRemoved(QUuid edgeId);
@@ -549,8 +534,6 @@ public slots:
     void createNewComponentAndMoveThisIn(QUuid componentId);
     void createNewChildComponent(QUuid parentComponentId);
     void setComponentExpandState(QUuid componentId, bool expanded);
-    void setComponentSmoothAll(QUuid componentId, float toSmoothAll);
-    void setComponentSmoothSeam(QUuid componentId, float toSmoothSeam);
     void hideOtherComponents(QUuid componentId);
     void lockOtherComponents(QUuid componentId);
     void hideAllComponents();
@@ -622,15 +605,12 @@ private:
     void markAllDirty();
     void removeRigResults();
     void updateLinkedPart(QUuid oldPartId, QUuid newPartId);
-    //void addToolToMesh(Model *mesh);
     bool updateDefaultVariables(const std::map<QString, std::map<QString, QString>> &defaultVariables);
-    void checkPartGrid(QUuid partId);
 private: // need initialize
     bool m_isResultMeshObsolete;
     MeshGenerator *m_meshGenerator;
     Model *m_resultMesh;
     Model *m_paintedMesh;
-    //std::map<QUuid, StrokeMeshBuilder::CutFaceTransform> *m_resultMeshCutFaceTransforms;
     std::map<QUuid, std::map<QString, QVector2D>> *m_resultMeshNodesCutFaces;
     bool m_isMeshGenerationSucceed;
     int m_batchChangeRefCount;

@@ -5,6 +5,7 @@
 #include "theme.h"
 #include "infolabel.h"
 #include "motioneditwidget.h"
+#include "document.h"
 
 MotionManageWidget::MotionManageWidget(const Document *document, QWidget *parent) :
     QWidget(parent),

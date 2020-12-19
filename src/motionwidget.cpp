@@ -1,5 +1,6 @@
 #include <QVBoxLayout>
 #include "motionwidget.h"
+#include "document.h"
 
 MotionWidget::MotionWidget(const Document *document, QUuid motionId) :
     m_motionId(motionId),
