@@ -394,9 +394,6 @@ HEADERS += src/proceduralanimation.h
 SOURCES += src/boundingboxmesh.cpp
 HEADERS += src/boundingboxmesh.h
 
-SOURCES += src/regionfiller.cpp
-HEADERS += src/regionfiller.h
-
 SOURCES += src/meshwrapper.cpp
 HEADERS += src/meshwrapper.h
 

@@ -133,9 +133,9 @@ void PartTreeWidget::updateComponentAppearance(QUuid componentId)
 
 void PartTreeWidget::updateComponentSelectState(QUuid componentId, bool selected)
 {
-    const Component *component = m_document->findComponent(componentId);
+    const SkeletonComponent *component = m_document->findComponent(componentId);
     if (nullptr == component) {
-        qDebug() << "Component not found:" << componentId;
+        qDebug() << "SkeletonComponent not found:" << componentId;
         return;
     }
     if (!component->linkToPartId.isNull()) {
@@ -196,7 +196,7 @@ void PartTreeWidget::handleSingleClick(const QPoint &pos)
         auto componentId = QUuid(item->data(0, Qt::UserRole).toString());
         if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
             if (!m_shiftStartComponentId.isNull()) {
-                const Component *parent = m_document->findComponentParent(m_shiftStartComponentId);
+                const SkeletonComponent *parent = m_document->findComponentParent(m_shiftStartComponentId);
                 if (parent) {
                     if (!parent->childrenIds.empty()) {
                         bool startAdd = false;
@@ -288,7 +288,7 @@ void PartTreeWidget::showContextMenu(const QPoint &pos, bool shorted)
     //delete m_delayedMousePressTimer;
     //m_delayedMousePressTimer = nullptr;
 
-    const Component *component = nullptr;
+    const SkeletonComponent *component = nullptr;
     const SkeletonPart *part = nullptr;
     PartWidget *partWidget = nullptr;
     
@@ -305,7 +305,7 @@ void PartTreeWidget::showContextMenu(const QPoint &pos, bool shorted)
         QUuid componentId = *componentIds.begin();
         component = m_document->findComponent(componentId);
         if (nullptr == component) {
-            qDebug() << "Component not found:" << componentId;
+            qDebug() << "SkeletonComponent not found:" << componentId;
             return;
         }
         if (component && !component->linkToPartId.isNull()) {
@@ -394,7 +394,7 @@ void PartTreeWidget::showContextMenu(const QPoint &pos, bool shorted)
         if (nullptr == partBaseSelectBox) {
             std::set<PartBase> partBases;
             for (const auto &componentId: componentIds) {
-                const Component *oneComponent = m_document->findComponent(componentId);
+                const SkeletonComponent *oneComponent = m_document->findComponent(componentId);
                 if (nullptr == oneComponent || oneComponent->linkToPartId.isNull())
                     continue;
                 const SkeletonPart *onePart = m_document->findPart(oneComponent->linkToPartId);
@@ -419,7 +419,7 @@ void PartTreeWidget::showContextMenu(const QPoint &pos, bool shorted)
                     if (index < startIndex)
                         return;
                     for (const auto &componentId: componentIds) {
-                        const Component *oneComponent = m_document->findComponent(componentId);
+                        const SkeletonComponent *oneComponent = m_document->findComponent(componentId);
                         if (nullptr == oneComponent || oneComponent->linkToPartId.isNull())
                             continue;
                         emit setPartBase(oneComponent->linkToPartId, (PartBase)(index - startIndex));
@@ -432,7 +432,7 @@ void PartTreeWidget::showContextMenu(const QPoint &pos, bool shorted)
         if (nullptr == combineModeSelectBox) {
             std::set<CombineMode> combineModes;
             for (const auto &componentId: componentIds) {
-                const Component *oneComponent = m_document->findComponent(componentId);
+                const SkeletonComponent *oneComponent = m_document->findComponent(componentId);
                 if (nullptr == oneComponent)
                     continue;
                 combineModes.insert(oneComponent->combineMode);
@@ -732,7 +732,7 @@ void PartTreeWidget::showContextMenu(const QPoint &pos, bool shorted)
         });
         
         addChildGroupsFunc = [this, &groupsActions, &addChildGroupsFunc, &moveToMenu, &componentIds](QUuid currentId, int tabs) -> void {
-            const Component *current = m_document->findComponent(currentId);
+            const SkeletonComponent *current = m_document->findComponent(currentId);
             if (nullptr == current)
                 return;
             if (!current->id.isNull() && current->linkDataType().isEmpty()) {
@@ -799,7 +799,7 @@ void PartTreeWidget::componentNameChanged(QUuid componentId)
         return;
     }
     
-    const Component *component = m_document->findComponent(componentId);
+    const SkeletonComponent *component = m_document->findComponent(componentId);
     if (nullptr == component) {
         qDebug() << "Find component failed:" << componentId;
         return;
@@ -816,7 +816,7 @@ void PartTreeWidget::componentExpandStateChanged(QUuid componentId)
         return;
     }
     
-    const Component *component = m_document->findComponent(componentId);
+    const SkeletonComponent *component = m_document->findComponent(componentId);
     if (nullptr == component) {
         qDebug() << "Find component failed:" << componentId;
         return;
@@ -837,12 +837,12 @@ void PartTreeWidget::componentTargetChanged(QUuid componentId)
 
 void PartTreeWidget::addComponentChildrenToItem(QUuid componentId, QTreeWidgetItem *parentItem)
 {
-    const Component *parentComponent = m_document->findComponent(componentId);
+    const SkeletonComponent *parentComponent = m_document->findComponent(componentId);
     if (nullptr == parentComponent)
         return;
     
     for (const auto &childId: parentComponent->childrenIds) {
-        const Component *component = m_document->findComponent(childId);
+        const SkeletonComponent *component = m_document->findComponent(childId);
         if (nullptr == component)
             continue;
         if (!component->linkToPartId.isNull()) {
@@ -885,7 +885,7 @@ void PartTreeWidget::deleteItemChildren(QTreeWidgetItem *item)
     while (!children.isEmpty()) {
         auto first = children.takeFirst();
         auto componentId = QUuid(first->data(0, Qt::UserRole).toString());
-        const Component *component = m_document->findComponent(componentId);
+        const SkeletonComponent *component = m_document->findComponent(componentId);
         if (nullptr != component) {
             m_componentItemMap.erase(componentId);
             if (!component->linkToPartId.isNull()) {
@@ -983,7 +983,7 @@ void PartTreeWidget::groupChanged(QTreeWidgetItem *item, int column)
     
     auto componentId = QUuid(item->data(0, Qt::UserRole).toString());
     
-    const Component *component = m_document->findComponent(componentId);
+    const SkeletonComponent *component = m_document->findComponent(componentId);
     if (nullptr == component) {
         qDebug() << "Find component failed:" << componentId;
         return;
