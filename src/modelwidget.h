@@ -92,14 +92,14 @@ public:
     const QVector3D &eyePosition();
     const QVector3D &moveToPosition();
 private:
-    int m_xRot;
-    int m_yRot;
-    int m_zRot;
-    ModelShaderProgram *m_program;
-    bool m_moveStarted;
-    bool m_moveEnabled;
-    bool m_zoomEnabled;
-    bool m_mousePickingEnabled;
+    int m_xRot = m_defaultXRotation;
+    int m_yRot = m_defaultYRotation;
+    int m_zRot = m_defaultZRotation;
+    ModelShaderProgram *m_program = nullptr;
+    bool m_moveStarted = false;
+    bool m_moveEnabled = true;
+    bool m_zoomEnabled = true;
+    bool m_mousePickingEnabled = false;
     QVector3D m_mousePickTargetPositionInModelSpace;
 private:
     QPoint m_lastPos;

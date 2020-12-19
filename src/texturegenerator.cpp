@@ -14,15 +14,7 @@
 QColor TextureGenerator::m_defaultTextureColor = Qt::transparent;
 
 TextureGenerator::TextureGenerator(const Object &object, Snapshot *snapshot) :
-    m_resultTextureColorImage(nullptr),
-    m_resultTextureNormalImage(nullptr),
-    m_resultTextureRoughnessImage(nullptr),
-    m_resultTextureMetalnessImage(nullptr),
-    m_resultTextureAmbientOcclusionImage(nullptr),
-    m_resultMesh(nullptr),
-    m_snapshot(snapshot),
-    m_hasTransparencySettings(false),
-    m_textureSize(Preferences::instance().textureSize())
+    m_snapshot(snapshot)
 {
     m_object = new Object();
     *m_object = object;

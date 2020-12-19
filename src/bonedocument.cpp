@@ -69,35 +69,3 @@ void BoneDocument::setEditMode(SkeletonDocumentEditMode mode)
     editMode = mode;
     emit editModeChanged();
 }
-
-void BoneDocument::setXlockState(bool locked)
-{
-    if (xlocked == locked)
-        return;
-    xlocked = locked;
-    emit xlockStateChanged();
-}
-
-void BoneDocument::setYlockState(bool locked)
-{
-    if (ylocked == locked)
-        return;
-    ylocked = locked;
-    emit ylockStateChanged();
-}
-
-void BoneDocument::setZlockState(bool locked)
-{
-    if (zlocked == locked)
-        return;
-    zlocked = locked;
-    emit zlockStateChanged();
-}
-
-void BoneDocument::setRadiusLockState(bool locked)
-{
-    if (radiusLocked == locked)
-        return;
-    radiusLocked = locked;
-    emit radiusLockStateChanged();
-}

@@ -581,6 +581,10 @@ signals:
     void originChanged();
     void skeletonChanged();
     void optionsChanged();
+    void xlockStateChanged();
+    void ylockStateChanged();
+    void zlockStateChanged();
+    void radiusLockStateChanged();
 public:
     SkeletonDocumentEditMode editMode = SkeletonDocumentEditMode::Select;
     bool xlocked = false;
@@ -720,6 +724,10 @@ public slots:
     void breakEdge(QUuid edgeId);
     void reduceNode(QUuid nodeId);
     void reverseEdge(QUuid edgeId);
+    void setXlockState(bool locked);
+    void setYlockState(bool locked);
+    void setZlockState(bool locked);
+    void setRadiusLockState(bool locked);
     
 private:
     float m_originX = 0;

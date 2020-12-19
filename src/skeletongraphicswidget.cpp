@@ -17,39 +17,7 @@
 #include "markiconcreator.h"
 
 SkeletonGraphicsWidget::SkeletonGraphicsWidget(const SkeletonDocument *document) :
-    m_document(document),
-    m_backgroundItem(nullptr),
-    m_turnaroundChanged(false),
-    m_turnaroundLoader(nullptr),
-    m_dragStarted(false),
-    m_moveStarted(false),
-    m_cursorNodeItem(nullptr),
-    m_cursorEdgeItem(nullptr),
-    m_addFromNodeItem(nullptr),
-    m_hoveredNodeItem(nullptr),
-    m_hoveredEdgeItem(nullptr),
-    m_lastAddedX(false),
-    m_lastAddedY(false),
-    m_lastAddedZ(false),
-    m_selectionItem(nullptr),
-    m_rangeSelectionStarted(false),
-    m_mouseEventFromSelf(false),
-    m_moveHappened(false),
-    m_lastRot(0),
-    m_mainOriginItem(nullptr),
-    m_sideOriginItem(nullptr),
-    m_hoveredOriginItem(nullptr),
-    m_checkedOriginItem(nullptr),
-    m_ikMoveUpdateVersion(0),
-    m_ikMover(nullptr),
-    m_deferredRemoveTimer(nullptr),
-    m_eventForwardingToModelWidget(false),
-    m_modelWidget(nullptr),
-    m_inTempDragMode(false),
-    m_modeBeforeEnterTempDragMode(SkeletonDocumentEditMode::Select),
-    m_turnaroundOpacity(0.25),
-    m_rotated(false),
-    m_backgroundImage(nullptr)
+    m_document(document)
 {
     setRenderHint(QPainter::Antialiasing, false);
     setBackgroundBrush(QBrush(QWidget::palette().color(QWidget::backgroundRole()), Qt::SolidPattern));
@@ -133,6 +101,9 @@ void SkeletonGraphicsWidget::setBackgroundBlur(float turnaroundOpacity)
 
 void SkeletonGraphicsWidget::shortcutEscape()
 {
+    if (!isVisible())
+        return;
+    
     if (SkeletonDocumentEditMode::Add == m_document->editMode ||
             SkeletonDocumentEditMode::Paint == m_document->editMode) {
         emit setEditMode(SkeletonDocumentEditMode::Select);
@@ -1742,6 +1713,9 @@ void SkeletonGraphicsWidget::deleteSelected()
 
 void SkeletonGraphicsWidget::shortcutDelete()
 {
+    if (!isVisible())
+        return;
+    
     bool processed = false;
     if (!m_rangeSelectionSet.empty()) {
         deleteSelected();
@@ -1764,11 +1738,17 @@ void SkeletonGraphicsWidget::shortcutAddMode()
 
 void SkeletonGraphicsWidget::shortcutUndo()
 {
+    if (!isVisible())
+        return;
+    
     emit undo();
 }
 
 void SkeletonGraphicsWidget::shortcutRedo()
 {
+    if (!isVisible())
+        return;
+    
     emit redo();
 }
 
@@ -1789,16 +1769,25 @@ void SkeletonGraphicsWidget::shortcutZlock()
 
 void SkeletonGraphicsWidget::shortcutCut()
 {
+    if (!isVisible())
+        return;
+    
     cut();
 }
 
 void SkeletonGraphicsWidget::shortcutCopy()
 {
+    if (!isVisible())
+        return;
+    
     copy();
 }
 
 void SkeletonGraphicsWidget::shortcutPaste()
 {
+    if (!isVisible())
+        return;
+    
     emit paste();
 }
 
@@ -1814,11 +1803,17 @@ void SkeletonGraphicsWidget::shortcutPaintMode()
 
 void SkeletonGraphicsWidget::shortcutZoomRenderedModelByMinus10()
 {
+    if (!isVisible())
+        return;
+    
     emit zoomRenderedModelBy(-10);
 }
 
 void SkeletonGraphicsWidget::shortcutZoomSelectedByMinus1()
 {
+    if (!isVisible())
+        return;
+    
     if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
         zoomSelected(-1);
         emit groupOperationAdded();
@@ -1831,11 +1826,17 @@ void SkeletonGraphicsWidget::shortcutZoomSelectedByMinus1()
 
 void SkeletonGraphicsWidget::shortcutZoomRenderedModelBy10()
 {
+    if (!isVisible())
+        return;
+    
     emit zoomRenderedModelBy(10);
 }
 
 void SkeletonGraphicsWidget::shortcutZoomSelectedBy1()
 {
+    if (!isVisible())
+        return;
+    
     if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
         zoomSelected(1);
         emit groupOperationAdded();
@@ -1848,6 +1849,9 @@ void SkeletonGraphicsWidget::shortcutZoomSelectedBy1()
 
 void SkeletonGraphicsWidget::shortcutRotateSelectedByMinus1()
 {
+    if (!isVisible())
+        return;
+    
     if ((SkeletonDocumentEditMode::Select == m_document->editMode) &&
             hasSelection()) {
         rotateSelected(-1);
@@ -1857,6 +1861,9 @@ void SkeletonGraphicsWidget::shortcutRotateSelectedByMinus1()
 
 void SkeletonGraphicsWidget::shortcutRotateSelectedBy1()
 {
+    if (!isVisible())
+        return;
+    
     if ((SkeletonDocumentEditMode::Select == m_document->editMode) &&
             hasSelection()) {
         rotateSelected(1);
@@ -1866,6 +1873,9 @@ void SkeletonGraphicsWidget::shortcutRotateSelectedBy1()
 
 void SkeletonGraphicsWidget::shortcutMoveSelectedToLeft()
 {
+    if (!isVisible())
+        return;
+    
     if (SkeletonDocumentEditMode::Select == m_document->editMode) {
         if (m_checkedOriginItem) {
             moveCheckedOrigin(-1, 0);
@@ -1879,6 +1889,9 @@ void SkeletonGraphicsWidget::shortcutMoveSelectedToLeft()
 
 void SkeletonGraphicsWidget::shortcutMoveSelectedToRight()
 {
+    if (!isVisible())
+        return;
+    
     if (SkeletonDocumentEditMode::Select == m_document->editMode) {
         if (m_checkedOriginItem) {
             moveCheckedOrigin(1, 0);
@@ -1892,6 +1905,9 @@ void SkeletonGraphicsWidget::shortcutMoveSelectedToRight()
 
 void SkeletonGraphicsWidget::shortcutMoveSelectedToUp()
 {
+    if (!isVisible())
+        return;
+    
     if (SkeletonDocumentEditMode::Select == m_document->editMode) {
         if (m_checkedOriginItem) {
             moveCheckedOrigin(0, -1);
@@ -1905,6 +1921,9 @@ void SkeletonGraphicsWidget::shortcutMoveSelectedToUp()
 
 void SkeletonGraphicsWidget::shortcutMoveSelectedToDown()
 {
+    if (!isVisible())
+        return;
+    
     if (SkeletonDocumentEditMode::Select == m_document->editMode) {
         if (m_checkedOriginItem) {
             moveCheckedOrigin(0, 1);
@@ -1918,6 +1937,9 @@ void SkeletonGraphicsWidget::shortcutMoveSelectedToDown()
 
 void SkeletonGraphicsWidget::shortcutScaleSelectedByMinus1()
 {
+    if (!isVisible())
+        return;
+    
     if ((SkeletonDocumentEditMode::Select == m_document->editMode) &&
             hasSelection()) {
         scaleSelected(-1);
@@ -1927,6 +1949,9 @@ void SkeletonGraphicsWidget::shortcutScaleSelectedByMinus1()
 
 void SkeletonGraphicsWidget::shortcutScaleSelectedBy1()
 {
+    if (!isVisible())
+        return;
+    
     if ((SkeletonDocumentEditMode::Select == m_document->editMode) &&
             hasSelection()) {
         scaleSelected(1);
@@ -1936,6 +1961,9 @@ void SkeletonGraphicsWidget::shortcutScaleSelectedBy1()
 
 void SkeletonGraphicsWidget::shortcutSwitchProfileOnSelected()
 {
+    if (!isVisible())
+        return;
+    
     if ((SkeletonDocumentEditMode::Select == m_document->editMode) &&
             hasSelection()) {
         switchProfileOnRangeSelection();
@@ -1944,6 +1972,9 @@ void SkeletonGraphicsWidget::shortcutSwitchProfileOnSelected()
 
 void SkeletonGraphicsWidget::shortcutShowOrHideSelectedPart()
 {
+    if (!isVisible())
+        return;
+    
     if (SkeletonDocumentEditMode::Select == m_document->editMode) {
         if (!m_lastCheckedPart.isNull()) {
             const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
@@ -1958,6 +1989,9 @@ void SkeletonGraphicsWidget::shortcutShowOrHideSelectedPart()
 
 void SkeletonGraphicsWidget::shortcutEnableOrDisableSelectedPart()
 {
+    if (!isVisible())
+        return;
+    
     if ((SkeletonDocumentEditMode::Select == m_document->editMode) &&
             !m_lastCheckedPart.isNull()) {
         const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
@@ -1969,6 +2003,9 @@ void SkeletonGraphicsWidget::shortcutEnableOrDisableSelectedPart()
 
 void SkeletonGraphicsWidget::shortcutLockOrUnlockSelectedPart()
 {
+    if (!isVisible())
+        return;
+    
     if ((SkeletonDocumentEditMode::Select == m_document->editMode) &&
             !m_lastCheckedPart.isNull()) {
         const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
@@ -1980,6 +2017,9 @@ void SkeletonGraphicsWidget::shortcutLockOrUnlockSelectedPart()
 
 void SkeletonGraphicsWidget::shortcutXmirrorOnOrOffSelectedPart()
 {
+    if (!isVisible())
+        return;
+    
     if ((SkeletonDocumentEditMode::Select == m_document->editMode) &&
             !m_lastCheckedPart.isNull()) {
         const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
@@ -1991,6 +2031,9 @@ void SkeletonGraphicsWidget::shortcutXmirrorOnOrOffSelectedPart()
 
 void SkeletonGraphicsWidget::shortcutSubdivedOrNotSelectedPart()
 {
+    if (!isVisible())
+        return;
+    
     if ((SkeletonDocumentEditMode::Select == m_document->editMode) &&
             !m_lastCheckedPart.isNull()) {
         const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
@@ -2002,6 +2045,9 @@ void SkeletonGraphicsWidget::shortcutSubdivedOrNotSelectedPart()
 
 void SkeletonGraphicsWidget::shortcutChamferedOrNotSelectedPart()
 {
+    if (!isVisible())
+        return;
+    
     if ((SkeletonDocumentEditMode::Select == m_document->editMode) &&
             !m_lastCheckedPart.isNull()) {
         const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
@@ -2013,11 +2059,17 @@ void SkeletonGraphicsWidget::shortcutChamferedOrNotSelectedPart()
 
 void SkeletonGraphicsWidget::shortcutSelectAll()
 {
+    if (!isVisible())
+        return;
+    
     selectAll();
 }
 
 void SkeletonGraphicsWidget::shortcutRoundEndOrNotSelectedPart()
 {
+    if (!isVisible())
+        return;
+    
     if ((SkeletonDocumentEditMode::Select == m_document->editMode) &&
             !m_lastCheckedPart.isNull()) {
         const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
@@ -2671,6 +2723,9 @@ void SkeletonGraphicsWidget::selectPartAll()
 
 void SkeletonGraphicsWidget::shortcutCheckPartComponent()
 {
+    if (!isVisible())
+        return;
+    
     QUuid choosenPartId;
     if (m_hoveredNodeItem) {
         const SkeletonNode *node = m_document->findNode(m_hoveredNodeItem->id());
@@ -2981,3 +3036,4 @@ void SkeletonGraphicsWidget::clearSelectedCutFace()
     emit batchChangeEnd();
     emit groupOperationAdded();
 }
+

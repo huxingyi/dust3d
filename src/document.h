@@ -156,10 +156,6 @@ signals:
     void componentCombineModeChanged(QUuid componentId);
     void cleanup();
     void cleanupScript();
-    void xlockStateChanged();
-    void ylockStateChanged();
-    void zlockStateChanged();
-    void radiusLockStateChanged();
     void checkPart(QUuid partId);
     void partChecked(QUuid partId);
     void partUnchecked(QUuid partId);
@@ -336,10 +332,6 @@ public slots:
     void clearHistories();
     void silentReset();
     void silentResetScript();
-    void setXlockState(bool locked);
-    void setYlockState(bool locked);
-    void setZlockState(bool locked);
-    void setRadiusLockState(bool locked);
     void toggleSmoothNormal();
     void enableWeld(bool enabled);
     void setRigType(RigType toRigType);

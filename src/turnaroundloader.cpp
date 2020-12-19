@@ -1,8 +1,7 @@
 #include <QGuiApplication>
 #include "turnaroundloader.h"
 
-TurnaroundLoader::TurnaroundLoader(const QString &filename, QSize viewSize) :
-    m_resultImage(nullptr)
+TurnaroundLoader::TurnaroundLoader(const QString &filename, QSize viewSize)
 {
     m_filename = filename;
     m_viewSize = viewSize;

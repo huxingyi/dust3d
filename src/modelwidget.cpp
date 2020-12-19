@@ -21,15 +21,7 @@ int ModelWidget::m_defaultZRotation = 0;
 QVector3D ModelWidget::m_defaultEyePosition = QVector3D(0, 0, -2.5);
 
 ModelWidget::ModelWidget(QWidget *parent) :
-    QOpenGLWidget(parent),
-    m_xRot(m_defaultXRotation),
-    m_yRot(m_defaultYRotation),
-    m_zRot(m_defaultZRotation),
-    m_program(nullptr),
-    m_moveStarted(false),
-    m_moveEnabled(true),
-    m_zoomEnabled(true),
-    m_mousePickingEnabled(false)
+    QOpenGLWidget(parent)
 {
     // --transparent causes the clear color to be transparent. Therefore, on systems that
     // support it, the widget will become transparent apart from the logo.

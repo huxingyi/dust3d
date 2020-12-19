@@ -30,7 +30,7 @@ public slots:
 private:
     void resolve();
 private:
-    unsigned long long m_updateVersion;
+    unsigned long long m_updateVersion = 0;
     std::vector<SkeletonIkNode> m_ikNodes;
     QVector3D m_target;
 };

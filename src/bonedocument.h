@@ -8,10 +8,6 @@ class BoneDocument : public SkeletonDocument
 signals:
     void turnaroundChanged();
     void editModeChanged();
-    void xlockStateChanged();
-    void ylockStateChanged();
-    void zlockStateChanged();
-    void radiusLockStateChanged();
 public:
     BoneDocument();
     bool undoable(void) const;
@@ -27,10 +23,6 @@ public slots:
     void paste(void);
     void updateTurnaround(const QImage &image);
     void setEditMode(SkeletonDocumentEditMode mode);
-    void setXlockState(bool locked);
-    void setYlockState(bool locked);
-    void setZlockState(bool locked);
-    void setRadiusLockState(bool locked);
 };
 
 #endif

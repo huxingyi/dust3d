@@ -2,8 +2,7 @@
 #include "skeletonikmover.h"
 #include "ccdikresolver.h"
 
-SkeletonIkMover::SkeletonIkMover() :
-    m_updateVersion(0)
+SkeletonIkMover::SkeletonIkMover()
 {
 }
 

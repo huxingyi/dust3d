@@ -1872,38 +1872,6 @@ bool Document::isEdgeEditable(QUuid edgeId) const
     return !isPartReadonly(edge->partId);
 }
 
-void Document::setXlockState(bool locked)
-{
-    if (xlocked == locked)
-        return;
-    xlocked = locked;
-    emit xlockStateChanged();
-}
-
-void Document::setYlockState(bool locked)
-{
-    if (ylocked == locked)
-        return;
-    ylocked = locked;
-    emit ylockStateChanged();
-}
-
-void Document::setZlockState(bool locked)
-{
-    if (zlocked == locked)
-        return;
-    zlocked = locked;
-    emit zlockStateChanged();
-}
-
-void Document::setRadiusLockState(bool locked)
-{
-    if (radiusLocked == locked)
-        return;
-    radiusLocked = locked;
-    emit radiusLockStateChanged();
-}
-
 bool Document::isExportReady() const
 {
     if (m_meshGenerator ||

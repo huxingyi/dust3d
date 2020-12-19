@@ -30,10 +30,7 @@ GlbFileWriter::GlbFileWriter(Object &object,
         QImage *normalImage,
         QImage *ormImage,
         const std::vector<std::pair<QString, std::vector<std::pair<float, JointNodeTree>>>> *motions) :
-    m_filename(filename),
-    m_outputNormal(true),
-    m_outputAnimation(true),
-    m_outputUv(true)
+    m_filename(filename)
 {
     const std::vector<std::vector<QVector3D>> *triangleVertexNormals = object.triangleVertexNormals();
     if (m_outputNormal) {

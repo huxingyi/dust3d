@@ -26,8 +26,7 @@
 
 PartWidget::PartWidget(const Document *document, QUuid partId) :
     m_document(document),
-    m_partId(partId),
-    m_unnormal(false)
+    m_partId(partId)
 {
     QSizePolicy retainSizePolicy = sizePolicy();
     retainSizePolicy.setRetainSizeWhenHidden(true);

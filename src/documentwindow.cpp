@@ -179,14 +179,7 @@ size_t DocumentWindow::total()
     return g_documentWindows.size();
 }
 
-DocumentWindow::DocumentWindow() :
-    m_document(nullptr),
-    m_firstShow(true),
-    m_documentSaved(true),
-    m_preferencesWidget(nullptr),
-    m_isLastMeshGenerationSucceed(true),
-    m_currentUpdatedMeshId(0),
-    m_colorWheelWidget(nullptr)
+DocumentWindow::DocumentWindow()
 {
     QObject::connect((QtSingleApplication *)QGuiApplication::instance(), 
             &QtSingleApplication::messageReceived, this, [this](const QString &message) {
@@ -249,17 +242,17 @@ DocumentWindow::DocumentWindow() :
 
     m_xlockButton = new QPushButton(QChar('X'));
     m_xlockButton->setToolTip(tr("X axis locker"));
-    initLockButton(m_xlockButton);
+    initializeLockButton(m_xlockButton);
     updateXlockButtonState();
 
     m_ylockButton = new QPushButton(QChar('Y'));
     m_ylockButton->setToolTip(tr("Y axis locker"));
-    initLockButton(m_ylockButton);
+    initializeLockButton(m_ylockButton);
     updateYlockButtonState();
 
     m_zlockButton = new QPushButton(QChar('Z'));
     m_zlockButton->setToolTip(tr("Z axis locker"));
-    initLockButton(m_zlockButton);
+    initializeLockButton(m_zlockButton);
     updateZlockButtonState();
     
     m_radiusLockButton = new QPushButton(QChar(fa::bullseye));
@@ -1150,6 +1143,7 @@ DocumentWindow::DocumentWindow() :
     connect(m_shapeGraphicsWidget, &SkeletonGraphicsWidget::loadedTurnaroundImageChanged, this, &DocumentWindow::generateSilhouetteImage);
     
     initShortCuts(this, m_shapeGraphicsWidget);
+    //initShortCuts(this, m_boneGraphicsWidget);
 
     connect(this, &DocumentWindow::initialized, m_document, &Document::uiReady);
     connect(this, &DocumentWindow::initialized, this, &DocumentWindow::autoRecover);
@@ -1350,7 +1344,7 @@ void DocumentWindow::seeSupporters()
     DocumentWindow::showSupporters();
 }
 
-void DocumentWindow::initLockButton(QPushButton *button)
+void DocumentWindow::initializeLockButton(QPushButton *button)
 {
     QFont font;
     font.setWeight(QFont::Light);
@@ -2463,4 +2457,9 @@ void DocumentWindow::silhouetteImageReady()
     
     if (m_isSilhouetteImageObsolete)
         generateSilhouetteImage();
+}
+
+void DocumentWindow::initializeShortcuts()
+{
+    
 }

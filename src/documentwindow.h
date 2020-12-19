@@ -119,84 +119,85 @@ public slots:
     void generateSilhouetteImage();
     void silhouetteImageReady();
 private:
-    void initLockButton(QPushButton *button);
+    void initializeLockButton(QPushButton *button);
     void setCurrentFilename(const QString &filename);
     void updateTitle();
     void createPartSnapshotForFillMesh(const QUuid &fillMeshFileId, Snapshot *snapshot);
+    void initializeShortcuts();
 private:
-    Document *m_document;
-    BoneDocument *m_boneDocument;
-    bool m_firstShow;
-    bool m_documentSaved;
-    PreferencesWidget *m_preferencesWidget;
+    Document *m_document = nullptr;
+    BoneDocument *m_boneDocument = nullptr;
+    bool m_firstShow = true;
+    bool m_documentSaved = true;
+    PreferencesWidget *m_preferencesWidget = nullptr;
     std::vector<QWidget *> m_dialogs;
-    bool m_isLastMeshGenerationSucceed;
-    quint64 m_currentUpdatedMeshId;
+    bool m_isLastMeshGenerationSucceed = true;
+    quint64 m_currentUpdatedMeshId = 0;
     QStringList m_waitingForExportToFilenames;
-    color_widgets::ColorWheel *m_colorWheelWidget;
+    color_widgets::ColorWheel *m_colorWheelWidget = nullptr;
 private:
     QString m_currentFilename;
     
-    ModelWidget *m_modelRenderWidget;
-    SkeletonGraphicsWidget *m_shapeGraphicsWidget;
-    SkeletonGraphicsWidget *m_boneGraphicsWidget;
-    RigWidget *m_rigWidget;
-    GraphicsContainerWidget *m_graphicsContainerWidget;
+    ModelWidget *m_modelRenderWidget = nullptr;
+    SkeletonGraphicsWidget *m_shapeGraphicsWidget = nullptr;
+    SkeletonGraphicsWidget *m_boneGraphicsWidget = nullptr;
+    RigWidget *m_rigWidget = nullptr;
+    GraphicsContainerWidget *m_graphicsContainerWidget = nullptr;
     
-    QMenu *m_fileMenu;
-    QAction *m_newWindowAction;
-    QAction *m_newDocumentAction;
-    QAction *m_openAction;
-    QMenu *m_openExampleMenu;
-    QAction *m_saveAction;
-    QAction *m_saveAsAction;
-    QAction *m_saveAllAction;
-    QAction *m_showPreferencesAction;
-    QAction *m_changeTurnaroundAction;
-    QAction *m_quitAction;
+    QMenu *m_fileMenu = nullptr;
+    QAction *m_newWindowAction = nullptr;
+    QAction *m_newDocumentAction = nullptr;
+    QAction *m_openAction = nullptr;
+    QMenu *m_openExampleMenu = nullptr;
+    QAction *m_saveAction = nullptr;
+    QAction *m_saveAsAction = nullptr;
+    QAction *m_saveAllAction = nullptr;
+    QAction *m_showPreferencesAction = nullptr;
+    QAction *m_changeTurnaroundAction = nullptr;
+    QAction *m_quitAction = nullptr;
     
-    QAction *m_importAction;
+    QAction *m_importAction = nullptr;
     
-    QAction *m_exportAsObjAction;
-    QAction *m_exportAsGlbAction;
-    QAction *m_exportAsFbxAction;
-    QAction *m_exportTexturesAction;
-    QAction *m_exportDs3objAction;
-    QAction *m_exportRenderedAsImageAction;
+    QAction *m_exportAsObjAction = nullptr;
+    QAction *m_exportAsGlbAction = nullptr;
+    QAction *m_exportAsFbxAction = nullptr;
+    QAction *m_exportTexturesAction = nullptr;
+    QAction *m_exportDs3objAction = nullptr;
+    QAction *m_exportRenderedAsImageAction = nullptr;
     
-    QMenu *m_viewMenu;
-    QAction *m_toggleWireframeAction;
-    QAction *m_toggleUvCheckAction;
-    QAction *m_toggleRotationAction;
-    QAction *m_toggleColorAction;
+    QMenu *m_viewMenu = nullptr;
+    QAction *m_toggleWireframeAction = nullptr;
+    QAction *m_toggleUvCheckAction = nullptr;
+    QAction *m_toggleRotationAction = nullptr;
+    QAction *m_toggleColorAction = nullptr;
     bool m_modelRemoveColor = false;
     
-    QMenu *m_windowMenu;
-    QAction *m_showPartsListAction;
-    QAction *m_showDebugDialogAction;
-    QAction *m_showMaterialsAction;
-    QAction *m_showRigAction;
-    QAction *m_showMotionsAction;
-    QAction *m_showPaintAction;
-    QAction *m_showScriptAction;
+    QMenu *m_windowMenu = nullptr;
+    QAction *m_showPartsListAction = nullptr;
+    QAction *m_showDebugDialogAction = nullptr;
+    QAction *m_showMaterialsAction = nullptr;
+    QAction *m_showRigAction = nullptr;
+    QAction *m_showMotionsAction = nullptr;
+    QAction *m_showPaintAction = nullptr;
+    QAction *m_showScriptAction = nullptr;
     
-    QMenu *m_helpMenu;
-    QAction *m_gotoHomepageAction;
-    QAction *m_viewSourceAction;
-    QAction *m_aboutAction;
-    QAction *m_checkForUpdatesAction;
-    QAction *m_reportIssuesAction;
-    QAction *m_seeContributorsAction;
-    QAction *m_seeSupportersAction;
-    QAction *m_seeAcknowlegementsAction;
-    QAction *m_seeReferenceGuideAction;
+    QMenu *m_helpMenu = nullptr;
+    QAction *m_gotoHomepageAction = nullptr;
+    QAction *m_viewSourceAction = nullptr;
+    QAction *m_aboutAction = nullptr;
+    QAction *m_checkForUpdatesAction = nullptr;
+    QAction *m_reportIssuesAction = nullptr;
+    QAction *m_seeContributorsAction = nullptr;
+    QAction *m_seeSupportersAction = nullptr;
+    QAction *m_seeAcknowlegementsAction = nullptr;
+    QAction *m_seeReferenceGuideAction = nullptr;
     
-    QPushButton *m_rotationButton;
+    QPushButton *m_rotationButton = nullptr;
 
-    QPushButton *m_xlockButton;
-    QPushButton *m_ylockButton;
-    QPushButton *m_zlockButton;
-    QPushButton *m_radiusLockButton;
+    QPushButton *m_xlockButton = nullptr;
+    QPushButton *m_ylockButton = nullptr;
+    QPushButton *m_zlockButton = nullptr;
+    QPushButton *m_radiusLockButton = nullptr;
     
     QMetaObject::Connection m_partListDockerVisibleSwitchConnection;
     

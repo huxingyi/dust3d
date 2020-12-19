@@ -1,6 +1,9 @@
 #include <QShortcut>
 #include <QObject>
+#include <map>
 #include "shortcuts.h"
+
+static std::map<QKeySequence, QShortcut *> g_shortcutMap;
 
 #define defineKey(keyVal, funcName) do {                                     \
     auto key = new QShortcut(widget);                                        \

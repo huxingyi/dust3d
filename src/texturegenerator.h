@@ -8,6 +8,7 @@
 #include "object.h"
 #include "model.h"
 #include "snapshot.h"
+#include "preferences.h"
 
 class TextureGenerator : public QObject
 {
@@ -41,22 +42,22 @@ public:
 private:
     void prepare();
 private:
-    Object *m_object;
-    QImage *m_resultTextureColorImage;
-    QImage *m_resultTextureNormalImage;
-    QImage *m_resultTextureRoughnessImage;
-    QImage *m_resultTextureMetalnessImage;
-    QImage *m_resultTextureAmbientOcclusionImage;
-    Model *m_resultMesh;
+    Object *m_object = nullptr;
+    QImage *m_resultTextureColorImage = nullptr;
+    QImage *m_resultTextureNormalImage = nullptr;
+    QImage *m_resultTextureRoughnessImage = nullptr;
+    QImage *m_resultTextureMetalnessImage = nullptr;
+    QImage *m_resultTextureAmbientOcclusionImage = nullptr;
+    Model *m_resultMesh = nullptr;
     std::map<QUuid, std::pair<QImage, float>> m_partColorTextureMap;
     std::map<QUuid, std::pair<QImage, float>> m_partNormalTextureMap;
     std::map<QUuid, std::pair<QImage, float>> m_partMetalnessTextureMap;
     std::map<QUuid, std::pair<QImage, float>> m_partRoughnessTextureMap;
     std::map<QUuid, std::pair<QImage, float>> m_partAmbientOcclusionTextureMap;
     std::set<QUuid> m_countershadedPartIds;
-    Snapshot *m_snapshot;
-    bool m_hasTransparencySettings;
-    int m_textureSize;
+    Snapshot *m_snapshot = nullptr;
+    bool m_hasTransparencySettings = false;
+    int m_textureSize = Preferences::instance().textureSize();
 };
 
 #endif

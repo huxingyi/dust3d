@@ -26,9 +26,9 @@ public:
     bool save();
 private:
     QString m_filename;
-    bool m_outputNormal;
-    bool m_outputAnimation;
-    bool m_outputUv;
+    bool m_outputNormal = true;
+    bool m_outputAnimation = true;
+    bool m_outputUv = true;
     QByteArray m_binByteArray;
     QByteArray m_jsonByteArray;
 private:

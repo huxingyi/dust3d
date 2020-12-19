@@ -70,10 +70,10 @@ public slots:
     void showDeformSettingPopup(const QPoint &pos);
     void showCutRotationSettingPopup(const QPoint &pos);
     void showColorSettingPopup(const QPoint &pos);
-private: // need initialize
-    const Document *m_document;
+private:
+    const Document *m_document = nullptr;
     QUuid m_partId;
-    bool m_unnormal;
+    bool m_unnormal = false;
 private:
     ModelWidget *m_previewWidget = nullptr;
     QPushButton *m_visibleButton = nullptr;

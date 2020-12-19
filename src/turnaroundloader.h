@@ -18,7 +18,7 @@ signals:
 public slots:
     void process();
 private:
-    QImage *m_resultImage;
+    QImage *m_resultImage = nullptr;
     QImage m_inputImage;
     QString m_filename;
     QSize m_viewSize;

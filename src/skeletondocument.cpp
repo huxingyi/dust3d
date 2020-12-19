@@ -1298,3 +1298,35 @@ void SkeletonDocument::markAllDirty()
         part.second.dirty = true;
     }
 }
+
+void SkeletonDocument::setXlockState(bool locked)
+{
+    if (xlocked == locked)
+        return;
+    xlocked = locked;
+    emit xlockStateChanged();
+}
+
+void SkeletonDocument::setYlockState(bool locked)
+{
+    if (ylocked == locked)
+        return;
+    ylocked = locked;
+    emit ylockStateChanged();
+}
+
+void SkeletonDocument::setZlockState(bool locked)
+{
+    if (zlocked == locked)
+        return;
+    zlocked = locked;
+    emit zlockStateChanged();
+}
+
+void SkeletonDocument::setRadiusLockState(bool locked)
+{
+    if (radiusLocked == locked)
+        return;
+    radiusLocked = locked;
+    emit radiusLockStateChanged();
+}
