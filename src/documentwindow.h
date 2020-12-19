@@ -10,6 +10,7 @@
 #include <map>
 #include <QStringList>
 #include <QLabel>
+#include <QShortcut>
 #include "modelwidget.h"
 #include "rigwidget.h"
 #include "bonemark.h"
@@ -124,6 +125,9 @@ private:
     void updateTitle();
     void createPartSnapshotForFillMesh(const QUuid &fillMeshFileId, Snapshot *snapshot);
     void initializeShortcuts();
+    void initializeToolShortcuts(SkeletonGraphicsWidget *graphicsWidget);
+    void initializeCanvasShortcuts(SkeletonGraphicsWidget *graphicsWidget);
+    QShortcut *createShortcut(QKeySequence key);
 private:
     Document *m_document = nullptr;
     BoneDocument *m_boneDocument = nullptr;
@@ -218,6 +222,8 @@ private:
     GraphicsViewEditTarget m_graphicsViewEditTarget = GraphicsViewEditTarget::Shape;
     bool m_isSilhouetteImageObsolete = false;
     SilhouetteImageGenerator *m_silhouetteImageGenerator = nullptr;
+    
+    std::map<QKeySequence, QShortcut *> m_shortcutMap;
 public:
     static int m_autoRecovered;
 };

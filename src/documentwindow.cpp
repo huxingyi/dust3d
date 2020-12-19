@@ -41,7 +41,6 @@
 #include "imageforever.h"
 #include "spinnableawesomebutton.h"
 #include "fbxfile.h"
-#include "shortcuts.h"
 #include "floatnumberwidget.h"
 #include "scriptwidget.h"
 #include "variablesxml.h"
@@ -1142,8 +1141,7 @@ DocumentWindow::DocumentWindow()
     connect(m_document, &Document::skeletonChanged, this, &DocumentWindow::generateSilhouetteImage);
     connect(m_shapeGraphicsWidget, &SkeletonGraphicsWidget::loadedTurnaroundImageChanged, this, &DocumentWindow::generateSilhouetteImage);
     
-    initShortCuts(this, m_shapeGraphicsWidget);
-    //initShortCuts(this, m_boneGraphicsWidget);
+    initializeShortcuts();
 
     connect(this, &DocumentWindow::initialized, m_document, &Document::uiReady);
     connect(this, &DocumentWindow::initialized, this, &DocumentWindow::autoRecover);
@@ -2459,7 +2457,72 @@ void DocumentWindow::silhouetteImageReady()
         generateSilhouetteImage();
 }
 
+QShortcut *DocumentWindow::createShortcut(QKeySequence key)
+{
+    auto shortcutIt = m_shortcutMap.find(key);
+    if (shortcutIt != m_shortcutMap.end())
+        return shortcutIt->second;
+    QShortcut *shortcut = new QShortcut(this);
+    shortcut->setKey(key);
+    m_shortcutMap.insert({key, shortcut});
+    return shortcut;
+}
+
+#define defineShortcut(keyVal, widget, funcName)                                     \
+    QObject::connect(createShortcut(keyVal), &QShortcut::activated, widget, funcName)
+        
+void DocumentWindow::initializeToolShortcuts(SkeletonGraphicsWidget *graphicsWidget)
+{
+    defineShortcut(Qt::Key_A, graphicsWidget, &SkeletonGraphicsWidget::shortcutAddMode);
+    defineShortcut(Qt::CTRL + Qt::Key_A, graphicsWidget, &SkeletonGraphicsWidget::shortcutSelectAll);
+    defineShortcut(Qt::CTRL + Qt::Key_Z, graphicsWidget, &SkeletonGraphicsWidget::shortcutUndo);
+    defineShortcut(Qt::CTRL + Qt::SHIFT + Qt::Key_Z, graphicsWidget, &SkeletonGraphicsWidget::shortcutRedo);
+    defineShortcut(Qt::CTRL + Qt::Key_Y, graphicsWidget, &SkeletonGraphicsWidget::shortcutRedo);
+    defineShortcut(Qt::Key_Z, graphicsWidget, &SkeletonGraphicsWidget::shortcutZlock);
+    defineShortcut(Qt::Key_Y, graphicsWidget, &SkeletonGraphicsWidget::shortcutYlock);
+    defineShortcut(Qt::Key_X, graphicsWidget, &SkeletonGraphicsWidget::shortcutXlock);
+    defineShortcut(Qt::Key_S, graphicsWidget, &SkeletonGraphicsWidget::shortcutSelectMode);
+    defineShortcut(Qt::Key_D, graphicsWidget, &SkeletonGraphicsWidget::shortcutPaintMode);
+    defineShortcut(Qt::Key_R, graphicsWidget, &SkeletonGraphicsWidget::shortcutToggleRotation);
+    defineShortcut(Qt::Key_O, graphicsWidget, &SkeletonGraphicsWidget::shortcutToggleFlatShading);
+    defineShortcut(Qt::Key_W, graphicsWidget, &SkeletonGraphicsWidget::shortcutToggleWireframe);
+    defineShortcut(Qt::Key_Escape, graphicsWidget, &SkeletonGraphicsWidget::shortcutEscape);
+}
+
+void DocumentWindow::initializeCanvasShortcuts(SkeletonGraphicsWidget *graphicsWidget)
+{
+    defineShortcut(Qt::Key_Delete, graphicsWidget, &SkeletonGraphicsWidget::shortcutDelete);
+    defineShortcut(Qt::Key_Backspace, graphicsWidget, &SkeletonGraphicsWidget::shortcutDelete);
+    defineShortcut(Qt::CTRL + Qt::Key_X, graphicsWidget, &SkeletonGraphicsWidget::shortcutCut);
+    defineShortcut(Qt::CTRL + Qt::Key_C, graphicsWidget, &SkeletonGraphicsWidget::shortcutCopy);
+    defineShortcut(Qt::CTRL + Qt::Key_V, graphicsWidget, &SkeletonGraphicsWidget::shortcutPaste);
+    defineShortcut(Qt::ALT + Qt::Key_Minus, graphicsWidget, &SkeletonGraphicsWidget::shortcutZoomRenderedModelByMinus10);
+    defineShortcut(Qt::Key_Minus, graphicsWidget, &SkeletonGraphicsWidget::shortcutZoomSelectedByMinus1);
+    defineShortcut(Qt::ALT + Qt::Key_Equal, graphicsWidget, &SkeletonGraphicsWidget::shortcutZoomRenderedModelBy10);
+    defineShortcut(Qt::Key_Equal, graphicsWidget, &SkeletonGraphicsWidget::shortcutZoomSelectedBy1);
+    defineShortcut(Qt::Key_Comma, graphicsWidget, &SkeletonGraphicsWidget::shortcutRotateSelectedByMinus1);
+    defineShortcut(Qt::Key_Period, graphicsWidget, &SkeletonGraphicsWidget::shortcutRotateSelectedBy1);
+    defineShortcut(Qt::Key_Left, graphicsWidget, &SkeletonGraphicsWidget::shortcutMoveSelectedToLeft);
+    defineShortcut(Qt::Key_Right, graphicsWidget, &SkeletonGraphicsWidget::shortcutMoveSelectedToRight);
+    defineShortcut(Qt::Key_Up, graphicsWidget, &SkeletonGraphicsWidget::shortcutMoveSelectedToUp);
+    defineShortcut(Qt::Key_Down, graphicsWidget, &SkeletonGraphicsWidget::shortcutMoveSelectedToDown);
+    defineShortcut(Qt::Key_BracketLeft, graphicsWidget, &SkeletonGraphicsWidget::shortcutScaleSelectedByMinus1);
+    defineShortcut(Qt::Key_BracketRight, graphicsWidget, &SkeletonGraphicsWidget::shortcutScaleSelectedBy1);
+    defineShortcut(Qt::Key_E, graphicsWidget, &SkeletonGraphicsWidget::shortcutSwitchProfileOnSelected);
+    defineShortcut(Qt::Key_H, graphicsWidget, &SkeletonGraphicsWidget::shortcutShowOrHideSelectedPart);
+    defineShortcut(Qt::Key_J, graphicsWidget, &SkeletonGraphicsWidget::shortcutEnableOrDisableSelectedPart);
+    defineShortcut(Qt::Key_L, graphicsWidget, &SkeletonGraphicsWidget::shortcutLockOrUnlockSelectedPart);
+    defineShortcut(Qt::Key_F, graphicsWidget, &SkeletonGraphicsWidget::shortcutCheckPartComponent);
+}
+
 void DocumentWindow::initializeShortcuts()
 {
+    initializeToolShortcuts(m_shapeGraphicsWidget);
+    initializeCanvasShortcuts(m_shapeGraphicsWidget);
+    initializeCanvasShortcuts(m_boneGraphicsWidget);
     
+    defineShortcut(Qt::Key_M, m_shapeGraphicsWidget, &SkeletonGraphicsWidget::shortcutXmirrorOnOrOffSelectedPart);
+    defineShortcut(Qt::Key_B, m_shapeGraphicsWidget, &SkeletonGraphicsWidget::shortcutSubdivedOrNotSelectedPart);
+    defineShortcut(Qt::Key_U, m_shapeGraphicsWidget, &SkeletonGraphicsWidget::shortcutRoundEndOrNotSelectedPart);
+    defineShortcut(Qt::Key_C, m_shapeGraphicsWidget, &SkeletonGraphicsWidget::shortcutChamferedOrNotSelectedPart);
 }

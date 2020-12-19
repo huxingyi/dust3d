@@ -323,9 +323,6 @@ HEADERS += src/tabwidget.h
 SOURCES += src/flowlayout.cpp
 HEADERS += src/flowlayout.h
 
-SOURCES += src/shortcuts.cpp
-HEADERS += src/shortcuts.h
-
 SOURCES += src/trianglesourcenoderesolve.cpp
 HEADERS += src/trianglesourcenoderesolve.h
 
