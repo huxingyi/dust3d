@@ -675,6 +675,17 @@ DocumentWindow::DocumentWindow()
     m_fileMenu->addAction(m_changeTurnaroundAction);
     
     m_fileMenu->addSeparator();
+    
+    for (int i = 0; i < Preferences::instance().maxRecentFiles(); ++i) {
+        QAction *action = new QAction(this);
+        action->setVisible(false);
+        connect(action, &QAction::triggered, this, &DocumentWindow::openRecentFile, Qt::QueuedConnection);
+        m_recentFileActions.push_back(action);
+        m_fileMenu->addAction(action);
+    }
+    m_recentFileSeparatorAction = m_fileMenu->addSeparator();
+    m_recentFileSeparatorAction->setVisible(false);
+    updateRecentFileActions();
 
     m_quitAction = m_fileMenu->addAction(tr("&Quit"),
                                          this, &DocumentWindow::close,
@@ -1732,7 +1743,13 @@ void DocumentWindow::openPathAs(const QString &path, const QString &asName)
     }
     
     QApplication::restoreOverrideCursor();
-
+    
+    if (!asName.isEmpty()) {
+        Preferences::instance().setCurrentFile(path);
+        for (auto &it: g_documentWindows) {
+            it.first->updateRecentFileActions();
+        }
+    }
     setCurrentFilename(asName);
 }
 
@@ -2526,3 +2543,44 @@ void DocumentWindow::initializeShortcuts()
     defineShortcut(Qt::Key_U, m_shapeGraphicsWidget, &SkeletonGraphicsWidget::shortcutRoundEndOrNotSelectedPart);
     defineShortcut(Qt::Key_C, m_shapeGraphicsWidget, &SkeletonGraphicsWidget::shortcutChamferedOrNotSelectedPart);
 }
+
+void DocumentWindow::openRecentFile()
+{
+    if (!m_documentSaved) {
+        QMessageBox::StandardButton answer = QMessageBox::question(this,
+            APP_NAME,
+            tr("Do you really want to open another file and lose the unsaved changes?"),
+            QMessageBox::Yes | QMessageBox::No,
+            QMessageBox::No);
+        if (answer != QMessageBox::Yes)
+            return;
+    }
+
+    QAction *action = qobject_cast<QAction *>(sender());
+    if (action) {
+        QString fileName = action->data().toString();
+        openPathAs(fileName, fileName);
+    }
+}
+
+void DocumentWindow::updateRecentFileActions()
+{
+    QStringList files = Preferences::instance().recentFileList();
+    
+    for (int i = 0; i < files.size() && i < m_recentFileActions.size(); ++i) {
+        QString text = tr("&%1 %2").arg(i + 1).arg(strippedName(files[i]));
+        m_recentFileActions[i]->setText(text);
+        m_recentFileActions[i]->setData(files[i]);
+        m_recentFileActions[i]->setVisible(true);
+    }
+    for (int j = files.size(); j < m_recentFileActions.size(); ++j)
+        m_recentFileActions[j]->setVisible(false);
+
+    m_recentFileSeparatorAction->setVisible(files.size() > 0);
+}
+
+QString DocumentWindow::strippedName(const QString &fullFileName)
+{
+    return QFileInfo(fullFileName).fileName();
+}
+

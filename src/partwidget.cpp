@@ -17,7 +17,6 @@
 #include "infolabel.h"
 #include "cutface.h"
 #include "skeletongraphicswidget.h"
-#include "shortcuts.h"
 #include "graphicscontainerwidget.h"
 #include "flowlayout.h"
 #include "imageforever.h"

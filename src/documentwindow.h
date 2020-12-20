@@ -119,6 +119,8 @@ public slots:
     void updateGraphicsViewEditTarget(GraphicsViewEditTarget target);
     void generateSilhouetteImage();
     void silhouetteImageReady();
+    void openRecentFile();
+    void updateRecentFileActions();
 private:
     void initializeLockButton(QPushButton *button);
     void setCurrentFilename(const QString &filename);
@@ -128,6 +130,7 @@ private:
     void initializeToolShortcuts(SkeletonGraphicsWidget *graphicsWidget);
     void initializeCanvasShortcuts(SkeletonGraphicsWidget *graphicsWidget);
     QShortcut *createShortcut(QKeySequence key);
+    QString strippedName(const QString &fullFileName);
 private:
     Document *m_document = nullptr;
     BoneDocument *m_boneDocument = nullptr;
@@ -158,6 +161,8 @@ private:
     QAction *m_saveAllAction = nullptr;
     QAction *m_showPreferencesAction = nullptr;
     QAction *m_changeTurnaroundAction = nullptr;
+    std::vector<QAction *> m_recentFileActions;
+    QAction *m_recentFileSeparatorAction = nullptr;
     QAction *m_quitAction = nullptr;
     
     QAction *m_importAction = nullptr;

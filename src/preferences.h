@@ -3,6 +3,7 @@
 #include <QSettings>
 #include <QColor>
 #include <QSize>
+#include <QStringList>
 #include "combinemode.h"
 #include "toonline.h"
 
@@ -22,6 +23,8 @@ public:
     QSize documentWindowSize() const;
     void setDocumentWindowSize(const QSize&);
     int textureSize() const;
+    QStringList recentFileList() const;
+    int maxRecentFiles() const;
 signals:
     void componentCombineModeChanged();
     void partColorChanged();
@@ -40,6 +43,7 @@ public slots:
     void setTextureSize(int textureSize);
     void setScriptEnabled(bool enabled);
     void setInterpolationEnabled(bool enabled);
+    void setCurrentFile(const QString &fileName);
     void reset();
 private:
     CombineMode m_componentCombineMode;
