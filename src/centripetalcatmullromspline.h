@@ -1,5 +1,6 @@
 #ifndef DUST3D_CENTRIPETAL_CATMULL_ROM_SPLINE_H
 #define DUST3D_CENTRIPETAL_CATMULL_ROM_SPLINE_H
+#include <cmath>
 #include <vector>
 #include <QVector3D>
 

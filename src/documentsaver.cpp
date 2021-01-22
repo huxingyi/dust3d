@@ -8,7 +8,7 @@
 #include "snapshotxml.h"
 #include "variablesxml.h"
 #include "fileforever.h"
-#include "objectXml.h"
+#include "objectxml.h"
 
 DocumentSaver::DocumentSaver(const QString *filename, 
         Snapshot *snapshot,
