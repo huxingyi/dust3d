@@ -1,5 +1,6 @@
 #ifndef DUST3D_GENERIC_SPINE_AND_PSEUDO_PHYSICS_H
 #define DUST3D_GENERIC_SPINE_AND_PSEUDO_PHYSICS_H
+#include <cmath>
 #include <vector>
  
 class GenericSpineAndPseudoPhysics

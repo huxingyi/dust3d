@@ -1,5 +1,6 @@
 #ifndef DUST3D_HERMITE_CURVE_INTERPOLATION_H
 #define DUST3D_HERMITE_CURVE_INTERPOLATION_H
+#include <cmath>
 #include <vector>
 #include <unordered_map>
 #include <QVector2D>
