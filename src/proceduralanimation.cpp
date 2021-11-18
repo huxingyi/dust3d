@@ -1,6 +1,0 @@
-#include <QObject>
-#include "proceduralanimation.h"
-
-IMPL_ProceduralAnimationFromString
-IMPL_ProceduralAnimationToString
-IMPL_ProceduralAnimationToDispName

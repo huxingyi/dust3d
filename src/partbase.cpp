@@ -1,5 +1,0 @@
-#include "partbase.h"
-
-IMPL_PartBaseFromString
-IMPL_PartBaseToString
-IMPL_PartBaseToDispName

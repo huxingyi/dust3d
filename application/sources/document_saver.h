@@ -1,0 +1,35 @@
+#ifndef DUST3D_APPLICATION_DOCUMENT_SAVER_H_
+#define DUST3D_APPLICATION_DOCUMENT_SAVER_H_
+
+#include <QString>
+#include <QObject>
+#include <QByteArray>
+#include <map>
+#include <set>
+#include <dust3d/base/uuid.h>
+#include <dust3d/base/snapshot.h>
+
+class DocumentSaver : public QObject
+{
+    Q_OBJECT
+public:
+    DocumentSaver(const QString *filename, 
+        dust3d::Snapshot *snapshot,
+        QByteArray *turnaroundPngByteArray);
+    ~DocumentSaver();
+    static bool save(const QString *filename, 
+        dust3d::Snapshot *snapshot,
+        const QByteArray *turnaroundPngByteArray);
+    static void collectUsedResourceIds(const dust3d::Snapshot *snapshot,
+        std::set<dust3d::Uuid> &imageIds);
+signals:
+    void finished();
+public slots:
+    void process();
+private:
+    const QString *m_filename = nullptr;
+    dust3d::Snapshot *m_snapshot = nullptr;
+    QByteArray *m_turnaroundPngByteArray = nullptr;
+};
+
+#endif

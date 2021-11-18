@@ -1,0 +1,40 @@
+<RCC>
+    <qresource prefix="/">
+        <file alias="ACKNOWLEDGEMENTS.html">../ACKNOWLEDGEMENTS.html</file>
+        <file alias="AUTHORS">../AUTHORS</file>
+        <file alias="CONTRIBUTORS">../CONTRIBUTORS</file>
+        <file alias="SUPPORTERS">../SUPPORTERS</file>
+        <file>shaders/model.vert</file>
+        <file>shaders/model.frag</file>
+        <file>shaders/model_core.vert</file>
+        <file>shaders/model_core.frag</file>
+        <file>resources/cedar_bridge_irradiance.dds</file>
+        <file>resources/cedar_bridge_specular.dds</file>
+        <file>resources/dust3d-vertical.png</file>
+        <file>resources/toolbar_add.svg</file>
+        <file>resources/toolbar_pointer.svg</file>
+        <file>resources/toolbar_x.svg</file>
+        <file>resources/toolbar_x_disabled.svg</file>
+        <file>resources/toolbar_y.svg</file>
+        <file>resources/toolbar_y_disabled.svg</file>
+        <file>resources/toolbar_z.svg</file>
+        <file>resources/toolbar_z_disabled.svg</file>
+        <file>resources/toolbar_radius.svg</file>
+        <file>resources/toolbar_radius_disabled.svg</file>
+        <file>resources/material-demo-model.ds3</file>
+        <file>resources/model-addax.ds3</file>
+        <file>resources/model-bicycle.ds3</file>
+        <file>resources/model-dog.ds3</file>
+        <file>resources/model-cat.ds3</file>
+        <file>resources/model-giraffe.ds3</file>
+        <file>resources/model-meerkat.ds3</file>
+        <file>resources/model-mosquito.ds3</file>
+        <file>resources/model-screwdriver.ds3</file>
+        <file>resources/model-seagull.ds3</file>
+        <file>resources/tree-branch-closed.png</file>
+        <file>resources/tree-branch-end.png</file>
+        <file>resources/tree-branch-more.png</file>
+        <file>resources/tree-branch-open.png</file>
+        <file>resources/tree-vline.png</file>
+    </qresource>
+</RCC>
