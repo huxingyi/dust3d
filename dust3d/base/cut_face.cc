@@ -20,6 +20,7 @@
  *  SOFTWARE.
  */
 
+#include <algorithm>    // std::reverse
 #include <dust3d/base/vector2.h>
 #include <dust3d/base/vector3.h>
 #include <dust3d/base/cut_face.h>

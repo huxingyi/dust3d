@@ -1,4 +1,5 @@
 #include <QPainter>
+#include <QPainterPath>
 #include "cut_face_preview.h"
 #include "theme.h"
 

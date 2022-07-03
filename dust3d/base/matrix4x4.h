@@ -23,6 +23,7 @@
 #ifndef DUST3D_BASE_MATRIX4X4_H_
 #define DUST3D_BASE_MATRIX4X4_H_
 
+#include <cstring>
 #include <memory>
 #include <dust3d/base/vector3.h>
 #include <dust3d/base/quaternion.h>

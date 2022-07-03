@@ -1,6 +1,6 @@
 #include <QGuiApplication>
 #include <QElapsedTimer>
-#include <qDebug>
+#include <QDebug>
 #include <QFile>
 #include <dust3d/base/ds3_file.h>
 #include <dust3d/base/snapshot_xml.h>
