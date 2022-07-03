@@ -20,6 +20,7 @@
  *  SOFTWARE.
  */
 
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <rapidxml.hpp>

@@ -71,7 +71,7 @@ public:
         return m_data[0];
     }
     
-    inline Quaternion &Quaternion::operator*=(const double &number) 
+    inline Quaternion &operator*=(const double &number) 
     {
         m_data[0] *= number;
         m_data[1] *= number;

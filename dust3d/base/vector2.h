@@ -38,6 +38,7 @@
 
 #include <vector>
 #include <string>
+#include <iostream>
 #include <dust3d/base/math.h>
 
 namespace dust3d
