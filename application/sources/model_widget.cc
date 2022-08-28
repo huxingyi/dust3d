@@ -320,6 +320,7 @@ bool ModelWidget::inputMousePressEventFromOtherWidget(QMouseEvent *event, bool n
             m_moveStartPos = mapToParent(convertInputPosFromOtherWidget(event));
             m_moveStartGeometry = geometry();
             m_moveStarted = true;
+            m_directionOnMoveStart = abs(m_xRot) > 180 * 8 ? -1 : 1;
         }
         return true;
     }
@@ -389,7 +390,7 @@ bool ModelWidget::inputMouseMoveEventFromOtherWidget(QMouseEvent *event)
             }
         } else {
             setXRotation(m_xRot + 8 * dy);
-            setYRotation(m_yRot + 8 * dx);
+            setYRotation(m_yRot + 8 * dx * m_directionOnMoveStart);
         }
     }
     m_lastPos = pos;

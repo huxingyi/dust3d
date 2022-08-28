@@ -92,6 +92,7 @@ private:
     int m_xRot = m_defaultXRotation;
     int m_yRot = m_defaultYRotation;
     int m_zRot = m_defaultZRotation;
+    int m_directionOnMoveStart = 0;
     ModelShaderProgram *m_program = nullptr;
     bool m_moveStarted = false;
     bool m_moveEnabled = true;
