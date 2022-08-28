@@ -43,3 +43,12 @@ Thumbs.db
 *.mov
 *.wmv
 
+# Build files
+*.o
+application/.qmake.stash
+application/Makefile
+application/dust3d
+application/moc
+application/obj
+application/qrc_QtAwesome.cpp
+application/qrc_resources.cpp
