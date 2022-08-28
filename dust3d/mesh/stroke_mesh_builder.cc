@@ -451,7 +451,7 @@ void StrokeMeshBuilder::localAverageBaseNormals()
         size_t h, j;
         if (m_isRing) {
             h = (i + m_nodeIndices.size() - 1) % m_nodeIndices.size();
-            j = (j + 1) % m_nodeIndices.size();
+            j = (i + 1) % m_nodeIndices.size();
         } else {
             h = i > 0 ? i - 1 : i;
             j = i + 1 < m_nodeIndices.size() ? i + 1 : i;
