@@ -146,8 +146,7 @@ void ModelWidget::initializeGL()
     bool isCoreProfile = false;
     const char *versionString = (const char *)glGetString(GL_VERSION);
     if (nullptr != versionString &&
-            '\0' != versionString[0] &&
-            0 == strstr(versionString, "Mesa")) {
+            '\0' != versionString[0]) {
         isCoreProfile = format().profile() == QSurfaceFormat::CoreProfile;
     }
         
