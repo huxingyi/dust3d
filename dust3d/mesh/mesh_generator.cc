@@ -21,6 +21,7 @@
  */
 
 #include <unordered_set>
+#include <functional>
 #include <dust3d/base/string.h>
 #include <dust3d/base/part_target.h>
 #include <dust3d/base/part_base.h>

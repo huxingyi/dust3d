@@ -19,8 +19,8 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *  SOFTWARE.
  */
- 
-#include <boost/algorithm/string/join.hpp>
+
+#include <numeric>
 #include <dust3d/base/string.h>
 
 namespace dust3d
@@ -30,7 +30,10 @@ namespace String
     
 std::string join(const std::vector<std::string> &stringList, const char *separator)
 {
-    return boost::algorithm::join(stringList, separator);
+    return std::accumulate(stringList.begin(), stringList.end(), std::string(),
+        [=](const std::string &a, const std::string &b) -> std::string { 
+            return a + (a.length() > 0 ? separator : "") + b;
+        });
 }
 
 }

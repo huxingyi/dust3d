@@ -86,23 +86,6 @@ macx {
 
 RESOURCES += resources.qrc
 
-DEFINES += BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE
-win32 {
-	isEmpty(BOOST_INCLUDEDIR) {
-		BOOST_INCLUDEDIR = $$(BOOST_INCLUDEDIR)
-	}
-	isEmpty(BOOST_INCLUDEDIR) {
-		error("No BOOST_INCLUDEDIR define found in environment variables")
-	}
-}
-macx {
-	BOOST_INCLUDEDIR = /usr/local/opt/boost/include
-}
-unix:!macx {
-	BOOST_INCLUDEDIR = /usr/local/include
-}
-INCLUDEPATH += $$BOOST_INCLUDEDIR
-
 INCLUDEPATH += ../
 INCLUDEPATH += ../third_party
 INCLUDEPATH += ../third_party/rapidxml-1.13
@@ -262,6 +245,7 @@ HEADERS += ../dust3d/base/vector3.h
 SOURCES += ../dust3d/base/vector3.cc
 HEADERS += ../dust3d/base/vector2.h
 HEADERS += ../dust3d/base/uuid.h
+SOURCES += ../dust3d/base/uuid.cc
 HEADERS += ../dust3d/mesh/box_mesh.h
 SOURCES += ../dust3d/mesh/box_mesh.cc
 HEADERS += ../dust3d/mesh/centripetal_catmull_rom_spline.h

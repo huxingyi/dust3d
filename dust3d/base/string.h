@@ -98,7 +98,7 @@ inline std::string valueOrEmpty(const std::map<std::string, std::string> &map, c
     return it->second;
 }
 
-static bool isTrue(const std::string &string)
+inline bool isTrue(const std::string &string)
 {
     return "true" == string || "True" == string || "1" == string;
 }

@@ -67,7 +67,7 @@ public:
         return m_data[0];
     }
     
-    inline const double right() const
+    inline double right() const
     {
         return left() + width();
     }
@@ -77,7 +77,7 @@ public:
         return m_data[1];
     }
     
-    inline const double bottom() const
+    inline double bottom() const
     {
         return top() + height();
     }

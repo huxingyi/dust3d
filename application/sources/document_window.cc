@@ -1297,7 +1297,7 @@ void DocumentWindow::showCutFaceSettingPopup(const QPoint &globalPos, std::set<d
     buttons.resize(cutFaceList.size());
     for (size_t i = 0; i < cutFaceList.size(); ++i) {
         QString cutFaceString = cutFaceList[i];
-        dust3d::CutFace cutFace;
+        dust3d::CutFace cutFace = dust3d::CutFace::Quad;
         dust3d::Uuid cutFacePartId(cutFaceString.toUtf8().constData());
         QPushButton *button = new QPushButton;
         button->setIconSize(QSize(Theme::toolIconSize * 0.75, Theme::toolIconSize * 0.75));
