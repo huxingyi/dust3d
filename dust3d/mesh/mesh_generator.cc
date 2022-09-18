@@ -31,7 +31,6 @@
 #include <dust3d/mesh/stroke_modifier.h>
 #include <dust3d/mesh/mesh_recombiner.h>
 #include <dust3d/mesh/triangulate.h>
-#include <dust3d/mesh/mesh_stroketifier.h>
 #include <dust3d/mesh/mesh_generator.h>
 #include <dust3d/mesh/weld_vertices.h>
 #include <dust3d/mesh/trim_vertices.h>
