@@ -28,8 +28,6 @@ void PartPreviewImagesGenerator::generate()
     
     m_offscreenRender->setZRotation(0);
     m_offscreenRender->setEyePosition(QVector3D(0, 0, -4.0));
-    m_offscreenRender->enableEnvironmentLight();
-    m_offscreenRender->setRenderPurpose(0);
     for (auto &it: m_partPreviews) {
         if (it.second.isCutFace) {
             m_offscreenRender->setXRotation(0);

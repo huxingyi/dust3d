@@ -1,5 +1,4 @@
 #include <QMouseEvent>
-#include <QOpenGLShaderProgram>
 #include <QCoreApplication>
 #include <QGuiApplication>
 #include <cmath>
@@ -7,7 +6,6 @@
 #include <QSurfaceFormat>
 #include "model_widget.h"
 
-bool ModelWidget::m_transparent = true;
 float ModelWidget::m_minZoomRatio = 5.0;
 float ModelWidget::m_maxZoomRatio = 80.0;
 
@@ -19,18 +17,14 @@ QVector3D ModelWidget::m_defaultEyePosition = QVector3D(0, 0, -2.5);
 ModelWidget::ModelWidget(QWidget *parent) :
     QOpenGLWidget(parent)
 {
-    if (m_transparent) {
-        setAttribute(Qt::WA_AlwaysStackOnTop);
-        setAttribute(Qt::WA_TranslucentBackground);
-        QSurfaceFormat fmt = format();
-        fmt.setAlphaBufferSize(8);
-        fmt.setSamples(4);
-        setFormat(fmt);
-    } else {
-        QSurfaceFormat fmt = format();
-        fmt.setSamples(4);
-        setFormat(fmt);
-    }
+    setAttribute(Qt::WA_AlwaysStackOnTop);
+    setAttribute(Qt::WA_TranslucentBackground);
+    
+    QSurfaceFormat fmt = format();
+    fmt.setAlphaBufferSize(8);
+    fmt.setSamples(4);
+    setFormat(fmt);
+
     setContextMenuPolicy(Qt::CustomContextMenu);
     
     m_widthInPixels = width() * window()->devicePixelRatio();
@@ -115,46 +109,19 @@ void ModelWidget::setZRotation(int angle)
     }
 }
 
-Model *ModelWidget::fetchCurrentMesh()
-{
-    return m_meshBinder.fetchCurrentMesh();
-}
-
 void ModelWidget::cleanup()
 {
-    if (m_program == nullptr)
+    if (!m_openglProgram)
         return;
     makeCurrent();
-    m_meshBinder.cleanup();
-    delete m_program;
-    m_program = nullptr;
+    m_openglObject.reset();
+    m_openglProgram.reset();
     doneCurrent();
 }
 
 void ModelWidget::initializeGL()
 {
     connect(context(), &QOpenGLContext::aboutToBeDestroyed, this, &ModelWidget::cleanup);
-
-    initializeOpenGLFunctions();
-    if (m_transparent) {
-        glClearColor(0, 0, 0, 0);
-    } else {
-        QColor bgcolor = QWidget::palette().color(QWidget::backgroundRole());
-        glClearColor(bgcolor.redF(), bgcolor.greenF(), bgcolor.blueF(), 1);
-    }
-    
-    bool isCoreProfile = false;
-    const char *versionString = (const char *)glGetString(GL_VERSION);
-    if (nullptr != versionString &&
-            '\0' != versionString[0]) {
-        isCoreProfile = format().profile() == QSurfaceFormat::CoreProfile;
-    }
-        
-    m_program = new ModelShaderProgram(isCoreProfile);
-    
-    m_meshBinder.initialize();
-
-    m_program->release();
 }
 
 void ModelWidget::disableCullFace()
@@ -169,16 +136,18 @@ void ModelWidget::setMoveToPosition(const QVector3D &moveToPosition)
 
 void ModelWidget::paintGL()
 {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    glEnable(GL_DEPTH_TEST);
+    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+
+    f->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    f->glEnable(GL_BLEND);
+    f->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    f->glEnable(GL_DEPTH_TEST);
     if (m_enableCullFace)
-        glEnable(GL_CULL_FACE);
+        f->glEnable(GL_CULL_FACE);
 #ifdef GL_LINE_SMOOTH
-    glEnable(GL_LINE_SMOOTH);
+    f->glEnable(GL_LINE_SMOOTH);
 #endif
-	glViewport(0, 0, m_widthInPixels, m_heightInPixels);
+	f->glViewport(0, 0, m_widthInPixels, m_heightInPixels);
 
     m_world.setToIdentity();
     m_world.rotate(m_xRot / 16.0f, 1, 0, 0);
@@ -188,37 +157,18 @@ void ModelWidget::paintGL()
     m_camera.setToIdentity();
     m_camera.translate(m_eyePosition.x(), m_eyePosition.y(), m_eyePosition.z());
 
-    m_program->bind();
-    m_program->setUniformValue(m_program->eyePosLoc(), m_eyePosition);
-    m_program->setUniformValue(m_program->toonShadingEnabledLoc(), 0);
-    m_program->setUniformValue(m_program->projectionMatrixLoc(), m_projection);
-    m_program->setUniformValue(m_program->modelMatrixLoc(), m_world);
-    QMatrix3x3 normalMatrix = m_world.normalMatrix();
-    m_program->setUniformValue(m_program->normalMatrixLoc(), normalMatrix);
-    m_program->setUniformValue(m_program->viewMatrixLoc(), m_camera);
-    m_program->setUniformValue(m_program->textureEnabledLoc(), 0);
-    m_program->setUniformValue(m_program->normalMapEnabledLoc(), 0);
-    m_program->setUniformValue(m_program->renderPurposeLoc(), 0);
-    
-    m_program->setUniformValue(m_program->toonEdgeEnabledLoc(), 0);
-    m_program->setUniformValue(m_program->screenWidthLoc(), (GLfloat)m_widthInPixels);
-    m_program->setUniformValue(m_program->screenHeightLoc(), (GLfloat)m_heightInPixels);
-    m_program->setUniformValue(m_program->toonNormalMapIdLoc(), 0);
-    m_program->setUniformValue(m_program->toonDepthMapIdLoc(), 0);
-    
-    if (m_mousePickingEnabled && !m_mousePickTargetPositionInModelSpace.isNull()) {
-        m_program->setUniformValue(m_program->mousePickEnabledLoc(), 1);
-        m_program->setUniformValue(m_program->mousePickTargetPositionLoc(),
-            m_world * m_mousePickTargetPositionInModelSpace);
-    } else {
-        m_program->setUniformValue(m_program->mousePickEnabledLoc(), 0);
-        m_program->setUniformValue(m_program->mousePickTargetPositionLoc(), QVector3D());
+    if (!m_openglProgram) {
+        m_openglProgram = std::make_unique<ModelOpenGLProgram>();
+        const char *openglVersion = (const char *)f->glGetString(GL_VERSION);
+        m_openglProgram->load(nullptr != openglVersion && 
+            '\0' != openglVersion[0] && 
+            format().profile() == QSurfaceFormat::CoreProfile);
     }
-    m_program->setUniformValue(m_program->mousePickRadiusLoc(), m_mousePickRadius);
-    
-    m_meshBinder.paint(m_program);
 
-    m_program->release();
+    m_openglProgram->bind();
+    if (m_openglObject)
+        m_openglObject->draw();
+    m_openglProgram->release();
 }
 
 void ModelWidget::updateProjectionMatrix()
@@ -251,27 +201,24 @@ std::pair<QVector3D, QVector3D> ModelWidget::screenPositionToMouseRay(const QPoi
 
 void ModelWidget::toggleWireframe()
 {
-    if (m_meshBinder.isWireframeVisible())
-        m_meshBinder.hideWireframe();
-    else
-        m_meshBinder.showWireframe();
-    update();
+    // TODO
 }
 
 bool ModelWidget::isWireframeVisible()
 {
-    return m_meshBinder.isWireframeVisible();
+    // TODO
+    return false;
 }
 
 void ModelWidget::enableEnvironmentLight()
 {
-    m_meshBinder.enableEnvironmentLight();
-    update();
+    // TODO
 }
 
 bool ModelWidget::isEnvironmentLightEnabled()
 {
-    return m_meshBinder.isEnvironmentLightEnabled();
+    // TODO
+    return false;
 }
 
 void ModelWidget::toggleRotation()
@@ -288,16 +235,6 @@ void ModelWidget::toggleRotation()
         });
         m_rotationTimer->start();
     }
-}
-
-void ModelWidget::toggleUvCheck()
-{
-    if (m_meshBinder.isCheckUvEnabled())
-        m_meshBinder.disableCheckUv();
-    else
-        m_meshBinder.enableCheckUv();
-    m_meshBinder.reloadMesh();
-    update();
 }
 
 bool ModelWidget::inputMousePressEventFromOtherWidget(QMouseEvent *event, bool notGraphics)
@@ -471,26 +408,16 @@ void ModelWidget::setMousePickRadius(float radius)
 
 void ModelWidget::updateMesh(Model *mesh)
 {
-    m_meshBinder.updateMesh(mesh);
+    if (!m_openglObject)
+        m_openglObject = std::make_unique<ModelOpenGLObject>();
+    m_openglObject->update(std::unique_ptr<Model>(mesh));
     emit renderParametersChanged();
     update();
 }
 
 void ModelWidget::updateColorTexture(QImage *colorTextureImage)
 {
-    m_meshBinder.updateColorTexture(colorTextureImage);
-    update();
-}
-
-void ModelWidget::fetchCurrentToonNormalAndDepthMaps(QImage *normalMap, QImage *depthMap)
-{
-    m_meshBinder.fetchCurrentToonNormalAndDepthMaps(normalMap, depthMap);
-}
-
-void ModelWidget::updateToonNormalAndDepthMaps(QImage *normalMap, QImage *depthMap)
-{
-    m_meshBinder.updateToonNormalAndDepthMaps(normalMap, depthMap);
-    update();
+    // TODO
 }
 
 int ModelWidget::widthInPixels()
