@@ -1,5 +1,6 @@
 #include <QOpenGLFunctions>
 #include <QFile>
+#include <dust3d/base/debug.h>
 #include "model_opengl_program.h"
 
 static const QString &loadShaderSource(const QString &name)
@@ -16,6 +17,12 @@ static const QString &loadShaderSource(const QString &name)
     return insertResult.first->second;
 }
 
+void ModelOpenGLProgram::addShaderFromResource(QOpenGLShader::ShaderType type, const char *resourceName)
+{
+    if (!addShaderFromSourceCode(type, loadShaderSource(resourceName)))
+        dust3dDebug << "Failed to addShaderFromResource, resource:" << resourceName << ", " << log().toStdString();
+}
+
 void ModelOpenGLProgram::load(bool isCoreProfile)
 {
     if (m_isLoaded)
@@ -23,11 +30,11 @@ void ModelOpenGLProgram::load(bool isCoreProfile)
 
     m_isCoreProfile = isCoreProfile;
     if (m_isCoreProfile) {
-        addShaderFromSourceCode(QOpenGLShader::Vertex, loadShaderSource(":/shaders/model_core.vert"));
-        addShaderFromSourceCode(QOpenGLShader::Fragment, loadShaderSource(":/shaders/model_core.frag"));
+        addShaderFromResource(QOpenGLShader::Vertex, ":/shaders/model_core.vert");
+        addShaderFromResource(QOpenGLShader::Fragment, ":/shaders/model_core.frag");
     } else {
-        addShaderFromSourceCode(QOpenGLShader::Vertex, loadShaderSource(":/shaders/model.vert"));
-        addShaderFromSourceCode(QOpenGLShader::Fragment, loadShaderSource(":/shaders/model.frag"));
+        addShaderFromResource(QOpenGLShader::Vertex, ":/shaders/model.vert");
+        addShaderFromResource(QOpenGLShader::Fragment, ":/shaders/model.frag");
     }
     bindAttributeLocation("vertex", 0);
     bindAttributeLocation("normal", 1);
@@ -39,6 +46,15 @@ void ModelOpenGLProgram::load(bool isCoreProfile)
     bindAttributeLocation("alpha", 7);
     link();
     bind();
-        
     m_isLoaded = true;
+}
+
+int ModelOpenGLProgram::getUniformLocationByName(const char *name)
+{
+    auto findLocation = m_uniformLocationMap.find(name);
+    if (findLocation != m_uniformLocationMap.end())
+        return findLocation->second;
+    int location = uniformLocation(name);
+    m_uniformLocationMap.insert({std::string(name), location});
+    return location;
 }

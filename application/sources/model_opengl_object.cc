@@ -1,3 +1,4 @@
+#include <dust3d/base/debug.h>
 #include <QOpenGLFunctions>
 #include <QOpenGLContext>
 #include "model_opengl_object.h"
@@ -15,6 +16,7 @@ void ModelOpenGLObject::draw()
     if (0 == m_meshTriangleVertexCount)
         return;
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+    QOpenGLVertexArrayObject::Binder binder(&m_vertexArrayObject);
     f->glDrawArrays(GL_TRIANGLES, 0, m_meshTriangleVertexCount);
 }
 

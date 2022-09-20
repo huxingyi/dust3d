@@ -48,4 +48,5 @@ void ModelOffscreenRender::updateMesh(Model *mesh)
 QImage ModelOffscreenRender::toImage(const QSize &size)
 {
     // TODO
+    return QImage();
 }

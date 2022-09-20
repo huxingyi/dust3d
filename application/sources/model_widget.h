@@ -8,6 +8,7 @@
 #include <QMutex>
 #include <QVector2D>
 #include <QTimer>
+#include <QString>
 #include "model.h"
 #include "model_opengl_program.h"
 #include "model_opengl_object.h"
@@ -55,6 +56,7 @@ public:
     int zRot();
     const QVector3D &eyePosition();
     const QVector3D &moveToPosition();
+    const QString &openGLVersion();
 public slots:
     void setXRotation(int angle);
     void setYRotation(int angle);
@@ -79,8 +81,8 @@ private:
     int m_yRot = m_defaultYRotation;
     int m_zRot = m_defaultZRotation;
     int m_directionOnMoveStart = 0;
-    std::unique_ptr<ModelOpenGLProgram> m_openglProgram;
-    std::unique_ptr<ModelOpenGLObject> m_openglObject;
+    std::unique_ptr<ModelOpenGLProgram> m_openGLProgram;
+    std::unique_ptr<ModelOpenGLObject> m_openGLObject;
     bool m_moveStarted = false;
     bool m_moveEnabled = true;
     bool m_zoomEnabled = true;
@@ -104,8 +106,8 @@ private:
     bool m_moveAndZoomByWindow = true;
     bool m_enableCullFace = true;
     bool m_notGraphics = false;
+
     std::pair<QVector3D, QVector3D> screenPositionToMouseRay(const QPoint &screenPosition);
-private:
     void updateProjectionMatrix();
     void normalizeAngle(int &angle);
 public:
@@ -113,6 +115,9 @@ public:
     static int m_defaultYRotation;
     static int m_defaultZRotation;
     static QVector3D m_defaultEyePosition;
+    static QString m_openGLVersion;
+    static QString m_openGLShadingLanguageVersion;
+    static bool m_openGLIsCoreProfile;
 };
 
 #endif

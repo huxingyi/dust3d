@@ -22,8 +22,8 @@ int main(int argc, char *argv[])
     QCoreApplication::setOrganizationName(APP_COMPANY);
     QCoreApplication::setOrganizationDomain(APP_HOMEPAGE_URL);
     
-    freopen("dust3d.log", "w", stdout);
-    setvbuf(stdout, 0, _IONBF, 0);
+    //freopen("dust3d.log", "w", stdout);
+    //setvbuf(stdout, 0, _IONBF, 0);
     
     DocumentWindow *firstWindow = DocumentWindow::createDocumentWindow();
     

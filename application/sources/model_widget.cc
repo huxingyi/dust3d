@@ -13,6 +13,9 @@ int ModelWidget::m_defaultXRotation = 30 * 16;
 int ModelWidget::m_defaultYRotation = -45 * 16;
 int ModelWidget::m_defaultZRotation = 0;
 QVector3D ModelWidget::m_defaultEyePosition = QVector3D(0, 0, -2.5);
+QString ModelWidget::m_openGLVersion = "";
+QString ModelWidget::m_openGLShadingLanguageVersion = "";
+bool ModelWidget::m_openGLIsCoreProfile = false;
 
 ModelWidget::ModelWidget(QWidget *parent) :
     QOpenGLWidget(parent)
@@ -111,17 +114,12 @@ void ModelWidget::setZRotation(int angle)
 
 void ModelWidget::cleanup()
 {
-    if (!m_openglProgram)
+    if (!m_openGLProgram)
         return;
     makeCurrent();
-    m_openglObject.reset();
-    m_openglProgram.reset();
+    m_openGLObject.reset();
+    m_openGLProgram.reset();
     doneCurrent();
-}
-
-void ModelWidget::initializeGL()
-{
-    connect(context(), &QOpenGLContext::aboutToBeDestroyed, this, &ModelWidget::cleanup);
 }
 
 void ModelWidget::disableCullFace()
@@ -132,6 +130,20 @@ void ModelWidget::disableCullFace()
 void ModelWidget::setMoveToPosition(const QVector3D &moveToPosition)
 {
     m_moveToPosition = moveToPosition;
+}
+
+void ModelWidget::initializeGL()
+{
+    connect(context(), &QOpenGLContext::aboutToBeDestroyed, this, &ModelWidget::cleanup);
+
+    if (m_openGLVersion.isEmpty()) {
+        QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+        const char *openGLVersion = (const char *)f->glGetString(GL_VERSION);
+        m_openGLVersion = nullptr != openGLVersion ? openGLVersion : "<Unknown>";
+        const char *shadingLanguageVersion = (const char *)glGetString(GL_SHADING_LANGUAGE_VERSION);
+        m_openGLShadingLanguageVersion = nullptr != shadingLanguageVersion ? shadingLanguageVersion : "<Unknown>";
+        m_openGLIsCoreProfile = QSurfaceFormat::defaultFormat().profile() == QSurfaceFormat::CoreProfile;
+    }
 }
 
 void ModelWidget::paintGL()
@@ -157,18 +169,22 @@ void ModelWidget::paintGL()
     m_camera.setToIdentity();
     m_camera.translate(m_eyePosition.x(), m_eyePosition.y(), m_eyePosition.z());
 
-    if (!m_openglProgram) {
-        m_openglProgram = std::make_unique<ModelOpenGLProgram>();
-        const char *openglVersion = (const char *)f->glGetString(GL_VERSION);
-        m_openglProgram->load(nullptr != openglVersion && 
-            '\0' != openglVersion[0] && 
-            format().profile() == QSurfaceFormat::CoreProfile);
+    if (!m_openGLProgram) {
+        m_openGLProgram = std::make_unique<ModelOpenGLProgram>();
+        m_openGLProgram->load(format().profile() == QSurfaceFormat::CoreProfile);
     }
 
-    m_openglProgram->bind();
-    if (m_openglObject)
-        m_openglObject->draw();
-    m_openglProgram->release();
+    m_openGLProgram->bind();
+
+    m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("projectionMatrix"), m_projection);
+    m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("modelMatrix"), m_world);
+    m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("viewMatrix"), m_camera);
+    m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("defaultColor"), QVector4D(1.0, 1.0, 1.0, 1.0));
+
+    if (m_openGLObject)
+        m_openGLObject->draw();
+        
+    m_openGLProgram->release();
 }
 
 void ModelWidget::updateProjectionMatrix()
@@ -408,9 +424,9 @@ void ModelWidget::setMousePickRadius(float radius)
 
 void ModelWidget::updateMesh(Model *mesh)
 {
-    if (!m_openglObject)
-        m_openglObject = std::make_unique<ModelOpenGLObject>();
-    m_openglObject->update(std::unique_ptr<Model>(mesh));
+    if (!m_openGLObject)
+        m_openGLObject = std::make_unique<ModelOpenGLObject>();
+    m_openGLObject->update(std::unique_ptr<Model>(mesh));
     emit renderParametersChanged();
     update();
 }
