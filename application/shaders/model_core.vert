@@ -10,7 +10,23 @@ layout(location = 7) in float alpha;
 uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
 uniform mat4 projectionMatrix;
+uniform vec3 lightDirection;
+uniform vec3 eyePosition;
+out vec3 pointPosition;
+out vec3 pointNormal;
+out vec3 pointColor;
+out float pointAlpha;
+out float pointMetalness;
+out float pointRoughness;
+
 void main()
 {
-    gl_Position = projectionMatrix * viewMatrix * modelMatrix * vertex;
+    pointPosition = (modelMatrix * vertex).xyz;
+    pointNormal = normalize((modelMatrix * vec4(normal, 1.0)).xyz);
+    pointColor = color;
+    pointAlpha = alpha;
+    pointMetalness = metalness;
+    pointRoughness = roughness;
+
+    gl_Position = projectionMatrix * viewMatrix * vec4(pointPosition, 1.0);
 }

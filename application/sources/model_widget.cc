@@ -176,14 +176,15 @@ void ModelWidget::paintGL()
 
     m_openGLProgram->bind();
 
+    m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("eyePosition"), m_eyePosition);
+    m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("lightDirection"), QVector3D(-1.0, -1.0, -1.0).normalized());
     m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("projectionMatrix"), m_projection);
     m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("modelMatrix"), m_world);
     m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("viewMatrix"), m_camera);
-    m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("defaultColor"), QVector4D(1.0, 1.0, 1.0, 1.0));
 
     if (m_openGLObject)
         m_openGLObject->draw();
-        
+
     m_openGLProgram->release();
 }
 

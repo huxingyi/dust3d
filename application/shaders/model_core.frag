@@ -1,7 +1,12 @@
 #version 330
-uniform vec4 defaultColor;
+in vec3 pointPosition;
+in vec3 pointNormal;
+in vec3 pointColor;
+in float pointAlpha;
+in float pointMetalness;
+in float pointRoughness;
 out vec4 fragColor;
 void main()
 {
-    fragColor = defaultColor;
+    fragColor = vec4(pointColor, pointAlpha);
 }
