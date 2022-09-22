@@ -10,7 +10,6 @@ layout(location = 7) in float alpha;
 uniform mat4 modelMatrix;
 uniform mat4 viewMatrix;
 uniform mat4 projectionMatrix;
-uniform vec3 lightDirection;
 uniform vec3 eyePosition;
 out vec3 pointPosition;
 out vec3 pointNormal;

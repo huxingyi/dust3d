@@ -4,6 +4,7 @@
 #include <memory>
 #include <QOpenGLWidget>
 #include <QOpenGLBuffer>
+#include <QOpenGLTexture>
 #include <QMatrix4x4>
 #include <QMutex>
 #include <QVector2D>
@@ -106,6 +107,9 @@ private:
     bool m_moveAndZoomByWindow = true;
     bool m_enableCullFace = true;
     bool m_notGraphics = false;
+    bool m_isEnvironmentLightEnabled = false;
+    std::unique_ptr<QOpenGLTexture> m_environmentIrradianceMap;
+    std::unique_ptr<QOpenGLTexture> m_environmentSpecularMap;
 
     std::pair<QVector3D, QVector3D> screenPositionToMouseRay(const QPoint &screenPosition);
     void updateProjectionMatrix();

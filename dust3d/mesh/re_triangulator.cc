@@ -111,7 +111,7 @@ int ReTriangulator::attachPointToTriangleEdge(const Vector2 &point)
     }
     
     // 2: Brute force way
-    dust3dDebug << "Fall back to brute force way";
+    //dust3dDebug << "Fall back to brute force way";
     int picked = 0;
     double pickedValue = std::numeric_limits<double>::max();
     for (int i = 0; i < 3; ++i) {

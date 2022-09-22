@@ -5,6 +5,7 @@
 #include <QVector4D>
 #include <QSurfaceFormat>
 #include "model_widget.h"
+#include "dds_file.h"
 
 float ModelWidget::m_minZoomRatio = 5.0;
 float ModelWidget::m_maxZoomRatio = 80.0;
@@ -132,62 +133,6 @@ void ModelWidget::setMoveToPosition(const QVector3D &moveToPosition)
     m_moveToPosition = moveToPosition;
 }
 
-void ModelWidget::initializeGL()
-{
-    connect(context(), &QOpenGLContext::aboutToBeDestroyed, this, &ModelWidget::cleanup);
-
-    if (m_openGLVersion.isEmpty()) {
-        QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
-        const char *openGLVersion = (const char *)f->glGetString(GL_VERSION);
-        m_openGLVersion = nullptr != openGLVersion ? openGLVersion : "<Unknown>";
-        const char *shadingLanguageVersion = (const char *)glGetString(GL_SHADING_LANGUAGE_VERSION);
-        m_openGLShadingLanguageVersion = nullptr != shadingLanguageVersion ? shadingLanguageVersion : "<Unknown>";
-        m_openGLIsCoreProfile = QSurfaceFormat::defaultFormat().profile() == QSurfaceFormat::CoreProfile;
-    }
-}
-
-void ModelWidget::paintGL()
-{
-    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
-
-    f->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    f->glEnable(GL_BLEND);
-    f->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    f->glEnable(GL_DEPTH_TEST);
-    if (m_enableCullFace)
-        f->glEnable(GL_CULL_FACE);
-#ifdef GL_LINE_SMOOTH
-    f->glEnable(GL_LINE_SMOOTH);
-#endif
-	f->glViewport(0, 0, m_widthInPixels, m_heightInPixels);
-
-    m_world.setToIdentity();
-    m_world.rotate(m_xRot / 16.0f, 1, 0, 0);
-    m_world.rotate(m_yRot / 16.0f, 0, 1, 0);
-    m_world.rotate(m_zRot / 16.0f, 0, 0, 1);
-    
-    m_camera.setToIdentity();
-    m_camera.translate(m_eyePosition.x(), m_eyePosition.y(), m_eyePosition.z());
-
-    if (!m_openGLProgram) {
-        m_openGLProgram = std::make_unique<ModelOpenGLProgram>();
-        m_openGLProgram->load(format().profile() == QSurfaceFormat::CoreProfile);
-    }
-
-    m_openGLProgram->bind();
-
-    m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("eyePosition"), m_eyePosition);
-    m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("lightDirection"), QVector3D(-1.0, -1.0, -1.0).normalized());
-    m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("projectionMatrix"), m_projection);
-    m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("modelMatrix"), m_world);
-    m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("viewMatrix"), m_camera);
-
-    if (m_openGLObject)
-        m_openGLObject->draw();
-
-    m_openGLProgram->release();
-}
-
 void ModelWidget::updateProjectionMatrix()
 {
     m_projection.setToIdentity();
@@ -229,13 +174,12 @@ bool ModelWidget::isWireframeVisible()
 
 void ModelWidget::enableEnvironmentLight()
 {
-    // TODO
+    m_isEnvironmentLightEnabled = true;
 }
 
 bool ModelWidget::isEnvironmentLightEnabled()
 {
-    // TODO
-    return false;
+    return m_isEnvironmentLightEnabled;
 }
 
 void ModelWidget::toggleRotation()
@@ -500,3 +444,74 @@ void ModelWidget::normalizeAngle(int &angle)
         angle -= 360 * 16;
 }
 
+void ModelWidget::initializeGL()
+{
+    connect(context(), &QOpenGLContext::aboutToBeDestroyed, this, &ModelWidget::cleanup);
+
+    if (m_openGLVersion.isEmpty()) {
+        QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+        const char *openGLVersion = (const char *)f->glGetString(GL_VERSION);
+        m_openGLVersion = nullptr != openGLVersion ? openGLVersion : "<Unknown>";
+        const char *shadingLanguageVersion = (const char *)glGetString(GL_SHADING_LANGUAGE_VERSION);
+        m_openGLShadingLanguageVersion = nullptr != shadingLanguageVersion ? shadingLanguageVersion : "<Unknown>";
+        m_openGLIsCoreProfile = QSurfaceFormat::defaultFormat().profile() == QSurfaceFormat::CoreProfile;
+    }
+}
+
+void ModelWidget::paintGL()
+{
+    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+
+    f->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    f->glEnable(GL_BLEND);
+    f->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    f->glEnable(GL_DEPTH_TEST);
+    if (m_enableCullFace)
+        f->glEnable(GL_CULL_FACE);
+#ifdef GL_LINE_SMOOTH
+    f->glEnable(GL_LINE_SMOOTH);
+#endif
+	f->glViewport(0, 0, m_widthInPixels, m_heightInPixels);
+
+    m_world.setToIdentity();
+    m_world.rotate(m_xRot / 16.0f, 1, 0, 0);
+    m_world.rotate(m_yRot / 16.0f, 0, 1, 0);
+    m_world.rotate(m_zRot / 16.0f, 0, 0, 1);
+    
+    m_camera.setToIdentity();
+    m_camera.translate(m_eyePosition.x(), m_eyePosition.y(), m_eyePosition.z());
+
+    if (!m_openGLProgram) {
+        m_openGLProgram = std::make_unique<ModelOpenGLProgram>();
+        m_openGLProgram->load(format().profile() == QSurfaceFormat::CoreProfile);
+    }
+
+    m_openGLProgram->bind();
+
+    m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("eyePosition"), m_eyePosition);
+    m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("projectionMatrix"), m_projection);
+    m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("modelMatrix"), m_world);
+    m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("viewMatrix"), m_camera);
+
+    if (m_isEnvironmentLightEnabled) {
+        if (!m_environmentIrradianceMap) {
+            DdsFileReader irradianceFile(":/resources/cedar_bridge_irradiance.dds");
+            m_environmentIrradianceMap.reset(irradianceFile.createOpenGLTexture());
+        }
+        if (!m_environmentSpecularMap) {
+            DdsFileReader irradianceFile(":/resources/cedar_bridge_specular.dds");
+            m_environmentSpecularMap.reset(irradianceFile.createOpenGLTexture());
+        }
+        
+        m_environmentIrradianceMap->bind(0);
+        m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("environmentIrradianceMapId"), 0);
+
+        m_environmentSpecularMap->bind(1);
+        m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("environmentSpecularMapId"), 1);
+    }
+
+    if (m_openGLObject)
+        m_openGLObject->draw();
+
+    m_openGLProgram->release();
+}
