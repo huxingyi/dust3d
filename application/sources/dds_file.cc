@@ -301,7 +301,7 @@ static const char *DxgiFormatToString(DXGI_FORMAT dxgiFormat)
         "DXGI_FORMAT_FORCE_UINT",
     };
     int index = (int)dxgiFormat;
-    if (index >= 0 && index < sizeof(names) / sizeof(names[0]))
+    if (index >= 0 && index < (int)(sizeof(names) / sizeof(names[0])))
         return names[index];
     return "(Unknown)";
 }
@@ -324,7 +324,7 @@ static const char *ResourceDimensionToString(D3D10_RESOURCE_DIMENSION resourceDi
         "D3D10_RESOURCE_DIMENSION_TEXTURE3D",
     };
     int index = (int)resourceDimension;
-    if (index >= 0 && index < sizeof(names) / sizeof(names[0]))
+    if (index >= 0 && index < (int)(sizeof(names) / sizeof(names[0])))
         return names[index];
     return "(Unknown)";
 }
@@ -347,7 +347,7 @@ static const char *MiscFlagToString(UINT miscFlag)
         "D3D10_RESOURCE_MISC_GDI_COMPATIBLE",
     };
     int index = (int)miscFlag;
-    if (index >= 0 && index < sizeof(names) / sizeof(names[0]))
+    if (index >= 0 && index < (int)(sizeof(names) / sizeof(names[0])))
         return names[index];
     return "(Unknown)";
 }
@@ -369,6 +369,139 @@ typedef struct {
 DdsFileReader::DdsFileReader(const QString &filename) :
     m_filename(filename)
 {     
+}
+
+std::unique_ptr<std::vector<std::unique_ptr<QOpenGLTexture>>> DdsFileReader::createOpenGLTextures()
+{
+    QFile file(m_filename);
+    
+    if (!file.open(QIODevice::ReadOnly)) {
+        qDebug() << "Open" << m_filename << "failed";
+        return nullptr;
+    }
+    
+    DDS_FILE_HEADER fileHeader;
+    if (sizeof(fileHeader) != file.read((char *)&fileHeader, sizeof(fileHeader))) {
+        qDebug() << "Read DDS file hader failed";
+        return nullptr;
+    }
+    
+    if (0x20534444 != qFromLittleEndian<quint32>(&fileHeader.dwMagic)) {
+        qDebug() << "Not a DDS file";
+        return nullptr;
+    }
+    
+    if (0x30315844 != qFromLittleEndian<quint32>(&fileHeader.header.ddspf.dwFourCC)) {
+        qDebug() << "Unsupported DDS file, expected DX10 file";
+        return nullptr;
+    }
+    
+    auto caps2 = qFromLittleEndian<quint32>(&fileHeader.header.dwCaps2);
+    if (!(DDSCAPS2_CUBEMAP & caps2)) {
+        qDebug() << "Unsupported DDS file, expected CUBEMAP file";
+        return nullptr;
+    }
+    
+    //qDebug() << "Start anyalize DDS file...";
+    
+    int width = qFromLittleEndian<quint32>(&fileHeader.header.dwWidth);
+    int height = qFromLittleEndian<quint32>(&fileHeader.header.dwHeight);
+    
+    //qDebug() << "DDS size:" << width << "X" << height;
+    
+    //auto pitchOrLinearSize = qFromLittleEndian<quint32>(&fileHeader.header.dwPitchOrLinearSize);
+    //qDebug() << "DDS pitch or linear size:" << pitchOrLinearSize;
+    
+    auto arraySize = qFromLittleEndian<quint32>(&fileHeader.header10.arraySize);
+    //qDebug() << "DDS array size:" << arraySize;
+    
+    auto mipMapCount = qFromLittleEndian<quint32>(&fileHeader.header.dwMipMapCount);
+    //qDebug() << "DDS mip map count:" << mipMapCount;
+    
+    DXGI_FORMAT dxgiFormat = (DXGI_FORMAT)qFromLittleEndian<quint32>(&fileHeader.header10.dxgiFormat);
+    //qDebug() << "DDS dxgi format:" << DxgiFormatToString(dxgiFormat);
+    //qDebug() << "DDS resource dimension:" << ResourceDimensionToString((D3D10_RESOURCE_DIMENSION)qFromLittleEndian<quint32>(&fileHeader.header10.resourceDimension));
+    //qDebug() << "DDS misc flag:" << MiscFlagToString((UINT)qFromLittleEndian<quint32>(&fileHeader.header10.miscFlag));
+    
+    quint32 faces = 0;
+    if (DDSCAPS2_CUBEMAP_POSITIVEX & caps2) {
+        //qDebug() << "DDS found +x";
+        ++faces;
+    }
+    if (DDSCAPS2_CUBEMAP_NEGATIVEX & caps2) {
+        //qDebug() << "DDS found -x";
+        ++faces;
+    }
+    if (DDSCAPS2_CUBEMAP_POSITIVEY & caps2) {
+        //qDebug() << "DDS found +y";
+        ++faces;
+    }
+    if (DDSCAPS2_CUBEMAP_NEGATIVEY & caps2) {
+        //qDebug() << "DDS found -y";
+        ++faces;
+    }
+    if (DDSCAPS2_CUBEMAP_POSITIVEZ & caps2) {
+        //qDebug() << "DDS found +z";
+        ++faces;
+    }
+    if (DDSCAPS2_CUBEMAP_NEGATIVEZ & caps2) {
+        //qDebug() << "DDS found -z";
+        ++faces;
+    }
+    
+    if (6 != faces) {
+        qDebug() << "Unsupported DDS file, expected six faces";
+        return nullptr;
+    }
+    
+    if (1 != arraySize) {
+        qDebug() << "Unsupported DDS file, expected one layer";
+        return nullptr;
+    }
+    
+    if (DXGI_FORMAT_R16G16B16A16_FLOAT != dxgiFormat) {
+        qDebug() << "Unsupported DDS file, expected dxgi format: DXGI_FORMAT_R16G16B16A16_FLOAT";
+        return nullptr; 
+    }
+    int components = 8;
+    int oneFaceSize = 0;
+    auto calculateOneFaceSizeAtLevel = [=](int level) {
+        return qMax(width >> level, 1) * qMax(height >> level, 1) * components;
+    };
+    for (quint32 level = 0; level < mipMapCount; ++level) {
+        oneFaceSize += calculateOneFaceSizeAtLevel(level);
+    }
+    int totalSize = arraySize * faces * oneFaceSize;
+    const QByteArray data = file.read(totalSize);
+    if (data.size() < totalSize) {
+        qDebug() << "DDS file invalid, expected total size:" << totalSize << "read size:" << data.size();
+        return nullptr;
+    }
+
+    int depth = 1;
+    
+    auto textures = std::make_unique<std::vector<std::unique_ptr<QOpenGLTexture>>>();
+    textures->resize(6);
+
+    uint64_t dataOffset = 0;
+    for (quint32 layer = 0; layer < arraySize; ++layer) {
+        for (quint32 face = 0; face < faces; ++face) {
+            for (quint32 level = 0; level < mipMapCount; ++level) {
+                if (0 == layer && 0 == level) {
+                    QOpenGLTexture *texture = new QOpenGLTexture(QOpenGLTexture::Target2D);
+                    texture->setMinificationFilter(QOpenGLTexture::NearestMipMapNearest);
+                    texture->setMagnificationFilter(QOpenGLTexture::Nearest);
+                    texture->setFormat(QOpenGLTexture::RGBA16F);
+                    texture->setSize(width, height, depth);
+                    texture->allocateStorage(QOpenGLTexture::RGBA, QOpenGLTexture::Float16);
+                    texture->setData(QOpenGLTexture::RGBA, QOpenGLTexture::Float16, data.constData() + dataOffset);
+                    textures->at(face).reset(texture);
+                }
+                dataOffset += calculateOneFaceSizeAtLevel(level);
+            }
+        }
+    }
+    return std::move(textures);
 }
 
 QOpenGLTexture *DdsFileReader::createOpenGLTexture()
@@ -423,7 +556,7 @@ QOpenGLTexture *DdsFileReader::createOpenGLTexture()
     //qDebug() << "DDS resource dimension:" << ResourceDimensionToString((D3D10_RESOURCE_DIMENSION)qFromLittleEndian<quint32>(&fileHeader.header10.resourceDimension));
     //qDebug() << "DDS misc flag:" << MiscFlagToString((UINT)qFromLittleEndian<quint32>(&fileHeader.header10.miscFlag));
     
-    auto faces = 0;
+    quint32 faces = 0;
     if (DDSCAPS2_CUBEMAP_POSITIVEX & caps2) {
         //qDebug() << "DDS found +x";
         ++faces;
@@ -468,7 +601,7 @@ QOpenGLTexture *DdsFileReader::createOpenGLTexture()
     auto calculateOneFaceSizeAtLevel = [=](int level) {
         return qMax(width >> level, 1) * qMax(height >> level, 1) * components;
     };
-    for (auto level = 0; level < mipMapCount; ++level) {
+    for (quint32 level = 0; level < mipMapCount; ++level) {
         oneFaceSize += calculateOneFaceSizeAtLevel(level);
     }
     int totalSize = arraySize * faces * oneFaceSize;
@@ -502,9 +635,9 @@ QOpenGLTexture *DdsFileReader::createOpenGLTexture()
     }
     
     uint64_t dataOffset = 0;
-    for (int layer = 0; layer < arraySize; ++layer) {
-        for (int face = 0; face < faces; ++face) {
-            for (int level = 0; level < mipMapCount; ++level) {
+    for (quint32 layer = 0; layer < arraySize; ++layer) {
+        for (quint32 face = 0; face < faces; ++face) {
+            for (quint32 level = 0; level < mipMapCount; ++level) {
                 QOpenGLPixelTransferOptions uploadOptions;
                 uploadOptions.setAlignment(1);
                 texture->setData(level, 

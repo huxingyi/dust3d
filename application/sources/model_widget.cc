@@ -494,20 +494,45 @@ void ModelWidget::paintGL()
     m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("viewMatrix"), m_camera);
 
     if (m_isEnvironmentLightEnabled) {
-        if (!m_environmentIrradianceMap) {
-            DdsFileReader irradianceFile(":/resources/cedar_bridge_irradiance.dds");
-            m_environmentIrradianceMap.reset(irradianceFile.createOpenGLTexture());
-        }
-        if (!m_environmentSpecularMap) {
-            DdsFileReader irradianceFile(":/resources/cedar_bridge_specular.dds");
-            m_environmentSpecularMap.reset(irradianceFile.createOpenGLTexture());
-        }
-        
-        m_environmentIrradianceMap->bind(0);
-        m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("environmentIrradianceMapId"), 0);
+        if (m_openGLProgram->isCoreProfile()) {
+            if (!m_environmentIrradianceMap) {
+                DdsFileReader irradianceFile(":/resources/cedar_bridge_irradiance.dds");
+                m_environmentIrradianceMap.reset(irradianceFile.createOpenGLTexture());
+            }
+            if (!m_environmentSpecularMap) {
+                DdsFileReader irradianceFile(":/resources/cedar_bridge_specular.dds");
+                m_environmentSpecularMap.reset(irradianceFile.createOpenGLTexture());
+            }
+            
+            m_environmentIrradianceMap->bind(0);
+            m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("environmentIrradianceMapId"), 0);
 
-        m_environmentSpecularMap->bind(1);
-        m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("environmentSpecularMapId"), 1);
+            m_environmentSpecularMap->bind(1);
+            m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("environmentSpecularMapId"), 1);
+        } else {
+            if (!m_environmentIrradianceMaps) {
+                DdsFileReader irradianceFile(":/resources/cedar_bridge_irradiance.dds");
+                m_environmentIrradianceMaps = std::move(irradianceFile.createOpenGLTextures());
+            }
+            if (!m_environmentSpecularMaps) {
+                DdsFileReader irradianceFile(":/resources/cedar_bridge_specular.dds");
+                m_environmentSpecularMaps = std::move(irradianceFile.createOpenGLTextures());
+            }
+
+            size_t bindPosition = 0;
+
+            bindPosition = 0;
+            for (size_t i = 0; i < m_environmentIrradianceMaps->size(); ++i)
+                m_environmentIrradianceMaps->at(i)->bind(bindPosition++);
+            for (size_t i = 0; i < m_environmentSpecularMaps->size(); ++i)
+                m_environmentSpecularMaps->at(i)->bind(bindPosition++);
+
+            bindPosition = 0;
+            for (size_t i = 0; i < m_environmentIrradianceMaps->size(); ++i)
+                m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("environmentIrradianceMapId[" + std::to_string(i) + "]"), (int)(bindPosition++));
+            for (size_t i = 0; i < m_environmentSpecularMaps->size(); ++i)
+                m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("environmentSpecularMapId[" + std::to_string(i) + "]"), (int)(bindPosition++));
+        }
     }
 
     if (m_openGLObject)

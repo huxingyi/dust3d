@@ -110,6 +110,8 @@ private:
     bool m_isEnvironmentLightEnabled = false;
     std::unique_ptr<QOpenGLTexture> m_environmentIrradianceMap;
     std::unique_ptr<QOpenGLTexture> m_environmentSpecularMap;
+    std::unique_ptr<std::vector<std::unique_ptr<QOpenGLTexture>>> m_environmentIrradianceMaps;
+    std::unique_ptr<std::vector<std::unique_ptr<QOpenGLTexture>>> m_environmentSpecularMaps;
 
     std::pair<QVector3D, QVector3D> screenPositionToMouseRay(const QPoint &screenPosition);
     void updateProjectionMatrix();

@@ -23,6 +23,11 @@ void ModelOpenGLProgram::addShaderFromResource(QOpenGLShader::ShaderType type, c
         dust3dDebug << "Failed to addShaderFromResource, resource:" << resourceName << ", " << log().toStdString();
 }
 
+bool ModelOpenGLProgram::isCoreProfile() const
+{
+    return m_isCoreProfile;
+}
+
 void ModelOpenGLProgram::load(bool isCoreProfile)
 {
     if (m_isLoaded)
@@ -49,12 +54,12 @@ void ModelOpenGLProgram::load(bool isCoreProfile)
     m_isLoaded = true;
 }
 
-int ModelOpenGLProgram::getUniformLocationByName(const char *name)
+int ModelOpenGLProgram::getUniformLocationByName(const std::string &name)
 {
     auto findLocation = m_uniformLocationMap.find(name);
     if (findLocation != m_uniformLocationMap.end())
         return findLocation->second;
-    int location = uniformLocation(name);
-    m_uniformLocationMap.insert({std::string(name), location});
+    int location = uniformLocation(name.c_str());
+    m_uniformLocationMap.insert({name, location});
     return location;
 }

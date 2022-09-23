@@ -12,9 +12,9 @@ out vec4 fragColor;
 
 const float PI = 3.1415926;
 
-vec3 fresnelFactor(const vec3 f0, float u)
+vec3 fresnelSchlickRoughness(float NoV, vec3 f0, float roughness)
 {
-    return mix(f0, vec3(1.0), pow(1.01 - u, 5.0));
+    return f0 + (max(vec3(1.0 - roughness), f0) - f0) * pow(clamp(1.0 - NoV, 0.0, 1.0), 5.0);
 }
 
 void main()
@@ -23,19 +23,18 @@ void main()
     vec3 v = normalize(eyePosition - pointPosition);
     vec3 r = reflect(-v, n);
 
-    vec3 diffuseColor = (1.0 - pointMetalness) * pointColor;
-
     float NoV = abs(dot(n, v)) + 1e-5;
 
-    vec3 specular = mix(vec3(0.04), vec3(1.0), pointMetalness);
-
     vec3 irradiance = texture(environmentIrradianceMapId, r).rgb;
-    vec3 diffuse = irradiance * diffuseColor / PI;
+    vec3 diffuse = irradiance * (1.0 - pointMetalness) * pointColor;
 
-    vec3 reflected = fresnelFactor(specular, NoV) * texture(environmentSpecularMapId, r, 1.0).rgb;
+    vec3 f0 = mix(vec3(0.04), pointColor, pointMetalness);
+    vec3 fresnelFactor = fresnelSchlickRoughness(NoV, f0, pointRoughness);
+    vec3 specular = fresnelFactor * texture(environmentSpecularMapId, r, 0.0).rgb;
 
-    vec3 color = diffuse + reflected * pointMetalness;
+    vec3 color = diffuse + specular;
 
+    color = color / (color + vec3(1.0));
     color = pow(color, vec3(1.0/2.2));
 
     fragColor = vec4(color, pointAlpha);

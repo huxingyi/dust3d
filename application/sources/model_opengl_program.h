@@ -8,7 +8,8 @@ class ModelOpenGLProgram: public QOpenGLShaderProgram
 {
 public:
     void load(bool isCoreProfile=false);
-    int getUniformLocationByName(const char *name);
+    int getUniformLocationByName(const std::string &name);
+    bool isCoreProfile() const;
 
 private:
     void addShaderFromResource(QOpenGLShader::ShaderType type, const char *resourceName);
