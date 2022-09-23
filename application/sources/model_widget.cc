@@ -120,6 +120,8 @@ void ModelWidget::cleanup()
     makeCurrent();
     m_modelOpenGLObject.reset();
     m_modelOpenGLProgram.reset();
+    m_wireframeOpenGLObject.reset();
+    m_monochromeOpenGLProgram.reset();
     doneCurrent();
 }
 
@@ -538,47 +540,7 @@ void ModelWidget::drawModel()
     m_modelOpenGLProgram->setUniformValue(m_modelOpenGLProgram->getUniformLocationByName("modelMatrix"), m_world);
     m_modelOpenGLProgram->setUniformValue(m_modelOpenGLProgram->getUniformLocationByName("viewMatrix"), m_camera);
 
-    if (m_isEnvironmentLightEnabled) {
-        if (m_modelOpenGLProgram->isCoreProfile()) {
-            if (!m_environmentIrradianceMap) {
-                DdsFileReader irradianceFile(":/resources/cedar_bridge_irradiance.dds");
-                m_environmentIrradianceMap.reset(irradianceFile.createOpenGLTexture());
-            }
-            if (!m_environmentSpecularMap) {
-                DdsFileReader irradianceFile(":/resources/cedar_bridge_specular.dds");
-                m_environmentSpecularMap.reset(irradianceFile.createOpenGLTexture());
-            }
-            
-            m_environmentIrradianceMap->bind(0);
-            m_modelOpenGLProgram->setUniformValue(m_modelOpenGLProgram->getUniformLocationByName("environmentIrradianceMapId"), 0);
-
-            m_environmentSpecularMap->bind(1);
-            m_modelOpenGLProgram->setUniformValue(m_modelOpenGLProgram->getUniformLocationByName("environmentSpecularMapId"), 1);
-        } else {
-            if (!m_environmentIrradianceMaps) {
-                DdsFileReader irradianceFile(":/resources/cedar_bridge_irradiance.dds");
-                m_environmentIrradianceMaps = std::move(irradianceFile.createOpenGLTextures());
-            }
-            if (!m_environmentSpecularMaps) {
-                DdsFileReader irradianceFile(":/resources/cedar_bridge_specular.dds");
-                m_environmentSpecularMaps = std::move(irradianceFile.createOpenGLTextures());
-            }
-
-            size_t bindPosition = 0;
-
-            bindPosition = 0;
-            for (size_t i = 0; i < m_environmentIrradianceMaps->size(); ++i)
-                m_environmentIrradianceMaps->at(i)->bind(bindPosition++);
-            for (size_t i = 0; i < m_environmentSpecularMaps->size(); ++i)
-                m_environmentSpecularMaps->at(i)->bind(bindPosition++);
-
-            bindPosition = 0;
-            for (size_t i = 0; i < m_environmentIrradianceMaps->size(); ++i)
-                m_modelOpenGLProgram->setUniformValue(m_modelOpenGLProgram->getUniformLocationByName("environmentIrradianceMapId[" + std::to_string(i) + "]"), (int)(bindPosition++));
-            for (size_t i = 0; i < m_environmentSpecularMaps->size(); ++i)
-                m_modelOpenGLProgram->setUniformValue(m_modelOpenGLProgram->getUniformLocationByName("environmentSpecularMapId[" + std::to_string(i) + "]"), (int)(bindPosition++));
-        }
-    }
+    m_modelOpenGLProgram->bindEnvironment();
 
     if (m_modelOpenGLObject)
         m_modelOpenGLObject->draw();

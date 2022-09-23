@@ -11,8 +11,6 @@ float ModelMesh::m_defaultRoughness = 1.0;
 ModelMesh::ModelMesh(const ModelMesh &mesh) :
     m_triangleVertices(nullptr),
     m_triangleVertexCount(0),
-    m_edgeVertices(nullptr),
-    m_edgeVertexCount(0),
     m_textureImage(nullptr)
 {
     if (nullptr != mesh.m_triangleVertices &&
@@ -21,20 +19,6 @@ ModelMesh::ModelMesh(const ModelMesh &mesh) :
         this->m_triangleVertexCount = mesh.m_triangleVertexCount;
         for (int i = 0; i < mesh.m_triangleVertexCount; i++)
             this->m_triangleVertices[i] = mesh.m_triangleVertices[i];
-    }
-    if (nullptr != mesh.m_edgeVertices &&
-            mesh.m_edgeVertexCount > 0) {
-        this->m_edgeVertices = new ModelOpenGLVertex[mesh.m_edgeVertexCount];
-        this->m_edgeVertexCount = mesh.m_edgeVertexCount;
-        for (int i = 0; i < mesh.m_edgeVertexCount; i++)
-            this->m_edgeVertices[i] = mesh.m_edgeVertices[i];
-    }
-    if (nullptr != mesh.m_toolVertices &&
-            mesh.m_toolVertexCount > 0) {
-        this->m_toolVertices = new ModelOpenGLVertex[mesh.m_toolVertexCount];
-        this->m_toolVertexCount = mesh.m_toolVertexCount;
-        for (int i = 0; i < mesh.m_toolVertexCount; i++)
-            this->m_toolVertices[i] = mesh.m_toolVertices[i];
     }
     if (nullptr != mesh.m_textureImage) {
         this->m_textureImage = new QImage(*mesh.m_textureImage);
@@ -77,11 +61,9 @@ void ModelMesh::removeColor()
     }
 }
 
-ModelMesh::ModelMesh(ModelOpenGLVertex *triangleVertices, int vertexNum, ModelOpenGLVertex *edgeVertices, int edgeVertexCount) :
+ModelMesh::ModelMesh(ModelOpenGLVertex *triangleVertices, int vertexNum) :
     m_triangleVertices(triangleVertices),
     m_triangleVertexCount(vertexNum),
-    m_edgeVertices(edgeVertices),
-    m_edgeVertexCount(edgeVertexCount),
     m_textureImage(nullptr)
 {
 }
@@ -126,8 +108,6 @@ ModelMesh::ModelMesh(const std::vector<dust3d::Vector3> &vertices, const std::ve
 ModelMesh::ModelMesh(dust3d::Object &object) :
     m_triangleVertices(nullptr),
     m_triangleVertexCount(0),
-    m_edgeVertices(nullptr),
-    m_edgeVertexCount(0),
     m_textureImage(nullptr)
 {
     m_meshId = object.meshId;
@@ -190,42 +170,11 @@ ModelMesh::ModelMesh(dust3d::Object &object) :
             destIndex++;
         }
     }
-    
-    size_t edgeCount = 0;
-    for (const auto &face: object.triangleAndQuads) {
-        edgeCount += face.size();
-    }
-    m_edgeVertexCount = (int)edgeCount * 2;
-    m_edgeVertices = new ModelOpenGLVertex[m_edgeVertexCount];
-    size_t edgeVertexIndex = 0;
-    for (size_t faceIndex = 0; faceIndex < object.triangleAndQuads.size(); ++faceIndex) {
-        const auto &face = object.triangleAndQuads[faceIndex];
-        for (size_t i = 0; i < face.size(); ++i) {
-            for (size_t x = 0; x < 2; ++x) {
-                size_t sourceIndex = face[(i + x) % face.size()];
-                const dust3d::Vector3 *srcVert = &object.vertices[sourceIndex];
-                ModelOpenGLVertex *dest = &m_edgeVertices[edgeVertexIndex];
-                memset(dest, 0, sizeof(ModelOpenGLVertex));
-                dest->colorR = 0.0;
-                dest->colorG = 0.0;
-                dest->colorB = 0.0;
-                dest->alpha = 1.0;
-                dest->posX = srcVert->x();
-                dest->posY = srcVert->y();
-                dest->posZ = srcVert->z();
-                dest->metalness = m_defaultMetalness;
-                dest->roughness = m_defaultRoughness;
-                edgeVertexIndex++;
-            }
-        }
-    }
 }
 
 ModelMesh::ModelMesh() :
     m_triangleVertices(nullptr),
     m_triangleVertexCount(0),
-    m_edgeVertices(nullptr),
-    m_edgeVertexCount(0),
     m_textureImage(nullptr)
 {
 }
@@ -234,10 +183,6 @@ ModelMesh::~ModelMesh()
 {
     delete[] m_triangleVertices;
     m_triangleVertexCount = 0;
-    delete[] m_edgeVertices;
-    m_edgeVertexCount = 0;
-    delete[] m_toolVertices;
-    m_toolVertexCount = 0;
     delete m_textureImage;
     delete m_normalMapImage;
     delete m_metalnessRoughnessAmbientOcclusionImage;
@@ -266,26 +211,6 @@ ModelOpenGLVertex *ModelMesh::triangleVertices()
 int ModelMesh::triangleVertexCount()
 {
     return m_triangleVertexCount;
-}
-
-ModelOpenGLVertex *ModelMesh::edgeVertices()
-{
-    return m_edgeVertices;
-}
-
-int ModelMesh::edgeVertexCount()
-{
-    return m_edgeVertexCount;
-}
-
-ModelOpenGLVertex *ModelMesh::toolVertices()
-{
-    return m_toolVertices;
-}
-
-int ModelMesh::toolVertexCount()
-{
-    return m_toolVertexCount;
 }
 
 void ModelMesh::setTextureImage(QImage *textureImage)
@@ -372,26 +297,6 @@ void ModelMesh::exportAsObj(const QString &filename)
         QTextStream stream(&file);
         exportAsObj(&stream);
     }
-}
-
-void ModelMesh::updateTool(ModelOpenGLVertex *toolVertices, int vertexNum)
-{
-    delete[] m_toolVertices;
-    m_toolVertices = nullptr;
-    m_toolVertexCount = 0;
-    
-    m_toolVertices = toolVertices;
-    m_toolVertexCount = vertexNum;
-}
-
-void ModelMesh::updateEdges(ModelOpenGLVertex *edgeVertices, int edgeVertexCount)
-{
-    delete[] m_edgeVertices;
-    m_edgeVertices = nullptr;
-    m_edgeVertexCount = 0;
-    
-    m_edgeVertices = edgeVertices;
-    m_edgeVertexCount = edgeVertexCount;
 }
 
 void ModelMesh::updateTriangleVertices(ModelOpenGLVertex *triangleVertices, int triangleVertexCount)

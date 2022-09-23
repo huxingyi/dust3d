@@ -19,7 +19,7 @@ public:
         float metalness=0.0,
         float roughness=0.0);
     ModelMesh(dust3d::Object &object);
-    ModelMesh(ModelOpenGLVertex *triangleVertices, int vertexNum, ModelOpenGLVertex *edgeVertices=nullptr, int edgeVertexCount=0);
+    ModelMesh(ModelOpenGLVertex *triangleVertices, int vertexNum);
     ModelMesh(const ModelMesh &mesh);
     ModelMesh();
     ~ModelMesh();
@@ -48,8 +48,6 @@ public:
     static float m_defaultRoughness;
     void exportAsObj(const QString &filename);
     void exportAsObj(QTextStream *textStream);
-    void updateTool(ModelOpenGLVertex *toolVertices, int vertexNum);
-    void updateEdges(ModelOpenGLVertex *edgeVertices, int edgeVertexCount);
     void updateTriangleVertices(ModelOpenGLVertex *triangleVertices, int triangleVertexCount);
     quint64 meshId() const;
     void setMeshId(quint64 id);
@@ -57,10 +55,6 @@ public:
 private:
     ModelOpenGLVertex *m_triangleVertices = nullptr;
     int m_triangleVertexCount = 0;
-    ModelOpenGLVertex *m_edgeVertices = nullptr;
-    int m_edgeVertexCount = 0;
-    ModelOpenGLVertex *m_toolVertices = nullptr;
-    int m_toolVertexCount = 0;
     std::vector<dust3d::Vector3> m_vertices;
     std::vector<std::vector<size_t>> m_faces;
     std::vector<dust3d::Vector3> m_triangulatedVertices;
