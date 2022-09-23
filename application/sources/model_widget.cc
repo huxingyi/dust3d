@@ -480,6 +480,14 @@ void ModelWidget::paintGL()
 #ifdef GL_LINE_SMOOTH
     f->glEnable(GL_LINE_SMOOTH);
 #endif
+
+    // The built-in line width settings is not been well supported on all platforms,
+    // for example, the line range on 5.15.57.1-microsoft-standard-WSL2 is 1,
+    // that means the wireframe will not looking good,
+    // hence, we use the polygon offset to mimic thickness of wireframes
+    f->glEnable(GL_POLYGON_OFFSET_FILL);
+    f->glPolygonOffset(1.0, 1.0);
+
 	f->glViewport(0, 0, m_widthInPixels, m_heightInPixels);
 
     m_world.setToIdentity();

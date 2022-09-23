@@ -10,9 +10,9 @@ typedef struct
     GLfloat posX;
     GLfloat posY;
     GLfloat posZ;
-    GLfloat colorR = 1.0;
-    GLfloat colorG = 1.0;
-    GLfloat colorB = 1.0;
+    GLfloat colorR = 0.0;
+    GLfloat colorG = 0.0;
+    GLfloat colorB = 0.0;
     GLfloat alpha = 1.0;
 } MonochromeOpenGLVertex;
 #pragma pack(pop)
