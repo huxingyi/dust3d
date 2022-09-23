@@ -729,12 +729,19 @@ void Document::fromSnapshot(const dust3d::Snapshot &snapshot)
     emit uncheckAll();
 }
 
-Model *Document::takeResultMesh()
+ModelMesh *Document::takeResultMesh()
 {
     if (nullptr == m_resultMesh)
         return nullptr;
-    Model *resultMesh = new Model(*m_resultMesh);
+    ModelMesh *resultMesh = new ModelMesh(*m_resultMesh);
     return resultMesh;
+}
+
+MonochromeMesh *Document::takeWireframeMesh()
+{
+    if (nullptr == m_wireframeMesh)
+        return nullptr;
+    return new MonochromeMesh(*m_wireframeMesh);
 }
 
 bool Document::isMeshGenerationSucceed()
@@ -742,17 +749,18 @@ bool Document::isMeshGenerationSucceed()
     return m_isMeshGenerationSucceed;
 }
 
-Model *Document::takeResultTextureMesh()
+ModelMesh *Document::takeResultTextureMesh()
 {
     if (nullptr == m_resultTextureMesh)
         return nullptr;
-    Model *resultTextureMesh = new Model(*m_resultTextureMesh);
+    ModelMesh *resultTextureMesh = new ModelMesh(*m_resultTextureMesh);
     return resultTextureMesh;
 }
 
 void Document::meshReady()
 {
-    Model *resultMesh = m_meshGenerator->takeResultMesh();
+    ModelMesh *resultMesh = m_meshGenerator->takeResultMesh();
+    m_wireframeMesh.reset(m_meshGenerator->takeWireframeMesh());
     dust3d::Object *object = m_meshGenerator->takeObject();
     bool isSuccessful = m_meshGenerator->isSuccessful();
     
@@ -772,7 +780,7 @@ void Document::meshReady()
     for (auto &partId: m_meshGenerator->generatedPreviewPartIds()) {
         auto part = partMap.find(partId);
         if (part != partMap.end()) {
-            Model *resultPartPreviewMesh = m_meshGenerator->takePartPreviewMesh(partId);
+            ModelMesh *resultPartPreviewMesh = m_meshGenerator->takePartPreviewMesh(partId);
             part->second.updatePreviewMesh(resultPartPreviewMesh);
             partPreviewsChanged = true;
         }
@@ -1591,7 +1599,7 @@ void Document::materialPreviewsReady()
     for (const auto &materialId: m_materialPreviewsGenerator->generatedPreviewMaterialIds()) {
         auto material = materialMap.find(materialId);
         if (material != materialMap.end()) {
-            Model *resultPartPreviewMesh = m_materialPreviewsGenerator->takePreview(materialId);
+            ModelMesh *resultPartPreviewMesh = m_materialPreviewsGenerator->takePreview(materialId);
             material->second.updatePreviewMesh(resultPartPreviewMesh);
             emit materialPreviewChanged(materialId);
         }

@@ -4,7 +4,7 @@
 #include <QObject>
 #include <map>
 #include <vector>
-#include "model.h"
+#include "model_mesh.h"
 #include "material_layer.h"
 
 class MaterialPreviewsGenerator : public QObject
@@ -15,7 +15,7 @@ public:
     ~MaterialPreviewsGenerator();
     void addMaterial(dust3d::Uuid materialId, const std::vector<MaterialLayer> &layers);
     const std::set<dust3d::Uuid> &generatedPreviewMaterialIds();
-    Model *takePreview(dust3d::Uuid materialId);
+    ModelMesh *takePreview(dust3d::Uuid materialId);
     void generate();
 signals:
     void finished();
@@ -23,7 +23,7 @@ public slots:
     void process();
 private:
     std::vector<std::pair<dust3d::Uuid, std::vector<MaterialLayer>>> m_materials;
-    std::map<dust3d::Uuid, Model *> m_previews;
+    std::map<dust3d::Uuid, ModelMesh *> m_previews;
     std::set<dust3d::Uuid> m_generatedMaterialIds;
 };
 

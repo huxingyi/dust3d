@@ -423,7 +423,7 @@ DocumentWindow::DocumentWindow()
     m_toggleColorAction = new QAction(tr("Toggle Color"), this);
     connect(m_toggleColorAction, &QAction::triggered, [&]() {
         m_modelRemoveColor = !m_modelRemoveColor;
-        Model *mesh = nullptr;
+        ModelMesh *mesh = nullptr;
         if (m_document->isMeshGenerating() ||
                 m_document->isPostProcessing() ||
                 m_document->isTextureGenerating()) {
@@ -738,6 +738,7 @@ DocumentWindow::DocumentWindow()
         if (m_modelRemoveColor && resultMesh)
             resultMesh->removeColor();
         m_modelRenderWidget->updateMesh(resultMesh);
+        m_modelRenderWidget->updateWireframeMesh(m_document->takeWireframeMesh());
     });
 
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::cursorChanged, [=]() {
@@ -1027,7 +1028,7 @@ void DocumentWindow::openPathAs(const QString &path, const QString &asName)
     QByteArray fileData = file.readAll();
     
     dust3d::Ds3FileReader ds3Reader((const std::uint8_t *)fileData.data(), fileData.size());
-    for (int i = 0; i < ds3Reader.items().size(); ++i) {
+    for (int i = 0; i < (int)ds3Reader.items().size(); ++i) {
         const dust3d::Ds3ReaderItem &item = ds3Reader.items()[i];
         qDebug() << "[" << i << "]item.name:" << item.name << "item.type:" << item.type;
         if (item.type == "asset") {
@@ -1045,7 +1046,7 @@ void DocumentWindow::openPathAs(const QString &path, const QString &asName)
         }
     }
     
-    for (int i = 0; i < ds3Reader.items().size(); ++i) {
+    for (int i = 0; i < (int)ds3Reader.items().size(); ++i) {
         const dust3d::Ds3ReaderItem &item = ds3Reader.items()[i];
         if (item.type == "model") {
             std::vector<std::uint8_t> data;
@@ -1124,7 +1125,7 @@ void DocumentWindow::exportObjResult()
 void DocumentWindow::exportObjToFilename(const QString &filename)
 {
     QApplication::setOverrideCursor(Qt::WaitCursor);
-    Model *resultMesh = m_document->takeResultMesh();
+    ModelMesh *resultMesh = m_document->takeResultMesh();
     if (nullptr != resultMesh) {
         resultMesh->exportAsObj(filename);
         delete resultMesh;
@@ -1534,13 +1535,13 @@ void DocumentWindow::updateRecentFileActions()
 {
     QStringList files = Preferences::instance().recentFileList();
     
-    for (int i = 0; i < files.size() && i < m_recentFileActions.size(); ++i) {
+    for (int i = 0; i < (int)files.size() && i < (int)m_recentFileActions.size(); ++i) {
         QString text = tr("&%1 %2").arg(i + 1).arg(strippedName(files[i]));
         m_recentFileActions[i]->setText(text);
         m_recentFileActions[i]->setData(files[i]);
         m_recentFileActions[i]->setVisible(true);
     }
-    for (int j = files.size(); j < m_recentFileActions.size(); ++j)
+    for (int j = files.size(); j < (int)m_recentFileActions.size(); ++j)
         m_recentFileActions[j]->setVisible(false);
 
     m_recentFileSeparatorAction->setVisible(files.size() > 0);

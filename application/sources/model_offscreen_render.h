@@ -4,7 +4,7 @@
 #include <QOffscreenSurface>
 #include <QSurfaceFormat>
 #include <QVector3D>
-#include "model.h"
+#include "model_mesh.h"
 
 class ModelOffscreenRender: public QOffscreenSurface
 {
@@ -17,7 +17,7 @@ public:
     void setEyePosition(const QVector3D &eyePosition);
     void setMoveToPosition(const QVector3D &moveToPosition);
     void setRenderThread(QThread *thread);
-    void updateMesh(Model *mesh);
+    void updateMesh(ModelMesh *mesh);
     QImage toImage(const QSize &size);
 };
 

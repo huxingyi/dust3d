@@ -8,7 +8,7 @@
 #include <QPixmap>
 #include <dust3d/base/object.h>
 #include <dust3d/base/snapshot.h>
-#include "model.h"
+#include "model_mesh.h"
 
 class TextureGenerator : public QObject
 {
@@ -22,7 +22,7 @@ public:
     QImage *takeResultTextureMetalnessImage();
     QImage *takeResultTextureAmbientOcclusionImage();
     dust3d::Object *takeObject();
-    Model *takeResultMesh();
+    ModelMesh *takeResultMesh();
     bool hasTransparencySettings();
     void addPartColorMap(dust3d::Uuid partId, const QImage *image, float tileScale);
     void addPartNormalMap(dust3d::Uuid partId, const QImage *image, float tileScale);
@@ -48,7 +48,7 @@ private:
     QImage *m_resultTextureRoughnessImage = nullptr;
     QImage *m_resultTextureMetalnessImage = nullptr;
     QImage *m_resultTextureAmbientOcclusionImage = nullptr;
-    Model *m_resultMesh = nullptr;
+    ModelMesh *m_resultMesh = nullptr;
     std::map<dust3d::Uuid, std::pair<QImage, float>> m_partColorTextureMap;
     std::map<dust3d::Uuid, std::pair<QImage, float>> m_partNormalTextureMap;
     std::map<dust3d::Uuid, std::pair<QImage, float>> m_partMetalnessTextureMap;

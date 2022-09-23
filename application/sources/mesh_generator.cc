@@ -17,9 +17,9 @@ MeshGenerator::~MeshGenerator()
     delete m_resultMesh;
 }
 
-Model *MeshGenerator::takePartPreviewMesh(const dust3d::Uuid &partId)
+ModelMesh *MeshGenerator::takePartPreviewMesh(const dust3d::Uuid &partId)
 {
-    Model *resultMesh = m_partPreviewMeshes[partId];
+    ModelMesh *resultMesh = m_partPreviewMeshes[partId];
     m_partPreviewMeshes[partId] = nullptr;
     return resultMesh;
 }
@@ -31,6 +31,11 @@ QImage *MeshGenerator::takePartPreviewImage(const dust3d::Uuid &partId)
     return image;
 }
 
+MonochromeMesh *MeshGenerator::takeWireframeMesh()
+{
+    return m_wireframeMesh.release();
+}
+
 void MeshGenerator::process()
 {
     QElapsedTimer countTimeConsumed;
@@ -39,7 +44,7 @@ void MeshGenerator::process()
     generate();
     
     if (nullptr != m_object)
-        m_resultMesh = new Model(*m_object);
+        m_resultMesh = new ModelMesh(*m_object);
     
     for (const auto &partId: m_generatedPreviewImagePartIds) {
         auto it = m_generatedPartPreviews.find(partId);
@@ -51,22 +56,25 @@ void MeshGenerator::process()
         auto it = m_generatedPartPreviews.find(partId);
         if (it == m_generatedPartPreviews.end())
             continue;
-        m_partPreviewMeshes[partId] = new Model(it->second.vertices,
+        m_partPreviewMeshes[partId] = new ModelMesh(it->second.vertices,
             it->second.triangles,
             it->second.vertexNormals,
             it->second.color,
             it->second.metalness,
             it->second.roughness);
     }
+
+    if (nullptr != m_object)
+        m_wireframeMesh = std::make_unique<MonochromeMesh>(*m_object);
     
     qDebug() << "The mesh generation took" << countTimeConsumed.elapsed() << "milliseconds";
     
     emit finished();
 }
 
-Model *MeshGenerator::takeResultMesh()
+ModelMesh *MeshGenerator::takeResultMesh()
 {
-    Model *resultMesh = m_resultMesh;
+    ModelMesh *resultMesh = m_resultMesh;
     m_resultMesh = nullptr;
     return resultMesh;
 }

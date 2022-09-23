@@ -63,7 +63,7 @@ void MaterialWidget::updatePreview(dust3d::Uuid materialId)
         qDebug() << "Material not found:" << m_materialId;
         return;
     }
-    Model *previewMesh = material->takePreviewMesh();
+    ModelMesh *previewMesh = material->takePreviewMesh();
     m_previewWidget->updateMesh(previewMesh);
 }
 

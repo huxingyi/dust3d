@@ -1,5 +1,5 @@
-#ifndef DUST3D_APPLICATION_MODEL_SHADER_VERTEX_H_
-#define DUST3D_APPLICATION_MODEL_SHADER_VERTEX_H_
+#ifndef DUST3D_APPLICATION_MODEL_OPENGL_VERTEX_H_
+#define DUST3D_APPLICATION_MODEL_OPENGL_VERTEX_H_
 
 #include <QOpenGLFunctions>
 
@@ -24,7 +24,7 @@ typedef struct
     GLfloat tangentY;
     GLfloat tangentZ;
     GLfloat alpha = 1.0;
-} ModelShaderVertex;
+} ModelOpenGLVertex;
 #pragma pack(pop)
 
 #endif

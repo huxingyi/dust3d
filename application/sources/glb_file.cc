@@ -7,7 +7,7 @@
 #include <QtCore/qbuffer.h>
 #include "glb_file.h"
 #include "version.h"
-#include "model.h"
+#include "model_mesh.h"
 
 bool GlbFileWriter::m_enableComment = false;
 
@@ -79,8 +79,8 @@ GlbFileWriter::GlbFileWriter(dust3d::Object &object,
             m_json["meshes"][0]["primitives"][primitiveIndex]["attributes"]["TEXCOORD_0"] = bufferViewIndex + (++attributeIndex);
         int textureIndex = 0;
         m_json["materials"][primitiveIndex]["pbrMetallicRoughness"]["baseColorTexture"]["index"] = textureIndex++;
-        m_json["materials"][primitiveIndex]["pbrMetallicRoughness"]["metallicFactor"] = Model::m_defaultMetalness;
-        m_json["materials"][primitiveIndex]["pbrMetallicRoughness"]["roughnessFactor"] = Model::m_defaultRoughness;
+        m_json["materials"][primitiveIndex]["pbrMetallicRoughness"]["metallicFactor"] = ModelMesh::m_defaultMetalness;
+        m_json["materials"][primitiveIndex]["pbrMetallicRoughness"]["roughnessFactor"] = ModelMesh::m_defaultRoughness;
         if (object.alphaEnabled)
             m_json["materials"][primitiveIndex]["alphaMode"] = "BLEND";
         if (normalImage) {

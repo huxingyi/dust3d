@@ -10,9 +10,12 @@
 #include <QVector2D>
 #include <QTimer>
 #include <QString>
-#include "model.h"
+#include "model_mesh.h"
 #include "model_opengl_program.h"
 #include "model_opengl_object.h"
+#include "monochrome_mesh.h"
+#include "monochrome_opengl_program.h"
+#include "monochrome_opengl_object.h"
 
 class ModelWidget : public QOpenGLWidget
 {
@@ -31,7 +34,8 @@ signals:
 public:
     ModelWidget(QWidget *parent = 0);
     ~ModelWidget();
-    void updateMesh(Model *mesh);
+    void updateMesh(ModelMesh *mesh);
+    void updateWireframeMesh(MonochromeMesh *mesh);
     void updateColorTexture(QImage *colorTextureImage);
     void toggleWireframe();
     bool isWireframeVisible();
@@ -82,8 +86,10 @@ private:
     int m_yRot = m_defaultYRotation;
     int m_zRot = m_defaultZRotation;
     int m_directionOnMoveStart = 0;
-    std::unique_ptr<ModelOpenGLProgram> m_openGLProgram;
-    std::unique_ptr<ModelOpenGLObject> m_openGLObject;
+    std::unique_ptr<ModelOpenGLProgram> m_modelOpenGLProgram;
+    std::unique_ptr<ModelOpenGLObject> m_modelOpenGLObject;
+    std::unique_ptr<MonochromeOpenGLProgram> m_monochromeOpenGLProgram;
+    std::unique_ptr<MonochromeOpenGLObject> m_wireframeOpenGLObject;
     bool m_moveStarted = false;
     bool m_moveEnabled = true;
     bool m_zoomEnabled = true;
@@ -108,6 +114,7 @@ private:
     bool m_enableCullFace = true;
     bool m_notGraphics = false;
     bool m_isEnvironmentLightEnabled = false;
+    bool m_isWireframeVisible = false;
     std::unique_ptr<QOpenGLTexture> m_environmentIrradianceMap;
     std::unique_ptr<QOpenGLTexture> m_environmentSpecularMap;
     std::unique_ptr<std::vector<std::unique_ptr<QOpenGLTexture>>> m_environmentIrradianceMaps;
@@ -116,6 +123,8 @@ private:
     std::pair<QVector3D, QVector3D> screenPositionToMouseRay(const QPoint &screenPosition);
     void updateProjectionMatrix();
     void normalizeAngle(int &angle);
+    void drawModel();
+    void drawWireframe();
 public:
     static int m_defaultXRotation;
     static int m_defaultYRotation;

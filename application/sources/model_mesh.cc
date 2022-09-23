@@ -2,13 +2,13 @@
 #include <QTextStream>
 #include <QFile>
 #include <cmath>
-#include "model.h"
+#include "model_mesh.h"
 #include "version.h"
 
-float Model::m_defaultMetalness = 0.0;
-float Model::m_defaultRoughness = 1.0;
+float ModelMesh::m_defaultMetalness = 0.0;
+float ModelMesh::m_defaultRoughness = 1.0;
 
-Model::Model(const Model &mesh) :
+ModelMesh::ModelMesh(const ModelMesh &mesh) :
     m_triangleVertices(nullptr),
     m_triangleVertexCount(0),
     m_edgeVertices(nullptr),
@@ -17,21 +17,21 @@ Model::Model(const Model &mesh) :
 {
     if (nullptr != mesh.m_triangleVertices &&
             mesh.m_triangleVertexCount > 0) {
-        this->m_triangleVertices = new ModelShaderVertex[mesh.m_triangleVertexCount];
+        this->m_triangleVertices = new ModelOpenGLVertex[mesh.m_triangleVertexCount];
         this->m_triangleVertexCount = mesh.m_triangleVertexCount;
         for (int i = 0; i < mesh.m_triangleVertexCount; i++)
             this->m_triangleVertices[i] = mesh.m_triangleVertices[i];
     }
     if (nullptr != mesh.m_edgeVertices &&
             mesh.m_edgeVertexCount > 0) {
-        this->m_edgeVertices = new ModelShaderVertex[mesh.m_edgeVertexCount];
+        this->m_edgeVertices = new ModelOpenGLVertex[mesh.m_edgeVertexCount];
         this->m_edgeVertexCount = mesh.m_edgeVertexCount;
         for (int i = 0; i < mesh.m_edgeVertexCount; i++)
             this->m_edgeVertices[i] = mesh.m_edgeVertices[i];
     }
     if (nullptr != mesh.m_toolVertices &&
             mesh.m_toolVertexCount > 0) {
-        this->m_toolVertices = new ModelShaderVertex[mesh.m_toolVertexCount];
+        this->m_toolVertices = new ModelOpenGLVertex[mesh.m_toolVertexCount];
         this->m_toolVertexCount = mesh.m_toolVertexCount;
         for (int i = 0; i < mesh.m_toolVertexCount; i++)
             this->m_toolVertices[i] = mesh.m_toolVertices[i];
@@ -54,7 +54,7 @@ Model::Model(const Model &mesh) :
     this->m_meshId = mesh.meshId();
 }
 
-void Model::removeColor()
+void ModelMesh::removeColor()
 {
     delete this->m_textureImage;
     this->m_textureImage = nullptr;
@@ -77,7 +77,7 @@ void Model::removeColor()
     }
 }
 
-Model::Model(ModelShaderVertex *triangleVertices, int vertexNum, ModelShaderVertex *edgeVertices, int edgeVertexCount) :
+ModelMesh::ModelMesh(ModelOpenGLVertex *triangleVertices, int vertexNum, ModelOpenGLVertex *edgeVertices, int edgeVertexCount) :
     m_triangleVertices(triangleVertices),
     m_triangleVertexCount(vertexNum),
     m_edgeVertices(edgeVertices),
@@ -86,21 +86,21 @@ Model::Model(ModelShaderVertex *triangleVertices, int vertexNum, ModelShaderVert
 {
 }
 
-Model::Model(const std::vector<dust3d::Vector3> &vertices, const std::vector<std::vector<size_t>> &triangles,
+ModelMesh::ModelMesh(const std::vector<dust3d::Vector3> &vertices, const std::vector<std::vector<size_t>> &triangles,
     const std::vector<std::vector<dust3d::Vector3>> &triangleVertexNormals,
     const dust3d::Color &color,
     float metalness,
     float roughness)
 {
     m_triangleVertexCount = (int)triangles.size() * 3;
-    m_triangleVertices = new ModelShaderVertex[m_triangleVertexCount];
+    m_triangleVertices = new ModelOpenGLVertex[m_triangleVertexCount];
     int destIndex = 0;
     for (size_t i = 0; i < triangles.size(); ++i) {
         for (auto j = 0; j < 3; j++) {
             int vertexIndex = (int)triangles[i][j];
             const dust3d::Vector3 *srcVert = &vertices[vertexIndex];
             const dust3d::Vector3 *srcNormal = &(triangleVertexNormals)[i][j];
-            ModelShaderVertex *dest = &m_triangleVertices[destIndex];
+            ModelOpenGLVertex *dest = &m_triangleVertices[destIndex];
             dest->colorR = color.r();
             dest->colorG = color.g();
             dest->colorB = color.b();
@@ -123,7 +123,7 @@ Model::Model(const std::vector<dust3d::Vector3> &vertices, const std::vector<std
     }
 }
 
-Model::Model(dust3d::Object &object) :
+ModelMesh::ModelMesh(dust3d::Object &object) :
     m_triangleVertices(nullptr),
     m_triangleVertexCount(0),
     m_edgeVertices(nullptr),
@@ -141,7 +141,7 @@ Model::Model(dust3d::Object &object) :
     }
     
     m_triangleVertexCount = (int)object.triangles.size() * 3;
-    m_triangleVertices = new ModelShaderVertex[m_triangleVertexCount];
+    m_triangleVertices = new ModelOpenGLVertex[m_triangleVertexCount];
     int destIndex = 0;
     const auto triangleVertexNormals = object.triangleVertexNormals();
     const auto triangleVertexUvs = object.triangleVertexUvs();
@@ -163,7 +163,7 @@ Model::Model(dust3d::Object &object) :
             const dust3d::Vector3 *srcTangent = &defaultTangent;
             if (triangleTangents)
                 srcTangent = &(*triangleTangents)[i];
-            ModelShaderVertex *dest = &m_triangleVertices[destIndex];
+            ModelOpenGLVertex *dest = &m_triangleVertices[destIndex];
             dest->colorR = triangleColor->r();
             dest->colorG = triangleColor->g();
             dest->colorB = triangleColor->b();
@@ -196,7 +196,7 @@ Model::Model(dust3d::Object &object) :
         edgeCount += face.size();
     }
     m_edgeVertexCount = (int)edgeCount * 2;
-    m_edgeVertices = new ModelShaderVertex[m_edgeVertexCount];
+    m_edgeVertices = new ModelOpenGLVertex[m_edgeVertexCount];
     size_t edgeVertexIndex = 0;
     for (size_t faceIndex = 0; faceIndex < object.triangleAndQuads.size(); ++faceIndex) {
         const auto &face = object.triangleAndQuads[faceIndex];
@@ -204,8 +204,8 @@ Model::Model(dust3d::Object &object) :
             for (size_t x = 0; x < 2; ++x) {
                 size_t sourceIndex = face[(i + x) % face.size()];
                 const dust3d::Vector3 *srcVert = &object.vertices[sourceIndex];
-                ModelShaderVertex *dest = &m_edgeVertices[edgeVertexIndex];
-                memset(dest, 0, sizeof(ModelShaderVertex));
+                ModelOpenGLVertex *dest = &m_edgeVertices[edgeVertexIndex];
+                memset(dest, 0, sizeof(ModelOpenGLVertex));
                 dest->colorR = 0.0;
                 dest->colorG = 0.0;
                 dest->colorB = 0.0;
@@ -221,7 +221,7 @@ Model::Model(dust3d::Object &object) :
     }
 }
 
-Model::Model() :
+ModelMesh::ModelMesh() :
     m_triangleVertices(nullptr),
     m_triangleVertexCount(0),
     m_edgeVertices(nullptr),
@@ -230,7 +230,7 @@ Model::Model() :
 {
 }
 
-Model::~Model()
+ModelMesh::~ModelMesh()
 {
     delete[] m_triangleVertices;
     m_triangleVertexCount = 0;
@@ -243,112 +243,112 @@ Model::~Model()
     delete m_metalnessRoughnessAmbientOcclusionImage;
 }
 
-const std::vector<dust3d::Vector3> &Model::vertices()
+const std::vector<dust3d::Vector3> &ModelMesh::vertices()
 {
     return m_vertices;
 }
 
-const std::vector<std::vector<size_t>> &Model::faces()
+const std::vector<std::vector<size_t>> &ModelMesh::faces()
 {
     return m_faces;
 }
 
-const std::vector<dust3d::Vector3> &Model::triangulatedVertices()
+const std::vector<dust3d::Vector3> &ModelMesh::triangulatedVertices()
 {
     return m_triangulatedVertices;
 }
 
-ModelShaderVertex *Model::triangleVertices()
+ModelOpenGLVertex *ModelMesh::triangleVertices()
 {
     return m_triangleVertices;
 }
 
-int Model::triangleVertexCount()
+int ModelMesh::triangleVertexCount()
 {
     return m_triangleVertexCount;
 }
 
-ModelShaderVertex *Model::edgeVertices()
+ModelOpenGLVertex *ModelMesh::edgeVertices()
 {
     return m_edgeVertices;
 }
 
-int Model::edgeVertexCount()
+int ModelMesh::edgeVertexCount()
 {
     return m_edgeVertexCount;
 }
 
-ModelShaderVertex *Model::toolVertices()
+ModelOpenGLVertex *ModelMesh::toolVertices()
 {
     return m_toolVertices;
 }
 
-int Model::toolVertexCount()
+int ModelMesh::toolVertexCount()
 {
     return m_toolVertexCount;
 }
 
-void Model::setTextureImage(QImage *textureImage)
+void ModelMesh::setTextureImage(QImage *textureImage)
 {
     m_textureImage = textureImage;
 }
 
-const QImage *Model::textureImage()
+const QImage *ModelMesh::textureImage()
 {
     return m_textureImage;
 }
 
-void Model::setNormalMapImage(QImage *normalMapImage)
+void ModelMesh::setNormalMapImage(QImage *normalMapImage)
 {
     m_normalMapImage = normalMapImage;
 }
 
-const QImage *Model::normalMapImage()
+const QImage *ModelMesh::normalMapImage()
 {
     return m_normalMapImage;
 }
 
-const QImage *Model::metalnessRoughnessAmbientOcclusionImage()
+const QImage *ModelMesh::metalnessRoughnessAmbientOcclusionImage()
 {
     return m_metalnessRoughnessAmbientOcclusionImage;
 }
 
-void Model::setMetalnessRoughnessAmbientOcclusionImage(QImage *image)
+void ModelMesh::setMetalnessRoughnessAmbientOcclusionImage(QImage *image)
 {
     m_metalnessRoughnessAmbientOcclusionImage = image;
 }
 
-bool Model::hasMetalnessInImage()
+bool ModelMesh::hasMetalnessInImage()
 {
     return m_hasMetalnessInImage;
 }
 
-void Model::setHasMetalnessInImage(bool hasInImage)
+void ModelMesh::setHasMetalnessInImage(bool hasInImage)
 {
     m_hasMetalnessInImage = hasInImage;
 }
 
-bool Model::hasRoughnessInImage()
+bool ModelMesh::hasRoughnessInImage()
 {
     return m_hasRoughnessInImage;
 }
 
-void Model::setHasRoughnessInImage(bool hasInImage)
+void ModelMesh::setHasRoughnessInImage(bool hasInImage)
 {
     m_hasRoughnessInImage = hasInImage;
 }
 
-bool Model::hasAmbientOcclusionInImage()
+bool ModelMesh::hasAmbientOcclusionInImage()
 {
     return m_hasAmbientOcclusionInImage;
 }
 
-void Model::setHasAmbientOcclusionInImage(bool hasInImage)
+void ModelMesh::setHasAmbientOcclusionInImage(bool hasInImage)
 {
     m_hasAmbientOcclusionInImage = hasInImage;
 }
 
-void Model::exportAsObj(QTextStream *textStream)
+void ModelMesh::exportAsObj(QTextStream *textStream)
 {
     auto &stream = *textStream;
     stream << "# " << APP_NAME << " " << APP_HUMAN_VER << endl;
@@ -365,7 +365,7 @@ void Model::exportAsObj(QTextStream *textStream)
     }
 }
 
-void Model::exportAsObj(const QString &filename)
+void ModelMesh::exportAsObj(const QString &filename)
 {
     QFile file(filename);
     if (file.open(QIODevice::WriteOnly)) {
@@ -374,7 +374,7 @@ void Model::exportAsObj(const QString &filename)
     }
 }
 
-void Model::updateTool(ModelShaderVertex *toolVertices, int vertexNum)
+void ModelMesh::updateTool(ModelOpenGLVertex *toolVertices, int vertexNum)
 {
     delete[] m_toolVertices;
     m_toolVertices = nullptr;
@@ -384,7 +384,7 @@ void Model::updateTool(ModelShaderVertex *toolVertices, int vertexNum)
     m_toolVertexCount = vertexNum;
 }
 
-void Model::updateEdges(ModelShaderVertex *edgeVertices, int edgeVertexCount)
+void ModelMesh::updateEdges(ModelOpenGLVertex *edgeVertices, int edgeVertexCount)
 {
     delete[] m_edgeVertices;
     m_edgeVertices = nullptr;
@@ -394,7 +394,7 @@ void Model::updateEdges(ModelShaderVertex *edgeVertices, int edgeVertexCount)
     m_edgeVertexCount = edgeVertexCount;
 }
 
-void Model::updateTriangleVertices(ModelShaderVertex *triangleVertices, int triangleVertexCount)
+void ModelMesh::updateTriangleVertices(ModelOpenGLVertex *triangleVertices, int triangleVertexCount)
 {
     delete[] m_triangleVertices;
     m_triangleVertices = 0;
@@ -404,12 +404,12 @@ void Model::updateTriangleVertices(ModelShaderVertex *triangleVertices, int tria
     m_triangleVertexCount = triangleVertexCount;
 }
 
-quint64 Model::meshId() const
+quint64 ModelMesh::meshId() const
 {
     return m_meshId;
 }
 
-void Model::setMeshId(quint64 id)
+void ModelMesh::setMeshId(quint64 id)
 {
     m_meshId = id;
 }

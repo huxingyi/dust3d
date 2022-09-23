@@ -2,7 +2,7 @@
 #include "part_preview_images_generator.h"
 #include "theme.h"
 
-void PartPreviewImagesGenerator::addPart(const dust3d::Uuid &partId, Model *previewMesh, bool isCutFace)
+void PartPreviewImagesGenerator::addPart(const dust3d::Uuid &partId, ModelMesh *previewMesh, bool isCutFace)
 {
     m_partPreviews.insert({partId, {previewMesh, isCutFace}});
 }

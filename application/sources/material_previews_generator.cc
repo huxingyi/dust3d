@@ -31,9 +31,9 @@ const std::set<dust3d::Uuid> &MaterialPreviewsGenerator::generatedPreviewMateria
     return m_generatedMaterialIds;
 }
 
-Model *MaterialPreviewsGenerator::takePreview(dust3d::Uuid materialId)
+ModelMesh *MaterialPreviewsGenerator::takePreview(dust3d::Uuid materialId)
 {
-    Model *resultMesh = m_previews[materialId];
+    ModelMesh *resultMesh = m_previews[materialId];
     m_previews[materialId] = nullptr;
     return resultMesh;
 }
@@ -102,9 +102,9 @@ void MaterialPreviewsGenerator::generate()
                 }
             }
             textureGenerator->generate();
-            Model *texturedResultMesh = textureGenerator->takeResultMesh();
+            ModelMesh *texturedResultMesh = textureGenerator->takeResultMesh();
             if (nullptr != texturedResultMesh) {
-                m_previews[material.first] = new Model(*texturedResultMesh);
+                m_previews[material.first] = new ModelMesh(*texturedResultMesh);
                 m_generatedMaterialIds.insert(material.first);
                 delete texturedResultMesh;
             }

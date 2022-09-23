@@ -1,5 +1,5 @@
-#ifndef DUST3D_APPLICATION_MODEL_H_
-#define DUST3D_APPLICATION_MODEL_H_
+#ifndef DUST3D_APPLICATION_MODEL_MESH_H_
+#define DUST3D_APPLICATION_MODEL_MESH_H_
 
 #include <QObject>
 #include <vector>
@@ -8,26 +8,26 @@
 #include <dust3d/base/vector3.h>
 #include <dust3d/base/color.h>
 #include <dust3d/base/object.h>
-#include "model_shader_vertex.h"
+#include "model_opengl_vertex.h"
 
-class Model
+class ModelMesh
 {
 public:
-    Model(const std::vector<dust3d::Vector3> &vertices, const std::vector<std::vector<size_t>> &triangles,
+    ModelMesh(const std::vector<dust3d::Vector3> &vertices, const std::vector<std::vector<size_t>> &triangles,
         const std::vector<std::vector<dust3d::Vector3>> &triangleVertexNormals,
         const dust3d::Color &color=dust3d::Color::createWhite(),
         float metalness=0.0,
         float roughness=0.0);
-    Model(dust3d::Object &object);
-    Model(ModelShaderVertex *triangleVertices, int vertexNum, ModelShaderVertex *edgeVertices=nullptr, int edgeVertexCount=0);
-    Model(const Model &mesh);
-    Model();
-    ~Model();
-    ModelShaderVertex *triangleVertices();
+    ModelMesh(dust3d::Object &object);
+    ModelMesh(ModelOpenGLVertex *triangleVertices, int vertexNum, ModelOpenGLVertex *edgeVertices=nullptr, int edgeVertexCount=0);
+    ModelMesh(const ModelMesh &mesh);
+    ModelMesh();
+    ~ModelMesh();
+    ModelOpenGLVertex *triangleVertices();
     int triangleVertexCount();
-    ModelShaderVertex *edgeVertices();
+    ModelOpenGLVertex *edgeVertices();
     int edgeVertexCount();
-    ModelShaderVertex *toolVertices();
+    ModelOpenGLVertex *toolVertices();
     int toolVertexCount();
     const std::vector<dust3d::Vector3> &vertices();
     const std::vector<std::vector<size_t>> &faces();
@@ -48,18 +48,18 @@ public:
     static float m_defaultRoughness;
     void exportAsObj(const QString &filename);
     void exportAsObj(QTextStream *textStream);
-    void updateTool(ModelShaderVertex *toolVertices, int vertexNum);
-    void updateEdges(ModelShaderVertex *edgeVertices, int edgeVertexCount);
-    void updateTriangleVertices(ModelShaderVertex *triangleVertices, int triangleVertexCount);
+    void updateTool(ModelOpenGLVertex *toolVertices, int vertexNum);
+    void updateEdges(ModelOpenGLVertex *edgeVertices, int edgeVertexCount);
+    void updateTriangleVertices(ModelOpenGLVertex *triangleVertices, int triangleVertexCount);
     quint64 meshId() const;
     void setMeshId(quint64 id);
     void removeColor();
 private:
-    ModelShaderVertex *m_triangleVertices = nullptr;
+    ModelOpenGLVertex *m_triangleVertices = nullptr;
     int m_triangleVertexCount = 0;
-    ModelShaderVertex *m_edgeVertices = nullptr;
+    ModelOpenGLVertex *m_edgeVertices = nullptr;
     int m_edgeVertexCount = 0;
-    ModelShaderVertex *m_toolVertices = nullptr;
+    ModelOpenGLVertex *m_toolVertices = nullptr;
     int m_toolVertexCount = 0;
     std::vector<dust3d::Vector3> m_vertices;
     std::vector<std::vector<size_t>> m_faces;

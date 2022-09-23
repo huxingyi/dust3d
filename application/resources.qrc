@@ -8,6 +8,10 @@
         <file>shaders/model.frag</file>
         <file>shaders/model_core.vert</file>
         <file>shaders/model_core.frag</file>
+        <file>shaders/monochrome.vert</file>
+        <file>shaders/monochrome.frag</file>
+        <file>shaders/monochrome_core.vert</file>
+        <file>shaders/monochrome_core.frag</file>
         <file>resources/cedar_bridge_irradiance.dds</file>
         <file>resources/cedar_bridge_specular.dds</file>
         <file>resources/dust3d-vertical.png</file>

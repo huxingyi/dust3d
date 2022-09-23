@@ -115,11 +115,11 @@ void ModelWidget::setZRotation(int angle)
 
 void ModelWidget::cleanup()
 {
-    if (!m_openGLProgram)
+    if (!m_modelOpenGLProgram)
         return;
     makeCurrent();
-    m_openGLObject.reset();
-    m_openGLProgram.reset();
+    m_modelOpenGLObject.reset();
+    m_modelOpenGLProgram.reset();
     doneCurrent();
 }
 
@@ -163,13 +163,13 @@ std::pair<QVector3D, QVector3D> ModelWidget::screenPositionToMouseRay(const QPoi
 
 void ModelWidget::toggleWireframe()
 {
-    // TODO
+    m_isWireframeVisible = !m_isWireframeVisible;
+    update();
 }
 
 bool ModelWidget::isWireframeVisible()
 {
-    // TODO
-    return false;
+    return m_isWireframeVisible;
 }
 
 void ModelWidget::enableEnvironmentLight()
@@ -367,11 +367,20 @@ void ModelWidget::setMousePickRadius(float radius)
     update();
 }
 
-void ModelWidget::updateMesh(Model *mesh)
+void ModelWidget::updateMesh(ModelMesh *mesh)
 {
-    if (!m_openGLObject)
-        m_openGLObject = std::make_unique<ModelOpenGLObject>();
-    m_openGLObject->update(std::unique_ptr<Model>(mesh));
+    if (!m_modelOpenGLObject)
+        m_modelOpenGLObject = std::make_unique<ModelOpenGLObject>();
+    m_modelOpenGLObject->update(std::unique_ptr<ModelMesh>(mesh));
+    emit renderParametersChanged();
+    update();
+}
+
+void ModelWidget::updateWireframeMesh(MonochromeMesh *mesh)
+{
+    if (!m_wireframeOpenGLObject)
+        m_wireframeOpenGLObject = std::make_unique<MonochromeOpenGLObject>();
+    m_wireframeOpenGLObject->update(std::unique_ptr<MonochromeMesh>(mesh));
     emit renderParametersChanged();
     update();
 }
@@ -481,20 +490,48 @@ void ModelWidget::paintGL()
     m_camera.setToIdentity();
     m_camera.translate(m_eyePosition.x(), m_eyePosition.y(), m_eyePosition.z());
 
-    if (!m_openGLProgram) {
-        m_openGLProgram = std::make_unique<ModelOpenGLProgram>();
-        m_openGLProgram->load(format().profile() == QSurfaceFormat::CoreProfile);
+    if (!m_modelOpenGLProgram) {
+        m_modelOpenGLProgram = std::make_unique<ModelOpenGLProgram>();
+        m_modelOpenGLProgram->load(format().profile() == QSurfaceFormat::CoreProfile);
     }
 
-    m_openGLProgram->bind();
+    if (m_isWireframeVisible) {
+        if (!m_monochromeOpenGLProgram) {
+            m_monochromeOpenGLProgram = std::make_unique<MonochromeOpenGLProgram>();
+            m_monochromeOpenGLProgram->load(format().profile() == QSurfaceFormat::CoreProfile);
+        }
+    }
 
-    m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("eyePosition"), m_eyePosition);
-    m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("projectionMatrix"), m_projection);
-    m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("modelMatrix"), m_world);
-    m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("viewMatrix"), m_camera);
+    drawModel();
+    if (m_isWireframeVisible)
+        drawWireframe();
+}
+
+void ModelWidget::drawWireframe()
+{
+    m_monochromeOpenGLProgram->bind();
+
+    m_monochromeOpenGLProgram->setUniformValue(m_modelOpenGLProgram->getUniformLocationByName("projectionMatrix"), m_projection);
+    m_monochromeOpenGLProgram->setUniformValue(m_modelOpenGLProgram->getUniformLocationByName("modelMatrix"), m_world);
+    m_monochromeOpenGLProgram->setUniformValue(m_modelOpenGLProgram->getUniformLocationByName("viewMatrix"), m_camera);
+
+    if (m_wireframeOpenGLObject)
+        m_wireframeOpenGLObject->draw();
+
+    m_monochromeOpenGLProgram->release();
+}
+
+void ModelWidget::drawModel()
+{
+    m_modelOpenGLProgram->bind();
+
+    m_modelOpenGLProgram->setUniformValue(m_modelOpenGLProgram->getUniformLocationByName("eyePosition"), m_eyePosition);
+    m_modelOpenGLProgram->setUniformValue(m_modelOpenGLProgram->getUniformLocationByName("projectionMatrix"), m_projection);
+    m_modelOpenGLProgram->setUniformValue(m_modelOpenGLProgram->getUniformLocationByName("modelMatrix"), m_world);
+    m_modelOpenGLProgram->setUniformValue(m_modelOpenGLProgram->getUniformLocationByName("viewMatrix"), m_camera);
 
     if (m_isEnvironmentLightEnabled) {
-        if (m_openGLProgram->isCoreProfile()) {
+        if (m_modelOpenGLProgram->isCoreProfile()) {
             if (!m_environmentIrradianceMap) {
                 DdsFileReader irradianceFile(":/resources/cedar_bridge_irradiance.dds");
                 m_environmentIrradianceMap.reset(irradianceFile.createOpenGLTexture());
@@ -505,10 +542,10 @@ void ModelWidget::paintGL()
             }
             
             m_environmentIrradianceMap->bind(0);
-            m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("environmentIrradianceMapId"), 0);
+            m_modelOpenGLProgram->setUniformValue(m_modelOpenGLProgram->getUniformLocationByName("environmentIrradianceMapId"), 0);
 
             m_environmentSpecularMap->bind(1);
-            m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("environmentSpecularMapId"), 1);
+            m_modelOpenGLProgram->setUniformValue(m_modelOpenGLProgram->getUniformLocationByName("environmentSpecularMapId"), 1);
         } else {
             if (!m_environmentIrradianceMaps) {
                 DdsFileReader irradianceFile(":/resources/cedar_bridge_irradiance.dds");
@@ -529,14 +566,14 @@ void ModelWidget::paintGL()
 
             bindPosition = 0;
             for (size_t i = 0; i < m_environmentIrradianceMaps->size(); ++i)
-                m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("environmentIrradianceMapId[" + std::to_string(i) + "]"), (int)(bindPosition++));
+                m_modelOpenGLProgram->setUniformValue(m_modelOpenGLProgram->getUniformLocationByName("environmentIrradianceMapId[" + std::to_string(i) + "]"), (int)(bindPosition++));
             for (size_t i = 0; i < m_environmentSpecularMaps->size(); ++i)
-                m_openGLProgram->setUniformValue(m_openGLProgram->getUniformLocationByName("environmentSpecularMapId[" + std::to_string(i) + "]"), (int)(bindPosition++));
+                m_modelOpenGLProgram->setUniformValue(m_modelOpenGLProgram->getUniformLocationByName("environmentSpecularMapId[" + std::to_string(i) + "]"), (int)(bindPosition++));
         }
     }
 
-    if (m_openGLObject)
-        m_openGLObject->draw();
+    if (m_modelOpenGLObject)
+        m_modelOpenGLObject->draw();
 
-    m_openGLProgram->release();
+    m_modelOpenGLProgram->release();
 }

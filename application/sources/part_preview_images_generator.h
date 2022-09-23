@@ -18,7 +18,7 @@ public:
     
     struct PreviewInput
     {
-        Model *mesh = nullptr;
+        ModelMesh *mesh = nullptr;
         bool isCutFace = false;
     };
     
@@ -32,7 +32,7 @@ public:
         delete m_offscreenRender;
     }
 
-    void addPart(const dust3d::Uuid &partId, Model *previewMesh, bool isCutFace);
+    void addPart(const dust3d::Uuid &partId, ModelMesh *previewMesh, bool isCutFace);
     void generate();
     std::map<dust3d::Uuid, QImage> *takePartImages();
 signals:

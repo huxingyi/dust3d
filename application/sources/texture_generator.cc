@@ -73,9 +73,9 @@ dust3d::Object *TextureGenerator::takeObject()
     return object;
 }
 
-Model *TextureGenerator::takeResultMesh()
+ModelMesh *TextureGenerator::takeResultMesh()
 {
-    Model *resultMesh = m_resultMesh;
+    ModelMesh *resultMesh = m_resultMesh;
     m_resultMesh = nullptr;
     return resultMesh;
 }
@@ -174,7 +174,7 @@ bool TextureGenerator::hasTransparencySettings()
 
 void TextureGenerator::generate()
 {
-    m_resultMesh = new Model(*m_object);
+    m_resultMesh = new ModelMesh(*m_object);
     
     if (nullptr == m_object->triangleVertexUvs())
         return;

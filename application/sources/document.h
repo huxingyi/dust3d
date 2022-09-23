@@ -14,7 +14,8 @@
 #include <dust3d/base/snapshot.h>
 #include <dust3d/base/texture_type.h>
 #include <dust3d/base/combine_mode.h>
-#include "model.h"
+#include "model_mesh.h"
+#include "monochrome_mesh.h"
 #include "theme.h"
 #include "skeleton_document.h"
 #include "material_layer.h"
@@ -44,20 +45,20 @@ public:
     QString name;
     bool dirty = true;
     std::vector<MaterialLayer> layers;
-    void updatePreviewMesh(Model *previewMesh)
+    void updatePreviewMesh(ModelMesh *previewMesh)
     {
         delete m_previewMesh;
         m_previewMesh = previewMesh;
     }
-    Model *takePreviewMesh() const
+    ModelMesh *takePreviewMesh() const
     {
         if (nullptr == m_previewMesh)
             return nullptr;
-        return new Model(*m_previewMesh);
+        return new ModelMesh(*m_previewMesh);
     }
 private:
     Q_DISABLE_COPY(Material);
-    Model *m_previewMesh = nullptr;
+    ModelMesh *m_previewMesh = nullptr;
 };
 
 enum class DocumentToSnapshotFor
@@ -133,8 +134,8 @@ public: // need initialize
     QImage *textureAmbientOcclusionImage = nullptr;
     QByteArray *textureAmbientOcclusionImageByteArray = nullptr;
     bool weldEnabled = true;
-    float brushMetalness = Model::m_defaultMetalness;
-    float brushRoughness = Model::m_defaultRoughness;
+    float brushMetalness = ModelMesh::m_defaultMetalness;
+    float brushRoughness = ModelMesh::m_defaultRoughness;
 public:
     Document();
     ~Document();
@@ -160,11 +161,12 @@ public:
     };
     void addFromSnapshot(const dust3d::Snapshot &snapshot, enum SnapshotSource source=SnapshotSource::Paste);
     const Material *findMaterial(dust3d::Uuid materialId) const;
-    Model *takeResultMesh();
-    Model *takePaintedMesh();
+    ModelMesh *takeResultMesh();
+    MonochromeMesh *takeWireframeMesh();
+    ModelMesh *takePaintedMesh();
     bool isMeshGenerationSucceed();
-    Model *takeResultTextureMesh();
-    Model *takeResultRigWeightMesh();
+    ModelMesh *takeResultTextureMesh();
+    ModelMesh *takeResultRigWeightMesh();
     void updateTurnaround(const QImage &image);
     void clearTurnaround();
     void updateTextureImage(QImage *image);
@@ -239,7 +241,8 @@ private:
 
     bool m_isResultMeshObsolete = false;
     MeshGenerator *m_meshGenerator = nullptr;
-    Model *m_resultMesh = nullptr;
+    ModelMesh *m_resultMesh = nullptr;
+    std::unique_ptr<MonochromeMesh> m_wireframeMesh;
     bool m_isMeshGenerationSucceed = true;
     int m_batchChangeRefCount = 0;
     dust3d::Object *m_currentObject = nullptr;
@@ -248,7 +251,7 @@ private:
     bool m_isPostProcessResultObsolete = false;
     MeshResultPostProcessor *m_postProcessor = nullptr;
     dust3d::Object *m_postProcessedObject = new dust3d::Object;
-    Model *m_resultTextureMesh = nullptr;
+    ModelMesh *m_resultTextureMesh = nullptr;
     unsigned long long m_textureImageUpdateVersion = 0;
     bool m_smoothNormal = false;
     MaterialPreviewsGenerator *m_materialPreviewsGenerator = nullptr;

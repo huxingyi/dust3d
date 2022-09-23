@@ -15,7 +15,7 @@
 #include <dust3d/base/part_base.h>
 #include <dust3d/base/combine_mode.h>
 #include "theme.h"
-#include "model.h"
+#include "model_mesh.h"
 #include "debug.h"
 
 class SkeletonNode
@@ -388,21 +388,21 @@ public:
         smooth = other.smooth;
         hollowThickness = other.hollowThickness;
     }
-    void updatePreviewMesh(Model *previewMesh)
+    void updatePreviewMesh(ModelMesh *previewMesh)
     {
         delete m_previewMesh;
         m_previewMesh = previewMesh;
         isPreviewMeshObsolete = true;
     }
-    Model *takePreviewMesh() const
+    ModelMesh *takePreviewMesh() const
     {
         if (nullptr == m_previewMesh)
             return nullptr;
-        return new Model(*m_previewMesh);
+        return new ModelMesh(*m_previewMesh);
     }
 private:
     Q_DISABLE_COPY(SkeletonPart);
-    Model *m_previewMesh = nullptr;
+    ModelMesh *m_previewMesh = nullptr;
 };
 
 enum class SkeletonDocumentEditMode

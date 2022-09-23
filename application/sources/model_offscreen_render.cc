@@ -40,7 +40,7 @@ void ModelOffscreenRender::setRenderThread(QThread *thread)
     // TODO
 }
 
-void ModelOffscreenRender::updateMesh(Model *mesh)
+void ModelOffscreenRender::updateMesh(ModelMesh *mesh)
 {
     // TODO
 }

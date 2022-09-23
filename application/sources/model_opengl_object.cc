@@ -3,7 +3,7 @@
 #include <QOpenGLContext>
 #include "model_opengl_object.h"
 
-void ModelOpenGLObject::update(std::unique_ptr<Model> mesh)
+void ModelOpenGLObject::update(std::unique_ptr<ModelMesh> mesh)
 {
     QMutexLocker lock(&m_meshMutex);
     m_mesh = std::move(mesh);
@@ -22,7 +22,7 @@ void ModelOpenGLObject::draw()
 
 void ModelOpenGLObject::copyMeshToOpenGL()
 {
-    std::unique_ptr<Model> mesh;
+    std::unique_ptr<ModelMesh> mesh;
     bool meshChanged = false;
     if (m_meshIsDirty) {
         QMutexLocker lock(&m_meshMutex);
@@ -41,7 +41,7 @@ void ModelOpenGLObject::copyMeshToOpenGL()
             m_buffer.destroy();
         m_buffer.create();
         m_buffer.bind();
-        m_buffer.allocate(mesh->triangleVertices(), mesh->triangleVertexCount() * sizeof(ModelShaderVertex));
+        m_buffer.allocate(mesh->triangleVertices(), mesh->triangleVertexCount() * sizeof(ModelOpenGLVertex));
         m_meshTriangleVertexCount = mesh->triangleVertexCount();
         QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
         f->glEnableVertexAttribArray(0);
@@ -52,14 +52,14 @@ void ModelOpenGLObject::copyMeshToOpenGL()
         f->glEnableVertexAttribArray(5);
         f->glEnableVertexAttribArray(6);
         f->glEnableVertexAttribArray(7);
-        f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(ModelShaderVertex), 0);
-        f->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(ModelShaderVertex), reinterpret_cast<void *>(3 * sizeof(GLfloat)));
-        f->glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(ModelShaderVertex), reinterpret_cast<void *>(6 * sizeof(GLfloat)));
-        f->glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(ModelShaderVertex), reinterpret_cast<void *>(9 * sizeof(GLfloat)));
-        f->glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(ModelShaderVertex), reinterpret_cast<void *>(11 * sizeof(GLfloat)));
-        f->glVertexAttribPointer(5, 1, GL_FLOAT, GL_FALSE, sizeof(ModelShaderVertex), reinterpret_cast<void *>(12 * sizeof(GLfloat)));
-        f->glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, sizeof(ModelShaderVertex), reinterpret_cast<void *>(13 * sizeof(GLfloat)));
-        f->glVertexAttribPointer(7, 1, GL_FLOAT, GL_FALSE, sizeof(ModelShaderVertex), reinterpret_cast<void *>(16 * sizeof(GLfloat)));
+        f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(ModelOpenGLVertex), 0);
+        f->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(ModelOpenGLVertex), reinterpret_cast<void *>(3 * sizeof(GLfloat)));
+        f->glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(ModelOpenGLVertex), reinterpret_cast<void *>(6 * sizeof(GLfloat)));
+        f->glVertexAttribPointer(3, 2, GL_FLOAT, GL_FALSE, sizeof(ModelOpenGLVertex), reinterpret_cast<void *>(9 * sizeof(GLfloat)));
+        f->glVertexAttribPointer(4, 1, GL_FLOAT, GL_FALSE, sizeof(ModelOpenGLVertex), reinterpret_cast<void *>(11 * sizeof(GLfloat)));
+        f->glVertexAttribPointer(5, 1, GL_FLOAT, GL_FALSE, sizeof(ModelOpenGLVertex), reinterpret_cast<void *>(12 * sizeof(GLfloat)));
+        f->glVertexAttribPointer(6, 3, GL_FLOAT, GL_FALSE, sizeof(ModelOpenGLVertex), reinterpret_cast<void *>(13 * sizeof(GLfloat)));
+        f->glVertexAttribPointer(7, 1, GL_FLOAT, GL_FALSE, sizeof(ModelOpenGLVertex), reinterpret_cast<void *>(16 * sizeof(GLfloat)));
         m_buffer.release();
     }
 }
