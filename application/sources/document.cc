@@ -744,6 +744,13 @@ MonochromeMesh *Document::takeWireframeMesh()
     return new MonochromeMesh(*m_wireframeMesh);
 }
 
+MonochromeMesh *Document::takeHudMesh()
+{
+    if (nullptr == m_hudMesh)
+        return nullptr;
+    return new MonochromeMesh(*m_hudMesh);
+}
+
 bool Document::isMeshGenerationSucceed()
 {
     return m_isMeshGenerationSucceed;
@@ -761,6 +768,7 @@ void Document::meshReady()
 {
     ModelMesh *resultMesh = m_meshGenerator->takeResultMesh();
     m_wireframeMesh.reset(m_meshGenerator->takeWireframeMesh());
+    m_hudMesh.reset(m_meshGenerator->takeHudMesh());
     dust3d::Object *object = m_meshGenerator->takeObject();
     bool isSuccessful = m_meshGenerator->isSuccessful();
     

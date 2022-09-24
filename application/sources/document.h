@@ -162,6 +162,7 @@ public:
     const Material *findMaterial(dust3d::Uuid materialId) const;
     ModelMesh *takeResultMesh();
     MonochromeMesh *takeWireframeMesh();
+    MonochromeMesh *takeHudMesh();
     ModelMesh *takePaintedMesh();
     bool isMeshGenerationSucceed();
     ModelMesh *takeResultTextureMesh();
@@ -242,6 +243,7 @@ private:
     MeshGenerator *m_meshGenerator = nullptr;
     ModelMesh *m_resultMesh = nullptr;
     std::unique_ptr<MonochromeMesh> m_wireframeMesh;
+    std::unique_ptr<MonochromeMesh> m_hudMesh;
     bool m_isMeshGenerationSucceed = true;
     int m_batchChangeRefCount = 0;
     dust3d::Object *m_currentObject = nullptr;

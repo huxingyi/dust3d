@@ -734,6 +734,7 @@ DocumentWindow::DocumentWindow()
             resultMesh->removeColor();
         m_modelRenderWidget->updateMesh(resultMesh);
         m_modelRenderWidget->updateWireframeMesh(m_document->takeWireframeMesh());
+        m_modelRenderWidget->updateHudMesh(m_document->takeHudMesh());
     });
 
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::cursorChanged, [=]() {

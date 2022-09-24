@@ -81,8 +81,8 @@ MeshCombiner::Mesh *MeshCombiner::combine(const Mesh &firstMesh, const Mesh &sec
     std::vector<std::pair<Source, size_t>> *combinedVerticesComeFrom)
 {
     if (firstMesh.isNull() || !firstMesh.isCombinable() ||
-			secondMesh.isNull() || !secondMesh.isCombinable())
-		return nullptr;
+            secondMesh.isNull() || !secondMesh.isCombinable())
+        return nullptr;
 
     SolidMeshBooleanOperation booleanOperation(firstMesh.m_solidMesh, secondMesh.m_solidMesh);
     if (!booleanOperation.combine())

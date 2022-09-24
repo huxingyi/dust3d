@@ -1,5 +1,6 @@
 #include <QElapsedTimer>
 #include <QDebug>
+#include <dust3d/mesh/hud_manager.h>
 #include "mesh_generator.h"
 #include "cut_face_preview.h"
 
@@ -36,6 +37,11 @@ MonochromeMesh *MeshGenerator::takeWireframeMesh()
     return m_wireframeMesh.release();
 }
 
+MonochromeMesh *MeshGenerator::takeHudMesh()
+{
+    return m_hudMesh.release();
+}
+
 void MeshGenerator::process()
 {
     QElapsedTimer countTimeConsumed;
@@ -66,6 +72,14 @@ void MeshGenerator::process()
 
     if (nullptr != m_object)
         m_wireframeMesh = std::make_unique<MonochromeMesh>(*m_object);
+    
+    if (nullptr != m_object) {
+        dust3d::HudManager hudManager;
+        hudManager.addFromObject(*m_object);
+        hudManager.generate();
+        auto lineVertices = hudManager.takeLineVertices();
+        m_hudMesh = std::make_unique<MonochromeMesh>(std::move(*lineVertices));
+    }
     
     qDebug() << "The mesh generation took" << countTimeConsumed.elapsed() << "milliseconds";
     

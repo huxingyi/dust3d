@@ -11,10 +11,11 @@ public:
     MonochromeMesh(const MonochromeMesh &mesh);
     MonochromeMesh(MonochromeMesh &&mesh);
     MonochromeMesh(const dust3d::Object &object);
-    const MonochromeOpenGLVertex *lineVertices();
+    MonochromeMesh(std::vector<float> &&lineVertices);
+    const float *lineVertices();
     int lineVertexCount();
 private:
-    std::vector<MonochromeOpenGLVertex> m_lineVertices;
+    std::vector<float> m_lineVertices;
 };
 
 #endif

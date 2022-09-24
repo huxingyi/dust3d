@@ -36,6 +36,7 @@ public:
     ~ModelWidget();
     void updateMesh(ModelMesh *mesh);
     void updateWireframeMesh(MonochromeMesh *mesh);
+    void updateHudMesh(MonochromeMesh *mesh);
     void toggleWireframe();
     bool isWireframeVisible();
     void toggleRotation();
@@ -87,6 +88,7 @@ private:
     std::unique_ptr<ModelOpenGLObject> m_modelOpenGLObject;
     std::unique_ptr<MonochromeOpenGLProgram> m_monochromeOpenGLProgram;
     std::unique_ptr<MonochromeOpenGLObject> m_wireframeOpenGLObject;
+    std::unique_ptr<MonochromeOpenGLObject> m_hudOpenGLObject;
     bool m_moveStarted = false;
     bool m_moveEnabled = true;
     bool m_zoomEnabled = true;
@@ -115,7 +117,7 @@ private:
     void updateProjectionMatrix();
     void normalizeAngle(int &angle);
     void drawModel();
-    void drawWireframe();
+    void drawMonochrome();
 public:
     static int m_defaultXRotation;
     static int m_defaultYRotation;

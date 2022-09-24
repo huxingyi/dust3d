@@ -32,14 +32,14 @@ ModelWidget::ModelWidget(QWidget *parent) :
     setContextMenuPolicy(Qt::CustomContextMenu);
     
     m_widthInPixels = width() * window()->devicePixelRatio();
-	m_heightInPixels = height() * window()->devicePixelRatio();
-	
+    m_heightInPixels = height() * window()->devicePixelRatio();
+    
     zoom(200);
 }
 
 const QVector3D &ModelWidget::eyePosition()
 {
-	return m_eyePosition;
+    return m_eyePosition;
 }
 
 const QVector3D &ModelWidget::moveToPosition()
@@ -121,6 +121,7 @@ void ModelWidget::cleanup()
     m_modelOpenGLObject.reset();
     m_modelOpenGLProgram.reset();
     m_wireframeOpenGLObject.reset();
+    m_hudOpenGLObject.reset();
     m_monochromeOpenGLProgram.reset();
     doneCurrent();
 }
@@ -144,8 +145,8 @@ void ModelWidget::updateProjectionMatrix()
 
 void ModelWidget::resizeGL(int w, int h)
 {
-	m_widthInPixels = w * window()->devicePixelRatio();
-	m_heightInPixels = h * window()->devicePixelRatio();
+    m_widthInPixels = w * window()->devicePixelRatio();
+    m_heightInPixels = h * window()->devicePixelRatio();
     updateProjectionMatrix();
     emit renderParametersChanged();
 }
@@ -387,14 +388,23 @@ void ModelWidget::updateWireframeMesh(MonochromeMesh *mesh)
     update();
 }
 
+void ModelWidget::updateHudMesh(MonochromeMesh *mesh)
+{
+    if (!m_hudOpenGLObject)
+        m_hudOpenGLObject = std::make_unique<MonochromeOpenGLObject>();
+    m_hudOpenGLObject->update(std::unique_ptr<MonochromeMesh>(mesh));
+    emit renderParametersChanged();
+    update();
+}
+
 int ModelWidget::widthInPixels()
 {
-	return m_widthInPixels;
+    return m_widthInPixels;
 }
 
 int ModelWidget::heightInPixels()
 {
-	return m_heightInPixels;
+    return m_heightInPixels;
 }
 
 void ModelWidget::enableMove(bool enabled)
@@ -485,7 +495,7 @@ void ModelWidget::paintGL()
     f->glEnable(GL_POLYGON_OFFSET_FILL);
     f->glPolygonOffset(1.0, 1.0);
 
-	f->glViewport(0, 0, m_widthInPixels, m_heightInPixels);
+    f->glViewport(0, 0, m_widthInPixels, m_heightInPixels);
 
     m_world.setToIdentity();
     m_world.rotate(m_xRot / 16.0f, 1, 0, 0);
@@ -508,12 +518,10 @@ void ModelWidget::paintGL()
     }
     
     drawModel();
-    if (m_isWireframeVisible) {
-        drawWireframe();
-    }
+    drawMonochrome();
 }
 
-void ModelWidget::drawWireframe()
+void ModelWidget::drawMonochrome()
 {
     m_monochromeOpenGLProgram->bind();
 
@@ -521,8 +529,12 @@ void ModelWidget::drawWireframe()
     m_monochromeOpenGLProgram->setUniformValue(m_monochromeOpenGLProgram->getUniformLocationByName("modelMatrix"), m_world);
     m_monochromeOpenGLProgram->setUniformValue(m_monochromeOpenGLProgram->getUniformLocationByName("viewMatrix"), m_camera);
 
-    if (m_wireframeOpenGLObject)
-        m_wireframeOpenGLObject->draw();
+    if (m_isWireframeVisible) {
+        if (m_wireframeOpenGLObject)
+            m_wireframeOpenGLObject->draw();
+        if (m_hudOpenGLObject)
+            m_hudOpenGLObject->draw();
+    }
 
     m_monochromeOpenGLProgram->release();
 }

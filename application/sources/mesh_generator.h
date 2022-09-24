@@ -18,6 +18,7 @@ public:
     ModelMesh *takePartPreviewMesh(const dust3d::Uuid &partId);
     QImage *takePartPreviewImage(const dust3d::Uuid &partId);
     MonochromeMesh *takeWireframeMesh();
+    MonochromeMesh *takeHudMesh();
 public slots:
     void process();
 signals:
@@ -27,6 +28,7 @@ private:
     std::map<dust3d::Uuid, ModelMesh *> m_partPreviewMeshes;
     std::map<dust3d::Uuid, QImage *> m_partPreviewImages;
     std::unique_ptr<MonochromeMesh> m_wireframeMesh;
+    std::unique_ptr<MonochromeMesh> m_hudMesh;
 };
 
 #endif

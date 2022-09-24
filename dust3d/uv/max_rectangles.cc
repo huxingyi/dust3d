@@ -198,7 +198,7 @@ MaxRectanglesRect *findPositionForNewNodeBottomLeft(MaxRectanglesContext *ctx,
     *bestY = INT_MAX;
 
     for (loop = ctx->freeRectLink; loop; loop = loop->next) {
-       	// Try to place the rectangle in upright (non-flipped) orientation.
+           // Try to place the rectangle in upright (non-flipped) orientation.
         if (loop->width >= width && loop->height >= height) {
             int topSideY = (int) loop->y + height;
             if (topSideY<*bestY || (topSideY == *bestY && loop->x<*bestX)) {
@@ -237,7 +237,7 @@ MaxRectanglesRect *findPositionForNewNodeBestShortSideFit(MaxRectanglesContext *
     *bestShortSideFit = INT_MAX;
 
     for (loop = ctx->freeRectLink; loop; loop = loop->next) {
-       	// Try to place the rectangle in upright (non-flipped) orientation.
+           // Try to place the rectangle in upright (non-flipped) orientation.
         if (loop->width >= width && loop->height >= height) {
             int leftoverHoriz = abs((int) loop->width - width);
             int leftoverVert = abs((int) loop->height - height);
@@ -289,7 +289,7 @@ MaxRectanglesRect *findPositionForNewNodeBestLongSideFit(MaxRectanglesContext *c
     *bestLongSideFit = INT_MAX;
 
     for (loop = ctx->freeRectLink; loop; loop = loop->next) {
-       	// Try to place the rectangle in upright (non-flipped) orientation.
+           // Try to place the rectangle in upright (non-flipped) orientation.
         if (loop->width >= width && loop->height >= height) {
             int leftoverHoriz = abs((int) loop->width - width);
             int leftoverVert = abs((int) loop->height - height);
@@ -343,7 +343,7 @@ MaxRectanglesRect *findPositionForNewNodeBestAreaFit(MaxRectanglesContext *ctx,
     for (loop = ctx->freeRectLink; loop; loop = loop->next) {
         int areaFit = (int) loop->width *(int) loop->height - width * height;
 
-       	// Try to place the rectangle in upright (non-flipped) orientation.
+           // Try to place the rectangle in upright (non-flipped) orientation.
         if (loop->width >= width && loop->height >= height) {
             int leftoverHoriz = abs((int) loop->width - width);
             int leftoverVert = abs((int) loop->height - height);
@@ -423,7 +423,7 @@ MaxRectanglesRect *findPositionForNewNodeContactPoint(MaxRectanglesContext *ctx,
     *bestContactScore = -1;
 
     for (loop = ctx->freeRectLink; loop; loop = loop->next) {
-       	// Try to place the rectangle in upright (non-flipped) orientation.
+           // Try to place the rectangle in upright (non-flipped) orientation.
         if (loop->width >= width && loop->height >= height) {
             int score = contactPointScoreNode(ctx, (int) loop->x, (int) loop->y,
                 width, height);
@@ -504,7 +504,7 @@ MaxRectanglesRect *scoreRect(MaxRectanglesContext *ctx, int width, int height,
             break;
         case kMaxRectanglesContactPointRule:
             newNode = findPositionForNewNodeContactPoint(ctx, width, height, score1);
-            *score1 = - *score1;	// Reverse since we are minimizing, but for contact point score bigger is better.
+            *score1 = - *score1;    // Reverse since we are minimizing, but for contact point score bigger is better.
             break;
         case kMaxRectanglesBestLongSideFit:
             newNode = findPositionForNewNodeBestLongSideFit(ctx, width, height,
@@ -516,7 +516,7 @@ MaxRectanglesRect *scoreRect(MaxRectanglesContext *ctx, int width, int height,
             break;
     }
 
-   	// Cannot fit the current rectangle.
+       // Cannot fit the current rectangle.
     if (!newNode || 0 == newNode->height) {
         *score1 = INT_MAX;
         *score2 = INT_MAX;
@@ -528,7 +528,7 @@ MaxRectanglesRect *scoreRect(MaxRectanglesContext *ctx, int width, int height,
 int splitFreeNode(MaxRectanglesContext *ctx, MaxRectanglesRect *freeNode,
     MaxRectanglesRect *usedNode)
 {
-   	// Test with SAT if the rectangles even intersect.
+       // Test with SAT if the rectangles even intersect.
     if (usedNode->x >= freeNode->x + freeNode->width ||
             usedNode->x + usedNode->width <= freeNode->x ||
             usedNode->y >= freeNode->y + freeNode->height ||
@@ -538,7 +538,7 @@ int splitFreeNode(MaxRectanglesContext *ctx, MaxRectanglesRect *freeNode,
 
     if (usedNode->x < freeNode->x + freeNode->width &&
             usedNode->x + usedNode->width > freeNode->x) {
-       	// New node at the top side of the used node.
+           // New node at the top side of the used node.
         if (usedNode->y > freeNode->y && usedNode->y<freeNode->y + freeNode->height) {
             MaxRectanglesRect *newNode = createRect(freeNode->x, freeNode->y,
                 freeNode->width, freeNode->height, 0);
@@ -549,7 +549,7 @@ int splitFreeNode(MaxRectanglesContext *ctx, MaxRectanglesRect *freeNode,
             addRectToFreeRectLink(ctx, newNode);
         }
 
-       	// New node at the bottom side of the used node.
+           // New node at the bottom side of the used node.
         if (usedNode->y + usedNode->height < freeNode->y + freeNode->height) {
             MaxRectanglesRect *newNode = createRect(freeNode->x, freeNode->y,
                 freeNode->width, freeNode->height, 0);
@@ -565,7 +565,7 @@ int splitFreeNode(MaxRectanglesContext *ctx, MaxRectanglesRect *freeNode,
 
     if (usedNode->y < freeNode->y + freeNode->height &&
             usedNode->y + usedNode->height > freeNode->y) {
-       	// New node at the left side of the used node.
+           // New node at the left side of the used node.
         if (usedNode->x > freeNode->x && usedNode->x<freeNode->x + freeNode->width) {
             MaxRectanglesRect *newNode = createRect(freeNode->x, freeNode->y,
                 freeNode->width, freeNode->height, 0);
@@ -576,7 +576,7 @@ int splitFreeNode(MaxRectanglesContext *ctx, MaxRectanglesRect *freeNode,
             addRectToFreeRectLink(ctx, newNode);
         }
 
-       	// New node at the right side of the used node.
+           // New node at the right side of the used node.
         if (usedNode->x + usedNode->width<freeNode->x + freeNode->width) {
             MaxRectanglesRect *newNode = createRect(freeNode->x, freeNode->y,
                 freeNode->width, freeNode->height, 0);
