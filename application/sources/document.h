@@ -80,7 +80,6 @@ signals:
     void turnaroundChanged();
     void editModeChanged();
     void resultTextureChanged();
-    void resultColorTextureChanged();
     void postProcessedResultChanged();
     void partSubdivStateChanged(dust3d::Uuid partId);
     void partXmirrorStateChanged(dust3d::Uuid partId);

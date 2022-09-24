@@ -120,14 +120,17 @@ QImage ModelOffscreenRender::toImage(const QSize &size)
     auto program = std::make_unique<ModelOpenGLProgram>();
     program->load(m_context->format().profile() == QSurfaceFormat::CoreProfile);
     program->bind();
-    program->bindEnvironment();
+    program->bindMaps();
 
     program->setUniformValue(program->getUniformLocationByName("eyePosition"), m_eyePosition);
     program->setUniformValue(program->getUniformLocationByName("projectionMatrix"), projection);
     program->setUniformValue(program->getUniformLocationByName("modelMatrix"), world);
+    program->setUniformValue(program->getUniformLocationByName("normalMatrix"), world.normalMatrix());
     program->setUniformValue(program->getUniformLocationByName("viewMatrix"), camera);
 
     object->draw();
+
+    program->releaseMaps();
 
     program->release();
 

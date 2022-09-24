@@ -36,12 +36,9 @@ public:
     ~ModelWidget();
     void updateMesh(ModelMesh *mesh);
     void updateWireframeMesh(MonochromeMesh *mesh);
-    void updateColorTexture(QImage *colorTextureImage);
     void toggleWireframe();
     bool isWireframeVisible();
     void toggleRotation();
-    void enableEnvironmentLight();
-    bool isEnvironmentLightEnabled();
     void enableMove(bool enabled);
     void enableZoom(bool enabled);
     void enableMousePicking(bool enabled);
@@ -113,7 +110,6 @@ private:
     bool m_moveAndZoomByWindow = true;
     bool m_enableCullFace = true;
     bool m_notGraphics = false;
-    bool m_isEnvironmentLightEnabled = false;
     bool m_isWireframeVisible = false;
     std::pair<QVector3D, QVector3D> screenPositionToMouseRay(const QPoint &screenPosition);
     void updateProjectionMatrix();

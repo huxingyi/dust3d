@@ -251,7 +251,6 @@ DocumentWindow::DocumentWindow()
     m_modelRenderWidget->setMoveAndZoomByWindow(false);
     m_modelRenderWidget->move(0, 0);
     m_modelRenderWidget->setAttribute(Qt::WA_TransparentForMouseEvents);
-    m_modelRenderWidget->enableEnvironmentLight();
     m_modelRenderWidget->toggleWireframe();
     m_modelRenderWidget->disableCullFace();
     m_modelRenderWidget->setEyePosition(QVector3D(0.0, 0.0, -4.0));
@@ -725,10 +724,6 @@ DocumentWindow::DocumentWindow()
         if (m_modelRemoveColor && resultTextureMesh)
             resultTextureMesh->removeColor();
         m_modelRenderWidget->updateMesh(resultTextureMesh);
-    });
-    connect(m_document, &Document::resultColorTextureChanged, [=]() {
-        if (nullptr != m_document->textureImage)
-            m_modelRenderWidget->updateColorTexture(new QImage(*m_document->textureImage));
     });
     
     connect(m_document, &Document::resultMeshChanged, [=]() {

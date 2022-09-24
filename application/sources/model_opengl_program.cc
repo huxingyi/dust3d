@@ -1,5 +1,6 @@
 #include <QOpenGLFunctions>
 #include <QFile>
+#include <QMutexLocker>
 #include <dust3d/base/debug.h>
 #include "model_opengl_program.h"
 #include "dds_file.h"
@@ -29,6 +30,42 @@ bool ModelOpenGLProgram::isCoreProfile() const
     return m_isCoreProfile;
 }
 
+void ModelOpenGLProgram::updateTextureImage(std::unique_ptr<QImage> image)
+{
+    QMutexLocker lock(&m_imageMutex);
+    m_textureImage = std::move(image);
+    m_imageIsDirty = true;
+}
+
+void ModelOpenGLProgram::updateNormalMapImage(std::unique_ptr<QImage> image)
+{
+    QMutexLocker lock(&m_imageMutex);
+    m_normalMapImage = std::move(image);
+    m_imageIsDirty = true;
+}
+
+void ModelOpenGLProgram::updateMetalnessRoughnessAmbientOcclusionMapImage(std::unique_ptr<QImage> image,
+    bool hasMetalnessMap,
+    bool hasRoughnessMap,
+    bool hasAmbientOcclusionMap)
+{
+    QMutexLocker lock(&m_imageMutex);
+    m_metalnessRoughnessAmbientOcclusionMapImage = std::move(image);
+    m_hasMetalnessMap = hasMetalnessMap;
+    m_hasRoughnessMap = hasRoughnessMap;
+    m_hasAmbientOcclusionMap = hasAmbientOcclusionMap;
+    m_imageIsDirty = true;
+}
+
+void ModelOpenGLProgram::activeAndBindTexture(int location, QOpenGLTexture *texture)
+{
+    if (0 == texture->textureId()) {
+        dust3dDebug << "Expected texture with a bound id";
+        return;
+    }
+    texture->bind(location);
+}
+
 void ModelOpenGLProgram::load(bool isCoreProfile)
 {
     if (m_isLoaded)
@@ -54,8 +91,11 @@ void ModelOpenGLProgram::load(bool isCoreProfile)
     m_isLoaded = true;
 }
 
-void ModelOpenGLProgram::bindEnvironment()
+void ModelOpenGLProgram::bindMaps()
 {
+    int bindLocation = 1;
+
+    // Bind environment maps
     if (m_isCoreProfile) {
         if (!m_environmentIrradianceMap) {
             DdsFileReader irradianceFile(":/resources/cedar_bridge_irradiance.dds");
@@ -66,11 +106,13 @@ void ModelOpenGLProgram::bindEnvironment()
             m_environmentSpecularMap.reset(irradianceFile.createOpenGLTexture());
         }
         
-        m_environmentIrradianceMap->bind(0);
-        setUniformValue(getUniformLocationByName("environmentIrradianceMapId"), 0);
+        bindLocation++;
+        activeAndBindTexture(bindLocation, m_environmentIrradianceMap.get());
+        setUniformValue(getUniformLocationByName("environmentIrradianceMapId"), bindLocation);
 
-        m_environmentSpecularMap->bind(1);
-        setUniformValue(getUniformLocationByName("environmentSpecularMapId"), 1);
+        bindLocation++;
+        activeAndBindTexture(bindLocation, m_environmentSpecularMap.get());
+        setUniformValue(getUniformLocationByName("environmentSpecularMapId"), bindLocation);
     } else {
         if (!m_environmentIrradianceMaps) {
             DdsFileReader irradianceFile(":/resources/cedar_bridge_irradiance.dds");
@@ -81,19 +123,104 @@ void ModelOpenGLProgram::bindEnvironment()
             m_environmentSpecularMaps = std::move(irradianceFile.createOpenGLTextures());
         }
 
-        size_t bindPosition = 0;
+        auto oldBindLocationStart = bindLocation;
 
-        bindPosition = 0;
         for (size_t i = 0; i < m_environmentIrradianceMaps->size(); ++i)
-            m_environmentIrradianceMaps->at(i)->bind(bindPosition++);
+            activeAndBindTexture(bindLocation++, m_environmentIrradianceMaps->at(i).get());
         for (size_t i = 0; i < m_environmentSpecularMaps->size(); ++i)
-            m_environmentSpecularMaps->at(i)->bind(bindPosition++);
+            activeAndBindTexture(bindLocation++, m_environmentSpecularMaps->at(i).get());
 
-        bindPosition = 0;
+        bindLocation = oldBindLocationStart;
+
         for (size_t i = 0; i < m_environmentIrradianceMaps->size(); ++i)
-            setUniformValue(getUniformLocationByName("environmentIrradianceMapId[" + std::to_string(i) + "]"), (int)(bindPosition++));
+            setUniformValue(getUniformLocationByName("environmentIrradianceMapId[" + std::to_string(i) + "]"), bindLocation++);
         for (size_t i = 0; i < m_environmentSpecularMaps->size(); ++i)
-            setUniformValue(getUniformLocationByName("environmentSpecularMapId[" + std::to_string(i) + "]"), (int)(bindPosition++));
+            setUniformValue(getUniformLocationByName("environmentSpecularMapId[" + std::to_string(i) + "]"), bindLocation++);
+    }
+
+    // Bind texture, normal map, and other maps
+    if (m_imageIsDirty) {
+        QMutexLocker lock(&m_imageMutex);
+        if (m_imageIsDirty) {
+            m_imageIsDirty = false;
+            if (m_texture) {
+                m_texture->destroy();
+                m_texture.reset();
+            }
+            if (m_textureImage) {
+                m_texture = std::make_unique<QOpenGLTexture>(*m_textureImage);
+            }
+            if (m_normalMap) {
+                m_normalMap->destroy();
+                m_normalMap.reset();
+            }
+            if (m_normalMapImage) {
+                m_normalMap = std::make_unique<QOpenGLTexture>(*m_normalMapImage);
+            }
+            if (m_metalnessRoughnessAmbientOcclusionMap) {
+                m_metalnessRoughnessAmbientOcclusionMap->destroy();
+                m_metalnessRoughnessAmbientOcclusionMap.reset();
+            }
+            if (m_metalnessRoughnessAmbientOcclusionMapImage) {
+                m_metalnessRoughnessAmbientOcclusionMap = std::make_unique<QOpenGLTexture>(*m_metalnessRoughnessAmbientOcclusionMapImage);
+            }
+            m_metalnessMapEnabled = m_hasMetalnessMap;
+            m_roughnessMapEnabled = m_hasRoughnessMap;
+            m_ambientOcclusionMapEnabled = m_hasAmbientOcclusionMap;
+        }
+    }
+    bindLocation++;
+    if (m_texture) {
+        activeAndBindTexture(bindLocation, m_texture.get());
+        setUniformValue(getUniformLocationByName("textureId"), bindLocation);
+        setUniformValue(getUniformLocationByName("textureEnabled"), (int)1);
+    } else {
+        setUniformValue(getUniformLocationByName("textureId"), (int)0);
+        setUniformValue(getUniformLocationByName("textureEnabled"), (int)0);
+    }
+    bindLocation++;
+    if (m_normalMap) {
+        activeAndBindTexture(bindLocation, m_normalMap.get());
+        setUniformValue(getUniformLocationByName("normalMapId"), bindLocation);
+        setUniformValue(getUniformLocationByName("normalMapEnabled"), (int)1);
+    } else {
+        setUniformValue(getUniformLocationByName("normalMapId"), (int)0);
+        setUniformValue(getUniformLocationByName("normalMapEnabled"), (int)0);
+    }
+    bindLocation++;
+    if (m_metalnessRoughnessAmbientOcclusionMap) {
+        activeAndBindTexture(bindLocation, m_metalnessRoughnessAmbientOcclusionMap.get());
+        setUniformValue(getUniformLocationByName("metalnessRoughnessAoMapId"), bindLocation);
+        setUniformValue(getUniformLocationByName("metalnessMapEnabled"), (int)m_metalnessMapEnabled);
+        setUniformValue(getUniformLocationByName("roughnessMapEnabled"), (int)m_roughnessMapEnabled);
+        setUniformValue(getUniformLocationByName("aoMapEnabled"), (int)m_ambientOcclusionMapEnabled);
+    } else {
+        setUniformValue(getUniformLocationByName("metalnessRoughnessAoMapId"), (int)0);
+        setUniformValue(getUniformLocationByName("metalnessMapEnabled"), (int)0);
+        setUniformValue(getUniformLocationByName("roughnessMapEnabled"), (int)0);
+        setUniformValue(getUniformLocationByName("aoMapEnabled"), (int)0);
+    }
+}
+
+void ModelOpenGLProgram::releaseMaps()
+{
+    if (m_texture)
+        m_texture->release();
+    if (m_normalMap)
+        m_normalMap->release();
+    if (m_metalnessRoughnessAmbientOcclusionMap)
+        m_metalnessRoughnessAmbientOcclusionMap->release();
+    if (m_environmentIrradianceMap)
+        m_environmentIrradianceMap->release();
+    if (m_environmentSpecularMap)
+        m_environmentSpecularMap->release();
+    if (m_environmentIrradianceMaps) {
+        for (size_t i = 0; i < m_environmentIrradianceMaps->size(); ++i)
+            m_environmentIrradianceMaps->at(i)->release();
+    }
+    if (m_environmentSpecularMaps) {
+        for (size_t i = 0; i < m_environmentSpecularMaps->size(); ++i)
+            m_environmentSpecularMaps->at(i)->release();
     }
 }
 

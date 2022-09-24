@@ -174,16 +174,6 @@ bool ModelWidget::isWireframeVisible()
     return m_isWireframeVisible;
 }
 
-void ModelWidget::enableEnvironmentLight()
-{
-    m_isEnvironmentLightEnabled = true;
-}
-
-bool ModelWidget::isEnvironmentLightEnabled()
-{
-    return m_isEnvironmentLightEnabled;
-}
-
 void ModelWidget::toggleRotation()
 {
     if (nullptr != m_rotationTimer) {
@@ -371,9 +361,19 @@ void ModelWidget::setMousePickRadius(float radius)
 
 void ModelWidget::updateMesh(ModelMesh *mesh)
 {
+    if (!m_modelOpenGLProgram)
+        m_modelOpenGLProgram = std::make_unique<ModelOpenGLProgram>();
+    m_modelOpenGLProgram->updateTextureImage(std::unique_ptr<QImage>(nullptr != mesh ? mesh->takeTextureImage() : nullptr));
+    m_modelOpenGLProgram->updateNormalMapImage(std::unique_ptr<QImage>(nullptr != mesh ? mesh->takeNormalMapImage() : nullptr));
+    m_modelOpenGLProgram->updateMetalnessRoughnessAmbientOcclusionMapImage(std::unique_ptr<QImage>(nullptr != mesh ? mesh->takeMetalnessRoughnessAmbientOcclusionMapImage() : nullptr),
+        mesh && mesh->hasMetalnessInImage(),
+        mesh && mesh->hasRoughnessInImage(),
+        mesh && mesh->hasAmbientOcclusionInImage());
+    
     if (!m_modelOpenGLObject)
         m_modelOpenGLObject = std::make_unique<ModelOpenGLObject>();
     m_modelOpenGLObject->update(std::unique_ptr<ModelMesh>(mesh));
+
     emit renderParametersChanged();
     update();
 }
@@ -385,11 +385,6 @@ void ModelWidget::updateWireframeMesh(MonochromeMesh *mesh)
     m_wireframeOpenGLObject->update(std::unique_ptr<MonochromeMesh>(mesh));
     emit renderParametersChanged();
     update();
-}
-
-void ModelWidget::updateColorTexture(QImage *colorTextureImage)
-{
-    // TODO
 }
 
 int ModelWidget::widthInPixels()
@@ -511,19 +506,20 @@ void ModelWidget::paintGL()
             m_monochromeOpenGLProgram->load(format().profile() == QSurfaceFormat::CoreProfile);
         }
     }
-
+    
     drawModel();
-    if (m_isWireframeVisible)
+    if (m_isWireframeVisible) {
         drawWireframe();
+    }
 }
 
 void ModelWidget::drawWireframe()
 {
     m_monochromeOpenGLProgram->bind();
 
-    m_monochromeOpenGLProgram->setUniformValue(m_modelOpenGLProgram->getUniformLocationByName("projectionMatrix"), m_projection);
-    m_monochromeOpenGLProgram->setUniformValue(m_modelOpenGLProgram->getUniformLocationByName("modelMatrix"), m_world);
-    m_monochromeOpenGLProgram->setUniformValue(m_modelOpenGLProgram->getUniformLocationByName("viewMatrix"), m_camera);
+    m_monochromeOpenGLProgram->setUniformValue(m_monochromeOpenGLProgram->getUniformLocationByName("projectionMatrix"), m_projection);
+    m_monochromeOpenGLProgram->setUniformValue(m_monochromeOpenGLProgram->getUniformLocationByName("modelMatrix"), m_world);
+    m_monochromeOpenGLProgram->setUniformValue(m_monochromeOpenGLProgram->getUniformLocationByName("viewMatrix"), m_camera);
 
     if (m_wireframeOpenGLObject)
         m_wireframeOpenGLObject->draw();
@@ -538,12 +534,15 @@ void ModelWidget::drawModel()
     m_modelOpenGLProgram->setUniformValue(m_modelOpenGLProgram->getUniformLocationByName("eyePosition"), m_eyePosition);
     m_modelOpenGLProgram->setUniformValue(m_modelOpenGLProgram->getUniformLocationByName("projectionMatrix"), m_projection);
     m_modelOpenGLProgram->setUniformValue(m_modelOpenGLProgram->getUniformLocationByName("modelMatrix"), m_world);
+    m_modelOpenGLProgram->setUniformValue(m_modelOpenGLProgram->getUniformLocationByName("normalMatrix"), m_world.normalMatrix());
     m_modelOpenGLProgram->setUniformValue(m_modelOpenGLProgram->getUniformLocationByName("viewMatrix"), m_camera);
 
-    m_modelOpenGLProgram->bindEnvironment();
+    m_modelOpenGLProgram->bindMaps();
 
     if (m_modelOpenGLObject)
         m_modelOpenGLObject->draw();
+
+    m_modelOpenGLProgram->releaseMaps();
 
     m_modelOpenGLProgram->release();
 }

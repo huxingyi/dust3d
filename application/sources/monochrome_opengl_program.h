@@ -1,6 +1,7 @@
 #ifndef DUST3D_APPLICATION_MONOCHROME_OPENGL_PROGRAM_H_
 #define DUST3D_APPLICATION_MONOCHROME_OPENGL_PROGRAM_H_
 
+#include <memory>
 #include <QOpenGLShaderProgram>
 #include <QOpenGLShader>
 

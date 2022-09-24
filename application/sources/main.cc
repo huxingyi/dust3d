@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
     //freopen("dust3d.log", "w", stdout);
     //setvbuf(stdout, 0, _IONBF, 0);
     
-    DocumentWindow *firstWindow = DocumentWindow::createDocumentWindow();
+    DocumentWindow::createDocumentWindow();
     
     return app.exec();
 }

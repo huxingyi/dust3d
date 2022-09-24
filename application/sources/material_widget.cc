@@ -13,7 +13,6 @@ MaterialWidget::MaterialWidget(const Document *document, dust3d::Uuid materialId
     m_previewWidget->setFixedSize(Theme::materialPreviewImageSize, Theme::materialPreviewImageSize);
     m_previewWidget->enableMove(false);
     m_previewWidget->enableZoom(false);
-    m_previewWidget->enableEnvironmentLight();
 
     m_nameLabel = new QLabel;
     m_nameLabel->setAlignment(Qt::AlignCenter);

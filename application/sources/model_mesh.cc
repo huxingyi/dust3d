@@ -26,8 +26,8 @@ ModelMesh::ModelMesh(const ModelMesh &mesh) :
     if (nullptr != mesh.m_normalMapImage) {
         this->m_normalMapImage = new QImage(*mesh.m_normalMapImage);
     }
-    if (nullptr != mesh.m_metalnessRoughnessAmbientOcclusionImage) {
-        this->m_metalnessRoughnessAmbientOcclusionImage = new QImage(*mesh.m_metalnessRoughnessAmbientOcclusionImage);
+    if (nullptr != mesh.m_metalnessRoughnessAmbientOcclusionMapImage) {
+        this->m_metalnessRoughnessAmbientOcclusionMapImage = new QImage(*mesh.m_metalnessRoughnessAmbientOcclusionMapImage);
         this->m_hasMetalnessInImage = mesh.m_hasMetalnessInImage;
         this->m_hasRoughnessInImage = mesh.m_hasRoughnessInImage;
         this->m_hasAmbientOcclusionInImage = mesh.m_hasAmbientOcclusionInImage;
@@ -46,8 +46,8 @@ void ModelMesh::removeColor()
     delete this->m_normalMapImage;
     this->m_normalMapImage = nullptr;
     
-    delete this->m_metalnessRoughnessAmbientOcclusionImage;
-    this->m_metalnessRoughnessAmbientOcclusionImage = nullptr;
+    delete this->m_metalnessRoughnessAmbientOcclusionMapImage;
+    this->m_metalnessRoughnessAmbientOcclusionMapImage = nullptr;
     
     this->m_hasMetalnessInImage = false;
     this->m_hasRoughnessInImage = false;
@@ -185,7 +185,7 @@ ModelMesh::~ModelMesh()
     m_triangleVertexCount = 0;
     delete m_textureImage;
     delete m_normalMapImage;
-    delete m_metalnessRoughnessAmbientOcclusionImage;
+    delete m_metalnessRoughnessAmbientOcclusionMapImage;
 }
 
 const std::vector<dust3d::Vector3> &ModelMesh::vertices()
@@ -223,6 +223,13 @@ const QImage *ModelMesh::textureImage()
     return m_textureImage;
 }
 
+QImage *ModelMesh::takeTextureImage()
+{
+    auto image = m_textureImage;
+    m_textureImage = nullptr;
+    return image;
+}
+
 void ModelMesh::setNormalMapImage(QImage *normalMapImage)
 {
     m_normalMapImage = normalMapImage;
@@ -233,14 +240,28 @@ const QImage *ModelMesh::normalMapImage()
     return m_normalMapImage;
 }
 
-const QImage *ModelMesh::metalnessRoughnessAmbientOcclusionImage()
+QImage *ModelMesh::takeNormalMapImage()
 {
-    return m_metalnessRoughnessAmbientOcclusionImage;
+    auto image = m_normalMapImage;
+    m_normalMapImage = nullptr;
+    return image;
 }
 
-void ModelMesh::setMetalnessRoughnessAmbientOcclusionImage(QImage *image)
+const QImage *ModelMesh::metalnessRoughnessAmbientOcclusionMapImage()
 {
-    m_metalnessRoughnessAmbientOcclusionImage = image;
+    return m_metalnessRoughnessAmbientOcclusionMapImage;
+}
+
+QImage *ModelMesh::takeMetalnessRoughnessAmbientOcclusionMapImage()
+{
+    auto image = m_metalnessRoughnessAmbientOcclusionMapImage;
+    m_metalnessRoughnessAmbientOcclusionMapImage = nullptr;
+    return image;
+}
+
+void ModelMesh::setMetalnessRoughnessAmbientOcclusionMapImage(QImage *image)
+{
+    m_metalnessRoughnessAmbientOcclusionMapImage = image;
 }
 
 bool ModelMesh::hasMetalnessInImage()

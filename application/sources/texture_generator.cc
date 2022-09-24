@@ -652,7 +652,7 @@ void TextureGenerator::generate()
     if (nullptr != m_resultTextureNormalImage)
         m_resultMesh->setNormalMapImage(new QImage(*m_resultTextureNormalImage));
     if (hasMetalnessMap || hasRoughnessMap || hasAmbientOcclusionMap) {
-        m_resultMesh->setMetalnessRoughnessAmbientOcclusionImage(combineMetalnessRoughnessAmbientOcclusionImages(
+        m_resultMesh->setMetalnessRoughnessAmbientOcclusionMapImage(combineMetalnessRoughnessAmbientOcclusionImages(
             m_resultTextureMetalnessImage,
             m_resultTextureRoughnessImage,
             m_resultTextureAmbientOcclusionImage));
