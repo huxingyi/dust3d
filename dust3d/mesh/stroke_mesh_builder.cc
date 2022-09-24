@@ -82,11 +82,12 @@ void StrokeMeshBuilder::setHollowThickness(float hollowThickness)
     m_hollowThickness = hollowThickness;
 }
 
-void StrokeMeshBuilder::setNodeOriginInfo(size_t nodeIndex, int nearOriginNodeIndex, int farOriginNodeIndex)
+void StrokeMeshBuilder::setNodeOriginInfo(size_t nodeIndex, int nearOriginNodeIndex, int farOriginNodeIndex, int sourceNodeIndex)
 {
     auto &node = m_nodes[nodeIndex];
     node.nearOriginNodeIndex = nearOriginNodeIndex;
     node.farOriginNodeIndex = farOriginNodeIndex;
+    node.sourceNodeIndex = sourceNodeIndex;
 }
 
 const std::vector<Vector3> &StrokeMeshBuilder::generatedVertices()

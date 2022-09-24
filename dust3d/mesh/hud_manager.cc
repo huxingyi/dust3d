@@ -39,11 +39,12 @@ void HudManager::addFromObject(const Object &object)
 
 void HudManager::addController(const Vector3 &origin, float radius, const Vector3 &direction, const Color &color)
 {
-    float expandedRadius = radius + 0.05;
+    float expandedRadius = radius + 0.15;
     auto firstDirection = direction.normalized();
     auto axis = Predefined::findNearestAxis(firstDirection);
     auto secondDirection = Predefined::nextAxisDirection(axis.first) * axis.second;
-    auto thirdDirection = Vector3::crossProduct(secondDirection, firstDirection);
+    auto thirdDirection = Vector3::crossProduct(firstDirection, secondDirection);
+    secondDirection = Vector3::crossProduct(thirdDirection, firstDirection);
     auto originIndex = addVertex(origin);
     auto firstPointIndex = addVertex(origin + firstDirection * expandedRadius);
     auto secondPointIndex = addVertex(origin + secondDirection * expandedRadius);

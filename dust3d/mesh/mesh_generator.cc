@@ -482,6 +482,7 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const std::string &partIdStri
         bool hasCutFaceSettings = false;
         float cutRotation = 0.0;
         std::string cutFace;
+        Vector3 direction;
     };
     std::map<std::string, NodeInfo> nodeInfos;
     for (const auto &nodeIdString: m_partNodeIds[searchPartIdString]) {
@@ -553,6 +554,7 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const std::string &partIdStri
         objectNode.nodeId = Uuid(nodeIdString);
         objectNode.origin = nodeInfo.position;
         objectNode.radius = nodeInfo.radius;
+        objectNode.direction = nodeInfo.direction;
         objectNode.color = partColor;
         objectNode.materialId = materialId;
         objectNode.countershaded = countershaded;
@@ -642,12 +644,22 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const std::string &partIdStri
         strokeMeshBuilder->enableBaseNormalOnY(false);
     }
     
-    for (const auto &node: strokeModifier->nodes()) {
+    for (size_t sourceNodeIndex = 0; sourceNodeIndex < strokeModifier->nodes().size(); ++sourceNodeIndex) {
+        const auto &node = strokeModifier->nodes()[sourceNodeIndex];
         auto nodeIndex = strokeMeshBuilder->addNode(node.position, node.radius, node.cutTemplate, node.cutRotation);
-        strokeMeshBuilder->setNodeOriginInfo(nodeIndex, node.nearOriginNodeIndex, node.farOriginNodeIndex);
+        strokeMeshBuilder->setNodeOriginInfo(nodeIndex, node.nearOriginNodeIndex, node.farOriginNodeIndex, sourceNodeIndex);
     }
     for (const auto &edge: strokeModifier->edges())
         strokeMeshBuilder->addEdge(edge.firstNodeIndex, edge.secondNodeIndex);
+
+    buildSucceed = strokeMeshBuilder->build();
+
+    for (const auto &node: strokeMeshBuilder->nodes()) {
+        const auto &sourceNode = strokeModifier->nodes()[node.sourceNodeIndex];
+        if (sourceNode.isOriginal) {
+            nodeInfos[nodeIndexToIdStringMap[node.sourceNodeIndex]].direction = node.traverseDirection;
+        }
+    }
     
     for (const auto &nodeIt: nodeInfos) {
         const auto &nodeIdString = nodeIt.first;
@@ -661,8 +673,6 @@ MeshCombiner::Mesh *MeshGenerator::combinePartMesh(const std::string &partIdStri
         addEdgeToPartCache(fromNodeIdString, toNodeIdString);
     }
 
-    buildSucceed = strokeMeshBuilder->build();
-    
     partCache.vertices = strokeMeshBuilder->generatedVertices();
     partCache.faces = strokeMeshBuilder->generatedFaces();
     if (!__mirrorFromPartId.empty()) {

@@ -52,6 +52,7 @@ public:
         float cutRotation;
         int nearOriginNodeIndex = -1;
         int farOriginNodeIndex = -1;
+        int sourceNodeIndex = -1;
         
         size_t index;
         std::vector<size_t> neighbors;
@@ -66,7 +67,7 @@ public:
     
     size_t addNode(const Vector3 &position, float radius, const std::vector<Vector2> &cutTemplate, float cutRotation);
     void addEdge(size_t firstNodeIndex, size_t secondNodeIndex);
-    void setNodeOriginInfo(size_t nodeIndex, int nearOriginNodeIndex, int farOriginNodeIndex);
+    void setNodeOriginInfo(size_t nodeIndex, int nearOriginNodeIndex, int farOriginNodeIndex, int sourceNodeIndex=-1);
     void setDeformThickness(float thickness);
     void setDeformWidth(float width);
     void setDeformUnified(bool unified);
