@@ -13,11 +13,14 @@ void MonochromeOpenGLObject::update(std::unique_ptr<MonochromeMesh> mesh)
 void MonochromeOpenGLObject::draw()
 {
     copyMeshToOpenGL();
-    if (0 == m_meshLineVertexCount)
+    if (0 == m_meshLineVertexCount && 0 == m_meshTriangleVertexCount)
         return;
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
     QOpenGLVertexArrayObject::Binder binder(&m_vertexArrayObject);
-    f->glDrawArrays(GL_LINES, 0, m_meshLineVertexCount);
+    if (m_meshLineVertexCount > 0)
+        f->glDrawArrays(GL_LINES, 0, m_meshLineVertexCount);
+    if (m_meshTriangleVertexCount > 0)
+        f->glDrawArrays(GL_TRIANGLES, m_meshLineVertexCount, m_meshTriangleVertexCount);
 }
 
 void MonochromeOpenGLObject::copyMeshToOpenGL()
@@ -35,14 +38,16 @@ void MonochromeOpenGLObject::copyMeshToOpenGL()
     if (!meshChanged)
         return;
     m_meshLineVertexCount = 0;
+    m_meshTriangleVertexCount = 0;
     if (mesh) {
         QOpenGLVertexArrayObject::Binder binder(&m_vertexArrayObject);
         if (m_buffer.isCreated())
             m_buffer.destroy();
         m_buffer.create();
         m_buffer.bind();
-        m_buffer.allocate(mesh->lineVertices(), mesh->lineVertexCount() * sizeof(MonochromeOpenGLVertex));
+        m_buffer.allocate(mesh->vertices(), (mesh->lineVertexCount() + mesh->triangleVertexCount()) * sizeof(MonochromeOpenGLVertex));
         m_meshLineVertexCount = mesh->lineVertexCount();
+        m_meshTriangleVertexCount = mesh->triangleVertexCount();
         QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
         f->glEnableVertexAttribArray(0);
         f->glEnableVertexAttribArray(1);

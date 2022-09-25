@@ -35,7 +35,7 @@ namespace dust3d
 class HudManager
 {
 public:
-    enum class LineVertex
+    enum class OutputVertexAttribute
     {
         X = 0, Y, Z, R, G, B, A, Max
     };
@@ -45,14 +45,16 @@ public:
     void addController(const Vector3 &origin, float radius, const Vector3 &direction, const Color &color);
     void addController(const Vector3 &origin, const std::vector<Vector3> &points, const Color &color);
     void generate();
-    std::unique_ptr<std::vector<float>> takeLineVertices();
+    std::unique_ptr<std::vector<float>> takeVertices(int *lineVertexCount, int *triangleVertexCount=nullptr);
 private:
-    size_t addVertex(const Vector3 &position);
+    size_t addPosition(const Vector3 &position);
     void addLine(size_t from, size_t to, const Color &color);
 
-    std::vector<Vector3> m_vertices;
+    std::vector<Vector3> m_positions;
     std::vector<std::tuple<size_t, size_t, Color>> m_lines;
-    std::unique_ptr<std::vector<float>> m_lineVertices;
+    std::unique_ptr<std::vector<float>> m_vertices;
+    int m_lineVertexCount = 0;
+    int m_triangleVertexCount = 0;
 };
 
 }

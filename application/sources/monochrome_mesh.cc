@@ -3,17 +3,23 @@
 
 MonochromeMesh::MonochromeMesh(const MonochromeMesh &mesh)
 {
-    m_lineVertices = mesh.m_lineVertices;
+    m_vertices = mesh.m_vertices;
+    m_lineVertexCount = mesh.m_lineVertexCount;
+    m_triangleVertexCount = mesh.m_triangleVertexCount;
 }
 
 MonochromeMesh::MonochromeMesh(MonochromeMesh &&mesh)
 {
-    m_lineVertices = std::move(mesh.m_lineVertices);
+    std::swap(m_vertices, mesh.m_vertices);
+    std::swap(m_lineVertexCount, mesh.m_lineVertexCount);
+    std::swap(m_triangleVertexCount, mesh.m_triangleVertexCount);
 }
 
-MonochromeMesh::MonochromeMesh(std::vector<float> &&lineVertices)
+MonochromeMesh::MonochromeMesh(std::vector<float> &&vertices, int lineVertexCount, int triangleVertexCount)
 {
-    m_lineVertices = std::move(lineVertices);
+    m_vertices = std::move(vertices);
+    m_lineVertexCount = lineVertexCount;
+    m_triangleVertexCount = triangleVertexCount;
 }
 
 MonochromeMesh::MonochromeMesh(const dust3d::Object &object)
@@ -38,38 +44,44 @@ MonochromeMesh::MonochromeMesh(const dust3d::Object &object)
         halfEdges.insert({face[3], face[0]});
         halfEdges.insert({face[0], face[3]});
     }
-    m_lineVertices.reserve(halfEdges.size() * 2 * sizeof(MonochromeOpenGLVertex));
+    m_vertices.reserve(halfEdges.size() * 2 * sizeof(MonochromeOpenGLVertex));
     for (const auto &halfEdge: halfEdges) {
         // For two halfedges shared one edge, only output one line
         if (halfEdge.first > halfEdge.second)
             continue;
         const auto &from = object.vertices[halfEdge.first];
         const auto &to = object.vertices[halfEdge.second];
-        m_lineVertices.push_back(from.x());
-        m_lineVertices.push_back(from.y());
-        m_lineVertices.push_back(from.z());
-        m_lineVertices.push_back(0.0);
-        m_lineVertices.push_back(0.0);
-        m_lineVertices.push_back(0.0);
-        m_lineVertices.push_back(1.0);
-        m_lineVertices.push_back(to.x());
-        m_lineVertices.push_back(to.y());
-        m_lineVertices.push_back(to.z());
-        m_lineVertices.push_back(0.0);
-        m_lineVertices.push_back(0.0);
-        m_lineVertices.push_back(0.0);
-        m_lineVertices.push_back(1.0);
+        m_vertices.push_back(from.x());
+        m_vertices.push_back(from.y());
+        m_vertices.push_back(from.z());
+        m_vertices.push_back(0.0);
+        m_vertices.push_back(0.0);
+        m_vertices.push_back(0.0);
+        m_vertices.push_back(1.0);
+        m_vertices.push_back(to.x());
+        m_vertices.push_back(to.y());
+        m_vertices.push_back(to.z());
+        m_vertices.push_back(0.0);
+        m_vertices.push_back(0.0);
+        m_vertices.push_back(0.0);
+        m_vertices.push_back(1.0);
     }
+    m_lineVertexCount = (int)(m_vertices.size() * sizeof(float) / sizeof(MonochromeOpenGLVertex));
 }
 
-const float *MonochromeMesh::lineVertices()
+const float *MonochromeMesh::vertices()
 {
-    if (m_lineVertices.empty())
+    if (m_vertices.empty())
         return nullptr;
-    return &m_lineVertices[0];
+    return &m_vertices[0];
+}
+
+int MonochromeMesh::triangleVertexCount()
+{
+    return m_triangleVertexCount;
 }
 
 int MonochromeMesh::lineVertexCount()
 {
-    return (int)(m_lineVertices.size() * sizeof(float) / sizeof(MonochromeOpenGLVertex));
+    return m_lineVertexCount;
 }

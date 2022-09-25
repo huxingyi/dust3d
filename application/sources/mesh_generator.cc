@@ -77,8 +77,11 @@ void MeshGenerator::process()
         dust3d::HudManager hudManager;
         hudManager.addFromObject(*m_object);
         hudManager.generate();
-        auto lineVertices = hudManager.takeLineVertices();
-        m_hudMesh = std::make_unique<MonochromeMesh>(std::move(*lineVertices));
+        int lineVertexCount = 0;
+        int triangleVertexCount = 0;
+        auto vertices = hudManager.takeVertices(&lineVertexCount, &triangleVertexCount);
+        if (vertices)
+            m_hudMesh = std::make_unique<MonochromeMesh>(std::move(*vertices), lineVertexCount, triangleVertexCount);
     }
     
     qDebug() << "The mesh generation took" << countTimeConsumed.elapsed() << "milliseconds";

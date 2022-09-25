@@ -11,11 +11,14 @@ public:
     MonochromeMesh(const MonochromeMesh &mesh);
     MonochromeMesh(MonochromeMesh &&mesh);
     MonochromeMesh(const dust3d::Object &object);
-    MonochromeMesh(std::vector<float> &&lineVertices);
-    const float *lineVertices();
+    MonochromeMesh(std::vector<float> &&vertices, int lineVertexCount, int triangleVertexCount=0);
+    const float *vertices();
     int lineVertexCount();
+    int triangleVertexCount();
 private:
-    std::vector<float> m_lineVertices;
+    std::vector<float> m_vertices;
+    int m_lineVertexCount = 0;
+    int m_triangleVertexCount = 0;
 };
 
 #endif

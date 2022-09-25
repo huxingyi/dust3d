@@ -20,6 +20,7 @@ private:
     bool m_meshIsDirty = false;
     QMutex m_meshMutex;
     int m_meshLineVertexCount = 0;
+    int m_meshTriangleVertexCount = 0;
 };
 
 #endif
