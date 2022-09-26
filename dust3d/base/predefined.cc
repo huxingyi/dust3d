@@ -44,4 +44,22 @@ std::pair<size_t, int> Predefined::findNearestAxis(const Vector3 &direction)
     return {nearAxisIndex, positive};
 }
 
+std::vector<Vector3> Predefined::calculateCircleVertices(double radius, 
+    size_t points, 
+    const Vector3 &aroundAxis, 
+    const Vector3 &startDirection,
+    const Vector3 &origin)
+{
+    constexpr auto roundAngle = 2.0 * Math::Pi;
+    auto stepAngle = roundAngle / points;
+    std::vector<Vector3> circlePoints;
+    circlePoints.reserve(points);
+    for (double angle = (0 == points % 2) ? stepAngle * -0.5 : 0.0;
+            circlePoints.size() < points;
+            angle += stepAngle) {
+        circlePoints.push_back(origin + startDirection.rotated(aroundAxis, angle) * radius);
+    }
+    return circlePoints;
+}
+
 }

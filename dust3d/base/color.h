@@ -126,6 +126,11 @@ public:
         m_data[2] = b;
     }
     
+    inline void setAlpha(double alpha)
+    {
+        m_data[3] = alpha;
+    }
+    
     inline static Color createRed()
     {
         return Color(1.0, 0.0, 0.0);

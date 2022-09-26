@@ -47,6 +47,12 @@ public:
     {
         return axisDirection((index + 1) % 3);
     }
+
+    static std::vector<Vector3> calculateCircleVertices(double radius, 
+        size_t points, 
+        const Vector3 &aroundAxis=Vector3(0.0, 0.0, 1.0), 
+        const Vector3 &startDirection=Vector3(0.0, 1.0, 0.0),
+        const Vector3 &origin=Vector3(0.0, 0.0, 0.0));
 };
 
 }

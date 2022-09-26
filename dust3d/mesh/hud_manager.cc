@@ -132,13 +132,16 @@ void HudManager::generate()
             const Vector3 &tangent, 
             double radius)
     {
-        auto upDirection = Vector3::crossProduct(tangent, faceNormal);
+        return Predefined::calculateCircleVertices(radius, 4, faceNormal, tangent, origin);
+        /*
+        auto upDirection = Vector3::crossProduct(tangent, faceNormal).normalized();
         return std::vector<Vector3> {
             origin + tangent * radius,
             origin - upDirection * radius,
             origin - tangent * radius,
             origin + upDirection * radius
         };
+        */
     };
     auto addPoint = [&](const Vector3 &position, const auto &color) {
         m_vertices->push_back(position.x());
@@ -150,14 +153,57 @@ void HudManager::generate()
         m_vertices->push_back(color.alpha());
     };
     for (const auto &line: m_lines) {
-        const auto &color = std::get<2>(line);
+        //const auto &color = std::get<2>(line);
+        auto color = Color(0, 0, 0);
         const auto &from = m_positions[std::get<0>(line)];
         const auto &to = m_positions[std::get<1>(line)];
         auto direction = to - from;
         auto sectionNormal = direction.normalized();
         auto axis = Predefined::findNearestAxis(sectionNormal);
-        auto sectionTangent = Vector3::crossProduct(sectionNormal, Predefined::nextAxisDirection(axis.first)) * axis.second;
-        auto sectionTo = buildSection(to, sectionNormal, sectionTangent, 0.005);
+        if (axis.second)
+            sectionNormal = -sectionNormal;
+        auto sectionTangent = (Vector3::crossProduct(sectionNormal, Predefined::nextAxisDirection(axis.first).normalized())).normalized();
+        auto sectionTo = buildSection(to, sectionNormal, sectionTangent, 0.025);
+        auto sectionFrom = sectionTo;
+        for (auto &it: sectionFrom)
+            it = it - direction;
+        for (size_t i = 0; i < sectionTo.size(); ++i) {
+            size_t j = (i + 1) % sectionTo.size();
+            addPoint(sectionTo[i], color);
+            addPoint(sectionFrom[i], color);
+            addPoint(sectionFrom[i], color);
+            addPoint(sectionTo[j], color);
+            addPoint(sectionTo[j], color);
+            addPoint(sectionTo[i], color);
+
+            addPoint(sectionFrom[i], color);
+            addPoint(sectionFrom[j], color);
+            addPoint(sectionFrom[j], color);
+            addPoint(sectionTo[j], color);
+            addPoint(sectionTo[j], color);
+            addPoint(sectionFrom[i], color);
+        }
+    }
+    m_lineVertexCount = m_vertices->size() / (size_t)OutputVertexAttribute::Max;
+    for (const auto &line: m_lines) {
+        //auto color = std::get<2>(line);
+        auto color = Color();
+        color.setAlpha(0.5);
+        const auto &from = m_positions[std::get<0>(line)];
+        const auto &to = m_positions[std::get<1>(line)];
+        auto direction = to - from;
+        auto sectionNormal = direction.normalized();
+        auto axis = Predefined::findNearestAxis(sectionNormal);
+        if (axis.second)
+            sectionNormal = -sectionNormal;
+        auto sectionTangent = (Vector3::crossProduct(sectionNormal, Predefined::nextAxisDirection(axis.first).normalized())).normalized();
+        auto sectionTo = buildSection(to, sectionNormal, sectionTangent, 0.025);
+        if (0 == axis.first)
+            color.setRed(1.0);
+        else if (1 == axis.first)
+            color.setGreen(1.0);
+        else
+            color.setBlue(1.0);
         auto sectionFrom = sectionTo;
         for (auto &it: sectionFrom)
             it = it - direction;
@@ -171,7 +217,7 @@ void HudManager::generate()
             addPoint(sectionTo[j], color);
         }
     }
-    m_triangleVertexCount = m_vertices->size() / (size_t)OutputVertexAttribute::Max;
+    m_triangleVertexCount = m_vertices->size() / (size_t)OutputVertexAttribute::Max - m_lineVertexCount;
 }
 
 std::unique_ptr<std::vector<float>> HudManager::takeVertices(int *lineVertexCount, int *triangleVertexCount)

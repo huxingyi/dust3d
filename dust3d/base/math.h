@@ -31,7 +31,7 @@ namespace dust3d
 namespace Math
 {
     
-const double Pi = 3.14159265358979323846;
+constexpr double Pi = 3.14159265358979323846;
     
 inline bool isZero(double number)
 {
