@@ -20,13 +20,13 @@
  *  SOFTWARE.
  */
 
-#include <unordered_set>
 #include <functional>
 #include <dust3d/base/string.h>
 #include <dust3d/base/part_target.h>
 #include <dust3d/base/part_base.h>
 #include <dust3d/base/snapshot_xml.h>
 #include <dust3d/base/cut_face.h>
+#include <dust3d/mesh/stitch_mesh_builder.h>
 #include <dust3d/mesh/stroke_mesh_builder.h>
 #include <dust3d/mesh/stroke_modifier.h>
 #include <dust3d/mesh/mesh_recombiner.h>
@@ -373,6 +373,100 @@ void MeshGenerator::cutFaceStringToCutTemplate(const std::string &cutFaceString,
         CutFace cutFace = CutFaceFromString(cutFaceString.c_str());
         cutTemplate = CutFaceToPoints(cutFace);
     }
+}
+
+void MeshGenerator::convertLinksToOrdered(const std::unordered_map<size_t, std::unordered_set<size_t>> &links,
+    std::vector<size_t> *ordered,
+    bool *isCircle)
+{
+    for (const auto &it: links) {
+        if (1 == it.second.size()) {
+            std::unordered_set<size_t> used;
+            size_t current = it.first;
+            bool foundNext = true;
+            while (foundNext) {
+                auto findNext = links.find(current);
+                if (findNext == links.end())
+                    break;
+                used.insert(current);
+                ordered->push_back(current);
+                foundNext = false;
+                for (const auto &it: findNext->second) {
+                    if (used.end() != used.find(it))
+                        continue;
+                    current = it;
+                    foundNext = true;
+                    break;
+                }
+            }
+            break;
+        }
+    }
+    // TODO:
+}
+
+std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineStitchingMesh(const std::vector<std::string> &partIdStrings)
+{
+    std::vector<StitchMeshBuilder::Spline> splines;
+    splines.reserve(partIdStrings.size());
+    for (const auto &partIdString: partIdStrings) {
+        std::vector<StitchMeshBuilder::Node> builderNodes;
+        std::map<std::string, size_t> builderNodeIdStringToIndexMap;
+        for (const auto &nodeIdString: m_partNodeIds[partIdString]) {
+            auto findNode = m_snapshot->nodes.find(nodeIdString);
+            if (findNode == m_snapshot->nodes.end()) {
+                continue;
+            }
+            auto &node = findNode->second;
+            
+            float radius = String::toFloat(String::valueOrEmpty(node, "radius"));
+            float x = (String::toFloat(String::valueOrEmpty(node, "x")) - m_mainProfileMiddleX);
+            float y = (m_mainProfileMiddleY - String::toFloat(String::valueOrEmpty(node, "y")));
+            float z = (m_sideProfileMiddleX - String::toFloat(String::valueOrEmpty(node, "z")));
+
+            builderNodeIdStringToIndexMap.insert({nodeIdString, builderNodes.size()});
+            builderNodes.emplace_back(StitchMeshBuilder::Node {
+                Vector3((double)x, (double)y, (double)z), (double)radius
+            });
+        }
+
+        std::unordered_map<size_t, std::unordered_set<size_t>> builderNodeLinks;
+        for (const auto &edgeIdString: m_partEdgeIds[partIdString]) {
+            auto findEdge = m_snapshot->edges.find(edgeIdString);
+            if (findEdge == m_snapshot->edges.end()) {
+                continue;
+            }
+            auto &edge = findEdge->second;
+            
+            std::string fromNodeIdString = String::valueOrEmpty(edge, "from");
+            std::string toNodeIdString = String::valueOrEmpty(edge, "to");
+
+            auto findFrom = builderNodeIdStringToIndexMap.find(fromNodeIdString);
+            if (findFrom == builderNodeIdStringToIndexMap.end())
+                continue;
+            auto findTo = builderNodeIdStringToIndexMap.find(toNodeIdString);
+            if (findTo == builderNodeIdStringToIndexMap.end())
+                continue;
+            builderNodeLinks[findFrom->second].insert(findTo->second);
+        }
+
+        std::vector<size_t> orderedIndices;
+        bool isCircle = false;
+        convertLinksToOrdered(builderNodeLinks, &orderedIndices, &isCircle);
+        std::vector<StitchMeshBuilder::Node> orderedBuilderNodes(orderedIndices.size());
+        for (size_t i = 0; i < orderedIndices.size(); ++i)
+            orderedBuilderNodes[i] = builderNodes[orderedIndices[i]];
+        splines.emplace_back(StitchMeshBuilder::Spline {
+            std::move(orderedBuilderNodes),
+            isCircle
+        });
+    }
+
+    auto stitchMeshBuilder = std::make_unique<StitchMeshBuilder>(std::move(splines));
+    stitchMeshBuilder->build();
+
+    return std::make_unique<MeshCombiner::Mesh>(stitchMeshBuilder->generatedVertices(), 
+        stitchMeshBuilder->generatedFaces());
 }
 
 std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combinePartMesh(const std::string &partIdString, bool *hasError, bool *retryable, bool addIntermediateNodes)
@@ -872,10 +966,25 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineComponentMesh(const st
         std::vector<std::pair<CombineMode, std::vector<std::string>>> combineGroups;
         int currentGroupIndex = -1;
         auto lastCombineMode = CombineMode::Count;
+        std::vector<std::string> stitchingParts;
+        std::vector<std::string> stitchingComponents;
         for (const auto &childIdString: String::split(String::valueOrEmpty(*component, "children"), ',')) {
             if (childIdString.empty())
                 continue;
             const auto &child = findComponent(childIdString);
+            if (nullptr == child)
+                continue;
+            if ("partId" == String::valueOrEmpty(*child, "linkDataType")) {
+                auto partIdString = String::valueOrEmpty(*child, "linkData");
+                auto findPart = m_snapshot->parts.find(partIdString);
+                if (findPart != m_snapshot->parts.end()) {
+                    if ("StitchingLine" == String::valueOrEmpty(findPart->second, "target")) {
+                        stitchingParts.emplace_back(partIdString);
+                        stitchingComponents.emplace_back(childIdString);
+                        continue;
+                    }
+                }
+            }
             auto combineMode = componentCombineMode(child);
             if (lastCombineMode != combineMode || lastCombineMode == CombineMode::Inversion) {
                 combineGroups.push_back({combineMode, {}});
@@ -893,6 +1002,11 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineComponentMesh(const st
             if (nullptr == childMesh || childMesh->isNull())
                 continue;
             groupMeshes.emplace_back(std::make_tuple(std::move(childMesh), group.first, String::join(group.second, "|")));
+        }
+        if (!stitchingParts.empty()) {
+            auto stitchingMesh = combineStitchingMesh(stitchingParts);
+            if (stitchingMesh && !stitchingMesh->isNull())
+                groupMeshes.emplace_back(std::make_tuple(std::move(stitchingMesh), CombineMode::Normal, String::join(stitchingComponents, ":")));
         }
         mesh = combineMultipleMeshes(std::move(groupMeshes), true);
     }

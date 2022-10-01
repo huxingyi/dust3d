@@ -24,6 +24,8 @@
 #define DUST3D_MESH_MESH_GENERATOR_H_
 
 #include <set>
+#include <unordered_map>
+#include <unordered_set>
 #include <tuple>
 #include <dust3d/base/position_key.h>
 #include <dust3d/base/uuid.h>
@@ -146,6 +148,7 @@ private:
     std::unique_ptr<MeshCombiner::Mesh> combineComponentChildGroupMesh(const std::vector<std::string> &componentIdStrings,
         GeneratedComponent &componentCache);
     std::unique_ptr<MeshCombiner::Mesh> combineMultipleMeshes(std::vector<std::tuple<std::unique_ptr<MeshCombiner::Mesh>, CombineMode, std::string>> &&multipleMeshes, bool recombine=true);
+    std::unique_ptr<MeshCombiner::Mesh> combineStitchingMesh(const std::vector<std::string> &partIdStrings);
     std::string componentColorName(const std::map<std::string, std::string> *component);
     void collectUncombinedComponent(const std::string &componentIdString);
     void cutFaceStringToCutTemplate(const std::string &cutFaceString, std::vector<Vector2> &cutTemplate);
@@ -157,6 +160,9 @@ private:
     
     static void chamferFace(std::vector<Vector2> *face);
     static bool isWatertight(const std::vector<std::vector<size_t>> &faces);
+    static void convertLinksToOrdered(const std::unordered_map<size_t, std::unordered_set<size_t>> &links,
+        std::vector<size_t> *ordered,
+        bool *isCircle);
 };
 
 }
