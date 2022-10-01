@@ -41,6 +41,7 @@ public:
     {
         std::vector<Node> nodes;
         bool isCircle = false;
+        bool isClosing = false;
     };
 
     StitchMeshBuilder(std::vector<Spline> &&splines);
@@ -60,8 +61,9 @@ private:
     std::vector<Vector3> m_generatedVertices;
     std::vector<std::vector<size_t>> m_generatedFaces;
     std::vector<Vector3> m_generatedNormals;
-    size_t m_targetSegments = 5;
+    size_t m_targetSegments = 15;
 
+    void interpolateSplinesToHaveEqualSizeOfNodesExceptClosingSplines();
     std::vector<std::vector<StitchingPoint>> convertSplinesToStitchingPoints(const std::vector<Spline> &splines);
     void generateMeshFromStitchingPoints(const std::vector<std::vector<StitchingPoint>> &stitchingPoints);
     void generateMeshFromStitchingPoints(const std::vector<StitchingPoint> &a, 
@@ -72,6 +74,8 @@ private:
         std::vector<Vector3> *targetPoints,
         std::vector<double> *targetRadiuses);
     double segmentsLength(const std::vector<Vector3> &segmentPoints);
+    void interpolateSplinesForBackClosing();
+    void addQuadButMaybeTriangle(const std::vector<size_t> &quadButMaybeTriangle);
 };
 
 }

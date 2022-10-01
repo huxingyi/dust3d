@@ -460,13 +460,22 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineStitchingMesh(const st
 
         std::vector<size_t> orderedIndices;
         bool isCircle = false;
-        flattenLinks(builderNodeLinks, &orderedIndices, &isCircle);
-        std::vector<StitchMeshBuilder::Node> orderedBuilderNodes(orderedIndices.size());
-        for (size_t i = 0; i < orderedIndices.size(); ++i)
-            orderedBuilderNodes[i] = builderNodes[orderedIndices[i]];
+        bool isClosing = false;
+        std::vector<StitchMeshBuilder::Node> orderedBuilderNodes;
+        if (!builderNodeLinks.empty()) {
+            flattenLinks(builderNodeLinks, &orderedIndices, &isCircle);
+            orderedBuilderNodes.resize(orderedIndices.size());
+            for (size_t i = 0; i < orderedIndices.size(); ++i)
+                orderedBuilderNodes[i] = builderNodes[orderedIndices[i]];
+        } else {
+            orderedBuilderNodes.push_back(builderNodes[0]);
+            isClosing = true;
+        }
+
         splines.emplace_back(StitchMeshBuilder::Spline {
             std::move(orderedBuilderNodes),
-            isCircle
+            isCircle,
+            isClosing
         });
     }
 
