@@ -32,6 +32,7 @@ enum class PartTarget
 {
     Model = 0,
     CutFace,
+    StitchingLine,
     Count
 };
 PartTarget PartTargetFromString(const char *targetString);
@@ -43,6 +44,8 @@ PartTarget PartTargetFromString(const char *targetString)                       
         return PartTarget::Model;                                               \
     if (target == "CutFace")                                                    \
         return PartTarget::CutFace;                                             \
+    if (target == "StitchingLine")                                              \
+        return PartTarget::StitchingLine;                                       \
     return PartTarget::Model;                                                   \
 }
 const char *PartTargetToString(PartTarget target);
@@ -54,6 +57,8 @@ const char *PartTargetToString(PartTarget target)                               
             return "Model";                                                     \
         case PartTarget::CutFace:                                               \
             return "CutFace";                                                   \
+        case PartTarget::StitchingLine:                                         \
+            return "StitchingLine";                                             \
         default:                                                                \
             return "Model";                                                     \
     }                                                                           \
@@ -67,6 +72,8 @@ std::string PartTargetToDispName(PartTarget target)                             
             return std::string("Model");                                        \
         case PartTarget::CutFace:                                               \
             return std::string("Cut Face");                                     \
+        case PartTarget::StitchingLine:                                         \
+            return std::string("Stitching Line");                               \
         default:                                                                \
             return std::string("Model");                                        \
     }                                                                           \

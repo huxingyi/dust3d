@@ -24,6 +24,7 @@
 #define DUST3D_MESH_MESH_COMBINER_H_
 
 #include <vector>
+#include <memory>
 #include <dust3d/base/vector3.h>
 #include <dust3d/mesh/solid_mesh.h>
 
@@ -55,14 +56,13 @@ public:
         ~Mesh();
         void fetch(std::vector<Vector3> &vertices, std::vector<std::vector<size_t>> &faces) const;
         bool isNull() const;
-        bool isCombinable() const;
         
         friend MeshCombiner;
         
     private:
-        SolidMesh *m_solidMesh = nullptr;
-        std::vector<Vector3> *m_vertices = nullptr;
-        std::vector<std::vector<size_t>> *m_triangles = nullptr;
+        std::unique_ptr<SolidMesh> m_solidMesh;
+        std::unique_ptr<std::vector<Vector3>> m_vertices;
+        std::unique_ptr<std::vector<std::vector<size_t>>> m_triangles;
     };
     
     static Mesh *combine(const Mesh &firstMesh, const Mesh &secondMesh, Method method,

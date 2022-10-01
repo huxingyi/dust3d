@@ -40,19 +40,8 @@ class MeshGenerator
 {
 public:
 
-    class GeneratedPart
+    struct GeneratedPart
     {
-    public:
-        ~GeneratedPart()
-        {
-            releaseMeshes();
-        };
-        void releaseMeshes()
-        {
-            delete mesh;
-            mesh = nullptr;
-        }
-        MeshCombiner::Mesh *mesh = nullptr;
         std::vector<Vector3> vertices;
         std::vector<std::vector<size_t>> faces;
         std::vector<ObjectNode> objectNodes;
@@ -64,23 +53,9 @@ public:
         bool joined = true;
     };
 
-    class GeneratedComponent
+    struct GeneratedComponent
     {
-    public:
-        ~GeneratedComponent()
-        {
-            releaseMeshes();
-        };
-        void releaseMeshes()
-        {
-            delete mesh;
-            mesh = nullptr;
-            for (auto &it: incombinableMeshes)
-                delete it;
-            incombinableMeshes.clear();
-        }
-        MeshCombiner::Mesh *mesh = nullptr;
-        std::vector<MeshCombiner::Mesh *> incombinableMeshes;
+        std::unique_ptr<MeshCombiner::Mesh> mesh;
         std::set<std::pair<PositionKey, PositionKey>> sharedQuadEdges;
         std::set<PositionKey> noneSeamVertices;
         std::vector<ObjectNode> objectNodes;
@@ -88,27 +63,16 @@ public:
         std::vector<std::pair<Vector3, std::pair<Uuid, Uuid>>> objectNodeVertices;
     };
 
-    class GeneratedCacheContext
+    struct GeneratedCacheContext
     {
-    public:
-        ~GeneratedCacheContext()
-        {
-            for (auto &it: cachedCombination)
-                delete it.second;
-            for (auto &it: parts)
-                it.second.releaseMeshes();
-            for (auto &it: components)
-                it.second.releaseMeshes();
-        }
         std::map<std::string, GeneratedComponent> components;
         std::map<std::string, GeneratedPart> parts;
         std::map<std::string, std::string> partMirrorIdMap;
-        std::map<std::string, MeshCombiner::Mesh *> cachedCombination;
+        std::map<std::string, std::unique_ptr<MeshCombiner::Mesh>> cachedCombination;
     };
     
-    class PartPreview
+    struct PartPreview
     {
-    public:
         std::vector<Vector2> cutTemplate;
         
         std::vector<Vector3> vertices;
@@ -156,25 +120,22 @@ private:
     bool m_cacheEnabled = false;
     float m_smoothShadingThresholdAngleDegrees = 60;
     uint64_t m_id = 0;
-    std::vector<Vector3> m_clothCollisionVertices;
-    std::vector<std::vector<size_t>> m_clothCollisionTriangles;
     bool m_weldEnabled = true;
     bool m_interpolationEnabled = true;
     
     void collectParts();
-    void collectIncombinableComponentMeshes(const std::string &componentIdString);
     void collectIncombinableMesh(const MeshCombiner::Mesh *mesh, const GeneratedComponent &componentCache);
     bool checkIsComponentDirty(const std::string &componentIdString);
     bool checkIsPartDirty(const std::string &partIdString);
     bool checkIsPartDependencyDirty(const std::string &partIdString);
     void checkDirtyFlags();
-    MeshCombiner::Mesh *combinePartMesh(const std::string &partIdString, bool *hasError, bool *retryable, bool addIntermediateNodes=true);
-    MeshCombiner::Mesh *combineComponentMesh(const std::string &componentIdString, CombineMode *combineMode);
+    std::unique_ptr<MeshCombiner::Mesh> combinePartMesh(const std::string &partIdString, bool *hasError, bool *retryable, bool addIntermediateNodes=true);
+    std::unique_ptr<MeshCombiner::Mesh> combineComponentMesh(const std::string &componentIdString, CombineMode *combineMode);
     void makeXmirror(const std::vector<Vector3> &sourceVertices, const std::vector<std::vector<size_t>> &sourceFaces,
         std::vector<Vector3> *destVertices, std::vector<std::vector<size_t>> *destFaces);
     void collectSharedQuadEdges(const std::vector<Vector3> &vertices, const std::vector<std::vector<size_t>> &faces,
         std::set<std::pair<PositionKey, PositionKey>> *sharedQuadEdges);
-    MeshCombiner::Mesh *combineTwoMeshes(const MeshCombiner::Mesh &first, const MeshCombiner::Mesh &second,
+    std::unique_ptr<MeshCombiner::Mesh> combineTwoMeshes(const MeshCombiner::Mesh &first, const MeshCombiner::Mesh &second,
         MeshCombiner::Method method,
         bool recombine=true);
     void generateSmoothTriangleVertexNormals(const std::vector<Vector3> &vertices, const std::vector<std::vector<size_t>> &triangles,
@@ -182,9 +143,9 @@ private:
         std::vector<std::vector<Vector3>> *triangleVertexNormals);
     const std::map<std::string, std::string> *findComponent(const std::string &componentIdString);
     CombineMode componentCombineMode(const std::map<std::string, std::string> *component);
-    MeshCombiner::Mesh *combineComponentChildGroupMesh(const std::vector<std::string> &componentIdStrings,
+    std::unique_ptr<MeshCombiner::Mesh> combineComponentChildGroupMesh(const std::vector<std::string> &componentIdStrings,
         GeneratedComponent &componentCache);
-    MeshCombiner::Mesh *combineMultipleMeshes(const std::vector<std::tuple<MeshCombiner::Mesh *, CombineMode, std::string>> &multipleMeshes, bool recombine=true);
+    std::unique_ptr<MeshCombiner::Mesh> combineMultipleMeshes(std::vector<std::tuple<std::unique_ptr<MeshCombiner::Mesh>, CombineMode, std::string>> &&multipleMeshes, bool recombine=true);
     std::string componentColorName(const std::map<std::string, std::string> *component);
     void collectUncombinedComponent(const std::string &componentIdString);
     void cutFaceStringToCutTemplate(const std::string &cutFaceString, std::vector<Vector2> &cutTemplate);

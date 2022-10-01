@@ -31,31 +31,28 @@ namespace dust3d
 
 MeshCombiner::Mesh::Mesh(const std::vector<Vector3> &vertices, const std::vector<std::vector<size_t>> &faces)
 {
-    m_vertices = new std::vector<Vector3>(vertices);
-    m_triangles = new std::vector<std::vector<size_t>>;
-    triangulate(vertices, faces, m_triangles);
-    m_solidMesh = new SolidMesh;
-    m_solidMesh->setVertices(m_vertices);
-    m_solidMesh->setTriangles(m_triangles);
+    m_vertices = std::make_unique<std::vector<Vector3>>(vertices);
+    m_triangles = std::make_unique<std::vector<std::vector<size_t>>>();
+    triangulate(vertices, faces, m_triangles.get());
+    m_solidMesh = std::make_unique<SolidMesh>();
+    m_solidMesh->setVertices(m_vertices.get());
+    m_solidMesh->setTriangles(m_triangles.get());
     m_solidMesh->prepare();
 }
 
 MeshCombiner::Mesh::Mesh(const Mesh &other)
 {
-    m_vertices = new std::vector<Vector3>;
-    m_triangles = new std::vector<std::vector<size_t>>;
+    m_vertices = std::make_unique<std::vector<Vector3>>();
+    m_triangles = std::make_unique<std::vector<std::vector<size_t>>>();
     other.fetch(*m_vertices, *m_triangles);
-    m_solidMesh = new SolidMesh;
-    m_solidMesh->setVertices(m_vertices);
-    m_solidMesh->setTriangles(m_triangles);
+    m_solidMesh = std::make_unique<SolidMesh>();
+    m_solidMesh->setVertices(m_vertices.get());
+    m_solidMesh->setTriangles(m_triangles.get());
     m_solidMesh->prepare();
 }
 
 MeshCombiner::Mesh::~Mesh()
 {
-    delete m_solidMesh;
-    delete m_vertices;
-    delete m_triangles;
 }
 
 void MeshCombiner::Mesh::fetch(std::vector<Vector3> &vertices, std::vector<std::vector<size_t>> &faces) const
@@ -72,19 +69,13 @@ bool MeshCombiner::Mesh::isNull() const
     return nullptr == m_vertices || m_vertices->empty();
 }
 
-bool MeshCombiner::Mesh::isCombinable() const
-{
-    return true;
-}
-
 MeshCombiner::Mesh *MeshCombiner::combine(const Mesh &firstMesh, const Mesh &secondMesh, Method method,
     std::vector<std::pair<Source, size_t>> *combinedVerticesComeFrom)
 {
-    if (firstMesh.isNull() || !firstMesh.isCombinable() ||
-			secondMesh.isNull() || !secondMesh.isCombinable())
+    if (firstMesh.isNull() || secondMesh.isNull())
 		return nullptr;
 
-    SolidMeshBooleanOperation booleanOperation(firstMesh.m_solidMesh, secondMesh.m_solidMesh);
+    SolidMeshBooleanOperation booleanOperation(firstMesh.m_solidMesh.get(), secondMesh.m_solidMesh.get());
     if (!booleanOperation.combine())
         return nullptr;
     
@@ -96,14 +87,14 @@ MeshCombiner::Mesh *MeshCombiner::combine(const Mesh &firstMesh, const Mesh &sec
         if (nullptr == vertices)
             return;
         for (const auto &point: *vertices) {
-            auto insertResult = verticesSourceMap.insert({{point.x(), point.y(), point.z()}, 
+            verticesSourceMap.insert({{point.x(), point.y(), point.z()}, 
                 {source, vertexIndex}});
             ++vertexIndex;
         }
     };
     if (nullptr != combinedVerticesComeFrom) {
-        addToSourceMap(firstMesh.m_solidMesh, Source::First);
-        addToSourceMap(secondMesh.m_solidMesh, Source::Second);
+        addToSourceMap(firstMesh.m_solidMesh.get(), Source::First);
+        addToSourceMap(secondMesh.m_solidMesh.get(), Source::Second);
     }
     
     std::vector<std::vector<size_t>> resultTriangles;

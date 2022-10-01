@@ -48,7 +48,7 @@ void MaterialPreviewsGenerator::generate()
     
     std::vector<dust3d::Uuid> partIds;
     dust3d::Ds3FileReader ds3Reader((const std::uint8_t *)fileData.data(), fileData.size());
-    for (int i = 0; i < ds3Reader.items().size(); ++i) {
+    for (int i = 0; i < (int)ds3Reader.items().size(); ++i) {
         dust3d::Ds3ReaderItem item = ds3Reader.items().at(i);
         if (item.type == "model") {
             std::vector<std::uint8_t> data;
