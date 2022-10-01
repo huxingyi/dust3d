@@ -53,6 +53,10 @@ public:
         const Vector3 &aroundAxis=Vector3(0.0, 0.0, 1.0), 
         const Vector3 &startDirection=Vector3(0.0, 1.0, 0.0),
         const Vector3 &origin=Vector3(0.0, 0.0, 0.0));
+
+    static Vector3 calculateCircleBaseNormal(const std::vector<Vector3> &vertices);
+
+    static Vector3 calculateTubeBaseNormal(const std::vector<Vector3> &vertices);
 };
 
 }

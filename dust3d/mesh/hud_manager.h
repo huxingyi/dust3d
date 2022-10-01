@@ -48,10 +48,10 @@ public:
     std::unique_ptr<std::vector<float>> takeVertices(int *lineVertexCount, int *triangleVertexCount=nullptr);
 private:
     size_t addPosition(const Vector3 &position);
-    void addLine(size_t from, size_t to, const Color &color);
+    void addLine(size_t from, size_t to, const Color &color, const Vector3 &baseNormal);
 
     std::vector<Vector3> m_positions;
-    std::vector<std::tuple<size_t, size_t, Color>> m_lines;
+    std::vector<std::tuple<size_t, size_t, Color, Vector3>> m_lines;
     std::unique_ptr<std::vector<float>> m_vertices;
     int m_lineVertexCount = 0;
     int m_triangleVertexCount = 0;

@@ -21,6 +21,7 @@
  */
 
 #include <dust3d/base/predefined.h>
+#include <dust3d/base/debug.h>
 
 namespace dust3d
 {
@@ -54,12 +55,52 @@ std::vector<Vector3> Predefined::calculateCircleVertices(double radius,
     auto stepAngle = roundAngle / points;
     std::vector<Vector3> circlePoints;
     circlePoints.reserve(points);
-    for (double angle = (0 == points % 2) ? stepAngle * -0.5 : 0.0;
+    for (double angle = stepAngle * -0.5;
             circlePoints.size() < points;
             angle += stepAngle) {
         circlePoints.push_back(origin + startDirection.rotated(aroundAxis, angle) * radius);
     }
     return circlePoints;
+}
+
+Vector3 Predefined::calculateCircleBaseNormal(const std::vector<Vector3> &vertices)
+{
+    std::vector<Vector3> edgeDirections(vertices.size());
+    for (size_t i = 0; i < edgeDirections.size(); ++i) {
+        size_t j = (i + 1) % edgeDirections.size();
+        edgeDirections[i] = (vertices[j] - vertices[i]).normalized();
+    }
+    Vector3 baseNormal;
+    for (size_t i = 0; i < edgeDirections.size(); ++i) {
+        size_t j = (i + 1) % edgeDirections.size();
+        baseNormal += Vector3::crossProduct(-edgeDirections[i], edgeDirections[j]);
+    }
+    return baseNormal.normalized();
+}
+
+Vector3 Predefined::calculateTubeBaseNormal(const std::vector<Vector3> &vertices)
+{
+    std::vector<Vector3> edgeDirections(vertices.size());
+    for (size_t i = 1; i < edgeDirections.size(); ++i) {
+        size_t h = i - 1;
+        edgeDirections[h] = (vertices[i] - vertices[h]).normalized();
+    }
+    Vector3 baseNormal;
+    for (size_t i = 1; i < edgeDirections.size(); ++i) {
+        size_t h = i - 1;
+        // >15 degrees && < 165 degrees
+        if (std::abs(Vector3::dotProduct(edgeDirections[h], edgeDirections[i])) < 0.966)
+            baseNormal += Vector3::crossProduct(edgeDirections[h], edgeDirections[i]);
+    }
+    if (baseNormal.isZero()) {
+        for (size_t h = 0; h + 1 < edgeDirections.size(); ++h) {
+            const auto &sectionNormal = edgeDirections[h];
+            auto axis = Predefined::findNearestAxis(sectionNormal);
+            baseNormal += axis.second * 
+                Vector3::crossProduct(sectionNormal, Predefined::nextAxisDirection(axis.first)).normalized();
+        }
+    }
+    return baseNormal.normalized();
 }
 
 }
