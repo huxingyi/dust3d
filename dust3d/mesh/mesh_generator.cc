@@ -375,34 +375,42 @@ void MeshGenerator::cutFaceStringToCutTemplate(const std::string &cutFaceString,
     }
 }
 
-void MeshGenerator::convertLinksToOrdered(const std::unordered_map<size_t, std::unordered_set<size_t>> &links,
-    std::vector<size_t> *ordered,
+void MeshGenerator::flattenLinks(const std::unordered_map<size_t, size_t> &links,
+    std::vector<size_t> *array,
     bool *isCircle)
 {
+    if (links.empty())
+        return;
     for (const auto &it: links) {
-        if (1 == it.second.size()) {
-            std::unordered_set<size_t> used;
-            size_t current = it.first;
-            bool foundNext = true;
-            while (foundNext) {
-                auto findNext = links.find(current);
-                if (findNext == links.end())
+        if (links.end() == links.find(it.second)) {
+            *isCircle = false;
+            std::unordered_map<size_t, size_t> reversedLinks;
+            for (const auto &it: links)
+                reversedLinks.insert({it.second, it.first});
+            size_t current = it.second;
+            for (;;) {
+                array->push_back(current);
+                auto findNext = reversedLinks.find(current);
+                if (findNext == reversedLinks.end())
                     break;
-                used.insert(current);
-                ordered->push_back(current);
-                foundNext = false;
-                for (const auto &it: findNext->second) {
-                    if (used.end() != used.find(it))
-                        continue;
-                    current = it;
-                    foundNext = true;
-                    break;
-                }
+                current = findNext->second;
             }
-            break;
+            std::reverse(array->begin(), array->end());
+            return;
         }
     }
-    // TODO:
+    *isCircle = true;
+    size_t startIndex = links.begin()->first;
+    size_t current = startIndex;
+    for (;;) {
+        array->push_back(current);
+        auto findNext = links.find(current);
+        if (findNext == links.end())
+            break;
+        current = findNext->second;
+        if (current == startIndex)
+            break;
+    }
 }
 
 std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineStitchingMesh(const std::vector<std::string> &partIdStrings)
@@ -430,7 +438,7 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineStitchingMesh(const st
             });
         }
 
-        std::unordered_map<size_t, std::unordered_set<size_t>> builderNodeLinks;
+        std::unordered_map<size_t, size_t> builderNodeLinks;
         for (const auto &edgeIdString: m_partEdgeIds[partIdString]) {
             auto findEdge = m_snapshot->edges.find(edgeIdString);
             if (findEdge == m_snapshot->edges.end()) {
@@ -447,12 +455,12 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineStitchingMesh(const st
             auto findTo = builderNodeIdStringToIndexMap.find(toNodeIdString);
             if (findTo == builderNodeIdStringToIndexMap.end())
                 continue;
-            builderNodeLinks[findFrom->second].insert(findTo->second);
+            builderNodeLinks[findFrom->second] = findTo->second;
         }
 
         std::vector<size_t> orderedIndices;
         bool isCircle = false;
-        convertLinksToOrdered(builderNodeLinks, &orderedIndices, &isCircle);
+        flattenLinks(builderNodeLinks, &orderedIndices, &isCircle);
         std::vector<StitchMeshBuilder::Node> orderedBuilderNodes(orderedIndices.size());
         for (size_t i = 0; i < orderedIndices.size(); ++i)
             orderedBuilderNodes[i] = builderNodes[orderedIndices[i]];
@@ -465,8 +473,12 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineStitchingMesh(const st
     auto stitchMeshBuilder = std::make_unique<StitchMeshBuilder>(std::move(splines));
     stitchMeshBuilder->build();
 
-    return std::make_unique<MeshCombiner::Mesh>(stitchMeshBuilder->generatedVertices(), 
+    auto mesh = std::make_unique<MeshCombiner::Mesh>(stitchMeshBuilder->generatedVertices(), 
         stitchMeshBuilder->generatedFaces());
+    if (mesh && mesh->isNull())
+        mesh.reset();
+
+    return mesh;
 }
 
 std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combinePartMesh(const std::string &partIdString, bool *hasError, bool *retryable, bool addIntermediateNodes)

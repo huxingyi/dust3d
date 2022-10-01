@@ -56,15 +56,21 @@ private:
     };
 
     std::vector<Spline> m_splines;
+    std::vector<StitchingPoint> m_generatedStitchingPoints;
     std::vector<Vector3> m_generatedVertices;
     std::vector<std::vector<size_t>> m_generatedFaces;
+    std::vector<Vector3> m_generatedNormals;
+    size_t m_targetSegments = 5;
 
     std::vector<std::vector<StitchingPoint>> convertSplinesToStitchingPoints(const std::vector<Spline> &splines);
     void generateMeshFromStitchingPoints(const std::vector<std::vector<StitchingPoint>> &stitchingPoints);
     void generateMeshFromStitchingPoints(const std::vector<StitchingPoint> &a, 
         const std::vector<StitchingPoint> &b);
-    std::vector<Vector3> splitPolylineToSegments(const std::vector<Vector3> &polyline,
-        size_t targetSegments);
+    void splitPolylineToSegments(const std::vector<Vector3> &polyline,
+        const std::vector<double> &radiuses,
+        size_t targetSegments,
+        std::vector<Vector3> *targetPoints,
+        std::vector<double> *targetRadiuses);
     double segmentsLength(const std::vector<Vector3> &segmentPoints);
 };
 

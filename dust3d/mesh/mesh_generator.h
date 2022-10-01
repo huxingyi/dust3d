@@ -160,8 +160,8 @@ private:
     
     static void chamferFace(std::vector<Vector2> *face);
     static bool isWatertight(const std::vector<std::vector<size_t>> &faces);
-    static void convertLinksToOrdered(const std::unordered_map<size_t, std::unordered_set<size_t>> &links,
-        std::vector<size_t> *ordered,
+    static void flattenLinks(const std::unordered_map<size_t, size_t> &links,
+        std::vector<size_t> *array,
         bool *isCircle);
 };
 
