@@ -40,6 +40,8 @@
 namespace dust3d
 {
 
+double MeshGenerator::m_minimalRadius = 0.001;
+
 MeshGenerator::MeshGenerator(Snapshot *snapshot) :
     m_snapshot(snapshot)
 {
@@ -1529,7 +1531,7 @@ void MeshGenerator::generate()
                 std::vector<Vector3> weldedVertices;
                 std::vector<std::vector<size_t>> weldedFaces;
                 affectedNum = weldVertices(combinedVertices, combinedFaces,
-                    0.025, componentCache.noneSeamVertices,
+                    m_minimalRadius, componentCache.noneSeamVertices,
                     weldedVertices, weldedFaces);
                 combinedVertices = weldedVertices;
                 combinedFaces = weldedFaces;

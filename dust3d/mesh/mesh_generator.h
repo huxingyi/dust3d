@@ -41,6 +41,7 @@ namespace dust3d
 class MeshGenerator
 {
 public:
+    static double m_minimalRadius;
 
     struct GeneratedPart
     {

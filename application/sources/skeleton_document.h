@@ -17,6 +17,7 @@
 #include "theme.h"
 #include "model_mesh.h"
 #include "debug.h"
+#include "mesh_generator.h"
 
 class SkeletonNode
 {
@@ -34,8 +35,8 @@ public:
     }
     void setRadius(float toRadius)
     {
-        if (toRadius < 0.001f)
-            toRadius = 0.001f;
+        if (toRadius < MeshGenerator::m_minimalRadius)
+            toRadius = MeshGenerator::m_minimalRadius;
         else if (toRadius > 1)
             toRadius = 1;
         radius = toRadius;
