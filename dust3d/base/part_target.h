@@ -32,8 +32,8 @@ enum class PartTarget
 {
     Model = 0,
     CutFace,
-    StitchingLine,
-    Count
+    Count, // FIXME: Enable StitchingLine after the UI is avaliable
+    StitchingLine
 };
 PartTarget PartTargetFromString(const char *targetString);
 #define IMPL_PartTargetFromString                                               \
