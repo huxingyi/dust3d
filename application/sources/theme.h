@@ -15,6 +15,8 @@ public:
     static QColor red;
     static QColor green;
     static QColor blue;
+    static QColor black;
+    static QColor gray;
     static float normalAlpha;
     static float checkedAlpha;
     static float edgeAlpha;

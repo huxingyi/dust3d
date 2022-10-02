@@ -586,8 +586,9 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combinePartMesh(const std::st
     partCache.objectNodeVertices.clear();
     partCache.vertices.clear();
     partCache.faces.clear();
-    partCache.previewTriangles.clear();
-    partCache.previewVertices.clear();
+    partCache.color = partColor;
+    partCache.metalness = metalness;
+    partCache.roughness = roughness;
     partCache.isSuccessful = false;
     partCache.joined = (target == PartTarget::Model && !isDisabled);
     
@@ -806,6 +807,10 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combinePartMesh(const std::st
     } else {
         hasMeshError = true;
     }
+
+    if (nullptr != mesh) {
+        partCache.isSuccessful = true;
+    }
     
     if (mesh && mesh->isNull()) {
         mesh.reset();
@@ -934,7 +939,13 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineComponentMesh(const st
             componentCache.objectEdges.push_back(it);
         for (const auto &it: partCache.objectNodeVertices)
             componentCache.objectNodeVertices.push_back(it);
-        addComponentPreview(componentId, ComponentPreview {partCache.vertices, partCache.faces});
+        ComponentPreview preview;
+        if (mesh)
+            mesh->fetch(preview.vertices, preview.triangles);
+        preview.color = partCache.color;
+        preview.metalness = partCache.metalness;
+        preview.roughness = partCache.roughness;
+        addComponentPreview(componentId, std::move(preview));
     } else {
         std::vector<std::pair<CombineMode, std::vector<std::string>>> combineGroups;
         int currentGroupIndex = -1;
@@ -1185,11 +1196,6 @@ void MeshGenerator::collectErroredParts()
             updateVertexIndices(errorTriangleAndQuads, m_object->vertices.size());
             m_object->vertices.insert(m_object->vertices.end(), it.second.vertices.begin(), it.second.vertices.end());
             m_object->triangleAndQuads.insert(m_object->triangleAndQuads.end(), errorTriangleAndQuads.begin(), errorTriangleAndQuads.end());
-            
-            auto errorTriangles = it.second.previewTriangles;
-            updateVertexIndices(errorTriangles, m_object->vertices.size());
-            m_object->vertices.insert(m_object->vertices.end(), it.second.previewVertices.begin(), it.second.previewVertices.end());
-            m_object->triangles.insert(m_object->triangles.end(), errorTriangles.begin(), errorTriangles.end());
         }
     }
 }

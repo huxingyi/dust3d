@@ -50,8 +50,9 @@ public:
         std::vector<ObjectNode> objectNodes;
         std::vector<std::pair<std::pair<Uuid, Uuid>, std::pair<Uuid, Uuid>>> objectEdges;
         std::vector<std::pair<Vector3, std::pair<Uuid, Uuid>>> objectNodeVertices;
-        std::vector<Vector3> previewVertices;
-        std::vector<std::vector<size_t>> previewTriangles;
+        Color color = Color(1.0, 1.0, 1.0);
+        float metalness = 0.0;
+        float roughness = 1.0;
         bool isSuccessful = false;
         bool joined = true;
     };

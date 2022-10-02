@@ -9,6 +9,8 @@ QColor Theme::white = QColor(0xf7, 0xd9, 0xc8);
 QColor Theme::red = QColor(0xfc, 0x66, 0x21);
 QColor Theme::green = QColor(0xaa, 0xeb, 0xc4);
 QColor Theme::blue = QColor(0x0d, 0xa9, 0xf1);
+QColor Theme::black = QColor(25, 25, 25);
+QColor Theme::gray = QColor(0x32, 0x32, 0x32);
 float Theme::normalAlpha = 96.0 / 255;
 float Theme::checkedAlpha = 1.0;
 float Theme::edgeAlpha = 1.0;
@@ -50,8 +52,8 @@ void Theme::initialize()
     Theme::toolIconSize = (int)(Theme::toolIconFontSize * 1.5);
     Theme::miniIconFontSize = (int)(Theme::toolIconFontSize * 0.85);
     Theme::miniIconSize = (int)(Theme::miniIconFontSize * 1.67);
-    Theme::partPreviewImageSize = (Theme::miniIconSize * 3);
-    Theme::sidebarPreferredWidth = Theme::partPreviewImageSize * 4;
+    Theme::partPreviewImageSize = (Theme::miniIconSize * 2);
+    Theme::sidebarPreferredWidth = Theme::partPreviewImageSize * 4.5;
     Theme::materialPreviewImageSize = Theme::sidebarPreferredWidth * 0.4;
 }
 

@@ -7,10 +7,15 @@ ComponentListModel::ComponentListModel(const Document *document, QObject *parent
     QAbstractListModel(parent),
     m_document(document)
 {
+    connect(m_document, &Document::componentPreviewImageChanged, [this](const dust3d::Uuid &componentId) {
+        emit this->layoutChanged();
+    });
 }
 
 int ComponentListModel::rowCount(const QModelIndex &parent) const
 {
+    if (parent.isValid())
+        return 0;
     const SkeletonComponent *listingComponent = m_document->findComponent(m_listingComponentId);
     if (nullptr == listingComponent)
         return 0;
@@ -19,6 +24,8 @@ int ComponentListModel::rowCount(const QModelIndex &parent) const
 
 int ComponentListModel::columnCount(const QModelIndex &parent) const
 {
+    if (parent.isValid())
+        return 0;
     return 1;
 }
 
@@ -53,7 +60,7 @@ QVariant ComponentListModel::data(const QModelIndex &index, int role) const
     case Qt::DecorationRole: {
             const SkeletonComponent *component = modelIndexToComponent(index);
             if (nullptr != component) {
-                // TODO:
+                return component->previewPixmap;
             }
         }
         break;
