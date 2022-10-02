@@ -13,11 +13,11 @@
 #include <QShortcut>
 #include "model_widget.h"
 #include "graphics_container_widget.h"
-#include "part_preview_images_generator.h"
+#include "mesh_preview_images_generator.h"
 
 class Document;
 class SkeletonGraphicsWidget;
-class PartTreeWidget;
+class ComponentPreviewGridWidget;
 class ToolbarButton;
 class SpinnableToolbarIcon;
 
@@ -74,15 +74,14 @@ public slots:
     void updateRadiusLockButtonState();
     void registerDialog(QWidget *widget);
     void unregisterDialog(QWidget *widget);
-    void showCutFaceSettingPopup(const QPoint &globalPos, std::set<dust3d::Uuid> nodeIds);
     void setExportWaitingList(const QStringList &filenames);
     void checkExportWaitingList();
     void exportObjToFilename(const QString &filename);
     void exportFbxToFilename(const QString &filename);
     void exportGlbToFilename(const QString &filename);
     void toggleRotation();
-    void generatePartPreviewImages();
-    void partPreviewImagesReady();
+    void generateComponentPreviewImages();
+    void componentPreviewImagesReady();
     void updateInprogressIndicator();
     void openRecentFile();
     void updateRecentFileActions();
@@ -156,10 +155,10 @@ private:
     
     QMetaObject::Connection m_partListDockerVisibleSwitchConnection;
     
-    PartPreviewImagesGenerator *m_partPreviewImagesGenerator = nullptr;
-    bool m_isPartPreviewImagesObsolete = false;
+    MeshPreviewImagesGenerator *m_componentPreviewImagesGenerator = nullptr;
+    bool m_isComponentPreviewImagesObsolete = false;
     
-    PartTreeWidget *m_partTreeWidget = nullptr;
+    ComponentPreviewGridWidget *m_componentPreviewGridWidget = nullptr;
     
     SpinnableToolbarIcon *m_inprogressIndicator = nullptr;
     

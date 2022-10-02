@@ -435,8 +435,6 @@ signals:
     void setYlockState(bool locked);
     void setZlockState(bool locked);
     void setNodeOrigin(dust3d::Uuid nodeId, float x, float y, float z);
-    void clearNodeCutFaceSettings(dust3d::Uuid nodeId);
-    void showCutFaceSettingPopup(const QPoint &globalPos, std::set<dust3d::Uuid> nodeIds);
     void zoomRenderedModelBy(float delta);
     void switchNodeXZ(dust3d::Uuid nodeId);
     void enableAllPositionRelatedLocks();
@@ -472,7 +470,6 @@ public:
     bool hasEdgeSelection();
     bool hasNodeSelection();
     bool hasTwoDisconnectedNodesSelection();
-    bool hasCutFaceAdjustedNodesSelection();
     void setModelWidget(ModelWidget *modelWidget);
     bool inputWheelEventFromOtherWidget(QWheelEvent *event);
     bool rotated();
@@ -542,8 +539,6 @@ public slots:
     void ikMoveReady();
     void timeToRemoveDeferredNodesAndEdges();
     void switchSelectedXZ();
-    void showSelectedCutFaceSettingPopup(const QPoint &pos);
-    void clearSelectedCutFace();
     void setRotated(bool rotated);
     void shortcutDelete();
     void shortcutAddMode();

@@ -68,14 +68,9 @@ bool MeshGenerator::isSuccessful()
     return m_isSuccessful;
 }
 
-const std::set<Uuid> &MeshGenerator::generatedPreviewPartIds()
+const std::set<Uuid> &MeshGenerator::generatedPreviewComponentIds()
 {
-    return m_generatedPreviewPartIds;
-}
-
-const std::set<Uuid> &MeshGenerator::generatedPreviewImagePartIds()
-{
-    return m_generatedPreviewImagePartIds;
+    return m_generatedPreviewComponentIds;
 }
 
 Object *MeshGenerator::takeObject()
@@ -812,57 +807,6 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combinePartMesh(const std::st
         hasMeshError = true;
     }
     
-    std::vector<Vector3> partPreviewVertices;
-    Color partPreviewColor = partColor;
-    if (nullptr != mesh) {
-        mesh->fetch(partPreviewVertices, partCache.previewTriangles);
-        partCache.previewVertices = partPreviewVertices;
-        partCache.isSuccessful = true;
-    }
-    if (partCache.previewTriangles.empty()) {
-        partPreviewVertices = partCache.vertices;
-        triangulate(partPreviewVertices, partCache.faces, &partCache.previewTriangles);
-        partCache.previewVertices = partPreviewVertices;
-        partPreviewColor = Color::createRed();
-        partCache.isSuccessful = false;
-    }
-    
-    trimVertices(&partPreviewVertices, true);
-    for (auto &it: partPreviewVertices) {
-        it *= 2.0;
-    }
-    std::vector<Vector3> partPreviewTriangleNormals;
-    for (const auto &face: partCache.previewTriangles) {
-        partPreviewTriangleNormals.push_back(Vector3::normal(
-            partPreviewVertices[face[0]],
-            partPreviewVertices[face[1]],
-            partPreviewVertices[face[2]]
-        ));
-    }
-    std::vector<std::vector<Vector3>> partPreviewTriangleVertexNormals;
-    generateSmoothTriangleVertexNormals(partPreviewVertices,
-        partCache.previewTriangles,
-        partPreviewTriangleNormals,
-        &partPreviewTriangleVertexNormals);
-    if (!partCache.previewTriangles.empty()) {
-        if (PartTarget::CutFace == target) {
-            std::vector<Vector2> cutTemplate;
-            cutFaceStringToCutTemplate(partIdString, cutTemplate);
-            auto &preview = m_generatedPartPreviews[partId];
-            preview.cutTemplate = cutTemplate;
-            m_generatedPreviewImagePartIds.insert(partId);
-        } else {
-            auto &preview = m_generatedPartPreviews[partId];
-            preview.vertices = partPreviewVertices;
-            preview.triangles = partCache.previewTriangles;
-            preview.vertexNormals = partPreviewTriangleVertexNormals;
-            preview.color = partPreviewColor;
-            preview.metalness = metalness;
-            preview.roughness = roughness;
-            m_generatedPreviewPartIds.insert(partId);
-        }
-    }
-    
     if (mesh && mesh->isNull()) {
         mesh.reset();
     }
@@ -990,6 +934,7 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineComponentMesh(const st
             componentCache.objectEdges.push_back(it);
         for (const auto &it: partCache.objectNodeVertices)
             componentCache.objectNodeVertices.push_back(it);
+        addComponentPreview(componentId, ComponentPreview {partCache.vertices, partCache.faces});
     } else {
         std::vector<std::pair<CombineMode, std::vector<std::string>>> combineGroups;
         int currentGroupIndex = -1;
@@ -1037,6 +982,10 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineComponentMesh(const st
                 groupMeshes.emplace_back(std::make_tuple(std::move(stitchingMesh), CombineMode::Normal, String::join(stitchingComponents, ":")));
         }
         mesh = combineMultipleMeshes(std::move(groupMeshes), true);
+        ComponentPreview preview;
+        if (mesh)
+            mesh->fetch(preview.vertices, preview.triangles);
+        addComponentPreview(componentId, std::move(preview));
     }
     
     if (nullptr != mesh)
@@ -1276,9 +1225,10 @@ void MeshGenerator::postprocessObject(Object *object)
     }
     
     std::vector<std::vector<Vector3>> triangleVertexNormals;
-    generateSmoothTriangleVertexNormals(object->vertices,
+    smoothNormal(object->vertices,
         object->triangles,
         object->triangleNormals,
+        m_smoothShadingThresholdAngleDegrees,
         &triangleVertexNormals);
     object->setTriangleVertexNormals(triangleVertexNormals);
 }
@@ -1330,30 +1280,6 @@ void MeshGenerator::collectUncombinedComponent(const std::string &componentIdStr
         if (childIdString.empty())
             continue;
         collectUncombinedComponent(childIdString);
-    }
-}
-
-void MeshGenerator::generateSmoothTriangleVertexNormals(const std::vector<Vector3> &vertices, const std::vector<std::vector<size_t>> &triangles,
-    const std::vector<Vector3> &triangleNormals,
-    std::vector<std::vector<Vector3>> *triangleVertexNormals)
-{
-    std::vector<Vector3> smoothNormals;
-    smoothNormal(vertices,
-        triangles,
-        triangleNormals,
-        m_smoothShadingThresholdAngleDegrees,
-        smoothNormals);
-    triangleVertexNormals->resize(triangles.size(), {
-        Vector3(), Vector3(), Vector3()
-    });
-    size_t index = 0;
-    for (size_t i = 0; i < triangles.size(); ++i) {
-        auto &normals = (*triangleVertexNormals)[i];
-        for (size_t j = 0; j < 3; ++j) {
-            if (index < smoothNormals.size())
-                normals[j] = smoothNormals[index];
-            ++index;
-        }
     }
 }
 
@@ -1446,6 +1372,12 @@ void MeshGenerator::preprocessMirror()
             m_snapshot->components[parentIdString]["children"] += "," + idString;
         }
     }
+}
+
+void MeshGenerator::addComponentPreview(const Uuid &componentId, ComponentPreview &&preview)
+{
+    m_generatedPreviewComponentIds.insert(componentId);
+    m_generatedComponentPreviews[componentId] = std::move(preview);
 }
 
 void MeshGenerator::generate()

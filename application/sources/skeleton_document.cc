@@ -535,12 +535,13 @@ void SkeletonDocument::createNewComponentAndMoveThisIn(dust3d::Uuid componentId)
     oldParent->replaceChild(componentId, newParent.id);
     newParent.parentId = oldParent->id;
     newParent.addChild(componentId);
-    componentMap[newParent.id] = newParent;
+    auto newParentId = newParent.id;
+    componentMap.emplace(newParentId, std::move(newParent));
     
-    component->second.parentId = newParent.id;
+    component->second.parentId = newParentId;
     
     emit componentChildrenChanged(oldParent->id);
-    emit componentAdded(newParent.id);
+    emit componentAdded(newParentId);
     emit optionsChanged();
 }
 
@@ -558,10 +559,11 @@ void SkeletonDocument::createNewChildComponent(dust3d::Uuid parentComponentId)
     parentComponent->addChild(newComponent.id);
     newComponent.parentId = parentComponentId;
     
-    componentMap[newComponent.id] = newComponent;
+    auto newComponentId = newComponent.id;
+    componentMap.emplace(newComponentId, std::move(newComponent));
     
     emit componentChildrenChanged(parentComponentId);
-    emit componentAdded(newComponent.id);
+    emit componentAdded(newComponentId);
     emit optionsChanged();
 }
 
@@ -638,10 +640,11 @@ void SkeletonDocument::addPartToComponent(dust3d::Uuid partId, dust3d::Uuid comp
     partMap[partId].componentId = child.id;
     child.linkToPartId = partId;
     child.parentId = componentId;
-    componentMap[child.id] = child;
+    auto childId = child.id;
+    componentMap.emplace(childId, std::move(child));
     
     emit componentChildrenChanged(componentId);
-    emit componentAdded(child.id);
+    emit componentAdded(childId);
 }
 
 void SkeletonDocument::removeComponent(dust3d::Uuid componentId)
@@ -711,10 +714,11 @@ void SkeletonDocument::addComponent(dust3d::Uuid parentId)
     }
     
     component.parentId = parentId;
-    componentMap[component.id] = component;
+    auto componentId = component.id;
+    componentMap.emplace(componentId, std::move(component));
     
     emit componentChildrenChanged(parentId);
-    emit componentAdded(component.id);
+    emit componentAdded(componentId);
 }
 
 bool SkeletonDocument::isDescendantComponent(dust3d::Uuid componentId, dust3d::Uuid suspiciousId)
@@ -1266,4 +1270,23 @@ void SkeletonDocument::setRadiusLockState(bool locked)
         return;
     radiusLocked = locked;
     emit radiusLockStateChanged();
+}
+
+void SkeletonDocument::setComponentPreviewImage(const dust3d::Uuid &componentId, const QImage &image)
+{
+    SkeletonComponent *component = (SkeletonComponent *)findComponent(componentId);
+    if (nullptr == component)
+        return;
+    component->isPreviewMeshObsolete = false;
+    component->previewPixmap = QPixmap::fromImage(image);
+    emit componentPreviewImageChanged(componentId);
+}
+
+void SkeletonDocument::setComponentPreviewMesh(const dust3d::Uuid &componentId, std::unique_ptr<ModelMesh> mesh)
+{
+    SkeletonComponent *component = (SkeletonComponent *)findComponent(componentId);
+    if (nullptr == component)
+        return;
+    component->updatePreviewMesh(std::move(mesh));
+    emit componentPreviewMeshChanged(componentId);
 }

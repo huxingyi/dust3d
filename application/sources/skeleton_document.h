@@ -151,10 +151,6 @@ public:
 class SkeletonPart
 {
 public:
-    ~SkeletonPart()
-    {
-        delete m_previewMesh;
-    }
     dust3d::Uuid id;
     QString name;
     bool visible;
@@ -183,8 +179,6 @@ public:
     float roughness;
     float hollowThickness;
     bool countershaded;
-    bool isPreviewMeshObsolete;
-    QPixmap previewPixmap;
     bool smooth;
     SkeletonPart(const dust3d::Uuid &withId=dust3d::Uuid()) :
         visible(true),
@@ -209,7 +203,6 @@ public:
         roughness(1.0),
         hollowThickness(0.0),
         countershaded(false),
-        isPreviewMeshObsolete(false),
         smooth(false)
     {
         id = withId.isNull() ? dust3d::Uuid::createUuid() : withId;
@@ -389,21 +382,8 @@ public:
         smooth = other.smooth;
         hollowThickness = other.hollowThickness;
     }
-    void updatePreviewMesh(ModelMesh *previewMesh)
-    {
-        delete m_previewMesh;
-        m_previewMesh = previewMesh;
-        isPreviewMeshObsolete = true;
-    }
-    ModelMesh *takePreviewMesh() const
-    {
-        if (nullptr == m_previewMesh)
-            return nullptr;
-        return new ModelMesh(*m_previewMesh);
-    }
 private:
     Q_DISABLE_COPY(SkeletonPart);
-    ModelMesh *m_previewMesh = nullptr;
 };
 
 enum class SkeletonDocumentEditMode
@@ -446,6 +426,8 @@ public:
     dust3d::CombineMode combineMode = dust3d::CombineMode::Normal;
     bool dirty = true;
     std::vector<dust3d::Uuid> childrenIds;
+    bool isPreviewMeshObsolete = false;
+    QPixmap previewPixmap;
     QString linkData() const
     {
         return linkToPartId.isNull() ? QString() : QString(linkToPartId.toString().c_str());
@@ -532,7 +514,19 @@ public:
         for (int i = index; i <= (int)childrenIds.size() - 2; i++)
             std::swap(childrenIds[i], childrenIds[i + 1]);
     }
+    void updatePreviewMesh(std::unique_ptr<ModelMesh> mesh)
+    {
+        m_previewMesh = std::move(mesh);
+        isPreviewMeshObsolete = true;
+    }
+    ModelMesh *takePreviewMesh() const
+    {
+        if (nullptr == m_previewMesh)
+            return nullptr;
+        return new ModelMesh(*m_previewMesh);
+    }
 private:
+    std::unique_ptr<ModelMesh> m_previewMesh;
     std::set<dust3d::Uuid> m_childrenIdSet;
 };
 
@@ -552,6 +546,8 @@ signals:
     void componentRemoved(dust3d::Uuid componentId);
     void componentAdded(dust3d::Uuid componentId);
     void componentExpandStateChanged(dust3d::Uuid componentId);
+    void componentPreviewMeshChanged(const dust3d::Uuid &componentId);
+    void componentPreviewImageChanged(const dust3d::Uuid &componentId);
     void nodeRemoved(dust3d::Uuid nodeId);
     void edgeRemoved(dust3d::Uuid edgeId);
     void nodeRadiusChanged(dust3d::Uuid nodeId);
@@ -589,6 +585,7 @@ public:
     dust3d::Uuid findComponentParentId(dust3d::Uuid componentId) const;
     void collectComponentDescendantParts(dust3d::Uuid componentId, std::vector<dust3d::Uuid> &partIds) const;
     void collectComponentDescendantComponents(dust3d::Uuid componentId, std::vector<dust3d::Uuid> &componentIds) const;
+    void setComponentPreviewMesh(const dust3d::Uuid &componentId, std::unique_ptr<ModelMesh> mesh);
     void resetDirtyFlags();
     void markAllDirty();
     
@@ -694,6 +691,7 @@ public slots:
     void showDescendantComponents(dust3d::Uuid componentId);
     void lockDescendantComponents(dust3d::Uuid componentId);
     void unlockDescendantComponents(dust3d::Uuid componentId);
+    void setComponentPreviewImage(const dust3d::Uuid &componentId, const QImage &image);
     void setPartLockState(dust3d::Uuid partId, bool locked);
     void setPartVisibleState(dust3d::Uuid partId, bool visible);
     void setPartDisableState(dust3d::Uuid partId, bool disabled);

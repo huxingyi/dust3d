@@ -74,23 +74,20 @@ public:
         std::map<std::string, std::unique_ptr<MeshCombiner::Mesh>> cachedCombination;
     };
     
-    struct PartPreview
+    struct ComponentPreview
     {
-        std::vector<Vector2> cutTemplate;
-        
         std::vector<Vector3> vertices;
         std::vector<std::vector<size_t>> triangles;
-        std::vector<std::vector<Vector3>> vertexNormals;
-        Color color;
-        float metalness;
-        float roughness;
+        Color color = Color(1.0, 1.0, 1.0);
+        float metalness = 0.0;
+        float roughness = 1.0;
     };
 
     MeshGenerator(Snapshot *snapshot);
     ~MeshGenerator();
     bool isSuccessful();
-    const std::set<Uuid> &generatedPreviewPartIds();
-    const std::set<Uuid> &generatedPreviewImagePartIds();
+    const std::set<Uuid> &generatedPreviewComponentIds();
+    const std::map<Uuid, ComponentPreview> &generatedComponentPreviews();
     Object *takeObject();
     virtual void generate();
     void setGeneratedCacheContext(GeneratedCacheContext *cacheContext);
@@ -102,9 +99,8 @@ public:
     uint64_t id();
     
 protected:
-    std::set<Uuid> m_generatedPreviewPartIds;
-    std::map<Uuid, PartPreview> m_generatedPartPreviews;
-    std::set<Uuid> m_generatedPreviewImagePartIds;
+    std::set<Uuid> m_generatedPreviewComponentIds;
+    std::map<Uuid, ComponentPreview> m_generatedComponentPreviews;
     Object *m_object = nullptr;
         
 private:
@@ -141,9 +137,6 @@ private:
     std::unique_ptr<MeshCombiner::Mesh> combineTwoMeshes(const MeshCombiner::Mesh &first, const MeshCombiner::Mesh &second,
         MeshCombiner::Method method,
         bool recombine=true);
-    void generateSmoothTriangleVertexNormals(const std::vector<Vector3> &vertices, const std::vector<std::vector<size_t>> &triangles,
-        const std::vector<Vector3> &triangleNormals,
-        std::vector<std::vector<Vector3>> *triangleVertexNormals);
     const std::map<std::string, std::string> *findComponent(const std::string &componentIdString);
     CombineMode componentCombineMode(const std::map<std::string, std::string> *component);
     std::unique_ptr<MeshCombiner::Mesh> combineComponentChildGroupMesh(const std::vector<std::string> &componentIdStrings,
@@ -159,7 +152,8 @@ private:
     void preprocessMirror();
     std::string reverseUuid(const std::string &uuidString);
     void recoverQuads(const std::vector<Vector3> &vertices, const std::vector<std::vector<size_t>> &triangles, const std::set<std::pair<PositionKey, PositionKey>> &sharedQuadEdges, std::vector<std::vector<size_t>> &triangleAndQuads);
-    
+    void addComponentPreview(const Uuid &componentId, ComponentPreview &&preview);
+
     static void chamferFace(std::vector<Vector2> *face);
     static bool isWatertight(const std::vector<std::vector<size_t>> &faces);
     static void flattenLinks(const std::unordered_map<size_t, size_t> &links,

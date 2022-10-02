@@ -76,7 +76,7 @@ signals:
     void nodeCutFaceChanged(dust3d::Uuid nodeId);
     void partPreviewChanged(dust3d::Uuid partId);
     void resultMeshChanged();
-    void resultPartPreviewsChanged();
+    void resultComponentPreviewMeshesChanged();
     void turnaroundChanged();
     void editModeChanged();
     void resultTextureChanged();

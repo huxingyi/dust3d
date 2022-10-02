@@ -30,7 +30,7 @@ void smoothNormal(const std::vector<Vector3> &vertices,
     const std::vector<std::vector<size_t>> &triangles,
     const std::vector<Vector3> &triangleNormals,
     float thresholdAngleDegrees,
-    std::vector<Vector3> &triangleVertexNormals)
+    std::vector<std::vector<Vector3>> *triangleVertexNormals)
 {
     std::vector<std::vector<std::pair<size_t, size_t>>> triangleVertexNormalsMapByIndices(vertices.size());
     std::vector<Vector3> angleAreaWeightedNormals;
@@ -54,7 +54,7 @@ void smoothNormal(const std::vector<Vector3> &vertices,
             angleAreaWeightedNormals.push_back(triangleNormals[triangleIndex] * area * angles[i]);
         }
     }
-    triangleVertexNormals = angleAreaWeightedNormals;
+    std::vector<Vector3> finalNormals = angleAreaWeightedNormals;
     std::map<std::pair<size_t, size_t>, float> degreesBetweenFacesMap;
     for (size_t vertexIndex = 0; vertexIndex < vertices.size(); ++vertexIndex) {
         const auto &triangleVertices = triangleVertexNormalsMapByIndices[vertexIndex];
@@ -74,12 +74,24 @@ void smoothNormal(const std::vector<Vector3> &vertices,
                 if (degrees > thresholdAngleDegrees) {
                     continue;
                 }
-                triangleVertexNormals[triangleVertex.second] += angleAreaWeightedNormals[otherTriangleVertex.second];
+                finalNormals[triangleVertex.second] += angleAreaWeightedNormals[otherTriangleVertex.second];
             }
         }
     }
-    for (auto &item: triangleVertexNormals)
+    for (auto &item: finalNormals)
         item.normalize();
+    triangleVertexNormals->resize(triangles.size(), {
+        Vector3(), Vector3(), Vector3()
+    });
+    size_t index = 0;
+    for (size_t i = 0; i < triangles.size(); ++i) {
+        auto &normals = (*triangleVertexNormals)[i];
+        for (size_t j = 0; j < 3; ++j) {
+            if (index < finalNormals.size())
+                normals[j] = finalNormals[index];
+            ++index;
+        }
+    }
 }
 
 }

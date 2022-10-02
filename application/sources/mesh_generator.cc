@@ -1,3 +1,6 @@
+
+#include <dust3d/mesh/smooth_normal.h>
+#include <dust3d/mesh/trim_vertices.h>
 #include <QElapsedTimer>
 #include <QDebug>
 #include "mesh_generator.h"
@@ -10,25 +13,11 @@ MeshGenerator::MeshGenerator(dust3d::Snapshot *snapshot) :
 
 MeshGenerator::~MeshGenerator()
 {
-    for (auto &it: m_partPreviewImages)
-        delete it.second;
-    for (auto &it: m_partPreviewMeshes)
-        delete it.second;
-    delete m_resultMesh;
 }
 
-ModelMesh *MeshGenerator::takePartPreviewMesh(const dust3d::Uuid &partId)
+std::map<dust3d::Uuid, std::unique_ptr<ModelMesh>> *MeshGenerator::takeComponentPreviewMeshes()
 {
-    ModelMesh *resultMesh = m_partPreviewMeshes[partId];
-    m_partPreviewMeshes[partId] = nullptr;
-    return resultMesh;
-}
-
-QImage *MeshGenerator::takePartPreviewImage(const dust3d::Uuid &partId)
-{
-    QImage *image = m_partPreviewImages[partId];
-    m_partPreviewImages[partId] = nullptr;
-    return image;
+    return m_componentPreviewMeshes.release();
 }
 
 MonochromeMesh *MeshGenerator::takeWireframeMesh()
@@ -44,21 +33,35 @@ void MeshGenerator::process()
     generate();
     
     if (nullptr != m_object)
-        m_resultMesh = new ModelMesh(*m_object);
+        m_resultMesh = std::make_unique<ModelMesh>(*m_object);
     
-    for (const auto &partId: m_generatedPreviewImagePartIds) {
-        auto it = m_generatedPartPreviews.find(partId);
-        if (it == m_generatedPartPreviews.end())
+    m_componentPreviewMeshes = std::make_unique<std::map<dust3d::Uuid, std::unique_ptr<ModelMesh>>>();
+    for (const auto &componentId: m_generatedPreviewComponentIds) {
+        auto it = m_generatedComponentPreviews.find(componentId);
+        if (it == m_generatedComponentPreviews.end())
             continue;
-        m_partPreviewImages[partId] = buildCutFaceTemplatePreviewImage(it->second.cutTemplate);
-    }
-    for (const auto &partId: m_generatedPreviewPartIds) {
-        auto it = m_generatedPartPreviews.find(partId);
-        if (it == m_generatedPartPreviews.end())
-            continue;
-        m_partPreviewMeshes[partId] = new ModelMesh(it->second.vertices,
+        dust3d::trimVertices(&it->second.vertices, true);
+        for (auto &it: it->second.vertices) {
+            it *= 2.0;
+        }
+        std::vector<dust3d::Vector3> previewTriangleNormals;
+        previewTriangleNormals.reserve(it->second.triangles.size());
+        for (const auto &face: it->second.triangles) {
+            previewTriangleNormals.emplace_back(dust3d::Vector3::normal(
+                it->second.vertices[face[0]],
+                it->second.vertices[face[1]],
+                it->second.vertices[face[2]]
+            ));
+        }
+        std::vector<std::vector<dust3d::Vector3>> previewTriangleVertexNormals;
+        dust3d::smoothNormal(it->second.vertices,
             it->second.triangles,
-            it->second.vertexNormals,
+            previewTriangleNormals,
+            0,
+            &previewTriangleVertexNormals);
+        (*m_componentPreviewMeshes)[componentId] = std::make_unique<ModelMesh>(it->second.vertices,
+            it->second.triangles,
+            previewTriangleVertexNormals,
             it->second.color,
             it->second.metalness,
             it->second.roughness);
@@ -74,8 +77,6 @@ void MeshGenerator::process()
 
 ModelMesh *MeshGenerator::takeResultMesh()
 {
-    ModelMesh *resultMesh = m_resultMesh;
-    m_resultMesh = nullptr;
-    return resultMesh;
+    return m_resultMesh.release();
 }
 

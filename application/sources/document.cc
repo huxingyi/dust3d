@@ -639,7 +639,7 @@ void Document::addFromSnapshot(const dust3d::Snapshot &snapshot, enum SnapshotSo
             if (inversePartIds.find(partId) != inversePartIds.end())
                 component.combineMode = dust3d::CombineMode::Inversion;
         }
-        componentMap[component.id] = component;
+        componentMap.emplace(component.id, std::move(component));
         newAddedComponentIds.insert(component.id);
     }
     const auto &rootComponentChildren = snapshot.rootComponent.find("children");
@@ -764,29 +764,15 @@ void Document::meshReady()
     dust3d::Object *object = m_meshGenerator->takeObject();
     bool isSuccessful = m_meshGenerator->isSuccessful();
     
-    for (auto &partId: m_meshGenerator->generatedPreviewImagePartIds()) {
-        auto part = partMap.find(partId);
-        if (part != partMap.end()) {
-            part->second.isPreviewMeshObsolete = false;
-            QImage *resultPartPreviewImage = m_meshGenerator->takePartPreviewImage(partId);
-            if (nullptr != resultPartPreviewImage)
-                part->second.previewPixmap = QPixmap::fromImage(*resultPartPreviewImage);
-            delete resultPartPreviewImage;
-            emit partPreviewChanged(partId);
+    std::unique_ptr<std::map<dust3d::Uuid, std::unique_ptr<ModelMesh>>> componentPreviewMeshes;
+    componentPreviewMeshes.reset(m_meshGenerator->takeComponentPreviewMeshes());
+    bool componentPreviewsChanged = componentPreviewMeshes && !componentPreviewMeshes->empty();
+    if (componentPreviewsChanged) {
+        for (auto &it: *componentPreviewMeshes) {
+            setComponentPreviewMesh(it.first, std::move(it.second));
         }
+        emit resultComponentPreviewMeshesChanged();
     }
-    
-    bool partPreviewsChanged = false;
-    for (auto &partId: m_meshGenerator->generatedPreviewPartIds()) {
-        auto part = partMap.find(partId);
-        if (part != partMap.end()) {
-            ModelMesh *resultPartPreviewMesh = m_meshGenerator->takePartPreviewMesh(partId);
-            part->second.updatePreviewMesh(resultPartPreviewMesh);
-            partPreviewsChanged = true;
-        }
-    }
-    if (partPreviewsChanged)
-        emit resultPartPreviewsChanged();
     
     delete m_resultMesh;
     m_resultMesh = resultMesh;

@@ -15,17 +15,15 @@ public:
     MeshGenerator(dust3d::Snapshot *snapshot);
     ~MeshGenerator();
     ModelMesh *takeResultMesh();
-    ModelMesh *takePartPreviewMesh(const dust3d::Uuid &partId);
-    QImage *takePartPreviewImage(const dust3d::Uuid &partId);
+    std::map<dust3d::Uuid, std::unique_ptr<ModelMesh>> *takeComponentPreviewMeshes();
     MonochromeMesh *takeWireframeMesh();
 public slots:
     void process();
 signals:
     void finished();
 private:
-    ModelMesh *m_resultMesh = nullptr;
-    std::map<dust3d::Uuid, ModelMesh *> m_partPreviewMeshes;
-    std::map<dust3d::Uuid, QImage *> m_partPreviewImages;
+    std::unique_ptr<ModelMesh> m_resultMesh;
+    std::unique_ptr<std::map<dust3d::Uuid, std::unique_ptr<ModelMesh>>> m_componentPreviewMeshes;
     std::unique_ptr<MonochromeMesh> m_wireframeMesh;
 };
 
