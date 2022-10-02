@@ -149,7 +149,8 @@ private:
     std::unique_ptr<MeshCombiner::Mesh> combineComponentChildGroupMesh(const std::vector<std::string> &componentIdStrings,
         GeneratedComponent &componentCache);
     std::unique_ptr<MeshCombiner::Mesh> combineMultipleMeshes(std::vector<std::tuple<std::unique_ptr<MeshCombiner::Mesh>, CombineMode, std::string>> &&multipleMeshes, bool recombine=true);
-    std::unique_ptr<MeshCombiner::Mesh> combineStitchingMesh(const std::vector<std::string> &partIdStrings);
+    std::unique_ptr<MeshCombiner::Mesh> combineStitchingMesh(const std::vector<std::string> &partIdStrings,
+        GeneratedComponent &componentCache);
     std::string componentColorName(const std::map<std::string, std::string> *component);
     void collectUncombinedComponent(const std::string &componentIdString);
     void cutFaceStringToCutTemplate(const std::string &cutFaceString, std::vector<Vector2> &cutTemplate);

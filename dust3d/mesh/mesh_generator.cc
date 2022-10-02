@@ -415,7 +415,8 @@ void MeshGenerator::flattenLinks(const std::unordered_map<size_t, size_t> &links
     }
 }
 
-std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineStitchingMesh(const std::vector<std::string> &partIdStrings)
+std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineStitchingMesh(const std::vector<std::string> &partIdStrings,
+    GeneratedComponent &componentCache)
 {
     std::vector<StitchMeshBuilder::Spline> splines;
     splines.reserve(partIdStrings.size());
@@ -483,6 +484,10 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineStitchingMesh(const st
 
     auto stitchMeshBuilder = std::make_unique<StitchMeshBuilder>(std::move(splines));
     stitchMeshBuilder->build();
+
+    collectSharedQuadEdges(stitchMeshBuilder->generatedVertices(), 
+        stitchMeshBuilder->generatedFaces(),
+        &componentCache.sharedQuadEdges);
 
     auto mesh = std::make_unique<MeshCombiner::Mesh>(stitchMeshBuilder->generatedVertices(), 
         stitchMeshBuilder->generatedFaces());
@@ -1027,7 +1032,7 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineComponentMesh(const st
             groupMeshes.emplace_back(std::make_tuple(std::move(childMesh), group.first, String::join(group.second, "|")));
         }
         if (!stitchingParts.empty()) {
-            auto stitchingMesh = combineStitchingMesh(stitchingParts);
+            auto stitchingMesh = combineStitchingMesh(stitchingParts, componentCache);
             if (stitchingMesh && !stitchingMesh->isNull())
                 groupMeshes.emplace_back(std::make_tuple(std::move(stitchingMesh), CombineMode::Normal, String::join(stitchingComponents, ":")));
         }
