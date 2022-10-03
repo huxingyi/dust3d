@@ -1,6 +1,7 @@
 #ifndef DUST3D_APPLICATION_COMPONENT_PREVIEW_GRID_WIDGET_H_
 #define DUST3D_APPLICATION_COMPONENT_PREVIEW_GRID_WIDGET_H_
 
+#include <memory>
 #include <QAbstractListModel>
 #include "preview_grid_view.h"
 

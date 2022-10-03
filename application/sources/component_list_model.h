@@ -15,12 +15,12 @@ public:
     int rowCount(const QModelIndex &parent = QModelIndex()) const;
     int columnCount(const QModelIndex &parent = QModelIndex()) const;
     QVariant data(const QModelIndex &index, int role) const;
+    const SkeletonComponent *modelIndexToComponent(const QModelIndex &index) const;
 public slots:
     void setListingComponentId(const dust3d::Uuid &componentId);
 private:
     const Document *m_document = nullptr;
     dust3d::Uuid m_listingComponentId;
-    const SkeletonComponent *modelIndexToComponent(const QModelIndex &index) const;
 };
 
 #endif

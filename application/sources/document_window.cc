@@ -33,7 +33,7 @@
 #include "about_widget.h"
 #include "version.h"
 #include "glb_file.h"
-#include "component_preview_grid_widget.h"
+#include "part_manage_widget.h"
 #include "material_manage_widget.h"
 #include "image_forever.h"
 #include "spinnable_toolbar_icon.h"
@@ -266,8 +266,8 @@ DocumentWindow::DocumentWindow()
 
     QDockWidget *partsDocker = new QDockWidget(tr("Parts"), this);
     partsDocker->setAllowedAreas(Qt::RightDockWidgetArea);
-    m_componentPreviewGridWidget = new ComponentPreviewGridWidget(m_document, nullptr);
-    partsDocker->setWidget(m_componentPreviewGridWidget);
+    m_partManageWidget = new PartManageWidget(m_document);
+    partsDocker->setWidget(m_partManageWidget);
     addDockWidget(Qt::RightDockWidgetArea, partsDocker);
 
     QDockWidget *materialDocker = new QDockWidget(tr("Materials"), this);

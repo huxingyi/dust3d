@@ -17,7 +17,7 @@
 
 class Document;
 class SkeletonGraphicsWidget;
-class ComponentPreviewGridWidget;
+class PartManageWidget;
 class ToolbarButton;
 class SpinnableToolbarIcon;
 
@@ -158,7 +158,7 @@ private:
     MeshPreviewImagesGenerator *m_componentPreviewImagesGenerator = nullptr;
     bool m_isComponentPreviewImagesObsolete = false;
     
-    ComponentPreviewGridWidget *m_componentPreviewGridWidget = nullptr;
+    PartManageWidget *m_partManageWidget = nullptr;
     
     SpinnableToolbarIcon *m_inprogressIndicator = nullptr;
     
