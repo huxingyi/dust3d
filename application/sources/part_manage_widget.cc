@@ -10,17 +10,16 @@ PartManageWidget::PartManageWidget(const Document *document, QWidget *parent):
     toolsLayout->setSpacing(0);
     toolsLayout->setMargin(0);
 
-    QPushButton *lockButton = new QPushButton(QChar(fa::lock));
-    Theme::initAwesomeToolButton(lockButton);
+    auto createButton = [](QChar icon) {
+        QPushButton *button = new QPushButton(icon);
+        button->setFixedSize(Theme::toolIconSize, Theme::toolIconSize);
+        return button;
+    };
 
-    QPushButton *unlockButton = new QPushButton(QChar(fa::unlock));
-    Theme::initAwesomeToolButton(unlockButton);
-
-    QPushButton *showButton = new QPushButton(QChar(fa::eye));
-    Theme::initAwesomeToolButton(showButton);
-
-    QPushButton *hideButton = new QPushButton(QChar(fa::eyeslash));
-    Theme::initAwesomeToolButton(hideButton);
+    QPushButton *lockButton = createButton(QChar(fa::lock));
+    QPushButton *unlockButton = createButton(QChar(fa::unlock));
+    QPushButton *showButton = createButton(QChar(fa::eye));
+    QPushButton *hideButton = createButton(QChar(fa::eyeslash));
 
     toolsLayout->addWidget(showButton);
     toolsLayout->addWidget(hideButton);
