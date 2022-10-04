@@ -22,4 +22,5 @@ PreviewGridView::PreviewGridView(QWidget *parent):
     setMovement(QListView::Snap);
     setFlow(QListView::LeftToRight);
     setSelectionMode(QAbstractItemView::ExtendedSelection);
+    setResizeMode(QListView::Adjust);
 }

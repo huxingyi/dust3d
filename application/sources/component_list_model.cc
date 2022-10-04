@@ -8,6 +8,7 @@ ComponentListModel::ComponentListModel(const Document *document, QObject *parent
     m_document(document)
 {
     connect(m_document, &Document::componentPreviewImageChanged, [this](const dust3d::Uuid &componentId) {
+        // FIXME: dont refresh the whole layout
         emit this->layoutChanged();
     });
 }
@@ -73,5 +74,11 @@ void ComponentListModel::setListingComponentId(const dust3d::Uuid &componentId)
     if (m_listingComponentId == componentId)
         return;
     m_listingComponentId = componentId;
+    emit listingComponentChanged(m_listingComponentId);
     emit layoutChanged();
+}
+
+const dust3d::Uuid ComponentListModel::listingComponentId() const
+{
+    return m_listingComponentId;
 }

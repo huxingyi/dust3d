@@ -22,3 +22,13 @@ ComponentListModel *ComponentPreviewGridWidget::componentListModel()
 {
     return m_componentListModel.get();
 }
+
+std::vector<const SkeletonComponent *> ComponentPreviewGridWidget::getSelectedComponents() const
+{
+    std::vector<const SkeletonComponent *> components;
+    QModelIndexList selected = selectionModel()->selectedIndexes();
+    for (const auto &it: selected) {
+        components.push_back(m_componentListModel->modelIndexToComponent(it));
+    }
+    return components;
+}

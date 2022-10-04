@@ -7,12 +7,14 @@
 
 class ComponentListModel;
 class Document;
+class SkeletonComponent;
 
 class ComponentPreviewGridWidget: public PreviewGridView
 {
 public:
     ComponentPreviewGridWidget(const Document *document, QWidget *parent=nullptr);
     ComponentListModel *componentListModel();
+    std::vector<const SkeletonComponent *> getSelectedComponents() const;
 private:
     std::unique_ptr<ComponentListModel> m_componentListModel;
     const Document *m_document = nullptr;
