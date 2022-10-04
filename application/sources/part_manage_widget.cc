@@ -5,7 +5,7 @@
 #include "theme.h"
 #include "document.h"
 
-PartManageWidget::PartManageWidget(const Document *document, QWidget *parent):
+PartManageWidget::PartManageWidget(Document *document, QWidget *parent):
     QWidget(parent),
     m_document(document)
 {
@@ -51,6 +51,50 @@ PartManageWidget::PartManageWidget(const Document *document, QWidget *parent):
             return;
         this->m_componentPreviewGridWidget->componentListModel()->setListingComponentId(parent->id);
     });
+
+    connect(m_hideButton, &QPushButton::clicked, [this]() {
+        for (const auto &partId: m_componentPreviewGridWidget->getSelectedPartIds())
+            this->m_document->setPartVisibleState(partId, false);
+        this->m_document->saveSnapshot();
+    });
+    connect(m_showButton, &QPushButton::clicked, [this]() {
+        for (const auto &partId: m_componentPreviewGridWidget->getSelectedPartIds())
+            this->m_document->setPartVisibleState(partId, true);
+        this->m_document->saveSnapshot();
+    });
+
+    connect(m_unlockButton, &QPushButton::clicked, [this]() {
+        for (const auto &partId: m_componentPreviewGridWidget->getSelectedPartIds())
+            this->m_document->setPartLockState(partId, false);
+        this->m_document->saveSnapshot();
+    });
+    connect(m_lockButton, &QPushButton::clicked, [this]() {
+        for (const auto &partId: m_componentPreviewGridWidget->getSelectedPartIds())
+            this->m_document->setPartLockState(partId, true);
+        this->m_document->saveSnapshot();
+    });
+
+    connect(m_unlinkButton, &QPushButton::clicked, [this]() {
+        for (const auto &partId: m_componentPreviewGridWidget->getSelectedPartIds())
+            this->m_document->setPartDisableState(partId, true);
+        this->m_document->saveSnapshot();
+    });
+    connect(m_linkButton, &QPushButton::clicked, [this]() {
+        for (const auto &partId: m_componentPreviewGridWidget->getSelectedPartIds())
+            this->m_document->setPartDisableState(partId, false);
+        this->m_document->saveSnapshot();
+    });
+
+    connect(m_removeButton, &QPushButton::clicked, [this]() {
+        for (const auto &componentId: m_componentPreviewGridWidget->getSelectedComponentIds())
+            this->m_document->removeComponent(componentId);
+        this->m_document->saveSnapshot();
+    });
+
+    connect(m_document, &Document::partLockStateChanged, this, &PartManageWidget::updateToolButtons);
+    connect(m_document, &Document::partVisibleStateChanged, this, &PartManageWidget::updateToolButtons);
+    connect(m_document, &Document::partDisableStateChanged, this, &PartManageWidget::updateToolButtons);
+    connect(m_document, &Document::componentChildrenChanged, this, &PartManageWidget::updateToolButtons);
 
     QVBoxLayout *mainLayout = new QVBoxLayout;
     mainLayout->addLayout(toolsLayout);

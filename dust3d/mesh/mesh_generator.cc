@@ -816,9 +816,9 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combinePartMesh(const std::st
         mesh.reset();
     }
     
-    if (isDisabled) {
-        mesh.reset();
-    }
+    //if (isDisabled) {
+    //    mesh.reset();
+    //}
     
     if (target != PartTarget::Model) {
         mesh.reset();
@@ -930,15 +930,17 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineComponentMesh(const st
             }
         }
         const auto &partCache = m_cacheContext->parts[partIdString];
-        for (const auto &vertex: partCache.vertices)
-            componentCache.noneSeamVertices.insert(vertex);
-        collectSharedQuadEdges(partCache.vertices, partCache.faces, &componentCache.sharedQuadEdges);
-        for (const auto &it: partCache.objectNodes)
-            componentCache.objectNodes.push_back(it);
-        for (const auto &it: partCache.objectEdges)
-            componentCache.objectEdges.push_back(it);
-        for (const auto &it: partCache.objectNodeVertices)
-            componentCache.objectNodeVertices.push_back(it);
+        if (partCache.joined) {
+            for (const auto &vertex: partCache.vertices)
+                componentCache.noneSeamVertices.insert(vertex);
+            collectSharedQuadEdges(partCache.vertices, partCache.faces, &componentCache.sharedQuadEdges);
+            for (const auto &it: partCache.objectNodes)
+                componentCache.objectNodes.push_back(it);
+            for (const auto &it: partCache.objectEdges)
+                componentCache.objectEdges.push_back(it);
+            for (const auto &it: partCache.objectNodeVertices)
+                componentCache.objectNodeVertices.push_back(it);
+        }
         ComponentPreview preview;
         if (mesh)
             mesh->fetch(preview.vertices, preview.triangles);
@@ -946,6 +948,10 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineComponentMesh(const st
         preview.metalness = partCache.metalness;
         preview.roughness = partCache.roughness;
         addComponentPreview(componentId, std::move(preview));
+        if (!partCache.joined) {
+            if (mesh)
+                mesh.reset();
+        }
     } else {
         std::vector<std::pair<CombineMode, std::vector<std::string>>> combineGroups;
         int currentGroupIndex = -1;

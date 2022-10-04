@@ -48,6 +48,19 @@ const SkeletonComponent *ComponentListModel::modelIndexToComponent(const QModelI
     return component;
 }
 
+const dust3d::Uuid ComponentListModel::modelIndexToComponentId(const QModelIndex &index) const
+{
+    const SkeletonComponent *listingComponent = m_document->findComponent(m_listingComponentId);
+    if (nullptr == listingComponent)
+        return dust3d::Uuid();
+    if (index.row() >= (int)listingComponent->childrenIds.size()) {
+        dust3dDebug << "Component list row is out of range, size:" << listingComponent->childrenIds.size() << "row:" << index.row();
+        return dust3d::Uuid();
+    }
+    const auto &componentId = listingComponent->childrenIds[index.row()];
+    return componentId;
+}
+
 QVariant ComponentListModel::data(const QModelIndex &index, int role) const
 {
     switch (role) {

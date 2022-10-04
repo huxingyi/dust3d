@@ -11,9 +11,9 @@ class PartManageWidget : public QWidget
 {
     Q_OBJECT
 public:
-    PartManageWidget(const Document *document, QWidget *parent=nullptr);
+    PartManageWidget(Document *document, QWidget *parent=nullptr);
 private:
-    const Document *m_document = nullptr;
+    Document *m_document = nullptr;
     ComponentPreviewGridWidget *m_componentPreviewGridWidget = nullptr;
     QPushButton *m_levelUpButton = nullptr;
     QPushButton *m_lockButton = nullptr;

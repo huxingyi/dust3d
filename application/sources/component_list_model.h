@@ -18,6 +18,7 @@ public:
     int columnCount(const QModelIndex &parent = QModelIndex()) const;
     QVariant data(const QModelIndex &index, int role) const;
     const SkeletonComponent *modelIndexToComponent(const QModelIndex &index) const;
+    const dust3d::Uuid modelIndexToComponentId(const QModelIndex &index) const;
     const dust3d::Uuid listingComponentId() const;
 public slots:
     void setListingComponentId(const dust3d::Uuid &componentId);
