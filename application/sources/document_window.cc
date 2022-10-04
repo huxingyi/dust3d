@@ -629,6 +629,9 @@ DocumentWindow::DocumentWindow()
     connect(m_document, &Document::checkNode, canvasGraphicsWidget, &SkeletonGraphicsWidget::addSelectNode);
     connect(m_document, &Document::checkEdge, canvasGraphicsWidget, &SkeletonGraphicsWidget::addSelectEdge);
 
+    connect(m_partManageWidget, &PartManageWidget::unselectAllOnCanvas, canvasGraphicsWidget, &SkeletonGraphicsWidget::unselectAll);
+    connect(m_partManageWidget, &PartManageWidget::selectPartOnCanvas, canvasGraphicsWidget, &SkeletonGraphicsWidget::addPartToSelection);
+
     connect(m_document, &Document::skeletonChanged, m_document, &Document::generateMesh);
     connect(m_document, &Document::textureChanged, m_document, &Document::generateTexture);
     connect(m_document, &Document::resultMeshChanged, m_document, &Document::postProcess);
