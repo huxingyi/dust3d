@@ -1272,14 +1272,22 @@ void SkeletonDocument::setRadiusLockState(bool locked)
     emit radiusLockStateChanged();
 }
 
-void SkeletonDocument::setComponentPreviewImage(const dust3d::Uuid &componentId, const QImage &image)
+void SkeletonDocument::setComponentPreviewImage(const dust3d::Uuid &componentId, std::unique_ptr<QImage> image)
 {
     SkeletonComponent *component = (SkeletonComponent *)findComponent(componentId);
     if (nullptr == component)
         return;
-    component->isPreviewMeshObsolete = false;
-    component->previewPixmap = QPixmap::fromImage(image);
-    emit componentPreviewImageChanged(componentId);
+    component->isPreviewImageDecorationObsolete = true;
+    component->previewImage = std::move(image);
+}
+
+void SkeletonDocument::setComponentPreviewPixmap(const dust3d::Uuid &componentId, const QPixmap &pixmap)
+{
+    SkeletonComponent *component = (SkeletonComponent *)findComponent(componentId);
+    if (nullptr == component)
+        return;
+    component->previewPixmap = pixmap;
+    emit componentPreviewPixmapChanged(componentId);
 }
 
 void SkeletonDocument::setComponentPreviewMesh(const dust3d::Uuid &componentId, std::unique_ptr<ModelMesh> mesh)

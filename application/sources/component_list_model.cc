@@ -7,7 +7,7 @@ ComponentListModel::ComponentListModel(const Document *document, QObject *parent
     QAbstractListModel(parent),
     m_document(document)
 {
-    connect(m_document, &Document::componentPreviewImageChanged, [this](const dust3d::Uuid &componentId) {
+    connect(m_document, &Document::componentPreviewPixmapChanged, [this](const dust3d::Uuid &componentId) {
         // FIXME: dont refresh the whole layout
         emit this->layoutChanged();
     });

@@ -427,6 +427,8 @@ public:
     bool dirty = true;
     std::vector<dust3d::Uuid> childrenIds;
     bool isPreviewMeshObsolete = false;
+    std::unique_ptr<QImage> previewImage;
+    bool isPreviewImageDecorationObsolete = false;
     QPixmap previewPixmap;
     QString linkData() const
     {
@@ -547,7 +549,7 @@ signals:
     void componentAdded(dust3d::Uuid componentId);
     void componentExpandStateChanged(dust3d::Uuid componentId);
     void componentPreviewMeshChanged(const dust3d::Uuid &componentId);
-    void componentPreviewImageChanged(const dust3d::Uuid &componentId);
+    void componentPreviewPixmapChanged(const dust3d::Uuid &componentId);
     void nodeRemoved(dust3d::Uuid nodeId);
     void edgeRemoved(dust3d::Uuid edgeId);
     void nodeRadiusChanged(dust3d::Uuid nodeId);
@@ -586,6 +588,7 @@ public:
     void collectComponentDescendantParts(dust3d::Uuid componentId, std::vector<dust3d::Uuid> &partIds) const;
     void collectComponentDescendantComponents(dust3d::Uuid componentId, std::vector<dust3d::Uuid> &componentIds) const;
     void setComponentPreviewMesh(const dust3d::Uuid &componentId, std::unique_ptr<ModelMesh> mesh);
+    void setComponentPreviewImage(const dust3d::Uuid &componentId, std::unique_ptr<QImage> image);
     void resetDirtyFlags();
     void markAllDirty();
     
@@ -691,7 +694,7 @@ public slots:
     void showDescendantComponents(dust3d::Uuid componentId);
     void lockDescendantComponents(dust3d::Uuid componentId);
     void unlockDescendantComponents(dust3d::Uuid componentId);
-    void setComponentPreviewImage(const dust3d::Uuid &componentId, const QImage &image);
+    void setComponentPreviewPixmap(const dust3d::Uuid &componentId, const QPixmap &pixmap);
     void setPartLockState(dust3d::Uuid partId, bool locked);
     void setPartVisibleState(dust3d::Uuid partId, bool visible);
     void setPartDisableState(dust3d::Uuid partId, bool disabled);

@@ -1,6 +1,7 @@
 #ifndef DUST3D_APPLICATION_DOCUMENT_WINDOW_H_
 #define DUST3D_APPLICATION_DOCUMENT_WINDOW_H_
 
+#include <memory>
 #include <QMainWindow>
 #include <QShowEvent>
 #include <QPushButton>
@@ -14,6 +15,7 @@
 #include "model_widget.h"
 #include "graphics_container_widget.h"
 #include "mesh_preview_images_generator.h"
+#include "component_preview_images_decorator.h"
 
 class Document;
 class SkeletonGraphicsWidget;
@@ -82,6 +84,8 @@ public slots:
     void toggleRotation();
     void generateComponentPreviewImages();
     void componentPreviewImagesReady();
+    void decorateComponentPreviewImages();
+    void componentPreviewImageDecorationsReady();
     void updateInprogressIndicator();
     void openRecentFile();
     void updateRecentFileActions();
@@ -157,6 +161,9 @@ private:
     
     MeshPreviewImagesGenerator *m_componentPreviewImagesGenerator = nullptr;
     bool m_isComponentPreviewImagesObsolete = false;
+
+    std::unique_ptr<ComponentPreviewImagesDecorator> m_componentPreviewImagesDecorator;
+    bool m_isComponentPreviewImageDecorationsObsolete = false;
     
     PartManageWidget *m_partManageWidget = nullptr;
     

@@ -22,6 +22,7 @@
 #include <QFormLayout>
 #include <QTextBrowser>
 #include <QMimeData>
+#include <QPixmap>
 #include <dust3d/base/ds3_file.h>
 #include <dust3d/base/snapshot.h>
 #include <dust3d/base/snapshot_xml.h>
@@ -1197,9 +1198,10 @@ void DocumentWindow::generateComponentPreviewImages()
     QThread *thread = new QThread;
     
     m_componentPreviewImagesGenerator = new MeshPreviewImagesGenerator(new ModelOffscreenRender(m_modelRenderWidget->format()));
-    for (const auto &component: m_document->componentMap) {
+    for (auto &component: m_document->componentMap) {
         if (!component.second.isPreviewMeshObsolete)
             continue;
+        component.second.isPreviewMeshObsolete = false;
         m_componentPreviewImagesGenerator->addInput(component.first, std::unique_ptr<ModelMesh>(component.second.takePreviewMesh()));
     }
     m_componentPreviewImagesGenerator->moveToThread(thread);
@@ -1216,15 +1218,67 @@ void DocumentWindow::componentPreviewImagesReady()
     componentImages.reset(m_componentPreviewImagesGenerator->takeImages());
     if (nullptr != componentImages) {
         for (const auto &it: *componentImages) {
-            m_document->setComponentPreviewImage(it.first, it.second);
+            m_document->setComponentPreviewImage(it.first, std::make_unique<QImage>(std::move(it.second)));
         }
     }
+
+    decorateComponentPreviewImages();
     
     delete m_componentPreviewImagesGenerator;
     m_componentPreviewImagesGenerator = nullptr;
     
     if (m_isComponentPreviewImagesObsolete)
         generateComponentPreviewImages();
+}
+
+void DocumentWindow::decorateComponentPreviewImages()
+{
+    if (nullptr != m_componentPreviewImagesDecorator) {
+        m_isComponentPreviewImageDecorationsObsolete = true;
+        return;
+    }
+    
+    m_isComponentPreviewImageDecorationsObsolete = false;
+     
+    QThread *thread = new QThread;
+    
+    auto previewInputs = std::make_unique<std::vector<ComponentPreviewImagesDecorator::PreviewInput>>();
+    for (auto &component: m_document->componentMap) {
+        if (!component.second.isPreviewImageDecorationObsolete)
+            continue;
+        component.second.isPreviewImageDecorationObsolete = false;
+        if (nullptr == component.second.previewImage)
+            continue;
+        previewInputs->emplace_back(ComponentPreviewImagesDecorator::PreviewInput {
+            component.first, 
+            std::make_unique<QImage>(*component.second.previewImage),
+            !component.second.childrenIds.empty()
+        });
+    }
+    m_componentPreviewImagesDecorator = std::make_unique<ComponentPreviewImagesDecorator>(std::move(previewInputs));
+    m_componentPreviewImagesDecorator->moveToThread(thread);
+    connect(thread, &QThread::started, m_componentPreviewImagesDecorator.get(), &ComponentPreviewImagesDecorator::process);
+    connect(m_componentPreviewImagesDecorator.get(), &ComponentPreviewImagesDecorator::finished, this, &DocumentWindow::componentPreviewImageDecorationsReady);
+    connect(m_componentPreviewImagesDecorator.get(), &ComponentPreviewImagesDecorator::finished, thread, &QThread::quit);
+    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+    thread->start();
+}
+
+void DocumentWindow::componentPreviewImageDecorationsReady()
+{
+    auto resultImages = m_componentPreviewImagesDecorator->takeResultImages();
+    if (nullptr != resultImages) {
+        for (auto &it: *resultImages) {
+            if (nullptr == it.second)
+                continue;
+            m_document->setComponentPreviewPixmap(it.first, QPixmap::fromImage(*it.second));
+        }
+    }
+
+    m_componentPreviewImagesDecorator.reset();
+    
+    if (m_isComponentPreviewImageDecorationsObsolete)
+        decorateComponentPreviewImages();
 }
 
 ModelWidget *DocumentWindow::modelWidget()
