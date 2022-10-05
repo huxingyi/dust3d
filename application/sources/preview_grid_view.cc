@@ -9,9 +9,9 @@ PreviewGridView::PreviewGridView(QWidget *parent):
     viewPalette.setColor(QPalette::Base, Qt::transparent);
     setPalette(viewPalette);
 
-    auto borderSize = std::max(1, Theme::partPreviewImageSize / 20);
-    auto margin = std::max(1, borderSize / 2);
-    auto borderRadius = std::max(3, Theme::partPreviewImageSize / 10);
+    auto borderSize = Theme::previewIconBorderSize;
+    auto margin = Theme::previewIconMargin;
+    auto borderRadius = Theme::previewIconBorderRadius;
     setStyleSheet(
         "QListView::item {border:" + QString::number(borderSize) + "px solid transparent; margin:" + QString::number(margin) + "px; background-color: " + Theme::gray.name() +"; border-radius: " + QString::number(borderRadius) + ";}" +
         "QListView::item:selected {border-color: " + Theme::red.name() + ";}"

@@ -22,6 +22,9 @@ int Theme::miniIconSize = 0;
 int Theme::partPreviewImageSize = 0;
 int Theme::materialPreviewImageSize = 0;
 int Theme::sidebarPreferredWidth = 0;
+int Theme::previewIconBorderSize = 0;
+int Theme::previewIconMargin = 0;
+int Theme::previewIconBorderRadius = 0;
 
 void Theme::initialize()
 {
@@ -55,6 +58,9 @@ void Theme::initialize()
     Theme::partPreviewImageSize = (Theme::miniIconSize * 2);
     Theme::sidebarPreferredWidth = Theme::partPreviewImageSize * 4.5;
     Theme::materialPreviewImageSize = Theme::sidebarPreferredWidth * 0.4;
+    Theme::previewIconBorderSize = std::max(1, Theme::partPreviewImageSize / 20);
+    Theme::previewIconMargin = std::max(1, Theme::previewIconBorderSize / 2);
+    Theme::previewIconBorderRadius = std::max(3, Theme::partPreviewImageSize / 10);
 }
 
 QtAwesome *Theme::awesome()

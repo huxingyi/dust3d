@@ -28,6 +28,9 @@ public:
     static int partPreviewImageSize;
     static int materialPreviewImageSize;
     static int sidebarPreferredWidth;
+    static int previewIconBorderSize;
+    static int previewIconMargin;
+    static int previewIconBorderRadius;
     
     static void initialize();
     static QtAwesome *awesome();

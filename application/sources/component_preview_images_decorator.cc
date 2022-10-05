@@ -20,16 +20,17 @@ void ComponentPreviewImagesDecorator::decorate()
 
     m_resultImages = std::make_unique<std::unordered_map<dust3d::Uuid, std::unique_ptr<QImage>>>();
 
+    QPointF iconOffset(Theme::previewIconMargin, 0);
     for (auto &it: *m_previewInputs) {
         if (it.isDirectory) {
             QPainter painter(it.image.get());
             painter.setRenderHints(QPainter::Antialiasing);
             QPolygonF polygon;
-            polygon << QPointF(it.image->width() / 4, 0.0) << QPointF(it.image->width() / 2.5, 0.0);
-            polygon << QPointF(0.0, it.image->height() / 2.5) << QPointF(0.0, it.image->height() / 4);
+            polygon << iconOffset + QPointF(it.image->width() / 4, 0) << iconOffset + QPointF(it.image->width() / 2, 0);
+            polygon << iconOffset + QPointF(0.0, it.image->height() / 2) << iconOffset + QPointF(0.0, it.image->height() / 4);
             QPainterPath painterPath;
             painterPath.addPolygon(polygon);
-            painter.setBrush(Theme::white);
+            painter.setBrush(Theme::green);
             painter.setPen(Qt::NoPen);
             painter.drawPath(painterPath);
         }
