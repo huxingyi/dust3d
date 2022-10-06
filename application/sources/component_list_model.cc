@@ -8,9 +8,33 @@ ComponentListModel::ComponentListModel(const Document *document, QObject *parent
     m_document(document)
 {
     connect(m_document, &Document::componentPreviewPixmapChanged, [this](const dust3d::Uuid &componentId) {
-        // FIXME: dont refresh the whole layout
-        emit this->layoutChanged();
+        auto findIndex = this->m_componentIdToIndexMap.find(componentId);
+        if (findIndex != this->m_componentIdToIndexMap.end()) {
+            //dust3dDebug << "dataChanged:" << findIndex->second.row();
+            emit this->dataChanged(findIndex->second, findIndex->second);
+        }
     });
+    connect(m_document, &Document::cleanup, [this]() {
+        this->setListingComponentId(dust3d::Uuid());
+        this->reload();
+    });
+    connect(m_document, &Document::componentChildrenChanged, [this](const dust3d::Uuid &componentId) {
+        if (componentId != this->listingComponentId())
+            return;
+        this->reload();
+    });
+}
+
+void ComponentListModel::reload()
+{
+    m_componentIdToIndexMap.clear();
+    const SkeletonComponent *listingComponent = m_document->findComponent(m_listingComponentId);
+    if (nullptr != listingComponent) {
+        for (int i = 0; i < (int)listingComponent->childrenIds.size(); ++i) {
+            m_componentIdToIndexMap[listingComponent->childrenIds[i]] = index(i);
+        }
+    }
+    emit this->layoutChanged();
 }
 
 int ComponentListModel::rowCount(const QModelIndex &parent) const
@@ -87,8 +111,8 @@ void ComponentListModel::setListingComponentId(const dust3d::Uuid &componentId)
     if (m_listingComponentId == componentId)
         return;
     m_listingComponentId = componentId;
+    reload();
     emit listingComponentChanged(m_listingComponentId);
-    emit layoutChanged();
 }
 
 const dust3d::Uuid ComponentListModel::listingComponentId() const

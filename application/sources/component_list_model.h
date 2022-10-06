@@ -1,8 +1,9 @@
 #ifndef DUST3D_APPLICATION_COMPONENT_LIST_MODEL_H_
 #define DUST3D_APPLICATION_COMPONENT_LIST_MODEL_H_
 
-#include <QAbstractListModel>
+#include <unordered_map>
 #include <dust3d/base/uuid.h>
+#include <QAbstractListModel>
 
 class Document;
 class SkeletonComponent;
@@ -22,9 +23,11 @@ public:
     const dust3d::Uuid listingComponentId() const;
 public slots:
     void setListingComponentId(const dust3d::Uuid &componentId);
+    void reload();
 private:
     const Document *m_document = nullptr;
     dust3d::Uuid m_listingComponentId;
+    std::unordered_map<dust3d::Uuid, QModelIndex> m_componentIdToIndexMap;
 };
 
 #endif
