@@ -27,14 +27,23 @@ ComponentListModel::ComponentListModel(const Document *document, QObject *parent
 
 void ComponentListModel::reload()
 {
+    std::pair<QModelIndex, QModelIndex> beginEnd;
+    beginResetModel();
     m_componentIdToIndexMap.clear();
     const SkeletonComponent *listingComponent = m_document->findComponent(m_listingComponentId);
     if (nullptr != listingComponent) {
         for (int i = 0; i < (int)listingComponent->childrenIds.size(); ++i) {
-            m_componentIdToIndexMap[listingComponent->childrenIds[i]] = index(i);
+            m_componentIdToIndexMap[listingComponent->childrenIds[i]] = createIndex(i, 0);
+        }
+        if (!listingComponent->childrenIds.empty()) {
+            beginEnd.first = m_componentIdToIndexMap[listingComponent->childrenIds.front()];
+            beginEnd.second = m_componentIdToIndexMap[listingComponent->childrenIds.back()];
         }
     }
-    emit this->layoutChanged();
+    endResetModel();
+    if (!m_componentIdToIndexMap.empty())
+        emit dataChanged(beginEnd.first, beginEnd.second);
+    emit layoutChanged();
 }
 
 int ComponentListModel::rowCount(const QModelIndex &parent) const
@@ -98,6 +107,15 @@ QVariant ComponentListModel::data(const QModelIndex &index, int role) const
     case Qt::DecorationRole: {
             const SkeletonComponent *component = modelIndexToComponent(index);
             if (nullptr != component) {
+                if (0 == component->previewPixmap.width()) {
+                    static QPixmap s_emptyPixmap;
+                    if (0 == s_emptyPixmap.width()) {
+                        QImage image((int)Theme::partPreviewImageSize, (int)Theme::partPreviewImageSize, QImage::Format_ARGB32);
+                        image.fill(Qt::transparent);
+                        s_emptyPixmap = QPixmap::fromImage(image);
+                    }
+                    return s_emptyPixmap;
+                }
                 return component->previewPixmap;
             }
         }
