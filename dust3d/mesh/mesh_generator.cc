@@ -997,8 +997,18 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineComponentMesh(const st
         }
         if (!stitchingParts.empty()) {
             auto stitchingMesh = combineStitchingMesh(stitchingParts, componentCache);
-            if (stitchingMesh && !stitchingMesh->isNull())
+            if (stitchingMesh && !stitchingMesh->isNull()) {
+
+                // Generate preview for each stitching line
+                ComponentPreview stitchingLinePreview;
+                if (stitchingMesh)
+                    stitchingMesh->fetch(stitchingLinePreview.vertices, stitchingLinePreview.triangles);
+                stitchingLinePreview.color = Color(1.0, 1.0, 1.0, 0.2);
+                for (const auto &it: stitchingComponents)
+                    addComponentPreview(it, ComponentPreview(stitchingLinePreview));
+                
                 groupMeshes.emplace_back(std::make_tuple(std::move(stitchingMesh), CombineMode::Normal, String::join(stitchingComponents, ":")));
+            }
         }
         mesh = combineMultipleMeshes(std::move(groupMeshes), true);
         ComponentPreview preview;
