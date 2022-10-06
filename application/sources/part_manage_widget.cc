@@ -126,6 +126,7 @@ void PartManageWidget::selectComponentByPartId(const dust3d::Uuid &partId)
     QModelIndex index = m_componentPreviewGridWidget->componentListModel()->componentIdToIndex(componentId);
     if (index.isValid()) {
         m_componentPreviewGridWidget->selectionModel()->select(index, QItemSelectionModel::ClearAndSelect);
+        m_componentPreviewGridWidget->scrollTo(index);
         return;
     }
     const auto &component = m_document->findComponent(componentId);
@@ -135,6 +136,7 @@ void PartManageWidget::selectComponentByPartId(const dust3d::Uuid &partId)
     index = m_componentPreviewGridWidget->componentListModel()->componentIdToIndex(componentId);
     if (index.isValid()) {
         m_componentPreviewGridWidget->selectionModel()->select(index, QItemSelectionModel::ClearAndSelect);
+        m_componentPreviewGridWidget->scrollTo(index);
         return;
     }
     dust3dDebug << "Unable to select component:" << componentId.toString();
