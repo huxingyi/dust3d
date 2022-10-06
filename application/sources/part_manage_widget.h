@@ -14,6 +14,8 @@ class PartManageWidget : public QWidget
 signals:
     void unselectAllOnCanvas();
     void selectPartOnCanvas(const dust3d::Uuid &partId);
+public slots:
+    void selectComponentByPartId(const dust3d::Uuid &partId);
 public:
     PartManageWidget(Document *document, QWidget *parent=nullptr);
 private:

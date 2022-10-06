@@ -46,8 +46,9 @@ public:
 
     StitchMeshBuilder(std::vector<Spline> &&splines);
     void build();
-    const std::vector<Vector3> &generatedVertices();
-    const std::vector<std::vector<size_t>> &generatedFaces();
+    const std::vector<Vector3> &generatedVertices() const;
+    const std::vector<std::vector<size_t>> &generatedFaces() const;
+    const std::vector<Spline> &splines() const;
 
 private:
     struct StitchingPoint

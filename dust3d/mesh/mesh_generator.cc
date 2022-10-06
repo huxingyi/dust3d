@@ -480,6 +480,8 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineStitchingMesh(const st
     auto stitchMeshBuilder = std::make_unique<StitchMeshBuilder>(std::move(splines));
     stitchMeshBuilder->build();
 
+    // stitchMeshBuilder->splines();
+
     collectSharedQuadEdges(stitchMeshBuilder->generatedVertices(), 
         stitchMeshBuilder->generatedFaces(),
         &componentCache.sharedQuadEdges);

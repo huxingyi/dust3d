@@ -27,7 +27,6 @@ ComponentListModel::ComponentListModel(const Document *document, QObject *parent
 
 void ComponentListModel::reload()
 {
-    std::pair<QModelIndex, QModelIndex> beginEnd;
     beginResetModel();
     m_componentIdToIndexMap.clear();
     const SkeletonComponent *listingComponent = m_document->findComponent(m_listingComponentId);
@@ -35,15 +34,17 @@ void ComponentListModel::reload()
         for (int i = 0; i < (int)listingComponent->childrenIds.size(); ++i) {
             m_componentIdToIndexMap[listingComponent->childrenIds[i]] = createIndex(i, 0);
         }
-        if (!listingComponent->childrenIds.empty()) {
-            beginEnd.first = m_componentIdToIndexMap[listingComponent->childrenIds.front()];
-            beginEnd.second = m_componentIdToIndexMap[listingComponent->childrenIds.back()];
-        }
     }
     endResetModel();
-    if (!m_componentIdToIndexMap.empty())
-        emit dataChanged(beginEnd.first, beginEnd.second);
     emit layoutChanged();
+}
+
+QModelIndex ComponentListModel::componentIdToIndex(const dust3d::Uuid &componentId) const
+{
+    auto findIndex = m_componentIdToIndexMap.find(componentId);
+    if (findIndex == m_componentIdToIndexMap.end())
+        return QModelIndex();
+    return findIndex->second;
 }
 
 int ComponentListModel::rowCount(const QModelIndex &parent) const

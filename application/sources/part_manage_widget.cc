@@ -117,6 +117,29 @@ PartManageWidget::PartManageWidget(Document *document, QWidget *parent):
     updateLevelUpButton();
 }
 
+void PartManageWidget::selectComponentByPartId(const dust3d::Uuid &partId)
+{
+    const auto &part = m_document->findPart(partId);
+    if (nullptr == part)
+        return;
+    auto componentId = part->componentId;
+    QModelIndex index = m_componentPreviewGridWidget->componentListModel()->componentIdToIndex(componentId);
+    if (index.isValid()) {
+        m_componentPreviewGridWidget->selectionModel()->select(index, QItemSelectionModel::ClearAndSelect);
+        return;
+    }
+    const auto &component = m_document->findComponent(componentId);
+    if (nullptr == component)
+        return;
+    m_componentPreviewGridWidget->componentListModel()->setListingComponentId(component->parentId);
+    index = m_componentPreviewGridWidget->componentListModel()->componentIdToIndex(componentId);
+    if (index.isValid()) {
+        m_componentPreviewGridWidget->selectionModel()->select(index, QItemSelectionModel::ClearAndSelect);
+        return;
+    }
+    dust3dDebug << "Unable to select component:" << componentId.toString();
+}
+
 void PartManageWidget::updateLevelUpButton()
 {
     const auto &parent = m_document->findComponentParent(m_componentPreviewGridWidget->componentListModel()->listingComponentId());

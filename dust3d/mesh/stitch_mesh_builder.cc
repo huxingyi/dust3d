@@ -32,12 +32,12 @@ StitchMeshBuilder::StitchMeshBuilder(std::vector<Spline> &&splines)
     m_splines = std::move(splines);
 }
 
-const std::vector<Vector3> &StitchMeshBuilder::generatedVertices()
+const std::vector<Vector3> &StitchMeshBuilder::generatedVertices() const
 {
     return m_generatedVertices;
 }
 
-const std::vector<std::vector<size_t>> &StitchMeshBuilder::generatedFaces()
+const std::vector<std::vector<size_t>> &StitchMeshBuilder::generatedFaces() const
 {
     return m_generatedFaces;
 }
@@ -223,6 +223,11 @@ void StitchMeshBuilder::addQuadButMaybeTriangle(const std::vector<size_t> &quadB
             finalFace.push_back(it);
     }
     m_generatedFaces.emplace_back(finalFace);
+}
+
+const std::vector<StitchMeshBuilder::Spline> &StitchMeshBuilder::splines() const
+{
+    return m_splines;
 }
 
 void StitchMeshBuilder::build()
