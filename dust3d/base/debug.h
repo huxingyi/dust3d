@@ -75,7 +75,7 @@ private:
 #define DEBUG_STRINGIZE1(x) #x
 #define DEBUG_STRINGIZE2(x) DEBUG_STRINGIZE1(x)
 
-#define dust3dDebug dust3d::Debug() << __FILE__ "(" DEBUG_STRINGIZE2(__LINE__) "):"
+#define dust3dDebug dust3d::Debug() << __FILE__ "(" DEBUG_STRINGIZE2(__LINE__) ")#" << __func__ << ":"
 
 #endif
 

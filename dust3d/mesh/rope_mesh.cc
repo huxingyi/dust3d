@@ -121,14 +121,19 @@ Vector3 RopeMesh::calculateTubeBaseNormal(const std::vector<Vector3> &vertices)
 
 void RopeMesh::addRope(const std::vector<Vector3> &positions, bool isCircle)
 {
+    if (positions.size() < 2) {
+        dust3dDebug << "Expected at least 2 nodes, current:" << positions.size();
+        return;
+    }
     Vector3 baseNormal = isCircle ? calculateCircleBaseNormal(positions) : calculateTubeBaseNormal(positions);
     std::vector<std::vector<size_t>> circles;
     circles.reserve(positions.size());
-    for (size_t j = isCircle ? 0 : 1; j < positions.size(); ++j) {
-        size_t i = (j + positions.size() - 1) % positions.size();
+    Vector3 forwardDirection = (positions[1] - positions[0]).normalized();
+    for (size_t i = isCircle ? 0 : 1; i < positions.size(); ++i) {
+        size_t j = (i + 1) % positions.size();
         auto circlePositions = calculateCircleVertices(m_buildParameters.defaultRadius, 
             m_buildParameters.sectionSegments, 
-            (positions[j] - positions[i]).normalized(), 
+            forwardDirection, 
             baseNormal,
             positions[i]);
         std::vector<size_t> indices(circlePositions.size());
@@ -137,6 +142,7 @@ void RopeMesh::addRope(const std::vector<Vector3> &positions, bool isCircle)
             m_resultVertices.push_back(circlePositions[k]);
         }
         circles.emplace_back(indices);
+        forwardDirection = (positions[j] - positions[i]).normalized();
     }
     for (size_t j = isCircle ? 0 : 1; j < circles.size(); ++j) {
         size_t i = (j + circles.size() - 1) % circles.size();

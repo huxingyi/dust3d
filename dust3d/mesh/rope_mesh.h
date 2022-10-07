@@ -34,8 +34,8 @@ class RopeMesh
 public:
     struct BuildParameters
     {
-        double defaultRadius = 0.01;
-        size_t sectionSegments = 5;
+        double defaultRadius = 0.008;
+        size_t sectionSegments = 8;
     };
 
     RopeMesh(const BuildParameters &parameters);

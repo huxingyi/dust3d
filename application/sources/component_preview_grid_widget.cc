@@ -12,7 +12,14 @@ ComponentPreviewGridWidget::ComponentPreviewGridWidget(Document *document, QWidg
 
     connect(this, &ComponentPreviewGridWidget::doubleClicked, [this](const QModelIndex &index) {
         const SkeletonComponent *component = this->componentListModel()->modelIndexToComponent(index);
-        if (nullptr != component && !component->childrenIds.empty()) {
+        if (nullptr == component)
+            return;
+        if (component->childrenIds.empty()) {
+            std::vector<dust3d::Uuid> partIds;
+            this->m_document->collectComponentDescendantParts(component->id, partIds);
+            for (const auto &partId: partIds)
+                emit this->selectPartOnCanvas(partId);
+        } else {
             this->componentListModel()->setListingComponentId(component->id);
         }
     });

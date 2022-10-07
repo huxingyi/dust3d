@@ -5,13 +5,17 @@
 #include <dust3d/base/uuid.h>
 #include <QAbstractListModel>
 #include "preview_grid_view.h"
+#include "component_list_model.h"
 
-class ComponentListModel;
 class Document;
 class SkeletonComponent;
 
 class ComponentPreviewGridWidget: public PreviewGridView
 {
+    Q_OBJECT
+signals:
+    void unselectAllOnCanvas();
+    void selectPartOnCanvas(const dust3d::Uuid &partId);
 public:
     ComponentPreviewGridWidget(Document *document, QWidget *parent=nullptr);
     ComponentListModel *componentListModel();
