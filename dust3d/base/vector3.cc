@@ -25,7 +25,7 @@
 namespace dust3d
 {
     
-Vector3 Vector3::rotated(const Vector3 &unitAxis, double angle)
+Vector3 Vector3::rotated(const Vector3 &unitAxis, double angle) const
 {
     double c = std::cos(angle);
     double s = std::sin(angle);

@@ -24,6 +24,7 @@
 #define DUST3D_MESH_STITCH_MESH_BUILDER_H_
 
 #include <dust3d/base/vector3.h>
+#include <dust3d/base/uuid.h>
 
 namespace dust3d
 {
@@ -42,6 +43,7 @@ public:
         std::vector<Node> nodes;
         bool isCircle = false;
         bool isClosing = false;
+        Uuid sourceId;
     };
 
     StitchMeshBuilder(std::vector<Spline> &&splines);

@@ -64,7 +64,8 @@ void MeshGenerator::process()
             previewTriangleVertexNormals,
             it->second.color,
             it->second.metalness,
-            it->second.roughness);
+            it->second.roughness,
+            it->second.vertexProperties.empty() ? nullptr : &it->second.vertexProperties);
     }
 
     if (nullptr != m_object)

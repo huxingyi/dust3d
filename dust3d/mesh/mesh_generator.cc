@@ -26,6 +26,7 @@
 #include <dust3d/base/part_base.h>
 #include <dust3d/base/snapshot_xml.h>
 #include <dust3d/base/cut_face.h>
+#include <dust3d/mesh/rope_mesh.h>
 #include <dust3d/mesh/stitch_mesh_builder.h>
 #include <dust3d/mesh/stroke_mesh_builder.h>
 #include <dust3d/mesh/stroke_modifier.h>
@@ -411,11 +412,16 @@ void MeshGenerator::flattenLinks(const std::unordered_map<size_t, size_t> &links
 }
 
 std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineStitchingMesh(const std::vector<std::string> &partIdStrings,
+    const std::vector<std::string> &componentIdStrings,
     GeneratedComponent &componentCache)
 {
     std::vector<StitchMeshBuilder::Spline> splines;
     splines.reserve(partIdStrings.size());
-    for (const auto &partIdString: partIdStrings) {
+    std::vector<Uuid> componentIds(componentIdStrings.size());
+    for (size_t i = 0; i < componentIdStrings.size(); ++i)
+        componentIds[i] = componentIdStrings[i];
+    for (size_t partIndex = 0; partIndex < partIdStrings.size(); ++partIndex) {
+        const auto &partIdString = partIdStrings[partIndex];
         std::vector<StitchMeshBuilder::Node> builderNodes;
         std::map<std::string, size_t> builderNodeIdStringToIndexMap;
         for (const auto &nodeIdString: m_partNodeIds[partIdString]) {
@@ -473,14 +479,13 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineStitchingMesh(const st
         splines.emplace_back(StitchMeshBuilder::Spline {
             std::move(orderedBuilderNodes),
             isCircle,
-            isClosing
+            isClosing,
+            componentIds[partIndex]
         });
     }
 
     auto stitchMeshBuilder = std::make_unique<StitchMeshBuilder>(std::move(splines));
     stitchMeshBuilder->build();
-
-    // stitchMeshBuilder->splines();
 
     collectSharedQuadEdges(stitchMeshBuilder->generatedVertices(), 
         stitchMeshBuilder->generatedFaces(),
@@ -490,6 +495,51 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineStitchingMesh(const st
         stitchMeshBuilder->generatedFaces());
     if (mesh && mesh->isNull())
         mesh.reset();
+
+    // Generate preview for each stitching line
+    for (const auto &spline: stitchMeshBuilder->splines()) {
+        RopeMesh::BuildParameters buildParameters;
+        RopeMesh ropeMesh(buildParameters);
+        std::vector<Vector3> positions(spline.nodes.size());
+        for (size_t i = 0; i < spline.nodes.size(); ++i)
+            positions[i] = spline.nodes[i].origin;
+        ropeMesh.addRope(positions, spline.isCircle);
+
+        ComponentPreview stitchingLinePreview;
+        if (mesh)
+            mesh->fetch(stitchingLinePreview.vertices, stitchingLinePreview.triangles);
+        size_t startIndex = stitchingLinePreview.vertices.size();
+
+        stitchingLinePreview.color = Color(1.0, 1.0, 1.0, 0.2);
+        for (const auto &ropeVertex: ropeMesh.resultVertices()) {
+            stitchingLinePreview.vertices.emplace_back(ropeVertex);
+        }
+        stitchingLinePreview.vertexProperties.resize(stitchingLinePreview.vertices.size());
+        auto modelProperty = std::tuple<dust3d::Color, float/*metalness*/, float/*roughness*/> {
+            stitchingLinePreview.color,
+            stitchingLinePreview.metalness,
+            stitchingLinePreview.roughness
+        };
+        auto lineProperty = std::tuple<dust3d::Color, float/*metalness*/, float/*roughness*/> {
+            Color(1.0, 1.0, 1.0, 1.0),
+            stitchingLinePreview.metalness,
+            stitchingLinePreview.roughness
+        };
+        for (size_t i = 0; i < startIndex; ++i) {
+            stitchingLinePreview.vertexProperties[i] = modelProperty;
+        }
+        for (size_t i = startIndex; i < stitchingLinePreview.vertexProperties.size(); ++i) {
+            stitchingLinePreview.vertexProperties[i] = lineProperty;
+        }
+        for (const auto &ropeTriangles: ropeMesh.resultTriangles()) {
+            stitchingLinePreview.triangles.emplace_back(std::vector<size_t> {
+                startIndex + ropeTriangles[0],
+                startIndex + ropeTriangles[1],
+                startIndex + ropeTriangles[2]
+            });
+        }
+        addComponentPreview(spline.sourceId, ComponentPreview(stitchingLinePreview));
+    }
 
     return mesh;
 }
@@ -996,17 +1046,8 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineComponentMesh(const st
             groupMeshes.emplace_back(std::make_tuple(std::move(childMesh), group.first, String::join(group.second, "|")));
         }
         if (!stitchingParts.empty()) {
-            auto stitchingMesh = combineStitchingMesh(stitchingParts, componentCache);
+            auto stitchingMesh = combineStitchingMesh(stitchingParts, stitchingComponents,  componentCache);
             if (stitchingMesh && !stitchingMesh->isNull()) {
-
-                // Generate preview for each stitching line
-                ComponentPreview stitchingLinePreview;
-                if (stitchingMesh)
-                    stitchingMesh->fetch(stitchingLinePreview.vertices, stitchingLinePreview.triangles);
-                stitchingLinePreview.color = Color(1.0, 1.0, 1.0, 0.2);
-                for (const auto &it: stitchingComponents)
-                    addComponentPreview(it, ComponentPreview(stitchingLinePreview));
-                
                 groupMeshes.emplace_back(std::make_tuple(std::move(stitchingMesh), CombineMode::Normal, String::join(stitchingComponents, ":")));
             }
         }

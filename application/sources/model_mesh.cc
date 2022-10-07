@@ -68,11 +68,13 @@ ModelMesh::ModelMesh(ModelOpenGLVertex *triangleVertices, int vertexNum) :
 {
 }
 
-ModelMesh::ModelMesh(const std::vector<dust3d::Vector3> &vertices, const std::vector<std::vector<size_t>> &triangles,
+ModelMesh::ModelMesh(const std::vector<dust3d::Vector3> &vertices, 
+    const std::vector<std::vector<size_t>> &triangles,
     const std::vector<std::vector<dust3d::Vector3>> &triangleVertexNormals,
     const dust3d::Color &color,
     float metalness,
-    float roughness)
+    float roughness,
+    const std::vector<std::tuple<dust3d::Color, float/*metalness*/, float/*roughness*/>> *vertexProperties)
 {
     m_triangleVertexCount = (int)triangles.size() * 3;
     m_triangleVertices = new ModelOpenGLVertex[m_triangleVertexCount];
@@ -83,10 +85,6 @@ ModelMesh::ModelMesh(const std::vector<dust3d::Vector3> &vertices, const std::ve
             const dust3d::Vector3 *srcVert = &vertices[vertexIndex];
             const dust3d::Vector3 *srcNormal = &(triangleVertexNormals)[i][j];
             ModelOpenGLVertex *dest = &m_triangleVertices[destIndex];
-            dest->colorR = color.r();
-            dest->colorG = color.g();
-            dest->colorB = color.b();
-            dest->alpha = color.alpha();
             dest->posX = srcVert->x();
             dest->posY = srcVert->y();
             dest->posZ = srcVert->z();
@@ -95,8 +93,22 @@ ModelMesh::ModelMesh(const std::vector<dust3d::Vector3> &vertices, const std::ve
             dest->normX = srcNormal->x();
             dest->normY = srcNormal->y();
             dest->normZ = srcNormal->z();
-            dest->metalness = metalness;
-            dest->roughness = roughness;
+            if (nullptr == vertexProperties) {
+                dest->colorR = color.r();
+                dest->colorG = color.g();
+                dest->colorB = color.b();
+                dest->alpha = color.alpha();
+                dest->metalness = metalness;
+                dest->roughness = roughness;
+            } else {
+                const auto &property = (*vertexProperties)[vertexIndex];
+                dest->colorR = std::get<0>(property).r();
+                dest->colorG = std::get<0>(property).g();
+                dest->colorB = std::get<0>(property).b();
+                dest->alpha = std::get<0>(property).alpha();
+                dest->metalness = std::get<1>(property);
+                dest->roughness = std::get<2>(property);
+            }
             dest->tangentX = 0;
             dest->tangentY = 0;
             dest->tangentZ = 0;

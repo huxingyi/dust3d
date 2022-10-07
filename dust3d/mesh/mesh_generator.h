@@ -82,6 +82,7 @@ public:
         Color color = Color(1.0, 1.0, 1.0);
         float metalness = 0.0;
         float roughness = 1.0;
+        std::vector<std::tuple<dust3d::Color, float/*metalness*/, float/*roughness*/>> vertexProperties;
     };
 
     MeshGenerator(Snapshot *snapshot);
@@ -144,6 +145,7 @@ private:
         GeneratedComponent &componentCache);
     std::unique_ptr<MeshCombiner::Mesh> combineMultipleMeshes(std::vector<std::tuple<std::unique_ptr<MeshCombiner::Mesh>, CombineMode, std::string>> &&multipleMeshes, bool recombine=true);
     std::unique_ptr<MeshCombiner::Mesh> combineStitchingMesh(const std::vector<std::string> &partIdStrings,
+        const std::vector<std::string> &componentIdStrings,
         GeneratedComponent &componentCache);
     std::string componentColorName(const std::map<std::string, std::string> *component);
     void collectUncombinedComponent(const std::string &componentIdString);

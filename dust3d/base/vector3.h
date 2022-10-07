@@ -334,7 +334,7 @@ public:
         return std::acos(dotProduct(first.normalized(), second.normalized()));
     }
     
-    Vector3 rotated(const Vector3 &unitAxis, double angle);
+    Vector3 rotated(const Vector3 &unitAxis, double angle) const;
     
 private:
     double m_data[3] = {0.0};
