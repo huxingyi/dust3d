@@ -12,6 +12,8 @@ PartManageWidget::PartManageWidget(Document *document, QWidget *parent):
     QWidget(parent),
     m_document(document)
 {
+    setContextMenuPolicy(Qt::CustomContextMenu);
+
     QHBoxLayout *toolsLayout = new QHBoxLayout;
     toolsLayout->setSpacing(0);
     toolsLayout->setMargin(0);
@@ -110,6 +112,11 @@ PartManageWidget::PartManageWidget(Document *document, QWidget *parent):
     connect(m_document, &Document::partVisibleStateChanged, this, &PartManageWidget::updateToolButtons);
     connect(m_document, &Document::partDisableStateChanged, this, &PartManageWidget::updateToolButtons);
     connect(m_document, &Document::componentChildrenChanged, this, &PartManageWidget::updateToolButtons);
+
+    connect(this, &PartManageWidget::groupComponents, m_document, &Document::createNewComponentAndMoveTheseIn);
+    connect(this, &PartManageWidget::groupOperationAdded, m_document, &Document::saveSnapshot);
+
+    connect(this, &PartManageWidget::customContextMenuRequested, this, &PartManageWidget::showContextMenu);
 
     QVBoxLayout *mainLayout = new QVBoxLayout;
     mainLayout->addLayout(toolsLayout);
@@ -216,4 +223,24 @@ void PartManageWidget::updateToolButtons()
     m_unlinkButton->setEnabled(enableUnlinkButton);
     m_linkButton->setEnabled(enableLinkButton);
     m_propertyButton->setEnabled(enablePropertyButton);
+}
+
+void PartManageWidget::showContextMenu(const QPoint &pos)
+{
+    auto selectedComponentIds = m_componentPreviewGridWidget->getSelectedComponentIds();
+    if (selectedComponentIds.empty())
+        return;
+
+    QMenu contextMenu(this);
+
+    QAction makeGroupAction(tr("Make group"), this);
+    makeGroupAction.setIcon(Theme::awesome()->icon(fa::folder));
+    connect(&makeGroupAction, &QAction::triggered, this, [=]() {
+        emit this->groupComponents(selectedComponentIds);
+        emit this->groupOperationAdded();
+    });
+
+    contextMenu.addAction(&makeGroupAction);
+
+    contextMenu.exec(mapToGlobal(pos));
 }

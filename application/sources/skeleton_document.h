@@ -678,7 +678,7 @@ public slots:
     void addComponent(dust3d::Uuid parentId);
     void moveComponent(dust3d::Uuid componentId, dust3d::Uuid toParentId);
     void setCurrentCanvasComponentId(dust3d::Uuid componentId);
-    void createNewComponentAndMoveThisIn(dust3d::Uuid componentId);
+    void createNewComponentAndMoveTheseIn(const std::vector<dust3d::Uuid> &componentIds);
     void createNewChildComponent(dust3d::Uuid parentComponentId);
     void setComponentExpandState(dust3d::Uuid componentId, bool expanded);
     void hideOtherComponents(dust3d::Uuid componentId);

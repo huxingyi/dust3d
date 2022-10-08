@@ -520,29 +520,41 @@ void SkeletonDocument::setComponentExpandState(dust3d::Uuid componentId, bool ex
     emit optionsChanged();
 }
 
-void SkeletonDocument::createNewComponentAndMoveThisIn(dust3d::Uuid componentId)
+void SkeletonDocument::createNewComponentAndMoveTheseIn(const std::vector<dust3d::Uuid> &componentIds)
 {
-    auto component = componentMap.find(componentId);
-    if (component == componentMap.end()) {
+    if (componentIds.empty())
         return;
-    }
-    
-    SkeletonComponent *oldParent = (SkeletonComponent *)findComponentParent(componentId);
-    
+
+    dust3d::Uuid newParentId;
+
     SkeletonComponent newParent(dust3d::Uuid::createUuid());
+    newParentId = newParent.id;
+
+    auto it = componentIds.begin();
+
+    SkeletonComponent *oldParent = (SkeletonComponent *)findComponentParent(*it);
+    auto oldParentId = oldParent->id;
+    oldParent->replaceChild(*it, newParentId);
+    for (++it; it != componentIds.end(); ++it) {
+        oldParent->removeChild(*it);
+    }
+
+    for (const auto &componentId: componentIds) {
+        auto component = componentMap.find(componentId);
+        if (component == componentMap.end()) {
+            continue;
+        }
+        component->second.parentId = newParentId;
+        newParent.addChild(componentId);
+    }
+
+    newParent.parentId = oldParentId;
     newParent.name = tr("Group") + " " + QString::number(componentMap.size() - partMap.size() + 1);
-    
-    oldParent->replaceChild(componentId, newParent.id);
-    newParent.parentId = oldParent->id;
-    newParent.addChild(componentId);
-    auto newParentId = newParent.id;
     componentMap.emplace(newParentId, std::move(newParent));
-    
-    component->second.parentId = newParentId;
-    
-    emit componentChildrenChanged(oldParent->id);
+
+    emit componentChildrenChanged(oldParentId);
     emit componentAdded(newParentId);
-    emit optionsChanged();
+    emit skeletonChanged();
 }
 
 void SkeletonDocument::createNewChildComponent(dust3d::Uuid parentComponentId)
