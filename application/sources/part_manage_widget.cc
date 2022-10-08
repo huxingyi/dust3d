@@ -127,10 +127,9 @@ void PartManageWidget::showSelectedComponentProperties()
     if (componentIds.empty())
         return;
 
-    auto *propertyWidget = new ComponentPropertyWidget(m_document);
-    propertyWidget->setComponentIds(componentIds);
+    auto *propertyWidget = new ComponentPropertyWidget(m_document, componentIds);
 
-    auto menu = std::make_unique<QMenu>(this);
+    auto menu = std::make_unique<QMenu>(this->parentWidget());
     QWidgetAction *widgetAction = new QWidgetAction(menu.get());
     widgetAction->setDefaultWidget(propertyWidget);
     menu->addAction(widgetAction);
