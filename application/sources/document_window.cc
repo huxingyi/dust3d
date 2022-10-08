@@ -332,10 +332,9 @@ DocumentWindow::DocumentWindow()
     m_openExampleMenu = new QMenu(tr("Open Example"));
     std::vector<QString> exampleModels = {
         "Addax",
+        "Banana",
         "Bicycle",
-        "Cat",
         "Dog",
-        "Giraffe",
         "Meerkat",
         "Mosquito",
         "Screwdriver",
