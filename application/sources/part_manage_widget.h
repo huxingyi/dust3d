@@ -6,9 +6,10 @@
 
 class Document;
 class ComponentPreviewGridWidget;
+class ComponentPropertyWidget;
 class QPushButton;
 
-class PartManageWidget : public QWidget
+class PartManageWidget: public QWidget
 {
     Q_OBJECT
 signals:
@@ -16,6 +17,7 @@ signals:
     void selectPartOnCanvas(const dust3d::Uuid &partId);
 public slots:
     void selectComponentByPartId(const dust3d::Uuid &partId);
+    void showSelectedComponentProperties();
 public:
     PartManageWidget(Document *document, QWidget *parent=nullptr);
 private:
@@ -29,7 +31,7 @@ private:
     QPushButton *m_hideButton = nullptr;
     QPushButton *m_unlinkButton = nullptr;
     QPushButton *m_linkButton = nullptr;
-    QPushButton *m_removeButton = nullptr;
+    QPushButton *m_propertyButton = nullptr;
     void updateToolButtons();
     void updateLevelUpButton();
 };
