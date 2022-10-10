@@ -24,6 +24,7 @@
 #define DUST3D_MESH_TUBE_MESH_BUILDER_H_
 
 #include <dust3d/base/uuid.h>
+#include <dust3d/base/vector2.h>
 #include <dust3d/base/vector3.h>
 
 namespace dust3d
@@ -32,6 +33,12 @@ namespace dust3d
 class TubeMeshBuilder
 {
 public:
+    struct BuildParameters
+    {
+        std::vector<Vector2> cutFace;
+        double baseNormalRotation;
+    };
+
     struct Node
     {
         Vector3 origin;
@@ -39,12 +46,18 @@ public:
         Uuid sourceId;
     };
 
-    TubeMeshBuilder(std::vector<Node> &&nodes, bool isCircle);
+    TubeMeshBuilder(const BuildParameters &buildParameters, std::vector<Node> &&nodes, bool isCircle);
     void build();
+    const Vector3 &resultBaseNormal();
 private:
+    BuildParameters m_buildParameters;
     std::vector<Node> m_nodes;
+    std::vector<Vector3> m_nodePositions;
+    std::vector<Vector3> m_nodeForwardDirections;
+    Vector3 m_baseNormal;
     bool m_isCircle = false;
     void preprocessNodes();
+    void finalizeDataForNodes();
 };
 
 };

@@ -20,20 +20,41 @@
  *  SOFTWARE.
  */
 
+#include <dust3d/mesh/base_normal.h>
 #include <dust3d/mesh/tube_mesh_builder.h>
 
 namespace dust3d
 {
 
-TubeMeshBuilder::TubeMeshBuilder(std::vector<Node> &&nodes, bool isCircle):
+TubeMeshBuilder::TubeMeshBuilder(const BuildParameters &buildParameters, std::vector<Node> &&nodes, bool isCircle):
+    m_buildParameters(buildParameters),
     m_nodes(std::move(nodes)),
     m_isCircle(isCircle)
 {
 }
 
+const Vector3 &TubeMeshBuilder::resultBaseNormal()
+{
+    return m_baseNormal;
+}
+
 void TubeMeshBuilder::preprocessNodes()
 {
-    // TODO:
+    // TODO: Interpolate...
+}
+
+void TubeMeshBuilder::finalizeDataForNodes()
+{
+    m_nodePositions.resize(m_nodes.size());
+    for (size_t i = 0; i < m_nodes.size(); ++i)
+        m_nodePositions[i] = m_nodes[i].origin;
+
+    m_nodeForwardDirections.resize(m_nodes.size());
+    if (m_isCircle) {
+        // TODO:
+    } else {
+        // TODO:
+    }
 }
 
 void TubeMeshBuilder::build()
@@ -43,6 +64,9 @@ void TubeMeshBuilder::build()
     if (m_nodes.empty())
         return;
 
+    m_baseNormal = m_isCircle ? 
+        BaseNormal::calculateCircleBaseNormal(m_nodePositions) : 
+        BaseNormal::calculateTubeBaseNormal(m_nodePositions);
     
     // TODO:
 }
