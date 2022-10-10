@@ -445,6 +445,34 @@ public:
         m_childrenIdSet.insert(childId);
         childrenIds.push_back(childId);
     }
+    void replaceChildWithOthers(const dust3d::Uuid &childId, const std::vector<dust3d::Uuid> &others)
+    {
+        if (m_childrenIdSet.find(childId) == m_childrenIdSet.end())
+            return;
+        m_childrenIdSet.erase(childId);
+        std::vector<dust3d::Uuid> candidates;
+        for (const auto &it: others) {
+            if (m_childrenIdSet.find(it) == m_childrenIdSet.end()) {
+                m_childrenIdSet.insert(it);
+                candidates.emplace_back(it);
+            }
+        }
+        for (size_t i = 0; i < childrenIds.size(); ++i) {
+            if (childId == childrenIds[i]) {
+                size_t newAddSize = candidates.size() - 1;
+                if (newAddSize > 0) {
+                    size_t oldSize = childrenIds.size();
+                    childrenIds.resize(childrenIds.size() + newAddSize);
+                    for (int j = (int)oldSize - 1; j > (int)i; --j) {
+                        childrenIds[j + newAddSize] = childrenIds[j];
+                    }
+                }
+                for (size_t k = 0; k < candidates.size(); ++k)
+                    childrenIds[i + k] = candidates[k];
+                break;
+            }
+        }
+    }
     void removeChild(dust3d::Uuid childId)
     {
         if (m_childrenIdSet.find(childId) == m_childrenIdSet.end())
@@ -678,7 +706,8 @@ public slots:
     void addComponent(dust3d::Uuid parentId);
     void moveComponent(dust3d::Uuid componentId, dust3d::Uuid toParentId);
     void setCurrentCanvasComponentId(dust3d::Uuid componentId);
-    void createNewComponentAndMoveTheseIn(const std::vector<dust3d::Uuid> &componentIds);
+    void groupComponents(const std::vector<dust3d::Uuid> &componentIds);
+    void ungroupComponent(const dust3d::Uuid &componentId);
     void createNewChildComponent(dust3d::Uuid parentComponentId);
     void setComponentExpandState(dust3d::Uuid componentId, bool expanded);
     void hideOtherComponents(dust3d::Uuid componentId);

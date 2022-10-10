@@ -520,7 +520,38 @@ void SkeletonDocument::setComponentExpandState(dust3d::Uuid componentId, bool ex
     emit optionsChanged();
 }
 
-void SkeletonDocument::createNewComponentAndMoveTheseIn(const std::vector<dust3d::Uuid> &componentIds)
+void SkeletonDocument::ungroupComponent(const dust3d::Uuid &componentId)
+{
+    if (componentId.isNull())
+        return;
+    SkeletonComponent *component = (SkeletonComponent *)findComponent(componentId);
+    if (nullptr == component) {
+        dust3dDebug << "Component not found:" << componentId.toString();
+        return;
+    }
+    if (component->childrenIds.empty())
+        return;
+    auto childrenIds = component->childrenIds;
+    SkeletonComponent *newParent = (SkeletonComponent *)findComponentParent(componentId);
+    if (nullptr == newParent) {
+        dust3dDebug << "Expected parent component to be found, component:" << componentId.toString();
+        return;
+    }
+    auto newParentId = newParent->id;
+    newParent->replaceChildWithOthers(componentId, childrenIds);
+    for (const auto &childId: childrenIds) {
+        SkeletonComponent *child = (SkeletonComponent *)findComponent(childId);
+        if (nullptr == child)
+            continue;
+        child->parentId = newParentId;
+    }
+    componentMap.erase(componentId);
+    emit componentRemoved(componentId);
+    emit componentChildrenChanged(newParentId);
+    emit skeletonChanged();
+}
+
+void SkeletonDocument::groupComponents(const std::vector<dust3d::Uuid> &componentIds)
 {
     if (componentIds.empty())
         return;
@@ -533,6 +564,10 @@ void SkeletonDocument::createNewComponentAndMoveTheseIn(const std::vector<dust3d
     auto it = componentIds.begin();
 
     SkeletonComponent *oldParent = (SkeletonComponent *)findComponentParent(*it);
+    if (nullptr == oldParent) {
+        dust3dDebug << "Expected parent component to be found, component:" << it->toString();
+        return;
+    }
     auto oldParentId = oldParent->id;
     oldParent->replaceChild(*it, newParentId);
     for (++it; it != componentIds.end(); ++it) {

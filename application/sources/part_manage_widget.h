@@ -16,6 +16,7 @@ signals:
     void unselectAllOnCanvas();
     void selectPartOnCanvas(const dust3d::Uuid &partId);
     void groupComponents(const std::vector<dust3d::Uuid> &componentIds);
+    void ungroupComponent(const dust3d::Uuid &componentId);
     void groupOperationAdded();
 public slots:
     void selectComponentByPartId(const dust3d::Uuid &partId);
@@ -37,6 +38,7 @@ private:
     QPushButton *m_propertyButton = nullptr;
     void updateToolButtons();
     void updateLevelUpButton();
+    bool hasSelectedGroupedComponent();
 };
 
 #endif

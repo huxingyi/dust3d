@@ -113,7 +113,8 @@ PartManageWidget::PartManageWidget(Document *document, QWidget *parent):
     connect(m_document, &Document::partDisableStateChanged, this, &PartManageWidget::updateToolButtons);
     connect(m_document, &Document::componentChildrenChanged, this, &PartManageWidget::updateToolButtons);
 
-    connect(this, &PartManageWidget::groupComponents, m_document, &Document::createNewComponentAndMoveTheseIn);
+    connect(this, &PartManageWidget::groupComponents, m_document, &Document::groupComponents);
+    connect(this, &PartManageWidget::ungroupComponent, m_document, &Document::ungroupComponent);
     connect(this, &PartManageWidget::groupOperationAdded, m_document, &Document::saveSnapshot);
 
     connect(this, &PartManageWidget::customContextMenuRequested, this, &PartManageWidget::showContextMenu);
@@ -225,6 +226,16 @@ void PartManageWidget::updateToolButtons()
     m_propertyButton->setEnabled(enablePropertyButton);
 }
 
+bool PartManageWidget::hasSelectedGroupedComponent()
+{
+    auto selectedComponents = m_componentPreviewGridWidget->getSelectedComponents();
+    for (auto &component: selectedComponents) {
+        if (!component->childrenIds.empty())
+            return true;
+    }
+    return false;
+}
+
 void PartManageWidget::showContextMenu(const QPoint &pos)
 {
     auto selectedComponentIds = m_componentPreviewGridWidget->getSelectedComponentIds();
@@ -239,8 +250,17 @@ void PartManageWidget::showContextMenu(const QPoint &pos)
         emit this->groupComponents(selectedComponentIds);
         emit this->groupOperationAdded();
     });
-
     contextMenu.addAction(&makeGroupAction);
+
+    QAction ungroupAction(tr("Ungroup"), this);
+    if (hasSelectedGroupedComponent()) {
+        connect(&ungroupAction, &QAction::triggered, this, [=]() {
+            for (const auto &it: selectedComponentIds)
+                emit this->ungroupComponent(it);
+            emit this->groupOperationAdded();
+        });
+        contextMenu.addAction(&ungroupAction);
+    }
 
     contextMenu.exec(mapToGlobal(pos));
 }
