@@ -20,8 +20,8 @@
  *  SOFTWARE.
  */
 
-#ifndef DUST3D_MESH_ROPE_MESH_H_
-#define DUST3D_MESH_ROPE_MESH_H_
+#ifndef DUST3D_MESH_BASE_NORMAL_H_
+#define DUST3D_MESH_BASE_NORMAL_H_
 
 #include <vector>
 #include <dust3d/base/vector3.h>
@@ -29,25 +29,32 @@
 namespace dust3d
 {
 
-class RopeMesh
+class BaseNormal
 {
 public:
-    struct BuildParameters
+    static std::pair<size_t, int> findNearestAxis(const Vector3 &direction);
+    static inline const Vector3 &axisDirection(size_t index)
     {
-        double defaultRadius = 0.008;
-        size_t sectionSegments = 8;
-    };
-
-    RopeMesh(const BuildParameters &parameters);
-    void addRope(const std::vector<Vector3> &positions, bool isCircle);
-    const std::vector<Vector3> &resultVertices();
-    const std::vector<std::vector<size_t>> &resultTriangles();
-private:
-    std::vector<Vector3> m_resultVertices;
-    std::vector<std::vector<size_t>> m_resultTriangles;
-    BuildParameters m_buildParameters;
+        static const std::vector<Vector3> axisList = {
+            Vector3 {1, 0, 0},
+            Vector3 {0, 1, 0},
+            Vector3 {0, 0, 1},
+        };
+        return axisList[index];
+    }
+    static inline const Vector3 &nextAxisDirection(size_t index)
+    {
+        return axisDirection((index + 1) % 3);
+    }
+    static std::vector<Vector3> calculateCircleVertices(double radius, 
+        size_t points, 
+        const Vector3 &aroundAxis=Vector3(0.0, 0.0, 1.0), 
+        const Vector3 &startDirection=Vector3(0.0, 1.0, 0.0),
+        const Vector3 &origin=Vector3(0.0, 0.0, 0.0));
+    static Vector3 calculateCircleBaseNormal(const std::vector<Vector3> &vertices);
+    static Vector3 calculateTubeBaseNormal(const std::vector<Vector3> &vertices);
 };
 
-};
+}
 
 #endif

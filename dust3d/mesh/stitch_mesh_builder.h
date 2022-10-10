@@ -64,7 +64,7 @@ private:
     std::vector<Vector3> m_generatedVertices;
     std::vector<std::vector<size_t>> m_generatedFaces;
     std::vector<Vector3> m_generatedNormals;
-    size_t m_targetSegments = 15;
+    size_t m_targetSegments = 0;
 
     void interpolateSplinesToHaveEqualSizeOfNodesExceptClosingSplines();
     std::vector<std::vector<StitchingPoint>> convertSplinesToStitchingPoints(const std::vector<Spline> &splines);

@@ -22,6 +22,7 @@
 
 #include <dust3d/base/debug.h>
 #include <dust3d/base/math.h>
+#include <dust3d/mesh/base_normal.h>
 #include <dust3d/mesh/rope_mesh.h>
 
 namespace dust3d
@@ -42,96 +43,19 @@ const std::vector<std::vector<size_t>> &RopeMesh::resultTriangles()
     return m_resultTriangles;
 }
 
-std::pair<size_t, int> RopeMesh::findNearestAxis(const Vector3 &direction)
-{
-    float maxDot = -1;
-    size_t nearAxisIndex = 0;
-    int positive = 1;
-    for (size_t i = 0; i < 3; ++i) {
-        const auto axis = axisDirection(i);
-        auto dot = Vector3::dotProduct(axis, direction);
-        auto positiveDot = std::abs(dot);
-        if (positiveDot >= maxDot) {
-            if (dot < 0)
-                positive = -1;
-            maxDot = positiveDot;
-            nearAxisIndex = i;
-        }
-    }
-    return {nearAxisIndex, positive};
-}
-
-std::vector<Vector3> RopeMesh::calculateCircleVertices(double radius, 
-    size_t points, 
-    const Vector3 &aroundAxis, 
-    const Vector3 &startDirection,
-    const Vector3 &origin)
-{
-    constexpr auto roundAngle = 2.0 * Math::Pi;
-    auto stepAngle = roundAngle / points;
-    std::vector<Vector3> circlePoints;
-    circlePoints.reserve(points);
-    for (double angle = stepAngle * -0.5;
-            circlePoints.size() < points;
-            angle += stepAngle) {
-        circlePoints.push_back(origin + startDirection.rotated(aroundAxis, angle) * radius);
-    }
-    return circlePoints;
-}
-
-Vector3 RopeMesh::calculateCircleBaseNormal(const std::vector<Vector3> &vertices)
-{
-    std::vector<Vector3> edgeDirections(vertices.size());
-    for (size_t i = 0; i < edgeDirections.size(); ++i) {
-        size_t j = (i + 1) % edgeDirections.size();
-        edgeDirections[i] = (vertices[j] - vertices[i]).normalized();
-    }
-    Vector3 baseNormal;
-    for (size_t i = 0; i < edgeDirections.size(); ++i) {
-        size_t j = (i + 1) % edgeDirections.size();
-        baseNormal += Vector3::crossProduct(-edgeDirections[i], edgeDirections[j]);
-    }
-    return baseNormal.normalized();
-}
-
-Vector3 RopeMesh::calculateTubeBaseNormal(const std::vector<Vector3> &vertices)
-{
-    std::vector<Vector3> edgeDirections(vertices.size());
-    for (size_t i = 1; i < edgeDirections.size(); ++i) {
-        size_t h = i - 1;
-        edgeDirections[h] = (vertices[i] - vertices[h]).normalized();
-    }
-    Vector3 baseNormal;
-    for (size_t i = 1; i < edgeDirections.size(); ++i) {
-        size_t h = i - 1;
-        // >15 degrees && < 165 degrees
-        if (std::abs(Vector3::dotProduct(edgeDirections[h], edgeDirections[i])) < 0.966)
-            baseNormal += Vector3::crossProduct(edgeDirections[h], edgeDirections[i]);
-    }
-    if (baseNormal.isZero()) {
-        for (size_t h = 0; h + 1 < edgeDirections.size(); ++h) {
-            const auto &sectionNormal = edgeDirections[h];
-            auto axis = RopeMesh::findNearestAxis(sectionNormal);
-            baseNormal += axis.second * 
-                Vector3::crossProduct(sectionNormal, RopeMesh::nextAxisDirection(axis.first)).normalized();
-        }
-    }
-    return baseNormal.normalized();
-}
-
 void RopeMesh::addRope(const std::vector<Vector3> &positions, bool isCircle)
 {
     if (positions.size() < 2) {
         dust3dDebug << "Expected at least 2 nodes, current:" << positions.size();
         return;
     }
-    Vector3 baseNormal = isCircle ? calculateCircleBaseNormal(positions) : calculateTubeBaseNormal(positions);
+    Vector3 baseNormal = isCircle ? BaseNormal::calculateCircleBaseNormal(positions) : BaseNormal::calculateTubeBaseNormal(positions);
     std::vector<std::vector<size_t>> circles;
     circles.reserve(positions.size());
     Vector3 forwardDirection = (positions[1] - positions[0]).normalized();
     for (size_t i = isCircle ? 0 : 1; i < positions.size(); ++i) {
         size_t j = (i + 1) % positions.size();
-        auto circlePositions = calculateCircleVertices(m_buildParameters.defaultRadius, 
+        auto circlePositions = BaseNormal::calculateCircleVertices(m_buildParameters.defaultRadius, 
             m_buildParameters.sectionSegments, 
             forwardDirection, 
             baseNormal,

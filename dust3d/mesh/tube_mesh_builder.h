@@ -20,32 +20,31 @@
  *  SOFTWARE.
  */
 
-#ifndef DUST3D_MESH_ROPE_MESH_H_
-#define DUST3D_MESH_ROPE_MESH_H_
+#ifndef DUST3D_MESH_TUBE_MESH_BUILDER_H_
+#define DUST3D_MESH_TUBE_MESH_BUILDER_H_
 
-#include <vector>
+#include <dust3d/base/uuid.h>
 #include <dust3d/base/vector3.h>
 
 namespace dust3d
 {
 
-class RopeMesh
+class TubeMeshBuilder
 {
 public:
-    struct BuildParameters
+    struct Node
     {
-        double defaultRadius = 0.008;
-        size_t sectionSegments = 8;
+        Vector3 origin;
+        double radius;
+        Uuid sourceId;
     };
 
-    RopeMesh(const BuildParameters &parameters);
-    void addRope(const std::vector<Vector3> &positions, bool isCircle);
-    const std::vector<Vector3> &resultVertices();
-    const std::vector<std::vector<size_t>> &resultTriangles();
+    TubeMeshBuilder(std::vector<Node> &&nodes, bool isCircle);
+    void build();
 private:
-    std::vector<Vector3> m_resultVertices;
-    std::vector<std::vector<size_t>> m_resultTriangles;
-    BuildParameters m_buildParameters;
+    std::vector<Node> m_nodes;
+    bool m_isCircle = false;
+    void preprocessNodes();
 };
 
 };
