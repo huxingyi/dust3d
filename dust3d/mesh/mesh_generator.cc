@@ -411,6 +411,59 @@ void MeshGenerator::flattenLinks(const std::unordered_map<size_t, size_t> &links
     }
 }
 
+void MeshGenerator::fetchPartOrderedNodes(const std::string &partIdString, std::vector<MeshNode> *meshNodes, bool *isCircle)
+{
+    std::vector<MeshNode> builderNodes;
+    std::map<std::string, size_t> builderNodeIdStringToIndexMap;
+    for (const auto &nodeIdString: m_partNodeIds[partIdString]) {
+        auto findNode = m_snapshot->nodes.find(nodeIdString);
+        if (findNode == m_snapshot->nodes.end()) {
+            continue;
+        }
+        auto &node = findNode->second;
+        
+        float radius = String::toFloat(String::valueOrEmpty(node, "radius"));
+        float x = (String::toFloat(String::valueOrEmpty(node, "x")) - m_mainProfileMiddleX);
+        float y = (m_mainProfileMiddleY - String::toFloat(String::valueOrEmpty(node, "y")));
+        float z = (m_sideProfileMiddleX - String::toFloat(String::valueOrEmpty(node, "z")));
+
+        builderNodeIdStringToIndexMap.insert({nodeIdString, builderNodes.size()});
+        builderNodes.emplace_back(MeshNode {
+            Vector3((double)x, (double)y, (double)z), (double)radius
+        });
+    }
+
+    std::unordered_map<size_t, size_t> builderNodeLinks;
+    for (const auto &edgeIdString: m_partEdgeIds[partIdString]) {
+        auto findEdge = m_snapshot->edges.find(edgeIdString);
+        if (findEdge == m_snapshot->edges.end()) {
+            continue;
+        }
+        auto &edge = findEdge->second;
+        
+        std::string fromNodeIdString = String::valueOrEmpty(edge, "from");
+        std::string toNodeIdString = String::valueOrEmpty(edge, "to");
+
+        auto findFrom = builderNodeIdStringToIndexMap.find(fromNodeIdString);
+        if (findFrom == builderNodeIdStringToIndexMap.end())
+            continue;
+        auto findTo = builderNodeIdStringToIndexMap.find(toNodeIdString);
+        if (findTo == builderNodeIdStringToIndexMap.end())
+            continue;
+        builderNodeLinks[findFrom->second] = findTo->second;
+    }
+
+    std::vector<size_t> orderedIndices;
+    if (!builderNodeLinks.empty()) {
+        flattenLinks(builderNodeLinks, &orderedIndices, isCircle);
+        meshNodes->resize(orderedIndices.size());
+        for (size_t i = 0; i < orderedIndices.size(); ++i)
+            (*meshNodes)[i] = builderNodes[orderedIndices[i]];
+    } else {
+        meshNodes->push_back(builderNodes[0]);
+    }
+}
+
 std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineStitchingMesh(const std::vector<std::string> &partIdStrings,
     const std::vector<std::string> &componentIdStrings,
     GeneratedComponent &componentCache)
@@ -422,60 +475,11 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineStitchingMesh(const st
         componentIds[i] = componentIdStrings[i];
     for (size_t partIndex = 0; partIndex < partIdStrings.size(); ++partIndex) {
         const auto &partIdString = partIdStrings[partIndex];
-        std::vector<StitchMeshBuilder::Node> builderNodes;
-        std::map<std::string, size_t> builderNodeIdStringToIndexMap;
-        for (const auto &nodeIdString: m_partNodeIds[partIdString]) {
-            auto findNode = m_snapshot->nodes.find(nodeIdString);
-            if (findNode == m_snapshot->nodes.end()) {
-                continue;
-            }
-            auto &node = findNode->second;
-            
-            float radius = String::toFloat(String::valueOrEmpty(node, "radius"));
-            float x = (String::toFloat(String::valueOrEmpty(node, "x")) - m_mainProfileMiddleX);
-            float y = (m_mainProfileMiddleY - String::toFloat(String::valueOrEmpty(node, "y")));
-            float z = (m_sideProfileMiddleX - String::toFloat(String::valueOrEmpty(node, "z")));
-
-            builderNodeIdStringToIndexMap.insert({nodeIdString, builderNodes.size()});
-            builderNodes.emplace_back(StitchMeshBuilder::Node {
-                Vector3((double)x, (double)y, (double)z), (double)radius
-            });
-        }
-
-        std::unordered_map<size_t, size_t> builderNodeLinks;
-        for (const auto &edgeIdString: m_partEdgeIds[partIdString]) {
-            auto findEdge = m_snapshot->edges.find(edgeIdString);
-            if (findEdge == m_snapshot->edges.end()) {
-                continue;
-            }
-            auto &edge = findEdge->second;
-            
-            std::string fromNodeIdString = String::valueOrEmpty(edge, "from");
-            std::string toNodeIdString = String::valueOrEmpty(edge, "to");
-
-            auto findFrom = builderNodeIdStringToIndexMap.find(fromNodeIdString);
-            if (findFrom == builderNodeIdStringToIndexMap.end())
-                continue;
-            auto findTo = builderNodeIdStringToIndexMap.find(toNodeIdString);
-            if (findTo == builderNodeIdStringToIndexMap.end())
-                continue;
-            builderNodeLinks[findFrom->second] = findTo->second;
-        }
-
-        std::vector<size_t> orderedIndices;
         bool isCircle = false;
         bool isClosing = false;
-        std::vector<StitchMeshBuilder::Node> orderedBuilderNodes;
-        if (!builderNodeLinks.empty()) {
-            flattenLinks(builderNodeLinks, &orderedIndices, &isCircle);
-            orderedBuilderNodes.resize(orderedIndices.size());
-            for (size_t i = 0; i < orderedIndices.size(); ++i)
-                orderedBuilderNodes[i] = builderNodes[orderedIndices[i]];
-        } else {
-            orderedBuilderNodes.push_back(builderNodes[0]);
-            isClosing = true;
-        }
-
+        std::vector<MeshNode> orderedBuilderNodes;
+        fetchPartOrderedNodes(partIdString, &orderedBuilderNodes, &isCircle);
+        isClosing = orderedBuilderNodes.size() <= 1;
         splines.emplace_back(StitchMeshBuilder::Spline {
             std::move(orderedBuilderNodes),
             isCircle,
@@ -544,6 +548,94 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineStitchingMesh(const st
     return mesh;
 }
 
+std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combinePartMesh(const std::string &partIdString, 
+    bool *hasError, 
+    bool *retryable, 
+    bool addIntermediateNodes)
+{
+    auto findPart = m_snapshot->parts.find(partIdString);
+    if (findPart == m_snapshot->parts.end()) {
+        return nullptr;
+    }
+    
+    Uuid partId = Uuid(partIdString);
+    auto &part = findPart->second;
+    
+    *retryable = true;
+
+    bool isDisabled = String::isTrue(String::valueOrEmpty(part, "disabled"));
+    std::string __mirroredByPartId = String::valueOrEmpty(part, "__mirroredByPartId");
+    std::string __mirrorFromPartId = String::valueOrEmpty(part, "__mirrorFromPartId");
+    bool subdived = String::isTrue(String::valueOrEmpty(part, "subdived"));
+    bool rounded = String::isTrue(String::valueOrEmpty(part, "rounded"));
+    bool chamfered = String::isTrue(String::valueOrEmpty(part, "chamfered"));
+    bool countershaded = String::isTrue(String::valueOrEmpty(part, "countershaded"));
+    bool smooth = String::isTrue(String::valueOrEmpty(part, "smooth"));
+    std::string colorString = String::valueOrEmpty(part, "color");
+    Color partColor = colorString.empty() ? m_defaultPartColor : Color(colorString);
+    float deformThickness = 1.0;
+    float deformWidth = 1.0;
+    float cutRotation = 0.0;
+    float hollowThickness = 0.0;
+    auto target = PartTargetFromString(String::valueOrEmpty(part, "target").c_str());
+    auto base = PartBaseFromString(String::valueOrEmpty(part, "base").c_str());
+    
+    std::string searchPartIdString = __mirrorFromPartId.empty() ? partIdString : __mirrorFromPartId;
+
+    std::string cutFaceString = String::valueOrEmpty(part, "cutFace");
+    std::vector<Vector2> cutTemplate;
+    cutFaceStringToCutTemplate(cutFaceString, cutTemplate);
+    if (chamfered)
+        chamferFace(&cutTemplate);
+    
+    std::string cutRotationString = String::valueOrEmpty(part, "cutRotation");
+    if (!cutRotationString.empty()) {
+        cutRotation = String::toFloat(cutRotationString);
+    }
+    
+    std::string hollowThicknessString = String::valueOrEmpty(part, "hollowThickness");
+    if (!hollowThicknessString.empty()) {
+        hollowThickness = String::toFloat(hollowThicknessString);
+    }
+    
+    std::string thicknessString = String::valueOrEmpty(part, "deformThickness");
+    if (!thicknessString.empty()) {
+        deformThickness = String::toFloat(thicknessString);
+    }
+    
+    std::string widthString = String::valueOrEmpty(part, "deformWidth");
+    if (!widthString.empty()) {
+        deformWidth = String::toFloat(widthString);
+    }
+    
+    bool deformUnified = String::isTrue(String::valueOrEmpty(part, "deformUnified"));
+    
+    Uuid materialId;
+    std::string materialIdString = String::valueOrEmpty(part, "materialId");
+    if (!materialIdString.empty())
+        materialId = Uuid(materialIdString);
+    
+    float colorSolubility = 0;
+    std::string colorSolubilityString = String::valueOrEmpty(part, "colorSolubility");
+    if (!colorSolubilityString.empty())
+        colorSolubility = String::toFloat(colorSolubilityString);
+    
+    float metalness = 0;
+    std::string metalnessString = String::valueOrEmpty(part, "metallic");
+    if (!metalnessString.empty())
+        metalness = String::toFloat(metalnessString);
+    
+    float roughness = 1.0;
+    std::string roughnessString = String::valueOrEmpty(part, "roughness");
+    if (!roughnessString.empty())
+        roughness = String::toFloat(roughnessString);
+
+    // TODO:
+
+    return nullptr;
+}
+
+/*
 std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combinePartMesh(const std::string &partIdString, bool *hasError, bool *retryable, bool addIntermediateNodes)
 {
     auto findPart = m_snapshot->parts.find(partIdString);
@@ -882,6 +974,7 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combinePartMesh(const std::st
     
     return mesh;
 }
+*/
 
 const std::map<std::string, std::string> *MeshGenerator::findComponent(const std::string &componentIdString)
 {

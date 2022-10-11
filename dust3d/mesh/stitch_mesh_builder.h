@@ -25,6 +25,7 @@
 
 #include <dust3d/base/vector3.h>
 #include <dust3d/base/uuid.h>
+#include <dust3d/mesh/mesh_node.h>
 
 namespace dust3d
 {
@@ -32,15 +33,9 @@ namespace dust3d
 class StitchMeshBuilder
 {
 public:
-    struct Node
-    {
-        Vector3 origin;
-        double radius;
-    };
-
     struct Spline
     {
-        std::vector<Node> nodes;
+        std::vector<MeshNode> nodes;
         bool isCircle = false;
         bool isClosing = false;
         Uuid sourceId;

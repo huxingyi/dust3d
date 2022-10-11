@@ -20,51 +20,20 @@
  *  SOFTWARE.
  */
 
-#ifndef DUST3D_MESH_TUBE_MESH_BUILDER_H_
-#define DUST3D_MESH_TUBE_MESH_BUILDER_H_
+#ifndef DUST3D_MESH_MESH_NODE_H_
+#define DUST3D_MESH_MESH_NODE_H_
 
-#include <dust3d/base/uuid.h>
-#include <dust3d/base/vector2.h>
 #include <dust3d/base/vector3.h>
 
 namespace dust3d
 {
 
-class TubeMeshBuilder
+struct MeshNode
 {
-public:
-    struct BuildParameters
-    {
-        std::vector<Vector2> cutFace;
-        double baseNormalRotation;
-    };
-
-    struct Node
-    {
-        Vector3 origin;
-        double radius;
-        Uuid sourceId;
-    };
-
-    TubeMeshBuilder(const BuildParameters &buildParameters, std::vector<Node> &&nodes, bool isCircle);
-    void build();
-    const Vector3 &resultBaseNormal();
-private:
-    BuildParameters m_buildParameters;
-    std::vector<Node> m_nodes;
-    std::vector<Vector3> m_nodePositions;
-    std::vector<Vector3> m_nodeForwardDirections;
-    std::vector<Vector3> m_generatedVertices;
-    std::vector<std::vector<size_t>> m_generatedFaces;
-    Vector3 m_baseNormal;
-    bool m_isCircle = false;
-    void preprocessNodes();
-    void buildNodePositionAndDirections();
-    std::vector<Vector3> buildCutFaceVertices(const Vector3 &origin,
-        double radius,
-        const Vector3 &forwardDirection);
+    Vector3 origin;
+    double radius;
 };
 
-};
+}
 
 #endif

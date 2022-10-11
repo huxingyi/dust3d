@@ -283,6 +283,7 @@ HEADERS += ../dust3d/mesh/mesh_combiner.h
 SOURCES += ../dust3d/mesh/mesh_combiner.cc
 HEADERS += ../dust3d/mesh/mesh_generator.h
 SOURCES += ../dust3d/mesh/mesh_generator.cc
+HEADERS += ../dust3d/mesh/mesh_node.h
 HEADERS += ../dust3d/mesh/mesh_recombiner.h
 SOURCES += ../dust3d/mesh/mesh_recombiner.cc
 HEADERS += ../dust3d/mesh/re_triangulator.h

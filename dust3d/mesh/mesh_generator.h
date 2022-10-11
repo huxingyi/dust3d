@@ -33,6 +33,7 @@
 #include <dust3d/base/snapshot.h>
 #include <dust3d/base/combine_mode.h>
 #include <dust3d/mesh/mesh_combiner.h>
+#include <dust3d/mesh/mesh_node.h>
 #include <dust3d/mesh/stroke_mesh_builder.h>
 
 namespace dust3d
@@ -130,7 +131,10 @@ private:
     bool checkIsPartDirty(const std::string &partIdString);
     bool checkIsPartDependencyDirty(const std::string &partIdString);
     void checkDirtyFlags();
-    std::unique_ptr<MeshCombiner::Mesh> combinePartMesh(const std::string &partIdString, bool *hasError, bool *retryable, bool addIntermediateNodes=true);
+    std::unique_ptr<MeshCombiner::Mesh> combinePartMesh(const std::string &partIdString, 
+        bool *hasError, 
+        bool *retryable, 
+        bool addIntermediateNodes=true);
     std::unique_ptr<MeshCombiner::Mesh> combineComponentMesh(const std::string &componentIdString, CombineMode *combineMode);
     void makeXmirror(const std::vector<Vector3> &sourceVertices, const std::vector<std::vector<size_t>> &sourceFaces,
         std::vector<Vector3> *destVertices, std::vector<std::vector<size_t>> *destFaces);
@@ -156,6 +160,7 @@ private:
     std::string reverseUuid(const std::string &uuidString);
     void recoverQuads(const std::vector<Vector3> &vertices, const std::vector<std::vector<size_t>> &triangles, const std::set<std::pair<PositionKey, PositionKey>> &sharedQuadEdges, std::vector<std::vector<size_t>> &triangleAndQuads);
     void addComponentPreview(const Uuid &componentId, ComponentPreview &&preview);
+    void fetchPartOrderedNodes(const std::string &partIdString, std::vector<MeshNode> *meshNodes, bool *isCircle);
 
     static void chamferFace(std::vector<Vector2> *face);
     static bool isWatertight(const std::vector<std::vector<size_t>> &faces);

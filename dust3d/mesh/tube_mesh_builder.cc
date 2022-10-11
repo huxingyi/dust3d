@@ -43,18 +43,55 @@ void TubeMeshBuilder::preprocessNodes()
     // TODO: Interpolate...
 }
 
-void TubeMeshBuilder::finalizeDataForNodes()
+void TubeMeshBuilder::buildNodePositionAndDirections()
 {
     m_nodePositions.resize(m_nodes.size());
     for (size_t i = 0; i < m_nodes.size(); ++i)
         m_nodePositions[i] = m_nodes[i].origin;
 
-    m_nodeForwardDirections.resize(m_nodes.size());
-    if (m_isCircle) {
-        // TODO:
-    } else {
-        // TODO:
+    std::vector<Vector3> rawDirections;
+    rawDirections.resize(m_nodePositions.size());
+    m_nodeForwardDirections.resize(m_nodePositions.size());
+    if (m_nodePositions.size() >= 2) {
+        if (m_isCircle) {
+            for (size_t i = 0; i < m_nodePositions.size(); ++i) {
+                size_t j = (i + 1) % m_nodePositions.size();
+                rawDirections[i] = (m_nodePositions[j] - m_nodePositions[i]).normalized();
+            }
+            for (size_t i = 0; i < m_nodePositions.size(); ++i) {
+                size_t j = (i + 1) % m_nodePositions.size();
+                m_nodeForwardDirections[j] = (rawDirections[i] + rawDirections[j]).normalized();
+            }
+        } else {
+            for (size_t j = 1; j < m_nodePositions.size(); ++j) {
+                size_t i = j - 1;
+                rawDirections[i] = (m_nodePositions[j] - m_nodePositions[i]).normalized();
+            }
+            rawDirections[m_nodeForwardDirections.size() - 1] = rawDirections[m_nodeForwardDirections.size() - 2];
+            m_nodeForwardDirections.front() = rawDirections.front();
+            for (size_t j = 1; j + 1 < m_nodePositions.size(); ++j) {
+                size_t i = j - 1;
+                m_nodeForwardDirections[j] = (rawDirections[i] + rawDirections[j]).normalized();
+            }
+            m_nodeForwardDirections.back() = rawDirections.back();
+        }
     }
+}
+
+std::vector<Vector3> TubeMeshBuilder::buildCutFaceVertices(const Vector3 &origin,
+    double radius,
+    const Vector3 &forwardDirection)
+{
+    std::vector<Vector3> cutFaceVertices(m_buildParameters.cutFace.size());
+    Vector3 u = m_baseNormal;
+    Vector3 v = Vector3::crossProduct(forwardDirection, m_baseNormal).normalized();
+    auto uFactor = u * radius;
+    auto vFactor = v * radius;
+    for (size_t i = 0; i < m_buildParameters.cutFace.size(); ++i) {
+        const auto &t = m_buildParameters.cutFace[i];
+        cutFaceVertices[i] = origin + (uFactor * t.x() + vFactor * t.y());
+    }
+    return cutFaceVertices;
 }
 
 void TubeMeshBuilder::build()
@@ -64,11 +101,34 @@ void TubeMeshBuilder::build()
     if (m_nodes.empty())
         return;
 
+    buildNodePositionAndDirections();
+
     m_baseNormal = m_isCircle ? 
         BaseNormal::calculateCircleBaseNormal(m_nodePositions) : 
         BaseNormal::calculateTubeBaseNormal(m_nodePositions);
     
-    // TODO:
+    std::vector<std::vector<size_t>> cutFaceIndices(m_nodePositions.size());
+    for (size_t i = 0; i < m_nodePositions.size(); ++i) {
+        auto cutFaceVertices = buildCutFaceVertices(m_nodePositions[i],
+            m_nodes[i].radius,
+            m_nodeForwardDirections[i]);
+        cutFaceIndices[i].resize(cutFaceVertices.size());
+        for (size_t k = 0; k < cutFaceVertices.size(); ++k) {
+            cutFaceIndices[i][k] = m_generatedVertices.size();
+            m_generatedVertices.emplace_back(cutFaceVertices[k]);
+        }
+    }
+    for (size_t j = m_isCircle ? 0 : 1; j < cutFaceIndices.size(); ++j) {
+        size_t i = (j + cutFaceIndices.size() - 1) % cutFaceIndices.size();
+        const auto &cutFaceI = cutFaceIndices[i];
+        const auto &cutFaceJ = cutFaceIndices[j];
+        for (size_t m = 0; m < cutFaceI.size(); ++m) {
+            size_t n = (m + 1) % cutFaceI.size();
+            m_generatedFaces.emplace_back(std::vector<size_t> {
+                cutFaceI[m], cutFaceI[n], cutFaceJ[n], cutFaceJ[m]
+            });
+        }
+    }
 }
 
 }
