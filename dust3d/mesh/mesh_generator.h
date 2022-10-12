@@ -163,6 +163,7 @@ private:
     bool fetchPartOrderedNodes(const std::string &partIdString, std::vector<MeshNode> *meshNodes, bool *isCircle);
 
     static void chamferFace(std::vector<Vector2> *face);
+    static void subdivideFace(std::vector<Vector2> *face);
     static bool isWatertight(const std::vector<std::vector<size_t>> &faces);
     static void flattenLinks(const std::unordered_map<size_t, size_t> &links,
         std::vector<size_t> *array,

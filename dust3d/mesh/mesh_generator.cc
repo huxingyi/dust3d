@@ -93,6 +93,18 @@ void MeshGenerator::chamferFace(std::vector<Vector2> *face)
     }
 }
 
+void MeshGenerator::subdivideFace(std::vector<Vector2> *face)
+{
+    auto oldFace = *face;
+    face->resize(oldFace.size() * 2);
+    for (size_t i = 0, n = 0; i < oldFace.size(); ++i) {
+        size_t h = (i + oldFace.size() - 1) % oldFace.size();
+        size_t j = (i + 1) % oldFace.size();
+        (*face)[n++] = oldFace[h] * 0.125 + oldFace[i] * 0.75 + oldFace[j] * 0.125;
+        (*face)[n++] = (oldFace[i] + oldFace[j]) * 0.5;
+    }
+}
+
 bool MeshGenerator::isWatertight(const std::vector<std::vector<size_t>> &faces)
 {
     std::set<std::pair<size_t, size_t>> halfEdges;
@@ -596,6 +608,8 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combinePartMesh(const std::st
     cutFaceStringToCutTemplate(cutFaceString, cutTemplate);
     if (chamfered)
         chamferFace(&cutTemplate);
+    if (subdived)
+        subdivideFace(&cutTemplate);
     
     std::string cutRotationString = String::valueOrEmpty(part, "cutRotation");
     if (!cutRotationString.empty()) {

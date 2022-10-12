@@ -20,6 +20,7 @@
  *  SOFTWARE.
  */
 
+#include <algorithm>
 #include <dust3d/mesh/base_normal.h>
 #include <dust3d/mesh/tube_mesh_builder.h>
 
@@ -138,6 +139,11 @@ void TubeMeshBuilder::build()
                 cutFaceI[m], cutFaceI[n], cutFaceJ[n], cutFaceJ[m]
             });
         }
+    }
+    if (!m_isCircle) {
+        m_generatedFaces.emplace_back(cutFaceIndices.back());
+        m_generatedFaces.emplace_back(cutFaceIndices.front());
+        std::reverse(m_generatedFaces.back().begin(), m_generatedFaces.back().end());
     }
 }
 

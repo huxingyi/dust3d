@@ -89,7 +89,7 @@ Vector3 BaseNormal::calculateTubeBaseNormal(const std::vector<Vector3> &vertices
         size_t h = i - 1;
         // >15 degrees && < 165 degrees
         if (std::abs(Vector3::dotProduct(edgeDirections[h], edgeDirections[i])) < 0.966)
-            baseNormal += Vector3::crossProduct(edgeDirections[h], edgeDirections[i]);
+            baseNormal += Vector3::crossProduct(-edgeDirections[h], edgeDirections[i]);
     }
     if (baseNormal.isZero()) {
         for (size_t h = 0; h + 1 < edgeDirections.size(); ++h) {
