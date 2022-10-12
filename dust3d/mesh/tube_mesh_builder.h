@@ -26,6 +26,7 @@
 #include <dust3d/base/uuid.h>
 #include <dust3d/base/vector2.h>
 #include <dust3d/base/vector3.h>
+#include <dust3d/mesh/mesh_node.h>
 
 namespace dust3d
 {
@@ -39,24 +40,19 @@ public:
         double baseNormalRotation;
     };
 
-    struct Node
-    {
-        Vector3 origin;
-        double radius;
-        Uuid sourceId;
-    };
-
-    TubeMeshBuilder(const BuildParameters &buildParameters, std::vector<Node> &&nodes, bool isCircle);
+    TubeMeshBuilder(const BuildParameters &buildParameters, std::vector<MeshNode> &&nodes, bool isCircle);
     void build();
-    const Vector3 &resultBaseNormal();
+    const Vector3 &generatedBaseNormal();
+    const std::vector<Vector3> &generatedVertices();
+    const std::vector<std::vector<size_t>> &generatedFaces();
 private:
     BuildParameters m_buildParameters;
-    std::vector<Node> m_nodes;
+    std::vector<MeshNode> m_nodes;
     std::vector<Vector3> m_nodePositions;
     std::vector<Vector3> m_nodeForwardDirections;
     std::vector<Vector3> m_generatedVertices;
     std::vector<std::vector<size_t>> m_generatedFaces;
-    Vector3 m_baseNormal;
+    Vector3 m_generatedBaseNormal;
     bool m_isCircle = false;
     void preprocessNodes();
     void buildNodePositionAndDirections();

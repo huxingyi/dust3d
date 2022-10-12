@@ -37,6 +37,7 @@
 #include <dust3d/mesh/trim_vertices.h>
 #include <dust3d/mesh/smooth_normal.h>
 #include <dust3d/mesh/resolve_triangle_source_node.h>
+#include <dust3d/mesh/tube_mesh_builder.h>
 
 namespace dust3d
 {
@@ -411,7 +412,7 @@ void MeshGenerator::flattenLinks(const std::unordered_map<size_t, size_t> &links
     }
 }
 
-void MeshGenerator::fetchPartOrderedNodes(const std::string &partIdString, std::vector<MeshNode> *meshNodes, bool *isCircle)
+bool MeshGenerator::fetchPartOrderedNodes(const std::string &partIdString, std::vector<MeshNode> *meshNodes, bool *isCircle)
 {
     std::vector<MeshNode> builderNodes;
     std::map<std::string, size_t> builderNodeIdStringToIndexMap;
@@ -431,6 +432,11 @@ void MeshGenerator::fetchPartOrderedNodes(const std::string &partIdString, std::
         builderNodes.emplace_back(MeshNode {
             Vector3((double)x, (double)y, (double)z), (double)radius
         });
+    }
+    
+    if (builderNodes.empty()) {
+        dust3dDebug << "Expected at least one node in part:" << partIdString;
+        return false;
     }
 
     std::unordered_map<size_t, size_t> builderNodeLinks;
@@ -462,6 +468,8 @@ void MeshGenerator::fetchPartOrderedNodes(const std::string &partIdString, std::
     } else {
         meshNodes->push_back(builderNodes[0]);
     }
+
+    return true;
 }
 
 std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineStitchingMesh(const std::vector<std::string> &partIdStrings,
@@ -478,7 +486,8 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineStitchingMesh(const st
         bool isCircle = false;
         bool isClosing = false;
         std::vector<MeshNode> orderedBuilderNodes;
-        fetchPartOrderedNodes(partIdString, &orderedBuilderNodes, &isCircle);
+        if (!fetchPartOrderedNodes(partIdString, &orderedBuilderNodes, &isCircle))
+            continue;
         isClosing = orderedBuilderNodes.size() <= 1;
         splines.emplace_back(StitchMeshBuilder::Spline {
             std::move(orderedBuilderNodes),
@@ -630,9 +639,63 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combinePartMesh(const std::st
     if (!roughnessString.empty())
         roughness = String::toFloat(roughnessString);
 
+    std::vector<MeshNode> meshNodes;
+    bool isCircle = false;
+    if (!fetchPartOrderedNodes(searchPartIdString, &meshNodes, &isCircle))
+        return nullptr;
+
+    TubeMeshBuilder::BuildParameters buildParameters;
+    buildParameters.cutFace = cutTemplate;
+    auto tubeMeshBuilder = std::make_unique<TubeMeshBuilder>(buildParameters, std::move(meshNodes), isCircle);
+    tubeMeshBuilder->build();
+
+    auto &partCache = m_cacheContext->parts[partIdString];
+    partCache.objectNodes.clear();
+    partCache.objectEdges.clear();
+    partCache.objectNodeVertices.clear();
+    partCache.vertices.clear();
+    partCache.faces.clear();
+    partCache.color = partColor;
+    partCache.metalness = metalness;
+    partCache.roughness = roughness;
+    partCache.isSuccessful = false;
+    partCache.joined = (target == PartTarget::Model && !isDisabled);
+    partCache.vertices = tubeMeshBuilder->generatedVertices();
+    partCache.faces = tubeMeshBuilder->generatedFaces();
+    if (!__mirrorFromPartId.empty()) {
+        for (auto &it: partCache.vertices)
+            it.setX(-it.x());
+        for (auto &it: partCache.faces)
+            std::reverse(it.begin(), it.end());
+    }
+
+    bool hasMeshError = false;
+    std::unique_ptr<MeshCombiner::Mesh> mesh;
+    
+    mesh = std::make_unique<MeshCombiner::Mesh>(partCache.vertices, partCache.faces);
+    if (mesh->isNull()) {
+        hasMeshError = true;
+    }
+
+    if (nullptr != mesh) {
+        partCache.isSuccessful = true;
+    }
+    
+    if (mesh && mesh->isNull()) {
+        mesh.reset();
+    }
+
+    if (target != PartTarget::Model) {
+        mesh.reset();
+    }
+    
+    if (hasMeshError && target == PartTarget::Model) {
+        *hasError = true;
+    }
+
     // TODO:
 
-    return nullptr;
+    return mesh;
 }
 
 /*

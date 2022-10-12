@@ -160,7 +160,7 @@ private:
     std::string reverseUuid(const std::string &uuidString);
     void recoverQuads(const std::vector<Vector3> &vertices, const std::vector<std::vector<size_t>> &triangles, const std::set<std::pair<PositionKey, PositionKey>> &sharedQuadEdges, std::vector<std::vector<size_t>> &triangleAndQuads);
     void addComponentPreview(const Uuid &componentId, ComponentPreview &&preview);
-    void fetchPartOrderedNodes(const std::string &partIdString, std::vector<MeshNode> *meshNodes, bool *isCircle);
+    bool fetchPartOrderedNodes(const std::string &partIdString, std::vector<MeshNode> *meshNodes, bool *isCircle);
 
     static void chamferFace(std::vector<Vector2> *face);
     static bool isWatertight(const std::vector<std::vector<size_t>> &faces);

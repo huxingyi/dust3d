@@ -26,16 +26,26 @@
 namespace dust3d
 {
 
-TubeMeshBuilder::TubeMeshBuilder(const BuildParameters &buildParameters, std::vector<Node> &&nodes, bool isCircle):
+TubeMeshBuilder::TubeMeshBuilder(const BuildParameters &buildParameters, std::vector<MeshNode> &&nodes, bool isCircle):
     m_buildParameters(buildParameters),
     m_nodes(std::move(nodes)),
     m_isCircle(isCircle)
 {
 }
 
-const Vector3 &TubeMeshBuilder::resultBaseNormal()
+const Vector3 &TubeMeshBuilder::generatedBaseNormal()
 {
-    return m_baseNormal;
+    return m_generatedBaseNormal;
+}
+
+const std::vector<Vector3> &TubeMeshBuilder::generatedVertices()
+{
+    return m_generatedVertices;
+}
+
+const std::vector<std::vector<size_t>> &TubeMeshBuilder::generatedFaces()
+{
+    return m_generatedFaces;
 }
 
 void TubeMeshBuilder::preprocessNodes()
@@ -83,8 +93,8 @@ std::vector<Vector3> TubeMeshBuilder::buildCutFaceVertices(const Vector3 &origin
     const Vector3 &forwardDirection)
 {
     std::vector<Vector3> cutFaceVertices(m_buildParameters.cutFace.size());
-    Vector3 u = m_baseNormal;
-    Vector3 v = Vector3::crossProduct(forwardDirection, m_baseNormal).normalized();
+    Vector3 u = m_generatedBaseNormal;
+    Vector3 v = Vector3::crossProduct(forwardDirection, m_generatedBaseNormal).normalized();
     auto uFactor = u * radius;
     auto vFactor = v * radius;
     for (size_t i = 0; i < m_buildParameters.cutFace.size(); ++i) {
@@ -103,7 +113,7 @@ void TubeMeshBuilder::build()
 
     buildNodePositionAndDirections();
 
-    m_baseNormal = m_isCircle ? 
+    m_generatedBaseNormal = m_isCircle ? 
         BaseNormal::calculateCircleBaseNormal(m_nodePositions) : 
         BaseNormal::calculateTubeBaseNormal(m_nodePositions);
     

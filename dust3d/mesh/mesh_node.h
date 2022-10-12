@@ -24,6 +24,7 @@
 #define DUST3D_MESH_MESH_NODE_H_
 
 #include <dust3d/base/vector3.h>
+#include <dust3d/base/uuid.h>
 
 namespace dust3d
 {
@@ -32,6 +33,7 @@ struct MeshNode
 {
     Vector3 origin;
     double radius;
+    Uuid sourceId;
 };
 
 }
