@@ -18,7 +18,7 @@ public:
         const std::vector<std::vector<dust3d::Vector3>> &triangleVertexNormals,
         const dust3d::Color &color=dust3d::Color::createWhite(),
         float metalness=0.0,
-        float roughness=0.0,
+        float roughness=1.0,
         const std::vector<std::tuple<dust3d::Color, float/*metalness*/, float/*roughness*/>> *vertexProperties=nullptr);
     ModelMesh(dust3d::Object &object);
     ModelMesh(ModelOpenGLVertex *triangleVertices, int vertexNum);

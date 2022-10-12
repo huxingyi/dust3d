@@ -30,11 +30,13 @@ signals:
     void initialized();
     void uninialized();
     void waitingExportFinished(const QString &filename, bool isSuccessful);
+    void workingStatusChanged(bool isWorking);
 public:
     DocumentWindow();
     ~DocumentWindow();
     Document *document();
     ModelWidget *modelWidget();
+    bool isWorking();
     static DocumentWindow *createDocumentWindow();
     static const std::map<DocumentWindow *, dust3d::Uuid> &documentWindows();
     static void showAcknowlegements();

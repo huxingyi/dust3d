@@ -706,13 +706,15 @@ DocumentWindow::DocumentWindow()
 
 void DocumentWindow::updateInprogressIndicator()
 {
-    if (m_document->isMeshGenerating() ||
-            m_document->isPostProcessing() ||
-            m_document->isTextureGenerating()) {
-        m_inprogressIndicator->showSpinner(true);
-    } else {
-        m_inprogressIndicator->showSpinner(false);
-    }
+    bool inprogress = m_document->isMeshGenerating() ||
+        m_document->isPostProcessing() ||
+        m_document->isTextureGenerating() ||
+        nullptr != m_componentPreviewImagesGenerator ||
+        nullptr != m_componentPreviewImagesDecorator;
+    if (inprogress == m_inprogressIndicator->isSpinning())
+        return;
+    m_inprogressIndicator->showSpinner(inprogress);
+    emit workingStatusChanged(inprogress);
 }
 
 void DocumentWindow::toggleRotation()
@@ -1211,6 +1213,8 @@ void DocumentWindow::generateComponentPreviewImages()
     connect(m_componentPreviewImagesGenerator, &MeshPreviewImagesGenerator::finished, thread, &QThread::quit);
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
     thread->start();
+
+    updateInprogressIndicator();
 }
 
 void DocumentWindow::componentPreviewImagesReady()
@@ -1230,6 +1234,8 @@ void DocumentWindow::componentPreviewImagesReady()
     
     if (m_isComponentPreviewImagesObsolete)
         generateComponentPreviewImages();
+    else
+        updateInprogressIndicator();
 }
 
 void DocumentWindow::decorateComponentPreviewImages()
@@ -1263,6 +1269,8 @@ void DocumentWindow::decorateComponentPreviewImages()
     connect(m_componentPreviewImagesDecorator.get(), &ComponentPreviewImagesDecorator::finished, thread, &QThread::quit);
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
     thread->start();
+
+    updateInprogressIndicator();
 }
 
 void DocumentWindow::componentPreviewImageDecorationsReady()
@@ -1280,6 +1288,8 @@ void DocumentWindow::componentPreviewImageDecorationsReady()
     
     if (m_isComponentPreviewImageDecorationsObsolete)
         decorateComponentPreviewImages();
+    else
+        updateInprogressIndicator();
 }
 
 ModelWidget *DocumentWindow::modelWidget()
@@ -1394,4 +1404,9 @@ void DocumentWindow::updateRecentFileActions()
 QString DocumentWindow::strippedName(const QString &fullFileName)
 {
     return QFileInfo(fullFileName).fileName();
+}
+
+bool DocumentWindow::isWorking()
+{
+    return nullptr == m_inprogressIndicator || m_inprogressIndicator->isSpinning();
 }

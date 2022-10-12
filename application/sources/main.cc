@@ -4,6 +4,7 @@
 #include <iostream>
 #include <cstdio>
 #include "document_window.h"
+#include "document.h"
 #include "theme.h"
 #include "version.h"
 
@@ -25,7 +26,81 @@ int main(int argc, char *argv[])
     //freopen("dust3d.log", "w", stdout);
     //setvbuf(stdout, 0, _IONBF, 0);
     
-    DocumentWindow::createDocumentWindow();
+    DocumentWindow *firstWindow = DocumentWindow::createDocumentWindow();
+
+    QStringList openFileList;
+    QStringList waitingExportList;
+    for (int i = 1; i < argc; ++i) {
+        if ('-' == argv[i][0]) {
+            if (0 == strcmp(argv[i], "-output") ||
+                    0 == strcmp(argv[i], "-o")) {
+                ++i;
+                if (i < argc)
+                    waitingExportList.append(argv[i]);
+                continue;
+            }
+            qDebug() << "Unknown option:" << argv[i];
+            continue;
+        }
+        QString arg = argv[i];
+        if (arg.endsWith(".ds3")) {
+            openFileList.append(arg);
+            continue;
+        }
+    }
+    
+    int finishedExportFileNum = 0;
+    int totalExportFileNum = 0;
+    int succeedExportNum = 0;
+    int exitCode = -1;
+    std::vector<DocumentWindow *> windowList;
+    auto checkToSafelyExit = [&]() {
+        if (-1 == exitCode)
+            return;
+        for (int i = 0; i < openFileList.size(); ++i) {
+            if (windowList[i]->isWorking())
+                return;
+        }
+        app.exit(exitCode);
+    };
+    if (!openFileList.empty()) {
+        windowList.push_back(firstWindow);
+        for (int i = 1; i < openFileList.size(); ++i) {
+            windowList.push_back(DocumentWindow::createDocumentWindow());
+        }
+        if (!waitingExportList.empty() &&
+                openFileList.size() == 1) {
+            totalExportFileNum = openFileList.size() * waitingExportList.size();
+            for (int i = 0; i < openFileList.size(); ++i) {
+                QObject::connect(windowList[i], &DocumentWindow::workingStatusChanged, &app, checkToSafelyExit);
+            }
+            for (int i = 0; i < openFileList.size(); ++i) {
+                QObject::connect(windowList[i], &DocumentWindow::waitingExportFinished, &app, [&](const QString &filename, bool isSuccessful) {
+                    qDebug() << "Export to" << filename << (isSuccessful ? "isSuccessful" : "failed");
+                    ++finishedExportFileNum;
+                    if (isSuccessful)
+                        ++succeedExportNum;
+                    if (finishedExportFileNum == totalExportFileNum) {
+                        if (succeedExportNum == totalExportFileNum) {
+                            exitCode = 0;
+                            checkToSafelyExit();
+                            return;
+                        }
+                        exitCode = 1;
+                        checkToSafelyExit();
+                        return;
+                    }
+                });
+            }
+            for (int i = 0; i < openFileList.size(); ++i) {
+                QObject::connect(windowList[i]->document(), &Document::exportReady, windowList[i], &DocumentWindow::checkExportWaitingList);
+                windowList[i]->setExportWaitingList(waitingExportList);
+            }
+        }
+        for (int i = 0; i < openFileList.size(); ++i) {
+            windowList[i]->openPathAs(openFileList[i], openFileList[i]);
+        }
+    }
     
     return app.exec();
 }
