@@ -43,6 +43,7 @@ public:
     static void initAwsome();
     static void initToolButton(QPushButton *button);
     static void initCheckbox(QCheckBox *checkbox);
+    static void initIconButton(QPushButton *button);
 };
 
 #endif

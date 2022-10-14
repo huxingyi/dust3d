@@ -5,6 +5,7 @@
 #include <QWidget>
 
 class Document;
+class SkeletonPart;
 
 class ComponentPropertyWidget: public QWidget
 {
@@ -13,6 +14,10 @@ signals:
     void beginColorPicking();
     void endColorPicking();
     void setPartColorState(const dust3d::Uuid &partId, bool hasColor, const QColor &color);
+    void setPartDeformThickness(const dust3d::Uuid &partId, float thickness);
+    void setPartDeformWidth(const dust3d::Uuid &partId, float width);
+    void setPartDeformUnified(const dust3d::Uuid &partId, bool unified);
+    void setPartCutRotation(const dust3d::Uuid &partId, float cutRotation);
     void groupOperationAdded();
 public:
     ComponentPropertyWidget(Document *document, 
@@ -24,6 +29,8 @@ private:
     Document *m_document = nullptr;
     std::vector<dust3d::Uuid> m_componentIds;
     std::vector<dust3d::Uuid> m_partIds;
+    dust3d::Uuid m_partId;
+    const SkeletonPart *m_part = nullptr;
     QColor m_color;
     QColor lastColor();
     void preparePartIds();

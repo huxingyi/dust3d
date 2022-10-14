@@ -94,8 +94,8 @@ std::vector<Vector3> TubeMeshBuilder::buildCutFaceVertices(const Vector3 &origin
     const Vector3 &forwardDirection)
 {
     std::vector<Vector3> cutFaceVertices(m_buildParameters.cutFace.size());
-    Vector3 u = m_generatedBaseNormal;
-    Vector3 v = Vector3::crossProduct(forwardDirection, m_generatedBaseNormal).normalized();
+    Vector3 u = m_generatedBaseNormal.rotated(-forwardDirection, m_buildParameters.baseNormalRotation);
+    Vector3 v = Vector3::crossProduct(forwardDirection, u).normalized();
     auto uFactor = u * radius;
     auto vFactor = v * radius;
     for (size_t i = 0; i < m_buildParameters.cutFace.size(); ++i) {

@@ -158,3 +158,8 @@ void Theme::initCheckbox(QCheckBox *checkbox)
     palette.setColor(QPalette::Background, Theme::white);
     checkbox->setPalette(palette);
 }
+
+void Theme::initIconButton(QPushButton *button)
+{
+    button->setFixedSize(Theme::toolIconSize, Theme::toolIconSize);
+}

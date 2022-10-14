@@ -37,7 +37,10 @@ public:
     struct BuildParameters
     {
         std::vector<Vector2> cutFace;
-        double baseNormalRotation;
+        double deformThickness = 1.0;
+        double deformWidth = 1.0;
+        bool deformUnified = false;
+        double baseNormalRotation = 0.0;
     };
 
     TubeMeshBuilder(const BuildParameters &buildParameters, std::vector<MeshNode> &&nodes, bool isCircle);

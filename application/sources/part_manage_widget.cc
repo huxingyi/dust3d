@@ -22,7 +22,7 @@ PartManageWidget::PartManageWidget(Document *document, QWidget *parent):
 
     auto createButton = [](QChar icon, const QString &title) {
         QPushButton *button = new QPushButton(icon);
-        button->setFixedSize(Theme::toolIconSize, Theme::toolIconSize);
+        Theme::initIconButton(button);
         button->setToolTip(title);
         return button;
     };

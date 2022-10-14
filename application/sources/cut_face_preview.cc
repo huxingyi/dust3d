@@ -29,7 +29,7 @@ QImage *buildCutFaceTemplatePreviewImage(const std::vector<dust3d::Vector2> &cut
     
     const float scale = 0.7f;
     QPolygon polygon;
-    for (int i = 0; i <= cutTemplate.size(); ++i) {
+    for (size_t i = 0; i <= cutTemplate.size(); ++i) {
         const auto &it = cutTemplate[i % cutTemplate.size()];
         polygon.append(QPoint((it.x() * scale + 1.0) * 0.5 * Theme::partPreviewImageSize, 
             (it.y() * scale + 1.0) * 0.5 * Theme::partPreviewImageSize));
