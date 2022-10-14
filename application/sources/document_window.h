@@ -91,6 +91,7 @@ public slots:
     void updateInprogressIndicator();
     void openRecentFile();
     void updateRecentFileActions();
+    void toggleRenderColor();
 private:
     void setCurrentFilename(const QString &filename);
     void updateTitle();

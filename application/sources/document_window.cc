@@ -420,20 +420,7 @@ DocumentWindow::DocumentWindow()
     m_viewMenu->addAction(m_toggleRotationAction);
     
     m_toggleColorAction = new QAction(tr("Toggle Color"), this);
-    connect(m_toggleColorAction, &QAction::triggered, [&]() {
-        m_modelRemoveColor = !m_modelRemoveColor;
-        ModelMesh *mesh = nullptr;
-        if (m_document->isMeshGenerating() ||
-                m_document->isPostProcessing() ||
-                m_document->isTextureGenerating()) {
-            mesh = m_document->takeResultMesh();
-        } else {
-            mesh = m_document->takeResultTextureMesh();
-        }
-        if (m_modelRemoveColor && mesh)
-            mesh->removeColor();
-        m_modelRenderWidget->updateMesh(mesh);
-    });
+    connect(m_toggleColorAction, &QAction::triggered, this, &DocumentWindow::toggleRenderColor);
     m_viewMenu->addAction(m_toggleColorAction);
     
     m_windowMenu = menuBar()->addMenu(tr("&Window"));
@@ -1409,4 +1396,20 @@ QString DocumentWindow::strippedName(const QString &fullFileName)
 bool DocumentWindow::isWorking()
 {
     return nullptr == m_inprogressIndicator || m_inprogressIndicator->isSpinning();
+}
+
+void DocumentWindow::toggleRenderColor()
+{
+    m_modelRemoveColor = !m_modelRemoveColor;
+    ModelMesh *mesh = nullptr;
+    if (m_document->isMeshGenerating() ||
+            m_document->isPostProcessing() ||
+            m_document->isTextureGenerating()) {
+        mesh = m_document->takeResultMesh();
+    } else {
+        mesh = m_document->takeResultTextureMesh();
+    }
+    if (m_modelRemoveColor && mesh)
+        mesh->removeColor();
+    m_modelRenderWidget->updateMesh(mesh);
 }

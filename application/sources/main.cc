@@ -3,6 +3,7 @@
 #include <QDebug>
 #include <iostream>
 #include <cstdio>
+#include <dust3d/base/string.h>
 #include "document_window.h"
 #include "document.h"
 #include "theme.h"
@@ -30,6 +31,7 @@ int main(int argc, char *argv[])
 
     QStringList openFileList;
     QStringList waitingExportList;
+    bool toggleColor = false;
     for (int i = 1; i < argc; ++i) {
         if ('-' == argv[i][0]) {
             if (0 == strcmp(argv[i], "-output") ||
@@ -37,6 +39,11 @@ int main(int argc, char *argv[])
                 ++i;
                 if (i < argc)
                     waitingExportList.append(argv[i]);
+                continue;
+            } else if (0 == strcmp(argv[i], "-toggle-color")) {
+                ++i;
+                if (i < argc)
+                    toggleColor = dust3d::String::isTrue(argv[i]);
                 continue;
             }
             qDebug() << "Unknown option:" << argv[i];
@@ -67,6 +74,10 @@ int main(int argc, char *argv[])
         windowList.push_back(firstWindow);
         for (int i = 1; i < openFileList.size(); ++i) {
             windowList.push_back(DocumentWindow::createDocumentWindow());
+        }
+        if (toggleColor) {
+            for (auto &it: windowList)
+                it->toggleRenderColor();
         }
         if (!waitingExportList.empty() &&
                 openFileList.size() == 1) {
