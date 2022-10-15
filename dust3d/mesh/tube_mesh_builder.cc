@@ -96,8 +96,16 @@ std::vector<Vector3> TubeMeshBuilder::buildCutFaceVertices(const Vector3 &origin
     std::vector<Vector3> cutFaceVertices(m_buildParameters.cutFace.size());
     Vector3 u = m_generatedBaseNormal.rotated(-forwardDirection, m_buildParameters.baseNormalRotation);
     Vector3 v = Vector3::crossProduct(forwardDirection, u).normalized();
-    auto uFactor = u * radius;
-    auto vFactor = v * radius;
+    auto uFactor = u * radius * m_buildParameters.deformWidth;
+    auto vFactor = v * radius * m_buildParameters.deformThickness;
+    if (m_buildParameters.deformUnified) {
+        if (!Math::isEqual(m_buildParameters.deformWidth, 1.0)) {
+            uFactor *= m_maxNodeRadius / radius;
+        }
+        if (!Math::isEqual(m_buildParameters.deformThickness, 1.0)) {
+            vFactor *= m_maxNodeRadius / radius;
+        }
+    }
     for (size_t i = 0; i < m_buildParameters.cutFace.size(); ++i) {
         const auto &t = m_buildParameters.cutFace[i];
         cutFaceVertices[i] = origin + (uFactor * t.x() + vFactor * t.y());
@@ -113,6 +121,9 @@ void TubeMeshBuilder::build()
         return;
 
     buildNodePositionAndDirections();
+
+    for (const auto &it: m_nodes)
+        m_maxNodeRadius = std::max(m_maxNodeRadius, it.radius);
 
     m_generatedBaseNormal = m_isCircle ? 
         BaseNormal::calculateCircleBaseNormal(m_nodePositions) : 

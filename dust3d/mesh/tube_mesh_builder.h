@@ -57,6 +57,7 @@ private:
     std::vector<std::vector<size_t>> m_generatedFaces;
     Vector3 m_generatedBaseNormal;
     bool m_isCircle = false;
+    double m_maxNodeRadius = 0.0;
     void preprocessNodes();
     void buildNodePositionAndDirections();
     std::vector<Vector3> buildCutFaceVertices(const Vector3 &origin,
