@@ -144,10 +144,25 @@ void TubeMeshBuilder::build()
         size_t i = (j + cutFaceIndices.size() - 1) % cutFaceIndices.size();
         const auto &cutFaceI = cutFaceIndices[i];
         const auto &cutFaceJ = cutFaceIndices[j];
-        for (size_t m = 0; m < cutFaceI.size(); ++m) {
+        size_t halfSize = cutFaceI.size() / 2;
+        for (size_t m = 0; m < halfSize; ++m) {
             size_t n = (m + 1) % cutFaceI.size();
+            // KEEP QUAD ORDER TO MAKE THE TRIANLES NO CROSSING OVER ON EACH SIDE (1)
+            // The following quad vertices should follow the order strictly,
+            // This will group two points from I, and one point from J as a triangle in the later quad to triangles processing.
+            // If not follow this order, the front triangle and back triangle maybe cross over because of not be parallel.
             m_generatedFaces.emplace_back(std::vector<size_t> {
                 cutFaceI[m], cutFaceI[n], cutFaceJ[n], cutFaceJ[m]
+            });
+        }
+        for (size_t m = halfSize; m < cutFaceI.size(); ++m) {
+            size_t n = (m + 1) % cutFaceI.size();
+            // KEEP QUAD ORDER TO MAKE THE TRIANLES NO CROSSING OVER ON EACH SIDE (2)
+            // The following quad vertices should follow the order strictly,
+            // This will group two points from I, and one point from J as a triangle in the later quad to triangles processing.
+            // If not follow this order, the front triangle and back triangle maybe cross over because of not be parallel.
+            m_generatedFaces.emplace_back(std::vector<size_t> {
+                cutFaceJ[m], cutFaceI[m], cutFaceI[n], cutFaceJ[n]
             });
         }
     }
