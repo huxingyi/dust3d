@@ -62,12 +62,15 @@ void TubeMeshBuilder::buildNodePositionAndDirections()
 
     std::vector<Vector3> rawDirections;
     rawDirections.resize(m_nodePositions.size());
+    m_nodeForwardDistances.resize(m_nodePositions.size());
     m_nodeForwardDirections.resize(m_nodePositions.size());
     if (m_nodePositions.size() >= 2) {
         if (m_isCircle) {
             for (size_t i = 0; i < m_nodePositions.size(); ++i) {
                 size_t j = (i + 1) % m_nodePositions.size();
-                rawDirections[i] = (m_nodePositions[j] - m_nodePositions[i]).normalized();
+                rawDirections[i] = (m_nodePositions[j] - m_nodePositions[i]);
+                m_nodeForwardDistances[i] = rawDirections[i].length();
+                rawDirections[i].normalize();
             }
             for (size_t i = 0; i < m_nodePositions.size(); ++i) {
                 size_t j = (i + 1) % m_nodePositions.size();
@@ -76,13 +79,16 @@ void TubeMeshBuilder::buildNodePositionAndDirections()
         } else {
             for (size_t j = 1; j < m_nodePositions.size(); ++j) {
                 size_t i = j - 1;
-                rawDirections[i] = (m_nodePositions[j] - m_nodePositions[i]).normalized();
+                rawDirections[i] = (m_nodePositions[j] - m_nodePositions[i]);
+                m_nodeForwardDistances[i] = rawDirections[i].length();
+                rawDirections[i].normalize();
             }
             rawDirections[m_nodeForwardDirections.size() - 1] = rawDirections[m_nodeForwardDirections.size() - 2];
             m_nodeForwardDirections.front() = rawDirections.front();
             for (size_t j = 1; j + 1 < m_nodePositions.size(); ++j) {
                 size_t i = j - 1;
-                m_nodeForwardDirections[j] = (rawDirections[i] + rawDirections[j]).normalized();
+                m_nodeForwardDirections[j] = (rawDirections[i] * m_nodeForwardDistances[j] + 
+                    rawDirections[j] * m_nodeForwardDistances[i]).normalized();
             }
             m_nodeForwardDirections.back() = rawDirections.back();
         }

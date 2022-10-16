@@ -53,6 +53,7 @@ private:
     std::vector<MeshNode> m_nodes;
     std::vector<Vector3> m_nodePositions;
     std::vector<Vector3> m_nodeForwardDirections;
+    std::vector<double> m_nodeForwardDistances;
     std::vector<Vector3> m_generatedVertices;
     std::vector<std::vector<size_t>> m_generatedFaces;
     Vector3 m_generatedBaseNormal;
