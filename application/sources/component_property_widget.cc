@@ -3,6 +3,7 @@
 #include <QHBoxLayout>
 #include <QPushButton>
 #include <QColorDialog>
+#include <QGroupBox>
 #include "component_property_widget.h"
 #include "float_number_widget.h"
 #include "document.h"
@@ -32,9 +33,8 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document *document,
     colorLayout->addStretch();
     colorLayout->setSizeConstraint(QLayout::SetFixedSize);
 
-    QVBoxLayout *deformLayout = nullptr;
+    QGroupBox *deformGroupBox = nullptr;
     if (nullptr != m_part) {
-
         FloatNumberWidget *thicknessWidget = new FloatNumberWidget;
         thicknessWidget->setItemName(tr("Thickness"));
         thicknessWidget->setRange(0, 2);
@@ -71,7 +71,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document *document,
             emit groupOperationAdded();
         });
         
-        deformLayout = new QVBoxLayout;
+        QVBoxLayout *deformLayout = new QVBoxLayout;
         
         QHBoxLayout *thicknessLayout = new QHBoxLayout;
         QHBoxLayout *widthLayout = new QHBoxLayout;
@@ -97,9 +97,12 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document *document,
         deformLayout->addLayout(thicknessLayout);
         deformLayout->addLayout(widthLayout);
         deformLayout->addLayout(deformUnifyLayout);
+
+        deformGroupBox = new QGroupBox(tr("Deform"));
+        deformGroupBox->setLayout(deformLayout);
     }
 
-    QHBoxLayout *rotationLayout = nullptr;
+    QGroupBox *cutFaceGroupBox = nullptr;
     if (nullptr != m_part) {
         FloatNumberWidget *rotationWidget = new FloatNumberWidget;
         rotationWidget->setItemName(tr("Rotation"));
@@ -134,20 +137,52 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document *document,
             rotationWidget->setValue(0.5);
             emit groupOperationAdded();
         });
-        
-        rotationLayout = new QHBoxLayout;
+
+        QHBoxLayout *rotationLayout = new QHBoxLayout;
         rotationLayout->addWidget(rotationEraser);
         rotationLayout->addWidget(rotationWidget);
         rotationLayout->addWidget(rotationMinus5Button);
         rotationLayout->addWidget(rotation5Button);
+
+        QCheckBox *subdivStateBox = new QCheckBox();
+        Theme::initCheckbox(subdivStateBox);
+        subdivStateBox->setText(tr("Subdivided"));
+        subdivStateBox->setChecked(m_part->subdived);
+        
+        connect(subdivStateBox, &QCheckBox::stateChanged, this, [=]() {
+            emit setPartSubdivState(m_partId, subdivStateBox->isChecked());
+            emit groupOperationAdded();
+        });
+
+        QCheckBox *chamferStateBox = new QCheckBox();
+        Theme::initCheckbox(chamferStateBox);
+        chamferStateBox->setText(tr("Chamfered"));
+        chamferStateBox->setChecked(m_part->chamfered);
+        
+        connect(chamferStateBox, &QCheckBox::stateChanged, this, [=]() {
+            emit setPartChamferState(m_partId, chamferStateBox->isChecked());
+            emit groupOperationAdded();
+        });
+
+        QHBoxLayout *optionsLayout = new QHBoxLayout;
+        optionsLayout->addStretch();
+        optionsLayout->addWidget(chamferStateBox);
+        optionsLayout->addWidget(subdivStateBox);
+
+        QVBoxLayout *cutFaceLayout = new QVBoxLayout;
+        cutFaceLayout->addLayout(rotationLayout);
+        cutFaceLayout->addLayout(optionsLayout);
+
+        cutFaceGroupBox = new QGroupBox(tr("Cut Face"));
+        cutFaceGroupBox->setLayout(cutFaceLayout);
     }
 
     QVBoxLayout *mainLayout = new QVBoxLayout;
     mainLayout->addLayout(colorLayout);
-    if (nullptr != deformLayout)
-        mainLayout->addLayout(deformLayout);
-    if (nullptr != rotationLayout)
-        mainLayout->addLayout(rotationLayout);
+    if (nullptr != deformGroupBox)
+        mainLayout->addWidget(deformGroupBox);
+    if (nullptr != cutFaceGroupBox)
+        mainLayout->addWidget(cutFaceGroupBox);
     mainLayout->setSizeConstraint(QLayout::SetFixedSize);
 
     connect(this, &ComponentPropertyWidget::setPartColorState, m_document, &Document::setPartColorState);
@@ -157,6 +192,8 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document *document,
     connect(this, &ComponentPropertyWidget::setPartDeformWidth, m_document, &Document::setPartDeformWidth);
     connect(this, &ComponentPropertyWidget::setPartDeformUnified, m_document, &Document::setPartDeformUnified);
     connect(this, &ComponentPropertyWidget::setPartCutRotation, m_document, &Document::setPartCutRotation);
+    connect(this, &ComponentPropertyWidget::setPartSubdivState, m_document, &Document::setPartSubdivState);
+    connect(this, &ComponentPropertyWidget::setPartChamferState, m_document, &Document::setPartChamferState);
     connect(this, &ComponentPropertyWidget::groupOperationAdded, m_document, &Document::saveSnapshot);
 
     setLayout(mainLayout);
