@@ -83,7 +83,7 @@ void TubeMeshBuilder::buildNodePositionAndDirections()
                 m_nodeForwardDistances[i] = rawDirections[i].length();
                 rawDirections[i].normalize();
             }
-            rawDirections[m_nodeForwardDirections.size() - 1] = rawDirections[m_nodeForwardDirections.size() - 2];
+            rawDirections[rawDirections.size() - 1] = rawDirections[rawDirections.size() - 2];
             m_nodeForwardDirections.front() = rawDirections.front();
             for (size_t j = 1; j + 1 < m_nodePositions.size(); ++j) {
                 size_t i = j - 1;
@@ -102,6 +102,7 @@ std::vector<Vector3> TubeMeshBuilder::buildCutFaceVertices(const Vector3 &origin
     std::vector<Vector3> cutFaceVertices(m_buildParameters.cutFace.size());
     Vector3 u = m_generatedBaseNormal.rotated(-forwardDirection, m_buildParameters.baseNormalRotation);
     Vector3 v = Vector3::crossProduct(forwardDirection, u).normalized();
+    u = Vector3::crossProduct(v, forwardDirection).normalized();
     auto uFactor = u * radius * m_buildParameters.deformWidth;
     auto vFactor = v * radius * m_buildParameters.deformThickness;
     if (m_buildParameters.deformUnified) {
