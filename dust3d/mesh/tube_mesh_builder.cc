@@ -72,8 +72,40 @@ void TubeMeshBuilder::applyRoundEnd()
     }
 }
 
+void TubeMeshBuilder::applyInterpolation()
+{
+    if (!m_buildParameters.interpolationEnabled)
+        return;
+
+    if (m_nodes.size() <= 1)
+        return;
+
+    std::vector<MeshNode> interpolatedNodes;
+    interpolatedNodes.push_back(m_nodes.front());
+    for (size_t j = 1; j < m_nodes.size(); ++j) {
+        size_t i = j - 1;
+        double distance = (m_nodes[i].origin - m_nodes[j].origin).length();
+        double radiusDistance = m_nodes[i].radius + m_nodes[j].radius;
+        if (radiusDistance <= distance) {
+            double targetDistance = radiusDistance;
+            size_t segments = distance / targetDistance;
+            for (size_t k = 1; k < segments; ++k) {
+                double ratio = (double)k / segments;
+                MeshNode newNode;
+                newNode.origin = m_nodes[i].origin * (1.0 - ratio) + m_nodes[j].origin * ratio;
+                newNode.radius = m_nodes[i].radius * (1.0 - ratio) + m_nodes[j].radius * ratio;
+                interpolatedNodes.push_back(newNode);
+            }
+        }
+        interpolatedNodes.push_back(m_nodes[j]);
+    }
+
+    m_nodes = std::move(interpolatedNodes);
+}
+
 void TubeMeshBuilder::preprocessNodes()
 {
+    applyInterpolation();
     applyRoundEnd();
 
     // TODO: Interpolate...

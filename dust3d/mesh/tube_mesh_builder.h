@@ -43,6 +43,7 @@ public:
         double baseNormalRotation = 0.0;
         bool frontEndRounded = false;
         bool backEndRounded = false;
+        bool interpolationEnabled = true;
     };
 
     TubeMeshBuilder(const BuildParameters &buildParameters, std::vector<MeshNode> &&nodes, bool isCircle);
@@ -67,6 +68,7 @@ private:
         double radius,
         const Vector3 &forwardDirection);
     void applyRoundEnd();
+    void applyInterpolation();
 };
 
 };
