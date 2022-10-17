@@ -38,6 +38,7 @@
 #include <dust3d/mesh/smooth_normal.h>
 #include <dust3d/mesh/resolve_triangle_source_node.h>
 #include <dust3d/mesh/tube_mesh_builder.h>
+#include <dust3d/mesh/section_preview_mesh_builder.h>
 
 namespace dust3d
 {
@@ -658,6 +659,11 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combinePartMesh(const std::st
     if (!fetchPartOrderedNodes(searchPartIdString, &meshNodes, &isCircle))
         return nullptr;
 
+    // TODO: Generate section preview mesh
+    // ... ...
+
+    std::unique_ptr<TubeMeshBuilder> tubeMeshBuilder;
+
     TubeMeshBuilder::BuildParameters buildParameters;
     buildParameters.deformThickness = deformThickness;
     buildParameters.deformWidth = deformWidth;
@@ -665,7 +671,7 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combinePartMesh(const std::st
     buildParameters.baseNormalRotation = cutRotation * Math::Pi;
     buildParameters.cutFace = cutTemplate;
     buildParameters.frontEndRounded = buildParameters.backEndRounded = rounded;
-    auto tubeMeshBuilder = std::make_unique<TubeMeshBuilder>(buildParameters, std::move(meshNodes), isCircle);
+    tubeMeshBuilder = std::make_unique<TubeMeshBuilder>(buildParameters, std::move(meshNodes), isCircle);
     tubeMeshBuilder->build();
 
     auto &partCache = m_cacheContext->parts[partIdString];
@@ -704,9 +710,9 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combinePartMesh(const std::st
         mesh.reset();
     }
 
-    if (target != PartTarget::Model) {
-        mesh.reset();
-    }
+    //if (target != PartTarget::Model) {
+    //    mesh.reset();
+    //}
     
     if (hasMeshError && target == PartTarget::Model) {
         *hasError = true;
