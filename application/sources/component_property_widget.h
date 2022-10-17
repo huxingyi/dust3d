@@ -19,6 +19,7 @@ signals:
     void setPartDeformUnified(const dust3d::Uuid &partId, bool unified);
     void setPartSubdivState(const dust3d::Uuid &partId, bool subdived);
     void setPartChamferState(const dust3d::Uuid &partId, bool chamfered);
+    void setPartRoundState(const dust3d::Uuid &partId, bool rounded);
     void setPartCutRotation(const dust3d::Uuid &partId, float cutRotation);
     void groupOperationAdded();
 public:

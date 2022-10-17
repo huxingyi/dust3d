@@ -664,6 +664,7 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combinePartMesh(const std::st
     buildParameters.deformUnified = deformUnified;
     buildParameters.baseNormalRotation = cutRotation * Math::Pi;
     buildParameters.cutFace = cutTemplate;
+    buildParameters.frontEndRounded = buildParameters.backEndRounded = rounded;
     auto tubeMeshBuilder = std::make_unique<TubeMeshBuilder>(buildParameters, std::move(meshNodes), isCircle);
     tubeMeshBuilder->build();
 

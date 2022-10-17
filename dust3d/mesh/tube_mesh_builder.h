@@ -41,6 +41,8 @@ public:
         double deformWidth = 1.0;
         bool deformUnified = false;
         double baseNormalRotation = 0.0;
+        bool frontEndRounded = false;
+        bool backEndRounded = false;
     };
 
     TubeMeshBuilder(const BuildParameters &buildParameters, std::vector<MeshNode> &&nodes, bool isCircle);
@@ -64,6 +66,7 @@ private:
     std::vector<Vector3> buildCutFaceVertices(const Vector3 &origin,
         double radius,
         const Vector3 &forwardDirection);
+    void applyRoundEnd();
 };
 
 };

@@ -164,8 +164,19 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document *document,
             emit groupOperationAdded();
         });
 
+        QCheckBox *roundEndStateBox = new QCheckBox();
+        Theme::initCheckbox(roundEndStateBox);
+        roundEndStateBox->setText(tr("Round end"));
+        roundEndStateBox->setChecked(m_part->rounded);
+        
+        connect(roundEndStateBox, &QCheckBox::stateChanged, this, [=]() {
+            emit setPartRoundState(m_partId, roundEndStateBox->isChecked());
+            emit groupOperationAdded();
+        });
+
         QHBoxLayout *optionsLayout = new QHBoxLayout;
         optionsLayout->addStretch();
+        optionsLayout->addWidget(roundEndStateBox);
         optionsLayout->addWidget(chamferStateBox);
         optionsLayout->addWidget(subdivStateBox);
 
@@ -194,6 +205,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document *document,
     connect(this, &ComponentPropertyWidget::setPartCutRotation, m_document, &Document::setPartCutRotation);
     connect(this, &ComponentPropertyWidget::setPartSubdivState, m_document, &Document::setPartSubdivState);
     connect(this, &ComponentPropertyWidget::setPartChamferState, m_document, &Document::setPartChamferState);
+    connect(this, &ComponentPropertyWidget::setPartRoundState, m_document, &Document::setPartRoundState);
     connect(this, &ComponentPropertyWidget::groupOperationAdded, m_document, &Document::saveSnapshot);
 
     setLayout(mainLayout);

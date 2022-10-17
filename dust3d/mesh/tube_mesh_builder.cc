@@ -49,8 +49,33 @@ const std::vector<std::vector<size_t>> &TubeMeshBuilder::generatedFaces()
     return m_generatedFaces;
 }
 
+void TubeMeshBuilder::applyRoundEnd()
+{
+    if (m_isCircle)
+        return;
+
+    if (m_nodes.size() <= 1)
+        return;
+    
+    if (m_buildParameters.frontEndRounded) {
+        auto newNode = m_nodes.front();
+        newNode.radius *= 0.5;
+        newNode.origin += (m_nodes[0].origin - m_nodes[1].origin).normalized() * newNode.radius;
+        m_nodes.insert(m_nodes.begin(), newNode);
+    }
+
+    if (m_buildParameters.backEndRounded) {
+        auto newNode = m_nodes.back();
+        newNode.radius *= 0.5;
+        newNode.origin += (m_nodes[m_nodes.size() - 1].origin - m_nodes[m_nodes.size() - 2].origin).normalized() * newNode.radius;
+        m_nodes.emplace_back(newNode);
+    }
+}
+
 void TubeMeshBuilder::preprocessNodes()
 {
+    applyRoundEnd();
+
     // TODO: Interpolate...
 }
 
