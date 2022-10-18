@@ -860,7 +860,6 @@ void Document::generateMesh()
     m_meshGenerator = new MeshGenerator(snapshot);
     m_meshGenerator->setId(m_nextMeshGenerationId++);
     m_meshGenerator->setDefaultPartColor(dust3d::Color::createWhite());
-    m_meshGenerator->setInterpolationEnabled(true);
     if (nullptr == m_generatedCacheContext)
         m_generatedCacheContext = new MeshGenerator::GeneratedCacheContext;
     m_meshGenerator->setGeneratedCacheContext((dust3d::MeshGenerator::GeneratedCacheContext *)m_generatedCacheContext);

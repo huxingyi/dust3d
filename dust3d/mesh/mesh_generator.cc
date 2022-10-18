@@ -571,9 +571,7 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineStitchingMesh(const st
 }
 
 std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combinePartMesh(const std::string &partIdString, 
-    bool *hasError, 
-    bool *retryable, 
-    bool addIntermediateNodes)
+    bool *hasError)
 {
     auto findPart = m_snapshot->parts.find(partIdString);
     if (findPart == m_snapshot->parts.end()) {
@@ -582,8 +580,6 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combinePartMesh(const std::st
     
     Uuid partId = Uuid(partIdString);
     auto &part = findPart->second;
-    
-    *retryable = true;
 
     bool isDisabled = String::isTrue(String::valueOrEmpty(part, "disabled"));
     std::string __mirroredByPartId = String::valueOrEmpty(part, "__mirroredByPartId");
@@ -659,21 +655,6 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combinePartMesh(const std::st
     if (!fetchPartOrderedNodes(searchPartIdString, &meshNodes, &isCircle))
         return nullptr;
 
-    // TODO: Generate section preview mesh
-    // ... ...
-
-    std::unique_ptr<TubeMeshBuilder> tubeMeshBuilder;
-
-    TubeMeshBuilder::BuildParameters buildParameters;
-    buildParameters.deformThickness = deformThickness;
-    buildParameters.deformWidth = deformWidth;
-    buildParameters.deformUnified = deformUnified;
-    buildParameters.baseNormalRotation = cutRotation * Math::Pi;
-    buildParameters.cutFace = cutTemplate;
-    buildParameters.frontEndRounded = buildParameters.backEndRounded = rounded;
-    tubeMeshBuilder = std::make_unique<TubeMeshBuilder>(buildParameters, std::move(meshNodes), isCircle);
-    tubeMeshBuilder->build();
-
     auto &partCache = m_cacheContext->parts[partIdString];
     partCache.objectNodes.clear();
     partCache.objectEdges.clear();
@@ -685,13 +666,32 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combinePartMesh(const std::st
     partCache.roughness = roughness;
     partCache.isSuccessful = false;
     partCache.joined = (target == PartTarget::Model && !isDisabled);
-    partCache.vertices = tubeMeshBuilder->generatedVertices();
-    partCache.faces = tubeMeshBuilder->generatedFaces();
-    if (!__mirrorFromPartId.empty()) {
-        for (auto &it: partCache.vertices)
-            it.setX(-it.x());
-        for (auto &it: partCache.faces)
-            std::reverse(it.begin(), it.end());
+
+    if (PartTarget::Model == target) {
+        std::unique_ptr<TubeMeshBuilder> tubeMeshBuilder;
+        TubeMeshBuilder::BuildParameters buildParameters;
+        buildParameters.deformThickness = deformThickness;
+        buildParameters.deformWidth = deformWidth;
+        buildParameters.deformUnified = deformUnified;
+        buildParameters.baseNormalRotation = cutRotation * Math::Pi;
+        buildParameters.cutFace = cutTemplate;
+        buildParameters.frontEndRounded = buildParameters.backEndRounded = rounded;
+        tubeMeshBuilder = std::make_unique<TubeMeshBuilder>(buildParameters, std::move(meshNodes), isCircle);
+        tubeMeshBuilder->build();
+        partCache.vertices = tubeMeshBuilder->generatedVertices();
+        partCache.faces = tubeMeshBuilder->generatedFaces();
+        if (!__mirrorFromPartId.empty()) {
+            for (auto &it: partCache.vertices)
+                it.setX(-it.x());
+            for (auto &it: partCache.faces)
+                std::reverse(it.begin(), it.end());
+        }
+    } else if (PartTarget::CutFace == target) {
+        std::unique_ptr<SectionPreviewMeshBuilder> sectionPreviewMeshBuilder;
+        sectionPreviewMeshBuilder = std::make_unique<SectionPreviewMeshBuilder>(cutTemplate);
+        sectionPreviewMeshBuilder->build();
+        partCache.vertices = sectionPreviewMeshBuilder->resultVertices();
+        partCache.faces = sectionPreviewMeshBuilder->resultTriangles();
     }
 
     bool hasMeshError = false;
@@ -709,16 +709,10 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combinePartMesh(const std::st
     if (mesh && mesh->isNull()) {
         mesh.reset();
     }
-
-    //if (target != PartTarget::Model) {
-    //    mesh.reset();
-    //}
     
     if (hasMeshError && target == PartTarget::Model) {
         *hasError = true;
     }
-
-    // TODO:
 
     return mesh;
 }
@@ -1150,17 +1144,9 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineComponentMesh(const st
     if ("partId" == linkDataType) {
         std::string partIdString = String::valueOrEmpty(*component, "linkData");
         bool hasError = false;
-        bool retryable = true;
-        mesh = combinePartMesh(partIdString, &hasError, &retryable, m_interpolationEnabled);
+        mesh = combinePartMesh(partIdString, &hasError);
         if (hasError) {
-            mesh.reset();
-            if (retryable && m_interpolationEnabled) {
-                hasError = false;
-                mesh = combinePartMesh(partIdString, &hasError, &retryable, false);
-            }
-            if (hasError) {
-                m_isSuccessful = false;
-            }
+            m_isSuccessful = false;
         }
         const auto &partCache = m_cacheContext->parts[partIdString];
         if (partCache.joined) {
@@ -1406,11 +1392,6 @@ void MeshGenerator::setGeneratedCacheContext(GeneratedCacheContext *cacheContext
 void MeshGenerator::setSmoothShadingThresholdAngleDegrees(float degrees)
 {
     m_smoothShadingThresholdAngleDegrees = degrees;
-}
-
-void MeshGenerator::setInterpolationEnabled(bool interpolationEnabled)
-{
-    m_interpolationEnabled = interpolationEnabled;
 }
 
 void MeshGenerator::setWeldEnabled(bool enabled)

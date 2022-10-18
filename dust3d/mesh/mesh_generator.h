@@ -95,7 +95,6 @@ public:
     virtual void generate();
     void setGeneratedCacheContext(GeneratedCacheContext *cacheContext);
     void setSmoothShadingThresholdAngleDegrees(float degrees);
-    void setInterpolationEnabled(bool interpolationEnabled);
     void setDefaultPartColor(const Color &color);
     void setId(uint64_t id);
     void setWeldEnabled(bool enabled);
@@ -123,7 +122,6 @@ private:
     float m_smoothShadingThresholdAngleDegrees = 60;
     uint64_t m_id = 0;
     bool m_weldEnabled = true;
-    bool m_interpolationEnabled = true;
     
     void collectParts();
     void collectIncombinableMesh(const MeshCombiner::Mesh *mesh, const GeneratedComponent &componentCache);
@@ -132,9 +130,7 @@ private:
     bool checkIsPartDependencyDirty(const std::string &partIdString);
     void checkDirtyFlags();
     std::unique_ptr<MeshCombiner::Mesh> combinePartMesh(const std::string &partIdString, 
-        bool *hasError, 
-        bool *retryable, 
-        bool addIntermediateNodes=true);
+        bool *hasError);
     std::unique_ptr<MeshCombiner::Mesh> combineComponentMesh(const std::string &componentIdString, CombineMode *combineMode);
     void makeXmirror(const std::vector<Vector3> &sourceVertices, const std::vector<std::vector<size_t>> &sourceFaces,
         std::vector<Vector3> *destVertices, std::vector<std::vector<size_t>> *destFaces);
