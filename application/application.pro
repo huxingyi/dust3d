@@ -50,13 +50,13 @@ CONFIG(release, debug|release) {
 
 PLATFORM = "Unknown"
 macx {
-	PLATFORM = "MacOS"
+    PLATFORM = "MacOS"
 }
 win32 {
-	PLATFORM = "Win32"
+    PLATFORM = "Win32"
 }
 unix:!macx {
-	PLATFORM = "Linux"
+    PLATFORM = "Linux"
 }
 
 DEFINES += "PROJECT_DEFINED_APP_COMPANY=\"\\\"$$QMAKE_TARGET_COMPANY\\\"\""
@@ -74,14 +74,14 @@ OBJECTS_DIR = obj
 MOC_DIR = moc
 
 win32 {
-	RC_FILE = $${SOURCE_ROOT}dust3d.rc
+    RC_FILE = $${SOURCE_ROOT}dust3d.rc
 }
 macx {
-	ICON = $${SOURCE_ROOT}dust3d.icns
+    ICON = $${SOURCE_ROOT}dust3d.icns
 
-	RESOURCE_FILES.files = $$ICON
-	RESOURCE_FILES.path = Contents/Resources
-	QMAKE_BUNDLE_DATA += RESOURCE_FILES
+    RESOURCE_FILES.files = $$ICON
+    RESOURCE_FILES.path = Contents/Resources
+    QMAKE_BUNDLE_DATA += RESOURCE_FILES
 }
 
 RESOURCES += resources.qrc
@@ -335,5 +335,5 @@ SOURCES += ../third_party/lodepng/lodepng.cpp
 
 win32 {
     LIBS += -luser32
-	LIBS += -lopengl32
+    LIBS += -lopengl32
 }

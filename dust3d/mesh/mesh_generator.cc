@@ -25,6 +25,7 @@
 #include <dust3d/base/part_target.h>
 #include <dust3d/base/snapshot_xml.h>
 #include <dust3d/base/string.h>
+#include <dust3d/mesh/box_mesh.h>
 #include <dust3d/mesh/mesh_generator.h>
 #include <dust3d/mesh/mesh_recombiner.h>
 #include <dust3d/mesh/resolve_triangle_source_node.h>
@@ -38,7 +39,6 @@
 #include <dust3d/mesh/trim_vertices.h>
 #include <dust3d/mesh/tube_mesh_builder.h>
 #include <dust3d/mesh/weld_vertices.h>
-#include <dust3d/mesh/box_mesh.h>
 #include <functional>
 
 namespace dust3d {
@@ -567,6 +567,7 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineStitchingMesh(const st
 }
 
 std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combinePartMesh(const std::string& partIdString,
+    const std::string& componentIdString,
     bool* hasError)
 {
     auto findPart = m_snapshot->parts.find(partIdString);
@@ -687,12 +688,6 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combinePartMesh(const std::st
                     std::reverse(it.begin(), it.end());
             }
         }
-    } else if (PartTarget::CutFace == target) {
-        std::unique_ptr<SectionPreviewMeshBuilder> sectionPreviewMeshBuilder;
-        sectionPreviewMeshBuilder = std::make_unique<SectionPreviewMeshBuilder>(cutTemplate);
-        sectionPreviewMeshBuilder->build();
-        partCache.vertices = sectionPreviewMeshBuilder->resultVertices();
-        partCache.faces = sectionPreviewMeshBuilder->resultTriangles();
     }
 
     bool hasMeshError = false;
@@ -701,6 +696,28 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combinePartMesh(const std::st
     mesh = std::make_unique<MeshCombiner::Mesh>(partCache.vertices, partCache.faces);
     if (mesh->isNull()) {
         hasMeshError = true;
+    }
+
+    if (PartTarget::Model == target) {
+        ComponentPreview preview;
+        if (mesh)
+            mesh->fetch(preview.vertices, preview.triangles);
+        preview.color = partCache.color;
+        preview.metalness = partCache.metalness;
+        preview.roughness = partCache.roughness;
+        addComponentPreview(componentIdString, std::move(preview));
+    } else if (PartTarget::CutFace == target) {
+        std::unique_ptr<SectionPreviewMeshBuilder> sectionPreviewMeshBuilder;
+        sectionPreviewMeshBuilder = std::make_unique<SectionPreviewMeshBuilder>(cutTemplate, partCache.color);
+        sectionPreviewMeshBuilder->build();
+        ComponentPreview preview;
+        preview.vertices = sectionPreviewMeshBuilder->resultVertices();
+        preview.triangles = sectionPreviewMeshBuilder->resultTriangles();
+        preview.vertexProperties = sectionPreviewMeshBuilder->resultVertexProperties();
+        preview.color = partCache.color;
+        preview.metalness = partCache.metalness;
+        preview.roughness = partCache.roughness;
+        addComponentPreview(componentIdString, std::move(preview));
     }
 
     if (nullptr != mesh) {
@@ -1145,7 +1162,7 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineComponentMesh(const st
     if ("partId" == linkDataType) {
         std::string partIdString = String::valueOrEmpty(*component, "linkData");
         bool hasError = false;
-        mesh = combinePartMesh(partIdString, &hasError);
+        mesh = combinePartMesh(partIdString, componentIdString, &hasError);
         if (hasError) {
             m_isSuccessful = false;
         }
@@ -1161,13 +1178,6 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineComponentMesh(const st
             for (const auto& it : partCache.objectNodeVertices)
                 componentCache.objectNodeVertices.push_back(it);
         }
-        ComponentPreview preview;
-        if (mesh)
-            mesh->fetch(preview.vertices, preview.triangles);
-        preview.color = partCache.color;
-        preview.metalness = partCache.metalness;
-        preview.roughness = partCache.roughness;
-        addComponentPreview(componentId, std::move(preview));
         if (!partCache.joined) {
             if (mesh)
                 mesh.reset();

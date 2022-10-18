@@ -124,6 +124,7 @@ private:
     bool checkIsPartDependencyDirty(const std::string& partIdString);
     void checkDirtyFlags();
     std::unique_ptr<MeshCombiner::Mesh> combinePartMesh(const std::string& partIdString,
+        const std::string& componentIdString,
         bool* hasError);
     std::unique_ptr<MeshCombiner::Mesh> combineComponentMesh(const std::string& componentIdString, CombineMode* combineMode);
     void makeXmirror(const std::vector<Vector3>& sourceVertices, const std::vector<std::vector<size_t>>& sourceFaces,

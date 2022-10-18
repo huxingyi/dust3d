@@ -23,23 +23,28 @@
 #ifndef DUST3D_MESH_SECTION_PREVIEW_MESH_BUILDER_H_
 #define DUST3D_MESH_SECTION_PREVIEW_MESH_BUILDER_H_
 
+#include <dust3d/base/color.h>
 #include <dust3d/base/vector2.h>
 #include <dust3d/base/vector3.h>
+#include <tuple>
 #include <vector>
 
 namespace dust3d {
 
 class SectionPreviewMeshBuilder {
 public:
-    SectionPreviewMeshBuilder(const std::vector<Vector2>& cutFace);
+    SectionPreviewMeshBuilder(const std::vector<Vector2>& cutFace, const Color& mainColor);
     void build();
     const std::vector<Vector3>& resultVertices();
     const std::vector<std::vector<size_t>>& resultTriangles();
+    const std::vector<std::tuple<Color, float /*metalness*/, float /*roughness*/>>& resultVertexProperties();
 
 private:
     std::vector<Vector2> m_cutFace;
     std::vector<Vector3> m_resultVertices;
+    std::vector<std::tuple<dust3d::Color, float /*metalness*/, float /*roughness*/>> m_resultVertexProperties;
     std::vector<std::vector<size_t>> m_resultTriangles;
+    Color m_mainColor;
 };
 
 }
