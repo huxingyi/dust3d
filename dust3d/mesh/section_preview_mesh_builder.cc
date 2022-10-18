@@ -58,25 +58,34 @@ void SectionPreviewMeshBuilder::build()
 
     std::tuple<dust3d::Color, float, float> frameVertexProperty = { frameColor, (float)0.0, (float)1.0 };
 
+    std::vector<Vector3> cutFaceVertices(m_cutFace.size());
+    for (size_t i = 0; i < m_cutFace.size(); ++i) {
+        cutFaceVertices[i] = Vector3(m_cutFace[i][0], m_cutFace[i][1], 0);
+    }
+
     // Cut face
     m_resultVertices.resize(m_cutFace.size());
     m_resultVertexProperties.resize(m_cutFace.size());
     for (size_t i = 0; i < m_cutFace.size(); ++i) {
-        m_resultVertices[i] = Vector3(m_cutFace[i][0], m_cutFace[i][1], 0);
+        m_resultVertices[i] = cutFaceVertices[i];
         m_resultVertexProperties[i] = cutFaceVertexProperty;
     }
     std::vector<size_t> cutFaceIndices(m_resultVertices.size());
     for (size_t i = 0; i < cutFaceIndices.size(); ++i)
         cutFaceIndices[i] = i;
-    triangulate(m_resultVertices, cutFaceIndices, &m_resultTriangles);
 
     auto cutFaceVertexCount = m_resultVertices.size();
 
+    triangulate(m_resultVertices, cutFaceIndices, &m_resultTriangles);
+
     // Frames
     RopeMesh::BuildParameters ropeParameters;
-    ropeParameters.defaultRadius = 0.25;
+    ropeParameters.defaultRadius = 0.075;
     RopeMesh ropeMesh(ropeParameters);
-    ropeMesh.addRope(m_resultVertices, true);
+    ropeMesh.addRope(cutFaceVertices, true);
+    for (size_t i = 0; i < cutFaceVertices.size(); ++i) {
+        ropeMesh.addRope({ cutFaceVertices[i], cutFaceVertices[i] - Vector3(0.0, 0.0, 2.0) }, false);
+    }
     for (const auto& it : ropeMesh.resultVertices()) {
         m_resultVertices.push_back(it);
         m_resultVertexProperties.emplace_back(frameVertexProperty);

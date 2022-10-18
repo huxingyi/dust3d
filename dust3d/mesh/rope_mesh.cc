@@ -42,30 +42,65 @@ const std::vector<std::vector<size_t>>& RopeMesh::resultTriangles()
     return m_resultTriangles;
 }
 
+std::vector<Vector3> RopeMesh::cornerInterpolated(const std::vector<Vector3>& positions, double cornerRadius, bool isCircle)
+{
+    std::vector<Vector3> nodePositions;
+    nodePositions.reserve(positions.size() * 3);
+    if (isCircle) {
+        std::vector<Vector3> forwardDirections(positions.size());
+        for (size_t i = 0; i < positions.size(); ++i) {
+            size_t j = (i + 1) % positions.size();
+            forwardDirections[i] = (positions[j] - positions[i]).normalized();
+        }
+        for (size_t i = 0; i < positions.size(); ++i) {
+            size_t j = (i + 1) % positions.size();
+            nodePositions.push_back(positions[i]);
+            nodePositions.push_back(positions[i] + forwardDirections[i] * cornerRadius);
+            nodePositions.push_back(positions[j] - forwardDirections[i] * cornerRadius);
+        }
+        return nodePositions;
+    } else {
+        std::vector<Vector3> forwardDirections(positions.size());
+        for (size_t j = 1; j < positions.size(); ++j) {
+            size_t i = j - 1;
+            forwardDirections[i] = (positions[j] - positions[i]).normalized();
+        }
+        nodePositions.push_back(positions.front());
+        for (size_t j = 1; j + 1 < positions.size(); ++j) {
+            size_t i = j - 1;
+            nodePositions.push_back(positions[j] - forwardDirections[i] * cornerRadius);
+            nodePositions.push_back(positions[j]);
+            nodePositions.push_back(positions[j] + forwardDirections[j] * cornerRadius);
+        }
+        nodePositions.push_back(positions.back());
+    }
+    return nodePositions;
+}
+
 void RopeMesh::addRope(const std::vector<Vector3>& positions, bool isCircle)
 {
     if (positions.size() < 2) {
         dust3dDebug << "Expected at least 2 nodes, current:" << positions.size();
         return;
     }
-    Vector3 baseNormal = isCircle ? BaseNormal::calculateCircleBaseNormal(positions) : BaseNormal::calculateTubeBaseNormal(positions);
+    auto nodePositions = cornerInterpolated(positions, m_buildParameters.defaultRadius, isCircle);
+    Vector3 baseNormal = isCircle ? BaseNormal::calculateCircleBaseNormal(nodePositions) : BaseNormal::calculateTubeBaseNormal(nodePositions);
     std::vector<std::vector<size_t>> circles;
-    circles.reserve(positions.size());
-    Vector3 forwardDirection = isCircle ? (positions[1] - positions[0]).normalized() : (positions[(2 % positions.size())] - positions[1]).normalized();
-    for (size_t i = isCircle ? 0 : 1; i < positions.size(); ++i) {
-        size_t j = (i + 1) % positions.size();
+    circles.reserve(nodePositions.size());
+    for (size_t i = 0; i < nodePositions.size(); ++i) {
+        size_t j = (i + 1) % nodePositions.size();
+        Vector3 forwardDirection = (nodePositions[j] - nodePositions[i]).normalized();
         auto circlePositions = BaseNormal::calculateCircleVertices(m_buildParameters.defaultRadius,
             m_buildParameters.sectionSegments,
             forwardDirection,
             baseNormal,
-            positions[i]);
+            nodePositions[i]);
         std::vector<size_t> indices(circlePositions.size());
         for (size_t k = 0; k < indices.size(); ++k) {
             indices[k] = m_resultVertices.size();
             m_resultVertices.push_back(circlePositions[k]);
         }
         circles.emplace_back(indices);
-        forwardDirection = (positions[j] - positions[i]).normalized();
     }
     for (size_t j = isCircle ? 0 : 1; j < circles.size(); ++j) {
         size_t i = (j + circles.size() - 1) % circles.size();

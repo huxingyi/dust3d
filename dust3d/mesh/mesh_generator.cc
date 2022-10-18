@@ -708,7 +708,9 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combinePartMesh(const std::st
         addComponentPreview(componentIdString, std::move(preview));
     } else if (PartTarget::CutFace == target) {
         std::unique_ptr<SectionPreviewMeshBuilder> sectionPreviewMeshBuilder;
-        sectionPreviewMeshBuilder = std::make_unique<SectionPreviewMeshBuilder>(cutTemplate, partCache.color);
+        std::vector<Vector2> previewCutTemplate;
+        cutFaceStringToCutTemplate(partIdString, previewCutTemplate);
+        sectionPreviewMeshBuilder = std::make_unique<SectionPreviewMeshBuilder>(previewCutTemplate, partCache.color);
         sectionPreviewMeshBuilder->build();
         ComponentPreview preview;
         preview.vertices = sectionPreviewMeshBuilder->resultVertices();

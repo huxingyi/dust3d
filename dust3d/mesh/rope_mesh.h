@@ -44,6 +44,7 @@ private:
     std::vector<Vector3> m_resultVertices;
     std::vector<std::vector<size_t>> m_resultTriangles;
     BuildParameters m_buildParameters;
+    std::vector<Vector3> cornerInterpolated(const std::vector<Vector3>& positions, double cornerRadius, bool isCircle);
 };
 
 };
