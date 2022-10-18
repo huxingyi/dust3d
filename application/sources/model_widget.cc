@@ -1,11 +1,11 @@
-#include <QMouseEvent>
-#include <QCoreApplication>
-#include <QGuiApplication>
-#include <cmath>
-#include <QVector4D>
-#include <QSurfaceFormat>
 #include "model_widget.h"
 #include "dds_file.h"
+#include <QCoreApplication>
+#include <QGuiApplication>
+#include <QMouseEvent>
+#include <QSurfaceFormat>
+#include <QVector4D>
+#include <cmath>
 
 float ModelWidget::m_minZoomRatio = 5.0;
 float ModelWidget::m_maxZoomRatio = 80.0;
@@ -18,36 +18,36 @@ QString ModelWidget::m_openGLVersion = "";
 QString ModelWidget::m_openGLShadingLanguageVersion = "";
 bool ModelWidget::m_openGLIsCoreProfile = false;
 
-ModelWidget::ModelWidget(QWidget *parent) :
-    QOpenGLWidget(parent)
+ModelWidget::ModelWidget(QWidget* parent)
+    : QOpenGLWidget(parent)
 {
     setAttribute(Qt::WA_AlwaysStackOnTop);
     setAttribute(Qt::WA_TranslucentBackground);
-    
+
     QSurfaceFormat fmt = format();
     fmt.setAlphaBufferSize(8);
     fmt.setSamples(4);
     setFormat(fmt);
 
     setContextMenuPolicy(Qt::CustomContextMenu);
-    
+
     m_widthInPixels = width() * window()->devicePixelRatio();
-	m_heightInPixels = height() * window()->devicePixelRatio();
-	
+    m_heightInPixels = height() * window()->devicePixelRatio();
+
     zoom(200);
 }
 
-const QVector3D &ModelWidget::eyePosition()
+const QVector3D& ModelWidget::eyePosition()
 {
-	return m_eyePosition;
+    return m_eyePosition;
 }
 
-const QVector3D &ModelWidget::moveToPosition()
+const QVector3D& ModelWidget::moveToPosition()
 {
     return m_moveToPosition;
 }
 
-void ModelWidget::setEyePosition(const QVector3D &eyePosition)
+void ModelWidget::setEyePosition(const QVector3D& eyePosition)
 {
     m_eyePosition = eyePosition;
     emit eyePositionChanged(m_eyePosition);
@@ -130,7 +130,7 @@ void ModelWidget::disableCullFace()
     m_enableCullFace = false;
 }
 
-void ModelWidget::setMoveToPosition(const QVector3D &moveToPosition)
+void ModelWidget::setMoveToPosition(const QVector3D& moveToPosition)
 {
     m_moveToPosition = moveToPosition;
 }
@@ -144,13 +144,13 @@ void ModelWidget::updateProjectionMatrix()
 
 void ModelWidget::resizeGL(int w, int h)
 {
-	m_widthInPixels = w * window()->devicePixelRatio();
-	m_heightInPixels = h * window()->devicePixelRatio();
+    m_widthInPixels = w * window()->devicePixelRatio();
+    m_heightInPixels = h * window()->devicePixelRatio();
     updateProjectionMatrix();
     emit renderParametersChanged();
 }
 
-std::pair<QVector3D, QVector3D> ModelWidget::screenPositionToMouseRay(const QPoint &screenPosition)
+std::pair<QVector3D, QVector3D> ModelWidget::screenPositionToMouseRay(const QPoint& screenPosition)
 {
     auto modelView = m_camera * m_world;
     float x = qMax(qMin(screenPosition.x(), width() - 1), 0);
@@ -190,12 +190,11 @@ void ModelWidget::toggleRotation()
     }
 }
 
-bool ModelWidget::inputMousePressEventFromOtherWidget(QMouseEvent *event, bool notGraphics)
+bool ModelWidget::inputMousePressEventFromOtherWidget(QMouseEvent* event, bool notGraphics)
 {
     bool shouldStartMove = false;
     if (event->button() == Qt::LeftButton) {
-        if ((notGraphics || QGuiApplication::queryKeyboardModifiers().testFlag(Qt::AltModifier)) &&
-                !QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
+        if ((notGraphics || QGuiApplication::queryKeyboardModifiers().testFlag(Qt::AltModifier)) && !QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
             shouldStartMove = m_moveEnabled;
         }
         if (!shouldStartMove && !m_mousePickTargetPositionInModelSpace.isNull())
@@ -216,7 +215,7 @@ bool ModelWidget::inputMousePressEventFromOtherWidget(QMouseEvent *event, bool n
     return false;
 }
 
-bool ModelWidget::inputMouseReleaseEventFromOtherWidget(QMouseEvent *event)
+bool ModelWidget::inputMouseReleaseEventFromOtherWidget(QMouseEvent* event)
 {
     Q_UNUSED(event);
     if (m_moveStarted) {
@@ -235,10 +234,10 @@ void ModelWidget::canvasResized()
     resize(parentWidget()->size());
 }
 
-bool ModelWidget::inputMouseMoveEventFromOtherWidget(QMouseEvent *event)
+bool ModelWidget::inputMouseMoveEventFromOtherWidget(QMouseEvent* event)
 {
     QPoint pos = convertInputPosFromOtherWidget(event);
-    
+
     if (m_mousePickingEnabled) {
         auto segment = screenPositionToMouseRay(pos);
         emit mouseRayChanged(segment.first, segment.second);
@@ -247,12 +246,11 @@ bool ModelWidget::inputMouseMoveEventFromOtherWidget(QMouseEvent *event)
     if (!m_moveStarted) {
         return false;
     }
-    
+
     int dx = pos.x() - m_lastPos.x();
     int dy = pos.y() - m_lastPos.y();
 
-    if ((event->buttons() & Qt::MidButton) ||
-            (m_moveStarted && (event->buttons() & Qt::LeftButton))) {
+    if ((event->buttons() & Qt::MidButton) || (m_moveStarted && (event->buttons() & Qt::LeftButton))) {
         if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
             if (m_moveStarted) {
                 if (m_moveAndZoomByWindow) {
@@ -283,27 +281,27 @@ bool ModelWidget::inputMouseMoveEventFromOtherWidget(QMouseEvent *event)
         }
     }
     m_lastPos = pos;
-    
+
     return true;
 }
 
-QPoint ModelWidget::convertInputPosFromOtherWidget(QMouseEvent *event)
+QPoint ModelWidget::convertInputPosFromOtherWidget(QMouseEvent* event)
 {
     return mapFromGlobal(event->globalPos());
 }
 
-bool ModelWidget::inputWheelEventFromOtherWidget(QWheelEvent *event)
+bool ModelWidget::inputWheelEventFromOtherWidget(QWheelEvent* event)
 {
     if (m_moveStarted)
         return true;
-    
+
     if (m_mousePickingEnabled) {
         if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
             emit addMouseRadius((float)event->delta() / 200 / height());
             return true;
         }
     }
-    
+
     if (!m_zoomEnabled)
         return false;
 
@@ -311,7 +309,7 @@ bool ModelWidget::inputWheelEventFromOtherWidget(QWheelEvent *event)
     if (event->delta() < 0)
         delta = -delta;
     zoom(delta);
-    
+
     return true;
 }
 
@@ -359,7 +357,7 @@ void ModelWidget::setMousePickRadius(float radius)
     update();
 }
 
-void ModelWidget::updateMesh(ModelMesh *mesh)
+void ModelWidget::updateMesh(ModelMesh* mesh)
 {
     if (!m_modelOpenGLProgram)
         m_modelOpenGLProgram = std::make_unique<ModelOpenGLProgram>();
@@ -369,7 +367,7 @@ void ModelWidget::updateMesh(ModelMesh *mesh)
         mesh && mesh->hasMetalnessInImage(),
         mesh && mesh->hasRoughnessInImage(),
         mesh && mesh->hasAmbientOcclusionInImage());
-    
+
     if (!m_modelOpenGLObject)
         m_modelOpenGLObject = std::make_unique<ModelOpenGLObject>();
     m_modelOpenGLObject->update(std::unique_ptr<ModelMesh>(mesh));
@@ -378,7 +376,7 @@ void ModelWidget::updateMesh(ModelMesh *mesh)
     update();
 }
 
-void ModelWidget::updateWireframeMesh(MonochromeMesh *mesh)
+void ModelWidget::updateWireframeMesh(MonochromeMesh* mesh)
 {
     if (!m_wireframeOpenGLObject)
         m_wireframeOpenGLObject = std::make_unique<MonochromeOpenGLObject>();
@@ -389,12 +387,12 @@ void ModelWidget::updateWireframeMesh(MonochromeMesh *mesh)
 
 int ModelWidget::widthInPixels()
 {
-	return m_widthInPixels;
+    return m_widthInPixels;
 }
 
 int ModelWidget::heightInPixels()
 {
-	return m_heightInPixels;
+    return m_heightInPixels;
 }
 
 void ModelWidget::enableMove(bool enabled)
@@ -417,22 +415,22 @@ void ModelWidget::setMoveAndZoomByWindow(bool byWindow)
     m_moveAndZoomByWindow = byWindow;
 }
 
-void ModelWidget::mousePressEvent(QMouseEvent *event)
+void ModelWidget::mousePressEvent(QMouseEvent* event)
 {
     inputMousePressEventFromOtherWidget(event, m_notGraphics);
 }
 
-void ModelWidget::mouseMoveEvent(QMouseEvent *event)
+void ModelWidget::mouseMoveEvent(QMouseEvent* event)
 {
     inputMouseMoveEventFromOtherWidget(event);
 }
 
-void ModelWidget::wheelEvent(QWheelEvent *event)
+void ModelWidget::wheelEvent(QWheelEvent* event)
 {
     inputWheelEventFromOtherWidget(event);
 }
 
-void ModelWidget::mouseReleaseEvent(QMouseEvent *event)
+void ModelWidget::mouseReleaseEvent(QMouseEvent* event)
 {
     inputMouseReleaseEventFromOtherWidget(event);
 }
@@ -442,7 +440,7 @@ void ModelWidget::setNotGraphics(bool notGraphics)
     m_notGraphics = notGraphics;
 }
 
-void ModelWidget::normalizeAngle(int &angle)
+void ModelWidget::normalizeAngle(int& angle)
 {
     while (angle < 0)
         angle += 360 * 16;
@@ -455,10 +453,10 @@ void ModelWidget::initializeGL()
     connect(context(), &QOpenGLContext::aboutToBeDestroyed, this, &ModelWidget::cleanup);
 
     if (m_openGLVersion.isEmpty()) {
-        QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
-        const char *openGLVersion = (const char *)f->glGetString(GL_VERSION);
+        QOpenGLFunctions* f = QOpenGLContext::currentContext()->functions();
+        const char* openGLVersion = (const char*)f->glGetString(GL_VERSION);
         m_openGLVersion = nullptr != openGLVersion ? openGLVersion : "<Unknown>";
-        const char *shadingLanguageVersion = (const char *)glGetString(GL_SHADING_LANGUAGE_VERSION);
+        const char* shadingLanguageVersion = (const char*)glGetString(GL_SHADING_LANGUAGE_VERSION);
         m_openGLShadingLanguageVersion = nullptr != shadingLanguageVersion ? shadingLanguageVersion : "<Unknown>";
         m_openGLIsCoreProfile = QSurfaceFormat::defaultFormat().profile() == QSurfaceFormat::CoreProfile;
     }
@@ -466,7 +464,7 @@ void ModelWidget::initializeGL()
 
 void ModelWidget::paintGL()
 {
-    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+    QOpenGLFunctions* f = QOpenGLContext::currentContext()->functions();
 
     f->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     f->glEnable(GL_BLEND);
@@ -485,13 +483,13 @@ void ModelWidget::paintGL()
     f->glEnable(GL_POLYGON_OFFSET_FILL);
     f->glPolygonOffset(1.0, 1.0);
 
-	f->glViewport(0, 0, m_widthInPixels, m_heightInPixels);
+    f->glViewport(0, 0, m_widthInPixels, m_heightInPixels);
 
     m_world.setToIdentity();
     m_world.rotate(m_xRot / 16.0f, 1, 0, 0);
     m_world.rotate(m_yRot / 16.0f, 0, 1, 0);
     m_world.rotate(m_zRot / 16.0f, 0, 0, 1);
-    
+
     m_camera.setToIdentity();
     m_camera.translate(m_eyePosition.x(), m_eyePosition.y(), m_eyePosition.z());
 
@@ -506,7 +504,7 @@ void ModelWidget::paintGL()
             m_monochromeOpenGLProgram->load(format().profile() == QSurfaceFormat::CoreProfile);
         }
     }
-    
+
     drawModel();
     if (m_isWireframeVisible) {
         drawWireframe();

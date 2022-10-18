@@ -19,11 +19,10 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *  SOFTWARE.
  */
- 
+
 #include <dust3d/mesh/solid_mesh.h>
 
-namespace dust3d
-{
+namespace dust3d {
 
 SolidMesh::~SolidMesh()
 {
@@ -32,12 +31,12 @@ SolidMesh::~SolidMesh()
     delete m_triangleAxisAlignedBoundingBoxes;
 }
 
-void SolidMesh::setVertices(const std::vector<Vector3> *vertices)
+void SolidMesh::setVertices(const std::vector<Vector3>* vertices)
 {
     m_vertices = vertices;
 }
 
-void SolidMesh::setTriangles(const std::vector<std::vector<size_t>> *triangles)
+void SolidMesh::setTriangles(const std::vector<std::vector<size_t>>* triangles)
 {
     m_triangles = triangles;
 }
@@ -46,35 +45,34 @@ void SolidMesh::prepare()
 {
     if (nullptr == m_triangles)
         return;
-    
+
     m_triangleNormals = new std::vector<Vector3>;
     m_triangleNormals->reserve(m_triangles->size());
-    for (const auto &it: *m_triangles) {
+    for (const auto& it : *m_triangles) {
         m_triangleNormals->push_back(
-            Vector3::normal((*m_vertices)[it[0]], 
-                (*m_vertices)[it[1]], 
-                (*m_vertices)[it[2]])
-        );
+            Vector3::normal((*m_vertices)[it[0]],
+                (*m_vertices)[it[1]],
+                (*m_vertices)[it[2]]));
     }
-    
+
     m_triangleAxisAlignedBoundingBoxes = new std::vector<AxisAlignedBoudingBox>(m_triangles->size());
-    
+
     for (size_t i = 0; i < m_triangleAxisAlignedBoundingBoxes->size(); ++i) {
         addTriagleToAxisAlignedBoundingBox((*m_triangles)[i], &(*m_triangleAxisAlignedBoundingBoxes)[i]);
         (*m_triangleAxisAlignedBoundingBoxes)[i].updateCenter();
     }
-    
+
     std::vector<size_t> firstGroupOfFacesIn;
     for (size_t i = 0; i < m_triangleAxisAlignedBoundingBoxes->size(); ++i)
         firstGroupOfFacesIn.push_back(i);
-    
+
     AxisAlignedBoudingBox groupBox;
-    for (const auto &i: firstGroupOfFacesIn) {
+    for (const auto& i : firstGroupOfFacesIn) {
         addTriagleToAxisAlignedBoundingBox((*m_triangles)[i], &groupBox);
     }
     groupBox.updateCenter();
-    
-    m_axisAlignedBoundingBoxTree = new AxisAlignedBoudingBoxTree(m_triangleAxisAlignedBoundingBoxes, 
+
+    m_axisAlignedBoundingBoxTree = new AxisAlignedBoudingBoxTree(m_triangleAxisAlignedBoundingBoxes,
         firstGroupOfFacesIn, groupBox);
 }
 

@@ -19,38 +19,36 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *  SOFTWARE.
  */
- 
+
 #ifndef DUST3D_MESH_CENTRIPETAL_CATMULL_ROM_SPLINE_H_
 #define DUST3D_MESH_CENTRIPETAL_CATMULL_ROM_SPLINE_H_
 
-#include <vector>
 #include <dust3d/base/vector3.h>
+#include <vector>
 
-namespace dust3d
-{
-    
-class CentripetalCatmullRomSpline
-{
+namespace dust3d {
+
+class CentripetalCatmullRomSpline {
 public:
-    struct SplineNode
-    {
+    struct SplineNode {
         int source = -1;
         Vector3 position;
     };
-    
+
     CentripetalCatmullRomSpline(bool isClosed);
-    void addPoint(int source, const Vector3 &position, bool isKnot);
+    void addPoint(int source, const Vector3& position, bool isKnot);
     bool interpolate();
-    const std::vector<SplineNode> &splineNodes();
+    const std::vector<SplineNode>& splineNodes();
+
 private:
     std::vector<SplineNode> m_splineNodes;
     std::vector<size_t> m_splineKnots;
-    
+
     bool m_isClosed = false;
     bool interpolateClosed();
     bool interpolateOpened();
-    float atKnot(float t, const Vector3 &p0, const Vector3 &p1);
-    void interpolateSegment(std::vector<Vector3> &knots,
+    float atKnot(float t, const Vector3& p0, const Vector3& p1);
+    void interpolateSegment(std::vector<Vector3>& knots,
         size_t from, size_t to);
 };
 

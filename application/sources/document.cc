@@ -1,34 +1,34 @@
-#include <QFileDialog>
-#include <QDebug>
-#include <QThread>
-#include <QGuiApplication>
-#include <QClipboard>
-#include <QMimeData>
-#include <QApplication>
-#include <QVector3D>
-#include <functional>
-#include <QtCore/qbuffer.h>
-#include <QElapsedTimer>
-#include <queue>
-#include <dust3d/base/snapshot_xml.h>
-#include <dust3d/base/texture_type.h>
 #include "document.h"
 #include "image_forever.h"
+#include "material_previews_generator.h"
 #include "mesh_generator.h"
 #include "mesh_result_post_processor.h"
 #include "texture_generator.h"
-#include "material_previews_generator.h"
+#include <QApplication>
+#include <QClipboard>
+#include <QDebug>
+#include <QElapsedTimer>
+#include <QFileDialog>
+#include <QGuiApplication>
+#include <QMimeData>
+#include <QThread>
+#include <QVector3D>
+#include <QtCore/qbuffer.h>
+#include <dust3d/base/snapshot_xml.h>
+#include <dust3d/base/texture_type.h>
+#include <functional>
+#include <queue>
 
 unsigned long Document::m_maxSnapshot = 1000;
 
-Document::Document() :
-    SkeletonDocument()
+Document::Document()
+    : SkeletonDocument()
 {
 }
 
 Document::~Document()
 {
-    delete (dust3d::MeshGenerator::GeneratedCacheContext *)m_generatedCacheContext;
+    delete (dust3d::MeshGenerator::GeneratedCacheContext*)m_generatedCacheContext;
     delete m_resultMesh;
     delete m_postProcessedObject;
     delete textureImage;
@@ -55,7 +55,7 @@ bool Document::originSettled() const
     return !qFuzzyIsNull(getOriginX()) && !qFuzzyIsNull(getOriginY()) && !qFuzzyIsNull(getOriginZ());
 }
 
-const Material *Document::findMaterial(dust3d::Uuid materialId) const
+const Material* Document::findMaterial(dust3d::Uuid materialId) const
 {
     auto it = materialMap.find(materialId);
     if (it == materialMap.end())
@@ -104,8 +104,7 @@ void Document::setNodeCutFaceLinkedId(dust3d::Uuid nodeId, dust3d::Uuid linkedId
         qDebug() << "Node not found:" << nodeId;
         return;
     }
-    if (node->second.cutFace == dust3d::CutFace::UserDefined &&
-            node->second.cutFaceLinkedId == linkedId)
+    if (node->second.cutFace == dust3d::CutFace::UserDefined && node->second.cutFaceLinkedId == linkedId)
         return;
     node->second.setCutFaceLinkedId(linkedId);
     auto part = partMap.find(node->second.partId);
@@ -132,7 +131,7 @@ void Document::clearNodeCutFaceSettings(dust3d::Uuid nodeId)
     emit skeletonChanged();
 }
 
-void Document::updateTurnaround(const QImage &image)
+void Document::updateTurnaround(const QImage& image)
 {
     turnaround = image;
     turnaroundPngByteArray.clear();
@@ -149,47 +148,47 @@ void Document::clearTurnaround()
     emit turnaroundChanged();
 }
 
-void Document::updateTextureImage(QImage *image)
+void Document::updateTextureImage(QImage* image)
 {
     delete textureImageByteArray;
     textureImageByteArray = nullptr;
-    
+
     delete textureImage;
     textureImage = image;
 }
 
-void Document::updateTextureNormalImage(QImage *image)
+void Document::updateTextureNormalImage(QImage* image)
 {
     delete textureNormalImageByteArray;
     textureNormalImageByteArray = nullptr;
-    
+
     delete textureNormalImage;
     textureNormalImage = image;
 }
 
-void Document::updateTextureMetalnessImage(QImage *image)
+void Document::updateTextureMetalnessImage(QImage* image)
 {
     delete textureMetalnessImageByteArray;
     textureMetalnessImageByteArray = nullptr;
-    
+
     delete textureMetalnessImage;
     textureMetalnessImage = image;
 }
 
-void Document::updateTextureRoughnessImage(QImage *image)
+void Document::updateTextureRoughnessImage(QImage* image)
 {
     delete textureRoughnessImageByteArray;
     textureRoughnessImageByteArray = nullptr;
-    
+
     delete textureRoughnessImage;
     textureRoughnessImage = image;
 }
 
-void Document::updateTextureAmbientOcclusionImage(QImage *image)
+void Document::updateTextureAmbientOcclusionImage(QImage* image)
 {
     delete textureAmbientOcclusionImageByteArray;
     textureAmbientOcclusionImageByteArray = nullptr;
-    
+
     delete textureAmbientOcclusionImage;
     textureAmbientOcclusionImage = image;
 }
@@ -198,28 +197,27 @@ void Document::setEditMode(SkeletonDocumentEditMode mode)
 {
     if (editMode == mode)
         return;
-    
+
     editMode = mode;
     emit editModeChanged();
 }
 
-void Document::toSnapshot(dust3d::Snapshot *snapshot, const std::set<dust3d::Uuid> &limitNodeIds,
+void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uuid>& limitNodeIds,
     DocumentToSnapshotFor forWhat,
-    const std::set<dust3d::Uuid> &limitMaterialIds) const
+    const std::set<dust3d::Uuid>& limitMaterialIds) const
 {
-    if (DocumentToSnapshotFor::Document == forWhat ||
-            DocumentToSnapshotFor::Nodes == forWhat) {
+    if (DocumentToSnapshotFor::Document == forWhat || DocumentToSnapshotFor::Nodes == forWhat) {
         std::set<dust3d::Uuid> limitPartIds;
         std::set<dust3d::Uuid> limitComponentIds;
-        for (const auto &nodeId: limitNodeIds) {
-            const SkeletonNode *node = findNode(nodeId);
+        for (const auto& nodeId : limitNodeIds) {
+            const SkeletonNode* node = findNode(nodeId);
             if (!node)
                 continue;
-            const SkeletonPart *part = findPart(node->partId);
+            const SkeletonPart* part = findPart(node->partId);
             if (!part)
                 continue;
             limitPartIds.insert(node->partId);
-            const SkeletonComponent *component = findComponent(part->componentId);
+            const SkeletonComponent* component = findComponent(part->componentId);
             while (component) {
                 limitComponentIds.insert(component->id);
                 if (component->id.isNull())
@@ -227,7 +225,7 @@ void Document::toSnapshot(dust3d::Snapshot *snapshot, const std::set<dust3d::Uui
                 component = findComponent(component->parentId);
             }
         }
-        for (const auto &partIt : partMap) {
+        for (const auto& partIt : partMap) {
             if (!limitPartIds.empty() && limitPartIds.find(partIt.first) == limitPartIds.end())
                 continue;
             std::map<std::string, std::string> part;
@@ -281,7 +279,7 @@ void Document::toSnapshot(dust3d::Snapshot *snapshot, const std::set<dust3d::Uui
                 part["smooth"] = "true";
             snapshot->parts[part["id"]] = part;
         }
-        for (const auto &nodeIt: nodeMap) {
+        for (const auto& nodeIt : nodeMap) {
             if (!limitNodeIds.empty() && limitNodeIds.find(nodeIt.first) == limitNodeIds.end())
                 continue;
             std::map<std::string, std::string> node;
@@ -305,12 +303,10 @@ void Document::toSnapshot(dust3d::Snapshot *snapshot, const std::set<dust3d::Uui
                 node["name"] = nodeIt.second.name.toUtf8().constData();
             snapshot->nodes[node["id"]] = node;
         }
-        for (const auto &edgeIt: edgeMap) {
+        for (const auto& edgeIt : edgeMap) {
             if (edgeIt.second.nodeIds.size() != 2)
                 continue;
-            if (!limitNodeIds.empty() &&
-                    (limitNodeIds.find(edgeIt.second.nodeIds[0]) == limitNodeIds.end() ||
-                        limitNodeIds.find(edgeIt.second.nodeIds[1]) == limitNodeIds.end()))
+            if (!limitNodeIds.empty() && (limitNodeIds.find(edgeIt.second.nodeIds[0]) == limitNodeIds.end() || limitNodeIds.find(edgeIt.second.nodeIds[1]) == limitNodeIds.end()))
                 continue;
             std::map<std::string, std::string> edge;
             edge["id"] = edgeIt.second.id.toString();
@@ -321,7 +317,7 @@ void Document::toSnapshot(dust3d::Snapshot *snapshot, const std::set<dust3d::Uui
                 edge["name"] = edgeIt.second.name.toUtf8().constData();
             snapshot->edges[edge["id"]] = edge;
         }
-        for (const auto &componentIt: componentMap) {
+        for (const auto& componentIt : componentMap) {
             if (!limitComponentIds.empty() && limitComponentIds.find(componentIt.first) == limitComponentIds.end())
                 continue;
             std::map<std::string, std::string> component;
@@ -332,7 +328,7 @@ void Document::toSnapshot(dust3d::Snapshot *snapshot, const std::set<dust3d::Uui
             component["combineMode"] = CombineModeToString(componentIt.second.combineMode);
             component["__dirty"] = componentIt.second.dirty ? "true" : "false";
             std::vector<std::string> childIdList;
-            for (const auto &childId: componentIt.second.childrenIds) {
+            for (const auto& childId : componentIt.second.childrenIds) {
                 childIdList.push_back(childId.toString());
             }
             std::string children = dust3d::String::join(childIdList, ",");
@@ -349,7 +345,7 @@ void Document::toSnapshot(dust3d::Snapshot *snapshot, const std::set<dust3d::Uui
         }
         if (limitComponentIds.empty() || limitComponentIds.find(dust3d::Uuid()) != limitComponentIds.end()) {
             std::vector<std::string> childIdList;
-            for (const auto &childId: rootComponent.childrenIds) {
+            for (const auto& childId : rootComponent.childrenIds) {
                 childIdList.push_back(childId.toString());
             }
             std::string children = dust3d::String::join(childIdList, ",");
@@ -357,9 +353,8 @@ void Document::toSnapshot(dust3d::Snapshot *snapshot, const std::set<dust3d::Uui
                 snapshot->rootComponent["children"] = children;
         }
     }
-    if (DocumentToSnapshotFor::Document == forWhat ||
-            DocumentToSnapshotFor::Materials == forWhat) {
-        for (const auto &materialId: materialIdList) {
+    if (DocumentToSnapshotFor::Document == forWhat || DocumentToSnapshotFor::Materials == forWhat) {
+        for (const auto& materialId : materialIdList) {
             if (!limitMaterialIds.empty() && limitMaterialIds.find(materialId) == limitMaterialIds.end())
                 continue;
             auto findMaterialResult = materialMap.find(materialId);
@@ -367,16 +362,16 @@ void Document::toSnapshot(dust3d::Snapshot *snapshot, const std::set<dust3d::Uui
                 qDebug() << "Find material failed:" << materialId;
                 continue;
             }
-            auto &materialIt = *findMaterialResult;
+            auto& materialIt = *findMaterialResult;
             std::map<std::string, std::string> material;
             material["id"] = materialIt.second.id.toString();
             material["type"] = "MetalRoughness";
             if (!materialIt.second.name.isEmpty())
                 material["name"] = materialIt.second.name.toUtf8().constData();
             std::vector<std::pair<std::map<std::string, std::string>, std::vector<std::map<std::string, std::string>>>> layers;
-            for (const auto &layer: materialIt.second.layers) {
+            for (const auto& layer : materialIt.second.layers) {
                 std::vector<std::map<std::string, std::string>> maps;
-                for (const auto &mapItem: layer.maps) {
+                for (const auto& mapItem : layer.maps) {
                     std::map<std::string, std::string> textureMap;
                     textureMap["for"] = TextureTypeToString(mapItem.forWhat);
                     textureMap["linkDataType"] = "imageId";
@@ -386,7 +381,7 @@ void Document::toSnapshot(dust3d::Snapshot *snapshot, const std::set<dust3d::Uui
                 std::map<std::string, std::string> layerAttributes;
                 if (!qFuzzyCompare((float)layer.tileScale, (float)1.0))
                     layerAttributes["tileScale"] = std::to_string(layer.tileScale);
-                layers.push_back({layerAttributes, maps});
+                layers.push_back({ layerAttributes, maps });
             }
             snapshot->materials.push_back(std::make_pair(material, layers));
         }
@@ -400,34 +395,31 @@ void Document::toSnapshot(dust3d::Snapshot *snapshot, const std::set<dust3d::Uui
     }
 }
 
-void Document::addFromSnapshot(const dust3d::Snapshot &snapshot, enum SnapshotSource source)
+void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSource source)
 {
     bool isOriginChanged = false;
-    if (SnapshotSource::Paste != source &&
-            SnapshotSource::Import != source) {
-        const auto &originXit = snapshot.canvas.find("originX");
-        const auto &originYit = snapshot.canvas.find("originY");
-        const auto &originZit = snapshot.canvas.find("originZ");
-        if (originXit != snapshot.canvas.end() &&
-                originYit != snapshot.canvas.end() &&
-                originZit != snapshot.canvas.end()) {
+    if (SnapshotSource::Paste != source && SnapshotSource::Import != source) {
+        const auto& originXit = snapshot.canvas.find("originX");
+        const auto& originYit = snapshot.canvas.find("originY");
+        const auto& originZit = snapshot.canvas.find("originZ");
+        if (originXit != snapshot.canvas.end() && originYit != snapshot.canvas.end() && originZit != snapshot.canvas.end()) {
             setOriginX(dust3d::String::toFloat(originXit->second));
             setOriginY(dust3d::String::toFloat(originYit->second));
             setOriginZ(dust3d::String::toFloat(originZit->second));
             isOriginChanged = true;
         }
     }
-    
+
     std::set<dust3d::Uuid> newAddedNodeIds;
     std::set<dust3d::Uuid> newAddedEdgeIds;
     std::set<dust3d::Uuid> newAddedPartIds;
     std::set<dust3d::Uuid> newAddedComponentIds;
-    
+
     std::set<dust3d::Uuid> inversePartIds;
-    
+
     std::map<dust3d::Uuid, dust3d::Uuid> oldNewIdMap;
-    for (const auto &materialIt: snapshot.materials) {
-        const auto &materialAttributes = materialIt.first;
+    for (const auto& materialIt : snapshot.materials) {
+        const auto& materialAttributes = materialIt.first;
         auto materialType = dust3d::String::valueOrEmpty(materialAttributes, "type");
         if ("MetalRoughness" != materialType) {
             qDebug() << "Unsupported material type:" << materialType;
@@ -437,15 +429,15 @@ void Document::addFromSnapshot(const dust3d::Snapshot &snapshot, enum SnapshotSo
         dust3d::Uuid newMaterialId = SnapshotSource::Import == source ? oldMaterialId : dust3d::Uuid::createUuid();
         oldNewIdMap[oldMaterialId] = newMaterialId;
         if (materialMap.end() == materialMap.find(newMaterialId)) {
-            auto &newMaterial = materialMap[newMaterialId];
+            auto& newMaterial = materialMap[newMaterialId];
             newMaterial.id = newMaterialId;
             newMaterial.name = dust3d::String::valueOrEmpty(materialAttributes, "name").c_str();
-            for (const auto &layerIt: materialIt.second) {
+            for (const auto& layerIt : materialIt.second) {
                 MaterialLayer layer;
                 auto findTileScale = layerIt.first.find("tileScale");
                 if (findTileScale != layerIt.first.end())
                     layer.tileScale = dust3d::String::toFloat(findTileScale->second);
-                for (const auto &mapItem: layerIt.second) {
+                for (const auto& mapItem : layerIt.second) {
                     auto textureTypeString = dust3d::String::valueOrEmpty(mapItem, "for");
                     auto textureType = dust3d::TextureTypeFromString(textureTypeString.c_str());
                     if (dust3d::TextureType::None == textureType) {
@@ -470,13 +462,13 @@ void Document::addFromSnapshot(const dust3d::Snapshot &snapshot, enum SnapshotSo
         }
     }
     std::map<dust3d::Uuid, dust3d::Uuid> cutFaceLinkedIdModifyMap;
-    for (const auto &partKv: snapshot.parts) {
+    for (const auto& partKv : snapshot.parts) {
         const auto newUuid = dust3d::Uuid::createUuid();
-        SkeletonPart &part = partMap[newUuid];
+        SkeletonPart& part = partMap[newUuid];
         part.id = newUuid;
         oldNewIdMap[dust3d::Uuid(partKv.first)] = part.id;
         part.name = dust3d::String::valueOrEmpty(partKv.second, "name").c_str();
-        const auto &visibleIt = partKv.second.find("visible");
+        const auto& visibleIt = partKv.second.find("visible");
         if (visibleIt != partKv.second.end()) {
             part.visible = dust3d::String::isTrue(visibleIt->second);
         } else {
@@ -490,56 +482,56 @@ void Document::addFromSnapshot(const dust3d::Snapshot &snapshot, enum SnapshotSo
         part.rounded = dust3d::String::isTrue(dust3d::String::valueOrEmpty(partKv.second, "rounded"));
         part.chamfered = dust3d::String::isTrue(dust3d::String::valueOrEmpty(partKv.second, "chamfered"));
         part.target = dust3d::PartTargetFromString(dust3d::String::valueOrEmpty(partKv.second, "target").c_str());
-        const auto &cutRotationIt = partKv.second.find("cutRotation");
+        const auto& cutRotationIt = partKv.second.find("cutRotation");
         if (cutRotationIt != partKv.second.end())
             part.setCutRotation(dust3d::String::toFloat(cutRotationIt->second));
-        const auto &cutFaceIt = partKv.second.find("cutFace");
+        const auto& cutFaceIt = partKv.second.find("cutFace");
         if (cutFaceIt != partKv.second.end()) {
             dust3d::Uuid cutFaceLinkedId = dust3d::Uuid(cutFaceIt->second);
             if (cutFaceLinkedId.isNull()) {
                 part.setCutFace(dust3d::CutFaceFromString(cutFaceIt->second.c_str()));
             } else {
                 part.setCutFaceLinkedId(cutFaceLinkedId);
-                cutFaceLinkedIdModifyMap.insert({part.id, cutFaceLinkedId});
+                cutFaceLinkedIdModifyMap.insert({ part.id, cutFaceLinkedId });
             }
         }
         if (dust3d::String::isTrue(dust3d::String::valueOrEmpty(partKv.second, "inverse")))
             inversePartIds.insert(part.id);
-        const auto &colorIt = partKv.second.find("color");
+        const auto& colorIt = partKv.second.find("color");
         if (colorIt != partKv.second.end()) {
             part.color = QColor(colorIt->second.c_str());
             part.hasColor = true;
         }
-        const auto &colorSolubilityIt = partKv.second.find("colorSolubility");
+        const auto& colorSolubilityIt = partKv.second.find("colorSolubility");
         if (colorSolubilityIt != partKv.second.end())
             part.colorSolubility = dust3d::String::toFloat(colorSolubilityIt->second);
-        const auto &metalnessIt = partKv.second.find("metallic");
+        const auto& metalnessIt = partKv.second.find("metallic");
         if (metalnessIt != partKv.second.end())
             part.metalness = dust3d::String::toFloat(metalnessIt->second);
-        const auto &roughnessIt = partKv.second.find("roughness");
+        const auto& roughnessIt = partKv.second.find("roughness");
         if (roughnessIt != partKv.second.end())
             part.roughness = dust3d::String::toFloat(roughnessIt->second);
-        const auto &deformThicknessIt = partKv.second.find("deformThickness");
+        const auto& deformThicknessIt = partKv.second.find("deformThickness");
         if (deformThicknessIt != partKv.second.end())
             part.setDeformThickness(dust3d::String::toFloat(deformThicknessIt->second));
-        const auto &deformWidthIt = partKv.second.find("deformWidth");
+        const auto& deformWidthIt = partKv.second.find("deformWidth");
         if (deformWidthIt != partKv.second.end())
             part.setDeformWidth(dust3d::String::toFloat(deformWidthIt->second));
-        const auto &deformUnifiedIt = partKv.second.find("deformUnified");
+        const auto& deformUnifiedIt = partKv.second.find("deformUnified");
         if (deformUnifiedIt != partKv.second.end())
             part.deformUnified = dust3d::String::isTrue(dust3d::String::valueOrEmpty(partKv.second, "deformUnified"));
-        const auto &hollowThicknessIt = partKv.second.find("hollowThickness");
+        const auto& hollowThicknessIt = partKv.second.find("hollowThickness");
         if (hollowThicknessIt != partKv.second.end())
             part.hollowThickness = dust3d::String::toFloat(hollowThicknessIt->second);
-        const auto &materialIdIt = partKv.second.find("materialId");
+        const auto& materialIdIt = partKv.second.find("materialId");
         if (materialIdIt != partKv.second.end())
             part.materialId = oldNewIdMap[dust3d::Uuid(materialIdIt->second)];
         part.countershaded = dust3d::String::isTrue(dust3d::String::valueOrEmpty(partKv.second, "countershaded"));
         part.smooth = dust3d::String::isTrue(dust3d::String::valueOrEmpty(partKv.second, "smooth"));
         newAddedPartIds.insert(part.id);
     }
-    for (const auto &it: cutFaceLinkedIdModifyMap) {
-        SkeletonPart &part = partMap[it.first];
+    for (const auto& it : cutFaceLinkedIdModifyMap) {
+        SkeletonPart& part = partMap[it.first];
         auto findNewLinkedId = oldNewIdMap.find(it.second);
         if (findNewLinkedId == oldNewIdMap.end()) {
             if (partMap.find(it.second) == partMap.end()) {
@@ -549,12 +541,8 @@ void Document::addFromSnapshot(const dust3d::Snapshot &snapshot, enum SnapshotSo
             part.setCutFaceLinkedId(findNewLinkedId->second);
         }
     }
-    for (const auto &nodeKv: snapshot.nodes) {
-        if (nodeKv.second.find("radius") == nodeKv.second.end() ||
-                nodeKv.second.find("x") == nodeKv.second.end() ||
-                nodeKv.second.find("y") == nodeKv.second.end() ||
-                nodeKv.second.find("z") == nodeKv.second.end() ||
-                nodeKv.second.find("partId") == nodeKv.second.end())
+    for (const auto& nodeKv : snapshot.nodes) {
+        if (nodeKv.second.find("radius") == nodeKv.second.end() || nodeKv.second.find("x") == nodeKv.second.end() || nodeKv.second.find("y") == nodeKv.second.end() || nodeKv.second.find("z") == nodeKv.second.end() || nodeKv.second.find("partId") == nodeKv.second.end())
             continue;
         dust3d::Uuid oldNodeId = dust3d::Uuid(nodeKv.first);
         SkeletonNode node(nodeMap.find(oldNodeId) == nodeMap.end() ? oldNodeId : dust3d::Uuid::createUuid());
@@ -565,10 +553,10 @@ void Document::addFromSnapshot(const dust3d::Snapshot &snapshot, enum SnapshotSo
         node.setY(dust3d::String::toFloat(dust3d::String::valueOrEmpty(nodeKv.second, "y")));
         node.setZ(dust3d::String::toFloat(dust3d::String::valueOrEmpty(nodeKv.second, "z")));
         node.partId = oldNewIdMap[dust3d::Uuid(dust3d::String::valueOrEmpty(nodeKv.second, "partId"))];
-        const auto &cutRotationIt = nodeKv.second.find("cutRotation");
+        const auto& cutRotationIt = nodeKv.second.find("cutRotation");
         if (cutRotationIt != nodeKv.second.end())
             node.setCutRotation(dust3d::String::toFloat(cutRotationIt->second));
-        const auto &cutFaceIt = nodeKv.second.find("cutFace");
+        const auto& cutFaceIt = nodeKv.second.find("cutFace");
         if (cutFaceIt != nodeKv.second.end()) {
             dust3d::Uuid cutFaceLinkedId = dust3d::Uuid(cutFaceIt->second);
             if (cutFaceLinkedId.isNull()) {
@@ -588,10 +576,8 @@ void Document::addFromSnapshot(const dust3d::Snapshot &snapshot, enum SnapshotSo
         nodeMap[node.id] = node;
         newAddedNodeIds.insert(node.id);
     }
-    for (const auto &edgeKv: snapshot.edges) {
-        if (edgeKv.second.find("from") == edgeKv.second.end() ||
-                edgeKv.second.find("to") == edgeKv.second.end() ||
-                edgeKv.second.find("partId") == edgeKv.second.end())
+    for (const auto& edgeKv : snapshot.edges) {
+        if (edgeKv.second.find("from") == edgeKv.second.end() || edgeKv.second.find("to") == edgeKv.second.end() || edgeKv.second.find("partId") == edgeKv.second.end())
             continue;
         dust3d::Uuid oldEdgeId = dust3d::Uuid(edgeKv.first);
         SkeletonEdge edge(edgeMap.find(oldEdgeId) == edgeMap.end() ? oldEdgeId : dust3d::Uuid::createUuid());
@@ -613,12 +599,12 @@ void Document::addFromSnapshot(const dust3d::Snapshot &snapshot, enum SnapshotSo
         edgeMap[edge.id] = edge;
         newAddedEdgeIds.insert(edge.id);
     }
-    for (const auto &nodeIt: nodeMap) {
+    for (const auto& nodeIt : nodeMap) {
         if (newAddedNodeIds.find(nodeIt.first) == newAddedNodeIds.end())
             continue;
         partMap[nodeIt.second.partId].nodeIds.push_back(nodeIt.first);
     }
-    for (const auto &componentKv: snapshot.components) {
+    for (const auto& componentKv : snapshot.components) {
         QString linkData = dust3d::String::valueOrEmpty(componentKv.second, "linkData").c_str();
         QString linkDataType = dust3d::String::valueOrEmpty(componentKv.second, "linkDataType").c_str();
         SkeletonComponent component(dust3d::Uuid(), linkData, linkDataType);
@@ -642,9 +628,9 @@ void Document::addFromSnapshot(const dust3d::Snapshot &snapshot, enum SnapshotSo
         componentMap.emplace(component.id, std::move(component));
         newAddedComponentIds.insert(component.id);
     }
-    const auto &rootComponentChildren = snapshot.rootComponent.find("children");
+    const auto& rootComponentChildren = snapshot.rootComponent.find("children");
     if (rootComponentChildren != snapshot.rootComponent.end()) {
-        for (const auto &childId: dust3d::String::split(rootComponentChildren->second, ',')) {
+        for (const auto& childId : dust3d::String::split(rootComponentChildren->second, ',')) {
             if (childId.empty())
                 continue;
             dust3d::Uuid componentId = oldNewIdMap[dust3d::Uuid(childId)];
@@ -654,11 +640,11 @@ void Document::addFromSnapshot(const dust3d::Snapshot &snapshot, enum SnapshotSo
             rootComponent.addChild(componentId);
         }
     }
-    for (const auto &componentKv: snapshot.components) {
+    for (const auto& componentKv : snapshot.components) {
         dust3d::Uuid componentId = oldNewIdMap[dust3d::Uuid(componentKv.first)];
         if (componentMap.find(componentId) == componentMap.end())
             continue;
-        for (const auto &childId: dust3d::String::split(dust3d::String::valueOrEmpty(componentKv.second, "children"), ',')) {
+        for (const auto& childId : dust3d::String::split(dust3d::String::valueOrEmpty(componentKv.second, "children"), ',')) {
             if (childId.empty())
                 continue;
             dust3d::Uuid childComponentId = oldNewIdMap[dust3d::Uuid(childId)];
@@ -669,34 +655,34 @@ void Document::addFromSnapshot(const dust3d::Snapshot &snapshot, enum SnapshotSo
             componentMap[childComponentId].parentId = componentId;
         }
     }
-    
-    for (const auto &nodeIt: newAddedNodeIds) {
+
+    for (const auto& nodeIt : newAddedNodeIds) {
         emit nodeAdded(nodeIt);
     }
-    for (const auto &edgeIt: newAddedEdgeIds) {
+    for (const auto& edgeIt : newAddedEdgeIds) {
         emit edgeAdded(edgeIt);
     }
-    for (const auto &partIt : newAddedPartIds) {
+    for (const auto& partIt : newAddedPartIds) {
         emit partAdded(partIt);
     }
-    
+
     emit componentChildrenChanged(dust3d::Uuid());
     if (isOriginChanged)
         emit originChanged();
     emit skeletonChanged();
-    
-    for (const auto &partIt : newAddedPartIds) {
+
+    for (const auto& partIt : newAddedPartIds) {
         emit partVisibleStateChanged(partIt);
     }
-    
+
     emit uncheckAll();
-    for (const auto &nodeIt: newAddedNodeIds) {
+    for (const auto& nodeIt : newAddedNodeIds) {
         emit checkNode(nodeIt);
     }
-    for (const auto &edgeIt: newAddedEdgeIds) {
+    for (const auto& edgeIt : newAddedEdgeIds) {
         emit checkEdge(edgeIt);
     }
-    
+
     if (!snapshot.materials.empty())
         emit materialListChanged();
 }
@@ -722,22 +708,22 @@ void Document::reset()
     emit skeletonChanged();
 }
 
-void Document::fromSnapshot(const dust3d::Snapshot &snapshot)
+void Document::fromSnapshot(const dust3d::Snapshot& snapshot)
 {
     reset();
     addFromSnapshot(snapshot, SnapshotSource::Unknown);
     emit uncheckAll();
 }
 
-ModelMesh *Document::takeResultMesh()
+ModelMesh* Document::takeResultMesh()
 {
     if (nullptr == m_resultMesh)
         return nullptr;
-    ModelMesh *resultMesh = new ModelMesh(*m_resultMesh);
+    ModelMesh* resultMesh = new ModelMesh(*m_resultMesh);
     return resultMesh;
 }
 
-MonochromeMesh *Document::takeWireframeMesh()
+MonochromeMesh* Document::takeWireframeMesh()
 {
     if (nullptr == m_wireframeMesh)
         return nullptr;
@@ -749,51 +735,51 @@ bool Document::isMeshGenerationSucceed()
     return m_isMeshGenerationSucceed;
 }
 
-ModelMesh *Document::takeResultTextureMesh()
+ModelMesh* Document::takeResultTextureMesh()
 {
     if (nullptr == m_resultTextureMesh)
         return nullptr;
-    ModelMesh *resultTextureMesh = new ModelMesh(*m_resultTextureMesh);
+    ModelMesh* resultTextureMesh = new ModelMesh(*m_resultTextureMesh);
     return resultTextureMesh;
 }
 
 void Document::meshReady()
 {
-    ModelMesh *resultMesh = m_meshGenerator->takeResultMesh();
+    ModelMesh* resultMesh = m_meshGenerator->takeResultMesh();
     m_wireframeMesh.reset(m_meshGenerator->takeWireframeMesh());
-    dust3d::Object *object = m_meshGenerator->takeObject();
+    dust3d::Object* object = m_meshGenerator->takeObject();
     bool isSuccessful = m_meshGenerator->isSuccessful();
-    
+
     std::unique_ptr<std::map<dust3d::Uuid, std::unique_ptr<ModelMesh>>> componentPreviewMeshes;
     componentPreviewMeshes.reset(m_meshGenerator->takeComponentPreviewMeshes());
     bool componentPreviewsChanged = componentPreviewMeshes && !componentPreviewMeshes->empty();
     if (componentPreviewsChanged) {
-        for (auto &it: *componentPreviewMeshes) {
+        for (auto& it : *componentPreviewMeshes) {
             setComponentPreviewMesh(it.first, std::move(it.second));
         }
         emit resultComponentPreviewMeshesChanged();
     }
-    
+
     delete m_resultMesh;
     m_resultMesh = resultMesh;
-    
+
     m_isMeshGenerationSucceed = isSuccessful;
-    
+
     delete m_currentObject;
     m_currentObject = object;
-    
+
     if (nullptr == m_resultMesh) {
         qDebug() << "Result mesh is null";
     }
-    
+
     delete m_meshGenerator;
     m_meshGenerator = nullptr;
-    
+
     qDebug() << "Mesh generation done";
-    
+
     m_isPostProcessResultObsolete = true;
     emit resultMeshChanged();
-    
+
     if (m_isResultMeshObsolete) {
         generateMesh();
     }
@@ -843,18 +829,18 @@ void Document::generateMesh()
         m_isResultMeshObsolete = true;
         return;
     }
-    
+
     emit meshGenerating();
-    
+
     qDebug() << "Mesh generating..";
-    
+
     settleOrigin();
-    
+
     m_isResultMeshObsolete = false;
-    
-    QThread *thread = new QThread;
-    
-    dust3d::Snapshot *snapshot = new dust3d::Snapshot;
+
+    QThread* thread = new QThread;
+
+    dust3d::Snapshot* snapshot = new dust3d::Snapshot;
     toSnapshot(snapshot);
     resetDirtyFlags();
     m_meshGenerator = new MeshGenerator(snapshot);
@@ -862,7 +848,7 @@ void Document::generateMesh()
     m_meshGenerator->setDefaultPartColor(dust3d::Color::createWhite());
     if (nullptr == m_generatedCacheContext)
         m_generatedCacheContext = new MeshGenerator::GeneratedCacheContext;
-    m_meshGenerator->setGeneratedCacheContext((dust3d::MeshGenerator::GeneratedCacheContext *)m_generatedCacheContext);
+    m_meshGenerator->setGeneratedCacheContext((dust3d::MeshGenerator::GeneratedCacheContext*)m_generatedCacheContext);
     if (!m_smoothNormal) {
         m_meshGenerator->setSmoothShadingThresholdAngleDegrees(0);
     }
@@ -880,16 +866,16 @@ void Document::generateTexture()
         m_isTextureObsolete = true;
         return;
     }
-    
+
     qDebug() << "Texture guide generating..";
     emit textureGenerating();
-    
+
     m_isTextureObsolete = false;
-    
-    dust3d::Snapshot *snapshot = new dust3d::Snapshot;
+
+    dust3d::Snapshot* snapshot = new dust3d::Snapshot;
     toSnapshot(snapshot);
-    
-    QThread *thread = new QThread;
+
+    QThread* thread = new QThread;
     m_textureGenerator = new TextureGenerator(*m_postProcessedObject, snapshot);
     m_textureGenerator->moveToThread(thread);
     connect(thread, &QThread::started, m_textureGenerator, &TextureGenerator::process);
@@ -906,21 +892,21 @@ void Document::textureReady()
     updateTextureMetalnessImage(m_textureGenerator->takeResultTextureMetalnessImage());
     updateTextureRoughnessImage(m_textureGenerator->takeResultTextureRoughnessImage());
     updateTextureAmbientOcclusionImage(m_textureGenerator->takeResultTextureAmbientOcclusionImage());
-    
+
     delete m_resultTextureMesh;
     m_resultTextureMesh = m_textureGenerator->takeResultMesh();
-    
+
     m_postProcessedObject->alphaEnabled = m_textureGenerator->hasTransparencySettings();
 
     m_textureImageUpdateVersion++;
-    
+
     delete m_textureGenerator;
     m_textureGenerator = nullptr;
-    
+
     qDebug() << "Texture guide generation done";
-    
+
     emit resultTextureChanged();
-    
+
     if (m_isTextureObsolete) {
         generateTexture();
     } else {
@@ -945,7 +931,7 @@ void Document::postProcess()
     qDebug() << "Post processing..";
     emit postProcessing();
 
-    QThread *thread = new QThread;
+    QThread* thread = new QThread;
     m_postProcessor = new MeshResultPostProcessor(*m_currentObject);
     m_postProcessor->moveToThread(thread);
     connect(thread, &QThread::started, m_postProcessor, &MeshResultPostProcessor::process);
@@ -972,7 +958,7 @@ void Document::postProcessedMeshResultReady()
     }
 }
 
-const dust3d::Object &Document::currentPostProcessedObject() const
+const dust3d::Object& Document::currentPostProcessedObject() const
 {
     return *m_postProcessedObject;
 }
@@ -1007,7 +993,7 @@ void Document::setPartSubdivState(dust3d::Uuid partId, bool subdived)
     emit skeletonChanged();
 }
 
-void Document::resolveSnapshotBoundingBox(const dust3d::Snapshot &snapshot, QRectF *mainProfile, QRectF *sideProfile)
+void Document::resolveSnapshotBoundingBox(const dust3d::Snapshot& snapshot, QRectF* mainProfile, QRectF* sideProfile)
 {
     float left = 0;
     bool leftFirstTime = true;
@@ -1021,7 +1007,7 @@ void Document::resolveSnapshotBoundingBox(const dust3d::Snapshot &snapshot, QRec
     bool zLeftFirstTime = true;
     float zRight = 0;
     bool zRightFirstTime = true;
-    for (const auto &nodeIt: snapshot.nodes) {
+    for (const auto& nodeIt : snapshot.nodes) {
         float radius = dust3d::String::toFloat(dust3d::String::valueOrEmpty(nodeIt.second, "radius"));
         float x = dust3d::String::toFloat(dust3d::String::valueOrEmpty(nodeIt.second, "x"));
         float y = dust3d::String::toFloat(dust3d::String::valueOrEmpty(nodeIt.second, "y"));
@@ -1330,8 +1316,7 @@ void Document::setPartCutFaceLinkedId(dust3d::Uuid partId, dust3d::Uuid linkedId
         qDebug() << "Part not found:" << partId;
         return;
     }
-    if (part->second.cutFace == dust3d::CutFace::UserDefined &&
-            part->second.cutFaceLinkedId == linkedId)
+    if (part->second.cutFace == dust3d::CutFace::UserDefined && part->second.cutFaceLinkedId == linkedId)
         return;
     part->second.setCutFaceLinkedId(linkedId);
     part->second.dirty = true;
@@ -1370,7 +1355,7 @@ void Document::undo()
         return;
     m_redoItems.push_back(m_undoItems.back());
     m_undoItems.pop_back();
-    const auto &item = m_undoItems.back();
+    const auto& item = m_undoItems.back();
     fromSnapshot(item.snapshot);
     qDebug() << "Undo/Redo items:" << m_undoItems.size() << m_redoItems.size();
 }
@@ -1380,7 +1365,7 @@ void Document::redo()
     if (m_redoItems.empty())
         return;
     m_undoItems.push_back(m_redoItems.back());
-    const auto &item = m_redoItems.back();
+    const auto& item = m_redoItems.back();
     fromSnapshot(item.snapshot);
     m_redoItems.pop_back();
     qDebug() << "Undo/Redo items:" << m_undoItems.size() << m_redoItems.size();
@@ -1394,12 +1379,12 @@ void Document::clearHistories()
 
 void Document::paste()
 {
-    const QClipboard *clipboard = QApplication::clipboard();
-    const QMimeData *mimeData = clipboard->mimeData();
+    const QClipboard* clipboard = QApplication::clipboard();
+    const QMimeData* mimeData = clipboard->mimeData();
     if (mimeData->hasText()) {
         dust3d::Snapshot snapshot;
         std::string text = mimeData->text().toUtf8().constData();
-        loadSnapshotFromXmlString(&snapshot, (char *)text.c_str());
+        loadSnapshotFromXmlString(&snapshot, (char*)text.c_str());
         addFromSnapshot(snapshot, SnapshotSource::Paste);
         saveSnapshot();
     }
@@ -1407,8 +1392,8 @@ void Document::paste()
 
 bool Document::hasPastableNodesInClipboard() const
 {
-    const QClipboard *clipboard = QApplication::clipboard();
-    const QMimeData *mimeData = clipboard->mimeData();
+    const QClipboard* clipboard = QApplication::clipboard();
+    const QMimeData* mimeData = clipboard->mimeData();
     if (mimeData->hasText()) {
         if (-1 != mimeData->text().indexOf("<node "))
             return true;
@@ -1418,8 +1403,8 @@ bool Document::hasPastableNodesInClipboard() const
 
 bool Document::hasPastableMaterialsInClipboard() const
 {
-    const QClipboard *clipboard = QApplication::clipboard();
-    const QMimeData *mimeData = clipboard->mimeData();
+    const QClipboard* clipboard = QApplication::clipboard();
+    const QMimeData* mimeData = clipboard->mimeData();
     if (mimeData->hasText()) {
         if (-1 != mimeData->text().indexOf("<material "))
             return true;
@@ -1439,7 +1424,7 @@ bool Document::redoable() const
 
 bool Document::isNodeEditable(dust3d::Uuid nodeId) const
 {
-    const SkeletonNode *node = findNode(nodeId);
+    const SkeletonNode* node = findNode(nodeId);
     if (!node) {
         qDebug() << "Node id not found:" << nodeId;
         return false;
@@ -1449,7 +1434,7 @@ bool Document::isNodeEditable(dust3d::Uuid nodeId) const
 
 bool Document::isEdgeEditable(dust3d::Uuid edgeId) const
 {
-    const SkeletonEdge *edge = findEdge(edgeId);
+    const SkeletonEdge* edge = findEdge(edgeId);
     if (!edge) {
         qDebug() << "Edge id not found:" << edgeId;
         return false;
@@ -1459,16 +1444,12 @@ bool Document::isEdgeEditable(dust3d::Uuid edgeId) const
 
 bool Document::isExportReady() const
 {
-    if (m_meshGenerator ||
-            m_textureGenerator ||
-            m_postProcessor)
+    if (m_meshGenerator || m_textureGenerator || m_postProcessor)
         return false;
-    
-    if (m_isResultMeshObsolete ||
-            m_isTextureObsolete ||
-            m_isPostProcessResultObsolete)
+
+    if (m_isResultMeshObsolete || m_isTextureObsolete || m_isPostProcessResultObsolete)
         return false;
-        
+
     return true;
 }
 
@@ -1485,17 +1466,17 @@ void Document::addMaterial(dust3d::Uuid materialId, QString name, std::vector<Ma
         qDebug() << "Material already exist:" << materialId;
         return;
     }
-    
+
     dust3d::Uuid newMaterialId = materialId;
-    auto &material = materialMap[newMaterialId];
+    auto& material = materialMap[newMaterialId];
     material.id = newMaterialId;
-    
+
     material.name = name;
     material.layers = layers;
     material.dirty = true;
-    
+
     materialIdList.push_back(newMaterialId);
-    
+
     emit materialAdded(newMaterialId);
     emit materialListChanged();
     emit optionsChanged();
@@ -1510,7 +1491,7 @@ void Document::removeMaterial(dust3d::Uuid materialId)
     }
     materialIdList.erase(std::remove(materialIdList.begin(), materialIdList.end(), materialId), materialIdList.end());
     materialMap.erase(findMaterialResult);
-    
+
     emit materialListChanged();
     emit materialRemoved(materialId);
     emit optionsChanged();
@@ -1539,7 +1520,7 @@ void Document::renameMaterial(dust3d::Uuid materialId, QString name)
     }
     if (findMaterialResult->second.name == name)
         return;
-    
+
     findMaterialResult->second.name = name;
     emit materialNameChanged(materialId);
     emit materialListChanged();
@@ -1552,10 +1533,10 @@ void Document::generateMaterialPreviews()
         return;
     }
 
-    QThread *thread = new QThread;
+    QThread* thread = new QThread;
     m_materialPreviewsGenerator = new MaterialPreviewsGenerator();
     bool hasDirtyMaterial = false;
-    for (auto &materialIt: materialMap) {
+    for (auto& materialIt : materialMap) {
         if (!materialIt.second.dirty)
             continue;
         m_materialPreviewsGenerator->addMaterial(materialIt.first, materialIt.second.layers);
@@ -1568,9 +1549,9 @@ void Document::generateMaterialPreviews()
         delete thread;
         return;
     }
-    
+
     qDebug() << "Material previews generating..";
-    
+
     m_materialPreviewsGenerator->moveToThread(thread);
     connect(thread, &QThread::started, m_materialPreviewsGenerator, &MaterialPreviewsGenerator::process);
     connect(m_materialPreviewsGenerator, &MaterialPreviewsGenerator::finished, this, &Document::materialPreviewsReady);
@@ -1581,10 +1562,10 @@ void Document::generateMaterialPreviews()
 
 void Document::materialPreviewsReady()
 {
-    for (const auto &materialId: m_materialPreviewsGenerator->generatedPreviewMaterialIds()) {
+    for (const auto& materialId : m_materialPreviewsGenerator->generatedPreviewMaterialIds()) {
         auto material = materialMap.find(materialId);
         if (material != materialMap.end()) {
-            ModelMesh *resultPartPreviewMesh = m_materialPreviewsGenerator->takePreview(materialId);
+            ModelMesh* resultPartPreviewMesh = m_materialPreviewsGenerator->takePreview(materialId);
             material->second.updatePreviewMesh(resultPartPreviewMesh);
             emit materialPreviewChanged(materialId);
         }
@@ -1592,9 +1573,9 @@ void Document::materialPreviewsReady()
 
     delete m_materialPreviewsGenerator;
     m_materialPreviewsGenerator = nullptr;
-    
+
     qDebug() << "Material previews generation done";
-    
+
     generateMaterialPreviews();
 }
 
@@ -1619,18 +1600,18 @@ void Document::copyNodes(std::set<dust3d::Uuid> nodeIdSet) const
     toSnapshot(&snapshot, nodeIdSet, DocumentToSnapshotFor::Nodes);
     std::string snapshotXml;
     dust3d::saveSnapshotToXmlString(snapshot, snapshotXml);
-    QClipboard *clipboard = QApplication::clipboard();
+    QClipboard* clipboard = QApplication::clipboard();
     clipboard->setText(snapshotXml.c_str());
 }
 
-void Document::collectCutFaceList(std::vector<QString> &cutFaces) const
+void Document::collectCutFaceList(std::vector<QString>& cutFaces) const
 {
     cutFaces.clear();
-    
+
     std::vector<dust3d::Uuid> cutFacePartIdList;
-    
+
     std::set<dust3d::Uuid> cutFacePartIds;
-    for (const auto &it: partMap) {
+    for (const auto& it : partMap) {
         if (dust3d::PartTarget::CutFace == it.second.target) {
             if (cutFacePartIds.find(it.first) != cutFacePartIds.end())
                 continue;
@@ -1644,16 +1625,16 @@ void Document::collectCutFaceList(std::vector<QString> &cutFaces) const
             cutFacePartIdList.push_back(it.second.cutFaceLinkedId);
         }
     }
-    
+
     // Sort cut face by center.x of front view
     std::map<dust3d::Uuid, float> centerOffsetMap;
-    for (const auto &partId: cutFacePartIdList) {
-        const SkeletonPart *part = findPart(partId);
+    for (const auto& partId : cutFacePartIdList) {
+        const SkeletonPart* part = findPart(partId);
         if (nullptr == part)
             continue;
         float offsetSum = 0;
-        for (const auto &nodeId: part->nodeIds) {
-            const SkeletonNode *node = findNode(nodeId);
+        for (const auto& nodeId : part->nodeIds) {
+            const SkeletonNode* node = findNode(nodeId);
             if (nullptr == node)
                 continue;
             offsetSum += node->getX();
@@ -1663,16 +1644,16 @@ void Document::collectCutFaceList(std::vector<QString> &cutFaces) const
         centerOffsetMap[partId] = offsetSum / part->nodeIds.size();
     }
     std::sort(cutFacePartIdList.begin(), cutFacePartIdList.end(),
-            [&](const dust3d::Uuid &firstPartId, const dust3d::Uuid &secondPartId) {
-        return centerOffsetMap[firstPartId] < centerOffsetMap[secondPartId];
-    });
-    
+        [&](const dust3d::Uuid& firstPartId, const dust3d::Uuid& secondPartId) {
+            return centerOffsetMap[firstPartId] < centerOffsetMap[secondPartId];
+        });
+
     size_t cutFaceTypeCount = (size_t)dust3d::CutFace::UserDefined;
     for (size_t i = 0; i < (size_t)cutFaceTypeCount; ++i) {
         dust3d::CutFace cutFace = (dust3d::CutFace)i;
         cutFaces.push_back(QString(dust3d::CutFaceToString(cutFace).c_str()));
     }
-    
-    for (const auto &it: cutFacePartIdList)
+
+    for (const auto& it : cutFacePartIdList)
         cutFaces.push_back(QString(it.toString().c_str()));
 }

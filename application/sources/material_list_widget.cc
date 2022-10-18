@@ -1,15 +1,15 @@
+#include "material_list_widget.h"
+#include "document.h"
+#include <QApplication>
+#include <QClipboard>
 #include <QGuiApplication>
 #include <QMenu>
 #include <QXmlStreamWriter>
-#include <QClipboard>
-#include <QApplication>
 #include <dust3d/base/snapshot_xml.h>
-#include "material_list_widget.h"
-#include "document.h"
 
-MaterialListWidget::MaterialListWidget(const Document *document, QWidget *parent) :
-    QTreeWidget(parent),
-    m_document(document)
+MaterialListWidget::MaterialListWidget(const Document* document, QWidget* parent)
+    : QTreeWidget(parent)
+    , m_document(document)
 {
     setVerticalScrollMode(QAbstractItemView::ScrollPerPixel);
     setFocusPolicy(Qt::NoFocus);
@@ -59,7 +59,7 @@ void MaterialListWidget::updateMaterialSelectState(dust3d::Uuid materialId, bool
         qDebug() << "Find material item failed:" << materialId;
         return;
     }
-    MaterialWidget *materialWidget = (MaterialWidget *)itemWidget(findItemResult->second.first, findItemResult->second.second);
+    MaterialWidget* materialWidget = (MaterialWidget*)itemWidget(findItemResult->second.first, findItemResult->second.second);
     materialWidget->updateCheckedState(selected);
 }
 
@@ -90,7 +90,7 @@ void MaterialListWidget::selectMaterial(dust3d::Uuid materialId, bool multiple)
         }
     }
     if (!m_selectedMaterialIds.empty()) {
-        for (const auto &id: m_selectedMaterialIds) {
+        for (const auto& id : m_selectedMaterialIds) {
             updateMaterialSelectState(id, false);
         }
         m_selectedMaterialIds.clear();
@@ -107,20 +107,20 @@ void MaterialListWidget::selectMaterial(dust3d::Uuid materialId, bool multiple)
     }
 }
 
-void MaterialListWidget::mousePressEvent(QMouseEvent *event)
+void MaterialListWidget::mousePressEvent(QMouseEvent* event)
 {
     QModelIndex itemIndex = indexAt(event->pos());
     QTreeView::mousePressEvent(event);
     if (event->button() == Qt::LeftButton) {
         bool multiple = QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier);
         if (itemIndex.isValid()) {
-            QTreeWidgetItem *item = itemFromIndex(itemIndex);
+            QTreeWidgetItem* item = itemFromIndex(itemIndex);
             auto materialId = dust3d::Uuid(item->data(itemIndex.column(), Qt::UserRole).toString().toUtf8().constData());
             if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
                 bool startAdd = false;
                 bool stopAdd = false;
                 std::vector<dust3d::Uuid> waitQueue;
-                for (const auto &childId: m_document->materialIdList) {
+                for (const auto& childId : m_document->materialIdList) {
                     if (m_shiftStartMaterialId == childId || materialId == childId) {
                         if (startAdd) {
                             stopAdd = true;
@@ -135,7 +135,7 @@ void MaterialListWidget::mousePressEvent(QMouseEvent *event)
                 }
                 if (stopAdd && !waitQueue.empty()) {
                     if (!m_selectedMaterialIds.empty()) {
-                        for (const auto &id: m_selectedMaterialIds) {
+                        for (const auto& id : m_selectedMaterialIds) {
                             updateMaterialSelectState(id, false);
                         }
                         m_selectedMaterialIds.clear();
@@ -143,7 +143,7 @@ void MaterialListWidget::mousePressEvent(QMouseEvent *event)
                     if (!m_currentSelectedMaterialId.isNull()) {
                         m_currentSelectedMaterialId = dust3d::Uuid();
                     }
-                    for (const auto &waitId: waitQueue) {
+                    for (const auto& waitId : waitQueue) {
                         selectMaterial(waitId, true);
                     }
                 }
@@ -161,11 +161,10 @@ void MaterialListWidget::mousePressEvent(QMouseEvent *event)
 
 bool MaterialListWidget::isMaterialSelected(dust3d::Uuid materialId)
 {
-    return (m_currentSelectedMaterialId == materialId ||
-        m_selectedMaterialIds.find(materialId) != m_selectedMaterialIds.end());
+    return (m_currentSelectedMaterialId == materialId || m_selectedMaterialIds.find(materialId) != m_selectedMaterialIds.end());
 }
 
-void MaterialListWidget::showContextMenu(const QPoint &pos)
+void MaterialListWidget::showContextMenu(const QPoint& pos)
 {
     if (!m_hasContextMenu)
         return;
@@ -177,7 +176,7 @@ void MaterialListWidget::showContextMenu(const QPoint &pos)
         unorderedMaterialIds.insert(m_currentSelectedMaterialId);
 
     std::vector<dust3d::Uuid> materialIds;
-    for (const auto &cand: m_document->materialIdList) {
+    for (const auto& cand : m_document->materialIdList) {
         if (unorderedMaterialIds.find(cand) != unorderedMaterialIds.end())
             materialIds.push_back(cand);
     }
@@ -205,7 +204,7 @@ void MaterialListWidget::showContextMenu(const QPoint &pos)
     QAction deleteAction(tr("Delete"), this);
     if (!materialIds.empty()) {
         connect(&deleteAction, &QAction::triggered, [=]() {
-            for (const auto &materialId: materialIds)
+            for (const auto& materialId : materialIds)
                 emit removeMaterial(materialId);
         });
         contextMenu.addAction(&deleteAction);
@@ -214,7 +213,7 @@ void MaterialListWidget::showContextMenu(const QPoint &pos)
     contextMenu.exec(mapToGlobal(pos));
 }
 
-void MaterialListWidget::resizeEvent(QResizeEvent *event)
+void MaterialListWidget::resizeEvent(QResizeEvent* event)
 {
     QTreeWidget::resizeEvent(event);
     if (calculateColumnCount() != columnCount())
@@ -247,11 +246,11 @@ void MaterialListWidget::reload()
     setColumnCount(columns);
     for (int i = 0; i < columns; i++)
         setColumnWidth(i, columnWidth);
-    
+
     std::vector<dust3d::Uuid> orderedMaterialIdList = m_document->materialIdList;
-    std::sort(orderedMaterialIdList.begin(), orderedMaterialIdList.end(), [&](const dust3d::Uuid &firstMaterialId, const dust3d::Uuid &secondMaterialId) {
-        const auto *firstMaterial = m_document->findMaterial(firstMaterialId);
-        const auto *secondMaterial = m_document->findMaterial(secondMaterialId);
+    std::sort(orderedMaterialIdList.begin(), orderedMaterialIdList.end(), [&](const dust3d::Uuid& firstMaterialId, const dust3d::Uuid& secondMaterialId) {
+        const auto* firstMaterial = m_document->findMaterial(firstMaterialId);
+        const auto* secondMaterial = m_document->findMaterial(secondMaterialId);
         if (nullptr == firstMaterial || nullptr == secondMaterial)
             return false;
         return QString::compare(firstMaterial->name, secondMaterial->name, Qt::CaseInsensitive) < 0;
@@ -259,13 +258,13 @@ void MaterialListWidget::reload()
 
     decltype(orderedMaterialIdList.size()) materialIndex = 0;
     while (materialIndex < orderedMaterialIdList.size()) {
-        QTreeWidgetItem *item = new QTreeWidgetItem(this);
+        QTreeWidgetItem* item = new QTreeWidgetItem(this);
         item->setFlags((item->flags() | Qt::ItemIsEnabled) & ~(Qt::ItemIsSelectable) & ~(Qt::ItemIsEditable));
         for (int col = 0; col < columns && materialIndex < orderedMaterialIdList.size(); col++, materialIndex++) {
-            const auto &materialId = orderedMaterialIdList[materialIndex];
+            const auto& materialId = orderedMaterialIdList[materialIndex];
             item->setSizeHint(col, QSize(columnWidth, MaterialWidget::preferredHeight() + 2));
             item->setData(col, Qt::UserRole, QString(materialId.toString().c_str()));
-            MaterialWidget *widget = new MaterialWidget(m_document, materialId);
+            MaterialWidget* widget = new MaterialWidget(m_document, materialId);
             connect(widget, &MaterialWidget::modifyMaterial, this, &MaterialListWidget::modifyMaterial);
             setItemWidget(item, col, widget);
             widget->reload();
@@ -301,9 +300,9 @@ void MaterialListWidget::copy()
     dust3d::Snapshot snapshot;
     m_document->toSnapshot(&snapshot, emptySet, DocumentToSnapshotFor::Materials,
         limitMaterialIds);
-        
+
     std::string snapshotXml;
     dust3d::saveSnapshotToXmlString(snapshot, snapshotXml);
-    QClipboard *clipboard = QApplication::clipboard();
+    QClipboard* clipboard = QApplication::clipboard();
     clipboard->setText(snapshotXml.c_str());
 }

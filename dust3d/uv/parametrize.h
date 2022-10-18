@@ -25,14 +25,12 @@
 
 #include <dust3d/uv/uv_mesh_data_type.h>
 
-namespace dust3d
-{
-namespace uv
-{
+namespace dust3d {
+namespace uv {
 
-bool parametrize(const std::vector<Vertex> &verticies, 
-        const std::vector<Face> &faces, 
-        std::vector<TextureCoord> &vertexUvs);
+    bool parametrize(const std::vector<Vertex>& verticies,
+        const std::vector<Face>& faces,
+        std::vector<TextureCoord>& vertexUvs);
 
 }
 }

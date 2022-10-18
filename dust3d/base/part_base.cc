@@ -22,11 +22,10 @@
 
 #include <dust3d/base/part_base.h>
 
-namespace dust3d
-{
-    
+namespace dust3d {
+
 IMPL_PartBaseFromString
-IMPL_PartBaseToString
-IMPL_PartBaseToDispName
+    IMPL_PartBaseToString
+        IMPL_PartBaseToDispName
 
 }

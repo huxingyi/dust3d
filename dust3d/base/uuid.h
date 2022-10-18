@@ -23,75 +23,65 @@
 #ifndef DUST3D_BASE_UUID_H_
 #define DUST3D_BASE_UUID_H_
 
-#include <random>
-#include <sstream>
 #include <chrono>
 #include <ctime>
+#include <random>
+#include <sstream>
 
-namespace dust3d
-{
+namespace dust3d {
 
-class Uuid
-{
+class Uuid {
 public:
-    class RandomGenerator
-    {
+    class RandomGenerator {
     public:
-        RandomGenerator():
-            m_randomGenerator(m_randomDevice() + std::chrono::time_point_cast<std::chrono::seconds>(std::chrono::system_clock::now()).time_since_epoch().count()),
-            m_randomDistribution(0, 15)
+        RandomGenerator()
+            : m_randomGenerator(m_randomDevice() + std::chrono::time_point_cast<std::chrono::seconds>(std::chrono::system_clock::now()).time_since_epoch().count())
+            , m_randomDistribution(0, 15)
         {
         }
-        
+
         int generate()
         {
             return m_randomDistribution(m_randomGenerator);
         }
-    
+
     private:
         std::random_device m_randomDevice;
         std::mt19937 m_randomGenerator;
         std::uniform_int_distribution<int> m_randomDistribution;
     };
 
-    static RandomGenerator *m_generator;
+    static RandomGenerator* m_generator;
 
     Uuid() = default;
-    
-    Uuid(const std::string &string)
+
+    Uuid(const std::string& string)
     {
-        if (sizeof("{hhhhhhhh-hhhh-hhhh-hhhh-hhhhhhhhhhhh}") - 1 == string.length() &&
-                '{' == string[0] &&
-                validate(&string[1], string.length() - 2)) {
+        if (sizeof("{hhhhhhhh-hhhh-hhhh-hhhh-hhhhhhhhhhhh}") - 1 == string.length() && '{' == string[0] && validate(&string[1], string.length() - 2)) {
             m_uuid = string.substr(1, string.length() - 2);
             return;
         }
-        if (sizeof("hhhhhhhh-hhhh-hhhh-hhhh-hhhhhhhhhhhh") - 1 == string.length() &&
-                validate(&string[0], string.length())) {
+        if (sizeof("hhhhhhhh-hhhh-hhhh-hhhh-hhhhhhhhhhhh") - 1 == string.length() && validate(&string[0], string.length())) {
             m_uuid = string;
             return;
         }
     }
 
-    static bool validate(const char *string, size_t length)
+    static bool validate(const char* string, size_t length)
     {
-        return length >= 24 &&
-            '-' == string[8] && 
-            '-' == string[13] && 
-            '-' == string[18] && 
-            '-' == string[23];
+        return length >= 24 && '-' == string[8] && '-' == string[13] && '-' == string[18] && '-' == string[23];
     }
-    
+
     bool isNull() const
     {
         return m_uuid.empty();
     }
-    
+
     std::string toString() const
     {
         return "{" + m_uuid + "}";
     }
-    
+
     static Uuid createUuid()
     {
         std::ostringstream ss;
@@ -134,43 +124,42 @@ public:
         ss << m_generator->generate();
         return Uuid(ss.str());
     }
+
 private:
-    friend std::string to_string(const Uuid &uuid);
+    friend std::string to_string(const Uuid& uuid);
     friend struct std::hash<Uuid>;
-    friend bool operator==(const Uuid &lhs, const Uuid &rhs);
-    friend bool operator!=(const Uuid &lhs, const Uuid &rhs);
-    friend bool operator<(const Uuid &lhs, const Uuid &rhs);
+    friend bool operator==(const Uuid& lhs, const Uuid& rhs);
+    friend bool operator!=(const Uuid& lhs, const Uuid& rhs);
+    friend bool operator<(const Uuid& lhs, const Uuid& rhs);
     std::string m_uuid;
 };
 
-inline std::string to_string(const Uuid &uuid)
+inline std::string to_string(const Uuid& uuid)
 {
     return "{" + uuid.m_uuid + "}";
 }
 
-inline bool operator==(const Uuid &lhs, const Uuid &rhs)
+inline bool operator==(const Uuid& lhs, const Uuid& rhs)
 {
     return lhs.m_uuid == rhs.m_uuid;
 }
 
-inline bool operator!=(const Uuid &lhs, const Uuid &rhs)
+inline bool operator!=(const Uuid& lhs, const Uuid& rhs)
 {
     return lhs.m_uuid != rhs.m_uuid;
 }
 
-inline bool operator<(const Uuid &lhs, const Uuid &rhs)
+inline bool operator<(const Uuid& lhs, const Uuid& rhs)
 {
     return lhs.m_uuid < rhs.m_uuid;
 }
-    
+
 }
 
-namespace std
-{
-    
-template<>
-struct hash<dust3d::Uuid>
-{
+namespace std {
+
+template <>
+struct hash<dust3d::Uuid> {
     size_t operator()(const dust3d::Uuid& uuid) const
     {
         return std::hash<std::string>()(uuid.m_uuid);

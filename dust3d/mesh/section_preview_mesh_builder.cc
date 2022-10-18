@@ -23,20 +23,19 @@
 #include <dust3d/mesh/section_preview_mesh_builder.h>
 #include <dust3d/mesh/triangulate.h>
 
-namespace dust3d
-{
+namespace dust3d {
 
-SectionPreviewMeshBuilder::SectionPreviewMeshBuilder(const std::vector<Vector2> &cutFace):
-    m_cutFace(cutFace)
+SectionPreviewMeshBuilder::SectionPreviewMeshBuilder(const std::vector<Vector2>& cutFace)
+    : m_cutFace(cutFace)
 {
 }
 
-const std::vector<Vector3> &SectionPreviewMeshBuilder::resultVertices()
+const std::vector<Vector3>& SectionPreviewMeshBuilder::resultVertices()
 {
     return m_resultVertices;
 }
 
-const std::vector<std::vector<size_t>> &SectionPreviewMeshBuilder::resultTriangles()
+const std::vector<std::vector<size_t>>& SectionPreviewMeshBuilder::resultTriangles()
 {
     return m_resultTriangles;
 }

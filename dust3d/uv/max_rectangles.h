@@ -31,35 +31,31 @@
 #ifndef DUST3D_UV_MAX_RECTANGLES_H_
 #define DUST3D_UV_MAX_RECTANGLES_H_
 
-namespace dust3d
-{
-namespace uv
-{
+namespace dust3d {
+namespace uv {
 
-typedef struct MaxRectanglesSize 
-{
-    int width;
-    int height;
-} MaxRectanglesSize;
+    typedef struct MaxRectanglesSize {
+        int width;
+        int height;
+    } MaxRectanglesSize;
 
-typedef struct MaxRectanglesPosition 
-{
-    int left;
-    int top;
-    int rotated:1;
-} MaxRectanglesPosition;
+    typedef struct MaxRectanglesPosition {
+        int left;
+        int top;
+        int rotated : 1;
+    } MaxRectanglesPosition;
 
-enum MaxRectanglesFreeRectChoiceHeuristic {
-    kMaxRectanglesBestShortSideFit, ///< -BSSF: Positions the rectangle against the short side of a free rectangle into which it fits the best.
-    kMaxRectanglesBestLongSideFit, ///< -BLSF: Positions the rectangle against the long side of a free rectangle into which it fits the best.
-    kMaxRectanglesBestAreaFit, ///< -BAF: Positions the rectangle into the smallest free rect into which it fits.
-    kMaxRectanglesBottomLeftRule, ///< -BL: Does the Tetris placement.
-    kMaxRectanglesContactPointRule ///< -CP: Choosest the placement where the rectangle touches other rects as much as possible.
-};
+    enum MaxRectanglesFreeRectChoiceHeuristic {
+        kMaxRectanglesBestShortSideFit, ///< -BSSF: Positions the rectangle against the short side of a free rectangle into which it fits the best.
+        kMaxRectanglesBestLongSideFit, ///< -BLSF: Positions the rectangle against the long side of a free rectangle into which it fits the best.
+        kMaxRectanglesBestAreaFit, ///< -BAF: Positions the rectangle into the smallest free rect into which it fits.
+        kMaxRectanglesBottomLeftRule, ///< -BL: Does the Tetris placement.
+        kMaxRectanglesContactPointRule ///< -CP: Choosest the placement where the rectangle touches other rects as much as possible.
+    };
 
-int maxRectangles(int width, int height, int rectCount, MaxRectanglesSize *rects,
+    int maxRectangles(int width, int height, int rectCount, MaxRectanglesSize* rects,
         enum MaxRectanglesFreeRectChoiceHeuristic method, int allowRotations,
-        MaxRectanglesPosition *layoutResults, float *occupancy);
+        MaxRectanglesPosition* layoutResults, float* occupancy);
 
 }
 }

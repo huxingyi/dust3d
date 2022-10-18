@@ -1,96 +1,96 @@
-#include <unordered_set>
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QPushButton>
+#include "component_property_widget.h"
+#include "document.h"
+#include "float_number_widget.h"
+#include "theme.h"
 #include <QColorDialog>
 #include <QGroupBox>
-#include "component_property_widget.h"
-#include "float_number_widget.h"
-#include "document.h"
-#include "theme.h"
+#include <QHBoxLayout>
+#include <QPushButton>
+#include <QVBoxLayout>
+#include <unordered_set>
 
-ComponentPropertyWidget::ComponentPropertyWidget(Document *document, 
-        const std::vector<dust3d::Uuid> &componentIds,
-        QWidget *parent):
-    QWidget(parent),
-    m_document(document),
-    m_componentIds(componentIds)
+ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
+    const std::vector<dust3d::Uuid>& componentIds,
+    QWidget* parent)
+    : QWidget(parent)
+    , m_document(document)
+    , m_componentIds(componentIds)
 {
     preparePartIds();
     m_color = lastColor();
 
-    QPushButton *colorPreviewArea = new QPushButton;
+    QPushButton* colorPreviewArea = new QPushButton;
     colorPreviewArea->setStyleSheet("QPushButton {background-color: " + m_color.name() + "; border-radius: 0;}");
     colorPreviewArea->setFixedSize(Theme::toolIconSize * 1.8, Theme::toolIconSize);
 
-    QPushButton *colorPickerButton = new QPushButton(QChar(fa::eyedropper));
+    QPushButton* colorPickerButton = new QPushButton(QChar(fa::eyedropper));
     Theme::initIconButton(colorPickerButton);
     connect(colorPickerButton, &QPushButton::clicked, this, &ComponentPropertyWidget::showColorDialog);
 
-    QHBoxLayout *colorLayout = new QHBoxLayout;
+    QHBoxLayout* colorLayout = new QHBoxLayout;
     colorLayout->addWidget(colorPreviewArea);
     colorLayout->addWidget(colorPickerButton);
     colorLayout->addStretch();
     colorLayout->setSizeConstraint(QLayout::SetFixedSize);
 
-    QGroupBox *deformGroupBox = nullptr;
+    QGroupBox* deformGroupBox = nullptr;
     if (nullptr != m_part) {
-        FloatNumberWidget *thicknessWidget = new FloatNumberWidget;
+        FloatNumberWidget* thicknessWidget = new FloatNumberWidget;
         thicknessWidget->setItemName(tr("Thickness"));
         thicknessWidget->setRange(0, 2);
         thicknessWidget->setValue(m_part->deformThickness);
-        
+
         connect(thicknessWidget, &FloatNumberWidget::valueChanged, [=](float value) {
             emit setPartDeformThickness(m_partId, value);
             emit groupOperationAdded();
         });
-        
-        FloatNumberWidget *widthWidget = new FloatNumberWidget;
+
+        FloatNumberWidget* widthWidget = new FloatNumberWidget;
         widthWidget->setItemName(tr("Width"));
         widthWidget->setRange(0, 2);
         widthWidget->setValue(m_part->deformWidth);
-        
+
         connect(widthWidget, &FloatNumberWidget::valueChanged, [=](float value) {
             emit setPartDeformWidth(m_partId, value);
             emit groupOperationAdded();
         });
-        
-        QPushButton *thicknessEraser = new QPushButton(QChar(fa::eraser));
+
+        QPushButton* thicknessEraser = new QPushButton(QChar(fa::eraser));
         Theme::initIconButton(thicknessEraser);
-        
+
         connect(thicknessEraser, &QPushButton::clicked, [=]() {
             thicknessWidget->setValue(1.0);
             emit groupOperationAdded();
         });
-        
-        QPushButton *widthEraser = new QPushButton(QChar(fa::eraser));
+
+        QPushButton* widthEraser = new QPushButton(QChar(fa::eraser));
         Theme::initIconButton(widthEraser);
-        
+
         connect(widthEraser, &QPushButton::clicked, [=]() {
             widthWidget->setValue(1.0);
             emit groupOperationAdded();
         });
-        
-        QVBoxLayout *deformLayout = new QVBoxLayout;
-        
-        QHBoxLayout *thicknessLayout = new QHBoxLayout;
-        QHBoxLayout *widthLayout = new QHBoxLayout;
+
+        QVBoxLayout* deformLayout = new QVBoxLayout;
+
+        QHBoxLayout* thicknessLayout = new QHBoxLayout;
+        QHBoxLayout* widthLayout = new QHBoxLayout;
         thicknessLayout->addWidget(thicknessEraser);
         thicknessLayout->addWidget(thicknessWidget);
         widthLayout->addWidget(widthEraser);
         widthLayout->addWidget(widthWidget);
-        
-        QCheckBox *deformUnifyStateBox = new QCheckBox();
+
+        QCheckBox* deformUnifyStateBox = new QCheckBox();
         Theme::initCheckbox(deformUnifyStateBox);
         deformUnifyStateBox->setText(tr("Unified"));
         deformUnifyStateBox->setChecked(m_part->deformUnified);
-        
+
         connect(deformUnifyStateBox, &QCheckBox::stateChanged, this, [=]() {
             emit setPartDeformUnified(m_partId, deformUnifyStateBox->isChecked());
             emit groupOperationAdded();
         });
-        
-        QHBoxLayout *deformUnifyLayout = new QHBoxLayout;
+
+        QHBoxLayout* deformUnifyLayout = new QHBoxLayout;
         deformUnifyLayout->addStretch();
         deformUnifyLayout->addWidget(deformUnifyStateBox);
 
@@ -102,85 +102,85 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document *document,
         deformGroupBox->setLayout(deformLayout);
     }
 
-    QGroupBox *cutFaceGroupBox = nullptr;
+    QGroupBox* cutFaceGroupBox = nullptr;
     if (nullptr != m_part) {
-        FloatNumberWidget *rotationWidget = new FloatNumberWidget;
+        FloatNumberWidget* rotationWidget = new FloatNumberWidget;
         rotationWidget->setItemName(tr("Rotation"));
         rotationWidget->setRange(-1, 1);
         rotationWidget->setValue(m_part->cutRotation);
-        
+
         connect(rotationWidget, &FloatNumberWidget::valueChanged, [=](float value) {
             emit setPartCutRotation(m_partId, value);
             emit groupOperationAdded();
         });
-        
-        QPushButton *rotationEraser = new QPushButton(QChar(fa::eraser));
+
+        QPushButton* rotationEraser = new QPushButton(QChar(fa::eraser));
         Theme::initIconButton(rotationEraser);
-        
+
         connect(rotationEraser, &QPushButton::clicked, [=]() {
             rotationWidget->setValue(0.0);
             emit groupOperationAdded();
         });
-        
-        QPushButton *rotationMinus5Button = new QPushButton(QChar(fa::rotateleft));
+
+        QPushButton* rotationMinus5Button = new QPushButton(QChar(fa::rotateleft));
         Theme::initIconButton(rotationMinus5Button);
-        
+
         connect(rotationMinus5Button, &QPushButton::clicked, [=]() {
             rotationWidget->setValue(-0.5);
             emit groupOperationAdded();
         });
-        
-        QPushButton *rotation5Button = new QPushButton(QChar(fa::rotateright));
+
+        QPushButton* rotation5Button = new QPushButton(QChar(fa::rotateright));
         Theme::initIconButton(rotation5Button);
-        
+
         connect(rotation5Button, &QPushButton::clicked, [=]() {
             rotationWidget->setValue(0.5);
             emit groupOperationAdded();
         });
 
-        QHBoxLayout *rotationLayout = new QHBoxLayout;
+        QHBoxLayout* rotationLayout = new QHBoxLayout;
         rotationLayout->addWidget(rotationEraser);
         rotationLayout->addWidget(rotationWidget);
         rotationLayout->addWidget(rotationMinus5Button);
         rotationLayout->addWidget(rotation5Button);
 
-        QCheckBox *subdivStateBox = new QCheckBox();
+        QCheckBox* subdivStateBox = new QCheckBox();
         Theme::initCheckbox(subdivStateBox);
         subdivStateBox->setText(tr("Subdivided"));
         subdivStateBox->setChecked(m_part->subdived);
-        
+
         connect(subdivStateBox, &QCheckBox::stateChanged, this, [=]() {
             emit setPartSubdivState(m_partId, subdivStateBox->isChecked());
             emit groupOperationAdded();
         });
 
-        QCheckBox *chamferStateBox = new QCheckBox();
+        QCheckBox* chamferStateBox = new QCheckBox();
         Theme::initCheckbox(chamferStateBox);
         chamferStateBox->setText(tr("Chamfered"));
         chamferStateBox->setChecked(m_part->chamfered);
-        
+
         connect(chamferStateBox, &QCheckBox::stateChanged, this, [=]() {
             emit setPartChamferState(m_partId, chamferStateBox->isChecked());
             emit groupOperationAdded();
         });
 
-        QCheckBox *roundEndStateBox = new QCheckBox();
+        QCheckBox* roundEndStateBox = new QCheckBox();
         Theme::initCheckbox(roundEndStateBox);
         roundEndStateBox->setText(tr("Round end"));
         roundEndStateBox->setChecked(m_part->rounded);
-        
+
         connect(roundEndStateBox, &QCheckBox::stateChanged, this, [=]() {
             emit setPartRoundState(m_partId, roundEndStateBox->isChecked());
             emit groupOperationAdded();
         });
 
-        QHBoxLayout *optionsLayout = new QHBoxLayout;
+        QHBoxLayout* optionsLayout = new QHBoxLayout;
         optionsLayout->addStretch();
         optionsLayout->addWidget(roundEndStateBox);
         optionsLayout->addWidget(chamferStateBox);
         optionsLayout->addWidget(subdivStateBox);
 
-        QVBoxLayout *cutFaceLayout = new QVBoxLayout;
+        QVBoxLayout* cutFaceLayout = new QVBoxLayout;
         cutFaceLayout->addLayout(rotationLayout);
         cutFaceLayout->addLayout(optionsLayout);
 
@@ -188,7 +188,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document *document,
         cutFaceGroupBox->setLayout(cutFaceLayout);
     }
 
-    QVBoxLayout *mainLayout = new QVBoxLayout;
+    QVBoxLayout* mainLayout = new QVBoxLayout;
     mainLayout->addLayout(colorLayout);
     if (nullptr != deformGroupBox)
         mainLayout->addWidget(deformGroupBox);
@@ -216,10 +216,10 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document *document,
 void ComponentPropertyWidget::preparePartIds()
 {
     std::unordered_set<dust3d::Uuid> addedPartIdSet;
-    for (const auto &componentId: m_componentIds) {
+    for (const auto& componentId : m_componentIds) {
         std::vector<dust3d::Uuid> partIds;
         m_document->collectComponentDescendantParts(componentId, partIds);
-        for (const auto &it: partIds) {
+        for (const auto& it : partIds) {
             if (addedPartIdSet.insert(it).second)
                 m_partIds.emplace_back(it);
         }
@@ -234,18 +234,18 @@ void ComponentPropertyWidget::preparePartIds()
 QColor ComponentPropertyWidget::lastColor()
 {
     QColor color = Qt::white;
-    std::map<QString, int> colorMap; 
-    for (const auto &partId: m_partIds) {
-        const SkeletonPart *part = m_document->findPart(partId);
+    std::map<QString, int> colorMap;
+    for (const auto& partId : m_partIds) {
+        const SkeletonPart* part = m_document->findPart(partId);
         if (nullptr == part)
             continue;
         colorMap[part->color.name()]++;
     }
     if (!colorMap.empty()) {
-        color = std::max_element(colorMap.begin(), colorMap.end(), 
-                [](const std::map<QString, int>::value_type &a, const std::map<QString, int>::value_type &b) {
-            return a.second < b.second;
-        })->first;
+        color = std::max_element(colorMap.begin(), colorMap.end(),
+            [](const std::map<QString, int>::value_type& a, const std::map<QString, int>::value_type& b) {
+                return a.second < b.second;
+            })->first;
     }
     return color;
 }
@@ -258,7 +258,7 @@ void ComponentPropertyWidget::showColorDialog()
     if (!color.isValid())
         return;
 
-    for (const auto &partId: m_partIds) {
+    for (const auto& partId : m_partIds) {
         emit setPartColorState(partId, true, color);
     }
     emit groupOperationAdded();

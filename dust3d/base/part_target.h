@@ -25,59 +25,57 @@
 
 #include <string>
 
-namespace dust3d
-{
+namespace dust3d {
 
-enum class PartTarget
-{
+enum class PartTarget {
     Model = 0,
     CutFace,
     Count, // FIXME: Enable StitchingLine after the UI is avaliable
     StitchingLine
 };
-PartTarget PartTargetFromString(const char *targetString);
-#define IMPL_PartTargetFromString                                               \
-PartTarget PartTargetFromString(const char *targetString)                       \
-{                                                                               \
-    std::string target = targetString;                                          \
-    if (target == "Model")                                                      \
-        return PartTarget::Model;                                               \
-    if (target == "CutFace")                                                    \
-        return PartTarget::CutFace;                                             \
-    if (target == "StitchingLine")                                              \
-        return PartTarget::StitchingLine;                                       \
-    return PartTarget::Model;                                                   \
-}
-const char *PartTargetToString(PartTarget target);
-#define IMPL_PartTargetToString                                                 \
-const char *PartTargetToString(PartTarget target)                               \
-{                                                                               \
-    switch (target) {                                                           \
-        case PartTarget::Model:                                                 \
-            return "Model";                                                     \
-        case PartTarget::CutFace:                                               \
-            return "CutFace";                                                   \
-        case PartTarget::StitchingLine:                                         \
-            return "StitchingLine";                                             \
-        default:                                                                \
-            return "Model";                                                     \
-    }                                                                           \
-}
+PartTarget PartTargetFromString(const char* targetString);
+#define IMPL_PartTargetFromString                             \
+    PartTarget PartTargetFromString(const char* targetString) \
+    {                                                         \
+        std::string target = targetString;                    \
+        if (target == "Model")                                \
+            return PartTarget::Model;                         \
+        if (target == "CutFace")                              \
+            return PartTarget::CutFace;                       \
+        if (target == "StitchingLine")                        \
+            return PartTarget::StitchingLine;                 \
+        return PartTarget::Model;                             \
+    }
+const char* PartTargetToString(PartTarget target);
+#define IMPL_PartTargetToString                       \
+    const char* PartTargetToString(PartTarget target) \
+    {                                                 \
+        switch (target) {                             \
+        case PartTarget::Model:                       \
+            return "Model";                           \
+        case PartTarget::CutFace:                     \
+            return "CutFace";                         \
+        case PartTarget::StitchingLine:               \
+            return "StitchingLine";                   \
+        default:                                      \
+            return "Model";                           \
+        }                                             \
+    }
 std::string PartTargetToDispName(PartTarget target);
-#define IMPL_PartTargetToDispName                                               \
-std::string PartTargetToDispName(PartTarget target)                             \
-{                                                                               \
-    switch (target) {                                                           \
-        case PartTarget::Model:                                                 \
-            return std::string("Model");                                        \
-        case PartTarget::CutFace:                                               \
-            return std::string("Cut Face");                                     \
-        case PartTarget::StitchingLine:                                         \
-            return std::string("Stitching Line");                               \
-        default:                                                                \
-            return std::string("Model");                                        \
-    }                                                                           \
-}
+#define IMPL_PartTargetToDispName                       \
+    std::string PartTargetToDispName(PartTarget target) \
+    {                                                   \
+        switch (target) {                               \
+        case PartTarget::Model:                         \
+            return std::string("Model");                \
+        case PartTarget::CutFace:                       \
+            return std::string("Cut Face");             \
+        case PartTarget::StitchingLine:                 \
+            return std::string("Stitching Line");       \
+        default:                                        \
+            return std::string("Model");                \
+        }                                               \
+    }
 
 }
 

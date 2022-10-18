@@ -22,9 +22,8 @@
 
 #include <dust3d/base/uuid.h>
 
-namespace dust3d
-{
+namespace dust3d {
 
-Uuid::RandomGenerator *Uuid::m_generator = new Uuid::RandomGenerator;
+Uuid::RandomGenerator* Uuid::m_generator = new Uuid::RandomGenerator;
 
 } // namespace dust3d

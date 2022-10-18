@@ -20,16 +20,15 @@
  *  SOFTWARE.
  */
 
-#include <dust3d/mesh/mesh_combiner.h>
 #include <dust3d/base/position_key.h>
-#include <dust3d/mesh/triangulate.h>
+#include <dust3d/mesh/mesh_combiner.h>
 #include <dust3d/mesh/solid_mesh_boolean_operation.h>
+#include <dust3d/mesh/triangulate.h>
 #include <dust3d/util/obj.h>
 
-namespace dust3d
-{
+namespace dust3d {
 
-MeshCombiner::Mesh::Mesh(const std::vector<Vector3> &vertices, const std::vector<std::vector<size_t>> &faces)
+MeshCombiner::Mesh::Mesh(const std::vector<Vector3>& vertices, const std::vector<std::vector<size_t>>& faces)
 {
     m_vertices = std::make_unique<std::vector<Vector3>>(vertices);
     m_triangles = std::make_unique<std::vector<std::vector<size_t>>>();
@@ -40,7 +39,7 @@ MeshCombiner::Mesh::Mesh(const std::vector<Vector3> &vertices, const std::vector
     m_solidMesh->prepare();
 }
 
-MeshCombiner::Mesh::Mesh(const Mesh &other)
+MeshCombiner::Mesh::Mesh(const Mesh& other)
 {
     m_vertices = std::make_unique<std::vector<Vector3>>();
     m_triangles = std::make_unique<std::vector<std::vector<size_t>>>();
@@ -55,11 +54,11 @@ MeshCombiner::Mesh::~Mesh()
 {
 }
 
-void MeshCombiner::Mesh::fetch(std::vector<Vector3> &vertices, std::vector<std::vector<size_t>> &faces) const
+void MeshCombiner::Mesh::fetch(std::vector<Vector3>& vertices, std::vector<std::vector<size_t>>& faces) const
 {
     if (nullptr != m_vertices)
         vertices = *m_vertices;
-    
+
     if (nullptr != m_triangles)
         faces = *m_triangles;
 }
@@ -69,26 +68,26 @@ bool MeshCombiner::Mesh::isNull() const
     return nullptr == m_vertices || m_vertices->empty();
 }
 
-MeshCombiner::Mesh *MeshCombiner::combine(const Mesh &firstMesh, const Mesh &secondMesh, Method method,
-    std::vector<std::pair<Source, size_t>> *combinedVerticesComeFrom)
+MeshCombiner::Mesh* MeshCombiner::combine(const Mesh& firstMesh, const Mesh& secondMesh, Method method,
+    std::vector<std::pair<Source, size_t>>* combinedVerticesComeFrom)
 {
     if (firstMesh.isNull() || secondMesh.isNull())
-		return nullptr;
+        return nullptr;
 
     SolidMeshBooleanOperation booleanOperation(firstMesh.m_solidMesh.get(), secondMesh.m_solidMesh.get());
     if (!booleanOperation.combine())
         return nullptr;
-    
+
     std::map<PositionKey, std::pair<Source, size_t>> verticesSourceMap;
-    
-    auto addToSourceMap = [&](SolidMesh *solidMesh, Source source) {
+
+    auto addToSourceMap = [&](SolidMesh* solidMesh, Source source) {
         size_t vertexIndex = 0;
-        const std::vector<Vector3> *vertices = solidMesh->vertices();
+        const std::vector<Vector3>* vertices = solidMesh->vertices();
         if (nullptr == vertices)
             return;
-        for (const auto &point: *vertices) {
-            verticesSourceMap.insert({{point.x(), point.y(), point.z()}, 
-                {source, vertexIndex}});
+        for (const auto& point : *vertices) {
+            verticesSourceMap.insert({ { point.x(), point.y(), point.z() },
+                { source, vertexIndex } });
             ++vertexIndex;
         }
     };
@@ -96,7 +95,7 @@ MeshCombiner::Mesh *MeshCombiner::combine(const Mesh &firstMesh, const Mesh &sec
         addToSourceMap(firstMesh.m_solidMesh.get(), Source::First);
         addToSourceMap(secondMesh.m_solidMesh.get(), Source::Second);
     }
-    
+
     std::vector<std::vector<size_t>> resultTriangles;
     if (Method::Union == method) {
         booleanOperation.fetchUnion(resultTriangles);
@@ -105,14 +104,14 @@ MeshCombiner::Mesh *MeshCombiner::combine(const Mesh &firstMesh, const Mesh &sec
     } else {
         return nullptr;
     }
-    
-    const auto &resultVertices = booleanOperation.resultVertices();
+
+    const auto& resultVertices = booleanOperation.resultVertices();
     if (nullptr != combinedVerticesComeFrom) {
         combinedVerticesComeFrom->clear();
-        for (const auto &point: resultVertices) {
+        for (const auto& point : resultVertices) {
             auto findSource = verticesSourceMap.find(PositionKey(point.x(), point.y(), point.z()));
             if (findSource == verticesSourceMap.end()) {
-                combinedVerticesComeFrom->push_back({Source::None, 0});
+                combinedVerticesComeFrom->push_back({ Source::None, 0 });
             } else {
                 combinedVerticesComeFrom->push_back(findSource->second);
             }

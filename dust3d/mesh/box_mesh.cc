@@ -22,77 +22,77 @@
 
 #include <dust3d/mesh/box_mesh.h>
 
-namespace dust3d
-{
+namespace dust3d {
 
 static const std::vector<Vector3> g_subdivedBoxObjVertices = {
-    {-0.025357f, -0.025357f, 0.025357f},
-    {-0.025357f, 0.025357f, 0.025357f},
-    {-0.025357f, 0.025357f, -0.025357f},
-    {-0.025357f, -0.025357f, -0.025357f},
-    {0.025357f, -0.025357f, 0.025357f},
-    {0.025357f, -0.025357f, -0.025357f},
-    {0.025357f, 0.025357f, 0.025357f},
-    {0.025357f, 0.025357f, -0.025357f},
-    {-0.030913f, -0.030913f, -0.000000f},
-    {-0.030913f, -0.000000f, 0.030913f},
-    {-0.030913f, 0.030913f, 0.000000f},
-    {-0.030913f, 0.000000f, -0.030913f},
-    {0.030913f, -0.030913f, -0.000000f},
-    {0.000000f, -0.030913f, 0.030913f},
-    {-0.000000f, -0.030913f, -0.030913f},
-    {0.030913f, -0.000000f, 0.030913f},
-    {-0.000000f, 0.030913f, 0.030913f},
-    {0.030913f, 0.030913f, 0.000000f},
-    {0.030913f, 0.000000f, -0.030913f},
-    {-0.000000f, 0.030913f, -0.030913f},
-    {-0.042574f, 0.000000f, -0.000000f},
-    {-0.000000f, -0.042574f, -0.000000f},
-    {0.000000f, -0.000000f, 0.042574f},
-    {0.042574f, -0.000000f, -0.000000f},
-    {-0.000000f, 0.000000f, -0.042574f},
-    {0.000000f, 0.042574f, 0.000000f},
+    { -0.025357f, -0.025357f, 0.025357f },
+    { -0.025357f, 0.025357f, 0.025357f },
+    { -0.025357f, 0.025357f, -0.025357f },
+    { -0.025357f, -0.025357f, -0.025357f },
+    { 0.025357f, -0.025357f, 0.025357f },
+    { 0.025357f, -0.025357f, -0.025357f },
+    { 0.025357f, 0.025357f, 0.025357f },
+    { 0.025357f, 0.025357f, -0.025357f },
+    { -0.030913f, -0.030913f, -0.000000f },
+    { -0.030913f, -0.000000f, 0.030913f },
+    { -0.030913f, 0.030913f, 0.000000f },
+    { -0.030913f, 0.000000f, -0.030913f },
+    { 0.030913f, -0.030913f, -0.000000f },
+    { 0.000000f, -0.030913f, 0.030913f },
+    { -0.000000f, -0.030913f, -0.030913f },
+    { 0.030913f, -0.000000f, 0.030913f },
+    { -0.000000f, 0.030913f, 0.030913f },
+    { 0.030913f, 0.030913f, 0.000000f },
+    { 0.030913f, 0.000000f, -0.030913f },
+    { -0.000000f, 0.030913f, -0.030913f },
+    { -0.042574f, 0.000000f, -0.000000f },
+    { -0.000000f, -0.042574f, -0.000000f },
+    { 0.000000f, -0.000000f, 0.042574f },
+    { 0.042574f, -0.000000f, -0.000000f },
+    { -0.000000f, 0.000000f, -0.042574f },
+    { 0.000000f, 0.042574f, 0.000000f },
 };
 
 static const std::vector<std::vector<size_t>> g_subdivedBoxObjFaces = {
-    {1, 10, 21, 9},
-    {10, 2, 11, 21},
-    {21, 11, 3, 12},
-    {9, 21, 12, 4},
-    {5, 14, 22, 13},
-    {14, 1, 9, 22},
-    {22, 9, 4, 15},
-    {13, 22, 15, 6},
-    {1, 14, 23, 10},
-    {14, 5, 16, 23},
-    {23, 16, 7, 17},
-    {10, 23, 17, 2},
-    {7, 16, 24, 18},
-    {16, 5, 13, 24},
-    {24, 13, 6, 19},
-    {18, 24, 19, 8},
-    {4, 12, 25, 15},
-    {12, 3, 20, 25},
-    {25, 20, 8, 19},
-    {15, 25, 19, 6},
-    {2, 17, 26, 11},
-    {17, 7, 18, 26},
-    {26, 18, 8, 20},
-    {11, 26, 20, 3},
+    { 1, 10, 21, 9 },
+    { 10, 2, 11, 21 },
+    { 21, 11, 3, 12 },
+    { 9, 21, 12, 4 },
+    { 5, 14, 22, 13 },
+    { 14, 1, 9, 22 },
+    { 22, 9, 4, 15 },
+    { 13, 22, 15, 6 },
+    { 1, 14, 23, 10 },
+    { 14, 5, 16, 23 },
+    { 23, 16, 7, 17 },
+    { 10, 23, 17, 2 },
+    { 7, 16, 24, 18 },
+    { 16, 5, 13, 24 },
+    { 24, 13, 6, 19 },
+    { 18, 24, 19, 8 },
+    { 4, 12, 25, 15 },
+    { 12, 3, 20, 25 },
+    { 25, 20, 8, 19 },
+    { 15, 25, 19, 6 },
+    { 2, 17, 26, 11 },
+    { 17, 7, 18, 26 },
+    { 26, 18, 8, 20 },
+    { 11, 26, 20, 3 },
 };
 
-void buildBoxMesh(const Vector3 &position, float radius, size_t subdivideTimes, std::vector<Vector3> &vertices, std::vector<std::vector<size_t>> &faces)
+void buildBoxMesh(const Vector3& position, float radius, size_t subdivideTimes, std::vector<Vector3>& vertices, std::vector<std::vector<size_t>>& faces)
 {
     if (subdivideTimes > 0) {
         vertices.reserve(g_subdivedBoxObjVertices.size());
         auto ratio = 24 * radius;
-        for (const auto &vertex: g_subdivedBoxObjVertices) {
+        for (const auto& vertex : g_subdivedBoxObjVertices) {
             auto newVertex = vertex * ratio + position;
             vertices.push_back(newVertex);
         }
         faces.reserve(g_subdivedBoxObjFaces.size());
-        for (const auto &face: g_subdivedBoxObjFaces) {
-            auto newFace = {face[0] - 1,
+        for (const auto& face : g_subdivedBoxObjFaces) {
+            auto newFace = {
+                face[0] - 1,
                 face[1] - 1,
                 face[2] - 1,
                 face[3] - 1,
@@ -102,10 +102,10 @@ void buildBoxMesh(const Vector3 &position, float radius, size_t subdivideTimes, 
         return;
     }
     std::vector<Vector3> beginPlane = {
-        {-radius, -radius,  radius},
-        { radius, -radius,  radius},
-        { radius,  radius,  radius},
-        {-radius,  radius,  radius},
+        { -radius, -radius, radius },
+        { radius, -radius, radius },
+        { radius, radius, radius },
+        { -radius, radius, radius },
     };
     std::vector<Vector3> endPlane = {
         beginPlane[0],
@@ -113,13 +113,13 @@ void buildBoxMesh(const Vector3 &position, float radius, size_t subdivideTimes, 
         beginPlane[2],
         beginPlane[1]
     };
-    for (auto &vertex: endPlane) {
+    for (auto& vertex : endPlane) {
         vertex.setZ(vertex.z() - radius - radius);
     }
-    for (const auto &vertex: beginPlane) {
+    for (const auto& vertex : beginPlane) {
         vertices.push_back(vertex);
     }
-    for (const auto &vertex: endPlane) {
+    for (const auto& vertex : endPlane) {
         vertices.push_back(vertex);
     }
     std::vector<size_t> beginLoop = {
@@ -135,14 +135,12 @@ void buildBoxMesh(const Vector3 &position, float radius, size_t subdivideTimes, 
     faces.push_back(endLoop);
     for (size_t i = 0; i < beginLoop.size(); ++i) {
         size_t j = (i + 1) % beginLoop.size();
-        faces.push_back({
-            beginLoop[j],
+        faces.push_back({ beginLoop[j],
             beginLoop[i],
             alignedEndLoop[i],
-            alignedEndLoop[j]
-        });
+            alignedEndLoop[j] });
     }
-    for (auto &vertex: vertices) {
+    for (auto& vertex : vertices) {
         vertex += position;
     }
 }

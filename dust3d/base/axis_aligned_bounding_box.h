@@ -19,21 +19,19 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *  SOFTWARE.
  */
- 
+
 #ifndef DUST3D_BASE_AXIS_ALIGNED_BOUNDING_BOX_H_
 #define DUST3D_BASE_AXIS_ALIGNED_BOUNDING_BOX_H_
 
-#include <cmath>
 #include <algorithm>
+#include <cmath>
 #include <dust3d/base/vector3.h>
 
-namespace dust3d
-{
+namespace dust3d {
 
-class AxisAlignedBoudingBox
-{
+class AxisAlignedBoudingBox {
 public:
-    void update(const Vector3 &vertex)
+    void update(const Vector3& vertex)
     {
         for (size_t i = 0; i < 3; ++i) {
             if (vertex[i] > m_max[i])
@@ -45,7 +43,7 @@ public:
         ++m_num;
     }
 
-    const Vector3 &center() const
+    const Vector3& center() const
     {
         return m_center;
     }
@@ -57,30 +55,30 @@ public:
         m_center = m_sum /= (float)m_num;
     }
 
-    const Vector3 &lowerBound() const
+    const Vector3& lowerBound() const
     {
         return m_min;
     }
 
-    const Vector3 &upperBound() const
+    const Vector3& upperBound() const
     {
         return m_max;
     }
 
-    Vector3 &lowerBound()
+    Vector3& lowerBound()
     {
         return m_min;
     }
 
-    Vector3 &upperBound()
+    Vector3& upperBound()
     {
         return m_max;
     }
 
-    bool intersectWithAt(const AxisAlignedBoudingBox &other, AxisAlignedBoudingBox *result) const
+    bool intersectWithAt(const AxisAlignedBoudingBox& other, AxisAlignedBoudingBox* result) const
     {
-        const Vector3 &otherMin = other.lowerBound();
-        const Vector3 &otherMax = other.upperBound();
+        const Vector3& otherMin = other.lowerBound();
+        const Vector3& otherMax = other.upperBound();
         for (size_t i = 0; i < 3; ++i) {
             if (m_min[i] <= otherMax[i] && m_max[i] >= otherMin[i])
                 continue;
@@ -97,10 +95,10 @@ public:
         return true;
     }
 
-    bool intersectWith(const AxisAlignedBoudingBox &other) const
+    bool intersectWith(const AxisAlignedBoudingBox& other) const
     {
-        const Vector3 &otherMin = other.lowerBound();
-        const Vector3 &otherMax = other.upperBound();
+        const Vector3& otherMin = other.lowerBound();
+        const Vector3& otherMax = other.upperBound();
         for (size_t i = 0; i < 3; ++i) {
             if (m_min[i] <= otherMax[i] && m_max[i] >= otherMin[i])
                 continue;
@@ -108,7 +106,7 @@ public:
         }
         return true;
     }
-    
+
 private:
     Vector3 m_min = {
         std::numeric_limits<double>::max(),

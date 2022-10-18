@@ -3,11 +3,10 @@
 
 #include <QListView>
 
-class PreviewGridView: public QListView
-{
+class PreviewGridView : public QListView {
     Q_OBJECT
 public:
-    PreviewGridView(QWidget *parent=nullptr);
+    PreviewGridView(QWidget* parent = nullptr);
 };
 
 #endif

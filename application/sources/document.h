@@ -1,38 +1,36 @@
 #ifndef DUST3D_APPLICATION_DOCUMENT_H_
 #define DUST3D_APPLICATION_DOCUMENT_H_
 
-#include <QObject>
-#include <vector>
-#include <map>
-#include <set>
-#include <deque>
-#include <QImage>
-#include <cmath>
-#include <algorithm>
-#include <QPolygon>
-#include <dust3d/base/uuid.h>
-#include <dust3d/base/snapshot.h>
-#include <dust3d/base/texture_type.h>
-#include <dust3d/base/combine_mode.h>
+#include "material_layer.h"
 #include "model_mesh.h"
 #include "monochrome_mesh.h"
-#include "theme.h"
 #include "skeleton_document.h"
-#include "material_layer.h"
+#include "theme.h"
+#include <QImage>
+#include <QObject>
+#include <QPolygon>
+#include <algorithm>
+#include <cmath>
+#include <deque>
+#include <dust3d/base/combine_mode.h>
+#include <dust3d/base/snapshot.h>
+#include <dust3d/base/texture_type.h>
+#include <dust3d/base/uuid.h>
+#include <map>
+#include <set>
+#include <vector>
 
 class MaterialPreviewsGenerator;
 class TextureGenerator;
 class MeshGenerator;
 class MeshResultPostProcessor;
 
-class HistoryItem
-{
+class HistoryItem {
 public:
     dust3d::Snapshot snapshot;
 };
 
-class Material
-{
+class Material {
 public:
     Material()
     {
@@ -45,31 +43,30 @@ public:
     QString name;
     bool dirty = true;
     std::vector<MaterialLayer> layers;
-    void updatePreviewMesh(ModelMesh *previewMesh)
+    void updatePreviewMesh(ModelMesh* previewMesh)
     {
         delete m_previewMesh;
         m_previewMesh = previewMesh;
     }
-    ModelMesh *takePreviewMesh() const
+    ModelMesh* takePreviewMesh() const
     {
         if (nullptr == m_previewMesh)
             return nullptr;
         return new ModelMesh(*m_previewMesh);
     }
+
 private:
     Q_DISABLE_COPY(Material);
-    ModelMesh *m_previewMesh = nullptr;
+    ModelMesh* m_previewMesh = nullptr;
 };
 
-enum class DocumentToSnapshotFor
-{
+enum class DocumentToSnapshotFor {
     Document = 0,
     Nodes,
     Materials
 };
 
-class Document : public SkeletonDocument
-{
+class Document : public SkeletonDocument {
     Q_OBJECT
 signals:
     void nodeCutRotationChanged(dust3d::Uuid nodeId);
@@ -121,26 +118,28 @@ signals:
     void postProcessing();
     void textureGenerating();
     void textureChanged();
+
 public: // need initialize
-    QImage *textureImage = nullptr;
-    QByteArray *textureImageByteArray = nullptr;
-    QImage *textureNormalImage = nullptr;
-    QByteArray *textureNormalImageByteArray = nullptr;
-    QImage *textureMetalnessImage = nullptr;
-    QByteArray *textureMetalnessImageByteArray = nullptr;
-    QImage *textureRoughnessImage = nullptr;
-    QByteArray *textureRoughnessImageByteArray = nullptr;
-    QImage *textureAmbientOcclusionImage = nullptr;
-    QByteArray *textureAmbientOcclusionImageByteArray = nullptr;
+    QImage* textureImage = nullptr;
+    QByteArray* textureImageByteArray = nullptr;
+    QImage* textureNormalImage = nullptr;
+    QByteArray* textureNormalImageByteArray = nullptr;
+    QImage* textureMetalnessImage = nullptr;
+    QByteArray* textureMetalnessImageByteArray = nullptr;
+    QImage* textureRoughnessImage = nullptr;
+    QByteArray* textureRoughnessImageByteArray = nullptr;
+    QImage* textureAmbientOcclusionImage = nullptr;
+    QByteArray* textureAmbientOcclusionImageByteArray = nullptr;
     bool weldEnabled = true;
     float brushMetalness = ModelMesh::m_defaultMetalness;
     float brushRoughness = ModelMesh::m_defaultRoughness;
+
 public:
     Document();
     ~Document();
     std::map<dust3d::Uuid, Material> materialMap;
     std::vector<dust3d::Uuid> materialIdList;
-    
+
     bool undoable() const override;
     bool redoable() const override;
     bool hasPastableNodesInClipboard() const override;
@@ -148,39 +147,38 @@ public:
     bool isNodeEditable(dust3d::Uuid nodeId) const override;
     bool isEdgeEditable(dust3d::Uuid edgeId) const override;
     void copyNodes(std::set<dust3d::Uuid> nodeIdSet) const override;
-    void toSnapshot(dust3d::Snapshot *snapshot, const std::set<dust3d::Uuid> &limitNodeIds=std::set<dust3d::Uuid>(),
-        DocumentToSnapshotFor forWhat=DocumentToSnapshotFor::Document,
-        const std::set<dust3d::Uuid> &limitMaterialIds=std::set<dust3d::Uuid>()) const;
-    void fromSnapshot(const dust3d::Snapshot &snapshot);
-    enum class SnapshotSource
-    {
+    void toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uuid>& limitNodeIds = std::set<dust3d::Uuid>(),
+        DocumentToSnapshotFor forWhat = DocumentToSnapshotFor::Document,
+        const std::set<dust3d::Uuid>& limitMaterialIds = std::set<dust3d::Uuid>()) const;
+    void fromSnapshot(const dust3d::Snapshot& snapshot);
+    enum class SnapshotSource {
         Unknown,
         Paste,
         Import
     };
-    void addFromSnapshot(const dust3d::Snapshot &snapshot, enum SnapshotSource source=SnapshotSource::Paste);
-    const Material *findMaterial(dust3d::Uuid materialId) const;
-    ModelMesh *takeResultMesh();
-    MonochromeMesh *takeWireframeMesh();
-    ModelMesh *takePaintedMesh();
+    void addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSource source = SnapshotSource::Paste);
+    const Material* findMaterial(dust3d::Uuid materialId) const;
+    ModelMesh* takeResultMesh();
+    MonochromeMesh* takeWireframeMesh();
+    ModelMesh* takePaintedMesh();
     bool isMeshGenerationSucceed();
-    ModelMesh *takeResultTextureMesh();
-    ModelMesh *takeResultRigWeightMesh();
-    void updateTurnaround(const QImage &image);
+    ModelMesh* takeResultTextureMesh();
+    ModelMesh* takeResultRigWeightMesh();
+    void updateTurnaround(const QImage& image);
     void clearTurnaround();
-    void updateTextureImage(QImage *image);
-    void updateTextureNormalImage(QImage *image);
-    void updateTextureMetalnessImage(QImage *image);
-    void updateTextureRoughnessImage(QImage *image);
-    void updateTextureAmbientOcclusionImage(QImage *image);
+    void updateTextureImage(QImage* image);
+    void updateTextureNormalImage(QImage* image);
+    void updateTextureMetalnessImage(QImage* image);
+    void updateTextureRoughnessImage(QImage* image);
+    void updateTextureAmbientOcclusionImage(QImage* image);
     bool hasPastableMaterialsInClipboard() const;
-    const dust3d::Object &currentPostProcessedObject() const;
+    const dust3d::Object& currentPostProcessedObject() const;
     bool isExportReady() const;
     bool isPostProcessResultObsolete() const;
     bool isMeshGenerating() const;
     bool isPostProcessing() const;
     bool isTextureGenerating() const;
-    void collectCutFaceList(std::vector<QString> &cutFaces) const;
+    void collectCutFaceList(std::vector<QString>& cutFaces) const;
 public slots:
     void undo() override;
     void redo() override;
@@ -233,30 +231,32 @@ public slots:
     void removeMaterial(dust3d::Uuid materialId);
     void setMaterialLayers(dust3d::Uuid materialId, std::vector<MaterialLayer> layers);
     void renameMaterial(dust3d::Uuid materialId, QString name);
+
 private:
-    void resolveSnapshotBoundingBox(const dust3d::Snapshot &snapshot, QRectF *mainProfile, QRectF *sideProfile);
+    void resolveSnapshotBoundingBox(const dust3d::Snapshot& snapshot, QRectF* mainProfile, QRectF* sideProfile);
     void settleOrigin();
     void checkExportReadyState();
 
     bool m_isResultMeshObsolete = false;
-    MeshGenerator *m_meshGenerator = nullptr;
-    ModelMesh *m_resultMesh = nullptr;
+    MeshGenerator* m_meshGenerator = nullptr;
+    ModelMesh* m_resultMesh = nullptr;
     std::unique_ptr<MonochromeMesh> m_wireframeMesh;
     bool m_isMeshGenerationSucceed = true;
     int m_batchChangeRefCount = 0;
-    dust3d::Object *m_currentObject = nullptr;
+    dust3d::Object* m_currentObject = nullptr;
     bool m_isTextureObsolete = false;
-    TextureGenerator *m_textureGenerator = nullptr;
+    TextureGenerator* m_textureGenerator = nullptr;
     bool m_isPostProcessResultObsolete = false;
-    MeshResultPostProcessor *m_postProcessor = nullptr;
-    dust3d::Object *m_postProcessedObject = new dust3d::Object;
-    ModelMesh *m_resultTextureMesh = nullptr;
+    MeshResultPostProcessor* m_postProcessor = nullptr;
+    dust3d::Object* m_postProcessedObject = new dust3d::Object;
+    ModelMesh* m_resultTextureMesh = nullptr;
     unsigned long long m_textureImageUpdateVersion = 0;
     bool m_smoothNormal = false;
-    MaterialPreviewsGenerator *m_materialPreviewsGenerator = nullptr;
+    MaterialPreviewsGenerator* m_materialPreviewsGenerator = nullptr;
     quint64 m_meshGenerationId = 0;
     quint64 m_nextMeshGenerationId = 0;
-    void *m_generatedCacheContext = nullptr;
+    void* m_generatedCacheContext = nullptr;
+
 private:
     static unsigned long m_maxSnapshot;
     std::deque<HistoryItem> m_undoItems;

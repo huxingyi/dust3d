@@ -1,10 +1,10 @@
-#include <QVBoxLayout>
 #include "material_widget.h"
 #include "document.h"
+#include <QVBoxLayout>
 
-MaterialWidget::MaterialWidget(const Document *document, dust3d::Uuid materialId) :
-    m_materialId(materialId),
-    m_document(document)
+MaterialWidget::MaterialWidget(const Document* document, dust3d::Uuid materialId)
+    : m_materialId(materialId)
+    , m_document(document)
 {
     setObjectName("MaterialFrame");
 
@@ -23,7 +23,7 @@ MaterialWidget::MaterialWidget(const Document *document, dust3d::Uuid materialId
     nameFont.setBold(false);
     m_nameLabel->setFont(nameFont);
 
-    QVBoxLayout *mainLayout = new QVBoxLayout;
+    QVBoxLayout* mainLayout = new QVBoxLayout;
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->addStretch();
     mainLayout->addWidget(m_nameLabel);
@@ -36,7 +36,7 @@ MaterialWidget::MaterialWidget(const Document *document, dust3d::Uuid materialId
     connect(document, &Document::materialPreviewChanged, this, &MaterialWidget::updatePreview);
 }
 
-void MaterialWidget::resizeEvent(QResizeEvent *event)
+void MaterialWidget::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
     m_previewWidget->move((width() - Theme::materialPreviewImageSize) / 2, 0);
@@ -57,12 +57,12 @@ void MaterialWidget::updatePreview(dust3d::Uuid materialId)
 {
     if (materialId != m_materialId)
         return;
-    const Material *material = m_document->findMaterial(m_materialId);
+    const Material* material = m_document->findMaterial(m_materialId);
     if (!material) {
         qDebug() << "Material not found:" << m_materialId;
         return;
     }
-    ModelMesh *previewMesh = material->takePreviewMesh();
+    ModelMesh* previewMesh = material->takePreviewMesh();
     m_previewWidget->updateMesh(previewMesh);
 }
 
@@ -70,7 +70,7 @@ void MaterialWidget::updateName(dust3d::Uuid materialId)
 {
     if (materialId != m_materialId)
         return;
-    const Material *material = m_document->findMaterial(m_materialId);
+    const Material* material = m_document->findMaterial(m_materialId);
     if (!material) {
         qDebug() << "Material not found:" << m_materialId;
         return;
@@ -86,12 +86,12 @@ void MaterialWidget::updateCheckedState(bool checked)
         setStyleSheet("#MaterialFrame {border: 1px solid transparent;}");
 }
 
-ModelWidget *MaterialWidget::previewWidget()
+ModelWidget* MaterialWidget::previewWidget()
 {
     return m_previewWidget;
 }
 
-void MaterialWidget::mouseDoubleClickEvent(QMouseEvent *event)
+void MaterialWidget::mouseDoubleClickEvent(QMouseEvent* event)
 {
     QFrame::mouseDoubleClickEvent(event);
     emit modifyMaterial(m_materialId);

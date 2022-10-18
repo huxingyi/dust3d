@@ -25,11 +25,9 @@
 
 #include <string>
 
-namespace dust3d
-{
+namespace dust3d {
 
-enum class PartBase
-{
+enum class PartBase {
     XYZ = 0,
     Average,
     YZ,
@@ -37,61 +35,61 @@ enum class PartBase
     ZX,
     Count
 };
-PartBase PartBaseFromString(const char *baseString);
-#define IMPL_PartBaseFromString                                                 \
-PartBase PartBaseFromString(const char *baseString)                             \
-{                                                                               \
-    std::string base = baseString;                                              \
-    if (base == "XYZ")                                                          \
-        return PartBase::XYZ;                                                   \
-    if (base == "Average")                                                      \
-        return PartBase::Average;                                               \
-    if (base == "YZ")                                                           \
-        return PartBase::YZ;                                                    \
-    if (base == "XY")                                                           \
-        return PartBase::XY;                                                    \
-    if (base == "ZX")                                                           \
-        return PartBase::ZX;                                                    \
-    return PartBase::XYZ;                                                       \
-}
-const char *PartBaseToString(PartBase base);
-#define IMPL_PartBaseToString                                                   \
-const char *PartBaseToString(PartBase base)                                     \
-{                                                                               \
-    switch (base) {                                                             \
-        case PartBase::XYZ:                                                     \
-            return "XYZ";                                                       \
-        case PartBase::Average:                                                 \
-            return "Average";                                                   \
-        case PartBase::YZ:                                                      \
-            return "YZ";                                                        \
-        case PartBase::XY:                                                      \
-            return "XY";                                                        \
-        case PartBase::ZX:                                                      \
-            return "ZX";                                                        \
-        default:                                                                \
-            return "XYZ";                                                       \
-    }                                                                           \
-}
+PartBase PartBaseFromString(const char* baseString);
+#define IMPL_PartBaseFromString                         \
+    PartBase PartBaseFromString(const char* baseString) \
+    {                                                   \
+        std::string base = baseString;                  \
+        if (base == "XYZ")                              \
+            return PartBase::XYZ;                       \
+        if (base == "Average")                          \
+            return PartBase::Average;                   \
+        if (base == "YZ")                               \
+            return PartBase::YZ;                        \
+        if (base == "XY")                               \
+            return PartBase::XY;                        \
+        if (base == "ZX")                               \
+            return PartBase::ZX;                        \
+        return PartBase::XYZ;                           \
+    }
+const char* PartBaseToString(PartBase base);
+#define IMPL_PartBaseToString                   \
+    const char* PartBaseToString(PartBase base) \
+    {                                           \
+        switch (base) {                         \
+        case PartBase::XYZ:                     \
+            return "XYZ";                       \
+        case PartBase::Average:                 \
+            return "Average";                   \
+        case PartBase::YZ:                      \
+            return "YZ";                        \
+        case PartBase::XY:                      \
+            return "XY";                        \
+        case PartBase::ZX:                      \
+            return "ZX";                        \
+        default:                                \
+            return "XYZ";                       \
+        }                                       \
+    }
 std::string PartBaseToDispName(PartBase base);
-#define IMPL_PartBaseToDispName                                                 \
-std::string PartBaseToDispName(PartBase base)                                   \
-{                                                                               \
-    switch (base) {                                                             \
-        case PartBase::XYZ:                                                     \
-            return std::string("Dynamic");                                      \
-        case PartBase::Average:                                                 \
-            return std::string("Average");                                      \
-        case PartBase::YZ:                                                      \
-            return std::string("Side Plane");                                   \
-        case PartBase::XY:                                                      \
-            return std::string("Front Plane");                                  \
-        case PartBase::ZX:                                                      \
-            return std::string("Top Plane");                                    \
-        default:                                                                \
-            return std::string("Dynamic");                                      \
-    }                                                                           \
-}
+#define IMPL_PartBaseToDispName                   \
+    std::string PartBaseToDispName(PartBase base) \
+    {                                             \
+        switch (base) {                           \
+        case PartBase::XYZ:                       \
+            return std::string("Dynamic");        \
+        case PartBase::Average:                   \
+            return std::string("Average");        \
+        case PartBase::YZ:                        \
+            return std::string("Side Plane");     \
+        case PartBase::XY:                        \
+            return std::string("Front Plane");    \
+        case PartBase::ZX:                        \
+            return std::string("Top Plane");      \
+        default:                                  \
+            return std::string("Dynamic");        \
+        }                                         \
+    }
 
 }
 

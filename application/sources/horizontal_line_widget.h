@@ -3,8 +3,7 @@
 
 #include <QWidget>
 
-class HorizontalLineWidget : public QWidget
-{
+class HorizontalLineWidget : public QWidget {
     Q_OBJECT
 public:
     HorizontalLineWidget();

@@ -1,32 +1,31 @@
 #ifndef DUST3D_APPLICATION_SKELETON_GRAPHICS_VIEW_H_
 #define DUST3D_APPLICATION_SKELETON_GRAPHICS_VIEW_H_
 
-#include <map>
-#include <QMouseEvent>
-#include <QKeyEvent>
+#include "model_widget.h"
+#include "skeleton_document.h"
+#include "skeleton_ik_mover.h"
+#include "theme.h"
+#include "turnaround_loader.h"
 #include <QGraphicsEllipseItem>
 #include <QGraphicsLineItem>
-#include <QGraphicsView>
 #include <QGraphicsPixmapItem>
 #include <QGraphicsPolygonItem>
+#include <QGraphicsView>
+#include <QKeyEvent>
+#include <QMouseEvent>
 #include <QThread>
-#include <cmath>
-#include <set>
 #include <QTimer>
-#include "skeleton_document.h"
-#include "turnaround_loader.h"
-#include "theme.h"
-#include "skeleton_ik_mover.h"
-#include "model_widget.h"
+#include <cmath>
+#include <map>
+#include <set>
 
-class SkeletonGraphicsOriginItem : public QGraphicsPolygonItem
-{
+class SkeletonGraphicsOriginItem : public QGraphicsPolygonItem {
 public:
-    SkeletonGraphicsOriginItem(SkeletonProfile profile=SkeletonProfile::Unknown) :
-        m_profile(profile),
-        m_hovered(false),
-        m_checked(false),
-        m_rotated(false)
+    SkeletonGraphicsOriginItem(SkeletonProfile profile = SkeletonProfile::Unknown)
+        : m_profile(profile)
+        , m_hovered(false)
+        , m_checked(false)
+        , m_rotated(false)
     {
         setData(0, "origin");
     }
@@ -37,9 +36,8 @@ public:
     void updateAppearance()
     {
         QColor color = Theme::white;
-        
-        switch (m_profile)
-        {
+
+        switch (m_profile) {
         case SkeletonProfile::Unknown:
             break;
         case SkeletonProfile::Main:
@@ -49,13 +47,13 @@ public:
             color = Theme::green;
             break;
         }
-        
+
         QColor penColor = color;
         penColor.setAlphaF(m_checked ? Theme::checkedAlpha : Theme::normalAlpha);
         QPen pen(penColor);
         pen.setWidth(0);
         setPen(pen);
-        
+
         QColor brushColor = color;
         brushColor.setAlphaF((m_checked || m_hovered) ? Theme::checkedAlpha : Theme::normalAlpha);
         QBrush brush(brushColor);
@@ -99,6 +97,7 @@ public:
     {
         return m_hovered;
     }
+
 private:
     SkeletonProfile m_profile;
     bool m_hovered;
@@ -107,8 +106,7 @@ private:
     bool m_rotated;
 };
 
-class SkeletonGraphicsSelectionItem : public QGraphicsRectItem
-{
+class SkeletonGraphicsSelectionItem : public QGraphicsRectItem {
 public:
     SkeletonGraphicsSelectionItem()
     {
@@ -124,16 +122,15 @@ public:
     }
 };
 
-class SkeletonGraphicsNodeItem : public QGraphicsEllipseItem
-{
+class SkeletonGraphicsNodeItem : public QGraphicsEllipseItem {
 public:
-    SkeletonGraphicsNodeItem(SkeletonProfile profile=SkeletonProfile::Unknown) :
-        m_profile(profile),
-        m_hovered(false),
-        m_checked(false),
-        m_markColor(Qt::transparent),
-        m_deactivated(false),
-        m_rotated(false)
+    SkeletonGraphicsNodeItem(SkeletonProfile profile = SkeletonProfile::Unknown)
+        : m_profile(profile)
+        , m_hovered(false)
+        , m_checked(false)
+        , m_markColor(Qt::transparent)
+        , m_deactivated(false)
+        , m_rotated(false)
     {
         setData(0, "node");
         setRadius(32);
@@ -145,10 +142,9 @@ public:
     void updateAppearance()
     {
         QColor color = Qt::gray;
-        
+
         if (!m_deactivated) {
-            switch (m_profile)
-            {
+            switch (m_profile) {
             case SkeletonProfile::Unknown:
                 break;
             case SkeletonProfile::Main:
@@ -159,13 +155,13 @@ public:
                 break;
             }
         }
-        
+
         QColor penColor = color;
         penColor.setAlphaF((m_checked || m_hovered) ? Theme::checkedAlpha : Theme::normalAlpha);
         QPen pen(penColor);
         pen.setWidth(0);
         setPen(pen);
-        
+
         QColor brushColor;
         Qt::BrushStyle style;
         if (m_markColor == Qt::transparent) {
@@ -253,6 +249,7 @@ public:
     {
         return m_hovered;
     }
+
 private:
     dust3d::Uuid m_uuid;
     SkeletonProfile m_profile;
@@ -263,17 +260,16 @@ private:
     bool m_rotated;
 };
 
-class SkeletonGraphicsEdgeItem : public QGraphicsPolygonItem
-{
+class SkeletonGraphicsEdgeItem : public QGraphicsPolygonItem {
 public:
-    SkeletonGraphicsEdgeItem() :
-        m_firstItem(nullptr),
-        m_secondItem(nullptr),
-        m_hovered(false),
-        m_checked(false),
-        m_profile(SkeletonProfile::Unknown),
-        m_deactivated(false),
-        m_rotated(false)
+    SkeletonGraphicsEdgeItem()
+        : m_firstItem(nullptr)
+        , m_secondItem(nullptr)
+        , m_hovered(false)
+        , m_checked(false)
+        , m_profile(SkeletonProfile::Unknown)
+        , m_deactivated(false)
+        , m_rotated(false)
     {
         setData(0, "edge");
     }
@@ -281,17 +277,17 @@ public:
     {
         m_rotated = rotated;
     }
-    void setEndpoints(SkeletonGraphicsNodeItem *first, SkeletonGraphicsNodeItem *second)
+    void setEndpoints(SkeletonGraphicsNodeItem* first, SkeletonGraphicsNodeItem* second)
     {
         m_firstItem = first;
         m_secondItem = second;
         updateAppearance();
     }
-    SkeletonGraphicsNodeItem *firstItem()
+    SkeletonGraphicsNodeItem* firstItem()
     {
         return m_firstItem;
     }
-    SkeletonGraphicsNodeItem *secondItem()
+    SkeletonGraphicsNodeItem* secondItem()
     {
         return m_secondItem;
     }
@@ -299,11 +295,11 @@ public:
     {
         if (nullptr == m_firstItem || nullptr == m_secondItem)
             return;
-        
+
         m_profile = m_firstItem->profile();
-        
+
         QLineF line(m_firstItem->origin(), m_secondItem->origin());
-        
+
         QPolygonF polygon;
         float radAngle = line.angle() * M_PI / 180;
         float dx = 2 * sin(radAngle);
@@ -313,12 +309,11 @@ public:
         //polygon << line.p1() + offset1 << line.p1() + offset2 << line.p2() + offset2 << line.p2() + offset1;
         polygon << line.p1() + offset1 << line.p1() + offset2 << line.p2();
         setPolygon(polygon);
-        
+
         QColor color = Qt::gray;
-        
+
         if (!m_deactivated) {
-            switch (m_firstItem->profile())
-            {
+            switch (m_firstItem->profile()) {
             case SkeletonProfile::Unknown:
                 break;
             case SkeletonProfile::Main:
@@ -329,7 +324,7 @@ public:
                 break;
             }
         }
-        
+
         QColor penColor = color;
         penColor.setAlphaF((m_checked || m_hovered) ? Theme::checkedAlpha : Theme::normalAlpha);
         QPen pen(penColor);
@@ -380,10 +375,11 @@ public:
     {
         return m_hovered;
     }
+
 private:
     dust3d::Uuid m_uuid;
-    SkeletonGraphicsNodeItem *m_firstItem;
-    SkeletonGraphicsNodeItem *m_secondItem;
+    SkeletonGraphicsNodeItem* m_firstItem;
+    SkeletonGraphicsNodeItem* m_secondItem;
     QPolygonF m_selectionPolygon;
     bool m_hovered;
     bool m_checked;
@@ -392,8 +388,7 @@ private:
     bool m_rotated;
 };
 
-class SkeletonGraphicsWidget : public QGraphicsView
-{
+class SkeletonGraphicsWidget : public QGraphicsView {
     Q_OBJECT
 public:
     ~SkeletonGraphicsWidget();
@@ -445,43 +440,45 @@ signals:
     void shortcutToggleFlatShading();
     void shortcutToggleRotation();
     void loadedTurnaroundImageChanged();
+
 public:
-    SkeletonGraphicsWidget(const SkeletonDocument *document);
-    std::map<dust3d::Uuid, std::pair<SkeletonGraphicsNodeItem *, SkeletonGraphicsNodeItem *>> nodeItemMap;
-    std::map<dust3d::Uuid, std::pair<SkeletonGraphicsEdgeItem *, SkeletonGraphicsEdgeItem *>> edgeItemMap;
-    bool mouseMove(QMouseEvent *event);
-    bool wheel(QWheelEvent *event);
-    bool mouseRelease(QMouseEvent *event);
-    bool mousePress(QMouseEvent *event);
-    bool mouseDoubleClick(QMouseEvent *event);
-    bool keyPress(QKeyEvent *event);
-    bool keyRelease(QKeyEvent *event);
-    bool checkSkeletonItem(QGraphicsItem *item, bool checked);
-    dust3d::Uuid querySkeletonItemPartId(QGraphicsItem *item);
-    static SkeletonProfile readSkeletonItemProfile(QGraphicsItem *item);
-    void getOtherProfileNodeItems(const std::set<SkeletonGraphicsNodeItem *> &nodeItemSet,
-        std::set<SkeletonGraphicsNodeItem *> *otherProfileNodeItemSet);
-    void readMergedSkeletonNodeSetFromRangeSelection(std::set<SkeletonGraphicsNodeItem *> *nodeItemSet);
-    void readSkeletonNodeAndEdgeIdSetFromRangeSelection(std::set<dust3d::Uuid> *nodeIdSet, std::set<dust3d::Uuid> *edgeIdSet=nullptr);
-    bool readSkeletonNodeAndAnyEdgeOfNodeFromRangeSelection(SkeletonGraphicsNodeItem **nodeItem, SkeletonGraphicsEdgeItem **edgeItem);
+    SkeletonGraphicsWidget(const SkeletonDocument* document);
+    std::map<dust3d::Uuid, std::pair<SkeletonGraphicsNodeItem*, SkeletonGraphicsNodeItem*>> nodeItemMap;
+    std::map<dust3d::Uuid, std::pair<SkeletonGraphicsEdgeItem*, SkeletonGraphicsEdgeItem*>> edgeItemMap;
+    bool mouseMove(QMouseEvent* event);
+    bool wheel(QWheelEvent* event);
+    bool mouseRelease(QMouseEvent* event);
+    bool mousePress(QMouseEvent* event);
+    bool mouseDoubleClick(QMouseEvent* event);
+    bool keyPress(QKeyEvent* event);
+    bool keyRelease(QKeyEvent* event);
+    bool checkSkeletonItem(QGraphicsItem* item, bool checked);
+    dust3d::Uuid querySkeletonItemPartId(QGraphicsItem* item);
+    static SkeletonProfile readSkeletonItemProfile(QGraphicsItem* item);
+    void getOtherProfileNodeItems(const std::set<SkeletonGraphicsNodeItem*>& nodeItemSet,
+        std::set<SkeletonGraphicsNodeItem*>* otherProfileNodeItemSet);
+    void readMergedSkeletonNodeSetFromRangeSelection(std::set<SkeletonGraphicsNodeItem*>* nodeItemSet);
+    void readSkeletonNodeAndEdgeIdSetFromRangeSelection(std::set<dust3d::Uuid>* nodeIdSet, std::set<dust3d::Uuid>* edgeIdSet = nullptr);
+    bool readSkeletonNodeAndAnyEdgeOfNodeFromRangeSelection(SkeletonGraphicsNodeItem** nodeItem, SkeletonGraphicsEdgeItem** edgeItem);
     bool hasSelection();
     bool hasItems();
     bool hasMultipleSelection();
     bool hasEdgeSelection();
     bool hasNodeSelection();
     bool hasTwoDisconnectedNodesSelection();
-    void setModelWidget(ModelWidget *modelWidget);
-    bool inputWheelEventFromOtherWidget(QWheelEvent *event);
+    void setModelWidget(ModelWidget* modelWidget);
+    bool inputWheelEventFromOtherWidget(QWheelEvent* event);
     bool rotated();
-    const QImage *loadedTurnaroundImage() const;
+    const QImage* loadedTurnaroundImage() const;
+
 protected:
-    void mouseMoveEvent(QMouseEvent *event) override;
-    void wheelEvent(QWheelEvent *event) override;
-    void mouseReleaseEvent(QMouseEvent *event) override;
-    void mousePressEvent(QMouseEvent *event) override;
-    void mouseDoubleClickEvent(QMouseEvent *event) override;
-    void keyPressEvent(QKeyEvent *event) override;
-    void keyReleaseEvent(QKeyEvent *event) override;
+    void mouseMoveEvent(QMouseEvent* event) override;
+    void wheelEvent(QWheelEvent* event) override;
+    void mouseReleaseEvent(QMouseEvent* event) override;
+    void mousePressEvent(QMouseEvent* event) override;
+    void mouseDoubleClickEvent(QMouseEvent* event) override;
+    void keyPressEvent(QKeyEvent* event) override;
+    void keyReleaseEvent(QKeyEvent* event) override;
 public slots:
     void nodeAdded(dust3d::Uuid nodeId);
     void edgeAdded(dust3d::Uuid edgeId);
@@ -495,7 +492,7 @@ public slots:
     void editModeChanged();
     void updateCursor();
     void partVisibleStateChanged(dust3d::Uuid partId);
-    void showContextMenu(const QPoint &pos);
+    void showContextMenu(const QPoint& pos);
     void deleteSelected();
     void selectAll();
     void unselectAll();
@@ -577,8 +574,9 @@ public slots:
     void shortcutEscape();
 private slots:
     void turnaroundImageReady();
+
 private:
-    QPointF mouseEventScenePos(QMouseEvent *event);
+    QPointF mouseEventScenePos(QMouseEvent* event);
     QPointF scenePosToUnified(QPointF pos);
     QPointF scenePosFromUnified(QPointF pos);
     float sceneRadiusToUnified(float radius);
@@ -587,56 +585,57 @@ private:
     void updateItems();
     void checkRangeSelection();
     void clearRangeSelection();
-    void removeItem(QGraphicsItem *item);
-    QVector2D centerOfNodeItemSet(const std::set<SkeletonGraphicsNodeItem *> &set);
+    void removeItem(QGraphicsItem* item);
+    QVector2D centerOfNodeItemSet(const std::set<SkeletonGraphicsNodeItem*>& set);
     bool isSingleNodeSelected();
-    void addItemToRangeSelection(QGraphicsItem *item);
-    void removeItemFromRangeSelection(QGraphicsItem *item);
+    void addItemToRangeSelection(QGraphicsItem* item);
+    void removeItemFromRangeSelection(QGraphicsItem* item);
     void hoverPart(dust3d::Uuid partId);
     void switchProfileOnRangeSelection();
-    void setItemHoveredOnAllProfiles(QGraphicsItem *item, bool hovered);
+    void setItemHoveredOnAllProfiles(QGraphicsItem* item, bool hovered);
     void alignSelectedToGlobal(bool alignToVerticalCenter, bool alignToHorizontalCenter);
     void alignSelectedToLocal(bool alignToVerticalCenter, bool alignToHorizontalCenter);
-    void rotateItems(const std::set<SkeletonGraphicsNodeItem *> &nodeItems, int degree, QVector2D center);
+    void rotateItems(const std::set<SkeletonGraphicsNodeItem*>& nodeItems, int degree, QVector2D center);
     void rotateAllSideProfile(int degree);
     bool isFloatEqual(float a, float b);
+
 private:
-    const SkeletonDocument *m_document = nullptr;
-    QGraphicsPixmapItem *m_backgroundItem = nullptr;
+    const SkeletonDocument* m_document = nullptr;
+    QGraphicsPixmapItem* m_backgroundItem = nullptr;
     bool m_turnaroundChanged = false;
-    TurnaroundLoader *m_turnaroundLoader = nullptr;
+    TurnaroundLoader* m_turnaroundLoader = nullptr;
     bool m_dragStarted = false;
     bool m_moveStarted = false;
-    SkeletonGraphicsNodeItem *m_cursorNodeItem = nullptr;
-    SkeletonGraphicsEdgeItem *m_cursorEdgeItem = nullptr;
-    SkeletonGraphicsNodeItem *m_addFromNodeItem = nullptr;
-    SkeletonGraphicsNodeItem *m_hoveredNodeItem = nullptr;
-    SkeletonGraphicsEdgeItem *m_hoveredEdgeItem = nullptr;
+    SkeletonGraphicsNodeItem* m_cursorNodeItem = nullptr;
+    SkeletonGraphicsEdgeItem* m_cursorEdgeItem = nullptr;
+    SkeletonGraphicsNodeItem* m_addFromNodeItem = nullptr;
+    SkeletonGraphicsNodeItem* m_hoveredNodeItem = nullptr;
+    SkeletonGraphicsEdgeItem* m_hoveredEdgeItem = nullptr;
     float m_lastAddedX = false;
     float m_lastAddedY = false;
     float m_lastAddedZ = false;
-    SkeletonGraphicsSelectionItem *m_selectionItem = nullptr;
+    SkeletonGraphicsSelectionItem* m_selectionItem = nullptr;
     bool m_rangeSelectionStarted = false;
     bool m_mouseEventFromSelf = false;
     bool m_moveHappened = false;
     int m_lastRot = 0;
-    SkeletonGraphicsOriginItem *m_mainOriginItem = nullptr;
-    SkeletonGraphicsOriginItem *m_sideOriginItem = nullptr;
-    SkeletonGraphicsOriginItem *m_hoveredOriginItem = nullptr;
-    SkeletonGraphicsOriginItem *m_checkedOriginItem = nullptr;
+    SkeletonGraphicsOriginItem* m_mainOriginItem = nullptr;
+    SkeletonGraphicsOriginItem* m_sideOriginItem = nullptr;
+    SkeletonGraphicsOriginItem* m_hoveredOriginItem = nullptr;
+    SkeletonGraphicsOriginItem* m_checkedOriginItem = nullptr;
     unsigned long long m_ikMoveUpdateVersion = 0;
-    SkeletonIkMover *m_ikMover = nullptr;
-    QTimer *m_deferredRemoveTimer = nullptr;
+    SkeletonIkMover* m_ikMover = nullptr;
+    QTimer* m_deferredRemoveTimer = nullptr;
     bool m_eventForwardingToModelWidget = false;
-    ModelWidget *m_modelWidget = nullptr;
+    ModelWidget* m_modelWidget = nullptr;
     bool m_inTempDragMode = false;
     SkeletonDocumentEditMode m_modeBeforeEnterTempDragMode = SkeletonDocumentEditMode::Select;
     float m_turnaroundOpacity = 0.25f;
     bool m_rotated = false;
-    QImage *m_backgroundImage = nullptr;
+    QImage* m_backgroundImage = nullptr;
     QVector3D m_ikMoveTarget;
     dust3d::Uuid m_ikMoveEndEffectorId;
-    std::set<QGraphicsItem *> m_rangeSelectionSet;
+    std::set<QGraphicsItem*> m_rangeSelectionSet;
     QPoint m_lastGlobalPos;
     QPointF m_lastScenePos;
     QPointF m_rangeSelectionStartPos;
@@ -645,27 +644,28 @@ private:
     std::set<dust3d::Uuid> m_deferredRemoveEdgeIds;
 };
 
-class SkeletonGraphicsContainerWidget : public QWidget
-{
+class SkeletonGraphicsContainerWidget : public QWidget {
     Q_OBJECT
 signals:
     void containerSizeChanged(QSize size);
+
 public:
-    SkeletonGraphicsContainerWidget() :
-        m_graphicsWidget(nullptr)
+    SkeletonGraphicsContainerWidget()
+        : m_graphicsWidget(nullptr)
     {
     }
-    void resizeEvent(QResizeEvent *event) override
+    void resizeEvent(QResizeEvent* event) override
     {
         if (m_graphicsWidget && m_graphicsWidget->size() != event->size())
             emit containerSizeChanged(event->size());
     }
-    void setGraphicsWidget(SkeletonGraphicsWidget *graphicsWidget)
+    void setGraphicsWidget(SkeletonGraphicsWidget* graphicsWidget)
     {
         m_graphicsWidget = graphicsWidget;
     }
+
 private:
-    SkeletonGraphicsWidget *m_graphicsWidget;
+    SkeletonGraphicsWidget* m_graphicsWidget;
 };
 
 #endif

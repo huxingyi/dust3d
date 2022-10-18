@@ -26,10 +26,9 @@
 #include <dust3d/base/vector3.h>
 #include <vector>
 
-namespace dust3d
-{
-    
-void buildBoxMesh(const Vector3 &position, float radius, size_t subdivideTimes, std::vector<Vector3> &vertices, std::vector<std::vector<size_t>> &faces);
+namespace dust3d {
+
+void buildBoxMesh(const Vector3& position, float radius, size_t subdivideTimes, std::vector<Vector3>& vertices, std::vector<std::vector<size_t>>& faces);
 
 }
 

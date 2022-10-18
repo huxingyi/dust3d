@@ -19,19 +19,17 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *  SOFTWARE.
  */
- 
+
 #ifndef DUST3D_BASE_DS3_FILE_H_
 #define DUST3D_BASE_DS3_FILE_H_
 
-#include <string>
 #include <map>
+#include <string>
 #include <vector>
 
-namespace dust3d
-{
+namespace dust3d {
 
-class Ds3ReaderItem
-{
+class Ds3ReaderItem {
 public:
     std::string type;
     std::string name;
@@ -39,38 +37,38 @@ public:
     long long size;
 };
 
-class Ds3FileReader
-{
+class Ds3FileReader {
 public:
-    Ds3FileReader(const std::uint8_t *fileData, size_t fileSize);
-    void loadItem(const std::string &name, std::vector<std::uint8_t> *byteArray);
-    const std::vector<Ds3ReaderItem> &items() const;
+    Ds3FileReader(const std::uint8_t* fileData, size_t fileSize);
+    void loadItem(const std::string& name, std::vector<std::uint8_t>* byteArray);
+    const std::vector<Ds3ReaderItem>& items() const;
     static std::string m_applicationName;
     static std::string m_fileFormatVersion;
     static std::string m_headFormat;
+
 private:
     std::map<std::string, Ds3ReaderItem> m_itemsMap;
     std::vector<Ds3ReaderItem> m_items;
     std::vector<std::uint8_t> m_fileContent;
+
 private:
-    static std::string readFirstLine(const std::uint8_t *data, size_t size);
+    static std::string readFirstLine(const std::uint8_t* data, size_t size);
     bool m_headerIsGood = false;
     long long m_binaryOffset = 0;
 };
 
-class Ds3WriterItem
-{
+class Ds3WriterItem {
 public:
     std::string type;
     std::string name;
     std::vector<std::uint8_t> byteArray;
 };
 
-class Ds3FileWriter
-{
+class Ds3FileWriter {
 public:
-    bool add(const std::string &name, const std::string &type, const void *buffer, size_t bufferSize);
-    bool save(const std::string &filename);
+    bool add(const std::string& name, const std::string& type, const void* buffer, size_t bufferSize);
+    bool save(const std::string& filename);
+
 private:
     std::map<std::string, Ds3WriterItem> m_itemsMap;
     std::vector<Ds3WriterItem> m_items;

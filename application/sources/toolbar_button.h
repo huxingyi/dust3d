@@ -6,14 +6,14 @@
 
 class QSvgWidget;
 
-class ToolbarButton : public QPushButton
-{
+class ToolbarButton : public QPushButton {
     Q_OBJECT
 public:
-    ToolbarButton(const QString &filename=QString(), QWidget *parent=nullptr);
-    void setIcon(const QString &filename);
+    ToolbarButton(const QString& filename = QString(), QWidget* parent = nullptr);
+    void setIcon(const QString& filename);
+
 private:
-    QSvgWidget *m_iconWidget = nullptr;
+    QSvgWidget* m_iconWidget = nullptr;
 };
 
 #endif

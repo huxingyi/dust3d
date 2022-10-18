@@ -1,11 +1,11 @@
-#include <QtWidgets>
+#include "float_number_widget.h"
+#include "theme.h"
 #include <QHBoxLayout>
 #include <QVBoxLayout>
-#include "theme.h"
-#include "float_number_widget.h"
+#include <QtWidgets>
 
-FloatNumberWidget::FloatNumberWidget(QWidget *parent, bool singleLine) :
-    QWidget(parent)
+FloatNumberWidget::FloatNumberWidget(QWidget* parent, bool singleLine)
+    : QWidget(parent)
 {
     m_slider = new QSlider(Qt::Horizontal, this);
     m_slider->setRange(0, 100);
@@ -19,8 +19,8 @@ FloatNumberWidget::FloatNumberWidget(QWidget *parent, bool singleLine) :
         updateValueLabel(fvalue);
         emit valueChanged(fvalue);
     });
-    
-    QBoxLayout *layout = nullptr;
+
+    QBoxLayout* layout = nullptr;
     if (singleLine) {
         layout = new QHBoxLayout(this);
         layout->setMargin(2);
@@ -48,7 +48,7 @@ void FloatNumberWidget::updateValueLabel(float value)
         m_label->setText(m_itemName + ": " + valueString);
 }
 
-void FloatNumberWidget::setItemName(const QString &name)
+void FloatNumberWidget::setItemName(const QString& name)
 {
     m_itemName = name;
     updateValueLabel(value());

@@ -25,34 +25,32 @@
 
 #include <iostream>
 
-namespace dust3d
-{
+namespace dust3d {
 
-class Debug
-{
+class Debug {
 public:
     Debug() = default;
-    
-    Debug(Debug const &) = delete;
-    
-    Debug &operator=(Debug const &) = delete;
-    
-    Debug &operator=(Debug &&) = delete;
-    
-    Debug(Debug &&instance) noexcept 
+
+    Debug(Debug const&) = delete;
+
+    Debug& operator=(Debug const&) = delete;
+
+    Debug& operator=(Debug&&) = delete;
+
+    Debug(Debug&& instance) noexcept
         : m_firstItem(false)
     {
         instance.m_lastItem = false;
     }
 
-    ~Debug() 
+    ~Debug()
     {
         if (m_lastItem)
             std::cout << '\n';
     }
-    
+
     template <typename T>
-    friend Debug operator<<(Debug instance, const T &value) 
+    friend Debug operator<<(Debug instance, const T& value)
     {
         if (instance.m_firstItem)
             instance.m_firstItem = false;
@@ -62,7 +60,7 @@ public:
         std::cout << value;
         return instance;
     }
-    
+
 private:
     bool m_firstItem = true;
     bool m_lastItem = true;

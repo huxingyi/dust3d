@@ -4,7 +4,7 @@
 #include <QDebug>
 #include <dust3d/base/uuid.h>
 
-QDebug operator<<(QDebug debug, const dust3d::Uuid &uuid);
-QDebug operator<<(QDebug debug, const std::string &string);
+QDebug operator<<(QDebug debug, const dust3d::Uuid& uuid);
+QDebug operator<<(QDebug debug, const std::string& string);
 
 #endif

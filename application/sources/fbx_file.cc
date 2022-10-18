@@ -1,13 +1,13 @@
+#include "fbx_file.h"
+#include "document.h"
+#include "version.h"
+#include <QByteArray>
+#include <QDateTime>
+#include <QFileInfo>
+#include <QtCore/qbuffer.h>
+#include <QtMath>
 #include <fbxnode.h>
 #include <fbxproperty.h>
-#include <QDateTime>
-#include <QtMath>
-#include <QtCore/qbuffer.h>
-#include <QByteArray>
-#include <QFileInfo>
-#include "fbx_file.h"
-#include "version.h"
-#include "document.h"
 
 using namespace fbx;
 
@@ -27,9 +27,9 @@ void FbxFileWriter::createFbxHeader()
     headerExtension.addPropertyNode("EncryptionType", (int32_t)0);
     {
         auto currentDateTime = QDateTime::currentDateTime();
-        const auto &currentDate = currentDateTime.date();
-        const auto &currentTime = currentDateTime.time();
-        
+        const auto& currentDate = currentDateTime.date();
+        const auto& currentTime = currentDateTime.time();
+
         FBXNode creationTimeStamp("CreationTimeStamp");
         creationTimeStamp.addPropertyNode("Version", (int32_t)1000);
         creationTimeStamp.addPropertyNode("Year", (int32_t)currentDate.year());
@@ -45,7 +45,7 @@ void FbxFileWriter::createFbxHeader()
     headerExtension.addPropertyNode("Creator", APP_NAME " " APP_HUMAN_VER);
     {
         FBXNode sceneInfo("SceneInfo");
-        sceneInfo.addProperty(std::vector<uint8_t>({'G','l','o','b','a','l','I','n','f','o',0,1,'S','c','e','n','e','I','n','f','o'}), 'S');
+        sceneInfo.addProperty(std::vector<uint8_t>({ 'G', 'l', 'o', 'b', 'a', 'l', 'I', 'n', 'f', 'o', 0, 1, 'S', 'c', 'e', 'n', 'e', 'I', 'n', 'f', 'o' }), 'S');
         sceneInfo.addProperty("UserData");
         sceneInfo.addPropertyNode("Type", "UserData");
         sceneInfo.addPropertyNode("Version", 100);
@@ -185,7 +185,7 @@ void FbxFileWriter::createFbxHeader()
         headerExtension.addChild(sceneInfo);
         headerExtension.addChild(FBXNode());
     }
-    
+
     m_fbxDocument.nodes.push_back(headerExtension);
 }
 
@@ -198,7 +198,7 @@ void FbxFileWriter::createCreationTime()
 
 void FbxFileWriter::createFileId()
 {
-    std::vector<uint8_t> fileIdBytes = {40, (uint8_t)-77, 42, (uint8_t)-21, (uint8_t)-74, 36, (uint8_t)-52, (uint8_t)-62, (uint8_t)-65, (uint8_t)-56, (uint8_t)-80, 42, (uint8_t)-87, 43, (uint8_t)-4, (uint8_t)-15};
+    std::vector<uint8_t> fileIdBytes = { 40, (uint8_t)-77, 42, (uint8_t)-21, (uint8_t)-74, 36, (uint8_t)-52, (uint8_t)-62, (uint8_t)-65, (uint8_t)-56, (uint8_t)-80, 42, (uint8_t)-87, 43, (uint8_t)-4, (uint8_t)-15 };
     FBXNode fileId("FileId");
     fileId.addProperty(fileIdBytes, 'R');
     m_fbxDocument.nodes.push_back(fileId);
@@ -415,13 +415,13 @@ void FbxFileWriter::createReferences()
 }
 
 void FbxFileWriter::createDefinitions(size_t deformerCount,
-        size_t textureCount,
-        size_t videoCount,
-        bool hasAnimtion,
-        size_t animationStackCount,
-        size_t animationLayerCount,
-        size_t animationCurveNodeCount,
-        size_t animationCurveCount)
+    size_t textureCount,
+    size_t videoCount,
+    bool hasAnimtion,
+    size_t animationStackCount,
+    size_t animationLayerCount,
+    size_t animationCurveNodeCount,
+    size_t animationCurveCount)
 {
     FBXNode definitions("Definitions");
     definitions.addPropertyNode("Version", (int32_t)100);
@@ -2198,15 +2198,15 @@ void FbxFileWriter::createDefinitions(size_t deformerCount,
     m_fbxDocument.nodes.push_back(definitions);
 }
 
-FbxFileWriter::FbxFileWriter(dust3d::Object &object,
-        const QString &filename,
-        QImage *textureImage,
-        QImage *normalImage,
-        QImage *metalnessImage,
-        QImage *roughnessImage,
-        QImage *ambientOcclusionImage) :
-    m_filename(filename),
-    m_baseName(QFileInfo(m_filename).baseName())
+FbxFileWriter::FbxFileWriter(dust3d::Object& object,
+    const QString& filename,
+    QImage* textureImage,
+    QImage* normalImage,
+    QImage* metalnessImage,
+    QImage* roughnessImage,
+    QImage* ambientOcclusionImage)
+    : m_filename(filename)
+    , m_baseName(QFileInfo(m_filename).baseName())
 {
     createFbxHeader();
     createFileId();
@@ -2215,24 +2215,24 @@ FbxFileWriter::FbxFileWriter(dust3d::Object &object,
     createGlobalSettings();
     createDocuments();
     createReferences();
-    
+
     FBXNode connections("Connections");
-    
+
     size_t deformerCount = 0;
-    
+
     FBXNode geometry("Geometry");
     int64_t geometryId = m_next64Id++;
     geometry.addProperty(geometryId);
-    geometry.addProperty(std::vector<uint8_t>({'u','n','a','m','e','d','m','e','s','h',0,1,'G','e','o','m','e','t','r','y'}), 'S');
+    geometry.addProperty(std::vector<uint8_t>({ 'u', 'n', 'a', 'm', 'e', 'd', 'm', 'e', 's', 'h', 0, 1, 'G', 'e', 'o', 'm', 'e', 't', 'r', 'y' }), 'S');
     geometry.addProperty("Mesh");
     std::vector<double> positions;
-    for (const auto &vertex: object.vertices) {
+    for (const auto& vertex : object.vertices) {
         positions.push_back((double)vertex.x());
         positions.push_back((double)vertex.y());
         positions.push_back((double)vertex.z());
     }
     std::vector<int32_t> indices;
-    for (const auto &triangle: object.triangles) {
+    for (const auto& triangle : object.triangles) {
         indices.push_back(triangle[0]);
         indices.push_back(triangle[1]);
         indices.push_back(triangle[2] ^ -1);
@@ -2248,7 +2248,7 @@ FbxFileWriter::FbxFileWriter(dust3d::Object &object,
         std::vector<double> normals;
         for (decltype(triangleVertexNormals->size()) i = 0; i < triangleVertexNormals->size(); ++i) {
             for (size_t j = 0; j < 3; ++j) {
-                const auto &n = (*triangleVertexNormals)[i][j];
+                const auto& n = (*triangleVertexNormals)[i][j];
                 normals.push_back((double)n.x());
                 normals.push_back((double)n.y());
                 normals.push_back((double)n.z());
@@ -2269,7 +2269,7 @@ FbxFileWriter::FbxFileWriter(dust3d::Object &object,
         //std::vector<int32_t> uvIndices;
         for (decltype(triangleVertexUvs->size()) i = 0; i < triangleVertexUvs->size(); ++i) {
             for (size_t j = 0; j < 3; ++j) {
-                const auto &uv = (*triangleVertexUvs)[i][j];
+                const auto& uv = (*triangleVertexUvs)[i][j];
                 uvs.push_back((double)uv.x());
                 uvs.push_back((double)1.0 - uv.y());
                 //uvIndices.push_back(uvIndices.size());
@@ -2285,7 +2285,7 @@ FbxFileWriter::FbxFileWriter(dust3d::Object &object,
     layerElementMaterial.addPropertyNode("Name", "");
     layerElementMaterial.addPropertyNode("MappingInformationType", "AllSame");
     layerElementMaterial.addPropertyNode("ReferenceInformationType", "IndexToDirect");
-    std::vector<int32_t> materials = {(int32_t)0};
+    std::vector<int32_t> materials = { (int32_t)0 };
     layerElementMaterial.addPropertyNode("Materials", materials);
     layerElementMaterial.addChild(FBXNode());
     FBXNode layer("Layer");
@@ -2323,11 +2323,11 @@ FbxFileWriter::FbxFileWriter(dust3d::Object &object,
         geometry.addChild(layerElementUv);
     geometry.addChild(layer);
     geometry.addChild(FBXNode());
-    
+
     int64_t modelId = m_next64Id++;
     FBXNode model("Model");
     model.addProperty(modelId);
-    model.addProperty(std::vector<uint8_t>({'u','n','a','m','e','d',0,1,'M','o','d','e','l'}), 'S');
+    model.addProperty(std::vector<uint8_t>({ 'u', 'n', 'a', 'm', 'e', 'd', 0, 1, 'M', 'o', 'd', 'e', 'l' }), 'S');
     model.addProperty("Mesh");
     model.addPropertyNode("Version", (int32_t)232);
     {
@@ -2390,7 +2390,7 @@ FbxFileWriter::FbxFileWriter(dust3d::Object &object,
     model.addPropertyNode("Shading", (bool)true);
     model.addPropertyNode("Culling", "CullingOff");
     model.addChild(FBXNode());
-    
+
     FBXNode pose("Pose");
     int64_t poseId = 0;
     std::vector<FBXNode> deformers;
@@ -2401,12 +2401,11 @@ FbxFileWriter::FbxFileWriter(dust3d::Object &object,
     std::vector<int64_t> nodeAttributeIds;
     int64_t skinId = 0;
     int64_t armatureId = 0;
-    
-    if (deformerCount > 0)
-    {
+
+    if (deformerCount > 0) {
         poseId = m_next64Id++;
         pose.addProperty(poseId);
-        pose.addProperty(std::vector<uint8_t>({'u','n','a','m','e','d',0,1,'P','o','s','e'}), 'S');
+        pose.addProperty(std::vector<uint8_t>({ 'u', 'n', 'a', 'm', 'e', 'd', 0, 1, 'P', 'o', 's', 'e' }), 'S');
         pose.addProperty("BindPose");
         pose.addPropertyNode("Type", "BindPose");
         pose.addPropertyNode("Version", (int32_t)100);
@@ -2427,17 +2426,17 @@ FbxFileWriter::FbxFileWriter(dust3d::Object &object,
         }
         pose.addChild(FBXNode());
     }
-    
+
     size_t textureCount = 0;
     size_t videoCount = 0;
-    
+
     std::vector<FBXNode> videos;
     std::vector<FBXNode> textures;
-    
+
     FBXNode material("Material");
     int64_t materialId = m_next64Id++;
     material.addProperty(materialId);
-    material.addProperty(std::vector<uint8_t>({'M','a','t','e','r','i','a','l',0,1,'S','t','i','n','g','r','a','y','P','B','S'}), 'S');
+    material.addProperty(std::vector<uint8_t>({ 'M', 'a', 't', 'e', 'r', 'i', 'a', 'l', 0, 1, 'S', 't', 'i', 'n', 'g', 'r', 'a', 'y', 'P', 'B', 'S' }), 'S');
     material.addProperty("");
     material.addPropertyNode("Version", (int32_t)102);
     material.addPropertyNode("ShadingModel", "unknown");
@@ -2696,7 +2695,7 @@ FbxFileWriter::FbxFileWriter(dust3d::Object &object,
         material.addChild(properties);
     }
     material.addChild(FBXNode());
-    
+
     /*
     FBXNode material("Material");
     int64_t materialId = m_next64Id++;
@@ -2833,11 +2832,11 @@ FbxFileWriter::FbxFileWriter(dust3d::Object &object,
     }
     material.addChild(FBXNode());
     */
-    
+
     FBXNode implementation("Implementation");
     int64_t implementationId = m_next64Id++;
     implementation.addProperty(implementationId);
-    implementation.addProperty(std::vector<uint8_t>({'I','m','p','l','e','m','e','n','t','a','t','i','o','n',0,1,'S','t','i','n','g','r','a','y','P','B','S','_','I','m','p','l','e','m','e','n','t','a','t','i','o','n'}), 'S');
+    implementation.addProperty(std::vector<uint8_t>({ 'I', 'm', 'p', 'l', 'e', 'm', 'e', 'n', 't', 'a', 't', 'i', 'o', 'n', 0, 1, 'S', 't', 'i', 'n', 'g', 'r', 'a', 'y', 'P', 'B', 'S', '_', 'I', 'm', 'p', 'l', 'e', 'm', 'e', 'n', 't', 'a', 't', 'i', 'o', 'n' }), 'S');
     implementation.addProperty("");
     implementation.addPropertyNode("Version", (int32_t)100);
     {
@@ -2896,11 +2895,11 @@ FbxFileWriter::FbxFileWriter(dust3d::Object &object,
         implementation.addChild(properties);
     }
     implementation.addChild(FBXNode());
-    
+
     FBXNode bindingTable("BindingTable");
     int64_t bindingTableId = m_next64Id++;
     bindingTable.addProperty(bindingTableId);
-    bindingTable.addProperty(std::vector<uint8_t>({'B','i','n','d','i','n','g','T','a','b','l','e',0,1,'S','t','i','n','g','r','a','y','P','B','S','_','B','i','n','d','i','n','g','T','a','b','l','e'}), 'S');
+    bindingTable.addProperty(std::vector<uint8_t>({ 'B', 'i', 'n', 'd', 'i', 'n', 'g', 'T', 'a', 'b', 'l', 'e', 0, 1, 'S', 't', 'i', 'n', 'g', 'r', 'a', 'y', 'P', 'B', 'S', '_', 'B', 'i', 'n', 'd', 'i', 'n', 'g', 'T', 'a', 'b', 'l', 'e' }), 'S');
     bindingTable.addProperty("");
     bindingTable.addPropertyNode("Version", (int32_t)100);
     {
@@ -3103,8 +3102,8 @@ FbxFileWriter::FbxFileWriter(dust3d::Object &object,
         bindingTable.addChild(entry);
     }
     bindingTable.addChild(FBXNode());
-    
-    auto addTexture = [&](const QImage *image, const std::vector<uint8_t> &clipName, const std::vector<uint8_t> &textureName, const QString &filename, const QString &propertyName){
+
+    auto addTexture = [&](const QImage* image, const std::vector<uint8_t>& clipName, const std::vector<uint8_t>& textureName, const QString& filename, const QString& propertyName) {
         FBXNode video("Video");
         int64_t videoId = m_next64Id++;
         video.addProperty(videoId);
@@ -3136,7 +3135,7 @@ FbxFileWriter::FbxFileWriter(dust3d::Object &object,
         video.addChild(FBXNode());
         videos.push_back(video);
         videoCount++;
-        
+
         FBXNode texture("Texture");
         int64_t textureId = m_next64Id++;
         texture.addProperty(textureId);
@@ -3195,7 +3194,7 @@ FbxFileWriter::FbxFileWriter(dust3d::Object &object,
         texture.addChild(FBXNode());
         textures.push_back(texture);
         textureCount++;
-        
+
         {
             FBXNode p("C");
             p.addProperty("OO");
@@ -3214,46 +3213,46 @@ FbxFileWriter::FbxFileWriter(dust3d::Object &object,
     };
     if (nullptr != textureImage) {
         addTexture(textureImage,
-            std::vector<uint8_t>({'V','i','d','e','o',0,1,'B','a','s','e','C','o','l','o','r'}),
-            std::vector<uint8_t>({'T','e','x','t','u','r','e',0,1,'B','a','s','e','C','o','l','o','r'}),
+            std::vector<uint8_t>({ 'V', 'i', 'd', 'e', 'o', 0, 1, 'B', 'a', 's', 'e', 'C', 'o', 'l', 'o', 'r' }),
+            std::vector<uint8_t>({ 'T', 'e', 'x', 't', 'u', 'r', 'e', 0, 1, 'B', 'a', 's', 'e', 'C', 'o', 'l', 'o', 'r' }),
             m_baseName + "_color.png",
             "Maya|TEX_color_map");
     }
     if (nullptr != normalImage) {
         addTexture(normalImage,
-            std::vector<uint8_t>({'V','i','d','e','o',0,1,'N','o','r','m','a','l'}),
-            std::vector<uint8_t>({'T','e','x','t','u','r','e',0,1,'N','o','r','m','a','l'}),
+            std::vector<uint8_t>({ 'V', 'i', 'd', 'e', 'o', 0, 1, 'N', 'o', 'r', 'm', 'a', 'l' }),
+            std::vector<uint8_t>({ 'T', 'e', 'x', 't', 'u', 'r', 'e', 0, 1, 'N', 'o', 'r', 'm', 'a', 'l' }),
             m_baseName + "_normal.png",
             "Maya|TEX_normal_map");
     }
     if (nullptr != metalnessImage) {
         addTexture(metalnessImage,
-            std::vector<uint8_t>({'V','i','d','e','o',0,1,'M','e','t','a','l','l','i','c'}),
-            std::vector<uint8_t>({'T','e','x','t','u','r','e',0,1,'M','e','t','a','l','l','i','c'}),
+            std::vector<uint8_t>({ 'V', 'i', 'd', 'e', 'o', 0, 1, 'M', 'e', 't', 'a', 'l', 'l', 'i', 'c' }),
+            std::vector<uint8_t>({ 'T', 'e', 'x', 't', 'u', 'r', 'e', 0, 1, 'M', 'e', 't', 'a', 'l', 'l', 'i', 'c' }),
             m_baseName + "_metallic.png",
             "Maya|TEX_metallic_map");
     }
     if (nullptr != roughnessImage) {
         addTexture(roughnessImage,
-            std::vector<uint8_t>({'V','i','d','e','o',0,1,'R','o','u','g','h','n','e','s','s'}),
-            std::vector<uint8_t>({'T','e','x','t','u','r','e',0,1,'R','o','u','g','h','n','e','s','s'}),
+            std::vector<uint8_t>({ 'V', 'i', 'd', 'e', 'o', 0, 1, 'R', 'o', 'u', 'g', 'h', 'n', 'e', 's', 's' }),
+            std::vector<uint8_t>({ 'T', 'e', 'x', 't', 'u', 'r', 'e', 0, 1, 'R', 'o', 'u', 'g', 'h', 'n', 'e', 's', 's' }),
             m_baseName + "_roughness.png",
             "Maya|TEX_roughness_map");
     }
     if (nullptr != ambientOcclusionImage) {
         addTexture(ambientOcclusionImage,
-            std::vector<uint8_t>({'V','i','d','e','o',0,1,'A','o'}),
-            std::vector<uint8_t>({'T','e','x','t','u','r','e',0,1,'A','o'}),
+            std::vector<uint8_t>({ 'V', 'i', 'd', 'e', 'o', 0, 1, 'A', 'o' }),
+            std::vector<uint8_t>({ 'T', 'e', 'x', 't', 'u', 'r', 'e', 0, 1, 'A', 'o' }),
             m_baseName + "_ao.png",
             "Maya|TEX_ao_map");
     }
-    
+
     bool hasAnimation = false;
     size_t animationStackCount = 0;
     size_t animationLayerCount = 0;
     size_t animationCurveNodeCount = 0;
     size_t animationCurveCount = 0;
-    
+
     std::vector<FBXNode> animationStacks;
     std::vector<FBXNode> animationLayers;
     std::vector<FBXNode> animationCurveNodes;
@@ -3263,11 +3262,11 @@ FbxFileWriter::FbxFileWriter(dust3d::Object &object,
         textureCount, videoCount,
         hasAnimation,
         animationStackCount, animationLayerCount, animationCurveNodeCount, animationCurveCount);
-    
+
     FBXNode objects("Objects");
     objects.addChild(geometry);
     objects.addChild(model);
-    for (const auto &limbNode: limbNodes) {
+    for (const auto& limbNode : limbNodes) {
         objects.addChild(limbNode);
     }
     if (deformerCount > 0)
@@ -3276,38 +3275,38 @@ FbxFileWriter::FbxFileWriter(dust3d::Object &object,
     objects.addChild(implementation);
     objects.addChild(bindingTable);
     if (textureCount > 0) {
-        for (const auto &texture: textures) {
+        for (const auto& texture : textures) {
             objects.addChild(texture);
         }
     }
     if (videoCount > 0) {
-        for (const auto &video: videos) {
+        for (const auto& video : videos) {
             objects.addChild(video);
         }
     }
-    for (const auto &deformer: deformers) {
+    for (const auto& deformer : deformers) {
         objects.addChild(deformer);
     }
-    for (const auto &nodeAttribute: nodeAttributes) {
+    for (const auto& nodeAttribute : nodeAttributes) {
         objects.addChild(nodeAttribute);
     }
     if (hasAnimation) {
-        for (const auto &animationStack: animationStacks) {
+        for (const auto& animationStack : animationStacks) {
             objects.addChild(animationStack);
         }
-        for (const auto &animationLayer: animationLayers) {
+        for (const auto& animationLayer : animationLayers) {
             objects.addChild(animationLayer);
         }
-        for (const auto &animationCurveNode: animationCurveNodes) {
+        for (const auto& animationCurveNode : animationCurveNodes) {
             objects.addChild(animationCurveNode);
         }
-        for (const auto &animationCurve: animationCurves) {
+        for (const auto& animationCurve : animationCurves) {
             objects.addChild(animationCurve);
         }
     }
     objects.addChild(FBXNode());
     m_fbxDocument.nodes.push_back(objects);
-    
+
     {
         FBXNode p("C");
         p.addProperty("OO");
@@ -3315,8 +3314,7 @@ FbxFileWriter::FbxFileWriter(dust3d::Object &object,
         p.addProperty((int64_t)0);
         connections.addChild(p);
     }
-    if (armatureId > 0)
-    {
+    if (armatureId > 0) {
         FBXNode p("C");
         p.addProperty("OO");
         p.addProperty(armatureId);
@@ -3330,8 +3328,7 @@ FbxFileWriter::FbxFileWriter(dust3d::Object &object,
         p.addProperty(modelId);
         connections.addChild(p);
     }
-    if (skinId > 0)
-    {
+    if (skinId > 0) {
         FBXNode p("C");
         p.addProperty("OO");
         p.addProperty(skinId);
@@ -3375,7 +3372,7 @@ FbxFileWriter::FbxFileWriter(dust3d::Object &object,
     }
     connections.addChild(FBXNode());
     m_fbxDocument.nodes.push_back(connections);
-    
+
     createTakes();
 }
 
@@ -3394,11 +3391,11 @@ bool FbxFileWriter::save()
     return true;
 }
 
-std::vector<double> FbxFileWriter::matrixToVector(const QMatrix4x4 &matrix)
+std::vector<double> FbxFileWriter::matrixToVector(const QMatrix4x4& matrix)
 {
     std::vector<double> vec;
     for (size_t col = 0; col < 4; ++col) {
-        const auto &line = matrix.column(col);
+        const auto& line = matrix.column(col);
         vec.push_back(line.x());
         vec.push_back(line.y());
         vec.push_back(line.z());

@@ -23,17 +23,16 @@
 #ifndef DUST3D_MESH_RESOLVE_TRIANGLE_SOURCE_NODE_H_
 #define DUST3D_MESH_RESOLVE_TRIANGLE_SOURCE_NODE_H_
 
-#include <dust3d/base/uuid.h>
 #include <dust3d/base/object.h>
+#include <dust3d/base/uuid.h>
 
-namespace dust3d
-{
-    
-void resolveTriangleSourceNode(const Object &object, 
-    const std::vector<std::pair<Vector3, std::pair<Uuid, Uuid>>> &nodeVertices,
-    std::vector<std::pair<Uuid, Uuid>> &triangleSourceNodes,
-    std::vector<std::pair<Uuid, Uuid>> *vertexSourceNodes=nullptr);
-    
+namespace dust3d {
+
+void resolveTriangleSourceNode(const Object& object,
+    const std::vector<std::pair<Vector3, std::pair<Uuid, Uuid>>>& nodeVertices,
+    std::vector<std::pair<Uuid, Uuid>>& triangleSourceNodes,
+    std::vector<std::pair<Uuid, Uuid>>* vertexSourceNodes = nullptr);
+
 }
 
 #endif

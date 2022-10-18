@@ -23,36 +23,34 @@
 #ifndef DUST3D_BASE_COLOR_H_
 #define DUST3D_BASE_COLOR_H_
 
-#include <string>
-#include <iostream>
 #include <dust3d/base/debug.h>
+#include <iostream>
+#include <string>
 
-namespace dust3d
-{
-    
+namespace dust3d {
+
 class Color;
 
-inline std::string to_string(const Color &color);
-    
-class Color
-{
+inline std::string to_string(const Color& color);
+
+class Color {
 public:
-    inline Color() :
-        m_data {0.0, 0.0, 0.0, 1.0}
+    inline Color()
+        : m_data { 0.0, 0.0, 0.0, 1.0 }
     {
     }
-    
-    inline Color(double r, double g, double b) :
-        m_data {r, g, b, 1.0}
+
+    inline Color(double r, double g, double b)
+        : m_data { r, g, b, 1.0 }
     {
     }
-    
-    inline Color(double r, double g, double b, double alpha) :
-        m_data {r, g, b, alpha}
+
+    inline Color(double r, double g, double b, double alpha)
+        : m_data { r, g, b, alpha }
     {
     }
-    
-    inline Color(const std::string &name)
+
+    inline Color(const std::string& name)
     {
         if (7 == name.size() && '#' == name[0]) {
             m_data[0] = strtoul(name.substr(1, 2).c_str(), nullptr, 16) / 255.0;
@@ -65,106 +63,106 @@ public:
             m_data[2] = strtoul(name.substr(7, 2).c_str(), nullptr, 16) / 255.0;
         }
     }
-    
-    inline double &operator[](size_t index)
-    {
-        return m_data[index];
-    }
-    
-    inline const double &operator[](size_t index) const
+
+    inline double& operator[](size_t index)
     {
         return m_data[index];
     }
 
-    inline const double &alpha() const
+    inline const double& operator[](size_t index) const
+    {
+        return m_data[index];
+    }
+
+    inline const double& alpha() const
     {
         return m_data[3];
     }
 
-    inline const double &r() const
+    inline const double& r() const
     {
         return m_data[0];
     }
-    
-    inline const double &g() const
+
+    inline const double& g() const
     {
         return m_data[1];
     }
-    
-    inline const double &b() const
+
+    inline const double& b() const
     {
         return m_data[2];
     }
 
-    inline const double &red() const
+    inline const double& red() const
     {
         return m_data[0];
     }
-    
-    inline const double &green() const
+
+    inline const double& green() const
     {
         return m_data[1];
     }
-    
-    inline const double &blue() const
+
+    inline const double& blue() const
     {
         return m_data[2];
     }
-    
+
     inline void setRed(double r)
     {
         m_data[0] = r;
     }
-    
+
     inline void setGreen(double g)
     {
         m_data[1] = g;
     }
-    
+
     inline void setBlue(double b)
     {
         m_data[2] = b;
     }
-    
+
     inline static Color createRed()
     {
         return Color(1.0, 0.0, 0.0);
     }
-    
+
     inline static Color createWhite()
     {
         return Color(1.0, 1.0, 1.0);
     }
-    
+
     inline static Color createBlack()
     {
         return Color(0.0, 0.0, 0.0);
     }
-    
+
     inline static Color createTransparent()
     {
         return Color(0.0, 0.0, 0.0, 0.0);
     }
-    
+
     inline std::string toString() const
     {
         return to_string(*this);
     }
-    
+
 private:
-    double m_data[4] = {0.0, 0.0, 0.0, 1.0};
+    double m_data[4] = { 0.0, 0.0, 0.0, 1.0 };
 };
 
-inline std::string to_string(const Color &color)
+inline std::string to_string(const Color& color)
 {
-    static const char *digits = "0123456789ABCDEF";
+    static const char* digits = "0123456789ABCDEF";
     std::string name = "#00000000";
-    
+
     int alpha = static_cast<int>(color.alpha() * 255);
     int r = static_cast<int>(color.r() * 255);
     int g = static_cast<int>(color.g() * 255);
     int b = static_cast<int>(color.b() * 255);
-    
+
     name[1] = digits[(alpha & 0xf0) >> 4];
     name[2] = digits[alpha & 0x0f];
     name[3] = digits[(r & 0xf0) >> 4];
@@ -177,12 +175,12 @@ inline std::string to_string(const Color &color)
     return name;
 }
 
-inline Color operator*(const Color &color, double number)
+inline Color operator*(const Color& color, double number)
 {
     return Color(number * color[0], number * color[1], number * color[2], number * color[3]);
 }
 
-inline Color operator+(const Color &a, const Color &b)
+inline Color operator+(const Color& a, const Color& b)
 {
     return Color(a[0] + b[0], a[1] + b[1], a[2] + b[2], a[3] + b[3]);
 }

@@ -1,20 +1,19 @@
-#include <assert.h>
-#include <QTextStream>
-#include <QFile>
-#include <cmath>
 #include "model_mesh.h"
 #include "version.h"
+#include <QFile>
+#include <QTextStream>
+#include <assert.h>
+#include <cmath>
 
 float ModelMesh::m_defaultMetalness = 0.0;
 float ModelMesh::m_defaultRoughness = 1.0;
 
-ModelMesh::ModelMesh(const ModelMesh &mesh) :
-    m_triangleVertices(nullptr),
-    m_triangleVertexCount(0),
-    m_textureImage(nullptr)
+ModelMesh::ModelMesh(const ModelMesh& mesh)
+    : m_triangleVertices(nullptr)
+    , m_triangleVertexCount(0)
+    , m_textureImage(nullptr)
 {
-    if (nullptr != mesh.m_triangleVertices &&
-            mesh.m_triangleVertexCount > 0) {
+    if (nullptr != mesh.m_triangleVertices && mesh.m_triangleVertexCount > 0) {
         this->m_triangleVertices = new ModelOpenGLVertex[mesh.m_triangleVertexCount];
         this->m_triangleVertexCount = mesh.m_triangleVertexCount;
         for (int i = 0; i < mesh.m_triangleVertexCount; i++)
@@ -42,39 +41,39 @@ void ModelMesh::removeColor()
 {
     delete this->m_textureImage;
     this->m_textureImage = nullptr;
-    
+
     delete this->m_normalMapImage;
     this->m_normalMapImage = nullptr;
-    
+
     delete this->m_metalnessRoughnessAmbientOcclusionMapImage;
     this->m_metalnessRoughnessAmbientOcclusionMapImage = nullptr;
-    
+
     this->m_hasMetalnessInImage = false;
     this->m_hasRoughnessInImage = false;
     this->m_hasAmbientOcclusionInImage = false;
-    
+
     for (int i = 0; i < this->m_triangleVertexCount; ++i) {
-        auto &vertex = this->m_triangleVertices[i];
+        auto& vertex = this->m_triangleVertices[i];
         vertex.colorR = 1.0;
         vertex.colorG = 1.0;
         vertex.colorB = 1.0;
     }
 }
 
-ModelMesh::ModelMesh(ModelOpenGLVertex *triangleVertices, int vertexNum) :
-    m_triangleVertices(triangleVertices),
-    m_triangleVertexCount(vertexNum),
-    m_textureImage(nullptr)
+ModelMesh::ModelMesh(ModelOpenGLVertex* triangleVertices, int vertexNum)
+    : m_triangleVertices(triangleVertices)
+    , m_triangleVertexCount(vertexNum)
+    , m_textureImage(nullptr)
 {
 }
 
-ModelMesh::ModelMesh(const std::vector<dust3d::Vector3> &vertices, 
-    const std::vector<std::vector<size_t>> &triangles,
-    const std::vector<std::vector<dust3d::Vector3>> &triangleVertexNormals,
-    const dust3d::Color &color,
+ModelMesh::ModelMesh(const std::vector<dust3d::Vector3>& vertices,
+    const std::vector<std::vector<size_t>>& triangles,
+    const std::vector<std::vector<dust3d::Vector3>>& triangleVertexNormals,
+    const dust3d::Color& color,
     float metalness,
     float roughness,
-    const std::vector<std::tuple<dust3d::Color, float/*metalness*/, float/*roughness*/>> *vertexProperties)
+    const std::vector<std::tuple<dust3d::Color, float /*metalness*/, float /*roughness*/>>* vertexProperties)
 {
     m_triangleVertexCount = (int)triangles.size() * 3;
     m_triangleVertices = new ModelOpenGLVertex[m_triangleVertexCount];
@@ -82,9 +81,9 @@ ModelMesh::ModelMesh(const std::vector<dust3d::Vector3> &vertices,
     for (size_t i = 0; i < triangles.size(); ++i) {
         for (auto j = 0; j < 3; j++) {
             int vertexIndex = (int)triangles[i][j];
-            const dust3d::Vector3 *srcVert = &vertices[vertexIndex];
-            const dust3d::Vector3 *srcNormal = &(triangleVertexNormals)[i][j];
-            ModelOpenGLVertex *dest = &m_triangleVertices[destIndex];
+            const dust3d::Vector3* srcVert = &vertices[vertexIndex];
+            const dust3d::Vector3* srcNormal = &(triangleVertexNormals)[i][j];
+            ModelOpenGLVertex* dest = &m_triangleVertices[destIndex];
             dest->posX = srcVert->x();
             dest->posY = srcVert->y();
             dest->posZ = srcVert->z();
@@ -101,7 +100,7 @@ ModelMesh::ModelMesh(const std::vector<dust3d::Vector3> &vertices,
                 dest->metalness = metalness;
                 dest->roughness = roughness;
             } else {
-                const auto &property = (*vertexProperties)[vertexIndex];
+                const auto& property = (*vertexProperties)[vertexIndex];
                 dest->colorR = std::get<0>(property).r();
                 dest->colorG = std::get<0>(property).g();
                 dest->colorB = std::get<0>(property).b();
@@ -117,21 +116,21 @@ ModelMesh::ModelMesh(const std::vector<dust3d::Vector3> &vertices,
     }
 }
 
-ModelMesh::ModelMesh(dust3d::Object &object) :
-    m_triangleVertices(nullptr),
-    m_triangleVertexCount(0),
-    m_textureImage(nullptr)
+ModelMesh::ModelMesh(dust3d::Object& object)
+    : m_triangleVertices(nullptr)
+    , m_triangleVertexCount(0)
+    , m_textureImage(nullptr)
 {
     m_meshId = object.meshId;
     m_vertices = object.vertices;
     m_faces = object.triangleAndQuads;
 
-    std::map<std::pair<dust3d::Uuid, dust3d::Uuid>, const dust3d::ObjectNode *> nodeMap;
+    std::map<std::pair<dust3d::Uuid, dust3d::Uuid>, const dust3d::ObjectNode*> nodeMap;
     for (size_t i = 0; i < object.nodes.size(); ++i) {
-        const auto &node = object.nodes[i];
-        nodeMap.insert({{node.partId, node.nodeId}, &node});
+        const auto& node = object.nodes[i];
+        nodeMap.insert({ { node.partId, node.nodeId }, &node });
     }
-    
+
     m_triangleVertexCount = (int)object.triangles.size() * 3;
     m_triangleVertices = new ModelOpenGLVertex[m_triangleVertexCount];
     int destIndex = 0;
@@ -142,20 +141,20 @@ ModelMesh::ModelMesh(dust3d::Object &object) :
     const dust3d::Vector2 defaultUv = dust3d::Vector2(0, 0);
     const dust3d::Vector3 defaultTangent = dust3d::Vector3(0, 0, 0);
     for (size_t i = 0; i < object.triangles.size(); ++i) {
-        const auto &triangleColor = &object.triangleColors[i];
+        const auto& triangleColor = &object.triangleColors[i];
         for (auto j = 0; j < 3; j++) {
             int vertexIndex = (int)object.triangles[i][j];
-            const dust3d::Vector3 *srcVert = &object.vertices[vertexIndex];
-            const dust3d::Vector3 *srcNormal = &defaultNormal;
+            const dust3d::Vector3* srcVert = &object.vertices[vertexIndex];
+            const dust3d::Vector3* srcNormal = &defaultNormal;
             if (triangleVertexNormals)
                 srcNormal = &(*triangleVertexNormals)[i][j];
-            const dust3d::Vector2 *srcUv = &defaultUv;
+            const dust3d::Vector2* srcUv = &defaultUv;
             if (triangleVertexUvs)
                 srcUv = &(*triangleVertexUvs)[i][j];
-            const dust3d::Vector3 *srcTangent = &defaultTangent;
+            const dust3d::Vector3* srcTangent = &defaultTangent;
             if (triangleTangents)
                 srcTangent = &(*triangleTangents)[i];
-            ModelOpenGLVertex *dest = &m_triangleVertices[destIndex];
+            ModelOpenGLVertex* dest = &m_triangleVertices[destIndex];
             dest->colorR = triangleColor->r();
             dest->colorG = triangleColor->g();
             dest->colorB = triangleColor->b();
@@ -184,10 +183,10 @@ ModelMesh::ModelMesh(dust3d::Object &object) :
     }
 }
 
-ModelMesh::ModelMesh() :
-    m_triangleVertices(nullptr),
-    m_triangleVertexCount(0),
-    m_textureImage(nullptr)
+ModelMesh::ModelMesh()
+    : m_triangleVertices(nullptr)
+    , m_triangleVertexCount(0)
+    , m_textureImage(nullptr)
 {
 }
 
@@ -200,22 +199,22 @@ ModelMesh::~ModelMesh()
     delete m_metalnessRoughnessAmbientOcclusionMapImage;
 }
 
-const std::vector<dust3d::Vector3> &ModelMesh::vertices()
+const std::vector<dust3d::Vector3>& ModelMesh::vertices()
 {
     return m_vertices;
 }
 
-const std::vector<std::vector<size_t>> &ModelMesh::faces()
+const std::vector<std::vector<size_t>>& ModelMesh::faces()
 {
     return m_faces;
 }
 
-const std::vector<dust3d::Vector3> &ModelMesh::triangulatedVertices()
+const std::vector<dust3d::Vector3>& ModelMesh::triangulatedVertices()
 {
     return m_triangulatedVertices;
 }
 
-ModelOpenGLVertex *ModelMesh::triangleVertices()
+ModelOpenGLVertex* ModelMesh::triangleVertices()
 {
     return m_triangleVertices;
 }
@@ -225,53 +224,53 @@ int ModelMesh::triangleVertexCount()
     return m_triangleVertexCount;
 }
 
-void ModelMesh::setTextureImage(QImage *textureImage)
+void ModelMesh::setTextureImage(QImage* textureImage)
 {
     m_textureImage = textureImage;
 }
 
-const QImage *ModelMesh::textureImage()
+const QImage* ModelMesh::textureImage()
 {
     return m_textureImage;
 }
 
-QImage *ModelMesh::takeTextureImage()
+QImage* ModelMesh::takeTextureImage()
 {
     auto image = m_textureImage;
     m_textureImage = nullptr;
     return image;
 }
 
-void ModelMesh::setNormalMapImage(QImage *normalMapImage)
+void ModelMesh::setNormalMapImage(QImage* normalMapImage)
 {
     m_normalMapImage = normalMapImage;
 }
 
-const QImage *ModelMesh::normalMapImage()
+const QImage* ModelMesh::normalMapImage()
 {
     return m_normalMapImage;
 }
 
-QImage *ModelMesh::takeNormalMapImage()
+QImage* ModelMesh::takeNormalMapImage()
 {
     auto image = m_normalMapImage;
     m_normalMapImage = nullptr;
     return image;
 }
 
-const QImage *ModelMesh::metalnessRoughnessAmbientOcclusionMapImage()
+const QImage* ModelMesh::metalnessRoughnessAmbientOcclusionMapImage()
 {
     return m_metalnessRoughnessAmbientOcclusionMapImage;
 }
 
-QImage *ModelMesh::takeMetalnessRoughnessAmbientOcclusionMapImage()
+QImage* ModelMesh::takeMetalnessRoughnessAmbientOcclusionMapImage()
 {
     auto image = m_metalnessRoughnessAmbientOcclusionMapImage;
     m_metalnessRoughnessAmbientOcclusionMapImage = nullptr;
     return image;
 }
 
-void ModelMesh::setMetalnessRoughnessAmbientOcclusionMapImage(QImage *image)
+void ModelMesh::setMetalnessRoughnessAmbientOcclusionMapImage(QImage* image)
 {
     m_metalnessRoughnessAmbientOcclusionMapImage = image;
 }
@@ -306,24 +305,24 @@ void ModelMesh::setHasAmbientOcclusionInImage(bool hasInImage)
     m_hasAmbientOcclusionInImage = hasInImage;
 }
 
-void ModelMesh::exportAsObj(QTextStream *textStream)
+void ModelMesh::exportAsObj(QTextStream* textStream)
 {
-    auto &stream = *textStream;
+    auto& stream = *textStream;
     stream << "# " << APP_NAME << " " << APP_HUMAN_VER << endl;
     stream << "# " << APP_HOMEPAGE_URL << endl;
-    for (std::vector<dust3d::Vector3>::const_iterator it = vertices().begin() ; it != vertices().end(); ++it) {
+    for (std::vector<dust3d::Vector3>::const_iterator it = vertices().begin(); it != vertices().end(); ++it) {
         stream << "v " << QString::number((*it).x()) << " " << QString::number((*it).y()) << " " << QString::number((*it).z()) << endl;
     }
-    for (std::vector<std::vector<size_t>>::const_iterator it = faces().begin() ; it != faces().end(); ++it) {
+    for (std::vector<std::vector<size_t>>::const_iterator it = faces().begin(); it != faces().end(); ++it) {
         stream << "f";
-        for (std::vector<size_t>::const_iterator subIt = (*it).begin() ; subIt != (*it).end(); ++subIt) {
+        for (std::vector<size_t>::const_iterator subIt = (*it).begin(); subIt != (*it).end(); ++subIt) {
             stream << " " << QString::number((1 + *subIt));
         }
         stream << endl;
     }
 }
 
-void ModelMesh::exportAsObj(const QString &filename)
+void ModelMesh::exportAsObj(const QString& filename)
 {
     QFile file(filename);
     if (file.open(QIODevice::WriteOnly)) {
@@ -332,12 +331,12 @@ void ModelMesh::exportAsObj(const QString &filename)
     }
 }
 
-void ModelMesh::updateTriangleVertices(ModelOpenGLVertex *triangleVertices, int triangleVertexCount)
+void ModelMesh::updateTriangleVertices(ModelOpenGLVertex* triangleVertices, int triangleVertexCount)
 {
     delete[] m_triangleVertices;
     m_triangleVertices = 0;
     m_triangleVertexCount = 0;
-    
+
     m_triangleVertices = triangleVertices;
     m_triangleVertexCount = triangleVertexCount;
 }

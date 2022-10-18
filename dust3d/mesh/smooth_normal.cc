@@ -20,54 +20,53 @@
  *  SOFTWARE.
  */
 
-#include <map>
 #include <dust3d/mesh/smooth_normal.h>
+#include <map>
 
-namespace dust3d
-{
-    
-void smoothNormal(const std::vector<Vector3> &vertices,
-    const std::vector<std::vector<size_t>> &triangles,
-    const std::vector<Vector3> &triangleNormals,
+namespace dust3d {
+
+void smoothNormal(const std::vector<Vector3>& vertices,
+    const std::vector<std::vector<size_t>>& triangles,
+    const std::vector<Vector3>& triangleNormals,
     float thresholdAngleDegrees,
-    std::vector<std::vector<Vector3>> *triangleVertexNormals)
+    std::vector<std::vector<Vector3>>* triangleVertexNormals)
 {
     std::vector<std::vector<std::pair<size_t, size_t>>> triangleVertexNormalsMapByIndices(vertices.size());
     std::vector<Vector3> angleAreaWeightedNormals;
     for (size_t triangleIndex = 0; triangleIndex < triangles.size(); ++triangleIndex) {
-        const auto &sourceTriangle = triangles[triangleIndex];
+        const auto& sourceTriangle = triangles[triangleIndex];
         if (sourceTriangle.size() != 3) {
             continue;
         }
-        const auto &v1 = vertices[sourceTriangle[0]];
-        const auto &v2 = vertices[sourceTriangle[1]];
-        const auto &v3 = vertices[sourceTriangle[2]];
+        const auto& v1 = vertices[sourceTriangle[0]];
+        const auto& v2 = vertices[sourceTriangle[1]];
+        const auto& v3 = vertices[sourceTriangle[2]];
         float area = Vector3::area(v1, v2, v3);
-        float angles[] = {(float)Math::radiansToDegrees(Vector3::angleBetween(v2-v1, v3-v1)),
-            (float)Math::radiansToDegrees(Vector3::angleBetween(v1-v2, v3-v2)),
-            (float)Math::radiansToDegrees(Vector3::angleBetween(v1-v3, v2-v3))};
+        float angles[] = { (float)Math::radiansToDegrees(Vector3::angleBetween(v2 - v1, v3 - v1)),
+            (float)Math::radiansToDegrees(Vector3::angleBetween(v1 - v2, v3 - v2)),
+            (float)Math::radiansToDegrees(Vector3::angleBetween(v1 - v3, v2 - v3)) };
         for (int i = 0; i < 3; ++i) {
             if (sourceTriangle[i] >= vertices.size()) {
                 continue;
             }
-            triangleVertexNormalsMapByIndices[sourceTriangle[i]].push_back({triangleIndex, angleAreaWeightedNormals.size()});
+            triangleVertexNormalsMapByIndices[sourceTriangle[i]].push_back({ triangleIndex, angleAreaWeightedNormals.size() });
             angleAreaWeightedNormals.push_back(triangleNormals[triangleIndex] * area * angles[i]);
         }
     }
     std::vector<Vector3> finalNormals = angleAreaWeightedNormals;
     std::map<std::pair<size_t, size_t>, float> degreesBetweenFacesMap;
     for (size_t vertexIndex = 0; vertexIndex < vertices.size(); ++vertexIndex) {
-        const auto &triangleVertices = triangleVertexNormalsMapByIndices[vertexIndex];
-        for (const auto &triangleVertex: triangleVertices) {
-            for (const auto &otherTriangleVertex: triangleVertices) {
+        const auto& triangleVertices = triangleVertexNormalsMapByIndices[vertexIndex];
+        for (const auto& triangleVertex : triangleVertices) {
+            for (const auto& otherTriangleVertex : triangleVertices) {
                 if (triangleVertex.first == otherTriangleVertex.first)
                     continue;
                 float degrees = 0;
-                auto findDegreesResult = degreesBetweenFacesMap.find({triangleVertex.first, otherTriangleVertex.first});
+                auto findDegreesResult = degreesBetweenFacesMap.find({ triangleVertex.first, otherTriangleVertex.first });
                 if (findDegreesResult == degreesBetweenFacesMap.end()) {
                     degrees = Math::radiansToDegrees(Vector3::angleBetween(triangleNormals[triangleVertex.first], triangleNormals[otherTriangleVertex.first]));
-                    degreesBetweenFacesMap.insert({{triangleVertex.first, otherTriangleVertex.first}, degrees});
-                    degreesBetweenFacesMap.insert({{otherTriangleVertex.first, triangleVertex.first}, degrees});
+                    degreesBetweenFacesMap.insert({ { triangleVertex.first, otherTriangleVertex.first }, degrees });
+                    degreesBetweenFacesMap.insert({ { otherTriangleVertex.first, triangleVertex.first }, degrees });
                 } else {
                     degrees = findDegreesResult->second;
                 }
@@ -78,14 +77,12 @@ void smoothNormal(const std::vector<Vector3> &vertices,
             }
         }
     }
-    for (auto &item: finalNormals)
+    for (auto& item : finalNormals)
         item.normalize();
-    triangleVertexNormals->resize(triangles.size(), {
-        Vector3(), Vector3(), Vector3()
-    });
+    triangleVertexNormals->resize(triangles.size(), { Vector3(), Vector3(), Vector3() });
     size_t index = 0;
     for (size_t i = 0; i < triangles.size(); ++i) {
-        auto &normals = (*triangleVertexNormals)[i];
+        auto& normals = (*triangleVertexNormals)[i];
         for (size_t j = 0; j < 3; ++j) {
             if (index < finalNormals.size())
                 normals[j] = finalNormals[index];

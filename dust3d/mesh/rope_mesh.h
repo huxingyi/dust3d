@@ -23,25 +23,23 @@
 #ifndef DUST3D_MESH_ROPE_MESH_H_
 #define DUST3D_MESH_ROPE_MESH_H_
 
-#include <vector>
 #include <dust3d/base/vector3.h>
+#include <vector>
 
-namespace dust3d
-{
+namespace dust3d {
 
-class RopeMesh
-{
+class RopeMesh {
 public:
-    struct BuildParameters
-    {
+    struct BuildParameters {
         double defaultRadius = 0.008;
         size_t sectionSegments = 8;
     };
 
-    RopeMesh(const BuildParameters &parameters);
-    void addRope(const std::vector<Vector3> &positions, bool isCircle);
-    const std::vector<Vector3> &resultVertices();
-    const std::vector<std::vector<size_t>> &resultTriangles();
+    RopeMesh(const BuildParameters& parameters);
+    void addRope(const std::vector<Vector3>& positions, bool isCircle);
+    const std::vector<Vector3>& resultVertices();
+    const std::vector<std::vector<size_t>>& resultTriangles();
+
 private:
     std::vector<Vector3> m_resultVertices;
     std::vector<std::vector<size_t>> m_resultTriangles;

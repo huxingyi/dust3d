@@ -19,39 +19,37 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *  SOFTWARE.
  */
- 
+
 #ifndef DUST3D_BASE_MATH_H_
 #define DUST3D_BASE_MATH_H_
 
 #include <cmath>
 #include <limits>
 
-namespace dust3d
-{
-namespace Math
-{
-    
-constexpr double Pi = 3.14159265358979323846;
-    
-inline bool isZero(double number)
-{
-    return std::abs(number) <= std::numeric_limits<double>::epsilon();
-}
+namespace dust3d {
+namespace Math {
 
-inline bool isEqual(double a, double b)
-{
-    return isZero(a - b);
-}
+    constexpr double Pi = 3.14159265358979323846;
 
-inline double radiansFromDegrees(double degrees)
-{
-    return degrees * (Pi / 180.0);
-}
+    inline bool isZero(double number)
+    {
+        return std::abs(number) <= std::numeric_limits<double>::epsilon();
+    }
 
-inline double radiansToDegrees(double radians)
-{
-    return radians * (180.0 / Pi);
-}
+    inline bool isEqual(double a, double b)
+    {
+        return isZero(a - b);
+    }
+
+    inline double radiansFromDegrees(double degrees)
+    {
+        return degrees * (Pi / 180.0);
+    }
+
+    inline double radiansToDegrees(double radians)
+    {
+        return radians * (180.0 / Pi);
+    }
 
 }
 }

@@ -20,13 +20,12 @@
  *  SOFTWARE.
  */
 
-#include <unordered_map>
-#include <map>
-#include <dust3d/mesh/stroke_modifier.h>
 #include <dust3d/mesh/centripetal_catmull_rom_spline.h>
+#include <dust3d/mesh/stroke_modifier.h>
+#include <map>
+#include <unordered_map>
 
-namespace dust3d
-{
+namespace dust3d {
 
 void StrokeModifier::enableIntermediateAddition()
 {
@@ -38,10 +37,10 @@ void StrokeModifier::enableSmooth()
     m_smooth = true;
 }
 
-size_t StrokeModifier::addNode(const Vector3 &position, float radius, const std::vector<Vector2> &cutTemplate, float cutRotation)
+size_t StrokeModifier::addNode(const Vector3& position, float radius, const std::vector<Vector2>& cutTemplate, float cutRotation)
 {
     size_t nodeIndex = m_nodes.size();
-    
+
     Node node;
     node.isOriginal = true;
     node.position = position;
@@ -50,23 +49,23 @@ size_t StrokeModifier::addNode(const Vector3 &position, float radius, const std:
     node.cutRotation = cutRotation;
     node.originNodeIndex = nodeIndex;
     m_nodes.push_back(node);
-    
+
     return nodeIndex;
 }
 
 size_t StrokeModifier::addEdge(size_t firstNodeIndex, size_t secondNodeIndex)
 {
     size_t edgeIndex = m_edges.size();
-    
+
     Edge edge;
     edge.firstNodeIndex = firstNodeIndex;
     edge.secondNodeIndex = secondNodeIndex;
     m_edges.push_back(edge);
-    
+
     return edgeIndex;
 }
 
-void StrokeModifier::createIntermediateNode(const Node &firstNode, const Node &secondNode, float factor, Node *resultNode)
+void StrokeModifier::createIntermediateNode(const Node& firstNode, const Node& secondNode, float factor, Node* resultNode)
 {
     float firstFactor = 1.0 - factor;
     resultNode->position = firstNode.position * firstFactor + secondNode.position * factor;
@@ -88,12 +87,12 @@ void StrokeModifier::createIntermediateNode(const Node &firstNode, const Node &s
 
 void StrokeModifier::subdivide()
 {
-    for (auto &node: m_nodes) {
+    for (auto& node : m_nodes) {
         subdivideFace(&node.cutTemplate);
     }
 }
 
-void StrokeModifier::subdivideFace(std::vector<Vector2> *face)
+void StrokeModifier::subdivideFace(std::vector<Vector2>* face)
 {
     auto oldFace = *face;
     face->resize(oldFace.size() * 2);
@@ -105,11 +104,11 @@ void StrokeModifier::subdivideFace(std::vector<Vector2> *face)
     }
 }
 
-float StrokeModifier::averageCutTemplateEdgeLength(const std::vector<Vector2> &cutTemplate)
+float StrokeModifier::averageCutTemplateEdgeLength(const std::vector<Vector2>& cutTemplate)
 {
     if (cutTemplate.empty())
         return 0;
-    
+
     float sum = 0;
     for (size_t i = 0; i < cutTemplate.size(); ++i) {
         size_t j = (i + 1) % cutTemplate.size();
@@ -121,14 +120,14 @@ float StrokeModifier::averageCutTemplateEdgeLength(const std::vector<Vector2> &c
 void StrokeModifier::roundEnd()
 {
     std::map<size_t, std::vector<size_t>> neighbors;
-    for (const auto &edge: m_edges) {
+    for (const auto& edge : m_edges) {
         neighbors[edge.firstNodeIndex].push_back(edge.secondNodeIndex);
         neighbors[edge.secondNodeIndex].push_back(edge.firstNodeIndex);
     }
-    for (const auto &it: neighbors) {
+    for (const auto& it : neighbors) {
         if (1 == it.second.size()) {
-            const Node &currentNode = m_nodes[it.first];
-            const Node &neighborNode = m_nodes[it.second[0]];
+            const Node& currentNode = m_nodes[it.first];
+            const Node& neighborNode = m_nodes[it.second[0]];
             Node endNode;
             endNode.radius = currentNode.radius * 0.5;
             endNode.position = currentNode.position + (currentNode.position - neighborNode.position).normalized() * endNode.radius;
@@ -142,7 +141,7 @@ void StrokeModifier::roundEnd()
     }
 }
 
-void StrokeModifier::createIntermediateCutTemplateEdges(std::vector<Vector2> &cutTemplate, float averageCutTemplateLength)
+void StrokeModifier::createIntermediateCutTemplateEdges(std::vector<Vector2>& cutTemplate, float averageCutTemplateLength)
 {
     std::vector<Vector2> newCutTemplate;
     auto pointCount = cutTemplate.size();
@@ -172,17 +171,17 @@ void StrokeModifier::finalize()
 {
     if (!m_intermediateAdditionEnabled)
         return;
-    
-    for (auto &node: m_nodes) {
+
+    for (auto& node : m_nodes) {
         node.averageCutTemplateLength = averageCutTemplateEdgeLength(node.cutTemplate);
         createIntermediateCutTemplateEdges(node.cutTemplate, node.averageCutTemplateLength);
     }
-    
+
     auto oldEdges = m_edges;
     m_edges.clear();
-    for (const auto &edge: oldEdges) {
-        const Node &firstNode = m_nodes[edge.firstNodeIndex];
-        const Node &secondNode = m_nodes[edge.secondNodeIndex];
+    for (const auto& edge : oldEdges) {
+        const Node& firstNode = m_nodes[edge.firstNodeIndex];
+        const Node& secondNode = m_nodes[edge.secondNodeIndex];
         auto firstAverageCutTemplateEdgeLength = firstNode.averageCutTemplateLength * firstNode.radius;
         auto secondAverageCutTemplateEdgeLength = secondNode.averageCutTemplateLength * secondNode.radius;
         float targetEdgeLength = (firstAverageCutTemplateEdgeLength + secondAverageCutTemplateEdgeLength) * 0.5;
@@ -204,8 +203,8 @@ void StrokeModifier::finalize()
         float factor = stepFactor;
         for (size_t i = 0; i < newInsertNum && factor < 1.0; factor += stepFactor, ++i) {
             Node intermediateNode;
-            const Node &firstNode = m_nodes[edge.firstNodeIndex];
-            const Node &secondNode = m_nodes[edge.secondNodeIndex];
+            const Node& firstNode = m_nodes[edge.firstNodeIndex];
+            const Node& secondNode = m_nodes[edge.secondNodeIndex];
             createIntermediateNode(firstNode, secondNode, factor, &intermediateNode);
             size_t intermedidateNodeIndex = m_nodes.size();
             nodeIndices.push_back(intermedidateNodeIndex);
@@ -216,7 +215,7 @@ void StrokeModifier::finalize()
             addEdge(nodeIndices[i - 1], nodeIndices[i]);
         }
     }
-    
+
     if (m_smooth)
         smooth();
 }
@@ -224,13 +223,13 @@ void StrokeModifier::finalize()
 void StrokeModifier::smooth()
 {
     std::unordered_map<int, std::vector<int>> neighborMap;
-    for (const auto &edge: m_edges) {
+    for (const auto& edge : m_edges) {
         neighborMap[edge.firstNodeIndex].push_back(edge.secondNodeIndex);
         neighborMap[edge.secondNodeIndex].push_back(edge.firstNodeIndex);
     }
-    
+
     int startEndpoint = 0;
-    for (const auto &edge: m_edges) {
+    for (const auto& edge : m_edges) {
         auto findNeighbor = neighborMap.find(edge.firstNodeIndex);
         if (findNeighbor == neighborMap.end())
             continue;
@@ -248,7 +247,7 @@ void StrokeModifier::smooth()
     }
     if (-1 == startEndpoint)
         return;
-    
+
     int loopIndex = startEndpoint;
     int previousIndex = -1;
     bool isRing = false;
@@ -259,7 +258,7 @@ void StrokeModifier::smooth()
         if (findNeighbor == neighborMap.end())
             return;
         int nextIndex = -1;
-        for (const auto &index: findNeighbor->second) {
+        for (const auto& index : findNeighbor->second) {
             if (index == previousIndex)
                 continue;
             if (index == startEndpoint) {
@@ -272,30 +271,30 @@ void StrokeModifier::smooth()
         previousIndex = loopIndex;
         loopIndex = nextIndex;
     }
-    
+
     CentripetalCatmullRomSpline spline(isRing);
     for (size_t i = 0; i < loop.size(); ++i) {
-        const auto &nodeIndex = loop[i];
-        const auto &node = m_nodes[nodeIndex];
+        const auto& nodeIndex = loop[i];
+        const auto& node = m_nodes[nodeIndex];
         bool isKnot = node.originNodeIndex == nodeIndex;
         spline.addPoint((int)nodeIndex, node.position, isKnot);
     }
     if (!spline.interpolate())
         return;
-    for (const auto &it: spline.splineNodes()) {
+    for (const auto& it : spline.splineNodes()) {
         if (-1 == it.source)
             continue;
-        auto &node = m_nodes[it.source];
+        auto& node = m_nodes[it.source];
         node.position = it.position;
     }
 }
 
-const std::vector<StrokeModifier::Node> &StrokeModifier::nodes() const
+const std::vector<StrokeModifier::Node>& StrokeModifier::nodes() const
 {
     return m_nodes;
 }
 
-const std::vector<StrokeModifier::Edge> &StrokeModifier::edges() const
+const std::vector<StrokeModifier::Edge>& StrokeModifier::edges() const
 {
     return m_edges;
 }

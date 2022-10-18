@@ -21,21 +21,20 @@
  */
 
 #include <cstring>
-#include <fstream>
-#include <iostream>
-#include <rapidxml.hpp>
 #include <dust3d/base/debug.h>
 #include <dust3d/base/ds3_file.h>
 #include <dust3d/base/string.h>
+#include <fstream>
+#include <iostream>
+#include <rapidxml.hpp>
 
-namespace dust3d
-{
+namespace dust3d {
 
 std::string Ds3FileReader::m_applicationName = std::string("DUST3D");
 std::string Ds3FileReader::m_fileFormatVersion = std::string("1.0");
 std::string Ds3FileReader::m_headFormat = std::string("xml");
 
-std::string Ds3FileReader::readFirstLine(const std::uint8_t *data, size_t size)
+std::string Ds3FileReader::readFirstLine(const std::uint8_t* data, size_t size)
 {
     std::string firstLine;
     for (size_t i = 0; i < size; ++i) {
@@ -47,7 +46,7 @@ std::string Ds3FileReader::readFirstLine(const std::uint8_t *data, size_t size)
     return std::string();
 }
 
-Ds3FileReader::Ds3FileReader(const std::uint8_t *fileData, size_t fileSize)
+Ds3FileReader::Ds3FileReader(const std::uint8_t* fileData, size_t fileSize)
 {
     m_headerIsGood = false;
     std::string firstLine = readFirstLine(fileData, fileSize);
@@ -76,25 +75,25 @@ Ds3FileReader::Ds3FileReader(const std::uint8_t *fileData, size_t fileSize)
     std::vector<char> header(m_binaryOffset - firstLine.size() + 1);
     std::memcpy(header.data(), fileData + firstLine.size(), header.size() - 1);
     header[header.size() - 1] = '\0';
-    
+
     try {
         rapidxml::xml_document<> xml;
         xml.parse<0>(header.data());
-        rapidxml::xml_node<> *rootNode = xml.first_node("ds3");
+        rapidxml::xml_node<>* rootNode = xml.first_node("ds3");
         if (nullptr == rootNode)
             return;
         m_headerIsGood = true;
         m_fileContent = std::vector<std::uint8_t>(fileSize);
         std::memcpy(m_fileContent.data(), fileData, fileSize);
-        for (rapidxml::xml_node<> *node = rootNode->first_node(); nullptr != node; node = node->next_sibling()) {
+        for (rapidxml::xml_node<>* node = rootNode->first_node(); nullptr != node; node = node->next_sibling()) {
             Ds3ReaderItem readerItem;
-            rapidxml::xml_attribute<> *attribute;
+            rapidxml::xml_attribute<>* attribute;
             readerItem.type = node->name();
-            if (nullptr != (attribute=node->first_attribute("name")))
+            if (nullptr != (attribute = node->first_attribute("name")))
                 readerItem.name = String::trimmed(attribute->value());
-            if (nullptr != (attribute=node->first_attribute("offset")))
+            if (nullptr != (attribute = node->first_attribute("offset")))
                 readerItem.offset = std::stoull(attribute->value());
-            if (nullptr != (attribute=node->first_attribute("size")))
+            if (nullptr != (attribute = node->first_attribute("size")))
                 readerItem.size = std::stoull(attribute->value());
             if (readerItem.offset > (long long)fileSize)
                 continue;
@@ -103,18 +102,18 @@ Ds3FileReader::Ds3FileReader(const std::uint8_t *fileData, size_t fileSize)
             m_items.push_back(readerItem);
             m_itemsMap[readerItem.name] = readerItem;
         }
-    } catch (const std::runtime_error &e) {
+    } catch (const std::runtime_error& e) {
         dust3dDebug << "Runtime error was: " << e.what();
-    } catch (const rapidxml::parse_error &e) {
+    } catch (const rapidxml::parse_error& e) {
         dust3dDebug << "Parse error was: " << e.what();
-    } catch (const std::exception &e) {
+    } catch (const std::exception& e) {
         dust3dDebug << "Error was: " << e.what();
     } catch (...) {
         dust3dDebug << "An unknown error occurred.";
     }
 }
 
-void Ds3FileReader::loadItem(const std::string &name, std::vector<std::uint8_t> *byteArray)
+void Ds3FileReader::loadItem(const std::string& name, std::vector<std::uint8_t>* byteArray)
 {
     byteArray->clear();
     if (!m_headerIsGood)
@@ -124,17 +123,17 @@ void Ds3FileReader::loadItem(const std::string &name, std::vector<std::uint8_t> 
     }
     Ds3ReaderItem readerItem = m_itemsMap[name];
     byteArray->resize(readerItem.size, 0);
-    std::memcpy((char *)byteArray->data(), 
-        m_fileContent.data() + m_binaryOffset + readerItem.offset, 
+    std::memcpy((char*)byteArray->data(),
+        m_fileContent.data() + m_binaryOffset + readerItem.offset,
         byteArray->size());
 }
 
-const std::vector<Ds3ReaderItem> &Ds3FileReader::items() const
+const std::vector<Ds3ReaderItem>& Ds3FileReader::items() const
 {
     return m_items;
 }
 
-bool Ds3FileWriter::add(const std::string &name, const std::string &type, const void *buffer, size_t bufferSize)
+bool Ds3FileWriter::add(const std::string& name, const std::string& type, const void* buffer, size_t bufferSize)
 {
     if (m_itemsMap.find(name) != m_itemsMap.end()) {
         return false;
@@ -144,30 +143,30 @@ bool Ds3FileWriter::add(const std::string &name, const std::string &type, const 
     writerItem.name = name;
     writerItem.byteArray.resize(bufferSize);
     for (size_t i = 0; i < bufferSize; ++i)
-        writerItem.byteArray[i] = ((const std::uint8_t *)buffer)[i];
+        writerItem.byteArray[i] = ((const std::uint8_t*)buffer)[i];
     m_itemsMap[name] = writerItem;
     m_items.push_back(writerItem);
     return true;
 }
 
-bool Ds3FileWriter::save(const std::string &filename)
+bool Ds3FileWriter::save(const std::string& filename)
 {
     std::ofstream file(filename, std::ios::out | std::ios::trunc | std::ios::binary);
     if (!file.is_open())
         return false;
-    
+
     std::ostringstream headerXmlStream;
     headerXmlStream << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << std::endl;
     headerXmlStream << "<ds3>" << std::endl;
     {
         long long offset = 0;
         for (int i = 0; i < m_items.size(); i++) {
-            Ds3WriterItem *writerItem = &m_items[i];
+            Ds3WriterItem* writerItem = &m_items[i];
             headerXmlStream << "    <" << writerItem->type;
-                headerXmlStream << " name=\"" << String::doubleQuoteEscapedForXml(writerItem->name) << "\"";
-                headerXmlStream << " offset=\"" << std::to_string(offset) << "\"";
-                headerXmlStream << " size=\"" << std::to_string(writerItem->byteArray.size()) << "\"";
-                offset += writerItem->byteArray.size();
+            headerXmlStream << " name=\"" << String::doubleQuoteEscapedForXml(writerItem->name) << "\"";
+            headerXmlStream << " offset=\"" << std::to_string(offset) << "\"";
+            headerXmlStream << " size=\"" << std::to_string(writerItem->byteArray.size()) << "\"";
+            offset += writerItem->byteArray.size();
             headerXmlStream << "/>" << std::endl;
         }
     }
@@ -179,16 +178,16 @@ bool Ds3FileWriter::save(const std::string &filename)
         Ds3FileReader::m_fileFormatVersion.c_str(),
         Ds3FileReader::m_headFormat.c_str());
     unsigned int headerSize = (unsigned int)(firstLineSizeExcludeSizeSelf + 12 + headerXml.size());
-    char headerSizeString[100] = {0};
+    char headerSizeString[100] = { 0 };
     sprintf(headerSizeString, "%010u\r\n", headerSize);
     file.write(firstLine, firstLineSizeExcludeSizeSelf);
     file.write(headerSizeString, strlen(headerSizeString));
     file << headerXml;
     for (int i = 0; i < m_items.size(); i++) {
-        Ds3WriterItem *writerItem = &m_items[i];
-        file.write((char *)writerItem->byteArray.data(), writerItem->byteArray.size());
+        Ds3WriterItem* writerItem = &m_items[i];
+        file.write((char*)writerItem->byteArray.data(), writerItem->byteArray.size());
     }
-    
+
     return true;
 }
 

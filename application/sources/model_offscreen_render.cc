@@ -2,10 +2,10 @@
 #include "model_opengl_object.h"
 #include "model_opengl_program.h"
 
-ModelOffscreenRender::ModelOffscreenRender(const QSurfaceFormat &format, QScreen *targetScreen):
-    QOffscreenSurface(targetScreen),
-    m_context(nullptr),
-    m_mesh(nullptr)
+ModelOffscreenRender::ModelOffscreenRender(const QSurfaceFormat& format, QScreen* targetScreen)
+    : QOffscreenSurface(targetScreen)
+    , m_context(nullptr)
+    , m_mesh(nullptr)
 {
     setFormat(format);
     create();
@@ -13,11 +13,11 @@ ModelOffscreenRender::ModelOffscreenRender(const QSurfaceFormat &format, QScreen
 
 ModelOffscreenRender::~ModelOffscreenRender()
 {
-    // FIXME: If delete m_renderFbo inside toImage, 
+    // FIXME: If delete m_renderFbo inside toImage,
     // sometimes, the application will freeze, maybe there are dead locks inside the destruction call
     // move it here can make sure it will be deleted on the main GUI thread to avoid dead locks
     delete m_renderFbo;
-    
+
     destroy();
     delete m_mesh;
 }
@@ -37,28 +37,28 @@ void ModelOffscreenRender::setZRotation(int angle)
     m_zRot = angle;
 }
 
-void ModelOffscreenRender::setEyePosition(const QVector3D &eyePosition)
+void ModelOffscreenRender::setEyePosition(const QVector3D& eyePosition)
 {
     m_eyePosition = eyePosition;
 }
 
-void ModelOffscreenRender::setMoveToPosition(const QVector3D &moveToPosition)
+void ModelOffscreenRender::setMoveToPosition(const QVector3D& moveToPosition)
 {
     m_moveToPosition = moveToPosition;
 }
 
-void ModelOffscreenRender::setRenderThread(QThread *thread)
+void ModelOffscreenRender::setRenderThread(QThread* thread)
 {
     moveToThread(thread);
 }
 
-void ModelOffscreenRender::updateMesh(ModelMesh *mesh)
+void ModelOffscreenRender::updateMesh(ModelMesh* mesh)
 {
     delete m_mesh;
     m_mesh = mesh;
 }
 
-QImage ModelOffscreenRender::toImage(const QSize &size)
+QImage ModelOffscreenRender::toImage(const QSize& size)
 {
     QImage image;
 
@@ -105,7 +105,7 @@ QImage ModelOffscreenRender::toImage(const QSize &size)
     m_renderFbo = new QOpenGLFramebufferObject(size, format);
     m_renderFbo->bind();
 
-    QOpenGLFunctions *f = m_context->functions();
+    QOpenGLFunctions* f = m_context->functions();
     f->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     f->glEnable(GL_BLEND);
     f->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);

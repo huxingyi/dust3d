@@ -22,16 +22,13 @@
 
 #include <dust3d/base/vector3.h>
 
-namespace dust3d
-{
-    
-Vector3 Vector3::rotated(const Vector3 &unitAxis, double angle) const
+namespace dust3d {
+
+Vector3 Vector3::rotated(const Vector3& unitAxis, double angle) const
 {
     double c = std::cos(angle);
     double s = std::sin(angle);
-    return *this * c + 
-        Vector3::crossProduct(unitAxis, *this) * s +
-        unitAxis * Vector3::dotProduct(unitAxis, *this) * (1.0 - c);
+    return *this * c + Vector3::crossProduct(unitAxis, *this) * s + unitAxis * Vector3::dotProduct(unitAxis, *this) * (1.0 - c);
 }
 
 }

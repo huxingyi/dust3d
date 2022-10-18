@@ -1,20 +1,20 @@
-#include <QDebug>
 #include "mesh_preview_images_generator.h"
 #include "theme.h"
+#include <QDebug>
 
-void MeshPreviewImagesGenerator::addInput(const dust3d::Uuid &inputId, std::unique_ptr<ModelMesh> previewMesh, bool useFrontView)
+void MeshPreviewImagesGenerator::addInput(const dust3d::Uuid& inputId, std::unique_ptr<ModelMesh> previewMesh, bool useFrontView)
 {
-    m_previewInputMap.insert({inputId, PreviewInput {std::move(previewMesh), useFrontView}});
+    m_previewInputMap.insert({ inputId, PreviewInput { std::move(previewMesh), useFrontView } });
 }
 
 void MeshPreviewImagesGenerator::process()
 {
     generate();
-    
+
     emit finished();
 }
 
-std::map<dust3d::Uuid, QImage> *MeshPreviewImagesGenerator::takeImages()
+std::map<dust3d::Uuid, QImage>* MeshPreviewImagesGenerator::takeImages()
 {
     return m_partImages.release();
 }
@@ -22,10 +22,10 @@ std::map<dust3d::Uuid, QImage> *MeshPreviewImagesGenerator::takeImages()
 void MeshPreviewImagesGenerator::generate()
 {
     m_partImages = std::make_unique<std::map<dust3d::Uuid, QImage>>();
-    
+
     m_offscreenRender->setZRotation(0);
     m_offscreenRender->setEyePosition(QVector3D(0, 0, -4.0));
-    for (auto &it: m_previewInputMap) {
+    for (auto& it : m_previewInputMap) {
         if (it.second.useFrontView) {
             m_offscreenRender->setXRotation(0);
             m_offscreenRender->setYRotation(0);

@@ -19,40 +19,39 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *  SOFTWARE.
  */
- 
+
 #include <dust3d/base/axis_aligned_bounding_box_tree.h>
 
-namespace dust3d
-{
+namespace dust3d {
 
 const size_t AxisAlignedBoudingBoxTree::m_leafMaxNodeSize = 20;
 
-AxisAlignedBoudingBoxTree::AxisAlignedBoudingBoxTree(const std::vector<AxisAlignedBoudingBox> *boxes,
-        const std::vector<size_t> &boxIndices,
-        const AxisAlignedBoudingBox &outterBox)
+AxisAlignedBoudingBoxTree::AxisAlignedBoudingBoxTree(const std::vector<AxisAlignedBoudingBox>* boxes,
+    const std::vector<size_t>& boxIndices,
+    const AxisAlignedBoudingBox& outterBox)
 {
     m_boxes = boxes;
-    
+
     m_root = new Node;
     m_root->boundingBox = outterBox;
     m_root->boxIndices = boxIndices;
-    
+
     if (!boxIndices.empty()) {
-        for (const auto &boxIndex: boxIndices) {
+        for (const auto& boxIndex : boxIndices) {
             m_root->center += (*boxes)[boxIndex].center();
         }
         m_root->center /= (float)boxIndices.size();
     }
-    
+
     splitNode(m_root);
 }
 
-const AxisAlignedBoudingBoxTree::Node *AxisAlignedBoudingBoxTree::root() const
+const AxisAlignedBoudingBoxTree::Node* AxisAlignedBoudingBoxTree::root() const
 {
     return m_root;
 }
 
-const std::vector<AxisAlignedBoudingBox> *AxisAlignedBoudingBoxTree::boxes() const
+const std::vector<AxisAlignedBoudingBox>* AxisAlignedBoudingBoxTree::boxes() const
 {
     return m_boxes;
 }
@@ -62,7 +61,7 @@ AxisAlignedBoudingBoxTree::~AxisAlignedBoudingBoxTree()
     deleteNode(m_root);
 }
 
-void AxisAlignedBoudingBoxTree::deleteNode(Node *node)
+void AxisAlignedBoudingBoxTree::deleteNode(Node* node)
 {
     if (nullptr == node)
         return;
@@ -71,18 +70,17 @@ void AxisAlignedBoudingBoxTree::deleteNode(Node *node)
     delete node;
 }
 
-void AxisAlignedBoudingBoxTree::splitNode(Node *node)
+void AxisAlignedBoudingBoxTree::splitNode(Node* node)
 {
-    const auto &boxIndices = node->boxIndices;
+    const auto& boxIndices = node->boxIndices;
     if (boxIndices.size() <= m_leafMaxNodeSize)
         return;
-    const auto &splitBox = node->boundingBox;
-    const Vector3 &lower = splitBox.lowerBound();
-    const Vector3 &upper = splitBox.upperBound();
+    const auto& splitBox = node->boundingBox;
+    const Vector3& lower = splitBox.lowerBound();
+    const Vector3& upper = splitBox.upperBound();
     for (size_t i = 0; i < 3; ++i)
-        m_spans[i] = {i, upper[i] - lower[i]};
-    size_t longestAxis = std::max_element(m_spans.begin(), m_spans.end(), [](const std::pair<size_t, float> &first,
-            const std::pair<size_t, float> &second) {
+        m_spans[i] = { i, upper[i] - lower[i] };
+    size_t longestAxis = std::max_element(m_spans.begin(), m_spans.end(), [](const std::pair<size_t, float>& first, const std::pair<size_t, float>& second) {
         return first.second < second.second;
     })->first;
     auto splitPoint = node->center[longestAxis];
@@ -94,9 +92,9 @@ void AxisAlignedBoudingBoxTree::splitNode(Node *node)
     size_t leftCount = 0;
     size_t rightCount = 0;
     for (size_t i = 0; i < boxIndices.size(); ++i) {
-        const auto &boxIndex = boxIndices[i];
-        const AxisAlignedBoudingBox &box = (*m_boxes)[boxIndex];
-        const auto &center = box.center()[longestAxis];
+        const auto& boxIndex = boxIndices[i];
+        const AxisAlignedBoudingBox& box = (*m_boxes)[boxIndex];
+        const auto& center = box.center()[longestAxis];
         if (center < splitPoint) {
             m_boxIndicesOrderList[--leftOffset] = boxIndex;
             ++leftCount;
@@ -105,7 +103,7 @@ void AxisAlignedBoudingBoxTree::splitNode(Node *node)
             ++rightCount;
         }
     }
-    
+
     if (0 == leftCount) {
         leftCount = rightCount / 2;
         rightCount -= leftCount;
@@ -115,21 +113,21 @@ void AxisAlignedBoudingBoxTree::splitNode(Node *node)
         leftCount -= rightCount;
         rightOffset = leftOffset + boxIndices.size() - 1;
     }
-    
+
     size_t middle = leftOffset + leftCount - 1;
-    
+
     for (size_t i = leftOffset; i <= middle; ++i) {
-        const auto &boxIndex = m_boxIndicesOrderList[i];
-        const AxisAlignedBoudingBox &box = (*m_boxes)[boxIndex];
+        const auto& boxIndex = m_boxIndicesOrderList[i];
+        const AxisAlignedBoudingBox& box = (*m_boxes)[boxIndex];
         node->left->boundingBox.update(box.lowerBound());
         node->left->boundingBox.update(box.upperBound());
         node->left->boxIndices.push_back(boxIndex);
         node->left->center += box.center();
     }
-    
+
     for (size_t i = middle + 1; i <= rightOffset; ++i) {
-        const auto &boxIndex = m_boxIndicesOrderList[i];
-        const AxisAlignedBoudingBox &box = (*m_boxes)[boxIndex];
+        const auto& boxIndex = m_boxIndicesOrderList[i];
+        const AxisAlignedBoudingBox& box = (*m_boxes)[boxIndex];
         node->right->boundingBox.update(box.lowerBound());
         node->right->boundingBox.update(box.upperBound());
         node->right->boxIndices.push_back(boxIndex);

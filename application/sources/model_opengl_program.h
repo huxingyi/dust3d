@@ -1,30 +1,29 @@
 #ifndef DUST3D_APPLICATION_MODEL_OPENGL_PROGRAM_H_
 #define DUST3D_APPLICATION_MODEL_OPENGL_PROGRAM_H_
 
-#include <memory>
-#include <QOpenGLShaderProgram>
-#include <QOpenGLShader>
-#include <QOpenGLTexture>
 #include <QMutex>
+#include <QOpenGLShader>
+#include <QOpenGLShaderProgram>
+#include <QOpenGLTexture>
+#include <memory>
 
-class ModelOpenGLProgram: public QOpenGLShaderProgram
-{
+class ModelOpenGLProgram : public QOpenGLShaderProgram {
 public:
-    void load(bool isCoreProfile=false);
-    int getUniformLocationByName(const std::string &name);
+    void load(bool isCoreProfile = false);
+    int getUniformLocationByName(const std::string& name);
     bool isCoreProfile() const;
     void bindMaps();
     void releaseMaps();
     void updateTextureImage(std::unique_ptr<QImage> image);
     void updateNormalMapImage(std::unique_ptr<QImage> image);
     void updateMetalnessRoughnessAmbientOcclusionMapImage(std::unique_ptr<QImage> image,
-        bool hasMetalnessMap = false, 
-        bool hasRoughnessMap = false, 
+        bool hasMetalnessMap = false,
+        bool hasRoughnessMap = false,
         bool hasAmbientOcclusionMap = false);
 
 private:
-    void addShaderFromResource(QOpenGLShader::ShaderType type, const char *resourceName);
-    void activeAndBindTexture(int location, QOpenGLTexture *texture);
+    void addShaderFromResource(QOpenGLShader::ShaderType type, const char* resourceName);
+    void activeAndBindTexture(int location, QOpenGLTexture* texture);
 
     bool m_isLoaded = false;
     bool m_isCoreProfile = false;

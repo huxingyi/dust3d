@@ -23,17 +23,14 @@
 #ifndef DUST3D_MESH_STROKE_MODIFIER_H_
 #define DUST3D_MESH_STROKE_MODIFIER_H_
 
-#include <vector>
 #include <dust3d/base/vector3.h>
+#include <vector>
 
-namespace dust3d
-{
-    
-class StrokeModifier
-{
+namespace dust3d {
+
+class StrokeModifier {
 public:
-    struct Node
-    {
+    struct Node {
         bool isOriginal = false;
         Vector3 position;
         float radius = 0.0;
@@ -44,35 +41,33 @@ public:
         int originNodeIndex = 0;
         float averageCutTemplateLength;
     };
-    
-    struct Edge
-    {
+
+    struct Edge {
         size_t firstNodeIndex;
         size_t secondNodeIndex;
     };
-    
-    size_t addNode(const Vector3 &position, float radius, const std::vector<Vector2> &cutTemplate, float cutRotation);
+
+    size_t addNode(const Vector3& position, float radius, const std::vector<Vector2>& cutTemplate, float cutRotation);
     size_t addEdge(size_t firstNodeIndex, size_t secondNodeIndex);
     void subdivide();
     void roundEnd();
     void enableIntermediateAddition();
     void enableSmooth();
-    const std::vector<Node> &nodes() const;
-    const std::vector<Edge> &edges() const;
+    const std::vector<Node>& nodes() const;
+    const std::vector<Edge>& edges() const;
     void finalize();
-    
-    static void subdivideFace(std::vector<Vector2> *face);
-    
+
+    static void subdivideFace(std::vector<Vector2>* face);
+
 private:
-    
     std::vector<Node> m_nodes;
     std::vector<Edge> m_edges;
     bool m_intermediateAdditionEnabled = false;
     bool m_smooth = false;
-    
-    void createIntermediateNode(const Node &firstNode, const Node &secondNode, float factor, Node *resultNode);
-    float averageCutTemplateEdgeLength(const std::vector<Vector2> &cutTemplate);
-    void createIntermediateCutTemplateEdges(std::vector<Vector2> &cutTemplate, float averageCutTemplateLength);
+
+    void createIntermediateNode(const Node& firstNode, const Node& secondNode, float factor, Node* resultNode);
+    float averageCutTemplateEdgeLength(const std::vector<Vector2>& cutTemplate);
+    void createIntermediateCutTemplateEdges(std::vector<Vector2>& cutTemplate, float averageCutTemplateLength);
     void smooth();
 };
 

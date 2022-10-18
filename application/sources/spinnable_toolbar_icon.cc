@@ -1,8 +1,8 @@
 #include "spinnable_toolbar_icon.h"
 #include "theme.h"
 
-SpinnableToolbarIcon::SpinnableToolbarIcon(QWidget *parent) :
-    QWidget(parent)
+SpinnableToolbarIcon::SpinnableToolbarIcon(QWidget* parent)
+    : QWidget(parent)
 {
     setFixedSize(Theme::toolIconSize, Theme::toolIconSize);
 

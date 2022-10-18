@@ -1,19 +1,18 @@
-#include <map>
+#include "image_forever.h"
 #include <QMutex>
 #include <QMutexLocker>
 #include <QtCore/qbuffer.h>
-#include "image_forever.h"
+#include <map>
 
-struct ImageForeverItem
-{
-    QImage *image;
+struct ImageForeverItem {
+    QImage* image;
     dust3d::Uuid id;
-    QByteArray *imageByteArray;
+    QByteArray* imageByteArray;
 };
 static std::map<dust3d::Uuid, ImageForeverItem> g_foreverMap;
 static QMutex g_mapMutex;
 
-const QImage *ImageForever::get(const dust3d::Uuid &id)
+const QImage* ImageForever::get(const dust3d::Uuid& id)
 {
     QMutexLocker locker(&g_mapMutex);
     auto findResult = g_foreverMap.find(id);
@@ -22,7 +21,7 @@ const QImage *ImageForever::get(const dust3d::Uuid &id)
     return findResult->second.image;
 }
 
-void ImageForever::copy(const dust3d::Uuid &id, QImage &image)
+void ImageForever::copy(const dust3d::Uuid& id, QImage& image)
 {
     QMutexLocker locker(&g_mapMutex);
     auto findResult = g_foreverMap.find(id);
@@ -31,7 +30,7 @@ void ImageForever::copy(const dust3d::Uuid &id, QImage &image)
     image = *findResult->second.image;
 }
 
-const QByteArray *ImageForever::getPngByteArray(const dust3d::Uuid &id)
+const QByteArray* ImageForever::getPngByteArray(const dust3d::Uuid& id)
 {
     QMutexLocker locker(&g_mapMutex);
     auto findResult = g_foreverMap.find(id);
@@ -40,7 +39,7 @@ const QByteArray *ImageForever::getPngByteArray(const dust3d::Uuid &id)
     return findResult->second.imageByteArray;
 }
 
-dust3d::Uuid ImageForever::add(const QImage *image, dust3d::Uuid toId)
+dust3d::Uuid ImageForever::add(const QImage* image, dust3d::Uuid toId)
 {
     QMutexLocker locker(&g_mapMutex);
     if (nullptr == image)
@@ -48,16 +47,16 @@ dust3d::Uuid ImageForever::add(const QImage *image, dust3d::Uuid toId)
     dust3d::Uuid newId = toId.isNull() ? dust3d::Uuid::createUuid() : toId;
     if (g_foreverMap.find(newId) != g_foreverMap.end())
         return newId;
-    QImage *newImage = new QImage(*image);
-    QByteArray *imageByteArray = new QByteArray();
+    QImage* newImage = new QImage(*image);
+    QByteArray* imageByteArray = new QByteArray();
     QBuffer pngBuffer(imageByteArray);
     pngBuffer.open(QIODevice::WriteOnly);
     newImage->save(&pngBuffer, "PNG");
-    g_foreverMap[newId] = {newImage, newId, imageByteArray};
+    g_foreverMap[newId] = { newImage, newId, imageByteArray };
     return newId;
 }
 
-void ImageForever::remove(const dust3d::Uuid &id)
+void ImageForever::remove(const dust3d::Uuid& id)
 {
     QMutexLocker locker(&g_mapMutex);
     auto findImage = g_foreverMap.find(id);

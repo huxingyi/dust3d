@@ -19,52 +19,49 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *  SOFTWARE.
  */
- 
+
 #ifndef DUST3D_BASE_AXIS_ALIGNED_BOUNDING_BOX_TREE_H_
 #define DUST3D_BASE_AXIS_ALIGNED_BOUNDING_BOX_TREE_H_
 
-#include <vector>
 #include <dust3d/base/axis_aligned_bounding_box.h>
+#include <vector>
 
-namespace dust3d
-{
+namespace dust3d {
 
-class AxisAlignedBoudingBoxTree
-{
+class AxisAlignedBoudingBoxTree {
 public:
-    struct Node
-    {
+    struct Node {
         AxisAlignedBoudingBox boundingBox;
         Vector3 center;
         std::vector<size_t> boxIndices;
-        Node *left = nullptr;
-        Node *right = nullptr;
-        
+        Node* left = nullptr;
+        Node* right = nullptr;
+
         bool isLeaf() const
         {
             return nullptr == left && nullptr == right;
         };
     };
-    
-    AxisAlignedBoudingBoxTree(const std::vector<AxisAlignedBoudingBox> *boxes,
-        const std::vector<size_t> &boxIndices,
-        const AxisAlignedBoudingBox &outterBox);
-    const Node *root() const;
-    const std::vector<AxisAlignedBoudingBox> *boxes() const;
+
+    AxisAlignedBoudingBoxTree(const std::vector<AxisAlignedBoudingBox>* boxes,
+        const std::vector<size_t>& boxIndices,
+        const AxisAlignedBoudingBox& outterBox);
+    const Node* root() const;
+    const std::vector<AxisAlignedBoudingBox>* boxes() const;
     ~AxisAlignedBoudingBoxTree();
-    void splitNode(Node *node);
-    void deleteNode(Node *node);
-    
-    void testNodes(const Node *first, 
-        const Node *second, 
-        const std::vector<AxisAlignedBoudingBox> *secondBoxes,
-        std::vector<std::pair<size_t, size_t>> *pairs) const
+    void splitNode(Node* node);
+    void deleteNode(Node* node);
+
+    void testNodes(const Node* first,
+        const Node* second,
+        const std::vector<AxisAlignedBoudingBox>* secondBoxes,
+        std::vector<std::pair<size_t, size_t>>* pairs) const
     {
         if (first->boundingBox.intersectWith(second->boundingBox)) {
             if (first->isLeaf()) {
                 if (second->isLeaf()) {
-                    for (const auto &a: first->boxIndices) {
-                        for (const auto &b: second->boxIndices) {
+                    for (const auto& a : first->boxIndices) {
+                        for (const auto& b : second->boxIndices) {
                             if ((*m_boxes)[a].intersectWith((*secondBoxes)[b])) {
                                 pairs->push_back(std::make_pair(a, b));
                             }
@@ -90,20 +87,20 @@ public:
             }
         }
     }
-    
-    void test(const Node *first, const Node *second,
-        const std::vector<AxisAlignedBoudingBox> *secondBoxes,
-        std::vector<std::pair<size_t, size_t>> *pairs) const
+
+    void test(const Node* first, const Node* second,
+        const std::vector<AxisAlignedBoudingBox>* secondBoxes,
+        std::vector<std::pair<size_t, size_t>>* pairs) const
     {
         testNodes(first, second, secondBoxes, pairs);
     }
-    
+
 private:
-    const std::vector<AxisAlignedBoudingBox> *m_boxes = nullptr;
-    Node *m_root = nullptr;
+    const std::vector<AxisAlignedBoudingBox>* m_boxes = nullptr;
+    Node* m_root = nullptr;
     std::vector<size_t> m_boxIndicesOrderList;
     std::vector<std::pair<size_t, float>> m_spans = std::vector<std::pair<size_t, float>>(3);
-    
+
     static const size_t m_leafMaxNodeSize;
 };
 

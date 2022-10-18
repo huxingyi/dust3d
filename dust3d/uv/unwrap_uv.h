@@ -23,19 +23,18 @@
 #ifndef DUST3D_UV_UNWRAP_UV_H_
 #define DUST3D_UV_UNWRAP_UV_H_
 
-#include <dust3d/base/vector2.h>
+#include <dust3d/base/object.h>
 #include <dust3d/base/rectangle.h>
 #include <dust3d/base/uuid.h>
-#include <dust3d/base/object.h>
+#include <dust3d/base/vector2.h>
 
-namespace dust3d
-{
-    
-void unwrapUv(const Object &object,
-    std::vector<std::vector<Vector2>> &triangleVertexUvs,
-    std::set<int> &seamVertices,
-    std::map<Uuid, std::vector<Rectangle>> &uvRects);
-    
+namespace dust3d {
+
+void unwrapUv(const Object& object,
+    std::vector<std::vector<Vector2>>& triangleVertexUvs,
+    std::set<int>& seamVertices,
+    std::map<Uuid, std::vector<Rectangle>>& uvRects);
+
 }
 
 #endif

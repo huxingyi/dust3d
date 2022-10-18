@@ -26,10 +26,9 @@
 #include <dust3d/base/object.h>
 #include <dust3d/base/vector3.h>
 
-namespace dust3d
-{
+namespace dust3d {
 
-void resolveTriangleTangent(const dust3d::Object &object, std::vector<dust3d::Vector3> &tangents);
+void resolveTriangleTangent(const dust3d::Object& object, std::vector<dust3d::Vector3>& tangents);
 
 }
 

@@ -28,14 +28,11 @@
 #include <dust3d/base/vector3.h>
 #include <dust3d/mesh/mesh_node.h>
 
-namespace dust3d
-{
+namespace dust3d {
 
-class TubeMeshBuilder
-{
+class TubeMeshBuilder {
 public:
-    struct BuildParameters
-    {
+    struct BuildParameters {
         std::vector<Vector2> cutFace;
         double deformThickness = 1.0;
         double deformWidth = 1.0;
@@ -46,11 +43,12 @@ public:
         bool interpolationEnabled = true;
     };
 
-    TubeMeshBuilder(const BuildParameters &buildParameters, std::vector<MeshNode> &&nodes, bool isCircle);
+    TubeMeshBuilder(const BuildParameters& buildParameters, std::vector<MeshNode>&& nodes, bool isCircle);
     void build();
-    const Vector3 &generatedBaseNormal();
-    const std::vector<Vector3> &generatedVertices();
-    const std::vector<std::vector<size_t>> &generatedFaces();
+    const Vector3& generatedBaseNormal();
+    const std::vector<Vector3>& generatedVertices();
+    const std::vector<std::vector<size_t>>& generatedFaces();
+
 private:
     BuildParameters m_buildParameters;
     std::vector<MeshNode> m_nodes;
@@ -64,9 +62,9 @@ private:
     double m_maxNodeRadius = 0.0;
     void preprocessNodes();
     void buildNodePositionAndDirections();
-    std::vector<Vector3> buildCutFaceVertices(const Vector3 &origin,
+    std::vector<Vector3> buildCutFaceVertices(const Vector3& origin,
         double radius,
-        const Vector3 &forwardDirection);
+        const Vector3& forwardDirection);
     void applyRoundEnd();
     void applyInterpolation();
 };

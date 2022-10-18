@@ -1,17 +1,17 @@
 #ifndef DUST3D_APPLICATION_MONOCHROME_OPENGL_OBJECT_H_
 #define DUST3D_APPLICATION_MONOCHROME_OPENGL_OBJECT_H_
 
-#include <memory>
-#include <QMutex>
-#include <QOpenGLVertexArrayObject>
-#include <QOpenGLBuffer>
 #include "monochrome_mesh.h"
+#include <QMutex>
+#include <QOpenGLBuffer>
+#include <QOpenGLVertexArrayObject>
+#include <memory>
 
-class MonochromeOpenGLObject
-{
+class MonochromeOpenGLObject {
 public:
     void update(std::unique_ptr<MonochromeMesh> mesh);
     void draw();
+
 private:
     void copyMeshToOpenGL();
     QOpenGLVertexArrayObject m_vertexArrayObject;

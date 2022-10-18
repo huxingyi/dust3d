@@ -25,15 +25,14 @@
 
 #include <dust3d/base/vector3.h>
 
-namespace dust3d
-{
-    
-void smoothNormal(const std::vector<Vector3> &vertices,
-    const std::vector<std::vector<size_t>> &triangles,
-    const std::vector<Vector3> &triangleNormals,
+namespace dust3d {
+
+void smoothNormal(const std::vector<Vector3>& vertices,
+    const std::vector<std::vector<size_t>>& triangles,
+    const std::vector<Vector3>& triangleNormals,
     float thresholdAngleDegrees,
-    std::vector<std::vector<Vector3>> *triangleVertexNormals);
-    
+    std::vector<std::vector<Vector3>>* triangleVertexNormals);
+
 }
 
 #endif

@@ -1,80 +1,81 @@
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QLabel>
-#include <QGridLayout>
-#include <QToolBar>
-#include <QPushButton>
-#include <QFileDialog>
-#include <QTabWidget>
-#include <QtCore/qbuffer.h>
-#include <QMessageBox>
-#include <QTimer>
-#include <QMenuBar>
-#include <QPointer>
+#include "document_window.h"
+#include "about_widget.h"
+#include "cut_face_preview.h"
+#include "document.h"
+#include "document_saver.h"
+#include "fbx_file.h"
+#include "float_number_widget.h"
+#include "flow_layout.h"
+#include "glb_file.h"
+#include "horizontal_line_widget.h"
+#include "image_forever.h"
+#include "log_browser.h"
+#include "material_manage_widget.h"
+#include "part_manage_widget.h"
+#include "preferences.h"
+#include "skeleton_graphics_widget.h"
+#include "spinnable_toolbar_icon.h"
+#include "texture_generator.h"
+#include "theme.h"
+#include "updates_check_widget.h"
+#include "version.h"
 #include <QApplication>
-#include <map>
 #include <QDesktopServices>
-#include <QDockWidget>
-#include <QWidgetAction>
-#include <QGraphicsOpacityEffect>
 #include <QDir>
+#include <QDockWidget>
+#include <QFileDialog>
 #include <QFileInfo>
 #include <QFormLayout>
-#include <QTextBrowser>
+#include <QGraphicsOpacityEffect>
+#include <QGridLayout>
+#include <QHBoxLayout>
+#include <QLabel>
+#include <QMenuBar>
+#include <QMessageBox>
 #include <QMimeData>
 #include <QPixmap>
+#include <QPointer>
+#include <QPushButton>
+#include <QTabWidget>
+#include <QTextBrowser>
+#include <QTimer>
+#include <QToolBar>
+#include <QVBoxLayout>
+#include <QWidgetAction>
+#include <QtCore/qbuffer.h>
+#include <dust3d/base/debug.h>
 #include <dust3d/base/ds3_file.h>
 #include <dust3d/base/snapshot.h>
 #include <dust3d/base/snapshot_xml.h>
-#include <dust3d/base/debug.h>
-#include "document_window.h"
-#include "skeleton_graphics_widget.h"
-#include "theme.h"
-#include "log_browser.h"
-#include "about_widget.h"
-#include "version.h"
-#include "glb_file.h"
-#include "part_manage_widget.h"
-#include "material_manage_widget.h"
-#include "image_forever.h"
-#include "spinnable_toolbar_icon.h"
-#include "fbx_file.h"
-#include "float_number_widget.h"
-#include "updates_check_widget.h"
-#include "document_saver.h"
-#include "document.h"
-#include "preferences.h"
-#include "flow_layout.h"
-#include "cut_face_preview.h"
-#include "horizontal_line_widget.h"
-#include "texture_generator.h"
+#include <map>
 
-LogBrowser *g_logBrowser = nullptr;
-std::map<DocumentWindow *, dust3d::Uuid> g_documentWindows;
-QTextBrowser *g_acknowlegementsWidget = nullptr;
-AboutWidget *g_aboutWidget = nullptr;
-QTextBrowser *g_contributorsWidget = nullptr;
-QTextBrowser *g_supportersWidget = nullptr;
-UpdatesCheckWidget *g_updatesCheckWidget = nullptr;
+LogBrowser* g_logBrowser = nullptr;
+std::map<DocumentWindow*, dust3d::Uuid> g_documentWindows;
+QTextBrowser* g_acknowlegementsWidget = nullptr;
+AboutWidget* g_aboutWidget = nullptr;
+QTextBrowser* g_contributorsWidget = nullptr;
+QTextBrowser* g_supportersWidget = nullptr;
+UpdatesCheckWidget* g_updatesCheckWidget = nullptr;
 
-void outputMessage(QtMsgType type, const QMessageLogContext &context, const QString &msg)
+void outputMessage(QtMsgType type, const QMessageLogContext& context, const QString& msg)
 {
     if (g_logBrowser)
         g_logBrowser->outputMessage(type, msg, context.file, context.line);
 }
 
-void ensureFileExtension(QString* filename, const QString extension) {
+void ensureFileExtension(QString* filename, const QString extension)
+{
     if (!filename->endsWith(extension)) {
         filename->append(extension);
     }
 }
 
-const std::map<DocumentWindow *, dust3d::Uuid> &DocumentWindow::documentWindows()
+const std::map<DocumentWindow*, dust3d::Uuid>& DocumentWindow::documentWindows()
 {
     return g_documentWindows;
 }
 
-Document *DocumentWindow::document()
+Document* DocumentWindow::document()
 {
     return m_document;
 }
@@ -160,21 +161,21 @@ DocumentWindow::DocumentWindow()
         qInstallMessageHandler(&outputMessage);
     }
 
-    g_documentWindows.insert({this, dust3d::Uuid::createUuid()});
+    g_documentWindows.insert({ this, dust3d::Uuid::createUuid() });
 
     m_document = new Document;
-    
-    SkeletonGraphicsWidget *canvasGraphicsWidget = new SkeletonGraphicsWidget(m_document);
+
+    SkeletonGraphicsWidget* canvasGraphicsWidget = new SkeletonGraphicsWidget(m_document);
     m_canvasGraphicsWidget = canvasGraphicsWidget;
 
-    QVBoxLayout *toolButtonLayout = new QVBoxLayout;
+    QVBoxLayout* toolButtonLayout = new QVBoxLayout;
     toolButtonLayout->setSpacing(0);
     toolButtonLayout->setContentsMargins(5, 10, 4, 0);
 
-    ToolbarButton *addButton = new ToolbarButton(":/resources/toolbar_add.svg");
+    ToolbarButton* addButton = new ToolbarButton(":/resources/toolbar_add.svg");
     addButton->setToolTip(tr("Add node to canvas"));
 
-    ToolbarButton *selectButton = new ToolbarButton(":/resources/toolbar_pointer.svg");
+    ToolbarButton* selectButton = new ToolbarButton(":/resources/toolbar_pointer.svg");
     selectButton->setToolTip(tr("Select node on canvas"));
 
     m_xLockButton = new ToolbarButton();
@@ -188,14 +189,14 @@ DocumentWindow::DocumentWindow()
     m_zLockButton = new ToolbarButton();
     m_zLockButton->setToolTip(tr("Z axis locker"));
     updateZlockButtonState();
-    
+
     m_radiusLockButton = new ToolbarButton();
     m_radiusLockButton->setToolTip(tr("Node radius locker"));
     updateRadiusLockButtonState();
-    
+
     m_inprogressIndicator = new SpinnableToolbarIcon();
     updateInprogressIndicator();
-    
+
     connect(m_document, &Document::meshGenerating, this, &DocumentWindow::updateInprogressIndicator);
     connect(m_document, &Document::resultMeshChanged, this, [=]() {
         m_isLastMeshGenerationSucceed = m_document->isMeshGenerationSucceed();
@@ -218,18 +219,17 @@ DocumentWindow::DocumentWindow()
     toolButtonLayout->addWidget(m_radiusLockButton);
     toolButtonLayout->addSpacing(20);
     toolButtonLayout->addWidget(m_inprogressIndicator);
-    
 
-    QLabel *verticalLogoLabel = new QLabel;
+    QLabel* verticalLogoLabel = new QLabel;
     QImage verticalLogoImage;
     verticalLogoImage.load(":/resources/dust3d-vertical.png");
     verticalLogoLabel->setPixmap(QPixmap::fromImage(verticalLogoImage));
 
-    QHBoxLayout *logoLayout = new QHBoxLayout;
+    QHBoxLayout* logoLayout = new QHBoxLayout;
     logoLayout->addWidget(verticalLogoLabel);
     logoLayout->setContentsMargins(0, 0, 0, 0);
 
-    QVBoxLayout *mainLeftLayout = new QVBoxLayout;
+    QVBoxLayout* mainLeftLayout = new QVBoxLayout;
     mainLeftLayout->setSpacing(0);
     mainLeftLayout->setContentsMargins(0, 0, 0, 0);
     mainLeftLayout->addLayout(toolButtonLayout);
@@ -237,15 +237,15 @@ DocumentWindow::DocumentWindow()
     mainLeftLayout->addLayout(logoLayout);
     mainLeftLayout->addSpacing(10);
 
-    GraphicsContainerWidget *containerWidget = new GraphicsContainerWidget;
+    GraphicsContainerWidget* containerWidget = new GraphicsContainerWidget;
     containerWidget->setGraphicsWidget(canvasGraphicsWidget);
-    QGridLayout *containerLayout = new QGridLayout;
+    QGridLayout* containerLayout = new QGridLayout;
     containerLayout->setSpacing(0);
     containerLayout->setContentsMargins(1, 0, 0, 0);
     containerLayout->addWidget(canvasGraphicsWidget);
     containerWidget->setLayout(containerLayout);
     containerWidget->setMinimumSize(400, 400);
-    
+
     m_graphicsContainerWidget = containerWidget;
 
     m_modelRenderWidget = new ModelWidget(containerWidget);
@@ -256,60 +256,60 @@ DocumentWindow::DocumentWindow()
     m_modelRenderWidget->disableCullFace();
     m_modelRenderWidget->setEyePosition(QVector3D(0.0, 0.0, -4.0));
     m_modelRenderWidget->setMoveToPosition(QVector3D(-0.5, -0.5, 0.0));
-    
+
     connect(containerWidget, &GraphicsContainerWidget::containerSizeChanged,
         m_modelRenderWidget, &ModelWidget::canvasResized);
 
     m_canvasGraphicsWidget->setModelWidget(m_modelRenderWidget);
     containerWidget->setModelWidget(m_modelRenderWidget);
-    
+
     setTabPosition(Qt::RightDockWidgetArea, QTabWidget::East);
 
-    QDockWidget *partsDocker = new QDockWidget(tr("Parts"), this);
+    QDockWidget* partsDocker = new QDockWidget(tr("Parts"), this);
     partsDocker->setAllowedAreas(Qt::RightDockWidgetArea);
     m_partManageWidget = new PartManageWidget(m_document);
     partsDocker->setWidget(m_partManageWidget);
     addDockWidget(Qt::RightDockWidgetArea, partsDocker);
 
-    QDockWidget *materialDocker = new QDockWidget(tr("Materials"), this);
+    QDockWidget* materialDocker = new QDockWidget(tr("Materials"), this);
     materialDocker->setAllowedAreas(Qt::RightDockWidgetArea);
-    MaterialManageWidget *materialManageWidget = new MaterialManageWidget(m_document, materialDocker);
+    MaterialManageWidget* materialManageWidget = new MaterialManageWidget(m_document, materialDocker);
     materialDocker->setWidget(materialManageWidget);
     connect(materialManageWidget, &MaterialManageWidget::registerDialog, this, &DocumentWindow::registerDialog);
     connect(materialManageWidget, &MaterialManageWidget::unregisterDialog, this, &DocumentWindow::unregisterDialog);
     addDockWidget(Qt::RightDockWidgetArea, materialDocker);
     connect(materialDocker, &QDockWidget::topLevelChanged, [=](bool topLevel) {
         Q_UNUSED(topLevel);
-        for (const auto &material: m_document->materialMap)
+        for (const auto& material : m_document->materialMap)
             emit m_document->materialPreviewChanged(material.first);
     });
-    
+
     tabifyDockWidget(partsDocker, materialDocker);
-    
+
     partsDocker->raise();
-    
-    QWidget *titleBarWidget = new QWidget;
+
+    QWidget* titleBarWidget = new QWidget;
     titleBarWidget->setFixedHeight(1);
-    
-    QHBoxLayout *titleBarLayout = new QHBoxLayout;
+
+    QHBoxLayout* titleBarLayout = new QHBoxLayout;
     titleBarLayout->addStretch();
     titleBarWidget->setLayout(titleBarLayout);
 
-    QVBoxLayout *canvasLayout = new QVBoxLayout;
+    QVBoxLayout* canvasLayout = new QVBoxLayout;
     canvasLayout->setSpacing(0);
     canvasLayout->setContentsMargins(0, 0, 0, 0);
     canvasLayout->addWidget(titleBarWidget);
     canvasLayout->addWidget(containerWidget);
     canvasLayout->setStretch(1, 1);
-    
-    QHBoxLayout *mainLayout = new QHBoxLayout;
+
+    QHBoxLayout* mainLayout = new QHBoxLayout;
     mainLayout->setSpacing(0);
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->addLayout(mainLeftLayout);
     mainLayout->addLayout(canvasLayout);
     mainLayout->addSpacing(3);
 
-    QWidget *centralWidget = new QWidget;
+    QWidget* centralWidget = new QWidget;
     centralWidget->setLayout(mainLayout);
 
     setCentralWidget(centralWidget);
@@ -322,13 +322,13 @@ DocumentWindow::DocumentWindow()
     m_fileMenu->addAction(m_newWindowAction);
 
     m_newDocumentAction = m_fileMenu->addAction(tr("&New"),
-                                         this, &DocumentWindow::newDocument,
-                                         QKeySequence::New);
+        this, &DocumentWindow::newDocument,
+        QKeySequence::New);
 
     m_openAction = m_fileMenu->addAction(tr("&Open..."),
-                                         this, &DocumentWindow::open,
-                                         QKeySequence::Open);
-    
+        this, &DocumentWindow::open,
+        QKeySequence::Open);
+
     m_openExampleMenu = new QMenu(tr("Open Example"));
     std::vector<QString> exampleModels = {
         "Addax",
@@ -340,19 +340,19 @@ DocumentWindow::DocumentWindow()
         "Screwdriver",
         "Seagull"
     };
-    for (const auto &model: exampleModels) {
-        QAction *openModelAction = new QAction(model, this);
+    for (const auto& model : exampleModels) {
+        QAction* openModelAction = new QAction(model, this);
         connect(openModelAction, &QAction::triggered, this, [this, model]() {
             openExample("model-" + model.toLower().replace(QChar(' '), QChar('-')) + ".ds3");
         });
         m_openExampleMenu->addAction(openModelAction);
     }
-    
+
     m_fileMenu->addMenu(m_openExampleMenu);
 
     m_saveAction = m_fileMenu->addAction(tr("&Save"),
-                                         this, &DocumentWindow::save,
-                                         QKeySequence::Save);
+        this, &DocumentWindow::save,
+        QKeySequence::Save);
 
     m_saveAsAction = new QAction(tr("Save As..."), this);
     connect(m_saveAsAction, &QAction::triggered, this, &DocumentWindow::saveAs, Qt::QueuedConnection);
@@ -367,25 +367,25 @@ DocumentWindow::DocumentWindow()
     m_exportAsObjAction = new QAction(tr("Export as OBJ..."), this);
     connect(m_exportAsObjAction, &QAction::triggered, this, &DocumentWindow::exportObjResult, Qt::QueuedConnection);
     m_fileMenu->addAction(m_exportAsObjAction);
-    
+
     m_exportAsGlbAction = new QAction(tr("Export as GLB..."), this);
     connect(m_exportAsGlbAction, &QAction::triggered, this, &DocumentWindow::exportGlbResult, Qt::QueuedConnection);
     m_fileMenu->addAction(m_exportAsGlbAction);
-    
+
     m_exportAsFbxAction = new QAction(tr("Export as FBX..."), this);
     connect(m_exportAsFbxAction, &QAction::triggered, this, &DocumentWindow::exportFbxResult, Qt::QueuedConnection);
     m_fileMenu->addAction(m_exportAsFbxAction);
-    
+
     m_fileMenu->addSeparator();
 
     m_changeTurnaroundAction = new QAction(tr("Change Reference Sheet..."), this);
     connect(m_changeTurnaroundAction, &QAction::triggered, this, &DocumentWindow::changeTurnaround, Qt::QueuedConnection);
     m_fileMenu->addAction(m_changeTurnaroundAction);
-    
+
     m_fileMenu->addSeparator();
-    
+
     for (int i = 0; i < Preferences::instance().maxRecentFiles(); ++i) {
-        QAction *action = new QAction(this);
+        QAction* action = new QAction(this);
         action->setVisible(false);
         connect(action, &QAction::triggered, this, &DocumentWindow::openRecentFile, Qt::QueuedConnection);
         m_recentFileActions.push_back(action);
@@ -396,8 +396,8 @@ DocumentWindow::DocumentWindow()
     updateRecentFileActions();
 
     m_quitAction = m_fileMenu->addAction(tr("&Quit"),
-                                         this, &DocumentWindow::close,
-                                         QKeySequence::Quit);
+        this, &DocumentWindow::close,
+        QKeySequence::Quit);
 
     connect(m_fileMenu, &QMenu::aboutToShow, [=]() {
         m_exportAsObjAction->setEnabled(m_canvasGraphicsWidget->hasItems());
@@ -412,56 +412,56 @@ DocumentWindow::DocumentWindow()
         m_modelRenderWidget->toggleWireframe();
     });
     m_viewMenu->addAction(m_toggleWireframeAction);
-    
+
     m_toggleRotationAction = new QAction(tr("Toggle Rotation"), this);
     connect(m_toggleRotationAction, &QAction::triggered, [=]() {
         m_modelRenderWidget->toggleRotation();
     });
     m_viewMenu->addAction(m_toggleRotationAction);
-    
+
     m_toggleColorAction = new QAction(tr("Toggle Color"), this);
     connect(m_toggleColorAction, &QAction::triggered, this, &DocumentWindow::toggleRenderColor);
     m_viewMenu->addAction(m_toggleColorAction);
-    
+
     m_windowMenu = menuBar()->addMenu(tr("&Window"));
-    
+
     m_showPartsListAction = new QAction(tr("Parts"), this);
     connect(m_showPartsListAction, &QAction::triggered, [=]() {
         partsDocker->show();
         partsDocker->raise();
     });
     m_windowMenu->addAction(m_showPartsListAction);
-    
+
     m_showMaterialsAction = new QAction(tr("Materials"), this);
     connect(m_showMaterialsAction, &QAction::triggered, [=]() {
         materialDocker->show();
         materialDocker->raise();
     });
     m_windowMenu->addAction(m_showMaterialsAction);
-    
-    QMenu *dialogsMenu = m_windowMenu->addMenu(tr("Dialogs"));
+
+    QMenu* dialogsMenu = m_windowMenu->addMenu(tr("Dialogs"));
     connect(dialogsMenu, &QMenu::aboutToShow, [=]() {
         dialogsMenu->clear();
         if (this->m_dialogs.empty()) {
-            QAction *action = dialogsMenu->addAction(tr("None"));
+            QAction* action = dialogsMenu->addAction(tr("None"));
             action->setEnabled(false);
             return;
         }
-        for (const auto &dialog: this->m_dialogs) {
-            QAction *action = dialogsMenu->addAction(dialog->windowTitle());
+        for (const auto& dialog : this->m_dialogs) {
+            QAction* action = dialogsMenu->addAction(dialog->windowTitle());
             connect(action, &QAction::triggered, [=]() {
                 dialog->show();
                 dialog->raise();
             });
         }
     });
-    
+
     m_showDebugDialogAction = new QAction(tr("Debug"), this);
     connect(m_showDebugDialogAction, &QAction::triggered, g_logBrowser, &LogBrowser::showDialog);
     m_windowMenu->addAction(m_showDebugDialogAction);
 
     m_helpMenu = menuBar()->addMenu(tr("&Help"));
-    
+
     m_gotoHomepageAction = new QAction(tr("Dust3D Homepage"), this);
     connect(m_gotoHomepageAction, &QAction::triggered, this, &DocumentWindow::gotoHomepage);
     m_helpMenu->addAction(m_gotoHomepageAction);
@@ -469,7 +469,7 @@ DocumentWindow::DocumentWindow()
     m_viewSourceAction = new QAction(tr("Source Code"), this);
     connect(m_viewSourceAction, &QAction::triggered, this, &DocumentWindow::viewSource);
     m_helpMenu->addAction(m_viewSourceAction);
-    
+
     m_checkForUpdatesAction = new QAction(tr("Check for Updates..."), this);
     connect(m_checkForUpdatesAction, &QAction::triggered, this, &DocumentWindow::checkForUpdates);
     m_helpMenu->addAction(m_checkForUpdatesAction);
@@ -489,13 +489,13 @@ DocumentWindow::DocumentWindow()
     m_reportIssuesAction = new QAction(tr("Report Issues"), this);
     connect(m_reportIssuesAction, &QAction::triggered, this, &DocumentWindow::reportIssues);
     m_helpMenu->addAction(m_reportIssuesAction);
-    
+
     m_helpMenu->addSeparator();
 
     m_seeContributorsAction = new QAction(tr("Contributors"), this);
     connect(m_seeContributorsAction, &QAction::triggered, this, &DocumentWindow::seeContributors);
     m_helpMenu->addAction(m_seeContributorsAction);
-    
+
     m_seeSupportersAction = new QAction(tr("Supporters"), this);
     connect(m_seeSupportersAction, &QAction::triggered, this, &DocumentWindow::seeSupporters);
     m_helpMenu->addAction(m_seeSupportersAction);
@@ -540,15 +540,15 @@ DocumentWindow::DocumentWindow()
     });
 
     connect(m_document, &Document::editModeChanged, canvasGraphicsWidget, &SkeletonGraphicsWidget::editModeChanged);
-    
+
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::shortcutToggleWireframe, [=]() {
         m_modelRenderWidget->toggleWireframe();
     });
-    
+
     //connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::shortcutToggleFlatShading, [=]() {
     //    Preferences::instance().setFlatShading(!Preferences::instance().flatShading());
     //});
-    
+
     //connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::shortcutToggleRotation, this, &DocumentWindow::toggleRotation);
 
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::zoomRenderedModelBy, m_modelRenderWidget, &ModelWidget::zoom);
@@ -589,15 +589,15 @@ DocumentWindow::DocumentWindow()
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::setXlockState, m_document, &Document::setXlockState);
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::setYlockState, m_document, &Document::setYlockState);
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::setZlockState, m_document, &Document::setZlockState);
-    
+
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::enableAllPositionRelatedLocks, m_document, &Document::enableAllPositionRelatedLocks);
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::disableAllPositionRelatedLocks, m_document, &Document::disableAllPositionRelatedLocks);
 
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::changeTurnaround, this, &DocumentWindow::changeTurnaround);
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::open, this, &DocumentWindow::open);
-    
+
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::showOrHideAllComponents, m_document, &Document::showOrHideAllComponents);
-    
+
     connect(m_document, &Document::nodeAdded, canvasGraphicsWidget, &SkeletonGraphicsWidget::nodeAdded);
     connect(m_document, &Document::nodeRemoved, canvasGraphicsWidget, &SkeletonGraphicsWidget::nodeRemoved);
     connect(m_document, &Document::edgeAdded, canvasGraphicsWidget, &SkeletonGraphicsWidget::edgeAdded);
@@ -639,7 +639,7 @@ DocumentWindow::DocumentWindow()
             resultTextureMesh->removeColor();
         m_modelRenderWidget->updateMesh(resultTextureMesh);
     });
-    
+
     connect(m_document, &Document::resultMeshChanged, [=]() {
         auto resultMesh = m_document->takeResultMesh();
         if (nullptr != resultMesh)
@@ -659,7 +659,7 @@ DocumentWindow::DocumentWindow()
     connect(m_document, &Document::turnaroundChanged, this, &DocumentWindow::documentChanged);
     connect(m_document, &Document::optionsChanged, this, &DocumentWindow::documentChanged);
 
-    connect(m_modelRenderWidget, &ModelWidget::customContextMenuRequested, [=](const QPoint &pos) {
+    connect(m_modelRenderWidget, &ModelWidget::customContextMenuRequested, [=](const QPoint& pos) {
         canvasGraphicsWidget->showContextMenu(canvasGraphicsWidget->mapFromGlobal(m_modelRenderWidget->mapToGlobal(pos)));
     });
 
@@ -667,7 +667,7 @@ DocumentWindow::DocumentWindow()
     connect(m_document, &Document::ylockStateChanged, this, &DocumentWindow::updateYlockButtonState);
     connect(m_document, &Document::zlockStateChanged, this, &DocumentWindow::updateZlockButtonState);
     connect(m_document, &Document::radiusLockStateChanged, this, &DocumentWindow::updateRadiusLockButtonState);
-    
+
     connect(m_document, &Document::materialAdded, this, [=](dust3d::Uuid materialId) {
         Q_UNUSED(materialId);
         m_document->generateMaterialPreviews();
@@ -680,11 +680,11 @@ DocumentWindow::DocumentWindow()
     initializeShortcuts();
 
     connect(this, &DocumentWindow::initialized, m_document, &Document::uiReady);
-    
-    QTimer *timer = new QTimer(this);
+
+    QTimer* timer = new QTimer(this);
     timer->setInterval(250);
     connect(timer, &QTimer::timeout, [=] {
-        QWidget *focusedWidget = QApplication::focusWidget();
+        QWidget* focusedWidget = QApplication::focusWidget();
         if (nullptr == focusedWidget && isActiveWindow())
             canvasGraphicsWidget->setFocus();
     });
@@ -693,11 +693,7 @@ DocumentWindow::DocumentWindow()
 
 void DocumentWindow::updateInprogressIndicator()
 {
-    bool inprogress = m_document->isMeshGenerating() ||
-        m_document->isPostProcessing() ||
-        m_document->isTextureGenerating() ||
-        nullptr != m_componentPreviewImagesGenerator ||
-        nullptr != m_componentPreviewImagesDecorator;
+    bool inprogress = m_document->isMeshGenerating() || m_document->isPostProcessing() || m_document->isTextureGenerating() || nullptr != m_componentPreviewImagesGenerator || nullptr != m_componentPreviewImagesDecorator;
     if (inprogress == m_inprogressIndicator->isSpinning())
         return;
     m_inprogressIndicator->showSpinner(inprogress);
@@ -711,9 +707,9 @@ void DocumentWindow::toggleRotation()
     m_canvasGraphicsWidget->setRotated(!m_canvasGraphicsWidget->rotated());
 }
 
-DocumentWindow *DocumentWindow::createDocumentWindow()
+DocumentWindow* DocumentWindow::createDocumentWindow()
 {
-    DocumentWindow *documentWindow = new DocumentWindow();
+    DocumentWindow* documentWindow = new DocumentWindow();
     documentWindow->setAttribute(Qt::WA_DeleteOnClose);
 
     QSize size = Preferences::instance().documentWindowSize();
@@ -727,9 +723,9 @@ DocumentWindow *DocumentWindow::createDocumentWindow()
     return documentWindow;
 }
 
-void DocumentWindow::closeEvent(QCloseEvent *event)
+void DocumentWindow::closeEvent(QCloseEvent* event)
 {
-    if (! m_documentSaved) {
+    if (!m_documentSaved) {
         QMessageBox::StandardButton answer = QMessageBox::question(this,
             APP_NAME,
             tr("Do you really want to close while there are unsaved changes?"),
@@ -749,7 +745,7 @@ void DocumentWindow::closeEvent(QCloseEvent *event)
     event->accept();
 }
 
-void DocumentWindow::setCurrentFilename(const QString &filename)
+void DocumentWindow::setCurrentFilename(const QString& filename)
 {
     m_currentFilename = filename;
     m_documentSaved = true;
@@ -796,7 +792,7 @@ void DocumentWindow::newDocument()
 void DocumentWindow::saveAs()
 {
     QString filename = QFileDialog::getSaveFileName(this, QString(), QString(),
-       tr("Dust3D Document (*.ds3)"));
+        tr("Dust3D Document (*.ds3)"));
     if (filename.isEmpty()) {
         return;
     }
@@ -806,7 +802,7 @@ void DocumentWindow::saveAs()
 
 void DocumentWindow::saveAll()
 {
-    for (auto &it: g_documentWindows) {
+    for (auto& it : g_documentWindows) {
         it.first->save();
     }
 }
@@ -866,7 +862,7 @@ DocumentWindow::~DocumentWindow()
     delete m_document;
 }
 
-void DocumentWindow::showEvent(QShowEvent *event)
+void DocumentWindow::showEvent(QShowEvent* event)
 {
     QMainWindow::showEvent(event);
     if (m_firstShow) {
@@ -878,7 +874,7 @@ void DocumentWindow::showEvent(QShowEvent *event)
     }
 }
 
-void DocumentWindow::mousePressEvent(QMouseEvent *event)
+void DocumentWindow::mousePressEvent(QMouseEvent* event)
 {
     QMainWindow::mousePressEvent(event);
 }
@@ -886,7 +882,8 @@ void DocumentWindow::mousePressEvent(QMouseEvent *event)
 void DocumentWindow::changeTurnaround()
 {
     QString fileName = QFileDialog::getOpenFileName(this, QString(), QString(),
-        tr("Image Files (*.png *.jpg *.bmp)")).trimmed();
+        tr("Image Files (*.png *.jpg *.bmp)"))
+                           .trimmed();
     if (fileName.isEmpty())
         return;
     QImage image;
@@ -900,32 +897,31 @@ void DocumentWindow::save()
     saveTo(m_currentFilename);
 }
 
-void DocumentWindow::saveTo(const QString &saveAsFilename)
+void DocumentWindow::saveTo(const QString& saveAsFilename)
 {
     QString filename = saveAsFilename;
 
     if (filename.isEmpty()) {
         filename = QFileDialog::getSaveFileName(this, QString(), QString(),
-           tr("Dust3D Document (*.ds3)"));
+            tr("Dust3D Document (*.ds3)"));
         if (filename.isEmpty()) {
             return;
         }
         ensureFileExtension(&filename, ".ds3");
     }
-    
+
     QApplication::setOverrideCursor(Qt::WaitCursor);
     dust3d::Snapshot snapshot;
     m_document->toSnapshot(&snapshot);
-    if (DocumentSaver::save(&filename, 
-            &snapshot, 
-            (!m_document->turnaround.isNull() && m_document->turnaroundPngByteArray.size() > 0) ? 
-                &m_document->turnaroundPngByteArray : nullptr)) {
+    if (DocumentSaver::save(&filename,
+            &snapshot,
+            (!m_document->turnaround.isNull() && m_document->turnaroundPngByteArray.size() > 0) ? &m_document->turnaroundPngByteArray : nullptr)) {
         setCurrentFilename(filename);
     }
     QApplication::restoreOverrideCursor();
 }
 
-void DocumentWindow::openPathAs(const QString &path, const QString &asName)
+void DocumentWindow::openPathAs(const QString& path, const QString& asName)
 {
     QApplication::setOverrideCursor(Qt::WaitCursor);
 
@@ -933,14 +929,14 @@ void DocumentWindow::openPathAs(const QString &path, const QString &asName)
     m_document->reset();
     m_document->clearTurnaround();
     m_document->saveSnapshot();
-    
+
     QFile file(path);
     file.open(QFile::ReadOnly);
     QByteArray fileData = file.readAll();
-    
-    dust3d::Ds3FileReader ds3Reader((const std::uint8_t *)fileData.data(), fileData.size());
+
+    dust3d::Ds3FileReader ds3Reader((const std::uint8_t*)fileData.data(), fileData.size());
     for (int i = 0; i < (int)ds3Reader.items().size(); ++i) {
-        const dust3d::Ds3ReaderItem &item = ds3Reader.items()[i];
+        const dust3d::Ds3ReaderItem& item = ds3Reader.items()[i];
         qDebug() << "[" << i << "]item.name:" << item.name << "item.type:" << item.type;
         if (item.type == "asset") {
             if (dust3d::String::startsWith(item.name, "images/")) {
@@ -956,15 +952,15 @@ void DocumentWindow::openPathAs(const QString &path, const QString &asName)
             }
         }
     }
-    
+
     for (int i = 0; i < (int)ds3Reader.items().size(); ++i) {
-        const dust3d::Ds3ReaderItem &item = ds3Reader.items()[i];
+        const dust3d::Ds3ReaderItem& item = ds3Reader.items()[i];
         if (item.type == "model") {
             std::vector<std::uint8_t> data;
             ds3Reader.loadItem(item.name, &data);
             data.push_back('\0');
             dust3d::Snapshot snapshot;
-            loadSnapshotFromXmlString(&snapshot, (char *)data.data());
+            loadSnapshotFromXmlString(&snapshot, (char*)data.data());
             m_document->fromSnapshot(snapshot);
             m_document->saveSnapshot();
         } else if (item.type == "asset") {
@@ -975,19 +971,19 @@ void DocumentWindow::openPathAs(const QString &path, const QString &asName)
             }
         }
     }
-    
+
     QApplication::restoreOverrideCursor();
-    
+
     if (!asName.isEmpty()) {
         Preferences::instance().setCurrentFile(path);
-        for (auto &it: g_documentWindows) {
+        for (auto& it : g_documentWindows) {
             it.first->updateRecentFileActions();
         }
     }
     setCurrentFilename(asName);
 }
 
-void DocumentWindow::openExample(const QString &modelName)
+void DocumentWindow::openExample(const QString& modelName)
 {
     if (!m_documentSaved) {
         QMessageBox::StandardButton answer = QMessageBox::question(this,
@@ -998,7 +994,7 @@ void DocumentWindow::openExample(const QString &modelName)
         if (answer != QMessageBox::Yes)
             return;
     }
-    
+
     openPathAs(":/resources/" + modelName, "");
 }
 
@@ -1018,14 +1014,14 @@ void DocumentWindow::open()
         tr("Dust3D Document (*.ds3)"));
     if (filename.isEmpty())
         return;
-    
+
     openPathAs(filename, filename);
 }
 
 void DocumentWindow::exportObjResult()
 {
     QString filename = QFileDialog::getSaveFileName(this, QString(), QString(),
-       tr("Wavefront (*.obj)"));
+        tr("Wavefront (*.obj)"));
     if (filename.isEmpty()) {
         return;
     }
@@ -1033,10 +1029,10 @@ void DocumentWindow::exportObjResult()
     exportObjToFilename(filename);
 }
 
-void DocumentWindow::exportObjToFilename(const QString &filename)
+void DocumentWindow::exportObjToFilename(const QString& filename)
 {
     QApplication::setOverrideCursor(Qt::WaitCursor);
-    ModelMesh *resultMesh = m_document->takeResultMesh();
+    ModelMesh* resultMesh = m_document->takeResultMesh();
     if (nullptr != resultMesh) {
         resultMesh->exportAsObj(filename);
         delete resultMesh;
@@ -1047,7 +1043,7 @@ void DocumentWindow::exportObjToFilename(const QString &filename)
 void DocumentWindow::exportFbxResult()
 {
     QString filename = QFileDialog::getSaveFileName(this, QString(), QString(),
-       tr("Autodesk FBX (*.fbx)"));
+        tr("Autodesk FBX (*.fbx)"));
     if (filename.isEmpty()) {
         return;
     }
@@ -1055,7 +1051,7 @@ void DocumentWindow::exportFbxResult()
     exportFbxToFilename(filename);
 }
 
-void DocumentWindow::exportFbxToFilename(const QString &filename)
+void DocumentWindow::exportFbxToFilename(const QString& filename)
 {
     if (!m_document->isExportReady()) {
         qDebug() << "Export but document is not export ready";
@@ -1063,7 +1059,7 @@ void DocumentWindow::exportFbxToFilename(const QString &filename)
     }
     QApplication::setOverrideCursor(Qt::WaitCursor);
     dust3d::Object skeletonResult = m_document->currentPostProcessedObject();
-    FbxFileWriter fbxFileWriter(skeletonResult, 
+    FbxFileWriter fbxFileWriter(skeletonResult,
         filename,
         m_document->textureImage,
         m_document->textureNormalImage,
@@ -1077,7 +1073,7 @@ void DocumentWindow::exportFbxToFilename(const QString &filename)
 void DocumentWindow::exportGlbResult()
 {
     QString filename = QFileDialog::getSaveFileName(this, QString(), QString(),
-       tr("glTF Binary Format (*.glb)"));
+        tr("glTF Binary Format (*.glb)"));
     if (filename.isEmpty()) {
         return;
     }
@@ -1085,7 +1081,7 @@ void DocumentWindow::exportGlbResult()
     exportGlbToFilename(filename);
 }
 
-void DocumentWindow::exportGlbToFilename(const QString &filename)
+void DocumentWindow::exportGlbToFilename(const QString& filename)
 {
     if (!m_document->isExportReady()) {
         qDebug() << "Export but document is not export ready";
@@ -1093,10 +1089,9 @@ void DocumentWindow::exportGlbToFilename(const QString &filename)
     }
     QApplication::setOverrideCursor(Qt::WaitCursor);
     dust3d::Object skeletonResult = m_document->currentPostProcessedObject();
-    QImage *textureMetalnessRoughnessAmbientOcclusionImage = 
-        TextureGenerator::combineMetalnessRoughnessAmbientOcclusionImages(m_document->textureMetalnessImage,
-            m_document->textureRoughnessImage,
-            m_document->textureAmbientOcclusionImage);
+    QImage* textureMetalnessRoughnessAmbientOcclusionImage = TextureGenerator::combineMetalnessRoughnessAmbientOcclusionImages(m_document->textureMetalnessImage,
+        m_document->textureRoughnessImage,
+        m_document->textureAmbientOcclusionImage);
     GlbFileWriter glbFileWriter(skeletonResult, filename,
         m_document->textureImage, m_document->textureNormalImage, textureMetalnessRoughnessAmbientOcclusionImage);
     glbFileWriter.save();
@@ -1136,17 +1131,17 @@ void DocumentWindow::updateRadiusLockButtonState()
         m_radiusLockButton->setIcon(":/resources/toolbar_radius.svg");
 }
 
-void DocumentWindow::registerDialog(QWidget *widget)
+void DocumentWindow::registerDialog(QWidget* widget)
 {
     m_dialogs.push_back(widget);
 }
 
-void DocumentWindow::unregisterDialog(QWidget *widget)
+void DocumentWindow::unregisterDialog(QWidget* widget)
 {
     m_dialogs.erase(std::remove(m_dialogs.begin(), m_dialogs.end(), widget), m_dialogs.end());
 }
 
-void DocumentWindow::setExportWaitingList(const QStringList &filenames)
+void DocumentWindow::setExportWaitingList(const QStringList& filenames)
 {
     m_waitingForExportToFilenames = filenames;
 }
@@ -1155,12 +1150,12 @@ void DocumentWindow::checkExportWaitingList()
 {
     if (m_waitingForExportToFilenames.empty())
         return;
-    
+
     auto list = m_waitingForExportToFilenames;
     m_waitingForExportToFilenames.clear();
-    
+
     bool isSuccessful = m_document->isMeshGenerationSucceed();
-    for (const auto &filename: list) {
+    for (const auto& filename : list) {
         if (filename.endsWith(".obj")) {
             exportObjToFilename(filename);
             emit waitingExportFinished(filename, isSuccessful);
@@ -1182,13 +1177,13 @@ void DocumentWindow::generateComponentPreviewImages()
         m_isComponentPreviewImagesObsolete = true;
         return;
     }
-    
+
     m_isComponentPreviewImagesObsolete = false;
-     
-    QThread *thread = new QThread;
-    
+
+    QThread* thread = new QThread;
+
     m_componentPreviewImagesGenerator = new MeshPreviewImagesGenerator(new ModelOffscreenRender(m_modelRenderWidget->format()));
-    for (auto &component: m_document->componentMap) {
+    for (auto& component : m_document->componentMap) {
         if (!component.second.isPreviewMeshObsolete)
             continue;
         component.second.isPreviewMeshObsolete = false;
@@ -1209,16 +1204,16 @@ void DocumentWindow::componentPreviewImagesReady()
     std::unique_ptr<std::map<dust3d::Uuid, QImage>> componentImages;
     componentImages.reset(m_componentPreviewImagesGenerator->takeImages());
     if (nullptr != componentImages) {
-        for (const auto &it: *componentImages) {
+        for (const auto& it : *componentImages) {
             m_document->setComponentPreviewImage(it.first, std::make_unique<QImage>(std::move(it.second)));
         }
     }
 
     decorateComponentPreviewImages();
-    
+
     delete m_componentPreviewImagesGenerator;
     m_componentPreviewImagesGenerator = nullptr;
-    
+
     if (m_isComponentPreviewImagesObsolete)
         generateComponentPreviewImages();
     else
@@ -1231,23 +1226,22 @@ void DocumentWindow::decorateComponentPreviewImages()
         m_isComponentPreviewImageDecorationsObsolete = true;
         return;
     }
-    
+
     m_isComponentPreviewImageDecorationsObsolete = false;
-     
-    QThread *thread = new QThread;
-    
+
+    QThread* thread = new QThread;
+
     auto previewInputs = std::make_unique<std::vector<ComponentPreviewImagesDecorator::PreviewInput>>();
-    for (auto &component: m_document->componentMap) {
+    for (auto& component : m_document->componentMap) {
         if (!component.second.isPreviewImageDecorationObsolete)
             continue;
         component.second.isPreviewImageDecorationObsolete = false;
         if (nullptr == component.second.previewImage)
             continue;
         previewInputs->emplace_back(ComponentPreviewImagesDecorator::PreviewInput {
-            component.first, 
+            component.first,
             std::make_unique<QImage>(*component.second.previewImage),
-            !component.second.childrenIds.empty()
-        });
+            !component.second.childrenIds.empty() });
     }
     m_componentPreviewImagesDecorator = std::make_unique<ComponentPreviewImagesDecorator>(std::move(previewInputs));
     m_componentPreviewImagesDecorator->moveToThread(thread);
@@ -1264,7 +1258,7 @@ void DocumentWindow::componentPreviewImageDecorationsReady()
 {
     auto resultImages = m_componentPreviewImagesDecorator->takeResultImages();
     if (nullptr != resultImages) {
-        for (auto &it: *resultImages) {
+        for (auto& it : *resultImages) {
             if (nullptr == it.second)
                 continue;
             m_document->setComponentPreviewPixmap(it.first, QPixmap::fromImage(*it.second));
@@ -1272,33 +1266,33 @@ void DocumentWindow::componentPreviewImageDecorationsReady()
     }
 
     m_componentPreviewImagesDecorator.reset();
-    
+
     if (m_isComponentPreviewImageDecorationsObsolete)
         decorateComponentPreviewImages();
     else
         updateInprogressIndicator();
 }
 
-ModelWidget *DocumentWindow::modelWidget()
+ModelWidget* DocumentWindow::modelWidget()
 {
     return m_modelRenderWidget;
 }
 
-QShortcut *DocumentWindow::createShortcut(QKeySequence key)
+QShortcut* DocumentWindow::createShortcut(QKeySequence key)
 {
     auto shortcutIt = m_shortcutMap.find(key);
     if (shortcutIt != m_shortcutMap.end())
         return shortcutIt->second;
-    QShortcut *shortcut = new QShortcut(this);
+    QShortcut* shortcut = new QShortcut(this);
     shortcut->setKey(key);
-    m_shortcutMap.insert({key, shortcut});
+    m_shortcutMap.insert({ key, shortcut });
     return shortcut;
 }
 
-#define defineShortcut(keyVal, widget, funcName)                                     \
+#define defineShortcut(keyVal, widget, funcName) \
     QObject::connect(createShortcut(keyVal), &QShortcut::activated, widget, funcName)
-        
-void DocumentWindow::initializeToolShortcuts(SkeletonGraphicsWidget *graphicsWidget)
+
+void DocumentWindow::initializeToolShortcuts(SkeletonGraphicsWidget* graphicsWidget)
 {
     defineShortcut(Qt::Key_A, graphicsWidget, &SkeletonGraphicsWidget::shortcutAddMode);
     defineShortcut(Qt::CTRL + Qt::Key_A, graphicsWidget, &SkeletonGraphicsWidget::shortcutSelectAll);
@@ -1316,7 +1310,7 @@ void DocumentWindow::initializeToolShortcuts(SkeletonGraphicsWidget *graphicsWid
     defineShortcut(Qt::Key_Escape, graphicsWidget, &SkeletonGraphicsWidget::shortcutEscape);
 }
 
-void DocumentWindow::initializeCanvasShortcuts(SkeletonGraphicsWidget *graphicsWidget)
+void DocumentWindow::initializeCanvasShortcuts(SkeletonGraphicsWidget* graphicsWidget)
 {
     defineShortcut(Qt::Key_Delete, graphicsWidget, &SkeletonGraphicsWidget::shortcutDelete);
     defineShortcut(Qt::Key_Backspace, graphicsWidget, &SkeletonGraphicsWidget::shortcutDelete);
@@ -1346,7 +1340,7 @@ void DocumentWindow::initializeShortcuts()
 {
     initializeToolShortcuts(m_canvasGraphicsWidget);
     initializeCanvasShortcuts(m_canvasGraphicsWidget);
-    
+
     defineShortcut(Qt::Key_M, m_canvasGraphicsWidget, &SkeletonGraphicsWidget::shortcutXmirrorOnOrOffSelectedPart);
     defineShortcut(Qt::Key_B, m_canvasGraphicsWidget, &SkeletonGraphicsWidget::shortcutSubdivedOrNotSelectedPart);
     defineShortcut(Qt::Key_U, m_canvasGraphicsWidget, &SkeletonGraphicsWidget::shortcutRoundEndOrNotSelectedPart);
@@ -1365,7 +1359,7 @@ void DocumentWindow::openRecentFile()
             return;
     }
 
-    QAction *action = qobject_cast<QAction *>(sender());
+    QAction* action = qobject_cast<QAction*>(sender());
     if (action) {
         QString fileName = action->data().toString();
         openPathAs(fileName, fileName);
@@ -1375,7 +1369,7 @@ void DocumentWindow::openRecentFile()
 void DocumentWindow::updateRecentFileActions()
 {
     QStringList files = Preferences::instance().recentFileList();
-    
+
     for (int i = 0; i < (int)files.size() && i < (int)m_recentFileActions.size(); ++i) {
         QString text = tr("&%1 %2").arg(i + 1).arg(strippedName(files[i]));
         m_recentFileActions[i]->setText(text);
@@ -1388,7 +1382,7 @@ void DocumentWindow::updateRecentFileActions()
     m_recentFileSeparatorAction->setVisible(files.size() > 0);
 }
 
-QString DocumentWindow::strippedName(const QString &fullFileName)
+QString DocumentWindow::strippedName(const QString& fullFileName)
 {
     return QFileInfo(fullFileName).fileName();
 }
@@ -1401,10 +1395,8 @@ bool DocumentWindow::isWorking()
 void DocumentWindow::toggleRenderColor()
 {
     m_modelRemoveColor = !m_modelRemoveColor;
-    ModelMesh *mesh = nullptr;
-    if (m_document->isMeshGenerating() ||
-            m_document->isPostProcessing() ||
-            m_document->isTextureGenerating()) {
+    ModelMesh* mesh = nullptr;
+    if (m_document->isMeshGenerating() || m_document->isPostProcessing() || m_document->isTextureGenerating()) {
         mesh = m_document->takeResultMesh();
     } else {
         mesh = m_document->takeResultTextureMesh();

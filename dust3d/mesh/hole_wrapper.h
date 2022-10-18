@@ -23,30 +23,27 @@
 #ifndef DUST3D_MESH_HOLE_WRAPPER_H_
 #define DUST3D_MESH_HOLE_WRAPPER_H_
 
-#include <vector>
-#include <map>
 #include <deque>
 #include <dust3d/base/vector3.h>
+#include <map>
+#include <vector>
 
-namespace dust3d
-{
-    
-class HoleWrapper
-{
+namespace dust3d {
+
+class HoleWrapper {
 public:
-    void setVertices(const std::vector<Vector3> *vertices);
-    void wrap(const std::vector<std::pair<std::vector<size_t>, Vector3>> &edgeLoops);
-    const std::vector<std::vector<size_t>> &newlyGeneratedFaces();
+    void setVertices(const std::vector<Vector3>* vertices);
+    void wrap(const std::vector<std::pair<std::vector<size_t>, Vector3>>& edgeLoops);
+    const std::vector<std::vector<size_t>>& newlyGeneratedFaces();
     bool finished();
-    void getFailedEdgeLoops(std::vector<size_t> &failedEdgeLoops);
+    void getFailedEdgeLoops(std::vector<size_t>& failedEdgeLoops);
 
 private:
-    struct WrapItemKey
-    {
+    struct WrapItemKey {
         size_t p1;
         size_t p2;
-        
-        bool operator <(const WrapItemKey &right) const
+
+        bool operator<(const WrapItemKey& right) const
         {
             if (p1 < right.p1)
                 return true;
@@ -59,45 +56,41 @@ private:
             return false;
         }
     };
-    
-    struct WrapItem
-    {
+
+    struct WrapItem {
         Vector3 baseNormal;
         size_t p1;
         size_t p2;
         size_t p3;
         bool processed;
     };
-    
-    struct Face3
-    {
+
+    struct Face3 {
         size_t p1;
         size_t p2;
         size_t p3;
         Vector3 normal;
         size_t index;
     };
-    
-    struct Face4
-    {
+
+    struct Face4 {
         size_t p1;
         size_t p2;
         size_t p3;
         size_t p4;
     };
-    
-    struct SourceVertex
-    {
+
+    struct SourceVertex {
         Vector3 position;
         size_t sourcePlane;
         size_t index;
         size_t tag;
     };
-    
+
     std::vector<WrapItem> m_items;
     std::map<WrapItemKey, size_t> m_itemsMap;
     std::deque<size_t> m_itemsList;
-    const std::vector<Vector3> *m_positions;
+    const std::vector<Vector3>* m_positions;
     std::vector<size_t> m_candidates;
     std::vector<SourceVertex> m_sourceVertices;
     std::vector<Face3> m_generatedFaces;
@@ -105,12 +98,12 @@ private:
     std::map<size_t, std::vector<size_t>> m_generatedVertexEdgesMap;
     bool m_finalizeFinished = false;
     std::vector<std::vector<size_t>> m_newlyGeneratedfaces;
-    
-    void addCandidateVertices(const std::vector<size_t> &vertices, const Vector3 &planeNormal, size_t planeId);
-    size_t addSourceVertex(const Vector3 &position, size_t sourcePlane, size_t tag);
-    void addStartup(size_t p1, size_t p2, const Vector3 &baseNormal);
-    Vector3 calculateFaceVector(size_t p1, size_t p2, const Vector3 &baseNormal);
-    void addItem(size_t p1, size_t p2, const Vector3 &baseNormal);
+
+    void addCandidateVertices(const std::vector<size_t>& vertices, const Vector3& planeNormal, size_t planeId);
+    size_t addSourceVertex(const Vector3& position, size_t sourcePlane, size_t tag);
+    void addStartup(size_t p1, size_t p2, const Vector3& baseNormal);
+    Vector3 calculateFaceVector(size_t p1, size_t p2, const Vector3& baseNormal);
+    void addItem(size_t p1, size_t p2, const Vector3& baseNormal);
     std::pair<size_t, bool> findItem(size_t p1, size_t p2);
     bool isEdgeGenerated(size_t p1, size_t p2);
     float angleOfBaseFaceAndPoint(size_t itemIndex, size_t vertexIndex);
@@ -119,10 +112,10 @@ private:
     bool isEdgeClosed(size_t p1, size_t p2);
     bool isVertexClosed(size_t vertexIndex);
     void generate();
-    size_t anotherVertexIndexOfFace3(const Face3 &f, size_t p1, size_t p2);
-    std::pair<size_t, bool> findPairFace3(const Face3 &f, std::map<size_t, bool> &usedIds, std::vector<Face4> &q);
+    size_t anotherVertexIndexOfFace3(const Face3& f, size_t p1, size_t p2);
+    std::pair<size_t, bool> findPairFace3(const Face3& f, std::map<size_t, bool>& usedIds, std::vector<Face4>& q);
     void finalize();
-    bool almostEqual(const Vector3 &v1, const Vector3 &v2);
+    bool almostEqual(const Vector3& v1, const Vector3& v2);
 };
 
 }

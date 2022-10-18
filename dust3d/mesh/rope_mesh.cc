@@ -25,25 +25,24 @@
 #include <dust3d/mesh/base_normal.h>
 #include <dust3d/mesh/rope_mesh.h>
 
-namespace dust3d
-{
+namespace dust3d {
 
-RopeMesh::RopeMesh(const BuildParameters &parameters):
-    m_buildParameters(parameters)
+RopeMesh::RopeMesh(const BuildParameters& parameters)
+    : m_buildParameters(parameters)
 {
 }
 
-const std::vector<Vector3> &RopeMesh::resultVertices()
+const std::vector<Vector3>& RopeMesh::resultVertices()
 {
     return m_resultVertices;
 }
 
-const std::vector<std::vector<size_t>> &RopeMesh::resultTriangles()
+const std::vector<std::vector<size_t>>& RopeMesh::resultTriangles()
 {
     return m_resultTriangles;
 }
 
-void RopeMesh::addRope(const std::vector<Vector3> &positions, bool isCircle)
+void RopeMesh::addRope(const std::vector<Vector3>& positions, bool isCircle)
 {
     if (positions.size() < 2) {
         dust3dDebug << "Expected at least 2 nodes, current:" << positions.size();
@@ -55,9 +54,9 @@ void RopeMesh::addRope(const std::vector<Vector3> &positions, bool isCircle)
     Vector3 forwardDirection = (positions[1] - positions[0]).normalized();
     for (size_t i = isCircle ? 0 : 1; i < positions.size(); ++i) {
         size_t j = (i + 1) % positions.size();
-        auto circlePositions = BaseNormal::calculateCircleVertices(m_buildParameters.defaultRadius, 
-            m_buildParameters.sectionSegments, 
-            forwardDirection, 
+        auto circlePositions = BaseNormal::calculateCircleVertices(m_buildParameters.defaultRadius,
+            m_buildParameters.sectionSegments,
+            forwardDirection,
             baseNormal,
             positions[i]);
         std::vector<size_t> indices(circlePositions.size());
@@ -70,16 +69,14 @@ void RopeMesh::addRope(const std::vector<Vector3> &positions, bool isCircle)
     }
     for (size_t j = isCircle ? 0 : 1; j < circles.size(); ++j) {
         size_t i = (j + circles.size() - 1) % circles.size();
-        const auto &circlesI = circles[i];
-        const auto &circlesJ = circles[j];
+        const auto& circlesI = circles[i];
+        const auto& circlesJ = circles[j];
         for (size_t m = 0; m < circlesI.size(); ++m) {
             size_t n = (m + 1) % circlesI.size();
             m_resultTriangles.emplace_back(std::vector<size_t> {
-                circlesI[m], circlesI[n], circlesJ[n]
-            });
+                circlesI[m], circlesI[n], circlesJ[n] });
             m_resultTriangles.emplace_back(std::vector<size_t> {
-                circlesJ[n], circlesJ[m], circlesI[m]
-            });
+                circlesJ[n], circlesJ[m], circlesI[m] });
         }
     }
 }

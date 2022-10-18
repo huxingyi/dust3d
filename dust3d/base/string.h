@@ -19,94 +19,93 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *  SOFTWARE.
  */
- 
+
 #ifndef DUST3D_BASE_STRING_H_
 #define DUST3D_BASE_STRING_H_
 
-#include <sstream>
-#include <vector>
-#include <string>
 #include <algorithm>
 #include <cctype>
 #include <map>
+#include <sstream>
+#include <string>
+#include <vector>
 
-namespace dust3d
-{
-namespace String
-{
-    
-inline std::vector<std::string> split(const std::string &string, char seperator)
-{
-    std::vector<std::string> tokens;
-    std::stringstream stream(string);
-    std::string token;
-    while (std::getline(stream, token, seperator))
-        tokens.push_back(token);
-    return tokens;
-}
+namespace dust3d {
+namespace String {
 
-inline std::string &trimLeft(std::string &string)
-{
-    string.erase(string.begin(), std::find_if(string.begin(), string.end(), [](int ch) {
-        return !std::isspace(ch);
-    }));
-    return string;
-}
-
-inline std::string &trimRight(std::string &string)
-{
-    string.erase(std::find_if(string.rbegin(), string.rend(), [](int ch) {
-        return !std::isspace(ch);
-    }).base(), string.end());
-    return string;
-}
-
-inline std::string trimmed(std::string string)
-{
-    trimLeft(string);
-    trimRight(string);
-    return string;
-}
-
-inline std::string doubleQuoteEscapedForXml(const std::string &string)
-{
-    std::string escapedString;
-    escapedString.reserve(string.size() + 1);
-    for (std::string::size_type i = 0; i < string.size(); ++i) {
-        char c = string[i];
-        if ('"' != c) {
-            escapedString += c;
-            continue;
-        }
-        escapedString +="&quot;";
+    inline std::vector<std::string> split(const std::string& string, char seperator)
+    {
+        std::vector<std::string> tokens;
+        std::stringstream stream(string);
+        std::string token;
+        while (std::getline(stream, token, seperator))
+            tokens.push_back(token);
+        return tokens;
     }
-    return escapedString;
-}
 
-inline float toFloat(const std::string &string)
-{
-    return (float)std::stod(string);
-}
+    inline std::string& trimLeft(std::string& string)
+    {
+        string.erase(string.begin(), std::find_if(string.begin(), string.end(), [](int ch) {
+            return !std::isspace(ch);
+        }));
+        return string;
+    }
 
-std::string join(const std::vector<std::string> &stringList, const char *separator);
+    inline std::string& trimRight(std::string& string)
+    {
+        string.erase(std::find_if(string.rbegin(), string.rend(), [](int ch) {
+            return !std::isspace(ch);
+        }).base(),
+            string.end());
+        return string;
+    }
 
-inline std::string valueOrEmpty(const std::map<std::string, std::string> &map, const std::string &key)
-{
-    auto it = map.find(key);
-    if (it == map.end())
-        return std::string();
-    return it->second;
-}
+    inline std::string trimmed(std::string string)
+    {
+        trimLeft(string);
+        trimRight(string);
+        return string;
+    }
 
-inline bool isTrue(const std::string &string)
-{
-    return "true" == string || "True" == string || "1" == string;
-}
+    inline std::string doubleQuoteEscapedForXml(const std::string& string)
+    {
+        std::string escapedString;
+        escapedString.reserve(string.size() + 1);
+        for (std::string::size_type i = 0; i < string.size(); ++i) {
+            char c = string[i];
+            if ('"' != c) {
+                escapedString += c;
+                continue;
+            }
+            escapedString += "&quot;";
+        }
+        return escapedString;
+    }
 
-inline bool startsWith(const std::string &string, const std::string searchItem)
-{
-    return string.rfind(searchItem, 0) == 0;
-}
+    inline float toFloat(const std::string& string)
+    {
+        return (float)std::stod(string);
+    }
+
+    std::string join(const std::vector<std::string>& stringList, const char* separator);
+
+    inline std::string valueOrEmpty(const std::map<std::string, std::string>& map, const std::string& key)
+    {
+        auto it = map.find(key);
+        if (it == map.end())
+            return std::string();
+        return it->second;
+    }
+
+    inline bool isTrue(const std::string& string)
+    {
+        return "true" == string || "True" == string || "1" == string;
+    }
+
+    inline bool startsWith(const std::string& string, const std::string searchItem)
+    {
+        return string.rfind(searchItem, 0) == 0;
+    }
 
 }
 }

@@ -23,17 +23,16 @@
 #ifndef DUST3D_MESH_WELD_VERTICES_H_
 #define DUST3D_MESH_WELD_VERTICES_H_
 
-#include <set>
-#include <dust3d/base/vector3.h>
 #include <dust3d/base/position_key.h>
+#include <dust3d/base/vector3.h>
+#include <set>
 
-namespace dust3d
-{
-    
-size_t weldVertices(const std::vector<Vector3> &sourceVertices, const std::vector<std::vector<size_t>> &sourceTriangles,
-    float allowedSmallestDistance, const std::set<PositionKey> &excludePositions,
-    std::vector<Vector3> &destVertices, std::vector<std::vector<size_t>> &destTriangles);
-    
+namespace dust3d {
+
+size_t weldVertices(const std::vector<Vector3>& sourceVertices, const std::vector<std::vector<size_t>>& sourceTriangles,
+    float allowedSmallestDistance, const std::set<PositionKey>& excludePositions,
+    std::vector<Vector3>& destVertices, std::vector<std::vector<size_t>>& destTriangles);
+
 }
 
 #endif

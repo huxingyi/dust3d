@@ -1,17 +1,17 @@
-#include <QMetaType>
-#include <QDir>
 #include "log_browser.h"
 #include "log_browser_dialog.h"
+#include <QDir>
+#include <QMetaType>
 
 bool LogBrowser::m_enableOutputToFile = true;
 
-LogBrowser::LogBrowser(QObject *parent) :
-    QObject(parent)
+LogBrowser::LogBrowser(QObject* parent)
+    : QObject(parent)
 {
     qRegisterMetaType<QtMsgType>("QtMsgType");
     m_browserDialog = new LogBrowserDialog;
     connect(this, &LogBrowser::sendMessage, m_browserDialog, &LogBrowserDialog::outputMessage, Qt::QueuedConnection);
-    
+
     if (m_enableOutputToFile) {
         QString filePath = "application.log";
         m_outputTo = fopen(filePath.toUtf8().constData(), "w");
@@ -42,7 +42,7 @@ bool LogBrowser::isDialogVisible()
     return m_browserDialog->isVisible();
 }
 
-void LogBrowser::outputMessage(QtMsgType type, const QString &msg, const QString &source, int line)
+void LogBrowser::outputMessage(QtMsgType type, const QString& msg, const QString& source, int line)
 {
     if (m_outputTo) {
         fprintf(m_outputTo, "[%s:%d]: %s\n", source.toUtf8().constData(), line, msg.toUtf8().constData());

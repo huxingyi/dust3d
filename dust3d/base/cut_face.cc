@@ -20,26 +20,26 @@
  *  SOFTWARE.
  */
 
-#include <algorithm>    // std::reverse
+#include <algorithm> // std::reverse
+#include <dust3d/base/cut_face.h>
 #include <dust3d/base/vector2.h>
 #include <dust3d/base/vector3.h>
-#include <dust3d/base/cut_face.h>
 
-namespace dust3d
-{
-    
+namespace dust3d {
+
 IMPL_CutFaceFromString
-IMPL_CutFaceToString
-TMPL_CutFaceToPoints
+    IMPL_CutFaceToString
+        TMPL_CutFaceToPoints
 
-static void correctFlippedNormal(std::vector<Vector2> *points)
+    static void
+    correctFlippedNormal(std::vector<Vector2>* points)
 {
     if (points->size() < 3)
         return;
     std::vector<Vector3> referenceFacePoints = {
         Vector3((float)-1.0, (float)-1.0, (float)0.0),
         Vector3((float)1.0, (float)-1.0, (float)0.0),
-        Vector3((float)1.0,  (float)1.0, (float)0.0)
+        Vector3((float)1.0, (float)1.0, (float)0.0)
     };
     Vector3 referenceNormal = Vector3::normal(referenceFacePoints[0],
         referenceFacePoints[1], referenceFacePoints[2]);
@@ -61,7 +61,7 @@ static void correctFlippedNormal(std::vector<Vector2> *points)
     std::reverse(points->begin() + 1, points->end());
 }
 
-void normalizeCutFacePoints(std::vector<Vector2> *points)
+void normalizeCutFacePoints(std::vector<Vector2>* points)
 {
     Vector2 center;
     if (nullptr == points || points->empty())
@@ -70,7 +70,7 @@ void normalizeCutFacePoints(std::vector<Vector2> *points)
     float xHigh = std::numeric_limits<float>::lowest();
     float yLow = std::numeric_limits<float>::max();
     float yHigh = std::numeric_limits<float>::lowest();
-    for (const auto &position: *points) {
+    for (const auto& position : *points) {
         if (position.x() < xLow)
             xLow = position.x();
         else if (position.x() > xHigh)
@@ -89,24 +89,24 @@ void normalizeCutFacePoints(std::vector<Vector2> *points)
         longSize = xSize;
     if (Math::isZero(longSize))
         longSize = 0.000001;
-    for (auto &position: *points) {
+    for (auto& position : *points) {
         position.setX((position.x() - xMiddle) * 2 / longSize);
         position.setY((position.y() - yMiddle) * 2 / longSize);
     }
     correctFlippedNormal(points);
 }
 
-void cutFacePointsFromNodes(std::vector<Vector2> &points, const std::vector<std::tuple<float, float, float, std::string>> &nodes, bool isRing,
-    std::vector<std::string> *pointsIds)
+void cutFacePointsFromNodes(std::vector<Vector2>& points, const std::vector<std::tuple<float, float, float, std::string>>& nodes, bool isRing,
+    std::vector<std::string>* pointsIds)
 {
     if (isRing) {
         if (nodes.size() < 3)
             return;
-        for (const auto &it: nodes) {
+        for (const auto& it : nodes) {
             points.push_back(Vector2(std::get<1>(it), std::get<2>(it)));
         }
         if (nullptr != pointsIds) {
-            for (const auto &it: nodes) {
+            for (const auto& it : nodes) {
                 pointsIds->push_back(std::get<3>(it));
             }
         }
@@ -117,38 +117,37 @@ void cutFacePointsFromNodes(std::vector<Vector2> &points, const std::vector<std:
         return;
     std::vector<Vector2> edges;
     for (size_t i = 1; i < nodes.size(); ++i) {
-        const auto &previous = nodes[i - 1];
-        const auto &current = nodes[i];
-        edges.push_back((Vector2(std::get<1>(current), std::get<2>(current)) -
-            Vector2(std::get<1>(previous), std::get<2>(previous))).normalized());
+        const auto& previous = nodes[i - 1];
+        const auto& current = nodes[i];
+        edges.push_back((Vector2(std::get<1>(current), std::get<2>(current)) - Vector2(std::get<1>(previous), std::get<2>(previous))).normalized());
     }
     std::vector<Vector2> nodeDirections;
     nodeDirections.push_back(edges[0]);
     for (size_t i = 1; i < nodes.size() - 1; ++i) {
-        const auto &previousEdge = edges[i - 1];
-        const auto &nextEdge = edges[i];
+        const auto& previousEdge = edges[i - 1];
+        const auto& nextEdge = edges[i];
         nodeDirections.push_back((previousEdge + nextEdge).normalized());
     }
     nodeDirections.push_back(edges[edges.size() - 1]);
     std::vector<std::pair<Vector2, Vector2>> cutPoints;
     for (size_t i = 0; i < nodes.size(); ++i) {
-        const auto &current = nodes[i];
-        const auto &direction = nodeDirections[i];
-        const auto &radius = std::get<0>(current);
+        const auto& current = nodes[i];
+        const auto& direction = nodeDirections[i];
+        const auto& radius = std::get<0>(current);
         Vector3 origin = Vector3(std::get<1>(current), std::get<2>(current), 0);
         Vector3 pointer = Vector3(direction.x(), direction.y(), 0);
         Vector3 rotateAxis = Vector3(0, 0, 1);
         Vector3 u = Vector3::crossProduct(pointer, rotateAxis).normalized();
         Vector3 upPoint = origin + u * radius;
         Vector3 downPoint = origin - u * radius;
-        cutPoints.push_back({Vector2(upPoint.x(), upPoint.y()),
-            Vector2(downPoint.x(), downPoint.y())});
+        cutPoints.push_back({ Vector2(upPoint.x(), upPoint.y()),
+            Vector2(downPoint.x(), downPoint.y()) });
     }
-    for (const auto &it: cutPoints) {
+    for (const auto& it : cutPoints) {
         points.push_back(it.first);
     }
     if (nullptr != pointsIds) {
-        for (const auto &it: nodes) {
+        for (const auto& it : nodes) {
             pointsIds->push_back(std::get<3>(it) + std::string("/1"));
         }
     }

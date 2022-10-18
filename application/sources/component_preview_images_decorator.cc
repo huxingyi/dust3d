@@ -1,7 +1,7 @@
-#include <dust3d/base/debug.h>
-#include <QPainter>
-#include "theme.h"
 #include "component_preview_images_decorator.h"
+#include "theme.h"
+#include <QPainter>
+#include <dust3d/base/debug.h>
 
 ComponentPreviewImagesDecorator::ComponentPreviewImagesDecorator(std::unique_ptr<std::vector<PreviewInput>> previewInputs)
 {
@@ -21,7 +21,7 @@ void ComponentPreviewImagesDecorator::decorate()
     m_resultImages = std::make_unique<std::unordered_map<dust3d::Uuid, std::unique_ptr<QImage>>>();
 
     QPointF iconOffset(Theme::previewIconMargin, 0);
-    for (auto &it: *m_previewInputs) {
+    for (auto& it : *m_previewInputs) {
         if (it.isDirectory) {
             QPainter painter(it.image.get());
             painter.setRenderHints(QPainter::Antialiasing);

@@ -23,36 +23,32 @@
 #ifndef DUST3D_MESH_STOKE_MESH_BUILDER_H_
 #define DUST3D_MESH_STOKE_MESH_BUILDER_H_
 
-#include <dust3d/base/vector3.h>
 #include <dust3d/base/vector2.h>
-#include <vector>
+#include <dust3d/base/vector3.h>
 #include <map>
 #include <set>
+#include <vector>
 
-namespace dust3d
-{
+namespace dust3d {
 
-class StrokeMeshBuilder
-{
+class StrokeMeshBuilder {
 public:
-    struct CutFaceTransform
-    {
+    struct CutFaceTransform {
         Vector3 translation;
         float scale;
         Vector3 uFactor;
         Vector3 vFactor;
         bool reverse = false;
     };
-    
-    struct Node
-    {
+
+    struct Node {
         float radius;
         Vector3 position;
         std::vector<Vector2> cutTemplate;
         float cutRotation;
         int nearOriginNodeIndex = -1;
         int farOriginNodeIndex = -1;
-        
+
         size_t index;
         std::vector<size_t> neighbors;
         size_t next;
@@ -60,11 +56,11 @@ public:
         Vector3 traverseDirection;
         Vector3 baseNormal;
         size_t traverseOrder;
-        
+
         size_t nextOrNeighborOtherThan(size_t neighborIndex) const;
     };
-    
-    size_t addNode(const Vector3 &position, float radius, const std::vector<Vector2> &cutTemplate, float cutRotation);
+
+    size_t addNode(const Vector3& position, float radius, const std::vector<Vector2>& cutTemplate, float cutRotation);
     void addEdge(size_t firstNodeIndex, size_t secondNodeIndex);
     void setNodeOriginInfo(size_t nodeIndex, int nearOriginNodeIndex, int farOriginNodeIndex);
     void setDeformThickness(float thickness);
@@ -76,25 +72,25 @@ public:
     void enableBaseNormalOnZ(bool enabled);
     void enableBaseNormalAverage(bool enabled);
     bool buildBaseNormalsOnly();
-    const std::vector<Node> &nodes() const;
-    const std::vector<size_t> &nodeIndices() const;
-    const Vector3 &nodeTraverseDirection(size_t nodeIndex) const;
-    const Vector3 &nodeBaseNormal(size_t nodeIndex) const;
+    const std::vector<Node>& nodes() const;
+    const std::vector<size_t>& nodeIndices() const;
+    const Vector3& nodeTraverseDirection(size_t nodeIndex) const;
+    const Vector3& nodeBaseNormal(size_t nodeIndex) const;
     size_t nodeTraverseOrder(size_t nodeIndex) const;
     bool build();
-    const std::vector<Vector3> &generatedVertices();
-    const std::vector<std::vector<size_t>> &generatedFaces();
-    const std::vector<size_t> &generatedVerticesSourceNodeIndices();
-    
-    static Vector3 calculateDeformPosition(const Vector3 &vertexPosition, const Vector3 &ray, const Vector3 &deformNormal, float deformFactor);
-    static Vector3 calculateBaseNormalFromTraverseDirection(const Vector3 &traverseDirection);
+    const std::vector<Vector3>& generatedVertices();
+    const std::vector<std::vector<size_t>>& generatedFaces();
+    const std::vector<size_t>& generatedVerticesSourceNodeIndices();
+
+    static Vector3 calculateDeformPosition(const Vector3& vertexPosition, const Vector3& ray, const Vector3& deformNormal, float deformFactor);
+    static Vector3 calculateBaseNormalFromTraverseDirection(const Vector3& traverseDirection);
+
 private:
-    struct GeneratedVertexInfo
-    {
+    struct GeneratedVertexInfo {
         size_t orderInCut;
         size_t cutSize;
     };
-    
+
     std::vector<Node> m_nodes;
     float m_deformThickness = 1.0f;
     float m_deformWidth = 1.0f;
@@ -105,7 +101,7 @@ private:
     bool m_baseNormalAverageEnabled = false;
     float m_hollowThickness = 0.0f;
     bool m_deformUnified = false;
-    
+
     bool m_isRing = false;
     std::vector<size_t> m_nodeIndices;
     std::vector<Vector3> m_generatedVertices;
@@ -113,28 +109,28 @@ private:
     std::vector<size_t> m_generatedVerticesSourceNodeIndices;
     std::vector<GeneratedVertexInfo> m_generatedVerticesInfos;
     std::vector<std::vector<size_t>> m_generatedFaces;
-    
+
     std::vector<std::vector<size_t>> m_cuts;
-    
+
     bool prepare();
-    std::vector<Vector3> makeCut(const Vector3 &cutCenter, 
-        float radius, 
-        const std::vector<Vector2> &cutTemplate, 
-        const Vector3 &cutNormal,
-        const Vector3 &baseNormal);
-    void insertCutVertices(const std::vector<Vector3> &cut,
-        std::vector<size_t> *vertices,
+    std::vector<Vector3> makeCut(const Vector3& cutCenter,
+        float radius,
+        const std::vector<Vector2>& cutTemplate,
+        const Vector3& cutNormal,
+        const Vector3& baseNormal);
+    void insertCutVertices(const std::vector<Vector3>& cut,
+        std::vector<size_t>* vertices,
         size_t nodeIndex,
-        const Vector3 &cutNormal);
+        const Vector3& cutNormal);
     void buildMesh();
-    std::vector<size_t> sortedNodeIndices(bool *isRing);
-    bool calculateStartingNodeIndex(size_t *startingNodeIndex, 
-        bool *isRing);
+    std::vector<size_t> sortedNodeIndices(bool* isRing);
+    bool calculateStartingNodeIndex(size_t* startingNodeIndex,
+        bool* isRing);
     void reviseTraverseDirections();
     void localAverageBaseNormals();
     void unifyBaseNormals();
-    std::vector<size_t> edgeloopFlipped(const std::vector<size_t> &edgeLoop);
-    void reviseNodeBaseNormal(Node &node);
+    std::vector<size_t> edgeloopFlipped(const std::vector<size_t>& edgeLoop);
+    void reviseNodeBaseNormal(Node& node);
     void applyDeform();
     void interpolateCutEdges();
     void stitchCuts();

@@ -23,47 +23,45 @@
 #ifndef DUST3D_MESH_ISOTROPIC_REMESHER_H_
 #define DUST3D_MESH_ISOTROPIC_REMESHER_H_
 
-#include <vector>
-#include <dust3d/base/vector3.h>
-#include <dust3d/base/axis_aligned_bounding_box_tree.h>
 #include <dust3d/base/axis_aligned_bounding_box.h>
+#include <dust3d/base/axis_aligned_bounding_box_tree.h>
+#include <dust3d/base/vector3.h>
+#include <vector>
 
-namespace dust3d
-{
+namespace dust3d {
 
 class IsotropicHalfedgeMesh;
 
-class IsotropicRemesher
-{
+class IsotropicRemesher {
 public:
-    IsotropicRemesher(const std::vector<Vector3> *vertices,
-            const std::vector<std::vector<size_t>> *triangles);
+    IsotropicRemesher(const std::vector<Vector3>* vertices,
+        const std::vector<std::vector<size_t>>* triangles);
     ~IsotropicRemesher();
     double initialAverageEdgeLength();
     void setSharpEdgeIncludedAngle(double degrees);
     void setTargetEdgeLength(double edgeLength);
     void setTargetTriangleCount(size_t triangleCount);
     void remesh(size_t iteration);
-    IsotropicHalfedgeMesh *remeshedHalfedgeMesh();
-    
+    IsotropicHalfedgeMesh* remeshedHalfedgeMesh();
+
 private:
-    const std::vector<Vector3> *m_vertices = nullptr;
-    const std::vector<std::vector<size_t>> *m_triangles = nullptr;
-    std::vector<Vector3> *m_triangleNormals = nullptr;
-    IsotropicHalfedgeMesh *m_halfedgeMesh = nullptr;
-    std::vector<AxisAlignedBoudingBox> *m_triangleBoxes = nullptr;
-    AxisAlignedBoudingBoxTree *m_axisAlignedBoundingBoxTree = nullptr;
+    const std::vector<Vector3>* m_vertices = nullptr;
+    const std::vector<std::vector<size_t>>* m_triangles = nullptr;
+    std::vector<Vector3>* m_triangleNormals = nullptr;
+    IsotropicHalfedgeMesh* m_halfedgeMesh = nullptr;
+    std::vector<AxisAlignedBoudingBox>* m_triangleBoxes = nullptr;
+    AxisAlignedBoudingBoxTree* m_axisAlignedBoundingBoxTree = nullptr;
     double m_sharpEdgeThresholdRadians = 0;
     double m_targetEdgeLength = 0;
     double m_initialAverageEdgeLength = 0;
     size_t m_targetTriangleCount = 0;
-    
-    void addTriagleToAxisAlignedBoundingBox(const std::vector<size_t> &triangle, AxisAlignedBoudingBox *box)
+
+    void addTriagleToAxisAlignedBoundingBox(const std::vector<size_t>& triangle, AxisAlignedBoudingBox* box)
     {
         for (size_t i = 0; i < 3; ++i)
             box->update((*m_vertices)[triangle[i]]);
     }
-    
+
     void splitLongEdges(double maxEdgeLength);
     void collapseShortEdges(double minEdgeLengthSquared, double maxEdgeLengthSquared);
     void flipEdges();

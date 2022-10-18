@@ -1,6 +1,6 @@
-#include <QGuiApplication>
 #include "skeleton_ik_mover.h"
 #include "ccd_ik_resolver.h"
+#include <QGuiApplication>
 
 SkeletonIkMover::SkeletonIkMover()
 {
@@ -10,7 +10,7 @@ SkeletonIkMover::~SkeletonIkMover()
 {
 }
 
-void SkeletonIkMover::setTarget(const QVector3D &target)
+void SkeletonIkMover::setTarget(const QVector3D& target)
 {
     m_target = target;
 }
@@ -33,7 +33,7 @@ void SkeletonIkMover::addNode(dust3d::Uuid id, QVector3D position)
     m_ikNodes.push_back(ikNode);
 }
 
-const std::vector<SkeletonIkNode> &SkeletonIkMover::ikNodes()
+const std::vector<SkeletonIkNode>& SkeletonIkMover::ikNodes()
 {
     return m_ikNodes;
 }
@@ -41,7 +41,7 @@ const std::vector<SkeletonIkNode> &SkeletonIkMover::ikNodes()
 void SkeletonIkMover::process()
 {
     resolve();
-    
+
     emit finished();
 }
 

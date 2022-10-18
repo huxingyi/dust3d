@@ -23,20 +23,18 @@
 #ifndef DUST3D_BASE_OBJECT_H_
 #define DUST3D_BASE_OBJECT_H_
 
-#include <vector>
-#include <set>
-#include <map>
-#include <dust3d/base/vector2.h>
-#include <dust3d/base/vector3.h>
-#include <dust3d/base/uuid.h>
 #include <dust3d/base/color.h>
 #include <dust3d/base/rectangle.h>
+#include <dust3d/base/uuid.h>
+#include <dust3d/base/vector2.h>
+#include <dust3d/base/vector3.h>
+#include <map>
+#include <set>
+#include <vector>
 
-namespace dust3d
-{
-    
-struct ObjectNode
-{
+namespace dust3d {
+
+struct ObjectNode {
     Uuid partId;
     Uuid nodeId;
     Vector3 origin;
@@ -53,8 +51,7 @@ struct ObjectNode
     bool joined = true;
 };
 
-class Object
-{
+class Object {
 public:
     std::vector<ObjectNode> nodes;
     std::vector<std::pair<std::pair<Uuid, Uuid>, std::pair<Uuid, Uuid>>> edges;
@@ -66,74 +63,74 @@ public:
     std::vector<Color> triangleColors;
     bool alphaEnabled = false;
     uint64_t meshId = 0;
-    
-    const std::vector<std::pair<Uuid, Uuid>> *triangleSourceNodes() const
+
+    const std::vector<std::pair<Uuid, Uuid>>* triangleSourceNodes() const
     {
         if (!m_hasTriangleSourceNodes)
             return nullptr;
         return &m_triangleSourceNodes;
     }
-    void setTriangleSourceNodes(const std::vector<std::pair<Uuid, Uuid>> &sourceNodes)
+    void setTriangleSourceNodes(const std::vector<std::pair<Uuid, Uuid>>& sourceNodes)
     {
         m_triangleSourceNodes = sourceNodes;
         m_hasTriangleSourceNodes = true;
     }
-    
-    const std::vector<std::vector<Vector2>> *triangleVertexUvs() const
+
+    const std::vector<std::vector<Vector2>>* triangleVertexUvs() const
     {
         if (!m_hasTriangleVertexUvs)
             return nullptr;
         return &m_triangleVertexUvs;
     }
-    void setTriangleVertexUvs(const std::vector<std::vector<Vector2>> &uvs)
+    void setTriangleVertexUvs(const std::vector<std::vector<Vector2>>& uvs)
     {
         m_triangleVertexUvs = uvs;
         m_hasTriangleVertexUvs = true;
     }
-    
-    const std::vector<std::vector<Vector3>> *triangleVertexNormals() const
+
+    const std::vector<std::vector<Vector3>>* triangleVertexNormals() const
     {
         if (!m_hasTriangleVertexNormals)
             return nullptr;
         return &m_triangleVertexNormals;
     }
-    void setTriangleVertexNormals(const std::vector<std::vector<Vector3>> &normals)
+    void setTriangleVertexNormals(const std::vector<std::vector<Vector3>>& normals)
     {
         m_triangleVertexNormals = normals;
         m_hasTriangleVertexNormals = true;
     }
-    
-    const std::vector<Vector3> *triangleTangents() const
+
+    const std::vector<Vector3>* triangleTangents() const
     {
         if (!m_hasTriangleTangents)
             return nullptr;
         return &m_triangleTangents;
     }
-    void setTriangleTangents(const std::vector<Vector3> &tangents)
+    void setTriangleTangents(const std::vector<Vector3>& tangents)
     {
         m_triangleTangents = tangents;
         m_hasTriangleTangents = true;
     }
-    
-    const std::map<Uuid, std::vector<Rectangle>> *partUvRects() const
+
+    const std::map<Uuid, std::vector<Rectangle>>* partUvRects() const
     {
         if (!m_hasPartUvRects)
             return nullptr;
         return &m_partUvRects;
     }
-    void setPartUvRects(const std::map<Uuid, std::vector<Rectangle>> &uvRects)
+    void setPartUvRects(const std::map<Uuid, std::vector<Rectangle>>& uvRects)
     {
         m_partUvRects = uvRects;
         m_hasPartUvRects = true;
     }
-    
-    const std::vector<std::pair<std::pair<size_t, size_t>, std::pair<size_t, size_t>>> *triangleLinks() const
+
+    const std::vector<std::pair<std::pair<size_t, size_t>, std::pair<size_t, size_t>>>* triangleLinks() const
     {
         if (!m_hasTriangleLinks)
             return nullptr;
         return &m_triangleLinks;
     }
-    void setTriangleLinks(const std::vector<std::pair<std::pair<size_t, size_t>, std::pair<size_t, size_t>>> &triangleLinks)
+    void setTriangleLinks(const std::vector<std::pair<std::pair<size_t, size_t>, std::pair<size_t, size_t>>>& triangleLinks)
     {
         m_triangleLinks = triangleLinks;
         m_hasTriangleLinks = true;
@@ -142,19 +139,19 @@ public:
 private:
     bool m_hasTriangleSourceNodes = false;
     std::vector<std::pair<Uuid, Uuid>> m_triangleSourceNodes;
-    
+
     bool m_hasTriangleVertexUvs = false;
     std::vector<std::vector<Vector2>> m_triangleVertexUvs;
-    
+
     bool m_hasTriangleVertexNormals = false;
     std::vector<std::vector<Vector3>> m_triangleVertexNormals;
-    
+
     bool m_hasTriangleTangents = false;
     std::vector<Vector3> m_triangleTangents;
-    
+
     bool m_hasPartUvRects = false;
     std::map<Uuid, std::vector<Rectangle>> m_partUvRects;
-    
+
     bool m_hasTriangleLinks = false;
     std::vector<std::pair<std::pair<size_t, size_t>, std::pair<size_t, size_t>>> m_triangleLinks;
 };

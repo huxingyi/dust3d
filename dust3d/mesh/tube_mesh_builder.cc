@@ -24,27 +24,26 @@
 #include <dust3d/mesh/base_normal.h>
 #include <dust3d/mesh/tube_mesh_builder.h>
 
-namespace dust3d
-{
+namespace dust3d {
 
-TubeMeshBuilder::TubeMeshBuilder(const BuildParameters &buildParameters, std::vector<MeshNode> &&nodes, bool isCircle):
-    m_buildParameters(buildParameters),
-    m_nodes(std::move(nodes)),
-    m_isCircle(isCircle)
+TubeMeshBuilder::TubeMeshBuilder(const BuildParameters& buildParameters, std::vector<MeshNode>&& nodes, bool isCircle)
+    : m_buildParameters(buildParameters)
+    , m_nodes(std::move(nodes))
+    , m_isCircle(isCircle)
 {
 }
 
-const Vector3 &TubeMeshBuilder::generatedBaseNormal()
+const Vector3& TubeMeshBuilder::generatedBaseNormal()
 {
     return m_generatedBaseNormal;
 }
 
-const std::vector<Vector3> &TubeMeshBuilder::generatedVertices()
+const std::vector<Vector3>& TubeMeshBuilder::generatedVertices()
 {
     return m_generatedVertices;
 }
 
-const std::vector<std::vector<size_t>> &TubeMeshBuilder::generatedFaces()
+const std::vector<std::vector<size_t>>& TubeMeshBuilder::generatedFaces()
 {
     return m_generatedFaces;
 }
@@ -56,7 +55,7 @@ void TubeMeshBuilder::applyRoundEnd()
 
     if (m_nodes.size() <= 1)
         return;
-    
+
     if (m_buildParameters.frontEndRounded) {
         auto newNode = m_nodes.front();
         newNode.radius *= 0.5;
@@ -144,17 +143,16 @@ void TubeMeshBuilder::buildNodePositionAndDirections()
             m_nodeForwardDirections.front() = rawDirections.front();
             for (size_t j = 1; j + 1 < m_nodePositions.size(); ++j) {
                 size_t i = j - 1;
-                m_nodeForwardDirections[j] = (rawDirections[i] * m_nodeForwardDistances[j] + 
-                    rawDirections[j] * m_nodeForwardDistances[i]).normalized();
+                m_nodeForwardDirections[j] = (rawDirections[i] * m_nodeForwardDistances[j] + rawDirections[j] * m_nodeForwardDistances[i]).normalized();
             }
             m_nodeForwardDirections.back() = rawDirections.back();
         }
     }
 }
 
-std::vector<Vector3> TubeMeshBuilder::buildCutFaceVertices(const Vector3 &origin,
+std::vector<Vector3> TubeMeshBuilder::buildCutFaceVertices(const Vector3& origin,
     double radius,
-    const Vector3 &forwardDirection)
+    const Vector3& forwardDirection)
 {
     std::vector<Vector3> cutFaceVertices(m_buildParameters.cutFace.size());
     Vector3 u = m_generatedBaseNormal.rotated(-forwardDirection, m_buildParameters.baseNormalRotation);
@@ -171,7 +169,7 @@ std::vector<Vector3> TubeMeshBuilder::buildCutFaceVertices(const Vector3 &origin
         }
     }
     for (size_t i = 0; i < m_buildParameters.cutFace.size(); ++i) {
-        const auto &t = m_buildParameters.cutFace[i];
+        const auto& t = m_buildParameters.cutFace[i];
         cutFaceVertices[i] = origin + (uFactor * t.x() + vFactor * t.y());
     }
     return cutFaceVertices;
@@ -186,13 +184,11 @@ void TubeMeshBuilder::build()
 
     buildNodePositionAndDirections();
 
-    for (const auto &it: m_nodes)
+    for (const auto& it : m_nodes)
         m_maxNodeRadius = std::max(m_maxNodeRadius, it.radius);
 
-    m_generatedBaseNormal = m_isCircle ? 
-        BaseNormal::calculateCircleBaseNormal(m_nodePositions) : 
-        BaseNormal::calculateTubeBaseNormal(m_nodePositions);
-    
+    m_generatedBaseNormal = m_isCircle ? BaseNormal::calculateCircleBaseNormal(m_nodePositions) : BaseNormal::calculateTubeBaseNormal(m_nodePositions);
+
     std::vector<std::vector<size_t>> cutFaceIndices(m_nodePositions.size());
     for (size_t i = 0; i < m_nodePositions.size(); ++i) {
         auto cutFaceVertices = buildCutFaceVertices(m_nodePositions[i],
@@ -206,8 +202,8 @@ void TubeMeshBuilder::build()
     }
     for (size_t j = m_isCircle ? 0 : 1; j < cutFaceIndices.size(); ++j) {
         size_t i = (j + cutFaceIndices.size() - 1) % cutFaceIndices.size();
-        const auto &cutFaceI = cutFaceIndices[i];
-        const auto &cutFaceJ = cutFaceIndices[j];
+        const auto& cutFaceI = cutFaceIndices[i];
+        const auto& cutFaceJ = cutFaceIndices[j];
         size_t halfSize = cutFaceI.size() / 2;
         for (size_t m = 0; m < halfSize; ++m) {
             size_t n = (m + 1) % cutFaceI.size();
@@ -216,8 +212,7 @@ void TubeMeshBuilder::build()
             // This will group two points from I, and one point from J as a triangle in the later quad to triangles processing.
             // If not follow this order, the front triangle and back triangle maybe cross over because of not be parallel.
             m_generatedFaces.emplace_back(std::vector<size_t> {
-                cutFaceI[m], cutFaceI[n], cutFaceJ[n], cutFaceJ[m]
-            });
+                cutFaceI[m], cutFaceI[n], cutFaceJ[n], cutFaceJ[m] });
         }
         for (size_t m = halfSize; m < cutFaceI.size(); ++m) {
             size_t n = (m + 1) % cutFaceI.size();
@@ -226,8 +221,7 @@ void TubeMeshBuilder::build()
             // This will group two points from I, and one point from J as a triangle in the later quad to triangles processing.
             // If not follow this order, the front triangle and back triangle maybe cross over because of not be parallel.
             m_generatedFaces.emplace_back(std::vector<size_t> {
-                cutFaceJ[m], cutFaceI[m], cutFaceI[n], cutFaceJ[n]
-            });
+                cutFaceJ[m], cutFaceI[m], cutFaceI[n], cutFaceJ[n] });
         }
     }
     if (!m_isCircle) {

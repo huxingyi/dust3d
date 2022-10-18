@@ -1,7 +1,7 @@
-#include <QDebug>
 #include "skeleton_document.h"
+#include <QDebug>
 
-const SkeletonNode *SkeletonDocument::findNode(dust3d::Uuid nodeId) const
+const SkeletonNode* SkeletonDocument::findNode(dust3d::Uuid nodeId) const
 {
     auto it = nodeMap.find(nodeId);
     if (it == nodeMap.end())
@@ -9,7 +9,7 @@ const SkeletonNode *SkeletonDocument::findNode(dust3d::Uuid nodeId) const
     return &it->second;
 }
 
-const SkeletonEdge *SkeletonDocument::findEdge(dust3d::Uuid edgeId) const
+const SkeletonEdge* SkeletonDocument::findEdge(dust3d::Uuid edgeId) const
 {
     auto it = edgeMap.find(edgeId);
     if (it == edgeMap.end())
@@ -17,7 +17,7 @@ const SkeletonEdge *SkeletonDocument::findEdge(dust3d::Uuid edgeId) const
     return &it->second;
 }
 
-const SkeletonPart *SkeletonDocument::findPart(dust3d::Uuid partId) const
+const SkeletonPart* SkeletonDocument::findPart(dust3d::Uuid partId) const
 {
     auto it = partMap.find(partId);
     if (it == partMap.end())
@@ -25,9 +25,9 @@ const SkeletonPart *SkeletonDocument::findPart(dust3d::Uuid partId) const
     return &it->second;
 }
 
-const SkeletonEdge *SkeletonDocument::findEdgeByNodes(dust3d::Uuid firstNodeId, dust3d::Uuid secondNodeId) const
+const SkeletonEdge* SkeletonDocument::findEdgeByNodes(dust3d::Uuid firstNodeId, dust3d::Uuid secondNodeId) const
 {
-    const SkeletonNode *firstNode = nullptr;
+    const SkeletonNode* firstNode = nullptr;
     firstNode = findNode(firstNodeId);
     if (nullptr == firstNode) {
         return nullptr;
@@ -43,18 +43,18 @@ const SkeletonEdge *SkeletonDocument::findEdgeByNodes(dust3d::Uuid firstNodeId, 
     return nullptr;
 }
 
-void SkeletonDocument::findAllNeighbors(dust3d::Uuid nodeId, std::set<dust3d::Uuid> &neighbors) const
+void SkeletonDocument::findAllNeighbors(dust3d::Uuid nodeId, std::set<dust3d::Uuid>& neighbors) const
 {
-    const auto &node = findNode(nodeId);
+    const auto& node = findNode(nodeId);
     if (nullptr == node) {
         return;
     }
-    for (const auto &edgeId: node->edgeIds) {
-        const auto &edge = findEdge(edgeId);
+    for (const auto& edgeId : node->edgeIds) {
+        const auto& edge = findEdge(edgeId);
         if (nullptr == edge) {
             continue;
         }
-        const auto &neighborNodeId = edge->neighborOf(nodeId);
+        const auto& neighborNodeId = edge->neighborOf(nodeId);
         if (neighborNodeId.isNull()) {
             continue;
         }
@@ -68,7 +68,7 @@ void SkeletonDocument::findAllNeighbors(dust3d::Uuid nodeId, std::set<dust3d::Uu
 
 bool SkeletonDocument::isNodeConnectable(dust3d::Uuid nodeId) const
 {
-    const auto &node = findNode(nodeId);
+    const auto& node = findNode(nodeId);
     if (nullptr == node)
         return false;
     if (node->edgeIds.size() < 2)
@@ -78,7 +78,7 @@ bool SkeletonDocument::isNodeConnectable(dust3d::Uuid nodeId) const
 
 void SkeletonDocument::reduceNode(dust3d::Uuid nodeId)
 {
-    const SkeletonNode *node = findNode(nodeId);
+    const SkeletonNode* node = findNode(nodeId);
     if (nullptr == node) {
         return;
     }
@@ -87,11 +87,11 @@ void SkeletonDocument::reduceNode(dust3d::Uuid nodeId)
     }
     dust3d::Uuid firstEdgeId = node->edgeIds[0];
     dust3d::Uuid secondEdgeId = node->edgeIds[1];
-    const SkeletonEdge *firstEdge = findEdge(firstEdgeId);
+    const SkeletonEdge* firstEdge = findEdge(firstEdgeId);
     if (nullptr == firstEdge) {
         return;
     }
-    const SkeletonEdge *secondEdge = findEdge(secondEdgeId);
+    const SkeletonEdge* secondEdge = findEdge(secondEdgeId);
     if (nullptr == secondEdge) {
         return;
     }
@@ -103,7 +103,7 @@ void SkeletonDocument::reduceNode(dust3d::Uuid nodeId)
 
 void SkeletonDocument::breakEdge(dust3d::Uuid edgeId)
 {
-    const SkeletonEdge *edge = findEdge(edgeId);
+    const SkeletonEdge* edge = findEdge(edgeId);
     if (nullptr == edge) {
         return;
     }
@@ -112,11 +112,11 @@ void SkeletonDocument::breakEdge(dust3d::Uuid edgeId)
     }
     dust3d::Uuid firstNodeId = edge->nodeIds[0];
     dust3d::Uuid secondNodeId = edge->nodeIds[1];
-    const SkeletonNode *firstNode = findNode(firstNodeId);
+    const SkeletonNode* firstNode = findNode(firstNodeId);
     if (nullptr == firstNode) {
         return;
     }
-    const SkeletonNode *secondNode = findNode(secondNodeId);
+    const SkeletonNode* secondNode = findNode(secondNodeId);
     if (nullptr == secondNode) {
         return;
     }
@@ -134,7 +134,7 @@ void SkeletonDocument::breakEdge(dust3d::Uuid edgeId)
 
 void SkeletonDocument::reverseEdge(dust3d::Uuid edgeId)
 {
-    SkeletonEdge *edge = (SkeletonEdge *)findEdge(edgeId);
+    SkeletonEdge* edge = (SkeletonEdge*)findEdge(edgeId);
     if (nullptr == edge) {
         return;
     }
@@ -151,13 +151,13 @@ void SkeletonDocument::reverseEdge(dust3d::Uuid edgeId)
 
 void SkeletonDocument::removeEdge(dust3d::Uuid edgeId)
 {
-    const SkeletonEdge *edge = findEdge(edgeId);
+    const SkeletonEdge* edge = findEdge(edgeId);
     if (nullptr == edge) {
         return;
     }
     if (isPartReadonly(edge->partId))
         return;
-    const SkeletonPart *oldPart = findPart(edge->partId);
+    const SkeletonPart* oldPart = findPart(edge->partId);
     if (nullptr == oldPart) {
         return;
     }
@@ -169,7 +169,7 @@ void SkeletonDocument::removeEdge(dust3d::Uuid edgeId)
     std::vector<dust3d::Uuid> newPartIds;
     for (auto groupIt = groups.begin(); groupIt != groups.end(); groupIt++) {
         const auto newUuid = dust3d::Uuid::createUuid();
-        SkeletonPart &part = partMap[newUuid];
+        SkeletonPart& part = partMap[newUuid];
         part.id = newUuid;
         part.copyAttributes(*oldPart);
         part.name = nextPartName;
@@ -189,7 +189,7 @@ void SkeletonDocument::removeEdge(dust3d::Uuid edgeId)
             }
         }
         addPartToComponent(part.id, findComponentParentId(part.componentId));
-        newPartNodeNumMap.push_back({part.id, part.nodeIds.size()});
+        newPartNodeNumMap.push_back({ part.id, part.nodeIds.size() });
         newPartIds.push_back(part.id);
         emit partAdded(part.id);
     }
@@ -204,27 +204,26 @@ void SkeletonDocument::removeEdge(dust3d::Uuid edgeId)
     edgeMap.erase(edgeId);
     emit edgeRemoved(edgeId);
     removePart(oldPartId);
-    
+
     if (!newPartNodeNumMap.empty()) {
-        std::sort(newPartNodeNumMap.begin(), newPartNodeNumMap.end(), [&](
-                const std::pair<dust3d::Uuid, size_t> &first, const std::pair<dust3d::Uuid, size_t> &second) {
+        std::sort(newPartNodeNumMap.begin(), newPartNodeNumMap.end(), [&](const std::pair<dust3d::Uuid, size_t>& first, const std::pair<dust3d::Uuid, size_t>& second) {
             return first.second > second.second;
         });
         updateLinkedPart(oldPartId, newPartNodeNumMap[0].first);
     }
-    
+
     emit skeletonChanged();
 }
 
 void SkeletonDocument::removeNode(dust3d::Uuid nodeId)
 {
-    const SkeletonNode *node = findNode(nodeId);
+    const SkeletonNode* node = findNode(nodeId);
     if (nullptr == node) {
         return;
     }
     if (isPartReadonly(node->partId))
         return;
-    const SkeletonPart *oldPart = findPart(node->partId);
+    const SkeletonPart* oldPart = findPart(node->partId);
     if (nullptr == oldPart) {
         return;
     }
@@ -236,7 +235,7 @@ void SkeletonDocument::removeNode(dust3d::Uuid nodeId)
     std::vector<dust3d::Uuid> newPartIds;
     for (auto groupIt = groups.begin(); groupIt != groups.end(); groupIt++) {
         const auto newUuid = dust3d::Uuid::createUuid();
-        SkeletonPart &part = partMap[newUuid];
+        SkeletonPart& part = partMap[newUuid];
         part.id = newUuid;
         part.copyAttributes(*oldPart);
         part.name = nextPartName;
@@ -256,7 +255,7 @@ void SkeletonDocument::removeNode(dust3d::Uuid nodeId)
             }
         }
         addPartToComponent(part.id, findComponentParentId(part.componentId));
-        newPartNodeNumMap.push_back({part.id, part.nodeIds.size()});
+        newPartNodeNumMap.push_back({ part.id, part.nodeIds.size() });
         newPartIds.push_back(part.id);
         emit partAdded(part.id);
     }
@@ -277,15 +276,14 @@ void SkeletonDocument::removeNode(dust3d::Uuid nodeId)
     nodeMap.erase(nodeId);
     emit nodeRemoved(nodeId);
     removePart(oldPartId);
-    
+
     if (!newPartNodeNumMap.empty()) {
-        std::sort(newPartNodeNumMap.begin(), newPartNodeNumMap.end(), [&](
-                const std::pair<dust3d::Uuid, size_t> &first, const std::pair<dust3d::Uuid, size_t> &second) {
+        std::sort(newPartNodeNumMap.begin(), newPartNodeNumMap.end(), [&](const std::pair<dust3d::Uuid, size_t>& first, const std::pair<dust3d::Uuid, size_t>& second) {
             return first.second > second.second;
         });
         updateLinkedPart(oldPartId, newPartNodeNumMap[0].first);
     }
-    
+
     emit skeletonChanged();
 }
 
@@ -302,11 +300,11 @@ void SkeletonDocument::addNodeWithId(dust3d::Uuid nodeId, float x, float y, floa
 dust3d::Uuid SkeletonDocument::createNode(dust3d::Uuid nodeId, float x, float y, float z, float radius, dust3d::Uuid fromNodeId)
 {
     dust3d::Uuid partId;
-    const SkeletonNode *fromNode = nullptr;
+    const SkeletonNode* fromNode = nullptr;
     bool newPartAdded = false;
     if (fromNodeId.isNull()) {
         const auto newUuid = dust3d::Uuid::createUuid();
-        SkeletonPart &part = partMap[newUuid];
+        SkeletonPart& part = partMap[newUuid];
         part.id = newUuid;
         partId = part.id;
         emit partAdded(partId);
@@ -331,35 +329,35 @@ dust3d::Uuid SkeletonDocument::createNode(dust3d::Uuid nodeId, float x, float y,
     node.setZ(z);
     nodeMap[node.id] = node;
     partMap[partId].nodeIds.push_back(node.id);
-    
+
     emit nodeAdded(node.id);
-    
+
     if (nullptr != fromNode) {
         SkeletonEdge edge;
         edge.partId = partId;
         edge.nodeIds.push_back(fromNode->id);
         edge.nodeIds.push_back(node.id);
         edgeMap[edge.id] = edge;
-        
+
         nodeMap[node.id].edgeIds.push_back(edge.id);
         nodeMap[fromNode->id].edgeIds.push_back(edge.id);
-        
+
         emit edgeAdded(edge.id);
     }
-    
+
     if (newPartAdded)
         addPartToComponent(partId, m_currentCanvasComponentId);
-    
+
     emit skeletonChanged();
-    
+
     return node.id;
 }
 
-void SkeletonDocument::joinNodeAndNeiborsToGroup(std::vector<dust3d::Uuid> *group, dust3d::Uuid nodeId, std::set<dust3d::Uuid> *visitMap, dust3d::Uuid noUseEdgeId)
+void SkeletonDocument::joinNodeAndNeiborsToGroup(std::vector<dust3d::Uuid>* group, dust3d::Uuid nodeId, std::set<dust3d::Uuid>* visitMap, dust3d::Uuid noUseEdgeId)
 {
     if (nodeId.isNull() || visitMap->find(nodeId) != visitMap->end())
         return;
-    const SkeletonNode *node = findNode(nodeId);
+    const SkeletonNode* node = findNode(nodeId);
     if (nullptr == node) {
         return;
     }
@@ -368,7 +366,7 @@ void SkeletonDocument::joinNodeAndNeiborsToGroup(std::vector<dust3d::Uuid> *grou
     for (auto edgeIt = node->edgeIds.begin(); edgeIt != node->edgeIds.end(); edgeIt++) {
         if (noUseEdgeId == *edgeIt)
             continue;
-        const SkeletonEdge *edge = findEdge(*edgeIt);
+        const SkeletonEdge* edge = findEdge(*edgeIt);
         if (nullptr == edge) {
             continue;
         }
@@ -378,14 +376,14 @@ void SkeletonDocument::joinNodeAndNeiborsToGroup(std::vector<dust3d::Uuid> *grou
     }
 }
 
-void SkeletonDocument::splitPartByNode(std::vector<std::vector<dust3d::Uuid>> *groups, dust3d::Uuid nodeId)
+void SkeletonDocument::splitPartByNode(std::vector<std::vector<dust3d::Uuid>>* groups, dust3d::Uuid nodeId)
 {
-    const SkeletonNode *node = findNode(nodeId);
+    const SkeletonNode* node = findNode(nodeId);
     std::set<dust3d::Uuid> visitMap;
     visitMap.insert(nodeId);
     for (auto edgeIt = node->edgeIds.begin(); edgeIt != node->edgeIds.end(); edgeIt++) {
         std::vector<dust3d::Uuid> group;
-        const SkeletonEdge *edge = findEdge(*edgeIt);
+        const SkeletonEdge* edge = findEdge(*edgeIt);
         if (nullptr == edge) {
             continue;
         }
@@ -395,9 +393,9 @@ void SkeletonDocument::splitPartByNode(std::vector<std::vector<dust3d::Uuid>> *g
     }
 }
 
-void SkeletonDocument::splitPartByEdge(std::vector<std::vector<dust3d::Uuid>> *groups, dust3d::Uuid edgeId)
+void SkeletonDocument::splitPartByEdge(std::vector<std::vector<dust3d::Uuid>>* groups, dust3d::Uuid edgeId)
 {
-    const SkeletonEdge *edge = findEdge(edgeId);
+    const SkeletonEdge* edge = findEdge(edgeId);
     if (nullptr == edge) {
         return;
     }
@@ -410,17 +408,17 @@ void SkeletonDocument::splitPartByEdge(std::vector<std::vector<dust3d::Uuid>> *g
     }
 }
 
-const SkeletonComponent *SkeletonDocument::findComponentParent(dust3d::Uuid componentId) const
+const SkeletonComponent* SkeletonDocument::findComponentParent(dust3d::Uuid componentId) const
 {
     auto component = componentMap.find(componentId);
     if (component == componentMap.end()) {
         return nullptr;
     }
-    
+
     if (component->second.parentId.isNull())
         return &rootComponent;
-    
-    return (SkeletonComponent *)findComponent(component->second.parentId);
+
+    return (SkeletonComponent*)findComponent(component->second.parentId);
 }
 
 dust3d::Uuid SkeletonDocument::findComponentParentId(dust3d::Uuid componentId) const
@@ -429,18 +427,18 @@ dust3d::Uuid SkeletonDocument::findComponentParentId(dust3d::Uuid componentId) c
     if (component == componentMap.end()) {
         return dust3d::Uuid();
     }
-    
+
     return component->second.parentId;
 }
 
 void SkeletonDocument::moveComponentUp(dust3d::Uuid componentId)
 {
-    SkeletonComponent *parent = (SkeletonComponent *)findComponentParent(componentId);
+    SkeletonComponent* parent = (SkeletonComponent*)findComponentParent(componentId);
     if (nullptr == parent)
         return;
-    
+
     dust3d::Uuid parentId = findComponentParentId(componentId);
-    
+
     parent->moveChildUp(componentId);
     parent->dirty = true;
     emit componentChildrenChanged(parentId);
@@ -449,12 +447,12 @@ void SkeletonDocument::moveComponentUp(dust3d::Uuid componentId)
 
 void SkeletonDocument::moveComponentDown(dust3d::Uuid componentId)
 {
-    SkeletonComponent *parent = (SkeletonComponent *)findComponentParent(componentId);
+    SkeletonComponent* parent = (SkeletonComponent*)findComponentParent(componentId);
     if (nullptr == parent)
         return;
-    
+
     dust3d::Uuid parentId = findComponentParentId(componentId);
-    
+
     parent->moveChildDown(componentId);
     parent->dirty = true;
     emit componentChildrenChanged(parentId);
@@ -463,12 +461,12 @@ void SkeletonDocument::moveComponentDown(dust3d::Uuid componentId)
 
 void SkeletonDocument::moveComponentToTop(dust3d::Uuid componentId)
 {
-    SkeletonComponent *parent = (SkeletonComponent *)findComponentParent(componentId);
+    SkeletonComponent* parent = (SkeletonComponent*)findComponentParent(componentId);
     if (nullptr == parent)
         return;
-    
+
     dust3d::Uuid parentId = findComponentParentId(componentId);
-    
+
     parent->moveChildToTop(componentId);
     parent->dirty = true;
     emit componentChildrenChanged(parentId);
@@ -477,12 +475,12 @@ void SkeletonDocument::moveComponentToTop(dust3d::Uuid componentId)
 
 void SkeletonDocument::moveComponentToBottom(dust3d::Uuid componentId)
 {
-    SkeletonComponent *parent = (SkeletonComponent *)findComponentParent(componentId);
+    SkeletonComponent* parent = (SkeletonComponent*)findComponentParent(componentId);
     if (nullptr == parent)
         return;
-    
+
     dust3d::Uuid parentId = findComponentParentId(componentId);
-    
+
     parent->moveChildToBottom(componentId);
     parent->dirty = true;
     emit componentChildrenChanged(parentId);
@@ -495,10 +493,10 @@ void SkeletonDocument::renameComponent(dust3d::Uuid componentId, QString name)
     if (component == componentMap.end()) {
         return;
     }
-    
+
     if (component->second.name == name)
         return;
-    
+
     if (!name.trimmed().isEmpty())
         component->second.name = name;
     emit componentNameChanged(componentId);
@@ -511,20 +509,20 @@ void SkeletonDocument::setComponentExpandState(dust3d::Uuid componentId, bool ex
     if (component == componentMap.end()) {
         return;
     }
-    
+
     if (component->second.expanded == expanded)
         return;
-    
+
     component->second.expanded = expanded;
     emit componentExpandStateChanged(componentId);
     emit optionsChanged();
 }
 
-void SkeletonDocument::ungroupComponent(const dust3d::Uuid &componentId)
+void SkeletonDocument::ungroupComponent(const dust3d::Uuid& componentId)
 {
     if (componentId.isNull())
         return;
-    SkeletonComponent *component = (SkeletonComponent *)findComponent(componentId);
+    SkeletonComponent* component = (SkeletonComponent*)findComponent(componentId);
     if (nullptr == component) {
         dust3dDebug << "Component not found:" << componentId.toString();
         return;
@@ -532,15 +530,15 @@ void SkeletonDocument::ungroupComponent(const dust3d::Uuid &componentId)
     if (component->childrenIds.empty())
         return;
     auto childrenIds = component->childrenIds;
-    SkeletonComponent *newParent = (SkeletonComponent *)findComponentParent(componentId);
+    SkeletonComponent* newParent = (SkeletonComponent*)findComponentParent(componentId);
     if (nullptr == newParent) {
         dust3dDebug << "Expected parent component to be found, component:" << componentId.toString();
         return;
     }
     auto newParentId = newParent->id;
     newParent->replaceChildWithOthers(componentId, childrenIds);
-    for (const auto &childId: childrenIds) {
-        SkeletonComponent *child = (SkeletonComponent *)findComponent(childId);
+    for (const auto& childId : childrenIds) {
+        SkeletonComponent* child = (SkeletonComponent*)findComponent(childId);
         if (nullptr == child)
             continue;
         child->parentId = newParentId;
@@ -551,7 +549,7 @@ void SkeletonDocument::ungroupComponent(const dust3d::Uuid &componentId)
     emit skeletonChanged();
 }
 
-void SkeletonDocument::groupComponents(const std::vector<dust3d::Uuid> &componentIds)
+void SkeletonDocument::groupComponents(const std::vector<dust3d::Uuid>& componentIds)
 {
     if (componentIds.empty())
         return;
@@ -563,7 +561,7 @@ void SkeletonDocument::groupComponents(const std::vector<dust3d::Uuid> &componen
 
     auto it = componentIds.begin();
 
-    SkeletonComponent *oldParent = (SkeletonComponent *)findComponentParent(*it);
+    SkeletonComponent* oldParent = (SkeletonComponent*)findComponentParent(*it);
     if (nullptr == oldParent) {
         dust3dDebug << "Expected parent component to be found, component:" << it->toString();
         return;
@@ -574,7 +572,7 @@ void SkeletonDocument::groupComponents(const std::vector<dust3d::Uuid> &componen
         oldParent->removeChild(*it);
     }
 
-    for (const auto &componentId: componentIds) {
+    for (const auto& componentId : componentIds) {
         auto component = componentMap.find(componentId);
         if (component == componentMap.end()) {
             continue;
@@ -594,21 +592,21 @@ void SkeletonDocument::groupComponents(const std::vector<dust3d::Uuid> &componen
 
 void SkeletonDocument::createNewChildComponent(dust3d::Uuid parentComponentId)
 {
-    SkeletonComponent *parentComponent = (SkeletonComponent *)findComponent(parentComponentId);
+    SkeletonComponent* parentComponent = (SkeletonComponent*)findComponent(parentComponentId);
     if (!parentComponent->linkToPartId.isNull()) {
         parentComponentId = parentComponent->parentId;
-        parentComponent = (SkeletonComponent *)findComponent(parentComponentId);
+        parentComponent = (SkeletonComponent*)findComponent(parentComponentId);
     }
-    
+
     SkeletonComponent newComponent(dust3d::Uuid::createUuid());
     newComponent.name = tr("Group") + " " + QString::number(componentMap.size() - partMap.size() + 1);
-    
+
     parentComponent->addChild(newComponent.id);
     newComponent.parentId = parentComponentId;
-    
+
     auto newComponentId = newComponent.id;
     componentMap.emplace(newComponentId, std::move(newComponent));
-    
+
     emit componentChildrenChanged(parentComponentId);
     emit componentAdded(newComponentId);
     emit optionsChanged();
@@ -620,12 +618,12 @@ void SkeletonDocument::removePart(dust3d::Uuid partId)
     if (part == partMap.end()) {
         return;
     }
-    
+
     if (!part->second.componentId.isNull()) {
         removeComponent(part->second.componentId);
         return;
     }
-    
+
     removePartDontCareComponent(partId);
 }
 
@@ -635,10 +633,10 @@ void SkeletonDocument::removePartDontCareComponent(dust3d::Uuid partId)
     if (part == partMap.end()) {
         return;
     }
-    
+
     std::vector<dust3d::Uuid> removedNodeIds;
     std::vector<dust3d::Uuid> removedEdgeIds;
-    
+
     for (auto nodeIt = nodeMap.begin(); nodeIt != nodeMap.end();) {
         if (nodeIt->second.partId != partId) {
             nodeIt++;
@@ -647,7 +645,7 @@ void SkeletonDocument::removePartDontCareComponent(dust3d::Uuid partId)
         removedNodeIds.push_back(nodeIt->second.id);
         nodeIt = nodeMap.erase(nodeIt);
     }
-    
+
     for (auto edgeIt = edgeMap.begin(); edgeIt != edgeMap.end();) {
         if (edgeIt->second.partId != partId) {
             edgeIt++;
@@ -656,13 +654,13 @@ void SkeletonDocument::removePartDontCareComponent(dust3d::Uuid partId)
         removedEdgeIds.push_back(edgeIt->second.id);
         edgeIt = edgeMap.erase(edgeIt);
     }
-    
+
     partMap.erase(part);
-    
-    for (const auto &nodeId: removedNodeIds) {
+
+    for (const auto& nodeId : removedNodeIds) {
         emit nodeRemoved(nodeId);
     }
-    for (const auto &edgeId: removedEdgeIds) {
+    for (const auto& edgeId : removedEdgeIds) {
         emit edgeRemoved(edgeId);
     }
     emit partRemoved(partId);
@@ -671,7 +669,7 @@ void SkeletonDocument::removePartDontCareComponent(dust3d::Uuid partId)
 void SkeletonDocument::addPartToComponent(dust3d::Uuid partId, dust3d::Uuid componentId)
 {
     SkeletonComponent child(dust3d::Uuid::createUuid());
-    
+
     if (!componentId.isNull()) {
         auto parentComponent = componentMap.find(componentId);
         if (parentComponent == componentMap.end()) {
@@ -683,13 +681,13 @@ void SkeletonDocument::addPartToComponent(dust3d::Uuid partId, dust3d::Uuid comp
     } else {
         rootComponent.addChild(child.id);
     }
-    
+
     partMap[partId].componentId = child.id;
     child.linkToPartId = partId;
     child.parentId = componentId;
     auto childId = child.id;
     componentMap.emplace(childId, std::move(child));
-    
+
     emit componentChildrenChanged(componentId);
     emit componentAdded(childId);
 }
@@ -706,16 +704,16 @@ void SkeletonDocument::removeComponentRecursively(dust3d::Uuid componentId)
     if (component == componentMap.end()) {
         return;
     }
-    
+
     if (!component->second.linkToPartId.isNull()) {
         removePartDontCareComponent(component->second.linkToPartId);
     }
-    
+
     auto childrenIds = component->second.childrenIds;
-    for (const auto &childId: childrenIds) {
+    for (const auto& childId : childrenIds) {
         removeComponentRecursively(childId);
     }
-    
+
     dust3d::Uuid parentId = component->second.parentId;
     if (!parentId.isNull()) {
         auto parentComponent = componentMap.find(parentId);
@@ -726,7 +724,7 @@ void SkeletonDocument::removeComponentRecursively(dust3d::Uuid componentId)
     } else {
         rootComponent.removeChild(componentId);
     }
-    
+
     componentMap.erase(component);
     emit componentRemoved(componentId);
     emit componentChildrenChanged(parentId);
@@ -735,7 +733,7 @@ void SkeletonDocument::removeComponentRecursively(dust3d::Uuid componentId)
 void SkeletonDocument::setCurrentCanvasComponentId(dust3d::Uuid componentId)
 {
     m_currentCanvasComponentId = componentId;
-    const SkeletonComponent *component = findComponent(m_currentCanvasComponentId);
+    const SkeletonComponent* component = findComponent(m_currentCanvasComponentId);
     if (nullptr == component) {
         m_currentCanvasComponentId = dust3d::Uuid();
     } else {
@@ -749,7 +747,7 @@ void SkeletonDocument::setCurrentCanvasComponentId(dust3d::Uuid componentId)
 void SkeletonDocument::addComponent(dust3d::Uuid parentId)
 {
     SkeletonComponent component(dust3d::Uuid::createUuid());
-    
+
     if (!parentId.isNull()) {
         auto parentComponent = componentMap.find(parentId);
         if (parentComponent == componentMap.end()) {
@@ -759,18 +757,18 @@ void SkeletonDocument::addComponent(dust3d::Uuid parentId)
     } else {
         rootComponent.addChild(component.id);
     }
-    
+
     component.parentId = parentId;
     auto componentId = component.id;
     componentMap.emplace(componentId, std::move(component));
-    
+
     emit componentChildrenChanged(parentId);
     emit componentAdded(componentId);
 }
 
 bool SkeletonDocument::isDescendantComponent(dust3d::Uuid componentId, dust3d::Uuid suspiciousId)
 {
-    const SkeletonComponent *loopComponent = findComponentParent(suspiciousId);
+    const SkeletonComponent* loopComponent = findComponentParent(suspiciousId);
     while (nullptr != loopComponent) {
         if (loopComponent->id == componentId)
             return true;
@@ -788,13 +786,13 @@ void SkeletonDocument::moveComponent(dust3d::Uuid componentId, dust3d::Uuid toPa
     if (component == componentMap.end()) {
         return;
     }
-    
+
     if (component->second.parentId == toParentId)
         return;
-    
+
     if (isDescendantComponent(componentId, toParentId))
         return;
-    
+
     if (component->second.parentId.isNull()) {
         rootComponent.removeChild(componentId);
         emit componentChildrenChanged(rootComponent.id);
@@ -806,9 +804,9 @@ void SkeletonDocument::moveComponent(dust3d::Uuid componentId, dust3d::Uuid toPa
             emit componentChildrenChanged(oldParent->second.id);
         }
     }
-    
+
     component->second.parentId = toParentId;
-    
+
     if (toParentId.isNull()) {
         rootComponent.addChild(componentId);
         emit componentChildrenChanged(rootComponent.id);
@@ -820,7 +818,7 @@ void SkeletonDocument::moveComponent(dust3d::Uuid componentId, dust3d::Uuid toPa
             emit componentChildrenChanged(newParent->second.id);
         }
     }
-    
+
     emit skeletonChanged();
 }
 
@@ -864,25 +862,25 @@ void SkeletonDocument::setPartDisableState(dust3d::Uuid partId, bool disabled)
     emit skeletonChanged();
 }
 
-void SkeletonDocument::collectComponentDescendantParts(dust3d::Uuid componentId, std::vector<dust3d::Uuid> &partIds) const
+void SkeletonDocument::collectComponentDescendantParts(dust3d::Uuid componentId, std::vector<dust3d::Uuid>& partIds) const
 {
-    const SkeletonComponent *component = findComponent(componentId);
+    const SkeletonComponent* component = findComponent(componentId);
     if (nullptr == component)
         return;
-    
+
     if (!component->linkToPartId.isNull()) {
         partIds.push_back(component->linkToPartId);
         return;
     }
-    
-    for (const auto &childId: component->childrenIds) {
+
+    for (const auto& childId : component->childrenIds) {
         collectComponentDescendantParts(childId, partIds);
     }
 }
 
-void SkeletonDocument::collectComponentDescendantComponents(dust3d::Uuid componentId, std::vector<dust3d::Uuid> &componentIds) const
+void SkeletonDocument::collectComponentDescendantComponents(dust3d::Uuid componentId, std::vector<dust3d::Uuid>& componentIds) const
 {
-    const SkeletonComponent *component = findComponent(componentId);
+    const SkeletonComponent* component = findComponent(componentId);
     if (nullptr == component)
         return;
 
@@ -890,7 +888,7 @@ void SkeletonDocument::collectComponentDescendantComponents(dust3d::Uuid compone
         return;
     }
 
-    for (const auto &childId: component->childrenIds) {
+    for (const auto& childId : component->childrenIds) {
         componentIds.push_back(childId);
         collectComponentDescendantComponents(childId, componentIds);
     }
@@ -901,10 +899,10 @@ void SkeletonDocument::hideOtherComponents(dust3d::Uuid componentId)
     std::vector<dust3d::Uuid> partIds;
     collectComponentDescendantParts(componentId, partIds);
     std::set<dust3d::Uuid> partIdSet;
-    for (const auto &partId: partIds) {
+    for (const auto& partId : partIds) {
         partIdSet.insert(partId);
     }
-    for (const auto &part: partMap) {
+    for (const auto& part : partMap) {
         if (partIdSet.find(part.first) != partIdSet.end())
             continue;
         setPartVisibleState(part.first, false);
@@ -916,10 +914,10 @@ void SkeletonDocument::lockOtherComponents(dust3d::Uuid componentId)
     std::vector<dust3d::Uuid> partIds;
     collectComponentDescendantParts(componentId, partIds);
     std::set<dust3d::Uuid> partIdSet;
-    for (const auto &partId: partIds) {
+    for (const auto& partId : partIds) {
         partIdSet.insert(partId);
     }
-    for (const auto &part: partMap) {
+    for (const auto& part : partMap) {
         if (partIdSet.find(part.first) != partIdSet.end())
             continue;
         setPartLockState(part.first, true);
@@ -928,14 +926,14 @@ void SkeletonDocument::lockOtherComponents(dust3d::Uuid componentId)
 
 void SkeletonDocument::hideAllComponents()
 {
-    for (const auto &part: partMap) {
+    for (const auto& part : partMap) {
         setPartVisibleState(part.first, false);
     }
 }
 
 void SkeletonDocument::showAllComponents()
 {
-    for (const auto &part: partMap) {
+    for (const auto& part : partMap) {
         setPartVisibleState(part.first, true);
     }
 }
@@ -943,7 +941,7 @@ void SkeletonDocument::showAllComponents()
 void SkeletonDocument::showOrHideAllComponents()
 {
     bool foundVisiblePart = false;
-    for (const auto &part: partMap) {
+    for (const auto& part : partMap) {
         if (part.second.visible) {
             foundVisiblePart = true;
         }
@@ -956,7 +954,7 @@ void SkeletonDocument::showOrHideAllComponents()
 
 void SkeletonDocument::collapseAllComponents()
 {
-    for (const auto &component: componentMap) {
+    for (const auto& component : componentMap) {
         if (!component.second.linkToPartId.isNull())
             continue;
         setComponentExpandState(component.first, false);
@@ -965,7 +963,7 @@ void SkeletonDocument::collapseAllComponents()
 
 void SkeletonDocument::expandAllComponents()
 {
-    for (const auto &component: componentMap) {
+    for (const auto& component : componentMap) {
         if (!component.second.linkToPartId.isNull())
             continue;
         setComponentExpandState(component.first, true);
@@ -974,14 +972,14 @@ void SkeletonDocument::expandAllComponents()
 
 void SkeletonDocument::lockAllComponents()
 {
-    for (const auto &part: partMap) {
+    for (const auto& part : partMap) {
         setPartLockState(part.first, true);
     }
 }
 
 void SkeletonDocument::unlockAllComponents()
 {
-    for (const auto &part: partMap) {
+    for (const auto& part : partMap) {
         setPartLockState(part.first, false);
     }
 }
@@ -990,7 +988,7 @@ void SkeletonDocument::hideDescendantComponents(dust3d::Uuid componentId)
 {
     std::vector<dust3d::Uuid> partIds;
     collectComponentDescendantParts(componentId, partIds);
-    for (const auto &partId: partIds) {
+    for (const auto& partId : partIds) {
         setPartVisibleState(partId, false);
     }
 }
@@ -999,7 +997,7 @@ void SkeletonDocument::showDescendantComponents(dust3d::Uuid componentId)
 {
     std::vector<dust3d::Uuid> partIds;
     collectComponentDescendantParts(componentId, partIds);
-    for (const auto &partId: partIds) {
+    for (const auto& partId : partIds) {
         setPartVisibleState(partId, true);
     }
 }
@@ -1008,7 +1006,7 @@ void SkeletonDocument::lockDescendantComponents(dust3d::Uuid componentId)
 {
     std::vector<dust3d::Uuid> partIds;
     collectComponentDescendantParts(componentId, partIds);
-    for (const auto &partId: partIds) {
+    for (const auto& partId : partIds) {
         setPartLockState(partId, true);
     }
 }
@@ -1017,7 +1015,7 @@ void SkeletonDocument::unlockDescendantComponents(dust3d::Uuid componentId)
 {
     std::vector<dust3d::Uuid> partIds;
     collectComponentDescendantParts(componentId, partIds);
-    for (const auto &partId: partIds) {
+    for (const auto& partId : partIds) {
         setPartLockState(partId, false);
     }
 }
@@ -1042,7 +1040,7 @@ void SkeletonDocument::scaleNodeByAddRadius(dust3d::Uuid nodeId, float amount)
 
 bool SkeletonDocument::isPartReadonly(dust3d::Uuid partId) const
 {
-    const SkeletonPart *part = findPart(partId);
+    const SkeletonPart* part = findPart(partId);
     if (nullptr == part) {
         return true;
     }
@@ -1151,7 +1149,7 @@ void SkeletonDocument::switchNodeXZ(dust3d::Uuid nodeId)
     emit skeletonChanged();
 }
 
-const SkeletonComponent *SkeletonDocument::findComponent(dust3d::Uuid componentId) const
+const SkeletonComponent* SkeletonDocument::findComponent(dust3d::Uuid componentId) const
 {
     if (componentId.isNull())
         return &rootComponent;
@@ -1166,36 +1164,36 @@ void SkeletonDocument::addEdge(dust3d::Uuid fromNodeId, dust3d::Uuid toNodeId)
     if (findEdgeByNodes(fromNodeId, toNodeId)) {
         return;
     }
-    
-    const SkeletonNode *fromNode = nullptr;
-    const SkeletonNode *toNode = nullptr;
+
+    const SkeletonNode* fromNode = nullptr;
+    const SkeletonNode* toNode = nullptr;
     bool toPartRemoved = false;
-    
+
     fromNode = findNode(fromNodeId);
     if (nullptr == fromNode) {
         return;
     }
-    
+
     if (isPartReadonly(fromNode->partId))
         return;
-    
+
     toNode = findNode(toNodeId);
     if (nullptr == toNode) {
         return;
     }
-    
+
     if (isPartReadonly(toNode->partId))
         return;
-    
+
     dust3d::Uuid toPartId = toNode->partId;
-    
+
     auto fromPart = partMap.find(fromNode->partId);
     if (fromPart == partMap.end()) {
         return;
     }
-    
+
     fromPart->second.dirty = true;
-    
+
     if (fromNode->partId != toNode->partId) {
         toPartRemoved = true;
         std::vector<dust3d::Uuid> toGroup;
@@ -1217,7 +1215,7 @@ void SkeletonDocument::addEdge(dust3d::Uuid fromNodeId, dust3d::Uuid toNodeId)
             }
         }
     }
-    
+
     SkeletonEdge edge;
     edge.partId = fromNode->partId;
     edge.nodeIds.push_back(fromNode->id);
@@ -1226,34 +1224,34 @@ void SkeletonDocument::addEdge(dust3d::Uuid fromNodeId, dust3d::Uuid toNodeId)
 
     nodeMap[toNodeId].edgeIds.push_back(edge.id);
     nodeMap[fromNode->id].edgeIds.push_back(edge.id);
-    
+
     emit edgeAdded(edge.id);
-    
+
     if (toPartRemoved) {
         updateLinkedPart(toPartId, fromNode->partId);
         removePart(toPartId);
     }
-    
+
     emit skeletonChanged();
 }
 
 void SkeletonDocument::updateLinkedPart(dust3d::Uuid oldPartId, dust3d::Uuid newPartId)
 {
-    for (auto &partIt: partMap) {
+    for (auto& partIt : partMap) {
         if (partIt.second.cutFaceLinkedId == oldPartId) {
             partIt.second.dirty = true;
             partIt.second.setCutFaceLinkedId(newPartId);
         }
     }
     std::set<dust3d::Uuid> dirtyPartIds;
-    for (auto &nodeIt: nodeMap) {
+    for (auto& nodeIt : nodeMap) {
         if (nodeIt.second.cutFaceLinkedId == oldPartId) {
             dirtyPartIds.insert(nodeIt.second.partId);
             nodeIt.second.setCutFaceLinkedId(newPartId);
         }
     }
-    for (const auto &partId: dirtyPartIds) {
-        SkeletonPart *part = (SkeletonPart *)findPart(partId);
+    for (const auto& partId : dirtyPartIds) {
+        SkeletonPart* part = (SkeletonPart*)findPart(partId);
         if (nullptr == part)
             continue;
         part->dirty = true;
@@ -1272,17 +1270,17 @@ void SkeletonDocument::disableAllPositionRelatedLocks()
 
 void SkeletonDocument::resetDirtyFlags()
 {
-    for (auto &part: partMap) {
+    for (auto& part : partMap) {
         part.second.dirty = false;
     }
-    for (auto &component: componentMap) {
+    for (auto& component : componentMap) {
         component.second.dirty = false;
     }
 }
 
 void SkeletonDocument::markAllDirty()
 {
-    for (auto &part: partMap) {
+    for (auto& part : partMap) {
         part.second.dirty = true;
     }
 }
@@ -1319,27 +1317,27 @@ void SkeletonDocument::setRadiusLockState(bool locked)
     emit radiusLockStateChanged();
 }
 
-void SkeletonDocument::setComponentPreviewImage(const dust3d::Uuid &componentId, std::unique_ptr<QImage> image)
+void SkeletonDocument::setComponentPreviewImage(const dust3d::Uuid& componentId, std::unique_ptr<QImage> image)
 {
-    SkeletonComponent *component = (SkeletonComponent *)findComponent(componentId);
+    SkeletonComponent* component = (SkeletonComponent*)findComponent(componentId);
     if (nullptr == component)
         return;
     component->isPreviewImageDecorationObsolete = true;
     component->previewImage = std::move(image);
 }
 
-void SkeletonDocument::setComponentPreviewPixmap(const dust3d::Uuid &componentId, const QPixmap &pixmap)
+void SkeletonDocument::setComponentPreviewPixmap(const dust3d::Uuid& componentId, const QPixmap& pixmap)
 {
-    SkeletonComponent *component = (SkeletonComponent *)findComponent(componentId);
+    SkeletonComponent* component = (SkeletonComponent*)findComponent(componentId);
     if (nullptr == component)
         return;
     component->previewPixmap = pixmap;
     emit componentPreviewPixmapChanged(componentId);
 }
 
-void SkeletonDocument::setComponentPreviewMesh(const dust3d::Uuid &componentId, std::unique_ptr<ModelMesh> mesh)
+void SkeletonDocument::setComponentPreviewMesh(const dust3d::Uuid& componentId, std::unique_ptr<ModelMesh> mesh)
 {
-    SkeletonComponent *component = (SkeletonComponent *)findComponent(componentId);
+    SkeletonComponent* component = (SkeletonComponent*)findComponent(componentId);
     if (nullptr == component)
         return;
     component->updatePreviewMesh(std::move(mesh));

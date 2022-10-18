@@ -20,21 +20,18 @@
  *  SOFTWARE.
  */
 
-#include <map>
 #include <dust3d/base/position_key.h>
 #include <dust3d/mesh/resolve_triangle_source_node.h>
+#include <map>
 
-namespace dust3d
-{
+namespace dust3d {
 
-struct HalfColorEdge
-{
+struct HalfColorEdge {
     int cornVertexIndex;
     std::pair<Uuid, Uuid> source;
 };
 
-struct CandidateEdge
-{
+struct CandidateEdge {
     std::pair<Uuid, Uuid> source;
     int fromVertexIndex;
     int toVertexIndex;
@@ -42,44 +39,42 @@ struct CandidateEdge
     float length;
 };
 
-static void fixRemainVertexSourceNodes(const Object &object, std::vector<std::pair<Uuid, Uuid>> &triangleSourceNodes,
-    std::vector<std::pair<Uuid, Uuid>> *vertexSourceNodes)
+static void fixRemainVertexSourceNodes(const Object& object, std::vector<std::pair<Uuid, Uuid>>& triangleSourceNodes,
+    std::vector<std::pair<Uuid, Uuid>>* vertexSourceNodes)
 {
     if (nullptr != vertexSourceNodes) {
         std::map<size_t, std::map<std::pair<Uuid, Uuid>, size_t>> remainVertexSourcesMap;
         for (size_t faceIndex = 0; faceIndex < object.triangles.size(); ++faceIndex) {
-            for (const auto &vertexIndex: object.triangles[faceIndex]) {
+            for (const auto& vertexIndex : object.triangles[faceIndex]) {
                 if (!(*vertexSourceNodes)[vertexIndex].second.isNull())
                     continue;
                 remainVertexSourcesMap[vertexIndex][triangleSourceNodes[faceIndex]]++;
             }
         }
-        for (const auto &it: remainVertexSourcesMap) {
-            (*vertexSourceNodes)[it.first] = std::max_element(it.second.begin(), it.second.end(), [](
-                    const std::map<std::pair<Uuid, Uuid>, size_t>::value_type &first,
-                    const std::map<std::pair<Uuid, Uuid>, size_t>::value_type &second) {
+        for (const auto& it : remainVertexSourcesMap) {
+            (*vertexSourceNodes)[it.first] = std::max_element(it.second.begin(), it.second.end(), [](const std::map<std::pair<Uuid, Uuid>, size_t>::value_type& first, const std::map<std::pair<Uuid, Uuid>, size_t>::value_type& second) {
                 return first.second < second.second;
             })->first;
         }
     }
 }
 
-void resolveTriangleSourceNode(const Object &object, 
-    const std::vector<std::pair<Vector3, std::pair<Uuid, Uuid>>> &nodeVertices,
-    std::vector<std::pair<Uuid, Uuid>> &triangleSourceNodes,
-    std::vector<std::pair<Uuid, Uuid>> *vertexSourceNodes)
+void resolveTriangleSourceNode(const Object& object,
+    const std::vector<std::pair<Vector3, std::pair<Uuid, Uuid>>>& nodeVertices,
+    std::vector<std::pair<Uuid, Uuid>>& triangleSourceNodes,
+    std::vector<std::pair<Uuid, Uuid>>* vertexSourceNodes)
 {
     std::map<int, std::pair<Uuid, Uuid>> vertexSourceMap;
     std::map<PositionKey, std::pair<Uuid, Uuid>> positionMap;
     std::map<std::pair<int, int>, HalfColorEdge> halfColorEdgeMap;
     std::set<int> brokenTriangleSet;
-    for (const auto &it: nodeVertices) {
-        positionMap.insert({PositionKey(it.first), it.second});
+    for (const auto& it : nodeVertices) {
+        positionMap.insert({ PositionKey(it.first), it.second });
     }
     if (nullptr != vertexSourceNodes)
         vertexSourceNodes->resize(object.vertices.size());
     for (auto x = 0u; x < object.vertices.size(); x++) {
-        const Vector3 *resultVertex = &object.vertices[x];
+        const Vector3* resultVertex = &object.vertices[x];
         std::pair<Uuid, Uuid> source;
         auto findPosition = positionMap.find(PositionKey(*resultVertex));
         if (findPosition != positionMap.end()) {
@@ -92,7 +87,7 @@ void resolveTriangleSourceNode(const Object &object,
         std::vector<std::pair<std::pair<Uuid, Uuid>, int>> colorTypes;
         for (int i = 0; i < 3; i++) {
             int index = triangle[i];
-            const auto &findResult = vertexSourceMap.find(index);
+            const auto& findResult = vertexSourceMap.find(index);
             if (findResult != vertexSourceMap.end()) {
                 std::pair<Uuid, Uuid> source = findResult->second;
                 bool colorExisted = false;
@@ -114,7 +109,7 @@ void resolveTriangleSourceNode(const Object &object,
             continue;
         }
         if (colorTypes.size() != 1 || 3 == colorTypes[0].second) {
-            std::sort(colorTypes.begin(), colorTypes.end(), [](const std::pair<std::pair<Uuid, Uuid>, int> &a, const std::pair<std::pair<Uuid, Uuid>, int> &b) -> bool {
+            std::sort(colorTypes.begin(), colorTypes.end(), [](const std::pair<std::pair<Uuid, Uuid>, int>& a, const std::pair<std::pair<Uuid, Uuid>, int>& b) -> bool {
                 return a.second > b.second;
             });
         }
@@ -137,7 +132,7 @@ void resolveTriangleSourceNode(const Object &object,
     }
     std::map<std::pair<int, int>, int> brokenTriangleMapByEdge;
     std::vector<CandidateEdge> candidateEdges;
-    for (const auto &x: brokenTriangleSet) {
+    for (const auto& x : brokenTriangleSet) {
         const auto triangle = object.triangles[x];
         for (int i = 0; i < 3; i++) {
             int oppositeStartIndex = triangle[(i + 1) % 3];
@@ -145,7 +140,7 @@ void resolveTriangleSourceNode(const Object &object,
             auto selfPair = std::make_pair(oppositeStopIndex, oppositeStartIndex);
             brokenTriangleMapByEdge[selfPair] = x;
             auto oppositePair = std::make_pair(oppositeStartIndex, oppositeStopIndex);
-            const auto &findOpposite = halfColorEdgeMap.find(oppositePair);
+            const auto& findOpposite = halfColorEdgeMap.find(oppositePair);
             if (findOpposite == halfColorEdgeMap.end())
                 continue;
             Vector3 selfPositions[3] = {
@@ -179,7 +174,7 @@ void resolveTriangleSourceNode(const Object &object,
         fixRemainVertexSourceNodes(object, triangleSourceNodes, vertexSourceNodes);
         return;
     }
-    std::sort(candidateEdges.begin(), candidateEdges.end(), [](const CandidateEdge &a, const CandidateEdge &b) -> bool {
+    std::sort(candidateEdges.begin(), candidateEdges.end(), [](const CandidateEdge& a, const CandidateEdge& b) -> bool {
         if (a.dot > b.dot)
             return true;
         else if (a.dot < b.dot)
@@ -187,13 +182,13 @@ void resolveTriangleSourceNode(const Object &object,
         return a.length > b.length;
     });
     for (auto cand = 0u; cand < candidateEdges.size(); cand++) {
-        const auto &candidate = candidateEdges[cand];
+        const auto& candidate = candidateEdges[cand];
         if (brokenTriangleSet.empty())
             break;
         std::vector<std::pair<int, int>> toResolvePairs;
         toResolvePairs.push_back(std::make_pair(candidate.fromVertexIndex, candidate.toVertexIndex));
         for (auto order = 0u; order < toResolvePairs.size(); order++) {
-            const auto &findTriangle = brokenTriangleMapByEdge.find(toResolvePairs[order]);
+            const auto& findTriangle = brokenTriangleMapByEdge.find(toResolvePairs[order]);
             if (findTriangle == brokenTriangleMapByEdge.end())
                 continue;
             int x = findTriangle->second;

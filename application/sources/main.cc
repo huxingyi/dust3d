@@ -1,41 +1,40 @@
-#include <QApplication>
-#include <QSurfaceFormat>
-#include <QDebug>
-#include <iostream>
-#include <cstdio>
-#include <dust3d/base/string.h>
-#include "document_window.h"
 #include "document.h"
+#include "document_window.h"
 #include "theme.h"
 #include "version.h"
+#include <QApplication>
+#include <QDebug>
+#include <QSurfaceFormat>
+#include <cstdio>
+#include <dust3d/base/string.h>
+#include <iostream>
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     QApplication app(argc, argv);
-    
+
     QSurfaceFormat format = QSurfaceFormat::defaultFormat();
     format.setProfile(QSurfaceFormat::OpenGLContextProfile::CoreProfile);
     format.setVersion(3, 3);
     QSurfaceFormat::setDefaultFormat(format);
-    
+
     Theme::initialize();
-    
+
     QCoreApplication::setApplicationName(APP_NAME);
     QCoreApplication::setOrganizationName(APP_COMPANY);
     QCoreApplication::setOrganizationDomain(APP_HOMEPAGE_URL);
-    
+
     //freopen("dust3d.log", "w", stdout);
     //setvbuf(stdout, 0, _IONBF, 0);
-    
-    DocumentWindow *firstWindow = DocumentWindow::createDocumentWindow();
+
+    DocumentWindow* firstWindow = DocumentWindow::createDocumentWindow();
 
     QStringList openFileList;
     QStringList waitingExportList;
     bool toggleColor = false;
     for (int i = 1; i < argc; ++i) {
         if ('-' == argv[i][0]) {
-            if (0 == strcmp(argv[i], "-output") ||
-                    0 == strcmp(argv[i], "-o")) {
+            if (0 == strcmp(argv[i], "-output") || 0 == strcmp(argv[i], "-o")) {
                 ++i;
                 if (i < argc)
                     waitingExportList.append(argv[i]);
@@ -55,12 +54,12 @@ int main(int argc, char *argv[])
             continue;
         }
     }
-    
+
     int finishedExportFileNum = 0;
     int totalExportFileNum = 0;
     int succeedExportNum = 0;
     int exitCode = -1;
-    std::vector<DocumentWindow *> windowList;
+    std::vector<DocumentWindow*> windowList;
     auto checkToSafelyExit = [&]() {
         if (-1 == exitCode)
             return;
@@ -76,17 +75,16 @@ int main(int argc, char *argv[])
             windowList.push_back(DocumentWindow::createDocumentWindow());
         }
         if (toggleColor) {
-            for (auto &it: windowList)
+            for (auto& it : windowList)
                 it->toggleRenderColor();
         }
-        if (!waitingExportList.empty() &&
-                openFileList.size() == 1) {
+        if (!waitingExportList.empty() && openFileList.size() == 1) {
             totalExportFileNum = openFileList.size() * waitingExportList.size();
             for (int i = 0; i < openFileList.size(); ++i) {
                 QObject::connect(windowList[i], &DocumentWindow::workingStatusChanged, &app, checkToSafelyExit);
             }
             for (int i = 0; i < openFileList.size(); ++i) {
-                QObject::connect(windowList[i], &DocumentWindow::waitingExportFinished, &app, [&](const QString &filename, bool isSuccessful) {
+                QObject::connect(windowList[i], &DocumentWindow::waitingExportFinished, &app, [&](const QString& filename, bool isSuccessful) {
                     qDebug() << "Export to" << filename << (isSuccessful ? "isSuccessful" : "failed");
                     ++finishedExportFileNum;
                     if (isSuccessful)
@@ -112,6 +110,6 @@ int main(int argc, char *argv[])
             windowList[i]->openPathAs(openFileList[i], openFileList[i]);
         }
     }
-    
+
     return app.exec();
 }

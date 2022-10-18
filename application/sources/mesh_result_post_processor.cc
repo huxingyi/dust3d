@@ -1,9 +1,9 @@
-#include <QGuiApplication>
-#include <dust3d/uv/unwrap_uv.h>
-#include <dust3d/mesh/resolve_triangle_tangent.h>
 #include "mesh_result_post_processor.h"
+#include <QGuiApplication>
+#include <dust3d/mesh/resolve_triangle_tangent.h>
+#include <dust3d/uv/unwrap_uv.h>
 
-MeshResultPostProcessor::MeshResultPostProcessor(const dust3d::Object &object)
+MeshResultPostProcessor::MeshResultPostProcessor(const dust3d::Object& object)
 {
     m_object = new dust3d::Object;
     *m_object = object;
@@ -14,9 +14,9 @@ MeshResultPostProcessor::~MeshResultPostProcessor()
     delete m_object;
 }
 
-dust3d::Object *MeshResultPostProcessor::takePostProcessedObject()
+dust3d::Object* MeshResultPostProcessor::takePostProcessedObject()
 {
-    dust3d::Object *object = m_object;
+    dust3d::Object* object = m_object;
     m_object = nullptr;
     return object;
 }
@@ -32,7 +32,7 @@ void MeshResultPostProcessor::poseProcess()
             m_object->setTriangleVertexUvs(triangleVertexUvs);
             m_object->setPartUvRects(partUvRects);
         }
-        
+
         {
             std::vector<dust3d::Vector3> triangleTangents;
             dust3d::resolveTriangleTangent(*m_object, triangleTangents);

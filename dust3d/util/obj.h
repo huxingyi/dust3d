@@ -19,19 +19,17 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *  SOFTWARE.
  */
- 
+
 #ifndef DUST3D_UTIL_OBJ_H_
 #define DUST3D_UTIL_OBJ_H_
 
 #include <dust3d/base/vector3.h>
 
-namespace dust3d
-{
-namespace util
-{
+namespace dust3d {
+namespace util {
 
-void exportObj(const char *filename, const std::vector<Vector3> &vertices, const std::vector<std::vector<size_t>> &faces);
-bool loadObj(const std::string &filename, std::vector<Vector3> &outputVertices, std::vector<std::vector<size_t>> &outputTriangles);
+    void exportObj(const char* filename, const std::vector<Vector3>& vertices, const std::vector<std::vector<size_t>>& faces);
+    bool loadObj(const std::string& filename, std::vector<Vector3>& outputVertices, std::vector<std::vector<size_t>>& outputTriangles);
 
 }
 }

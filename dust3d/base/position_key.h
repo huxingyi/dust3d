@@ -19,22 +19,20 @@
  *  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  *  SOFTWARE.
  */
- 
+
 #ifndef DUST3D_BASE_POSITION_KEY_H_
 #define DUST3D_BASE_POSITION_KEY_H_
 
 #include <dust3d/base/vector3.h>
 
-namespace dust3d
-{
+namespace dust3d {
 
-class PositionKey
-{
+class PositionKey {
 public:
-    PositionKey(const Vector3 &v);
+    PositionKey(const Vector3& v);
     PositionKey(double x, double y, double z);
-    bool operator<(const PositionKey &right) const;
-    bool operator==(const PositionKey &right) const;
+    bool operator<(const PositionKey& right) const;
+    bool operator==(const PositionKey& right) const;
 
 private:
     long m_intX;

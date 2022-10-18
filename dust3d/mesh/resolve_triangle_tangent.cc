@@ -20,31 +20,30 @@
  *  SOFTWARE.
  */
 
-#include <dust3d/mesh/resolve_triangle_tangent.h>
 #include <dust3d/base/vector2.h>
+#include <dust3d/mesh/resolve_triangle_tangent.h>
 
-namespace dust3d
-{
-    
-void resolveTriangleTangent(const dust3d::Object &object, std::vector<dust3d::Vector3> &tangents)
+namespace dust3d {
+
+void resolveTriangleTangent(const dust3d::Object& object, std::vector<dust3d::Vector3>& tangents)
 {
     tangents.resize(object.triangles.size());
-    
+
     if (nullptr == object.triangleVertexUvs())
         return;
-    
-    const std::vector<std::vector<Vector2>> &triangleVertexUvs = *object.triangleVertexUvs();
-    
+
+    const std::vector<std::vector<Vector2>>& triangleVertexUvs = *object.triangleVertexUvs();
+
     for (decltype(object.triangles.size()) i = 0; i < object.triangles.size(); i++) {
-        tangents[i] = {0, 0, 0};
-        const auto &uv = triangleVertexUvs[i];
-        Vector2 uv1 = {uv[0][0], uv[0][1]};
-        Vector2 uv2 = {uv[1][0], uv[1][1]};
-        Vector2 uv3 = {uv[2][0], uv[2][1]};
-        const auto &triangle = object.triangles[i];
-        const Vector3 &pos1 = object.vertices[triangle[0]];
-        const Vector3 &pos2 = object.vertices[triangle[1]];
-        const Vector3 &pos3 = object.vertices[triangle[2]];
+        tangents[i] = { 0, 0, 0 };
+        const auto& uv = triangleVertexUvs[i];
+        Vector2 uv1 = { uv[0][0], uv[0][1] };
+        Vector2 uv2 = { uv[1][0], uv[1][1] };
+        Vector2 uv3 = { uv[2][0], uv[2][1] };
+        const auto& triangle = object.triangles[i];
+        const Vector3& pos1 = object.vertices[triangle[0]];
+        const Vector3& pos2 = object.vertices[triangle[1]];
+        const Vector3& pos3 = object.vertices[triangle[2]];
         Vector3 edge1 = pos2 - pos1;
         Vector3 edge2 = pos3 - pos1;
         Vector2 deltaUv1 = uv2 - uv1;

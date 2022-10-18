@@ -22,10 +22,9 @@
 
 #include <dust3d/mesh/base_normal.h>
 
-namespace dust3d
-{
+namespace dust3d {
 
-std::pair<size_t, int> BaseNormal::findNearestAxis(const Vector3 &direction)
+std::pair<size_t, int> BaseNormal::findNearestAxis(const Vector3& direction)
 {
     float maxDot = -1;
     size_t nearAxisIndex = 0;
@@ -41,28 +40,28 @@ std::pair<size_t, int> BaseNormal::findNearestAxis(const Vector3 &direction)
             nearAxisIndex = i;
         }
     }
-    return {nearAxisIndex, positive};
+    return { nearAxisIndex, positive };
 }
 
-std::vector<Vector3> BaseNormal::calculateCircleVertices(double radius, 
-    size_t points, 
-    const Vector3 &aroundAxis, 
-    const Vector3 &startDirection,
-    const Vector3 &origin)
+std::vector<Vector3> BaseNormal::calculateCircleVertices(double radius,
+    size_t points,
+    const Vector3& aroundAxis,
+    const Vector3& startDirection,
+    const Vector3& origin)
 {
     constexpr auto roundAngle = 2.0 * Math::Pi;
     auto stepAngle = roundAngle / points;
     std::vector<Vector3> circlePoints;
     circlePoints.reserve(points);
     for (double angle = stepAngle * -0.5;
-            circlePoints.size() < points;
-            angle += stepAngle) {
+         circlePoints.size() < points;
+         angle += stepAngle) {
         circlePoints.push_back(origin + startDirection.rotated(aroundAxis, angle) * radius);
     }
     return circlePoints;
 }
 
-Vector3 BaseNormal::calculateCircleBaseNormal(const std::vector<Vector3> &vertices)
+Vector3 BaseNormal::calculateCircleBaseNormal(const std::vector<Vector3>& vertices)
 {
     std::vector<Vector3> edgeDirections(vertices.size());
     for (size_t i = 0; i < edgeDirections.size(); ++i) {
@@ -77,7 +76,7 @@ Vector3 BaseNormal::calculateCircleBaseNormal(const std::vector<Vector3> &vertic
     return baseNormal.normalized();
 }
 
-Vector3 BaseNormal::calculateTubeBaseNormal(const std::vector<Vector3> &vertices)
+Vector3 BaseNormal::calculateTubeBaseNormal(const std::vector<Vector3>& vertices)
 {
     std::vector<Vector3> edgeDirections(vertices.size());
     for (size_t i = 1; i < edgeDirections.size(); ++i) {
@@ -93,10 +92,9 @@ Vector3 BaseNormal::calculateTubeBaseNormal(const std::vector<Vector3> &vertices
     }
     if (baseNormal.isZero()) {
         for (size_t h = 0; h + 1 < edgeDirections.size(); ++h) {
-            const auto &sectionNormal = edgeDirections[h];
+            const auto& sectionNormal = edgeDirections[h];
             auto axis = BaseNormal::findNearestAxis(sectionNormal);
-            baseNormal += axis.second * 
-                Vector3::crossProduct(sectionNormal, BaseNormal::nextAxisDirection(axis.first)).normalized();
+            baseNormal += axis.second * Vector3::crossProduct(sectionNormal, BaseNormal::nextAxisDirection(axis.first)).normalized();
         }
     }
     return baseNormal.normalized();

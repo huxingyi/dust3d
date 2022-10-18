@@ -1,11 +1,11 @@
-#include <QOpenGLFunctions>
-#include <QFile>
-#include <QMutexLocker>
-#include <dust3d/base/debug.h>
 #include "model_opengl_program.h"
 #include "dds_file.h"
+#include <QFile>
+#include <QMutexLocker>
+#include <QOpenGLFunctions>
+#include <dust3d/base/debug.h>
 
-static const QString &loadShaderSource(const QString &name)
+static const QString& loadShaderSource(const QString& name)
 {
     static std::map<QString, QString> s_shaderSources;
     auto findShader = s_shaderSources.find(name);
@@ -15,11 +15,11 @@ static const QString &loadShaderSource(const QString &name)
     QFile file(name);
     file.open(QFile::ReadOnly | QFile::Text);
     QTextStream stream(&file);
-    auto insertResult = s_shaderSources.insert({name, stream.readAll()});
+    auto insertResult = s_shaderSources.insert({ name, stream.readAll() });
     return insertResult.first->second;
 }
 
-void ModelOpenGLProgram::addShaderFromResource(QOpenGLShader::ShaderType type, const char *resourceName)
+void ModelOpenGLProgram::addShaderFromResource(QOpenGLShader::ShaderType type, const char* resourceName)
 {
     if (!addShaderFromSourceCode(type, loadShaderSource(resourceName)))
         dust3dDebug << "Failed to addShaderFromResource, resource:" << resourceName << ", " << log().toStdString();
@@ -57,7 +57,7 @@ void ModelOpenGLProgram::updateMetalnessRoughnessAmbientOcclusionMapImage(std::u
     m_imageIsDirty = true;
 }
 
-void ModelOpenGLProgram::activeAndBindTexture(int location, QOpenGLTexture *texture)
+void ModelOpenGLProgram::activeAndBindTexture(int location, QOpenGLTexture* texture)
 {
     if (0 == texture->textureId()) {
         dust3dDebug << "Expected texture with a bound id";
@@ -105,7 +105,7 @@ void ModelOpenGLProgram::bindMaps()
             DdsFileReader irradianceFile(":/resources/cedar_bridge_specular.dds");
             m_environmentSpecularMap.reset(irradianceFile.createOpenGLTexture());
         }
-        
+
         bindLocation++;
         activeAndBindTexture(bindLocation, m_environmentIrradianceMap.get());
         setUniformValue(getUniformLocationByName("environmentIrradianceMapId"), bindLocation);
@@ -224,12 +224,12 @@ void ModelOpenGLProgram::releaseMaps()
     }
 }
 
-int ModelOpenGLProgram::getUniformLocationByName(const std::string &name)
+int ModelOpenGLProgram::getUniformLocationByName(const std::string& name)
 {
     auto findLocation = m_uniformLocationMap.find(name);
     if (findLocation != m_uniformLocationMap.end())
         return findLocation->second;
     int location = uniformLocation(name.c_str());
-    m_uniformLocationMap.insert({name, location});
+    m_uniformLocationMap.insert({ name, location });
     return location;
 }

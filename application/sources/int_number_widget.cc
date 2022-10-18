@@ -1,11 +1,11 @@
-#include <QtWidgets>
+#include "int_number_widget.h"
+#include "theme.h"
 #include <QHBoxLayout>
 #include <QVBoxLayout>
-#include "theme.h"
-#include "int_number_widget.h"
+#include <QtWidgets>
 
-IntNumberWidget::IntNumberWidget(QWidget *parent, bool singleLine) :
-    QWidget(parent)
+IntNumberWidget::IntNumberWidget(QWidget* parent, bool singleLine)
+    : QWidget(parent)
 {
     m_slider = new QSlider(Qt::Horizontal, this);
     m_slider->setRange(0, 100);
@@ -18,8 +18,8 @@ IntNumberWidget::IntNumberWidget(QWidget *parent, bool singleLine) :
         updateValueLabel(value);
         emit valueChanged(value);
     });
-    
-    QBoxLayout *layout = nullptr;
+
+    QBoxLayout* layout = nullptr;
     if (singleLine) {
         layout = new QHBoxLayout(this);
         layout->setMargin(2);
@@ -42,7 +42,7 @@ void IntNumberWidget::updateValueLabel(int value)
         m_label->setText(m_itemName + ": " + valueString);
 }
 
-void IntNumberWidget::setItemName(const QString &name)
+void IntNumberWidget::setItemName(const QString& name)
 {
     m_itemName = name;
     updateValueLabel(value());

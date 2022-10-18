@@ -1,7 +1,7 @@
-#include <dust3d/base/debug.h>
-#include <QOpenGLFunctions>
-#include <QOpenGLContext>
 #include "monochrome_opengl_object.h"
+#include <QOpenGLContext>
+#include <QOpenGLFunctions>
+#include <dust3d/base/debug.h>
 
 void MonochromeOpenGLObject::update(std::unique_ptr<MonochromeMesh> mesh)
 {
@@ -15,7 +15,7 @@ void MonochromeOpenGLObject::draw()
     copyMeshToOpenGL();
     if (0 == m_meshLineVertexCount)
         return;
-    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+    QOpenGLFunctions* f = QOpenGLContext::currentContext()->functions();
     QOpenGLVertexArrayObject::Binder binder(&m_vertexArrayObject);
     f->glDrawArrays(GL_LINES, 0, m_meshLineVertexCount);
 }
@@ -43,13 +43,13 @@ void MonochromeOpenGLObject::copyMeshToOpenGL()
         m_buffer.bind();
         m_buffer.allocate(mesh->lineVertices(), mesh->lineVertexCount() * sizeof(MonochromeOpenGLVertex));
         m_meshLineVertexCount = mesh->lineVertexCount();
-        QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+        QOpenGLFunctions* f = QOpenGLContext::currentContext()->functions();
         f->glEnableVertexAttribArray(0);
         f->glEnableVertexAttribArray(1);
         f->glEnableVertexAttribArray(2);
         f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(MonochromeOpenGLVertex), 0);
-        f->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(MonochromeOpenGLVertex), reinterpret_cast<void *>(3 * sizeof(GLfloat)));
-        f->glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, sizeof(MonochromeOpenGLVertex), reinterpret_cast<void *>(6 * sizeof(GLfloat)));
+        f->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(MonochromeOpenGLVertex), reinterpret_cast<void*>(3 * sizeof(GLfloat)));
+        f->glVertexAttribPointer(2, 1, GL_FLOAT, GL_FALSE, sizeof(MonochromeOpenGLVertex), reinterpret_cast<void*>(6 * sizeof(GLfloat)));
         m_buffer.release();
     }
 }

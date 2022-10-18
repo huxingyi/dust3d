@@ -23,50 +23,45 @@
 #ifndef DUST3D_MESH_MESH_COMBINER_H_
 #define DUST3D_MESH_MESH_COMBINER_H_
 
-#include <vector>
-#include <memory>
 #include <dust3d/base/vector3.h>
 #include <dust3d/mesh/solid_mesh.h>
+#include <memory>
+#include <vector>
 
-namespace dust3d
-{
-  
-class MeshCombiner
-{
+namespace dust3d {
+
+class MeshCombiner {
 public:
-    enum class Method
-    {
+    enum class Method {
         Union,
         Diff
     };
-    
-    enum class Source
-    {
+
+    enum class Source {
         None,
         First,
         Second
     };
 
-    class Mesh
-    {
+    class Mesh {
     public:
         Mesh() = default;
-        Mesh(const std::vector<Vector3> &vertices, const std::vector<std::vector<size_t>> &faces);
-        Mesh(const Mesh &other);
+        Mesh(const std::vector<Vector3>& vertices, const std::vector<std::vector<size_t>>& faces);
+        Mesh(const Mesh& other);
         ~Mesh();
-        void fetch(std::vector<Vector3> &vertices, std::vector<std::vector<size_t>> &faces) const;
+        void fetch(std::vector<Vector3>& vertices, std::vector<std::vector<size_t>>& faces) const;
         bool isNull() const;
-        
+
         friend MeshCombiner;
-        
+
     private:
         std::unique_ptr<SolidMesh> m_solidMesh;
         std::unique_ptr<std::vector<Vector3>> m_vertices;
         std::unique_ptr<std::vector<std::vector<size_t>>> m_triangles;
     };
-    
-    static Mesh *combine(const Mesh &firstMesh, const Mesh &secondMesh, Method method,
-        std::vector<std::pair<Source, size_t>> *combinedVerticesComeFrom=nullptr);
+
+    static Mesh* combine(const Mesh& firstMesh, const Mesh& secondMesh, Method method,
+        std::vector<std::pair<Source, size_t>>* combinedVerticesComeFrom = nullptr);
 };
 
 }

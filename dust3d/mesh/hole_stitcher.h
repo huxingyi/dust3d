@@ -23,31 +23,28 @@
 #ifndef DUST3D_MESH_HOLE_STITCHER_H_
 #define DUST3D_MESH_HOLE_STITCHER_H_
 
-#include <vector>
 #include <dust3d/base/vector3.h>
 #include <dust3d/mesh/hole_wrapper.h>
+#include <vector>
 
-namespace dust3d
-{
+namespace dust3d {
 
-class HoleStitcher
-{
+class HoleStitcher {
 public:
     ~HoleStitcher();
-    void setVertices(const std::vector<Vector3> *vertices);
-    bool stitch(const std::vector<std::pair<std::vector<size_t>, Vector3>> &edgeLoops);
-    const std::vector<std::vector<size_t>> &newlyGeneratedFaces();
-    void getFailedEdgeLoops(std::vector<size_t> &failedEdgeLoops);
+    void setVertices(const std::vector<Vector3>* vertices);
+    bool stitch(const std::vector<std::pair<std::vector<size_t>, Vector3>>& edgeLoops);
+    const std::vector<std::vector<size_t>>& newlyGeneratedFaces();
+    void getFailedEdgeLoops(std::vector<size_t>& failedEdgeLoops);
 
 private:
-    const std::vector<Vector3> *m_positions;
+    const std::vector<Vector3>* m_positions;
     std::vector<std::vector<size_t>> m_newlyGeneratedFaces;
-    HoleWrapper *m_wrapper = nullptr;
-    
-    bool stitchByQuads(const std::vector<std::pair<std::vector<size_t>, Vector3>> &edgeLoops);
+    HoleWrapper* m_wrapper = nullptr;
+
+    bool stitchByQuads(const std::vector<std::pair<std::vector<size_t>, Vector3>>& edgeLoops);
 };
 
 }
 
 #endif
-

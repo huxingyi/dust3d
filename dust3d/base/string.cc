@@ -20,21 +20,19 @@
  *  SOFTWARE.
  */
 
-#include <numeric>
 #include <dust3d/base/string.h>
+#include <numeric>
 
-namespace dust3d
-{
-namespace String
-{
-    
-std::string join(const std::vector<std::string> &stringList, const char *separator)
-{
-    return std::accumulate(stringList.begin(), stringList.end(), std::string(),
-        [=](const std::string &a, const std::string &b) -> std::string { 
-            return a + (a.length() > 0 ? separator : "") + b;
-        });
-}
+namespace dust3d {
+namespace String {
+
+    std::string join(const std::vector<std::string>& stringList, const char* separator)
+    {
+        return std::accumulate(stringList.begin(), stringList.end(), std::string(),
+            [=](const std::string& a, const std::string& b) -> std::string {
+                return a + (a.length() > 0 ? separator : "") + b;
+            });
+    }
 
 }
 }

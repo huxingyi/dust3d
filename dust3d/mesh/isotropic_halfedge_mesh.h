@@ -23,23 +23,20 @@
 #ifndef DUST3D_MESH_ISOTROPIC_HALFEDGE_MESH_H_
 #define DUST3D_MESH_ISOTROPIC_HALFEDGE_MESH_H_
 
-#include <set>
 #include <dust3d/base/vector3.h>
+#include <set>
 
-namespace dust3d
-{
+namespace dust3d {
 
-class IsotropicHalfedgeMesh
-{
+class IsotropicHalfedgeMesh {
 public:
     struct Halfedge;
-      
-    struct Vertex
-    {
+
+    struct Vertex {
         Vector3 position;
-        Halfedge *firstHalfedge = nullptr;
-        Vertex *previousVertex = nullptr;
-        Vertex *nextVertex = nullptr;
+        Halfedge* firstHalfedge = nullptr;
+        Vertex* previousVertex = nullptr;
+        Vertex* nextVertex = nullptr;
         int initialFaces = 0;
         int _valence = -1;
         bool _isBoundary = false;
@@ -48,100 +45,99 @@ public:
         size_t debugIndex = 0;
         int sourceIndex = -1;
         bool featured = false;
-        Vertex *_allocLink = nullptr;
+        Vertex* _allocLink = nullptr;
     };
 
-    struct Face
-    {
-        Halfedge *halfedge = nullptr;
-        Face *previousFace = nullptr;
-        Face *nextFace = nullptr;
+    struct Face {
+        Halfedge* halfedge = nullptr;
+        Face* previousFace = nullptr;
+        Face* nextFace = nullptr;
         Vector3 _normal;
         bool removed = false;
         size_t debugIndex = 0;
-        Face *_allocLink = nullptr;
+        Face* _allocLink = nullptr;
     };
 
-    struct Halfedge
-    {
-        Vertex *startVertex = nullptr;
-        Face *leftFace = nullptr;
-        Halfedge *nextHalfedge = nullptr;
-        Halfedge *previousHalfedge = nullptr;
-        Halfedge *oppositeHalfedge = nullptr;
+    struct Halfedge {
+        Vertex* startVertex = nullptr;
+        Face* leftFace = nullptr;
+        Halfedge* nextHalfedge = nullptr;
+        Halfedge* previousHalfedge = nullptr;
+        Halfedge* oppositeHalfedge = nullptr;
         int featureState = -1;
         size_t debugIndex = 0;
-        Halfedge *_allocLink = nullptr;
+        Halfedge* _allocLink = nullptr;
     };
-    
-    IsotropicHalfedgeMesh(const std::vector<Vector3> &vertices,
-        const std::vector<std::vector<size_t>> &faces);
+
+    IsotropicHalfedgeMesh(const std::vector<Vector3>& vertices,
+        const std::vector<std::vector<size_t>>& faces);
     ~IsotropicHalfedgeMesh();
-    
+
     double averageEdgeLength();
-    void breakEdge(Halfedge *halfedge);
-    bool collapseEdge(Halfedge *halfedge, double maxEdgeLengthSquared);
-    bool flipEdge(Halfedge *halfedge);
-    void relaxVertex(Vertex *vertex);
-    size_t vertexValence(Vertex *vertex, bool *isBoundary=nullptr);
-    Face *moveToNextFace(Face *face);
-    Vertex *moveToNextVertex(Vertex *vertex);
+    void breakEdge(Halfedge* halfedge);
+    bool collapseEdge(Halfedge* halfedge, double maxEdgeLengthSquared);
+    bool flipEdge(Halfedge* halfedge);
+    void relaxVertex(Vertex* vertex);
+    size_t vertexValence(Vertex* vertex, bool* isBoundary = nullptr);
+    Face* moveToNextFace(Face* face);
+    Vertex* moveToNextVertex(Vertex* vertex);
     void updateVertexValences();
     void updateVertexNormals();
     void updateTriangleNormals();
     void featureEdges(double radians);
     void featureBoundaries();
+
 private:
-    Vertex *m_firstVertex = nullptr;
-    Vertex *m_lastVertex = nullptr;
-    Face *m_firstFace = nullptr;
-    Face *m_lastFace = nullptr;
+    Vertex* m_firstVertex = nullptr;
+    Vertex* m_lastVertex = nullptr;
+    Face* m_firstFace = nullptr;
+    Face* m_lastFace = nullptr;
     size_t m_debugVertexIndex = 0;
     size_t m_debugFaceIndex = 0;
     size_t m_debugHalfedgeIndex = 0;
-    Vertex *m_vertexAllocLink = nullptr;
-    Face *m_faceAllocLink = nullptr;
-    Halfedge *m_halfedgeAllocLink = nullptr;
-    
+    Vertex* m_vertexAllocLink = nullptr;
+    Face* m_faceAllocLink = nullptr;
+    Halfedge* m_halfedgeAllocLink = nullptr;
+
     static inline uint64_t makeHalfedgeKey(size_t first, size_t second)
     {
         return (first << 32) | second;
     }
-    
+
     static inline uint64_t swapHalfedgeKey(uint64_t key)
     {
         return makeHalfedgeKey(key & 0xffffffff, key >> 32);
     }
-    
-    Face *firstFace()
+
+    Face* firstFace()
     {
         return m_firstFace;
     }
-    
-    Vertex *firstVertex()
+
+    Vertex* firstVertex()
     {
         return m_firstVertex;
     }
-    
-    Face *newFace();
-    Vertex *newVertex();
-    Halfedge *newHalfedge();
-    void linkFaceHalfedges(std::vector<Halfedge *> &halfedges);
-    void updateFaceHalfedgesLeftFace(std::vector<Halfedge *> &halfedges,
-        Face *leftFace);
-    void linkHalfedgePair(Halfedge *first, Halfedge *second);
-    void breakFace(Face *leftOldFace,
-        Halfedge *halfedge,
-        Vertex *breakPointVertex,
-        std::vector<Halfedge *> &leftNewFaceHalfedges,
-        std::vector<Halfedge *> &leftOldFaceHalfedges);
-    void pointerVertexToNewVertex(Vertex *vertex, Vertex *replacement);
-    bool testLengthSquaredAroundVertex(Vertex *vertex, 
-        const Vector3 &target, 
+
+    Face* newFace();
+    Vertex* newVertex();
+    Halfedge* newHalfedge();
+    void linkFaceHalfedges(std::vector<Halfedge*>& halfedges);
+    void updateFaceHalfedgesLeftFace(std::vector<Halfedge*>& halfedges,
+        Face* leftFace);
+    void linkHalfedgePair(Halfedge* first, Halfedge* second);
+    void breakFace(Face* leftOldFace,
+        Halfedge* halfedge,
+        Vertex* breakPointVertex,
+        std::vector<Halfedge*>& leftNewFaceHalfedges,
+        std::vector<Halfedge*>& leftOldFaceHalfedges);
+    void pointerVertexToNewVertex(Vertex* vertex, Vertex* replacement);
+    bool testLengthSquaredAroundVertex(Vertex* vertex,
+        const Vector3& target,
         double maxEdgeLengthSquared);
-    void collectVerticesAroundVertex(Vertex *vertex,
-        std::set<Vertex *> *vertices);
-    void featureHalfedge(Halfedge *halfedge, double radians);
+    void collectVerticesAroundVertex(Vertex* vertex,
+        std::set<Vertex*>* vertices);
+    void featureHalfedge(Halfedge* halfedge, double radians);
 };
 
 }

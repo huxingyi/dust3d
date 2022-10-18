@@ -22,11 +22,10 @@
 
 #include <dust3d/base/texture_type.h>
 
-namespace dust3d
-{
-    
+namespace dust3d {
+
 IMPL_TextureTypeToString
-IMPL_TextureTypeFromString
-IMPL_TextureTypeToDispName
+    IMPL_TextureTypeFromString
+        IMPL_TextureTypeToDispName
 
 }

@@ -23,10 +23,9 @@
 #include <dust3d/base/math.h>
 #include <dust3d/mesh/trim_vertices.h>
 
-namespace dust3d
-{
+namespace dust3d {
 
-void trimVertices(std::vector<Vector3> *vertices, bool normalize)
+void trimVertices(std::vector<Vector3>* vertices, bool normalize)
 {
     float xLow = std::numeric_limits<float>::max();
     float xHigh = std::numeric_limits<float>::lowest();
@@ -34,7 +33,7 @@ void trimVertices(std::vector<Vector3> *vertices, bool normalize)
     float yHigh = std::numeric_limits<float>::lowest();
     float zLow = std::numeric_limits<float>::max();
     float zHigh = std::numeric_limits<float>::lowest();
-    for (const auto &position: *vertices) {
+    for (const auto& position : *vertices) {
         if (position.x() < xLow)
             xLow = position.x();
         else if (position.x() > xHigh)
@@ -62,13 +61,13 @@ void trimVertices(std::vector<Vector3> *vertices, bool normalize)
             longSize = zSize;
         if (Math::isZero(longSize))
             longSize = 0.000001;
-        for (auto &position: *vertices) {
+        for (auto& position : *vertices) {
             position.setX((position.x() - xMiddle) / longSize);
             position.setY((position.y() - yMiddle) / longSize);
             position.setZ((position.z() - zMiddle) / longSize);
         }
     } else {
-        for (auto &position: *vertices) {
+        for (auto& position : *vertices) {
             position.setX((position.x() - xMiddle));
             position.setY((position.y() - yMiddle));
             position.setZ((position.z() - zMiddle));

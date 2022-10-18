@@ -23,14 +23,12 @@
 #ifndef DUST3D_BASE_SNAPSHOT_H_
 #define DUST3D_BASE_SNAPSHOT_H_
 
-#include <map>
 #include <dust3d/base/string.h>
+#include <map>
 
-namespace dust3d
-{
-    
-class Snapshot
-{
+namespace dust3d {
+
+class Snapshot {
 public:
     std::map<std::string, std::string> canvas;
     std::map<std::string, std::map<std::string, std::string>> nodes;
@@ -40,7 +38,7 @@ public:
     std::map<std::string, std::string> rootComponent;
     std::vector<std::pair<std::map<std::string, std::string>, std::vector<std::pair<std::map<std::string, std::string>, std::vector<std::map<std::string, std::string>>>>>> materials; // std::pair<Material attributes, layers>  layer: std::pair<Layer attributes, maps>
 };
-    
+
 }
 
 #endif

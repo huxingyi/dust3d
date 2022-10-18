@@ -22,11 +22,10 @@
 
 #include <dust3d/base/combine_mode.h>
 
-namespace dust3d
-{
-    
+namespace dust3d {
+
 IMPL_CombineModeToString
-IMPL_CombineModeFromString
-IMPL_CombineModeToDispName
+    IMPL_CombineModeFromString
+        IMPL_CombineModeToDispName
 
 }

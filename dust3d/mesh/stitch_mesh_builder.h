@@ -23,33 +23,29 @@
 #ifndef DUST3D_MESH_STITCH_MESH_BUILDER_H_
 #define DUST3D_MESH_STITCH_MESH_BUILDER_H_
 
-#include <dust3d/base/vector3.h>
 #include <dust3d/base/uuid.h>
+#include <dust3d/base/vector3.h>
 #include <dust3d/mesh/mesh_node.h>
 
-namespace dust3d
-{
+namespace dust3d {
 
-class StitchMeshBuilder
-{
+class StitchMeshBuilder {
 public:
-    struct Spline
-    {
+    struct Spline {
         std::vector<MeshNode> nodes;
         bool isCircle = false;
         bool isClosing = false;
         Uuid sourceId;
     };
 
-    StitchMeshBuilder(std::vector<Spline> &&splines);
+    StitchMeshBuilder(std::vector<Spline>&& splines);
     void build();
-    const std::vector<Vector3> &generatedVertices() const;
-    const std::vector<std::vector<size_t>> &generatedFaces() const;
-    const std::vector<Spline> &splines() const;
+    const std::vector<Vector3>& generatedVertices() const;
+    const std::vector<std::vector<size_t>>& generatedFaces() const;
+    const std::vector<Spline>& splines() const;
 
 private:
-    struct StitchingPoint
-    {
+    struct StitchingPoint {
         size_t originVertex;
         double radius;
     };
@@ -62,18 +58,18 @@ private:
     size_t m_targetSegments = 0;
 
     void interpolateSplinesToHaveEqualSizeOfNodesExceptClosingSplines();
-    std::vector<std::vector<StitchingPoint>> convertSplinesToStitchingPoints(const std::vector<Spline> &splines);
-    void generateMeshFromStitchingPoints(const std::vector<std::vector<StitchingPoint>> &stitchingPoints);
-    void generateMeshFromStitchingPoints(const std::vector<StitchingPoint> &a, 
-        const std::vector<StitchingPoint> &b);
-    void splitPolylineToSegments(const std::vector<Vector3> &polyline,
-        const std::vector<double> &radiuses,
+    std::vector<std::vector<StitchingPoint>> convertSplinesToStitchingPoints(const std::vector<Spline>& splines);
+    void generateMeshFromStitchingPoints(const std::vector<std::vector<StitchingPoint>>& stitchingPoints);
+    void generateMeshFromStitchingPoints(const std::vector<StitchingPoint>& a,
+        const std::vector<StitchingPoint>& b);
+    void splitPolylineToSegments(const std::vector<Vector3>& polyline,
+        const std::vector<double>& radiuses,
         size_t targetSegments,
-        std::vector<Vector3> *targetPoints,
-        std::vector<double> *targetRadiuses);
-    double segmentsLength(const std::vector<Vector3> &segmentPoints);
+        std::vector<Vector3>* targetPoints,
+        std::vector<double>* targetRadiuses);
+    double segmentsLength(const std::vector<Vector3>& segmentPoints);
     void interpolateSplinesForBackClosing();
-    void addQuadButMaybeTriangle(const std::vector<size_t> &quadButMaybeTriangle);
+    void addQuadButMaybeTriangle(const std::vector<size_t>& quadButMaybeTriangle);
 };
 
 }

@@ -1,27 +1,27 @@
-#include <QVBoxLayout>
-#include <QWidgetAction>
-#include <QMenu>
 #include "part_manage_widget.h"
+#include "component_list_model.h"
 #include "component_preview_grid_widget.h"
 #include "component_property_widget.h"
-#include "component_list_model.h"
-#include "theme.h"
 #include "document.h"
+#include "theme.h"
+#include <QMenu>
+#include <QVBoxLayout>
+#include <QWidgetAction>
 
-PartManageWidget::PartManageWidget(Document *document, QWidget *parent):
-    QWidget(parent),
-    m_document(document)
+PartManageWidget::PartManageWidget(Document* document, QWidget* parent)
+    : QWidget(parent)
+    , m_document(document)
 {
     setContextMenuPolicy(Qt::CustomContextMenu);
 
-    QHBoxLayout *toolsLayout = new QHBoxLayout;
+    QHBoxLayout* toolsLayout = new QHBoxLayout;
     toolsLayout->setSpacing(0);
     toolsLayout->setMargin(0);
 
     setStyleSheet("QPushButton:disabled {border: 0; color: " + Theme::gray.name() + "}");
 
-    auto createButton = [](QChar icon, const QString &title) {
-        QPushButton *button = new QPushButton(icon);
+    auto createButton = [](QChar icon, const QString& title) {
+        QPushButton* button = new QPushButton(icon);
         Theme::initIconButton(button);
         button->setToolTip(title);
         return button;
@@ -58,50 +58,50 @@ PartManageWidget::PartManageWidget(Document *document, QWidget *parent):
     //connect(m_componentPreviewGridWidget->selectionModel(), &QItemSelectionModel::selectionChanged, this, &PartManageWidget::showSelectedComponentProperties);
 
     connect(m_levelUpButton, &QPushButton::clicked, [this]() {
-        const auto &parent = m_document->findComponentParent(this->m_componentPreviewGridWidget->componentListModel()->listingComponentId());
+        const auto& parent = m_document->findComponentParent(this->m_componentPreviewGridWidget->componentListModel()->listingComponentId());
         if (nullptr == parent)
             return;
         this->m_componentPreviewGridWidget->componentListModel()->setListingComponentId(parent->id);
     });
 
     connect(m_hideButton, &QPushButton::clicked, [this]() {
-        for (const auto &partId: this->m_componentPreviewGridWidget->getSelectedPartIds())
+        for (const auto& partId : this->m_componentPreviewGridWidget->getSelectedPartIds())
             this->m_document->setPartVisibleState(partId, false);
         this->m_document->saveSnapshot();
     });
     connect(m_showButton, &QPushButton::clicked, [this]() {
-        for (const auto &partId: this->m_componentPreviewGridWidget->getSelectedPartIds())
+        for (const auto& partId : this->m_componentPreviewGridWidget->getSelectedPartIds())
             this->m_document->setPartVisibleState(partId, true);
         this->m_document->saveSnapshot();
     });
 
     connect(m_unlockButton, &QPushButton::clicked, [this]() {
-        for (const auto &partId: this->m_componentPreviewGridWidget->getSelectedPartIds())
+        for (const auto& partId : this->m_componentPreviewGridWidget->getSelectedPartIds())
             this->m_document->setPartLockState(partId, false);
         this->m_document->saveSnapshot();
     });
     connect(m_lockButton, &QPushButton::clicked, [this]() {
-        for (const auto &partId: this->m_componentPreviewGridWidget->getSelectedPartIds())
+        for (const auto& partId : this->m_componentPreviewGridWidget->getSelectedPartIds())
             this->m_document->setPartLockState(partId, true);
         this->m_document->saveSnapshot();
     });
 
     connect(m_unlinkButton, &QPushButton::clicked, [this]() {
-        for (const auto &partId: this->m_componentPreviewGridWidget->getSelectedPartIds())
+        for (const auto& partId : this->m_componentPreviewGridWidget->getSelectedPartIds())
             this->m_document->setPartDisableState(partId, true);
         this->m_document->saveSnapshot();
     });
     connect(m_linkButton, &QPushButton::clicked, [this]() {
-        for (const auto &partId: this->m_componentPreviewGridWidget->getSelectedPartIds())
+        for (const auto& partId : this->m_componentPreviewGridWidget->getSelectedPartIds())
             this->m_document->setPartDisableState(partId, false);
         this->m_document->saveSnapshot();
     });
 
     connect(m_selectButton, &QPushButton::clicked, [this]() {
-        for (const auto &componentId: this->m_componentPreviewGridWidget->getSelectedComponentIds()) {
+        for (const auto& componentId : this->m_componentPreviewGridWidget->getSelectedComponentIds()) {
             std::vector<dust3d::Uuid> partIds;
             this->m_document->collectComponentDescendantParts(componentId, partIds);
-            for (const auto &partId: partIds)
+            for (const auto& partId : partIds)
                 emit this->selectPartOnCanvas(partId);
         }
     });
@@ -119,7 +119,7 @@ PartManageWidget::PartManageWidget(Document *document, QWidget *parent):
 
     connect(this, &PartManageWidget::customContextMenuRequested, this, &PartManageWidget::showContextMenu);
 
-    QVBoxLayout *mainLayout = new QVBoxLayout;
+    QVBoxLayout* mainLayout = new QVBoxLayout;
     mainLayout->addLayout(toolsLayout);
     mainLayout->addWidget(m_componentPreviewGridWidget);
 
@@ -135,10 +135,10 @@ void PartManageWidget::showSelectedComponentProperties()
     if (componentIds.empty())
         return;
 
-    auto *propertyWidget = new ComponentPropertyWidget(m_document, componentIds);
+    auto* propertyWidget = new ComponentPropertyWidget(m_document, componentIds);
 
     auto menu = std::make_unique<QMenu>(this->parentWidget());
-    QWidgetAction *widgetAction = new QWidgetAction(menu.get());
+    QWidgetAction* widgetAction = new QWidgetAction(menu.get());
     widgetAction->setDefaultWidget(propertyWidget);
     menu->addAction(widgetAction);
 
@@ -146,14 +146,13 @@ void PartManageWidget::showSelectedComponentProperties()
     if (x <= 0)
         x = QCursor::pos().x();
     menu->exec(QPoint(
-        x - propertyWidget->width(), 
-        QCursor::pos().y()
-    ));
+        x - propertyWidget->width(),
+        QCursor::pos().y()));
 }
 
-void PartManageWidget::selectComponentByPartId(const dust3d::Uuid &partId)
+void PartManageWidget::selectComponentByPartId(const dust3d::Uuid& partId)
 {
-    const auto &part = m_document->findPart(partId);
+    const auto& part = m_document->findPart(partId);
     if (nullptr == part)
         return;
     auto componentId = part->componentId;
@@ -163,7 +162,7 @@ void PartManageWidget::selectComponentByPartId(const dust3d::Uuid &partId)
         m_componentPreviewGridWidget->scrollTo(index);
         return;
     }
-    const auto &component = m_document->findComponent(componentId);
+    const auto& component = m_document->findComponent(componentId);
     if (nullptr == component)
         return;
     m_componentPreviewGridWidget->componentListModel()->setListingComponentId(component->parentId);
@@ -178,7 +177,7 @@ void PartManageWidget::selectComponentByPartId(const dust3d::Uuid &partId)
 
 void PartManageWidget::updateLevelUpButton()
 {
-    const auto &parent = m_document->findComponentParent(m_componentPreviewGridWidget->componentListModel()->listingComponentId());
+    const auto& parent = m_document->findComponentParent(m_componentPreviewGridWidget->componentListModel()->listingComponentId());
     m_levelUpButton->setEnabled(nullptr != parent);
 }
 
@@ -193,13 +192,13 @@ void PartManageWidget::updateToolButtons()
     bool enableUnlinkButton = false;
     bool enableLinkButton = false;
     bool enablePropertyButton = false;
-    for (const auto &component: selectedComponents) {
+    for (const auto& component : selectedComponents) {
         enablePropertyButton = true;
         enableSelectButton = true;
         if (component->linkToPartId.isNull()) {
             continue;
         }
-        const auto &part = m_document->findPart(component->linkToPartId);
+        const auto& part = m_document->findPart(component->linkToPartId);
         if (part->visible) {
             enableHideButton = true;
         } else {
@@ -229,14 +228,14 @@ void PartManageWidget::updateToolButtons()
 bool PartManageWidget::hasSelectedGroupedComponent()
 {
     auto selectedComponents = m_componentPreviewGridWidget->getSelectedComponents();
-    for (auto &component: selectedComponents) {
+    for (auto& component : selectedComponents) {
         if (!component->childrenIds.empty())
             return true;
     }
     return false;
 }
 
-void PartManageWidget::showContextMenu(const QPoint &pos)
+void PartManageWidget::showContextMenu(const QPoint& pos)
 {
     auto selectedComponentIds = m_componentPreviewGridWidget->getSelectedComponentIds();
     if (selectedComponentIds.empty())
@@ -255,7 +254,7 @@ void PartManageWidget::showContextMenu(const QPoint &pos)
     QAction ungroupAction(tr("Ungroup"), this);
     if (hasSelectedGroupedComponent()) {
         connect(&ungroupAction, &QAction::triggered, this, [=]() {
-            for (const auto &it: selectedComponentIds)
+            for (const auto& it : selectedComponentIds)
                 emit this->ungroupComponent(it);
             emit this->groupOperationAdded();
         });

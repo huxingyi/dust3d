@@ -23,27 +23,22 @@
 #ifndef DUST3D_BASE_SNAPSHOT_XML_H_
 #define DUST3D_BASE_SNAPSHOT_XML_H_
 
-#include <string>
 #include <dust3d/base/snapshot.h>
+#include <string>
 
-namespace dust3d
-{
-    
-#define kSnapshotItemCanvas        0x00000001
-#define kSnapshotItemComponent     0x00000002
-#define kSnapshotItemMaterial      0x00000004
-#define kSnapshotItemMotion        0x00000008
-#define kSnapshotItemAll          (                                \
-                                        kSnapshotItemCanvas |      \
-                                        kSnapshotItemComponent |   \
-                                        kSnapshotItemMaterial |    \
-                                        kSnapshotItemMotion        \
-                                    )
+namespace dust3d {
 
-void loadSnapshotFromXmlString(Snapshot *snapshot, char *xmlString, 
-    uint32_t flags=kSnapshotItemAll);
-void saveSnapshotToXmlString(const Snapshot &snapshot, std::string &xmlString);
-    
+#define kSnapshotItemCanvas 0x00000001
+#define kSnapshotItemComponent 0x00000002
+#define kSnapshotItemMaterial 0x00000004
+#define kSnapshotItemMotion 0x00000008
+#define kSnapshotItemAll ( \
+    kSnapshotItemCanvas | kSnapshotItemComponent | kSnapshotItemMaterial | kSnapshotItemMotion)
+
+void loadSnapshotFromXmlString(Snapshot* snapshot, char* xmlString,
+    uint32_t flags = kSnapshotItemAll);
+void saveSnapshotToXmlString(const Snapshot& snapshot, std::string& xmlString);
+
 }
 
 #endif

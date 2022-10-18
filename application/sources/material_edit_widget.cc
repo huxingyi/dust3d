@@ -1,49 +1,49 @@
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QGridLayout>
+#include "material_edit_widget.h"
+#include "document.h"
+#include "float_number_widget.h"
+#include "horizontal_line_widget.h"
+#include "image_forever.h"
+#include "theme.h"
+#include "version.h"
+#include <QFileDialog>
 #include <QFormLayout>
 #include <QGridLayout>
-#include <QMenu>
-#include <QWidgetAction>
-#include <QLineEdit>
-#include <QMessageBox>
-#include <QFileDialog>
+#include <QHBoxLayout>
 #include <QLabel>
+#include <QLineEdit>
+#include <QMenu>
+#include <QMessageBox>
 #include <QThread>
-#include "theme.h"
-#include "material_edit_widget.h"
-#include "float_number_widget.h"
-#include "version.h"
-#include "image_forever.h"
-#include "document.h"
-#include "horizontal_line_widget.h"
+#include <QVBoxLayout>
+#include <QWidgetAction>
 
-ImagePreviewWidget *MaterialEditWidget::createMapButton()
+ImagePreviewWidget* MaterialEditWidget::createMapButton()
 {
-    ImagePreviewWidget *mapButton = new ImagePreviewWidget;
+    ImagePreviewWidget* mapButton = new ImagePreviewWidget;
     mapButton->setFixedSize(Theme::partPreviewImageSize * 2, Theme::partPreviewImageSize * 2);
     updateMapButtonBackground(mapButton, nullptr);
     return mapButton;
 }
 
-QImage *MaterialEditWidget::pickImage()
+QImage* MaterialEditWidget::pickImage()
 {
     QString fileName = QFileDialog::getOpenFileName(this, QString(), QString(),
-        tr("Image Files (*.png *.jpg *.bmp)")).trimmed();
+        tr("Image Files (*.png *.jpg *.bmp)"))
+                           .trimmed();
     if (fileName.isEmpty())
         return nullptr;
-    QImage *image = new QImage();
+    QImage* image = new QImage();
     if (!image->load(fileName))
         return nullptr;
     return image;
 }
 
-MaterialEditWidget::MaterialEditWidget(const Document *document, QWidget *parent) :
-    QDialog(parent),
-    m_document(document)
+MaterialEditWidget::MaterialEditWidget(const Document* document, QWidget* parent)
+    : QDialog(parent)
+    , m_document(document)
 {
     setWindowFlags(windowFlags() | Qt::WindowStaysOnTopHint);
-    
+
     m_layers.resize(1);
 
     m_previewWidget = new ModelWidget(this);
@@ -51,24 +51,24 @@ MaterialEditWidget::MaterialEditWidget(const Document *document, QWidget *parent
     m_previewWidget->resize(512, 512);
     m_previewWidget->move(-128, -128);
     m_previewWidget->setNotGraphics(true);
-    
+
     QFont nameFont;
     nameFont.setWeight(QFont::Light);
     nameFont.setBold(false);
-    
-    QGridLayout *mapLayout = new QGridLayout;
+
+    QGridLayout* mapLayout = new QGridLayout;
     int row = 0;
     int col = 0;
     for (int i = 1; i < (int)dust3d::TextureType::Count; i++) {
-        QVBoxLayout *textureManageLayout = new QVBoxLayout;
-    
+        QVBoxLayout* textureManageLayout = new QVBoxLayout;
+
         MaterialMap item;
         item.forWhat = (dust3d::TextureType)i;
         m_layers[0].maps.push_back(item);
-        
-        ImagePreviewWidget *imageButton = createMapButton();
+
+        ImagePreviewWidget* imageButton = createMapButton();
         connect(imageButton, &ImagePreviewWidget::clicked, [=]() {
-            QImage *image = pickImage();
+            QImage* image = pickImage();
             if (nullptr == image)
                 return;
             m_layers[0].maps[(int)i - 1].imageId = ImageForever::add(image);
@@ -76,41 +76,41 @@ MaterialEditWidget::MaterialEditWidget(const Document *document, QWidget *parent
             delete image;
             emit layersAdjusted();
         });
-        
-        QLabel *nameLabel = new QLabel(tr(dust3d::TextureTypeToDispName(item.forWhat).c_str()));
+
+        QLabel* nameLabel = new QLabel(tr(dust3d::TextureTypeToDispName(item.forWhat).c_str()));
         nameLabel->setFont(nameFont);
-        
-        QPushButton *eraser = new QPushButton(QChar(fa::eraser));
+
+        QPushButton* eraser = new QPushButton(QChar(fa::eraser));
         Theme::initAwesomeToolButton(eraser);
-        
+
         connect(eraser, &QPushButton::clicked, [=]() {
             m_layers[0].maps[(int)i - 1].imageId = dust3d::Uuid();
             updateMapButtonBackground(imageButton, nullptr);
             emit layersAdjusted();
         });
-        
-        QHBoxLayout *textureTitleLayout = new QHBoxLayout;
+
+        QHBoxLayout* textureTitleLayout = new QHBoxLayout;
         textureTitleLayout->addWidget(eraser);
         textureTitleLayout->addWidget(nameLabel);
         textureTitleLayout->addStretch();
-        
+
         textureManageLayout->addWidget(imageButton);
         textureManageLayout->addLayout(textureTitleLayout);
         m_textureMapButtons[i - 1] = imageButton;
-        
+
         mapLayout->addLayout(textureManageLayout, row, col++);
         if (col == 2) {
             col = 0;
             row++;
         }
     }
-    
-    QVBoxLayout *rightLayout = new QVBoxLayout;
+
+    QVBoxLayout* rightLayout = new QVBoxLayout;
     rightLayout->addStretch();
     rightLayout->addLayout(mapLayout);
     rightLayout->addStretch();
 
-    QHBoxLayout *paramtersLayout = new QHBoxLayout;
+    QHBoxLayout* paramtersLayout = new QHBoxLayout;
     paramtersLayout->setContentsMargins(256, 0, 0, 0);
     paramtersLayout->addStretch();
     paramtersLayout->addLayout(rightLayout);
@@ -120,41 +120,41 @@ MaterialEditWidget::MaterialEditWidget(const Document *document, QWidget *parent
         m_unsaved = true;
         updateTitle();
     });
-    QPushButton *saveButton = new QPushButton(tr("Save"));
+    QPushButton* saveButton = new QPushButton(tr("Save"));
     connect(saveButton, &QPushButton::clicked, this, &MaterialEditWidget::save);
     saveButton->setDefault(true);
-    
-    FloatNumberWidget *tileScaleWidget = new FloatNumberWidget;
+
+    FloatNumberWidget* tileScaleWidget = new FloatNumberWidget;
     tileScaleWidget->setItemName(tr("Tile Scale"));
     tileScaleWidget->setRange(0.01, 1.0);
     tileScaleWidget->setValue(m_layers[0].tileScale);
-    
+
     m_tileScaleSlider = tileScaleWidget;
-    
+
     connect(tileScaleWidget, &FloatNumberWidget::valueChanged, [=](float value) {
         m_layers[0].tileScale = value;
         emit layersAdjusted();
     });
-    
-    QPushButton *tileScaleEraser = new QPushButton(QChar(fa::eraser));
+
+    QPushButton* tileScaleEraser = new QPushButton(QChar(fa::eraser));
     Theme::initAwesomeToolButton(tileScaleEraser);
-    
+
     connect(tileScaleEraser, &QPushButton::clicked, [=]() {
         tileScaleWidget->setValue(1.0);
     });
-    
-    QHBoxLayout *tileScaleLayout = new QHBoxLayout;
+
+    QHBoxLayout* tileScaleLayout = new QHBoxLayout;
     tileScaleLayout->addWidget(tileScaleEraser);
     tileScaleLayout->addWidget(tileScaleWidget);
     tileScaleLayout->addStretch();
 
-    QHBoxLayout *baseInfoLayout = new QHBoxLayout;
+    QHBoxLayout* baseInfoLayout = new QHBoxLayout;
     baseInfoLayout->addWidget(new QLabel(tr("Name")));
     baseInfoLayout->addWidget(m_nameEdit);
     baseInfoLayout->addStretch();
     baseInfoLayout->addWidget(saveButton);
 
-    QVBoxLayout *mainLayout = new QVBoxLayout;
+    QVBoxLayout* mainLayout = new QVBoxLayout;
     mainLayout->addLayout(paramtersLayout);
     mainLayout->addStretch();
     mainLayout->addWidget(new HorizontalLineWidget());
@@ -176,7 +176,7 @@ MaterialEditWidget::MaterialEditWidget(const Document *document, QWidget *parent
     updateTitle();
 }
 
-void MaterialEditWidget::updateMapButtonBackground(ImagePreviewWidget *button, const QImage *image)
+void MaterialEditWidget::updateMapButtonBackground(ImagePreviewWidget* button, const QImage* image)
 {
     if (nullptr == image)
         button->updateImage(QImage());
@@ -189,7 +189,7 @@ void MaterialEditWidget::reject()
     close();
 }
 
-void MaterialEditWidget::closeEvent(QCloseEvent *event)
+void MaterialEditWidget::closeEvent(QCloseEvent* event)
 {
     if (m_unsaved && !m_closed) {
         QMessageBox::StandardButton answer = QMessageBox::question(this,
@@ -235,7 +235,7 @@ void MaterialEditWidget::updatePreview()
 
     qDebug() << "Material preview generating..";
 
-    QThread *thread = new QThread;
+    QThread* thread = new QThread;
     m_materialPreviewsGenerator = new MaterialPreviewsGenerator();
     m_materialPreviewsGenerator->addMaterial(dust3d::Uuid(), m_layers);
     m_materialPreviewsGenerator->moveToThread(thread);
@@ -279,7 +279,7 @@ void MaterialEditWidget::updateTitle()
         setWindowTitle(applicationTitle(tr("New") + (m_unsaved ? "*" : "")));
         return;
     }
-    const Material *material = m_document->findMaterial(m_materialId);
+    const Material* material = m_document->findMaterial(m_materialId);
     if (nullptr == material) {
         qDebug() << "Find material failed:" << m_materialId;
         return;
@@ -299,9 +299,9 @@ void MaterialEditWidget::setEditMaterialLayers(std::vector<MaterialLayer> layers
         m_layers[0].maps[i - 1].imageId = dust3d::Uuid();
     }
     if (!layers.empty()) {
-        for (const auto &layer: layers) {
+        for (const auto& layer : layers) {
             m_layers[0].tileScale = layer.tileScale;
-            for (const auto &mapItem: layer.maps) {
+            for (const auto& mapItem : layer.maps) {
                 int index = (int)mapItem.forWhat - 1;
                 if (index >= 0 && index < (int)dust3d::TextureType::Count - 1) {
                     m_layers[0].maps[index].imageId = mapItem.imageId;

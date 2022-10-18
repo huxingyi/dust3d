@@ -25,12 +25,10 @@
 
 #include <dust3d/uv/uv_mesh_data_type.h>
 
-namespace dust3d
-{
-namespace uv
-{
+namespace dust3d {
+namespace uv {
 
-void triangulate(const std::vector<Vertex> &vertices, std::vector<Face> &faces, const std::vector<size_t> &ring);
+    void triangulate(const std::vector<Vertex>& vertices, std::vector<Face>& faces, const std::vector<size_t>& ring);
 
 }
 }

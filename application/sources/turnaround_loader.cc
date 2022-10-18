@@ -1,13 +1,13 @@
-#include <QGuiApplication>
 #include "turnaround_loader.h"
+#include <QGuiApplication>
 
-TurnaroundLoader::TurnaroundLoader(const QString &filename, QSize viewSize)
+TurnaroundLoader::TurnaroundLoader(const QString& filename, QSize viewSize)
 {
     m_filename = filename;
     m_viewSize = viewSize;
 }
 
-TurnaroundLoader::TurnaroundLoader(const QImage &image, QSize viewSize)
+TurnaroundLoader::TurnaroundLoader(const QImage& image, QSize viewSize)
 {
     m_inputImage = image;
     m_viewSize = viewSize;
@@ -18,9 +18,9 @@ TurnaroundLoader::~TurnaroundLoader()
     delete m_resultImage;
 }
 
-QImage *TurnaroundLoader::takeResultImage()
+QImage* TurnaroundLoader::takeResultImage()
 {
-    QImage *returnImage = m_resultImage;
+    QImage* returnImage = m_resultImage;
     m_resultImage = nullptr;
     return returnImage;
 }

@@ -23,13 +23,12 @@
 #ifndef DUST3D_MESH_TRIM_VERTICES_H_
 #define DUST3D_MESH_TRIM_VERTICES_H_
 
-#include <vector>
 #include <dust3d/base/vector3.h>
+#include <vector>
 
-namespace dust3d
-{
+namespace dust3d {
 
-void trimVertices(std::vector<Vector3> *vertices, bool normalize);
+void trimVertices(std::vector<Vector3>* vertices, bool normalize);
 
 }
 

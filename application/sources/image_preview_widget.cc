@@ -1,28 +1,28 @@
-#include <QPainter>
 #include "image_preview_widget.h"
+#include <QPainter>
 
-ImagePreviewWidget::ImagePreviewWidget(QWidget *parent) :
-    QWidget(parent)
+ImagePreviewWidget::ImagePreviewWidget(QWidget* parent)
+    : QWidget(parent)
 {
 }
 
-void ImagePreviewWidget::updateImage(const QImage &image)
+void ImagePreviewWidget::updateImage(const QImage& image)
 {
     m_image = image;
     update();
 }
 
-void ImagePreviewWidget::updateBackgroundColor(const QColor &color)
+void ImagePreviewWidget::updateBackgroundColor(const QColor& color)
 {
     m_backgroundColor = color;
 }
 
-void ImagePreviewWidget::mousePressEvent(QMouseEvent *event)
+void ImagePreviewWidget::mousePressEvent(QMouseEvent* event)
 {
     emit clicked();
 }
 
-void ImagePreviewWidget::paintEvent(QPaintEvent *event)
+void ImagePreviewWidget::paintEvent(QPaintEvent* event)
 {
     QPainter painter(this);
     if (!m_image.isNull())
@@ -30,4 +30,3 @@ void ImagePreviewWidget::paintEvent(QPaintEvent *event)
     else
         painter.fillRect(QRect(0, 0, width(), height()), QBrush(m_backgroundColor));
 }
-

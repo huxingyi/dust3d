@@ -1,61 +1,61 @@
-#include <QDebug>
-#include <QScrollBar>
-#include <QGuiApplication>
-#include <cmath>
-#include <QtGlobal>
-#include <algorithm>
-#include <QVector2D>
-#include <QMenu>
-#include <QApplication>
-#include <QMatrix4x4>
-#include <queue>
-#include <QBitmap>
 #include "skeleton_graphics_widget.h"
 #include "theme.h"
+#include <QApplication>
+#include <QBitmap>
+#include <QDebug>
+#include <QGuiApplication>
+#include <QMatrix4x4>
+#include <QMenu>
+#include <QScrollBar>
+#include <QVector2D>
+#include <QtGlobal>
+#include <algorithm>
+#include <cmath>
+#include <queue>
 
-SkeletonGraphicsWidget::SkeletonGraphicsWidget(const SkeletonDocument *document) :
-    m_document(document)
+SkeletonGraphicsWidget::SkeletonGraphicsWidget(const SkeletonDocument* document)
+    : m_document(document)
 {
     setRenderHint(QPainter::Antialiasing, false);
     setBackgroundBrush(QBrush(QWidget::palette().color(QWidget::backgroundRole()), Qt::SolidPattern));
     setContentsMargins(0, 0, 0, 0);
     setFrameStyle(QFrame::NoFrame);
-    
+
     setAlignment(Qt::AlignCenter);
-    
+
     setScene(new QGraphicsScene());
-    
+
     m_backgroundItem = new QGraphicsPixmapItem();
     enableBackgroundBlur();
     scene()->addItem(m_backgroundItem);
-    
+
     m_cursorNodeItem = new SkeletonGraphicsNodeItem();
     m_cursorNodeItem->hide();
     m_cursorNodeItem->setData(0, "cursorNode");
     scene()->addItem(m_cursorNodeItem);
-    
+
     m_cursorEdgeItem = new SkeletonGraphicsEdgeItem();
     m_cursorEdgeItem->hide();
     m_cursorEdgeItem->setData(0, "cursorEdge");
     scene()->addItem(m_cursorEdgeItem);
-    
+
     m_selectionItem = new SkeletonGraphicsSelectionItem();
     m_selectionItem->hide();
     scene()->addItem(m_selectionItem);
-    
+
     m_mainOriginItem = new SkeletonGraphicsOriginItem(SkeletonProfile::Main);
     m_mainOriginItem->setRotated(m_rotated);
     m_mainOriginItem->hide();
     scene()->addItem(m_mainOriginItem);
-    
+
     m_sideOriginItem = new SkeletonGraphicsOriginItem(SkeletonProfile::Side);
     m_sideOriginItem->hide();
     scene()->addItem(m_sideOriginItem);
-    
+
     scene()->setSceneRect(rect());
-    
+
     setMouseTracking(true);
-    
+
     setContextMenuPolicy(Qt::CustomContextMenu);
     connect(this, &SkeletonGraphicsWidget::customContextMenuRequested, this, &SkeletonGraphicsWidget::showContextMenu);
 }
@@ -75,7 +75,7 @@ void SkeletonGraphicsWidget::setRotated(bool rotated)
     updateItems();
 }
 
-void SkeletonGraphicsWidget::setModelWidget(ModelWidget *modelWidget)
+void SkeletonGraphicsWidget::setModelWidget(ModelWidget* modelWidget)
 {
     m_modelWidget = modelWidget;
 }
@@ -100,123 +100,122 @@ void SkeletonGraphicsWidget::shortcutEscape()
 {
     if (!isVisible())
         return;
-    
-    if (SkeletonDocumentEditMode::Add == m_document->editMode ||
-            SkeletonDocumentEditMode::Paint == m_document->editMode) {
+
+    if (SkeletonDocumentEditMode::Add == m_document->editMode || SkeletonDocumentEditMode::Paint == m_document->editMode) {
         emit setEditMode(SkeletonDocumentEditMode::Select);
         return;
     }
 }
 
-void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
+void SkeletonGraphicsWidget::showContextMenu(const QPoint& pos)
 {
     if (SkeletonDocumentEditMode::Add == m_document->editMode) {
         emit setEditMode(SkeletonDocumentEditMode::Select);
         return;
     }
-    
+
     if (SkeletonDocumentEditMode::Select != m_document->editMode) {
         return;
     }
-    
+
     QMenu contextMenu(this);
-    
+
     QAction addAction(tr("Add..."), this);
     connect(&addAction, &QAction::triggered, [=]() {
         emit setEditMode(SkeletonDocumentEditMode::Add);
     });
     contextMenu.addAction(&addAction);
-    
+
     QAction undoAction(tr("Undo"), this);
     if (m_document->undoable()) {
         connect(&undoAction, &QAction::triggered, m_document, &SkeletonDocument::undo);
         contextMenu.addAction(&undoAction);
     }
-    
+
     QAction redoAction(tr("Redo"), this);
     if (m_document->redoable()) {
         connect(&redoAction, &QAction::triggered, m_document, &SkeletonDocument::redo);
         contextMenu.addAction(&redoAction);
     }
-    
+
     QAction deleteAction(tr("Delete"), this);
     if (hasSelection()) {
         connect(&deleteAction, &QAction::triggered, this, &SkeletonGraphicsWidget::deleteSelected);
         contextMenu.addAction(&deleteAction);
     }
-    
+
     QAction breakAction(tr("Break"), this);
     if (hasEdgeSelection()) {
         connect(&breakAction, &QAction::triggered, this, &SkeletonGraphicsWidget::breakSelected);
         contextMenu.addAction(&breakAction);
     }
-    
+
     QAction reduceAction(tr("Reduce"), this);
     if (hasSelection()) {
         connect(&reduceAction, &QAction::triggered, this, &SkeletonGraphicsWidget::reduceSelected);
         contextMenu.addAction(&reduceAction);
     }
-    
+
     QAction reverseAction(tr("Reverse"), this);
     if (hasEdgeSelection()) {
         connect(&reverseAction, &QAction::triggered, this, &SkeletonGraphicsWidget::reverseSelectedEdges);
         contextMenu.addAction(&reverseAction);
     }
-    
+
     QAction connectAction(tr("Connect"), this);
     if (hasTwoDisconnectedNodesSelection()) {
         connect(&connectAction, &QAction::triggered, this, &SkeletonGraphicsWidget::connectSelected);
         contextMenu.addAction(&connectAction);
     }
-    
+
     QAction cutAction(tr("Cut"), this);
     if (hasSelection()) {
         connect(&cutAction, &QAction::triggered, this, &SkeletonGraphicsWidget::cut);
         contextMenu.addAction(&cutAction);
     }
-    
+
     QAction copyAction(tr("Copy"), this);
     if (hasNodeSelection()) {
         connect(&copyAction, &QAction::triggered, this, &SkeletonGraphicsWidget::copy);
         contextMenu.addAction(&copyAction);
     }
-    
+
     QAction pasteAction(tr("Paste"), this);
     if (m_document->hasPastableNodesInClipboard()) {
         connect(&pasteAction, &QAction::triggered, m_document, &SkeletonDocument::paste);
         contextMenu.addAction(&pasteAction);
     }
-    
+
     QAction flipHorizontallyAction(tr("H Flip"), this);
     if (hasMultipleSelection()) {
         connect(&flipHorizontallyAction, &QAction::triggered, this, &SkeletonGraphicsWidget::flipHorizontally);
         contextMenu.addAction(&flipHorizontallyAction);
     }
-    
+
     QAction flipVerticallyAction(tr("V Flip"), this);
     if (hasMultipleSelection()) {
         connect(&flipVerticallyAction, &QAction::triggered, this, &SkeletonGraphicsWidget::flipVertically);
         contextMenu.addAction(&flipVerticallyAction);
     }
-    
+
     QAction rotateClockwiseAction(tr("Rotate 90D CW"), this);
     if (hasMultipleSelection()) {
         connect(&rotateClockwiseAction, &QAction::triggered, this, &SkeletonGraphicsWidget::rotateClockwise90Degree);
         contextMenu.addAction(&rotateClockwiseAction);
     }
-    
+
     QAction rotateCounterclockwiseAction(tr("Rotate 90D CCW"), this);
     if (hasMultipleSelection()) {
         connect(&rotateCounterclockwiseAction, &QAction::triggered, this, &SkeletonGraphicsWidget::rotateCounterclockwise90Degree);
         contextMenu.addAction(&rotateCounterclockwiseAction);
     }
-    
+
     QAction switchXzAction(tr("Switch XZ"), this);
     if (hasSelection()) {
         connect(&switchXzAction, &QAction::triggered, this, &SkeletonGraphicsWidget::switchSelectedXZ);
         contextMenu.addAction(&switchXzAction);
     }
-    
+
     QAction alignToLocalCenterAction(tr("Local Center"), this);
     QAction alignToLocalVerticalCenterAction(tr("Local Vertical Center"), this);
     QAction alignToLocalHorizontalCenterAction(tr("Local Horizontal Center"), this);
@@ -224,55 +223,55 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint &pos)
     QAction alignToGlobalVerticalCenterAction(tr("Global Vertical Center"), this);
     QAction alignToGlobalHorizontalCenterAction(tr("Global Horizontal Center"), this);
     if (((hasSelection() && m_document->originSettled()) || hasMultipleSelection())) {
-        QMenu *subMenu = contextMenu.addMenu(tr("Align To"));
-        
+        QMenu* subMenu = contextMenu.addMenu(tr("Align To"));
+
         if (hasMultipleSelection()) {
             connect(&alignToLocalCenterAction, &QAction::triggered, this, &SkeletonGraphicsWidget::alignSelectedToLocalCenter);
             subMenu->addAction(&alignToLocalCenterAction);
-            
+
             connect(&alignToLocalVerticalCenterAction, &QAction::triggered, this, &SkeletonGraphicsWidget::alignSelectedToLocalVerticalCenter);
             subMenu->addAction(&alignToLocalVerticalCenterAction);
-            
+
             connect(&alignToLocalHorizontalCenterAction, &QAction::triggered, this, &SkeletonGraphicsWidget::alignSelectedToLocalHorizontalCenter);
             subMenu->addAction(&alignToLocalHorizontalCenterAction);
         }
-        
+
         if (hasSelection() && m_document->originSettled()) {
             connect(&alignToGlobalCenterAction, &QAction::triggered, this, &SkeletonGraphicsWidget::alignSelectedToGlobalCenter);
             subMenu->addAction(&alignToGlobalCenterAction);
-            
+
             connect(&alignToGlobalVerticalCenterAction, &QAction::triggered, this, &SkeletonGraphicsWidget::alignSelectedToGlobalVerticalCenter);
             subMenu->addAction(&alignToGlobalVerticalCenterAction);
-            
+
             connect(&alignToGlobalHorizontalCenterAction, &QAction::triggered, this, &SkeletonGraphicsWidget::alignSelectedToGlobalHorizontalCenter);
             subMenu->addAction(&alignToGlobalHorizontalCenterAction);
         }
     }
-    
+
     QAction colorizeAsBlankAction(tr("Blank"), this);
     QAction colorizeAsAutoColorAction(tr("Auto Color"), this);
     if (hasNodeSelection()) {
-        QMenu *subMenu = contextMenu.addMenu(tr("Colorize"));
-        
+        QMenu* subMenu = contextMenu.addMenu(tr("Colorize"));
+
         connect(&colorizeAsBlankAction, &QAction::triggered, this, &SkeletonGraphicsWidget::fadeSelected);
         subMenu->addAction(&colorizeAsBlankAction);
-        
+
         connect(&colorizeAsAutoColorAction, &QAction::triggered, this, &SkeletonGraphicsWidget::colorizeSelected);
         subMenu->addAction(&colorizeAsAutoColorAction);
     }
-    
+
     QAction selectAllAction(tr("Select All"), this);
     if (hasItems()) {
         connect(&selectAllAction, &QAction::triggered, this, &SkeletonGraphicsWidget::selectAll);
         contextMenu.addAction(&selectAllAction);
     }
-    
+
     QAction selectPartAllAction(tr("Select Part"), this);
     if (hasItems()) {
         connect(&selectPartAllAction, &QAction::triggered, this, &SkeletonGraphicsWidget::selectPartAll);
         contextMenu.addAction(&selectPartAllAction);
     }
-    
+
     QAction unselectAllAction(tr("Unselect All"), this);
     if (hasSelection()) {
         connect(&unselectAllAction, &QAction::triggered, this, &SkeletonGraphicsWidget::unselectAll);
@@ -299,7 +298,7 @@ bool SkeletonGraphicsWidget::hasMultipleSelection()
 
 bool SkeletonGraphicsWidget::hasEdgeSelection()
 {
-    for (const auto &it: m_rangeSelectionSet) {
+    for (const auto& it : m_rangeSelectionSet) {
         if (it->data(0) == "edge")
             return true;
     }
@@ -308,7 +307,7 @@ bool SkeletonGraphicsWidget::hasEdgeSelection()
 
 bool SkeletonGraphicsWidget::hasNodeSelection()
 {
-    for (const auto &it: m_rangeSelectionSet) {
+    for (const auto& it : m_rangeSelectionSet) {
         if (it->data(0) == "node")
             return true;
     }
@@ -318,9 +317,9 @@ bool SkeletonGraphicsWidget::hasNodeSelection()
 bool SkeletonGraphicsWidget::hasTwoDisconnectedNodesSelection()
 {
     std::vector<dust3d::Uuid> nodeIds;
-    for (const auto &it: m_rangeSelectionSet) {
+    for (const auto& it : m_rangeSelectionSet) {
         if (it->data(0) == "node") {
-            nodeIds.push_back(((SkeletonGraphicsNodeItem *)it)->id());
+            nodeIds.push_back(((SkeletonGraphicsNodeItem*)it)->id());
         }
     }
     if (nodeIds.size() != 2)
@@ -337,10 +336,10 @@ bool SkeletonGraphicsWidget::hasTwoDisconnectedNodesSelection()
 void SkeletonGraphicsWidget::fadeSelected()
 {
     std::set<dust3d::Uuid> partIds;
-    for (const auto &it: m_rangeSelectionSet) {
+    for (const auto& it : m_rangeSelectionSet) {
         if (it->data(0) == "node") {
-            SkeletonGraphicsNodeItem *nodeItem = (SkeletonGraphicsNodeItem *)it;
-            const SkeletonNode *node = m_document->findNode(nodeItem->id());
+            SkeletonGraphicsNodeItem* nodeItem = (SkeletonGraphicsNodeItem*)it;
+            const SkeletonNode* node = m_document->findNode(nodeItem->id());
             if (nullptr == node)
                 continue;
             if (partIds.find(node->partId) != partIds.end())
@@ -351,7 +350,7 @@ void SkeletonGraphicsWidget::fadeSelected()
     if (partIds.empty())
         return;
     emit batchChangeBegin();
-    for (const auto &it: partIds) {
+    for (const auto& it : partIds) {
         emit setPartColorState(it, false, Qt::white);
     }
     emit batchChangeEnd();
@@ -363,17 +362,17 @@ void SkeletonGraphicsWidget::colorizeSelected()
     if (nullptr == m_backgroundImage)
         return;
     std::map<dust3d::Uuid, std::map<QString, size_t>> sumOfColor;
-    for (const auto &it: m_rangeSelectionSet) {
+    for (const auto& it : m_rangeSelectionSet) {
         if (it->data(0) == "node") {
-            SkeletonGraphicsNodeItem *nodeItem = (SkeletonGraphicsNodeItem *)it;
-            const SkeletonNode *node = m_document->findNode(nodeItem->id());
+            SkeletonGraphicsNodeItem* nodeItem = (SkeletonGraphicsNodeItem*)it;
+            const SkeletonNode* node = m_document->findNode(nodeItem->id());
             if (nullptr == node)
                 continue;
-            const auto &position = nodeItem->origin();
+            const auto& position = nodeItem->origin();
             sumOfColor[node->partId][m_backgroundImage->pixelColor(position.x(), position.y()).name()]++;
         } else if (it->data(0) == "edge") {
-            SkeletonGraphicsEdgeItem *edgeItem = (SkeletonGraphicsEdgeItem *)it;
-            const SkeletonEdge *edge = m_document->findEdge(edgeItem->id());
+            SkeletonGraphicsEdgeItem* edgeItem = (SkeletonGraphicsEdgeItem*)it;
+            const SkeletonEdge* edge = m_document->findEdge(edgeItem->id());
             if (nullptr == edge)
                 continue;
             const auto position = (edgeItem->firstItem()->origin() + edgeItem->secondItem()->origin()) / 2;
@@ -383,11 +382,11 @@ void SkeletonGraphicsWidget::colorizeSelected()
     if (sumOfColor.empty())
         return;
     emit batchChangeBegin();
-    for (const auto &it: sumOfColor) {
+    for (const auto& it : sumOfColor) {
         int r = 0;
         int g = 0;
         int b = 0;
-        for (const auto &freq: it.second) {
+        for (const auto& freq : it.second) {
             QColor color(freq.first);
             r += color.red();
             g += color.green();
@@ -403,14 +402,14 @@ void SkeletonGraphicsWidget::colorizeSelected()
 void SkeletonGraphicsWidget::breakSelected()
 {
     std::set<dust3d::Uuid> edgeIds;
-    for (const auto &it: m_rangeSelectionSet) {
+    for (const auto& it : m_rangeSelectionSet) {
         if (it->data(0) == "edge")
-            edgeIds.insert(((SkeletonGraphicsEdgeItem *)it)->id());
+            edgeIds.insert(((SkeletonGraphicsEdgeItem*)it)->id());
     }
     if (edgeIds.empty())
         return;
     emit batchChangeBegin();
-    for (const auto &it: edgeIds) {
+    for (const auto& it : edgeIds) {
         emit breakEdge(it);
     }
     emit batchChangeEnd();
@@ -420,14 +419,14 @@ void SkeletonGraphicsWidget::breakSelected()
 void SkeletonGraphicsWidget::reduceSelected()
 {
     std::set<dust3d::Uuid> nodeIds;
-    for (const auto &it: m_rangeSelectionSet) {
+    for (const auto& it : m_rangeSelectionSet) {
         if (it->data(0) == "node")
-            nodeIds.insert(((SkeletonGraphicsNodeItem *)it)->id());
+            nodeIds.insert(((SkeletonGraphicsNodeItem*)it)->id());
     }
     if (nodeIds.empty())
         return;
     emit batchChangeBegin();
-    for (const auto &it: nodeIds) {
+    for (const auto& it : nodeIds) {
         emit reduceNode(it);
     }
     emit batchChangeEnd();
@@ -437,14 +436,14 @@ void SkeletonGraphicsWidget::reduceSelected()
 void SkeletonGraphicsWidget::reverseSelectedEdges()
 {
     std::set<dust3d::Uuid> edgeIds;
-    for (const auto &it: m_rangeSelectionSet) {
+    for (const auto& it : m_rangeSelectionSet) {
         if (it->data(0) == "edge")
-            edgeIds.insert(((SkeletonGraphicsEdgeItem *)it)->id());
+            edgeIds.insert(((SkeletonGraphicsEdgeItem*)it)->id());
     }
     if (edgeIds.empty())
         return;
     emit batchChangeBegin();
-    for (const auto &it: edgeIds) {
+    for (const auto& it : edgeIds) {
         emit reverseEdge(it);
     }
     emit batchChangeEnd();
@@ -454,9 +453,9 @@ void SkeletonGraphicsWidget::reverseSelectedEdges()
 void SkeletonGraphicsWidget::connectSelected()
 {
     std::vector<dust3d::Uuid> nodeIds;
-    for (const auto &it: m_rangeSelectionSet) {
+    for (const auto& it : m_rangeSelectionSet) {
         if (it->data(0) == "node") {
-            nodeIds.push_back(((SkeletonGraphicsNodeItem *)it)->id());
+            nodeIds.push_back(((SkeletonGraphicsNodeItem*)it)->id());
         }
     }
     if (nodeIds.size() != 2)
@@ -475,7 +474,7 @@ void SkeletonGraphicsWidget::alignSelectedToLocal(bool alignToVerticalCenter, bo
 {
     if (!hasMultipleSelection())
         return;
-    std::set<SkeletonGraphicsNodeItem *> nodeItems;
+    std::set<SkeletonGraphicsNodeItem*> nodeItems;
     readMergedSkeletonNodeSetFromRangeSelection(&nodeItems);
     if (nodeItems.empty())
         return;
@@ -483,8 +482,8 @@ void SkeletonGraphicsWidget::alignSelectedToLocal(bool alignToVerticalCenter, bo
         return;
     emit batchChangeBegin();
     QVector2D center = centerOfNodeItemSet(nodeItems);
-    for (const auto &it: nodeItems) {
-        SkeletonGraphicsNodeItem *nodeItem = it;
+    for (const auto& it : nodeItems) {
+        SkeletonGraphicsNodeItem* nodeItem = it;
         QPointF nodeOrigin = nodeItem->origin();
         float byX = alignToHorizontalCenter ? sceneRadiusToUnified(center.x() - nodeOrigin.x()) : 0;
         float byY = alignToVerticalCenter ? sceneRadiusToUnified(center.y() - nodeOrigin.y()) : 0;
@@ -510,13 +509,13 @@ void SkeletonGraphicsWidget::alignSelectedToGlobal(bool alignToVerticalCenter, b
         return;
     if (!hasSelection())
         return;
-    std::set<SkeletonGraphicsNodeItem *> nodeItems;
+    std::set<SkeletonGraphicsNodeItem*> nodeItems;
     readMergedSkeletonNodeSetFromRangeSelection(&nodeItems);
     if (nodeItems.empty())
         return;
     emit batchChangeBegin();
-    for (const auto &nodeItem: nodeItems) {
-        const SkeletonNode *node = m_document->findNode(nodeItem->id());
+    for (const auto& nodeItem : nodeItems) {
+        const SkeletonNode* node = m_document->findNode(nodeItem->id());
         if (!node) {
             qDebug() << "Find node id failed:" << nodeItem->id();
             continue;
@@ -604,20 +603,20 @@ void SkeletonGraphicsWidget::turnaroundChanged()
 
 void SkeletonGraphicsWidget::updateTurnaround()
 {
-    const QImage *turnaroundImage = &m_document->turnaround;
+    const QImage* turnaroundImage = &m_document->turnaround;
     QImage onePixel(2, 1, QImage::Format_ARGB32);
     if (turnaroundImage->isNull()) {
         onePixel.fill(Qt::white);
         turnaroundImage = &onePixel;
     }
-    
+
     m_turnaroundChanged = true;
     if (m_turnaroundLoader)
         return;
-    
+
     m_turnaroundChanged = false;
 
-    QThread *thread = new QThread;
+    QThread* thread = new QThread;
     m_turnaroundLoader = new TurnaroundLoader(*turnaroundImage,
         parentWidget()->rect().size());
     m_turnaroundLoader->moveToThread(thread);
@@ -643,7 +642,7 @@ void SkeletonGraphicsWidget::turnaroundImageReady()
     }
     delete m_turnaroundLoader;
     m_turnaroundLoader = nullptr;
-    
+
     emit loadedTurnaroundImageChanged();
 
     if (m_turnaroundChanged) {
@@ -651,7 +650,7 @@ void SkeletonGraphicsWidget::turnaroundImageReady()
     }
 }
 
-const QImage *SkeletonGraphicsWidget::loadedTurnaroundImage() const
+const QImage* SkeletonGraphicsWidget::loadedTurnaroundImage() const
 {
     return m_backgroundImage;
 }
@@ -662,9 +661,9 @@ void SkeletonGraphicsWidget::updateCursor()
         m_cursorEdgeItem->hide();
         m_cursorNodeItem->hide();
     }
-    
+
     // Set cursor here if needed
-    
+
     emit cursorChanged();
 }
 
@@ -672,9 +671,9 @@ void SkeletonGraphicsWidget::editModeChanged()
 {
     updateCursor();
     if (SkeletonDocumentEditMode::Add == m_document->editMode) {
-        SkeletonGraphicsNodeItem *choosenNodeItem = nullptr;
+        SkeletonGraphicsNodeItem* choosenNodeItem = nullptr;
         if (!m_rangeSelectionSet.empty()) {
-            std::set<SkeletonGraphicsNodeItem *> nodeItems;
+            std::set<SkeletonGraphicsNodeItem*> nodeItems;
             readMergedSkeletonNodeSetFromRangeSelection(&nodeItems);
             if (nodeItems.size() == 1) {
                 choosenNodeItem = *nodeItems.begin();
@@ -686,11 +685,11 @@ void SkeletonGraphicsWidget::editModeChanged()
     }
 }
 
-void SkeletonGraphicsWidget::mouseMoveEvent(QMouseEvent *event)
+void SkeletonGraphicsWidget::mouseMoveEvent(QMouseEvent* event)
 {
     if (m_modelWidget && m_modelWidget->inputMouseMoveEventFromOtherWidget(event))
         return;
-    
+
     QGraphicsView::mouseMoveEvent(event);
     mouseMove(event);
 }
@@ -700,7 +699,7 @@ bool SkeletonGraphicsWidget::rotated()
     return m_rotated;
 }
 
-bool SkeletonGraphicsWidget::inputWheelEventFromOtherWidget(QWheelEvent *event)
+bool SkeletonGraphicsWidget::inputWheelEventFromOtherWidget(QWheelEvent* event)
 {
     if (!wheel(event)) {
         if (m_modelWidget && m_modelWidget->inputWheelEventFromOtherWidget(event))
@@ -709,7 +708,7 @@ bool SkeletonGraphicsWidget::inputWheelEventFromOtherWidget(QWheelEvent *event)
     return true;
 }
 
-void SkeletonGraphicsWidget::wheelEvent(QWheelEvent *event)
+void SkeletonGraphicsWidget::wheelEvent(QWheelEvent* event)
 {
     if (!wheel(event)) {
         if (m_modelWidget && m_modelWidget->inputWheelEventFromOtherWidget(event))
@@ -717,20 +716,20 @@ void SkeletonGraphicsWidget::wheelEvent(QWheelEvent *event)
     }
 }
 
-void SkeletonGraphicsWidget::mouseReleaseEvent(QMouseEvent *event)
+void SkeletonGraphicsWidget::mouseReleaseEvent(QMouseEvent* event)
 {
     if (m_modelWidget && m_modelWidget->inputMouseReleaseEventFromOtherWidget(event))
         return;
-    
+
     QGraphicsView::mouseReleaseEvent(event);
     mouseRelease(event);
 }
 
-void SkeletonGraphicsWidget::mousePressEvent(QMouseEvent *event)
+void SkeletonGraphicsWidget::mousePressEvent(QMouseEvent* event)
 {
     if (m_modelWidget && m_modelWidget->inputMousePressEventFromOtherWidget(event))
         return;
-    
+
     QGraphicsView::mousePressEvent(event);
     m_mouseEventFromSelf = true;
     if (mousePress(event)) {
@@ -740,27 +739,27 @@ void SkeletonGraphicsWidget::mousePressEvent(QMouseEvent *event)
     m_mouseEventFromSelf = false;
 }
 
-void SkeletonGraphicsWidget::mouseDoubleClickEvent(QMouseEvent *event)
+void SkeletonGraphicsWidget::mouseDoubleClickEvent(QMouseEvent* event)
 {
     QGraphicsView::mouseDoubleClickEvent(event);
     mouseDoubleClick(event);
 }
 
-void SkeletonGraphicsWidget::keyPressEvent(QKeyEvent *event)
+void SkeletonGraphicsWidget::keyPressEvent(QKeyEvent* event)
 {
     if (keyPress(event))
         return;
     QGraphicsView::keyPressEvent(event);
 }
 
-void SkeletonGraphicsWidget::keyReleaseEvent(QKeyEvent *event)
+void SkeletonGraphicsWidget::keyReleaseEvent(QKeyEvent* event)
 {
     if (keyRelease(event))
         return;
     QGraphicsView::keyReleaseEvent(event);
 }
 
-bool SkeletonGraphicsWidget::mouseMove(QMouseEvent *event)
+bool SkeletonGraphicsWidget::mouseMove(QMouseEvent* event)
 {
     if (m_dragStarted) {
         QPoint currentGlobalPos = event->globalPos();
@@ -771,7 +770,7 @@ bool SkeletonGraphicsWidget::mouseMove(QMouseEvent *event)
         m_lastGlobalPos = currentGlobalPos;
         return true;
     }
-    
+
     if (SkeletonDocumentEditMode::Select == m_document->editMode) {
         if (m_rangeSelectionStarted) {
             QPointF mouseScenePos = mouseEventScenePos(event);
@@ -782,32 +781,31 @@ bool SkeletonGraphicsWidget::mouseMove(QMouseEvent *event)
             return true;
         }
     }
-    
-    if (SkeletonDocumentEditMode::Select == m_document->editMode ||
-            SkeletonDocumentEditMode::Add == m_document->editMode) {
-        
+
+    if (SkeletonDocumentEditMode::Select == m_document->editMode || SkeletonDocumentEditMode::Add == m_document->editMode) {
+
         //
         // > For overlapping nodes, you can make it a bit better by selecting the node center nearest the mouse, rather than simply checking against the wider circle.
         // > https://www.reddit.com/user/hdu
         //
-        
-        SkeletonGraphicsNodeItem *newHoverNodeItem = nullptr;
-        SkeletonGraphicsEdgeItem *newHoverEdgeItem = nullptr;
-        SkeletonGraphicsOriginItem *newHoverOriginItem = nullptr;
+
+        SkeletonGraphicsNodeItem* newHoverNodeItem = nullptr;
+        SkeletonGraphicsEdgeItem* newHoverEdgeItem = nullptr;
+        SkeletonGraphicsOriginItem* newHoverOriginItem = nullptr;
         QPointF scenePos = mouseEventScenePos(event);
-        QList<QGraphicsItem *> items = scene()->items(scenePos);
-        std::vector<std::pair<QGraphicsItem *, float>> itemDistance2MapWithMouse;
+        QList<QGraphicsItem*> items = scene()->items(scenePos);
+        std::vector<std::pair<QGraphicsItem*, float>> itemDistance2MapWithMouse;
         for (auto it = items.begin(); it != items.end(); it++) {
-            QGraphicsItem *item = *it;
+            QGraphicsItem* item = *it;
             if (item->data(0) == "node") {
-                SkeletonGraphicsNodeItem *nodeItem = (SkeletonGraphicsNodeItem *)item;
+                SkeletonGraphicsNodeItem* nodeItem = (SkeletonGraphicsNodeItem*)item;
                 if (nodeItem->deactivated())
                     continue;
                 QPointF origin = nodeItem->origin();
                 float distance2 = pow(origin.x() - scenePos.x(), 2) + pow(origin.y() - scenePos.y(), 2);
                 itemDistance2MapWithMouse.push_back(std::make_pair(item, distance2));
             } else if (item->data(0) == "edge") {
-                SkeletonGraphicsEdgeItem *edgeItem = (SkeletonGraphicsEdgeItem *)item;
+                SkeletonGraphicsEdgeItem* edgeItem = (SkeletonGraphicsEdgeItem*)item;
                 if (edgeItem->deactivated())
                     continue;
                 if (edgeItem->firstItem() && edgeItem->secondItem()) {
@@ -818,19 +816,19 @@ bool SkeletonGraphicsWidget::mouseMove(QMouseEvent *event)
                     itemDistance2MapWithMouse.push_back(std::make_pair(item, distance2));
                 }
             } else if (item->data(0) == "origin") {
-                newHoverOriginItem = (SkeletonGraphicsOriginItem *)item;
+                newHoverOriginItem = (SkeletonGraphicsOriginItem*)item;
             }
         }
         if (!itemDistance2MapWithMouse.empty()) {
             std::sort(itemDistance2MapWithMouse.begin(), itemDistance2MapWithMouse.end(),
-                    [](const std::pair<QGraphicsItem *, float> &a, const std::pair<QGraphicsItem *, float> &b) {
-                return a.second < b.second;
-            });
-            QGraphicsItem *pickedNearestItem = itemDistance2MapWithMouse[0].first;
+                [](const std::pair<QGraphicsItem*, float>& a, const std::pair<QGraphicsItem*, float>& b) {
+                    return a.second < b.second;
+                });
+            QGraphicsItem* pickedNearestItem = itemDistance2MapWithMouse[0].first;
             if (pickedNearestItem->data(0) == "node") {
-                newHoverNodeItem = (SkeletonGraphicsNodeItem *)pickedNearestItem;
+                newHoverNodeItem = (SkeletonGraphicsNodeItem*)pickedNearestItem;
             } else if (pickedNearestItem->data(0) == "edge") {
-                newHoverEdgeItem = (SkeletonGraphicsEdgeItem *)pickedNearestItem;
+                newHoverEdgeItem = (SkeletonGraphicsEdgeItem*)pickedNearestItem;
             }
         }
         if (newHoverNodeItem) {
@@ -873,7 +871,7 @@ bool SkeletonGraphicsWidget::mouseMove(QMouseEvent *event)
         }
         hoverPart(hoveredPartId);
     }
-    
+
     if (SkeletonDocumentEditMode::Add == m_document->editMode) {
         QPointF mouseScenePos = mouseEventScenePos(event);
         m_cursorNodeItem->setOrigin(mouseScenePos);
@@ -890,7 +888,7 @@ bool SkeletonGraphicsWidget::mouseMove(QMouseEvent *event)
         }
         return true;
     }
-    
+
     if (SkeletonDocumentEditMode::Select == m_document->editMode) {
         if (m_moveStarted) {
             if (m_checkedOriginItem) {
@@ -906,12 +904,12 @@ bool SkeletonGraphicsWidget::mouseMove(QMouseEvent *event)
                 float byX = mouseScenePos.x() - m_lastScenePos.x();
                 float byY = mouseScenePos.y() - m_lastScenePos.y();
                 if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
-                    std::set<SkeletonGraphicsNodeItem *> nodeItems;
+                    std::set<SkeletonGraphicsNodeItem*> nodeItems;
                     readMergedSkeletonNodeSetFromRangeSelection(&nodeItems);
                     bool ikMoved = false;
                     if (nodeItems.size() == 1) {
-                        auto &nodeItem = *nodeItems.begin();
-                        const SkeletonNode *node = m_document->findNode(nodeItem->id());
+                        auto& nodeItem = *nodeItems.begin();
+                        const SkeletonNode* node = m_document->findNode(nodeItem->id());
                         if (node->edgeIds.size() == 1) {
                             const auto origin = nodeItem->origin();
                             byX = mouseScenePos.x() - origin.x();
@@ -941,7 +939,7 @@ bool SkeletonGraphicsWidget::mouseMove(QMouseEvent *event)
             }
         }
     }
-    
+
     return false;
 }
 
@@ -949,10 +947,10 @@ void SkeletonGraphicsWidget::rotateSelected(int degree)
 {
     if (m_rangeSelectionSet.empty())
         return;
-    
-    std::set<SkeletonGraphicsNodeItem *> nodeItems;
+
+    std::set<SkeletonGraphicsNodeItem*> nodeItems;
     readMergedSkeletonNodeSetFromRangeSelection(&nodeItems);
-    
+
     QVector2D center;
 
     if (1 == nodeItems.size() && m_document->originSettled()) {
@@ -960,21 +958,21 @@ void SkeletonGraphicsWidget::rotateSelected(int degree)
         // 1. Pick who is the parent from neighbors
         // 2. Rotate all the remaining neighbor nodes and their children exlucde the picked parent
         QVector3D worldOrigin = QVector3D(m_document->getOriginX(m_rotated), m_document->getOriginY(m_rotated), m_document->getOriginZ(m_rotated));
-        SkeletonGraphicsNodeItem *centerNodeItem = *nodeItems.begin();
-        const auto &centerNode = m_document->findNode(centerNodeItem->id());
+        SkeletonGraphicsNodeItem* centerNodeItem = *nodeItems.begin();
+        const auto& centerNode = m_document->findNode(centerNodeItem->id());
         if (nullptr == centerNode) {
             qDebug() << "findNode:" << centerNodeItem->id() << " failed while rotate";
             return;
         }
         std::vector<std::pair<dust3d::Uuid, float>> directNeighborDists;
-        for (const auto &neighborId: centerNode->edgeIds) {
-            const auto &neighborEdge = m_document->findEdge(neighborId);
+        for (const auto& neighborId : centerNode->edgeIds) {
+            const auto& neighborEdge = m_document->findEdge(neighborId);
             if (nullptr == neighborEdge) {
                 qDebug() << "findEdge:" << neighborId << " failed while rotate";
                 continue;
             }
-            const auto &neighborNodeId = neighborEdge->neighborOf(centerNodeItem->id());
-            const auto &neighborNode = m_document->findNode(neighborNodeId);
+            const auto& neighborNodeId = neighborEdge->neighborOf(centerNodeItem->id());
+            const auto& neighborNode = m_document->findNode(neighborNodeId);
             if (nullptr == centerNode) {
                 qDebug() << "findNode:" << neighborNodeId << " failed while rotate";
                 continue;
@@ -982,7 +980,7 @@ void SkeletonGraphicsWidget::rotateSelected(int degree)
             QVector3D nodeOrigin(neighborNode->getX(m_rotated), neighborNode->getY(m_rotated), neighborNode->getZ(m_rotated));
             directNeighborDists.push_back(std::make_pair(neighborNodeId, (nodeOrigin - worldOrigin).lengthSquared()));
         }
-        std::sort(directNeighborDists.begin(), directNeighborDists.end(), [](const std::pair<dust3d::Uuid, float> &a, const std::pair<dust3d::Uuid, float> &b) {
+        std::sort(directNeighborDists.begin(), directNeighborDists.end(), [](const std::pair<dust3d::Uuid, float>& a, const std::pair<dust3d::Uuid, float>& b) {
             return a.second < b.second;
         });
         int skippedNum = 1;
@@ -998,8 +996,8 @@ void SkeletonGraphicsWidget::rotateSelected(int degree)
         }
         center = QVector2D(centerNodeItem->origin().x(), centerNodeItem->origin().y());
         nodeItems.clear();
-        for (const auto &neighborId: neighborIds) {
-            const auto &findItemResult = nodeItemMap.find(neighborId);
+        for (const auto& neighborId : neighborIds) {
+            const auto& findItemResult = nodeItemMap.find(neighborId);
             if (findItemResult == nodeItemMap.end()) {
                 qDebug() << "find node item:" << neighborId << "failed";
                 continue;
@@ -1017,12 +1015,12 @@ void SkeletonGraphicsWidget::rotateSelected(int degree)
     rotateItems(nodeItems, degree, center);
 }
 
-void SkeletonGraphicsWidget::rotateItems(const std::set<SkeletonGraphicsNodeItem *> &nodeItems, int degree, QVector2D center)
+void SkeletonGraphicsWidget::rotateItems(const std::set<SkeletonGraphicsNodeItem*>& nodeItems, int degree, QVector2D center)
 {
     emit disableAllPositionRelatedLocks();
     QVector3D centerPoint(center.x(), center.y(), 0);
-    for (const auto &it: nodeItems) {
-        SkeletonGraphicsNodeItem *nodeItem = it;
+    for (const auto& it : nodeItems) {
+        SkeletonGraphicsNodeItem* nodeItem = it;
         QMatrix4x4 mat;
         QPointF nodeOrigin = nodeItem->origin();
         QVector3D nodeOriginPoint(nodeOrigin.x(), nodeOrigin.y(), 0);
@@ -1049,8 +1047,8 @@ void SkeletonGraphicsWidget::rotateItems(const std::set<SkeletonGraphicsNodeItem
 
 void SkeletonGraphicsWidget::rotateAllSideProfile(int degree)
 {
-    std::set<SkeletonGraphicsNodeItem *> items;
-    for (const auto &item: nodeItemMap) {
+    std::set<SkeletonGraphicsNodeItem*> items;
+    for (const auto& item : nodeItemMap) {
         items.insert(item.second.second);
     }
     QVector2D center(scenePosFromUnified(QPointF(m_document->getOriginZ(m_rotated), m_document->getOriginY(m_rotated))));
@@ -1080,16 +1078,16 @@ void SkeletonGraphicsWidget::moveSelected(float byX, float byY)
 {
     if (m_rangeSelectionSet.empty())
         return;
-    
+
     m_ikMoveEndEffectorId = dust3d::Uuid();
-    
+
     byX = sceneRadiusToUnified(byX);
     byY = sceneRadiusToUnified(byY);
-    std::set<SkeletonGraphicsNodeItem *> nodeItems;
+    std::set<SkeletonGraphicsNodeItem*> nodeItems;
     readMergedSkeletonNodeSetFromRangeSelection(&nodeItems);
-    
-    for (const auto &it: nodeItems) {
-        SkeletonGraphicsNodeItem *nodeItem = it;
+
+    for (const auto& it : nodeItems) {
+        SkeletonGraphicsNodeItem* nodeItem = it;
         if (SkeletonProfile::Main == nodeItem->profile()) {
             if (m_rotated)
                 emit moveNodeBy(nodeItem->id(), byY, byX, 0);
@@ -1108,14 +1106,14 @@ void SkeletonGraphicsWidget::switchSelectedXZ()
 {
     if (m_rangeSelectionSet.empty())
         return;
-    
+
     std::set<dust3d::Uuid> nodeIdSet;
     readSkeletonNodeAndEdgeIdSetFromRangeSelection(&nodeIdSet);
     if (nodeIdSet.empty())
         return;
-    
+
     emit batchChangeBegin();
-    for (const auto nodeId: nodeIdSet) {
+    for (const auto nodeId : nodeIdSet) {
         emit switchNodeXZ(nodeId);
     }
     emit batchChangeEnd();
@@ -1126,21 +1124,21 @@ void SkeletonGraphicsWidget::zoomSelected(float delta)
 {
     if (m_rangeSelectionSet.empty())
         return;
-    
-    std::set<SkeletonGraphicsNodeItem *> nodeItems;
+
+    std::set<SkeletonGraphicsNodeItem*> nodeItems;
     readMergedSkeletonNodeSetFromRangeSelection(&nodeItems);
-    
+
     float unifiedDelta = sceneRadiusToUnified(delta);
-    for (const auto &it: nodeItems) {
-        SkeletonGraphicsNodeItem *nodeItem = it;
+    for (const auto& it : nodeItems) {
+        SkeletonGraphicsNodeItem* nodeItem = it;
         emit scaleNodeByAddRadius(nodeItem->id(), unifiedDelta);
     }
 }
 
-void SkeletonGraphicsWidget::getOtherProfileNodeItems(const std::set<SkeletonGraphicsNodeItem *> &nodeItemSet,
-        std::set<SkeletonGraphicsNodeItem *> *otherProfileNodeItemSet)
+void SkeletonGraphicsWidget::getOtherProfileNodeItems(const std::set<SkeletonGraphicsNodeItem*>& nodeItemSet,
+    std::set<SkeletonGraphicsNodeItem*>* otherProfileNodeItemSet)
 {
-    for (const auto &nodeItem: nodeItemSet) {
+    for (const auto& nodeItem : nodeItemSet) {
         auto findNodeItem = nodeItemMap.find(nodeItem->id());
         if (findNodeItem == nodeItemMap.end())
             continue;
@@ -1155,18 +1153,18 @@ void SkeletonGraphicsWidget::scaleSelected(float delta)
 {
     if (m_rangeSelectionSet.empty())
         return;
-    
-    std::set<SkeletonGraphicsNodeItem *> nodeItems;
+
+    std::set<SkeletonGraphicsNodeItem*> nodeItems;
     readMergedSkeletonNodeSetFromRangeSelection(&nodeItems);
-    
-    std::set<SkeletonGraphicsNodeItem *> otherProfileNodeItems;
+
+    std::set<SkeletonGraphicsNodeItem*> otherProfileNodeItems;
     getOtherProfileNodeItems(nodeItems, &otherProfileNodeItems);
-    
+
     QVector2D center = centerOfNodeItemSet(nodeItems);
     QVector2D otherCenter = centerOfNodeItemSet(otherProfileNodeItems);
     std::map<dust3d::Uuid, std::tuple<float, float, float>> moveByMap;
     float scale = sceneRadiusToUnified(delta);
-    for (const auto &nodeItem: nodeItems) {
+    for (const auto& nodeItem : nodeItems) {
         QVector2D origin = QVector2D(nodeItem->origin());
         QVector2D ray = (center - origin) * scale;
         float byX = -sceneRadiusToUnified(ray.x());
@@ -1177,7 +1175,7 @@ void SkeletonGraphicsWidget::scaleSelected(float delta)
             moveByMap[nodeItem->id()] = std::make_tuple(0.0, byY, byX);
         }
     }
-    for (const auto &nodeItem: otherProfileNodeItems) {
+    for (const auto& nodeItem : otherProfileNodeItems) {
         QVector2D origin = QVector2D(nodeItem->origin());
         QVector2D ray = (otherCenter - origin) * scale;
         float byX = -sceneRadiusToUnified(ray.x());
@@ -1187,7 +1185,7 @@ void SkeletonGraphicsWidget::scaleSelected(float delta)
             std::get<2>(moveByMap[nodeItem->id()]) = byX;
         }
     }
-    for (const auto &it: moveByMap) {
+    for (const auto& it : moveByMap) {
         if (m_rotated)
             emit moveNodeBy(it.first, std::get<1>(it.second), std::get<0>(it.second), std::get<2>(it.second));
         else
@@ -1195,7 +1193,7 @@ void SkeletonGraphicsWidget::scaleSelected(float delta)
     }
 }
 
-bool SkeletonGraphicsWidget::wheel(QWheelEvent *event)
+bool SkeletonGraphicsWidget::wheel(QWheelEvent* event)
 {
     float delta = 0;
     if (event->delta() > 0)
@@ -1226,10 +1224,10 @@ bool SkeletonGraphicsWidget::wheel(QWheelEvent *event)
     return false;
 }
 
-QVector2D SkeletonGraphicsWidget::centerOfNodeItemSet(const std::set<SkeletonGraphicsNodeItem *> &set)
+QVector2D SkeletonGraphicsWidget::centerOfNodeItemSet(const std::set<SkeletonGraphicsNodeItem*>& set)
 {
     QVector2D center;
-    for (const auto &nodeItem: set) {
+    for (const auto& nodeItem : set) {
         center += QVector2D(nodeItem->origin());
     }
     center /= set.size();
@@ -1238,13 +1236,13 @@ QVector2D SkeletonGraphicsWidget::centerOfNodeItemSet(const std::set<SkeletonGra
 
 void SkeletonGraphicsWidget::flipHorizontally()
 {
-    std::set<SkeletonGraphicsNodeItem *> nodeItems;
+    std::set<SkeletonGraphicsNodeItem*> nodeItems;
     readMergedSkeletonNodeSetFromRangeSelection(&nodeItems);
     if (nodeItems.empty())
         return;
     QVector2D center = centerOfNodeItemSet(nodeItems);
     emit batchChangeBegin();
-    for (const auto &nodeItem: nodeItems) {
+    for (const auto& nodeItem : nodeItems) {
         QPointF origin = nodeItem->origin();
         float offset = origin.x() - center.x();
         float unifiedOffset = -sceneRadiusToUnified(offset * 2);
@@ -1263,13 +1261,13 @@ void SkeletonGraphicsWidget::flipHorizontally()
 
 void SkeletonGraphicsWidget::flipVertically()
 {
-    std::set<SkeletonGraphicsNodeItem *> nodeItems;
+    std::set<SkeletonGraphicsNodeItem*> nodeItems;
     readMergedSkeletonNodeSetFromRangeSelection(&nodeItems);
     if (nodeItems.empty())
         return;
     QVector2D center = centerOfNodeItemSet(nodeItems);
     emit batchChangeBegin();
-    for (const auto &nodeItem: nodeItems) {
+    for (const auto& nodeItem : nodeItems) {
         QPointF origin = nodeItem->origin();
         float offset = origin.y() - center.y();
         float unifiedOffset = -sceneRadiusToUnified(offset * 2);
@@ -1318,7 +1316,7 @@ void SkeletonGraphicsWidget::rotateAllMainProfileCounterclockwise90DegreeAlongOr
     emit groupOperationAdded();
 }
 
-bool SkeletonGraphicsWidget::mouseRelease(QMouseEvent *event)
+bool SkeletonGraphicsWidget::mouseRelease(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton) {
         bool processed = m_dragStarted || m_moveStarted || m_rangeSelectionStarted;
@@ -1341,12 +1339,12 @@ bool SkeletonGraphicsWidget::mouseRelease(QMouseEvent *event)
     return false;
 }
 
-QPointF SkeletonGraphicsWidget::mouseEventScenePos(QMouseEvent *event)
+QPointF SkeletonGraphicsWidget::mouseEventScenePos(QMouseEvent* event)
 {
     return mapToScene(mapFromGlobal(event->globalPos()));
 }
 
-bool SkeletonGraphicsWidget::mousePress(QMouseEvent *event)
+bool SkeletonGraphicsWidget::mousePress(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton) {
         if (SkeletonDocumentEditMode::ZoomIn == m_document->editMode) {
@@ -1374,11 +1372,7 @@ bool SkeletonGraphicsWidget::mousePress(QMouseEvent *event)
         } else if (SkeletonDocumentEditMode::Add == m_document->editMode) {
             if (m_cursorNodeItem->isVisible()) {
                 if (m_addFromNodeItem) {
-                    if (m_hoveredNodeItem && m_addFromNodeItem &&
-                            m_hoveredNodeItem != m_addFromNodeItem &&
-                            m_hoveredNodeItem->profile() == m_addFromNodeItem->profile() &&
-                            !m_document->findEdgeByNodes(m_addFromNodeItem->id(), m_hoveredNodeItem->id()) &&
-                            m_document->isNodeEditable(m_hoveredNodeItem->id())) {
+                    if (m_hoveredNodeItem && m_addFromNodeItem && m_hoveredNodeItem != m_addFromNodeItem && m_hoveredNodeItem->profile() == m_addFromNodeItem->profile() && !m_document->findEdgeByNodes(m_addFromNodeItem->id(), m_hoveredNodeItem->id()) && m_document->isNodeEditable(m_hoveredNodeItem->id())) {
                         if (m_document->isNodeConnectable(m_hoveredNodeItem->id())) {
                             emit addEdge(m_addFromNodeItem->id(), m_hoveredNodeItem->id());
                             emit groupOperationAdded();
@@ -1399,7 +1393,7 @@ bool SkeletonGraphicsWidget::mousePress(QMouseEvent *event)
                     if (mainProfile.x() >= scene()->width() / 2) {
                         sideProfile.setX(mainProfile.x() - scene()->width() / 4);
                     } else {
-                        sideProfile.setX(mainProfile.x() +scene()->width() / 4);
+                        sideProfile.setX(mainProfile.x() + scene()->width() / 4);
                     }
                 }
                 QPointF unifiedMainPos = scenePosToUnified(mainProfile);
@@ -1436,8 +1430,7 @@ bool SkeletonGraphicsWidget::mousePress(QMouseEvent *event)
                     processed = true;
                 }
             } else {
-                if ((nullptr == m_hoveredNodeItem || m_rangeSelectionSet.find(m_hoveredNodeItem) == m_rangeSelectionSet.end()) &&
-                        (nullptr == m_hoveredEdgeItem || m_rangeSelectionSet.find(m_hoveredEdgeItem) == m_rangeSelectionSet.end())) {
+                if ((nullptr == m_hoveredNodeItem || m_rangeSelectionSet.find(m_hoveredNodeItem) == m_rangeSelectionSet.end()) && (nullptr == m_hoveredEdgeItem || m_rangeSelectionSet.find(m_hoveredEdgeItem) == m_rangeSelectionSet.end())) {
                     if (!QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
                         clearRangeSelection();
                     }
@@ -1472,7 +1465,7 @@ bool SkeletonGraphicsWidget::mousePress(QMouseEvent *event)
             }
         }
     }
-    
+
     if (event->button() == Qt::LeftButton) {
         if (SkeletonDocumentEditMode::Select == m_document->editMode) {
             if (!m_rangeSelectionStarted) {
@@ -1513,7 +1506,7 @@ QPointF SkeletonGraphicsWidget::scenePosFromUnified(QPointF pos)
     return QPointF(pos.x() * scene()->height(), pos.y() * scene()->height());
 }
 
-bool SkeletonGraphicsWidget::mouseDoubleClick(QMouseEvent *event)
+bool SkeletonGraphicsWidget::mouseDoubleClick(QMouseEvent* event)
 {
     if (m_hoveredNodeItem || m_hoveredEdgeItem) {
         selectPartAll();
@@ -1530,25 +1523,25 @@ void SkeletonGraphicsWidget::timeToRemoveDeferredNodesAndEdges()
 {
     delete m_deferredRemoveTimer;
     m_deferredRemoveTimer = nullptr;
-    
+
     bool committed = false;
-    
+
     if (!committed && !m_deferredRemoveEdgeIds.empty()) {
-        const auto &it = m_deferredRemoveEdgeIds.begin();
+        const auto& it = m_deferredRemoveEdgeIds.begin();
         const auto edgeId = *it;
         m_deferredRemoveEdgeIds.erase(it);
         emit removeEdge(edgeId);
         committed = true;
     }
-    
+
     if (!committed && !m_deferredRemoveNodeIds.empty()) {
-        const auto &it = m_deferredRemoveNodeIds.begin();
+        const auto& it = m_deferredRemoveNodeIds.begin();
         const auto nodeId = *it;
         m_deferredRemoveNodeIds.erase(it);
         emit removeNode(nodeId);
         committed = true;
     }
-    
+
     if (committed) {
         m_deferredRemoveTimer = new QTimer(this);
         connect(m_deferredRemoveTimer, &QTimer::timeout, this, &SkeletonGraphicsWidget::timeToRemoveDeferredNodesAndEdges);
@@ -1562,30 +1555,30 @@ void SkeletonGraphicsWidget::deleteSelected()
 {
     if (m_rangeSelectionSet.empty())
         return;
-    
+
     std::set<dust3d::Uuid> nodeIdSet;
     std::set<dust3d::Uuid> edgeIdSet;
     readSkeletonNodeAndEdgeIdSetFromRangeSelection(&nodeIdSet, &edgeIdSet);
-    
+
     std::set<dust3d::Uuid> partIds;
-    for (const auto &it: nodeIdSet) {
-        const SkeletonNode *node = m_document->findNode(it);
+    for (const auto& it : nodeIdSet) {
+        const SkeletonNode* node = m_document->findNode(it);
         if (nullptr == node)
             continue;
         partIds.insert(node->partId);
     }
-    for (const auto &it: edgeIdSet) {
-        const SkeletonEdge *edge = m_document->findEdge(it);
+    for (const auto& it : edgeIdSet) {
+        const SkeletonEdge* edge = m_document->findEdge(it);
         if (nullptr == edge)
             continue;
         partIds.insert(edge->partId);
     }
     std::set<dust3d::Uuid> cleanupPartIds;
-    for (const auto &partId: partIds) {
-        const SkeletonPart *part = m_document->findPart(partId);
+    for (const auto& partId : partIds) {
+        const SkeletonPart* part = m_document->findPart(partId);
         if (nullptr != part) {
             bool allNodesSelected = true;
-            for (const auto &it: part->nodeIds) {
+            for (const auto& it : part->nodeIds) {
                 if (nodeIdSet.find(it) == nodeIdSet.end()) {
                     allNodesSelected = false;
                     break;
@@ -1596,17 +1589,17 @@ void SkeletonGraphicsWidget::deleteSelected()
             }
         }
     }
-    for (const auto &partId: cleanupPartIds) {
-        for (auto it = nodeIdSet.begin(); it != nodeIdSet.end(); ) {
-            const SkeletonNode *node = m_document->findNode(*it);
+    for (const auto& partId : cleanupPartIds) {
+        for (auto it = nodeIdSet.begin(); it != nodeIdSet.end();) {
+            const SkeletonNode* node = m_document->findNode(*it);
             if (nullptr != node && node->partId == partId) {
                 it = nodeIdSet.erase(it);
                 continue;
             }
             ++it;
         }
-        for (auto it = edgeIdSet.begin(); it != edgeIdSet.end(); ) {
-            const SkeletonEdge *edge = m_document->findEdge(*it);
+        for (auto it = edgeIdSet.begin(); it != edgeIdSet.end();) {
+            const SkeletonEdge* edge = m_document->findEdge(*it);
             if (nullptr != edge && edge->partId == partId) {
                 it = edgeIdSet.erase(it);
                 continue;
@@ -1614,18 +1607,18 @@ void SkeletonGraphicsWidget::deleteSelected()
             ++it;
         }
     }
-    
-    for (const auto &partId: cleanupPartIds) {
+
+    for (const auto& partId : cleanupPartIds) {
         emit removePart(partId);
     }
-    
-    for (const auto &it: nodeIdSet) {
+
+    for (const auto& it : nodeIdSet) {
         m_deferredRemoveNodeIds.insert(it);
     }
-    for (const auto &it: edgeIdSet) {
+    for (const auto& it : edgeIdSet) {
         m_deferredRemoveEdgeIds.insert(it);
     }
-    
+
     if (!nodeIdSet.empty() || !edgeIdSet.empty()) {
         if (nullptr == m_deferredRemoveTimer) {
             timeToRemoveDeferredNodesAndEdges();
@@ -1637,7 +1630,7 @@ void SkeletonGraphicsWidget::shortcutDelete()
 {
     if (!isVisible())
         return;
-    
+
     bool processed = false;
     if (!m_rangeSelectionSet.empty()) {
         deleteSelected();
@@ -1662,7 +1655,7 @@ void SkeletonGraphicsWidget::shortcutUndo()
 {
     if (!isVisible())
         return;
-    
+
     emit undo();
 }
 
@@ -1670,7 +1663,7 @@ void SkeletonGraphicsWidget::shortcutRedo()
 {
     if (!isVisible())
         return;
-    
+
     emit redo();
 }
 
@@ -1693,7 +1686,7 @@ void SkeletonGraphicsWidget::shortcutCut()
 {
     if (!isVisible())
         return;
-    
+
     cut();
 }
 
@@ -1701,7 +1694,7 @@ void SkeletonGraphicsWidget::shortcutCopy()
 {
     if (!isVisible())
         return;
-    
+
     copy();
 }
 
@@ -1709,7 +1702,7 @@ void SkeletonGraphicsWidget::shortcutPaste()
 {
     if (!isVisible())
         return;
-    
+
     emit paste();
 }
 
@@ -1727,7 +1720,7 @@ void SkeletonGraphicsWidget::shortcutZoomRenderedModelByMinus10()
 {
     if (!isVisible())
         return;
-    
+
     emit zoomRenderedModelBy(-10);
 }
 
@@ -1735,7 +1728,7 @@ void SkeletonGraphicsWidget::shortcutZoomSelectedByMinus1()
 {
     if (!isVisible())
         return;
-    
+
     if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
         zoomSelected(-1);
         emit groupOperationAdded();
@@ -1750,7 +1743,7 @@ void SkeletonGraphicsWidget::shortcutZoomRenderedModelBy10()
 {
     if (!isVisible())
         return;
-    
+
     emit zoomRenderedModelBy(10);
 }
 
@@ -1758,7 +1751,7 @@ void SkeletonGraphicsWidget::shortcutZoomSelectedBy1()
 {
     if (!isVisible())
         return;
-    
+
     if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
         zoomSelected(1);
         emit groupOperationAdded();
@@ -1773,9 +1766,8 @@ void SkeletonGraphicsWidget::shortcutRotateSelectedByMinus1()
 {
     if (!isVisible())
         return;
-    
-    if ((SkeletonDocumentEditMode::Select == m_document->editMode) &&
-            hasSelection()) {
+
+    if ((SkeletonDocumentEditMode::Select == m_document->editMode) && hasSelection()) {
         rotateSelected(-1);
         emit groupOperationAdded();
     }
@@ -1785,9 +1777,8 @@ void SkeletonGraphicsWidget::shortcutRotateSelectedBy1()
 {
     if (!isVisible())
         return;
-    
-    if ((SkeletonDocumentEditMode::Select == m_document->editMode) &&
-            hasSelection()) {
+
+    if ((SkeletonDocumentEditMode::Select == m_document->editMode) && hasSelection()) {
         rotateSelected(1);
         emit groupOperationAdded();
     }
@@ -1797,7 +1788,7 @@ void SkeletonGraphicsWidget::shortcutMoveSelectedToLeft()
 {
     if (!isVisible())
         return;
-    
+
     if (SkeletonDocumentEditMode::Select == m_document->editMode) {
         if (m_checkedOriginItem) {
             moveCheckedOrigin(-1, 0);
@@ -1813,7 +1804,7 @@ void SkeletonGraphicsWidget::shortcutMoveSelectedToRight()
 {
     if (!isVisible())
         return;
-    
+
     if (SkeletonDocumentEditMode::Select == m_document->editMode) {
         if (m_checkedOriginItem) {
             moveCheckedOrigin(1, 0);
@@ -1829,7 +1820,7 @@ void SkeletonGraphicsWidget::shortcutMoveSelectedToUp()
 {
     if (!isVisible())
         return;
-    
+
     if (SkeletonDocumentEditMode::Select == m_document->editMode) {
         if (m_checkedOriginItem) {
             moveCheckedOrigin(0, -1);
@@ -1845,7 +1836,7 @@ void SkeletonGraphicsWidget::shortcutMoveSelectedToDown()
 {
     if (!isVisible())
         return;
-    
+
     if (SkeletonDocumentEditMode::Select == m_document->editMode) {
         if (m_checkedOriginItem) {
             moveCheckedOrigin(0, 1);
@@ -1861,9 +1852,8 @@ void SkeletonGraphicsWidget::shortcutScaleSelectedByMinus1()
 {
     if (!isVisible())
         return;
-    
-    if ((SkeletonDocumentEditMode::Select == m_document->editMode) &&
-            hasSelection()) {
+
+    if ((SkeletonDocumentEditMode::Select == m_document->editMode) && hasSelection()) {
         scaleSelected(-1);
         emit groupOperationAdded();
     }
@@ -1873,9 +1863,8 @@ void SkeletonGraphicsWidget::shortcutScaleSelectedBy1()
 {
     if (!isVisible())
         return;
-    
-    if ((SkeletonDocumentEditMode::Select == m_document->editMode) &&
-            hasSelection()) {
+
+    if ((SkeletonDocumentEditMode::Select == m_document->editMode) && hasSelection()) {
         scaleSelected(1);
         emit groupOperationAdded();
     }
@@ -1885,9 +1874,8 @@ void SkeletonGraphicsWidget::shortcutSwitchProfileOnSelected()
 {
     if (!isVisible())
         return;
-    
-    if ((SkeletonDocumentEditMode::Select == m_document->editMode) &&
-            hasSelection()) {
+
+    if ((SkeletonDocumentEditMode::Select == m_document->editMode) && hasSelection()) {
         switchProfileOnRangeSelection();
     }
 }
@@ -1896,10 +1884,10 @@ void SkeletonGraphicsWidget::shortcutShowOrHideSelectedPart()
 {
     if (!isVisible())
         return;
-    
+
     if (SkeletonDocumentEditMode::Select == m_document->editMode) {
         if (!m_lastCheckedPart.isNull()) {
-            const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
+            const SkeletonPart* part = m_document->findPart(m_lastCheckedPart);
             bool partVisible = part && part->visible;
             emit setPartVisibleState(m_lastCheckedPart, !partVisible);
             emit groupOperationAdded();
@@ -1913,10 +1901,9 @@ void SkeletonGraphicsWidget::shortcutEnableOrDisableSelectedPart()
 {
     if (!isVisible())
         return;
-    
-    if ((SkeletonDocumentEditMode::Select == m_document->editMode) &&
-            !m_lastCheckedPart.isNull()) {
-        const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
+
+    if ((SkeletonDocumentEditMode::Select == m_document->editMode) && !m_lastCheckedPart.isNull()) {
+        const SkeletonPart* part = m_document->findPart(m_lastCheckedPart);
         bool partDisabled = part && part->disabled;
         emit setPartDisableState(m_lastCheckedPart, !partDisabled);
         emit groupOperationAdded();
@@ -1927,10 +1914,9 @@ void SkeletonGraphicsWidget::shortcutLockOrUnlockSelectedPart()
 {
     if (!isVisible())
         return;
-    
-    if ((SkeletonDocumentEditMode::Select == m_document->editMode) &&
-            !m_lastCheckedPart.isNull()) {
-        const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
+
+    if ((SkeletonDocumentEditMode::Select == m_document->editMode) && !m_lastCheckedPart.isNull()) {
+        const SkeletonPart* part = m_document->findPart(m_lastCheckedPart);
         bool partLocked = part && part->locked;
         emit setPartLockState(m_lastCheckedPart, !partLocked);
         emit groupOperationAdded();
@@ -1941,10 +1927,9 @@ void SkeletonGraphicsWidget::shortcutXmirrorOnOrOffSelectedPart()
 {
     if (!isVisible())
         return;
-    
-    if ((SkeletonDocumentEditMode::Select == m_document->editMode) &&
-            !m_lastCheckedPart.isNull()) {
-        const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
+
+    if ((SkeletonDocumentEditMode::Select == m_document->editMode) && !m_lastCheckedPart.isNull()) {
+        const SkeletonPart* part = m_document->findPart(m_lastCheckedPart);
         bool partXmirrored = part && part->xMirrored;
         emit setPartXmirrorState(m_lastCheckedPart, !partXmirrored);
         emit groupOperationAdded();
@@ -1955,10 +1940,9 @@ void SkeletonGraphicsWidget::shortcutSubdivedOrNotSelectedPart()
 {
     if (!isVisible())
         return;
-    
-    if ((SkeletonDocumentEditMode::Select == m_document->editMode) &&
-            !m_lastCheckedPart.isNull()) {
-        const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
+
+    if ((SkeletonDocumentEditMode::Select == m_document->editMode) && !m_lastCheckedPart.isNull()) {
+        const SkeletonPart* part = m_document->findPart(m_lastCheckedPart);
         bool partSubdived = part && part->subdived;
         emit setPartSubdivState(m_lastCheckedPart, !partSubdived);
         emit groupOperationAdded();
@@ -1969,10 +1953,9 @@ void SkeletonGraphicsWidget::shortcutChamferedOrNotSelectedPart()
 {
     if (!isVisible())
         return;
-    
-    if ((SkeletonDocumentEditMode::Select == m_document->editMode) &&
-            !m_lastCheckedPart.isNull()) {
-        const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
+
+    if ((SkeletonDocumentEditMode::Select == m_document->editMode) && !m_lastCheckedPart.isNull()) {
+        const SkeletonPart* part = m_document->findPart(m_lastCheckedPart);
         bool partChamfered = part && part->chamfered;
         emit setPartChamferState(m_lastCheckedPart, !partChamfered);
         emit groupOperationAdded();
@@ -1983,7 +1966,7 @@ void SkeletonGraphicsWidget::shortcutSelectAll()
 {
     if (!isVisible())
         return;
-    
+
     selectAll();
 }
 
@@ -1991,34 +1974,30 @@ void SkeletonGraphicsWidget::shortcutRoundEndOrNotSelectedPart()
 {
     if (!isVisible())
         return;
-    
-    if ((SkeletonDocumentEditMode::Select == m_document->editMode) &&
-            !m_lastCheckedPart.isNull()) {
-        const SkeletonPart *part = m_document->findPart(m_lastCheckedPart);
+
+    if ((SkeletonDocumentEditMode::Select == m_document->editMode) && !m_lastCheckedPart.isNull()) {
+        const SkeletonPart* part = m_document->findPart(m_lastCheckedPart);
         bool partRounded = part && part->rounded;
         emit setPartRoundState(m_lastCheckedPart, !partRounded);
         emit groupOperationAdded();
     }
 }
 
-bool SkeletonGraphicsWidget::keyPress(QKeyEvent *event)
+bool SkeletonGraphicsWidget::keyPress(QKeyEvent* event)
 {
     if (event->key() == Qt::Key_Space) {
-        if (SkeletonDocumentEditMode::ZoomIn == m_document->editMode ||
-                SkeletonDocumentEditMode::ZoomOut == m_document->editMode ||
-                SkeletonDocumentEditMode::Select == m_document->editMode ||
-                SkeletonDocumentEditMode::Add == m_document->editMode) {
+        if (SkeletonDocumentEditMode::ZoomIn == m_document->editMode || SkeletonDocumentEditMode::ZoomOut == m_document->editMode || SkeletonDocumentEditMode::Select == m_document->editMode || SkeletonDocumentEditMode::Add == m_document->editMode) {
             m_inTempDragMode = true;
             m_modeBeforeEnterTempDragMode = m_document->editMode;
             emit setEditMode(SkeletonDocumentEditMode::Drag);
             return true;
         }
     }
-    
+
     return false;
 }
 
-bool SkeletonGraphicsWidget::keyRelease(QKeyEvent *event)
+bool SkeletonGraphicsWidget::keyRelease(QKeyEvent* event)
 {
     if (event->key() == Qt::Key_Space) {
         if (m_inTempDragMode) {
@@ -2027,7 +2006,7 @@ bool SkeletonGraphicsWidget::keyRelease(QKeyEvent *event)
             return true;
         }
     }
-    
+
     return false;
 }
 
@@ -2046,7 +2025,7 @@ void SkeletonGraphicsWidget::originChanged()
 
 void SkeletonGraphicsWidget::nodeAdded(dust3d::Uuid nodeId)
 {
-    const SkeletonNode *node = m_document->findNode(nodeId);
+    const SkeletonNode* node = m_document->findNode(nodeId);
     if (nullptr == node) {
         qDebug() << "New node added but node id not exist:" << nodeId;
         return;
@@ -2055,9 +2034,9 @@ void SkeletonGraphicsWidget::nodeAdded(dust3d::Uuid nodeId)
         qDebug() << "New node added but node item already exist:" << nodeId;
         return;
     }
-    SkeletonGraphicsNodeItem *mainProfileItem = new SkeletonGraphicsNodeItem(SkeletonProfile::Main);
+    SkeletonGraphicsNodeItem* mainProfileItem = new SkeletonGraphicsNodeItem(SkeletonProfile::Main);
     mainProfileItem->setRotated(m_rotated);
-    SkeletonGraphicsNodeItem *sideProfileItem = new SkeletonGraphicsNodeItem(SkeletonProfile::Side);
+    SkeletonGraphicsNodeItem* sideProfileItem = new SkeletonGraphicsNodeItem(SkeletonProfile::Side);
     sideProfileItem->setRotated(m_rotated);
     mainProfileItem->setOrigin(scenePosFromUnified(QPointF(node->getX(m_rotated), node->getY(m_rotated))));
     sideProfileItem->setOrigin(scenePosFromUnified(QPointF(node->getZ(m_rotated), node->getY(m_rotated))));
@@ -2072,7 +2051,7 @@ void SkeletonGraphicsWidget::nodeAdded(dust3d::Uuid nodeId)
     scene()->addItem(mainProfileItem);
     scene()->addItem(sideProfileItem);
     nodeItemMap[nodeId] = std::make_pair(mainProfileItem, sideProfileItem);
-    
+
     if (nullptr == m_addFromNodeItem) {
         m_addFromNodeItem = mainProfileItem;
     } else {
@@ -2087,7 +2066,7 @@ void SkeletonGraphicsWidget::nodeAdded(dust3d::Uuid nodeId)
 
 void SkeletonGraphicsWidget::edgeReversed(dust3d::Uuid edgeId)
 {
-    const SkeletonEdge *edge = m_document->findEdge(edgeId);
+    const SkeletonEdge* edge = m_document->findEdge(edgeId);
     if (nullptr == edge) {
         qDebug() << "Edge changed but edge id not exist:" << edgeId;
         return;
@@ -2103,7 +2082,7 @@ void SkeletonGraphicsWidget::edgeReversed(dust3d::Uuid edgeId)
 
 void SkeletonGraphicsWidget::edgeAdded(dust3d::Uuid edgeId)
 {
-    const SkeletonEdge *edge = m_document->findEdge(edgeId);
+    const SkeletonEdge* edge = m_document->findEdge(edgeId);
     if (nullptr == edge) {
         qDebug() << "New edge added but edge id not exist:" << edgeId;
         return;
@@ -2128,9 +2107,9 @@ void SkeletonGraphicsWidget::edgeAdded(dust3d::Uuid edgeId)
         qDebug() << "New edge added but edge item already exist:" << edgeId;
         return;
     }
-    SkeletonGraphicsEdgeItem *mainProfileEdgeItem = new SkeletonGraphicsEdgeItem();
+    SkeletonGraphicsEdgeItem* mainProfileEdgeItem = new SkeletonGraphicsEdgeItem();
     mainProfileEdgeItem->setRotated(m_rotated);
-    SkeletonGraphicsEdgeItem *sideProfileEdgeItem = new SkeletonGraphicsEdgeItem();
+    SkeletonGraphicsEdgeItem* sideProfileEdgeItem = new SkeletonGraphicsEdgeItem();
     sideProfileEdgeItem->setRotated(m_rotated);
     mainProfileEdgeItem->setId(edgeId);
     sideProfileEdgeItem->setId(edgeId);
@@ -2145,7 +2124,7 @@ void SkeletonGraphicsWidget::edgeAdded(dust3d::Uuid edgeId)
     edgeItemMap[edgeId] = std::make_pair(mainProfileEdgeItem, sideProfileEdgeItem);
 }
 
-void SkeletonGraphicsWidget::removeItem(QGraphicsItem *item)
+void SkeletonGraphicsWidget::removeItem(QGraphicsItem* item)
 {
     if (m_hoveredNodeItem == item)
         m_hoveredNodeItem = nullptr;
@@ -2189,7 +2168,7 @@ void SkeletonGraphicsWidget::edgeRemoved(dust3d::Uuid edgeId)
 
 void SkeletonGraphicsWidget::nodeRadiusChanged(dust3d::Uuid nodeId)
 {
-    const SkeletonNode *node = m_document->findNode(nodeId);
+    const SkeletonNode* node = m_document->findNode(nodeId);
     if (nullptr == node) {
         qDebug() << "Node changed but node id not exist:" << nodeId;
         return;
@@ -2206,7 +2185,7 @@ void SkeletonGraphicsWidget::nodeRadiusChanged(dust3d::Uuid nodeId)
 
 void SkeletonGraphicsWidget::nodeOriginChanged(dust3d::Uuid nodeId)
 {
-    const SkeletonNode *node = m_document->findNode(nodeId);
+    const SkeletonNode* node = m_document->findNode(nodeId);
     if (nullptr == node) {
         qDebug() << "Node changed but node id not exist:" << nodeId;
         return;
@@ -2239,9 +2218,9 @@ void SkeletonGraphicsWidget::nodeOriginChanged(dust3d::Uuid nodeId)
 
 void SkeletonGraphicsWidget::partVisibleStateChanged(dust3d::Uuid partId)
 {
-    const SkeletonPart *part = m_document->findPart(partId);
-    for (const auto &nodeId: part->nodeIds) {
-        const SkeletonNode *node = m_document->findNode(nodeId);
+    const SkeletonPart* part = m_document->findPart(partId);
+    for (const auto& nodeId : part->nodeIds) {
+        const SkeletonNode* node = m_document->findNode(nodeId);
         for (auto edgeIt = node->edgeIds.begin(); edgeIt != node->edgeIds.end(); edgeIt++) {
             auto edgeItemIt = edgeItemMap.find(*edgeIt);
             if (edgeItemIt == edgeItemMap.end()) {
@@ -2261,14 +2240,14 @@ void SkeletonGraphicsWidget::partVisibleStateChanged(dust3d::Uuid partId)
     }
 }
 
-bool SkeletonGraphicsWidget::checkSkeletonItem(QGraphicsItem *item, bool checked)
+bool SkeletonGraphicsWidget::checkSkeletonItem(QGraphicsItem* item, bool checked)
 {
     if (checked) {
         if (!item->isVisible())
             return false;
     }
     if (item->data(0) == "node") {
-        SkeletonGraphicsNodeItem *nodeItem = (SkeletonGraphicsNodeItem *)item;
+        SkeletonGraphicsNodeItem* nodeItem = (SkeletonGraphicsNodeItem*)item;
         if (checked) {
             if (!m_document->isNodeEditable(nodeItem->id())) {
                 return false;
@@ -2278,7 +2257,7 @@ bool SkeletonGraphicsWidget::checkSkeletonItem(QGraphicsItem *item, bool checked
             nodeItem->setChecked(checked);
         return true;
     } else if (item->data(0) == "edge") {
-        SkeletonGraphicsEdgeItem *edgeItem = (SkeletonGraphicsEdgeItem *)item;
+        SkeletonGraphicsEdgeItem* edgeItem = (SkeletonGraphicsEdgeItem*)item;
         if (checked) {
             if (!m_document->isEdgeEditable(edgeItem->id())) {
                 return false;
@@ -2291,19 +2270,19 @@ bool SkeletonGraphicsWidget::checkSkeletonItem(QGraphicsItem *item, bool checked
     return false;
 }
 
-dust3d::Uuid SkeletonGraphicsWidget::querySkeletonItemPartId(QGraphicsItem *item)
+dust3d::Uuid SkeletonGraphicsWidget::querySkeletonItemPartId(QGraphicsItem* item)
 {
     if (item->data(0) == "node") {
-        SkeletonGraphicsNodeItem *nodeItem = (SkeletonGraphicsNodeItem *)item;
-        const SkeletonNode *node = m_document->findNode(nodeItem->id());
+        SkeletonGraphicsNodeItem* nodeItem = (SkeletonGraphicsNodeItem*)item;
+        const SkeletonNode* node = m_document->findNode(nodeItem->id());
         if (!node) {
             qDebug() << "Find node id failed:" << nodeItem->id();
             return dust3d::Uuid();
         }
         return node->partId;
     } else if (item->data(0) == "edge") {
-        SkeletonGraphicsEdgeItem *edgeItem = (SkeletonGraphicsEdgeItem *)item;
-        const SkeletonEdge *edge = m_document->findEdge(edgeItem->id());
+        SkeletonGraphicsEdgeItem* edgeItem = (SkeletonGraphicsEdgeItem*)item;
+        const SkeletonEdge* edge = m_document->findEdge(edgeItem->id());
         if (!edge) {
             qDebug() << "Find edge id failed:" << edgeItem->id();
             return dust3d::Uuid();
@@ -2313,13 +2292,13 @@ dust3d::Uuid SkeletonGraphicsWidget::querySkeletonItemPartId(QGraphicsItem *item
     return dust3d::Uuid();
 }
 
-SkeletonProfile SkeletonGraphicsWidget::readSkeletonItemProfile(QGraphicsItem *item)
+SkeletonProfile SkeletonGraphicsWidget::readSkeletonItemProfile(QGraphicsItem* item)
 {
     if (item->data(0) == "node") {
-        SkeletonGraphicsNodeItem *nodeItem = (SkeletonGraphicsNodeItem *)item;
+        SkeletonGraphicsNodeItem* nodeItem = (SkeletonGraphicsNodeItem*)item;
         return nodeItem->profile();
     } else if (item->data(0) == "edge") {
-        SkeletonGraphicsEdgeItem *edgeItem = (SkeletonGraphicsEdgeItem *)item;
+        SkeletonGraphicsEdgeItem* edgeItem = (SkeletonGraphicsEdgeItem*)item;
         return edgeItem->profile();
     }
     return SkeletonProfile::Unknown;
@@ -2327,18 +2306,18 @@ SkeletonProfile SkeletonGraphicsWidget::readSkeletonItemProfile(QGraphicsItem *i
 
 void SkeletonGraphicsWidget::checkRangeSelection()
 {
-    std::set<QGraphicsItem *> newSet;
-    std::set<QGraphicsItem *> deleteSet;
-    std::set<QGraphicsItem *> forceDeleteSet;
+    std::set<QGraphicsItem*> newSet;
+    std::set<QGraphicsItem*> deleteSet;
+    std::set<QGraphicsItem*> forceDeleteSet;
     SkeletonProfile choosenProfile = SkeletonProfile::Unknown;
     if (!m_rangeSelectionSet.empty()) {
         auto it = m_rangeSelectionSet.begin();
         choosenProfile = readSkeletonItemProfile(*it);
     }
     if (m_selectionItem->isVisible()) {
-        QList<QGraphicsItem *> items = scene()->items(m_selectionItem->sceneBoundingRect());
+        QList<QGraphicsItem*> items = scene()->items(m_selectionItem->sceneBoundingRect());
         for (auto it = items.begin(); it != items.end(); it++) {
-            QGraphicsItem *item = *it;
+            QGraphicsItem* item = *it;
             if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::AltModifier)) {
                 checkSkeletonItem(item, false);
                 forceDeleteSet.insert(item);
@@ -2356,40 +2335,40 @@ void SkeletonGraphicsWidget::checkRangeSelection()
         }
     }
     if (!QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
-        for (const auto &item: m_rangeSelectionSet) {
+        for (const auto& item : m_rangeSelectionSet) {
             if (newSet.find(item) == newSet.end()) {
                 checkSkeletonItem(item, false);
                 deleteSet.insert(item);
             }
         }
     }
-    for (const auto &item: newSet) {
+    for (const auto& item : newSet) {
         m_rangeSelectionSet.insert(item);
     }
-    for (const auto &item: deleteSet) {
+    for (const auto& item : deleteSet) {
         m_rangeSelectionSet.erase(item);
     }
-    for (const auto &item: forceDeleteSet) {
+    for (const auto& item : forceDeleteSet) {
         m_rangeSelectionSet.erase(item);
     }
 }
 
 void SkeletonGraphicsWidget::clearRangeSelection()
 {
-    for (const auto &item: m_rangeSelectionSet) {
+    for (const auto& item : m_rangeSelectionSet) {
         checkSkeletonItem(item, false);
     }
     m_rangeSelectionSet.clear();
 }
 
-void SkeletonGraphicsWidget::readMergedSkeletonNodeSetFromRangeSelection(std::set<SkeletonGraphicsNodeItem *> *nodeItemSet)
+void SkeletonGraphicsWidget::readMergedSkeletonNodeSetFromRangeSelection(std::set<SkeletonGraphicsNodeItem*>* nodeItemSet)
 {
-    for (const auto &it: m_rangeSelectionSet) {
-        QGraphicsItem *item = it;
+    for (const auto& it : m_rangeSelectionSet) {
+        QGraphicsItem* item = it;
         if (item->data(0) == "node") {
-            nodeItemSet->insert((SkeletonGraphicsNodeItem *)item);
+            nodeItemSet->insert((SkeletonGraphicsNodeItem*)item);
         } else if (item->data(0) == "edge") {
-            SkeletonGraphicsEdgeItem *edgeItem = (SkeletonGraphicsEdgeItem *)item;
+            SkeletonGraphicsEdgeItem* edgeItem = (SkeletonGraphicsEdgeItem*)item;
             if (edgeItem->firstItem() && edgeItem->secondItem()) {
                 nodeItemSet->insert(edgeItem->firstItem());
                 nodeItemSet->insert(edgeItem->secondItem());
@@ -2398,29 +2377,29 @@ void SkeletonGraphicsWidget::readMergedSkeletonNodeSetFromRangeSelection(std::se
     }
 }
 
-void SkeletonGraphicsWidget::readSkeletonNodeAndEdgeIdSetFromRangeSelection(std::set<dust3d::Uuid> *nodeIdSet, std::set<dust3d::Uuid> *edgeIdSet)
+void SkeletonGraphicsWidget::readSkeletonNodeAndEdgeIdSetFromRangeSelection(std::set<dust3d::Uuid>* nodeIdSet, std::set<dust3d::Uuid>* edgeIdSet)
 {
-    for (const auto &it: m_rangeSelectionSet) {
-        QGraphicsItem *item = it;
+    for (const auto& it : m_rangeSelectionSet) {
+        QGraphicsItem* item = it;
         if (item->data(0) == "node") {
-            nodeIdSet->insert(((SkeletonGraphicsNodeItem *)item)->id());
+            nodeIdSet->insert(((SkeletonGraphicsNodeItem*)item)->id());
         } else if (item->data(0) == "edge") {
             if (nullptr != edgeIdSet)
-                edgeIdSet->insert(((SkeletonGraphicsEdgeItem *)item)->id());
+                edgeIdSet->insert(((SkeletonGraphicsEdgeItem*)item)->id());
         }
     }
 }
 
-bool SkeletonGraphicsWidget::readSkeletonNodeAndAnyEdgeOfNodeFromRangeSelection(SkeletonGraphicsNodeItem **nodeItem, SkeletonGraphicsEdgeItem **edgeItem)
+bool SkeletonGraphicsWidget::readSkeletonNodeAndAnyEdgeOfNodeFromRangeSelection(SkeletonGraphicsNodeItem** nodeItem, SkeletonGraphicsEdgeItem** edgeItem)
 {
-    SkeletonGraphicsNodeItem *choosenNodeItem = nullptr;
-    SkeletonGraphicsEdgeItem *choosenEdgeItem = nullptr;
-    for (const auto &it: m_rangeSelectionSet) {
-        QGraphicsItem *item = it;
+    SkeletonGraphicsNodeItem* choosenNodeItem = nullptr;
+    SkeletonGraphicsEdgeItem* choosenEdgeItem = nullptr;
+    for (const auto& it : m_rangeSelectionSet) {
+        QGraphicsItem* item = it;
         if (item->data(0) == "node") {
-            choosenNodeItem = (SkeletonGraphicsNodeItem *)item;
+            choosenNodeItem = (SkeletonGraphicsNodeItem*)item;
         } else if (item->data(0) == "edge") {
-            choosenEdgeItem = (SkeletonGraphicsEdgeItem *)item;
+            choosenEdgeItem = (SkeletonGraphicsEdgeItem*)item;
         }
         if (choosenNodeItem && choosenEdgeItem)
             break;
@@ -2443,18 +2422,18 @@ bool SkeletonGraphicsWidget::readSkeletonNodeAndAnyEdgeOfNodeFromRangeSelection(
 void SkeletonGraphicsWidget::selectPartAllById(dust3d::Uuid partId)
 {
     unselectAll();
-    for (const auto &it: nodeItemMap) {
-        SkeletonGraphicsNodeItem *item = it.second.first;
-        const SkeletonNode *node = m_document->findNode(item->id());
+    for (const auto& it : nodeItemMap) {
+        SkeletonGraphicsNodeItem* item = it.second.first;
+        const SkeletonNode* node = m_document->findNode(item->id());
         if (!node)
             continue;
         if (node->partId != partId)
             continue;
         addItemToRangeSelection(item);
     }
-    for (const auto &it: edgeItemMap) {
-        SkeletonGraphicsEdgeItem *item = it.second.first;
-        const SkeletonEdge *edge = m_document->findEdge(item->id());
+    for (const auto& it : edgeItemMap) {
+        SkeletonGraphicsEdgeItem* item = it.second.first;
+        const SkeletonEdge* edge = m_document->findEdge(item->id());
         if (!edge)
             continue;
         if (edge->partId != partId)
@@ -2466,7 +2445,7 @@ void SkeletonGraphicsWidget::selectPartAllById(dust3d::Uuid partId)
 
 void SkeletonGraphicsWidget::addSelectNode(dust3d::Uuid nodeId)
 {
-    const auto &findResult = nodeItemMap.find(nodeId);
+    const auto& findResult = nodeItemMap.find(nodeId);
     if (findResult == nodeItemMap.end()) {
         qDebug() << "addSelectNode failed because of node id not exists:<<" << nodeId;
         return;
@@ -2477,7 +2456,7 @@ void SkeletonGraphicsWidget::addSelectNode(dust3d::Uuid nodeId)
 
 void SkeletonGraphicsWidget::addSelectEdge(dust3d::Uuid edgeId)
 {
-    const auto &findResult = edgeItemMap.find(edgeId);
+    const auto& findResult = edgeItemMap.find(edgeId);
     if (findResult == edgeItemMap.end()) {
         qDebug() << "addSelectEdge failed because of edge id not exists:<<" << edgeId;
         return;
@@ -2495,9 +2474,9 @@ void SkeletonGraphicsWidget::addPartToSelection(dust3d::Uuid partId)
         choosenProfile = m_hoveredEdgeItem->profile();
     }
     dust3d::Uuid choosenPartId = partId;
-    for (const auto &it: nodeItemMap) {
-        SkeletonGraphicsNodeItem *item = SkeletonProfile::Main == choosenProfile ? it.second.first : it.second.second;
-        const SkeletonNode *node = m_document->findNode(item->id());
+    for (const auto& it : nodeItemMap) {
+        SkeletonGraphicsNodeItem* item = SkeletonProfile::Main == choosenProfile ? it.second.first : it.second.second;
+        const SkeletonNode* node = m_document->findNode(item->id());
         if (!node)
             continue;
         if (choosenPartId.isNull()) {
@@ -2507,9 +2486,9 @@ void SkeletonGraphicsWidget::addPartToSelection(dust3d::Uuid partId)
             continue;
         addItemToRangeSelection(item);
     }
-    for (const auto &it: edgeItemMap) {
-        SkeletonGraphicsEdgeItem *item = SkeletonProfile::Main == choosenProfile ? it.second.first : it.second.second;
-        const SkeletonEdge *edge = m_document->findEdge(item->id());
+    for (const auto& it : edgeItemMap) {
+        SkeletonGraphicsEdgeItem* item = SkeletonProfile::Main == choosenProfile ? it.second.first : it.second.second;
+        const SkeletonEdge* edge = m_document->findEdge(item->id());
         if (!edge)
             continue;
         if (choosenPartId.isNull()) {
@@ -2528,12 +2507,12 @@ void SkeletonGraphicsWidget::selectConnectedAll()
     dust3d::Uuid startNodeId;
     if (m_hoveredNodeItem) {
         choosenProfile = m_hoveredNodeItem->profile();
-        const SkeletonNode *node = m_document->findNode(m_hoveredNodeItem->id());
+        const SkeletonNode* node = m_document->findNode(m_hoveredNodeItem->id());
         if (node)
             startNodeId = node->id;
     } else if (m_hoveredEdgeItem) {
         choosenProfile = m_hoveredEdgeItem->profile();
-        const SkeletonEdge *edge = m_document->findEdge(m_hoveredEdgeItem->id());
+        const SkeletonEdge* edge = m_document->findEdge(m_hoveredEdgeItem->id());
         if (edge && !edge->nodeIds.empty())
             startNodeId = *edge->nodeIds.begin();
     }
@@ -2548,30 +2527,30 @@ void SkeletonGraphicsWidget::selectConnectedAll()
         nodeIds.pop();
         if (visitedNodes.find(nodeId) != visitedNodes.end())
             continue;
-        const SkeletonNode *node = m_document->findNode(nodeId);
+        const SkeletonNode* node = m_document->findNode(nodeId);
         if (nullptr == node)
             continue;
         visitedNodes.insert(nodeId);
-        for (const auto &edgeId: node->edgeIds) {
-            const SkeletonEdge *edge = m_document->findEdge(edgeId);
+        for (const auto& edgeId : node->edgeIds) {
+            const SkeletonEdge* edge = m_document->findEdge(edgeId);
             if (nullptr == edge)
                 continue;
             visitedEdges.insert(edgeId);
-            for (const auto &nodeIdOfEdge: edge->nodeIds) {
+            for (const auto& nodeIdOfEdge : edge->nodeIds) {
                 if (visitedNodes.find(nodeIdOfEdge) != visitedNodes.end())
                     continue;
                 nodeIds.push(nodeIdOfEdge);
             }
         }
     }
-    for (const auto &it: nodeItemMap) {
-        SkeletonGraphicsNodeItem *item = SkeletonProfile::Main == choosenProfile ? it.second.first : it.second.second;
+    for (const auto& it : nodeItemMap) {
+        SkeletonGraphicsNodeItem* item = SkeletonProfile::Main == choosenProfile ? it.second.first : it.second.second;
         if (visitedNodes.find(item->id()) == visitedNodes.end())
             continue;
         addItemToRangeSelection(item);
     }
-    for (const auto &it: edgeItemMap) {
-        SkeletonGraphicsEdgeItem *item = SkeletonProfile::Main == choosenProfile ? it.second.first : it.second.second;
+    for (const auto& it : edgeItemMap) {
+        SkeletonGraphicsEdgeItem* item = SkeletonProfile::Main == choosenProfile ? it.second.first : it.second.second;
         if (visitedEdges.find(item->id()) == visitedEdges.end())
             continue;
         addItemToRangeSelection(item);
@@ -2585,18 +2564,18 @@ void SkeletonGraphicsWidget::selectPartAll()
     dust3d::Uuid choosenPartId;
     if (m_hoveredNodeItem) {
         choosenProfile = m_hoveredNodeItem->profile();
-        const SkeletonNode *node = m_document->findNode(m_hoveredNodeItem->id());
+        const SkeletonNode* node = m_document->findNode(m_hoveredNodeItem->id());
         if (node)
             choosenPartId = node->partId;
     } else if (m_hoveredEdgeItem) {
         choosenProfile = m_hoveredEdgeItem->profile();
-        const SkeletonEdge *edge = m_document->findEdge(m_hoveredEdgeItem->id());
+        const SkeletonEdge* edge = m_document->findEdge(m_hoveredEdgeItem->id());
         if (edge)
             choosenPartId = edge->partId;
     }
-    for (const auto &it: nodeItemMap) {
-        SkeletonGraphicsNodeItem *item = SkeletonProfile::Main == choosenProfile ? it.second.first : it.second.second;
-        const SkeletonNode *node = m_document->findNode(item->id());
+    for (const auto& it : nodeItemMap) {
+        SkeletonGraphicsNodeItem* item = SkeletonProfile::Main == choosenProfile ? it.second.first : it.second.second;
+        const SkeletonNode* node = m_document->findNode(item->id());
         if (!node)
             continue;
         if (choosenPartId.isNull()) {
@@ -2606,9 +2585,9 @@ void SkeletonGraphicsWidget::selectPartAll()
             continue;
         addItemToRangeSelection(item);
     }
-    for (const auto &it: edgeItemMap) {
-        SkeletonGraphicsEdgeItem *item = SkeletonProfile::Main == choosenProfile ? it.second.first : it.second.second;
-        const SkeletonEdge *edge = m_document->findEdge(item->id());
+    for (const auto& it : edgeItemMap) {
+        SkeletonGraphicsEdgeItem* item = SkeletonProfile::Main == choosenProfile ? it.second.first : it.second.second;
+        const SkeletonEdge* edge = m_document->findEdge(item->id());
         if (!edge)
             continue;
         if (choosenPartId.isNull()) {
@@ -2627,14 +2606,14 @@ void SkeletonGraphicsWidget::shortcutCheckPartComponent()
 {
     if (!isVisible())
         return;
-    
+
     dust3d::Uuid choosenPartId;
     if (m_hoveredNodeItem) {
-        const SkeletonNode *node = m_document->findNode(m_hoveredNodeItem->id());
+        const SkeletonNode* node = m_document->findNode(m_hoveredNodeItem->id());
         if (node)
             choosenPartId = node->partId;
     } else if (m_hoveredEdgeItem) {
-        const SkeletonEdge *edge = m_document->findEdge(m_hoveredEdgeItem->id());
+        const SkeletonEdge* edge = m_document->findEdge(m_hoveredEdgeItem->id());
         if (edge)
             choosenPartId = edge->partId;
     }
@@ -2652,17 +2631,17 @@ void SkeletonGraphicsWidget::selectAll()
     } else if (m_hoveredEdgeItem) {
         choosenProfile = m_hoveredEdgeItem->profile();
     }
-    for (const auto &it: nodeItemMap) {
-        SkeletonGraphicsNodeItem *item = SkeletonProfile::Main == choosenProfile ? it.second.first : it.second.second;
+    for (const auto& it : nodeItemMap) {
+        SkeletonGraphicsNodeItem* item = SkeletonProfile::Main == choosenProfile ? it.second.first : it.second.second;
         addItemToRangeSelection(item);
     }
-    for (const auto &it: edgeItemMap) {
-        SkeletonGraphicsEdgeItem *item = SkeletonProfile::Main == choosenProfile ? it.second.first : it.second.second;
+    for (const auto& it : edgeItemMap) {
+        SkeletonGraphicsEdgeItem* item = SkeletonProfile::Main == choosenProfile ? it.second.first : it.second.second;
         addItemToRangeSelection(item);
     }
 }
 
-void SkeletonGraphicsWidget::addItemToRangeSelection(QGraphicsItem *item)
+void SkeletonGraphicsWidget::addItemToRangeSelection(QGraphicsItem* item)
 {
     if (!item->isVisible())
         return;
@@ -2670,7 +2649,7 @@ void SkeletonGraphicsWidget::addItemToRangeSelection(QGraphicsItem *item)
         m_rangeSelectionSet.insert(item);
 }
 
-void SkeletonGraphicsWidget::removeItemFromRangeSelection(QGraphicsItem *item)
+void SkeletonGraphicsWidget::removeItemFromRangeSelection(QGraphicsItem* item)
 {
     checkSkeletonItem(item, false);
     m_rangeSelectionSet.erase(item);
@@ -2678,7 +2657,7 @@ void SkeletonGraphicsWidget::removeItemFromRangeSelection(QGraphicsItem *item)
 
 void SkeletonGraphicsWidget::unselectAll()
 {
-    for (const auto &item: m_rangeSelectionSet) {
+    for (const auto& item : m_rangeSelectionSet) {
         checkSkeletonItem(item, false);
     }
     m_rangeSelectionSet.clear();
@@ -2710,9 +2689,9 @@ void SkeletonGraphicsWidget::removeAllContent()
     m_addFromNodeItem = nullptr;
     m_cursorEdgeItem->hide();
     m_cursorNodeItem->hide();
-    std::vector<QGraphicsItem *> contentItems;
-    for (const auto &it: items()) {
-        QGraphicsItem *item = it;
+    std::vector<QGraphicsItem*> contentItems;
+    for (const auto& it : items()) {
+        QGraphicsItem* item = it;
         if (item->data(0) == "node") {
             contentItems.push_back(item);
         } else if (item->data(0) == "edge") {
@@ -2720,7 +2699,7 @@ void SkeletonGraphicsWidget::removeAllContent()
         }
     }
     for (size_t i = 0; i < contentItems.size(); i++) {
-        QGraphicsItem *item = contentItems[i];
+        QGraphicsItem* item = contentItems[i];
         Q_ASSERT(item != m_cursorEdgeItem);
         Q_ASSERT(item != m_cursorNodeItem);
         delete item;
@@ -2731,8 +2710,8 @@ bool SkeletonGraphicsWidget::isSingleNodeSelected()
 {
     if (m_rangeSelectionSet.size() != 1)
         return false;
-    const auto &it = m_rangeSelectionSet.begin();
-    QGraphicsItem *item = *it;
+    const auto& it = m_rangeSelectionSet.begin();
+    QGraphicsItem* item = *it;
     return item->data(0) == "node";
 }
 
@@ -2740,14 +2719,14 @@ void SkeletonGraphicsWidget::hoverPart(dust3d::Uuid partId)
 {
     if (partId.isNull()) {
         if (!m_rangeSelectionSet.empty()) {
-            const auto &it = m_rangeSelectionSet.begin();
+            const auto& it = m_rangeSelectionSet.begin();
             partId = querySkeletonItemPartId(*it);
         }
     }
-    
+
     if (m_lastCheckedPart == partId)
         return;
-    
+
     if (!m_lastCheckedPart.isNull())
         emit partUnchecked(m_lastCheckedPart);
     m_lastCheckedPart = partId;
@@ -2758,40 +2737,40 @@ void SkeletonGraphicsWidget::hoverPart(dust3d::Uuid partId)
 void SkeletonGraphicsWidget::switchProfileOnRangeSelection()
 {
     auto copiedSet = m_rangeSelectionSet;
-    for (const auto &item: copiedSet) {
+    for (const auto& item : copiedSet) {
         if (item->data(0) == "node") {
-            SkeletonGraphicsNodeItem *nodeItem = (SkeletonGraphicsNodeItem *)item;
-            const auto &find = nodeItemMap.find(nodeItem->id());
+            SkeletonGraphicsNodeItem* nodeItem = (SkeletonGraphicsNodeItem*)item;
+            const auto& find = nodeItemMap.find(nodeItem->id());
             if (find == nodeItemMap.end()) {
                 qDebug() << "Node item map key not found:" << nodeItem->id();
                 return;
             }
             checkSkeletonItem(nodeItem, false);
             m_rangeSelectionSet.erase(nodeItem);
-            SkeletonGraphicsNodeItem *altNodeItem = nodeItem == find->second.first ? find->second.second : find->second.first;
+            SkeletonGraphicsNodeItem* altNodeItem = nodeItem == find->second.first ? find->second.second : find->second.first;
             if (checkSkeletonItem(altNodeItem, true))
                 m_rangeSelectionSet.insert(altNodeItem);
         } else if (item->data(0) == "edge") {
-            SkeletonGraphicsEdgeItem *edgeItem = (SkeletonGraphicsEdgeItem *)item;
-            const auto &find = edgeItemMap.find(edgeItem->id());
+            SkeletonGraphicsEdgeItem* edgeItem = (SkeletonGraphicsEdgeItem*)item;
+            const auto& find = edgeItemMap.find(edgeItem->id());
             if (find == edgeItemMap.end()) {
                 qDebug() << "Edge item map key not found:" << edgeItem->id();
                 return;
             }
             checkSkeletonItem(edgeItem, false);
             m_rangeSelectionSet.erase(edgeItem);
-            SkeletonGraphicsEdgeItem *altEdgeItem = edgeItem == find->second.first ? find->second.second : find->second.first;
+            SkeletonGraphicsEdgeItem* altEdgeItem = edgeItem == find->second.first ? find->second.second : find->second.first;
             if (checkSkeletonItem(altEdgeItem, true))
                 m_rangeSelectionSet.insert(altEdgeItem);
         }
     }
 }
 
-void SkeletonGraphicsWidget::setItemHoveredOnAllProfiles(QGraphicsItem *item, bool hovered)
+void SkeletonGraphicsWidget::setItemHoveredOnAllProfiles(QGraphicsItem* item, bool hovered)
 {
     if (item->data(0) == "node") {
-        SkeletonGraphicsNodeItem *nodeItem = (SkeletonGraphicsNodeItem *)item;
-        const auto &find = nodeItemMap.find(nodeItem->id());
+        SkeletonGraphicsNodeItem* nodeItem = (SkeletonGraphicsNodeItem*)item;
+        const auto& find = nodeItemMap.find(nodeItem->id());
         if (find == nodeItemMap.end()) {
             qDebug() << "Node item map key not found:" << nodeItem->id();
             return;
@@ -2799,8 +2778,8 @@ void SkeletonGraphicsWidget::setItemHoveredOnAllProfiles(QGraphicsItem *item, bo
         find->second.first->setHovered(hovered);
         find->second.second->setHovered(hovered);
     } else if (item->data(0) == "edge") {
-        SkeletonGraphicsEdgeItem *edgeItem = (SkeletonGraphicsEdgeItem *)item;
-        const auto &find = edgeItemMap.find(edgeItem->id());
+        SkeletonGraphicsEdgeItem* edgeItem = (SkeletonGraphicsEdgeItem*)item;
+        const auto& find = edgeItemMap.find(edgeItem->id());
         if (find == edgeItemMap.end()) {
             qDebug() << "Edge item map key not found:" << edgeItem->id();
             return;
@@ -2813,11 +2792,10 @@ void SkeletonGraphicsWidget::setItemHoveredOnAllProfiles(QGraphicsItem *item, bo
 void SkeletonGraphicsWidget::ikMoveReady()
 {
     unsigned long long movedUpdateVersion = m_ikMover->getUpdateVersion();
-    
-    if (movedUpdateVersion == m_ikMoveUpdateVersion &&
-            !m_ikMoveEndEffectorId.isNull()) {
+
+    if (movedUpdateVersion == m_ikMoveUpdateVersion && !m_ikMoveEndEffectorId.isNull()) {
         emit batchChangeBegin();
-        for (const auto &it: m_ikMover->ikNodes()) {
+        for (const auto& it : m_ikMover->ikNodes()) {
             if (m_rotated)
                 emit setNodeOrigin(it.id, it.newPosition.y(), it.newPosition.x(), it.newPosition.z());
             else
@@ -2826,12 +2804,11 @@ void SkeletonGraphicsWidget::ikMoveReady()
         emit batchChangeEnd();
         emit groupOperationAdded();
     }
-    
+
     delete m_ikMover;
     m_ikMover = nullptr;
-    
-    if (movedUpdateVersion != m_ikMoveUpdateVersion &&
-            !m_ikMoveEndEffectorId.isNull()) {
+
+    if (movedUpdateVersion != m_ikMoveUpdateVersion && !m_ikMoveEndEffectorId.isNull()) {
         ikMove(m_ikMoveEndEffectorId, m_ikMoveTarget);
     }
 }
@@ -2844,9 +2821,9 @@ void SkeletonGraphicsWidget::ikMove(dust3d::Uuid endEffectorId, QVector3D target
     if (nullptr != m_ikMover) {
         return;
     }
-    
-    QThread *thread = new QThread;
-    
+
+    QThread* thread = new QThread;
+
     m_ikMover = new SkeletonIkMover();
     m_ikMover->setUpdateVersion(m_ikMoveUpdateVersion);
     m_ikMover->setTarget(m_ikMoveTarget);
@@ -2862,7 +2839,7 @@ void SkeletonGraphicsWidget::ikMove(dust3d::Uuid endEffectorId, QVector3D target
         if (node->edgeIds.size() < 1 || node->edgeIds.size() > 2)
             break;
         dust3d::Uuid choosenNodeId;
-        for (const auto &edgeId: node->edgeIds) {
+        for (const auto& edgeId : node->edgeIds) {
             const auto edge = m_document->findEdge(edgeId);
             if (nullptr == edge)
                 break;

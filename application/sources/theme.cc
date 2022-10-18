@@ -1,9 +1,9 @@
+#include "theme.h"
 #include <QApplication>
-#include <QStyleFactory>
-#include <QPalette>
 #include <QFont>
 #include <QFontMetrics>
-#include "theme.h"
+#include <QPalette>
+#include <QStyleFactory>
 
 QColor Theme::white = QColor(0xf7, 0xd9, 0xc8);
 QColor Theme::red = QColor(0xfc, 0x66, 0x21);
@@ -42,14 +42,14 @@ void Theme::initialize()
     darkPalette.setColor(QPalette::BrightText, QColor(0xfc, 0x66, 0x21));
     darkPalette.setColor(QPalette::Link, QColor(42, 130, 218));
     darkPalette.setColor(QPalette::Highlight, QColor(0xfc, 0x66, 0x21));
-    darkPalette.setColor(QPalette::HighlightedText, QColor(0x25, 0x25, 0x25));    
+    darkPalette.setColor(QPalette::HighlightedText, QColor(0x25, 0x25, 0x25));
     QApplication::setPalette(darkPalette);
-    
+
     QFont font;
     font.setWeight(QFont::Light);
     font.setBold(false);
     QApplication::setFont(font);
-    
+
     QFontMetrics fontMetrics(QApplication::font());
     Theme::toolIconFontSize = fontMetrics.height();
     Theme::toolIconSize = (int)(Theme::toolIconFontSize * 1.5);
@@ -63,9 +63,9 @@ void Theme::initialize()
     Theme::previewIconBorderRadius = std::max(3, Theme::partPreviewImageSize / 10);
 }
 
-QtAwesome *Theme::awesome()
+QtAwesome* Theme::awesome()
 {
-    static QtAwesome *s_awesome = nullptr;
+    static QtAwesome* s_awesome = nullptr;
     if (nullptr == s_awesome) {
         s_awesome = new QtAwesome();
         s_awesome->initFontAwesome();
@@ -77,7 +77,7 @@ QtAwesome *Theme::awesome()
     return s_awesome;
 }
 
-void Theme::initAwesomeButton(QPushButton *button)
+void Theme::initAwesomeButton(QPushButton* button)
 {
     button->setFont(Theme::awesome()->font(Theme::toolIconFontSize));
     button->setFixedSize(Theme::toolIconSize, Theme::toolIconSize);
@@ -85,25 +85,25 @@ void Theme::initAwesomeButton(QPushButton *button)
     button->setFocusPolicy(Qt::NoFocus);
 }
 
-void Theme::initAwesomeLabel(QLabel *label)
+void Theme::initAwesomeLabel(QLabel* label)
 {
     label->setFont(Theme::awesome()->font(Theme::toolIconFontSize));
     label->setStyleSheet("QLabel {color: " + Theme::white.name() + "}");
 }
 
-void Theme::initAwesomeMiniButton(QPushButton *button)
+void Theme::initAwesomeMiniButton(QPushButton* button)
 {
     button->setFont(Theme::awesome()->font(Theme::miniIconFontSize));
     button->setFixedSize(Theme::miniIconSize, Theme::miniIconSize);
     button->setFocusPolicy(Qt::NoFocus);
 }
 
-void Theme::updateAwesomeMiniButton(QPushButton *button, QChar icon, bool highlighted, bool enabled, bool unnormal)
+void Theme::updateAwesomeMiniButton(QPushButton* button, QChar icon, bool highlighted, bool enabled, bool unnormal)
 {
     button->setText(icon);
     QColor color;
     bool needDesaturation = true;
-    
+
     if (highlighted) {
         if (unnormal) {
             color = Theme::blue;
@@ -114,13 +114,13 @@ void Theme::updateAwesomeMiniButton(QPushButton *button, QChar icon, bool highli
     } else {
         color = QColor("#525252");
     }
-    
+
     if (needDesaturation) {
         color = color.toHsv();
         color.setHsv(color.hue(), color.saturation() / 5, color.value() * 2 / 3);
         color = color.toRgb();
     }
-    
+
     if (!enabled) {
         color = QColor(42, 42, 42);
     }
@@ -128,20 +128,20 @@ void Theme::updateAwesomeMiniButton(QPushButton *button, QChar icon, bool highli
     button->setStyleSheet("QPushButton {border: none; background: none; color: " + color.name() + ";}");
 }
 
-void Theme::initAwesomeToolButtonWithoutFont(QPushButton *button)
+void Theme::initAwesomeToolButtonWithoutFont(QPushButton* button)
 {
     button->setFixedSize(Theme::toolIconSize * 0.75, Theme::toolIconSize * 0.75);
     button->setStyleSheet("QPushButton {color: " + Theme::white.name() + "}");
     button->setFocusPolicy(Qt::NoFocus);
 }
 
-void Theme::initAwesomeToolButton(QPushButton *button)
+void Theme::initAwesomeToolButton(QPushButton* button)
 {
     button->setFont(Theme::awesome()->font(Theme::toolIconFontSize * 0.75));
     Theme::initAwesomeToolButtonWithoutFont(button);
 }
 
-void Theme::initToolButton(QPushButton *button)
+void Theme::initToolButton(QPushButton* button)
 {
     QFont font = button->font();
     font.setWeight(QFont::Light);
@@ -152,14 +152,14 @@ void Theme::initToolButton(QPushButton *button)
     button->setFocusPolicy(Qt::NoFocus);
 }
 
-void Theme::initCheckbox(QCheckBox *checkbox)
+void Theme::initCheckbox(QCheckBox* checkbox)
 {
     QPalette palette = checkbox->palette();
     palette.setColor(QPalette::Background, Theme::white);
     checkbox->setPalette(palette);
 }
 
-void Theme::initIconButton(QPushButton *button)
+void Theme::initIconButton(QPushButton* button)
 {
     button->setFixedSize(Theme::toolIconSize, Theme::toolIconSize);
 }

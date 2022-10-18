@@ -23,20 +23,19 @@
 #ifndef DUST3D_MESH_SECTION_PREVIEW_MESH_BUILDER_H_
 #define DUST3D_MESH_SECTION_PREVIEW_MESH_BUILDER_H_
 
-#include <vector>
 #include <dust3d/base/vector2.h>
 #include <dust3d/base/vector3.h>
+#include <vector>
 
-namespace dust3d
-{
+namespace dust3d {
 
-class SectionPreviewMeshBuilder
-{
+class SectionPreviewMeshBuilder {
 public:
-    SectionPreviewMeshBuilder(const std::vector<Vector2> &cutFace);
+    SectionPreviewMeshBuilder(const std::vector<Vector2>& cutFace);
     void build();
-    const std::vector<Vector3> &resultVertices();
-    const std::vector<std::vector<size_t>> &resultTriangles();
+    const std::vector<Vector3>& resultVertices();
+    const std::vector<std::vector<size_t>>& resultTriangles();
+
 private:
     std::vector<Vector2> m_cutFace;
     std::vector<Vector3> m_resultVertices;
@@ -44,6 +43,5 @@ private:
 };
 
 }
-
 
 #endif

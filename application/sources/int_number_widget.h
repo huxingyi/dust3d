@@ -6,14 +6,13 @@
 QT_FORWARD_DECLARE_CLASS(QLabel)
 QT_FORWARD_DECLARE_CLASS(QSlider)
 
-class IntNumberWidget : public QWidget
-{
+class IntNumberWidget : public QWidget {
     Q_OBJECT
 public:
-    explicit IntNumberWidget(QWidget *parent = nullptr, bool singleLine=true);
+    explicit IntNumberWidget(QWidget* parent = nullptr, bool singleLine = true);
     void setRange(int min, int max);
     int value() const;
-    void setItemName(const QString &name);
+    void setItemName(const QString& name);
 
 public slots:
     void increaseValue();
@@ -22,13 +21,13 @@ public slots:
 
 signals:
     void valueChanged(int value);
-    
+
 private:
     void updateValueLabel(int value);
 
 private:
-    QLabel *m_label = nullptr;
-    QSlider *m_slider = nullptr;
+    QLabel* m_label = nullptr;
+    QSlider* m_slider = nullptr;
     QString m_itemName;
 };
 
