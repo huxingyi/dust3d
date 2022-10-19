@@ -84,7 +84,7 @@ void SectionPreviewMeshBuilder::build()
     RopeMesh ropeMesh(ropeParameters);
     ropeMesh.addRope(cutFaceVertices, true);
     for (size_t i = 0; i < cutFaceVertices.size(); ++i) {
-        ropeMesh.addRope({ cutFaceVertices[i], cutFaceVertices[i] - Vector3(0.0, 0.0, 2.0) }, false);
+        ropeMesh.addRope({ cutFaceVertices[i], cutFaceVertices[i] - Vector3(0.0, 0.0, 1.5) }, false);
     }
     for (const auto& it : ropeMesh.resultVertices()) {
         m_resultVertices.push_back(it);

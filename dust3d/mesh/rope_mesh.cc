@@ -87,9 +87,11 @@ void RopeMesh::addRope(const std::vector<Vector3>& positions, bool isCircle)
     Vector3 baseNormal = isCircle ? BaseNormal::calculateCircleBaseNormal(nodePositions) : BaseNormal::calculateTubeBaseNormal(nodePositions);
     std::vector<std::vector<size_t>> circles;
     circles.reserve(nodePositions.size());
+    Vector3 forwardDirection;
     for (size_t i = 0; i < nodePositions.size(); ++i) {
         size_t j = (i + 1) % nodePositions.size();
-        Vector3 forwardDirection = (nodePositions[j] - nodePositions[i]).normalized();
+        if (isCircle || i + 1 < nodePositions.size())
+            forwardDirection = (nodePositions[j] - nodePositions[i]).normalized();
         auto circlePositions = BaseNormal::calculateCircleVertices(m_buildParameters.defaultRadius,
             m_buildParameters.sectionSegments,
             forwardDirection,
