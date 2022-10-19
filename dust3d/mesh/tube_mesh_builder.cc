@@ -189,17 +189,49 @@ void TubeMeshBuilder::build()
 
     m_generatedBaseNormal = m_isCircle ? BaseNormal::calculateCircleBaseNormal(m_nodePositions) : BaseNormal::calculateTubeBaseNormal(m_nodePositions);
 
-    std::vector<std::vector<size_t>> cutFaceIndices(m_nodePositions.size());
+    // Build all vertex Positions
+    std::vector<std::vector<Vector3>> cutFaceVertexPositions;
     for (size_t i = 0; i < m_nodePositions.size(); ++i) {
-        auto cutFaceVertices = buildCutFaceVertices(m_nodePositions[i],
+        cutFaceVertexPositions.emplace_back(buildCutFaceVertices(m_nodePositions[i],
             m_nodes[i].radius,
-            m_nodeForwardDirections[i]);
+            m_nodeForwardDirections[i]));
+    }
+
+    // Build all vertex Uvs
+    std::vector<std::vector<Vector2>> cutFaceVertexUvs(cutFaceVertexPositions.size());
+    double maxOffsetU = 0.0;
+    std::vector<double> offsetVs(cutFaceVertexPositions.front().size(), 0.0);
+    for (size_t n = 0; n < cutFaceVertexPositions.size(); ++n) {
+        const auto& cutFaceVertices = cutFaceVertexPositions[n];
+        double offsetU = 0;
+        if (n > 0) {
+            size_t m = n - 1;
+            for (size_t i = 0; i < cutFaceVertices.size(); ++i) {
+                offsetVs[i] = (cutFaceVertexPositions[n][i] - cutFaceVertexPositions[m][i]).length();
+            }
+        }
+        std::vector<Vector2> uvCoords = { Vector2 { offsetU, offsetVs[0] } };
+        for (size_t j = 1; j < cutFaceVertices.size(); ++j) {
+            size_t i = j - 1;
+            uvCoords.push_back({ offsetU, offsetVs[j] });
+            offsetU += (cutFaceVertices[j] - cutFaceVertices[i]).length();
+        }
+        cutFaceVertexUvs[n] = uvCoords;
+        maxOffsetU = std::max(maxOffsetU, offsetU);
+    }
+
+    // Generate vertex indices
+    std::vector<std::vector<size_t>> cutFaceIndices(m_nodePositions.size());
+    for (size_t i = 0; i < cutFaceVertexPositions.size(); ++i) {
+        const auto& cutFaceVertices = cutFaceVertexPositions[i];
         cutFaceIndices[i].resize(cutFaceVertices.size());
         for (size_t k = 0; k < cutFaceVertices.size(); ++k) {
             cutFaceIndices[i][k] = m_generatedVertices.size();
             m_generatedVertices.emplace_back(cutFaceVertices[k]);
         }
     }
+
+    // Generate faces
     for (size_t j = m_isCircle ? 0 : 1; j < cutFaceIndices.size(); ++j) {
         size_t i = (j + cutFaceIndices.size() - 1) % cutFaceIndices.size();
         const auto& cutFaceI = cutFaceIndices[i];

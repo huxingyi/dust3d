@@ -57,6 +57,7 @@ private:
     std::vector<double> m_nodeForwardDistances;
     std::vector<Vector3> m_generatedVertices;
     std::vector<std::vector<size_t>> m_generatedFaces;
+    std::vector<std::vector<Vector2>> m_generatedUvs;
     Vector3 m_generatedBaseNormal;
     bool m_isCircle = false;
     double m_maxNodeRadius = 0.0;
