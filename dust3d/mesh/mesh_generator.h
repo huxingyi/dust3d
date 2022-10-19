@@ -30,7 +30,6 @@
 #include <dust3d/base/uuid.h>
 #include <dust3d/mesh/mesh_combiner.h>
 #include <dust3d/mesh/mesh_node.h>
-#include <dust3d/mesh/stroke_mesh_builder.h>
 #include <set>
 #include <tuple>
 #include <unordered_map>
