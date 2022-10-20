@@ -48,6 +48,11 @@ const std::vector<std::vector<size_t>>& TubeMeshBuilder::generatedFaces()
     return m_generatedFaces;
 }
 
+const std::vector<std::vector<Vector2>>& TubeMeshBuilder::generatedFaceUvs()
+{
+    return m_generatedFaceUvs;
+}
+
 void TubeMeshBuilder::applyRoundEnd()
 {
     if (m_isCircle)
@@ -227,6 +232,7 @@ void TubeMeshBuilder::build()
         cutFaceIndices[i].resize(cutFaceVertices.size());
         for (size_t k = 0; k < cutFaceVertices.size(); ++k) {
             cutFaceIndices[i][k] = m_generatedVertices.size();
+            m_generatedVertexUvs.emplace_back(cutFaceVertexUvs[i][k]);
             m_generatedVertices.emplace_back(cutFaceVertices[k]);
         }
     }

@@ -48,6 +48,7 @@ public:
     const Vector3& generatedBaseNormal();
     const std::vector<Vector3>& generatedVertices();
     const std::vector<std::vector<size_t>>& generatedFaces();
+    const std::vector<std::vector<Vector2>>& generatedFaceUvs();
 
 private:
     BuildParameters m_buildParameters;
@@ -57,7 +58,8 @@ private:
     std::vector<double> m_nodeForwardDistances;
     std::vector<Vector3> m_generatedVertices;
     std::vector<std::vector<size_t>> m_generatedFaces;
-    std::vector<std::vector<Vector2>> m_generatedUvs;
+    std::vector<Vector2> m_generatedVertexUvs;
+    std::vector<std::vector<Vector2>> m_generatedFaceUvs;
     Vector3 m_generatedBaseNormal;
     bool m_isCircle = false;
     double m_maxNodeRadius = 0.0;
