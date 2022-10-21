@@ -251,6 +251,11 @@ void TubeMeshBuilder::build()
             // If not follow this order, the front triangle and back triangle maybe cross over because of not be parallel.
             m_generatedFaces.emplace_back(std::vector<size_t> {
                 cutFaceI[m], cutFaceI[n], cutFaceJ[n], cutFaceJ[m] });
+            m_generatedFaceUvs.emplace_back(std::vector<Vector2> {
+                m_generatedVertexUvs[cutFaceI[m]],
+                m_generatedVertexUvs[cutFaceI[n]],
+                m_generatedVertexUvs[cutFaceJ[n]],
+                m_generatedVertexUvs[cutFaceJ[m]] });
         }
         for (size_t m = halfSize; m < cutFaceI.size(); ++m) {
             size_t n = (m + 1) % cutFaceI.size();
@@ -260,12 +265,19 @@ void TubeMeshBuilder::build()
             // If not follow this order, the front triangle and back triangle maybe cross over because of not be parallel.
             m_generatedFaces.emplace_back(std::vector<size_t> {
                 cutFaceJ[m], cutFaceI[m], cutFaceI[n], cutFaceJ[n] });
+            m_generatedFaceUvs.emplace_back(std::vector<Vector2> {
+                m_generatedVertexUvs[cutFaceJ[m]],
+                m_generatedVertexUvs[cutFaceI[m]],
+                m_generatedVertexUvs[cutFaceI[n]],
+                m_generatedVertexUvs[cutFaceJ[n]] });
         }
     }
     if (!m_isCircle) {
         m_generatedFaces.emplace_back(cutFaceIndices.back());
         m_generatedFaces.emplace_back(cutFaceIndices.front());
         std::reverse(m_generatedFaces.back().begin(), m_generatedFaces.back().end());
+        // TODO: Add UV for end cap
+        m_generatedFaceUvs.resize(m_generatedFaces.size());
     }
 }
 

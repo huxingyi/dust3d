@@ -685,6 +685,7 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combinePartMesh(const std::st
                 for (auto& it : partCache.faces)
                     std::reverse(it.begin(), it.end());
             }
+            partCache.faceUvs = tubeMeshBuilder->generatedFaceUvs();
         }
     }
 
