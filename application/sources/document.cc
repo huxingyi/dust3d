@@ -1615,6 +1615,9 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
                     part["cutFace"] = CutFaceToString(partIt.second.cutFace);
                 }
             }
+            if (!partIt.second.colorImageId.isNull()) {
+                part["colorImageId"] = partIt.second.colorImageId.toString();
+            }
             part["__dirty"] = partIt.second.dirty ? "true" : "false";
             if (partIt.second.hasColor)
                 part["color"] = partIt.second.color.name(QColor::HexArgb).toUtf8().constData();
@@ -1856,6 +1859,10 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
                 part.setCutFaceLinkedId(cutFaceLinkedId);
                 cutFaceLinkedIdModifyMap.insert({ part.id, cutFaceLinkedId });
             }
+        }
+        const auto& colorImageIt = partKv.second.find("colorImageId");
+        if (colorImageIt != partKv.second.end()) {
+            part.colorImageId = dust3d::Uuid(colorImageIt->second);
         }
         if (dust3d::String::isTrue(dust3d::String::valueOrEmpty(partKv.second, "inverse")))
             inversePartIds.insert(part.id);

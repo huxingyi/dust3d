@@ -1,8 +1,11 @@
 #include "component_property_widget.h"
 #include "document.h"
 #include "float_number_widget.h"
+#include "image_forever.h"
+#include "image_preview_widget.h"
 #include "theme.h"
 #include <QColorDialog>
+#include <QFileDialog>
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QPushButton>
@@ -188,20 +191,59 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         cutFaceGroupBox->setLayout(cutFaceLayout);
     }
 
-    QGroupBox* skinGroupBox = nullptr;
+    QGroupBox* colorImageGroupBox = nullptr;
     if (nullptr != m_part) {
-        QCheckBox* useImageBox = new QCheckBox();
-        Theme::initCheckbox(useImageBox);
-        useImageBox->setText(tr("Use image"));
-        useImageBox->setChecked(m_part->rounded);
+        ImagePreviewWidget* colorImagePreviewWidget = new ImagePreviewWidget;
+        colorImagePreviewWidget->setFixedSize(Theme::partPreviewImageSize * 2, Theme::partPreviewImageSize * 2);
+        colorImagePreviewWidget->updateImage(m_part->colorImageId.isNull() ? QImage() : *ImageForever::get(m_part->colorImageId));
+        connect(m_document, &Document::partColorImageChanged, this, [=]() {
+            auto part = m_document->findPart(m_partId);
+            if (nullptr == part)
+                return;
+            colorImagePreviewWidget->updateImage(part->colorImageId.isNull() ? QImage() : *ImageForever::get(part->colorImageId));
+        });
+
+        QPushButton* colorImageEraser = new QPushButton(QChar(fa::eraser));
+        Theme::initIconButton(colorImageEraser);
+
+        connect(colorImageEraser, &QPushButton::clicked, [=]() {
+            emit setPartColorImage(m_partId, dust3d::Uuid());
+            emit groupOperationAdded();
+        });
+
+        QPushButton* colorImagePicker = new QPushButton(QChar(fa::image));
+        Theme::initIconButton(colorImagePicker);
+
+        connect(colorImagePicker, &QPushButton::clicked, [=]() {
+            QImage* image = pickImage();
+            if (nullptr == image)
+                return;
+            auto imageId = ImageForever::add(image);
+            delete image;
+            emit setPartColorImage(m_partId, imageId);
+            emit groupOperationAdded();
+        });
+
+        QHBoxLayout* colorImageToolsLayout = new QHBoxLayout;
+        colorImageToolsLayout->addWidget(colorImageEraser);
+        colorImageToolsLayout->addWidget(colorImagePicker);
+        colorImageToolsLayout->addStretch();
+
+        QVBoxLayout* colorImageLayout = new QVBoxLayout;
+        colorImageLayout->addWidget(colorImagePreviewWidget);
+        colorImageLayout->addLayout(colorImageToolsLayout);
 
         QHBoxLayout* skinLayout = new QHBoxLayout;
+        skinLayout->addLayout(colorImageLayout);
         skinLayout->addStretch();
-        skinLayout->addWidget(useImageBox);
 
-        skinGroupBox = new QGroupBox(tr("Skin"));
-        skinGroupBox->setLayout(skinLayout);
+        colorImageGroupBox = new QGroupBox(tr("Color"));
+        colorImageGroupBox->setLayout(skinLayout);
     }
+
+    QHBoxLayout* skinLayout = new QHBoxLayout;
+    if (nullptr != colorImageGroupBox)
+        skinLayout->addWidget(colorImageGroupBox);
 
     QVBoxLayout* mainLayout = new QVBoxLayout;
     mainLayout->addLayout(colorLayout);
@@ -209,8 +251,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         mainLayout->addWidget(deformGroupBox);
     if (nullptr != cutFaceGroupBox)
         mainLayout->addWidget(cutFaceGroupBox);
-    if (nullptr != skinGroupBox)
-        mainLayout->addWidget(skinGroupBox);
+    mainLayout->addLayout(skinLayout);
     mainLayout->setSizeConstraint(QLayout::SetFixedSize);
 
     connect(this, &ComponentPropertyWidget::setPartColorState, m_document, &Document::setPartColorState);
@@ -223,11 +264,25 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     connect(this, &ComponentPropertyWidget::setPartSubdivState, m_document, &Document::setPartSubdivState);
     connect(this, &ComponentPropertyWidget::setPartChamferState, m_document, &Document::setPartChamferState);
     connect(this, &ComponentPropertyWidget::setPartRoundState, m_document, &Document::setPartRoundState);
+    connect(this, &ComponentPropertyWidget::setPartColorImage, m_document, &Document::setPartColorImage);
     connect(this, &ComponentPropertyWidget::groupOperationAdded, m_document, &Document::saveSnapshot);
 
     setLayout(mainLayout);
 
     setFixedSize(minimumSizeHint());
+}
+
+QImage* ComponentPropertyWidget::pickImage()
+{
+    QString fileName = QFileDialog::getOpenFileName(this, QString(), QString(),
+        tr("Image Files (*.png *.jpg *.bmp)"))
+                           .trimmed();
+    if (fileName.isEmpty())
+        return nullptr;
+    QImage* image = new QImage();
+    if (!image->load(fileName))
+        return nullptr;
+    return image;
 }
 
 void ComponentPropertyWidget::preparePartIds()

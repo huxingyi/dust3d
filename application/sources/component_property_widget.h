@@ -20,6 +20,7 @@ signals:
     void setPartChamferState(const dust3d::Uuid& partId, bool chamfered);
     void setPartRoundState(const dust3d::Uuid& partId, bool rounded);
     void setPartCutRotation(const dust3d::Uuid& partId, float cutRotation);
+    void setPartColorImage(const dust3d::Uuid& partId, const dust3d::Uuid& imageId);
     void groupOperationAdded();
 
 public:
@@ -38,6 +39,7 @@ private:
     QColor m_color;
     QColor lastColor();
     void preparePartIds();
+    QImage* pickImage();
 };
 
 #endif

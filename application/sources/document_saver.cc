@@ -32,6 +32,13 @@ void DocumentSaver::process()
 void DocumentSaver::collectUsedResourceIds(const dust3d::Snapshot* snapshot,
     std::set<dust3d::Uuid>& imageIds)
 {
+    for (const auto& part : snapshot->parts) {
+        auto findImageIdString = part.second.find("colorImageId");
+        if (findImageIdString == part.second.end())
+            continue;
+        dust3d::Uuid imageId = dust3d::Uuid(findImageIdString->second);
+        imageIds.insert(imageId);
+    }
     for (const auto& material : snapshot->materials) {
         for (auto& layer : material.second) {
             for (auto& mapItem : layer.second) {
