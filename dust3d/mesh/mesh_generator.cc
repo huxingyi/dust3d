@@ -21,7 +21,6 @@
  */
 
 #include <dust3d/base/cut_face.h>
-#include <dust3d/base/part_base.h>
 #include <dust3d/base/part_target.h>
 #include <dust3d/base/snapshot_xml.h>
 #include <dust3d/base/string.h>
@@ -591,7 +590,6 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combinePartMesh(const std::st
     float cutRotation = 0.0;
     float hollowThickness = 0.0;
     auto target = PartTargetFromString(String::valueOrEmpty(part, "target").c_str());
-    auto base = PartBaseFromString(String::valueOrEmpty(part, "base").c_str());
 
     std::string searchPartIdString = __mirrorFromPartId.empty() ? partIdString : __mirrorFromPartId;
 

@@ -1,8 +1,8 @@
 #ifndef DUST3D_APPLICATION_SKELETON_GRAPHICS_VIEW_H_
 #define DUST3D_APPLICATION_SKELETON_GRAPHICS_VIEW_H_
 
+#include "document.h"
 #include "model_widget.h"
-#include "skeleton_document.h"
 #include "skeleton_ik_mover.h"
 #include "theme.h"
 #include "turnaround_loader.h"
@@ -398,7 +398,7 @@ signals:
     void moveNodeBy(dust3d::Uuid nodeId, float x, float y, float z);
     void removeNode(dust3d::Uuid nodeId);
     void removePart(dust3d::Uuid partId);
-    void setEditMode(SkeletonDocumentEditMode mode);
+    void setEditMode(DocumentEditMode mode);
     void removeEdge(dust3d::Uuid edgeId);
     void addEdge(dust3d::Uuid fromNodeId, dust3d::Uuid toNodeId);
     void cursorChanged();
@@ -442,7 +442,7 @@ signals:
     void loadedTurnaroundImageChanged();
 
 public:
-    SkeletonGraphicsWidget(const SkeletonDocument* document);
+    SkeletonGraphicsWidget(const Document* document);
     std::map<dust3d::Uuid, std::pair<SkeletonGraphicsNodeItem*, SkeletonGraphicsNodeItem*>> nodeItemMap;
     std::map<dust3d::Uuid, std::pair<SkeletonGraphicsEdgeItem*, SkeletonGraphicsEdgeItem*>> edgeItemMap;
     bool mouseMove(QMouseEvent* event);
@@ -600,7 +600,7 @@ private:
     bool isFloatEqual(float a, float b);
 
 private:
-    const SkeletonDocument* m_document = nullptr;
+    const Document* m_document = nullptr;
     QGraphicsPixmapItem* m_backgroundItem = nullptr;
     bool m_turnaroundChanged = false;
     TurnaroundLoader* m_turnaroundLoader = nullptr;
@@ -629,7 +629,7 @@ private:
     bool m_eventForwardingToModelWidget = false;
     ModelWidget* m_modelWidget = nullptr;
     bool m_inTempDragMode = false;
-    SkeletonDocumentEditMode m_modeBeforeEnterTempDragMode = SkeletonDocumentEditMode::Select;
+    DocumentEditMode m_modeBeforeEnterTempDragMode = DocumentEditMode::Select;
     float m_turnaroundOpacity = 0.25f;
     bool m_rotated = false;
     QImage* m_backgroundImage = nullptr;

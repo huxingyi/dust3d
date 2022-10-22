@@ -511,11 +511,11 @@ DocumentWindow::DocumentWindow()
         canvasGraphicsWidget, &SkeletonGraphicsWidget::turnaroundChanged);
 
     connect(addButton, &QPushButton::clicked, [=]() {
-        m_document->setEditMode(SkeletonDocumentEditMode::Add);
+        m_document->setEditMode(DocumentEditMode::Add);
     });
 
     connect(selectButton, &QPushButton::clicked, [=]() {
-        m_document->setEditMode(SkeletonDocumentEditMode::Select);
+        m_document->setEditMode(DocumentEditMode::Select);
     });
 
     connect(m_xLockButton, &QPushButton::clicked, [=]() {

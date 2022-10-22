@@ -13,7 +13,7 @@
 #include <cmath>
 #include <queue>
 
-SkeletonGraphicsWidget::SkeletonGraphicsWidget(const SkeletonDocument* document)
+SkeletonGraphicsWidget::SkeletonGraphicsWidget(const Document* document)
     : m_document(document)
 {
     setRenderHint(QPainter::Antialiasing, false);
@@ -101,20 +101,20 @@ void SkeletonGraphicsWidget::shortcutEscape()
     if (!isVisible())
         return;
 
-    if (SkeletonDocumentEditMode::Add == m_document->editMode || SkeletonDocumentEditMode::Paint == m_document->editMode) {
-        emit setEditMode(SkeletonDocumentEditMode::Select);
+    if (DocumentEditMode::Add == m_document->editMode || DocumentEditMode::Paint == m_document->editMode) {
+        emit setEditMode(DocumentEditMode::Select);
         return;
     }
 }
 
 void SkeletonGraphicsWidget::showContextMenu(const QPoint& pos)
 {
-    if (SkeletonDocumentEditMode::Add == m_document->editMode) {
-        emit setEditMode(SkeletonDocumentEditMode::Select);
+    if (DocumentEditMode::Add == m_document->editMode) {
+        emit setEditMode(DocumentEditMode::Select);
         return;
     }
 
-    if (SkeletonDocumentEditMode::Select != m_document->editMode) {
+    if (DocumentEditMode::Select != m_document->editMode) {
         return;
     }
 
@@ -122,19 +122,19 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint& pos)
 
     QAction addAction(tr("Add..."), this);
     connect(&addAction, &QAction::triggered, [=]() {
-        emit setEditMode(SkeletonDocumentEditMode::Add);
+        emit setEditMode(DocumentEditMode::Add);
     });
     contextMenu.addAction(&addAction);
 
     QAction undoAction(tr("Undo"), this);
     if (m_document->undoable()) {
-        connect(&undoAction, &QAction::triggered, m_document, &SkeletonDocument::undo);
+        connect(&undoAction, &QAction::triggered, m_document, &Document::undo);
         contextMenu.addAction(&undoAction);
     }
 
     QAction redoAction(tr("Redo"), this);
     if (m_document->redoable()) {
-        connect(&redoAction, &QAction::triggered, m_document, &SkeletonDocument::redo);
+        connect(&redoAction, &QAction::triggered, m_document, &Document::redo);
         contextMenu.addAction(&redoAction);
     }
 
@@ -182,7 +182,7 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint& pos)
 
     QAction pasteAction(tr("Paste"), this);
     if (m_document->hasPastableNodesInClipboard()) {
-        connect(&pasteAction, &QAction::triggered, m_document, &SkeletonDocument::paste);
+        connect(&pasteAction, &QAction::triggered, m_document, &Document::paste);
         contextMenu.addAction(&pasteAction);
     }
 
@@ -657,7 +657,7 @@ const QImage* SkeletonGraphicsWidget::loadedTurnaroundImage() const
 
 void SkeletonGraphicsWidget::updateCursor()
 {
-    if (SkeletonDocumentEditMode::Add != m_document->editMode) {
+    if (DocumentEditMode::Add != m_document->editMode) {
         m_cursorEdgeItem->hide();
         m_cursorNodeItem->hide();
     }
@@ -670,7 +670,7 @@ void SkeletonGraphicsWidget::updateCursor()
 void SkeletonGraphicsWidget::editModeChanged()
 {
     updateCursor();
-    if (SkeletonDocumentEditMode::Add == m_document->editMode) {
+    if (DocumentEditMode::Add == m_document->editMode) {
         SkeletonGraphicsNodeItem* choosenNodeItem = nullptr;
         if (!m_rangeSelectionSet.empty()) {
             std::set<SkeletonGraphicsNodeItem*> nodeItems;
@@ -771,7 +771,7 @@ bool SkeletonGraphicsWidget::mouseMove(QMouseEvent* event)
         return true;
     }
 
-    if (SkeletonDocumentEditMode::Select == m_document->editMode) {
+    if (DocumentEditMode::Select == m_document->editMode) {
         if (m_rangeSelectionStarted) {
             QPointF mouseScenePos = mouseEventScenePos(event);
             m_selectionItem->updateRange(m_rangeSelectionStartPos, mouseScenePos);
@@ -782,7 +782,7 @@ bool SkeletonGraphicsWidget::mouseMove(QMouseEvent* event)
         }
     }
 
-    if (SkeletonDocumentEditMode::Select == m_document->editMode || SkeletonDocumentEditMode::Add == m_document->editMode) {
+    if (DocumentEditMode::Select == m_document->editMode || DocumentEditMode::Add == m_document->editMode) {
 
         //
         // > For overlapping nodes, you can make it a bit better by selecting the node center nearest the mouse, rather than simply checking against the wider circle.
@@ -872,7 +872,7 @@ bool SkeletonGraphicsWidget::mouseMove(QMouseEvent* event)
         hoverPart(hoveredPartId);
     }
 
-    if (SkeletonDocumentEditMode::Add == m_document->editMode) {
+    if (DocumentEditMode::Add == m_document->editMode) {
         QPointF mouseScenePos = mouseEventScenePos(event);
         m_cursorNodeItem->setOrigin(mouseScenePos);
         if (m_addFromNodeItem) {
@@ -889,7 +889,7 @@ bool SkeletonGraphicsWidget::mouseMove(QMouseEvent* event)
         return true;
     }
 
-    if (SkeletonDocumentEditMode::Select == m_document->editMode) {
+    if (DocumentEditMode::Select == m_document->editMode) {
         if (m_moveStarted) {
             if (m_checkedOriginItem) {
                 QPointF mouseScenePos = mouseEventScenePos(event);
@@ -1200,12 +1200,12 @@ bool SkeletonGraphicsWidget::wheel(QWheelEvent* event)
         delta = 1;
     else
         delta = -1;
-    if (SkeletonDocumentEditMode::Add == m_document->editMode) {
+    if (DocumentEditMode::Add == m_document->editMode) {
         if (m_cursorNodeItem->isVisible()) {
             m_cursorNodeItem->setRadius(m_cursorNodeItem->radius() + delta);
             return true;
         }
-    } else if (SkeletonDocumentEditMode::Select == m_document->editMode) {
+    } else if (DocumentEditMode::Select == m_document->editMode) {
         if (!m_rangeSelectionSet.empty()) {
             if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {
                 scaleSelected(delta);
@@ -1347,13 +1347,13 @@ QPointF SkeletonGraphicsWidget::mouseEventScenePos(QMouseEvent* event)
 bool SkeletonGraphicsWidget::mousePress(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton) {
-        if (SkeletonDocumentEditMode::ZoomIn == m_document->editMode) {
+        if (DocumentEditMode::ZoomIn == m_document->editMode) {
             ViewportAnchor lastAnchor = transformationAnchor();
             setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
             scale(1.25, 1.25);
             setTransformationAnchor(lastAnchor);
             return true;
-        } else if (SkeletonDocumentEditMode::ZoomOut == m_document->editMode) {
+        } else if (DocumentEditMode::ZoomOut == m_document->editMode) {
             ViewportAnchor lastAnchor = transformationAnchor();
             setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
             scale(0.8, 0.8);
@@ -1363,20 +1363,20 @@ bool SkeletonGraphicsWidget::mousePress(QMouseEvent* event)
             //    setTransform(QTransform());
             //}
             return true;
-        } else if (SkeletonDocumentEditMode::Drag == m_document->editMode) {
+        } else if (DocumentEditMode::Drag == m_document->editMode) {
             if (!m_dragStarted) {
                 m_lastGlobalPos = event->globalPos();
                 m_dragStarted = true;
                 updateCursor();
             }
-        } else if (SkeletonDocumentEditMode::Add == m_document->editMode) {
+        } else if (DocumentEditMode::Add == m_document->editMode) {
             if (m_cursorNodeItem->isVisible()) {
                 if (m_addFromNodeItem) {
                     if (m_hoveredNodeItem && m_addFromNodeItem && m_hoveredNodeItem != m_addFromNodeItem && m_hoveredNodeItem->profile() == m_addFromNodeItem->profile() && !m_document->findEdgeByNodes(m_addFromNodeItem->id(), m_hoveredNodeItem->id()) && m_document->isNodeEditable(m_hoveredNodeItem->id())) {
                         if (m_document->isNodeConnectable(m_hoveredNodeItem->id())) {
                             emit addEdge(m_addFromNodeItem->id(), m_hoveredNodeItem->id());
                             emit groupOperationAdded();
-                            emit setEditMode(SkeletonDocumentEditMode::Select);
+                            emit setEditMode(DocumentEditMode::Select);
                             return true;
                         }
                     }
@@ -1410,7 +1410,7 @@ bool SkeletonGraphicsWidget::mousePress(QMouseEvent* event)
                 emit groupOperationAdded();
                 return true;
             }
-        } else if (SkeletonDocumentEditMode::Select == m_document->editMode) {
+        } else if (DocumentEditMode::Select == m_document->editMode) {
             bool processed = false;
             if (m_hoveredOriginItem != m_checkedOriginItem) {
                 if (m_checkedOriginItem) {
@@ -1467,7 +1467,7 @@ bool SkeletonGraphicsWidget::mousePress(QMouseEvent* event)
     }
 
     if (event->button() == Qt::LeftButton) {
-        if (SkeletonDocumentEditMode::Select == m_document->editMode) {
+        if (DocumentEditMode::Select == m_document->editMode) {
             if (!m_rangeSelectionStarted) {
                 m_rangeSelectionStartPos = mouseEventScenePos(event);
                 m_rangeSelectionStarted = true;
@@ -1644,10 +1644,10 @@ void SkeletonGraphicsWidget::shortcutDelete()
 
 void SkeletonGraphicsWidget::shortcutAddMode()
 {
-    if (SkeletonDocumentEditMode::Add == m_document->editMode) {
-        emit setEditMode(SkeletonDocumentEditMode::Select);
+    if (DocumentEditMode::Add == m_document->editMode) {
+        emit setEditMode(DocumentEditMode::Select);
     } else {
-        emit setEditMode(SkeletonDocumentEditMode::Add);
+        emit setEditMode(DocumentEditMode::Add);
     }
 }
 
@@ -1708,12 +1708,12 @@ void SkeletonGraphicsWidget::shortcutPaste()
 
 void SkeletonGraphicsWidget::shortcutSelectMode()
 {
-    emit setEditMode(SkeletonDocumentEditMode::Select);
+    emit setEditMode(DocumentEditMode::Select);
 }
 
 void SkeletonGraphicsWidget::shortcutPaintMode()
 {
-    emit setEditMode(SkeletonDocumentEditMode::Paint);
+    emit setEditMode(DocumentEditMode::Paint);
 }
 
 void SkeletonGraphicsWidget::shortcutZoomRenderedModelByMinus10()
@@ -1729,10 +1729,10 @@ void SkeletonGraphicsWidget::shortcutZoomSelectedByMinus1()
     if (!isVisible())
         return;
 
-    if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
+    if (DocumentEditMode::Select == m_document->editMode && hasSelection()) {
         zoomSelected(-1);
         emit groupOperationAdded();
-    } else if (SkeletonDocumentEditMode::Add == m_document->editMode) {
+    } else if (DocumentEditMode::Add == m_document->editMode) {
         if (m_cursorNodeItem->isVisible()) {
             m_cursorNodeItem->setRadius(m_cursorNodeItem->radius() + -1);
         }
@@ -1752,10 +1752,10 @@ void SkeletonGraphicsWidget::shortcutZoomSelectedBy1()
     if (!isVisible())
         return;
 
-    if (SkeletonDocumentEditMode::Select == m_document->editMode && hasSelection()) {
+    if (DocumentEditMode::Select == m_document->editMode && hasSelection()) {
         zoomSelected(1);
         emit groupOperationAdded();
-    } else if (SkeletonDocumentEditMode::Add == m_document->editMode) {
+    } else if (DocumentEditMode::Add == m_document->editMode) {
         if (m_cursorNodeItem->isVisible()) {
             m_cursorNodeItem->setRadius(m_cursorNodeItem->radius() + 1);
         }
@@ -1767,7 +1767,7 @@ void SkeletonGraphicsWidget::shortcutRotateSelectedByMinus1()
     if (!isVisible())
         return;
 
-    if ((SkeletonDocumentEditMode::Select == m_document->editMode) && hasSelection()) {
+    if ((DocumentEditMode::Select == m_document->editMode) && hasSelection()) {
         rotateSelected(-1);
         emit groupOperationAdded();
     }
@@ -1778,7 +1778,7 @@ void SkeletonGraphicsWidget::shortcutRotateSelectedBy1()
     if (!isVisible())
         return;
 
-    if ((SkeletonDocumentEditMode::Select == m_document->editMode) && hasSelection()) {
+    if ((DocumentEditMode::Select == m_document->editMode) && hasSelection()) {
         rotateSelected(1);
         emit groupOperationAdded();
     }
@@ -1789,7 +1789,7 @@ void SkeletonGraphicsWidget::shortcutMoveSelectedToLeft()
     if (!isVisible())
         return;
 
-    if (SkeletonDocumentEditMode::Select == m_document->editMode) {
+    if (DocumentEditMode::Select == m_document->editMode) {
         if (m_checkedOriginItem) {
             moveCheckedOrigin(-1, 0);
             emit groupOperationAdded();
@@ -1805,7 +1805,7 @@ void SkeletonGraphicsWidget::shortcutMoveSelectedToRight()
     if (!isVisible())
         return;
 
-    if (SkeletonDocumentEditMode::Select == m_document->editMode) {
+    if (DocumentEditMode::Select == m_document->editMode) {
         if (m_checkedOriginItem) {
             moveCheckedOrigin(1, 0);
             emit groupOperationAdded();
@@ -1821,7 +1821,7 @@ void SkeletonGraphicsWidget::shortcutMoveSelectedToUp()
     if (!isVisible())
         return;
 
-    if (SkeletonDocumentEditMode::Select == m_document->editMode) {
+    if (DocumentEditMode::Select == m_document->editMode) {
         if (m_checkedOriginItem) {
             moveCheckedOrigin(0, -1);
             emit groupOperationAdded();
@@ -1837,7 +1837,7 @@ void SkeletonGraphicsWidget::shortcutMoveSelectedToDown()
     if (!isVisible())
         return;
 
-    if (SkeletonDocumentEditMode::Select == m_document->editMode) {
+    if (DocumentEditMode::Select == m_document->editMode) {
         if (m_checkedOriginItem) {
             moveCheckedOrigin(0, 1);
             emit groupOperationAdded();
@@ -1853,7 +1853,7 @@ void SkeletonGraphicsWidget::shortcutScaleSelectedByMinus1()
     if (!isVisible())
         return;
 
-    if ((SkeletonDocumentEditMode::Select == m_document->editMode) && hasSelection()) {
+    if ((DocumentEditMode::Select == m_document->editMode) && hasSelection()) {
         scaleSelected(-1);
         emit groupOperationAdded();
     }
@@ -1864,7 +1864,7 @@ void SkeletonGraphicsWidget::shortcutScaleSelectedBy1()
     if (!isVisible())
         return;
 
-    if ((SkeletonDocumentEditMode::Select == m_document->editMode) && hasSelection()) {
+    if ((DocumentEditMode::Select == m_document->editMode) && hasSelection()) {
         scaleSelected(1);
         emit groupOperationAdded();
     }
@@ -1875,7 +1875,7 @@ void SkeletonGraphicsWidget::shortcutSwitchProfileOnSelected()
     if (!isVisible())
         return;
 
-    if ((SkeletonDocumentEditMode::Select == m_document->editMode) && hasSelection()) {
+    if ((DocumentEditMode::Select == m_document->editMode) && hasSelection()) {
         switchProfileOnRangeSelection();
     }
 }
@@ -1885,7 +1885,7 @@ void SkeletonGraphicsWidget::shortcutShowOrHideSelectedPart()
     if (!isVisible())
         return;
 
-    if (SkeletonDocumentEditMode::Select == m_document->editMode) {
+    if (DocumentEditMode::Select == m_document->editMode) {
         if (!m_lastCheckedPart.isNull()) {
             const SkeletonPart* part = m_document->findPart(m_lastCheckedPart);
             bool partVisible = part && part->visible;
@@ -1902,7 +1902,7 @@ void SkeletonGraphicsWidget::shortcutEnableOrDisableSelectedPart()
     if (!isVisible())
         return;
 
-    if ((SkeletonDocumentEditMode::Select == m_document->editMode) && !m_lastCheckedPart.isNull()) {
+    if ((DocumentEditMode::Select == m_document->editMode) && !m_lastCheckedPart.isNull()) {
         const SkeletonPart* part = m_document->findPart(m_lastCheckedPart);
         bool partDisabled = part && part->disabled;
         emit setPartDisableState(m_lastCheckedPart, !partDisabled);
@@ -1915,7 +1915,7 @@ void SkeletonGraphicsWidget::shortcutLockOrUnlockSelectedPart()
     if (!isVisible())
         return;
 
-    if ((SkeletonDocumentEditMode::Select == m_document->editMode) && !m_lastCheckedPart.isNull()) {
+    if ((DocumentEditMode::Select == m_document->editMode) && !m_lastCheckedPart.isNull()) {
         const SkeletonPart* part = m_document->findPart(m_lastCheckedPart);
         bool partLocked = part && part->locked;
         emit setPartLockState(m_lastCheckedPart, !partLocked);
@@ -1928,7 +1928,7 @@ void SkeletonGraphicsWidget::shortcutXmirrorOnOrOffSelectedPart()
     if (!isVisible())
         return;
 
-    if ((SkeletonDocumentEditMode::Select == m_document->editMode) && !m_lastCheckedPart.isNull()) {
+    if ((DocumentEditMode::Select == m_document->editMode) && !m_lastCheckedPart.isNull()) {
         const SkeletonPart* part = m_document->findPart(m_lastCheckedPart);
         bool partXmirrored = part && part->xMirrored;
         emit setPartXmirrorState(m_lastCheckedPart, !partXmirrored);
@@ -1941,7 +1941,7 @@ void SkeletonGraphicsWidget::shortcutSubdivedOrNotSelectedPart()
     if (!isVisible())
         return;
 
-    if ((SkeletonDocumentEditMode::Select == m_document->editMode) && !m_lastCheckedPart.isNull()) {
+    if ((DocumentEditMode::Select == m_document->editMode) && !m_lastCheckedPart.isNull()) {
         const SkeletonPart* part = m_document->findPart(m_lastCheckedPart);
         bool partSubdived = part && part->subdived;
         emit setPartSubdivState(m_lastCheckedPart, !partSubdived);
@@ -1954,7 +1954,7 @@ void SkeletonGraphicsWidget::shortcutChamferedOrNotSelectedPart()
     if (!isVisible())
         return;
 
-    if ((SkeletonDocumentEditMode::Select == m_document->editMode) && !m_lastCheckedPart.isNull()) {
+    if ((DocumentEditMode::Select == m_document->editMode) && !m_lastCheckedPart.isNull()) {
         const SkeletonPart* part = m_document->findPart(m_lastCheckedPart);
         bool partChamfered = part && part->chamfered;
         emit setPartChamferState(m_lastCheckedPart, !partChamfered);
@@ -1975,7 +1975,7 @@ void SkeletonGraphicsWidget::shortcutRoundEndOrNotSelectedPart()
     if (!isVisible())
         return;
 
-    if ((SkeletonDocumentEditMode::Select == m_document->editMode) && !m_lastCheckedPart.isNull()) {
+    if ((DocumentEditMode::Select == m_document->editMode) && !m_lastCheckedPart.isNull()) {
         const SkeletonPart* part = m_document->findPart(m_lastCheckedPart);
         bool partRounded = part && part->rounded;
         emit setPartRoundState(m_lastCheckedPart, !partRounded);
@@ -1986,10 +1986,10 @@ void SkeletonGraphicsWidget::shortcutRoundEndOrNotSelectedPart()
 bool SkeletonGraphicsWidget::keyPress(QKeyEvent* event)
 {
     if (event->key() == Qt::Key_Space) {
-        if (SkeletonDocumentEditMode::ZoomIn == m_document->editMode || SkeletonDocumentEditMode::ZoomOut == m_document->editMode || SkeletonDocumentEditMode::Select == m_document->editMode || SkeletonDocumentEditMode::Add == m_document->editMode) {
+        if (DocumentEditMode::ZoomIn == m_document->editMode || DocumentEditMode::ZoomOut == m_document->editMode || DocumentEditMode::Select == m_document->editMode || DocumentEditMode::Add == m_document->editMode) {
             m_inTempDragMode = true;
             m_modeBeforeEnterTempDragMode = m_document->editMode;
-            emit setEditMode(SkeletonDocumentEditMode::Drag);
+            emit setEditMode(DocumentEditMode::Drag);
             return true;
         }
     }
@@ -2044,10 +2044,6 @@ void SkeletonGraphicsWidget::nodeAdded(dust3d::Uuid nodeId)
     sideProfileItem->setRadius(sceneRadiusFromUnified(node->radius));
     mainProfileItem->setId(nodeId);
     sideProfileItem->setId(nodeId);
-    if (m_document->isNodeDeactivated(nodeId)) {
-        mainProfileItem->setDeactivated(true);
-        sideProfileItem->setDeactivated(true);
-    }
     scene()->addItem(mainProfileItem);
     scene()->addItem(sideProfileItem);
     nodeItemMap[nodeId] = std::make_pair(mainProfileItem, sideProfileItem);
@@ -2115,10 +2111,6 @@ void SkeletonGraphicsWidget::edgeAdded(dust3d::Uuid edgeId)
     sideProfileEdgeItem->setId(edgeId);
     mainProfileEdgeItem->setEndpoints(fromIt->second.first, toIt->second.first);
     sideProfileEdgeItem->setEndpoints(fromIt->second.second, toIt->second.second);
-    if (m_document->isNodeDeactivated(edgeId)) {
-        mainProfileEdgeItem->setDeactivated(true);
-        sideProfileEdgeItem->setDeactivated(true);
-    }
     scene()->addItem(mainProfileEdgeItem);
     scene()->addItem(sideProfileEdgeItem);
     edgeItemMap[edgeId] = std::make_pair(mainProfileEdgeItem, sideProfileEdgeItem);

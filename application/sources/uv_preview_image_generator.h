@@ -1,5 +1,5 @@
-#ifndef DUST3D_APPLICATION_TUBE_UV_PREVIEW_IMAGE_GENERATOR_H_
-#define DUST3D_APPLICATION_TUBE_UV_PREVIEW_IMAGE_GENERATOR_H_
+#ifndef DUST3D_APPLICATION_TUBE_PREVIEW_IMAGE_GENERATOR_H_
+#define DUST3D_APPLICATION_TUBE_PREVIEW_IMAGE_GENERATOR_H_
 
 #include <QImage>
 #include <QObject>
@@ -7,10 +7,10 @@
 #include <memory>
 #include <vector>
 
-class TubeUvPreviewImageGenerator : public QObject {
+class UvPreviewImageGenerator : public QObject {
     Q_OBJECT
 public:
-    TubeUvPreviewImageGenerator(std::vector<std::vector<dust3d::Vector2>>&& faceUvs);
+    UvPreviewImageGenerator(std::vector<std::vector<dust3d::Vector2>>&& faceUvs);
     void generate();
 signals:
     void finished();

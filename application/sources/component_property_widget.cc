@@ -188,12 +188,29 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         cutFaceGroupBox->setLayout(cutFaceLayout);
     }
 
+    QGroupBox* skinGroupBox = nullptr;
+    if (nullptr != m_part) {
+        QCheckBox* useImageBox = new QCheckBox();
+        Theme::initCheckbox(useImageBox);
+        useImageBox->setText(tr("Use image"));
+        useImageBox->setChecked(m_part->rounded);
+
+        QHBoxLayout* skinLayout = new QHBoxLayout;
+        skinLayout->addStretch();
+        skinLayout->addWidget(useImageBox);
+
+        skinGroupBox = new QGroupBox(tr("Skin"));
+        skinGroupBox->setLayout(skinLayout);
+    }
+
     QVBoxLayout* mainLayout = new QVBoxLayout;
     mainLayout->addLayout(colorLayout);
     if (nullptr != deformGroupBox)
         mainLayout->addWidget(deformGroupBox);
     if (nullptr != cutFaceGroupBox)
         mainLayout->addWidget(cutFaceGroupBox);
+    if (nullptr != skinGroupBox)
+        mainLayout->addWidget(skinGroupBox);
     mainLayout->setSizeConstraint(QLayout::SetFixedSize);
 
     connect(this, &ComponentPropertyWidget::setPartColorState, m_document, &Document::setPartColorState);
