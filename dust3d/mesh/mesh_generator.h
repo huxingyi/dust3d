@@ -44,10 +44,10 @@ public:
     struct GeneratedPart {
         std::vector<Vector3> vertices;
         std::vector<std::vector<size_t>> faces;
+        std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>> triangleUvs;
         std::vector<ObjectNode> objectNodes;
         std::vector<std::pair<std::pair<Uuid, Uuid>, std::pair<Uuid, Uuid>>> objectEdges;
         std::vector<std::pair<Vector3, std::pair<Uuid, Uuid>>> objectNodeVertices;
-        std::vector<std::vector<Vector2>> faceUvs;
         Color color = Color(1.0, 1.0, 1.0);
         float metalness = 0.0;
         float roughness = 1.0;
@@ -74,6 +74,7 @@ public:
     struct ComponentPreview {
         std::vector<Vector3> vertices;
         std::vector<std::vector<size_t>> triangles;
+        std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>> triangleUvs;
         Color color = Color(1.0, 1.0, 1.0);
         float metalness = 0.0;
         float roughness = 1.0;

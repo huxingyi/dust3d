@@ -202,9 +202,8 @@ DocumentWindow::DocumentWindow()
         m_isLastMeshGenerationSucceed = m_document->isMeshGenerationSucceed();
         updateInprogressIndicator();
     });
-    connect(m_document, &Document::resultComponentPreviewMeshesChanged, this, [=]() {
-        generateComponentPreviewImages();
-    });
+    connect(m_document, &Document::resultComponentPreviewMeshesChanged, this, &DocumentWindow::generateComponentPreviewImages);
+    connect(m_document, &Document::textureChanged, this, &DocumentWindow::generateComponentPreviewImages);
     connect(m_document, &Document::postProcessing, this, &DocumentWindow::updateInprogressIndicator);
     connect(m_document, &Document::textureGenerating, this, &DocumentWindow::updateInprogressIndicator);
     connect(m_document, &Document::resultTextureChanged, this, &DocumentWindow::updateInprogressIndicator);
@@ -1187,7 +1186,19 @@ void DocumentWindow::generateComponentPreviewImages()
         if (!component.second.isPreviewMeshObsolete)
             continue;
         component.second.isPreviewMeshObsolete = false;
-        m_componentPreviewImagesGenerator->addInput(component.first, std::unique_ptr<ModelMesh>(component.second.takePreviewMesh()));
+        auto previewMesh = std::unique_ptr<ModelMesh>(component.second.takePreviewMesh());
+        if (!component.second.linkToPartId.isNull()) {
+            const auto& part = m_document->findPart(component.second.linkToPartId);
+            if (nullptr != part) {
+                if (!part->colorImageId.isNull()) {
+                    const auto& colorImage = ImageForever::get(part->colorImageId);
+                    if (nullptr != colorImage) {
+                        previewMesh->setTextureImage(new QImage(*colorImage));
+                    }
+                }
+            }
+        }
+        m_componentPreviewImagesGenerator->addInput(component.first, std::move(previewMesh));
     }
     m_componentPreviewImagesGenerator->moveToThread(thread);
     connect(thread, &QThread::started, m_componentPreviewImagesGenerator, &MeshPreviewImagesGenerator::process);

@@ -5,9 +5,14 @@
 #include <QImage>
 #include <QObject>
 #include <QTextStream>
+#include <array>
 #include <dust3d/base/color.h>
 #include <dust3d/base/object.h>
+#include <dust3d/base/position_key.h>
+#include <dust3d/base/vector2.h>
 #include <dust3d/base/vector3.h>
+#include <map>
+#include <tuple>
 #include <vector>
 
 class ModelMesh {
@@ -18,7 +23,8 @@ public:
         const dust3d::Color& color = dust3d::Color::createWhite(),
         float metalness = 0.0,
         float roughness = 1.0,
-        const std::vector<std::tuple<dust3d::Color, float /*metalness*/, float /*roughness*/>>* vertexProperties = nullptr);
+        const std::vector<std::tuple<dust3d::Color, float /*metalness*/, float /*roughness*/>>* vertexProperties = nullptr,
+        const std::vector<std::array<dust3d::Vector2, 3>>* triangleUvs = nullptr);
     ModelMesh(dust3d::Object& object);
     ModelMesh(ModelOpenGLVertex* triangleVertices, int vertexNum);
     ModelMesh(const ModelMesh& mesh);

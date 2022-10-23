@@ -21,6 +21,7 @@
  */
 
 #include <algorithm>
+#include <dust3d/base/debug.h>
 #include <dust3d/mesh/base_normal.h>
 #include <dust3d/mesh/tube_mesh_builder.h>
 
@@ -204,7 +205,8 @@ void TubeMeshBuilder::build()
 
     // Build all vertex Uvs
     std::vector<std::vector<Vector2>> cutFaceVertexUvs(cutFaceVertexPositions.size());
-    double maxOffsetU = 0.0;
+    std::vector<double> maxUs(cutFaceVertexPositions.size(), 0.0);
+    std::vector<double> maxVs(cutFaceVertexPositions.front().size(), 0.0);
     std::vector<double> offsetVs(cutFaceVertexPositions.front().size(), 0.0);
     for (size_t n = 0; n < cutFaceVertexPositions.size(); ++n) {
         const auto& cutFaceVertices = cutFaceVertexPositions[n];
@@ -222,7 +224,17 @@ void TubeMeshBuilder::build()
             offsetU += (cutFaceVertices[j] - cutFaceVertices[i]).length();
         }
         cutFaceVertexUvs[n] = uvCoords;
-        maxOffsetU = std::max(maxOffsetU, offsetU);
+        maxUs[n] = offsetU;
+        for (size_t i = 0; i < cutFaceVertices.size(); ++i) {
+            maxVs[i] += offsetVs[i];
+        }
+    }
+    for (size_t n = 0; n < cutFaceVertexUvs.size(); ++n) {
+        for (size_t k = 0; k < cutFaceVertexUvs[n].size(); ++k) {
+            cutFaceVertexUvs[n][k][0] /= std::max(maxUs[n], std::numeric_limits<double>::epsilon());
+            cutFaceVertexUvs[n][k][1] /= std::max(maxVs[k], std::numeric_limits<double>::epsilon());
+            //dust3dDebug << "uv[" << n << "][" << k << "]:" << cutFaceVertexUvs[n][k][0] << cutFaceVertexUvs[n][k][1];
+        }
     }
 
     // Generate vertex indices
@@ -277,7 +289,6 @@ void TubeMeshBuilder::build()
         m_generatedFaces.emplace_back(cutFaceIndices.front());
         std::reverse(m_generatedFaces.back().begin(), m_generatedFaces.back().end());
         // TODO: Add UV for end cap
-        m_generatedFaceUvs.resize(m_generatedFaces.size());
     }
 }
 

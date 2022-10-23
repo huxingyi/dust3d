@@ -923,8 +923,11 @@ void Document::setPartColorImage(const dust3d::Uuid& partId, const dust3d::Uuid&
         return;
     part->second.colorImageId = imageId;
     part->second.dirty = true;
+    auto component = componentMap.find(part->second.componentId);
+    if (component != componentMap.end())
+        component->second.isPreviewMeshObsolete = true;
     emit partColorImageChanged(partId);
-    emit optionsChanged();
+    emit textureChanged();
 }
 
 void Document::collectComponentDescendantParts(dust3d::Uuid componentId, std::vector<dust3d::Uuid>& partIds) const

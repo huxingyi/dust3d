@@ -683,7 +683,26 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combinePartMesh(const std::st
                 for (auto& it : partCache.faces)
                     std::reverse(it.begin(), it.end());
             }
-            partCache.faceUvs = tubeMeshBuilder->generatedFaceUvs();
+            const auto& faceUvs = tubeMeshBuilder->generatedFaceUvs();
+            for (size_t i = 0; i < faceUvs.size(); ++i) {
+                const auto& uv = faceUvs[i];
+                const auto& face = partCache.faces[i];
+                if (3 == face.size()) {
+                    partCache.triangleUvs.insert({ { PositionKey(partCache.vertices[face[0]]),
+                                                       PositionKey(partCache.vertices[face[1]]),
+                                                       PositionKey(partCache.vertices[face[2]]) },
+                        { uv[0], uv[1], uv[2] } });
+                } else if (4 == face.size()) {
+                    partCache.triangleUvs.insert({ { PositionKey(partCache.vertices[face[0]]),
+                                                       PositionKey(partCache.vertices[face[1]]),
+                                                       PositionKey(partCache.vertices[face[2]]) },
+                        { uv[0], uv[1], uv[2] } });
+                    partCache.triangleUvs.insert({ { PositionKey(partCache.vertices[face[2]]),
+                                                       PositionKey(partCache.vertices[face[3]]),
+                                                       PositionKey(partCache.vertices[face[0]]) },
+                        { uv[2], uv[3], uv[0] } });
+                }
+            }
         }
     }
 
@@ -702,6 +721,7 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combinePartMesh(const std::st
         preview.color = partCache.color;
         preview.metalness = partCache.metalness;
         preview.roughness = partCache.roughness;
+        preview.triangleUvs = partCache.triangleUvs;
         addComponentPreview(componentIdString, std::move(preview));
     } else if (PartTarget::CutFace == target) {
         std::unique_ptr<SectionPreviewMeshBuilder> sectionPreviewMeshBuilder;

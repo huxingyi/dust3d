@@ -7,9 +7,15 @@ UvPreviewImageGenerator::UvPreviewImageGenerator(std::vector<std::vector<dust3d:
 {
 }
 
+std::unique_ptr<QImage> UvPreviewImageGenerator::takePreviewImage()
+{
+    return std::move(m_previewImage);
+}
+
 void UvPreviewImageGenerator::generate()
 {
     m_previewImage = std::make_unique<QImage>(m_uvImageSize, m_uvImageSize, QImage::Format_ARGB32);
+    m_previewImage->fill(Qt::white);
     // TODO:
 }
 

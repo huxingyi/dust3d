@@ -61,9 +61,9 @@ void main()
     float NoV = abs(dot(n, v)) + 1e-5;
 
     vec3 irradiance = texture(environmentIrradianceMapId, r).rgb;
-    vec3 diffuse = irradiance * (1.0 - metalness) * pointColor;
+    vec3 diffuse = irradiance * (1.0 - metalness) * color;
 
-    vec3 f0 = mix(vec3(0.04), pointColor, metalness);
+    vec3 f0 = mix(vec3(0.04), color, metalness);
     vec3 fresnelFactor = fresnelSchlickRoughness(NoV, f0, roughness);
     vec3 specular = fresnelFactor * texture(environmentSpecularMapId, r, 0.0).rgb;
 

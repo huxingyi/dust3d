@@ -113,12 +113,16 @@ QImage ModelOffscreenRender::toImage(const QSize& size)
     f->glEnable(GL_CULL_FACE);
     f->glViewport(0, 0, size.width(), size.height());
 
+    auto colorTextureImage = std::unique_ptr<QImage>(nullptr != m_mesh ? m_mesh->takeTextureImage() : nullptr);
+
     auto object = std::make_unique<ModelOpenGLObject>();
     object->update(std::unique_ptr<ModelMesh>(m_mesh));
     m_mesh = nullptr;
 
     auto program = std::make_unique<ModelOpenGLProgram>();
     program->load(m_context->format().profile() == QSurfaceFormat::CoreProfile);
+    if (nullptr != colorTextureImage)
+        program->updateTextureImage(std::move(colorTextureImage));
     program->bind();
     program->bindMaps();
 

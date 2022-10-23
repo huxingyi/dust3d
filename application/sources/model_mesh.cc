@@ -73,12 +73,17 @@ ModelMesh::ModelMesh(const std::vector<dust3d::Vector3>& vertices,
     const dust3d::Color& color,
     float metalness,
     float roughness,
-    const std::vector<std::tuple<dust3d::Color, float /*metalness*/, float /*roughness*/>>* vertexProperties)
+    const std::vector<std::tuple<dust3d::Color, float /*metalness*/, float /*roughness*/>>* vertexProperties,
+    const std::vector<std::array<dust3d::Vector2, 3>>* triangleUvs)
 {
     m_triangleVertexCount = (int)triangles.size() * 3;
     m_triangleVertices = new ModelOpenGLVertex[m_triangleVertexCount];
     int destIndex = 0;
     for (size_t i = 0; i < triangles.size(); ++i) {
+        std::array<dust3d::Vector2, 3> uvs = {};
+        if (nullptr != triangleUvs) {
+            uvs = triangleUvs->at(i);
+        }
         for (auto j = 0; j < 3; j++) {
             int vertexIndex = (int)triangles[i][j];
             const dust3d::Vector3* srcVert = &vertices[vertexIndex];
@@ -87,8 +92,8 @@ ModelMesh::ModelMesh(const std::vector<dust3d::Vector3>& vertices,
             dest->posX = srcVert->x();
             dest->posY = srcVert->y();
             dest->posZ = srcVert->z();
-            dest->texU = 0;
-            dest->texV = 0;
+            dest->texU = uvs[j][0];
+            dest->texV = uvs[j][1];
             dest->normX = srcNormal->x();
             dest->normY = srcNormal->y();
             dest->normZ = srcNormal->z();

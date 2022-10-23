@@ -40,6 +40,19 @@ void MeshGenerator::process()
         auto it = m_generatedComponentPreviews.find(componentId);
         if (it == m_generatedComponentPreviews.end())
             continue;
+        std::vector<std::array<dust3d::Vector2, 3>> triangleUvs;
+        if (!it->second.triangleUvs.empty()) {
+            triangleUvs.resize(it->second.triangles.size());
+            for (size_t i = 0; i < it->second.triangles.size(); ++i) {
+                const auto& triangle = it->second.triangles[i];
+                auto findUv = it->second.triangleUvs.find({ dust3d::PositionKey(it->second.vertices[triangle[0]]),
+                    dust3d::PositionKey(it->second.vertices[triangle[1]]),
+                    dust3d::PositionKey(it->second.vertices[triangle[2]]) });
+                if (findUv != it->second.triangleUvs.end()) {
+                    triangleUvs[i] = findUv->second;
+                }
+            }
+        }
         dust3d::trimVertices(&it->second.vertices, true);
         for (auto& it : it->second.vertices) {
             it *= 2.0;
@@ -64,7 +77,8 @@ void MeshGenerator::process()
             it->second.color,
             it->second.metalness,
             it->second.roughness,
-            it->second.vertexProperties.empty() ? nullptr : &it->second.vertexProperties);
+            it->second.vertexProperties.empty() ? nullptr : &it->second.vertexProperties,
+            triangleUvs.empty() ? nullptr : &triangleUvs);
     }
 
     if (nullptr != m_object)
