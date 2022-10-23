@@ -204,23 +204,27 @@ void TubeMeshBuilder::build()
     }
 
     // Build all vertex Uvs
-    std::vector<std::vector<Vector2>> cutFaceVertexUvs(cutFaceVertexPositions.size());
-    std::vector<double> maxUs(cutFaceVertexPositions.size(), 0.0);
-    std::vector<double> maxVs(cutFaceVertexPositions.front().size(), 0.0);
-    for (size_t n = 0; n < cutFaceVertexPositions.size(); ++n) {
-        const auto& cutFaceVertices = cutFaceVertexPositions[n];
+    auto cutFaceVertexPositionsForUv = cutFaceVertexPositions;
+    for (size_t n = 0; n < cutFaceVertexPositionsForUv.size(); ++n) {
+        cutFaceVertexPositionsForUv[n].push_back(cutFaceVertexPositions[n].front());
+    }
+    std::vector<std::vector<Vector2>> cutFaceVertexUvs(cutFaceVertexPositionsForUv.size());
+    std::vector<double> maxUs(cutFaceVertexPositionsForUv.size(), 0.0);
+    std::vector<double> maxVs(cutFaceVertexPositionsForUv.front().size(), 0.0);
+    for (size_t n = 0; n < cutFaceVertexPositionsForUv.size(); ++n) {
+        const auto& cutFaceVertices = cutFaceVertexPositionsForUv[n];
         double offsetU = 0;
         if (n > 0) {
             size_t m = n - 1;
             for (size_t i = 0; i < cutFaceVertices.size(); ++i) {
-                maxVs[i] += (cutFaceVertexPositions[n][i] - cutFaceVertexPositions[m][i]).length();
+                maxVs[i] += (cutFaceVertexPositionsForUv[n][i] - cutFaceVertexPositionsForUv[m][i]).length();
             }
         }
         std::vector<Vector2> uvCoords = { Vector2 { offsetU, maxVs[0] } };
         for (size_t j = 1; j < cutFaceVertices.size(); ++j) {
             size_t i = j - 1;
-            uvCoords.push_back({ offsetU, maxVs[j] });
             offsetU += (cutFaceVertices[j] - cutFaceVertices[i]).length();
+            uvCoords.push_back({ offsetU, maxVs[j] });
         }
         cutFaceVertexUvs[n] = uvCoords;
         maxUs[n] = offsetU;
@@ -239,7 +243,6 @@ void TubeMeshBuilder::build()
         cutFaceIndices[i].resize(cutFaceVertices.size());
         for (size_t k = 0; k < cutFaceVertices.size(); ++k) {
             cutFaceIndices[i][k] = m_generatedVertices.size();
-            m_generatedVertexUvs.emplace_back(cutFaceVertexUvs[i][k]);
             m_generatedVertices.emplace_back(cutFaceVertices[k]);
         }
     }
@@ -259,10 +262,10 @@ void TubeMeshBuilder::build()
             m_generatedFaces.emplace_back(std::vector<size_t> {
                 cutFaceI[m], cutFaceI[n], cutFaceJ[n], cutFaceJ[m] });
             m_generatedFaceUvs.emplace_back(std::vector<Vector2> {
-                m_generatedVertexUvs[cutFaceI[m]],
-                m_generatedVertexUvs[cutFaceI[n]],
-                m_generatedVertexUvs[cutFaceJ[n]],
-                m_generatedVertexUvs[cutFaceJ[m]] });
+                cutFaceVertexUvs[i][m],
+                cutFaceVertexUvs[i][m + 1],
+                cutFaceVertexUvs[j][m + 1],
+                cutFaceVertexUvs[j][m] });
         }
         for (size_t m = halfSize; m < cutFaceI.size(); ++m) {
             size_t n = (m + 1) % cutFaceI.size();
@@ -273,10 +276,10 @@ void TubeMeshBuilder::build()
             m_generatedFaces.emplace_back(std::vector<size_t> {
                 cutFaceJ[m], cutFaceI[m], cutFaceI[n], cutFaceJ[n] });
             m_generatedFaceUvs.emplace_back(std::vector<Vector2> {
-                m_generatedVertexUvs[cutFaceJ[m]],
-                m_generatedVertexUvs[cutFaceI[m]],
-                m_generatedVertexUvs[cutFaceI[n]],
-                m_generatedVertexUvs[cutFaceJ[n]] });
+                cutFaceVertexUvs[j][m],
+                cutFaceVertexUvs[i][m],
+                cutFaceVertexUvs[i][m + 1],
+                cutFaceVertexUvs[j][m + 1] });
         }
     }
     if (!m_isCircle) {
