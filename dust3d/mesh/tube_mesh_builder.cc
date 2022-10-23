@@ -207,33 +207,28 @@ void TubeMeshBuilder::build()
     std::vector<std::vector<Vector2>> cutFaceVertexUvs(cutFaceVertexPositions.size());
     std::vector<double> maxUs(cutFaceVertexPositions.size(), 0.0);
     std::vector<double> maxVs(cutFaceVertexPositions.front().size(), 0.0);
-    std::vector<double> offsetVs(cutFaceVertexPositions.front().size(), 0.0);
     for (size_t n = 0; n < cutFaceVertexPositions.size(); ++n) {
         const auto& cutFaceVertices = cutFaceVertexPositions[n];
         double offsetU = 0;
         if (n > 0) {
             size_t m = n - 1;
             for (size_t i = 0; i < cutFaceVertices.size(); ++i) {
-                offsetVs[i] = (cutFaceVertexPositions[n][i] - cutFaceVertexPositions[m][i]).length();
+                maxVs[i] += (cutFaceVertexPositions[n][i] - cutFaceVertexPositions[m][i]).length();
             }
         }
-        std::vector<Vector2> uvCoords = { Vector2 { offsetU, offsetVs[0] } };
+        std::vector<Vector2> uvCoords = { Vector2 { offsetU, maxVs[0] } };
         for (size_t j = 1; j < cutFaceVertices.size(); ++j) {
             size_t i = j - 1;
-            uvCoords.push_back({ offsetU, offsetVs[j] });
+            uvCoords.push_back({ offsetU, maxVs[j] });
             offsetU += (cutFaceVertices[j] - cutFaceVertices[i]).length();
         }
         cutFaceVertexUvs[n] = uvCoords;
         maxUs[n] = offsetU;
-        for (size_t i = 0; i < cutFaceVertices.size(); ++i) {
-            maxVs[i] += offsetVs[i];
-        }
     }
     for (size_t n = 0; n < cutFaceVertexUvs.size(); ++n) {
         for (size_t k = 0; k < cutFaceVertexUvs[n].size(); ++k) {
             cutFaceVertexUvs[n][k][0] /= std::max(maxUs[n], std::numeric_limits<double>::epsilon());
             cutFaceVertexUvs[n][k][1] /= std::max(maxVs[k], std::numeric_limits<double>::epsilon());
-            //dust3dDebug << "uv[" << n << "][" << k << "]:" << cutFaceVertexUvs[n][k][0] << cutFaceVertexUvs[n][k][1];
         }
     }
 
