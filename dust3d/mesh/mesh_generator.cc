@@ -849,6 +849,7 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineComponentMesh(const st
             for (const auto& vertex : partCache.vertices)
                 componentCache.noneSeamVertices.insert(vertex);
             collectSharedQuadEdges(partCache.vertices, partCache.faces, &componentCache.sharedQuadEdges);
+            componentCache.partTriangleUvs.insert({ Uuid(partIdString), partCache.triangleUvs });
             for (const auto& it : partCache.objectNodes)
                 componentCache.objectNodes.push_back(it);
             for (const auto& it : partCache.objectEdges)
@@ -989,6 +990,8 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineComponentChildGroupMes
             componentCache.noneSeamVertices.insert(vertex);
         for (const auto& it : childComponentCache.sharedQuadEdges)
             componentCache.sharedQuadEdges.insert(it);
+        for (const auto& it : childComponentCache.partTriangleUvs)
+            componentCache.partTriangleUvs.insert({ it.first, it.second });
         for (const auto& it : childComponentCache.objectNodes)
             componentCache.objectNodes.push_back(it);
         for (const auto& it : childComponentCache.objectEdges)
@@ -1356,6 +1359,7 @@ void MeshGenerator::generate()
 
     m_object->nodes = componentCache.objectNodes;
     m_object->edges = componentCache.objectEdges;
+    m_object->partTriangleUvs = componentCache.partTriangleUvs;
     m_nodeVertices = componentCache.objectNodeVertices;
 
     std::vector<Vector3> combinedVertices;

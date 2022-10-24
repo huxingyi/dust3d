@@ -23,13 +23,16 @@
 #ifndef DUST3D_BASE_OBJECT_H_
 #define DUST3D_BASE_OBJECT_H_
 
+#include <array>
 #include <dust3d/base/color.h>
+#include <dust3d/base/position_key.h>
 #include <dust3d/base/rectangle.h>
 #include <dust3d/base/uuid.h>
 #include <dust3d/base/vector2.h>
 #include <dust3d/base/vector3.h>
 #include <map>
 #include <set>
+#include <unordered_map>
 #include <vector>
 
 namespace dust3d {
@@ -59,6 +62,7 @@ public:
     std::vector<std::pair<Uuid, Uuid>> vertexSourceNodes;
     std::vector<std::vector<size_t>> triangleAndQuads;
     std::vector<std::vector<size_t>> triangles;
+    std::unordered_map<Uuid, std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>>> partTriangleUvs;
     std::vector<Vector3> triangleNormals;
     std::vector<Color> triangleColors;
     bool alphaEnabled = false;

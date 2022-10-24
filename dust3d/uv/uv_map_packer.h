@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016-2021 Jeremy HU <jeremy-at-dust3d dot org>. All rights reserved. 
+ *  Copyright (c) 2016-2022 Jeremy HU <jeremy-at-dust3d dot org>. All rights reserved. 
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -20,34 +20,47 @@
  *  SOFTWARE.
  */
 
-#ifndef DUST3D_UV_CHART_PACKER_H_
-#define DUST3D_UV_CHART_PACKER_H_
+#ifndef DUST3D_UV_MAP_PACKER_H_
+#define DUST3D_UV_MAP_PACKER_H_
 
-#include <cstdlib>
-#include <tuple>
+#include <array>
+#include <dust3d/base/position_key.h>
+#include <dust3d/base/uuid.h>
+#include <dust3d/base/vector2.h>
+#include <map>
 #include <vector>
 
 namespace dust3d {
 
-class ChartPacker {
+class UvMapPacker {
 public:
-    void setCharts(const std::vector<std::pair<float, float>>& chartSizes);
-    const std::vector<std::tuple<float, float, float, float, bool>>& getResult();
-    float pack();
-    bool tryPack(float textureSize);
+    struct Part {
+        Uuid id;
+        double width;
+        double height;
+        std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>> localUv;
+    };
+
+    struct Layout {
+        Uuid id;
+        double left;
+        double top;
+        double width;
+        double height;
+        bool flipped;
+        std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>> globalUv;
+    };
+
+    UvMapPacker();
+    void addPart(const Part& part);
+    void pack();
+    const std::vector<Layout>& packedLayouts();
+    double packedTextureSize();
 
 private:
-    double calculateTotalArea();
-
-    std::vector<std::pair<float, float>> m_chartSizes;
-    std::vector<std::tuple<float, float, float, float, bool>> m_result;
-    float m_initialAreaGuessFactor = 1.1;
-    float m_textureSizeGrowFactor = 0.05;
-    float m_floatToIntFactor = 10000;
-    size_t m_tryNum = 0;
-    float m_textureSizeFactor = 1.0;
-    float m_paddingSize = 0.005;
-    size_t m_maxTryNum = 100;
+    std::vector<Part> m_partTriangleUvs;
+    std::vector<Layout> m_packedLayouts;
+    double m_packedTextureSize = 0.0;
 };
 
 }

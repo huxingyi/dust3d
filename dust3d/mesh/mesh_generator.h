@@ -58,6 +58,7 @@ public:
     struct GeneratedComponent {
         std::unique_ptr<MeshCombiner::Mesh> mesh;
         std::set<std::pair<PositionKey, PositionKey>> sharedQuadEdges;
+        std::unordered_map<Uuid, std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>>> partTriangleUvs;
         std::set<PositionKey> noneSeamVertices;
         std::vector<ObjectNode> objectNodes;
         std::vector<std::pair<std::pair<Uuid, Uuid>, std::pair<Uuid, Uuid>>> objectEdges;
