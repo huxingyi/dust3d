@@ -10,14 +10,13 @@
 #include "horizontal_line_widget.h"
 #include "image_forever.h"
 #include "log_browser.h"
-#include "material_manage_widget.h"
 #include "part_manage_widget.h"
 #include "preferences.h"
 #include "skeleton_graphics_widget.h"
 #include "spinnable_toolbar_icon.h"
-#include "texture_generator.h"
 #include "theme.h"
 #include "updates_check_widget.h"
+#include "uv_map_generator.h"
 #include "version.h"
 #include <QApplication>
 #include <QDesktopServices>
@@ -270,21 +269,6 @@ DocumentWindow::DocumentWindow()
     partsDocker->setWidget(m_partManageWidget);
     addDockWidget(Qt::RightDockWidgetArea, partsDocker);
 
-    QDockWidget* materialDocker = new QDockWidget(tr("Materials"), this);
-    materialDocker->setAllowedAreas(Qt::RightDockWidgetArea);
-    MaterialManageWidget* materialManageWidget = new MaterialManageWidget(m_document, materialDocker);
-    materialDocker->setWidget(materialManageWidget);
-    connect(materialManageWidget, &MaterialManageWidget::registerDialog, this, &DocumentWindow::registerDialog);
-    connect(materialManageWidget, &MaterialManageWidget::unregisterDialog, this, &DocumentWindow::unregisterDialog);
-    addDockWidget(Qt::RightDockWidgetArea, materialDocker);
-    connect(materialDocker, &QDockWidget::topLevelChanged, [=](bool topLevel) {
-        Q_UNUSED(topLevel);
-        for (const auto& material : m_document->materialMap)
-            emit m_document->materialPreviewChanged(material.first);
-    });
-
-    tabifyDockWidget(partsDocker, materialDocker);
-
     partsDocker->raise();
 
     QWidget* titleBarWidget = new QWidget;
@@ -430,13 +414,6 @@ DocumentWindow::DocumentWindow()
         partsDocker->raise();
     });
     m_windowMenu->addAction(m_showPartsListAction);
-
-    m_showMaterialsAction = new QAction(tr("Materials"), this);
-    connect(m_showMaterialsAction, &QAction::triggered, [=]() {
-        materialDocker->show();
-        materialDocker->raise();
-    });
-    m_windowMenu->addAction(m_showMaterialsAction);
 
     QMenu* dialogsMenu = m_windowMenu->addMenu(tr("Dialogs"));
     connect(dialogsMenu, &QMenu::aboutToShow, [=]() {
@@ -666,15 +643,6 @@ DocumentWindow::DocumentWindow()
     connect(m_document, &Document::ylockStateChanged, this, &DocumentWindow::updateYlockButtonState);
     connect(m_document, &Document::zlockStateChanged, this, &DocumentWindow::updateZlockButtonState);
     connect(m_document, &Document::radiusLockStateChanged, this, &DocumentWindow::updateRadiusLockButtonState);
-
-    connect(m_document, &Document::materialAdded, this, [=](dust3d::Uuid materialId) {
-        Q_UNUSED(materialId);
-        m_document->generateMaterialPreviews();
-    });
-    connect(m_document, &Document::materialLayersChanged, this, [=](dust3d::Uuid materialId) {
-        Q_UNUSED(materialId);
-        m_document->generateMaterialPreviews();
-    });
 
     initializeShortcuts();
 
@@ -1088,7 +1056,7 @@ void DocumentWindow::exportGlbToFilename(const QString& filename)
     }
     QApplication::setOverrideCursor(Qt::WaitCursor);
     dust3d::Object skeletonResult = m_document->currentPostProcessedObject();
-    QImage* textureMetalnessRoughnessAmbientOcclusionImage = TextureGenerator::combineMetalnessRoughnessAmbientOcclusionImages(m_document->textureMetalnessImage,
+    QImage* textureMetalnessRoughnessAmbientOcclusionImage = UvMapGenerator::combineMetalnessRoughnessAmbientOcclusionImages(m_document->textureMetalnessImage,
         m_document->textureRoughnessImage,
         m_document->textureAmbientOcclusionImage);
     GlbFileWriter glbFileWriter(skeletonResult, filename,

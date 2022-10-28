@@ -144,7 +144,6 @@ private:
     QMenu* m_windowMenu = nullptr;
     QAction* m_showPartsListAction = nullptr;
     QAction* m_showDebugDialogAction = nullptr;
-    QAction* m_showMaterialsAction = nullptr;
 
     QMenu* m_helpMenu = nullptr;
     QAction* m_gotoHomepageAction = nullptr;

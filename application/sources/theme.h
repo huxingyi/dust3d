@@ -25,7 +25,6 @@ public:
     static int miniIconFontSize;
     static int miniIconSize;
     static int partPreviewImageSize;
-    static int materialPreviewImageSize;
     static int sidebarPreferredWidth;
     static int previewIconBorderSize;
     static int previewIconMargin;

@@ -1,9 +1,8 @@
 #include "document.h"
 #include "image_forever.h"
-#include "material_previews_generator.h"
 #include "mesh_generator.h"
 #include "mesh_result_post_processor.h"
-#include "texture_generator.h"
+#include "uv_map_generator.h"
 #include <QApplication>
 #include <QClipboard>
 #include <QDebug>
@@ -1423,14 +1422,6 @@ bool Document::originSettled() const
     return !qFuzzyIsNull(getOriginX()) && !qFuzzyIsNull(getOriginY()) && !qFuzzyIsNull(getOriginZ());
 }
 
-const Material* Document::findMaterial(dust3d::Uuid materialId) const
-{
-    auto it = materialMap.find(materialId);
-    if (it == materialMap.end())
-        return nullptr;
-    return &it->second;
-}
-
 void Document::setNodeCutRotation(dust3d::Uuid nodeId, float cutRotation)
 {
     auto node = nodeMap.find(nodeId);
@@ -1571,8 +1562,7 @@ void Document::setEditMode(DocumentEditMode mode)
 }
 
 void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uuid>& limitNodeIds,
-    DocumentToSnapshotFor forWhat,
-    const std::set<dust3d::Uuid>& limitMaterialIds) const
+    DocumentToSnapshotFor forWhat) const
 {
     if (DocumentToSnapshotFor::Document == forWhat || DocumentToSnapshotFor::Nodes == forWhat) {
         std::set<dust3d::Uuid> limitPartIds;
@@ -1640,8 +1630,6 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
                 part["hollowThickness"] = std::to_string(partIt.second.hollowThickness);
             if (!partIt.second.name.isEmpty())
                 part["name"] = partIt.second.name.toUtf8().constData();
-            if (partIt.second.materialAdjusted())
-                part["materialId"] = partIt.second.materialId.toString();
             if (partIt.second.countershaded)
                 part["countershaded"] = "true";
             if (partIt.second.smooth)
@@ -1722,39 +1710,6 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
                 snapshot->rootComponent["children"] = children;
         }
     }
-    if (DocumentToSnapshotFor::Document == forWhat || DocumentToSnapshotFor::Materials == forWhat) {
-        for (const auto& materialId : materialIdList) {
-            if (!limitMaterialIds.empty() && limitMaterialIds.find(materialId) == limitMaterialIds.end())
-                continue;
-            auto findMaterialResult = materialMap.find(materialId);
-            if (findMaterialResult == materialMap.end()) {
-                qDebug() << "Find material failed:" << materialId;
-                continue;
-            }
-            auto& materialIt = *findMaterialResult;
-            std::map<std::string, std::string> material;
-            material["id"] = materialIt.second.id.toString();
-            material["type"] = "MetalRoughness";
-            if (!materialIt.second.name.isEmpty())
-                material["name"] = materialIt.second.name.toUtf8().constData();
-            std::vector<std::pair<std::map<std::string, std::string>, std::vector<std::map<std::string, std::string>>>> layers;
-            for (const auto& layer : materialIt.second.layers) {
-                std::vector<std::map<std::string, std::string>> maps;
-                for (const auto& mapItem : layer.maps) {
-                    std::map<std::string, std::string> textureMap;
-                    textureMap["for"] = TextureTypeToString(mapItem.forWhat);
-                    textureMap["linkDataType"] = "imageId";
-                    textureMap["linkData"] = mapItem.imageId.toString();
-                    maps.push_back(textureMap);
-                }
-                std::map<std::string, std::string> layerAttributes;
-                if (!qFuzzyCompare((float)layer.tileScale, (float)1.0))
-                    layerAttributes["tileScale"] = std::to_string(layer.tileScale);
-                layers.push_back({ layerAttributes, maps });
-            }
-            snapshot->materials.push_back(std::make_pair(material, layers));
-        }
-    }
     if (DocumentToSnapshotFor::Document == forWhat) {
         std::map<std::string, std::string> canvas;
         canvas["originX"] = std::to_string(getOriginX());
@@ -1787,49 +1742,6 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
     std::set<dust3d::Uuid> inversePartIds;
 
     std::map<dust3d::Uuid, dust3d::Uuid> oldNewIdMap;
-    for (const auto& materialIt : snapshot.materials) {
-        const auto& materialAttributes = materialIt.first;
-        auto materialType = dust3d::String::valueOrEmpty(materialAttributes, "type");
-        if ("MetalRoughness" != materialType) {
-            qDebug() << "Unsupported material type:" << materialType;
-            continue;
-        }
-        dust3d::Uuid oldMaterialId = dust3d::Uuid(dust3d::String::valueOrEmpty(materialAttributes, "id"));
-        dust3d::Uuid newMaterialId = SnapshotSource::Import == source ? oldMaterialId : dust3d::Uuid::createUuid();
-        oldNewIdMap[oldMaterialId] = newMaterialId;
-        if (materialMap.end() == materialMap.find(newMaterialId)) {
-            auto& newMaterial = materialMap[newMaterialId];
-            newMaterial.id = newMaterialId;
-            newMaterial.name = dust3d::String::valueOrEmpty(materialAttributes, "name").c_str();
-            for (const auto& layerIt : materialIt.second) {
-                MaterialLayer layer;
-                auto findTileScale = layerIt.first.find("tileScale");
-                if (findTileScale != layerIt.first.end())
-                    layer.tileScale = dust3d::String::toFloat(findTileScale->second);
-                for (const auto& mapItem : layerIt.second) {
-                    auto textureTypeString = dust3d::String::valueOrEmpty(mapItem, "for");
-                    auto textureType = dust3d::TextureTypeFromString(textureTypeString.c_str());
-                    if (dust3d::TextureType::None == textureType) {
-                        qDebug() << "Unsupported texture type:" << textureTypeString;
-                        continue;
-                    }
-                    auto linkTypeString = dust3d::String::valueOrEmpty(mapItem, "linkDataType");
-                    if ("imageId" != linkTypeString) {
-                        qDebug() << "Unsupported link data type:" << linkTypeString;
-                        continue;
-                    }
-                    auto imageId = dust3d::Uuid(dust3d::String::valueOrEmpty(mapItem, "linkData"));
-                    MaterialMap materialMap;
-                    materialMap.imageId = imageId;
-                    materialMap.forWhat = textureType;
-                    layer.maps.push_back(materialMap);
-                }
-                newMaterial.layers.push_back(layer);
-            }
-            materialIdList.push_back(newMaterialId);
-            emit materialAdded(newMaterialId);
-        }
-    }
     std::map<dust3d::Uuid, dust3d::Uuid> cutFaceLinkedIdModifyMap;
     for (const auto& partKv : snapshot.parts) {
         const auto newUuid = dust3d::Uuid::createUuid();
@@ -1895,9 +1807,6 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
         const auto& hollowThicknessIt = partKv.second.find("hollowThickness");
         if (hollowThicknessIt != partKv.second.end())
             part.hollowThickness = dust3d::String::toFloat(hollowThicknessIt->second);
-        const auto& materialIdIt = partKv.second.find("materialId");
-        if (materialIdIt != partKv.second.end())
-            part.materialId = oldNewIdMap[dust3d::Uuid(materialIdIt->second)];
         part.countershaded = dust3d::String::isTrue(dust3d::String::valueOrEmpty(partKv.second, "countershaded"));
         part.smooth = dust3d::String::isTrue(dust3d::String::valueOrEmpty(partKv.second, "smooth"));
         newAddedPartIds.insert(part.id);
@@ -2054,9 +1963,6 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
     for (const auto& edgeIt : newAddedEdgeIds) {
         emit checkEdge(edgeIt);
     }
-
-    if (!snapshot.materials.empty())
-        emit materialListChanged();
 }
 
 void Document::silentReset()
@@ -2068,8 +1974,6 @@ void Document::silentReset()
     edgeMap.clear();
     partMap.clear();
     componentMap.clear();
-    materialMap.clear();
-    materialIdList.clear();
     rootComponent = SkeletonComponent();
 }
 
@@ -2244,29 +2148,31 @@ void Document::generateTexture()
 
     m_isTextureObsolete = false;
 
-    dust3d::Snapshot* snapshot = new dust3d::Snapshot;
-    toSnapshot(snapshot);
+    auto object = std::make_unique<dust3d::Object>(*m_postProcessedObject);
+
+    auto snapshot = std::make_unique<dust3d::Snapshot>();
+    toSnapshot(snapshot.get());
 
     QThread* thread = new QThread;
-    m_textureGenerator = new TextureGenerator(*m_postProcessedObject, snapshot);
+    m_textureGenerator = new UvMapGenerator(std::move(object), std::move(snapshot));
     m_textureGenerator->moveToThread(thread);
-    connect(thread, &QThread::started, m_textureGenerator, &TextureGenerator::process);
-    connect(m_textureGenerator, &TextureGenerator::finished, this, &Document::textureReady);
-    connect(m_textureGenerator, &TextureGenerator::finished, thread, &QThread::quit);
+    connect(thread, &QThread::started, m_textureGenerator, &UvMapGenerator::process);
+    connect(m_textureGenerator, &UvMapGenerator::finished, this, &Document::textureReady);
+    connect(m_textureGenerator, &UvMapGenerator::finished, thread, &QThread::quit);
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
     thread->start();
 }
 
 void Document::textureReady()
 {
-    updateTextureImage(m_textureGenerator->takeResultTextureColorImage());
-    updateTextureNormalImage(m_textureGenerator->takeResultTextureNormalImage());
-    updateTextureMetalnessImage(m_textureGenerator->takeResultTextureMetalnessImage());
-    updateTextureRoughnessImage(m_textureGenerator->takeResultTextureRoughnessImage());
-    updateTextureAmbientOcclusionImage(m_textureGenerator->takeResultTextureAmbientOcclusionImage());
+    updateTextureImage(m_textureGenerator->takeResultTextureColorImage().release());
+    updateTextureNormalImage(m_textureGenerator->takeResultTextureNormalImage().release());
+    updateTextureMetalnessImage(m_textureGenerator->takeResultTextureMetalnessImage().release());
+    updateTextureRoughnessImage(m_textureGenerator->takeResultTextureRoughnessImage().release());
+    updateTextureAmbientOcclusionImage(m_textureGenerator->takeResultTextureAmbientOcclusionImage().release());
 
     delete m_resultTextureMesh;
-    m_resultTextureMesh = m_textureGenerator->takeResultMesh();
+    m_resultTextureMesh = m_textureGenerator->takeResultMesh().release();
 
     m_postProcessedObject->alphaEnabled = m_textureGenerator->hasTransparencySettings();
 
@@ -2484,21 +2390,6 @@ void Document::setPartDeformUnified(dust3d::Uuid partId, bool unified)
     part->second.dirty = true;
     emit partDeformUnifyStateChanged(partId);
     emit skeletonChanged();
-}
-
-void Document::setPartMaterialId(dust3d::Uuid partId, dust3d::Uuid materialId)
-{
-    auto part = partMap.find(partId);
-    if (part == partMap.end()) {
-        qDebug() << "Part not found:" << partId;
-        return;
-    }
-    if (part->second.materialId == materialId)
-        return;
-    part->second.materialId = materialId;
-    part->second.dirty = true;
-    emit partMaterialIdChanged(partId);
-    emit textureChanged();
 }
 
 void Document::setPartRoundState(dust3d::Uuid partId, bool rounded)
@@ -2758,17 +2649,6 @@ bool Document::hasPastableNodesInClipboard() const
     return false;
 }
 
-bool Document::hasPastableMaterialsInClipboard() const
-{
-    const QClipboard* clipboard = QApplication::clipboard();
-    const QMimeData* mimeData = clipboard->mimeData();
-    if (mimeData->hasText()) {
-        if (-1 != mimeData->text().indexOf("<material "))
-            return true;
-    }
-    return false;
-}
-
 bool Document::undoable() const
 {
     return m_undoItems.size() >= 2;
@@ -2814,126 +2694,6 @@ void Document::checkExportReadyState()
 {
     if (isExportReady())
         emit exportReady();
-}
-
-void Document::addMaterial(dust3d::Uuid materialId, QString name, std::vector<MaterialLayer> layers)
-{
-    auto findMaterialResult = materialMap.find(materialId);
-    if (findMaterialResult != materialMap.end()) {
-        qDebug() << "Material already exist:" << materialId;
-        return;
-    }
-
-    dust3d::Uuid newMaterialId = materialId;
-    auto& material = materialMap[newMaterialId];
-    material.id = newMaterialId;
-
-    material.name = name;
-    material.layers = layers;
-    material.dirty = true;
-
-    materialIdList.push_back(newMaterialId);
-
-    emit materialAdded(newMaterialId);
-    emit materialListChanged();
-    emit optionsChanged();
-}
-
-void Document::removeMaterial(dust3d::Uuid materialId)
-{
-    auto findMaterialResult = materialMap.find(materialId);
-    if (findMaterialResult == materialMap.end()) {
-        qDebug() << "Remove a none exist material:" << materialId;
-        return;
-    }
-    materialIdList.erase(std::remove(materialIdList.begin(), materialIdList.end(), materialId), materialIdList.end());
-    materialMap.erase(findMaterialResult);
-
-    emit materialListChanged();
-    emit materialRemoved(materialId);
-    emit optionsChanged();
-}
-
-void Document::setMaterialLayers(dust3d::Uuid materialId, std::vector<MaterialLayer> layers)
-{
-    auto findMaterialResult = materialMap.find(materialId);
-    if (findMaterialResult == materialMap.end()) {
-        qDebug() << "Find material failed:" << materialId;
-        return;
-    }
-    findMaterialResult->second.layers = layers;
-    findMaterialResult->second.dirty = true;
-    emit materialLayersChanged(materialId);
-    emit textureChanged();
-    emit optionsChanged();
-}
-
-void Document::renameMaterial(dust3d::Uuid materialId, QString name)
-{
-    auto findMaterialResult = materialMap.find(materialId);
-    if (findMaterialResult == materialMap.end()) {
-        qDebug() << "Find material failed:" << materialId;
-        return;
-    }
-    if (findMaterialResult->second.name == name)
-        return;
-
-    findMaterialResult->second.name = name;
-    emit materialNameChanged(materialId);
-    emit materialListChanged();
-    emit optionsChanged();
-}
-
-void Document::generateMaterialPreviews()
-{
-    if (nullptr != m_materialPreviewsGenerator) {
-        return;
-    }
-
-    QThread* thread = new QThread;
-    m_materialPreviewsGenerator = new MaterialPreviewsGenerator();
-    bool hasDirtyMaterial = false;
-    for (auto& materialIt : materialMap) {
-        if (!materialIt.second.dirty)
-            continue;
-        m_materialPreviewsGenerator->addMaterial(materialIt.first, materialIt.second.layers);
-        materialIt.second.dirty = false;
-        hasDirtyMaterial = true;
-    }
-    if (!hasDirtyMaterial) {
-        delete m_materialPreviewsGenerator;
-        m_materialPreviewsGenerator = nullptr;
-        delete thread;
-        return;
-    }
-
-    qDebug() << "Material previews generating..";
-
-    m_materialPreviewsGenerator->moveToThread(thread);
-    connect(thread, &QThread::started, m_materialPreviewsGenerator, &MaterialPreviewsGenerator::process);
-    connect(m_materialPreviewsGenerator, &MaterialPreviewsGenerator::finished, this, &Document::materialPreviewsReady);
-    connect(m_materialPreviewsGenerator, &MaterialPreviewsGenerator::finished, thread, &QThread::quit);
-    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
-    thread->start();
-}
-
-void Document::materialPreviewsReady()
-{
-    for (const auto& materialId : m_materialPreviewsGenerator->generatedPreviewMaterialIds()) {
-        auto material = materialMap.find(materialId);
-        if (material != materialMap.end()) {
-            ModelMesh* resultPartPreviewMesh = m_materialPreviewsGenerator->takePreview(materialId);
-            material->second.updatePreviewMesh(resultPartPreviewMesh);
-            emit materialPreviewChanged(materialId);
-        }
-    }
-
-    delete m_materialPreviewsGenerator;
-    m_materialPreviewsGenerator = nullptr;
-
-    qDebug() << "Material previews generation done";
-
-    generateMaterialPreviews();
 }
 
 bool Document::isMeshGenerating() const

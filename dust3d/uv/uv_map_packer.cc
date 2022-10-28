@@ -61,15 +61,15 @@ void UvMapPacker::pack()
         layout.id = part.id;
         layout.flipped = flipped;
         if (flipped) {
-            layout.left = left;
-            layout.top = top;
-            layout.width = height;
-            layout.height = width;
+            layout.left = left / m_packedTextureSize;
+            layout.top = top / m_packedTextureSize;
+            layout.width = height / m_packedTextureSize;
+            layout.height = width / m_packedTextureSize;
         } else {
-            layout.left = left;
-            layout.top = top;
-            layout.width = width;
-            layout.height = height;
+            layout.left = left / m_packedTextureSize;
+            layout.top = top / m_packedTextureSize;
+            layout.width = width / m_packedTextureSize;
+            layout.height = height / m_packedTextureSize;
         }
         if (flipped) {
             for (auto& it : part.localUv) {

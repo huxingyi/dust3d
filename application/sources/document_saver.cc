@@ -39,17 +39,6 @@ void DocumentSaver::collectUsedResourceIds(const dust3d::Snapshot* snapshot,
         dust3d::Uuid imageId = dust3d::Uuid(findImageIdString->second);
         imageIds.insert(imageId);
     }
-    for (const auto& material : snapshot->materials) {
-        for (auto& layer : material.second) {
-            for (auto& mapItem : layer.second) {
-                auto findImageIdString = mapItem.find("linkData");
-                if (findImageIdString == mapItem.end())
-                    continue;
-                dust3d::Uuid imageId = dust3d::Uuid(findImageIdString->second);
-                imageIds.insert(imageId);
-            }
-        }
-    }
 }
 
 bool DocumentSaver::save(const QString* filename,

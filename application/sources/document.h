@@ -2,7 +2,6 @@
 #define DUST3D_APPLICATION_DOCUMENT_H_
 
 #include "debug.h"
-#include "material_layer.h"
 #include "model_mesh.h"
 #include "monochrome_mesh.h"
 #include "theme.h"
@@ -165,7 +164,6 @@ public:
     float cutRotation;
     dust3d::CutFace cutFace;
     dust3d::Uuid cutFaceLinkedId;
-    dust3d::Uuid materialId;
     dust3d::PartTarget target;
     float colorSolubility;
     float metalness;
@@ -338,10 +336,6 @@ public:
     {
         return cutRotationAdjusted() || cutFaceAdjusted() || hollowThicknessAdjusted();
     }
-    bool materialAdjusted() const
-    {
-        return !materialId.isNull();
-    }
     bool isEditVisible() const
     {
         return visible && !disabled;
@@ -364,7 +358,6 @@ public:
         cutFaceLinkedId = other.cutFaceLinkedId;
         componentId = other.componentId;
         dirty = other.dirty;
-        materialId = other.materialId;
         target = other.target;
         colorSolubility = other.colorSolubility;
         countershaded = other.countershaded;
@@ -551,8 +544,7 @@ private:
     std::set<dust3d::Uuid> m_childrenIdSet;
 };
 
-class MaterialPreviewsGenerator;
-class TextureGenerator;
+class UvMapGenerator;
 class MeshGenerator;
 class MeshResultPostProcessor;
 
@@ -561,40 +553,9 @@ public:
     dust3d::Snapshot snapshot;
 };
 
-class Material {
-public:
-    Material()
-    {
-    }
-    ~Material()
-    {
-        delete m_previewMesh;
-    }
-    dust3d::Uuid id;
-    QString name;
-    bool dirty = true;
-    std::vector<MaterialLayer> layers;
-    void updatePreviewMesh(ModelMesh* previewMesh)
-    {
-        delete m_previewMesh;
-        m_previewMesh = previewMesh;
-    }
-    ModelMesh* takePreviewMesh() const
-    {
-        if (nullptr == m_previewMesh)
-            return nullptr;
-        return new ModelMesh(*m_previewMesh);
-    }
-
-private:
-    Q_DISABLE_COPY(Material);
-    ModelMesh* m_previewMesh = nullptr;
-};
-
 enum class DocumentToSnapshotFor {
     Document = 0,
-    Nodes,
-    Materials
+    Nodes
 };
 
 class Document : public QObject {
@@ -618,7 +579,6 @@ signals:
     void partColorStateChanged(dust3d::Uuid partId);
     void partCutRotationChanged(dust3d::Uuid partId);
     void partCutFaceChanged(dust3d::Uuid partId);
-    void partMaterialIdChanged(dust3d::Uuid partId);
     void partChamferStateChanged(dust3d::Uuid partId);
     void partTargetChanged(dust3d::Uuid partId);
     void partColorSolubilityChanged(dust3d::Uuid partId);
@@ -638,12 +598,6 @@ signals:
     void uncheckAll();
     void checkNode(dust3d::Uuid nodeId);
     void checkEdge(dust3d::Uuid edgeId);
-    void materialAdded(dust3d::Uuid materialId);
-    void materialRemoved(dust3d::Uuid materialId);
-    void materialListChanged();
-    void materialNameChanged(dust3d::Uuid materialId);
-    void materialLayersChanged(dust3d::Uuid materialId);
-    void materialPreviewChanged(dust3d::Uuid materialId);
     void meshGenerating();
     void postProcessing();
     void textureGenerating();
@@ -706,9 +660,6 @@ public: // need initialize
 public:
     Document();
     ~Document();
-    std::map<dust3d::Uuid, Material> materialMap;
-    std::vector<dust3d::Uuid> materialIdList;
-
     bool undoable() const;
     bool redoable() const;
     bool hasPastableNodesInClipboard() const;
@@ -717,8 +668,7 @@ public:
     bool isEdgeEditable(dust3d::Uuid edgeId) const;
     void copyNodes(std::set<dust3d::Uuid> nodeIdSet) const;
     void toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uuid>& limitNodeIds = std::set<dust3d::Uuid>(),
-        DocumentToSnapshotFor forWhat = DocumentToSnapshotFor::Document,
-        const std::set<dust3d::Uuid>& limitMaterialIds = std::set<dust3d::Uuid>()) const;
+        DocumentToSnapshotFor forWhat = DocumentToSnapshotFor::Document) const;
     void fromSnapshot(const dust3d::Snapshot& snapshot);
     enum class SnapshotSource {
         Unknown,
@@ -726,7 +676,6 @@ public:
         Import
     };
     void addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSource source = SnapshotSource::Paste);
-    const Material* findMaterial(dust3d::Uuid materialId) const;
     ModelMesh* takeResultMesh();
     MonochromeMesh* takeWireframeMesh();
     ModelMesh* takePaintedMesh();
@@ -740,7 +689,6 @@ public:
     void updateTextureMetalnessImage(QImage* image);
     void updateTextureRoughnessImage(QImage* image);
     void updateTextureAmbientOcclusionImage(QImage* image);
-    bool hasPastableMaterialsInClipboard() const;
     const dust3d::Object& currentPostProcessedObject() const;
     bool isExportReady() const;
     bool isPostProcessResultObsolete() const;
@@ -822,8 +770,6 @@ public slots:
     void textureReady();
     void postProcess();
     void postProcessedMeshResultReady();
-    void generateMaterialPreviews();
-    void materialPreviewsReady();
     void setPartSubdivState(dust3d::Uuid partId, bool subdived);
     void setPartXmirrorState(dust3d::Uuid partId, bool mirrored);
     void setPartDeformThickness(dust3d::Uuid partId, float thickness);
@@ -834,7 +780,6 @@ public slots:
     void setPartCutRotation(dust3d::Uuid partId, float cutRotation);
     void setPartCutFace(dust3d::Uuid partId, dust3d::CutFace cutFace);
     void setPartCutFaceLinkedId(dust3d::Uuid partId, dust3d::Uuid linkedId);
-    void setPartMaterialId(dust3d::Uuid partId, dust3d::Uuid materialId);
     void setPartChamferState(dust3d::Uuid partId, bool chamfered);
     void setPartTarget(dust3d::Uuid partId, dust3d::PartTarget target);
     void setPartColorSolubility(dust3d::Uuid partId, float solubility);
@@ -852,10 +797,6 @@ public slots:
     void silentReset();
     void toggleSmoothNormal();
     void enableWeld(bool enabled);
-    void addMaterial(dust3d::Uuid materialId, QString name, std::vector<MaterialLayer>);
-    void removeMaterial(dust3d::Uuid materialId);
-    void setMaterialLayers(dust3d::Uuid materialId, std::vector<MaterialLayer> layers);
-    void renameMaterial(dust3d::Uuid materialId, QString name);
     void removeNode(dust3d::Uuid nodeId);
     void removeEdge(dust3d::Uuid edgeId);
     void removePart(dust3d::Uuid partId);
@@ -932,14 +873,13 @@ private:
     int m_batchChangeRefCount = 0;
     dust3d::Object* m_currentObject = nullptr;
     bool m_isTextureObsolete = false;
-    TextureGenerator* m_textureGenerator = nullptr;
+    UvMapGenerator* m_textureGenerator = nullptr;
     bool m_isPostProcessResultObsolete = false;
     MeshResultPostProcessor* m_postProcessor = nullptr;
     dust3d::Object* m_postProcessedObject = new dust3d::Object;
     ModelMesh* m_resultTextureMesh = nullptr;
     unsigned long long m_textureImageUpdateVersion = 0;
     bool m_smoothNormal = false;
-    MaterialPreviewsGenerator* m_materialPreviewsGenerator = nullptr;
     quint64 m_meshGenerationId = 0;
     quint64 m_nextMeshGenerationId = 0;
     void* m_generatedCacheContext = nullptr;
