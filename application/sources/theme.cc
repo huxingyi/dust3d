@@ -59,6 +59,8 @@ void Theme::initialize()
     Theme::previewIconBorderSize = std::max(1, Theme::partPreviewImageSize / 20);
     Theme::previewIconMargin = std::max(1, Theme::previewIconBorderSize / 2);
     Theme::previewIconBorderRadius = std::max(3, Theme::partPreviewImageSize / 10);
+
+    Theme::awesome();
 }
 
 QtAwesome* Theme::awesome()

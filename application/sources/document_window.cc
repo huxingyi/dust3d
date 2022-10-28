@@ -269,6 +269,11 @@ DocumentWindow::DocumentWindow()
     partsDocker->setWidget(m_partManageWidget);
     addDockWidget(Qt::RightDockWidgetArea, partsDocker);
 
+    //QDockWidget* motionsDocker = new QDockWidget(tr("Motions"), this);
+    //motionsDocker->setAllowedAreas(Qt::RightDockWidgetArea);
+
+    //tabifyDockWidget(partsDocker, motionsDocker);
+
     partsDocker->raise();
 
     QWidget* titleBarWidget = new QWidget;
