@@ -43,6 +43,7 @@ void UvMapPacker::pack()
     std::vector<std::pair<float, float>> chartSizes(m_partTriangleUvs.size());
     for (size_t i = 0; i < m_partTriangleUvs.size(); ++i) {
         const auto& part = m_partTriangleUvs[i];
+        //dust3dDebug << "part.width:" << part.width << "part.height:" << part.height;
         chartSizes[i] = { part.width, part.height };
     }
 
@@ -73,22 +74,25 @@ void UvMapPacker::pack()
             layout.width = width;
             layout.height = height;
         }
+        auto partWidth = part.width;
+        auto partHeight = part.height;
         if (flipped) {
             for (auto& it : part.localUv) {
                 std::swap(it.second[0][0], it.second[0][1]);
                 std::swap(it.second[1][0], it.second[1][1]);
                 std::swap(it.second[2][0], it.second[2][1]);
             }
+            std::swap(partWidth, partHeight);
         }
         for (const auto& it : part.localUv) {
             layout.globalUv.insert({ it.first,
                 std::array<Vector2, 3> {
-                    Vector2(left + (it.second[0].x() * width) / m_packedTextureSize,
-                        top + (it.second[0].y() * height) / m_packedTextureSize),
-                    Vector2(left + (it.second[1].x() * width) / m_packedTextureSize,
-                        top + (it.second[1].y() * height) / m_packedTextureSize),
-                    Vector2(left + (it.second[2].x() * width) / m_packedTextureSize,
-                        top + (it.second[2].y() * height) / m_packedTextureSize) } });
+                    Vector2((left * m_packedTextureSize + it.second[0].x() * partWidth) / m_packedTextureSize,
+                        (top * m_packedTextureSize + it.second[0].y() * partHeight) / m_packedTextureSize),
+                    Vector2((left * m_packedTextureSize + it.second[1].x() * partWidth) / m_packedTextureSize,
+                        (top * m_packedTextureSize + it.second[1].y() * partHeight) / m_packedTextureSize),
+                    Vector2((left * m_packedTextureSize + it.second[2].x() * partWidth) / m_packedTextureSize,
+                        (top * m_packedTextureSize + it.second[2].y() * partHeight) / m_packedTextureSize) } });
         }
         m_packedLayouts.emplace_back(layout);
     }
