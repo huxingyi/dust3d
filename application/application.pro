@@ -90,9 +90,6 @@ INCLUDEPATH += ../
 INCLUDEPATH += ../third_party
 INCLUDEPATH += ../third_party/rapidxml-1.13
 INCLUDEPATH += ../third_party/earcut.hpp/include
-INCLUDEPATH += ../third_party/eigen
-INCLUDEPATH += ../third_party/libigl/include
-INCLUDEPATH += ../third_party/lodepng
 
 include(third_party/QtAwesome/QtAwesome/QtAwesome.pri)
 
@@ -290,28 +287,14 @@ HEADERS += ../dust3d/mesh/tube_mesh_builder.h
 SOURCES += ../dust3d/mesh/tube_mesh_builder.cc
 HEADERS += ../dust3d/mesh/weld_vertices.h
 SOURCES += ../dust3d/mesh/weld_vertices.cc
-HEADERS += ../dust3d/util/obj.h
-SOURCES += ../dust3d/util/obj.cc
 HEADERS += ../dust3d/uv/chart_packer.h
 SOURCES += ../dust3d/uv/chart_packer.cc
 HEADERS += ../dust3d/uv/max_rectangles.h
 SOURCES += ../dust3d/uv/max_rectangles.cc
-HEADERS += ../dust3d/uv/parametrize.h
-SOURCES += ../dust3d/uv/parametrize.cc
-HEADERS += ../dust3d/uv/triangulate.h
-SOURCES += ../dust3d/uv/triangulate.cc
-HEADERS += ../dust3d/uv/unwrap_uv.h
-SOURCES += ../dust3d/uv/unwrap_uv.cc
 HEADERS += ../dust3d/uv/uv_map_packer.h
 SOURCES += ../dust3d/uv/uv_map_packer.cc
-HEADERS += ../dust3d/uv/uv_mesh_data_type.h
-SOURCES += ../dust3d/uv/uv_mesh_data_type.cc
-HEADERS += ../dust3d/uv/uv_unwrapper.h
-SOURCES += ../dust3d/uv/uv_unwrapper.cc
 HEADERS += ../third_party/GuigueDevillers03/tri_tri_intersect.h
 SOURCES += ../third_party/GuigueDevillers03/tri_tri_intersect.c
-HEADERS += ../third_party/lodepng/lodepng.h
-SOURCES += ../third_party/lodepng/lodepng.cpp
 
 win32 {
     LIBS += -luser32

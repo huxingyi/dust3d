@@ -42,6 +42,9 @@ private:
     std::unique_ptr<ModelMesh> m_mesh;
     bool m_hasTransparencySettings = false;
     static size_t m_textureSize;
+    void packUvs();
+    void generateTextureColorImage();
+    void generateUvCoords();
 };
 
 #endif

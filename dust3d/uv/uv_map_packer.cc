@@ -20,6 +20,7 @@
  *  SOFTWARE.
  */
 
+#include <dust3d/base/debug.h>
 #include <dust3d/uv/chart_packer.h>
 #include <dust3d/uv/uv_map_packer.h>
 
@@ -57,19 +58,20 @@ void UvMapPacker::pack()
         auto& width = std::get<2>(result);
         auto& height = std::get<3>(result);
         auto& flipped = std::get<4>(result);
+        //dust3dDebug << "left:" << left << "top:" << top << "width:" << width << "height:" << height << "flipped:" << flipped;
         Layout layout;
         layout.id = part.id;
         layout.flipped = flipped;
         if (flipped) {
-            layout.left = left / m_packedTextureSize;
-            layout.top = top / m_packedTextureSize;
-            layout.width = height / m_packedTextureSize;
-            layout.height = width / m_packedTextureSize;
+            layout.left = left;
+            layout.top = top;
+            layout.width = height;
+            layout.height = width;
         } else {
-            layout.left = left / m_packedTextureSize;
-            layout.top = top / m_packedTextureSize;
-            layout.width = width / m_packedTextureSize;
-            layout.height = height / m_packedTextureSize;
+            layout.left = left;
+            layout.top = top;
+            layout.width = width;
+            layout.height = height;
         }
         if (flipped) {
             for (auto& it : part.localUv) {
@@ -81,12 +83,12 @@ void UvMapPacker::pack()
         for (const auto& it : part.localUv) {
             layout.globalUv.insert({ it.first,
                 std::array<Vector2, 3> {
-                    Vector2((left + it.second[0].x() * width) / m_packedTextureSize,
-                        (top + it.second[0].y() * height) / m_packedTextureSize),
-                    Vector2((left + it.second[1].x() * width) / m_packedTextureSize,
-                        (top + it.second[1].y() * height) / m_packedTextureSize),
-                    Vector2((left + it.second[2].x() * width) / m_packedTextureSize,
-                        (top + it.second[2].y() * height) / m_packedTextureSize) } });
+                    Vector2(left + (it.second[0].x() * width) / m_packedTextureSize,
+                        top + (it.second[0].y() * height) / m_packedTextureSize),
+                    Vector2(left + (it.second[1].x() * width) / m_packedTextureSize,
+                        top + (it.second[1].y() * height) / m_packedTextureSize),
+                    Vector2(left + (it.second[2].x() * width) / m_packedTextureSize,
+                        top + (it.second[2].y() * height) / m_packedTextureSize) } });
         }
         m_packedLayouts.emplace_back(layout);
     }
