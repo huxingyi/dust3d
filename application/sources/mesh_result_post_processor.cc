@@ -1,7 +1,6 @@
 #include "mesh_result_post_processor.h"
 #include <QGuiApplication>
 #include <dust3d/mesh/resolve_triangle_tangent.h>
-#include <dust3d/uv/unwrap_uv.h>
 
 MeshResultPostProcessor::MeshResultPostProcessor(const dust3d::Object& object)
 {
