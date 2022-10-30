@@ -649,11 +649,8 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combinePartMesh(const std::st
         return nullptr;
 
     auto& partCache = m_cacheContext->parts[partIdString];
-    partCache.objectNodes.clear();
-    partCache.objectEdges.clear();
-    partCache.objectNodeVertices.clear();
-    partCache.vertices.clear();
-    partCache.faces.clear();
+    partCache.reset();
+
     partCache.color = partColor;
     partCache.metalness = metalness;
     partCache.roughness = roughness;
@@ -829,12 +826,7 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineComponentMesh(const st
         }
     }
 
-    componentCache.sharedQuadEdges.clear();
-    componentCache.noneSeamVertices.clear();
-    componentCache.objectNodes.clear();
-    componentCache.objectEdges.clear();
-    componentCache.objectNodeVertices.clear();
-    componentCache.mesh.reset();
+    componentCache.reset();
 
     std::string linkDataType = String::valueOrEmpty(*component, "linkDataType");
     if ("partId" == linkDataType) {

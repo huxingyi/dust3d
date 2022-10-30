@@ -4,7 +4,7 @@
 #include <QPainter>
 #include <dust3d/uv/uv_map_packer.h>
 
-size_t UvMapGenerator::m_textureSize = 1024;
+size_t UvMapGenerator::m_textureSize = 4096;
 
 UvMapGenerator::UvMapGenerator(std::unique_ptr<dust3d::Object> object, std::unique_ptr<dust3d::Snapshot> snapshot)
     : m_object(std::move(object))

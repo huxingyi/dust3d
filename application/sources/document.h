@@ -689,7 +689,7 @@ public:
     void updateTextureMetalnessImage(QImage* image);
     void updateTextureRoughnessImage(QImage* image);
     void updateTextureAmbientOcclusionImage(QImage* image);
-    const dust3d::Object& currentPostProcessedObject() const;
+    const dust3d::Object& currentUvMappedObject() const;
     bool isExportReady() const;
     bool isPostProcessResultObsolete() const;
     bool isMeshGenerating() const;
@@ -876,7 +876,7 @@ private:
     UvMapGenerator* m_textureGenerator = nullptr;
     bool m_isPostProcessResultObsolete = false;
     MeshResultPostProcessor* m_postProcessor = nullptr;
-    dust3d::Object* m_postProcessedObject = new dust3d::Object;
+    std::unique_ptr<dust3d::Object> m_uvMappedObject = std::make_unique<dust3d::Object>();
     ModelMesh* m_resultTextureMesh = nullptr;
     unsigned long long m_textureImageUpdateVersion = 0;
     bool m_smoothNormal = false;

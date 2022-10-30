@@ -53,6 +53,20 @@ public:
         float roughness = 1.0;
         bool isSuccessful = false;
         bool joined = true;
+        void reset()
+        {
+            vertices.clear();
+            faces.clear();
+            triangleUvs.clear();
+            objectNodes.clear();
+            objectEdges.clear();
+            objectNodeVertices.clear();
+            color = Color(1.0, 1.0, 1.0);
+            metalness = 0.0;
+            roughness = 1.0;
+            isSuccessful = false;
+            joined = true;
+        }
     };
 
     struct GeneratedComponent {
@@ -63,6 +77,16 @@ public:
         std::vector<ObjectNode> objectNodes;
         std::vector<std::pair<std::pair<Uuid, Uuid>, std::pair<Uuid, Uuid>>> objectEdges;
         std::vector<std::pair<Vector3, std::pair<Uuid, Uuid>>> objectNodeVertices;
+        void reset()
+        {
+            mesh.reset();
+            sharedQuadEdges.clear();
+            partTriangleUvs.clear();
+            noneSeamVertices.clear();
+            objectNodes.clear();
+            objectEdges.clear();
+            objectNodeVertices.clear();
+        }
     };
 
     struct GeneratedCacheContext {

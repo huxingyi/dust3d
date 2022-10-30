@@ -1030,7 +1030,7 @@ void DocumentWindow::exportFbxToFilename(const QString& filename)
         return;
     }
     QApplication::setOverrideCursor(Qt::WaitCursor);
-    dust3d::Object skeletonResult = m_document->currentPostProcessedObject();
+    dust3d::Object skeletonResult = m_document->currentUvMappedObject();
     FbxFileWriter fbxFileWriter(skeletonResult,
         filename,
         m_document->textureImage,
@@ -1060,7 +1060,7 @@ void DocumentWindow::exportGlbToFilename(const QString& filename)
         return;
     }
     QApplication::setOverrideCursor(Qt::WaitCursor);
-    dust3d::Object skeletonResult = m_document->currentPostProcessedObject();
+    dust3d::Object skeletonResult = m_document->currentUvMappedObject();
     QImage* textureMetalnessRoughnessAmbientOcclusionImage = UvMapGenerator::combineMetalnessRoughnessAmbientOcclusionImages(m_document->textureMetalnessImage,
         m_document->textureRoughnessImage,
         m_document->textureAmbientOcclusionImage);

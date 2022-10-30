@@ -37,7 +37,6 @@ Document::~Document()
 {
     delete (dust3d::MeshGenerator::GeneratedCacheContext*)m_generatedCacheContext;
     delete m_resultMesh;
-    delete m_postProcessedObject;
     delete textureImage;
     delete textureImageByteArray;
     delete textureNormalImage;
@@ -2148,7 +2147,7 @@ void Document::generateTexture()
 
     m_isTextureObsolete = false;
 
-    auto object = std::make_unique<dust3d::Object>(*m_postProcessedObject);
+    auto object = std::make_unique<dust3d::Object>(*m_uvMappedObject);
 
     auto snapshot = std::make_unique<dust3d::Snapshot>();
     toSnapshot(snapshot.get());
@@ -2174,7 +2173,10 @@ void Document::textureReady()
     delete m_resultTextureMesh;
     m_resultTextureMesh = m_textureGenerator->takeResultMesh().release();
 
-    m_postProcessedObject->alphaEnabled = m_textureGenerator->hasTransparencySettings();
+    auto object = m_textureGenerator->takeObject();
+    if (nullptr != object)
+        m_uvMappedObject = std::move(object);
+    //m_uvMappedObject->alphaEnabled = m_textureGenerator->hasTransparencySettings();
 
     m_textureImageUpdateVersion++;
 
@@ -2221,8 +2223,7 @@ void Document::postProcess()
 
 void Document::postProcessedMeshResultReady()
 {
-    delete m_postProcessedObject;
-    m_postProcessedObject = m_postProcessor->takePostProcessedObject();
+    m_uvMappedObject.reset(m_postProcessor->takePostProcessedObject());
 
     delete m_postProcessor;
     m_postProcessor = nullptr;
@@ -2236,9 +2237,9 @@ void Document::postProcessedMeshResultReady()
     }
 }
 
-const dust3d::Object& Document::currentPostProcessedObject() const
+const dust3d::Object& Document::currentUvMappedObject() const
 {
-    return *m_postProcessedObject;
+    return *m_uvMappedObject;
 }
 
 void Document::setComponentCombineMode(dust3d::Uuid componentId, dust3d::CombineMode combineMode)
