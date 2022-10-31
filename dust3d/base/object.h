@@ -63,6 +63,7 @@ public:
     std::vector<std::vector<size_t>> triangleAndQuads;
     std::vector<std::vector<size_t>> triangles;
     std::unordered_map<Uuid, std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>>> partTriangleUvs;
+    std::vector<std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>>> seamTriangleUvs;
     std::vector<Vector3> triangleNormals;
     std::vector<Color> triangleColors;
     bool alphaEnabled = false;

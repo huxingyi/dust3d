@@ -23,6 +23,7 @@
 #ifndef DUST3D_MESH_MESH_RECOMBINER_H_
 #define DUST3D_MESH_MESH_RECOMBINER_H_
 
+#include <dust3d/base/vector2.h>
 #include <dust3d/mesh/mesh_combiner.h>
 #include <map>
 #include <set>
@@ -38,6 +39,7 @@ public:
     const std::vector<Vector3>& regeneratedVertices();
     const std::vector<std::pair<MeshCombiner::Source, size_t>>& regeneratedVerticesSourceIndices();
     const std::vector<std::vector<size_t>>& regeneratedFaces();
+    const std::vector<std::vector<std::pair<std::array<Vector3, 3>, std::array<Vector2, 3>>>>& generatedBridgingTriangleUvs();
     bool recombine();
 
 private:
@@ -50,6 +52,7 @@ private:
     std::map<std::pair<size_t, size_t>, size_t> m_halfEdgeToFaceMap;
     std::map<size_t, size_t> m_facesInSeamArea;
     std::set<size_t> m_goodSeams;
+    std::vector<std::vector<std::pair<std::array<Vector3, 3>, std::array<Vector2, 3>>>> m_generatedBridgingTriangleUvs;
 
     bool addFaceToHalfEdgeToFaceMap(size_t faceIndex,
         std::map<std::pair<size_t, size_t>, size_t>& halfEdgeToFaceMap);

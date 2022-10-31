@@ -149,7 +149,7 @@ bool MeshRecombiner::recombine()
         }
     }
     std::map<size_t, size_t> seamVertexToIslandMap;
-    size_t islands = splitSeamVerticesToIslands(seamLink, &seamVertexToIslandMap);
+    splitSeamVerticesToIslands(seamLink, &seamVertexToIslandMap);
 
     std::map<std::pair<size_t, size_t>, std::pair<size_t, bool>> edgesInSeamArea;
     for (size_t faceIndex = 0; faceIndex < (*m_faces).size(); ++faceIndex) {
@@ -376,6 +376,22 @@ bool MeshRecombiner::bridge(const std::vector<size_t>& first, const std::vector<
 
 void MeshRecombiner::fillPairs(const std::vector<size_t>& small, const std::vector<size_t>& large)
 {
+    std::vector<std::pair<std::array<Vector3, 3>, std::array<Vector2, 3>>> bridgingFaceUvs;
+
+    std::vector<double> leftV(small.size(), 0.0);
+    double leftOffset = 0.0;
+    for (size_t j = 1; j < small.size(); ++j) {
+        leftOffset += ((*m_vertices)[small[j]] - (*m_vertices)[small[j - 1]]).length();
+        leftV[j] = leftOffset;
+    }
+
+    std::vector<double> rightV(large.size(), 0.0);
+    double rightOffset = 0.0;
+    for (size_t j = 1; j < large.size(); ++j) {
+        rightOffset += ((*m_vertices)[large[j]] - (*m_vertices)[large[j - 1]]).length();
+        rightV[j] = rightOffset;
+    }
+
     size_t smallIndex = 0;
     size_t largeIndex = 0;
     while (smallIndex + 1 < small.size() || largeIndex + 1 < large.size()) {
@@ -388,12 +404,18 @@ void MeshRecombiner::fillPairs(const std::vector<size_t>& small, const std::vect
                 m_regeneratedFaces.push_back({ small[smallIndex],
                     small[smallIndex + 1],
                     large[largeIndex] });
+                bridgingFaceUvs.emplace_back(std::make_pair(
+                    std::array<Vector3, 3> { (*m_vertices)[small[smallIndex]], (*m_vertices)[small[smallIndex + 1]], (*m_vertices)[large[largeIndex]] },
+                    std::array<Vector2, 3> { Vector2(0.0, leftV[smallIndex]), Vector2(0.0, leftV[smallIndex + 1]), Vector2(1.0, rightV[largeIndex]) }));
                 ++smallIndex;
                 continue;
             }
             m_regeneratedFaces.push_back({ large[largeIndex + 1],
                 large[largeIndex],
                 small[smallIndex] });
+            bridgingFaceUvs.emplace_back(std::make_pair(
+                std::array<Vector3, 3> { (*m_vertices)[large[largeIndex + 1]], (*m_vertices)[large[largeIndex]], (*m_vertices)[small[smallIndex]] },
+                std::array<Vector2, 3> { Vector2(1.0, rightV[largeIndex + 1]), Vector2(1.0, rightV[largeIndex]), Vector2(0.0, rightV[largeIndex]) }));
             ++largeIndex;
             continue;
         }
@@ -401,6 +423,9 @@ void MeshRecombiner::fillPairs(const std::vector<size_t>& small, const std::vect
             m_regeneratedFaces.push_back({ large[largeIndex + 1],
                 large[largeIndex],
                 small[smallIndex] });
+            bridgingFaceUvs.emplace_back(std::make_pair(
+                std::array<Vector3, 3> { (*m_vertices)[large[largeIndex + 1]], (*m_vertices)[large[largeIndex]], (*m_vertices)[small[smallIndex]] },
+                std::array<Vector2, 3> { Vector2(1.0, rightV[largeIndex + 1]), Vector2(1.0, rightV[largeIndex]), Vector2(0.0, rightV[largeIndex]) }));
             ++largeIndex;
             continue;
         }
@@ -408,11 +433,16 @@ void MeshRecombiner::fillPairs(const std::vector<size_t>& small, const std::vect
             m_regeneratedFaces.push_back({ small[smallIndex],
                 small[smallIndex + 1],
                 large[largeIndex] });
+            bridgingFaceUvs.emplace_back(std::make_pair(
+                std::array<Vector3, 3> { (*m_vertices)[small[smallIndex]], (*m_vertices)[small[smallIndex + 1]], (*m_vertices)[large[largeIndex]] },
+                std::array<Vector2, 3> { Vector2(0.0, leftV[smallIndex]), Vector2(0.0, leftV[smallIndex + 1]), Vector2(1.0, rightV[largeIndex]) }));
             ++smallIndex;
             continue;
         }
         break;
     }
+
+    m_generatedBridgingTriangleUvs.emplace_back(bridgingFaceUvs);
 }
 
 void MeshRecombiner::removeReluctantVertices()
@@ -436,6 +466,11 @@ void MeshRecombiner::removeReluctantVertices()
         rearrangedFaces.push_back(newFace);
     }
     m_regeneratedFaces = rearrangedFaces;
+}
+
+const std::vector<std::vector<std::pair<std::array<Vector3, 3>, std::array<Vector2, 3>>>>& MeshRecombiner::generatedBridgingTriangleUvs()
+{
+    return m_generatedBridgingTriangleUvs;
 }
 
 }

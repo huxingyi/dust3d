@@ -73,6 +73,7 @@ public:
         std::unique_ptr<MeshCombiner::Mesh> mesh;
         std::set<std::pair<PositionKey, PositionKey>> sharedQuadEdges;
         std::unordered_map<Uuid, std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>>> partTriangleUvs;
+        std::vector<std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>>> seamTriangleUvs;
         std::set<PositionKey> noneSeamVertices;
         std::vector<ObjectNode> objectNodes;
         std::vector<std::pair<std::pair<Uuid, Uuid>, std::pair<Uuid, Uuid>>> objectEdges;
@@ -82,6 +83,7 @@ public:
             mesh.reset();
             sharedQuadEdges.clear();
             partTriangleUvs.clear();
+            seamTriangleUvs.clear();
             noneSeamVertices.clear();
             objectNodes.clear();
             objectEdges.clear();
@@ -89,11 +91,16 @@ public:
         }
     };
 
+    struct GeneratedCombination {
+        std::unique_ptr<MeshCombiner::Mesh> mesh;
+        std::vector<std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>>> seamTriangleUvs;
+    };
+
     struct GeneratedCacheContext {
         std::map<std::string, GeneratedComponent> components;
         std::map<std::string, GeneratedPart> parts;
         std::map<std::string, std::string> partMirrorIdMap;
-        std::map<std::string, std::unique_ptr<MeshCombiner::Mesh>> cachedCombination;
+        std::map<std::string, GeneratedCombination> cachedCombination;
     };
 
     struct ComponentPreview {
@@ -158,13 +165,12 @@ private:
     void collectSharedQuadEdges(const std::vector<Vector3>& vertices, const std::vector<std::vector<size_t>>& faces,
         std::set<std::pair<PositionKey, PositionKey>>* sharedQuadEdges);
     std::unique_ptr<MeshCombiner::Mesh> combineTwoMeshes(const MeshCombiner::Mesh& first, const MeshCombiner::Mesh& second,
-        MeshCombiner::Method method,
-        bool recombine = true);
+        MeshCombiner::Method method);
     const std::map<std::string, std::string>* findComponent(const std::string& componentIdString);
     CombineMode componentCombineMode(const std::map<std::string, std::string>* component);
     std::unique_ptr<MeshCombiner::Mesh> combineComponentChildGroupMesh(const std::vector<std::string>& componentIdStrings,
         GeneratedComponent& componentCache);
-    std::unique_ptr<MeshCombiner::Mesh> combineMultipleMeshes(std::vector<std::tuple<std::unique_ptr<MeshCombiner::Mesh>, CombineMode, std::string>>&& multipleMeshes, bool recombine = true);
+    std::unique_ptr<MeshCombiner::Mesh> combineMultipleMeshes(std::vector<std::tuple<std::unique_ptr<MeshCombiner::Mesh>, CombineMode, std::string>>&& multipleMeshes);
     std::unique_ptr<MeshCombiner::Mesh> combineStitchingMesh(const std::vector<std::string>& partIdStrings,
         const std::vector<std::string>& componentIdStrings,
         GeneratedComponent& componentCache);
