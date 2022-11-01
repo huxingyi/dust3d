@@ -103,24 +103,6 @@ void MeshGenerator::subdivideFace(std::vector<Vector2>* face)
     }
 }
 
-bool MeshGenerator::isWatertight(const std::vector<std::vector<size_t>>& faces)
-{
-    std::set<std::pair<size_t, size_t>> halfEdges;
-    for (const auto& face : faces) {
-        for (size_t i = 0; i < face.size(); ++i) {
-            size_t j = (i + 1) % face.size();
-            auto insertResult = halfEdges.insert({ face[i], face[j] });
-            if (!insertResult.second)
-                return false;
-        }
-    }
-    for (const auto& it : halfEdges) {
-        if (halfEdges.find({ it.second, it.first }) == halfEdges.end())
-            return false;
-    }
-    return true;
-}
-
 void MeshGenerator::recoverQuads(const std::vector<Vector3>& vertices, const std::vector<std::vector<size_t>>& triangles, const std::set<std::pair<PositionKey, PositionKey>>& sharedQuadEdges, std::vector<std::vector<size_t>>& triangleAndQuads)
 {
     std::vector<PositionKey> verticesPositionKeys;
@@ -439,7 +421,7 @@ bool MeshGenerator::fetchPartOrderedNodes(const std::string& partIdString, std::
 
         builderNodeIdStringToIndexMap.insert({ nodeIdString, builderNodes.size() });
         builderNodes.emplace_back(MeshNode {
-            Vector3((double)x, (double)y, (double)z), (double)radius });
+            Vector3((double)x, (double)y, (double)z), (double)radius, Uuid(nodeIdString) });
     }
 
     if (builderNodes.empty()) {
@@ -480,7 +462,7 @@ bool MeshGenerator::fetchPartOrderedNodes(const std::string& partIdString, std::
     return true;
 }
 
-std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineStitchingMesh(const std::vector<std::string>& partIdStrings,
+std::unique_ptr<MeshState> MeshGenerator::combineStitchingMesh(const std::vector<std::string>& partIdStrings,
     const std::vector<std::string>& componentIdStrings,
     GeneratedComponent& componentCache)
 {
@@ -511,7 +493,7 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineStitchingMesh(const st
         stitchMeshBuilder->generatedFaces(),
         &componentCache.sharedQuadEdges);
 
-    auto mesh = std::make_unique<MeshCombiner::Mesh>(stitchMeshBuilder->generatedVertices(),
+    auto mesh = std::make_unique<MeshState>(stitchMeshBuilder->generatedVertices(),
         stitchMeshBuilder->generatedFaces());
     if (mesh && mesh->isNull())
         mesh.reset();
@@ -563,7 +545,7 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineStitchingMesh(const st
     return mesh;
 }
 
-std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combinePartMesh(const std::string& partIdString,
+std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& partIdString,
     const std::string& componentIdString,
     bool* hasError)
 {
@@ -704,9 +686,9 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combinePartMesh(const std::st
     }
 
     bool hasMeshError = false;
-    std::unique_ptr<MeshCombiner::Mesh> mesh;
+    std::unique_ptr<MeshState> mesh;
 
-    mesh = std::make_unique<MeshCombiner::Mesh>(partCache.vertices, partCache.faces);
+    mesh = std::make_unique<MeshState>(partCache.vertices, partCache.faces);
     if (mesh->isNull()) {
         hasMeshError = true;
     }
@@ -800,9 +782,9 @@ std::string MeshGenerator::componentColorName(const std::map<std::string, std::s
     return std::string();
 }
 
-std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineComponentMesh(const std::string& componentIdString, CombineMode* combineMode)
+std::unique_ptr<MeshState> MeshGenerator::combineComponentMesh(const std::string& componentIdString, CombineMode* combineMode)
 {
-    std::unique_ptr<MeshCombiner::Mesh> mesh;
+    std::unique_ptr<MeshState> mesh;
 
     Uuid componentId;
     const std::map<std::string, std::string>* component = &m_snapshot->rootComponent;
@@ -822,7 +804,7 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineComponentMesh(const st
     if (m_cacheEnabled) {
         if (m_dirtyComponentIds.find(componentIdString) == m_dirtyComponentIds.end()) {
             if (nullptr != componentCache.mesh)
-                return std::make_unique<MeshCombiner::Mesh>(*componentCache.mesh);
+                return std::make_unique<MeshState>(*componentCache.mesh);
         }
     }
 
@@ -887,7 +869,7 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineComponentMesh(const st
             }
             combineGroups[currentGroupIndex].second.push_back(childIdString);
         }
-        std::vector<std::tuple<std::unique_ptr<MeshCombiner::Mesh>, CombineMode, std::string>> groupMeshes;
+        std::vector<std::tuple<std::unique_ptr<MeshState>, CombineMode, std::string>> groupMeshes;
         for (const auto& group : combineGroups) {
             auto childMesh = combineComponentChildGroupMesh(group.second, componentCache);
             if (nullptr == childMesh || childMesh->isNull())
@@ -908,7 +890,7 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineComponentMesh(const st
     }
 
     if (nullptr != mesh)
-        componentCache.mesh = std::make_unique<MeshCombiner::Mesh>(*mesh);
+        componentCache.mesh = std::make_unique<MeshState>(*mesh);
 
     if (nullptr != mesh && mesh->isNull()) {
         mesh.reset();
@@ -917,9 +899,9 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineComponentMesh(const st
     return mesh;
 }
 
-std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineMultipleMeshes(std::vector<std::tuple<std::unique_ptr<MeshCombiner::Mesh>, CombineMode, std::string>>&& multipleMeshes)
+std::unique_ptr<MeshState> MeshGenerator::combineMultipleMeshes(std::vector<std::tuple<std::unique_ptr<MeshState>, CombineMode, std::string>>&& multipleMeshes)
 {
-    std::unique_ptr<MeshCombiner::Mesh> mesh;
+    std::unique_ptr<MeshState> mesh;
     std::string meshIdStrings;
     for (auto& it : multipleMeshes) {
         auto subMesh = std::move(std::get<0>(it));
@@ -936,20 +918,20 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineMultipleMeshes(std::ve
         auto combinerMethod = childCombineMode == CombineMode::Inversion ? MeshCombiner::Method::Diff : MeshCombiner::Method::Union;
         auto combinerMethodString = combinerMethod == MeshCombiner::Method::Union ? "+" : "-";
         meshIdStrings += combinerMethodString + subMeshIdString;
-        std::unique_ptr<MeshCombiner::Mesh> newMesh;
+        std::unique_ptr<MeshState> newMesh;
         auto findCached = m_cacheContext->cachedCombination.find(meshIdStrings);
         if (findCached != m_cacheContext->cachedCombination.end()) {
-            if (nullptr != findCached->second.mesh) {
-                newMesh = std::make_unique<MeshCombiner::Mesh>(*findCached->second.mesh);
+            if (nullptr != findCached->second) {
+                newMesh = std::make_unique<MeshState>(*findCached->second);
             }
         } else {
-            newMesh = combineTwoMeshes(*mesh,
+            newMesh = MeshState::combine(*mesh,
                 *subMesh,
                 combinerMethod);
             if (nullptr != newMesh)
-                m_cacheContext->cachedCombination.insert({ meshIdStrings, GeneratedCombination { std::make_unique<MeshCombiner::Mesh>(*newMesh) } });
+                m_cacheContext->cachedCombination.insert({ meshIdStrings, std::make_unique<MeshState>(*newMesh) });
             else
-                m_cacheContext->cachedCombination.insert({ meshIdStrings, GeneratedCombination {} });
+                m_cacheContext->cachedCombination.insert({ meshIdStrings, nullptr });
         }
         if (newMesh && !newMesh->isNull()) {
             mesh = std::move(newMesh);
@@ -963,12 +945,12 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineMultipleMeshes(std::ve
     return mesh;
 }
 
-std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineComponentChildGroupMesh(const std::vector<std::string>& componentIdStrings, GeneratedComponent& componentCache)
+std::unique_ptr<MeshState> MeshGenerator::combineComponentChildGroupMesh(const std::vector<std::string>& componentIdStrings, GeneratedComponent& componentCache)
 {
-    std::vector<std::tuple<std::unique_ptr<MeshCombiner::Mesh>, CombineMode, std::string>> multipleMeshes;
+    std::vector<std::tuple<std::unique_ptr<MeshState>, CombineMode, std::string>> multipleMeshes;
     for (const auto& childIdString : componentIdStrings) {
         CombineMode childCombineMode = CombineMode::Normal;
-        std::unique_ptr<MeshCombiner::Mesh> subMesh = combineComponentMesh(childIdString, &childCombineMode);
+        std::unique_ptr<MeshState> subMesh = combineComponentMesh(childIdString, &childCombineMode);
 
         if (CombineMode::Uncombined == childCombineMode) {
             continue;
@@ -997,40 +979,6 @@ std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineComponentChildGroupMes
         multipleMeshes.emplace_back(std::make_tuple(std::move(subMesh), childCombineMode, childIdString));
     }
     return combineMultipleMeshes(std::move(multipleMeshes));
-}
-
-std::unique_ptr<MeshCombiner::Mesh> MeshGenerator::combineTwoMeshes(const MeshCombiner::Mesh& first, const MeshCombiner::Mesh& second,
-    MeshCombiner::Method method)
-{
-    if (first.isNull() || second.isNull())
-        return nullptr;
-    std::vector<std::pair<MeshCombiner::Source, size_t>> combinedVerticesSources;
-    auto newMesh = std::unique_ptr<MeshCombiner::Mesh>(MeshCombiner::combine(first,
-        second,
-        method,
-        &combinedVerticesSources));
-    if (nullptr == newMesh)
-        return nullptr;
-    if (!newMesh->isNull()) {
-        MeshRecombiner recombiner;
-        std::vector<Vector3> combinedVertices;
-        std::vector<std::vector<size_t>> combinedFaces;
-        newMesh->fetch(combinedVertices, combinedFaces);
-        recombiner.setVertices(&combinedVertices, &combinedVerticesSources);
-        recombiner.setFaces(&combinedFaces);
-        if (recombiner.recombine()) {
-            if (isWatertight(recombiner.regeneratedFaces())) {
-                auto reMesh = std::make_unique<MeshCombiner::Mesh>(recombiner.regeneratedVertices(), recombiner.regeneratedFaces());
-                if (!reMesh->isNull()) {
-                    newMesh = std::move(reMesh);
-                }
-            }
-        }
-    }
-    if (newMesh->isNull()) {
-        return nullptr;
-    }
-    return newMesh;
 }
 
 void MeshGenerator::makeXmirror(const std::vector<Vector3>& sourceVertices, const std::vector<std::vector<size_t>>& sourceFaces,
@@ -1135,7 +1083,7 @@ void MeshGenerator::postprocessObject(Object* object)
     object->setTriangleVertexNormals(triangleVertexNormals);
 }
 
-void MeshGenerator::collectIncombinableMesh(const MeshCombiner::Mesh* mesh, const GeneratedComponent& componentCache)
+void MeshGenerator::collectIncombinableMesh(const MeshState* mesh, const GeneratedComponent& componentCache)
 {
     if (nullptr == mesh)
         return;

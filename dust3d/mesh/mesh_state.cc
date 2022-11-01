@@ -25,10 +25,29 @@
 
 namespace dust3d {
 
+MeshState::MeshState(const std::vector<Vector3>& vertices, const std::vector<std::vector<size_t>>& faces)
+{
+    mesh = std::make_unique<MeshCombiner::Mesh>(vertices, faces);
+}
+
+MeshState::MeshState(const MeshState& other)
+{
+    if (nullptr != other.mesh)
+        mesh = std::make_unique<MeshCombiner::Mesh>(*other.mesh);
+    seamTriangleUvs = other.seamTriangleUvs;
+}
+
 void MeshState::fetch(std::vector<Vector3>& vertices, std::vector<std::vector<size_t>>& faces) const
 {
     if (mesh)
         mesh->fetch(vertices, faces);
+}
+
+bool MeshState::isNull() const
+{
+    if (nullptr == mesh)
+        return true;
+    return mesh->isNull();
 }
 
 std::unique_ptr<MeshState> MeshState::combine(const MeshState& first, const MeshState& second,
@@ -36,6 +55,7 @@ std::unique_ptr<MeshState> MeshState::combine(const MeshState& first, const Mesh
 {
     if (first.mesh->isNull() || second.mesh->isNull())
         return nullptr;
+    auto newMeshState = std::make_unique<MeshState>();
     std::vector<std::pair<MeshCombiner::Source, size_t>> combinedVerticesSources;
     auto newMesh = std::unique_ptr<MeshCombiner::Mesh>(MeshCombiner::combine(*first.mesh,
         *second.mesh,
@@ -54,6 +74,19 @@ std::unique_ptr<MeshState> MeshState::combine(const MeshState& first, const Mesh
             if (MeshState::isWatertight(recombiner.regeneratedFaces())) {
                 auto reMesh = std::make_unique<MeshCombiner::Mesh>(recombiner.regeneratedVertices(), recombiner.regeneratedFaces());
                 if (!reMesh->isNull()) {
+                    for (const auto& uvSeams : recombiner.generatedBridgingTriangleUvs()) {
+                        std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>> uvs;
+                        for (const auto& it : uvSeams) {
+                            uvs.insert(std::make_pair(std::array<PositionKey, 3> {
+                                                          PositionKey(it.first[0]),
+                                                          PositionKey(it.first[1]),
+                                                          PositionKey(it.first[2]) },
+                                it.second));
+                        }
+                        if (uvs.empty())
+                            continue;
+                        newMeshState->seamTriangleUvs.push_back(uvs);
+                    }
                     newMesh = std::move(reMesh);
                 }
             }
@@ -62,7 +95,6 @@ std::unique_ptr<MeshState> MeshState::combine(const MeshState& first, const Mesh
     if (newMesh->isNull()) {
         return nullptr;
     }
-    auto newMeshState = std::make_unique<MeshState>();
     newMeshState->mesh = std::move(newMesh);
     return newMeshState;
 }

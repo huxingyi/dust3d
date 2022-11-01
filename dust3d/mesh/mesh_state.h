@@ -34,7 +34,11 @@ public:
     std::unique_ptr<MeshCombiner::Mesh> mesh;
     std::vector<std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>>> seamTriangleUvs;
 
+    MeshState() = default;
+    MeshState(const std::vector<Vector3>& vertices, const std::vector<std::vector<size_t>>& faces);
+    MeshState(const MeshState& other);
     void fetch(std::vector<Vector3>& vertices, std::vector<std::vector<size_t>>& faces) const;
+    bool isNull() const;
     static std::unique_ptr<MeshState> combine(const MeshState& first, const MeshState& second,
         MeshCombiner::Method method);
     static bool isWatertight(const std::vector<std::vector<size_t>>& faces);
