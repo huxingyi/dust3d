@@ -45,6 +45,7 @@ private:
     void packUvs();
     void generateTextureColorImage();
     void generateUvCoords();
+    void filterSeamUvs();
 };
 
 #endif

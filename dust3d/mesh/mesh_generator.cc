@@ -963,8 +963,6 @@ std::unique_ptr<MeshState> MeshGenerator::combineComponentChildGroupMesh(const s
             componentCache.sharedQuadEdges.insert(it);
         for (const auto& it : childComponentCache.partTriangleUvs)
             componentCache.partTriangleUvs.insert({ it.first, it.second });
-        for (const auto& it : childComponentCache.seamTriangleUvs)
-            componentCache.seamTriangleUvs.push_back(it);
         for (const auto& it : childComponentCache.objectNodes)
             componentCache.objectNodes.push_back(it);
         for (const auto& it : childComponentCache.objectEdges)
@@ -1298,13 +1296,13 @@ void MeshGenerator::generate()
     m_object->nodes = componentCache.objectNodes;
     m_object->edges = componentCache.objectEdges;
     m_object->partTriangleUvs = componentCache.partTriangleUvs;
-    m_object->seamTriangleUvs = componentCache.seamTriangleUvs;
     m_nodeVertices = componentCache.objectNodeVertices;
 
     std::vector<Vector3> combinedVertices;
     std::vector<std::vector<size_t>> combinedFaces;
     if (nullptr != combinedMesh) {
         combinedMesh->fetch(combinedVertices, combinedFaces);
+        m_object->seamTriangleUvs = combinedMesh->seamTriangleUvs;
         if (m_weldEnabled) {
             size_t totalAffectedNum = 0;
             size_t affectedNum = 0;

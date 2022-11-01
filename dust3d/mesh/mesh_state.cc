@@ -20,6 +20,7 @@
  *  SOFTWARE.
  */
 
+#include <dust3d/base/debug.h>
 #include <dust3d/mesh/mesh_recombiner.h>
 #include <dust3d/mesh/mesh_state.h>
 
@@ -96,6 +97,10 @@ std::unique_ptr<MeshState> MeshState::combine(const MeshState& first, const Mesh
         return nullptr;
     }
     newMeshState->mesh = std::move(newMesh);
+    for (const auto& it : first.seamTriangleUvs)
+        newMeshState->seamTriangleUvs.push_back(it);
+    for (const auto& it : second.seamTriangleUvs)
+        newMeshState->seamTriangleUvs.push_back(it);
     return newMeshState;
 }
 

@@ -3,6 +3,7 @@
 #include <QMatrix>
 #include <QPainter>
 #include <dust3d/uv/uv_map_packer.h>
+#include <unordered_set>
 
 size_t UvMapGenerator::m_textureSize = 4096;
 
@@ -117,6 +118,30 @@ void UvMapGenerator::packUvs()
     m_mapPacker->pack();
 }
 
+void UvMapGenerator::filterSeamUvs()
+{
+    /*
+    dust3dDebug << "m_object->seamTriangleUvs.size():" << m_object->seamTriangleUvs.size();
+    std::map<std::array<dust3d::PositionKey, 3>, size_t> triangleMap;
+    for (size_t i = 0; i < m_object->seamTriangleUvs.size(); ++i) {
+        for (const auto& it : m_object->seamTriangleUvs[i]) {
+            triangleMap.insert({ it.first, i });
+        }
+        // TODO:
+    }
+    std::unordered_set<size_t> seams;
+    size_t uvTriangleCount = 0;
+    for (const auto& triangle : m_object->triangles) {
+        auto findResult = triangleMap.find(std::array<dust3d::PositionKey, 3> { m_object->vertices[triangle[0]], m_object->vertices[triangle[1]], m_object->vertices[triangle[2]] });
+        if (triangleMap.end() != findResult) {
+            ++uvTriangleCount;
+            seams.insert(findResult->second);
+        }
+    }
+    dust3dDebug << "uvTriangleCount:" << uvTriangleCount << "seams:" << seams.size();
+    */
+}
+
 void UvMapGenerator::generateTextureColorImage()
 {
     m_textureColorImage = std::make_unique<QImage>(UvMapGenerator::m_textureSize, UvMapGenerator::m_textureSize, QImage::Format_ARGB32);
@@ -189,6 +214,7 @@ void UvMapGenerator::generate()
     if (nullptr == m_snapshot)
         return;
 
+    filterSeamUvs();
     packUvs();
     generateTextureColorImage();
     generateUvCoords();
