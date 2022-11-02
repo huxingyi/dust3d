@@ -36,23 +36,25 @@ class UvMapPacker {
 public:
     struct Part {
         Uuid id;
-        double width;
-        double height;
+        double width = 0.0;
+        double height = 0.0;
         std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>> localUv;
     };
 
     struct Layout {
         Uuid id;
-        double left;
-        double top;
-        double width;
-        double height;
-        bool flipped;
+        double left = 0.0;
+        double top = 0.0;
+        double width = 0.0;
+        double height = 0.0;
+        bool flipped = false;
+        bool isSeam = false;
         std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>> globalUv;
     };
 
     UvMapPacker();
     void addPart(const Part& part);
+    void addSeams(const std::vector<std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>>>& seamTriangleUvs);
     void pack();
     const std::vector<Layout>& packedLayouts();
     double packedTextureSize();
@@ -60,7 +62,10 @@ public:
 private:
     std::vector<Part> m_partTriangleUvs;
     std::vector<Layout> m_packedLayouts;
+    std::vector<std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>>> m_seams;
     double m_packedTextureSize = 0.0;
+
+    void resolveSeamUvs();
 };
 
 }

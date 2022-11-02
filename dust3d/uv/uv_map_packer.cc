@@ -35,10 +35,59 @@ void UvMapPacker::addPart(const Part& part)
     m_partTriangleUvs.push_back(part);
 }
 
+void UvMapPacker::addSeams(const std::vector<std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>>>& seamTriangleUvs)
+{
+    for (const auto& it : seamTriangleUvs)
+        m_seams.push_back(it);
+}
+
+void UvMapPacker::resolveSeamUvs()
+{
+    struct TriangleUv {
+        size_t partIndex;
+        std::array<Vector2, 3> uv;
+    };
+
+    std::map<std::array<PositionKey, 2>, TriangleUv> halfEdgeToUvMap;
+    for (size_t partIndex = 0; partIndex < m_partTriangleUvs.size(); ++partIndex) {
+        const auto& part = m_partTriangleUvs[partIndex];
+        for (const auto& it : part.localUv) {
+            halfEdgeToUvMap.insert(std::make_pair(std::array<PositionKey, 2> {
+                                                      it.first[1], it.first[0] },
+                TriangleUv { partIndex, it.second }));
+            halfEdgeToUvMap.insert(std::make_pair(std::array<PositionKey, 2> {
+                                                      it.first[2], it.first[1] },
+                TriangleUv { partIndex, it.second }));
+            halfEdgeToUvMap.insert(std::make_pair(std::array<PositionKey, 2> {
+                                                      it.first[0], it.first[2] },
+                TriangleUv { partIndex, it.second }));
+        }
+    }
+
+    for (size_t seamIndex = 0; seamIndex < m_seams.size(); ++seamIndex) {
+        const auto& seam = m_seams[seamIndex];
+        double seamUvMapWidth = 0.0;
+        double seamUvMapHeight = 0.0;
+        for (const auto& triangle : seam) {
+            auto findUv = halfEdgeToUvMap.find({ triangle.first[0], triangle.first[1] });
+            if (findUv == halfEdgeToUvMap.end())
+                continue;
+            const auto& triangleUv = findUv->second;
+            const auto& part = m_partTriangleUvs[triangleUv.partIndex];
+            seamUvMapWidth += std::abs(triangleUv.uv[0].x() - triangleUv.uv[1].x()) * part.width;
+            seamUvMapHeight += std::abs(triangleUv.uv[0].y() - triangleUv.uv[1].y()) * part.height;
+        }
+        // dust3dDebug << "Seam uv map size:" << seamUvMapWidth << seamUvMapHeight;
+    }
+    // TODO:
+}
+
 void UvMapPacker::pack()
 {
     if (m_partTriangleUvs.empty())
         return;
+
+    resolveSeamUvs();
 
     std::vector<std::pair<float, float>> chartSizes(m_partTriangleUvs.size());
     for (size_t i = 0; i < m_partTriangleUvs.size(); ++i) {
