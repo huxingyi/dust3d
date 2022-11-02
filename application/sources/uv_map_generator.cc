@@ -132,28 +132,10 @@ void UvMapGenerator::generateTextureColorImage()
     colorTexturePainter.setPen(Qt::NoPen);
 
     for (const auto& layout : m_mapPacker->packedLayouts()) {
-        const QImage* image = nullptr;
-        std::unique_ptr<QImage> seamImage;
-        if (layout.isSeam) {
-            seamImage = std::make_unique<QImage>(layout.imageWidth, layout.imageHeight, QImage::Format_ARGB32);
-            seamImage->fill(Qt::red);
-            for (const auto& it : layout.uvCopyMap) {
-                const auto& sourceImageId = m_mapPacker->packedLayouts()[it.first].id;
-                const QImage* sourceImage = ImageForever::get(sourceImageId);
-                if (nullptr == sourceImage) {
-                    dust3dDebug << "Find image failed:" << sourceImageId.toString();
-                    continue;
-                }
-                // TODO: copy triangle UV from source to seam image
-            }
-            //dust3dDebug << "layout.imageWidth:" << layout.imageWidth << "layout.imageHeight:" << layout.imageHeight;
-            image = seamImage.get();
-        } else {
-            image = ImageForever::get(layout.id);
-            if (nullptr == image) {
-                dust3dDebug << "Find image failed:" << layout.id.toString();
-                continue;
-            }
+        const QImage* image = image = ImageForever::get(layout.id);
+        if (nullptr == image) {
+            dust3dDebug << "Find image failed:" << layout.id.toString();
+            continue;
         }
         QPixmap brushPixmap;
         if (layout.flipped) {

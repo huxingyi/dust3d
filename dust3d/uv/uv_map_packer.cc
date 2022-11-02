@@ -54,41 +54,26 @@ void UvMapPacker::resolveSeamUvs()
         for (const auto& it : part.localUv) {
             halfEdgeToUvMap.insert(std::make_pair(std::array<PositionKey, 2> {
                                                       it.first[1], it.first[0] },
-                TriangleUv { partIndex, it.second }));
+                TriangleUv { partIndex, { it.second[1], it.second[0], it.second[2] } }));
             halfEdgeToUvMap.insert(std::make_pair(std::array<PositionKey, 2> {
                                                       it.first[2], it.first[1] },
-                TriangleUv { partIndex, it.second }));
+                TriangleUv { partIndex, { it.second[2], it.second[1], it.second[0] } }));
             halfEdgeToUvMap.insert(std::make_pair(std::array<PositionKey, 2> {
                                                       it.first[0], it.first[2] },
-                TriangleUv { partIndex, it.second }));
+                TriangleUv { partIndex, { it.second[0], it.second[2], it.second[1] } }));
         }
     }
 
     for (size_t seamIndex = 0; seamIndex < m_seams.size(); ++seamIndex) {
         const auto& seam = m_seams[seamIndex];
-        double seamUvMapWidth = 0.0;
-        double seamUvMapHeight = 0.0;
-        std::unordered_map<size_t, std::array<std::array<Vector2, 3>, 2>> uvCopyMap;
         for (const auto& triangle : seam) {
             auto findUv = halfEdgeToUvMap.find({ triangle.first[0], triangle.first[1] });
             if (findUv == halfEdgeToUvMap.end())
                 continue;
             const auto& triangleUv = findUv->second;
-            const auto& part = m_partTriangleUvs[triangleUv.partIndex];
-            seamUvMapWidth += std::abs(triangleUv.uv[0].x() - triangleUv.uv[1].x()) * part.width;
-            seamUvMapHeight += std::abs(triangleUv.uv[0].y() - triangleUv.uv[1].y()) * part.height;
-            uvCopyMap.insert({ triangleUv.partIndex, { triangleUv.uv, triangle.second } });
+            m_partTriangleUvs[triangleUv.partIndex].localUv.insert({ triangle.first,
+                triangleUv.uv });
         }
-        if (uvCopyMap.empty())
-            continue;
-        Part newPart;
-        newPart.isSeam = true;
-        newPart.width = seamUvMapWidth;
-        newPart.height = seamUvMapHeight;
-        newPart.uvCopyMap = std::move(uvCopyMap);
-        newPart.localUv = seam;
-        m_partTriangleUvs.emplace_back(newPart);
-        // dust3dDebug << "Seam uv map size:" << seamUvMapWidth << seamUvMapHeight;
     }
 }
 
@@ -121,10 +106,6 @@ void UvMapPacker::pack()
         //dust3dDebug << "left:" << left << "top:" << top << "width:" << width << "height:" << height << "flipped:" << flipped;
         Layout layout;
         layout.id = part.id;
-        layout.isSeam = part.isSeam;
-        layout.imageWidth = part.width;
-        layout.imageHeight = part.height;
-        layout.uvCopyMap = part.uvCopyMap;
         layout.flipped = flipped;
         if (flipped) {
             layout.left = left;

@@ -37,10 +37,8 @@ class UvMapPacker {
 public:
     struct Part {
         Uuid id;
-        bool isSeam = false;
         double width = 0.0;
         double height = 0.0;
-        std::unordered_map<size_t, std::array<std::array<Vector2, 3>, 2>> uvCopyMap;
         std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>> localUv;
     };
 
@@ -51,10 +49,6 @@ public:
         double width = 0.0;
         double height = 0.0;
         bool flipped = false;
-        bool isSeam = false;
-        size_t imageWidth = 0;
-        size_t imageHeight = 0;
-        std::unordered_map<size_t, std::array<std::array<Vector2, 3>, 2>> uvCopyMap;
         std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>> globalUv;
     };
 
