@@ -24,8 +24,44 @@
 
 namespace dust3d {
 
-IMPL_CombineModeToString
-    IMPL_CombineModeFromString
-        IMPL_CombineModeToDispName
+CombineMode CombineModeFromString(const char* modeString)
+{
+    std::string mode = modeString;
+    if (mode == "Normal")
+        return CombineMode::Normal;
+    if (mode == "Inversion")
+        return CombineMode::Inversion;
+    if (mode == "Uncombined")
+        return CombineMode::Uncombined;
+    return CombineMode::Normal;
+}
+
+const char* CombineModeToString(CombineMode mode)
+{
+    switch (mode) {
+    case CombineMode::Normal:
+        return "Normal";
+    case CombineMode::Inversion:
+        return "Inversion";
+    case CombineMode::Uncombined:
+        return "Uncombined";
+    default:
+        return "Normal";
+    }
+}
+
+std::string CombineModeToDispName(CombineMode mode)
+{
+    switch (mode) {
+    case CombineMode::Normal:
+        return std::string("Normal");
+    case CombineMode::Inversion:
+        return std::string("Inversion");
+    case CombineMode::Uncombined:
+        return std::string("Uncombined");
+    default:
+        return std::string("Normal");
+    }
+}
 
 }

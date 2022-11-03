@@ -20,58 +20,34 @@
  *  SOFTWARE.
  */
 
-#ifndef DUST3D_MESH_TUBE_MESH_BUILDER_H_
-#define DUST3D_MESH_TUBE_MESH_BUILDER_H_
+#ifndef DUST3D_MESH_SECTION_REMESHER_H_
+#define DUST3D_MESH_SECTION_REMESHER_H_
 
-#include <dust3d/base/uuid.h>
 #include <dust3d/base/vector2.h>
 #include <dust3d/base/vector3.h>
-#include <dust3d/mesh/mesh_node.h>
+#include <vector>
 
 namespace dust3d {
 
-class TubeMeshBuilder {
+class SectionRemesher {
 public:
-    struct BuildParameters {
-        std::vector<Vector2> cutFace;
-        double deformThickness = 1.0;
-        double deformWidth = 1.0;
-        bool deformUnified = false;
-        double baseNormalRotation = 0.0;
-        bool frontEndRounded = false;
-        bool backEndRounded = false;
-        bool interpolationEnabled = true;
-    };
-
-    TubeMeshBuilder(const BuildParameters& buildParameters, std::vector<MeshNode>&& nodes, bool isCircle);
-    void build();
-    const Vector3& generatedBaseNormal();
+    SectionRemesher(const std::vector<Vector3>& vertices, double ringV, double centerV);
+    void remesh();
     const std::vector<Vector3>& generatedVertices();
     const std::vector<std::vector<size_t>>& generatedFaces();
     const std::vector<std::vector<Vector2>>& generatedFaceUvs();
 
 private:
-    BuildParameters m_buildParameters;
-    std::vector<MeshNode> m_nodes;
-    std::vector<Vector3> m_nodePositions;
-    std::vector<Vector3> m_nodeForwardDirections;
-    std::vector<double> m_nodeForwardDistances;
-    std::vector<Vector3> m_generatedVertices;
     std::vector<std::vector<size_t>> m_generatedFaces;
     std::vector<std::vector<Vector2>> m_generatedFaceUvs;
-    Vector3 m_generatedBaseNormal;
-    bool m_isCircle = false;
-    double m_maxNodeRadius = 0.0;
-    void preprocessNodes();
-    void buildNodePositionAndDirections();
-    std::vector<Vector3> buildCutFaceVertices(const Vector3& origin,
-        double radius,
-        const Vector3& forwardDirection);
-    void applyRoundEnd();
-    void applyInterpolation();
-    void addCap(const std::vector<size_t>& section, double ringV, double centerV);
+
+    size_t m_ringSize = 0;
+    double m_ringV = 0.0;
+    double m_centerV = 0.0;
+    std::vector<Vector3> m_vertices;
+    bool isConvex(const std::vector<Vector3>& vertices);
 };
 
-};
+}
 
 #endif

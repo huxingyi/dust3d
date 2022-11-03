@@ -24,8 +24,44 @@
 
 namespace dust3d {
 
-IMPL_PartTargetFromString
-    IMPL_PartTargetToString
-        IMPL_PartTargetToDispName
+PartTarget PartTargetFromString(const char* targetString)
+{
+    std::string target = targetString;
+    if (target == "Model")
+        return PartTarget::Model;
+    if (target == "CutFace")
+        return PartTarget::CutFace;
+    if (target == "StitchingLine")
+        return PartTarget::StitchingLine;
+    return PartTarget::Model;
+}
+
+const char* PartTargetToString(PartTarget target)
+{
+    switch (target) {
+    case PartTarget::Model:
+        return "Model";
+    case PartTarget::CutFace:
+        return "CutFace";
+    case PartTarget::StitchingLine:
+        return "StitchingLine";
+    default:
+        return "Model";
+    }
+}
+
+std::string PartTargetToDispName(PartTarget target)
+{
+    switch (target) {
+    case PartTarget::Model:
+        return std::string("Model");
+    case PartTarget::CutFace:
+        return std::string("Cut Face");
+    case PartTarget::StitchingLine:
+        return std::string("Stitching Line");
+    default:
+        return std::string("Model");
+    }
+}
 
 }

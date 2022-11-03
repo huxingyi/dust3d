@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <dust3d/base/debug.h>
 #include <dust3d/mesh/base_normal.h>
+#include <dust3d/mesh/section_remesher.h>
 #include <dust3d/mesh/tube_mesh_builder.h>
 
 namespace dust3d {
@@ -195,6 +196,21 @@ void TubeMeshBuilder::build()
 
     m_generatedBaseNormal = m_isCircle ? BaseNormal::calculateCircleBaseNormal(m_nodePositions) : BaseNormal::calculateTubeBaseNormal(m_nodePositions);
 
+    // Prepare V of UV for cap
+    double vOffsetBecauseOfFrontCap = 0.0;
+    double vTubeRatio = 1.0;
+    if (!m_isCircle) {
+        double totalTubeLength = 0.0;
+        for (const auto& it : m_nodeForwardDistances)
+            totalTubeLength += it;
+        double totalLength = m_nodes.front().radius + totalTubeLength + m_nodes.back().radius;
+        vTubeRatio = totalTubeLength / totalLength;
+        vOffsetBecauseOfFrontCap = m_nodes.front().radius / totalLength;
+    }
+    auto tubeUv = [=](const Vector2& uv) {
+        return Vector2(uv[0], uv[1] * vTubeRatio + vOffsetBecauseOfFrontCap);
+    };
+
     // Build all vertex Positions
     std::vector<std::vector<Vector3>> cutFaceVertexPositions;
     for (size_t i = 0; i < m_nodePositions.size(); ++i) {
@@ -262,10 +278,10 @@ void TubeMeshBuilder::build()
             m_generatedFaces.emplace_back(std::vector<size_t> {
                 cutFaceI[m], cutFaceI[n], cutFaceJ[n], cutFaceJ[m] });
             m_generatedFaceUvs.emplace_back(std::vector<Vector2> {
-                cutFaceVertexUvs[i][m],
-                cutFaceVertexUvs[i][m + 1],
-                cutFaceVertexUvs[j][m + 1],
-                cutFaceVertexUvs[j][m] });
+                tubeUv(cutFaceVertexUvs[i][m]),
+                tubeUv(cutFaceVertexUvs[i][m + 1]),
+                tubeUv(cutFaceVertexUvs[j][m + 1]),
+                tubeUv(cutFaceVertexUvs[j][m]) });
         }
         for (size_t m = halfSize; m < cutFaceI.size(); ++m) {
             size_t n = (m + 1) % cutFaceI.size();
@@ -276,17 +292,42 @@ void TubeMeshBuilder::build()
             m_generatedFaces.emplace_back(std::vector<size_t> {
                 cutFaceJ[m], cutFaceI[m], cutFaceI[n], cutFaceJ[n] });
             m_generatedFaceUvs.emplace_back(std::vector<Vector2> {
-                cutFaceVertexUvs[j][m],
-                cutFaceVertexUvs[i][m],
-                cutFaceVertexUvs[i][m + 1],
-                cutFaceVertexUvs[j][m + 1] });
+                tubeUv(cutFaceVertexUvs[j][m]),
+                tubeUv(cutFaceVertexUvs[i][m]),
+                tubeUv(cutFaceVertexUvs[i][m + 1]),
+                tubeUv(cutFaceVertexUvs[j][m + 1]) });
         }
     }
     if (!m_isCircle) {
-        m_generatedFaces.emplace_back(cutFaceIndices.back());
-        m_generatedFaces.emplace_back(cutFaceIndices.front());
-        std::reverse(m_generatedFaces.back().begin(), m_generatedFaces.back().end());
-        // TODO: Add UV for end cap
+        addCap(cutFaceIndices.back(), vOffsetBecauseOfFrontCap + vTubeRatio, 1.0);
+        auto front = cutFaceIndices.front();
+        std::reverse(front.begin(), front.end());
+        addCap(front, vOffsetBecauseOfFrontCap, 0.0);
+    }
+}
+
+void TubeMeshBuilder::addCap(const std::vector<size_t>& section, double ringV, double centerV)
+{
+    std::vector<size_t> vertexIndices = section;
+    std::vector<Vector3> ringVertices(vertexIndices.size());
+    for (size_t i = 0; i < ringVertices.size(); ++i) {
+        ringVertices[i] = m_generatedVertices[vertexIndices[i]];
+    }
+    SectionRemesher sectionRemesher(ringVertices, ringV, centerV);
+    sectionRemesher.remesh();
+    const std::vector<Vector3>& resultVertices = sectionRemesher.generatedVertices();
+    for (size_t i = ringVertices.size(); i < resultVertices.size(); ++i) {
+        vertexIndices.push_back(m_generatedVertices.size());
+        m_generatedVertices.push_back(resultVertices[i]);
+    }
+    for (const auto& it : sectionRemesher.generatedFaces()) {
+        std::vector<size_t> newFace(it.size());
+        for (size_t i = 0; i < it.size(); ++i)
+            newFace[i] = vertexIndices[it[i]];
+        m_generatedFaces.emplace_back(newFace);
+    }
+    for (const auto& it : sectionRemesher.generatedFaceUvs()) {
+        m_generatedFaceUvs.emplace_back(it);
     }
 }
 

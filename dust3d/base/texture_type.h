@@ -38,66 +38,8 @@ enum class TextureType {
 };
 
 const char* TextureTypeToString(TextureType type);
-#define IMPL_TextureTypeToString                      \
-    const char* TextureTypeToString(TextureType type) \
-    {                                                 \
-        switch (type) {                               \
-        case TextureType::BaseColor:                  \
-            return "BaseColor";                       \
-        case TextureType::Normal:                     \
-            return "Normal";                          \
-        case TextureType::Metallic:                   \
-            return "Metallic";                        \
-        case TextureType::Roughness:                  \
-            return "Roughness";                       \
-        case TextureType::AmbientOcclusion:           \
-            return "AmbientOcclusion";                \
-        case TextureType::None:                       \
-            return "None";                            \
-        default:                                      \
-            return "";                                \
-        }                                             \
-    }
 TextureType TextureTypeFromString(const char* typeString);
-#define IMPL_TextureTypeFromString                            \
-    TextureType TextureTypeFromString(const char* typeString) \
-    {                                                         \
-        std::string type = typeString;                        \
-        if (type == "BaseColor")                              \
-            return TextureType::BaseColor;                    \
-        if (type == "Normal")                                 \
-            return TextureType::Normal;                       \
-        if (type == "Metallic")                               \
-            return TextureType::Metallic;                     \
-        if (type == "Metalness")                              \
-            return TextureType::Metallic;                     \
-        if (type == "Roughness")                              \
-            return TextureType::Roughness;                    \
-        if (type == "AmbientOcclusion")                       \
-            return TextureType::AmbientOcclusion;             \
-        return TextureType::None;                             \
-    }
 std::string TextureTypeToDispName(TextureType type);
-#define IMPL_TextureTypeToDispName                      \
-    std::string TextureTypeToDispName(TextureType type) \
-    {                                                   \
-        switch (type) {                                 \
-        case TextureType::BaseColor:                    \
-            return std::string("Base Color");           \
-        case TextureType::Normal:                       \
-            return std::string("Normal Map");           \
-        case TextureType::Metallic:                     \
-            return std::string("Metallic");             \
-        case TextureType::Roughness:                    \
-            return std::string("Roughness");            \
-        case TextureType::AmbientOcclusion:             \
-            return std::string("Ambient Occlusion");    \
-        case TextureType::None:                         \
-            return std::string("None");                 \
-        default:                                        \
-            return "";                                  \
-        }                                               \
-    }
 
 }
 
