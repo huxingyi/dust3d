@@ -69,7 +69,7 @@ private:
         const Vector3& forwardDirection);
     void applyRoundEnd();
     void applyInterpolation();
-    void addCap(const std::vector<size_t>& section, double ringV, double centerV);
+    void addCap(const std::vector<size_t>& section, double ringV, double centerV, bool reverseU);
 };
 
 };

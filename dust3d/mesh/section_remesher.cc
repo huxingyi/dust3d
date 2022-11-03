@@ -81,7 +81,7 @@ void SectionRemesher::remesh()
             maxUs[i] = offsetU;
             offsetU += (m_vertices[i] - m_vertices[j]).length();
         }
-        maxUs[m_ringSize] = offsetU;
+        maxUs[m_ringSize] += offsetU;
         offsetU = std::max(offsetU, std::numeric_limits<double>::epsilon());
         for (auto& it : maxUs)
             it /= offsetU;
@@ -90,8 +90,8 @@ void SectionRemesher::remesh()
             m_generatedFaces.emplace_back(std::vector<size_t> { i, j, m_ringSize });
             m_generatedFaceUvs.emplace_back(std::vector<Vector2> {
                 Vector2(maxUs[i], m_ringV),
-                Vector2(maxUs[j], m_ringV),
-                Vector2((maxUs[i] + maxUs[j]) * 0.5, m_centerV) });
+                Vector2(maxUs[i + 1], m_ringV),
+                Vector2((maxUs[i] + maxUs[i + 1]) * 0.5, m_centerV) });
         }
         return;
     }

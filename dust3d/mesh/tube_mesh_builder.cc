@@ -299,14 +299,12 @@ void TubeMeshBuilder::build()
         }
     }
     if (!m_isCircle) {
-        addCap(cutFaceIndices.back(), vOffsetBecauseOfFrontCap + vTubeRatio, 1.0);
-        auto front = cutFaceIndices.front();
-        std::reverse(front.begin(), front.end());
-        addCap(front, vOffsetBecauseOfFrontCap, 0.0);
+        addCap(cutFaceIndices.back(), vOffsetBecauseOfFrontCap + vTubeRatio, 1.0, false);
+        addCap(cutFaceIndices.front(), vOffsetBecauseOfFrontCap, 0.0, true);
     }
 }
 
-void TubeMeshBuilder::addCap(const std::vector<size_t>& section, double ringV, double centerV)
+void TubeMeshBuilder::addCap(const std::vector<size_t>& section, double ringV, double centerV, bool reverseU)
 {
     std::vector<size_t> vertexIndices = section;
     std::vector<Vector3> ringVertices(vertexIndices.size());
@@ -325,9 +323,13 @@ void TubeMeshBuilder::addCap(const std::vector<size_t>& section, double ringV, d
         for (size_t i = 0; i < it.size(); ++i)
             newFace[i] = vertexIndices[it[i]];
         m_generatedFaces.emplace_back(newFace);
+        if (reverseU)
+            std::reverse(m_generatedFaces.back().begin(), m_generatedFaces.back().end());
     }
     for (const auto& it : sectionRemesher.generatedFaceUvs()) {
         m_generatedFaceUvs.emplace_back(it);
+        if (reverseU)
+            std::reverse(m_generatedFaceUvs.back().begin(), m_generatedFaceUvs.back().end());
     }
 }
 
