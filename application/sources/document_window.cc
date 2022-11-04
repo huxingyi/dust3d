@@ -1161,9 +1161,12 @@ void DocumentWindow::generateComponentPreviewImages()
             continue;
         component.second.isPreviewMeshObsolete = false;
         auto previewMesh = std::unique_ptr<ModelMesh>(component.second.takePreviewMesh());
+        bool useFrontView = false;
         if (!component.second.linkToPartId.isNull()) {
             const auto& part = m_document->findPart(component.second.linkToPartId);
             if (nullptr != part) {
+                if (dust3d::PartTarget::CutFace == part->target)
+                    useFrontView = true;
                 if (!part->colorImageId.isNull()) {
                     const auto& colorImage = ImageForever::get(part->colorImageId);
                     if (nullptr != colorImage) {
@@ -1172,7 +1175,7 @@ void DocumentWindow::generateComponentPreviewImages()
                 }
             }
         }
-        m_componentPreviewImagesGenerator->addInput(component.first, std::move(previewMesh));
+        m_componentPreviewImagesGenerator->addInput(component.first, std::move(previewMesh), useFrontView);
     }
     m_componentPreviewImagesGenerator->moveToThread(thread);
     connect(thread, &QThread::started, m_componentPreviewImagesGenerator, &MeshPreviewImagesGenerator::process);
