@@ -49,124 +49,81 @@ static std::string loadComponentReturnChildrenList(Snapshot* snapshot, rapidxml:
     return String::join(children, ",");
 }
 
-void loadSnapshotFromXmlString(Snapshot* snapshot, char* xmlString, uint32_t flags)
+void loadSnapshotFromXmlString(Snapshot* snapshot, char* xmlString)
 {
     try {
         rapidxml::xml_document<> xml;
         xml.parse<0>(xmlString);
         rapidxml::xml_node<>* canvas = xml.first_node("canvas");
         if (nullptr != canvas) {
-            if (flags & kSnapshotItemCanvas) {
-                for (rapidxml::xml_attribute<>* attribute = canvas->first_attribute();
-                     attribute; attribute = attribute->next_attribute()) {
-                    snapshot->canvas[attribute->name()] = attribute->value();
-                }
+            for (rapidxml::xml_attribute<>* attribute = canvas->first_attribute();
+                 attribute; attribute = attribute->next_attribute()) {
+                snapshot->canvas[attribute->name()] = attribute->value();
             }
-            if (flags & kSnapshotItemComponent) {
-                rapidxml::xml_node<>* nodes = canvas->first_node("nodes");
-                if (nullptr != nodes) {
-                    for (rapidxml::xml_node<>* node = nodes->first_node(); nullptr != node; node = node->next_sibling()) {
-                        rapidxml::xml_attribute<>* idAttribute = node->first_attribute("id");
-                        if (nullptr != idAttribute) {
-                            std::map<std::string, std::string>* nodeMap = &snapshot->nodes[idAttribute->value()];
-                            for (rapidxml::xml_attribute<>* attribute = node->first_attribute();
-                                 attribute; attribute = attribute->next_attribute()) {
-                                (*nodeMap)[attribute->name()] = attribute->value();
-                            }
-                        }
-                    }
-                }
-            }
-            if (flags & kSnapshotItemComponent) {
-                rapidxml::xml_node<>* edges = canvas->first_node("edges");
-                if (nullptr != edges) {
-                    for (rapidxml::xml_node<>* node = edges->first_node(); nullptr != node; node = node->next_sibling()) {
-                        rapidxml::xml_attribute<>* idAttribute = node->first_attribute("id");
-                        if (nullptr != idAttribute) {
-                            std::map<std::string, std::string>* edgeMap = &snapshot->edges[idAttribute->value()];
-                            for (rapidxml::xml_attribute<>* attribute = node->first_attribute();
-                                 attribute; attribute = attribute->next_attribute()) {
-                                (*edgeMap)[attribute->name()] = attribute->value();
-                            }
-                        }
-                    }
-                }
-            }
-            if (flags & kSnapshotItemComponent) {
-                rapidxml::xml_node<>* parts = canvas->first_node("parts");
-                if (nullptr != parts) {
-                    for (rapidxml::xml_node<>* node = parts->first_node(); nullptr != node; node = node->next_sibling()) {
-                        rapidxml::xml_attribute<>* idAttribute = node->first_attribute("id");
-                        if (nullptr != idAttribute) {
-                            std::map<std::string, std::string>* partMap = &snapshot->parts[idAttribute->value()];
-                            for (rapidxml::xml_attribute<>* attribute = node->first_attribute();
-                                 attribute; attribute = attribute->next_attribute()) {
-                                (*partMap)[attribute->name()] = attribute->value();
-                            }
-                        }
-                    }
-                }
-            }
-            if (flags & kSnapshotItemComponent) {
-                rapidxml::xml_node<>* partIdList = canvas->first_node("partIdList");
-                if (nullptr != partIdList) {
-                    for (rapidxml::xml_node<>* partId = partIdList->first_node(); nullptr != partId; partId = partId->next_sibling()) {
-                        rapidxml::xml_attribute<>* idAttribute = partId->first_attribute("id");
-                        if (nullptr != idAttribute) {
-                            std::string componentId = to_string(Uuid::createUuid());
-                            auto& component = snapshot->components[componentId];
-                            component["id"] = componentId;
-                            component["linkData"] = idAttribute->value();
-                            component["linkDataType"] = "partId";
-                            auto& childrenIds = snapshot->rootComponent["children"];
-                            if (!childrenIds.empty())
-                                childrenIds += ",";
-                            childrenIds += componentId;
-                        }
-                    }
-                }
-            }
-            if (flags & kSnapshotItemComponent) {
-                rapidxml::xml_node<>* components = canvas->first_node("components");
-                if (nullptr != components) {
-                    snapshot->rootComponent["children"] = loadComponentReturnChildrenList(snapshot, components);
-                }
-            }
-            if (flags & kSnapshotItemMaterial) {
-                rapidxml::xml_node<>* materials = canvas->first_node("materials");
-                if (nullptr != materials) {
-                    for (rapidxml::xml_node<>* material = materials->first_node(); nullptr != material; material = material->next_sibling()) {
-                        std::pair<std::map<std::string, std::string>, std::vector<std::pair<std::map<std::string, std::string>, std::vector<std::map<std::string, std::string>>>>> currentMaterial;
-                        for (rapidxml::xml_attribute<>* attribute = material->first_attribute();
+
+            rapidxml::xml_node<>* nodes = canvas->first_node("nodes");
+            if (nullptr != nodes) {
+                for (rapidxml::xml_node<>* node = nodes->first_node(); nullptr != node; node = node->next_sibling()) {
+                    rapidxml::xml_attribute<>* idAttribute = node->first_attribute("id");
+                    if (nullptr != idAttribute) {
+                        std::map<std::string, std::string>* nodeMap = &snapshot->nodes[idAttribute->value()];
+                        for (rapidxml::xml_attribute<>* attribute = node->first_attribute();
                              attribute; attribute = attribute->next_attribute()) {
-                            currentMaterial.first[attribute->name()] = attribute->value();
+                            (*nodeMap)[attribute->name()] = attribute->value();
                         }
-                        rapidxml::xml_node<>* materialLayers = material->first_node("layers");
-                        if (nullptr != materialLayers) {
-                            rapidxml::xml_node<>* layer = materialLayers->first_node("layer");
-                            if (nullptr != layer) {
-                                std::pair<std::map<std::string, std::string>, std::vector<std::map<std::string, std::string>>> currentMaterialLayer;
-                                for (rapidxml::xml_attribute<>* attribute = layer->first_attribute();
-                                     attribute; attribute = attribute->next_attribute()) {
-                                    currentMaterialLayer.first[attribute->name()] = attribute->value();
-                                }
-                                rapidxml::xml_node<>* layerMaps = layer->first_node("maps");
-                                if (nullptr != layerMaps) {
-                                    for (rapidxml::xml_node<>* mapPerLayer = layerMaps->first_node(); nullptr != mapPerLayer; mapPerLayer = mapPerLayer->next_sibling()) {
-                                        std::map<std::string, std::string> mapAttributes;
-                                        for (rapidxml::xml_attribute<>* attribute = mapPerLayer->first_attribute();
-                                             attribute; attribute = attribute->next_attribute()) {
-                                            mapAttributes[attribute->name()] = attribute->value();
-                                        }
-                                        currentMaterialLayer.second.push_back(mapAttributes);
-                                    }
-                                }
-                                currentMaterial.second.push_back(currentMaterialLayer);
-                            }
-                        }
-                        snapshot->materials.push_back(currentMaterial);
                     }
                 }
+            }
+
+            rapidxml::xml_node<>* edges = canvas->first_node("edges");
+            if (nullptr != edges) {
+                for (rapidxml::xml_node<>* node = edges->first_node(); nullptr != node; node = node->next_sibling()) {
+                    rapidxml::xml_attribute<>* idAttribute = node->first_attribute("id");
+                    if (nullptr != idAttribute) {
+                        std::map<std::string, std::string>* edgeMap = &snapshot->edges[idAttribute->value()];
+                        for (rapidxml::xml_attribute<>* attribute = node->first_attribute();
+                             attribute; attribute = attribute->next_attribute()) {
+                            (*edgeMap)[attribute->name()] = attribute->value();
+                        }
+                    }
+                }
+            }
+
+            rapidxml::xml_node<>* parts = canvas->first_node("parts");
+            if (nullptr != parts) {
+                for (rapidxml::xml_node<>* node = parts->first_node(); nullptr != node; node = node->next_sibling()) {
+                    rapidxml::xml_attribute<>* idAttribute = node->first_attribute("id");
+                    if (nullptr != idAttribute) {
+                        std::map<std::string, std::string>* partMap = &snapshot->parts[idAttribute->value()];
+                        for (rapidxml::xml_attribute<>* attribute = node->first_attribute();
+                             attribute; attribute = attribute->next_attribute()) {
+                            (*partMap)[attribute->name()] = attribute->value();
+                        }
+                    }
+                }
+            }
+
+            rapidxml::xml_node<>* partIdList = canvas->first_node("partIdList");
+            if (nullptr != partIdList) {
+                for (rapidxml::xml_node<>* partId = partIdList->first_node(); nullptr != partId; partId = partId->next_sibling()) {
+                    rapidxml::xml_attribute<>* idAttribute = partId->first_attribute("id");
+                    if (nullptr != idAttribute) {
+                        std::string componentId = to_string(Uuid::createUuid());
+                        auto& component = snapshot->components[componentId];
+                        component["id"] = componentId;
+                        component["linkData"] = idAttribute->value();
+                        component["linkDataType"] = "partId";
+                        auto& childrenIds = snapshot->rootComponent["children"];
+                        if (!childrenIds.empty())
+                            childrenIds += ",";
+                        childrenIds += componentId;
+                    }
+                }
+            }
+
+            rapidxml::xml_node<>* components = canvas->first_node("components");
+            if (nullptr != components) {
+                snapshot->rootComponent["children"] = loadComponentReturnChildrenList(snapshot, components);
             }
         }
     } catch (const std::runtime_error& e) {
@@ -271,43 +228,6 @@ void saveSnapshotToXmlString(const Snapshot& snapshot, std::string& xmlString)
         }
         xmlString += " </components>\n";
     }
-
-    xmlString += " <materials>\n";
-    std::vector<std::pair<std::map<std::string, std::string>, std::vector<std::pair<std::map<std::string, std::string>, std::vector<std::map<std::string, std::string>>>>>>::const_iterator materialIterator;
-    for (materialIterator = snapshot.materials.begin(); materialIterator != snapshot.materials.end(); materialIterator++) {
-        std::map<std::string, std::string>::const_iterator materialAttributeIterator;
-        xmlString += "  <material";
-        for (materialAttributeIterator = materialIterator->first.begin(); materialAttributeIterator != materialIterator->first.end(); materialAttributeIterator++) {
-            xmlString += " " + materialAttributeIterator->first + "=\"" + materialAttributeIterator->second + "\"";
-        }
-        xmlString += ">\n";
-        xmlString += "   <layers>\n";
-        std::vector<std::pair<std::map<std::string, std::string>, std::vector<std::map<std::string, std::string>>>>::const_iterator layerIterator;
-        for (layerIterator = materialIterator->second.begin(); layerIterator != materialIterator->second.end(); layerIterator++) {
-            std::map<std::string, std::string>::const_iterator layerAttributeIterator;
-            xmlString += "    <layer";
-            for (layerAttributeIterator = layerIterator->first.begin(); layerAttributeIterator != layerIterator->first.end(); layerAttributeIterator++) {
-                xmlString += " " + layerAttributeIterator->first + "=\"" + layerAttributeIterator->second + "\"";
-            }
-            xmlString += ">\n";
-            xmlString += "     <maps>\n";
-            std::vector<std::map<std::string, std::string>>::const_iterator mapIterator;
-            for (mapIterator = layerIterator->second.begin(); mapIterator != layerIterator->second.end(); mapIterator++) {
-                std::map<std::string, std::string>::const_iterator attributesIterator;
-                xmlString += "      <map";
-                for (attributesIterator = mapIterator->begin(); attributesIterator != mapIterator->end();
-                     attributesIterator++) {
-                    xmlString += " " + attributesIterator->first + "=\"" + attributesIterator->second + "\"";
-                }
-                xmlString += "/>\n";
-            }
-            xmlString += "     </maps>\n";
-            xmlString += "    </layer>\n";
-        }
-        xmlString += "  </layers>\n";
-        xmlString += "  </material>\n";
-    }
-    xmlString += " </materials>\n";
 
     xmlString += "</canvas>\n";
 }

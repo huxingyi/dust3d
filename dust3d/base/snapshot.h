@@ -36,7 +36,6 @@ public:
     std::map<std::string, std::map<std::string, std::string>> parts;
     std::map<std::string, std::map<std::string, std::string>> components;
     std::map<std::string, std::string> rootComponent;
-    std::vector<std::pair<std::map<std::string, std::string>, std::vector<std::pair<std::map<std::string, std::string>, std::vector<std::map<std::string, std::string>>>>>> materials; // std::pair<Material attributes, layers>  layer: std::pair<Layer attributes, maps>
 };
 
 }
