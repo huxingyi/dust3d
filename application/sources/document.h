@@ -561,6 +561,15 @@ public:
         std::set<dust3d::Uuid> m_childrenIdSet;
     };
 
+    class Bone {
+    public:
+        dust3d::Uuid id;
+        dust3d::Uuid parentId;
+        std::vector<dust3d::Uuid> childrenIds;
+
+        Bone(const dust3d::Uuid& withId = dust3d::Uuid());
+    };
+
 signals:
     void nodeCutRotationChanged(dust3d::Uuid nodeId);
     void nodeCutFaceChanged(dust3d::Uuid nodeId);
@@ -656,7 +665,9 @@ public: // need initialize
     std::map<dust3d::Uuid, Node> nodeMap;
     std::map<dust3d::Uuid, Edge> edgeMap;
     std::map<dust3d::Uuid, Component> componentMap;
+    std::map<dust3d::Uuid, Bone> boneMap;
     Component rootComponent;
+    Bone rootBone;
 
 public:
     Document();
@@ -851,6 +862,12 @@ public slots:
     void setYlockState(bool locked);
     void setZlockState(bool locked);
     void setRadiusLockState(bool locked);
+    void addBone(const dust3d::Uuid& boneId);
+    void addNodesToBone(const dust3d::Uuid& boneId, const std::vector<dust3d::Uuid>& nodeIds);
+    void removeNodesFromBone(const dust3d::Uuid& boneId, const std::vector<dust3d::Uuid>& nodeIds);
+    void markNodeAsJointForBone(const dust3d::Uuid& boneId, const dust3d::Uuid& nodeId);
+    void markNodeAsNotJointForBone(const dust3d::Uuid& boneId, const dust3d::Uuid& nodeId);
+    void removeBone(const dust3d::Uuid& boneId);
 
 private:
     void resolveSnapshotBoundingBox(const dust3d::Snapshot& snapshot, QRectF* mainProfile, QRectF* sideProfile);

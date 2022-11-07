@@ -20,6 +20,11 @@
 
 unsigned long Document::m_maxSnapshot = 1000;
 
+Document::Bone::Bone(const dust3d::Uuid& withId)
+{
+    id = withId.isNull() ? dust3d::Uuid::createUuid() : withId;
+}
+
 void Document::Node::setRadius(float toRadius)
 {
     if (toRadius < MeshGenerator::m_minimalRadius)
@@ -2774,4 +2779,34 @@ void Document::collectCutFaceList(std::vector<QString>& cutFaces) const
 
     for (const auto& it : cutFacePartIdList)
         cutFaces.push_back(QString(it.toString().c_str()));
+}
+
+void Document::addBone(const dust3d::Uuid& boneId)
+{
+    // TODO:
+}
+
+void Document::addNodesToBone(const dust3d::Uuid& boneId, const std::vector<dust3d::Uuid>& nodeIds)
+{
+    // TODO:
+}
+
+void Document::removeNodesFromBone(const dust3d::Uuid& boneId, const std::vector<dust3d::Uuid>& nodeIds)
+{
+    // TODO:
+}
+
+void Document::markNodeAsJointForBone(const dust3d::Uuid& boneId, const dust3d::Uuid& nodeId)
+{
+    // TODO:
+}
+
+void Document::markNodeAsNotJointForBone(const dust3d::Uuid& boneId, const dust3d::Uuid& nodeId)
+{
+    // TODO:
+}
+
+void Document::removeBone(const dust3d::Uuid& boneId)
+{
+    // TODO:
 }
