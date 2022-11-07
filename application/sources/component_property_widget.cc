@@ -1,5 +1,4 @@
 #include "component_property_widget.h"
-#include "document.h"
 #include "float_number_widget.h"
 #include "image_forever.h"
 #include "image_preview_widget.h"
@@ -308,7 +307,7 @@ QColor ComponentPropertyWidget::lastColor()
     QColor color = Qt::white;
     std::map<QString, int> colorMap;
     for (const auto& partId : m_partIds) {
-        const SkeletonPart* part = m_document->findPart(partId);
+        const Document::Part* part = m_document->findPart(partId);
         if (nullptr == part)
             continue;
         colorMap[part->color.name()]++;

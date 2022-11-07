@@ -1,6 +1,5 @@
 #include "component_preview_grid_widget.h"
 #include "component_list_model.h"
-#include "document.h"
 #include <memory>
 
 ComponentPreviewGridWidget::ComponentPreviewGridWidget(Document* document, QWidget* parent)
@@ -11,7 +10,7 @@ ComponentPreviewGridWidget::ComponentPreviewGridWidget(Document* document, QWidg
     setModel(m_componentListModel.get());
 
     connect(this, &ComponentPreviewGridWidget::doubleClicked, [this](const QModelIndex& index) {
-        const SkeletonComponent* component = this->componentListModel()->modelIndexToComponent(index);
+        const Document::Component* component = this->componentListModel()->modelIndexToComponent(index);
         if (nullptr == component)
             return;
         if (component->childrenIds.empty()) {
@@ -30,9 +29,9 @@ ComponentListModel* ComponentPreviewGridWidget::componentListModel()
     return m_componentListModel.get();
 }
 
-std::vector<const SkeletonComponent*> ComponentPreviewGridWidget::getSelectedComponents() const
+std::vector<const Document::Component*> ComponentPreviewGridWidget::getSelectedComponents() const
 {
-    std::vector<const SkeletonComponent*> components;
+    std::vector<const Document::Component*> components;
     QModelIndexList selected = selectionModel()->selectedIndexes();
     for (const auto& it : selected) {
         const auto& component = m_componentListModel->modelIndexToComponent(it);

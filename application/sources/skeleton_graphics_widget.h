@@ -21,7 +21,7 @@
 
 class SkeletonGraphicsOriginItem : public QGraphicsPolygonItem {
 public:
-    SkeletonGraphicsOriginItem(SkeletonProfile profile = SkeletonProfile::Unknown)
+    SkeletonGraphicsOriginItem(Document::Profile profile = Document::Profile::Unknown)
         : m_profile(profile)
         , m_hovered(false)
         , m_checked(false)
@@ -38,12 +38,12 @@ public:
         QColor color = Theme::white;
 
         switch (m_profile) {
-        case SkeletonProfile::Unknown:
+        case Document::Profile::Unknown:
             break;
-        case SkeletonProfile::Main:
+        case Document::Profile::Main:
             color = m_rotated ? Theme::blue : Theme::red;
             break;
-        case SkeletonProfile::Side:
+        case Document::Profile::Side:
             color = Theme::green;
             break;
         }
@@ -75,7 +75,7 @@ public:
     {
         return m_origin;
     }
-    SkeletonProfile profile()
+    Document::Profile profile()
     {
         return m_profile;
     }
@@ -99,7 +99,7 @@ public:
     }
 
 private:
-    SkeletonProfile m_profile;
+    Document::Profile m_profile;
     bool m_hovered;
     bool m_checked;
     QPointF m_origin;
@@ -124,7 +124,7 @@ public:
 
 class SkeletonGraphicsNodeItem : public QGraphicsEllipseItem {
 public:
-    SkeletonGraphicsNodeItem(SkeletonProfile profile = SkeletonProfile::Unknown)
+    SkeletonGraphicsNodeItem(Document::Profile profile = Document::Profile::Unknown)
         : m_profile(profile)
         , m_hovered(false)
         , m_checked(false)
@@ -145,12 +145,12 @@ public:
 
         if (!m_deactivated) {
             switch (m_profile) {
-            case SkeletonProfile::Unknown:
+            case Document::Profile::Unknown:
                 break;
-            case SkeletonProfile::Main:
+            case Document::Profile::Main:
                 color = m_rotated ? Theme::blue : Theme::red;
                 break;
-            case SkeletonProfile::Side:
+            case Document::Profile::Side:
                 color = Theme::green;
                 break;
             }
@@ -210,7 +210,7 @@ public:
         m_markColor = color;
         updateAppearance();
     }
-    SkeletonProfile profile()
+    Document::Profile profile()
     {
         return m_profile;
     }
@@ -252,7 +252,7 @@ public:
 
 private:
     dust3d::Uuid m_uuid;
-    SkeletonProfile m_profile;
+    Document::Profile m_profile;
     bool m_hovered;
     bool m_checked;
     QColor m_markColor;
@@ -267,7 +267,7 @@ public:
         , m_secondItem(nullptr)
         , m_hovered(false)
         , m_checked(false)
-        , m_profile(SkeletonProfile::Unknown)
+        , m_profile(Document::Profile::Unknown)
         , m_deactivated(false)
         , m_rotated(false)
     {
@@ -314,12 +314,12 @@ public:
 
         if (!m_deactivated) {
             switch (m_firstItem->profile()) {
-            case SkeletonProfile::Unknown:
+            case Document::Profile::Unknown:
                 break;
-            case SkeletonProfile::Main:
+            case Document::Profile::Main:
                 color = m_rotated ? Theme::blue : Theme::red;
                 break;
-            case SkeletonProfile::Side:
+            case Document::Profile::Side:
                 color = Theme::green;
                 break;
             }
@@ -339,7 +339,7 @@ public:
     {
         m_uuid = id;
     }
-    SkeletonProfile profile()
+    Document::Profile profile()
     {
         return m_profile;
     }
@@ -383,7 +383,7 @@ private:
     QPolygonF m_selectionPolygon;
     bool m_hovered;
     bool m_checked;
-    SkeletonProfile m_profile;
+    Document::Profile m_profile;
     bool m_deactivated;
     bool m_rotated;
 };
@@ -398,7 +398,7 @@ signals:
     void moveNodeBy(dust3d::Uuid nodeId, float x, float y, float z);
     void removeNode(dust3d::Uuid nodeId);
     void removePart(dust3d::Uuid partId);
-    void setEditMode(DocumentEditMode mode);
+    void setEditMode(Document::EditMode mode);
     void removeEdge(dust3d::Uuid edgeId);
     void addEdge(dust3d::Uuid fromNodeId, dust3d::Uuid toNodeId);
     void cursorChanged();
@@ -454,7 +454,7 @@ public:
     bool keyRelease(QKeyEvent* event);
     bool checkSkeletonItem(QGraphicsItem* item, bool checked);
     dust3d::Uuid querySkeletonItemPartId(QGraphicsItem* item);
-    static SkeletonProfile readSkeletonItemProfile(QGraphicsItem* item);
+    static Document::Profile readSkeletonItemProfile(QGraphicsItem* item);
     void getOtherProfileNodeItems(const std::set<SkeletonGraphicsNodeItem*>& nodeItemSet,
         std::set<SkeletonGraphicsNodeItem*>* otherProfileNodeItemSet);
     void readMergedSkeletonNodeSetFromRangeSelection(std::set<SkeletonGraphicsNodeItem*>* nodeItemSet);
@@ -629,7 +629,7 @@ private:
     bool m_eventForwardingToModelWidget = false;
     ModelWidget* m_modelWidget = nullptr;
     bool m_inTempDragMode = false;
-    DocumentEditMode m_modeBeforeEnterTempDragMode = DocumentEditMode::Select;
+    Document::EditMode m_modeBeforeEnterTempDragMode = Document::EditMode::Select;
     float m_turnaroundOpacity = 0.25f;
     bool m_rotated = false;
     QImage* m_backgroundImage = nullptr;

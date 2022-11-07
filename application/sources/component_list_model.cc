@@ -1,5 +1,4 @@
 #include "component_list_model.h"
-#include "document.h"
 #include <QAbstractListModel>
 #include <dust3d/base/debug.h>
 
@@ -29,7 +28,7 @@ void ComponentListModel::reload()
 {
     beginResetModel();
     m_componentIdToIndexMap.clear();
-    const SkeletonComponent* listingComponent = m_document->findComponent(m_listingComponentId);
+    const Document::Component* listingComponent = m_document->findComponent(m_listingComponentId);
     if (nullptr != listingComponent) {
         for (int i = 0; i < (int)listingComponent->childrenIds.size(); ++i) {
             m_componentIdToIndexMap[listingComponent->childrenIds[i]] = createIndex(i, 0);
@@ -51,7 +50,7 @@ int ComponentListModel::rowCount(const QModelIndex& parent) const
 {
     if (parent.isValid())
         return 0;
-    const SkeletonComponent* listingComponent = m_document->findComponent(m_listingComponentId);
+    const Document::Component* listingComponent = m_document->findComponent(m_listingComponentId);
     if (nullptr == listingComponent)
         return 0;
     return (int)listingComponent->childrenIds.size();
@@ -64,9 +63,9 @@ int ComponentListModel::columnCount(const QModelIndex& parent) const
     return 1;
 }
 
-const SkeletonComponent* ComponentListModel::modelIndexToComponent(const QModelIndex& index) const
+const Document::Component* ComponentListModel::modelIndexToComponent(const QModelIndex& index) const
 {
-    const SkeletonComponent* listingComponent = m_document->findComponent(m_listingComponentId);
+    const Document::Component* listingComponent = m_document->findComponent(m_listingComponentId);
     if (nullptr == listingComponent)
         return nullptr;
     if (index.row() >= (int)listingComponent->childrenIds.size()) {
@@ -74,7 +73,7 @@ const SkeletonComponent* ComponentListModel::modelIndexToComponent(const QModelI
         return nullptr;
     }
     const auto& componentId = listingComponent->childrenIds[index.row()];
-    const SkeletonComponent* component = m_document->findComponent(componentId);
+    const Document::Component* component = m_document->findComponent(componentId);
     if (nullptr == component) {
         dust3dDebug << "Component not found:" << componentId.toString();
         return nullptr;
@@ -84,7 +83,7 @@ const SkeletonComponent* ComponentListModel::modelIndexToComponent(const QModelI
 
 const dust3d::Uuid ComponentListModel::modelIndexToComponentId(const QModelIndex& index) const
 {
-    const SkeletonComponent* listingComponent = m_document->findComponent(m_listingComponentId);
+    const Document::Component* listingComponent = m_document->findComponent(m_listingComponentId);
     if (nullptr == listingComponent)
         return dust3d::Uuid();
     if (index.row() >= (int)listingComponent->childrenIds.size()) {
@@ -99,13 +98,13 @@ QVariant ComponentListModel::data(const QModelIndex& index, int role) const
 {
     switch (role) {
     case Qt::ToolTipRole: {
-        const SkeletonComponent* component = modelIndexToComponent(index);
+        const Document::Component* component = modelIndexToComponent(index);
         if (nullptr != component) {
             return component->name;
         }
     } break;
     case Qt::DecorationRole: {
-        const SkeletonComponent* component = modelIndexToComponent(index);
+        const Document::Component* component = modelIndexToComponent(index);
         if (nullptr != component) {
             if (0 == component->previewPixmap.width()) {
                 static QPixmap s_emptyPixmap;

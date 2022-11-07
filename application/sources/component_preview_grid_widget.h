@@ -2,13 +2,11 @@
 #define DUST3D_APPLICATION_COMPONENT_PREVIEW_GRID_WIDGET_H_
 
 #include "component_list_model.h"
+#include "document.h"
 #include "preview_grid_view.h"
 #include <QAbstractListModel>
 #include <dust3d/base/uuid.h>
 #include <memory>
-
-class Document;
-class SkeletonComponent;
 
 class ComponentPreviewGridWidget : public PreviewGridView {
     Q_OBJECT
@@ -19,7 +17,7 @@ signals:
 public:
     ComponentPreviewGridWidget(Document* document, QWidget* parent = nullptr);
     ComponentListModel* componentListModel();
-    std::vector<const SkeletonComponent*> getSelectedComponents() const;
+    std::vector<const Document::Component*> getSelectedComponents() const;
     std::vector<dust3d::Uuid> getSelectedComponentIds() const;
     std::vector<dust3d::Uuid> getSelectedPartIds() const;
 

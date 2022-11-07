@@ -1,11 +1,9 @@
 #ifndef DUST3D_APPLICATION_COMPONENT_PROPERTY_WIDGET_H_
 #define DUST3D_APPLICATION_COMPONENT_PROPERTY_WIDGET_H_
 
+#include "document.h"
 #include <QWidget>
 #include <dust3d/base/uuid.h>
-
-class Document;
-class SkeletonPart;
 
 class ComponentPropertyWidget : public QWidget {
     Q_OBJECT
@@ -35,7 +33,7 @@ private:
     std::vector<dust3d::Uuid> m_componentIds;
     std::vector<dust3d::Uuid> m_partIds;
     dust3d::Uuid m_partId;
-    const SkeletonPart* m_part = nullptr;
+    const Document::Part* m_part = nullptr;
     QColor m_color;
     QColor lastColor();
     void preparePartIds();

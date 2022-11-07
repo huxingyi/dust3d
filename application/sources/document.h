@@ -21,545 +21,546 @@
 #include <set>
 #include <vector>
 
-class SkeletonNode {
-public:
-    SkeletonNode(const dust3d::Uuid& withId = dust3d::Uuid())
-        : radius(0)
-        , cutRotation(0.0)
-        , cutFace(dust3d::CutFace::Quad)
-        , hasCutFaceSettings(false)
-        , m_x(0)
-        , m_y(0)
-        , m_z(0)
-    {
-        id = withId.isNull() ? dust3d::Uuid::createUuid() : withId;
-    }
-    void setRadius(float toRadius);
-    void setCutRotation(float toRotation)
-    {
-        if (toRotation < -1)
-            toRotation = -1;
-        else if (toRotation > 1)
-            toRotation = 1;
-        cutRotation = toRotation;
-        hasCutFaceSettings = true;
-    }
-    void setCutFace(dust3d::CutFace face)
-    {
-        cutFace = face;
-        cutFaceLinkedId = dust3d::Uuid();
-        hasCutFaceSettings = true;
-    }
-    void setCutFaceLinkedId(const dust3d::Uuid& linkedId)
-    {
-        if (linkedId.isNull()) {
-            clearCutFaceSettings();
-            return;
-        }
-        cutFace = dust3d::CutFace::UserDefined;
-        cutFaceLinkedId = linkedId;
-        hasCutFaceSettings = true;
-    }
-    void clearCutFaceSettings()
-    {
-        cutFace = dust3d::CutFace::Quad;
-        cutFaceLinkedId = dust3d::Uuid();
-        cutRotation = 0;
-        hasCutFaceSettings = false;
-    }
-    float getX(bool rotated = false) const
-    {
-        if (rotated)
-            return m_y;
-        return m_x;
-    }
-    float getY(bool rotated = false) const
-    {
-        if (rotated)
-            return m_x;
-        return m_y;
-    }
-    float getZ(bool rotated = false) const
-    {
-        (void)rotated;
-        return m_z;
-    }
-    void setX(float x)
-    {
-        m_x = x;
-    }
-    void setY(float y)
-    {
-        m_y = y;
-    }
-    void setZ(float z)
-    {
-        m_z = z;
-    }
-    void addX(float x)
-    {
-        m_x += x;
-    }
-    void addY(float y)
-    {
-        m_y += y;
-    }
-    void addZ(float z)
-    {
-        m_z += z;
-    }
-    dust3d::Uuid id;
-    dust3d::Uuid partId;
-    QString name;
-    float radius;
-    float cutRotation;
-    dust3d::CutFace cutFace;
-    dust3d::Uuid cutFaceLinkedId;
-    bool hasCutFaceSettings;
-    std::vector<dust3d::Uuid> edgeIds;
-
-private:
-    float m_x;
-    float m_y;
-    float m_z;
-};
-
-class SkeletonEdge {
-public:
-    SkeletonEdge(const dust3d::Uuid& withId = dust3d::Uuid())
-    {
-        id = withId.isNull() ? dust3d::Uuid::createUuid() : withId;
-    }
-    dust3d::Uuid id;
-    dust3d::Uuid partId;
-    QString name;
-    std::vector<dust3d::Uuid> nodeIds;
-    dust3d::Uuid neighborOf(dust3d::Uuid nodeId) const
-    {
-        if (nodeIds.size() != 2)
-            return dust3d::Uuid();
-        return nodeIds[0] == nodeId ? nodeIds[1] : nodeIds[0];
-    }
-};
-
-class SkeletonPart {
-public:
-    dust3d::Uuid id;
-    QString name;
-    bool visible;
-    bool locked;
-    bool subdived;
-    bool disabled;
-    bool xMirrored;
-    float deformThickness;
-    float deformWidth;
-    bool deformUnified;
-    bool rounded;
-    bool chamfered;
-    QColor color;
-    bool hasColor;
-    dust3d::Uuid componentId;
-    std::vector<dust3d::Uuid> nodeIds;
-    bool dirty;
-    float cutRotation;
-    dust3d::CutFace cutFace;
-    dust3d::Uuid cutFaceLinkedId;
-    dust3d::PartTarget target;
-    float colorSolubility;
-    float metalness;
-    float roughness;
-    float hollowThickness;
-    bool countershaded;
-    bool smooth;
-    dust3d::Uuid colorImageId;
-    SkeletonPart(const dust3d::Uuid& withId = dust3d::Uuid())
-        : visible(true)
-        , locked(false)
-        , subdived(false)
-        , disabled(false)
-        , xMirrored(false)
-        , deformThickness(1.0)
-        , deformWidth(1.0)
-        , deformUnified(false)
-        , rounded(false)
-        , chamfered(false)
-        , color(Qt::white)
-        , hasColor(false)
-        , dirty(true)
-        , cutRotation(0.0)
-        , cutFace(dust3d::CutFace::Quad)
-        , target(dust3d::PartTarget::Model)
-        , colorSolubility(0.0)
-        , metalness(0.0)
-        , roughness(1.0)
-        , hollowThickness(0.0)
-        , countershaded(false)
-        , smooth(false)
-    {
-        id = withId.isNull() ? dust3d::Uuid::createUuid() : withId;
-    }
-    bool hasPolyFunction() const
-    {
-        return dust3d::PartTarget::Model == target;
-    }
-    bool hasSmoothFunction() const
-    {
-        return dust3d::PartTarget::Model == target;
-    }
-    bool hasSubdivFunction() const
-    {
-        return dust3d::PartTarget::Model == target;
-    }
-    bool hasRoundEndFunction() const
-    {
-        return dust3d::PartTarget::Model == target;
-    }
-    bool hasMirrorFunction() const
-    {
-        return dust3d::PartTarget::Model == target;
-    }
-    bool hasChamferFunction() const
-    {
-        return dust3d::PartTarget::Model == target;
-    }
-    bool hasRotationFunction() const
-    {
-        return dust3d::PartTarget::Model == target;
-    }
-    bool hasHollowFunction() const
-    {
-        return dust3d::PartTarget::Model == target;
-    }
-    bool hasCutFaceFunction() const
-    {
-        return dust3d::PartTarget::Model == target;
-    }
-    bool hasLayerFunction() const
-    {
-        return dust3d::PartTarget::Model == target;
-    }
-    bool hasTargetFunction() const
-    {
-        return true;
-    }
-    bool hasBaseFunction() const
-    {
-        return dust3d::PartTarget::Model == target;
-    }
-    bool hasCombineModeFunction() const
-    {
-        return dust3d::PartTarget::Model == target;
-    }
-    bool hasDeformFunction() const
-    {
-        return dust3d::PartTarget::Model == target;
-    }
-    bool hasColorFunction() const
-    {
-        return dust3d::PartTarget::Model == target;
-    }
-    void setDeformThickness(float toThickness)
-    {
-        if (toThickness < 0)
-            toThickness = 0;
-        else if (toThickness > 2)
-            toThickness = 2;
-        deformThickness = toThickness;
-    }
-    void setDeformWidth(float toWidth)
-    {
-        if (toWidth < 0)
-            toWidth = 0;
-        else if (toWidth > 2)
-            toWidth = 2;
-        deformWidth = toWidth;
-    }
-    void setCutRotation(float toRotation)
-    {
-        if (toRotation < -1)
-            toRotation = -1;
-        else if (toRotation > 1)
-            toRotation = 1;
-        cutRotation = toRotation;
-    }
-    void setCutFace(dust3d::CutFace face)
-    {
-        cutFace = face;
-        cutFaceLinkedId = dust3d::Uuid();
-    }
-    void setCutFaceLinkedId(const dust3d::Uuid& linkedId)
-    {
-        if (linkedId.isNull()) {
-            setCutFace(dust3d::CutFace::Quad);
-            return;
-        }
-        cutFace = dust3d::CutFace::UserDefined;
-        cutFaceLinkedId = linkedId;
-    }
-    bool deformThicknessAdjusted() const
-    {
-        return fabs(deformThickness - 1.0) >= 0.01;
-    }
-    bool deformWidthAdjusted() const
-    {
-        return fabs(deformWidth - 1.0) >= 0.01;
-    }
-    bool deformAdjusted() const
-    {
-        return deformThicknessAdjusted() || deformWidthAdjusted() || deformUnified;
-    }
-    bool colorSolubilityAdjusted() const
-    {
-        return fabs(colorSolubility - 0.0) >= 0.01;
-    }
-    bool metalnessAdjusted() const
-    {
-        return fabs(metalness - 0.0) >= 0.01;
-    }
-    bool roughnessAdjusted() const
-    {
-        return fabs(roughness - 1.0) >= 0.01;
-    }
-    bool cutRotationAdjusted() const
-    {
-        return fabs(cutRotation - 0.0) >= 0.01;
-    }
-    bool hollowThicknessAdjusted() const
-    {
-        return fabs(hollowThickness - 0.0) >= 0.01;
-    }
-    bool cutFaceAdjusted() const
-    {
-        return cutFace != dust3d::CutFace::Quad;
-    }
-    bool cutAdjusted() const
-    {
-        return cutRotationAdjusted() || cutFaceAdjusted() || hollowThicknessAdjusted();
-    }
-    bool isEditVisible() const
-    {
-        return visible && !disabled;
-    }
-    void copyAttributes(const SkeletonPart& other)
-    {
-        visible = other.visible;
-        locked = other.locked;
-        subdived = other.subdived;
-        disabled = other.disabled;
-        xMirrored = other.xMirrored;
-        deformThickness = other.deformThickness;
-        deformWidth = other.deformWidth;
-        rounded = other.rounded;
-        chamfered = other.chamfered;
-        color = other.color;
-        hasColor = other.hasColor;
-        cutRotation = other.cutRotation;
-        cutFace = other.cutFace;
-        cutFaceLinkedId = other.cutFaceLinkedId;
-        componentId = other.componentId;
-        dirty = other.dirty;
-        target = other.target;
-        colorSolubility = other.colorSolubility;
-        countershaded = other.countershaded;
-        metalness = other.metalness;
-        roughness = other.roughness;
-        deformUnified = other.deformUnified;
-        smooth = other.smooth;
-        hollowThickness = other.hollowThickness;
-    }
-
-private:
-    Q_DISABLE_COPY(SkeletonPart);
-};
-
-enum class DocumentEditMode {
-    Add = 0,
-    Select,
-    Paint,
-    Drag,
-    ZoomIn,
-    ZoomOut
-};
-
-enum class SkeletonProfile {
-    Unknown = 0,
-    Main,
-    Side
-};
-
-class SkeletonComponent {
-public:
-    SkeletonComponent()
-    {
-    }
-    SkeletonComponent(const dust3d::Uuid& withId, const QString& linkData = QString(), const QString& linkDataType = QString())
-    {
-        id = withId.isNull() ? dust3d::Uuid::createUuid() : withId;
-        if (!linkData.isEmpty()) {
-            if ("partId" == linkDataType) {
-                linkToPartId = dust3d::Uuid(linkData.toUtf8().constData());
-            }
-        }
-    }
-    dust3d::Uuid id;
-    QString name;
-    dust3d::Uuid linkToPartId;
-    dust3d::Uuid parentId;
-    bool expanded = true;
-    dust3d::CombineMode combineMode = dust3d::CombineMode::Normal;
-    bool dirty = true;
-    std::vector<dust3d::Uuid> childrenIds;
-    bool isPreviewMeshObsolete = false;
-    std::unique_ptr<QImage> previewImage;
-    bool isPreviewImageDecorationObsolete = false;
-    QPixmap previewPixmap;
-    QString linkData() const
-    {
-        return linkToPartId.isNull() ? QString() : QString(linkToPartId.toString().c_str());
-    }
-    QString linkDataType() const
-    {
-        return linkToPartId.isNull() ? QString() : QString("partId");
-    }
-    void addChild(dust3d::Uuid childId)
-    {
-        if (m_childrenIdSet.find(childId) != m_childrenIdSet.end())
-            return;
-        m_childrenIdSet.insert(childId);
-        childrenIds.push_back(childId);
-    }
-    void replaceChildWithOthers(const dust3d::Uuid& childId, const std::vector<dust3d::Uuid>& others)
-    {
-        if (m_childrenIdSet.find(childId) == m_childrenIdSet.end())
-            return;
-        m_childrenIdSet.erase(childId);
-        std::vector<dust3d::Uuid> candidates;
-        for (const auto& it : others) {
-            if (m_childrenIdSet.find(it) == m_childrenIdSet.end()) {
-                m_childrenIdSet.insert(it);
-                candidates.emplace_back(it);
-            }
-        }
-        for (size_t i = 0; i < childrenIds.size(); ++i) {
-            if (childId == childrenIds[i]) {
-                size_t newAddSize = candidates.size() - 1;
-                if (newAddSize > 0) {
-                    size_t oldSize = childrenIds.size();
-                    childrenIds.resize(childrenIds.size() + newAddSize);
-                    for (int j = (int)oldSize - 1; j > (int)i; --j) {
-                        childrenIds[j + newAddSize] = childrenIds[j];
-                    }
-                }
-                for (size_t k = 0; k < candidates.size(); ++k)
-                    childrenIds[i + k] = candidates[k];
-                break;
-            }
-        }
-    }
-    void removeChild(dust3d::Uuid childId)
-    {
-        if (m_childrenIdSet.find(childId) == m_childrenIdSet.end())
-            return;
-        m_childrenIdSet.erase(childId);
-        auto findResult = std::find(childrenIds.begin(), childrenIds.end(), childId);
-        if (findResult != childrenIds.end())
-            childrenIds.erase(findResult);
-    }
-    void replaceChild(dust3d::Uuid childId, dust3d::Uuid newId)
-    {
-        if (m_childrenIdSet.find(childId) == m_childrenIdSet.end())
-            return;
-        if (m_childrenIdSet.find(newId) != m_childrenIdSet.end())
-            return;
-        m_childrenIdSet.erase(childId);
-        m_childrenIdSet.insert(newId);
-        auto findResult = std::find(childrenIds.begin(), childrenIds.end(), childId);
-        if (findResult != childrenIds.end())
-            *findResult = newId;
-    }
-    void moveChildUp(dust3d::Uuid childId)
-    {
-        auto it = std::find(childrenIds.begin(), childrenIds.end(), childId);
-        if (it == childrenIds.end()) {
-            return;
-        }
-
-        auto index = std::distance(childrenIds.begin(), it);
-        if (index == 0)
-            return;
-        std::swap(childrenIds[index - 1], childrenIds[index]);
-    }
-    void moveChildDown(dust3d::Uuid childId)
-    {
-        auto it = std::find(childrenIds.begin(), childrenIds.end(), childId);
-        if (it == childrenIds.end()) {
-            return;
-        }
-
-        auto index = std::distance(childrenIds.begin(), it);
-        if (index == (int)childrenIds.size() - 1)
-            return;
-        std::swap(childrenIds[index], childrenIds[index + 1]);
-    }
-    void moveChildToTop(dust3d::Uuid childId)
-    {
-        auto it = std::find(childrenIds.begin(), childrenIds.end(), childId);
-        if (it == childrenIds.end()) {
-            return;
-        }
-
-        auto index = std::distance(childrenIds.begin(), it);
-        if (index == 0)
-            return;
-        for (int i = index; i >= 1; i--)
-            std::swap(childrenIds[i - 1], childrenIds[i]);
-    }
-    void moveChildToBottom(dust3d::Uuid childId)
-    {
-        auto it = std::find(childrenIds.begin(), childrenIds.end(), childId);
-        if (it == childrenIds.end()) {
-            return;
-        }
-
-        auto index = std::distance(childrenIds.begin(), it);
-        if (index == (int)childrenIds.size() - 1)
-            return;
-        for (int i = index; i <= (int)childrenIds.size() - 2; i++)
-            std::swap(childrenIds[i], childrenIds[i + 1]);
-    }
-    void updatePreviewMesh(std::unique_ptr<ModelMesh> mesh)
-    {
-        m_previewMesh = std::move(mesh);
-        isPreviewMeshObsolete = true;
-    }
-    ModelMesh* takePreviewMesh() const
-    {
-        if (nullptr == m_previewMesh)
-            return nullptr;
-        return new ModelMesh(*m_previewMesh);
-    }
-
-private:
-    std::unique_ptr<ModelMesh> m_previewMesh;
-    std::set<dust3d::Uuid> m_childrenIdSet;
-};
-
 class UvMapGenerator;
 class MeshGenerator;
 class MeshResultPostProcessor;
 
-class HistoryItem {
-public:
-    dust3d::Snapshot snapshot;
-};
-
-enum class DocumentToSnapshotFor {
-    Document = 0,
-    Nodes
-};
-
 class Document : public QObject {
     Q_OBJECT
+public:
+    enum class EditMode {
+        Add = 0,
+        Select,
+        Paint,
+        Drag,
+        ZoomIn,
+        ZoomOut
+    };
+
+    enum class SnapshotFor {
+        Document = 0,
+        Nodes
+    };
+
+    class HistoryItem {
+    public:
+        dust3d::Snapshot snapshot;
+    };
+
+    enum class Profile {
+        Unknown = 0,
+        Main,
+        Side
+    };
+
+    class Node {
+    public:
+        Node(const dust3d::Uuid& withId = dust3d::Uuid())
+            : radius(0)
+            , cutRotation(0.0)
+            , cutFace(dust3d::CutFace::Quad)
+            , hasCutFaceSettings(false)
+            , m_x(0)
+            , m_y(0)
+            , m_z(0)
+        {
+            id = withId.isNull() ? dust3d::Uuid::createUuid() : withId;
+        }
+        void setRadius(float toRadius);
+        void setCutRotation(float toRotation)
+        {
+            if (toRotation < -1)
+                toRotation = -1;
+            else if (toRotation > 1)
+                toRotation = 1;
+            cutRotation = toRotation;
+            hasCutFaceSettings = true;
+        }
+        void setCutFace(dust3d::CutFace face)
+        {
+            cutFace = face;
+            cutFaceLinkedId = dust3d::Uuid();
+            hasCutFaceSettings = true;
+        }
+        void setCutFaceLinkedId(const dust3d::Uuid& linkedId)
+        {
+            if (linkedId.isNull()) {
+                clearCutFaceSettings();
+                return;
+            }
+            cutFace = dust3d::CutFace::UserDefined;
+            cutFaceLinkedId = linkedId;
+            hasCutFaceSettings = true;
+        }
+        void clearCutFaceSettings()
+        {
+            cutFace = dust3d::CutFace::Quad;
+            cutFaceLinkedId = dust3d::Uuid();
+            cutRotation = 0;
+            hasCutFaceSettings = false;
+        }
+        float getX(bool rotated = false) const
+        {
+            if (rotated)
+                return m_y;
+            return m_x;
+        }
+        float getY(bool rotated = false) const
+        {
+            if (rotated)
+                return m_x;
+            return m_y;
+        }
+        float getZ(bool rotated = false) const
+        {
+            (void)rotated;
+            return m_z;
+        }
+        void setX(float x)
+        {
+            m_x = x;
+        }
+        void setY(float y)
+        {
+            m_y = y;
+        }
+        void setZ(float z)
+        {
+            m_z = z;
+        }
+        void addX(float x)
+        {
+            m_x += x;
+        }
+        void addY(float y)
+        {
+            m_y += y;
+        }
+        void addZ(float z)
+        {
+            m_z += z;
+        }
+        dust3d::Uuid id;
+        dust3d::Uuid partId;
+        QString name;
+        float radius;
+        float cutRotation;
+        dust3d::CutFace cutFace;
+        dust3d::Uuid cutFaceLinkedId;
+        bool hasCutFaceSettings;
+        std::vector<dust3d::Uuid> edgeIds;
+
+    private:
+        float m_x;
+        float m_y;
+        float m_z;
+    };
+
+    class Edge {
+    public:
+        Edge(const dust3d::Uuid& withId = dust3d::Uuid())
+        {
+            id = withId.isNull() ? dust3d::Uuid::createUuid() : withId;
+        }
+        dust3d::Uuid id;
+        dust3d::Uuid partId;
+        QString name;
+        std::vector<dust3d::Uuid> nodeIds;
+        dust3d::Uuid neighborOf(dust3d::Uuid nodeId) const
+        {
+            if (nodeIds.size() != 2)
+                return dust3d::Uuid();
+            return nodeIds[0] == nodeId ? nodeIds[1] : nodeIds[0];
+        }
+    };
+
+    class Part {
+    public:
+        dust3d::Uuid id;
+        QString name;
+        bool visible;
+        bool locked;
+        bool subdived;
+        bool disabled;
+        bool xMirrored;
+        float deformThickness;
+        float deformWidth;
+        bool deformUnified;
+        bool rounded;
+        bool chamfered;
+        QColor color;
+        bool hasColor;
+        dust3d::Uuid componentId;
+        std::vector<dust3d::Uuid> nodeIds;
+        bool dirty;
+        float cutRotation;
+        dust3d::CutFace cutFace;
+        dust3d::Uuid cutFaceLinkedId;
+        dust3d::PartTarget target;
+        float colorSolubility;
+        float metalness;
+        float roughness;
+        float hollowThickness;
+        bool countershaded;
+        bool smooth;
+        dust3d::Uuid colorImageId;
+        Part(const dust3d::Uuid& withId = dust3d::Uuid())
+            : visible(true)
+            , locked(false)
+            , subdived(false)
+            , disabled(false)
+            , xMirrored(false)
+            , deformThickness(1.0)
+            , deformWidth(1.0)
+            , deformUnified(false)
+            , rounded(false)
+            , chamfered(false)
+            , color(Qt::white)
+            , hasColor(false)
+            , dirty(true)
+            , cutRotation(0.0)
+            , cutFace(dust3d::CutFace::Quad)
+            , target(dust3d::PartTarget::Model)
+            , colorSolubility(0.0)
+            , metalness(0.0)
+            , roughness(1.0)
+            , hollowThickness(0.0)
+            , countershaded(false)
+            , smooth(false)
+        {
+            id = withId.isNull() ? dust3d::Uuid::createUuid() : withId;
+        }
+        bool hasPolyFunction() const
+        {
+            return dust3d::PartTarget::Model == target;
+        }
+        bool hasSmoothFunction() const
+        {
+            return dust3d::PartTarget::Model == target;
+        }
+        bool hasSubdivFunction() const
+        {
+            return dust3d::PartTarget::Model == target;
+        }
+        bool hasRoundEndFunction() const
+        {
+            return dust3d::PartTarget::Model == target;
+        }
+        bool hasMirrorFunction() const
+        {
+            return dust3d::PartTarget::Model == target;
+        }
+        bool hasChamferFunction() const
+        {
+            return dust3d::PartTarget::Model == target;
+        }
+        bool hasRotationFunction() const
+        {
+            return dust3d::PartTarget::Model == target;
+        }
+        bool hasHollowFunction() const
+        {
+            return dust3d::PartTarget::Model == target;
+        }
+        bool hasCutFaceFunction() const
+        {
+            return dust3d::PartTarget::Model == target;
+        }
+        bool hasLayerFunction() const
+        {
+            return dust3d::PartTarget::Model == target;
+        }
+        bool hasTargetFunction() const
+        {
+            return true;
+        }
+        bool hasBaseFunction() const
+        {
+            return dust3d::PartTarget::Model == target;
+        }
+        bool hasCombineModeFunction() const
+        {
+            return dust3d::PartTarget::Model == target;
+        }
+        bool hasDeformFunction() const
+        {
+            return dust3d::PartTarget::Model == target;
+        }
+        bool hasColorFunction() const
+        {
+            return dust3d::PartTarget::Model == target;
+        }
+        void setDeformThickness(float toThickness)
+        {
+            if (toThickness < 0)
+                toThickness = 0;
+            else if (toThickness > 2)
+                toThickness = 2;
+            deformThickness = toThickness;
+        }
+        void setDeformWidth(float toWidth)
+        {
+            if (toWidth < 0)
+                toWidth = 0;
+            else if (toWidth > 2)
+                toWidth = 2;
+            deformWidth = toWidth;
+        }
+        void setCutRotation(float toRotation)
+        {
+            if (toRotation < -1)
+                toRotation = -1;
+            else if (toRotation > 1)
+                toRotation = 1;
+            cutRotation = toRotation;
+        }
+        void setCutFace(dust3d::CutFace face)
+        {
+            cutFace = face;
+            cutFaceLinkedId = dust3d::Uuid();
+        }
+        void setCutFaceLinkedId(const dust3d::Uuid& linkedId)
+        {
+            if (linkedId.isNull()) {
+                setCutFace(dust3d::CutFace::Quad);
+                return;
+            }
+            cutFace = dust3d::CutFace::UserDefined;
+            cutFaceLinkedId = linkedId;
+        }
+        bool deformThicknessAdjusted() const
+        {
+            return fabs(deformThickness - 1.0) >= 0.01;
+        }
+        bool deformWidthAdjusted() const
+        {
+            return fabs(deformWidth - 1.0) >= 0.01;
+        }
+        bool deformAdjusted() const
+        {
+            return deformThicknessAdjusted() || deformWidthAdjusted() || deformUnified;
+        }
+        bool colorSolubilityAdjusted() const
+        {
+            return fabs(colorSolubility - 0.0) >= 0.01;
+        }
+        bool metalnessAdjusted() const
+        {
+            return fabs(metalness - 0.0) >= 0.01;
+        }
+        bool roughnessAdjusted() const
+        {
+            return fabs(roughness - 1.0) >= 0.01;
+        }
+        bool cutRotationAdjusted() const
+        {
+            return fabs(cutRotation - 0.0) >= 0.01;
+        }
+        bool hollowThicknessAdjusted() const
+        {
+            return fabs(hollowThickness - 0.0) >= 0.01;
+        }
+        bool cutFaceAdjusted() const
+        {
+            return cutFace != dust3d::CutFace::Quad;
+        }
+        bool cutAdjusted() const
+        {
+            return cutRotationAdjusted() || cutFaceAdjusted() || hollowThicknessAdjusted();
+        }
+        bool isEditVisible() const
+        {
+            return visible && !disabled;
+        }
+        void copyAttributes(const Part& other)
+        {
+            visible = other.visible;
+            locked = other.locked;
+            subdived = other.subdived;
+            disabled = other.disabled;
+            xMirrored = other.xMirrored;
+            deformThickness = other.deformThickness;
+            deformWidth = other.deformWidth;
+            rounded = other.rounded;
+            chamfered = other.chamfered;
+            color = other.color;
+            hasColor = other.hasColor;
+            cutRotation = other.cutRotation;
+            cutFace = other.cutFace;
+            cutFaceLinkedId = other.cutFaceLinkedId;
+            componentId = other.componentId;
+            dirty = other.dirty;
+            target = other.target;
+            colorSolubility = other.colorSolubility;
+            countershaded = other.countershaded;
+            metalness = other.metalness;
+            roughness = other.roughness;
+            deformUnified = other.deformUnified;
+            smooth = other.smooth;
+            hollowThickness = other.hollowThickness;
+        }
+
+    private:
+        Q_DISABLE_COPY(Part);
+    };
+
+    class Component {
+    public:
+        Component()
+        {
+        }
+        Component(const dust3d::Uuid& withId, const QString& linkData = QString(), const QString& linkDataType = QString())
+        {
+            id = withId.isNull() ? dust3d::Uuid::createUuid() : withId;
+            if (!linkData.isEmpty()) {
+                if ("partId" == linkDataType) {
+                    linkToPartId = dust3d::Uuid(linkData.toUtf8().constData());
+                }
+            }
+        }
+        dust3d::Uuid id;
+        QString name;
+        dust3d::Uuid linkToPartId;
+        dust3d::Uuid parentId;
+        bool expanded = true;
+        dust3d::CombineMode combineMode = dust3d::CombineMode::Normal;
+        bool dirty = true;
+        std::vector<dust3d::Uuid> childrenIds;
+        bool isPreviewMeshObsolete = false;
+        std::unique_ptr<QImage> previewImage;
+        bool isPreviewImageDecorationObsolete = false;
+        QPixmap previewPixmap;
+        QString linkData() const
+        {
+            return linkToPartId.isNull() ? QString() : QString(linkToPartId.toString().c_str());
+        }
+        QString linkDataType() const
+        {
+            return linkToPartId.isNull() ? QString() : QString("partId");
+        }
+        void addChild(dust3d::Uuid childId)
+        {
+            if (m_childrenIdSet.find(childId) != m_childrenIdSet.end())
+                return;
+            m_childrenIdSet.insert(childId);
+            childrenIds.push_back(childId);
+        }
+        void replaceChildWithOthers(const dust3d::Uuid& childId, const std::vector<dust3d::Uuid>& others)
+        {
+            if (m_childrenIdSet.find(childId) == m_childrenIdSet.end())
+                return;
+            m_childrenIdSet.erase(childId);
+            std::vector<dust3d::Uuid> candidates;
+            for (const auto& it : others) {
+                if (m_childrenIdSet.find(it) == m_childrenIdSet.end()) {
+                    m_childrenIdSet.insert(it);
+                    candidates.emplace_back(it);
+                }
+            }
+            for (size_t i = 0; i < childrenIds.size(); ++i) {
+                if (childId == childrenIds[i]) {
+                    size_t newAddSize = candidates.size() - 1;
+                    if (newAddSize > 0) {
+                        size_t oldSize = childrenIds.size();
+                        childrenIds.resize(childrenIds.size() + newAddSize);
+                        for (int j = (int)oldSize - 1; j > (int)i; --j) {
+                            childrenIds[j + newAddSize] = childrenIds[j];
+                        }
+                    }
+                    for (size_t k = 0; k < candidates.size(); ++k)
+                        childrenIds[i + k] = candidates[k];
+                    break;
+                }
+            }
+        }
+        void removeChild(dust3d::Uuid childId)
+        {
+            if (m_childrenIdSet.find(childId) == m_childrenIdSet.end())
+                return;
+            m_childrenIdSet.erase(childId);
+            auto findResult = std::find(childrenIds.begin(), childrenIds.end(), childId);
+            if (findResult != childrenIds.end())
+                childrenIds.erase(findResult);
+        }
+        void replaceChild(dust3d::Uuid childId, dust3d::Uuid newId)
+        {
+            if (m_childrenIdSet.find(childId) == m_childrenIdSet.end())
+                return;
+            if (m_childrenIdSet.find(newId) != m_childrenIdSet.end())
+                return;
+            m_childrenIdSet.erase(childId);
+            m_childrenIdSet.insert(newId);
+            auto findResult = std::find(childrenIds.begin(), childrenIds.end(), childId);
+            if (findResult != childrenIds.end())
+                *findResult = newId;
+        }
+        void moveChildUp(dust3d::Uuid childId)
+        {
+            auto it = std::find(childrenIds.begin(), childrenIds.end(), childId);
+            if (it == childrenIds.end()) {
+                return;
+            }
+
+            auto index = std::distance(childrenIds.begin(), it);
+            if (index == 0)
+                return;
+            std::swap(childrenIds[index - 1], childrenIds[index]);
+        }
+        void moveChildDown(dust3d::Uuid childId)
+        {
+            auto it = std::find(childrenIds.begin(), childrenIds.end(), childId);
+            if (it == childrenIds.end()) {
+                return;
+            }
+
+            auto index = std::distance(childrenIds.begin(), it);
+            if (index == (int)childrenIds.size() - 1)
+                return;
+            std::swap(childrenIds[index], childrenIds[index + 1]);
+        }
+        void moveChildToTop(dust3d::Uuid childId)
+        {
+            auto it = std::find(childrenIds.begin(), childrenIds.end(), childId);
+            if (it == childrenIds.end()) {
+                return;
+            }
+
+            auto index = std::distance(childrenIds.begin(), it);
+            if (index == 0)
+                return;
+            for (int i = index; i >= 1; i--)
+                std::swap(childrenIds[i - 1], childrenIds[i]);
+        }
+        void moveChildToBottom(dust3d::Uuid childId)
+        {
+            auto it = std::find(childrenIds.begin(), childrenIds.end(), childId);
+            if (it == childrenIds.end()) {
+                return;
+            }
+
+            auto index = std::distance(childrenIds.begin(), it);
+            if (index == (int)childrenIds.size() - 1)
+                return;
+            for (int i = index; i <= (int)childrenIds.size() - 2; i++)
+                std::swap(childrenIds[i], childrenIds[i + 1]);
+        }
+        void updatePreviewMesh(std::unique_ptr<ModelMesh> mesh)
+        {
+            m_previewMesh = std::move(mesh);
+            isPreviewMeshObsolete = true;
+        }
+        ModelMesh* takePreviewMesh() const
+        {
+            if (nullptr == m_previewMesh)
+                return nullptr;
+            return new ModelMesh(*m_previewMesh);
+        }
+
+    private:
+        std::unique_ptr<ModelMesh> m_previewMesh;
+        std::set<dust3d::Uuid> m_childrenIdSet;
+    };
+
 signals:
     void nodeCutRotationChanged(dust3d::Uuid nodeId);
     void nodeCutFaceChanged(dust3d::Uuid nodeId);
@@ -644,18 +645,18 @@ public: // need initialize
     bool weldEnabled = true;
     float brushMetalness = ModelMesh::m_defaultMetalness;
     float brushRoughness = ModelMesh::m_defaultRoughness;
-    DocumentEditMode editMode = DocumentEditMode::Select;
+    EditMode editMode = EditMode::Select;
     bool xlocked = false;
     bool ylocked = false;
     bool zlocked = false;
     bool radiusLocked = false;
     QImage turnaround;
     QByteArray turnaroundPngByteArray;
-    std::map<dust3d::Uuid, SkeletonPart> partMap;
-    std::map<dust3d::Uuid, SkeletonNode> nodeMap;
-    std::map<dust3d::Uuid, SkeletonEdge> edgeMap;
-    std::map<dust3d::Uuid, SkeletonComponent> componentMap;
-    SkeletonComponent rootComponent;
+    std::map<dust3d::Uuid, Part> partMap;
+    std::map<dust3d::Uuid, Node> nodeMap;
+    std::map<dust3d::Uuid, Edge> edgeMap;
+    std::map<dust3d::Uuid, Component> componentMap;
+    Component rootComponent;
 
 public:
     Document();
@@ -668,7 +669,7 @@ public:
     bool isEdgeEditable(dust3d::Uuid edgeId) const;
     void copyNodes(std::set<dust3d::Uuid> nodeIdSet) const;
     void toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uuid>& limitNodeIds = std::set<dust3d::Uuid>(),
-        DocumentToSnapshotFor forWhat = DocumentToSnapshotFor::Document) const;
+        SnapshotFor forWhat = SnapshotFor::Document) const;
     void fromSnapshot(const dust3d::Snapshot& snapshot);
     enum class SnapshotSource {
         Unknown,
@@ -737,14 +738,14 @@ public:
     {
         m_originZ += originZ;
     }
-    const SkeletonNode* findNode(dust3d::Uuid nodeId) const;
-    const SkeletonEdge* findEdge(dust3d::Uuid edgeId) const;
-    const SkeletonPart* findPart(dust3d::Uuid partId) const;
-    const SkeletonEdge* findEdgeByNodes(dust3d::Uuid firstNodeId, dust3d::Uuid secondNodeId) const;
+    const Node* findNode(dust3d::Uuid nodeId) const;
+    const Edge* findEdge(dust3d::Uuid edgeId) const;
+    const Part* findPart(dust3d::Uuid partId) const;
+    const Edge* findEdgeByNodes(dust3d::Uuid firstNodeId, dust3d::Uuid secondNodeId) const;
     void findAllNeighbors(dust3d::Uuid nodeId, std::set<dust3d::Uuid>& neighbors) const;
     bool isNodeConnectable(dust3d::Uuid nodeId) const;
-    const SkeletonComponent* findComponent(dust3d::Uuid componentId) const;
-    const SkeletonComponent* findComponentParent(dust3d::Uuid componentId) const;
+    const Component* findComponent(dust3d::Uuid componentId) const;
+    const Component* findComponentParent(dust3d::Uuid componentId) const;
     dust3d::Uuid findComponentParentId(dust3d::Uuid componentId) const;
     void collectComponentDescendantParts(dust3d::Uuid componentId, std::vector<dust3d::Uuid>& partIds) const;
     void collectComponentDescendantComponents(dust3d::Uuid componentId, std::vector<dust3d::Uuid>& componentIds) const;
@@ -761,7 +762,7 @@ public slots:
     void setNodeCutFace(dust3d::Uuid nodeId, dust3d::CutFace cutFace);
     void setNodeCutFaceLinkedId(dust3d::Uuid nodeId, dust3d::Uuid linkedId);
     void clearNodeCutFaceSettings(dust3d::Uuid nodeId);
-    void setEditMode(DocumentEditMode mode);
+    void setEditMode(EditMode mode);
     void uiReady();
     void generateMesh();
     void regenerateMesh();
