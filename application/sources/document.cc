@@ -2783,7 +2783,13 @@ void Document::collectCutFaceList(std::vector<QString>& cutFaces) const
 
 void Document::addBone(const dust3d::Uuid& boneId)
 {
-    // TODO:
+    if (boneMap.end() != boneMap.find(boneId))
+        return;
+
+    Bone bone(boneId);
+    boneMap.emplace(boneId, bone);
+    emit boneAdded(boneId);
+    emit rigChanged();
 }
 
 void Document::addNodesToBone(const dust3d::Uuid& boneId, const std::vector<dust3d::Uuid>& nodeIds)
@@ -2808,5 +2814,23 @@ void Document::markNodeAsNotJointForBone(const dust3d::Uuid& boneId, const dust3
 
 void Document::removeBone(const dust3d::Uuid& boneId)
 {
-    // TODO:
+    if (boneMap.end() != boneMap.find(boneId))
+        return;
+
+    boneMap.erase(boneId);
+    emit boneRemoved(boneId);
+    emit rigChanged();
+}
+
+void Document::setBoneAttachment(const dust3d::Uuid& boneId, const dust3d::Uuid& toBoneId, int toBoneJointIndex)
+{
+    auto boneIt = boneMap.find(boneId);
+    if (boneIt == boneMap.end())
+        return;
+    if (boneIt->second.attachBoneId == toBoneId && boneIt->second.attachBoneJointIndex == toBoneJointIndex)
+        return;
+    boneIt->second.attachBoneId = toBoneId;
+    boneIt->second.attachBoneJointIndex = toBoneJointIndex;
+    emit boneAttachmentChanged(boneId);
+    emit rigChanged();
 }

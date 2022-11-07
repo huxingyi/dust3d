@@ -563,9 +563,14 @@ public:
 
     class Bone {
     public:
+        struct NodeProperty {
+            bool isJoint = false;
+        };
+
         dust3d::Uuid id;
-        dust3d::Uuid parentId;
-        std::vector<dust3d::Uuid> childrenIds;
+        dust3d::Uuid attachBoneId;
+        int attachBoneJointIndex;
+        std::map<dust3d::Uuid, NodeProperty> nodeProperties;
 
         Bone(const dust3d::Uuid& withId = dust3d::Uuid());
     };
@@ -639,6 +644,10 @@ signals:
     void ylockStateChanged();
     void zlockStateChanged();
     void radiusLockStateChanged();
+    void boneAdded(const dust3d::Uuid& boneId);
+    void boneRemoved(const dust3d::Uuid& boneId);
+    void boneAttachmentChanged(const dust3d::Uuid& boneId);
+    void rigChanged();
 
 public: // need initialize
     QImage* textureImage = nullptr;
@@ -868,6 +877,7 @@ public slots:
     void markNodeAsJointForBone(const dust3d::Uuid& boneId, const dust3d::Uuid& nodeId);
     void markNodeAsNotJointForBone(const dust3d::Uuid& boneId, const dust3d::Uuid& nodeId);
     void removeBone(const dust3d::Uuid& boneId);
+    void setBoneAttachment(const dust3d::Uuid& boneId, const dust3d::Uuid& toBoneId, int toBoneJointIndex);
 
 private:
     void resolveSnapshotBoundingBox(const dust3d::Snapshot& snapshot, QRectF* mainProfile, QRectF* sideProfile);
