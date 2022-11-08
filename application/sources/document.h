@@ -38,8 +38,10 @@ public:
     };
 
     enum class SnapshotFor {
-        Document = 0,
-        Nodes
+        None = 0,
+        Nodes = 0x00000001,
+        Bones = 0x00000002,
+        Document = (Nodes | Bones)
     };
 
     class HistoryItem {
@@ -56,13 +58,6 @@ public:
     class Node {
     public:
         Node(const dust3d::Uuid& withId = dust3d::Uuid())
-            : radius(0)
-            , cutRotation(0.0)
-            , cutFace(dust3d::CutFace::Quad)
-            , hasCutFaceSettings(false)
-            , m_x(0)
-            , m_y(0)
-            , m_z(0)
         {
             id = withId.isNull() ? dust3d::Uuid::createUuid() : withId;
         }
@@ -143,17 +138,19 @@ public:
         dust3d::Uuid id;
         dust3d::Uuid partId;
         QString name;
-        float radius;
-        float cutRotation;
-        dust3d::CutFace cutFace;
+        float radius = 0.0;
+        float cutRotation = 0.0;
+        dust3d::CutFace cutFace = dust3d::CutFace::Quad;
         dust3d::Uuid cutFaceLinkedId;
-        bool hasCutFaceSettings;
+        bool hasCutFaceSettings = false;
         std::vector<dust3d::Uuid> edgeIds;
+        std::set<dust3d::Uuid> boneIds;
+        bool boneJoint = false;
 
     private:
-        float m_x;
-        float m_y;
-        float m_z;
+        float m_x = 0.0;
+        float m_y = 0.0;
+        float m_z = 0.0;
     };
 
     class Edge {
@@ -563,14 +560,9 @@ public:
 
     class Bone {
     public:
-        struct NodeProperty {
-            bool isJoint = false;
-        };
-
         dust3d::Uuid id;
         dust3d::Uuid attachBoneId;
         int attachBoneJointIndex;
-        std::map<dust3d::Uuid, NodeProperty> nodeProperties;
 
         Bone(const dust3d::Uuid& withId = dust3d::Uuid());
     };
@@ -636,6 +628,7 @@ signals:
     void edgeRemoved(dust3d::Uuid edgeId);
     void nodeRadiusChanged(dust3d::Uuid nodeId);
     void nodeOriginChanged(dust3d::Uuid nodeId);
+    void nodeBoneJointStateChanged(const dust3d::Uuid& nodeId);
     void edgeReversed(dust3d::Uuid edgeId);
     void originChanged();
     void skeletonChanged();
@@ -647,6 +640,7 @@ signals:
     void boneAdded(const dust3d::Uuid& boneId);
     void boneRemoved(const dust3d::Uuid& boneId);
     void boneAttachmentChanged(const dust3d::Uuid& boneId);
+    void boneNodesChanged(const dust3d::Uuid& boneId);
     void rigChanged();
 
 public: // need initialize
@@ -675,6 +669,7 @@ public: // need initialize
     std::map<dust3d::Uuid, Edge> edgeMap;
     std::map<dust3d::Uuid, Component> componentMap;
     std::map<dust3d::Uuid, Bone> boneMap;
+    std::vector<dust3d::Uuid> boneIdList;
     Component rootComponent;
     Bone rootBone;
 
@@ -827,6 +822,7 @@ public slots:
     void moveNodeBy(dust3d::Uuid nodeId, float x, float y, float z);
     void setNodeOrigin(dust3d::Uuid nodeId, float x, float y, float z);
     void setNodeRadius(dust3d::Uuid nodeId, float radius);
+    void setNodeBoneJointState(const dust3d::Uuid& nodeId, bool boneJoint);
     void switchNodeXZ(dust3d::Uuid nodeId);
     void moveOriginBy(float x, float y, float z);
     void addEdge(dust3d::Uuid fromNodeId, dust3d::Uuid toNodeId);
@@ -874,8 +870,6 @@ public slots:
     void addBone(const dust3d::Uuid& boneId);
     void addNodesToBone(const dust3d::Uuid& boneId, const std::vector<dust3d::Uuid>& nodeIds);
     void removeNodesFromBone(const dust3d::Uuid& boneId, const std::vector<dust3d::Uuid>& nodeIds);
-    void markNodeAsJointForBone(const dust3d::Uuid& boneId, const dust3d::Uuid& nodeId);
-    void markNodeAsNotJointForBone(const dust3d::Uuid& boneId, const dust3d::Uuid& nodeId);
     void removeBone(const dust3d::Uuid& boneId);
     void setBoneAttachment(const dust3d::Uuid& boneId, const dust3d::Uuid& toBoneId, int toBoneJointIndex);
 

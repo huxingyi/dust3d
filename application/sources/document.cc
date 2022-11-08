@@ -1199,6 +1199,21 @@ void Document::setNodeRadius(dust3d::Uuid nodeId, float radius)
     emit skeletonChanged();
 }
 
+void Document::setNodeBoneJointState(const dust3d::Uuid& nodeId, bool boneJoint)
+{
+    auto it = nodeMap.find(nodeId);
+    if (it == nodeMap.end()) {
+        return;
+    }
+    if (isPartReadonly(it->second.partId))
+        return;
+    if (it->second.boneJoint == boneJoint)
+        return;
+    it->second.boneJoint = boneJoint;
+    emit nodeBoneJointStateChanged(nodeId);
+    emit rigChanged();
+}
+
 void Document::switchNodeXZ(dust3d::Uuid nodeId)
 {
     auto it = nodeMap.find(nodeId);
@@ -1568,7 +1583,7 @@ void Document::setEditMode(Document::EditMode mode)
 void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uuid>& limitNodeIds,
     Document::SnapshotFor forWhat) const
 {
-    if (Document::SnapshotFor::Document == forWhat || Document::SnapshotFor::Nodes == forWhat) {
+    if (static_cast<unsigned int>(Document::SnapshotFor::Nodes) & static_cast<unsigned int>(forWhat)) {
         std::set<dust3d::Uuid> limitPartIds;
         std::set<dust3d::Uuid> limitComponentIds;
         for (const auto& nodeId : limitNodeIds) {
@@ -1662,6 +1677,8 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
             }
             if (!nodeIt.second.name.isEmpty())
                 node["name"] = nodeIt.second.name.toUtf8().constData();
+            if (nodeIt.second.boneJoint)
+                node["boneJoint"] = "true";
             snapshot->nodes[node["id"]] = node;
         }
         for (const auto& edgeIt : edgeMap) {
@@ -1712,6 +1729,20 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
             std::string children = dust3d::String::join(childIdList, ",");
             if (!children.empty())
                 snapshot->rootComponent["children"] = children;
+        }
+    }
+    if (static_cast<unsigned int>(Document::SnapshotFor::Bones) & static_cast<unsigned int>(forWhat)) {
+        if (!boneIdList.empty()) {
+            for (const auto& boneId : boneIdList) {
+                snapshot->boneIdList.emplace_back(boneId.toString());
+            }
+            for (const auto& boneIt : boneMap) {
+                std::map<std::string, std::string> bone;
+                bone["id"] = boneIt.second.id.toString();
+                bone["attachBoneId"] = boneIt.second.attachBoneId.toString();
+                bone["attachBoneJointIndex"] = std::to_string(boneIt.second.attachBoneJointIndex);
+                snapshot->bones[bone["id"]] = bone;
+            }
         }
     }
     if (Document::SnapshotFor::Document == forWhat) {
@@ -2788,28 +2819,33 @@ void Document::addBone(const dust3d::Uuid& boneId)
 
     Bone bone(boneId);
     boneMap.emplace(boneId, bone);
+    boneIdList.push_back(boneId);
     emit boneAdded(boneId);
     emit rigChanged();
 }
 
 void Document::addNodesToBone(const dust3d::Uuid& boneId, const std::vector<dust3d::Uuid>& nodeIds)
 {
-    // TODO:
+    for (const auto& nodeId : nodeIds) {
+        auto nodeIt = nodeMap.find(nodeId);
+        if (nodeIt == nodeMap.end())
+            continue;
+        nodeIt->second.boneIds.insert(boneId);
+    }
+    emit boneNodesChanged(boneId);
+    emit rigChanged();
 }
 
 void Document::removeNodesFromBone(const dust3d::Uuid& boneId, const std::vector<dust3d::Uuid>& nodeIds)
 {
-    // TODO:
-}
-
-void Document::markNodeAsJointForBone(const dust3d::Uuid& boneId, const dust3d::Uuid& nodeId)
-{
-    // TODO:
-}
-
-void Document::markNodeAsNotJointForBone(const dust3d::Uuid& boneId, const dust3d::Uuid& nodeId)
-{
-    // TODO:
+    for (const auto& nodeId : nodeIds) {
+        auto nodeIt = nodeMap.find(nodeId);
+        if (nodeIt == nodeMap.end())
+            continue;
+        nodeIt->second.boneIds.erase(boneId);
+    }
+    emit boneNodesChanged(boneId);
+    emit rigChanged();
 }
 
 void Document::removeBone(const dust3d::Uuid& boneId)
@@ -2817,6 +2853,10 @@ void Document::removeBone(const dust3d::Uuid& boneId)
     if (boneMap.end() != boneMap.find(boneId))
         return;
 
+    for (auto& it : nodeMap)
+        it.second.boneIds.erase(boneId);
+
+    boneIdList.erase(std::remove(boneIdList.begin(), boneIdList.end(), boneId), boneIdList.end());
     boneMap.erase(boneId);
     emit boneRemoved(boneId);
     emit rigChanged();

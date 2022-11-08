@@ -35,6 +35,8 @@ public:
     std::map<std::string, std::map<std::string, std::string>> edges;
     std::map<std::string, std::map<std::string, std::string>> parts;
     std::map<std::string, std::map<std::string, std::string>> components;
+    std::map<std::string, std::map<std::string, std::string>> bones;
+    std::vector<std::string> boneIdList;
     std::map<std::string, std::string> rootComponent;
 };
 
