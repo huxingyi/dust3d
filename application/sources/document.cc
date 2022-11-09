@@ -1677,6 +1677,13 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
             }
             if (!nodeIt.second.name.isEmpty())
                 node["name"] = nodeIt.second.name.toUtf8().constData();
+            std::vector<std::string> nodeBoneIdList;
+            for (const auto& boneId : nodeIt.second.boneIds) {
+                nodeBoneIdList.push_back(boneId.toString());
+            }
+            std::string boneIds = dust3d::String::join(nodeBoneIdList, ",");
+            if (!boneIds.empty())
+                node["boneIdList"] = boneIds;
             if (nodeIt.second.boneJoint)
                 node["boneJoint"] = "true";
             snapshot->nodes[node["id"]] = node;
@@ -1741,6 +1748,8 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
                 bone["id"] = boneIt.second.id.toString();
                 bone["attachBoneId"] = boneIt.second.attachBoneId.toString();
                 bone["attachBoneJointIndex"] = std::to_string(boneIt.second.attachBoneJointIndex);
+                if (!boneIt.second.name.isEmpty())
+                    bone["name"] = boneIt.second.name.toUtf8().constData();
                 snapshot->bones[bone["id"]] = bone;
             }
         }
@@ -1773,6 +1782,7 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
     std::set<dust3d::Uuid> newAddedEdgeIds;
     std::set<dust3d::Uuid> newAddedPartIds;
     std::set<dust3d::Uuid> newAddedComponentIds;
+    std::set<dust3d::Uuid> newAddedBoneIds;
 
     std::set<dust3d::Uuid> inversePartIds;
 
@@ -1857,6 +1867,20 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
             part.setCutFaceLinkedId(findNewLinkedId->second);
         }
     }
+    for (const auto& boneKv : snapshot.bones) {
+        Document::Bone bone;
+        oldNewIdMap[dust3d::Uuid(boneKv.first)] = bone.id;
+        bone.name = dust3d::String::valueOrEmpty(boneKv.second, "name").c_str();
+        bone.attachBoneJointIndex = dust3d::String::toInt(dust3d::String::valueOrEmpty(boneKv.second, "attachBoneJointIndex").c_str());
+        boneMap.emplace(bone.id, std::move(bone));
+        newAddedBoneIds.insert(bone.id);
+    }
+    for (const auto& boneKv : snapshot.bones) {
+        auto attachBoneId = dust3d::Uuid(dust3d::String::valueOrEmpty(boneKv.second, "attachBoneId"));
+        if (!attachBoneId.isNull()) {
+            boneMap[oldNewIdMap[dust3d::Uuid(boneKv.first)]].attachBoneId = oldNewIdMap[attachBoneId];
+        }
+    }
     for (const auto& nodeKv : snapshot.nodes) {
         if (nodeKv.second.find("radius") == nodeKv.second.end() || nodeKv.second.find("x") == nodeKv.second.end() || nodeKv.second.find("y") == nodeKv.second.end() || nodeKv.second.find("z") == nodeKv.second.end() || nodeKv.second.find("partId") == nodeKv.second.end())
             continue;
@@ -1888,6 +1912,11 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
                     node.setCutFaceLinkedId(findNewLinkedId->second);
                 }
             }
+        }
+        for (const auto& boneIdString : dust3d::String::split(dust3d::String::valueOrEmpty(nodeKv.second, "boneIdList"), ',')) {
+            if (boneIdString.empty())
+                continue;
+            node.boneIds.insert(oldNewIdMap[dust3d::Uuid(boneIdString)]);
         }
         nodeMap[node.id] = node;
         newAddedNodeIds.insert(node.id);
@@ -1985,6 +2014,11 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
     emit componentChildrenChanged(dust3d::Uuid());
     if (isOriginChanged)
         emit originChanged();
+
+    for (const auto& boneIt : newAddedBoneIds) {
+        emit boneAdded(boneIt);
+    }
+
     emit skeletonChanged();
 
     for (const auto& partIt : newAddedPartIds) {
@@ -2872,5 +2906,17 @@ void Document::setBoneAttachment(const dust3d::Uuid& boneId, const dust3d::Uuid&
     boneIt->second.attachBoneId = toBoneId;
     boneIt->second.attachBoneJointIndex = toBoneJointIndex;
     emit boneAttachmentChanged(boneId);
+    emit rigChanged();
+}
+
+void Document::renameBone(const dust3d::Uuid& boneId, const QString& name)
+{
+    auto boneIt = boneMap.find(boneId);
+    if (boneIt == boneMap.end())
+        return;
+    if (boneIt->second.name == name)
+        return;
+    boneIt->second.name = name;
+    emit boneNameChanged(boneId);
     emit rigChanged();
 }

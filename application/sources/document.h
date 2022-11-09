@@ -562,7 +562,8 @@ public:
     public:
         dust3d::Uuid id;
         dust3d::Uuid attachBoneId;
-        int attachBoneJointIndex;
+        int attachBoneJointIndex = 0;
+        QString name;
 
         Bone(const dust3d::Uuid& withId = dust3d::Uuid());
     };
@@ -641,6 +642,7 @@ signals:
     void boneRemoved(const dust3d::Uuid& boneId);
     void boneAttachmentChanged(const dust3d::Uuid& boneId);
     void boneNodesChanged(const dust3d::Uuid& boneId);
+    void boneNameChanged(const dust3d::Uuid& boneId);
     void rigChanged();
 
 public: // need initialize
@@ -668,10 +670,9 @@ public: // need initialize
     std::map<dust3d::Uuid, Node> nodeMap;
     std::map<dust3d::Uuid, Edge> edgeMap;
     std::map<dust3d::Uuid, Component> componentMap;
+    Component rootComponent;
     std::map<dust3d::Uuid, Bone> boneMap;
     std::vector<dust3d::Uuid> boneIdList;
-    Component rootComponent;
-    Bone rootBone;
 
 public:
     Document();
@@ -872,6 +873,7 @@ public slots:
     void removeNodesFromBone(const dust3d::Uuid& boneId, const std::vector<dust3d::Uuid>& nodeIds);
     void removeBone(const dust3d::Uuid& boneId);
     void setBoneAttachment(const dust3d::Uuid& boneId, const dust3d::Uuid& toBoneId, int toBoneJointIndex);
+    void renameBone(const dust3d::Uuid& boneId, const QString& name);
 
 private:
     void resolveSnapshotBoundingBox(const dust3d::Snapshot& snapshot, QRectF* mainProfile, QRectF* sideProfile);

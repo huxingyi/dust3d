@@ -87,6 +87,11 @@ namespace String {
         return (float)std::stod(string);
     }
 
+    inline int toInt(const std::string& string)
+    {
+        return std::stoi(string);
+    }
+
     std::string join(const std::vector<std::string>& stringList, const char* separator);
 
     inline std::string valueOrEmpty(const std::map<std::string, std::string>& map, const std::string& key)
