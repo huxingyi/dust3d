@@ -2855,6 +2855,7 @@ void Document::addBone(const dust3d::Uuid& boneId)
     boneMap.emplace(boneId, bone);
     boneIdList.push_back(boneId);
     emit boneAdded(boneId);
+    emit boneIdListChanged();
     emit rigChanged();
 }
 
@@ -2893,6 +2894,7 @@ void Document::removeBone(const dust3d::Uuid& boneId)
     boneIdList.erase(std::remove(boneIdList.begin(), boneIdList.end(), boneId), boneIdList.end());
     boneMap.erase(boneId);
     emit boneRemoved(boneId);
+    emit boneIdListChanged();
     emit rigChanged();
 }
 
@@ -2919,4 +2921,12 @@ void Document::renameBone(const dust3d::Uuid& boneId, const QString& name)
     boneIt->second.name = name;
     emit boneNameChanged(boneId);
     emit rigChanged();
+}
+
+const Document::Bone* Document::findBone(const dust3d::Uuid& boneId) const
+{
+    auto boneIt = boneMap.find(boneId);
+    if (boneIt == boneMap.end())
+        return nullptr;
+    return &boneIt->second;
 }

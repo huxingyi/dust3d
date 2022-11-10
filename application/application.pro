@@ -95,6 +95,8 @@ include(third_party/QtAwesome/QtAwesome/QtAwesome.pri)
 
 HEADERS += sources/about_widget.h
 SOURCES += sources/about_widget.cc
+HEADERS += sources/bone_list_model.h
+SOURCES += sources/bone_list_model.cc
 HEADERS += sources/ccd_ik_resolver.h
 SOURCES += sources/ccd_ik_resolver.cc
 HEADERS += sources/component_list_model.h

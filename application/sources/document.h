@@ -564,6 +564,7 @@ public:
         dust3d::Uuid attachBoneId;
         int attachBoneJointIndex = 0;
         QString name;
+        QPixmap previewPixmap;
 
         Bone(const dust3d::Uuid& withId = dust3d::Uuid());
     };
@@ -643,6 +644,8 @@ signals:
     void boneAttachmentChanged(const dust3d::Uuid& boneId);
     void boneNodesChanged(const dust3d::Uuid& boneId);
     void boneNameChanged(const dust3d::Uuid& boneId);
+    void bonePreviewPixmapChanged(const dust3d::Uuid& boneId);
+    void boneIdListChanged();
     void rigChanged();
 
 public: // need initialize
@@ -769,6 +772,7 @@ public:
     void setComponentPreviewImage(const dust3d::Uuid& componentId, std::unique_ptr<QImage> image);
     void resetDirtyFlags();
     void markAllDirty();
+    const Bone* findBone(const dust3d::Uuid& boneId) const;
 
 public slots:
     void undo();
