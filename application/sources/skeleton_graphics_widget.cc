@@ -2039,6 +2039,22 @@ void SkeletonGraphicsWidget::originChanged()
     m_sideOriginItem->show();
 }
 
+void SkeletonGraphicsWidget::nodeBoneJointStateChanged(const dust3d::Uuid& nodeId)
+{
+    const Document::Node* node = m_document->findNode(nodeId);
+    if (nullptr == node) {
+        qDebug() << "Node changed but node id not exist:" << nodeId;
+        return;
+    }
+    auto it = nodeItemMap.find(nodeId);
+    if (it == nodeItemMap.end()) {
+        qDebug() << "Node not found:" << nodeId;
+        return;
+    }
+    it->second.first->setMarkColor(node->boneJoint ? Theme::blue : Qt::transparent);
+    it->second.second->setMarkColor(node->boneJoint ? Theme::blue : Qt::transparent);
+}
+
 void SkeletonGraphicsWidget::nodeAdded(dust3d::Uuid nodeId)
 {
     const Document::Node* node = m_document->findNode(nodeId);
@@ -2058,6 +2074,8 @@ void SkeletonGraphicsWidget::nodeAdded(dust3d::Uuid nodeId)
     sideProfileItem->setOrigin(scenePosFromUnified(QPointF(node->getZ(m_rotated), node->getY(m_rotated))));
     mainProfileItem->setRadius(sceneRadiusFromUnified(node->radius));
     sideProfileItem->setRadius(sceneRadiusFromUnified(node->radius));
+    mainProfileItem->setMarkColor(node->boneJoint ? Theme::blue : Qt::transparent);
+    sideProfileItem->setMarkColor(node->boneJoint ? Theme::blue : Qt::transparent);
     mainProfileItem->setId(nodeId);
     sideProfileItem->setId(nodeId);
     scene()->addItem(mainProfileItem);
