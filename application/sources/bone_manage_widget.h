@@ -13,7 +13,7 @@ class BoneManageWidget : public QWidget {
     Q_OBJECT
 signals:
     void unselectAllOnCanvas();
-    void selectNodeOnCanvas(const dust3d::Uuid& boneId);
+    void selectNodeOnCanvas(const dust3d::Uuid& nodeId);
     void groupOperationAdded();
 public slots:
     void selectBoneByBoneId(const dust3d::Uuid& boneId);
@@ -26,6 +26,7 @@ public:
 private:
     Document* m_document = nullptr;
     BonePreviewGridWidget* m_bonePreviewGridWidget = nullptr;
+    QPushButton* m_addButton = nullptr;
     QPushButton* m_selectButton = nullptr;
     QPushButton* m_propertyButton = nullptr;
     void updateToolButtons();

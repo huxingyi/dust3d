@@ -27,9 +27,11 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
         return button;
     };
 
+    m_addButton = createButton(QChar(fa::plus), tr("Add new bone"));
     m_selectButton = createButton(QChar(fa::objectgroup), tr("Select them on canvas"));
     m_propertyButton = createButton(QChar(fa::sliders), tr("Configure properties"));
 
+    toolsLayout->addWidget(m_addButton);
     toolsLayout->addWidget(m_selectButton);
     toolsLayout->addWidget(m_propertyButton);
     toolsLayout->addStretch();
@@ -44,6 +46,12 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
     connect(m_bonePreviewGridWidget->selectionModel(), &QItemSelectionModel::selectionChanged, this, &BoneManageWidget::updateToolButtons);
     connect(m_bonePreviewGridWidget, &BonePreviewGridWidget::unselectAllOnCanvas, this, &BoneManageWidget::unselectAllOnCanvas);
     connect(m_bonePreviewGridWidget, &BonePreviewGridWidget::selectNodeOnCanvas, this, &BoneManageWidget::selectNodeOnCanvas);
+
+    connect(m_addButton, &QPushButton::clicked, this, [this]() {
+        dust3d::Uuid boneId = dust3d::Uuid::createUuid();
+        this->m_document->addBone(boneId);
+        this->m_document->saveSnapshot();
+    });
 
     connect(m_propertyButton, &QPushButton::clicked, this, &BoneManageWidget::showSelectedBoneProperties);
 
