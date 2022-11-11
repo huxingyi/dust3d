@@ -1,4 +1,8 @@
 #include "skeleton_graphics_widget.h"
+#include "skeleton_graphics_edge_item.h"
+#include "skeleton_graphics_node_item.h"
+#include "skeleton_graphics_origin_item.h"
+#include "skeleton_graphics_selection_item.h"
 #include "theme.h"
 #include <QApplication>
 #include <QBitmap>
