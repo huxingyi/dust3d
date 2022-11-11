@@ -48,6 +48,11 @@ PartManageWidget::PartManageWidget(Document* document, QWidget* parent)
     toolsLayout->addWidget(m_propertyButton);
     toolsLayout->addStretch();
 
+    QWidget* toolsWidget = new QWidget();
+    toolsWidget->setObjectName("tools");
+    toolsWidget->setStyleSheet("QWidget#tools {background: qlineargradient( x1:0 y1:0, x2:1 y2:0, stop:0 transparent, stop:0.5 " + Theme::black.name() + ", stop:1 transparent)};");
+    toolsWidget->setLayout(toolsLayout);
+
     m_componentPreviewGridWidget = new ComponentPreviewGridWidget(document);
 
     connect(m_componentPreviewGridWidget->selectionModel(), &QItemSelectionModel::selectionChanged, this, &PartManageWidget::updateToolButtons);
@@ -120,7 +125,7 @@ PartManageWidget::PartManageWidget(Document* document, QWidget* parent)
     connect(this, &PartManageWidget::customContextMenuRequested, this, &PartManageWidget::showContextMenu);
 
     QVBoxLayout* mainLayout = new QVBoxLayout;
-    mainLayout->addLayout(toolsLayout);
+    mainLayout->addWidget(toolsWidget);
     mainLayout->addWidget(m_componentPreviewGridWidget);
 
     setLayout(mainLayout);
