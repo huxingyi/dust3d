@@ -1,5 +1,6 @@
 #include "document_window.h"
 #include "about_widget.h"
+#include "bone_manage_widget.h"
 #include "cut_face_preview.h"
 #include "document.h"
 #include "document_saver.h"
@@ -269,10 +270,12 @@ DocumentWindow::DocumentWindow()
     partsDocker->setWidget(m_partManageWidget);
     addDockWidget(Qt::RightDockWidgetArea, partsDocker);
 
-    //QDockWidget* motionsDocker = new QDockWidget(tr("Motions"), this);
-    //motionsDocker->setAllowedAreas(Qt::RightDockWidgetArea);
+    QDockWidget* bonesDocker = new QDockWidget(tr("Bones"), this);
+    m_boneManageWidget = new BoneManageWidget(m_document);
+    bonesDocker->setWidget(m_boneManageWidget);
+    bonesDocker->setAllowedAreas(Qt::RightDockWidgetArea);
 
-    //tabifyDockWidget(partsDocker, motionsDocker);
+    tabifyDockWidget(partsDocker, bonesDocker);
 
     partsDocker->raise();
 

@@ -20,6 +20,7 @@
 class Document;
 class SkeletonGraphicsWidget;
 class PartManageWidget;
+class BoneManageWidget;
 class ToolbarButton;
 class SpinnableToolbarIcon;
 
@@ -170,6 +171,7 @@ private:
     bool m_isComponentPreviewImageDecorationsObsolete = false;
 
     PartManageWidget* m_partManageWidget = nullptr;
+    BoneManageWidget* m_boneManageWidget = nullptr;
 
     SpinnableToolbarIcon* m_inprogressIndicator = nullptr;
 
