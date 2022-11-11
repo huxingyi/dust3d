@@ -396,6 +396,7 @@ signals:
     void addNode(float x, float y, float z, float radius, dust3d::Uuid fromNodeId);
     void scaleNodeByAddRadius(dust3d::Uuid nodeId, float amount);
     void moveNodeBy(dust3d::Uuid nodeId, float x, float y, float z);
+    void setNodeBoneJointState(const dust3d::Uuid& nodeId, bool boneJoint);
     void removeNode(dust3d::Uuid nodeId);
     void removePart(dust3d::Uuid partId);
     void setEditMode(Document::EditMode mode);
@@ -572,6 +573,8 @@ public slots:
     void shortcutChamferedOrNotSelectedPart();
     void shortcutSelectAll();
     void shortcutEscape();
+    void markSelectedAsBoneJoint();
+    void markSelectedAsNotBoneJoint();
 private slots:
     void turnaroundImageReady();
 
@@ -598,6 +601,7 @@ private:
     void rotateItems(const std::set<SkeletonGraphicsNodeItem*>& nodeItems, int degree, QVector2D center);
     void rotateAllSideProfile(int degree);
     bool isFloatEqual(float a, float b);
+    void setNodeBoneJointStates(const std::vector<dust3d::Uuid>& nodeIds, bool boneJoint);
 
 private:
     const Document* m_document = nullptr;

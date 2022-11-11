@@ -260,6 +260,18 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint& pos)
         subMenu->addAction(&colorizeAsAutoColorAction);
     }
 
+    QAction markAsBoneJointAction(tr("Bone Joint"), this);
+    QAction markAsNotBoneJointAction(tr("Not Bone Joint"), this);
+    if (hasNodeSelection()) {
+        QMenu* subMenu = contextMenu.addMenu(tr("Mark As"));
+
+        connect(&markAsBoneJointAction, &QAction::triggered, this, &SkeletonGraphicsWidget::markSelectedAsBoneJoint);
+        subMenu->addAction(&markAsBoneJointAction);
+
+        connect(&markAsNotBoneJointAction, &QAction::triggered, this, &SkeletonGraphicsWidget::markSelectedAsNotBoneJoint);
+        subMenu->addAction(&markAsNotBoneJointAction);
+    }
+
     QAction selectAllAction(tr("Select All"), this);
     if (hasItems()) {
         connect(&selectAllAction, &QAction::triggered, this, &SkeletonGraphicsWidget::selectAll);
@@ -2857,4 +2869,47 @@ void SkeletonGraphicsWidget::ikMove(dust3d::Uuid endEffectorId, QVector3D target
     connect(m_ikMover, &SkeletonIkMover::finished, thread, &QThread::quit);
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
     thread->start();
+}
+
+void SkeletonGraphicsWidget::setNodeBoneJointStates(const std::vector<dust3d::Uuid>& nodeIds, bool boneJoint)
+{
+    if (nodeIds.empty())
+        return;
+
+    emit batchChangeBegin();
+    for (const auto& it : nodeIds) {
+        emit setNodeBoneJointState(it, boneJoint);
+    }
+    emit batchChangeEnd();
+    emit groupOperationAdded();
+}
+
+void SkeletonGraphicsWidget::markSelectedAsBoneJoint()
+{
+    std::set<SkeletonGraphicsNodeItem*> nodeItems;
+    readMergedSkeletonNodeSetFromRangeSelection(&nodeItems);
+    if (nodeItems.empty())
+        return;
+
+    std::vector<dust3d::Uuid> nodeIds;
+    for (const auto& it : nodeItems) {
+        nodeIds.push_back(it->id());
+    }
+
+    setNodeBoneJointStates(nodeIds, true);
+}
+
+void SkeletonGraphicsWidget::markSelectedAsNotBoneJoint()
+{
+    std::set<SkeletonGraphicsNodeItem*> nodeItems;
+    readMergedSkeletonNodeSetFromRangeSelection(&nodeItems);
+    if (nodeItems.empty())
+        return;
+
+    std::vector<dust3d::Uuid> nodeIds;
+    for (const auto& it : nodeItems) {
+        nodeIds.push_back(it->id());
+    }
+
+    setNodeBoneJointStates(nodeIds, false);
 }
