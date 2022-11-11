@@ -641,6 +641,7 @@ DocumentWindow::DocumentWindow()
 
     connect(m_document, &Document::skeletonChanged, this, &DocumentWindow::documentChanged);
     connect(m_document, &Document::textureChanged, this, &DocumentWindow::documentChanged);
+    connect(m_document, &Document::rigChanged, this, &DocumentWindow::documentChanged);
     connect(m_document, &Document::turnaroundChanged, this, &DocumentWindow::documentChanged);
     connect(m_document, &Document::optionsChanged, this, &DocumentWindow::documentChanged);
 

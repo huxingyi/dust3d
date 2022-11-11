@@ -89,6 +89,8 @@ namespace String {
 
     inline int toInt(const std::string& string)
     {
+        if (string.empty())
+            return 0;
         return std::stoi(string);
     }
 

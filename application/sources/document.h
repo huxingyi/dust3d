@@ -41,7 +41,7 @@ public:
         None = 0,
         Nodes = 0x00000001,
         Bones = 0x00000002,
-        Document = (Nodes | Bones)
+        Document = (SnapshotFor::Nodes | SnapshotFor::Bones)
     };
 
     class HistoryItem {

@@ -1746,8 +1746,10 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
             for (const auto& boneIt : boneMap) {
                 std::map<std::string, std::string> bone;
                 bone["id"] = boneIt.second.id.toString();
-                bone["attachBoneId"] = boneIt.second.attachBoneId.toString();
-                bone["attachBoneJointIndex"] = std::to_string(boneIt.second.attachBoneJointIndex);
+                if (!boneIt.second.attachBoneId.isNull()) {
+                    bone["attachBoneId"] = boneIt.second.attachBoneId.toString();
+                    bone["attachBoneJointIndex"] = std::to_string(boneIt.second.attachBoneJointIndex);
+                }
                 if (!boneIt.second.name.isEmpty())
                     bone["name"] = boneIt.second.name.toUtf8().constData();
                 snapshot->bones[bone["id"]] = bone;
@@ -1869,11 +1871,13 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
     }
     for (const auto& boneKv : snapshot.bones) {
         Document::Bone bone;
-        oldNewIdMap[dust3d::Uuid(boneKv.first)] = bone.id;
+        auto boneId = bone.id;
+        oldNewIdMap[dust3d::Uuid(boneKv.first)] = boneId;
         bone.name = dust3d::String::valueOrEmpty(boneKv.second, "name").c_str();
-        bone.attachBoneJointIndex = dust3d::String::toInt(dust3d::String::valueOrEmpty(boneKv.second, "attachBoneJointIndex").c_str());
-        boneMap.emplace(bone.id, std::move(bone));
-        newAddedBoneIds.insert(bone.id);
+        bone.attachBoneJointIndex = dust3d::String::toInt(dust3d::String::valueOrEmpty(boneKv.second, "attachBoneJointIndex"));
+        boneMap.emplace(boneId, std::move(bone));
+        boneIdList.push_back(boneId);
+        newAddedBoneIds.insert(boneId);
     }
     for (const auto& boneKv : snapshot.bones) {
         auto attachBoneId = dust3d::Uuid(dust3d::String::valueOrEmpty(boneKv.second, "attachBoneId"));
@@ -1953,7 +1957,8 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
         QString linkData = dust3d::String::valueOrEmpty(componentKv.second, "linkData").c_str();
         QString linkDataType = dust3d::String::valueOrEmpty(componentKv.second, "linkDataType").c_str();
         Document::Component component(dust3d::Uuid(), linkData, linkDataType);
-        oldNewIdMap[dust3d::Uuid(componentKv.first)] = component.id;
+        auto componentId = component.id;
+        oldNewIdMap[dust3d::Uuid(componentKv.first)] = componentId;
         component.name = dust3d::String::valueOrEmpty(componentKv.second, "name").c_str();
         component.expanded = dust3d::String::isTrue(dust3d::String::valueOrEmpty(componentKv.second, "expanded"));
         component.combineMode = dust3d::CombineModeFromString(dust3d::String::valueOrEmpty(componentKv.second, "combineMode").c_str());
@@ -1966,12 +1971,12 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
             dust3d::Uuid partId = oldNewIdMap[dust3d::Uuid(linkData.toUtf8().constData())];
             component.linkToPartId = partId;
             //qDebug() << "Add part:" << partId << " from component:" << component.id;
-            partMap[partId].componentId = component.id;
+            partMap[partId].componentId = componentId;
             if (inversePartIds.find(partId) != inversePartIds.end())
                 component.combineMode = dust3d::CombineMode::Inversion;
         }
-        componentMap.emplace(component.id, std::move(component));
-        newAddedComponentIds.insert(component.id);
+        componentMap.emplace(componentId, std::move(component));
+        newAddedComponentIds.insert(componentId);
     }
     const auto& rootComponentChildren = snapshot.rootComponent.find("children");
     if (rootComponentChildren != snapshot.rootComponent.end()) {
@@ -2018,6 +2023,7 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
     for (const auto& boneIt : newAddedBoneIds) {
         emit boneAdded(boneIt);
     }
+    emit boneIdListChanged();
 
     emit skeletonChanged();
 
