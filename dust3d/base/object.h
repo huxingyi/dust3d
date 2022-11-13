@@ -56,10 +56,8 @@ struct ObjectNode {
 
 class Object {
 public:
-    //std::vector<ObjectNode> nodes;
-    //std::vector<std::pair<std::pair<Uuid, Uuid>, std::pair<Uuid, Uuid>>> edges;
     std::vector<Vector3> vertices;
-    std::vector<std::pair<Uuid, Uuid>> vertexSourceNodes;
+    std::map<PositionKey, Uuid> sourceNodeMap;
     std::vector<std::vector<size_t>> triangleAndQuads;
     std::vector<std::vector<size_t>> triangles;
     std::unordered_map<Uuid, std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>>> partTriangleUvs;

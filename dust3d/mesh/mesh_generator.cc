@@ -682,6 +682,10 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
                         { uv[2], uv[3], uv[0] } });
                 }
             }
+            const auto& vertexSources = tubeMeshBuilder->generatedVertexSources();
+            for (size_t i = 0; i < vertexSources.size(); ++i) {
+                partCache.sourceNodeMap.emplace(std::make_pair(PositionKey(partCache.vertices[i]), vertexSources[i]));
+            }
         }
     }
 
@@ -824,12 +828,8 @@ std::unique_ptr<MeshState> MeshGenerator::combineComponentMesh(const std::string
                 componentCache.noneSeamVertices.insert(vertex);
             collectSharedQuadEdges(partCache.vertices, partCache.faces, &componentCache.sharedQuadEdges);
             componentCache.partTriangleUvs.insert({ Uuid(partIdString), partCache.triangleUvs });
-            for (const auto& it : partCache.objectNodes)
-                componentCache.objectNodes.push_back(it);
-            for (const auto& it : partCache.objectEdges)
-                componentCache.objectEdges.push_back(it);
-            for (const auto& it : partCache.objectNodeVertices)
-                componentCache.objectNodeVertices.push_back(it);
+            for (const auto& it : partCache.sourceNodeMap)
+                componentCache.sourceNodeMap.emplace(it);
         }
         if (!partCache.joined) {
             if (mesh)
@@ -963,12 +963,8 @@ std::unique_ptr<MeshState> MeshGenerator::combineComponentChildGroupMesh(const s
             componentCache.sharedQuadEdges.insert(it);
         for (const auto& it : childComponentCache.partTriangleUvs)
             componentCache.partTriangleUvs.insert({ it.first, it.second });
-        for (const auto& it : childComponentCache.objectNodes)
-            componentCache.objectNodes.push_back(it);
-        for (const auto& it : childComponentCache.objectEdges)
-            componentCache.objectEdges.push_back(it);
-        for (const auto& it : childComponentCache.objectNodeVertices)
-            componentCache.objectNodeVertices.push_back(it);
+        for (const auto& it : childComponentCache.sourceNodeMap)
+            componentCache.sourceNodeMap.emplace(it);
 
         if (nullptr == subMesh || subMesh->isNull()) {
             continue;
@@ -1021,28 +1017,6 @@ void MeshGenerator::setWeldEnabled(bool enabled)
     m_weldEnabled = enabled;
 }
 
-void MeshGenerator::collectErroredParts()
-{
-    for (const auto& it : m_cacheContext->parts) {
-        if (!it.second.isSuccessful) {
-            if (!it.second.joined)
-                continue;
-
-            auto updateVertexIndices = [=](std::vector<std::vector<size_t>>& faces, size_t vertexStartIndex) {
-                for (auto& it : faces) {
-                    for (auto& subIt : it)
-                        subIt += vertexStartIndex;
-                }
-            };
-
-            auto errorTriangleAndQuads = it.second.faces;
-            updateVertexIndices(errorTriangleAndQuads, m_object->vertices.size());
-            m_object->vertices.insert(m_object->vertices.end(), it.second.vertices.begin(), it.second.vertices.end());
-            m_object->triangleAndQuads.insert(m_object->triangleAndQuads.end(), errorTriangleAndQuads.begin(), errorTriangleAndQuads.end());
-        }
-    }
-}
-
 void MeshGenerator::postprocessObject(Object* object)
 {
     std::vector<Vector3> combinedFacesNormals;
@@ -1055,22 +1029,7 @@ void MeshGenerator::postprocessObject(Object* object)
 
     object->triangleNormals = combinedFacesNormals;
 
-    //std::vector<std::pair<Uuid, Uuid>> sourceNodes;
-    //resolveTriangleSourceNode(*object, m_nodeVertices, sourceNodes, &object->vertexSourceNodes);
-    //object->setTriangleSourceNodes(sourceNodes);
-
-    //std::map<std::pair<Uuid, Uuid>, Color> sourceNodeToColorMap;
-    //for (const auto& node : object->nodes)
-    //    sourceNodeToColorMap.insert({ { node.partId, node.nodeId }, node.color });
-
     object->triangleColors.resize(object->triangles.size(), Color::createWhite());
-    //const std::vector<std::pair<Uuid, Uuid>>* triangleSourceNodes = object->triangleSourceNodes();
-    //if (nullptr != triangleSourceNodes) {
-    //for (size_t triangleIndex = 0; triangleIndex < object->triangles.size(); triangleIndex++) {
-    //const auto& source = (*triangleSourceNodes)[triangleIndex];
-    //object->triangleColors[triangleIndex] = sourceNodeToColorMap[source];
-    //}
-    //}
 
     std::vector<std::vector<Vector3>> triangleVertexNormals;
     smoothNormal(object->vertices,
@@ -1116,11 +1075,6 @@ void MeshGenerator::collectUncombinedComponent(const std::string& componentIdStr
         if (nullptr == componentCache.mesh || componentCache.mesh->isNull()) {
             return;
         }
-
-        //m_object->nodes.insert(m_object->nodes.end(), componentCache.objectNodes.begin(), componentCache.objectNodes.end());
-        //m_object->edges.insert(m_object->edges.end(), componentCache.objectEdges.begin(), componentCache.objectEdges.end());
-        m_nodeVertices.insert(m_nodeVertices.end(), componentCache.objectNodeVertices.begin(), componentCache.objectNodeVertices.end());
-
         collectIncombinableMesh(componentCache.mesh.get(), componentCache);
         return;
     }
@@ -1293,10 +1247,8 @@ void MeshGenerator::generate()
 
     const auto& componentCache = m_cacheContext->components[to_string(Uuid())];
 
-    //m_object->nodes = componentCache.objectNodes;
-    //m_object->edges = componentCache.objectEdges;
+    m_object->sourceNodeMap = componentCache.sourceNodeMap;
     m_object->partTriangleUvs = componentCache.partTriangleUvs;
-    m_nodeVertices = componentCache.objectNodeVertices;
 
     std::vector<Vector3> combinedVertices;
     std::vector<std::vector<size_t>> combinedFaces;
@@ -1325,7 +1277,6 @@ void MeshGenerator::generate()
     // Recursively check uncombined components
     collectUncombinedComponent(to_string(Uuid()));
 
-    collectErroredParts();
     postprocessObject(m_object);
 
     if (needDeleteCacheContext) {

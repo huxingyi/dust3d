@@ -44,11 +44,9 @@ public:
 
     struct GeneratedPart {
         std::vector<Vector3> vertices;
+        std::map<PositionKey, Uuid> sourceNodeMap;
         std::vector<std::vector<size_t>> faces;
         std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>> triangleUvs;
-        std::vector<ObjectNode> objectNodes;
-        std::vector<std::pair<std::pair<Uuid, Uuid>, std::pair<Uuid, Uuid>>> objectEdges;
-        std::vector<std::pair<Vector3, std::pair<Uuid, Uuid>>> objectNodeVertices;
         Color color = Color(1.0, 1.0, 1.0);
         float metalness = 0.0;
         float roughness = 1.0;
@@ -59,9 +57,7 @@ public:
             vertices.clear();
             faces.clear();
             triangleUvs.clear();
-            objectNodes.clear();
-            objectEdges.clear();
-            objectNodeVertices.clear();
+            sourceNodeMap.clear();
             color = Color(1.0, 1.0, 1.0);
             metalness = 0.0;
             roughness = 1.0;
@@ -76,9 +72,7 @@ public:
         std::unordered_map<Uuid, std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>>> partTriangleUvs;
         std::vector<std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>>> seamTriangleUvs;
         std::set<PositionKey> noneSeamVertices;
-        std::vector<ObjectNode> objectNodes;
-        std::vector<std::pair<std::pair<Uuid, Uuid>, std::pair<Uuid, Uuid>>> objectEdges;
-        std::vector<std::pair<Vector3, std::pair<Uuid, Uuid>>> objectNodeVertices;
+        std::map<PositionKey, Uuid> sourceNodeMap;
         void reset()
         {
             mesh.reset();
@@ -86,9 +80,7 @@ public:
             partTriangleUvs.clear();
             seamTriangleUvs.clear();
             noneSeamVertices.clear();
-            objectNodes.clear();
-            objectEdges.clear();
-            objectNodeVertices.clear();
+            sourceNodeMap.clear();
         }
     };
 
@@ -137,7 +129,6 @@ private:
     float m_mainProfileMiddleX = 0;
     float m_sideProfileMiddleX = 0;
     float m_mainProfileMiddleY = 0;
-    std::vector<std::pair<Vector3, std::pair<Uuid, Uuid>>> m_nodeVertices;
     std::map<std::string, std::set<std::string>> m_partNodeIds;
     std::map<std::string, std::set<std::string>> m_partEdgeIds;
     bool m_isSuccessful = false;
@@ -172,7 +163,6 @@ private:
     void collectUncombinedComponent(const std::string& componentIdString);
     void cutFaceStringToCutTemplate(const std::string& cutFaceString, std::vector<Vector2>& cutTemplate);
     void postprocessObject(Object* object);
-    void collectErroredParts();
     void preprocessMirror();
     std::string reverseUuid(const std::string& uuidString);
     void recoverQuads(const std::vector<Vector3>& vertices, const std::vector<std::vector<size_t>>& triangles, const std::set<std::pair<PositionKey, PositionKey>>& sharedQuadEdges, std::vector<std::vector<size_t>>& triangleAndQuads);
