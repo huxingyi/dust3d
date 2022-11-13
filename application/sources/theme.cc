@@ -163,3 +163,8 @@ void Theme::initIconButton(QPushButton* button)
 {
     button->setFixedSize(Theme::toolIconSize, Theme::toolIconSize);
 }
+
+void Theme::initLineEdit(QLineEdit* edit)
+{
+    edit->setStyleSheet("QLineEdit { background-color: black }");
+}

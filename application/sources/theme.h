@@ -6,6 +6,7 @@
 #include <QCheckBox>
 #include <QColor>
 #include <QLabel>
+#include <QLineEdit>
 #include <QPushButton>
 
 class Theme {
@@ -42,6 +43,7 @@ public:
     static void initToolButton(QPushButton* button);
     static void initCheckbox(QCheckBox* checkbox);
     static void initIconButton(QPushButton* button);
+    static void initLineEdit(QLineEdit* edit);
 };
 
 #endif

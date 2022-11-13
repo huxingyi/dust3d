@@ -30,6 +30,8 @@ signals:
     void scaleNodeByAddRadius(dust3d::Uuid nodeId, float amount);
     void moveNodeBy(dust3d::Uuid nodeId, float x, float y, float z);
     void setNodeBoneJointState(const dust3d::Uuid& nodeId, bool boneJoint);
+    void addNodesToBone(const dust3d::Uuid& boneId, const std::vector<dust3d::Uuid>& nodeIds);
+    void removeNodesFromBone(const dust3d::Uuid& boneId, const std::vector<dust3d::Uuid>& nodeIds);
     void removeNode(dust3d::Uuid nodeId);
     void removePart(dust3d::Uuid partId);
     void setEditMode(Document::EditMode mode);
@@ -236,6 +238,8 @@ private:
     void rotateAllSideProfile(int degree);
     bool isFloatEqual(float a, float b);
     void setNodeBoneJointStates(const std::vector<dust3d::Uuid>& nodeIds, bool boneJoint);
+    void addSelectedToBone(const dust3d::Uuid& boneId);
+    void removeSelectedFromBone(const dust3d::Uuid& boneId);
 
 private:
     const Document* m_document = nullptr;

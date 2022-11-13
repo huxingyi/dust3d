@@ -115,6 +115,12 @@ void loadSnapshotFromXmlString(Snapshot* snapshot, char* xmlString)
                         }
                     }
                 }
+                for (rapidxml::xml_node<>* node = bones->first_node(); nullptr != node; node = node->next_sibling()) {
+                    rapidxml::xml_attribute<>* idAttribute = node->first_attribute("id");
+                    if (nullptr != idAttribute) {
+                        snapshot->boneIdList.push_back(idAttribute->value());
+                    }
+                }
             }
 
             rapidxml::xml_node<>* partIdList = canvas->first_node("partIdList");
@@ -232,13 +238,15 @@ void saveSnapshotToXmlString(const Snapshot& snapshot, std::string& xmlString)
     }
     xmlString += " </parts>\n";
 
-    if (!snapshot.bones.empty()) {
+    if (!snapshot.boneIdList.empty()) {
         xmlString += " <bones>\n";
-        std::map<std::string, std::map<std::string, std::string>>::const_iterator boneIterator;
-        for (boneIterator = snapshot.bones.begin(); boneIterator != snapshot.bones.end(); boneIterator++) {
+        for (const auto& boneId : snapshot.boneIdList) {
+            auto findBone = snapshot.bones.find(boneId);
+            if (findBone == snapshot.bones.end())
+                continue;
             std::map<std::string, std::string>::const_iterator boneAttributeIterator;
             xmlString += "  <bone";
-            for (boneAttributeIterator = boneIterator->second.begin(); boneAttributeIterator != boneIterator->second.end(); boneAttributeIterator++) {
+            for (boneAttributeIterator = findBone->second.begin(); boneAttributeIterator != findBone->second.end(); boneAttributeIterator++) {
                 if (String::startsWith(boneAttributeIterator->first, "__"))
                     continue;
                 xmlString += " " + boneAttributeIterator->first + "=\"" + boneAttributeIterator->second + "\"";

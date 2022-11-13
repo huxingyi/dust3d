@@ -1876,8 +1876,10 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
         bone.name = dust3d::String::valueOrEmpty(boneKv.second, "name").c_str();
         bone.attachBoneJointIndex = dust3d::String::toInt(dust3d::String::valueOrEmpty(boneKv.second, "attachBoneJointIndex"));
         boneMap.emplace(boneId, std::move(bone));
-        boneIdList.push_back(boneId);
         newAddedBoneIds.insert(boneId);
+    }
+    for (const auto& boneIdString : snapshot.boneIdList) {
+        boneIdList.push_back(oldNewIdMap[dust3d::Uuid(boneIdString)]);
     }
     for (const auto& boneKv : snapshot.bones) {
         auto attachBoneId = dust3d::Uuid(dust3d::String::valueOrEmpty(boneKv.second, "attachBoneId"));

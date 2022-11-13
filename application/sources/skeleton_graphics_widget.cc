@@ -276,6 +276,27 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint& pos)
         subMenu->addAction(&markAsNotBoneJointAction);
     }
 
+    if (hasNodeSelection() && !m_document->boneIdList.empty()) {
+        QMenu* addToBoneMenu = contextMenu.addMenu(tr("Add To Bone"));
+        QMenu* removeFromBoneMenu = contextMenu.addMenu(tr("Remove From Bone"));
+
+        for (const auto& boneId : m_document->boneIdList) {
+            const Document::Bone* bone = m_document->findBone(boneId);
+            if (nullptr == bone)
+                continue;
+            QAction* addAction = new QAction(bone->previewPixmap, bone->name, this);
+            connect(addAction, &QAction::triggered, this, [=]() {
+                this->addSelectedToBone(boneId);
+            });
+            QAction* removeAction = new QAction(bone->previewPixmap, bone->name, this);
+            connect(removeAction, &QAction::triggered, this, [=]() {
+                this->removeSelectedFromBone(boneId);
+            });
+            addToBoneMenu->addAction(addAction);
+            removeFromBoneMenu->addAction(removeAction);
+        }
+    }
+
     QAction selectAllAction(tr("Select All"), this);
     if (hasItems()) {
         connect(&selectAllAction, &QAction::triggered, this, &SkeletonGraphicsWidget::selectAll);
@@ -2934,4 +2955,34 @@ void SkeletonGraphicsWidget::markSelectedAsNotBoneJoint()
     }
 
     setNodeBoneJointStates(nodeIds, false);
+}
+
+void SkeletonGraphicsWidget::addSelectedToBone(const dust3d::Uuid& boneId)
+{
+    std::set<SkeletonGraphicsNodeItem*> nodeItems;
+    readMergedSkeletonNodeSetFromRangeSelection(&nodeItems);
+    if (nodeItems.empty())
+        return;
+
+    std::vector<dust3d::Uuid> nodeIds;
+    for (const auto& it : nodeItems) {
+        nodeIds.push_back(it->id());
+    }
+
+    emit addNodesToBone(boneId, nodeIds);
+}
+
+void SkeletonGraphicsWidget::removeSelectedFromBone(const dust3d::Uuid& boneId)
+{
+    std::set<SkeletonGraphicsNodeItem*> nodeItems;
+    readMergedSkeletonNodeSetFromRangeSelection(&nodeItems);
+    if (nodeItems.empty())
+        return;
+
+    std::vector<dust3d::Uuid> nodeIds;
+    for (const auto& it : nodeItems) {
+        nodeIds.push_back(it->id());
+    }
+
+    emit removeNodesFromBone(boneId, nodeIds);
 }
