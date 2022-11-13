@@ -45,6 +45,11 @@ const std::vector<Vector3>& TubeMeshBuilder::generatedVertices()
     return m_generatedVertices;
 }
 
+const std::vector<Uuid>& TubeMeshBuilder::generatedVertexSources()
+{
+    return m_generatedVertexSources;
+}
+
 const std::vector<std::vector<size_t>>& TubeMeshBuilder::generatedFaces()
 {
     return m_generatedFaces;
@@ -113,8 +118,6 @@ void TubeMeshBuilder::preprocessNodes()
 {
     applyInterpolation();
     applyRoundEnd();
-
-    // TODO: Interpolate...
 }
 
 void TubeMeshBuilder::buildNodePositionAndDirections()
@@ -260,6 +263,7 @@ void TubeMeshBuilder::build()
         for (size_t k = 0; k < cutFaceVertices.size(); ++k) {
             cutFaceIndices[i][k] = m_generatedVertices.size();
             m_generatedVertices.emplace_back(cutFaceVertices[k]);
+            m_generatedVertexSources.emplace_back(m_nodes[i].sourceId);
         }
     }
 

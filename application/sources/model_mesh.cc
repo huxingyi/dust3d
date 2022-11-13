@@ -130,11 +130,11 @@ ModelMesh::ModelMesh(dust3d::Object& object)
     m_vertices = object.vertices;
     m_faces = object.triangleAndQuads;
 
-    std::map<std::pair<dust3d::Uuid, dust3d::Uuid>, const dust3d::ObjectNode*> nodeMap;
-    for (size_t i = 0; i < object.nodes.size(); ++i) {
-        const auto& node = object.nodes[i];
-        nodeMap.insert({ { node.partId, node.nodeId }, &node });
-    }
+    //std::map<std::pair<dust3d::Uuid, dust3d::Uuid>, const dust3d::ObjectNode*> nodeMap;
+    //for (size_t i = 0; i < object.nodes.size(); ++i) {
+    //    const auto& node = object.nodes[i];
+    //    nodeMap.insert({ { node.partId, node.nodeId }, &node });
+    //}
 
     m_triangleVertexCount = (int)object.triangles.size() * 3;
     m_triangleVertices = new ModelOpenGLVertex[m_triangleVertexCount];
@@ -172,14 +172,14 @@ ModelMesh::ModelMesh(dust3d::Object& object)
             dest->normX = srcNormal->x();
             dest->normY = srcNormal->y();
             dest->normZ = srcNormal->z();
-            auto findNode = nodeMap.find(object.vertexSourceNodes[vertexIndex]);
-            if (findNode != nodeMap.end()) {
-                dest->metalness = findNode->second->metalness;
-                dest->roughness = findNode->second->roughness;
-            } else {
-                dest->metalness = m_defaultMetalness;
-                dest->roughness = m_defaultRoughness;
-            }
+            //auto findNode = nodeMap.find(object.vertexSourceNodes[vertexIndex]);
+            //if (findNode != nodeMap.end()) {
+            //    dest->metalness = findNode->second->metalness;
+            //    dest->roughness = findNode->second->roughness;
+            //} else {
+            dest->metalness = m_defaultMetalness;
+            dest->roughness = m_defaultRoughness;
+            //}
             dest->tangentX = srcTangent->x();
             dest->tangentY = srcTangent->y();
             dest->tangentZ = srcTangent->z();

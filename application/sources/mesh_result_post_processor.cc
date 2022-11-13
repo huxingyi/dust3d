@@ -22,8 +22,8 @@ dust3d::Object* MeshResultPostProcessor::takePostProcessedObject()
 
 void MeshResultPostProcessor::poseProcess()
 {
-    if (!m_object->nodes.empty()) {
-        /*
+    //if (!m_object->nodes.empty()) {
+    /*
         {
             std::vector<std::vector<dust3d::Vector2>> triangleVertexUvs;
             std::set<int> seamVertices;
@@ -39,7 +39,7 @@ void MeshResultPostProcessor::poseProcess()
             m_object->setTriangleTangents(triangleTangents);
         }
         */
-    }
+    //}
 }
 
 void MeshResultPostProcessor::process()

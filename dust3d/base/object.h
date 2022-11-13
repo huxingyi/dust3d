@@ -56,8 +56,8 @@ struct ObjectNode {
 
 class Object {
 public:
-    std::vector<ObjectNode> nodes;
-    std::vector<std::pair<std::pair<Uuid, Uuid>, std::pair<Uuid, Uuid>>> edges;
+    //std::vector<ObjectNode> nodes;
+    //std::vector<std::pair<std::pair<Uuid, Uuid>, std::pair<Uuid, Uuid>>> edges;
     std::vector<Vector3> vertices;
     std::vector<std::pair<Uuid, Uuid>> vertexSourceNodes;
     std::vector<std::vector<size_t>> triangleAndQuads;
