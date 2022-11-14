@@ -38,32 +38,33 @@
 namespace dust3d {
 
 struct ObjectNode {
-    Uuid partId;
-    Uuid nodeId;
-    Vector3 origin;
-    float radius = 0.0;
+    //Uuid partId;
+    //Uuid nodeId;
+    //Vector3 origin;
+    //float radius = 0.0;
     Color color;
-    float colorSolubility = 0.0;
-    float metalness = 0.0;
-    float roughness = 1.0;
-    Uuid materialId;
-    bool countershaded = false;
-    Uuid mirrorFromPartId;
-    Uuid mirroredByPartId;
-    Vector3 direction;
-    bool joined = true;
+    //float colorSolubility = 0.0;
+    //float metalness = 0.0;
+    //float roughness = 1.0;
+    //Uuid materialId;
+    //bool countershaded = false;
+    //Uuid mirrorFromPartId;
+    //Uuid mirroredByPartId;
+    //Vector3 direction;
+    //bool joined = true;
 };
 
 class Object {
 public:
     std::vector<Vector3> vertices;
-    std::map<PositionKey, Uuid> sourceNodeMap;
+    std::map<PositionKey, Uuid> positionToNodeIdMap;
+    std::map<Uuid, ObjectNode> nodeMap;
     std::vector<std::vector<size_t>> triangleAndQuads;
     std::vector<std::vector<size_t>> triangles;
     std::unordered_map<Uuid, std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>>> partTriangleUvs;
     std::vector<std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>>> seamTriangleUvs;
     std::vector<Vector3> triangleNormals;
-    std::vector<Color> triangleColors;
+    std::vector<Color> vertexColors;
     bool alphaEnabled = false;
     uint64_t meshId = 0;
 

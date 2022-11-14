@@ -639,6 +639,12 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
     partCache.isSuccessful = false;
     partCache.joined = (target == PartTarget::Model && !isDisabled);
 
+    partCache.nodeMap.clear();
+    for (const auto& meshNode : meshNodes) {
+        partCache.nodeMap.emplace(std::make_pair(meshNode.sourceId,
+            ObjectNode { partColor }));
+    }
+
     if (PartTarget::Model == target) {
         if (1 == meshNodes.size()) {
             size_t subdivideTimes = subdived ? 1 : 0;
@@ -684,7 +690,7 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
             }
             const auto& vertexSources = tubeMeshBuilder->generatedVertexSources();
             for (size_t i = 0; i < vertexSources.size(); ++i) {
-                partCache.sourceNodeMap.emplace(std::make_pair(PositionKey(partCache.vertices[i]), vertexSources[i]));
+                partCache.positionToNodeIdMap.emplace(std::make_pair(PositionKey(partCache.vertices[i]), vertexSources[i]));
             }
         }
     }
@@ -828,8 +834,10 @@ std::unique_ptr<MeshState> MeshGenerator::combineComponentMesh(const std::string
                 componentCache.noneSeamVertices.insert(vertex);
             collectSharedQuadEdges(partCache.vertices, partCache.faces, &componentCache.sharedQuadEdges);
             componentCache.partTriangleUvs.insert({ Uuid(partIdString), partCache.triangleUvs });
-            for (const auto& it : partCache.sourceNodeMap)
-                componentCache.sourceNodeMap.emplace(it);
+            for (const auto& it : partCache.positionToNodeIdMap)
+                componentCache.positionToNodeIdMap.emplace(it);
+            for (const auto& it : partCache.nodeMap)
+                componentCache.nodeMap.emplace(it);
         }
         if (!partCache.joined) {
             if (mesh)
@@ -963,8 +971,10 @@ std::unique_ptr<MeshState> MeshGenerator::combineComponentChildGroupMesh(const s
             componentCache.sharedQuadEdges.insert(it);
         for (const auto& it : childComponentCache.partTriangleUvs)
             componentCache.partTriangleUvs.insert({ it.first, it.second });
-        for (const auto& it : childComponentCache.sourceNodeMap)
-            componentCache.sourceNodeMap.emplace(it);
+        for (const auto& it : childComponentCache.positionToNodeIdMap)
+            componentCache.positionToNodeIdMap.emplace(it);
+        for (const auto& it : childComponentCache.nodeMap)
+            componentCache.nodeMap.emplace(it);
 
         if (nullptr == subMesh || subMesh->isNull()) {
             continue;
@@ -1029,7 +1039,16 @@ void MeshGenerator::postprocessObject(Object* object)
 
     object->triangleNormals = combinedFacesNormals;
 
-    object->triangleColors.resize(object->triangles.size(), Color::createWhite());
+    object->vertexColors.resize(object->vertices.size(), Color::createWhite());
+    for (size_t i = 0; i < object->vertices.size(); ++i) {
+        auto findSourceNode = object->positionToNodeIdMap.find(object->vertices[i]);
+        if (findSourceNode == object->positionToNodeIdMap.end())
+            continue;
+        auto findObjectNode = object->nodeMap.find(findSourceNode->second);
+        if (findObjectNode == object->nodeMap.end())
+            continue;
+        object->vertexColors[i] = findObjectNode->second.color;
+    }
 
     std::vector<std::vector<Vector3>> triangleVertexNormals;
     smoothNormal(object->vertices,
@@ -1247,7 +1266,8 @@ void MeshGenerator::generate()
 
     const auto& componentCache = m_cacheContext->components[to_string(Uuid())];
 
-    m_object->sourceNodeMap = componentCache.sourceNodeMap;
+    m_object->positionToNodeIdMap = componentCache.positionToNodeIdMap;
+    m_object->nodeMap = componentCache.nodeMap;
     m_object->partTriangleUvs = componentCache.partTriangleUvs;
 
     std::vector<Vector3> combinedVertices;

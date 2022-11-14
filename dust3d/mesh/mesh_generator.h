@@ -44,7 +44,8 @@ public:
 
     struct GeneratedPart {
         std::vector<Vector3> vertices;
-        std::map<PositionKey, Uuid> sourceNodeMap;
+        std::map<PositionKey, Uuid> positionToNodeIdMap;
+        std::map<Uuid, ObjectNode> nodeMap;
         std::vector<std::vector<size_t>> faces;
         std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>> triangleUvs;
         Color color = Color(1.0, 1.0, 1.0);
@@ -57,7 +58,8 @@ public:
             vertices.clear();
             faces.clear();
             triangleUvs.clear();
-            sourceNodeMap.clear();
+            positionToNodeIdMap.clear();
+            nodeMap.clear();
             color = Color(1.0, 1.0, 1.0);
             metalness = 0.0;
             roughness = 1.0;
@@ -72,7 +74,8 @@ public:
         std::unordered_map<Uuid, std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>>> partTriangleUvs;
         std::vector<std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>>> seamTriangleUvs;
         std::set<PositionKey> noneSeamVertices;
-        std::map<PositionKey, Uuid> sourceNodeMap;
+        std::map<PositionKey, Uuid> positionToNodeIdMap;
+        std::map<Uuid, ObjectNode> nodeMap;
         void reset()
         {
             mesh.reset();
@@ -80,7 +83,8 @@ public:
             partTriangleUvs.clear();
             seamTriangleUvs.clear();
             noneSeamVertices.clear();
-            sourceNodeMap.clear();
+            positionToNodeIdMap.clear();
+            nodeMap.clear();
         }
     };
 

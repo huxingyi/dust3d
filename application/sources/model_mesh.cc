@@ -130,12 +130,6 @@ ModelMesh::ModelMesh(dust3d::Object& object)
     m_vertices = object.vertices;
     m_faces = object.triangleAndQuads;
 
-    //std::map<std::pair<dust3d::Uuid, dust3d::Uuid>, const dust3d::ObjectNode*> nodeMap;
-    //for (size_t i = 0; i < object.nodes.size(); ++i) {
-    //    const auto& node = object.nodes[i];
-    //    nodeMap.insert({ { node.partId, node.nodeId }, &node });
-    //}
-
     m_triangleVertexCount = (int)object.triangles.size() * 3;
     m_triangleVertices = new ModelOpenGLVertex[m_triangleVertexCount];
     int destIndex = 0;
@@ -146,10 +140,10 @@ ModelMesh::ModelMesh(dust3d::Object& object)
     const dust3d::Vector2 defaultUv = dust3d::Vector2(0, 0);
     const dust3d::Vector3 defaultTangent = dust3d::Vector3(0, 0, 0);
     for (size_t i = 0; i < object.triangles.size(); ++i) {
-        const auto& triangleColor = &object.triangleColors[i];
         for (auto j = 0; j < 3; j++) {
             int vertexIndex = (int)object.triangles[i][j];
             const dust3d::Vector3* srcVert = &object.vertices[vertexIndex];
+            const dust3d::Color* srcColor = &object.vertexColors[vertexIndex];
             const dust3d::Vector3* srcNormal = &defaultNormal;
             if (triangleVertexNormals)
                 srcNormal = &(*triangleVertexNormals)[i][j];
@@ -160,10 +154,10 @@ ModelMesh::ModelMesh(dust3d::Object& object)
             if (triangleTangents)
                 srcTangent = &(*triangleTangents)[i];
             ModelOpenGLVertex* dest = &m_triangleVertices[destIndex];
-            dest->colorR = triangleColor->r();
-            dest->colorG = triangleColor->g();
-            dest->colorB = triangleColor->b();
-            dest->alpha = triangleColor->alpha();
+            dest->colorR = srcColor->r();
+            dest->colorG = srcColor->g();
+            dest->colorB = srcColor->b();
+            dest->alpha = srcColor->alpha();
             dest->posX = srcVert->x();
             dest->posY = srcVert->y();
             dest->posZ = srcVert->z();
