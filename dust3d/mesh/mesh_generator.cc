@@ -27,7 +27,6 @@
 #include <dust3d/mesh/box_mesh.h>
 #include <dust3d/mesh/mesh_generator.h>
 #include <dust3d/mesh/mesh_recombiner.h>
-#include <dust3d/mesh/resolve_triangle_source_node.h>
 #include <dust3d/mesh/rope_mesh.h>
 #include <dust3d/mesh/section_preview_mesh_builder.h>
 #include <dust3d/mesh/smooth_normal.h>
