@@ -31,10 +31,7 @@ public:
     enum class EditMode {
         Add = 0,
         Select,
-        Paint,
-        Drag,
-        ZoomIn,
-        ZoomOut
+        Pick
     };
 
     enum class SnapshotFor {

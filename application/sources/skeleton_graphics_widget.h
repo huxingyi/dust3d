@@ -185,7 +185,6 @@ public slots:
     void shortcutCopy();
     void shortcutPaste();
     void shortcutSelectMode();
-    void shortcutPaintMode();
     void shortcutZoomRenderedModelByMinus10();
     void shortcutZoomSelectedByMinus1();
     void shortcutZoomRenderedModelBy10();
@@ -270,8 +269,6 @@ private:
     QTimer* m_deferredRemoveTimer = nullptr;
     bool m_eventForwardingToModelWidget = false;
     ModelWidget* m_modelWidget = nullptr;
-    bool m_inTempDragMode = false;
-    Document::EditMode m_modeBeforeEnterTempDragMode = Document::EditMode::Select;
     float m_turnaroundOpacity = 0.25f;
     bool m_rotated = false;
     QImage* m_backgroundImage = nullptr;

@@ -105,7 +105,7 @@ void SkeletonGraphicsWidget::shortcutEscape()
     if (!isVisible())
         return;
 
-    if (Document::EditMode::Add == m_document->editMode || Document::EditMode::Paint == m_document->editMode) {
+    if (Document::EditMode::Select != m_document->editMode) {
         emit setEditMode(Document::EditMode::Select);
         return;
     }
@@ -700,6 +700,14 @@ void SkeletonGraphicsWidget::updateCursor()
     }
 
     // Set cursor here if needed
+    switch (m_document->editMode) {
+    case Document::EditMode::Pick:
+        setCursor(Qt::CrossCursor);
+        break;
+    default:
+        unsetCursor();
+        break;
+    }
 
     emit cursorChanged();
 }
@@ -1384,29 +1392,7 @@ QPointF SkeletonGraphicsWidget::mouseEventScenePos(QMouseEvent* event)
 bool SkeletonGraphicsWidget::mousePress(QMouseEvent* event)
 {
     if (event->button() == Qt::LeftButton) {
-        if (Document::EditMode::ZoomIn == m_document->editMode) {
-            ViewportAnchor lastAnchor = transformationAnchor();
-            setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
-            scale(1.25, 1.25);
-            setTransformationAnchor(lastAnchor);
-            return true;
-        } else if (Document::EditMode::ZoomOut == m_document->editMode) {
-            ViewportAnchor lastAnchor = transformationAnchor();
-            setTransformationAnchor(QGraphicsView::AnchorUnderMouse);
-            scale(0.8, 0.8);
-            setTransformationAnchor(lastAnchor);
-            //if ((!verticalScrollBar() || !verticalScrollBar()->isVisible()) &&
-            //        (!horizontalScrollBar() || !horizontalScrollBar()->isVisible())) {
-            //    setTransform(QTransform());
-            //}
-            return true;
-        } else if (Document::EditMode::Drag == m_document->editMode) {
-            if (!m_dragStarted) {
-                m_lastGlobalPos = event->globalPos();
-                m_dragStarted = true;
-                updateCursor();
-            }
-        } else if (Document::EditMode::Add == m_document->editMode) {
+        if (Document::EditMode::Add == m_document->editMode) {
             if (m_cursorNodeItem->isVisible()) {
                 if (m_addFromNodeItem) {
                     if (m_hoveredNodeItem && m_addFromNodeItem && m_hoveredNodeItem != m_addFromNodeItem && m_hoveredNodeItem->profile() == m_addFromNodeItem->profile() && !m_document->findEdgeByNodes(m_addFromNodeItem->id(), m_hoveredNodeItem->id()) && m_document->isNodeEditable(m_hoveredNodeItem->id())) {
@@ -1748,11 +1734,6 @@ void SkeletonGraphicsWidget::shortcutSelectMode()
     emit setEditMode(Document::EditMode::Select);
 }
 
-void SkeletonGraphicsWidget::shortcutPaintMode()
-{
-    emit setEditMode(Document::EditMode::Paint);
-}
-
 void SkeletonGraphicsWidget::shortcutZoomRenderedModelByMinus10()
 {
     if (!isVisible())
@@ -2022,28 +2003,11 @@ void SkeletonGraphicsWidget::shortcutRoundEndOrNotSelectedPart()
 
 bool SkeletonGraphicsWidget::keyPress(QKeyEvent* event)
 {
-    if (event->key() == Qt::Key_Space) {
-        if (Document::EditMode::ZoomIn == m_document->editMode || Document::EditMode::ZoomOut == m_document->editMode || Document::EditMode::Select == m_document->editMode || Document::EditMode::Add == m_document->editMode) {
-            m_inTempDragMode = true;
-            m_modeBeforeEnterTempDragMode = m_document->editMode;
-            emit setEditMode(Document::EditMode::Drag);
-            return true;
-        }
-    }
-
     return false;
 }
 
 bool SkeletonGraphicsWidget::keyRelease(QKeyEvent* event)
 {
-    if (event->key() == Qt::Key_Space) {
-        if (m_inTempDragMode) {
-            m_inTempDragMode = false;
-            emit setEditMode(m_modeBeforeEnterTempDragMode);
-            return true;
-        }
-    }
-
     return false;
 }
 
