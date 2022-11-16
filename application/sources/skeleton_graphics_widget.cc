@@ -1485,6 +1485,11 @@ bool SkeletonGraphicsWidget::mousePress(QMouseEvent* event)
             if (processed) {
                 return true;
             }
+        } else if (Document::EditMode::Pick == m_document->editMode) {
+            if (m_hoveredNodeItem) {
+                dust3dDebug << "nodePicked:" << m_hoveredNodeItem->id().toString();
+                emit nodePicked(m_hoveredNodeItem->id());
+            }
         }
     }
 
@@ -1531,7 +1536,8 @@ QPointF SkeletonGraphicsWidget::scenePosFromUnified(QPointF pos)
 bool SkeletonGraphicsWidget::mouseDoubleClick(QMouseEvent* event)
 {
     if (m_hoveredNodeItem || m_hoveredEdgeItem) {
-        selectPartAll();
+        if (Document::EditMode::Select == m_document->editMode)
+            selectPartAll();
         return true;
     }
     if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ControlModifier)) {

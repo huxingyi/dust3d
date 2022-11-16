@@ -76,6 +76,7 @@ signals:
     void shortcutToggleFlatShading();
     void shortcutToggleRotation();
     void loadedTurnaroundImageChanged();
+    void nodePicked(const dust3d::Uuid& nodeId);
 
 public:
     SkeletonGraphicsWidget(const Document* document);
