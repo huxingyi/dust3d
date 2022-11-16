@@ -4,7 +4,6 @@
 #include "bone_property_widget.h"
 #include "document.h"
 #include "theme.h"
-#include <QMenu>
 #include <QVBoxLayout>
 #include <QWidgetAction>
 
@@ -76,15 +75,23 @@ void BoneManageWidget::showSelectedBoneProperties()
 
     auto* propertyWidget = new BonePropertyWidget(m_document, boneIds);
 
-    auto menu = std::make_unique<QMenu>(this->parentWidget());
-    QWidgetAction* widgetAction = new QWidgetAction(menu.get());
+    m_propertyMenu = std::make_unique<QMenu>(this->parentWidget());
+
+    connect(propertyWidget, &BonePropertyWidget::pickBoneJoints, this, [this]() {
+        if (nullptr == this->m_propertyMenu)
+            return;
+        this->m_document->setEditMode(Document::EditMode::Pick);
+        this->m_propertyMenu->close();
+    });
+
+    QWidgetAction* widgetAction = new QWidgetAction(m_propertyMenu.get());
     widgetAction->setDefaultWidget(propertyWidget);
-    menu->addAction(widgetAction);
+    m_propertyMenu->addAction(widgetAction);
 
     auto x = mapToGlobal(QPoint(0, 0)).x();
     if (x <= 0)
         x = QCursor::pos().x();
-    menu->exec(QPoint(
+    m_propertyMenu->exec(QPoint(
         x - propertyWidget->width(),
         QCursor::pos().y()));
 }

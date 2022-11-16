@@ -9,7 +9,7 @@ IntNumberWidget::IntNumberWidget(QWidget* parent, bool singleLine)
 {
     m_slider = new QSlider(Qt::Horizontal, this);
     m_slider->setRange(0, 100);
-    m_slider->setFixedWidth(240);
+    m_slider->setFixedWidth(Theme::sidebarPreferredWidth * 0.6);
 
     m_label = new QLabel(this);
     m_label->setAlignment(Qt::AlignLeft);

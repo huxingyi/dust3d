@@ -705,8 +705,7 @@ void SkeletonGraphicsWidget::updateCursor()
         setCursor(Qt::CrossCursor);
         break;
     default:
-        unsetCursor();
-        break;
+        setCursor(Qt::ArrowCursor);
     }
 
     emit cursorChanged();
@@ -827,7 +826,7 @@ bool SkeletonGraphicsWidget::mouseMove(QMouseEvent* event)
         }
     }
 
-    if (Document::EditMode::Select == m_document->editMode || Document::EditMode::Add == m_document->editMode) {
+    if (Document::EditMode::Select == m_document->editMode || Document::EditMode::Add == m_document->editMode || Document::EditMode::Pick == m_document->editMode) {
 
         //
         // > For overlapping nodes, you can make it a bit better by selecting the node center nearest the mouse, rather than simply checking against the wider circle.

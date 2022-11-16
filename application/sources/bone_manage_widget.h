@@ -1,8 +1,10 @@
 #ifndef DUST3D_APPLICATION_BONE_MANAGE_WIDGET_H_
 #define DUST3D_APPLICATION_BONE_MANAGE_WIDGET_H_
 
+#include <QMenu>
 #include <QWidget>
 #include <dust3d/base/uuid.h>
+#include <memory>
 
 class Document;
 class BonePreviewGridWidget;
@@ -29,6 +31,7 @@ private:
     QPushButton* m_addButton = nullptr;
     QPushButton* m_selectButton = nullptr;
     QPushButton* m_propertyButton = nullptr;
+    std::unique_ptr<QMenu> m_propertyMenu;
     void updateToolButtons();
 };
 

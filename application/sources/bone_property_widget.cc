@@ -2,6 +2,7 @@
 #include "float_number_widget.h"
 #include "image_preview_widget.h"
 #include "theme.h"
+#include <QComboBox>
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QLineEdit>
@@ -33,7 +34,23 @@ BonePropertyWidget::BonePropertyWidget(Document* document,
         renameLayout->addWidget(m_nameEdit);
         renameLayout->addStretch();
 
+        m_jointsWidget = new IntNumberWidget;
+        m_jointsWidget->setRange(2, 10);
+
+        QPushButton* nodePicker = new QPushButton(QChar(fa::eyedropper));
+        nodePicker->setToolTip(tr("Click node one by one on canvas as joints in order"));
+        Theme::initIconButton(nodePicker);
+
+        connect(nodePicker, &QPushButton::clicked, this, &BonePropertyWidget::pickBoneJoints);
+
+        QHBoxLayout* jointsLayout = new QHBoxLayout;
+        jointsLayout->addWidget(new QLabel(tr("Joints")));
+        jointsLayout->addWidget(m_jointsWidget);
+        jointsLayout->addStretch();
+        jointsLayout->addWidget(nodePicker);
+
         mainLayout->addLayout(renameLayout);
+        mainLayout->addLayout(jointsLayout);
     }
 
     mainLayout->setSizeConstraint(QLayout::SetFixedSize);
