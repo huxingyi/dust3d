@@ -20,20 +20,6 @@
 
 unsigned long Document::m_maxSnapshot = 1000;
 
-Document::Bone::Bone(const dust3d::Uuid& withId)
-{
-    id = withId.isNull() ? dust3d::Uuid::createUuid() : withId;
-}
-
-void Document::Node::setRadius(float toRadius)
-{
-    if (toRadius < MeshGenerator::m_minimalRadius)
-        toRadius = MeshGenerator::m_minimalRadius;
-    else if (toRadius > 1)
-        toRadius = 1;
-    radius = toRadius;
-}
-
 Document::Document()
 {
 }

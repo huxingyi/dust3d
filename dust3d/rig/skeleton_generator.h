@@ -27,6 +27,8 @@
 #include <dust3d/base/uuid.h>
 #include <dust3d/base/vector3.h>
 #include <map>
+#include <set>
+#include <unordered_set>
 #include <vector>
 
 namespace dust3d {
@@ -40,7 +42,6 @@ public:
 
     struct Bone {
         std::string name;
-        std::string parent;
     };
 
     SkeletonGenerator();
@@ -48,7 +49,7 @@ public:
     void setFaces(const std::vector<std::vector<size_t>>& faces);
     void setPositionToNodeMap(const std::map<PositionKey, Uuid>& positionToNodeMap);
     void addBone(const Uuid& boneId, const Bone& bone);
-    void addNodeBinding(const Uuid& nodeId, const NodeBinding& node);
+    void addNodeBinding(const Uuid& nodeId, const NodeBinding& nodeBinding);
     void bind();
 
 private:
@@ -57,6 +58,15 @@ private:
     std::map<PositionKey, Uuid> m_positionToNodeMap;
     std::map<Uuid, NodeBinding> m_nodeBindingMap;
     std::map<Uuid, Bone> m_boneMap;
+    std::map<size_t, std::set<size_t>> m_edges;
+    std::vector<Uuid> m_vertexSourceNodes;
+
+    void buildEdges();
+    void resolveVertexSources();
+    Uuid resolveVertexSourceByBreadthFirstSearch(size_t vertexIndex, std::unordered_set<size_t>& visited);
+    void groupBoneVertices();
+    void buildBoneJoints();
+    void assignBoneJointToVertices();
 };
 
 }
