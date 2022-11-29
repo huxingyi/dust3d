@@ -1562,6 +1562,9 @@ void Document::setEditMode(Document::EditMode mode)
     if (editMode == mode)
         return;
 
+    if (EditMode::Pick == editMode)
+        resetCurrentBone();
+
     editMode = mode;
     emit editModeChanged();
 }
@@ -2924,4 +2927,47 @@ const Document::Bone* Document::findBone(const dust3d::Uuid& boneId) const
     if (boneIt == boneMap.end())
         return nullptr;
     return &boneIt->second;
+}
+
+void Document::stopBoneJointsPicking()
+{
+    if (EditMode::Pick != editMode)
+        return;
+    setEditMode(EditMode::Select);
+}
+
+void Document::startBoneJointsPicking(const dust3d::Uuid& boneId, size_t boneJoints)
+{
+    stopBoneJointsPicking();
+
+    m_currentBondId = boneId;
+    m_currentBoneJoints = boneJoints;
+
+    setEditMode(EditMode::Pick);
+}
+
+void Document::resetCurrentBone()
+{
+    m_currentBondId = dust3d::Uuid();
+    m_currentBoneJoints = 0;
+    m_currentBoneJointNodes.clear();
+}
+
+void Document::pickBoneNode(const dust3d::Uuid& nodeId)
+{
+    if (m_currentBondId.isNull())
+        return;
+
+    for (const auto& it : m_currentBoneJointNodes) {
+        if (it == nodeId)
+            return;
+    }
+
+    m_currentBoneJointNodes.push_back(nodeId);
+    if (m_currentBoneJointNodes.size() < m_currentBoneJoints)
+        return;
+
+    // TODO: Apply bone joints
+
+    stopBoneJointsPicking();
 }

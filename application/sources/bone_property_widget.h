@@ -13,7 +13,7 @@ class BonePropertyWidget : public QWidget {
 signals:
     void renameBone(const dust3d::Uuid& boneId, const QString& name);
     void groupOperationAdded();
-    void pickBoneJoints();
+    void pickBoneJoints(const dust3d::Uuid& boneId, size_t joints);
 
 public:
     BonePropertyWidget(Document* document,

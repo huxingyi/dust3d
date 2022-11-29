@@ -574,6 +574,8 @@ DocumentWindow::DocumentWindow()
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::addNodesToBone, m_document, &Document::addNodesToBone);
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::removeNodesFromBone, m_document, &Document::removeNodesFromBone);
 
+    connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::nodePicked, m_document, &Document::pickBoneNode);
+
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::setXlockState, m_document, &Document::setXlockState);
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::setYlockState, m_document, &Document::setYlockState);
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::setZlockState, m_document, &Document::setZlockState);

@@ -519,6 +519,9 @@ public slots:
     void removeBone(const dust3d::Uuid& boneId);
     void setBoneAttachment(const dust3d::Uuid& boneId, const dust3d::Uuid& toBoneId, int toBoneJointIndex);
     void renameBone(const dust3d::Uuid& boneId, const QString& name);
+    void startBoneJointsPicking(const dust3d::Uuid& boneId, size_t boneJoints);
+    void stopBoneJointsPicking();
+    void pickBoneNode(const dust3d::Uuid& nodeId);
 
 private:
     void resolveSnapshotBoundingBox(const dust3d::Snapshot& snapshot, QRectF* mainProfile, QRectF* sideProfile);
@@ -533,6 +536,7 @@ private:
     void removeComponentRecursively(dust3d::Uuid componentId);
     void updateLinkedPart(dust3d::Uuid oldPartId, dust3d::Uuid newPartId);
     dust3d::Uuid createNode(dust3d::Uuid nodeId, float x, float y, float z, float radius, dust3d::Uuid fromNodeId);
+    void resetCurrentBone();
 
     bool m_isResultMeshObsolete = false;
     MeshGenerator* m_meshGenerator = nullptr;
@@ -557,6 +561,9 @@ private:
     float m_originZ = 0;
     dust3d::Uuid m_currentCanvasComponentId;
     bool m_allPositionRelatedLocksEnabled = true;
+    dust3d::Uuid m_currentBondId;
+    size_t m_currentBoneJoints = 0;
+    std::vector<dust3d::Uuid> m_currentBoneJointNodes;
 
 private:
     static unsigned long m_maxSnapshot;

@@ -77,10 +77,10 @@ void BoneManageWidget::showSelectedBoneProperties()
 
     m_propertyMenu = std::make_unique<QMenu>(this->parentWidget());
 
-    connect(propertyWidget, &BonePropertyWidget::pickBoneJoints, this, [this]() {
+    connect(propertyWidget, &BonePropertyWidget::pickBoneJoints, this, [this](const dust3d::Uuid& boneId, size_t joints) {
         if (nullptr == this->m_propertyMenu)
             return;
-        this->m_document->setEditMode(Document::EditMode::Pick);
+        this->m_document->startBoneJointsPicking(boneId, joints);
         this->m_propertyMenu->close();
     });
 

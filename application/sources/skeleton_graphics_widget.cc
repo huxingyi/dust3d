@@ -1487,7 +1487,6 @@ bool SkeletonGraphicsWidget::mousePress(QMouseEvent* event)
             }
         } else if (Document::EditMode::Pick == m_document->editMode) {
             if (m_hoveredNodeItem) {
-                dust3dDebug << "nodePicked:" << m_hoveredNodeItem->id().toString();
                 emit nodePicked(m_hoveredNodeItem->id());
             }
         }

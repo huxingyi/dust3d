@@ -41,7 +41,9 @@ BonePropertyWidget::BonePropertyWidget(Document* document,
         nodePicker->setToolTip(tr("Click node one by one on canvas as joints in order"));
         Theme::initIconButton(nodePicker);
 
-        connect(nodePicker, &QPushButton::clicked, this, &BonePropertyWidget::pickBoneJoints);
+        connect(nodePicker, &QPushButton::clicked, this, [this]() {
+            emit this->pickBoneJoints(this->m_boneId, (size_t)this->m_jointsWidget->value());
+        });
 
         QHBoxLayout* jointsLayout = new QHBoxLayout;
         jointsLayout->addWidget(new QLabel(tr("Joints")));
