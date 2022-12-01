@@ -79,6 +79,7 @@ public:
         bool hasCutFaceSettings = false;
         std::vector<dust3d::Uuid> edgeIds;
         std::set<dust3d::Uuid> boneIds;
+        std::set<dust3d::Uuid> asBontJoints;
         bool boneJoint = false;
 
     private:
@@ -204,6 +205,7 @@ public:
         dust3d::Uuid id;
         dust3d::Uuid attachBoneId;
         int attachBoneJointIndex = 0;
+        std::vector<dust3d::Uuid> joints;
         QString name;
         QPixmap previewPixmap;
 
@@ -284,6 +286,7 @@ signals:
     void boneRemoved(const dust3d::Uuid& boneId);
     void boneAttachmentChanged(const dust3d::Uuid& boneId);
     void boneNodesChanged(const dust3d::Uuid& boneId);
+    void boneJointsChanged(const dust3d::Uuid& boneId);
     void boneNameChanged(const dust3d::Uuid& boneId);
     void bonePreviewPixmapChanged(const dust3d::Uuid& boneId);
     void boneIdListChanged();
@@ -519,6 +522,7 @@ public slots:
     void removeBone(const dust3d::Uuid& boneId);
     void setBoneAttachment(const dust3d::Uuid& boneId, const dust3d::Uuid& toBoneId, int toBoneJointIndex);
     void renameBone(const dust3d::Uuid& boneId, const QString& name);
+    void applyBoneJoints(const dust3d::Uuid& boneId, const std::vector<dust3d::Uuid>& nodeIds);
     void startBoneJointsPicking(const dust3d::Uuid& boneId, size_t boneJoints);
     void stopBoneJointsPicking();
     void pickBoneNode(const dust3d::Uuid& nodeId);

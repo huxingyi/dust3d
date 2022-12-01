@@ -1673,8 +1673,6 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
             std::string boneIds = dust3d::String::join(nodeBoneIdList, ",");
             if (!boneIds.empty())
                 node["boneIdList"] = boneIds;
-            if (nodeIt.second.boneJoint)
-                node["boneJoint"] = "true";
             snapshot->nodes[node["id"]] = node;
         }
         for (const auto& edgeIt : edgeMap) {
@@ -1888,7 +1886,6 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
         node.setY(dust3d::String::toFloat(dust3d::String::valueOrEmpty(nodeKv.second, "y")));
         node.setZ(dust3d::String::toFloat(dust3d::String::valueOrEmpty(nodeKv.second, "z")));
         node.partId = oldNewIdMap[dust3d::Uuid(dust3d::String::valueOrEmpty(nodeKv.second, "partId"))];
-        node.boneJoint = dust3d::String::isTrue(dust3d::String::valueOrEmpty(nodeKv.second, "boneJoint"));
         const auto& cutRotationIt = nodeKv.second.find("cutRotation");
         if (cutRotationIt != nodeKv.second.end())
             node.setCutRotation(dust3d::String::toFloat(cutRotationIt->second));
@@ -2881,6 +2878,37 @@ void Document::removeNodesFromBone(const dust3d::Uuid& boneId, const std::vector
     emit rigChanged();
 }
 
+void Document::applyBoneJoints(const dust3d::Uuid& boneId, const std::vector<dust3d::Uuid>& nodeIds)
+{
+    auto boneIt = boneMap.find(boneId);
+    if (boneIt == boneMap.end())
+        return;
+
+    std::set<dust3d::Uuid> changeNodeIds;
+    for (const auto& nodeId : boneIt->second.joints) {
+        auto nodeIt = nodeMap.find(nodeId);
+        if (nodeIt == nodeMap.end())
+            continue;
+        nodeIt->second.asBontJoints.erase(boneId);
+        nodeIt->second.boneJoint = !nodeIt->second.asBontJoints.empty();
+        changeNodeIds.insert(nodeId);
+    }
+    boneIt->second.joints = nodeIds;
+    for (const auto& nodeId : boneIt->second.joints) {
+        auto nodeIt = nodeMap.find(nodeId);
+        if (nodeIt == nodeMap.end())
+            continue;
+        nodeIt->second.asBontJoints.insert(boneId);
+        nodeIt->second.boneJoint = true;
+        changeNodeIds.insert(nodeId);
+    }
+    for (const auto& nodeId : changeNodeIds) {
+        emit nodeBoneJointStateChanged(nodeId);
+    }
+    emit boneJointsChanged(boneId);
+    emit rigChanged();
+}
+
 void Document::removeBone(const dust3d::Uuid& boneId)
 {
     if (boneMap.end() != boneMap.find(boneId))
@@ -2964,10 +2992,11 @@ void Document::pickBoneNode(const dust3d::Uuid& nodeId)
     }
 
     m_currentBoneJointNodes.push_back(nodeId);
+
+    applyBoneJoints(m_currentBondId, m_currentBoneJointNodes);
+
     if (m_currentBoneJointNodes.size() < m_currentBoneJoints)
         return;
-
-    // TODO: Apply bone joints
 
     stopBoneJointsPicking();
 }
