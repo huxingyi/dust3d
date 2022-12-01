@@ -1739,6 +1739,13 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
                 }
                 if (!boneIt.second.name.isEmpty())
                     bone["name"] = boneIt.second.name.toUtf8().constData();
+                std::vector<std::string> nodeIdList;
+                for (const auto& nodeId : boneIt.second.joints) {
+                    nodeIdList.push_back(nodeId.toString());
+                }
+                std::string nodeIds = dust3d::String::join(nodeIdList, ",");
+                if (!nodeIds.empty())
+                    bone["jointNodeIdList"] = nodeIds;
                 snapshot->bones[bone["id"]] = bone;
             }
         }
@@ -1913,6 +1920,17 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
         }
         nodeMap[node.id] = node;
         newAddedNodeIds.insert(node.id);
+    }
+    for (const auto& boneKv : snapshot.bones) {
+        std::vector<dust3d::Uuid> joints;
+        for (const auto& nodeIdString : dust3d::String::split(dust3d::String::valueOrEmpty(boneKv.second, "jointNodeIdList"), ',')) {
+            if (nodeIdString.empty())
+                continue;
+            auto newNodeId = oldNewIdMap[dust3d::Uuid(nodeIdString)];
+            nodeMap[newNodeId].boneJoint = true;
+            joints.push_back(newNodeId);
+        }
+        boneMap[oldNewIdMap[dust3d::Uuid(boneKv.first)]].joints = joints;
     }
     for (const auto& edgeKv : snapshot.edges) {
         if (edgeKv.second.find("from") == edgeKv.second.end() || edgeKv.second.find("to") == edgeKv.second.end() || edgeKv.second.find("partId") == edgeKv.second.end())
@@ -2780,7 +2798,7 @@ bool Document::isTextureGenerating() const
 void Document::copyNodes(std::set<dust3d::Uuid> nodeIdSet) const
 {
     dust3d::Snapshot snapshot;
-    toSnapshot(&snapshot, nodeIdSet, Document::SnapshotFor::Nodes);
+    toSnapshot(&snapshot, nodeIdSet, Document::SnapshotFor::Document);
     std::string snapshotXml;
     dust3d::saveSnapshotToXmlString(snapshot, snapshotXml);
     QClipboard* clipboard = QApplication::clipboard();
