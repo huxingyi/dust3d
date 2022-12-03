@@ -40,7 +40,7 @@ namespace dust3d {
 struct ObjectNode {
     //Uuid partId;
     //Uuid nodeId;
-    //Vector3 origin;
+    Vector3 origin;
     //float radius = 0.0;
     Color color;
     //float colorSolubility = 0.0;

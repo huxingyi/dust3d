@@ -3,6 +3,7 @@
 
 #include "model_mesh.h"
 #include <QObject>
+#include <dust3d/base/snapshot.h>
 #include <dust3d/rig/bone_generator.h>
 #include <map>
 #include <memory>
@@ -10,6 +11,7 @@
 class BoneGenerator : public QObject, public dust3d::BoneGenerator {
     Q_OBJECT
 public:
+    BoneGenerator(std::unique_ptr<dust3d::Object> object, std::unique_ptr<dust3d::Snapshot> snapshot);
     std::map<dust3d::Uuid, std::unique_ptr<ModelMesh>>* takeBonePreviewMeshes();
 public slots:
     void process();
@@ -18,6 +20,8 @@ signals:
 
 private:
     std::unique_ptr<std::map<dust3d::Uuid, std::unique_ptr<ModelMesh>>> m_bonePreviewMeshes;
+    std::unique_ptr<dust3d::Object> m_object;
+    std::unique_ptr<dust3d::Snapshot> m_snapshot;
 };
 
 #endif

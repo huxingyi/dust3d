@@ -163,7 +163,6 @@ private:
     std::unique_ptr<MeshState> combineStitchingMesh(const std::vector<std::string>& partIdStrings,
         const std::vector<std::string>& componentIdStrings,
         GeneratedComponent& componentCache);
-    std::string componentColorName(const std::map<std::string, std::string>* component);
     void collectUncombinedComponent(const std::string& componentIdString);
     void cutFaceStringToCutTemplate(const std::string& cutFaceString, std::vector<Vector2>& cutTemplate);
     void postprocessObject(Object* object);

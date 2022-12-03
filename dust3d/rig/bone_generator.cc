@@ -21,7 +21,6 @@
  */
 
 #include <dust3d/rig/bone_generator.h>
-#include <unordered_map>
 
 namespace dust3d {
 
@@ -161,25 +160,29 @@ std::map<Uuid, BoneGenerator::BonePreview>& BoneGenerator::bonePreviews()
     return m_bonePreviews;
 }
 
+void BoneGenerator::addBonePreviewTriangle(BonePreview& bonePreview,
+    std::unordered_map<size_t, size_t>& oldToNewVertexMap,
+    const std::vector<size_t>& triangle)
+{
+    std::vector<size_t> newTriangle(3);
+    for (size_t i = 0; i < 3; ++i) {
+        auto findVertex = oldToNewVertexMap.find(triangle[i]);
+        if (findVertex == oldToNewVertexMap.end()) {
+            oldToNewVertexMap.insert(std::make_pair(triangle[i], bonePreview.vertices.size()));
+            newTriangle[i] = bonePreview.vertices.size();
+            bonePreview.vertices.push_back(m_vertices[triangle[i]]);
+        } else {
+            newTriangle[i] = findVertex->second;
+        }
+    }
+    bonePreview.triangles.emplace_back(newTriangle);
+}
+
 void BoneGenerator::generateBonePreviews()
 {
     for (const auto& it : m_boneVertices) {
         BonePreview bonePreview;
         std::unordered_map<size_t, size_t> oldToNewVertexMap;
-        auto addTriangleAsLocal = [&](const std::vector<size_t>& globalTriangle) {
-            std::vector<size_t> newTriangle(3);
-            for (size_t i = 0; i < 3; ++i) {
-                auto findVertex = oldToNewVertexMap.find(globalTriangle[i]);
-                if (findVertex == oldToNewVertexMap.end()) {
-                    oldToNewVertexMap.insert(std::make_pair(globalTriangle[i], bonePreview.vertices.size()));
-                    newTriangle[i] = bonePreview.vertices.size();
-                    bonePreview.vertices.push_back(m_vertices[globalTriangle[i]]);
-                } else {
-                    newTriangle[i] = findVertex->first;
-                }
-            }
-            bonePreview.triangles.emplace_back(newTriangle);
-        };
 
         for (const auto& triangle : m_triangles) {
             size_t countedPoints = 0;
@@ -189,7 +192,7 @@ void BoneGenerator::generateBonePreviews()
             }
             if (0 == countedPoints)
                 continue;
-            addTriangleAsLocal(triangle);
+            addBonePreviewTriangle(bonePreview, oldToNewVertexMap, triangle);
         }
 
         m_bonePreviews.emplace(std::make_pair(it.first, std::move(bonePreview)));

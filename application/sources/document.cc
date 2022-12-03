@@ -3036,10 +3036,13 @@ void Document::generateBone()
 
     emit boneGenerating();
 
-    // TODO:
+    auto object = std::make_unique<dust3d::Object>(*m_uvMappedObject);
+
+    auto snapshot = std::make_unique<dust3d::Snapshot>();
+    toSnapshot(snapshot.get());
 
     QThread* thread = new QThread;
-    m_boneGenerator = std::make_unique<BoneGenerator>();
+    m_boneGenerator = std::make_unique<BoneGenerator>(std::move(object), std::move(snapshot));
     m_boneGenerator->moveToThread(thread);
     connect(thread, &QThread::started, m_boneGenerator.get(), &BoneGenerator::process);
     connect(m_boneGenerator.get(), &BoneGenerator::finished, this, &Document::boneReady);

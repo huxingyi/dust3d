@@ -30,6 +30,7 @@
 #include <dust3d/base/vector3.h>
 #include <map>
 #include <set>
+#include <unordered_map>
 #include <unordered_set>
 #include <vector>
 
@@ -64,14 +65,16 @@ public:
     };
 
     BoneGenerator();
+    void generate();
+    std::map<Uuid, BonePreview>& bonePreviews();
+
+protected:
     void setVertices(const std::vector<Vector3>& vertices);
     void setTriangles(const std::vector<std::vector<size_t>>& triangles);
     void setPositionToNodeMap(const std::map<PositionKey, Uuid>& positionToNodeMap);
     void addBone(const Uuid& boneId, const Bone& bone);
     void addNodeBinding(const Uuid& nodeId, const NodeBinding& nodeBidning);
     void addNode(const Uuid& nodeId, const Node& node);
-    void generate();
-    std::map<Uuid, BonePreview>& bonePreviews();
 
 private:
     std::vector<Vector3> m_vertices;
@@ -92,6 +95,9 @@ private:
     void buildBoneJoints();
     void assignVerticesToBoneJoints();
     void generateBonePreviews();
+    void addBonePreviewTriangle(BonePreview& bonePreview,
+        std::unordered_map<size_t, size_t>& oldToNewVertexMap,
+        const std::vector<size_t>& triangle);
 };
 
 }

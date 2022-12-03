@@ -641,7 +641,7 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
     partCache.nodeMap.clear();
     for (const auto& meshNode : meshNodes) {
         partCache.nodeMap.emplace(std::make_pair(meshNode.sourceId,
-            ObjectNode { partColor }));
+            ObjectNode { meshNode.origin, partColor }));
     }
 
     if (PartTarget::Model == target) {
@@ -765,30 +765,6 @@ CombineMode MeshGenerator::componentCombineMode(const std::map<std::string, std:
             combineMode = CombineMode::Inversion;
     }
     return combineMode;
-}
-
-std::string MeshGenerator::componentColorName(const std::map<std::string, std::string>* component)
-{
-    if (nullptr == component)
-        return std::string();
-    std::string linkDataType = String::valueOrEmpty(*component, "linkDataType");
-    if ("partId" == linkDataType) {
-        std::string partIdString = String::valueOrEmpty(*component, "linkData");
-        auto findPart = m_snapshot->parts.find(partIdString);
-        if (findPart == m_snapshot->parts.end()) {
-            return std::string();
-        }
-        auto& part = findPart->second;
-        std::string colorSolubility = String::valueOrEmpty(part, "colorSolubility");
-        if (!colorSolubility.empty()) {
-            return std::string("+");
-        }
-        std::string colorName = String::valueOrEmpty(part, "color");
-        if (colorName.empty())
-            return std::string("-");
-        return colorName;
-    }
-    return std::string();
 }
 
 std::unique_ptr<MeshState> MeshGenerator::combineComponentMesh(const std::string& componentIdString, CombineMode* combineMode)
