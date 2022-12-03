@@ -23,6 +23,8 @@
 #ifndef DUST3D_RIG_SKELETON_GENERATOR_H_
 #define DUST3D_RIG_SKELETON_GENERATOR_H_
 
+#include <array>
+#include <dust3d/base/color.h>
 #include <dust3d/base/position_key.h>
 #include <dust3d/base/uuid.h>
 #include <dust3d/base/vector3.h>
@@ -36,37 +38,59 @@ namespace dust3d {
 class SkeletonGenerator {
 public:
     struct NodeBinding {
-        std::vector<Uuid> boneIds;
-        bool bontJoint = false;
+        std::set<Uuid> boneIds;
+    };
+
+    struct VertexWeight {
+        size_t vertex;
+        double weight;
     };
 
     struct Bone {
         std::string name;
+        std::vector<Uuid> joints;
+        std::vector<Vector3> startPositions;
+        std::vector<Vector3> forwardVectors;
+        std::vector<VertexWeight> vertexWeights;
+    };
+
+    struct Node {
+        Vector3 position;
+    };
+
+    struct BonePreview {
+        std::vector<Vector3> vertices;
+        std::vector<std::vector<size_t>> triangles;
     };
 
     SkeletonGenerator();
     void setVertices(const std::vector<Vector3>& vertices);
-    void setFaces(const std::vector<std::vector<size_t>>& faces);
+    void setTriangles(const std::vector<std::vector<size_t>>& triangles);
     void setPositionToNodeMap(const std::map<PositionKey, Uuid>& positionToNodeMap);
     void addBone(const Uuid& boneId, const Bone& bone);
-    void addNodeBinding(const Uuid& nodeId, const NodeBinding& nodeBinding);
-    void bind();
+    void addNodeBinding(const Uuid& nodeId, const NodeBinding& nodeBidning);
+    void addNode(const Uuid& nodeId, const Node& node);
+    void generate();
 
 private:
     std::vector<Vector3> m_vertices;
-    std::vector<std::vector<size_t>> m_faces;
+    std::vector<std::vector<size_t>> m_triangles;
     std::map<PositionKey, Uuid> m_positionToNodeMap;
     std::map<Uuid, NodeBinding> m_nodeBindingMap;
     std::map<Uuid, Bone> m_boneMap;
+    std::map<Uuid, Node> m_nodeMap;
     std::map<size_t, std::set<size_t>> m_edges;
     std::vector<Uuid> m_vertexSourceNodes;
+    std::map<Uuid, std::unordered_set<size_t>> m_boneVertices;
+    std::map<Uuid, BonePreview> m_bonePreviews;
 
     void buildEdges();
     void resolveVertexSources();
     Uuid resolveVertexSourceByBreadthFirstSearch(size_t vertexIndex, std::unordered_set<size_t>& visited);
     void groupBoneVertices();
     void buildBoneJoints();
-    void assignBoneJointToVertices();
+    void assignVerticesToBoneJoints();
+    void generateBonePreviews();
 };
 
 }

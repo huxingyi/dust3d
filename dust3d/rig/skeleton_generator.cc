@@ -21,6 +21,7 @@
  */
 
 #include <dust3d/rig/skeleton_generator.h>
+#include <unordered_map>
 
 namespace dust3d {
 
@@ -33,9 +34,9 @@ void SkeletonGenerator::setVertices(const std::vector<Vector3>& vertices)
     m_vertices = vertices;
 }
 
-void SkeletonGenerator::setFaces(const std::vector<std::vector<size_t>>& faces)
+void SkeletonGenerator::setTriangles(const std::vector<std::vector<size_t>>& triangles)
 {
-    m_faces = faces;
+    m_triangles = triangles;
 }
 
 void SkeletonGenerator::setPositionToNodeMap(const std::map<PositionKey, Uuid>& positionToNodeMap)
@@ -48,6 +49,11 @@ void SkeletonGenerator::addBone(const Uuid& boneId, const Bone& bone)
     m_boneMap.emplace(std::make_pair(boneId, bone));
 }
 
+void SkeletonGenerator::addNode(const Uuid& nodeId, const Node& node)
+{
+    m_nodeMap.emplace(std::make_pair(nodeId, node));
+}
+
 void SkeletonGenerator::addNodeBinding(const Uuid& nodeId, const NodeBinding& nodeBinding)
 {
     m_nodeBindingMap.emplace(std::make_pair(nodeId, nodeBinding));
@@ -55,11 +61,11 @@ void SkeletonGenerator::addNodeBinding(const Uuid& nodeId, const NodeBinding& no
 
 void SkeletonGenerator::buildEdges()
 {
-    for (const auto& face : m_faces) {
-        for (size_t i = 0; i < face.size(); ++i) {
-            size_t j = (i + 1) % face.size();
-            m_edges[face[i]].insert(face[j]);
-            m_edges[face[j]].insert(face[i]);
+    for (const auto& triangle : m_triangles) {
+        for (size_t i = 0; i < 3; ++i) {
+            size_t j = (i + 1) % 3;
+            m_edges[triangle[i]].insert(triangle[j]);
+            m_edges[triangle[j]].insert(triangle[i]);
         }
     }
 }
@@ -104,17 +110,29 @@ void SkeletonGenerator::resolveVertexSources()
 
 void SkeletonGenerator::buildBoneJoints()
 {
-    // TODO:
+    for (auto& boneIt : m_boneMap) {
+        boneIt.second.startPositions.resize(boneIt.second.joints.size());
+        for (size_t i = 0; i < boneIt.second.joints.size(); ++i) {
+            const auto& nodeId = boneIt.second.joints[i];
+            auto nodeIt = m_nodeMap.find(nodeId);
+            if (nodeIt == m_nodeMap.end())
+                continue;
+            boneIt.second.startPositions[i] = nodeIt->second.position;
+        }
+        boneIt.second.forwardVectors.resize(boneIt.second.startPositions.size());
+        for (size_t i = 0; i + 1 < boneIt.second.startPositions.size(); ++i) {
+            boneIt.second.forwardVectors[i] = boneIt.second.startPositions[i + 1] - boneIt.second.startPositions[i];
+        }
+    }
 }
 
-void SkeletonGenerator::assignBoneJointToVertices()
+void SkeletonGenerator::assignVerticesToBoneJoints()
 {
     // TODO:
 }
 
 void SkeletonGenerator::groupBoneVertices()
 {
-    /*
     for (size_t i = 0; i < m_vertexSourceNodes.size(); ++i) {
         const Uuid& sourceNodeId = m_vertexSourceNodes[i];
         if (sourceNodeId.isNull())
@@ -122,19 +140,55 @@ void SkeletonGenerator::groupBoneVertices()
         auto findBinding = m_nodeBindingMap.find(sourceNodeId);
         if (findBinding == m_nodeBindingMap.end())
             continue;
-        // TODO:
+        for (const auto& boneId : findBinding->second.boneIds) {
+            m_boneVertices[boneId].insert(i);
+        }
     }
-    */
-    // TODO:
 }
 
-void SkeletonGenerator::bind()
+void SkeletonGenerator::generate()
 {
     buildEdges();
     resolveVertexSources();
     groupBoneVertices();
     buildBoneJoints();
-    assignBoneJointToVertices();
+    assignVerticesToBoneJoints();
+    generateBonePreviews();
+}
+
+void SkeletonGenerator::generateBonePreviews()
+{
+    for (const auto& it : m_boneVertices) {
+        BonePreview bonePreview;
+        std::unordered_map<size_t, size_t> oldToNewVertexMap;
+        auto addTriangleAsLocal = [&](const std::vector<size_t>& globalTriangle) {
+            std::vector<size_t> newTriangle(3);
+            for (size_t i = 0; i < 3; ++i) {
+                auto findVertex = oldToNewVertexMap.find(globalTriangle[i]);
+                if (findVertex == oldToNewVertexMap.end()) {
+                    oldToNewVertexMap.insert(std::make_pair(globalTriangle[i], bonePreview.vertices.size()));
+                    newTriangle[i] = bonePreview.vertices.size();
+                    bonePreview.vertices.push_back(m_vertices[globalTriangle[i]]);
+                } else {
+                    newTriangle[i] = findVertex->first;
+                }
+            }
+            bonePreview.triangles.emplace_back(newTriangle);
+        };
+
+        for (const auto& triangle : m_triangles) {
+            size_t countedPoints = 0;
+            for (size_t i = 0; i < 3; ++i) {
+                if (it.second.end() != it.second.find(triangle[i]))
+                    ++countedPoints;
+            }
+            if (0 == countedPoints)
+                continue;
+            addTriangleAsLocal(triangle);
+        }
+
+        m_bonePreviews.emplace(std::make_pair(it.first, std::move(bonePreview)));
+    }
 }
 
 }
