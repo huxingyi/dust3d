@@ -4,10 +4,13 @@
 #include "model_mesh.h"
 #include <QObject>
 #include <dust3d/rig/bone_generator.h>
+#include <map>
 #include <memory>
 
 class BoneGenerator : public QObject, public dust3d::BoneGenerator {
     Q_OBJECT
+public:
+    std::map<dust3d::Uuid, std::unique_ptr<ModelMesh>>* takeBonePreviewMeshes();
 public slots:
     void process();
 signals:

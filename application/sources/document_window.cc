@@ -208,6 +208,9 @@ DocumentWindow::DocumentWindow()
     connect(m_document, &Document::textureGenerating, this, &DocumentWindow::updateInprogressIndicator);
     connect(m_document, &Document::resultTextureChanged, this, &DocumentWindow::updateInprogressIndicator);
     connect(m_document, &Document::postProcessedResultChanged, this, &DocumentWindow::updateInprogressIndicator);
+    connect(m_document, &Document::boneGenerating, this, &DocumentWindow::updateInprogressIndicator);
+    connect(m_document, &Document::resultBoneChanged, this, &DocumentWindow::updateInprogressIndicator);
+    connect(m_document, &Document::resultBonePreviewMeshesChanged, this, &DocumentWindow::generateBonePreviewImages);
 
     toolButtonLayout->addWidget(addButton);
     toolButtonLayout->addWidget(selectButton);
@@ -616,6 +619,8 @@ DocumentWindow::DocumentWindow()
     connect(m_document, &Document::textureChanged, m_document, &Document::generateTexture);
     connect(m_document, &Document::resultMeshChanged, m_document, &Document::postProcess);
     connect(m_document, &Document::postProcessedResultChanged, m_document, &Document::generateTexture);
+    connect(m_document, &Document::rigChanged, m_document, &Document::generateBone);
+    connect(m_document, &Document::postProcessedResultChanged, m_document, &Document::generateBone);
     connect(m_document, &Document::resultTextureChanged, [=]() {
         if (m_document->isMeshGenerating())
             return;
@@ -677,7 +682,7 @@ DocumentWindow::DocumentWindow()
 
 void DocumentWindow::updateInprogressIndicator()
 {
-    bool inprogress = m_document->isMeshGenerating() || m_document->isPostProcessing() || m_document->isTextureGenerating() || nullptr != m_componentPreviewImagesGenerator || nullptr != m_componentPreviewImagesDecorator;
+    bool inprogress = m_document->isMeshGenerating() || m_document->isPostProcessing() || m_document->isTextureGenerating() || m_document->isBoneGenerating() || nullptr != m_componentPreviewImagesGenerator || nullptr != m_componentPreviewImagesDecorator;
     if (inprogress == m_inprogressIndicator->isSpinning())
         return;
     m_inprogressIndicator->showSpinner(inprogress);
@@ -1402,4 +1407,53 @@ void DocumentWindow::toggleRenderColor()
     if (m_modelRemoveColor && mesh)
         mesh->removeColor();
     m_modelRenderWidget->updateMesh(mesh);
+}
+
+void DocumentWindow::generateBonePreviewImages()
+{
+    if (nullptr != m_bonePreviewImagesGenerator) {
+        m_isBonePreviewImagesObsolete = true;
+        return;
+    }
+
+    m_isBonePreviewImagesObsolete = false;
+
+    QThread* thread = new QThread;
+
+    m_bonePreviewImagesGenerator = new MeshPreviewImagesGenerator(new ModelOffscreenRender(m_modelRenderWidget->format()));
+    for (auto& bone : m_document->boneMap) {
+        if (!bone.second.isPreviewMeshObsolete)
+            continue;
+        bone.second.isPreviewMeshObsolete = false;
+        auto previewMesh = std::unique_ptr<ModelMesh>(bone.second.takePreviewMesh());
+        const bool useFrontView = false;
+        m_bonePreviewImagesGenerator->addInput(bone.first, std::move(previewMesh), useFrontView);
+    }
+    m_bonePreviewImagesGenerator->moveToThread(thread);
+    connect(thread, &QThread::started, m_bonePreviewImagesGenerator, &MeshPreviewImagesGenerator::process);
+    connect(m_bonePreviewImagesGenerator, &MeshPreviewImagesGenerator::finished, this, &DocumentWindow::bonePreviewImagesReady);
+    connect(m_bonePreviewImagesGenerator, &MeshPreviewImagesGenerator::finished, thread, &QThread::quit);
+    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+    thread->start();
+
+    updateInprogressIndicator();
+}
+
+void DocumentWindow::bonePreviewImagesReady()
+{
+    std::unique_ptr<std::map<dust3d::Uuid, QImage>> boneImages;
+    boneImages.reset(m_bonePreviewImagesGenerator->takeImages());
+    if (nullptr != boneImages) {
+        for (const auto& it : *boneImages) {
+            m_document->setBonePreviewPixmap(it.first, QPixmap::fromImage(it.second));
+        }
+    }
+
+    delete m_bonePreviewImagesGenerator;
+    m_bonePreviewImagesGenerator = nullptr;
+
+    if (m_isBonePreviewImagesObsolete)
+        generateBonePreviewImages();
+    else
+        updateInprogressIndicator();
 }

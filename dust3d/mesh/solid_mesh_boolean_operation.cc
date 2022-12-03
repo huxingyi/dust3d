@@ -25,7 +25,6 @@
 #include <dust3d/base/position_key.h>
 #include <dust3d/mesh/re_triangulator.h>
 #include <dust3d/mesh/solid_mesh_boolean_operation.h>
-#include <dust3d/util/obj.h>
 #include <queue>
 #include <set>
 #include <stdio.h>

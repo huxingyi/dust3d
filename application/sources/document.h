@@ -24,6 +24,7 @@
 class UvMapGenerator;
 class MeshGenerator;
 class MeshResultPostProcessor;
+class BoneGenerator;
 
 class Document : public QObject {
     Q_OBJECT
@@ -208,8 +209,14 @@ public:
         std::vector<dust3d::Uuid> joints;
         QString name;
         QPixmap previewPixmap;
+        bool isPreviewMeshObsolete = false;
+        void updatePreviewMesh(std::unique_ptr<ModelMesh> mesh);
+        ModelMesh* takePreviewMesh() const;
 
         Bone(const dust3d::Uuid& withId = dust3d::Uuid());
+
+    private:
+        std::unique_ptr<ModelMesh> m_previewMesh;
     };
 
 signals:
@@ -218,6 +225,7 @@ signals:
     void partPreviewChanged(dust3d::Uuid partId);
     void resultMeshChanged();
     void resultComponentPreviewMeshesChanged();
+    void resultBonePreviewMeshesChanged();
     void turnaroundChanged();
     void editModeChanged();
     void resultTextureChanged();
@@ -288,9 +296,12 @@ signals:
     void boneNodesChanged(const dust3d::Uuid& boneId);
     void boneJointsChanged(const dust3d::Uuid& boneId);
     void boneNameChanged(const dust3d::Uuid& boneId);
+    void bonePreviewMeshChanged(const dust3d::Uuid& boneId);
     void bonePreviewPixmapChanged(const dust3d::Uuid& boneId);
     void boneIdListChanged();
     void rigChanged();
+    void boneGenerating();
+    void resultBoneChanged();
 
 public: // need initialize
     QImage* textureImage = nullptr;
@@ -359,6 +370,7 @@ public:
     bool isMeshGenerating() const;
     bool isPostProcessing() const;
     bool isTextureGenerating() const;
+    bool isBoneGenerating() const;
     void collectCutFaceList(std::vector<QString>& cutFaces) const;
     float getOriginX(bool rotated = false) const
     {
@@ -417,6 +429,8 @@ public:
     void resetDirtyFlags();
     void markAllDirty();
     const Bone* findBone(const dust3d::Uuid& boneId) const;
+    void setBonePreviewMesh(const dust3d::Uuid& boneId, std::unique_ptr<ModelMesh> mesh);
+    void setBonePreviewPixmap(const dust3d::Uuid& boneId, const QPixmap& pixmap);
 
 public slots:
     void undo();
@@ -435,6 +449,8 @@ public slots:
     void textureReady();
     void postProcess();
     void postProcessedMeshResultReady();
+    void generateBone();
+    void boneReady();
     void setPartSubdivState(dust3d::Uuid partId, bool subdived);
     void setPartXmirrorState(dust3d::Uuid partId, bool mirrored);
     void setPartDeformThickness(dust3d::Uuid partId, float thickness);
@@ -565,9 +581,13 @@ private:
     float m_originZ = 0;
     dust3d::Uuid m_currentCanvasComponentId;
     bool m_allPositionRelatedLocksEnabled = true;
+
     dust3d::Uuid m_currentBondId;
     size_t m_currentBoneJoints = 0;
     std::vector<dust3d::Uuid> m_currentBoneJointNodes;
+
+    std::unique_ptr<BoneGenerator> m_boneGenerator;
+    bool m_isResultBoneObsolete = false;
 
 private:
     static unsigned long m_maxSnapshot;

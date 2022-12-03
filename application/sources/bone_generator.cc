@@ -2,6 +2,11 @@
 #include <dust3d/mesh/smooth_normal.h>
 #include <dust3d/mesh/trim_vertices.h>
 
+std::map<dust3d::Uuid, std::unique_ptr<ModelMesh>>* BoneGenerator::takeBonePreviewMeshes()
+{
+    return m_bonePreviewMeshes.release();
+}
+
 void BoneGenerator::process()
 {
     generate();

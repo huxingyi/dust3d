@@ -90,6 +90,8 @@ public slots:
     void componentPreviewImagesReady();
     void decorateComponentPreviewImages();
     void componentPreviewImageDecorationsReady();
+    void generateBonePreviewImages();
+    void bonePreviewImagesReady();
     void updateInprogressIndicator();
     void openRecentFile();
     void updateRecentFileActions();
@@ -169,6 +171,9 @@ private:
 
     std::unique_ptr<ComponentPreviewImagesDecorator> m_componentPreviewImagesDecorator;
     bool m_isComponentPreviewImageDecorationsObsolete = false;
+
+    MeshPreviewImagesGenerator* m_bonePreviewImagesGenerator = nullptr;
+    bool m_isBonePreviewImagesObsolete = false;
 
     PartManageWidget* m_partManageWidget = nullptr;
     BoneManageWidget* m_boneManageWidget = nullptr;

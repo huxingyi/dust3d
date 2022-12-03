@@ -1,4 +1,5 @@
 #include "document.h"
+#include "bone_generator.h"
 #include "image_forever.h"
 #include "mesh_generator.h"
 #include "mesh_result_post_processor.h"
@@ -2795,6 +2796,11 @@ bool Document::isTextureGenerating() const
     return nullptr != m_textureGenerator;
 }
 
+bool Document::isBoneGenerating() const
+{
+    return nullptr != m_boneGenerator;
+}
+
 void Document::copyNodes(std::set<dust3d::Uuid> nodeIdSet) const
 {
     dust3d::Snapshot snapshot;
@@ -2865,7 +2871,7 @@ void Document::addBone(const dust3d::Uuid& boneId)
         return;
 
     Bone bone(boneId);
-    boneMap.emplace(boneId, bone);
+    boneMap.emplace(boneId, std::move(bone));
     boneIdList.push_back(boneId);
     emit boneAdded(boneId);
     emit boneIdListChanged();
@@ -3017,4 +3023,67 @@ void Document::pickBoneNode(const dust3d::Uuid& nodeId)
         return;
 
     stopBoneJointsPicking();
+}
+
+void Document::generateBone()
+{
+    if (nullptr != m_boneGenerator) {
+        m_isResultBoneObsolete = true;
+        return;
+    }
+
+    m_isResultBoneObsolete = false;
+
+    emit boneGenerating();
+
+    // TODO:
+
+    QThread* thread = new QThread;
+    m_boneGenerator = std::make_unique<BoneGenerator>();
+    m_boneGenerator->moveToThread(thread);
+    connect(thread, &QThread::started, m_boneGenerator.get(), &BoneGenerator::process);
+    connect(m_boneGenerator.get(), &BoneGenerator::finished, this, &Document::boneReady);
+    connect(m_boneGenerator.get(), &BoneGenerator::finished, thread, &QThread::quit);
+    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+    thread->start();
+}
+
+void Document::boneReady()
+{
+    std::unique_ptr<std::map<dust3d::Uuid, std::unique_ptr<ModelMesh>>> bonePreviewMeshes;
+    bonePreviewMeshes.reset(m_boneGenerator->takeBonePreviewMeshes());
+    bool bonePreviewsChanged = bonePreviewMeshes && !bonePreviewMeshes->empty();
+    if (bonePreviewsChanged) {
+        for (auto& it : *bonePreviewMeshes) {
+            setBonePreviewMesh(it.first, std::move(it.second));
+        }
+        emit resultBonePreviewMeshesChanged();
+    }
+
+    // TODO:
+
+    m_boneGenerator.reset();
+
+    emit resultBoneChanged();
+
+    if (m_isResultBoneObsolete)
+        generateBone();
+}
+
+void Document::setBonePreviewMesh(const dust3d::Uuid& boneId, std::unique_ptr<ModelMesh> mesh)
+{
+    Document::Bone* bone = (Document::Bone*)findBone(boneId);
+    if (nullptr == bone)
+        return;
+    bone->updatePreviewMesh(std::move(mesh));
+    emit bonePreviewMeshChanged(boneId);
+}
+
+void Document::setBonePreviewPixmap(const dust3d::Uuid& boneId, const QPixmap& pixmap)
+{
+    Document::Bone* bone = (Document::Bone*)findBone(boneId);
+    if (nullptr == bone)
+        return;
+    bone->previewPixmap = pixmap;
+    emit bonePreviewPixmapChanged(boneId);
 }
