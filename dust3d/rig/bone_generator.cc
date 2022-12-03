@@ -20,46 +20,46 @@
  *  SOFTWARE.
  */
 
-#include <dust3d/rig/skeleton_generator.h>
+#include <dust3d/rig/bone_generator.h>
 #include <unordered_map>
 
 namespace dust3d {
 
-SkeletonGenerator::SkeletonGenerator()
+BoneGenerator::BoneGenerator()
 {
 }
 
-void SkeletonGenerator::setVertices(const std::vector<Vector3>& vertices)
+void BoneGenerator::setVertices(const std::vector<Vector3>& vertices)
 {
     m_vertices = vertices;
 }
 
-void SkeletonGenerator::setTriangles(const std::vector<std::vector<size_t>>& triangles)
+void BoneGenerator::setTriangles(const std::vector<std::vector<size_t>>& triangles)
 {
     m_triangles = triangles;
 }
 
-void SkeletonGenerator::setPositionToNodeMap(const std::map<PositionKey, Uuid>& positionToNodeMap)
+void BoneGenerator::setPositionToNodeMap(const std::map<PositionKey, Uuid>& positionToNodeMap)
 {
     m_positionToNodeMap = positionToNodeMap;
 }
 
-void SkeletonGenerator::addBone(const Uuid& boneId, const Bone& bone)
+void BoneGenerator::addBone(const Uuid& boneId, const Bone& bone)
 {
     m_boneMap.emplace(std::make_pair(boneId, bone));
 }
 
-void SkeletonGenerator::addNode(const Uuid& nodeId, const Node& node)
+void BoneGenerator::addNode(const Uuid& nodeId, const Node& node)
 {
     m_nodeMap.emplace(std::make_pair(nodeId, node));
 }
 
-void SkeletonGenerator::addNodeBinding(const Uuid& nodeId, const NodeBinding& nodeBinding)
+void BoneGenerator::addNodeBinding(const Uuid& nodeId, const NodeBinding& nodeBinding)
 {
     m_nodeBindingMap.emplace(std::make_pair(nodeId, nodeBinding));
 }
 
-void SkeletonGenerator::buildEdges()
+void BoneGenerator::buildEdges()
 {
     for (const auto& triangle : m_triangles) {
         for (size_t i = 0; i < 3; ++i) {
@@ -70,7 +70,7 @@ void SkeletonGenerator::buildEdges()
     }
 }
 
-Uuid SkeletonGenerator::resolveVertexSourceByBreadthFirstSearch(size_t vertexIndex, std::unordered_set<size_t>& visited)
+Uuid BoneGenerator::resolveVertexSourceByBreadthFirstSearch(size_t vertexIndex, std::unordered_set<size_t>& visited)
 {
     visited.insert(vertexIndex);
     auto findNeighbors = m_edges.find(vertexIndex);
@@ -90,7 +90,7 @@ Uuid SkeletonGenerator::resolveVertexSourceByBreadthFirstSearch(size_t vertexInd
     return Uuid();
 }
 
-void SkeletonGenerator::resolveVertexSources()
+void BoneGenerator::resolveVertexSources()
 {
     m_vertexSourceNodes.resize(m_vertices.size());
     for (size_t i = 0; i < m_vertices.size(); ++i) {
@@ -108,7 +108,7 @@ void SkeletonGenerator::resolveVertexSources()
     }
 }
 
-void SkeletonGenerator::buildBoneJoints()
+void BoneGenerator::buildBoneJoints()
 {
     for (auto& boneIt : m_boneMap) {
         boneIt.second.startPositions.resize(boneIt.second.joints.size());
@@ -126,12 +126,12 @@ void SkeletonGenerator::buildBoneJoints()
     }
 }
 
-void SkeletonGenerator::assignVerticesToBoneJoints()
+void BoneGenerator::assignVerticesToBoneJoints()
 {
     // TODO:
 }
 
-void SkeletonGenerator::groupBoneVertices()
+void BoneGenerator::groupBoneVertices()
 {
     for (size_t i = 0; i < m_vertexSourceNodes.size(); ++i) {
         const Uuid& sourceNodeId = m_vertexSourceNodes[i];
@@ -146,7 +146,7 @@ void SkeletonGenerator::groupBoneVertices()
     }
 }
 
-void SkeletonGenerator::generate()
+void BoneGenerator::generate()
 {
     buildEdges();
     resolveVertexSources();
@@ -156,7 +156,12 @@ void SkeletonGenerator::generate()
     generateBonePreviews();
 }
 
-void SkeletonGenerator::generateBonePreviews()
+std::map<Uuid, BoneGenerator::BonePreview>& BoneGenerator::bonePreviews()
+{
+    return m_bonePreviews;
+}
+
+void BoneGenerator::generateBonePreviews()
 {
     for (const auto& it : m_boneVertices) {
         BonePreview bonePreview;

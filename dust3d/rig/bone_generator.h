@@ -20,8 +20,8 @@
  *  SOFTWARE.
  */
 
-#ifndef DUST3D_RIG_SKELETON_GENERATOR_H_
-#define DUST3D_RIG_SKELETON_GENERATOR_H_
+#ifndef DUST3D_RIG_BONE_GENERATOR_H_
+#define DUST3D_RIG_BONE_GENERATOR_H_
 
 #include <array>
 #include <dust3d/base/color.h>
@@ -35,7 +35,7 @@
 
 namespace dust3d {
 
-class SkeletonGenerator {
+class BoneGenerator {
 public:
     struct NodeBinding {
         std::set<Uuid> boneIds;
@@ -63,7 +63,7 @@ public:
         std::vector<std::vector<size_t>> triangles;
     };
 
-    SkeletonGenerator();
+    BoneGenerator();
     void setVertices(const std::vector<Vector3>& vertices);
     void setTriangles(const std::vector<std::vector<size_t>>& triangles);
     void setPositionToNodeMap(const std::map<PositionKey, Uuid>& positionToNodeMap);
@@ -71,6 +71,7 @@ public:
     void addNodeBinding(const Uuid& nodeId, const NodeBinding& nodeBidning);
     void addNode(const Uuid& nodeId, const Node& node);
     void generate();
+    std::map<Uuid, BonePreview>& bonePreviews();
 
 private:
     std::vector<Vector3> m_vertices;

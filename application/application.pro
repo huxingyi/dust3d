@@ -95,6 +95,8 @@ include(third_party/QtAwesome/QtAwesome/QtAwesome.pri)
 
 HEADERS += sources/about_widget.h
 SOURCES += sources/about_widget.cc
+HEADERS += sources/bone_generator.h
+SOURCES += sources/bone_generator.cc
 HEADERS += sources/bone_list_model.h
 SOURCES += sources/bone_list_model.cc
 HEADERS += sources/bone_manage_widget.h
@@ -310,8 +312,8 @@ HEADERS += ../dust3d/mesh/tube_mesh_builder.h
 SOURCES += ../dust3d/mesh/tube_mesh_builder.cc
 HEADERS += ../dust3d/mesh/weld_vertices.h
 SOURCES += ../dust3d/mesh/weld_vertices.cc
-HEADERS += ../dust3d/rig/skeleton_generator.h
-SOURCES += ../dust3d/rig/skeleton_generator.cc
+HEADERS += ../dust3d/rig/bone_generator.h
+SOURCES += ../dust3d/rig/bone_generator.cc
 HEADERS += ../dust3d/uv/chart_packer.h
 SOURCES += ../dust3d/uv/chart_packer.cc
 HEADERS += ../dust3d/uv/max_rectangles.h
