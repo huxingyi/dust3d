@@ -171,6 +171,7 @@ void BoneGenerator::addBonePreviewTriangle(BonePreview& bonePreview,
             oldToNewVertexMap.insert(std::make_pair(triangle[i], bonePreview.vertices.size()));
             newTriangle[i] = bonePreview.vertices.size();
             bonePreview.vertices.push_back(m_vertices[triangle[i]]);
+            bonePreview.vertexColors.push_back(Color(1.0, 1.0, 1.0));
         } else {
             newTriangle[i] = findVertex->second;
         }

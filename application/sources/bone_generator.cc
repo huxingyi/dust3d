@@ -67,9 +67,18 @@ void BoneGenerator::process()
             previewTriangleNormals,
             0,
             &previewTriangleVertexNormals);
+        std::vector<std::tuple<dust3d::Color, float /*metalness*/, float /*roughness*/>> vertexProperties(it.second.vertexColors.size());
+        for (size_t i = 0; i < vertexProperties.size(); ++i) {
+            vertexProperties[i] = std::make_tuple(it.second.vertexColors[i],
+                (float)0.0, (float)1.0);
+        }
         (*m_bonePreviewMeshes)[it.first] = std::make_unique<ModelMesh>(it.second.vertices,
             it.second.triangles,
-            previewTriangleVertexNormals);
+            previewTriangleVertexNormals,
+            dust3d::Color::createWhite(),
+            (float)0.0,
+            (float)1.0,
+            &vertexProperties);
     }
 
     qDebug() << "The bone generation took" << countTimeConsumed.elapsed() << "milliseconds";

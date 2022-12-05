@@ -2058,6 +2058,8 @@ void Document::silentReset()
     partMap.clear();
     componentMap.clear();
     rootComponent = Document::Component();
+    boneMap.clear();
+    boneIdList.clear();
 }
 
 void Document::reset()

@@ -62,6 +62,7 @@ public:
     struct BonePreview {
         std::vector<Vector3> vertices;
         std::vector<std::vector<size_t>> triangles;
+        std::vector<Color> vertexColors;
     };
 
     BoneGenerator();
