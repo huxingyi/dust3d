@@ -352,11 +352,12 @@ public:
     };
     void addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSource source = SnapshotSource::Paste);
     ModelMesh* takeResultMesh();
+    quint64 resultMeshId();
     MonochromeMesh* takeWireframeMesh();
     ModelMesh* takePaintedMesh();
     bool isMeshGenerationSucceed();
     ModelMesh* takeResultTextureMesh();
-    ModelMesh* takeResultRigWeightMesh();
+    quint64 resultTextureMeshId();
     void updateTurnaround(const QImage& image);
     void clearTurnaround();
     void updateTextureImage(QImage* image);

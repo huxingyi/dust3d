@@ -2082,6 +2082,13 @@ ModelMesh* Document::takeResultMesh()
     return resultMesh;
 }
 
+quint64 Document::resultMeshId()
+{
+    if (nullptr == m_resultMesh)
+        return 0;
+    return m_resultMesh->meshId();
+}
+
 MonochromeMesh* Document::takeWireframeMesh()
 {
     if (nullptr == m_wireframeMesh)
@@ -2100,6 +2107,13 @@ ModelMesh* Document::takeResultTextureMesh()
         return nullptr;
     ModelMesh* resultTextureMesh = new ModelMesh(*m_resultTextureMesh);
     return resultTextureMesh;
+}
+
+quint64 Document::resultTextureMeshId()
+{
+    if (nullptr == m_resultTextureMesh)
+        return 0;
+    return m_resultTextureMesh->meshId();
 }
 
 void Document::meshReady()

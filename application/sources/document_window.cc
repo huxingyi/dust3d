@@ -623,30 +623,10 @@ DocumentWindow::DocumentWindow()
     connect(m_document, &Document::postProcessedResultChanged, m_document, &Document::generateTexture);
     connect(m_document, &Document::rigChanged, m_document, &Document::generateBone);
     connect(m_document, &Document::postProcessedResultChanged, m_document, &Document::generateBone);
-    connect(m_document, &Document::resultTextureChanged, [=]() {
-        if (m_document->isMeshGenerating())
-            return;
-        auto resultTextureMesh = m_document->takeResultTextureMesh();
-        if (nullptr != resultTextureMesh) {
-            if (resultTextureMesh->meshId() < m_currentUpdatedMeshId) {
-                delete resultTextureMesh;
-                return;
-            }
-        }
-        if (m_modelRemoveColor && resultTextureMesh)
-            resultTextureMesh->removeColor();
-        m_modelRenderWidget->updateMesh(resultTextureMesh);
-    });
+    connect(m_document, &Document::resultTextureChanged, this, &DocumentWindow::updateRenderModel);
 
-    connect(m_document, &Document::resultMeshChanged, [=]() {
-        auto resultMesh = m_document->takeResultMesh();
-        if (nullptr != resultMesh)
-            m_currentUpdatedMeshId = resultMesh->meshId();
-        if (m_modelRemoveColor && resultMesh)
-            resultMesh->removeColor();
-        m_modelRenderWidget->updateMesh(resultMesh);
-        m_modelRenderWidget->updateWireframeMesh(m_document->takeWireframeMesh());
-    });
+    connect(m_document, &Document::resultMeshChanged, this, &DocumentWindow::updateRenderModel);
+    connect(m_document, &Document::resultMeshChanged, this, &DocumentWindow::updateRenderWireframe);
 
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::cursorChanged, [=]() {
         m_modelRenderWidget->setCursor(canvasGraphicsWidget->cursor());
@@ -774,10 +754,18 @@ void DocumentWindow::newDocument()
         if (answer != QMessageBox::Yes)
             return;
     }
+    reset();
+}
+
+void DocumentWindow::reset()
+{
     m_document->clearHistories();
     m_document->reset();
     m_document->clearTurnaround();
     m_document->saveSnapshot();
+
+    m_currentUpdatedMeshId = 0;
+    m_currentUpdatedWireframeId = 0;
 }
 
 void DocumentWindow::saveAs()
@@ -916,10 +904,7 @@ void DocumentWindow::openPathAs(const QString& path, const QString& asName)
 {
     QApplication::setOverrideCursor(Qt::WaitCursor);
 
-    m_document->clearHistories();
-    m_document->reset();
-    m_document->clearTurnaround();
-    m_document->saveSnapshot();
+    reset();
 
     QFile file(path);
     file.open(QFile::ReadOnly);
@@ -1400,15 +1385,7 @@ bool DocumentWindow::isWorking()
 void DocumentWindow::toggleRenderColor()
 {
     m_modelRemoveColor = !m_modelRemoveColor;
-    ModelMesh* mesh = nullptr;
-    if (m_document->isMeshGenerating() || m_document->isPostProcessing() || m_document->isTextureGenerating()) {
-        mesh = m_document->takeResultMesh();
-    } else {
-        mesh = m_document->takeResultTextureMesh();
-    }
-    if (m_modelRemoveColor && mesh)
-        mesh->removeColor();
-    m_modelRenderWidget->updateMesh(mesh);
+    forceUpdateRenderModel();
 }
 
 void DocumentWindow::generateBonePreviewImages()
@@ -1458,4 +1435,47 @@ void DocumentWindow::bonePreviewImagesReady()
         generateBonePreviewImages();
     else
         updateInprogressIndicator();
+}
+
+void DocumentWindow::forceUpdateRenderModel()
+{
+    ModelMesh* mesh = nullptr;
+    if (m_document->isMeshGenerating() || m_document->isPostProcessing() || m_document->isTextureGenerating()) {
+        mesh = m_document->takeResultMesh();
+        m_currentUpdatedMeshId = m_document->resultMeshId();
+    } else {
+        mesh = m_document->takeResultTextureMesh();
+        m_currentUpdatedMeshId = m_document->resultTextureMeshId();
+    }
+    if (m_modelRemoveColor && mesh)
+        mesh->removeColor();
+    m_modelRenderWidget->updateMesh(mesh);
+}
+
+void DocumentWindow::updateRenderModel()
+{
+    qint64 shouldShowId = 0;
+    if (m_document->isMeshGenerating() || m_document->isPostProcessing() || m_document->isTextureGenerating()) {
+        shouldShowId = m_document->resultMeshId();
+    } else {
+        shouldShowId = -(qint64)m_document->resultTextureMeshId();
+    }
+    if (shouldShowId == m_currentUpdatedMeshId)
+        return;
+    if (std::abs(shouldShowId) < std::abs(m_currentUpdatedMeshId))
+        return;
+    forceUpdateRenderModel();
+}
+
+void DocumentWindow::forceUpdateRenderWireframe()
+{
+    m_modelRenderWidget->updateWireframeMesh(m_document->takeWireframeMesh());
+    m_currentUpdatedWireframeId = m_document->resultMeshId();
+}
+
+void DocumentWindow::updateRenderWireframe()
+{
+    if (m_document->resultMeshId() == m_currentUpdatedWireframeId)
+        return;
+    forceUpdateRenderWireframe();
 }

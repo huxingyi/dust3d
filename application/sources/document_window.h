@@ -96,6 +96,10 @@ public slots:
     void openRecentFile();
     void updateRecentFileActions();
     void toggleRenderColor();
+    void updateRenderModel();
+    void forceUpdateRenderModel();
+    void updateRenderWireframe();
+    void forceUpdateRenderWireframe();
 
 private:
     void setCurrentFilename(const QString& filename);
@@ -106,13 +110,15 @@ private:
     QShortcut* createShortcut(QKeySequence key);
     QString strippedName(const QString& fullFileName);
     bool openFiles(const QStringList& pathList);
+    void reset();
 
     Document* m_document = nullptr;
     bool m_firstShow = true;
     bool m_documentSaved = true;
     std::vector<QWidget*> m_dialogs;
     bool m_isLastMeshGenerationSucceed = true;
-    quint64 m_currentUpdatedMeshId = 0;
+    qint64 m_currentUpdatedMeshId = 0;
+    quint64 m_currentUpdatedWireframeId = 0;
     QStringList m_waitingForExportToFilenames;
 
     QString m_currentFilename;
