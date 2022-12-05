@@ -615,6 +615,8 @@ DocumentWindow::DocumentWindow()
 
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::partComponentChecked, m_partManageWidget, &PartManageWidget::selectComponentByPartId);
 
+    connect(m_boneManageWidget, &BoneManageWidget::selectNodeOnCanvas, canvasGraphicsWidget, &SkeletonGraphicsWidget::addNodeToSelection);
+
     connect(m_document, &Document::skeletonChanged, m_document, &Document::generateMesh);
     connect(m_document, &Document::textureChanged, m_document, &Document::generateTexture);
     connect(m_document, &Document::resultMeshChanged, m_document, &Document::postProcess);

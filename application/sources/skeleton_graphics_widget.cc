@@ -2515,6 +2515,21 @@ void SkeletonGraphicsWidget::addPartToSelection(dust3d::Uuid partId)
     }
 }
 
+void SkeletonGraphicsWidget::addNodeToSelection(const dust3d::Uuid& nodeId)
+{
+    Document::Profile choosenProfile = Document::Profile::Main;
+    if (m_hoveredNodeItem) {
+        choosenProfile = m_hoveredNodeItem->profile();
+    } else if (m_hoveredEdgeItem) {
+        choosenProfile = m_hoveredEdgeItem->profile();
+    }
+    auto findNodeItem = nodeItemMap.find(nodeId);
+    if (findNodeItem == nodeItemMap.end())
+        return;
+    SkeletonGraphicsNodeItem* item = Document::Profile::Main == choosenProfile ? findNodeItem->second.first : findNodeItem->second.second;
+    addItemToRangeSelection(item);
+}
+
 void SkeletonGraphicsWidget::selectConnectedAll()
 {
     unselectAll();

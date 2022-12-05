@@ -137,6 +137,7 @@ public slots:
     void selectPartAll();
     void selectConnectedAll();
     void addPartToSelection(dust3d::Uuid partId);
+    void addNodeToSelection(const dust3d::Uuid& nodeId);
     void cut();
     void copy();
     void flipHorizontally();

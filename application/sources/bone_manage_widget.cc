@@ -52,6 +52,16 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
         this->m_document->saveSnapshot();
     });
 
+    connect(m_selectButton, &QPushButton::clicked, [this]() {
+        for (const auto& boneId : this->m_bonePreviewGridWidget->getSelectedBoneIds()) {
+            for (const auto& nodeIt : m_document->nodeMap) {
+                if (nodeIt.second.boneIds.end() == nodeIt.second.boneIds.find(boneId))
+                    continue;
+                emit this->selectNodeOnCanvas(nodeIt.first);
+            }
+        }
+    });
+
     connect(m_propertyButton, &QPushButton::clicked, this, &BoneManageWidget::showSelectedBoneProperties);
 
     connect(this, &BoneManageWidget::groupOperationAdded, m_document, &Document::saveSnapshot);
