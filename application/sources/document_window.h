@@ -152,6 +152,7 @@ private:
 
     QMenu* m_windowMenu = nullptr;
     QAction* m_showPartsListAction = nullptr;
+    QAction* m_showBonesListAction = nullptr;
     QAction* m_showDebugDialogAction = nullptr;
 
     QMenu* m_helpMenu = nullptr;
@@ -187,6 +188,8 @@ private:
     SpinnableToolbarIcon* m_inprogressIndicator = nullptr;
 
     std::map<QKeySequence, QShortcut*> m_shortcutMap;
+
+    bool m_showBodyBonePreview = false;
 };
 
 #endif

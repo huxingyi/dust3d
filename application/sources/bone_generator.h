@@ -13,6 +13,7 @@ class BoneGenerator : public QObject, public dust3d::BoneGenerator {
 public:
     BoneGenerator(std::unique_ptr<dust3d::Object> object, std::unique_ptr<dust3d::Snapshot> snapshot);
     std::map<dust3d::Uuid, std::unique_ptr<ModelMesh>>* takeBonePreviewMeshes();
+    std::unique_ptr<ModelMesh> takeBodyPreviewMesh();
 public slots:
     void process();
 signals:
@@ -22,6 +23,7 @@ private:
     std::unique_ptr<std::map<dust3d::Uuid, std::unique_ptr<ModelMesh>>> m_bonePreviewMeshes;
     std::unique_ptr<dust3d::Object> m_object;
     std::unique_ptr<dust3d::Snapshot> m_snapshot;
+    std::unique_ptr<ModelMesh> m_bodyPreviewMesh;
 };
 
 #endif

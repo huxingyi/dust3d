@@ -278,6 +278,13 @@ DocumentWindow::DocumentWindow()
     bonesDocker->setWidget(m_boneManageWidget);
     bonesDocker->setAllowedAreas(Qt::RightDockWidgetArea);
 
+    connect(bonesDocker, &QDockWidget::visibilityChanged, this, [this](bool visible) {
+        if (this->m_showBodyBonePreview == visible)
+            return;
+        this->m_showBodyBonePreview = visible;
+        forceUpdateRenderModel();
+    });
+
     tabifyDockWidget(partsDocker, bonesDocker);
 
     partsDocker->raise();
@@ -425,6 +432,13 @@ DocumentWindow::DocumentWindow()
         partsDocker->raise();
     });
     m_windowMenu->addAction(m_showPartsListAction);
+
+    m_showBonesListAction = new QAction(tr("Bones"), this);
+    connect(m_showBonesListAction, &QAction::triggered, [=]() {
+        bonesDocker->show();
+        bonesDocker->raise();
+    });
+    m_windowMenu->addAction(m_showBonesListAction);
 
     QMenu* dialogsMenu = m_windowMenu->addMenu(tr("Dialogs"));
     connect(dialogsMenu, &QMenu::aboutToShow, [=]() {
@@ -1440,15 +1454,20 @@ void DocumentWindow::bonePreviewImagesReady()
 void DocumentWindow::forceUpdateRenderModel()
 {
     ModelMesh* mesh = nullptr;
-    if (m_document->isMeshGenerating() || m_document->isPostProcessing() || m_document->isTextureGenerating()) {
-        mesh = m_document->takeResultMesh();
-        m_currentUpdatedMeshId = m_document->resultMeshId();
+    if (m_showBodyBonePreview) {
+        mesh = m_document->takeResultBodyBonePreviewMesh();
+        m_currentUpdatedMeshId = m_document->resultBodyBonePreviewMeshId();
     } else {
-        mesh = m_document->takeResultTextureMesh();
-        m_currentUpdatedMeshId = m_document->resultTextureMeshId();
+        if (m_document->isMeshGenerating() || m_document->isPostProcessing() || m_document->isTextureGenerating()) {
+            mesh = m_document->takeResultMesh();
+            m_currentUpdatedMeshId = m_document->resultMeshId();
+        } else {
+            mesh = m_document->takeResultTextureMesh();
+            m_currentUpdatedMeshId = m_document->resultTextureMeshId();
+        }
+        if (m_modelRemoveColor && mesh)
+            mesh->removeColor();
     }
-    if (m_modelRemoveColor && mesh)
-        mesh->removeColor();
     m_modelRenderWidget->updateMesh(mesh);
 }
 

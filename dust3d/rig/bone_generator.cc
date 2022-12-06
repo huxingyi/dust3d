@@ -160,6 +160,11 @@ std::map<Uuid, BoneGenerator::BonePreview>& BoneGenerator::bonePreviews()
     return m_bonePreviews;
 }
 
+BoneGenerator::BonePreview& BoneGenerator::bodyPreview()
+{
+    return m_bodyPreview;
+}
+
 void BoneGenerator::addBonePreviewTriangle(BonePreview& bonePreview,
     std::unordered_map<size_t, size_t>& oldToNewVertexMap,
     const std::vector<size_t>& triangle)
@@ -197,6 +202,11 @@ void BoneGenerator::generateBonePreviews()
         }
 
         m_bonePreviews.emplace(std::make_pair(it.first, std::move(bonePreview)));
+    }
+
+    std::unordered_map<size_t, size_t> bodyOldToNewVertexMap;
+    for (const auto& triangle : m_triangles) {
+        addBonePreviewTriangle(m_bodyPreview, bodyOldToNewVertexMap, triangle);
     }
 }
 

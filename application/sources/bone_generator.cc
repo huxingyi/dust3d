@@ -15,6 +15,11 @@ std::map<dust3d::Uuid, std::unique_ptr<ModelMesh>>* BoneGenerator::takeBonePrevi
     return m_bonePreviewMeshes.release();
 }
 
+std::unique_ptr<ModelMesh> BoneGenerator::takeBodyPreviewMesh()
+{
+    return std::move(m_bodyPreviewMesh);
+}
+
 void BoneGenerator::process()
 {
     QElapsedTimer countTimeConsumed;
@@ -79,6 +84,37 @@ void BoneGenerator::process()
             (float)0.0,
             (float)1.0,
             &vertexProperties);
+    }
+
+    {
+        const auto& preview = bodyPreview();
+        std::vector<dust3d::Vector3> previewTriangleNormals;
+        previewTriangleNormals.reserve(preview.triangles.size());
+        for (const auto& face : preview.triangles) {
+            previewTriangleNormals.emplace_back(dust3d::Vector3::normal(
+                preview.vertices[face[0]],
+                preview.vertices[face[1]],
+                preview.vertices[face[2]]));
+        }
+        std::vector<std::vector<dust3d::Vector3>> previewTriangleVertexNormals;
+        dust3d::smoothNormal(preview.vertices,
+            preview.triangles,
+            previewTriangleNormals,
+            0,
+            &previewTriangleVertexNormals);
+        std::vector<std::tuple<dust3d::Color, float /*metalness*/, float /*roughness*/>> vertexProperties(preview.vertexColors.size());
+        for (size_t i = 0; i < vertexProperties.size(); ++i) {
+            vertexProperties[i] = std::make_tuple(preview.vertexColors[i],
+                (float)0.0, (float)1.0);
+        }
+        m_bodyPreviewMesh = std::make_unique<ModelMesh>(preview.vertices,
+            preview.triangles,
+            previewTriangleVertexNormals,
+            dust3d::Color::createWhite(),
+            (float)0.0,
+            (float)1.0,
+            &vertexProperties);
+        m_bodyPreviewMesh->setMeshId(m_object->meshId);
     }
 
     qDebug() << "The bone generation took" << countTimeConsumed.elapsed() << "milliseconds";

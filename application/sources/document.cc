@@ -2118,6 +2118,21 @@ quint64 Document::resultTextureMeshId()
     return m_resultTextureMesh->meshId();
 }
 
+ModelMesh* Document::takeResultBodyBonePreviewMesh()
+{
+    if (nullptr == m_resultBodyBonePreviewMesh)
+        return nullptr;
+    ModelMesh* resultBodyBonePreviewMesh = new ModelMesh(*m_resultBodyBonePreviewMesh);
+    return resultBodyBonePreviewMesh;
+}
+
+quint64 Document::resultBodyBonePreviewMeshId()
+{
+    if (nullptr == m_resultBodyBonePreviewMesh)
+        return 0;
+    return m_resultBodyBonePreviewMesh->meshId();
+}
+
 void Document::meshReady()
 {
     ModelMesh* resultMesh = m_meshGenerator->takeResultMesh();
@@ -3078,6 +3093,8 @@ void Document::boneReady()
         }
         emit resultBonePreviewMeshesChanged();
     }
+
+    m_resultBodyBonePreviewMesh = m_boneGenerator->takeBodyPreviewMesh();
 
     // TODO:
 

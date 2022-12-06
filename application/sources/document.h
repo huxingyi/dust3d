@@ -358,6 +358,8 @@ public:
     bool isMeshGenerationSucceed();
     ModelMesh* takeResultTextureMesh();
     quint64 resultTextureMeshId();
+    ModelMesh* takeResultBodyBonePreviewMesh();
+    quint64 resultBodyBonePreviewMeshId();
     void updateTurnaround(const QImage& image);
     void clearTurnaround();
     void updateTextureImage(QImage* image);
@@ -589,6 +591,7 @@ private:
 
     std::unique_ptr<BoneGenerator> m_boneGenerator;
     bool m_isResultBoneObsolete = false;
+    std::unique_ptr<ModelMesh> m_resultBodyBonePreviewMesh;
 
 private:
     static unsigned long m_maxSnapshot;

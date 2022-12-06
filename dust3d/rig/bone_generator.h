@@ -68,6 +68,7 @@ public:
     BoneGenerator();
     void generate();
     std::map<Uuid, BonePreview>& bonePreviews();
+    BonePreview& bodyPreview();
 
 protected:
     void setVertices(const std::vector<Vector3>& vertices);
@@ -88,6 +89,7 @@ private:
     std::vector<Uuid> m_vertexSourceNodes;
     std::map<Uuid, std::unordered_set<size_t>> m_boneVertices;
     std::map<Uuid, BonePreview> m_bonePreviews;
+    BonePreview m_bodyPreview;
 
     void buildEdges();
     void resolveVertexSources();
