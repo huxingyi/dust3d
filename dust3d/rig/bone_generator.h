@@ -48,6 +48,7 @@ public:
     };
 
     struct Bone {
+        size_t index;
         std::string name;
         std::vector<Uuid> joints;
         std::vector<Vector3> startPositions;
@@ -100,7 +101,8 @@ private:
     void generateBonePreviews();
     void addBonePreviewTriangle(BonePreview& bonePreview,
         std::unordered_map<size_t, size_t>& oldToNewVertexMap,
-        const std::vector<size_t>& triangle);
+        const std::vector<size_t>& triangle,
+        const Color& color);
 };
 
 }

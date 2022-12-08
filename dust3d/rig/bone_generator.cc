@@ -45,7 +45,9 @@ void BoneGenerator::setPositionToNodeMap(const std::map<PositionKey, Uuid>& posi
 
 void BoneGenerator::addBone(const Uuid& boneId, const Bone& bone)
 {
-    m_boneMap.emplace(std::make_pair(boneId, bone));
+    Bone newBone = bone;
+    newBone.index = m_boneMap.size();
+    m_boneMap.emplace(std::make_pair(boneId, std::move(newBone)));
 }
 
 void BoneGenerator::addNode(const Uuid& nodeId, const Node& node)
@@ -167,7 +169,8 @@ BoneGenerator::BonePreview& BoneGenerator::bodyPreview()
 
 void BoneGenerator::addBonePreviewTriangle(BonePreview& bonePreview,
     std::unordered_map<size_t, size_t>& oldToNewVertexMap,
-    const std::vector<size_t>& triangle)
+    const std::vector<size_t>& triangle,
+    const Color& color)
 {
     std::vector<size_t> newTriangle(3);
     for (size_t i = 0; i < 3; ++i) {
@@ -176,7 +179,7 @@ void BoneGenerator::addBonePreviewTriangle(BonePreview& bonePreview,
             oldToNewVertexMap.insert(std::make_pair(triangle[i], bonePreview.vertices.size()));
             newTriangle[i] = bonePreview.vertices.size();
             bonePreview.vertices.push_back(m_vertices[triangle[i]]);
-            bonePreview.vertexColors.push_back(Color(1.0, 1.0, 1.0));
+            bonePreview.vertexColors.push_back(color);
         } else {
             newTriangle[i] = findVertex->second;
         }
@@ -186,9 +189,25 @@ void BoneGenerator::addBonePreviewTriangle(BonePreview& bonePreview,
 
 void BoneGenerator::generateBonePreviews()
 {
+    const static std::array<Color, 7> s_colors = {
+        Color(155.0 / 255.0, 95.0 / 255.0, 224.0 / 255.0),
+        Color(22.0 / 255.0, 164.0 / 255.0, 216.0 / 255.0),
+        Color(96.0 / 255.0, 219.0 / 255.0, 232.0 / 255.0),
+        Color(139.0 / 255.0, 211.0 / 255.0, 70.0 / 255.0),
+        Color(239.0 / 255.0, 223.0 / 255.0, 72.0 / 255.0),
+        Color(249.0 / 255.0, 165.0 / 255.0, 44.0 / 255.0),
+        Color(214.0 / 255.0, 78.0 / 255.0, 18.0 / 255.0),
+    };
+
     for (const auto& it : m_boneVertices) {
+        auto findBone = m_boneMap.find(it.first);
+        if (findBone == m_boneMap.end())
+            continue;
+
         BonePreview bonePreview;
         std::unordered_map<size_t, size_t> oldToNewVertexMap;
+
+        const auto& color = s_colors[findBone->second.index % s_colors.size()];
 
         for (const auto& triangle : m_triangles) {
             size_t countedPoints = 0;
@@ -198,16 +217,32 @@ void BoneGenerator::generateBonePreviews()
             }
             if (0 == countedPoints)
                 continue;
-            addBonePreviewTriangle(bonePreview, oldToNewVertexMap, triangle);
+            addBonePreviewTriangle(bonePreview, oldToNewVertexMap, triangle, color);
         }
 
         m_bonePreviews.emplace(std::make_pair(it.first, std::move(bonePreview)));
     }
 
-    std::unordered_map<size_t, size_t> bodyOldToNewVertexMap;
-    for (const auto& triangle : m_triangles) {
-        addBonePreviewTriangle(m_bodyPreview, bodyOldToNewVertexMap, triangle);
+    std::unordered_map<size_t, std::vector<Color>> vertexSkinColors;
+    for (const auto& it : m_boneVertices) {
+        auto findBone = m_boneMap.find(it.first);
+        if (findBone == m_boneMap.end())
+            continue;
+        const auto& color = s_colors[findBone->second.index % s_colors.size()];
+        for (const auto& vertexIndex : it.second)
+            vertexSkinColors[vertexIndex].push_back(color);
     }
+    std::vector<Color> bodyVertexColors(m_vertices.size());
+    for (const auto& it : vertexSkinColors) {
+        Color color;
+        for (const auto& colorIt : it.second)
+            color = color + colorIt;
+        color = color * (1.0 / it.second.size());
+        bodyVertexColors[it.first] = color;
+    }
+    m_bodyPreview.vertices = m_vertices;
+    m_bodyPreview.triangles = m_triangles;
+    m_bodyPreview.vertexColors = std::move(bodyVertexColors);
 }
 
 }
