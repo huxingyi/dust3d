@@ -53,7 +53,7 @@ public:
         std::vector<Uuid> joints;
         std::vector<Vector3> startPositions;
         std::vector<Vector3> forwardVectors;
-        std::vector<VertexWeight> vertexWeights;
+        std::vector<std::vector<VertexWeight>> vertexWeights;
     };
 
     struct Node {
@@ -97,12 +97,12 @@ private:
     Uuid resolveVertexSourceByBreadthFirstSearch(size_t vertexIndex, std::unordered_set<size_t>& visited);
     void groupBoneVertices();
     void buildBoneJoints();
-    void assignVerticesToBoneJoints();
     void generateBonePreviews();
     void addBonePreviewTriangle(BonePreview& bonePreview,
         std::unordered_map<size_t, size_t>& oldToNewVertexMap,
         const std::vector<size_t>& triangle,
         const Color& color);
+    void calculateBoneVertexWeights(const Uuid& boneId, Bone& bone);
 };
 
 }

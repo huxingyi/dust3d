@@ -37,6 +37,14 @@ void BoneGenerator::process()
 
     for (const auto& it : m_snapshot->boneIdList) {
         Bone bone;
+        auto findBone = m_snapshot->bones.find(it);
+        if (findBone == m_snapshot->bones.end())
+            continue;
+        for (const auto& nodeIdString : dust3d::String::split(dust3d::String::valueOrEmpty(findBone->second, "jointNodeIdList"), ',')) {
+            if (nodeIdString.empty())
+                continue;
+            bone.joints.push_back(dust3d::Uuid(nodeIdString));
+        }
         addBone(dust3d::Uuid(it), bone);
     }
 

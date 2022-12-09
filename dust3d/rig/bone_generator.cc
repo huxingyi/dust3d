@@ -127,11 +127,6 @@ void BoneGenerator::buildBoneJoints()
     }
 }
 
-void BoneGenerator::assignVerticesToBoneJoints()
-{
-    // TODO:
-}
-
 void BoneGenerator::groupBoneVertices()
 {
     for (size_t i = 0; i < m_vertexSourceNodes.size(); ++i) {
@@ -147,13 +142,53 @@ void BoneGenerator::groupBoneVertices()
     }
 }
 
+void BoneGenerator::calculateBoneVertexWeights(const Uuid& boneId, Bone& bone)
+{
+    auto findBoneVertices = m_boneVertices.find(boneId);
+    if (findBoneVertices == m_boneVertices.end())
+        return;
+
+    std::vector<std::unordered_set<size_t>> segments(bone.startPositions.size());
+
+    // Split bone vertices by joint position and forward direction
+    for (size_t jointIndex = 0; jointIndex + 1 < bone.startPositions.size(); ++jointIndex) {
+        const auto& nextJointPosition = bone.startPositions[jointIndex + 1];
+        auto forwardDirection = bone.forwardVectors[jointIndex].normalized();
+        for (const auto& vertex : findBoneVertices->second) {
+            const auto& vertexPosition = m_vertices[vertex];
+            if (Vector3::dotProduct(forwardDirection, (vertexPosition - nextJointPosition).normalized()) <= 0.0) {
+                segments[jointIndex].insert(vertex);
+            }
+        }
+    }
+
+    bone.vertexWeights.resize(bone.startPositions.size());
+    for (size_t jointIndex = 0; jointIndex < bone.startPositions.size(); ++jointIndex) {
+        for (const auto& it : segments[jointIndex])
+            bone.vertexWeights[jointIndex].push_back(VertexWeight { it, 1.0 });
+    }
+
+    // Calculate joint radius based on group all the boundary vertices,
+    // and use these vertices as points of sphere,
+    // boundary vertices means the edge connected these vertices in different bone vertex split
+    // Use m_triangles which contains all triangles to find the edges of vertices
+    // TODO:
+
+    // Weight vertex as normal when not in joint radius range
+    // TODO:
+
+    // Weight vertex as joint radius considered
+    // TODO:
+}
+
 void BoneGenerator::generate()
 {
     buildEdges();
     resolveVertexSources();
     groupBoneVertices();
     buildBoneJoints();
-    assignVerticesToBoneJoints();
+    for (auto& boneIt : m_boneMap)
+        calculateBoneVertexWeights(boneIt.first, boneIt.second);
     generateBonePreviews();
 }
 
@@ -228,9 +263,14 @@ void BoneGenerator::generateBonePreviews()
         auto findBone = m_boneMap.find(it.first);
         if (findBone == m_boneMap.end())
             continue;
-        const auto& color = s_colors[findBone->second.index % s_colors.size()];
-        for (const auto& vertexIndex : it.second)
-            vertexSkinColors[vertexIndex].push_back(color);
+        const auto& color = s_colors[(findBone->second.index) % s_colors.size()];
+        const auto& alternativeColor = s_colors[(findBone->second.index + s_colors.size() / 2) % s_colors.size()];
+        for (size_t jointIndex = 0; jointIndex < findBone->second.vertexWeights.size(); ++jointIndex) {
+            const auto& useColor = 0 == jointIndex % 2 ? color : alternativeColor;
+            for (const auto& vertexWeight : findBone->second.vertexWeights[jointIndex]) {
+                vertexSkinColors[vertexWeight.vertex].push_back(useColor);
+            }
+        }
     }
     std::vector<Color> bodyVertexColors(m_vertices.size());
     for (const auto& it : vertexSkinColors) {
