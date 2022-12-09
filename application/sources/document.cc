@@ -3095,6 +3095,7 @@ void Document::boneReady()
     }
 
     m_resultBodyBonePreviewMesh = m_boneGenerator->takeBodyPreviewMesh();
+    emit resultBodyBonePreviewMeshChanged();
 
     // TODO:
 

@@ -202,6 +202,7 @@ DocumentWindow::DocumentWindow()
         m_isLastMeshGenerationSucceed = m_document->isMeshGenerationSucceed();
         updateInprogressIndicator();
     });
+    connect(m_document, &Document::resultBodyBonePreviewMeshChanged, this, &DocumentWindow::updateInprogressIndicator);
     connect(m_document, &Document::resultComponentPreviewMeshesChanged, this, &DocumentWindow::generateComponentPreviewImages);
     connect(m_document, &Document::textureChanged, this, &DocumentWindow::generateComponentPreviewImages);
     connect(m_document, &Document::postProcessing, this, &DocumentWindow::updateInprogressIndicator);
@@ -638,6 +639,7 @@ DocumentWindow::DocumentWindow()
     connect(m_document, &Document::rigChanged, m_document, &Document::generateBone);
     connect(m_document, &Document::postProcessedResultChanged, m_document, &Document::generateBone);
     connect(m_document, &Document::resultTextureChanged, this, &DocumentWindow::updateRenderModel);
+    connect(m_document, &Document::resultBodyBonePreviewMeshChanged, this, &DocumentWindow::updateRenderModel);
 
     connect(m_document, &Document::resultMeshChanged, this, &DocumentWindow::updateRenderModel);
     connect(m_document, &Document::resultMeshChanged, this, &DocumentWindow::updateRenderWireframe);

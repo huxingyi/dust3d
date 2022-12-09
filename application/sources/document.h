@@ -226,6 +226,7 @@ signals:
     void resultMeshChanged();
     void resultComponentPreviewMeshesChanged();
     void resultBonePreviewMeshesChanged();
+    void resultBodyBonePreviewMeshChanged();
     void turnaroundChanged();
     void editModeChanged();
     void resultTextureChanged();
