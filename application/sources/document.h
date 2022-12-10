@@ -23,7 +23,6 @@
 
 class UvMapGenerator;
 class MeshGenerator;
-class MeshResultPostProcessor;
 class BoneGenerator;
 
 class Document : public QObject {
@@ -230,7 +229,6 @@ signals:
     void turnaroundChanged();
     void editModeChanged();
     void resultTextureChanged();
-    void postProcessedResultChanged();
     void partSubdivStateChanged(dust3d::Uuid partId);
     void partXmirrorStateChanged(dust3d::Uuid partId);
     void partDeformThicknessChanged(dust3d::Uuid partId);
@@ -260,7 +258,6 @@ signals:
     void checkNode(dust3d::Uuid nodeId);
     void checkEdge(dust3d::Uuid edgeId);
     void meshGenerating();
-    void postProcessing();
     void textureGenerating();
     void textureChanged();
     void partAdded(dust3d::Uuid partId);
@@ -361,6 +358,7 @@ public:
     quint64 resultTextureMeshId();
     ModelMesh* takeResultBodyBonePreviewMesh();
     quint64 resultBodyBonePreviewMeshId();
+    quint64 resultTextureImageUpdateVersion();
     void updateTurnaround(const QImage& image);
     void clearTurnaround();
     void updateTextureImage(QImage* image);
@@ -370,9 +368,7 @@ public:
     void updateTextureAmbientOcclusionImage(QImage* image);
     const dust3d::Object& currentUvMappedObject() const;
     bool isExportReady() const;
-    bool isPostProcessResultObsolete() const;
     bool isMeshGenerating() const;
-    bool isPostProcessing() const;
     bool isTextureGenerating() const;
     bool isBoneGenerating() const;
     void collectCutFaceList(std::vector<QString>& cutFaces) const;
@@ -451,8 +447,6 @@ public slots:
     void meshReady();
     void generateTexture();
     void textureReady();
-    void postProcess();
-    void postProcessedMeshResultReady();
     void generateBone();
     void boneReady();
     void setPartSubdivState(dust3d::Uuid partId, bool subdived);
@@ -571,11 +565,9 @@ private:
     dust3d::Object* m_currentObject = nullptr;
     bool m_isTextureObsolete = false;
     UvMapGenerator* m_textureGenerator = nullptr;
-    bool m_isPostProcessResultObsolete = false;
-    MeshResultPostProcessor* m_postProcessor = nullptr;
     std::unique_ptr<dust3d::Object> m_uvMappedObject = std::make_unique<dust3d::Object>();
     ModelMesh* m_resultTextureMesh = nullptr;
-    unsigned long long m_textureImageUpdateVersion = 0;
+    quint64 m_textureImageUpdateVersion = 0;
     bool m_smoothNormal = false;
     quint64 m_meshGenerationId = 0;
     quint64 m_nextMeshGenerationId = 0;

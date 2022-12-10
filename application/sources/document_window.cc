@@ -205,10 +205,8 @@ DocumentWindow::DocumentWindow()
     connect(m_document, &Document::resultBodyBonePreviewMeshChanged, this, &DocumentWindow::updateInprogressIndicator);
     connect(m_document, &Document::resultComponentPreviewMeshesChanged, this, &DocumentWindow::generateComponentPreviewImages);
     connect(m_document, &Document::textureChanged, this, &DocumentWindow::generateComponentPreviewImages);
-    connect(m_document, &Document::postProcessing, this, &DocumentWindow::updateInprogressIndicator);
     connect(m_document, &Document::textureGenerating, this, &DocumentWindow::updateInprogressIndicator);
     connect(m_document, &Document::resultTextureChanged, this, &DocumentWindow::updateInprogressIndicator);
-    connect(m_document, &Document::postProcessedResultChanged, this, &DocumentWindow::updateInprogressIndicator);
     connect(m_document, &Document::boneGenerating, this, &DocumentWindow::updateInprogressIndicator);
     connect(m_document, &Document::resultBoneChanged, this, &DocumentWindow::updateInprogressIndicator);
     connect(m_document, &Document::resultBonePreviewMeshesChanged, this, &DocumentWindow::generateBonePreviewImages);
@@ -634,10 +632,9 @@ DocumentWindow::DocumentWindow()
 
     connect(m_document, &Document::skeletonChanged, m_document, &Document::generateMesh);
     connect(m_document, &Document::textureChanged, m_document, &Document::generateTexture);
-    connect(m_document, &Document::resultMeshChanged, m_document, &Document::postProcess);
-    connect(m_document, &Document::postProcessedResultChanged, m_document, &Document::generateTexture);
+    connect(m_document, &Document::resultMeshChanged, m_document, &Document::generateTexture);
     connect(m_document, &Document::rigChanged, m_document, &Document::generateBone);
-    connect(m_document, &Document::postProcessedResultChanged, m_document, &Document::generateBone);
+    connect(m_document, &Document::resultMeshChanged, m_document, &Document::generateBone);
     connect(m_document, &Document::resultTextureChanged, this, &DocumentWindow::updateRenderModel);
     connect(m_document, &Document::resultBodyBonePreviewMeshChanged, this, &DocumentWindow::updateRenderModel);
 
@@ -680,7 +677,7 @@ DocumentWindow::DocumentWindow()
 
 void DocumentWindow::updateInprogressIndicator()
 {
-    bool inprogress = m_document->isMeshGenerating() || m_document->isPostProcessing() || m_document->isTextureGenerating() || m_document->isBoneGenerating() || nullptr != m_componentPreviewImagesGenerator || nullptr != m_componentPreviewImagesDecorator;
+    bool inprogress = m_document->isMeshGenerating() || m_document->isTextureGenerating() || m_document->isBoneGenerating() || nullptr != m_componentPreviewImagesGenerator || nullptr != m_componentPreviewImagesDecorator;
     if (inprogress == m_inprogressIndicator->isSpinning())
         return;
     m_inprogressIndicator->showSpinner(inprogress);
@@ -1460,12 +1457,13 @@ void DocumentWindow::forceUpdateRenderModel()
         mesh = m_document->takeResultBodyBonePreviewMesh();
         m_currentUpdatedMeshId = m_document->resultBodyBonePreviewMeshId();
     } else {
-        if (m_document->isMeshGenerating() || m_document->isPostProcessing() || m_document->isTextureGenerating()) {
+        if (m_document->isMeshGenerating() || m_document->isTextureGenerating()) {
             mesh = m_document->takeResultMesh();
             m_currentUpdatedMeshId = m_document->resultMeshId();
         } else {
             mesh = m_document->takeResultTextureMesh();
             m_currentUpdatedMeshId = m_document->resultTextureMeshId();
+            m_currentTextureImageUpdateVersion = m_document->resultTextureImageUpdateVersion();
         }
         if (m_modelRemoveColor && mesh)
             mesh->removeColor();
@@ -1476,15 +1474,19 @@ void DocumentWindow::forceUpdateRenderModel()
 void DocumentWindow::updateRenderModel()
 {
     qint64 shouldShowId = 0;
-    if (m_document->isMeshGenerating() || m_document->isPostProcessing() || m_document->isTextureGenerating()) {
+    quint64 shouldShowTextureVersion = m_currentTextureImageUpdateVersion;
+    if (m_document->isMeshGenerating() || m_document->isTextureGenerating()) {
         shouldShowId = m_document->resultMeshId();
     } else {
         shouldShowId = -(qint64)m_document->resultTextureMeshId();
+        shouldShowTextureVersion = m_document->resultTextureImageUpdateVersion();
     }
-    if (shouldShowId == m_currentUpdatedMeshId)
+    if (shouldShowId == m_currentUpdatedMeshId && shouldShowTextureVersion == m_currentTextureImageUpdateVersion) {
         return;
-    if (std::abs(shouldShowId) < std::abs(m_currentUpdatedMeshId))
+    }
+    if (std::abs(shouldShowId) < std::abs(m_currentUpdatedMeshId)) {
         return;
+    }
     forceUpdateRenderModel();
 }
 

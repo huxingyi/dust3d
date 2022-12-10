@@ -275,7 +275,7 @@ void BoneGenerator::generateBonePreviews()
             }
         }
     }
-    std::vector<Color> bodyVertexColors(m_vertices.size());
+    std::vector<Color> bodyVertexColors(m_vertices.size(), Color(0.0, 0.0, 0.0, 0.0));
     for (const auto& it : vertexSkinColors) {
         Color color;
         for (const auto& colorIt : it.second)

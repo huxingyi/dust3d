@@ -2,7 +2,6 @@
 #include "bone_generator.h"
 #include "image_forever.h"
 #include "mesh_generator.h"
-#include "mesh_result_post_processor.h"
 #include "uv_map_generator.h"
 #include <QApplication>
 #include <QClipboard>
@@ -2167,17 +2166,11 @@ void Document::meshReady()
 
     qDebug() << "Mesh generation done";
 
-    m_isPostProcessResultObsolete = true;
     emit resultMeshChanged();
 
     if (m_isResultMeshObsolete) {
         generateMesh();
     }
-}
-
-bool Document::isPostProcessResultObsolete() const
-{
-    return m_isPostProcessResultObsolete;
 }
 
 void Document::batchChangeBegin()
@@ -2257,12 +2250,15 @@ void Document::generateTexture()
         return;
     }
 
-    qDebug() << "Texture guide generating..";
-    emit textureGenerating();
-
     m_isTextureObsolete = false;
 
-    auto object = std::make_unique<dust3d::Object>(*m_uvMappedObject);
+    if (nullptr == m_currentObject)
+        return;
+
+    qDebug() << "UV mapping generating..";
+    emit textureGenerating();
+
+    auto object = std::make_unique<dust3d::Object>(*m_currentObject);
 
     auto snapshot = std::make_unique<dust3d::Snapshot>();
     toSnapshot(snapshot.get());
@@ -2298,7 +2294,7 @@ void Document::textureReady()
     delete m_textureGenerator;
     m_textureGenerator = nullptr;
 
-    qDebug() << "Texture guide generation done";
+    qDebug() << "UV mapping generation done(meshId:" << (nullptr != m_resultTextureMesh ? m_resultTextureMesh->meshId() : 0) << ")";
 
     emit resultTextureChanged();
 
@@ -2309,47 +2305,9 @@ void Document::textureReady()
     }
 }
 
-void Document::postProcess()
+quint64 Document::resultTextureImageUpdateVersion()
 {
-    if (nullptr != m_postProcessor) {
-        m_isPostProcessResultObsolete = true;
-        return;
-    }
-
-    m_isPostProcessResultObsolete = false;
-
-    if (!m_currentObject) {
-        qDebug() << "Model is null";
-        return;
-    }
-
-    qDebug() << "Post processing..";
-    emit postProcessing();
-
-    QThread* thread = new QThread;
-    m_postProcessor = new MeshResultPostProcessor(*m_currentObject);
-    m_postProcessor->moveToThread(thread);
-    connect(thread, &QThread::started, m_postProcessor, &MeshResultPostProcessor::process);
-    connect(m_postProcessor, &MeshResultPostProcessor::finished, this, &Document::postProcessedMeshResultReady);
-    connect(m_postProcessor, &MeshResultPostProcessor::finished, thread, &QThread::quit);
-    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
-    thread->start();
-}
-
-void Document::postProcessedMeshResultReady()
-{
-    m_uvMappedObject.reset(m_postProcessor->takePostProcessedObject());
-
-    delete m_postProcessor;
-    m_postProcessor = nullptr;
-
-    qDebug() << "Post process done";
-
-    emit postProcessedResultChanged();
-
-    if (m_isPostProcessResultObsolete) {
-        postProcess();
-    }
+    return m_textureImageUpdateVersion;
 }
 
 const dust3d::Object& Document::currentUvMappedObject() const
@@ -2797,10 +2755,10 @@ bool Document::isEdgeEditable(dust3d::Uuid edgeId) const
 
 bool Document::isExportReady() const
 {
-    if (m_meshGenerator || m_textureGenerator || m_postProcessor)
+    if (m_meshGenerator || m_textureGenerator || m_boneGenerator)
         return false;
 
-    if (m_isResultMeshObsolete || m_isTextureObsolete || m_isPostProcessResultObsolete)
+    if (m_isResultMeshObsolete || m_isTextureObsolete || m_isResultBoneObsolete)
         return false;
 
     return true;
@@ -2815,11 +2773,6 @@ void Document::checkExportReadyState()
 bool Document::isMeshGenerating() const
 {
     return nullptr != m_meshGenerator;
-}
-
-bool Document::isPostProcessing() const
-{
-    return nullptr != m_postProcessor;
 }
 
 bool Document::isTextureGenerating() const
@@ -3065,9 +3018,12 @@ void Document::generateBone()
 
     m_isResultBoneObsolete = false;
 
+    if (nullptr == m_currentObject)
+        return;
+
     emit boneGenerating();
 
-    auto object = std::make_unique<dust3d::Object>(*m_uvMappedObject);
+    auto object = std::make_unique<dust3d::Object>(*m_currentObject);
 
     auto snapshot = std::make_unique<dust3d::Snapshot>();
     toSnapshot(snapshot.get());

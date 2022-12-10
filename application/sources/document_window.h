@@ -119,6 +119,7 @@ private:
     bool m_isLastMeshGenerationSucceed = true;
     qint64 m_currentUpdatedMeshId = 0;
     quint64 m_currentUpdatedWireframeId = 0;
+    quint64 m_currentTextureImageUpdateVersion = 0;
     QStringList m_waitingForExportToFilenames;
 
     QString m_currentFilename;
