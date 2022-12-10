@@ -148,18 +148,31 @@ void BoneGenerator::calculateBoneVertexWeights(const Uuid& boneId, Bone& bone)
     if (findBoneVertices == m_boneVertices.end())
         return;
 
+    if (bone.startPositions.size() < 2)
+        return;
+
     std::vector<std::unordered_set<size_t>> segments(bone.startPositions.size());
+
+    std::unordered_set<size_t> usedVertices;
 
     // Split bone vertices by joint position and forward direction
     for (size_t jointIndex = 0; jointIndex + 1 < bone.startPositions.size(); ++jointIndex) {
         const auto& nextJointPosition = bone.startPositions[jointIndex + 1];
         auto forwardDirection = bone.forwardVectors[jointIndex].normalized();
         for (const auto& vertex : findBoneVertices->second) {
+            if (usedVertices.end() != usedVertices.find(vertex))
+                continue;
             const auto& vertexPosition = m_vertices[vertex];
             if (Vector3::dotProduct(forwardDirection, (vertexPosition - nextJointPosition).normalized()) <= 0.0) {
                 segments[jointIndex].insert(vertex);
+                usedVertices.insert(vertex);
             }
         }
+    }
+    for (const auto& vertex : findBoneVertices->second) {
+        if (usedVertices.end() != usedVertices.find(vertex))
+            continue;
+        segments[segments.size() - 2].insert(vertex);
     }
 
     bone.vertexWeights.resize(bone.startPositions.size());
@@ -168,16 +181,6 @@ void BoneGenerator::calculateBoneVertexWeights(const Uuid& boneId, Bone& bone)
             bone.vertexWeights[jointIndex].push_back(VertexWeight { it, 1.0 });
     }
 
-    // Calculate joint radius based on group all the boundary vertices,
-    // and use these vertices as points of sphere,
-    // boundary vertices means the edge connected these vertices in different bone vertex split
-    // Use m_triangles which contains all triangles to find the edges of vertices
-    // TODO:
-
-    // Weight vertex as normal when not in joint radius range
-    // TODO:
-
-    // Weight vertex as joint radius considered
     // TODO:
 }
 
@@ -266,7 +269,7 @@ void BoneGenerator::generateBonePreviews()
         const auto& color = s_colors[(findBone->second.index) % s_colors.size()];
         const auto& alternativeColor = s_colors[(findBone->second.index + s_colors.size() / 2) % s_colors.size()];
         for (size_t jointIndex = 0; jointIndex < findBone->second.vertexWeights.size(); ++jointIndex) {
-            const auto& useColor = 0 == jointIndex % 2 ? color : alternativeColor;
+            const auto& useColor = 0 == (jointIndex % 2) ? color : alternativeColor;
             for (const auto& vertexWeight : findBone->second.vertexWeights[jointIndex]) {
                 vertexSkinColors[vertexWeight.vertex].push_back(useColor);
             }
