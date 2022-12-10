@@ -1056,6 +1056,13 @@ void MeshGenerator::collectIncombinableMesh(const MeshState* mesh, const Generat
     updateVertexIndices(uncombinedFaces);
     updateVertexIndices(uncombinedTriangleAndQuads);
 
+    for (const auto& it : componentCache.partTriangleUvs)
+        m_object->partTriangleUvs.insert({ it.first, it.second });
+    for (const auto& it : componentCache.positionToNodeIdMap)
+        m_object->positionToNodeIdMap.emplace(it);
+    for (const auto& it : componentCache.nodeMap)
+        m_object->nodeMap.emplace(it);
+
     m_object->vertices.insert(m_object->vertices.end(), uncombinedVertices.begin(), uncombinedVertices.end());
     m_object->triangles.insert(m_object->triangles.end(), uncombinedFaces.begin(), uncombinedFaces.end());
     m_object->triangleAndQuads.insert(m_object->triangleAndQuads.end(), uncombinedTriangleAndQuads.begin(), uncombinedTriangleAndQuads.end());
