@@ -22,6 +22,38 @@ BonePropertyWidget::BonePropertyWidget(Document* document,
     QVBoxLayout* mainLayout = new QVBoxLayout;
 
     if (nullptr != m_bone) {
+        m_parentBoneComboBox = new QComboBox;
+        m_parentBoneComboBox->addItem(tr("None"));
+
+        m_parentJointComboBox = new QComboBox;
+        m_parentJointComboBox->addItem(tr("1"));
+        m_parentJointComboBox->setVisible(false);
+
+        QHBoxLayout* parentBoneAndJointLayout = new QHBoxLayout;
+        parentBoneAndJointLayout->addWidget(m_parentBoneComboBox);
+        parentBoneAndJointLayout->addWidget(m_parentJointComboBox);
+
+        for (size_t i = 0; i < m_document->boneIdList.size(); ++i) {
+            const auto& boneId = m_document->boneIdList[i];
+            if (boneId == m_boneId)
+                continue;
+            const Document::Bone* bone = m_document->findBone(boneId);
+            if (nullptr == bone)
+                continue;
+            m_parentBoneComboBox->addItem(QIcon(bone->previewPixmap), bone->name, QVariant(QString::fromStdString(boneId.toString())));
+            if (m_bone->attachBoneId == boneId)
+                m_parentBoneComboBox->setCurrentIndex(m_parentBoneComboBox->count() - 1);
+        }
+        updateBoneJointComboBox();
+
+        connect(m_parentBoneComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &BonePropertyWidget::updateBoneJointComboBox);
+        connect(m_parentJointComboBox, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &BonePropertyWidget::synchronizeBoneAttachmentFromControls);
+
+        QHBoxLayout* parentLayout = new QHBoxLayout;
+        parentLayout->addWidget(new QLabel(tr("Parent")));
+        parentLayout->addLayout(parentBoneAndJointLayout);
+        parentLayout->addStretch();
+
         m_nameEdit = new QLineEdit;
         Theme::initLineEdit(m_nameEdit);
         m_nameEdit->setFixedWidth(Theme::partPreviewImageSize * 2.7);
@@ -51,6 +83,7 @@ BonePropertyWidget::BonePropertyWidget(Document* document,
         jointsLayout->addStretch();
         jointsLayout->addWidget(nodePicker);
 
+        mainLayout->addLayout(parentLayout);
         mainLayout->addLayout(renameLayout);
         mainLayout->addLayout(jointsLayout);
     }
@@ -58,11 +91,41 @@ BonePropertyWidget::BonePropertyWidget(Document* document,
     mainLayout->setSizeConstraint(QLayout::SetFixedSize);
 
     connect(this, &BonePropertyWidget::renameBone, m_document, &Document::renameBone);
+    connect(this, &BonePropertyWidget::setBoneAttachment, m_document, &Document::setBoneAttachment);
     connect(this, &BonePropertyWidget::groupOperationAdded, m_document, &Document::saveSnapshot);
 
     setLayout(mainLayout);
 
     setFixedSize(minimumSizeHint());
+}
+
+dust3d::Uuid BonePropertyWidget::editingParentBoneId()
+{
+    return dust3d::Uuid(m_parentBoneComboBox->currentData().toString().toStdString());
+}
+
+int BonePropertyWidget::editingParentJointIndex()
+{
+    return dust3d::String::toInt(m_parentJointComboBox->currentText().toStdString()) - 1;
+}
+
+void BonePropertyWidget::synchronizeBoneAttachmentFromControls()
+{
+    if (nullptr == m_bone)
+        return;
+
+    auto parentBoneId = editingParentBoneId();
+    int parentJointIndex = editingParentJointIndex();
+
+    if (-1 == parentJointIndex) {
+        // The joint control is initializing, ignore
+        return;
+    }
+
+    if (m_bone->attachBoneId == parentBoneId && parentJointIndex == m_bone->attachBoneJointIndex)
+        return;
+
+    emit setBoneAttachment(m_boneId, parentBoneId, parentJointIndex);
 }
 
 void BonePropertyWidget::prepareBoneIds()
@@ -81,4 +144,30 @@ void BonePropertyWidget::nameEditChanged()
         return;
     emit renameBone(m_boneId, m_nameEdit->text());
     emit groupOperationAdded();
+}
+
+void BonePropertyWidget::updateBoneJointComboBox()
+{
+    if (nullptr == m_bone)
+        return;
+
+    auto parentBoneId = editingParentBoneId();
+    const Document::Bone* parentBone = m_document->findBone(parentBoneId);
+    if (nullptr == parentBone || parentBone->joints.size() < 2) {
+        if (1 == m_parentJointComboBox->count())
+            return;
+        m_parentJointComboBox->clear();
+        m_parentJointComboBox->addItem(tr("1"));
+        m_parentJointComboBox->setVisible(false);
+        synchronizeBoneAttachmentFromControls();
+        return;
+    }
+    m_parentJointComboBox->clear();
+    for (size_t i = 0; i < parentBone->joints.size(); ++i) {
+        m_parentJointComboBox->addItem(QString::number(i + 1));
+        if (i == m_bone->attachBoneJointIndex)
+            m_parentJointComboBox->setCurrentIndex(m_parentJointComboBox->count() - 1);
+    }
+    m_parentJointComboBox->setVisible(true);
+    synchronizeBoneAttachmentFromControls();
 }
