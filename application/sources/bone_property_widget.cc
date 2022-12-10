@@ -165,7 +165,7 @@ void BonePropertyWidget::updateBoneJointComboBox()
     m_parentJointComboBox->clear();
     for (size_t i = 0; i < parentBone->joints.size(); ++i) {
         m_parentJointComboBox->addItem(QString::number(i + 1));
-        if (i == m_bone->attachBoneJointIndex)
+        if (i == (size_t)m_bone->attachBoneJointIndex)
             m_parentJointComboBox->setCurrentIndex(m_parentJointComboBox->count() - 1);
     }
     m_parentJointComboBox->setVisible(true);

@@ -2966,7 +2966,7 @@ void Document::applyBoneJoints(const dust3d::Uuid& boneId, const std::vector<dus
 
 void Document::removeBone(const dust3d::Uuid& boneId)
 {
-    if (boneMap.end() != boneMap.find(boneId))
+    if (boneMap.end() == boneMap.find(boneId))
         return;
 
     for (auto& it : nodeMap)

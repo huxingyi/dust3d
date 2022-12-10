@@ -16,11 +16,15 @@ class BoneManageWidget : public QWidget {
 signals:
     void unselectAllOnCanvas();
     void selectNodeOnCanvas(const dust3d::Uuid& nodeId);
+    void removeBone(const dust3d::Uuid& boneId);
     void groupOperationAdded();
 public slots:
     void selectBoneByBoneId(const dust3d::Uuid& boneId);
     void showSelectedBoneProperties();
     void showContextMenu(const QPoint& pos);
+
+private slots:
+    void removeSelectedBones();
 
 public:
     BoneManageWidget(Document* document, QWidget* parent = nullptr);

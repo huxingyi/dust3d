@@ -65,6 +65,7 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
     connect(m_propertyButton, &QPushButton::clicked, this, &BoneManageWidget::showSelectedBoneProperties);
 
     connect(this, &BoneManageWidget::groupOperationAdded, m_document, &Document::saveSnapshot);
+    connect(this, &BoneManageWidget::removeBone, m_document, &Document::removeBone);
 
     connect(this, &BoneManageWidget::customContextMenuRequested, this, &BoneManageWidget::showContextMenu);
 
@@ -130,6 +131,14 @@ void BoneManageWidget::updateToolButtons()
     m_propertyButton->setEnabled(enablePropertyButton);
 }
 
+void BoneManageWidget::removeSelectedBones()
+{
+    auto selectedBoneIds = m_bonePreviewGridWidget->getSelectedBoneIds();
+    for (const auto& boneId : selectedBoneIds)
+        emit removeBone(boneId);
+    emit groupOperationAdded();
+}
+
 void BoneManageWidget::showContextMenu(const QPoint& pos)
 {
     auto selectedBoneIds = m_bonePreviewGridWidget->getSelectedBoneIds();
@@ -137,6 +146,10 @@ void BoneManageWidget::showContextMenu(const QPoint& pos)
         return;
 
     QMenu contextMenu(this);
+
+    QAction deleteAction(tr("Delete"), this);
+    connect(&deleteAction, &QAction::triggered, this, &BoneManageWidget::removeSelectedBones);
+    contextMenu.addAction(&deleteAction);
 
     contextMenu.exec(mapToGlobal(pos));
 }
