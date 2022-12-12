@@ -24,6 +24,7 @@
 #define DUST3D_UV_MAP_PACKER_H_
 
 #include <array>
+#include <dust3d/base/color.h>
 #include <dust3d/base/position_key.h>
 #include <dust3d/base/uuid.h>
 #include <dust3d/base/vector2.h>
@@ -37,6 +38,7 @@ class UvMapPacker {
 public:
     struct Part {
         Uuid id;
+        Color color;
         double width = 0.0;
         double height = 0.0;
         std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>> localUv;
@@ -44,6 +46,7 @@ public:
 
     struct Layout {
         Uuid id;
+        Color color;
         double left = 0.0;
         double top = 0.0;
         double width = 0.0;

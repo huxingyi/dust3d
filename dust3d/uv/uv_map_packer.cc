@@ -105,6 +105,7 @@ void UvMapPacker::pack()
         auto& flipped = std::get<4>(result);
         //dust3dDebug << "left:" << left << "top:" << top << "width:" << width << "height:" << height << "flipped:" << flipped;
         Layout layout;
+        layout.color = part.color;
         layout.id = part.id;
         layout.flipped = flipped;
         if (flipped) {

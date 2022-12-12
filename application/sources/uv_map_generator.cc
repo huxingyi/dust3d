@@ -97,20 +97,31 @@ void UvMapGenerator::packUvs()
     m_mapPacker = std::make_unique<dust3d::UvMapPacker>();
 
     for (const auto& partIt : m_snapshot->parts) {
+        dust3d::Uuid imageId;
+        dust3d::Color color;
+        double width = 1.0;
+        double height = 1.0;
+        const auto& colorIt = partIt.second.find("color");
+        if (colorIt != partIt.second.end()) {
+            color = dust3d::Color(colorIt->second);
+        }
         const auto& colorImageIdIt = partIt.second.find("colorImageId");
-        if (colorImageIdIt == partIt.second.end())
-            continue;
-        auto imageId = dust3d::Uuid(colorImageIdIt->second);
-        const QImage* image = ImageForever::get(imageId);
-        if (nullptr == image)
-            continue;
+        if (colorImageIdIt != partIt.second.end()) {
+            imageId = dust3d::Uuid(colorImageIdIt->second);
+            const QImage* image = ImageForever::get(imageId);
+            if (nullptr != image) {
+                width = image->width();
+                height = image->height();
+            }
+        }
         const auto& findUvs = m_object->partTriangleUvs.find(dust3d::Uuid(partIt.first));
         if (findUvs == m_object->partTriangleUvs.end())
             continue;
         dust3d::UvMapPacker::Part part;
         part.id = imageId;
-        part.width = image->width();
-        part.height = image->height();
+        part.color = color;
+        part.width = width;
+        part.height = height;
         part.localUv = findUvs->second;
         m_mapPacker->addPart(part);
     }
@@ -132,25 +143,30 @@ void UvMapGenerator::generateTextureColorImage()
     colorTexturePainter.setPen(Qt::NoPen);
 
     for (const auto& layout : m_mapPacker->packedLayouts()) {
-        const QImage* image = image = ImageForever::get(layout.id);
-        if (nullptr == image) {
-            dust3dDebug << "Find image failed:" << layout.id.toString();
-            continue;
-        }
         QPixmap brushPixmap;
-        if (layout.flipped) {
-            auto scaledImage = image->scaled(QSize(layout.height * UvMapGenerator::m_textureSize,
-                layout.width * UvMapGenerator::m_textureSize));
-            QPoint center = scaledImage.rect().center();
-            QMatrix matrix;
-            matrix.translate(center.x(), center.y());
-            matrix.rotate(90);
-            auto rotatedImage = scaledImage.transformed(matrix).mirrored(true, false);
-            brushPixmap = QPixmap::fromImage(rotatedImage);
+        if (layout.id.isNull()) {
+            brushPixmap = QPixmap(layout.width * UvMapGenerator::m_textureSize, layout.height * UvMapGenerator::m_textureSize);
+            brushPixmap.fill(QColor(QString::fromStdString(layout.color.toString())));
         } else {
-            auto scaledImage = image->scaled(QSize(layout.width * UvMapGenerator::m_textureSize,
-                layout.height * UvMapGenerator::m_textureSize));
-            brushPixmap = QPixmap::fromImage(scaledImage);
+            const QImage* image = ImageForever::get(layout.id);
+            if (nullptr == image) {
+                dust3dDebug << "Find image failed:" << layout.id.toString();
+                continue;
+            }
+            if (layout.flipped) {
+                auto scaledImage = image->scaled(QSize(layout.height * UvMapGenerator::m_textureSize,
+                    layout.width * UvMapGenerator::m_textureSize));
+                QPoint center = scaledImage.rect().center();
+                QMatrix matrix;
+                matrix.translate(center.x(), center.y());
+                matrix.rotate(90);
+                auto rotatedImage = scaledImage.transformed(matrix).mirrored(true, false);
+                brushPixmap = QPixmap::fromImage(rotatedImage);
+            } else {
+                auto scaledImage = image->scaled(QSize(layout.width * UvMapGenerator::m_textureSize,
+                    layout.height * UvMapGenerator::m_textureSize));
+                brushPixmap = QPixmap::fromImage(scaledImage);
+            }
         }
         colorTexturePainter.drawPixmap(layout.left * UvMapGenerator::m_textureSize,
             layout.top * UvMapGenerator::m_textureSize,
