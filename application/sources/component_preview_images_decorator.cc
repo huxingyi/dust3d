@@ -1,6 +1,7 @@
 #include "component_preview_images_decorator.h"
 #include "theme.h"
 #include <QPainter>
+#include <QPainterPath>
 #include <dust3d/base/debug.h>
 
 ComponentPreviewImagesDecorator::ComponentPreviewImagesDecorator(std::unique_ptr<std::vector<PreviewInput>> previewInputs)
