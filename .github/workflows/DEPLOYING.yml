@@ -1,6 +1,14 @@
 name: Deploying
 
-on: [push]
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - '*'
+  pull_request:
+    branches:
+      - '*'
 
 jobs:
   clang-format-check:
