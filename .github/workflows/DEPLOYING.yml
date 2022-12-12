@@ -1,0 +1,20 @@
+name: Deploying
+
+on: [push]
+
+jobs:
+  clang-format-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Install clang-format
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format
+      - name: Run clang-format
+        run: cd ${GITHUB_WORKSPACE}/ci && sh ./lint.sh && cd ${GITHUB_WORKSPACE}
+      - name: Check for changes
+        run: |
+          if ! git diff --exit-code; then
+            exit 1
+          fi
