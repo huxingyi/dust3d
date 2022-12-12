@@ -98,7 +98,7 @@ void UvMapGenerator::packUvs()
 
     for (const auto& partIt : m_snapshot->parts) {
         dust3d::Uuid imageId;
-        dust3d::Color color;
+        dust3d::Color color(1.0, 1.0, 1.0);
         double width = 1.0;
         double height = 1.0;
         const auto& colorIt = partIt.second.find("color");
