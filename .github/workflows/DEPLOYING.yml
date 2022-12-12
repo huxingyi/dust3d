@@ -25,7 +25,7 @@ jobs:
       - name: Install Qt
         run: |
           sudo apt-get update
-          sudo apt-get install -y qt5-default
+          sudo apt-get install -y qtbase5-dev qt5-qmake
       - name: Build application
         run: |
           cd ${GITHUB_WORKSPACE}/application
