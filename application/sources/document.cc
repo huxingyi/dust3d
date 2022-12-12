@@ -2855,6 +2855,7 @@ void Document::addBone(const dust3d::Uuid& boneId)
         return;
 
     Bone bone(boneId);
+    bone.name = "Bone" + QString::number(boneMap.size() + 1);
     boneMap.emplace(boneId, std::move(bone));
     boneIdList.push_back(boneId);
     emit boneAdded(boneId);
