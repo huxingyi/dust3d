@@ -6,7 +6,7 @@ jobs:
   clang-format-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Install clang-format
         run: |
           sudo apt-get update
@@ -18,3 +18,16 @@ jobs:
           if ! git diff --ignore-space-at-eol --exit-code; then
             exit 1
           fi
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Qt
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qt5-default
+      - name: Build application
+        run: |
+          cd ${GITHUB_WORKSPACE}/application
+          qmake
+          make
