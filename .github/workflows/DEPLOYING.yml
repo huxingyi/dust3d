@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - pipeline
     tags:
       - '*'
   pull_request:
@@ -27,15 +28,24 @@ jobs:
             exit 1
           fi
   build:
-    runs-on: ubuntu-latest
+    # Use oldest ubuntu to make AppImage work
+    runs-on: ubuntu-18.04
     steps:
       - uses: actions/checkout@v3
       - name: Install Qt
         run: |
           sudo apt-get update
-          sudo apt-get install -y qtbase5-dev qt5-qmake libqt5svg5-dev
+          sudo apt-get install -y qt5-default libqt5svg5-dev
       - name: Build application
         run: |
           cd ${GITHUB_WORKSPACE}/application
           qmake
-          make
+          make -j`nproc`
+      - name: Generate AppImage
+        run: |
+          sudo apt-get install -y libfuse2
+          cd ${GITHUB_WORKSPACE} && sh ./ci/appimage/bundle.sh
+      - name: Archive AppImage
+        uses: actions/upload-artifact@v3
+        with:
+          path: Dust3D-x86_64.AppImage
