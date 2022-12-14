@@ -48,4 +48,5 @@ jobs:
       - name: Archive AppImage
         uses: actions/upload-artifact@v3
         with:
+          name: Dust3D-x86_64.AppImage
           path: Dust3D-x86_64.AppImage
