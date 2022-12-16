@@ -1,6 +1,6 @@
 # Dust3D
 
-Dust3D is a cross-platform 3D modeling software that makes it easy to create lowpoly 3D models for video games, 3D printing, and more.
+Dust3D is a cross-platform 3D modeling software that makes it easy to create low poly 3D models for video games, 3D printing, and more.
 
 ## Getting Started
 
