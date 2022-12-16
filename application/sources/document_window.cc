@@ -16,7 +16,6 @@
 #include "skeleton_graphics_widget.h"
 #include "spinnable_toolbar_icon.h"
 #include "theme.h"
-#include "updates_check_widget.h"
 #include "uv_map_generator.h"
 #include "version.h"
 #include <QApplication>
@@ -55,7 +54,6 @@ QTextBrowser* g_acknowlegementsWidget = nullptr;
 AboutWidget* g_aboutWidget = nullptr;
 QTextBrowser* g_contributorsWidget = nullptr;
 QTextBrowser* g_supportersWidget = nullptr;
-UpdatesCheckWidget* g_updatesCheckWidget = nullptr;
 
 void outputMessage(QtMsgType type, const QMessageLogContext& context, const QString& msg)
 {
@@ -136,17 +134,6 @@ void DocumentWindow::showAbout()
     g_aboutWidget->show();
     g_aboutWidget->activateWindow();
     g_aboutWidget->raise();
-}
-
-void DocumentWindow::checkForUpdates()
-{
-    if (!g_updatesCheckWidget) {
-        g_updatesCheckWidget = new UpdatesCheckWidget;
-    }
-    g_updatesCheckWidget->check();
-    g_updatesCheckWidget->show();
-    g_updatesCheckWidget->activateWindow();
-    g_updatesCheckWidget->raise();
 }
 
 size_t DocumentWindow::total()
@@ -469,10 +456,6 @@ DocumentWindow::DocumentWindow()
     m_viewSourceAction = new QAction(tr("Source Code"), this);
     connect(m_viewSourceAction, &QAction::triggered, this, &DocumentWindow::viewSource);
     m_helpMenu->addAction(m_viewSourceAction);
-
-    m_checkForUpdatesAction = new QAction(tr("Check for Updates..."), this);
-    connect(m_checkForUpdatesAction, &QAction::triggered, this, &DocumentWindow::checkForUpdates);
-    m_helpMenu->addAction(m_checkForUpdatesAction);
 
     m_helpMenu->addSeparator();
 

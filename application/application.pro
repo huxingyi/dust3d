@@ -1,4 +1,4 @@
-QT += core gui opengl widgets svg network
+QT += core gui opengl widgets svg
 
 TARGET = dust3d
 TEMPLATE = app
@@ -15,7 +15,6 @@ HOMEPAGE_URL = "https://dust3d.org/"
 REPOSITORY_URL = "https://github.com/huxingyi/dust3d"
 ISSUES_URL = "https://github.com/huxingyi/dust3d/issues"
 REFERENCE_GUIDE_URL = "https://docs.dust3d.org"
-UPDATES_CHECKER_URL = "https://dust3d.org/dust3d-updateinfo.xml"
 
 DEFINES += QT_MESSAGELOGCONTEXT
 DEFINES += _USE_MATH_DEFINES
@@ -67,7 +66,6 @@ DEFINES += "PROJECT_DEFINED_APP_HOMEPAGE_URL=\"\\\"$$HOMEPAGE_URL\\\"\""
 DEFINES += "PROJECT_DEFINED_APP_REPOSITORY_URL=\"\\\"$$REPOSITORY_URL\\\"\""
 DEFINES += "PROJECT_DEFINED_APP_ISSUES_URL=\"\\\"$$ISSUES_URL\\\"\""
 DEFINES += "PROJECT_DEFINED_APP_REFERENCE_GUIDE_URL=\"\\\"$$REFERENCE_GUIDE_URL\\\"\""
-DEFINES += "PROJECT_DEFINED_APP_UPDATES_CHECKER_URL=\"\\\"$$UPDATES_CHECKER_URL\\\"\""
 DEFINES += "PROJECT_DEFINED_APP_PLATFORM=\"\\\"$$PLATFORM\\\"\""
 
 OBJECTS_DIR = obj
@@ -205,10 +203,6 @@ HEADERS += sources/toolbar_button.h
 SOURCES += sources/toolbar_button.cc
 HEADERS += sources/turnaround_loader.h
 SOURCES += sources/turnaround_loader.cc
-HEADERS += sources/updates_check_widget.h
-SOURCES += sources/updates_check_widget.cc
-HEADERS += sources/updates_checker.h
-SOURCES += sources/updates_checker.cc
 HEADERS += sources/uv_map_generator.h
 SOURCES += sources/uv_map_generator.cc
 HEADERS += sources/version.h
