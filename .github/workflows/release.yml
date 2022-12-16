@@ -6,6 +6,10 @@ on:
     types:
       - completed
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   appimage-upload:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
