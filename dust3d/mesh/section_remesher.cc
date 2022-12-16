@@ -20,6 +20,7 @@
  *  SOFTWARE.
  */
 
+#include <algorithm>
 #include <dust3d/mesh/section_remesher.h>
 
 namespace dust3d {

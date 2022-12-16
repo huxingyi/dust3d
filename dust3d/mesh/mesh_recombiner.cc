@@ -20,6 +20,7 @@
  *  SOFTWARE.
  */
 
+#include <array>
 #include <cmath>
 #include <dust3d/base/position_key.h>
 #include <dust3d/mesh/hole_wrapper.h>

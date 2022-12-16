@@ -20,6 +20,7 @@
  *  SOFTWARE.
  */
 
+#include <array>
 #include <dust3d/base/debug.h>
 #include <dust3d/mesh/mesh_recombiner.h>
 #include <dust3d/mesh/mesh_state.h>
