@@ -69,7 +69,7 @@ BonePropertyWidget::BonePropertyWidget(Document* document,
         m_jointsWidget = new IntNumberWidget;
         m_jointsWidget->setRange(2, 10);
 
-        QPushButton* nodePicker = new QPushButton(QChar(fa::eyedropper));
+        QPushButton* nodePicker = new QPushButton(Theme::awesome()->icon(fa::eyedropper), "");
         nodePicker->setToolTip(tr("Click node one by one on canvas as joints in order"));
         Theme::initIconButton(nodePicker);
 

@@ -26,7 +26,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     colorPreviewArea->setStyleSheet("QPushButton {background-color: " + m_color.name() + "; border-radius: 0;}");
     colorPreviewArea->setFixedSize(Theme::toolIconSize * 1.8, Theme::toolIconSize);
 
-    QPushButton* colorPickerButton = new QPushButton(QChar(fa::eyedropper));
+    QPushButton* colorPickerButton = new QPushButton(Theme::awesome()->icon(fa::eyedropper), "");
     Theme::initIconButton(colorPickerButton);
     connect(colorPickerButton, &QPushButton::clicked, this, &ComponentPropertyWidget::showColorDialog);
 
@@ -91,7 +91,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
             emit groupOperationAdded();
         });
 
-        QPushButton* thicknessEraser = new QPushButton(QChar(fa::eraser));
+        QPushButton* thicknessEraser = new QPushButton(Theme::awesome()->icon(fa::eraser), "");
         Theme::initIconButton(thicknessEraser);
 
         connect(thicknessEraser, &QPushButton::clicked, [=]() {
@@ -99,7 +99,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
             emit groupOperationAdded();
         });
 
-        QPushButton* widthEraser = new QPushButton(QChar(fa::eraser));
+        QPushButton* widthEraser = new QPushButton(Theme::awesome()->icon(fa::eraser), "");
         Theme::initIconButton(widthEraser);
 
         connect(widthEraser, &QPushButton::clicked, [=]() {
@@ -150,7 +150,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
             emit groupOperationAdded();
         });
 
-        QPushButton* rotationEraser = new QPushButton(QChar(fa::eraser));
+        QPushButton* rotationEraser = new QPushButton(Theme::awesome()->icon(fa::eraser), "");
         Theme::initIconButton(rotationEraser);
 
         connect(rotationEraser, &QPushButton::clicked, [=]() {
@@ -158,7 +158,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
             emit groupOperationAdded();
         });
 
-        QPushButton* rotationMinus5Button = new QPushButton(QChar(fa::rotateleft));
+        QPushButton* rotationMinus5Button = new QPushButton(Theme::awesome()->icon(fa::rotateleft), "");
         Theme::initIconButton(rotationMinus5Button);
 
         connect(rotationMinus5Button, &QPushButton::clicked, [=]() {
@@ -166,7 +166,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
             emit groupOperationAdded();
         });
 
-        QPushButton* rotation5Button = new QPushButton(QChar(fa::rotateright));
+        QPushButton* rotation5Button = new QPushButton(Theme::awesome()->icon(fa::rotateright), "");
         Theme::initIconButton(rotation5Button);
 
         connect(rotation5Button, &QPushButton::clicked, [=]() {
@@ -230,7 +230,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         colorImagePreviewWidget->setFixedSize(Theme::partPreviewImageSize * 2, Theme::partPreviewImageSize * 2);
         auto colorImageId = lastColorImageId();
         colorImagePreviewWidget->updateImage(colorImageId.isNull() ? QImage() : *ImageForever::get(colorImageId));
-        QPushButton* colorImageEraser = new QPushButton(QChar(fa::eraser));
+        QPushButton* colorImageEraser = new QPushButton(Theme::awesome()->icon(fa::eraser), "");
         Theme::initIconButton(colorImageEraser);
 
         connect(colorImageEraser, &QPushButton::clicked, [=]() {
@@ -239,7 +239,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
             emit groupOperationAdded();
         });
 
-        QPushButton* colorImagePicker = new QPushButton(QChar(fa::image));
+        QPushButton* colorImagePicker = new QPushButton(Theme::awesome()->icon(fa::image), "");
         Theme::initIconButton(colorImagePicker);
 
         connect(colorImagePicker, &QPushButton::clicked, [=]() {

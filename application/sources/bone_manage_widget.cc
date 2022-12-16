@@ -19,16 +19,16 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
 
     setStyleSheet("QPushButton:disabled {border: 0; color: " + Theme::gray.name() + "}");
 
-    auto createButton = [](QChar icon, const QString& title) {
-        QPushButton* button = new QPushButton(icon);
+    auto createButton = [](QIcon icon, const QString& title) {
+        QPushButton* button = new QPushButton(icon, "");
         Theme::initIconButton(button);
         button->setToolTip(title);
         return button;
     };
 
-    m_addButton = createButton(QChar(fa::plus), tr("Add new bone"));
-    m_selectButton = createButton(QChar(fa::objectgroup), tr("Select them on canvas"));
-    m_propertyButton = createButton(QChar(fa::sliders), tr("Configure properties"));
+    m_addButton = createButton(Theme::awesome()->icon(fa::plus), tr("Add new bone"));
+    m_selectButton = createButton(Theme::awesome()->icon(fa::objectgroup), tr("Select them on canvas"));
+    m_propertyButton = createButton(Theme::awesome()->icon(fa::sliders), tr("Configure properties"));
 
     toolsLayout->addWidget(m_addButton);
     toolsLayout->addWidget(m_selectButton);
