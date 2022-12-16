@@ -225,22 +225,17 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     }
 
     QGroupBox* colorImageGroupBox = nullptr;
-    if (nullptr != m_part) {
+    if (!m_componentIds.empty()) {
         ImagePreviewWidget* colorImagePreviewWidget = new ImagePreviewWidget;
         colorImagePreviewWidget->setFixedSize(Theme::partPreviewImageSize * 2, Theme::partPreviewImageSize * 2);
-        colorImagePreviewWidget->updateImage(m_part->colorImageId.isNull() ? QImage() : *ImageForever::get(m_part->colorImageId));
-        connect(m_document, &Document::partColorImageChanged, this, [=]() {
-            auto part = m_document->findPart(m_partId);
-            if (nullptr == part)
-                return;
-            colorImagePreviewWidget->updateImage(part->colorImageId.isNull() ? QImage() : *ImageForever::get(part->colorImageId));
-        });
-
+        auto colorImageId = lastColorImageId();
+        colorImagePreviewWidget->updateImage(colorImageId.isNull() ? QImage() : *ImageForever::get(colorImageId));
         QPushButton* colorImageEraser = new QPushButton(QChar(fa::eraser));
         Theme::initIconButton(colorImageEraser);
 
         connect(colorImageEraser, &QPushButton::clicked, [=]() {
-            emit setPartColorImage(m_partId, dust3d::Uuid());
+            for (const auto& partId : m_partIds)
+                emit setPartColorImage(partId, dust3d::Uuid());
             emit groupOperationAdded();
         });
 
@@ -253,7 +248,8 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
                 return;
             auto imageId = ImageForever::add(image);
             delete image;
-            emit setPartColorImage(m_partId, imageId);
+            for (const auto& partId : m_partIds)
+                emit setPartColorImage(partId, imageId);
             emit groupOperationAdded();
         });
 
@@ -354,6 +350,27 @@ QColor ComponentPropertyWidget::lastColor()
             })->first;
     }
     return color;
+}
+
+dust3d::Uuid ComponentPropertyWidget::lastColorImageId()
+{
+    dust3d::Uuid colorImageId;
+    std::map<dust3d::Uuid, int> colorImageIdMap;
+    for (const auto& partId : m_partIds) {
+        const Document::Part* part = m_document->findPart(partId);
+        if (nullptr == part)
+            continue;
+        if (part->colorImageId.isNull())
+            continue;
+        colorImageIdMap[part->colorImageId]++;
+    }
+    if (!colorImageIdMap.empty()) {
+        colorImageId = std::max_element(colorImageIdMap.begin(), colorImageIdMap.end(),
+            [](const std::map<dust3d::Uuid, int>::value_type& a, const std::map<dust3d::Uuid, int>::value_type& b) {
+                return a.second < b.second;
+            })->first;
+    }
+    return colorImageId;
 }
 
 void ComponentPropertyWidget::showColorDialog()

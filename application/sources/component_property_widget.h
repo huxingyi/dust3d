@@ -37,6 +37,7 @@ private:
     const Document::Part* m_part = nullptr;
     QColor m_color;
     QColor lastColor();
+    dust3d::Uuid lastColorImageId();
     void preparePartIds();
     QImage* pickImage();
 };
