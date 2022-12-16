@@ -59,7 +59,7 @@ jobs:
         run: |
           set PATH="%PATH%;C:\Program Files\7-Zip"
       - name: Zip executable
-        run: |
+        ru
           7z a Dust3D-win32-x86_64.zip ${GITHUB_WORKSPACE}/application/release/dust3d.exe
           7z a Dust3D-win32-x86_64.zip ${GITHUB_WORKSPACE}/../Qt/5.15.2/msvc2019_64/bin/Qt5Svg.dll
           7z a Dust3D-win32-x86_64.zip ${GITHUB_WORKSPACE}/../Qt/5.15.2/msvc2019_64/bin/Qt5Widgets.dll
@@ -83,5 +83,5 @@ jobs:
       - name: Upload zip
         uses: actions/upload-artifact@v3
         with:
-          name: Dust3D-win32-x86_64.zip
+          name: Dust3D-win32-x86_64
           path: Dust3D-win32-x86_64/
