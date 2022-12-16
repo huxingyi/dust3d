@@ -4,6 +4,7 @@
 #include "image_preview_widget.h"
 #include "theme.h"
 #include <QColorDialog>
+#include <QComboBox>
 #include <QFileDialog>
 #include <QGroupBox>
 #include <QHBoxLayout>
@@ -29,11 +30,44 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     Theme::initIconButton(colorPickerButton);
     connect(colorPickerButton, &QPushButton::clicked, this, &ComponentPropertyWidget::showColorDialog);
 
-    QHBoxLayout* colorLayout = new QHBoxLayout;
-    colorLayout->addWidget(colorPreviewArea);
-    colorLayout->addWidget(colorPickerButton);
-    colorLayout->addStretch();
-    colorLayout->setSizeConstraint(QLayout::SetFixedSize);
+    QComboBox* combineModeSelectBox = nullptr;
+    std::set<dust3d::CombineMode> combineModes;
+    for (const auto& componentId : m_componentIds) {
+        const Document::Component* oneComponent = m_document->findComponent(componentId);
+        if (nullptr == oneComponent)
+            continue;
+        combineModes.insert(oneComponent->combineMode);
+    }
+    if (!combineModes.empty()) {
+        int startIndex = (1 == combineModes.size()) ? 0 : 1;
+        combineModeSelectBox = new QComboBox;
+        if (0 != startIndex)
+            combineModeSelectBox->addItem(tr("Not Change"));
+        for (size_t i = 0; i < (size_t)dust3d::CombineMode::Count; ++i) {
+            dust3d::CombineMode mode = (dust3d::CombineMode)i;
+            combineModeSelectBox->addItem(QString::fromStdString(dust3d::CombineModeToDispName(mode)));
+        }
+        if (0 != startIndex)
+            combineModeSelectBox->setCurrentIndex(0);
+        else
+            combineModeSelectBox->setCurrentIndex((int)*combineModes.begin());
+        connect(combineModeSelectBox, static_cast<void (QComboBox::*)(int)>(&QComboBox::currentIndexChanged), this, [=](int index) {
+            if (index < startIndex)
+                return;
+            for (const auto& componentId : m_componentIds) {
+                emit setComponentCombineMode(componentId, (dust3d::CombineMode)(index - startIndex));
+            }
+            emit groupOperationAdded();
+        });
+    }
+
+    QHBoxLayout* topLayout = new QHBoxLayout;
+    topLayout->addWidget(colorPreviewArea);
+    topLayout->addWidget(colorPickerButton);
+    topLayout->addStretch();
+    if (nullptr != combineModeSelectBox)
+        topLayout->addWidget(combineModeSelectBox);
+    topLayout->setSizeConstraint(QLayout::SetFixedSize);
 
     QGroupBox* deformGroupBox = nullptr;
     if (nullptr != m_part) {
@@ -236,7 +270,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         skinLayout->addLayout(colorImageLayout);
         skinLayout->addStretch();
 
-        colorImageGroupBox = new QGroupBox(tr("Color"));
+        colorImageGroupBox = new QGroupBox(tr("Texture Image"));
         colorImageGroupBox->setLayout(skinLayout);
     }
 
@@ -245,7 +279,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         skinLayout->addWidget(colorImageGroupBox);
 
     QVBoxLayout* mainLayout = new QVBoxLayout;
-    mainLayout->addLayout(colorLayout);
+    mainLayout->addLayout(topLayout);
     if (nullptr != deformGroupBox)
         mainLayout->addWidget(deformGroupBox);
     if (nullptr != cutFaceGroupBox)
@@ -264,6 +298,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     connect(this, &ComponentPropertyWidget::setPartChamferState, m_document, &Document::setPartChamferState);
     connect(this, &ComponentPropertyWidget::setPartRoundState, m_document, &Document::setPartRoundState);
     connect(this, &ComponentPropertyWidget::setPartColorImage, m_document, &Document::setPartColorImage);
+    connect(this, &ComponentPropertyWidget::setComponentCombineMode, m_document, &Document::setComponentCombineMode);
     connect(this, &ComponentPropertyWidget::groupOperationAdded, m_document, &Document::saveSnapshot);
 
     setLayout(mainLayout);

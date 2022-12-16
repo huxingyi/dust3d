@@ -19,6 +19,7 @@ signals:
     void setPartRoundState(const dust3d::Uuid& partId, bool rounded);
     void setPartCutRotation(const dust3d::Uuid& partId, float cutRotation);
     void setPartColorImage(const dust3d::Uuid& partId, const dust3d::Uuid& imageId);
+    void setComponentCombineMode(dust3d::Uuid componentId, dust3d::CombineMode combineMode);
     void groupOperationAdded();
 
 public:
