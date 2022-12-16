@@ -60,14 +60,18 @@ jobs:
           set PATH="%PATH%;C:\Program Files\7-Zip"
       - name: Zip executable
         run: |
+          dumpbin /dependents ${GITHUB_WORKSPACE}/application/release/dust3d.exe
           7z a Dust3D-win32-x86_64.zip ${GITHUB_WORKSPACE}/application/release/dust3d.exe
+          7z a Dust3D-win32-x86_64.zip ${GITHUB_WORKSPACE}/../Qt/5.15.2/msvc2019_64/bin/Qt5Svg.dll
           7z a Dust3D-win32-x86_64.zip ${GITHUB_WORKSPACE}/../Qt/5.15.2/msvc2019_64/bin/Qt5Widgets.dll
           7z a Dust3D-win32-x86_64.zip ${GITHUB_WORKSPACE}/../Qt/5.15.2/msvc2019_64/bin/Qt5Gui.dll
           7z a Dust3D-win32-x86_64.zip ${GITHUB_WORKSPACE}/../Qt/5.15.2/msvc2019_64/bin/Qt5Core.dll
           7z a Dust3D-win32-x86_64.zip ${GITHUB_WORKSPACE}/../Qt/5.15.2/msvc2019_64/bin/opengl32sw.dll
           ls "${VCToolsRedistDir}x64"
+          ls "${VCToolsRedistDir}x64/Microsoft.VC142.CRT"
           7z a Dust3D-win32-x86_64.zip "${VCToolsRedistDir}x64/Microsoft.VC142.CRT/msvcp140.dll"
           7z a Dust3D-win32-x86_64.zip "${VCToolsRedistDir}x64/Microsoft.VC142.CRT/vcruntime140.dll"
+          7z a Dust3D-win32-x86_64.zip "${VCToolsRedistDir}x64/Microsoft.VC142.CRT/vcruntime140_1.dll"
           mkdir ${GITHUB_WORKSPACE}/platforms
           cp ${GITHUB_WORKSPACE}/../Qt/5.15.2/msvc2019_64/plugins/platforms/qwindows.dll ${GITHUB_WORKSPACE}/platforms/qwindows.dll
           7z a Dust3D-win32-x86_64.zip -r ${GITHUB_WORKSPACE}/platforms/
@@ -75,9 +79,10 @@ jobs:
           cp ${GITHUB_WORKSPACE}/../Qt/5.15.2/msvc2019_64/plugins/imageformats/qjpeg.dll ${GITHUB_WORKSPACE}/imageformats/qjpeg.dll
           cp ${GITHUB_WORKSPACE}/../Qt/5.15.2/msvc2019_64/plugins/imageformats/qsvg.dll ${GITHUB_WORKSPACE}/imageformats/qsvg.dll
           7z a Dust3D-win32-x86_64.zip -r ${GITHUB_WORKSPACE}/imageformats/
+          7z x Dust3D-win32-x86_64.zip -oDust3D-win32-x86_64
         shell: bash
       - name: Upload zip
         uses: actions/upload-artifact@v3
         with:
           name: Dust3D-win32-x86_64.zip
-          path: Dust3D-win32-x86_64.zip
+          path: Dust3D-win32-x86_64/
