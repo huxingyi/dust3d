@@ -45,25 +45,27 @@ jobs:
             if ('' !== html) {
                 html = '## Sponsors  \n\n' + html + '\n _The list shown represent active sponsors on GitHub and a full list can be viewed at [SUPPORTERS](https://github.com/huxingyi/dust3d/blob/master/SUPPORTERS)._';
             }
-            require('fs').writeFileSync('SPONSORS.md', html);
-      - name: Replace content in README.md
-        run: |
-          # Read the contents of README.md into a variable
-          fileContents=$(cat README.md)
-          # Replace the content between the markers with the contents of SPONSORS.md
-          fileContents=$(echo "${fileContents}" | sed -e '/<!-- Sponsors begin -->/,/<!-- Sponsors end -->/{r SPONSORS.md; d}')
-          # Write the modified contents back to README.md
-          echo "${fileContents}" > README.md
+            const fs = require('fs').promises;
+            const readme = await fs.readFile('README.md', 'utf8');
+            const beginString = '<!-- Sponsors begin -->';
+            const endString = '<!-- Sponsors end -->';
+            const startIndex = readme.indexOf(beginString);
+            if (-1 !== startIndex) {
+              startIndex = startIndex + beginString.length;
+              const endIndex = readme.indexOf(endString);
+              if (-1 !== endIndex) {
+                const newContent = readme.substring(0, startIndex) + html + readme.substring(endIndex);
+                await fs.writeFile('README.md', newContent);
+              } else {
+                throw new Error('Could not find end marker');
+              }
+            } else {
+              throw new Error('Could not find begin marker');
+            }
       - name: Upload README.md
         run: |
-          # Check if README.md has changed
           if git diff --name-only HEAD | grep -q "README.md"; then
-            # Stage the updated README.md file
             git add README.md
-
-            # Commit the changes
             git commit -m "Update sponsors"
-
-            # Push the commit to the master branch
             git push origin HEAD
           fi
