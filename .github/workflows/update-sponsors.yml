@@ -77,10 +77,10 @@ jobs:
 
             let supportersText = '';
             for (const node of response.user.sponsorshipsAsMaintainer.nodes) {
-                if (undefined !== supporters[node.sponsor.login]) {
+                if (undefined !== supporters[node.sponsor.login.toLowerCase()]) {
                   continue;
                 }
-                supportersText += '\n' + node.sponsor.name + ' <' + node.sponsor.url + '>';
+                supportersText += '\n' + (node.sponsor.name ? node.sponsor.name : node.sponsor.login) + ' <' + node.sponsor.url + '>';
             }
             if ('' !== supportersText) {
               const newContent = supportersContent.trim() + supportersText;
