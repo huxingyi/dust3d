@@ -5,7 +5,8 @@ on:
     - cron: "0 0 * * *" # Run every day at midnight
       branches:
         - master
-
+  workflow_dispatch:
+  
 jobs:
   update-sponsors:
     runs-on: ubuntu-latest
