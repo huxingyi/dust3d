@@ -30,7 +30,8 @@ jobs:
                     }
                     sponsor {
                       login
-                      avatarUrl
+                      avatarUrl,
+                      url
                     }
                   }
                 }
@@ -43,7 +44,7 @@ jobs:
                 html += '<a href="' + node.sponsor.url + '" title="' + node.sponsor.login + (node.sponsor.name ? (' (' + node.sponsor.name + ')') : '') + '" target=_blank><image src="' + node.sponsor.avatarUrl + '" alt="@' + node.sponsor.login + '" width="35" height="35" style="border-radius: 17px;" /></a>\n';
             }
             if ('' !== html) {
-                html = '## Sponsors  \n\n' + html + '\n _The list shown represent active sponsors on GitHub and a full list can be viewed at [SUPPORTERS](https://github.com/huxingyi/dust3d/blob/master/SUPPORTERS)._';
+                html = '\n## Sponsors  \n\n' + html + '\n _The list shown represent active sponsors on GitHub and a full list can be viewed at [SUPPORTERS](https://github.com/huxingyi/dust3d/blob/master/SUPPORTERS)._\n';
             }
             const fs = require('fs').promises;
             const readme = await fs.readFile('README.md', 'utf8');
@@ -65,10 +66,10 @@ jobs:
       - name: Upload README.md
         run: |
           if git diff --name-only HEAD | grep -q "README.md"; then
-            git config --global user.email "${{ secrets.MY_EMAIL }}"
-            git config --global user.name "huxingyi"
+            git config --global user.email ""
+            git config --global user.name "bot"
             git add README.md
             timestamp=$(TZ=":Australia/Sydney" date)
-            git commit -m "Update sponsors ${timestamp}"
+            git commit -m "Update sponsors at ${timestamp}"
             git push origin HEAD
           fi
