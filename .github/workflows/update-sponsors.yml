@@ -31,7 +31,8 @@ jobs:
                     sponsor {
                       login
                       avatarUrl,
-                      url
+                      url,
+                      name
                     }
                   }
                 }
