@@ -10,13 +10,13 @@ These instructions will get you a copy of the Dust3D up and running on your loca
 
 In order to build and run Dust3D, you will need the following software and tools:
 
-- [Qt](https://www.qt.io/)
+- Qt
 - Visual Studio 2019 (Windows only)
 - GCC (Linux only)
 
 #### Windows
 
-1. Download and install the [Qt Online Installer](https://www.qt.io/download)
+1. Download and install the `Qt Online Installer`
 2. Run the installer and choose the Qt archives you want to install (required: qtbase, qtsvg)
 3. Install Visual Studio 2019
 
@@ -52,3 +52,7 @@ git clone https://github.com/huxingyi/dust3d.git
 ## License
 
 Dust3D is licensed under the MIT License - see the [LICENSE](https://github.com/huxingyi/dust3d/blob/master/LICENSE) file for details.
+
+<!-- Sponsors begin -->
+
+<!-- Sponsors end -->

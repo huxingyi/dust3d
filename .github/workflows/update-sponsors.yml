@@ -1,0 +1,68 @@
+name: update-sponsors
+
+on:
+  schedule:
+    - cron: "0 0 * * *" # Run every day at midnight
+      branches:
+        - master
+
+jobs:
+  update-sponsors:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Fetch sponsors
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const query = `
+              query {
+              user(login: "huxingyi") {
+                sponsorshipsAsMaintainer(first: 100) {
+                  totalCount
+                  nodes {
+                    id
+                    createdAt
+                    tier {
+                      name
+                    }
+                    sponsor {
+                      login
+                      avatarUrl
+                    }
+                  }
+                }
+              }
+            }
+            `;
+            const response = await github.graphql(query);
+            let html = '';
+            for (const node of response.data.user.sponsorshipsAsMaintainer.nodes) {
+                html += '<a href="' + node.sponsor.url + '" title="' + node.sponsor.login + (node.sponsor.name ? (' (' + node.sponsor.name + ')') : '') + '" target=_blank><image src="' + node.sponsor.avatarUrl + '" alt="@' + node.sponsor.login + '" width="35" height="35" style="border-radius: 17px;" /></a>\n';
+            }
+            if ('' !== html) {
+                html = '## Sponsors  \n\n' + html + '\n _The list shown represent active sponsors on GitHub and a full list can be viewed at [SUPPORTERS](https://github.com/huxingyi/dust3d/blob/master/SUPPORTERS)._';
+            }
+            require('fs').writeFileSync('SPONSORS.md', html);
+      - name: Replace content in README.md
+        run: |
+          # Read the contents of README.md into a variable
+          fileContents=$(cat README.md)
+          # Replace the content between the markers with the contents of SPONSORS.md
+          fileContents=$(echo "${fileContents}" | sed -e '/<!-- Sponsors begin -->/,/<!-- Sponsors end -->/{r SPONSORS.md; d}')
+          # Write the modified contents back to README.md
+          echo "${fileContents}" > README.md
+      - name: Upload README.md
+        run: |
+          # Check if README.md has changed
+          if git diff --name-only HEAD | grep -q "README.md"; then
+            # Stage the updated README.md file
+            git add README.md
+
+            # Commit the changes
+            git commit -m "Update sponsors"
+
+            # Push the commit to the master branch
+            git push origin HEAD
+          fi
