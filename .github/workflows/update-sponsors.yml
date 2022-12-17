@@ -49,7 +49,7 @@ jobs:
             const readme = await fs.readFile('README.md', 'utf8');
             const beginString = '<!-- Sponsors begin -->';
             const endString = '<!-- Sponsors end -->';
-            const startIndex = readme.indexOf(beginString);
+            let startIndex = readme.indexOf(beginString);
             if (-1 !== startIndex) {
               startIndex = startIndex + beginString.length;
               const endIndex = readme.indexOf(endString);
