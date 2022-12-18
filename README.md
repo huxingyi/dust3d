@@ -53,6 +53,12 @@ git clone https://github.com/huxingyi/dust3d.git
 
 Dust3D is licensed under the MIT License - see the [LICENSE](https://github.com/huxingyi/dust3d/blob/master/LICENSE) file for details.
 
-<!-- Sponsors begin -->
+<!-- Sponsors begin -->## Sponsors  
 
-<!-- Sponsors end -->
+<a href="undefined" title="fohara" target=_blank><image src="https://avatars.githubusercontent.com/u/1181948?u=00445fb982564b2a4461c5848662ac37f1405b01&v=4" alt="@fohara" width="35" height="35" style="border-radius: 17px;" /></a>
+<a href="undefined" title="kidandcat" target=_blank><image src="https://avatars.githubusercontent.com/u/3855826?u=64040c971ad9bf1e66dc5d4df54871d0af9c890f&v=4" alt="@kidandcat" width="35" height="35" style="border-radius: 17px;" /></a>
+<a href="undefined" title="DisownedWheat" target=_blank><image src="https://avatars.githubusercontent.com/u/11870491?u=a8b24ff1daf2577b1afac771fd2cf80e39c8b4b0&v=4" alt="@DisownedWheat" width="35" height="35" style="border-radius: 17px;" /></a>
+<a href="undefined" title="Nobuna-no" target=_blank><image src="https://avatars.githubusercontent.com/u/43406539?u=fc0d4b157b4b49775d415b2f405d5c45a486a107&v=4" alt="@Nobuna-no" width="35" height="35" style="border-radius: 17px;" /></a>
+<a href="undefined" title="Ghee36" target=_blank><image src="https://avatars.githubusercontent.com/u/70682472?v=4" alt="@Ghee36" width="35" height="35" style="border-radius: 17px;" /></a>
+
+ _The list shown represent active sponsors on GitHub and a full list can be viewed at [SUPPORTERS](https://github.com/huxingyi/dust3d/blob/master/SUPPORTERS)._<!-- Sponsors end -->
