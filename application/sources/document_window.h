@@ -53,6 +53,7 @@ protected:
 public slots:
     void changeTurnaround();
     void eraseTurnaround();
+    void makeTurnaround();
     void save();
     void saveTo(const QString& saveAsFilename);
     void open();
@@ -138,6 +139,7 @@ private:
     QAction* m_saveAllAction = nullptr;
     QAction* m_changeTurnaroundAction = nullptr;
     QAction* m_eraseTurnaroundAction = nullptr;
+    QAction* m_makeTurnaroundAction = nullptr;
     std::vector<QAction*> m_recentFileActions;
     QAction* m_recentFileSeparatorAction = nullptr;
     QAction* m_quitAction = nullptr;

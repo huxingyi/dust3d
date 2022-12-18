@@ -16,6 +16,7 @@
 #include "skeleton_graphics_widget.h"
 #include "spinnable_toolbar_icon.h"
 #include "theme.h"
+#include "turnaround_edit_widget.h"
 #include "uv_map_generator.h"
 #include "version.h"
 #include <QApplication>
@@ -372,6 +373,10 @@ DocumentWindow::DocumentWindow()
     m_eraseTurnaroundAction = new QAction(tr("Erase Background Image"), this);
     connect(m_eraseTurnaroundAction, &QAction::triggered, this, &DocumentWindow::eraseTurnaround, Qt::QueuedConnection);
     m_fileMenu->addAction(m_eraseTurnaroundAction);
+
+    m_makeTurnaroundAction = new QAction(tr("Make Background Image..."), this);
+    connect(m_makeTurnaroundAction, &QAction::triggered, this, &DocumentWindow::makeTurnaround, Qt::QueuedConnection);
+    m_fileMenu->addAction(m_makeTurnaroundAction);
 
     m_fileMenu->addSeparator();
 
@@ -887,6 +892,12 @@ void DocumentWindow::eraseTurnaround()
     QImage image(m_document->turnaround.width(), m_document->turnaround.height(), QImage::Format_RGBA8888);
     image.fill(0);
     m_document->updateTurnaround(image);
+}
+
+void DocumentWindow::makeTurnaround()
+{
+    auto turnaroundEditWdiget = new TurnaroundEditWidget;
+    turnaroundEditWdiget->show();
 }
 
 void DocumentWindow::save()
