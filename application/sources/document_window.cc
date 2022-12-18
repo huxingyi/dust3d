@@ -365,9 +365,13 @@ DocumentWindow::DocumentWindow()
 
     m_fileMenu->addSeparator();
 
-    m_changeTurnaroundAction = new QAction(tr("Change Reference Sheet..."), this);
+    m_changeTurnaroundAction = new QAction(tr("Change Background Image..."), this);
     connect(m_changeTurnaroundAction, &QAction::triggered, this, &DocumentWindow::changeTurnaround, Qt::QueuedConnection);
     m_fileMenu->addAction(m_changeTurnaroundAction);
+
+    m_eraseTurnaroundAction = new QAction(tr("Erase Background Image"), this);
+    connect(m_eraseTurnaroundAction, &QAction::triggered, this, &DocumentWindow::eraseTurnaround, Qt::QueuedConnection);
+    m_fileMenu->addAction(m_eraseTurnaroundAction);
 
     m_fileMenu->addSeparator();
 
@@ -864,6 +868,24 @@ void DocumentWindow::changeTurnaround()
     QImage image;
     if (!image.load(fileName))
         return;
+    m_document->updateTurnaround(image);
+}
+
+void DocumentWindow::eraseTurnaround()
+{
+    if (m_document->turnaround.isNull())
+        return;
+
+    QMessageBox::StandardButton answer = QMessageBox::question(this,
+        APP_NAME,
+        tr("Do you really want to erase background image? This can not be undo."),
+        QMessageBox::Yes | QMessageBox::No,
+        QMessageBox::No);
+    if (answer != QMessageBox::Yes)
+        return;
+
+    QImage image(m_document->turnaround.width(), m_document->turnaround.height(), QImage::Format_RGBA8888);
+    image.fill(0);
     m_document->updateTurnaround(image);
 }
 

@@ -52,6 +52,7 @@ protected:
     void mousePressEvent(QMouseEvent* event);
 public slots:
     void changeTurnaround();
+    void eraseTurnaround();
     void save();
     void saveTo(const QString& saveAsFilename);
     void open();
@@ -136,6 +137,7 @@ private:
     QAction* m_saveAsAction = nullptr;
     QAction* m_saveAllAction = nullptr;
     QAction* m_changeTurnaroundAction = nullptr;
+    QAction* m_eraseTurnaroundAction = nullptr;
     std::vector<QAction*> m_recentFileActions;
     QAction* m_recentFileSeparatorAction = nullptr;
     QAction* m_quitAction = nullptr;
