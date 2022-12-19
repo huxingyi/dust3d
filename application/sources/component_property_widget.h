@@ -19,6 +19,7 @@ signals:
     void setPartRoundState(const dust3d::Uuid& partId, bool rounded);
     void setPartCutRotation(const dust3d::Uuid& partId, float cutRotation);
     void setPartColorImage(const dust3d::Uuid& partId, const dust3d::Uuid& imageId);
+    void setPartSmoothCutoffDegrees(const dust3d::Uuid& partId, float degrees);
     void setComponentCombineMode(dust3d::Uuid componentId, dust3d::CombineMode combineMode);
     void groupOperationAdded();
 
@@ -38,6 +39,7 @@ private:
     QColor m_color;
     QColor lastColor();
     dust3d::Uuid lastColorImageId();
+    float lastSmoothCutoffDegrees();
     void preparePartIds();
     QImage* pickImage();
 };

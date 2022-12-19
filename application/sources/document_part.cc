@@ -22,7 +22,7 @@ Document::Part::Part(const dust3d::Uuid& withId)
     , roughness(1.0)
     , hollowThickness(0.0)
     , countershaded(false)
-    , smooth(false)
+    , smoothCutoffDegrees(0.0)
 {
     id = withId.isNull() ? dust3d::Uuid::createUuid() : withId;
 }
@@ -224,6 +224,6 @@ void Document::Part::copyAttributes(const Part& other)
     metalness = other.metalness;
     roughness = other.roughness;
     deformUnified = other.deformUnified;
-    smooth = other.smooth;
+    smoothCutoffDegrees = other.smoothCutoffDegrees;
     hollowThickness = other.hollowThickness;
 }

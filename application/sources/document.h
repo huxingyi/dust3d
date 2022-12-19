@@ -126,7 +126,7 @@ public:
         float roughness;
         float hollowThickness;
         bool countershaded;
-        bool smooth;
+        float smoothCutoffDegrees;
         dust3d::Uuid colorImageId;
         Part(const dust3d::Uuid& withId = dust3d::Uuid());
         bool hasPolyFunction() const;
@@ -245,7 +245,7 @@ signals:
     void partRoughnessChanged(dust3d::Uuid partId);
     void partHollowThicknessChanged(dust3d::Uuid partId);
     void partCountershadeStateChanged(dust3d::Uuid partId);
-    void partSmoothStateChanged(dust3d::Uuid partId);
+    void partSmoothCutoffDegreesChanged(dust3d::Uuid partId);
     void componentCombineModeChanged(dust3d::Uuid componentId);
     void cleanup();
     void checkPart(dust3d::Uuid partId);
@@ -466,7 +466,7 @@ public slots:
     void setPartRoughness(dust3d::Uuid partId, float roughness);
     void setPartHollowThickness(dust3d::Uuid partId, float hollowThickness);
     void setPartCountershaded(dust3d::Uuid partId, bool countershaded);
-    void setPartSmoothState(dust3d::Uuid partId, bool smooth);
+    void setPartSmoothCutoffDegrees(dust3d::Uuid partId, float degrees);
     void setComponentCombineMode(dust3d::Uuid componentId, dust3d::CombineMode combineMode);
     void saveSnapshot();
     void batchChangeBegin();

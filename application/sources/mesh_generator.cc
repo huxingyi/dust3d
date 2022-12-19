@@ -69,7 +69,7 @@ void MeshGenerator::process()
         dust3d::smoothNormal(it->second.vertices,
             it->second.triangles,
             previewTriangleNormals,
-            0,
+            nullptr,
             &previewTriangleVertexNormals);
         (*m_componentPreviewMeshes)[componentId] = std::make_unique<ModelMesh>(it->second.vertices,
             it->second.triangles,

@@ -563,13 +563,13 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
     bool rounded = String::isTrue(String::valueOrEmpty(part, "rounded"));
     bool chamfered = String::isTrue(String::valueOrEmpty(part, "chamfered"));
     bool countershaded = String::isTrue(String::valueOrEmpty(part, "countershaded"));
-    bool smooth = String::isTrue(String::valueOrEmpty(part, "smooth"));
     std::string colorString = String::valueOrEmpty(part, "color");
     Color partColor = colorString.empty() ? m_defaultPartColor : Color(colorString);
     float deformThickness = 1.0;
     float deformWidth = 1.0;
     float cutRotation = 0.0;
     float hollowThickness = 0.0;
+    float smoothCutoffDegrees = 0.0;
     auto target = PartTargetFromString(String::valueOrEmpty(part, "target").c_str());
 
     std::string searchPartIdString = __mirrorFromPartId.empty() ? partIdString : __mirrorFromPartId;
@@ -581,6 +581,11 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
         chamferFace(&cutTemplate);
     if (subdived)
         subdivideFace(&cutTemplate);
+
+    std::string smoothCutoffDegreesString = String::valueOrEmpty(part, "smoothCutoffDegrees");
+    if (!smoothCutoffDegreesString.empty()) {
+        smoothCutoffDegrees = String::toFloat(smoothCutoffDegreesString);
+    }
 
     std::string cutRotationString = String::valueOrEmpty(part, "cutRotation");
     if (!cutRotationString.empty()) {
@@ -641,7 +646,7 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
     partCache.nodeMap.clear();
     for (const auto& meshNode : meshNodes) {
         partCache.nodeMap.emplace(std::make_pair(meshNode.sourceId,
-            ObjectNode { meshNode.origin, partColor }));
+            ObjectNode { meshNode.origin, partColor, smoothCutoffDegrees }));
     }
 
     if (PartTarget::Model == target) {
@@ -1015,6 +1020,7 @@ void MeshGenerator::postprocessObject(Object* object)
     object->triangleNormals = combinedFacesNormals;
 
     object->vertexColors.resize(object->vertices.size(), Color::createWhite());
+    object->vertexSmoothCutoffDegrees.resize(object->vertices.size(), 0.0f);
     for (size_t i = 0; i < object->vertices.size(); ++i) {
         auto findSourceNode = object->positionToNodeIdMap.find(object->vertices[i]);
         if (findSourceNode == object->positionToNodeIdMap.end())
@@ -1023,13 +1029,14 @@ void MeshGenerator::postprocessObject(Object* object)
         if (findObjectNode == object->nodeMap.end())
             continue;
         object->vertexColors[i] = findObjectNode->second.color;
+        object->vertexSmoothCutoffDegrees[i] = findObjectNode->second.smoothCutoffDegrees;
     }
 
     std::vector<std::vector<Vector3>> triangleVertexNormals;
     smoothNormal(object->vertices,
         object->triangles,
         object->triangleNormals,
-        m_smoothShadingThresholdAngleDegrees,
+        &object->vertexSmoothCutoffDegrees,
         &triangleVertexNormals);
     object->setTriangleVertexNormals(triangleVertexNormals);
 }

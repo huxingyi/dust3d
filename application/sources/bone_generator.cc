@@ -78,7 +78,7 @@ void BoneGenerator::process()
         dust3d::smoothNormal(it.second.vertices,
             it.second.triangles,
             previewTriangleNormals,
-            0,
+            nullptr,
             &previewTriangleVertexNormals);
         std::vector<std::tuple<dust3d::Color, float /*metalness*/, float /*roughness*/>> vertexProperties(it.second.vertexColors.size());
         for (size_t i = 0; i < vertexProperties.size(); ++i) {
@@ -108,7 +108,7 @@ void BoneGenerator::process()
         dust3d::smoothNormal(preview.vertices,
             preview.triangles,
             previewTriangleNormals,
-            0,
+            nullptr,
             &previewTriangleVertexNormals);
         std::vector<std::tuple<dust3d::Color, float /*metalness*/, float /*roughness*/>> vertexProperties(preview.vertexColors.size());
         for (size_t i = 0; i < vertexProperties.size(); ++i) {

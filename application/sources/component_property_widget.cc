@@ -224,6 +224,38 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         cutFaceGroupBox->setLayout(cutFaceLayout);
     }
 
+    QGroupBox* smoothGroupBox = nullptr;
+    if (!m_componentIds.empty()) {
+        FloatNumberWidget* smoothCutoffDegreesWidget = new FloatNumberWidget;
+        smoothCutoffDegreesWidget->setItemName(tr("Cutoff"));
+        smoothCutoffDegreesWidget->setRange(0.0, 180.0);
+        smoothCutoffDegreesWidget->setValue(lastSmoothCutoffDegrees());
+
+        connect(smoothCutoffDegreesWidget, &FloatNumberWidget::valueChanged, [=](float value) {
+            for (const auto& partId : m_partIds)
+                emit setPartSmoothCutoffDegrees(partId, value);
+            emit groupOperationAdded();
+        });
+
+        QPushButton* smoothCutoffDegreesEraser = new QPushButton(Theme::awesome()->icon(fa::eraser), "");
+        Theme::initIconButton(smoothCutoffDegreesEraser);
+
+        connect(smoothCutoffDegreesEraser, &QPushButton::clicked, [=]() {
+            smoothCutoffDegreesWidget->setValue(0.0);
+            emit groupOperationAdded();
+        });
+
+        QHBoxLayout* smoothCutoffDegreesLayout = new QHBoxLayout;
+        smoothCutoffDegreesLayout->addWidget(smoothCutoffDegreesEraser);
+        smoothCutoffDegreesLayout->addWidget(smoothCutoffDegreesWidget);
+
+        QVBoxLayout* smoothGroupLayout = new QVBoxLayout;
+        smoothGroupLayout->addLayout(smoothCutoffDegreesLayout);
+
+        smoothGroupBox = new QGroupBox(tr("Normal Smooth"));
+        smoothGroupBox->setLayout(smoothGroupLayout);
+    }
+
     QGroupBox* colorImageGroupBox = nullptr;
     if (!m_componentIds.empty()) {
         ImagePreviewWidget* colorImagePreviewWidget = new ImagePreviewWidget;
@@ -280,6 +312,8 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         mainLayout->addWidget(deformGroupBox);
     if (nullptr != cutFaceGroupBox)
         mainLayout->addWidget(cutFaceGroupBox);
+    if (nullptr != smoothGroupBox)
+        mainLayout->addWidget(smoothGroupBox);
     mainLayout->addLayout(skinLayout);
     mainLayout->setSizeConstraint(QLayout::SetFixedSize);
 
@@ -294,6 +328,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     connect(this, &ComponentPropertyWidget::setPartChamferState, m_document, &Document::setPartChamferState);
     connect(this, &ComponentPropertyWidget::setPartRoundState, m_document, &Document::setPartRoundState);
     connect(this, &ComponentPropertyWidget::setPartColorImage, m_document, &Document::setPartColorImage);
+    connect(this, &ComponentPropertyWidget::setPartSmoothCutoffDegrees, m_document, &Document::setPartSmoothCutoffDegrees);
     connect(this, &ComponentPropertyWidget::setComponentCombineMode, m_document, &Document::setComponentCombineMode);
     connect(this, &ComponentPropertyWidget::groupOperationAdded, m_document, &Document::saveSnapshot);
 
@@ -371,6 +406,25 @@ dust3d::Uuid ComponentPropertyWidget::lastColorImageId()
             })->first;
     }
     return colorImageId;
+}
+
+float ComponentPropertyWidget::lastSmoothCutoffDegrees()
+{
+    float smoothCutoffDegrees = 0.0;
+    std::map<std::string, int> degreesMap;
+    for (const auto& partId : m_partIds) {
+        const Document::Part* part = m_document->findPart(partId);
+        if (nullptr == part)
+            continue;
+        degreesMap[std::to_string(part->smoothCutoffDegrees)]++;
+    }
+    if (!degreesMap.empty()) {
+        smoothCutoffDegrees = dust3d::String::toFloat(std::max_element(degreesMap.begin(), degreesMap.end(),
+            [](const std::map<std::string, int>::value_type& a, const std::map<std::string, int>::value_type& b) {
+                return a.second < b.second;
+            })->first);
+    }
+    return smoothCutoffDegrees;
 }
 
 void ComponentPropertyWidget::showColorDialog()

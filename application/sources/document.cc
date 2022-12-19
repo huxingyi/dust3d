@@ -1640,8 +1640,8 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
                 part["name"] = partIt.second.name.toUtf8().constData();
             if (partIt.second.countershaded)
                 part["countershaded"] = "true";
-            if (partIt.second.smooth)
-                part["smooth"] = "true";
+            if (partIt.second.smoothCutoffDegrees > 0)
+                part["smoothCutoffDegrees"] = std::to_string(partIt.second.smoothCutoffDegrees);
             snapshot->parts[part["id"]] = part;
         }
         for (const auto& nodeIt : nodeMap) {
@@ -1849,7 +1849,9 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
         if (hollowThicknessIt != partKv.second.end())
             part.hollowThickness = dust3d::String::toFloat(hollowThicknessIt->second);
         part.countershaded = dust3d::String::isTrue(dust3d::String::valueOrEmpty(partKv.second, "countershaded"));
-        part.smooth = dust3d::String::isTrue(dust3d::String::valueOrEmpty(partKv.second, "smooth"));
+        const auto& smoothCutoffDegreesIt = partKv.second.find("smoothCutoffDegrees");
+        if (smoothCutoffDegreesIt != partKv.second.end())
+            part.smoothCutoffDegrees = dust3d::String::toFloat(smoothCutoffDegreesIt->second);
         newAddedPartIds.insert(part.id);
     }
     for (const auto& it : cutFaceLinkedIdModifyMap) {
@@ -2586,18 +2588,18 @@ void Document::setPartCountershaded(dust3d::Uuid partId, bool countershaded)
     emit textureChanged();
 }
 
-void Document::setPartSmoothState(dust3d::Uuid partId, bool smooth)
+void Document::setPartSmoothCutoffDegrees(dust3d::Uuid partId, float degrees)
 {
     auto part = partMap.find(partId);
     if (part == partMap.end()) {
         qDebug() << "Part not found:" << partId;
         return;
     }
-    if (part->second.smooth == smooth)
+    if (dust3d::Math::isEqual(part->second.smoothCutoffDegrees, degrees))
         return;
-    part->second.smooth = smooth;
+    part->second.smoothCutoffDegrees = degrees;
     part->second.dirty = true;
-    emit partSmoothStateChanged(partId);
+    emit partSmoothCutoffDegreesChanged(partId);
     emit skeletonChanged();
 }
 

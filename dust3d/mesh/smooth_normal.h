@@ -30,7 +30,7 @@ namespace dust3d {
 void smoothNormal(const std::vector<Vector3>& vertices,
     const std::vector<std::vector<size_t>>& triangles,
     const std::vector<Vector3>& triangleNormals,
-    float thresholdAngleDegrees,
+    const std::vector<float>* thresholdAngleDegrees,
     std::vector<std::vector<Vector3>>* triangleVertexNormals);
 
 }

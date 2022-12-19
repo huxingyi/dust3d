@@ -43,6 +43,7 @@ struct ObjectNode {
     Vector3 origin;
     //float radius = 0.0;
     Color color;
+    float smoothCutoffDegrees = 0.0;
     //float colorSolubility = 0.0;
     //float metalness = 0.0;
     //float roughness = 1.0;
@@ -65,6 +66,7 @@ public:
     std::vector<std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>>> seamTriangleUvs;
     std::vector<Vector3> triangleNormals;
     std::vector<Color> vertexColors;
+    std::vector<float> vertexSmoothCutoffDegrees;
     bool alphaEnabled = false;
     uint64_t meshId = 0;
 

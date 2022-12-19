@@ -28,7 +28,7 @@ namespace dust3d {
 void smoothNormal(const std::vector<Vector3>& vertices,
     const std::vector<std::vector<size_t>>& triangles,
     const std::vector<Vector3>& triangleNormals,
-    float thresholdAngleDegrees,
+    const std::vector<float>* thresholdAngleDegrees,
     std::vector<std::vector<Vector3>>* triangleVertexNormals)
 {
     std::vector<std::vector<std::pair<size_t, size_t>>> triangleVertexNormalsMapByIndices(vertices.size());
@@ -56,6 +56,7 @@ void smoothNormal(const std::vector<Vector3>& vertices,
     std::vector<Vector3> finalNormals = angleAreaWeightedNormals;
     std::map<std::pair<size_t, size_t>, float> degreesBetweenFacesMap;
     for (size_t vertexIndex = 0; vertexIndex < vertices.size(); ++vertexIndex) {
+        float threshold = nullptr == thresholdAngleDegrees ? 0.0f : thresholdAngleDegrees->at(vertexIndex);
         const auto& triangleVertices = triangleVertexNormalsMapByIndices[vertexIndex];
         for (const auto& triangleVertex : triangleVertices) {
             for (const auto& otherTriangleVertex : triangleVertices) {
@@ -70,7 +71,7 @@ void smoothNormal(const std::vector<Vector3>& vertices,
                 } else {
                     degrees = findDegreesResult->second;
                 }
-                if (degrees > thresholdAngleDegrees) {
+                if (degrees > threshold) {
                     continue;
                 }
                 finalNormals[triangleVertex.second] += angleAreaWeightedNormals[otherTriangleVertex.second];
