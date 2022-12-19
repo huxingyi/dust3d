@@ -16,7 +16,6 @@
 #include "skeleton_graphics_widget.h"
 #include "spinnable_toolbar_icon.h"
 #include "theme.h"
-#include "turnaround_edit_widget.h"
 #include "uv_map_generator.h"
 #include "version.h"
 #include <QApplication>
@@ -373,10 +372,6 @@ DocumentWindow::DocumentWindow()
     m_eraseTurnaroundAction = new QAction(tr("Erase Background Image"), this);
     connect(m_eraseTurnaroundAction, &QAction::triggered, this, &DocumentWindow::eraseTurnaround, Qt::QueuedConnection);
     m_fileMenu->addAction(m_eraseTurnaroundAction);
-
-    m_makeTurnaroundAction = new QAction(tr("Make Background Image..."), this);
-    connect(m_makeTurnaroundAction, &QAction::triggered, this, &DocumentWindow::makeTurnaround, Qt::QueuedConnection);
-    m_fileMenu->addAction(m_makeTurnaroundAction);
 
     m_fileMenu->addSeparator();
 
@@ -865,13 +860,32 @@ void DocumentWindow::mousePressEvent(QMouseEvent* event)
 
 void DocumentWindow::changeTurnaround()
 {
-    QString fileName = QFileDialog::getOpenFileName(this, QString(), QString(),
-        tr("Image Files (*.png *.jpg *.bmp)"))
-                           .trimmed();
-    if (fileName.isEmpty())
+    QStringList fileNames = QFileDialog::getOpenFileNames(this, QString(), QString(),
+        tr("Image Files (*.png *.jpg *.bmp)"));
+    if (fileNames.isEmpty())
         return;
+
+    if (2 == fileNames.size()) {
+        QImage frontImage;
+        if (!frontImage.load(fileNames[0]))
+            return;
+        QImage sideImage;
+        if (!sideImage.load(fileNames[1]))
+            return;
+        frontImage = frontImage.scaledToHeight(512);
+        sideImage = sideImage.scaledToHeight(512);
+        QImage combined(frontImage.width() + sideImage.width(), frontImage.height(), QImage::Format_RGB32);
+        {
+            QPainter painter(&combined);
+            painter.drawImage(0, 0, frontImage);
+            painter.drawImage(frontImage.width(), 0, sideImage);
+        }
+        m_document->updateTurnaround(combined);
+        return;
+    }
+
     QImage image;
-    if (!image.load(fileName))
+    if (!image.load(fileNames[0]))
         return;
     m_document->updateTurnaround(image);
 }
@@ -892,12 +906,6 @@ void DocumentWindow::eraseTurnaround()
     QImage image(m_document->turnaround.width(), m_document->turnaround.height(), QImage::Format_RGBA8888);
     image.fill(0);
     m_document->updateTurnaround(image);
-}
-
-void DocumentWindow::makeTurnaround()
-{
-    auto turnaroundEditWdiget = new TurnaroundEditWidget;
-    turnaroundEditWdiget->show();
 }
 
 void DocumentWindow::save()
