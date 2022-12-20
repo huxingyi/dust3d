@@ -2,6 +2,7 @@
 #define DUST3D_APPLICATION_PART_MANAGE_WIDGET_H_
 
 #include <QWidget>
+#include <dust3d/base/part_target.h>
 #include <dust3d/base/uuid.h>
 
 class Document;
@@ -14,6 +15,7 @@ class PartManageWidget : public QWidget {
 signals:
     void unselectAllOnCanvas();
     void selectPartOnCanvas(const dust3d::Uuid& partId);
+    void setPartTarget(const dust3d::Uuid& partId, dust3d::PartTarget target);
     void groupComponents(const std::vector<dust3d::Uuid>& componentIds);
     void ungroupComponent(const dust3d::Uuid& componentId);
     void groupOperationAdded();

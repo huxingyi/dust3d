@@ -120,6 +120,7 @@ PartManageWidget::PartManageWidget(Document* document, QWidget* parent)
 
     connect(this, &PartManageWidget::groupComponents, m_document, &Document::groupComponents);
     connect(this, &PartManageWidget::ungroupComponent, m_document, &Document::ungroupComponent);
+    connect(this, &PartManageWidget::setPartTarget, m_document, &Document::setPartTarget);
     connect(this, &PartManageWidget::groupOperationAdded, m_document, &Document::saveSnapshot);
 
     connect(this, &PartManageWidget::customContextMenuRequested, this, &PartManageWidget::showContextMenu);
@@ -264,6 +265,28 @@ void PartManageWidget::showContextMenu(const QPoint& pos)
             emit this->groupOperationAdded();
         });
         contextMenu.addAction(&ungroupAction);
+    }
+
+    QAction convertToCutFaceAction(tr("Convert to Cut Face"), this);
+    QAction convertToPartAction(tr("Convert to Model"), this);
+    auto selectedPartIds = m_componentPreviewGridWidget->getSelectedPartIds();
+    if (1 == selectedPartIds.size()) {
+        const Document::Part* part = m_document->findPart(selectedPartIds[0]);
+        if (dust3d::PartTarget::CutFace == part->target) {
+            connect(&convertToPartAction, &QAction::triggered, this, [=]() {
+                for (const auto& it : selectedPartIds)
+                    emit this->setPartTarget(it, dust3d::PartTarget::Model);
+                emit this->groupOperationAdded();
+            });
+            contextMenu.addAction(&convertToPartAction);
+        } else if (dust3d::PartTarget::Model == part->target) {
+            connect(&convertToCutFaceAction, &QAction::triggered, this, [=]() {
+                for (const auto& it : selectedPartIds)
+                    emit this->setPartTarget(it, dust3d::PartTarget::CutFace);
+                emit this->groupOperationAdded();
+            });
+            contextMenu.addAction(&convertToCutFaceAction);
+        }
     }
 
     contextMenu.exec(mapToGlobal(pos));
