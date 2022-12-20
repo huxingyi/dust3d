@@ -20,6 +20,11 @@ std::map<dust3d::Uuid, std::unique_ptr<ModelMesh>>* MeshGenerator::takeComponent
     return m_componentPreviewMeshes.release();
 }
 
+std::map<dust3d::Uuid, std::unique_ptr<QImage>>* MeshGenerator::takeComponentPreviewImages()
+{
+    return m_componentPreviewImages.release();
+}
+
 MonochromeMesh* MeshGenerator::takeWireframeMesh()
 {
     return m_wireframeMesh.release();
@@ -35,11 +40,19 @@ void MeshGenerator::process()
     if (nullptr != m_object)
         m_resultMesh = std::make_unique<ModelMesh>(*m_object);
 
+    m_componentPreviewImages = std::make_unique<std::map<dust3d::Uuid, std::unique_ptr<QImage>>>();
+
     m_componentPreviewMeshes = std::make_unique<std::map<dust3d::Uuid, std::unique_ptr<ModelMesh>>>();
     for (const auto& componentId : m_generatedPreviewComponentIds) {
         auto it = m_generatedComponentPreviews.find(componentId);
         if (it == m_generatedComponentPreviews.end())
             continue;
+        if (!it->second.cutFaceTemplate.empty()) {
+            QImage* previewImage = buildCutFaceTemplatePreviewImage(it->second.cutFaceTemplate);
+            if (nullptr != previewImage)
+                (*m_componentPreviewImages)[componentId].reset(previewImage);
+            continue;
+        }
         std::vector<std::array<dust3d::Vector2, 3>> triangleUvs;
         if (!it->second.triangleUvs.empty()) {
             triangleUvs.resize(it->second.triangles.size());

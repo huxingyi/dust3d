@@ -103,6 +103,7 @@ public:
         float metalness = 0.0;
         float roughness = 1.0;
         std::vector<std::tuple<dust3d::Color, float /*metalness*/, float /*roughness*/>> vertexProperties;
+        std::vector<Vector2> cutFaceTemplate;
     };
 
     MeshGenerator(Snapshot* snapshot);

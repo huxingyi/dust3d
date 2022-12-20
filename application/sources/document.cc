@@ -2151,6 +2151,14 @@ void Document::meshReady()
         emit resultComponentPreviewMeshesChanged();
     }
 
+    std::unique_ptr<std::map<dust3d::Uuid, std::unique_ptr<QImage>>> componentPreviewImages;
+    componentPreviewImages.reset(m_meshGenerator->takeComponentPreviewImages());
+    if (componentPreviewImages && !componentPreviewImages->empty()) {
+        for (auto& it : *componentPreviewImages) {
+            setComponentPreviewImage(it.first, std::move(it.second));
+        }
+    }
+
     delete m_resultMesh;
     m_resultMesh = resultMesh;
 

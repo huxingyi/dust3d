@@ -15,6 +15,7 @@ public:
     ~MeshGenerator();
     ModelMesh* takeResultMesh();
     std::map<dust3d::Uuid, std::unique_ptr<ModelMesh>>* takeComponentPreviewMeshes();
+    std::map<dust3d::Uuid, std::unique_ptr<QImage>>* takeComponentPreviewImages();
     MonochromeMesh* takeWireframeMesh();
 public slots:
     void process();
@@ -24,6 +25,7 @@ signals:
 private:
     std::unique_ptr<ModelMesh> m_resultMesh;
     std::unique_ptr<std::map<dust3d::Uuid, std::unique_ptr<ModelMesh>>> m_componentPreviewMeshes;
+    std::unique_ptr<std::map<dust3d::Uuid, std::unique_ptr<QImage>>> m_componentPreviewImages;
     std::unique_ptr<MonochromeMesh> m_wireframeMesh;
 };
 

@@ -27,7 +27,6 @@
 #include <dust3d/mesh/mesh_generator.h>
 #include <dust3d/mesh/mesh_recombiner.h>
 #include <dust3d/mesh/rope_mesh.h>
-#include <dust3d/mesh/section_preview_mesh_builder.h>
 #include <dust3d/mesh/smooth_normal.h>
 #include <dust3d/mesh/stitch_mesh_builder.h>
 #include <dust3d/mesh/triangulate.h>
@@ -711,18 +710,8 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
         preview.triangleUvs = partCache.triangleUvs;
         addComponentPreview(componentIdString, std::move(preview));
     } else if (PartTarget::CutFace == target) {
-        std::unique_ptr<SectionPreviewMeshBuilder> sectionPreviewMeshBuilder;
-        std::vector<Vector2> previewCutTemplate;
-        cutFaceStringToCutTemplate(partIdString, previewCutTemplate);
-        sectionPreviewMeshBuilder = std::make_unique<SectionPreviewMeshBuilder>(previewCutTemplate, partCache.color);
-        sectionPreviewMeshBuilder->build();
         ComponentPreview preview;
-        preview.vertices = sectionPreviewMeshBuilder->resultVertices();
-        preview.triangles = sectionPreviewMeshBuilder->resultTriangles();
-        preview.vertexProperties = sectionPreviewMeshBuilder->resultVertexProperties();
-        preview.color = partCache.color;
-        preview.metalness = partCache.metalness;
-        preview.roughness = partCache.roughness;
+        cutFaceStringToCutTemplate(partIdString, preview.cutFaceTemplate);
         addComponentPreview(componentIdString, std::move(preview));
     }
 
