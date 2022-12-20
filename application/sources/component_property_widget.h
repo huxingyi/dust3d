@@ -5,6 +5,8 @@
 #include <QWidget>
 #include <dust3d/base/uuid.h>
 
+class QPushButton;
+
 class ComponentPropertyWidget : public QWidget {
     Q_OBJECT
 signals:
@@ -20,6 +22,8 @@ signals:
     void setPartCutRotation(const dust3d::Uuid& partId, float cutRotation);
     void setPartColorImage(const dust3d::Uuid& partId, const dust3d::Uuid& imageId);
     void setPartSmoothCutoffDegrees(const dust3d::Uuid& partId, float degrees);
+    void setPartCutFace(const dust3d::Uuid& partId, dust3d::CutFace cutFace);
+    void setPartCutFaceLinkedId(const dust3d::Uuid& partId, dust3d::Uuid linkedId);
     void setComponentCombineMode(dust3d::Uuid componentId, dust3d::CombineMode combineMode);
     void groupOperationAdded();
 
@@ -42,6 +46,10 @@ private:
     float lastSmoothCutoffDegrees();
     void preparePartIds();
     QImage* pickImage();
+    std::vector<QPushButton*> m_cutFaceButtons;
+    std::vector<QString> m_cutFaceList;
+
+    void updateCutFaceButtonState(size_t index);
 };
 
 #endif

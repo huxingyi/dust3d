@@ -1,5 +1,7 @@
 #include "component_property_widget.h"
+#include "cut_face_preview.h"
 #include "float_number_widget.h"
+#include "flow_layout.h"
 #include "image_forever.h"
 #include "image_preview_widget.h"
 #include "theme.h"
@@ -140,6 +142,51 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
 
     QGroupBox* cutFaceGroupBox = nullptr;
     if (nullptr != m_part) {
+        FlowLayout* cutFaceIconLayout = new FlowLayout(nullptr, 0, 0);
+        m_document->collectCutFaceList(m_cutFaceList);
+        m_cutFaceButtons.resize(m_cutFaceList.size());
+        for (size_t i = 0; i < m_cutFaceList.size(); ++i) {
+            QString cutFaceString = m_cutFaceList[i];
+            dust3d::CutFace cutFace;
+            dust3d::Uuid cutFacePartId(cutFaceString.toUtf8().constData());
+            QPushButton* button = new QPushButton;
+            button->setIconSize(QSize(Theme::toolIconSize * 0.75, Theme::toolIconSize * 0.75));
+            if (cutFacePartId.isNull()) {
+                cutFace = dust3d::CutFaceFromString(cutFaceString.toUtf8().constData());
+                button->setIcon(QIcon(QPixmap::fromImage(*cutFacePreviewImage(cutFace))));
+            } else {
+                const Document::Part* part = m_document->findPart(cutFacePartId);
+                if (nullptr != part) {
+                    const Document::Component* component = m_document->findComponent(part->componentId);
+                    if (nullptr != component)
+                        button->setIcon(QIcon(component->previewPixmap));
+                }
+            }
+            connect(button, &QPushButton::clicked, [=]() {
+                updateCutFaceButtonState(i);
+                if (cutFacePartId.isNull())
+                    emit setPartCutFace(m_partId, cutFace);
+                else
+                    emit setPartCutFaceLinkedId(m_partId, cutFacePartId);
+                emit groupOperationAdded();
+            });
+            cutFaceIconLayout->addWidget(button);
+            m_cutFaceButtons[i] = button;
+        }
+        for (size_t i = 0; i < m_cutFaceList.size(); ++i) {
+            if (dust3d::CutFace::UserDefined == m_part->cutFace) {
+                if (QString(m_part->cutFaceLinkedId.toString().c_str()) == m_cutFaceList[i]) {
+                    updateCutFaceButtonState(i);
+                    break;
+                }
+            } else if (i < (int)dust3d::CutFace::UserDefined) {
+                if ((size_t)m_part->cutFace == i) {
+                    updateCutFaceButtonState(i);
+                    break;
+                }
+            }
+        }
+
         FloatNumberWidget* rotationWidget = new FloatNumberWidget;
         rotationWidget->setItemName(tr("Rotation"));
         rotationWidget->setRange(-1, 1);
@@ -217,6 +264,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         optionsLayout->addWidget(subdivStateBox);
 
         QVBoxLayout* cutFaceLayout = new QVBoxLayout;
+        cutFaceLayout->addLayout(cutFaceIconLayout);
         cutFaceLayout->addLayout(rotationLayout);
         cutFaceLayout->addLayout(optionsLayout);
 
@@ -329,12 +377,28 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     connect(this, &ComponentPropertyWidget::setPartRoundState, m_document, &Document::setPartRoundState);
     connect(this, &ComponentPropertyWidget::setPartColorImage, m_document, &Document::setPartColorImage);
     connect(this, &ComponentPropertyWidget::setPartSmoothCutoffDegrees, m_document, &Document::setPartSmoothCutoffDegrees);
+    connect(this, &ComponentPropertyWidget::setPartCutFace, m_document, &Document::setPartCutFace);
+    connect(this, &ComponentPropertyWidget::setPartCutFaceLinkedId, m_document, &Document::setPartCutFaceLinkedId);
     connect(this, &ComponentPropertyWidget::setComponentCombineMode, m_document, &Document::setComponentCombineMode);
     connect(this, &ComponentPropertyWidget::groupOperationAdded, m_document, &Document::saveSnapshot);
 
     setLayout(mainLayout);
 
     setFixedSize(minimumSizeHint());
+}
+
+void ComponentPropertyWidget::updateCutFaceButtonState(size_t index)
+{
+    for (size_t i = 0; i < m_cutFaceList.size(); ++i) {
+        auto button = m_cutFaceButtons[i];
+        if (i == index) {
+            button->setFlat(true);
+            button->setEnabled(false);
+        } else {
+            button->setFlat(false);
+            button->setEnabled(true);
+        }
+    }
 }
 
 QImage* ComponentPropertyWidget::pickImage()
