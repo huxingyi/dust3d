@@ -69,6 +69,7 @@ private:
     std::vector<Vector3> buildCutFaceVertices(const Vector3& origin,
         double radius,
         const Vector3& forwardDirection);
+    void turnSingleNodeToTube();
     void applyRoundEnd();
     void applyInterpolation();
     void addCap(const std::vector<size_t>& section, double ringV, double centerV, bool reverseU);

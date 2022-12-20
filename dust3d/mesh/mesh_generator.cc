@@ -24,7 +24,6 @@
 #include <dust3d/base/part_target.h>
 #include <dust3d/base/snapshot_xml.h>
 #include <dust3d/base/string.h>
-#include <dust3d/mesh/box_mesh.h>
 #include <dust3d/mesh/mesh_generator.h>
 #include <dust3d/mesh/mesh_recombiner.h>
 #include <dust3d/mesh/rope_mesh.h>
@@ -650,52 +649,47 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
     }
 
     if (PartTarget::Model == target) {
-        if (1 == meshNodes.size()) {
-            size_t subdivideTimes = subdived ? 1 : 0;
-            buildBoxMesh(meshNodes[0].origin, meshNodes[0].radius, subdivideTimes, partCache.vertices, partCache.faces);
-        } else {
-            std::unique_ptr<TubeMeshBuilder> tubeMeshBuilder;
-            TubeMeshBuilder::BuildParameters buildParameters;
-            buildParameters.deformThickness = deformThickness;
-            buildParameters.deformWidth = deformWidth;
-            buildParameters.deformUnified = deformUnified;
-            buildParameters.baseNormalRotation = cutRotation * Math::Pi;
-            buildParameters.cutFace = cutTemplate;
-            buildParameters.frontEndRounded = buildParameters.backEndRounded = rounded;
-            tubeMeshBuilder = std::make_unique<TubeMeshBuilder>(buildParameters, std::move(meshNodes), isCircle);
-            tubeMeshBuilder->build();
-            partCache.vertices = tubeMeshBuilder->generatedVertices();
-            partCache.faces = tubeMeshBuilder->generatedFaces();
-            if (!__mirrorFromPartId.empty()) {
-                for (auto& it : partCache.vertices)
-                    it.setX(-it.x());
-                for (auto& it : partCache.faces)
-                    std::reverse(it.begin(), it.end());
+        std::unique_ptr<TubeMeshBuilder> tubeMeshBuilder;
+        TubeMeshBuilder::BuildParameters buildParameters;
+        buildParameters.deformThickness = deformThickness;
+        buildParameters.deformWidth = deformWidth;
+        buildParameters.deformUnified = deformUnified;
+        buildParameters.baseNormalRotation = cutRotation * Math::Pi;
+        buildParameters.cutFace = cutTemplate;
+        buildParameters.frontEndRounded = buildParameters.backEndRounded = rounded;
+        tubeMeshBuilder = std::make_unique<TubeMeshBuilder>(buildParameters, std::move(meshNodes), isCircle);
+        tubeMeshBuilder->build();
+        partCache.vertices = tubeMeshBuilder->generatedVertices();
+        partCache.faces = tubeMeshBuilder->generatedFaces();
+        if (!__mirrorFromPartId.empty()) {
+            for (auto& it : partCache.vertices)
+                it.setX(-it.x());
+            for (auto& it : partCache.faces)
+                std::reverse(it.begin(), it.end());
+        }
+        const auto& faceUvs = tubeMeshBuilder->generatedFaceUvs();
+        for (size_t i = 0; i < faceUvs.size(); ++i) {
+            const auto& uv = faceUvs[i];
+            const auto& face = partCache.faces[i];
+            if (3 == face.size()) {
+                partCache.triangleUvs.insert({ { PositionKey(partCache.vertices[face[0]]),
+                                                   PositionKey(partCache.vertices[face[1]]),
+                                                   PositionKey(partCache.vertices[face[2]]) },
+                    { uv[0], uv[1], uv[2] } });
+            } else if (4 == face.size()) {
+                partCache.triangleUvs.insert({ { PositionKey(partCache.vertices[face[0]]),
+                                                   PositionKey(partCache.vertices[face[1]]),
+                                                   PositionKey(partCache.vertices[face[2]]) },
+                    { uv[0], uv[1], uv[2] } });
+                partCache.triangleUvs.insert({ { PositionKey(partCache.vertices[face[2]]),
+                                                   PositionKey(partCache.vertices[face[3]]),
+                                                   PositionKey(partCache.vertices[face[0]]) },
+                    { uv[2], uv[3], uv[0] } });
             }
-            const auto& faceUvs = tubeMeshBuilder->generatedFaceUvs();
-            for (size_t i = 0; i < faceUvs.size(); ++i) {
-                const auto& uv = faceUvs[i];
-                const auto& face = partCache.faces[i];
-                if (3 == face.size()) {
-                    partCache.triangleUvs.insert({ { PositionKey(partCache.vertices[face[0]]),
-                                                       PositionKey(partCache.vertices[face[1]]),
-                                                       PositionKey(partCache.vertices[face[2]]) },
-                        { uv[0], uv[1], uv[2] } });
-                } else if (4 == face.size()) {
-                    partCache.triangleUvs.insert({ { PositionKey(partCache.vertices[face[0]]),
-                                                       PositionKey(partCache.vertices[face[1]]),
-                                                       PositionKey(partCache.vertices[face[2]]) },
-                        { uv[0], uv[1], uv[2] } });
-                    partCache.triangleUvs.insert({ { PositionKey(partCache.vertices[face[2]]),
-                                                       PositionKey(partCache.vertices[face[3]]),
-                                                       PositionKey(partCache.vertices[face[0]]) },
-                        { uv[2], uv[3], uv[0] } });
-                }
-            }
-            const auto& vertexSources = tubeMeshBuilder->generatedVertexSources();
-            for (size_t i = 0; i < vertexSources.size(); ++i) {
-                partCache.positionToNodeIdMap.emplace(std::make_pair(PositionKey(partCache.vertices[i]), vertexSources[i]));
-            }
+        }
+        const auto& vertexSources = tubeMeshBuilder->generatedVertexSources();
+        for (size_t i = 0; i < vertexSources.size(); ++i) {
+            partCache.positionToNodeIdMap.emplace(std::make_pair(PositionKey(partCache.vertices[i]), vertexSources[i]));
         }
     }
 

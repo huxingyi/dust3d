@@ -83,6 +83,48 @@ void TubeMeshBuilder::applyRoundEnd()
     }
 }
 
+void TubeMeshBuilder::turnSingleNodeToTube()
+{
+    if (1 != m_nodes.size())
+        return;
+
+    size_t subdivTimes = ((m_buildParameters.cutFace.size() + 3) / 4) - 1;
+
+    if (0 == subdivTimes) {
+        std::vector<MeshNode> interpolatedNodes;
+        interpolatedNodes.emplace_back(MeshNode {
+            m_nodes.front().origin + Vector3(0.0, m_nodes.front().radius, 0.0),
+            m_nodes.front().radius,
+            m_nodes.front().sourceId });
+        interpolatedNodes.emplace_back(MeshNode {
+            m_nodes.front().origin - Vector3(0.0, m_nodes.front().radius, 0.0),
+            m_nodes.front().radius,
+            m_nodes.front().sourceId });
+        m_nodes = std::move(interpolatedNodes);
+        return;
+    }
+
+    std::vector<MeshNode> interpolatedNodes;
+    double stepY = 0.45;
+    for (auto y = stepY; y < 1.0; y += stepY) {
+        auto moveY = m_nodes.front().radius * y;
+        interpolatedNodes.emplace_back(MeshNode {
+            m_nodes.front().origin + Vector3(0.0, 0.0, moveY),
+            std::sqrt(std::pow(m_nodes.front().radius, 2.0) - std::pow(moveY, 2.0)),
+            m_nodes.front().sourceId });
+    }
+    std::reverse(interpolatedNodes.begin(), interpolatedNodes.end());
+    interpolatedNodes.push_back(m_nodes.front());
+    for (auto y = stepY; y < 1.0; y += stepY) {
+        auto moveY = m_nodes.front().radius * y;
+        interpolatedNodes.emplace_back(MeshNode {
+            m_nodes.front().origin - Vector3(0.0, 0.0, moveY),
+            std::sqrt(std::pow(m_nodes.front().radius, 2.0) - std::pow(moveY, 2.0)),
+            m_nodes.front().sourceId });
+    }
+    m_nodes = std::move(interpolatedNodes);
+}
+
 void TubeMeshBuilder::applyInterpolation()
 {
     if (!m_buildParameters.interpolationEnabled)
@@ -116,6 +158,7 @@ void TubeMeshBuilder::applyInterpolation()
 
 void TubeMeshBuilder::preprocessNodes()
 {
+    turnSingleNodeToTube();
     applyInterpolation();
     applyRoundEnd();
 }
