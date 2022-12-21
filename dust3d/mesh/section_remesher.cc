@@ -23,6 +23,7 @@
 #include <algorithm>
 #include <dust3d/base/debug.h>
 #include <dust3d/mesh/section_remesher.h>
+#include <dust3d/mesh/triangulate.h>
 
 namespace dust3d {
 
@@ -46,20 +47,6 @@ const std::vector<std::vector<size_t>>& SectionRemesher::generatedFaces()
 const std::vector<std::vector<Vector2>>& SectionRemesher::generatedFaceUvs()
 {
     return m_generatedFaceUvs;
-}
-
-Vector3 SectionRemesher::sectionNormal(const std::vector<size_t>& ringVertices)
-{
-    if (ringVertices.size() < 3)
-        return Vector3();
-
-    Vector3 normal = Vector3::normal(m_vertices[ringVertices[1]], m_vertices[ringVertices[2]], m_vertices[ringVertices[0]]);
-    for (size_t i = 1; i < ringVertices.size(); ++i) {
-        size_t j = (i + 1) % ringVertices.size();
-        size_t k = (i + 2) % ringVertices.size();
-        normal += Vector3::normal(m_vertices[ringVertices[j]], m_vertices[ringVertices[k]], m_vertices[ringVertices[i]]);
-    }
-    return normal.normalized();
 }
 
 bool SectionRemesher::isConvex(const std::vector<size_t>& ringVertices)
@@ -99,90 +86,6 @@ void SectionRemesher::remeshConvex(const std::vector<size_t>& ringVertices, cons
     }
 }
 
-int SectionRemesher::findNonConvexVertex(const std::vector<size_t>& ringVertices)
-{
-    int nonConvexVertex = -1;
-    double maxEdgeLength = 0.0;
-    Vector3 positiveNormal = sectionNormal(ringVertices);
-    for (size_t i = 0; i < ringVertices.size(); ++i) {
-        size_t j = (i + 1) % ringVertices.size();
-        size_t k = (i + 2) % ringVertices.size();
-        Vector3 currentNormal = Vector3::normal(m_vertices[ringVertices[j]], m_vertices[ringVertices[k]], m_vertices[ringVertices[i]]);
-        if (Vector3::dotProduct(positiveNormal, currentNormal) >= 0)
-            continue;
-        double edgeLength = (m_vertices[ringVertices[j]] - m_vertices[ringVertices[k]]).length() + (m_vertices[ringVertices[j]] - m_vertices[ringVertices[i]]).length();
-        if (edgeLength > maxEdgeLength) {
-            maxEdgeLength = edgeLength;
-            nonConvexVertex = (int)j;
-        }
-    }
-    return nonConvexVertex;
-}
-
-int SectionRemesher::findPairVertex(const std::vector<size_t>& ringVertices, int vertex)
-{
-    size_t halfSize = ringVertices.size() / 2;
-    size_t quarterSize = std::max(ringVertices.size() / 4, (size_t)2);
-    double maxDotProduct = std::numeric_limits<double>::lowest();
-    int pairVertex = -1;
-    Vector3 forwardDirection = ((m_vertices[ringVertices[vertex]] - m_vertices[ringVertices[(vertex + 1) % ringVertices.size()]]) + (m_vertices[ringVertices[vertex]] - m_vertices[ringVertices[(vertex + ringVertices.size() - 1) % ringVertices.size()]])).normalized();
-    for (size_t i = 0; i < halfSize; ++i) {
-        size_t index = (vertex + quarterSize + i) % ringVertices.size();
-        if ((int)index == vertex)
-            continue;
-        double dot = Vector3::dotProduct(forwardDirection, (m_vertices[ringVertices[index]] - m_vertices[ringVertices[vertex]]).normalized());
-        if (dot > maxDotProduct) {
-            maxDotProduct = dot;
-            pairVertex = index;
-        }
-    }
-    return pairVertex;
-}
-
-void SectionRemesher::remeshRing(const std::vector<size_t>& ringVertices, const std::vector<double>& ringUs)
-{
-    if (isConvex(ringVertices)) {
-        remeshConvex(ringVertices, ringUs);
-        return;
-    }
-    int nonConvexVertex = findNonConvexVertex(ringVertices);
-    if (-1 == nonConvexVertex) {
-        remeshConvex(ringVertices, ringUs);
-        return;
-    }
-    int pairVertex = findPairVertex(ringVertices, nonConvexVertex);
-    if (-1 == pairVertex) {
-        remeshConvex(ringVertices, ringUs);
-        return;
-    }
-
-    auto nextVertex = [&](int index) {
-        return (index + 1) % ringVertices.size();
-    };
-
-    std::vector<size_t> leftRing;
-    std::vector<double> leftUs;
-    for (int i = pairVertex;; i = nextVertex(i)) {
-        leftRing.push_back(i);
-        leftUs.push_back(ringUs[i]);
-        if (i == nonConvexVertex)
-            break;
-    }
-    leftUs.push_back(leftUs.back());
-    remeshRing(leftRing, leftUs);
-
-    std::vector<size_t> rightRing;
-    std::vector<double> rightUs;
-    for (int i = nonConvexVertex;; i = nextVertex(i)) {
-        rightRing.push_back(i);
-        rightUs.push_back(ringUs[i]);
-        if (i == pairVertex)
-            break;
-    }
-    rightUs.push_back(rightUs.back());
-    remeshRing(rightRing, rightUs);
-}
-
 void SectionRemesher::remesh()
 {
     m_ringUs.resize(m_vertices.size() + 1);
@@ -200,7 +103,22 @@ void SectionRemesher::remesh()
     std::vector<size_t> ring(m_vertices.size());
     for (size_t i = 0; i < ring.size(); ++i)
         ring[i] = i;
-    remeshRing(ring, m_ringUs);
+
+    if (isConvex(ring)) {
+        remeshConvex(ring, m_ringUs);
+        return;
+    }
+
+    std::vector<std::vector<size_t>> triangles;
+    dust3d::triangulate(m_vertices, ring, &triangles);
+    size_t halfSize = m_vertices.size() / 2;
+    for (const auto& triangle : triangles) {
+        m_generatedFaces.emplace_back(std::vector<size_t> { triangle[0], triangle[1], triangle[2] });
+        m_generatedFaceUvs.emplace_back(std::vector<Vector2> {
+            Vector2(m_ringUs[triangle[0]], triangle[0] < halfSize ? m_ringV : m_centerV),
+            Vector2(m_ringUs[triangle[1]], triangle[1] < halfSize ? m_ringV : m_centerV),
+            Vector2(m_ringUs[triangle[2]], triangle[2] < halfSize ? m_ringV : m_centerV) });
+    }
 }
 
 }

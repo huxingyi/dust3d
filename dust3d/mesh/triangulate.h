@@ -35,10 +35,6 @@ void triangulate(const std::vector<Vector3>& vertices,
     const std::vector<std::vector<size_t>>& faces,
     std::vector<std::vector<size_t>>* triangles);
 
-void isotropicTriangulate(std::vector<Vector3>& vertices,
-    const std::vector<size_t>& faceIndices,
-    std::vector<std::vector<size_t>>* triangles);
-
 }
 
 #endif

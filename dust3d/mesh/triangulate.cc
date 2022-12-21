@@ -22,8 +22,6 @@
 
 #include <array>
 #include <dust3d/base/vector2.h>
-#include <dust3d/mesh/isotropic_halfedge_mesh.h>
-#include <dust3d/mesh/isotropic_remesher.h>
 #include <dust3d/mesh/triangulate.h>
 #include <mapbox/earcut.hpp>
 
@@ -93,48 +91,6 @@ void triangulate(const std::vector<Vector3>& vertices,
             continue;
         }
         triangulate(vertices, faceIndices, triangles);
-    }
-}
-
-void isotropicTriangulate(std::vector<Vector3>& vertices,
-    const std::vector<size_t>& faceIndices,
-    std::vector<std::vector<size_t>>* triangles)
-{
-    if (faceIndices.empty())
-        return;
-
-    double edgeLength = 0.0;
-    for (size_t i = 0; i < faceIndices.size(); ++i) {
-        size_t j = (i + 1) % faceIndices.size();
-        edgeLength += (vertices[faceIndices[i]] - vertices[faceIndices[j]]).length();
-    }
-    double targetEdgeLength = 1.2 * edgeLength / faceIndices.size();
-
-    std::vector<std::vector<size_t>> firstStepTriangles;
-    triangulate(vertices, faceIndices, &firstStepTriangles);
-
-    IsotropicRemesher isotropicRemesher(&vertices, &firstStepTriangles);
-    isotropicRemesher.setTargetEdgeLength(targetEdgeLength);
-    isotropicRemesher.remesh(3);
-
-    size_t outputIndex = vertices.size();
-    IsotropicHalfedgeMesh* halfedgeMesh = isotropicRemesher.remeshedHalfedgeMesh();
-    for (IsotropicHalfedgeMesh::Vertex* vertex = halfedgeMesh->moveToNextVertex(nullptr);
-         nullptr != vertex;
-         vertex = halfedgeMesh->moveToNextVertex(vertex)) {
-        if (-1 != vertex->sourceIndex)
-            continue;
-        vertex->sourceIndex = outputIndex++;
-        vertices.push_back({ vertex->position[0],
-            vertex->position[1],
-            vertex->position[2] });
-    }
-    for (IsotropicHalfedgeMesh::Face* face = halfedgeMesh->moveToNextFace(nullptr);
-         nullptr != face;
-         face = halfedgeMesh->moveToNextFace(face)) {
-        triangles->push_back({ (size_t)face->halfedge->previousHalfedge->startVertex->sourceIndex,
-            (size_t)face->halfedge->startVertex->sourceIndex,
-            (size_t)face->halfedge->nextHalfedge->startVertex->sourceIndex });
     }
 }
 

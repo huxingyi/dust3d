@@ -47,10 +47,6 @@ private:
     std::vector<double> m_ringUs;
 
     void remeshConvex(const std::vector<size_t>& ringVertices, const std::vector<double>& ringUs);
-    Vector3 sectionNormal(const std::vector<size_t>& ringVertices);
-    int findNonConvexVertex(const std::vector<size_t>& ringVertices);
-    int findPairVertex(const std::vector<size_t>& ringVertices, int vertex);
-    void remeshRing(const std::vector<size_t>& ringVertices, const std::vector<double>& ringUs);
     bool isConvex(const std::vector<size_t>& ringVertices);
 };
 
