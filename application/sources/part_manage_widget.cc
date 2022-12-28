@@ -268,24 +268,45 @@ void PartManageWidget::showContextMenu(const QPoint& pos)
     }
 
     QAction convertToCutFaceAction(tr("Convert to Cut Face"), this);
+    QAction convertToStitchingLineAction(tr("Convert to Stitching Line"), this);
     QAction convertToPartAction(tr("Convert to Model"), this);
     auto selectedPartIds = m_componentPreviewGridWidget->getSelectedPartIds();
-    if (1 == selectedPartIds.size()) {
-        const Document::Part* part = m_document->findPart(selectedPartIds[0]);
-        if (dust3d::PartTarget::CutFace == part->target) {
+    if (!selectedPartIds.empty()) {
+        bool addConvertToPartAction = false;
+        bool addConvertToCutFaceAction = false;
+        bool addConvertToStitchingLineAction = false;
+        for (const auto& it : selectedPartIds) {
+            const Document::Part* part = m_document->findPart(it);
+            if (dust3d::PartTarget::Model != part->target) {
+                addConvertToPartAction = true;
+            } else {
+                addConvertToCutFaceAction = true;
+                addConvertToStitchingLineAction = true;
+            }
+        }
+        if (addConvertToPartAction) {
             connect(&convertToPartAction, &QAction::triggered, this, [=]() {
                 for (const auto& it : selectedPartIds)
                     emit this->setPartTarget(it, dust3d::PartTarget::Model);
                 emit this->groupOperationAdded();
             });
             contextMenu.addAction(&convertToPartAction);
-        } else if (dust3d::PartTarget::Model == part->target) {
+        }
+        if (addConvertToCutFaceAction) {
             connect(&convertToCutFaceAction, &QAction::triggered, this, [=]() {
                 for (const auto& it : selectedPartIds)
                     emit this->setPartTarget(it, dust3d::PartTarget::CutFace);
                 emit this->groupOperationAdded();
             });
             contextMenu.addAction(&convertToCutFaceAction);
+        }
+        if (addConvertToStitchingLineAction) {
+            connect(&convertToStitchingLineAction, &QAction::triggered, this, [=]() {
+                for (const auto& it : selectedPartIds)
+                    emit this->setPartTarget(it, dust3d::PartTarget::StitchingLine);
+                emit this->groupOperationAdded();
+            });
+            contextMenu.addAction(&convertToStitchingLineAction);
         }
     }
 
