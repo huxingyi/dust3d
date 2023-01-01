@@ -18,6 +18,10 @@ signals:
     void setPartTarget(const dust3d::Uuid& partId, dust3d::PartTarget target);
     void groupComponents(const std::vector<dust3d::Uuid>& componentIds);
     void ungroupComponent(const dust3d::Uuid& componentId);
+    void moveComponentUp(const dust3d::Uuid& componentId);
+    void moveComponentDown(const dust3d::Uuid& componentId);
+    void moveComponentToTop(const dust3d::Uuid& componentId);
+    void moveComponentToBottom(const dust3d::Uuid& componentId);
     void groupOperationAdded();
 public slots:
     void selectComponentByPartId(const dust3d::Uuid& partId);

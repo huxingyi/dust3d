@@ -120,6 +120,10 @@ PartManageWidget::PartManageWidget(Document* document, QWidget* parent)
 
     connect(this, &PartManageWidget::groupComponents, m_document, &Document::groupComponents);
     connect(this, &PartManageWidget::ungroupComponent, m_document, &Document::ungroupComponent);
+    connect(this, &PartManageWidget::moveComponentUp, m_document, &Document::moveComponentUp);
+    connect(this, &PartManageWidget::moveComponentDown, m_document, &Document::moveComponentDown);
+    connect(this, &PartManageWidget::moveComponentToTop, m_document, &Document::moveComponentToTop);
+    connect(this, &PartManageWidget::moveComponentToBottom, m_document, &Document::moveComponentToBottom);
     connect(this, &PartManageWidget::setPartTarget, m_document, &Document::setPartTarget);
     connect(this, &PartManageWidget::groupOperationAdded, m_document, &Document::saveSnapshot);
 
@@ -265,6 +269,48 @@ void PartManageWidget::showContextMenu(const QPoint& pos)
             emit this->groupOperationAdded();
         });
         contextMenu.addAction(&ungroupAction);
+    }
+
+    QAction moveToTopAction(tr("Begin"), this);
+    QAction moveUpAction(tr("Previous"), this);
+    QAction moveDownAction(tr("Next"), this);
+    QAction moveToBottomAction(tr("End"), this);
+    if (1 == selectedComponentIds.size()) {
+        QMenu* moveToMenu = contextMenu.addMenu(tr("Move To"));
+
+        moveToTopAction.setIcon(Theme::awesome()->icon(fa::angledoubleup));
+        connect(&moveToTopAction, &QAction::triggered, [=]() {
+            for (const auto& it : selectedComponentIds)
+                emit moveComponentToTop(it);
+            emit groupOperationAdded();
+        });
+        moveToMenu->addAction(&moveToTopAction);
+
+        moveUpAction.setIcon(Theme::awesome()->icon(fa::angleup));
+        connect(&moveUpAction, &QAction::triggered, [=]() {
+            for (const auto& it : selectedComponentIds)
+                emit moveComponentUp(it);
+            emit groupOperationAdded();
+        });
+        moveToMenu->addAction(&moveUpAction);
+
+        moveDownAction.setIcon(Theme::awesome()->icon(fa::angledown));
+        connect(&moveDownAction, &QAction::triggered, [=]() {
+            for (const auto& it : selectedComponentIds)
+                emit moveComponentDown(it);
+            emit groupOperationAdded();
+        });
+        moveToMenu->addAction(&moveDownAction);
+
+        moveToBottomAction.setIcon(Theme::awesome()->icon(fa::angledoubledown));
+        connect(&moveToBottomAction, &QAction::triggered, [=]() {
+            for (const auto& it : selectedComponentIds)
+                emit moveComponentToBottom(it);
+            emit groupOperationAdded();
+        });
+        moveToMenu->addAction(&moveToBottomAction);
+
+        moveToMenu->addSeparator();
     }
 
     QAction convertToCutFaceAction(tr("Convert to Cut Face"), this);
