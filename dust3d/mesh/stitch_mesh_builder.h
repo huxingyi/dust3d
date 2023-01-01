@@ -42,6 +42,7 @@ public:
     void build();
     const std::vector<Vector3>& generatedVertices() const;
     const std::vector<std::vector<size_t>>& generatedFaces() const;
+    const std::vector<std::vector<Vector2>>& generatedFaceUvs() const;
     const std::vector<Spline>& splines() const;
 
 private:
@@ -54,6 +55,7 @@ private:
     std::vector<StitchingPoint> m_generatedStitchingPoints;
     std::vector<Vector3> m_generatedVertices;
     std::vector<std::vector<size_t>> m_generatedFaces;
+    std::vector<std::vector<Vector2>> m_generatedFaceUvs;
     std::vector<Vector3> m_generatedNormals;
     size_t m_targetSegments = 0;
 

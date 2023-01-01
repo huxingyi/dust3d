@@ -225,5 +225,6 @@ void Document::Part::copyAttributes(const Part& other)
     roughness = other.roughness;
     deformUnified = other.deformUnified;
     smoothCutoffDegrees = other.smoothCutoffDegrees;
+    colorImageId = other.colorImageId;
     hollowThickness = other.hollowThickness;
 }

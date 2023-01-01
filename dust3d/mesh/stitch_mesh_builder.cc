@@ -41,6 +41,11 @@ const std::vector<std::vector<size_t>>& StitchMeshBuilder::generatedFaces() cons
     return m_generatedFaces;
 }
 
+const std::vector<std::vector<Vector2>>& StitchMeshBuilder::generatedFaceUvs() const
+{
+    return m_generatedFaceUvs;
+}
+
 void StitchMeshBuilder::interpolateSplinesToHaveEqualSizeOfNodesExceptClosingSplines()
 {
     std::vector<Spline> interpolatedSplines = m_splines;
