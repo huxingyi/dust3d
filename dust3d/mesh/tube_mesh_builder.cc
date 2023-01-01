@@ -35,27 +35,27 @@ TubeMeshBuilder::TubeMeshBuilder(const BuildParameters& buildParameters, std::ve
 {
 }
 
-const Vector3& TubeMeshBuilder::generatedBaseNormal()
+const Vector3& TubeMeshBuilder::generatedBaseNormal() const
 {
     return m_generatedBaseNormal;
 }
 
-const std::vector<Vector3>& TubeMeshBuilder::generatedVertices()
+const std::vector<Vector3>& TubeMeshBuilder::generatedVertices() const
 {
     return m_generatedVertices;
 }
 
-const std::vector<Uuid>& TubeMeshBuilder::generatedVertexSources()
+const std::vector<Uuid>& TubeMeshBuilder::generatedVertexSources() const
 {
     return m_generatedVertexSources;
 }
 
-const std::vector<std::vector<size_t>>& TubeMeshBuilder::generatedFaces()
+const std::vector<std::vector<size_t>>& TubeMeshBuilder::generatedFaces() const
 {
     return m_generatedFaces;
 }
 
-const std::vector<std::vector<Vector2>>& TubeMeshBuilder::generatedFaceUvs()
+const std::vector<std::vector<Vector2>>& TubeMeshBuilder::generatedFaceUvs() const
 {
     return m_generatedFaceUvs;
 }

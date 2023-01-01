@@ -45,11 +45,11 @@ public:
 
     TubeMeshBuilder(const BuildParameters& buildParameters, std::vector<MeshNode>&& nodes, bool isCircle);
     void build();
-    const Vector3& generatedBaseNormal();
-    const std::vector<Vector3>& generatedVertices();
-    const std::vector<Uuid>& generatedVertexSources();
-    const std::vector<std::vector<size_t>>& generatedFaces();
-    const std::vector<std::vector<Vector2>>& generatedFaceUvs();
+    const Vector3& generatedBaseNormal() const;
+    const std::vector<Vector3>& generatedVertices() const;
+    const std::vector<Uuid>& generatedVertexSources() const;
+    const std::vector<std::vector<size_t>>& generatedFaces() const;
+    const std::vector<std::vector<Vector2>>& generatedFaceUvs() const;
 
 private:
     BuildParameters m_buildParameters;

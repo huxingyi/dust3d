@@ -459,7 +459,8 @@ bool MeshGenerator::fetchPartOrderedNodes(const std::string& partIdString, std::
     return true;
 }
 
-std::unique_ptr<MeshState> MeshGenerator::combineStitchingMesh(const std::vector<std::string>& partIdStrings,
+std::unique_ptr<MeshState> MeshGenerator::combineStitchingMesh(const std::string& componentIdString,
+    const std::vector<std::string>& partIdStrings,
     const std::vector<std::string>& componentIdStrings,
     GeneratedComponent& componentCache)
 {
@@ -486,14 +487,40 @@ std::unique_ptr<MeshState> MeshGenerator::combineStitchingMesh(const std::vector
     auto stitchMeshBuilder = std::make_unique<StitchMeshBuilder>(std::move(splines));
     stitchMeshBuilder->build();
 
-    collectSharedQuadEdges(stitchMeshBuilder->generatedVertices(),
-        stitchMeshBuilder->generatedFaces(),
+    const auto& generatedVertices = stitchMeshBuilder->generatedVertices();
+    const auto& generatedFaces = stitchMeshBuilder->generatedFaces();
+
+    collectSharedQuadEdges(generatedVertices,
+        generatedFaces,
         &componentCache.sharedQuadEdges);
 
-    auto mesh = std::make_unique<MeshState>(stitchMeshBuilder->generatedVertices(),
-        stitchMeshBuilder->generatedFaces());
+    auto mesh = std::make_unique<MeshState>(generatedVertices,
+        generatedFaces);
     if (mesh && mesh->isNull())
         mesh.reset();
+
+    const auto& faceUvs = stitchMeshBuilder->generatedFaceUvs();
+    Uuid componentId = Uuid(componentIdString);
+    auto& triangleUvs = componentCache.partTriangleUvs[componentId];
+    for (size_t i = 0; i < faceUvs.size(); ++i) {
+        const auto& uv = faceUvs[i];
+        const auto& face = generatedFaces[i];
+        if (3 == face.size()) {
+            triangleUvs.insert({ { PositionKey(generatedVertices[face[0]]),
+                                     PositionKey(generatedVertices[face[1]]),
+                                     PositionKey(generatedVertices[face[2]]) },
+                { uv[0], uv[1], uv[2] } });
+        } else if (4 == face.size()) {
+            triangleUvs.insert({ { PositionKey(generatedVertices[face[0]]),
+                                     PositionKey(generatedVertices[face[1]]),
+                                     PositionKey(generatedVertices[face[2]]) },
+                { uv[0], uv[1], uv[2] } });
+            triangleUvs.insert({ { PositionKey(generatedVertices[face[2]]),
+                                     PositionKey(generatedVertices[face[3]]),
+                                     PositionKey(generatedVertices[face[0]]) },
+                { uv[2], uv[3], uv[0] } });
+        }
+    }
 
     // Generate preview for each stitching line
     for (const auto& spline : stitchMeshBuilder->splines()) {
@@ -848,7 +875,7 @@ std::unique_ptr<MeshState> MeshGenerator::combineComponentMesh(const std::string
             groupMeshes.emplace_back(std::make_tuple(std::move(childMesh), group.first, String::join(group.second, "|")));
         }
         if (!stitchingParts.empty()) {
-            auto stitchingMesh = combineStitchingMesh(stitchingParts, stitchingComponents, componentCache);
+            auto stitchingMesh = combineStitchingMesh(componentIdString, stitchingParts, stitchingComponents, componentCache);
             if (stitchingMesh && !stitchingMesh->isNull()) {
                 groupMeshes.emplace_back(std::make_tuple(std::move(stitchingMesh), CombineMode::Normal, String::join(stitchingComponents, ":")));
             }

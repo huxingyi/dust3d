@@ -41,6 +41,7 @@ public:
     StitchMeshBuilder(std::vector<Spline>&& splines);
     void build();
     const std::vector<Vector3>& generatedVertices() const;
+    const std::vector<Uuid>& generatedVertexSources() const;
     const std::vector<std::vector<size_t>>& generatedFaces() const;
     const std::vector<std::vector<Vector2>>& generatedFaceUvs() const;
     const std::vector<Spline>& splines() const;
@@ -49,11 +50,13 @@ private:
     struct StitchingPoint {
         size_t originVertex;
         double radius;
+        double v;
     };
 
     std::vector<Spline> m_splines;
     std::vector<StitchingPoint> m_generatedStitchingPoints;
     std::vector<Vector3> m_generatedVertices;
+    std::vector<Uuid> m_generatedVertexSources;
     std::vector<std::vector<size_t>> m_generatedFaces;
     std::vector<std::vector<Vector2>> m_generatedFaceUvs;
     std::vector<Vector3> m_generatedNormals;

@@ -161,7 +161,8 @@ private:
     std::unique_ptr<MeshState> combineComponentChildGroupMesh(const std::vector<std::string>& componentIdStrings,
         GeneratedComponent& componentCache);
     std::unique_ptr<MeshState> combineMultipleMeshes(std::vector<std::tuple<std::unique_ptr<MeshState>, CombineMode, std::string>>&& multipleMeshes);
-    std::unique_ptr<MeshState> combineStitchingMesh(const std::vector<std::string>& partIdStrings,
+    std::unique_ptr<MeshState> combineStitchingMesh(const std::string& componentIdString,
+        const std::vector<std::string>& partIdStrings,
         const std::vector<std::string>& componentIdStrings,
         GeneratedComponent& componentCache);
     void collectUncombinedComponent(const std::string& componentIdString);

@@ -36,6 +36,11 @@ const std::vector<Vector3>& StitchMeshBuilder::generatedVertices() const
     return m_generatedVertices;
 }
 
+const std::vector<Uuid>& StitchMeshBuilder::generatedVertexSources() const
+{
+    return m_generatedVertexSources;
+}
+
 const std::vector<std::vector<size_t>>& StitchMeshBuilder::generatedFaces() const
 {
     return m_generatedFaces;
@@ -76,12 +81,25 @@ std::vector<std::vector<StitchMeshBuilder::StitchingPoint>> StitchMeshBuilder::c
 {
     std::vector<std::vector<StitchingPoint>> stitchingPoints(splines.size());
 
+    std::vector<std::vector<double>> offsetVs(splines.front().nodes.size());
+    for (size_t k = 0; k < splines.front().nodes.size(); ++k) {
+        offsetVs[k].resize(splines.size());
+        for (size_t i = 1; i < splines.size(); ++i) {
+            offsetVs[k][i] = offsetVs[k][i - 1] + (splines[i - 1].nodes[k].origin - splines[i].nodes[k].origin).length();
+        }
+        double totalLength = std::max(offsetVs[k].back(), std::numeric_limits<double>::epsilon());
+        for (size_t i = 1; i < splines.size(); ++i) {
+            offsetVs[k][i] /= totalLength;
+        }
+    }
+
     for (size_t i = 0; i < splines.size(); ++i) {
         const auto& spline = splines[i];
         stitchingPoints[i].resize(spline.nodes.size());
         for (size_t k = 0; k < spline.nodes.size(); ++k) {
             stitchingPoints[i][k].originVertex = m_generatedVertices.size();
             stitchingPoints[i][k].radius = spline.nodes[k].radius;
+            stitchingPoints[i][k].v = offsetVs[k][i];
             m_generatedVertices.push_back(spline.nodes[k].origin);
             m_generatedStitchingPoints.push_back(stitchingPoints[i][k]);
         }
@@ -170,6 +188,14 @@ void StitchMeshBuilder::generateMeshFromStitchingPoints(const std::vector<Stitch
         dust3dDebug << "Expected at least two stitching points, current:" << a.size();
         return;
     }
+    std::vector<double> us(a.size());
+    for (size_t j = 1; j < a.size(); ++j) {
+        us[j] = us[j - 1] + (m_generatedVertices[a[j].originVertex] - m_generatedVertices[a[j - 1].originVertex]).length();
+    }
+    double totalLength = std::max(us.back(), std::numeric_limits<double>::epsilon());
+    for (size_t j = 1; j < a.size(); ++j) {
+        us[j] /= totalLength;
+    }
     for (size_t j = 1; j < a.size(); ++j) {
         size_t i = j - 1;
         m_generatedFaces.emplace_back(std::vector<size_t> {
@@ -177,6 +203,11 @@ void StitchMeshBuilder::generateMeshFromStitchingPoints(const std::vector<Stitch
             b[i].originVertex,
             b[j].originVertex,
             a[j].originVertex });
+        m_generatedFaceUvs.emplace_back(std::vector<Vector2> {
+            Vector2(us[i], a[i].v),
+            Vector2(us[i], b[i].v),
+            Vector2(us[j], b[j].v),
+            Vector2(us[j], a[j].v) });
     }
 }
 
