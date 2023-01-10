@@ -2,6 +2,7 @@
 #include "image_forever.h"
 #include <QMatrix>
 #include <QPainter>
+#include <dust3d/base/part_target.h>
 #include <dust3d/uv/uv_map_packer.h>
 #include <unordered_set>
 
@@ -97,6 +98,9 @@ void UvMapGenerator::packUvs()
     m_mapPacker = std::make_unique<dust3d::UvMapPacker>();
 
     for (const auto& partIt : m_snapshot->parts) {
+        auto partTarget = dust3d::PartTargetFromString(dust3d::String::valueOrEmpty(partIt.second, "target").c_str());
+        if (dust3d::PartTarget::Model != partTarget)
+            continue;
         dust3d::Uuid imageId;
         dust3d::Color color(1.0, 1.0, 1.0);
         double width = 1.0;
@@ -125,6 +129,9 @@ void UvMapGenerator::packUvs()
         part.localUv = findUvs->second;
         m_mapPacker->addPart(part);
     }
+
+    // Combining stitching line texture image
+    // TODO: ...
 
     m_mapPacker->addSeams(m_object->seamTriangleUvs);
 

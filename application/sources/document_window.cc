@@ -1201,6 +1201,8 @@ void DocumentWindow::generateComponentPreviewImages()
             continue;
         component.second.isPreviewMeshObsolete = false;
         auto previewMesh = std::unique_ptr<ModelMesh>(component.second.takePreviewMesh());
+        if (nullptr == previewMesh)
+            continue;
         bool useFrontView = false;
         if (!component.second.linkToPartId.isNull()) {
             const auto& part = m_document->findPart(component.second.linkToPartId);
