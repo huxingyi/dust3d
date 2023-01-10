@@ -5,7 +5,7 @@
 #include <QPalette>
 #include <QStyleFactory>
 
-QColor Theme::white = QColor(0xf7, 0xd9, 0xc8);
+QColor Theme::white = Qt::white; //QColor(0xf7, 0xd9, 0xc8);
 QColor Theme::red = QColor(0xfc, 0x66, 0x21);
 QColor Theme::green = QColor(0xaa, 0xeb, 0xc4);
 QColor Theme::blue = QColor(0x0d, 0xa9, 0xf1);
@@ -31,13 +31,13 @@ void Theme::initialize()
 
     QPalette darkPalette;
     darkPalette.setColor(QPalette::Window, QColor(0x25, 0x25, 0x25));
-    darkPalette.setColor(QPalette::WindowText, QColor(0xf7, 0xd9, 0xc8));
+    darkPalette.setColor(QPalette::WindowText, Theme::white);
     darkPalette.setColor(QPalette::Base, QColor(25, 25, 25));
     darkPalette.setColor(QPalette::AlternateBase, QColor(53, 53, 53));
-    darkPalette.setColor(QPalette::Text, QColor(0xf7, 0xd9, 0xc8));
+    darkPalette.setColor(QPalette::Text, Theme::white);
     darkPalette.setColor(QPalette::Disabled, QPalette::Text, QColor(0x25, 0x25, 0x25));
     darkPalette.setColor(QPalette::Button, QColor(53, 53, 53));
-    darkPalette.setColor(QPalette::ButtonText, QColor(0xf7, 0xd9, 0xc8));
+    darkPalette.setColor(QPalette::ButtonText, Theme::white);
     darkPalette.setColor(QPalette::BrightText, QColor(0xfc, 0x66, 0x21));
     darkPalette.setColor(QPalette::Link, QColor(42, 130, 218));
     darkPalette.setColor(QPalette::Highlight, QColor(0xfc, 0x66, 0x21));
