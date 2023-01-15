@@ -935,6 +935,15 @@ void Document::collectComponentDescendantParts(dust3d::Uuid componentId, std::ve
     }
 }
 
+dust3d::Uuid Document::componentToLinkedPartId(const dust3d::Uuid& componentId)
+{
+    const Document::Component* component = findComponent(componentId);
+    if (nullptr == component)
+        return dust3d::Uuid();
+
+    return component->linkToPartId;
+}
+
 void Document::collectComponentDescendantComponents(dust3d::Uuid componentId, std::vector<dust3d::Uuid>& componentIds) const
 {
     const Document::Component* component = findComponent(componentId);

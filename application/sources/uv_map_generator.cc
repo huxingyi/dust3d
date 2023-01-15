@@ -93,6 +93,35 @@ QImage* UvMapGenerator::combineMetalnessRoughnessAmbientOcclusionImages(QImage* 
     return textureMetalnessRoughnessAmbientOcclusionImage;
 }
 
+void UvMapGenerator::collectStitchingLines(const std::map<std::string, std::string>& component)
+{
+    // TODO: Pick the most occurent image id and color
+    // ...
+
+    /*
+    for (const auto& childId : dust3d::String::split(dust3d::String::valueOrEmpty(component, "children"), ',')) {
+        if (childId.empty())
+            continue;
+        dust3dDebug << childId;
+        const auto& componentIt = m_snapshot->components.find(childId);
+        if (componentIt == m_snapshot->components.end())
+            continue;
+        if ("partId" != dust3d::String::valueOrEmpty(componentIt->second, "linkDataType")) {
+            collectStitchingLines(componentIt->second);
+            continue;
+        }
+        const auto& partIt = m_snapshot->parts.find(dust3d::String::valueOrEmpty(componentIt->second, "linkData"));
+        if (partIt == m_snapshot->parts.end())
+            continue;
+        auto partTarget = dust3d::PartTargetFromString(dust3d::String::valueOrEmpty(partIt->second, "target").c_str());
+        if (dust3d::PartTarget::StitchingLine != partTarget)
+            continue;
+        dust3dDebug << childId << partIt->first;
+        // TODO:
+    }
+    */
+}
+
 void UvMapGenerator::packUvs()
 {
     m_mapPacker = std::make_unique<dust3d::UvMapPacker>();
@@ -130,8 +159,7 @@ void UvMapGenerator::packUvs()
         m_mapPacker->addPart(part);
     }
 
-    // Combining stitching line texture image
-    // TODO: ...
+    collectStitchingLines(m_snapshot->rootComponent);
 
     m_mapPacker->addSeams(m_object->seamTriangleUvs);
 

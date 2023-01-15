@@ -423,6 +423,7 @@ public:
     const Component* findComponentParent(dust3d::Uuid componentId) const;
     dust3d::Uuid findComponentParentId(dust3d::Uuid componentId) const;
     void collectComponentDescendantParts(dust3d::Uuid componentId, std::vector<dust3d::Uuid>& partIds) const;
+    dust3d::Uuid componentToLinkedPartId(const dust3d::Uuid& componentId);
     void collectComponentDescendantComponents(dust3d::Uuid componentId, std::vector<dust3d::Uuid>& componentIds) const;
     void setComponentPreviewMesh(const dust3d::Uuid& componentId, std::unique_ptr<ModelMesh> mesh);
     void setComponentPreviewImage(const dust3d::Uuid& componentId, std::unique_ptr<QImage> image);

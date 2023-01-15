@@ -24,14 +24,6 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     preparePartIds();
     m_color = lastColor();
 
-    QPushButton* colorPreviewArea = new QPushButton;
-    colorPreviewArea->setStyleSheet("QPushButton {background-color: " + m_color.name() + "; border-radius: 0;}");
-    colorPreviewArea->setFixedSize(Theme::toolIconSize * 1.8, Theme::toolIconSize);
-
-    QPushButton* colorPickerButton = new QPushButton(Theme::awesome()->icon(fa::eyedropper), "");
-    Theme::initIconButton(colorPickerButton);
-    connect(colorPickerButton, &QPushButton::clicked, this, &ComponentPropertyWidget::showColorDialog);
-
     QComboBox* combineModeSelectBox = nullptr;
     std::set<dust3d::CombineMode> combineModes;
     for (const auto& componentId : m_componentIds) {
@@ -64,8 +56,20 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     }
 
     QHBoxLayout* topLayout = new QHBoxLayout;
-    topLayout->addWidget(colorPreviewArea);
-    topLayout->addWidget(colorPickerButton);
+
+    if (!m_partIds.empty()) {
+        QPushButton* colorPreviewArea = new QPushButton;
+        colorPreviewArea->setStyleSheet("QPushButton {background-color: " + m_color.name() + "; border-radius: 0;}");
+        colorPreviewArea->setFixedSize(Theme::toolIconSize * 1.8, Theme::toolIconSize);
+
+        QPushButton* colorPickerButton = new QPushButton(Theme::awesome()->icon(fa::eyedropper), "");
+        Theme::initIconButton(colorPickerButton);
+        connect(colorPickerButton, &QPushButton::clicked, this, &ComponentPropertyWidget::showColorDialog);
+
+        topLayout->addWidget(colorPreviewArea);
+        topLayout->addWidget(colorPickerButton);
+    }
+
     topLayout->addStretch();
     if (nullptr != combineModeSelectBox)
         topLayout->addWidget(combineModeSelectBox);
@@ -305,7 +309,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     }
 
     QGroupBox* colorImageGroupBox = nullptr;
-    if (!m_componentIds.empty()) {
+    if (!m_partIds.empty()) {
         ImagePreviewWidget* colorImagePreviewWidget = new ImagePreviewWidget;
         colorImagePreviewWidget->setFixedSize(Theme::partPreviewImageSize * 2, Theme::partPreviewImageSize * 2);
         auto colorImageId = lastColorImageId();
@@ -418,12 +422,11 @@ void ComponentPropertyWidget::preparePartIds()
 {
     std::unordered_set<dust3d::Uuid> addedPartIdSet;
     for (const auto& componentId : m_componentIds) {
-        std::vector<dust3d::Uuid> partIds;
-        m_document->collectComponentDescendantParts(componentId, partIds);
-        for (const auto& it : partIds) {
-            if (addedPartIdSet.insert(it).second)
-                m_partIds.emplace_back(it);
-        }
+        auto partId = m_document->componentToLinkedPartId(componentId);
+        if (partId.isNull())
+            continue;
+        if (addedPartIdSet.insert(partId).second)
+            m_partIds.emplace_back(partId);
     }
     if (1 == m_partIds.size()) {
         m_part = m_document->findPart(m_partIds.front());
