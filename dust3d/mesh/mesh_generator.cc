@@ -501,7 +501,7 @@ std::unique_ptr<MeshState> MeshGenerator::combineStitchingMesh(const std::string
 
     const auto& faceUvs = stitchMeshBuilder->generatedFaceUvs();
     Uuid componentId = Uuid(componentIdString);
-    auto& triangleUvs = componentCache.partTriangleUvs[componentId];
+    auto& triangleUvs = componentCache.componentTriangleUvs[componentId];
     for (size_t i = 0; i < faceUvs.size(); ++i) {
         const auto& uv = faceUvs[i];
         const auto& face = generatedFaces[i];
@@ -823,7 +823,7 @@ std::unique_ptr<MeshState> MeshGenerator::combineComponentMesh(const std::string
             for (const auto& vertex : partCache.vertices)
                 componentCache.noneSeamVertices.insert(vertex);
             collectSharedQuadEdges(partCache.vertices, partCache.faces, &componentCache.sharedQuadEdges);
-            componentCache.partTriangleUvs.insert({ Uuid(partIdString), partCache.triangleUvs });
+            componentCache.componentTriangleUvs.insert({ componentId, partCache.triangleUvs });
             for (const auto& it : partCache.positionToNodeIdMap)
                 componentCache.positionToNodeIdMap.emplace(it);
             for (const auto& it : partCache.nodeMap)
@@ -959,8 +959,8 @@ std::unique_ptr<MeshState> MeshGenerator::combineComponentChildGroupMesh(const s
             componentCache.noneSeamVertices.insert(vertex);
         for (const auto& it : childComponentCache.sharedQuadEdges)
             componentCache.sharedQuadEdges.insert(it);
-        for (const auto& it : childComponentCache.partTriangleUvs)
-            componentCache.partTriangleUvs.insert({ it.first, it.second });
+        for (const auto& it : childComponentCache.componentTriangleUvs)
+            componentCache.componentTriangleUvs.insert({ it.first, it.second });
         for (const auto& it : childComponentCache.positionToNodeIdMap)
             componentCache.positionToNodeIdMap.emplace(it);
         for (const auto& it : childComponentCache.nodeMap)
@@ -1073,8 +1073,8 @@ void MeshGenerator::collectIncombinableMesh(const MeshState* mesh, const Generat
     updateVertexIndices(uncombinedFaces);
     updateVertexIndices(uncombinedTriangleAndQuads);
 
-    for (const auto& it : componentCache.partTriangleUvs)
-        m_object->partTriangleUvs.insert({ it.first, it.second });
+    for (const auto& it : componentCache.componentTriangleUvs)
+        m_object->componentTriangleUvs.insert({ it.first, it.second });
     for (const auto& it : componentCache.positionToNodeIdMap)
         m_object->positionToNodeIdMap.emplace(it);
     for (const auto& it : componentCache.nodeMap)
@@ -1267,7 +1267,7 @@ void MeshGenerator::generate()
 
     m_object->positionToNodeIdMap = componentCache.positionToNodeIdMap;
     m_object->nodeMap = componentCache.nodeMap;
-    m_object->partTriangleUvs = componentCache.partTriangleUvs;
+    m_object->componentTriangleUvs = componentCache.componentTriangleUvs;
 
     std::vector<Vector3> combinedVertices;
     std::vector<std::vector<size_t>> combinedFaces;

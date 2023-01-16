@@ -93,53 +93,24 @@ QImage* UvMapGenerator::combineMetalnessRoughnessAmbientOcclusionImages(QImage* 
     return textureMetalnessRoughnessAmbientOcclusionImage;
 }
 
-void UvMapGenerator::collectStitchingLines(const std::map<std::string, std::string>& component)
-{
-    // TODO: Pick the most occurent image id and color
-    // ...
-
-    /*
-    for (const auto& childId : dust3d::String::split(dust3d::String::valueOrEmpty(component, "children"), ',')) {
-        if (childId.empty())
-            continue;
-        dust3dDebug << childId;
-        const auto& componentIt = m_snapshot->components.find(childId);
-        if (componentIt == m_snapshot->components.end())
-            continue;
-        if ("partId" != dust3d::String::valueOrEmpty(componentIt->second, "linkDataType")) {
-            collectStitchingLines(componentIt->second);
-            continue;
-        }
-        const auto& partIt = m_snapshot->parts.find(dust3d::String::valueOrEmpty(componentIt->second, "linkData"));
-        if (partIt == m_snapshot->parts.end())
-            continue;
-        auto partTarget = dust3d::PartTargetFromString(dust3d::String::valueOrEmpty(partIt->second, "target").c_str());
-        if (dust3d::PartTarget::StitchingLine != partTarget)
-            continue;
-        dust3dDebug << childId << partIt->first;
-        // TODO:
-    }
-    */
-}
-
 void UvMapGenerator::packUvs()
 {
     m_mapPacker = std::make_unique<dust3d::UvMapPacker>();
 
-    for (const auto& partIt : m_snapshot->parts) {
-        auto partTarget = dust3d::PartTargetFromString(dust3d::String::valueOrEmpty(partIt.second, "target").c_str());
-        if (dust3d::PartTarget::Model != partTarget)
+    for (const auto& componentTriangleUvIt : m_object->componentTriangleUvs) {
+        auto componentIt = m_snapshot->components.find(componentTriangleUvIt.first.toString());
+        if (componentIt == m_snapshot->components.end())
             continue;
         dust3d::Uuid imageId;
         dust3d::Color color(1.0, 1.0, 1.0);
         double width = 1.0;
         double height = 1.0;
-        const auto& colorIt = partIt.second.find("color");
-        if (colorIt != partIt.second.end()) {
+        const auto& colorIt = componentIt->second.find("color");
+        if (colorIt != componentIt->second.end()) {
             color = dust3d::Color(colorIt->second);
         }
-        const auto& colorImageIdIt = partIt.second.find("colorImageId");
-        if (colorImageIdIt != partIt.second.end()) {
+        const auto& colorImageIdIt = componentIt->second.find("colorImageId");
+        if (colorImageIdIt != componentIt->second.end()) {
             imageId = dust3d::Uuid(colorImageIdIt->second);
             const QImage* image = ImageForever::get(imageId);
             if (nullptr != image) {
@@ -147,19 +118,14 @@ void UvMapGenerator::packUvs()
                 height = image->height();
             }
         }
-        const auto& findUvs = m_object->partTriangleUvs.find(dust3d::Uuid(partIt.first));
-        if (findUvs == m_object->partTriangleUvs.end())
-            continue;
         dust3d::UvMapPacker::Part part;
         part.id = imageId;
         part.color = color;
         part.width = width;
         part.height = height;
-        part.localUv = findUvs->second;
+        part.localUv = componentTriangleUvIt.second;
         m_mapPacker->addPart(part);
     }
-
-    collectStitchingLines(m_snapshot->rootComponent);
 
     m_mapPacker->addSeams(m_object->seamTriangleUvs);
 

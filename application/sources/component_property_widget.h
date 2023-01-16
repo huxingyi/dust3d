@@ -50,7 +50,6 @@ private:
     std::vector<QString> m_cutFaceList;
 
     void updateCutFaceButtonState(size_t index);
-    bool hasTextureConfigure();
 };
 
 #endif

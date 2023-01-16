@@ -57,7 +57,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
 
     QHBoxLayout* topLayout = new QHBoxLayout;
 
-    if (hasTextureConfigure()) {
+    if (!m_componentIds.empty()) {
         QPushButton* colorPreviewArea = new QPushButton;
         colorPreviewArea->setStyleSheet("QPushButton {background-color: " + m_color.name() + "; border-radius: 0;}");
         colorPreviewArea->setFixedSize(Theme::toolIconSize * 1.8, Theme::toolIconSize);
@@ -309,7 +309,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     }
 
     QGroupBox* colorImageGroupBox = nullptr;
-    if (hasTextureConfigure()) {
+    if (!m_componentIds.empty()) {
         ImagePreviewWidget* colorImagePreviewWidget = new ImagePreviewWidget;
         colorImagePreviewWidget->setFixedSize(Theme::partPreviewImageSize * 2, Theme::partPreviewImageSize * 2);
         auto colorImageId = lastColorImageId();
@@ -506,26 +506,4 @@ void ComponentPropertyWidget::showColorDialog()
         emit setComponentColorState(componentId, true, color);
     }
     emit groupOperationAdded();
-}
-
-bool ComponentPropertyWidget::hasTextureConfigure()
-{
-    if (!m_partIds.empty())
-        return true;
-
-    for (const auto& componentId : m_componentIds) {
-        const Document::Component* parentComponent = m_document->findComponent(componentId);
-        if (nullptr == parentComponent)
-            continue;
-        for (const auto& childId : parentComponent->childrenIds) {
-            const Document::Component* component = m_document->findComponent(childId);
-            if (nullptr == component)
-                continue;
-            if (component->linkToPartId.isNull())
-                continue;
-            return true;
-        }
-    }
-
-    return false;
 }

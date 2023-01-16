@@ -71,7 +71,7 @@ public:
     struct GeneratedComponent {
         std::unique_ptr<MeshState> mesh;
         std::set<std::pair<PositionKey, PositionKey>> sharedQuadEdges;
-        std::unordered_map<Uuid, std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>>> partTriangleUvs;
+        std::unordered_map<Uuid, std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>>> componentTriangleUvs;
         std::vector<std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>>> seamTriangleUvs;
         std::set<PositionKey> noneSeamVertices;
         std::map<PositionKey, Uuid> positionToNodeIdMap;
@@ -80,7 +80,7 @@ public:
         {
             mesh.reset();
             sharedQuadEdges.clear();
-            partTriangleUvs.clear();
+            componentTriangleUvs.clear();
             seamTriangleUvs.clear();
             noneSeamVertices.clear();
             positionToNodeIdMap.clear();

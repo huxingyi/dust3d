@@ -43,7 +43,6 @@ private:
     bool m_hasTransparencySettings = false;
     static size_t m_textureSize;
     void packUvs();
-    void collectStitchingLines(const std::map<std::string, std::string>& component);
     void generateTextureColorImage();
     void generateUvCoords();
 };
