@@ -12,7 +12,7 @@ class ComponentPropertyWidget : public QWidget {
 signals:
     void beginColorPicking();
     void endColorPicking();
-    void setPartColorState(const dust3d::Uuid& partId, bool hasColor, const QColor& color);
+    void setComponentColorState(const dust3d::Uuid& componentId, bool hasColor, const QColor& color);
     void setPartDeformThickness(const dust3d::Uuid& partId, float thickness);
     void setPartDeformWidth(const dust3d::Uuid& partId, float width);
     void setPartDeformUnified(const dust3d::Uuid& partId, bool unified);
@@ -20,7 +20,7 @@ signals:
     void setPartChamferState(const dust3d::Uuid& partId, bool chamfered);
     void setPartRoundState(const dust3d::Uuid& partId, bool rounded);
     void setPartCutRotation(const dust3d::Uuid& partId, float cutRotation);
-    void setPartColorImage(const dust3d::Uuid& partId, const dust3d::Uuid& imageId);
+    void setComponentColorImage(const dust3d::Uuid& componentId, const dust3d::Uuid& imageId);
     void setPartSmoothCutoffDegrees(const dust3d::Uuid& partId, float degrees);
     void setPartCutFace(const dust3d::Uuid& partId, dust3d::CutFace cutFace);
     void setPartCutFaceLinkedId(const dust3d::Uuid& partId, dust3d::Uuid linkedId);
@@ -50,6 +50,7 @@ private:
     std::vector<QString> m_cutFaceList;
 
     void updateCutFaceButtonState(size_t index);
+    bool hasTextureConfigure();
 };
 
 #endif

@@ -568,7 +568,12 @@ DocumentWindow::DocumentWindow()
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::setPartVisibleState, m_document, &Document::setPartVisibleState);
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::setPartSubdivState, m_document, &Document::setPartSubdivState);
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::setPartChamferState, m_document, &Document::setPartChamferState);
-    connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::setPartColorState, m_document, &Document::setPartColorState);
+    connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::setPartColorState, m_document, [this](const dust3d::Uuid& partId, bool hasColor, QColor color) {
+        const Document::Part* part = this->m_document->findPart(partId);
+        if (nullptr == part)
+            return;
+        this->m_document->setComponentColorState(part->componentId, hasColor, color);
+    });
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::setPartDisableState, m_document, &Document::setPartDisableState);
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::setPartXmirrorState, m_document, &Document::setPartXmirrorState);
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::setPartRoundState, m_document, &Document::setPartRoundState);
@@ -1209,12 +1214,12 @@ void DocumentWindow::generateComponentPreviewImages()
             if (nullptr != part) {
                 if (dust3d::PartTarget::CutFace == part->target)
                     useFrontView = true;
-                if (!part->colorImageId.isNull()) {
-                    const auto& colorImage = ImageForever::get(part->colorImageId);
-                    if (nullptr != colorImage) {
-                        previewMesh->setTextureImage(new QImage(*colorImage));
-                    }
-                }
+            }
+        }
+        if (!component.second.colorImageId.isNull()) {
+            const auto& colorImage = ImageForever::get(component.second.colorImageId);
+            if (nullptr != colorImage) {
+                previewMesh->setTextureImage(new QImage(*colorImage));
             }
         }
         m_componentPreviewImagesGenerator->addInput(component.first, std::move(previewMesh), useFrontView);

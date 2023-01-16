@@ -57,7 +57,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
 
     QHBoxLayout* topLayout = new QHBoxLayout;
 
-    if (!m_partIds.empty()) {
+    if (hasTextureConfigure()) {
         QPushButton* colorPreviewArea = new QPushButton;
         colorPreviewArea->setStyleSheet("QPushButton {background-color: " + m_color.name() + "; border-radius: 0;}");
         colorPreviewArea->setFixedSize(Theme::toolIconSize * 1.8, Theme::toolIconSize);
@@ -309,7 +309,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     }
 
     QGroupBox* colorImageGroupBox = nullptr;
-    if (!m_partIds.empty()) {
+    if (hasTextureConfigure()) {
         ImagePreviewWidget* colorImagePreviewWidget = new ImagePreviewWidget;
         colorImagePreviewWidget->setFixedSize(Theme::partPreviewImageSize * 2, Theme::partPreviewImageSize * 2);
         auto colorImageId = lastColorImageId();
@@ -318,8 +318,8 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         Theme::initIconButton(colorImageEraser);
 
         connect(colorImageEraser, &QPushButton::clicked, [=]() {
-            for (const auto& partId : m_partIds)
-                emit setPartColorImage(partId, dust3d::Uuid());
+            for (const auto& componentId : m_componentIds)
+                emit setComponentColorImage(componentId, dust3d::Uuid());
             emit groupOperationAdded();
         });
 
@@ -332,8 +332,8 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
                 return;
             auto imageId = ImageForever::add(image);
             delete image;
-            for (const auto& partId : m_partIds)
-                emit setPartColorImage(partId, imageId);
+            for (const auto& componentId : m_componentIds)
+                emit setComponentColorImage(componentId, imageId);
             emit groupOperationAdded();
         });
 
@@ -369,7 +369,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     mainLayout->addLayout(skinLayout);
     mainLayout->setSizeConstraint(QLayout::SetFixedSize);
 
-    connect(this, &ComponentPropertyWidget::setPartColorState, m_document, &Document::setPartColorState);
+    connect(this, &ComponentPropertyWidget::setComponentColorState, m_document, &Document::setComponentColorState);
     connect(this, &ComponentPropertyWidget::endColorPicking, m_document, &Document::enableBackgroundBlur);
     connect(this, &ComponentPropertyWidget::beginColorPicking, m_document, &Document::disableBackgroundBlur);
     connect(this, &ComponentPropertyWidget::setPartDeformThickness, m_document, &Document::setPartDeformThickness);
@@ -379,7 +379,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     connect(this, &ComponentPropertyWidget::setPartSubdivState, m_document, &Document::setPartSubdivState);
     connect(this, &ComponentPropertyWidget::setPartChamferState, m_document, &Document::setPartChamferState);
     connect(this, &ComponentPropertyWidget::setPartRoundState, m_document, &Document::setPartRoundState);
-    connect(this, &ComponentPropertyWidget::setPartColorImage, m_document, &Document::setPartColorImage);
+    connect(this, &ComponentPropertyWidget::setComponentColorImage, m_document, &Document::setComponentColorImage);
     connect(this, &ComponentPropertyWidget::setPartSmoothCutoffDegrees, m_document, &Document::setPartSmoothCutoffDegrees);
     connect(this, &ComponentPropertyWidget::setPartCutFace, m_document, &Document::setPartCutFace);
     connect(this, &ComponentPropertyWidget::setPartCutFaceLinkedId, m_document, &Document::setPartCutFaceLinkedId);
@@ -439,11 +439,11 @@ QColor ComponentPropertyWidget::lastColor()
 {
     QColor color = Qt::white;
     std::map<QString, int> colorMap;
-    for (const auto& partId : m_partIds) {
-        const Document::Part* part = m_document->findPart(partId);
-        if (nullptr == part)
+    for (const auto& componentId : m_componentIds) {
+        const Document::Component* component = m_document->findComponent(componentId);
+        if (nullptr == component)
             continue;
-        colorMap[part->color.name()]++;
+        colorMap[component->color.name()]++;
     }
     if (!colorMap.empty()) {
         color = std::max_element(colorMap.begin(), colorMap.end(),
@@ -458,13 +458,13 @@ dust3d::Uuid ComponentPropertyWidget::lastColorImageId()
 {
     dust3d::Uuid colorImageId;
     std::map<dust3d::Uuid, int> colorImageIdMap;
-    for (const auto& partId : m_partIds) {
-        const Document::Part* part = m_document->findPart(partId);
-        if (nullptr == part)
+    for (const auto& componentId : m_componentIds) {
+        const Document::Component* component = m_document->findComponent(componentId);
+        if (nullptr == component)
             continue;
-        if (part->colorImageId.isNull())
+        if (component->colorImageId.isNull())
             continue;
-        colorImageIdMap[part->colorImageId]++;
+        colorImageIdMap[component->colorImageId]++;
     }
     if (!colorImageIdMap.empty()) {
         colorImageId = std::max_element(colorImageIdMap.begin(), colorImageIdMap.end(),
@@ -502,8 +502,30 @@ void ComponentPropertyWidget::showColorDialog()
     if (!color.isValid())
         return;
 
-    for (const auto& partId : m_partIds) {
-        emit setPartColorState(partId, true, color);
+    for (const auto& componentId : m_componentIds) {
+        emit setComponentColorState(componentId, true, color);
     }
     emit groupOperationAdded();
+}
+
+bool ComponentPropertyWidget::hasTextureConfigure()
+{
+    if (!m_partIds.empty())
+        return true;
+
+    for (const auto& componentId : m_componentIds) {
+        const Document::Component* parentComponent = m_document->findComponent(componentId);
+        if (nullptr == parentComponent)
+            continue;
+        for (const auto& childId : parentComponent->childrenIds) {
+            const Document::Component* component = m_document->findComponent(childId);
+            if (nullptr == component)
+                continue;
+            if (component->linkToPartId.isNull())
+                continue;
+            return true;
+        }
+    }
+
+    return false;
 }

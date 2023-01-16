@@ -11,13 +11,10 @@ Document::Part::Part(const dust3d::Uuid& withId)
     , deformUnified(false)
     , rounded(false)
     , chamfered(false)
-    , color(Qt::white)
-    , hasColor(false)
     , dirty(true)
     , cutRotation(0.0)
     , cutFace(dust3d::CutFace::Quad)
     , target(dust3d::PartTarget::Model)
-    , colorSolubility(0.0)
     , metalness(0.0)
     , roughness(1.0)
     , hollowThickness(0.0)
@@ -97,11 +94,6 @@ bool Document::Part::hasDeformFunction() const
     return dust3d::PartTarget::Model == target;
 }
 
-bool Document::Part::hasColorFunction() const
-{
-    return dust3d::PartTarget::Model == target;
-}
-
 void Document::Part::setDeformThickness(float toThickness)
 {
     if (toThickness < 0)
@@ -160,11 +152,6 @@ bool Document::Part::deformAdjusted() const
     return deformThicknessAdjusted() || deformWidthAdjusted() || deformUnified;
 }
 
-bool Document::Part::colorSolubilityAdjusted() const
-{
-    return fabs(colorSolubility - 0.0) >= 0.01;
-}
-
 bool Document::Part::metalnessAdjusted() const
 {
     return fabs(metalness - 0.0) >= 0.01;
@@ -211,20 +198,16 @@ void Document::Part::copyAttributes(const Part& other)
     deformWidth = other.deformWidth;
     rounded = other.rounded;
     chamfered = other.chamfered;
-    color = other.color;
-    hasColor = other.hasColor;
     cutRotation = other.cutRotation;
     cutFace = other.cutFace;
     cutFaceLinkedId = other.cutFaceLinkedId;
     componentId = other.componentId;
     dirty = other.dirty;
     target = other.target;
-    colorSolubility = other.colorSolubility;
     countershaded = other.countershaded;
     metalness = other.metalness;
     roughness = other.roughness;
     deformUnified = other.deformUnified;
     smoothCutoffDegrees = other.smoothCutoffDegrees;
-    colorImageId = other.colorImageId;
     hollowThickness = other.hollowThickness;
 }

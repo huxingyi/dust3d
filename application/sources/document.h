@@ -112,8 +112,6 @@ public:
         bool deformUnified;
         bool rounded;
         bool chamfered;
-        QColor color;
-        bool hasColor;
         dust3d::Uuid componentId;
         std::vector<dust3d::Uuid> nodeIds;
         bool dirty;
@@ -121,13 +119,11 @@ public:
         dust3d::CutFace cutFace;
         dust3d::Uuid cutFaceLinkedId;
         dust3d::PartTarget target;
-        float colorSolubility;
         float metalness;
         float roughness;
         float hollowThickness;
         bool countershaded;
         float smoothCutoffDegrees;
-        dust3d::Uuid colorImageId;
         Part(const dust3d::Uuid& withId = dust3d::Uuid());
         bool hasPolyFunction() const;
         bool hasSmoothFunction() const;
@@ -143,7 +139,6 @@ public:
         bool hasBaseFunction() const;
         bool hasCombineModeFunction() const;
         bool hasDeformFunction() const;
-        bool hasColorFunction() const;
         void setDeformThickness(float toThickness);
         void setDeformWidth(float toWidth);
         void setCutRotation(float toRotation);
@@ -152,7 +147,6 @@ public:
         bool deformThicknessAdjusted() const;
         bool deformWidthAdjusted() const;
         bool deformAdjusted() const;
-        bool colorSolubilityAdjusted() const;
         bool metalnessAdjusted() const;
         bool roughnessAdjusted() const;
         bool cutRotationAdjusted() const;
@@ -186,6 +180,9 @@ public:
         QString name;
         dust3d::Uuid linkToPartId;
         dust3d::Uuid parentId;
+        QColor color = Qt::white;
+        bool hasColor = false;
+        dust3d::Uuid colorImageId;
         bool expanded = true;
         dust3d::CombineMode combineMode = dust3d::CombineMode::Normal;
         bool dirty = true;
@@ -235,12 +232,11 @@ signals:
     void partDeformWidthChanged(dust3d::Uuid partId);
     void partDeformUnifyStateChanged(dust3d::Uuid partId);
     void partRoundStateChanged(dust3d::Uuid partId);
-    void partColorStateChanged(dust3d::Uuid partId);
+    void componentColorStateChanged(const dust3d::Uuid& componentId);
     void partCutRotationChanged(dust3d::Uuid partId);
     void partCutFaceChanged(dust3d::Uuid partId);
     void partChamferStateChanged(dust3d::Uuid partId);
     void partTargetChanged(dust3d::Uuid partId);
-    void partColorSolubilityChanged(dust3d::Uuid partId);
     void partMetalnessChanged(dust3d::Uuid partId);
     void partRoughnessChanged(dust3d::Uuid partId);
     void partHollowThicknessChanged(dust3d::Uuid partId);
@@ -267,7 +263,7 @@ signals:
     void partLockStateChanged(dust3d::Uuid partId);
     void partVisibleStateChanged(dust3d::Uuid partId);
     void partDisableStateChanged(dust3d::Uuid partId);
-    void partColorImageChanged(const dust3d::Uuid& partId);
+    void componentColorImageChanged(const dust3d::Uuid& componentId);
     void componentNameChanged(dust3d::Uuid componentId);
     void componentChildrenChanged(dust3d::Uuid componentId);
     void componentRemoved(dust3d::Uuid componentId);
@@ -456,13 +452,11 @@ public slots:
     void setPartDeformWidth(dust3d::Uuid partId, float width);
     void setPartDeformUnified(dust3d::Uuid partId, bool unified);
     void setPartRoundState(dust3d::Uuid partId, bool rounded);
-    void setPartColorState(dust3d::Uuid partId, bool hasColor, QColor color);
     void setPartCutRotation(dust3d::Uuid partId, float cutRotation);
     void setPartCutFace(dust3d::Uuid partId, dust3d::CutFace cutFace);
     void setPartCutFaceLinkedId(dust3d::Uuid partId, dust3d::Uuid linkedId);
     void setPartChamferState(dust3d::Uuid partId, bool chamfered);
     void setPartTarget(dust3d::Uuid partId, dust3d::PartTarget target);
-    void setPartColorSolubility(dust3d::Uuid partId, float solubility);
     void setPartMetalness(dust3d::Uuid partId, float metalness);
     void setPartRoughness(dust3d::Uuid partId, float roughness);
     void setPartHollowThickness(dust3d::Uuid partId, float hollowThickness);
@@ -505,6 +499,8 @@ public slots:
     void setComponentExpandState(dust3d::Uuid componentId, bool expanded);
     void hideOtherComponents(dust3d::Uuid componentId);
     void lockOtherComponents(dust3d::Uuid componentId);
+    void setComponentColorState(const dust3d::Uuid& componentId, bool hasColor, QColor color);
+    void setComponentColorImage(const dust3d::Uuid& componentId, const dust3d::Uuid& imageId);
     void hideAllComponents();
     void showAllComponents();
     void showOrHideAllComponents();
@@ -520,7 +516,6 @@ public slots:
     void setPartLockState(dust3d::Uuid partId, bool locked);
     void setPartVisibleState(dust3d::Uuid partId, bool visible);
     void setPartDisableState(dust3d::Uuid partId, bool disabled);
-    void setPartColorImage(const dust3d::Uuid& partId, const dust3d::Uuid& imageId);
     void enableAllPositionRelatedLocks();
     void disableAllPositionRelatedLocks();
     bool isPartReadonly(dust3d::Uuid partId) const;

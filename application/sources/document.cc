@@ -902,20 +902,18 @@ void Document::setPartDisableState(dust3d::Uuid partId, bool disabled)
     emit skeletonChanged();
 }
 
-void Document::setPartColorImage(const dust3d::Uuid& partId, const dust3d::Uuid& imageId)
+void Document::setComponentColorImage(const dust3d::Uuid& componentId, const dust3d::Uuid& imageId)
 {
-    auto part = partMap.find(partId);
-    if (part == partMap.end()) {
+    auto component = componentMap.find(componentId);
+    if (component == componentMap.end()) {
         return;
     }
-    if (part->second.colorImageId == imageId)
+    if (component->second.colorImageId == imageId)
         return;
-    part->second.colorImageId = imageId;
-    part->second.dirty = true;
-    auto component = componentMap.find(part->second.componentId);
-    if (component != componentMap.end())
-        component->second.isPreviewMeshObsolete = true;
-    emit partColorImageChanged(partId);
+    component->second.colorImageId = imageId;
+    component->second.isPreviewMeshObsolete = true;
+    component->second.dirty = true;
+    emit componentColorImageChanged(componentId);
     emit textureChanged();
 }
 
@@ -1625,14 +1623,7 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
                     part["cutFace"] = CutFaceToString(partIt.second.cutFace);
                 }
             }
-            if (!partIt.second.colorImageId.isNull()) {
-                part["colorImageId"] = partIt.second.colorImageId.toString();
-            }
             part["__dirty"] = partIt.second.dirty ? "true" : "false";
-            if (partIt.second.hasColor)
-                part["color"] = partIt.second.color.name(QColor::HexArgb).toUtf8().constData();
-            if (partIt.second.colorSolubilityAdjusted())
-                part["colorSolubility"] = std::to_string(partIt.second.colorSolubility);
             if (partIt.second.metalnessAdjusted())
                 part["metallic"] = std::to_string(partIt.second.metalness);
             if (partIt.second.roughnessAdjusted())
@@ -1707,6 +1698,10 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
                 component["name"] = componentIt.second.name.toUtf8().constData();
             component["expanded"] = componentIt.second.expanded ? "true" : "false";
             component["combineMode"] = CombineModeToString(componentIt.second.combineMode);
+            if (!componentIt.second.colorImageId.isNull())
+                component["colorImageId"] = componentIt.second.colorImageId.toString();
+            if (componentIt.second.hasColor)
+                component["color"] = componentIt.second.color.name(QColor::HexArgb).toUtf8().constData();
             component["__dirty"] = componentIt.second.dirty ? "true" : "false";
             std::vector<std::string> childIdList;
             for (const auto& childId : componentIt.second.childrenIds) {
@@ -1825,20 +1820,8 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
                 cutFaceLinkedIdModifyMap.insert({ part.id, cutFaceLinkedId });
             }
         }
-        const auto& colorImageIt = partKv.second.find("colorImageId");
-        if (colorImageIt != partKv.second.end()) {
-            part.colorImageId = dust3d::Uuid(colorImageIt->second);
-        }
         if (dust3d::String::isTrue(dust3d::String::valueOrEmpty(partKv.second, "inverse")))
             inversePartIds.insert(part.id);
-        const auto& colorIt = partKv.second.find("color");
-        if (colorIt != partKv.second.end()) {
-            part.color = QColor(colorIt->second.c_str());
-            part.hasColor = true;
-        }
-        const auto& colorSolubilityIt = partKv.second.find("colorSolubility");
-        if (colorSolubilityIt != partKv.second.end())
-            part.colorSolubility = dust3d::String::toFloat(colorSolubilityIt->second);
         const auto& metalnessIt = partKv.second.find("metallic");
         if (metalnessIt != partKv.second.end())
             part.metalness = dust3d::String::toFloat(metalnessIt->second);
@@ -1980,6 +1963,15 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
         component.name = dust3d::String::valueOrEmpty(componentKv.second, "name").c_str();
         component.expanded = dust3d::String::isTrue(dust3d::String::valueOrEmpty(componentKv.second, "expanded"));
         component.combineMode = dust3d::CombineModeFromString(dust3d::String::valueOrEmpty(componentKv.second, "combineMode").c_str());
+        const auto& colorImageIt = componentKv.second.find("colorImageId");
+        if (colorImageIt != componentKv.second.end()) {
+            component.colorImageId = dust3d::Uuid(colorImageIt->second);
+        }
+        const auto& colorIt = componentKv.second.find("color");
+        if (colorIt != componentKv.second.end()) {
+            component.color = QColor(colorIt->second.c_str());
+            component.hasColor = true;
+        }
         if (component.combineMode == dust3d::CombineMode::Normal) {
             if (dust3d::String::isTrue(dust3d::String::valueOrEmpty(componentKv.second, "inverse")))
                 component.combineMode = dust3d::CombineMode::Inversion;
@@ -2530,21 +2522,6 @@ void Document::setPartTarget(dust3d::Uuid partId, dust3d::PartTarget target)
     emit skeletonChanged();
 }
 
-void Document::setPartColorSolubility(dust3d::Uuid partId, float solubility)
-{
-    auto part = partMap.find(partId);
-    if (part == partMap.end()) {
-        qDebug() << "Part not found:" << partId;
-        return;
-    }
-    if (qFuzzyCompare(part->second.colorSolubility, solubility))
-        return;
-    part->second.colorSolubility = solubility;
-    part->second.dirty = true;
-    emit partColorSolubilityChanged(partId);
-    emit skeletonChanged();
-}
-
 void Document::setPartMetalness(dust3d::Uuid partId, float metalness)
 {
     auto part = partMap.find(partId);
@@ -2665,19 +2642,19 @@ void Document::setPartCutFaceLinkedId(dust3d::Uuid partId, dust3d::Uuid linkedId
     emit skeletonChanged();
 }
 
-void Document::setPartColorState(dust3d::Uuid partId, bool hasColor, QColor color)
+void Document::setComponentColorState(const dust3d::Uuid& componentId, bool hasColor, QColor color)
 {
-    auto part = partMap.find(partId);
-    if (part == partMap.end()) {
-        qDebug() << "Part not found:" << partId;
+    auto component = componentMap.find(componentId);
+    if (component == componentMap.end()) {
+        qDebug() << "Component not found:" << componentId;
         return;
     }
-    if (part->second.hasColor == hasColor && part->second.color == color)
+    if (component->second.hasColor == hasColor && component->second.color == color)
         return;
-    part->second.hasColor = hasColor;
-    part->second.color = color;
-    part->second.dirty = true;
-    emit partColorStateChanged(partId);
+    component->second.hasColor = hasColor;
+    component->second.color = color;
+    component->second.dirty = true;
+    emit componentColorStateChanged(componentId);
     emit skeletonChanged();
 }
 
