@@ -324,6 +324,11 @@ void StitchMeshBuilder::build()
             oneSideVertexCount + quad[1],
             oneSideVertexCount + quad[0],
             oneSideVertexCount + quad[3] });
+        m_generatedFaceUvs.emplace_back(std::vector<Vector2> {
+            m_generatedFaceUvs[i][2],
+            m_generatedFaceUvs[i][1],
+            m_generatedFaceUvs[i][0],
+            m_generatedFaceUvs[i][3] });
     }
 
     // Move all vertices off distance at radius

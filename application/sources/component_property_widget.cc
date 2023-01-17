@@ -313,7 +313,10 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         ImagePreviewWidget* colorImagePreviewWidget = new ImagePreviewWidget;
         colorImagePreviewWidget->setFixedSize(Theme::partPreviewImageSize * 2, Theme::partPreviewImageSize * 2);
         auto colorImageId = lastColorImageId();
-        colorImagePreviewWidget->updateImage(colorImageId.isNull() ? QImage() : *ImageForever::get(colorImageId));
+        const QImage* colorImage = nullptr;
+        if (!colorImageId.isNull())
+            colorImage = ImageForever::get(colorImageId);
+        colorImagePreviewWidget->updateImage(nullptr == colorImage ? QImage() : *colorImage);
         QPushButton* colorImageEraser = new QPushButton(Theme::awesome()->icon(fa::eraser), "");
         Theme::initIconButton(colorImageEraser);
 
