@@ -471,6 +471,11 @@ std::unique_ptr<MeshState> MeshGenerator::combineStitchingMesh(const std::string
         componentIds[i] = componentIdStrings[i];
     for (size_t partIndex = 0; partIndex < partIdStrings.size(); ++partIndex) {
         const auto& partIdString = partIdStrings[partIndex];
+        auto findPart = m_snapshot->parts.find(partIdString);
+        if (findPart != m_snapshot->parts.end()) {
+            if (String::isTrue(String::valueOrEmpty(findPart->second, "disabled")))
+                continue;
+        }
         bool isCircle = false;
         bool isClosing = false;
         std::vector<MeshNode> orderedBuilderNodes;
