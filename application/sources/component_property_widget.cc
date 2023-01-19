@@ -76,7 +76,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     topLayout->setSizeConstraint(QLayout::SetFixedSize);
 
     QGroupBox* deformGroupBox = nullptr;
-    if (nullptr != m_part) {
+    if (nullptr != m_part && dust3d::PartTarget::Model == m_part->target) {
         FloatNumberWidget* thicknessWidget = new FloatNumberWidget;
         thicknessWidget->setItemName(tr("Thickness"));
         thicknessWidget->setRange(0, 2);
@@ -145,7 +145,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     }
 
     QGroupBox* cutFaceGroupBox = nullptr;
-    if (nullptr != m_part) {
+    if (nullptr != m_part && dust3d::PartTarget::Model == m_part->target) {
         FlowLayout* cutFaceIconLayout = new FlowLayout(nullptr, 0, 0);
         m_document->collectCutFaceList(m_cutFaceList);
         m_cutFaceButtons.resize(m_cutFaceList.size());
