@@ -373,10 +373,23 @@ dust3d::Uuid Document::createNode(dust3d::Uuid nodeId, float x, float y, float z
     emit nodeAdded(node.id);
 
     if (nullptr != fromNode) {
+        bool reverse = false;
+        if (!fromNode->edgeIds.empty()) {
+            const Document::Edge* fromEdge = findEdge(fromNode->edgeIds[0]);
+            if (nullptr != fromEdge) {
+                if (!fromEdge->nodeIds.empty() && fromNode->id == fromEdge->nodeIds.front())
+                    reverse = true;
+            }
+        }
         Document::Edge edge;
         edge.partId = partId;
-        edge.nodeIds.push_back(fromNode->id);
-        edge.nodeIds.push_back(node.id);
+        if (reverse) {
+            edge.nodeIds.push_back(node.id);
+            edge.nodeIds.push_back(fromNode->id);
+        } else {
+            edge.nodeIds.push_back(fromNode->id);
+            edge.nodeIds.push_back(node.id);
+        }
         edgeMap[edge.id] = edge;
 
         nodeMap[node.id].edgeIds.push_back(edge.id);
@@ -1957,6 +1970,10 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
     for (const auto& componentKv : snapshot.components) {
         QString linkData = dust3d::String::valueOrEmpty(componentKv.second, "linkData").c_str();
         QString linkDataType = dust3d::String::valueOrEmpty(componentKv.second, "linkDataType").c_str();
+        if (SnapshotSource::Paste == source) {
+            if ("partId" != linkDataType)
+                continue;
+        }
         Document::Component component(dust3d::Uuid(), linkData, linkDataType);
         auto componentId = component.id;
         oldNewIdMap[dust3d::Uuid(componentKv.first)] = componentId;
@@ -1988,31 +2005,43 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
         componentMap.emplace(componentId, std::move(component));
         newAddedComponentIds.insert(componentId);
     }
-    const auto& rootComponentChildren = snapshot.rootComponent.find("children");
-    if (rootComponentChildren != snapshot.rootComponent.end()) {
-        for (const auto& childId : dust3d::String::split(rootComponentChildren->second, ',')) {
-            if (childId.empty())
-                continue;
-            dust3d::Uuid componentId = oldNewIdMap[dust3d::Uuid(childId)];
+    if (SnapshotSource::Paste == source) {
+        if (m_currentCanvasComponentId.isNull()) {
+            for (const auto& childComponentId : newAddedComponentIds)
+                rootComponent.addChild(childComponentId);
+        } else {
+            for (const auto& childComponentId : newAddedComponentIds) {
+                componentMap[m_currentCanvasComponentId].addChild(childComponentId);
+                componentMap[childComponentId].parentId = m_currentCanvasComponentId;
+            }
+        }
+    } else {
+        const auto& rootComponentChildren = snapshot.rootComponent.find("children");
+        if (rootComponentChildren != snapshot.rootComponent.end()) {
+            for (const auto& childId : dust3d::String::split(rootComponentChildren->second, ',')) {
+                if (childId.empty())
+                    continue;
+                dust3d::Uuid componentId = oldNewIdMap[dust3d::Uuid(childId)];
+                if (componentMap.find(componentId) == componentMap.end())
+                    continue;
+                //qDebug() << "Add root component:" << componentId;
+                rootComponent.addChild(componentId);
+            }
+        }
+        for (const auto& componentKv : snapshot.components) {
+            dust3d::Uuid componentId = oldNewIdMap[dust3d::Uuid(componentKv.first)];
             if (componentMap.find(componentId) == componentMap.end())
                 continue;
-            //qDebug() << "Add root component:" << componentId;
-            rootComponent.addChild(componentId);
-        }
-    }
-    for (const auto& componentKv : snapshot.components) {
-        dust3d::Uuid componentId = oldNewIdMap[dust3d::Uuid(componentKv.first)];
-        if (componentMap.find(componentId) == componentMap.end())
-            continue;
-        for (const auto& childId : dust3d::String::split(dust3d::String::valueOrEmpty(componentKv.second, "children"), ',')) {
-            if (childId.empty())
-                continue;
-            dust3d::Uuid childComponentId = oldNewIdMap[dust3d::Uuid(childId)];
-            if (componentMap.find(childComponentId) == componentMap.end())
-                continue;
-            //qDebug() << "Add child component:" << childComponentId << "to" << componentId;
-            componentMap[componentId].addChild(childComponentId);
-            componentMap[childComponentId].parentId = componentId;
+            for (const auto& childId : dust3d::String::split(dust3d::String::valueOrEmpty(componentKv.second, "children"), ',')) {
+                if (childId.empty())
+                    continue;
+                dust3d::Uuid childComponentId = oldNewIdMap[dust3d::Uuid(childId)];
+                if (componentMap.find(childComponentId) == componentMap.end())
+                    continue;
+                //qDebug() << "Add child component:" << childComponentId << "to" << componentId;
+                componentMap[componentId].addChild(childComponentId);
+                componentMap[childComponentId].parentId = componentId;
+            }
         }
     }
 

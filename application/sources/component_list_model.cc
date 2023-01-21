@@ -22,6 +22,7 @@ ComponentListModel::ComponentListModel(const Document* document, QObject* parent
             return;
         this->reload();
     });
+    connect(this, &ComponentListModel::listingComponentChanged, m_document, &Document::setCurrentCanvasComponentId);
 }
 
 void ComponentListModel::reload()
