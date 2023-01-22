@@ -47,6 +47,8 @@
 #include <dust3d/base/snapshot.h>
 #include <dust3d/base/snapshot_xml.h>
 #include <map>
+#include <unordered_map>
+#include <unordered_set>
 
 LogBrowser* g_logBrowser = nullptr;
 std::map<DocumentWindow*, dust3d::Uuid> g_documentWindows;
@@ -979,6 +981,7 @@ void DocumentWindow::openPathAs(const QString& path, const QString& asName)
             data.push_back('\0');
             dust3d::Snapshot snapshot;
             loadSnapshotFromXmlString(&snapshot, (char*)data.data());
+            unifySnapshotEdgeLinkDirection(snapshot);
             m_document->fromSnapshot(snapshot);
             m_document->saveSnapshot();
         } else if (item.type == "asset") {
@@ -999,6 +1002,79 @@ void DocumentWindow::openPathAs(const QString& path, const QString& asName)
         }
     }
     setCurrentFilename(asName);
+}
+
+void DocumentWindow::unifySnapshotEdgeLinkDirection(dust3d::Snapshot& snapshot)
+{
+    std::unordered_map<std::string, std::unordered_map<std::string, std::unordered_set<std::string>>> links;
+    std::unordered_set<std::string> linkSet;
+    std::unordered_set<std::string> notUnifiedParties;
+    for (auto& edgeIt : snapshot.edges) {
+        std::string partIdString = dust3d::String::valueOrEmpty(edgeIt.second, "partId");
+        std::string fromNodeIdString = dust3d::String::valueOrEmpty(edgeIt.second, "from");
+        std::string toNodeIdString = dust3d::String::valueOrEmpty(edgeIt.second, "to");
+        links[partIdString][fromNodeIdString].insert(toNodeIdString);
+        links[partIdString][toNodeIdString].insert(fromNodeIdString);
+        auto insertResult = linkSet.insert(partIdString + ">" + fromNodeIdString);
+        if (insertResult.second)
+            continue;
+        notUnifiedParties.insert(partIdString);
+    }
+    if (notUnifiedParties.empty())
+        return;
+    std::unordered_map<std::string, std::unordered_map<std::string, std::string>> partOneWayLinks;
+    for (const auto& partIdString : notUnifiedParties) {
+        auto partyIt = links.find(partIdString);
+        if (partyIt == links.end())
+            continue;
+        std::vector<std::pair<std::string, int>> endpoints;
+        for (const auto& edgeIt : partyIt->second) {
+            if (1 == edgeIt.second.size()) {
+                endpoints.push_back(std::make_pair(edgeIt.first, linkSet.end() != linkSet.find(partIdString + ">" + edgeIt.first) ? 1 : 0));
+            }
+        }
+        std::sort(endpoints.begin(), endpoints.end(), [](const auto& first, const auto& second) {
+            return first.second < second.second;
+        });
+        if (endpoints.empty()) {
+            endpoints.push_back(std::make_pair(partyIt->second.begin()->first, 0));
+        }
+        std::vector<std::string> nodeIdList;
+        auto loopNodeIdString = endpoints.back().first;
+        nodeIdList.push_back(loopNodeIdString);
+        std::unordered_set<std::string> visited;
+        bool continueLoop = true;
+        while (continueLoop) {
+            nodeIdList.push_back(loopNodeIdString);
+            visited.insert(loopNodeIdString);
+            auto nextIt = partyIt->second.find(loopNodeIdString);
+            continueLoop = false;
+            for (const auto& next : nextIt->second) {
+                if (visited.end() == visited.find(next)) {
+                    loopNodeIdString = next;
+                    continueLoop = true;
+                    break;
+                }
+            }
+        }
+        for (size_t i = 0; i < nodeIdList.size(); ++i) {
+            size_t j = (i + 1) % nodeIdList.size();
+            partOneWayLinks[partIdString][nodeIdList[i]] = nodeIdList[j];
+        }
+    }
+    for (auto& edgeIt : snapshot.edges) {
+        std::string partIdString = dust3d::String::valueOrEmpty(edgeIt.second, "partId");
+        auto oneWayLinksIt = partOneWayLinks.find(partIdString);
+        if (oneWayLinksIt == partOneWayLinks.end())
+            continue;
+        std::string fromNodeIdString = dust3d::String::valueOrEmpty(edgeIt.second, "from");
+        std::string toNodeIdString = dust3d::String::valueOrEmpty(edgeIt.second, "to");
+        auto nextIt = oneWayLinksIt->second.find(fromNodeIdString);
+        if (nextIt != oneWayLinksIt->second.end() && nextIt->second == toNodeIdString)
+            continue;
+        edgeIt.second["from"] = toNodeIdString;
+        edgeIt.second["to"] = fromNodeIdString;
+    }
 }
 
 void DocumentWindow::openExample(const QString& modelName)

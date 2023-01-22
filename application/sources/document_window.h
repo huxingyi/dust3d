@@ -111,6 +111,7 @@ private:
     QString strippedName(const QString& fullFileName);
     bool openFiles(const QStringList& pathList);
     void reset();
+    void unifySnapshotEdgeLinkDirection(dust3d::Snapshot& snapshot);
 
     Document* m_document = nullptr;
     bool m_firstShow = true;
