@@ -2055,7 +2055,10 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
         emit partAdded(partIt);
     }
 
-    emit componentChildrenChanged(dust3d::Uuid());
+    if (SnapshotSource::Paste == source)
+        emit componentChildrenChanged(m_currentCanvasComponentId);
+    else
+        emit componentChildrenChanged(dust3d::Uuid());
     if (isOriginChanged)
         emit originChanged();
 
