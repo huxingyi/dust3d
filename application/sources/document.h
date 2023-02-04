@@ -244,6 +244,7 @@ signals:
     void partSmoothCutoffDegreesChanged(dust3d::Uuid partId);
     void componentCombineModeChanged(dust3d::Uuid componentId);
     void cleanup();
+    void clearSelections();
     void checkPart(dust3d::Uuid partId);
     void partChecked(dust3d::Uuid partId);
     void partUnchecked(dust3d::Uuid partId);
@@ -277,6 +278,7 @@ signals:
     void nodeOriginChanged(dust3d::Uuid nodeId);
     void nodeBoneJointStateChanged(const dust3d::Uuid& nodeId);
     void edgeReversed(dust3d::Uuid edgeId);
+    void edgeNodeChanged(const dust3d::Uuid& edgeId);
     void originChanged();
     void skeletonChanged();
     void optionsChanged();

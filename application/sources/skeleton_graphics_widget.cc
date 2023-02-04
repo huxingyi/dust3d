@@ -2099,6 +2099,38 @@ void SkeletonGraphicsWidget::edgeReversed(dust3d::Uuid edgeId)
     edgeItemIt->second.second->reverse();
 }
 
+void SkeletonGraphicsWidget::edgeNodeChanged(const dust3d::Uuid& edgeId)
+{
+    const Document::Edge* edge = m_document->findEdge(edgeId);
+    if (nullptr == edge) {
+        qDebug() << "New edge added but edge id not exist:" << edgeId;
+        return;
+    }
+    if (edge->nodeIds.size() != 2) {
+        qDebug() << "Invalid node count of edge:" << edgeId;
+        return;
+    }
+    dust3d::Uuid fromNodeId = edge->nodeIds[0];
+    dust3d::Uuid toNodeId = edge->nodeIds[1];
+    auto fromIt = nodeItemMap.find(fromNodeId);
+    if (fromIt == nodeItemMap.end()) {
+        qDebug() << "Node not found:" << fromNodeId;
+        return;
+    }
+    auto toIt = nodeItemMap.find(toNodeId);
+    if (toIt == nodeItemMap.end()) {
+        qDebug() << "Node not found:" << toNodeId;
+        return;
+    }
+    auto edgeIt = edgeItemMap.find(edgeId);
+    if (edgeIt == edgeItemMap.end()) {
+        qDebug() << "Edge not found:" << toNodeId;
+        return;
+    }
+    edgeIt->second.first->setEndpoints(fromIt->second.first, toIt->second.first);
+    edgeIt->second.second->setEndpoints(fromIt->second.second, toIt->second.second);
+}
+
 void SkeletonGraphicsWidget::edgeAdded(dust3d::Uuid edgeId)
 {
     const Document::Edge* edge = m_document->findEdge(edgeId);
@@ -2148,6 +2180,7 @@ void SkeletonGraphicsWidget::removeItem(QGraphicsItem* item)
     if (m_hoveredEdgeItem == item)
         m_hoveredEdgeItem = nullptr;
     m_rangeSelectionSet.erase(item);
+    scene()->removeItem(item);
 }
 
 void SkeletonGraphicsWidget::nodeRemoved(dust3d::Uuid nodeId)

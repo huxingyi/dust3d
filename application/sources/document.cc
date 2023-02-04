@@ -119,26 +119,46 @@ bool Document::isNodeConnectable(dust3d::Uuid nodeId) const
 void Document::reduceNode(dust3d::Uuid nodeId)
 {
     const Document::Node* node = findNode(nodeId);
-    if (nullptr == node) {
+    if (nullptr == node)
         return;
-    }
-    if (node->edgeIds.size() != 2) {
+    if (node->edgeIds.size() != 2)
         return;
-    }
     dust3d::Uuid firstEdgeId = node->edgeIds[0];
     dust3d::Uuid secondEdgeId = node->edgeIds[1];
-    const Document::Edge* firstEdge = findEdge(firstEdgeId);
-    if (nullptr == firstEdge) {
+    Document::Edge* firstEdge = (Document::Edge*)findEdge(firstEdgeId);
+    if (nullptr == firstEdge)
         return;
-    }
     const Document::Edge* secondEdge = findEdge(secondEdgeId);
-    if (nullptr == secondEdge) {
+    if (nullptr == secondEdge)
         return;
-    }
+    Document::Part* part = (Document::Part*)findPart(node->partId);
+    if (nullptr == part)
+        return;
     dust3d::Uuid firstNeighborNodeId = firstEdge->neighborOf(nodeId);
     dust3d::Uuid secondNeighborNodeId = secondEdge->neighborOf(nodeId);
-    removeNode(nodeId);
-    addEdge(firstNeighborNodeId, secondNeighborNodeId);
+    Document::Node* secondNeighborNode = (Document::Node*)findNode(secondNeighborNodeId);
+    if (nullptr == secondNeighborNode)
+        return;
+    for (auto& it : secondNeighborNode->edgeIds) {
+        if (it == secondEdgeId) {
+            it = firstEdgeId;
+            break;
+        }
+    }
+    for (auto& it : firstEdge->nodeIds) {
+        if (it == nodeId) {
+            it = secondNeighborNodeId;
+            break;
+        }
+    }
+    part->dirty = true;
+    part->nodeIds.erase(std::remove(part->nodeIds.begin(), part->nodeIds.end(), nodeId), part->nodeIds.end());
+    nodeMap.erase(nodeId);
+    edgeMap.erase(secondEdgeId);
+    emit nodeRemoved(nodeId);
+    emit edgeRemoved(secondEdgeId);
+    emit edgeNodeChanged(firstEdgeId);
+    emit skeletonChanged();
 }
 
 void Document::breakEdge(dust3d::Uuid edgeId)

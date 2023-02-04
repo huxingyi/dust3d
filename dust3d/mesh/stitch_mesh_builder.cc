@@ -51,13 +51,16 @@ const std::vector<std::vector<Vector2>>& StitchMeshBuilder::generatedFaceUvs() c
     return m_generatedFaceUvs;
 }
 
-void StitchMeshBuilder::interpolateSplinesToHaveEqualSizeOfNodesExceptClosingSplines()
+bool StitchMeshBuilder::interpolateSplinesToHaveEqualSizeOfNodes()
 {
     std::vector<Spline> interpolatedSplines = m_splines;
     for (size_t i = 0; i < m_splines.size(); ++i) {
         const auto& spline = m_splines[i];
-        if (spline.isClosing)
+        if (spline.isClosing) {
+            auto& interpolatedSpline = interpolatedSplines[i];
+            interpolatedSpline.nodes.resize(m_targetSegments + 1, spline.nodes.front());
             continue;
+        }
         std::vector<Vector3> polyline(spline.nodes.size());
         std::vector<double> radiuses(spline.nodes.size());
         for (size_t j = 0; j < spline.nodes.size(); ++j) {
@@ -67,14 +70,19 @@ void StitchMeshBuilder::interpolateSplinesToHaveEqualSizeOfNodesExceptClosingSpl
         std::vector<Vector3> segmentPoints;
         std::vector<double> segmentRadiuses;
         splitPolylineToSegments(polyline, radiuses, m_targetSegments, &segmentPoints, &segmentRadiuses);
+        if (segmentPoints.size() != m_targetSegments + 1) {
+            dust3dDebug << "Interpolate spline failed";
+            return false;
+        }
         auto& interpolatedSpline = interpolatedSplines[i];
         interpolatedSpline.nodes.resize(segmentPoints.size());
-        for (size_t j = 0; j < spline.nodes.size(); ++j) {
+        for (size_t j = 0; j < interpolatedSpline.nodes.size(); ++j) {
             interpolatedSpline.nodes[j].origin = segmentPoints[j];
             interpolatedSpline.nodes[j].radius = segmentRadiuses[j];
         }
     }
     m_splines = std::move(interpolatedSplines);
+    return true;
 }
 
 std::vector<std::vector<StitchMeshBuilder::StitchingPoint>> StitchMeshBuilder::convertSplinesToStitchingPoints(const std::vector<Spline>& splines)
@@ -97,10 +105,14 @@ std::vector<std::vector<StitchMeshBuilder::StitchingPoint>> StitchMeshBuilder::c
         const auto& spline = splines[i];
         stitchingPoints[i].resize(spline.nodes.size());
         for (size_t k = 0; k < spline.nodes.size(); ++k) {
-            stitchingPoints[i][k].originVertex = m_generatedVertices.size();
+            if (spline.isClosing && k > 0) {
+                stitchingPoints[i][k].originVertex = stitchingPoints[i][0].originVertex;
+            } else {
+                stitchingPoints[i][k].originVertex = m_generatedVertices.size();
+                m_generatedVertices.push_back(spline.nodes[k].origin);
+            }
             stitchingPoints[i][k].radius = spline.nodes[k].radius;
             stitchingPoints[i][k].v = offsetVs[k][i];
-            m_generatedVertices.push_back(spline.nodes[k].origin);
             m_generatedStitchingPoints.push_back(stitchingPoints[i][k]);
         }
     }
@@ -198,63 +210,34 @@ void StitchMeshBuilder::generateMeshFromStitchingPoints(const std::vector<Stitch
     }
     for (size_t j = 1; j < a.size(); ++j) {
         size_t i = j - 1;
-        m_generatedFaces.emplace_back(std::vector<size_t> {
-            a[i].originVertex,
-            b[i].originVertex,
-            b[j].originVertex,
-            a[j].originVertex });
-        m_generatedFaceUvs.emplace_back(std::vector<Vector2> {
-            Vector2(us[i], a[i].v),
-            Vector2(us[i], b[i].v),
-            Vector2(us[j], b[j].v),
-            Vector2(us[j], a[j].v) });
+        addQuadButMaybeTriangle(std::vector<size_t> {
+                                    a[i].originVertex,
+                                    b[i].originVertex,
+                                    b[j].originVertex,
+                                    a[j].originVertex },
+            std::vector<Vector2> { Vector2(us[i], a[i].v), Vector2(us[i], b[i].v), Vector2(us[j], b[j].v), Vector2(us[j], a[j].v) });
     }
 }
 
-void StitchMeshBuilder::interpolateSplinesForBackClosing()
-{
-    if (m_splines.size() < 2) {
-        dust3dDebug << "Expected at least two splines for back closing interpoloating, current:" << m_splines.size();
-        return;
-    }
-    Vector3 sourceOrigin;
-    Vector3 targetPosition = m_splines.back().nodes.front().origin;
-    const auto& nodes = m_splines[m_splines.size() - 2].nodes;
-    std::vector<Vector3> sourcePositions(nodes.size());
-    for (size_t i = 0; i < nodes.size(); ++i) {
-        sourcePositions[i] = nodes[i].origin;
-        sourceOrigin += sourcePositions[i];
-    }
-    sourceOrigin /= nodes.size();
-    Vector3 targetDirection = (targetPosition - sourceOrigin).normalized();
-    std::vector<Vector3> sourceVectors(nodes.size());
-    for (size_t i = 0; i < nodes.size(); ++i) {
-        sourceVectors[i] = (nodes[i].origin - sourceOrigin).normalized();
-    }
-    std::vector<Vector3> interpolatedPositions(nodes.size());
-    std::vector<double> interpolatedRadiuses(nodes.size());
-    for (size_t i = 0; i < nodes.size(); ++i) {
-        interpolatedPositions[i] = sourceOrigin + sourceVectors[i].rotated(Vector3::crossProduct(sourceVectors[i], targetDirection), Math::Pi * 0.25) * ((nodes[i].origin - sourceOrigin).length() + (nodes[i].origin - targetPosition).length() * 0.5) * 0.5;
-        interpolatedRadiuses[i] = nodes[i].radius * 0.5;
-    }
-    m_splines.back().nodes.resize(nodes.size());
-    for (size_t i = 0; i < nodes.size(); ++i) {
-        m_splines.back().nodes[i].origin = interpolatedPositions[i];
-        m_splines.back().nodes[i].radius = interpolatedRadiuses[i];
-    }
-}
-
-void StitchMeshBuilder::addQuadButMaybeTriangle(const std::vector<size_t>& quadButMaybeTriangle)
+void StitchMeshBuilder::addQuadButMaybeTriangle(const std::vector<size_t>& quadButMaybeTriangle, const std::vector<Vector2>& quadUv)
 {
     std::vector<size_t> finalFace;
+    std::vector<Vector2> finalUv;
     std::unordered_set<size_t> used;
     finalFace.reserve(4);
-    for (const auto& it : quadButMaybeTriangle) {
+    finalUv.reserve(4);
+    for (size_t i = 0; i < quadButMaybeTriangle.size(); ++i) {
+        const auto& it = quadButMaybeTriangle[i];
         auto insertResult = used.insert(it);
-        if (insertResult.second)
+        if (insertResult.second) {
             finalFace.push_back(it);
+            finalUv.push_back(quadUv[i]);
+        }
     }
+    if (finalFace.size() < 3)
+        return;
     m_generatedFaces.emplace_back(finalFace);
+    m_generatedFaceUvs.emplace_back(finalUv);
 }
 
 const std::vector<StitchMeshBuilder::Spline>& StitchMeshBuilder::splines() const
@@ -275,21 +258,31 @@ void StitchMeshBuilder::build()
 
     // TODO: Make sure there is no closing nodes in the middle
 
-    // Interpolate splines to make sure every spline have equal size of nodes, except the closing splines
-    interpolateSplinesToHaveEqualSizeOfNodesExceptClosingSplines();
-
-    // Preprocess back closing
-    if (m_splines.back().isClosing)
-        interpolateSplinesForBackClosing();
-
-    // TODO: Preprocess front closing
-
-    // Update to the real interploated segments
-    m_targetSegments = m_splines.back().nodes.size() - 1;
+    // Interpolate splines to make sure every spline have equal size of nodes
+    if (!interpolateSplinesToHaveEqualSizeOfNodes())
+        return;
 
     // Generate one side faces
     std::vector<std::vector<StitchingPoint>> stitchingPoints = convertSplinesToStitchingPoints(m_splines);
     generateMeshFromStitchingPoints(stitchingPoints);
+
+    if (m_splines.back().isClosing && stitchingPoints.size() >= 2) {
+        addQuadButMaybeTriangle(std::vector<size_t> {
+                                    stitchingPoints[stitchingPoints.size() - 2].back().originVertex,
+                                    stitchingPoints[stitchingPoints.size() - 2].front().originVertex,
+                                    stitchingPoints.back().front().originVertex },
+            std::vector<Vector2> { Vector2(1.0, stitchingPoints[stitchingPoints.size() - 2].back().v), Vector2(0.0, stitchingPoints[stitchingPoints.size() - 2].back().v), Vector2(0.5, stitchingPoints.back().front().v) });
+    }
+
+    if (m_splines.front().isClosing && stitchingPoints.size() >= 2) {
+        addQuadButMaybeTriangle(std::vector<size_t> {
+                                    stitchingPoints[1].back().originVertex,
+                                    stitchingPoints[1].front().originVertex,
+                                    stitchingPoints.front().front().originVertex },
+            std::vector<Vector2> { Vector2(1.0, stitchingPoints[1].back().v), Vector2(0.0, stitchingPoints[1].back().v), Vector2(0.5, stitchingPoints.front().front().v) });
+    }
+
+    /*
 
     // Generate normals for all vertices
     m_generatedNormals.resize(m_generatedVertices.size());
@@ -401,6 +394,8 @@ void StitchMeshBuilder::build()
             j * (m_targetSegments + 1) + offsetBetweenSecondAndThirdBorder,
             oneSideVertexCount + j * (m_targetSegments + 1) + offsetBetweenSecondAndThirdBorder });
     }
+
+    */
 
     // TODO: Process circle
 

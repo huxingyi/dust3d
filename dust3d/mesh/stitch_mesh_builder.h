@@ -62,7 +62,7 @@ private:
     std::vector<Vector3> m_generatedNormals;
     size_t m_targetSegments = 0;
 
-    void interpolateSplinesToHaveEqualSizeOfNodesExceptClosingSplines();
+    bool interpolateSplinesToHaveEqualSizeOfNodes();
     std::vector<std::vector<StitchingPoint>> convertSplinesToStitchingPoints(const std::vector<Spline>& splines);
     void generateMeshFromStitchingPoints(const std::vector<std::vector<StitchingPoint>>& stitchingPoints);
     void generateMeshFromStitchingPoints(const std::vector<StitchingPoint>& a,
@@ -73,8 +73,7 @@ private:
         std::vector<Vector3>* targetPoints,
         std::vector<double>* targetRadiuses);
     double segmentsLength(const std::vector<Vector3>& segmentPoints);
-    void interpolateSplinesForBackClosing();
-    void addQuadButMaybeTriangle(const std::vector<size_t>& quadButMaybeTriangle);
+    void addQuadButMaybeTriangle(const std::vector<size_t>& quadButMaybeTriangle, const std::vector<Vector2>& quadUv);
 };
 
 }

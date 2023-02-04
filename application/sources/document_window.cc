@@ -606,6 +606,7 @@ DocumentWindow::DocumentWindow()
     connect(m_document, &Document::nodeBoneJointStateChanged, canvasGraphicsWidget, &SkeletonGraphicsWidget::nodeBoneJointStateChanged);
     connect(m_document, &Document::nodeOriginChanged, canvasGraphicsWidget, &SkeletonGraphicsWidget::nodeOriginChanged);
     connect(m_document, &Document::edgeReversed, canvasGraphicsWidget, &SkeletonGraphicsWidget::edgeReversed);
+    connect(m_document, &Document::edgeNodeChanged, canvasGraphicsWidget, &SkeletonGraphicsWidget::edgeNodeChanged);
     connect(m_document, &Document::partVisibleStateChanged, canvasGraphicsWidget, &SkeletonGraphicsWidget::partVisibleStateChanged);
     connect(m_document, &Document::partDisableStateChanged, canvasGraphicsWidget, &SkeletonGraphicsWidget::partVisibleStateChanged);
     connect(m_document, &Document::cleanup, canvasGraphicsWidget, &SkeletonGraphicsWidget::removeAllContent);
@@ -616,6 +617,7 @@ DocumentWindow::DocumentWindow()
     connect(m_document, &Document::uncheckAll, canvasGraphicsWidget, &SkeletonGraphicsWidget::unselectAll);
     connect(m_document, &Document::checkNode, canvasGraphicsWidget, &SkeletonGraphicsWidget::addSelectNode);
     connect(m_document, &Document::checkEdge, canvasGraphicsWidget, &SkeletonGraphicsWidget::addSelectEdge);
+    connect(m_document, &Document::clearSelections, canvasGraphicsWidget, &SkeletonGraphicsWidget::clearRangeSelection);
 
     connect(m_partManageWidget, &PartManageWidget::unselectAllOnCanvas, canvasGraphicsWidget, &SkeletonGraphicsWidget::unselectAll);
     connect(m_partManageWidget, &PartManageWidget::selectPartOnCanvas, canvasGraphicsWidget, &SkeletonGraphicsWidget::addPartToSelection);

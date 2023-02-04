@@ -125,6 +125,7 @@ public slots:
     void nodeOriginChanged(dust3d::Uuid nodeId);
     void nodeBoneJointStateChanged(const dust3d::Uuid& nodeId);
     void edgeReversed(dust3d::Uuid edgeId);
+    void edgeNodeChanged(const dust3d::Uuid& edgeId);
     void turnaroundChanged();
     void canvasResized();
     void editModeChanged();
@@ -212,6 +213,7 @@ public slots:
     void shortcutEscape();
     void markSelectedAsBoneJoint();
     void markSelectedAsNotBoneJoint();
+    void clearRangeSelection();
 private slots:
     void turnaroundImageReady();
 
@@ -224,7 +226,6 @@ private:
     void updateTurnaround();
     void updateItems();
     void checkRangeSelection();
-    void clearRangeSelection();
     void removeItem(QGraphicsItem* item);
     QVector2D centerOfNodeItemSet(const std::set<SkeletonGraphicsNodeItem*>& set);
     bool isSingleNodeSelected();
