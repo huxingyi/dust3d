@@ -163,7 +163,7 @@ void Document::reduceNode(dust3d::Uuid nodeId)
 
 void Document::breakEdge(dust3d::Uuid edgeId)
 {
-    const Document::Edge* edge = findEdge(edgeId);
+    Document::Edge* edge = (Document::Edge*)findEdge(edgeId);
     if (nullptr == edge) {
         return;
     }
@@ -176,7 +176,7 @@ void Document::breakEdge(dust3d::Uuid edgeId)
     if (nullptr == firstNode) {
         return;
     }
-    const Document::Node* secondNode = findNode(secondNodeId);
+    Document::Node* secondNode = (Document::Node*)findNode(secondNodeId);
     if (nullptr == secondNode) {
         return;
     }
@@ -184,12 +184,50 @@ void Document::breakEdge(dust3d::Uuid edgeId)
     QVector3D secondOrigin(secondNode->getX(), secondNode->getY(), secondNode->getZ());
     QVector3D middleOrigin = (firstOrigin + secondOrigin) / 2;
     float middleRadius = (firstNode->radius + secondNode->radius) / 2;
-    removeEdge(edgeId);
-    dust3d::Uuid middleNodeId = createNode(dust3d::Uuid::createUuid(), middleOrigin.x(), middleOrigin.y(), middleOrigin.z(), middleRadius, firstNodeId);
-    if (middleNodeId.isNull()) {
-        return;
+
+    auto partId = firstNode->partId;
+    auto middleNodeId = dust3d::Uuid::createUuid();
+    auto newEdgeId = dust3d::Uuid::createUuid();
+
+    for (auto& it : secondNode->edgeIds) {
+        if (it == edgeId) {
+            it = newEdgeId;
+            break;
+        }
     }
-    addEdge(middleNodeId, secondNodeId);
+
+    for (auto& it : edge->nodeIds) {
+        if (it == secondNodeId) {
+            it = middleNodeId;
+            break;
+        }
+    }
+
+    Document::Node middleNode(middleNodeId);
+    middleNode.partId = partId;
+    middleNode.setRadius(middleRadius);
+    middleNode.setX(middleOrigin.x());
+    middleNode.setY(middleOrigin.y());
+    middleNode.setZ(middleOrigin.z());
+    middleNode.edgeIds.push_back(edgeId);
+    middleNode.edgeIds.push_back(newEdgeId);
+    nodeMap[middleNodeId] = middleNode;
+    partMap[partId].nodeIds.push_back(middleNodeId);
+
+    Document::Edge newEdge(newEdgeId);
+    newEdge.partId = partId;
+    newEdge.nodeIds.push_back(middleNodeId);
+    newEdge.nodeIds.push_back(secondNodeId);
+    edgeMap[newEdgeId] = newEdge;
+
+    Document::Part* part = (Document::Part*)findPart(partId);
+    if (nullptr != part)
+        part->dirty = true;
+
+    emit nodeAdded(middleNodeId);
+    emit edgeAdded(newEdgeId);
+    emit edgeNodeChanged(edgeId);
+    emit skeletonChanged();
 }
 
 void Document::reverseEdge(dust3d::Uuid edgeId)
