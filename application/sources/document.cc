@@ -1790,7 +1790,7 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
             if (componentIt.second.hasColor)
                 component["color"] = componentIt.second.color.name(QColor::HexArgb).toUtf8().constData();
             if (componentIt.second.closed)
-                component["closed"] = componentIt.second.closed;
+                component["closed"] = "true";
             component["__dirty"] = componentIt.second.dirty ? "true" : "false";
             std::vector<std::string> childIdList;
             for (const auto& childId : componentIt.second.childrenIds) {

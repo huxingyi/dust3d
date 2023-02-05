@@ -361,6 +361,31 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     if (nullptr != colorImageGroupBox)
         skinLayout->addWidget(colorImageGroupBox);
 
+    QGroupBox* stitchingLineGroupBox = nullptr;
+    if (!m_componentIds.empty()) {
+        QCheckBox* closeStateBox = new QCheckBox();
+        Theme::initCheckbox(closeStateBox);
+        closeStateBox->setText(tr("Closed"));
+        closeStateBox->setChecked(lastClosed());
+
+        connect(closeStateBox, &QCheckBox::stateChanged, this, [=]() {
+            bool closed = closeStateBox->isChecked();
+            for (const auto& componentId : m_componentIds)
+                emit setComponentCloseState(componentId, closed);
+            emit groupOperationAdded();
+        });
+
+        QHBoxLayout* optionsLayout = new QHBoxLayout;
+        optionsLayout->addStretch();
+        optionsLayout->addWidget(closeStateBox);
+
+        QVBoxLayout* stitchingLineLayout = new QVBoxLayout;
+        stitchingLineLayout->addLayout(optionsLayout);
+
+        stitchingLineGroupBox = new QGroupBox(tr("Stitching Line"));
+        stitchingLineGroupBox->setLayout(stitchingLineLayout);
+    }
+
     QVBoxLayout* mainLayout = new QVBoxLayout;
     mainLayout->addLayout(topLayout);
     if (nullptr != deformGroupBox)
@@ -370,6 +395,8 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     if (nullptr != smoothGroupBox)
         mainLayout->addWidget(smoothGroupBox);
     mainLayout->addLayout(skinLayout);
+    if (nullptr != stitchingLineGroupBox)
+        mainLayout->addWidget(stitchingLineGroupBox);
     mainLayout->setSizeConstraint(QLayout::SetFixedSize);
 
     connect(this, &ComponentPropertyWidget::setComponentColorState, m_document, &Document::setComponentColorState);
@@ -383,6 +410,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     connect(this, &ComponentPropertyWidget::setPartChamferState, m_document, &Document::setPartChamferState);
     connect(this, &ComponentPropertyWidget::setPartRoundState, m_document, &Document::setPartRoundState);
     connect(this, &ComponentPropertyWidget::setComponentColorImage, m_document, &Document::setComponentColorImage);
+    connect(this, &ComponentPropertyWidget::setComponentCloseState, m_document, &Document::setComponentCloseState);
     connect(this, &ComponentPropertyWidget::setPartSmoothCutoffDegrees, m_document, &Document::setPartSmoothCutoffDegrees);
     connect(this, &ComponentPropertyWidget::setPartCutFace, m_document, &Document::setPartCutFace);
     connect(this, &ComponentPropertyWidget::setPartCutFaceLinkedId, m_document, &Document::setPartCutFaceLinkedId);
@@ -455,6 +483,25 @@ QColor ComponentPropertyWidget::lastColor()
             })->first;
     }
     return color;
+}
+
+bool ComponentPropertyWidget::lastClosed()
+{
+    bool closed = false;
+    std::map<bool, int> closeStateMap;
+    for (const auto& componentId : m_componentIds) {
+        const Document::Component* component = m_document->findComponent(componentId);
+        if (nullptr == component)
+            continue;
+        closeStateMap[component->closed]++;
+    }
+    if (!closeStateMap.empty()) {
+        closed = std::max_element(closeStateMap.begin(), closeStateMap.end(),
+            [](const std::map<bool, int>::value_type& a, const std::map<bool, int>::value_type& b) {
+                return a.second < b.second;
+            })->first;
+    }
+    return closed;
 }
 
 dust3d::Uuid ComponentPropertyWidget::lastColorImageId()
