@@ -362,7 +362,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         skinLayout->addWidget(colorImageGroupBox);
 
     QGroupBox* stitchingLineGroupBox = nullptr;
-    if (!m_componentIds.empty()) {
+    if (!m_componentIds.empty() && hasStitchingLineConfigure()) {
         QCheckBox* closeStateBox = new QCheckBox();
         Theme::initCheckbox(closeStateBox);
         closeStateBox->setText(tr("Closed"));
@@ -556,4 +556,22 @@ void ComponentPropertyWidget::showColorDialog()
         emit setComponentColorState(componentId, true, color);
     }
     emit groupOperationAdded();
+}
+
+bool ComponentPropertyWidget::hasStitchingLineConfigure()
+{
+    for (const auto& componentId : m_componentIds) {
+        const Document::Component* component = m_document->findComponent(componentId);
+        if (nullptr != component) {
+            for (const auto& childId : component->childrenIds) {
+                const Document::Component* child = m_document->findComponent(childId);
+                if (nullptr != child) {
+                    const Document::Part* part = m_document->findPart(child->linkToPartId);
+                    if (dust3d::PartTarget::StitchingLine == part->target)
+                        return true;
+                }
+            }
+        }
+    }
+    return false;
 }
