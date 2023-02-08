@@ -1360,11 +1360,28 @@ void Document::addEdge(dust3d::Uuid fromNodeId, dust3d::Uuid toNodeId)
 
     fromPart->second.dirty = true;
 
+    bool fromReverse = false;
+    if (!fromNode->edgeIds.empty()) {
+        const Document::Edge* fromEdge = findEdge(fromNode->edgeIds[0]);
+        if (nullptr != fromEdge) {
+            if (!fromEdge->nodeIds.empty() && fromNode->id == fromEdge->nodeIds.front())
+                fromReverse = true;
+        }
+    }
+
     if (fromNode->partId != toNode->partId) {
         toPartRemoved = true;
         std::vector<dust3d::Uuid> toGroup;
         std::set<dust3d::Uuid> visitMap;
         joinNodeAndNeiborsToGroup(&toGroup, toNodeId, &visitMap);
+        std::set<std::pair<dust3d::Uuid, dust3d::Uuid>> links;
+        for (size_t j = 1; j < toGroup.size(); ++j) {
+            size_t i = j - 1;
+            if (fromReverse)
+                links.insert(std::make_pair(toGroup[j], toGroup[i]));
+            else
+                links.insert(std::make_pair(toGroup[i], toGroup[j]));
+        }
         for (auto nodeIdIt = toGroup.begin(); nodeIdIt != toGroup.end(); nodeIdIt++) {
             auto nodeIt = nodeMap.find(*nodeIdIt);
             if (nodeIt == nodeMap.end()) {
@@ -1378,14 +1395,23 @@ void Document::addEdge(dust3d::Uuid fromNodeId, dust3d::Uuid toNodeId)
                     continue;
                 }
                 edgeIt->second.partId = fromNode->partId;
+                if (2 == edgeIt->second.nodeIds.size() && links.end() == links.find(std::make_pair(edgeIt->second.nodeIds[0], edgeIt->second.nodeIds[1]))) {
+                    std::swap(edgeIt->second.nodeIds[0], edgeIt->second.nodeIds[1]);
+                    emit edgeReversed(edgeIt->first);
+                }
             }
         }
     }
 
     Document::Edge edge;
     edge.partId = fromNode->partId;
-    edge.nodeIds.push_back(fromNode->id);
-    edge.nodeIds.push_back(toNodeId);
+    if (fromReverse) {
+        edge.nodeIds.push_back(toNodeId);
+        edge.nodeIds.push_back(fromNode->id);
+    } else {
+        edge.nodeIds.push_back(fromNode->id);
+        edge.nodeIds.push_back(toNodeId);
+    }
     edgeMap[edge.id] = edge;
 
     nodeMap[toNodeId].edgeIds.push_back(edge.id);
