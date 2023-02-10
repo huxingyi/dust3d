@@ -462,6 +462,7 @@ bool MeshGenerator::fetchPartOrderedNodes(const std::string& partIdString, std::
 std::unique_ptr<MeshState> MeshGenerator::combineStitchingMesh(const std::string& componentIdString,
     const std::vector<std::string>& partIdStrings,
     const std::vector<std::string>& componentIdStrings,
+    bool closed,
     GeneratedComponent& componentCache)
 {
     std::vector<StitchMeshBuilder::Spline> splines;
@@ -481,15 +482,16 @@ std::unique_ptr<MeshState> MeshGenerator::combineStitchingMesh(const std::string
         std::vector<MeshNode> orderedBuilderNodes;
         if (!fetchPartOrderedNodes(partIdString, &orderedBuilderNodes, &isCircle))
             continue;
+        if (isCircle)
+            continue;
         isClosing = orderedBuilderNodes.size() <= 1;
         splines.emplace_back(StitchMeshBuilder::Spline {
             std::move(orderedBuilderNodes),
-            isCircle,
             isClosing,
             componentIds[partIndex] });
     }
 
-    auto stitchMeshBuilder = std::make_unique<StitchMeshBuilder>(std::move(splines));
+    auto stitchMeshBuilder = std::make_unique<StitchMeshBuilder>(std::move(splines), closed);
     stitchMeshBuilder->build();
 
     const auto& generatedVertices = stitchMeshBuilder->generatedVertices();
@@ -534,7 +536,7 @@ std::unique_ptr<MeshState> MeshGenerator::combineStitchingMesh(const std::string
         std::vector<Vector3> positions(spline.nodes.size());
         for (size_t i = 0; i < spline.nodes.size(); ++i)
             positions[i] = spline.nodes[i].origin;
-        ropeMesh.addRope(positions, spline.isCircle);
+        ropeMesh.addRope(positions, false);
 
         ComponentPreview stitchingLinePreview;
         if (mesh)
@@ -880,7 +882,7 @@ std::unique_ptr<MeshState> MeshGenerator::combineComponentMesh(const std::string
             groupMeshes.emplace_back(std::make_tuple(std::move(childMesh), group.first, String::join(group.second, "|")));
         }
         if (!stitchingParts.empty()) {
-            auto stitchingMesh = combineStitchingMesh(componentIdString, stitchingParts, stitchingComponents, componentCache);
+            auto stitchingMesh = combineStitchingMesh(componentIdString, stitchingParts, stitchingComponents, String::isTrue(String::valueOrEmpty(*component, "closed")), componentCache);
             if (stitchingMesh && !stitchingMesh->isNull()) {
                 groupMeshes.emplace_back(std::make_tuple(std::move(stitchingMesh), CombineMode::Normal, String::join(stitchingComponents, ":")));
             }

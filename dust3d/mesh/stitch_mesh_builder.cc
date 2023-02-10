@@ -26,8 +26,9 @@
 
 namespace dust3d {
 
-StitchMeshBuilder::StitchMeshBuilder(std::vector<Spline>&& splines)
+StitchMeshBuilder::StitchMeshBuilder(std::vector<Spline>&& splines, bool closed)
 {
+    m_closed = closed;
     m_splines = std::move(splines);
 }
 
@@ -256,8 +257,6 @@ void StitchMeshBuilder::build()
         m_targetSegments = std::max(m_targetSegments, it.nodes.size() - 1);
     }
 
-    // TODO: Make sure there is no closing nodes in the middle
-
     // Interpolate splines to make sure every spline have equal size of nodes
     if (!interpolateSplinesToHaveEqualSizeOfNodes())
         return;
@@ -266,6 +265,7 @@ void StitchMeshBuilder::build()
     std::vector<std::vector<StitchingPoint>> stitchingPoints = convertSplinesToStitchingPoints(m_splines);
     generateMeshFromStitchingPoints(stitchingPoints);
 
+    /*
     if (m_splines.back().isClosing && stitchingPoints.size() >= 2) {
         addQuadButMaybeTriangle(std::vector<size_t> {
                                     stitchingPoints[stitchingPoints.size() - 2].back().originVertex,
@@ -281,6 +281,7 @@ void StitchMeshBuilder::build()
                                     stitchingPoints.front().front().originVertex },
             std::vector<Vector2> { Vector2(1.0, stitchingPoints[1].back().v), Vector2(0.0, stitchingPoints[1].back().v), Vector2(0.5, stitchingPoints.front().front().v) });
     }
+    */
 
     /*
 

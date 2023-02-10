@@ -33,12 +33,11 @@ class StitchMeshBuilder {
 public:
     struct Spline {
         std::vector<MeshNode> nodes;
-        bool isCircle = false;
         bool isClosing = false;
         Uuid sourceId;
     };
 
-    StitchMeshBuilder(std::vector<Spline>&& splines);
+    StitchMeshBuilder(std::vector<Spline>&& splines, bool closed);
     void build();
     const std::vector<Vector3>& generatedVertices() const;
     const std::vector<Uuid>& generatedVertexSources() const;
@@ -61,6 +60,7 @@ private:
     std::vector<std::vector<Vector2>> m_generatedFaceUvs;
     std::vector<Vector3> m_generatedNormals;
     size_t m_targetSegments = 0;
+    bool m_closed = false;
 
     bool interpolateSplinesToHaveEqualSizeOfNodes();
     std::vector<std::vector<StitchingPoint>> convertSplinesToStitchingPoints(const std::vector<Spline>& splines);
