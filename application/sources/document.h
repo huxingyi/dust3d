@@ -180,7 +180,9 @@ public:
         dust3d::Uuid colorImageId;
         bool expanded = true;
         dust3d::CombineMode combineMode = dust3d::CombineMode::Normal;
-        bool closed = false;
+        bool sideClosed = false;
+        bool frontClosed = false;
+        bool backClosed = false;
         bool dirty = true;
         std::vector<dust3d::Uuid> childrenIds;
         bool isPreviewMeshObsolete = false;
@@ -248,7 +250,9 @@ signals:
     void componentExpandStateChanged(dust3d::Uuid componentId);
     void componentPreviewMeshChanged(const dust3d::Uuid& componentId);
     void componentPreviewPixmapChanged(const dust3d::Uuid& componentId);
-    void componentCloseStateChanged(const dust3d::Uuid& componentId);
+    void componentSideCloseStateChanged(const dust3d::Uuid& componentId);
+    void componentFrontCloseStateChanged(const dust3d::Uuid& componentId);
+    void componentBackCloseStateChanged(const dust3d::Uuid& componentId);
     void nodeRemoved(dust3d::Uuid nodeId);
     void edgeRemoved(dust3d::Uuid edgeId);
     void nodeRadiusChanged(dust3d::Uuid nodeId);
@@ -452,7 +456,9 @@ public slots:
     void ungroupComponent(const dust3d::Uuid& componentId);
     void createNewChildComponent(dust3d::Uuid parentComponentId);
     void setComponentExpandState(dust3d::Uuid componentId, bool expanded);
-    void setComponentCloseState(const dust3d::Uuid& componentId, bool closed);
+    void setComponentSideCloseState(const dust3d::Uuid& componentId, bool closed);
+    void setComponentFrontCloseState(const dust3d::Uuid& componentId, bool closed);
+    void setComponentBackCloseState(const dust3d::Uuid& componentId, bool closed);
     void hideOtherComponents(dust3d::Uuid componentId);
     void lockOtherComponents(dust3d::Uuid componentId);
     void setComponentColorState(const dust3d::Uuid& componentId, bool hasColor, QColor color);

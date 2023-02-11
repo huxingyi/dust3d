@@ -628,19 +628,51 @@ void Document::setComponentExpandState(dust3d::Uuid componentId, bool expanded)
     emit optionsChanged();
 }
 
-void Document::setComponentCloseState(const dust3d::Uuid& componentId, bool closed)
+void Document::setComponentSideCloseState(const dust3d::Uuid& componentId, bool closed)
 {
     auto component = componentMap.find(componentId);
     if (component == componentMap.end()) {
         return;
     }
 
-    if (component->second.closed == closed)
+    if (component->second.sideClosed == closed)
         return;
 
     component->second.dirty = true;
-    component->second.closed = closed;
-    emit componentCloseStateChanged(componentId);
+    component->second.sideClosed = closed;
+    emit componentSideCloseStateChanged(componentId);
+    emit skeletonChanged();
+}
+
+void Document::setComponentFrontCloseState(const dust3d::Uuid& componentId, bool closed)
+{
+    auto component = componentMap.find(componentId);
+    if (component == componentMap.end()) {
+        return;
+    }
+
+    if (component->second.frontClosed == closed)
+        return;
+
+    component->second.dirty = true;
+    component->second.frontClosed = closed;
+    emit componentFrontCloseStateChanged(componentId);
+    emit skeletonChanged();
+}
+
+void Document::setComponentBackCloseState(const dust3d::Uuid& componentId, bool closed)
+{
+    auto component = componentMap.find(componentId);
+    if (component == componentMap.end()) {
+        return;
+    }
+
+    if (component->second.backClosed == closed)
+        return;
+
+    component->second.dirty = true;
+    component->second.backClosed = closed;
+    emit componentBackCloseStateChanged(componentId);
     emit skeletonChanged();
 }
 
@@ -1789,8 +1821,12 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
                 component["colorImageId"] = componentIt.second.colorImageId.toString();
             if (componentIt.second.hasColor)
                 component["color"] = componentIt.second.color.name(QColor::HexArgb).toUtf8().constData();
-            if (componentIt.second.closed)
-                component["closed"] = "true";
+            if (componentIt.second.sideClosed)
+                component["sideClosed"] = "true";
+            if (componentIt.second.frontClosed)
+                component["frontClosed"] = "true";
+            if (componentIt.second.backClosed)
+                component["backClosed"] = "true";
             component["__dirty"] = componentIt.second.dirty ? "true" : "false";
             std::vector<std::string> childIdList;
             for (const auto& childId : componentIt.second.childrenIds) {
@@ -1996,7 +2032,9 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
         component.name = dust3d::String::valueOrEmpty(componentKv.second, "name").c_str();
         component.expanded = dust3d::String::isTrue(dust3d::String::valueOrEmpty(componentKv.second, "expanded"));
         component.combineMode = dust3d::CombineModeFromString(dust3d::String::valueOrEmpty(componentKv.second, "combineMode").c_str());
-        component.closed = dust3d::String::isTrue(dust3d::String::valueOrEmpty(componentKv.second, "closed"));
+        component.sideClosed = dust3d::String::isTrue(dust3d::String::valueOrEmpty(componentKv.second, "sideClosed"));
+        component.frontClosed = dust3d::String::isTrue(dust3d::String::valueOrEmpty(componentKv.second, "frontClosed"));
+        component.sideClosed = dust3d::String::isTrue(dust3d::String::valueOrEmpty(componentKv.second, "sideClosed"));
         const auto& colorImageIt = componentKv.second.find("colorImageId");
         if (colorImageIt != componentKv.second.end()) {
             component.colorImageId = dust3d::Uuid(colorImageIt->second);

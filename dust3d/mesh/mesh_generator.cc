@@ -462,7 +462,9 @@ bool MeshGenerator::fetchPartOrderedNodes(const std::string& partIdString, std::
 std::unique_ptr<MeshState> MeshGenerator::combineStitchingMesh(const std::string& componentIdString,
     const std::vector<std::string>& partIdStrings,
     const std::vector<std::string>& componentIdStrings,
-    bool closed,
+    bool frontClosed,
+    bool backClosed,
+    bool sideClosed,
     GeneratedComponent& componentCache)
 {
     std::vector<StitchMeshBuilder::Spline> splines;
@@ -478,20 +480,17 @@ std::unique_ptr<MeshState> MeshGenerator::combineStitchingMesh(const std::string
                 continue;
         }
         bool isCircle = false;
-        bool isClosing = false;
         std::vector<MeshNode> orderedBuilderNodes;
         if (!fetchPartOrderedNodes(partIdString, &orderedBuilderNodes, &isCircle))
             continue;
         if (isCircle)
             continue;
-        isClosing = orderedBuilderNodes.size() <= 1;
         splines.emplace_back(StitchMeshBuilder::Spline {
             std::move(orderedBuilderNodes),
-            isClosing,
             componentIds[partIndex] });
     }
 
-    auto stitchMeshBuilder = std::make_unique<StitchMeshBuilder>(std::move(splines), closed);
+    auto stitchMeshBuilder = std::make_unique<StitchMeshBuilder>(std::move(splines), frontClosed, backClosed, sideClosed);
     stitchMeshBuilder->build();
 
     const auto& generatedVertices = stitchMeshBuilder->generatedVertices();
@@ -882,7 +881,13 @@ std::unique_ptr<MeshState> MeshGenerator::combineComponentMesh(const std::string
             groupMeshes.emplace_back(std::make_tuple(std::move(childMesh), group.first, String::join(group.second, "|")));
         }
         if (!stitchingParts.empty()) {
-            auto stitchingMesh = combineStitchingMesh(componentIdString, stitchingParts, stitchingComponents, String::isTrue(String::valueOrEmpty(*component, "closed")), componentCache);
+            auto stitchingMesh = combineStitchingMesh(componentIdString,
+                stitchingParts,
+                stitchingComponents,
+                String::isTrue(String::valueOrEmpty(*component, "frontClosed")),
+                String::isTrue(String::valueOrEmpty(*component, "backClosed")),
+                String::isTrue(String::valueOrEmpty(*component, "sideClosed")),
+                componentCache);
             if (stitchingMesh && !stitchingMesh->isNull()) {
                 groupMeshes.emplace_back(std::make_tuple(std::move(stitchingMesh), CombineMode::Normal, String::join(stitchingComponents, ":")));
             }

@@ -374,21 +374,47 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
 
     QGroupBox* stitchingLineGroupBox = nullptr;
     if (!m_componentIds.empty() && hasStitchingLineConfigure()) {
-        QCheckBox* closeStateBox = new QCheckBox();
-        Theme::initCheckbox(closeStateBox);
-        closeStateBox->setText(tr("Closed"));
-        closeStateBox->setChecked(lastClosed());
+        QCheckBox* frontCloseStateBox = new QCheckBox();
+        Theme::initCheckbox(frontCloseStateBox);
+        frontCloseStateBox->setText(tr("Front Closed"));
+        frontCloseStateBox->setChecked(lastFrontClosed());
 
-        connect(closeStateBox, &QCheckBox::stateChanged, this, [=]() {
-            bool closed = closeStateBox->isChecked();
+        QCheckBox* backCloseStateBox = new QCheckBox();
+        Theme::initCheckbox(backCloseStateBox);
+        backCloseStateBox->setText(tr("Back Closed"));
+        backCloseStateBox->setChecked(lastBackClosed());
+
+        QCheckBox* sideCloseStateBox = new QCheckBox();
+        Theme::initCheckbox(sideCloseStateBox);
+        sideCloseStateBox->setText(tr("Side Closed"));
+        sideCloseStateBox->setChecked(lastSideClosed());
+
+        connect(frontCloseStateBox, &QCheckBox::stateChanged, this, [=]() {
+            bool closed = frontCloseStateBox->isChecked();
             for (const auto& componentId : m_componentIds)
-                emit setComponentCloseState(componentId, closed);
+                emit setComponentFrontCloseState(componentId, closed);
+            emit groupOperationAdded();
+        });
+
+        connect(backCloseStateBox, &QCheckBox::stateChanged, this, [=]() {
+            bool closed = backCloseStateBox->isChecked();
+            for (const auto& componentId : m_componentIds)
+                emit setComponentBackCloseState(componentId, closed);
+            emit groupOperationAdded();
+        });
+
+        connect(sideCloseStateBox, &QCheckBox::stateChanged, this, [=]() {
+            bool closed = sideCloseStateBox->isChecked();
+            for (const auto& componentId : m_componentIds)
+                emit setComponentSideCloseState(componentId, closed);
             emit groupOperationAdded();
         });
 
         QHBoxLayout* optionsLayout = new QHBoxLayout;
         optionsLayout->addStretch();
-        optionsLayout->addWidget(closeStateBox);
+        optionsLayout->addWidget(frontCloseStateBox);
+        optionsLayout->addWidget(backCloseStateBox);
+        optionsLayout->addWidget(sideCloseStateBox);
 
         QVBoxLayout* stitchingLineLayout = new QVBoxLayout;
         stitchingLineLayout->addLayout(optionsLayout);
@@ -421,7 +447,9 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     connect(this, &ComponentPropertyWidget::setPartChamferState, m_document, &Document::setPartChamferState);
     connect(this, &ComponentPropertyWidget::setPartRoundState, m_document, &Document::setPartRoundState);
     connect(this, &ComponentPropertyWidget::setComponentColorImage, m_document, &Document::setComponentColorImage);
-    connect(this, &ComponentPropertyWidget::setComponentCloseState, m_document, &Document::setComponentCloseState);
+    connect(this, &ComponentPropertyWidget::setComponentSideCloseState, m_document, &Document::setComponentSideCloseState);
+    connect(this, &ComponentPropertyWidget::setComponentFrontCloseState, m_document, &Document::setComponentFrontCloseState);
+    connect(this, &ComponentPropertyWidget::setComponentBackCloseState, m_document, &Document::setComponentBackCloseState);
     connect(this, &ComponentPropertyWidget::setPartSmoothCutoffDegrees, m_document, &Document::setPartSmoothCutoffDegrees);
     connect(this, &ComponentPropertyWidget::setPartCutFace, m_document, &Document::setPartCutFace);
     connect(this, &ComponentPropertyWidget::setPartCutFaceLinkedId, m_document, &Document::setPartCutFaceLinkedId);
@@ -497,7 +525,7 @@ QColor ComponentPropertyWidget::lastColor()
     return color;
 }
 
-bool ComponentPropertyWidget::lastClosed()
+bool ComponentPropertyWidget::lastSideClosed()
 {
     bool closed = false;
     std::map<bool, int> closeStateMap;
@@ -505,7 +533,45 @@ bool ComponentPropertyWidget::lastClosed()
         const Document::Component* component = m_document->findComponent(componentId);
         if (nullptr == component)
             continue;
-        closeStateMap[component->closed]++;
+        closeStateMap[component->sideClosed]++;
+    }
+    if (!closeStateMap.empty()) {
+        closed = std::max_element(closeStateMap.begin(), closeStateMap.end(),
+            [](const std::map<bool, int>::value_type& a, const std::map<bool, int>::value_type& b) {
+                return a.second < b.second;
+            })->first;
+    }
+    return closed;
+}
+
+bool ComponentPropertyWidget::lastFrontClosed()
+{
+    bool closed = false;
+    std::map<bool, int> closeStateMap;
+    for (const auto& componentId : m_componentIds) {
+        const Document::Component* component = m_document->findComponent(componentId);
+        if (nullptr == component)
+            continue;
+        closeStateMap[component->frontClosed]++;
+    }
+    if (!closeStateMap.empty()) {
+        closed = std::max_element(closeStateMap.begin(), closeStateMap.end(),
+            [](const std::map<bool, int>::value_type& a, const std::map<bool, int>::value_type& b) {
+                return a.second < b.second;
+            })->first;
+    }
+    return closed;
+}
+
+bool ComponentPropertyWidget::lastBackClosed()
+{
+    bool closed = false;
+    std::map<bool, int> closeStateMap;
+    for (const auto& componentId : m_componentIds) {
+        const Document::Component* component = m_document->findComponent(componentId);
+        if (nullptr == component)
+            continue;
+        closeStateMap[component->backClosed]++;
     }
     if (!closeStateMap.empty()) {
         closed = std::max_element(closeStateMap.begin(), closeStateMap.end(),

@@ -164,7 +164,9 @@ private:
     std::unique_ptr<MeshState> combineStitchingMesh(const std::string& componentIdString,
         const std::vector<std::string>& partIdStrings,
         const std::vector<std::string>& componentIdStrings,
-        bool closed,
+        bool frontClosed,
+        bool backClosed,
+        bool sideClosed,
         GeneratedComponent& componentCache);
     void collectUncombinedComponent(const std::string& componentIdString);
     void cutFaceStringToCutTemplate(const std::string& cutFaceString, std::vector<Vector2>& cutTemplate);
