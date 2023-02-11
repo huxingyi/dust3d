@@ -132,8 +132,19 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
             emit groupOperationAdded();
         });
 
+        QCheckBox* mirrorStateBox = new QCheckBox();
+        Theme::initCheckbox(mirrorStateBox);
+        mirrorStateBox->setText(tr("Mirrored"));
+        mirrorStateBox->setChecked(m_part->xMirrored);
+
+        connect(mirrorStateBox, &QCheckBox::stateChanged, this, [=]() {
+            emit setPartXmirrorState(m_partId, mirrorStateBox->isChecked());
+            emit groupOperationAdded();
+        });
+
         QHBoxLayout* deformUnifyLayout = new QHBoxLayout;
         deformUnifyLayout->addStretch();
+        deformUnifyLayout->addWidget(mirrorStateBox);
         deformUnifyLayout->addWidget(deformUnifyStateBox);
 
         deformLayout->addLayout(thicknessLayout);
@@ -414,6 +425,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     connect(this, &ComponentPropertyWidget::setPartSmoothCutoffDegrees, m_document, &Document::setPartSmoothCutoffDegrees);
     connect(this, &ComponentPropertyWidget::setPartCutFace, m_document, &Document::setPartCutFace);
     connect(this, &ComponentPropertyWidget::setPartCutFaceLinkedId, m_document, &Document::setPartCutFaceLinkedId);
+    connect(this, &ComponentPropertyWidget::setPartXmirrorState, m_document, &Document::setPartXmirrorState);
     connect(this, &ComponentPropertyWidget::setComponentCombineMode, m_document, &Document::setComponentCombineMode);
     connect(this, &ComponentPropertyWidget::groupOperationAdded, m_document, &Document::saveSnapshot);
 

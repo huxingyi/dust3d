@@ -25,6 +25,7 @@ signals:
     void setPartSmoothCutoffDegrees(const dust3d::Uuid& partId, float degrees);
     void setPartCutFace(const dust3d::Uuid& partId, dust3d::CutFace cutFace);
     void setPartCutFaceLinkedId(const dust3d::Uuid& partId, dust3d::Uuid linkedId);
+    void setPartXmirrorState(dust3d::Uuid partId, bool mirrored);
     void setComponentCombineMode(dust3d::Uuid componentId, dust3d::CombineMode combineMode);
     void groupOperationAdded();
 
