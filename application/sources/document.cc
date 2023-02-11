@@ -1,5 +1,4 @@
 #include "document.h"
-#include "bone_generator.h"
 #include "image_forever.h"
 #include "mesh_generator.h"
 #include "uv_map_generator.h"
@@ -1279,21 +1278,6 @@ void Document::setNodeRadius(dust3d::Uuid nodeId, float radius)
     emit skeletonChanged();
 }
 
-void Document::setNodeBoneJointState(const dust3d::Uuid& nodeId, bool boneJoint)
-{
-    auto it = nodeMap.find(nodeId);
-    if (it == nodeMap.end()) {
-        return;
-    }
-    if (isPartReadonly(it->second.partId))
-        return;
-    if (it->second.boneJoint == boneJoint)
-        return;
-    it->second.boneJoint = boneJoint;
-    emit nodeBoneJointStateChanged(nodeId);
-    emit rigChanged();
-}
-
 void Document::switchNodeXZ(dust3d::Uuid nodeId)
 {
     auto it = nodeMap.find(nodeId);
@@ -1682,9 +1666,6 @@ void Document::setEditMode(Document::EditMode mode)
     if (editMode == mode)
         return;
 
-    if (EditMode::Pick == editMode)
-        resetCurrentBone();
-
     editMode = mode;
     emit editModeChanged();
 }
@@ -1779,13 +1760,6 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
             }
             if (!nodeIt.second.name.isEmpty())
                 node["name"] = nodeIt.second.name.toUtf8().constData();
-            std::vector<std::string> nodeBoneIdList;
-            for (const auto& boneId : nodeIt.second.boneIds) {
-                nodeBoneIdList.push_back(boneId.toString());
-            }
-            std::string boneIds = dust3d::String::join(nodeBoneIdList, ",");
-            if (!boneIds.empty())
-                node["boneIdList"] = boneIds;
             snapshot->nodes[node["id"]] = node;
         }
         for (const auto& edgeIt : edgeMap) {
@@ -1844,31 +1818,6 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
                 snapshot->rootComponent["children"] = children;
         }
     }
-    if (static_cast<unsigned int>(Document::SnapshotFor::Bones) & static_cast<unsigned int>(forWhat)) {
-        if (!boneIdList.empty()) {
-            for (const auto& boneId : boneIdList) {
-                snapshot->boneIdList.emplace_back(boneId.toString());
-            }
-            for (const auto& boneIt : boneMap) {
-                std::map<std::string, std::string> bone;
-                bone["id"] = boneIt.second.id.toString();
-                if (!boneIt.second.attachBoneId.isNull()) {
-                    bone["attachBoneId"] = boneIt.second.attachBoneId.toString();
-                    bone["attachBoneJointIndex"] = std::to_string(boneIt.second.attachBoneJointIndex);
-                }
-                if (!boneIt.second.name.isEmpty())
-                    bone["name"] = boneIt.second.name.toUtf8().constData();
-                std::vector<std::string> nodeIdList;
-                for (const auto& nodeId : boneIt.second.joints) {
-                    nodeIdList.push_back(nodeId.toString());
-                }
-                std::string nodeIds = dust3d::String::join(nodeIdList, ",");
-                if (!nodeIds.empty())
-                    bone["jointNodeIdList"] = nodeIds;
-                snapshot->bones[bone["id"]] = bone;
-            }
-        }
-    }
     if (Document::SnapshotFor::Document == forWhat) {
         std::map<std::string, std::string> canvas;
         canvas["originX"] = std::to_string(getOriginX());
@@ -1897,7 +1846,6 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
     std::set<dust3d::Uuid> newAddedEdgeIds;
     std::set<dust3d::Uuid> newAddedPartIds;
     std::set<dust3d::Uuid> newAddedComponentIds;
-    std::set<dust3d::Uuid> newAddedBoneIds;
 
     std::set<dust3d::Uuid> inversePartIds;
 
@@ -1972,24 +1920,6 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
             part.setCutFaceLinkedId(findNewLinkedId->second);
         }
     }
-    for (const auto& boneKv : snapshot.bones) {
-        Document::Bone bone;
-        auto boneId = bone.id;
-        oldNewIdMap[dust3d::Uuid(boneKv.first)] = boneId;
-        bone.name = dust3d::String::valueOrEmpty(boneKv.second, "name").c_str();
-        bone.attachBoneJointIndex = dust3d::String::toInt(dust3d::String::valueOrEmpty(boneKv.second, "attachBoneJointIndex"));
-        boneMap.emplace(boneId, std::move(bone));
-        newAddedBoneIds.insert(boneId);
-    }
-    for (const auto& boneIdString : snapshot.boneIdList) {
-        boneIdList.push_back(oldNewIdMap[dust3d::Uuid(boneIdString)]);
-    }
-    for (const auto& boneKv : snapshot.bones) {
-        auto attachBoneId = dust3d::Uuid(dust3d::String::valueOrEmpty(boneKv.second, "attachBoneId"));
-        if (!attachBoneId.isNull()) {
-            boneMap[oldNewIdMap[dust3d::Uuid(boneKv.first)]].attachBoneId = oldNewIdMap[attachBoneId];
-        }
-    }
     for (const auto& nodeKv : snapshot.nodes) {
         if (nodeKv.second.find("radius") == nodeKv.second.end() || nodeKv.second.find("x") == nodeKv.second.end() || nodeKv.second.find("y") == nodeKv.second.end() || nodeKv.second.find("z") == nodeKv.second.end() || nodeKv.second.find("partId") == nodeKv.second.end())
             continue;
@@ -2022,24 +1952,8 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
                 }
             }
         }
-        for (const auto& boneIdString : dust3d::String::split(dust3d::String::valueOrEmpty(nodeKv.second, "boneIdList"), ',')) {
-            if (boneIdString.empty())
-                continue;
-            node.boneIds.insert(oldNewIdMap[dust3d::Uuid(boneIdString)]);
-        }
         nodeMap[node.id] = node;
         newAddedNodeIds.insert(node.id);
-    }
-    for (const auto& boneKv : snapshot.bones) {
-        std::vector<dust3d::Uuid> joints;
-        for (const auto& nodeIdString : dust3d::String::split(dust3d::String::valueOrEmpty(boneKv.second, "jointNodeIdList"), ',')) {
-            if (nodeIdString.empty())
-                continue;
-            auto newNodeId = oldNewIdMap[dust3d::Uuid(nodeIdString)];
-            nodeMap[newNodeId].boneJoint = true;
-            joints.push_back(newNodeId);
-        }
-        boneMap[oldNewIdMap[dust3d::Uuid(boneKv.first)]].joints = joints;
     }
     for (const auto& edgeKv : snapshot.edges) {
         if (edgeKv.second.find("from") == edgeKv.second.end() || edgeKv.second.find("to") == edgeKv.second.end() || edgeKv.second.find("partId") == edgeKv.second.end())
@@ -2165,11 +2079,6 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
     if (isOriginChanged)
         emit originChanged();
 
-    for (const auto& boneIt : newAddedBoneIds) {
-        emit boneAdded(boneIt);
-    }
-    emit boneIdListChanged();
-
     emit skeletonChanged();
 
     for (const auto& partIt : newAddedPartIds) {
@@ -2195,8 +2104,6 @@ void Document::silentReset()
     partMap.clear();
     componentMap.clear();
     rootComponent = Document::Component();
-    boneMap.clear();
-    boneIdList.clear();
 }
 
 void Document::reset()
@@ -2253,21 +2160,6 @@ quint64 Document::resultTextureMeshId()
     if (nullptr == m_resultTextureMesh)
         return 0;
     return m_resultTextureMesh->meshId();
-}
-
-ModelMesh* Document::takeResultBodyBonePreviewMesh()
-{
-    if (nullptr == m_resultBodyBonePreviewMesh)
-        return nullptr;
-    ModelMesh* resultBodyBonePreviewMesh = new ModelMesh(*m_resultBodyBonePreviewMesh);
-    return resultBodyBonePreviewMesh;
-}
-
-quint64 Document::resultBodyBonePreviewMeshId()
-{
-    if (nullptr == m_resultBodyBonePreviewMesh)
-        return 0;
-    return m_resultBodyBonePreviewMesh->meshId();
 }
 
 void Document::meshReady()
@@ -2886,10 +2778,10 @@ bool Document::isEdgeEditable(dust3d::Uuid edgeId) const
 
 bool Document::isExportReady() const
 {
-    if (m_meshGenerator || m_textureGenerator || m_boneGenerator)
+    if (m_meshGenerator || m_textureGenerator)
         return false;
 
-    if (m_isResultMeshObsolete || m_isTextureObsolete || m_isResultBoneObsolete)
+    if (m_isResultMeshObsolete || m_isTextureObsolete)
         return false;
 
     return true;
@@ -2909,11 +2801,6 @@ bool Document::isMeshGenerating() const
 bool Document::isTextureGenerating() const
 {
     return nullptr != m_textureGenerator;
-}
-
-bool Document::isBoneGenerating() const
-{
-    return nullptr != m_boneGenerator;
 }
 
 void Document::copyNodes(std::set<dust3d::Uuid> nodeIdSet) const
@@ -2978,237 +2865,4 @@ void Document::collectCutFaceList(std::vector<QString>& cutFaces) const
 
     for (const auto& it : cutFacePartIdList)
         cutFaces.push_back(QString(it.toString().c_str()));
-}
-
-void Document::addBone(const dust3d::Uuid& boneId)
-{
-    if (boneMap.end() != boneMap.find(boneId))
-        return;
-
-    Bone bone(boneId);
-    bone.name = "Bone" + QString::number(boneMap.size() + 1);
-    boneMap.emplace(boneId, std::move(bone));
-    boneIdList.push_back(boneId);
-    emit boneAdded(boneId);
-    emit boneIdListChanged();
-    emit rigChanged();
-}
-
-void Document::addNodesToBone(const dust3d::Uuid& boneId, const std::vector<dust3d::Uuid>& nodeIds)
-{
-    for (const auto& nodeId : nodeIds) {
-        auto nodeIt = nodeMap.find(nodeId);
-        if (nodeIt == nodeMap.end())
-            continue;
-        nodeIt->second.boneIds.insert(boneId);
-    }
-    emit boneNodesChanged(boneId);
-    emit rigChanged();
-}
-
-void Document::removeNodesFromBone(const dust3d::Uuid& boneId, const std::vector<dust3d::Uuid>& nodeIds)
-{
-    for (const auto& nodeId : nodeIds) {
-        auto nodeIt = nodeMap.find(nodeId);
-        if (nodeIt == nodeMap.end())
-            continue;
-        nodeIt->second.boneIds.erase(boneId);
-    }
-    emit boneNodesChanged(boneId);
-    emit rigChanged();
-}
-
-void Document::applyBoneJoints(const dust3d::Uuid& boneId, const std::vector<dust3d::Uuid>& nodeIds)
-{
-    auto boneIt = boneMap.find(boneId);
-    if (boneIt == boneMap.end())
-        return;
-
-    std::set<dust3d::Uuid> changeNodeIds;
-    for (const auto& nodeId : boneIt->second.joints) {
-        auto nodeIt = nodeMap.find(nodeId);
-        if (nodeIt == nodeMap.end())
-            continue;
-        nodeIt->second.asBontJoints.erase(boneId);
-        nodeIt->second.boneJoint = !nodeIt->second.asBontJoints.empty();
-        changeNodeIds.insert(nodeId);
-    }
-    boneIt->second.joints = nodeIds;
-    for (const auto& nodeId : boneIt->second.joints) {
-        auto nodeIt = nodeMap.find(nodeId);
-        if (nodeIt == nodeMap.end())
-            continue;
-        nodeIt->second.asBontJoints.insert(boneId);
-        nodeIt->second.boneJoint = true;
-        changeNodeIds.insert(nodeId);
-    }
-    for (const auto& nodeId : changeNodeIds) {
-        emit nodeBoneJointStateChanged(nodeId);
-    }
-    emit boneJointsChanged(boneId);
-    emit rigChanged();
-}
-
-void Document::removeBone(const dust3d::Uuid& boneId)
-{
-    if (boneMap.end() == boneMap.find(boneId))
-        return;
-
-    for (auto& it : nodeMap)
-        it.second.boneIds.erase(boneId);
-
-    boneIdList.erase(std::remove(boneIdList.begin(), boneIdList.end(), boneId), boneIdList.end());
-    boneMap.erase(boneId);
-    emit boneRemoved(boneId);
-    emit boneIdListChanged();
-    emit rigChanged();
-}
-
-void Document::setBoneAttachment(const dust3d::Uuid& boneId, const dust3d::Uuid& toBoneId, int toBoneJointIndex)
-{
-    auto boneIt = boneMap.find(boneId);
-    if (boneIt == boneMap.end())
-        return;
-    if (boneIt->second.attachBoneId == toBoneId && boneIt->second.attachBoneJointIndex == toBoneJointIndex)
-        return;
-    boneIt->second.attachBoneId = toBoneId;
-    boneIt->second.attachBoneJointIndex = toBoneJointIndex;
-    emit boneAttachmentChanged(boneId);
-    emit rigChanged();
-}
-
-void Document::renameBone(const dust3d::Uuid& boneId, const QString& name)
-{
-    auto boneIt = boneMap.find(boneId);
-    if (boneIt == boneMap.end())
-        return;
-    if (boneIt->second.name == name)
-        return;
-    boneIt->second.name = name;
-    emit boneNameChanged(boneId);
-    emit rigChanged();
-}
-
-const Document::Bone* Document::findBone(const dust3d::Uuid& boneId) const
-{
-    auto boneIt = boneMap.find(boneId);
-    if (boneIt == boneMap.end())
-        return nullptr;
-    return &boneIt->second;
-}
-
-void Document::stopBoneJointsPicking()
-{
-    if (EditMode::Pick != editMode)
-        return;
-    setEditMode(EditMode::Select);
-}
-
-void Document::startBoneJointsPicking(const dust3d::Uuid& boneId, size_t boneJoints)
-{
-    stopBoneJointsPicking();
-
-    m_currentBondId = boneId;
-    m_currentBoneJoints = boneJoints;
-
-    setEditMode(EditMode::Pick);
-}
-
-void Document::resetCurrentBone()
-{
-    m_currentBondId = dust3d::Uuid();
-    m_currentBoneJoints = 0;
-    m_currentBoneJointNodes.clear();
-}
-
-void Document::pickBoneNode(const dust3d::Uuid& nodeId)
-{
-    if (m_currentBondId.isNull())
-        return;
-
-    for (const auto& it : m_currentBoneJointNodes) {
-        if (it == nodeId)
-            return;
-    }
-
-    m_currentBoneJointNodes.push_back(nodeId);
-
-    applyBoneJoints(m_currentBondId, m_currentBoneJointNodes);
-
-    if (m_currentBoneJointNodes.size() < m_currentBoneJoints)
-        return;
-
-    stopBoneJointsPicking();
-}
-
-void Document::generateBone()
-{
-    if (nullptr != m_boneGenerator) {
-        m_isResultBoneObsolete = true;
-        return;
-    }
-
-    m_isResultBoneObsolete = false;
-
-    if (nullptr == m_currentObject)
-        return;
-
-    emit boneGenerating();
-
-    auto object = std::make_unique<dust3d::Object>(*m_currentObject);
-
-    auto snapshot = std::make_unique<dust3d::Snapshot>();
-    toSnapshot(snapshot.get());
-
-    QThread* thread = new QThread;
-    m_boneGenerator = std::make_unique<BoneGenerator>(std::move(object), std::move(snapshot));
-    m_boneGenerator->moveToThread(thread);
-    connect(thread, &QThread::started, m_boneGenerator.get(), &BoneGenerator::process);
-    connect(m_boneGenerator.get(), &BoneGenerator::finished, this, &Document::boneReady);
-    connect(m_boneGenerator.get(), &BoneGenerator::finished, thread, &QThread::quit);
-    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
-    thread->start();
-}
-
-void Document::boneReady()
-{
-    std::unique_ptr<std::map<dust3d::Uuid, std::unique_ptr<ModelMesh>>> bonePreviewMeshes;
-    bonePreviewMeshes.reset(m_boneGenerator->takeBonePreviewMeshes());
-    bool bonePreviewsChanged = bonePreviewMeshes && !bonePreviewMeshes->empty();
-    if (bonePreviewsChanged) {
-        for (auto& it : *bonePreviewMeshes) {
-            setBonePreviewMesh(it.first, std::move(it.second));
-        }
-        emit resultBonePreviewMeshesChanged();
-    }
-
-    m_resultBodyBonePreviewMesh = m_boneGenerator->takeBodyPreviewMesh();
-    emit resultBodyBonePreviewMeshChanged();
-
-    // TODO:
-
-    m_boneGenerator.reset();
-
-    emit resultBoneChanged();
-
-    if (m_isResultBoneObsolete)
-        generateBone();
-}
-
-void Document::setBonePreviewMesh(const dust3d::Uuid& boneId, std::unique_ptr<ModelMesh> mesh)
-{
-    Document::Bone* bone = (Document::Bone*)findBone(boneId);
-    if (nullptr == bone)
-        return;
-    bone->updatePreviewMesh(std::move(mesh));
-    emit bonePreviewMeshChanged(boneId);
-}
-
-void Document::setBonePreviewPixmap(const dust3d::Uuid& boneId, const QPixmap& pixmap)
-{
-    Document::Bone* bone = (Document::Bone*)findBone(boneId);
-    if (nullptr == bone)
-        return;
-    bone->previewPixmap = pixmap;
-    emit bonePreviewPixmapChanged(boneId);
 }

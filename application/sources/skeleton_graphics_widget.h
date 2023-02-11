@@ -29,9 +29,6 @@ signals:
     void addNode(float x, float y, float z, float radius, dust3d::Uuid fromNodeId);
     void scaleNodeByAddRadius(dust3d::Uuid nodeId, float amount);
     void moveNodeBy(dust3d::Uuid nodeId, float x, float y, float z);
-    void setNodeBoneJointState(const dust3d::Uuid& nodeId, bool boneJoint);
-    void addNodesToBone(const dust3d::Uuid& boneId, const std::vector<dust3d::Uuid>& nodeIds);
-    void removeNodesFromBone(const dust3d::Uuid& boneId, const std::vector<dust3d::Uuid>& nodeIds);
     void removeNode(dust3d::Uuid nodeId);
     void removePart(dust3d::Uuid partId);
     void setEditMode(Document::EditMode mode);
@@ -123,7 +120,6 @@ public slots:
     void edgeRemoved(dust3d::Uuid edgeId);
     void nodeRadiusChanged(dust3d::Uuid nodeId);
     void nodeOriginChanged(dust3d::Uuid nodeId);
-    void nodeBoneJointStateChanged(const dust3d::Uuid& nodeId);
     void edgeReversed(dust3d::Uuid edgeId);
     void edgeNodeChanged(const dust3d::Uuid& edgeId);
     void turnaroundChanged();
@@ -211,8 +207,6 @@ public slots:
     void shortcutChamferedOrNotSelectedPart();
     void shortcutSelectAll();
     void shortcutEscape();
-    void markSelectedAsBoneJoint();
-    void markSelectedAsNotBoneJoint();
     void clearRangeSelection();
 private slots:
     void turnaroundImageReady();
@@ -239,9 +233,6 @@ private:
     void rotateItems(const std::set<SkeletonGraphicsNodeItem*>& nodeItems, int degree, QVector2D center);
     void rotateAllSideProfile(int degree);
     bool isFloatEqual(float a, float b);
-    void setNodeBoneJointStates(const std::vector<dust3d::Uuid>& nodeIds, bool boneJoint);
-    void addSelectedToBone(const dust3d::Uuid& boneId);
-    void removeSelectedFromBone(const dust3d::Uuid& boneId);
 
 private:
     const Document* m_document = nullptr;

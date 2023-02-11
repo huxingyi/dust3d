@@ -1,6 +1,5 @@
 #include "document_window.h"
 #include "about_widget.h"
-#include "bone_manage_widget.h"
 #include "cut_face_preview.h"
 #include "document.h"
 #include "document_saver.h"
@@ -191,14 +190,10 @@ DocumentWindow::DocumentWindow()
         m_isLastMeshGenerationSucceed = m_document->isMeshGenerationSucceed();
         updateInprogressIndicator();
     });
-    connect(m_document, &Document::resultBodyBonePreviewMeshChanged, this, &DocumentWindow::updateInprogressIndicator);
     connect(m_document, &Document::resultComponentPreviewMeshesChanged, this, &DocumentWindow::generateComponentPreviewImages);
     connect(m_document, &Document::textureChanged, this, &DocumentWindow::generateComponentPreviewImages);
     connect(m_document, &Document::textureGenerating, this, &DocumentWindow::updateInprogressIndicator);
     connect(m_document, &Document::resultTextureChanged, this, &DocumentWindow::updateInprogressIndicator);
-    connect(m_document, &Document::boneGenerating, this, &DocumentWindow::updateInprogressIndicator);
-    connect(m_document, &Document::resultBoneChanged, this, &DocumentWindow::updateInprogressIndicator);
-    connect(m_document, &Document::resultBonePreviewMeshesChanged, this, &DocumentWindow::generateBonePreviewImages);
 
     toolButtonLayout->addWidget(addButton);
     toolButtonLayout->addWidget(selectButton);
@@ -260,20 +255,6 @@ DocumentWindow::DocumentWindow()
     m_partManageWidget = new PartManageWidget(m_document);
     partsDocker->setWidget(m_partManageWidget);
     addDockWidget(Qt::RightDockWidgetArea, partsDocker);
-
-    QDockWidget* bonesDocker = new QDockWidget(tr("Bones"), this);
-    m_boneManageWidget = new BoneManageWidget(m_document);
-    bonesDocker->setWidget(m_boneManageWidget);
-    bonesDocker->setAllowedAreas(Qt::RightDockWidgetArea);
-
-    connect(bonesDocker, &QDockWidget::visibilityChanged, this, [this](bool visible) {
-        if (this->m_showBodyBonePreview == visible)
-            return;
-        this->m_showBodyBonePreview = visible;
-        forceUpdateRenderModel();
-    });
-
-    tabifyDockWidget(partsDocker, bonesDocker);
 
     partsDocker->raise();
 
@@ -425,13 +406,6 @@ DocumentWindow::DocumentWindow()
     });
     m_windowMenu->addAction(m_showPartsListAction);
 
-    m_showBonesListAction = new QAction(tr("Bones"), this);
-    connect(m_showBonesListAction, &QAction::triggered, [=]() {
-        bonesDocker->show();
-        bonesDocker->raise();
-    });
-    m_windowMenu->addAction(m_showBonesListAction);
-
     QMenu* dialogsMenu = m_windowMenu->addMenu(tr("Dialogs"));
     connect(dialogsMenu, &QMenu::aboutToShow, [=]() {
         dialogsMenu->clear();
@@ -545,7 +519,6 @@ DocumentWindow::DocumentWindow()
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::addNode, m_document, &Document::addNode);
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::scaleNodeByAddRadius, m_document, &Document::scaleNodeByAddRadius);
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::moveNodeBy, m_document, &Document::moveNodeBy);
-    connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::setNodeBoneJointState, m_document, &Document::setNodeBoneJointState);
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::setNodeOrigin, m_document, &Document::setNodeOrigin);
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::removeNode, m_document, &Document::removeNode);
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::removePart, m_document, &Document::removePart);
@@ -581,11 +554,6 @@ DocumentWindow::DocumentWindow()
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::setPartRoundState, m_document, &Document::setPartRoundState);
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::setPartWrapState, m_document, &Document::setPartCutRotation);
 
-    connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::addNodesToBone, m_document, &Document::addNodesToBone);
-    connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::removeNodesFromBone, m_document, &Document::removeNodesFromBone);
-
-    connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::nodePicked, m_document, &Document::pickBoneNode);
-
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::setXlockState, m_document, &Document::setXlockState);
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::setYlockState, m_document, &Document::setYlockState);
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::setZlockState, m_document, &Document::setZlockState);
@@ -603,7 +571,6 @@ DocumentWindow::DocumentWindow()
     connect(m_document, &Document::edgeAdded, canvasGraphicsWidget, &SkeletonGraphicsWidget::edgeAdded);
     connect(m_document, &Document::edgeRemoved, canvasGraphicsWidget, &SkeletonGraphicsWidget::edgeRemoved);
     connect(m_document, &Document::nodeRadiusChanged, canvasGraphicsWidget, &SkeletonGraphicsWidget::nodeRadiusChanged);
-    connect(m_document, &Document::nodeBoneJointStateChanged, canvasGraphicsWidget, &SkeletonGraphicsWidget::nodeBoneJointStateChanged);
     connect(m_document, &Document::nodeOriginChanged, canvasGraphicsWidget, &SkeletonGraphicsWidget::nodeOriginChanged);
     connect(m_document, &Document::edgeReversed, canvasGraphicsWidget, &SkeletonGraphicsWidget::edgeReversed);
     connect(m_document, &Document::edgeNodeChanged, canvasGraphicsWidget, &SkeletonGraphicsWidget::edgeNodeChanged);
@@ -624,15 +591,10 @@ DocumentWindow::DocumentWindow()
 
     connect(canvasGraphicsWidget, &SkeletonGraphicsWidget::partComponentChecked, m_partManageWidget, &PartManageWidget::selectComponentByPartId);
 
-    connect(m_boneManageWidget, &BoneManageWidget::selectNodeOnCanvas, canvasGraphicsWidget, &SkeletonGraphicsWidget::addNodeToSelection);
-
     connect(m_document, &Document::skeletonChanged, m_document, &Document::generateMesh);
     connect(m_document, &Document::textureChanged, m_document, &Document::generateTexture);
     connect(m_document, &Document::resultMeshChanged, m_document, &Document::generateTexture);
-    connect(m_document, &Document::rigChanged, m_document, &Document::generateBone);
-    connect(m_document, &Document::resultMeshChanged, m_document, &Document::generateBone);
     connect(m_document, &Document::resultTextureChanged, this, &DocumentWindow::updateRenderModel);
-    connect(m_document, &Document::resultBodyBonePreviewMeshChanged, this, &DocumentWindow::updateRenderModel);
 
     connect(m_document, &Document::resultMeshChanged, this, &DocumentWindow::updateRenderModel);
     connect(m_document, &Document::resultMeshChanged, this, &DocumentWindow::updateRenderWireframe);
@@ -644,7 +606,6 @@ DocumentWindow::DocumentWindow()
 
     connect(m_document, &Document::skeletonChanged, this, &DocumentWindow::documentChanged);
     connect(m_document, &Document::textureChanged, this, &DocumentWindow::documentChanged);
-    connect(m_document, &Document::rigChanged, this, &DocumentWindow::documentChanged);
     connect(m_document, &Document::turnaroundChanged, this, &DocumentWindow::documentChanged);
     connect(m_document, &Document::optionsChanged, this, &DocumentWindow::documentChanged);
 
@@ -673,7 +634,7 @@ DocumentWindow::DocumentWindow()
 
 void DocumentWindow::updateInprogressIndicator()
 {
-    bool inprogress = m_document->isMeshGenerating() || m_document->isTextureGenerating() || m_document->isBoneGenerating() || nullptr != m_componentPreviewImagesGenerator || nullptr != m_componentPreviewImagesDecorator;
+    bool inprogress = m_document->isMeshGenerating() || m_document->isTextureGenerating() || nullptr != m_componentPreviewImagesGenerator || nullptr != m_componentPreviewImagesDecorator;
     if (inprogress == m_inprogressIndicator->isSpinning())
         return;
     m_inprogressIndicator->showSpinner(inprogress);
@@ -1510,73 +1471,19 @@ void DocumentWindow::toggleRenderColor()
     forceUpdateRenderModel();
 }
 
-void DocumentWindow::generateBonePreviewImages()
-{
-    if (nullptr != m_bonePreviewImagesGenerator) {
-        m_isBonePreviewImagesObsolete = true;
-        return;
-    }
-
-    m_isBonePreviewImagesObsolete = false;
-
-    QThread* thread = new QThread;
-
-    m_bonePreviewImagesGenerator = new MeshPreviewImagesGenerator(new ModelOffscreenRender(m_modelRenderWidget->format()));
-    for (auto& bone : m_document->boneMap) {
-        if (!bone.second.isPreviewMeshObsolete)
-            continue;
-        bone.second.isPreviewMeshObsolete = false;
-        auto previewMesh = std::unique_ptr<ModelMesh>(bone.second.takePreviewMesh());
-        const bool useFrontView = false;
-        m_bonePreviewImagesGenerator->addInput(bone.first, std::move(previewMesh), useFrontView);
-    }
-    m_bonePreviewImagesGenerator->moveToThread(thread);
-    connect(thread, &QThread::started, m_bonePreviewImagesGenerator, &MeshPreviewImagesGenerator::process);
-    connect(m_bonePreviewImagesGenerator, &MeshPreviewImagesGenerator::finished, this, &DocumentWindow::bonePreviewImagesReady);
-    connect(m_bonePreviewImagesGenerator, &MeshPreviewImagesGenerator::finished, thread, &QThread::quit);
-    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
-    thread->start();
-
-    updateInprogressIndicator();
-}
-
-void DocumentWindow::bonePreviewImagesReady()
-{
-    std::unique_ptr<std::map<dust3d::Uuid, QImage>> boneImages;
-    boneImages.reset(m_bonePreviewImagesGenerator->takeImages());
-    if (nullptr != boneImages) {
-        for (const auto& it : *boneImages) {
-            m_document->setBonePreviewPixmap(it.first, QPixmap::fromImage(it.second));
-        }
-    }
-
-    delete m_bonePreviewImagesGenerator;
-    m_bonePreviewImagesGenerator = nullptr;
-
-    if (m_isBonePreviewImagesObsolete)
-        generateBonePreviewImages();
-    else
-        updateInprogressIndicator();
-}
-
 void DocumentWindow::forceUpdateRenderModel()
 {
     ModelMesh* mesh = nullptr;
-    if (m_showBodyBonePreview) {
-        mesh = m_document->takeResultBodyBonePreviewMesh();
-        m_currentUpdatedMeshId = m_document->resultBodyBonePreviewMeshId();
+    if (m_document->isMeshGenerating() || m_document->isTextureGenerating()) {
+        mesh = m_document->takeResultMesh();
+        m_currentUpdatedMeshId = m_document->resultMeshId();
     } else {
-        if (m_document->isMeshGenerating() || m_document->isTextureGenerating()) {
-            mesh = m_document->takeResultMesh();
-            m_currentUpdatedMeshId = m_document->resultMeshId();
-        } else {
-            mesh = m_document->takeResultTextureMesh();
-            m_currentUpdatedMeshId = m_document->resultTextureMeshId();
-            m_currentTextureImageUpdateVersion = m_document->resultTextureImageUpdateVersion();
-        }
-        if (m_modelRemoveColor && mesh)
-            mesh->removeColor();
+        mesh = m_document->takeResultTextureMesh();
+        m_currentUpdatedMeshId = m_document->resultTextureMeshId();
+        m_currentTextureImageUpdateVersion = m_document->resultTextureImageUpdateVersion();
     }
+    if (m_modelRemoveColor && mesh)
+        mesh->removeColor();
     m_modelRenderWidget->updateMesh(mesh);
 }
 

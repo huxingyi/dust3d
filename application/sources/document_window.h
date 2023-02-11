@@ -20,7 +20,6 @@
 class Document;
 class SkeletonGraphicsWidget;
 class PartManageWidget;
-class BoneManageWidget;
 class ToolbarButton;
 class SpinnableToolbarIcon;
 
@@ -90,8 +89,6 @@ public slots:
     void componentPreviewImagesReady();
     void decorateComponentPreviewImages();
     void componentPreviewImageDecorationsReady();
-    void generateBonePreviewImages();
-    void bonePreviewImagesReady();
     void updateInprogressIndicator();
     void openRecentFile();
     void updateRecentFileActions();
@@ -155,7 +152,6 @@ private:
 
     QMenu* m_windowMenu = nullptr;
     QAction* m_showPartsListAction = nullptr;
-    QAction* m_showBonesListAction = nullptr;
     QAction* m_showDebugDialogAction = nullptr;
 
     QMenu* m_helpMenu = nullptr;
@@ -181,17 +177,11 @@ private:
     std::unique_ptr<ComponentPreviewImagesDecorator> m_componentPreviewImagesDecorator;
     bool m_isComponentPreviewImageDecorationsObsolete = false;
 
-    MeshPreviewImagesGenerator* m_bonePreviewImagesGenerator = nullptr;
-    bool m_isBonePreviewImagesObsolete = false;
-
     PartManageWidget* m_partManageWidget = nullptr;
-    BoneManageWidget* m_boneManageWidget = nullptr;
 
     SpinnableToolbarIcon* m_inprogressIndicator = nullptr;
 
     std::map<QKeySequence, QShortcut*> m_shortcutMap;
-
-    bool m_showBodyBonePreview = false;
 };
 
 #endif

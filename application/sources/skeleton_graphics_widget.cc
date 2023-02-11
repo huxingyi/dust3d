@@ -264,39 +264,6 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint& pos)
         subMenu->addAction(&colorizeAsAutoColorAction);
     }
 
-    QAction markAsBoneJointAction(tr("Bone Joint"), this);
-    QAction markAsNotBoneJointAction(tr("Not Bone Joint"), this);
-    if (hasNodeSelection()) {
-        QMenu* subMenu = contextMenu.addMenu(tr("Mark As"));
-
-        connect(&markAsBoneJointAction, &QAction::triggered, this, &SkeletonGraphicsWidget::markSelectedAsBoneJoint);
-        subMenu->addAction(&markAsBoneJointAction);
-
-        connect(&markAsNotBoneJointAction, &QAction::triggered, this, &SkeletonGraphicsWidget::markSelectedAsNotBoneJoint);
-        subMenu->addAction(&markAsNotBoneJointAction);
-    }
-
-    if (hasNodeSelection() && !m_document->boneIdList.empty()) {
-        QMenu* addToBoneMenu = contextMenu.addMenu(tr("Add To Bone"));
-        QMenu* removeFromBoneMenu = contextMenu.addMenu(tr("Remove From Bone"));
-
-        for (const auto& boneId : m_document->boneIdList) {
-            const Document::Bone* bone = m_document->findBone(boneId);
-            if (nullptr == bone)
-                continue;
-            QAction* addAction = new QAction(bone->previewPixmap, bone->name, this);
-            connect(addAction, &QAction::triggered, this, [=]() {
-                this->addSelectedToBone(boneId);
-            });
-            QAction* removeAction = new QAction(bone->previewPixmap, bone->name, this);
-            connect(removeAction, &QAction::triggered, this, [=]() {
-                this->removeSelectedFromBone(boneId);
-            });
-            addToBoneMenu->addAction(addAction);
-            removeFromBoneMenu->addAction(removeAction);
-        }
-    }
-
     QAction selectAllAction(tr("Select All"), this);
     if (hasItems()) {
         connect(&selectAllAction, &QAction::triggered, this, &SkeletonGraphicsWidget::selectAll);
@@ -2028,22 +1995,6 @@ void SkeletonGraphicsWidget::originChanged()
     m_sideOriginItem->show();
 }
 
-void SkeletonGraphicsWidget::nodeBoneJointStateChanged(const dust3d::Uuid& nodeId)
-{
-    const Document::Node* node = m_document->findNode(nodeId);
-    if (nullptr == node) {
-        qDebug() << "Node changed but node id not exist:" << nodeId;
-        return;
-    }
-    auto it = nodeItemMap.find(nodeId);
-    if (it == nodeItemMap.end()) {
-        qDebug() << "Node not found:" << nodeId;
-        return;
-    }
-    it->second.first->setMarkColor(node->boneJoint ? Theme::blue : Qt::transparent);
-    it->second.second->setMarkColor(node->boneJoint ? Theme::blue : Qt::transparent);
-}
-
 void SkeletonGraphicsWidget::nodeAdded(dust3d::Uuid nodeId)
 {
     const Document::Node* node = m_document->findNode(nodeId);
@@ -2063,8 +2014,6 @@ void SkeletonGraphicsWidget::nodeAdded(dust3d::Uuid nodeId)
     sideProfileItem->setOrigin(scenePosFromUnified(QPointF(node->getZ(m_rotated), node->getY(m_rotated))));
     mainProfileItem->setRadius(sceneRadiusFromUnified(node->radius));
     sideProfileItem->setRadius(sceneRadiusFromUnified(node->radius));
-    mainProfileItem->setMarkColor(node->boneJoint ? Theme::blue : Qt::transparent);
-    sideProfileItem->setMarkColor(node->boneJoint ? Theme::blue : Qt::transparent);
     mainProfileItem->setId(nodeId);
     sideProfileItem->setId(nodeId);
     scene()->addItem(mainProfileItem);
@@ -2928,77 +2877,4 @@ void SkeletonGraphicsWidget::ikMove(dust3d::Uuid endEffectorId, QVector3D target
     connect(m_ikMover, &SkeletonIkMover::finished, thread, &QThread::quit);
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
     thread->start();
-}
-
-void SkeletonGraphicsWidget::setNodeBoneJointStates(const std::vector<dust3d::Uuid>& nodeIds, bool boneJoint)
-{
-    if (nodeIds.empty())
-        return;
-
-    emit batchChangeBegin();
-    for (const auto& it : nodeIds) {
-        emit setNodeBoneJointState(it, boneJoint);
-    }
-    emit batchChangeEnd();
-    emit groupOperationAdded();
-}
-
-void SkeletonGraphicsWidget::markSelectedAsBoneJoint()
-{
-    std::set<SkeletonGraphicsNodeItem*> nodeItems;
-    readMergedSkeletonNodeSetFromRangeSelection(&nodeItems);
-    if (nodeItems.empty())
-        return;
-
-    std::vector<dust3d::Uuid> nodeIds;
-    for (const auto& it : nodeItems) {
-        nodeIds.push_back(it->id());
-    }
-
-    setNodeBoneJointStates(nodeIds, true);
-}
-
-void SkeletonGraphicsWidget::markSelectedAsNotBoneJoint()
-{
-    std::set<SkeletonGraphicsNodeItem*> nodeItems;
-    readMergedSkeletonNodeSetFromRangeSelection(&nodeItems);
-    if (nodeItems.empty())
-        return;
-
-    std::vector<dust3d::Uuid> nodeIds;
-    for (const auto& it : nodeItems) {
-        nodeIds.push_back(it->id());
-    }
-
-    setNodeBoneJointStates(nodeIds, false);
-}
-
-void SkeletonGraphicsWidget::addSelectedToBone(const dust3d::Uuid& boneId)
-{
-    std::set<SkeletonGraphicsNodeItem*> nodeItems;
-    readMergedSkeletonNodeSetFromRangeSelection(&nodeItems);
-    if (nodeItems.empty())
-        return;
-
-    std::vector<dust3d::Uuid> nodeIds;
-    for (const auto& it : nodeItems) {
-        nodeIds.push_back(it->id());
-    }
-
-    emit addNodesToBone(boneId, nodeIds);
-}
-
-void SkeletonGraphicsWidget::removeSelectedFromBone(const dust3d::Uuid& boneId)
-{
-    std::set<SkeletonGraphicsNodeItem*> nodeItems;
-    readMergedSkeletonNodeSetFromRangeSelection(&nodeItems);
-    if (nodeItems.empty())
-        return;
-
-    std::vector<dust3d::Uuid> nodeIds;
-    for (const auto& it : nodeItems) {
-        nodeIds.push_back(it->id());
-    }
-
-    emit removeNodesFromBone(boneId, nodeIds);
 }
