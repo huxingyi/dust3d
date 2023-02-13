@@ -2034,7 +2034,7 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
         component.combineMode = dust3d::CombineModeFromString(dust3d::String::valueOrEmpty(componentKv.second, "combineMode").c_str());
         component.sideClosed = dust3d::String::isTrue(dust3d::String::valueOrEmpty(componentKv.second, "sideClosed"));
         component.frontClosed = dust3d::String::isTrue(dust3d::String::valueOrEmpty(componentKv.second, "frontClosed"));
-        component.sideClosed = dust3d::String::isTrue(dust3d::String::valueOrEmpty(componentKv.second, "sideClosed"));
+        component.backClosed = dust3d::String::isTrue(dust3d::String::valueOrEmpty(componentKv.second, "backClosed"));
         const auto& colorImageIt = componentKv.second.find("colorImageId");
         if (colorImageIt != componentKv.second.end()) {
             component.colorImageId = dust3d::Uuid(colorImageIt->second);

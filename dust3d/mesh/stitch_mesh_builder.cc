@@ -210,7 +210,7 @@ const std::vector<StitchMeshBuilder::Spline>& StitchMeshBuilder::splines() const
 
 void StitchMeshBuilder::build()
 {
-    if (m_splines.empty())
+    if (m_splines.size() < 2)
         return;
 
     // Calculate target segments
@@ -226,19 +226,25 @@ void StitchMeshBuilder::build()
         return;
 
     std::vector<std::vector<size_t>> stitchingPoints(m_splines.front().nodes.size() + 1);
+    std::vector<std::vector<double>> stitchingRadiuses(m_splines.front().nodes.size() + 1);
+    std::vector<std::vector<size_t>> innerPoints(stitchingPoints.size());
+    stitchingPoints[0].resize(m_splines.size());
+    stitchingRadiuses[0].resize(m_splines.size());
     for (size_t i = 1; i < stitchingPoints.size(); ++i) {
         stitchingPoints[i].resize(m_splines.size());
+        stitchingRadiuses[i].resize(m_splines.size());
         for (size_t k = 0; k < m_splines.size(); ++k) {
             stitchingPoints[i][k] = m_generatedVertices.size();
+            stitchingRadiuses[i][k] = m_splines[k].nodes[i - 1].radius;
             m_generatedVertexSources.push_back(m_splines[k].nodes[i - 1].sourceId);
             m_generatedVertices.push_back(m_splines[k].nodes[i - 1].origin);
         }
     }
 
     if (m_sideClosed) {
-        stitchingPoints[0].resize(m_splines.size());
         for (size_t k = 0; k < m_splines.size(); ++k) {
             stitchingPoints[0][k] = m_generatedVertices.size();
+            stitchingRadiuses[0][k] = (m_splines[k].nodes.front().radius + m_splines[k].nodes.back().radius) * 0.5;
             m_generatedVertexSources.push_back(m_splines[k].sourceId);
             m_generatedVertices.push_back((m_splines[k].nodes.front().origin + m_splines[k].nodes.back().origin) * 0.5);
         }
@@ -247,10 +253,10 @@ void StitchMeshBuilder::build()
             for (size_t n = 1; n < m_splines.size(); ++n) {
                 size_t m = n - 1;
                 m_generatedFaces.push_back(std::vector<size_t> {
-                    stitchingPoints[i][m],
                     stitchingPoints[i][n],
-                    stitchingPoints[j][n],
-                    stitchingPoints[j][m] });
+                    stitchingPoints[i][m],
+                    stitchingPoints[j][m],
+                    stitchingPoints[j][n] });
             }
         }
         // TODO:
@@ -260,25 +266,46 @@ void StitchMeshBuilder::build()
             for (size_t n = 1; n < m_splines.size(); ++n) {
                 size_t m = n - 1;
                 m_generatedFaces.push_back(std::vector<size_t> {
-                    stitchingPoints[i][m],
                     stitchingPoints[i][n],
-                    stitchingPoints[j][n],
-                    stitchingPoints[j][m] });
+                    stitchingPoints[i][m],
+                    stitchingPoints[j][m],
+                    stitchingPoints[j][n] });
             }
         }
         stitchingPoints[0].resize(m_splines.size());
         if (m_frontClosed) {
             stitchingPoints[0][0] = m_generatedVertices.size();
+            stitchingRadiuses[0][0] = (m_splines[0].nodes.front().radius + m_splines[0].nodes.back().radius) * 0.5;
             m_generatedVertexSources.push_back(m_splines[0].sourceId);
             m_generatedVertices.push_back((m_splines[0].nodes.front().origin + m_splines[0].nodes.back().origin) * 0.5);
         }
         if (m_backClosed) {
             stitchingPoints[0][m_splines.size() - 1] = m_generatedVertices.size();
+            stitchingRadiuses[0][m_splines.size() - 1] = (m_splines[m_splines.size() - 1].nodes.front().radius + m_splines[m_splines.size() - 1].nodes.back().radius) * 0.5;
             m_generatedVertexSources.push_back(m_splines[m_splines.size() - 1].sourceId);
             m_generatedVertices.push_back((m_splines[m_splines.size() - 1].nodes.front().origin + m_splines[m_splines.size() - 1].nodes.back().origin) * 0.5);
         }
         // TODO:
     }
+
+    // Generate normal for stitching points
+    std::vector<Vector3> normals;
+    normals.resize(m_generatedVertices.size());
+    for (const auto& quad : m_generatedFaces) {
+        if (4 != quad.size())
+            continue;
+        for (size_t i = 0; i < 4; ++i) {
+            size_t j = (i + 1) % 4;
+            size_t k = (j + 1) % 4;
+            auto faceNormal = Vector3::normal(m_generatedVertices[quad[i]], m_generatedVertices[quad[j]], m_generatedVertices[quad[k]]);
+            normals[quad[i]] += faceNormal;
+            normals[quad[j]] += faceNormal;
+            normals[quad[k]] += faceNormal;
+        }
+    }
+    for (auto& it : normals)
+        it.normalize();
+
     if (m_frontClosed) {
         size_t lastMiddleVertexIndex = stitchingPoints[0][0];
         int left = 2, right = (int)stitchingPoints.size() - 2;
@@ -289,25 +316,25 @@ void StitchMeshBuilder::build()
             m_generatedVertexSources.push_back(m_splines.front().sourceId);
             m_generatedVertices.push_back((m_generatedVertices[stitchingPoints[left][0]] + m_generatedVertices[stitchingPoints[right][0]]) * 0.5);
             m_generatedFaces.push_back(std::vector<size_t> {
-                stitchingPoints[left - 1][0],
-                stitchingPoints[left][0],
                 middleVertexIndex,
+                stitchingPoints[left][0],
+                stitchingPoints[left - 1][0],
                 lastMiddleVertexIndex });
             m_generatedFaces.push_back(std::vector<size_t> {
-                stitchingPoints[right + 1][0],
-                lastMiddleVertexIndex,
                 middleVertexIndex,
+                lastMiddleVertexIndex,
+                stitchingPoints[right + 1][0],
                 stitchingPoints[right][0] });
             lastMiddleVertexIndex = middleVertexIndex;
         }
         if (left == right) {
             m_generatedFaces.push_back(std::vector<size_t> {
-                stitchingPoints[left - 1][0],
-                stitchingPoints[left][0],
-                lastMiddleVertexIndex });
-            m_generatedFaces.push_back(std::vector<size_t> {
-                stitchingPoints[right + 1][0],
                 lastMiddleVertexIndex,
+                stitchingPoints[left][0],
+                stitchingPoints[left - 1][0] });
+            m_generatedFaces.push_back(std::vector<size_t> {
+                lastMiddleVertexIndex,
+                stitchingPoints[right + 1][0],
                 stitchingPoints[right][0] });
         }
     }
@@ -318,32 +345,564 @@ void StitchMeshBuilder::build()
              right + 1 < left;
              --left, ++right) {
             size_t middleVertexIndex = m_generatedVertices.size();
-            m_generatedVertexSources.push_back(m_splines.front().sourceId);
+            m_generatedVertexSources.push_back(m_splines.back().sourceId);
             m_generatedVertices.push_back((m_generatedVertices[stitchingPoints[left][m_splines.size() - 1]] + m_generatedVertices[stitchingPoints[right][m_splines.size() - 1]]) * 0.5);
             m_generatedFaces.push_back(std::vector<size_t> {
-                stitchingPoints[left + 1][m_splines.size() - 1],
-                stitchingPoints[left][m_splines.size() - 1],
                 middleVertexIndex,
+                stitchingPoints[left][m_splines.size() - 1],
+                stitchingPoints[left + 1][m_splines.size() - 1],
                 lastMiddleVertexIndex });
             m_generatedFaces.push_back(std::vector<size_t> {
-                stitchingPoints[right - 1][m_splines.size() - 1],
-                lastMiddleVertexIndex,
                 middleVertexIndex,
+                lastMiddleVertexIndex,
+                stitchingPoints[right - 1][m_splines.size() - 1],
                 stitchingPoints[right][m_splines.size() - 1] });
             lastMiddleVertexIndex = middleVertexIndex;
         }
         if (left == right) {
             m_generatedFaces.push_back(std::vector<size_t> {
-                stitchingPoints[left + 1][m_splines.size() - 1],
-                stitchingPoints[left][m_splines.size() - 1],
-                lastMiddleVertexIndex });
-            m_generatedFaces.push_back(std::vector<size_t> {
-                stitchingPoints[right - 1][m_splines.size() - 1],
                 lastMiddleVertexIndex,
+                stitchingPoints[left][m_splines.size() - 1],
+                stitchingPoints[left + 1][m_splines.size() - 1] });
+            m_generatedFaces.push_back(std::vector<size_t> {
+                lastMiddleVertexIndex,
+                stitchingPoints[right - 1][m_splines.size() - 1],
                 stitchingPoints[right][m_splines.size() - 1] });
         }
     }
-    // TODO:
+
+    // Make thick layer
+    if (m_sideClosed) {
+        if (m_frontClosed && m_backClosed) {
+            // All good, whole space closed, no thick layer needed
+        } else {
+            if (m_backClosed) {
+                // Front open
+                for (size_t i = 0; i < stitchingPoints.size(); ++i) {
+                    innerPoints[i].resize(m_splines.size());
+                    for (size_t k = 0; k + 1 < m_splines.size(); ++k) {
+                        innerPoints[i][k] = m_generatedVertices.size();
+                        m_generatedVertexSources.push_back(m_generatedVertexSources[stitchingPoints[i][k]]);
+                        m_generatedVertices.push_back(m_generatedVertices[stitchingPoints[i][k]] - normals[stitchingPoints[i][k]] * stitchingRadiuses[i][k]);
+                    }
+                }
+                for (size_t i = 0; i < innerPoints.size(); ++i) {
+                    size_t j = (i + 1) % innerPoints.size();
+                    m_generatedFaces.push_back(std::vector<size_t> {
+                        innerPoints[j][0],
+                        stitchingPoints[j][0],
+                        stitchingPoints[i][0],
+                        innerPoints[i][0] });
+                }
+                for (size_t i = 0; i < innerPoints.size(); ++i) {
+                    size_t j = (i + 1) % innerPoints.size();
+                    for (size_t n = 1; n + 1 < m_splines.size(); ++n) {
+                        size_t m = n - 1;
+                        m_generatedFaces.push_back(std::vector<size_t> {
+                            innerPoints[i][n],
+                            innerPoints[j][n],
+                            innerPoints[j][m],
+                            innerPoints[i][m] });
+                    }
+                }
+                // Close lid
+                size_t lastMiddleVertexIndex = innerPoints[0][m_splines.size() - 2];
+                int left = 2, right = (int)innerPoints.size() - 2;
+                for (;
+                     left + 1 < right;
+                     ++left, --right) {
+                    size_t middleVertexIndex = m_generatedVertices.size();
+                    m_generatedVertexSources.push_back(m_splines[m_splines.size() - 2].sourceId);
+                    m_generatedVertices.push_back((m_generatedVertices[innerPoints[left][m_splines.size() - 2]] + m_generatedVertices[innerPoints[right][m_splines.size() - 2]]) * 0.5);
+                    m_generatedFaces.push_back(std::vector<size_t> {
+                        middleVertexIndex,
+                        innerPoints[left][m_splines.size() - 2],
+                        innerPoints[left - 1][m_splines.size() - 2],
+                        lastMiddleVertexIndex });
+                    m_generatedFaces.push_back(std::vector<size_t> {
+                        middleVertexIndex,
+                        lastMiddleVertexIndex,
+                        innerPoints[right + 1][m_splines.size() - 2],
+                        innerPoints[right][m_splines.size() - 2] });
+                    lastMiddleVertexIndex = middleVertexIndex;
+                }
+                if (left == right) {
+                    m_generatedFaces.push_back(std::vector<size_t> {
+                        lastMiddleVertexIndex,
+                        innerPoints[left][m_splines.size() - 2],
+                        innerPoints[left - 1][m_splines.size() - 2] });
+                    m_generatedFaces.push_back(std::vector<size_t> {
+                        lastMiddleVertexIndex,
+                        innerPoints[right + 1][m_splines.size() - 2],
+                        innerPoints[right][m_splines.size() - 2] });
+                }
+            } else if (m_frontClosed) {
+                // Back open
+                for (size_t i = 0; i < stitchingPoints.size(); ++i) {
+                    innerPoints[i].resize(m_splines.size());
+                    for (size_t k = 1; k < m_splines.size(); ++k) {
+                        innerPoints[i][k] = m_generatedVertices.size();
+                        m_generatedVertexSources.push_back(m_generatedVertexSources[stitchingPoints[i][k]]);
+                        m_generatedVertices.push_back(m_generatedVertices[stitchingPoints[i][k]] - normals[stitchingPoints[i][k]] * stitchingRadiuses[i][k]);
+                    }
+                }
+                for (size_t i = 0; i < innerPoints.size(); ++i) {
+                    size_t j = (i + 1) % innerPoints.size();
+                    m_generatedFaces.push_back(std::vector<size_t> {
+                        innerPoints[i][m_splines.size() - 1],
+                        stitchingPoints[i][m_splines.size() - 1],
+                        stitchingPoints[j][m_splines.size() - 1],
+                        innerPoints[j][m_splines.size() - 1] });
+                }
+                for (size_t i = 0; i < innerPoints.size(); ++i) {
+                    size_t j = (i + 1) % innerPoints.size();
+                    for (size_t n = 2; n < m_splines.size(); ++n) {
+                        size_t m = n - 1;
+                        m_generatedFaces.push_back(std::vector<size_t> {
+                            innerPoints[i][n],
+                            innerPoints[j][n],
+                            innerPoints[j][m],
+                            innerPoints[i][m] });
+                    }
+                }
+                // Close lid
+                size_t lastMiddleVertexIndex = innerPoints[0][1];
+                int left = 2, right = (int)innerPoints.size() - 2;
+                for (;
+                     left + 1 < right;
+                     ++left, --right) {
+                    size_t middleVertexIndex = m_generatedVertices.size();
+                    m_generatedVertexSources.push_back(m_splines[1].sourceId);
+                    m_generatedVertices.push_back((m_generatedVertices[innerPoints[left][1]] + m_generatedVertices[innerPoints[right][1]]) * 0.5);
+                    m_generatedFaces.push_back(std::vector<size_t> {
+                        middleVertexIndex,
+                        lastMiddleVertexIndex,
+                        innerPoints[left - 1][1],
+                        innerPoints[left][1] });
+                    m_generatedFaces.push_back(std::vector<size_t> {
+                        middleVertexIndex,
+                        innerPoints[right][1],
+                        innerPoints[right + 1][1],
+                        lastMiddleVertexIndex });
+                    lastMiddleVertexIndex = middleVertexIndex;
+                }
+                if (left == right) {
+                    m_generatedFaces.push_back(std::vector<size_t> {
+                        lastMiddleVertexIndex,
+                        innerPoints[left - 1][1],
+                        innerPoints[left][1] });
+                    m_generatedFaces.push_back(std::vector<size_t> {
+                        lastMiddleVertexIndex,
+                        innerPoints[right][1],
+                        innerPoints[right + 1][1] });
+                }
+                // TODO:
+            } else {
+                for (size_t i = 0; i < stitchingPoints.size(); ++i) {
+                    innerPoints[i].resize(m_splines.size());
+                    for (size_t k = 0; k < m_splines.size(); ++k) {
+                        innerPoints[i][k] = m_generatedVertices.size();
+                        m_generatedVertexSources.push_back(m_generatedVertexSources[stitchingPoints[i][k]]);
+                        m_generatedVertices.push_back(m_generatedVertices[stitchingPoints[i][k]] - normals[stitchingPoints[i][k]] * stitchingRadiuses[i][k]);
+                    }
+                }
+                for (size_t i = 0; i < innerPoints.size(); ++i) {
+                    size_t j = (i + 1) % innerPoints.size();
+                    m_generatedFaces.push_back(std::vector<size_t> {
+                        innerPoints[j][0],
+                        stitchingPoints[j][0],
+                        stitchingPoints[i][0],
+                        innerPoints[i][0] });
+                    m_generatedFaces.push_back(std::vector<size_t> {
+                        innerPoints[i][m_splines.size() - 1],
+                        stitchingPoints[i][m_splines.size() - 1],
+                        stitchingPoints[j][m_splines.size() - 1],
+                        innerPoints[j][m_splines.size() - 1] });
+                }
+                for (size_t i = 0; i < innerPoints.size(); ++i) {
+                    size_t j = (i + 1) % innerPoints.size();
+                    for (size_t n = 1; n < m_splines.size(); ++n) {
+                        size_t m = n - 1;
+                        m_generatedFaces.push_back(std::vector<size_t> {
+                            innerPoints[i][n],
+                            innerPoints[j][n],
+                            innerPoints[j][m],
+                            innerPoints[i][m] });
+                    }
+                }
+            }
+        }
+    } else {
+        // Side not closed
+        if (m_frontClosed && m_backClosed) {
+            for (size_t i = 1; i < stitchingPoints.size(); ++i) {
+                innerPoints[i].resize(m_splines.size());
+                for (size_t k = 0; k < m_splines.size(); ++k) {
+                    Vector3 offset;
+                    if (0 == k) {
+                        offset = (m_generatedVertices[stitchingPoints[i][k + 1]] - m_generatedVertices[stitchingPoints[i][k]]).normalized() * stitchingRadiuses[i][k];
+                    } else if (k == m_splines.size() - 1) {
+                        offset = (m_generatedVertices[stitchingPoints[i][k - 1]] - m_generatedVertices[stitchingPoints[i][k]]).normalized() * stitchingRadiuses[i][k];
+                    }
+                    innerPoints[i][k] = m_generatedVertices.size();
+                    m_generatedVertexSources.push_back(m_generatedVertexSources[stitchingPoints[i][k]]);
+                    m_generatedVertices.push_back(m_generatedVertices[stitchingPoints[i][k]] - normals[stitchingPoints[i][k]] * stitchingRadiuses[i][k] + offset);
+                }
+            }
+            innerPoints[0].resize(m_splines.size());
+            innerPoints[0][0] = m_generatedVertices.size();
+            m_generatedVertexSources.push_back(m_generatedVertexSources[stitchingPoints[0][0]]);
+            m_generatedVertices.push_back((m_generatedVertices[innerPoints[1][0]] + m_generatedVertices[innerPoints[innerPoints.size() - 1][0]]) * 0.5);
+            innerPoints[0][m_splines.size() - 1] = m_generatedVertices.size();
+            m_generatedVertexSources.push_back(m_generatedVertexSources[stitchingPoints[0][m_splines.size() - 1]]);
+            m_generatedVertices.push_back((m_generatedVertices[innerPoints[1][m_splines.size() - 1]] + m_generatedVertices[innerPoints[innerPoints.size() - 1][m_splines.size() - 1]]) * 0.5);
+            for (size_t j = 2; j < innerPoints.size(); ++j) {
+                size_t i = j - 1;
+                for (size_t n = 1; n < m_splines.size(); ++n) {
+                    size_t m = n - 1;
+                    m_generatedFaces.push_back(std::vector<size_t> {
+                        innerPoints[i][n],
+                        innerPoints[j][n],
+                        innerPoints[j][m],
+                        innerPoints[i][m] });
+                }
+            }
+            for (size_t j = 1; j < m_splines.size(); ++j) {
+                size_t i = j - 1;
+                m_generatedFaces.push_back(std::vector<size_t> {
+                    innerPoints[1][i],
+                    stitchingPoints[1][i],
+                    stitchingPoints[1][j],
+                    innerPoints[1][j] });
+                m_generatedFaces.push_back(std::vector<size_t> {
+                    innerPoints[innerPoints.size() - 1][i],
+                    innerPoints[innerPoints.size() - 1][j],
+                    stitchingPoints[innerPoints.size() - 1][j],
+                    stitchingPoints[innerPoints.size() - 1][i] });
+            }
+            // Close lid
+            {
+                size_t lastMiddleVertexIndex = innerPoints[0][0];
+                int left = 2, right = (int)innerPoints.size() - 2;
+                for (;
+                     left + 1 < right;
+                     ++left, --right) {
+                    size_t middleVertexIndex = m_generatedVertices.size();
+                    m_generatedVertexSources.push_back(m_splines.front().sourceId);
+                    m_generatedVertices.push_back((m_generatedVertices[innerPoints[left][0]] + m_generatedVertices[innerPoints[right][0]]) * 0.5);
+                    m_generatedFaces.push_back(std::vector<size_t> {
+                        middleVertexIndex,
+                        lastMiddleVertexIndex,
+                        innerPoints[left - 1][0],
+                        innerPoints[left][0] });
+                    m_generatedFaces.push_back(std::vector<size_t> {
+                        middleVertexIndex,
+                        innerPoints[right][0],
+                        innerPoints[right + 1][0],
+                        lastMiddleVertexIndex });
+                    lastMiddleVertexIndex = middleVertexIndex;
+                }
+                if (left == right) {
+                    m_generatedFaces.push_back(std::vector<size_t> {
+                        lastMiddleVertexIndex,
+                        innerPoints[left - 1][0],
+                        innerPoints[left][0] });
+                    m_generatedFaces.push_back(std::vector<size_t> {
+                        lastMiddleVertexIndex,
+                        innerPoints[right][0],
+                        innerPoints[right + 1][0] });
+                }
+            }
+            {
+                size_t lastMiddleVertexIndex = innerPoints[0][m_splines.size() - 1];
+                int left = 2, right = (int)innerPoints.size() - 2;
+                for (;
+                     left + 1 < right;
+                     ++left, --right) {
+                    size_t middleVertexIndex = m_generatedVertices.size();
+                    m_generatedVertexSources.push_back(m_splines.back().sourceId);
+                    m_generatedVertices.push_back((m_generatedVertices[innerPoints[left][m_splines.size() - 1]] + m_generatedVertices[innerPoints[right][m_splines.size() - 1]]) * 0.5);
+                    m_generatedFaces.push_back(std::vector<size_t> {
+                        middleVertexIndex,
+                        innerPoints[left][m_splines.size() - 1],
+                        innerPoints[left - 1][m_splines.size() - 1],
+                        lastMiddleVertexIndex });
+                    m_generatedFaces.push_back(std::vector<size_t> {
+                        middleVertexIndex,
+                        lastMiddleVertexIndex,
+                        innerPoints[right + 1][m_splines.size() - 1],
+                        innerPoints[right][m_splines.size() - 1] });
+                    lastMiddleVertexIndex = middleVertexIndex;
+                }
+                if (left == right) {
+                    m_generatedFaces.push_back(std::vector<size_t> {
+                        lastMiddleVertexIndex,
+                        innerPoints[left][m_splines.size() - 1],
+                        innerPoints[left - 1][m_splines.size() - 1] });
+                    m_generatedFaces.push_back(std::vector<size_t> {
+                        lastMiddleVertexIndex,
+                        innerPoints[right + 1][m_splines.size() - 1],
+                        innerPoints[right][m_splines.size() - 1] });
+                }
+            }
+            // Close jaw
+            m_generatedFaces.push_back(std::vector<size_t> {
+                innerPoints[0][0],
+                stitchingPoints[0][0],
+                stitchingPoints[1][0],
+                innerPoints[1][0] });
+            m_generatedFaces.push_back(std::vector<size_t> {
+                innerPoints[0][0],
+                innerPoints[innerPoints.size() - 1][0],
+                stitchingPoints[stitchingPoints.size() - 1][0],
+                stitchingPoints[0][0] });
+            m_generatedFaces.push_back(std::vector<size_t> {
+                innerPoints[0][m_splines.size() - 1],
+                innerPoints[1][m_splines.size() - 1],
+                stitchingPoints[1][m_splines.size() - 1],
+                stitchingPoints[0][m_splines.size() - 1] });
+            m_generatedFaces.push_back(std::vector<size_t> {
+                innerPoints[0][m_splines.size() - 1],
+                stitchingPoints[0][m_splines.size() - 1],
+                stitchingPoints[stitchingPoints.size() - 1][m_splines.size() - 1],
+                innerPoints[innerPoints.size() - 1][m_splines.size() - 1] });
+        } else if (m_frontClosed) {
+            // Back open
+            for (size_t i = 1; i < stitchingPoints.size(); ++i) {
+                innerPoints[i].resize(m_splines.size());
+                for (size_t k = 0; k < m_splines.size(); ++k) {
+                    Vector3 offset;
+                    if (0 == k) {
+                        offset = (m_generatedVertices[stitchingPoints[i][k + 1]] - m_generatedVertices[stitchingPoints[i][k]]).normalized() * stitchingRadiuses[i][k];
+                    }
+                    innerPoints[i][k] = m_generatedVertices.size();
+                    m_generatedVertexSources.push_back(m_generatedVertexSources[stitchingPoints[i][k]]);
+                    m_generatedVertices.push_back(m_generatedVertices[stitchingPoints[i][k]] - normals[stitchingPoints[i][k]] * stitchingRadiuses[i][k] + offset);
+                }
+            }
+            innerPoints[0].resize(m_splines.size());
+            innerPoints[0][0] = m_generatedVertices.size();
+            m_generatedVertexSources.push_back(m_generatedVertexSources[stitchingPoints[0][0]]);
+            m_generatedVertices.push_back((m_generatedVertices[innerPoints[1][0]] + m_generatedVertices[innerPoints[innerPoints.size() - 1][0]]) * 0.5);
+            for (size_t j = 2; j < innerPoints.size(); ++j) {
+                size_t i = j - 1;
+                for (size_t n = 1; n < m_splines.size(); ++n) {
+                    size_t m = n - 1;
+                    m_generatedFaces.push_back(std::vector<size_t> {
+                        innerPoints[i][n],
+                        innerPoints[j][n],
+                        innerPoints[j][m],
+                        innerPoints[i][m] });
+                }
+            }
+            for (size_t j = 1; j < m_splines.size(); ++j) {
+                size_t i = j - 1;
+                m_generatedFaces.push_back(std::vector<size_t> {
+                    innerPoints[1][i],
+                    stitchingPoints[1][i],
+                    stitchingPoints[1][j],
+                    innerPoints[1][j] });
+                m_generatedFaces.push_back(std::vector<size_t> {
+                    innerPoints[innerPoints.size() - 1][i],
+                    innerPoints[innerPoints.size() - 1][j],
+                    stitchingPoints[innerPoints.size() - 1][j],
+                    stitchingPoints[innerPoints.size() - 1][i] });
+            }
+            // Close lid
+            {
+                size_t lastMiddleVertexIndex = innerPoints[0][0];
+                int left = 2, right = (int)innerPoints.size() - 2;
+                for (;
+                     left + 1 < right;
+                     ++left, --right) {
+                    size_t middleVertexIndex = m_generatedVertices.size();
+                    m_generatedVertexSources.push_back(m_splines.front().sourceId);
+                    m_generatedVertices.push_back((m_generatedVertices[innerPoints[left][0]] + m_generatedVertices[innerPoints[right][0]]) * 0.5);
+                    m_generatedFaces.push_back(std::vector<size_t> {
+                        middleVertexIndex,
+                        lastMiddleVertexIndex,
+                        innerPoints[left - 1][0],
+                        innerPoints[left][0] });
+                    m_generatedFaces.push_back(std::vector<size_t> {
+                        middleVertexIndex,
+                        innerPoints[right][0],
+                        innerPoints[right + 1][0],
+                        lastMiddleVertexIndex });
+                    lastMiddleVertexIndex = middleVertexIndex;
+                }
+                if (left == right) {
+                    m_generatedFaces.push_back(std::vector<size_t> {
+                        lastMiddleVertexIndex,
+                        innerPoints[left - 1][0],
+                        innerPoints[left][0] });
+                    m_generatedFaces.push_back(std::vector<size_t> {
+                        lastMiddleVertexIndex,
+                        innerPoints[right][0],
+                        innerPoints[right + 1][0] });
+                }
+            }
+            for (size_t j = 2; j < innerPoints.size(); ++j) {
+                size_t i = j - 1;
+                m_generatedFaces.push_back(std::vector<size_t> {
+                    innerPoints[i][m_splines.size() - 1],
+                    stitchingPoints[i][m_splines.size() - 1],
+                    stitchingPoints[j][m_splines.size() - 1],
+                    innerPoints[j][m_splines.size() - 1] });
+            }
+            // Close jaw
+            m_generatedFaces.push_back(std::vector<size_t> {
+                innerPoints[0][0],
+                stitchingPoints[0][0],
+                stitchingPoints[1][0],
+                innerPoints[1][0] });
+            m_generatedFaces.push_back(std::vector<size_t> {
+                innerPoints[0][0],
+                innerPoints[innerPoints.size() - 1][0],
+                stitchingPoints[stitchingPoints.size() - 1][0],
+                stitchingPoints[0][0] });
+        } else if (m_backClosed) {
+            // Front open
+            for (size_t i = 1; i < stitchingPoints.size(); ++i) {
+                innerPoints[i].resize(m_splines.size());
+                for (size_t k = 0; k < m_splines.size(); ++k) {
+                    Vector3 offset;
+                    if (k == m_splines.size() - 1) {
+                        offset = (m_generatedVertices[stitchingPoints[i][k - 1]] - m_generatedVertices[stitchingPoints[i][k]]).normalized() * stitchingRadiuses[i][k];
+                    }
+                    innerPoints[i][k] = m_generatedVertices.size();
+                    m_generatedVertexSources.push_back(m_generatedVertexSources[stitchingPoints[i][k]]);
+                    m_generatedVertices.push_back(m_generatedVertices[stitchingPoints[i][k]] - normals[stitchingPoints[i][k]] * stitchingRadiuses[i][k] + offset);
+                }
+            }
+            innerPoints[0].resize(m_splines.size());
+            innerPoints[0][m_splines.size() - 1] = m_generatedVertices.size();
+            m_generatedVertexSources.push_back(m_generatedVertexSources[stitchingPoints[0][m_splines.size() - 1]]);
+            m_generatedVertices.push_back((m_generatedVertices[innerPoints[1][m_splines.size() - 1]] + m_generatedVertices[innerPoints[innerPoints.size() - 1][m_splines.size() - 1]]) * 0.5);
+            for (size_t j = 2; j < innerPoints.size(); ++j) {
+                size_t i = j - 1;
+                for (size_t n = 1; n < m_splines.size(); ++n) {
+                    size_t m = n - 1;
+                    m_generatedFaces.push_back(std::vector<size_t> {
+                        innerPoints[i][n],
+                        innerPoints[j][n],
+                        innerPoints[j][m],
+                        innerPoints[i][m] });
+                }
+            }
+            // Close lid
+            {
+                size_t lastMiddleVertexIndex = innerPoints[0][m_splines.size() - 1];
+                int left = 2, right = (int)innerPoints.size() - 2;
+                for (;
+                     left + 1 < right;
+                     ++left, --right) {
+                    size_t middleVertexIndex = m_generatedVertices.size();
+                    m_generatedVertexSources.push_back(m_splines.back().sourceId);
+                    m_generatedVertices.push_back((m_generatedVertices[innerPoints[left][m_splines.size() - 1]] + m_generatedVertices[innerPoints[right][m_splines.size() - 1]]) * 0.5);
+                    m_generatedFaces.push_back(std::vector<size_t> {
+                        middleVertexIndex,
+                        innerPoints[left][m_splines.size() - 1],
+                        innerPoints[left - 1][m_splines.size() - 1],
+                        lastMiddleVertexIndex });
+                    m_generatedFaces.push_back(std::vector<size_t> {
+                        middleVertexIndex,
+                        lastMiddleVertexIndex,
+                        innerPoints[right + 1][m_splines.size() - 1],
+                        innerPoints[right][m_splines.size() - 1] });
+                    lastMiddleVertexIndex = middleVertexIndex;
+                }
+                if (left == right) {
+                    m_generatedFaces.push_back(std::vector<size_t> {
+                        lastMiddleVertexIndex,
+                        innerPoints[left][m_splines.size() - 1],
+                        innerPoints[left - 1][m_splines.size() - 1] });
+                    m_generatedFaces.push_back(std::vector<size_t> {
+                        lastMiddleVertexIndex,
+                        innerPoints[right + 1][m_splines.size() - 1],
+                        innerPoints[right][m_splines.size() - 1] });
+                }
+            }
+            for (size_t j = 1; j < m_splines.size(); ++j) {
+                size_t i = j - 1;
+                m_generatedFaces.push_back(std::vector<size_t> {
+                    innerPoints[1][i],
+                    stitchingPoints[1][i],
+                    stitchingPoints[1][j],
+                    innerPoints[1][j] });
+                m_generatedFaces.push_back(std::vector<size_t> {
+                    innerPoints[innerPoints.size() - 1][i],
+                    innerPoints[innerPoints.size() - 1][j],
+                    stitchingPoints[innerPoints.size() - 1][j],
+                    stitchingPoints[innerPoints.size() - 1][i] });
+            }
+            for (size_t j = 2; j < innerPoints.size(); ++j) {
+                size_t i = j - 1;
+                m_generatedFaces.push_back(std::vector<size_t> {
+                    innerPoints[j][0],
+                    stitchingPoints[j][0],
+                    stitchingPoints[i][0],
+                    innerPoints[i][0] });
+            }
+            // Close jaw
+            m_generatedFaces.push_back(std::vector<size_t> {
+                innerPoints[0][m_splines.size() - 1],
+                innerPoints[1][m_splines.size() - 1],
+                stitchingPoints[1][m_splines.size() - 1],
+                stitchingPoints[0][m_splines.size() - 1] });
+            m_generatedFaces.push_back(std::vector<size_t> {
+                innerPoints[0][m_splines.size() - 1],
+                stitchingPoints[0][m_splines.size() - 1],
+                stitchingPoints[stitchingPoints.size() - 1][m_splines.size() - 1],
+                innerPoints[innerPoints.size() - 1][m_splines.size() - 1] });
+        } else {
+            // Front open and back open
+            for (size_t i = 1; i < stitchingPoints.size(); ++i) {
+                innerPoints[i].resize(m_splines.size());
+                for (size_t k = 0; k < m_splines.size(); ++k) {
+                    innerPoints[i][k] = m_generatedVertices.size();
+                    m_generatedVertexSources.push_back(m_generatedVertexSources[stitchingPoints[i][k]]);
+                    m_generatedVertices.push_back(m_generatedVertices[stitchingPoints[i][k]] - normals[stitchingPoints[i][k]] * stitchingRadiuses[i][k]);
+                }
+            }
+            for (size_t j = 2; j < innerPoints.size(); ++j) {
+                size_t i = j - 1;
+                for (size_t n = 1; n < m_splines.size(); ++n) {
+                    size_t m = n - 1;
+                    m_generatedFaces.push_back(std::vector<size_t> {
+                        innerPoints[i][n],
+                        innerPoints[j][n],
+                        innerPoints[j][m],
+                        innerPoints[i][m] });
+                }
+            }
+            for (size_t j = 2; j < innerPoints.size(); ++j) {
+                size_t i = j - 1;
+                m_generatedFaces.push_back(std::vector<size_t> {
+                    innerPoints[j][0],
+                    stitchingPoints[j][0],
+                    stitchingPoints[i][0],
+                    innerPoints[i][0] });
+                m_generatedFaces.push_back(std::vector<size_t> {
+                    innerPoints[i][m_splines.size() - 1],
+                    stitchingPoints[i][m_splines.size() - 1],
+                    stitchingPoints[j][m_splines.size() - 1],
+                    innerPoints[j][m_splines.size() - 1] });
+            }
+            for (size_t j = 1; j < m_splines.size(); ++j) {
+                size_t i = j - 1;
+                m_generatedFaces.push_back(std::vector<size_t> {
+                    innerPoints[1][i],
+                    stitchingPoints[1][i],
+                    stitchingPoints[1][j],
+                    innerPoints[1][j] });
+                m_generatedFaces.push_back(std::vector<size_t> {
+                    innerPoints[innerPoints.size() - 1][i],
+                    innerPoints[innerPoints.size() - 1][j],
+                    stitchingPoints[innerPoints.size() - 1][j],
+                    stitchingPoints[innerPoints.size() - 1][i] });
+            }
+        }
+    }
 }
 
 }
