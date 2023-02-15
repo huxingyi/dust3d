@@ -45,35 +45,23 @@ public:
     const std::vector<Spline>& splines() const;
 
 private:
-    struct StitchingPoint {
-        size_t originVertex;
-        double radius;
-        double v;
-    };
-
     std::vector<Spline> m_splines;
-    std::vector<StitchingPoint> m_generatedStitchingPoints;
     std::vector<Vector3> m_generatedVertices;
     std::vector<Uuid> m_generatedVertexSources;
     std::vector<std::vector<size_t>> m_generatedFaces;
     std::vector<std::vector<Vector2>> m_generatedFaceUvs;
-    std::vector<Vector3> m_generatedNormals;
     size_t m_targetSegments = 0;
     bool m_sideClosed = false;
     bool m_frontClosed = false;
     bool m_backClosed = false;
 
     bool interpolateSplinesToHaveEqualSizeOfNodes();
-    void generateMeshFromStitchingPoints(const std::vector<std::vector<StitchingPoint>>& stitchingPoints);
-    void generateMeshFromStitchingPoints(const std::vector<StitchingPoint>& a,
-        const std::vector<StitchingPoint>& b);
     void splitPolylineToSegments(const std::vector<Vector3>& polyline,
         const std::vector<double>& radiuses,
         size_t targetSegments,
         std::vector<Vector3>* targetPoints,
         std::vector<double>* targetRadiuses);
     double segmentsLength(const std::vector<Vector3>& segmentPoints);
-    void addQuadButMaybeTriangle(const std::vector<size_t>& quadButMaybeTriangle, const std::vector<Vector2>& quadUv);
 };
 
 }

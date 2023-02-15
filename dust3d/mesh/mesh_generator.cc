@@ -467,6 +467,8 @@ std::unique_ptr<MeshState> MeshGenerator::combineStitchingMesh(const std::string
     bool sideClosed,
     GeneratedComponent& componentCache)
 {
+    // TODO: Apply "smoothCutoffDegrees" to component
+
     std::vector<StitchMeshBuilder::Spline> splines;
     splines.reserve(partIdStrings.size());
     std::vector<Uuid> componentIds(componentIdStrings.size());
