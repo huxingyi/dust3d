@@ -552,7 +552,7 @@ std::unique_ptr<MeshState> MeshGenerator::combineStitchingMesh(const std::string
             mesh->fetch(stitchingLinePreview.vertices, stitchingLinePreview.triangles);
         size_t startIndex = stitchingLinePreview.vertices.size();
 
-        stitchingLinePreview.color = Color(1.0, 1.0, 1.0, 0.2);
+        stitchingLinePreview.color = Color(color[0], color[1], color[2], 0.5);
         for (const auto& ropeVertex : ropeMesh.resultVertices()) {
             stitchingLinePreview.vertices.emplace_back(ropeVertex);
         }
@@ -909,8 +909,16 @@ std::unique_ptr<MeshState> MeshGenerator::combineComponentMesh(const std::string
         }
         mesh = combineMultipleMeshes(std::move(groupMeshes));
         ComponentPreview preview;
-        if (mesh)
+        if (mesh) {
             mesh->fetch(preview.vertices, preview.triangles);
+            preview.color = color;
+            if (!stitchingParts.empty()) {
+                for (const auto& it : componentCache.componentTriangleUvs) {
+                    for (const auto& uvs : it.second)
+                        preview.triangleUvs.insert(uvs);
+                }
+            }
+        }
         addComponentPreview(componentId, std::move(preview));
     }
 
