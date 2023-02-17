@@ -487,6 +487,8 @@ std::unique_ptr<MeshState> MeshGenerator::combineStitchingMesh(const std::string
             continue;
         if (isCircle)
             continue;
+        if (orderedBuilderNodes.size() < 2)
+            continue;
         for (const auto& meshNode : orderedBuilderNodes) {
             componentCache.nodeMap.emplace(std::make_pair(meshNode.sourceId,
                 ObjectNode { meshNode.origin, color, smoothCutoffDegrees }));
