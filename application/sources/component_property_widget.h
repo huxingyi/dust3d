@@ -24,7 +24,7 @@ signals:
     void setComponentSideCloseState(const dust3d::Uuid& componentId, bool closed);
     void setComponentFrontCloseState(const dust3d::Uuid& componentId, bool closed);
     void setComponentBackCloseState(const dust3d::Uuid& componentId, bool closed);
-    void setPartSmoothCutoffDegrees(const dust3d::Uuid& partId, float degrees);
+    void setComponentSmoothCutoffDegrees(const dust3d::Uuid& partId, float degrees);
     void setPartCutFace(const dust3d::Uuid& partId, dust3d::CutFace cutFace);
     void setPartCutFaceLinkedId(const dust3d::Uuid& partId, dust3d::Uuid linkedId);
     void setPartXmirrorState(dust3d::Uuid partId, bool mirrored);

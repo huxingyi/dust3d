@@ -465,10 +465,9 @@ std::unique_ptr<MeshState> MeshGenerator::combineStitchingMesh(const std::string
     bool frontClosed,
     bool backClosed,
     bool sideClosed,
+    float smoothCutoffDegrees,
     GeneratedComponent& componentCache)
 {
-    // TODO: Apply "smoothCutoffDegrees" to component
-
     std::vector<StitchMeshBuilder::Spline> splines;
     splines.reserve(partIdStrings.size());
     std::vector<Uuid> componentIds(componentIdStrings.size());
@@ -487,6 +486,10 @@ std::unique_ptr<MeshState> MeshGenerator::combineStitchingMesh(const std::string
             continue;
         if (isCircle)
             continue;
+        for (const auto& meshNode : orderedBuilderNodes) {
+            componentCache.nodeMap.emplace(std::make_pair(meshNode.sourceId,
+                ObjectNode { meshNode.origin, Color("#ffffff") /*TODO: Update to component color*/, smoothCutoffDegrees }));
+        }
         splines.emplace_back(StitchMeshBuilder::Spline {
             std::move(orderedBuilderNodes),
             componentIds[partIndex] });
@@ -528,6 +531,10 @@ std::unique_ptr<MeshState> MeshGenerator::combineStitchingMesh(const std::string
                                      PositionKey(generatedVertices[face[0]]) },
                 { uv[2], uv[3], uv[0] } });
         }
+    }
+    const auto& vertexSources = stitchMeshBuilder->generatedVertexSources();
+    for (size_t i = 0; i < vertexSources.size(); ++i) {
+        componentCache.positionToNodeIdMap.emplace(std::make_pair(PositionKey(generatedVertices[i]), vertexSources[i]));
     }
 
     // Generate preview for each stitching line
@@ -579,6 +586,7 @@ std::unique_ptr<MeshState> MeshGenerator::combineStitchingMesh(const std::string
 
 std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& partIdString,
     const std::string& componentIdString,
+    float smoothCutoffDegrees,
     bool* hasError)
 {
     auto findPart = m_snapshot->parts.find(partIdString);
@@ -602,7 +610,6 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
     float deformWidth = 1.0;
     float cutRotation = 0.0;
     float hollowThickness = 0.0;
-    float smoothCutoffDegrees = 0.0;
     auto target = PartTargetFromString(String::valueOrEmpty(part, "target").c_str());
 
     std::string searchPartIdString = __mirrorFromPartId.empty() ? partIdString : __mirrorFromPartId;
@@ -614,11 +621,6 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
         chamferFace(&cutTemplate);
     if (subdived)
         subdivideFace(&cutTemplate);
-
-    std::string smoothCutoffDegreesString = String::valueOrEmpty(part, "smoothCutoffDegrees");
-    if (!smoothCutoffDegreesString.empty()) {
-        smoothCutoffDegrees = String::toFloat(smoothCutoffDegreesString);
-    }
 
     std::string cutRotationString = String::valueOrEmpty(part, "cutRotation");
     if (!cutRotationString.empty()) {
@@ -807,6 +809,12 @@ std::unique_ptr<MeshState> MeshGenerator::combineComponentMesh(const std::string
 
     *combineMode = componentCombineMode(component);
 
+    float smoothCutoffDegrees = 0.0;
+    std::string smoothCutoffDegreesString = String::valueOrEmpty(*component, "smoothCutoffDegrees");
+    if (!smoothCutoffDegreesString.empty()) {
+        smoothCutoffDegrees = String::toFloat(smoothCutoffDegreesString);
+    }
+
     auto& componentCache = m_cacheContext->components[componentIdString];
 
     if (m_cacheEnabled) {
@@ -822,7 +830,7 @@ std::unique_ptr<MeshState> MeshGenerator::combineComponentMesh(const std::string
     if ("partId" == linkDataType) {
         std::string partIdString = String::valueOrEmpty(*component, "linkData");
         bool hasError = false;
-        mesh = combinePartMesh(partIdString, componentIdString, &hasError);
+        mesh = combinePartMesh(partIdString, componentIdString, smoothCutoffDegrees, &hasError);
         if (hasError) {
             m_isSuccessful = false;
         }
@@ -889,6 +897,7 @@ std::unique_ptr<MeshState> MeshGenerator::combineComponentMesh(const std::string
                 String::isTrue(String::valueOrEmpty(*component, "frontClosed")),
                 String::isTrue(String::valueOrEmpty(*component, "backClosed")),
                 String::isTrue(String::valueOrEmpty(*component, "sideClosed")),
+                smoothCutoffDegrees,
                 componentCache);
             if (stitchingMesh && !stitchingMesh->isNull()) {
                 groupMeshes.emplace_back(std::make_tuple(std::move(stitchingMesh), CombineMode::Normal, String::join(stitchingComponents, ":")));

@@ -295,8 +295,8 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         smoothCutoffDegreesWidget->setValue(lastSmoothCutoffDegrees());
 
         connect(smoothCutoffDegreesWidget, &FloatNumberWidget::valueChanged, [=](float value) {
-            for (const auto& partId : m_partIds)
-                emit setPartSmoothCutoffDegrees(partId, value);
+            for (const auto& componentId : m_componentIds)
+                emit setComponentSmoothCutoffDegrees(componentId, value);
             emit groupOperationAdded();
         });
 
@@ -450,7 +450,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     connect(this, &ComponentPropertyWidget::setComponentSideCloseState, m_document, &Document::setComponentSideCloseState);
     connect(this, &ComponentPropertyWidget::setComponentFrontCloseState, m_document, &Document::setComponentFrontCloseState);
     connect(this, &ComponentPropertyWidget::setComponentBackCloseState, m_document, &Document::setComponentBackCloseState);
-    connect(this, &ComponentPropertyWidget::setPartSmoothCutoffDegrees, m_document, &Document::setPartSmoothCutoffDegrees);
+    connect(this, &ComponentPropertyWidget::setComponentSmoothCutoffDegrees, m_document, &Document::setComponentSmoothCutoffDegrees);
     connect(this, &ComponentPropertyWidget::setPartCutFace, m_document, &Document::setPartCutFace);
     connect(this, &ComponentPropertyWidget::setPartCutFaceLinkedId, m_document, &Document::setPartCutFaceLinkedId);
     connect(this, &ComponentPropertyWidget::setPartXmirrorState, m_document, &Document::setPartXmirrorState);
@@ -607,11 +607,11 @@ float ComponentPropertyWidget::lastSmoothCutoffDegrees()
 {
     float smoothCutoffDegrees = 0.0;
     std::map<std::string, int> degreesMap;
-    for (const auto& partId : m_partIds) {
-        const Document::Part* part = m_document->findPart(partId);
-        if (nullptr == part)
+    for (const auto& componentId : m_componentIds) {
+        const Document::Component* component = m_document->findComponent(componentId);
+        if (nullptr == component)
             continue;
-        degreesMap[std::to_string(part->smoothCutoffDegrees)]++;
+        degreesMap[std::to_string(component->smoothCutoffDegrees)]++;
     }
     if (!degreesMap.empty()) {
         smoothCutoffDegrees = dust3d::String::toFloat(std::max_element(degreesMap.begin(), degreesMap.end(),

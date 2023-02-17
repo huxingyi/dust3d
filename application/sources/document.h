@@ -118,22 +118,7 @@ public:
         float roughness;
         float hollowThickness;
         bool countershaded;
-        float smoothCutoffDegrees;
         Part(const dust3d::Uuid& withId = dust3d::Uuid());
-        bool hasPolyFunction() const;
-        bool hasSmoothFunction() const;
-        bool hasSubdivFunction() const;
-        bool hasRoundEndFunction() const;
-        bool hasMirrorFunction() const;
-        bool hasChamferFunction() const;
-        bool hasRotationFunction() const;
-        bool hasHollowFunction() const;
-        bool hasCutFaceFunction() const;
-        bool hasLayerFunction() const;
-        bool hasTargetFunction() const;
-        bool hasBaseFunction() const;
-        bool hasCombineModeFunction() const;
-        bool hasDeformFunction() const;
         void setDeformThickness(float toThickness);
         void setDeformWidth(float toWidth);
         void setCutRotation(float toRotation);
@@ -183,6 +168,7 @@ public:
         bool sideClosed = false;
         bool frontClosed = false;
         bool backClosed = false;
+        float smoothCutoffDegrees = 0.0;
         bool dirty = true;
         std::vector<dust3d::Uuid> childrenIds;
         bool isPreviewMeshObsolete = false;
@@ -219,7 +205,7 @@ signals:
     void partRoughnessChanged(dust3d::Uuid partId);
     void partHollowThicknessChanged(dust3d::Uuid partId);
     void partCountershadeStateChanged(dust3d::Uuid partId);
-    void partSmoothCutoffDegreesChanged(dust3d::Uuid partId);
+    void componentSmoothCutoffDegreesChanged(dust3d::Uuid partId);
     void componentCombineModeChanged(dust3d::Uuid componentId);
     void cleanup();
     void clearSelections();
@@ -421,7 +407,7 @@ public slots:
     void setPartRoughness(dust3d::Uuid partId, float roughness);
     void setPartHollowThickness(dust3d::Uuid partId, float hollowThickness);
     void setPartCountershaded(dust3d::Uuid partId, bool countershaded);
-    void setPartSmoothCutoffDegrees(dust3d::Uuid partId, float degrees);
+    void setComponentSmoothCutoffDegrees(dust3d::Uuid componentId, float degrees);
     void setComponentCombineMode(dust3d::Uuid componentId, dust3d::CombineMode combineMode);
     void saveSnapshot();
     void batchChangeBegin();

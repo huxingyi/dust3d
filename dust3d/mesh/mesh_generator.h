@@ -150,6 +150,7 @@ private:
     void checkDirtyFlags();
     std::unique_ptr<MeshState> combinePartMesh(const std::string& partIdString,
         const std::string& componentIdString,
+        float smoothCutoffDegrees,
         bool* hasError);
     std::unique_ptr<MeshState> combineComponentMesh(const std::string& componentIdString, CombineMode* combineMode);
     void makeXmirror(const std::vector<Vector3>& sourceVertices, const std::vector<std::vector<size_t>>& sourceFaces,
@@ -167,6 +168,7 @@ private:
         bool frontClosed,
         bool backClosed,
         bool sideClosed,
+        float smoothCutoffDegrees,
         GeneratedComponent& componentCache);
     void collectUncombinedComponent(const std::string& componentIdString);
     void cutFaceStringToCutTemplate(const std::string& cutFaceString, std::vector<Vector2>& cutTemplate);

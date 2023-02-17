@@ -1766,8 +1766,6 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
                 part["name"] = partIt.second.name.toUtf8().constData();
             if (partIt.second.countershaded)
                 part["countershaded"] = "true";
-            if (partIt.second.smoothCutoffDegrees > 0)
-                part["smoothCutoffDegrees"] = std::to_string(partIt.second.smoothCutoffDegrees);
             snapshot->parts[part["id"]] = part;
         }
         for (const auto& nodeIt : nodeMap) {
@@ -1827,6 +1825,8 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
                 component["frontClosed"] = "true";
             if (componentIt.second.backClosed)
                 component["backClosed"] = "true";
+            if (componentIt.second.smoothCutoffDegrees > 0)
+                component["smoothCutoffDegrees"] = std::to_string(componentIt.second.smoothCutoffDegrees);
             component["__dirty"] = componentIt.second.dirty ? "true" : "false";
             std::vector<std::string> childIdList;
             for (const auto& childId : componentIt.second.childrenIds) {
@@ -1940,9 +1940,6 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
         if (hollowThicknessIt != partKv.second.end())
             part.hollowThickness = dust3d::String::toFloat(hollowThicknessIt->second);
         part.countershaded = dust3d::String::isTrue(dust3d::String::valueOrEmpty(partKv.second, "countershaded"));
-        const auto& smoothCutoffDegreesIt = partKv.second.find("smoothCutoffDegrees");
-        if (smoothCutoffDegreesIt != partKv.second.end())
-            part.smoothCutoffDegrees = dust3d::String::toFloat(smoothCutoffDegreesIt->second);
         newAddedPartIds.insert(part.id);
     }
     for (const auto& it : cutFaceLinkedIdModifyMap) {
@@ -2035,6 +2032,9 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
         component.sideClosed = dust3d::String::isTrue(dust3d::String::valueOrEmpty(componentKv.second, "sideClosed"));
         component.frontClosed = dust3d::String::isTrue(dust3d::String::valueOrEmpty(componentKv.second, "frontClosed"));
         component.backClosed = dust3d::String::isTrue(dust3d::String::valueOrEmpty(componentKv.second, "backClosed"));
+        const auto& smoothCutoffDegreesIt = componentKv.second.find("smoothCutoffDegrees");
+        if (smoothCutoffDegreesIt != componentKv.second.end())
+            component.smoothCutoffDegrees = dust3d::String::toFloat(smoothCutoffDegreesIt->second);
         const auto& colorImageIt = componentKv.second.find("colorImageId");
         if (colorImageIt != componentKv.second.end()) {
             component.colorImageId = dust3d::Uuid(colorImageIt->second);
@@ -2647,18 +2647,18 @@ void Document::setPartCountershaded(dust3d::Uuid partId, bool countershaded)
     emit textureChanged();
 }
 
-void Document::setPartSmoothCutoffDegrees(dust3d::Uuid partId, float degrees)
+void Document::setComponentSmoothCutoffDegrees(dust3d::Uuid componentId, float degrees)
 {
-    auto part = partMap.find(partId);
-    if (part == partMap.end()) {
-        qDebug() << "Part not found:" << partId;
+    auto component = componentMap.find(componentId);
+    if (component == componentMap.end()) {
+        qDebug() << "Component not found:" << componentId;
         return;
     }
-    if (dust3d::Math::isEqual(part->second.smoothCutoffDegrees, degrees))
+    if (dust3d::Math::isEqual(component->second.smoothCutoffDegrees, degrees))
         return;
-    part->second.smoothCutoffDegrees = degrees;
-    part->second.dirty = true;
-    emit partSmoothCutoffDegreesChanged(partId);
+    component->second.smoothCutoffDegrees = degrees;
+    component->second.dirty = true;
+    emit componentSmoothCutoffDegreesChanged(componentId);
     emit skeletonChanged();
 }
 

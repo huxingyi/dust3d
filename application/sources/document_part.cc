@@ -19,79 +19,8 @@ Document::Part::Part(const dust3d::Uuid& withId)
     , roughness(1.0)
     , hollowThickness(0.0)
     , countershaded(false)
-    , smoothCutoffDegrees(0.0)
 {
     id = withId.isNull() ? dust3d::Uuid::createUuid() : withId;
-}
-
-bool Document::Part::hasPolyFunction() const
-{
-    return dust3d::PartTarget::Model == target;
-}
-
-bool Document::Part::hasSmoothFunction() const
-{
-    return dust3d::PartTarget::Model == target;
-}
-
-bool Document::Part::hasSubdivFunction() const
-{
-    return dust3d::PartTarget::Model == target;
-}
-
-bool Document::Part::hasRoundEndFunction() const
-{
-    return dust3d::PartTarget::Model == target;
-}
-
-bool Document::Part::hasMirrorFunction() const
-{
-    return dust3d::PartTarget::Model == target;
-}
-
-bool Document::Part::hasChamferFunction() const
-{
-    return dust3d::PartTarget::Model == target;
-}
-
-bool Document::Part::hasRotationFunction() const
-{
-    return dust3d::PartTarget::Model == target;
-}
-
-bool Document::Part::hasHollowFunction() const
-{
-    return dust3d::PartTarget::Model == target;
-}
-
-bool Document::Part::hasCutFaceFunction() const
-{
-    return dust3d::PartTarget::Model == target;
-}
-
-bool Document::Part::hasLayerFunction() const
-{
-    return dust3d::PartTarget::Model == target;
-}
-
-bool Document::Part::hasTargetFunction() const
-{
-    return true;
-}
-
-bool Document::Part::hasBaseFunction() const
-{
-    return dust3d::PartTarget::Model == target;
-}
-
-bool Document::Part::hasCombineModeFunction() const
-{
-    return dust3d::PartTarget::Model == target;
-}
-
-bool Document::Part::hasDeformFunction() const
-{
-    return dust3d::PartTarget::Model == target;
 }
 
 void Document::Part::setDeformThickness(float toThickness)
@@ -208,6 +137,5 @@ void Document::Part::copyAttributes(const Part& other)
     metalness = other.metalness;
     roughness = other.roughness;
     deformUnified = other.deformUnified;
-    smoothCutoffDegrees = other.smoothCutoffDegrees;
     hollowThickness = other.hollowThickness;
 }
