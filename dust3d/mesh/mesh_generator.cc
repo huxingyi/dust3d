@@ -465,6 +465,7 @@ std::unique_ptr<MeshState> MeshGenerator::combineStitchingMesh(const std::string
     bool frontClosed,
     bool backClosed,
     bool sideClosed,
+    Color color,
     float smoothCutoffDegrees,
     GeneratedComponent& componentCache)
 {
@@ -488,7 +489,7 @@ std::unique_ptr<MeshState> MeshGenerator::combineStitchingMesh(const std::string
             continue;
         for (const auto& meshNode : orderedBuilderNodes) {
             componentCache.nodeMap.emplace(std::make_pair(meshNode.sourceId,
-                ObjectNode { meshNode.origin, Color("#ffffff") /*TODO: Update to component color*/, smoothCutoffDegrees }));
+                ObjectNode { meshNode.origin, color, smoothCutoffDegrees }));
         }
         splines.emplace_back(StitchMeshBuilder::Spline {
             std::move(orderedBuilderNodes),
@@ -586,6 +587,7 @@ std::unique_ptr<MeshState> MeshGenerator::combineStitchingMesh(const std::string
 
 std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& partIdString,
     const std::string& componentIdString,
+    Color color,
     float smoothCutoffDegrees,
     bool* hasError)
 {
@@ -604,8 +606,6 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
     bool rounded = String::isTrue(String::valueOrEmpty(part, "rounded"));
     bool chamfered = String::isTrue(String::valueOrEmpty(part, "chamfered"));
     bool countershaded = String::isTrue(String::valueOrEmpty(part, "countershaded"));
-    std::string colorString = String::valueOrEmpty(part, "color");
-    Color partColor = colorString.empty() ? m_defaultPartColor : Color(colorString);
     float deformThickness = 1.0;
     float deformWidth = 1.0;
     float cutRotation = 0.0;
@@ -672,7 +672,7 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
     auto& partCache = m_cacheContext->parts[partIdString];
     partCache.reset();
 
-    partCache.color = partColor;
+    partCache.color = color;
     partCache.metalness = metalness;
     partCache.roughness = roughness;
     partCache.isSuccessful = false;
@@ -681,7 +681,7 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
     partCache.nodeMap.clear();
     for (const auto& meshNode : meshNodes) {
         partCache.nodeMap.emplace(std::make_pair(meshNode.sourceId,
-            ObjectNode { meshNode.origin, partColor, smoothCutoffDegrees }));
+            ObjectNode { meshNode.origin, color, smoothCutoffDegrees }));
     }
 
     if (PartTarget::Model == target) {
@@ -815,6 +815,9 @@ std::unique_ptr<MeshState> MeshGenerator::combineComponentMesh(const std::string
         smoothCutoffDegrees = String::toFloat(smoothCutoffDegreesString);
     }
 
+    std::string colorString = String::valueOrEmpty(*component, "color");
+    Color color = colorString.empty() ? m_defaultPartColor : Color(colorString);
+
     auto& componentCache = m_cacheContext->components[componentIdString];
 
     if (m_cacheEnabled) {
@@ -830,7 +833,7 @@ std::unique_ptr<MeshState> MeshGenerator::combineComponentMesh(const std::string
     if ("partId" == linkDataType) {
         std::string partIdString = String::valueOrEmpty(*component, "linkData");
         bool hasError = false;
-        mesh = combinePartMesh(partIdString, componentIdString, smoothCutoffDegrees, &hasError);
+        mesh = combinePartMesh(partIdString, componentIdString, color, smoothCutoffDegrees, &hasError);
         if (hasError) {
             m_isSuccessful = false;
         }
@@ -897,6 +900,7 @@ std::unique_ptr<MeshState> MeshGenerator::combineComponentMesh(const std::string
                 String::isTrue(String::valueOrEmpty(*component, "frontClosed")),
                 String::isTrue(String::valueOrEmpty(*component, "backClosed")),
                 String::isTrue(String::valueOrEmpty(*component, "sideClosed")),
+                color,
                 smoothCutoffDegrees,
                 componentCache);
             if (stitchingMesh && !stitchingMesh->isNull()) {

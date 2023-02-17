@@ -150,6 +150,7 @@ private:
     void checkDirtyFlags();
     std::unique_ptr<MeshState> combinePartMesh(const std::string& partIdString,
         const std::string& componentIdString,
+        Color color,
         float smoothCutoffDegrees,
         bool* hasError);
     std::unique_ptr<MeshState> combineComponentMesh(const std::string& componentIdString, CombineMode* combineMode);
@@ -168,6 +169,7 @@ private:
         bool frontClosed,
         bool backClosed,
         bool sideClosed,
+        Color color,
         float smoothCutoffDegrees,
         GeneratedComponent& componentCache);
     void collectUncombinedComponent(const std::string& componentIdString);
