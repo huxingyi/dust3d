@@ -289,11 +289,6 @@ void StitchMeshBuilder::build()
 
     std::vector<std::vector<Vector2>> innerUvs = uvs;
     if (!m_sideClosed) {
-        for (size_t n = 0; n < m_splines.size(); ++n) {
-            innerUvs[1][n][0] = 0.0;
-            innerUvs[innerPoints.size()][n][0] = 1.0;
-            innerUvs[innerPoints.size()][n][1] = innerUvs[0][n][1];
-        }
         if (!m_backClosed) {
             for (size_t i = 0; i < stitchingPoints.size(); ++i) {
                 innerUvs[i][m_splines.size() - 1][1] = 1.0;
@@ -304,9 +299,9 @@ void StitchMeshBuilder::build()
                 innerUvs[i][0][1] = 0.0;
             }
         }
-        for (size_t n = 1; n + 1 < stitchingPoints.size(); ++n) {
-            innerUvs[0][n][0] = 0.0;
-            innerUvs[innerPoints.size() - 1][n][0] = 1.0;
+        for (size_t n = 1; n + 1 < m_splines.size(); ++n) {
+            innerUvs[1][n][0] = 0.0;
+            innerUvs[stitchingPoints.size() - 1][n][0] = 1.0;
         }
     }
 
