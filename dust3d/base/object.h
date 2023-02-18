@@ -44,11 +44,9 @@ struct ObjectNode {
     //float radius = 0.0;
     Color color;
     float smoothCutoffDegrees = 0.0;
-    //float colorSolubility = 0.0;
     //float metalness = 0.0;
     //float roughness = 1.0;
     //Uuid materialId;
-    //bool countershaded = false;
     //Uuid mirrorFromPartId;
     //Uuid mirroredByPartId;
     //Vector3 direction;

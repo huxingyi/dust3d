@@ -612,7 +612,6 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
     bool subdived = String::isTrue(String::valueOrEmpty(part, "subdived"));
     bool rounded = String::isTrue(String::valueOrEmpty(part, "rounded"));
     bool chamfered = String::isTrue(String::valueOrEmpty(part, "chamfered"));
-    bool countershaded = String::isTrue(String::valueOrEmpty(part, "countershaded"));
     float deformThickness = 1.0;
     float deformWidth = 1.0;
     float cutRotation = 0.0;
@@ -655,11 +654,6 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
     std::string materialIdString = String::valueOrEmpty(part, "materialId");
     if (!materialIdString.empty())
         materialId = Uuid(materialIdString);
-
-    float colorSolubility = 0;
-    std::string colorSolubilityString = String::valueOrEmpty(part, "colorSolubility");
-    if (!colorSolubilityString.empty())
-        colorSolubility = String::toFloat(colorSolubilityString);
 
     float metalness = 0;
     std::string metalnessString = String::valueOrEmpty(part, "metallic");

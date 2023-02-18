@@ -1764,8 +1764,6 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
                 part["hollowThickness"] = std::to_string(partIt.second.hollowThickness);
             if (!partIt.second.name.isEmpty())
                 part["name"] = partIt.second.name.toUtf8().constData();
-            if (partIt.second.countershaded)
-                part["countershaded"] = "true";
             snapshot->parts[part["id"]] = part;
         }
         for (const auto& nodeIt : nodeMap) {
@@ -1941,7 +1939,6 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
         const auto& hollowThicknessIt = partKv.second.find("hollowThickness");
         if (hollowThicknessIt != partKv.second.end())
             part.hollowThickness = dust3d::String::toFloat(hollowThicknessIt->second);
-        part.countershaded = dust3d::String::isTrue(dust3d::String::valueOrEmpty(partKv.second, "countershaded"));
         newAddedPartIds.insert(part.id);
     }
     for (const auto& it : cutFaceLinkedIdModifyMap) {
@@ -2635,21 +2632,6 @@ void Document::setPartHollowThickness(dust3d::Uuid partId, float hollowThickness
     part->second.dirty = true;
     emit partHollowThicknessChanged(partId);
     emit skeletonChanged();
-}
-
-void Document::setPartCountershaded(dust3d::Uuid partId, bool countershaded)
-{
-    auto part = partMap.find(partId);
-    if (part == partMap.end()) {
-        qDebug() << "Part not found:" << partId;
-        return;
-    }
-    if (part->second.countershaded == countershaded)
-        return;
-    part->second.countershaded = countershaded;
-    part->second.dirty = true;
-    emit partCountershadeStateChanged(partId);
-    emit textureChanged();
 }
 
 void Document::setComponentSmoothCutoffDegrees(dust3d::Uuid componentId, float degrees)

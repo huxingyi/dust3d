@@ -18,7 +18,6 @@ Document::Part::Part(const dust3d::Uuid& withId)
     , metalness(0.0)
     , roughness(1.0)
     , hollowThickness(0.0)
-    , countershaded(false)
 {
     id = withId.isNull() ? dust3d::Uuid::createUuid() : withId;
 }
@@ -133,7 +132,6 @@ void Document::Part::copyAttributes(const Part& other)
     componentId = other.componentId;
     dirty = other.dirty;
     target = other.target;
-    countershaded = other.countershaded;
     metalness = other.metalness;
     roughness = other.roughness;
     deformUnified = other.deformUnified;
