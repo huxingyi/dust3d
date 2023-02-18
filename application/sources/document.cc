@@ -1827,6 +1827,8 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
                 component["backClosed"] = "true";
             if (componentIt.second.smoothCutoffDegrees > 0)
                 component["smoothCutoffDegrees"] = std::to_string(componentIt.second.smoothCutoffDegrees);
+            if (componentIt.second.targetSegments > 0)
+                component["targetSegments"] = std::to_string(componentIt.second.targetSegments);
             component["__dirty"] = componentIt.second.dirty ? "true" : "false";
             std::vector<std::string> childIdList;
             for (const auto& childId : componentIt.second.childrenIds) {
@@ -2035,6 +2037,9 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
         const auto& smoothCutoffDegreesIt = componentKv.second.find("smoothCutoffDegrees");
         if (smoothCutoffDegreesIt != componentKv.second.end())
             component.smoothCutoffDegrees = dust3d::String::toFloat(smoothCutoffDegreesIt->second);
+        const auto& targetSegmentsIt = componentKv.second.find("targetSegments");
+        if (targetSegmentsIt != componentKv.second.end())
+            component.targetSegments = dust3d::String::toFloat(targetSegmentsIt->second);
         const auto& colorImageIt = componentKv.second.find("colorImageId");
         if (colorImageIt != componentKv.second.end()) {
             component.colorImageId = dust3d::Uuid(colorImageIt->second);
@@ -2659,6 +2664,21 @@ void Document::setComponentSmoothCutoffDegrees(dust3d::Uuid componentId, float d
     component->second.smoothCutoffDegrees = degrees;
     component->second.dirty = true;
     emit componentSmoothCutoffDegreesChanged(componentId);
+    emit skeletonChanged();
+}
+
+void Document::setComponentTargetSegments(const dust3d::Uuid& componentId, size_t targetSegments)
+{
+    auto component = componentMap.find(componentId);
+    if (component == componentMap.end()) {
+        qDebug() << "Component not found:" << componentId;
+        return;
+    }
+    if (component->second.targetSegments == targetSegments)
+        return;
+    component->second.targetSegments = targetSegments;
+    component->second.dirty = true;
+    emit componentTargetSegmentsChanged(componentId);
     emit skeletonChanged();
 }
 

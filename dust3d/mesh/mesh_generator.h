@@ -169,6 +169,7 @@ private:
         bool frontClosed,
         bool backClosed,
         bool sideClosed,
+        size_t targetSegments,
         Color color,
         float smoothCutoffDegrees,
         GeneratedComponent& componentCache);

@@ -465,6 +465,7 @@ std::unique_ptr<MeshState> MeshGenerator::combineStitchingMesh(const std::string
     bool frontClosed,
     bool backClosed,
     bool sideClosed,
+    size_t targetSegments,
     Color color,
     float smoothCutoffDegrees,
     GeneratedComponent& componentCache)
@@ -498,7 +499,11 @@ std::unique_ptr<MeshState> MeshGenerator::combineStitchingMesh(const std::string
             componentIds[partIndex] });
     }
 
-    auto stitchMeshBuilder = std::make_unique<StitchMeshBuilder>(std::move(splines), frontClosed, backClosed, sideClosed);
+    auto stitchMeshBuilder = std::make_unique<StitchMeshBuilder>(std::move(splines),
+        frontClosed,
+        backClosed,
+        sideClosed,
+        targetSegments);
     stitchMeshBuilder->build();
 
     const auto& generatedVertices = stitchMeshBuilder->generatedVertices();
@@ -820,6 +825,11 @@ std::unique_ptr<MeshState> MeshGenerator::combineComponentMesh(const std::string
     std::string colorString = String::valueOrEmpty(*component, "color");
     Color color = colorString.empty() ? m_defaultPartColor : Color(colorString);
 
+    size_t targetSegments = (size_t)String::toInt(String::valueOrEmpty(*component, "targetSegments"));
+    // Validate target segments, 100 should be a reasonable large number
+    if (targetSegments > 100)
+        targetSegments = 0;
+
     auto& componentCache = m_cacheContext->components[componentIdString];
 
     if (m_cacheEnabled) {
@@ -902,6 +912,7 @@ std::unique_ptr<MeshState> MeshGenerator::combineComponentMesh(const std::string
                 String::isTrue(String::valueOrEmpty(*component, "frontClosed")),
                 String::isTrue(String::valueOrEmpty(*component, "backClosed")),
                 String::isTrue(String::valueOrEmpty(*component, "sideClosed")),
+                targetSegments,
                 color,
                 smoothCutoffDegrees,
                 componentCache);

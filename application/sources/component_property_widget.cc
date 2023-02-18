@@ -11,6 +11,7 @@
 #include <QGroupBox>
 #include <QHBoxLayout>
 #include <QPushButton>
+#include <QSpinBox>
 #include <QVBoxLayout>
 #include <unordered_set>
 
@@ -416,8 +417,27 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         optionsLayout->addWidget(backCloseStateBox);
         optionsLayout->addWidget(sideCloseStateBox);
 
+        QLabel* targetSegmentsLabel = new QLabel;
+        targetSegmentsLabel->setText(tr("Target Segments:"));
+
+        QSpinBox* targetSegmentsBox = new QSpinBox;
+        targetSegmentsBox->setRange(0, 100);
+        targetSegmentsBox->setValue(lastTargetSegments());
+
+        connect(targetSegmentsBox, QOverload<int>::of(&QSpinBox::valueChanged), this, [=](int value) {
+            for (const auto& componentId : m_componentIds)
+                emit setComponentTargetSegments(componentId, (size_t)value);
+            emit groupOperationAdded();
+        });
+
+        QHBoxLayout* targetSegmentsLayout = new QHBoxLayout;
+        targetSegmentsLayout->addStretch();
+        targetSegmentsLayout->addWidget(targetSegmentsLabel);
+        targetSegmentsLayout->addWidget(targetSegmentsBox);
+
         QVBoxLayout* stitchingLineLayout = new QVBoxLayout;
         stitchingLineLayout->addLayout(optionsLayout);
+        stitchingLineLayout->addLayout(targetSegmentsLayout);
 
         stitchingLineGroupBox = new QGroupBox(tr("Stitching Line"));
         stitchingLineGroupBox->setLayout(stitchingLineLayout);
@@ -450,6 +470,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     connect(this, &ComponentPropertyWidget::setComponentSideCloseState, m_document, &Document::setComponentSideCloseState);
     connect(this, &ComponentPropertyWidget::setComponentFrontCloseState, m_document, &Document::setComponentFrontCloseState);
     connect(this, &ComponentPropertyWidget::setComponentBackCloseState, m_document, &Document::setComponentBackCloseState);
+    connect(this, &ComponentPropertyWidget::setComponentTargetSegments, m_document, &Document::setComponentTargetSegments);
     connect(this, &ComponentPropertyWidget::setComponentSmoothCutoffDegrees, m_document, &Document::setComponentSmoothCutoffDegrees);
     connect(this, &ComponentPropertyWidget::setPartCutFace, m_document, &Document::setPartCutFace);
     connect(this, &ComponentPropertyWidget::setPartCutFaceLinkedId, m_document, &Document::setPartCutFaceLinkedId);
@@ -542,6 +563,25 @@ bool ComponentPropertyWidget::lastSideClosed()
             })->first;
     }
     return closed;
+}
+
+size_t ComponentPropertyWidget::lastTargetSegments()
+{
+    size_t targetSegments = 0;
+    std::map<size_t, int> targetSegmentsMap;
+    for (const auto& componentId : m_componentIds) {
+        const Document::Component* component = m_document->findComponent(componentId);
+        if (nullptr == component)
+            continue;
+        targetSegmentsMap[component->targetSegments]++;
+    }
+    if (!targetSegmentsMap.empty()) {
+        targetSegments = std::max_element(targetSegmentsMap.begin(), targetSegmentsMap.end(),
+            [](const std::map<size_t, int>::value_type& a, const std::map<size_t, int>::value_type& b) {
+                return a.second < b.second;
+            })->first;
+    }
+    return targetSegments;
 }
 
 bool ComponentPropertyWidget::lastFrontClosed()

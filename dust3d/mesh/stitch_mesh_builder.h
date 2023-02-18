@@ -36,7 +36,7 @@ public:
         Uuid sourceId;
     };
 
-    StitchMeshBuilder(std::vector<Spline>&& splines, bool frontClosed, bool backClosed, bool sideClosed);
+    StitchMeshBuilder(std::vector<Spline>&& splines, bool frontClosed, bool backClosed, bool sideClosed, size_t targetSegments);
     void build();
     const std::vector<Vector3>& generatedVertices() const;
     const std::vector<Uuid>& generatedVertexSources() const;

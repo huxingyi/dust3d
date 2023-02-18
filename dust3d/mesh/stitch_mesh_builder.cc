@@ -26,11 +26,16 @@
 
 namespace dust3d {
 
-StitchMeshBuilder::StitchMeshBuilder(std::vector<Spline>&& splines, bool frontClosed, bool backClosed, bool sideClosed)
+StitchMeshBuilder::StitchMeshBuilder(std::vector<Spline>&& splines,
+    bool frontClosed,
+    bool backClosed,
+    bool sideClosed,
+    size_t targetSegments)
 {
     m_frontClosed = frontClosed;
     m_backClosed = backClosed;
     m_sideClosed = sideClosed;
+    m_targetSegments = targetSegments;
     m_splines = std::move(splines);
 }
 
@@ -154,10 +159,12 @@ void StitchMeshBuilder::build()
     if (m_splines.size() < 2)
         return;
 
-    // Calculate target segments
-    m_targetSegments = 1;
-    for (const auto& it : m_splines) {
-        m_targetSegments = std::max(m_targetSegments, it.nodes.size() - 1);
+    if (0 == m_targetSegments) {
+        // Calculate target segments
+        m_targetSegments = 1;
+        for (const auto& it : m_splines) {
+            m_targetSegments = std::max(m_targetSegments, it.nodes.size() - 1);
+        }
     }
     if (1 == m_targetSegments % 2)
         ++m_targetSegments;

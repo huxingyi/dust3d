@@ -168,6 +168,7 @@ public:
         bool sideClosed = false;
         bool frontClosed = false;
         bool backClosed = false;
+        size_t targetSegments = 0;
         float smoothCutoffDegrees = 0.0;
         bool dirty = true;
         std::vector<dust3d::Uuid> childrenIds;
@@ -205,7 +206,8 @@ signals:
     void partRoughnessChanged(dust3d::Uuid partId);
     void partHollowThicknessChanged(dust3d::Uuid partId);
     void partCountershadeStateChanged(dust3d::Uuid partId);
-    void componentSmoothCutoffDegreesChanged(dust3d::Uuid partId);
+    void componentSmoothCutoffDegreesChanged(dust3d::Uuid componentId);
+    void componentTargetSegmentsChanged(const dust3d::Uuid& componentId);
     void componentCombineModeChanged(dust3d::Uuid componentId);
     void cleanup();
     void clearSelections();
@@ -408,6 +410,7 @@ public slots:
     void setPartHollowThickness(dust3d::Uuid partId, float hollowThickness);
     void setPartCountershaded(dust3d::Uuid partId, bool countershaded);
     void setComponentSmoothCutoffDegrees(dust3d::Uuid componentId, float degrees);
+    void setComponentTargetSegments(const dust3d::Uuid& componentId, size_t targetSegments);
     void setComponentCombineMode(dust3d::Uuid componentId, dust3d::CombineMode combineMode);
     void saveSnapshot();
     void batchChangeBegin();
