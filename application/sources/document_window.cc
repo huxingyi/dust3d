@@ -412,18 +412,6 @@ DocumentWindow::DocumentWindow()
     connect(m_gotoHomepageAction, &QAction::triggered, this, &DocumentWindow::gotoHomepage);
     m_helpMenu->addAction(m_gotoHomepageAction);
 
-    m_viewSourceAction = new QAction(tr("Source Code"), this);
-    connect(m_viewSourceAction, &QAction::triggered, this, &DocumentWindow::viewSource);
-    m_helpMenu->addAction(m_viewSourceAction);
-
-    m_helpMenu->addSeparator();
-
-    m_seeReferenceGuideAction = new QAction(tr("Reference Guide"), this);
-    connect(m_seeReferenceGuideAction, &QAction::triggered, this, &DocumentWindow::seeReferenceGuide);
-    m_helpMenu->addAction(m_seeReferenceGuideAction);
-
-    m_helpMenu->addSeparator();
-
     m_aboutAction = new QAction(tr("About"), this);
     connect(m_aboutAction, &QAction::triggered, this, &DocumentWindow::about);
     m_helpMenu->addAction(m_aboutAction);
@@ -735,13 +723,6 @@ void DocumentWindow::saveAll()
     }
 }
 
-void DocumentWindow::viewSource()
-{
-    QString url = APP_REPOSITORY_URL;
-    qDebug() << "viewSource:" << url;
-    QDesktopServices::openUrl(QUrl(url));
-}
-
 void DocumentWindow::gotoHomepage()
 {
     QString url = APP_HOMEPAGE_URL;
@@ -758,13 +739,6 @@ void DocumentWindow::reportIssues()
 {
     QString url = APP_ISSUES_URL;
     qDebug() << "reportIssues:" << url;
-    QDesktopServices::openUrl(QUrl(url));
-}
-
-void DocumentWindow::seeReferenceGuide()
-{
-    QString url = APP_REFERENCE_GUIDE_URL;
-    qDebug() << "referenceGuide:" << url;
     QDesktopServices::openUrl(QUrl(url));
 }
 

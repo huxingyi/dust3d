@@ -64,13 +64,11 @@ public slots:
     void saveAs();
     void saveAll();
     void gotoHomepage();
-    void viewSource();
     void about();
     void reportIssues();
     void seeAcknowlegements();
     void seeContributors();
     void seeSupporters();
-    void seeReferenceGuide();
     void documentChanged();
     void updateXlockButtonState();
     void updateYlockButtonState();
@@ -154,7 +152,6 @@ private:
 
     QMenu* m_helpMenu = nullptr;
     QAction* m_gotoHomepageAction = nullptr;
-    QAction* m_viewSourceAction = nullptr;
     QAction* m_aboutAction = nullptr;
     QAction* m_reportIssuesAction = nullptr;
     QAction* m_seeContributorsAction = nullptr;
