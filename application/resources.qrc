@@ -25,13 +25,5 @@
         <file>resources/toolbar_z_disabled.svg</file>
         <file>resources/toolbar_radius.svg</file>
         <file>resources/toolbar_radius_disabled.svg</file>
-        <file>resources/model-addax.ds3</file>
-        <file>resources/model-banana.ds3</file>
-        <file>resources/model-bicycle.ds3</file>
-        <file>resources/model-dog.ds3</file>
-        <file>resources/model-meerkat.ds3</file>
-        <file>resources/model-mosquito.ds3</file>
-        <file>resources/model-screwdriver.ds3</file>
-        <file>resources/model-seagull.ds3</file>
     </qresource>
 </RCC>

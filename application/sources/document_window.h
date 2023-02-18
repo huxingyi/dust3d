@@ -55,7 +55,6 @@ public slots:
     void save();
     void saveTo(const QString& saveAsFilename);
     void open();
-    void openExample(const QString& modelName);
     void openPathAs(const QString& path, const QString& asName);
     void exportObjResult();
     void exportGlbResult();
@@ -130,7 +129,6 @@ private:
     QAction* m_newWindowAction = nullptr;
     QAction* m_newDocumentAction = nullptr;
     QAction* m_openAction = nullptr;
-    QMenu* m_openExampleMenu = nullptr;
     QAction* m_saveAction = nullptr;
     QAction* m_saveAsAction = nullptr;
     QAction* m_saveAllAction = nullptr;

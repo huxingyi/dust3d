@@ -299,27 +299,6 @@ DocumentWindow::DocumentWindow()
         this, &DocumentWindow::open,
         QKeySequence::Open);
 
-    m_openExampleMenu = new QMenu(tr("Open Example"));
-    std::vector<QString> exampleModels = {
-        "Addax",
-        "Banana",
-        "Bicycle",
-        "Dog",
-        "Meerkat",
-        "Mosquito",
-        "Screwdriver",
-        "Seagull"
-    };
-    for (const auto& model : exampleModels) {
-        QAction* openModelAction = new QAction(model, this);
-        connect(openModelAction, &QAction::triggered, this, [this, model]() {
-            openExample("model-" + model.toLower().replace(QChar(' '), QChar('-')) + ".ds3");
-        });
-        m_openExampleMenu->addAction(openModelAction);
-    }
-
-    m_fileMenu->addMenu(m_openExampleMenu);
-
     m_saveAction = m_fileMenu->addAction(tr("&Save"),
         this, &DocumentWindow::save,
         QKeySequence::Save);
@@ -1038,21 +1017,6 @@ void DocumentWindow::unifySnapshotEdgeLinkDirection(dust3d::Snapshot& snapshot)
         edgeIt.second["from"] = toNodeIdString;
         edgeIt.second["to"] = fromNodeIdString;
     }
-}
-
-void DocumentWindow::openExample(const QString& modelName)
-{
-    if (!m_documentSaved) {
-        QMessageBox::StandardButton answer = QMessageBox::question(this,
-            APP_NAME,
-            tr("Do you really want to open example and lose the unsaved changes?"),
-            QMessageBox::Yes | QMessageBox::No,
-            QMessageBox::No);
-        if (answer != QMessageBox::Yes)
-            return;
-    }
-
-    openPathAs(":/resources/" + modelName, "");
 }
 
 void DocumentWindow::open()
