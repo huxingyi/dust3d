@@ -31,6 +31,7 @@
 namespace dust3d {
 
 std::string Ds3FileReader::m_applicationName = std::string("DUST3D");
+std::string Ds3FileReader::m_magicApplicationName = char(0xd3) + (char(0x3d) + std::string("DUST3D"));
 std::string Ds3FileReader::m_fileFormatVersion = std::string("1.0");
 std::string Ds3FileReader::m_headFormat = std::string("xml");
 
@@ -55,7 +56,7 @@ Ds3FileReader::Ds3FileReader(const std::uint8_t* fileData, size_t fileSize)
         dust3dDebug << "Unexpected file header";
         return;
     }
-    if (tokens[0] != Ds3FileReader::m_applicationName) {
+    if (tokens[0] != Ds3FileReader::m_magicApplicationName && tokens[0] != Ds3FileReader::m_applicationName) {
         dust3dDebug << "Unrecognized application name:" << tokens[0];
         return;
     }
@@ -174,7 +175,7 @@ bool Ds3FileWriter::save(const std::string& filename)
     std::string headerXml = headerXmlStream.str();
     char firstLine[1024];
     int firstLineSizeExcludeSizeSelf = sprintf(firstLine, "%s %s %s ",
-        Ds3FileReader::m_applicationName.c_str(),
+        Ds3FileReader::m_magicApplicationName.c_str(),
         Ds3FileReader::m_fileFormatVersion.c_str(),
         Ds3FileReader::m_headFormat.c_str());
     unsigned int headerSize = (unsigned int)(firstLineSizeExcludeSizeSelf + 12 + headerXml.size());

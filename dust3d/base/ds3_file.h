@@ -43,8 +43,10 @@ public:
     void loadItem(const std::string& name, std::vector<std::uint8_t>* byteArray);
     const std::vector<Ds3ReaderItem>& items() const;
     static std::string m_applicationName;
+    static std::string m_magicApplicationName;
     static std::string m_fileFormatVersion;
     static std::string m_headFormat;
+    static uint8_t m_magicNumber[2];
 
 private:
     std::map<std::string, Ds3ReaderItem> m_itemsMap;
