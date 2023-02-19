@@ -95,3 +95,28 @@ jobs:
         with:
           name: Dust3D-win32-x86_64
           path: Dust3D-win32-x86_64/
+  macos-upload:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Qt
+        run: |
+          HOMEBREW_VERBOSE_USING_DOTS=1 brew reinstall --verbose qt@5
+          HOMEBREW_VERBOSE_USING_DOTS=1 brew link qt@5 --force
+          export PATH="/usr/local/opt/qt@5/bin:$PATH"
+      - name: Build application
+        run: |
+          cd ${GITHUB_WORKSPACE}/application
+          qmake
+          alias nproc="sysctl -n hw.logicalcpu"
+          make -j`nproc`
+      - name: Generate DMG
+        run: |
+          mv dust3d.app Dust3D.app
+          macdeployqt Dust3D.app -dmg
+      - name: Upload DMG
+        uses: actions/upload-artifact@v3
+        with:
+          name: Dust3D.dmg
+          path: Dust3D.dmg

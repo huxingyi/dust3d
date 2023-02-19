@@ -166,12 +166,12 @@ bool ReTriangulator::buildPolygons()
         const auto& polyline = m_polylines[polylineIndex];
         int frontEdge = attachPointToTriangleEdge(m_points[polyline.front()]);
         int backEdge = attachPointToTriangleEdge(m_points[polyline.back()]);
-        edgePoints[frontEdge].push_back({ polyline.front(),
+        edgePoints[frontEdge].push_back(EdgePoint { polyline.front(),
             polyline.back(),
             polylineIndex,
             false,
             (m_points[polyline.front()] - m_points[frontEdge]).lengthSquared() });
-        edgePoints[backEdge].push_back({ polyline.back(),
+        edgePoints[backEdge].push_back(EdgePoint { polyline.back(),
             polyline.front(),
             polylineIndex,
             true,

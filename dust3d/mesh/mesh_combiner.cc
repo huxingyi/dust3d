@@ -24,6 +24,7 @@
 #include <dust3d/mesh/mesh_combiner.h>
 #include <dust3d/mesh/solid_mesh_boolean_operation.h>
 #include <dust3d/mesh/triangulate.h>
+#include <memory>
 
 namespace dust3d {
 

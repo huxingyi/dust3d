@@ -34,6 +34,7 @@
 #include <dust3d/mesh/tube_mesh_builder.h>
 #include <dust3d/mesh/weld_vertices.h>
 #include <functional>
+#include <memory>
 
 namespace dust3d {
 

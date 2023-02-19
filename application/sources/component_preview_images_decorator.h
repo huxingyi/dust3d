@@ -2,6 +2,7 @@
 #define DUST3D_APPLICATION_COMPONENT_PREVIEW_IMAGES_DECORATOR_H_
 
 #include <QImage>
+#include <QObject>
 #include <dust3d/base/uuid.h>
 #include <memory>
 #include <unordered_map>

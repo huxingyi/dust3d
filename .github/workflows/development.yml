@@ -63,3 +63,18 @@ jobs:
           cd $env:GITHUB_WORKSPACE/application
           qmake -spec win32-msvc
           nmake -f Makefile.Release
+  macos-build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install Qt
+        run: |
+          HOMEBREW_VERBOSE_USING_DOTS=1 brew reinstall --verbose qt@5
+          HOMEBREW_VERBOSE_USING_DOTS=1 brew link qt@5 --force
+          export PATH="/usr/local/opt/qt@5/bin:$PATH"
+      - name: Build application
+        run: |
+          cd ${GITHUB_WORKSPACE}/application
+          qmake
+          alias nproc="sysctl -n hw.logicalcpu"
+          make -j`nproc`

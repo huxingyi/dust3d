@@ -307,17 +307,17 @@ void ModelMesh::setHasAmbientOcclusionInImage(bool hasInImage)
 void ModelMesh::exportAsObj(QTextStream* textStream)
 {
     auto& stream = *textStream;
-    stream << "# " << APP_NAME << " " << APP_HUMAN_VER << endl;
-    stream << "# " << APP_HOMEPAGE_URL << endl;
+    stream << "# " << APP_NAME << " " << APP_HUMAN_VER << "\n";
+    stream << "# " << APP_HOMEPAGE_URL << "\n";
     for (std::vector<dust3d::Vector3>::const_iterator it = vertices().begin(); it != vertices().end(); ++it) {
-        stream << "v " << QString::number((*it).x()) << " " << QString::number((*it).y()) << " " << QString::number((*it).z()) << endl;
+        stream << "v " << QString::number((*it).x()) << " " << QString::number((*it).y()) << " " << QString::number((*it).z()) << "\n";
     }
     for (std::vector<std::vector<size_t>>::const_iterator it = faces().begin(); it != faces().end(); ++it) {
         stream << "f";
         for (std::vector<size_t>::const_iterator subIt = (*it).begin(); subIt != (*it).end(); ++subIt) {
             stream << " " << QString::number((1 + *subIt));
         }
-        stream << endl;
+        stream << "\n";
     }
 }
 
