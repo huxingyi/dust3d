@@ -113,7 +113,7 @@ jobs:
           make -j`nproc`
       - name: Generate DMG
         run: |
-          mv dust3d.app Dust3D.app
+          mv ${GITHUB_WORKSPACE}/application/dust3d.app Dust3D.app
           macdeployqt Dust3D.app -dmg
       - name: Upload DMG
         uses: actions/upload-artifact@v3
