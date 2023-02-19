@@ -46,7 +46,6 @@ public:
     static std::string m_magicApplicationName;
     static std::string m_fileFormatVersion;
     static std::string m_headFormat;
-    static uint8_t m_magicNumber[2];
 
 private:
     std::map<std::string, Ds3ReaderItem> m_itemsMap;
