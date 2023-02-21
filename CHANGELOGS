@@ -1,5 +1,15 @@
-Changes between 1.0.0-rc.5 and 1.0.0-rc.6:
---------------------------------------------------
+
+- Add support to select two images and auto combine as background image
+- Simplify shaders
+- Rebuild parts UI
+- Remove example models
+- Add Stitching Line meshing method
+- Replace UV algorithm with built-in algorithm
+- Replace CGAL mesh library with built-in boolean algorithm
+- Remove Rig and Motion
+
+Apr 12, 2020:
+
 - Fix crash after remesh  
 - Fix remesh memory leak  
 - Change default part base as PartBase::Average  
@@ -11,8 +21,8 @@ Changes between 1.0.0-rc.5 and 1.0.0-rc.6:
 - Optimize nodes deletion  
 - Remove Mark Pen  
 
-Changes between 1.0.0-rc.3 and 1.0.0-rc.5:
---------------------------------------------------
+Apr 9, 2020:
+
 - Add preference: Toon Shader  
 - Add menu: Export as Image  
 - Add auto saving  
@@ -22,14 +32,14 @@ Changes between 1.0.0-rc.3 and 1.0.0-rc.5:
 - Show edge direction on canvas  
 - Add example model: Backpacker  
 
-Changes between 1.0.0-rc.1 and 1.0.0-rc.3:
---------------------------------------------------
+Mar 20, 2020:
+
 - Fix negative skinning weight  
 - Fix IBL shader  
 - Add win32 release  
 
-Changes between 1.0.0-beta.29 and 1.0.0-rc.1:
---------------------------------------------------
+Mar 1, 2020:
+
 - Add shortcuts for menu items  
 - Preserve window size between runs  
 - Drop win32 support  
@@ -42,21 +52,21 @@ Changes between 1.0.0-beta.29 and 1.0.0-rc.1:
 - Add texture size preference setting  
 - Add example model: Cat  
 
-Changes between 1.0.0-beta.28 and 1.0.0-beta.29:
---------------------------------------------------
+Dec 25, 2019:
+
 - Add marker pen: A new way of modeling from contour  
 - Fix crash when nodes are extremely small  
 - Fix shader for core profile  
 
-Changes between 1.0.0-beta.27 and 1.0.0-beta.28:
---------------------------------------------------
+Dec 15, 2019:
+
 - Add new generated mesh type: Grid mesh  
 - Include non-manifold geometry in result  
 - Fix smooth angle  
 - Fix preview model zoom scale  
 
-Changes between 1.0.0-beta.26 and 1.0.0-beta.27:
---------------------------------------------------
+Nov 8, 2019:
+
 - Fix normal map generation  
 - Fix transparency and solubility setting for texture generation  
 - Fix shader for metallic parameter  
@@ -65,8 +75,8 @@ Changes between 1.0.0-beta.26 and 1.0.0-beta.27:
 - Add countershading setting for texture generation  
 - Update built-in example models  
 
-Changes between 1.0.0-beta.25 and 1.0.0-beta.26:
---------------------------------------------------
+Nov 3, 2019:
+
 - Fix undo for part tree widget  
 - Add experiment auto colorizing (Thanks @enzyme69)  
 - Improve mesh generation, more average edge length    
@@ -76,8 +86,8 @@ Changes between 1.0.0-beta.25 and 1.0.0-beta.26:
 - Remove built-in example model: Bob  
 - Add built-in example model: Giraffe  
 
-Changes between 1.0.0-beta.24 and 1.0.0-beta.25:
---------------------------------------------------
+Oct 20, 2019:
+
 - Add shortcuts key F: bring part widget of hovered part to visible area
 - Add shortcut key C: toggle chamfer state  
 - Add shortcut key O: toggle flat shading  
@@ -87,15 +97,15 @@ Changes between 1.0.0-beta.24 and 1.0.0-beta.25:
 - Add one tool button to toggle viewport rotation  
 - Increase the icon size of mini buttons  
 
-Changes between 1.0.0-beta.23 and 1.0.0-beta.24:
---------------------------------------------------
+Oct 6, 2019:
+
 - Support part color copy and paste  
 - Add auto ragdoll animation, powered by bullet3  
 - Fix texture generation  
 - Fix optimized compiling options for windows  
 
-Changes between 1.0.0-beta.22 and 1.0.0-beta.23:
---------------------------------------------------
+Aug 19, 2019:
+
 - Fix rig bone name issue because of translation  
 - Update application logo  
 - Add deforming map  
@@ -105,8 +115,8 @@ Changes between 1.0.0-beta.22 and 1.0.0-beta.23:
 - Remove drag mode icon  
 - Add hollow modifier  
 
-Changes between 1.0.0-beta.21 and 1.0.0-beta.22:
---------------------------------------------------
+Jul 28, 2019:
+
 - Improve intermediate nodes generation  
 - Add JavaScript language support for procedural nodes generation  
 - Optimize cut face endpoints sort algorithm  
@@ -116,22 +126,22 @@ Changes between 1.0.0-beta.21 and 1.0.0-beta.22:
 - Fix inconsistent base normal when shape is too straight  
 - Add procedural tree example model  
 
-Changes between 1.0.0-beta.20 and 1.0.0-beta.21:
---------------------------------------------------
+Jul 11, 2019:
+
 - Fix build for Raspberry Pi 3 Model B+  
 - Fix cut face direction for intermediate nodes  
 - Fix mesh render result flashback  
 - Sort cut face list by x position  
 - Support customizing cut face per each node   
 
-Changes between 1.0.0-beta.19 and 1.0.0-beta.20:
---------------------------------------------------
+Jul 7, 2019:
+
 - Support language: Simplified Chinese  
 - Fix crash on cut face nodes ordering  
 - Improve quality of mesh generation  
 
-Changes between 1.0.0-beta.18 and 1.0.0-beta.19:
---------------------------------------------------
+Jun 26, 2019:
+
 - Improve Pose Editor UI
 - Add new pose setting: yTranslationScale
 - Add new base option: Average
@@ -140,8 +150,8 @@ Changes between 1.0.0-beta.18 and 1.0.0-beta.19:
 - Disable three nodes branch by default, could be enabled from preferences window
 - Make flat shading as default
 
-Changes between 1.0.0-beta.17 and 1.0.0-beta.18:
---------------------------------------------------
+Jun 13, 2019:
+
 - Add preferences settings, including flat shading, default color, and default combine mode
 - Fix user defined cut face flipped normal issues
 - Improve shader light
@@ -151,8 +161,8 @@ Changes between 1.0.0-beta.17 and 1.0.0-beta.18:
 - Add more built-in example models
 - Change application logo
 
-Changes between 1.0.0-beta.16 and 1.0.0-beta.17:
---------------------------------------------------
+May 26, 2019:
+
 - Remote IO Protocol
 - Uncombined Mode
 - User Defined Cut Face
@@ -160,8 +170,8 @@ Changes between 1.0.0-beta.16 and 1.0.0-beta.17:
 - Color Solubility
 - Crash Fix
 
-Changes between 1.0.0-beta.15 and 1.0.0-beta.16:
---------------------------------------------------
+Mar 10, 2019:
+
 - Support onion skinning in pose editor  
 - Upgrade CGAL version from 4.11.1 to 4.13  
 - Replace triangulation with CGAL triangulate faces method   
@@ -170,8 +180,8 @@ Changes between 1.0.0-beta.15 and 1.0.0-beta.16:
 - Remove cut face customization  
 - Make chamfer tool as a separate mini button  
 
-Changes between 1.0.0-beta.14 and 1.0.0-beta.15:
---------------------------------------------------
+Feb 28, 2019:
+
 - Improved mesh quality: more quads with even edge size  
 - Remesh seams as better as possible and keep mesh manifold  
 - Support cut face customization  
@@ -181,8 +191,8 @@ Changes between 1.0.0-beta.14 and 1.0.0-beta.15:
 - Removed global rotation buttons  
 - Removed rust language dependency: reimplemented mesh generator in C++  
 
-Initial beta release:
-------------------------
+Dec 1, 2018:
+
 - Combinable Bmesh Modeling  
 - Auto UV Unwrapping  
 - Metallic/Roughness PBR Material Support  

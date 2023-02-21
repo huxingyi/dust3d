@@ -34,11 +34,12 @@ jobs:
         run: |
           sudo apt-get install -y libfuse2
           cd ${GITHUB_WORKSPACE} && sh ./ci/appimage/bundle.sh
+          mv Dust3D-x86_64.AppImage dust3d-${{env.GITHUB_REF_NAME}}.AppImage
       - name: Upload AppImage
         uses: actions/upload-artifact@v3
         with:
-          name: Dust3D-x86_64.AppImage
-          path: Dust3D-x86_64.AppImage
+          name: dust3d-${{env.GITHUB_REF_NAME}}.AppImage
+          path: dust3d-${{env.GITHUB_REF_NAME}}.AppImage
   win32-msvc-upload:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: 	windows-2019
@@ -88,13 +89,13 @@ jobs:
           cp ${GITHUB_WORKSPACE}/../Qt/5.15.2/msvc2019_64/plugins/imageformats/qjpeg.dll ${GITHUB_WORKSPACE}/imageformats/qjpeg.dll
           cp ${GITHUB_WORKSPACE}/../Qt/5.15.2/msvc2019_64/plugins/imageformats/qsvg.dll ${GITHUB_WORKSPACE}/imageformats/qsvg.dll
           7z a Dust3D-win32-x86_64.zip -r ${GITHUB_WORKSPACE}/imageformats/
-          7z x Dust3D-win32-x86_64.zip -oDust3D-win32-x86_64
+          7z x Dust3D-win32-x86_64.zip -odust3d-${{env.GITHUB_REF_NAME}}
         shell: bash
       - name: Upload zip
         uses: actions/upload-artifact@v3
         with:
-          name: Dust3D-win32-x86_64
-          path: Dust3D-win32-x86_64/
+          name: dust3d-${{env.GITHUB_REF_NAME}}
+          path: dust3d-${{env.GITHUB_REF_NAME}}/
   macos-upload:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: macos-latest
@@ -113,10 +114,10 @@ jobs:
           make -j`nproc`
       - name: Generate DMG
         run: |
-          mv ${GITHUB_WORKSPACE}/application/dust3d.app Dust3D.app
-          macdeployqt Dust3D.app -dmg
+          mv ${GITHUB_WORKSPACE}/application/dust3d.app dust3d-${{env.GITHUB_REF_NAME}}.app
+          macdeployqt dust3d-${{env.GITHUB_REF_NAME}}.app -dmg
       - name: Upload DMG
         uses: actions/upload-artifact@v3
         with:
-          name: Dust3D.dmg
-          path: Dust3D.dmg
+          name: dust3d-${{env.GITHUB_REF_NAME}}.dmg
+          path: dust3d-${{env.GITHUB_REF_NAME}}.dmg
