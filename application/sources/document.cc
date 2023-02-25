@@ -1881,7 +1881,6 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
     std::set<dust3d::Uuid> newAddedNodeIds;
     std::set<dust3d::Uuid> newAddedEdgeIds;
     std::set<dust3d::Uuid> newAddedPartIds;
-    std::set<dust3d::Uuid> newAddedComponentIds;
 
     std::set<dust3d::Uuid> inversePartIds;
 
@@ -2015,6 +2014,27 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
             continue;
         partMap[nodeIt.second.partId].nodeIds.push_back(nodeIt.first);
     }
+    std::map<dust3d::Uuid, std::vector<dust3d::Uuid>> snapshotComponentChildMap;
+    if (SnapshotSource::Paste == source) {
+        for (const auto& componentKv : snapshot.components) {
+            auto componentId = dust3d::Uuid(componentKv.first);
+            for (const auto& childId : dust3d::String::split(dust3d::String::valueOrEmpty(componentKv.second, "children"), ',')) {
+                if (childId.empty())
+                    continue;
+                dust3d::Uuid childComponentId = dust3d::Uuid(childId);
+                snapshotComponentChildMap[componentId].push_back(childComponentId);
+            }
+        }
+        const auto& rootComponentChildren = snapshot.rootComponent.find("children");
+        if (rootComponentChildren != snapshot.rootComponent.end()) {
+            for (const auto& childId : dust3d::String::split(rootComponentChildren->second, ',')) {
+                if (childId.empty())
+                    continue;
+                dust3d::Uuid childComponentId = dust3d::Uuid(childId);
+                snapshotComponentChildMap[dust3d::Uuid()].push_back(childComponentId);
+            }
+        }
+    }
     for (const auto& componentKv : snapshot.components) {
         QString linkData = dust3d::String::valueOrEmpty(componentKv.second, "linkData").c_str();
         QString linkDataType = dust3d::String::valueOrEmpty(componentKv.second, "linkDataType").c_str();
@@ -2060,9 +2080,22 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
                 component.combineMode = dust3d::CombineMode::Inversion;
         }
         componentMap.emplace(componentId, std::move(component));
-        newAddedComponentIds.insert(componentId);
     }
     if (SnapshotSource::Paste == source) {
+        std::vector<dust3d::Uuid> newAddedComponentIds;
+        auto addChild = [&](const dust3d::Uuid& parentId) {
+            auto childIt = snapshotComponentChildMap.find(parentId);
+            if (childIt == snapshotComponentChildMap.end())
+                return;
+            for (const auto& it : childIt->second) {
+                auto newId = oldNewIdMap.find(it);
+                if (newId == oldNewIdMap.end())
+                    continue;
+                newAddedComponentIds.push_back(newId->second);
+            }
+        };
+        for (const auto& it : snapshotComponentChildMap)
+            addChild(it.first);
         if (m_currentCanvasComponentId.isNull()) {
             for (const auto& childComponentId : newAddedComponentIds)
                 rootComponent.addChild(childComponentId);

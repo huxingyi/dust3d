@@ -3,13 +3,13 @@ QT += core gui opengl widgets svg
 TARGET = dust3d
 TEMPLATE = app
 
-HUMAN_VERSION = "1.0.0-rc.7"
-VERSION = 1.0.0.37
+HUMAN_VERSION = "1.0.0-rc.8"
+VERSION = 1.0.0.38
 
 QMAKE_TARGET_COMPANY = Dust3D
 QMAKE_TARGET_PRODUCT = Dust3D
 QMAKE_TARGET_DESCRIPTION = "Dust3D is a cross-platform open-source 3D modeling software"
-QMAKE_TARGET_COPYRIGHT = "Copyright (C) 2018-2021 Dust3D Project. All Rights Reserved."
+QMAKE_TARGET_COPYRIGHT = "Copyright (C) 2018-2023 Dust3D Project. All Rights Reserved."
 
 HOMEPAGE_URL = "https://dust3d.org/"
 REPOSITORY_URL = "https://github.com/huxingyi/dust3d"
