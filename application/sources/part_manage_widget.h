@@ -17,6 +17,7 @@ signals:
     void selectPartOnCanvas(const dust3d::Uuid& partId);
     void setPartTarget(const dust3d::Uuid& partId, dust3d::PartTarget target);
     void groupComponents(const std::vector<dust3d::Uuid>& componentIds);
+    void removeComponent(const dust3d::Uuid& componentId);
     void ungroupComponent(const dust3d::Uuid& componentId);
     void moveComponentUp(const dust3d::Uuid& componentId);
     void moveComponentDown(const dust3d::Uuid& componentId);

@@ -119,6 +119,7 @@ PartManageWidget::PartManageWidget(Document* document, QWidget* parent)
     connect(m_document, &Document::componentChildrenChanged, this, &PartManageWidget::updateToolButtons);
 
     connect(this, &PartManageWidget::groupComponents, m_document, &Document::groupComponents);
+    connect(this, &PartManageWidget::removeComponent, m_document, &Document::removeComponent);
     connect(this, &PartManageWidget::ungroupComponent, m_document, &Document::ungroupComponent);
     connect(this, &PartManageWidget::moveComponentUp, m_document, &Document::moveComponentUp);
     connect(this, &PartManageWidget::moveComponentDown, m_document, &Document::moveComponentDown);
@@ -355,6 +356,15 @@ void PartManageWidget::showContextMenu(const QPoint& pos)
             contextMenu.addAction(&convertToStitchingLineAction);
         }
     }
+
+    QAction deleteAction(tr("Delete"), this);
+    deleteAction.setIcon(Theme::awesome()->icon(fa::remove));
+    connect(&deleteAction, &QAction::triggered, this, [=]() {
+        for (const auto& componentId : selectedComponentIds)
+            emit this->removeComponent(componentId);
+        emit this->groupOperationAdded();
+    });
+    contextMenu.addAction(&deleteAction);
 
     contextMenu.exec(mapToGlobal(pos));
 }
