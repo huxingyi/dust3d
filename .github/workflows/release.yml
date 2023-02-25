@@ -93,14 +93,12 @@ jobs:
           git clone https://${{ secrets.GITHUB_TOKEN }}@github.com/huxingyi/huxingyi.github.io.git
           cd huxingyi.github.io
           cp ../Dust3D-win32-x86_64.zip download/dust3d-latest-preview.zip
-          if git diff --name-only HEAD | grep -q "download/dust3d-latest-preview.zip"; then
-            git config --global user.email ""
-            git config --global user.name "bot"
-            git add download/dust3d-latest-preview.zip
-            timestamp=$(TZ=":Australia/Sydney" date)
-            git commit -m "Update latest windows build at ${timestamp}"
-            git push origin HEAD
-          fi
+          git config --global user.email ""
+          git config --global user.name "bot"
+          git add download/dust3d-latest-preview.zip
+          timestamp=$(TZ=":Australia/Sydney" date)
+          git commit -m "Update latest windows build at ${timestamp}"
+          git push origin HEAD
           cd ../
         shell: bash
       - name: Upload zip
