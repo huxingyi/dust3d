@@ -102,7 +102,7 @@ jobs:
           repository: huxingyi/huxingyi.github.io
       - name: Copy and Commit
         run: |
-          cp ${GITHUB_WORKSPACE}/Dust3D-win32-x86_64.zip download/dust3d-latest-preview.zip
+          cp ${GITHUB_WORKSPACE}/application/Dust3D-win32-x86_64.zip download/dust3d-latest-preview.zip
           git config --global user.email ""
           git config --global user.name "bot"
           git add download/dust3d-latest-preview.zip
