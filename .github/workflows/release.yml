@@ -99,7 +99,7 @@ jobs:
       - name: Clone Target Repository
         uses: actions/checkout@v3
         with:
-          repository: https://github.com/huxingyi/huxingyi.github.io.git
+          repository: huxingyi/huxingyi.github.io
       - name: Copy and Commit
         run: |
           cp ${GITHUB_WORKSPACE}/Dust3D-win32-x86_64.zip download/dust3d-latest-preview.zip
