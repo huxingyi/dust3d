@@ -90,25 +90,24 @@ jobs:
           cp ${GITHUB_WORKSPACE}/../Qt/5.15.2/msvc2019_64/plugins/imageformats/qsvg.dll ${GITHUB_WORKSPACE}/imageformats/qsvg.dll
           7z a Dust3D-win32-x86_64.zip -r ${GITHUB_WORKSPACE}/imageformats/
           7z x Dust3D-win32-x86_64.zip -odust3d-${{ github.event.workflow_run.head_branch }}
+          cp Dust3D-win32-x86_64.zip dust3d-latest-preview.zip
         shell: bash
       - name: Upload zip
         uses: actions/upload-artifact@v3
         with:
           name: dust3d-${{ github.event.workflow_run.head_branch }}
           path: dust3d-${{ github.event.workflow_run.head_branch }}/
-      - name: Clone Target Repository
-        uses: actions/checkout@v3
+      - name: Push latest build
+        uses: dmnemec/copy_file_to_another_repo_action@main
+        env:
+          API_TOKEN_GITHUB: ${{ secrets.GITHUB_TOKEN }}
         with:
-          repository: huxingyi/huxingyi.github.io
-      - name: Copy and Commit
-        run: |
-          cp ${GITHUB_WORKSPACE}/application/Dust3D-win32-x86_64.zip download/dust3d-latest-preview.zip
-          git config --global user.email ""
-          git config --global user.name "bot"
-          git add download/dust3d-latest-preview.zip
-          timestamp=$(TZ=":Australia/Sydney" date)
-          git commit -m "Update latest windows build at ${timestamp}"
-          git push origin HEAD
+          source_file: 'dust3d-latest-preview.zip'
+          destination_repo: 'huxingyi/huxingyi.github.io'
+          destination_folder: 'download'
+          user_email: ''
+          user_name: 'bot'
+          commit_message: 'Update latest windows build'
   macos-upload:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: macos-latest
