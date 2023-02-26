@@ -102,8 +102,7 @@ jobs:
           git config --global user.email ""
           git config --global user.name "bot"
           git add download/dust3d-latest-preview.zip
-          timestamp=$(TZ=":Australia/Sydney" date)
-          git commit -m "Update latest windows build at ${timestamp}"
+          git commit -m "Update latest windows build"
           git push origin HEAD
           cd ../
       - name: Upload zip
