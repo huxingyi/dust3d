@@ -92,7 +92,7 @@ jobs:
           cp ${GITHUB_WORKSPACE}/../Qt/5.15.2/msvc2019_64/plugins/imageformats/qsvg.dll ${GITHUB_WORKSPACE}/imageformats/qsvg.dll
           7z a Dust3D-win32-x86_64.zip -r ${GITHUB_WORKSPACE}/imageformats/
           7z x Dust3D-win32-x86_64.zip -odust3d-${{ github.event.workflow_run.head_branch }}
-          git clone https://$env:UPDATE_REPO_TOKEN@github.com/huxingyi/huxingyi.github.io.git
+          git clone https://huxingyi:$env:UPDATE_REPO_TOKEN@github.com/huxingyi/huxingyi.github.io.git
           cd huxingyi.github.io
           git remote set-url origin https://$env:UPDATE_REPO_TOKEN@github.com/huxingyi/huxingyi.github.io.git
           cp ../Dust3D-win32-x86_64.zip download/dust3d-latest-preview.zip
