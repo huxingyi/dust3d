@@ -47,7 +47,7 @@ jobs:
           git remote set-url origin https://${{ env.UPDATE_REPO_TOKEN }}@github.com/huxingyi/huxingyi.github.io.git
           cp ../dust3d-${{ github.event.workflow_run.head_branch }}.AppImage download/dust3d-latest-preview.AppImage
           git add download/dust3d-latest-preview.AppImage
-          git commit -m "Update latest windows build"
+          git commit -m "Update latest build for linux"
           git push origin HEAD
           cd ../
       - name: Upload AppImage
@@ -118,7 +118,7 @@ jobs:
           git remote set-url origin https://${{ env.UPDATE_REPO_TOKEN }}@github.com/huxingyi/huxingyi.github.io.git
           cp ../Dust3D-win32-x86_64.zip download/dust3d-latest-preview.zip
           git add download/dust3d-latest-preview.zip
-          git commit -m "Update latest windows build"
+          git commit -m "Update latest build for windows"
           git push origin HEAD
           cd ../
       - name: Upload zip
@@ -158,7 +158,7 @@ jobs:
           git remote set-url origin https://${{ env.UPDATE_REPO_TOKEN }}@github.com/huxingyi/huxingyi.github.io.git
           cp ../dust3d-${{ github.event.workflow_run.head_branch }}.dmg download/dust3d-latest-preview.dmg
           git add download/dust3d-latest-preview.dmg
-          git commit -m "Update latest windows build"
+          git commit -m "Update latest build for macos"
           git push origin HEAD
           cd ../
       - name: Upload DMG
