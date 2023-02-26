@@ -91,21 +91,6 @@ jobs:
           7z a Dust3D-win32-x86_64.zip -r ${GITHUB_WORKSPACE}/imageformats/
           7z x Dust3D-win32-x86_64.zip -odust3d-${{ github.event.workflow_run.head_branch }}
         shell: bash
-      - name: Push latest build
-        env:
-          MY_EMAIL: ${{ secrets.MY_EMAIL }}
-          UPDATE_REPO_TOKEN: ${{ secrets.UPDATE_REPO_TOKEN }}
-        run: |
-          git clone https://huxingyi:$env:UPDATE_REPO_TOKEN@github.com/huxingyi/huxingyi.github.io.git
-          cd huxingyi.github.io
-          git remote set-url origin https://$env:UPDATE_REPO_TOKEN@github.com/huxingyi/huxingyi.github.io.git
-          cp ../Dust3D-win32-x86_64.zip download/dust3d-latest-preview.zip
-          git config --global user.email "${{env:MY_EMAIL}}"
-          git config --global user.name "Jeremy HU"
-          git add download/dust3d-latest-preview.zip
-          git commit -m "Update latest windows build"
-          git push origin HEAD
-          cd ../
       - name: Upload zip
         uses: actions/upload-artifact@v3
         with:
