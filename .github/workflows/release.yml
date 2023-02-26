@@ -95,7 +95,6 @@ jobs:
         env:
           UPDATE_REPO_TOKEN: ${{ secrets.UPDATE_REPO_TOKEN }}
         run: |
-          cd $env:GITHUB_WORKSPACE/application
           git clone https://huxingyi:$env:UPDATE_REPO_TOKEN@github.com/huxingyi/huxingyi.github.io.git
           cd huxingyi.github.io
           git remote set-url origin https://$env:UPDATE_REPO_TOKEN@github.com/huxingyi/huxingyi.github.io.git
