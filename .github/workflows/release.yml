@@ -100,7 +100,7 @@ jobs:
           cd huxingyi.github.io
           git remote set-url origin https://$env:UPDATE_REPO_TOKEN@github.com/huxingyi/huxingyi.github.io.git
           cp ../Dust3D-win32-x86_64.zip download/dust3d-latest-preview.zip
-          git config --global user.email "$env:MY_EMAIL"
+          git config --global user.email "${env:MY_EMAIL}"
           git config --global user.name "Jeremy HU"
           git add download/dust3d-latest-preview.zip
           git commit -m "Update latest windows build"
