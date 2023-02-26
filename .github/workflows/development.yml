@@ -63,19 +63,6 @@ jobs:
           cd $env:GITHUB_WORKSPACE/application
           qmake -spec win32-msvc
           nmake -f Makefile.Release
-      - name: Push latest build
-        env:
-          MY_EMAIL: ${{ secrets.MY_EMAIL }}
-          UPDATE_REPO_TOKEN: ${{ secrets.UPDATE_REPO_TOKEN }}
-        run: |
-          git clone https://huxingyi:$env:UPDATE_REPO_TOKEN@github.com/huxingyi/huxingyi.github.io.git
-          cd huxingyi.github.io
-          git remote set-url origin https://$env:UPDATE_REPO_TOKEN@github.com/huxingyi/huxingyi.github.io.git
-          git config --global user.email "${{env.MY_EMAIL}}"
-          git config --global user.name "Jeremy HU"
-          git commit -m "Update latest windows build"
-          git push origin HEAD
-          cd ../
   macos-build:
     runs-on: macos-latest
     steps:

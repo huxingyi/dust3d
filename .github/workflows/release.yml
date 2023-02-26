@@ -35,6 +35,21 @@ jobs:
           sudo apt-get install -y libfuse2
           cd ${GITHUB_WORKSPACE} && sh ./ci/appimage/bundle.sh
           mv Dust3D-x86_64.AppImage dust3d-${{ github.event.workflow_run.head_branch }}.AppImage
+      - name: Publish latest build
+        env:
+          MY_EMAIL: ${{ secrets.MY_EMAIL }}
+          UPDATE_REPO_TOKEN: ${{ secrets.UPDATE_REPO_TOKEN }}
+        run: |
+          git config --global user.email "${{ env.MY_EMAIL }}"
+          git config --global user.name "Jeremy HU"
+          git clone https://${{ env.UPDATE_REPO_TOKEN }}@github.com/huxingyi/huxingyi.github.io.git
+          cd huxingyi.github.io
+          git remote set-url origin https://${{ env.UPDATE_REPO_TOKEN }}@github.com/huxingyi/huxingyi.github.io.git
+          cp ../dust3d-${{ github.event.workflow_run.head_branch }}.AppImage download/dust3d-latest-preview.AppImage
+          git add download/dust3d-latest-preview.AppImage
+          git commit -m "Update latest windows build"
+          git push origin HEAD
+          cd ../
       - name: Upload AppImage
         uses: actions/upload-artifact@v3
         with:
@@ -91,6 +106,21 @@ jobs:
           7z a Dust3D-win32-x86_64.zip -r ${GITHUB_WORKSPACE}/imageformats/
           7z x Dust3D-win32-x86_64.zip -odust3d-${{ github.event.workflow_run.head_branch }}
         shell: bash
+      - name: Publish latest build
+        env:
+          MY_EMAIL: ${{ secrets.MY_EMAIL }}
+          UPDATE_REPO_TOKEN: ${{ secrets.UPDATE_REPO_TOKEN }}
+        run: |
+          git config --global user.email "${{ env.MY_EMAIL }}"
+          git config --global user.name "Jeremy HU"
+          git clone https://${{ env.UPDATE_REPO_TOKEN }}@github.com/huxingyi/huxingyi.github.io.git
+          cd huxingyi.github.io
+          git remote set-url origin https://${{ env.UPDATE_REPO_TOKEN }}@github.com/huxingyi/huxingyi.github.io.git
+          cp ../Dust3D-win32-x86_64.zip download/dust3d-latest-preview.zip
+          git add download/dust3d-latest-preview.zip
+          git commit -m "Update latest windows build"
+          git push origin HEAD
+          cd ../
       - name: Upload zip
         uses: actions/upload-artifact@v3
         with:
@@ -116,6 +146,21 @@ jobs:
         run: |
           mv ${GITHUB_WORKSPACE}/application/dust3d.app dust3d-${{ github.event.workflow_run.head_branch }}.app
           macdeployqt dust3d-${{ github.event.workflow_run.head_branch }}.app -dmg
+      - name: Publish latest build
+        env:
+          MY_EMAIL: ${{ secrets.MY_EMAIL }}
+          UPDATE_REPO_TOKEN: ${{ secrets.UPDATE_REPO_TOKEN }}
+        run: |
+          git config --global user.email "${{ env.MY_EMAIL }}"
+          git config --global user.name "Jeremy HU"
+          git clone https://${{ env.UPDATE_REPO_TOKEN }}@github.com/huxingyi/huxingyi.github.io.git
+          cd huxingyi.github.io
+          git remote set-url origin https://${{ env.UPDATE_REPO_TOKEN }}@github.com/huxingyi/huxingyi.github.io.git
+          cp ../dust3d-${{ github.event.workflow_run.head_branch }}.dmg download/dust3d-latest-preview.dmg
+          git add download/dust3d-latest-preview.dmg
+          git commit -m "Update latest windows build"
+          git push origin HEAD
+          cd ../
       - name: Upload DMG
         uses: actions/upload-artifact@v3
         with:
