@@ -60,7 +60,6 @@ Dust3D is licensed under the MIT License - see the [LICENSE](https://github.com/
 <a href="https://github.com/kidandcat" title="kidandcat (Hairok)" target=_blank><image src="https://avatars.githubusercontent.com/u/3855826?u=64040c971ad9bf1e66dc5d4df54871d0af9c890f&v=4" alt="@kidandcat" width="35" height="35" style="border-radius: 17px;" /></a>
 <a href="https://github.com/DisownedWheat" title="DisownedWheat (Robert Larnach)" target=_blank><image src="https://avatars.githubusercontent.com/u/11870491?u=a8b24ff1daf2577b1afac771fd2cf80e39c8b4b0&v=4" alt="@DisownedWheat" width="35" height="35" style="border-radius: 17px;" /></a>
 <a href="https://github.com/Nobuna-no" title="Nobuna-no (Morgan Hoarau)" target=_blank><image src="https://avatars.githubusercontent.com/u/43406539?u=fc0d4b157b4b49775d415b2f405d5c45a486a107&v=4" alt="@Nobuna-no" width="35" height="35" style="border-radius: 17px;" /></a>
-<a href="https://github.com/Ghee36" title="Ghee36" target=_blank><image src="https://avatars.githubusercontent.com/u/70682472?v=4" alt="@Ghee36" width="35" height="35" style="border-radius: 17px;" /></a>
 
  _The list shown represent active sponsors on GitHub and a full list can be viewed at [SUPPORTERS](https://github.com/huxingyi/dust3d/blob/master/SUPPORTERS)._
 <!-- Sponsors end -->
