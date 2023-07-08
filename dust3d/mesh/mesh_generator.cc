@@ -1018,20 +1018,6 @@ std::unique_ptr<MeshState> MeshGenerator::combineComponentChildGroupMesh(const s
     return combineMultipleMeshes(std::move(multipleMeshes));
 }
 
-void MeshGenerator::makeXmirror(const std::vector<Vector3>& sourceVertices, const std::vector<std::vector<size_t>>& sourceFaces,
-    std::vector<Vector3>* destVertices, std::vector<std::vector<size_t>>* destFaces)
-{
-    for (const auto& mirrorFrom : sourceVertices) {
-        destVertices->push_back(Vector3(-mirrorFrom.x(), mirrorFrom.y(), mirrorFrom.z()));
-    }
-    std::vector<std::vector<size_t>> newFaces;
-    for (const auto& mirrorFrom : sourceFaces) {
-        auto newFace = mirrorFrom;
-        std::reverse(newFace.begin(), newFace.end());
-        destFaces->push_back(newFace);
-    }
-}
-
 void MeshGenerator::collectSharedQuadEdges(const std::vector<Vector3>& vertices, const std::vector<std::vector<size_t>>& faces,
     std::set<std::pair<PositionKey, PositionKey>>* sharedQuadEdges)
 {

@@ -154,8 +154,6 @@ private:
         float smoothCutoffDegrees,
         bool* hasError);
     std::unique_ptr<MeshState> combineComponentMesh(const std::string& componentIdString, CombineMode* combineMode);
-    void makeXmirror(const std::vector<Vector3>& sourceVertices, const std::vector<std::vector<size_t>>& sourceFaces,
-        std::vector<Vector3>* destVertices, std::vector<std::vector<size_t>>* destFaces);
     void collectSharedQuadEdges(const std::vector<Vector3>& vertices, const std::vector<std::vector<size_t>>& faces,
         std::set<std::pair<PositionKey, PositionKey>>* sharedQuadEdges);
     const std::map<std::string, std::string>* findComponent(const std::string& componentIdString);
