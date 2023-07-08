@@ -78,6 +78,13 @@ Object* MeshGenerator::takeObject()
     return object;
 }
 
+Snapshot* MeshGenerator::takeSnapshot()
+{
+    Snapshot* snapshot = m_snapshot;
+    m_snapshot = nullptr;
+    return snapshot;
+}
+
 void MeshGenerator::chamferFace(std::vector<Vector2>* face)
 {
     auto oldFace = *face;
