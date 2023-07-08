@@ -496,7 +496,8 @@ private:
     std::unique_ptr<MonochromeMesh> m_wireframeMesh;
     bool m_isMeshGenerationSucceed = true;
     int m_batchChangeRefCount = 0;
-    dust3d::Object* m_currentObject = nullptr;
+    std::unique_ptr<dust3d::Object> m_currentObject;
+    std::unique_ptr<dust3d::Snapshot> m_currentSnapshot;
     bool m_isTextureObsolete = false;
     UvMapGenerator* m_textureGenerator = nullptr;
     std::unique_ptr<dust3d::Object> m_uvMappedObject = std::make_unique<dust3d::Object>();

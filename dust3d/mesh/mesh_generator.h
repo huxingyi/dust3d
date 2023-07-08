@@ -112,6 +112,7 @@ public:
     const std::set<Uuid>& generatedPreviewComponentIds();
     const std::map<Uuid, ComponentPreview>& generatedComponentPreviews();
     Object* takeObject();
+    Snapshot* takeSnapshot();
     virtual void generate();
     void setGeneratedCacheContext(GeneratedCacheContext* cacheContext);
     void setSmoothShadingThresholdAngleDegrees(float degrees);

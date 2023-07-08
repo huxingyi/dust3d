@@ -2240,6 +2240,7 @@ void Document::meshReady()
     ModelMesh* resultMesh = m_meshGenerator->takeResultMesh();
     m_wireframeMesh.reset(m_meshGenerator->takeWireframeMesh());
     dust3d::Object* object = m_meshGenerator->takeObject();
+    dust3d::Snapshot* snapshot = m_meshGenerator->takeSnapshot();
     bool isSuccessful = m_meshGenerator->isSuccessful();
 
     std::unique_ptr<std::map<dust3d::Uuid, std::unique_ptr<ModelMesh>>> componentPreviewMeshes;
@@ -2265,8 +2266,8 @@ void Document::meshReady()
 
     m_isMeshGenerationSucceed = isSuccessful;
 
-    delete m_currentObject;
-    m_currentObject = object;
+    m_currentObject.reset(object);
+    m_currentSnapshot.reset(snapshot);
 
     if (nullptr == m_resultMesh) {
         qDebug() << "Result mesh is null";
@@ -2363,7 +2364,7 @@ void Document::generateTexture()
 
     m_isTextureObsolete = false;
 
-    if (nullptr == m_currentObject)
+    if (nullptr == m_currentObject || nullptr == m_currentSnapshot)
         return;
 
     qDebug() << "UV mapping generating..";
@@ -2371,8 +2372,7 @@ void Document::generateTexture()
 
     auto object = std::make_unique<dust3d::Object>(*m_currentObject);
 
-    auto snapshot = std::make_unique<dust3d::Snapshot>();
-    toSnapshot(snapshot.get());
+    auto snapshot = std::make_unique<dust3d::Snapshot>(*m_currentSnapshot);
 
     QThread* thread = new QThread;
     m_textureGenerator = new UvMapGenerator(std::move(object), std::move(snapshot));
