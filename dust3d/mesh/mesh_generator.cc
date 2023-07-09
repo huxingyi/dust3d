@@ -1054,11 +1054,6 @@ void MeshGenerator::setSmoothShadingThresholdAngleDegrees(float degrees)
     m_smoothShadingThresholdAngleDegrees = degrees;
 }
 
-void MeshGenerator::setWeldEnabled(bool enabled)
-{
-    m_weldEnabled = enabled;
-}
-
 void MeshGenerator::postprocessObject(Object* object)
 {
     std::vector<Vector3> combinedFacesNormals;
