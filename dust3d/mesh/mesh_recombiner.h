@@ -41,6 +41,7 @@ public:
     const std::vector<std::vector<size_t>>& regeneratedFaces();
     const std::vector<std::vector<std::pair<std::array<Vector3, 3>, std::array<Vector2, 3>>>>& generatedBridgingTriangleUvs();
     bool recombine();
+    const std::map<size_t, size_t>& inputFacesInSeamArea() const;
 
 private:
     const std::vector<Vector3>* m_vertices = nullptr;

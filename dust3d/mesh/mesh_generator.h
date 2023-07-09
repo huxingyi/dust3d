@@ -72,7 +72,7 @@ public:
         std::unique_ptr<MeshState> mesh;
         std::set<std::pair<PositionKey, PositionKey>> sharedQuadEdges;
         std::unordered_map<Uuid, std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>>> componentTriangleUvs;
-        std::vector<std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>>> seamTriangleUvs;
+        std::set<std::array<PositionKey, 3>> brokenTriangles;
         std::set<PositionKey> noneSeamVertices;
         std::map<PositionKey, Uuid> positionToNodeIdMap;
         std::map<Uuid, ObjectNode> nodeMap;
@@ -81,7 +81,7 @@ public:
             mesh.reset();
             sharedQuadEdges.clear();
             componentTriangleUvs.clear();
-            seamTriangleUvs.clear();
+            brokenTriangles.clear();
             noneSeamVertices.clear();
             positionToNodeIdMap.clear();
             nodeMap.clear();
@@ -141,7 +141,7 @@ private:
     bool m_cacheEnabled = false;
     float m_smoothShadingThresholdAngleDegrees = 60;
     uint64_t m_id = 0;
-    bool m_weldEnabled = true;
+    bool m_weldEnabled = false;
 
     void collectParts();
     void collectIncombinableMesh(const MeshState* mesh, const GeneratedComponent& componentCache);
@@ -160,8 +160,10 @@ private:
     const std::map<std::string, std::string>* findComponent(const std::string& componentIdString);
     CombineMode componentCombineMode(const std::map<std::string, std::string>* component);
     std::unique_ptr<MeshState> combineComponentChildGroupMesh(const std::vector<std::string>& componentIdStrings,
-        GeneratedComponent& componentCache);
-    std::unique_ptr<MeshState> combineMultipleMeshes(std::vector<std::tuple<std::unique_ptr<MeshState>, CombineMode, std::string>>&& multipleMeshes);
+        GeneratedComponent& componentCache,
+        std::set<std::array<PositionKey, 3>>* brokenTriangles);
+    std::unique_ptr<MeshState> combineMultipleMeshes(std::vector<std::tuple<std::unique_ptr<MeshState>, CombineMode, std::string>>&& multipleMeshes,
+        std::set<std::array<PositionKey, 3>>* brokenTriangles);
     std::unique_ptr<MeshState> combineStitchingMesh(const std::string& componentIdString,
         const std::vector<std::string>& partIdStrings,
         const std::vector<std::string>& componentIdStrings,
@@ -173,6 +175,7 @@ private:
         float smoothCutoffDegrees,
         GeneratedComponent& componentCache);
     void collectUncombinedComponent(const std::string& componentIdString);
+    void collectBrokenTriangles(const std::string& componentIdString);
     void cutFaceStringToCutTemplate(const std::string& cutFaceString, std::vector<Vector2>& cutTemplate);
     void postprocessObject(Object* object);
     void preprocessMirror();

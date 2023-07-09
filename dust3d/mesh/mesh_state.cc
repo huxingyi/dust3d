@@ -93,6 +93,13 @@ std::unique_ptr<MeshState> MeshState::combine(const MeshState& first, const Mesh
                     newMesh = std::move(reMesh);
                 }
             }
+            for (const auto& faceIt : recombiner.inputFacesInSeamArea()) {
+                const auto& face = combinedFaces[faceIt.first];
+                newMeshState->brokenTriangles.push_back(std::array<PositionKey, 3> {
+                    PositionKey(combinedVertices[face[0]]),
+                    PositionKey(combinedVertices[face[1]]),
+                    PositionKey(combinedVertices[face[2]]) });
+            }
         }
     }
     if (newMesh->isNull()) {
