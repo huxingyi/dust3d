@@ -118,7 +118,6 @@ public:
     void setSmoothShadingThresholdAngleDegrees(float degrees);
     void setDefaultPartColor(const Color& color);
     void setId(uint64_t id);
-    void setWeldEnabled(bool enabled);
     uint64_t id();
 
 protected:
@@ -141,7 +140,6 @@ private:
     bool m_cacheEnabled = false;
     float m_smoothShadingThresholdAngleDegrees = 60;
     uint64_t m_id = 0;
-    bool m_weldEnabled = false;
 
     void collectParts();
     void collectIncombinableMesh(const MeshState* mesh, const GeneratedComponent& componentCache);
