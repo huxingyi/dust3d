@@ -65,6 +65,7 @@ public:
     std::vector<Vector3> triangleNormals;
     std::vector<Color> vertexColors;
     std::vector<float> vertexSmoothCutoffDegrees;
+    std::map<std::array<PositionKey, 3>, Uuid> brokenTrianglesToComponentIdMap;
     bool alphaEnabled = false;
     uint64_t meshId = 0;
 

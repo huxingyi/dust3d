@@ -228,6 +228,11 @@ bool MeshRecombiner::recombine()
     return true;
 }
 
+const std::map<size_t, size_t>& MeshRecombiner::inputFacesInSeamArea() const
+{
+    return m_facesInSeamArea;
+}
+
 size_t MeshRecombiner::adjustTrianglesFromSeam(std::vector<size_t>& edgeLoop, size_t seamIndex)
 {
     if (edgeLoop.size() <= 3)

@@ -33,6 +33,7 @@ class MeshState {
 public:
     std::unique_ptr<MeshCombiner::Mesh> mesh;
     std::vector<std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>>> seamTriangleUvs;
+    std::vector<std::array<PositionKey, 3>> brokenTriangles;
 
     MeshState() = default;
     MeshState(const std::vector<Vector3>& vertices, const std::vector<std::vector<size_t>>& faces);

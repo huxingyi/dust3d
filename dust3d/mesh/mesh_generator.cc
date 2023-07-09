@@ -32,7 +32,6 @@
 #include <dust3d/mesh/triangulate.h>
 #include <dust3d/mesh/trim_vertices.h>
 #include <dust3d/mesh/tube_mesh_builder.h>
-#include <dust3d/mesh/weld_vertices.h>
 #include <functional>
 #include <memory>
 
@@ -902,7 +901,7 @@ std::unique_ptr<MeshState> MeshGenerator::combineComponentMesh(const std::string
         }
         std::vector<std::tuple<std::unique_ptr<MeshState>, CombineMode, std::string>> groupMeshes;
         for (const auto& group : combineGroups) {
-            auto childMesh = combineComponentChildGroupMesh(group.second, componentCache);
+            auto childMesh = combineComponentChildGroupMesh(group.second, componentCache, &componentCache.brokenTriangles);
             if (nullptr == childMesh || childMesh->isNull())
                 continue;
             groupMeshes.emplace_back(std::make_tuple(std::move(childMesh), group.first, String::join(group.second, "|")));
@@ -922,7 +921,7 @@ std::unique_ptr<MeshState> MeshGenerator::combineComponentMesh(const std::string
                 groupMeshes.emplace_back(std::make_tuple(std::move(stitchingMesh), CombineMode::Normal, String::join(stitchingComponents, ":")));
             }
         }
-        mesh = combineMultipleMeshes(std::move(groupMeshes));
+        mesh = combineMultipleMeshes(std::move(groupMeshes), &componentCache.brokenTriangles);
         ComponentPreview preview;
         if (mesh) {
             mesh->fetch(preview.vertices, preview.triangles);
@@ -947,7 +946,8 @@ std::unique_ptr<MeshState> MeshGenerator::combineComponentMesh(const std::string
     return mesh;
 }
 
-std::unique_ptr<MeshState> MeshGenerator::combineMultipleMeshes(std::vector<std::tuple<std::unique_ptr<MeshState>, CombineMode, std::string>>&& multipleMeshes)
+std::unique_ptr<MeshState> MeshGenerator::combineMultipleMeshes(std::vector<std::tuple<std::unique_ptr<MeshState>, CombineMode, std::string>>&& multipleMeshes,
+    std::set<std::array<PositionKey, 3>>* brokenTriangles)
 {
     std::unique_ptr<MeshState> mesh;
     std::string meshIdStrings;
@@ -982,6 +982,10 @@ std::unique_ptr<MeshState> MeshGenerator::combineMultipleMeshes(std::vector<std:
                 m_cacheContext->cachedCombination.insert({ meshIdStrings, nullptr });
         }
         if (newMesh && !newMesh->isNull()) {
+            if (nullptr != brokenTriangles) {
+                for (const auto& brokenTriangle : newMesh->brokenTriangles)
+                    brokenTriangles->insert(brokenTriangle);
+            }
             mesh = std::move(newMesh);
         } else {
             m_isSuccessful = false;
@@ -993,7 +997,9 @@ std::unique_ptr<MeshState> MeshGenerator::combineMultipleMeshes(std::vector<std:
     return mesh;
 }
 
-std::unique_ptr<MeshState> MeshGenerator::combineComponentChildGroupMesh(const std::vector<std::string>& componentIdStrings, GeneratedComponent& componentCache)
+std::unique_ptr<MeshState> MeshGenerator::combineComponentChildGroupMesh(const std::vector<std::string>& componentIdStrings,
+    GeneratedComponent& componentCache,
+    std::set<std::array<PositionKey, 3>>* brokenTriangles)
 {
     std::vector<std::tuple<std::unique_ptr<MeshState>, CombineMode, std::string>> multipleMeshes;
     for (const auto& childIdString : componentIdStrings) {
@@ -1022,7 +1028,7 @@ std::unique_ptr<MeshState> MeshGenerator::combineComponentChildGroupMesh(const s
 
         multipleMeshes.emplace_back(std::make_tuple(std::move(subMesh), childCombineMode, childIdString));
     }
-    return combineMultipleMeshes(std::move(multipleMeshes));
+    return combineMultipleMeshes(std::move(multipleMeshes), brokenTriangles);
 }
 
 void MeshGenerator::collectSharedQuadEdges(const std::vector<Vector3>& vertices, const std::vector<std::vector<size_t>>& faces,
@@ -1136,6 +1142,20 @@ void MeshGenerator::collectUncombinedComponent(const std::string& componentIdStr
         if (childIdString.empty())
             continue;
         collectUncombinedComponent(childIdString);
+    }
+}
+
+void MeshGenerator::collectBrokenTriangles(const std::string& componentIdString)
+{
+    const auto& component = findComponent(componentIdString);
+    for (const auto& childIdString : String::split(String::valueOrEmpty(*component, "children"), ',')) {
+        if (childIdString.empty())
+            continue;
+        collectBrokenTriangles(childIdString);
+    }
+    const auto& componentCache = m_cacheContext->components[componentIdString];
+    for (const auto& triangle : componentCache.brokenTriangles) {
+        m_object->brokenTrianglesToComponentIdMap.insert({ triangle, Uuid(componentIdString) });
     }
 }
 
@@ -1310,20 +1330,6 @@ void MeshGenerator::generate()
     if (nullptr != combinedMesh) {
         combinedMesh->fetch(combinedVertices, combinedFaces);
         m_object->seamTriangleUvs = combinedMesh->seamTriangleUvs;
-        if (m_weldEnabled) {
-            size_t totalAffectedNum = 0;
-            size_t affectedNum = 0;
-            do {
-                std::vector<Vector3> weldedVertices;
-                std::vector<std::vector<size_t>> weldedFaces;
-                affectedNum = weldVertices(combinedVertices, combinedFaces,
-                    m_minimalRadius, componentCache.noneSeamVertices,
-                    weldedVertices, weldedFaces);
-                combinedVertices = weldedVertices;
-                combinedFaces = weldedFaces;
-                totalAffectedNum += affectedNum;
-            } while (affectedNum > 0);
-        }
         recoverQuads(combinedVertices, combinedFaces, componentCache.sharedQuadEdges, m_object->triangleAndQuads);
         m_object->vertices = combinedVertices;
         m_object->triangles = combinedFaces;
@@ -1331,6 +1337,7 @@ void MeshGenerator::generate()
 
     // Recursively check uncombined components
     collectUncombinedComponent(to_string(Uuid()));
+    collectBrokenTriangles(to_string(Uuid()));
 
     postprocessObject(m_object);
 
