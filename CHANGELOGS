@@ -1,4 +1,9 @@
-Feb 21, 2023:
+1.0.0-rc.8 (TBD):
+
+- Fix color and texture of mirrored parts
+- Fix color of seam triangles
+
+1.0.0-rc.7 (Feb 21, 2023):
 
 - Add support to select two images and auto combine as background image
 - Simplify shaders
@@ -9,7 +14,7 @@ Feb 21, 2023:
 - Replace CGAL mesh library with built-in boolean algorithm
 - Remove Rig and Motion
 
-Apr 12, 2020:
+1.0.0-rc.6 (Apr 12, 2020):
 
 - Fix crash after remesh  
 - Fix remesh memory leak  
@@ -22,7 +27,7 @@ Apr 12, 2020:
 - Optimize nodes deletion  
 - Remove Mark Pen  
 
-Apr 9, 2020:
+1.0.0-rc.5 (Apr 9, 2020):
 
 - Add preference: Toon Shader  
 - Add menu: Export as Image  
@@ -33,13 +38,13 @@ Apr 9, 2020:
 - Show edge direction on canvas  
 - Add example model: Backpacker  
 
-Mar 20, 2020:
+1.0.0-rc.3 (Mar 20, 2020):
 
 - Fix negative skinning weight  
 - Fix IBL shader  
 - Add win32 release  
 
-Mar 1, 2020:
+1.0.0-rc.1 (Mar 1, 2020):
 
 - Add shortcuts for menu items  
 - Preserve window size between runs  
@@ -53,20 +58,20 @@ Mar 1, 2020:
 - Add texture size preference setting  
 - Add example model: Cat  
 
-Dec 25, 2019:
+1.0.0-beta.29 (Dec 25, 2019):
 
 - Add marker pen: A new way of modeling from contour  
 - Fix crash when nodes are extremely small  
 - Fix shader for core profile  
 
-Dec 15, 2019:
+1.0.0-beta.28 (Dec 15, 2019):
 
 - Add new generated mesh type: Grid mesh  
 - Include non-manifold geometry in result  
 - Fix smooth angle  
 - Fix preview model zoom scale  
 
-Nov 8, 2019:
+1.0.0-beta.27 (Nov 8, 2019):
 
 - Fix normal map generation  
 - Fix transparency and solubility setting for texture generation  
@@ -76,7 +81,7 @@ Nov 8, 2019:
 - Add countershading setting for texture generation  
 - Update built-in example models  
 
-Nov 3, 2019:
+1.0.0-beta.26 (Nov 3, 2019):
 
 - Fix undo for part tree widget  
 - Add experiment auto colorizing (Thanks @enzyme69)  
@@ -87,7 +92,7 @@ Nov 3, 2019:
 - Remove built-in example model: Bob  
 - Add built-in example model: Giraffe  
 
-Oct 20, 2019:
+1.0.0-beta.25 (Oct 20, 2019):
 
 - Add shortcuts key F: bring part widget of hovered part to visible area
 - Add shortcut key C: toggle chamfer state  
@@ -98,14 +103,14 @@ Oct 20, 2019:
 - Add one tool button to toggle viewport rotation  
 - Increase the icon size of mini buttons  
 
-Oct 6, 2019:
+1.0.0-beta.24 (Oct 6, 2019):
 
 - Support part color copy and paste  
 - Add auto ragdoll animation, powered by bullet3  
 - Fix texture generation  
 - Fix optimized compiling options for windows  
 
-Aug 19, 2019:
+1.0.0-beta.23 (Aug 19, 2019):
 
 - Fix rig bone name issue because of translation  
 - Update application logo  
@@ -116,7 +121,7 @@ Aug 19, 2019:
 - Remove drag mode icon  
 - Add hollow modifier  
 
-Jul 28, 2019:
+1.0.0-beta.22 (Jul 28, 2019):
 
 - Improve intermediate nodes generation  
 - Add JavaScript language support for procedural nodes generation  
@@ -127,7 +132,7 @@ Jul 28, 2019:
 - Fix inconsistent base normal when shape is too straight  
 - Add procedural tree example model  
 
-Jul 11, 2019:
+1.0.0-beta.21 (Jul 11, 2019):
 
 - Fix build for Raspberry Pi 3 Model B+  
 - Fix cut face direction for intermediate nodes  
@@ -135,13 +140,13 @@ Jul 11, 2019:
 - Sort cut face list by x position  
 - Support customizing cut face per each node   
 
-Jul 7, 2019:
+1.0.0-beta.20 (Jul 7, 2019):
 
 - Support language: Simplified Chinese  
 - Fix crash on cut face nodes ordering  
 - Improve quality of mesh generation  
 
-Jun 26, 2019:
+1.0.0-beta.19 (Jun 26, 2019):
 
 - Improve Pose Editor UI
 - Add new pose setting: yTranslationScale
@@ -151,7 +156,7 @@ Jun 26, 2019:
 - Disable three nodes branch by default, could be enabled from preferences window
 - Make flat shading as default
 
-Jun 13, 2019:
+1.0.0-beta.18 (Jun 13, 2019):
 
 - Add preferences settings, including flat shading, default color, and default combine mode
 - Fix user defined cut face flipped normal issues
@@ -162,7 +167,7 @@ Jun 13, 2019:
 - Add more built-in example models
 - Change application logo
 
-May 26, 2019:
+1.0.0-beta.17 (May 26, 2019):
 
 - Remote IO Protocol
 - Uncombined Mode
@@ -171,7 +176,7 @@ May 26, 2019:
 - Color Solubility
 - Crash Fix
 
-Mar 10, 2019:
+1.0.0-beta.16 (Mar 10, 2019):
 
 - Support onion skinning in pose editor  
 - Upgrade CGAL version from 4.11.1 to 4.13  
@@ -181,7 +186,7 @@ Mar 10, 2019:
 - Remove cut face customization  
 - Make chamfer tool as a separate mini button  
 
-Feb 28, 2019:
+1.0.0-beta.15 (Feb 28, 2019):
 
 - Improved mesh quality: more quads with even edge size  
 - Remesh seams as better as possible and keep mesh manifold  
@@ -192,7 +197,7 @@ Feb 28, 2019:
 - Removed global rotation buttons  
 - Removed rust language dependency: reimplemented mesh generator in C++  
 
-Dec 1, 2018:
+1.0.0-beta.3 (Dec 1, 2018):
 
 - Combinable Bmesh Modeling  
 - Auto UV Unwrapping  
