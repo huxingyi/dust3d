@@ -49,6 +49,18 @@ git clone https://github.com/huxingyi/dust3d.git
 2. Run `qmake` to generate a Makefile
 3. Build the project using `make`
 
+### Releasing
+
+1. Make sure all changes are merged to master branch including CHANGELOGS update
+2. Run `git tag 1.0.0-rc.<number>`
+3. Run `git push origin 1.0.0-rc.<number>`
+4. Wait Actions/release finish and download all the Artifacts
+5. Goto `Tags/1.0.0-rc.<number>` and create release from tag
+6. Title the release as `1.0.0-rc.<number>`
+7. Copy description from CHANGELOGS
+8. Drag the Artifacts: `dust3d-1.0.0-rc.<number>.zip`, `dust3d-1.0.0-rc.<number>.AppImage (Extracted)`, `dust3d-1.0.0-rc.<number>.dmg (Extracted)` to binaries.
+9. Publish release
+
 ## License
 
 Dust3D is licensed under the MIT License - see the [LICENSE](https://github.com/huxingyi/dust3d/blob/master/LICENSE) file for details.
