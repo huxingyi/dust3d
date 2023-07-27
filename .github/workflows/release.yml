@@ -95,6 +95,7 @@ jobs:
           ls "${VCToolsRedistDir}x64"
           ls "${VCToolsRedistDir}x64/Microsoft.VC142.CRT"
           7z a Dust3D-win32-x86_64.zip "${VCToolsRedistDir}x64/Microsoft.VC142.CRT/msvcp140.dll"
+          7z a Dust3D-win32-x86_64.zip "${VCToolsRedistDir}x64/Microsoft.VC142.CRT/msvcp140_1.dll"
           7z a Dust3D-win32-x86_64.zip "${VCToolsRedistDir}x64/Microsoft.VC142.CRT/vcruntime140.dll"
           7z a Dust3D-win32-x86_64.zip "${VCToolsRedistDir}x64/Microsoft.VC142.CRT/vcruntime140_1.dll"
           mkdir ${GITHUB_WORKSPACE}/platforms
