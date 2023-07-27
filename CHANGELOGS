@@ -1,3 +1,7 @@
+1.0.0-rc.9 (Jul 27, 2023):
+
+- Fix windows build
+
 1.0.0-rc.8 (Jul 18, 2023):
 
 - Fix color and texture of mirrored parts
