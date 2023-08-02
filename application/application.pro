@@ -3,8 +3,8 @@ QT += core gui opengl widgets svg
 TARGET = dust3d
 TEMPLATE = app
 
-HUMAN_VERSION = "1.0.0-rc.9"
-VERSION = 1.0.0.39
+HUMAN_VERSION = "1.0.0-rc.10.preview"
+VERSION = 1.0.0.40
 
 QMAKE_TARGET_COMPANY = Dust3D
 QMAKE_TARGET_PRODUCT = Dust3D
