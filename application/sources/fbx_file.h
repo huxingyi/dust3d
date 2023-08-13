@@ -3,8 +3,8 @@
 
 #include "fbxdocument.h"
 #include <QImage>
-#include <QObject>
 #include <QMatrix4x4>
+#include <QObject>
 #include <QQuaternion>
 #include <QString>
 #include <dust3d/base/object.h>

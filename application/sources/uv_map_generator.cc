@@ -1,7 +1,7 @@
 #include "uv_map_generator.h"
 #include "image_forever.h"
-#include <QTransform>
 #include <QPainter>
+#include <QTransform>
 #include <dust3d/base/part_target.h>
 #include <dust3d/uv/uv_map_packer.h>
 #include <unordered_set>
