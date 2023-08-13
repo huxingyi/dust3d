@@ -22,12 +22,12 @@ IntNumberWidget::IntNumberWidget(QWidget* parent, bool singleLine)
     QBoxLayout* layout = nullptr;
     if (singleLine) {
         layout = new QHBoxLayout(this);
-        layout->setMargin(2);
+        layout->setContentsMargins(2, 2, 2, 2);
         layout->addWidget(m_slider);
         layout->addWidget(m_label);
     } else {
         layout = new QVBoxLayout(this);
-        layout->setMargin(2);
+        layout->setContentsMargins(2, 2, 2, 2);
         layout->addWidget(m_label);
         layout->addWidget(m_slider);
     }

@@ -16,7 +16,7 @@ PartManageWidget::PartManageWidget(Document* document, QWidget* parent)
 
     QHBoxLayout* toolsLayout = new QHBoxLayout;
     toolsLayout->setSpacing(0);
-    toolsLayout->setMargin(0);
+    toolsLayout->setContentsMargins(0, 0, 0, 0);
 
     setStyleSheet("QPushButton:disabled {border: 0; color: " + Theme::gray.name() + "}");
 

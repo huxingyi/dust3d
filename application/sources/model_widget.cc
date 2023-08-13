@@ -199,7 +199,7 @@ bool ModelWidget::inputMousePressEventFromOtherWidget(QMouseEvent* event, bool n
         }
         if (!shouldStartMove && !m_mousePickTargetPositionInModelSpace.isNull())
             emit mousePressed();
-    } else if (event->button() == Qt::MidButton) {
+    } else if (event->button() == Qt::MiddleButton) {
         shouldStartMove = m_moveEnabled;
     }
     if (shouldStartMove) {
@@ -250,7 +250,7 @@ bool ModelWidget::inputMouseMoveEventFromOtherWidget(QMouseEvent* event)
     int dx = pos.x() - m_lastPos.x();
     int dy = pos.y() - m_lastPos.y();
 
-    if ((event->buttons() & Qt::MidButton) || (m_moveStarted && (event->buttons() & Qt::LeftButton))) {
+    if ((event->buttons() & Qt::MiddleButton) || (m_moveStarted && (event->buttons() & Qt::LeftButton))) {
         if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
             if (m_moveStarted) {
                 if (m_moveAndZoomByWindow) {
@@ -297,7 +297,7 @@ bool ModelWidget::inputWheelEventFromOtherWidget(QWheelEvent* event)
 
     if (m_mousePickingEnabled) {
         if (QGuiApplication::queryKeyboardModifiers().testFlag(Qt::ShiftModifier)) {
-            emit addMouseRadius((float)event->delta() / 200 / height());
+            emit addMouseRadius((float)event->pixelDelta().y() / 200 / height());
             return true;
         }
     }
@@ -306,7 +306,7 @@ bool ModelWidget::inputWheelEventFromOtherWidget(QWheelEvent* event)
         return false;
 
     qreal delta = geometry().height() * 0.1f;
-    if (event->delta() < 0)
+    if (event->pixelDelta().y() < 0)
         delta = -delta;
     zoom(delta);
 

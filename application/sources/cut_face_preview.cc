@@ -16,7 +16,9 @@ QImage* buildCutFaceTemplatePreviewImage(const std::vector<dust3d::Vector2>& cut
     QPainter painter;
     painter.begin(image);
     painter.setRenderHint(QPainter::Antialiasing);
+#if QT_VERSION < 0x060000
     painter.setRenderHint(QPainter::HighQualityAntialiasing);
+#endif
 
     QPen pen(Theme::red, 2);
     painter.setPen(pen);

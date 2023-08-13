@@ -155,7 +155,9 @@ void Theme::initToolButton(QPushButton* button)
 void Theme::initCheckbox(QCheckBox* checkbox)
 {
     QPalette palette = checkbox->palette();
+#if QT_VERSION < 0x060000
     palette.setColor(QPalette::Background, Theme::white);
+#endif
     checkbox->setPalette(palette);
 }
 

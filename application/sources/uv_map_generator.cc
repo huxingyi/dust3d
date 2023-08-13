@@ -1,6 +1,6 @@
 #include "uv_map_generator.h"
 #include "image_forever.h"
-#include <QMatrix>
+#include <QTransform>
 #include <QPainter>
 #include <dust3d/base/part_target.h>
 #include <dust3d/uv/uv_map_packer.h>
@@ -165,7 +165,9 @@ void UvMapGenerator::generateTextureColorImage()
     QPainter colorTexturePainter;
     colorTexturePainter.begin(m_textureColorImage.get());
     colorTexturePainter.setRenderHint(QPainter::Antialiasing);
+#if QT_VERSION < 0x060000
     colorTexturePainter.setRenderHint(QPainter::HighQualityAntialiasing);
+#endif
     colorTexturePainter.setPen(Qt::NoPen);
 
     for (const auto& layout : m_mapPacker->packedLayouts()) {
@@ -183,7 +185,7 @@ void UvMapGenerator::generateTextureColorImage()
                 auto scaledImage = image->scaled(QSize(layout.height * UvMapGenerator::m_textureSize,
                     layout.width * UvMapGenerator::m_textureSize));
                 QPoint center = scaledImage.rect().center();
-                QMatrix matrix;
+                QTransform matrix;
                 matrix.translate(center.x(), center.y());
                 matrix.rotate(90);
                 auto rotatedImage = scaledImage.transformed(matrix).mirrored(true, false);
