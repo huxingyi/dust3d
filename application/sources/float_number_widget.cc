@@ -23,12 +23,12 @@ FloatNumberWidget::FloatNumberWidget(QWidget* parent, bool singleLine)
     QBoxLayout* layout = nullptr;
     if (singleLine) {
         layout = new QHBoxLayout(this);
-        layout->setMargin(2);
+        layout->setContentsMargins(2, 2, 2, 2);
         layout->addWidget(m_slider);
         layout->addWidget(m_label);
     } else {
         layout = new QVBoxLayout(this);
-        layout->setMargin(2);
+        layout->setContentsMargins(2, 2, 2, 2);
         layout->addWidget(m_label);
         layout->addWidget(m_slider);
     }
@@ -41,7 +41,7 @@ void FloatNumberWidget::setSliderFixedWidth(float width)
 
 void FloatNumberWidget::updateValueLabel(float value)
 {
-    QString valueString = QString().sprintf("%.2f", value);
+    QString valueString = QString().asprintf("%.2f", value);
     if (m_itemName.isEmpty())
         m_label->setText(valueString);
     else

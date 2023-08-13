@@ -3,6 +3,7 @@
 
 #include "fbxdocument.h"
 #include <QImage>
+#include <QObject>
 #include <QMatrix4x4>
 #include <QQuaternion>
 #include <QString>

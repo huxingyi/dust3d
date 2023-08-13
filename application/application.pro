@@ -1,5 +1,9 @@
 QT += core gui opengl widgets svg
 
+greaterThan(QT_MAJOR_VERSION, 5) {
+    QT += openglwidgets svgwidgets
+}
+
 TARGET = dust3d
 TEMPLATE = app
 

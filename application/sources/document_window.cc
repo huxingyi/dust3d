@@ -1307,10 +1307,10 @@ QShortcut* DocumentWindow::createShortcut(QKeySequence key)
 void DocumentWindow::initializeToolShortcuts(SkeletonGraphicsWidget* graphicsWidget)
 {
     defineShortcut(Qt::Key_A, graphicsWidget, &SkeletonGraphicsWidget::shortcutAddMode);
-    defineShortcut(Qt::CTRL + Qt::Key_A, graphicsWidget, &SkeletonGraphicsWidget::shortcutSelectAll);
-    defineShortcut(Qt::CTRL + Qt::Key_Z, graphicsWidget, &SkeletonGraphicsWidget::shortcutUndo);
-    defineShortcut(Qt::CTRL + Qt::SHIFT + Qt::Key_Z, graphicsWidget, &SkeletonGraphicsWidget::shortcutRedo);
-    defineShortcut(Qt::CTRL + Qt::Key_Y, graphicsWidget, &SkeletonGraphicsWidget::shortcutRedo);
+    defineShortcut(Qt::CTRL | Qt::Key_A, graphicsWidget, &SkeletonGraphicsWidget::shortcutSelectAll);
+    defineShortcut(Qt::CTRL | Qt::Key_Z, graphicsWidget, &SkeletonGraphicsWidget::shortcutUndo);
+    defineShortcut(Qt::CTRL | Qt::SHIFT | Qt::Key_Z, graphicsWidget, &SkeletonGraphicsWidget::shortcutRedo);
+    defineShortcut(Qt::CTRL | Qt::Key_Y, graphicsWidget, &SkeletonGraphicsWidget::shortcutRedo);
     defineShortcut(Qt::Key_Z, graphicsWidget, &SkeletonGraphicsWidget::shortcutZlock);
     defineShortcut(Qt::Key_Y, graphicsWidget, &SkeletonGraphicsWidget::shortcutYlock);
     defineShortcut(Qt::Key_X, graphicsWidget, &SkeletonGraphicsWidget::shortcutXlock);
@@ -1325,12 +1325,12 @@ void DocumentWindow::initializeCanvasShortcuts(SkeletonGraphicsWidget* graphicsW
 {
     defineShortcut(Qt::Key_Delete, graphicsWidget, &SkeletonGraphicsWidget::shortcutDelete);
     defineShortcut(Qt::Key_Backspace, graphicsWidget, &SkeletonGraphicsWidget::shortcutDelete);
-    defineShortcut(Qt::CTRL + Qt::Key_X, graphicsWidget, &SkeletonGraphicsWidget::shortcutCut);
-    defineShortcut(Qt::CTRL + Qt::Key_C, graphicsWidget, &SkeletonGraphicsWidget::shortcutCopy);
-    defineShortcut(Qt::CTRL + Qt::Key_V, graphicsWidget, &SkeletonGraphicsWidget::shortcutPaste);
-    defineShortcut(Qt::ALT + Qt::Key_Minus, graphicsWidget, &SkeletonGraphicsWidget::shortcutZoomRenderedModelByMinus10);
+    defineShortcut(Qt::CTRL | Qt::Key_X, graphicsWidget, &SkeletonGraphicsWidget::shortcutCut);
+    defineShortcut(Qt::CTRL | Qt::Key_C, graphicsWidget, &SkeletonGraphicsWidget::shortcutCopy);
+    defineShortcut(Qt::CTRL | Qt::Key_V, graphicsWidget, &SkeletonGraphicsWidget::shortcutPaste);
+    defineShortcut(Qt::ALT | Qt::Key_Minus, graphicsWidget, &SkeletonGraphicsWidget::shortcutZoomRenderedModelByMinus10);
     defineShortcut(Qt::Key_Minus, graphicsWidget, &SkeletonGraphicsWidget::shortcutZoomSelectedByMinus1);
-    defineShortcut(Qt::ALT + Qt::Key_Equal, graphicsWidget, &SkeletonGraphicsWidget::shortcutZoomRenderedModelBy10);
+    defineShortcut(Qt::ALT | Qt::Key_Equal, graphicsWidget, &SkeletonGraphicsWidget::shortcutZoomRenderedModelBy10);
     defineShortcut(Qt::Key_Equal, graphicsWidget, &SkeletonGraphicsWidget::shortcutZoomSelectedBy1);
     defineShortcut(Qt::Key_Comma, graphicsWidget, &SkeletonGraphicsWidget::shortcutRotateSelectedByMinus1);
     defineShortcut(Qt::Key_Period, graphicsWidget, &SkeletonGraphicsWidget::shortcutRotateSelectedBy1);
