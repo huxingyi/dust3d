@@ -101,7 +101,7 @@ QImage ModelOffscreenRender::toImage(const QSize& size)
     format.setAttachment(QOpenGLFramebufferObject::CombinedDepthStencil);
     format.setSamples(4);
     format.setTextureTarget(GL_TEXTURE_2D);
-    format.setInternalTextureFormat(GL_RGBA32F_ARB);
+    //format.setInternalTextureFormat(GL_RGBA32F_ARB);
     m_renderFbo = new QOpenGLFramebufferObject(size, format);
     m_renderFbo->bind();
 
