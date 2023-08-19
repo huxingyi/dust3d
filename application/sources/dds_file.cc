@@ -488,7 +488,7 @@ std::unique_ptr<std::vector<std::unique_ptr<QOpenGLTexture>>> DdsFileReader::cre
         for (quint32 face = 0; face < faces; ++face) {
             for (quint32 level = 0; level < mipMapCount; ++level) {
                 if (0 == layer && 0 == level) {
-                    QImage image((uchar *)(data.constData() + dataOffset), width, height, QImage::Format_RGBA16FPx4);
+                    QImage image((uchar*)(data.constData() + dataOffset), width, height, QImage::Format_RGBA16FPx4);
                     QOpenGLTexture* texture = new QOpenGLTexture(image);
                     textures->at(face).reset(texture);
                 }
