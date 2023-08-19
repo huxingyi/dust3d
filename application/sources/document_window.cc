@@ -1168,16 +1168,12 @@ void DocumentWindow::checkExportWaitingList()
 
 void DocumentWindow::generateComponentPreviewImages()
 {
-    return;
-
     if (nullptr != m_componentPreviewImagesGenerator) {
         m_isComponentPreviewImagesObsolete = true;
         return;
     }
 
     m_isComponentPreviewImagesObsolete = false;
-
-    QThread* thread = new QThread;
 
     m_componentPreviewImagesGenerator = new MeshPreviewImagesGenerator(new ModelOffscreenRender(m_modelRenderWidget->format()));
     for (auto& component : m_document->componentMap) {
@@ -1203,14 +1199,21 @@ void DocumentWindow::generateComponentPreviewImages()
         }
         m_componentPreviewImagesGenerator->addInput(component.first, std::move(previewMesh), useFrontView);
     }
-    m_componentPreviewImagesGenerator->moveToThread(thread);
-    connect(thread, &QThread::started, m_componentPreviewImagesGenerator, &MeshPreviewImagesGenerator::process);
-    connect(m_componentPreviewImagesGenerator, &MeshPreviewImagesGenerator::finished, this, &DocumentWindow::componentPreviewImagesReady);
-    connect(m_componentPreviewImagesGenerator, &MeshPreviewImagesGenerator::finished, thread, &QThread::quit);
-    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
-    thread->start();
 
     updateInprogressIndicator();
+
+    if (QOpenGLContext::supportsThreadedOpenGL()) {
+        QThread* thread = new QThread;
+        m_componentPreviewImagesGenerator->moveToThread(thread);
+        connect(thread, &QThread::started, m_componentPreviewImagesGenerator, &MeshPreviewImagesGenerator::process);
+        connect(m_componentPreviewImagesGenerator, &MeshPreviewImagesGenerator::finished, this, &DocumentWindow::componentPreviewImagesReady);
+        connect(m_componentPreviewImagesGenerator, &MeshPreviewImagesGenerator::finished, thread, &QThread::quit);
+        connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+        thread->start();
+    } else {
+        connect(m_componentPreviewImagesGenerator, &MeshPreviewImagesGenerator::finished, this, &DocumentWindow::componentPreviewImagesReady);
+        m_componentPreviewImagesGenerator->process();
+    }
 }
 
 void DocumentWindow::componentPreviewImagesReady()
