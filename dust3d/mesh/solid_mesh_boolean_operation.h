@@ -62,7 +62,7 @@ private:
 
     static inline uint64_t makeHalfEdgeKey(size_t first, size_t second)
     {
-        return (first << 32) | second;
+        return ((uint64_t)first << 32) | second;
     }
 
     void addTriagleToAxisAlignedBoundingBox(const SolidMesh& mesh, const std::vector<size_t>& triangle, AxisAlignedBoudingBox* box)
