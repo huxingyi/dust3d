@@ -1169,7 +1169,7 @@ void DocumentWindow::checkExportWaitingList()
 void DocumentWindow::generateComponentPreviewImages()
 {
     return;
-    
+
     if (nullptr != m_componentPreviewImagesGenerator) {
         m_isComponentPreviewImagesObsolete = true;
         return;

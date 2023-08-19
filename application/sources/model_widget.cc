@@ -466,6 +466,7 @@ void ModelWidget::paintGL()
 {
     QOpenGLFunctions* f = QOpenGLContext::currentContext()->functions();
 
+    f->glClearColor(0.0, 0.0, 0.0, 0.0);
     f->glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     f->glEnable(GL_BLEND);
     f->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
