@@ -2812,6 +2812,8 @@ bool Document::hasPastableNodesInClipboard() const
 {
     const QClipboard* clipboard = QApplication::clipboard();
     const QMimeData* mimeData = clipboard->mimeData();
+    if (nullptr == mimeData)
+        return false;
     if (mimeData->hasText()) {
         if (-1 != mimeData->text().indexOf("<node "))
             return true;

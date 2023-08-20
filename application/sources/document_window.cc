@@ -291,9 +291,12 @@ DocumentWindow::DocumentWindow()
 
     m_fileMenu = menuBar()->addMenu(tr("&File"));
 
+#if defined(Q_OS_WASM)
+#else
     m_newWindowAction = new QAction(tr("New Window"), this);
     connect(m_newWindowAction, &QAction::triggered, this, &DocumentWindow::newWindow, Qt::QueuedConnection);
     m_fileMenu->addAction(m_newWindowAction);
+#endif
 
     m_newDocumentAction = m_fileMenu->addAction(tr("&New"),
         this, &DocumentWindow::newDocument,
@@ -307,6 +310,8 @@ DocumentWindow::DocumentWindow()
         this, &DocumentWindow::save,
         QKeySequence::Save);
 
+#if defined(Q_OS_WASM)
+#else
     m_saveAsAction = new QAction(tr("Save As..."), this);
     connect(m_saveAsAction, &QAction::triggered, this, &DocumentWindow::saveAs, Qt::QueuedConnection);
     m_fileMenu->addAction(m_saveAsAction);
@@ -314,6 +319,7 @@ DocumentWindow::DocumentWindow()
     m_saveAllAction = new QAction(tr("Save All"), this);
     connect(m_saveAllAction, &QAction::triggered, this, &DocumentWindow::saveAll, Qt::QueuedConnection);
     m_fileMenu->addAction(m_saveAllAction);
+#endif
 
     m_fileMenu->addSeparator();
 
