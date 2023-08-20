@@ -342,14 +342,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         Theme::initIconButton(colorImagePicker);
 
         connect(colorImagePicker, &QPushButton::clicked, [=]() {
-            QImage* image = pickImage();
-            if (nullptr == image)
-                return;
-            auto imageId = ImageForever::add(image);
-            delete image;
-            for (const auto& componentId : m_componentIds)
-                emit setComponentColorImage(componentId, imageId);
-            emit groupOperationAdded();
+            pickColorImageForComponents(m_componentIds);
         });
 
         QHBoxLayout* colorImageToolsLayout = new QHBoxLayout;
@@ -497,17 +490,41 @@ void ComponentPropertyWidget::updateCutFaceButtonState(size_t index)
     }
 }
 
-QImage* ComponentPropertyWidget::pickImage()
+void ComponentPropertyWidget::pickColorImageForComponents(const std::vector<dust3d::Uuid>& componentIds)
 {
+#if defined(Q_OS_WASM)
+    QFileDialog::getOpenFileContent(tr("Image Files (*.png *.jpg *.bmp)"),
+        [=](const QString& fileName, const QByteArray& fileContent) {
+            if (fileName.isEmpty())
+                return;
+            QImage* image = new QImage();
+            if (!image->loadFromData(fileContent)) {
+                delete image;
+                return;
+            }
+            auto imageId = ImageForever::add(image);
+            delete image;
+            for (const auto& componentId : componentIds)
+                emit setComponentColorImage(componentId, imageId);
+            emit groupOperationAdded();
+        });
+#else
     QString fileName = QFileDialog::getOpenFileName(this, QString(), QString(),
         tr("Image Files (*.png *.jpg *.bmp)"))
                            .trimmed();
     if (fileName.isEmpty())
-        return nullptr;
+        return;
     QImage* image = new QImage();
-    if (!image->load(fileName))
-        return nullptr;
-    return image;
+    if (!image->load(fileName)) {
+        delete image;
+        return;
+    }
+    auto imageId = ImageForever::add(image);
+    delete image;
+    for (const auto& componentId : componentIds)
+        emit setComponentColorImage(componentId, imageId);
+    emit groupOperationAdded();
+#endif
 }
 
 void ComponentPropertyWidget::preparePartIds()

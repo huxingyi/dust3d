@@ -54,7 +54,7 @@ private:
     size_t lastTargetSegments();
     float lastSmoothCutoffDegrees();
     void preparePartIds();
-    QImage* pickImage();
+    void pickColorImageForComponents(const std::vector<dust3d::Uuid>& componentIds);
     std::vector<QPushButton*> m_cutFaceButtons;
     std::vector<QString> m_cutFaceList;
 

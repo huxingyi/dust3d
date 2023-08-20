@@ -144,6 +144,10 @@ size_t DocumentWindow::total()
 
 DocumentWindow::DocumentWindow()
 {
+#if defined(Q_OS_WASM)
+    setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
+#endif
+
     if (!g_logBrowser) {
         g_logBrowser = new LogBrowser;
         qInstallMessageHandler(&outputMessage);
@@ -633,6 +637,8 @@ DocumentWindow* DocumentWindow::createDocumentWindow()
 
 void DocumentWindow::closeEvent(QCloseEvent* event)
 {
+#if defined(Q_OS_WASM)
+#else
     if (!m_documentSaved) {
         QMessageBox::StandardButton answer = QMessageBox::question(this,
             APP_NAME,
@@ -644,6 +650,7 @@ void DocumentWindow::closeEvent(QCloseEvent* event)
             return;
         }
     }
+#endif
 
     QSize saveSize;
     if (!isMaximized())
@@ -682,6 +689,8 @@ void DocumentWindow::newWindow()
 
 void DocumentWindow::newDocument()
 {
+#if defined(Q_OS_WASM)
+#else
     if (!m_documentSaved) {
         QMessageBox::StandardButton answer = QMessageBox::question(this,
             APP_NAME,
@@ -691,6 +700,7 @@ void DocumentWindow::newDocument()
         if (answer != QMessageBox::Yes)
             return;
     }
+#endif
     reset();
 }
 
@@ -783,6 +793,17 @@ void DocumentWindow::mousePressEvent(QMouseEvent* event)
 
 void DocumentWindow::changeTurnaround()
 {
+#if defined(Q_OS_WASM)
+    QFileDialog::getOpenFileContent(tr("Image Files (*.png *.jpg *.bmp)"),
+        [=](const QString& fileName, const QByteArray& fileContent) {
+            if (fileName.isEmpty())
+                return;
+            QImage image;
+            if (!image.loadFromData(fileContent))
+                return;
+            m_document->updateTurnaround(image);
+        });
+#else
     QStringList fileNames = QFileDialog::getOpenFileNames(this, QString(), QString(),
         tr("Image Files (*.png *.jpg *.bmp)"));
     if (fileNames.isEmpty())
@@ -811,6 +832,7 @@ void DocumentWindow::changeTurnaround()
     if (!image.load(fileNames[0]))
         return;
     m_document->updateTurnaround(image);
+#endif
 }
 
 void DocumentWindow::eraseTurnaround()
@@ -818,6 +840,8 @@ void DocumentWindow::eraseTurnaround()
     if (m_document->turnaround.isNull())
         return;
 
+#if defined(Q_OS_WASM)
+#else
     QMessageBox::StandardButton answer = QMessageBox::question(this,
         APP_NAME,
         tr("Do you really want to erase background image? This can not be undo."),
@@ -825,6 +849,7 @@ void DocumentWindow::eraseTurnaround()
         QMessageBox::No);
     if (answer != QMessageBox::Yes)
         return;
+#endif
 
     QImage image(m_document->turnaround.width(), m_document->turnaround.height(), QImage::Format_RGBA8888);
     image.fill(0);
@@ -860,15 +885,11 @@ void DocumentWindow::saveTo(const QString& saveAsFilename)
     QApplication::restoreOverrideCursor();
 }
 
-void DocumentWindow::openPathAs(const QString& path, const QString& asName)
+void DocumentWindow::openPathDataAs(const QString& path, const QByteArray& fileData, const QString& asName)
 {
     QApplication::setOverrideCursor(Qt::WaitCursor);
 
     reset();
-
-    QFile file(path);
-    file.open(QFile::ReadOnly);
-    QByteArray fileData = file.readAll();
 
     dust3d::Ds3FileReader ds3Reader((const std::uint8_t*)fileData.data(), fileData.size());
     for (int i = 0; i < (int)ds3Reader.items().size(); ++i) {
@@ -918,6 +939,15 @@ void DocumentWindow::openPathAs(const QString& path, const QString& asName)
         }
     }
     setCurrentFilename(asName);
+}
+
+void DocumentWindow::openPathAs(const QString& path, const QString& asName)
+{
+    QFile file(path);
+    file.open(QFile::ReadOnly);
+    QByteArray fileData = file.readAll();
+
+    openPathDataAs(path, fileData, asName);
 }
 
 void DocumentWindow::unifySnapshotEdgeLinkDirection(dust3d::Snapshot& snapshot)
@@ -995,6 +1025,14 @@ void DocumentWindow::unifySnapshotEdgeLinkDirection(dust3d::Snapshot& snapshot)
 
 void DocumentWindow::open()
 {
+#if defined(Q_OS_WASM)
+    QFileDialog::getOpenFileContent(tr("Dust3D Document (*.ds3)"),
+        [=](const QString& filename, const QByteArray& fileContent) {
+            if (filename.isEmpty())
+                return;
+            openPathDataAs(filename, fileContent, filename);
+        });
+#else
     if (!m_documentSaved) {
         QMessageBox::StandardButton answer = QMessageBox::question(this,
             APP_NAME,
@@ -1004,13 +1042,13 @@ void DocumentWindow::open()
         if (answer != QMessageBox::Yes)
             return;
     }
-
     QString filename = QFileDialog::getOpenFileName(this, QString(), QString(),
         tr("Dust3D Document (*.ds3)"));
     if (filename.isEmpty())
         return;
 
     openPathAs(filename, filename);
+#endif
 }
 
 void DocumentWindow::exportObjResult()
@@ -1365,6 +1403,8 @@ void DocumentWindow::initializeShortcuts()
 
 void DocumentWindow::openRecentFile()
 {
+#if defined(Q_OS_WASM)
+#else
     if (!m_documentSaved) {
         QMessageBox::StandardButton answer = QMessageBox::question(this,
             APP_NAME,
@@ -1374,7 +1414,7 @@ void DocumentWindow::openRecentFile()
         if (answer != QMessageBox::Yes)
             return;
     }
-
+#endif
     QAction* action = qobject_cast<QAction*>(sender());
     if (action) {
         QString fileName = action->data().toString();
