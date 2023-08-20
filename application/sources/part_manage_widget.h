@@ -1,6 +1,7 @@
 #ifndef DUST3D_APPLICATION_PART_MANAGE_WIDGET_H_
 #define DUST3D_APPLICATION_PART_MANAGE_WIDGET_H_
 
+#include <QMenu>
 #include <QWidget>
 #include <dust3d/base/part_target.h>
 #include <dust3d/base/uuid.h>
@@ -44,6 +45,7 @@ private:
     QPushButton* m_unlinkButton = nullptr;
     QPushButton* m_linkButton = nullptr;
     QPushButton* m_propertyButton = nullptr;
+    std::unique_ptr<QMenu> m_contextMenu;
     void updateToolButtons();
     void updateLevelUpButton();
     bool hasSelectedGroupedComponent();
