@@ -2,6 +2,7 @@
 #define DUST3D_APPLICATION_COMPONENT_PROPERTY_WIDGET_H_
 
 #include "document.h"
+#include <QColorDialog>
 #include <QWidget>
 #include <dust3d/base/uuid.h>
 
@@ -57,6 +58,8 @@ private:
     void pickColorImageForComponents(const std::vector<dust3d::Uuid>& componentIds);
     std::vector<QPushButton*> m_cutFaceButtons;
     std::vector<QString> m_cutFaceList;
+    std::unique_ptr<QColorDialog> m_colorDialog;
+    std::map<dust3d::Uuid, QColor> m_componentsColorsBeforeColorPicking;
 
     void updateCutFaceButtonState(size_t index);
     bool hasStitchingLineConfigure();
