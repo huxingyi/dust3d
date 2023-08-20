@@ -55,6 +55,7 @@ public slots:
     void save();
     void saveTo(const QString& saveAsFilename);
     void open();
+    void openPathDataAs(const QString& path, const QByteArray& fileData, const QString& asName);
     void openPathAs(const QString& path, const QString& asName);
     void exportObjResult();
     void exportGlbResult();
