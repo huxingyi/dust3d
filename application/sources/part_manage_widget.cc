@@ -252,71 +252,71 @@ void PartManageWidget::showContextMenu(const QPoint& pos)
     if (selectedComponentIds.empty())
         return;
 
-    QMenu contextMenu(this);
+    m_contextMenu.reset(new QMenu(this));
 
-    QAction makeGroupAction(tr("Make group"), this);
-    makeGroupAction.setIcon(Theme::awesome()->icon(fa::folder));
-    connect(&makeGroupAction, &QAction::triggered, this, [=]() {
+    QAction* makeGroupAction = new QAction(tr("Make group"), m_contextMenu.get());
+    makeGroupAction->setIcon(Theme::awesome()->icon(fa::folder));
+    connect(makeGroupAction, &QAction::triggered, this, [=]() {
         emit this->groupComponents(selectedComponentIds);
         emit this->groupOperationAdded();
     });
-    contextMenu.addAction(&makeGroupAction);
+    m_contextMenu->addAction(makeGroupAction);
 
-    QAction ungroupAction(tr("Ungroup"), this);
+    QAction* ungroupAction = new QAction(tr("Ungroup"), m_contextMenu.get());
     if (hasSelectedGroupedComponent()) {
-        connect(&ungroupAction, &QAction::triggered, this, [=]() {
+        connect(ungroupAction, &QAction::triggered, this, [=]() {
             for (const auto& it : selectedComponentIds)
                 emit this->ungroupComponent(it);
             emit this->groupOperationAdded();
         });
-        contextMenu.addAction(&ungroupAction);
+        m_contextMenu->addAction(ungroupAction);
     }
 
-    QAction moveToTopAction(tr("Begin"), this);
-    QAction moveUpAction(tr("Previous"), this);
-    QAction moveDownAction(tr("Next"), this);
-    QAction moveToBottomAction(tr("End"), this);
+    QAction* moveToTopAction = new QAction(tr("Begin"), m_contextMenu.get());
+    QAction* moveUpAction = new QAction(tr("Previous"), m_contextMenu.get());
+    QAction* moveDownAction = new QAction(tr("Next"), m_contextMenu.get());
+    QAction* moveToBottomAction = new QAction(tr("End"), m_contextMenu.get());
     if (1 == selectedComponentIds.size()) {
-        QMenu* moveToMenu = contextMenu.addMenu(tr("Move To"));
+        QMenu* moveToMenu = m_contextMenu->addMenu(tr("Move To"));
 
-        moveToTopAction.setIcon(Theme::awesome()->icon(fa::angledoubleup));
-        connect(&moveToTopAction, &QAction::triggered, [=]() {
+        moveToTopAction->setIcon(Theme::awesome()->icon(fa::angledoubleup));
+        connect(moveToTopAction, &QAction::triggered, [=]() {
             for (const auto& it : selectedComponentIds)
                 emit moveComponentToTop(it);
             emit groupOperationAdded();
         });
-        moveToMenu->addAction(&moveToTopAction);
+        moveToMenu->addAction(moveToTopAction);
 
-        moveUpAction.setIcon(Theme::awesome()->icon(fa::angleup));
-        connect(&moveUpAction, &QAction::triggered, [=]() {
+        moveUpAction->setIcon(Theme::awesome()->icon(fa::angleup));
+        connect(moveUpAction, &QAction::triggered, [=]() {
             for (const auto& it : selectedComponentIds)
                 emit moveComponentUp(it);
             emit groupOperationAdded();
         });
-        moveToMenu->addAction(&moveUpAction);
+        moveToMenu->addAction(moveUpAction);
 
-        moveDownAction.setIcon(Theme::awesome()->icon(fa::angledown));
-        connect(&moveDownAction, &QAction::triggered, [=]() {
+        moveDownAction->setIcon(Theme::awesome()->icon(fa::angledown));
+        connect(moveDownAction, &QAction::triggered, [=]() {
             for (const auto& it : selectedComponentIds)
                 emit moveComponentDown(it);
             emit groupOperationAdded();
         });
-        moveToMenu->addAction(&moveDownAction);
+        moveToMenu->addAction(moveDownAction);
 
-        moveToBottomAction.setIcon(Theme::awesome()->icon(fa::angledoubledown));
-        connect(&moveToBottomAction, &QAction::triggered, [=]() {
+        moveToBottomAction->setIcon(Theme::awesome()->icon(fa::angledoubledown));
+        connect(moveToBottomAction, &QAction::triggered, [=]() {
             for (const auto& it : selectedComponentIds)
                 emit moveComponentToBottom(it);
             emit groupOperationAdded();
         });
-        moveToMenu->addAction(&moveToBottomAction);
+        moveToMenu->addAction(moveToBottomAction);
 
         moveToMenu->addSeparator();
     }
 
-    QAction convertToCutFaceAction(tr("Convert to Cut Face"), this);
-    QAction convertToStitchingLineAction(tr("Convert to Stitching Line"), this);
-    QAction convertToPartAction(tr("Convert to Model"), this);
+    QAction* convertToCutFaceAction = new QAction(tr("Convert to Cut Face"), m_contextMenu.get());
+    QAction* convertToStitchingLineAction = new QAction(tr("Convert to Stitching Line"), m_contextMenu.get());
+    QAction* convertToPartAction = new QAction(tr("Convert to Model"), m_contextMenu.get());
     auto selectedPartIds = m_componentPreviewGridWidget->getSelectedPartIds();
     if (!selectedPartIds.empty()) {
         bool addConvertToPartAction = false;
@@ -332,39 +332,39 @@ void PartManageWidget::showContextMenu(const QPoint& pos)
             }
         }
         if (addConvertToPartAction) {
-            connect(&convertToPartAction, &QAction::triggered, this, [=]() {
+            connect(convertToPartAction, &QAction::triggered, this, [=]() {
                 for (const auto& it : selectedPartIds)
                     emit this->setPartTarget(it, dust3d::PartTarget::Model);
                 emit this->groupOperationAdded();
             });
-            contextMenu.addAction(&convertToPartAction);
+            m_contextMenu->addAction(convertToPartAction);
         }
         if (addConvertToCutFaceAction) {
-            connect(&convertToCutFaceAction, &QAction::triggered, this, [=]() {
+            connect(convertToCutFaceAction, &QAction::triggered, this, [=]() {
                 for (const auto& it : selectedPartIds)
                     emit this->setPartTarget(it, dust3d::PartTarget::CutFace);
                 emit this->groupOperationAdded();
             });
-            contextMenu.addAction(&convertToCutFaceAction);
+            m_contextMenu->addAction(convertToCutFaceAction);
         }
         if (addConvertToStitchingLineAction) {
-            connect(&convertToStitchingLineAction, &QAction::triggered, this, [=]() {
+            connect(convertToStitchingLineAction, &QAction::triggered, this, [=]() {
                 for (const auto& it : selectedPartIds)
                     emit this->setPartTarget(it, dust3d::PartTarget::StitchingLine);
                 emit this->groupOperationAdded();
             });
-            contextMenu.addAction(&convertToStitchingLineAction);
+            m_contextMenu->addAction(convertToStitchingLineAction);
         }
     }
 
-    QAction deleteAction(tr("Delete"), this);
-    deleteAction.setIcon(Theme::awesome()->icon(fa::remove));
-    connect(&deleteAction, &QAction::triggered, this, [=]() {
+    QAction* deleteAction = new QAction(tr("Delete"), m_contextMenu.get());
+    deleteAction->setIcon(Theme::awesome()->icon(fa::remove));
+    connect(deleteAction, &QAction::triggered, this, [=]() {
         for (const auto& componentId : selectedComponentIds)
             emit this->removeComponent(componentId);
         emit this->groupOperationAdded();
     });
-    contextMenu.addAction(&deleteAction);
+    m_contextMenu->addAction(deleteAction);
 
-    contextMenu.exec(mapToGlobal(pos));
+    m_contextMenu->popup(mapToGlobal(pos));
 }
