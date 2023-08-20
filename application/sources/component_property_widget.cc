@@ -681,16 +681,43 @@ float ComponentPropertyWidget::lastSmoothCutoffDegrees()
 
 void ComponentPropertyWidget::showColorDialog()
 {
-    emit beginColorPicking();
-    QColor color = QColorDialog::getColor(m_color, this);
-    emit endColorPicking();
-    if (!color.isValid())
-        return;
-
-    for (const auto& componentId : m_componentIds) {
-        emit setComponentColorState(componentId, true, color);
+    if (nullptr == m_colorDialog) {
+        m_colorDialog.reset(new QColorDialog(this));
+        connect(m_colorDialog.get(), &QColorDialog::currentColorChanged, [this](const QColor& color) {
+            if (!color.isValid())
+                return;
+            for (const auto& componentId : m_componentIds) {
+                emit setComponentColorState(componentId, true, color);
+            }
+        });
+        connect(m_colorDialog.get(), &QColorDialog::colorSelected, [this](const QColor& color) {
+            if (!color.isValid())
+                return;
+            for (const auto& componentId : m_componentIds) {
+                emit setComponentColorState(componentId, true, color);
+            }
+            emit endColorPicking();
+            emit groupOperationAdded();
+        });
+        connect(m_colorDialog.get(), &QColorDialog::rejected, [this]() {
+            for (const auto& componentId : m_componentIds) {
+                emit setComponentColorState(componentId, true, m_componentsColorsBeforeColorPicking[componentId]);
+                emit endColorPicking();
+                emit groupOperationAdded();
+            }
+        });
     }
-    emit groupOperationAdded();
+    m_componentsColorsBeforeColorPicking.clear();
+    for (const auto& componentId : m_componentIds) {
+        const Document::Component* component = m_document->findComponent(componentId);
+        if (nullptr == component)
+            continue;
+        m_componentsColorsBeforeColorPicking[componentId] = component->color;
+    }
+    emit beginColorPicking();
+    m_colorDialog->setCurrentColor(m_color);
+    m_colorDialog->show();
+    m_colorDialog->raise();
 }
 
 bool ComponentPropertyWidget::hasStitchingLineConfigure()
