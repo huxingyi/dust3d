@@ -41,12 +41,10 @@ void DocumentSaver::collectUsedResourceIds(const dust3d::Snapshot* snapshot,
     }
 }
 
-bool DocumentSaver::save(const QString* filename,
+bool DocumentSaver::save(dust3d::Ds3FileWriter& ds3Writer,
     dust3d::Snapshot* snapshot,
     const QByteArray* turnaroundPngByteArray)
 {
-    dust3d::Ds3FileWriter ds3Writer;
-
     {
         std::string modelXml;
         saveSnapshotToXmlString(*snapshot, modelXml);
@@ -69,5 +67,32 @@ bool DocumentSaver::save(const QString* filename,
             ds3Writer.add("images/" + imageId.toString() + ".png", "asset", pngByteArray->data(), pngByteArray->size());
     }
 
+    return true;
+}
+
+bool DocumentSaver::save(const QString* filename,
+    dust3d::Snapshot* snapshot,
+    const QByteArray* turnaroundPngByteArray)
+{
+    dust3d::Ds3FileWriter ds3Writer;
+
+    save(ds3Writer, snapshot, turnaroundPngByteArray);
+
     return ds3Writer.save(filename->toUtf8().constData());
+}
+
+bool DocumentSaver::save(QByteArray& byteArray,
+    dust3d::Snapshot* snapshot,
+    const QByteArray* turnaroundPngByteArray)
+{
+    dust3d::Ds3FileWriter ds3Writer;
+
+    save(ds3Writer, snapshot, turnaroundPngByteArray);
+
+    std::vector<uint8_t> rawArray;
+    ds3Writer.save(rawArray);
+
+    byteArray.append((char*)rawArray.data(), rawArray.size());
+
+    return true;
 }

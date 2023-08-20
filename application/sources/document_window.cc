@@ -867,7 +867,19 @@ void DocumentWindow::eraseTurnaround()
 
 void DocumentWindow::save()
 {
+#if defined(Q_OS_WASM)
+    dust3d::Snapshot snapshot;
+    m_document->toSnapshot(&snapshot);
+    QByteArray fileContent;
+    if (DocumentSaver::save(fileContent,
+            &snapshot,
+            (!m_document->turnaround.isNull() && m_document->turnaroundPngByteArray.size() > 0) ? &m_document->turnaroundPngByteArray : nullptr)) {
+        setCurrentFilename(m_currentFilename);
+        QFileDialog::saveFileContent(fileContent);
+    }
+#else
     saveTo(m_currentFilename);
+#endif
 }
 
 void DocumentWindow::saveTo(const QString& saveAsFilename)

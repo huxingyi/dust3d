@@ -69,11 +69,13 @@ class Ds3FileWriter {
 public:
     bool add(const std::string& name, const std::string& type, const void* buffer, size_t bufferSize);
     bool save(const std::string& filename);
+    void save(std::vector<std::uint8_t>& byteArray);
 
 private:
     std::map<std::string, Ds3WriterItem> m_itemsMap;
     std::vector<Ds3WriterItem> m_items;
     std::string m_filename;
+    void getHeaderXml(std::string& headerXml);
 };
 
 }
