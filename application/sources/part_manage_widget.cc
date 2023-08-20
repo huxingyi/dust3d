@@ -148,15 +148,15 @@ void PartManageWidget::showSelectedComponentProperties()
 
     auto* propertyWidget = new ComponentPropertyWidget(m_document, componentIds);
 
-    auto menu = std::make_unique<QMenu>(this->parentWidget());
-    QWidgetAction* widgetAction = new QWidgetAction(menu.get());
+    m_contextMenu.reset(new QMenu(this->parentWidget()));
+    QWidgetAction* widgetAction = new QWidgetAction(m_contextMenu.get());
     widgetAction->setDefaultWidget(propertyWidget);
-    menu->addAction(widgetAction);
+    m_contextMenu->addAction(widgetAction);
 
     auto x = mapToGlobal(QPoint(0, 0)).x();
     if (x <= 0)
         x = QCursor::pos().x();
-    menu->exec(QPoint(
+    m_contextMenu->popup(QPoint(
         x - propertyWidget->width(),
         QCursor::pos().y()));
 }
