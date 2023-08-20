@@ -341,6 +341,8 @@ DocumentWindow::DocumentWindow()
 
     m_fileMenu->addSeparator();
 
+#if defined(Q_OS_WASM)
+#else
     for (int i = 0; i < Preferences::instance().maxRecentFiles(); ++i) {
         QAction* action = new QAction(this);
         action->setVisible(false);
@@ -355,6 +357,7 @@ DocumentWindow::DocumentWindow()
     m_quitAction = m_fileMenu->addAction(tr("&Quit"),
         this, &DocumentWindow::close,
         QKeySequence::Quit);
+#endif
 
     connect(m_fileMenu, &QMenu::aboutToShow, [=]() {
         m_exportAsObjAction->setEnabled(m_canvasGraphicsWidget->hasItems());
@@ -1424,6 +1427,8 @@ void DocumentWindow::openRecentFile()
 
 void DocumentWindow::updateRecentFileActions()
 {
+#if defined(Q_OS_WASM)
+#else
     QStringList files = Preferences::instance().recentFileList();
 
     for (int i = 0; i < (int)files.size() && i < (int)m_recentFileActions.size(); ++i) {
@@ -1436,6 +1441,7 @@ void DocumentWindow::updateRecentFileActions()
         m_recentFileActions[j]->setVisible(false);
 
     m_recentFileSeparatorAction->setVisible(files.size() > 0);
+#endif
 }
 
 QString DocumentWindow::strippedName(const QString& fullFileName)
