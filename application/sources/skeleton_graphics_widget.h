@@ -275,6 +275,7 @@ private:
     dust3d::Uuid m_lastCheckedPart;
     std::set<dust3d::Uuid> m_deferredRemoveNodeIds;
     std::set<dust3d::Uuid> m_deferredRemoveEdgeIds;
+    std::unique_ptr<QMenu> m_contextMenu;
 };
 
 class SkeletonGraphicsContainerWidget : public QWidget {

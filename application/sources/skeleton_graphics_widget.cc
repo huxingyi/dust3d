@@ -122,167 +122,167 @@ void SkeletonGraphicsWidget::showContextMenu(const QPoint& pos)
         return;
     }
 
-    QMenu contextMenu(this);
+    m_contextMenu.reset(new QMenu(this));
 
-    QAction addAction(tr("Add..."), this);
-    connect(&addAction, &QAction::triggered, [=]() {
+    QAction *addAction = new QAction(tr("Add..."), m_contextMenu.get());
+    connect(addAction, &QAction::triggered, [=]() {
         emit setEditMode(Document::EditMode::Add);
     });
-    contextMenu.addAction(&addAction);
+    m_contextMenu->addAction(addAction);
 
-    QAction undoAction(tr("Undo"), this);
+    QAction *undoAction = new QAction(tr("Undo"), m_contextMenu.get());
     if (m_document->undoable()) {
-        connect(&undoAction, &QAction::triggered, m_document, &Document::undo);
-        contextMenu.addAction(&undoAction);
+        connect(undoAction, &QAction::triggered, m_document, &Document::undo);
+        m_contextMenu->addAction(undoAction);
     }
 
-    QAction redoAction(tr("Redo"), this);
+    QAction *redoAction = new QAction(tr("Redo"), m_contextMenu.get());
     if (m_document->redoable()) {
-        connect(&redoAction, &QAction::triggered, m_document, &Document::redo);
-        contextMenu.addAction(&redoAction);
+        connect(redoAction, &QAction::triggered, m_document, &Document::redo);
+        m_contextMenu->addAction(redoAction);
     }
 
-    QAction deleteAction(tr("Delete"), this);
+    QAction *deleteAction = new QAction(tr("Delete"), m_contextMenu.get());
     if (hasSelection()) {
-        connect(&deleteAction, &QAction::triggered, this, &SkeletonGraphicsWidget::deleteSelected);
-        contextMenu.addAction(&deleteAction);
+        connect(deleteAction, &QAction::triggered, this, &SkeletonGraphicsWidget::deleteSelected);
+        m_contextMenu->addAction(deleteAction);
     }
 
-    QAction breakAction(tr("Break"), this);
+    QAction *breakAction = new QAction(tr("Break"), m_contextMenu.get());
     if (hasEdgeSelection()) {
-        connect(&breakAction, &QAction::triggered, this, &SkeletonGraphicsWidget::breakSelected);
-        contextMenu.addAction(&breakAction);
+        connect(breakAction, &QAction::triggered, this, &SkeletonGraphicsWidget::breakSelected);
+        m_contextMenu->addAction(breakAction);
     }
 
-    QAction reduceAction(tr("Reduce"), this);
+    QAction *reduceAction = new QAction(tr("Reduce"), m_contextMenu.get());
     if (hasSelection()) {
-        connect(&reduceAction, &QAction::triggered, this, &SkeletonGraphicsWidget::reduceSelected);
-        contextMenu.addAction(&reduceAction);
+        connect(reduceAction, &QAction::triggered, this, &SkeletonGraphicsWidget::reduceSelected);
+        m_contextMenu->addAction(reduceAction);
     }
 
-    QAction reverseAction(tr("Reverse"), this);
+    QAction *reverseAction = new QAction(tr("Reverse"), m_contextMenu.get());
     if (hasEdgeSelection()) {
-        connect(&reverseAction, &QAction::triggered, this, &SkeletonGraphicsWidget::reverseSelectedEdges);
-        contextMenu.addAction(&reverseAction);
+        connect(reverseAction, &QAction::triggered, this, &SkeletonGraphicsWidget::reverseSelectedEdges);
+        m_contextMenu->addAction(reverseAction);
     }
 
-    QAction connectAction(tr("Connect"), this);
+    QAction *connectAction = new QAction(tr("Connect"), m_contextMenu.get());
     if (hasTwoDisconnectedNodesSelection()) {
-        connect(&connectAction, &QAction::triggered, this, &SkeletonGraphicsWidget::connectSelected);
-        contextMenu.addAction(&connectAction);
+        connect(connectAction, &QAction::triggered, this, &SkeletonGraphicsWidget::connectSelected);
+        m_contextMenu->addAction(connectAction);
     }
 
-    QAction cutAction(tr("Cut"), this);
+    QAction *cutAction = new QAction(tr("Cut"), m_contextMenu.get());
     if (hasSelection()) {
-        connect(&cutAction, &QAction::triggered, this, &SkeletonGraphicsWidget::cut);
-        contextMenu.addAction(&cutAction);
+        connect(cutAction, &QAction::triggered, this, &SkeletonGraphicsWidget::cut);
+        m_contextMenu->addAction(cutAction);
     }
 
-    QAction copyAction(tr("Copy"), this);
+    QAction *copyAction = new QAction(tr("Copy"), m_contextMenu.get());
     if (hasNodeSelection()) {
-        connect(&copyAction, &QAction::triggered, this, &SkeletonGraphicsWidget::copy);
-        contextMenu.addAction(&copyAction);
+        connect(copyAction, &QAction::triggered, this, &SkeletonGraphicsWidget::copy);
+        m_contextMenu->addAction(copyAction);
     }
 
-    QAction pasteAction(tr("Paste"), this);
+    QAction *pasteAction = new QAction(tr("Paste"), m_contextMenu.get());
     if (m_document->hasPastableNodesInClipboard()) {
-        connect(&pasteAction, &QAction::triggered, m_document, &Document::paste);
-        contextMenu.addAction(&pasteAction);
+        connect(pasteAction, &QAction::triggered, m_document, &Document::paste);
+        m_contextMenu->addAction(pasteAction);
     }
 
-    QAction flipHorizontallyAction(tr("H Flip"), this);
+    QAction *flipHorizontallyAction = new QAction(tr("H Flip"), m_contextMenu.get());
     if (hasMultipleSelection()) {
-        connect(&flipHorizontallyAction, &QAction::triggered, this, &SkeletonGraphicsWidget::flipHorizontally);
-        contextMenu.addAction(&flipHorizontallyAction);
+        connect(flipHorizontallyAction, &QAction::triggered, this, &SkeletonGraphicsWidget::flipHorizontally);
+        m_contextMenu->addAction(flipHorizontallyAction);
     }
 
-    QAction flipVerticallyAction(tr("V Flip"), this);
+    QAction *flipVerticallyAction = new QAction(tr("V Flip"), m_contextMenu.get());
     if (hasMultipleSelection()) {
-        connect(&flipVerticallyAction, &QAction::triggered, this, &SkeletonGraphicsWidget::flipVertically);
-        contextMenu.addAction(&flipVerticallyAction);
+        connect(flipVerticallyAction, &QAction::triggered, this, &SkeletonGraphicsWidget::flipVertically);
+        m_contextMenu->addAction(flipVerticallyAction);
     }
 
-    QAction rotateClockwiseAction(tr("Rotate 90D CW"), this);
+    QAction *rotateClockwiseAction = new QAction(tr("Rotate 90D CW"), m_contextMenu.get());
     if (hasMultipleSelection()) {
-        connect(&rotateClockwiseAction, &QAction::triggered, this, &SkeletonGraphicsWidget::rotateClockwise90Degree);
-        contextMenu.addAction(&rotateClockwiseAction);
+        connect(rotateClockwiseAction, &QAction::triggered, this, &SkeletonGraphicsWidget::rotateClockwise90Degree);
+        m_contextMenu->addAction(rotateClockwiseAction);
     }
 
-    QAction rotateCounterclockwiseAction(tr("Rotate 90D CCW"), this);
+    QAction *rotateCounterclockwiseAction = new QAction(tr("Rotate 90D CCW"), m_contextMenu.get());
     if (hasMultipleSelection()) {
-        connect(&rotateCounterclockwiseAction, &QAction::triggered, this, &SkeletonGraphicsWidget::rotateCounterclockwise90Degree);
-        contextMenu.addAction(&rotateCounterclockwiseAction);
+        connect(rotateCounterclockwiseAction, &QAction::triggered, this, &SkeletonGraphicsWidget::rotateCounterclockwise90Degree);
+        m_contextMenu->addAction(rotateCounterclockwiseAction);
     }
 
-    QAction switchXzAction(tr("Switch XZ"), this);
+    QAction *switchXzAction = new QAction(tr("Switch XZ"), m_contextMenu.get());
     if (hasSelection()) {
-        connect(&switchXzAction, &QAction::triggered, this, &SkeletonGraphicsWidget::switchSelectedXZ);
-        contextMenu.addAction(&switchXzAction);
+        connect(switchXzAction, &QAction::triggered, this, &SkeletonGraphicsWidget::switchSelectedXZ);
+        m_contextMenu->addAction(switchXzAction);
     }
 
-    QAction alignToLocalCenterAction(tr("Local Center"), this);
-    QAction alignToLocalVerticalCenterAction(tr("Local Vertical Center"), this);
-    QAction alignToLocalHorizontalCenterAction(tr("Local Horizontal Center"), this);
-    QAction alignToGlobalCenterAction(tr("Global Center"), this);
-    QAction alignToGlobalVerticalCenterAction(tr("Global Vertical Center"), this);
-    QAction alignToGlobalHorizontalCenterAction(tr("Global Horizontal Center"), this);
+    QAction *alignToLocalCenterAction = new QAction(tr("Local Center"), m_contextMenu.get());
+    QAction *alignToLocalVerticalCenterAction = new QAction(tr("Local Vertical Center"), m_contextMenu.get());
+    QAction *alignToLocalHorizontalCenterAction = new QAction(tr("Local Horizontal Center"), m_contextMenu.get());
+    QAction *alignToGlobalCenterAction = new QAction(tr("Global Center"), m_contextMenu.get());
+    QAction *alignToGlobalVerticalCenterAction = new QAction(tr("Global Vertical Center"), m_contextMenu.get());
+    QAction *alignToGlobalHorizontalCenterAction = new QAction(tr("Global Horizontal Center"), m_contextMenu.get());
     if (((hasSelection() && m_document->originSettled()) || hasMultipleSelection())) {
-        QMenu* subMenu = contextMenu.addMenu(tr("Align To"));
+        QMenu* subMenu = m_contextMenu->addMenu(tr("Align To"));
 
         if (hasMultipleSelection()) {
-            connect(&alignToLocalCenterAction, &QAction::triggered, this, &SkeletonGraphicsWidget::alignSelectedToLocalCenter);
-            subMenu->addAction(&alignToLocalCenterAction);
+            connect(alignToLocalCenterAction, &QAction::triggered, this, &SkeletonGraphicsWidget::alignSelectedToLocalCenter);
+            subMenu->addAction(alignToLocalCenterAction);
 
-            connect(&alignToLocalVerticalCenterAction, &QAction::triggered, this, &SkeletonGraphicsWidget::alignSelectedToLocalVerticalCenter);
-            subMenu->addAction(&alignToLocalVerticalCenterAction);
+            connect(alignToLocalVerticalCenterAction, &QAction::triggered, this, &SkeletonGraphicsWidget::alignSelectedToLocalVerticalCenter);
+            subMenu->addAction(alignToLocalVerticalCenterAction);
 
-            connect(&alignToLocalHorizontalCenterAction, &QAction::triggered, this, &SkeletonGraphicsWidget::alignSelectedToLocalHorizontalCenter);
-            subMenu->addAction(&alignToLocalHorizontalCenterAction);
+            connect(alignToLocalHorizontalCenterAction, &QAction::triggered, this, &SkeletonGraphicsWidget::alignSelectedToLocalHorizontalCenter);
+            subMenu->addAction(alignToLocalHorizontalCenterAction);
         }
 
         if (hasSelection() && m_document->originSettled()) {
-            connect(&alignToGlobalCenterAction, &QAction::triggered, this, &SkeletonGraphicsWidget::alignSelectedToGlobalCenter);
-            subMenu->addAction(&alignToGlobalCenterAction);
+            connect(alignToGlobalCenterAction, &QAction::triggered, this, &SkeletonGraphicsWidget::alignSelectedToGlobalCenter);
+            subMenu->addAction(alignToGlobalCenterAction);
 
-            connect(&alignToGlobalVerticalCenterAction, &QAction::triggered, this, &SkeletonGraphicsWidget::alignSelectedToGlobalVerticalCenter);
-            subMenu->addAction(&alignToGlobalVerticalCenterAction);
+            connect(alignToGlobalVerticalCenterAction, &QAction::triggered, this, &SkeletonGraphicsWidget::alignSelectedToGlobalVerticalCenter);
+            subMenu->addAction(alignToGlobalVerticalCenterAction);
 
-            connect(&alignToGlobalHorizontalCenterAction, &QAction::triggered, this, &SkeletonGraphicsWidget::alignSelectedToGlobalHorizontalCenter);
-            subMenu->addAction(&alignToGlobalHorizontalCenterAction);
+            connect(alignToGlobalHorizontalCenterAction, &QAction::triggered, this, &SkeletonGraphicsWidget::alignSelectedToGlobalHorizontalCenter);
+            subMenu->addAction(alignToGlobalHorizontalCenterAction);
         }
     }
 
-    QAction colorizeAsBlankAction(tr("Blank"), this);
-    QAction colorizeAsAutoColorAction(tr("Auto Color"), this);
+    QAction *colorizeAsBlankAction = new QAction(tr("Blank"), m_contextMenu.get());
+    QAction *colorizeAsAutoColorAction = new QAction(tr("Auto Color"), m_contextMenu.get());
     if (hasNodeSelection()) {
-        QMenu* subMenu = contextMenu.addMenu(tr("Colorize"));
+        QMenu* subMenu = m_contextMenu->addMenu(tr("Colorize"));
 
-        connect(&colorizeAsBlankAction, &QAction::triggered, this, &SkeletonGraphicsWidget::fadeSelected);
-        subMenu->addAction(&colorizeAsBlankAction);
+        connect(colorizeAsBlankAction, &QAction::triggered, this, &SkeletonGraphicsWidget::fadeSelected);
+        subMenu->addAction(colorizeAsBlankAction);
 
-        connect(&colorizeAsAutoColorAction, &QAction::triggered, this, &SkeletonGraphicsWidget::colorizeSelected);
-        subMenu->addAction(&colorizeAsAutoColorAction);
+        connect(colorizeAsAutoColorAction, &QAction::triggered, this, &SkeletonGraphicsWidget::colorizeSelected);
+        subMenu->addAction(colorizeAsAutoColorAction);
     }
 
-    QAction selectAllAction(tr("Select All"), this);
+    QAction *selectAllAction = new QAction(tr("Select All"), m_contextMenu.get());
     if (hasItems()) {
-        connect(&selectAllAction, &QAction::triggered, this, &SkeletonGraphicsWidget::selectAll);
-        contextMenu.addAction(&selectAllAction);
+        connect(selectAllAction, &QAction::triggered, this, &SkeletonGraphicsWidget::selectAll);
+        m_contextMenu->addAction(selectAllAction);
     }
 
-    QAction selectPartAllAction(tr("Select Part"), this);
+    QAction *selectPartAllAction = new QAction(tr("Select Part"), m_contextMenu.get());
     if (hasItems()) {
-        connect(&selectPartAllAction, &QAction::triggered, this, &SkeletonGraphicsWidget::selectPartAll);
-        contextMenu.addAction(&selectPartAllAction);
+        connect(selectPartAllAction, &QAction::triggered, this, &SkeletonGraphicsWidget::selectPartAll);
+        m_contextMenu->addAction(selectPartAllAction);
     }
 
-    QAction unselectAllAction(tr("Unselect All"), this);
+    QAction *unselectAllAction = new QAction(tr("Unselect All"), m_contextMenu.get());
     if (hasSelection()) {
-        connect(&unselectAllAction, &QAction::triggered, this, &SkeletonGraphicsWidget::unselectAll);
-        contextMenu.addAction(&unselectAllAction);
+        connect(unselectAllAction, &QAction::triggered, this, &SkeletonGraphicsWidget::unselectAll);
+        m_contextMenu->addAction(unselectAllAction);
     }
 
-    contextMenu.exec(mapToGlobal(pos));
+    m_contextMenu->popup(mapToGlobal(pos));
 }
 
 bool SkeletonGraphicsWidget::hasSelection()
