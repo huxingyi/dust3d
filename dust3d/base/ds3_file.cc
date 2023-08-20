@@ -150,18 +150,14 @@ bool Ds3FileWriter::add(const std::string& name, const std::string& type, const 
     return true;
 }
 
-bool Ds3FileWriter::save(const std::string& filename)
+void Ds3FileWriter::getHeaderXml(std::string& headerXml)
 {
-    std::ofstream file(filename, std::ios::out | std::ios::trunc | std::ios::binary);
-    if (!file.is_open())
-        return false;
-
     std::ostringstream headerXmlStream;
     headerXmlStream << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << std::endl;
     headerXmlStream << "<ds3>" << std::endl;
     {
         long long offset = 0;
-        for (int i = 0; i < m_items.size(); i++) {
+        for (size_t i = 0; i < m_items.size(); i++) {
             Ds3WriterItem* writerItem = &m_items[i];
             headerXmlStream << "    <" << writerItem->type;
             headerXmlStream << " name=\"" << String::doubleQuoteEscapedForXml(writerItem->name) << "\"";
@@ -172,7 +168,18 @@ bool Ds3FileWriter::save(const std::string& filename)
         }
     }
     headerXmlStream << "</ds3>" << std::endl;
-    std::string headerXml = headerXmlStream.str();
+    headerXml = headerXmlStream.str();
+}
+
+bool Ds3FileWriter::save(const std::string& filename)
+{
+    std::ofstream file(filename, std::ios::out | std::ios::trunc | std::ios::binary);
+    if (!file.is_open())
+        return false;
+
+    std::string headerXml;
+    getHeaderXml(headerXml);
+
     char firstLine[1024];
     int firstLineSizeExcludeSizeSelf = sprintf(firstLine, "%s %s %s ",
         Ds3FileReader::m_magicApplicationName.c_str(),
@@ -184,12 +191,35 @@ bool Ds3FileWriter::save(const std::string& filename)
     file.write(firstLine, firstLineSizeExcludeSizeSelf);
     file.write(headerSizeString, strlen(headerSizeString));
     file << headerXml;
-    for (int i = 0; i < m_items.size(); i++) {
+    for (size_t i = 0; i < m_items.size(); i++) {
         Ds3WriterItem* writerItem = &m_items[i];
         file.write((char*)writerItem->byteArray.data(), writerItem->byteArray.size());
     }
 
     return true;
+}
+
+void Ds3FileWriter::save(std::vector<std::uint8_t>& byteArray)
+{
+    std::string headerXml;
+    getHeaderXml(headerXml);
+
+    char firstLine[1024];
+    int firstLineSizeExcludeSizeSelf = sprintf(firstLine, "%s %s %s ",
+        Ds3FileReader::m_magicApplicationName.c_str(),
+        Ds3FileReader::m_fileFormatVersion.c_str(),
+        Ds3FileReader::m_headFormat.c_str());
+    unsigned int headerSize = (unsigned int)(firstLineSizeExcludeSizeSelf + 12 + headerXml.size());
+    char headerSizeString[100] = { 0 };
+    sprintf(headerSizeString, "%010u\r\n", headerSize);
+
+    byteArray.insert(byteArray.end(), firstLine, firstLine + firstLineSizeExcludeSizeSelf);
+    byteArray.insert(byteArray.end(), headerSizeString, headerSizeString + strlen(headerSizeString));
+    std::copy(headerXml.begin(), headerXml.end(), std::back_inserter(byteArray));
+    for (size_t i = 0; i < m_items.size(); i++) {
+        Ds3WriterItem* writerItem = &m_items[i];
+        byteArray.insert(byteArray.end(), (char*)writerItem->byteArray.data(), (char*)writerItem->byteArray.data() + writerItem->byteArray.size());
+    }
 }
 
 }
