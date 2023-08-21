@@ -278,13 +278,8 @@ GlbFileWriter::GlbFileWriter(dust3d::Object& object,
     alignJson();
 }
 
-bool GlbFileWriter::save()
+bool GlbFileWriter::save(QDataStream& output)
 {
-    QFile file(m_filename);
-    if (!file.open(QIODevice::WriteOnly)) {
-        return false;
-    }
-    QDataStream output(&file);
     output.setFloatingPointPrecision(QDataStream::SinglePrecision);
     output.setByteOrder(QDataStream::LittleEndian);
 
@@ -331,4 +326,14 @@ bool GlbFileWriter::save()
     output.writeRawData(m_binByteArray.data(), m_binByteArray.size());
 
     return true;
+}
+
+bool GlbFileWriter::save()
+{
+    QFile file(m_filename);
+    if (!file.open(QIODevice::WriteOnly)) {
+        return false;
+    }
+    QDataStream output(&file);
+    return save(output);
 }

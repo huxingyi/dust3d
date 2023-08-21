@@ -21,6 +21,7 @@ public:
         QImage* normalImage = nullptr,
         QImage* ormImage = nullptr);
     bool save();
+    bool save(QDataStream& output);
 
 private:
     QString m_filename;
