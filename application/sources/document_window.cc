@@ -62,11 +62,21 @@ void outputMessage(QtMsgType type, const QMessageLogContext& context, const QStr
         g_logBrowser->outputMessage(type, msg, context.file, context.line);
 }
 
-void ensureFileExtension(QString* filename, const QString extension)
+void DocumentWindow::ensureFileExtension(QString* filename, const QString& extension)
 {
     if (!filename->endsWith(extension)) {
         filename->append(extension);
     }
+}
+
+QString DocumentWindow::exportedFilename(const QString& filename, const QString& extension)
+{
+    QString finalName = filename;
+    if (!finalName.endsWith(extension))
+        finalName += extension;
+    if (finalName == extension)
+        finalName = "Untitled" + finalName;
+    return finalName;
 }
 
 const std::map<DocumentWindow*, dust3d::Uuid>& DocumentWindow::documentWindows()
@@ -331,9 +341,12 @@ DocumentWindow::DocumentWindow()
     connect(m_exportAsGlbAction, &QAction::triggered, this, &DocumentWindow::exportGlbResult, Qt::QueuedConnection);
     m_fileMenu->addAction(m_exportAsGlbAction);
 
+#if defined(Q_OS_WASM)
+#else
     m_exportAsFbxAction = new QAction(tr("Export as FBX..."), this);
     connect(m_exportAsFbxAction, &QAction::triggered, this, &DocumentWindow::exportFbxResult, Qt::QueuedConnection);
     m_fileMenu->addAction(m_exportAsFbxAction);
+#endif
 
     m_fileMenu->addSeparator();
 
@@ -875,7 +888,7 @@ void DocumentWindow::save()
             &snapshot,
             (!m_document->turnaround.isNull() && m_document->turnaroundPngByteArray.size() > 0) ? &m_document->turnaroundPngByteArray : nullptr)) {
         setCurrentFilename(m_currentFilename);
-        QFileDialog::saveFileContent(fileContent);
+        QFileDialog::saveFileContent(fileContent, exportedFilename(m_currentFilename, ".ds3"));
     }
 #else
     saveTo(m_currentFilename);
@@ -1074,6 +1087,17 @@ void DocumentWindow::open()
 
 void DocumentWindow::exportObjResult()
 {
+#if defined(Q_OS_WASM)
+    QByteArray fileData;
+    QTextStream stream(&fileData);
+    ModelMesh* resultMesh = m_document->takeResultMesh();
+    if (nullptr != resultMesh) {
+        resultMesh->exportAsObj(&stream);
+        delete resultMesh;
+    }
+    stream.flush();
+    QFileDialog::saveFileContent(fileData, exportedFilename(m_currentFilename, ".obj"));
+#else
     QString filename = QFileDialog::getSaveFileName(this, QString(), QString(),
         tr("Wavefront (*.obj)"));
     if (filename.isEmpty()) {
@@ -1081,6 +1105,7 @@ void DocumentWindow::exportObjResult()
     }
     ensureFileExtension(&filename, ".obj");
     exportObjToFilename(filename);
+#endif
 }
 
 void DocumentWindow::exportObjToFilename(const QString& filename)
@@ -1126,6 +1151,23 @@ void DocumentWindow::exportFbxToFilename(const QString& filename)
 
 void DocumentWindow::exportGlbResult()
 {
+#if defined(Q_OS_WASM)
+    if (!m_document->isExportReady())
+        return;
+    QByteArray fileData;
+    dust3d::Object skeletonResult = m_document->currentUvMappedObject();
+    QImage* textureMetalnessRoughnessAmbientOcclusionImage = UvMapGenerator::combineMetalnessRoughnessAmbientOcclusionImages(m_document->textureMetalnessImage,
+        m_document->textureRoughnessImage,
+        m_document->textureAmbientOcclusionImage);
+    GlbFileWriter glbFileWriter(skeletonResult, m_currentFilename + ".glb",
+        m_document->textureImage, m_document->textureNormalImage, textureMetalnessRoughnessAmbientOcclusionImage);
+    {
+        QDataStream stream(&fileData, QIODeviceBase::Append);
+        glbFileWriter.save(stream);
+    }
+    delete textureMetalnessRoughnessAmbientOcclusionImage;
+    QFileDialog::saveFileContent(fileData, exportedFilename(m_currentFilename, ".glb"));
+#else
     QString filename = QFileDialog::getSaveFileName(this, QString(), QString(),
         tr("glTF Binary Format (*.glb)"));
     if (filename.isEmpty()) {
@@ -1133,6 +1175,7 @@ void DocumentWindow::exportGlbResult()
     }
     ensureFileExtension(&filename, ".glb");
     exportGlbToFilename(filename);
+#endif
 }
 
 void DocumentWindow::exportGlbToFilename(const QString& filename)

@@ -178,6 +178,10 @@ private:
     SpinnableToolbarIcon* m_inprogressIndicator = nullptr;
 
     std::map<QKeySequence, QShortcut*> m_shortcutMap;
+
+private:
+    static void ensureFileExtension(QString* filename, const QString& extension);
+    static QString exportedFilename(const QString& filename, const QString& extension);
 };
 
 #endif
