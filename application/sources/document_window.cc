@@ -1304,7 +1304,12 @@ void DocumentWindow::generateComponentPreviewImages()
 
     updateInprogressIndicator();
 
-    if (QOpenGLContext::supportsThreadedOpenGL()) {
+    bool useThreadedOpenGL = true;
+#if defined(Q_OS_WASM)
+    useThreadedOpenGL = false;
+#endif
+
+    if (useThreadedOpenGL && QOpenGLContext::supportsThreadedOpenGL()) {
         QThread* thread = new QThread;
         m_componentPreviewImagesGenerator->moveToThread(thread);
         connect(thread, &QThread::started, m_componentPreviewImagesGenerator, &MeshPreviewImagesGenerator::process);
