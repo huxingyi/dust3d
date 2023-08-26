@@ -53,6 +53,8 @@ CONFIG(release, debug|release) {
     }
 }
 
+QMAKE_LFLAGS += -Os
+
 PLATFORM = "Unknown"
 macx {
     PLATFORM = "MacOS"
@@ -87,9 +89,6 @@ macx {
     RESOURCE_FILES.path = Contents/Resources
     QMAKE_BUNDLE_DATA += RESOURCE_FILES
 }
-
-QMAKE_LFLAGS += -sFULL_ES3=1
-QMAKE_LFLAGS += -sASYNCIFY -Os
 
 RESOURCES += resources.qrc
 
