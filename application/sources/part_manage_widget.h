@@ -5,6 +5,7 @@
 #include <QWidget>
 #include <dust3d/base/part_target.h>
 #include <dust3d/base/uuid.h>
+#include <memory>
 
 class Document;
 class ComponentPreviewGridWidget;

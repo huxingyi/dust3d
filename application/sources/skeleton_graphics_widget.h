@@ -14,6 +14,7 @@
 #include <QTimer>
 #include <cmath>
 #include <map>
+#include <memory>
 #include <set>
 
 class SkeletonGraphicsEdgeItem;
