@@ -5,6 +5,7 @@
 #include <QColorDialog>
 #include <QWidget>
 #include <dust3d/base/uuid.h>
+#include <memory>
 
 class QPushButton;
 
