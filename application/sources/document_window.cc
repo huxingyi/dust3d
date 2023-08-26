@@ -1309,7 +1309,7 @@ void DocumentWindow::generateComponentPreviewImages()
     useThreadedOpenGL = false;
 #endif
 
-    if (useThreadedOpenGL && QOpenGLContext::supportsThreadedOpenGL()) {
+    if (useThreadedOpenGL) {
         QThread* thread = new QThread;
         m_componentPreviewImagesGenerator->moveToThread(thread);
         connect(thread, &QThread::started, m_componentPreviewImagesGenerator, &MeshPreviewImagesGenerator::process);
@@ -1318,8 +1318,10 @@ void DocumentWindow::generateComponentPreviewImages()
         connect(thread, &QThread::finished, thread, &QThread::deleteLater);
         thread->start();
     } else {
-        connect(m_componentPreviewImagesGenerator, &MeshPreviewImagesGenerator::finished, this, &DocumentWindow::componentPreviewImagesReady);
-        m_componentPreviewImagesGenerator->process();
+        QTimer::singleShot(10, this, [this]() {
+            connect(m_componentPreviewImagesGenerator, &MeshPreviewImagesGenerator::finished, this, &DocumentWindow::componentPreviewImagesReady);
+            m_componentPreviewImagesGenerator->process();
+        });
     }
 }
 

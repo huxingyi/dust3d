@@ -1,4 +1,3 @@
-#version 110
 attribute vec4 vertex;
 attribute vec3 normal;
 attribute vec3 color;

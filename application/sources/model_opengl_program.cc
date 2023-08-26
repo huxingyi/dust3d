@@ -76,8 +76,13 @@ void ModelOpenGLProgram::load(bool isCoreProfile)
         addShaderFromResource(QOpenGLShader::Vertex, ":/shaders/model_core.vert");
         addShaderFromResource(QOpenGLShader::Fragment, ":/shaders/model_core.frag");
     } else {
+#if defined(Q_OS_WASM)
+        addShaderFromResource(QOpenGLShader::Vertex, ":/shaders/model_wasm.vert");
+        addShaderFromResource(QOpenGLShader::Fragment, ":/shaders/model_wasm.frag");
+#else
         addShaderFromResource(QOpenGLShader::Vertex, ":/shaders/model.vert");
         addShaderFromResource(QOpenGLShader::Fragment, ":/shaders/model.frag");
+#endif
     }
     bindAttributeLocation("vertex", 0);
     bindAttributeLocation("normal", 1);

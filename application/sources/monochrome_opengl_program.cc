@@ -38,8 +38,13 @@ void MonochromeOpenGLProgram::load(bool isCoreProfile)
         addShaderFromResource(QOpenGLShader::Vertex, ":/shaders/monochrome_core.vert");
         addShaderFromResource(QOpenGLShader::Fragment, ":/shaders/monochrome_core.frag");
     } else {
+#if defined(Q_OS_WASM)
+        addShaderFromResource(QOpenGLShader::Vertex, ":/shaders/monochrome_wasm.vert");
+        addShaderFromResource(QOpenGLShader::Fragment, ":/shaders/monochrome_wasm.frag");
+#else
         addShaderFromResource(QOpenGLShader::Vertex, ":/shaders/monochrome.vert");
         addShaderFromResource(QOpenGLShader::Fragment, ":/shaders/monochrome.frag");
+#endif
     }
     bindAttributeLocation("vertex", 0);
     bindAttributeLocation("color", 1);
