@@ -1,4 +1,5 @@
-#version 110
+precision highp float;
+precision highp int;
 uniform sampler2D environmentIrradianceMapId[6];
 uniform sampler2D environmentSpecularMapId[6];
 uniform sampler2D textureId;
