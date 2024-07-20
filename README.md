@@ -70,7 +70,6 @@ Dust3D is licensed under the MIT License - see the [LICENSE](https://github.com/
 
 <a href="https://github.com/fohara" title="fohara (Frank O'Hara)" target=_blank><image src="https://avatars.githubusercontent.com/u/1181948?u=00445fb982564b2a4461c5848662ac37f1405b01&v=4" alt="@fohara" width="35" height="35" style="border-radius: 17px;" /></a>
 <a href="https://github.com/DisownedWheat" title="DisownedWheat (Robert Larnach)" target=_blank><image src="https://avatars.githubusercontent.com/u/11870491?u=a8b24ff1daf2577b1afac771fd2cf80e39c8b4b0&v=4" alt="@DisownedWheat" width="35" height="35" style="border-radius: 17px;" /></a>
-<a href="https://github.com/Nobuna-no" title="Nobuna-no (Morgan Hoarau)" target=_blank><image src="https://avatars.githubusercontent.com/u/43406539?u=fc0d4b157b4b49775d415b2f405d5c45a486a107&v=4" alt="@Nobuna-no" width="35" height="35" style="border-radius: 17px;" /></a>
 
  _The list shown represent active sponsors on GitHub and a full list can be viewed at [SUPPORTERS](https://github.com/huxingyi/dust3d/blob/master/SUPPORTERS)._
 <!-- Sponsors end -->
