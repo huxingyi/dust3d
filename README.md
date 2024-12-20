@@ -68,8 +68,8 @@ Dust3D is licensed under the MIT License - see the [LICENSE](https://github.com/
 <!-- Sponsors begin -->
 ## Sponsors  
 
-<a href="https://github.com/fohara" title="fohara (Frank O'Hara)" target=_blank><image src="https://avatars.githubusercontent.com/u/1181948?u=00445fb982564b2a4461c5848662ac37f1405b01&v=4" alt="@fohara" width="35" height="35" style="border-radius: 17px;" /></a>
-<a href="https://github.com/DisownedWheat" title="DisownedWheat (Robert Larnach)" target=_blank><image src="https://avatars.githubusercontent.com/u/11870491?u=a8b24ff1daf2577b1afac771fd2cf80e39c8b4b0&v=4" alt="@DisownedWheat" width="35" height="35" style="border-radius: 17px;" /></a>
+<a href="https://github.com/fohara" title="fohara (Frank O'Hara)" target=_blank><image src="https://private-avatars.githubusercontent.com/u/1181948?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTEiLCJleHAiOjE3MzQ2NTMyODAsIm5iZiI6MTczNDY1MjA4MCwicGF0aCI6Ii91LzExODE5NDgifQ.Xmuc5Go2fF03HG-k7TWxuPWtS2UAEokJPszI8_jjAxc&u=00445fb982564b2a4461c5848662ac37f1405b01&v=4" alt="@fohara" width="35" height="35" style="border-radius: 17px;" /></a>
+<a href="https://github.com/DisownedWheat" title="DisownedWheat (Robert Larnach)" target=_blank><image src="https://private-avatars.githubusercontent.com/u/11870491?jwt=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTEiLCJleHAiOjE3MzQ2NTQwMDAsIm5iZiI6MTczNDY1MjgwMCwicGF0aCI6Ii91LzExODcwNDkxIn0.5fZArb-qsUA6SUUrse15d_3Yb-SXpVPd0P7-regbyS0&u=a8b24ff1daf2577b1afac771fd2cf80e39c8b4b0&v=4" alt="@DisownedWheat" width="35" height="35" style="border-radius: 17px;" /></a>
 
  _The list shown represent active sponsors on GitHub and a full list can be viewed at [SUPPORTERS](https://github.com/huxingyi/dust3d/blob/master/SUPPORTERS)._
 <!-- Sponsors end -->
