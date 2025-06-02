@@ -65,10 +65,4 @@ git clone https://github.com/huxingyi/dust3d.git
 
 Dust3D is licensed under the MIT License - see the [LICENSE](https://github.com/huxingyi/dust3d/blob/master/LICENSE) file for details.
 
-<!-- Sponsors begin -->
-## Sponsors  
-
-<a href="https://github.com/fohara" title="fohara (Frank O'Hara)" target=_blank><image src="https://avatars.githubusercontent.com/u/1181948?u=00445fb982564b2a4461c5848662ac37f1405b01&v=4" alt="@fohara" width="35" height="35" style="border-radius: 17px;" /></a>
-
- _The list shown represent active sponsors on GitHub and a full list can be viewed at [SUPPORTERS](https://github.com/huxingyi/dust3d/blob/master/SUPPORTERS)._
-<!-- Sponsors end -->
+<!-- Sponsors begin --><!-- Sponsors end -->
