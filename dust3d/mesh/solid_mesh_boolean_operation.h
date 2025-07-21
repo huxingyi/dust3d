@@ -26,6 +26,7 @@
 #include <dust3d/base/position_key.h>
 #include <dust3d/base/vector3.h>
 #include <dust3d/mesh/solid_mesh.h>
+#include <cstdint>
 #include <map>
 #include <unordered_map>
 #include <unordered_set>
