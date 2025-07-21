@@ -59,6 +59,7 @@ public slots:
     void openPathAs(const QString& path, const QString& asName);
     void exportObjResult();
     void exportGlbResult();
+    void exportGltfResult();
     void exportFbxResult();
     void newWindow();
     void newDocument();
@@ -82,6 +83,7 @@ public slots:
     void exportObjToFilename(const QString& filename);
     void exportFbxToFilename(const QString& filename);
     void exportGlbToFilename(const QString& filename);
+    void exportGltfToFilename(const QString& filename);
     void toggleRotation();
     void generateComponentPreviewImages();
     void componentPreviewImagesReady();
@@ -139,6 +141,7 @@ private:
 
     QAction* m_exportAsObjAction = nullptr;
     QAction* m_exportAsGlbAction = nullptr;
+    QAction* m_exportAsGltfAction = nullptr;
     QAction* m_exportAsFbxAction = nullptr;
 
     QMenu* m_viewMenu = nullptr;
