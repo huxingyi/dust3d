@@ -13,13 +13,13 @@ on:
 
 jobs:
   clang-format-check:
-    runs-on: ubuntu-latest
+    runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install clang-format
         run: |
-          sudo apt-get update
-          sudo apt-get install -y clang-format
+          brew update
+          brew install clang-format
       - name: Run clang-format
         run: cd ${GITHUB_WORKSPACE}/ci && sh ./lint.sh && cd ${GITHUB_WORKSPACE}
       - name: Check for changes
