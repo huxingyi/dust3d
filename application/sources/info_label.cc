@@ -5,7 +5,7 @@
 InfoLabel::InfoLabel(const QString& text, QWidget* parent)
     : QWidget(parent)
 {
-    m_icon = new QLabel(QChar(fa::infocircle));
+    m_icon = new QLabel(QChar(static_cast<ushort>(fa::infocircle)));
     Theme::initAwesomeLabel(m_icon);
 
     m_label = new QLabel(text);

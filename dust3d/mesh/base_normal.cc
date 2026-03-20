@@ -54,8 +54,8 @@ std::vector<Vector3> BaseNormal::calculateCircleVertices(double radius,
     std::vector<Vector3> circlePoints;
     circlePoints.reserve(points);
     for (double angle = stepAngle * -0.5;
-         circlePoints.size() < points;
-         angle += stepAngle) {
+        circlePoints.size() < points;
+        angle += stepAngle) {
         circlePoints.push_back(origin + startDirection.rotated(aroundAxis, angle) * radius);
     }
     return circlePoints;

@@ -360,15 +360,15 @@ bool MeshRecombiner::bridge(const std::vector<size_t>& first, const std::vector<
         std::vector<size_t> smallSide;
         std::vector<size_t> largeSide;
         for (size_t indexOnSmall = matchedPairs[i].first;
-             ;
-             indexOnSmall = (indexOnSmall + 1) % small->size()) {
+            ;
+            indexOnSmall = (indexOnSmall + 1) % small->size()) {
             smallSide.push_back((*small)[indexOnSmall]);
             if (indexOnSmall == matchedPairs[j].first)
                 break;
         }
         for (size_t indexOnLarge = matchedPairs[j].second;
-             ;
-             indexOnLarge = (indexOnLarge + 1) % large->size()) {
+            ;
+            indexOnLarge = (indexOnLarge + 1) % large->size()) {
             largeSide.push_back((*large)[indexOnLarge]);
             if (indexOnLarge == matchedPairs[i].second)
                 break;

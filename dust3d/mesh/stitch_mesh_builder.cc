@@ -370,8 +370,8 @@ void StitchMeshBuilder::build()
         size_t lastMiddleVertexIndex = stitchingPoints[0][0];
         int left = 2, right = (int)stitchingPoints.size() - 2;
         for (;
-             left + 1 < right;
-             ++left, --right) {
+            left + 1 < right;
+            ++left, --right) {
             size_t middleVertexIndex = m_generatedVertices.size();
             m_generatedVertexSources.push_back(m_splines.front().sourceId);
             m_generatedVertices.push_back((m_generatedVertices[stitchingPoints[left][0]] + m_generatedVertices[stitchingPoints[right][0]]) * 0.5);
@@ -420,8 +420,8 @@ void StitchMeshBuilder::build()
         size_t lastMiddleVertexIndex = stitchingPoints[0][m_splines.size() - 1];
         int right = 2, left = (int)stitchingPoints.size() - 2;
         for (;
-             right + 1 < left;
-             --left, ++right) {
+            right + 1 < left;
+            --left, ++right) {
             size_t middleVertexIndex = m_generatedVertices.size();
             m_generatedVertexSources.push_back(m_splines.back().sourceId);
             m_generatedVertices.push_back((m_generatedVertices[stitchingPoints[left][m_splines.size() - 1]] + m_generatedVertices[stitchingPoints[right][m_splines.size() - 1]]) * 0.5);
@@ -519,8 +519,8 @@ void StitchMeshBuilder::build()
                 size_t lastMiddleVertexIndex = innerPoints[0][m_splines.size() - 1];
                 int left = 2, right = (int)innerPoints.size() - 2;
                 for (;
-                     left + 1 < right;
-                     ++left, --right) {
+                    left + 1 < right;
+                    ++left, --right) {
                     size_t middleVertexIndex = m_generatedVertices.size();
                     m_generatedVertexSources.push_back(m_splines[m_splines.size() - 1].sourceId);
                     m_generatedVertices.push_back((m_generatedVertices[innerPoints[left][m_splines.size() - 1]] + m_generatedVertices[innerPoints[right][m_splines.size() - 1]]) * 0.5);
@@ -611,8 +611,8 @@ void StitchMeshBuilder::build()
                 size_t lastMiddleVertexIndex = innerPoints[0][0];
                 int left = 2, right = (int)innerPoints.size() - 2;
                 for (;
-                     left + 1 < right;
-                     ++left, --right) {
+                    left + 1 < right;
+                    ++left, --right) {
                     size_t middleVertexIndex = m_generatedVertices.size();
                     m_generatedVertexSources.push_back(m_splines[0].sourceId);
                     m_generatedVertices.push_back((m_generatedVertices[innerPoints[left][0]] + m_generatedVertices[innerPoints[right][0]]) * 0.5);
@@ -774,8 +774,8 @@ void StitchMeshBuilder::build()
                 size_t lastMiddleVertexIndex = innerPoints[0][0];
                 int left = 2, right = (int)innerPoints.size() - 2;
                 for (;
-                     left + 1 < right;
-                     ++left, --right) {
+                    left + 1 < right;
+                    ++left, --right) {
                     size_t middleVertexIndex = m_generatedVertices.size();
                     m_generatedVertexSources.push_back(m_splines.front().sourceId);
                     m_generatedVertices.push_back((m_generatedVertices[innerPoints[left][0]] + m_generatedVertices[innerPoints[right][0]]) * 0.5);
@@ -824,8 +824,8 @@ void StitchMeshBuilder::build()
                 size_t lastMiddleVertexIndex = innerPoints[0][m_splines.size() - 1];
                 int left = 2, right = (int)innerPoints.size() - 2;
                 for (;
-                     left + 1 < right;
-                     ++left, --right) {
+                    left + 1 < right;
+                    ++left, --right) {
                     size_t middleVertexIndex = m_generatedVertices.size();
                     m_generatedVertexSources.push_back(m_splines.back().sourceId);
                     m_generatedVertices.push_back((m_generatedVertices[innerPoints[left][m_splines.size() - 1]] + m_generatedVertices[innerPoints[right][m_splines.size() - 1]]) * 0.5);
@@ -973,8 +973,8 @@ void StitchMeshBuilder::build()
                 size_t lastMiddleVertexIndex = innerPoints[0][0];
                 int left = 2, right = (int)innerPoints.size() - 2;
                 for (;
-                     left + 1 < right;
-                     ++left, --right) {
+                    left + 1 < right;
+                    ++left, --right) {
                     size_t middleVertexIndex = m_generatedVertices.size();
                     m_generatedVertexSources.push_back(m_splines.front().sourceId);
                     m_generatedVertices.push_back((m_generatedVertices[innerPoints[left][0]] + m_generatedVertices[innerPoints[right][0]]) * 0.5);
@@ -1092,8 +1092,8 @@ void StitchMeshBuilder::build()
                 size_t lastMiddleVertexIndex = innerPoints[0][m_splines.size() - 1];
                 int left = 2, right = (int)innerPoints.size() - 2;
                 for (;
-                     left + 1 < right;
-                     ++left, --right) {
+                    left + 1 < right;
+                    ++left, --right) {
                     size_t middleVertexIndex = m_generatedVertices.size();
                     m_generatedVertexSources.push_back(m_splines.back().sourceId);
                     m_generatedVertices.push_back((m_generatedVertices[innerPoints[left][m_splines.size() - 1]] + m_generatedVertices[innerPoints[right][m_splines.size() - 1]]) * 0.5);

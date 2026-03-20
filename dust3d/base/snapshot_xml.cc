@@ -40,7 +40,7 @@ static std::string loadComponentReturnChildrenList(Snapshot* snapshot, rapidxml:
             children.push_back(componentIdString);
             std::map<std::string, std::string>* componentMap = &snapshot->components[componentIdString];
             for (rapidxml::xml_attribute<>* attribute = node->first_attribute();
-                 attribute; attribute = attribute->next_attribute()) {
+                attribute; attribute = attribute->next_attribute()) {
                 (*componentMap)[attribute->name()] = attribute->value();
             }
             snapshot->components[componentIdString]["children"] = loadComponentReturnChildrenList(snapshot, node);
@@ -57,7 +57,7 @@ void loadSnapshotFromXmlString(Snapshot* snapshot, char* xmlString)
         rapidxml::xml_node<>* canvas = xml.first_node("canvas");
         if (nullptr != canvas) {
             for (rapidxml::xml_attribute<>* attribute = canvas->first_attribute();
-                 attribute; attribute = attribute->next_attribute()) {
+                attribute; attribute = attribute->next_attribute()) {
                 snapshot->canvas[attribute->name()] = attribute->value();
             }
 
@@ -68,7 +68,7 @@ void loadSnapshotFromXmlString(Snapshot* snapshot, char* xmlString)
                     if (nullptr != idAttribute) {
                         std::map<std::string, std::string>* nodeMap = &snapshot->nodes[idAttribute->value()];
                         for (rapidxml::xml_attribute<>* attribute = node->first_attribute();
-                             attribute; attribute = attribute->next_attribute()) {
+                            attribute; attribute = attribute->next_attribute()) {
                             (*nodeMap)[attribute->name()] = attribute->value();
                         }
                     }
@@ -82,7 +82,7 @@ void loadSnapshotFromXmlString(Snapshot* snapshot, char* xmlString)
                     if (nullptr != idAttribute) {
                         std::map<std::string, std::string>* edgeMap = &snapshot->edges[idAttribute->value()];
                         for (rapidxml::xml_attribute<>* attribute = node->first_attribute();
-                             attribute; attribute = attribute->next_attribute()) {
+                            attribute; attribute = attribute->next_attribute()) {
                             (*edgeMap)[attribute->name()] = attribute->value();
                         }
                     }
@@ -96,7 +96,7 @@ void loadSnapshotFromXmlString(Snapshot* snapshot, char* xmlString)
                     if (nullptr != idAttribute) {
                         std::map<std::string, std::string>* partMap = &snapshot->parts[idAttribute->value()];
                         for (rapidxml::xml_attribute<>* attribute = node->first_attribute();
-                             attribute; attribute = attribute->next_attribute()) {
+                            attribute; attribute = attribute->next_attribute()) {
                             (*partMap)[attribute->name()] = attribute->value();
                         }
                     }
