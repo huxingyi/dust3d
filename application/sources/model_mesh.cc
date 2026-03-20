@@ -54,9 +54,10 @@ void ModelMesh::removeColor()
 
     for (int i = 0; i < this->m_triangleVertexCount; ++i) {
         auto& vertex = this->m_triangleVertices[i];
-        vertex.colorR = 1.0;
-        vertex.colorG = 1.0;
-        vertex.colorB = 1.0;
+        // Warm paper-white
+        vertex.colorR = 0.96;
+        vertex.colorG = 0.94;
+        vertex.colorB = 0.91;
     }
 }
 

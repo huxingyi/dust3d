@@ -22,6 +22,13 @@ out vec4 fragColor;
 
 const float PI = 3.1415926;
 
+// Defined as a constant for a fixed "Top-Right" light source
+// X: 10.0 (Right), Y: 15.0 (High Up), Z: 10.0 (Slightly in front of objects)
+const vec3 LIGHT_POS = vec3(10.0, 15.0, 10.0);
+
+// Soft cool gray for shadows
+const vec3 SHADOW_TINT = vec3(0.82, 0.81, 0.85);
+
 vec3 fresnelSchlickRoughness(float NoV, vec3 f0, float roughness)
 {
     return f0 + (max(vec3(1.0 - roughness), f0) - f0) * pow(clamp(1.0 - NoV, 0.0, 1.0), 5.0);
@@ -41,36 +48,24 @@ void main()
         normal = texture(normalMapId, pointTexCoord).rgb;
         normal = pointTBN * normalize(normal * 2.0 - 1.0);
     }
-    float metalness = pointMetalness;
-    if (1 == metalnessMapEnabled) {
-        metalness = texture(metalnessRoughnessAoMapId, pointTexCoord).b;
-    }
-    float roughness = pointRoughness;
-    if (1 == roughnessMapEnabled) {
-        roughness = texture(metalnessRoughnessAoMapId, pointTexCoord).g;
-    }
-    float ambientOcclusion = 1.0;
-    if (1 == aoMapEnabled) {
-        ambientOcclusion = texture(metalnessRoughnessAoMapId, pointTexCoord).r;
-    }
 
-    vec3 n = normal;
-    vec3 v = normalize(eyePosition - pointPosition);
-    vec3 r = reflect(-v, n);
+    vec3 lightDir = normalize(LIGHT_POS - pointPosition);
 
-    float NoV = abs(dot(n, v)) + 1e-5;
+    // Soft "Half-Lambert" Diffuse
+    // This maps dot product from [-1, 1] to [0.5, 1.0] 
+    // This ensures the "dark side" is never pitch black
+    float diff = dot(normal, lightDir) * 0.25 + 0.75;
 
-    vec3 irradiance = texture(environmentIrradianceMapId, r).rgb;
-    vec3 diffuse = irradiance * (1.0 - metalness) * color;
+    // --- Hemispherical Component ---
+    // Objects are slightly darker on their underside to simulate contact with the floor
+    float hemi = smoothstep(-0.2, 1.0, normal.y);
+    vec3 ambient = mix(SHADOW_TINT, vec3(1.0), hemi);
 
-    vec3 f0 = mix(vec3(0.04), color, metalness);
-    vec3 fresnelFactor = fresnelSchlickRoughness(NoV, f0, roughness);
-    vec3 specular = fresnelFactor * texture(environmentSpecularMapId, r, 0.0).rgb;
+    // Combine light contribution
+    vec3 lighting = ambient * diff;
 
-    color = (diffuse + specular) * ambientOcclusion;
+    color = color * lighting;
 
-    color = color / (color + vec3(1.0));
-    color = pow(color, vec3(1.0/2.2));
-
-    fragColor = vec4(color, alpha);
+    // Apply a light gamma correction for the "washed out" architectural feel
+    fragColor = vec4(pow(color, vec3(1.0 / 1.1)), alpha);
 }
