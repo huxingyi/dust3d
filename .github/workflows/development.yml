@@ -30,11 +30,15 @@ jobs:
   linux-build:
     runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install Qt
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y qt5-default libqt5svg5-dev
+        uses: jurplel/install-qt-action@v3
+        with:
+          aqtversion: '==3.3.*'
+          version: '5.15.2'
+          host: 'linux'
+          target: 'desktop'
+          archives: 'qttools qtsvg qtimageformats qtbase'
       - name: Build application
         run: |
           cd ${GITHUB_WORKSPACE}/application
