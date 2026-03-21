@@ -28,7 +28,7 @@ jobs:
             exit 1
           fi
   linux-build:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v3
       - name: Install Qt
@@ -41,7 +41,7 @@ jobs:
           qmake
           make -j`nproc`
   win32-msvc-build:
-    runs-on: 	windows-2019
+    runs-on: 	windows-2022
     steps:
       - uses: actions/checkout@v3
       - name: Set up Visual Studio shell
