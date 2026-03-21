@@ -38,7 +38,7 @@ jobs:
           version: '5.15.2'
           host: 'linux'
           target: 'desktop'
-          archives: 'qttools qtsvg qtimageformats qtbase'
+          archives: 'qttools qtsvg qtimageformats qtbase icu'
       - name: Build application
         run: |
           cd ${GITHUB_WORKSPACE}/application
