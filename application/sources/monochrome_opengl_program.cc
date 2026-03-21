@@ -36,6 +36,7 @@ void MonochromeOpenGLProgram::load(bool isCoreProfile)
     m_isCoreProfile = isCoreProfile;
     if (m_isCoreProfile) {
         addShaderFromResource(QOpenGLShader::Vertex, ":/shaders/monochrome_core.vert");
+        addShaderFromResource(QOpenGLShader::Geometry, ":/shaders/monochrome_core.geom");
         addShaderFromResource(QOpenGLShader::Fragment, ":/shaders/monochrome_core.frag");
     } else {
 #if defined(Q_OS_WASM)

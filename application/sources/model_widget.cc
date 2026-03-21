@@ -482,7 +482,7 @@ void ModelWidget::paintGL()
     // that means the wireframe will not looking good,
     // hence, we use the polygon offset to mimic thickness of wireframes
     f->glEnable(GL_POLYGON_OFFSET_FILL);
-    f->glPolygonOffset(1.0, 1.0);
+    f->glPolygonOffset(1.0f, 1.0f);
 
     f->glViewport(0, 0, m_widthInPixels, m_heightInPixels);
 
@@ -519,6 +519,10 @@ void ModelWidget::drawWireframe()
     m_monochromeOpenGLProgram->setUniformValue(m_monochromeOpenGLProgram->getUniformLocationByName("projectionMatrix"), m_projection);
     m_monochromeOpenGLProgram->setUniformValue(m_monochromeOpenGLProgram->getUniformLocationByName("modelMatrix"), m_world);
     m_monochromeOpenGLProgram->setUniformValue(m_monochromeOpenGLProgram->getUniformLocationByName("viewMatrix"), m_camera);
+
+    if (m_monochromeOpenGLProgram->isCoreProfile()) {
+        m_monochromeOpenGLProgram->setUniformValue("viewportSize", QVector2D(m_widthInPixels, m_heightInPixels));
+    }
 
     if (m_wireframeOpenGLObject)
         m_wireframeOpenGLObject->draw();

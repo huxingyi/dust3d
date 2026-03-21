@@ -13,6 +13,7 @@
         <file>shaders/monochrome.vert</file>
         <file>shaders/monochrome.frag</file>
         <file>shaders/monochrome_core.vert</file>
+        <file>shaders/monochrome_core.geom</file>
         <file>shaders/monochrome_core.frag</file>
         <file>shaders/monochrome_wasm.vert</file>
         <file>shaders/monochrome_wasm.frag</file>

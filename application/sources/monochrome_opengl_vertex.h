@@ -10,10 +10,12 @@ typedef struct
     GLfloat posX;
     GLfloat posY;
     GLfloat posZ;
-    GLfloat colorR = 0.0;
-    GLfloat colorG = 0.0;
-    GLfloat colorB = 0.0;
-    GLfloat alpha = 1.0;
+    // Dark blue-grey
+    GLfloat colorR = 0.15f;
+    GLfloat colorG = 0.15f;
+    GLfloat colorB = 0.18f;
+    // Tiny bit of alpha lets the base color of the model show through the lines
+    GLfloat alpha = 0.9f;
 } MonochromeOpenGLVertex;
 #pragma pack(pop)
 
