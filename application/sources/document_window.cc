@@ -617,6 +617,7 @@ DocumentWindow::DocumentWindow()
     connect(m_document, &Document::textureChanged, this, &DocumentWindow::documentChanged);
     connect(m_document, &Document::turnaroundChanged, this, &DocumentWindow::documentChanged);
     connect(m_document, &Document::optionsChanged, this, &DocumentWindow::documentChanged);
+    connect(m_document, &Document::rigTypeChanged, this, &DocumentWindow::documentChanged);
 
     connect(m_modelRenderWidget, &ModelWidget::customContextMenuRequested, [=](const QPoint& pos) {
         canvasGraphicsWidget->showContextMenu(canvasGraphicsWidget->mapFromGlobal(m_modelRenderWidget->mapToGlobal(pos)));

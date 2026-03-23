@@ -253,6 +253,7 @@ signals:
     void ylockStateChanged();
     void zlockStateChanged();
     void radiusLockStateChanged();
+    void rigTypeChanged(QString rigType);
 
 public: // need initialize
     QImage* textureImage = nullptr;
@@ -360,6 +361,10 @@ public:
     void addOriginZ(float originZ)
     {
         m_originZ += originZ;
+    }
+    QString getRigType() const
+    {
+        return m_rigType;
     }
     const Node* findNode(dust3d::Uuid nodeId) const;
     const Edge* findEdge(dust3d::Uuid edgeId) const;
@@ -475,6 +480,7 @@ public slots:
     void setYlockState(bool locked);
     void setZlockState(bool locked);
     void setRadiusLockState(bool locked);
+    void setRigType(QString rigType);
 
 private:
     void resolveSnapshotBoundingBox(const dust3d::Snapshot& snapshot, QRectF* mainProfile, QRectF* sideProfile);
@@ -510,6 +516,7 @@ private:
     float m_originX = 0;
     float m_originY = 0;
     float m_originZ = 0;
+    QString m_rigType = "None";
     dust3d::Uuid m_currentCanvasComponentId;
     bool m_allPositionRelatedLocksEnabled = true;
 

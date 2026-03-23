@@ -69,14 +69,30 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
 
     setLayout(mainLayout);
 
+    // Initialize combo box with current document rigType
+    QString currentRigType = m_document->getRigType();
+    int index = 0;
+    for (int i = 0; i < m_rigTypeComboBox->count(); ++i) {
+        if (m_rigTypeComboBox->itemText(i).compare(currentRigType, Qt::CaseInsensitive) == 0) {
+            index = i;
+            break;
+        }
+    }
+    m_rigTypeComboBox->setCurrentIndex(index);
+
     // Connect signals
+    // Combo box changes trigger document's setRigType slot
     connect(m_rigTypeComboBox, QOverload<const QString&>::of(&QComboBox::currentTextChanged),
+        m_document, &Document::setRigType);
+    
+    // Document's rigTypeChanged signal updates the bone tree view
+    connect(m_document, &Document::rigTypeChanged,
         this, &BoneManageWidget::onRigTypeChanged);
 
     connect(this, &QWidget::customContextMenuRequested, this, &BoneManageWidget::showContextMenu);
 
-    // Initialize tree view
-    updateBoneTreeView(m_rigTypeComboBox->currentText());
+    // Initialize tree view with current rig type
+    updateBoneTreeView(currentRigType);
 }
 
 void BoneManageWidget::showContextMenu(const QPoint& pos)
@@ -219,8 +235,17 @@ bool BoneManageWidget::loadRigFromXml(const QString& filePath)
 
 void BoneManageWidget::onRigTypeChanged(const QString& rigType)
 {
+    // Update the combo box selection to match the document's current rig type
+    int index = 0;
+    for (int i = 0; i < m_rigTypeComboBox->count(); ++i) {
+        if (m_rigTypeComboBox->itemText(i).compare(rigType, Qt::CaseInsensitive) == 0) {
+            index = i;
+            break;
+        }
+    }
+    m_rigTypeComboBox->setCurrentIndex(index);
+    
     updateBoneTreeView(rigType);
-    emit rigTypeChanged(rigType);  // Emit the signal if needed elsewhere
 }
 
 void BoneManageWidget::updateBoneTreeView(const QString& rigType)

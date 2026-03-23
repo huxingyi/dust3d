@@ -29,8 +29,6 @@ struct RigStructure {
 
 class BoneManageWidget : public QWidget {
     Q_OBJECT
-signals:
-    void rigTypeChanged(const QString& rigType);
 
 public slots:
     void showContextMenu(const QPoint& pos);

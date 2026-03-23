@@ -1525,6 +1525,14 @@ void Document::setRadiusLockState(bool locked)
     emit radiusLockStateChanged();
 }
 
+void Document::setRigType(QString rigType)
+{
+    if (m_rigType == rigType)
+        return;
+    m_rigType = rigType;
+    emit rigTypeChanged(rigType);
+}
+
 void Document::setComponentPreviewImage(const dust3d::Uuid& componentId, std::unique_ptr<QImage> image)
 {
     Document::Component* component = (Document::Component*)findComponent(componentId);
@@ -1859,6 +1867,7 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
         canvas["originX"] = std::to_string(getOriginX());
         canvas["originY"] = std::to_string(getOriginY());
         canvas["originZ"] = std::to_string(getOriginZ());
+        canvas["rigType"] = m_rigType.toUtf8().constData();
         snapshot->canvas = canvas;
     }
 }
@@ -1866,6 +1875,8 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
 void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSource source)
 {
     bool isOriginChanged = false;
+    bool isRigTypeChanged = false;
+    QString rigType;
     if (SnapshotSource::Paste != source && SnapshotSource::Import != source) {
         const auto& originXit = snapshot.canvas.find("originX");
         const auto& originYit = snapshot.canvas.find("originY");
@@ -1875,6 +1886,11 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
             setOriginY(dust3d::String::toFloat(originYit->second));
             setOriginZ(dust3d::String::toFloat(originZit->second));
             isOriginChanged = true;
+        }
+        const auto& rigTypeIt = snapshot.canvas.find("rigType");
+        if (rigTypeIt != snapshot.canvas.end()) {
+            rigType = QString::fromUtf8(rigTypeIt->second.c_str());
+            isRigTypeChanged = true;
         }
     }
 
@@ -2164,6 +2180,10 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
     }
     for (const auto& edgeIt : newAddedEdgeIds) {
         emit checkEdge(edgeIt);
+    }
+
+    if (isRigTypeChanged) {
+        setRigType(rigType);
     }
 }
 
