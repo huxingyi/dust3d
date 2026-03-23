@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rig type="bird" name="Bird">
+    <description>Bird rig with wings, legs, and tail</description>
+    
+    <!-- Body -->
+    <bone name="Pelvis" parent="">
+        <position x="0" y="0.5" z="0"/>
+        <endPosition x="0" y="0.6" z="0.1"/>
+    </bone>
+    
+    <bone name="Spine" parent="Pelvis">
+        <position x="0" y="0.6" z="0.1"/>
+        <endPosition x="0" y="0.7" z="0.2"/>
+    </bone>
+    
+    <bone name="Chest" parent="Spine">
+        <position x="0" y="0.7" z="0.2"/>
+        <endPosition x="0" y="0.8" z="0.3"/>
+    </bone>
+    
+    <bone name="Neck" parent="Chest">
+        <position x="0" y="0.8" z="0.3"/>
+        <endPosition x="0" y="0.95" z="0.4"/>
+    </bone>
+    
+    <bone name="Head" parent="Neck">
+        <position x="0" y="0.95" z="0.4"/>
+        <endPosition x="0" y="1.05" z="0.55"/>
+    </bone>
+    
+    <bone name="Beak" parent="Head">
+        <position x="0" y="1.0" z="0.55"/>
+        <endPosition x="0" y="0.98" z="0.75"/>
+    </bone>
+    
+    <!-- Tail -->
+    <bone name="TailBase" parent="Spine">
+        <position x="0" y="0.65" z="-0.1"/>
+        <endPosition x="0" y="0.6" z="-0.3"/>
+    </bone>
+    
+    <bone name="TailFeathers" parent="TailBase">
+        <position x="0" y="0.6" z="-0.3"/>
+        <endPosition x="0" y="0.5" z="-0.5"/>
+    </bone>
+    
+    <!-- Left Wing -->
+    <bone name="LeftWingShoulder" parent="Chest">
+        <position x="0.25" y="0.75" z="0.25"/>
+        <endPosition x="0.5" y="0.7" z="0.2"/>
+    </bone>
+    
+    <bone name="LeftWingElbow" parent="LeftWingShoulder">
+        <position x="0.5" y="0.7" z="0.2"/>
+        <endPosition x="0.8" y="0.65" z="0.1"/>
+    </bone>
+    
+    <bone name="LeftWingHand" parent="LeftWingElbow">
+        <position x="0.8" y="0.65" z="0.1"/>
+        <endPosition x="1.1" y="0.6" z="0"/>
+    </bone>
+    
+    <!-- Right Wing -->
+    <bone name="RightWingShoulder" parent="Chest">
+        <position x="-0.25" y="0.75" z="0.25"/>
+        <endPosition x="-0.5" y="0.7" z="0.2"/>
+    </bone>
+    
+    <bone name="RightWingElbow" parent="RightWingShoulder">
+        <position x="-0.5" y="0.7" z="0.2"/>
+        <endPosition x="-0.8" y="0.65" z="0.1"/>
+    </bone>
+    
+    <bone name="RightWingHand" parent="RightWingElbow">
+        <position x="-0.8" y="0.65" z="0.1"/>
+        <endPosition x="-1.1" y="0.6" z="0"/>
+    </bone>
+    
+    <!-- Left Leg -->
+    <bone name="LeftUpperLeg" parent="Pelvis">
+        <position x="0.15" y="0.4" z="0.05"/>
+        <endPosition x="0.15" y="0.15" z="0.1"/>
+    </bone>
+    
+    <bone name="LeftLowerLeg" parent="LeftUpperLeg">
+        <position x="0.15" y="0.15" z="0.1"/>
+        <endPosition x="0.15" y="0.0" z="0.15"/>
+    </bone>
+    
+    <bone name="LeftFoot" parent="LeftLowerLeg">
+        <position x="0.15" y="0.0" z="0.15"/>
+        <endPosition x="0.15" y="-0.05" z="0.25"/>
+    </bone>
+    
+    <!-- Right Leg -->
+    <bone name="RightUpperLeg" parent="Pelvis">
+        <position x="-0.15" y="0.4" z="0.05"/>
+        <endPosition x="-0.15" y="0.15" z="0.1"/>
+    </bone>
+    
+    <bone name="RightLowerLeg" parent="RightUpperLeg">
+        <position x="-0.15" y="0.15" z="0.1"/>
+        <endPosition x="-0.15" y="0.0" z="0.15"/>
+    </bone>
+    
+    <bone name="RightFoot" parent="RightLowerLeg">
+        <position x="-0.15" y="0.0" z="0.15"/>
+        <endPosition x="-0.15" y="-0.05" z="0.25"/>
+    </bone>
+    
+</rig>

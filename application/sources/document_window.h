@@ -20,6 +20,7 @@
 class Document;
 class SkeletonGraphicsWidget;
 class PartManageWidget;
+class BoneManageWidget;
 class ToolbarButton;
 class SpinnableToolbarIcon;
 
@@ -95,6 +96,7 @@ public slots:
     void forceUpdateRenderModel();
     void updateRenderWireframe();
     void forceUpdateRenderWireframe();
+    void onBonesDockerVisibilityChanged(bool visible);
 
 private:
     void setCurrentFilename(const QString& filename);
@@ -149,6 +151,7 @@ private:
 
     QMenu* m_windowMenu = nullptr;
     QAction* m_showPartsListAction = nullptr;
+    QAction* m_showBonesListAction = nullptr;
     QAction* m_showDebugDialogAction = nullptr;
 
     QMenu* m_helpMenu = nullptr;
@@ -174,6 +177,13 @@ private:
     bool m_isComponentPreviewImageDecorationsObsolete = false;
 
     PartManageWidget* m_partManageWidget = nullptr;
+    BoneManageWidget* m_boneManageWidget = nullptr;
+    QDockWidget* m_bonesDocker = nullptr;
+
+    bool m_savedXlockState = false;
+    bool m_savedYlockState = false;
+    bool m_savedZlockState = false;
+    bool m_savedRadiusLockState = false;
 
     SpinnableToolbarIcon* m_inprogressIndicator = nullptr;
 

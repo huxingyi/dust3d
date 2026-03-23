@@ -1,5 +1,6 @@
 #include "document_window.h"
 #include "about_widget.h"
+#include "bone_manage_widget.h"
 #include "cut_face_preview.h"
 #include "document.h"
 #include "document_saver.h"
@@ -270,6 +271,14 @@ DocumentWindow::DocumentWindow()
     partsDocker->setWidget(m_partManageWidget);
     addDockWidget(Qt::RightDockWidgetArea, partsDocker);
 
+    m_bonesDocker = new QDockWidget(tr("Bones"), this);
+    m_bonesDocker->setAllowedAreas(Qt::RightDockWidgetArea);
+    m_boneManageWidget = new BoneManageWidget(m_document);
+    m_bonesDocker->setWidget(m_boneManageWidget);
+    addDockWidget(Qt::RightDockWidgetArea, m_bonesDocker);
+
+    tabifyDockWidget(partsDocker, m_bonesDocker);
+
     partsDocker->raise();
 
     QWidget* titleBarWidget = new QWidget;
@@ -410,6 +419,13 @@ DocumentWindow::DocumentWindow()
         partsDocker->raise();
     });
     m_windowMenu->addAction(m_showPartsListAction);
+
+    m_showBonesListAction = new QAction(tr("Bones"), this);
+    connect(m_showBonesListAction, &QAction::triggered, [=]() {
+        m_bonesDocker->show();
+        m_bonesDocker->raise();
+    });
+    m_windowMenu->addAction(m_showBonesListAction);
 
     QMenu* dialogsMenu = m_windowMenu->addMenu(tr("Dialogs"));
     connect(dialogsMenu, &QMenu::aboutToShow, [=]() {
@@ -610,6 +626,8 @@ DocumentWindow::DocumentWindow()
     connect(m_document, &Document::ylockStateChanged, this, &DocumentWindow::updateYlockButtonState);
     connect(m_document, &Document::zlockStateChanged, this, &DocumentWindow::updateZlockButtonState);
     connect(m_document, &Document::radiusLockStateChanged, this, &DocumentWindow::updateRadiusLockButtonState);
+
+    connect(m_bonesDocker, &QDockWidget::visibilityChanged, this, &DocumentWindow::onBonesDockerVisibilityChanged);
 
     initializeShortcuts();
 
@@ -1574,4 +1592,27 @@ void DocumentWindow::updateRenderWireframe()
     if (m_document->resultMeshId() == m_currentUpdatedWireframeId)
         return;
     forceUpdateRenderWireframe();
+}
+
+void DocumentWindow::onBonesDockerVisibilityChanged(bool visible)
+{
+    if (visible) {
+        // Bones docker became active - save current lock states and lock everything
+        m_savedXlockState = m_document->xlocked;
+        m_savedYlockState = m_document->ylocked;
+        m_savedZlockState = m_document->zlocked;
+        m_savedRadiusLockState = m_document->radiusLocked;
+
+        // Lock all axes and radius
+        m_document->setXlockState(true);
+        m_document->setYlockState(true);
+        m_document->setZlockState(true);
+        m_document->setRadiusLockState(true);
+    } else {
+        // Bones docker became inactive - restore previous lock states
+        m_document->setXlockState(m_savedXlockState);
+        m_document->setYlockState(m_savedYlockState);
+        m_document->setZlockState(m_savedZlockState);
+        m_document->setRadiusLockState(m_savedRadiusLockState);
+    }
 }
