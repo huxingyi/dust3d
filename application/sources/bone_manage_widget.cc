@@ -76,10 +76,11 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
     m_assignButton->setToolTip(tr("Assign the selected edges from the canvas to the selected bone"));
     mainLayout->addWidget(m_assignButton);
 
-    // Generate Rig Bindings button
-    m_generateRigButton = new QPushButton(tr("Generate Rig Bindings"));
-    m_generateRigButton->setToolTip(tr("Generate bone skinning bindings from the assigned edges"));
-    mainLayout->addWidget(m_generateRigButton);
+    // Model Widget for rendering the actual rig skeleton mesh (computed from edge assignments)
+    m_actualRigModelWidget = new ModelWidget();
+    m_actualRigModelWidget->setMinimumHeight(250);
+    m_actualRigModelWidget->enableZoom(false);
+    mainLayout->addWidget(m_actualRigModelWidget);
 
     mainLayout->addStretch();
 
@@ -115,9 +116,9 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
     connect(m_assignButton, &QPushButton::clicked,
         this, &BoneManageWidget::assignSelectedEdgesToBone);
     
-    // Connect button click to generate rig bindings
-    connect(m_generateRigButton, &QPushButton::clicked,
-        this, &BoneManageWidget::generateRigBindings);
+    // Connect rig generation ready signal to update actual rig model widget
+    connect(m_document, &Document::rigGenerationReady,
+        this, &BoneManageWidget::onRigGenerationReady);
 
     // Initialize tree view with current rig type
     updateBoneTreeView(currentRigType);
@@ -130,6 +131,11 @@ BoneManageWidget::~BoneManageWidget()
         m_meshGenerationThread->quit();
         m_meshGenerationThread->wait();
         m_meshGenerationThread = nullptr;
+    }
+    if (m_actualRigMeshThread) {
+        m_actualRigMeshThread->quit();
+        m_actualRigMeshThread->wait();
+        m_actualRigMeshThread = nullptr;
     }
 }
 
@@ -313,11 +319,13 @@ void BoneManageWidget::updateBoneTreeView(const QString& rigType)
     if (rigType == tr("None")) {
         m_boneTreeView->hide();
         m_modelWidget->hide();
+        m_actualRigModelWidget->hide();
         return;
     }
 
     m_boneTreeView->show();
     m_modelWidget->show();
+    m_actualRigModelWidget->show();
 
     // Find the rig structure by name
     RigStructure* selectedRig = nullptr;
@@ -498,25 +506,77 @@ void BoneManageWidget::assignSelectedEdgesToBone()
     qDebug() << "Assigned" << selectedEdgeIds.size() << "edges to bone:" << m_selectedBoneName;
 }
 
-void BoneManageWidget::generateRigBindings()
+void BoneManageWidget::onRigGenerationReady()
 {
-    if (!m_document) {
-        qWarning() << "Cannot generate rig bindings: no document";
+    const RigStructure& actualRig = m_document->getActualRigStructure();
+    if (actualRig.bones.empty())
+        return;
+
+    // If an actual rig mesh generation thread is already running, mark as obsolete
+    if (nullptr != m_actualRigMeshThread) {
+        m_actualRigMeshObsolete = true;
         return;
     }
 
-    qDebug() << "Generating rig bindings...";
-    
-    // The rig bindings generation is handled by the MeshGenerator after mesh generation
-    // The applyRigBindings() method will be called during the normal mesh generation process
-    // For now, we could trigger a mesh regeneration if the rig bindings are not yet applied
-    
-    // In a full implementation, this could trigger:
-    // 1. A regeneration of the mesh with rig bindings applied
-    // 2. Or direct generation of bindings if a live mesh object is available
-    
-    // This is a placeholder that can be expanded once the mesh generation pipeline
-    // is updated to explicitly call applyRigBindings() after generating the mesh
-    
-    qDebug() << "Rig bindings generation queued. They will be applied during next mesh generation.";
+    m_actualRigMeshObsolete = false;
+
+    m_actualRigMeshWorker = std::make_unique<RigSkeletonMeshWorker>();
+    m_actualRigMeshWorker->setParameters(actualRig, QString(), 0.02);
+
+    m_actualRigMeshThread = new QThread;
+    m_actualRigMeshWorker->moveToThread(m_actualRigMeshThread);
+
+    connect(m_actualRigMeshThread, &QThread::started, m_actualRigMeshWorker.get(), &RigSkeletonMeshWorker::process);
+    connect(m_actualRigMeshWorker.get(), &RigSkeletonMeshWorker::finished, this, &BoneManageWidget::onActualRigMeshReady);
+    connect(m_actualRigMeshWorker.get(), &RigSkeletonMeshWorker::finished, m_actualRigMeshThread, &QThread::quit);
+    connect(m_actualRigMeshThread, &QThread::finished, this, &BoneManageWidget::onActualRigMeshThreadFinished);
+    connect(m_actualRigMeshThread, &QThread::finished, m_actualRigMeshThread, &QThread::deleteLater);
+
+    qDebug() << "Starting actual rig mesh generation";
+    m_actualRigMeshThread->start();
+}
+
+void BoneManageWidget::onActualRigMeshReady()
+{
+    if (!m_actualRigMeshWorker)
+        return;
+
+    const auto& vertices = m_actualRigMeshWorker->getVertices();
+    const auto& faces = m_actualRigMeshWorker->getFaces();
+
+    if (vertices.empty() || faces.empty()) {
+        qWarning() << "Failed to generate actual rig skeleton mesh";
+        return;
+    }
+
+    std::vector<std::vector<dust3d::Vector3>> triangleVertexNormals;
+    for (const auto& face : faces) {
+        if (face.size() >= 3) {
+            dust3d::Vector3 faceNormal = dust3d::Vector3::normal(
+                vertices[face[0]], vertices[face[1]], vertices[face[2]]);
+            triangleVertexNormals.push_back({faceNormal, faceNormal, faceNormal});
+        }
+    }
+
+    const auto* vertexProperties = m_actualRigMeshWorker->getVertexProperties();
+
+    ModelMesh* rigMesh = new ModelMesh(vertices, faces, triangleVertexNormals,
+        dust3d::Color(Theme::green.redF(), Theme::green.greenF(), Theme::green.blueF()),
+        0.0, 1.0, vertexProperties);
+
+    if (m_actualRigModelWidget) {
+        m_actualRigModelWidget->updateMesh(rigMesh);
+    }
+
+    qDebug() << "Actual rig skeleton mesh generated with" << vertices.size() << "vertices";
+}
+
+void BoneManageWidget::onActualRigMeshThreadFinished()
+{
+    m_actualRigMeshThread = nullptr;
+    m_actualRigMeshWorker = nullptr;
+
+    if (m_actualRigMeshObsolete) {
+        onRigGenerationReady();
+    }
 }

@@ -1343,27 +1343,4 @@ void MeshGenerator::generate()
     }
 }
 
-void MeshGenerator::applyRigBindings()
-{
-    if (!m_object || !m_snapshot) {
-        return;
-    }
-
-    // Use RigGenerator to compute bone influences and bind vertices
-    RigGenerator rigGenerator;
-    std::map<Uuid, NodeBoneInfluence> nodeBoneInfluences;
-
-    if (!rigGenerator.computeNodeBoneInfluences(m_snapshot, nodeBoneInfluences)) {
-        dust3dDebug << "Failed to compute node bone influences:" << rigGenerator.getErrorMessage().c_str();
-        return;
-    }
-
-    if (!rigGenerator.computeVertexBoneBindings(m_object, nodeBoneInfluences)) {
-        dust3dDebug << "Failed to compute vertex bone bindings:" << rigGenerator.getErrorMessage().c_str();
-        return;
-    }
-
-    dust3dDebug << "Applied rig bindings to" << m_object->vertices.size() << "vertices";
-}
-
 }

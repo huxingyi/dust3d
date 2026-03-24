@@ -29,7 +29,9 @@ public slots:
     void assignSelectedEdgesToBone();
     void onRigSkeletonMeshReady();
     void onMeshGenerationThreadFinished();
-    void generateRigBindings();
+    void onRigGenerationReady();
+    void onActualRigMeshReady();
+    void onActualRigMeshThreadFinished();
 
 public:
     BoneManageWidget(Document* document, QWidget* parent = nullptr);
@@ -44,7 +46,7 @@ private:
     QStandardItemModel* m_boneTreeModel = nullptr;
     ModelWidget* m_modelWidget = nullptr;
     QPushButton* m_assignButton = nullptr;
-    QPushButton* m_generateRigButton = nullptr;
+    ModelWidget* m_actualRigModelWidget = nullptr;
     std::unique_ptr<QMenu> m_contextMenu;
     std::map<QString, RigStructure> m_rigStructures;
     QString m_selectedBoneName;
@@ -53,6 +55,9 @@ private:
     bool m_rigSkeletonMeshObsolete = false;
     QString m_pendingRigType;
     QString m_pendingSelectedBoneName;
+    std::unique_ptr<RigSkeletonMeshWorker> m_actualRigMeshWorker;
+    QThread* m_actualRigMeshThread = nullptr;
+    bool m_actualRigMeshObsolete = false;
     
     void loadRigStructures();
     bool loadRigFromXml(const QString& filePath);

@@ -2,6 +2,7 @@
 #define DUST3D_APPLICATION_DOCUMENT_H_
 
 #include "debug.h"
+#include "bone_structure.h"
 #include "model_mesh.h"
 #include "monochrome_mesh.h"
 #include "theme.h"
@@ -23,6 +24,7 @@
 
 class UvMapGenerator;
 class MeshGenerator;
+class RigGeneratorWorker;
 
 class Document : public QObject {
     Q_OBJECT
@@ -255,6 +257,7 @@ signals:
     void zlockStateChanged();
     void radiusLockStateChanged();
     void rigTypeChanged(QString rigType);
+    void rigGenerationReady();
 
 public: // need initialize
     QImage* textureImage = nullptr;
@@ -366,6 +369,10 @@ public:
     QString getRigType() const
     {
         return m_rigType;
+    }
+    const RigStructure& getActualRigStructure() const
+    {
+        return m_actualRigStructure;
     }
     const Node* findNode(dust3d::Uuid nodeId) const;
     const Edge* findEdge(dust3d::Uuid edgeId) const;
@@ -483,6 +490,8 @@ public slots:
     void setZlockState(bool locked);
     void setRadiusLockState(bool locked);
     void setRigType(QString rigType);
+    void generateRig();
+    void rigReady();
 
 private:
     void resolveSnapshotBoundingBox(const dust3d::Snapshot& snapshot, QRectF* mainProfile, QRectF* sideProfile);
@@ -521,6 +530,13 @@ private:
     QString m_rigType = "None";
     dust3d::Uuid m_currentCanvasComponentId;
     bool m_allPositionRelatedLocksEnabled = true;
+    std::map<QString, RigStructure> m_rigStructures;
+    RigGeneratorWorker* m_rigGeneratorWorker = nullptr;
+    QThread* m_rigGenerationThread = nullptr;
+    bool m_isRigObsolete = false;
+    RigStructure m_actualRigStructure;
+    void loadRigStructures();
+    bool loadRigFromXml(const QString& filePath);
 
 private:
     static unsigned long m_maxSnapshot;

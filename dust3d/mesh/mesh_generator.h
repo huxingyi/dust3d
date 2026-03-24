@@ -120,10 +120,6 @@ public:
     void setId(uint64_t id);
     uint64_t id();
 
-    // Apply rig bindings to the generated mesh using the snapshot's edge bone assignments
-    // This should be called after generate() to apply skeletal rig weights to vertices
-    void applyRigBindings();
-
 protected:
     std::set<Uuid> m_generatedPreviewComponentIds;
     std::map<Uuid, ComponentPreview> m_generatedComponentPreviews;

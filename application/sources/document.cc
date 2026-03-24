@@ -1,11 +1,13 @@
 #include "document.h"
 #include "image_forever.h"
 #include "mesh_generator.h"
+#include "rig_generator_worker.h"
 #include "uv_map_generator.h"
 #include <QApplication>
 #include <QClipboard>
 #include <QDebug>
 #include <QElapsedTimer>
+#include <QFile>
 #include <QFileDialog>
 #include <QGuiApplication>
 #include <QMimeData>
@@ -16,11 +18,13 @@
 #include <dust3d/base/texture_type.h>
 #include <functional>
 #include <queue>
+#include <rapidxml.hpp>
 
 unsigned long Document::m_maxSnapshot = 1000;
 
 Document::Document()
 {
+    loadRigStructures();
 }
 
 Document::~Document()
@@ -1474,6 +1478,7 @@ void Document::setEdgeBoneName(dust3d::Uuid edgeId, const QString& boneName)
     
     edgeIt->second.boneName = boneName;
     emit optionsChanged();
+    generateRig();
 }
 
 void Document::enableAllPositionRelatedLocks()
@@ -1541,6 +1546,168 @@ void Document::setRigType(QString rigType)
         return;
     m_rigType = rigType;
     emit rigTypeChanged(rigType);
+    generateRig();
+}
+
+void Document::generateRig()
+{
+    if (m_rigType == "None" || m_rigType.isEmpty())
+        return;
+
+    // Find the template rig structure for current rig type
+    RigStructure* templateRig = nullptr;
+    for (auto& entry : m_rigStructures) {
+        if (entry.second.name == m_rigType) {
+            templateRig = &entry.second;
+            break;
+        }
+    }
+
+    if (!templateRig || templateRig->bones.empty())
+        return;
+
+    if (nullptr != m_rigGeneratorWorker) {
+        m_isRigObsolete = true;
+        return;
+    }
+
+    m_isRigObsolete = false;
+
+    auto snapshot = std::make_unique<dust3d::Snapshot>();
+    toSnapshot(snapshot.get());
+
+    m_rigGeneratorWorker = new RigGeneratorWorker;
+    m_rigGeneratorWorker->setParameters(std::move(snapshot), *templateRig);
+
+    m_rigGenerationThread = new QThread;
+    m_rigGeneratorWorker->moveToThread(m_rigGenerationThread);
+    connect(m_rigGenerationThread, &QThread::started, m_rigGeneratorWorker, &RigGeneratorWorker::process);
+    connect(m_rigGeneratorWorker, &RigGeneratorWorker::finished, this, &Document::rigReady);
+    connect(m_rigGeneratorWorker, &RigGeneratorWorker::finished, m_rigGenerationThread, &QThread::quit);
+    connect(m_rigGenerationThread, &QThread::finished, m_rigGenerationThread, &QThread::deleteLater);
+    m_rigGenerationThread->start();
+}
+
+void Document::rigReady()
+{
+    if (m_rigGeneratorWorker->isSuccessful()) {
+        m_actualRigStructure = m_rigGeneratorWorker->getActualRig();
+    }
+
+    delete m_rigGeneratorWorker;
+    m_rigGeneratorWorker = nullptr;
+    m_rigGenerationThread = nullptr;
+
+    qDebug() << "Rig generation done";
+
+    emit rigGenerationReady();
+
+    if (m_isRigObsolete) {
+        generateRig();
+    }
+}
+
+void Document::loadRigStructures()
+{
+    const QStringList rigFiles = {
+        ":/resources/rig_human.xml",
+        ":/resources/rig_quad.xml",
+        ":/resources/rig_bird.xml",
+        ":/resources/rig_fish.xml",
+        ":/resources/rig_fly.xml",
+        ":/resources/rig_generic.xml"
+    };
+
+    for (const auto& filePath : rigFiles) {
+        loadRigFromXml(filePath);
+    }
+
+    qDebug() << "Document loaded" << m_rigStructures.size() << "rig structures";
+}
+
+bool Document::loadRigFromXml(const QString& filePath)
+{
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        qWarning() << "Failed to open rig file:" << filePath;
+        return false;
+    }
+
+    QByteArray xmlData = file.readAll();
+    file.close();
+
+    if (xmlData.isEmpty())
+        return false;
+
+    try {
+        rapidxml::xml_document<> doc;
+        doc.parse<0>(xmlData.data());
+
+        rapidxml::xml_node<>* rigElement = doc.first_node("rig");
+        if (!rigElement)
+            return false;
+
+        RigStructure rigStruct;
+
+        rapidxml::xml_attribute<>* typeAttr = rigElement->first_attribute("type");
+        rapidxml::xml_attribute<>* nameAttr = rigElement->first_attribute("name");
+
+        if (typeAttr)
+            rigStruct.type = QString::fromStdString(std::string(typeAttr->value(), typeAttr->value_size()));
+        if (nameAttr)
+            rigStruct.name = QString::fromStdString(std::string(nameAttr->value(), nameAttr->value_size()));
+
+        rapidxml::xml_node<>* descElement = rigElement->first_node("description");
+        if (descElement && descElement->value_size() > 0)
+            rigStruct.description = QString::fromStdString(std::string(descElement->value(), descElement->value_size()));
+
+        for (rapidxml::xml_node<>* boneElement = rigElement->first_node("bone");
+             boneElement;
+             boneElement = boneElement->next_sibling("bone")) {
+
+            BoneNode bone;
+
+            rapidxml::xml_attribute<>* boneName = boneElement->first_attribute("name");
+            rapidxml::xml_attribute<>* boneParent = boneElement->first_attribute("parent");
+
+            if (boneName)
+                bone.name = QString::fromStdString(std::string(boneName->value(), boneName->value_size()));
+            if (boneParent)
+                bone.parent = QString::fromStdString(std::string(boneParent->value(), boneParent->value_size()));
+
+            rapidxml::xml_node<>* posElement = boneElement->first_node("position");
+            if (posElement) {
+                rapidxml::xml_attribute<>* xAttr = posElement->first_attribute("x");
+                rapidxml::xml_attribute<>* yAttr = posElement->first_attribute("y");
+                rapidxml::xml_attribute<>* zAttr = posElement->first_attribute("z");
+                if (xAttr) bone.posX = QString::fromStdString(std::string(xAttr->value(), xAttr->value_size())).toFloat();
+                if (yAttr) bone.posY = QString::fromStdString(std::string(yAttr->value(), yAttr->value_size())).toFloat();
+                if (zAttr) bone.posZ = QString::fromStdString(std::string(zAttr->value(), zAttr->value_size())).toFloat();
+            }
+
+            rapidxml::xml_node<>* endPosElement = boneElement->first_node("endPosition");
+            if (endPosElement) {
+                rapidxml::xml_attribute<>* xAttr = endPosElement->first_attribute("x");
+                rapidxml::xml_attribute<>* yAttr = endPosElement->first_attribute("y");
+                rapidxml::xml_attribute<>* zAttr = endPosElement->first_attribute("z");
+                if (xAttr) bone.endX = QString::fromStdString(std::string(xAttr->value(), xAttr->value_size())).toFloat();
+                if (yAttr) bone.endY = QString::fromStdString(std::string(yAttr->value(), yAttr->value_size())).toFloat();
+                if (zAttr) bone.endZ = QString::fromStdString(std::string(zAttr->value(), zAttr->value_size())).toFloat();
+            }
+
+            rigStruct.bones.push_back(bone);
+        }
+
+        if (!rigStruct.type.isEmpty()) {
+            m_rigStructures[rigStruct.type] = rigStruct;
+            return true;
+        }
+
+    } catch (const std::exception& e) {
+        qWarning() << "Failed to parse rig XML:" << filePath << e.what();
+    }
+
+    return false;
 }
 
 void Document::setComponentPreviewImage(const dust3d::Uuid& componentId, std::unique_ptr<QImage> image)
@@ -2312,6 +2479,8 @@ void Document::meshReady()
     qDebug() << "Mesh generation done";
 
     emit resultMeshChanged();
+
+    generateRig();
 
     if (m_isResultMeshObsolete) {
         generateMesh();

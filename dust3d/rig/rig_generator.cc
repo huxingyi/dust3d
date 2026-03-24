@@ -45,6 +45,16 @@ bool RigGenerator::generateRig(const Snapshot* snapshot, const RigStructure& tem
 
     actualRig = templateRig;  // Copy template structure
 
+    // Clear template positions - they are only for template visualization
+    for (auto& bone : actualRig.bones) {
+        bone.posX = 0.0f;
+        bone.posY = 0.0f;
+        bone.posZ = 0.0f;
+        bone.endX = 0.0f;
+        bone.endY = 0.0f;
+        bone.endZ = 0.0f;
+    }
+
     // For each bone, compute actual position from edge assignments
     for (auto& bone : actualRig.bones) {
         std::vector<Uuid> nodeChain;
@@ -52,7 +62,6 @@ bool RigGenerator::generateRig(const Snapshot* snapshot, const RigStructure& tem
         if (!extractNodeChainForBone(snapshot, bone.name, nodeChain)) {
             // No edges assigned to this bone
             dust3dDebug << "No edges assigned to bone:" << bone.name;
-            // Keep template positions
             continue;
         }
 
@@ -416,6 +425,30 @@ std::string RigGenerator::getEdgeBoneName(const std::map<std::string, std::strin
 {
     if (!edge) return "";
     return String::valueOrEmpty(*edge, "boneName");
+}
+
+bool RigGenerator::applyRigBindings(Object* object, const Snapshot* snapshot)
+{
+    if (!object || !snapshot) {
+        m_errorMessage = "Object or snapshot not initialized";
+        return false;
+    }
+
+    // Use RigGenerator to compute bone influences and bind vertices
+    std::map<Uuid, NodeBoneInfluence> nodeBoneInfluences;
+
+    if (!computeNodeBoneInfluences(snapshot, nodeBoneInfluences)) {
+        dust3dDebug << "Failed to compute node bone influences:" << getErrorMessage().c_str();
+        return false;
+    }
+
+    if (!computeVertexBoneBindings(object, nodeBoneInfluences)) {
+        dust3dDebug << "Failed to compute vertex bone bindings:" << getErrorMessage().c_str();
+        return false;
+    }
+
+    dust3dDebug << "Applied rig bindings to" << object->vertices.size() << "vertices";
+    return true;
 }
 
 }

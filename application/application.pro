@@ -108,6 +108,7 @@ HEADERS += sources/rig_skeleton_mesh_generator.h
 SOURCES += sources/rig_skeleton_mesh_generator.cc
 HEADERS += sources/rig_skeleton_mesh_worker.h
 SOURCES += sources/rig_skeleton_mesh_worker.cc
+HEADERS += sources/rig_generator_worker.h
 HEADERS += sources/ccd_ik_resolver.h
 SOURCES += sources/ccd_ik_resolver.cc
 HEADERS += sources/component_list_model.h

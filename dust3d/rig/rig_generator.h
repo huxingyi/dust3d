@@ -80,6 +80,10 @@ public:
     bool computeVertexBoneBindings(Object* object,
                                    const std::map<Uuid, NodeBoneInfluence>& nodeBoneInfluences);
 
+    // Apply rig bindings to the generated mesh using the snapshot's edge bone assignments
+    // This should be called after generate() to apply skeletal rig weights to vertices
+    bool applyRigBindings(Object* object, const Snapshot* snapshot);
+
     // Get error message from last operation
     const std::string& getErrorMessage() const { return m_errorMessage; }
 
