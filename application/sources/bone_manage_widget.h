@@ -29,6 +29,7 @@ public slots:
     void assignSelectedEdgesToBone();
     void onRigSkeletonMeshReady();
     void onMeshGenerationThreadFinished();
+    void generateRigBindings();
 
 public:
     BoneManageWidget(Document* document, QWidget* parent = nullptr);
@@ -43,6 +44,7 @@ private:
     QStandardItemModel* m_boneTreeModel = nullptr;
     ModelWidget* m_modelWidget = nullptr;
     QPushButton* m_assignButton = nullptr;
+    QPushButton* m_generateRigButton = nullptr;
     std::unique_ptr<QMenu> m_contextMenu;
     std::map<QString, RigStructure> m_rigStructures;
     QString m_selectedBoneName;

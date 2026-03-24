@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016-2021 Jeremy HU <jeremy-at-dust3d dot org>. All rights reserved. 
+ *  Copyright (c) 2016-2026 Jeremy HU <jeremy-at-dust3d dot org>. All rights reserved. 
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -32,6 +32,7 @@
 #include <dust3d/mesh/triangulate.h>
 #include <dust3d/mesh/trim_vertices.h>
 #include <dust3d/mesh/tube_mesh_builder.h>
+#include <dust3d/rig/rig_generator.h>
 #include <functional>
 #include <memory>
 
@@ -1340,6 +1341,29 @@ void MeshGenerator::generate()
         delete m_cacheContext;
         m_cacheContext = nullptr;
     }
+}
+
+void MeshGenerator::applyRigBindings()
+{
+    if (!m_object || !m_snapshot) {
+        return;
+    }
+
+    // Use RigGenerator to compute bone influences and bind vertices
+    RigGenerator rigGenerator;
+    std::map<Uuid, NodeBoneInfluence> nodeBoneInfluences;
+
+    if (!rigGenerator.computeNodeBoneInfluences(m_snapshot, nodeBoneInfluences)) {
+        dust3dDebug << "Failed to compute node bone influences:" << rigGenerator.getErrorMessage().c_str();
+        return;
+    }
+
+    if (!rigGenerator.computeVertexBoneBindings(m_object, nodeBoneInfluences)) {
+        dust3dDebug << "Failed to compute vertex bone bindings:" << rigGenerator.getErrorMessage().c_str();
+        return;
+    }
+
+    dust3dDebug << "Applied rig bindings to" << m_object->vertices.size() << "vertices";
 }
 
 }

@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016-2021 Jeremy HU <jeremy-at-dust3d dot org>. All rights reserved. 
+ *  Copyright (c) 2016-2026 Jeremy HU <jeremy-at-dust3d dot org>. All rights reserved. 
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -119,6 +119,10 @@ public:
     void setDefaultPartColor(const Color& color);
     void setId(uint64_t id);
     uint64_t id();
+
+    // Apply rig bindings to the generated mesh using the snapshot's edge bone assignments
+    // This should be called after generate() to apply skeletal rig weights to vertices
+    void applyRigBindings();
 
 protected:
     std::set<Uuid> m_generatedPreviewComponentIds;
