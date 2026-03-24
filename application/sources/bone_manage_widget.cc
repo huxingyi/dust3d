@@ -1,6 +1,7 @@
 #include "bone_manage_widget.h"
 #include "document.h"
 #include "theme.h"
+#include "model_mesh.h"
 #include <QComboBox>
 #include <QLabel>
 #include <QMenu>
@@ -14,6 +15,7 @@
 #include <QTreeView>
 #include <QStandardItemModel>
 #include <QStandardItem>
+#include <QItemSelectionModel>
 #include <rapidxml.hpp>
 #include <string>
 
@@ -37,7 +39,6 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
     rigTypeLayout->setSpacing(5);
     rigTypeLayout->setContentsMargins(0, 0, 0, 0);
 
-    QLabel* rigTypeLabel = new QLabel(tr("Rig type:"));
     m_rigTypeComboBox = new QComboBox();
 
     // Add loaded rig types to combo box
@@ -46,7 +47,6 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
         m_rigTypeComboBox->addItem(entry.second.name);
     }
 
-    rigTypeLayout->addWidget(rigTypeLabel);
     rigTypeLayout->addWidget(m_rigTypeComboBox);
     rigTypeLayout->addStretch();
 
@@ -54,7 +54,6 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
     mainLayout->addLayout(rigTypeLayout);
 
     // Bone Tree View
-    QLabel* boneTreeLabel = new QLabel(tr("Bone Hierarchy:"));
     m_boneTreeView = new QTreeView();
     m_boneTreeModel = new QStandardItemModel();
     m_boneTreeView->setModel(m_boneTreeModel);
@@ -62,8 +61,13 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
     m_boneTreeView->setMinimumHeight(200);
     m_boneTreeView->setEditTriggers(QAbstractItemView::NoEditTriggers);
 
-    mainLayout->addWidget(boneTreeLabel);
     mainLayout->addWidget(m_boneTreeView);
+
+    // Model Widget for rendering the rig skeleton mesh
+    m_modelWidget = new ModelWidget();
+    m_modelWidget->setMinimumHeight(250);
+
+    mainLayout->addWidget(m_modelWidget);
 
     mainLayout->addStretch();
 
@@ -90,6 +94,10 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
         this, &BoneManageWidget::onRigTypeChanged);
 
     connect(this, &QWidget::customContextMenuRequested, this, &BoneManageWidget::showContextMenu);
+    
+    // Connect tree view selection changes to update the highlighted bone
+    connect(m_boneTreeView->selectionModel(), &QItemSelectionModel::selectionChanged,
+        this, &BoneManageWidget::onBoneSelectionChanged);
 
     // Initialize tree view with current rig type
     updateBoneTreeView(currentRigType);
@@ -248,6 +256,26 @@ void BoneManageWidget::onRigTypeChanged(const QString& rigType)
     updateBoneTreeView(rigType);
 }
 
+void BoneManageWidget::onBoneSelectionChanged()
+{
+    QModelIndexList selectedIndexes = m_boneTreeView->selectionModel()->selectedIndexes();
+    QString selectedBoneName;
+    
+    if (!selectedIndexes.isEmpty()) {
+        QModelIndex selectedIndex = selectedIndexes.first();
+        QStandardItem* selectedItem = m_boneTreeModel->itemFromIndex(selectedIndex);
+        if (selectedItem) {
+            selectedBoneName = selectedItem->text();
+        }
+    }
+    
+    m_selectedBoneName = selectedBoneName;
+    
+    // Regenerate mesh with the selected bone highlighted
+    QString currentRigType = m_rigTypeComboBox->currentText();
+    generateRigSkeletonMesh(currentRigType, selectedBoneName);
+}
+
 void BoneManageWidget::updateBoneTreeView(const QString& rigType)
 {
     m_boneTreeModel->clear();
@@ -298,4 +326,70 @@ void BoneManageWidget::updateBoneTreeView(const QString& rigType)
     }
 
     m_boneTreeView->expandAll();
+
+    // Generate the rig skeleton mesh for visualization
+    generateRigSkeletonMesh(rigType, m_selectedBoneName);
+}
+
+void BoneManageWidget::generateRigSkeletonMesh(const QString& rigType, const QString& selectedBoneName)
+{
+    if (rigType == tr("None")) {
+        return;
+    }
+
+    // Find the rig structure by name
+    RigStructure* selectedRig = nullptr;
+    for (auto& entry : m_rigStructures) {
+        if (entry.second.name == rigType) {
+            selectedRig = &entry.second;
+            break;
+        }
+    }
+
+    if (!selectedRig || selectedRig->bones.empty()) {
+        return;
+    }
+
+    // Generate the rig skeleton mesh
+    RigSkeletonMeshGenerator meshGenerator;
+    meshGenerator.setStartRadius(0.02);  // Default radius, can be configured
+    meshGenerator.generateMesh(*selectedRig, selectedBoneName);
+
+    // Get the generated mesh data
+    const auto& vertices = meshGenerator.getVertices();
+    const auto& faces = meshGenerator.getFaces();
+
+    if (vertices.empty() || faces.empty()) {
+        qWarning() << "Failed to generate rig skeleton mesh for" << rigType;
+        return;
+    }
+
+    // Generate normals for each triangle face
+    std::vector<std::vector<dust3d::Vector3>> triangleVertexNormals;
+    for (const auto& face : faces) {
+        if (face.size() >= 3) {
+            dust3d::Vector3 faceNormal = dust3d::Vector3::normal(
+                vertices[face[0]], vertices[face[1]], vertices[face[2]]);
+            triangleVertexNormals.push_back({faceNormal, faceNormal, faceNormal});
+        }
+    }
+
+    // Create a ModelMesh with the generated rig skeleton
+    // Use per-vertex properties if available (for bone highlighting)
+    const auto* vertexProperties = meshGenerator.getVertexProperties();
+    
+    ModelMesh* rigSkeletonMesh = new ModelMesh(vertices, faces, triangleVertexNormals,
+        dust3d::Color(0.8, 0.8, 0.8),  // Default light gray color for skeleton
+        0.0,   // No metalness
+        1.0,   // Full roughness
+        vertexProperties);  // Use per-vertex properties if available
+
+    // Update the model widget to display the generated mesh
+    if (m_modelWidget) {
+        m_modelWidget->updateMesh(rigSkeletonMesh);
+    }
+
+    qDebug() << "Generated rig skeleton mesh for" << rigType 
+             << "with" << vertices.size() << "vertices and" << faces.size() << "faces"
+             << (selectedBoneName.isEmpty() ? "" : " (highlighting bone: " + selectedBoneName + ")");
 }

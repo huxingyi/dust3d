@@ -101,8 +101,11 @@ include(third_party/QtAwesome/QtAwesome/QtAwesome.pri)
 
 HEADERS += sources/about_widget.h
 SOURCES += sources/about_widget.cc
+HEADERS += sources/bone_structure.h
 HEADERS += sources/bone_manage_widget.h
 SOURCES += sources/bone_manage_widget.cc
+HEADERS += sources/rig_skeleton_mesh_generator.h
+SOURCES += sources/rig_skeleton_mesh_generator.cc
 HEADERS += sources/ccd_ik_resolver.h
 SOURCES += sources/ccd_ik_resolver.cc
 HEADERS += sources/component_list_model.h

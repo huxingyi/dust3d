@@ -10,22 +10,11 @@
 #include <memory>
 #include <map>
 #include <vector>
+#include "bone_structure.h"
+#include "rig_skeleton_mesh_generator.h"
+#include "model_widget.h"
 
 class Document;
-
-struct BoneNode {
-    QString name;
-    QString parent;
-    float posX, posY, posZ;
-    float endX, endY, endZ;
-};
-
-struct RigStructure {
-    QString type;
-    QString name;
-    QString description;
-    std::vector<BoneNode> bones;
-};
 
 class BoneManageWidget : public QWidget {
     Q_OBJECT
@@ -33,6 +22,7 @@ class BoneManageWidget : public QWidget {
 public slots:
     void showContextMenu(const QPoint& pos);
     void onRigTypeChanged(const QString& rigType);
+    void onBoneSelectionChanged();
 
 public:
     BoneManageWidget(Document* document, QWidget* parent = nullptr);
@@ -42,12 +32,15 @@ private:
     QComboBox* m_rigTypeComboBox = nullptr;
     QTreeView* m_boneTreeView = nullptr;
     QStandardItemModel* m_boneTreeModel = nullptr;
+    ModelWidget* m_modelWidget = nullptr;
     std::unique_ptr<QMenu> m_contextMenu;
     std::map<QString, RigStructure> m_rigStructures;
+    QString m_selectedBoneName;
     
     void loadRigStructures();
     bool loadRigFromXml(const QString& filePath);
     void updateBoneTreeView(const QString& rigType);
+    void generateRigSkeletonMesh(const QString& rigType, const QString& selectedBoneName = "");
 };
 
 #endif
