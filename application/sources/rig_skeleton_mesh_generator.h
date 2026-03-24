@@ -57,6 +57,15 @@ private:
 
     // Convert BoneNode to BoneSegment
     BoneSegment boneToBoneSegment(const BoneNode& bone) const;
+
+    // Calculate bounding box of all vertices and normalize size
+    struct BoundingBox {
+        dust3d::Vector3 minPoint;
+        dust3d::Vector3 maxPoint;
+    };
+
+    BoundingBox calculateBoundingBox() const;
+    void normalizeMeshSize();
 };
 
 #endif

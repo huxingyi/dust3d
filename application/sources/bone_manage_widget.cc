@@ -281,8 +281,13 @@ void BoneManageWidget::updateBoneTreeView(const QString& rigType)
     m_boneTreeModel->clear();
 
     if (rigType == tr("None")) {
+        m_boneTreeView->hide();
+        m_modelWidget->hide();
         return;
     }
+
+    m_boneTreeView->show();
+    m_modelWidget->show();
 
     // Find the rig structure by name
     RigStructure* selectedRig = nullptr;
@@ -379,7 +384,7 @@ void BoneManageWidget::generateRigSkeletonMesh(const QString& rigType, const QSt
     const auto* vertexProperties = meshGenerator.getVertexProperties();
     
     ModelMesh* rigSkeletonMesh = new ModelMesh(vertices, faces, triangleVertexNormals,
-        dust3d::Color(0.8, 0.8, 0.8),  // Default light gray color for skeleton
+        dust3d::Color(Theme::green.redF(), Theme::green.greenF(), Theme::green.blueF()),  // Default light gray color for skeleton
         0.0,   // No metalness
         1.0,   // Full roughness
         vertexProperties);  // Use per-vertex properties if available

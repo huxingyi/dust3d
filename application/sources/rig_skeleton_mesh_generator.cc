@@ -1,4 +1,5 @@
 #include "rig_skeleton_mesh_generator.h"
+#include "theme.h"
 #include <cmath>
 
 RigSkeletonMeshGenerator::RigSkeletonMeshGenerator()
@@ -119,6 +120,70 @@ void RigSkeletonMeshGenerator::buildBone(const BoneSegment& bone, const QString&
     m_boneVertexRanges[boneName] = std::make_pair(startVertexIndex, endVertexIndex);
 }
 
+RigSkeletonMeshGenerator::BoundingBox RigSkeletonMeshGenerator::calculateBoundingBox() const
+{
+    BoundingBox bbox;
+    
+    if (m_resultVertices->empty()) {
+        bbox.minPoint = dust3d::Vector3(0, 0, 0);
+        bbox.maxPoint = dust3d::Vector3(0, 0, 0);
+        return bbox;
+    }
+    
+    // Initialize with first vertex
+    bbox.minPoint = (*m_resultVertices)[0];
+    bbox.maxPoint = (*m_resultVertices)[0];
+    
+    // Find min and max for each axis
+    for (const auto& vertex : *m_resultVertices) {
+        if (vertex.x() < bbox.minPoint.x()) bbox.minPoint.setX(vertex.x());
+        if (vertex.y() < bbox.minPoint.y()) bbox.minPoint.setY(vertex.y());
+        if (vertex.z() < bbox.minPoint.z()) bbox.minPoint.setZ(vertex.z());
+        
+        if (vertex.x() > bbox.maxPoint.x()) bbox.maxPoint.setX(vertex.x());
+        if (vertex.y() > bbox.maxPoint.y()) bbox.maxPoint.setY(vertex.y());
+        if (vertex.z() > bbox.maxPoint.z()) bbox.maxPoint.setZ(vertex.z());
+    }
+    
+    return bbox;
+}
+
+void RigSkeletonMeshGenerator::normalizeMeshSize()
+{
+    if (m_resultVertices->empty()) {
+        return;
+    }
+    
+    // Calculate bounding box
+    BoundingBox bbox = calculateBoundingBox();
+    
+    // Calculate the size of the rig in each dimension
+    double sizeX = bbox.maxPoint.x() - bbox.minPoint.x();
+    double sizeY = bbox.maxPoint.y() - bbox.minPoint.y();
+    double sizeZ = bbox.maxPoint.z() - bbox.minPoint.z();
+    
+    // Find the largest dimension
+    double maxSize = std::max({sizeX, sizeY, sizeZ});
+    
+    // Target size - normalize all rigs to have their largest dimension be 1.5 units
+    const double TARGET_SIZE = 1.5;
+    
+    if (maxSize > 0.001) {  // Avoid division by very small numbers
+        double scaleFactor = TARGET_SIZE / maxSize;
+        
+        // Calculate the center of the bounding box
+        dust3d::Vector3 center = (bbox.minPoint + bbox.maxPoint) * 0.5;
+        
+        // Scale all vertices around the center
+        for (auto& vertex : *m_resultVertices) {
+            // Translate to origin
+            vertex = vertex - center;
+            // Scale
+            vertex = vertex * scaleFactor;
+        }
+    }
+}
+
 void RigSkeletonMeshGenerator::generateMesh(const RigStructure& rigStructure, const QString& selectedBoneName)
 {
     // Clear previous results
@@ -133,6 +198,9 @@ void RigSkeletonMeshGenerator::generateMesh(const RigStructure& rigStructure, co
         BoneSegment segment = boneToBoneSegment(bone);
         buildBone(segment, bone.name);
     }
+
+    // Normalize the mesh size to ensure all rig types appear at similar scale
+    normalizeMeshSize();
 
     // Convert quads to faces (split each quad into two triangles)
     m_resultFaces->reserve(m_resultQuads->size() * 2);
@@ -156,9 +224,9 @@ void RigSkeletonMeshGenerator::generateMesh(const RigStructure& rigStructure, co
         size_t selectedEndIdx = (selectedBoneIt != m_boneVertexRanges.end()) ? selectedBoneIt->second.second : -1;
         
         // Default color for non-selected bones (light gray)
-        dust3d::Color defaultColor(0.8f, 0.8f, 0.8f);
+        dust3d::Color defaultColor(Theme::green.redF(), Theme::green.greenF(), Theme::green.blueF());
         // Highlight color for selected bone (bright orange/yellow)
-        dust3d::Color highlightColor(1.0f, 0.85f, 0.0f);
+        dust3d::Color highlightColor(Theme::red.redF(), Theme::red.greenF(), Theme::red.blueF());
         
         for (size_t i = 0; i < m_resultVertices->size(); ++i) {
             bool isSelected = (selectedStartIdx != (size_t)-1 && i >= selectedStartIdx && i < selectedEndIdx);
