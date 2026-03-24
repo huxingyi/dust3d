@@ -564,7 +564,7 @@ void BoneManageWidget::generateRigSkinningMesh()
     dust3d::Object* rigObject = m_document->takeRigObject();
 
     m_rigSkinningMeshWorker = std::make_unique<RigSkeletonMeshWorker>();
-    m_rigSkinningMeshWorker->setParameters(actualRig, QString(), 0.02);
+    m_rigSkinningMeshWorker->setParameters(actualRig, m_selectedBoneName, 0.02);
     m_rigSkinningMeshWorker->setRigObject(rigObject, m_selectedBoneName);
 
     m_rigSkinningMeshGenerationThread = new QThread;

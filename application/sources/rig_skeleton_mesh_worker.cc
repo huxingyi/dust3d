@@ -137,9 +137,9 @@ void RigSkeletonMeshWorker::process()
                     }
 
                     if (weight > 0.0f) {
-                        dest->colorR = Theme::green.redF() * weight;
-                        dest->colorG = Theme::green.greenF() * weight;
-                        dest->colorB = Theme::green.blueF() * weight;
+                        dest->colorR = 1.0 * weight;
+                        dest->colorG = 1.0 * weight;
+                        dest->colorB = 1.0 * weight;
                         dest->alpha = 0.8f;
                     } else {
                         dest->colorR = 0.5f;
