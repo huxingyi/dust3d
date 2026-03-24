@@ -90,30 +90,27 @@ public:
 private:
     std::string m_errorMessage;
 
-    // Helper: Extract linear chain of nodes for a given bone name
-    // Returns node UUIDs in chain order (root to tip)
-    bool extractNodeChainForBone(const Snapshot* snapshot,
-                                 const std::string& boneName,
-                                 std::vector<Uuid>& nodeChain);
+    // Helper: Extract all connected chains of nodes for a given bone name
+    // Each chain is an ordered list of node UUIDs.
+    // Multiple disconnected groups of edges produce multiple chains.
+    bool extractNodeChainsForBone(const Snapshot* snapshot,
+                                  const std::string& boneName,
+                                  std::vector<std::vector<Uuid>>& nodeChains);
 
     // Helper: Build node connectivity graph from edges with a given bone name
-    // Returns adjacency structure: node UUID -> connected node UUIDs
     void buildNodeAdjacency(const Snapshot* snapshot,
                            const std::string& boneName,
                            std::map<Uuid, std::vector<Uuid>>& adjacency,
                            std::set<Uuid>& allNodes);
 
-    // Helper: Traverse chain to find nodes with degree 1 (endpoints)
-    // Returns two lists: root nodes and tip nodes
-    void findChainEndpoints(const std::vector<Uuid>& nodeChain,
-                           const std::map<Uuid, std::vector<Uuid>>& adjacency,
-                           std::vector<Uuid>& rootNodes,
-                           std::vector<Uuid>& tipNodes);
+    // Helper: Orient a chain so its end closest to refPoint comes first
+    void orientChainTowardPoint(const Snapshot* snapshot,
+                               std::vector<Uuid>& chain,
+                               float refX, float refY, float refZ);
 
-    // Helper: Average positions of given nodes
-    bool averageNodePositions(const Snapshot* snapshot,
-                             const std::vector<Uuid>& nodeUuids,
-                             float& outX, float& outY, float& outZ);
+    // Helper: Get position of a single node from the snapshot
+    bool getNodePosition(const Snapshot* snapshot, const Uuid& nodeId,
+                        float& x, float& y, float& z);
 
     // Helper: Get all edges with a specific bone name
     std::vector<const std::map<std::string, std::string>*> getEdgesWithBoneName(

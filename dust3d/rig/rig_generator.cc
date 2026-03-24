@@ -55,51 +55,95 @@ bool RigGenerator::generateRig(const Snapshot* snapshot, const RigStructure& tem
         bone.endZ = 0.0f;
     }
 
-    // For each bone, compute actual position from edge assignments
-    for (auto& bone : actualRig.bones) {
-        std::vector<Uuid> nodeChain;
+    // Build bone name -> index map for parent lookups
+    std::map<std::string, size_t> boneNameToIndex;
+    for (size_t i = 0; i < actualRig.bones.size(); ++i) {
+        boneNameToIndex[actualRig.bones[i].name] = i;
+    }
 
-        if (!extractNodeChainForBone(snapshot, bone.name, nodeChain)) {
-            // No edges assigned to this bone
+    // Process bones in topological order (parents before children)
+    std::vector<size_t> processingOrder;
+    std::set<std::string> processed;
+    while (processingOrder.size() < actualRig.bones.size()) {
+        bool progress = false;
+        for (size_t i = 0; i < actualRig.bones.size(); ++i) {
+            const auto& bone = actualRig.bones[i];
+            if (processed.count(bone.name))
+                continue;
+            if (bone.parent.empty() || processed.count(bone.parent)) {
+                processingOrder.push_back(i);
+                processed.insert(bone.name);
+                progress = true;
+            }
+        }
+        if (!progress) {
+            // Circular or missing parent - add remaining in order
+            for (size_t i = 0; i < actualRig.bones.size(); ++i) {
+                if (!processed.count(actualRig.bones[i].name)) {
+                    processingOrder.push_back(i);
+                    processed.insert(actualRig.bones[i].name);
+                }
+            }
+            break;
+        }
+    }
+
+    // For each bone, compute actual position from edge assignments
+    for (size_t boneIdx : processingOrder) {
+        auto& bone = actualRig.bones[boneIdx];
+
+        std::vector<std::vector<Uuid>> nodeChains;
+        if (!extractNodeChainsForBone(snapshot, bone.name, nodeChains)) {
             dust3dDebug << "No edges assigned to bone:" << bone.name;
             continue;
         }
 
-        if (nodeChain.empty()) {
-            dust3dDebug << "Empty node chain for bone:" << bone.name;
-            continue;
-        }
-
-        // Find root and tip nodes in the chain
-        std::map<Uuid, std::vector<Uuid>> adjacency;
-        std::set<Uuid> allNodes;
-        buildNodeAdjacency(snapshot, bone.name, adjacency, allNodes);
-
-        std::vector<Uuid> rootNodes, tipNodes;
-        findChainEndpoints(nodeChain, adjacency, rootNodes, tipNodes);
-
-        // Compute bone position from root nodes
-        if (!rootNodes.empty()) {
-            float posX, posY, posZ;
-            if (averageNodePositions(snapshot, rootNodes, posX, posY, posZ)) {
-                bone.posX = posX;
-                bone.posY = posY;
-                bone.posZ = posZ;
+        // Determine reference point from parent bone's tip position.
+        // Root bones (no parent) use the origin.
+        float refX = 0, refY = 0, refZ = 0;
+        if (!bone.parent.empty()) {
+            auto parentIt = boneNameToIndex.find(bone.parent);
+            if (parentIt != boneNameToIndex.end()) {
+                const auto& parentBone = actualRig.bones[parentIt->second];
+                refX = parentBone.endX;
+                refY = parentBone.endY;
+                refZ = parentBone.endZ;
             }
         }
 
-        // Compute bone end position from tip nodes
-        if (!tipNodes.empty()) {
-            float endX, endY, endZ;
-            if (averageNodePositions(snapshot, tipNodes, endX, endY, endZ)) {
-                bone.endX = endX;
-                bone.endY = endY;
-                bone.endZ = endZ;
-            }
+        // Orient each chain so its end closest to the reference comes first
+        for (auto& chain : nodeChains) {
+            orientChainTowardPoint(snapshot, chain, refX, refY, refZ);
         }
+
+        // Sort chains by distance of their front node to the reference
+        std::sort(nodeChains.begin(), nodeChains.end(),
+            [&](const std::vector<Uuid>& a, const std::vector<Uuid>& b) {
+                float ax = 0, ay = 0, az = 0, bx = 0, by = 0, bz = 0;
+                getNodePosition(snapshot, a.front(), ax, ay, az);
+                getNodePosition(snapshot, b.front(), bx, by, bz);
+                float da = (ax - refX) * (ax - refX) + (ay - refY) * (ay - refY) + (az - refZ) * (az - refZ);
+                float db = (bx - refX) * (bx - refX) + (by - refY) * (by - refY) + (bz - refZ) * (bz - refZ);
+                return da < db;
+            });
+
+        // Bone root = first node of closest chain (nearest to parent tip)
+        // Bone tip  = last node of farthest chain
+        if (getNodePosition(snapshot, nodeChains.front().front(),
+                bone.posX, bone.posY, bone.posZ)) {
+            // set successfully
+        }
+        if (getNodePosition(snapshot, nodeChains.back().back(),
+                bone.endX, bone.endY, bone.endZ)) {
+            // set successfully
+        }
+
+        size_t totalNodes = 0;
+        for (const auto& chain : nodeChains)
+            totalNodes += chain.size();
 
         dust3dDebug << "Computed bone" << bone.name.c_str()
-                    << "from" << nodeChain.size() << "nodes"
+                    << "from" << totalNodes << "nodes in" << nodeChains.size() << "chains"
                     << "position:" << bone.posX << bone.posY << bone.posZ
                     << "endPosition:" << bone.endX << bone.endY << bone.endZ;
     }
@@ -232,59 +276,120 @@ bool RigGenerator::computeVertexBoneBindings(Object* object,
     return true;
 }
 
-bool RigGenerator::extractNodeChainForBone(const Snapshot* snapshot,
-                                           const std::string& boneName,
-                                           std::vector<Uuid>& nodeChain)
+bool RigGenerator::extractNodeChainsForBone(const Snapshot* snapshot,
+                                            const std::string& boneName,
+                                            std::vector<std::vector<Uuid>>& nodeChains)
 {
-    nodeChain.clear();
+    nodeChains.clear();
 
-    // Build adjacency for nodes connected via edges with this bone name
     std::map<Uuid, std::vector<Uuid>> adjacency;
     std::set<Uuid> allNodes;
     buildNodeAdjacency(snapshot, boneName, adjacency, allNodes);
 
     if (allNodes.empty()) {
-        return false;  // No edges assigned to this bone
+        return false;
     }
 
-    // Find a starting node (degree 1 = endpoint)
-    Uuid startNode;
-    for (const auto& nodeId : allNodes) {
-        if (adjacency[nodeId].size() == 1) {
-            startNode = nodeId;
-            break;
-        }
-    }
+    // Find all connected components and traverse each as a chain
+    std::set<Uuid> globalVisited;
 
-    // If no degree-1 node found, start from any node (should not happen in linear chain)
-    if (startNode.isNull() && !allNodes.empty()) {
-        startNode = *allNodes.begin();
-    }
+    for (const auto& seedNode : allNodes) {
+        if (globalVisited.count(seedNode))
+            continue;
 
-    // Traverse the chain from start to end
-    Uuid current = startNode;
-    Uuid prev;
-    std::set<Uuid> visited;
-
-    while (!current.isNull() && visited.find(current) == visited.end()) {
-        nodeChain.push_back(current);
-        visited.insert(current);
-
-        // Find next node
-        Uuid next;
-        const auto& neighbors = adjacency[current];
-        for (const auto& neighbor : neighbors) {
-            if (neighbor != prev) {
-                next = neighbor;
-                break;
+        // Discover connected component via DFS
+        std::set<Uuid> componentNodes;
+        std::vector<Uuid> stack;
+        stack.push_back(seedNode);
+        while (!stack.empty()) {
+            Uuid n = stack.back();
+            stack.pop_back();
+            if (componentNodes.count(n))
+                continue;
+            componentNodes.insert(n);
+            for (const auto& neighbor : adjacency[n]) {
+                if (!componentNodes.count(neighbor))
+                    stack.push_back(neighbor);
             }
         }
 
-        prev = current;
-        current = next;
+        // Find a degree-1 node in this component to start the linear walk
+        Uuid startNode;
+        for (const auto& n : componentNodes) {
+            if (adjacency[n].size() == 1) {
+                startNode = n;
+                break;
+            }
+        }
+        if (startNode.isNull())
+            startNode = *componentNodes.begin();
+
+        // Traverse chain linearly
+        std::vector<Uuid> chain;
+        Uuid current = startNode;
+        Uuid prev;
+
+        while (!current.isNull() && !globalVisited.count(current)) {
+            chain.push_back(current);
+            globalVisited.insert(current);
+
+            Uuid next;
+            const auto& neighbors = adjacency[current];
+            for (const auto& neighbor : neighbors) {
+                if (neighbor != prev) {
+                    next = neighbor;
+                    break;
+                }
+            }
+            prev = current;
+            current = next;
+        }
+
+        if (!chain.empty())
+            nodeChains.push_back(chain);
     }
 
-    return !nodeChain.empty();
+    return !nodeChains.empty();
+}
+
+void RigGenerator::orientChainTowardPoint(const Snapshot* snapshot,
+                                          std::vector<Uuid>& chain,
+                                          float refX, float refY, float refZ)
+{
+    if (chain.size() < 2)
+        return;
+
+    float frontX, frontY, frontZ;
+    float backX, backY, backZ;
+
+    if (!getNodePosition(snapshot, chain.front(), frontX, frontY, frontZ))
+        return;
+    if (!getNodePosition(snapshot, chain.back(), backX, backY, backZ))
+        return;
+
+    float distFront = (frontX - refX) * (frontX - refX)
+        + (frontY - refY) * (frontY - refY)
+        + (frontZ - refZ) * (frontZ - refZ);
+    float distBack = (backX - refX) * (backX - refX)
+        + (backY - refY) * (backY - refY)
+        + (backZ - refZ) * (backZ - refZ);
+
+    if (distBack < distFront) {
+        std::reverse(chain.begin(), chain.end());
+    }
+}
+
+bool RigGenerator::getNodePosition(const Snapshot* snapshot, const Uuid& nodeId,
+                                   float& x, float& y, float& z)
+{
+    auto it = snapshot->nodes.find(nodeId.toString());
+    if (it == snapshot->nodes.end())
+        return false;
+
+    x = String::toFloat(String::valueOrEmpty(it->second, "x"));
+    y = String::toFloat(String::valueOrEmpty(it->second, "y"));
+    z = String::toFloat(String::valueOrEmpty(it->second, "z"));
+    return true;
 }
 
 void RigGenerator::buildNodeAdjacency(const Snapshot* snapshot,
@@ -316,73 +421,7 @@ void RigGenerator::buildNodeAdjacency(const Snapshot* snapshot,
     }
 }
 
-void RigGenerator::findChainEndpoints(const std::vector<Uuid>& nodeChain,
-                                     const std::map<Uuid, std::vector<Uuid>>& adjacency,
-                                     std::vector<Uuid>& rootNodes,
-                                     std::vector<Uuid>& tipNodes)
-{
-    rootNodes.clear();
-    tipNodes.clear();
 
-    // Find nodes with degree 1 (endpoints in the linear chain)
-    for (const auto& nodeId : nodeChain) {
-        auto it = adjacency.find(nodeId);
-        if (it != adjacency.end() && it->second.size() == 1) {
-            // This is an endpoint
-            // Root is typically the first one, but we store both
-            if (rootNodes.empty()) {
-                rootNodes.push_back(nodeId);
-            } else {
-                tipNodes.push_back(nodeId);
-            }
-        }
-    }
-
-    // If no degree-1 nodes found (shouldn't happen in linear chain), use first and last
-    if (rootNodes.empty() && !nodeChain.empty()) {
-        rootNodes.push_back(nodeChain.front());
-        if (nodeChain.size() > 1) {
-            tipNodes.push_back(nodeChain.back());
-        }
-    }
-}
-
-bool RigGenerator::averageNodePositions(const Snapshot* snapshot,
-                                       const std::vector<Uuid>& nodeUuids,
-                                       float& outX, float& outY, float& outZ)
-{
-    if (nodeUuids.empty()) {
-        return false;
-    }
-
-    double sumX = 0, sumY = 0, sumZ = 0;
-    int count = 0;
-
-    for (const auto& nodeId : nodeUuids) {
-        std::string nodeIdString = nodeId.toString();
-        auto it = snapshot->nodes.find(nodeIdString);
-        if (it != snapshot->nodes.end()) {
-            const auto& nodeAttributes = it->second;
-            float x = String::toFloat(String::valueOrEmpty(nodeAttributes, "x"));
-            float y = String::toFloat(String::valueOrEmpty(nodeAttributes, "y"));
-            float z = String::toFloat(String::valueOrEmpty(nodeAttributes, "z"));
-
-            sumX += x;
-            sumY += y;
-            sumZ += z;
-            count++;
-        }
-    }
-
-    if (count == 0) {
-        return false;
-    }
-
-    outX = sumX / count;
-    outY = sumY / count;
-    outZ = sumZ / count;
-    return true;
-}
 
 std::vector<const std::map<std::string, std::string>*> RigGenerator::getEdgesWithBoneName(
     const Snapshot* snapshot,
