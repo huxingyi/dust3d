@@ -2,6 +2,7 @@
 #include "document.h"
 #include "theme.h"
 #include "model_mesh.h"
+#include "skeleton_graphics_widget.h"
 #include <QComboBox>
 #include <QLabel>
 #include <QMenu>
@@ -66,8 +67,14 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
     // Model Widget for rendering the rig skeleton mesh
     m_modelWidget = new ModelWidget();
     m_modelWidget->setMinimumHeight(250);
+    m_modelWidget->enableZoom(false);  // Only allow rotation, disable zoom
 
     mainLayout->addWidget(m_modelWidget);
+
+    // Assign button to assign selected edges to the selected bone
+    m_assignButton = new QPushButton(tr("Assign Selected Edges to Bone"));
+    m_assignButton->setToolTip(tr("Assign the selected edges from the canvas to the selected bone"));
+    mainLayout->addWidget(m_assignButton);
 
     mainLayout->addStretch();
 
@@ -98,6 +105,10 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
     // Connect tree view selection changes to update the highlighted bone
     connect(m_boneTreeView->selectionModel(), &QItemSelectionModel::selectionChanged,
         this, &BoneManageWidget::onBoneSelectionChanged);
+    
+    // Connect button click to assign selected edges to bone
+    connect(m_assignButton, &QPushButton::clicked,
+        this, &BoneManageWidget::assignSelectedEdgesToBone);
 
     // Initialize tree view with current rig type
     updateBoneTreeView(currentRigType);
@@ -397,4 +408,32 @@ void BoneManageWidget::generateRigSkeletonMesh(const QString& rigType, const QSt
     qDebug() << "Generated rig skeleton mesh for" << rigType 
              << "with" << vertices.size() << "vertices and" << faces.size() << "faces"
              << (selectedBoneName.isEmpty() ? "" : " (highlighting bone: " + selectedBoneName + ")");
+}
+
+void BoneManageWidget::setSkeletonGraphicsWidget(SkeletonGraphicsWidget* graphicsWidget)
+{
+    m_skeletonGraphicsWidget = graphicsWidget;
+}
+
+void BoneManageWidget::assignSelectedEdgesToBone()
+{
+    if (!m_skeletonGraphicsWidget || m_selectedBoneName.isEmpty()) {
+        qWarning() << "Cannot assign edges: graphics widget or selected bone name is empty";
+        return;
+    }
+
+    // Get the selected edge IDs from the graphics widget
+    std::set<dust3d::Uuid> selectedEdgeIds = m_skeletonGraphicsWidget->getSelectedEdgeIds();
+    
+    if (selectedEdgeIds.empty()) {
+        qWarning() << "No edges selected on the canvas";
+        return;
+    }
+
+    // Assign each selected edge to the selected bone
+    for (const auto& edgeId : selectedEdgeIds) {
+        m_document->setEdgeBoneName(edgeId, m_selectedBoneName);
+    }
+
+    qDebug() << "Assigned" << selectedEdgeIds.size() << "edges to bone:" << m_selectedBoneName;
 }

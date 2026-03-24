@@ -318,6 +318,17 @@ bool SkeletonGraphicsWidget::hasNodeSelection()
     return false;
 }
 
+std::set<dust3d::Uuid> SkeletonGraphicsWidget::getSelectedEdgeIds()
+{
+    std::set<dust3d::Uuid> edgeIds;
+    for (const auto& it : m_rangeSelectionSet) {
+        if (it->data(0) == "edge") {
+            edgeIds.insert(((SkeletonGraphicsEdgeItem*)it)->id());
+        }
+    }
+    return edgeIds;
+}
+
 bool SkeletonGraphicsWidget::hasTwoDisconnectedNodesSelection()
 {
     std::vector<dust3d::Uuid> nodeIds;

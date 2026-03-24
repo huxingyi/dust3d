@@ -1466,6 +1466,16 @@ void Document::updateLinkedPart(dust3d::Uuid oldPartId, dust3d::Uuid newPartId)
     }
 }
 
+void Document::setEdgeBoneName(dust3d::Uuid edgeId, const QString& boneName)
+{
+    auto edgeIt = edgeMap.find(edgeId);
+    if (edgeIt == edgeMap.end())
+        return;
+    
+    edgeIt->second.boneName = boneName;
+    emit optionsChanged();
+}
+
 void Document::enableAllPositionRelatedLocks()
 {
     m_allPositionRelatedLocksEnabled = true;
@@ -1810,6 +1820,8 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
             edge["partId"] = edgeIt.second.partId.toString();
             if (!edgeIt.second.name.isEmpty())
                 edge["name"] = edgeIt.second.name.toUtf8().constData();
+            if (!edgeIt.second.boneName.isEmpty())
+                edge["boneName"] = edgeIt.second.boneName.toUtf8().constData();
             snapshot->edges[edge["id"]] = edge;
         }
         for (const auto& componentIt : componentMap) {
@@ -2009,6 +2021,7 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
         Document::Edge edge(edgeMap.find(oldEdgeId) == edgeMap.end() ? oldEdgeId : dust3d::Uuid::createUuid());
         oldNewIdMap[oldEdgeId] = edge.id;
         edge.name = dust3d::String::valueOrEmpty(edgeKv.second, "name").c_str();
+        edge.boneName = dust3d::String::valueOrEmpty(edgeKv.second, "boneName").c_str();
         edge.partId = oldNewIdMap[dust3d::Uuid(dust3d::String::valueOrEmpty(edgeKv.second, "partId"))];
         std::string fromNodeId = dust3d::String::valueOrEmpty(edgeKv.second, "from");
         if (!fromNodeId.empty()) {

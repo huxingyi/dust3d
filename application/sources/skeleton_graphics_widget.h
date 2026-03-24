@@ -100,6 +100,7 @@ public:
     bool hasMultipleSelection();
     bool hasEdgeSelection();
     bool hasNodeSelection();
+    std::set<dust3d::Uuid> getSelectedEdgeIds();
     bool hasTwoDisconnectedNodesSelection();
     void setModelWidget(ModelWidget* modelWidget);
     bool inputWheelEventFromOtherWidget(QWheelEvent* event);

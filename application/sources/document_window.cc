@@ -274,6 +274,7 @@ DocumentWindow::DocumentWindow()
     m_bonesDocker = new QDockWidget(tr("Bones"), this);
     m_bonesDocker->setAllowedAreas(Qt::RightDockWidgetArea);
     m_boneManageWidget = new BoneManageWidget(m_document);
+    m_boneManageWidget->setSkeletonGraphicsWidget(m_canvasGraphicsWidget);
     m_bonesDocker->setWidget(m_boneManageWidget);
     addDockWidget(Qt::RightDockWidgetArea, m_bonesDocker);
 

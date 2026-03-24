@@ -89,6 +89,7 @@ public:
         dust3d::Uuid id;
         dust3d::Uuid partId;
         QString name;
+        QString boneName;
         std::vector<dust3d::Uuid> nodeIds;
         dust3d::Uuid neighborOf(dust3d::Uuid nodeId) const;
     };
@@ -435,6 +436,7 @@ public slots:
     void switchNodeXZ(dust3d::Uuid nodeId);
     void moveOriginBy(float x, float y, float z);
     void addEdge(dust3d::Uuid fromNodeId, dust3d::Uuid toNodeId);
+    void setEdgeBoneName(dust3d::Uuid edgeId, const QString& boneName);
     void moveComponentUp(dust3d::Uuid componentId);
     void moveComponentDown(dust3d::Uuid componentId);
     void moveComponentToTop(dust3d::Uuid componentId);
