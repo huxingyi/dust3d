@@ -34,12 +34,6 @@ public:
         m_weightBoneName = weightBoneName;
     }
 
-    void setPrecomputedRigSkeletonVertices(const std::vector<ModelOpenGLVertex>& vertices)
-    {
-        m_rigSkeletonVertices = vertices;
-        m_usePrecomputedVertices = true;
-    }
-
     const std::vector<dust3d::Vector3>& getVertices() const { return m_vertices; }
     const std::vector<std::vector<size_t>>& getFaces() const { return m_faces; }
     const std::vector<std::tuple<dust3d::Color, float, float>>* getVertexProperties() const { return m_vertexProperties.get(); }
@@ -73,7 +67,6 @@ private:
     std::unique_ptr<std::vector<std::tuple<dust3d::Color, float, float>>> m_vertexProperties;
     dust3d::Object* m_rigObject = nullptr;
     QString m_weightBoneName;
-    bool m_usePrecomputedVertices = false;
     std::vector<ModelOpenGLVertex> m_rigSkeletonVertices;
     ModelOpenGLVertex* m_combinedVertices = nullptr;
     int m_combinedVertexCount = 0;

@@ -205,8 +205,10 @@ void RigSkeletonMeshGenerator::generateMesh(const RigStructure& rigStructure, co
         buildBone(segment, bone.name);
     }
 
-    // Normalize the mesh size to ensure all rig types appear at similar scale
-    normalizeMeshSize();
+    if (m_normalizeRequired) {
+        // Normalize the mesh size to ensure all rig types appear at similar scale
+        normalizeMeshSize();
+    }
 
     // Convert quads to faces (split each quad into two triangles)
     m_resultFaces->reserve(m_resultQuads->size() * 2);
@@ -240,4 +242,9 @@ void RigSkeletonMeshGenerator::generateMesh(const RigStructure& rigStructure, co
             (*m_vertexProperties)[i] = std::make_tuple(vertexColor, 0.0f, 1.0f);
         }
     }
+}
+
+void RigSkeletonMeshGenerator::setNormalizeRequired(bool required)
+{
+    m_normalizeRequired = required;
 }

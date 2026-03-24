@@ -27,6 +27,8 @@ public:
     void setStartRadius(double radius);
     double getStartRadius() const;
 
+    void setNormalizeRequired(bool required);
+
 private:
     struct BoneSegment {
         dust3d::Vector3 fromPosition;
@@ -37,7 +39,9 @@ private:
 
     // Start radius - the radius at the bone start
     // End radius will be 1/3 of start radius
-    double m_startRadius;
+    double m_startRadius = 0.0;
+
+    bool m_normalizeRequired = true;
 
     std::unique_ptr<std::vector<dust3d::Vector3>> m_resultVertices;
     std::unique_ptr<std::vector<std::vector<size_t>>> m_resultQuads;

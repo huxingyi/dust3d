@@ -44,6 +44,11 @@ bool RigGenerator::generateRig(const Snapshot* snapshot, const RigStructure& tem
     }
 
     actualRig = templateRig; // Copy template structure
+    
+    // Extract coordinate transformation offsets from snapshot's canvas
+    m_mainProfileMiddleX = String::toFloat(String::valueOrEmpty(snapshot->canvas, "originX"));
+    m_mainProfileMiddleY = String::toFloat(String::valueOrEmpty(snapshot->canvas, "originY"));
+    m_sideProfileMiddleX = String::toFloat(String::valueOrEmpty(snapshot->canvas, "originZ"));
 
     // Clear template positions - they are only for template visualization
     for (auto& bone : actualRig.bones) {
@@ -386,9 +391,10 @@ bool RigGenerator::getNodePosition(const Snapshot* snapshot, const Uuid& nodeId,
     if (it == snapshot->nodes.end())
         return false;
 
-    x = String::toFloat(String::valueOrEmpty(it->second, "x"));
-    y = String::toFloat(String::valueOrEmpty(it->second, "y"));
-    z = String::toFloat(String::valueOrEmpty(it->second, "z"));
+    // Apply same coordinate transformation as MeshGenerator uses
+    x = (String::toFloat(String::valueOrEmpty(it->second, "x")) - m_mainProfileMiddleX);
+    y = (m_mainProfileMiddleY - String::toFloat(String::valueOrEmpty(it->second, "y")));
+    z = (m_sideProfileMiddleX - String::toFloat(String::valueOrEmpty(it->second, "z")));
     return true;
 }
 

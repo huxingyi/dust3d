@@ -89,6 +89,11 @@ public:
 
 private:
     std::string m_errorMessage;
+    
+    // Coordinate transformation offsets (from snapshot canvas)
+    float m_mainProfileMiddleX = 0.0f;
+    float m_mainProfileMiddleY = 0.0f;
+    float m_sideProfileMiddleX = 0.0f;
 
     // Helper: Extract all connected chains of nodes for a given bone name
     // Each chain is an ordered list of node UUIDs.
