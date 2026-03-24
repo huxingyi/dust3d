@@ -30,14 +30,19 @@ namespace dust3d {
 // Vertex bone binding: stores bone influences for a single vertex
 // A vertex can be influenced by at most 2 bones with linear interpolation
 struct VertexBoneBinding {
-    std::string bone1;       // Primary bone name
-    float weight1 = 1.0f;    // Weight for bone1 (0.0 to 1.0)
-    std::string bone2;       // Secondary bone name (empty if single bone)
-    float weight2 = 0.0f;    // Weight for bone2 (should be 1.0 - weight1 if bone2 exists)
+    std::string bone1; // Primary bone name
+    float weight1 = 1.0f; // Weight for bone1 (0.0 to 1.0)
+    std::string bone2; // Secondary bone name (empty if single bone)
+    float weight2 = 0.0f; // Weight for bone2 (should be 1.0 - weight1 if bone2 exists)
 
     VertexBoneBinding() = default;
     VertexBoneBinding(const std::string& b1, float w1 = 1.0f, const std::string& b2 = std::string(), float w2 = 0.0f)
-        : bone1(b1), weight1(w1), bone2(b2), weight2(w2) {}
+        : bone1(b1)
+        , weight1(w1)
+        , bone2(b2)
+        , weight2(w2)
+    {
+    }
 
     bool isValid() const { return !bone1.empty(); }
     bool isSingleBone() const { return bone2.empty(); }
@@ -46,19 +51,24 @@ struct VertexBoneBinding {
 // Node bone influence: stores which bones a node is influenced by
 // A node can be influenced by at most 2 bones based on its connected edges
 struct NodeBoneInfluence {
-    std::string primary;     // Primary bone name (or only bone if single)
-    std::string secondary;   // Secondary bone name (empty if single)
-    float lerp = 0.0f;       // Interpolation factor between primary and secondary (0.0 = all primary, 1.0 = all secondary)
+    std::string primary; // Primary bone name (or only bone if single)
+    std::string secondary; // Secondary bone name (empty if single)
+    float lerp = 0.0f; // Interpolation factor between primary and secondary (0.0 = all primary, 1.0 = all secondary)
 
     NodeBoneInfluence() = default;
     NodeBoneInfluence(const std::string& p, const std::string& s = std::string(), float l = 0.0f)
-        : primary(p), secondary(s), lerp(l) {}
+        : primary(p)
+        , secondary(s)
+        , lerp(l)
+    {
+    }
 
     bool isValid() const { return !primary.empty(); }
     bool isSingleBone() const { return secondary.empty(); }
 
     // Convert node influence to vertex binding
-    VertexBoneBinding toVertexBinding() const {
+    VertexBoneBinding toVertexBinding() const
+    {
         if (isSingleBone()) {
             return VertexBoneBinding(primary, 1.0f);
         } else {

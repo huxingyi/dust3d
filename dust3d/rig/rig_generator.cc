@@ -20,11 +20,11 @@
  *  SOFTWARE.
  */
 
-#include <dust3d/rig/rig_generator.h>
-#include <dust3d/base/debug.h>
-#include <dust3d/base/string.h>
 #include <algorithm>
 #include <cmath>
+#include <dust3d/base/debug.h>
+#include <dust3d/base/string.h>
+#include <dust3d/rig/rig_generator.h>
 
 namespace dust3d {
 
@@ -43,7 +43,7 @@ bool RigGenerator::generateRig(const Snapshot* snapshot, const RigStructure& tem
         return false;
     }
 
-    actualRig = templateRig;  // Copy template structure
+    actualRig = templateRig; // Copy template structure
 
     // Clear template positions - they are only for template visualization
     for (auto& bone : actualRig.bones) {
@@ -153,7 +153,7 @@ bool RigGenerator::generateRig(const Snapshot* snapshot, const RigStructure& tem
 }
 
 bool RigGenerator::computeNodeBoneInfluences(const Snapshot* snapshot,
-                                             std::map<Uuid, NodeBoneInfluence>& nodeBoneInfluences)
+    std::map<Uuid, NodeBoneInfluence>& nodeBoneInfluences)
 {
     if (!snapshot) {
         m_errorMessage = "Snapshot not initialized";
@@ -227,7 +227,7 @@ bool RigGenerator::computeNodeBoneInfluences(const Snapshot* snapshot,
 }
 
 bool RigGenerator::computeVertexBoneBindings(Object* object,
-                                             const std::map<Uuid, NodeBoneInfluence>& nodeBoneInfluences)
+    const std::map<Uuid, NodeBoneInfluence>& nodeBoneInfluences)
 {
     if (!object) {
         m_errorMessage = "Object not initialized";
@@ -268,8 +268,8 @@ bool RigGenerator::computeVertexBoneBindings(Object* object,
         VertexBoneBinding binding = influence.toVertexBinding();
 
         // Store binding in parallel arrays
-        object->vertexBone1[i] = {binding.bone1, binding.weight1};
-        object->vertexBone2[i] = {binding.bone2, binding.weight2};
+        object->vertexBone1[i] = { binding.bone1, binding.weight1 };
+        object->vertexBone2[i] = { binding.bone2, binding.weight2 };
     }
 
     m_errorMessage = "";
@@ -277,8 +277,8 @@ bool RigGenerator::computeVertexBoneBindings(Object* object,
 }
 
 bool RigGenerator::extractNodeChainsForBone(const Snapshot* snapshot,
-                                            const std::string& boneName,
-                                            std::vector<std::vector<Uuid>>& nodeChains)
+    const std::string& boneName,
+    std::vector<std::vector<Uuid>>& nodeChains)
 {
     nodeChains.clear();
 
@@ -353,8 +353,8 @@ bool RigGenerator::extractNodeChainsForBone(const Snapshot* snapshot,
 }
 
 void RigGenerator::orientChainTowardPoint(const Snapshot* snapshot,
-                                          std::vector<Uuid>& chain,
-                                          float refX, float refY, float refZ)
+    std::vector<Uuid>& chain,
+    float refX, float refY, float refZ)
 {
     if (chain.size() < 2)
         return;
@@ -380,7 +380,7 @@ void RigGenerator::orientChainTowardPoint(const Snapshot* snapshot,
 }
 
 bool RigGenerator::getNodePosition(const Snapshot* snapshot, const Uuid& nodeId,
-                                   float& x, float& y, float& z)
+    float& x, float& y, float& z)
 {
     auto it = snapshot->nodes.find(nodeId.toString());
     if (it == snapshot->nodes.end())
@@ -393,9 +393,9 @@ bool RigGenerator::getNodePosition(const Snapshot* snapshot, const Uuid& nodeId,
 }
 
 void RigGenerator::buildNodeAdjacency(const Snapshot* snapshot,
-                                     const std::string& boneName,
-                                     std::map<Uuid, std::vector<Uuid>>& adjacency,
-                                     std::set<Uuid>& allNodes)
+    const std::string& boneName,
+    std::map<Uuid, std::vector<Uuid>>& adjacency,
+    std::set<Uuid>& allNodes)
 {
     adjacency.clear();
     allNodes.clear();
@@ -403,12 +403,14 @@ void RigGenerator::buildNodeAdjacency(const Snapshot* snapshot,
     auto edgesForBone = getEdgesWithBoneName(snapshot, boneName);
 
     for (const auto* edge : edgesForBone) {
-        if (!edge) continue;
+        if (!edge)
+            continue;
 
         std::string fromNodeIdString = String::valueOrEmpty(*edge, "from");
         std::string toNodeIdString = String::valueOrEmpty(*edge, "to");
 
-        if (fromNodeIdString.empty() || toNodeIdString.empty()) continue;
+        if (fromNodeIdString.empty() || toNodeIdString.empty())
+            continue;
 
         Uuid n1(fromNodeIdString);
         Uuid n2(toNodeIdString);
@@ -420,8 +422,6 @@ void RigGenerator::buildNodeAdjacency(const Snapshot* snapshot,
         allNodes.insert(n2);
     }
 }
-
-
 
 std::vector<const std::map<std::string, std::string>*> RigGenerator::getEdgesWithBoneName(
     const Snapshot* snapshot,
@@ -441,8 +441,8 @@ std::vector<const std::map<std::string, std::string>*> RigGenerator::getEdgesWit
 }
 
 bool RigGenerator::nodeHasEdgeWithBoneName(const Snapshot* snapshot,
-                                           const Uuid& nodeId,
-                                           const std::string& boneName)
+    const Uuid& nodeId,
+    const std::string& boneName)
 {
     std::string nodeIdString = nodeId.toString();
 
@@ -462,7 +462,8 @@ bool RigGenerator::nodeHasEdgeWithBoneName(const Snapshot* snapshot,
 
 std::string RigGenerator::getEdgeBoneName(const std::map<std::string, std::string>* edge)
 {
-    if (!edge) return "";
+    if (!edge)
+        return "";
     return String::valueOrEmpty(*edge, "boneName");
 }
 

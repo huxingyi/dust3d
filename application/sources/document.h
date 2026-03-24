@@ -1,8 +1,8 @@
 #ifndef DUST3D_APPLICATION_DOCUMENT_H_
 #define DUST3D_APPLICATION_DOCUMENT_H_
 
-#include "debug.h"
 #include "bone_structure.h"
+#include "debug.h"
 #include "model_mesh.h"
 #include "monochrome_mesh.h"
 #include "theme.h"
@@ -19,6 +19,7 @@
 #include <dust3d/base/texture_type.h>
 #include <dust3d/base/uuid.h>
 #include <map>
+#include <memory>
 #include <set>
 #include <vector>
 
@@ -374,6 +375,13 @@ public:
     {
         return m_actualRigStructure;
     }
+    dust3d::Object* takeRigObject() const
+    {
+        if (nullptr == m_rigObject)
+            return nullptr;
+        dust3d::Object* rigObject = new dust3d::Object(*m_rigObject);
+        return rigObject;
+    }
     const Node* findNode(dust3d::Uuid nodeId) const;
     const Edge* findEdge(dust3d::Uuid edgeId) const;
     const Part* findPart(dust3d::Uuid partId) const;
@@ -535,6 +543,7 @@ private:
     QThread* m_rigGenerationThread = nullptr;
     bool m_isRigObsolete = false;
     RigStructure m_actualRigStructure;
+    std::unique_ptr<dust3d::Object> m_rigObject;
     void loadRigStructures();
     bool loadRigFromXml(const QString& filePath);
 

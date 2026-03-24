@@ -1,12 +1,12 @@
 #ifndef DUST3D_APPLICATION_RIG_SKELETON_MESH_GENERATOR_H_
 #define DUST3D_APPLICATION_RIG_SKELETON_MESH_GENERATOR_H_
 
-#include <dust3d/base/vector3.h>
+#include "bone_structure.h"
 #include <dust3d/base/color.h>
-#include <vector>
+#include <dust3d/base/vector3.h>
 #include <map>
 #include <memory>
-#include "bone_structure.h"
+#include <vector>
 
 class RigSkeletonMeshGenerator {
 public:
@@ -43,7 +43,7 @@ private:
     std::unique_ptr<std::vector<std::vector<size_t>>> m_resultQuads;
     std::unique_ptr<std::vector<std::vector<size_t>>> m_resultFaces;
     std::unique_ptr<std::vector<std::tuple<dust3d::Color, float, float>>> m_vertexProperties;
-    std::map<QString, std::pair<size_t, size_t>> m_boneVertexRanges;  // bone name -> (start index, end index)
+    std::map<QString, std::pair<size_t, size_t>> m_boneVertexRanges; // bone name -> (start index, end index)
 
     // Helper methods following the BlockMesh pattern
     std::vector<size_t> buildFace(const dust3d::Vector3& origin,

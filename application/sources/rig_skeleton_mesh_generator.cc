@@ -47,7 +47,7 @@ RigSkeletonMeshGenerator::BoneSegment RigSkeletonMeshGenerator::boneToBoneSegmen
     segment.fromPosition = dust3d::Vector3(bone.posX, bone.posY, bone.posZ);
     segment.toPosition = dust3d::Vector3(bone.endX, bone.endY, bone.endZ);
     segment.fromRadius = m_startRadius;
-    segment.toRadius = m_startRadius / 3.0;  // End radius is 1/3 of start radius
+    segment.toRadius = m_startRadius / 3.0; // End radius is 1/3 of start radius
     return segment;
 }
 
@@ -100,7 +100,7 @@ dust3d::Vector3 RigSkeletonMeshGenerator::calculateStartDirection(const dust3d::
 void RigSkeletonMeshGenerator::buildBone(const BoneSegment& bone, const QString& boneName)
 {
     size_t startVertexIndex = m_resultVertices->size();
-    
+
     dust3d::Vector3 fromFaceNormal = (bone.toPosition - bone.fromPosition).normalized();
     dust3d::Vector3 startDirection = calculateStartDirection(-fromFaceNormal);
     std::vector<size_t> fromFaces = buildFace(bone.fromPosition,
@@ -111,11 +111,11 @@ void RigSkeletonMeshGenerator::buildBone(const BoneSegment& bone, const QString&
     m_resultQuads->push_back(fromFaces);
     for (size_t i = 0; i < fromFaces.size(); ++i) {
         size_t j = (i + 1) % fromFaces.size();
-        m_resultQuads->push_back({fromFaces[j], fromFaces[i], toFaces[i], toFaces[j]});
+        m_resultQuads->push_back({ fromFaces[j], fromFaces[i], toFaces[i], toFaces[j] });
     }
     std::reverse(toFaces.begin(), toFaces.end());
     m_resultQuads->push_back(toFaces);
-    
+
     size_t endVertexIndex = m_resultVertices->size();
     m_boneVertexRanges[boneName] = std::make_pair(startVertexIndex, endVertexIndex);
 }
@@ -123,28 +123,34 @@ void RigSkeletonMeshGenerator::buildBone(const BoneSegment& bone, const QString&
 RigSkeletonMeshGenerator::BoundingBox RigSkeletonMeshGenerator::calculateBoundingBox() const
 {
     BoundingBox bbox;
-    
+
     if (m_resultVertices->empty()) {
         bbox.minPoint = dust3d::Vector3(0, 0, 0);
         bbox.maxPoint = dust3d::Vector3(0, 0, 0);
         return bbox;
     }
-    
+
     // Initialize with first vertex
     bbox.minPoint = (*m_resultVertices)[0];
     bbox.maxPoint = (*m_resultVertices)[0];
-    
+
     // Find min and max for each axis
     for (const auto& vertex : *m_resultVertices) {
-        if (vertex.x() < bbox.minPoint.x()) bbox.minPoint.setX(vertex.x());
-        if (vertex.y() < bbox.minPoint.y()) bbox.minPoint.setY(vertex.y());
-        if (vertex.z() < bbox.minPoint.z()) bbox.minPoint.setZ(vertex.z());
-        
-        if (vertex.x() > bbox.maxPoint.x()) bbox.maxPoint.setX(vertex.x());
-        if (vertex.y() > bbox.maxPoint.y()) bbox.maxPoint.setY(vertex.y());
-        if (vertex.z() > bbox.maxPoint.z()) bbox.maxPoint.setZ(vertex.z());
+        if (vertex.x() < bbox.minPoint.x())
+            bbox.minPoint.setX(vertex.x());
+        if (vertex.y() < bbox.minPoint.y())
+            bbox.minPoint.setY(vertex.y());
+        if (vertex.z() < bbox.minPoint.z())
+            bbox.minPoint.setZ(vertex.z());
+
+        if (vertex.x() > bbox.maxPoint.x())
+            bbox.maxPoint.setX(vertex.x());
+        if (vertex.y() > bbox.maxPoint.y())
+            bbox.maxPoint.setY(vertex.y());
+        if (vertex.z() > bbox.maxPoint.z())
+            bbox.maxPoint.setZ(vertex.z());
     }
-    
+
     return bbox;
 }
 
@@ -153,27 +159,27 @@ void RigSkeletonMeshGenerator::normalizeMeshSize()
     if (m_resultVertices->empty()) {
         return;
     }
-    
+
     // Calculate bounding box
     BoundingBox bbox = calculateBoundingBox();
-    
+
     // Calculate the size of the rig in each dimension
     double sizeX = bbox.maxPoint.x() - bbox.minPoint.x();
     double sizeY = bbox.maxPoint.y() - bbox.minPoint.y();
     double sizeZ = bbox.maxPoint.z() - bbox.minPoint.z();
-    
+
     // Find the largest dimension
-    double maxSize = std::max({sizeX, sizeY, sizeZ});
-    
+    double maxSize = std::max({ sizeX, sizeY, sizeZ });
+
     // Target size - normalize all rigs to have their largest dimension be 1.5 units
     const double TARGET_SIZE = 1.5;
-    
-    if (maxSize > 0.001) {  // Avoid division by very small numbers
+
+    if (maxSize > 0.001) { // Avoid division by very small numbers
         double scaleFactor = TARGET_SIZE / maxSize;
-        
+
         // Calculate the center of the bounding box
         dust3d::Vector3 center = (bbox.minPoint + bbox.maxPoint) * 0.5;
-        
+
         // Scale all vertices around the center
         for (auto& vertex : *m_resultVertices) {
             // Translate to origin
@@ -207,27 +213,27 @@ void RigSkeletonMeshGenerator::generateMesh(const RigStructure& rigStructure, co
     for (const auto& quad : *m_resultQuads) {
         if (quad.size() == 4) {
             // Split quad into two triangles
-            m_resultFaces->push_back({quad[0], quad[1], quad[2]});
-            m_resultFaces->push_back({quad[2], quad[3], quad[0]});
+            m_resultFaces->push_back({ quad[0], quad[1], quad[2] });
+            m_resultFaces->push_back({ quad[2], quad[3], quad[0] });
         } else if (quad.size() == 3) {
             // Already a triangle
             m_resultFaces->push_back(quad);
         }
     }
-    
+
     // Generate per-vertex properties if a bone is selected
     if (!selectedBoneName.isEmpty()) {
         m_vertexProperties->resize(m_resultVertices->size());
-        
+
         auto selectedBoneIt = m_boneVertexRanges.find(selectedBoneName);
         size_t selectedStartIdx = (selectedBoneIt != m_boneVertexRanges.end()) ? selectedBoneIt->second.first : -1;
         size_t selectedEndIdx = (selectedBoneIt != m_boneVertexRanges.end()) ? selectedBoneIt->second.second : -1;
-        
+
         // Default color for non-selected bones (light gray)
         dust3d::Color defaultColor(Theme::green.redF(), Theme::green.greenF(), Theme::green.blueF());
         // Highlight color for selected bone (bright orange/yellow)
         dust3d::Color highlightColor(Theme::red.redF(), Theme::red.greenF(), Theme::red.blueF());
-        
+
         for (size_t i = 0; i < m_resultVertices->size(); ++i) {
             bool isSelected = (selectedStartIdx != (size_t)-1 && i >= selectedStartIdx && i < selectedEndIdx);
             dust3d::Color vertexColor = isSelected ? highlightColor : defaultColor;

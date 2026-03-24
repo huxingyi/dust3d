@@ -1,26 +1,25 @@
 #include "bone_manage_widget.h"
 #include "document.h"
-#include "theme.h"
 #include "model_mesh.h"
 #include "skeleton_graphics_widget.h"
+#include "theme.h"
 #include <QComboBox>
+#include <QDebug>
+#include <QFile>
+#include <QHBoxLayout>
+#include <QIcon>
+#include <QItemSelectionModel>
 #include <QLabel>
+#include <QMap>
 #include <QMenu>
 #include <QPushButton>
-#include <QVBoxLayout>
-#include <QHBoxLayout>
-#include <QFile>
-#include <QIcon>
-#include <QMap>
-#include <QDebug>
-#include <QTreeView>
-#include <QStandardItemModel>
 #include <QStandardItem>
-#include <QItemSelectionModel>
+#include <QStandardItemModel>
 #include <QThread>
+#include <QTreeView>
+#include <QVBoxLayout>
 #include <rapidxml.hpp>
 #include <string>
-
 
 BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
     : QWidget(parent)
@@ -65,11 +64,11 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
     mainLayout->addWidget(m_boneTreeView);
 
     // Model Widget for rendering the rig skeleton mesh
-    m_modelWidget = new ModelWidget();
-    m_modelWidget->setMinimumHeight(250);
-    m_modelWidget->enableZoom(false);  // Only allow rotation, disable zoom
+    m_rigTemplateModelWidget = new ModelWidget();
+    m_rigTemplateModelWidget->setMinimumHeight(250);
+    m_rigTemplateModelWidget->enableZoom(false); // Only allow rotation, disable zoom
 
-    mainLayout->addWidget(m_modelWidget);
+    mainLayout->addWidget(m_rigTemplateModelWidget);
 
     // Assign button to assign selected edges to the selected bone
     m_assignButton = new QPushButton(tr("Assign Selected Edges to Bone"));
@@ -77,10 +76,11 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
     mainLayout->addWidget(m_assignButton);
 
     // Model Widget for rendering the actual rig skeleton mesh (computed from edge assignments)
-    m_actualRigModelWidget = new ModelWidget();
-    m_actualRigModelWidget->setMinimumHeight(250);
-    m_actualRigModelWidget->enableZoom(false);
-    mainLayout->addWidget(m_actualRigModelWidget);
+    m_rigSkinningModelWidget = new ModelWidget();
+    m_rigSkinningModelWidget->setMinimumHeight(250);
+    m_rigSkinningModelWidget->enableZoom(false);
+    m_rigSkinningModelWidget->disableCullFace();
+    mainLayout->addWidget(m_rigSkinningModelWidget);
 
     mainLayout->addStretch();
 
@@ -101,21 +101,21 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
     // Combo box changes trigger document's setRigType slot
     connect(m_rigTypeComboBox, QOverload<const QString&>::of(&QComboBox::currentTextChanged),
         m_document, &Document::setRigType);
-    
+
     // Document's rigTypeChanged signal updates the bone tree view
     connect(m_document, &Document::rigTypeChanged,
         this, &BoneManageWidget::onRigTypeChanged);
 
     connect(this, &QWidget::customContextMenuRequested, this, &BoneManageWidget::showContextMenu);
-    
+
     // Connect tree view selection changes to update the highlighted bone
     connect(m_boneTreeView->selectionModel(), &QItemSelectionModel::selectionChanged,
         this, &BoneManageWidget::onBoneSelectionChanged);
-    
+
     // Connect button click to assign selected edges to bone
     connect(m_assignButton, &QPushButton::clicked,
         this, &BoneManageWidget::assignSelectedEdgesToBone);
-    
+
     // Connect rig generation ready signal to update actual rig model widget
     connect(m_document, &Document::rigGenerationReady,
         this, &BoneManageWidget::onRigGenerationReady);
@@ -127,15 +127,15 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
 BoneManageWidget::~BoneManageWidget()
 {
     // Clean up the mesh generation thread and worker
-    if (m_meshGenerationThread) {
-        m_meshGenerationThread->quit();
-        m_meshGenerationThread->wait();
-        m_meshGenerationThread = nullptr;
+    if (m_rigTemplateMeshGenerationThread) {
+        m_rigTemplateMeshGenerationThread->quit();
+        m_rigTemplateMeshGenerationThread->wait();
+        m_rigTemplateMeshGenerationThread = nullptr;
     }
-    if (m_actualRigMeshThread) {
-        m_actualRigMeshThread->quit();
-        m_actualRigMeshThread->wait();
-        m_actualRigMeshThread = nullptr;
+    if (m_rigSkinningMeshGenerationThread) {
+        m_rigSkinningMeshGenerationThread->quit();
+        m_rigSkinningMeshGenerationThread->wait();
+        m_rigSkinningMeshGenerationThread = nullptr;
     }
 }
 
@@ -219,8 +219,8 @@ bool BoneManageWidget::loadRigFromXml(const QString& filePath)
 
         // Parse bones
         for (rapidxml::xml_node<>* boneElement = rigElement->first_node("bone");
-             boneElement;
-             boneElement = boneElement->next_sibling("bone")) {
+            boneElement;
+            boneElement = boneElement->next_sibling("bone")) {
 
             BoneNode bone;
 
@@ -242,9 +242,12 @@ bool BoneManageWidget::loadRigFromXml(const QString& filePath)
                 rapidxml::xml_attribute<>* yAttr = posElement->first_attribute("y");
                 rapidxml::xml_attribute<>* zAttr = posElement->first_attribute("z");
 
-                if (xAttr) bone.posX = QString::fromStdString(std::string(xAttr->value(), xAttr->value_size())).toFloat();
-                if (yAttr) bone.posY = QString::fromStdString(std::string(yAttr->value(), yAttr->value_size())).toFloat();
-                if (zAttr) bone.posZ = QString::fromStdString(std::string(zAttr->value(), zAttr->value_size())).toFloat();
+                if (xAttr)
+                    bone.posX = QString::fromStdString(std::string(xAttr->value(), xAttr->value_size())).toFloat();
+                if (yAttr)
+                    bone.posY = QString::fromStdString(std::string(yAttr->value(), yAttr->value_size())).toFloat();
+                if (zAttr)
+                    bone.posZ = QString::fromStdString(std::string(zAttr->value(), zAttr->value_size())).toFloat();
             }
 
             // Get endPosition
@@ -254,9 +257,12 @@ bool BoneManageWidget::loadRigFromXml(const QString& filePath)
                 rapidxml::xml_attribute<>* yAttr = endPosElement->first_attribute("y");
                 rapidxml::xml_attribute<>* zAttr = endPosElement->first_attribute("z");
 
-                if (xAttr) bone.endX = QString::fromStdString(std::string(xAttr->value(), xAttr->value_size())).toFloat();
-                if (yAttr) bone.endY = QString::fromStdString(std::string(yAttr->value(), yAttr->value_size())).toFloat();
-                if (zAttr) bone.endZ = QString::fromStdString(std::string(zAttr->value(), zAttr->value_size())).toFloat();
+                if (xAttr)
+                    bone.endX = QString::fromStdString(std::string(xAttr->value(), xAttr->value_size())).toFloat();
+                if (yAttr)
+                    bone.endY = QString::fromStdString(std::string(yAttr->value(), yAttr->value_size())).toFloat();
+                if (zAttr)
+                    bone.endZ = QString::fromStdString(std::string(zAttr->value(), zAttr->value_size())).toFloat();
             }
 
             rigStruct.bones.push_back(bone);
@@ -264,7 +270,7 @@ bool BoneManageWidget::loadRigFromXml(const QString& filePath)
 
         if (!rigStruct.type.isEmpty()) {
             m_rigStructures[rigStruct.type] = rigStruct;
-            qDebug() << "Loaded rig:" << rigStruct.type << "-" << rigStruct.name 
+            qDebug() << "Loaded rig:" << rigStruct.type << "-" << rigStruct.name
                      << "with" << rigStruct.bones.size() << "bones";
             return true;
         }
@@ -288,7 +294,7 @@ void BoneManageWidget::onRigTypeChanged(const QString& rigType)
         }
     }
     m_rigTypeComboBox->setCurrentIndex(index);
-    
+
     updateBoneTreeView(rigType);
 }
 
@@ -296,7 +302,7 @@ void BoneManageWidget::onBoneSelectionChanged()
 {
     QModelIndexList selectedIndexes = m_boneTreeView->selectionModel()->selectedIndexes();
     QString selectedBoneName;
-    
+
     if (!selectedIndexes.isEmpty()) {
         QModelIndex selectedIndex = selectedIndexes.first();
         QStandardItem* selectedItem = m_boneTreeModel->itemFromIndex(selectedIndex);
@@ -304,12 +310,14 @@ void BoneManageWidget::onBoneSelectionChanged()
             selectedBoneName = selectedItem->text();
         }
     }
-    
+
     m_selectedBoneName = selectedBoneName;
-    
+
     // Regenerate mesh with the selected bone highlighted
     QString currentRigType = m_rigTypeComboBox->currentText();
-    generateRigSkeletonMesh(currentRigType, selectedBoneName);
+    generateRigTemplateMesh(currentRigType, selectedBoneName);
+
+    generateRigSkinningMesh();
 }
 
 void BoneManageWidget::updateBoneTreeView(const QString& rigType)
@@ -318,14 +326,14 @@ void BoneManageWidget::updateBoneTreeView(const QString& rigType)
 
     if (rigType == tr("None")) {
         m_boneTreeView->hide();
-        m_modelWidget->hide();
-        m_actualRigModelWidget->hide();
+        m_rigTemplateModelWidget->hide();
+        m_rigSkinningModelWidget->hide();
         return;
     }
 
     m_boneTreeView->show();
-    m_modelWidget->show();
-    m_actualRigModelWidget->show();
+    m_rigTemplateModelWidget->show();
+    m_rigSkinningModelWidget->show();
 
     // Find the rig structure by name
     RigStructure* selectedRig = nullptr;
@@ -371,10 +379,10 @@ void BoneManageWidget::updateBoneTreeView(const QString& rigType)
     m_boneTreeView->expandAll();
 
     // Generate the rig skeleton mesh for visualization
-    generateRigSkeletonMesh(rigType, m_selectedBoneName);
+    generateRigTemplateMesh(rigType, m_selectedBoneName);
 }
 
-void BoneManageWidget::generateRigSkeletonMesh(const QString& rigType, const QString& selectedBoneName)
+void BoneManageWidget::generateRigTemplateMesh(const QString& rigType, const QString& selectedBoneName)
 {
     if (rigType == tr("None")) {
         return;
@@ -394,8 +402,8 @@ void BoneManageWidget::generateRigSkeletonMesh(const QString& rigType, const QSt
     }
 
     // If a mesh generation thread is already running, mark as obsolete instead of waiting
-    if (nullptr != m_meshGenerationThread) {
-        m_rigSkeletonMeshObsolete = true;
+    if (nullptr != m_rigTemplateMeshGenerationThread) {
+        m_rigTemplateMeshObsolete = true;
         m_pendingRigType = rigType;
         m_pendingSelectedBoneName = selectedBoneName;
         qDebug() << "Mesh generation already in progress, marking as obsolete";
@@ -403,33 +411,33 @@ void BoneManageWidget::generateRigSkeletonMesh(const QString& rigType, const QSt
     }
 
     // Create a new worker and thread
-    m_meshWorker = std::make_unique<RigSkeletonMeshWorker>();
-    m_meshWorker->setParameters(*selectedRig, selectedBoneName, 0.02);
+    m_rigTemplateMeshWorker = std::make_unique<RigSkeletonMeshWorker>();
+    m_rigTemplateMeshWorker->setParameters(*selectedRig, selectedBoneName, 0.02);
 
-    m_meshGenerationThread = new QThread;
-    m_meshWorker->moveToThread(m_meshGenerationThread);
+    m_rigTemplateMeshGenerationThread = new QThread;
+    m_rigTemplateMeshWorker->moveToThread(m_rigTemplateMeshGenerationThread);
 
     // Connect signals
-    connect(m_meshGenerationThread, &QThread::started, m_meshWorker.get(), &RigSkeletonMeshWorker::process);
-    connect(m_meshWorker.get(), &RigSkeletonMeshWorker::finished, this, &BoneManageWidget::onRigSkeletonMeshReady);
-    connect(m_meshWorker.get(), &RigSkeletonMeshWorker::finished, m_meshGenerationThread, &QThread::quit);
-    connect(m_meshGenerationThread, &QThread::finished, this, &BoneManageWidget::onMeshGenerationThreadFinished);
-    connect(m_meshGenerationThread, &QThread::finished, m_meshGenerationThread, &QThread::deleteLater);
+    connect(m_rigTemplateMeshGenerationThread, &QThread::started, m_rigTemplateMeshWorker.get(), &RigSkeletonMeshWorker::process);
+    connect(m_rigTemplateMeshWorker.get(), &RigSkeletonMeshWorker::finished, this, &BoneManageWidget::onRigSkeletonTemplateMeshReady);
+    connect(m_rigTemplateMeshWorker.get(), &RigSkeletonMeshWorker::finished, m_rigTemplateMeshGenerationThread, &QThread::quit);
+    connect(m_rigTemplateMeshGenerationThread, &QThread::finished, this, &BoneManageWidget::onRigTemplateMeshGenerationThreadFinished);
+    connect(m_rigTemplateMeshGenerationThread, &QThread::finished, m_rigTemplateMeshGenerationThread, &QThread::deleteLater);
 
-    m_rigSkeletonMeshObsolete = false;
+    m_rigTemplateMeshObsolete = false;
     qDebug() << "Starting threaded mesh generation for" << rigType;
-    m_meshGenerationThread->start();
+    m_rigTemplateMeshGenerationThread->start();
 }
 
-void BoneManageWidget::onRigSkeletonMeshReady()
+void BoneManageWidget::onRigSkeletonTemplateMeshReady()
 {
-    if (!m_meshWorker) {
+    if (!m_rigTemplateMeshWorker) {
         qWarning() << "Mesh worker is null";
         return;
     }
 
-    const auto& vertices = m_meshWorker->getVertices();
-    const auto& faces = m_meshWorker->getFaces();
+    const auto& vertices = m_rigTemplateMeshWorker->getVertices();
+    const auto& faces = m_rigTemplateMeshWorker->getFaces();
 
     if (vertices.empty() || faces.empty()) {
         qWarning() << "Failed to generate rig skeleton mesh";
@@ -442,39 +450,39 @@ void BoneManageWidget::onRigSkeletonMeshReady()
         if (face.size() >= 3) {
             dust3d::Vector3 faceNormal = dust3d::Vector3::normal(
                 vertices[face[0]], vertices[face[1]], vertices[face[2]]);
-            triangleVertexNormals.push_back({faceNormal, faceNormal, faceNormal});
+            triangleVertexNormals.push_back({ faceNormal, faceNormal, faceNormal });
         }
     }
 
     // Get per-vertex properties if available (for bone highlighting)
-    const auto* vertexProperties = m_meshWorker->getVertexProperties();
-    
+    const auto* vertexProperties = m_rigTemplateMeshWorker->getVertexProperties();
+
     ModelMesh* rigSkeletonMesh = new ModelMesh(vertices, faces, triangleVertexNormals,
-        dust3d::Color(Theme::green.redF(), Theme::green.greenF(), Theme::green.blueF()),  // Default light gray color for skeleton
-        0.0,   // No metalness
-        1.0,   // Full roughness
-        vertexProperties);  // Use per-vertex properties if available
+        dust3d::Color(Theme::green.redF(), Theme::green.greenF(), Theme::green.blueF()), // Default light gray color for skeleton
+        0.0, // No metalness
+        1.0, // Full roughness
+        vertexProperties); // Use per-vertex properties if available
 
     // Update the model widget to display the generated mesh
-    if (m_modelWidget) {
-        m_modelWidget->updateMesh(rigSkeletonMesh);
+    if (m_rigTemplateModelWidget) {
+        m_rigTemplateModelWidget->updateMesh(rigSkeletonMesh);
     }
 
     qDebug() << "Rig skeleton mesh generated successfully"
              << "with" << vertices.size() << "vertices and" << faces.size() << "faces";
 }
 
-void BoneManageWidget::onMeshGenerationThreadFinished()
+void BoneManageWidget::onRigTemplateMeshGenerationThreadFinished()
 {
     // Clean up thread and worker pointers after thread finishes
-    m_meshGenerationThread = nullptr;
-    m_meshWorker = nullptr;
+    m_rigTemplateMeshGenerationThread = nullptr;
+    m_rigTemplateMeshWorker = nullptr;
     qDebug() << "Mesh generation thread finished and cleaned up";
 
     // If mesh was marked as obsolete during generation, regenerate with pending parameters
-    if (m_rigSkeletonMeshObsolete) {
+    if (m_rigTemplateMeshObsolete) {
         qDebug() << "Regenerating rig skeleton mesh due to obsolete flag";
-        generateRigSkeletonMesh(m_pendingRigType, m_pendingSelectedBoneName);
+        generateRigTemplateMesh(m_pendingRigType, m_pendingSelectedBoneName);
     }
 }
 
@@ -492,7 +500,7 @@ void BoneManageWidget::assignSelectedEdgesToBone()
 
     // Get the selected edge IDs from the graphics widget
     std::set<dust3d::Uuid> selectedEdgeIds = m_skeletonGraphicsWidget->getSelectedEdgeIds();
-    
+
     if (selectedEdgeIds.empty()) {
         qWarning() << "No edges selected on the canvas";
         return;
@@ -508,75 +516,66 @@ void BoneManageWidget::assignSelectedEdgesToBone()
 
 void BoneManageWidget::onRigGenerationReady()
 {
+    generateRigSkinningMesh();
+}
+
+void BoneManageWidget::onRigSkinningMeshReady()
+{
+    if (!m_rigSkinningMeshWorker)
+        return;
+
+    // Use combined mesh built in the worker thread
+    ModelOpenGLVertex* combinedVertices = m_rigSkinningMeshWorker->takeCombinedVertices();
+    int combinedVertexCount = m_rigSkinningMeshWorker->getCombinedVertexCount();
+
+    if (combinedVertices && combinedVertexCount > 0) {
+        ModelMesh* combinedMesh = new ModelMesh(combinedVertices, combinedVertexCount);
+        if (m_rigSkinningModelWidget) {
+            m_rigSkinningModelWidget->updateMesh(combinedMesh);
+        }
+    }
+
+    qDebug() << "Actual rig mesh updated with" << combinedVertexCount << "combined vertices";
+}
+
+void BoneManageWidget::onRigSkinningMeshThreadFinished()
+{
+    m_rigSkinningMeshGenerationThread = nullptr;
+    m_rigSkinningMeshWorker = nullptr;
+
+    if (m_rigSkinningMeshObsolete) {
+        generateRigSkinningMesh();
+    }
+}
+
+void BoneManageWidget::generateRigSkinningMesh()
+{
+    if (nullptr != m_rigSkinningMeshGenerationThread) {
+        m_rigSkinningMeshObsolete = true;
+        return;
+    }
+
+    m_rigSkinningMeshObsolete = false;
+
     const RigStructure& actualRig = m_document->getActualRigStructure();
     if (actualRig.bones.empty())
         return;
 
-    // If an actual rig mesh generation thread is already running, mark as obsolete
-    if (nullptr != m_actualRigMeshThread) {
-        m_actualRigMeshObsolete = true;
-        return;
-    }
+    dust3d::Object* rigObject = m_document->takeRigObject();
 
-    m_actualRigMeshObsolete = false;
+    m_rigSkinningMeshWorker = std::make_unique<RigSkeletonMeshWorker>();
+    m_rigSkinningMeshWorker->setParameters(actualRig, QString(), 0.02);
+    m_rigSkinningMeshWorker->setRigObject(rigObject, m_selectedBoneName);
 
-    m_actualRigMeshWorker = std::make_unique<RigSkeletonMeshWorker>();
-    m_actualRigMeshWorker->setParameters(actualRig, QString(), 0.02);
+    m_rigSkinningMeshGenerationThread = new QThread;
+    m_rigSkinningMeshWorker->moveToThread(m_rigSkinningMeshGenerationThread);
 
-    m_actualRigMeshThread = new QThread;
-    m_actualRigMeshWorker->moveToThread(m_actualRigMeshThread);
+    connect(m_rigSkinningMeshGenerationThread, &QThread::started, m_rigSkinningMeshWorker.get(), &RigSkeletonMeshWorker::process);
+    connect(m_rigSkinningMeshWorker.get(), &RigSkeletonMeshWorker::finished, this, &BoneManageWidget::onRigSkinningMeshReady);
+    connect(m_rigSkinningMeshWorker.get(), &RigSkeletonMeshWorker::finished, m_rigSkinningMeshGenerationThread, &QThread::quit);
+    connect(m_rigSkinningMeshGenerationThread, &QThread::finished, this, &BoneManageWidget::onRigSkinningMeshThreadFinished);
+    connect(m_rigSkinningMeshGenerationThread, &QThread::finished, m_rigSkinningMeshGenerationThread, &QThread::deleteLater);
 
-    connect(m_actualRigMeshThread, &QThread::started, m_actualRigMeshWorker.get(), &RigSkeletonMeshWorker::process);
-    connect(m_actualRigMeshWorker.get(), &RigSkeletonMeshWorker::finished, this, &BoneManageWidget::onActualRigMeshReady);
-    connect(m_actualRigMeshWorker.get(), &RigSkeletonMeshWorker::finished, m_actualRigMeshThread, &QThread::quit);
-    connect(m_actualRigMeshThread, &QThread::finished, this, &BoneManageWidget::onActualRigMeshThreadFinished);
-    connect(m_actualRigMeshThread, &QThread::finished, m_actualRigMeshThread, &QThread::deleteLater);
-
-    qDebug() << "Starting actual rig mesh generation";
-    m_actualRigMeshThread->start();
+    m_rigSkinningMeshGenerationThread->start();
 }
 
-void BoneManageWidget::onActualRigMeshReady()
-{
-    if (!m_actualRigMeshWorker)
-        return;
-
-    const auto& vertices = m_actualRigMeshWorker->getVertices();
-    const auto& faces = m_actualRigMeshWorker->getFaces();
-
-    if (vertices.empty() || faces.empty()) {
-        qWarning() << "Failed to generate actual rig skeleton mesh";
-        return;
-    }
-
-    std::vector<std::vector<dust3d::Vector3>> triangleVertexNormals;
-    for (const auto& face : faces) {
-        if (face.size() >= 3) {
-            dust3d::Vector3 faceNormal = dust3d::Vector3::normal(
-                vertices[face[0]], vertices[face[1]], vertices[face[2]]);
-            triangleVertexNormals.push_back({faceNormal, faceNormal, faceNormal});
-        }
-    }
-
-    const auto* vertexProperties = m_actualRigMeshWorker->getVertexProperties();
-
-    ModelMesh* rigMesh = new ModelMesh(vertices, faces, triangleVertexNormals,
-        dust3d::Color(Theme::green.redF(), Theme::green.greenF(), Theme::green.blueF()),
-        0.0, 1.0, vertexProperties);
-
-    if (m_actualRigModelWidget) {
-        m_actualRigModelWidget->updateMesh(rigMesh);
-    }
-
-    qDebug() << "Actual rig skeleton mesh generated with" << vertices.size() << "vertices";
-}
-
-void BoneManageWidget::onActualRigMeshThreadFinished()
-{
-    m_actualRigMeshThread = nullptr;
-    m_actualRigMeshWorker = nullptr;
-
-    if (m_actualRigMeshObsolete) {
-        onRigGenerationReady();
-    }
-}

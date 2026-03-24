@@ -1,8 +1,8 @@
 #ifndef DUST3D_APPLICATION_BONE_STRUCTURE_H_
 #define DUST3D_APPLICATION_BONE_STRUCTURE_H_
 
-#include <dust3d/rig/rig_generator.h>
 #include <QString>
+#include <dust3d/rig/rig_generator.h>
 #include <vector>
 
 // Qt wrapper for dust3d::RigNode with QString for UI compatibility
@@ -12,14 +12,29 @@ struct BoneNode {
     float posX, posY, posZ;
     float endX, endY, endZ;
 
-    BoneNode() : posX(0), posY(0), posZ(0), endX(0), endY(0), endZ(0) {}
+    BoneNode()
+        : posX(0)
+        , posY(0)
+        , posZ(0)
+        , endX(0)
+        , endY(0)
+        , endZ(0)
+    {
+    }
     BoneNode(const dust3d::RigNode& rigNode)
-        : name(QString::fromStdString(rigNode.name)),
-          parent(QString::fromStdString(rigNode.parent)),
-          posX(rigNode.posX), posY(rigNode.posY), posZ(rigNode.posZ),
-          endX(rigNode.endX), endY(rigNode.endY), endZ(rigNode.endZ) {}
+        : name(QString::fromStdString(rigNode.name))
+        , parent(QString::fromStdString(rigNode.parent))
+        , posX(rigNode.posX)
+        , posY(rigNode.posY)
+        , posZ(rigNode.posZ)
+        , endX(rigNode.endX)
+        , endY(rigNode.endY)
+        , endZ(rigNode.endZ)
+    {
+    }
 
-    dust3d::RigNode toRigNode() const {
+    dust3d::RigNode toRigNode() const
+    {
         dust3d::RigNode node;
         node.name = name.toStdString();
         node.parent = parent.toStdString();
@@ -42,15 +57,17 @@ struct RigStructure {
 
     RigStructure() = default;
     RigStructure(const dust3d::RigStructure& rigStruct)
-        : type(QString::fromStdString(rigStruct.type)),
-          name(QString::fromStdString(rigStruct.name)),
-          description(QString::fromStdString(rigStruct.description)) {
+        : type(QString::fromStdString(rigStruct.type))
+        , name(QString::fromStdString(rigStruct.name))
+        , description(QString::fromStdString(rigStruct.description))
+    {
         for (const auto& bone : rigStruct.bones) {
             bones.push_back(BoneNode(bone));
         }
     }
 
-    dust3d::RigStructure toRigStructure() const {
+    dust3d::RigStructure toRigStructure() const
+    {
         dust3d::RigStructure rigStruct;
         rigStruct.type = type.toStdString();
         rigStruct.name = name.toStdString();

@@ -66,14 +66,14 @@ public:
     std::vector<Color> vertexColors;
     std::vector<float> vertexSmoothCutoffDegrees;
     std::map<std::array<PositionKey, 3>, Uuid> brokenTrianglesToComponentIdMap;
-    
+
     // Bone binding data: each vertex can be bound to at most 2 bones with interpolation weights
     // Indexed parallel to vertices; bone names and weights stored in pairs
     // vertexBone1[i] = {primary bone name, weight1}
     // vertexBone2[i] = {secondary bone name, weight2}  (second string empty if unused)
     std::vector<std::pair<std::string, float>> vertexBone1;
     std::vector<std::pair<std::string, float>> vertexBone2;
-    
+
     bool alphaEnabled = false;
     uint64_t meshId = 0;
 

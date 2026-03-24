@@ -72,13 +72,13 @@ public:
     // Compute node-to-bone influences from snapshot edges
     // output: nodeBoneInfluences - maps node UUID -> bone influence
     bool computeNodeBoneInfluences(const Snapshot* snapshot,
-                                   std::map<Uuid, NodeBoneInfluence>& nodeBoneInfluences);
+        std::map<Uuid, NodeBoneInfluence>& nodeBoneInfluences);
 
     // Compute vertex bone bindings for a generated mesh object
     // Uses the mesh's positionToNodeIdMap to trace vertices back to nodes,
     // then applies node bone influences to create vertex bindings
     bool computeVertexBoneBindings(Object* object,
-                                   const std::map<Uuid, NodeBoneInfluence>& nodeBoneInfluences);
+        const std::map<Uuid, NodeBoneInfluence>& nodeBoneInfluences);
 
     // Apply rig bindings to the generated mesh using the snapshot's edge bone assignments
     // This should be called after generate() to apply skeletal rig weights to vertices
@@ -94,23 +94,23 @@ private:
     // Each chain is an ordered list of node UUIDs.
     // Multiple disconnected groups of edges produce multiple chains.
     bool extractNodeChainsForBone(const Snapshot* snapshot,
-                                  const std::string& boneName,
-                                  std::vector<std::vector<Uuid>>& nodeChains);
+        const std::string& boneName,
+        std::vector<std::vector<Uuid>>& nodeChains);
 
     // Helper: Build node connectivity graph from edges with a given bone name
     void buildNodeAdjacency(const Snapshot* snapshot,
-                           const std::string& boneName,
-                           std::map<Uuid, std::vector<Uuid>>& adjacency,
-                           std::set<Uuid>& allNodes);
+        const std::string& boneName,
+        std::map<Uuid, std::vector<Uuid>>& adjacency,
+        std::set<Uuid>& allNodes);
 
     // Helper: Orient a chain so its end closest to refPoint comes first
     void orientChainTowardPoint(const Snapshot* snapshot,
-                               std::vector<Uuid>& chain,
-                               float refX, float refY, float refZ);
+        std::vector<Uuid>& chain,
+        float refX, float refY, float refZ);
 
     // Helper: Get position of a single node from the snapshot
     bool getNodePosition(const Snapshot* snapshot, const Uuid& nodeId,
-                        float& x, float& y, float& z);
+        float& x, float& y, float& z);
 
     // Helper: Get all edges with a specific bone name
     std::vector<const std::map<std::string, std::string>*> getEdgesWithBoneName(
@@ -119,8 +119,8 @@ private:
 
     // Helper: Check if node has edge with given boneName
     bool nodeHasEdgeWithBoneName(const Snapshot* snapshot,
-                                 const Uuid& nodeId,
-                                 const std::string& boneName);
+        const Uuid& nodeId,
+        const std::string& boneName);
 
     // Helper: Get bone name from edge (or empty string if not assigned)
     std::string getEdgeBoneName(const std::map<std::string, std::string>* edge);

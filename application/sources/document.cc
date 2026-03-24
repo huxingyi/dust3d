@@ -1475,7 +1475,7 @@ void Document::setEdgeBoneName(dust3d::Uuid edgeId, const QString& boneName)
     auto edgeIt = edgeMap.find(edgeId);
     if (edgeIt == edgeMap.end())
         return;
-    
+
     edgeIt->second.boneName = boneName;
     emit optionsChanged();
     generateRig();
@@ -1573,11 +1573,15 @@ void Document::generateRig()
 
     m_isRigObsolete = false;
 
-    auto snapshot = std::make_unique<dust3d::Snapshot>();
-    toSnapshot(snapshot.get());
+    if (nullptr == m_currentObject || nullptr == m_currentSnapshot)
+        return;
+
+    auto snapshot = std::make_unique<dust3d::Snapshot>(*m_currentSnapshot);
+
+    auto object = std::make_unique<dust3d::Object>(*m_currentObject);
 
     m_rigGeneratorWorker = new RigGeneratorWorker;
-    m_rigGeneratorWorker->setParameters(std::move(snapshot), *templateRig);
+    m_rigGeneratorWorker->setParameters(std::move(snapshot), std::move(object), *templateRig);
 
     m_rigGenerationThread = new QThread;
     m_rigGeneratorWorker->moveToThread(m_rigGenerationThread);
@@ -1592,6 +1596,7 @@ void Document::rigReady()
 {
     if (m_rigGeneratorWorker->isSuccessful()) {
         m_actualRigStructure = m_rigGeneratorWorker->getActualRig();
+        m_rigObject = m_rigGeneratorWorker->takeObject();
     }
 
     delete m_rigGeneratorWorker;
@@ -1662,8 +1667,8 @@ bool Document::loadRigFromXml(const QString& filePath)
             rigStruct.description = QString::fromStdString(std::string(descElement->value(), descElement->value_size()));
 
         for (rapidxml::xml_node<>* boneElement = rigElement->first_node("bone");
-             boneElement;
-             boneElement = boneElement->next_sibling("bone")) {
+            boneElement;
+            boneElement = boneElement->next_sibling("bone")) {
 
             BoneNode bone;
 
@@ -1680,9 +1685,12 @@ bool Document::loadRigFromXml(const QString& filePath)
                 rapidxml::xml_attribute<>* xAttr = posElement->first_attribute("x");
                 rapidxml::xml_attribute<>* yAttr = posElement->first_attribute("y");
                 rapidxml::xml_attribute<>* zAttr = posElement->first_attribute("z");
-                if (xAttr) bone.posX = QString::fromStdString(std::string(xAttr->value(), xAttr->value_size())).toFloat();
-                if (yAttr) bone.posY = QString::fromStdString(std::string(yAttr->value(), yAttr->value_size())).toFloat();
-                if (zAttr) bone.posZ = QString::fromStdString(std::string(zAttr->value(), zAttr->value_size())).toFloat();
+                if (xAttr)
+                    bone.posX = QString::fromStdString(std::string(xAttr->value(), xAttr->value_size())).toFloat();
+                if (yAttr)
+                    bone.posY = QString::fromStdString(std::string(yAttr->value(), yAttr->value_size())).toFloat();
+                if (zAttr)
+                    bone.posZ = QString::fromStdString(std::string(zAttr->value(), zAttr->value_size())).toFloat();
             }
 
             rapidxml::xml_node<>* endPosElement = boneElement->first_node("endPosition");
@@ -1690,9 +1698,12 @@ bool Document::loadRigFromXml(const QString& filePath)
                 rapidxml::xml_attribute<>* xAttr = endPosElement->first_attribute("x");
                 rapidxml::xml_attribute<>* yAttr = endPosElement->first_attribute("y");
                 rapidxml::xml_attribute<>* zAttr = endPosElement->first_attribute("z");
-                if (xAttr) bone.endX = QString::fromStdString(std::string(xAttr->value(), xAttr->value_size())).toFloat();
-                if (yAttr) bone.endY = QString::fromStdString(std::string(yAttr->value(), yAttr->value_size())).toFloat();
-                if (zAttr) bone.endZ = QString::fromStdString(std::string(zAttr->value(), zAttr->value_size())).toFloat();
+                if (xAttr)
+                    bone.endX = QString::fromStdString(std::string(xAttr->value(), xAttr->value_size())).toFloat();
+                if (yAttr)
+                    bone.endY = QString::fromStdString(std::string(yAttr->value(), yAttr->value_size())).toFloat();
+                if (zAttr)
+                    bone.endZ = QString::fromStdString(std::string(zAttr->value(), zAttr->value_size())).toFloat();
             }
 
             rigStruct.bones.push_back(bone);
