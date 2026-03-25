@@ -34,6 +34,7 @@ public slots:
 
         m_successful = generator.generateRig(m_snapshot.get(), templateRig, actualRig);
         if (m_successful) {
+            generator.applyRigBindings(m_object.get(), m_snapshot.get());
             m_actualRig = RigStructure(actualRig);
         }
 

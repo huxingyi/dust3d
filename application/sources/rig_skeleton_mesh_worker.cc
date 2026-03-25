@@ -97,6 +97,8 @@ void RigSkeletonMeshWorker::process()
             std::string weightBoneStd = m_weightBoneName.toStdString();
             bool hasBindings = !m_rigObject->vertexBone1.empty();
 
+            qDebug() << "m_weightBoneName:" << m_weightBoneName << "hasBindings:" << hasBindings;
+
             size_t destIdx = rigVertexCount;
             for (size_t i = 0; i < m_rigObject->triangles.size(); ++i) {
                 for (int j = 0; j < 3; j++) {
@@ -137,15 +139,15 @@ void RigSkeletonMeshWorker::process()
                     }
 
                     if (weight > 0.0f) {
-                        dest->colorR = 1.0 * weight;
-                        dest->colorG = 1.0 * weight;
-                        dest->colorB = 1.0 * weight;
+                        dest->colorR = weight;
+                        dest->colorG = 0.0;
+                        dest->colorB = 1.0f - weight;
                         dest->alpha = 0.8f;
                     } else {
-                        dest->colorR = 0.5f;
-                        dest->colorG = 0.5f;
-                        dest->colorB = 0.5f;
-                        dest->alpha = 0.8f;
+                        dest->colorR = 1.0f;
+                        dest->colorG = 1.0f;
+                        dest->colorB = 1.0f;
+                        dest->alpha = 0.7f;
                     }
                 }
             }
