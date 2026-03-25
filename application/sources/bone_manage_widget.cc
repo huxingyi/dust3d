@@ -6,6 +6,7 @@
 #include <QComboBox>
 #include <QDebug>
 #include <QFile>
+#include <QGroupBox>
 #include <QHBoxLayout>
 #include <QIcon>
 #include <QItemSelectionModel>
@@ -73,14 +74,25 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
     m_rigTemplateModelWidget->setMinimumHeight(250);
     m_rigTemplateModelWidget->enableZoom(false); // Only allow rotation, disable zoom
 
-    mainLayout->addWidget(m_rigTemplateModelWidget);
+    QGroupBox* rigTemplateGroupBox = new QGroupBox(tr("Template"));
+    QVBoxLayout* rigTemplateLayout = new QVBoxLayout;
+    rigTemplateLayout->setContentsMargins(3, 3, 3, 3);
+    rigTemplateLayout->addWidget(m_rigTemplateModelWidget);
+    rigTemplateGroupBox->setLayout(rigTemplateLayout);
+    mainLayout->addWidget(rigTemplateGroupBox);
 
     // Model Widget for rendering the actual rig skeleton mesh (computed from edge assignments)
     m_rigSkinningModelWidget = new ModelWidget();
     m_rigSkinningModelWidget->setMinimumHeight(250);
     m_rigSkinningModelWidget->enableZoom(false);
     m_rigSkinningModelWidget->disableCullFace();
-    mainLayout->addWidget(m_rigSkinningModelWidget);
+
+    QGroupBox* rigSkinningGroupBox = new QGroupBox(tr("Skinned"));
+    QVBoxLayout* rigSkinningLayout = new QVBoxLayout;
+    rigSkinningLayout->setContentsMargins(3, 3, 3, 3);
+    rigSkinningLayout->addWidget(m_rigSkinningModelWidget);
+    rigSkinningGroupBox->setLayout(rigSkinningLayout);
+    mainLayout->addWidget(rigSkinningGroupBox);
 
     mainLayout->addStretch();
 
