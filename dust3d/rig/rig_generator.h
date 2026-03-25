@@ -117,6 +117,10 @@ private:
     bool getNodePosition(const Snapshot* snapshot, const Uuid& nodeId,
         float& x, float& y, float& z);
 
+    // Internal helper that tracks visited node ids to prevent mirror loops
+    bool getNodePositionInternal(const Snapshot* snapshot, const Uuid& nodeId,
+        float& x, float& y, float& z, std::set<std::string>& visited);
+
     // Helper: Get all edges with a specific bone name
     std::vector<const std::map<std::string, std::string>*> getEdgesWithBoneName(
         const Snapshot* snapshot,

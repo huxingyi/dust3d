@@ -144,10 +144,10 @@ void RigSkeletonMeshWorker::process()
                         dest->colorB = 1.0f - weight;
                         dest->alpha = 0.8f;
                     } else {
-                        dest->colorR = 1.0f;
-                        dest->colorG = 1.0f;
-                        dest->colorB = 1.0f;
-                        dest->alpha = 0.7f;
+                        dest->colorR = 0.5f;
+                        dest->colorG = 0.5f;
+                        dest->colorB = 0.5f;
+                        dest->alpha = 0.8f;
                     }
                 }
             }

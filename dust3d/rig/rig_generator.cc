@@ -384,18 +384,48 @@ void RigGenerator::orientChainTowardPoint(const Snapshot* snapshot,
     }
 }
 
-bool RigGenerator::getNodePosition(const Snapshot* snapshot, const Uuid& nodeId,
-    float& x, float& y, float& z)
+bool RigGenerator::getNodePositionInternal(const Snapshot* snapshot, const Uuid& nodeId,
+    float& x, float& y, float& z, std::set<std::string>& visited)
 {
-    auto it = snapshot->nodes.find(nodeId.toString());
+    if (!snapshot)
+        return false;
+
+    std::string nodeIdString = nodeId.toString();
+    if (visited.count(nodeIdString))
+        return false; // cycle detected
+
+    visited.insert(nodeIdString);
+
+    auto it = snapshot->nodes.find(nodeIdString);
     if (it == snapshot->nodes.end())
         return false;
+
+    std::string mirrorFromNodeId = String::valueOrEmpty(it->second, "__mirrorFromNodeId");
+    if (!mirrorFromNodeId.empty()) {
+        Uuid mirrorNode(mirrorFromNodeId);
+        float mx = 0, my = 0, mz = 0;
+        if (getNodePositionInternal(snapshot, mirrorNode, mx, my, mz, visited)) {
+            x = -mx;
+            y = my;
+            z = mz;
+            return true;
+        }
+
+        // Fall back to this node when mirror source fails
+    }
 
     // Apply same coordinate transformation as MeshGenerator uses
     x = (String::toFloat(String::valueOrEmpty(it->second, "x")) - m_mainProfileMiddleX);
     y = (m_mainProfileMiddleY - String::toFloat(String::valueOrEmpty(it->second, "y")));
     z = (m_sideProfileMiddleX - String::toFloat(String::valueOrEmpty(it->second, "z")));
     return true;
+}
+
+bool RigGenerator::getNodePosition(const Snapshot* snapshot, const Uuid& nodeId,
+    float& x, float& y, float& z)
+{
+    std::set<std::string> visited;
+    return getNodePositionInternal(snapshot, nodeId, x, y, z, visited);
 }
 
 void RigGenerator::buildNodeAdjacency(const Snapshot* snapshot,

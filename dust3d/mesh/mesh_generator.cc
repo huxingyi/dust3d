@@ -408,7 +408,7 @@ void MeshGenerator::flattenLinks(const std::unordered_map<size_t, size_t>& links
     }
 }
 
-bool MeshGenerator::fetchPartOrderedNodes(const std::string& partIdString, std::vector<MeshNode>* meshNodes, bool* isCircle)
+bool MeshGenerator::fetchPartOrderedNodes(const std::string& partIdString, bool xMirrored, std::vector<MeshNode>* meshNodes, bool* isCircle)
 {
     std::vector<MeshNode> builderNodes;
     std::map<std::string, size_t> builderNodeIdStringToIndexMap;
@@ -426,7 +426,7 @@ bool MeshGenerator::fetchPartOrderedNodes(const std::string& partIdString, std::
 
         builderNodeIdStringToIndexMap.insert({ nodeIdString, builderNodes.size() });
         builderNodes.emplace_back(MeshNode {
-            Vector3((double)x, (double)y, (double)z), (double)radius, Uuid(nodeIdString) });
+            Vector3((double)x, (double)y, (double)z), (double)radius, Uuid(xMirrored ? String::valueOrEmpty(node, "__mirroredByNodeId") : nodeIdString) });
     }
 
     if (builderNodes.empty()) {
@@ -492,7 +492,7 @@ std::unique_ptr<MeshState> MeshGenerator::combineStitchingMesh(const std::string
         }
         bool isCircle = false;
         std::vector<MeshNode> orderedBuilderNodes;
-        if (!fetchPartOrderedNodes(partIdString, &orderedBuilderNodes, &isCircle))
+        if (!fetchPartOrderedNodes(partIdString, false, &orderedBuilderNodes, &isCircle))
             continue;
         if (isCircle)
             continue;
@@ -675,7 +675,7 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
 
     std::vector<MeshNode> meshNodes;
     bool isCircle = false;
-    if (!fetchPartOrderedNodes(searchPartIdString, &meshNodes, &isCircle))
+    if (!fetchPartOrderedNodes(searchPartIdString, !__mirrorFromPartId.empty(), &meshNodes, &isCircle))
         return nullptr;
 
     auto& partCache = m_cacheContext->parts[partIdString];
@@ -1190,6 +1190,97 @@ void MeshGenerator::preprocessMirror()
 
     for (const auto& it : partOldToNewMap)
         m_snapshot->parts[it.second]["__mirroredByPartId"] = it.first;
+
+    // Create mirrored nodes and edges for mirrored parts
+    std::map<std::string, std::string> nodeOldToNewMap;
+    std::vector<std::map<std::string, std::string>> newNodes;
+    std::vector<std::map<std::string, std::string>> newEdges;
+
+    // Find all nodes that belong to mirrored parts and create mirrored versions
+    for (const auto& nodeIt : m_snapshot->nodes) {
+        std::string nodePartId = String::valueOrEmpty(nodeIt.second, "partId");
+        auto findMirroredPart = partOldToNewMap.find(nodePartId);
+        if (findMirroredPart == partOldToNewMap.end())
+            continue;
+
+        // Create mirrored node with flipped X coordinate
+        std::map<std::string, std::string> mirroredNode = nodeIt.second;
+        std::string newNodeIdString = reverseUuid(nodeIt.first);
+        nodeOldToNewMap.insert({ nodeIt.first, newNodeIdString });
+
+        // Update partId to point to the new mirrored part
+        mirroredNode["partId"] = findMirroredPart->second;
+        mirroredNode["id"] = newNodeIdString;
+        mirroredNode["__mirrorFromNodeId"] = nodeIt.first;
+        newNodes.push_back(mirroredNode);
+    }
+
+    // Find all edges that belong to mirrored parts and create mirrored versions
+    for (const auto& edgeIt : m_snapshot->edges) {
+        std::string edgePartId = String::valueOrEmpty(edgeIt.second, "partId");
+        auto findMirroredPart = partOldToNewMap.find(edgePartId);
+        if (findMirroredPart == partOldToNewMap.end())
+            continue;
+
+        // Create mirrored edge
+        std::map<std::string, std::string> mirroredEdge = edgeIt.second;
+        std::string newEdgeIdString = reverseUuid(edgeIt.first);
+
+        // Update edge endpoints to use new mirrored nodes
+        std::string fromNodeId = String::valueOrEmpty(mirroredEdge, "from");
+        std::string toNodeId = String::valueOrEmpty(mirroredEdge, "to");
+
+        auto findFromNode = nodeOldToNewMap.find(fromNodeId);
+        auto findToNode = nodeOldToNewMap.find(toNodeId);
+
+        if (findFromNode != nodeOldToNewMap.end())
+            mirroredEdge["from"] = findFromNode->second;
+        if (findToNode != nodeOldToNewMap.end())
+            mirroredEdge["to"] = findToNode->second;
+
+        // Update partId to point to the new mirrored part
+        mirroredEdge["partId"] = findMirroredPart->second;
+        mirroredEdge["id"] = newEdgeIdString;
+        mirroredEdge["__mirrorFromEdgeId"] = edgeIt.first;
+
+        auto swapBoneNameLeftRight = [](const std::string& value) {
+            std::string swapped;
+            swapped.reserve(value.size());
+            size_t i = 0;
+            while (i < value.size()) {
+                if (i + 4 <= value.size() && value.compare(i, 4, "Left") == 0) {
+                    swapped += "Right";
+                    i += 4;
+                } else if (i + 5 <= value.size() && value.compare(i, 5, "Right") == 0) {
+                    swapped += "Left";
+                    i += 5;
+                } else {
+                    swapped.push_back(value[i]);
+                    ++i;
+                }
+            }
+            return swapped;
+        };
+
+        std::string boneName = String::valueOrEmpty(mirroredEdge, "boneName");
+        if (!boneName.empty()) {
+            std::string newBoneName = swapBoneNameLeftRight(boneName);
+            if (newBoneName != boneName)
+                mirroredEdge["boneName"] = newBoneName;
+        }
+
+        newEdges.push_back(mirroredEdge);
+    }
+
+    // Add new mirrored nodes and edges to snapshot
+    for (const auto& node : newNodes)
+        m_snapshot->nodes[String::valueOrEmpty(node, "id")] = node;
+    for (const auto& edge : newEdges)
+        m_snapshot->edges[String::valueOrEmpty(edge, "id")] = edge;
+
+    // Mark original nodes with mirror references
+    for (const auto& it : nodeOldToNewMap)
+        m_snapshot->nodes[it.first]["__mirroredByNodeId"] = it.second;
 
     std::map<std::string, std::string> parentMap;
     for (auto& componentIt : m_snapshot->components) {

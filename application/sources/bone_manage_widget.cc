@@ -63,17 +63,17 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
 
     mainLayout->addWidget(m_boneTreeView);
 
+    // Assign button to assign selected edges to the selected bone
+    m_assignButton = new QPushButton(tr("Assign Selected Edges to Bone"));
+    m_assignButton->setToolTip(tr("Assign the selected edges from the canvas to the selected bone"));
+    mainLayout->addWidget(m_assignButton);
+
     // Model Widget for rendering the rig skeleton mesh
     m_rigTemplateModelWidget = new ModelWidget();
     m_rigTemplateModelWidget->setMinimumHeight(250);
     m_rigTemplateModelWidget->enableZoom(false); // Only allow rotation, disable zoom
 
     mainLayout->addWidget(m_rigTemplateModelWidget);
-
-    // Assign button to assign selected edges to the selected bone
-    m_assignButton = new QPushButton(tr("Assign Selected Edges to Bone"));
-    m_assignButton->setToolTip(tr("Assign the selected edges from the canvas to the selected bone"));
-    mainLayout->addWidget(m_assignButton);
 
     // Model Widget for rendering the actual rig skeleton mesh (computed from edge assignments)
     m_rigSkinningModelWidget = new ModelWidget();
