@@ -102,6 +102,8 @@ public:
     bool hasNodeSelection();
     std::set<dust3d::Uuid> getSelectedEdgeIds();
     bool hasTwoDisconnectedNodesSelection();
+    void setNodeSelectionEnabled(bool enabled);
+    bool isNodeSelectionEnabled() const;
     void setModelWidget(ModelWidget* modelWidget);
     bool inputWheelEventFromOtherWidget(QWheelEvent* event);
     bool rotated();
@@ -267,6 +269,7 @@ private:
     ModelWidget* m_modelWidget = nullptr;
     float m_turnaroundOpacity = 0.25f;
     bool m_rotated = false;
+    bool m_nodeSelectionEnabled = true;
     QImage* m_backgroundImage = nullptr;
     QVector3D m_ikMoveTarget;
     dust3d::Uuid m_ikMoveEndEffectorId;

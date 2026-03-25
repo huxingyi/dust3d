@@ -2255,6 +2255,9 @@ bool SkeletonGraphicsWidget::checkSkeletonItem(QGraphicsItem* item, bool checked
             return false;
     }
     if (item->data(0) == "node") {
+        if (!m_nodeSelectionEnabled && checked) {
+            return false;
+        }
         SkeletonGraphicsNodeItem* nodeItem = (SkeletonGraphicsNodeItem*)item;
         if (checked) {
             if (!m_document->isNodeEditable(nodeItem->id())) {
@@ -2276,6 +2279,31 @@ bool SkeletonGraphicsWidget::checkSkeletonItem(QGraphicsItem* item, bool checked
         return true;
     }
     return false;
+}
+
+void SkeletonGraphicsWidget::setNodeSelectionEnabled(bool enabled)
+{
+    if (m_nodeSelectionEnabled == enabled)
+        return;
+
+    m_nodeSelectionEnabled = enabled;
+
+    if (!m_nodeSelectionEnabled) {
+        // Deselect any currently selected nodes
+        std::vector<QGraphicsItem*> nodeItems;
+        for (auto item : m_rangeSelectionSet) {
+            if (item->data(0) == "node")
+                nodeItems.push_back(item);
+        }
+        for (auto item : nodeItems) {
+            removeItemFromRangeSelection(item);
+        }
+    }
+}
+
+bool SkeletonGraphicsWidget::isNodeSelectionEnabled() const
+{
+    return m_nodeSelectionEnabled;
 }
 
 dust3d::Uuid SkeletonGraphicsWidget::querySkeletonItemPartId(QGraphicsItem* item)
