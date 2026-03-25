@@ -66,6 +66,7 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
     // Assign button to assign selected edges to the selected bone
     m_assignButton = new QPushButton(tr("Assign Selected Edges to Bone"));
     m_assignButton->setToolTip(tr("Assign the selected edges from the canvas to the selected bone"));
+    m_assignButton->setEnabled(false);
     mainLayout->addWidget(m_assignButton);
 
     // Model Widget for rendering the rig skeleton mesh
@@ -318,6 +319,8 @@ void BoneManageWidget::onBoneSelectionChanged()
     generateRigTemplateMesh(currentRigType, selectedBoneName);
 
     generateRigSkinningMesh();
+
+    updateAssignButtonState();
 }
 
 void BoneManageWidget::updateBoneTreeView(const QString& rigType)
@@ -481,6 +484,13 @@ void BoneManageWidget::rigSkeletonTemplateMeshReady()
 void BoneManageWidget::setSkeletonGraphicsWidget(SkeletonGraphicsWidget* graphicsWidget)
 {
     m_skeletonGraphicsWidget = graphicsWidget;
+
+    if (m_skeletonGraphicsWidget) {
+        connect(m_skeletonGraphicsWidget, &SkeletonGraphicsWidget::skeletonSelectionChanged,
+            this, &BoneManageWidget::updateAssignButtonState);
+    }
+
+    updateAssignButtonState();
 }
 
 void BoneManageWidget::assignSelectedEdgesToBone()
@@ -509,6 +519,15 @@ void BoneManageWidget::assignSelectedEdgesToBone()
 void BoneManageWidget::onRigGenerationReady()
 {
     generateRigSkinningMesh();
+}
+
+void BoneManageWidget::updateAssignButtonState()
+{
+    qDebug() << "Updating assign button state. Selected bone:" << m_selectedBoneName;
+    bool hasBone = !m_selectedBoneName.isEmpty();
+    bool hasEdgeSelection = m_skeletonGraphicsWidget ? m_skeletonGraphicsWidget->hasEdgeSelection() : false;
+    if (m_assignButton)
+        m_assignButton->setEnabled(isVisible() && hasBone && hasEdgeSelection);
 }
 
 void BoneManageWidget::rigSkinningMeshReady()

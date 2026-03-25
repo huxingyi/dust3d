@@ -60,6 +60,9 @@ void Theme::initialize()
     Theme::previewIconMargin = std::max(1, Theme::previewIconBorderSize / 2);
     Theme::previewIconBorderRadius = std::max(3, Theme::partPreviewImageSize / 10);
 
+    // Ensure disabled buttons are visually distinct and look unclickable.
+    qApp->setStyleSheet("QPushButton:disabled { color: " + QColor(0x25, 0x25, 0x25).name() + ";}") ;
+
     Theme::awesome();
 }
 
@@ -81,7 +84,6 @@ void Theme::initAwesomeButton(QPushButton* button)
 {
     button->setFont(Theme::awesome()->font(Theme::toolIconFontSize));
     button->setFixedSize(Theme::toolIconSize, Theme::toolIconSize);
-    button->setStyleSheet("QPushButton {color: " + Theme::white.name() + "}");
     button->setFocusPolicy(Qt::NoFocus);
 }
 
@@ -131,7 +133,6 @@ void Theme::updateAwesomeMiniButton(QPushButton* button, QChar icon, bool highli
 void Theme::initAwesomeToolButtonWithoutFont(QPushButton* button)
 {
     button->setFixedSize(Theme::toolIconSize * 0.75, Theme::toolIconSize * 0.75);
-    button->setStyleSheet("QPushButton {color: " + Theme::white.name() + "}");
     button->setFocusPolicy(Qt::NoFocus);
 }
 
@@ -148,7 +149,6 @@ void Theme::initToolButton(QPushButton* button)
     font.setBold(false);
     button->setFont(font);
     button->setFixedHeight(Theme::toolIconSize * 0.75);
-    button->setStyleSheet("QPushButton {color: " + Theme::white.name() + "}");
     button->setFocusPolicy(Qt::NoFocus);
 }
 

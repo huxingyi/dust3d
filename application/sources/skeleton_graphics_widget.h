@@ -37,6 +37,7 @@ signals:
     void addEdge(dust3d::Uuid fromNodeId, dust3d::Uuid toNodeId);
     void cursorChanged();
     void groupOperationAdded();
+    void skeletonSelectionChanged();
     void undo();
     void redo();
     void paste();

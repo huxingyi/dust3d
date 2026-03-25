@@ -2139,7 +2139,8 @@ void SkeletonGraphicsWidget::removeItem(QGraphicsItem* item)
         m_addFromNodeItem = nullptr;
     if (m_hoveredEdgeItem == item)
         m_hoveredEdgeItem = nullptr;
-    m_rangeSelectionSet.erase(item);
+    if (m_rangeSelectionSet.erase(item) > 0)
+        emit skeletonSelectionChanged();
     scene()->removeItem(item);
 }
 
@@ -2378,15 +2379,21 @@ void SkeletonGraphicsWidget::checkRangeSelection()
             }
         }
     }
+    bool selectionChanged = false;
     for (const auto& item : newSet) {
-        m_rangeSelectionSet.insert(item);
+        if (m_rangeSelectionSet.insert(item).second)
+            selectionChanged = true;
     }
     for (const auto& item : deleteSet) {
-        m_rangeSelectionSet.erase(item);
+        if (m_rangeSelectionSet.erase(item) > 0)
+            selectionChanged = true;
     }
     for (const auto& item : forceDeleteSet) {
-        m_rangeSelectionSet.erase(item);
+        if (m_rangeSelectionSet.erase(item) > 0)
+            selectionChanged = true;
     }
+    if (selectionChanged)
+        emit skeletonSelectionChanged();
 }
 
 void SkeletonGraphicsWidget::clearRangeSelection()
@@ -2394,7 +2401,10 @@ void SkeletonGraphicsWidget::clearRangeSelection()
     for (const auto& item : m_rangeSelectionSet) {
         checkSkeletonItem(item, false);
     }
-    m_rangeSelectionSet.clear();
+    if (!m_rangeSelectionSet.empty()) {
+        m_rangeSelectionSet.clear();
+        emit skeletonSelectionChanged();
+    }
 }
 
 void SkeletonGraphicsWidget::readMergedSkeletonNodeSetFromRangeSelection(std::set<SkeletonGraphicsNodeItem*>* nodeItemSet)
@@ -2696,14 +2706,18 @@ void SkeletonGraphicsWidget::addItemToRangeSelection(QGraphicsItem* item)
 {
     if (!item->isVisible())
         return;
-    if (checkSkeletonItem(item, true))
-        m_rangeSelectionSet.insert(item);
+    if (checkSkeletonItem(item, true)) {
+        bool inserted = m_rangeSelectionSet.insert(item).second;
+        if (inserted)
+            emit skeletonSelectionChanged();
+    }
 }
 
 void SkeletonGraphicsWidget::removeItemFromRangeSelection(QGraphicsItem* item)
 {
     checkSkeletonItem(item, false);
-    m_rangeSelectionSet.erase(item);
+    if (m_rangeSelectionSet.erase(item) > 0)
+        emit skeletonSelectionChanged();
 }
 
 void SkeletonGraphicsWidget::unselectAll()
@@ -2711,7 +2725,10 @@ void SkeletonGraphicsWidget::unselectAll()
     for (const auto& item : m_rangeSelectionSet) {
         checkSkeletonItem(item, false);
     }
-    m_rangeSelectionSet.clear();
+    if (!m_rangeSelectionSet.empty()) {
+        m_rangeSelectionSet.clear();
+        emit skeletonSelectionChanged();
+    }
 }
 
 void SkeletonGraphicsWidget::cut()

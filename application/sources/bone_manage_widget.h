@@ -64,6 +64,7 @@ private:
     void updateBoneTreeView(const QString& rigType);
     void generateRigTemplateMesh(const QString& rigType, const QString& selectedBoneName = "");
     void generateRigSkinningMesh();
+    void updateAssignButtonState();
 };
 
 #endif
