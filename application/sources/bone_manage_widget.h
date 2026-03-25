@@ -28,11 +28,9 @@ public slots:
     void onRigTypeChanged(const QString& rigType);
     void onBoneSelectionChanged();
     void assignSelectedEdgesToBone();
-    void onRigSkeletonTemplateMeshReady();
-    void onRigTemplateMeshGenerationThreadFinished();
+    void rigSkeletonTemplateMeshReady();
     void onRigGenerationReady();
-    void onRigSkinningMeshReady();
-    void onRigSkinningMeshThreadFinished();
+    void rigSkinningMeshReady();
 
 public:
     BoneManageWidget(Document* document, QWidget* parent = nullptr);
@@ -52,12 +50,10 @@ private:
     std::map<QString, RigStructure> m_rigStructures;
     QString m_selectedBoneName;
     std::unique_ptr<RigSkeletonMeshWorker> m_rigTemplateMeshWorker;
-    QThread* m_rigTemplateMeshGenerationThread = nullptr;
     bool m_rigTemplateMeshObsolete = false;
     QString m_pendingRigType;
     QString m_pendingSelectedBoneName;
     std::unique_ptr<RigSkeletonMeshWorker> m_rigSkinningMeshWorker;
-    QThread* m_rigSkinningMeshGenerationThread = nullptr;
     bool m_rigSkinningMeshObsolete = false;
 
     void loadRigStructures();

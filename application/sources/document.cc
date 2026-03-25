@@ -1477,8 +1477,7 @@ void Document::setEdgeBoneName(dust3d::Uuid edgeId, const QString& boneName)
         return;
 
     edgeIt->second.boneName = boneName;
-    emit optionsChanged();
-    generateRig();
+    emit skeletonChanged();
 }
 
 void Document::enableAllPositionRelatedLocks()
@@ -1583,13 +1582,13 @@ void Document::generateRig()
     m_rigGeneratorWorker = new RigGeneratorWorker;
     m_rigGeneratorWorker->setParameters(std::move(snapshot), std::move(object), *templateRig);
 
-    m_rigGenerationThread = new QThread;
-    m_rigGeneratorWorker->moveToThread(m_rigGenerationThread);
-    connect(m_rigGenerationThread, &QThread::started, m_rigGeneratorWorker, &RigGeneratorWorker::process);
+    auto thread = new QThread;
+    m_rigGeneratorWorker->moveToThread(thread);
+    connect(thread, &QThread::started, m_rigGeneratorWorker, &RigGeneratorWorker::process);
     connect(m_rigGeneratorWorker, &RigGeneratorWorker::finished, this, &Document::rigReady);
-    connect(m_rigGeneratorWorker, &RigGeneratorWorker::finished, m_rigGenerationThread, &QThread::quit);
-    connect(m_rigGenerationThread, &QThread::finished, m_rigGenerationThread, &QThread::deleteLater);
-    m_rigGenerationThread->start();
+    connect(m_rigGeneratorWorker, &RigGeneratorWorker::finished, thread, &QThread::quit);
+    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+    thread->start();
 }
 
 void Document::rigReady()
@@ -1601,11 +1600,10 @@ void Document::rigReady()
 
     delete m_rigGeneratorWorker;
     m_rigGeneratorWorker = nullptr;
-    m_rigGenerationThread = nullptr;
 
     qDebug() << "Rig generation done";
 
-    emit rigGenerationReady();
+    emit resultRigChanged();
 
     if (m_isRigObsolete) {
         generateRig();

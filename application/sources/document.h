@@ -258,7 +258,7 @@ signals:
     void zlockStateChanged();
     void radiusLockStateChanged();
     void rigTypeChanged(QString rigType);
-    void rigGenerationReady();
+    void resultRigChanged();
 
 public: // need initialize
     QImage* textureImage = nullptr;
@@ -540,7 +540,6 @@ private:
     bool m_allPositionRelatedLocksEnabled = true;
     std::map<QString, RigStructure> m_rigStructures;
     RigGeneratorWorker* m_rigGeneratorWorker = nullptr;
-    QThread* m_rigGenerationThread = nullptr;
     bool m_isRigObsolete = false;
     RigStructure m_actualRigStructure;
     std::unique_ptr<dust3d::Object> m_rigObject;
