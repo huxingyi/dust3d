@@ -513,6 +513,8 @@ void BoneManageWidget::assignSelectedEdgesToBone()
         m_document->setEdgeBoneName(edgeId, m_selectedBoneName);
     }
 
+    m_document->saveSnapshot();
+
     qDebug() << "Assigned" << selectedEdgeIds.size() << "edges to bone:" << m_selectedBoneName;
 }
 
