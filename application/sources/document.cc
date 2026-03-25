@@ -1582,6 +1582,8 @@ void Document::generateRig()
     m_rigGeneratorWorker = new RigGeneratorWorker;
     m_rigGeneratorWorker->setParameters(std::move(snapshot), std::move(object), *templateRig);
 
+    emit rigGenerating();
+
     auto thread = new QThread;
     m_rigGeneratorWorker->moveToThread(thread);
     connect(thread, &QThread::started, m_rigGeneratorWorker, &RigGeneratorWorker::process);
@@ -3087,6 +3089,11 @@ bool Document::isMeshGenerating() const
 bool Document::isTextureGenerating() const
 {
     return nullptr != m_textureGenerator;
+}
+
+bool Document::isRigGenerating() const
+{
+    return nullptr != m_rigGeneratorWorker;
 }
 
 void Document::copyNodes(std::set<dust3d::Uuid> nodeIdSet) const

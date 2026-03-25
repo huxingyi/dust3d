@@ -201,10 +201,12 @@ DocumentWindow::DocumentWindow()
     updateInprogressIndicator();
 
     connect(m_document, &Document::meshGenerating, this, &DocumentWindow::updateInprogressIndicator);
+    connect(m_document, &Document::rigGenerating, this, &DocumentWindow::updateInprogressIndicator);
     connect(m_document, &Document::resultMeshChanged, this, [=]() {
         m_isLastMeshGenerationSucceed = m_document->isMeshGenerationSucceed();
         updateInprogressIndicator();
     });
+    connect(m_document, &Document::resultRigChanged, this, &DocumentWindow::updateInprogressIndicator);
     connect(m_document, &Document::resultComponentPreviewMeshesChanged, this, &DocumentWindow::generateComponentPreviewImages);
     connect(m_document, &Document::textureChanged, this, &DocumentWindow::generateComponentPreviewImages);
     connect(m_document, &Document::textureGenerating, this, &DocumentWindow::updateInprogressIndicator);
@@ -647,7 +649,11 @@ DocumentWindow::DocumentWindow()
 
 void DocumentWindow::updateInprogressIndicator()
 {
-    bool inprogress = m_document->isMeshGenerating() || m_document->isTextureGenerating() || nullptr != m_componentPreviewImagesGenerator || nullptr != m_componentPreviewImagesDecorator;
+    bool inprogress = m_document->isMeshGenerating()
+        || m_document->isTextureGenerating()
+        || m_document->isRigGenerating()
+        || nullptr != m_componentPreviewImagesGenerator
+        || nullptr != m_componentPreviewImagesDecorator;
     if (inprogress == m_inprogressIndicator->isSpinning())
         return;
     m_inprogressIndicator->showSpinner(inprogress);

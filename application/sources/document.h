@@ -225,6 +225,7 @@ signals:
     void checkEdge(dust3d::Uuid edgeId);
     void meshGenerating();
     void textureGenerating();
+    void rigGenerating();
     void textureChanged();
     void partAdded(dust3d::Uuid partId);
     void nodeAdded(dust3d::Uuid nodeId);
@@ -325,6 +326,7 @@ public:
     bool isExportReady() const;
     bool isMeshGenerating() const;
     bool isTextureGenerating() const;
+    bool isRigGenerating() const;
     void collectCutFaceList(std::vector<QString>& cutFaces) const;
     float getOriginX(bool rotated = false) const
     {
