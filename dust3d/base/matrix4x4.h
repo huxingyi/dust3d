@@ -175,6 +175,8 @@ public:
 
         for (size_t i = 0; i < 16; ++i)
             dest[i] *= det;
+        
+        return m;
     }
 
     inline Matrix4x4& operator*=(const Matrix4x4& by)

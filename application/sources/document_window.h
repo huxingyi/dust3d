@@ -21,6 +21,7 @@ class Document;
 class SkeletonGraphicsWidget;
 class PartManageWidget;
 class BoneManageWidget;
+class AnimationManageWidget;
 class ToolbarButton;
 class SpinnableToolbarIcon;
 
@@ -97,6 +98,7 @@ public slots:
     void updateRenderWireframe();
     void forceUpdateRenderWireframe();
     void onBonesDockerVisibilityChanged(bool visible);
+    void onAnimationsDockerVisibilityChanged(bool visible);
 
 private:
     void setCurrentFilename(const QString& filename);
@@ -152,6 +154,7 @@ private:
     QMenu* m_windowMenu = nullptr;
     QAction* m_showPartsListAction = nullptr;
     QAction* m_showBonesListAction = nullptr;
+    QAction* m_showAnimationsListAction = nullptr;
     QAction* m_showDebugDialogAction = nullptr;
 
     QMenu* m_helpMenu = nullptr;
@@ -178,7 +181,9 @@ private:
 
     PartManageWidget* m_partManageWidget = nullptr;
     BoneManageWidget* m_boneManageWidget = nullptr;
+    AnimationManageWidget* m_animationManageWidget = nullptr;
     QDockWidget* m_bonesDocker = nullptr;
+    QDockWidget* m_animationsDocker = nullptr;
 
     bool m_savedXlockState = false;
     bool m_savedYlockState = false;

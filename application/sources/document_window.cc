@@ -1,5 +1,6 @@
 #include "document_window.h"
 #include "about_widget.h"
+#include "animation_manage_widget.h"
 #include "bone_manage_widget.h"
 #include "cut_face_preview.h"
 #include "document.h"
@@ -280,7 +281,14 @@ DocumentWindow::DocumentWindow()
     m_bonesDocker->setWidget(m_boneManageWidget);
     addDockWidget(Qt::RightDockWidgetArea, m_bonesDocker);
 
+    m_animationsDocker = new QDockWidget(tr("Animations"), this);
+    m_animationsDocker->setAllowedAreas(Qt::RightDockWidgetArea);
+    m_animationManageWidget = new AnimationManageWidget(m_document);
+    m_animationsDocker->setWidget(m_animationManageWidget);
+    addDockWidget(Qt::RightDockWidgetArea, m_animationsDocker);
+
     tabifyDockWidget(partsDocker, m_bonesDocker);
+    tabifyDockWidget(m_bonesDocker, m_animationsDocker);
 
     partsDocker->raise();
 
@@ -429,6 +437,13 @@ DocumentWindow::DocumentWindow()
         m_bonesDocker->raise();
     });
     m_windowMenu->addAction(m_showBonesListAction);
+
+    m_showAnimationsListAction = new QAction(tr("Animations"), this);
+    connect(m_showAnimationsListAction, &QAction::triggered, [=]() {
+        m_animationsDocker->show();
+        m_animationsDocker->raise();
+    });
+    m_windowMenu->addAction(m_showAnimationsListAction);
 
     QMenu* dialogsMenu = m_windowMenu->addMenu(tr("Dialogs"));
     connect(dialogsMenu, &QMenu::aboutToShow, [=]() {
@@ -632,6 +647,7 @@ DocumentWindow::DocumentWindow()
     connect(m_document, &Document::radiusLockStateChanged, this, &DocumentWindow::updateRadiusLockButtonState);
 
     connect(m_bonesDocker, &QDockWidget::visibilityChanged, this, &DocumentWindow::onBonesDockerVisibilityChanged);
+    connect(m_animationsDocker, &QDockWidget::visibilityChanged, this, &DocumentWindow::onAnimationsDockerVisibilityChanged);
 
     initializeShortcuts();
 
@@ -1627,4 +1643,10 @@ void DocumentWindow::onBonesDockerVisibilityChanged(bool visible)
 
         m_canvasGraphicsWidget->setNodeSelectionEnabled(true);
     }
+}
+
+void DocumentWindow::onAnimationsDockerVisibilityChanged(bool visible)
+{
+    Q_UNUSED(visible);
+    // Placeholder for later animation-related behavior.
 }
