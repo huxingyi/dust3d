@@ -24,6 +24,7 @@
 #define DUST3D_RIG_RIG_GENERATOR_H_
 
 #include <dust3d/base/bone_binding.h>
+#include <dust3d/base/matrix4x4.h>
 #include <dust3d/base/object.h>
 #include <dust3d/base/snapshot.h>
 #include <dust3d/base/uuid.h>
@@ -83,6 +84,15 @@ public:
     // Apply rig bindings to the generated mesh using the snapshot's edge bone assignments
     // This should be called after generate() to apply skeletal rig weights to vertices
     bool applyRigBindings(Object* object, const Snapshot* snapshot);
+
+    // Compute world transforms for each bone in rest pose
+    // If a child bone begin position is different from parent end, it still uses its own rest position.
+    bool computeBoneWorldTransforms(const RigStructure& rigStructure,
+        std::map<std::string, Matrix4x4>& boneWorldTransforms);
+
+    // Compute inverse bind matrices for each bone in rest pose
+    bool computeBoneInverseBindMatrices(const RigStructure& rigStructure,
+        std::map<std::string, Matrix4x4>& inverseBindMatrices);
 
     // Get error message from last operation
     const std::string& getErrorMessage() const { return m_errorMessage; }

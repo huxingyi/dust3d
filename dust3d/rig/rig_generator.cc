@@ -23,7 +23,10 @@
 #include <algorithm>
 #include <cmath>
 #include <dust3d/base/debug.h>
+#include <dust3d/base/matrix4x4.h>
+#include <dust3d/base/quaternion.h>
 #include <dust3d/base/string.h>
+#include <dust3d/base/vector3.h>
 #include <dust3d/rig/rig_generator.h>
 
 namespace dust3d {
@@ -151,6 +154,100 @@ bool RigGenerator::generateRig(const Snapshot* snapshot, const RigStructure& tem
                     << "from" << totalNodes << "nodes in" << nodeChains.size() << "chains"
                     << "position:" << bone.posX << bone.posY << bone.posZ
                     << "endPosition:" << bone.endX << bone.endY << bone.endZ;
+    }
+
+    m_errorMessage = "";
+    return true;
+}
+
+bool RigGenerator::computeBoneWorldTransforms(const RigStructure& rigStructure,
+    std::map<std::string, Matrix4x4>& boneWorldTransforms)
+{
+    boneWorldTransforms.clear();
+
+    // Build bone name map for parent lookup and ensure order
+    std::map<std::string, size_t> boneNameToIndex;
+    for (size_t i = 0; i < rigStructure.bones.size(); ++i) {
+        boneNameToIndex[rigStructure.bones[i].name] = i;
+    }
+
+    std::vector<size_t> processingOrder;
+    std::set<std::string> processed;
+    while (processingOrder.size() < rigStructure.bones.size()) {
+        bool progress = false;
+        for (size_t i = 0; i < rigStructure.bones.size(); ++i) {
+            const auto& bone = rigStructure.bones[i];
+            if (processed.count(bone.name))
+                continue;
+            if (bone.parent.empty() || processed.count(bone.parent)) {
+                processingOrder.push_back(i);
+                processed.insert(bone.name);
+                progress = true;
+            }
+        }
+        if (!progress) {
+            for (size_t i = 0; i < rigStructure.bones.size(); ++i) {
+                if (!processed.count(rigStructure.bones[i].name)) {
+                    processingOrder.push_back(i);
+                    processed.insert(rigStructure.bones[i].name);
+                }
+            }
+            break;
+        }
+    }
+
+    for (size_t boneIdx : processingOrder) {
+        const auto& node = rigStructure.bones[boneIdx];
+
+        Vector3 boneHead(node.posX, node.posY, node.posZ);
+        Vector3 boneTail(node.endX, node.endY, node.endZ);
+        Vector3 boneDirection = boneTail - boneHead;
+
+        Matrix4x4 restTransform;
+        restTransform.translate(boneHead);
+
+        if (!boneDirection.isZero()) {
+            Quaternion orient = Quaternion::rotationTo(Vector3(0.0, 0.0, 1.0), boneDirection.normalized());
+            restTransform.rotate(orient);
+        }
+
+        if (!node.parent.empty()) {
+            auto parentIt = boneNameToIndex.find(node.parent);
+            if (parentIt != boneNameToIndex.end()) {
+                auto worldIt = boneWorldTransforms.find(node.parent);
+                if (worldIt != boneWorldTransforms.end()) {
+                    const Matrix4x4& parentWorld = worldIt->second;
+                    Matrix4x4 parentInverse = parentWorld.inverted();
+                    Matrix4x4 localTransform = parentInverse;
+                    localTransform *= restTransform;
+
+                    Matrix4x4 finalWorld = parentWorld;
+                    finalWorld *= localTransform;
+                    boneWorldTransforms.emplace(node.name, finalWorld);
+                    continue;
+                }
+            }
+        }
+
+        boneWorldTransforms.emplace(node.name, restTransform);
+    }
+
+    return true;
+}
+
+bool RigGenerator::computeBoneInverseBindMatrices(const RigStructure& rigStructure,
+    std::map<std::string, Matrix4x4>& inverseBindMatrices)
+{
+    inverseBindMatrices.clear();
+
+    std::map<std::string, Matrix4x4> boneWorldTransforms;
+    if (!computeBoneWorldTransforms(rigStructure, boneWorldTransforms)) {
+        m_errorMessage = "Failed to compute bone world transforms";
+        return false;
+    }
+
+    for (const auto& pair : boneWorldTransforms) {
+        inverseBindMatrices.emplace(pair.first, pair.second.inverted());
     }
 
     m_errorMessage = "";
