@@ -1,0 +1,106 @@
+#include "animation_preview_worker.h"
+#include "theme.h"
+#include <dust3d/base/vector3.h>
+#include <dust3d/rig/rig_generator.h>
+#include <QDebug>
+
+namespace {
+
+dust3d::Vector3 applyMatrixToPoint(const dust3d::Matrix4x4& m, const dust3d::Vector3& p)
+{
+    const double* data = m.constData();
+    return dust3d::Vector3(
+        (float)(p.x() * data[0] + p.y() * data[4] + p.z() * data[8] + data[12]),
+        (float)(p.x() * data[1] + p.y() * data[5] + p.z() * data[9] + data[13]),
+        (float)(p.x() * data[2] + p.y() * data[6] + p.z() * data[10] + data[14]));
+}
+
+} // namespace
+
+void AnimationPreviewWorker::process()
+{
+    m_previewMeshes.clear();
+
+    dust3d::RigStructure baseRig = m_rigStructure.toRigStructure();
+
+    dust3d::RigGenerator rigGenerator;
+    std::map<std::string, dust3d::Matrix4x4> inverseBindMatrices;
+    if (!rigGenerator.computeBoneInverseBindMatrices(baseRig, inverseBindMatrices)) {
+        qWarning() << "Animation preview: failed to compute inverse bind matrices:" << QString::fromStdString(rigGenerator.getErrorMessage());
+        emit finished();
+        return;
+    }
+
+    dust3d::RigAnimationClip animationClip;
+    if (!dust3d::AnimationGenerator::generateFlyWalkCycle(baseRig, inverseBindMatrices, animationClip, m_frameCount, m_durationSeconds)) {
+        qWarning() << "Animation preview: generateFlyWalkCycle failed (only fly rig supported)";
+        emit finished();
+        return;
+    }
+
+    // Generate a mesh for every frame
+    for (const auto& frame : animationClip.frames) {
+        RigStructure poseRig = m_rigStructure;
+
+        for (auto& boneNode : poseRig.bones) {
+            auto iter = frame.boneWorldTransforms.find(boneNode.name.toStdString());
+            if (iter == frame.boneWorldTransforms.end())
+                continue;
+
+            const dust3d::Matrix4x4& boneTransform = iter->second;
+
+            float boneLength = 1.0f;
+            for (const auto& sourceBone : m_rigStructure.bones) {
+                if (sourceBone.name == boneNode.name) {
+                    dust3d::Vector3 v0(sourceBone.posX, sourceBone.posY, sourceBone.posZ);
+                    dust3d::Vector3 v1(sourceBone.endX, sourceBone.endY, sourceBone.endZ);
+                    float d = (v1 - v0).length();
+                    if (d > 1e-6f)
+                        boneLength = d;
+                    break;
+                }
+            }
+
+            dust3d::Vector3 worldHead = applyMatrixToPoint(boneTransform, dust3d::Vector3(0, 0, 0));
+            dust3d::Vector3 worldTail = applyMatrixToPoint(boneTransform, dust3d::Vector3(0, 0, boneLength));
+
+            boneNode.posX = worldHead.x();
+            boneNode.posY = worldHead.y();
+            boneNode.posZ = worldHead.z();
+            boneNode.endX = worldTail.x();
+            boneNode.endY = worldTail.y();
+            boneNode.endZ = worldTail.z();
+        }
+
+        RigSkeletonMeshGenerator meshGenerator;
+        meshGenerator.setStartRadius(0.02);
+        meshGenerator.generateMesh(poseRig, "");
+
+        const auto& vertices = meshGenerator.getVertices();
+        const auto& faces = meshGenerator.getFaces();
+        const auto* vertexProperties = meshGenerator.getVertexProperties();
+
+        if (vertices.empty() || faces.empty()) {
+            continue;
+        }
+
+        std::vector<std::vector<dust3d::Vector3>> triangleVertexNormals;
+        triangleVertexNormals.reserve(faces.size());
+        for (const auto& face : faces) {
+            if (face.size() < 3)
+                continue;
+            dust3d::Vector3 normal = dust3d::Vector3::normal(vertices[face[0]], vertices[face[1]], vertices[face[2]]);
+            triangleVertexNormals.push_back({ normal, normal, normal });
+        }
+
+        ModelMesh mesh(vertices, faces, triangleVertexNormals,
+            dust3d::Color(Theme::blue.redF(), Theme::blue.greenF(), Theme::blue.blueF()),
+            0.0f, 1.0f, vertexProperties);
+
+        m_previewMeshes.push_back(std::move(mesh));
+    }
+
+    qDebug() << "Animation preview: generated" << m_previewMeshes.size() << "frames";
+
+    emit finished();
+}

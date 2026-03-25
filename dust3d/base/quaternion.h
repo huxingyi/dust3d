@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016-2021 Jeremy HU <jeremy-at-dust3d dot org>. All rights reserved. 
+ *  Copyright (c) 2016-2026 Jeremy HU <jeremy-at-dust3d dot org>. All rights reserved. 
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -33,7 +33,6 @@ inline Quaternion operator*(const Quaternion& q, const double& number);
 inline Quaternion operator*(const double& number, const Quaternion& q);
 inline Quaternion operator+(const Quaternion& q, const Quaternion& p);
 inline Quaternion operator/(const Quaternion& q, const double& number);
-inline Quaternion operator/(const double& number, const Quaternion& q);
 
 class Quaternion {
 public:
@@ -86,20 +85,30 @@ public:
         if (t >= 1.0)
             return b;
 
-        double dot = a.w() * b.w() + a.x() * b.x() * a.y() * b.y() + a.z() * b.z();
+        double dot = a.w() * b.w() + a.x() * b.x() + a.y() * b.y() + a.z() * b.z();
         Quaternion to(b);
         if (dot < 0.0) {
             dot *= -1.0;
             to *= -1.0;
         }
 
+        // Clamp dot to avoid numerical issues with acos outside [-1,1]
+        if (dot > 1.0)
+            dot = 1.0;
+        if (dot < -1.0)
+            dot = -1.0;
+
         double angle = std::acos(dot);
         double sine = std::sin(angle);
         if (Math::isZero(sine)) {
-            return a * (1.0 - t) + b * t;
+            // fallback to lerp for nearly parallel quaternions
+            return a * (1.0 - t) + to * t;
         }
 
-        return (((Quaternion)(a * std::sin(angle * (1.0f - t)))) + ((Quaternion)(to * std::sin(angle * t)))) / sine;
+        double scalarA = std::sin((1.0 - t) * angle) / sine;
+        double scalarB = std::sin(t * angle) / sine;
+
+        return a * scalarA + to * scalarB;
     }
 
     inline static Quaternion fromAxisAndAngle(const Vector3& axis, double angle)
@@ -157,11 +166,6 @@ inline Quaternion operator+(const Quaternion& q, const Quaternion& p)
 }
 
 inline Quaternion operator/(const Quaternion& q, const double& number)
-{
-    return Quaternion(q.w() / number, q.x() / number, q.y() / number, q.z() / number);
-}
-
-inline Quaternion operator/(const double& number, const Quaternion& q)
 {
     return Quaternion(q.w() / number, q.x() / number, q.y() / number, q.z() / number);
 }

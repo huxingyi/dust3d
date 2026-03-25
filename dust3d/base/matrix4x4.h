@@ -1,5 +1,5 @@
 /*
- *  Copyright (c) 2016-2021 Jeremy HU <jeremy-at-dust3d dot org>. All rights reserved. 
+ *  Copyright (c) 2016-2026 Jeremy HU <jeremy-at-dust3d dot org>. All rights reserved. 
  *
  *  Permission is hereby granted, free of charge, to any person obtaining a copy
  *  of this software and associated documentation files (the "Software"), to deal
@@ -26,7 +26,6 @@
 #include <cstring>
 #include <dust3d/base/quaternion.h>
 #include <dust3d/base/vector3.h>
-#include <memory>
 
 namespace dust3d {
 
@@ -46,44 +45,44 @@ public:
     // | 2  6  10 14 |
     // | 3  7  11 15 |
 
-    const int M00 = 0;
-    const int M01 = 1;
-    const int M02 = 2;
-    const int M03 = 3;
-    const int M10 = 4;
-    const int M11 = 5;
-    const int M12 = 6;
-    const int M13 = 7;
-    const int M20 = 8;
-    const int M21 = 9;
-    const int M22 = 10;
-    const int M23 = 11;
-    const int M30 = 12;
-    const int M31 = 13;
-    const int M32 = 14;
-    const int M33 = 15;
+    static constexpr int M00 = 0;
+    static constexpr int M01 = 1;
+    static constexpr int M02 = 2;
+    static constexpr int M03 = 3;
+    static constexpr int M10 = 4;
+    static constexpr int M11 = 5;
+    static constexpr int M12 = 6;
+    static constexpr int M13 = 7;
+    static constexpr int M20 = 8;
+    static constexpr int M21 = 9;
+    static constexpr int M22 = 10;
+    static constexpr int M23 = 11;
+    static constexpr int M30 = 12;
+    static constexpr int M31 = 13;
+    static constexpr int M32 = 14;
+    static constexpr int M33 = 15;
 
     inline Matrix4x4() = default;
 
-    // https://en.wikipedia.org/wiki/Rotation_matrix#Rotation_matrix_from_axis_and_angle
     inline void rotate(const Vector3& axis, double angle)
     {
+        Vector3 a = axis.normalized();
         double cosine = std::cos(angle);
         double sine = std::sin(angle);
         double oneMinusCosine = 1.0 - cosine;
         Matrix4x4 by;
         double* byData = by.data();
-        byData[M00] = cosine + axis.x() * axis.x() * oneMinusCosine;
-        byData[M10] = axis.x() * axis.y() * oneMinusCosine - axis.z() * sine;
-        byData[M20] = axis.x() * axis.z() * oneMinusCosine + axis.y() * sine;
+        byData[M00] = cosine + a.x() * a.x() * oneMinusCosine;
+        byData[M10] = a.x() * a.y() * oneMinusCosine - a.z() * sine;
+        byData[M20] = a.x() * a.z() * oneMinusCosine + a.y() * sine;
         byData[M30] = 0.0;
-        byData[M01] = axis.y() * axis.x() * oneMinusCosine + axis.z() * sine;
-        byData[M11] = cosine + axis.y() * axis.y() * oneMinusCosine;
-        byData[M21] = axis.y() * axis.z() * oneMinusCosine - axis.x() * sine;
+        byData[M01] = a.y() * a.x() * oneMinusCosine + a.z() * sine;
+        byData[M11] = cosine + a.y() * a.y() * oneMinusCosine;
+        byData[M21] = a.y() * a.z() * oneMinusCosine - a.x() * sine;
         byData[M31] = 0.0;
-        byData[M02] = axis.z() * axis.x() * oneMinusCosine - axis.y() * sine;
-        byData[M12] = axis.z() * axis.y() * oneMinusCosine + axis.x() * sine;
-        byData[M22] = cosine + axis.z() * axis.z() * oneMinusCosine;
+        byData[M02] = a.z() * a.x() * oneMinusCosine - a.y() * sine;
+        byData[M12] = a.z() * a.y() * oneMinusCosine + a.x() * sine;
+        byData[M22] = cosine + a.z() * a.z() * oneMinusCosine;
         byData[M32] = 0.0;
         byData[M03] = 0.0;
         byData[M13] = 0.0;
@@ -118,30 +117,33 @@ public:
         double yyy = yy * q.y();
         double yyz = yy * q.z();
         double zzz = zz * q.z();
-        tmpData[M00] = 1.0f - (yyy + zzz);
+        tmpData[M00] = 1.0 - (yyy + zzz);
         tmpData[M10] = xxy - zzw;
         tmpData[M20] = xxz + yyw;
-        tmpData[M30] = 0.0f;
+        tmpData[M30] = 0.0;
         tmpData[M01] = xxy + zzw;
-        tmpData[M11] = 1.0f - (xxx + zzz);
+        tmpData[M11] = 1.0 - (xxx + zzz);
         tmpData[M21] = yyz - xxw;
-        tmpData[M31] = 0.0f;
+        tmpData[M31] = 0.0;
         tmpData[M02] = xxz - yyw;
         tmpData[M12] = yyz + xxw;
-        tmpData[M22] = 1.0f - (xxx + yyy);
-        tmpData[M32] = 0.0f;
-        tmpData[M03] = 0.0f;
-        tmpData[M13] = 0.0f;
-        tmpData[M23] = 0.0f;
-        tmpData[M33] = 1.0f;
+        tmpData[M22] = 1.0 - (xxx + yyy);
+        tmpData[M32] = 0.0;
+        tmpData[M03] = 0.0;
+        tmpData[M13] = 0.0;
+        tmpData[M23] = 0.0;
+        tmpData[M33] = 1.0;
         *this *= tmp;
     }
 
     inline Matrix4x4& translate(const Vector3& v)
     {
-        m_data[M30] += v.x();
-        m_data[M31] += v.y();
-        m_data[M32] += v.z();
+        Matrix4x4 translateMatrix;
+        double* translateData = translateMatrix.data();
+        translateData[M30] = v.x();
+        translateData[M31] = v.y();
+        translateData[M32] = v.z();
+        *this *= translateMatrix;
         return *this;
     }
 
@@ -181,28 +183,28 @@ public:
 
     inline Matrix4x4& operator*=(const Matrix4x4& by)
     {
-        double tmpData[16];
-        memcpy(tmpData, m_data, sizeof(tmpData));
+        double tempData[16];
+        memcpy(tempData, m_data, sizeof(tempData));
         const double* byData = by.constData();
-        m_data[0] = tmpData[0] * byData[0] + tmpData[4] * byData[1] + tmpData[8] * byData[2] + tmpData[12] * byData[3];
-        m_data[4] = tmpData[0] * byData[4] + tmpData[4] * byData[5] + tmpData[8] * byData[6] + tmpData[12] * byData[7];
-        m_data[8] = tmpData[0] * byData[8] + tmpData[4] * byData[9] + tmpData[8] * byData[10] + tmpData[12] * byData[11];
-        m_data[12] = tmpData[0] * byData[12] + tmpData[4] * byData[13] + tmpData[8] * byData[14] + tmpData[12] * byData[15];
+        m_data[0] = tempData[0] * byData[0] + tempData[4] * byData[1] + tempData[8] * byData[2] + tempData[12] * byData[3];
+        m_data[4] = tempData[0] * byData[4] + tempData[4] * byData[5] + tempData[8] * byData[6] + tempData[12] * byData[7];
+        m_data[8] = tempData[0] * byData[8] + tempData[4] * byData[9] + tempData[8] * byData[10] + tempData[12] * byData[11];
+        m_data[12] = tempData[0] * byData[12] + tempData[4] * byData[13] + tempData[8] * byData[14] + tempData[12] * byData[15];
 
-        m_data[1] = tmpData[1] * byData[0] + tmpData[5] * byData[1] + tmpData[9] * byData[2] + tmpData[13] * byData[3];
-        m_data[5] = tmpData[1] * byData[4] + tmpData[5] * byData[5] + tmpData[9] * byData[6] + tmpData[13] * byData[7];
-        m_data[9] = tmpData[1] * byData[8] + tmpData[5] * byData[9] + tmpData[9] * byData[10] + tmpData[13] * byData[11];
-        m_data[13] = tmpData[1] * byData[12] + tmpData[5] * byData[13] + tmpData[9] * byData[14] + tmpData[13] * byData[15];
+        m_data[1] = tempData[1] * byData[0] + tempData[5] * byData[1] + tempData[9] * byData[2] + tempData[13] * byData[3];
+        m_data[5] = tempData[1] * byData[4] + tempData[5] * byData[5] + tempData[9] * byData[6] + tempData[13] * byData[7];
+        m_data[9] = tempData[1] * byData[8] + tempData[5] * byData[9] + tempData[9] * byData[10] + tempData[13] * byData[11];
+        m_data[13] = tempData[1] * byData[12] + tempData[5] * byData[13] + tempData[9] * byData[14] + tempData[13] * byData[15];
 
-        m_data[2] = tmpData[2] * byData[0] + tmpData[6] * byData[1] + tmpData[10] * byData[2] + tmpData[14] * byData[3];
-        m_data[6] = tmpData[2] * byData[4] + tmpData[6] * byData[5] + tmpData[10] * byData[6] + tmpData[14] * byData[7];
-        m_data[10] = tmpData[2] * byData[8] + tmpData[6] * byData[9] + tmpData[10] * byData[10] + tmpData[14] * byData[11];
-        m_data[14] = tmpData[2] * byData[12] + tmpData[6] * byData[13] + tmpData[10] * byData[14] + tmpData[14] * byData[15];
+        m_data[2] = tempData[2] * byData[0] + tempData[6] * byData[1] + tempData[10] * byData[2] + tempData[14] * byData[3];
+        m_data[6] = tempData[2] * byData[4] + tempData[6] * byData[5] + tempData[10] * byData[6] + tempData[14] * byData[7];
+        m_data[10] = tempData[2] * byData[8] + tempData[6] * byData[9] + tempData[10] * byData[10] + tempData[14] * byData[11];
+        m_data[14] = tempData[2] * byData[12] + tempData[6] * byData[13] + tempData[10] * byData[14] + tempData[14] * byData[15];
 
-        m_data[3] = tmpData[3] * byData[0] + tmpData[7] * byData[1] + tmpData[11] * byData[2] + tmpData[15] * byData[3];
-        m_data[7] = tmpData[3] * byData[4] + tmpData[7] * byData[5] + tmpData[11] * byData[6] + tmpData[15] * byData[7];
-        m_data[11] = tmpData[3] * byData[8] + tmpData[7] * byData[9] + tmpData[11] * byData[10] + tmpData[15] * byData[11];
-        m_data[15] = tmpData[3] * byData[12] + tmpData[7] * byData[13] + tmpData[11] * byData[14] + tmpData[15] * byData[15];
+        m_data[3] = tempData[3] * byData[0] + tempData[7] * byData[1] + tempData[11] * byData[2] + tempData[15] * byData[3];
+        m_data[7] = tempData[3] * byData[4] + tempData[7] * byData[5] + tempData[11] * byData[6] + tempData[15] * byData[7];
+        m_data[11] = tempData[3] * byData[8] + tempData[7] * byData[9] + tempData[11] * byData[10] + tempData[15] * byData[11];
+        m_data[15] = tempData[3] * byData[12] + tempData[7] * byData[13] + tempData[11] * byData[14] + tempData[15] * byData[15];
         return *this;
     }
 
