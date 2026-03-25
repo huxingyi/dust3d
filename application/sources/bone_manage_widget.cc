@@ -6,7 +6,6 @@
 #include <QComboBox>
 #include <QDebug>
 #include <QFile>
-#include <QGroupBox>
 #include <QHBoxLayout>
 #include <QIcon>
 #include <QItemSelectionModel>
@@ -74,12 +73,12 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
     m_rigTemplateModelWidget->setMinimumHeight(250);
     m_rigTemplateModelWidget->enableZoom(false); // Only allow rotation, disable zoom
 
-    QGroupBox* rigTemplateGroupBox = new QGroupBox(tr("Template"));
+    m_rigTemplateGroupBox = new QGroupBox(tr("Template"));
     QVBoxLayout* rigTemplateLayout = new QVBoxLayout;
     rigTemplateLayout->setContentsMargins(3, 3, 3, 3);
     rigTemplateLayout->addWidget(m_rigTemplateModelWidget);
-    rigTemplateGroupBox->setLayout(rigTemplateLayout);
-    mainLayout->addWidget(rigTemplateGroupBox);
+    m_rigTemplateGroupBox->setLayout(rigTemplateLayout);
+    mainLayout->addWidget(m_rigTemplateGroupBox);
 
     // Model Widget for rendering the actual rig skeleton mesh (computed from edge assignments)
     m_rigSkinningModelWidget = new ModelWidget();
@@ -87,12 +86,12 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
     m_rigSkinningModelWidget->enableZoom(false);
     m_rigSkinningModelWidget->disableCullFace();
 
-    QGroupBox* rigSkinningGroupBox = new QGroupBox(tr("Skinned"));
+    m_rigSkinningGroupBox = new QGroupBox(tr("Skinned"));
     QVBoxLayout* rigSkinningLayout = new QVBoxLayout;
     rigSkinningLayout->setContentsMargins(3, 3, 3, 3);
     rigSkinningLayout->addWidget(m_rigSkinningModelWidget);
-    rigSkinningGroupBox->setLayout(rigSkinningLayout);
-    mainLayout->addWidget(rigSkinningGroupBox);
+    m_rigSkinningGroupBox->setLayout(rigSkinningLayout);
+    mainLayout->addWidget(m_rigSkinningGroupBox);
 
     mainLayout->addStretch();
 
@@ -329,12 +328,18 @@ void BoneManageWidget::updateBoneTreeView(const QString& rigType)
         m_boneTreeView->hide();
         m_rigTemplateModelWidget->hide();
         m_rigSkinningModelWidget->hide();
+        m_assignButton->hide();
+        m_rigSkinningGroupBox->hide();
+        m_rigTemplateGroupBox->hide();
         return;
     }
 
     m_boneTreeView->show();
     m_rigTemplateModelWidget->show();
     m_rigSkinningModelWidget->show();
+    m_assignButton->show();
+    m_rigSkinningGroupBox->show();
+    m_rigTemplateGroupBox->show();
 
     // Find the rig structure by name
     RigStructure* selectedRig = nullptr;

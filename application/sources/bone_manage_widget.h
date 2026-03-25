@@ -7,6 +7,7 @@
 #include "rig_skeleton_mesh_generator.h"
 #include "rig_skeleton_mesh_worker.h"
 #include <QComboBox>
+#include <QGroupBox>
 #include <QMenu>
 #include <QPushButton>
 #include <QStandardItemModel>
@@ -45,6 +46,8 @@ private:
     QStandardItemModel* m_boneTreeModel = nullptr;
     ModelWidget* m_rigTemplateModelWidget = nullptr;
     QPushButton* m_assignButton = nullptr;
+    QGroupBox* m_rigTemplateGroupBox = nullptr;
+    QGroupBox* m_rigSkinningGroupBox = nullptr;
     ModelWidget* m_rigSkinningModelWidget = nullptr;
     std::unique_ptr<QMenu> m_contextMenu;
     std::map<QString, RigStructure> m_rigStructures;
