@@ -365,6 +365,7 @@ void TubeMeshBuilder::addCap(const std::vector<size_t>& section, double ringV, d
     for (size_t i = ringVertices.size(); i < resultVertices.size(); ++i) {
         vertexIndices.push_back(m_generatedVertices.size());
         m_generatedVertices.push_back(resultVertices[i]);
+        m_generatedVertexSources.push_back(m_generatedVertexSources[vertexIndices[0]]);
     }
     for (const auto& it : sectionRemesher.generatedFaces()) {
         std::vector<size_t> newFace(it.size());
