@@ -525,7 +525,6 @@ void BoneManageWidget::onRigGenerationReady()
 
 void BoneManageWidget::updateAssignButtonState()
 {
-    qDebug() << "Updating assign button state. Selected bone:" << m_selectedBoneName;
     bool hasBone = !m_selectedBoneName.isEmpty();
     bool hasEdgeSelection = m_skeletonGraphicsWidget ? m_skeletonGraphicsWidget->hasEdgeSelection() : false;
     if (m_assignButton)
