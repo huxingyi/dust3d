@@ -115,8 +115,14 @@ void AnimationManageWidget::triggerPreviewRegeneration()
 AnimationManageWidget::~AnimationManageWidget()
 {
     stopAnimationLoop();
-}
 
+    if (m_animationThread) {
+        m_animationThread->quit();
+        m_animationThread->wait(1000);
+        // thread object is deleted by deleteLater after finished
+        m_animationThread = nullptr;
+    }
+}
 void AnimationManageWidget::onResultRigChanged()
 {
     qDebug() << "AnimationManageWidget: resultRigChanged";
@@ -124,6 +130,18 @@ void AnimationManageWidget::onResultRigChanged()
     stopAnimationLoop();
     m_animationFrames.clear();
     m_currentFrame = 0;
+
+    m_animationParams.stepLengthFactor = m_stepLengthSlider->value() / 100.0;
+    m_animationParams.stepHeightFactor = m_stepHeightSlider->value() / 100.0;
+    m_animationParams.bodyBobFactor = m_bodyBobSlider->value() / 100.0;
+    m_animationParams.gaitSpeedFactor = m_gaitSpeedSlider->value() / 100.0;
+    m_animationParams.useFabrikIk = m_useFabrikCheck->isChecked();
+    m_animationParams.planeStabilization = m_planeStabilizationCheck->isChecked();
+
+    if (m_animationWorkerBusy) {
+        m_animationRegenerationPending = true;
+        return;
+    }
 
     if (!m_animationWorker) {
         m_animationWorker = std::make_unique<AnimationPreviewWorker>();
@@ -137,35 +155,60 @@ void AnimationManageWidget::onResultRigChanged()
 
     m_animationWorker->setParameters(actualRig, 30, 1.0f, m_animationParams);
 
-    auto thread = new QThread;
-    m_animationWorker->moveToThread(thread);
+    dust3d::Object* rigObject = m_document->takeRigObject();
+    m_animationWorker->setRigObject(std::unique_ptr<dust3d::Object>(rigObject));
 
-    connect(thread, &QThread::started, m_animationWorker.get(), &AnimationPreviewWorker::process);
+    if (m_animationThread) {
+        m_animationThread->quit();
+        m_animationThread->wait(1000);
+        m_animationThread = nullptr;
+    }
+
+    m_animationThread = new QThread;
+    m_animationWorker->moveToThread(m_animationThread);
+
+    m_animationWorkerBusy = true;
+
+    connect(m_animationThread, &QThread::started, m_animationWorker.get(), &AnimationPreviewWorker::process);
     connect(m_animationWorker.get(), &AnimationPreviewWorker::finished, this, &AnimationManageWidget::onAnimationPreviewReady);
-    connect(m_animationWorker.get(), &AnimationPreviewWorker::finished, thread, &QThread::quit);
-    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+    connect(m_animationWorker.get(), &AnimationPreviewWorker::finished, m_animationThread, &QThread::quit);
+    connect(m_animationThread, &QThread::finished, m_animationThread, &QThread::deleteLater);
 
-    thread->start();
+    m_animationThread->start();
 }
 
 void AnimationManageWidget::onAnimationPreviewReady()
 {
+    m_animationWorkerBusy = false;
+
     if (!m_animationWorker) {
         qWarning() << "AnimationManageWidget: preview worker finished but missing worker";
-        return;
+    } else {
+        m_animationFrames = m_animationWorker->takePreviewMeshes();
+        m_animationWorker.reset();
     }
 
-    m_animationFrames = m_animationWorker->takePreviewMeshes();
-    m_animationWorker.reset();
+    if (m_animationThread) {
+        m_animationThread = nullptr; // deleted by deleteLater
+    }
 
     if (m_animationFrames.empty()) {
         qWarning() << "AnimationManageWidget: no preview frames generated";
+        if (m_animationRegenerationPending) {
+            m_animationRegenerationPending = false;
+            onResultRigChanged();
+        }
         return;
     }
 
     qDebug() << "AnimationManageWidget: received" << m_animationFrames.size() << "frames";
 
     startAnimationLoop();
+
+    if (m_animationRegenerationPending) {
+        m_animationRegenerationPending = false;
+        onResultRigChanged();
+    }
 }
 
 void AnimationManageWidget::onAnimationFrameTimeout()

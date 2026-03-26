@@ -3,6 +3,7 @@
 #include <dust3d/base/vector3.h>
 #include <dust3d/rig/rig_generator.h>
 #include <QDebug>
+#include <cstring>
 
 void AnimationPreviewWorker::process()
 {
@@ -61,6 +62,7 @@ void AnimationPreviewWorker::process()
         }
 
         RigSkeletonMeshGenerator meshGenerator;
+        meshGenerator.setNormalizeRequired(false);
         meshGenerator.setStartRadius(0.02);
         meshGenerator.generateMesh(poseRig, "");
 
@@ -81,11 +83,67 @@ void AnimationPreviewWorker::process()
             triangleVertexNormals.push_back({ normal, normal, normal });
         }
 
-        ModelMesh mesh(vertices, faces, triangleVertexNormals,
+        ModelMesh skeletonMesh(vertices, faces, triangleVertexNormals,
             dust3d::Color(Theme::blue.redF(), Theme::blue.greenF(), Theme::blue.blueF()),
             0.0f, 1.0f, vertexProperties);
 
-        m_previewMeshes.push_back(std::move(mesh));
+        std::unique_ptr<ModelMesh> frameMesh;
+        if (m_rigObject && !m_rigObject->vertices.empty() && !frame.boneSkinMatrices.empty()) {
+            dust3d::Object skinnedObject(*m_rigObject);
+
+            for (size_t i = 0; i < skinnedObject.vertices.size(); ++i) {
+                const dust3d::Vector3& origin = m_rigObject->vertices[i];
+                dust3d::Vector3 transformed(0.0f, 0.0f, 0.0f);
+                float totalWeight = 0.0f;
+
+                if (i < m_rigObject->vertexBone1.size()) {
+                    const auto& b1 = m_rigObject->vertexBone1[i];
+                    if (!b1.first.empty()) {
+                        auto it = frame.boneSkinMatrices.find(b1.first);
+                        if (it != frame.boneSkinMatrices.end()) {
+                            transformed += it->second.transformPoint(origin) * b1.second;
+                            totalWeight += b1.second;
+                        }
+                    }
+                }
+
+                if (i < m_rigObject->vertexBone2.size()) {
+                    const auto& b2 = m_rigObject->vertexBone2[i];
+                    if (!b2.first.empty()) {
+                        auto it = frame.boneSkinMatrices.find(b2.first);
+                        if (it != frame.boneSkinMatrices.end()) {
+                            transformed += it->second.transformPoint(origin) * b2.second;
+                            totalWeight += b2.second;
+                        }
+                    }
+                }
+
+                if (totalWeight > 1e-6f) {
+                    transformed /= totalWeight;
+                    skinnedObject.vertices[i] = transformed;
+                } else {
+                    skinnedObject.vertices[i] = origin;
+                }
+            }
+
+            frameMesh = std::make_unique<ModelMesh>(skinnedObject);
+        }
+
+        // Combine skeleton and skinned object -- keep both in preview output
+        if (frameMesh && frameMesh->triangleVertexCount() > 0) {
+            int skeletonCount = skeletonMesh.triangleVertexCount();
+            int skinnedCount = frameMesh->triangleVertexCount();
+            int totalCount = skeletonCount + skinnedCount;
+
+            ModelOpenGLVertex* combinedVertices = new ModelOpenGLVertex[totalCount];
+            std::memcpy(combinedVertices, skeletonMesh.triangleVertices(), skeletonCount * sizeof(ModelOpenGLVertex));
+            std::memcpy(combinedVertices + skeletonCount, frameMesh->triangleVertices(), skinnedCount * sizeof(ModelOpenGLVertex));
+
+            ModelMesh combinedMesh(combinedVertices, totalCount);
+            m_previewMeshes.push_back(std::move(combinedMesh));
+        } else {
+            m_previewMeshes.push_back(std::move(skeletonMesh));
+        }
     }
 
     qDebug() << "Animation preview: generated" << m_previewMeshes.size() << "frames";

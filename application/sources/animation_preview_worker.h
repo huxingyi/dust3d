@@ -8,6 +8,7 @@
 #include <dust3d/animation/animation_generator.h>
 #include <dust3d/rig/rig_generator.h>
 #include <map>
+#include <memory>
 #include <vector>
 
 class AnimationPreviewWorker : public QObject {
@@ -20,6 +21,11 @@ public:
         m_frameCount = frameCount;
         m_durationSeconds = durationSeconds;
         m_animationParameters = parameters;
+    }
+
+    void setRigObject(std::unique_ptr<dust3d::Object> rigObject)
+    {
+        m_rigObject = std::move(rigObject);
     }
 
     std::vector<ModelMesh> takePreviewMeshes()
@@ -38,6 +44,7 @@ private:
     int m_frameCount = 30;
     float m_durationSeconds = 1.0f;
     dust3d::AnimationParams m_animationParameters;
+    std::unique_ptr<dust3d::Object> m_rigObject;
     std::vector<ModelMesh> m_previewMeshes;
 };
 
