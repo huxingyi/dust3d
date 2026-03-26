@@ -108,7 +108,7 @@ void AnimationManageWidget::updateAnimationParamsFromWidgets()
     m_animationParams.stepLengthFactor = m_stepLengthSlider->value() / 100.0;
     m_animationParams.stepHeightFactor = m_stepHeightSlider->value() / 100.0;
     m_animationParams.bodyBobFactor = m_bodyBobSlider->value() / 100.0;
-    m_animationParams.gaitSpeedFactor = m_gaitSpeedSlider->value() / 50.0;
+    m_animationParams.gaitSpeedFactor = m_gaitSpeedSlider->value() / 10.0;
     m_animationParams.useFabrikIk = m_useFabrikCheck->isChecked();
     m_animationParams.planeStabilization = m_planeStabilizationCheck->isChecked();
 }

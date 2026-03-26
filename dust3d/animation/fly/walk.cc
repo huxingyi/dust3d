@@ -340,9 +340,14 @@ bool walk(const RigStructure& rigStructure,
     animationClip.durationSeconds = durationSeconds;
     animationClip.frames.resize(frameCount);
 
+    // Round gaitSpeedFactor to the nearest positive integer so the clip always
+    // contains a whole number of gait cycles.  A fractional value would leave
+    // the last frame mid-cycle, causing a visible jump when the clip loops.
+    const double cycles = std::max(1.0, std::round(parameters.gaitSpeedFactor));
+
     for (int frame = 0; frame < frameCount; ++frame) {
-        double t = static_cast<double>(frame) / static_cast<double>(frameCount);
-        t = fmod(t * parameters.gaitSpeedFactor, 1.0);
+        double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
+        double t = fmod(tNormalized * cycles, 1.0);
 
         // -- body oscillation (paper §3.2 – pelvis movement) --
         // Two bobs per cycle (one per tripod group switch)
@@ -476,7 +481,9 @@ bool walk(const RigStructure& rigStructure,
         // 4d. Skin matrices = worldTransform × inverseBindMatrix
         // -------------------------------------------------------
         auto& animFrame = animationClip.frames[frame];
-        animFrame.time = static_cast<float>(t) * durationSeconds;
+        // Use the frame's actual position in the clip, not the wrapped gait
+        // phase, so that frame times remain monotonically increasing.
+        animFrame.time = static_cast<float>(tNormalized) * durationSeconds;
         animFrame.boneWorldTransforms = boneWorldTransforms;
 
         for (const auto& pair : boneWorldTransforms) {
