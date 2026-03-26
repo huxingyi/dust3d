@@ -147,6 +147,20 @@ public:
         return *this;
     }
 
+    inline Vector3 transformVector(const Vector3& v) const
+    {
+        return Vector3((v.x() * m_data[M00]) + (v.y() * m_data[M10]) + (v.z() * m_data[M20]),
+            (v.x() * m_data[M01]) + (v.y() * m_data[M11]) + (v.z() * m_data[M21]),
+            (v.x() * m_data[M02]) + (v.y() * m_data[M12]) + (v.z() * m_data[M22]));
+    }
+
+    inline Vector3 transformPoint(const Vector3& v) const
+    {
+        return Vector3((v.x() * m_data[M00]) + (v.y() * m_data[M10]) + (v.z() * m_data[M20]) + m_data[M30],
+            (v.x() * m_data[M01]) + (v.y() * m_data[M11]) + (v.z() * m_data[M21]) + m_data[M31],
+            (v.x() * m_data[M02]) + (v.y() * m_data[M12]) + (v.z() * m_data[M22]) + m_data[M32]);
+    }
+
     inline Matrix4x4 inverted() const
     {
         Matrix4x4 m;
@@ -219,10 +233,7 @@ private:
 
 inline Vector3 operator*(const Matrix4x4& m, const Vector3& v)
 {
-    const double* data = m.constData();
-    return Vector3((v.x() * data[0]) + (v.y() * data[4]) + (v.z() * data[8]),
-        (v.x() * data[1]) + (v.y() * data[5]) + (v.z() * data[9]),
-        (v.x() * data[2]) + (v.y() * data[6]) + (v.z() * data[10]));
+    return m.transformVector(v);
 }
 
 }

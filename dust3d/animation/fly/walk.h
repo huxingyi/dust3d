@@ -20,38 +20,24 @@
  *  SOFTWARE.
  */
 
-#ifndef DUST3D_ANIMATION_ANIMATION_GENERATOR_H_
-#define DUST3D_ANIMATION_ANIMATION_GENERATOR_H_
+#ifndef DUST3D_ANIMATION_FLY_WALK_H_
+#define DUST3D_ANIMATION_FLY_WALK_H_
 
+#include <dust3d/animation/animation_generator.h>
 #include <dust3d/rig/rig_generator.h>
 
 namespace dust3d {
 
-struct BoneAnimationFrame {
-    float time = 0.0f;
-    std::map<std::string, Matrix4x4> boneWorldTransforms;
-    std::map<std::string, Matrix4x4> boneSkinMatrices;
-};
+namespace fly {
 
-struct RigAnimationClip {
-    std::string name;
-    float durationSeconds = 1.0f;
-    std::vector<BoneAnimationFrame> frames;
-};
+bool walk(const RigStructure& rigStructure,
+    const std::map<std::string, Matrix4x4>& inverseBindMatrices,
+    RigAnimationClip& animationClip,
+    int frameCount = 30,
+    float durationSeconds = 1.0f);
 
-class AnimationGenerator {
-public:
-    AnimationGenerator() = default;
-    ~AnimationGenerator() = default;
+} // namespace fly
 
-    static bool generate(const RigStructure& rigStructure,
-        const std::map<std::string, Matrix4x4>& inverseBindMatrices,
-        RigAnimationClip& animationClip,
-        const std::string& animationName,
-        int frameCount = 30,
-        float durationSeconds = 1.0f);
-};
+} // namespace dust3d
 
-}
-
-#endif
+#endif // DUST3D_ANIMATION_FLY_WALK_H_

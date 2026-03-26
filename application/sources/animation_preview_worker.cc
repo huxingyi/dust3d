@@ -4,19 +4,6 @@
 #include <dust3d/rig/rig_generator.h>
 #include <QDebug>
 
-namespace {
-
-dust3d::Vector3 applyMatrixToPoint(const dust3d::Matrix4x4& m, const dust3d::Vector3& p)
-{
-    const double* data = m.constData();
-    return dust3d::Vector3(
-        (float)(p.x() * data[0] + p.y() * data[4] + p.z() * data[8] + data[12]),
-        (float)(p.x() * data[1] + p.y() * data[5] + p.z() * data[9] + data[13]),
-        (float)(p.x() * data[2] + p.y() * data[6] + p.z() * data[10] + data[14]));
-}
-
-} // namespace
-
 void AnimationPreviewWorker::process()
 {
     m_previewMeshes.clear();
@@ -32,8 +19,8 @@ void AnimationPreviewWorker::process()
     }
 
     dust3d::RigAnimationClip animationClip;
-    if (!dust3d::AnimationGenerator::generateFlyWalkCycle(baseRig, inverseBindMatrices, animationClip, m_frameCount, m_durationSeconds)) {
-        qWarning() << "Animation preview: generateFlyWalkCycle failed (only fly rig supported)";
+    if (!dust3d::AnimationGenerator::generate(baseRig, inverseBindMatrices, animationClip, "walk", m_frameCount, m_durationSeconds)) {
+        qWarning() << "Animation preview: generate failed (only fly rig supported)";
         emit finished();
         return;
     }
@@ -61,8 +48,8 @@ void AnimationPreviewWorker::process()
                 }
             }
 
-            dust3d::Vector3 worldHead = applyMatrixToPoint(boneTransform, dust3d::Vector3(0, 0, 0));
-            dust3d::Vector3 worldTail = applyMatrixToPoint(boneTransform, dust3d::Vector3(0, 0, boneLength));
+            dust3d::Vector3 worldHead = boneTransform.transformPoint(dust3d::Vector3(0, 0, 0));
+            dust3d::Vector3 worldTail = boneTransform.transformPoint(dust3d::Vector3(0, 0, boneLength));
 
             boneNode.posX = worldHead.x();
             boneNode.posY = worldHead.y();
