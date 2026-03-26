@@ -129,8 +129,16 @@ void AnimationPreviewWorker::process()
             frameMesh = std::make_unique<ModelMesh>(skinnedObject);
         }
 
-        // Combine skeleton and skinned object -- keep both in preview output
-        if (frameMesh && frameMesh->triangleVertexCount() > 0) {
+        // Decide what should be visible according to the hide options.
+        bool showSkeleton = !m_hideBones && skeletonMesh.triangleVertexCount() > 0;
+        bool showSkinned = !m_hideParts && frameMesh && frameMesh->triangleVertexCount() > 0;
+
+        if (!showSkeleton && !showSkinned) {
+            // Both hidden: do not push any mesh for this frame.
+            continue;
+        }
+
+        if (showSkeleton && showSkinned) {
             int skeletonCount = skeletonMesh.triangleVertexCount();
             int skinnedCount = frameMesh->triangleVertexCount();
             int totalCount = skeletonCount + skinnedCount;
@@ -141,8 +149,10 @@ void AnimationPreviewWorker::process()
 
             ModelMesh combinedMesh(combinedVertices, totalCount);
             m_previewMeshes.push_back(std::move(combinedMesh));
-        } else {
+        } else if (showSkeleton) {
             m_previewMeshes.push_back(std::move(skeletonMesh));
+        } else if (showSkinned) {
+            m_previewMeshes.push_back(std::move(*frameMesh));
         }
     }
 

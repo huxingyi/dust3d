@@ -67,9 +67,15 @@ void AnimationManageWidget::createParameterWidgets()
     m_useFabrikCheck->setChecked(true);
     m_planeStabilizationCheck = new QCheckBox("Plane Stabilization");
     m_planeStabilizationCheck->setChecked(true);
+    m_hideBonesCheck = new QCheckBox("Hide Bones");
+    m_hideBonesCheck->setChecked(false);
+    m_hidePartsCheck = new QCheckBox("Hide Parts");
+    m_hidePartsCheck->setChecked(false);
 
     settingsLayout->addWidget(m_useFabrikCheck);
     settingsLayout->addWidget(m_planeStabilizationCheck);
+    settingsLayout->addWidget(m_hideBonesCheck);
+    settingsLayout->addWidget(m_hidePartsCheck);
 
     auto connectAll = [&]() {
         connect(m_stepLengthSlider, &QSlider::valueChanged, this, &AnimationManageWidget::triggerPreviewRegeneration);
@@ -78,6 +84,8 @@ void AnimationManageWidget::createParameterWidgets()
         connect(m_gaitSpeedSlider, &QSlider::valueChanged, this, &AnimationManageWidget::triggerPreviewRegeneration);
         connect(m_useFabrikCheck, &QCheckBox::toggled, this, &AnimationManageWidget::triggerPreviewRegeneration);
         connect(m_planeStabilizationCheck, &QCheckBox::toggled, this, &AnimationManageWidget::triggerPreviewRegeneration);
+        connect(m_hideBonesCheck, &QCheckBox::toggled, this, &AnimationManageWidget::triggerPreviewRegeneration);
+        connect(m_hidePartsCheck, &QCheckBox::toggled, this, &AnimationManageWidget::triggerPreviewRegeneration);
     };
 
     connectAll();
@@ -99,7 +107,7 @@ void AnimationManageWidget::createParameterWidgets()
 
 void AnimationManageWidget::triggerPreviewRegeneration()
 {
-    if (!m_stepLengthSlider || !m_stepHeightSlider || !m_bodyBobSlider || !m_gaitSpeedSlider || !m_useFabrikCheck || !m_planeStabilizationCheck)
+    if (!m_stepLengthSlider || !m_stepHeightSlider || !m_bodyBobSlider || !m_gaitSpeedSlider || !m_useFabrikCheck || !m_planeStabilizationCheck || !m_hideBonesCheck || !m_hidePartsCheck)
         return;
 
     m_animationParams.stepLengthFactor = m_stepLengthSlider->value() / 100.0;
@@ -147,6 +155,8 @@ void AnimationManageWidget::onResultRigChanged()
     }
 
     m_animationWorker->setParameters(actualRig, 30, 1.0f, m_animationParams);
+    m_animationWorker->setHideBones(m_hideBonesCheck ? m_hideBonesCheck->isChecked() : false);
+    m_animationWorker->setHideParts(m_hidePartsCheck ? m_hidePartsCheck->isChecked() : false);
 
     dust3d::Object* rigObject = m_document->takeRigObject();
     m_animationWorker->setRigObject(std::unique_ptr<dust3d::Object>(rigObject));

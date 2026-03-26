@@ -28,6 +28,16 @@ public:
         m_rigObject = std::move(rigObject);
     }
 
+    void setHideBones(bool hideBones)
+    {
+        m_hideBones = hideBones;
+    }
+
+    void setHideParts(bool hideParts)
+    {
+        m_hideParts = hideParts;
+    }
+
     std::vector<ModelMesh> takePreviewMeshes()
     {
         return std::move(m_previewMeshes);
@@ -46,6 +56,8 @@ private:
     dust3d::AnimationParams m_animationParameters;
     std::unique_ptr<dust3d::Object> m_rigObject;
     std::vector<ModelMesh> m_previewMeshes;
+    bool m_hideBones = false;
+    bool m_hideParts = false;
 };
 
 #endif

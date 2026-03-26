@@ -42,6 +42,8 @@ private:
     QSlider* m_gaitSpeedSlider = nullptr;
     QCheckBox* m_useFabrikCheck = nullptr;
     QCheckBox* m_planeStabilizationCheck = nullptr;
+    QCheckBox* m_hideBonesCheck = nullptr;
+    QCheckBox* m_hidePartsCheck = nullptr;
 
     std::unique_ptr<AnimationPreviewWorker> m_animationWorker;
     bool m_animationWorkerBusy = false;
