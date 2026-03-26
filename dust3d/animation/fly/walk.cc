@@ -39,7 +39,7 @@ namespace fly {
 namespace {
 
 // ---------------------------------------------------------------------------
-// CCD (Cyclic Coordinate Descent) IK solver  –  paper §3, refs [34][35]
+// CCD (Cyclic Coordinate Descent) IK solver
 // Iteratively adjusts each joint angle from end-effector back to root so
 // that the chain tip converges toward the target position.
 // joints: ordered positions [root … end-effector]  (root stays fixed)
@@ -84,7 +84,6 @@ void solveCcdIk(std::vector<Vector3>& joints, const Vector3& target, int maxIter
 void solveFabrikIk(std::vector<Vector3>& joints, const Vector3& target, int maxIterations, const Vector3& preferredPlaneNormal = Vector3())
 {
     const double threshold2 = 1e-8;
-    const double damping = 0.75;        // soft iterative damping to avoid overshoot
     const double planeBias = 0.45;      // bias toward preferred leg plane
     size_t n = joints.size();
     if (n < 2)
@@ -131,8 +130,7 @@ void solveFabrikIk(std::vector<Vector3>& joints, const Vector3& target, int maxI
                 continue;
             }
             dir *= (1.0 / r);
-            Vector3 candidate = newPos[i + 1] + dir * lengths[i];
-            newPos[i] = newPos[i] * (1.0 - damping) + candidate * damping;
+            newPos[i] = newPos[i + 1] + dir * lengths[i];
         }
 
         // Forward reaching
@@ -144,8 +142,7 @@ void solveFabrikIk(std::vector<Vector3>& joints, const Vector3& target, int maxI
                 continue;
             }
             dir *= (1.0 / r);
-            Vector3 candidate = newPos[i] + dir * lengths[i];
-            newPos[i + 1] = newPos[i + 1] * (1.0 - damping) + candidate * damping;
+            newPos[i + 1] = newPos[i] + dir * lengths[i];
         }
 
         // Keep chain close to preferred leg plane, if one exists
@@ -157,7 +154,15 @@ void solveFabrikIk(std::vector<Vector3>& joints, const Vector3& target, int maxI
                 newPos[i] = newPos[i] * (1.0 - planeBias) + projected * planeBias;
             }
 
-            // Re-apply segment lengths after plane bias
+            // Re-apply segment lengths after plane bias: backward then forward
+            for (int i = static_cast<int>(n) - 2; i >= 0; --i) {
+                Vector3 dir = newPos[i] - newPos[i + 1];
+                double r = dir.length();
+                if (r < 1e-12)
+                    continue;
+                newPos[i] = newPos[i + 1] + dir * (lengths[i] / r);
+            }
+            newPos[0] = rootPos;
             for (size_t i = 0; i < n - 1; ++i) {
                 Vector3 dir = newPos[i + 1] - newPos[i];
                 double r = dir.length();
@@ -190,6 +195,29 @@ Matrix4x4 buildBoneWorldTransform(const Vector3& boneStart, const Vector3& boneE
         transform.rotate(orient);
     }
     return transform;
+}
+
+// ---------------------------------------------------------------------------
+// Smooth Hermite interpolation (Ken Perlin's smoothstep: 3t²-2t³).
+// Maps [0,1] to [0,1] with zero first-derivative at both endpoints, removing
+// the constant-velocity snap that a plain lerp produces at phase boundaries.
+// ---------------------------------------------------------------------------
+static inline double smoothstep(double t)
+{
+    // clamp to [0,1] defensively
+    if (t <= 0.0) return 0.0;
+    if (t >= 1.0) return 1.0;
+    return t * t * (3.0 - 2.0 * t);
+}
+
+// Smoother-step (Ken Perlin's improved version: 6t⁵-15t⁴+10t³).
+// Zero first *and* second derivative at both endpoints – better for the foot
+// lift arc where a sudden acceleration from rest looks unnatural.
+static inline double smootherstep(double t)
+{
+    if (t <= 0.0) return 0.0;
+    if (t >= 1.0) return 1.0;
+    return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
 }
 
 struct LegDef {
@@ -248,7 +276,7 @@ bool walk(const RigStructure& rigStructure,
     }
 
     // ===================================================================
-    // 1. Determine body facing from bone positions  (paper §3.2)
+    // 1. Determine body facing from bone positions
     // ===================================================================
     // Body vector: direction from abdomen tail toward the head.
     Vector3 bodyVector = getBonePos("Thorax") - getBoneEnd("Abdomen");
@@ -272,7 +300,7 @@ bool walk(const RigStructure& rigStructure,
     Vector3 up = Vector3::crossProduct(right, forward).normalized();
 
     // ===================================================================
-    // 2. Define six legs with tripod gait groups  (paper §3.3)
+    // 2. Define six legs with tripod gait groups
     // ===================================================================
     // Tripod gait – the standard insect locomotion pattern:
     //   Group A (swing first half of cycle): FrontLeft, MiddleRight, BackLeft
@@ -310,7 +338,7 @@ bool walk(const RigStructure& rigStructure,
     }
 
     // ===================================================================
-    // 3. Compute walking parameters from body geometry  (paper §3.1)
+    // 3. Compute walking parameters from body geometry
     // ===================================================================
     double bodyLength = bodyVector.length();
     double stepLength = bodyLength * 0.20 * parameters.stepLengthFactor; // half-stride extent per leg
@@ -349,18 +377,18 @@ bool walk(const RigStructure& rigStructure,
         double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
         double t = fmod(tNormalized * cycles, 1.0);
 
-        // -- body oscillation (paper §3.2 – pelvis movement) --
+        // -- body oscillation (pelvis movement) --
         // Two bobs per cycle (one per tripod group switch)
         double bodyBob = bodyBobAmp * std::sin(t * 4.0 * Math::Pi);
         // Slight pitch oscillation around the "right" axis
-        double bodyPitch = 0.02 * std::sin(t * 2.0 * Math::Pi);
+        double bodyPitch = 0.02 * parameters.bodyBobFactor * std::sin(t * 2.0 * Math::Pi);
 
         Matrix4x4 bodyTransform;
         bodyTransform.translate(up * bodyBob);
         bodyTransform.rotate(right, bodyPitch);
 
         // -------------------------------------------------------
-        // 4a. Compute foot target for each leg  (paper §3.2 / §5)
+        // 4a. Compute foot target for each leg
         // -------------------------------------------------------
         std::array<Vector3, 6> footTarget;
 
@@ -394,13 +422,21 @@ bool walk(const RigStructure& rigStructure,
             Vector3 footBack = footHome[i] - forward * stepLength;
 
             if (isSwing) {
-                // Swing phase (paper §3.2): parabolic 3D arc from back → front
-                Vector3 groundPos = footBack + (footFront - footBack) * legPhase;
-                double lift = 4.0 * stepHeight * legPhase * (1.0 - legPhase);
+                // Swing phase: arc from back → front.
+                // smootherstep on horizontal travel: eases out of liftoff and
+                // into touchdown so the foot doesn't snap forward at a constant speed.
+                double smoothSwing = smootherstep(legPhase);
+                Vector3 groundPos = footBack + (footFront - footBack) * smoothSwing;
+                // Lift: sin curve gives zero velocity at liftoff and touchdown,
+                // which looks more natural than the bare quadratic.  Phase is
+                // smoothstepped first so the peak stays centred.
+                double lift = stepHeight * std::sin(smoothSwing * Math::Pi);
                 footTarget[i] = groundPos + up * lift;
             } else {
-                // Stance phase: foot planted on the ground, sliding front → back
-                footTarget[i] = footFront + (footBack - footFront) * legPhase;
+                // Stance phase: foot planted on the ground, sliding front → back.
+                // smoothstep removes the abrupt velocity change at the moment the
+                // foot is set down or lifted off.
+                footTarget[i] = footFront + (footBack - footFront) * smoothstep(legPhase);
             }
         }
 
@@ -433,7 +469,7 @@ bool walk(const RigStructure& rigStructure,
         }
 
         // -------------------------------------------------------
-        // 4c. Leg IK  (paper §3 – CCD IK, refs [34][35])
+        // 4c. Leg IK
         //     For each leg: build a 3-joint chain
         //     [coxaPos, coxaEnd, tibiaEnd]
         //     treating femur+tibia as one rigid segment for IK purposes.
@@ -450,6 +486,8 @@ bool walk(const RigStructure& rigStructure,
             std::vector<Vector3> chain = { hipPos, coxaEnd, tibiaEnd };
 
             Vector3 preferPlane = Vector3::crossProduct(chain[1] - chain[0], chain[2] - chain[1]);
+            if (preferPlane.lengthSquared() < 1e-10)
+                preferPlane = Vector3::crossProduct(chain[1] - chain[0], up);
             if (parameters.useFabrikIk) {
                 Vector3 plane = parameters.planeStabilization ? preferPlane : Vector3();
                 solveFabrikIk(chain, footTarget[i], 15, plane);
