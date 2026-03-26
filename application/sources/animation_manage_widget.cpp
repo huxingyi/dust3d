@@ -9,7 +9,7 @@
 AnimationManageWidget::AnimationManageWidget(Document* document, QWidget* parent)
     : QWidget(parent)
     , m_document(document)
-    , m_modelWidget(new ModelWidget(this))
+    , m_modelWidget(new WorldWidget(this))
     , m_frameTimer(new QTimer(this))
 {
     QVBoxLayout* mainLayout = new QVBoxLayout;
@@ -17,7 +17,6 @@ AnimationManageWidget::AnimationManageWidget(Document* document, QWidget* parent
     mainLayout->setContentsMargins(5, 5, 5, 5);
 
     m_modelWidget->setMinimumHeight(280);
-    m_modelWidget->disableCullFace();
     m_modelWidget->enableZoom(true);
     m_modelWidget->enableMove(true);
     m_modelWidget->setMoveAndZoomByWindow(false);

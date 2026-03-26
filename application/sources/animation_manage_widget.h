@@ -3,7 +3,7 @@
 
 #include "animation_preview_worker.h"
 #include "model_mesh.h"
-#include "model_widget.h"
+#include "world_widget.h"
 #include <QWidget>
 #include <QTimer>
 #include <QThread>
@@ -34,7 +34,7 @@ private:
     void createParameterWidgets();
 
     Document* m_document = nullptr;
-    ModelWidget* m_modelWidget = nullptr;
+    WorldWidget* m_modelWidget = nullptr;
     QTimer* m_frameTimer = nullptr;
     QSlider* m_stepLengthSlider = nullptr;
     QSlider* m_stepHeightSlider = nullptr;

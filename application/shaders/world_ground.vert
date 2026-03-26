@@ -1,0 +1,14 @@
+#version 110
+attribute vec4 vertex;
+uniform mat4 viewMatrix;
+uniform mat4 projectionMatrix;
+uniform mat4 lightSpaceMatrix;
+varying vec3 pointPosition;
+varying vec4 pointLightSpacePos;
+
+void main()
+{
+    pointPosition = vertex.xyz;
+    pointLightSpacePos = lightSpaceMatrix * vertex;
+    gl_Position = projectionMatrix * viewMatrix * vertex;
+}
