@@ -7,6 +7,10 @@
 #include <QWidget>
 #include <QTimer>
 #include <QThread>
+#include <QSlider>
+#include <QLabel>
+#include <QCheckBox>
+#include <QDoubleSpinBox>
 #include <vector>
 
 class Document;
@@ -26,13 +30,23 @@ public slots:
 private:
     void startAnimationLoop();
     void stopAnimationLoop();
+    void triggerPreviewRegeneration();
+    void createParameterWidgets();
 
     Document* m_document = nullptr;
     ModelWidget* m_modelWidget = nullptr;
     QTimer* m_frameTimer = nullptr;
+    QSlider* m_stepLengthSlider = nullptr;
+    QSlider* m_stepHeightSlider = nullptr;
+    QSlider* m_bodyBobSlider = nullptr;
+    QSlider* m_gaitSpeedSlider = nullptr;
+    QCheckBox* m_useFabrikCheck = nullptr;
+    QCheckBox* m_planeStabilizationCheck = nullptr;
+
     std::unique_ptr<AnimationPreviewWorker> m_animationWorker;
     std::vector<ModelMesh> m_animationFrames;
     int m_currentFrame = 0;
+    dust3d::AnimationParams m_animationParams;
 };
 
 #endif

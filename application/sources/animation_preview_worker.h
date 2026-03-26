@@ -13,11 +13,13 @@
 class AnimationPreviewWorker : public QObject {
     Q_OBJECT
 public:
-    void setParameters(const RigStructure& rigStructure, int frameCount = 30, float durationSeconds = 1.0f)
+    void setParameters(const RigStructure& rigStructure, int frameCount = 30, float durationSeconds = 1.0f,
+        const dust3d::AnimationParams& parameters = dust3d::AnimationParams())
     {
         m_rigStructure = rigStructure;
         m_frameCount = frameCount;
         m_durationSeconds = durationSeconds;
+        m_animationParameters = parameters;
     }
 
     std::vector<ModelMesh> takePreviewMeshes()
@@ -35,6 +37,7 @@ private:
     RigStructure m_rigStructure;
     int m_frameCount = 30;
     float m_durationSeconds = 1.0f;
+    dust3d::AnimationParams m_animationParameters;
     std::vector<ModelMesh> m_previewMeshes;
 };
 

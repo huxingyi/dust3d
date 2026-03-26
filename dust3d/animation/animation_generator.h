@@ -39,6 +39,15 @@ struct RigAnimationClip {
     std::vector<BoneAnimationFrame> frames;
 };
 
+struct AnimationParams {
+    bool useFabrikIk = true;
+    bool planeStabilization = true;
+    double stepLengthFactor = 1.0;
+    double stepHeightFactor = 1.0;
+    double bodyBobFactor = 1.0;
+    double gaitSpeedFactor = 1.0;
+};
+
 class AnimationGenerator {
 public:
     AnimationGenerator() = default;
@@ -49,7 +58,8 @@ public:
         RigAnimationClip& animationClip,
         const std::string& animationName,
         int frameCount = 30,
-        float durationSeconds = 1.0f);
+        float durationSeconds = 1.0f,
+        const AnimationParams& parameters = AnimationParams());
 };
 
 }

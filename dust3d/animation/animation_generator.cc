@@ -30,10 +30,11 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
     RigAnimationClip& animationClip,
     const std::string& animationName,
     int frameCount,
-    float durationSeconds)
+    float durationSeconds,
+    const AnimationParams& parameters)
 {
     if (animationName == "walk")
-        return fly::walk(rigStructure, inverseBindMatrices, animationClip, frameCount, durationSeconds);
+        return fly::walk(rigStructure, inverseBindMatrices, animationClip, frameCount, durationSeconds, parameters);
 
     // Add future rig type + animationName mappings here.
     return false;

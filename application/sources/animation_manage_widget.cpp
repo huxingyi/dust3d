@@ -2,6 +2,7 @@
 #include "document.h"
 #include "theme.h"
 #include <QVBoxLayout>
+#include <QHBoxLayout>
 #include <QLabel>
 #include <QDebug>
 
@@ -26,12 +27,89 @@ AnimationManageWidget::AnimationManageWidget(Document* document, QWidget* parent
 
     setLayout(mainLayout);
 
+    createParameterWidgets();
+
     m_frameTimer->setInterval(100);
     connect(m_frameTimer, &QTimer::timeout, this, &AnimationManageWidget::onAnimationFrameTimeout);
 
     if (m_document) {
         connect(m_document, &Document::resultRigChanged, this, &AnimationManageWidget::onResultRigChanged);
     }
+}
+
+void AnimationManageWidget::createParameterWidgets()
+{
+    QVBoxLayout* settingsLayout = new QVBoxLayout;
+
+    auto makeSliderRow = [&](const QString& labelText, QSlider* slider, int value) {
+        QHBoxLayout* row = new QHBoxLayout;
+        QLabel* label = new QLabel(labelText);
+        slider->setOrientation(Qt::Horizontal);
+        slider->setRange(25, 200);
+        slider->setValue(value);
+        slider->setSingleStep(1);
+        row->addWidget(label);
+        row->addWidget(slider);
+        return row;
+    };
+
+    m_stepLengthSlider = new QSlider;
+    m_stepHeightSlider = new QSlider;
+    m_bodyBobSlider = new QSlider;
+    m_gaitSpeedSlider = new QSlider;
+
+    settingsLayout->addLayout(makeSliderRow("Step Length", m_stepLengthSlider, 100));
+    settingsLayout->addLayout(makeSliderRow("Step Height", m_stepHeightSlider, 100));
+    settingsLayout->addLayout(makeSliderRow("Body Bob", m_bodyBobSlider, 100));
+    settingsLayout->addLayout(makeSliderRow("Gait Speed", m_gaitSpeedSlider, 100));
+
+    m_useFabrikCheck = new QCheckBox("Use FABRIK IK");
+    m_useFabrikCheck->setChecked(true);
+    m_planeStabilizationCheck = new QCheckBox("Plane Stabilization");
+    m_planeStabilizationCheck->setChecked(true);
+
+    settingsLayout->addWidget(m_useFabrikCheck);
+    settingsLayout->addWidget(m_planeStabilizationCheck);
+
+    auto connectAll = [&]() {
+        connect(m_stepLengthSlider, &QSlider::valueChanged, this, &AnimationManageWidget::triggerPreviewRegeneration);
+        connect(m_stepHeightSlider, &QSlider::valueChanged, this, &AnimationManageWidget::triggerPreviewRegeneration);
+        connect(m_bodyBobSlider, &QSlider::valueChanged, this, &AnimationManageWidget::triggerPreviewRegeneration);
+        connect(m_gaitSpeedSlider, &QSlider::valueChanged, this, &AnimationManageWidget::triggerPreviewRegeneration);
+        connect(m_useFabrikCheck, &QCheckBox::toggled, this, &AnimationManageWidget::triggerPreviewRegeneration);
+        connect(m_planeStabilizationCheck, &QCheckBox::toggled, this, &AnimationManageWidget::triggerPreviewRegeneration);
+    };
+
+    connectAll();
+
+    // Insert parameter widgets above the model widget
+    QVBoxLayout* topLayout = qobject_cast<QVBoxLayout*>(layout());
+    if (topLayout) {
+        topLayout->insertLayout(0, settingsLayout);
+    }
+
+    // Initialize internal parameter structure
+    m_animationParams.useFabrikIk = true;
+    m_animationParams.planeStabilization = true;
+    m_animationParams.stepLengthFactor = 1.0;
+    m_animationParams.stepHeightFactor = 1.0;
+    m_animationParams.bodyBobFactor = 1.0;
+    m_animationParams.gaitSpeedFactor = 1.0;
+}
+
+void AnimationManageWidget::triggerPreviewRegeneration()
+{
+    if (!m_stepLengthSlider || !m_stepHeightSlider || !m_bodyBobSlider || !m_gaitSpeedSlider || !m_useFabrikCheck || !m_planeStabilizationCheck)
+        return;
+
+    m_animationParams.stepLengthFactor = m_stepLengthSlider->value() / 100.0;
+    m_animationParams.stepHeightFactor = m_stepHeightSlider->value() / 100.0;
+    m_animationParams.bodyBobFactor = m_bodyBobSlider->value() / 100.0;
+    m_animationParams.gaitSpeedFactor = m_gaitSpeedSlider->value() / 100.0;
+    m_animationParams.useFabrikIk = m_useFabrikCheck->isChecked();
+    m_animationParams.planeStabilization = m_planeStabilizationCheck->isChecked();
+
+    onResultRigChanged();
 }
 
 AnimationManageWidget::~AnimationManageWidget()
@@ -57,7 +135,7 @@ void AnimationManageWidget::onResultRigChanged()
         return;
     }
 
-    m_animationWorker->setParameters(actualRig, 30, 1.0f);
+    m_animationWorker->setParameters(actualRig, 30, 1.0f, m_animationParams);
 
     auto thread = new QThread;
     m_animationWorker->moveToThread(thread);
