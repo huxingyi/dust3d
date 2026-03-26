@@ -14,6 +14,8 @@
 #include <vector>
 
 class Document;
+class QComboBox;
+class ToolbarButton;
 
 class AnimationManageWidget : public QWidget {
     Q_OBJECT
@@ -45,7 +47,12 @@ private:
     QCheckBox* m_hideBonesCheck = nullptr;
     QCheckBox* m_hidePartsCheck = nullptr;
 
+    QComboBox* m_animationNameCombo = nullptr;
+    ToolbarButton* m_addAnimationButton = nullptr;
+
     void updateAnimationParamsFromWidgets();
+    void updateAnimationNameForRigType(const QString& rigType);
+    void onRigTypeChanged(const QString& rigType);
 
     std::unique_ptr<AnimationPreviewWorker> m_animationWorker;
     bool m_animationWorkerBusy = false;

@@ -1,10 +1,13 @@
 #include "animation_manage_widget.h"
 #include "document.h"
 #include "theme.h"
+#include "toolbar_button.h"
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QDebug>
+#include <QComboBox>
+#include <QGroupBox>
 
 AnimationManageWidget::AnimationManageWidget(Document* document, QWidget* parent)
     : QWidget(parent)
@@ -21,12 +24,11 @@ AnimationManageWidget::AnimationManageWidget(Document* document, QWidget* parent
     m_modelWidget->enableMove(true);
     m_modelWidget->setMoveAndZoomByWindow(false);
 
-    mainLayout->addWidget(m_modelWidget);
-    mainLayout->addStretch();
-
     setLayout(mainLayout);
 
     createParameterWidgets();
+
+    mainLayout->addStretch();
 
     m_frameTimer->setInterval(100);
     connect(m_frameTimer, &QTimer::timeout, this, &AnimationManageWidget::onAnimationFrameTimeout);
@@ -38,7 +40,26 @@ AnimationManageWidget::AnimationManageWidget(Document* document, QWidget* parent
 
 void AnimationManageWidget::createParameterWidgets()
 {
-    QVBoxLayout* settingsLayout = new QVBoxLayout;
+    QVBoxLayout* topLayout = qobject_cast<QVBoxLayout*>(layout());
+    if (!topLayout)
+        return;
+
+    // Animation name selector + add button (outside groupbox)
+    QHBoxLayout* animationLayout = new QHBoxLayout;
+    m_animationNameCombo = new QComboBox;
+    m_addAnimationButton = new ToolbarButton(":/resources/toolbar_add.svg");
+    m_addAnimationButton->setToolTip(tr("Add new animation"));
+
+    animationLayout->addWidget(m_animationNameCombo);
+    animationLayout->addWidget(m_addAnimationButton);
+    topLayout->addLayout(animationLayout);
+
+    // Groupbox containing model widget and parameter controls
+    QGroupBox* groupBox = new QGroupBox(tr("Parameters (New)"));
+    QVBoxLayout* groupBoxLayout = new QVBoxLayout;
+    groupBox->setLayout(groupBoxLayout);
+
+    groupBoxLayout->addWidget(m_modelWidget);
 
     auto makeSliderRow = [&](const QString& labelText, QSlider* slider, int value) {
         QHBoxLayout* row = new QHBoxLayout;
@@ -57,10 +78,10 @@ void AnimationManageWidget::createParameterWidgets()
     m_bodyBobSlider = new QSlider;
     m_gaitSpeedSlider = new QSlider;
 
-    settingsLayout->addLayout(makeSliderRow("Step Length", m_stepLengthSlider, 100));
-    settingsLayout->addLayout(makeSliderRow("Step Height", m_stepHeightSlider, 100));
-    settingsLayout->addLayout(makeSliderRow("Body Bob", m_bodyBobSlider, 100));
-    settingsLayout->addLayout(makeSliderRow("Gait Speed", m_gaitSpeedSlider, 100));
+    groupBoxLayout->addLayout(makeSliderRow("Step Length", m_stepLengthSlider, 100));
+    groupBoxLayout->addLayout(makeSliderRow("Step Height", m_stepHeightSlider, 100));
+    groupBoxLayout->addLayout(makeSliderRow("Body Bob", m_bodyBobSlider, 100));
+    groupBoxLayout->addLayout(makeSliderRow("Gait Speed", m_gaitSpeedSlider, 100));
 
     m_useFabrikCheck = new QCheckBox("Use FABRIK IK");
     m_useFabrikCheck->setChecked(true);
@@ -71,10 +92,12 @@ void AnimationManageWidget::createParameterWidgets()
     m_hidePartsCheck = new QCheckBox("Hide Parts");
     m_hidePartsCheck->setChecked(false);
 
-    settingsLayout->addWidget(m_useFabrikCheck);
-    settingsLayout->addWidget(m_planeStabilizationCheck);
-    settingsLayout->addWidget(m_hideBonesCheck);
-    settingsLayout->addWidget(m_hidePartsCheck);
+    groupBoxLayout->addWidget(m_useFabrikCheck);
+    groupBoxLayout->addWidget(m_planeStabilizationCheck);
+    groupBoxLayout->addWidget(m_hideBonesCheck);
+    groupBoxLayout->addWidget(m_hidePartsCheck);
+
+    topLayout->addWidget(groupBox);
 
     auto connectAll = [&]() {
         connect(m_stepLengthSlider, &QSlider::valueChanged, this, &AnimationManageWidget::triggerPreviewRegeneration);
@@ -89,14 +112,38 @@ void AnimationManageWidget::createParameterWidgets()
 
     connectAll();
 
-    // Insert parameter widgets above the model widget
-    QVBoxLayout* topLayout = qobject_cast<QVBoxLayout*>(layout());
-    if (topLayout) {
-        topLayout->insertLayout(0, settingsLayout);
+    if (m_document) {
+        updateAnimationNameForRigType(m_document->getRigType());
+        connect(m_document, &Document::rigTypeChanged, this, &AnimationManageWidget::onRigTypeChanged);
+    } else {
+        updateAnimationNameForRigType(QString());
     }
 
     // Initialize internal parameter structure from widgets
     updateAnimationParamsFromWidgets();
+}
+
+void AnimationManageWidget::updateAnimationNameForRigType(const QString& rigType)
+{
+    if (!m_animationNameCombo || !m_addAnimationButton)
+        return;
+
+    m_animationNameCombo->clear();
+    if (rigType.compare("Fly", Qt::CaseInsensitive) == 0) {
+        m_animationNameCombo->addItem("FlyWalk");
+        m_animationNameCombo->setEnabled(true);
+        m_addAnimationButton->setEnabled(true);
+    } else {
+        m_animationNameCombo->addItem("N/A");
+        m_animationNameCombo->setEnabled(false);
+        m_addAnimationButton->setEnabled(false);
+    }
+}
+
+void AnimationManageWidget::onRigTypeChanged(const QString& rigType)
+{
+    updateAnimationNameForRigType(rigType);
+    triggerPreviewRegeneration();
 }
 
 void AnimationManageWidget::updateAnimationParamsFromWidgets()
