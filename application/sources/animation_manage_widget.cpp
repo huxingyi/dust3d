@@ -96,13 +96,21 @@ void AnimationManageWidget::createParameterWidgets()
         topLayout->insertLayout(0, settingsLayout);
     }
 
-    // Initialize internal parameter structure
-    m_animationParams.useFabrikIk = true;
-    m_animationParams.planeStabilization = true;
-    m_animationParams.stepLengthFactor = 1.0;
-    m_animationParams.stepHeightFactor = 1.0;
-    m_animationParams.bodyBobFactor = 1.0;
-    m_animationParams.gaitSpeedFactor = 1.0;
+    // Initialize internal parameter structure from widgets
+    updateAnimationParamsFromWidgets();
+}
+
+void AnimationManageWidget::updateAnimationParamsFromWidgets()
+{
+    if (!m_stepLengthSlider || !m_stepHeightSlider || !m_bodyBobSlider || !m_gaitSpeedSlider || !m_useFabrikCheck || !m_planeStabilizationCheck)
+        return;
+
+    m_animationParams.stepLengthFactor = m_stepLengthSlider->value() / 100.0;
+    m_animationParams.stepHeightFactor = m_stepHeightSlider->value() / 100.0;
+    m_animationParams.bodyBobFactor = m_bodyBobSlider->value() / 100.0;
+    m_animationParams.gaitSpeedFactor = m_gaitSpeedSlider->value() / 50.0;
+    m_animationParams.useFabrikIk = m_useFabrikCheck->isChecked();
+    m_animationParams.planeStabilization = m_planeStabilizationCheck->isChecked();
 }
 
 void AnimationManageWidget::triggerPreviewRegeneration()
@@ -110,12 +118,7 @@ void AnimationManageWidget::triggerPreviewRegeneration()
     if (!m_stepLengthSlider || !m_stepHeightSlider || !m_bodyBobSlider || !m_gaitSpeedSlider || !m_useFabrikCheck || !m_planeStabilizationCheck || !m_hideBonesCheck || !m_hidePartsCheck)
         return;
 
-    m_animationParams.stepLengthFactor = m_stepLengthSlider->value() / 100.0;
-    m_animationParams.stepHeightFactor = m_stepHeightSlider->value() / 100.0;
-    m_animationParams.bodyBobFactor = m_bodyBobSlider->value() / 100.0;
-    m_animationParams.gaitSpeedFactor = m_gaitSpeedSlider->value() / 100.0;
-    m_animationParams.useFabrikIk = m_useFabrikCheck->isChecked();
-    m_animationParams.planeStabilization = m_planeStabilizationCheck->isChecked();
+    updateAnimationParamsFromWidgets();
 
     onResultRigChanged();
 }
@@ -132,12 +135,7 @@ void AnimationManageWidget::onResultRigChanged()
     m_animationFrames.clear();
     m_currentFrame = 0;
 
-    m_animationParams.stepLengthFactor = m_stepLengthSlider->value() / 100.0;
-    m_animationParams.stepHeightFactor = m_stepHeightSlider->value() / 100.0;
-    m_animationParams.bodyBobFactor = m_bodyBobSlider->value() / 100.0;
-    m_animationParams.gaitSpeedFactor = m_gaitSpeedSlider->value() / 100.0;
-    m_animationParams.useFabrikIk = m_useFabrikCheck->isChecked();
-    m_animationParams.planeStabilization = m_planeStabilizationCheck->isChecked();
+    updateAnimationParamsFromWidgets();
 
     if (m_animationWorkerBusy) {
         m_animationRegenerationPending = true;

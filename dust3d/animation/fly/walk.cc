@@ -21,29 +21,6 @@
  */
 
 // Procedural walk animation for six-legged fly/insect rig.
-//
-// Based on: "Procedural Locomotion of Multi-Legged Characters in Dynamic
-// Environments" (Abdul Karim et al., LIRIS-5511 / Computer Animation and
-// Virtual Worlds 2012).
-//
-// Algorithm overview (following the paper):
-//   1. Determine the body facing direction from the Thorax→Abdomen bone vector.
-//   2. Build an orthonormal frame (forward / up / right) so the walk works
-//      regardless of whether the fly faces front, down, etc.
-//   3. Use a *tripod gait* pattern (Gait Manager, paper §3.3):
-//        Group A = {FrontLeft, MiddleRight, BackLeft}
-//        Group B = {FrontRight, MiddleLeft, BackRight}
-//      Each group alternates between swing and stance phases.
-//   4. Per frame, compute each foot's target position:
-//        – Stance phase: foot slides from front to back on the ground plane
-//          (paper §3.2 – foot blocked on the ground).
-//        – Swing phase: foot follows a parabolic arc from back to front
-//          (paper §3.2 / §4 – 3D trajectory construction).
-//   5. Body (pelvis) gets a slight vertical bob and pitch oscillation,
-//      derived from the feet phases (paper §3.2 – pelvis movement).
-//   6. Solve CCD Inverse Kinematics per leg to match each tibia tip to
-//      its target (paper §3 – CCD IK, refs [34][35]).
-//   7. Store bone world transforms and skin matrices for every frame.
 
 #include <array>
 #include <cmath>
@@ -314,6 +291,12 @@ bool walk(const RigStructure& rigStructure,
         Vector3 coxaPos, coxaEnd;
         Vector3 femurEnd;
         Vector3 tibiaEnd; // end-effector (foot tip)
+        // For rigid femur+tibia reconstruction: rest-pose chord direction (coxaEnd→tibiaEnd)
+        // and the femur offset vector in that same space.  Applying the rotation that maps
+        // restStickDir → newStickDir to restCoxaToFemurVec gives the new femurEnd offset,
+        // preserving both bone lengths and the knee bend angle exactly.
+        Vector3 restStickDir;       // normalized(tibiaEnd - coxaEnd) in rest pose
+        Vector3 restCoxaToFemurVec; // (femurEnd - coxaEnd) in rest pose (not normalized)
     };
     std::array<LegRest, 6> legRest;
     for (size_t i = 0; i < 6; ++i) {
@@ -321,15 +304,18 @@ bool walk(const RigStructure& rigStructure,
         legRest[i].coxaEnd = getBoneEnd(legs[i].coxaName);
         legRest[i].femurEnd = getBoneEnd(legs[i].femurName);
         legRest[i].tibiaEnd = getBoneEnd(legs[i].tibiaName);
+        Vector3 chordVec = legRest[i].tibiaEnd - legRest[i].coxaEnd;
+        legRest[i].restStickDir = chordVec.isZero() ? Vector3(1, 0, 0) : chordVec.normalized();
+        legRest[i].restCoxaToFemurVec = legRest[i].femurEnd - legRest[i].coxaEnd;
     }
 
     // ===================================================================
     // 3. Compute walking parameters from body geometry  (paper §3.1)
     // ===================================================================
     double bodyLength = bodyVector.length();
-    double stepLength = bodyLength * 0.10 * parameters.stepLengthFactor; // half-stride extent per leg
-    double stepHeight = bodyLength * 0.03 * parameters.stepHeightFactor; // foot lift during swing
-    double bodyBobAmp = bodyLength * 0.005 * parameters.bodyBobFactor; // vertical oscillation amplitude
+    double stepLength = bodyLength * 0.20 * parameters.stepLengthFactor; // half-stride extent per leg
+    double stepHeight = bodyLength * 0.08 * parameters.stepHeightFactor; // foot lift during swing
+    double bodyBobAmp = bodyLength * 0.02 * parameters.bodyBobFactor; // vertical oscillation amplitude
 
     // Ground level: project all rest foot tips onto the "up" axis and take
     // the minimum projection as the ground reference.
@@ -443,19 +429,20 @@ bool walk(const RigStructure& rigStructure,
 
         // -------------------------------------------------------
         // 4c. Leg IK  (paper §3 – CCD IK, refs [34][35])
-        //     For each leg: build a 4-joint chain
-        //     [coxaPos, coxaEnd, femurEnd, tibiaEnd]
-        //     and solve IK toward the foot target.
+        //     For each leg: build a 3-joint chain
+        //     [coxaPos, coxaEnd, tibiaEnd]
+        //     treating femur+tibia as one rigid segment for IK purposes.
+        //     The femur-tibia junction is reconstructed afterward by rotating
+        //     the rest-pose structure, preserving the original knee bend angle.
         // -------------------------------------------------------
         for (size_t i = 0; i < 6; ++i) {
             Vector3 hipPos = bodyTransform.transformPoint(legRest[i].coxaPos);
+            Vector3 coxaEnd = bodyTransform.transformPoint(legRest[i].coxaEnd);
+            Vector3 tibiaEnd = bodyTransform.transformPoint(legRest[i].tibiaEnd);
 
-            std::vector<Vector3> chain = {
-                hipPos,
-                bodyTransform.transformPoint(legRest[i].coxaEnd),
-                bodyTransform.transformPoint(legRest[i].femurEnd),
-                bodyTransform.transformPoint(legRest[i].tibiaEnd)
-            };
+            // Treat femur+tibia as a single rigid segment so no angle opens between
+            // them during IK.  The 3-joint chain is [coxa-root, coxa-end, foot-tip].
+            std::vector<Vector3> chain = { hipPos, coxaEnd, tibiaEnd };
 
             Vector3 preferPlane = Vector3::crossProduct(chain[1] - chain[0], chain[2] - chain[1]);
             if (parameters.useFabrikIk) {
@@ -465,10 +452,24 @@ bool walk(const RigStructure& rigStructure,
                 solveCcdIk(chain, footTarget[i], 15);
             }
 
+            // Reconstruct the femur-tibia junction by rotating the rest-pose femur
+            // offset vector (coxaEnd→femurEnd) by the same rotation that maps the
+            // rest-pose chord direction to the current stick direction.  This keeps
+            // the knee bend angle identical to the rest pose.
+            Vector3 newStickDir = (chain[2] - chain[1]);
+            if (newStickDir.isZero())
+                newStickDir = legRest[i].restStickDir;
+            else
+                newStickDir.normalize();
+            Quaternion stickRot = Quaternion::rotationTo(legRest[i].restStickDir, newStickDir);
+            Matrix4x4 stickRotMat;
+            stickRotMat.rotate(stickRot);
+            Vector3 femurEnd = chain[1] + stickRotMat.transformVector(legRest[i].restCoxaToFemurVec);
+
             // Build per-bone transforms from IK solution
             boneWorldTransforms[legs[i].coxaName] = buildBoneWorldTransform(chain[0], chain[1]);
-            boneWorldTransforms[legs[i].femurName] = buildBoneWorldTransform(chain[1], chain[2]);
-            boneWorldTransforms[legs[i].tibiaName] = buildBoneWorldTransform(chain[2], chain[3]);
+            boneWorldTransforms[legs[i].femurName] = buildBoneWorldTransform(chain[1], femurEnd);
+            boneWorldTransforms[legs[i].tibiaName] = buildBoneWorldTransform(femurEnd, chain[2]);
         }
 
         // -------------------------------------------------------

@@ -45,6 +45,8 @@ private:
     QCheckBox* m_hideBonesCheck = nullptr;
     QCheckBox* m_hidePartsCheck = nullptr;
 
+    void updateAnimationParamsFromWidgets();
+
     std::unique_ptr<AnimationPreviewWorker> m_animationWorker;
     bool m_animationWorkerBusy = false;
     bool m_animationRegenerationPending = false;
