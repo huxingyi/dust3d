@@ -115,13 +115,6 @@ void AnimationManageWidget::triggerPreviewRegeneration()
 AnimationManageWidget::~AnimationManageWidget()
 {
     stopAnimationLoop();
-
-    if (m_animationThread) {
-        m_animationThread->quit();
-        m_animationThread->wait(1000);
-        // thread object is deleted by deleteLater after finished
-        m_animationThread = nullptr;
-    }
 }
 void AnimationManageWidget::onResultRigChanged()
 {
@@ -158,23 +151,17 @@ void AnimationManageWidget::onResultRigChanged()
     dust3d::Object* rigObject = m_document->takeRigObject();
     m_animationWorker->setRigObject(std::unique_ptr<dust3d::Object>(rigObject));
 
-    if (m_animationThread) {
-        m_animationThread->quit();
-        m_animationThread->wait(1000);
-        m_animationThread = nullptr;
-    }
-
-    m_animationThread = new QThread;
-    m_animationWorker->moveToThread(m_animationThread);
+    auto thread = new QThread;
+    m_animationWorker->moveToThread(thread);
 
     m_animationWorkerBusy = true;
 
-    connect(m_animationThread, &QThread::started, m_animationWorker.get(), &AnimationPreviewWorker::process);
+    connect(thread, &QThread::started, m_animationWorker.get(), &AnimationPreviewWorker::process);
     connect(m_animationWorker.get(), &AnimationPreviewWorker::finished, this, &AnimationManageWidget::onAnimationPreviewReady);
-    connect(m_animationWorker.get(), &AnimationPreviewWorker::finished, m_animationThread, &QThread::quit);
-    connect(m_animationThread, &QThread::finished, m_animationThread, &QThread::deleteLater);
+    connect(m_animationWorker.get(), &AnimationPreviewWorker::finished, thread, &QThread::quit);
+    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
 
-    m_animationThread->start();
+    thread->start();
 }
 
 void AnimationManageWidget::onAnimationPreviewReady()
@@ -186,10 +173,6 @@ void AnimationManageWidget::onAnimationPreviewReady()
     } else {
         m_animationFrames = m_animationWorker->takePreviewMeshes();
         m_animationWorker.reset();
-    }
-
-    if (m_animationThread) {
-        m_animationThread = nullptr; // deleted by deleteLater
     }
 
     if (m_animationFrames.empty()) {

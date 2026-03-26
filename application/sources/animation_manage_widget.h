@@ -44,7 +44,6 @@ private:
     QCheckBox* m_planeStabilizationCheck = nullptr;
 
     std::unique_ptr<AnimationPreviewWorker> m_animationWorker;
-    QThread* m_animationThread = nullptr;
     bool m_animationWorkerBusy = false;
     bool m_animationRegenerationPending = false;
     std::vector<ModelMesh> m_animationFrames;

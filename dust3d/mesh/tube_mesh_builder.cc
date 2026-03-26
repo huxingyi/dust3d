@@ -147,6 +147,7 @@ void TubeMeshBuilder::applyInterpolation()
                 MeshNode newNode;
                 newNode.origin = m_nodes[i].origin * (1.0 - ratio) + m_nodes[j].origin * ratio;
                 newNode.radius = m_nodes[i].radius * (1.0 - ratio) + m_nodes[j].radius * ratio;
+                newNode.sourceId = (ratio < 0.5) ? m_nodes[i].sourceId : m_nodes[j].sourceId;
                 interpolatedNodes.push_back(newNode);
             }
         }
