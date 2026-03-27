@@ -2648,7 +2648,7 @@ FbxFileWriter::FbxFileWriter(dust3d::Object& object,
                         const auto worldBind = invBind.inverted();
                         const std::string parentNameStr = bone.parent.toStdString();
                         if (!parentNameStr.empty() && inverseBindMatrices->count(parentNameStr)) {
-                            auto localMat = inverseBindMatrices->at(parentNameStr);
+                            auto localMat = inverseBindMatrices->at(parentNameStr).inverted();
                             localMat *= worldBind;
                             localX = localMat.constData()[dust3d::Matrix4x4::M30];
                             localY = localMat.constData()[dust3d::Matrix4x4::M31];
@@ -3649,7 +3649,7 @@ FbxFileWriter::FbxFileWriter(dust3d::Object& object,
                 dust3d::Matrix4x4 localMat;
                 const std::string parentNameStr = bone.parent.toStdString();
                 if (!parentNameStr.empty() && inverseBindMatrices->count(parentNameStr)) {
-                    localMat = inverseBindMatrices->at(parentNameStr);
+                    localMat = inverseBindMatrices->at(parentNameStr).inverted();
                     localMat *= worldBind;
                 } else {
                     localMat = worldBind;
