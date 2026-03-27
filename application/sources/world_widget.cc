@@ -105,19 +105,35 @@ void WorldWidget::cleanup()
 {
     if (!m_shadowFBOId && !m_worldOpenGLProgram)
         return;
-    makeCurrent();
-    cleanupShadowFBO();
+
+    // During widget teardown the GL context can already be gone.
+    // Only issue GL deletes when we actually have a current context.
+    const bool canUseGlContext = nullptr != context() && context()->isValid();
+    if (canUseGlContext)
+        makeCurrent();
+
+    if (nullptr != QOpenGLContext::currentContext()) {
+        cleanupShadowFBO();
+    } else {
+        m_shadowDepthTexture = 0;
+        m_shadowFBOId = 0;
+    }
+
     m_modelOpenGLObject.reset();
     m_shadowOpenGLProgram.reset();
     m_worldOpenGLProgram.reset();
     m_groundOpenGLProgram.reset();
     m_groundOpenGLObject.reset();
-    doneCurrent();
+    if (canUseGlContext && nullptr != QOpenGLContext::currentContext())
+        doneCurrent();
 }
 
 void WorldWidget::cleanupShadowFBO()
 {
-    QOpenGLFunctions* f = QOpenGLContext::currentContext()->functions();
+    QOpenGLContext* currentContext = QOpenGLContext::currentContext();
+    if (nullptr == currentContext)
+        return;
+    QOpenGLFunctions* f = currentContext->functions();
     if (m_shadowDepthTexture) {
         f->glDeleteTextures(1, &m_shadowDepthTexture);
         m_shadowDepthTexture = 0;

@@ -13,6 +13,7 @@
 #include <QPushButton>
 #include <QSpinBox>
 #include <QVBoxLayout>
+#include <QtGlobal>
 #include <unordered_set>
 
 ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
@@ -22,6 +23,12 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     , m_document(document)
     , m_componentIds(componentIds)
 {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 9, 0)
+    const auto checkboxStateChangedSignal = &QCheckBox::checkStateChanged;
+#else
+    const auto checkboxStateChangedSignal = &QCheckBox::stateChanged;
+#endif
+
     preparePartIds();
     m_color = lastColor();
 
@@ -128,7 +135,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         deformUnifyStateBox->setText(tr("Unified"));
         deformUnifyStateBox->setChecked(m_part->deformUnified);
 
-        connect(deformUnifyStateBox, &QCheckBox::stateChanged, this, [=]() {
+        connect(deformUnifyStateBox, checkboxStateChangedSignal, this, [=]() {
             emit setPartDeformUnified(m_partId, deformUnifyStateBox->isChecked());
             emit groupOperationAdded();
         });
@@ -138,7 +145,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         mirrorStateBox->setText(tr("Mirrored"));
         mirrorStateBox->setChecked(m_part->xMirrored);
 
-        connect(mirrorStateBox, &QCheckBox::stateChanged, this, [=]() {
+        connect(mirrorStateBox, checkboxStateChangedSignal, this, [=]() {
             emit setPartXmirrorState(m_partId, mirrorStateBox->isChecked());
             emit groupOperationAdded();
         });
@@ -163,13 +170,17 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         m_cutFaceButtons.resize(m_cutFaceList.size());
         for (size_t i = 0; i < m_cutFaceList.size(); ++i) {
             QString cutFaceString = m_cutFaceList[i];
-            dust3d::CutFace cutFace;
             dust3d::Uuid cutFacePartId(cutFaceString.toUtf8().constData());
             QPushButton* button = new QPushButton;
             button->setIconSize(QSize(Theme::toolIconSize * 0.75, Theme::toolIconSize * 0.75));
             if (cutFacePartId.isNull()) {
-                cutFace = dust3d::CutFaceFromString(cutFaceString.toUtf8().constData());
+                dust3d::CutFace cutFace = dust3d::CutFaceFromString(cutFaceString.toUtf8().constData());
                 button->setIcon(QIcon(QPixmap::fromImage(*cutFacePreviewImage(cutFace))));
+                connect(button, &QPushButton::clicked, [=]() {
+                    updateCutFaceButtonState(i);
+                    emit setPartCutFace(m_partId, cutFace);
+                    emit groupOperationAdded();
+                });
             } else {
                 const Document::Part* part = m_document->findPart(cutFacePartId);
                 if (nullptr != part) {
@@ -177,15 +188,12 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
                     if (nullptr != component)
                         button->setIcon(QIcon(component->previewPixmap));
                 }
-            }
-            connect(button, &QPushButton::clicked, [=]() {
-                updateCutFaceButtonState(i);
-                if (cutFacePartId.isNull())
-                    emit setPartCutFace(m_partId, cutFace);
-                else
+                connect(button, &QPushButton::clicked, [=]() {
+                    updateCutFaceButtonState(i);
                     emit setPartCutFaceLinkedId(m_partId, cutFacePartId);
-                emit groupOperationAdded();
-            });
+                    emit groupOperationAdded();
+                });
+            }
             cutFaceIconLayout->addWidget(button);
             m_cutFaceButtons[i] = button;
         }
@@ -248,7 +256,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         subdivStateBox->setText(tr("Subdivided"));
         subdivStateBox->setChecked(m_part->subdived);
 
-        connect(subdivStateBox, &QCheckBox::stateChanged, this, [=]() {
+        connect(subdivStateBox, checkboxStateChangedSignal, this, [=]() {
             emit setPartSubdivState(m_partId, subdivStateBox->isChecked());
             emit groupOperationAdded();
         });
@@ -258,7 +266,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         chamferStateBox->setText(tr("Chamfered"));
         chamferStateBox->setChecked(m_part->chamfered);
 
-        connect(chamferStateBox, &QCheckBox::stateChanged, this, [=]() {
+        connect(chamferStateBox, checkboxStateChangedSignal, this, [=]() {
             emit setPartChamferState(m_partId, chamferStateBox->isChecked());
             emit groupOperationAdded();
         });
@@ -268,7 +276,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         roundEndStateBox->setText(tr("Round end"));
         roundEndStateBox->setChecked(m_part->rounded);
 
-        connect(roundEndStateBox, &QCheckBox::stateChanged, this, [=]() {
+        connect(roundEndStateBox, checkboxStateChangedSignal, this, [=]() {
             emit setPartRoundState(m_partId, roundEndStateBox->isChecked());
             emit groupOperationAdded();
         });
@@ -383,21 +391,21 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         sideCloseStateBox->setText(tr("Side Closed"));
         sideCloseStateBox->setChecked(lastSideClosed());
 
-        connect(frontCloseStateBox, &QCheckBox::stateChanged, this, [=]() {
+        connect(frontCloseStateBox, checkboxStateChangedSignal, this, [=]() {
             bool closed = frontCloseStateBox->isChecked();
             for (const auto& componentId : m_componentIds)
                 emit setComponentFrontCloseState(componentId, closed);
             emit groupOperationAdded();
         });
 
-        connect(backCloseStateBox, &QCheckBox::stateChanged, this, [=]() {
+        connect(backCloseStateBox, checkboxStateChangedSignal, this, [=]() {
             bool closed = backCloseStateBox->isChecked();
             for (const auto& componentId : m_componentIds)
                 emit setComponentBackCloseState(componentId, closed);
             emit groupOperationAdded();
         });
 
-        connect(sideCloseStateBox, &QCheckBox::stateChanged, this, [=]() {
+        connect(sideCloseStateBox, checkboxStateChangedSignal, this, [=]() {
             bool closed = sideCloseStateBox->isChecked();
             for (const auto& componentId : m_componentIds)
                 emit setComponentSideCloseState(componentId, closed);

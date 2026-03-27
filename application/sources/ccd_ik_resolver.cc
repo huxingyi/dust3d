@@ -82,9 +82,10 @@ float CcdIkSolver::angleInRangle360BetweenTwoVectors(QVector3D a, QVector3D b, Q
 
 void CcdIkSolver::iterate()
 {
+    const int nodeCount = static_cast<int>(m_nodes.size());
     auto rotateChildren = [&](const QQuaternion& quaternion, int i) {
         const auto& origin = m_nodes[i];
-        for (size_t j = i + 1; j <= m_nodes.size() - 1; j++) {
+        for (int j = i + 1; j < nodeCount; ++j) {
             auto& next = m_nodes[j];
             const auto offset = next.position - origin.position;
             next.position = origin.position + quaternion.rotatedVector(offset);
@@ -109,7 +110,7 @@ void CcdIkSolver::iterate()
         if (parentIndex < 0)
             continue;
         int childIndex = i + 1;
-        if (childIndex >= m_nodes.size())
+        if (childIndex >= nodeCount)
             continue;
         const auto& parent = m_nodes[parentIndex];
         const auto& child = m_nodes[childIndex];

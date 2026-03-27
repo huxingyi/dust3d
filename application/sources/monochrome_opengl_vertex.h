@@ -5,7 +5,7 @@
 
 #pragma pack(push)
 #pragma pack(1)
-typedef struct
+struct MonochromeOpenGLVertex
 {
     GLfloat posX;
     GLfloat posY;
@@ -16,7 +16,7 @@ typedef struct
     GLfloat colorB = 0.18f;
     // Tiny bit of alpha lets the base color of the model show through the lines
     GLfloat alpha = 0.9f;
-} MonochromeOpenGLVertex;
+};
 #pragma pack(pop)
 
 #endif
