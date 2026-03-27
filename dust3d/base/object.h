@@ -149,6 +149,24 @@ public:
         m_hasTriangleLinks = true;
     }
 
+    void copyUvFrom(const Object& source)
+    {
+        componentTriangleUvs = source.componentTriangleUvs;
+        seamTriangleUvs = source.seamTriangleUvs;
+        if (source.m_hasTriangleVertexUvs) {
+            m_triangleVertexUvs = source.m_triangleVertexUvs;
+            m_hasTriangleVertexUvs = true;
+        }
+        if (source.m_hasTriangleTangents) {
+            m_triangleTangents = source.m_triangleTangents;
+            m_hasTriangleTangents = true;
+        }
+        if (source.m_hasPartUvRects) {
+            m_partUvRects = source.m_partUvRects;
+            m_hasPartUvRects = true;
+        }
+    }
+
 private:
     bool m_hasTriangleSourceNodes = false;
     std::vector<std::pair<Uuid, Uuid>> m_triangleSourceNodes;

@@ -1222,7 +1222,9 @@ void DocumentWindow::exportFbxToFilename(const QString& filename)
         ExportAnimationWorker worker;
         worker.setParameters(m_document->getActualRigStructure(), animations);
         worker.process();
-        FbxFileWriter fbxFileWriter(*const_cast<dust3d::Object*>(rigObject), filename,
+        dust3d::Object rigWithUv = *rigObject;
+        rigWithUv.copyUvFrom(uvObject);
+        FbxFileWriter fbxFileWriter(rigWithUv, filename,
             m_document->textureImage,
             m_document->textureNormalImage,
             m_document->textureMetalnessImage,
@@ -1230,7 +1232,6 @@ void DocumentWindow::exportFbxToFilename(const QString& filename)
             m_document->textureAmbientOcclusionImage,
             &m_document->getActualRigStructure(),
             &worker.inverseBindMatrices(),
-            &uvObject,
             nullptr);
         fbxFileWriter.save();
         QApplication::restoreOverrideCursor();
@@ -1250,7 +1251,7 @@ void DocumentWindow::exportFbxToFilename(const QString& filename)
 
     RigStructure rigStructure = m_document->getActualRigStructure();
     dust3d::Object rigObjectCopy = *rigObject;
-    dust3d::Object uvObjectCopy = uvObject;
+    rigObjectCopy.copyUvFrom(uvObject);
     QImage* textureImage = m_document->textureImage ? new QImage(*m_document->textureImage) : nullptr;
     QImage* normalImage = m_document->textureNormalImage ? new QImage(*m_document->textureNormalImage) : nullptr;
     QImage* metalnessImage = m_document->textureMetalnessImage ? new QImage(*m_document->textureMetalnessImage) : nullptr;
@@ -1272,7 +1273,6 @@ void DocumentWindow::exportFbxToFilename(const QString& filename)
             textureImage, normalImage, metalnessImage, roughnessImage, aoImage,
             &rigStructure,
             &ibm,
-            &uvObjectCopy,
             &clips);
         fbxFileWriter.save();
 
@@ -1371,12 +1371,12 @@ void DocumentWindow::exportGlbToFilename(const QString& filename)
         ExportAnimationWorker worker;
         worker.setParameters(m_document->getActualRigStructure(), animations);
         worker.process();
-        const_cast<dust3d::Object*>(rigObject); // reference stays valid
-        GlbFileWriter glbFileWriter(*const_cast<dust3d::Object*>(rigObject), filename,
+        dust3d::Object rigWithUv = *rigObject;
+        rigWithUv.copyUvFrom(uvObject);
+        GlbFileWriter glbFileWriter(rigWithUv, filename,
             m_document->textureImage, m_document->textureNormalImage, ormImage,
             &m_document->getActualRigStructure(),
             &worker.inverseBindMatrices(),
-            &uvObject,
             nullptr);
         glbFileWriter.save();
         delete ormImage;
@@ -1398,7 +1398,7 @@ void DocumentWindow::exportGlbToFilename(const QString& filename)
     // Capture data needed after thread finishes
     RigStructure rigStructure = m_document->getActualRigStructure();
     dust3d::Object rigObjectCopy = *rigObject;
-    dust3d::Object uvObjectCopy = uvObject;
+    rigObjectCopy.copyUvFrom(uvObject);
     QImage* textureImage = m_document->textureImage ? new QImage(*m_document->textureImage) : nullptr;
     QImage* normalImage = m_document->textureNormalImage ? new QImage(*m_document->textureNormalImage) : nullptr;
 
@@ -1417,7 +1417,6 @@ void DocumentWindow::exportGlbToFilename(const QString& filename)
             textureImage, normalImage, ormImage,
             &rigStructure,
             &ibm,
-            &uvObjectCopy,
             &clips);
         glbFileWriter.save();
 

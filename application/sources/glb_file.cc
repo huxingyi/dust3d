@@ -18,7 +18,6 @@ GlbFileWriter::GlbFileWriter(dust3d::Object& object,
     QImage* ormImage,
     const RigStructure* rigStructure,
     const std::map<std::string, dust3d::Matrix4x4>* inverseBindMatrices,
-    const dust3d::Object* uvObject,
     const std::vector<dust3d::RigAnimationClip>* animationClips)
     : m_filename(filename)
 {

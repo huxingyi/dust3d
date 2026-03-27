@@ -26,7 +26,6 @@ public:
         QImage* ambientOcclusionImage = nullptr,
         const RigStructure* rigStructure = nullptr,
         const std::map<std::string, dust3d::Matrix4x4>* inverseBindMatrices = nullptr,
-        const dust3d::Object* uvObject = nullptr,
         const std::vector<dust3d::RigAnimationClip>* animationClips = nullptr);
     bool save();
 
