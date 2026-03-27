@@ -82,6 +82,27 @@ void AnimationManageWidget::createParameterWidgets()
 
     groupBoxLayout->addWidget(m_modelWidget);
 
+    // Preview-specific options (not animation parameters)
+    m_hideBonesCheck = new QCheckBox("Hide Bones");
+    m_hideBonesCheck->setChecked(false);
+    m_hidePartsCheck = new QCheckBox("Hide Parts");
+    m_hidePartsCheck->setChecked(false);
+
+    QWidget* previewOptionWidget = new QWidget;
+    QHBoxLayout* previewOptionLayout = new QHBoxLayout(previewOptionWidget);
+    previewOptionLayout->setContentsMargins(0, 0, 0, 0);
+    previewOptionLayout->addWidget(m_hideBonesCheck);
+    previewOptionLayout->addWidget(m_hidePartsCheck);
+    previewOptionLayout->addStretch();
+    groupBoxLayout->addWidget(previewOptionWidget);
+
+    // Visual splitter line between preview options and parameter controls
+    QFrame* separatorLine = new QFrame;
+    separatorLine->setObjectName("separatorLine");
+    separatorLine->setFrameShape(QFrame::HLine);
+    separatorLine->setFrameShadow(QFrame::Sunken);
+    groupBoxLayout->addWidget(separatorLine);
+
     // Parameters area in form layout (label right aligned, control left aligned)
     QFormLayout* parameterLayout = new QFormLayout;
     m_parameterLayout = parameterLayout;
@@ -146,15 +167,9 @@ void AnimationManageWidget::createParameterWidgets()
     m_useFabrikCheck->setChecked(true);
     m_planeStabilizationCheck = new QCheckBox("Plane Stabilization");
     m_planeStabilizationCheck->setChecked(true);
-    m_hideBonesCheck = new QCheckBox("Hide Bones");
-    m_hideBonesCheck->setChecked(false);
-    m_hidePartsCheck = new QCheckBox("Hide Parts");
-    m_hidePartsCheck->setChecked(false);
 
     groupBoxLayout->addWidget(m_useFabrikCheck);
     groupBoxLayout->addWidget(m_planeStabilizationCheck);
-    groupBoxLayout->addWidget(m_hideBonesCheck);
-    groupBoxLayout->addWidget(m_hidePartsCheck);
 
     topLayout->addWidget(m_parametersGroupBox);
     m_parametersGroupBox->hide();
