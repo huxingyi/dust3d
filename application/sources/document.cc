@@ -2687,6 +2687,11 @@ const dust3d::Object& Document::currentUvMappedObject() const
     return *m_uvMappedObject;
 }
 
+const RigStructure& Document::currentActualRigStructure() const
+{
+    return m_actualRigStructure;
+}
+
 void Document::setComponentCombineMode(dust3d::Uuid componentId, dust3d::CombineMode combineMode)
 {
     auto component = componentMap.find(componentId);

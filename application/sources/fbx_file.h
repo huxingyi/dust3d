@@ -1,14 +1,18 @@
 #ifndef DUST3D_APPLICATION_FBX_FILE_H_
 #define DUST3D_APPLICATION_FBX_FILE_H_
 
+#include "bone_structure.h"
 #include "fbxdocument.h"
 #include <QImage>
 #include <QMatrix4x4>
 #include <QObject>
 #include <QQuaternion>
 #include <QString>
+#include <dust3d/animation/animation_generator.h>
+#include <dust3d/base/matrix4x4.h>
 #include <dust3d/base/object.h>
 #include <map>
+#include <vector>
 
 class FbxFileWriter : public QObject {
     Q_OBJECT
@@ -19,7 +23,11 @@ public:
         QImage* normalImage = nullptr,
         QImage* metalnessImage = nullptr,
         QImage* roughnessImage = nullptr,
-        QImage* ambientOcclusionImage = nullptr);
+        QImage* ambientOcclusionImage = nullptr,
+        const RigStructure* rigStructure = nullptr,
+        const std::map<std::string, dust3d::Matrix4x4>* inverseBindMatrices = nullptr,
+        const dust3d::Object* uvObject = nullptr,
+        const std::vector<dust3d::RigAnimationClip>* animationClips = nullptr);
     bool save();
 
 private:

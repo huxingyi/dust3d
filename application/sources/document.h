@@ -337,6 +337,7 @@ public:
     void updateTextureRoughnessImage(QImage* image);
     void updateTextureAmbientOcclusionImage(QImage* image);
     const dust3d::Object& currentUvMappedObject() const;
+    const RigStructure& currentActualRigStructure() const;
     bool isExportReady() const;
     bool isMeshGenerating() const;
     bool isTextureGenerating() const;
@@ -397,6 +398,14 @@ public:
             return nullptr;
         dust3d::Object* rigObject = new dust3d::Object(*m_rigObject);
         return rigObject;
+    }
+    const dust3d::Object* currentRigObject() const
+    {
+        return m_rigObject.get();
+    }
+    bool hasRigWithBindings() const
+    {
+        return m_rigObject && !m_rigObject->vertices.empty() && !m_rigObject->vertexBone1.empty();
     }
     const Node* findNode(dust3d::Uuid nodeId) const;
     const Edge* findEdge(dust3d::Uuid edgeId) const;

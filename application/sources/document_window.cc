@@ -5,6 +5,8 @@
 #include "cut_face_preview.h"
 #include "document.h"
 #include "document_saver.h"
+#include "export_animation_worker.h"
+#include "export_progress_widget.h"
 #include "fbx_file.h"
 #include "float_number_widget.h"
 #include "flow_layout.h"
@@ -1178,17 +1180,115 @@ void DocumentWindow::exportFbxToFilename(const QString& filename)
         qDebug() << "Export but document is not export ready";
         return;
     }
-    QApplication::setOverrideCursor(Qt::WaitCursor);
-    dust3d::Object skeletonResult = m_document->currentUvMappedObject();
-    FbxFileWriter fbxFileWriter(skeletonResult,
-        filename,
-        m_document->textureImage,
-        m_document->textureNormalImage,
-        m_document->textureMetalnessImage,
-        m_document->textureRoughnessImage,
-        m_document->textureAmbientOcclusionImage);
-    fbxFileWriter.save();
-    QApplication::restoreOverrideCursor();
+
+    if (!m_document->hasRigWithBindings()) {
+        // No rig: export mesh + UV + textures only
+        QApplication::setOverrideCursor(Qt::WaitCursor);
+        dust3d::Object uvObject = m_document->currentUvMappedObject();
+        FbxFileWriter fbxFileWriter(uvObject, filename,
+            m_document->textureImage,
+            m_document->textureNormalImage,
+            m_document->textureMetalnessImage,
+            m_document->textureRoughnessImage,
+            m_document->textureAmbientOcclusionImage);
+        fbxFileWriter.save();
+        QApplication::restoreOverrideCursor();
+        return;
+    }
+
+    // Verify meshIds match
+    const dust3d::Object* rigObject = m_document->currentRigObject();
+    const dust3d::Object& uvObject = m_document->currentUvMappedObject();
+    if (rigObject->meshId != uvObject.meshId) {
+        QMessageBox::warning(this, tr("Export"), tr("Rig generation is still in progress. Please wait and try again."));
+        return;
+    }
+
+    // Collect animations
+    std::vector<Document::Animation> animations;
+    {
+        std::vector<dust3d::Uuid> animationIds;
+        m_document->getAllAnimationIds(animationIds);
+        for (const auto& id : animationIds) {
+            const Document::Animation* anim = m_document->findAnimation(id);
+            if (anim)
+                animations.push_back(*anim);
+        }
+    }
+
+    if (animations.empty()) {
+        // Rig but no animations
+        QApplication::setOverrideCursor(Qt::WaitCursor);
+        ExportAnimationWorker worker;
+        worker.setParameters(m_document->getActualRigStructure(), animations);
+        worker.process();
+        FbxFileWriter fbxFileWriter(*const_cast<dust3d::Object*>(rigObject), filename,
+            m_document->textureImage,
+            m_document->textureNormalImage,
+            m_document->textureMetalnessImage,
+            m_document->textureRoughnessImage,
+            m_document->textureAmbientOcclusionImage,
+            &m_document->getActualRigStructure(),
+            &worker.inverseBindMatrices(),
+            &uvObject,
+            nullptr);
+        fbxFileWriter.save();
+        QApplication::restoreOverrideCursor();
+        return;
+    }
+
+    // Rig + animations: background thread with progress dialog
+    ExportProgressWidget* progressWidget = new ExportProgressWidget(this);
+    progressWidget->show();
+    progressWidget->setStep(tr("Generating animations..."));
+
+    ExportAnimationWorker* worker = new ExportAnimationWorker;
+    worker->setParameters(m_document->getActualRigStructure(), animations);
+
+    QThread* thread = new QThread;
+    worker->moveToThread(thread);
+
+    RigStructure rigStructure = m_document->getActualRigStructure();
+    dust3d::Object rigObjectCopy = *rigObject;
+    dust3d::Object uvObjectCopy = uvObject;
+    QImage* textureImage = m_document->textureImage ? new QImage(*m_document->textureImage) : nullptr;
+    QImage* normalImage = m_document->textureNormalImage ? new QImage(*m_document->textureNormalImage) : nullptr;
+    QImage* metalnessImage = m_document->textureMetalnessImage ? new QImage(*m_document->textureMetalnessImage) : nullptr;
+    QImage* roughnessImage = m_document->textureRoughnessImage ? new QImage(*m_document->textureRoughnessImage) : nullptr;
+    QImage* aoImage = m_document->textureAmbientOcclusionImage ? new QImage(*m_document->textureAmbientOcclusionImage) : nullptr;
+
+    connect(thread, &QThread::started, worker, &ExportAnimationWorker::process);
+    connect(worker, &ExportAnimationWorker::progress, this, [progressWidget](int current, int total) {
+        progressWidget->updateProgress(tr("Generating animations..."), current, total);
+    });
+    connect(worker, &ExportAnimationWorker::finished, this, [=]() mutable {
+        progressWidget->setStep(tr("Writing file..."));
+        QApplication::processEvents();
+
+        auto clips = worker->takeAnimationClips();
+        const auto& ibm = worker->inverseBindMatrices();
+
+        FbxFileWriter fbxFileWriter(rigObjectCopy, filename,
+            textureImage, normalImage, metalnessImage, roughnessImage, aoImage,
+            &rigStructure,
+            &ibm,
+            &uvObjectCopy,
+            &clips);
+        fbxFileWriter.save();
+
+        delete textureImage;
+        delete normalImage;
+        delete metalnessImage;
+        delete roughnessImage;
+        delete aoImage;
+        progressWidget->close();
+        progressWidget->deleteLater();
+        worker->deleteLater();
+        thread->quit();
+    });
+    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+
+    thread->start();
 }
 
 void DocumentWindow::exportGlbResult()
@@ -1226,16 +1326,112 @@ void DocumentWindow::exportGlbToFilename(const QString& filename)
         qDebug() << "Export but document is not export ready";
         return;
     }
-    QApplication::setOverrideCursor(Qt::WaitCursor);
-    dust3d::Object skeletonResult = m_document->currentUvMappedObject();
-    QImage* textureMetalnessRoughnessAmbientOcclusionImage = UvMapGenerator::combineMetalnessRoughnessAmbientOcclusionImages(m_document->textureMetalnessImage,
+
+    QImage* ormImage = UvMapGenerator::combineMetalnessRoughnessAmbientOcclusionImages(
+        m_document->textureMetalnessImage,
         m_document->textureRoughnessImage,
         m_document->textureAmbientOcclusionImage);
-    GlbFileWriter glbFileWriter(skeletonResult, filename,
-        m_document->textureImage, m_document->textureNormalImage, textureMetalnessRoughnessAmbientOcclusionImage);
-    glbFileWriter.save();
-    delete textureMetalnessRoughnessAmbientOcclusionImage;
-    QApplication::restoreOverrideCursor();
+
+    if (!m_document->hasRigWithBindings()) {
+        // No rig case: export mesh + UV + textures only
+        QApplication::setOverrideCursor(Qt::WaitCursor);
+        dust3d::Object uvObject = m_document->currentUvMappedObject();
+        GlbFileWriter glbFileWriter(uvObject, filename,
+            m_document->textureImage, m_document->textureNormalImage, ormImage);
+        glbFileWriter.save();
+        delete ormImage;
+        QApplication::restoreOverrideCursor();
+        return;
+    }
+
+    // Verify meshIds match between rig and UV objects
+    const dust3d::Object* rigObject = m_document->currentRigObject();
+    const dust3d::Object& uvObject = m_document->currentUvMappedObject();
+    if (rigObject->meshId != uvObject.meshId) {
+        QMessageBox::warning(this, tr("Export"), tr("Rig generation is still in progress. Please wait and try again."));
+        delete ormImage;
+        return;
+    }
+
+    // Collect animations
+    std::vector<Document::Animation> animations;
+    {
+        std::vector<dust3d::Uuid> animationIds;
+        m_document->getAllAnimationIds(animationIds);
+        for (const auto& id : animationIds) {
+            const Document::Animation* anim = m_document->findAnimation(id);
+            if (anim)
+                animations.push_back(*anim);
+        }
+    }
+
+    if (animations.empty()) {
+        // Rig but no animations
+        QApplication::setOverrideCursor(Qt::WaitCursor);
+        ExportAnimationWorker worker;
+        worker.setParameters(m_document->getActualRigStructure(), animations);
+        worker.process();
+        const_cast<dust3d::Object*>(rigObject); // reference stays valid
+        GlbFileWriter glbFileWriter(*const_cast<dust3d::Object*>(rigObject), filename,
+            m_document->textureImage, m_document->textureNormalImage, ormImage,
+            &m_document->getActualRigStructure(),
+            &worker.inverseBindMatrices(),
+            &uvObject,
+            nullptr);
+        glbFileWriter.save();
+        delete ormImage;
+        QApplication::restoreOverrideCursor();
+        return;
+    }
+
+    // Rig + animations: run worker in background thread with progress dialog
+    ExportProgressWidget* progressWidget = new ExportProgressWidget(this);
+    progressWidget->show();
+    progressWidget->setStep(tr("Generating animations..."));
+
+    ExportAnimationWorker* worker = new ExportAnimationWorker;
+    worker->setParameters(m_document->getActualRigStructure(), animations);
+
+    QThread* thread = new QThread;
+    worker->moveToThread(thread);
+
+    // Capture data needed after thread finishes
+    RigStructure rigStructure = m_document->getActualRigStructure();
+    dust3d::Object rigObjectCopy = *rigObject;
+    dust3d::Object uvObjectCopy = uvObject;
+    QImage* textureImage = m_document->textureImage ? new QImage(*m_document->textureImage) : nullptr;
+    QImage* normalImage = m_document->textureNormalImage ? new QImage(*m_document->textureNormalImage) : nullptr;
+
+    connect(thread, &QThread::started, worker, &ExportAnimationWorker::process);
+    connect(worker, &ExportAnimationWorker::progress, this, [progressWidget](int current, int total) {
+        progressWidget->updateProgress(tr("Generating animations..."), current, total);
+    });
+    connect(worker, &ExportAnimationWorker::finished, this, [=]() mutable {
+        progressWidget->setStep(tr("Writing file..."));
+        QApplication::processEvents();
+
+        auto clips = worker->takeAnimationClips();
+        const auto& ibm = worker->inverseBindMatrices();
+
+        GlbFileWriter glbFileWriter(rigObjectCopy, filename,
+            textureImage, normalImage, ormImage,
+            &rigStructure,
+            &ibm,
+            &uvObjectCopy,
+            &clips);
+        glbFileWriter.save();
+
+        delete textureImage;
+        delete normalImage;
+        delete ormImage;
+        progressWidget->close();
+        progressWidget->deleteLater();
+        worker->deleteLater();
+        thread->quit();
+    });
+    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+
+    thread->start();
 }
 
 void DocumentWindow::updateXlockButtonState()
