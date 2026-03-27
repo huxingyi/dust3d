@@ -11,6 +11,10 @@
 #include <QLabel>
 #include <QCheckBox>
 #include <QDoubleSpinBox>
+#include <QPushButton>
+#include <QLineEdit>
+#include <QListWidget>
+#include <QGroupBox>
 #include <vector>
 
 class Document;
@@ -29,11 +33,19 @@ public slots:
     void onAnimationPreviewReady();
     void onAnimationFrameTimeout();
 
+private slots:
+    void onDeleteAnimationClicked();
+    void onDuplicateAnimationClicked();
+    void onAnimationListSelectionChanged();
+    void onParameterChanged();
+    void onAnimationNameEdited(const QString& name);
+
 private:
     void startAnimationLoop();
     void stopAnimationLoop();
     void triggerPreviewRegeneration();
     void createParameterWidgets();
+    void autoSaveCurrentAnimation();
 
     Document* m_document = nullptr;
     WorldWidget* m_modelWidget = nullptr;
@@ -50,6 +62,16 @@ private:
     QComboBox* m_animationNameCombo = nullptr;
     ToolbarButton* m_addAnimationButton = nullptr;
 
+    QLineEdit* m_animationNameInput = nullptr;
+    QLineEdit* m_animationTypeInput = nullptr;
+    QListWidget* m_animationListWidget = nullptr;
+    QPushButton* m_deleteAnimationButton = nullptr;
+    QPushButton* m_duplicateAnimationButton = nullptr;
+    QGroupBox* m_parametersGroupBox = nullptr;
+
+    void refreshAnimationList();
+    void loadAnimationIntoForm(const dust3d::Uuid& animationId);
+
     void updateAnimationParamsFromWidgets();
     void updateAnimationNameForRigType(const QString& rigType);
     void onRigTypeChanged(const QString& rigType);
@@ -60,6 +82,8 @@ private:
     std::vector<ModelMesh> m_animationFrames;
     int m_currentFrame = 0;
     dust3d::AnimationParams m_animationParams;
+    dust3d::Uuid m_currentAnimationId;
+    bool m_isUpdatingForm = false;
 };
 
 #endif

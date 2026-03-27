@@ -125,6 +125,20 @@ void loadSnapshotFromXmlString(Snapshot* snapshot, char* xmlString)
             if (nullptr != components) {
                 snapshot->rootComponent["children"] = loadComponentReturnChildrenList(snapshot, components);
             }
+
+            rapidxml::xml_node<>* animations = canvas->first_node("animations");
+            if (nullptr != animations) {
+                for (rapidxml::xml_node<>* node = animations->first_node(); nullptr != node; node = node->next_sibling()) {
+                    rapidxml::xml_attribute<>* idAttribute = node->first_attribute("id");
+                    if (nullptr != idAttribute) {
+                        std::map<std::string, std::string>* animationMap = &snapshot->animations[idAttribute->value()];
+                        for (rapidxml::xml_attribute<>* attribute = node->first_attribute();
+                            attribute; attribute = attribute->next_attribute()) {
+                            (*animationMap)[attribute->name()] = attribute->value();
+                        }
+                    }
+                }
+            }
         }
     } catch (const std::runtime_error& e) {
         dust3dDebug << "Runtime error was: " << e.what();
@@ -228,6 +242,18 @@ void saveSnapshotToXmlString(const Snapshot& snapshot, std::string& xmlString)
         }
         xmlString += " </components>\n";
     }
+
+    xmlString += " <animations>\n";
+    std::map<std::string, std::map<std::string, std::string>>::const_iterator animationIterator;
+    for (animationIterator = snapshot.animations.begin(); animationIterator != snapshot.animations.end(); animationIterator++) {
+        std::map<std::string, std::string>::const_iterator animationAttributeIterator;
+        xmlString += "  <animation";
+        for (animationAttributeIterator = animationIterator->second.begin(); animationAttributeIterator != animationIterator->second.end(); animationAttributeIterator++) {
+            xmlString += " " + animationAttributeIterator->first + "=\"" + animationAttributeIterator->second + "\"";
+        }
+        xmlString += "/>\n";
+    }
+    xmlString += " </animations>\n";
 
     xmlString += "</canvas>\n";
 }

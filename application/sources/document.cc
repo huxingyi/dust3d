@@ -2059,6 +2059,20 @@ void Document::toSnapshot(dust3d::Snapshot* snapshot, const std::set<dust3d::Uui
         canvas["originZ"] = std::to_string(getOriginZ());
         canvas["rigType"] = m_rigType.toUtf8().constData();
         snapshot->canvas = canvas;
+
+        // Serialize animations
+        for (const auto& animationIt : m_animations) {
+            const auto& anim = animationIt.second;
+            std::map<std::string, std::string> animation;
+            animation["id"] = anim.id.toString();
+            animation["name"] = anim.name.toStdString();
+            animation["type"] = anim.type.toStdString();
+            // Add all parameters from the params map
+            for (const auto& paramIt : anim.params) {
+                animation[paramIt.first] = paramIt.second;
+            }
+            snapshot->animations[anim.id.toString()] = animation;
+        }
     }
 }
 
@@ -2342,6 +2356,33 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
         }
     }
 
+    // Deserialize animations
+    bool hasAnimation = false;
+    if (SnapshotSource::Paste != source && SnapshotSource::Import != source) {
+        for (const auto& animationKv : snapshot.animations) {
+            const auto& attrs = animationKv.second;
+            const auto nameIt = attrs.find("name");
+            const auto typeIt = attrs.find("type");
+            if (nameIt == attrs.end() || typeIt == attrs.end())
+                continue;
+
+            Animation anim;
+            anim.id = dust3d::Uuid(animationKv.first);
+            anim.name = QString::fromUtf8(nameIt->second.c_str());
+            anim.type = QString::fromUtf8(typeIt->second.c_str());
+
+            // Copy all parameters except metadata fields
+            for (const auto& attrIt : attrs) {
+                if (attrIt.first != "id" && attrIt.first != "name" && attrIt.first != "type") {
+                    anim.params[attrIt.first] = attrIt.second;
+                }
+            }
+
+            m_animations[anim.id] = anim;
+            hasAnimation = true;
+        }
+    }
+
     for (const auto& nodeIt : newAddedNodeIds) {
         emit nodeAdded(nodeIt);
     }
@@ -2376,6 +2417,10 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
     if (isRigTypeChanged) {
         setRigType(rigType);
     }
+
+    if (hasAnimation) {
+        emit animationsChanged();
+    }
 }
 
 void Document::silentReset()
@@ -2388,6 +2433,8 @@ void Document::silentReset()
     partMap.clear();
     componentMap.clear();
     rootComponent = Document::Component();
+    m_animations.clear();
+    m_currentAnimationId = dust3d::Uuid();
 }
 
 void Document::reset()
@@ -3158,4 +3205,115 @@ void Document::collectCutFaceList(std::vector<QString>& cutFaces) const
 
     for (const auto& it : cutFacePartIdList)
         cutFaces.push_back(QString(it.toString().c_str()));
+}
+
+bool Document::hasAnimation(const dust3d::Uuid& animationId) const
+{
+    return m_animations.find(animationId) != m_animations.end();
+}
+
+const Document::Animation* Document::findAnimation(const dust3d::Uuid& animationId) const
+{
+    const auto it = m_animations.find(animationId);
+    if (it == m_animations.end())
+        return nullptr;
+    return &it->second;
+}
+
+void Document::getAllAnimationIds(std::vector<dust3d::Uuid>& animationIds) const
+{
+    for (const auto& it : m_animations) {
+        animationIds.push_back(it.first);
+    }
+}
+
+void Document::createAnimation(const dust3d::Uuid& animationId, const QString& name, const QString& type)
+{
+    if (m_animations.find(animationId) != m_animations.end()) {
+        qWarning() << "Animation already exists:" << animationId;
+        return;
+    }
+
+    Animation anim;
+    anim.id = animationId;
+    anim.name = name;
+    anim.type = type;
+    // params is an empty map initially
+
+    m_animations[animationId] = anim;
+    m_currentAnimationId = animationId;
+    emit animationAdded(animationId);
+    emit animationsChanged();
+}
+
+void Document::setAnimationName(const dust3d::Uuid& animationId, const QString& name)
+{
+    auto it = m_animations.find(animationId);
+    if (it == m_animations.end()) {
+        qDebug() << "Animation not found:" << animationId;
+        return;
+    }
+    if (it->second.name == name)
+        return;
+    it->second.name = name;
+    emit animationNameChanged(animationId);
+    emit animationsChanged();
+}
+
+void Document::setAnimationType(const dust3d::Uuid& animationId, const QString& type)
+{
+    auto it = m_animations.find(animationId);
+    if (it == m_animations.end()) {
+        qDebug() << "Animation not found:" << animationId;
+        return;
+    }
+    if (it->second.type == type)
+        return;
+    it->second.type = type;
+    emit animationTypeChanged(animationId);
+}
+
+void Document::setAnimationParams(const dust3d::Uuid& animationId, const std::map<std::string, std::string>& params)
+{
+    auto it = m_animations.find(animationId);
+    if (it == m_animations.end()) {
+        qDebug() << "Animation not found:" << animationId;
+        return;
+    }
+    it->second.params = params;
+    emit animationParamsChanged(animationId);
+}
+
+void Document::deleteAnimation(const dust3d::Uuid& animationId)
+{
+    auto it = m_animations.find(animationId);
+    if (it == m_animations.end()) {
+        qDebug() << "Animation not found:" << animationId;
+        return;
+    }
+    m_animations.erase(it);
+    if (m_currentAnimationId == animationId) {
+        m_currentAnimationId = dust3d::Uuid();
+    }
+    emit animationRemoved(animationId);
+    emit animationsChanged();
+}
+
+void Document::duplicateAnimation(const dust3d::Uuid& animationId)
+{
+    auto it = m_animations.find(animationId);
+    if (it == m_animations.end()) {
+        qDebug() << "Animation not found:" << animationId;
+        return;
+    }
+
+    const auto newUuid = dust3d::Uuid::createUuid();
+    Animation newAnim = it->second;
+    newAnim.id = newUuid;
+    newAnim.name = it->second.name + "_copy";
+
+    m_animations[newUuid] = newAnim;
+    m_currentAnimationId = newUuid;
+    emit animationAdded(newUuid);
+    emit animationsChanged();
 }

@@ -36,6 +36,7 @@ public:
     std::map<std::string, std::map<std::string, std::string>> parts;
     std::map<std::string, std::map<std::string, std::string>> components;
     std::map<std::string, std::string> rootComponent;
+    std::map<std::string, std::map<std::string, std::string>> animations;
 };
 
 }

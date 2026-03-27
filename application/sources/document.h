@@ -185,6 +185,14 @@ public:
         std::set<dust3d::Uuid> m_childrenIdSet;
     };
 
+    class Animation {
+    public:
+        dust3d::Uuid id;
+        QString name;
+        QString type;
+        std::map<std::string, std::string> params;  // Key-value parameters
+    };
+
 signals:
     void nodeCutRotationChanged(dust3d::Uuid nodeId);
     void nodeCutFaceChanged(dust3d::Uuid nodeId);
@@ -260,6 +268,12 @@ signals:
     void radiusLockStateChanged();
     void rigTypeChanged(QString rigType);
     void resultRigChanged();
+    void animationAdded(dust3d::Uuid animationId);
+    void animationRemoved(dust3d::Uuid animationId);
+    void animationNameChanged(dust3d::Uuid animationId);
+    void animationTypeChanged(dust3d::Uuid animationId);
+    void animationParamsChanged(dust3d::Uuid animationId);
+    void animationsChanged();
 
 public: // need initialize
     QImage* textureImage = nullptr;
@@ -402,6 +416,9 @@ public:
     void markAllDirty();
 
 public slots:
+    bool hasAnimation(const dust3d::Uuid& animationId) const;
+    const Animation* findAnimation(const dust3d::Uuid& animationId) const;
+    void getAllAnimationIds(std::vector<dust3d::Uuid>& animationIds) const;
     void undo();
     void redo();
     void paste();
@@ -502,6 +519,12 @@ public slots:
     void setRigType(QString rigType);
     void generateRig();
     void rigReady();
+    void createAnimation(const dust3d::Uuid& animationId, const QString& name, const QString& type);
+    void setAnimationName(const dust3d::Uuid& animationId, const QString& name);
+    void setAnimationType(const dust3d::Uuid& animationId, const QString& type);
+    void setAnimationParams(const dust3d::Uuid& animationId, const std::map<std::string, std::string>& params);
+    void deleteAnimation(const dust3d::Uuid& animationId);
+    void duplicateAnimation(const dust3d::Uuid& animationId);
 
 private:
     void resolveSnapshotBoundingBox(const dust3d::Snapshot& snapshot, QRectF* mainProfile, QRectF* sideProfile);
@@ -547,6 +570,8 @@ private:
     std::unique_ptr<dust3d::Object> m_rigObject;
     void loadRigStructures();
     bool loadRigFromXml(const QString& filePath);
+    std::map<dust3d::Uuid, Animation> m_animations;
+    dust3d::Uuid m_currentAnimationId;
 
 private:
     static unsigned long m_maxSnapshot;

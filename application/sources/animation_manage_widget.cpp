@@ -8,6 +8,9 @@
 #include <QDebug>
 #include <QComboBox>
 #include <QGroupBox>
+#include <QLineEdit>
+#include <QListWidget>
+#include <QListWidgetItem>
 
 AnimationManageWidget::AnimationManageWidget(Document* document, QWidget* parent)
     : QWidget(parent)
@@ -28,7 +31,8 @@ AnimationManageWidget::AnimationManageWidget(Document* document, QWidget* parent
 
     createParameterWidgets();
 
-    mainLayout->addStretch();
+    // Allow the animation list widget to control remaining space itself
+    // by not adding a global bottom stretch in the main layout.
 
     m_frameTimer->setInterval(100);
     connect(m_frameTimer, &QTimer::timeout, this, &AnimationManageWidget::onAnimationFrameTimeout);
@@ -55,11 +59,28 @@ void AnimationManageWidget::createParameterWidgets()
     topLayout->addLayout(animationLayout);
 
     // Groupbox containing model widget and parameter controls
-    QGroupBox* groupBox = new QGroupBox(tr("Parameters (New)"));
+    m_parametersGroupBox = new QGroupBox(tr("Parameters (New)"));
     QVBoxLayout* groupBoxLayout = new QVBoxLayout;
-    groupBox->setLayout(groupBoxLayout);
+    m_parametersGroupBox->setLayout(groupBoxLayout);
 
     groupBoxLayout->addWidget(m_modelWidget);
+
+    // Animation name input
+    QHBoxLayout* nameLayout = new QHBoxLayout;
+    nameLayout->addWidget(new QLabel(tr("Animation name:")));
+    m_animationNameInput = new QLineEdit;
+    m_animationNameInput->setPlaceholderText(tr("Enter animation name"));
+    nameLayout->addWidget(m_animationNameInput);
+    groupBoxLayout->addLayout(nameLayout);
+
+    // Animation type input (readonly)
+    QHBoxLayout* typeLayout = new QHBoxLayout;
+    typeLayout->addWidget(new QLabel(tr("Animation type:")));
+    m_animationTypeInput = new QLineEdit;
+    m_animationTypeInput->setReadOnly(true);
+    m_animationTypeInput->setText(tr("FlyWalk"));
+    typeLayout->addWidget(m_animationTypeInput);
+    groupBoxLayout->addLayout(typeLayout);
 
     auto makeSliderRow = [&](const QString& labelText, QSlider* slider, int value) {
         QHBoxLayout* row = new QHBoxLayout;
@@ -91,30 +112,54 @@ void AnimationManageWidget::createParameterWidgets()
     m_hideBonesCheck->setChecked(false);
     m_hidePartsCheck = new QCheckBox("Hide Parts");
     m_hidePartsCheck->setChecked(false);
+    m_deleteAnimationButton = new QPushButton("Delete");
+    m_duplicateAnimationButton = new QPushButton("Duplicate");
 
     groupBoxLayout->addWidget(m_useFabrikCheck);
     groupBoxLayout->addWidget(m_planeStabilizationCheck);
     groupBoxLayout->addWidget(m_hideBonesCheck);
     groupBoxLayout->addWidget(m_hidePartsCheck);
 
-    topLayout->addWidget(groupBox);
+    // Buttons layout
+    QHBoxLayout* buttonsLayout = new QHBoxLayout;
+    buttonsLayout->addWidget(m_deleteAnimationButton);
+    buttonsLayout->addWidget(m_duplicateAnimationButton);
+    groupBoxLayout->addLayout(buttonsLayout);
+
+    topLayout->addWidget(m_parametersGroupBox);
 
     auto connectAll = [&]() {
-        connect(m_stepLengthSlider, &QSlider::valueChanged, this, &AnimationManageWidget::triggerPreviewRegeneration);
-        connect(m_stepHeightSlider, &QSlider::valueChanged, this, &AnimationManageWidget::triggerPreviewRegeneration);
-        connect(m_bodyBobSlider, &QSlider::valueChanged, this, &AnimationManageWidget::triggerPreviewRegeneration);
-        connect(m_gaitSpeedSlider, &QSlider::valueChanged, this, &AnimationManageWidget::triggerPreviewRegeneration);
-        connect(m_useFabrikCheck, &QCheckBox::toggled, this, &AnimationManageWidget::triggerPreviewRegeneration);
-        connect(m_planeStabilizationCheck, &QCheckBox::toggled, this, &AnimationManageWidget::triggerPreviewRegeneration);
-        connect(m_hideBonesCheck, &QCheckBox::toggled, this, &AnimationManageWidget::triggerPreviewRegeneration);
-        connect(m_hidePartsCheck, &QCheckBox::toggled, this, &AnimationManageWidget::triggerPreviewRegeneration);
+        connect(m_stepLengthSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_stepHeightSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_bodyBobSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_gaitSpeedSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_useFabrikCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_planeStabilizationCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_hideBonesCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_hidePartsCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_animationNameInput, &QLineEdit::textEdited, this, &AnimationManageWidget::onAnimationNameEdited);
+        connect(m_deleteAnimationButton, &QPushButton::clicked, this, &AnimationManageWidget::onDeleteAnimationClicked);
+        connect(m_duplicateAnimationButton, &QPushButton::clicked, this, &AnimationManageWidget::onDuplicateAnimationClicked);
     };
 
     connectAll();
 
+    // Animation list widget
+    m_animationListWidget = new QListWidget;
+    m_animationListWidget->setMinimumHeight(120);
+    m_animationListWidget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
+    QLabel* animationListLabel = new QLabel(tr("Animations:"));
+    topLayout->addWidget(animationListLabel);
+    topLayout->addWidget(m_animationListWidget);
+    connect(m_animationListWidget, &QListWidget::itemSelectionChanged, this, &AnimationManageWidget::onAnimationListSelectionChanged);
+
     if (m_document) {
         updateAnimationNameForRigType(m_document->getRigType());
         connect(m_document, &Document::rigTypeChanged, this, &AnimationManageWidget::onRigTypeChanged);
+        connect(m_document, &Document::animationAdded, this, &AnimationManageWidget::refreshAnimationList);
+        connect(m_document, &Document::animationRemoved, this, &AnimationManageWidget::refreshAnimationList);
+        connect(m_document, &Document::animationNameChanged, this, &AnimationManageWidget::refreshAnimationList);
+        connect(m_document, &Document::animationsChanged, this, &AnimationManageWidget::refreshAnimationList);
     } else {
         updateAnimationNameForRigType(QString());
     }
@@ -278,5 +323,208 @@ void AnimationManageWidget::stopAnimationLoop()
         m_frameTimer->stop();
     }
     m_currentFrame = 0;
+}
+
+void AnimationManageWidget::autoSaveCurrentAnimation()
+{
+    if (m_isUpdatingForm || !m_document)
+        return;
+
+    QString animationName = m_animationNameInput->text().trimmed();
+    const QString animationType = m_animationTypeInput->text().trimmed();
+
+    if (animationName.isEmpty() || animationType.isEmpty()) {
+        return;
+    }
+
+    updateAnimationParamsFromWidgets();
+
+    // Convert AnimationParams struct to key-value string map
+    std::map<std::string, std::string> paramsMap;
+    paramsMap["useFabrikIk"] = m_animationParams.useFabrikIk ? "true" : "false";
+    paramsMap["planeStabilization"] = m_animationParams.planeStabilization ? "true" : "false";
+    paramsMap["stepLengthFactor"] = std::to_string(m_animationParams.stepLengthFactor);
+    paramsMap["stepHeightFactor"] = std::to_string(m_animationParams.stepHeightFactor);
+    paramsMap["bodyBobFactor"] = std::to_string(m_animationParams.bodyBobFactor);
+    paramsMap["gaitSpeedFactor"] = std::to_string(m_animationParams.gaitSpeedFactor);
+
+    if (m_currentAnimationId.isNull()) {
+        const auto newId = dust3d::Uuid::createUuid();
+        m_document->createAnimation(newId, animationName, animationType);
+        m_currentAnimationId = newId;
+    } else {
+        m_document->setAnimationName(m_currentAnimationId, animationName);
+        m_document->setAnimationType(m_currentAnimationId, animationType);
+    }
+
+    m_document->setAnimationParams(m_currentAnimationId, paramsMap);
+    m_document->saveSnapshot();
+    m_parametersGroupBox->setTitle(tr("Parameters (") + animationName + ")" );
+    refreshAnimationList();
+}
+
+void AnimationManageWidget::onParameterChanged()
+{
+    if (m_isUpdatingForm)
+        return;
+
+    autoSaveCurrentAnimation();
+    triggerPreviewRegeneration();
+}
+
+void AnimationManageWidget::onAnimationNameEdited(const QString&)
+{
+    if (m_isUpdatingForm)
+        return;
+
+    autoSaveCurrentAnimation();
+}
+
+void AnimationManageWidget::onDeleteAnimationClicked()
+{
+    if (!m_document || m_currentAnimationId.isNull())
+        return;
+
+    m_document->deleteAnimation(m_currentAnimationId);
+    m_document->saveSnapshot();
+    m_currentAnimationId = dust3d::Uuid();
+    m_animationNameInput->clear();
+    m_animationTypeInput->clear();
+    m_parametersGroupBox->setTitle(tr("Parameters (New)"));
+}
+
+void AnimationManageWidget::onDuplicateAnimationClicked()
+{
+    if (!m_document || m_currentAnimationId.isNull())
+        return;
+
+    m_document->duplicateAnimation(m_currentAnimationId);
+    m_document->saveSnapshot();
+}
+
+void AnimationManageWidget::onAnimationListSelectionChanged()
+{
+    QListWidgetItem* currentItem = m_animationListWidget->currentItem();
+    if (!currentItem) {
+        m_currentAnimationId = dust3d::Uuid();
+        m_animationNameInput->clear();
+        m_animationTypeInput->clear();
+        m_parametersGroupBox->setTitle(tr("Parameters (New)"));
+        return;
+    }
+
+    QString itemId = currentItem->data(Qt::UserRole).toString();
+    m_currentAnimationId = dust3d::Uuid(itemId.toUtf8().constData());
+
+    loadAnimationIntoForm(m_currentAnimationId);
+}
+
+void AnimationManageWidget::refreshAnimationList()
+{
+    if (!m_document)
+        return;
+
+    m_animationListWidget->clear();
+    std::vector<dust3d::Uuid> animationIds;
+    m_document->getAllAnimationIds(animationIds);
+
+    // Sort by animation name for consistent display
+    std::vector<std::pair<QString, dust3d::Uuid>> sortedAnims;
+    for (const auto& id : animationIds) {
+        const auto* anim = m_document->findAnimation(id);
+        if (anim) {
+            sortedAnims.push_back({anim->name, id});
+        }
+    }
+    std::sort(sortedAnims.begin(), sortedAnims.end());
+
+    for (const auto& [name, id] : sortedAnims) {
+        QListWidgetItem* item = new QListWidgetItem(name);
+        item->setData(Qt::UserRole, QString::fromStdString(id.toString()));
+        m_animationListWidget->addItem(item);
+    }
+
+    // Re-select if current animation still exists
+    if (!m_currentAnimationId.isNull()) {
+        for (int i = 0; i < m_animationListWidget->count(); i++) {
+            auto item = m_animationListWidget->item(i);
+            QString itemId = item->data(Qt::UserRole).toString();
+            if (itemId == QString::fromStdString(m_currentAnimationId.toString())) {
+                m_animationListWidget->setCurrentItem(item);
+                break;
+            }
+        }
+    }
+}
+
+void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationId)
+{
+    const auto* anim = m_document->findAnimation(animationId);
+    if (!anim) {
+        m_animationNameInput->clear();
+        m_animationTypeInput->clear();
+        m_parametersGroupBox->setTitle(tr("Parameters (New)"));
+        return;
+    }
+
+    m_animationNameInput->setText(anim->name);
+    m_animationTypeInput->setText(anim->type);
+
+    // Convert key-value string map to AnimationParams struct
+    dust3d::AnimationParams params;
+    const auto& paramMap = anim->params;
+
+    const auto useFabrikIt = paramMap.find("useFabrikIk");
+    if (useFabrikIt != paramMap.end())
+        params.useFabrikIk = dust3d::String::isTrue(useFabrikIt->second);
+
+    const auto planeStabIt = paramMap.find("planeStabilization");
+    if (planeStabIt != paramMap.end())
+        params.planeStabilization = dust3d::String::isTrue(planeStabIt->second);
+
+    const auto stepLenIt = paramMap.find("stepLengthFactor");
+    if (stepLenIt != paramMap.end())
+        params.stepLengthFactor = dust3d::String::toFloat(stepLenIt->second);
+
+    const auto stepHeightIt = paramMap.find("stepHeightFactor");
+    if (stepHeightIt != paramMap.end())
+        params.stepHeightFactor = dust3d::String::toFloat(stepHeightIt->second);
+
+    const auto bodyBobIt = paramMap.find("bodyBobFactor");
+    if (bodyBobIt != paramMap.end())
+        params.bodyBobFactor = dust3d::String::toFloat(bodyBobIt->second);
+
+    const auto gaitSpeedIt = paramMap.find("gaitSpeedFactor");
+    if (gaitSpeedIt != paramMap.end())
+        params.gaitSpeedFactor = dust3d::String::toFloat(gaitSpeedIt->second);
+
+    // Load parameters into UI
+    m_stepLengthSlider->blockSignals(true);
+    m_stepHeightSlider->blockSignals(true);
+    m_bodyBobSlider->blockSignals(true);
+    m_gaitSpeedSlider->blockSignals(true);
+    m_useFabrikCheck->blockSignals(true);
+    m_planeStabilizationCheck->blockSignals(true);
+
+    m_stepLengthSlider->setValue(static_cast<int>(params.stepLengthFactor * 100));
+    m_stepHeightSlider->setValue(static_cast<int>(params.stepHeightFactor * 100));
+    m_bodyBobSlider->setValue(static_cast<int>(params.bodyBobFactor * 100));
+    m_gaitSpeedSlider->setValue(static_cast<int>(params.gaitSpeedFactor * 10));
+    m_useFabrikCheck->setChecked(params.useFabrikIk);
+    m_planeStabilizationCheck->setChecked(params.planeStabilization);
+
+    m_stepLengthSlider->blockSignals(false);
+    m_stepHeightSlider->blockSignals(false);
+    m_bodyBobSlider->blockSignals(false);
+    m_gaitSpeedSlider->blockSignals(false);
+    m_useFabrikCheck->blockSignals(false);
+    m_planeStabilizationCheck->blockSignals(false);
+
+    // Update title and trigger preview
+    m_parametersGroupBox->setTitle(tr("Parameters (") + anim->name + ")");
+
+    // Store the loaded params for preview
+    m_animationParams = params;
+    triggerPreviewRegeneration();
 }
 
