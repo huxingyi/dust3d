@@ -2420,6 +2420,7 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
 
     if (hasAnimation) {
         emit animationsChanged();
+        emit optionsChanged();
     }
 }
 
@@ -3244,6 +3245,7 @@ void Document::createAnimation(const dust3d::Uuid& animationId, const QString& n
     m_currentAnimationId = animationId;
     emit animationAdded(animationId);
     emit animationsChanged();
+    emit optionsChanged();
 }
 
 void Document::setAnimationName(const dust3d::Uuid& animationId, const QString& name)
@@ -3258,6 +3260,7 @@ void Document::setAnimationName(const dust3d::Uuid& animationId, const QString& 
     it->second.name = name;
     emit animationNameChanged(animationId);
     emit animationsChanged();
+    emit optionsChanged();
 }
 
 void Document::setAnimationType(const dust3d::Uuid& animationId, const QString& type)
@@ -3271,6 +3274,7 @@ void Document::setAnimationType(const dust3d::Uuid& animationId, const QString& 
         return;
     it->second.type = type;
     emit animationTypeChanged(animationId);
+    emit optionsChanged();
 }
 
 void Document::setAnimationParams(const dust3d::Uuid& animationId, const std::map<std::string, std::string>& params)
@@ -3282,6 +3286,7 @@ void Document::setAnimationParams(const dust3d::Uuid& animationId, const std::ma
     }
     it->second.params = params;
     emit animationParamsChanged(animationId);
+    emit optionsChanged();
 }
 
 void Document::deleteAnimation(const dust3d::Uuid& animationId)
@@ -3297,6 +3302,7 @@ void Document::deleteAnimation(const dust3d::Uuid& animationId)
     }
     emit animationRemoved(animationId);
     emit animationsChanged();
+    emit optionsChanged();
 }
 
 void Document::duplicateAnimation(const dust3d::Uuid& animationId)
@@ -3316,4 +3322,5 @@ void Document::duplicateAnimation(const dust3d::Uuid& animationId)
     m_currentAnimationId = newUuid;
     emit animationAdded(newUuid);
     emit animationsChanged();
+    emit optionsChanged();
 }

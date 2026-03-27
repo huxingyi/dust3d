@@ -31,9 +31,6 @@ AnimationManageWidget::AnimationManageWidget(Document* document, QWidget* parent
 
     createParameterWidgets();
 
-    // Allow the animation list widget to control remaining space itself
-    // by not adding a global bottom stretch in the main layout.
-
     m_frameTimer->setInterval(100);
     connect(m_frameTimer, &QTimer::timeout, this, &AnimationManageWidget::onAnimationFrameTimeout);
 
@@ -48,14 +45,33 @@ void AnimationManageWidget::createParameterWidgets()
     if (!topLayout)
         return;
 
-    // Animation name selector + add button (outside groupbox)
+    m_animationListWidget = new QListWidget;
+    m_animationListWidget->setMaximumHeight(120);
+    topLayout->addWidget(m_animationListWidget);
+    connect(m_animationListWidget, &QListWidget::itemSelectionChanged, this, &AnimationManageWidget::onAnimationListSelectionChanged);
+
     QHBoxLayout* animationLayout = new QHBoxLayout;
+    animationLayout->setSpacing(0);
+    animationLayout->setContentsMargins(0, 0, 0, 0);
     m_animationNameCombo = new QComboBox;
     m_addAnimationButton = new ToolbarButton(":/resources/toolbar_add.svg");
     m_addAnimationButton->setToolTip(tr("Add new animation"));
+    m_deleteAnimationButton = new QPushButton();
+    Theme::initIconButton(m_deleteAnimationButton);
+    m_deleteAnimationButton->setIcon(Theme::awesome()->icon(fa::remove));
+    m_deleteAnimationButton->setToolTip(tr("Delete current animation"));
+    m_duplicateAnimationButton = new QPushButton();
+    Theme::initIconButton(m_duplicateAnimationButton);
+    m_duplicateAnimationButton->setIcon(Theme::awesome()->icon(fa::copy));
+    m_duplicateAnimationButton->setToolTip(tr("Duplicate current animation"));
+    m_deleteAnimationButton->setEnabled(false);
+    m_duplicateAnimationButton->setEnabled(false);
 
     animationLayout->addWidget(m_animationNameCombo);
     animationLayout->addWidget(m_addAnimationButton);
+    animationLayout->addStretch();
+    animationLayout->addWidget(m_deleteAnimationButton);
+    animationLayout->addWidget(m_duplicateAnimationButton);
     topLayout->addLayout(animationLayout);
 
     // Groupbox containing model widget and parameter controls
@@ -78,7 +94,6 @@ void AnimationManageWidget::createParameterWidgets()
     typeLayout->addWidget(new QLabel(tr("Animation type:")));
     m_animationTypeInput = new QLineEdit;
     m_animationTypeInput->setReadOnly(true);
-    m_animationTypeInput->setText(tr("FlyWalk"));
     typeLayout->addWidget(m_animationTypeInput);
     groupBoxLayout->addLayout(typeLayout);
 
@@ -112,21 +127,16 @@ void AnimationManageWidget::createParameterWidgets()
     m_hideBonesCheck->setChecked(false);
     m_hidePartsCheck = new QCheckBox("Hide Parts");
     m_hidePartsCheck->setChecked(false);
-    m_deleteAnimationButton = new QPushButton("Delete");
-    m_duplicateAnimationButton = new QPushButton("Duplicate");
 
     groupBoxLayout->addWidget(m_useFabrikCheck);
     groupBoxLayout->addWidget(m_planeStabilizationCheck);
     groupBoxLayout->addWidget(m_hideBonesCheck);
     groupBoxLayout->addWidget(m_hidePartsCheck);
 
-    // Buttons layout
-    QHBoxLayout* buttonsLayout = new QHBoxLayout;
-    buttonsLayout->addWidget(m_deleteAnimationButton);
-    buttonsLayout->addWidget(m_duplicateAnimationButton);
-    groupBoxLayout->addLayout(buttonsLayout);
-
     topLayout->addWidget(m_parametersGroupBox);
+    m_parametersGroupBox->hide();
+
+    topLayout->addStretch();
 
     auto connectAll = [&]() {
         connect(m_stepLengthSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
@@ -140,18 +150,10 @@ void AnimationManageWidget::createParameterWidgets()
         connect(m_animationNameInput, &QLineEdit::textEdited, this, &AnimationManageWidget::onAnimationNameEdited);
         connect(m_deleteAnimationButton, &QPushButton::clicked, this, &AnimationManageWidget::onDeleteAnimationClicked);
         connect(m_duplicateAnimationButton, &QPushButton::clicked, this, &AnimationManageWidget::onDuplicateAnimationClicked);
+        connect(m_addAnimationButton, &QPushButton::clicked, this, &AnimationManageWidget::onAddAnimationClicked);
     };
 
     connectAll();
-
-    // Animation list widget
-    m_animationListWidget = new QListWidget;
-    m_animationListWidget->setMinimumHeight(120);
-    m_animationListWidget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Expanding);
-    QLabel* animationListLabel = new QLabel(tr("Animations:"));
-    topLayout->addWidget(animationListLabel);
-    topLayout->addWidget(m_animationListWidget);
-    connect(m_animationListWidget, &QListWidget::itemSelectionChanged, this, &AnimationManageWidget::onAnimationListSelectionChanged);
 
     if (m_document) {
         updateAnimationNameForRigType(m_document->getRigType());
@@ -196,12 +198,12 @@ void AnimationManageWidget::updateAnimationParamsFromWidgets()
     if (!m_stepLengthSlider || !m_stepHeightSlider || !m_bodyBobSlider || !m_gaitSpeedSlider || !m_useFabrikCheck || !m_planeStabilizationCheck)
         return;
 
-    m_animationParams.stepLengthFactor = m_stepLengthSlider->value() / 100.0;
-    m_animationParams.stepHeightFactor = m_stepHeightSlider->value() / 100.0;
-    m_animationParams.bodyBobFactor = m_bodyBobSlider->value() / 100.0;
-    m_animationParams.gaitSpeedFactor = m_gaitSpeedSlider->value() / 10.0;
-    m_animationParams.useFabrikIk = m_useFabrikCheck->isChecked();
-    m_animationParams.planeStabilization = m_planeStabilizationCheck->isChecked();
+    m_animationParams.setValue("stepLengthFactor", m_stepLengthSlider->value() / 100.0);
+    m_animationParams.setValue("stepHeightFactor", m_stepHeightSlider->value() / 100.0);
+    m_animationParams.setValue("bodyBobFactor", m_bodyBobSlider->value() / 100.0);
+    m_animationParams.setValue("gaitSpeedFactor", m_gaitSpeedSlider->value() / 10.0);
+    m_animationParams.setBool("useFabrikIk", m_useFabrikCheck->isChecked());
+    m_animationParams.setBool("planeStabilization", m_planeStabilizationCheck->isChecked());
 }
 
 void AnimationManageWidget::triggerPreviewRegeneration()
@@ -341,12 +343,9 @@ void AnimationManageWidget::autoSaveCurrentAnimation()
 
     // Convert AnimationParams struct to key-value string map
     std::map<std::string, std::string> paramsMap;
-    paramsMap["useFabrikIk"] = m_animationParams.useFabrikIk ? "true" : "false";
-    paramsMap["planeStabilization"] = m_animationParams.planeStabilization ? "true" : "false";
-    paramsMap["stepLengthFactor"] = std::to_string(m_animationParams.stepLengthFactor);
-    paramsMap["stepHeightFactor"] = std::to_string(m_animationParams.stepHeightFactor);
-    paramsMap["bodyBobFactor"] = std::to_string(m_animationParams.bodyBobFactor);
-    paramsMap["gaitSpeedFactor"] = std::to_string(m_animationParams.gaitSpeedFactor);
+    for (const auto& it : m_animationParams.values) {
+        paramsMap[it.first] = std::to_string(it.second);
+    }
 
     if (m_currentAnimationId.isNull()) {
         const auto newId = dust3d::Uuid::createUuid();
@@ -391,6 +390,7 @@ void AnimationManageWidget::onDeleteAnimationClicked()
     m_animationNameInput->clear();
     m_animationTypeInput->clear();
     m_parametersGroupBox->setTitle(tr("Parameters (New)"));
+    m_parametersGroupBox->hide();
 }
 
 void AnimationManageWidget::onDuplicateAnimationClicked()
@@ -402,6 +402,26 @@ void AnimationManageWidget::onDuplicateAnimationClicked()
     m_document->saveSnapshot();
 }
 
+void AnimationManageWidget::onAddAnimationClicked()
+{
+    m_animationListWidget->clearSelection();
+    m_currentAnimationId = dust3d::Uuid();
+
+    QString type = m_animationNameCombo->currentText();
+    m_isUpdatingForm = true;
+    m_animationNameInput->setText(type);
+    m_animationTypeInput->setText(type);
+    m_isUpdatingForm = false;
+
+    m_parametersGroupBox->setTitle(tr("Parameters (New)"));
+    m_parametersGroupBox->show();
+    m_animationNameInput->setFocus();
+
+    autoSaveCurrentAnimation();
+
+    triggerPreviewRegeneration();
+}
+
 void AnimationManageWidget::onAnimationListSelectionChanged()
 {
     QListWidgetItem* currentItem = m_animationListWidget->currentItem();
@@ -410,8 +430,15 @@ void AnimationManageWidget::onAnimationListSelectionChanged()
         m_animationNameInput->clear();
         m_animationTypeInput->clear();
         m_parametersGroupBox->setTitle(tr("Parameters (New)"));
+        m_parametersGroupBox->hide();
+        m_deleteAnimationButton->setEnabled(false);
+        m_duplicateAnimationButton->setEnabled(false);
         return;
     }
+
+    m_deleteAnimationButton->setEnabled(true);
+    m_duplicateAnimationButton->setEnabled(true);
+    m_parametersGroupBox->show();
 
     QString itemId = currentItem->data(Qt::UserRole).toString();
     m_currentAnimationId = dust3d::Uuid(itemId.toUtf8().constData());
@@ -476,27 +503,27 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
 
     const auto useFabrikIt = paramMap.find("useFabrikIk");
     if (useFabrikIt != paramMap.end())
-        params.useFabrikIk = dust3d::String::isTrue(useFabrikIt->second);
+        params.setBool("useFabrikIk", dust3d::String::isTrue(useFabrikIt->second));
 
     const auto planeStabIt = paramMap.find("planeStabilization");
     if (planeStabIt != paramMap.end())
-        params.planeStabilization = dust3d::String::isTrue(planeStabIt->second);
+        params.setBool("planeStabilization", dust3d::String::isTrue(planeStabIt->second));
 
     const auto stepLenIt = paramMap.find("stepLengthFactor");
     if (stepLenIt != paramMap.end())
-        params.stepLengthFactor = dust3d::String::toFloat(stepLenIt->second);
+        params.setValue("stepLengthFactor", dust3d::String::toFloat(stepLenIt->second));
 
     const auto stepHeightIt = paramMap.find("stepHeightFactor");
     if (stepHeightIt != paramMap.end())
-        params.stepHeightFactor = dust3d::String::toFloat(stepHeightIt->second);
+        params.setValue("stepHeightFactor", dust3d::String::toFloat(stepHeightIt->second));
 
     const auto bodyBobIt = paramMap.find("bodyBobFactor");
     if (bodyBobIt != paramMap.end())
-        params.bodyBobFactor = dust3d::String::toFloat(bodyBobIt->second);
+        params.setValue("bodyBobFactor", dust3d::String::toFloat(bodyBobIt->second));
 
     const auto gaitSpeedIt = paramMap.find("gaitSpeedFactor");
     if (gaitSpeedIt != paramMap.end())
-        params.gaitSpeedFactor = dust3d::String::toFloat(gaitSpeedIt->second);
+        params.setValue("gaitSpeedFactor", dust3d::String::toFloat(gaitSpeedIt->second));
 
     // Load parameters into UI
     m_stepLengthSlider->blockSignals(true);
@@ -506,12 +533,12 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
     m_useFabrikCheck->blockSignals(true);
     m_planeStabilizationCheck->blockSignals(true);
 
-    m_stepLengthSlider->setValue(static_cast<int>(params.stepLengthFactor * 100));
-    m_stepHeightSlider->setValue(static_cast<int>(params.stepHeightFactor * 100));
-    m_bodyBobSlider->setValue(static_cast<int>(params.bodyBobFactor * 100));
-    m_gaitSpeedSlider->setValue(static_cast<int>(params.gaitSpeedFactor * 10));
-    m_useFabrikCheck->setChecked(params.useFabrikIk);
-    m_planeStabilizationCheck->setChecked(params.planeStabilization);
+    m_stepLengthSlider->setValue(static_cast<int>(params.getValue("stepLengthFactor", 1.0) * 100));
+    m_stepHeightSlider->setValue(static_cast<int>(params.getValue("stepHeightFactor", 1.0) * 100));
+    m_bodyBobSlider->setValue(static_cast<int>(params.getValue("bodyBobFactor", 1.0) * 100));
+    m_gaitSpeedSlider->setValue(static_cast<int>(params.getValue("gaitSpeedFactor", 1.0) * 10));
+    m_useFabrikCheck->setChecked(params.getBool("useFabrikIk", true));
+    m_planeStabilizationCheck->setChecked(params.getBool("planeStabilization", true));
 
     m_stepLengthSlider->blockSignals(false);
     m_stepHeightSlider->blockSignals(false);
@@ -527,4 +554,3 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
     m_animationParams = params;
     triggerPreviewRegeneration();
 }
-

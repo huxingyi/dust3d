@@ -39,6 +39,7 @@ private slots:
     void onAnimationListSelectionChanged();
     void onParameterChanged();
     void onAnimationNameEdited(const QString& name);
+    void onAddAnimationClicked();
 
 private:
     void startAnimationLoop();

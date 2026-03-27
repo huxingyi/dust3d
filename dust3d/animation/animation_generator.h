@@ -23,6 +23,7 @@
 #ifndef DUST3D_ANIMATION_ANIMATION_GENERATOR_H_
 #define DUST3D_ANIMATION_ANIMATION_GENERATOR_H_
 
+#include <map>
 #include <dust3d/rig/rig_generator.h>
 
 namespace dust3d {
@@ -40,12 +41,30 @@ struct RigAnimationClip {
 };
 
 struct AnimationParams {
-    bool useFabrikIk = true;
-    bool planeStabilization = true;
-    double stepLengthFactor = 1.0;
-    double stepHeightFactor = 1.0;
-    double bodyBobFactor = 1.0;
-    double gaitSpeedFactor = 1.0;
+    std::map<std::string, double> values;
+
+    double getValue(const std::string& name, double defaultValue) const
+    {
+        auto it = values.find(name);
+        if (it == values.end())
+            return defaultValue;
+        return it->second;
+    }
+
+    bool getBool(const std::string& name, bool defaultValue) const
+    {
+        return getValue(name, defaultValue ? 1.0 : 0.0) != 0.0;
+    }
+
+    void setValue(const std::string& name, double value)
+    {
+        values[name] = value;
+    }
+
+    void setBool(const std::string& name, bool value)
+    {
+        values[name] = value ? 1.0 : 0.0;
+    }
 };
 
 class AnimationGenerator {

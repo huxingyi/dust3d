@@ -340,10 +340,14 @@ bool walk(const RigStructure& rigStructure,
     // ===================================================================
     // 3. Compute walking parameters from body geometry
     // ===================================================================
+    double stepLengthFactor = parameters.getValue("stepLengthFactor", 1.0);
+    double stepHeightFactor = parameters.getValue("stepHeightFactor", 1.0);
+    double bodyBobFactor = parameters.getValue("bodyBobFactor", 1.0);
+
     double bodyLength = bodyVector.length();
-    double stepLength = bodyLength * 0.20 * parameters.stepLengthFactor; // half-stride extent per leg
-    double stepHeight = bodyLength * 0.08 * parameters.stepHeightFactor; // foot lift during swing
-    double bodyBobAmp = bodyLength * 0.02 * parameters.bodyBobFactor; // vertical oscillation amplitude
+    double stepLength = bodyLength * 0.20 * stepLengthFactor; // half-stride extent per leg
+    double stepHeight = bodyLength * 0.08 * stepHeightFactor; // foot lift during swing
+    double bodyBobAmp = bodyLength * 0.02 * bodyBobFactor; // vertical oscillation amplitude
 
     // Ground level: project all rest foot tips onto the "up" axis and take
     // the minimum projection as the ground reference.
@@ -371,7 +375,8 @@ bool walk(const RigStructure& rigStructure,
     // Round gaitSpeedFactor to the nearest positive integer so the clip always
     // contains a whole number of gait cycles.  A fractional value would leave
     // the last frame mid-cycle, causing a visible jump when the clip loops.
-    const double cycles = std::max(1.0, std::round(parameters.gaitSpeedFactor));
+    double gaitSpeedFactor = parameters.getValue("gaitSpeedFactor", 1.0);
+    const double cycles = std::max(1.0, std::round(gaitSpeedFactor));
 
     for (int frame = 0; frame < frameCount; ++frame) {
         double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
@@ -381,7 +386,7 @@ bool walk(const RigStructure& rigStructure,
         // Two bobs per cycle (one per tripod group switch)
         double bodyBob = bodyBobAmp * std::sin(t * 4.0 * Math::Pi);
         // Slight pitch oscillation around the "right" axis
-        double bodyPitch = 0.02 * parameters.bodyBobFactor * std::sin(t * 2.0 * Math::Pi);
+        double bodyPitch = 0.02 * bodyBobFactor * std::sin(t * 2.0 * Math::Pi);
 
         Matrix4x4 bodyTransform;
         bodyTransform.translate(up * bodyBob);
@@ -488,8 +493,10 @@ bool walk(const RigStructure& rigStructure,
             Vector3 preferPlane = Vector3::crossProduct(chain[1] - chain[0], chain[2] - chain[1]);
             if (preferPlane.lengthSquared() < 1e-10)
                 preferPlane = Vector3::crossProduct(chain[1] - chain[0], up);
-            if (parameters.useFabrikIk) {
-                Vector3 plane = parameters.planeStabilization ? preferPlane : Vector3();
+            bool useFabrikIk = parameters.getBool("useFabrikIk", true);
+            bool planeStabilization = parameters.getBool("planeStabilization", true);
+            if (useFabrikIk) {
+                Vector3 plane = planeStabilization ? preferPlane : Vector3();
                 solveFabrikIk(chain, footTarget[i], 15, plane);
             } else {
                 solveCcdIk(chain, footTarget[i], 15);
