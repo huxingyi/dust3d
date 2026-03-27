@@ -203,7 +203,8 @@ bool rubHands(const RigStructure& rigStructure,
     double stepHeightFactor = parameters.getValue("stepHeightFactor", 1.0);
     double bodyBobFactor = parameters.getValue("bodyBobFactor", 1.0);
     double gaitSpeedFactor = parameters.getValue("gaitSpeedFactor", 1.0);
-    double rubCenterOffsetFactor = parameters.getValue("rubCenterOffsetFactor", 1.0);
+    double rubForwardOffsetFactor = parameters.getValue("rubForwardOffsetFactor", 1.0);
+    double rubUpOffsetFactor = parameters.getValue("rubUpOffsetFactor", 1.0);
 
     double bodyLength = bodyVector.length();
     double bodyBobAmp = bodyLength * 0.01 * bodyBobFactor;
@@ -225,7 +226,7 @@ bool rubHands(const RigStructure& rigStructure,
 
         std::array<Vector3, 6> footTarget;
         Vector3 thoraxPos = getBonePos("Thorax");
-        Vector3 rubCenter = thoraxPos + forward * (bodyLength * 0.15 * stepLengthFactor * rubCenterOffsetFactor) - up * (bodyLength * 0.05);
+        Vector3 rubCenter = thoraxPos + forward * (bodyLength * 0.15 * stepLengthFactor * rubForwardOffsetFactor) + up * (bodyLength * 0.05 * rubUpOffsetFactor);
         double rubOffset = rubAmp * std::sin(t * 4.0 * Math::Pi);
 
         for (size_t i = 0; i < 6; ++i) {

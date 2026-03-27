@@ -15,6 +15,7 @@
 #include <QLineEdit>
 #include <QListWidget>
 #include <QGroupBox>
+#include <QFormLayout>
 #include <vector>
 
 class Document;
@@ -47,6 +48,8 @@ private:
     void triggerPreviewRegeneration();
     void createParameterWidgets();
     void autoSaveCurrentAnimation();
+    void updateVisibleParameters(const QString& animationType);
+    void setParameterRowVisible(QWidget* rowWidget, QLabel* rowLabel, bool visible);
 
     Document* m_document = nullptr;
     WorldWidget* m_modelWidget = nullptr;
@@ -55,7 +58,21 @@ private:
     QSlider* m_stepHeightSlider = nullptr;
     QSlider* m_bodyBobSlider = nullptr;
     QSlider* m_gaitSpeedSlider = nullptr;
-    QSlider* m_rubCenterOffsetSlider = nullptr;
+    QSlider* m_rubForwardOffsetSlider = nullptr;
+    QSlider* m_rubUpOffsetSlider = nullptr;
+    QFormLayout* m_parameterLayout = nullptr;
+    QWidget* m_stepLengthRow = nullptr;
+    QLabel* m_stepLengthLabel = nullptr;
+    QWidget* m_stepHeightRow = nullptr;
+    QLabel* m_stepHeightLabel = nullptr;
+    QWidget* m_bodyBobRow = nullptr;
+    QLabel* m_bodyBobLabel = nullptr;
+    QWidget* m_gaitSpeedRow = nullptr;
+    QLabel* m_gaitSpeedLabel = nullptr;
+    QWidget* m_rubForwardOffsetRow = nullptr;
+    QLabel* m_rubForwardOffsetLabel = nullptr;
+    QWidget* m_rubUpOffsetRow = nullptr;
+    QLabel* m_rubUpOffsetLabel = nullptr;
     QCheckBox* m_useFabrikCheck = nullptr;
     QCheckBox* m_planeStabilizationCheck = nullptr;
     QCheckBox* m_hideBonesCheck = nullptr;

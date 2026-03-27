@@ -41,29 +41,37 @@ struct RigAnimationClip {
 };
 
 struct AnimationParams {
-    std::map<std::string, double> values;
+    std::map<std::string, std::string> values;
 
     double getValue(const std::string& name, double defaultValue) const
     {
         auto it = values.find(name);
         if (it == values.end())
             return defaultValue;
-        return it->second;
+
+        try {
+            return (double)std::stod(it->second);
+        } catch (...) {
+            return defaultValue;
+        }
     }
 
     bool getBool(const std::string& name, bool defaultValue) const
     {
-        return getValue(name, defaultValue ? 1.0 : 0.0) != 0.0;
+        auto it = values.find(name);
+        if (it == values.end())
+            return defaultValue;
+        return dust3d::String::isTrue(it->second);
     }
 
     void setValue(const std::string& name, double value)
     {
-        values[name] = value;
+        values[name] = std::to_string(value);
     }
 
     void setBool(const std::string& name, bool value)
     {
-        values[name] = value ? 1.0 : 0.0;
+        values[name] = value ? "true" : "false";
     }
 };
 
