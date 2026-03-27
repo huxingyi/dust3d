@@ -113,11 +113,13 @@ void AnimationManageWidget::createParameterWidgets()
     m_stepHeightSlider = new QSlider;
     m_bodyBobSlider = new QSlider;
     m_gaitSpeedSlider = new QSlider;
+    m_rubCenterOffsetSlider = new QSlider;
 
     groupBoxLayout->addLayout(makeSliderRow("Step Length", m_stepLengthSlider, 100));
     groupBoxLayout->addLayout(makeSliderRow("Step Height", m_stepHeightSlider, 100));
     groupBoxLayout->addLayout(makeSliderRow("Body Bob", m_bodyBobSlider, 100));
     groupBoxLayout->addLayout(makeSliderRow("Gait Speed", m_gaitSpeedSlider, 100));
+    groupBoxLayout->addLayout(makeSliderRow("Rub Center Offset", m_rubCenterOffsetSlider, 100));
 
     m_useFabrikCheck = new QCheckBox("Use FABRIK IK");
     m_useFabrikCheck->setChecked(true);
@@ -143,6 +145,7 @@ void AnimationManageWidget::createParameterWidgets()
         connect(m_stepHeightSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
         connect(m_bodyBobSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
         connect(m_gaitSpeedSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_rubCenterOffsetSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
         connect(m_useFabrikCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
         connect(m_planeStabilizationCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
         connect(m_hideBonesCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
@@ -196,20 +199,21 @@ void AnimationManageWidget::onRigTypeChanged(const QString& rigType)
 
 void AnimationManageWidget::updateAnimationParamsFromWidgets()
 {
-    if (!m_stepLengthSlider || !m_stepHeightSlider || !m_bodyBobSlider || !m_gaitSpeedSlider || !m_useFabrikCheck || !m_planeStabilizationCheck)
+    if (!m_stepLengthSlider || !m_stepHeightSlider || !m_bodyBobSlider || !m_gaitSpeedSlider || !m_rubCenterOffsetSlider || !m_useFabrikCheck || !m_planeStabilizationCheck)
         return;
 
     m_animationParams.setValue("stepLengthFactor", m_stepLengthSlider->value() / 100.0);
     m_animationParams.setValue("stepHeightFactor", m_stepHeightSlider->value() / 100.0);
     m_animationParams.setValue("bodyBobFactor", m_bodyBobSlider->value() / 100.0);
     m_animationParams.setValue("gaitSpeedFactor", m_gaitSpeedSlider->value() / 10.0);
+    m_animationParams.setValue("rubCenterOffsetFactor", m_rubCenterOffsetSlider->value() / 100.0);
     m_animationParams.setBool("useFabrikIk", m_useFabrikCheck->isChecked());
     m_animationParams.setBool("planeStabilization", m_planeStabilizationCheck->isChecked());
 }
 
 void AnimationManageWidget::triggerPreviewRegeneration()
 {
-    if (!m_stepLengthSlider || !m_stepHeightSlider || !m_bodyBobSlider || !m_gaitSpeedSlider || !m_useFabrikCheck || !m_planeStabilizationCheck || !m_hideBonesCheck || !m_hidePartsCheck)
+    if (!m_stepLengthSlider || !m_stepHeightSlider || !m_bodyBobSlider || !m_gaitSpeedSlider || !m_rubCenterOffsetSlider || !m_useFabrikCheck || !m_planeStabilizationCheck || !m_hideBonesCheck || !m_hidePartsCheck)
         return;
 
     updateAnimationParamsFromWidgets();
@@ -224,6 +228,11 @@ AnimationManageWidget::~AnimationManageWidget()
 void AnimationManageWidget::onResultRigChanged()
 {
     qDebug() << "AnimationManageWidget: resultRigChanged";
+
+    if (!m_document) {
+        qWarning() << "AnimationManageWidget: missing document";
+        return;
+    }
 
     stopAnimationLoop();
     m_animationFrames.clear();
@@ -247,7 +256,16 @@ void AnimationManageWidget::onResultRigChanged()
     }
 
     const auto* anim = m_document->findAnimation(m_currentAnimationId);
-    m_animationWorker->setParameters(actualRig, anim->type, 30, 1.0f, m_animationParams);
+    QString animationType;
+    if (anim) {
+        animationType = anim->type;
+    }
+    if (animationType.isEmpty()) {
+        qWarning() << "AnimationManageWidget: no animation available for preview";
+        return;
+    }
+
+    m_animationWorker->setParameters(actualRig, animationType.toStdString(), 30, 1.0f, m_animationParams);
     m_animationWorker->setHideBones(m_hideBonesCheck ? m_hideBonesCheck->isChecked() : false);
     m_animationWorker->setHideParts(m_hidePartsCheck ? m_hidePartsCheck->isChecked() : false);
 
@@ -527,6 +545,10 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
     if (gaitSpeedIt != paramMap.end())
         params.setValue("gaitSpeedFactor", dust3d::String::toFloat(gaitSpeedIt->second));
 
+    const auto rubCenterIt = paramMap.find("rubCenterOffsetFactor");
+    if (rubCenterIt != paramMap.end())
+        params.setValue("rubCenterOffsetFactor", dust3d::String::toFloat(rubCenterIt->second));
+
     // Load parameters into UI
     m_stepLengthSlider->blockSignals(true);
     m_stepHeightSlider->blockSignals(true);
@@ -534,11 +556,13 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
     m_gaitSpeedSlider->blockSignals(true);
     m_useFabrikCheck->blockSignals(true);
     m_planeStabilizationCheck->blockSignals(true);
+    m_rubCenterOffsetSlider->blockSignals(true);
 
     m_stepLengthSlider->setValue(static_cast<int>(params.getValue("stepLengthFactor", 1.0) * 100));
     m_stepHeightSlider->setValue(static_cast<int>(params.getValue("stepHeightFactor", 1.0) * 100));
     m_bodyBobSlider->setValue(static_cast<int>(params.getValue("bodyBobFactor", 1.0) * 100));
     m_gaitSpeedSlider->setValue(static_cast<int>(params.getValue("gaitSpeedFactor", 1.0) * 10));
+    m_rubCenterOffsetSlider->setValue(static_cast<int>(params.getValue("rubCenterOffsetFactor", 1.0) * 100));
     m_useFabrikCheck->setChecked(params.getBool("useFabrikIk", true));
     m_planeStabilizationCheck->setChecked(params.getBool("planeStabilization", true));
 
@@ -548,6 +572,7 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
     m_gaitSpeedSlider->blockSignals(false);
     m_useFabrikCheck->blockSignals(false);
     m_planeStabilizationCheck->blockSignals(false);
+    m_rubCenterOffsetSlider->blockSignals(false);
 
     // Update title and trigger preview
     m_parametersGroupBox->setTitle(tr("Parameters (") + anim->name + ")");

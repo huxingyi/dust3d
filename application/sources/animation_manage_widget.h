@@ -55,6 +55,7 @@ private:
     QSlider* m_stepHeightSlider = nullptr;
     QSlider* m_bodyBobSlider = nullptr;
     QSlider* m_gaitSpeedSlider = nullptr;
+    QSlider* m_rubCenterOffsetSlider = nullptr;
     QCheckBox* m_useFabrikCheck = nullptr;
     QCheckBox* m_planeStabilizationCheck = nullptr;
     QCheckBox* m_hideBonesCheck = nullptr;
