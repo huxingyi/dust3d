@@ -47,6 +47,8 @@ private:
         size_t animationCurveCount = 0);
     void createTakes();
     std::vector<double> matrixToVector(const QMatrix4x4& matrix);
+    std::vector<double> matrixToVector(const dust3d::Matrix4x4& matrix);
+    static void matrixToFbxEulerAngles(const dust3d::Matrix4x4& matrix, double* pitch, double* yaw, double* roll);
     int64_t secondsToKtime(double seconds);
 
     int64_t m_next64Id = 612150000;
