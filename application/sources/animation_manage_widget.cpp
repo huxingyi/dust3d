@@ -55,6 +55,9 @@ void AnimationManageWidget::createParameterWidgets()
     animationLayout->setSpacing(0);
     animationLayout->setContentsMargins(0, 0, 0, 0);
     m_animationNameCombo = new QComboBox;
+    m_animationNameCombo->setSizeAdjustPolicy(QComboBox::AdjustToContents);
+    m_animationNameCombo->setMinimumContentsLength(8);
+    m_animationNameCombo->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
     m_addAnimationButton = new ToolbarButton(":/resources/toolbar_add.svg");
     m_addAnimationButton->setToolTip(tr("Add new animation"));
     m_deleteAnimationButton = new QPushButton();
