@@ -20,27 +20,23 @@
  *  SOFTWARE.
  */
 
+#ifndef DUST3D_ANIMATION_FLY_RUB_HANDS_H_
+#define DUST3D_ANIMATION_FLY_RUB_HANDS_H_
+
 #include <dust3d/animation/animation_generator.h>
-#include <dust3d/animation/fly/walk.h>
-#include <dust3d/animation/fly/rub_hands.h>
+#include <dust3d/rig/rig_generator.h>
 
 namespace dust3d {
+namespace fly {
 
-bool AnimationGenerator::generate(const RigStructure& rigStructure,
+bool rubHands(const RigStructure& rigStructure,
     const std::map<std::string, Matrix4x4>& inverseBindMatrices,
     RigAnimationClip& animationClip,
-    const std::string& animationType,
-    int frameCount,
-    float durationSeconds,
-    const AnimationParams& parameters)
-{
-    if (animationType == "FlyWalk")
-        return fly::walk(rigStructure, inverseBindMatrices, animationClip, frameCount, durationSeconds, parameters);
-    if (animationType == "FlyRubHands")
-        return fly::rubHands(rigStructure, inverseBindMatrices, animationClip, frameCount, durationSeconds, parameters);
+    int frameCount = 30,
+    float durationSeconds = 1.0f,
+    const AnimationParams& parameters = AnimationParams());
 
-    // Add future rig type + animationName mappings here.
-    return false;
-}
-
+} // namespace fly
 } // namespace dust3d
+
+#endif

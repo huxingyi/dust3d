@@ -178,6 +178,7 @@ void AnimationManageWidget::updateAnimationNameForRigType(const QString& rigType
     m_animationNameCombo->clear();
     if (rigType.compare("Fly", Qt::CaseInsensitive) == 0) {
         m_animationNameCombo->addItem("FlyWalk");
+        m_animationNameCombo->addItem("FlyRubHands");
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);
     } else {
@@ -245,7 +246,8 @@ void AnimationManageWidget::onResultRigChanged()
         return;
     }
 
-    m_animationWorker->setParameters(actualRig, 30, 1.0f, m_animationParams);
+    const auto* anim = m_document->findAnimation(m_currentAnimationId);
+    m_animationWorker->setParameters(actualRig, anim->type, 30, 1.0f, m_animationParams);
     m_animationWorker->setHideBones(m_hideBonesCheck ? m_hideBonesCheck->isChecked() : false);
     m_animationWorker->setHideParts(m_hidePartsCheck ? m_hidePartsCheck->isChecked() : false);
 
