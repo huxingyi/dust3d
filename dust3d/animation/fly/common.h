@@ -214,6 +214,11 @@ namespace fly {
     // Optional: leg definition with gait group assignment (for tripod gaits)
     struct LegDefWithGait : public LegDef {
         int gaitGroup; // 0 = Group A, 1 = Group B
+        constexpr LegDefWithGait(LegDef base, int g)
+            : LegDef(base)
+            , gaitGroup(g)
+        {
+        }
     };
 
     // Cached rest-pose geometry for a leg, used to reconstruct pose from IK solutions
