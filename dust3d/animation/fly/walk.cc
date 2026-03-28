@@ -25,6 +25,7 @@
 #include <array>
 #include <cmath>
 #include <dust3d/animation/animation_generator.h>
+#include <dust3d/animation/fly/common.h>
 #include <dust3d/animation/fly/walk.h>
 #include <dust3d/base/math.h>
 #include <dust3d/base/matrix4x4.h>
@@ -38,198 +39,9 @@ namespace fly {
 
     namespace {
 
-        // ---------------------------------------------------------------------------
-        // CCD (Cyclic Coordinate Descent) IK solver
-        // Iteratively adjusts each joint angle from end-effector back to root so
-        // that the chain tip converges toward the target position.
-        // joints: ordered positions [root … end-effector]  (root stays fixed)
-        // ---------------------------------------------------------------------------
-        void solveCcdIk(std::vector<Vector3>& joints, const Vector3& target, int maxIterations)
-        {
-            const double threshold2 = 1e-8;
 
-            for (int iter = 0; iter < maxIterations; ++iter) {
-                double dist2 = (joints.back() - target).lengthSquared();
-                if (dist2 <= threshold2)
-                    break;
 
-                // Walk from the joint just before the end-effector back to the root
-                for (int i = static_cast<int>(joints.size()) - 2; i >= 0; --i) {
-                    Vector3 toEnd = joints.back() - joints[i];
-                    Vector3 toTarget = target - joints[i];
 
-                    if (toEnd.lengthSquared() < 1e-12 || toTarget.lengthSquared() < 1e-12)
-                        continue;
-
-                    Quaternion rotation = Quaternion::rotationTo(toEnd.normalized(), toTarget.normalized());
-
-                    // Apply the rotation to every descendant joint
-                    Matrix4x4 rotMat;
-                    rotMat.rotate(rotation);
-                    for (size_t j = i + 1; j < joints.size(); ++j) {
-                        Vector3 offset = joints[j] - joints[i];
-                        joints[j] = joints[i] + rotMat.transformVector(offset);
-                    }
-                }
-            }
-        }
-
-        // ---------------------------------------------------------------------------
-        // FABRIK (Forward And Backward Reaching Inverse Kinematics) solver
-        // Alternative to CCD for stronger geometric behavior in serial 1D chains.
-        // Iteratively adjusts joint positions to preserve bone lengths while matching
-        // end-effector to the target.  Works with arbitrary 3D  joint chains.
-        // joints: ordered positions [root … end-effector]  (root stays fixed)
-        // ---------------------------------------------------------------------------
-        void solveFabrikIk(std::vector<Vector3>& joints, const Vector3& target, int maxIterations, const Vector3& preferredPlaneNormal = Vector3())
-        {
-            const double threshold2 = 1e-8;
-            const double planeBias = 0.45; // bias toward preferred leg plane
-            size_t n = joints.size();
-            if (n < 2)
-                return;
-
-            // original segment lengths
-            std::vector<double> lengths(n - 1);
-            double totalLength = 0.0;
-            for (size_t i = 0; i < n - 1; ++i) {
-                lengths[i] = (joints[i + 1] - joints[i]).length();
-                totalLength += lengths[i];
-            }
-
-            Vector3 rootPos = joints[0];
-            double distRootTarget = (target - rootPos).length();
-            Vector3 planeNorm;
-            if (!preferredPlaneNormal.isZero())
-                planeNorm = preferredPlaneNormal.normalized();
-
-            if (distRootTarget <= 1e-12) {
-                // degenerate target; no strong positioning.
-                return;
-            }
-
-            if (distRootTarget > totalLength) {
-                // target unreachable: stretch fully toward target.
-                Vector3 direction = (target - rootPos).normalized();
-                joints[0] = rootPos;
-                for (size_t i = 1; i < n; ++i) {
-                    joints[i] = joints[i - 1] + direction * lengths[i - 1];
-                }
-                return;
-            }
-
-            std::vector<Vector3> newPos(joints);
-
-            for (int iter = 0; iter < maxIterations; ++iter) {
-                // Backward reaching
-                newPos[n - 1] = target;
-                for (int i = static_cast<int>(n) - 2; i >= 0; --i) {
-                    Vector3 dir = newPos[i] - newPos[i + 1];
-                    double r = dir.length();
-                    if (r < 1e-12) {
-                        continue;
-                    }
-                    dir *= (1.0 / r);
-                    newPos[i] = newPos[i + 1] + dir * lengths[i];
-                }
-
-                // Forward reaching
-                newPos[0] = rootPos;
-                for (size_t i = 0; i < n - 1; ++i) {
-                    Vector3 dir = newPos[i + 1] - newPos[i];
-                    double r = dir.length();
-                    if (r < 1e-12) {
-                        continue;
-                    }
-                    dir *= (1.0 / r);
-                    newPos[i + 1] = newPos[i] + dir * lengths[i];
-                }
-
-                // Keep chain close to preferred leg plane, if one exists
-                if (!planeNorm.isZero()) {
-                    for (size_t i = 1; i + 1 < n; ++i) {
-                        Vector3 item = newPos[i] - rootPos;
-                        double distToPlane = Vector3::dotProduct(item, planeNorm);
-                        Vector3 projected = newPos[i] - planeNorm * distToPlane;
-                        newPos[i] = newPos[i] * (1.0 - planeBias) + projected * planeBias;
-                    }
-
-                    // Re-apply segment lengths after plane bias: backward then forward
-                    for (int i = static_cast<int>(n) - 2; i >= 0; --i) {
-                        Vector3 dir = newPos[i] - newPos[i + 1];
-                        double r = dir.length();
-                        if (r < 1e-12)
-                            continue;
-                        newPos[i] = newPos[i + 1] + dir * (lengths[i] / r);
-                    }
-                    newPos[0] = rootPos;
-                    for (size_t i = 0; i < n - 1; ++i) {
-                        Vector3 dir = newPos[i + 1] - newPos[i];
-                        double r = dir.length();
-                        if (r < 1e-12)
-                            continue;
-                        newPos[i + 1] = newPos[i] + dir * (lengths[i] / r);
-                    }
-                }
-
-                if ((newPos.back() - target).lengthSquared() <= threshold2) {
-                    break;
-                }
-            }
-
-            joints = newPos;
-        }
-
-        // ---------------------------------------------------------------------------
-        // Build a bone world transform from animated start/end positions.
-        // Matches the convention used by RigGenerator::computeBoneWorldTransforms():
-        //   Translate to boneStart, then rotate so local +Z aligns with bone direction.
-        // ---------------------------------------------------------------------------
-        Matrix4x4 buildBoneWorldTransform(const Vector3& boneStart, const Vector3& boneEnd)
-        {
-            Vector3 dir = boneEnd - boneStart;
-            Matrix4x4 transform;
-            transform.translate(boneStart);
-            if (!dir.isZero()) {
-                Quaternion orient = Quaternion::rotationTo(Vector3(0.0, 0.0, 1.0), dir.normalized());
-                transform.rotate(orient);
-            }
-            return transform;
-        }
-
-        // ---------------------------------------------------------------------------
-        // Smooth Hermite interpolation (Ken Perlin's smoothstep: 3t²-2t³).
-        // Maps [0,1] to [0,1] with zero first-derivative at both endpoints, removing
-        // the constant-velocity snap that a plain lerp produces at phase boundaries.
-        // ---------------------------------------------------------------------------
-        static inline double smoothstep(double t)
-        {
-            // clamp to [0,1] defensively
-            if (t <= 0.0)
-                return 0.0;
-            if (t >= 1.0)
-                return 1.0;
-            return t * t * (3.0 - 2.0 * t);
-        }
-
-        // Smoother-step (Ken Perlin's improved version: 6t⁵-15t⁴+10t³).
-        // Zero first *and* second derivative at both endpoints – better for the foot
-        // lift arc where a sudden acceleration from rest looks unnatural.
-        static inline double smootherstep(double t)
-        {
-            if (t <= 0.0)
-                return 0.0;
-            if (t >= 1.0)
-                return 1.0;
-            return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
-        }
-
-        struct LegDef {
-            const char* coxaName;
-            const char* femurName;
-            const char* tibiaName;
-            int gaitGroup; // 0 = Group A, 1 = Group B
-        };
 
     } // anonymous namespace
 
@@ -309,13 +121,13 @@ namespace fly {
         // Tripod gait – the standard insect locomotion pattern:
         //   Group A (swing first half of cycle): FrontLeft, MiddleRight, BackLeft
         //   Group B (swing second half of cycle): FrontRight, MiddleLeft, BackRight
-        static const std::array<LegDef, 6> legs = { {
-            { "FrontLeftCoxa", "FrontLeftFemur", "FrontLeftTibia", 0 },
-            { "FrontRightCoxa", "FrontRightFemur", "FrontRightTibia", 1 },
-            { "MiddleLeftCoxa", "MiddleLeftFemur", "MiddleLeftTibia", 1 },
-            { "MiddleRightCoxa", "MiddleRightFemur", "MiddleRightTibia", 0 },
-            { "BackLeftCoxa", "BackLeftFemur", "BackLeftTibia", 0 },
-            { "BackRightCoxa", "BackRightFemur", "BackRightTibia", 1 },
+        static const std::array<LegDefWithGait, 6> legs = { {
+            { { "FrontLeftCoxa", "FrontLeftFemur", "FrontLeftTibia" }, 0 },
+            { { "FrontRightCoxa", "FrontRightFemur", "FrontRightTibia" }, 1 },
+            { { "MiddleLeftCoxa", "MiddleLeftFemur", "MiddleLeftTibia" }, 1 },
+            { { "MiddleRightCoxa", "MiddleRightFemur", "MiddleRightTibia" }, 0 },
+            { { "BackLeftCoxa", "BackLeftFemur", "BackLeftTibia" }, 0 },
+            { { "BackRightCoxa", "BackRightFemur", "BackRightTibia" }, 1 },
         } };
 
         // Gather rest-pose joint positions for every leg
@@ -459,7 +271,7 @@ namespace fly {
                 Vector3 end = getBoneEnd(name);
                 Vector3 newPos = bodyTransform.transformPoint(pos);
                 Vector3 newEnd = bodyTransform.transformPoint(end);
-                boneWorldTransforms[name] = buildBoneWorldTransform(newPos, newEnd);
+                boneWorldTransforms[name] = fly::buildBoneWorldTransform(newPos, newEnd);
             };
 
             computeBodyBone("Head");
@@ -474,7 +286,7 @@ namespace fly {
                 Vector3 end = getBoneEnd(wingName);
                 Vector3 newPos = bodyTransform.transformPoint(pos);
                 Vector3 newEnd = bodyTransform.transformPoint(end);
-                boneWorldTransforms[wingName] = buildBoneWorldTransform(newPos, newEnd);
+                boneWorldTransforms[wingName] = fly::buildBoneWorldTransform(newPos, newEnd);
             }
 
             // -------------------------------------------------------
@@ -501,9 +313,9 @@ namespace fly {
                 bool planeStabilization = parameters.getBool("planeStabilization", true);
                 if (useFabrikIk) {
                     Vector3 plane = planeStabilization ? preferPlane : Vector3();
-                    solveFabrikIk(chain, footTarget[i], 15, plane);
+                    fly::solveFabrikIk(chain, footTarget[i], 15, plane);
                 } else {
-                    solveCcdIk(chain, footTarget[i], 15);
+                    fly::solveCcdIk(chain, footTarget[i], 15);
                 }
 
                 // Reconstruct the femur-tibia junction by rotating the rest-pose femur
@@ -521,9 +333,9 @@ namespace fly {
                 Vector3 femurEnd = chain[1] + stickRotMat.transformVector(legRest[i].restCoxaToFemurVec);
 
                 // Build per-bone transforms from IK solution
-                boneWorldTransforms[legs[i].coxaName] = buildBoneWorldTransform(chain[0], chain[1]);
-                boneWorldTransforms[legs[i].femurName] = buildBoneWorldTransform(chain[1], femurEnd);
-                boneWorldTransforms[legs[i].tibiaName] = buildBoneWorldTransform(femurEnd, chain[2]);
+                boneWorldTransforms[legs[i].coxaName] = fly::buildBoneWorldTransform(chain[0], chain[1]);
+                boneWorldTransforms[legs[i].femurName] = fly::buildBoneWorldTransform(chain[1], femurEnd);
+                boneWorldTransforms[legs[i].tibiaName] = fly::buildBoneWorldTransform(femurEnd, chain[2]);
             }
 
             // -------------------------------------------------------

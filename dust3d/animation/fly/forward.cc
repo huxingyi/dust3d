@@ -23,6 +23,7 @@
 #include <array>
 #include <cmath>
 #include <dust3d/animation/animation_generator.h>
+#include <dust3d/animation/fly/common.h>
 #include <dust3d/animation/fly/forward.h>
 #include <dust3d/base/math.h>
 #include <dust3d/base/matrix4x4.h>
@@ -35,134 +36,6 @@ namespace dust3d {
 namespace fly {
 
     namespace {
-
-        void solveCcdIk(std::vector<Vector3>& joints, const Vector3& target, int maxIterations)
-        {
-            const double threshold2 = 1e-8;
-            for (int iter = 0; iter < maxIterations; ++iter) {
-                double dist2 = (joints.back() - target).lengthSquared();
-                if (dist2 <= threshold2)
-                    break;
-                for (int i = static_cast<int>(joints.size()) - 2; i >= 0; --i) {
-                    Vector3 toEnd = joints.back() - joints[i];
-                    Vector3 toTarget = target - joints[i];
-                    if (toEnd.lengthSquared() < 1e-12 || toTarget.lengthSquared() < 1e-12)
-                        continue;
-                    Quaternion rotation = Quaternion::rotationTo(toEnd.normalized(), toTarget.normalized());
-                    Matrix4x4 rotMat;
-                    rotMat.rotate(rotation);
-                    for (size_t j = i + 1; j < joints.size(); ++j) {
-                        Vector3 offset = joints[j] - joints[i];
-                        joints[j] = joints[i] + rotMat.transformVector(offset);
-                    }
-                }
-            }
-        }
-
-        void solveFabrikIk(std::vector<Vector3>& joints, const Vector3& target, int maxIterations, const Vector3& preferredPlaneNormal = Vector3())
-        {
-            const double threshold2 = 1e-8;
-            const double planeBias = 0.45;
-            size_t n = joints.size();
-            if (n < 2)
-                return;
-
-            std::vector<double> lengths(n - 1);
-            double totalLength = 0.0;
-            for (size_t i = 0; i < n - 1; ++i) {
-                lengths[i] = (joints[i + 1] - joints[i]).length();
-                totalLength += lengths[i];
-            }
-
-            Vector3 rootPos = joints[0];
-            double distRootTarget = (target - rootPos).length();
-            Vector3 planeNorm;
-            if (!preferredPlaneNormal.isZero())
-                planeNorm = preferredPlaneNormal.normalized();
-
-            if (distRootTarget <= 1e-12)
-                return;
-
-            if (distRootTarget > totalLength) {
-                Vector3 direction = (target - rootPos).normalized();
-                joints[0] = rootPos;
-                for (size_t i = 1; i < n; ++i)
-                    joints[i] = joints[i - 1] + direction * lengths[i - 1];
-                return;
-            }
-
-            std::vector<Vector3> newPos(joints);
-            for (int iter = 0; iter < maxIterations; ++iter) {
-                newPos[n - 1] = target;
-                for (int i = static_cast<int>(n) - 2; i >= 0; --i) {
-                    Vector3 dir = newPos[i] - newPos[i + 1];
-                    double r = dir.length();
-                    if (r < 1e-12)
-                        continue;
-                    dir *= (1.0 / r);
-                    newPos[i] = newPos[i + 1] + dir * lengths[i];
-                }
-
-                newPos[0] = rootPos;
-                for (size_t i = 0; i < n - 1; ++i) {
-                    Vector3 dir = newPos[i + 1] - newPos[i];
-                    double r = dir.length();
-                    if (r < 1e-12)
-                        continue;
-                    dir *= (1.0 / r);
-                    newPos[i + 1] = newPos[i] + dir * lengths[i];
-                }
-
-                if (!planeNorm.isZero()) {
-                    for (size_t i = 1; i + 1 < n; ++i) {
-                        Vector3 item = newPos[i] - rootPos;
-                        double distToPlane = Vector3::dotProduct(item, planeNorm);
-                        Vector3 projected = newPos[i] - planeNorm * distToPlane;
-                        newPos[i] = newPos[i] * (1.0 - planeBias) + projected * planeBias;
-                    }
-
-                    for (int i = static_cast<int>(n) - 2; i >= 0; --i) {
-                        Vector3 dir = newPos[i] - newPos[i + 1];
-                        double r = dir.length();
-                        if (r < 1e-12)
-                            continue;
-                        newPos[i] = newPos[i + 1] + dir * (lengths[i] / r);
-                    }
-
-                    newPos[0] = rootPos;
-                    for (size_t i = 0; i < n - 1; ++i) {
-                        Vector3 dir = newPos[i + 1] - newPos[i];
-                        double r = dir.length();
-                        if (r < 1e-12)
-                            continue;
-                        newPos[i + 1] = newPos[i] + dir * (lengths[i] / r);
-                    }
-                }
-
-                if ((newPos.back() - target).lengthSquared() <= threshold2)
-                    break;
-            }
-
-            joints = newPos;
-        }
-
-        Matrix4x4 buildBoneWorldTransform(const Vector3& boneStart, const Vector3& boneEnd)
-        {
-            Vector3 dir = boneEnd - boneStart;
-            Matrix4x4 transform;
-            transform.translate(boneStart);
-            if (!dir.isZero()) {
-                Quaternion orient = Quaternion::rotationTo(Vector3(0.0, 0.0, 1.0), dir.normalized());
-                transform.rotate(orient);
-            }
-            return transform;
-        }
-
-        struct LegDef {
-            const char* coxaName;
-            const char* femurName;
-            const char* tibiaName;
-        };
 
     } // anonymous namespace
 
@@ -308,7 +181,7 @@ namespace fly {
                 Vector3 end = getBoneEnd(name);
                 Vector3 newPos = bodyTransform.transformPoint(pos);
                 Vector3 newEnd = bodyTransform.transformPoint(end);
-                boneWorldTransforms[name] = buildBoneWorldTransform(newPos, newEnd);
+                boneWorldTransforms[name] = fly::buildBoneWorldTransform(newPos, newEnd);
             };
 
             computeBodyBone("Head");
@@ -327,7 +200,7 @@ namespace fly {
                 double wingLen = wingDir.length();
 
                 if (wingLen < 1e-8) {
-                    boneWorldTransforms[wingName] = buildBoneWorldTransform(worldWingStart, worldWingStart);
+                    boneWorldTransforms[wingName] = fly::buildBoneWorldTransform(worldWingStart, worldWingStart);
                     continue;
                 }
 
@@ -345,7 +218,7 @@ namespace fly {
 
                 Vector3 rotatedDir = wingRotMat.transformVector(wingDir.normalized()) * wingLen;
                 Vector3 rotatedEnd = worldWingStart + rotatedDir;
-                boneWorldTransforms[wingName] = buildBoneWorldTransform(worldWingStart, rotatedEnd);
+                boneWorldTransforms[wingName] = fly::buildBoneWorldTransform(worldWingStart, rotatedEnd);
             }
 
             for (size_t i = 0; i < 6; ++i) {
@@ -362,9 +235,9 @@ namespace fly {
                 bool planeStabilization = parameters.getBool("planeStabilization", true);
                 if (useFabrikIk) {
                     Vector3 plane = planeStabilization ? preferPlane : Vector3();
-                    solveFabrikIk(chain, footTarget[i], 15, plane);
+                    fly::solveFabrikIk(chain, footTarget[i], 15, plane);
                 } else {
-                    solveCcdIk(chain, footTarget[i], 15);
+                    fly::solveCcdIk(chain, footTarget[i], 15);
                 }
 
                 Vector3 newStickDir = (chain[2] - chain[1]);
