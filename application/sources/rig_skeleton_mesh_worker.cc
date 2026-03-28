@@ -1,6 +1,7 @@
 #include "rig_skeleton_mesh_worker.h"
 #include "rig_skeleton_mesh_generator.h"
 #include "theme.h"
+#include <QDebug>
 
 void RigSkeletonMeshWorker::process()
 {
