@@ -82,8 +82,8 @@ namespace fly {
     // @param target: desired end-effector position
     // @param maxIterations: maximum IK solver iterations
     // @param preferredPlaneNormal: optional plane normal to bias leg toward (for insect gait)
-    inline void solveFabrikIk(std::vector<Vector3>& joints, const Vector3& target, int maxIterations, 
-                             const Vector3& preferredPlaneNormal = Vector3())
+    inline void solveFabrikIk(std::vector<Vector3>& joints, const Vector3& target, int maxIterations,
+        const Vector3& preferredPlaneNormal = Vector3())
     {
         const double threshold2 = 1e-8;
         const double planeBias = 0.45; // bias toward preferred leg plane
@@ -245,7 +245,7 @@ namespace fly {
 
     // Get bone start position by name. Returns zero vector if not found.
     inline Vector3 getBonePos(const RigStructure& rigStructure, const std::map<std::string, size_t>& boneIdx,
-                             const std::string& name)
+        const std::string& name)
     {
         auto it = boneIdx.find(name);
         if (it == boneIdx.end())
@@ -256,7 +256,7 @@ namespace fly {
 
     // Get bone end position by name. Returns zero vector if not found.
     inline Vector3 getBoneEnd(const RigStructure& rigStructure, const std::map<std::string, size_t>& boneIdx,
-                             const std::string& name)
+        const std::string& name)
     {
         auto it = boneIdx.find(name);
         if (it == boneIdx.end())
@@ -266,8 +266,8 @@ namespace fly {
     }
 
     // Validate that all required bones exist in the rig
-    inline bool validateRequiredBones(const std::map<std::string, size_t>& boneIdx, 
-                                      const char* const* requiredBones, size_t count)
+    inline bool validateRequiredBones(const std::map<std::string, size_t>& boneIdx,
+        const char* const* requiredBones, size_t count)
     {
         for (size_t i = 0; i < count; ++i) {
             if (boneIdx.find(requiredBones[i]) == boneIdx.end())
