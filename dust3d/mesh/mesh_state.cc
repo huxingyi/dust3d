@@ -77,18 +77,17 @@ std::unique_ptr<MeshState> MeshState::combine(const MeshState& first, const Mesh
             if (MeshState::isWatertight(recombiner.regeneratedFaces())) {
                 auto reMesh = std::make_unique<MeshCombiner::Mesh>(recombiner.regeneratedVertices(), recombiner.regeneratedFaces());
                 if (!reMesh->isNull()) {
-                    for (const auto& uvSeams : recombiner.generatedBridgingTriangleUvs()) {
-                        std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>> uvs;
-                        for (const auto& it : uvSeams) {
-                            uvs.insert(std::make_pair(std::array<PositionKey, 3> {
-                                                          PositionKey(it.first[0]),
-                                                          PositionKey(it.first[1]),
-                                                          PositionKey(it.first[2]) },
-                                it.second));
+                    for (const auto& bridgingTriangles : recombiner.generatedBridgingTriangles()) {
+                        std::set<std::array<PositionKey, 3>> triangles;
+                        for (const auto& tri : bridgingTriangles) {
+                            triangles.insert(std::array<PositionKey, 3> {
+                                PositionKey(tri[0]),
+                                PositionKey(tri[1]),
+                                PositionKey(tri[2]) });
                         }
-                        if (uvs.empty())
+                        if (triangles.empty())
                             continue;
-                        newMeshState->seamTriangleUvs.push_back(uvs);
+                        newMeshState->seamTriangleUvs.push_back(triangles);
                     }
                     newMesh = std::move(reMesh);
                 }

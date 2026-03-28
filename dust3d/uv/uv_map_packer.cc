@@ -35,7 +35,7 @@ void UvMapPacker::addPart(const Part& part)
     m_partTriangleUvs.push_back(part);
 }
 
-void UvMapPacker::addSeams(const std::vector<std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>>>& seamTriangleUvs)
+void UvMapPacker::addSeams(const std::vector<std::set<std::array<PositionKey, 3>>>& seamTriangleUvs)
 {
     for (const auto& it : seamTriangleUvs)
         m_seams.push_back(it);
@@ -64,15 +64,34 @@ void UvMapPacker::resolveSeamUvs()
         }
     }
 
+    std::map<std::array<PositionKey, 2>, TriangleUv> newHalfEdgeToUvMap;
     for (size_t seamIndex = 0; seamIndex < m_seams.size(); ++seamIndex) {
         const auto& seam = m_seams[seamIndex];
         for (const auto& triangle : seam) {
-            auto findUv = halfEdgeToUvMap.find({ triangle.first[0], triangle.first[1] });
+            auto findUv = halfEdgeToUvMap.find({ triangle[0], triangle[1] });
             if (findUv == halfEdgeToUvMap.end())
                 continue;
             const auto& triangleUv = findUv->second;
-            m_partTriangleUvs[triangleUv.partIndex].localUv.insert({ triangle.first,
-                triangleUv.uv });
+            m_partTriangleUvs[triangleUv.partIndex].localUv.insert({ triangle, triangleUv.uv });
+            newHalfEdgeToUvMap.insert({ { triangle[1], triangle[0] }, TriangleUv { triangleUv.partIndex, { triangleUv.uv[1], triangleUv.uv[0], triangleUv.uv[2] } } });
+            newHalfEdgeToUvMap.insert({ { triangle[2], triangle[1] }, TriangleUv { triangleUv.partIndex, { triangleUv.uv[2], triangleUv.uv[1], triangleUv.uv[0] } } });
+            newHalfEdgeToUvMap.insert({ { triangle[0], triangle[2] }, TriangleUv { triangleUv.partIndex, { triangleUv.uv[0], triangleUv.uv[2], triangleUv.uv[1] } } });
+        }
+    }
+
+    for (size_t seamIndex = 0; seamIndex < m_seams.size(); ++seamIndex) {
+        const auto& seam = m_seams[seamIndex];
+        for (const auto& triangle : seam) {
+            if (halfEdgeToUvMap.find({ triangle[0], triangle[1] }) != halfEdgeToUvMap.end())
+                continue;
+            for (size_t k = 1; k < 3; ++k) {
+                auto findUv = newHalfEdgeToUvMap.find({ triangle[k], triangle[(k + 1) % 3] });
+                if (findUv == newHalfEdgeToUvMap.end())
+                    continue;
+                const auto& triangleUv = findUv->second;
+                m_partTriangleUvs[triangleUv.partIndex].localUv.insert({ triangle, triangleUv.uv });
+                break;
+            }
         }
     }
 }

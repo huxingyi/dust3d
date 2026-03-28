@@ -26,13 +26,14 @@
 #include <dust3d/base/position_key.h>
 #include <dust3d/mesh/mesh_combiner.h>
 #include <map>
+#include <set>
 
 namespace dust3d {
 
 class MeshState {
 public:
     std::unique_ptr<MeshCombiner::Mesh> mesh;
-    std::vector<std::map<std::array<PositionKey, 3>, std::array<Vector2, 3>>> seamTriangleUvs;
+    std::vector<std::set<std::array<PositionKey, 3>>> seamTriangleUvs;
     std::vector<std::array<PositionKey, 3>> brokenTriangles;
 
     MeshState() = default;
