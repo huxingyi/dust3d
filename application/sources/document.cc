@@ -29,19 +29,54 @@ Document::Document()
 
 Document::~Document()
 {
+    // Ensure workers are stopped before cleanup
+    if (nullptr != m_meshGenerator) {
+        delete m_meshGenerator;
+        m_meshGenerator = nullptr;
+    }
+    if (nullptr != m_rigGeneratorWorker) {
+        delete m_rigGeneratorWorker;
+        m_rigGeneratorWorker = nullptr;
+    }
+
     delete (dust3d::MeshGenerator::GeneratedCacheContext*)m_generatedCacheContext;
+    m_generatedCacheContext = nullptr;
+
     delete m_resultMesh;
+    m_resultMesh = nullptr;
+
     delete textureImage;
+    textureImage = nullptr;
+
     delete textureImageByteArray;
+    textureImageByteArray = nullptr;
+
     delete textureNormalImage;
+    textureNormalImage = nullptr;
+
     delete textureNormalImageByteArray;
+    textureNormalImageByteArray = nullptr;
+
     delete textureMetalnessImage;
+    textureMetalnessImage = nullptr;
+
     delete textureMetalnessImageByteArray;
+    textureMetalnessImageByteArray = nullptr;
+
     delete textureRoughnessImage;
+    textureRoughnessImage = nullptr;
+
     delete textureRoughnessImageByteArray;
+    textureRoughnessImageByteArray = nullptr;
+
     delete textureAmbientOcclusionImage;
+    textureAmbientOcclusionImage = nullptr;
+
     delete textureAmbientOcclusionImageByteArray;
+    textureAmbientOcclusionImageByteArray = nullptr;
+
     delete m_resultTextureMesh;
+    m_resultTextureMesh = nullptr;
 }
 
 const Document::Node* Document::findNode(dust3d::Uuid nodeId) const
@@ -2440,21 +2475,9 @@ void Document::silentReset()
 
 void Document::clearResults()
 {
-    // Clear generated mesh data
-    delete m_resultMesh;
-    m_resultMesh = nullptr;
+    // Only clear texture images and non-shared resources
+    // Avoid deleting shared resources while workers may be using them
 
-    delete m_resultTextureMesh;
-    m_resultTextureMesh = nullptr;
-
-    // Clear unique_ptr objects
-    m_wireframeMesh.reset();
-    m_currentObject.reset();
-    m_currentSnapshot.reset();
-    m_uvMappedObject = std::make_unique<dust3d::Object>();
-    m_rigObject.reset();
-
-    // Clear texture images
     delete textureImage;
     textureImage = nullptr;
 
@@ -2485,12 +2508,31 @@ void Document::clearResults()
     delete textureAmbientOcclusionImageByteArray;
     textureAmbientOcclusionImageByteArray = nullptr;
 
-    // Clear generated cache context
-    delete (dust3d::MeshGenerator::GeneratedCacheContext*)m_generatedCacheContext;
-    m_generatedCacheContext = nullptr;
+    // Only clear result meshes if no mesh generation is in progress
+    // to avoid race conditions where meshReady() may still be running
+    if (nullptr == m_meshGenerator) {
+        delete m_resultMesh;
+        m_resultMesh = nullptr;
 
-    // Clear rig structure
-    m_actualRigStructure = RigStructure();
+        delete m_resultTextureMesh;
+        m_resultTextureMesh = nullptr;
+
+        // Clear generated cache context only when generator is not running
+        delete (dust3d::MeshGenerator::GeneratedCacheContext*)m_generatedCacheContext;
+        m_generatedCacheContext = nullptr;
+    }
+
+    // Clear unique_ptr objects (these will delete their contents safely)
+    m_wireframeMesh.reset();
+    m_currentObject.reset();
+    m_currentSnapshot.reset();
+    m_uvMappedObject = std::make_unique<dust3d::Object>();
+
+    // Only clear rig object if rig generator is not running
+    if (nullptr == m_rigGeneratorWorker) {
+        m_rigObject.reset();
+        m_actualRigStructure = RigStructure();
+    }
 
     // Reset flags
     m_isResultMeshObsolete = false;
