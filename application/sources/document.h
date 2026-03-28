@@ -465,6 +465,7 @@ public slots:
     void reset();
     void clearHistories();
     void silentReset();
+    void clearResults();
     void toggleSmoothNormal();
     void enableWeld(bool enabled);
     void removeNode(dust3d::Uuid nodeId);
