@@ -528,6 +528,9 @@ void Document::joinNodeAndNeiborsToGroup(std::vector<dust3d::Uuid>* group, dust3
 void Document::splitPartByNode(std::vector<std::vector<dust3d::Uuid>>* groups, dust3d::Uuid nodeId)
 {
     const Document::Node* node = findNode(nodeId);
+    if (nullptr == node) {
+        return;
+    }
     std::set<dust3d::Uuid> visitMap;
     visitMap.insert(nodeId);
     for (auto edgeIt = node->edgeIds.begin(); edgeIt != node->edgeIds.end(); edgeIt++) {
