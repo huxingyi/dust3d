@@ -6,9 +6,9 @@
 #include <QFileInfo>
 #include <QtCore/qbuffer.h>
 #include <QtMath>
+#include <cmath>
 #include <fbxnode.h>
 #include <fbxproperty.h>
-#include <cmath>
 #include <set>
 
 using namespace fbx;
@@ -2596,10 +2596,17 @@ FbxFileWriter::FbxFileWriter(dust3d::Object& object,
                     clusterNameBytes.push_back((uint8_t)c.toLatin1());
                 clusterNameBytes.push_back(0);
                 clusterNameBytes.push_back(1);
-                clusterNameBytes.push_back('S'); clusterNameBytes.push_back('u'); clusterNameBytes.push_back('b');
-                clusterNameBytes.push_back('D'); clusterNameBytes.push_back('e'); clusterNameBytes.push_back('f');
-                clusterNameBytes.push_back('o'); clusterNameBytes.push_back('r'); clusterNameBytes.push_back('m');
-                clusterNameBytes.push_back('e'); clusterNameBytes.push_back('r');
+                clusterNameBytes.push_back('S');
+                clusterNameBytes.push_back('u');
+                clusterNameBytes.push_back('b');
+                clusterNameBytes.push_back('D');
+                clusterNameBytes.push_back('e');
+                clusterNameBytes.push_back('f');
+                clusterNameBytes.push_back('o');
+                clusterNameBytes.push_back('r');
+                clusterNameBytes.push_back('m');
+                clusterNameBytes.push_back('e');
+                clusterNameBytes.push_back('r');
                 deformer.addProperty(clusterNameBytes, 'S');
                 deformer.addProperty("Cluster");
                 deformer.addPropertyNode("Version", (int32_t)100);
@@ -2634,8 +2641,11 @@ FbxFileWriter::FbxFileWriter(dust3d::Object& object,
                     limbNameBytes.push_back((uint8_t)c.toLatin1());
                 limbNameBytes.push_back(0);
                 limbNameBytes.push_back(1);
-                limbNameBytes.push_back('M'); limbNameBytes.push_back('o'); limbNameBytes.push_back('d');
-                limbNameBytes.push_back('e'); limbNameBytes.push_back('l');
+                limbNameBytes.push_back('M');
+                limbNameBytes.push_back('o');
+                limbNameBytes.push_back('d');
+                limbNameBytes.push_back('e');
+                limbNameBytes.push_back('l');
                 limbNode.addProperty(limbNameBytes, 'S');
                 limbNode.addProperty("LimbNode");
                 limbNode.addPropertyNode("Version", (int32_t)232);
@@ -2733,10 +2743,18 @@ FbxFileWriter::FbxFileWriter(dust3d::Object& object,
                     attrNameBytes.push_back((uint8_t)c.toLatin1());
                 attrNameBytes.push_back(0);
                 attrNameBytes.push_back(1);
-                attrNameBytes.push_back('N'); attrNameBytes.push_back('o'); attrNameBytes.push_back('d');
-                attrNameBytes.push_back('e'); attrNameBytes.push_back('A'); attrNameBytes.push_back('t');
-                attrNameBytes.push_back('t'); attrNameBytes.push_back('r'); attrNameBytes.push_back('i');
-                attrNameBytes.push_back('b'); attrNameBytes.push_back('u'); attrNameBytes.push_back('t');
+                attrNameBytes.push_back('N');
+                attrNameBytes.push_back('o');
+                attrNameBytes.push_back('d');
+                attrNameBytes.push_back('e');
+                attrNameBytes.push_back('A');
+                attrNameBytes.push_back('t');
+                attrNameBytes.push_back('t');
+                attrNameBytes.push_back('r');
+                attrNameBytes.push_back('i');
+                attrNameBytes.push_back('b');
+                attrNameBytes.push_back('u');
+                attrNameBytes.push_back('t');
                 attrNameBytes.push_back('e');
                 nodeAttribute.addProperty(attrNameBytes, 'S');
                 nodeAttribute.addProperty("LimbNode");
@@ -3672,10 +3690,17 @@ FbxFileWriter::FbxFileWriter(dust3d::Object& object,
                 std::vector<uint8_t> name;
                 for (const char c : clip.name)
                     name.push_back((uint8_t)c);
-                name.push_back(0); name.push_back(1);
-                name.push_back('A'); name.push_back('n'); name.push_back('i');
-                name.push_back('m'); name.push_back('S'); name.push_back('t');
-                name.push_back('a'); name.push_back('c'); name.push_back('k');
+                name.push_back(0);
+                name.push_back(1);
+                name.push_back('A');
+                name.push_back('n');
+                name.push_back('i');
+                name.push_back('m');
+                name.push_back('S');
+                name.push_back('t');
+                name.push_back('a');
+                name.push_back('c');
+                name.push_back('k');
                 animationStack.addProperty(name, 'S');
             }
             animationStack.addProperty("");
@@ -3712,10 +3737,17 @@ FbxFileWriter::FbxFileWriter(dust3d::Object& object,
                 std::vector<uint8_t> name;
                 for (const char c : clip.name)
                     name.push_back((uint8_t)c);
-                name.push_back(0); name.push_back(1);
-                name.push_back('A'); name.push_back('n'); name.push_back('i');
-                name.push_back('m'); name.push_back('L'); name.push_back('a');
-                name.push_back('y'); name.push_back('e'); name.push_back('r');
+                name.push_back(0);
+                name.push_back(1);
+                name.push_back('A');
+                name.push_back('n');
+                name.push_back('i');
+                name.push_back('m');
+                name.push_back('L');
+                name.push_back('a');
+                name.push_back('y');
+                name.push_back('e');
+                name.push_back('r');
                 animationLayer.addProperty(name, 'S');
             }
             animationLayer.addProperty("");
@@ -3750,15 +3782,11 @@ FbxFileWriter::FbxFileWriter(dust3d::Object& object,
                     double tx = localMat.constData()[dust3d::Matrix4x4::M30];
                     double ty = localMat.constData()[dust3d::Matrix4x4::M31];
                     double tz = localMat.constData()[dust3d::Matrix4x4::M32];
-                    if (std::abs(tx - bindLocals[i].tx) > 1e-6 ||
-                        std::abs(ty - bindLocals[i].ty) > 1e-6 ||
-                        std::abs(tz - bindLocals[i].tz) > 1e-6)
+                    if (std::abs(tx - bindLocals[i].tx) > 1e-6 || std::abs(ty - bindLocals[i].ty) > 1e-6 || std::abs(tz - bindLocals[i].tz) > 1e-6)
                         translatedBones.insert(i);
                     double pitch = 0, yaw = 0, roll = 0;
                     matrixToFbxEulerAngles(localMat, &pitch, &yaw, &roll);
-                    if (std::abs(pitch - bindLocals[i].pitch) > 1e-6 ||
-                        std::abs(yaw - bindLocals[i].yaw) > 1e-6 ||
-                        std::abs(roll - bindLocals[i].roll) > 1e-6)
+                    if (std::abs(pitch - bindLocals[i].pitch) > 1e-6 || std::abs(yaw - bindLocals[i].yaw) > 1e-6 || std::abs(roll - bindLocals[i].roll) > 1e-6)
                         rotatedBones.insert(i);
                 }
             }

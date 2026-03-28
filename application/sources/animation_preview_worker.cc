@@ -1,9 +1,9 @@
 #include "animation_preview_worker.h"
 #include "theme.h"
-#include <dust3d/base/vector3.h>
-#include <dust3d/rig/rig_generator.h>
 #include <QDebug>
 #include <cstring>
+#include <dust3d/base/vector3.h>
+#include <dust3d/rig/rig_generator.h>
 
 void AnimationPreviewWorker::process()
 {

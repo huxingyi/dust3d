@@ -21,8 +21,8 @@
  */
 
 #include <dust3d/animation/animation_generator.h>
-#include <dust3d/animation/fly/walk.h>
 #include <dust3d/animation/fly/rub_hands.h>
+#include <dust3d/animation/fly/walk.h>
 
 namespace dust3d {
 

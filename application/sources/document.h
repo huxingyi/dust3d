@@ -190,7 +190,7 @@ public:
         dust3d::Uuid id;
         QString name;
         QString type;
-        std::map<std::string, std::string> params;  // Key-value parameters
+        std::map<std::string, std::string> params; // Key-value parameters
     };
 
 signals:

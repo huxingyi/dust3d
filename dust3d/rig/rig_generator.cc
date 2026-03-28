@@ -47,7 +47,7 @@ bool RigGenerator::generateRig(const Snapshot* snapshot, const RigStructure& tem
     }
 
     actualRig = templateRig; // Copy template structure
-    
+
     // Extract coordinate transformation offsets from snapshot's canvas
     m_mainProfileMiddleX = String::toFloat(String::valueOrEmpty(snapshot->canvas, "originX"));
     m_mainProfileMiddleY = String::toFloat(String::valueOrEmpty(snapshot->canvas, "originY"));

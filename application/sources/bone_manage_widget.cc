@@ -471,7 +471,7 @@ void BoneManageWidget::rigSkeletonTemplateMeshReady()
         }
 
         qDebug() << "Rig skeleton mesh generated successfully"
-            << "with" << vertices.size() << "vertices and" << faces.size() << "faces";
+                 << "with" << vertices.size() << "vertices and" << faces.size() << "faces";
     }
 
     m_rigTemplateMeshWorker.reset();
@@ -582,4 +582,3 @@ void BoneManageWidget::generateRigSkinningMesh()
 
     thread->start();
 }
-

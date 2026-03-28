@@ -99,7 +99,7 @@ public:
 
 private:
     std::string m_errorMessage;
-    
+
     // Coordinate transformation offsets (from snapshot canvas)
     float m_mainProfileMiddleX = 0.0f;
     float m_mainProfileMiddleY = 0.0f;

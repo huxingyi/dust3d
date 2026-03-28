@@ -4,18 +4,18 @@
 #include "animation_preview_worker.h"
 #include "model_mesh.h"
 #include "world_widget.h"
-#include <QWidget>
-#include <QTimer>
-#include <QThread>
-#include <QSlider>
-#include <QLabel>
 #include <QCheckBox>
 #include <QDoubleSpinBox>
-#include <QPushButton>
+#include <QFormLayout>
+#include <QGroupBox>
+#include <QLabel>
 #include <QLineEdit>
 #include <QListWidget>
-#include <QGroupBox>
-#include <QFormLayout>
+#include <QPushButton>
+#include <QSlider>
+#include <QThread>
+#include <QTimer>
+#include <QWidget>
 #include <vector>
 
 class Document;

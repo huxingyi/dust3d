@@ -2443,55 +2443,55 @@ void Document::clearResults()
     // Clear generated mesh data
     delete m_resultMesh;
     m_resultMesh = nullptr;
-    
+
     delete m_resultTextureMesh;
     m_resultTextureMesh = nullptr;
-    
+
     // Clear unique_ptr objects
     m_wireframeMesh.reset();
     m_currentObject.reset();
     m_currentSnapshot.reset();
     m_uvMappedObject = std::make_unique<dust3d::Object>();
     m_rigObject.reset();
-    
+
     // Clear texture images
     delete textureImage;
     textureImage = nullptr;
-    
+
     delete textureImageByteArray;
     textureImageByteArray = nullptr;
-    
+
     delete textureNormalImage;
     textureNormalImage = nullptr;
-    
+
     delete textureNormalImageByteArray;
     textureNormalImageByteArray = nullptr;
-    
+
     delete textureMetalnessImage;
     textureMetalnessImage = nullptr;
-    
+
     delete textureMetalnessImageByteArray;
     textureMetalnessImageByteArray = nullptr;
-    
+
     delete textureRoughnessImage;
     textureRoughnessImage = nullptr;
-    
+
     delete textureRoughnessImageByteArray;
     textureRoughnessImageByteArray = nullptr;
-    
+
     delete textureAmbientOcclusionImage;
     textureAmbientOcclusionImage = nullptr;
-    
+
     delete textureAmbientOcclusionImageByteArray;
     textureAmbientOcclusionImageByteArray = nullptr;
-    
+
     // Clear generated cache context
     delete (dust3d::MeshGenerator::GeneratedCacheContext*)m_generatedCacheContext;
     m_generatedCacheContext = nullptr;
-    
+
     // Clear rig structure
     m_actualRigStructure = RigStructure();
-    
+
     // Reset flags
     m_isResultMeshObsolete = false;
     m_isMeshGenerationSucceed = true;

@@ -67,8 +67,8 @@ GlbFileWriter::GlbFileWriter(dust3d::Object& object,
     }
 
     auto matrixToTranslationAndRotation = [](const dust3d::Matrix4x4& mat,
-        float& tx, float& ty, float& tz,
-        float& qx, float& qy, float& qz, float& qw) {
+                                              float& tx, float& ty, float& tz,
+                                              float& qx, float& qy, float& qz, float& qw) {
         const double* m = mat.constData();
         tx = (float)m[12];
         ty = (float)m[13];
@@ -107,8 +107,8 @@ GlbFileWriter::GlbFileWriter(dust3d::Object& object,
     };
 
     auto computeLocalTransform = [](const std::string& parentName,
-        const dust3d::Matrix4x4& childWorldTransform,
-        const std::map<std::string, dust3d::Matrix4x4>& worldTransforms) -> dust3d::Matrix4x4 {
+                                     const dust3d::Matrix4x4& childWorldTransform,
+                                     const std::map<std::string, dust3d::Matrix4x4>& worldTransforms) -> dust3d::Matrix4x4 {
         if (parentName.empty())
             return childWorldTransform;
         auto parentIt = worldTransforms.find(parentName);

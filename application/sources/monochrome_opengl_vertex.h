@@ -5,8 +5,7 @@
 
 #pragma pack(push)
 #pragma pack(1)
-struct MonochromeOpenGLVertex
-{
+struct MonochromeOpenGLVertex {
     GLfloat posX;
     GLfloat posY;
     GLfloat posZ;

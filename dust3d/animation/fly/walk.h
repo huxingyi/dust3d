@@ -30,12 +30,12 @@ namespace dust3d {
 
 namespace fly {
 
-bool walk(const RigStructure& rigStructure,
-    const std::map<std::string, Matrix4x4>& inverseBindMatrices,
-    RigAnimationClip& animationClip,
-    int frameCount = 30,
-    float durationSeconds = 1.0f,
-    const AnimationParams& parameters = AnimationParams());
+    bool walk(const RigStructure& rigStructure,
+        const std::map<std::string, Matrix4x4>& inverseBindMatrices,
+        RigAnimationClip& animationClip,
+        int frameCount = 30,
+        float durationSeconds = 1.0f,
+        const AnimationParams& parameters = AnimationParams());
 
 } // namespace fly
 

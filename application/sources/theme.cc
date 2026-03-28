@@ -63,8 +63,7 @@ void Theme::initialize()
     // Ensure disabled buttons are visually distinct and look unclickable.
     qApp->setStyleSheet(
         "QPushButton:disabled { color: " + QColor(0x25, 0x25, 0x25).name() + "; }"
-        "QFrame#separatorLine { background-color: #4a4a4a; min-height: 1px; max-height: 1px; border: none; }"
-    );
+                                                                             "QFrame#separatorLine { background-color: #4a4a4a; min-height: 1px; max-height: 1px; border: none; }");
 
     Theme::awesome();
 }

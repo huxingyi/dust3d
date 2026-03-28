@@ -23,8 +23,8 @@
 #ifndef DUST3D_ANIMATION_ANIMATION_GENERATOR_H_
 #define DUST3D_ANIMATION_ANIMATION_GENERATOR_H_
 
-#include <map>
 #include <dust3d/rig/rig_generator.h>
+#include <map>
 
 namespace dust3d {
 
