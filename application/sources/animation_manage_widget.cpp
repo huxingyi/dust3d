@@ -557,9 +557,9 @@ void AnimationManageWidget::refreshAnimationList()
     }
     std::sort(sortedAnims.begin(), sortedAnims.end());
 
-    for (const auto& [name, id] : sortedAnims) {
-        QListWidgetItem* item = new QListWidgetItem(name);
-        item->setData(Qt::UserRole, QString::fromStdString(id.toString()));
+    for (const auto& anim : sortedAnims) {
+        QListWidgetItem* item = new QListWidgetItem(anim.first);
+        item->setData(Qt::UserRole, QString::fromStdString(anim.second.toString()));
         m_animationListWidget->addItem(item);
     }
 
