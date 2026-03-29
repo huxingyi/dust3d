@@ -174,7 +174,7 @@ void UvMapGenerator::generateTextureColorImage()
     // UV seam white lines caused by GPU bilinear filtering sampling white background
     // pixels just outside the chart boundary. The chart padding (~20px) comfortably
     // accommodates this bleed without overlapping adjacent charts.
-    const int bleedPixels = 2;
+    const int bleedPixels = 5;
 
     for (const auto& layout : m_mapPacker->packedLayouts()) {
         QPixmap brushPixmap;
