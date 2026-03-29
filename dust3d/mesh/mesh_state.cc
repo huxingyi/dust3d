@@ -78,14 +78,20 @@ std::unique_ptr<MeshState> MeshState::combine(const MeshState& first, const Mesh
                 auto reMesh = std::make_unique<MeshCombiner::Mesh>(recombiner.regeneratedVertices(), recombiner.regeneratedFaces());
                 if (!reMesh->isNull()) {
                     for (const auto& bridgingTriangles : recombiner.generatedBridgingTriangles()) {
-                        std::set<std::array<PositionKey, 3>> triangles;
-                        for (const auto& tri : bridgingTriangles) {
-                            triangles.insert(std::array<PositionKey, 3> {
+                        std::pair<std::set<std::array<PositionKey, 3>>, std::set<std::array<PositionKey, 3>>> triangles;
+                        for (const auto& tri : bridgingTriangles.first) {
+                            triangles.first.insert(std::array<PositionKey, 3> {
                                 PositionKey(tri[0]),
                                 PositionKey(tri[1]),
                                 PositionKey(tri[2]) });
                         }
-                        if (triangles.empty())
+                        for (const auto& tri : bridgingTriangles.second) {
+                            triangles.second.insert(std::array<PositionKey, 3> {
+                                PositionKey(tri[0]),
+                                PositionKey(tri[1]),
+                                PositionKey(tri[2]) });
+                        }
+                        if (triangles.first.empty() && triangles.second.empty())
                             continue;
                         newMeshState->seamTriangleUvs.push_back(triangles);
                     }

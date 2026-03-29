@@ -39,7 +39,7 @@ public:
     const std::vector<Vector3>& regeneratedVertices();
     const std::vector<std::pair<MeshCombiner::Source, size_t>>& regeneratedVerticesSourceIndices();
     const std::vector<std::vector<size_t>>& regeneratedFaces();
-    const std::vector<std::vector<std::array<Vector3, 3>>>& generatedBridgingTriangles();
+    const std::vector<std::pair<std::vector<std::array<Vector3, 3>>, std::vector<std::array<Vector3, 3>>>>& generatedBridgingTriangles();
     bool recombine();
     const std::map<size_t, size_t>& inputFacesInSeamArea() const;
 
@@ -53,7 +53,7 @@ private:
     std::map<std::pair<size_t, size_t>, size_t> m_halfEdgeToFaceMap;
     std::map<size_t, size_t> m_facesInSeamArea;
     std::set<size_t> m_goodSeams;
-    std::vector<std::vector<std::array<Vector3, 3>>> m_generatedBridgingTriangles;
+    std::vector<std::pair<std::vector<std::array<Vector3, 3>>, std::vector<std::array<Vector3, 3>>>> m_generatedBridgingTriangles;
 
     bool buildHalfEdgeToFaceMap(std::map<std::pair<size_t, size_t>, size_t>& halfEdgeToFaceMap);
     bool convertHalfEdgesToEdgeLoops(const std::vector<std::pair<size_t, size_t>>& halfEdges,

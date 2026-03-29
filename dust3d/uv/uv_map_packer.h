@@ -58,7 +58,7 @@ public:
 
     UvMapPacker();
     void addPart(const Part& part);
-    void addSeams(const std::vector<std::set<std::array<PositionKey, 3>>>& seamTriangleUvs);
+    void addSeams(const std::vector<std::pair<std::set<std::array<PositionKey, 3>>, std::set<std::array<PositionKey, 3>>>>& seamTriangleUvs);
     void pack();
     const std::vector<Layout>& packedLayouts();
     double packedTextureSize();
@@ -66,7 +66,7 @@ public:
 private:
     std::vector<Part> m_partTriangleUvs;
     std::vector<Layout> m_packedLayouts;
-    std::vector<std::set<std::array<PositionKey, 3>>> m_seams;
+    std::vector<std::pair<std::set<std::array<PositionKey, 3>>, std::set<std::array<PositionKey, 3>>>> m_seams;
     double m_packedTextureSize = 0.0;
 
     void resolveSeamUvs();
