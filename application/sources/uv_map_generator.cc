@@ -165,8 +165,8 @@ void UvMapGenerator::packUvs()
         dust3d::UvMapPacker::Part seamPart;
         seamPart.id = gradientId;
         seamPart.color = dust3d::Color(1.0, 1.0, 1.0);
-        seamPart.width = 1.0;
-        seamPart.height = 1.0;
+        seamPart.width = kGradientSize;
+        seamPart.height = kGradientSize;
 
         // large side: triangle[0,1] are large-side vertices → u=0
         //             triangle[2]   is the small-side vertex  → u=1
