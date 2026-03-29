@@ -4,6 +4,7 @@
 #include <QTransform>
 #include <dust3d/base/part_target.h>
 #include <dust3d/uv/uv_map_packer.h>
+#include <map>
 #include <unordered_set>
 
 size_t UvMapGenerator::m_textureSize = 4096;
@@ -97,6 +98,98 @@ void UvMapGenerator::packUvs()
 {
     m_mapPacker = std::make_unique<dust3d::UvMapPacker>();
 
+    // Build vertex-position-key → component base color lookup so we can identify
+    // the colors on each side of a seam boundary.
+    std::map<dust3d::PositionKey, QColor> vertexToComponentColor;
+    for (const auto& compIt : m_object->componentTriangleUvs) {
+        QColor color(255, 255, 255);
+        auto snapshotCompIt = m_snapshot->components.find(compIt.first.toString());
+        if (snapshotCompIt != m_snapshot->components.end()) {
+            const auto& colorIt = snapshotCompIt->second.find("color");
+            if (colorIt != snapshotCompIt->second.end())
+                color = QColor(QString::fromStdString(colorIt->second));
+        }
+        for (const auto& triIt : compIt.second) {
+            for (size_t i = 0; i < 3; ++i)
+                vertexToComponentColor.insert({ triIt.first[i], color });
+        }
+    }
+
+    // For each seam create a dedicated gradient chart.  Large-side vertices are
+    // mapped to u=0 and small-side vertices to u=1, so the renderer interpolates
+    // smoothly from the large-side component color to the small-side component
+    // color across every bridging triangle.  Seam parts are added to the packer
+    // before component parts so their globalUv entries win in generateUvCoords.
+    //
+    // seam.first  triangles have layout [large₀, large₁, small].
+    // seam.second triangles have layout [small₀, small₁, large].
+    for (const auto& seam : m_object->seamTriangleUvs) {
+        if (seam.first.empty() && seam.second.empty())
+            continue;
+
+        QColor colorLarge(200, 200, 200), colorSmall(200, 200, 200);
+        if (!seam.first.empty()) {
+            const auto& tri = *seam.first.begin();
+            auto it = vertexToComponentColor.find(tri[0]);
+            if (it != vertexToComponentColor.end())
+                colorLarge = it->second;
+            it = vertexToComponentColor.find(tri[2]);
+            if (it != vertexToComponentColor.end())
+                colorSmall = it->second;
+        } else {
+            const auto& tri = *seam.second.begin();
+            auto it = vertexToComponentColor.find(tri[2]);
+            if (it != vertexToComponentColor.end())
+                colorLarge = it->second;
+            it = vertexToComponentColor.find(tri[0]);
+            if (it != vertexToComponentColor.end())
+                colorSmall = it->second;
+        }
+
+        // 64×64 horizontal gradient: column 0 = colorLarge, column 63 = colorSmall.
+        // The image is square so the chart packer has no incentive to flip it.
+        const int kGradientSize = 64;
+        QImage gradientImage(kGradientSize, kGradientSize, QImage::Format_ARGB32);
+        for (int y = 0; y < kGradientSize; ++y) {
+            for (int x = 0; x < kGradientSize; ++x) {
+                double t = (double)x / (kGradientSize - 1);
+                int r = (int)(colorLarge.red() * (1.0 - t) + colorSmall.red() * t);
+                int g = (int)(colorLarge.green() * (1.0 - t) + colorSmall.green() * t);
+                int b = (int)(colorLarge.blue() * (1.0 - t) + colorSmall.blue() * t);
+                int a = (int)(colorLarge.alpha() * (1.0 - t) + colorSmall.alpha() * t);
+                gradientImage.setPixelColor(x, y, QColor(r, g, b, a));
+            }
+        }
+        dust3d::Uuid gradientId = ImageForever::add(&gradientImage);
+
+        dust3d::UvMapPacker::Part seamPart;
+        seamPart.id = gradientId;
+        seamPart.color = dust3d::Color(1.0, 1.0, 1.0);
+        seamPart.width = 1.0;
+        seamPart.height = 1.0;
+
+        // large side: triangle[0,1] are large-side vertices → u=0
+        //             triangle[2]   is the small-side vertex  → u=1
+        for (const auto& tri : seam.first) {
+            seamPart.localUv[tri] = {
+                dust3d::Vector2(0.0, 0.0),
+                dust3d::Vector2(0.0, 1.0),
+                dust3d::Vector2(1.0, 0.5)
+            };
+        }
+        // small side: triangle[0,1] are small-side vertices → u=1
+        //             triangle[2]   is the large-side vertex  → u=0
+        for (const auto& tri : seam.second) {
+            seamPart.localUv[tri] = {
+                dust3d::Vector2(1.0, 0.0),
+                dust3d::Vector2(1.0, 1.0),
+                dust3d::Vector2(0.0, 0.5)
+            };
+        }
+
+        m_mapPacker->addPart(seamPart);
+    }
+
     for (const auto& componentTriangleUvIt : m_object->componentTriangleUvs) {
         auto componentIt = m_snapshot->components.find(componentTriangleUvIt.first.toString());
         if (componentIt == m_snapshot->components.end())
@@ -151,8 +244,6 @@ void UvMapGenerator::packUvs()
         partIt.second.height = height;
         m_mapPacker->addPart(partIt.second);
     }
-
-    m_mapPacker->addSeams(m_object->seamTriangleUvs);
 
     m_mapPacker->pack();
 }
