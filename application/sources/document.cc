@@ -3182,6 +3182,21 @@ void Document::paste()
     }
 }
 
+void Document::pasteFromXmlFile(const QString& filePath)
+{
+    QFile file(filePath);
+    if (!file.open(QFile::ReadOnly)) {
+        qDebug() << "Failed to open XML file for paste:" << filePath;
+        return;
+    }
+    QByteArray data = file.readAll();
+    data.append('\0');
+    dust3d::Snapshot snapshot;
+    loadSnapshotFromXmlString(&snapshot, data.data());
+    addFromSnapshot(snapshot, SnapshotSource::Paste);
+    saveSnapshot();
+}
+
 bool Document::hasPastableNodesInClipboard() const
 {
     const QClipboard* clipboard = QApplication::clipboard();

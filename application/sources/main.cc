@@ -13,6 +13,7 @@ static QApplication* g_app = nullptr;
 static std::vector<DocumentWindow*> g_windowList;
 static QStringList g_openFileList;
 static QStringList g_waitingExportList;
+static QString g_pasteXmlFile;
 static int g_finishedExportFileNum = 0;
 static int g_totalExportFileNum = 0;
 static int g_succeedExportNum = 0;
@@ -21,7 +22,7 @@ static int g_exitCode = -1;
 static auto checkToSafelyExit = []() {
     if (-1 == g_exitCode)
         return;
-    for (int i = 0; i < g_openFileList.size(); ++i) {
+    for (int i = 0; i < (int)g_windowList.size(); ++i) {
         if (g_windowList[i]->isWorking())
             return;
     }
@@ -58,6 +59,11 @@ int main(int argc, char* argv[])
                 ++i;
                 if (i < argc)
                     g_waitingExportList.append(argv[i]);
+                continue;
+            } else if (0 == strcmp(argv[i], "-paste-xml")) {
+                ++i;
+                if (i < argc)
+                    g_pasteXmlFile = argv[i];
                 continue;
             } else if (0 == strcmp(argv[i], "-toggle-color")) {
                 ++i;
@@ -115,6 +121,36 @@ int main(int argc, char* argv[])
         for (int i = 0; i < g_openFileList.size(); ++i) {
             g_windowList[i]->openPathAs(g_openFileList[i], g_openFileList[i]);
         }
+        if (!g_pasteXmlFile.isEmpty()) {
+            for (int i = 0; i < (int)g_windowList.size(); ++i) {
+                g_windowList[i]->document()->pasteFromXmlFile(g_pasteXmlFile);
+            }
+        }
+    } else if (!g_pasteXmlFile.isEmpty()) {
+        g_windowList.push_back(firstWindow);
+        if (!g_waitingExportList.empty()) {
+            g_totalExportFileNum = g_waitingExportList.size();
+            QObject::connect(firstWindow, &DocumentWindow::workingStatusChanged, g_app, checkToSafelyExit);
+            QObject::connect(firstWindow, &DocumentWindow::waitingExportFinished, g_app, [&](const QString& filename, bool isSuccessful) {
+                qDebug() << "Export to" << filename << (isSuccessful ? "isSuccessful" : "failed");
+                ++g_finishedExportFileNum;
+                if (isSuccessful)
+                    ++g_succeedExportNum;
+                if (g_finishedExportFileNum == g_totalExportFileNum) {
+                    if (g_succeedExportNum == g_totalExportFileNum) {
+                        g_exitCode = 0;
+                        checkToSafelyExit();
+                        return;
+                    }
+                    g_exitCode = 1;
+                    checkToSafelyExit();
+                    return;
+                }
+            });
+            QObject::connect(firstWindow->document(), &Document::exportReady, firstWindow, &DocumentWindow::checkExportWaitingList);
+            firstWindow->setExportWaitingList(g_waitingExportList);
+        }
+        firstWindow->document()->pasteFromXmlFile(g_pasteXmlFile);
     }
 #if defined(Q_OS_WASM)
     return 0;

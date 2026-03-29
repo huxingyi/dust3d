@@ -431,6 +431,7 @@ public slots:
     void undo();
     void redo();
     void paste();
+    void pasteFromXmlFile(const QString& filePath);
     void setNodeCutRotation(dust3d::Uuid nodeId, float cutRotation);
     void setNodeCutFace(dust3d::Uuid nodeId, dust3d::CutFace cutFace);
     void setNodeCutFaceLinkedId(dust3d::Uuid nodeId, dust3d::Uuid linkedId);
