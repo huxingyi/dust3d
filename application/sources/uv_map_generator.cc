@@ -170,10 +170,17 @@ void UvMapGenerator::generateTextureColorImage()
 #endif
     colorTexturePainter.setPen(Qt::NoPen);
 
+    // Extend each chart's painted region by bleedPixels on every side to prevent
+    // UV seam white lines caused by GPU bilinear filtering sampling white background
+    // pixels just outside the chart boundary. The chart padding (~20px) comfortably
+    // accommodates this bleed without overlapping adjacent charts.
+    const int bleedPixels = 2;
+
     for (const auto& layout : m_mapPacker->packedLayouts()) {
         QPixmap brushPixmap;
         if (layout.id.isNull()) {
-            brushPixmap = QPixmap(layout.width * UvMapGenerator::m_textureSize, layout.height * UvMapGenerator::m_textureSize);
+            brushPixmap = QPixmap(layout.width * UvMapGenerator::m_textureSize + bleedPixels * 2,
+                layout.height * UvMapGenerator::m_textureSize + bleedPixels * 2);
             brushPixmap.fill(QColor(QString::fromStdString(layout.color.toString())));
         } else {
             const QImage* image = ImageForever::get(layout.id);
@@ -182,8 +189,8 @@ void UvMapGenerator::generateTextureColorImage()
                 continue;
             }
             if (layout.flipped) {
-                auto scaledImage = image->scaled(QSize(layout.height * UvMapGenerator::m_textureSize,
-                    layout.width * UvMapGenerator::m_textureSize));
+                auto scaledImage = image->scaled(QSize(layout.height * UvMapGenerator::m_textureSize + bleedPixels * 2,
+                    layout.width * UvMapGenerator::m_textureSize + bleedPixels * 2));
                 QPoint center = scaledImage.rect().center();
                 QTransform matrix;
                 matrix.translate(center.x(), center.y());
@@ -191,13 +198,13 @@ void UvMapGenerator::generateTextureColorImage()
                 auto rotatedImage = scaledImage.transformed(matrix).mirrored(true, false);
                 brushPixmap = QPixmap::fromImage(rotatedImage);
             } else {
-                auto scaledImage = image->scaled(QSize(layout.width * UvMapGenerator::m_textureSize,
-                    layout.height * UvMapGenerator::m_textureSize));
+                auto scaledImage = image->scaled(QSize(layout.width * UvMapGenerator::m_textureSize + bleedPixels * 2,
+                    layout.height * UvMapGenerator::m_textureSize + bleedPixels * 2));
                 brushPixmap = QPixmap::fromImage(scaledImage);
             }
         }
-        colorTexturePainter.drawPixmap(layout.left * UvMapGenerator::m_textureSize,
-            layout.top * UvMapGenerator::m_textureSize,
+        colorTexturePainter.drawPixmap(layout.left * UvMapGenerator::m_textureSize - bleedPixels,
+            layout.top * UvMapGenerator::m_textureSize - bleedPixels,
             brushPixmap);
     }
 
