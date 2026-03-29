@@ -93,8 +93,8 @@ void UvMapPacker::resolveSeamUvs()
                     if (findUv == newHalfEdgeToUvMap.end())
                         continue;
                     const auto& triangleUv = findUv->second;
-                    auto [it, inserted] = m_partTriangleUvs[triangleUv.partIndex].localUv.insert({ triangle, triangleUv.uv });
-                    if (inserted) {
+                    auto insertResult = m_partTriangleUvs[triangleUv.partIndex].localUv.insert({ triangle, triangleUv.uv });
+                    if (insertResult.second) {
                         ++resolvedCount;
                         resolvedSmallHalfEdgeToUvMap.insert({ { triangle[1], triangle[0] }, TriangleUv { triangleUv.partIndex, { triangleUv.uv[1], triangleUv.uv[0], triangleUv.uv[2] } } });
                         resolvedSmallHalfEdgeToUvMap.insert({ { triangle[2], triangle[1] }, TriangleUv { triangleUv.partIndex, { triangleUv.uv[2], triangleUv.uv[1], triangleUv.uv[0] } } });
