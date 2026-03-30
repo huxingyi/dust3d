@@ -1499,6 +1499,9 @@ void DocumentWindow::checkExportWaitingList()
         } else if (filename.endsWith(".glb")) {
             exportGlbToFilename(filename);
             emit waitingExportFinished(filename, isSuccessful);
+        } else if (filename.endsWith(".ds3")) {
+            saveTo(filename);
+            emit waitingExportFinished(filename, true);
         } else {
             emit waitingExportFinished(filename, false);
         }
