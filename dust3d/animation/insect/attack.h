@@ -20,25 +20,25 @@
  *  SOFTWARE.
  */
 
-#ifndef DUST3D_ANIMATION_FLY_FORWARD_H_
-#define DUST3D_ANIMATION_FLY_FORWARD_H_
+#ifndef DUST3D_ANIMATION_FLY_ATTACK_H_
+#define DUST3D_ANIMATION_FLY_ATTACK_H_
 
 #include <dust3d/animation/animation_generator.h>
 #include <dust3d/rig/rig_generator.h>
 
 namespace dust3d {
 
-namespace fly {
+namespace insect {
 
-    bool forward(const RigStructure& rigStructure,
+    bool attack(const RigStructure& rigStructure,
         const std::map<std::string, Matrix4x4>& inverseBindMatrices,
         RigAnimationClip& animationClip,
         int frameCount = 30,
         float durationSeconds = 1.0f,
         const AnimationParams& parameters = AnimationParams());
 
-} // namespace fly
+} // namespace insect
 
 } // namespace dust3d
 
-#endif // DUST3D_ANIMATION_FLY_FORWARD_H_
+#endif // DUST3D_ANIMATION_FLY_ATTACK_H_

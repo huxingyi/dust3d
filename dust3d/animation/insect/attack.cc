@@ -23,8 +23,8 @@
 #include <array>
 #include <cmath>
 #include <dust3d/animation/animation_generator.h>
-#include <dust3d/animation/fly/attack.h>
-#include <dust3d/animation/fly/common.h>
+#include <dust3d/animation/insect/attack.h>
+#include <dust3d/animation/insect/common.h>
 #include <dust3d/base/math.h>
 #include <dust3d/base/matrix4x4.h>
 #include <dust3d/base/quaternion.h>
@@ -33,7 +33,7 @@
 
 namespace dust3d {
 
-namespace fly {
+namespace insect {
 
     namespace {
 
@@ -172,7 +172,7 @@ namespace fly {
                 Vector3 end = getBoneEnd(name);
                 Vector3 newPos = bodyTransform.transformPoint(pos);
                 Vector3 newEnd = bodyTransform.transformPoint(end);
-                boneWorldTransforms[name] = fly::buildBoneWorldTransform(newPos, newEnd);
+                boneWorldTransforms[name] = insect::buildBoneWorldTransform(newPos, newEnd);
             };
 
             computeBodyBone("Head");
@@ -191,7 +191,7 @@ namespace fly {
                 double wingLen = wingDir.length();
 
                 if (wingLen < 1e-8) {
-                    boneWorldTransforms[wingName] = fly::buildBoneWorldTransform(worldStart, worldStart);
+                    boneWorldTransforms[wingName] = insect::buildBoneWorldTransform(worldStart, worldStart);
                     continue;
                 }
 
@@ -209,7 +209,7 @@ namespace fly {
 
                 Vector3 rotatedDir = wingRotMat.transformVector(wingDir.normalized()) * wingLen;
                 Vector3 rotatedEnd = worldStart + rotatedDir;
-                boneWorldTransforms[wingName] = fly::buildBoneWorldTransform(worldStart, rotatedEnd);
+                boneWorldTransforms[wingName] = insect::buildBoneWorldTransform(worldStart, rotatedEnd);
             }
 
             for (size_t i = 0; i < 6; ++i) {
@@ -226,9 +226,9 @@ namespace fly {
                 bool planeStabilization = parameters.getBool("planeStabilization", true);
                 if (useFabrikIk) {
                     Vector3 plane = planeStabilization ? preferPlane : Vector3();
-                    fly::solveFabrikIk(chain, footTarget[i], 15, plane);
+                    insect::solveFabrikIk(chain, footTarget[i], 15, plane);
                 } else {
-                    fly::solveCcdIk(chain, footTarget[i], 15);
+                    insect::solveCcdIk(chain, footTarget[i], 15);
                 }
 
                 Vector3 newStickDir = (chain[2] - chain[1]);
@@ -242,9 +242,9 @@ namespace fly {
                 stickRotMat.rotate(stickRot);
                 Vector3 femurEnd = chain[1] + stickRotMat.transformVector(legRest[i].restCoxaToFemurVec);
 
-                boneWorldTransforms[legs[i].coxaName] = fly::buildBoneWorldTransform(chain[0], chain[1]);
-                boneWorldTransforms[legs[i].femurName] = fly::buildBoneWorldTransform(chain[1], femurEnd);
-                boneWorldTransforms[legs[i].tibiaName] = fly::buildBoneWorldTransform(femurEnd, chain[2]);
+                boneWorldTransforms[legs[i].coxaName] = insect::buildBoneWorldTransform(chain[0], chain[1]);
+                boneWorldTransforms[legs[i].femurName] = insect::buildBoneWorldTransform(chain[1], femurEnd);
+                boneWorldTransforms[legs[i].tibiaName] = insect::buildBoneWorldTransform(femurEnd, chain[2]);
             }
 
             auto& frameData = animationClip.frames[frame];
@@ -264,6 +264,6 @@ namespace fly {
         return true;
     }
 
-} // namespace fly
+} // namespace insect
 
 } // namespace dust3d

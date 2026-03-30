@@ -159,8 +159,10 @@ void BoneManageWidget::loadRigStructures()
         ":/resources/rig_quad.xml",
         ":/resources/rig_bird.xml",
         ":/resources/rig_fish.xml",
-        ":/resources/rig_fly.xml",
-        ":/resources/rig_generic.xml"
+        ":/resources/rig_insect.xml",
+        ":/resources/rig_snake.xml",
+        ":/resources/rig_spider.xml",
+        ":/resources/rig_dragon.xml"
     };
 
     for (const auto& filePath : rigFiles) {

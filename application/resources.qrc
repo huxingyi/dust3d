@@ -47,7 +47,9 @@
         <file>resources/rig_quad.xml</file>
         <file>resources/rig_bird.xml</file>
         <file>resources/rig_fish.xml</file>
-        <file>resources/rig_fly.xml</file>
-        <file>resources/rig_generic.xml</file>
+        <file>resources/rig_insect.xml</file>
+        <file>resources/rig_snake.xml</file>
+        <file>resources/rig_spider.xml</file>
+        <file>resources/rig_dragon.xml</file>
     </qresource>
 </RCC>

@@ -23,8 +23,8 @@
 #include <array>
 #include <cmath>
 #include <dust3d/animation/animation_generator.h>
-#include <dust3d/animation/fly/common.h>
-#include <dust3d/animation/fly/forward.h>
+#include <dust3d/animation/insect/common.h>
+#include <dust3d/animation/insect/rub_hands.h>
 #include <dust3d/base/math.h>
 #include <dust3d/base/matrix4x4.h>
 #include <dust3d/base/quaternion.h>
@@ -32,14 +32,13 @@
 #include <dust3d/rig/rig_generator.h>
 
 namespace dust3d {
-
-namespace fly {
+namespace insect {
 
     namespace {
 
     } // anonymous namespace
 
-    bool forward(const RigStructure& rigStructure,
+    bool rubHands(const RigStructure& rigStructure,
         const std::map<std::string, Matrix4x4>& inverseBindMatrices,
         RigAnimationClip& animationClip,
         int frameCount,
@@ -66,27 +65,9 @@ namespace fly {
             return Vector3(b.endX, b.endY, b.endZ);
         };
 
-        // Required fly bones: body and wings plus leg chain if present.
-        static const char* requiredBones[] = {
-            "Head", "Thorax", "Abdomen",
-            "LeftWing", "RightWing",
-            "FrontLeftCoxa", "FrontLeftFemur", "FrontLeftTibia",
-            "FrontRightCoxa", "FrontRightFemur", "FrontRightTibia",
-            "MiddleLeftCoxa", "MiddleLeftFemur", "MiddleLeftTibia",
-            "MiddleRightCoxa", "MiddleRightFemur", "MiddleRightTibia",
-            "BackLeftCoxa", "BackLeftFemur", "BackLeftTibia",
-            "BackRightCoxa", "BackRightFemur", "BackRightTibia"
-        };
-
-        for (const char* name : requiredBones) {
-            if (boneIdx.find(name) == boneIdx.end())
-                return false;
-        }
-
         Vector3 bodyVector = getBonePos("Thorax") - getBoneEnd("Abdomen");
         if (bodyVector.isZero())
             return false;
-
         Vector3 forward = bodyVector.normalized();
         Vector3 worldUp(0.0, 1.0, 0.0);
         Vector3 right = Vector3::crossProduct(forward, worldUp);
@@ -108,7 +89,6 @@ namespace fly {
             Vector3 coxaPos, coxaEnd, femurEnd, tibiaEnd;
             Vector3 restStickDir, restCoxaToFemurVec;
         };
-
         std::array<LegRest, 6> legRest;
         for (size_t i = 0; i < 6; ++i) {
             legRest[i].coxaPos = getBonePos(legs[i].coxaName);
@@ -124,14 +104,14 @@ namespace fly {
         double stepHeightFactor = parameters.getValue("stepHeightFactor", 1.0);
         double bodyBobFactor = parameters.getValue("bodyBobFactor", 1.0);
         double gaitSpeedFactor = parameters.getValue("gaitSpeedFactor", 1.0);
+        double rubForwardOffsetFactor = parameters.getValue("rubForwardOffsetFactor", 1.0);
+        double rubUpOffsetFactor = parameters.getValue("rubUpOffsetFactor", 1.0);
 
         double bodyLength = bodyVector.length();
-        double bodyBobAmp = bodyLength * 0.03 * bodyBobFactor;
-        double bodyForwardAmp = bodyLength * 0.2 * stepLengthFactor;
-        double bodyLeanAmp = 0.15 * stepHeightFactor; // radians
-        double wingFlapAmp = 0.8; // radians (approx 45 degrees)
+        double bodyBobAmp = bodyLength * 0.01 * bodyBobFactor;
+        double rubAmp = bodyLength * 0.05 * stepHeightFactor;
 
-        animationClip.name = "flyForward";
+        animationClip.name = "rubHands";
         animationClip.durationSeconds = durationSeconds;
         animationClip.frames.resize(frameCount);
 
@@ -142,46 +122,32 @@ namespace fly {
             double t = fmod(tNormalized * cycles, 1.0);
 
             double bodyBob = bodyBobAmp * std::sin(t * 2.0 * Math::Pi);
-            double forwardShift = bodyForwardAmp * std::sin(t * 2.0 * Math::Pi);
-            double bodyPitch = -bodyLeanAmp + bodyLeanAmp * 0.3 * std::sin(t * 2.0 * Math::Pi);
-            double bodyRoll = 0.08 * std::sin(t * 4.0 * Math::Pi);
-
             Matrix4x4 bodyTransform;
-            bodyTransform.translate(forward * forwardShift + up * bodyBob);
-            bodyTransform.rotate(right, bodyPitch);
-            bodyTransform.rotate(forward, bodyRoll);
+            bodyTransform.translate(up * bodyBob);
 
             std::array<Vector3, 6> footTarget;
+            Vector3 thoraxPos = getBonePos("Thorax");
+            Vector3 rubCenter = thoraxPos + forward * (bodyLength * 0.15 * stepLengthFactor * rubForwardOffsetFactor) + up * (bodyLength * 0.05 * rubUpOffsetFactor);
+            double rubOffset = rubAmp * std::sin(t * 4.0 * Math::Pi);
 
-            // In-flight legs are folded and kept high near the body; they should not track a ground path.
-            // Add a gentle idle-sway to avoid a rigid, starting-walk feel.
             for (size_t i = 0; i < 6; ++i) {
-                Vector3 hipPos = bodyTransform.transformPoint(legRest[i].coxaPos);
-                Vector3 tipOffset = (legRest[i].tibiaEnd - legRest[i].coxaPos).normalized();
-
-                double legPhase = static_cast<double>(i) / 6.0 * Math::Pi;
-                double liftBias = bodyLength * 0.22; // high flight leg position
-                double foldBack = bodyLength * 0.14;
-                double sway = bodyLength * 0.02 * std::sin(t * 4.0 * Math::Pi + legPhase);
-
-                Vector3 desired = hipPos
-                    + forward * -foldBack
-                    + up * (liftBias + sway)
-                    + right * (bodyLength * 0.05 * ((i % 2 == 0) ? 1.0 : -1.0));
-
-                // Prevent fully straight legs by slightly pulling toward hip
-                Vector3 foldTarget = hipPos + (desired - hipPos) * 0.7;
-                footTarget[i] = foldTarget;
+                if (i < 2) { // Front legs
+                    if (i == 0) // Left
+                        footTarget[i] = rubCenter + right * (bodyLength * 0.02) + up * rubOffset;
+                    else // Right
+                        footTarget[i] = rubCenter - right * (bodyLength * 0.02) - up * rubOffset;
+                } else {
+                    footTarget[i] = legRest[i].tibiaEnd;
+                }
             }
 
             std::map<std::string, Matrix4x4> boneWorldTransforms;
-
             auto computeBodyBone = [&](const std::string& name) {
                 Vector3 pos = getBonePos(name);
                 Vector3 end = getBoneEnd(name);
                 Vector3 newPos = bodyTransform.transformPoint(pos);
                 Vector3 newEnd = bodyTransform.transformPoint(end);
-                boneWorldTransforms[name] = fly::buildBoneWorldTransform(newPos, newEnd);
+                boneWorldTransforms[name] = insect::buildBoneWorldTransform(newPos, newEnd);
             };
 
             computeBodyBone("Head");
@@ -191,34 +157,11 @@ namespace fly {
             for (const char* wingName : { "LeftWing", "RightWing" }) {
                 if (boneIdx.count(wingName) == 0)
                     continue;
-
-                Vector3 wingPos = getBonePos(wingName);
-                Vector3 wingEnd = getBoneEnd(wingName);
-                Vector3 worldWingStart = bodyTransform.transformPoint(wingPos);
-                Vector3 worldWingEnd = bodyTransform.transformPoint(wingEnd);
-                Vector3 wingDir = worldWingEnd - worldWingStart;
-                double wingLen = wingDir.length();
-
-                if (wingLen < 1e-8) {
-                    boneWorldTransforms[wingName] = fly::buildBoneWorldTransform(worldWingStart, worldWingStart);
-                    continue;
-                }
-
-                Vector3 wingAxis = Vector3::crossProduct(wingDir.normalized(), up);
-                if (wingAxis.lengthSquared() < 1e-8)
-                    wingAxis = right;
-                else
-                    wingAxis.normalize();
-
-                double side = (std::strcmp(wingName, "LeftWing") == 0) ? 1.0 : -1.0;
-                double wingAngle = wingFlapAmp * std::sin(t * 6.0 * Math::Pi) * side;
-                Quaternion wingRot = Quaternion::fromAxisAndAngle(wingAxis, wingAngle);
-                Matrix4x4 wingRotMat;
-                wingRotMat.rotate(wingRot);
-
-                Vector3 rotatedDir = wingRotMat.transformVector(wingDir.normalized()) * wingLen;
-                Vector3 rotatedEnd = worldWingStart + rotatedDir;
-                boneWorldTransforms[wingName] = fly::buildBoneWorldTransform(worldWingStart, rotatedEnd);
+                Vector3 pos = getBonePos(wingName);
+                Vector3 end = getBoneEnd(wingName);
+                Vector3 newPos = bodyTransform.transformPoint(pos);
+                Vector3 newEnd = bodyTransform.transformPoint(end);
+                boneWorldTransforms[wingName] = insect::buildBoneWorldTransform(newPos, newEnd);
             }
 
             for (size_t i = 0; i < 6; ++i) {
@@ -235,9 +178,9 @@ namespace fly {
                 bool planeStabilization = parameters.getBool("planeStabilization", true);
                 if (useFabrikIk) {
                     Vector3 plane = planeStabilization ? preferPlane : Vector3();
-                    fly::solveFabrikIk(chain, footTarget[i], 15, plane);
+                    insect::solveFabrikIk(chain, footTarget[i], 15, plane);
                 } else {
-                    fly::solveCcdIk(chain, footTarget[i], 15);
+                    insect::solveCcdIk(chain, footTarget[i], 15);
                 }
 
                 Vector3 newStickDir = (chain[2] - chain[1]);
@@ -245,21 +188,19 @@ namespace fly {
                     newStickDir = legRest[i].restStickDir;
                 else
                     newStickDir.normalize();
-
                 Quaternion stickRot = Quaternion::rotationTo(legRest[i].restStickDir, newStickDir);
                 Matrix4x4 stickRotMat;
                 stickRotMat.rotate(stickRot);
                 Vector3 femurEnd = chain[1] + stickRotMat.transformVector(legRest[i].restCoxaToFemurVec);
 
-                boneWorldTransforms[legs[i].coxaName] = buildBoneWorldTransform(chain[0], chain[1]);
-                boneWorldTransforms[legs[i].femurName] = buildBoneWorldTransform(chain[1], femurEnd);
-                boneWorldTransforms[legs[i].tibiaName] = buildBoneWorldTransform(femurEnd, chain[2]);
+                boneWorldTransforms[legs[i].coxaName] = insect::buildBoneWorldTransform(chain[0], chain[1]);
+                boneWorldTransforms[legs[i].femurName] = insect::buildBoneWorldTransform(chain[1], femurEnd);
+                boneWorldTransforms[legs[i].tibiaName] = insect::buildBoneWorldTransform(femurEnd, chain[2]);
             }
 
             auto& animFrame = animationClip.frames[frame];
             animFrame.time = static_cast<float>(tNormalized) * durationSeconds;
             animFrame.boneWorldTransforms = boneWorldTransforms;
-
             for (const auto& pair : boneWorldTransforms) {
                 auto invIt = inverseBindMatrices.find(pair.first);
                 if (invIt != inverseBindMatrices.end()) {
@@ -269,10 +210,8 @@ namespace fly {
                 }
             }
         }
-
         return true;
     }
 
-} // namespace fly
-
+} // namespace insect
 } // namespace dust3d

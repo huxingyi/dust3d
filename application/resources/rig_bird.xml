@@ -2,8 +2,13 @@
 <rig type="bird" name="Bird">
     <description>Bird rig with wings, legs, and tail</description>
     
+    <bone name="Root" parent="">
+        <position x="0" y="0" z="0"/>
+        <endPosition x="0" y="0.5" z="0"/>
+    </bone>
+    
     <!-- Body -->
-    <bone name="Pelvis" parent="">
+    <bone name="Pelvis" parent="Root">
         <position x="0" y="0.5" z="0"/>
         <endPosition x="0" y="0.6" z="0.1"/>
     </bone>

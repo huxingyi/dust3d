@@ -2,7 +2,12 @@
 <rig type="human" name="Humanoid">
     <description>Standard humanoid biped rig with arms, legs, spine, and head</description>
     
-    <bone name="Hips" parent="">
+    <bone name="Root" parent="">
+        <position x="0" y="0" z="0"/>
+        <endPosition x="0" y="1.0" z="0"/>
+    </bone>
+    
+    <bone name="Hips" parent="Root">
         <position x="0" y="1.0" z="0"/>
         <endPosition x="0" y="1.2" z="0"/>
     </bone>
@@ -39,12 +44,12 @@
         <endPosition x="0.6" y="1.2" z="0"/>
     </bone>
     
-    <bone name="LeftForeArm" parent="LeftUpperArm">
+    <bone name="LeftLowerArm" parent="LeftUpperArm">
         <position x="0.6" y="1.2" z="0"/>
         <endPosition x="0.8" y="1.0" z="0"/>
     </bone>
     
-    <bone name="LeftHand" parent="LeftForeArm">
+    <bone name="LeftHand" parent="LeftLowerArm">
         <position x="0.8" y="1.0" z="0"/>
         <endPosition x="0.95" y="0.95" z="0"/>
     </bone>
@@ -60,12 +65,12 @@
         <endPosition x="-0.6" y="1.2" z="0"/>
     </bone>
     
-    <bone name="RightForeArm" parent="RightUpperArm">
+    <bone name="RightLowerArm" parent="RightUpperArm">
         <position x="-0.6" y="1.2" z="0"/>
         <endPosition x="-0.8" y="1.0" z="0"/>
     </bone>
     
-    <bone name="RightHand" parent="RightForeArm">
+    <bone name="RightHand" parent="RightLowerArm">
         <position x="-0.8" y="1.0" z="0"/>
         <endPosition x="-0.95" y="0.95" z="0"/>
     </bone>

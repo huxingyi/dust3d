@@ -21,10 +21,10 @@
  */
 
 #include <dust3d/animation/animation_generator.h>
-#include <dust3d/animation/fly/attack.h>
-#include <dust3d/animation/fly/forward.h>
-#include <dust3d/animation/fly/rub_hands.h>
-#include <dust3d/animation/fly/walk.h>
+#include <dust3d/animation/insect/attack.h>
+#include <dust3d/animation/insect/forward.h>
+#include <dust3d/animation/insect/rub_hands.h>
+#include <dust3d/animation/insect/walk.h>
 
 namespace dust3d {
 
@@ -36,14 +36,14 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
     float durationSeconds,
     const AnimationParams& parameters)
 {
-    if (animationType == "FlyWalk")
-        return fly::walk(rigStructure, inverseBindMatrices, animationClip, frameCount, durationSeconds, parameters);
-    if (animationType == "FlyRubHands")
-        return fly::rubHands(rigStructure, inverseBindMatrices, animationClip, frameCount, durationSeconds, parameters);
-    if (animationType == "FlyForward")
-        return fly::forward(rigStructure, inverseBindMatrices, animationClip, frameCount, durationSeconds, parameters);
-    if (animationType == "FlyAttack")
-        return fly::attack(rigStructure, inverseBindMatrices, animationClip, frameCount, durationSeconds, parameters);
+    if (animationType == "InsectWalk")
+        return insect::walk(rigStructure, inverseBindMatrices, animationClip, frameCount, durationSeconds, parameters);
+    if (animationType == "InsectRubHands")
+        return insect::rubHands(rigStructure, inverseBindMatrices, animationClip, frameCount, durationSeconds, parameters);
+    if (animationType == "InsectForward")
+        return insect::forward(rigStructure, inverseBindMatrices, animationClip, frameCount, durationSeconds, parameters);
+    if (animationType == "InsectAttack")
+        return insect::attack(rigStructure, inverseBindMatrices, animationClip, frameCount, durationSeconds, parameters);
 
     // Add future rig type + animationName mappings here.
     return false;

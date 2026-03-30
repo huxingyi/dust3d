@@ -32,7 +32,7 @@
 #include <vector>
 
 namespace dust3d {
-namespace fly {
+namespace insect {
 
     // =========================================================================
     // IK SOLVERS
@@ -310,7 +310,7 @@ namespace fly {
         return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
     }
 
-} // namespace fly
+} // namespace insect
 } // namespace dust3d
 
 #endif // DUST3D_ANIMATION_FLY_COMMON_H

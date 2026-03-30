@@ -2,8 +2,13 @@
 <rig type="quad" name="Quadruped">
     <description>Four-legged animal rig (horse, dog, cat, etc.)</description>
     
+    <bone name="Root" parent="">
+        <position x="0" y="0" z="0"/>
+        <endPosition x="0" y="1.0" z="0"/>
+    </bone>
+    
     <!-- Spine -->
-    <bone name="Pelvis" parent="">
+    <bone name="Pelvis" parent="Root">
         <position x="0" y="1.0" z="0"/>
         <endPosition x="0" y="1.1" z="0.1"/>
     </bone>
@@ -50,65 +55,65 @@
     </bone>
     
     <!-- Front Left Leg -->
-    <bone name="FrontLeftUpLeg" parent="Chest">
+    <bone name="FrontLeftUpperLeg" parent="Chest">
         <position x="0.3" y="0.9" z="0.3"/>
         <endPosition x="0.3" y="0.5" z="0.4"/>
     </bone>
     
-    <bone name="FrontLeftLowLeg" parent="FrontLeftUpLeg">
+    <bone name="FrontLeftLowerLeg" parent="FrontLeftUpperLeg">
         <position x="0.3" y="0.5" z="0.4"/>
         <endPosition x="0.3" y="0.1" z="0.4"/>
     </bone>
     
-    <bone name="FrontLeftFoot" parent="FrontLeftLowLeg">
+    <bone name="FrontLeftFoot" parent="FrontLeftLowerLeg">
         <position x="0.3" y="0.1" z="0.4"/>
         <endPosition x="0.3" y="0.0" z="0.5"/>
     </bone>
     
     <!-- Front Right Leg -->
-    <bone name="FrontRightUpLeg" parent="Chest">
+    <bone name="FrontRightUpperLeg" parent="Chest">
         <position x="-0.3" y="0.9" z="0.3"/>
         <endPosition x="-0.3" y="0.5" z="0.4"/>
     </bone>
     
-    <bone name="FrontRightLowLeg" parent="FrontRightUpLeg">
+    <bone name="FrontRightLowerLeg" parent="FrontRightUpperLeg">
         <position x="-0.3" y="0.5" z="0.4"/>
         <endPosition x="-0.3" y="0.1" z="0.4"/>
     </bone>
     
-    <bone name="FrontRightFoot" parent="FrontRightLowLeg">
+    <bone name="FrontRightFoot" parent="FrontRightLowerLeg">
         <position x="-0.3" y="0.1" z="0.4"/>
         <endPosition x="-0.3" y="0.0" z="0.5"/>
     </bone>
     
     <!-- Back Left Leg -->
-    <bone name="BackLeftUpLeg" parent="Pelvis">
+    <bone name="BackLeftUpperLeg" parent="Pelvis">
         <position x="0.3" y="0.9" z="-0.1"/>
         <endPosition x="0.3" y="0.5" z="-0.2"/>
     </bone>
     
-    <bone name="BackLeftLowLeg" parent="BackLeftUpLeg">
+    <bone name="BackLeftLowerLeg" parent="BackLeftUpperLeg">
         <position x="0.3" y="0.5" z="-0.2"/>
         <endPosition x="0.3" y="0.1" z="-0.2"/>
     </bone>
     
-    <bone name="BackLeftFoot" parent="BackLeftLowLeg">
+    <bone name="BackLeftFoot" parent="BackLeftLowerLeg">
         <position x="0.3" y="0.1" z="-0.2"/>
         <endPosition x="0.3" y="0.0" z="-0.1"/>
     </bone>
     
     <!-- Back Right Leg -->
-    <bone name="BackRightUpLeg" parent="Pelvis">
+    <bone name="BackRightUpperLeg" parent="Pelvis">
         <position x="-0.3" y="0.9" z="-0.1"/>
         <endPosition x="-0.3" y="0.5" z="-0.2"/>
     </bone>
     
-    <bone name="BackRightLowLeg" parent="BackRightUpLeg">
+    <bone name="BackRightLowerLeg" parent="BackRightUpperLeg">
         <position x="-0.3" y="0.5" z="-0.2"/>
         <endPosition x="-0.3" y="0.1" z="-0.2"/>
     </bone>
     
-    <bone name="BackRightFoot" parent="BackRightLowLeg">
+    <bone name="BackRightFoot" parent="BackRightLowerLeg">
         <position x="-0.3" y="0.1" z="-0.2"/>
         <endPosition x="-0.3" y="0.0" z="-0.1"/>
     </bone>

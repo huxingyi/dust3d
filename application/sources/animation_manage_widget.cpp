@@ -230,12 +230,12 @@ void AnimationManageWidget::updateVisibleParameters(const QString& animationType
     setParameterRowVisible(m_rubForwardOffsetRow, m_rubForwardOffsetLabel, false);
     setParameterRowVisible(m_rubUpOffsetRow, m_rubUpOffsetLabel, false);
 
-    if (animationType == "FlyWalk" || animationType == "FlyForward" || animationType == "FlyAttack") {
+    if (animationType == "InsectWalk" || animationType == "InsectForward" || animationType == "InsectAttack") {
         setParameterRowVisible(m_stepLengthRow, m_stepLengthLabel, true);
         setParameterRowVisible(m_stepHeightRow, m_stepHeightLabel, true);
         setParameterRowVisible(m_bodyBobRow, m_bodyBobLabel, true);
         setParameterRowVisible(m_gaitSpeedRow, m_gaitSpeedLabel, true);
-    } else if (animationType == "FlyRubHands") {
+    } else if (animationType == "InsectRubHands") {
         setParameterRowVisible(m_stepLengthRow, m_stepLengthLabel, true);
         setParameterRowVisible(m_stepHeightRow, m_stepHeightLabel, true);
         setParameterRowVisible(m_bodyBobRow, m_bodyBobLabel, true);
@@ -251,11 +251,11 @@ void AnimationManageWidget::updateAnimationNameForRigType(const QString& rigType
         return;
 
     m_animationNameCombo->clear();
-    if (rigType.compare("Fly", Qt::CaseInsensitive) == 0) {
-        m_animationNameCombo->addItem("FlyRubHands");
-        m_animationNameCombo->addItem("FlyWalk");
-        m_animationNameCombo->addItem("FlyForward");
-        m_animationNameCombo->addItem("FlyAttack");
+    if (rigType.compare("Insect", Qt::CaseInsensitive) == 0) {
+        m_animationNameCombo->addItem("InsectRubHands");
+        m_animationNameCombo->addItem("InsectWalk");
+        m_animationNameCombo->addItem("InsectForward");
+        m_animationNameCombo->addItem("InsectAttack");
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);
     } else {
