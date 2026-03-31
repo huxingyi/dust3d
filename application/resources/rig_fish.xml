@@ -9,8 +9,8 @@
     
     <!-- Body -->
     <bone name="Head" parent="Root">
-        <position x="0" y="0" z="0.5"/>
-        <endPosition x="0" y="0" z="0.25"/>
+        <position x="0" y="0" z="0.25"/>
+        <endPosition x="0" y="0" z="0.5"/>
     </bone>
     
     <bone name="BodyFront" parent="Head">
