@@ -105,7 +105,12 @@ void ComponentPreviewGridWidget::startDrag(Qt::DropActions supportedActions)
     // Set a pixmap as visual feedback (use the first selected item's icon)
     QVariant decoration = model()->data(selectedIndexes.first(), Qt::DecorationRole);
     if (decoration.type() == QVariant::Pixmap) {
-        drag->setPixmap(qvariant_cast<QPixmap>(decoration).scaled(QSize(Theme::partPreviewImageSize / 2, Theme::partPreviewImageSize / 2), Qt::KeepAspectRatio, Qt::SmoothTransformation));
+        QPixmap sourcePixmap = qvariant_cast<QPixmap>(decoration);
+        qreal dpr = sourcePixmap.devicePixelRatio();
+        int halfSize = qRound(Theme::partPreviewImageSize / 2 * dpr);
+        QPixmap scaledPixmap = sourcePixmap.scaled(QSize(halfSize, halfSize), Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        scaledPixmap.setDevicePixelRatio(dpr);
+        drag->setPixmap(scaledPixmap);
     }
 
     drag->exec(supportedActions, dropAction);

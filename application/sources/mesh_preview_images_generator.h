@@ -11,8 +11,9 @@
 class MeshPreviewImagesGenerator : public QObject {
     Q_OBJECT
 public:
-    MeshPreviewImagesGenerator(ModelOffscreenRender* modelOffscreenRender)
+    MeshPreviewImagesGenerator(ModelOffscreenRender* modelOffscreenRender, qreal devicePixelRatio = 1.0)
         : m_offscreenRender(modelOffscreenRender)
+        , m_devicePixelRatio(devicePixelRatio)
     {
     }
 
@@ -38,6 +39,7 @@ private:
     std::map<dust3d::Uuid, PreviewInput> m_previewInputMap;
     ModelOffscreenRender* m_offscreenRender = nullptr;
     std::unique_ptr<std::map<dust3d::Uuid, QImage>> m_partImages;
+    qreal m_devicePixelRatio = 1.0;
 };
 
 #endif

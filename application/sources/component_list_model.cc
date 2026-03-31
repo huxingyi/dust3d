@@ -1,6 +1,7 @@
 #include "component_list_model.h"
 #include "theme.h"
 #include <QAbstractListModel>
+#include <QGuiApplication>
 #include <QMimeData>
 #include <QPainter>
 #include <dust3d/base/debug.h>
@@ -114,9 +115,12 @@ QVariant ComponentListModel::data(const QModelIndex& index, int role) const
             if (0 == component->previewPixmap.width()) {
                 static QPixmap s_emptyPixmap;
                 if (0 == s_emptyPixmap.width()) {
-                    QImage image((int)Theme::partPreviewImageSize, (int)Theme::partPreviewImageSize, QImage::Format_ARGB32);
+                    qreal dpr = qApp->devicePixelRatio();
+                    int physicalSize = qRound(Theme::partPreviewImageSize * dpr);
+                    QImage image(physicalSize, physicalSize, QImage::Format_ARGB32);
                     image.fill(Qt::transparent);
                     s_emptyPixmap = QPixmap::fromImage(image);
+                    s_emptyPixmap.setDevicePixelRatio(dpr);
                 }
                 pixmap = s_emptyPixmap;
             } else {
@@ -131,8 +135,8 @@ QVariant ComponentListModel::data(const QModelIndex& index, int role) const
                         ? tr("Cut Face")
                         : tr("Stitch");
                     QColor badgeColor = dust3d::PartTarget::CutFace == part->target
-                        ? QColor(200, 100, 0, 210)
-                        : QColor(90, 0, 190, 210);
+                        ? QColor(0xfc, 0x66, 0x21, 210)
+                        : QColor(0x0d, 0xa9, 0xf1, 210);
                     QFont font = painter.font();
                     font.setPixelSize(9);
                     font.setBold(true);
@@ -143,10 +147,11 @@ QVariant ComponentListModel::data(const QModelIndex& index, int role) const
                     int bw = textWidth + padding * 2;
                     int bh = fm.height() + padding * 2;
                     int x = 2;
-                    int y = badgedPixmap.height() - bh - 2;
+                    int y = qRound(badgedPixmap.height() / badgedPixmap.devicePixelRatio()) - bh - 2;
                     painter.fillRect(x, y, bw, bh, badgeColor);
                     painter.setPen(Qt::white);
                     painter.drawText(x + padding, y + padding + fm.ascent(), badgeText);
+                    badgedPixmap.setDevicePixelRatio(pixmap.devicePixelRatio());
                     return badgedPixmap;
                 }
             }

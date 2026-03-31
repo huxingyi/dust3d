@@ -1,5 +1,6 @@
 #include "cut_face_preview.h"
 #include "theme.h"
+#include <QGuiApplication>
 #include <QPainter>
 #include <QPainterPath>
 
@@ -7,7 +8,10 @@ static std::map<int, QImage*> g_standardCutFaceMap;
 
 QImage* buildCutFaceTemplatePreviewImage(const std::vector<dust3d::Vector2>& cutTemplate)
 {
-    QImage* image = new QImage(Theme::partPreviewImageSize, Theme::partPreviewImageSize, QImage::Format_ARGB32);
+    qreal dpr = qApp->devicePixelRatio();
+    int physicalSize = qRound(Theme::partPreviewImageSize * dpr);
+    QImage* image = new QImage(physicalSize, physicalSize, QImage::Format_ARGB32);
+    image->setDevicePixelRatio(dpr);
     image->fill(Qt::transparent);
 
     if (cutTemplate.empty())
@@ -20,7 +24,7 @@ QImage* buildCutFaceTemplatePreviewImage(const std::vector<dust3d::Vector2>& cut
     painter.setRenderHint(QPainter::HighQualityAntialiasing);
 #endif
 
-    QPen pen(Theme::red, 2);
+    QPen pen(Theme::red, 2 * dpr);
     painter.setPen(pen);
 
     QBrush brush;

@@ -1518,7 +1518,7 @@ void DocumentWindow::generateComponentPreviewImages()
 
     m_isComponentPreviewImagesObsolete = false;
 
-    m_componentPreviewImagesGenerator = new MeshPreviewImagesGenerator(new ModelOffscreenRender(m_modelRenderWidget->format()));
+    m_componentPreviewImagesGenerator = new MeshPreviewImagesGenerator(new ModelOffscreenRender(m_modelRenderWidget->format()), devicePixelRatioF());
     for (auto& component : m_document->componentMap) {
         if (!component.second.isPreviewMeshObsolete)
             continue;
@@ -1628,7 +1628,9 @@ void DocumentWindow::componentPreviewImageDecorationsReady()
         for (auto& it : *resultImages) {
             if (nullptr == it.second)
                 continue;
-            m_document->setComponentPreviewPixmap(it.first, QPixmap::fromImage(*it.second));
+            auto pixmap = QPixmap::fromImage(*it.second);
+            pixmap.setDevicePixelRatio(devicePixelRatioF());
+            m_document->setComponentPreviewPixmap(it.first, pixmap);
         }
     }
 

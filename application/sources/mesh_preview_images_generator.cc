@@ -34,6 +34,7 @@ void MeshPreviewImagesGenerator::generate()
             m_offscreenRender->setYRotation(-45 * 16);
         }
         m_offscreenRender->updateMesh(it.second.mesh.release());
-        (*m_partImages)[it.first] = m_offscreenRender->toImage(QSize(Theme::partPreviewImageSize, Theme::partPreviewImageSize));
+        int renderSize = qRound(Theme::partPreviewImageSize * m_devicePixelRatio);
+        (*m_partImages)[it.first] = m_offscreenRender->toImage(QSize(renderSize, renderSize));
     }
 }
