@@ -146,10 +146,12 @@ void UvMapGenerator::packUvs()
                 colorSmall = it->second;
         }
 
-        // 64×64 horizontal gradient: column 0 = colorLarge, column 63 = colorSmall.
+        // 512×512 horizontal gradient to provide sufficient texture detail and prevent seam artifacts.
+        // Larger resolution reduces filtering artifacts at seam boundaries.
         // The image is square so the chart packer has no incentive to flip it.
-        const int kGradientSize = 64;
+        const int kGradientSize = 512;
         QImage gradientImage(kGradientSize, kGradientSize, QImage::Format_ARGB32);
+
         for (int y = 0; y < kGradientSize; ++y) {
             for (int x = 0; x < kGradientSize; ++x) {
                 double t = (double)x / (kGradientSize - 1);
@@ -168,22 +170,29 @@ void UvMapGenerator::packUvs()
         seamPart.width = kGradientSize;
         seamPart.height = kGradientSize;
 
-        // large side: triangle[0,1] are large-side vertices → u=0
-        //             triangle[2]   is the small-side vertex  → u=1
+        // Inset UV coordinates from edges to prevent GPU filtering from sampling outside the gradient.
+        // Using a small margin (0.5/kGradientSize ≈ 0.001) to keep UVs within safe bounds.
+        const float kUvMargin = 0.5f / kGradientSize;
+        const float kUvMin = kUvMargin;
+        const float kUvMax = 1.0f - kUvMargin;
+        const float kUvMid = (kUvMin + kUvMax) * 0.5f;
+
+        // large side: triangle[0,1] are large-side vertices → u≈0
+        //             triangle[2]   is the small-side vertex  → u≈1
         for (const auto& tri : seam.first) {
             seamPart.localUv[tri] = {
-                dust3d::Vector2(0.0, 0.0),
-                dust3d::Vector2(0.0, 1.0),
-                dust3d::Vector2(1.0, 0.5)
+                dust3d::Vector2(kUvMin, kUvMin),
+                dust3d::Vector2(kUvMin, kUvMax),
+                dust3d::Vector2(kUvMax, kUvMid)
             };
         }
-        // small side: triangle[0,1] are small-side vertices → u=1
-        //             triangle[2]   is the large-side vertex  → u=0
+        // small side: triangle[0,1] are small-side vertices → u≈1
+        //             triangle[2]   is the large-side vertex  → u≈0
         for (const auto& tri : seam.second) {
             seamPart.localUv[tri] = {
-                dust3d::Vector2(1.0, 0.0),
-                dust3d::Vector2(1.0, 1.0),
-                dust3d::Vector2(0.0, 0.5)
+                dust3d::Vector2(kUvMax, kUvMin),
+                dust3d::Vector2(kUvMax, kUvMax),
+                dust3d::Vector2(kUvMin, kUvMid)
             };
         }
 
@@ -265,7 +274,7 @@ void UvMapGenerator::generateTextureColorImage()
     // UV seam white lines caused by GPU bilinear filtering sampling white background
     // pixels just outside the chart boundary. The chart padding (~20px) comfortably
     // accommodates this bleed without overlapping adjacent charts.
-    const int bleedPixels = 5;
+    const int bleedPixels = 32;
 
     for (const auto& layout : m_mapPacker->packedLayouts()) {
         QPixmap brushPixmap;
