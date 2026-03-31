@@ -613,6 +613,7 @@ DocumentWindow::DocumentWindow()
     connect(m_document, &Document::uncheckAll, canvasGraphicsWidget, &SkeletonGraphicsWidget::unselectAll);
     connect(m_document, &Document::checkNode, canvasGraphicsWidget, &SkeletonGraphicsWidget::addSelectNode);
     connect(m_document, &Document::checkEdge, canvasGraphicsWidget, &SkeletonGraphicsWidget::addSelectEdge);
+    connect(m_document, &Document::pasteDone, canvasGraphicsWidget, &SkeletonGraphicsWidget::switchProfileOnRangeSelection);
     connect(m_document, &Document::clearSelections, canvasGraphicsWidget, &SkeletonGraphicsWidget::clearRangeSelection);
 
     connect(m_partManageWidget, &PartManageWidget::unselectAllOnCanvas, canvasGraphicsWidget, &SkeletonGraphicsWidget::unselectAll);

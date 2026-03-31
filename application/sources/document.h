@@ -231,6 +231,7 @@ signals:
     void uncheckAll();
     void checkNode(dust3d::Uuid nodeId);
     void checkEdge(dust3d::Uuid edgeId);
+    void pasteDone();
     void meshGenerating();
     void textureGenerating();
     void rigGenerating();

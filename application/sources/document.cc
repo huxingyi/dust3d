@@ -2249,6 +2249,16 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
             part.setCutFaceLinkedId(findNewLinkedId->second);
         }
     }
+    bool isPastedFromSelf = false;
+    if (SnapshotSource::Paste == source) {
+        for (const auto& nodeKv : snapshot.nodes) {
+            if (nodeMap.find(dust3d::Uuid(nodeKv.first)) != nodeMap.end()) {
+                isPastedFromSelf = true;
+                break;
+            }
+        }
+    }
+    const float pasteOffset = 0.04f;
     for (const auto& nodeKv : snapshot.nodes) {
         if (nodeKv.second.find("radius") == nodeKv.second.end() || nodeKv.second.find("x") == nodeKv.second.end() || nodeKv.second.find("y") == nodeKv.second.end() || nodeKv.second.find("z") == nodeKv.second.end() || nodeKv.second.find("partId") == nodeKv.second.end())
             continue;
@@ -2258,8 +2268,8 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
         node.name = dust3d::String::valueOrEmpty(nodeKv.second, "name").c_str();
         node.radius = dust3d::String::toFloat(dust3d::String::valueOrEmpty(nodeKv.second, "radius"));
         node.setX(dust3d::String::toFloat(dust3d::String::valueOrEmpty(nodeKv.second, "x")));
-        node.setY(dust3d::String::toFloat(dust3d::String::valueOrEmpty(nodeKv.second, "y")));
-        node.setZ(dust3d::String::toFloat(dust3d::String::valueOrEmpty(nodeKv.second, "z")));
+        node.setY(dust3d::String::toFloat(dust3d::String::valueOrEmpty(nodeKv.second, "y")) + (isPastedFromSelf ? pasteOffset : 0.0f));
+        node.setZ(dust3d::String::toFloat(dust3d::String::valueOrEmpty(nodeKv.second, "z")) + (isPastedFromSelf ? pasteOffset : 0.0f));
         node.partId = oldNewIdMap[dust3d::Uuid(dust3d::String::valueOrEmpty(nodeKv.second, "partId"))];
         const auto& cutRotationIt = nodeKv.second.find("cutRotation");
         if (cutRotationIt != nodeKv.second.end())
@@ -2491,6 +2501,8 @@ void Document::addFromSnapshot(const dust3d::Snapshot& snapshot, enum SnapshotSo
     for (const auto& edgeIt : newAddedEdgeIds) {
         emit checkEdge(edgeIt);
     }
+    if (SnapshotSource::Paste == source)
+        emit pasteDone();
 
     if (isRigTypeChanged) {
         setRigType(rigType);

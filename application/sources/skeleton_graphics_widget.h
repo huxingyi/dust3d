@@ -213,6 +213,7 @@ public slots:
     void shortcutSelectAll();
     void shortcutEscape();
     void clearRangeSelection();
+    void switchProfileOnRangeSelection();
 private slots:
     void turnaroundImageReady();
 
@@ -231,7 +232,6 @@ private:
     void addItemToRangeSelection(QGraphicsItem* item);
     void removeItemFromRangeSelection(QGraphicsItem* item);
     void hoverPart(dust3d::Uuid partId);
-    void switchProfileOnRangeSelection();
     void setItemHoveredOnAllProfiles(QGraphicsItem* item, bool hovered);
     void alignSelectedToGlobal(bool alignToVerticalCenter, bool alignToHorizontalCenter);
     void alignSelectedToLocal(bool alignToVerticalCenter, bool alignToHorizontalCenter);
