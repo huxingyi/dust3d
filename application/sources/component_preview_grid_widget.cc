@@ -3,8 +3,10 @@
 #include "theme.h"
 #include <QDrag>
 #include <QDragEnterEvent>
+#include <QDragLeaveEvent>
 #include <QDropEvent>
 #include <QMimeData>
+#include <QPainter>
 #include <algorithm>
 #include <memory>
 
@@ -113,6 +115,7 @@ void ComponentPreviewGridWidget::dragEnterEvent(QDragEnterEvent* event)
 {
     if (event->mimeData()->hasFormat("application/x-qabstractitemmodeldatalist")) {
         event->acceptProposedAction();
+        m_isDragging = true;
     }
     QListView::dragEnterEvent(event);
 }
@@ -121,6 +124,19 @@ void ComponentPreviewGridWidget::dragMoveEvent(QDragMoveEvent* event)
 {
     if (event->mimeData()->hasFormat("application/x-qabstractitemmodeldatalist")) {
         event->acceptProposedAction();
+
+        // Calculate the drop index
+        QModelIndex dropIndex = indexAt(event->pos());
+        if (!dropIndex.isValid() && m_componentListModel->rowCount() > 0) {
+            m_dropIndicatorRow = m_componentListModel->rowCount();
+        } else if (dropIndex.isValid()) {
+            m_dropIndicatorRow = dropIndex.row();
+        } else {
+            m_dropIndicatorRow = -1;
+        }
+
+        // Trigger repaint to show drop hint
+        viewport()->update();
     }
     QListView::dragMoveEvent(event);
 }
@@ -129,6 +145,9 @@ void ComponentPreviewGridWidget::dropEvent(QDropEvent* event)
 {
     if (!event->mimeData()->hasFormat("application/x-qabstractitemmodeldatalist")) {
         event->ignore();
+        m_isDragging = false;
+        m_dropIndicatorRow = -1;
+        viewport()->update();
         return;
     }
 
@@ -144,6 +163,9 @@ void ComponentPreviewGridWidget::dropEvent(QDropEvent* event)
     QModelIndexList selectedIndexes = selectionModel()->selectedIndexes();
     if (selectedIndexes.isEmpty()) {
         event->ignore();
+        m_isDragging = false;
+        m_dropIndicatorRow = -1;
+        viewport()->update();
         return;
     }
 
@@ -230,5 +252,48 @@ void ComponentPreviewGridWidget::dropEvent(QDropEvent* event)
         m_document->moveComponentToIndex(allComponentIds[i], i);
     }
 
+    m_isDragging = false;
+    m_dropIndicatorRow = -1;
+    viewport()->update();
     event->accept();
+}
+
+void ComponentPreviewGridWidget::dragLeaveEvent(QDragLeaveEvent* event)
+{
+    m_isDragging = false;
+    m_dropIndicatorRow = -1;
+    viewport()->update();
+    QListView::dragLeaveEvent(event);
+}
+
+void ComponentPreviewGridWidget::paintEvent(QPaintEvent* event)
+{
+    // Call the parent paint event first
+    QListView::paintEvent(event);
+
+    // Draw drop hint indicator if dragging
+    if (m_isDragging && m_dropIndicatorRow >= 0) {
+        QPainter painter(viewport());
+
+        // Get the target item rectangle
+        QRect targetRect;
+
+        if (m_dropIndicatorRow < m_componentListModel->rowCount()) {
+            QModelIndex index = m_componentListModel->index(m_dropIndicatorRow, 0);
+            targetRect = visualRect(index);
+        } else {
+            // If dropping at the end, try to estimate the position from the last item
+            if (m_componentListModel->rowCount() > 0) {
+                QModelIndex lastIndex = m_componentListModel->index(m_componentListModel->rowCount() - 1, 0);
+                QRect lastItemRect = visualRect(lastIndex);
+                targetRect = lastItemRect.translated(0, lastItemRect.height() + 5);
+            }
+        }
+
+        if (targetRect.isValid()) {
+            // Draw a dashed border around the target item place
+            painter.setPen(QPen(Theme::red, 2, Qt::DashLine));
+            painter.drawRect(targetRect);
+        }
+    }
 }

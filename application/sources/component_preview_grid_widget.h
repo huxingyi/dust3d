@@ -26,11 +26,15 @@ protected:
     void dropEvent(QDropEvent* event) override;
     void dragEnterEvent(QDragEnterEvent* event) override;
     void dragMoveEvent(QDragMoveEvent* event) override;
+    void dragLeaveEvent(QDragLeaveEvent* event) override;
+    void paintEvent(QPaintEvent* event) override;
     void startDrag(Qt::DropActions supportedActions) override;
 
 private:
     std::unique_ptr<ComponentListModel> m_componentListModel;
     Document* m_document = nullptr;
+    int m_dropIndicatorRow = -1;
+    bool m_isDragging = false;
 };
 
 #endif
