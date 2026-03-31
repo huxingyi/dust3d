@@ -256,6 +256,10 @@ void ComponentPreviewGridWidget::dropEvent(QDropEvent* event)
     m_dropIndicatorRow = -1;
     viewport()->update();
     event->accept();
+
+    if (!allComponentIds.empty()) {
+        m_document->saveSnapshot();
+    }
 }
 
 void ComponentPreviewGridWidget::dragLeaveEvent(QDragLeaveEvent* event)
