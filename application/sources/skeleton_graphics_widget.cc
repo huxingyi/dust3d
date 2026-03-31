@@ -2513,7 +2513,7 @@ void SkeletonGraphicsWidget::addSelectEdge(dust3d::Uuid edgeId)
 
 void SkeletonGraphicsWidget::addPartToSelection(dust3d::Uuid partId)
 {
-    Document::Profile choosenProfile = Document::Profile::Main;
+    Document::Profile choosenProfile = Document::Profile::Side;
     if (m_hoveredNodeItem) {
         choosenProfile = m_hoveredNodeItem->profile();
     } else if (m_hoveredEdgeItem) {
@@ -2548,7 +2548,7 @@ void SkeletonGraphicsWidget::addPartToSelection(dust3d::Uuid partId)
 
 void SkeletonGraphicsWidget::addNodeToSelection(const dust3d::Uuid& nodeId)
 {
-    Document::Profile choosenProfile = Document::Profile::Main;
+    Document::Profile choosenProfile = Document::Profile::Side;
     if (m_hoveredNodeItem) {
         choosenProfile = m_hoveredNodeItem->profile();
     } else if (m_hoveredEdgeItem) {
@@ -2564,7 +2564,7 @@ void SkeletonGraphicsWidget::addNodeToSelection(const dust3d::Uuid& nodeId)
 void SkeletonGraphicsWidget::selectConnectedAll()
 {
     unselectAll();
-    Document::Profile choosenProfile = Document::Profile::Main;
+    Document::Profile choosenProfile = Document::Profile::Side;
     dust3d::Uuid startNodeId;
     if (m_hoveredNodeItem) {
         choosenProfile = m_hoveredNodeItem->profile();
