@@ -134,6 +134,10 @@ void ComponentPreviewGridWidget::dropEvent(QDropEvent* event)
 
     // Get the drop position
     QModelIndex dropIndex = indexAt(event->pos());
+    if (!dropIndex.isValid() && m_componentListModel->rowCount() > 0) {
+        // If no item under cursor but there are items, drop at the end
+        dropIndex = m_componentListModel->index(m_componentListModel->rowCount() - 1, 0);
+    }
     int dropRow = dropIndex.isValid() ? dropIndex.row() : m_componentListModel->rowCount();
 
     // Get the source items (selected rows)
@@ -143,12 +147,31 @@ void ComponentPreviewGridWidget::dropEvent(QDropEvent* event)
         return;
     }
 
-    // Sort selected indexes in descending order to remove them safely
+    // Sort selected indexes in ascending order
     std::sort(selectedIndexes.begin(), selectedIndexes.end(), [](const QModelIndex& a, const QModelIndex& b) {
-        return a.row() > b.row();
+        return a.row() < b.row();
     });
 
-    // Collect all selected component IDs
+    // Get first selected row
+    int firstSelectedRow = selectedIndexes.first().row();
+    int lastSelectedRow = selectedIndexes.last().row();
+
+    // Build a new order by:
+    // 1. Starting with all component IDs
+    // 2. Removing selected items
+    // 3. Inserting them at the drop position
+
+    const dust3d::Uuid listingComponentId = m_componentListModel->listingComponentId();
+    const Document::Component* listingComponent = m_document->findComponent(listingComponentId);
+    if (nullptr == listingComponent) {
+        event->ignore();
+        return;
+    }
+
+    // Create a vector of all component IDs in current order
+    std::vector<dust3d::Uuid> allComponentIds = listingComponent->childrenIds;
+
+    // Collect selected component IDs
     std::vector<dust3d::Uuid> selectedComponentIds;
     for (const auto& index : selectedIndexes) {
         const dust3d::Uuid componentId = m_componentListModel->modelIndexToComponentId(index);
@@ -162,34 +185,49 @@ void ComponentPreviewGridWidget::dropEvent(QDropEvent* event)
         return;
     }
 
-    // Get the parent component
-    const dust3d::Uuid listingComponentId = m_componentListModel->listingComponentId();
-    const Document::Component* listingComponent = m_document->findComponent(listingComponentId);
-    if (nullptr == listingComponent) {
-        event->ignore();
-        return;
-    }
-
-    // Calculate the target position accounting for removed items
-    int targetRow = dropRow;
-    for (const auto& selectedIndex : selectedIndexes) {
-        if (selectedIndex.row() < dropRow) {
-            targetRow--;
+    // Remove selected items from the all list (in reverse to maintain indices)
+    for (int i = (int)allComponentIds.size() - 1; i >= 0; --i) {
+        for (const auto& selectedId : selectedComponentIds) {
+            if (allComponentIds[i] == selectedId) {
+                allComponentIds.erase(allComponentIds.begin() + i);
+                break;
+            }
         }
     }
 
-    // Clamp target row to valid range
-    if (targetRow < 0)
-        targetRow = 0;
-    if (targetRow > (int)listingComponent->childrenIds.size())
-        targetRow = listingComponent->childrenIds.size();
+    // Calculate insert position
+    // Count how many selected items are before the drop row
+    int itemsBeforeDrop = 0;
+    for (const auto& index : selectedIndexes) {
+        if (index.row() < dropRow) {
+            itemsBeforeDrop++;
+        }
+    }
 
-    // Move each selected component to the new position
-    int insertOffset = 0;
-    for (const auto& componentId : selectedComponentIds) {
-        int targetIndex = targetRow + insertOffset;
-        m_document->moveComponentToIndex(componentId, targetIndex);
-        insertOffset++;
+    // Calculate insert position based on direction
+    int insertPos;
+    if (dropRow > lastSelectedRow) {
+        // Dropping after all selected items: account for all removed items
+        insertPos = dropRow - selectedComponentIds.size() + 1;
+    } else {
+        // Dropping before/within: account only for items removed before dropRow
+        insertPos = dropRow - itemsBeforeDrop;
+    }
+
+    // Clamp to valid range
+    if (insertPos < 0)
+        insertPos = 0;
+    if (insertPos > (int)allComponentIds.size())
+        insertPos = (int)allComponentIds.size();
+
+    // Insert selected items at the new position
+    for (int i = 0; i < (int)selectedComponentIds.size(); ++i) {
+        allComponentIds.insert(allComponentIds.begin() + insertPos + i, selectedComponentIds[i]);
+    }
+
+    // Now apply this new order to the document
+    for (int i = 0; i < (int)allComponentIds.size(); ++i) {
+        m_document->moveComponentToIndex(allComponentIds[i], i);
     }
 
     event->accept();
