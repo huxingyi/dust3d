@@ -23,7 +23,7 @@ public:
     // Get per-vertex color properties for highlighting selected bone
     const std::vector<std::tuple<dust3d::Color, float, float>>* getVertexProperties() const;
 
-    // Set the start radius for bones (default 0.1)
+    // Set the start radius for bones
     void setStartRadius(double radius);
     double getStartRadius() const;
 

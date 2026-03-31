@@ -135,15 +135,82 @@ bool RigGenerator::generateRig(const Snapshot* snapshot, const RigStructure& tem
                 return da < db;
             });
 
-        // Bone root = first node of closest chain (nearest to parent tip)
-        // Bone tip  = last node of farthest chain
-        if (getNodePosition(snapshot, nodeChains.front().front(),
-                bone.posX, bone.posY, bone.posZ)) {
-            // set successfully
+        // Compute the central bone axis across all chains:
+        //   1. Average all chain-front positions -> approximate bone root
+        //   2. Average all chain-back  positions -> approximate bone tip
+        //   3. Build a unit direction from root to tip
+        //   4. Project every chain endpoint onto that axis to find the true extents
+        // This handles multiple parallel chains (e.g. cross-section rings of a limb)
+        // by producing a single representative centre line rather than picking one
+        // arbitrary chain.
+        float sumBeginX = 0, sumBeginY = 0, sumBeginZ = 0;
+        float sumEndX = 0, sumEndY = 0, sumEndZ = 0;
+        size_t validChains = 0;
+
+        for (const auto& chain : nodeChains) {
+            float fx, fy, fz, bx, by, bz;
+            if (getNodePosition(snapshot, chain.front(), fx, fy, fz) && getNodePosition(snapshot, chain.back(), bx, by, bz)) {
+                sumBeginX += fx;
+                sumBeginY += fy;
+                sumBeginZ += fz;
+                sumEndX += bx;
+                sumEndY += by;
+                sumEndZ += bz;
+                ++validChains;
+            }
         }
-        if (getNodePosition(snapshot, nodeChains.back().back(),
-                bone.endX, bone.endY, bone.endZ)) {
-            // set successfully
+
+        if (validChains > 0) {
+            float avgBeginX = sumBeginX / validChains;
+            float avgBeginY = sumBeginY / validChains;
+            float avgBeginZ = sumBeginZ / validChains;
+            float avgEndX = sumEndX / validChains;
+            float avgEndY = sumEndY / validChains;
+            float avgEndZ = sumEndZ / validChains;
+
+            float dx = avgEndX - avgBeginX;
+            float dy = avgEndY - avgBeginY;
+            float dz = avgEndZ - avgBeginZ;
+            float axisLen = std::sqrt(dx * dx + dy * dy + dz * dz);
+
+            if (axisLen > 1e-6f) {
+                dx /= axisLen;
+                dy /= axisLen;
+                dz /= axisLen;
+
+                // Project all chain endpoints onto the central axis and track extents
+                float minT = 0.0f, maxT = 0.0f;
+                bool firstProjection = true;
+                for (const auto& chain : nodeChains) {
+                    float px, py, pz;
+                    for (const Uuid& endNode : { chain.front(), chain.back() }) {
+                        if (!getNodePosition(snapshot, endNode, px, py, pz))
+                            continue;
+                        float t = (px - avgBeginX) * dx + (py - avgBeginY) * dy + (pz - avgBeginZ) * dz;
+                        if (firstProjection) {
+                            minT = maxT = t;
+                            firstProjection = false;
+                        } else {
+                            minT = std::min(minT, t);
+                            maxT = std::max(maxT, t);
+                        }
+                    }
+                }
+
+                bone.posX = avgBeginX + minT * dx;
+                bone.posY = avgBeginY + minT * dy;
+                bone.posZ = avgBeginZ + minT * dz;
+                bone.endX = avgBeginX + maxT * dx;
+                bone.endY = avgBeginY + maxT * dy;
+                bone.endZ = avgBeginZ + maxT * dz;
+            } else {
+                bone.posX = avgBeginX;
+                bone.posY = avgBeginY;
+                bone.posZ = avgBeginZ;
+                bone.endX = avgEndX;
+                bone.endY = avgEndY;
+                bone.endZ = avgEndZ;
+            }
         }
 
         size_t totalNodes = 0;

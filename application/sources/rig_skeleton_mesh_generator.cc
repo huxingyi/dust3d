@@ -3,7 +3,7 @@
 #include <cmath>
 
 RigSkeletonMeshGenerator::RigSkeletonMeshGenerator()
-    : m_startRadius(0.1)
+    : m_startRadius(0.05)
     , m_resultVertices(new std::vector<dust3d::Vector3>)
     , m_resultQuads(new std::vector<std::vector<size_t>>)
     , m_resultFaces(new std::vector<std::vector<size_t>>)
@@ -47,7 +47,7 @@ RigSkeletonMeshGenerator::BoneSegment RigSkeletonMeshGenerator::boneToBoneSegmen
     segment.fromPosition = dust3d::Vector3(bone.posX, bone.posY, bone.posZ);
     segment.toPosition = dust3d::Vector3(bone.endX, bone.endY, bone.endZ);
     segment.fromRadius = m_startRadius;
-    segment.toRadius = m_startRadius / 3.0; // End radius is 1/3 of start radius
+    segment.toRadius = m_startRadius / 5.0; // End radius is 1/5 of start radius
     return segment;
 }
 

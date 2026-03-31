@@ -61,7 +61,7 @@ public slots:
 private:
     RigStructure m_rigStructure;
     QString m_selectedBoneName;
-    double m_startRadius = 0.02;
+    double m_startRadius = 0.05;
     std::vector<dust3d::Vector3> m_vertices;
     std::vector<std::vector<size_t>> m_faces;
     std::unique_ptr<std::vector<std::tuple<dust3d::Color, float, float>>> m_vertexProperties;
