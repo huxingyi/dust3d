@@ -106,16 +106,16 @@ bool RigGenerator::generateRig(const Snapshot* snapshot, const RigStructure& tem
             continue;
         }
 
-        // Determine reference point from parent bone's tip position.
+        // Determine reference point from parent bone' position.
         // Root bones (no parent) use the origin.
         float refX = 0, refY = 0, refZ = 0;
         if (!bone.parent.empty()) {
             auto parentIt = boneNameToIndex.find(bone.parent);
             if (parentIt != boneNameToIndex.end()) {
                 const auto& parentBone = actualRig.bones[parentIt->second];
-                refX = parentBone.endX;
-                refY = parentBone.endY;
-                refZ = parentBone.endZ;
+                refX = parentBone.posX;
+                refY = parentBone.posY;
+                refZ = parentBone.posZ;
             }
         }
 
