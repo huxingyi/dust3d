@@ -28,6 +28,7 @@ public slots:
     void showContextMenu(const QPoint& pos);
     void onRigTypeChanged(const QString& rigType);
     void onBoneSelectionChanged();
+    void selectBoneEdges();
     void assignSelectedEdgesToBone();
     void rigSkeletonTemplateMeshReady();
     void onRigGenerationReady();
@@ -46,6 +47,7 @@ private:
     QStandardItemModel* m_boneTreeModel = nullptr;
     ModelWidget* m_rigTemplateModelWidget = nullptr;
     QPushButton* m_assignButton = nullptr;
+    QPushButton* m_selectBoneEdgesButton = nullptr;
     QGroupBox* m_rigTemplateGroupBox = nullptr;
     QGroupBox* m_rigSkinningGroupBox = nullptr;
     ModelWidget* m_rigSkinningModelWidget = nullptr;

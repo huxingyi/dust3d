@@ -170,6 +170,7 @@ public slots:
     void selectPartAllById(dust3d::Uuid partId);
     void addSelectNode(dust3d::Uuid nodeId);
     void addSelectEdge(dust3d::Uuid edgeId);
+    void addSelectEdgeOnSideProfile(dust3d::Uuid edgeId);
     void enableBackgroundBlur();
     void disableBackgroundBlur();
     void setBackgroundBlur(float turnaroundOpacity);

@@ -2511,6 +2511,17 @@ void SkeletonGraphicsWidget::addSelectEdge(dust3d::Uuid edgeId)
     hoverPart(dust3d::Uuid());
 }
 
+void SkeletonGraphicsWidget::addSelectEdgeOnSideProfile(dust3d::Uuid edgeId)
+{
+    const auto& findResult = edgeItemMap.find(edgeId);
+    if (findResult == edgeItemMap.end()) {
+        qDebug() << "addSelectEdgeOnSideProfile failed because of edge id not exists:<<" << edgeId;
+        return;
+    }
+    addItemToRangeSelection(findResult->second.second);
+    hoverPart(dust3d::Uuid());
+}
+
 void SkeletonGraphicsWidget::addPartToSelection(dust3d::Uuid partId)
 {
     Document::Profile choosenProfile = Document::Profile::Side;

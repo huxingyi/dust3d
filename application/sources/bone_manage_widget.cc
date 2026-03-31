@@ -69,6 +69,12 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
     m_assignButton->setEnabled(false);
     mainLayout->addWidget(m_assignButton);
 
+    // Select bone edges button
+    m_selectBoneEdgesButton = new QPushButton(tr("Select Bone Edges"));
+    m_selectBoneEdgesButton->setToolTip(tr("Select all edges on the canvas assigned to the selected bone"));
+    m_selectBoneEdgesButton->setEnabled(false);
+    mainLayout->addWidget(m_selectBoneEdgesButton);
+
     // Model Widget for rendering the rig skeleton mesh
     m_rigTemplateModelWidget = new ModelWidget();
     m_rigTemplateModelWidget->setMinimumHeight(250);
@@ -127,6 +133,10 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
     // Connect button click to assign selected edges to bone
     connect(m_assignButton, &QPushButton::clicked,
         this, &BoneManageWidget::assignSelectedEdgesToBone);
+
+    // Connect select bone edges button
+    connect(m_selectBoneEdgesButton, &QPushButton::clicked,
+        this, &BoneManageWidget::selectBoneEdges);
 
     // Connect rig generation ready signal to update actual rig model widget
     connect(m_document, &Document::resultRigChanged,
@@ -325,6 +335,17 @@ void BoneManageWidget::onBoneSelectionChanged()
     updateAssignButtonState();
 }
 
+void BoneManageWidget::selectBoneEdges()
+{
+    if (!m_skeletonGraphicsWidget || m_selectedBoneName.isEmpty())
+        return;
+    m_skeletonGraphicsWidget->unselectAll();
+    for (const auto& it : m_document->edgeMap) {
+        if (it.second.boneName == m_selectedBoneName)
+            m_skeletonGraphicsWidget->addSelectEdgeOnSideProfile(it.first);
+    }
+}
+
 void BoneManageWidget::updateBoneTreeView(const QString& rigType)
 {
     m_boneTreeModel->clear();
@@ -334,6 +355,7 @@ void BoneManageWidget::updateBoneTreeView(const QString& rigType)
         m_rigTemplateModelWidget->hide();
         m_rigSkinningModelWidget->hide();
         m_assignButton->hide();
+        m_selectBoneEdgesButton->hide();
         m_rigSkinningGroupBox->hide();
         m_rigTemplateGroupBox->hide();
         return;
@@ -343,6 +365,7 @@ void BoneManageWidget::updateBoneTreeView(const QString& rigType)
     m_rigTemplateModelWidget->show();
     m_rigSkinningModelWidget->show();
     m_assignButton->show();
+    m_selectBoneEdgesButton->show();
     m_rigSkinningGroupBox->show();
     m_rigTemplateGroupBox->show();
 
@@ -531,6 +554,8 @@ void BoneManageWidget::updateAssignButtonState()
     bool hasEdgeSelection = m_skeletonGraphicsWidget ? m_skeletonGraphicsWidget->hasEdgeSelection() : false;
     if (m_assignButton)
         m_assignButton->setEnabled(isVisible() && hasBone && hasEdgeSelection);
+    if (m_selectBoneEdgesButton)
+        m_selectBoneEdgesButton->setEnabled(isVisible() && hasBone);
 }
 
 void BoneManageWidget::rigSkinningMeshReady()
