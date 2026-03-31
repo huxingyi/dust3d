@@ -287,7 +287,7 @@ void StitchMeshBuilder::build()
             for (size_t i = 2; i < stitchingPoints.size(); ++i) {
                 uvs[i][n][0] = uvs[i - 1][n][0] + (m_generatedVertices[stitchingPoints[i][n]] - m_generatedVertices[stitchingPoints[i - 1][n]]).length();
             }
-            auto totalLength = uvs[stitchingPoints.size() - 1][n][0] + stitchingRadiuses[m_splines.size() - 1][n];
+            auto totalLength = uvs[stitchingPoints.size() - 1][n][0] + stitchingRadiuses[stitchingPoints.size() - 1][n];
             for (size_t i = 0; i < stitchingPoints.size(); ++i) {
                 uvs[i][n][0] /= totalLength;
             }
