@@ -12,6 +12,10 @@
 #include <QLabel>
 #include <QMap>
 #include <QMenu>
+#include <QPainter>
+#include <QPen>
+#include <QPolygon>
+#include <QProxyStyle>
 #include <QPushButton>
 #include <QStandardItem>
 #include <QStandardItemModel>
@@ -20,6 +24,65 @@
 #include <QVBoxLayout>
 #include <rapidxml.hpp>
 #include <string>
+
+class BoneTreeStyle : public QProxyStyle {
+public:
+    using QProxyStyle::QProxyStyle;
+
+    void drawPrimitive(PrimitiveElement element, const QStyleOption* option,
+        QPainter* painter, const QWidget* widget) const override
+    {
+        if (element != PE_IndicatorBranch) {
+            QProxyStyle::drawPrimitive(element, option, painter, widget);
+            return;
+        }
+
+        const QColor lineColor(150, 150, 150);
+        const int midX = (option->rect.left() + option->rect.right()) / 2;
+        const int midY = (option->rect.top() + option->rect.bottom()) / 2;
+        const bool hasItem = option->state & State_Item;
+        const bool hasSibling = option->state & State_Sibling;
+        const bool hasChildren = option->state & State_Children;
+        const bool isOpen = option->state & State_Open;
+
+        painter->save();
+        painter->setRenderHint(QPainter::Antialiasing, false);
+        painter->setPen(QPen(lineColor, 1, Qt::SolidLine));
+
+        if (hasItem) {
+            // Horizontal line connecting branch to item
+            painter->drawLine(midX, midY, option->rect.right(), midY);
+            // Vertical line from top to center (connecting upward to parent)
+            painter->drawLine(midX, option->rect.top(), midX, midY);
+            if (hasSibling) {
+                // Continue vertical line below center (more siblings follow)
+                painter->drawLine(midX, midY, midX, option->rect.bottom());
+            }
+        } else if (hasSibling) {
+            // Pass-through vertical line for ancestor level with more siblings
+            painter->drawLine(midX, option->rect.top(), midX, option->rect.bottom());
+        }
+
+        if (hasChildren) {
+            // Draw expand/collapse triangle
+            painter->setPen(Qt::NoPen);
+            painter->setBrush(lineColor);
+            QPolygon triangle;
+            if (isOpen) {
+                triangle << QPoint(midX - 4, midY - 2)
+                         << QPoint(midX + 4, midY - 2)
+                         << QPoint(midX, midY + 3);
+            } else {
+                triangle << QPoint(midX - 2, midY - 4)
+                         << QPoint(midX + 3, midY)
+                         << QPoint(midX - 2, midY + 4);
+            }
+            painter->drawPolygon(triangle);
+        }
+
+        painter->restore();
+    }
+};
 
 BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
     : QWidget(parent)
@@ -60,6 +123,7 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
     m_boneTreeView->setHeaderHidden(true);
     m_boneTreeView->setMinimumHeight(200);
     m_boneTreeView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_boneTreeView->setStyle(new BoneTreeStyle(m_boneTreeView->style()));
 
     mainLayout->addWidget(m_boneTreeView);
 
