@@ -1,6 +1,8 @@
 #include "component_list_model.h"
+#include "theme.h"
 #include <QAbstractListModel>
 #include <QMimeData>
+#include <QPainter>
 #include <dust3d/base/debug.h>
 
 ComponentListModel::ComponentListModel(const Document* document, QObject* parent)
@@ -108,6 +110,7 @@ QVariant ComponentListModel::data(const QModelIndex& index, int role) const
     case Qt::DecorationRole: {
         const Document::Component* component = modelIndexToComponent(index);
         if (nullptr != component) {
+            QPixmap pixmap;
             if (0 == component->previewPixmap.width()) {
                 static QPixmap s_emptyPixmap;
                 if (0 == s_emptyPixmap.width()) {
@@ -115,9 +118,39 @@ QVariant ComponentListModel::data(const QModelIndex& index, int role) const
                     image.fill(Qt::transparent);
                     s_emptyPixmap = QPixmap::fromImage(image);
                 }
-                return s_emptyPixmap;
+                pixmap = s_emptyPixmap;
+            } else {
+                pixmap = component->previewPixmap;
             }
-            return component->previewPixmap;
+            if (!component->linkToPartId.isNull()) {
+                const Document::Part* part = m_document->findPart(component->linkToPartId);
+                if (nullptr != part && dust3d::PartTarget::Model != part->target) {
+                    QPixmap badgedPixmap(pixmap);
+                    QPainter painter(&badgedPixmap);
+                    QString badgeText = dust3d::PartTarget::CutFace == part->target
+                        ? tr("Cut Face")
+                        : tr("Stitch");
+                    QColor badgeColor = dust3d::PartTarget::CutFace == part->target
+                        ? QColor(200, 100, 0, 210)
+                        : QColor(90, 0, 190, 210);
+                    QFont font = painter.font();
+                    font.setPixelSize(9);
+                    font.setBold(true);
+                    painter.setFont(font);
+                    QFontMetrics fm(font);
+                    int textWidth = fm.horizontalAdvance(badgeText);
+                    int padding = 2;
+                    int bw = textWidth + padding * 2;
+                    int bh = fm.height() + padding * 2;
+                    int x = 2;
+                    int y = badgedPixmap.height() - bh - 2;
+                    painter.fillRect(x, y, bw, bh, badgeColor);
+                    painter.setPen(Qt::white);
+                    painter.drawText(x + padding, y + padding + fm.ascent(), badgeText);
+                    return badgedPixmap;
+                }
+            }
+            return pixmap;
         }
     } break;
     }

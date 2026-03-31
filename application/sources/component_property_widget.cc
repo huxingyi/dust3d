@@ -83,6 +83,50 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
         topLayout->addWidget(combineModeSelectBox);
     topLayout->setSizeConstraint(QLayout::SetFixedSize);
 
+    QGroupBox* partRoleGroupBox = nullptr;
+    if (nullptr != m_part) {
+        QPushButton* modelRoleButton = new QPushButton(tr("Model"));
+        QPushButton* cutFaceRoleButton = new QPushButton(tr("Cut Face"));
+        QPushButton* stitchingLineRoleButton = new QPushButton(tr("Stitching Line"));
+        modelRoleButton->setToolTip(tr("Regular mesh part — contributes geometry to the 3D model"));
+        cutFaceRoleButton->setToolTip(tr("Cross-section profile — defines the tube shape that Model parts can reference as their cut face"));
+        stitchingLineRoleButton->setToolTip(tr("Stitch guide — stitches surface geometry across lines within the same component"));
+        auto initRoleButton = [](QPushButton* btn, bool selected) {
+            btn->setFlat(selected);
+            btn->setEnabled(!selected);
+        };
+        initRoleButton(modelRoleButton, dust3d::PartTarget::Model == m_part->target);
+        initRoleButton(cutFaceRoleButton, dust3d::PartTarget::CutFace == m_part->target);
+        initRoleButton(stitchingLineRoleButton, dust3d::PartTarget::StitchingLine == m_part->target);
+        connect(modelRoleButton, &QPushButton::clicked, this, [=]() {
+            initRoleButton(modelRoleButton, true);
+            initRoleButton(cutFaceRoleButton, false);
+            initRoleButton(stitchingLineRoleButton, false);
+            emit setPartTarget(m_partId, dust3d::PartTarget::Model);
+            emit groupOperationAdded();
+        });
+        connect(cutFaceRoleButton, &QPushButton::clicked, this, [=]() {
+            initRoleButton(modelRoleButton, false);
+            initRoleButton(cutFaceRoleButton, true);
+            initRoleButton(stitchingLineRoleButton, false);
+            emit setPartTarget(m_partId, dust3d::PartTarget::CutFace);
+            emit groupOperationAdded();
+        });
+        connect(stitchingLineRoleButton, &QPushButton::clicked, this, [=]() {
+            initRoleButton(modelRoleButton, false);
+            initRoleButton(cutFaceRoleButton, false);
+            initRoleButton(stitchingLineRoleButton, true);
+            emit setPartTarget(m_partId, dust3d::PartTarget::StitchingLine);
+            emit groupOperationAdded();
+        });
+        QHBoxLayout* partRoleLayout = new QHBoxLayout;
+        partRoleLayout->addWidget(modelRoleButton);
+        partRoleLayout->addWidget(cutFaceRoleButton);
+        partRoleLayout->addWidget(stitchingLineRoleButton);
+        partRoleGroupBox = new QGroupBox(tr("Part Role"));
+        partRoleGroupBox->setLayout(partRoleLayout);
+    }
+
     QGroupBox* deformGroupBox = nullptr;
     if (nullptr != m_part && dust3d::PartTarget::Model == m_part->target) {
         FloatNumberWidget* thicknessWidget = new FloatNumberWidget;
@@ -446,6 +490,8 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
 
     QVBoxLayout* mainLayout = new QVBoxLayout;
     mainLayout->addLayout(topLayout);
+    if (nullptr != partRoleGroupBox)
+        mainLayout->addWidget(partRoleGroupBox);
     if (nullptr != deformGroupBox)
         mainLayout->addWidget(deformGroupBox);
     if (nullptr != cutFaceGroupBox)
@@ -476,6 +522,7 @@ ComponentPropertyWidget::ComponentPropertyWidget(Document* document,
     connect(this, &ComponentPropertyWidget::setPartCutFace, m_document, &Document::setPartCutFace);
     connect(this, &ComponentPropertyWidget::setPartCutFaceLinkedId, m_document, &Document::setPartCutFaceLinkedId);
     connect(this, &ComponentPropertyWidget::setPartXmirrorState, m_document, &Document::setPartXmirrorState);
+    connect(this, &ComponentPropertyWidget::setPartTarget, m_document, &Document::setPartTarget);
     connect(this, &ComponentPropertyWidget::setComponentCombineMode, m_document, &Document::setComponentCombineMode);
     connect(this, &ComponentPropertyWidget::groupOperationAdded, m_document, &Document::saveSnapshot);
 
