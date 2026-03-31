@@ -240,6 +240,11 @@ void AnimationManageWidget::updateVisibleParameters(const QString& animationType
         setParameterRowVisible(m_stepHeightRow, m_stepHeightLabel, true);
         setParameterRowVisible(m_bodyBobRow, m_bodyBobLabel, true);
         setParameterRowVisible(m_gaitSpeedRow, m_gaitSpeedLabel, true);
+    } else if (animationType == "FishForward") {
+        setParameterRowVisible(m_stepLengthRow, m_stepLengthLabel, true);
+        setParameterRowVisible(m_stepHeightRow, m_stepHeightLabel, true);
+        setParameterRowVisible(m_bodyBobRow, m_bodyBobLabel, true);
+        setParameterRowVisible(m_gaitSpeedRow, m_gaitSpeedLabel, true);
     } else if (animationType == "InsectRubHands") {
         setParameterRowVisible(m_stepLengthRow, m_stepLengthLabel, true);
         setParameterRowVisible(m_stepHeightRow, m_stepHeightLabel, true);
@@ -265,6 +270,10 @@ void AnimationManageWidget::updateAnimationNameForRigType(const QString& rigType
         m_addAnimationButton->setEnabled(true);
     } else if (rigType.compare("Bird", Qt::CaseInsensitive) == 0) {
         m_animationNameCombo->addItem("BirdForward");
+        m_animationNameCombo->setEnabled(true);
+        m_addAnimationButton->setEnabled(true);
+    } else if (rigType.compare("Fish", Qt::CaseInsensitive) == 0) {
+        m_animationNameCombo->addItem("FishForward");
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);
     } else {

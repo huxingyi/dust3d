@@ -22,6 +22,7 @@
 
 #include <dust3d/animation/animation_generator.h>
 #include <dust3d/animation/bird/forward.h>
+#include <dust3d/animation/fish/forward.h>
 #include <dust3d/animation/insect/attack.h>
 #include <dust3d/animation/insect/forward.h>
 #include <dust3d/animation/insect/rub_hands.h>
@@ -47,6 +48,8 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
         return insect::attack(rigStructure, inverseBindMatrices, animationClip, frameCount, durationSeconds, parameters);
     if (animationType == "BirdForward")
         return bird::forward(rigStructure, inverseBindMatrices, animationClip, frameCount, durationSeconds, parameters);
+    if (animationType == "FishForward")
+        return fish::forward(rigStructure, inverseBindMatrices, animationClip, frameCount, durationSeconds, parameters);
 
     // Add future rig type + animationName mappings here.
     return false;
