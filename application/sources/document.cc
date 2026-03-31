@@ -639,6 +639,44 @@ void Document::moveComponentToBottom(dust3d::Uuid componentId)
     emit skeletonChanged();
 }
 
+void Document::moveComponentToIndex(dust3d::Uuid componentId, int targetIndex)
+{
+    Document::Component* parent = (Document::Component*)findComponentParent(componentId);
+    if (nullptr == parent)
+        return;
+
+    dust3d::Uuid parentId = findComponentParentId(componentId);
+
+    auto it = std::find(parent->childrenIds.begin(), parent->childrenIds.end(), componentId);
+    if (it == parent->childrenIds.end())
+        return;
+
+    int currentIndex = std::distance(parent->childrenIds.begin(), it);
+
+    // Clamp target index to valid range
+    if (targetIndex < 0)
+        targetIndex = 0;
+    if (targetIndex >= (int)parent->childrenIds.size())
+        targetIndex = (int)parent->childrenIds.size() - 1;
+
+    if (currentIndex == targetIndex)
+        return;
+
+    // Remove from current position
+    parent->childrenIds.erase(it);
+
+    // Adjust target index if needed (if removing shifted positions)
+    if (targetIndex > currentIndex)
+        targetIndex--;
+
+    // Insert at target position
+    parent->childrenIds.insert(parent->childrenIds.begin() + targetIndex, componentId);
+
+    parent->dirty = true;
+    emit componentChildrenChanged(parentId);
+    emit skeletonChanged();
+}
+
 void Document::renameComponent(dust3d::Uuid componentId, QString name)
 {
     auto component = componentMap.find(componentId);

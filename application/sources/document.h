@@ -486,6 +486,7 @@ public slots:
     void moveComponentDown(dust3d::Uuid componentId);
     void moveComponentToTop(dust3d::Uuid componentId);
     void moveComponentToBottom(dust3d::Uuid componentId);
+    void moveComponentToIndex(dust3d::Uuid componentId, int targetIndex);
     void renameComponent(dust3d::Uuid componentId, QString name);
     void removeComponent(dust3d::Uuid componentId);
     void addComponent(dust3d::Uuid parentId);

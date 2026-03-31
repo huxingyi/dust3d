@@ -1,5 +1,6 @@
 #include "component_list_model.h"
 #include <QAbstractListModel>
+#include <QMimeData>
 #include <dust3d/base/debug.h>
 
 ComponentListModel::ComponentListModel(const Document* document, QObject* parent)
@@ -135,4 +136,40 @@ void ComponentListModel::setListingComponentId(const dust3d::Uuid& componentId)
 const dust3d::Uuid ComponentListModel::listingComponentId() const
 {
     return m_listingComponentId;
+}
+
+Qt::DropActions ComponentListModel::supportedDropActions() const
+{
+    return Qt::MoveAction;
+}
+
+Qt::ItemFlags ComponentListModel::flags(const QModelIndex& index) const
+{
+    Qt::ItemFlags defaultFlags = QAbstractListModel::flags(index);
+    if (index.isValid()) {
+        // Allow items to be dragged and dropped
+        return defaultFlags | Qt::ItemIsDragEnabled | Qt::ItemIsDropEnabled;
+    }
+    // Root index - allow drop
+    return defaultFlags | Qt::ItemIsDropEnabled;
+}
+
+QStringList ComponentListModel::mimeTypes() const
+{
+    return QStringList() << "application/x-qabstractitemmodeldatalist";
+}
+
+QMimeData* ComponentListModel::mimeData(const QModelIndexList& indexes) const
+{
+    // Use the default implementation from QAbstractListModel
+    return QAbstractListModel::mimeData(indexes);
+}
+
+bool ComponentListModel::dropMimeData(const QMimeData* data, Qt::DropAction action, int /*row*/, int /*column*/, const QModelIndex& /*parent*/)
+{
+    if (!data->hasFormat("application/x-qabstractitemmodeldatalist"))
+        return false;
+
+    // Accept the drop - actual reordering is handled in the view's dropEvent
+    return true;
 }

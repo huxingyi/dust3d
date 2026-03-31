@@ -17,7 +17,7 @@ PreviewGridView::PreviewGridView(QWidget* parent)
 
     setViewMode(QListView::IconMode);
     setGridSize(QSize(Theme::partPreviewImageSize, Theme::partPreviewImageSize));
-    setMovement(QListView::Snap);
+    setMovement(QListView::Free);
     setFlow(QListView::LeftToRight);
     setSelectionMode(QAbstractItemView::ExtendedSelection);
     setResizeMode(QListView::Adjust);
