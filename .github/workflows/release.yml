@@ -1,25 +1,22 @@
 name: release
 
 on:
-  workflow_run:
-    workflows: ["development"]
-    types:
-      - completed
+  push:
+    branches:
+      - master
+      - pipeline
+    tags:
+      - '*'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-run-name: ${{ github.event.workflow_run.head_commit.message }}
-
 jobs:
   appimage-upload:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
       - name: Install Qt
         uses: jurplel/install-qt-action@v3
         with:
@@ -37,7 +34,7 @@ jobs:
         run: |
           sudo apt-get install -y libfuse2
           cd ${GITHUB_WORKSPACE} && sh ./ci/appimage/bundle.sh
-          mv Dust3D-x86_64.AppImage dust3d-${{ github.event.workflow_run.head_branch }}.AppImage
+          mv Dust3D-x86_64.AppImage dust3d-${{ github.ref_name }}.AppImage
       - name: Publish latest build
         env:
           MY_EMAIL: ${{ secrets.MY_EMAIL }}
@@ -48,7 +45,7 @@ jobs:
           git clone https://${{ env.UPDATE_REPO_TOKEN }}@github.com/huxingyi/huxingyi.github.io.git
           cd huxingyi.github.io
           git remote set-url origin https://${{ env.UPDATE_REPO_TOKEN }}@github.com/huxingyi/huxingyi.github.io.git
-          cp ../dust3d-${{ github.event.workflow_run.head_branch }}.AppImage download/dust3d-latest-preview.AppImage
+          cp ../dust3d-${{ github.ref_name }}.AppImage download/dust3d-latest-preview.AppImage
           git add download/dust3d-latest-preview.AppImage
           git commit -m "Update latest build for linux"
           git push origin HEAD
@@ -56,15 +53,12 @@ jobs:
       - name: Upload AppImage
         uses: actions/upload-artifact@v4
         with:
-          name: dust3d-${{ github.event.workflow_run.head_branch }}.AppImage
-          path: dust3d-${{ github.event.workflow_run.head_branch }}.AppImage
+          name: dust3d-${{ github.ref_name }}.AppImage
+          path: dust3d-${{ github.ref_name }}.AppImage
   win32-msvc-upload:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
       - name: Set up Visual Studio shell
         uses: egor-tensin/vs-shell@v2
         with:
@@ -108,7 +102,7 @@ jobs:
           cp ${GITHUB_WORKSPACE}/../Qt/5.15.2/msvc2019_64/plugins/imageformats/qjpeg.dll ${GITHUB_WORKSPACE}/imageformats/qjpeg.dll
           cp ${GITHUB_WORKSPACE}/../Qt/5.15.2/msvc2019_64/plugins/imageformats/qsvg.dll ${GITHUB_WORKSPACE}/imageformats/qsvg.dll
           7z a Dust3D-win32-x86_64.zip -r ${GITHUB_WORKSPACE}/imageformats/
-          7z x Dust3D-win32-x86_64.zip -odust3d-${{ github.event.workflow_run.head_branch }}
+          7z x Dust3D-win32-x86_64.zip -odust3d-${{ github.ref_name }}
         shell: bash
       - name: Publish latest build
         env:
@@ -128,15 +122,12 @@ jobs:
       - name: Upload zip
         uses: actions/upload-artifact@v4
         with:
-          name: dust3d-${{ github.event.workflow_run.head_branch }}
-          path: dust3d-${{ github.event.workflow_run.head_branch }}/
+          name: dust3d-${{ github.ref_name }}
+          path: dust3d-${{ github.ref_name }}/
   macos-upload:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha }}
       - name: Install Qt
         run: |
           HOMEBREW_VERBOSE_USING_DOTS=1 brew reinstall --verbose qt@5
@@ -150,8 +141,8 @@ jobs:
           make -j`nproc`
       - name: Generate DMG
         run: |
-          mv ${GITHUB_WORKSPACE}/application/dust3d.app dust3d-${{ github.event.workflow_run.head_branch }}.app
-          macdeployqt dust3d-${{ github.event.workflow_run.head_branch }}.app -dmg
+          mv ${GITHUB_WORKSPACE}/application/dust3d.app dust3d-${{ github.ref_name }}.app
+          macdeployqt dust3d-${{ github.ref_name }}.app -dmg
       - name: Publish latest build
         env:
           MY_EMAIL: ${{ secrets.MY_EMAIL }}
@@ -162,7 +153,7 @@ jobs:
           git clone https://${{ env.UPDATE_REPO_TOKEN }}@github.com/huxingyi/huxingyi.github.io.git
           cd huxingyi.github.io
           git remote set-url origin https://${{ env.UPDATE_REPO_TOKEN }}@github.com/huxingyi/huxingyi.github.io.git
-          cp ../dust3d-${{ github.event.workflow_run.head_branch }}.dmg download/dust3d-latest-preview.dmg
+          cp ../dust3d-${{ github.ref_name }}.dmg download/dust3d-latest-preview.dmg
           git add download/dust3d-latest-preview.dmg
           git commit -m "Update latest build for macos"
           git push origin HEAD
@@ -170,5 +161,5 @@ jobs:
       - name: Upload DMG
         uses: actions/upload-artifact@v4
         with:
-          name: dust3d-${{ github.event.workflow_run.head_branch }}.dmg
-          path: dust3d-${{ github.event.workflow_run.head_branch }}.dmg
+          name: dust3d-${{ github.ref_name }}.dmg
+          path: dust3d-${{ github.ref_name }}.dmg
