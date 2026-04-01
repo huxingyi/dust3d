@@ -20,8 +20,8 @@
  *  SOFTWARE.
  */
 
+#include <algorithm>
 #include <cmath>
-#include <cstring>
 #include <dust3d/animation/common.h>
 #include <dust3d/animation/fish/forward.h>
 #include <dust3d/base/math.h>
@@ -34,6 +34,32 @@ namespace dust3d {
 
 namespace fish {
 
+    namespace {
+
+        struct SpineBone {
+            const char* name;
+            double position;
+            double amplitudeScale;
+        };
+
+        const SpineBone SpineBones[] = {
+            { "Head", 0.0, 0.1 },
+            { "BodyFront", 0.2, 0.3 },
+            { "BodyMid", 0.5, 0.6 },
+            { "BodyRear", 0.75, 0.9 },
+            { "TailStart", 0.9, 1.2 },
+            { "TailEnd", 1.0, 1.5 }
+        };
+
+        Vector3 normalizeOrFallback(const Vector3& value, const Vector3& fallback)
+        {
+            if (value.isZero())
+                return fallback;
+            return value.normalized();
+        }
+
+    } // namespace
+
     bool forward(const RigStructure& rigStructure,
         const std::map<std::string, Matrix4x4>& inverseBindMatrices,
         RigAnimationClip& animationClip,
@@ -41,10 +67,8 @@ namespace fish {
         float durationSeconds,
         const AnimationParams& parameters)
     {
-        // Build bone index map using the common utility
         std::map<std::string, size_t> boneIdx = animation::buildBoneIndexMap(rigStructure);
 
-        // Helper lambdas for bone position lookups
         auto getBonePos = [&](const std::string& name) -> Vector3 {
             return animation::getBonePos(rigStructure, boneIdx, name);
         };
@@ -53,7 +77,6 @@ namespace fish {
             return animation::getBoneEnd(rigStructure, boneIdx, name);
         };
 
-        // Required bones for fish animation
         static const char* requiredBones[] = {
             "Root", "Head", "BodyFront", "BodyMid", "BodyRear",
             "TailStart", "TailEnd"
@@ -63,7 +86,6 @@ namespace fish {
         if (!animation::validateRequiredBones(boneIdx, requiredBones, numRequiredBones))
             return false;
 
-        // Calculate body length and coordinate frame
         Vector3 headPos = getBonePos("Head");
         Vector3 tailEndPos = getBoneEnd("TailEnd");
         Vector3 bodyVector = headPos - tailEndPos;
@@ -73,90 +95,64 @@ namespace fish {
         double bodyLength = bodyVector.length();
         Vector3 forwardDir = bodyVector.normalized();
         Vector3 worldUp(0.0, 1.0, 0.0);
-        Vector3 right = Vector3::crossProduct(forwardDir, worldUp).normalized();
-        if (right.isZero()) {
-            right = Vector3::crossProduct(forwardDir, Vector3(0.0, 0.0, 1.0)).normalized();
-        }
+        Vector3 right = Vector3::crossProduct(forwardDir, worldUp);
+        if (right.lengthSquared() < 1e-8)
+            right = Vector3::crossProduct(forwardDir, Vector3(0.0, 0.0, 1.0));
+        right = normalizeOrFallback(right, Vector3(1.0, 0.0, 0.0));
         Vector3 up = Vector3::crossProduct(right, forwardDir).normalized();
 
-        // ANIMATION PARAMETERS - Exposed for user customization
-        // Swimming speed and timing
-        double swimSpeed = parameters.getValue("swimSpeed", 1.0); // cycles per second (0.5 = slow, 2.0 = fast)
-        double swimFrequency = parameters.getValue("swimFrequency", 2.0); // tail beat frequency multiplier
+        double swimSpeed = parameters.getValue("swimSpeed", 1.0);
+        double swimFrequency = parameters.getValue("swimFrequency", 2.0);
 
-        // Body undulation parameters
-        double spineAmplitude = parameters.getValue("spineAmplitude", 0.15); // spine side-to-side amplitude (radians)
-        double waveLength = parameters.getValue("waveLength", 1.0); // undulation wavelength factor
-        double tailAmplitudeRatio = parameters.getValue("tailAmplitudeRatio", 1.5); // tail amplitude vs body ratio
+        double spineAmplitude = parameters.getValue("spineAmplitude", 0.15);
+        double waveLength = parameters.getValue("waveLength", 1.0);
+        double tailAmplitudeRatio = parameters.getValue("tailAmplitudeRatio", 1.5);
 
-        // Body motion parameters
-        double bodyBob = parameters.getValue("bodyBob", 0.02); // vertical bobbing amplitude
-        double bodyRoll = parameters.getValue("bodyRoll", 0.05); // subtle body roll (radians)
-        double forwardThrust = parameters.getValue("forwardThrust", 0.08); // forward surge amplitude
+        double bodyBob = parameters.getValue("bodyBob", 0.02);
+        double bodyRoll = parameters.getValue("bodyRoll", 0.05);
+        double forwardThrust = parameters.getValue("forwardThrust", 0.08);
 
-        // Fin motion parameters (used by fin animation)
         double pectoralFlapPower = parameters.getValue("pectoralFlapPower", 0.4);
         double pelvicFlapPower = parameters.getValue("pelvicFlapPower", 0.25);
         double dorsalSwayPower = parameters.getValue("dorsalSwayPower", 0.2);
         double ventralSwayPower = parameters.getValue("ventralSwayPower", 0.2);
 
-        // Phase offsets for different fin types
         double pectoralPhaseOffset = parameters.getValue("pectoralPhaseOffset", 0.0);
         double pelvicPhaseOffset = parameters.getValue("pelvicPhaseOffset", 0.5);
         double dorsalPhaseOffset = parameters.getValue("dorsalPhaseOffset", 0.0);
         double ventralPhaseOffset = parameters.getValue("ventralPhaseOffset", 0.25);
 
-        // Setup animation
         animationClip.name = "fishForward";
         animationClip.durationSeconds = durationSeconds;
         animationClip.frames.resize(frameCount);
 
-        // Define spine bone chain with positions along body (0 = head, 1 = tail tip)
-        struct SpineBone {
-            const char* name;
-            double spinePosition; // 0.0 at head, 1.0 at tail tip
-            double amplitudeScale; // amplitude multiplier for this segment
-        };
+        constexpr size_t numSpineBones = sizeof(SpineBones) / sizeof(SpineBones[0]);
+        const double twoPi = 2.0 * Math::Pi;
+        const double inverseFrameCount = 1.0 / std::max(1, frameCount);
 
-        static const SpineBone spineBones[] = {
-            { "Head", 0.0, 0.1 }, // minimal movement at head
-            { "BodyFront", 0.2, 0.3 }, // gentle undulation starts
-            { "BodyMid", 0.5, 0.6 }, // progressive increase
-            { "BodyRear", 0.75, 0.9 }, // stronger movement near tail
-            { "TailStart", 0.9, 1.2 }, // tail begins strong motion
-            { "TailEnd", 1.0, 1.5 } // maximum amplitude at tail tip
-        };
-
-        // Generate animation frames
         for (int frame = 0; frame < frameCount; ++frame) {
-            double t = static_cast<double>(frame) / static_cast<double>(frameCount);
+            double t = static_cast<double>(frame) * inverseFrameCount;
             double animTime = t * durationSeconds;
-            double phase = animTime * swimSpeed * swimFrequency * 2.0 * Math::Pi;
+            double phase = animTime * swimSpeed * swimFrequency * twoPi;
 
             std::map<std::string, Matrix4x4> boneWorldTransforms;
 
-            // Calculate root motion: subtle body movements for realism
-            double bobOffset = sin(phase * 2.0) * bodyBob * bodyLength;
-            double rollOffset = sin(phase + Math::Pi * 0.3) * bodyRoll;
-            double thrustOffset = sin(phase) * forwardThrust * bodyLength;
+            double bobOffset = std::sin(phase * 2.0) * bodyBob * bodyLength;
+            double rollOffset = std::sin(phase + Math::Pi * 0.3) * bodyRoll;
+            double thrustOffset = std::sin(phase) * forwardThrust * bodyLength;
 
-            // Root transform with overall body motion
             Matrix4x4 rootTransform;
             rootTransform.translate(forwardDir * thrustOffset + up * bobOffset);
             rootTransform.rotate(forwardDir, rollOffset);
 
-            // Root bone follows the overall motion
             Vector3 rootPos = getBonePos("Root");
             Vector3 rootEnd = getBoneEnd("Root");
             Vector3 newRootPos = rootTransform.transformPoint(rootPos);
             Vector3 newRootEnd = rootTransform.transformPoint(rootEnd);
             boneWorldTransforms["Root"] = animation::buildBoneWorldTransform(newRootPos, newRootEnd);
 
-            // Create undulating spine motion using rotations around the body axis
-            constexpr size_t numSpineBones = sizeof(spineBones) / sizeof(SpineBone);
-
             for (size_t i = 0; i < numSpineBones; ++i) {
-                const auto& bone = spineBones[i];
+                const auto& bone = SpineBones[i];
 
                 if (boneIdx.find(bone.name) == boneIdx.end())
                     continue;
@@ -164,28 +160,26 @@ namespace fish {
                 Vector3 restPos = getBonePos(bone.name);
                 Vector3 restEnd = getBoneEnd(bone.name);
                 Vector3 restBoneDir = restEnd - restPos;
-                if (std::string(bone.name) == "Head") {
-                    // head bone is oriented to the natural forward direction,
-                    // reverse it to maintain consistent spine tailward chain direction
+                if (i == 0)
                     restBoneDir = -restBoneDir;
-                }
                 double boneLength = restBoneDir.length();
+                if (boneLength < 1e-8)
+                    continue;
 
-                // Calculate rotation for undulation
-                double pos = bone.spinePosition;
-                double wavePhase = phase - (pos * waveLength * 2.0 * Math::Pi);
-                double ampScale = bone.amplitudeScale;
-                double rotAngle = spineAmplitude * ampScale * tailAmplitudeRatio * sin(wavePhase);
+                double pos = bone.position;
+                double wavePhase = phase - (pos * waveLength * twoPi);
+                double tailGain = 1.0 + (tailAmplitudeRatio - 1.0) * pos;
+                double rotAngle = spineAmplitude * bone.amplitudeScale * tailGain * std::sin(wavePhase);
+                double rollAngle = bodyRoll * bone.amplitudeScale * 0.45 * std::cos(wavePhase);
 
-                // Determine parent bone for hierarchical spine motion
-                const char* parentName = (i == 0) ? "Root" : spineBones[i - 1].name;
+                const char* parentName = (i == 0) ? "Root" : SpineBones[i - 1].name;
                 auto parentIt = boneWorldTransforms.find(parentName);
                 if (parentIt == boneWorldTransforms.end()) {
-                    // fallback to root transform if unexpectedly missing
                     parentIt = boneWorldTransforms.find("Root");
                 }
+                if (parentIt == boneWorldTransforms.end())
+                    continue;
 
-                // Convert bone rest positions into parent-local space
                 Vector3 parentRestPos = getBonePos(parentName);
                 Vector3 parentRestEnd = getBoneEnd(parentName);
                 Matrix4x4 parentRestTransform = animation::buildBoneWorldTransform(parentRestPos, parentRestEnd);
@@ -193,13 +187,28 @@ namespace fish {
 
                 Vector3 localBonePos = parentRestInv.transformPoint(restPos);
                 Vector3 localBoneDir = parentRestInv.transformVector(restBoneDir);
+                Vector3 localUpAxis = parentRestInv.transformVector(up);
+                if (localUpAxis.lengthSquared() < 1e-8)
+                    localUpAxis = Vector3(1.0, 0.0, 0.0);
+                else
+                    localUpAxis.normalize();
 
-                Quaternion rot = Quaternion::fromAxisAndAngle(up, rotAngle);
-                Matrix4x4 rotMatrix;
-                rotMatrix.rotate(rot);
-                Vector3 rotatedLocalDir = rotMatrix.transformVector(localBoneDir.normalized()) * boneLength;
+                Vector3 localForwardAxis = parentRestInv.transformVector(restBoneDir);
+                if (localForwardAxis.lengthSquared() < 1e-8)
+                    localForwardAxis = Vector3(0.0, 0.0, 1.0);
+                else
+                    localForwardAxis.normalize();
 
-                // Transform into world space via parent world transform
+                Quaternion swingRot = Quaternion::fromAxisAndAngle(localUpAxis, rotAngle);
+                Matrix4x4 swingMat;
+                swingMat.rotate(swingRot);
+
+                Quaternion twistRot = Quaternion::fromAxisAndAngle(localForwardAxis, rollAngle);
+                Matrix4x4 twistMat;
+                twistMat.rotate(twistRot);
+
+                Vector3 rotatedLocalDir = twistMat.transformVector(swingMat.transformVector(localBoneDir.normalized())) * boneLength;
+
                 Matrix4x4 parentWorldTransform = parentIt->second;
                 Vector3 boneStart = parentWorldTransform.transformPoint(localBonePos);
                 Vector3 boneEnd = boneStart + parentWorldTransform.transformVector(rotatedLocalDir);
@@ -207,192 +216,99 @@ namespace fish {
                 boneWorldTransforms[bone.name] = animation::buildBoneWorldTransform(boneStart, boneEnd);
             }
 
-            // Animate pectoral fins (attached to BodyFront)
-            for (int side = 0; side < 2; ++side) {
-                const char* finName = (side == 0) ? "LeftPectoralFin" : "RightPectoralFin";
+            auto animateSideFin = [&](const char* finName, const char* parentBone, double power, double phaseOffset, double sidePhase) {
                 if (boneIdx.find(finName) == boneIdx.end())
-                    continue;
+                    return;
 
-                auto bodyFrontIt = boneWorldTransforms.find("BodyFront");
-                if (bodyFrontIt == boneWorldTransforms.end())
-                    continue;
-
-                Vector3 finRestPos = getBonePos(finName);
-                Vector3 finRestEnd = getBoneEnd(finName);
-                Vector3 bodyFrontRestPos = getBonePos("BodyFront");
-                Vector3 bodyFrontRestEnd = getBoneEnd("BodyFront");
-
-                Matrix4x4 parentRestTransform = animation::buildBoneWorldTransform(bodyFrontRestPos, bodyFrontRestEnd);
-                Matrix4x4 parentRestInv = parentRestTransform.inverted();
-                Vector3 localFinPos = parentRestInv.transformPoint(finRestPos);
-                Vector3 localFinEnd = parentRestInv.transformPoint(finRestEnd);
-                Vector3 localFinDir = localFinEnd - localFinPos;
-
-                Vector3 bodyForward = (bodyFrontRestEnd - bodyFrontRestPos).normalized();
-                Vector3 bodyRight = Vector3::crossProduct(bodyForward, up).normalized();
-                if (bodyRight.isZero()) {
-                    bodyRight = Vector3::crossProduct(bodyForward, Vector3(0.0, 0.0, 1.0)).normalized();
-                }
-
-                double sidePhase = (side == 0) ? 0.0 : Math::Pi;
-                double finPhase = phase + pectoralPhaseOffset * 2.0 * Math::Pi + sidePhase;
-                double flapAngle = sin(finPhase) * pectoralFlapPower;
-                Quaternion finRot = Quaternion::fromAxisAndAngle(bodyRight, flapAngle);
-                Matrix4x4 finRotMat;
-                finRotMat.rotate(finRot);
-                Vector3 rotatedLocalFinDir = finRotMat.transformVector(localFinDir);
-
-                Vector3 finPos = bodyFrontIt->second.transformPoint(localFinPos);
-                Vector3 finDir = bodyFrontIt->second.transformVector(rotatedLocalFinDir);
-                Vector3 finEnd = finPos + finDir;
-                boneWorldTransforms[finName] = animation::buildBoneWorldTransform(finPos, finEnd);
-            }
-
-            // Animate pelvic fins (attached to BodyMid)
-            for (int side = 0; side < 2; ++side) {
-                const char* finName = (side == 0) ? "LeftPelvicFin" : "RightPelvicFin";
-                if (boneIdx.find(finName) == boneIdx.end())
-                    continue;
-
-                auto bodyMidIt = boneWorldTransforms.find("BodyMid");
-                if (bodyMidIt == boneWorldTransforms.end())
-                    continue;
-
-                Vector3 finRestPos = getBonePos(finName);
-                Vector3 finRestEnd = getBoneEnd(finName);
-                Vector3 bodyMidRestPos = getBonePos("BodyMid");
-                Vector3 bodyMidRestEnd = getBoneEnd("BodyMid");
-
-                Matrix4x4 parentRestTransform = animation::buildBoneWorldTransform(bodyMidRestPos, bodyMidRestEnd);
-                Matrix4x4 parentRestInv = parentRestTransform.inverted();
-                Vector3 localFinPos = parentRestInv.transformPoint(finRestPos);
-                Vector3 localFinEnd = parentRestInv.transformPoint(finRestEnd);
-                Vector3 localFinDir = localFinEnd - localFinPos;
-
-                Vector3 bodyForward = (bodyMidRestEnd - bodyMidRestPos).normalized();
-                Vector3 bodyRight = Vector3::crossProduct(bodyForward, up).normalized();
-                if (bodyRight.isZero()) {
-                    bodyRight = Vector3::crossProduct(bodyForward, Vector3(0.0, 0.0, 1.0)).normalized();
-                }
-
-                double sidePhase = (side == 0) ? 0.0 : Math::Pi;
-                double finPhase = phase + pelvicPhaseOffset * 2.0 * Math::Pi + sidePhase;
-                double flapAngle = sin(finPhase) * pelvicFlapPower;
-                Quaternion finRot = Quaternion::fromAxisAndAngle(bodyRight, flapAngle);
-                Matrix4x4 finRotMat;
-                finRotMat.rotate(finRot);
-                Vector3 rotatedLocalFinDir = finRotMat.transformVector(localFinDir);
-
-                Vector3 finPos = bodyMidIt->second.transformPoint(localFinPos);
-                Vector3 finDir = bodyMidIt->second.transformVector(rotatedLocalFinDir);
-                Vector3 finEnd = finPos + finDir;
-                boneWorldTransforms[finName] = animation::buildBoneWorldTransform(finPos, finEnd);
-            }
-
-            // Animate dorsal fins (sway with body undulation)
-            static const struct {
-                const char* finName;
-                const char* parentBone;
-                double phaseOffset;
-            } dorsalFins[] = {
-                { "DorsalFinFront", "BodyFront", 0.2 },
-                { "DorsalFinMid", "BodyMid", 0.5 },
-                { "DorsalFinRear", "BodyRear", 0.75 }
-            };
-
-            for (const auto& fin : dorsalFins) {
-                if (boneIdx.find(fin.finName) == boneIdx.end())
-                    continue;
-
-                auto parentIt = boneWorldTransforms.find(fin.parentBone);
+                auto parentIt = boneWorldTransforms.find(parentBone);
                 if (parentIt == boneWorldTransforms.end())
-                    continue;
+                    return;
 
-                Vector3 finRestPos = getBonePos(fin.finName);
-                Vector3 finRestEnd = getBoneEnd(fin.finName);
-                Vector3 parentRestPos = getBonePos(fin.parentBone);
-                Vector3 parentRestEnd = getBoneEnd(fin.parentBone);
+                Vector3 finRestPos = getBonePos(finName);
+                Vector3 finRestEnd = getBoneEnd(finName);
+                Vector3 parentRestPos = getBonePos(parentBone);
+                Vector3 parentRestEnd = getBoneEnd(parentBone);
 
                 Matrix4x4 parentRestTransform = animation::buildBoneWorldTransform(parentRestPos, parentRestEnd);
                 Matrix4x4 parentRestInv = parentRestTransform.inverted();
                 Vector3 localFinPos = parentRestInv.transformPoint(finRestPos);
-                Vector3 localFinEnd = parentRestInv.transformPoint(finRestEnd);
-                Vector3 localFinDir = localFinEnd - localFinPos;
+                Vector3 localFinDir = parentRestInv.transformVector(finRestEnd - finRestPos);
+                if (localFinDir.lengthSquared() < 1e-8)
+                    return;
 
-                Vector3 parentForward = (parentRestEnd - parentRestPos).normalized();
-                if (parentForward.isZero()) {
-                    parentForward = forwardDir;
-                }
+                Vector3 localFlapAxis = parentRestInv.transformVector(right);
+                if (localFlapAxis.lengthSquared() < 1e-8)
+                    localFlapAxis = Vector3(1.0, 0.0, 0.0);
+                else
+                    localFlapAxis.normalize();
 
-                double finPhase = phase + (fin.phaseOffset + dorsalPhaseOffset) * 2.0 * Math::Pi;
-                double swayAngle = sin(finPhase) * dorsalSwayPower;
-                Quaternion finRot = Quaternion::fromAxisAndAngle(parentForward, swayAngle);
+                double finPhase = phase + phaseOffset * twoPi + sidePhase;
+                double flapAngle = std::sin(finPhase) * power;
+                Quaternion finRot = Quaternion::fromAxisAndAngle(localFlapAxis, flapAngle);
                 Matrix4x4 finRotMat;
                 finRotMat.rotate(finRot);
+
                 Vector3 rotatedLocalFinDir = finRotMat.transformVector(localFinDir);
-
                 Vector3 finPos = parentIt->second.transformPoint(localFinPos);
-                Vector3 finDir = parentIt->second.transformVector(rotatedLocalFinDir);
-                Vector3 finEnd = finPos + finDir;
-
-                boneWorldTransforms[fin.finName] = animation::buildBoneWorldTransform(finPos, finEnd);
-            }
-
-            // Animate ventral fins (sway opposite to dorsals)
-            static const struct {
-                const char* finName;
-                const char* parentBone;
-                double phaseOffset;
-            } ventralFins[] = {
-                { "VentralFinFront", "BodyFront", 0.2 },
-                { "VentralFinMid", "BodyMid", 0.5 },
-                { "VentralFinRear", "BodyRear", 0.75 }
+                Vector3 finEnd = finPos + parentIt->second.transformVector(rotatedLocalFinDir);
+                boneWorldTransforms[finName] = animation::buildBoneWorldTransform(finPos, finEnd);
             };
 
-            for (const auto& fin : ventralFins) {
-                if (boneIdx.find(fin.finName) == boneIdx.end())
-                    continue;
+            animateSideFin("LeftPectoralFin", "BodyFront", pectoralFlapPower, pectoralPhaseOffset, 0.0);
+            animateSideFin("RightPectoralFin", "BodyFront", pectoralFlapPower, pectoralPhaseOffset, Math::Pi);
+            animateSideFin("LeftPelvicFin", "BodyMid", pelvicFlapPower, pelvicPhaseOffset, 0.0);
+            animateSideFin("RightPelvicFin", "BodyMid", pelvicFlapPower, pelvicPhaseOffset, Math::Pi);
 
-                auto parentIt = boneWorldTransforms.find(fin.parentBone);
+            auto animateMidlineFin = [&](const char* finName, const char* parentBone, double power, double phaseOffset,
+                                         double localPhaseOffset, double directionSign) {
+                if (boneIdx.find(finName) == boneIdx.end())
+                    return;
+
+                auto parentIt = boneWorldTransforms.find(parentBone);
                 if (parentIt == boneWorldTransforms.end())
-                    continue;
+                    return;
 
-                Vector3 finRestPos = getBonePos(fin.finName);
-                Vector3 finRestEnd = getBoneEnd(fin.finName);
-                Vector3 parentRestPos = getBonePos(fin.parentBone);
-                Vector3 parentRestEnd = getBoneEnd(fin.parentBone);
+                Vector3 finRestPos = getBonePos(finName);
+                Vector3 finRestEnd = getBoneEnd(finName);
+                Vector3 parentRestPos = getBonePos(parentBone);
+                Vector3 parentRestEnd = getBoneEnd(parentBone);
 
                 Matrix4x4 parentRestTransform = animation::buildBoneWorldTransform(parentRestPos, parentRestEnd);
                 Matrix4x4 parentRestInv = parentRestTransform.inverted();
                 Vector3 localFinPos = parentRestInv.transformPoint(finRestPos);
-                Vector3 localFinEnd = parentRestInv.transformPoint(finRestEnd);
-                Vector3 localFinDir = localFinEnd - localFinPos;
+                Vector3 localFinDir = parentRestInv.transformVector(finRestEnd - finRestPos);
+                if (localFinDir.lengthSquared() < 1e-8)
+                    return;
 
-                Vector3 parentForward = (parentRestEnd - parentRestPos).normalized();
-                if (parentForward.isZero()) {
-                    parentForward = forwardDir;
-                }
+                Vector3 localSwayAxis = parentRestInv.transformVector(forwardDir);
+                if (localSwayAxis.lengthSquared() < 1e-8)
+                    localSwayAxis = Vector3(0.0, 0.0, 1.0);
+                else
+                    localSwayAxis.normalize();
 
-                double finPhase = phase + (fin.phaseOffset + ventralPhaseOffset) * 2.0 * Math::Pi + Math::Pi;
-                double swayAngle = sin(finPhase) * ventralSwayPower;
-                Quaternion finRot = Quaternion::fromAxisAndAngle(parentForward, swayAngle);
+                double finPhase = phase + (phaseOffset + localPhaseOffset) * twoPi;
+                double swayAngle = std::sin(finPhase + (directionSign < 0.0 ? Math::Pi : 0.0)) * power * directionSign;
+                Quaternion finRot = Quaternion::fromAxisAndAngle(localSwayAxis, swayAngle);
                 Matrix4x4 finRotMat;
                 finRotMat.rotate(finRot);
+
                 Vector3 rotatedLocalFinDir = finRotMat.transformVector(localFinDir);
-
                 Vector3 finPos = parentIt->second.transformPoint(localFinPos);
-                Vector3 finDir = parentIt->second.transformVector(rotatedLocalFinDir);
-                Vector3 finEnd = finPos + finDir;
+                Vector3 finEnd = finPos + parentIt->second.transformVector(rotatedLocalFinDir);
+                boneWorldTransforms[finName] = animation::buildBoneWorldTransform(finPos, finEnd);
+            };
 
-                boneWorldTransforms[fin.finName] = animation::buildBoneWorldTransform(finPos, finEnd);
-            }
+            animateMidlineFin("DorsalFinFront", "BodyFront", dorsalSwayPower, dorsalPhaseOffset, 0.2, 1.0);
+            animateMidlineFin("DorsalFinMid", "BodyMid", dorsalSwayPower, dorsalPhaseOffset, 0.5, 1.0);
+            animateMidlineFin("DorsalFinRear", "BodyRear", dorsalSwayPower, dorsalPhaseOffset, 0.75, 1.0);
+            animateMidlineFin("VentralFinFront", "BodyFront", ventralSwayPower, ventralPhaseOffset, 0.2, -1.0);
+            animateMidlineFin("VentralFinMid", "BodyMid", ventralSwayPower, ventralPhaseOffset, 0.5, -1.0);
+            animateMidlineFin("VentralFinRear", "BodyRear", ventralSwayPower, ventralPhaseOffset, 0.75, -1.0);
 
-            // Write frame data
             auto& animFrame = animationClip.frames[frame];
-            animFrame.time = static_cast<float>(t) * durationSeconds;
+            animFrame.time = static_cast<float>(animTime);
             animFrame.boneWorldTransforms = boneWorldTransforms;
 
-            // Calculate skin matrices
             for (const auto& pair : boneWorldTransforms) {
                 auto invIt = inverseBindMatrices.find(pair.first);
                 if (invIt != inverseBindMatrices.end()) {
