@@ -62,3 +62,21 @@ int MonochromeMesh::lineVertexCount()
 {
     return (int)m_lineVertices.size();
 }
+
+MonochromeMesh::MonochromeMesh(const ModelOpenGLVertex* triangleVertices, int vertexCount,
+    float r, float g, float b, float a)
+{
+    // Each group of 3 vertices forms a triangle; emit 3 edges per triangle
+    m_lineVertices.reserve(vertexCount * 2);
+    for (int i = 0; i + 2 < vertexCount; i += 3) {
+        const auto& v0 = triangleVertices[i];
+        const auto& v1 = triangleVertices[i + 1];
+        const auto& v2 = triangleVertices[i + 2];
+        m_lineVertices.emplace_back(MonochromeOpenGLVertex { v0.posX, v0.posY, v0.posZ, r, g, b, a });
+        m_lineVertices.emplace_back(MonochromeOpenGLVertex { v1.posX, v1.posY, v1.posZ, r, g, b, a });
+        m_lineVertices.emplace_back(MonochromeOpenGLVertex { v1.posX, v1.posY, v1.posZ, r, g, b, a });
+        m_lineVertices.emplace_back(MonochromeOpenGLVertex { v2.posX, v2.posY, v2.posZ, r, g, b, a });
+        m_lineVertices.emplace_back(MonochromeOpenGLVertex { v2.posX, v2.posY, v2.posZ, r, g, b, a });
+        m_lineVertices.emplace_back(MonochromeOpenGLVertex { v0.posX, v0.posY, v0.posZ, r, g, b, a });
+    }
+}

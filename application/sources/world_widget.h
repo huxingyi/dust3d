@@ -3,6 +3,9 @@
 
 #include "model_mesh.h"
 #include "model_opengl_object.h"
+#include "monochrome_mesh.h"
+#include "monochrome_opengl_object.h"
+#include "monochrome_opengl_program.h"
 #include "shadow_opengl_program.h"
 #include "world_ground_opengl_object.h"
 #include "world_ground_opengl_program.h"
@@ -27,6 +30,10 @@ public:
     WorldWidget(QWidget* parent = nullptr);
     ~WorldWidget();
     void updateMesh(ModelMesh* mesh);
+    void updateWireframeMesh(MonochromeMesh* mesh);
+    void toggleWireframe();
+    void setWireframeVisible(bool visible);
+    bool isWireframeVisible();
     void toggleRotation();
     void enableMove(bool enabled);
     void enableZoom(bool enabled);
@@ -67,6 +74,9 @@ private:
     std::unique_ptr<WorldGroundOpenGLProgram> m_groundOpenGLProgram;
     std::unique_ptr<ModelOpenGLObject> m_modelOpenGLObject;
     std::unique_ptr<WorldGroundOpenGLObject> m_groundOpenGLObject;
+    std::unique_ptr<MonochromeOpenGLProgram> m_monochromeOpenGLProgram;
+    std::unique_ptr<MonochromeOpenGLObject> m_wireframeOpenGLObject;
+    bool m_isWireframeVisible = false;
     bool m_moveStarted = false;
     bool m_moveEnabled = true;
     bool m_zoomEnabled = true;
@@ -99,6 +109,7 @@ private:
     void drawShadowPass();
     void drawWorldModel();
     void drawGround();
+    void drawWireframe();
 
 public:
     static int m_defaultXRotation;

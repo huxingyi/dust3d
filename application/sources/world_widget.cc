@@ -124,6 +124,8 @@ void WorldWidget::cleanup()
     m_worldOpenGLProgram.reset();
     m_groundOpenGLProgram.reset();
     m_groundOpenGLObject.reset();
+    m_wireframeOpenGLObject.reset();
+    m_monochromeOpenGLProgram.reset();
     if (canUseGlContext && nullptr != QOpenGLContext::currentContext())
         doneCurrent();
 }
@@ -196,6 +198,34 @@ void WorldWidget::updateMesh(ModelMesh* mesh)
 
     emit renderParametersChanged();
     update();
+}
+
+void WorldWidget::updateWireframeMesh(MonochromeMesh* mesh)
+{
+    if (!m_wireframeOpenGLObject)
+        m_wireframeOpenGLObject = std::make_unique<MonochromeOpenGLObject>();
+    m_wireframeOpenGLObject->update(std::unique_ptr<MonochromeMesh>(mesh));
+    emit renderParametersChanged();
+    update();
+}
+
+void WorldWidget::toggleWireframe()
+{
+    m_isWireframeVisible = !m_isWireframeVisible;
+    update();
+}
+
+void WorldWidget::setWireframeVisible(bool visible)
+{
+    if (m_isWireframeVisible != visible) {
+        m_isWireframeVisible = visible;
+        update();
+    }
+}
+
+bool WorldWidget::isWireframeVisible()
+{
+    return m_isWireframeVisible;
 }
 
 void WorldWidget::toggleRotation()
@@ -311,6 +341,13 @@ void WorldWidget::paintGL()
     m_lightProjection.ortho(-4.0f, 4.0f, -4.0f, 4.0f, 1.0f, 50.0f);
     m_lightSpaceMatrix = m_lightProjection * m_lightView;
 
+    if (m_isWireframeVisible) {
+        if (!m_monochromeOpenGLProgram) {
+            m_monochromeOpenGLProgram = std::make_unique<MonochromeOpenGLProgram>();
+            m_monochromeOpenGLProgram->load(isCoreProfile);
+        }
+    }
+
     // --- Pass 1: Shadow depth ---
     drawShadowPass();
 
@@ -331,6 +368,9 @@ void WorldWidget::paintGL()
 
     f->glDisable(GL_CULL_FACE);
     drawGround();
+
+    if (m_isWireframeVisible)
+        drawWireframe();
 
     f->glDisable(GL_POLYGON_OFFSET_FILL);
 }
@@ -415,6 +455,24 @@ void WorldWidget::drawGround()
     f->glActiveTexture(GL_TEXTURE0);
 
     m_groundOpenGLProgram->release();
+}
+
+void WorldWidget::drawWireframe()
+{
+    m_monochromeOpenGLProgram->bind();
+
+    m_monochromeOpenGLProgram->setUniformValue(m_monochromeOpenGLProgram->getUniformLocationByName("projectionMatrix"), m_projection);
+    m_monochromeOpenGLProgram->setUniformValue(m_monochromeOpenGLProgram->getUniformLocationByName("modelMatrix"), m_world);
+    m_monochromeOpenGLProgram->setUniformValue(m_monochromeOpenGLProgram->getUniformLocationByName("viewMatrix"), m_camera);
+
+    if (m_monochromeOpenGLProgram->isCoreProfile()) {
+        m_monochromeOpenGLProgram->setUniformValue("viewportSize", QVector2D(m_widthInPixels, m_heightInPixels));
+    }
+
+    if (m_wireframeOpenGLObject)
+        m_wireframeOpenGLObject->draw();
+
+    m_monochromeOpenGLProgram->release();
 }
 
 void WorldWidget::zoom(float delta)

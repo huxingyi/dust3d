@@ -1,6 +1,7 @@
 #include "bone_manage_widget.h"
 #include "document.h"
 #include "model_mesh.h"
+#include "monochrome_mesh.h"
 #include "skeleton_graphics_widget.h"
 #include "theme.h"
 #include <QComboBox>
@@ -156,6 +157,7 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
     m_rigSkinningModelWidget->setMinimumHeight(250);
     m_rigSkinningModelWidget->enableZoom(false);
     m_rigSkinningModelWidget->disableCullFace();
+    m_rigSkinningModelWidget->toggleWireframe();
 
     m_rigSkinningGroupBox = new QGroupBox(tr("Skinned"));
     QVBoxLayout* rigSkinningLayout = new QVBoxLayout;
@@ -212,6 +214,12 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
 
 BoneManageWidget::~BoneManageWidget()
 {
+}
+
+void BoneManageWidget::setWireframeVisible(bool visible)
+{
+    if (m_rigSkinningModelWidget)
+        m_rigSkinningModelWidget->setWireframeVisible(visible);
 }
 
 void BoneManageWidget::showContextMenu(const QPoint& pos)
@@ -628,11 +636,11 @@ void BoneManageWidget::rigSkinningMeshReady()
     ModelOpenGLVertex* combinedVertices = m_rigSkinningMeshWorker->takeCombinedVertices();
     int combinedVertexCount = m_rigSkinningMeshWorker->getCombinedVertexCount();
 
-    if (combinedVertices && combinedVertexCount > 0) {
+    if (combinedVertices && combinedVertexCount > 0 && m_rigSkinningModelWidget) {
+        MonochromeMesh* wireframeMesh = new MonochromeMesh(combinedVertices, combinedVertexCount, 1.0f, 1.0f, 1.0f, 0.3f);
         ModelMesh* combinedMesh = new ModelMesh(combinedVertices, combinedVertexCount);
-        if (m_rigSkinningModelWidget) {
-            m_rigSkinningModelWidget->updateMesh(combinedMesh);
-        }
+        m_rigSkinningModelWidget->updateMesh(combinedMesh);
+        m_rigSkinningModelWidget->updateWireframeMesh(wireframeMesh);
     }
 
     m_rigSkinningMeshWorker.reset();

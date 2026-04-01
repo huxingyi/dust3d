@@ -38,6 +38,7 @@ public:
     void updateWireframeMesh(MonochromeMesh* mesh);
     void toggleWireframe();
     bool isWireframeVisible();
+    void setWireframeVisible(bool visible);
     void toggleRotation();
     void enableMove(bool enabled);
     void enableZoom(bool enabled);

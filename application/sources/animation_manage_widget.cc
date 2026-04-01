@@ -1,5 +1,6 @@
 #include "animation_manage_widget.h"
 #include "document.h"
+#include "monochrome_mesh.h"
 #include "theme.h"
 #include "toolbar_button.h"
 #include <QComboBox>
@@ -27,6 +28,7 @@ AnimationManageWidget::AnimationManageWidget(Document* document, QWidget* parent
     m_modelWidget->enableZoom(true);
     m_modelWidget->enableMove(true);
     m_modelWidget->setMoveAndZoomByWindow(false);
+    m_modelWidget->toggleWireframe();
 
     setLayout(mainLayout);
 
@@ -457,6 +459,12 @@ AnimationManageWidget::~AnimationManageWidget()
 {
     stopAnimationLoop();
 }
+
+void AnimationManageWidget::setWireframeVisible(bool visible)
+{
+    if (m_modelWidget)
+        m_modelWidget->setWireframeVisible(visible);
+}
 void AnimationManageWidget::onResultRigChanged()
 {
     qDebug() << "AnimationManageWidget: resultRigChanged";
@@ -555,8 +563,12 @@ void AnimationManageWidget::onAnimationFrameTimeout()
     if (m_currentFrame < 0 || m_currentFrame >= (int)m_animationFrames.size())
         m_currentFrame = 0;
 
-    ModelMesh* frameMesh = new ModelMesh(m_animationFrames[m_currentFrame]);
-    m_modelWidget->updateMesh(frameMesh);
+    ModelMesh& frameSource = m_animationFrames[m_currentFrame];
+    if (m_modelWidget->isWireframeVisible()) {
+        m_modelWidget->updateWireframeMesh(
+            new MonochromeMesh(frameSource.triangleVertices(), frameSource.triangleVertexCount()));
+    }
+    m_modelWidget->updateMesh(new ModelMesh(frameSource));
 
     m_currentFrame = (m_currentFrame + 1) % (int)m_animationFrames.size();
 }

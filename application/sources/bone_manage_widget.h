@@ -38,6 +38,7 @@ public:
     BoneManageWidget(Document* document, QWidget* parent = nullptr);
     ~BoneManageWidget();
     void setSkeletonGraphicsWidget(SkeletonGraphicsWidget* graphicsWidget);
+    void setWireframeVisible(bool visible);
 
 private:
     Document* m_document = nullptr;

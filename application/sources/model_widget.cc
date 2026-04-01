@@ -174,6 +174,14 @@ bool ModelWidget::isWireframeVisible()
     return m_isWireframeVisible;
 }
 
+void ModelWidget::setWireframeVisible(bool visible)
+{
+    if (m_isWireframeVisible != visible) {
+        m_isWireframeVisible = visible;
+        update();
+    }
+}
+
 void ModelWidget::toggleRotation()
 {
     if (nullptr != m_rotationTimer) {
