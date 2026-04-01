@@ -11,6 +11,7 @@
 #include "float_number_widget.h"
 #include "flow_layout.h"
 #include "glb_file.h"
+#include "gltf_file.h"
 #include "horizontal_line_widget.h"
 #include "image_forever.h"
 #include "log_browser.h"
@@ -367,6 +368,10 @@ DocumentWindow::DocumentWindow()
     connect(m_exportAsGlbAction, &QAction::triggered, this, &DocumentWindow::exportGlbResult, Qt::QueuedConnection);
     m_fileMenu->addAction(m_exportAsGlbAction);
 
+    m_exportAsGltfAction = new QAction(tr("Export as glTF..."), this);
+    connect(m_exportAsGltfAction, &QAction::triggered, this, &DocumentWindow::exportGltfResult, Qt::QueuedConnection);
+    m_fileMenu->addAction(m_exportAsGltfAction);
+
 #if defined(Q_OS_WASM)
 #else
     m_exportAsFbxAction = new QAction(tr("Export as FBX..."), this);
@@ -407,6 +412,7 @@ DocumentWindow::DocumentWindow()
     connect(m_fileMenu, &QMenu::aboutToShow, [=]() {
         m_exportAsObjAction->setEnabled(m_canvasGraphicsWidget->hasItems());
         m_exportAsGlbAction->setEnabled(m_canvasGraphicsWidget->hasItems() && m_document->isExportReady());
+        m_exportAsGltfAction->setEnabled(m_canvasGraphicsWidget->hasItems() && m_document->isExportReady());
         m_exportAsFbxAction->setEnabled(m_canvasGraphicsWidget->hasItems() && m_document->isExportReady());
     });
 
@@ -1440,6 +1446,35 @@ void DocumentWindow::exportGlbToFilename(const QString& filename)
     connect(thread, &QThread::finished, thread, &QThread::deleteLater);
 
     thread->start();
+}
+
+void DocumentWindow::exportGltfResult()
+{
+    QString filename = QFileDialog::getSaveFileName(this, QString(), QString(),
+        tr("glTF JSON Format (*.gltf)"));
+    if (filename.isEmpty()) {
+        return;
+    }
+    ensureFileExtension(&filename, ".gltf");
+    exportGltfToFilename(filename);
+}
+
+void DocumentWindow::exportGltfToFilename(const QString& filename)
+{
+    if (!m_document->isExportReady()) {
+        qDebug() << "Export but document is not export ready";
+        return;
+    }
+    QApplication::setOverrideCursor(Qt::WaitCursor);
+    dust3d::Object skeletonResult = m_document->currentUvMappedObject();
+    QImage* textureMetalnessRoughnessAmbientOcclusionImage = UvMapGenerator::combineMetalnessRoughnessAmbientOcclusionImages(m_document->textureMetalnessImage,
+        m_document->textureRoughnessImage,
+        m_document->textureAmbientOcclusionImage);
+    GltfFileWriter gltfFileWriter(skeletonResult, filename,
+        m_document->textureImage, m_document->textureNormalImage, textureMetalnessRoughnessAmbientOcclusionImage);
+    gltfFileWriter.save();
+    delete textureMetalnessRoughnessAmbientOcclusionImage;
+    QApplication::restoreOverrideCursor();
 }
 
 void DocumentWindow::updateXlockButtonState()
