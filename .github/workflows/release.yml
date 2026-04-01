@@ -15,16 +15,19 @@ run-name: ${{ github.event.workflow_run.head_commit.message }}
 jobs:
   appimage-upload:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    # Use oldest ubuntu to make AppImage work
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
       - name: Install Qt
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y qt5-default libqt5svg5-dev
+        uses: jurplel/install-qt-action@v3
+        with:
+          aqtversion: '==3.3.*'
+          version: '5.15.2'
+          host: 'linux'
+          target: 'desktop'
+          archives: 'qttools qtsvg qtimageformats qtbase icu'
       - name: Build application
         run: |
           cd ${GITHUB_WORKSPACE}/application
@@ -51,15 +54,15 @@ jobs:
           git push origin HEAD
           cd ../
       - name: Upload AppImage
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dust3d-${{ github.event.workflow_run.head_branch }}.AppImage
           path: dust3d-${{ github.event.workflow_run.head_branch }}.AppImage
   win32-msvc-upload:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
-    runs-on: 	windows-2019
+    runs-on: windows-2022
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
       - name: Set up Visual Studio shell
@@ -123,7 +126,7 @@ jobs:
           git push origin HEAD
           cd ../
       - name: Upload zip
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dust3d-${{ github.event.workflow_run.head_branch }}
           path: dust3d-${{ github.event.workflow_run.head_branch }}/
@@ -131,7 +134,9 @@ jobs:
     if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
       - name: Install Qt
         run: |
           HOMEBREW_VERBOSE_USING_DOTS=1 brew reinstall --verbose qt@5
@@ -163,7 +168,7 @@ jobs:
           git push origin HEAD
           cd ../
       - name: Upload DMG
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: dust3d-${{ github.event.workflow_run.head_branch }}.dmg
           path: dust3d-${{ github.event.workflow_run.head_branch }}.dmg
