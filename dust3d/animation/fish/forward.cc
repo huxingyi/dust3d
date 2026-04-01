@@ -22,8 +22,8 @@
 
 #include <cmath>
 #include <cstring>
+#include <dust3d/animation/common.h>
 #include <dust3d/animation/fish/forward.h>
-#include <dust3d/animation/insect/common.h>
 #include <dust3d/base/math.h>
 #include <dust3d/base/matrix4x4.h>
 #include <dust3d/base/quaternion.h>
@@ -42,15 +42,15 @@ namespace fish {
         const AnimationParams& parameters)
     {
         // Build bone index map using the common utility
-        std::map<std::string, size_t> boneIdx = insect::buildBoneIndexMap(rigStructure);
+        std::map<std::string, size_t> boneIdx = animation::buildBoneIndexMap(rigStructure);
 
         // Helper lambdas for bone position lookups
         auto getBonePos = [&](const std::string& name) -> Vector3 {
-            return insect::getBonePos(rigStructure, boneIdx, name);
+            return animation::getBonePos(rigStructure, boneIdx, name);
         };
 
         auto getBoneEnd = [&](const std::string& name) -> Vector3 {
-            return insect::getBoneEnd(rigStructure, boneIdx, name);
+            return animation::getBoneEnd(rigStructure, boneIdx, name);
         };
 
         // Required bones for fish animation
@@ -60,7 +60,7 @@ namespace fish {
         };
         constexpr size_t numRequiredBones = sizeof(requiredBones) / sizeof(requiredBones[0]);
 
-        if (!insect::validateRequiredBones(boneIdx, requiredBones, numRequiredBones))
+        if (!animation::validateRequiredBones(boneIdx, requiredBones, numRequiredBones))
             return false;
 
         // Calculate body length and coordinate frame
@@ -148,12 +148,34 @@ namespace fish {
             Vector3 rootEnd = getBoneEnd("Root");
             Vector3 newRootPos = rootTransform.transformPoint(rootPos);
             Vector3 newRootEnd = rootTransform.transformPoint(rootEnd);
-            boneWorldTransforms["Root"] = insect::buildBoneWorldTransform(newRootPos, newRootEnd);
+            boneWorldTransforms["Root"] = animation::buildBoneWorldTransform(newRootPos, newRootEnd);
 
-            // Create undulating spine motion
-            Vector3 currentPos = newRootEnd; // Start from root end position
+            // Create undulating spine motion using wave displacement at spine junctions
+            constexpr size_t numSpineBones = sizeof(spineBones) / sizeof(SpineBone);
 
-            for (size_t i = 0; i < sizeof(spineBones) / sizeof(SpineBone); ++i) {
+            // Compute lateral displacement from the traveling wave at each junction
+            // junctions[i] = start of spineBones[i], junctions[numSpineBones] = end of last bone
+            double junctionLateral[numSpineBones + 1];
+            double junctionSpinePos[numSpineBones + 1];
+
+            for (size_t i = 0; i < numSpineBones; ++i) {
+                junctionSpinePos[i] = spineBones[i].spinePosition;
+            }
+            junctionSpinePos[numSpineBones] = spineBones[numSpineBones - 1].spinePosition
+                + (spineBones[numSpineBones - 1].spinePosition - spineBones[numSpineBones - 2].spinePosition);
+
+            for (size_t i = 0; i <= numSpineBones; ++i) {
+                double pos = junctionSpinePos[i];
+                double wavePhase = phase - (pos * waveLength * 2.0 * Math::Pi);
+                double ampScale = (i < numSpineBones) ? spineBones[i].amplitudeScale
+                                                      : spineBones[numSpineBones - 1].amplitudeScale;
+                junctionLateral[i] = spineAmplitude * ampScale * tailAmplitudeRatio * sin(wavePhase);
+            }
+
+            // Start chain from root end, offset by the head's wave displacement
+            Vector3 currentPos = newRootEnd + right * junctionLateral[0];
+
+            for (size_t i = 0; i < numSpineBones; ++i) {
                 const auto& bone = spineBones[i];
 
                 if (boneIdx.find(bone.name) == boneIdx.end())
@@ -161,24 +183,22 @@ namespace fish {
 
                 Vector3 restPos = getBonePos(bone.name);
                 Vector3 restEnd = getBoneEnd(bone.name);
-                Vector3 boneDir = restEnd - restPos;
-                double boneLength = boneDir.length();
+                Vector3 restBoneDir = restEnd - restPos;
+                double boneLength = restBoneDir.length();
 
-                // Calculate undulation parameters for this bone
-                double wavePhase = phase - (bone.spinePosition * waveLength * 2.0 * Math::Pi);
-                double undulationAngle = spineAmplitude * bone.amplitudeScale * tailAmplitudeRatio * sin(wavePhase);
+                // Forward component: bone's rest direction projected onto spine axis
+                double fwdComponent = Vector3::dotProduct(restBoneDir, forwardDir);
+                // Lateral component: wave displacement difference between junctions
+                double latComponent = junctionLateral[i + 1] - junctionLateral[i];
 
-                // Apply spine undulation rotation around the up axis
-                Quaternion spineRotation = Quaternion::fromAxisAndAngle(up, undulationAngle);
-                Matrix4x4 localSpineTransform = rootTransform;
-                localSpineTransform.rotate(spineRotation);
+                // Compose bone direction and preserve bone length
+                Vector3 newBoneDir = forwardDir * fwdComponent + right * latComponent;
+                newBoneDir = newBoneDir.normalized() * boneLength;
 
-                // Transform bone direction with undulation
-                Vector3 newBoneDir = localSpineTransform.transformVector(boneDir.normalized()) * boneLength;
                 Vector3 boneStart = currentPos;
                 Vector3 boneEnd = boneStart + newBoneDir;
 
-                boneWorldTransforms[bone.name] = insect::buildBoneWorldTransform(boneStart, boneEnd);
+                boneWorldTransforms[bone.name] = animation::buildBoneWorldTransform(boneStart, boneEnd);
 
                 // Update position for next bone in chain
                 currentPos = boneEnd;
@@ -215,7 +235,7 @@ namespace fish {
                 Vector3 finDir = bodyFrontIt->second.transformVector(finTransform.transformVector(finRestDir));
                 Vector3 finEnd = finPos + finDir;
 
-                boneWorldTransforms[finName] = insect::buildBoneWorldTransform(finPos, finEnd);
+                boneWorldTransforms[finName] = animation::buildBoneWorldTransform(finPos, finEnd);
             }
 
             // Animate pelvic fins (attached to BodyMid)
@@ -246,7 +266,7 @@ namespace fish {
                 Vector3 finDir = bodyMidIt->second.transformVector(finTransform.transformVector(finRestDir));
                 Vector3 finEnd = finPos + finDir;
 
-                boneWorldTransforms[finName] = insect::buildBoneWorldTransform(finPos, finEnd);
+                boneWorldTransforms[finName] = animation::buildBoneWorldTransform(finPos, finEnd);
             }
 
             // Animate dorsal fins (sway with body undulation)
@@ -284,7 +304,7 @@ namespace fish {
                 Vector3 finDir = parentIt->second.transformVector(finTransform.transformVector(finRestDir));
                 Vector3 finEnd = finPos + finDir;
 
-                boneWorldTransforms[fin.finName] = insect::buildBoneWorldTransform(finPos, finEnd);
+                boneWorldTransforms[fin.finName] = animation::buildBoneWorldTransform(finPos, finEnd);
             }
 
             // Animate ventral fins (sway opposite to dorsals)
@@ -323,7 +343,7 @@ namespace fish {
                 Vector3 finDir = parentIt->second.transformVector(finTransform.transformVector(finRestDir));
                 Vector3 finEnd = finPos + finDir;
 
-                boneWorldTransforms[fin.finName] = insect::buildBoneWorldTransform(finPos, finEnd);
+                boneWorldTransforms[fin.finName] = animation::buildBoneWorldTransform(finPos, finEnd);
             }
 
             // Write frame data

@@ -23,7 +23,7 @@
 #include <cmath>
 #include <cstring>
 #include <dust3d/animation/bird/forward.h>
-#include <dust3d/animation/insect/common.h>
+#include <dust3d/animation/common.h>
 #include <dust3d/base/math.h>
 #include <dust3d/base/matrix4x4.h>
 #include <dust3d/base/quaternion.h>
@@ -136,7 +136,7 @@ namespace bird {
                 Vector3 end = getBoneEnd(name);
                 Vector3 newPos = bodyTransform.transformPoint(pos);
                 Vector3 newEnd = bodyTransform.transformPoint(end);
-                boneWorldTransforms[name] = insect::buildBoneWorldTransform(newPos, newEnd);
+                boneWorldTransforms[name] = animation::buildBoneWorldTransform(newPos, newEnd);
             };
 
             // Body chain
@@ -154,7 +154,7 @@ namespace bird {
                 neckRot.rotate(right, neckCounterPitch);
                 Vector3 neckDir = neckEnd - neckPos;
                 Vector3 rotatedNeckDir = neckRot.transformVector(neckDir);
-                boneWorldTransforms["Neck"] = insect::buildBoneWorldTransform(neckPos, neckPos + rotatedNeckDir);
+                boneWorldTransforms["Neck"] = animation::buildBoneWorldTransform(neckPos, neckPos + rotatedNeckDir);
 
                 // Head follows neck end, using combined body+neck rotation
                 Vector3 headPos = neckPos + rotatedNeckDir;
@@ -166,7 +166,7 @@ namespace bird {
                 Vector3 rotatedHeadDir = headTransform.transformVector(headDir);
                 if (rotatedHeadDir.isZero())
                     rotatedHeadDir = forwardDir;
-                boneWorldTransforms["Head"] = insect::buildBoneWorldTransform(headPos, headPos + rotatedHeadDir);
+                boneWorldTransforms["Head"] = animation::buildBoneWorldTransform(headPos, headPos + rotatedHeadDir);
 
                 // Beak rigidly follows Head with the same transform
                 if (boneIdx.count("Beak")) {
@@ -175,7 +175,7 @@ namespace bird {
                     Vector3 rotatedBeakDir = headTransform.transformVector(beakDir);
                     if (rotatedBeakDir.isZero())
                         rotatedBeakDir = rotatedHeadDir.normalized();
-                    boneWorldTransforms["Beak"] = insect::buildBoneWorldTransform(beakPos, beakPos + rotatedBeakDir);
+                    boneWorldTransforms["Beak"] = animation::buildBoneWorldTransform(beakPos, beakPos + rotatedBeakDir);
                 }
             }
 
@@ -192,14 +192,14 @@ namespace bird {
                     tailRot.rotate(right, tailAngle);
                     Vector3 tailDir = tailBaseEnd - tailBasePos;
                     Vector3 rotatedTailDir = tailRot.transformVector(tailDir);
-                    boneWorldTransforms["TailBase"] = insect::buildBoneWorldTransform(tailBasePos, tailBasePos + rotatedTailDir);
+                    boneWorldTransforms["TailBase"] = animation::buildBoneWorldTransform(tailBasePos, tailBasePos + rotatedTailDir);
 
                     if (hasTailFeathers) {
                         Vector3 featherStart = tailBasePos + rotatedTailDir;
                         Vector3 featherDir = getBoneEnd("TailFeathers") - getBonePos("TailFeathers");
                         double featherLen = featherDir.length();
                         Vector3 rotatedFeatherDir = tailRot.transformVector(bodyTransform.transformVector(featherDir.normalized())) * featherLen;
-                        boneWorldTransforms["TailFeathers"] = insect::buildBoneWorldTransform(featherStart, featherStart + rotatedFeatherDir);
+                        boneWorldTransforms["TailFeathers"] = animation::buildBoneWorldTransform(featherStart, featherStart + rotatedFeatherDir);
                     }
                 }
             }
@@ -234,7 +234,7 @@ namespace bird {
                 Vector3 shoulderDir = shoulderEnd - shoulderPos;
                 Vector3 rotatedShoulderDir = shoulderRotMat.transformVector(shoulderDir);
                 Vector3 newShoulderEnd = shoulderPos + rotatedShoulderDir;
-                boneWorldTransforms[shoulderName] = insect::buildBoneWorldTransform(shoulderPos, newShoulderEnd);
+                boneWorldTransforms[shoulderName] = animation::buildBoneWorldTransform(shoulderPos, newShoulderEnd);
 
                 // Elbow: secondary fold during upstroke (wings fold in on upstroke)
                 double elbowFold = elbowFoldAmp * std::max(0.0, -rawWing) * sideSign;
@@ -245,7 +245,7 @@ namespace bird {
                 Vector3 elbowDir = elbowEnd - shoulderEnd;
                 Vector3 rotatedElbowDir = elbowRotMat.transformVector(shoulderRotMat.transformVector(elbowDir));
                 Vector3 newElbowEnd = newShoulderEnd + rotatedElbowDir;
-                boneWorldTransforms[elbowName] = insect::buildBoneWorldTransform(newShoulderEnd, newElbowEnd);
+                boneWorldTransforms[elbowName] = animation::buildBoneWorldTransform(newShoulderEnd, newElbowEnd);
 
                 // Hand: tertiary fold, slightly delayed phase
                 double handFold = handFoldAmp * std::max(0.0, -rawWing) * sideSign;
@@ -256,7 +256,7 @@ namespace bird {
                 Vector3 handDir = handEnd - elbowEnd;
                 Vector3 rotatedHandDir = handRotMat.transformVector(elbowRotMat.transformVector(shoulderRotMat.transformVector(handDir)));
                 Vector3 newHandEnd = newElbowEnd + rotatedHandDir;
-                boneWorldTransforms[handName] = insect::buildBoneWorldTransform(newElbowEnd, newHandEnd);
+                boneWorldTransforms[handName] = animation::buildBoneWorldTransform(newElbowEnd, newHandEnd);
             }
 
             // Legs: tucked during flight with gentle sway
@@ -279,7 +279,7 @@ namespace bird {
                 Vector3 upperDir = upperEnd - upperPos;
                 Vector3 rotatedUpperDir = legTuckMat.transformVector(upperDir);
                 Vector3 newUpperEnd = upperPos + rotatedUpperDir;
-                boneWorldTransforms[upperName] = insect::buildBoneWorldTransform(upperPos, newUpperEnd);
+                boneWorldTransforms[upperName] = animation::buildBoneWorldTransform(upperPos, newUpperEnd);
 
                 // Lower leg folds more to tuck
                 double lowerTuckAngle = -0.6;
@@ -288,13 +288,13 @@ namespace bird {
                 Vector3 lowerDir = lowerEnd - upperEnd;
                 Vector3 rotatedLowerDir = lowerTuckMat.transformVector(legTuckMat.transformVector(lowerDir));
                 Vector3 newLowerEnd = newUpperEnd + rotatedLowerDir;
-                boneWorldTransforms[lowerName] = insect::buildBoneWorldTransform(newUpperEnd, newLowerEnd);
+                boneWorldTransforms[lowerName] = animation::buildBoneWorldTransform(newUpperEnd, newLowerEnd);
 
                 // Foot follows
                 Vector3 footDir = footEnd - lowerEnd;
                 Vector3 rotatedFootDir = lowerTuckMat.transformVector(legTuckMat.transformVector(footDir));
                 Vector3 newFootEnd = newLowerEnd + rotatedFootDir;
-                boneWorldTransforms[footName] = insect::buildBoneWorldTransform(newLowerEnd, newFootEnd);
+                boneWorldTransforms[footName] = animation::buildBoneWorldTransform(newLowerEnd, newFootEnd);
             }
 
             // Write frame
