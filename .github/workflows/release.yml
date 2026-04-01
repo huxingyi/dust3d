@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-      - pipeline
     tags:
       - '*'
 
@@ -35,21 +34,24 @@ jobs:
           sudo apt-get install -y libfuse2
           cd ${GITHUB_WORKSPACE} && sh ./ci/appimage/bundle.sh
           mv Dust3D-x86_64.AppImage dust3d-${{ github.ref_name }}.AppImage
+      - name: Checkout Pages repository
+        uses: actions/checkout@v4
+        with:
+          repository: huxingyi/huxingyi.github.io
+          token: ${{ secrets.UPDATE_REPO_TOKEN }}
+          path: gh-pages
+
       - name: Publish latest build
         env:
           MY_EMAIL: ${{ secrets.MY_EMAIL }}
-          UPDATE_REPO_TOKEN: ${{ secrets.UPDATE_REPO_TOKEN }}
         run: |
-          git config --global user.email "${{ env.MY_EMAIL }}"
-          git config --global user.name "Jeremy HU"
-          git clone https://${{ env.UPDATE_REPO_TOKEN }}@github.com/huxingyi/huxingyi.github.io.git
-          cd huxingyi.github.io
-          git remote set-url origin https://${{ env.UPDATE_REPO_TOKEN }}@github.com/huxingyi/huxingyi.github.io.git
+          cd gh-pages
+          git config user.email "${{ env.MY_EMAIL }}"
+          git config user.name "huxingyi"
           cp ../dust3d-${{ github.ref_name }}.AppImage download/dust3d-latest-preview.AppImage
           git add download/dust3d-latest-preview.AppImage
-          git commit -m "Update latest build for linux"
-          git push origin HEAD
-          cd ../
+          git commit -m "Update latest build for linux" || true
+          git push origin HEAD:master
       - name: Upload AppImage
         uses: actions/upload-artifact@v4
         with:
@@ -90,11 +92,11 @@ jobs:
           7z a Dust3D-win32-x86_64.zip ${GITHUB_WORKSPACE}/../Qt/5.15.2/msvc2019_64/bin/Qt5Core.dll
           7z a Dust3D-win32-x86_64.zip ${GITHUB_WORKSPACE}/../Qt/5.15.2/msvc2019_64/bin/opengl32sw.dll
           ls "${VCToolsRedistDir}x64"
-          ls "${VCToolsRedistDir}x64/Microsoft.VC142.CRT"
-          7z a Dust3D-win32-x86_64.zip "${VCToolsRedistDir}x64/Microsoft.VC142.CRT/msvcp140.dll"
-          7z a Dust3D-win32-x86_64.zip "${VCToolsRedistDir}x64/Microsoft.VC142.CRT/msvcp140_1.dll"
-          7z a Dust3D-win32-x86_64.zip "${VCToolsRedistDir}x64/Microsoft.VC142.CRT/vcruntime140.dll"
-          7z a Dust3D-win32-x86_64.zip "${VCToolsRedistDir}x64/Microsoft.VC142.CRT/vcruntime140_1.dll"
+          CRT_DIR=$(ls -d "${VCToolsRedistDir}x64"/Microsoft.VC*.CRT | head -1)
+          7z a Dust3D-win32-x86_64.zip "${CRT_DIR}/msvcp140.dll"
+          7z a Dust3D-win32-x86_64.zip "${CRT_DIR}/msvcp140_1.dll"
+          7z a Dust3D-win32-x86_64.zip "${CRT_DIR}/vcruntime140.dll"
+          7z a Dust3D-win32-x86_64.zip "${CRT_DIR}/vcruntime140_1.dll"
           mkdir ${GITHUB_WORKSPACE}/platforms
           cp ${GITHUB_WORKSPACE}/../Qt/5.15.2/msvc2019_64/plugins/platforms/qwindows.dll ${GITHUB_WORKSPACE}/platforms/qwindows.dll
           7z a Dust3D-win32-x86_64.zip -r ${GITHUB_WORKSPACE}/platforms/
@@ -104,21 +106,24 @@ jobs:
           7z a Dust3D-win32-x86_64.zip -r ${GITHUB_WORKSPACE}/imageformats/
           7z x Dust3D-win32-x86_64.zip -odust3d-${{ github.ref_name }}
         shell: bash
+      - name: Checkout Pages repository
+        uses: actions/checkout@v4
+        with:
+          repository: huxingyi/huxingyi.github.io
+          token: ${{ secrets.UPDATE_REPO_TOKEN }}
+          path: gh-pages
+
       - name: Publish latest build
         env:
           MY_EMAIL: ${{ secrets.MY_EMAIL }}
-          UPDATE_REPO_TOKEN: ${{ secrets.UPDATE_REPO_TOKEN }}
         run: |
-          git config --global user.email "${{ env.MY_EMAIL }}"
-          git config --global user.name "Jeremy HU"
-          git clone https://${{ env.UPDATE_REPO_TOKEN }}@github.com/huxingyi/huxingyi.github.io.git
-          cd huxingyi.github.io
-          git remote set-url origin https://${{ env.UPDATE_REPO_TOKEN }}@github.com/huxingyi/huxingyi.github.io.git
+          cd gh-pages
+          git config user.email "${{ env.MY_EMAIL }}"
+          git config user.name "huxingyi"
           cp ../Dust3D-win32-x86_64.zip download/dust3d-latest-preview.zip
           git add download/dust3d-latest-preview.zip
-          git commit -m "Update latest build for windows"
-          git push origin HEAD
-          cd ../
+          git commit -m "Update latest build for windows" || true
+          git push origin HEAD:master
       - name: Upload zip
         uses: actions/upload-artifact@v4
         with:
@@ -136,30 +141,40 @@ jobs:
       - name: Build application
         run: |
           cd ${GITHUB_WORKSPACE}/application
-          qmake
-          alias nproc="sysctl -n hw.logicalcpu"
-          make -j`nproc`
+          qmake CONFIG+=sdk_no_version_check
+          CPU_COUNT=$(sysctl -n hw.logicalcpu)
+          make -j${CPU_COUNT}
       - name: Generate DMG
         run: |
-          mv ${GITHUB_WORKSPACE}/application/dust3d.app dust3d-${{ github.ref_name }}.app
-          macdeployqt dust3d-${{ github.ref_name }}.app -dmg
+          # deploy Qt frameworks into the app bundle
+          macdeployqt ${GITHUB_WORKSPACE}/application/dust3d.app
+          # ad-hoc sign so Gatekeeper doesn't report the app as damaged
+          codesign --force --deep --sign - ${GITHUB_WORKSPACE}/application/dust3d.app
+          # package into DMG
+          hdiutil create -volname "Dust3D" \
+            -srcfolder ${GITHUB_WORKSPACE}/application/dust3d.app \
+            -ov -format UDZO \
+            -o ${GITHUB_WORKSPACE}/application/dust3d-${{ github.ref_name }}.dmg
+      - name: Checkout Pages repository
+        uses: actions/checkout@v4
+        with:
+          repository: huxingyi/huxingyi.github.io
+          token: ${{ secrets.UPDATE_REPO_TOKEN }}
+          path: gh-pages
+
       - name: Publish latest build
         env:
           MY_EMAIL: ${{ secrets.MY_EMAIL }}
-          UPDATE_REPO_TOKEN: ${{ secrets.UPDATE_REPO_TOKEN }}
         run: |
-          git config --global user.email "${{ env.MY_EMAIL }}"
-          git config --global user.name "Jeremy HU"
-          git clone https://${{ env.UPDATE_REPO_TOKEN }}@github.com/huxingyi/huxingyi.github.io.git
-          cd huxingyi.github.io
-          git remote set-url origin https://${{ env.UPDATE_REPO_TOKEN }}@github.com/huxingyi/huxingyi.github.io.git
-          cp ../dust3d-${{ github.ref_name }}.dmg download/dust3d-latest-preview.dmg
+          cd gh-pages
+          git config user.email "${{ env.MY_EMAIL }}"
+          git config user.name "huxingyi"
+          cp ${GITHUB_WORKSPACE}/application/dust3d-${{ github.ref_name }}.dmg download/dust3d-latest-preview.dmg
           git add download/dust3d-latest-preview.dmg
-          git commit -m "Update latest build for macos"
-          git push origin HEAD
-          cd ../
+          git commit -m "Update latest build for macos" || true
+          git push origin HEAD:master
       - name: Upload DMG
         uses: actions/upload-artifact@v4
         with:
           name: dust3d-${{ github.ref_name }}.dmg
-          path: dust3d-${{ github.ref_name }}.dmg
+          path: ${{ github.workspace }}/application/dust3d-${{ github.ref_name }}.dmg
