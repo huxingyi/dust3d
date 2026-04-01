@@ -153,9 +153,6 @@ namespace fish {
             // Create undulating spine motion using rotations around the body axis
             constexpr size_t numSpineBones = sizeof(spineBones) / sizeof(SpineBone);
 
-            // Start chain from root end
-            Vector3 currentPos = newRootEnd;
-
             for (size_t i = 0; i < numSpineBones; ++i) {
                 const auto& bone = spineBones[i];
 
@@ -177,13 +174,11 @@ namespace fish {
                 rotMatrix.rotate(rot);
                 Vector3 rotatedDir = rotMatrix.transformVector(restBoneDir.normalized()) * boneLength;
 
-                Vector3 boneStart = currentPos;
+                // Use each bone's own rest start position (not chain-accumulated) to preserve rig topology
+                Vector3 boneStart = rootTransform.transformPoint(restPos);
                 Vector3 boneEnd = boneStart + rotatedDir;
 
                 boneWorldTransforms[bone.name] = animation::buildBoneWorldTransform(boneStart, boneEnd);
-
-                // Update position for next bone in chain
-                currentPos = boneEnd;
             }
 
             // Animate pectoral fins (attached to BodyFront)
