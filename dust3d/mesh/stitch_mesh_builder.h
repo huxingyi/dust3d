@@ -58,9 +58,11 @@ private:
     bool interpolateSplinesToHaveEqualSizeOfNodes();
     void splitPolylineToSegments(const std::vector<Vector3>& polyline,
         const std::vector<double>& radiuses,
+        const std::vector<Uuid>& sourceIds,
         size_t targetSegments,
         std::vector<Vector3>* targetPoints,
-        std::vector<double>* targetRadiuses);
+        std::vector<double>* targetRadiuses,
+        std::vector<Uuid>* targetSourceIds);
     double segmentsLength(const std::vector<Vector3>& segmentPoints);
 };
 

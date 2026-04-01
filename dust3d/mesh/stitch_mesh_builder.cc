@@ -66,13 +66,16 @@ bool StitchMeshBuilder::interpolateSplinesToHaveEqualSizeOfNodes()
         const auto& spline = m_splines[i];
         std::vector<Vector3> polyline(spline.nodes.size());
         std::vector<double> radiuses(spline.nodes.size());
+        std::vector<Uuid> sourceIds(spline.nodes.size());
         for (size_t j = 0; j < spline.nodes.size(); ++j) {
             polyline[j] = spline.nodes[j].origin;
             radiuses[j] = spline.nodes[j].radius;
+            sourceIds[j] = spline.nodes[j].sourceId;
         }
         std::vector<Vector3> segmentPoints;
         std::vector<double> segmentRadiuses;
-        splitPolylineToSegments(polyline, radiuses, m_targetSegments, &segmentPoints, &segmentRadiuses);
+        std::vector<Uuid> segmentSourceIds;
+        splitPolylineToSegments(polyline, radiuses, sourceIds, m_targetSegments, &segmentPoints, &segmentRadiuses, &segmentSourceIds);
         if (segmentPoints.size() != m_targetSegments + 1) {
             dust3dDebug << "Interpolate spline failed";
             return false;
@@ -82,6 +85,7 @@ bool StitchMeshBuilder::interpolateSplinesToHaveEqualSizeOfNodes()
         for (size_t j = 0; j < interpolatedSpline.nodes.size(); ++j) {
             interpolatedSpline.nodes[j].origin = segmentPoints[j];
             interpolatedSpline.nodes[j].radius = segmentRadiuses[j];
+            interpolatedSpline.nodes[j].sourceId = segmentSourceIds[j];
         }
     }
     m_splines = std::move(interpolatedSplines);
@@ -100,9 +104,11 @@ double StitchMeshBuilder::segmentsLength(const std::vector<Vector3>& segmentPoin
 
 void StitchMeshBuilder::splitPolylineToSegments(const std::vector<Vector3>& polyline,
     const std::vector<double>& radiuses,
+    const std::vector<Uuid>& sourceIds,
     size_t targetSegments,
     std::vector<Vector3>* targetPoints,
-    std::vector<double>* targetRadiuses)
+    std::vector<double>* targetRadiuses,
+    std::vector<Uuid>* targetSourceIds)
 {
     if (polyline.size() < 2)
         return;
@@ -113,6 +119,7 @@ void StitchMeshBuilder::splitPolylineToSegments(const std::vector<Vector3>& poly
         for (size_t i = 0; i < targetSegments + 1; ++i) {
             targetPoints->push_back(middle);
             targetRadiuses->push_back(radius);
+            targetSourceIds->push_back(sourceIds.front());
         }
         return;
     }
@@ -120,11 +127,13 @@ void StitchMeshBuilder::splitPolylineToSegments(const std::vector<Vector3>& poly
     double wantLength = segmentLength;
     targetPoints->push_back(polyline.front());
     targetRadiuses->push_back(radiuses.front());
+    targetSourceIds->push_back(sourceIds.front());
     for (size_t j = 1; j < polyline.size(); ++j) {
         size_t i = j - 1;
         double lineLength = (polyline[j] - polyline[i]).length();
         Vector3 polylineStart = polyline[i];
         double radiusStart = radiuses[i];
+        Uuid sourceIdStart = sourceIds[i];
         while (true) {
             if (lineLength < wantLength) {
                 wantLength -= lineLength;
@@ -132,20 +141,25 @@ void StitchMeshBuilder::splitPolylineToSegments(const std::vector<Vector3>& poly
             }
             Vector3 newPosition = (polylineStart * (lineLength - wantLength) + polyline[j] * wantLength) / lineLength;
             double newRadius = (radiusStart * (lineLength - wantLength) + radiuses[j] * wantLength) / lineLength;
+            Uuid newSourceId = (wantLength * 2 >= lineLength) ? sourceIds[j] : sourceIdStart;
             targetPoints->push_back(newPosition);
             targetRadiuses->push_back(newRadius);
+            targetSourceIds->push_back(newSourceId);
             lineLength -= wantLength;
             polylineStart = newPosition;
             radiusStart = newRadius;
+            sourceIdStart = newSourceId;
             wantLength = segmentLength;
         }
     }
     if (targetPoints->size() < targetSegments + 1) {
         targetPoints->push_back(polyline.back());
         targetRadiuses->push_back(radiuses.back());
+        targetSourceIds->push_back(sourceIds.back());
     } else {
         targetPoints->back() = polyline.back();
         targetRadiuses->back() = radiuses.back();
+        targetSourceIds->back() = sourceIds.back();
     }
 }
 
