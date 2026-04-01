@@ -46,7 +46,7 @@ namespace fish {
      * Body Motion:
      *   spineAmplitude (0.15): Spine side-to-side undulation amplitude in radians
      *   waveLength (1.0): Undulation wavelength factor
-     *   tailAmplitudeRatio (2.5): Tail amplitude vs body amplitude ratio
+     *   tailAmplitudeRatio (1.5): Tail amplitude vs body amplitude ratio
      *   bodyBob (0.02): Vertical bobbing amplitude
      *   bodyRoll (0.05): Subtle body roll amplitude in radians
      *   forwardThrust (0.08): Forward surge amplitude

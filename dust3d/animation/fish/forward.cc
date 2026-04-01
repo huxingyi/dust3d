@@ -94,15 +94,17 @@ namespace fish {
         double bodyRoll = parameters.getValue("bodyRoll", 0.05); // subtle body roll (radians)
         double forwardThrust = parameters.getValue("forwardThrust", 0.08); // forward surge amplitude
 
-        // Fin motion parameters (unused for static fins but kept for future compatibility)
-        (void)parameters.getValue("pectoralFlapPower", 0.4);
-        (void)parameters.getValue("pelvicFlapPower", 0.25);
-        (void)parameters.getValue("dorsalSwayPower", 0.2);
-        (void)parameters.getValue("ventralSwayPower", 0.2);
+        // Fin motion parameters (used by fin animation)
+        double pectoralFlapPower = parameters.getValue("pectoralFlapPower", 0.4);
+        double pelvicFlapPower = parameters.getValue("pelvicFlapPower", 0.25);
+        double dorsalSwayPower = parameters.getValue("dorsalSwayPower", 0.2);
+        double ventralSwayPower = parameters.getValue("ventralSwayPower", 0.2);
 
-        // Phase offsets for different fin types (unused for static fins)
-        (void)parameters.getValue("pectoralPhaseOffset", 0.0);
-        (void)parameters.getValue("pelvicPhaseOffset", 0.5);
+        // Phase offsets for different fin types
+        double pectoralPhaseOffset = parameters.getValue("pectoralPhaseOffset", 0.0);
+        double pelvicPhaseOffset = parameters.getValue("pelvicPhaseOffset", 0.5);
+        double dorsalPhaseOffset = parameters.getValue("dorsalPhaseOffset", 0.0);
+        double ventralPhaseOffset = parameters.getValue("ventralPhaseOffset", 0.25);
 
         // Setup animation
         animationClip.name = "fishForward";
@@ -211,7 +213,6 @@ namespace fish {
                 if (boneIdx.find(finName) == boneIdx.end())
                     continue;
 
-                // Get parent body segment transform
                 auto bodyFrontIt = boneWorldTransforms.find("BodyFront");
                 if (bodyFrontIt == boneWorldTransforms.end())
                     continue;
@@ -221,17 +222,29 @@ namespace fish {
                 Vector3 bodyFrontRestPos = getBonePos("BodyFront");
                 Vector3 bodyFrontRestEnd = getBoneEnd("BodyFront");
 
-                // Parent-space fin transform to avoid flipping artifacts
                 Matrix4x4 parentRestTransform = animation::buildBoneWorldTransform(bodyFrontRestPos, bodyFrontRestEnd);
                 Matrix4x4 parentRestInv = parentRestTransform.inverted();
                 Vector3 localFinPos = parentRestInv.transformPoint(finRestPos);
                 Vector3 localFinEnd = parentRestInv.transformPoint(finRestEnd);
                 Vector3 localFinDir = localFinEnd - localFinPos;
 
-                Vector3 finPos = bodyFrontIt->second.transformPoint(localFinPos);
-                Vector3 finDir = bodyFrontIt->second.transformVector(localFinDir);
-                Vector3 finEnd = finPos + finDir;
+                Vector3 bodyForward = (bodyFrontRestEnd - bodyFrontRestPos).normalized();
+                Vector3 bodyRight = Vector3::crossProduct(bodyForward, up).normalized();
+                if (bodyRight.isZero()) {
+                    bodyRight = Vector3::crossProduct(bodyForward, Vector3(0.0, 0.0, 1.0)).normalized();
+                }
 
+                double sidePhase = (side == 0) ? 0.0 : Math::Pi;
+                double finPhase = phase + pectoralPhaseOffset * 2.0 * Math::Pi + sidePhase;
+                double flapAngle = sin(finPhase) * pectoralFlapPower;
+                Quaternion finRot = Quaternion::fromAxisAndAngle(bodyRight, flapAngle);
+                Matrix4x4 finRotMat;
+                finRotMat.rotate(finRot);
+                Vector3 rotatedLocalFinDir = finRotMat.transformVector(localFinDir);
+
+                Vector3 finPos = bodyFrontIt->second.transformPoint(localFinPos);
+                Vector3 finDir = bodyFrontIt->second.transformVector(rotatedLocalFinDir);
+                Vector3 finEnd = finPos + finDir;
                 boneWorldTransforms[finName] = animation::buildBoneWorldTransform(finPos, finEnd);
             }
 
@@ -256,10 +269,23 @@ namespace fish {
                 Vector3 localFinEnd = parentRestInv.transformPoint(finRestEnd);
                 Vector3 localFinDir = localFinEnd - localFinPos;
 
-                Vector3 finPos = bodyMidIt->second.transformPoint(localFinPos);
-                Vector3 finDir = bodyMidIt->second.transformVector(localFinDir);
-                Vector3 finEnd = finPos + finDir;
+                Vector3 bodyForward = (bodyMidRestEnd - bodyMidRestPos).normalized();
+                Vector3 bodyRight = Vector3::crossProduct(bodyForward, up).normalized();
+                if (bodyRight.isZero()) {
+                    bodyRight = Vector3::crossProduct(bodyForward, Vector3(0.0, 0.0, 1.0)).normalized();
+                }
 
+                double sidePhase = (side == 0) ? 0.0 : Math::Pi;
+                double finPhase = phase + pelvicPhaseOffset * 2.0 * Math::Pi + sidePhase;
+                double flapAngle = sin(finPhase) * pelvicFlapPower;
+                Quaternion finRot = Quaternion::fromAxisAndAngle(bodyRight, flapAngle);
+                Matrix4x4 finRotMat;
+                finRotMat.rotate(finRot);
+                Vector3 rotatedLocalFinDir = finRotMat.transformVector(localFinDir);
+
+                Vector3 finPos = bodyMidIt->second.transformPoint(localFinPos);
+                Vector3 finDir = bodyMidIt->second.transformVector(rotatedLocalFinDir);
+                Vector3 finEnd = finPos + finDir;
                 boneWorldTransforms[finName] = animation::buildBoneWorldTransform(finPos, finEnd);
             }
 
@@ -293,8 +319,20 @@ namespace fish {
                 Vector3 localFinEnd = parentRestInv.transformPoint(finRestEnd);
                 Vector3 localFinDir = localFinEnd - localFinPos;
 
+                Vector3 parentForward = (parentRestEnd - parentRestPos).normalized();
+                if (parentForward.isZero()) {
+                    parentForward = forwardDir;
+                }
+
+                double finPhase = phase + (fin.phaseOffset + dorsalPhaseOffset) * 2.0 * Math::Pi;
+                double swayAngle = sin(finPhase) * dorsalSwayPower;
+                Quaternion finRot = Quaternion::fromAxisAndAngle(parentForward, swayAngle);
+                Matrix4x4 finRotMat;
+                finRotMat.rotate(finRot);
+                Vector3 rotatedLocalFinDir = finRotMat.transformVector(localFinDir);
+
                 Vector3 finPos = parentIt->second.transformPoint(localFinPos);
-                Vector3 finDir = parentIt->second.transformVector(localFinDir);
+                Vector3 finDir = parentIt->second.transformVector(rotatedLocalFinDir);
                 Vector3 finEnd = finPos + finDir;
 
                 boneWorldTransforms[fin.finName] = animation::buildBoneWorldTransform(finPos, finEnd);
@@ -330,8 +368,20 @@ namespace fish {
                 Vector3 localFinEnd = parentRestInv.transformPoint(finRestEnd);
                 Vector3 localFinDir = localFinEnd - localFinPos;
 
+                Vector3 parentForward = (parentRestEnd - parentRestPos).normalized();
+                if (parentForward.isZero()) {
+                    parentForward = forwardDir;
+                }
+
+                double finPhase = phase + (fin.phaseOffset + ventralPhaseOffset) * 2.0 * Math::Pi + Math::Pi;
+                double swayAngle = sin(finPhase) * ventralSwayPower;
+                Quaternion finRot = Quaternion::fromAxisAndAngle(parentForward, swayAngle);
+                Matrix4x4 finRotMat;
+                finRotMat.rotate(finRot);
+                Vector3 rotatedLocalFinDir = finRotMat.transformVector(localFinDir);
+
                 Vector3 finPos = parentIt->second.transformPoint(localFinPos);
-                Vector3 finDir = parentIt->second.transformVector(localFinDir);
+                Vector3 finDir = parentIt->second.transformVector(rotatedLocalFinDir);
                 Vector3 finEnd = finPos + finDir;
 
                 boneWorldTransforms[fin.finName] = animation::buildBoneWorldTransform(finPos, finEnd);
