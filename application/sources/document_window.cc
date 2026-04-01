@@ -283,7 +283,7 @@ DocumentWindow::DocumentWindow()
     m_bonesDocker->setWidget(m_boneManageWidget);
     addDockWidget(Qt::RightDockWidgetArea, m_bonesDocker);
 
-    m_animationsDocker = new QDockWidget(tr("Animations"), this);
+    m_animationsDocker = new QDockWidget(tr("Animations (beta)"), this);
     m_animationsDocker->setAllowedAreas(Qt::RightDockWidgetArea);
     m_animationManageWidget = new AnimationManageWidget(m_document);
     m_animationsDocker->setWidget(m_animationManageWidget);
@@ -446,7 +446,7 @@ DocumentWindow::DocumentWindow()
     });
     m_windowMenu->addAction(m_showBonesListAction);
 
-    m_showAnimationsListAction = new QAction(tr("Animations"), this);
+    m_showAnimationsListAction = new QAction(tr("Animations (beta)"), this);
     connect(m_showAnimationsListAction, &QAction::triggered, [=]() {
         m_animationsDocker->show();
         m_animationsDocker->raise();
