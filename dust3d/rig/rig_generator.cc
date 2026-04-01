@@ -103,6 +103,11 @@ bool RigGenerator::generateRig(const Snapshot* snapshot, const RigStructure& tem
         std::vector<std::vector<Uuid>> nodeChains;
         if (!extractNodeChainsForBone(snapshot, bone.name, nodeChains)) {
             dust3dDebug << "No edges assigned to bone:" << bone.name;
+            if (bone.parent.empty()) {
+                // Root bone with no bindings: give it a tiny upward tail so it has
+                // a valid, non-degenerate orientation for exporters and game engines.
+                bone.endY = -0.25f;
+            }
             continue;
         }
 
