@@ -39,6 +39,11 @@ public:
         m_hideParts = hideParts;
     }
 
+    void setSelectedBoneName(const QString& boneName)
+    {
+        m_selectedBoneName = boneName;
+    }
+
     std::vector<ModelMesh> takePreviewMeshes()
     {
         return std::move(m_previewMeshes);
@@ -51,6 +56,7 @@ public slots:
     void process();
 
 private:
+    dust3d::Color calculateBoneWeightColor(float weight);
     RigStructure m_rigStructure;
     std::string m_animationType;
     int m_frameCount = 30;
@@ -60,6 +66,7 @@ private:
     std::vector<ModelMesh> m_previewMeshes;
     bool m_hideBones = false;
     bool m_hideParts = false;
+    QString m_selectedBoneName;
 };
 
 #endif

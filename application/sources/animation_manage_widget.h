@@ -34,6 +34,7 @@ public slots:
     void onResultRigChanged();
     void onAnimationPreviewReady();
     void onAnimationFrameTimeout();
+    void onSelectedBoneChanged(const QString& boneName);
 
 private slots:
     void onDeleteAnimationClicked();
@@ -122,6 +123,7 @@ private:
     QCheckBox* m_planeStabilizationCheck = nullptr;
     QCheckBox* m_hideBonesCheck = nullptr;
     QCheckBox* m_hidePartsCheck = nullptr;
+    QCheckBox* m_hideWeightsCheck = nullptr;
 
     QComboBox* m_animationNameCombo = nullptr;
     ToolbarButton* m_addAnimationButton = nullptr;
@@ -148,6 +150,7 @@ private:
     dust3d::AnimationParams m_animationParams;
     dust3d::Uuid m_currentAnimationId;
     bool m_isUpdatingForm = false;
+    QString m_selectedBoneName;
 };
 
 #endif

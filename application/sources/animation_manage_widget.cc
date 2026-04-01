@@ -92,12 +92,15 @@ void AnimationManageWidget::createParameterWidgets()
     m_hideBonesCheck->setChecked(false);
     m_hidePartsCheck = new QCheckBox("Hide Parts");
     m_hidePartsCheck->setChecked(false);
+    m_hideWeightsCheck = new QCheckBox("Hide Weights");
+    m_hideWeightsCheck->setChecked(true);
 
     QWidget* previewOptionWidget = new QWidget;
     QHBoxLayout* previewOptionLayout = new QHBoxLayout(previewOptionWidget);
     previewOptionLayout->setContentsMargins(0, 0, 0, 0);
     previewOptionLayout->addWidget(m_hideBonesCheck);
     previewOptionLayout->addWidget(m_hidePartsCheck);
+    previewOptionLayout->addWidget(m_hideWeightsCheck);
     previewOptionLayout->addStretch();
     groupBoxLayout->addWidget(previewOptionWidget);
 
@@ -276,6 +279,7 @@ void AnimationManageWidget::createParameterWidgets()
         connect(m_planeStabilizationCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
         connect(m_hideBonesCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
         connect(m_hidePartsCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_hideWeightsCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
         connect(m_animationNameInput, &QLineEdit::textEdited, this, &AnimationManageWidget::onAnimationNameEdited);
         connect(m_deleteAnimationButton, &QPushButton::clicked, this, &AnimationManageWidget::onDeleteAnimationClicked);
         connect(m_duplicateAnimationButton, &QPushButton::clicked, this, &AnimationManageWidget::onDuplicateAnimationClicked);
@@ -447,7 +451,7 @@ void AnimationManageWidget::updateAnimationParamsFromWidgets()
 
 void AnimationManageWidget::triggerPreviewRegeneration()
 {
-    if (!m_stepLengthSlider || !m_stepHeightSlider || !m_bodyBobSlider || !m_gaitSpeedSlider || !m_rubForwardOffsetSlider || !m_rubUpOffsetSlider || !m_useFabrikCheck || !m_planeStabilizationCheck || !m_hideBonesCheck || !m_hidePartsCheck)
+    if (!m_stepLengthSlider || !m_stepHeightSlider || !m_bodyBobSlider || !m_gaitSpeedSlider || !m_rubForwardOffsetSlider || !m_rubUpOffsetSlider || !m_useFabrikCheck || !m_planeStabilizationCheck || !m_hideBonesCheck || !m_hidePartsCheck || !m_hideWeightsCheck)
         return;
 
     updateAnimationParamsFromWidgets();
@@ -508,6 +512,8 @@ void AnimationManageWidget::onResultRigChanged()
     m_animationWorker->setParameters(actualRig, animationType.toStdString(), 30, 1.0f, m_animationParams);
     m_animationWorker->setHideBones(m_hideBonesCheck ? m_hideBonesCheck->isChecked() : false);
     m_animationWorker->setHideParts(m_hidePartsCheck ? m_hidePartsCheck->isChecked() : false);
+    m_animationWorker->setSelectedBoneName(
+        (m_hideWeightsCheck && m_hideWeightsCheck->isChecked()) ? QString() : m_selectedBoneName);
 
     dust3d::Object* rigObject = m_document->takeRigObject();
     m_animationWorker->setRigObject(std::unique_ptr<dust3d::Object>(rigObject));
@@ -883,5 +889,12 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
 
     // Store the loaded params for preview
     m_animationParams = params;
+    triggerPreviewRegeneration();
+}
+
+void AnimationManageWidget::onSelectedBoneChanged(const QString& boneName)
+{
+    m_selectedBoneName = boneName;
+    // Trigger preview regeneration with new bone selection
     triggerPreviewRegeneration();
 }

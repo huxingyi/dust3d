@@ -24,6 +24,9 @@ class SkeletonGraphicsWidget;
 class BoneManageWidget : public QWidget {
     Q_OBJECT
 
+signals:
+    void boneSelectionChanged(const QString& boneName);
+
 public slots:
     void showContextMenu(const QPoint& pos);
     void onRigTypeChanged(const QString& rigType);

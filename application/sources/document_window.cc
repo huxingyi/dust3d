@@ -292,6 +292,10 @@ DocumentWindow::DocumentWindow()
     tabifyDockWidget(partsDocker, m_bonesDocker);
     tabifyDockWidget(m_bonesDocker, m_animationsDocker);
 
+    // Connect bone selection changes to animation widget for bone weight visualization
+    connect(m_boneManageWidget, &BoneManageWidget::boneSelectionChanged,
+        m_animationManageWidget, &AnimationManageWidget::onSelectedBoneChanged);
+
     partsDocker->raise();
 
     QWidget* titleBarWidget = new QWidget;

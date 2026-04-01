@@ -398,6 +398,9 @@ void BoneManageWidget::onBoneSelectionChanged()
 
     m_selectedBoneName = selectedBoneName;
 
+    // Notify other widgets that bone selection has changed
+    emit boneSelectionChanged(selectedBoneName);
+
     // Regenerate mesh with the selected bone highlighted
     QString currentRigType = m_rigTypeComboBox->currentText();
     generateRigTemplateMesh(currentRigType, selectedBoneName);
