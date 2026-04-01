@@ -87,7 +87,7 @@ namespace fish {
         // Body undulation parameters
         double spineAmplitude = parameters.getValue("spineAmplitude", 0.15); // spine side-to-side amplitude (radians)
         double waveLength = parameters.getValue("waveLength", 1.0); // undulation wavelength factor
-        double tailAmplitudeRatio = parameters.getValue("tailAmplitudeRatio", 2.5); // tail amplitude vs body ratio
+        double tailAmplitudeRatio = parameters.getValue("tailAmplitudeRatio", 1.5); // tail amplitude vs body ratio
 
         // Body motion parameters
         double bodyBob = parameters.getValue("bodyBob", 0.02); // vertical bobbing amplitude
@@ -150,30 +150,11 @@ namespace fish {
             Vector3 newRootEnd = rootTransform.transformPoint(rootEnd);
             boneWorldTransforms["Root"] = animation::buildBoneWorldTransform(newRootPos, newRootEnd);
 
-            // Create undulating spine motion using wave displacement at spine junctions
+            // Create undulating spine motion using rotations around the body axis
             constexpr size_t numSpineBones = sizeof(spineBones) / sizeof(SpineBone);
 
-            // Compute lateral displacement from the traveling wave at each junction
-            // junctions[i] = start of spineBones[i], junctions[numSpineBones] = end of last bone
-            double junctionLateral[numSpineBones + 1];
-            double junctionSpinePos[numSpineBones + 1];
-
-            for (size_t i = 0; i < numSpineBones; ++i) {
-                junctionSpinePos[i] = spineBones[i].spinePosition;
-            }
-            junctionSpinePos[numSpineBones] = spineBones[numSpineBones - 1].spinePosition
-                + (spineBones[numSpineBones - 1].spinePosition - spineBones[numSpineBones - 2].spinePosition);
-
-            for (size_t i = 0; i <= numSpineBones; ++i) {
-                double pos = junctionSpinePos[i];
-                double wavePhase = phase - (pos * waveLength * 2.0 * Math::Pi);
-                double ampScale = (i < numSpineBones) ? spineBones[i].amplitudeScale
-                                                      : spineBones[numSpineBones - 1].amplitudeScale;
-                junctionLateral[i] = spineAmplitude * ampScale * tailAmplitudeRatio * sin(wavePhase);
-            }
-
-            // Start chain from root end, offset by the head's wave displacement
-            Vector3 currentPos = newRootEnd + right * junctionLateral[0];
+            // Start chain from root end
+            Vector3 currentPos = newRootEnd;
 
             for (size_t i = 0; i < numSpineBones; ++i) {
                 const auto& bone = spineBones[i];
@@ -186,17 +167,18 @@ namespace fish {
                 Vector3 restBoneDir = restEnd - restPos;
                 double boneLength = restBoneDir.length();
 
-                // Forward component: bone's rest direction projected onto spine axis
-                double fwdComponent = Vector3::dotProduct(restBoneDir, forwardDir);
-                // Lateral component: wave displacement difference between junctions
-                double latComponent = junctionLateral[i + 1] - junctionLateral[i];
-
-                // Compose bone direction and preserve bone length
-                Vector3 newBoneDir = forwardDir * fwdComponent + right * latComponent;
-                newBoneDir = newBoneDir.normalized() * boneLength;
+                // Calculate rotation for undulation
+                double pos = bone.spinePosition;
+                double wavePhase = phase - (pos * waveLength * 2.0 * Math::Pi);
+                double ampScale = bone.amplitudeScale;
+                double rotAngle = spineAmplitude * ampScale * tailAmplitudeRatio * sin(wavePhase);
+                Quaternion rot = Quaternion::fromAxisAndAngle(forwardDir, rotAngle);
+                Matrix4x4 rotMatrix;
+                rotMatrix.rotate(rot);
+                Vector3 rotatedDir = rotMatrix.transformVector(restBoneDir.normalized()) * boneLength;
 
                 Vector3 boneStart = currentPos;
-                Vector3 boneEnd = boneStart + newBoneDir;
+                Vector3 boneEnd = boneStart + rotatedDir;
 
                 boneWorldTransforms[bone.name] = animation::buildBoneWorldTransform(boneStart, boneEnd);
 
@@ -228,7 +210,7 @@ namespace fish {
 
                 // Apply pectoral fin flapping motion
                 double flapAngle = pectoralFlapPower * sin(phase + pectoralPhaseOffset + sideSign * 0.2) * sideSign;
-                Quaternion flapRotation = Quaternion::fromAxisAndAngle(up, flapAngle);
+                Quaternion flapRotation = Quaternion::fromAxisAndAngle(right, flapAngle);
                 Matrix4x4 finTransform;
                 finTransform.rotate(flapRotation);
 
@@ -259,7 +241,7 @@ namespace fish {
                 Vector3 finPos = bodyMidIt->second.transformPoint(finOffset);
 
                 double flapAngle = pelvicFlapPower * sin(phase + pelvicPhaseOffset + sideSign * 0.15) * sideSign;
-                Quaternion flapRotation = Quaternion::fromAxisAndAngle(up, flapAngle);
+                Quaternion flapRotation = Quaternion::fromAxisAndAngle(right, flapAngle);
                 Matrix4x4 finTransform;
                 finTransform.rotate(flapRotation);
 
@@ -297,7 +279,7 @@ namespace fish {
                 Vector3 finPos = parentIt->second.transformPoint(finOffset);
 
                 double swayAngle = dorsalSwayPower * sin(phase - fin.phaseOffset * waveLength);
-                Quaternion swayRotation = Quaternion::fromAxisAndAngle(forwardDir, swayAngle);
+                Quaternion swayRotation = Quaternion::fromAxisAndAngle(up, swayAngle);
                 Matrix4x4 finTransform;
                 finTransform.rotate(swayRotation);
 
@@ -336,7 +318,7 @@ namespace fish {
 
                 // Opposite phase from dorsal fins
                 double swayAngle = -ventralSwayPower * sin(phase - fin.phaseOffset * waveLength);
-                Quaternion swayRotation = Quaternion::fromAxisAndAngle(forwardDir, swayAngle);
+                Quaternion swayRotation = Quaternion::fromAxisAndAngle(up, swayAngle);
                 Matrix4x4 finTransform;
                 finTransform.rotate(swayRotation);
 
