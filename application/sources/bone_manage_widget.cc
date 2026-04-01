@@ -155,7 +155,9 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
     // Model Widget for rendering the actual rig skeleton mesh (computed from edge assignments)
     m_rigSkinningModelWidget = new ModelWidget();
     m_rigSkinningModelWidget->setMinimumHeight(250);
-    m_rigSkinningModelWidget->enableZoom(false);
+    m_rigSkinningModelWidget->enableZoom(true);
+    m_rigSkinningModelWidget->enableMove(true);
+    m_rigSkinningModelWidget->setMoveAndZoomByWindow(false);
     m_rigSkinningModelWidget->disableCullFace();
     m_rigSkinningModelWidget->toggleWireframe();
 
