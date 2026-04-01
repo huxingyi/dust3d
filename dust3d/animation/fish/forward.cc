@@ -20,6 +20,7 @@
  *  SOFTWARE.
  */
 
+#include <QDebug>
 #include <cmath>
 #include <cstring>
 #include <dust3d/animation/common.h>
@@ -162,6 +163,11 @@ namespace fish {
                 Vector3 restPos = getBonePos(bone.name);
                 Vector3 restEnd = getBoneEnd(bone.name);
                 Vector3 restBoneDir = restEnd - restPos;
+                if (std::string(bone.name) == "Head") {
+                    // head bone is oriented to the natural forward direction,
+                    // reverse it to maintain consistent spine tailward chain direction
+                    restBoneDir = -restBoneDir;
+                }
                 double boneLength = restBoneDir.length();
 
                 // Calculate rotation for undulation
@@ -169,14 +175,48 @@ namespace fish {
                 double wavePhase = phase - (pos * waveLength * 2.0 * Math::Pi);
                 double ampScale = bone.amplitudeScale;
                 double rotAngle = spineAmplitude * ampScale * tailAmplitudeRatio * sin(wavePhase);
-                Quaternion rot = Quaternion::fromAxisAndAngle(forwardDir, rotAngle);
+
+                // Determine parent bone for hierarchical spine motion
+                const char* parentName = (i == 0) ? "Root" : spineBones[i - 1].name;
+                auto parentIt = boneWorldTransforms.find(parentName);
+                if (parentIt == boneWorldTransforms.end()) {
+                    // fallback to root transform if unexpectedly missing
+                    parentIt = boneWorldTransforms.find("Root");
+                }
+
+                // Convert bone rest positions into parent-local space
+                Vector3 parentRestPos = getBonePos(parentName);
+                Vector3 parentRestEnd = getBoneEnd(parentName);
+                Matrix4x4 parentRestTransform = animation::buildBoneWorldTransform(parentRestPos, parentRestEnd);
+                Matrix4x4 parentRestInv = parentRestTransform.inverted();
+
+                Vector3 localBonePos = parentRestInv.transformPoint(restPos);
+                Vector3 localBoneDir = parentRestInv.transformVector(restBoneDir);
+
+                // Use fixed parent-local up axis for consistent spine bend orientation
+                Vector3 localUp(0.0, 1.0, 0.0);
+                Quaternion rot = Quaternion::fromAxisAndAngle(localUp, rotAngle);
                 Matrix4x4 rotMatrix;
                 rotMatrix.rotate(rot);
-                Vector3 rotatedDir = rotMatrix.transformVector(restBoneDir.normalized()) * boneLength;
+                Vector3 rotatedLocalDir = rotMatrix.transformVector(localBoneDir.normalized()) * boneLength;
 
-                // Use each bone's own rest start position (not chain-accumulated) to preserve rig topology
-                Vector3 boneStart = rootTransform.transformPoint(restPos);
-                Vector3 boneEnd = boneStart + rotatedDir;
+                // Transform into world space via parent world transform
+                Matrix4x4 parentWorldTransform = parentIt->second;
+                Vector3 boneStart = parentWorldTransform.transformPoint(localBonePos);
+                Vector3 boneEnd = boneStart + parentWorldTransform.transformVector(rotatedLocalDir);
+
+                Vector3 axisWorld = parentWorldTransform.transformVector(localUp).normalized();
+
+                qDebug()
+                    << "[fish::forward] frame" << frame
+                    << "bone" << bone.name
+                    << "pos" << pos
+                    << "wavePhase" << wavePhase
+                    << "rotAngle" << rotAngle
+                    << "axisLocal" << localUp.x() << localUp.y() << localUp.z()
+                    << "axisWorld" << axisWorld.x() << axisWorld.y() << axisWorld.z()
+                    << "restBoneDir" << restBoneDir.x() << restBoneDir.y() << restBoneDir.z()
+                    << "rotatedDir" << (boneEnd - boneStart).x() << (boneEnd - boneStart).y() << (boneEnd - boneStart).z();
 
                 boneWorldTransforms[bone.name] = animation::buildBoneWorldTransform(boneStart, boneEnd);
             }
