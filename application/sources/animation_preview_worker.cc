@@ -62,6 +62,7 @@ void AnimationPreviewWorker::process()
         }
 
         RigSkeletonMeshGenerator meshGenerator;
+        meshGenerator.setStartRadius(0.02);
         meshGenerator.setNormalizeRequired(false);
         meshGenerator.generateMesh(poseRig, "");
 
@@ -83,7 +84,7 @@ void AnimationPreviewWorker::process()
         }
 
         ModelMesh skeletonMesh(vertices, faces, triangleVertexNormals,
-            dust3d::Color(Theme::blue.redF(), Theme::blue.greenF(), Theme::blue.blueF()),
+            dust3d::Color(Theme::green.redF(), Theme::green.greenF(), Theme::green.blueF()),
             0.0f, 1.0f, vertexProperties);
 
         std::unique_ptr<ModelMesh> frameMesh;

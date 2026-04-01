@@ -60,6 +60,22 @@ private:
     QSlider* m_gaitSpeedSlider = nullptr;
     QSlider* m_rubForwardOffsetSlider = nullptr;
     QSlider* m_rubUpOffsetSlider = nullptr;
+
+    // Fish animation parameter sliders
+    QSlider* m_swimSpeedSlider = nullptr;
+    QSlider* m_swimFrequencySlider = nullptr;
+    QSlider* m_spineAmplitudeSlider = nullptr;
+    QSlider* m_waveLengthSlider = nullptr;
+    QSlider* m_tailAmplitudeRatioSlider = nullptr;
+    QSlider* m_bodyRollSlider = nullptr;
+    QSlider* m_forwardThrustSlider = nullptr;
+    QSlider* m_pectoralFlapPowerSlider = nullptr;
+    QSlider* m_pelvicFlapPowerSlider = nullptr;
+    QSlider* m_dorsalSwayPowerSlider = nullptr;
+    QSlider* m_ventralSwayPowerSlider = nullptr;
+    QSlider* m_pectoralPhaseOffsetSlider = nullptr;
+    QSlider* m_pelvicPhaseOffsetSlider = nullptr;
+
     QFormLayout* m_parameterLayout = nullptr;
     QWidget* m_stepLengthRow = nullptr;
     QLabel* m_stepLengthLabel = nullptr;
@@ -73,6 +89,34 @@ private:
     QLabel* m_rubForwardOffsetLabel = nullptr;
     QWidget* m_rubUpOffsetRow = nullptr;
     QLabel* m_rubUpOffsetLabel = nullptr;
+
+    // Fish animation parameter rows and labels
+    QWidget* m_swimSpeedRow = nullptr;
+    QLabel* m_swimSpeedLabel = nullptr;
+    QWidget* m_swimFrequencyRow = nullptr;
+    QLabel* m_swimFrequencyLabel = nullptr;
+    QWidget* m_spineAmplitudeRow = nullptr;
+    QLabel* m_spineAmplitudeLabel = nullptr;
+    QWidget* m_waveLengthRow = nullptr;
+    QLabel* m_waveLengthLabel = nullptr;
+    QWidget* m_tailAmplitudeRatioRow = nullptr;
+    QLabel* m_tailAmplitudeRatioLabel = nullptr;
+    QWidget* m_bodyRollRow = nullptr;
+    QLabel* m_bodyRollLabel = nullptr;
+    QWidget* m_forwardThrustRow = nullptr;
+    QLabel* m_forwardThrustLabel = nullptr;
+    QWidget* m_pectoralFlapPowerRow = nullptr;
+    QLabel* m_pectoralFlapPowerLabel = nullptr;
+    QWidget* m_pelvicFlapPowerRow = nullptr;
+    QLabel* m_pelvicFlapPowerLabel = nullptr;
+    QWidget* m_dorsalSwayPowerRow = nullptr;
+    QLabel* m_dorsalSwayPowerLabel = nullptr;
+    QWidget* m_ventralSwayPowerRow = nullptr;
+    QLabel* m_ventralSwayPowerLabel = nullptr;
+    QWidget* m_pectoralPhaseOffsetRow = nullptr;
+    QLabel* m_pectoralPhaseOffsetLabel = nullptr;
+    QWidget* m_pelvicPhaseOffsetRow = nullptr;
+    QLabel* m_pelvicPhaseOffsetLabel = nullptr;
     QCheckBox* m_useFabrikCheck = nullptr;
     QCheckBox* m_planeStabilizationCheck = nullptr;
     QCheckBox* m_hideBonesCheck = nullptr;

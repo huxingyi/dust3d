@@ -41,345 +41,297 @@ namespace fish {
         float durationSeconds,
         const AnimationParams& parameters)
     {
-        std::map<std::string, size_t> boneIdx;
-        for (size_t i = 0; i < rigStructure.bones.size(); ++i)
-            boneIdx[rigStructure.bones[i].name] = i;
+        // Build bone index map using the common utility
+        std::map<std::string, size_t> boneIdx = insect::buildBoneIndexMap(rigStructure);
 
+        // Helper lambdas for bone position lookups
         auto getBonePos = [&](const std::string& name) -> Vector3 {
-            auto it = boneIdx.find(name);
-            if (it == boneIdx.end())
-                return Vector3();
-            const auto& b = rigStructure.bones[it->second];
-            return Vector3(b.posX, b.posY, b.posZ);
+            return insect::getBonePos(rigStructure, boneIdx, name);
         };
 
         auto getBoneEnd = [&](const std::string& name) -> Vector3 {
-            auto it = boneIdx.find(name);
-            if (it == boneIdx.end())
-                return Vector3();
-            const auto& b = rigStructure.bones[it->second];
-            return Vector3(b.endX, b.endY, b.endZ);
+            return insect::getBoneEnd(rigStructure, boneIdx, name);
         };
 
-        // Required fish bones
+        // Required bones for fish animation
         static const char* requiredBones[] = {
             "Root", "Head", "BodyFront", "BodyMid", "BodyRear",
-            "TailStart", "TailEnd",
-            "LeftPectoralFin", "RightPectoralFin"
+            "TailStart", "TailEnd"
         };
+        constexpr size_t numRequiredBones = sizeof(requiredBones) / sizeof(requiredBones[0]);
 
-        for (const char* name : requiredBones) {
-            if (boneIdx.find(name) == boneIdx.end())
-                return false;
-        }
+        if (!insect::validateRequiredBones(boneIdx, requiredBones, numRequiredBones))
+            return false;
 
-        // Determine forward direction from body (Head toward TailEnd along Z)
+        // Calculate body length and coordinate frame
         Vector3 headPos = getBonePos("Head");
         Vector3 tailEndPos = getBoneEnd("TailEnd");
         Vector3 bodyVector = headPos - tailEndPos;
         if (bodyVector.isZero())
             return false;
 
+        double bodyLength = bodyVector.length();
         Vector3 forwardDir = bodyVector.normalized();
         Vector3 worldUp(0.0, 1.0, 0.0);
-        Vector3 right = Vector3::crossProduct(forwardDir, worldUp);
-        if (right.lengthSquared() < 1e-8)
-            right = Vector3::crossProduct(forwardDir, Vector3(0.0, 0.0, 1.0));
-        right.normalize();
+        Vector3 right = Vector3::crossProduct(forwardDir, worldUp).normalized();
+        if (right.isZero()) {
+            right = Vector3::crossProduct(forwardDir, Vector3(0.0, 0.0, 1.0)).normalized();
+        }
         Vector3 up = Vector3::crossProduct(right, forwardDir).normalized();
 
-        double bodyLength = bodyVector.length();
+        // ANIMATION PARAMETERS - Exposed for user customization
+        // Swimming speed and timing
+        double swimSpeed = parameters.getValue("swimSpeed", 1.0); // cycles per second (0.5 = slow, 2.0 = fast)
+        double swimFrequency = parameters.getValue("swimFrequency", 2.0); // tail beat frequency multiplier
 
-        // Animation parameters
-        double bodyBobFactor = parameters.getValue("bodyBobFactor", 1.0);
-        double gaitSpeedFactor = parameters.getValue("gaitSpeedFactor", 1.0);
-        double stepLengthFactor = parameters.getValue("stepLengthFactor", 1.0);
-        double stepHeightFactor = parameters.getValue("stepHeightFactor", 1.0);
+        // Body undulation parameters
+        double spineAmplitude = parameters.getValue("spineAmplitude", 0.15); // spine side-to-side amplitude (radians)
+        double waveLength = parameters.getValue("waveLength", 1.0); // undulation wavelength factor
+        double tailAmplitudeRatio = parameters.getValue("tailAmplitudeRatio", 2.5); // tail amplitude vs body ratio
 
-        // Swimming motion amplitudes
-        double bodyYawAmp = 0.08 * stepHeightFactor; // subtle side-to-side body yaw (radians)
-        double bodyForwardAmp = bodyLength * 0.1 * stepLengthFactor; // forward surge
-        double bodyBobAmp = bodyLength * 0.015 * bodyBobFactor; // very subtle vertical bob
+        // Body motion parameters
+        double bodyBob = parameters.getValue("bodyBob", 0.02); // vertical bobbing amplitude
+        double bodyRoll = parameters.getValue("bodyRoll", 0.05); // subtle body roll (radians)
+        double forwardThrust = parameters.getValue("forwardThrust", 0.08); // forward surge amplitude
 
-        // Spine undulation: each body segment lags behind the previous one
-        // producing a sinusoidal wave traveling from head to tail
-        double spineYawAmp = 0.12 * stepHeightFactor; // radians per segment
+        // Fin motion parameters
+        double pectoralFlapPower = parameters.getValue("pectoralFlapPower", 0.4); // pectoral fin flap amplitude
+        double pelvicFlapPower = parameters.getValue("pelvicFlapPower", 0.25); // pelvic fin flap amplitude
+        double dorsalSwayPower = parameters.getValue("dorsalSwayPower", 0.2); // dorsal fin sway amplitude
+        double ventralSwayPower = parameters.getValue("ventralSwayPower", 0.2); // ventral fin sway amplitude
 
-        // Tail amplitudes (tail swings more than body)
-        double tailStartYawAmp = 0.25 * stepHeightFactor; // radians
-        double tailEndYawAmp = 0.40 * stepHeightFactor; // radians
+        // Phase offsets for different fin types
+        double pectoralPhaseOffset = parameters.getValue("pectoralPhaseOffset", 0.0); // pectoral fin phase offset
+        double pelvicPhaseOffset = parameters.getValue("pelvicPhaseOffset", 0.5); // pelvic fin phase offset
 
-        // Fin parameters
-        double pectoralFlapAmp = 0.3 * stepHeightFactor; // radians
-        double dorsalSwayAmp = 0.15 * stepHeightFactor; // radians
-        double ventralSwayAmp = 0.15 * stepHeightFactor; // radians
-        double pelvicFlapAmp = 0.2 * stepHeightFactor; // radians
-
+        // Setup animation
         animationClip.name = "fishForward";
         animationClip.durationSeconds = durationSeconds;
         animationClip.frames.resize(frameCount);
 
-        const double cycles = std::max(1.0, std::round(gaitSpeedFactor));
+        // Define spine bone chain with positions along body (0 = head, 1 = tail tip)
+        struct SpineBone {
+            const char* name;
+            double spinePosition; // 0.0 at head, 1.0 at tail tip
+            double amplitudeScale; // amplitude multiplier for this segment
+        };
 
+        static const SpineBone spineBones[] = {
+            { "Head", 0.0, 0.1 }, // minimal movement at head
+            { "BodyFront", 0.2, 0.3 }, // gentle undulation starts
+            { "BodyMid", 0.5, 0.6 }, // progressive increase
+            { "BodyRear", 0.75, 0.9 }, // stronger movement near tail
+            { "TailStart", 0.9, 1.2 }, // tail begins strong motion
+            { "TailEnd", 1.0, 1.5 } // maximum amplitude at tail tip
+        };
+
+        // Generate animation frames
         for (int frame = 0; frame < frameCount; ++frame) {
-            double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
-            double t = fmod(tNormalized * cycles, 1.0);
-            double phase = t * 2.0 * Math::Pi;
-
-            // Body motion: subtle yaw oscillation and forward surge
-            double bodyYaw = bodyYawAmp * std::sin(phase);
-            double bodyBob = bodyBobAmp * std::sin(phase * 2.0);
-            double bodyForward = bodyForwardAmp * std::sin(phase);
-
-            Matrix4x4 bodyTransform;
-            bodyTransform.translate(forwardDir * bodyForward + up * bodyBob);
-            bodyTransform.rotate(up, bodyYaw);
+            double t = static_cast<double>(frame) / static_cast<double>(frameCount);
+            double animTime = t * durationSeconds;
+            double phase = animTime * swimSpeed * swimFrequency * 2.0 * Math::Pi;
 
             std::map<std::string, Matrix4x4> boneWorldTransforms;
 
-            // Root and Head: move rigidly with body
-            auto computeRigidBone = [&](const std::string& name) {
-                Vector3 pos = getBonePos(name);
-                Vector3 end = getBoneEnd(name);
-                Vector3 newPos = bodyTransform.transformPoint(pos);
-                Vector3 newEnd = bodyTransform.transformPoint(end);
-                boneWorldTransforms[name] = insect::buildBoneWorldTransform(newPos, newEnd);
-            };
+            // Calculate root motion: subtle body movements for realism
+            double bobOffset = sin(phase * 2.0) * bodyBob * bodyLength;
+            double rollOffset = sin(phase + Math::Pi * 0.3) * bodyRoll;
+            double thrustOffset = sin(phase) * forwardThrust * bodyLength;
 
-            computeRigidBone("Root");
-            computeRigidBone("Head");
+            // Root transform with overall body motion
+            Matrix4x4 rootTransform;
+            rootTransform.translate(forwardDir * thrustOffset + up * bobOffset);
+            rootTransform.rotate(forwardDir, rollOffset);
 
-            // Spine undulation: each segment gets an increasing phase lag
-            // Phase propagates from head to tail, creating a traveling wave
-            struct SpineSegment {
-                const char* name;
-                double phaseLag; // radians of delay behind head
-                double yawScale; // amplitude multiplier (increases toward tail)
-            };
+            // Root bone follows the overall motion
+            Vector3 rootPos = getBonePos("Root");
+            Vector3 rootEnd = getBoneEnd("Root");
+            Vector3 newRootPos = rootTransform.transformPoint(rootPos);
+            Vector3 newRootEnd = rootTransform.transformPoint(rootEnd);
+            boneWorldTransforms["Root"] = insect::buildBoneWorldTransform(newRootPos, newRootEnd);
 
-            static const SpineSegment spineSegments[] = {
-                { "BodyFront", 0.3, 0.4 },
-                { "BodyMid", 0.6, 0.7 },
-                { "BodyRear", 0.9, 1.0 },
-            };
+            // Create undulating spine motion
+            Vector3 currentPos = newRootEnd; // Start from root end position
 
-            // Accumulate yaw transforms along the spine
-            // Each segment's start is the end of the previous segment
-            Matrix4x4 cumulativeTransform = bodyTransform;
-            Vector3 prevEnd = bodyTransform.transformPoint(getBoneEnd("Head"));
+            for (size_t i = 0; i < sizeof(spineBones) / sizeof(SpineBone); ++i) {
+                const auto& bone = spineBones[i];
 
-            for (const auto& seg : spineSegments) {
-                double segYaw = spineYawAmp * seg.yawScale * std::sin(phase - seg.phaseLag);
+                if (boneIdx.find(bone.name) == boneIdx.end())
+                    continue;
 
-                Vector3 restPos = getBonePos(seg.name);
-                Vector3 restEnd = getBoneEnd(seg.name);
-                Vector3 restDir = restEnd - restPos;
+                Vector3 restPos = getBonePos(bone.name);
+                Vector3 restEnd = getBoneEnd(bone.name);
+                Vector3 boneDir = restEnd - restPos;
+                double boneLength = boneDir.length();
 
-                // Apply cumulative body transform to get baseline position
-                Vector3 segStart = prevEnd;
+                // Calculate undulation parameters for this bone
+                double wavePhase = phase - (bone.spinePosition * waveLength * 2.0 * Math::Pi);
+                double undulationAngle = spineAmplitude * bone.amplitudeScale * tailAmplitudeRatio * sin(wavePhase);
 
-                // Apply local yaw rotation for this segment
-                Matrix4x4 localYaw;
-                localYaw.rotate(up, segYaw);
-                Vector3 rotatedDir = localYaw.transformVector(cumulativeTransform.transformVector(restDir.normalized())) * restDir.length();
+                // Apply spine undulation rotation around the up axis
+                Quaternion spineRotation = Quaternion::fromAxisAndAngle(up, undulationAngle);
+                Matrix4x4 localSpineTransform = rootTransform;
+                localSpineTransform.rotate(spineRotation);
 
-                Vector3 segEnd = segStart + rotatedDir;
-                boneWorldTransforms[seg.name] = insect::buildBoneWorldTransform(segStart, segEnd);
+                // Transform bone direction with undulation
+                Vector3 newBoneDir = localSpineTransform.transformVector(boneDir.normalized()) * boneLength;
+                Vector3 boneStart = currentPos;
+                Vector3 boneEnd = boneStart + newBoneDir;
 
-                // Update cumulative transform for child segments
-                Matrix4x4 segTransform;
-                segTransform.translate(segStart - restPos);
-                segTransform.rotate(up, segYaw);
-                cumulativeTransform = segTransform;
+                boneWorldTransforms[bone.name] = insect::buildBoneWorldTransform(boneStart, boneEnd);
 
-                prevEnd = segEnd;
+                // Update position for next bone in chain
+                currentPos = boneEnd;
             }
 
-            // Tail: continues the undulation wave with larger amplitude
-            {
-                double tailStartYaw = tailStartYawAmp * std::sin(phase - 1.2);
-                Vector3 tailStartRestDir = getBoneEnd("TailStart") - getBonePos("TailStart");
-
-                Matrix4x4 tailStartLocalYaw;
-                tailStartLocalYaw.rotate(up, tailStartYaw);
-                Vector3 tailStartDir = tailStartLocalYaw.transformVector(
-                                           cumulativeTransform.transformVector(tailStartRestDir.normalized()))
-                    * tailStartRestDir.length();
-
-                Vector3 tailStartPos = prevEnd;
-                Vector3 tailStartEnd = tailStartPos + tailStartDir;
-                boneWorldTransforms["TailStart"] = insect::buildBoneWorldTransform(tailStartPos, tailStartEnd);
-
-                // TailEnd: even more amplitude
-                double tailEndYaw = tailEndYawAmp * std::sin(phase - 1.5);
-                Vector3 tailEndRestDir = getBoneEnd("TailEnd") - getBonePos("TailEnd");
-
-                Matrix4x4 tailEndLocalYaw;
-                tailEndLocalYaw.rotate(up, tailEndYaw);
-
-                Matrix4x4 tailCumTransform;
-                tailCumTransform.translate(tailStartPos - getBonePos("TailStart"));
-                tailCumTransform.rotate(up, tailStartYaw);
-
-                Vector3 tailEndDir = tailEndLocalYaw.transformVector(
-                                         tailCumTransform.transformVector(tailEndRestDir.normalized()))
-                    * tailEndRestDir.length();
-
-                Vector3 tailEndPos = tailStartEnd;
-                Vector3 tailEndEnd = tailEndPos + tailEndDir;
-                boneWorldTransforms["TailEnd"] = insect::buildBoneWorldTransform(tailEndPos, tailEndEnd);
-            }
-
-            // Pectoral fins: rhythmic flapping opposite to body yaw
+            // Animate pectoral fins (attached to BodyFront)
             for (int side = 0; side < 2; ++side) {
                 const char* finName = (side == 0) ? "LeftPectoralFin" : "RightPectoralFin";
-                double sideSign = (side == 0) ? 1.0 : -1.0;
-
-                Vector3 finPos = bodyTransform.transformPoint(getBonePos(finName));
-                Vector3 finEnd = bodyTransform.transformPoint(getBoneEnd(finName));
-                Vector3 finDir = finEnd - finPos;
-                double finLen = finDir.length();
-                if (finLen < 1e-8) {
-                    boneWorldTransforms[finName] = insect::buildBoneWorldTransform(finPos, finPos);
-                    continue;
-                }
-
-                // Pectoral fins sweep forward/backward with a slight phase offset
-                double flapAngle = pectoralFlapAmp * std::sin(phase + sideSign * 0.3) * sideSign;
-                Quaternion flapRot = Quaternion::fromAxisAndAngle(up, flapAngle);
-                Matrix4x4 flapMat;
-                flapMat.rotate(flapRot);
-
-                Vector3 rotatedDir = flapMat.transformVector(finDir.normalized()) * finLen;
-                boneWorldTransforms[finName] = insect::buildBoneWorldTransform(finPos, finPos + rotatedDir);
-            }
-
-            // Pelvic fins: gentle flapping, slightly delayed from pectorals
-            for (int side = 0; side < 2; ++side) {
-                const char* finName = (side == 0) ? "LeftPelvicFin" : "RightPelvicFin";
-                if (boneIdx.count(finName) == 0)
+                if (boneIdx.find(finName) == boneIdx.end())
                     continue;
 
                 double sideSign = (side == 0) ? 1.0 : -1.0;
 
-                // Pelvic fins are attached to BodyMid, use that bone's world transform
-                Vector3 bodyMidStart, bodyMidEnd;
-                auto bmIt = boneWorldTransforms.find("BodyMid");
-                if (bmIt != boneWorldTransforms.end()) {
-                    // Approximate: use the BodyMid segment's transformed positions
-                    bodyMidStart = bmIt->second.transformPoint(Vector3());
-                }
+                // Get parent body segment transform
+                auto bodyFrontIt = boneWorldTransforms.find("BodyFront");
+                if (bodyFrontIt == boneWorldTransforms.end())
+                    continue;
 
                 Vector3 finRestPos = getBonePos(finName);
                 Vector3 finRestEnd = getBoneEnd(finName);
+                Vector3 bodyFrontRestPos = getBonePos("BodyFront");
+                Vector3 finOffset = finRestPos - bodyFrontRestPos;
                 Vector3 finRestDir = finRestEnd - finRestPos;
-                double finLen = finRestDir.length();
 
-                // Transform fin base with the BodyMid bone's transform
-                Vector3 finPos = bodyTransform.transformPoint(finRestPos);
-                Vector3 finEnd = bodyTransform.transformPoint(finRestEnd);
-                Vector3 finDir = finEnd - finPos;
+                // Calculate fin attachment point on animated body
+                Vector3 finPos = bodyFrontIt->second.transformPoint(finOffset);
 
-                double flapAngle = pelvicFlapAmp * std::sin(phase - 0.5 + sideSign * 0.3) * sideSign;
-                Quaternion flapRot = Quaternion::fromAxisAndAngle(up, flapAngle);
-                Matrix4x4 flapMat;
-                flapMat.rotate(flapRot);
+                // Apply pectoral fin flapping motion
+                double flapAngle = pectoralFlapPower * sin(phase + pectoralPhaseOffset + sideSign * 0.2) * sideSign;
+                Quaternion flapRotation = Quaternion::fromAxisAndAngle(up, flapAngle);
+                Matrix4x4 finTransform;
+                finTransform.rotate(flapRotation);
 
-                Vector3 rotatedDir = flapMat.transformVector(finDir.normalized()) * finLen;
-                boneWorldTransforms[finName] = insect::buildBoneWorldTransform(finPos, finPos + rotatedDir);
+                Vector3 finDir = bodyFrontIt->second.transformVector(finTransform.transformVector(finRestDir));
+                Vector3 finEnd = finPos + finDir;
+
+                boneWorldTransforms[finName] = insect::buildBoneWorldTransform(finPos, finEnd);
             }
 
-            // Dorsal fins: sway with the body undulation
+            // Animate pelvic fins (attached to BodyMid)
+            for (int side = 0; side < 2; ++side) {
+                const char* finName = (side == 0) ? "LeftPelvicFin" : "RightPelvicFin";
+                if (boneIdx.find(finName) == boneIdx.end())
+                    continue;
+
+                double sideSign = (side == 0) ? 1.0 : -1.0;
+
+                auto bodyMidIt = boneWorldTransforms.find("BodyMid");
+                if (bodyMidIt == boneWorldTransforms.end())
+                    continue;
+
+                Vector3 finRestPos = getBonePos(finName);
+                Vector3 finRestEnd = getBoneEnd(finName);
+                Vector3 bodyMidRestPos = getBonePos("BodyMid");
+                Vector3 finOffset = finRestPos - bodyMidRestPos;
+                Vector3 finRestDir = finRestEnd - finRestPos;
+
+                Vector3 finPos = bodyMidIt->second.transformPoint(finOffset);
+
+                double flapAngle = pelvicFlapPower * sin(phase + pelvicPhaseOffset + sideSign * 0.15) * sideSign;
+                Quaternion flapRotation = Quaternion::fromAxisAndAngle(up, flapAngle);
+                Matrix4x4 finTransform;
+                finTransform.rotate(flapRotation);
+
+                Vector3 finDir = bodyMidIt->second.transformVector(finTransform.transformVector(finRestDir));
+                Vector3 finEnd = finPos + finDir;
+
+                boneWorldTransforms[finName] = insect::buildBoneWorldTransform(finPos, finEnd);
+            }
+
+            // Animate dorsal fins (sway with body undulation)
             static const struct {
                 const char* finName;
-                const char* parentSegment;
-                double phaseLag;
+                const char* parentBone;
+                double phaseOffset;
             } dorsalFins[] = {
-                { "DorsalFinFront", "BodyFront", 0.3 },
-                { "DorsalFinMid", "BodyMid", 0.6 },
-                { "DorsalFinRear", "BodyRear", 0.9 },
+                { "DorsalFinFront", "BodyFront", 0.2 },
+                { "DorsalFinMid", "BodyMid", 0.5 },
+                { "DorsalFinRear", "BodyRear", 0.75 }
             };
 
-            for (const auto& df : dorsalFins) {
-                if (boneIdx.count(df.finName) == 0)
+            for (const auto& fin : dorsalFins) {
+                if (boneIdx.find(fin.finName) == boneIdx.end())
                     continue;
 
-                Vector3 finRestPos = getBonePos(df.finName);
-                Vector3 finRestEnd = getBoneEnd(df.finName);
+                auto parentIt = boneWorldTransforms.find(fin.parentBone);
+                if (parentIt == boneWorldTransforms.end())
+                    continue;
+
+                Vector3 finRestPos = getBonePos(fin.finName);
+                Vector3 finRestEnd = getBoneEnd(fin.finName);
+                Vector3 parentRestPos = getBonePos(fin.parentBone);
+                Vector3 finOffset = finRestPos - parentRestPos;
                 Vector3 finRestDir = finRestEnd - finRestPos;
-                double finLen = finRestDir.length();
 
-                // Use parent segment's transform
-                auto parentIt = boneWorldTransforms.find(df.parentSegment);
-                Vector3 finPos, finDir;
-                if (parentIt != boneWorldTransforms.end()) {
-                    // Reconstruct parent segment positions
-                    finPos = parentIt->second.transformPoint(Vector3());
-                    // Offset fin base relative to parent start
-                    Vector3 parentRestPos = getBonePos(df.parentSegment);
-                    Vector3 offsetInParent = finRestPos - parentRestPos;
-                    finPos = parentIt->second.transformPoint(offsetInParent);
-                    finDir = parentIt->second.transformVector(finRestDir.normalized()) * finLen;
-                } else {
-                    finPos = bodyTransform.transformPoint(finRestPos);
-                    finDir = bodyTransform.transformVector(finRestDir.normalized()) * finLen;
-                }
+                Vector3 finPos = parentIt->second.transformPoint(finOffset);
 
-                double swayAngle = dorsalSwayAmp * std::sin(phase - df.phaseLag);
-                Quaternion swayRot = Quaternion::fromAxisAndAngle(forwardDir, swayAngle);
-                Matrix4x4 swayMat;
-                swayMat.rotate(swayRot);
+                double swayAngle = dorsalSwayPower * sin(phase - fin.phaseOffset * waveLength);
+                Quaternion swayRotation = Quaternion::fromAxisAndAngle(forwardDir, swayAngle);
+                Matrix4x4 finTransform;
+                finTransform.rotate(swayRotation);
 
-                Vector3 rotatedDir = swayMat.transformVector(finDir.normalized()) * finLen;
-                boneWorldTransforms[df.finName] = insect::buildBoneWorldTransform(finPos, finPos + rotatedDir);
+                Vector3 finDir = parentIt->second.transformVector(finTransform.transformVector(finRestDir));
+                Vector3 finEnd = finPos + finDir;
+
+                boneWorldTransforms[fin.finName] = insect::buildBoneWorldTransform(finPos, finEnd);
             }
 
-            // Ventral fins: sway opposite to dorsals
+            // Animate ventral fins (sway opposite to dorsals)
             static const struct {
                 const char* finName;
-                const char* parentSegment;
-                double phaseLag;
+                const char* parentBone;
+                double phaseOffset;
             } ventralFins[] = {
-                { "VentralFinFront", "BodyFront", 0.3 },
-                { "VentralFinMid", "BodyMid", 0.6 },
-                { "VentralFinRear", "BodyRear", 0.9 },
+                { "VentralFinFront", "BodyFront", 0.2 },
+                { "VentralFinMid", "BodyMid", 0.5 },
+                { "VentralFinRear", "BodyRear", 0.75 }
             };
 
-            for (const auto& vf : ventralFins) {
-                if (boneIdx.count(vf.finName) == 0)
+            for (const auto& fin : ventralFins) {
+                if (boneIdx.find(fin.finName) == boneIdx.end())
                     continue;
 
-                Vector3 finRestPos = getBonePos(vf.finName);
-                Vector3 finRestEnd = getBoneEnd(vf.finName);
+                auto parentIt = boneWorldTransforms.find(fin.parentBone);
+                if (parentIt == boneWorldTransforms.end())
+                    continue;
+
+                Vector3 finRestPos = getBonePos(fin.finName);
+                Vector3 finRestEnd = getBoneEnd(fin.finName);
+                Vector3 parentRestPos = getBonePos(fin.parentBone);
+                Vector3 finOffset = finRestPos - parentRestPos;
                 Vector3 finRestDir = finRestEnd - finRestPos;
-                double finLen = finRestDir.length();
 
-                auto parentIt = boneWorldTransforms.find(vf.parentSegment);
-                Vector3 finPos, finDir;
-                if (parentIt != boneWorldTransforms.end()) {
-                    Vector3 parentRestPos = getBonePos(vf.parentSegment);
-                    Vector3 offsetInParent = finRestPos - parentRestPos;
-                    finPos = parentIt->second.transformPoint(offsetInParent);
-                    finDir = parentIt->second.transformVector(finRestDir.normalized()) * finLen;
-                } else {
-                    finPos = bodyTransform.transformPoint(finRestPos);
-                    finDir = bodyTransform.transformVector(finRestDir.normalized()) * finLen;
-                }
+                Vector3 finPos = parentIt->second.transformPoint(finOffset);
 
-                double swayAngle = -ventralSwayAmp * std::sin(phase - vf.phaseLag);
-                Quaternion swayRot = Quaternion::fromAxisAndAngle(forwardDir, swayAngle);
-                Matrix4x4 swayMat;
-                swayMat.rotate(swayRot);
+                // Opposite phase from dorsal fins
+                double swayAngle = -ventralSwayPower * sin(phase - fin.phaseOffset * waveLength);
+                Quaternion swayRotation = Quaternion::fromAxisAndAngle(forwardDir, swayAngle);
+                Matrix4x4 finTransform;
+                finTransform.rotate(swayRotation);
 
-                Vector3 rotatedDir = swayMat.transformVector(finDir.normalized()) * finLen;
-                boneWorldTransforms[vf.finName] = insect::buildBoneWorldTransform(finPos, finPos + rotatedDir);
+                Vector3 finDir = parentIt->second.transformVector(finTransform.transformVector(finRestDir));
+                Vector3 finEnd = finPos + finDir;
+
+                boneWorldTransforms[fin.finName] = insect::buildBoneWorldTransform(finPos, finEnd);
             }
 
-            // Write frame
+            // Write frame data
             auto& animFrame = animationClip.frames[frame];
-            animFrame.time = static_cast<float>(tNormalized) * durationSeconds;
+            animFrame.time = static_cast<float>(t) * durationSeconds;
             animFrame.boneWorldTransforms = boneWorldTransforms;
 
+            // Calculate skin matrices
             for (const auto& pair : boneWorldTransforms) {
                 auto invIt = inverseBindMatrices.find(pair.first);
                 if (invIt != inverseBindMatrices.end()) {

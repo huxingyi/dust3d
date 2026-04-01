@@ -38,7 +38,6 @@ private:
     };
 
     // Start radius - the radius at the bone start
-    // End radius will be 1/3 of start radius
     double m_startRadius = 0.0;
 
     bool m_normalizeRequired = true;
