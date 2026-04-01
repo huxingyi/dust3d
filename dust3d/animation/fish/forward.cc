@@ -20,7 +20,6 @@
  *  SOFTWARE.
  */
 
-#include <QDebug>
 #include <cmath>
 #include <cstring>
 #include <dust3d/animation/common.h>
@@ -193,9 +192,7 @@ namespace fish {
                 Vector3 localBonePos = parentRestInv.transformPoint(restPos);
                 Vector3 localBoneDir = parentRestInv.transformVector(restBoneDir);
 
-                // Use fixed parent-local up axis for consistent spine bend orientation
-                Vector3 localUp(0.0, 1.0, 0.0);
-                Quaternion rot = Quaternion::fromAxisAndAngle(localUp, rotAngle);
+                Quaternion rot = Quaternion::fromAxisAndAngle(up, rotAngle);
                 Matrix4x4 rotMatrix;
                 rotMatrix.rotate(rot);
                 Vector3 rotatedLocalDir = rotMatrix.transformVector(localBoneDir.normalized()) * boneLength;
@@ -204,19 +201,6 @@ namespace fish {
                 Matrix4x4 parentWorldTransform = parentIt->second;
                 Vector3 boneStart = parentWorldTransform.transformPoint(localBonePos);
                 Vector3 boneEnd = boneStart + parentWorldTransform.transformVector(rotatedLocalDir);
-
-                Vector3 axisWorld = parentWorldTransform.transformVector(localUp).normalized();
-
-                qDebug()
-                    << "[fish::forward] frame" << frame
-                    << "bone" << bone.name
-                    << "pos" << pos
-                    << "wavePhase" << wavePhase
-                    << "rotAngle" << rotAngle
-                    << "axisLocal" << localUp.x() << localUp.y() << localUp.z()
-                    << "axisWorld" << axisWorld.x() << axisWorld.y() << axisWorld.z()
-                    << "restBoneDir" << restBoneDir.x() << restBoneDir.y() << restBoneDir.z()
-                    << "rotatedDir" << (boneEnd - boneStart).x() << (boneEnd - boneStart).y() << (boneEnd - boneStart).z();
 
                 boneWorldTransforms[bone.name] = animation::buildBoneWorldTransform(boneStart, boneEnd);
             }
