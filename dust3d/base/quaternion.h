@@ -101,14 +101,14 @@ public:
         double angle = std::acos(dot);
         double sine = std::sin(angle);
         if (Math::isZero(sine)) {
-            // fallback to lerp for nearly parallel quaternions
-            return a * (1.0 - t) + to * t;
+            // fallback to nlerp for nearly parallel quaternions
+            return (a * (1.0 - t) + to * t).normalized();
         }
 
         double scalarA = std::sin((1.0 - t) * angle) / sine;
         double scalarB = std::sin(t * angle) / sine;
 
-        return a * scalarA + to * scalarB;
+        return (a * scalarA + to * scalarB).normalized();
     }
 
     inline static Quaternion fromAxisAndAngle(const Vector3& axis, double angle)
@@ -141,7 +141,7 @@ public:
         double length2 = x() * x() + y() * y() + z() * z() + w() * w();
         double length = std::sqrt(length2);
         if (Math::isZero(length))
-            return Quaternion();
+            return Quaternion(1.0, 0.0, 0.0, 0.0);
 
         return Quaternion(w() / length, x() / length, y() / length, z() / length);
     }
