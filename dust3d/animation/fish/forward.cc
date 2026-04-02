@@ -180,10 +180,10 @@ namespace fish {
                 if (parentIt == boneWorldTransforms.end())
                     continue;
 
-                Vector3 parentRestPos = getBonePos(parentName);
-                Vector3 parentRestEnd = getBoneEnd(parentName);
-                Matrix4x4 parentRestTransform = animation::buildBoneWorldTransform(parentRestPos, parentRestEnd);
-                Matrix4x4 parentRestInv = parentRestTransform.inverted();
+                auto invIt = inverseBindMatrices.find(parentName);
+                if (invIt == inverseBindMatrices.end())
+                    continue;
+                const Matrix4x4& parentRestInv = invIt->second;
 
                 Vector3 localBonePos = parentRestInv.transformPoint(restPos);
                 Vector3 localBoneDir = parentRestInv.transformVector(restBoneDir);
@@ -226,11 +226,11 @@ namespace fish {
 
                 Vector3 finRestPos = getBonePos(finName);
                 Vector3 finRestEnd = getBoneEnd(finName);
-                Vector3 parentRestPos = getBonePos(parentBone);
-                Vector3 parentRestEnd = getBoneEnd(parentBone);
 
-                Matrix4x4 parentRestTransform = animation::buildBoneWorldTransform(parentRestPos, parentRestEnd);
-                Matrix4x4 parentRestInv = parentRestTransform.inverted();
+                auto invIt = inverseBindMatrices.find(parentBone);
+                if (invIt == inverseBindMatrices.end())
+                    return;
+                const Matrix4x4& parentRestInv = invIt->second;
                 Vector3 localFinPos = parentRestInv.transformPoint(finRestPos);
                 Vector3 localFinDir = parentRestInv.transformVector(finRestEnd - finRestPos);
                 if (localFinDir.lengthSquared() < 1e-8)
@@ -270,11 +270,11 @@ namespace fish {
 
                 Vector3 finRestPos = getBonePos(finName);
                 Vector3 finRestEnd = getBoneEnd(finName);
-                Vector3 parentRestPos = getBonePos(parentBone);
-                Vector3 parentRestEnd = getBoneEnd(parentBone);
 
-                Matrix4x4 parentRestTransform = animation::buildBoneWorldTransform(parentRestPos, parentRestEnd);
-                Matrix4x4 parentRestInv = parentRestTransform.inverted();
+                auto invIt = inverseBindMatrices.find(parentBone);
+                if (invIt == inverseBindMatrices.end())
+                    return;
+                const Matrix4x4& parentRestInv = invIt->second;
                 Vector3 localFinPos = parentRestInv.transformPoint(finRestPos);
                 Vector3 localFinDir = parentRestInv.transformVector(finRestEnd - finRestPos);
                 if (localFinDir.lengthSquared() < 1e-8)
