@@ -305,6 +305,29 @@ namespace fish {
             animateMidlineFin("VentralFinMid", "BodyMid", ventralSwayPower, ventralPhaseOffset, 0.5, -1.0);
             animateMidlineFin("VentralFinRear", "BodyRear", ventralSwayPower, ventralPhaseOffset, 0.75, -1.0);
 
+            // After full animation for this frame, vertically flip the Root bone
+            // and all child bones by rotating 180 degrees around the Root right axis.
+            auto rootIt = boneWorldTransforms.find("Root");
+            if (rootIt != boneWorldTransforms.end()) {
+                Vector3 rootWorldPos = rootIt->second.transformPoint(Vector3(0.0, 0.0, 0.0));
+                Vector3 rootRight = rootIt->second.transformVector(Vector3(1.0, 0.0, 0.0));
+                if (rootRight.isZero())
+                    rootRight = Vector3(1.0, 0.0, 0.0);
+                else
+                    rootRight.normalize();
+
+                Matrix4x4 rootFlip;
+                rootFlip.translate(rootWorldPos);
+                rootFlip.rotate(rootRight, Math::Pi);
+                rootFlip.translate(rootWorldPos * -1.0);
+
+                for (auto& pair : boneWorldTransforms) {
+                    Matrix4x4 transformed = rootFlip;
+                    transformed *= pair.second;
+                    pair.second = transformed;
+                }
+            }
+
             auto& animFrame = animationClip.frames[frame];
             animFrame.time = static_cast<float>(animTime);
             animFrame.boneWorldTransforms = boneWorldTransforms;
