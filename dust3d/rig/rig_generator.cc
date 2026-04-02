@@ -228,14 +228,15 @@ bool RigGenerator::generateRig(const Snapshot* snapshot, const RigStructure& tem
                     << "endPosition:" << bone.endX << bone.endY << bone.endZ;
     }
 
-    // Generate collision capsules for ragdoll physics from bone segments
-    actualRig.capsules.clear();
-    for (const auto& bone : actualRig.bones) {
+    // Generate collision capsule radius for each bone in rig data
+    for (auto& bone : actualRig.bones) {
         Vector3 start(bone.posX, bone.posY, bone.posZ);
         Vector3 end(bone.endX, bone.endY, bone.endZ);
         float length = (end - start).length();
-        if (length < 1e-6f)
+        if (length < 1e-6f) {
+            bone.capsuleRadius = 0.01f;
             continue;
+        }
 
         // Determine capsule radius from node radius average on the bone's node chains.
         std::vector<std::vector<Uuid>> nodeChains;
@@ -265,17 +266,9 @@ bool RigGenerator::generateRig(const Snapshot* snapshot, const RigStructure& tem
         else
             radius = std::max(0.01f, length * 0.12f);
 
-        RigCapsule capsule;
-        capsule.boneName = bone.name;
-        capsule.startX = bone.posX;
-        capsule.startY = bone.posY;
-        capsule.startZ = bone.posZ;
-        capsule.endX = bone.endX;
-        capsule.endY = bone.endY;
-        capsule.endZ = bone.endZ;
-        capsule.radius = std::max(0.01f, radius);
-        actualRig.capsules.push_back(capsule);
+        bone.capsuleRadius = std::max(0.01f, radius);
     }
+
     m_errorMessage = "";
     return true;
 }

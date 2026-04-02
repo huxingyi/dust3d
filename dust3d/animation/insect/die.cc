@@ -20,6 +20,7 @@
  *  SOFTWARE.
  */
 
+#include <algorithm>
 #include <cmath>
 #include <dust3d/animation/animation_generator.h>
 #include <dust3d/animation/insect/common.h>
@@ -102,23 +103,9 @@ namespace insect {
             info.tailPos = Vector3(b.endX, b.endY, b.endZ);
             info.headVel = Vector3(0.0, 0.0, 0.0);
             info.tailVel = Vector3(0.0, 0.0, 0.0);
-            info.restLength = (info.tailPos - info.headPos).length();
-            info.radius = std::max(0.01f, info.restLength * 0.12f);
+            info.restLength = std::max(static_cast<float>((info.tailPos - info.headPos).length()), 1e-6f);
+            info.radius = b.capsuleRadius;
             bones.push_back(info);
-        }
-
-        // Override with capsules generated in rig data when present
-        std::map<std::string, float> capsuleRadius;
-        for (const auto& capsule : rigStructure.capsules) {
-            capsuleRadius[capsule.boneName] = capsule.radius;
-        }
-
-        for (auto& bone : bones) {
-            auto it = capsuleRadius.find(bone.name);
-            if (it != capsuleRadius.end())
-                bone.radius = it->second;
-            if (bone.restLength < 1e-6f)
-                bone.restLength = 1e-6f;
         }
 
         animationClip.name = "flyDie";

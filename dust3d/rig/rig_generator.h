@@ -41,13 +41,7 @@ struct RigNode {
     std::string parent;
     float posX = 0.0f, posY = 0.0f, posZ = 0.0f;
     float endX = 0.0f, endY = 0.0f, endZ = 0.0f;
-};
-
-struct RigCapsule {
-    std::string boneName;
-    float startX = 0.0f, startY = 0.0f, startZ = 0.0f;
-    float endX = 0.0f, endY = 0.0f, endZ = 0.0f;
-    float radius = 0.0f;
+    float capsuleRadius = 0.0f;
 };
 
 struct RigStructure {
@@ -55,7 +49,6 @@ struct RigStructure {
     std::string name;
     std::string description;
     std::vector<RigNode> bones;
-    std::vector<RigCapsule> capsules;
 };
 
 // RigGenerator: Computes actual bone positions from edge assignments
