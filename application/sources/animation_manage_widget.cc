@@ -13,6 +13,7 @@
 #include <QListWidget>
 #include <QListWidgetItem>
 #include <QVBoxLayout>
+#include <algorithm>
 
 AnimationManageWidget::AnimationManageWidget(Document* document, QWidget* parent)
     : QWidget(parent)
@@ -34,7 +35,6 @@ AnimationManageWidget::AnimationManageWidget(Document* document, QWidget* parent
 
     createParameterWidgets();
 
-    m_frameTimer->setInterval(100);
     connect(m_frameTimer, &QTimer::timeout, this, &AnimationManageWidget::onAnimationFrameTimeout);
 
     if (m_document) {
@@ -785,6 +785,13 @@ void AnimationManageWidget::startAnimationLoop()
 {
     if (!m_frameTimer)
         return;
+
+    double durationSeconds = m_durationSpinBox ? m_durationSpinBox->value() : 1.0;
+    int frameCount = m_frameCountSpinBox ? m_frameCountSpinBox->value() : 30;
+    if (frameCount < 1)
+        frameCount = 1;
+    int intervalMs = std::max(1, static_cast<int>((durationSeconds * 1000.0) / frameCount));
+    m_frameTimer->setInterval(intervalMs);
 
     if (!m_frameTimer->isActive()) {
         m_frameTimer->start();
