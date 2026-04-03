@@ -50,6 +50,8 @@ public:
     void setHasRoughnessInImage(bool hasInImage);
     bool hasAmbientOcclusionInImage();
     void setHasAmbientOcclusionInImage(bool hasInImage);
+    int skeletonVertexCount() const;
+    void setSkeletonVertexCount(int count);
     static float m_defaultMetalness;
     static float m_defaultRoughness;
     void exportAsObj(const QString& filename);
@@ -71,6 +73,7 @@ private:
     bool m_hasMetalnessInImage = false;
     bool m_hasRoughnessInImage = false;
     bool m_hasAmbientOcclusionInImage = false;
+    int m_skeletonVertexCount = 0;
     quint64 m_meshId = 0;
 };
 

@@ -12,6 +12,7 @@ ModelMesh::ModelMesh(const ModelMesh& mesh)
     : m_triangleVertices(nullptr)
     , m_triangleVertexCount(0)
     , m_textureImage(nullptr)
+    , m_skeletonVertexCount(mesh.m_skeletonVertexCount)
 {
     if (nullptr != mesh.m_triangleVertices && mesh.m_triangleVertexCount > 0) {
         this->m_triangleVertices = new ModelOpenGLVertex[mesh.m_triangleVertexCount];
@@ -35,6 +36,17 @@ ModelMesh::ModelMesh(const ModelMesh& mesh)
     this->m_faces = mesh.m_faces;
     this->m_triangulatedVertices = mesh.m_triangulatedVertices;
     this->m_meshId = mesh.meshId();
+    this->m_skeletonVertexCount = mesh.m_skeletonVertexCount;
+}
+
+int ModelMesh::skeletonVertexCount() const
+{
+    return m_skeletonVertexCount;
+}
+
+void ModelMesh::setSkeletonVertexCount(int count)
+{
+    m_skeletonVertexCount = count;
 }
 
 void ModelMesh::removeColor()

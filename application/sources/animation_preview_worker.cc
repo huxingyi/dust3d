@@ -203,10 +203,13 @@ void AnimationPreviewWorker::process()
             std::memcpy(combinedVertices + skeletonCount, frameMesh->triangleVertices(), skinnedCount * sizeof(ModelOpenGLVertex));
 
             ModelMesh combinedMesh(combinedVertices, totalCount);
+            combinedMesh.setSkeletonVertexCount(skeletonCount);
             m_previewMeshes.push_back(std::move(combinedMesh));
         } else if (showSkeleton) {
+            skeletonMesh.setSkeletonVertexCount(skeletonMesh.triangleVertexCount());
             m_previewMeshes.push_back(std::move(skeletonMesh));
         } else if (showSkinned) {
+            frameMesh->setSkeletonVertexCount(0);
             m_previewMeshes.push_back(std::move(*frameMesh));
         }
     }

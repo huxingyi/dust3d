@@ -642,7 +642,18 @@ void BoneManageWidget::rigSkinningMeshReady()
     int combinedVertexCount = m_rigSkinningMeshWorker->getCombinedVertexCount();
 
     if (combinedVertices && combinedVertexCount > 0 && m_rigSkinningModelWidget) {
-        MonochromeMesh* wireframeMesh = new MonochromeMesh(combinedVertices, combinedVertexCount, 1.0f, 1.0f, 1.0f, 0.3f);
+        // The combined buffer has skeleton vertices first and rigged model vertices after.
+        // Only show wireframe for the actual rigged model geometry, not the skeleton/assist meshes.
+        size_t rigVertexCount = m_rigSkinningMeshWorker->getRigSkeletonVertices().size();
+        size_t meshVertexCount = combinedVertexCount > (int)rigVertexCount ? combinedVertexCount - (int)rigVertexCount : 0;
+
+        MonochromeMesh* wireframeMesh = nullptr;
+        if (meshVertexCount > 0) {
+            wireframeMesh = new MonochromeMesh(combinedVertices + rigVertexCount, (int)meshVertexCount, 1.0f, 1.0f, 1.0f, 0.3f);
+        } else {
+            wireframeMesh = new MonochromeMesh(combinedVertices, combinedVertexCount, 1.0f, 1.0f, 1.0f, 0.3f);
+        }
+
         ModelMesh* combinedMesh = new ModelMesh(combinedVertices, combinedVertexCount);
         m_rigSkinningModelWidget->updateMesh(combinedMesh);
         m_rigSkinningModelWidget->updateWireframeMesh(wireframeMesh);
