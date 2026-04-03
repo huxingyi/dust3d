@@ -72,7 +72,6 @@ private:
     QSlider* m_dieMaxJointAngleSlider = nullptr;
     QSlider* m_dieDampingSlider = nullptr;
     QSlider* m_dieGroundBounceSlider = nullptr;
-    QSlider* m_dieGroundYSlider = nullptr;
 
     // Fish animation parameter sliders
     QSlider* m_swimSpeedSlider = nullptr;
@@ -119,8 +118,6 @@ private:
     QLabel* m_dieDampingLabel = nullptr;
     QWidget* m_dieGroundBounceRow = nullptr;
     QLabel* m_dieGroundBounceLabel = nullptr;
-    QWidget* m_dieGroundYRow = nullptr;
-    QLabel* m_dieGroundYLabel = nullptr;
 
     // Fish animation parameter rows and labels
     QWidget* m_swimSpeedRow = nullptr;

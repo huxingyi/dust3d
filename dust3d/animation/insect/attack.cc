@@ -136,6 +136,9 @@ namespace insect {
         double cycles = std::max(1.0, std::round(attackSpeedFactor));
 
         for (int frame = 0; frame < frameCount; ++frame) {
+            // Attack is a loopable clip: tNormalized spans [0, 1) so frame 0 and a
+            // hypothetical extra frame are identical, enabling seamless looping.
+            // One-shot clips (e.g. die) use frameCount - 1 to reach exactly 1.0.
             double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
             double t = fmod(tNormalized * cycles, 1.0);
 

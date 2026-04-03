@@ -30,6 +30,7 @@
 #include <dust3d/base/quaternion.h>
 #include <dust3d/base/vector3.h>
 #include <dust3d/rig/rig_generator.h>
+#include <functional>
 
 namespace dust3d {
 
@@ -61,22 +62,6 @@ namespace insect {
         std::map<std::string, size_t> boneIdx;
         for (size_t i = 0; i < rigStructure.bones.size(); ++i)
             boneIdx[rigStructure.bones[i].name] = i;
-
-        auto getBonePos = [&](const std::string& name) -> Vector3 {
-            auto it = boneIdx.find(name);
-            if (it == boneIdx.end())
-                return Vector3();
-            const auto& b = rigStructure.bones[it->second];
-            return Vector3(b.posX, b.posY, b.posZ);
-        };
-
-        auto getBoneEnd = [&](const std::string& name) -> Vector3 {
-            auto it = boneIdx.find(name);
-            if (it == boneIdx.end())
-                return Vector3();
-            const auto& b = rigStructure.bones[it->second];
-            return Vector3(b.endX, b.endY, b.endZ);
-        };
 
         static const char* requiredBones[] = {
             "Head", "Thorax", "Abdomen",
@@ -110,91 +95,271 @@ namespace insect {
             bones.push_back(info);
         }
 
+        // Build name-to-index map over the ragdoll bone array for O(1) lookup
+        std::map<std::string, size_t> ragdollBoneIdx;
+        for (size_t i = 0; i < bones.size(); ++i)
+            ragdollBoneIdx[bones[i].name] = i;
+
+        // Topological sort so parents are always processed before their children,
+        // which lets joint constraints propagate correctly in a single pass.
+        {
+            std::vector<BoneRagdollInfo> sorted;
+            sorted.reserve(bones.size());
+            std::vector<bool> visited(bones.size(), false);
+            std::function<void(size_t)> visit = [&](size_t i) {
+                if (visited[i])
+                    return;
+                if (!bones[i].parent.empty()) {
+                    auto pit = ragdollBoneIdx.find(bones[i].parent);
+                    if (pit != ragdollBoneIdx.end())
+                        visit(pit->second);
+                }
+                visited[i] = true;
+                sorted.push_back(bones[i]);
+            };
+            for (size_t i = 0; i < bones.size(); ++i)
+                visit(i);
+            bones = std::move(sorted);
+            ragdollBoneIdx.clear();
+            for (size_t i = 0; i < bones.size(); ++i)
+                ragdollBoneIdx[bones[i].name] = i;
+        }
+
+        // Compute gravity direction from the rest pose: the average unit vector from
+        // the thorax toward every leg-tip (Tibia tail) defines "down" for this model.
+        Vector3 gravityDir(0.0, -1.0, 0.0);
+        {
+            Vector3 thoraxPos;
+            auto tit = ragdollBoneIdx.find("Thorax");
+            if (tit != ragdollBoneIdx.end())
+                thoraxPos = (bones[tit->second].headPos + bones[tit->second].tailPos) * 0.5;
+
+            Vector3 legDirSum(0.0, 0.0, 0.0);
+            int legCount = 0;
+            for (const auto& b : bones) {
+                if (b.name.find("Tibia") == std::string::npos)
+                    continue;
+                Vector3 dir = b.tailPos - thoraxPos;
+                double len = dir.length();
+                if (len > 1e-6) {
+                    legDirSum += dir / len;
+                    ++legCount;
+                }
+            }
+            if (legCount > 0) {
+                Vector3 candidate = (legDirSum / legCount).normalized();
+                if (candidate.length() > 1e-6)
+                    gravityDir = candidate;
+            }
+        }
+
+        // Compute the insect's forward direction (head→abdomen axis).
+        Vector3 forwardDir(0.0, 0.0, -1.0);
+        {
+            auto headIt = ragdollBoneIdx.find("Head");
+            auto abdIt = ragdollBoneIdx.find("Abdomen");
+            if (headIt != ragdollBoneIdx.end() && abdIt != ragdollBoneIdx.end()) {
+                Vector3 headPos = bones[headIt->second].headPos;
+                Vector3 abdPos = bones[abdIt->second].tailPos;
+                Vector3 dir = headPos - abdPos;
+                if (dir.length() > 1e-6)
+                    forwardDir = dir.normalized();
+            }
+        }
+
+        // Lateral axis (left-to-right relative to forward and gravity).
+        // For Left bones the outward direction is +sideDir; for Right it is -sideDir.
+        Vector3 sideDir = Vector3::crossProduct(forwardDir, gravityDir);
+        if (sideDir.length() < 1e-6) {
+            // Forward is collinear with gravity – pick any perpendicular.
+            Vector3 arbitrary = (std::abs(gravityDir.x()) < 0.9) ? Vector3(1.0, 0.0, 0.0) : Vector3(0.0, 1.0, 0.0);
+            sideDir = Vector3::crossProduct(arbitrary, gravityDir);
+        }
+        sideDir = sideDir.normalized();
+        Vector3 upDir = -gravityDir;
+
+        // Ground level: the furthest point along gravityDir across all leg tips
+        // in the rest pose defines the floor plane.
+        double groundLevel = 0.0;
+        {
+            double maxDot = -1e18;
+            for (const auto& b : bones) {
+                if (b.name.find("Tibia") == std::string::npos)
+                    continue;
+                double d = Vector3::dotProduct(b.tailPos, gravityDir);
+                if (d > maxDot)
+                    maxDot = d;
+            }
+            if (maxDot > -1e17)
+                groundLevel = maxDot;
+        }
+
+        // Apply initial death impulse so the insect doesn't just fall straight down.
+        // Body rolls sideways, wings flare up, and legs splay outward.
+        // All directions are expressed in the model's own rest-pose frame.
+        {
+            const double bodyRollVel = 1.5;
+            const double bodyDropVel = 0.3;
+            for (const char* bodyBone : { "Thorax", "Head", "Abdomen" }) {
+                auto it = ragdollBoneIdx.find(bodyBone);
+                if (it != ragdollBoneIdx.end()) {
+                    auto& b = bones[it->second];
+                    // Roll sideways, slight initial push into gravity.
+                    b.headVel = sideDir * bodyRollVel + gravityDir * bodyDropVel;
+                    b.tailVel = sideDir * bodyRollVel + gravityDir * bodyDropVel;
+                }
+            }
+            for (const char* wing : { "LeftWing", "RightWing" }) {
+                auto it = ragdollBoneIdx.find(wing);
+                if (it != ragdollBoneIdx.end()) {
+                    auto& b = bones[it->second];
+                    // Left wing spreads in +sideDir, right wing in -sideDir.
+                    double outerSide = (b.name.find("Left") != std::string::npos) ? 1.0 : -1.0;
+                    b.headVel = sideDir * (outerSide * 0.3) + upDir * 1.5;
+                    b.tailVel = sideDir * (outerSide * 0.8) + upDir * 2.5;
+                }
+            }
+            for (auto& b : bones) {
+                bool isLeg = (b.name.find("Coxa") != std::string::npos || b.name.find("Femur") != std::string::npos || b.name.find("Tibia") != std::string::npos);
+                if (!isLeg)
+                    continue;
+                double outerSide = (b.name.find("Left") != std::string::npos) ? 1.0 : -1.0;
+                b.headVel = sideDir * (outerSide * 0.5) + upDir * 0.2;
+                b.tailVel = sideDir * (outerSide * 1.2) + upDir * 0.5;
+            }
+        }
+
         animationClip.durationSeconds = durationSeconds;
         animationClip.frames.clear();
         animationClip.frames.resize(frameCount);
 
         double dt = durationSeconds / std::max(1, frameCount);
-        Vector3 gravity(0.0, -9.80, 0.0);
+        Vector3 gravity = gravityDir * 9.80;
 
         float lengthStiffness = static_cast<float>(parameters.getValue("insectDieLengthStiffness", 0.9));
         float parentJointStiffness = static_cast<float>(parameters.getValue("insectDieParentStiffness", 0.8));
         float maxJointAngleDeg = static_cast<float>(parameters.getValue("insectDieMaxJointAngleDeg", 120.0));
-        float maxJointAngleRad = maxJointAngleDeg * (3.14159265f / 180.0f);
+        double maxJointAngleRad = maxJointAngleDeg * (Math::Pi / 180.0);
         float damping = static_cast<float>(parameters.getValue("insectDieDamping", 0.95));
-        float groundY = static_cast<float>(parameters.getValue("insectDieGroundY", 0.0));
         float groundBounce = static_cast<float>(parameters.getValue("insectDieGroundBounce", 0.22));
 
-        for (int frame = 0; frame < frameCount; ++frame) {
-            double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
+        // Precomputed per-bone iteration count (more iterations = stiffer constraints).
+        const size_t constraintIterations = 4;
 
-            // Per-bone dynamic update
+        for (int frame = 0; frame < frameCount; ++frame) {
+            // Die is a one-shot clip (non-loopable): tNormalized must reach exactly 1.0
+            // on the last frame so the insect fully settles.  Loopable clips use
+            // frameCount as the divisor (frames span [0, 1)), but here we use
+            // frameCount - 1 so frames span [0, 1].
+            double tNormalized = static_cast<double>(frame) / static_cast<double>(std::max(1, frameCount - 1));
+
+            // --- Step 1: Save positions at the start of this timestep ---
+            std::vector<Vector3> savedHead(bones.size()), savedTail(bones.size());
+            for (size_t i = 0; i < bones.size(); ++i) {
+                savedHead[i] = bones[i].headPos;
+                savedTail[i] = bones[i].tailPos;
+            }
+
+            // --- Step 2: Integrate gravity into velocity and predict new positions ---
             for (auto& bone : bones) {
-                // Apply gravity and integrate endpoint velocities and positions
                 bone.headVel += gravity * dt;
                 bone.tailVel += gravity * dt;
                 bone.headPos += bone.headVel * dt;
                 bone.tailPos += bone.tailVel * dt;
             }
 
-            // Constraint solve (length maintenance + hierarchical joint and angular constraints)
-            for (size_t iter = 0; iter < 2; ++iter) {
+            // --- Step 3: Position-based constraint solve (no velocity modifications here) ---
+            for (size_t iter = 0; iter < constraintIterations; ++iter) {
+                // Bones are in topological order so parent joints are resolved first.
                 for (auto& bone : bones) {
-                    // length constraint
+                    // Length constraint: keep bone length near its rest length.
                     Vector3 delta = bone.tailPos - bone.headPos;
-                    float len = delta.length();
-                    if (len > 1e-6f) {
-                        float correction = (len - bone.restLength) / len * 0.5f * lengthStiffness;
+                    double len = delta.length();
+                    if (len > 1e-6) {
+                        double correction = (len - bone.restLength) / len * 0.5 * lengthStiffness;
                         Vector3 diff = delta * correction;
                         bone.headPos += diff;
                         bone.tailPos -= diff;
-                        bone.headVel += diff / dt;
-                        bone.tailVel -= diff / dt;
                     }
 
-                    // parent-child positional constraint (IK-like joint stiffness)
+                    // Joint constraint: keep this bone's head coincident with its parent's tail.
                     if (!bone.parent.empty()) {
-                        auto parentIt = std::find_if(bones.begin(), bones.end(),
-                            [&](const BoneRagdollInfo& p) { return p.name == bone.parent; });
-                        if (parentIt != bones.end()) {
-                            Vector3 jointError = parentIt->tailPos - bone.headPos;
+                        auto parentIt = ragdollBoneIdx.find(bone.parent);
+                        if (parentIt != ragdollBoneIdx.end()) {
+                            auto& parent = bones[parentIt->second];
+                            Vector3 jointError = parent.tailPos - bone.headPos;
                             Vector3 correction = jointError * parentJointStiffness;
                             bone.headPos += correction;
-                            parentIt->tailPos -= correction;
-                            bone.headVel += correction / dt;
-                            parentIt->tailVel -= correction / dt;
+                            parent.tailPos -= correction;
                         }
                     }
 
-                    // angular constraint relative to rest direction (help preserve insect limb posture)
+                    // Angular constraint: clamp bone direction to within maxJointAngleRad
+                    // of its rest direction using Rodrigues' rotation for an exact result.
                     if (!bone.restDir.isZero()) {
                         Vector3 currentDir = (bone.tailPos - bone.headPos).normalized();
                         if (!currentDir.isZero()) {
-                            float dot = std::max(-1.0f, std::min(1.0f, static_cast<float>(Vector3::dotProduct(currentDir, bone.restDir))));
-                            float angle = std::acos(dot);
-                            if (angle > maxJointAngleRad && angle > 1e-6f) {
-                                float t = maxJointAngleRad / angle;
-                                Vector3 restrictedDir = (bone.restDir * (1.0f - t) + currentDir * t).normalized();
-                                Vector3 oldTail = bone.tailPos;
+                            double dot = std::max(-1.0, std::min(1.0, Vector3::dotProduct(currentDir, bone.restDir)));
+                            double angle = std::acos(dot);
+                            if (angle > maxJointAngleRad) {
+                                // Rotate currentDir toward restDir by (angle - maxJointAngleRad).
+                                Vector3 axis = Vector3::crossProduct(currentDir, bone.restDir);
+                                double axisLen = axis.length();
+                                Vector3 restrictedDir;
+                                if (axisLen > 1e-6) {
+                                    axis /= axisLen;
+                                    double rotAngle = angle - maxJointAngleRad;
+                                    double c = std::cos(rotAngle), s = std::sin(rotAngle);
+                                    restrictedDir = currentDir * c
+                                        + Vector3::crossProduct(axis, currentDir) * s
+                                        + axis * Vector3::dotProduct(axis, currentDir) * (1.0 - c);
+                                    restrictedDir = restrictedDir.normalized();
+                                } else {
+                                    restrictedDir = bone.restDir;
+                                }
                                 bone.tailPos = bone.headPos + restrictedDir * bone.restLength;
-                                bone.tailVel = (bone.tailPos - oldTail) / dt * 0.5f + bone.tailVel * 0.5f;
                             }
                         }
                     }
                 }
             }
 
-            // Collision with ground for collision capsules
+            // --- Step 4: Ground collision (position clamp along gravity axis) ---
+            // A position is "below ground" when its projection onto gravityDir exceeds
+            // (groundLevel - radius).  Push it back along the anti-gravity direction.
             for (auto& bone : bones) {
-                for (Vector3* p : { &bone.headPos, &bone.tailPos }) {
-                    if (p->y() < groundY + bone.radius) {
-                        p->setY(groundY + bone.radius);
-                        // bounce and friction
-                        if (&bone.headPos == p)
-                            bone.headVel.setY(-bone.headVel.y() * groundBounce);
-                        else
-                            bone.tailVel.setY(-bone.tailVel.y() * groundBounce);
-                    }
+                double headDot = Vector3::dotProduct(bone.headPos, gravityDir);
+                double headLimit = groundLevel - bone.radius;
+                if (headDot > headLimit)
+                    bone.headPos -= gravityDir * (headDot - headLimit);
+
+                double tailDot = Vector3::dotProduct(bone.tailPos, gravityDir);
+                double tailLimit = groundLevel - bone.radius;
+                if (tailDot > tailLimit)
+                    bone.tailPos -= gravityDir * (tailDot - tailLimit);
+            }
+
+            // --- Step 5: Derive velocities from final position changes (PBD style) ---
+            for (size_t i = 0; i < bones.size(); ++i) {
+                bones[i].headVel = (bones[i].headPos - savedHead[i]) / dt;
+                bones[i].tailVel = (bones[i].tailPos - savedTail[i]) / dt;
+            }
+
+            // --- Step 6: Velocity-level bounce and damping ---
+            // Reflect the velocity component along gravityDir when a point is on the
+            // ground and still moving toward it (positive component along gravityDir).
+            for (auto& bone : bones) {
+                double headDot = Vector3::dotProduct(bone.headPos, gravityDir);
+                if (headDot >= groundLevel - bone.radius - 1e-4) {
+                    double vDot = Vector3::dotProduct(bone.headVel, gravityDir);
+                    if (vDot > 0.0)
+                        bone.headVel -= gravityDir * (vDot * (1.0 + groundBounce));
+                }
+                double tailDot = Vector3::dotProduct(bone.tailPos, gravityDir);
+                if (tailDot >= groundLevel - bone.radius - 1e-4) {
+                    double vDot = Vector3::dotProduct(bone.tailVel, gravityDir);
+                    if (vDot > 0.0)
+                        bone.tailVel -= gravityDir * (vDot * (1.0 + groundBounce));
                 }
 
                 bone.headVel *= damping;

@@ -111,6 +111,9 @@ namespace fish {
         };
 
         for (int frame = 0; frame < frameCount; ++frame) {
+            // Forward is a loopable clip: tNormalized spans [0, 1) so frame 0 and a
+            // hypothetical extra frame are identical, enabling seamless looping.
+            // One-shot clips (e.g. die) use frameCount - 1 to reach exactly 1.0.
             double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
             // Ensure animation loops seamlessly by completing integer cycles
             double totalCycles = swimSpeed * swimFrequency;
