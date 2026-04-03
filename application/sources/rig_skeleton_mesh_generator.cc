@@ -1,6 +1,7 @@
 #include "rig_skeleton_mesh_generator.h"
 #include "theme.h"
 #include <cmath>
+#include <dust3d/mesh/rope_mesh.h>
 
 RigSkeletonMeshGenerator::RigSkeletonMeshGenerator()
     : m_startRadius(0.05)
@@ -120,6 +121,50 @@ void RigSkeletonMeshGenerator::buildBone(const BoneSegment& bone, const QString&
     m_boneVertexRanges[boneName] = std::make_pair(startVertexIndex, endVertexIndex);
 }
 
+void RigSkeletonMeshGenerator::buildRing(const BoneNode& bone)
+{
+    dust3d::Vector3 from(bone.posX, bone.posY, bone.posZ);
+    dust3d::Vector3 to(bone.endX, bone.endY, bone.endZ);
+    dust3d::Vector3 center = (from + to) * 0.5;
+    dust3d::Vector3 axis = to - from;
+    double axisLength = axis.length();
+    if (axisLength < 1e-6)
+        return;
+
+    axis = axis / axisLength;
+    dust3d::Vector3 arbitraryBasis = std::abs(axis.x()) < 0.9 ? dust3d::Vector3(1, 0, 0) : dust3d::Vector3(0, 1, 0);
+    dust3d::Vector3 u = dust3d::Vector3::crossProduct(axis, arbitraryBasis).normalized();
+    dust3d::Vector3 v = dust3d::Vector3::crossProduct(axis, u).normalized();
+
+    double ringRadius = std::max(0.01, static_cast<double>(bone.capsuleRadius) * 1.25);
+    size_t segmentCount = 32;
+    std::vector<dust3d::Vector3> ringPositions;
+    ringPositions.reserve(segmentCount);
+    for (size_t i = 0; i < segmentCount; ++i) {
+        double theta = 2.0 * M_PI * static_cast<double>(i) / static_cast<double>(segmentCount);
+        double cosTheta = std::cos(theta);
+        double sinTheta = std::sin(theta);
+        ringPositions.emplace_back(center + u * (ringRadius * cosTheta) + v * (ringRadius * sinTheta));
+    }
+
+    dust3d::RopeMesh::BuildParameters ropeParams;
+    ropeParams.defaultRadius = 0.001;
+    ropeParams.sectionSegments = 3;
+    dust3d::RopeMesh ropeMesh(ropeParams);
+    ropeMesh.addRope(ringPositions, true);
+
+    size_t ringStart = m_resultVertices->size();
+    for (const auto& vertex : ropeMesh.resultVertices()) {
+        m_resultVertices->push_back(vertex);
+    }
+    size_t ringEnd = m_resultVertices->size();
+    m_ringVertexRanges.emplace_back(ringStart, ringEnd);
+
+    for (const auto& tri : ropeMesh.resultTriangles()) {
+        m_resultFaces->push_back({ ringStart + tri[0], ringStart + tri[1], ringStart + tri[2] });
+    }
+}
+
 RigSkeletonMeshGenerator::BoundingBox RigSkeletonMeshGenerator::calculateBoundingBox() const
 {
     BoundingBox bbox;
@@ -197,12 +242,14 @@ void RigSkeletonMeshGenerator::generateMesh(const RigStructure& rigStructure, co
     m_resultQuads->clear();
     m_resultFaces->clear();
     m_boneVertexRanges.clear();
+    m_ringVertexRanges.clear();
     m_vertexProperties->clear();
 
     // Build mesh for each bone
     for (const auto& bone : rigStructure.bones) {
         BoneSegment segment = boneToBoneSegment(bone);
         buildBone(segment, bone.name);
+        buildRing(bone);
     }
 
     if (m_normalizeRequired) {
@@ -211,7 +258,7 @@ void RigSkeletonMeshGenerator::generateMesh(const RigStructure& rigStructure, co
     }
 
     // Convert quads to faces (split each quad into two triangles)
-    m_resultFaces->reserve(m_resultQuads->size() * 2);
+    m_resultFaces->reserve(m_resultQuads->size() * 2 + m_resultFaces->size());
     for (const auto& quad : *m_resultQuads) {
         if (quad.size() == 4) {
             // Split quad into two triangles
@@ -223,23 +270,30 @@ void RigSkeletonMeshGenerator::generateMesh(const RigStructure& rigStructure, co
         }
     }
 
-    // Generate per-vertex properties if a bone is selected
-    if (!selectedBoneName.isEmpty()) {
-        m_vertexProperties->resize(m_resultVertices->size());
+    // Generate per-vertex color/alpha properties for bones and ring
+    m_vertexProperties->resize(m_resultVertices->size());
 
-        auto selectedBoneIt = m_boneVertexRanges.find(selectedBoneName);
-        size_t selectedStartIdx = (selectedBoneIt != m_boneVertexRanges.end()) ? selectedBoneIt->second.first : -1;
-        size_t selectedEndIdx = (selectedBoneIt != m_boneVertexRanges.end()) ? selectedBoneIt->second.second : -1;
+    auto selectedBoneIt = m_boneVertexRanges.find(selectedBoneName);
+    size_t selectedStartIdx = (selectedBoneIt != m_boneVertexRanges.end()) ? selectedBoneIt->second.first : static_cast<size_t>(-1);
+    size_t selectedEndIdx = (selectedBoneIt != m_boneVertexRanges.end()) ? selectedBoneIt->second.second : static_cast<size_t>(-1);
 
-        // Default color for non-selected bones (light gray)
-        dust3d::Color defaultColor(Theme::green.redF(), Theme::green.greenF(), Theme::green.blueF());
-        // Highlight color for selected bone (bright orange/yellow)
-        dust3d::Color highlightColor(Theme::red.redF(), Theme::red.greenF(), Theme::red.blueF());
+    dust3d::Color defaultColor(Theme::green.redF(), Theme::green.greenF(), Theme::green.blueF(), 1.0);
+    dust3d::Color highlightColor(Theme::red.redF(), Theme::red.greenF(), Theme::red.blueF(), 1.0);
+    dust3d::Color ringColor(Theme::green.redF(), Theme::green.greenF(), Theme::green.blueF(), 1.0);
 
-        for (size_t i = 0; i < m_resultVertices->size(); ++i) {
-            bool isSelected = (selectedStartIdx != (size_t)-1 && i >= selectedStartIdx && i < selectedEndIdx);
-            dust3d::Color vertexColor = isSelected ? highlightColor : defaultColor;
-            (*m_vertexProperties)[i] = std::make_tuple(vertexColor, 0.0f, 1.0f);
+    for (size_t i = 0; i < m_resultVertices->size(); ++i) {
+        (*m_vertexProperties)[i] = std::make_tuple(defaultColor, 0.0f, 1.0f);
+    }
+
+    if (!selectedBoneName.isEmpty() && selectedBoneIt != m_boneVertexRanges.end()) {
+        for (size_t i = selectedStartIdx; i < selectedEndIdx && i < m_resultVertices->size(); ++i) {
+            (*m_vertexProperties)[i] = std::make_tuple(highlightColor, 0.0f, 1.0f);
+        }
+    }
+
+    for (const auto& ringRange : m_ringVertexRanges) {
+        for (size_t i = ringRange.first; i < ringRange.second && i < m_resultVertices->size(); ++i) {
+            (*m_vertexProperties)[i] = std::make_tuple(ringColor, 0.0f, 1.0f);
         }
     }
 }

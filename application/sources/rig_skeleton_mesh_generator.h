@@ -47,6 +47,7 @@ private:
     std::unique_ptr<std::vector<std::vector<size_t>>> m_resultFaces;
     std::unique_ptr<std::vector<std::tuple<dust3d::Color, float, float>>> m_vertexProperties;
     std::map<QString, std::pair<size_t, size_t>> m_boneVertexRanges; // bone name -> (start index, end index)
+    std::vector<std::pair<size_t, size_t>> m_ringVertexRanges; // ring vertex ranges for transparent green ring
 
     // Helper methods following the BlockMesh pattern
     std::vector<size_t> buildFace(const dust3d::Vector3& origin,
@@ -69,6 +70,8 @@ private:
 
     BoundingBox calculateBoundingBox() const;
     void normalizeMeshSize();
+
+    void buildRing(const BoneNode& bone);
 };
 
 #endif
