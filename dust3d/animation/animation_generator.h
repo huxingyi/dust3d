@@ -84,8 +84,6 @@ public:
         const std::map<std::string, Matrix4x4>& inverseBindMatrices,
         RigAnimationClip& animationClip,
         const std::string& animationName,
-        int frameCount = 30,
-        float durationSeconds = 1.0f,
         const AnimationParams& parameters = AnimationParams());
 };
 

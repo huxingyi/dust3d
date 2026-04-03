@@ -13,6 +13,7 @@
 #include <QListWidget>
 #include <QPushButton>
 #include <QSlider>
+#include <QSpinBox>
 #include <QThread>
 #include <QTimer>
 #include <QWidget>
@@ -151,6 +152,9 @@ private:
     QCheckBox* m_hideBonesCheck = nullptr;
     QCheckBox* m_hidePartsCheck = nullptr;
     QCheckBox* m_hideWeightsCheck = nullptr;
+
+    QDoubleSpinBox* m_durationSpinBox = nullptr;
+    QSpinBox* m_frameCountSpinBox = nullptr;
 
     QComboBox* m_animationNameCombo = nullptr;
     ToolbarButton* m_addAnimationButton = nullptr;

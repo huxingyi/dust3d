@@ -35,24 +35,22 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
     const std::map<std::string, Matrix4x4>& inverseBindMatrices,
     RigAnimationClip& animationClip,
     const std::string& animationType,
-    int frameCount,
-    float durationSeconds,
     const AnimationParams& parameters)
 {
     if (animationType == "InsectWalk")
-        return insect::walk(rigStructure, inverseBindMatrices, animationClip, frameCount, durationSeconds, parameters);
+        return insect::walk(rigStructure, inverseBindMatrices, animationClip, parameters);
     if (animationType == "InsectRubHands")
-        return insect::rubHands(rigStructure, inverseBindMatrices, animationClip, frameCount, durationSeconds, parameters);
+        return insect::rubHands(rigStructure, inverseBindMatrices, animationClip, parameters);
     if (animationType == "InsectForward")
-        return insect::forward(rigStructure, inverseBindMatrices, animationClip, frameCount, durationSeconds, parameters);
+        return insect::forward(rigStructure, inverseBindMatrices, animationClip, parameters);
     if (animationType == "InsectAttack")
-        return insect::attack(rigStructure, inverseBindMatrices, animationClip, frameCount, durationSeconds, parameters);
+        return insect::attack(rigStructure, inverseBindMatrices, animationClip, parameters);
     if (animationType == "InsectDie")
-        return insect::die(rigStructure, inverseBindMatrices, animationClip, frameCount, durationSeconds, parameters);
+        return insect::die(rigStructure, inverseBindMatrices, animationClip, parameters);
     if (animationType == "BirdForward")
-        return bird::forward(rigStructure, inverseBindMatrices, animationClip, frameCount, durationSeconds, parameters);
+        return bird::forward(rigStructure, inverseBindMatrices, animationClip, parameters);
     if (animationType == "FishForward")
-        return fish::forward(rigStructure, inverseBindMatrices, animationClip, frameCount, durationSeconds, parameters);
+        return fish::forward(rigStructure, inverseBindMatrices, animationClip, parameters);
 
     // Add future rig type + animationName mappings here.
     return false;

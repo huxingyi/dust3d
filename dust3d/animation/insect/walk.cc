@@ -47,10 +47,10 @@ namespace insect {
     bool walk(const RigStructure& rigStructure,
         const std::map<std::string, Matrix4x4>& inverseBindMatrices,
         RigAnimationClip& animationClip,
-        int frameCount,
-        float durationSeconds,
         const AnimationParams& parameters)
     {
+        int frameCount = static_cast<int>(parameters.getValue("frameCount", 30.0));
+        float durationSeconds = static_cast<float>(parameters.getValue("durationSeconds", 1.0));
         // ----- bone lookup helpers -----
         std::map<std::string, size_t> boneIdx;
         for (size_t i = 0; i < rigStructure.bones.size(); ++i)

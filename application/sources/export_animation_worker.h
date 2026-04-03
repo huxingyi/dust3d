@@ -15,14 +15,10 @@ class ExportAnimationWorker : public QObject {
     Q_OBJECT
 public:
     void setParameters(const RigStructure& rigStructure,
-        const std::vector<Document::Animation>& animations,
-        int frameCount = 30,
-        float durationSeconds = 1.0f)
+        const std::vector<Document::Animation>& animations)
     {
         m_rigStructure = rigStructure;
         m_animations = animations;
-        m_frameCount = frameCount;
-        m_durationSeconds = durationSeconds;
     }
 
     const std::map<std::string, dust3d::Matrix4x4>& inverseBindMatrices() const
@@ -47,8 +43,6 @@ public slots:
 private:
     RigStructure m_rigStructure;
     std::vector<Document::Animation> m_animations;
-    int m_frameCount = 30;
-    float m_durationSeconds = 1.0f;
     std::map<std::string, dust3d::Matrix4x4> m_inverseBindMatrices;
     std::vector<dust3d::RigAnimationClip> m_animationClips;
     bool m_successful = false;

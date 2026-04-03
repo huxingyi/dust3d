@@ -141,6 +141,23 @@ void AnimationManageWidget::createParameterWidgets()
     m_animationNameInput->setPlaceholderText(tr("Enter animation name"));
     parameterLayout->addRow(new QLabel(tr("Name:")), m_animationNameInput);
 
+    // Common parameters (visible for all animation types)
+    m_durationSpinBox = new QDoubleSpinBox;
+    m_durationSpinBox->setRange(0.01, 59.99);
+    m_durationSpinBox->setDecimals(2);
+    m_durationSpinBox->setSingleStep(0.1);
+    m_durationSpinBox->setValue(1.0);
+    m_durationSpinBox->setSuffix(tr(" s"));
+    m_durationSpinBox->setToolTip(tr("Duration in seconds (0.01 – 60)"));
+    parameterLayout->addRow(new QLabel(tr("Duration:")), m_durationSpinBox);
+
+    m_frameCountSpinBox = new QSpinBox;
+    m_frameCountSpinBox->setRange(1, 4999);
+    m_frameCountSpinBox->setSingleStep(5);
+    m_frameCountSpinBox->setValue(30);
+    m_frameCountSpinBox->setToolTip(tr("Number of frames (1 – 4999)"));
+    parameterLayout->addRow(new QLabel(tr("Frame Count:")), m_frameCountSpinBox);
+
     m_stepLengthSlider = new QSlider;
     m_stepHeightSlider = new QSlider;
     m_bodyBobSlider = new QSlider;
@@ -329,6 +346,11 @@ void AnimationManageWidget::createParameterWidgets()
         connect(m_hidePartsCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
         connect(m_hideWeightsCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
 
+        if (m_durationSpinBox)
+            connect(m_durationSpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &AnimationManageWidget::onParameterChanged);
+        if (m_frameCountSpinBox)
+            connect(m_frameCountSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &AnimationManageWidget::onParameterChanged);
+
         if (m_animationFrameSlider) {
             connect(m_animationFrameSlider, &QSlider::sliderPressed, this, [this]() {
                 m_isScrubbing = true;
@@ -446,6 +468,14 @@ void AnimationManageWidget::updateVisibleParameters(const QString& animationType
     setParameterRowVisible(m_pectoralPhaseOffsetRow, m_pectoralPhaseOffsetLabel, false);
     setParameterRowVisible(m_pelvicPhaseOffsetRow, m_pelvicPhaseOffsetLabel, false);
 
+    // useFabrikIk and planeStabilization are only relevant for animation types that use IK
+    bool showIkParams = (animationType == "InsectWalk" || animationType == "InsectForward"
+        || animationType == "InsectAttack" || animationType == "InsectRubHands");
+    if (m_useFabrikCheck)
+        m_useFabrikCheck->setVisible(showIkParams);
+    if (m_planeStabilizationCheck)
+        m_planeStabilizationCheck->setVisible(showIkParams);
+
     if (animationType == "InsectWalk" || animationType == "InsectForward" || animationType == "InsectAttack") {
         setParameterRowVisible(m_stepLengthRow, m_stepLengthLabel, true);
         setParameterRowVisible(m_stepHeightRow, m_stepHeightLabel, true);
@@ -536,6 +566,12 @@ void AnimationManageWidget::updateAnimationParamsFromWidgets()
     m_animationParams.setValue("rubUpOffsetFactor", m_rubUpOffsetSlider->value() / 100.0);
     m_animationParams.setBool("useFabrikIk", m_useFabrikCheck->isChecked());
     m_animationParams.setBool("planeStabilization", m_planeStabilizationCheck->isChecked());
+
+    // Common parameters
+    if (m_durationSpinBox)
+        m_animationParams.setValue("durationSeconds", m_durationSpinBox->value());
+    if (m_frameCountSpinBox)
+        m_animationParams.setValue("frameCount", m_frameCountSpinBox->value());
 
     // Insect die parameters
     if (m_dieLengthStiffnessSlider)
@@ -662,7 +698,7 @@ void AnimationManageWidget::onResultRigChanged()
         return;
     }
 
-    m_animationWorker->setParameters(actualRig, animationType.toStdString(), 30, 1.0f, m_animationParams);
+    m_animationWorker->setParameters(actualRig, animationType.toStdString(), m_animationParams);
     m_animationWorker->setHideBones(m_hideBonesCheck ? m_hideBonesCheck->isChecked() : false);
     m_animationWorker->setHideParts(m_hidePartsCheck ? m_hidePartsCheck->isChecked() : false);
     m_animationWorker->setSelectedBoneName(
@@ -951,6 +987,11 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
     m_rubForwardOffsetSlider->blockSignals(true);
     m_rubUpOffsetSlider->blockSignals(true);
 
+    if (m_durationSpinBox)
+        m_durationSpinBox->blockSignals(true);
+    if (m_frameCountSpinBox)
+        m_frameCountSpinBox->blockSignals(true);
+
     // Block signals for insect die parameters
     if (m_dieLengthStiffnessSlider)
         m_dieLengthStiffnessSlider->blockSignals(true);
@@ -1000,6 +1041,11 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
     m_useFabrikCheck->setChecked(params.getBool("useFabrikIk", true));
     m_planeStabilizationCheck->setChecked(params.getBool("planeStabilization", true));
 
+    if (m_durationSpinBox)
+        m_durationSpinBox->setValue(params.getValue("durationSeconds", 1.0));
+    if (m_frameCountSpinBox)
+        m_frameCountSpinBox->setValue(static_cast<int>(params.getValue("frameCount", 30.0)));
+
     // Load insect die parameters
     if (m_dieLengthStiffnessSlider)
         m_dieLengthStiffnessSlider->setValue(static_cast<int>(params.getValue("insectDieLengthStiffness", 0.9) * 100));
@@ -1048,6 +1094,11 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
     m_planeStabilizationCheck->blockSignals(false);
     m_rubForwardOffsetSlider->blockSignals(false);
     m_rubUpOffsetSlider->blockSignals(false);
+
+    if (m_durationSpinBox)
+        m_durationSpinBox->blockSignals(false);
+    if (m_frameCountSpinBox)
+        m_frameCountSpinBox->blockSignals(false);
 
     // Unblock signals for insect die parameters
     if (m_dieLengthStiffnessSlider)

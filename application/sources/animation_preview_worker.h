@@ -14,13 +14,11 @@
 class AnimationPreviewWorker : public QObject {
     Q_OBJECT
 public:
-    void setParameters(const RigStructure& rigStructure, const std::string& animationType, int frameCount = 30, float durationSeconds = 1.0f,
+    void setParameters(const RigStructure& rigStructure, const std::string& animationType,
         const dust3d::AnimationParams& parameters = dust3d::AnimationParams())
     {
         m_rigStructure = rigStructure;
         m_animationType = animationType;
-        m_frameCount = frameCount;
-        m_durationSeconds = durationSeconds;
         m_animationParameters = parameters;
     }
 
@@ -59,8 +57,6 @@ private:
     dust3d::Color calculateBoneWeightColor(float weight);
     RigStructure m_rigStructure;
     std::string m_animationType;
-    int m_frameCount = 30;
-    float m_durationSeconds = 1.0f;
     dust3d::AnimationParams m_animationParameters;
     std::unique_ptr<dust3d::Object> m_rigObject;
     std::vector<ModelMesh> m_previewMeshes;

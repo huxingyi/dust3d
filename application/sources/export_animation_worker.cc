@@ -31,7 +31,7 @@ void ExportAnimationWorker::process()
         clip.name = animation.name.toStdString();
 
         if (!dust3d::AnimationGenerator::generate(baseRig, m_inverseBindMatrices, clip,
-                animation.type.toStdString(), m_frameCount, m_durationSeconds, params)) {
+                animation.type.toStdString(), params)) {
             qWarning() << "Export animation: generate failed for animation"
                        << animation.name;
             // Push an empty clip so indices align with input animations list

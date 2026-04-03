@@ -11,8 +11,6 @@ namespace insect {
     bool die(const RigStructure& rigStructure,
         const std::map<std::string, Matrix4x4>& inverseBindMatrices,
         RigAnimationClip& animationClip,
-        int frameCount = 30,
-        float durationSeconds = 1.0f,
         const AnimationParams& parameters = AnimationParams());
 
 } // namespace insect

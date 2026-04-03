@@ -21,7 +21,7 @@ void AnimationPreviewWorker::process()
     }
 
     dust3d::RigAnimationClip animationClip;
-    if (!dust3d::AnimationGenerator::generate(baseRig, inverseBindMatrices, animationClip, m_animationType, m_frameCount, m_durationSeconds,
+    if (!dust3d::AnimationGenerator::generate(baseRig, inverseBindMatrices, animationClip, m_animationType,
             m_animationParameters)) {
         qWarning() << "Animation preview: generate failed (only fly rig supported)";
         emit finished();
