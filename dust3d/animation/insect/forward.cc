@@ -131,7 +131,6 @@ namespace insect {
         double bodyLeanAmp = 0.15 * stepHeightFactor; // radians
         double wingFlapAmp = 0.8; // radians (approx 45 degrees)
 
-        animationClip.name = "flyForward";
         animationClip.durationSeconds = durationSeconds;
         animationClip.frames.resize(frameCount);
 

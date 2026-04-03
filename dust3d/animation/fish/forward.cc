@@ -103,7 +103,6 @@ namespace fish {
         double bodyBobAmp = bodyLength * bodyBobFactor;
         double forwardAmp = bodyLength * forwardThrust;
 
-        animationClip.name = "fishForward";
         animationClip.durationSeconds = durationSeconds;
         animationClip.frames.resize(frameCount);
 

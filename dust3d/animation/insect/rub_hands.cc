@@ -111,7 +111,6 @@ namespace insect {
         double bodyBobAmp = bodyLength * 0.01 * bodyBobFactor;
         double rubAmp = bodyLength * 0.05 * stepHeightFactor;
 
-        animationClip.name = "rubHands";
         animationClip.durationSeconds = durationSeconds;
         animationClip.frames.resize(frameCount);
 

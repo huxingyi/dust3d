@@ -228,6 +228,47 @@ bool RigGenerator::generateRig(const Snapshot* snapshot, const RigStructure& tem
                     << "endPosition:" << bone.endX << bone.endY << bone.endZ;
     }
 
+    // Generate collision capsule radius for each bone in rig data
+    for (auto& bone : actualRig.bones) {
+        Vector3 start(bone.posX, bone.posY, bone.posZ);
+        Vector3 end(bone.endX, bone.endY, bone.endZ);
+        float length = (end - start).length();
+        if (length < 1e-6f) {
+            bone.capsuleRadius = 0.01f;
+            continue;
+        }
+
+        // Determine capsule radius from node radius average on the bone's node chains.
+        std::vector<std::vector<Uuid>> nodeChains;
+        float radiusSum = 0.0f;
+        size_t radiusCount = 0;
+        if (extractNodeChainsForBone(snapshot, bone.name, nodeChains)) {
+            for (const auto& chain : nodeChains) {
+                for (const auto& nodeId : chain) {
+                    float nx = 0, ny = 0, nz = 0;
+                    if (getNodePosition(snapshot, nodeId, nx, ny, nz)) {
+                        auto it = snapshot->nodes.find(nodeId.toString());
+                        if (it != snapshot->nodes.end()) {
+                            float nodeRadius = String::toFloat(String::valueOrEmpty(it->second, "radius"));
+                            if (nodeRadius > 1e-6f) {
+                                radiusSum += nodeRadius;
+                                ++radiusCount;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        float radius = 0.0f;
+        if (radiusCount > 0)
+            radius = radiusSum / static_cast<float>(radiusCount);
+        else
+            radius = std::max(0.01f, length * 0.12f);
+
+        bone.capsuleRadius = std::max(0.01f, radius);
+    }
+
     m_errorMessage = "";
     return true;
 }

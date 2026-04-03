@@ -41,6 +41,7 @@ struct RigNode {
     std::string parent;
     float posX = 0.0f, posY = 0.0f, posZ = 0.0f;
     float endX = 0.0f, endY = 0.0f, endZ = 0.0f;
+    float capsuleRadius = 0.0f;
 };
 
 struct RigStructure {

@@ -180,7 +180,6 @@ namespace insect {
         // ===================================================================
         // 4. Generate animation frames
         // ===================================================================
-        animationClip.name = "walk";
         animationClip.durationSeconds = durationSeconds;
         animationClip.frames.resize(frameCount);
 

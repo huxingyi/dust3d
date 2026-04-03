@@ -129,7 +129,6 @@ namespace insect {
         double bodyPitchAmp = 0.8 * diveIntensityFactor; // rad
         double wingSwingAmp = 1.0; // rad
 
-        animationClip.name = "flyAttack";
         animationClip.durationSeconds = durationSeconds;
         animationClip.frames.resize(frameCount);
 

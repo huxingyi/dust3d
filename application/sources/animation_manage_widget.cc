@@ -184,6 +184,33 @@ void AnimationManageWidget::createParameterWidgets()
     m_rubUpOffsetRow = rubUpOffsetPair.first;
     m_rubUpOffsetLabel = rubUpOffsetPair.second;
 
+    // Insect die parameters
+    m_dieLengthStiffnessSlider = new QSlider;
+    m_dieParentStiffnessSlider = new QSlider;
+    m_dieMaxJointAngleSlider = new QSlider;
+    m_dieDampingSlider = new QSlider;
+    m_dieGroundBounceSlider = new QSlider;
+
+    auto dieLengthStiffnessPair = makeSliderRow(tr("Die Length Stiffness"), m_dieLengthStiffnessSlider, 90, 10, 200);
+    m_dieLengthStiffnessRow = dieLengthStiffnessPair.first;
+    m_dieLengthStiffnessLabel = dieLengthStiffnessPair.second;
+
+    auto dieParentStiffnessPair = makeSliderRow(tr("Die Parent Stiffness"), m_dieParentStiffnessSlider, 80, 10, 200);
+    m_dieParentStiffnessRow = dieParentStiffnessPair.first;
+    m_dieParentStiffnessLabel = dieParentStiffnessPair.second;
+
+    auto dieMaxJointAnglePair = makeSliderRow(tr("Die Max Joint Angle"), m_dieMaxJointAngleSlider, 120, 60, 180);
+    m_dieMaxJointAngleRow = dieMaxJointAnglePair.first;
+    m_dieMaxJointAngleLabel = dieMaxJointAnglePair.second;
+
+    auto dieDampingPair = makeSliderRow(tr("Die Damping"), m_dieDampingSlider, 95, 50, 99);
+    m_dieDampingRow = dieDampingPair.first;
+    m_dieDampingLabel = dieDampingPair.second;
+
+    auto dieGroundBouncePair = makeSliderRow(tr("Die Ground Bounce"), m_dieGroundBounceSlider, 22, 0, 100);
+    m_dieGroundBounceRow = dieGroundBouncePair.first;
+    m_dieGroundBounceLabel = dieGroundBouncePair.second;
+
     // Fish animation parameters
     auto swimSpeedPair = makeSliderRow(tr("Swim Speed"), m_swimSpeedSlider, 100, 25, 300);
     m_swimSpeedRow = swimSpeedPair.first;
@@ -259,6 +286,13 @@ void AnimationManageWidget::createParameterWidgets()
         connect(m_gaitSpeedSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
         connect(m_rubForwardOffsetSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
         connect(m_rubUpOffsetSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+
+        // Insect die parameter connections
+        connect(m_dieLengthStiffnessSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_dieParentStiffnessSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_dieMaxJointAngleSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_dieDampingSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_dieGroundBounceSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
 
         // Fish animation parameter connections
         connect(m_swimSpeedSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
@@ -341,6 +375,12 @@ void AnimationManageWidget::updateVisibleParameters(const QString& animationType
         setParameterRowVisible(m_stepHeightRow, m_stepHeightLabel, true);
         setParameterRowVisible(m_bodyBobRow, m_bodyBobLabel, true);
         setParameterRowVisible(m_gaitSpeedRow, m_gaitSpeedLabel, true);
+    } else if (animationType == "InsectDie") {
+        setParameterRowVisible(m_dieLengthStiffnessRow, m_dieLengthStiffnessLabel, true);
+        setParameterRowVisible(m_dieParentStiffnessRow, m_dieParentStiffnessLabel, true);
+        setParameterRowVisible(m_dieMaxJointAngleRow, m_dieMaxJointAngleLabel, true);
+        setParameterRowVisible(m_dieDampingRow, m_dieDampingLabel, true);
+        setParameterRowVisible(m_dieGroundBounceRow, m_dieGroundBounceLabel, true);
     } else if (animationType == "BirdForward") {
         setParameterRowVisible(m_stepLengthRow, m_stepLengthLabel, true);
         setParameterRowVisible(m_stepHeightRow, m_stepHeightLabel, true);
@@ -382,6 +422,7 @@ void AnimationManageWidget::updateAnimationNameForRigType(const QString& rigType
         m_animationNameCombo->addItem("InsectWalk");
         m_animationNameCombo->addItem("InsectForward");
         m_animationNameCombo->addItem("InsectAttack");
+        m_animationNameCombo->addItem("InsectDie");
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);
     } else if (rigType.compare("Bird", Qt::CaseInsensitive) == 0) {
@@ -419,6 +460,18 @@ void AnimationManageWidget::updateAnimationParamsFromWidgets()
     m_animationParams.setValue("rubUpOffsetFactor", m_rubUpOffsetSlider->value() / 100.0);
     m_animationParams.setBool("useFabrikIk", m_useFabrikCheck->isChecked());
     m_animationParams.setBool("planeStabilization", m_planeStabilizationCheck->isChecked());
+
+    // Insect die parameters
+    if (m_dieLengthStiffnessSlider)
+        m_animationParams.setValue("insectDieLengthStiffness", m_dieLengthStiffnessSlider->value() / 100.0);
+    if (m_dieParentStiffnessSlider)
+        m_animationParams.setValue("insectDieParentStiffness", m_dieParentStiffnessSlider->value() / 100.0);
+    if (m_dieMaxJointAngleSlider)
+        m_animationParams.setValue("insectDieMaxJointAngleDeg", m_dieMaxJointAngleSlider->value());
+    if (m_dieDampingSlider)
+        m_animationParams.setValue("insectDieDamping", m_dieDampingSlider->value() / 100.0);
+    if (m_dieGroundBounceSlider)
+        m_animationParams.setValue("insectDieGroundBounce", m_dieGroundBounceSlider->value() / 100.0);
 
     // Fish animation parameters - only save if sliders exist
     if (m_swimSpeedSlider)
@@ -818,6 +871,18 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
     m_rubUpOffsetSlider->setValue(static_cast<int>(params.getValue("rubUpOffsetFactor", 1.0) * 100));
     m_useFabrikCheck->setChecked(params.getBool("useFabrikIk", true));
     m_planeStabilizationCheck->setChecked(params.getBool("planeStabilization", true));
+
+    // Load insect die parameters
+    if (m_dieLengthStiffnessSlider)
+        m_dieLengthStiffnessSlider->setValue(static_cast<int>(params.getValue("insectDieLengthStiffness", 0.9) * 100));
+    if (m_dieParentStiffnessSlider)
+        m_dieParentStiffnessSlider->setValue(static_cast<int>(params.getValue("insectDieParentStiffness", 0.8) * 100));
+    if (m_dieMaxJointAngleSlider)
+        m_dieMaxJointAngleSlider->setValue(static_cast<int>(params.getValue("insectDieMaxJointAngleDeg", 120.0)));
+    if (m_dieDampingSlider)
+        m_dieDampingSlider->setValue(static_cast<int>(params.getValue("insectDieDamping", 0.95) * 100));
+    if (m_dieGroundBounceSlider)
+        m_dieGroundBounceSlider->setValue(static_cast<int>(params.getValue("insectDieGroundBounce", 0.22) * 100));
 
     // Load fish parameter values (using default values matching the animation implementation)
     if (m_swimSpeedSlider)

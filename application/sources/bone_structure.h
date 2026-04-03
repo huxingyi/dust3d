@@ -11,6 +11,7 @@ struct BoneNode {
     QString parent;
     float posX, posY, posZ;
     float endX, endY, endZ;
+    float capsuleRadius;
 
     BoneNode()
         : posX(0)
@@ -19,6 +20,7 @@ struct BoneNode {
         , endX(0)
         , endY(0)
         , endZ(0)
+        , capsuleRadius(0)
     {
     }
     BoneNode(const dust3d::RigNode& rigNode)
@@ -30,6 +32,7 @@ struct BoneNode {
         , endX(rigNode.endX)
         , endY(rigNode.endY)
         , endZ(rigNode.endZ)
+        , capsuleRadius(rigNode.capsuleRadius)
     {
     }
 
@@ -44,6 +47,7 @@ struct BoneNode {
         node.endX = endX;
         node.endY = endY;
         node.endZ = endZ;
+        node.capsuleRadius = capsuleRadius;
         return node;
     }
 };
