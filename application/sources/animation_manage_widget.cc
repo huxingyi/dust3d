@@ -469,7 +469,7 @@ void AnimationManageWidget::displayCurrentFrame()
 
         if (skinnedCount > 0) {
             m_modelWidget->updateWireframeMesh(
-                new MonochromeMesh(frameSource.triangleVertices() + skeletonCount, skinnedCount));
+                new MonochromeMesh(frameSource.triangleVertices() + skeletonCount, skinnedCount, 1.0, 1.0, 1.0, 0.5));
         } else {
             // If no skinned vertices or skeleton-only frame, hide rig skeleton wireframe
             m_modelWidget->updateWireframeMesh(nullptr);
