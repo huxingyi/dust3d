@@ -104,12 +104,23 @@ void AnimationManageWidget::createParameterWidgets()
     previewOptionLayout->addStretch();
     groupBoxLayout->addWidget(previewOptionWidget);
 
-    // Visual splitter line between preview options and parameter controls
-    QFrame* separatorLine = new QFrame;
-    separatorLine->setObjectName("separatorLine");
-    separatorLine->setFrameShape(QFrame::HLine);
-    separatorLine->setFrameShadow(QFrame::Sunken);
-    groupBoxLayout->addWidget(separatorLine);
+    // Preview timeline slider
+    m_animationFrameSlider = new QSlider(Qt::Horizontal);
+    m_animationFrameSlider->setMinimum(0);
+    m_animationFrameSlider->setMaximum(0);
+    m_animationFrameSlider->setEnabled(false);
+    m_animationFrameSlider->setToolTip(tr("Drag to scrub animation frames"));
+
+    QLabel* frameSliderLabel = new QLabel(tr("Frame"));
+    frameSliderLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+
+    QWidget* frameSliderWidget = new QWidget;
+    QHBoxLayout* frameSliderLayout = new QHBoxLayout(frameSliderWidget);
+    frameSliderLayout->setContentsMargins(0, 0, 0, 0);
+    frameSliderLayout->addWidget(frameSliderLabel);
+    frameSliderLayout->addWidget(m_animationFrameSlider);
+
+    groupBoxLayout->addWidget(frameSliderWidget);
 
     // Parameters area in form layout (label right aligned, control left aligned)
     QFormLayout* parameterLayout = new QFormLayout;
@@ -320,6 +331,27 @@ void AnimationManageWidget::createParameterWidgets()
         connect(m_hideBonesCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
         connect(m_hidePartsCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
         connect(m_hideWeightsCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
+
+        if (m_animationFrameSlider) {
+            connect(m_animationFrameSlider, &QSlider::sliderPressed, this, [this]() {
+                m_isScrubbing = true;
+                stopAnimationLoop();
+            });
+            connect(m_animationFrameSlider, &QSlider::sliderMoved, this, [this](int value) {
+                if (value >= 0 && value < (int)m_animationFrames.size()) {
+                    m_currentFrame = value;
+                    displayCurrentFrame();
+                }
+            });
+            connect(m_animationFrameSlider, &QSlider::sliderReleased, this, [this]() {
+                m_isScrubbing = false;
+                if (m_animationFrameSlider) {
+                    m_currentFrame = m_animationFrameSlider->value();
+                }
+                startAnimationLoop();
+            });
+        }
+
         connect(m_animationNameInput, &QLineEdit::textEdited, this, &AnimationManageWidget::onAnimationNameEdited);
         connect(m_deleteAnimationButton, &QPushButton::clicked, this, &AnimationManageWidget::onDeleteAnimationClicked);
         connect(m_duplicateAnimationButton, &QPushButton::clicked, this, &AnimationManageWidget::onDuplicateAnimationClicked);
@@ -349,6 +381,28 @@ void AnimationManageWidget::setParameterRowVisible(QWidget* rowWidget, QLabel* r
         rowWidget->setVisible(visible);
     if (rowLabel)
         rowLabel->setVisible(visible);
+}
+
+void AnimationManageWidget::displayCurrentFrame()
+{
+    if (m_animationFrames.empty() || !m_modelWidget)
+        return;
+
+    if (m_currentFrame < 0 || m_currentFrame >= (int)m_animationFrames.size())
+        m_currentFrame = 0;
+
+    ModelMesh& frameSource = m_animationFrames[m_currentFrame];
+    if (m_modelWidget->isWireframeVisible()) {
+        m_modelWidget->updateWireframeMesh(
+            new MonochromeMesh(frameSource.triangleVertices(), frameSource.triangleVertexCount()));
+    }
+    m_modelWidget->updateMesh(new ModelMesh(frameSource));
+
+    if (m_animationFrameSlider && !m_isScrubbing) {
+        m_animationFrameSlider->blockSignals(true);
+        m_animationFrameSlider->setValue(m_currentFrame);
+        m_animationFrameSlider->blockSignals(false);
+    }
 }
 
 void AnimationManageWidget::updateVisibleParameters(const QString& animationType)
@@ -623,6 +677,18 @@ void AnimationManageWidget::onAnimationPreviewReady()
 
     qDebug() << "AnimationManageWidget: received" << m_animationFrames.size() << "frames";
 
+    // Configure frame slider for scrubber
+    if (m_animationFrameSlider) {
+        m_animationFrameSlider->setEnabled(true);
+        m_animationFrameSlider->setRange(0, static_cast<int>(m_animationFrames.size()) - 1);
+        m_animationFrameSlider->blockSignals(true);
+        m_animationFrameSlider->setValue(0);
+        m_animationFrameSlider->blockSignals(false);
+    }
+
+    m_currentFrame = 0;
+    displayCurrentFrame();
+
     startAnimationLoop();
 
     if (m_animationRegenerationPending) {
@@ -633,18 +699,13 @@ void AnimationManageWidget::onAnimationPreviewReady()
 
 void AnimationManageWidget::onAnimationFrameTimeout()
 {
+    if (m_isScrubbing)
+        return;
+
     if (m_animationFrames.empty() || !m_modelWidget)
         return;
 
-    if (m_currentFrame < 0 || m_currentFrame >= (int)m_animationFrames.size())
-        m_currentFrame = 0;
-
-    ModelMesh& frameSource = m_animationFrames[m_currentFrame];
-    if (m_modelWidget->isWireframeVisible()) {
-        m_modelWidget->updateWireframeMesh(
-            new MonochromeMesh(frameSource.triangleVertices(), frameSource.triangleVertexCount()));
-    }
-    m_modelWidget->updateMesh(new ModelMesh(frameSource));
+    displayCurrentFrame();
 
     m_currentFrame = (m_currentFrame + 1) % (int)m_animationFrames.size();
 }

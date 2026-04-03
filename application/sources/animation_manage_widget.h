@@ -47,6 +47,7 @@ private slots:
 private:
     void startAnimationLoop();
     void stopAnimationLoop();
+    void displayCurrentFrame();
     void triggerPreviewRegeneration();
     void createParameterWidgets();
     void autoSaveCurrentAnimation();
@@ -99,6 +100,10 @@ private:
     QLabel* m_rubForwardOffsetLabel = nullptr;
     QWidget* m_rubUpOffsetRow = nullptr;
     QLabel* m_rubUpOffsetLabel = nullptr;
+
+    // Animation preview frame scrubber
+    QSlider* m_animationFrameSlider = nullptr;
+    bool m_isScrubbing = false;
 
     // Insect die parameter rows and labels
     QWidget* m_dieLengthStiffnessRow = nullptr;
