@@ -11,6 +11,10 @@
 #include <fbxproperty.h>
 #include <set>
 
+static double normalizeFbxEulerAngle(double angle);
+static double shortestFbxEulerAngleDifference(double a, double b);
+static double wrapFbxEulerAngleToPrevious(double value, double previous);
+
 using namespace fbx;
 
 std::vector<double> FbxFileWriter::m_identityMatrix = {
@@ -3786,7 +3790,10 @@ FbxFileWriter::FbxFileWriter(dust3d::Object& object,
                         translatedBones.insert(i);
                     double pitch = 0, yaw = 0, roll = 0;
                     matrixToFbxEulerAngles(localMat, &pitch, &yaw, &roll);
-                    if (std::abs(pitch - bindLocals[i].pitch) > 1e-6 || std::abs(yaw - bindLocals[i].yaw) > 1e-6 || std::abs(roll - bindLocals[i].roll) > 1e-6)
+                    double dp = shortestFbxEulerAngleDifference(pitch, bindLocals[i].pitch);
+                    double dy = shortestFbxEulerAngleDifference(yaw, bindLocals[i].yaw);
+                    double dr = shortestFbxEulerAngleDifference(roll, bindLocals[i].roll);
+                    if (std::abs(dp) > 1e-6 || std::abs(dy) > 1e-6 || std::abs(dr) > 1e-6)
                         rotatedBones.insert(i);
                 }
             }
@@ -3935,11 +3942,19 @@ FbxFileWriter::FbxFileWriter(dust3d::Object& object,
                     }
                     double pitch = 0, yaw = 0, roll = 0;
                     matrixToFbxEulerAngles(localMat, &pitch, &yaw, &roll);
-                    values[0].push_back((float)pitch);
-                    values[1].push_back((float)yaw);
-                    values[2].push_back((float)roll);
+                    values[0].push_back((float)normalizeFbxEulerAngle(pitch));
+                    values[1].push_back((float)normalizeFbxEulerAngle(yaw));
+                    values[2].push_back((float)normalizeFbxEulerAngle(roll));
                     ktimes.push_back(secondsToKtime(frame.time));
                 }
+
+                // Avoid 360-degree wrap jitter between adjacent keyframes for the same bone channel.
+                for (int ci = 0; ci < 3; ++ci) {
+                    for (size_t k = 1; k < values[ci].size(); ++k) {
+                        values[ci][k] = (float)wrapFbxEulerAngleToPrevious(values[ci][k], values[ci][k - 1]);
+                    }
+                }
+
                 FBXNode animationCurveNode("AnimationCurveNode");
                 int64_t animationCurveNodeId = m_next64Id++;
                 animationCurveNode.addProperty(animationCurveNodeId);
@@ -4226,6 +4241,36 @@ std::vector<double> FbxFileWriter::matrixToVector(const dust3d::Matrix4x4& matri
     for (size_t i = 0; i < 16; ++i)
         vec.push_back(data[i]);
     return vec;
+}
+
+static double normalizeFbxEulerAngle(double angle)
+{
+    double wrapped = std::fmod(angle, 360.0);
+    if (wrapped <= -180.0)
+        wrapped += 360.0;
+    else if (wrapped > 180.0)
+        wrapped -= 360.0;
+    return wrapped;
+}
+
+static double shortestFbxEulerAngleDifference(double a, double b)
+{
+    double diff = std::fmod(a - b, 360.0);
+    if (diff < -180.0)
+        diff += 360.0;
+    else if (diff > 180.0)
+        diff -= 360.0;
+    return diff;
+}
+
+static double wrapFbxEulerAngleToPrevious(double value, double previous)
+{
+    double wrapped = value;
+    while (wrapped - previous > 180.0)
+        wrapped -= 360.0;
+    while (wrapped - previous <= -180.0)
+        wrapped += 360.0;
+    return wrapped;
 }
 
 void FbxFileWriter::matrixToFbxEulerAngles(const dust3d::Matrix4x4& matrix, double* pitch, double* yaw, double* roll)
