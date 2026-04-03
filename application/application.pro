@@ -299,6 +299,7 @@ SOURCES += ../dust3d/animation/insect/attack.cc
 SOURCES += ../dust3d/animation/insect/die.cc
 SOURCES += ../dust3d/animation/bird/forward.cc
 SOURCES += ../dust3d/animation/fish/forward.cc
+SOURCES += ../dust3d/animation/fish/die.cc
 SOURCES += ../dust3d/mesh/base_normal.cc
 HEADERS += ../dust3d/mesh/centripetal_catmull_rom_spline.h
 SOURCES += ../dust3d/mesh/centripetal_catmull_rom_spline.cc

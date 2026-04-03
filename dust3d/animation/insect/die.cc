@@ -236,12 +236,12 @@ namespace insect {
         double dt = durationSeconds / std::max(1, frameCount);
         Vector3 gravity = gravityDir * 9.80;
 
-        float lengthStiffness = static_cast<float>(parameters.getValue("insectDieLengthStiffness", 0.9));
-        float parentJointStiffness = static_cast<float>(parameters.getValue("insectDieParentStiffness", 0.8));
-        float maxJointAngleDeg = static_cast<float>(parameters.getValue("insectDieMaxJointAngleDeg", 120.0));
+        float lengthStiffness = static_cast<float>(parameters.getValue("lengthStiffness", 0.9));
+        float parentJointStiffness = static_cast<float>(parameters.getValue("parentStiffness", 0.8));
+        float maxJointAngleDeg = static_cast<float>(parameters.getValue("maxJointAngleDeg", 120.0));
         double maxJointAngleRad = maxJointAngleDeg * (Math::Pi / 180.0);
-        float damping = static_cast<float>(parameters.getValue("insectDieDamping", 0.95));
-        float groundBounce = static_cast<float>(parameters.getValue("insectDieGroundBounce", 0.22));
+        float damping = static_cast<float>(parameters.getValue("damping", 0.95));
+        float groundBounce = static_cast<float>(parameters.getValue("groundBounce", 0.22));
 
         // Precomputed per-bone iteration count (more iterations = stiffer constraints).
         const size_t constraintIterations = 4;

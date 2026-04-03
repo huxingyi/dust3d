@@ -74,6 +74,15 @@ private:
     QSlider* m_dieDampingSlider = nullptr;
     QSlider* m_dieGroundBounceSlider = nullptr;
 
+    // Fish die parameter sliders
+    QSlider* m_fishDieHitIntensitySlider = nullptr;
+    QSlider* m_fishDieHitFrequencySlider = nullptr;
+    QSlider* m_fishDieFlipSpeedSlider = nullptr;
+    QSlider* m_fishDieFlipAngleSlider = nullptr;
+    QSlider* m_fishDieTiltSlider = nullptr;
+    QSlider* m_fishDieFinFlopSlider = nullptr;
+    QSlider* m_fishDieSpinDecaySlider = nullptr;
+
     // Fish animation parameter sliders
     QSlider* m_swimSpeedSlider = nullptr;
     QSlider* m_swimFrequencySlider = nullptr;
@@ -119,6 +128,22 @@ private:
     QLabel* m_dieDampingLabel = nullptr;
     QWidget* m_dieGroundBounceRow = nullptr;
     QLabel* m_dieGroundBounceLabel = nullptr;
+
+    // Fish die parameter rows and labels
+    QWidget* m_fishDieHitIntensityRow = nullptr;
+    QLabel* m_fishDieHitIntensityLabel = nullptr;
+    QWidget* m_fishDieHitFrequencyRow = nullptr;
+    QLabel* m_fishDieHitFrequencyLabel = nullptr;
+    QWidget* m_fishDieFlipSpeedRow = nullptr;
+    QLabel* m_fishDieFlipSpeedLabel = nullptr;
+    QWidget* m_fishDieFlipAngleRow = nullptr;
+    QLabel* m_fishDieFlipAngleLabel = nullptr;
+    QWidget* m_fishDieTiltRow = nullptr;
+    QLabel* m_fishDieTiltLabel = nullptr;
+    QWidget* m_fishDieFinFlopRow = nullptr;
+    QLabel* m_fishDieFinFlopLabel = nullptr;
+    QWidget* m_fishDieSpinDecayRow = nullptr;
+    QLabel* m_fishDieSpinDecayLabel = nullptr;
 
     // Fish animation parameter rows and labels
     QWidget* m_swimSpeedRow = nullptr;

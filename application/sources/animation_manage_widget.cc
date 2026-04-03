@@ -165,6 +165,15 @@ void AnimationManageWidget::createParameterWidgets()
     m_rubForwardOffsetSlider = new QSlider;
     m_rubUpOffsetSlider = new QSlider;
 
+    // Fish die parameter sliders
+    m_fishDieHitIntensitySlider = new QSlider;
+    m_fishDieHitFrequencySlider = new QSlider;
+    m_fishDieFlipSpeedSlider = new QSlider;
+    m_fishDieFlipAngleSlider = new QSlider;
+    m_fishDieTiltSlider = new QSlider;
+    m_fishDieFinFlopSlider = new QSlider;
+    m_fishDieSpinDecaySlider = new QSlider;
+
     // Fish animation parameter sliders
     m_swimSpeedSlider = new QSlider;
     m_swimFrequencySlider = new QSlider;
@@ -221,6 +230,36 @@ void AnimationManageWidget::createParameterWidgets()
     m_dieMaxJointAngleSlider = new QSlider;
     m_dieDampingSlider = new QSlider;
     m_dieGroundBounceSlider = new QSlider;
+
+    auto fishDieHitIntensityPair = makeSliderRow(tr("Hit Intensity"), m_fishDieHitIntensitySlider, 100, 10, 300);
+    m_fishDieHitIntensityRow = fishDieHitIntensityPair.first;
+    m_fishDieHitIntensityLabel = fishDieHitIntensityPair.second;
+
+    auto fishDieHitFrequencyPair = makeSliderRow(tr("Hit Frequency"), m_fishDieHitFrequencySlider, 100, 20, 300);
+    m_fishDieHitFrequencyRow = fishDieHitFrequencyPair.first;
+    m_fishDieHitFrequencyLabel = fishDieHitFrequencyPair.second;
+
+    auto fishDieFlipSpeedPair = makeSliderRow(tr("Flip Speed"), m_fishDieFlipSpeedSlider, 100, 25, 400);
+    m_fishDieFlipSpeedRow = fishDieFlipSpeedPair.first;
+    m_fishDieFlipSpeedLabel = fishDieFlipSpeedPair.second;
+
+    // Flip Angle: 0–180 degree, default 180 (slider 0–180, value=angle in degrees)
+    auto fishDieFlipAnglePair = makeSliderRow(tr("Flip Angle"), m_fishDieFlipAngleSlider, 180, 0, 180);
+    m_fishDieFlipAngleRow = fishDieFlipAnglePair.first;
+    m_fishDieFlipAngleLabel = fishDieFlipAnglePair.second;
+
+    // Tilt: -100 to +100, 0 = no tilt; maps to -1.0..+1.0 * bodyLength fraction
+    auto fishDieTiltPair = makeSliderRow(tr("Tilt"), m_fishDieTiltSlider, 0, -100, 100);
+    m_fishDieTiltRow = fishDieTiltPair.first;
+    m_fishDieTiltLabel = fishDieTiltPair.second;
+
+    auto fishDieFinFlopPair = makeSliderRow(tr("Fin Flop"), m_fishDieFinFlopSlider, 100, 0, 300);
+    m_fishDieFinFlopRow = fishDieFinFlopPair.first;
+    m_fishDieFinFlopLabel = fishDieFinFlopPair.second;
+
+    auto fishDieSpinDecayPair = makeSliderRow(tr("Spin Decay"), m_fishDieSpinDecaySlider, 100, 10, 300);
+    m_fishDieSpinDecayRow = fishDieSpinDecayPair.first;
+    m_fishDieSpinDecayLabel = fishDieSpinDecayPair.second;
 
     auto dieLengthStiffnessPair = makeSliderRow(tr("Die Length Stiffness"), m_dieLengthStiffnessSlider, 90, 10, 200);
     m_dieLengthStiffnessRow = dieLengthStiffnessPair.first;
@@ -324,6 +363,15 @@ void AnimationManageWidget::createParameterWidgets()
         connect(m_dieMaxJointAngleSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
         connect(m_dieDampingSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
         connect(m_dieGroundBounceSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+
+        // Fish die parameter connections
+        connect(m_fishDieHitIntensitySlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_fishDieHitFrequencySlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_fishDieFlipSpeedSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_fishDieFlipAngleSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_fishDieTiltSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_fishDieFinFlopSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_fishDieSpinDecaySlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
 
         // Fish animation parameter connections
         connect(m_swimSpeedSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
@@ -453,6 +501,15 @@ void AnimationManageWidget::updateVisibleParameters(const QString& animationType
     setParameterRowVisible(m_dieDampingRow, m_dieDampingLabel, false);
     setParameterRowVisible(m_dieGroundBounceRow, m_dieGroundBounceLabel, false);
 
+    // Hide fish die parameter rows
+    setParameterRowVisible(m_fishDieHitIntensityRow, m_fishDieHitIntensityLabel, false);
+    setParameterRowVisible(m_fishDieHitFrequencyRow, m_fishDieHitFrequencyLabel, false);
+    setParameterRowVisible(m_fishDieFlipSpeedRow, m_fishDieFlipSpeedLabel, false);
+    setParameterRowVisible(m_fishDieFlipAngleRow, m_fishDieFlipAngleLabel, false);
+    setParameterRowVisible(m_fishDieTiltRow, m_fishDieTiltLabel, false);
+    setParameterRowVisible(m_fishDieFinFlopRow, m_fishDieFinFlopLabel, false);
+    setParameterRowVisible(m_fishDieSpinDecayRow, m_fishDieSpinDecayLabel, false);
+
     // Hide fish parameter rows
     setParameterRowVisible(m_swimSpeedRow, m_swimSpeedLabel, false);
     setParameterRowVisible(m_swimFrequencyRow, m_swimFrequencyLabel, false);
@@ -492,6 +549,14 @@ void AnimationManageWidget::updateVisibleParameters(const QString& animationType
         setParameterRowVisible(m_stepHeightRow, m_stepHeightLabel, true);
         setParameterRowVisible(m_bodyBobRow, m_bodyBobLabel, true);
         setParameterRowVisible(m_gaitSpeedRow, m_gaitSpeedLabel, true);
+    } else if (animationType == "FishDie") {
+        setParameterRowVisible(m_fishDieHitIntensityRow, m_fishDieHitIntensityLabel, true);
+        setParameterRowVisible(m_fishDieHitFrequencyRow, m_fishDieHitFrequencyLabel, true);
+        setParameterRowVisible(m_fishDieFlipSpeedRow, m_fishDieFlipSpeedLabel, true);
+        setParameterRowVisible(m_fishDieFlipAngleRow, m_fishDieFlipAngleLabel, true);
+        setParameterRowVisible(m_fishDieTiltRow, m_fishDieTiltLabel, true);
+        setParameterRowVisible(m_fishDieFinFlopRow, m_fishDieFinFlopLabel, true);
+        setParameterRowVisible(m_fishDieSpinDecayRow, m_fishDieSpinDecayLabel, true);
     } else if (animationType == "FishForward") {
         // Show fish-specific parameters
         setParameterRowVisible(m_swimSpeedRow, m_swimSpeedLabel, true);
@@ -537,6 +602,7 @@ void AnimationManageWidget::updateAnimationNameForRigType(const QString& rigType
         m_addAnimationButton->setEnabled(true);
     } else if (rigType.compare("Fish", Qt::CaseInsensitive) == 0) {
         m_animationNameCombo->addItem("FishForward");
+        m_animationNameCombo->addItem("FishDie");
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);
     } else {
@@ -575,15 +641,15 @@ void AnimationManageWidget::updateAnimationParamsFromWidgets()
 
     // Insect die parameters
     if (m_dieLengthStiffnessSlider)
-        m_animationParams.setValue("insectDieLengthStiffness", m_dieLengthStiffnessSlider->value() / 100.0);
+        m_animationParams.setValue("lengthStiffness", m_dieLengthStiffnessSlider->value() / 100.0);
     if (m_dieParentStiffnessSlider)
-        m_animationParams.setValue("insectDieParentStiffness", m_dieParentStiffnessSlider->value() / 100.0);
+        m_animationParams.setValue("parentStiffness", m_dieParentStiffnessSlider->value() / 100.0);
     if (m_dieMaxJointAngleSlider)
-        m_animationParams.setValue("insectDieMaxJointAngleDeg", m_dieMaxJointAngleSlider->value());
+        m_animationParams.setValue("maxJointAngleDeg", m_dieMaxJointAngleSlider->value());
     if (m_dieDampingSlider)
-        m_animationParams.setValue("insectDieDamping", m_dieDampingSlider->value() / 100.0);
+        m_animationParams.setValue("damping", m_dieDampingSlider->value() / 100.0);
     if (m_dieGroundBounceSlider)
-        m_animationParams.setValue("insectDieGroundBounce", m_dieGroundBounceSlider->value() / 100.0);
+        m_animationParams.setValue("groundBounce", m_dieGroundBounceSlider->value() / 100.0);
     // Fish animation parameters - only save if sliders exist
     if (m_swimSpeedSlider)
         m_animationParams.setValue("swimSpeed", m_swimSpeedSlider->value() / 100.0);
@@ -611,6 +677,21 @@ void AnimationManageWidget::updateAnimationParamsFromWidgets()
         m_animationParams.setValue("pectoralPhaseOffset", m_pectoralPhaseOffsetSlider->value() / 100.0);
     if (m_pelvicPhaseOffsetSlider)
         m_animationParams.setValue("pelvicPhaseOffset", m_pelvicPhaseOffsetSlider->value() / 100.0);
+    // Fish die parameters
+    if (m_fishDieHitIntensitySlider)
+        m_animationParams.setValue("hitIntensity", m_fishDieHitIntensitySlider->value() / 100.0);
+    if (m_fishDieHitFrequencySlider)
+        m_animationParams.setValue("hitFrequency", m_fishDieHitFrequencySlider->value() / 100.0 * 8.0); // 8.0 at value 100
+    if (m_fishDieFlipSpeedSlider)
+        m_animationParams.setValue("flipSpeed", m_fishDieFlipSpeedSlider->value() / 100.0);
+    if (m_fishDieFlipAngleSlider)
+        m_animationParams.setValue("flipAngle", static_cast<double>(m_fishDieFlipAngleSlider->value())); // degrees 0–180
+    if (m_fishDieTiltSlider)
+        m_animationParams.setValue("tilt", m_fishDieTiltSlider->value() / 100.0); // -1.0..+1.0
+    if (m_fishDieFinFlopSlider)
+        m_animationParams.setValue("finFlop", m_fishDieFinFlopSlider->value() / 100.0);
+    if (m_fishDieSpinDecaySlider)
+        m_animationParams.setValue("spinDecay", m_fishDieSpinDecaySlider->value() / 100.0 * 4.0); // 4.0 at value 100
 }
 
 void AnimationManageWidget::triggerPreviewRegeneration()
@@ -1055,15 +1136,15 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
 
     // Load insect die parameters
     if (m_dieLengthStiffnessSlider)
-        m_dieLengthStiffnessSlider->setValue(static_cast<int>(params.getValue("insectDieLengthStiffness", 0.9) * 100));
+        m_dieLengthStiffnessSlider->setValue(static_cast<int>(params.getValue("lengthStiffness", 0.9) * 100));
     if (m_dieParentStiffnessSlider)
-        m_dieParentStiffnessSlider->setValue(static_cast<int>(params.getValue("insectDieParentStiffness", 0.8) * 100));
+        m_dieParentStiffnessSlider->setValue(static_cast<int>(params.getValue("parentStiffness", 0.8) * 100));
     if (m_dieMaxJointAngleSlider)
-        m_dieMaxJointAngleSlider->setValue(static_cast<int>(params.getValue("insectDieMaxJointAngleDeg", 120.0)));
+        m_dieMaxJointAngleSlider->setValue(static_cast<int>(params.getValue("maxJointAngleDeg", 120.0)));
     if (m_dieDampingSlider)
-        m_dieDampingSlider->setValue(static_cast<int>(params.getValue("insectDieDamping", 0.95) * 100));
+        m_dieDampingSlider->setValue(static_cast<int>(params.getValue("damping", 0.95) * 100));
     if (m_dieGroundBounceSlider)
-        m_dieGroundBounceSlider->setValue(static_cast<int>(params.getValue("insectDieGroundBounce", 0.22) * 100));
+        m_dieGroundBounceSlider->setValue(static_cast<int>(params.getValue("groundBounce", 0.22) * 100));
 
     // Load fish parameter values (using default values matching the animation implementation)
     if (m_swimSpeedSlider)
