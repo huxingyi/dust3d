@@ -211,6 +211,11 @@ void AnimationManageWidget::createParameterWidgets()
     m_dieGroundBounceRow = dieGroundBouncePair.first;
     m_dieGroundBounceLabel = dieGroundBouncePair.second;
 
+    m_dieGroundYSlider = new QSlider;
+    auto dieGroundYPair = makeSliderRow(tr("Die Ground Y"), m_dieGroundYSlider, 0, -100, 100);
+    m_dieGroundYRow = dieGroundYPair.first;
+    m_dieGroundYLabel = dieGroundYPair.second;
+
     // Fish animation parameters
     auto swimSpeedPair = makeSliderRow(tr("Swim Speed"), m_swimSpeedSlider, 100, 25, 300);
     m_swimSpeedRow = swimSpeedPair.first;
@@ -293,6 +298,7 @@ void AnimationManageWidget::createParameterWidgets()
         connect(m_dieMaxJointAngleSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
         connect(m_dieDampingSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
         connect(m_dieGroundBounceSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_dieGroundYSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
 
         // Fish animation parameter connections
         connect(m_swimSpeedSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
@@ -355,6 +361,14 @@ void AnimationManageWidget::updateVisibleParameters(const QString& animationType
     setParameterRowVisible(m_rubForwardOffsetRow, m_rubForwardOffsetLabel, false);
     setParameterRowVisible(m_rubUpOffsetRow, m_rubUpOffsetLabel, false);
 
+    // Hide insect die parameter rows
+    setParameterRowVisible(m_dieLengthStiffnessRow, m_dieLengthStiffnessLabel, false);
+    setParameterRowVisible(m_dieParentStiffnessRow, m_dieParentStiffnessLabel, false);
+    setParameterRowVisible(m_dieMaxJointAngleRow, m_dieMaxJointAngleLabel, false);
+    setParameterRowVisible(m_dieDampingRow, m_dieDampingLabel, false);
+    setParameterRowVisible(m_dieGroundBounceRow, m_dieGroundBounceLabel, false);
+    setParameterRowVisible(m_dieGroundYRow, m_dieGroundYLabel, false);
+
     // Hide fish parameter rows
     setParameterRowVisible(m_swimSpeedRow, m_swimSpeedLabel, false);
     setParameterRowVisible(m_swimFrequencyRow, m_swimFrequencyLabel, false);
@@ -381,6 +395,7 @@ void AnimationManageWidget::updateVisibleParameters(const QString& animationType
         setParameterRowVisible(m_dieMaxJointAngleRow, m_dieMaxJointAngleLabel, true);
         setParameterRowVisible(m_dieDampingRow, m_dieDampingLabel, true);
         setParameterRowVisible(m_dieGroundBounceRow, m_dieGroundBounceLabel, true);
+        setParameterRowVisible(m_dieGroundYRow, m_dieGroundYLabel, true);
     } else if (animationType == "BirdForward") {
         setParameterRowVisible(m_stepLengthRow, m_stepLengthLabel, true);
         setParameterRowVisible(m_stepHeightRow, m_stepHeightLabel, true);
@@ -472,6 +487,8 @@ void AnimationManageWidget::updateAnimationParamsFromWidgets()
         m_animationParams.setValue("insectDieDamping", m_dieDampingSlider->value() / 100.0);
     if (m_dieGroundBounceSlider)
         m_animationParams.setValue("insectDieGroundBounce", m_dieGroundBounceSlider->value() / 100.0);
+    if (m_dieGroundYSlider)
+        m_animationParams.setValue("insectDieGroundY", m_dieGroundYSlider->value() / 10.0);
 
     // Fish animation parameters - only save if sliders exist
     if (m_swimSpeedSlider)
@@ -835,6 +852,20 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
     m_rubForwardOffsetSlider->blockSignals(true);
     m_rubUpOffsetSlider->blockSignals(true);
 
+    // Block signals for insect die parameters
+    if (m_dieLengthStiffnessSlider)
+        m_dieLengthStiffnessSlider->blockSignals(true);
+    if (m_dieParentStiffnessSlider)
+        m_dieParentStiffnessSlider->blockSignals(true);
+    if (m_dieMaxJointAngleSlider)
+        m_dieMaxJointAngleSlider->blockSignals(true);
+    if (m_dieDampingSlider)
+        m_dieDampingSlider->blockSignals(true);
+    if (m_dieGroundBounceSlider)
+        m_dieGroundBounceSlider->blockSignals(true);
+    if (m_dieGroundYSlider)
+        m_dieGroundYSlider->blockSignals(true);
+
     // Block signals for fish parameters
     if (m_swimSpeedSlider)
         m_swimSpeedSlider->blockSignals(true);
@@ -883,6 +914,8 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
         m_dieDampingSlider->setValue(static_cast<int>(params.getValue("insectDieDamping", 0.95) * 100));
     if (m_dieGroundBounceSlider)
         m_dieGroundBounceSlider->setValue(static_cast<int>(params.getValue("insectDieGroundBounce", 0.22) * 100));
+    if (m_dieGroundYSlider)
+        m_dieGroundYSlider->setValue(static_cast<int>(params.getValue("insectDieGroundY", 0.0) * 10));
 
     // Load fish parameter values (using default values matching the animation implementation)
     if (m_swimSpeedSlider)
@@ -920,6 +953,20 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
     m_planeStabilizationCheck->blockSignals(false);
     m_rubForwardOffsetSlider->blockSignals(false);
     m_rubUpOffsetSlider->blockSignals(false);
+
+    // Unblock signals for insect die parameters
+    if (m_dieLengthStiffnessSlider)
+        m_dieLengthStiffnessSlider->blockSignals(false);
+    if (m_dieParentStiffnessSlider)
+        m_dieParentStiffnessSlider->blockSignals(false);
+    if (m_dieMaxJointAngleSlider)
+        m_dieMaxJointAngleSlider->blockSignals(false);
+    if (m_dieDampingSlider)
+        m_dieDampingSlider->blockSignals(false);
+    if (m_dieGroundBounceSlider)
+        m_dieGroundBounceSlider->blockSignals(false);
+    if (m_dieGroundYSlider)
+        m_dieGroundYSlider->blockSignals(false);
 
     // Unblock signals for fish parameters
     if (m_swimSpeedSlider)
