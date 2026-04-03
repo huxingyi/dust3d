@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<rig type="dragon" name="Dragon">
+<rig type="Dragon">
     <description>Winged quadruped rig for dragons, wyverns, and similar creatures</description>
     
     <bone name="Root" parent="">

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<rig type="fish" name="Fish">
+<rig type="Fish">
     <description>Fish rig with fins and tail</description>
     
     <bone name="Root" parent="">

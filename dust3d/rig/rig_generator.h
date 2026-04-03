@@ -46,7 +46,6 @@ struct RigNode {
 
 struct RigStructure {
     std::string type;
-    std::string name;
     std::string description;
     std::vector<RigNode> bones;
 };

@@ -108,7 +108,7 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
     // Add loaded rig types to combo box
     m_rigTypeComboBox->addItem(tr("None"));
     for (const auto& entry : m_rigStructures) {
-        m_rigTypeComboBox->addItem(entry.second.name);
+        m_rigTypeComboBox->addItem(entry.second.type);
     }
 
     rigTypeLayout->addWidget(m_rigTypeComboBox);
@@ -239,8 +239,8 @@ void BoneManageWidget::loadRigStructures()
 {
     // Load all rig structure XML files from resources
     const QStringList rigFiles = {
-        ":/resources/rig_human.xml",
-        ":/resources/rig_quad.xml",
+        ":/resources/rig_humanoid.xml",
+        ":/resources/rig_quadruped.xml",
         ":/resources/rig_bird.xml",
         ":/resources/rig_fish.xml",
         ":/resources/rig_insect.xml",
@@ -289,13 +289,9 @@ bool BoneManageWidget::loadRigFromXml(const QString& filePath)
 
         // Get attributes
         rapidxml::xml_attribute<>* typeAttr = rigElement->first_attribute("type");
-        rapidxml::xml_attribute<>* nameAttr = rigElement->first_attribute("name");
 
         if (typeAttr) {
             rigStruct.type = QString::fromStdString(std::string(typeAttr->value(), typeAttr->value_size()));
-        }
-        if (nameAttr) {
-            rigStruct.name = QString::fromStdString(std::string(nameAttr->value(), nameAttr->value_size()));
         }
 
         // Get description
@@ -357,7 +353,7 @@ bool BoneManageWidget::loadRigFromXml(const QString& filePath)
 
         if (!rigStruct.type.isEmpty()) {
             m_rigStructures[rigStruct.type] = rigStruct;
-            qDebug() << "Loaded rig:" << rigStruct.type << "-" << rigStruct.name
+            qDebug() << "Loaded rig:" << rigStruct.type
                      << "with" << rigStruct.bones.size() << "bones";
             return true;
         }
@@ -449,7 +445,7 @@ void BoneManageWidget::updateBoneTreeView(const QString& rigType)
     // Find the rig structure by name
     RigStructure* selectedRig = nullptr;
     for (auto& entry : m_rigStructures) {
-        if (entry.second.name == rigType) {
+        if (entry.second.type == rigType) {
             selectedRig = &entry.second;
             break;
         }
@@ -502,7 +498,7 @@ void BoneManageWidget::generateRigTemplateMesh(const QString& rigType, const QSt
     // Find the rig structure by name
     RigStructure* selectedRig = nullptr;
     for (auto& entry : m_rigStructures) {
-        if (entry.second.name == rigType) {
+        if (entry.second.type == rigType) {
             selectedRig = &entry.second;
             break;
         }

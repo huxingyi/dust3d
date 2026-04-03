@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<rig type="snake" name="Snake">
+<rig type="Snake">
     <description>Legless serpentine rig for snakes, worms, eels, and similar creatures</description>
     
     <bone name="Root" parent="">

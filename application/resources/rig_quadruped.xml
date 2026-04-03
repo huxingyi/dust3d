@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<rig type="quad" name="Quadruped">
+<rig type="Quadruped">
     <description>Four-legged animal rig (horse, dog, cat, etc.)</description>
     
     <bone name="Root" parent="">

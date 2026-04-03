@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<rig type="human" name="Humanoid">
+<rig type="Humanoid">
     <description>Standard humanoid biped rig with arms, legs, spine, and head</description>
     
     <bone name="Root" parent="">

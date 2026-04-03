@@ -228,6 +228,34 @@ bool RigGenerator::generateRig(const Snapshot* snapshot, const RigStructure& tem
                     << "endPosition:" << bone.endX << bone.endY << bone.endZ;
     }
 
+    // Fish rig patch: ensure "Head" bone direction aligns with "BodyFront"
+    if (actualRig.type == "Fish") {
+        RigNode* headBone = nullptr;
+        RigNode* bodyFrontBone = nullptr;
+        for (auto& bone : actualRig.bones) {
+            if (bone.name == "Head")
+                headBone = &bone;
+            else if (bone.name == "BodyFront")
+                bodyFrontBone = &bone;
+        }
+        if (headBone && bodyFrontBone) {
+            Vector3 headDir(headBone->endX - headBone->posX,
+                headBone->endY - headBone->posY,
+                headBone->endZ - headBone->posZ);
+            Vector3 bodyFrontDir(bodyFrontBone->endX - bodyFrontBone->posX,
+                bodyFrontBone->endY - bodyFrontBone->posY,
+                bodyFrontBone->endZ - bodyFrontBone->posZ);
+            float dot = Vector3::dotProduct(headDir, bodyFrontDir);
+            if (dot < 0.0f) {
+                // Head is pointing away from BodyFront — reverse it
+                std::swap(headBone->posX, headBone->endX);
+                std::swap(headBone->posY, headBone->endY);
+                std::swap(headBone->posZ, headBone->endZ);
+                dust3dDebug << "Fish rig patch: reversed Head bone direction to align with BodyFront";
+            }
+        }
+    }
+
     // Generate collision capsule radius for each bone in rig data
     for (auto& bone : actualRig.bones) {
         Vector3 start(bone.posX, bone.posY, bone.posZ);

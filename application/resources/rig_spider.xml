@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<rig type="spider" name="Spider">
+<rig type="Spider">
     <description>Eight-legged arachnid rig for spiders, crabs, and scorpions</description>
     
     <bone name="Root" parent="">

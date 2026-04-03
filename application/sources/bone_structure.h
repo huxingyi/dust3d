@@ -55,14 +55,12 @@ struct BoneNode {
 // Qt wrapper for dust3d::RigStructure with QString for UI compatibility
 struct RigStructure {
     QString type;
-    QString name;
     QString description;
     std::vector<BoneNode> bones;
 
     RigStructure() = default;
     RigStructure(const dust3d::RigStructure& rigStruct)
         : type(QString::fromStdString(rigStruct.type))
-        , name(QString::fromStdString(rigStruct.name))
         , description(QString::fromStdString(rigStruct.description))
     {
         for (const auto& bone : rigStruct.bones) {
@@ -74,7 +72,6 @@ struct RigStructure {
     {
         dust3d::RigStructure rigStruct;
         rigStruct.type = type.toStdString();
-        rigStruct.name = name.toStdString();
         rigStruct.description = description.toStdString();
         for (const auto& bone : bones) {
             rigStruct.bones.push_back(bone.toRigNode());

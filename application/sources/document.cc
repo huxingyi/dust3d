@@ -1632,7 +1632,7 @@ void Document::generateRig()
     // Find the template rig structure for current rig type
     RigStructure* templateRig = nullptr;
     for (auto& entry : m_rigStructures) {
-        if (entry.second.name == m_rigType) {
+        if (entry.second.type == m_rigType) {
             templateRig = &entry.second;
             break;
         }
@@ -1691,8 +1691,8 @@ void Document::rigReady()
 void Document::loadRigStructures()
 {
     const QStringList rigFiles = {
-        ":/resources/rig_human.xml",
-        ":/resources/rig_quad.xml",
+        ":/resources/rig_humanoid.xml",
+        ":/resources/rig_quadruped.xml",
         ":/resources/rig_bird.xml",
         ":/resources/rig_fish.xml",
         ":/resources/rig_insect.xml",
@@ -1737,8 +1737,6 @@ bool Document::loadRigFromXml(const QString& filePath)
 
         if (typeAttr)
             rigStruct.type = QString::fromStdString(std::string(typeAttr->value(), typeAttr->value_size()));
-        if (nameAttr)
-            rigStruct.name = QString::fromStdString(std::string(nameAttr->value(), nameAttr->value_size()));
 
         rapidxml::xml_node<>* descElement = rigElement->first_node("description");
         if (descElement && descElement->value_size() > 0)

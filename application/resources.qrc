@@ -42,9 +42,8 @@
         <file>resources/toolbar_z_disabled.svg</file>
         <file>resources/toolbar_radius.svg</file>
         <file>resources/toolbar_radius_disabled.svg</file>
-
-        <file>resources/rig_human.xml</file>
-        <file>resources/rig_quad.xml</file>
+        <file>resources/rig_humanoid.xml</file>
+        <file>resources/rig_quadruped.xml</file>
         <file>resources/rig_bird.xml</file>
         <file>resources/rig_fish.xml</file>
         <file>resources/rig_insect.xml</file>
