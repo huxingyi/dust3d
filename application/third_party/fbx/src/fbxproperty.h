@@ -1,6 +1,7 @@
 #ifndef FBXPROPERTY_H
 #define FBXPROPERTY_H
 
+#include <cstdint>
 #include <memory>
 #include <iostream>
 #include <vector>
