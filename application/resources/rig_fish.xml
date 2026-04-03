@@ -4,13 +4,13 @@
     
     <bone name="Root" parent="">
         <position x="0" y="0" z="0"/>
-        <endPosition x="0" y="0" z="0.5"/>
+        <endPosition x="0" y="-0.5" z="0"/>
     </bone>
     
     <!-- Body -->
     <bone name="Head" parent="Root">
-        <position x="0" y="0" z="0.25"/>
-        <endPosition x="0" y="0" z="0.5"/>
+        <position x="0" y="0" z="0.5"/>
+        <endPosition x="0" y="0" z="0.25"/>
     </bone>
     
     <bone name="BodyFront" parent="Head">
