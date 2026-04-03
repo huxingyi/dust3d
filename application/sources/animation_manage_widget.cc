@@ -111,13 +111,16 @@ void AnimationManageWidget::createParameterWidgets()
     m_animationFrameSlider->setEnabled(false);
     m_animationFrameSlider->setToolTip(tr("Drag to scrub animation frames"));
 
-    QLabel* frameSliderLabel = new QLabel(tr("Frame"));
-    frameSliderLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    m_playPauseButton = new QPushButton;
+    m_playPauseButton->setIcon(Theme::awesome()->icon(fa::play));
+    m_playPauseButton->setToolTip(tr("Play/Pause animation"));
+    m_playPauseButton->setFixedSize(26, 26);
+    m_playPauseButton->setEnabled(false);
 
     QWidget* frameSliderWidget = new QWidget;
     QHBoxLayout* frameSliderLayout = new QHBoxLayout(frameSliderWidget);
     frameSliderLayout->setContentsMargins(0, 0, 0, 0);
-    frameSliderLayout->addWidget(frameSliderLabel);
+    frameSliderLayout->addWidget(m_playPauseButton);
     frameSliderLayout->addWidget(m_animationFrameSlider);
 
     groupBoxLayout->addWidget(frameSliderWidget);
@@ -130,13 +133,13 @@ void AnimationManageWidget::createParameterWidgets()
     parameterLayout->setContentsMargins(0, 0, 0, 0);
     parameterLayout->setSpacing(6);
 
-    m_animationNameInput = new QLineEdit;
-    m_animationNameInput->setPlaceholderText(tr("Enter animation name"));
-    parameterLayout->addRow(new QLabel(tr("Name:")), m_animationNameInput);
-
     m_animationTypeInput = new QLineEdit;
     m_animationTypeInput->setReadOnly(true);
     parameterLayout->addRow(new QLabel(tr("Type:")), m_animationTypeInput);
+
+    m_animationNameInput = new QLineEdit;
+    m_animationNameInput->setPlaceholderText(tr("Enter animation name"));
+    parameterLayout->addRow(new QLabel(tr("Name:")), m_animationNameInput);
 
     m_stepLengthSlider = new QSlider;
     m_stepHeightSlider = new QSlider;
@@ -348,8 +351,11 @@ void AnimationManageWidget::createParameterWidgets()
                 if (m_animationFrameSlider) {
                     m_currentFrame = m_animationFrameSlider->value();
                 }
-                startAnimationLoop();
             });
+        }
+
+        if (m_playPauseButton) {
+            connect(m_playPauseButton, &QPushButton::clicked, this, &AnimationManageWidget::onPlayPauseClicked);
         }
 
         connect(m_animationNameInput, &QLineEdit::textEdited, this, &AnimationManageWidget::onAnimationNameEdited);
@@ -593,6 +599,31 @@ void AnimationManageWidget::setWireframeVisible(bool visible)
     if (m_modelWidget)
         m_modelWidget->setWireframeVisible(visible);
 }
+
+void AnimationManageWidget::updatePlayPauseIcon()
+{
+    if (!m_playPauseButton)
+        return;
+
+    if (m_frameTimer && m_frameTimer->isActive())
+        m_playPauseButton->setIcon(Theme::awesome()->icon(fa::pause));
+    else
+        m_playPauseButton->setIcon(Theme::awesome()->icon(fa::play));
+}
+
+void AnimationManageWidget::onPlayPauseClicked()
+{
+    if (!m_frameTimer)
+        return;
+
+    if (m_frameTimer->isActive()) {
+        stopAnimationLoop();
+    } else {
+        startAnimationLoop();
+    }
+    updatePlayPauseIcon();
+}
+
 void AnimationManageWidget::onResultRigChanged()
 {
     qDebug() << "AnimationManageWidget: resultRigChanged";
@@ -668,6 +699,10 @@ void AnimationManageWidget::onAnimationPreviewReady()
 
     if (m_animationFrames.empty()) {
         qWarning() << "AnimationManageWidget: no preview frames generated";
+        if (m_playPauseButton)
+            m_playPauseButton->setEnabled(false);
+        if (m_animationFrameSlider)
+            m_animationFrameSlider->setEnabled(false);
         if (m_animationRegenerationPending) {
             m_animationRegenerationPending = false;
             onResultRigChanged();
@@ -685,6 +720,8 @@ void AnimationManageWidget::onAnimationPreviewReady()
         m_animationFrameSlider->setValue(0);
         m_animationFrameSlider->blockSignals(false);
     }
+    if (m_playPauseButton)
+        m_playPauseButton->setEnabled(true);
 
     m_currentFrame = 0;
     displayCurrentFrame();
@@ -718,6 +755,8 @@ void AnimationManageWidget::startAnimationLoop()
     if (!m_frameTimer->isActive()) {
         m_frameTimer->start();
     }
+
+    updatePlayPauseIcon();
 }
 
 void AnimationManageWidget::stopAnimationLoop()
@@ -726,6 +765,7 @@ void AnimationManageWidget::stopAnimationLoop()
         m_frameTimer->stop();
     }
     m_currentFrame = 0;
+    updatePlayPauseIcon();
 }
 
 void AnimationManageWidget::autoSaveCurrentAnimation()
@@ -813,7 +853,7 @@ void AnimationManageWidget::onAddAnimationClicked()
 
     m_parametersGroupBox->setTitle(tr("Parameters (New)"));
     m_parametersGroupBox->show();
-    m_animationNameInput->setFocus();
+    m_animationTypeInput->setFocus();
 
     updateVisibleParameters(type);
 

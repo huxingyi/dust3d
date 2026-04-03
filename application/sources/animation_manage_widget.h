@@ -43,6 +43,7 @@ private slots:
     void onParameterChanged();
     void onAnimationNameEdited(const QString& name);
     void onAddAnimationClicked();
+    void onPlayPauseClicked();
 
 private:
     void startAnimationLoop();
@@ -53,6 +54,7 @@ private:
     void autoSaveCurrentAnimation();
     void updateVisibleParameters(const QString& animationType);
     void setParameterRowVisible(QWidget* rowWidget, QLabel* rowLabel, bool visible);
+    void updatePlayPauseIcon();
 
     Document* m_document = nullptr;
     WorldWidget* m_modelWidget = nullptr;
@@ -103,6 +105,7 @@ private:
 
     // Animation preview frame scrubber
     QSlider* m_animationFrameSlider = nullptr;
+    QPushButton* m_playPauseButton = nullptr;
     bool m_isScrubbing = false;
 
     // Insect die parameter rows and labels
