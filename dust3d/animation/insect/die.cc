@@ -44,6 +44,7 @@ namespace insect {
             Vector3 tailPos;
             Vector3 headVel;
             Vector3 tailVel;
+            Vector3 restDir;
             float restLength;
             float radius;
         };
@@ -104,6 +105,7 @@ namespace insect {
             info.headVel = Vector3(0.0, 0.0, 0.0);
             info.tailVel = Vector3(0.0, 0.0, 0.0);
             info.restLength = std::max(static_cast<float>((info.tailPos - info.headPos).length()), 1e-6f);
+            info.restDir = (info.tailPos - info.headPos).normalized();
             info.radius = b.capsuleRadius;
             bones.push_back(info);
         }
@@ -115,8 +117,14 @@ namespace insect {
 
         double dt = durationSeconds / std::max(1, frameCount);
         Vector3 gravity(0.0, -9.80, 0.0);
-        float damping = 0.95f;
-        float groundY = 0.0f;
+
+        float lengthStiffness = static_cast<float>(parameters.getValue("insectDieLengthStiffness", 0.9));
+        float parentJointStiffness = static_cast<float>(parameters.getValue("insectDieParentStiffness", 0.8));
+        float maxJointAngleDeg = static_cast<float>(parameters.getValue("insectDieMaxJointAngleDeg", 120.0));
+        float maxJointAngleRad = maxJointAngleDeg * (3.14159265f / 180.0f);
+        float damping = static_cast<float>(parameters.getValue("insectDieDamping", 0.95));
+        float groundY = static_cast<float>(parameters.getValue("insectDieGroundY", 0.0));
+        float groundBounce = static_cast<float>(parameters.getValue("insectDieGroundBounce", 0.22));
 
         for (int frame = 0; frame < frameCount; ++frame) {
             double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
@@ -130,13 +138,14 @@ namespace insect {
                 bone.tailPos += bone.tailVel * dt;
             }
 
-            // Constraint solve (length maintenance + parent heads should follow parent tails)
+            // Constraint solve (length maintenance + hierarchical joint and angular constraints)
             for (size_t iter = 0; iter < 2; ++iter) {
                 for (auto& bone : bones) {
+                    // length constraint
                     Vector3 delta = bone.tailPos - bone.headPos;
                     float len = delta.length();
                     if (len > 1e-6f) {
-                        float correction = (len - bone.restLength) / len * 0.5f;
+                        float correction = (len - bone.restLength) / len * 0.5f * lengthStiffness;
                         Vector3 diff = delta * correction;
                         bone.headPos += diff;
                         bone.tailPos -= diff;
@@ -144,16 +153,33 @@ namespace insect {
                         bone.tailVel -= diff / dt;
                     }
 
+                    // parent-child positional constraint (IK-like joint stiffness)
                     if (!bone.parent.empty()) {
                         auto parentIt = std::find_if(bones.begin(), bones.end(),
                             [&](const BoneRagdollInfo& p) { return p.name == bone.parent; });
                         if (parentIt != bones.end()) {
                             Vector3 jointError = parentIt->tailPos - bone.headPos;
-                            Vector3 half = jointError * 0.5f;
-                            bone.headPos += half;
-                            parentIt->tailPos -= half;
-                            bone.headVel += half / dt;
-                            parentIt->tailVel -= half / dt;
+                            Vector3 correction = jointError * parentJointStiffness;
+                            bone.headPos += correction;
+                            parentIt->tailPos -= correction;
+                            bone.headVel += correction / dt;
+                            parentIt->tailVel -= correction / dt;
+                        }
+                    }
+
+                    // angular constraint relative to rest direction (help preserve insect limb posture)
+                    if (!bone.restDir.isZero()) {
+                        Vector3 currentDir = (bone.tailPos - bone.headPos).normalized();
+                        if (!currentDir.isZero()) {
+                            float dot = std::max(-1.0f, std::min(1.0f, static_cast<float>(Vector3::dotProduct(currentDir, bone.restDir))));
+                            float angle = std::acos(dot);
+                            if (angle > maxJointAngleRad && angle > 1e-6f) {
+                                float t = maxJointAngleRad / angle;
+                                Vector3 restrictedDir = (bone.restDir * (1.0f - t) + currentDir * t).normalized();
+                                Vector3 oldTail = bone.tailPos;
+                                bone.tailPos = bone.headPos + restrictedDir * bone.restLength;
+                                bone.tailVel = (bone.tailPos - oldTail) / dt * 0.5f + bone.tailVel * 0.5f;
+                            }
                         }
                     }
                 }
@@ -166,9 +192,9 @@ namespace insect {
                         p->setY(groundY + bone.radius);
                         // bounce and friction
                         if (&bone.headPos == p)
-                            bone.headVel.setY(-bone.headVel.y() * 0.22f);
+                            bone.headVel.setY(-bone.headVel.y() * groundBounce);
                         else
-                            bone.tailVel.setY(-bone.tailVel.y() * 0.22f);
+                            bone.tailVel.setY(-bone.tailVel.y() * groundBounce);
                     }
                 }
 

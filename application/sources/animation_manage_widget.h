@@ -63,6 +63,13 @@ private:
     QSlider* m_rubForwardOffsetSlider = nullptr;
     QSlider* m_rubUpOffsetSlider = nullptr;
 
+    // Insect die simulation parameter sliders
+    QSlider* m_dieLengthStiffnessSlider = nullptr;
+    QSlider* m_dieParentStiffnessSlider = nullptr;
+    QSlider* m_dieMaxJointAngleSlider = nullptr;
+    QSlider* m_dieDampingSlider = nullptr;
+    QSlider* m_dieGroundBounceSlider = nullptr;
+
     // Fish animation parameter sliders
     QSlider* m_swimSpeedSlider = nullptr;
     QSlider* m_swimFrequencySlider = nullptr;
@@ -91,6 +98,18 @@ private:
     QLabel* m_rubForwardOffsetLabel = nullptr;
     QWidget* m_rubUpOffsetRow = nullptr;
     QLabel* m_rubUpOffsetLabel = nullptr;
+
+    // Insect die parameter rows and labels
+    QWidget* m_dieLengthStiffnessRow = nullptr;
+    QLabel* m_dieLengthStiffnessLabel = nullptr;
+    QWidget* m_dieParentStiffnessRow = nullptr;
+    QLabel* m_dieParentStiffnessLabel = nullptr;
+    QWidget* m_dieMaxJointAngleRow = nullptr;
+    QLabel* m_dieMaxJointAngleLabel = nullptr;
+    QWidget* m_dieDampingRow = nullptr;
+    QLabel* m_dieDampingLabel = nullptr;
+    QWidget* m_dieGroundBounceRow = nullptr;
+    QLabel* m_dieGroundBounceLabel = nullptr;
 
     // Fish animation parameter rows and labels
     QWidget* m_swimSpeedRow = nullptr;
