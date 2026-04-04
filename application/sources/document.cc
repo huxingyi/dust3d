@@ -1733,7 +1733,6 @@ bool Document::loadRigFromXml(const QString& filePath)
         RigStructure rigStruct;
 
         rapidxml::xml_attribute<>* typeAttr = rigElement->first_attribute("type");
-        rapidxml::xml_attribute<>* nameAttr = rigElement->first_attribute("name");
 
         if (typeAttr)
             rigStruct.type = QString::fromStdString(std::string(typeAttr->value(), typeAttr->value_size()));

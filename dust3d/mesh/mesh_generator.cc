@@ -611,7 +611,6 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
         return nullptr;
     }
 
-    Uuid partId = Uuid(partIdString);
     auto& part = findPart->second;
 
     bool isDisabled = String::isTrue(String::valueOrEmpty(part, "disabled"));
@@ -623,7 +622,6 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
     float deformThickness = 1.0;
     float deformWidth = 1.0;
     float cutRotation = 0.0;
-    float hollowThickness = 0.0;
     auto target = PartTargetFromString(String::valueOrEmpty(part, "target").c_str());
 
     std::string searchPartIdString = __mirrorFromPartId.empty() ? partIdString : __mirrorFromPartId;
@@ -641,11 +639,6 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
         cutRotation = String::toFloat(cutRotationString);
     }
 
-    std::string hollowThicknessString = String::valueOrEmpty(part, "hollowThickness");
-    if (!hollowThicknessString.empty()) {
-        hollowThickness = String::toFloat(hollowThicknessString);
-    }
-
     std::string thicknessString = String::valueOrEmpty(part, "deformThickness");
     if (!thicknessString.empty()) {
         deformThickness = String::toFloat(thicknessString);
@@ -657,11 +650,6 @@ std::unique_ptr<MeshState> MeshGenerator::combinePartMesh(const std::string& par
     }
 
     bool deformUnified = String::isTrue(String::valueOrEmpty(part, "deformUnified"));
-
-    Uuid materialId;
-    std::string materialIdString = String::valueOrEmpty(part, "materialId");
-    if (!materialIdString.empty())
-        materialId = Uuid(materialIdString);
 
     float metalness = 0;
     std::string metalnessString = String::valueOrEmpty(part, "metallic");
