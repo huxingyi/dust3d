@@ -29,6 +29,7 @@
 #include <dust3d/animation/insect/forward.h>
 #include <dust3d/animation/insect/rub_hands.h>
 #include <dust3d/animation/insect/walk.h>
+#include <dust3d/animation/quadruped/walk.h>
 
 namespace dust3d {
 
@@ -54,6 +55,8 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
         return fish::forward(rigStructure, inverseBindMatrices, animationClip, parameters);
     if (animationType == "FishDie")
         return fish::die(rigStructure, inverseBindMatrices, animationClip, parameters);
+    if (animationType == "QuadrupedWalk")
+        return quadruped::walk(rigStructure, inverseBindMatrices, animationClip, parameters);
 
     // Add future rig type + animationName mappings here.
     return false;

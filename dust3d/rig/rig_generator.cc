@@ -28,6 +28,7 @@
 #include <dust3d/base/string.h>
 #include <dust3d/base/vector3.h>
 #include <dust3d/rig/rig_generator.h>
+#include <limits>
 
 namespace dust3d {
 
@@ -67,6 +68,29 @@ bool RigGenerator::generateRig(const Snapshot* snapshot, const RigStructure& tem
     std::map<std::string, size_t> boneNameToIndex;
     for (size_t i = 0; i < actualRig.bones.size(); ++i) {
         boneNameToIndex[actualRig.bones[i].name] = i;
+    }
+
+    // Pre-collect all nodes that appear in any edge with a bone name (across all bones).
+    // Used later to identify isolated single nodes.
+    std::set<Uuid> allEdgeNodes;
+    std::map<std::string, std::set<Uuid>> boneEdgeNodesMap;
+    for (const auto& edgePair : snapshot->edges) {
+        const auto& edgeAttributes = edgePair.second;
+        std::string edgeBoneName = String::valueOrEmpty(edgeAttributes, "boneName");
+        if (edgeBoneName.empty())
+            continue;
+        std::string fromNode = String::valueOrEmpty(edgeAttributes, "from");
+        std::string toNode = String::valueOrEmpty(edgeAttributes, "to");
+        if (!fromNode.empty()) {
+            Uuid id(fromNode);
+            allEdgeNodes.insert(id);
+            boneEdgeNodesMap[edgeBoneName].insert(id);
+        }
+        if (!toNode.empty()) {
+            Uuid id(toNode);
+            allEdgeNodes.insert(id);
+            boneEdgeNodesMap[edgeBoneName].insert(id);
+        }
     }
 
     // Process bones in topological order (parents before children)
@@ -109,6 +133,13 @@ bool RigGenerator::generateRig(const Snapshot* snapshot, const RigStructure& tem
                 bone.endY = -0.25f;
             }
             continue;
+        }
+
+        // Attach isolated single nodes (nodes with no edge-bone assignment) to
+        // this bone if they are nearest to this bone's edge-connected nodes.
+        if (!boneEdgeNodesMap[bone.name].empty()) {
+            attachSingleNodesToBone(snapshot, bone.name,
+                boneEdgeNodesMap[bone.name], allEdgeNodes, nodeChains);
         }
 
         // Determine reference point from parent bone' position.
@@ -427,7 +458,42 @@ bool RigGenerator::computeNodeBoneInfluences(const Snapshot* snapshot,
         }
 
         if (boneNames.empty()) {
-            // Node has no assigned edges
+            // Node has no assigned edges — find nearest node that has a bone assignment
+            // and inherit its bone influence.
+            float nx = 0, ny = 0, nz = 0;
+            if (!getNodePosition(snapshot, nodeId, nx, ny, nz))
+                continue;
+
+            float bestDist = std::numeric_limits<float>::max();
+            std::string nearestBone;
+            for (const auto& edgePair : snapshot->edges) {
+                const auto& edgeAttributes = edgePair.second;
+                std::string edgeBoneName = String::valueOrEmpty(edgeAttributes, "boneName");
+                if (edgeBoneName.empty())
+                    continue;
+                for (const auto& key : { std::string("from"), std::string("to") }) {
+                    std::string candidateIdStr = String::valueOrEmpty(edgeAttributes, key);
+                    if (candidateIdStr.empty() || candidateIdStr == nodeIdString)
+                        continue;
+                    Uuid candidateId(candidateIdStr);
+                    float cx = 0, cy = 0, cz = 0;
+                    if (!getNodePosition(snapshot, candidateId, cx, cy, cz))
+                        continue;
+                    float dx = nx - cx, dy = ny - cy, dz = nz - cz;
+                    float dist = dx * dx + dy * dy + dz * dz;
+                    if (dist < bestDist) {
+                        bestDist = dist;
+                        nearestBone = edgeBoneName;
+                    }
+                }
+            }
+
+            if (!nearestBone.empty()) {
+                NodeBoneInfluence influence(nearestBone);
+                nodeBoneInfluences[nodeId] = influence;
+                dust3dDebug << "Single node" << nodeIdString.c_str()
+                            << "inherited bone from nearest edge node:" << nearestBone.c_str();
+            }
             continue;
         }
 
@@ -517,6 +583,66 @@ bool RigGenerator::computeVertexBoneBindings(Object* object,
 
     m_errorMessage = "";
     return true;
+}
+
+void RigGenerator::attachSingleNodesToBone(const Snapshot* snapshot,
+    const std::string& boneName,
+    const std::set<Uuid>& boneEdgeNodes,
+    const std::set<Uuid>& allEdgeNodes,
+    std::vector<std::vector<Uuid>>& nodeChains)
+{
+    // Collect all nodes in the snapshot
+    for (const auto& nodePair : snapshot->nodes) {
+        Uuid nodeId(nodePair.first);
+
+        // Skip nodes that already participate in any bone edge
+        if (allEdgeNodes.count(nodeId))
+            continue;
+
+        // This is an isolated node (no edge with any bone name).
+        // Find the nearest node among this bone's edge-connected nodes.
+        float nx = 0, ny = 0, nz = 0;
+        if (!getNodePosition(snapshot, nodeId, nx, ny, nz))
+            continue;
+
+        float bestDist = std::numeric_limits<float>::max();
+        bool foundNearest = false;
+        for (const auto& candidateId : boneEdgeNodes) {
+            float cx = 0, cy = 0, cz = 0;
+            if (!getNodePosition(snapshot, candidateId, cx, cy, cz))
+                continue;
+            float dx = nx - cx, dy = ny - cy, dz = nz - cz;
+            float dist = dx * dx + dy * dy + dz * dz;
+            if (dist < bestDist) {
+                bestDist = dist;
+                foundNearest = true;
+            }
+        }
+
+        if (foundNearest) {
+            // Also verify this bone is truly the nearest bone overall:
+            // compare bestDist against nearest node in allEdgeNodes minus boneEdgeNodes.
+            bool nearerBoneExists = false;
+            for (const auto& candidateId : allEdgeNodes) {
+                if (boneEdgeNodes.count(candidateId))
+                    continue;
+                float cx = 0, cy = 0, cz = 0;
+                if (!getNodePosition(snapshot, candidateId, cx, cy, cz))
+                    continue;
+                float dx = nx - cx, dy = ny - cy, dz = nz - cz;
+                float dist = dx * dx + dy * dy + dz * dz;
+                if (dist < bestDist) {
+                    nearerBoneExists = true;
+                    break;
+                }
+            }
+            if (!nearerBoneExists) {
+                dust3dDebug << "Single node" << nodePair.first.c_str()
+                            << "attached to bone" << boneName.c_str();
+                nodeChains.push_back({ nodeId });
+            }
+        }
+    }
 }
 
 bool RigGenerator::extractNodeChainsForBone(const Snapshot* snapshot,

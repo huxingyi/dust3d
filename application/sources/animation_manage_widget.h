@@ -172,6 +172,16 @@ private:
     QLabel* m_pectoralPhaseOffsetLabel = nullptr;
     QWidget* m_pelvicPhaseOffsetRow = nullptr;
     QLabel* m_pelvicPhaseOffsetLabel = nullptr;
+    // Quadruped walk parameter sliders
+    QSlider* m_spineFlexSlider = nullptr;
+    QSlider* m_tailSwaySlider = nullptr;
+
+    // Quadruped walk parameter rows and labels
+    QWidget* m_spineFlexRow = nullptr;
+    QLabel* m_spineFlexLabel = nullptr;
+    QWidget* m_tailSwayRow = nullptr;
+    QLabel* m_tailSwayLabel = nullptr;
+
     QCheckBox* m_useFabrikCheck = nullptr;
     QCheckBox* m_planeStabilizationCheck = nullptr;
     QCheckBox* m_hideBonesCheck = nullptr;

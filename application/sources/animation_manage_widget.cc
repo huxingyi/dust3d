@@ -224,6 +224,17 @@ void AnimationManageWidget::createParameterWidgets()
     m_rubUpOffsetRow = rubUpOffsetPair.first;
     m_rubUpOffsetLabel = rubUpOffsetPair.second;
 
+    // Quadruped walk parameters
+    m_spineFlexSlider = new QSlider;
+    m_tailSwaySlider = new QSlider;
+
+    auto spineFlexPair = makeSliderRow(tr("Spine Flex"), m_spineFlexSlider, 100);
+    m_spineFlexRow = spineFlexPair.first;
+    m_spineFlexLabel = spineFlexPair.second;
+    auto tailSwayPair = makeSliderRow(tr("Tail Sway"), m_tailSwaySlider, 100);
+    m_tailSwayRow = tailSwayPair.first;
+    m_tailSwayLabel = tailSwayPair.second;
+
     // Insect die parameters
     m_dieLengthStiffnessSlider = new QSlider;
     m_dieParentStiffnessSlider = new QSlider;
@@ -356,6 +367,10 @@ void AnimationManageWidget::createParameterWidgets()
         connect(m_gaitSpeedSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
         connect(m_rubForwardOffsetSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
         connect(m_rubUpOffsetSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+
+        // Quadruped walk parameter connections
+        connect(m_spineFlexSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_tailSwaySlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
 
         // Insect die parameter connections
         connect(m_dieLengthStiffnessSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
@@ -525,9 +540,14 @@ void AnimationManageWidget::updateVisibleParameters(const QString& animationType
     setParameterRowVisible(m_pectoralPhaseOffsetRow, m_pectoralPhaseOffsetLabel, false);
     setParameterRowVisible(m_pelvicPhaseOffsetRow, m_pelvicPhaseOffsetLabel, false);
 
+    // Hide quadruped parameter rows
+    setParameterRowVisible(m_spineFlexRow, m_spineFlexLabel, false);
+    setParameterRowVisible(m_tailSwayRow, m_tailSwayLabel, false);
+
     // useFabrikIk and planeStabilization are only relevant for animation types that use IK
     bool showIkParams = (animationType == "InsectWalk" || animationType == "InsectForward"
-        || animationType == "InsectAttack" || animationType == "InsectRubHands");
+        || animationType == "InsectAttack" || animationType == "InsectRubHands"
+        || animationType == "QuadrupedWalk");
     if (m_useFabrikCheck)
         m_useFabrikCheck->setVisible(showIkParams);
     if (m_planeStabilizationCheck)
@@ -579,6 +599,13 @@ void AnimationManageWidget::updateVisibleParameters(const QString& animationType
         setParameterRowVisible(m_gaitSpeedRow, m_gaitSpeedLabel, true);
         setParameterRowVisible(m_rubForwardOffsetRow, m_rubForwardOffsetLabel, true);
         setParameterRowVisible(m_rubUpOffsetRow, m_rubUpOffsetLabel, true);
+    } else if (animationType == "QuadrupedWalk") {
+        setParameterRowVisible(m_stepLengthRow, m_stepLengthLabel, true);
+        setParameterRowVisible(m_stepHeightRow, m_stepHeightLabel, true);
+        setParameterRowVisible(m_bodyBobRow, m_bodyBobLabel, true);
+        setParameterRowVisible(m_gaitSpeedRow, m_gaitSpeedLabel, true);
+        setParameterRowVisible(m_spineFlexRow, m_spineFlexLabel, true);
+        setParameterRowVisible(m_tailSwayRow, m_tailSwayLabel, true);
     }
 }
 
@@ -603,6 +630,10 @@ void AnimationManageWidget::updateAnimationNameForRigType(const QString& rigType
     } else if (rigType.compare("Fish", Qt::CaseInsensitive) == 0) {
         m_animationNameCombo->addItem("FishForward");
         m_animationNameCombo->addItem("FishDie");
+        m_animationNameCombo->setEnabled(true);
+        m_addAnimationButton->setEnabled(true);
+    } else if (rigType.compare("Quadruped", Qt::CaseInsensitive) == 0) {
+        m_animationNameCombo->addItem("QuadrupedWalk");
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);
     } else {
@@ -632,6 +663,12 @@ void AnimationManageWidget::updateAnimationParamsFromWidgets()
     m_animationParams.setValue("rubUpOffsetFactor", m_rubUpOffsetSlider->value() / 100.0);
     m_animationParams.setBool("useFabrikIk", m_useFabrikCheck->isChecked());
     m_animationParams.setBool("planeStabilization", m_planeStabilizationCheck->isChecked());
+
+    // Quadruped walk parameters
+    if (m_spineFlexSlider)
+        m_animationParams.setValue("spineFlexFactor", m_spineFlexSlider->value() / 100.0);
+    if (m_tailSwaySlider)
+        m_animationParams.setValue("tailSwayFactor", m_tailSwaySlider->value() / 100.0);
 
     // Common parameters
     if (m_durationSpinBox)
@@ -1075,6 +1112,12 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
     m_rubForwardOffsetSlider->blockSignals(true);
     m_rubUpOffsetSlider->blockSignals(true);
 
+    // Block signals for quadruped parameters
+    if (m_spineFlexSlider)
+        m_spineFlexSlider->blockSignals(true);
+    if (m_tailSwaySlider)
+        m_tailSwaySlider->blockSignals(true);
+
     if (m_durationSpinBox)
         m_durationSpinBox->blockSignals(true);
     if (m_frameCountSpinBox)
@@ -1129,6 +1172,12 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
     m_useFabrikCheck->setChecked(params.getBool("useFabrikIk", true));
     m_planeStabilizationCheck->setChecked(params.getBool("planeStabilization", true));
 
+    // Load quadruped walk parameters
+    if (m_spineFlexSlider)
+        m_spineFlexSlider->setValue(static_cast<int>(params.getValue("spineFlexFactor", 1.0) * 100));
+    if (m_tailSwaySlider)
+        m_tailSwaySlider->setValue(static_cast<int>(params.getValue("tailSwayFactor", 1.0) * 100));
+
     if (m_durationSpinBox)
         m_durationSpinBox->setValue(params.getValue("durationSeconds", 1.0));
     if (m_frameCountSpinBox)
@@ -1182,6 +1231,12 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
     m_planeStabilizationCheck->blockSignals(false);
     m_rubForwardOffsetSlider->blockSignals(false);
     m_rubUpOffsetSlider->blockSignals(false);
+
+    // Unblock signals for quadruped parameters
+    if (m_spineFlexSlider)
+        m_spineFlexSlider->blockSignals(false);
+    if (m_tailSwaySlider)
+        m_tailSwaySlider->blockSignals(false);
 
     if (m_durationSpinBox)
         m_durationSpinBox->blockSignals(false);

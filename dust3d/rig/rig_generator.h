@@ -143,6 +143,14 @@ private:
 
     // Helper: Get bone name from edge (or empty string if not assigned)
     std::string getEdgeBoneName(const std::map<std::string, std::string>* edge);
+
+    // Helper: Find isolated nodes (no edges with any bone name) that are nearest
+    // to the given bone's edge-connected nodes, and append them as single-node chains.
+    void attachSingleNodesToBone(const Snapshot* snapshot,
+        const std::string& boneName,
+        const std::set<Uuid>& boneEdgeNodes,
+        const std::set<Uuid>& allEdgeNodes,
+        std::vector<std::vector<Uuid>>& nodeChains);
 };
 
 }
