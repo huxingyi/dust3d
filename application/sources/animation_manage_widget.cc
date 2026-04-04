@@ -261,23 +261,23 @@ void AnimationManageWidget::createParameterWidgets()
     m_fishDieSpinDecayRow = fishDieSpinDecayPair.first;
     m_fishDieSpinDecayLabel = fishDieSpinDecayPair.second;
 
-    auto dieLengthStiffnessPair = makeSliderRow(tr("Die Length Stiffness"), m_dieLengthStiffnessSlider, 90, 10, 200);
+    auto dieLengthStiffnessPair = makeSliderRow(tr("Length Stiffness"), m_dieLengthStiffnessSlider, 90, 10, 200);
     m_dieLengthStiffnessRow = dieLengthStiffnessPair.first;
     m_dieLengthStiffnessLabel = dieLengthStiffnessPair.second;
 
-    auto dieParentStiffnessPair = makeSliderRow(tr("Die Parent Stiffness"), m_dieParentStiffnessSlider, 80, 10, 200);
+    auto dieParentStiffnessPair = makeSliderRow(tr("Parent Stiffness"), m_dieParentStiffnessSlider, 80, 10, 200);
     m_dieParentStiffnessRow = dieParentStiffnessPair.first;
     m_dieParentStiffnessLabel = dieParentStiffnessPair.second;
 
-    auto dieMaxJointAnglePair = makeSliderRow(tr("Die Max Joint Angle"), m_dieMaxJointAngleSlider, 120, 60, 180);
+    auto dieMaxJointAnglePair = makeSliderRow(tr("Max Joint Angle"), m_dieMaxJointAngleSlider, 120, 60, 180);
     m_dieMaxJointAngleRow = dieMaxJointAnglePair.first;
     m_dieMaxJointAngleLabel = dieMaxJointAnglePair.second;
 
-    auto dieDampingPair = makeSliderRow(tr("Die Damping"), m_dieDampingSlider, 95, 50, 99);
+    auto dieDampingPair = makeSliderRow(tr("Damping"), m_dieDampingSlider, 95, 50, 99);
     m_dieDampingRow = dieDampingPair.first;
     m_dieDampingLabel = dieDampingPair.second;
 
-    auto dieGroundBouncePair = makeSliderRow(tr("Die Ground Bounce"), m_dieGroundBounceSlider, 22, 0, 100);
+    auto dieGroundBouncePair = makeSliderRow(tr("Ground Bounce"), m_dieGroundBounceSlider, 22, 0, 100);
     m_dieGroundBounceRow = dieGroundBouncePair.first;
     m_dieGroundBounceLabel = dieGroundBouncePair.second;
 
