@@ -73,6 +73,22 @@ For each part:
 
 > **Tip:** For left-side parts that will be mirrored, place the nodes slightly to the left of `originX` in the front view so they sit on the correct side.
 
+### Node Placement Constraints (from mesh engine internals)
+
+The tube mesh builder has specific constraints that, if violated, cause mesh artifacts or failures:
+
+1. **Minimum radius**: Never use a radius below `0.002`. The engine has a hard floor of `0.001`; staying above `0.002` avoids degenerate geometry.
+
+2. **Node spacing rule**: The distance between two consecutive nodes should be **≥ the sum of their radii**. When `radius[i] + radius[j] > distance(i, j)`, the engine inserts interpolation nodes automatically, but excessive overlap (ratio > 2:1) can produce poor topology. **Best practice:** ensure `distance ≥ 1.2 × (radius_a + radius_b)`.
+
+3. **Minimum 2 nodes per part**: A part with only 1 node becomes a sphere (via `turnSingleNodeToTube()`). This works but produces limited geometry. Use at least 2 nodes per part for proper tube generation.
+
+4. **Avoid collinear nodes**: If all nodes in a part lie on a straight line with no curvature, the base normal calculation may fail (cross products become zero). Add a slight offset (even 0.001 in any axis) to at least one interior node to break collinearity. The engine falls back to a perpendicular vector, but this fallback can produce unexpected cut face orientations.
+
+5. **Avoid duplicate positions**: Two nodes at the exact same position produce a zero-length edge, which breaks direction calculations. Always maintain at least `0.002` distance between consecutive nodes.
+
+6. **Radius transitions**: Avoid abrupt radius changes (e.g., 0.1 → 0.01 between adjacent nodes). The engine interpolates linearly, and extreme jumps create pinched or stepped surfaces. Transition gradually over 2–3 nodes.
+
 ---
 
 ## Step 4 — Write the XML File
@@ -146,8 +162,9 @@ def new_id():
 | `xMirrored` | `true` / `false` | Mirror part across the X (left-right) axis |
 | `deformThickness` | `0.0` – `2.0` (default `1.0`) | Scale the tube along the **normal of the part's base plane**. The base plane is derived by averaging the angles of all edges in the tube (e.g., for an arm, the plane roughly follows the limb's swept surface), and `deformThickness` pushes in/out along that plane's normal |
 | `deformWidth` | `0.0` – `2.0` (default `1.0`) | Scale the tube **within** the base plane, orthogonal to `deformThickness` |
-| `cutFace` | `Quad`, `Triangle`, `Pentagon`, `Hexagon` | Cross-section polygon shape; `Pentagon` gives more organic results for tails/limbs |
+| `cutFace` | `Quad`, `Triangle`, `Pentagon`, `Hexagon` | Cross-section polygon shape. More sides = smoother tube. `Quad` (default) is good for bodies; `Pentagon`/`Hexagon` for organic limbs/tails |
 | `chamfered` | `true` / `false` | Chamfer (bevel) the edges of the `cutFace` cross-section along the tube |
+| `baseNormalRotation` | `0.0` – `6.283` (radians) | Rotates the cut face orientation around the tube axis. Default `0.0`. Useful for flattening a limb in a specific direction (e.g., set to `1.5708` for 90° rotation) |
 
 ### 4.4 Edges
 
@@ -230,6 +247,26 @@ grep -c '^f ' result.obj   # face count
 For visual verification, open `result.obj` in any 3D viewer that supports orthographic projection (e.g., Blender, MeshLab) and switch to front orthographic and right orthographic cameras. The silhouette should roughly match the front and side views of the reference image.
 
 If a part is too flat or too round, adjust `deformThickness` or `deformWidth` on that part and re-run.
+
+### Troubleshooting Common Failures
+
+| Symptom | Likely Cause | Fix |
+|---------|-------------|-----|
+| Empty or near-empty `.obj` (0 faces) | Boolean CSG failed due to non-manifold input | Increase spacing between overlapping parts; reduce radii at junctions |
+| Missing part in output | Part mesh is degenerate (collinear nodes, zero radius) | Add slight offset to break collinearity; ensure radii ≥ 0.002 |
+| Jagged seam between two parts | Seam recombiner couldn't bridge edge loops | Increase radius at the junction point so tubes overlap cleanly; ensure parts share a clear overlap region |
+| Part looks twisted | Base normal picked an unexpected orientation | Add `baseNormalRotation` to the part, or add a slight bend to the node chain |
+| Mesh has holes | Boolean produced broken triangles that were discarded | Simplify geometry near the problem area; reduce node count or radius near the junction |
+| Mirrored part intersects body | xMirrored nodes too close to originX | Move mirrored-part nodes further from originX (increase lateral offset) |
+
+### Best Practices for Reliable Mesh Generation
+
+1. **Start simple**: Begin with 3–5 nodes per part and add detail after confirming the base mesh generates correctly.
+2. **Overlap parts intentionally**: Where two parts connect (e.g., leg to body), ensure the first node of the child part sits **inside** the parent tube. The boolean union will merge them cleanly.
+3. **Use `subdived="true"` and `rounded="true"`** on all parts for smoother results. Only disable for angular/mechanical shapes.
+4. **Test incrementally**: Add one part at a time and regenerate to isolate which part causes failures.
+5. **Keep radii proportional**: A good rule of thumb is that the smallest radius in the model should be no less than 1/20th of the largest radius.
+6. **Prefer fewer, well-placed nodes** over many tightly-packed nodes. Dense node chains (spacing < 2× radius) trigger heavy interpolation and can slow generation or produce artifacts.
 
 ---
 
