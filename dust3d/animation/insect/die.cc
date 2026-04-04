@@ -46,6 +46,7 @@ namespace insect {
             Vector3 headVel;
             Vector3 tailVel;
             Vector3 restDir;
+            Vector3 parentOffset;
             float restLength;
             float radius;
         };
@@ -91,6 +92,7 @@ namespace insect {
             info.tailVel = Vector3(0.0, 0.0, 0.0);
             info.restLength = std::max(static_cast<float>((info.tailPos - info.headPos).length()), 1e-6f);
             info.restDir = (info.tailPos - info.headPos).normalized();
+            info.parentOffset = Vector3(0.0, 0.0, 0.0);
             info.radius = b.capsuleRadius;
             bones.push_back(info);
         }
@@ -123,6 +125,17 @@ namespace insect {
             ragdollBoneIdx.clear();
             for (size_t i = 0; i < bones.size(); ++i)
                 ragdollBoneIdx[bones[i].name] = i;
+        }
+
+        // Capture the rest-pose offset from each bone head to its parent tail.
+        for (auto& bone : bones) {
+            if (!bone.parent.empty()) {
+                auto parentIt = ragdollBoneIdx.find(bone.parent);
+                if (parentIt != ragdollBoneIdx.end()) {
+                    const auto& parent = bones[parentIt->second];
+                    bone.parentOffset = bone.headPos - parent.tailPos;
+                }
+            }
         }
 
         // Compute gravity direction from the rest pose: the average unit vector from
@@ -287,7 +300,8 @@ namespace insect {
                         auto parentIt = ragdollBoneIdx.find(bone.parent);
                         if (parentIt != ragdollBoneIdx.end()) {
                             auto& parent = bones[parentIt->second];
-                            Vector3 jointError = parent.tailPos - bone.headPos;
+                            Vector3 desiredHeadPos = parent.tailPos + bone.parentOffset;
+                            Vector3 jointError = desiredHeadPos - bone.headPos;
                             Vector3 correction = jointError * parentJointStiffness;
                             bone.headPos += correction;
                             parent.tailPos -= correction;
