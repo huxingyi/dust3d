@@ -235,6 +235,25 @@ void AnimationManageWidget::createParameterWidgets()
     m_tailSwayRow = tailSwayPair.first;
     m_tailSwayLabel = tailSwayPair.second;
 
+    // Quadruped run parameters
+    m_suspensionSlider = new QSlider;
+    m_forwardLeanSlider = new QSlider;
+    m_strideFrequencySlider = new QSlider;
+
+    auto suspensionPair = makeSliderRow(tr("Suspension"), m_suspensionSlider, 100);
+    m_suspensionRow = suspensionPair.first;
+    m_suspensionLabel = suspensionPair.second;
+    auto forwardLeanPair = makeSliderRow(tr("Forward Lean"), m_forwardLeanSlider, 100);
+    m_forwardLeanRow = forwardLeanPair.first;
+    m_forwardLeanLabel = forwardLeanPair.second;
+    auto strideFrequencyPair = makeSliderRow(tr("Stride Frequency"), m_strideFrequencySlider, 100);
+    m_strideFrequencyRow = strideFrequencyPair.first;
+    m_strideFrequencyLabel = strideFrequencyPair.second;
+    m_boundSlider = new QSlider;
+    auto boundPair = makeSliderRow(tr("Bound"), m_boundSlider, 0, 0, 100);
+    m_boundRow = boundPair.first;
+    m_boundLabel = boundPair.second;
+
     // Insect die parameters
     m_dieLengthStiffnessSlider = new QSlider;
     m_dieParentStiffnessSlider = new QSlider;
@@ -371,6 +390,12 @@ void AnimationManageWidget::createParameterWidgets()
         // Quadruped walk parameter connections
         connect(m_spineFlexSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
         connect(m_tailSwaySlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+
+        // Quadruped run parameter connections
+        connect(m_suspensionSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_forwardLeanSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_strideFrequencySlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_boundSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
 
         // Insect die parameter connections
         connect(m_dieLengthStiffnessSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
@@ -543,11 +568,15 @@ void AnimationManageWidget::updateVisibleParameters(const QString& animationType
     // Hide quadruped parameter rows
     setParameterRowVisible(m_spineFlexRow, m_spineFlexLabel, false);
     setParameterRowVisible(m_tailSwayRow, m_tailSwayLabel, false);
+    setParameterRowVisible(m_suspensionRow, m_suspensionLabel, false);
+    setParameterRowVisible(m_forwardLeanRow, m_forwardLeanLabel, false);
+    setParameterRowVisible(m_strideFrequencyRow, m_strideFrequencyLabel, false);
+    setParameterRowVisible(m_boundRow, m_boundLabel, false);
 
     // useFabrikIk and planeStabilization are only relevant for animation types that use IK
     bool showIkParams = (animationType == "InsectWalk" || animationType == "InsectForward"
         || animationType == "InsectAttack" || animationType == "InsectRubHands"
-        || animationType == "QuadrupedWalk");
+        || animationType == "QuadrupedWalk" || animationType == "QuadrupedRun");
     if (m_useFabrikCheck)
         m_useFabrikCheck->setVisible(showIkParams);
     if (m_planeStabilizationCheck)
@@ -606,6 +635,17 @@ void AnimationManageWidget::updateVisibleParameters(const QString& animationType
         setParameterRowVisible(m_gaitSpeedRow, m_gaitSpeedLabel, true);
         setParameterRowVisible(m_spineFlexRow, m_spineFlexLabel, true);
         setParameterRowVisible(m_tailSwayRow, m_tailSwayLabel, true);
+    } else if (animationType == "QuadrupedRun") {
+        setParameterRowVisible(m_stepLengthRow, m_stepLengthLabel, true);
+        setParameterRowVisible(m_stepHeightRow, m_stepHeightLabel, true);
+        setParameterRowVisible(m_bodyBobRow, m_bodyBobLabel, true);
+        setParameterRowVisible(m_gaitSpeedRow, m_gaitSpeedLabel, true);
+        setParameterRowVisible(m_spineFlexRow, m_spineFlexLabel, true);
+        setParameterRowVisible(m_tailSwayRow, m_tailSwayLabel, true);
+        setParameterRowVisible(m_suspensionRow, m_suspensionLabel, true);
+        setParameterRowVisible(m_forwardLeanRow, m_forwardLeanLabel, true);
+        setParameterRowVisible(m_strideFrequencyRow, m_strideFrequencyLabel, true);
+        setParameterRowVisible(m_boundRow, m_boundLabel, true);
     }
 }
 
@@ -634,6 +674,7 @@ void AnimationManageWidget::updateAnimationNameForRigType(const QString& rigType
         m_addAnimationButton->setEnabled(true);
     } else if (rigType.compare("Quadruped", Qt::CaseInsensitive) == 0) {
         m_animationNameCombo->addItem("QuadrupedWalk");
+        m_animationNameCombo->addItem("QuadrupedRun");
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);
     } else {
@@ -669,6 +710,16 @@ void AnimationManageWidget::updateAnimationParamsFromWidgets()
         m_animationParams.setValue("spineFlexFactor", m_spineFlexSlider->value() / 100.0);
     if (m_tailSwaySlider)
         m_animationParams.setValue("tailSwayFactor", m_tailSwaySlider->value() / 100.0);
+
+    // Quadruped run parameters
+    if (m_suspensionSlider)
+        m_animationParams.setValue("suspensionFactor", m_suspensionSlider->value() / 100.0);
+    if (m_forwardLeanSlider)
+        m_animationParams.setValue("forwardLeanFactor", m_forwardLeanSlider->value() / 100.0);
+    if (m_strideFrequencySlider)
+        m_animationParams.setValue("strideFrequencyFactor", m_strideFrequencySlider->value() / 100.0);
+    if (m_boundSlider)
+        m_animationParams.setValue("boundFactor", m_boundSlider->value() / 100.0);
 
     // Common parameters
     if (m_durationSpinBox)
@@ -1177,6 +1228,16 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
         m_spineFlexSlider->setValue(static_cast<int>(params.getValue("spineFlexFactor", 1.0) * 100));
     if (m_tailSwaySlider)
         m_tailSwaySlider->setValue(static_cast<int>(params.getValue("tailSwayFactor", 1.0) * 100));
+
+    // Load quadruped run parameters
+    if (m_suspensionSlider)
+        m_suspensionSlider->setValue(static_cast<int>(params.getValue("suspensionFactor", 1.0) * 100));
+    if (m_forwardLeanSlider)
+        m_forwardLeanSlider->setValue(static_cast<int>(params.getValue("forwardLeanFactor", 1.0) * 100));
+    if (m_strideFrequencySlider)
+        m_strideFrequencySlider->setValue(static_cast<int>(params.getValue("strideFrequencyFactor", 1.0) * 100));
+    if (m_boundSlider)
+        m_boundSlider->setValue(static_cast<int>(params.getValue("boundFactor", 0.0) * 100));
 
     if (m_durationSpinBox)
         m_durationSpinBox->setValue(params.getValue("durationSeconds", 1.0));

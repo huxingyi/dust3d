@@ -182,6 +182,22 @@ private:
     QWidget* m_tailSwayRow = nullptr;
     QLabel* m_tailSwayLabel = nullptr;
 
+    // Quadruped run parameter sliders
+    QSlider* m_suspensionSlider = nullptr;
+    QSlider* m_forwardLeanSlider = nullptr;
+    QSlider* m_strideFrequencySlider = nullptr;
+    QSlider* m_boundSlider = nullptr;
+
+    // Quadruped run parameter rows and labels
+    QWidget* m_suspensionRow = nullptr;
+    QLabel* m_suspensionLabel = nullptr;
+    QWidget* m_forwardLeanRow = nullptr;
+    QLabel* m_forwardLeanLabel = nullptr;
+    QWidget* m_strideFrequencyRow = nullptr;
+    QLabel* m_strideFrequencyLabel = nullptr;
+    QWidget* m_boundRow = nullptr;
+    QLabel* m_boundLabel = nullptr;
+
     QCheckBox* m_useFabrikCheck = nullptr;
     QCheckBox* m_planeStabilizationCheck = nullptr;
     QCheckBox* m_hideBonesCheck = nullptr;
