@@ -198,6 +198,19 @@ private:
     QWidget* m_boundRow = nullptr;
     QLabel* m_boundLabel = nullptr;
 
+    // Quadruped die parameter sliders
+    QSlider* m_quadDieCollapseSpeedSlider = nullptr;
+    QSlider* m_quadDieLegSpreadSlider = nullptr;
+    QSlider* m_quadDieRollIntensitySlider = nullptr;
+
+    // Quadruped die parameter rows and labels
+    QWidget* m_quadDieCollapseSpeedRow = nullptr;
+    QLabel* m_quadDieCollapseSpeedLabel = nullptr;
+    QWidget* m_quadDieLegSpreadRow = nullptr;
+    QLabel* m_quadDieLegSpreadLabel = nullptr;
+    QWidget* m_quadDieRollIntensityRow = nullptr;
+    QLabel* m_quadDieRollIntensityLabel = nullptr;
+
     QCheckBox* m_useFabrikCheck = nullptr;
     QCheckBox* m_planeStabilizationCheck = nullptr;
     QCheckBox* m_hideBonesCheck = nullptr;

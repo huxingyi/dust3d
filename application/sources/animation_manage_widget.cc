@@ -254,6 +254,23 @@ void AnimationManageWidget::createParameterWidgets()
     m_boundRow = boundPair.first;
     m_boundLabel = boundPair.second;
 
+    // Quadruped die parameters
+    m_quadDieCollapseSpeedSlider = new QSlider;
+    m_quadDieLegSpreadSlider = new QSlider;
+    m_quadDieRollIntensitySlider = new QSlider;
+
+    auto quadDieCollapseSpeedPair = makeSliderRow(tr("Collapse Speed"), m_quadDieCollapseSpeedSlider, 100, 10, 300);
+    m_quadDieCollapseSpeedRow = quadDieCollapseSpeedPair.first;
+    m_quadDieCollapseSpeedLabel = quadDieCollapseSpeedPair.second;
+
+    auto quadDieLegSpreadPair = makeSliderRow(tr("Leg Spread"), m_quadDieLegSpreadSlider, 100, 10, 300);
+    m_quadDieLegSpreadRow = quadDieLegSpreadPair.first;
+    m_quadDieLegSpreadLabel = quadDieLegSpreadPair.second;
+
+    auto quadDieRollIntensityPair = makeSliderRow(tr("Roll Intensity"), m_quadDieRollIntensitySlider, 100, 0, 300);
+    m_quadDieRollIntensityRow = quadDieRollIntensityPair.first;
+    m_quadDieRollIntensityLabel = quadDieRollIntensityPair.second;
+
     // Insect die parameters
     m_dieLengthStiffnessSlider = new QSlider;
     m_dieParentStiffnessSlider = new QSlider;
@@ -403,6 +420,11 @@ void AnimationManageWidget::createParameterWidgets()
         connect(m_dieMaxJointAngleSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
         connect(m_dieDampingSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
         connect(m_dieGroundBounceSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+
+        // Quadruped die parameter connections
+        connect(m_quadDieCollapseSpeedSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_quadDieLegSpreadSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_quadDieRollIntensitySlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
 
         // Fish die parameter connections
         connect(m_fishDieHitIntensitySlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
@@ -573,6 +595,11 @@ void AnimationManageWidget::updateVisibleParameters(const QString& animationType
     setParameterRowVisible(m_strideFrequencyRow, m_strideFrequencyLabel, false);
     setParameterRowVisible(m_boundRow, m_boundLabel, false);
 
+    // Hide quadruped die parameter rows
+    setParameterRowVisible(m_quadDieCollapseSpeedRow, m_quadDieCollapseSpeedLabel, false);
+    setParameterRowVisible(m_quadDieLegSpreadRow, m_quadDieLegSpreadLabel, false);
+    setParameterRowVisible(m_quadDieRollIntensityRow, m_quadDieRollIntensityLabel, false);
+
     // useFabrikIk and planeStabilization are only relevant for animation types that use IK
     bool showIkParams = (animationType == "InsectWalk" || animationType == "InsectForward"
         || animationType == "InsectAttack" || animationType == "InsectRubHands"
@@ -646,6 +673,15 @@ void AnimationManageWidget::updateVisibleParameters(const QString& animationType
         setParameterRowVisible(m_forwardLeanRow, m_forwardLeanLabel, true);
         setParameterRowVisible(m_strideFrequencyRow, m_strideFrequencyLabel, true);
         setParameterRowVisible(m_boundRow, m_boundLabel, true);
+    } else if (animationType == "QuadrupedDie") {
+        setParameterRowVisible(m_quadDieCollapseSpeedRow, m_quadDieCollapseSpeedLabel, true);
+        setParameterRowVisible(m_quadDieLegSpreadRow, m_quadDieLegSpreadLabel, true);
+        setParameterRowVisible(m_quadDieRollIntensityRow, m_quadDieRollIntensityLabel, true);
+        setParameterRowVisible(m_dieLengthStiffnessRow, m_dieLengthStiffnessLabel, true);
+        setParameterRowVisible(m_dieParentStiffnessRow, m_dieParentStiffnessLabel, true);
+        setParameterRowVisible(m_dieMaxJointAngleRow, m_dieMaxJointAngleLabel, true);
+        setParameterRowVisible(m_dieDampingRow, m_dieDampingLabel, true);
+        setParameterRowVisible(m_dieGroundBounceRow, m_dieGroundBounceLabel, true);
     }
 }
 
@@ -675,6 +711,7 @@ void AnimationManageWidget::updateAnimationNameForRigType(const QString& rigType
     } else if (rigType.compare("Quadruped", Qt::CaseInsensitive) == 0) {
         m_animationNameCombo->addItem("QuadrupedWalk");
         m_animationNameCombo->addItem("QuadrupedRun");
+        m_animationNameCombo->addItem("QuadrupedDie");
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);
     } else {
@@ -738,6 +775,13 @@ void AnimationManageWidget::updateAnimationParamsFromWidgets()
         m_animationParams.setValue("damping", m_dieDampingSlider->value() / 100.0);
     if (m_dieGroundBounceSlider)
         m_animationParams.setValue("groundBounce", m_dieGroundBounceSlider->value() / 100.0);
+    // Quadruped die parameters
+    if (m_quadDieCollapseSpeedSlider)
+        m_animationParams.setValue("collapseSpeed", m_quadDieCollapseSpeedSlider->value() / 100.0);
+    if (m_quadDieLegSpreadSlider)
+        m_animationParams.setValue("legSpreadFactor", m_quadDieLegSpreadSlider->value() / 100.0);
+    if (m_quadDieRollIntensitySlider)
+        m_animationParams.setValue("rollIntensity", m_quadDieRollIntensitySlider->value() / 100.0);
     // Fish animation parameters - only save if sliders exist
     if (m_swimSpeedSlider)
         m_animationParams.setValue("swimSpeed", m_swimSpeedSlider->value() / 100.0);
@@ -1186,6 +1230,14 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
     if (m_dieGroundBounceSlider)
         m_dieGroundBounceSlider->blockSignals(true);
 
+    // Block signals for quadruped die parameters
+    if (m_quadDieCollapseSpeedSlider)
+        m_quadDieCollapseSpeedSlider->blockSignals(true);
+    if (m_quadDieLegSpreadSlider)
+        m_quadDieLegSpreadSlider->blockSignals(true);
+    if (m_quadDieRollIntensitySlider)
+        m_quadDieRollIntensitySlider->blockSignals(true);
+
     // Block signals for fish parameters
     if (m_swimSpeedSlider)
         m_swimSpeedSlider->blockSignals(true);
@@ -1256,6 +1308,14 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
     if (m_dieGroundBounceSlider)
         m_dieGroundBounceSlider->setValue(static_cast<int>(params.getValue("groundBounce", 0.22) * 100));
 
+    // Load quadruped die parameter values
+    if (m_quadDieCollapseSpeedSlider)
+        m_quadDieCollapseSpeedSlider->setValue(static_cast<int>(params.getValue("collapseSpeed", 1.0) * 100));
+    if (m_quadDieLegSpreadSlider)
+        m_quadDieLegSpreadSlider->setValue(static_cast<int>(params.getValue("legSpreadFactor", 1.0) * 100));
+    if (m_quadDieRollIntensitySlider)
+        m_quadDieRollIntensitySlider->setValue(static_cast<int>(params.getValue("rollIntensity", 1.0) * 100));
+
     // Load fish parameter values (using default values matching the animation implementation)
     if (m_swimSpeedSlider)
         m_swimSpeedSlider->setValue(static_cast<int>(params.getValue("swimSpeed", 1.0) * 100));
@@ -1315,6 +1375,14 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
         m_dieDampingSlider->blockSignals(false);
     if (m_dieGroundBounceSlider)
         m_dieGroundBounceSlider->blockSignals(false);
+
+    // Unblock signals for quadruped die parameters
+    if (m_quadDieCollapseSpeedSlider)
+        m_quadDieCollapseSpeedSlider->blockSignals(false);
+    if (m_quadDieLegSpreadSlider)
+        m_quadDieLegSpreadSlider->blockSignals(false);
+    if (m_quadDieRollIntensitySlider)
+        m_quadDieRollIntensitySlider->blockSignals(false);
 
     // Unblock signals for fish parameters
     if (m_swimSpeedSlider)
