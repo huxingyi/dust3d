@@ -42,7 +42,9 @@ static bool targetPartIsModel(const Snapshot* snapshot, const std::string& partI
     if (partIt == snapshot->parts.end())
         return false;
 
-    return PartTarget::Model == PartTargetFromString(String::valueOrEmpty(partIt->second, "target").c_str());
+    auto target = PartTargetFromString(String::valueOrEmpty(partIt->second, "target").c_str());
+
+    return PartTarget::Model == target || PartTarget::StitchingLine == target;
 }
 
 static bool nodeBelongsToModelPart(const Snapshot* snapshot, const Uuid& nodeId)
