@@ -49,6 +49,5 @@
         <file>resources/rig_insect.xml</file>
         <file>resources/rig_snake.xml</file>
         <file>resources/rig_spider.xml</file>
-        <file>resources/rig_dragon.xml</file>
     </qresource>
 </RCC>

@@ -1697,8 +1697,7 @@ void Document::loadRigStructures()
         ":/resources/rig_fish.xml",
         ":/resources/rig_insect.xml",
         ":/resources/rig_snake.xml",
-        ":/resources/rig_spider.xml",
-        ":/resources/rig_dragon.xml"
+        ":/resources/rig_spider.xml"
     };
 
     for (const auto& filePath : rigFiles) {
