@@ -1854,7 +1854,7 @@ void SkeletonGraphicsWidget::shortcutScaleSelectedByMinus1()
         return;
 
     if ((Document::EditMode::Select == m_document->editMode) && hasSelection()) {
-        scaleSelected(-1);
+        scaleSelected(-10);
         emit groupOperationAdded();
     }
 }
@@ -1865,7 +1865,7 @@ void SkeletonGraphicsWidget::shortcutScaleSelectedBy1()
         return;
 
     if ((Document::EditMode::Select == m_document->editMode) && hasSelection()) {
-        scaleSelected(1);
+        scaleSelected(10);
         emit groupOperationAdded();
     }
 }
