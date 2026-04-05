@@ -1691,7 +1691,7 @@ void Document::rigReady()
 void Document::loadRigStructures()
 {
     const QStringList rigFiles = {
-        ":/resources/rig_humanoid.xml",
+        ":/resources/rig_biped.xml",
         ":/resources/rig_quadruped.xml",
         ":/resources/rig_bird.xml",
         ":/resources/rig_fish.xml",

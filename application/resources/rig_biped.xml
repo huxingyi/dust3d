@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rig type="Biped">
+    <description>Standard biped rig with arms, legs, spine, head, and tail. Suitable for humanoids, dinosaurs, birds, and other two-legged creatures.</description>
+    
+    <bone name="Root" parent="">
+        <position x="0" y="0" z="0"/>
+        <endPosition x="0" y="0.9" z="0"/>
+    </bone>
+    
+    <bone name="Hips" parent="Root">
+        <position x="0" y="0.9" z="0"/>
+        <endPosition x="0" y="1.0" z="0"/>
+    </bone>
+    
+    <!-- Spine -->
+    <bone name="Spine" parent="Hips">
+        <position x="0" y="1.0" z="0"/>
+        <endPosition x="0" y="1.2" z="0"/>
+    </bone>
+    
+    <bone name="Chest" parent="Spine">
+        <position x="0" y="1.2" z="0"/>
+        <endPosition x="0" y="1.4" z="0"/>
+    </bone>
+    
+    <bone name="Neck" parent="Chest">
+        <position x="0" y="1.4" z="0"/>
+        <endPosition x="0" y="1.6" z="0"/>
+    </bone>
+    
+    <bone name="Head" parent="Neck">
+        <position x="0" y="1.6" z="0"/>
+        <endPosition x="0" y="1.85" z="0"/>
+    </bone>
+    
+    <!-- Left Arm -->
+    <bone name="LeftShoulder" parent="Chest">
+        <position x="0.2" y="1.4" z="0"/>
+        <endPosition x="0.35" y="1.35" z="0"/>
+    </bone>
+    
+    <bone name="LeftUpperArm" parent="LeftShoulder">
+        <position x="0.35" y="1.35" z="0"/>
+        <endPosition x="0.6" y="1.15" z="0"/>
+    </bone>
+    
+    <bone name="LeftLowerArm" parent="LeftUpperArm">
+        <position x="0.6" y="1.15" z="0"/>
+        <endPosition x="0.8" y="0.95" z="0"/>
+    </bone>
+    
+    <bone name="LeftHand" parent="LeftLowerArm">
+        <position x="0.8" y="0.95" z="0"/>
+        <endPosition x="0.95" y="0.9" z="0"/>
+    </bone>
+    
+    <!-- Right Arm -->
+    <bone name="RightShoulder" parent="Chest">
+        <position x="-0.2" y="1.4" z="0"/>
+        <endPosition x="-0.35" y="1.35" z="0"/>
+    </bone>
+    
+    <bone name="RightUpperArm" parent="RightShoulder">
+        <position x="-0.35" y="1.35" z="0"/>
+        <endPosition x="-0.6" y="1.15" z="0"/>
+    </bone>
+    
+    <bone name="RightLowerArm" parent="RightUpperArm">
+        <position x="-0.6" y="1.15" z="0"/>
+        <endPosition x="-0.8" y="0.95" z="0"/>
+    </bone>
+    
+    <bone name="RightHand" parent="RightLowerArm">
+        <position x="-0.8" y="0.95" z="0"/>
+        <endPosition x="-0.95" y="0.9" z="0"/>
+    </bone>
+    
+    <!-- Left Leg -->
+    <bone name="LeftUpperLeg" parent="Hips">
+        <position x="0.1" y="0.9" z="0"/>
+        <endPosition x="0.1" y="0.5" z="0"/>
+    </bone>
+    
+    <bone name="LeftLowerLeg" parent="LeftUpperLeg">
+        <position x="0.1" y="0.5" z="0"/>
+        <endPosition x="0.1" y="0.1" z="0"/>
+    </bone>
+    
+    <bone name="LeftFoot" parent="LeftLowerLeg">
+        <position x="0.1" y="0.1" z="0"/>
+        <endPosition x="0.1" y="0.0" z="0.2"/>
+    </bone>
+    
+    <!-- Right Leg -->
+    <bone name="RightUpperLeg" parent="Hips">
+        <position x="-0.1" y="0.9" z="0"/>
+        <endPosition x="-0.1" y="0.5" z="0"/>
+    </bone>
+    
+    <bone name="RightLowerLeg" parent="RightUpperLeg">
+        <position x="-0.1" y="0.5" z="0"/>
+        <endPosition x="-0.1" y="0.1" z="0"/>
+    </bone>
+    
+    <bone name="RightFoot" parent="RightLowerLeg">
+        <position x="-0.1" y="0.1" z="0"/>
+        <endPosition x="-0.1" y="0.0" z="0.2"/>
+    </bone>
+    
+    <!-- Tail -->
+    <bone name="TailBase" parent="Hips">
+        <position x="0" y="0.95" z="-0.15"/>
+        <endPosition x="0" y="0.9" z="-0.35"/>
+    </bone>
+    
+    <bone name="TailMid" parent="TailBase">
+        <position x="0" y="0.9" z="-0.35"/>
+        <endPosition x="0" y="0.85" z="-0.55"/>
+    </bone>
+    
+    <bone name="TailTip" parent="TailMid">
+        <position x="0" y="0.85" z="-0.55"/>
+        <endPosition x="0" y="0.8" z="-0.75"/>
+    </bone>
+    
+</rig>

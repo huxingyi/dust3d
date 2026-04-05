@@ -224,6 +224,41 @@ void AnimationManageWidget::createParameterWidgets()
     m_rubUpOffsetRow = rubUpOffsetPair.first;
     m_rubUpOffsetLabel = rubUpOffsetPair.second;
 
+    // Biped walk parameters
+    m_armSwingSlider = new QSlider;
+    m_hipSwaySlider = new QSlider;
+    m_hipRotateSlider = new QSlider;
+    m_bipedSpineFlexSlider = new QSlider;
+    m_headBobSlider = new QSlider;
+    m_kneeBendSlider = new QSlider;
+    m_leanForwardSlider = new QSlider;
+    m_bouncinessSlider = new QSlider;
+
+    auto armSwingPair = makeSliderRow(tr("Arm Swing"), m_armSwingSlider, 100);
+    m_armSwingRow = armSwingPair.first;
+    m_armSwingLabel = armSwingPair.second;
+    auto hipSwayPair = makeSliderRow(tr("Hip Sway"), m_hipSwaySlider, 100);
+    m_hipSwayRow = hipSwayPair.first;
+    m_hipSwayLabel = hipSwayPair.second;
+    auto hipRotatePair = makeSliderRow(tr("Hip Rotate"), m_hipRotateSlider, 100);
+    m_hipRotateRow = hipRotatePair.first;
+    m_hipRotateLabel = hipRotatePair.second;
+    auto bipedSpineFlexPair = makeSliderRow(tr("Spine Counter"), m_bipedSpineFlexSlider, 100);
+    m_bipedSpineFlexRow = bipedSpineFlexPair.first;
+    m_bipedSpineFlexLabel = bipedSpineFlexPair.second;
+    auto headBobPair = makeSliderRow(tr("Head Stabilize"), m_headBobSlider, 100);
+    m_headBobRow = headBobPair.first;
+    m_headBobLabel = headBobPair.second;
+    auto kneeBendPair = makeSliderRow(tr("Knee Bend"), m_kneeBendSlider, 100);
+    m_kneeBendRow = kneeBendPair.first;
+    m_kneeBendLabel = kneeBendPair.second;
+    auto leanForwardPair = makeSliderRow(tr("Lean Forward"), m_leanForwardSlider, 100, 0, 200);
+    m_leanForwardRow = leanForwardPair.first;
+    m_leanForwardLabel = leanForwardPair.second;
+    auto bouncinessPair = makeSliderRow(tr("Bounciness"), m_bouncinessSlider, 100, 0, 300);
+    m_bouncinessRow = bouncinessPair.first;
+    m_bouncinessLabel = bouncinessPair.second;
+
     // Quadruped walk parameters
     m_spineFlexSlider = new QSlider;
     m_tailSwaySlider = new QSlider;
@@ -595,6 +630,16 @@ void AnimationManageWidget::updateVisibleParameters(const QString& animationType
     setParameterRowVisible(m_strideFrequencyRow, m_strideFrequencyLabel, false);
     setParameterRowVisible(m_boundRow, m_boundLabel, false);
 
+    // Hide biped walk parameter rows
+    setParameterRowVisible(m_armSwingRow, m_armSwingLabel, false);
+    setParameterRowVisible(m_hipSwayRow, m_hipSwayLabel, false);
+    setParameterRowVisible(m_hipRotateRow, m_hipRotateLabel, false);
+    setParameterRowVisible(m_bipedSpineFlexRow, m_bipedSpineFlexLabel, false);
+    setParameterRowVisible(m_headBobRow, m_headBobLabel, false);
+    setParameterRowVisible(m_kneeBendRow, m_kneeBendLabel, false);
+    setParameterRowVisible(m_leanForwardRow, m_leanForwardLabel, false);
+    setParameterRowVisible(m_bouncinessRow, m_bouncinessLabel, false);
+
     // Hide quadruped die parameter rows
     setParameterRowVisible(m_quadDieCollapseSpeedRow, m_quadDieCollapseSpeedLabel, false);
     setParameterRowVisible(m_quadDieLegSpreadRow, m_quadDieLegSpreadLabel, false);
@@ -603,7 +648,8 @@ void AnimationManageWidget::updateVisibleParameters(const QString& animationType
     // useFabrikIk and planeStabilization are only relevant for animation types that use IK
     bool showIkParams = (animationType == "InsectWalk" || animationType == "InsectForward"
         || animationType == "InsectAttack" || animationType == "InsectRubHands"
-        || animationType == "QuadrupedWalk" || animationType == "QuadrupedRun");
+        || animationType == "QuadrupedWalk" || animationType == "QuadrupedRun"
+        || animationType == "BipedWalk");
     if (m_useFabrikCheck)
         m_useFabrikCheck->setVisible(showIkParams);
     if (m_planeStabilizationCheck)
@@ -673,6 +719,19 @@ void AnimationManageWidget::updateVisibleParameters(const QString& animationType
         setParameterRowVisible(m_forwardLeanRow, m_forwardLeanLabel, true);
         setParameterRowVisible(m_strideFrequencyRow, m_strideFrequencyLabel, true);
         setParameterRowVisible(m_boundRow, m_boundLabel, true);
+    } else if (animationType == "BipedWalk") {
+        setParameterRowVisible(m_stepLengthRow, m_stepLengthLabel, true);
+        setParameterRowVisible(m_stepHeightRow, m_stepHeightLabel, true);
+        setParameterRowVisible(m_bodyBobRow, m_bodyBobLabel, true);
+        setParameterRowVisible(m_gaitSpeedRow, m_gaitSpeedLabel, true);
+        setParameterRowVisible(m_armSwingRow, m_armSwingLabel, true);
+        setParameterRowVisible(m_hipSwayRow, m_hipSwayLabel, true);
+        setParameterRowVisible(m_hipRotateRow, m_hipRotateLabel, true);
+        setParameterRowVisible(m_bipedSpineFlexRow, m_bipedSpineFlexLabel, true);
+        setParameterRowVisible(m_headBobRow, m_headBobLabel, true);
+        setParameterRowVisible(m_kneeBendRow, m_kneeBendLabel, true);
+        setParameterRowVisible(m_leanForwardRow, m_leanForwardLabel, true);
+        setParameterRowVisible(m_bouncinessRow, m_bouncinessLabel, true);
     } else if (animationType == "QuadrupedDie") {
         setParameterRowVisible(m_quadDieCollapseSpeedRow, m_quadDieCollapseSpeedLabel, true);
         setParameterRowVisible(m_quadDieLegSpreadRow, m_quadDieLegSpreadLabel, true);
@@ -706,6 +765,10 @@ void AnimationManageWidget::updateAnimationNameForRigType(const QString& rigType
     } else if (rigType.compare("Fish", Qt::CaseInsensitive) == 0) {
         m_animationNameCombo->addItem("FishForward");
         m_animationNameCombo->addItem("FishDie");
+        m_animationNameCombo->setEnabled(true);
+        m_addAnimationButton->setEnabled(true);
+    } else if (rigType.compare("Biped", Qt::CaseInsensitive) == 0) {
+        m_animationNameCombo->addItem("BipedWalk");
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);
     } else if (rigType.compare("Quadruped", Qt::CaseInsensitive) == 0) {
@@ -747,6 +810,24 @@ void AnimationManageWidget::updateAnimationParamsFromWidgets()
         m_animationParams.setValue("spineFlexFactor", m_spineFlexSlider->value() / 100.0);
     if (m_tailSwaySlider)
         m_animationParams.setValue("tailSwayFactor", m_tailSwaySlider->value() / 100.0);
+
+    // Biped walk parameters
+    if (m_armSwingSlider)
+        m_animationParams.setValue("armSwingFactor", m_armSwingSlider->value() / 100.0);
+    if (m_hipSwaySlider)
+        m_animationParams.setValue("hipSwayFactor", m_hipSwaySlider->value() / 100.0);
+    if (m_hipRotateSlider)
+        m_animationParams.setValue("hipRotateFactor", m_hipRotateSlider->value() / 100.0);
+    if (m_bipedSpineFlexSlider)
+        m_animationParams.setValue("spineFlexFactor", m_bipedSpineFlexSlider->value() / 100.0);
+    if (m_headBobSlider)
+        m_animationParams.setValue("headBobFactor", m_headBobSlider->value() / 100.0);
+    if (m_kneeBendSlider)
+        m_animationParams.setValue("kneeBendFactor", m_kneeBendSlider->value() / 100.0);
+    if (m_leanForwardSlider)
+        m_animationParams.setValue("leanForwardFactor", m_leanForwardSlider->value() / 100.0);
+    if (m_bouncinessSlider)
+        m_animationParams.setValue("bouncinessFactor", m_bouncinessSlider->value() / 100.0);
 
     // Quadruped run parameters
     if (m_suspensionSlider)

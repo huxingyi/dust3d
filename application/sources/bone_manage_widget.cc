@@ -239,7 +239,7 @@ void BoneManageWidget::loadRigStructures()
 {
     // Load all rig structure XML files from resources
     const QStringList rigFiles = {
-        ":/resources/rig_humanoid.xml",
+        ":/resources/rig_biped.xml",
         ":/resources/rig_quadruped.xml",
         ":/resources/rig_bird.xml",
         ":/resources/rig_fish.xml",

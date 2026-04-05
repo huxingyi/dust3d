@@ -172,6 +172,34 @@ private:
     QLabel* m_pectoralPhaseOffsetLabel = nullptr;
     QWidget* m_pelvicPhaseOffsetRow = nullptr;
     QLabel* m_pelvicPhaseOffsetLabel = nullptr;
+    // Biped walk parameter sliders
+    QSlider* m_armSwingSlider = nullptr;
+    QSlider* m_hipSwaySlider = nullptr;
+    QSlider* m_hipRotateSlider = nullptr;
+    QSlider* m_bipedSpineFlexSlider = nullptr;
+    QSlider* m_headBobSlider = nullptr;
+    QSlider* m_kneeBendSlider = nullptr;
+    QSlider* m_leanForwardSlider = nullptr;
+    QSlider* m_bouncinessSlider = nullptr;
+
+    // Biped walk parameter rows and labels
+    QWidget* m_armSwingRow = nullptr;
+    QLabel* m_armSwingLabel = nullptr;
+    QWidget* m_hipSwayRow = nullptr;
+    QLabel* m_hipSwayLabel = nullptr;
+    QWidget* m_hipRotateRow = nullptr;
+    QLabel* m_hipRotateLabel = nullptr;
+    QWidget* m_bipedSpineFlexRow = nullptr;
+    QLabel* m_bipedSpineFlexLabel = nullptr;
+    QWidget* m_headBobRow = nullptr;
+    QLabel* m_headBobLabel = nullptr;
+    QWidget* m_kneeBendRow = nullptr;
+    QLabel* m_kneeBendLabel = nullptr;
+    QWidget* m_leanForwardRow = nullptr;
+    QLabel* m_leanForwardLabel = nullptr;
+    QWidget* m_bouncinessRow = nullptr;
+    QLabel* m_bouncinessLabel = nullptr;
+
     // Quadruped walk parameter sliders
     QSlider* m_spineFlexSlider = nullptr;
     QSlider* m_tailSwaySlider = nullptr;
