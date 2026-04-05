@@ -40,6 +40,7 @@
 //   - footRollFactor:      heel-strike to toe-off roll intensity
 //   - leanForwardFactor:   forward torso lean (heavy/fast creatures)
 //   - bouncinessFactory:   extra vertical bounce (cartoon style)
+//   - tailSwayFactor:      tail side-to-side sway amplitude
 //   - useFabrikIk:         use FABRIK IK solver (vs CCD)
 //   - planeStabilization:  constrain legs to their rest-pose sagittal plane
 
@@ -220,6 +221,8 @@ namespace biped {
         double headCounterAmp = 0.02 * headBobFactor;
         double kneeBendExtra = avgLegLength * 0.015 * kneeBendFactor;
         double leanAngle = 0.03 * leanForwardFactor; // radians forward lean
+        double tailSwayFactor = parameters.getValue("tailSwayFactor", 1.0);
+        double tailSwayAmp = 0.08 * tailSwayFactor;
 
         // Ground level: lowest foot tip
         double leftFootUp = Vector3::dotProduct(leftLegRest.footEnd, upDir);
@@ -310,6 +313,17 @@ namespace biped {
             computeBodyBone("Chest", spineYaw * 0.5);
             computeBodyBone("Neck", -spineYaw * 0.3, headPitch);
             computeBodyBone("Head", 0.0, headPitch);
+
+            // Tail sway / wave
+            static const char* tailBones[] = { "TailBase", "TailMid", "TailTip" };
+            double tailPhase = t * 2.0 * Math::Pi;
+            for (int ti = 0; ti < 3; ++ti) {
+                if (boneIdx.count(tailBones[ti]) == 0)
+                    continue;
+                double attenuation = 1.0 - ti * 0.28;
+                double tailAngle = tailSwayAmp * attenuation * std::sin(tailPhase - ti * 0.75 + 0.2);
+                computeBodyBone(tailBones[ti], tailAngle);
+            }
 
             // -------------------------------------------------------
             // 4c. Leg IK: compute foot targets then solve

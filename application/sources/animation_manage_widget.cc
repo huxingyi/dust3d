@@ -732,6 +732,7 @@ void AnimationManageWidget::updateVisibleParameters(const QString& animationType
         setParameterRowVisible(m_kneeBendRow, m_kneeBendLabel, true);
         setParameterRowVisible(m_leanForwardRow, m_leanForwardLabel, true);
         setParameterRowVisible(m_bouncinessRow, m_bouncinessLabel, true);
+        setParameterRowVisible(m_tailSwayRow, m_tailSwayLabel, true);
     } else if (animationType == "QuadrupedDie") {
         setParameterRowVisible(m_quadDieCollapseSpeedRow, m_quadDieCollapseSpeedLabel, true);
         setParameterRowVisible(m_quadDieLegSpreadRow, m_quadDieLegSpreadLabel, true);
