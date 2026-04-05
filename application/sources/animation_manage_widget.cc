@@ -12,6 +12,7 @@
 #include <QLineEdit>
 #include <QListWidget>
 #include <QListWidgetItem>
+#include <QScrollArea>
 #include <QVBoxLayout>
 #include <algorithm>
 
@@ -435,15 +436,22 @@ void AnimationManageWidget::createParameterWidgets()
     m_pelvicPhaseOffsetRow = pelvicPhaseOffsetPair.first;
     m_pelvicPhaseOffsetLabel = pelvicPhaseOffsetPair.second;
 
-    groupBoxLayout->addLayout(parameterLayout);
-
     m_useFabrikCheck = new QCheckBox("Use FABRIK IK");
     m_useFabrikCheck->setChecked(true);
+    parameterLayout->addRow(m_useFabrikCheck);
+
     m_planeStabilizationCheck = new QCheckBox("Plane Stabilization");
     m_planeStabilizationCheck->setChecked(true);
+    parameterLayout->addRow(m_planeStabilizationCheck);
 
-    groupBoxLayout->addWidget(m_useFabrikCheck);
-    groupBoxLayout->addWidget(m_planeStabilizationCheck);
+    // Add parameter layout to a scrollable area to prevent uncontrolled growth
+    QWidget* scrollAreaWidget = new QWidget;
+    scrollAreaWidget->setLayout(parameterLayout);
+    QScrollArea* parameterScrollArea = new QScrollArea;
+    parameterScrollArea->setWidget(scrollAreaWidget);
+    parameterScrollArea->setWidgetResizable(true);
+    groupBoxLayout->addWidget(parameterScrollArea, 1);
+    groupBoxLayout->addStretch();
 
     topLayout->addWidget(m_parametersGroupBox);
     m_parametersGroupBox->hide();
