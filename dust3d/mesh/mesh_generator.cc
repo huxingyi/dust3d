@@ -34,6 +34,7 @@
 #include <dust3d/mesh/tube_mesh_builder.h>
 #include <dust3d/rig/rig_generator.h>
 #include <functional>
+#include <limits>
 #include <memory>
 
 namespace dust3d {
@@ -318,13 +319,14 @@ void MeshGenerator::cutFaceStringToCutTemplate(const std::string& cutFaceString,
                 // choose the minimal angle, angle: (0, 0 -> -1, -1) to the direction
                 const Vector3 referenceDirection = Vector3(-1, -1, 0).normalized();
                 int choosenEndpoint = -1;
-                float choosenRadian = 0;
+                float choosenRadian = std::numeric_limits<float>::max();
                 for (int i = 0; i < (int)endpointNodes.size(); ++i) {
                     const auto& it = endpointNodes[i];
                     Vector2 direction2d = (Vector2(std::get<1>(it.second), std::get<2>(it.second)) - center);
                     Vector3 direction = Vector3(direction2d.x(), direction2d.y(), 0).normalized();
                     float radian = Vector3::angleBetween(referenceDirection, direction);
-                    if (-1 == choosenEndpoint || radian < choosenRadian) {
+                    // Use strict less-than for deterministic first-match behavior
+                    if (radian < choosenRadian) {
                         choosenRadian = radian;
                         choosenEndpoint = i;
                     }
@@ -370,7 +372,7 @@ void MeshGenerator::cutFaceStringToCutTemplate(const std::string& cutFaceString,
     }
 }
 
-void MeshGenerator::flattenLinks(const std::unordered_map<size_t, size_t>& links,
+void MeshGenerator::flattenLinks(const std::map<size_t, size_t>& links,
     std::vector<size_t>* array,
     bool* isCircle)
 {
@@ -379,7 +381,7 @@ void MeshGenerator::flattenLinks(const std::unordered_map<size_t, size_t>& links
     for (const auto& it : links) {
         if (links.end() == links.find(it.second)) {
             *isCircle = false;
-            std::unordered_map<size_t, size_t> reversedLinks;
+            std::map<size_t, size_t> reversedLinks;
             for (const auto& it : links)
                 reversedLinks.insert({ it.second, it.first });
             size_t current = it.second;
@@ -434,7 +436,7 @@ bool MeshGenerator::fetchPartOrderedNodes(const std::string& partIdString, bool 
         return false;
     }
 
-    std::unordered_map<size_t, size_t> builderNodeLinks;
+    std::map<size_t, size_t> builderNodeLinks;
     for (const auto& edgeIdString : m_partEdgeIds[partIdString]) {
         auto findEdge = m_snapshot->edges.find(edgeIdString);
         if (findEdge == m_snapshot->edges.end()) {

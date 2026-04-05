@@ -41,14 +41,14 @@ ReTriangulator::ReTriangulator(const std::vector<Vector3>& points,
 }
 
 void ReTriangulator::setEdges(const std::vector<Vector3>& points,
-    const std::unordered_map<size_t, std::unordered_set<size_t>>* neighborMapFrom3)
+    const std::map<size_t, std::set<size_t>>* neighborMapFrom3)
 {
     Vector3::project(points, &m_points,
         m_projectNormal, m_projectAxis, m_projectOrigin);
     m_neighborMapFrom3 = neighborMapFrom3;
 }
 
-void ReTriangulator::lookupPolylinesFromNeighborMap(const std::unordered_map<size_t, std::unordered_set<size_t>>& neighborMap)
+void ReTriangulator::lookupPolylinesFromNeighborMap(const std::map<size_t, std::set<size_t>>& neighborMap)
 {
     std::vector<size_t> endpoints;
     endpoints.reserve(neighborMap.size());
@@ -63,7 +63,7 @@ void ReTriangulator::lookupPolylinesFromNeighborMap(const std::unordered_map<siz
         }
     }
 
-    std::unordered_set<size_t> visited;
+    std::set<size_t> visited;
     for (const auto& startEndpoint : endpoints) {
         if (visited.find(startEndpoint) != visited.end())
             continue;
@@ -192,7 +192,7 @@ bool ReTriangulator::buildPolygons()
     }
 
     // Make polyline link
-    std::unordered_map<size_t, size_t> pointRingPositionMap;
+    std::map<size_t, size_t> pointRingPositionMap;
     for (size_t i = 0; i < ringPoints.size(); ++i) {
         const auto& it = ringPoints[i];
         if (-1 == it.polylineIndex)
@@ -209,7 +209,7 @@ bool ReTriangulator::buildPolygons()
         it.linkTo = findLinkTo->second;
     }
 
-    std::unordered_set<size_t> visited;
+    std::set<size_t> visited;
     std::queue<size_t> startQueue;
     startQueue.push(0);
     while (!startQueue.empty()) {

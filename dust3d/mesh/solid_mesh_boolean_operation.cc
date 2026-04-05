@@ -123,10 +123,10 @@ bool SolidMeshBooleanOperation::intersectTwoFaces(size_t firstIndex, size_t seco
     return true;
 }
 
-bool SolidMeshBooleanOperation::buildPolygonsFromEdges(const std::unordered_map<size_t, std::unordered_set<size_t>>& edges,
+bool SolidMeshBooleanOperation::buildPolygonsFromEdges(const std::map<size_t, std::set<size_t>>& edges,
     std::vector<std::vector<size_t>>& polygons)
 {
-    std::unordered_set<size_t> visited;
+    std::set<size_t> visited;
     for (const auto& edge : edges) {
         const auto& startEndpoint = edge.first;
         if (visited.find(startEndpoint) != visited.end())
@@ -167,13 +167,13 @@ bool SolidMeshBooleanOperation::buildPolygonsFromEdges(const std::unordered_map<
 }
 
 void SolidMeshBooleanOperation::buildFaceGroups(const std::vector<std::vector<size_t>>& intersections,
-    const std::unordered_map<uint64_t, size_t>& halfEdges,
+    const std::map<uint64_t, size_t>& halfEdges,
     const std::vector<std::vector<size_t>>& triangles,
     size_t remainingStartTriangleIndex,
     size_t remainingTriangleCount,
     std::vector<std::vector<size_t>>& triangleGroups)
 {
-    std::unordered_map<uint64_t, size_t> halfEdgeGroupMap;
+    std::map<uint64_t, size_t> halfEdgeGroupMap;
     size_t groupIndex = 0;
     std::queue<std::pair<size_t, size_t>> waitQ;
     for (const auto& intersection : intersections) {
@@ -200,7 +200,7 @@ void SolidMeshBooleanOperation::buildFaceGroups(const std::vector<std::vector<si
     }
 
     triangleGroups.resize(groupIndex);
-    std::unordered_set<size_t> visitedTriangles;
+    std::set<size_t> visitedTriangles;
 
     auto processQueue = [&](std::queue<std::pair<size_t, size_t>>& q) {
         while (!q.empty()) {
@@ -250,8 +250,8 @@ size_t SolidMeshBooleanOperation::addNewPoint(const Vector3& position)
 }
 
 bool SolidMeshBooleanOperation::addUnintersectedTriangles(const SolidMesh* mesh,
-    const std::unordered_set<size_t>& usedFaces,
-    std::unordered_map<uint64_t, size_t>* halfEdges)
+    const std::set<size_t>& usedFaces,
+    std::map<uint64_t, size_t>* halfEdges)
 {
     size_t oldVertexCount = m_newVertices.size();
     const auto& vertices = *mesh->vertices();
@@ -292,11 +292,11 @@ bool SolidMeshBooleanOperation::combine()
     struct IntersectedContext {
         std::vector<Vector3> points;
         std::map<PositionKey, size_t> positionMap;
-        std::unordered_map<size_t, std::unordered_set<size_t>> neighborMap;
+        std::map<size_t, std::set<size_t>> neighborMap;
     };
 
-    std::unordered_map<size_t, IntersectedContext> firstTriangleIntersectedContext;
-    std::unordered_map<size_t, IntersectedContext> secondTriangleIntersectedContext;
+    std::map<size_t, IntersectedContext> firstTriangleIntersectedContext;
+    std::map<size_t, IntersectedContext> secondTriangleIntersectedContext;
 
     auto addIntersectedPoint = [](IntersectedContext& context, const Vector3& position) {
         auto insertResult = context.positionMap.insert({ PositionKey(position), context.points.size() });
@@ -333,36 +333,36 @@ bool SolidMeshBooleanOperation::combine()
         }
     }
 
-    std::unordered_map<size_t, std::unordered_set<size_t>> firstEdges;
-    std::unordered_map<size_t, std::unordered_set<size_t>> secondEdges;
+    std::map<size_t, std::set<size_t>> firstEdges;
+    std::map<size_t, std::set<size_t>> secondEdges;
     std::vector<std::vector<size_t>> firstIntersections;
     std::vector<std::vector<size_t>> secondIntersections;
-    std::unordered_map<uint64_t, size_t> firstHalfEdges;
-    std::unordered_map<uint64_t, size_t> secondHalfEdges;
+    std::map<uint64_t, size_t> firstHalfEdges;
+    std::map<uint64_t, size_t> secondHalfEdges;
 
-    auto reTriangulate = [&](const std::unordered_map<size_t, IntersectedContext>& context,
+    auto reTriangulate = [&](const std::map<size_t, IntersectedContext>& context,
                              const SolidMesh* mesh,
                              size_t startOldVertex,
-                             std::unordered_map<size_t, std::unordered_set<size_t>>& edges,
-                             std::unordered_map<uint64_t, size_t>& halfEdges) {
-        for (const auto& it : context) {
-            const auto& triangle = (*mesh->triangles())[it.first];
+                             std::map<size_t, std::set<size_t>>& edges,
+                             std::map<uint64_t, size_t>& halfEdges) {
+        for (const auto& [contextKey, it] : context) {
+            const auto& triangle = (*mesh->triangles())[contextKey];
             ReTriangulator reTriangulator({ (*mesh->vertices())[triangle[0]],
                                               (*mesh->vertices())[triangle[1]],
                                               (*mesh->vertices())[triangle[2]] },
-                (*mesh->triangleNormals())[it.first]);
-            reTriangulator.setEdges(it.second.points,
-                &it.second.neighborMap);
+                (*mesh->triangleNormals())[contextKey]);
+            reTriangulator.setEdges(it.points,
+                &it.neighborMap);
             if (!reTriangulator.reTriangulate()) {
                 dust3dDebug << "Retriangle failed";
                 return false;
             }
             std::vector<size_t> newIndices;
-            newIndices.reserve(3 + it.second.points.size());
+            newIndices.reserve(3 + it.points.size());
             newIndices.push_back(startOldVertex + triangle[0]);
             newIndices.push_back(startOldVertex + triangle[1]);
             newIndices.push_back(startOldVertex + triangle[2]);
-            for (const auto& point : it.second.points)
+            for (const auto& point : it.points)
                 newIndices.push_back(addNewPoint(point));
             for (const auto& triangle : reTriangulator.triangles()) {
                 size_t newInsertedIndex = m_newTriangles.size();
@@ -380,10 +380,10 @@ bool SolidMeshBooleanOperation::combine()
                     dust3dDebug << "Found repeated halfedge:" << newInsertedTriangle[3] << "," << newInsertedTriangle[0];
                 }
             }
-            for (const auto& it : it.second.neighborMap) {
-                auto from = newIndices[it.first];
-                for (const auto& it2 : it.second) {
-                    auto to = newIndices[it2];
+            for (const auto& neighborIt : it.neighborMap) {
+                auto from = newIndices[neighborIt.first];
+                for (const auto& neighborIt2 : neighborIt.second) {
+                    auto to = newIndices[neighborIt2];
                     edges[from].insert(to);
                     edges[to].insert(from);
                 }

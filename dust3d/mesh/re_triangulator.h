@@ -25,8 +25,8 @@
 
 #include <dust3d/base/vector2.h>
 #include <dust3d/base/vector3.h>
-#include <unordered_map>
-#include <unordered_set>
+#include <map>
+#include <set>
 
 namespace dust3d {
 
@@ -35,7 +35,7 @@ public:
     ReTriangulator(const std::vector<Vector3>& points,
         const Vector3& normal);
     void setEdges(const std::vector<Vector3>& points,
-        const std::unordered_map<size_t, std::unordered_set<size_t>>* neighborMapFrom3);
+        const std::map<size_t, std::set<size_t>>* neighborMapFrom3);
     bool reTriangulate();
     const std::vector<std::vector<size_t>>& polygons() const;
     const std::vector<std::vector<size_t>>& triangles() const;
@@ -45,16 +45,16 @@ private:
     Vector3 m_projectOrigin;
     Vector3 m_projectNormal;
     std::vector<Vector2> m_points;
-    const std::unordered_map<size_t, std::unordered_set<size_t>>* m_neighborMapFrom3 = nullptr;
+    const std::map<size_t, std::set<size_t>>* m_neighborMapFrom3 = nullptr;
     std::vector<std::vector<size_t>> m_polylines;
     std::vector<std::vector<size_t>> m_innerPolygons;
     std::vector<std::vector<size_t>> m_polygons;
-    std::unordered_map<size_t, std::unordered_set<size_t>> m_innerParentsMap;
-    std::unordered_map<size_t, std::unordered_set<size_t>> m_innerChildrenMap;
-    std::unordered_map<size_t, std::vector<size_t>> m_polygonHoles;
+    std::map<size_t, std::set<size_t>> m_innerParentsMap;
+    std::map<size_t, std::set<size_t>> m_innerChildrenMap;
+    std::map<size_t, std::vector<size_t>> m_polygonHoles;
     std::vector<std::vector<size_t>> m_triangles;
 
-    void lookupPolylinesFromNeighborMap(const std::unordered_map<size_t, std::unordered_set<size_t>>& neighborMap);
+    void lookupPolylinesFromNeighborMap(const std::map<size_t, std::set<size_t>>& neighborMap);
     int attachPointToTriangleEdge(const Vector2& point);
     bool buildPolygons();
     void buildPolygonHierarchy();

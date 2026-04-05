@@ -20,10 +20,12 @@
  *  SOFTWARE.
  */
 
+#include <algorithm>
 #include <array>
 #include <dust3d/base/position_key.h>
 #include <dust3d/mesh/hole_wrapper.h>
 #include <dust3d/mesh/mesh_recombiner.h>
+#include <limits>
 #include <queue>
 #include <set>
 
@@ -323,6 +325,7 @@ size_t MeshRecombiner::nearestIndex(const Vector3& position, const std::vector<s
     size_t choosenIndex = 0;
     for (size_t i = 0; i < edgeLoop.size(); ++i) {
         float dist2 = ((*m_vertices)[edgeLoop[i]] - position).lengthSquared();
+        // Use only strictly less than to ensure deterministic first-match behavior
         if (dist2 < minDist2) {
             minDist2 = dist2;
             choosenIndex = i;
@@ -337,24 +340,75 @@ bool MeshRecombiner::bridge(const std::vector<size_t>& first, const std::vector<
     const std::vector<size_t>* small = &second;
     if (large->size() < small->size())
         std::swap(large, small);
+
+    if (small->size() < 3)
+        return false; // Need at least triangular loops
+
     std::vector<std::pair<size_t, size_t>> matchedPairs;
     std::map<size_t, size_t> nearestIndicesFromLargeToSmall;
+    std::map<size_t, bool> largeVertexMatched; // Track which large vertices are matched
+
+    // First pass: find best matches from small to large
     for (size_t i = 0; i < small->size(); ++i) {
         const auto& positionOnSmall = (*m_vertices)[(*small)[i]];
         size_t nearestIndexOnLarge = nearestIndex(positionOnSmall, *large);
-        auto matchResult = nearestIndicesFromLargeToSmall.find(nearestIndexOnLarge);
-        size_t nearestIndexOnSmall;
-        if (matchResult == nearestIndicesFromLargeToSmall.end()) {
-            const auto& positionOnLarge = (*m_vertices)[(*large)[nearestIndexOnLarge]];
-            nearestIndexOnSmall = nearestIndex(positionOnLarge, *small);
-            nearestIndicesFromLargeToSmall.insert({ nearestIndexOnLarge, nearestIndexOnSmall });
-        } else {
-            nearestIndexOnSmall = matchResult->second;
-        }
+
+        // Always record the bidirectional check, overwriting if we find a better one
+        const auto& positionOnLarge = (*m_vertices)[(*large)[nearestIndexOnLarge]];
+        size_t nearestIndexOnSmall = nearestIndex(positionOnLarge, *small);
+
+        // Use this match if it's bidirectional or if it's the best we can find
         if (nearestIndexOnSmall == i) {
-            matchedPairs.push_back({ nearestIndexOnSmall, nearestIndexOnLarge });
+            // Perfect bidirectional match
+            matchedPairs.push_back({ i, nearestIndexOnLarge });
+            largeVertexMatched[nearestIndexOnLarge] = true;
+        } else {
+            // Store for fallback matching below
+            nearestIndicesFromLargeToSmall[nearestIndexOnLarge] = i;
         }
     }
+
+    // If we don't have enough bidirectional matches, use the best nearby matches
+    // to ensure we always have valid pairs for bridging
+    if (matchedPairs.size() < 3) {
+        matchedPairs.clear();
+        largeVertexMatched.clear();
+
+        // Simpler matching: just find nearest from small to large
+        std::map<size_t, size_t> smallToLargeNearest;
+        for (size_t i = 0; i < small->size(); ++i) {
+            const auto& positionOnSmall = (*m_vertices)[(*small)[i]];
+            size_t nearestIndexOnLarge = nearestIndex(positionOnSmall, *large);
+            smallToLargeNearest[i] = nearestIndexOnLarge;
+        }
+
+        // Remove duplicates: keep only one small vertex per large vertex
+        std::map<size_t, size_t> largeToSmallBest;
+        for (const auto& kv : smallToLargeNearest) {
+            size_t smallIdx = kv.first;
+            size_t largeIdx = kv.second;
+
+            auto existingMatch = largeToSmallBest.find(largeIdx);
+            if (existingMatch == largeToSmallBest.end()) {
+                largeToSmallBest[largeIdx] = smallIdx;
+            } else {
+                // Keep the one with smaller index for determinism
+                if (smallIdx < existingMatch->second) {
+                    largeToSmallBest[largeIdx] = smallIdx;
+                }
+            }
+        }
+
+        for (const auto& kv : largeToSmallBest) {
+            matchedPairs.push_back({ kv.second, kv.first });
+        }
+    }
+
+    // Sort matched pairs by small index to ensure deterministic ordering
+    std::sort(matchedPairs.begin(), matchedPairs.end(),
+        [](const std::pair<size_t, size_t>& a, const std::pair<size_t, size_t>& b) {
+            return a.first < b.first;
+        });
 
     if (matchedPairs.empty())
         return false;
@@ -394,13 +448,16 @@ void MeshRecombiner::fillPairs(const std::vector<size_t>& small, const std::vect
 
     size_t smallIndex = 0;
     size_t largeIndex = 0;
+    const float ANGLE_EPSILON = 1e-5f;
     while (smallIndex + 1 < small.size() || largeIndex + 1 < large.size()) {
         if (smallIndex + 1 < small.size() && largeIndex + 1 < large.size()) {
             float angleOnSmallEdgeLoop = Vector3::angleBetween((*m_vertices)[large[largeIndex]] - (*m_vertices)[small[smallIndex]],
                 (*m_vertices)[small[smallIndex + 1]] - (*m_vertices)[small[smallIndex]]);
             float angleOnLargeEdgeLoop = Vector3::angleBetween((*m_vertices)[small[smallIndex]] - (*m_vertices)[large[largeIndex]],
                 (*m_vertices)[large[largeIndex + 1]] - (*m_vertices)[large[largeIndex]]);
-            if (angleOnSmallEdgeLoop < angleOnLargeEdgeLoop) {
+            // Use stricter comparison: only advance if clearly one is better
+            // This prevents oscillation at nearly-equal angles
+            if (angleOnSmallEdgeLoop + ANGLE_EPSILON < angleOnLargeEdgeLoop) {
                 m_regeneratedFaces.push_back({ small[smallIndex],
                     small[smallIndex + 1],
                     large[largeIndex] });
