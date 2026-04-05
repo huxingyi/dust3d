@@ -443,6 +443,16 @@ void AnimationManageWidget::createParameterWidgets()
         connect(m_spineFlexSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
         connect(m_tailSwaySlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
 
+        // Biped walk/run parameter connections
+        connect(m_armSwingSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_hipSwaySlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_hipRotateSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_bipedSpineFlexSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_headBobSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_kneeBendSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_leanForwardSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_bouncinessSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+
         // Quadruped run parameter connections
         connect(m_suspensionSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
         connect(m_forwardLeanSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
@@ -649,7 +659,7 @@ void AnimationManageWidget::updateVisibleParameters(const QString& animationType
     bool showIkParams = (animationType == "InsectWalk" || animationType == "InsectForward"
         || animationType == "InsectAttack" || animationType == "InsectRubHands"
         || animationType == "QuadrupedWalk" || animationType == "QuadrupedRun"
-        || animationType == "BipedWalk");
+        || animationType == "BipedWalk" || animationType == "BipedRun");
     if (m_useFabrikCheck)
         m_useFabrikCheck->setVisible(showIkParams);
     if (m_planeStabilizationCheck)
@@ -733,6 +743,22 @@ void AnimationManageWidget::updateVisibleParameters(const QString& animationType
         setParameterRowVisible(m_leanForwardRow, m_leanForwardLabel, true);
         setParameterRowVisible(m_bouncinessRow, m_bouncinessLabel, true);
         setParameterRowVisible(m_tailSwayRow, m_tailSwayLabel, true);
+    } else if (animationType == "BipedRun") {
+        setParameterRowVisible(m_stepLengthRow, m_stepLengthLabel, true);
+        setParameterRowVisible(m_stepHeightRow, m_stepHeightLabel, true);
+        setParameterRowVisible(m_bodyBobRow, m_bodyBobLabel, true);
+        setParameterRowVisible(m_gaitSpeedRow, m_gaitSpeedLabel, true);
+        setParameterRowVisible(m_armSwingRow, m_armSwingLabel, true);
+        setParameterRowVisible(m_hipSwayRow, m_hipSwayLabel, true);
+        setParameterRowVisible(m_hipRotateRow, m_hipRotateLabel, true);
+        setParameterRowVisible(m_bipedSpineFlexRow, m_bipedSpineFlexLabel, true);
+        setParameterRowVisible(m_headBobRow, m_headBobLabel, true);
+        setParameterRowVisible(m_kneeBendRow, m_kneeBendLabel, true);
+        setParameterRowVisible(m_leanForwardRow, m_leanForwardLabel, true);
+        setParameterRowVisible(m_bouncinessRow, m_bouncinessLabel, true);
+        setParameterRowVisible(m_tailSwayRow, m_tailSwayLabel, true);
+        setParameterRowVisible(m_suspensionRow, m_suspensionLabel, true);
+        setParameterRowVisible(m_strideFrequencyRow, m_strideFrequencyLabel, true);
     } else if (animationType == "QuadrupedDie") {
         setParameterRowVisible(m_quadDieCollapseSpeedRow, m_quadDieCollapseSpeedLabel, true);
         setParameterRowVisible(m_quadDieLegSpreadRow, m_quadDieLegSpreadLabel, true);
@@ -770,6 +796,7 @@ void AnimationManageWidget::updateAnimationNameForRigType(const QString& rigType
         m_addAnimationButton->setEnabled(true);
     } else if (rigType.compare("Biped", Qt::CaseInsensitive) == 0) {
         m_animationNameCombo->addItem("BipedWalk");
+        m_animationNameCombo->addItem("BipedRun");
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);
     } else if (rigType.compare("Quadruped", Qt::CaseInsensitive) == 0) {
