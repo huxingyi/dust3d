@@ -239,6 +239,22 @@ private:
     QWidget* m_quadDieRollIntensityRow = nullptr;
     QLabel* m_quadDieRollIntensityLabel = nullptr;
 
+    // Spider walk parameter sliders
+    QSlider* m_spiderLegSpreadSlider = nullptr;
+    QSlider* m_spiderAbdomenSwaySlider = nullptr;
+    QSlider* m_spiderPedipalpSwaySlider = nullptr;
+    QSlider* m_spiderBodyYawSlider = nullptr;
+
+    // Spider walk parameter rows and labels
+    QWidget* m_spiderLegSpreadRow = nullptr;
+    QLabel* m_spiderLegSpreadLabel = nullptr;
+    QWidget* m_spiderAbdomenSwayRow = nullptr;
+    QLabel* m_spiderAbdomenSwayLabel = nullptr;
+    QWidget* m_spiderPedipalpSwayRow = nullptr;
+    QLabel* m_spiderPedipalpSwayLabel = nullptr;
+    QWidget* m_spiderBodyYawRow = nullptr;
+    QLabel* m_spiderBodyYawLabel = nullptr;
+
     QCheckBox* m_useFabrikCheck = nullptr;
     QCheckBox* m_planeStabilizationCheck = nullptr;
     QCheckBox* m_hideBonesCheck = nullptr;

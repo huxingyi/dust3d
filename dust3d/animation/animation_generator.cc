@@ -34,6 +34,7 @@
 #include <dust3d/animation/quadruped/die.h>
 #include <dust3d/animation/quadruped/run.h>
 #include <dust3d/animation/quadruped/walk.h>
+#include <dust3d/animation/spider/walk.h>
 
 namespace dust3d {
 
@@ -69,6 +70,8 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
         return quadruped::run(rigStructure, inverseBindMatrices, animationClip, parameters);
     if (animationType == "QuadrupedDie")
         return quadruped::die(rigStructure, inverseBindMatrices, animationClip, parameters);
+    if (animationType == "SpiderWalk")
+        return spider::walk(rigStructure, inverseBindMatrices, animationClip, parameters);
 
     // Add future rig type + animationName mappings here.
     return false;

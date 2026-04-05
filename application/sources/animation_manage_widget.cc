@@ -306,6 +306,25 @@ void AnimationManageWidget::createParameterWidgets()
     m_quadDieRollIntensityRow = quadDieRollIntensityPair.first;
     m_quadDieRollIntensityLabel = quadDieRollIntensityPair.second;
 
+    // Spider walk parameters
+    m_spiderLegSpreadSlider = new QSlider;
+    m_spiderAbdomenSwaySlider = new QSlider;
+    m_spiderPedipalpSwaySlider = new QSlider;
+    m_spiderBodyYawSlider = new QSlider;
+
+    auto spiderLegSpreadPair = makeSliderRow(tr("Leg Spread"), m_spiderLegSpreadSlider, 100);
+    m_spiderLegSpreadRow = spiderLegSpreadPair.first;
+    m_spiderLegSpreadLabel = spiderLegSpreadPair.second;
+    auto spiderAbdomenSwayPair = makeSliderRow(tr("Abdomen Sway"), m_spiderAbdomenSwaySlider, 100, 0, 300);
+    m_spiderAbdomenSwayRow = spiderAbdomenSwayPair.first;
+    m_spiderAbdomenSwayLabel = spiderAbdomenSwayPair.second;
+    auto spiderPedipalpSwayPair = makeSliderRow(tr("Pedipalp Sway"), m_spiderPedipalpSwaySlider, 100, 0, 300);
+    m_spiderPedipalpSwayRow = spiderPedipalpSwayPair.first;
+    m_spiderPedipalpSwayLabel = spiderPedipalpSwayPair.second;
+    auto spiderBodyYawPair = makeSliderRow(tr("Body Yaw"), m_spiderBodyYawSlider, 100, 0, 300);
+    m_spiderBodyYawRow = spiderBodyYawPair.first;
+    m_spiderBodyYawLabel = spiderBodyYawPair.second;
+
     // Insect die parameters
     m_dieLengthStiffnessSlider = new QSlider;
     m_dieParentStiffnessSlider = new QSlider;
@@ -470,6 +489,12 @@ void AnimationManageWidget::createParameterWidgets()
         connect(m_quadDieCollapseSpeedSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
         connect(m_quadDieLegSpreadSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
         connect(m_quadDieRollIntensitySlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+
+        // Spider walk parameter connections
+        connect(m_spiderLegSpreadSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_spiderAbdomenSwaySlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_spiderPedipalpSwaySlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_spiderBodyYawSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
 
         // Fish die parameter connections
         connect(m_fishDieHitIntensitySlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
@@ -655,11 +680,18 @@ void AnimationManageWidget::updateVisibleParameters(const QString& animationType
     setParameterRowVisible(m_quadDieLegSpreadRow, m_quadDieLegSpreadLabel, false);
     setParameterRowVisible(m_quadDieRollIntensityRow, m_quadDieRollIntensityLabel, false);
 
+    // Hide spider walk parameter rows
+    setParameterRowVisible(m_spiderLegSpreadRow, m_spiderLegSpreadLabel, false);
+    setParameterRowVisible(m_spiderAbdomenSwayRow, m_spiderAbdomenSwayLabel, false);
+    setParameterRowVisible(m_spiderPedipalpSwayRow, m_spiderPedipalpSwayLabel, false);
+    setParameterRowVisible(m_spiderBodyYawRow, m_spiderBodyYawLabel, false);
+
     // useFabrikIk and planeStabilization are only relevant for animation types that use IK
     bool showIkParams = (animationType == "InsectWalk" || animationType == "InsectForward"
         || animationType == "InsectAttack" || animationType == "InsectRubHands"
         || animationType == "QuadrupedWalk" || animationType == "QuadrupedRun"
-        || animationType == "BipedWalk" || animationType == "BipedRun");
+        || animationType == "BipedWalk" || animationType == "BipedRun"
+        || animationType == "SpiderWalk");
     if (m_useFabrikCheck)
         m_useFabrikCheck->setVisible(showIkParams);
     if (m_planeStabilizationCheck)
@@ -768,6 +800,15 @@ void AnimationManageWidget::updateVisibleParameters(const QString& animationType
         setParameterRowVisible(m_dieMaxJointAngleRow, m_dieMaxJointAngleLabel, true);
         setParameterRowVisible(m_dieDampingRow, m_dieDampingLabel, true);
         setParameterRowVisible(m_dieGroundBounceRow, m_dieGroundBounceLabel, true);
+    } else if (animationType == "SpiderWalk") {
+        setParameterRowVisible(m_stepLengthRow, m_stepLengthLabel, true);
+        setParameterRowVisible(m_stepHeightRow, m_stepHeightLabel, true);
+        setParameterRowVisible(m_bodyBobRow, m_bodyBobLabel, true);
+        setParameterRowVisible(m_gaitSpeedRow, m_gaitSpeedLabel, true);
+        setParameterRowVisible(m_spiderLegSpreadRow, m_spiderLegSpreadLabel, true);
+        setParameterRowVisible(m_spiderAbdomenSwayRow, m_spiderAbdomenSwayLabel, true);
+        setParameterRowVisible(m_spiderPedipalpSwayRow, m_spiderPedipalpSwayLabel, true);
+        setParameterRowVisible(m_spiderBodyYawRow, m_spiderBodyYawLabel, true);
     }
 }
 
@@ -803,6 +844,10 @@ void AnimationManageWidget::updateAnimationNameForRigType(const QString& rigType
         m_animationNameCombo->addItem("QuadrupedWalk");
         m_animationNameCombo->addItem("QuadrupedRun");
         m_animationNameCombo->addItem("QuadrupedDie");
+        m_animationNameCombo->setEnabled(true);
+        m_addAnimationButton->setEnabled(true);
+    } else if (rigType.compare("Spider", Qt::CaseInsensitive) == 0) {
+        m_animationNameCombo->addItem("SpiderWalk");
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);
     } else {
@@ -891,6 +936,15 @@ void AnimationManageWidget::updateAnimationParamsFromWidgets()
         m_animationParams.setValue("legSpreadFactor", m_quadDieLegSpreadSlider->value() / 100.0);
     if (m_quadDieRollIntensitySlider)
         m_animationParams.setValue("rollIntensity", m_quadDieRollIntensitySlider->value() / 100.0);
+    // Spider walk parameters
+    if (m_spiderLegSpreadSlider)
+        m_animationParams.setValue("legSpreadFactor", m_spiderLegSpreadSlider->value() / 100.0);
+    if (m_spiderAbdomenSwaySlider)
+        m_animationParams.setValue("abdomenSwayFactor", m_spiderAbdomenSwaySlider->value() / 100.0);
+    if (m_spiderPedipalpSwaySlider)
+        m_animationParams.setValue("pedipalpSwayFactor", m_spiderPedipalpSwaySlider->value() / 100.0);
+    if (m_spiderBodyYawSlider)
+        m_animationParams.setValue("bodyYawFactor", m_spiderBodyYawSlider->value() / 100.0);
     // Fish animation parameters - only save if sliders exist
     if (m_swimSpeedSlider)
         m_animationParams.setValue("swimSpeed", m_swimSpeedSlider->value() / 100.0);

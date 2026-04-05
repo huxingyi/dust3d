@@ -24,6 +24,7 @@
 #include <cmath>
 #include <dust3d/base/debug.h>
 #include <dust3d/base/matrix4x4.h>
+#include <dust3d/base/part_target.h>
 #include <dust3d/base/quaternion.h>
 #include <dust3d/base/string.h>
 #include <dust3d/base/vector3.h>
@@ -31,6 +32,47 @@
 #include <limits>
 
 namespace dust3d {
+
+static bool targetPartIsModel(const Snapshot* snapshot, const std::string& partIdString)
+{
+    if (!snapshot || partIdString.empty())
+        return false;
+
+    auto partIt = snapshot->parts.find(partIdString);
+    if (partIt == snapshot->parts.end())
+        return false;
+
+    return PartTarget::Model == PartTargetFromString(String::valueOrEmpty(partIt->second, "target").c_str());
+}
+
+static bool nodeBelongsToModelPart(const Snapshot* snapshot, const Uuid& nodeId)
+{
+    if (!snapshot)
+        return false;
+
+    auto it = snapshot->nodes.find(nodeId.toString());
+    if (it == snapshot->nodes.end())
+        return false;
+
+    return targetPartIsModel(snapshot, String::valueOrEmpty(it->second, "partId"));
+}
+
+static bool edgeBelongsToModelPart(const Snapshot* snapshot,
+    const std::map<std::string, std::string>& edgeAttributes)
+{
+    if (!snapshot)
+        return false;
+
+    std::string fromNode = String::valueOrEmpty(edgeAttributes, "from");
+    std::string toNode = String::valueOrEmpty(edgeAttributes, "to");
+    if (fromNode.empty() || toNode.empty())
+        return false;
+
+    Uuid fromId(fromNode);
+    Uuid toId(toNode);
+    return nodeBelongsToModelPart(snapshot, fromId)
+        && nodeBelongsToModelPart(snapshot, toId);
+}
 
 RigGenerator::RigGenerator()
 {
@@ -78,6 +120,8 @@ bool RigGenerator::generateRig(const Snapshot* snapshot, const RigStructure& tem
         const auto& edgeAttributes = edgePair.second;
         std::string edgeBoneName = String::valueOrEmpty(edgeAttributes, "boneName");
         if (edgeBoneName.empty())
+            continue;
+        if (!edgeBelongsToModelPart(snapshot, edgeAttributes))
             continue;
         std::string fromNode = String::valueOrEmpty(edgeAttributes, "from");
         std::string toNode = String::valueOrEmpty(edgeAttributes, "to");
@@ -442,10 +486,16 @@ bool RigGenerator::computeNodeBoneInfluences(const Snapshot* snapshot,
         const std::map<std::string, std::string>& nodeAttributes = nodePair.second;
         Uuid nodeId(nodeIdString);
 
-        // Find all edges connected to this node
+        if (!nodeBelongsToModelPart(snapshot, nodeId))
+            continue;
+
+        // Find all model edges connected to this node
         std::set<std::string> boneNames;
         for (const auto& edgePair : snapshot->edges) {
             const std::map<std::string, std::string>& edgeAttributes = edgePair.second;
+            if (!edgeBelongsToModelPart(snapshot, edgeAttributes))
+                continue;
+
             std::string fromNode = String::valueOrEmpty(edgeAttributes, "from");
             std::string toNode = String::valueOrEmpty(edgeAttributes, "to");
 
@@ -468,6 +518,8 @@ bool RigGenerator::computeNodeBoneInfluences(const Snapshot* snapshot,
             std::string nearestBone;
             for (const auto& edgePair : snapshot->edges) {
                 const auto& edgeAttributes = edgePair.second;
+                if (!edgeBelongsToModelPart(snapshot, edgeAttributes))
+                    continue;
                 std::string edgeBoneName = String::valueOrEmpty(edgeAttributes, "boneName");
                 if (edgeBoneName.empty())
                     continue;
@@ -595,6 +647,9 @@ void RigGenerator::attachSingleNodesToBone(const Snapshot* snapshot,
     for (const auto& nodePair : snapshot->nodes) {
         Uuid nodeId(nodePair.first);
 
+        if (!nodeBelongsToModelPart(snapshot, nodeId))
+            continue;
+
         // Skip nodes that already participate in any bone edge
         if (allEdgeNodes.count(nodeId))
             continue;
@@ -637,7 +692,7 @@ void RigGenerator::attachSingleNodesToBone(const Snapshot* snapshot,
                 }
             }
             if (!nearerBoneExists) {
-                dust3dDebug << "Single node" << nodePair.first.c_str()
+                dust3dDebug << "Single node" << nodeId.toString().c_str()
                             << "attached to bone" << boneName.c_str();
                 nodeChains.push_back({ nodeId });
             }
@@ -832,7 +887,7 @@ std::vector<const std::map<std::string, std::string>*> RigGenerator::getEdgesWit
     for (const auto& edgePair : snapshot->edges) {
         const auto& edgeAttributes = edgePair.second;
         std::string edgeBoneName = String::valueOrEmpty(edgeAttributes, "boneName");
-        if (edgeBoneName == boneName) {
+        if (edgeBoneName == boneName && edgeBelongsToModelPart(snapshot, edgeAttributes)) {
             result.push_back(&edgeAttributes);
         }
     }
