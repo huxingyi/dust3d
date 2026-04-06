@@ -175,7 +175,8 @@ namespace bird {
             }
         }
 
-        if (auto it = ragdollBoneIdx.find("Head"); it != ragdollBoneIdx.end()) {
+        auto it = ragdollBoneIdx.find("Head");
+        if (it != ragdollBoneIdx.end()) {
             auto& head = bones[it->second];
             head.tailVel += forwardDir * 0.22f + gravityDir * 0.15f;
         }

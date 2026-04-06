@@ -178,7 +178,8 @@ namespace biped {
             }
         }
 
-        if (auto it = ragdollBoneIdx.find("Head"); it != ragdollBoneIdx.end()) {
+        auto it = ragdollBoneIdx.find("Head");
+        if (it != ragdollBoneIdx.end()) {
             auto& head = bones[it->second];
             head.tailVel += forwardDir * 0.25f + gravityDir * (0.2f * collapseSpeed * headDrop);
         }

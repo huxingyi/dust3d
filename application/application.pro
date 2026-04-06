@@ -25,7 +25,7 @@ DEFINES += _USE_MATH_DEFINES
 CONFIG += object_parallel_to_source
 CONFIG += no_batch
 
-CONFIG += c++14
+CONFIG += c++17
 
 CONFIG(release, debug|release) {
     win32 {
