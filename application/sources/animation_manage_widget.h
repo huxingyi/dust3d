@@ -261,6 +261,25 @@ private:
     QSlider* m_quadDieLegSpreadSlider = nullptr;
     QSlider* m_quadDieRollIntensitySlider = nullptr;
 
+    // Biped die parameter sliders
+    QSlider* m_bipedDieCollapseSpeedSlider = nullptr;
+    QSlider* m_bipedDieArmFlailSlider = nullptr;
+    QSlider* m_bipedDieHeadDropSlider = nullptr;
+
+    // Bird die parameter sliders
+    QSlider* m_birdDieCollapseSpeedSlider = nullptr;
+    QSlider* m_birdDieWingFlapSlider = nullptr;
+    QSlider* m_birdDieRollIntensitySlider = nullptr;
+
+    // Snake die parameter sliders
+    QSlider* m_snakeDieCollapseSpeedSlider = nullptr;
+    QSlider* m_snakeDieCoilFactorSlider = nullptr;
+    QSlider* m_snakeDieJawOpenSlider = nullptr;
+
+    // Spider die parameter sliders
+    QSlider* m_spiderDieCollapseSpeedSlider = nullptr;
+    QSlider* m_spiderDieLegSpreadSlider = nullptr;
+
     // Quadruped die parameter rows and labels
     QWidget* m_quadDieCollapseSpeedRow = nullptr;
     QLabel* m_quadDieCollapseSpeedLabel = nullptr;
@@ -268,6 +287,36 @@ private:
     QLabel* m_quadDieLegSpreadLabel = nullptr;
     QWidget* m_quadDieRollIntensityRow = nullptr;
     QLabel* m_quadDieRollIntensityLabel = nullptr;
+
+    // Biped die parameter rows and labels
+    QWidget* m_bipedDieCollapseSpeedRow = nullptr;
+    QLabel* m_bipedDieCollapseSpeedLabel = nullptr;
+    QWidget* m_bipedDieArmFlailRow = nullptr;
+    QLabel* m_bipedDieArmFlailLabel = nullptr;
+    QWidget* m_bipedDieHeadDropRow = nullptr;
+    QLabel* m_bipedDieHeadDropLabel = nullptr;
+
+    // Bird die parameter rows and labels
+    QWidget* m_birdDieCollapseSpeedRow = nullptr;
+    QLabel* m_birdDieCollapseSpeedLabel = nullptr;
+    QWidget* m_birdDieWingFlapRow = nullptr;
+    QLabel* m_birdDieWingFlapLabel = nullptr;
+    QWidget* m_birdDieRollIntensityRow = nullptr;
+    QLabel* m_birdDieRollIntensityLabel = nullptr;
+
+    // Snake die parameter rows and labels
+    QWidget* m_snakeDieCollapseSpeedRow = nullptr;
+    QLabel* m_snakeDieCollapseSpeedLabel = nullptr;
+    QWidget* m_snakeDieCoilFactorRow = nullptr;
+    QLabel* m_snakeDieCoilFactorLabel = nullptr;
+    QWidget* m_snakeDieJawOpenRow = nullptr;
+    QLabel* m_snakeDieJawOpenLabel = nullptr;
+
+    // Spider die parameter rows and labels
+    QWidget* m_spiderDieCollapseSpeedRow = nullptr;
+    QLabel* m_spiderDieCollapseSpeedLabel = nullptr;
+    QWidget* m_spiderDieLegSpreadRow = nullptr;
+    QLabel* m_spiderDieLegSpreadLabel = nullptr;
 
     // Spider walk parameter sliders
     QSlider* m_spiderLegSpreadSlider = nullptr;
