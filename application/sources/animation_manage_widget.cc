@@ -540,6 +540,139 @@ void AnimationManageWidget::createParameterWidgets()
     m_snakeForwardJawFrequencyRow = snakeJawFrequencyPair.first;
     m_snakeForwardJawFrequencyLabel = snakeJawFrequencyPair.second;
 
+    // ---- Idle animation parameters ----
+    m_idleBreathingAmplitudeSlider = new QSlider;
+    m_idleBreathingSpeedSlider = new QSlider;
+    m_idleWeightShiftSlider = new QSlider;
+    m_idleHeadLookSlider = new QSlider;
+    m_idleSpineSwaySlider = new QSlider;
+    m_idleTailIdleSlider = new QSlider;
+
+    auto idleBreathingAmplitudePair = makeSliderRow(tr("Breathing Amplitude"), m_idleBreathingAmplitudeSlider, 100, 0, 300);
+    m_idleBreathingAmplitudeRow = idleBreathingAmplitudePair.first;
+    m_idleBreathingAmplitudeLabel = idleBreathingAmplitudePair.second;
+    auto idleBreathingSpeedPair = makeSliderRow(tr("Breathing Speed"), m_idleBreathingSpeedSlider, 100, 25, 300);
+    m_idleBreathingSpeedRow = idleBreathingSpeedPair.first;
+    m_idleBreathingSpeedLabel = idleBreathingSpeedPair.second;
+    auto idleWeightShiftPair = makeSliderRow(tr("Weight Shift"), m_idleWeightShiftSlider, 100, 0, 300);
+    m_idleWeightShiftRow = idleWeightShiftPair.first;
+    m_idleWeightShiftLabel = idleWeightShiftPair.second;
+    auto idleHeadLookPair = makeSliderRow(tr("Head Look"), m_idleHeadLookSlider, 100, 0, 300);
+    m_idleHeadLookRow = idleHeadLookPair.first;
+    m_idleHeadLookLabel = idleHeadLookPair.second;
+    auto idleSpineSwayPair = makeSliderRow(tr("Spine Sway"), m_idleSpineSwaySlider, 100, 0, 300);
+    m_idleSpineSwayRow = idleSpineSwayPair.first;
+    m_idleSpineSwayLabel = idleSpineSwayPair.second;
+    auto idleTailIdlePair = makeSliderRow(tr("Tail Idle"), m_idleTailIdleSlider, 100, 0, 300);
+    m_idleTailIdleRow = idleTailIdlePair.first;
+    m_idleTailIdleLabel = idleTailIdlePair.second;
+
+    // Biped idle specific
+    m_bipedIdleArmRestSlider = new QSlider;
+    auto bipedIdleArmRestPair = makeSliderRow(tr("Arm Rest Sway"), m_bipedIdleArmRestSlider, 100, 0, 300);
+    m_bipedIdleArmRestRow = bipedIdleArmRestPair.first;
+    m_bipedIdleArmRestLabel = bipedIdleArmRestPair.second;
+
+    // Quadruped idle specific
+    m_quadIdleJawSlider = new QSlider;
+    auto quadIdleJawPair = makeSliderRow(tr("Jaw Movement"), m_quadIdleJawSlider, 100, 0, 300);
+    m_quadIdleJawRow = quadIdleJawPair.first;
+    m_quadIdleJawLabel = quadIdleJawPair.second;
+
+    // Insect idle specific
+    m_insectIdleAntennaeSwaySlider = new QSlider;
+    m_insectIdleLegTwitchSlider = new QSlider;
+    m_insectIdleWingFoldSlider = new QSlider;
+    m_insectIdleAbdomenSwaySlider = new QSlider;
+    auto insectAntennaeSwayPair = makeSliderRow(tr("Antennae Sway"), m_insectIdleAntennaeSwaySlider, 100, 0, 300);
+    m_insectIdleAntennaeSwayRow = insectAntennaeSwayPair.first;
+    m_insectIdleAntennaeSwayLabel = insectAntennaeSwayPair.second;
+    auto insectLegTwitchPair = makeSliderRow(tr("Leg Twitch"), m_insectIdleLegTwitchSlider, 100, 0, 300);
+    m_insectIdleLegTwitchRow = insectLegTwitchPair.first;
+    m_insectIdleLegTwitchLabel = insectLegTwitchPair.second;
+    auto insectWingFoldPair = makeSliderRow(tr("Wing Fold"), m_insectIdleWingFoldSlider, 100, 0, 300);
+    m_insectIdleWingFoldRow = insectWingFoldPair.first;
+    m_insectIdleWingFoldLabel = insectWingFoldPair.second;
+    auto insectAbdomenSwayPair = makeSliderRow(tr("Abdomen Sway"), m_insectIdleAbdomenSwaySlider, 100, 0, 300);
+    m_insectIdleAbdomenSwayRow = insectAbdomenSwayPair.first;
+    m_insectIdleAbdomenSwayLabel = insectAbdomenSwayPair.second;
+
+    // Spider idle specific
+    m_spiderIdlePedipalpSwaySlider = new QSlider;
+    m_spiderIdleLegTwitchSlider = new QSlider;
+    m_spiderIdleAbdomenPulseSlider = new QSlider;
+    m_spiderIdleBodySwaySlider = new QSlider;
+    auto spiderIdlePedipalpSwayPair = makeSliderRow(tr("Pedipalp Sway"), m_spiderIdlePedipalpSwaySlider, 100, 0, 300);
+    m_spiderIdlePedipalpSwayRow = spiderIdlePedipalpSwayPair.first;
+    m_spiderIdlePedipalpSwayLabel = spiderIdlePedipalpSwayPair.second;
+    auto spiderIdleLegTwitchPair = makeSliderRow(tr("Leg Twitch"), m_spiderIdleLegTwitchSlider, 100, 0, 300);
+    m_spiderIdleLegTwitchRow = spiderIdleLegTwitchPair.first;
+    m_spiderIdleLegTwitchLabel = spiderIdleLegTwitchPair.second;
+    auto spiderIdleAbdomenPulsePair = makeSliderRow(tr("Abdomen Pulse"), m_spiderIdleAbdomenPulseSlider, 100, 0, 300);
+    m_spiderIdleAbdomenPulseRow = spiderIdleAbdomenPulsePair.first;
+    m_spiderIdleAbdomenPulseLabel = spiderIdleAbdomenPulsePair.second;
+    auto spiderIdleBodySwayPair = makeSliderRow(tr("Body Sway"), m_spiderIdleBodySwaySlider, 100, 0, 300);
+    m_spiderIdleBodySwayRow = spiderIdleBodySwayPair.first;
+    m_spiderIdleBodySwayLabel = spiderIdleBodySwayPair.second;
+
+    // Bird idle specific
+    m_birdIdleHeadPeckSlider = new QSlider;
+    m_birdIdleWingFoldSlider = new QSlider;
+    m_birdIdleTailFeatherSlider = new QSlider;
+    auto birdIdleHeadPeckPair = makeSliderRow(tr("Head Peck"), m_birdIdleHeadPeckSlider, 100, 0, 300);
+    m_birdIdleHeadPeckRow = birdIdleHeadPeckPair.first;
+    m_birdIdleHeadPeckLabel = birdIdleHeadPeckPair.second;
+    auto birdIdleWingFoldPair = makeSliderRow(tr("Wing Fold"), m_birdIdleWingFoldSlider, 100, 0, 300);
+    m_birdIdleWingFoldRow = birdIdleWingFoldPair.first;
+    m_birdIdleWingFoldLabel = birdIdleWingFoldPair.second;
+    auto birdIdleTailFeatherPair = makeSliderRow(tr("Tail Feather"), m_birdIdleTailFeatherSlider, 100, 0, 300);
+    m_birdIdleTailFeatherRow = birdIdleTailFeatherPair.first;
+    m_birdIdleTailFeatherLabel = birdIdleTailFeatherPair.second;
+
+    // Fish idle specific
+    m_fishIdleFinScullSlider = new QSlider;
+    m_fishIdleTailSwaySlider = new QSlider;
+    m_fishIdleBodyUndulationSlider = new QSlider;
+    m_fishIdleDorsalSwaySlider = new QSlider;
+    m_fishIdleDriftSlider = new QSlider;
+    auto fishIdleFinScullPair = makeSliderRow(tr("Fin Scull"), m_fishIdleFinScullSlider, 100, 0, 300);
+    m_fishIdleFinScullRow = fishIdleFinScullPair.first;
+    m_fishIdleFinScullLabel = fishIdleFinScullPair.second;
+    auto fishIdleTailSwayPair = makeSliderRow(tr("Tail Sway"), m_fishIdleTailSwaySlider, 100, 0, 300);
+    m_fishIdleTailSwayRow = fishIdleTailSwayPair.first;
+    m_fishIdleTailSwayLabel = fishIdleTailSwayPair.second;
+    auto fishIdleBodyUndulationPair = makeSliderRow(tr("Body Undulation"), m_fishIdleBodyUndulationSlider, 100, 0, 300);
+    m_fishIdleBodyUndulationRow = fishIdleBodyUndulationPair.first;
+    m_fishIdleBodyUndulationLabel = fishIdleBodyUndulationPair.second;
+    auto fishIdleDorsalSwayPair = makeSliderRow(tr("Dorsal Sway"), m_fishIdleDorsalSwaySlider, 100, 0, 300);
+    m_fishIdleDorsalSwayRow = fishIdleDorsalSwayPair.first;
+    m_fishIdleDorsalSwayLabel = fishIdleDorsalSwayPair.second;
+    auto fishIdleDriftPair = makeSliderRow(tr("Drift"), m_fishIdleDriftSlider, 100, 0, 300);
+    m_fishIdleDriftRow = fishIdleDriftPair.first;
+    m_fishIdleDriftLabel = fishIdleDriftPair.second;
+
+    // Snake idle specific
+    m_snakeIdleHeadSwaySlider = new QSlider;
+    m_snakeIdleHeadRaiseSlider = new QSlider;
+    m_snakeIdleTongueFlickSlider = new QSlider;
+    m_snakeIdleBodyUndulationSlider = new QSlider;
+    m_snakeIdleTailTwitchSlider = new QSlider;
+    auto snakeIdleHeadSwayPair = makeSliderRow(tr("Head Sway"), m_snakeIdleHeadSwaySlider, 100, 0, 300);
+    m_snakeIdleHeadSwayRow = snakeIdleHeadSwayPair.first;
+    m_snakeIdleHeadSwayLabel = snakeIdleHeadSwayPair.second;
+    auto snakeIdleHeadRaisePair = makeSliderRow(tr("Head Raise"), m_snakeIdleHeadRaiseSlider, 100, 0, 300);
+    m_snakeIdleHeadRaiseRow = snakeIdleHeadRaisePair.first;
+    m_snakeIdleHeadRaiseLabel = snakeIdleHeadRaisePair.second;
+    auto snakeIdleTongueFlickPair = makeSliderRow(tr("Tongue Flick"), m_snakeIdleTongueFlickSlider, 100, 0, 300);
+    m_snakeIdleTongueFlickRow = snakeIdleTongueFlickPair.first;
+    m_snakeIdleTongueFlickLabel = snakeIdleTongueFlickPair.second;
+    auto snakeIdleBodyUndulationPair = makeSliderRow(tr("Body Undulation"), m_snakeIdleBodyUndulationSlider, 100, 0, 300);
+    m_snakeIdleBodyUndulationRow = snakeIdleBodyUndulationPair.first;
+    m_snakeIdleBodyUndulationLabel = snakeIdleBodyUndulationPair.second;
+    auto snakeIdleTailTwitchPair = makeSliderRow(tr("Tail Twitch"), m_snakeIdleTailTwitchSlider, 100, 0, 300);
+    m_snakeIdleTailTwitchRow = snakeIdleTailTwitchPair.first;
+    m_snakeIdleTailTwitchLabel = snakeIdleTailTwitchPair.second;
+
     m_sharedUseFabrikCheck = new QCheckBox("Use FABRIK IK");
     m_sharedUseFabrikCheck->setChecked(true);
     parameterLayout->addRow(m_sharedUseFabrikCheck);
@@ -659,6 +792,37 @@ void AnimationManageWidget::createParameterWidgets()
         connect(m_snakeForwardHeadPullFactorSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
         connect(m_snakeForwardJawAmplitudeSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
         connect(m_snakeForwardJawFrequencySlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+
+        // Idle animation parameter connections
+        connect(m_idleBreathingAmplitudeSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_idleBreathingSpeedSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_idleWeightShiftSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_idleHeadLookSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_idleSpineSwaySlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_idleTailIdleSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_bipedIdleArmRestSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_quadIdleJawSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_insectIdleAntennaeSwaySlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_insectIdleLegTwitchSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_insectIdleWingFoldSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_insectIdleAbdomenSwaySlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_spiderIdlePedipalpSwaySlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_spiderIdleLegTwitchSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_spiderIdleAbdomenPulseSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_spiderIdleBodySwaySlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_birdIdleHeadPeckSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_birdIdleWingFoldSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_birdIdleTailFeatherSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_fishIdleFinScullSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_fishIdleTailSwaySlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_fishIdleBodyUndulationSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_fishIdleDorsalSwaySlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_fishIdleDriftSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_snakeIdleHeadSwaySlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_snakeIdleHeadRaiseSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_snakeIdleTongueFlickSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_snakeIdleBodyUndulationSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_snakeIdleTailTwitchSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
 
         connect(m_sharedUseFabrikCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
         connect(m_sharedPlaneStabilizationCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
@@ -856,6 +1020,37 @@ void AnimationManageWidget::updateVisibleParameters(const QString& animationType
     setParameterRowVisible(m_spiderPedipalpSwayRow, m_spiderPedipalpSwayLabel, false);
     setParameterRowVisible(m_spiderBodyYawRow, m_spiderBodyYawLabel, false);
 
+    // Hide idle parameter rows
+    setParameterRowVisible(m_idleBreathingAmplitudeRow, m_idleBreathingAmplitudeLabel, false);
+    setParameterRowVisible(m_idleBreathingSpeedRow, m_idleBreathingSpeedLabel, false);
+    setParameterRowVisible(m_idleWeightShiftRow, m_idleWeightShiftLabel, false);
+    setParameterRowVisible(m_idleHeadLookRow, m_idleHeadLookLabel, false);
+    setParameterRowVisible(m_idleSpineSwayRow, m_idleSpineSwayLabel, false);
+    setParameterRowVisible(m_idleTailIdleRow, m_idleTailIdleLabel, false);
+    setParameterRowVisible(m_bipedIdleArmRestRow, m_bipedIdleArmRestLabel, false);
+    setParameterRowVisible(m_quadIdleJawRow, m_quadIdleJawLabel, false);
+    setParameterRowVisible(m_insectIdleAntennaeSwayRow, m_insectIdleAntennaeSwayLabel, false);
+    setParameterRowVisible(m_insectIdleLegTwitchRow, m_insectIdleLegTwitchLabel, false);
+    setParameterRowVisible(m_insectIdleWingFoldRow, m_insectIdleWingFoldLabel, false);
+    setParameterRowVisible(m_insectIdleAbdomenSwayRow, m_insectIdleAbdomenSwayLabel, false);
+    setParameterRowVisible(m_spiderIdlePedipalpSwayRow, m_spiderIdlePedipalpSwayLabel, false);
+    setParameterRowVisible(m_spiderIdleLegTwitchRow, m_spiderIdleLegTwitchLabel, false);
+    setParameterRowVisible(m_spiderIdleAbdomenPulseRow, m_spiderIdleAbdomenPulseLabel, false);
+    setParameterRowVisible(m_spiderIdleBodySwayRow, m_spiderIdleBodySwayLabel, false);
+    setParameterRowVisible(m_birdIdleHeadPeckRow, m_birdIdleHeadPeckLabel, false);
+    setParameterRowVisible(m_birdIdleWingFoldRow, m_birdIdleWingFoldLabel, false);
+    setParameterRowVisible(m_birdIdleTailFeatherRow, m_birdIdleTailFeatherLabel, false);
+    setParameterRowVisible(m_fishIdleFinScullRow, m_fishIdleFinScullLabel, false);
+    setParameterRowVisible(m_fishIdleTailSwayRow, m_fishIdleTailSwayLabel, false);
+    setParameterRowVisible(m_fishIdleBodyUndulationRow, m_fishIdleBodyUndulationLabel, false);
+    setParameterRowVisible(m_fishIdleDorsalSwayRow, m_fishIdleDorsalSwayLabel, false);
+    setParameterRowVisible(m_fishIdleDriftRow, m_fishIdleDriftLabel, false);
+    setParameterRowVisible(m_snakeIdleHeadSwayRow, m_snakeIdleHeadSwayLabel, false);
+    setParameterRowVisible(m_snakeIdleHeadRaiseRow, m_snakeIdleHeadRaiseLabel, false);
+    setParameterRowVisible(m_snakeIdleTongueFlickRow, m_snakeIdleTongueFlickLabel, false);
+    setParameterRowVisible(m_snakeIdleBodyUndulationRow, m_snakeIdleBodyUndulationLabel, false);
+    setParameterRowVisible(m_snakeIdleTailTwitchRow, m_snakeIdleTailTwitchLabel, false);
+
     // useFabrikIk and planeStabilization are only relevant for animation types that use IK
     bool showIkParams = (animationType == "InsectWalk" || animationType == "InsectForward"
         || animationType == "InsectAttack" || animationType == "InsectRubHands"
@@ -1019,6 +1214,60 @@ void AnimationManageWidget::updateVisibleParameters(const QString& animationType
         setParameterRowVisible(m_spiderAbdomenSwayRow, m_spiderAbdomenSwayLabel, true);
         setParameterRowVisible(m_spiderPedipalpSwayRow, m_spiderPedipalpSwayLabel, true);
         setParameterRowVisible(m_spiderBodyYawRow, m_spiderBodyYawLabel, true);
+    } else if (animationType == "BipedIdle") {
+        setParameterRowVisible(m_idleBreathingAmplitudeRow, m_idleBreathingAmplitudeLabel, true);
+        setParameterRowVisible(m_idleBreathingSpeedRow, m_idleBreathingSpeedLabel, true);
+        setParameterRowVisible(m_idleWeightShiftRow, m_idleWeightShiftLabel, true);
+        setParameterRowVisible(m_idleHeadLookRow, m_idleHeadLookLabel, true);
+        setParameterRowVisible(m_idleSpineSwayRow, m_idleSpineSwayLabel, true);
+        setParameterRowVisible(m_idleTailIdleRow, m_idleTailIdleLabel, true);
+        setParameterRowVisible(m_bipedIdleArmRestRow, m_bipedIdleArmRestLabel, true);
+    } else if (animationType == "QuadrupedIdle") {
+        setParameterRowVisible(m_idleBreathingAmplitudeRow, m_idleBreathingAmplitudeLabel, true);
+        setParameterRowVisible(m_idleBreathingSpeedRow, m_idleBreathingSpeedLabel, true);
+        setParameterRowVisible(m_idleWeightShiftRow, m_idleWeightShiftLabel, true);
+        setParameterRowVisible(m_idleHeadLookRow, m_idleHeadLookLabel, true);
+        setParameterRowVisible(m_idleSpineSwayRow, m_idleSpineSwayLabel, true);
+        setParameterRowVisible(m_idleTailIdleRow, m_idleTailIdleLabel, true);
+        setParameterRowVisible(m_quadIdleJawRow, m_quadIdleJawLabel, true);
+    } else if (animationType == "InsectIdle") {
+        setParameterRowVisible(m_idleBreathingAmplitudeRow, m_idleBreathingAmplitudeLabel, true);
+        setParameterRowVisible(m_idleBreathingSpeedRow, m_idleBreathingSpeedLabel, true);
+        setParameterRowVisible(m_insectIdleAntennaeSwayRow, m_insectIdleAntennaeSwayLabel, true);
+        setParameterRowVisible(m_insectIdleLegTwitchRow, m_insectIdleLegTwitchLabel, true);
+        setParameterRowVisible(m_insectIdleWingFoldRow, m_insectIdleWingFoldLabel, true);
+        setParameterRowVisible(m_insectIdleAbdomenSwayRow, m_insectIdleAbdomenSwayLabel, true);
+    } else if (animationType == "SpiderIdle") {
+        setParameterRowVisible(m_idleBreathingAmplitudeRow, m_idleBreathingAmplitudeLabel, true);
+        setParameterRowVisible(m_idleBreathingSpeedRow, m_idleBreathingSpeedLabel, true);
+        setParameterRowVisible(m_spiderIdlePedipalpSwayRow, m_spiderIdlePedipalpSwayLabel, true);
+        setParameterRowVisible(m_spiderIdleLegTwitchRow, m_spiderIdleLegTwitchLabel, true);
+        setParameterRowVisible(m_spiderIdleAbdomenPulseRow, m_spiderIdleAbdomenPulseLabel, true);
+        setParameterRowVisible(m_spiderIdleBodySwayRow, m_spiderIdleBodySwayLabel, true);
+    } else if (animationType == "BirdIdle") {
+        setParameterRowVisible(m_idleBreathingAmplitudeRow, m_idleBreathingAmplitudeLabel, true);
+        setParameterRowVisible(m_idleBreathingSpeedRow, m_idleBreathingSpeedLabel, true);
+        setParameterRowVisible(m_idleWeightShiftRow, m_idleWeightShiftLabel, true);
+        setParameterRowVisible(m_idleHeadLookRow, m_idleHeadLookLabel, true);
+        setParameterRowVisible(m_birdIdleHeadPeckRow, m_birdIdleHeadPeckLabel, true);
+        setParameterRowVisible(m_birdIdleWingFoldRow, m_birdIdleWingFoldLabel, true);
+        setParameterRowVisible(m_birdIdleTailFeatherRow, m_birdIdleTailFeatherLabel, true);
+    } else if (animationType == "FishIdle") {
+        setParameterRowVisible(m_idleBreathingAmplitudeRow, m_idleBreathingAmplitudeLabel, true);
+        setParameterRowVisible(m_idleBreathingSpeedRow, m_idleBreathingSpeedLabel, true);
+        setParameterRowVisible(m_fishIdleFinScullRow, m_fishIdleFinScullLabel, true);
+        setParameterRowVisible(m_fishIdleTailSwayRow, m_fishIdleTailSwayLabel, true);
+        setParameterRowVisible(m_fishIdleBodyUndulationRow, m_fishIdleBodyUndulationLabel, true);
+        setParameterRowVisible(m_fishIdleDorsalSwayRow, m_fishIdleDorsalSwayLabel, true);
+        setParameterRowVisible(m_fishIdleDriftRow, m_fishIdleDriftLabel, true);
+    } else if (animationType == "SnakeIdle") {
+        setParameterRowVisible(m_idleBreathingAmplitudeRow, m_idleBreathingAmplitudeLabel, true);
+        setParameterRowVisible(m_idleBreathingSpeedRow, m_idleBreathingSpeedLabel, true);
+        setParameterRowVisible(m_snakeIdleHeadSwayRow, m_snakeIdleHeadSwayLabel, true);
+        setParameterRowVisible(m_snakeIdleHeadRaiseRow, m_snakeIdleHeadRaiseLabel, true);
+        setParameterRowVisible(m_snakeIdleTongueFlickRow, m_snakeIdleTongueFlickLabel, true);
+        setParameterRowVisible(m_snakeIdleBodyUndulationRow, m_snakeIdleBodyUndulationLabel, true);
+        setParameterRowVisible(m_snakeIdleTailTwitchRow, m_snakeIdleTailTwitchLabel, true);
     }
 }
 
@@ -1029,6 +1278,7 @@ void AnimationManageWidget::updateAnimationNameForRigType(const QString& rigType
 
     m_animationNameCombo->clear();
     if (rigType.compare("Insect", Qt::CaseInsensitive) == 0) {
+        m_animationNameCombo->addItem("InsectIdle");
         m_animationNameCombo->addItem("InsectRubHands");
         m_animationNameCombo->addItem("InsectWalk");
         m_animationNameCombo->addItem("InsectForward");
@@ -1037,33 +1287,39 @@ void AnimationManageWidget::updateAnimationNameForRigType(const QString& rigType
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);
     } else if (rigType.compare("Bird", Qt::CaseInsensitive) == 0) {
+        m_animationNameCombo->addItem("BirdIdle");
         m_animationNameCombo->addItem("BirdForward");
         m_animationNameCombo->addItem("BirdDie");
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);
     } else if (rigType.compare("Fish", Qt::CaseInsensitive) == 0) {
+        m_animationNameCombo->addItem("FishIdle");
         m_animationNameCombo->addItem("FishForward");
         m_animationNameCombo->addItem("FishDie");
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);
     } else if (rigType.compare("Biped", Qt::CaseInsensitive) == 0) {
+        m_animationNameCombo->addItem("BipedIdle");
         m_animationNameCombo->addItem("BipedWalk");
         m_animationNameCombo->addItem("BipedRun");
         m_animationNameCombo->addItem("BipedDie");
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);
     } else if (rigType.compare("Quadruped", Qt::CaseInsensitive) == 0) {
+        m_animationNameCombo->addItem("QuadrupedIdle");
         m_animationNameCombo->addItem("QuadrupedWalk");
         m_animationNameCombo->addItem("QuadrupedRun");
         m_animationNameCombo->addItem("QuadrupedDie");
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);
     } else if (rigType.compare("Spider", Qt::CaseInsensitive) == 0) {
+        m_animationNameCombo->addItem("SpiderIdle");
         m_animationNameCombo->addItem("SpiderWalk");
         m_animationNameCombo->addItem("SpiderDie");
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);
     } else if (rigType.compare("Snake", Qt::CaseInsensitive) == 0) {
+        m_animationNameCombo->addItem("SnakeIdle");
         m_animationNameCombo->addItem("SnakeForward");
         m_animationNameCombo->addItem("SnakeDie");
         m_animationNameCombo->setEnabled(true);
@@ -1330,6 +1586,89 @@ void AnimationManageWidget::updateAnimationParamsFromWidgets()
             m_animationParams.setValue("finFlop", m_fishDieFinFlopSlider->value() / 100.0);
         if (m_fishDieSpinDecaySlider)
             m_animationParams.setValue("spinDecay", m_fishDieSpinDecaySlider->value() / 100.0 * 4.0); // 4.0 at value 100
+    }
+
+    const bool isIdleAnimation = animationType.endsWith("Idle");
+    if (isIdleAnimation) {
+        if (m_idleBreathingAmplitudeSlider)
+            m_animationParams.setValue("breathingAmplitude", m_idleBreathingAmplitudeSlider->value() / 100.0);
+        if (m_idleBreathingSpeedSlider)
+            m_animationParams.setValue("breathingSpeed", m_idleBreathingSpeedSlider->value() / 100.0);
+    }
+
+    if (animationType == "BipedIdle") {
+        if (m_idleWeightShiftSlider)
+            m_animationParams.setValue("weightShiftFactor", m_idleWeightShiftSlider->value() / 100.0);
+        if (m_idleHeadLookSlider)
+            m_animationParams.setValue("headLookFactor", m_idleHeadLookSlider->value() / 100.0);
+        if (m_idleSpineSwaySlider)
+            m_animationParams.setValue("spineSwayFactor", m_idleSpineSwaySlider->value() / 100.0);
+        if (m_idleTailIdleSlider)
+            m_animationParams.setValue("tailIdleFactor", m_idleTailIdleSlider->value() / 100.0);
+        if (m_bipedIdleArmRestSlider)
+            m_animationParams.setValue("armRestFactor", m_bipedIdleArmRestSlider->value() / 100.0);
+    } else if (animationType == "QuadrupedIdle") {
+        if (m_idleWeightShiftSlider)
+            m_animationParams.setValue("weightShiftFactor", m_idleWeightShiftSlider->value() / 100.0);
+        if (m_idleHeadLookSlider)
+            m_animationParams.setValue("headLookFactor", m_idleHeadLookSlider->value() / 100.0);
+        if (m_idleSpineSwaySlider)
+            m_animationParams.setValue("spineSwayFactor", m_idleSpineSwaySlider->value() / 100.0);
+        if (m_idleTailIdleSlider)
+            m_animationParams.setValue("tailIdleFactor", m_idleTailIdleSlider->value() / 100.0);
+        if (m_quadIdleJawSlider)
+            m_animationParams.setValue("jawFactor", m_quadIdleJawSlider->value() / 100.0);
+    } else if (animationType == "InsectIdle") {
+        if (m_insectIdleAntennaeSwaySlider)
+            m_animationParams.setValue("antennaeSwayFactor", m_insectIdleAntennaeSwaySlider->value() / 100.0);
+        if (m_insectIdleLegTwitchSlider)
+            m_animationParams.setValue("legTwitchFactor", m_insectIdleLegTwitchSlider->value() / 100.0);
+        if (m_insectIdleWingFoldSlider)
+            m_animationParams.setValue("wingFoldFactor", m_insectIdleWingFoldSlider->value() / 100.0);
+        if (m_insectIdleAbdomenSwaySlider)
+            m_animationParams.setValue("abdomenSwayFactor", m_insectIdleAbdomenSwaySlider->value() / 100.0);
+    } else if (animationType == "SpiderIdle") {
+        if (m_spiderIdlePedipalpSwaySlider)
+            m_animationParams.setValue("pedipalpSwayFactor", m_spiderIdlePedipalpSwaySlider->value() / 100.0);
+        if (m_spiderIdleLegTwitchSlider)
+            m_animationParams.setValue("legTwitchFactor", m_spiderIdleLegTwitchSlider->value() / 100.0);
+        if (m_spiderIdleAbdomenPulseSlider)
+            m_animationParams.setValue("abdomenPulseFactor", m_spiderIdleAbdomenPulseSlider->value() / 100.0);
+        if (m_spiderIdleBodySwaySlider)
+            m_animationParams.setValue("bodySwayFactor", m_spiderIdleBodySwaySlider->value() / 100.0);
+    } else if (animationType == "BirdIdle") {
+        if (m_idleWeightShiftSlider)
+            m_animationParams.setValue("weightShiftFactor", m_idleWeightShiftSlider->value() / 100.0);
+        if (m_idleHeadLookSlider)
+            m_animationParams.setValue("headLookFactor", m_idleHeadLookSlider->value() / 100.0);
+        if (m_birdIdleHeadPeckSlider)
+            m_animationParams.setValue("headPeckFactor", m_birdIdleHeadPeckSlider->value() / 100.0);
+        if (m_birdIdleWingFoldSlider)
+            m_animationParams.setValue("wingFoldFactor", m_birdIdleWingFoldSlider->value() / 100.0);
+        if (m_birdIdleTailFeatherSlider)
+            m_animationParams.setValue("tailFeatherFactor", m_birdIdleTailFeatherSlider->value() / 100.0);
+    } else if (animationType == "FishIdle") {
+        if (m_fishIdleFinScullSlider)
+            m_animationParams.setValue("finScullFactor", m_fishIdleFinScullSlider->value() / 100.0);
+        if (m_fishIdleTailSwaySlider)
+            m_animationParams.setValue("tailSwayFactor", m_fishIdleTailSwaySlider->value() / 100.0);
+        if (m_fishIdleBodyUndulationSlider)
+            m_animationParams.setValue("bodyUndulationFactor", m_fishIdleBodyUndulationSlider->value() / 100.0);
+        if (m_fishIdleDorsalSwaySlider)
+            m_animationParams.setValue("dorsalSwayFactor", m_fishIdleDorsalSwaySlider->value() / 100.0);
+        if (m_fishIdleDriftSlider)
+            m_animationParams.setValue("driftFactor", m_fishIdleDriftSlider->value() / 100.0);
+    } else if (animationType == "SnakeIdle") {
+        if (m_snakeIdleHeadSwaySlider)
+            m_animationParams.setValue("headSwayFactor", m_snakeIdleHeadSwaySlider->value() / 100.0);
+        if (m_snakeIdleHeadRaiseSlider)
+            m_animationParams.setValue("headRaiseFactor", m_snakeIdleHeadRaiseSlider->value() / 100.0);
+        if (m_snakeIdleTongueFlickSlider)
+            m_animationParams.setValue("tongueFlickFactor", m_snakeIdleTongueFlickSlider->value() / 100.0);
+        if (m_snakeIdleBodyUndulationSlider)
+            m_animationParams.setValue("bodyUndulationFactor", m_snakeIdleBodyUndulationSlider->value() / 100.0);
+        if (m_snakeIdleTailTwitchSlider)
+            m_animationParams.setValue("tailTwitchFactor", m_snakeIdleTailTwitchSlider->value() / 100.0);
     }
 }
 

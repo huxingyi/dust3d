@@ -334,6 +334,111 @@ private:
     QWidget* m_spiderBodyYawRow = nullptr;
     QLabel* m_spiderBodyYawLabel = nullptr;
 
+    // Idle animation parameter sliders (shared across rig types)
+    QSlider* m_idleBreathingAmplitudeSlider = nullptr;
+    QSlider* m_idleBreathingSpeedSlider = nullptr;
+    QSlider* m_idleWeightShiftSlider = nullptr;
+    QSlider* m_idleHeadLookSlider = nullptr;
+    QSlider* m_idleSpineSwaySlider = nullptr;
+    QSlider* m_idleTailIdleSlider = nullptr;
+
+    // Idle parameter rows and labels
+    QWidget* m_idleBreathingAmplitudeRow = nullptr;
+    QLabel* m_idleBreathingAmplitudeLabel = nullptr;
+    QWidget* m_idleBreathingSpeedRow = nullptr;
+    QLabel* m_idleBreathingSpeedLabel = nullptr;
+    QWidget* m_idleWeightShiftRow = nullptr;
+    QLabel* m_idleWeightShiftLabel = nullptr;
+    QWidget* m_idleHeadLookRow = nullptr;
+    QLabel* m_idleHeadLookLabel = nullptr;
+    QWidget* m_idleSpineSwayRow = nullptr;
+    QLabel* m_idleSpineSwayLabel = nullptr;
+    QWidget* m_idleTailIdleRow = nullptr;
+    QLabel* m_idleTailIdleLabel = nullptr;
+
+    // Biped idle specific
+    QSlider* m_bipedIdleArmRestSlider = nullptr;
+    QWidget* m_bipedIdleArmRestRow = nullptr;
+    QLabel* m_bipedIdleArmRestLabel = nullptr;
+
+    // Quadruped idle specific
+    QSlider* m_quadIdleJawSlider = nullptr;
+    QWidget* m_quadIdleJawRow = nullptr;
+    QLabel* m_quadIdleJawLabel = nullptr;
+
+    // Insect idle specific
+    QSlider* m_insectIdleAntennaeSwaySlider = nullptr;
+    QSlider* m_insectIdleLegTwitchSlider = nullptr;
+    QSlider* m_insectIdleWingFoldSlider = nullptr;
+    QSlider* m_insectIdleAbdomenSwaySlider = nullptr;
+    QWidget* m_insectIdleAntennaeSwayRow = nullptr;
+    QLabel* m_insectIdleAntennaeSwayLabel = nullptr;
+    QWidget* m_insectIdleLegTwitchRow = nullptr;
+    QLabel* m_insectIdleLegTwitchLabel = nullptr;
+    QWidget* m_insectIdleWingFoldRow = nullptr;
+    QLabel* m_insectIdleWingFoldLabel = nullptr;
+    QWidget* m_insectIdleAbdomenSwayRow = nullptr;
+    QLabel* m_insectIdleAbdomenSwayLabel = nullptr;
+
+    // Spider idle specific
+    QSlider* m_spiderIdlePedipalpSwaySlider = nullptr;
+    QSlider* m_spiderIdleLegTwitchSlider = nullptr;
+    QSlider* m_spiderIdleAbdomenPulseSlider = nullptr;
+    QSlider* m_spiderIdleBodySwaySlider = nullptr;
+    QWidget* m_spiderIdlePedipalpSwayRow = nullptr;
+    QLabel* m_spiderIdlePedipalpSwayLabel = nullptr;
+    QWidget* m_spiderIdleLegTwitchRow = nullptr;
+    QLabel* m_spiderIdleLegTwitchLabel = nullptr;
+    QWidget* m_spiderIdleAbdomenPulseRow = nullptr;
+    QLabel* m_spiderIdleAbdomenPulseLabel = nullptr;
+    QWidget* m_spiderIdleBodySwayRow = nullptr;
+    QLabel* m_spiderIdleBodySwayLabel = nullptr;
+
+    // Bird idle specific
+    QSlider* m_birdIdleHeadPeckSlider = nullptr;
+    QSlider* m_birdIdleWingFoldSlider = nullptr;
+    QSlider* m_birdIdleTailFeatherSlider = nullptr;
+    QWidget* m_birdIdleHeadPeckRow = nullptr;
+    QLabel* m_birdIdleHeadPeckLabel = nullptr;
+    QWidget* m_birdIdleWingFoldRow = nullptr;
+    QLabel* m_birdIdleWingFoldLabel = nullptr;
+    QWidget* m_birdIdleTailFeatherRow = nullptr;
+    QLabel* m_birdIdleTailFeatherLabel = nullptr;
+
+    // Fish idle specific
+    QSlider* m_fishIdleFinScullSlider = nullptr;
+    QSlider* m_fishIdleTailSwaySlider = nullptr;
+    QSlider* m_fishIdleBodyUndulationSlider = nullptr;
+    QSlider* m_fishIdleDorsalSwaySlider = nullptr;
+    QSlider* m_fishIdleDriftSlider = nullptr;
+    QWidget* m_fishIdleFinScullRow = nullptr;
+    QLabel* m_fishIdleFinScullLabel = nullptr;
+    QWidget* m_fishIdleTailSwayRow = nullptr;
+    QLabel* m_fishIdleTailSwayLabel = nullptr;
+    QWidget* m_fishIdleBodyUndulationRow = nullptr;
+    QLabel* m_fishIdleBodyUndulationLabel = nullptr;
+    QWidget* m_fishIdleDorsalSwayRow = nullptr;
+    QLabel* m_fishIdleDorsalSwayLabel = nullptr;
+    QWidget* m_fishIdleDriftRow = nullptr;
+    QLabel* m_fishIdleDriftLabel = nullptr;
+
+    // Snake idle specific
+    QSlider* m_snakeIdleHeadSwaySlider = nullptr;
+    QSlider* m_snakeIdleHeadRaiseSlider = nullptr;
+    QSlider* m_snakeIdleTongueFlickSlider = nullptr;
+    QSlider* m_snakeIdleBodyUndulationSlider = nullptr;
+    QSlider* m_snakeIdleTailTwitchSlider = nullptr;
+    QWidget* m_snakeIdleHeadSwayRow = nullptr;
+    QLabel* m_snakeIdleHeadSwayLabel = nullptr;
+    QWidget* m_snakeIdleHeadRaiseRow = nullptr;
+    QLabel* m_snakeIdleHeadRaiseLabel = nullptr;
+    QWidget* m_snakeIdleTongueFlickRow = nullptr;
+    QLabel* m_snakeIdleTongueFlickLabel = nullptr;
+    QWidget* m_snakeIdleBodyUndulationRow = nullptr;
+    QLabel* m_snakeIdleBodyUndulationLabel = nullptr;
+    QWidget* m_snakeIdleTailTwitchRow = nullptr;
+    QLabel* m_snakeIdleTailTwitchLabel = nullptr;
+
     QCheckBox* m_sharedUseFabrikCheck = nullptr;
     QCheckBox* m_sharedPlaneStabilizationCheck = nullptr;
     QCheckBox* m_hideBonesCheck = nullptr;

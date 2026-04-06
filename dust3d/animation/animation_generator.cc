@@ -22,23 +22,30 @@
 
 #include <dust3d/animation/animation_generator.h>
 #include <dust3d/animation/biped/die.h>
+#include <dust3d/animation/biped/idle.h>
 #include <dust3d/animation/biped/run.h>
 #include <dust3d/animation/biped/walk.h>
 #include <dust3d/animation/bird/die.h>
 #include <dust3d/animation/bird/forward.h>
+#include <dust3d/animation/bird/idle.h>
 #include <dust3d/animation/fish/die.h>
 #include <dust3d/animation/fish/forward.h>
+#include <dust3d/animation/fish/idle.h>
 #include <dust3d/animation/insect/attack.h>
 #include <dust3d/animation/insect/die.h>
 #include <dust3d/animation/insect/forward.h>
+#include <dust3d/animation/insect/idle.h>
 #include <dust3d/animation/insect/rub_hands.h>
 #include <dust3d/animation/insect/walk.h>
 #include <dust3d/animation/quadruped/die.h>
+#include <dust3d/animation/quadruped/idle.h>
 #include <dust3d/animation/quadruped/run.h>
 #include <dust3d/animation/quadruped/walk.h>
 #include <dust3d/animation/snake/die.h>
 #include <dust3d/animation/snake/forward.h>
+#include <dust3d/animation/snake/idle.h>
 #include <dust3d/animation/spider/die.h>
+#include <dust3d/animation/spider/idle.h>
 #include <dust3d/animation/spider/walk.h>
 
 namespace dust3d {
@@ -51,6 +58,8 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
 {
     if (animationType == "InsectWalk")
         return insect::walk(rigStructure, inverseBindMatrices, animationClip, parameters);
+    if (animationType == "InsectIdle")
+        return insect::idle(rigStructure, inverseBindMatrices, animationClip, parameters);
     if (animationType == "InsectRubHands")
         return insect::rubHands(rigStructure, inverseBindMatrices, animationClip, parameters);
     if (animationType == "InsectForward")
@@ -61,22 +70,32 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
         return insect::die(rigStructure, inverseBindMatrices, animationClip, parameters);
     if (animationType == "BirdForward")
         return bird::forward(rigStructure, inverseBindMatrices, animationClip, parameters);
+    if (animationType == "BirdIdle")
+        return bird::idle(rigStructure, inverseBindMatrices, animationClip, parameters);
     if (animationType == "FishForward")
         return fish::forward(rigStructure, inverseBindMatrices, animationClip, parameters);
+    if (animationType == "FishIdle")
+        return fish::idle(rigStructure, inverseBindMatrices, animationClip, parameters);
     if (animationType == "FishDie")
         return fish::die(rigStructure, inverseBindMatrices, animationClip, parameters);
     if (animationType == "SnakeForward")
         return snake::forward(rigStructure, inverseBindMatrices, animationClip, parameters);
+    if (animationType == "SnakeIdle")
+        return snake::idle(rigStructure, inverseBindMatrices, animationClip, parameters);
     if (animationType == "SnakeDie")
         return snake::die(rigStructure, inverseBindMatrices, animationClip, parameters);
     if (animationType == "BipedWalk")
         return biped::walk(rigStructure, inverseBindMatrices, animationClip, parameters);
+    if (animationType == "BipedIdle")
+        return biped::idle(rigStructure, inverseBindMatrices, animationClip, parameters);
     if (animationType == "BipedRun")
         return biped::run(rigStructure, inverseBindMatrices, animationClip, parameters);
     if (animationType == "BipedDie")
         return biped::die(rigStructure, inverseBindMatrices, animationClip, parameters);
     if (animationType == "QuadrupedWalk")
         return quadruped::walk(rigStructure, inverseBindMatrices, animationClip, parameters);
+    if (animationType == "QuadrupedIdle")
+        return quadruped::idle(rigStructure, inverseBindMatrices, animationClip, parameters);
     if (animationType == "QuadrupedRun")
         return quadruped::run(rigStructure, inverseBindMatrices, animationClip, parameters);
     if (animationType == "QuadrupedDie")
@@ -85,6 +104,8 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
         return bird::die(rigStructure, inverseBindMatrices, animationClip, parameters);
     if (animationType == "SpiderDie")
         return spider::die(rigStructure, inverseBindMatrices, animationClip, parameters);
+    if (animationType == "SpiderIdle")
+        return spider::idle(rigStructure, inverseBindMatrices, animationClip, parameters);
     if (animationType == "SpiderWalk")
         return spider::walk(rigStructure, inverseBindMatrices, animationClip, parameters);
 
