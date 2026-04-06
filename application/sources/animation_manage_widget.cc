@@ -436,6 +436,53 @@ void AnimationManageWidget::createParameterWidgets()
     m_fishForwardPelvicPhaseOffsetRow = pelvicPhaseOffsetPair.first;
     m_fishForwardPelvicPhaseOffsetLabel = pelvicPhaseOffsetPair.second;
 
+    // Snake animation parameters
+    m_snakeForwardWaveSpeedSlider = new QSlider;
+    m_snakeForwardWaveFrequencySlider = new QSlider;
+    m_snakeForwardWaveAmplitudeSlider = new QSlider;
+    m_snakeForwardWaveLengthSlider = new QSlider;
+    m_snakeForwardTailAmplitudeRatioSlider = new QSlider;
+    m_snakeForwardHeadYawFactorSlider = new QSlider;
+    m_snakeForwardHeadPullFactorSlider = new QSlider;
+    m_snakeForwardJawAmplitudeSlider = new QSlider;
+    m_snakeForwardJawFrequencySlider = new QSlider;
+
+    auto snakeWaveSpeedPair = makeSliderRow(tr("Wave Speed"), m_snakeForwardWaveSpeedSlider, 100, 25, 300);
+    m_snakeForwardWaveSpeedRow = snakeWaveSpeedPair.first;
+    m_snakeForwardWaveSpeedLabel = snakeWaveSpeedPair.second;
+
+    auto snakeWaveFrequencyPair = makeSliderRow(tr("Wave Frequency"), m_snakeForwardWaveFrequencySlider, 100, 25, 400);
+    m_snakeForwardWaveFrequencyRow = snakeWaveFrequencyPair.first;
+    m_snakeForwardWaveFrequencyLabel = snakeWaveFrequencyPair.second;
+
+    auto snakeWaveAmplitudePair = makeSliderRow(tr("Wave Amplitude"), m_snakeForwardWaveAmplitudeSlider, 100, 10, 300);
+    m_snakeForwardWaveAmplitudeRow = snakeWaveAmplitudePair.first;
+    m_snakeForwardWaveAmplitudeLabel = snakeWaveAmplitudePair.second;
+
+    auto snakeWaveLengthPair = makeSliderRow(tr("Wave Length"), m_snakeForwardWaveLengthSlider, 100, 50, 200);
+    m_snakeForwardWaveLengthRow = snakeWaveLengthPair.first;
+    m_snakeForwardWaveLengthLabel = snakeWaveLengthPair.second;
+
+    auto snakeTailAmplitudeRatioPair = makeSliderRow(tr("Tail Amplitude Ratio"), m_snakeForwardTailAmplitudeRatioSlider, 100, 50, 500);
+    m_snakeForwardTailAmplitudeRatioRow = snakeTailAmplitudeRatioPair.first;
+    m_snakeForwardTailAmplitudeRatioLabel = snakeTailAmplitudeRatioPair.second;
+
+    auto snakeHeadYawPair = makeSliderRow(tr("Head Yaw"), m_snakeForwardHeadYawFactorSlider, 100, 0, 200);
+    m_snakeForwardHeadYawFactorRow = snakeHeadYawPair.first;
+    m_snakeForwardHeadYawFactorLabel = snakeHeadYawPair.second;
+
+    auto snakeHeadPullPair = makeSliderRow(tr("Head Pull"), m_snakeForwardHeadPullFactorSlider, 100, 0, 300);
+    m_snakeForwardHeadPullFactorRow = snakeHeadPullPair.first;
+    m_snakeForwardHeadPullFactorLabel = snakeHeadPullPair.second;
+
+    auto snakeJawAmplitudePair = makeSliderRow(tr("Jaw Amplitude"), m_snakeForwardJawAmplitudeSlider, 200, 0, 600);
+    m_snakeForwardJawAmplitudeRow = snakeJawAmplitudePair.first;
+    m_snakeForwardJawAmplitudeLabel = snakeJawAmplitudePair.second;
+
+    auto snakeJawFrequencyPair = makeSliderRow(tr("Jaw Frequency"), m_snakeForwardJawFrequencySlider, 100, 0, 600);
+    m_snakeForwardJawFrequencyRow = snakeJawFrequencyPair.first;
+    m_snakeForwardJawFrequencyLabel = snakeJawFrequencyPair.second;
+
     m_sharedUseFabrikCheck = new QCheckBox("Use FABRIK IK");
     m_sharedUseFabrikCheck->setChecked(true);
     parameterLayout->addRow(m_sharedUseFabrikCheck);
@@ -527,6 +574,15 @@ void AnimationManageWidget::createParameterWidgets()
         connect(m_fishForwardVentralSwayPowerSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
         connect(m_fishForwardPectoralPhaseOffsetSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
         connect(m_fishForwardPelvicPhaseOffsetSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_snakeForwardWaveSpeedSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_snakeForwardWaveFrequencySlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_snakeForwardWaveAmplitudeSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_snakeForwardWaveLengthSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_snakeForwardTailAmplitudeRatioSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_snakeForwardHeadYawFactorSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_snakeForwardHeadPullFactorSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_snakeForwardJawAmplitudeSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_snakeForwardJawFrequencySlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
 
         connect(m_sharedUseFabrikCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
         connect(m_sharedPlaneStabilizationCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
@@ -744,6 +800,16 @@ void AnimationManageWidget::updateVisibleParameters(const QString& animationType
         setParameterRowVisible(m_fishForwardVentralSwayPowerRow, m_fishForwardVentralSwayPowerLabel, true);
         setParameterRowVisible(m_fishForwardPectoralPhaseOffsetRow, m_fishForwardPectoralPhaseOffsetLabel, true);
         setParameterRowVisible(m_fishForwardPelvicPhaseOffsetRow, m_fishForwardPelvicPhaseOffsetLabel, true);
+    } else if (animationType == "SnakeForward") {
+        setParameterRowVisible(m_snakeForwardWaveSpeedRow, m_snakeForwardWaveSpeedLabel, true);
+        setParameterRowVisible(m_snakeForwardWaveFrequencyRow, m_snakeForwardWaveFrequencyLabel, true);
+        setParameterRowVisible(m_snakeForwardWaveAmplitudeRow, m_snakeForwardWaveAmplitudeLabel, true);
+        setParameterRowVisible(m_snakeForwardWaveLengthRow, m_snakeForwardWaveLengthLabel, true);
+        setParameterRowVisible(m_snakeForwardTailAmplitudeRatioRow, m_snakeForwardTailAmplitudeRatioLabel, true);
+        setParameterRowVisible(m_snakeForwardHeadYawFactorRow, m_snakeForwardHeadYawFactorLabel, true);
+        setParameterRowVisible(m_snakeForwardHeadPullFactorRow, m_snakeForwardHeadPullFactorLabel, true);
+        setParameterRowVisible(m_snakeForwardJawAmplitudeRow, m_snakeForwardJawAmplitudeLabel, true);
+        setParameterRowVisible(m_snakeForwardJawFrequencyRow, m_snakeForwardJawFrequencyLabel, true);
     } else if (animationType == "InsectRubHands") {
         setParameterRowVisible(m_sharedStepLengthRow, m_sharedStepLengthLabel, true);
         setParameterRowVisible(m_sharedStepHeightRow, m_sharedStepHeightLabel, true);
@@ -856,6 +922,10 @@ void AnimationManageWidget::updateAnimationNameForRigType(const QString& rigType
         m_addAnimationButton->setEnabled(true);
     } else if (rigType.compare("Spider", Qt::CaseInsensitive) == 0) {
         m_animationNameCombo->addItem("SpiderWalk");
+        m_animationNameCombo->setEnabled(true);
+        m_addAnimationButton->setEnabled(true);
+    } else if (rigType.compare("Snake", Qt::CaseInsensitive) == 0) {
+        m_animationNameCombo->addItem("SnakeForward");
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);
     } else {
@@ -980,6 +1050,26 @@ void AnimationManageWidget::updateAnimationParamsFromWidgets()
         m_animationParams.setValue("pectoralPhaseOffset", m_fishForwardPectoralPhaseOffsetSlider->value() / 100.0);
     if (m_fishForwardPelvicPhaseOffsetSlider)
         m_animationParams.setValue("pelvicPhaseOffset", m_fishForwardPelvicPhaseOffsetSlider->value() / 100.0);
+
+    if (m_snakeForwardWaveSpeedSlider)
+        m_animationParams.setValue("waveSpeed", m_snakeForwardWaveSpeedSlider->value() / 100.0);
+    if (m_snakeForwardWaveFrequencySlider)
+        m_animationParams.setValue("waveFrequency", m_snakeForwardWaveFrequencySlider->value() / 50.0);
+    if (m_snakeForwardWaveAmplitudeSlider)
+        m_animationParams.setValue("waveAmplitude", m_snakeForwardWaveAmplitudeSlider->value() / 667.0);
+    if (m_snakeForwardWaveLengthSlider)
+        m_animationParams.setValue("waveLength", m_snakeForwardWaveLengthSlider->value() / 100.0);
+    if (m_snakeForwardTailAmplitudeRatioSlider)
+        m_animationParams.setValue("tailAmplitudeRatio", m_snakeForwardTailAmplitudeRatioSlider->value() / 40.0);
+    if (m_snakeForwardHeadYawFactorSlider)
+        m_animationParams.setValue("headYawFactor", m_snakeForwardHeadYawFactorSlider->value() / 2000.0);
+    if (m_snakeForwardHeadPullFactorSlider)
+        m_animationParams.setValue("headPullFactor", m_snakeForwardHeadPullFactorSlider->value() / 200.0);
+    if (m_snakeForwardJawAmplitudeSlider)
+        m_animationParams.setValue("jawAmplitude", m_snakeForwardJawAmplitudeSlider->value() / 500.0);
+    if (m_snakeForwardJawFrequencySlider)
+        m_animationParams.setValue("jawFrequency", m_snakeForwardJawFrequencySlider->value() / 100.0);
+
     // Fish die parameters
     if (m_fishDieHitIntensitySlider)
         m_animationParams.setValue("hitIntensity", m_fishDieHitIntensitySlider->value() / 100.0);
@@ -1436,6 +1526,18 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
         m_fishForwardPectoralPhaseOffsetSlider->blockSignals(true);
     if (m_fishForwardPelvicPhaseOffsetSlider)
         m_fishForwardPelvicPhaseOffsetSlider->blockSignals(true);
+    if (m_snakeForwardWaveSpeedSlider)
+        m_snakeForwardWaveSpeedSlider->blockSignals(true);
+    if (m_snakeForwardWaveFrequencySlider)
+        m_snakeForwardWaveFrequencySlider->blockSignals(true);
+    if (m_snakeForwardWaveAmplitudeSlider)
+        m_snakeForwardWaveAmplitudeSlider->blockSignals(true);
+    if (m_snakeForwardWaveLengthSlider)
+        m_snakeForwardWaveLengthSlider->blockSignals(true);
+    if (m_snakeForwardTailAmplitudeRatioSlider)
+        m_snakeForwardTailAmplitudeRatioSlider->blockSignals(true);
+    if (m_snakeForwardHeadYawFactorSlider)
+        m_snakeForwardHeadYawFactorSlider->blockSignals(true);
 
     m_sharedStepLengthSlider->setValue(static_cast<int>(params.getValue("stepLengthFactor", 1.0) * 100));
     m_sharedStepHeightSlider->setValue(static_cast<int>(params.getValue("stepHeightFactor", 1.0) * 100));
@@ -1515,6 +1617,25 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
     if (m_fishForwardPelvicPhaseOffsetSlider)
         m_fishForwardPelvicPhaseOffsetSlider->setValue(static_cast<int>(params.getValue("pelvicPhaseOffset", 0.5) * 100));
 
+    if (m_snakeForwardWaveSpeedSlider)
+        m_snakeForwardWaveSpeedSlider->setValue(static_cast<int>(params.getValue("waveSpeed", 1.0) * 100));
+    if (m_snakeForwardWaveFrequencySlider)
+        m_snakeForwardWaveFrequencySlider->setValue(static_cast<int>(params.getValue("waveFrequency", 2.0) * 50));
+    if (m_snakeForwardWaveAmplitudeSlider)
+        m_snakeForwardWaveAmplitudeSlider->setValue(static_cast<int>(params.getValue("waveAmplitude", 0.15) * 667));
+    if (m_snakeForwardWaveLengthSlider)
+        m_snakeForwardWaveLengthSlider->setValue(static_cast<int>(params.getValue("waveLength", 1.0) * 100));
+    if (m_snakeForwardTailAmplitudeRatioSlider)
+        m_snakeForwardTailAmplitudeRatioSlider->setValue(static_cast<int>(params.getValue("tailAmplitudeRatio", 2.5) * 40));
+    if (m_snakeForwardHeadYawFactorSlider)
+        m_snakeForwardHeadYawFactorSlider->setValue(static_cast<int>(params.getValue("headYawFactor", 0.05) * 2000));
+    if (m_snakeForwardHeadPullFactorSlider)
+        m_snakeForwardHeadPullFactorSlider->setValue(static_cast<int>(params.getValue("headPullFactor", 0.2) * 200));
+    if (m_snakeForwardJawAmplitudeSlider)
+        m_snakeForwardJawAmplitudeSlider->setValue(static_cast<int>(params.getValue("jawAmplitude", 0.25) * 500));
+    if (m_snakeForwardJawFrequencySlider)
+        m_snakeForwardJawFrequencySlider->setValue(static_cast<int>(params.getValue("jawFrequency", 1.0) * 100));
+
     m_sharedStepLengthSlider->blockSignals(false);
     m_sharedStepHeightSlider->blockSignals(false);
     m_sharedBodyBobSlider->blockSignals(false);
@@ -1582,6 +1703,18 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
         m_fishForwardPectoralPhaseOffsetSlider->blockSignals(false);
     if (m_fishForwardPelvicPhaseOffsetSlider)
         m_fishForwardPelvicPhaseOffsetSlider->blockSignals(false);
+    if (m_snakeForwardWaveSpeedSlider)
+        m_snakeForwardWaveSpeedSlider->blockSignals(false);
+    if (m_snakeForwardWaveFrequencySlider)
+        m_snakeForwardWaveFrequencySlider->blockSignals(false);
+    if (m_snakeForwardWaveAmplitudeSlider)
+        m_snakeForwardWaveAmplitudeSlider->blockSignals(false);
+    if (m_snakeForwardWaveLengthSlider)
+        m_snakeForwardWaveLengthSlider->blockSignals(false);
+    if (m_snakeForwardTailAmplitudeRatioSlider)
+        m_snakeForwardTailAmplitudeRatioSlider->blockSignals(false);
+    if (m_snakeForwardHeadYawFactorSlider)
+        m_snakeForwardHeadYawFactorSlider->blockSignals(false);
 
     // Update title and trigger preview
     m_parametersGroupBox->setTitle(tr("Parameters (") + anim->name + ")");

@@ -97,6 +97,15 @@ private:
     QSlider* m_fishForwardVentralSwayPowerSlider = nullptr;
     QSlider* m_fishForwardPectoralPhaseOffsetSlider = nullptr;
     QSlider* m_fishForwardPelvicPhaseOffsetSlider = nullptr;
+    QSlider* m_snakeForwardWaveSpeedSlider = nullptr;
+    QSlider* m_snakeForwardWaveFrequencySlider = nullptr;
+    QSlider* m_snakeForwardWaveAmplitudeSlider = nullptr;
+    QSlider* m_snakeForwardWaveLengthSlider = nullptr;
+    QSlider* m_snakeForwardTailAmplitudeRatioSlider = nullptr;
+    QSlider* m_snakeForwardHeadYawFactorSlider = nullptr;
+    QSlider* m_snakeForwardHeadPullFactorSlider = nullptr;
+    QSlider* m_snakeForwardJawAmplitudeSlider = nullptr;
+    QSlider* m_snakeForwardJawFrequencySlider = nullptr;
 
     QFormLayout* m_parameterLayout = nullptr;
     QWidget* m_sharedStepLengthRow = nullptr;
@@ -172,6 +181,27 @@ private:
     QLabel* m_fishForwardPectoralPhaseOffsetLabel = nullptr;
     QWidget* m_fishForwardPelvicPhaseOffsetRow = nullptr;
     QLabel* m_fishForwardPelvicPhaseOffsetLabel = nullptr;
+
+    // Snake animation parameter rows and labels
+    QWidget* m_snakeForwardWaveSpeedRow = nullptr;
+    QLabel* m_snakeForwardWaveSpeedLabel = nullptr;
+    QWidget* m_snakeForwardWaveFrequencyRow = nullptr;
+    QLabel* m_snakeForwardWaveFrequencyLabel = nullptr;
+    QWidget* m_snakeForwardWaveAmplitudeRow = nullptr;
+    QLabel* m_snakeForwardWaveAmplitudeLabel = nullptr;
+    QWidget* m_snakeForwardWaveLengthRow = nullptr;
+    QLabel* m_snakeForwardWaveLengthLabel = nullptr;
+    QWidget* m_snakeForwardTailAmplitudeRatioRow = nullptr;
+    QLabel* m_snakeForwardTailAmplitudeRatioLabel = nullptr;
+    QWidget* m_snakeForwardHeadYawFactorRow = nullptr;
+    QLabel* m_snakeForwardHeadYawFactorLabel = nullptr;
+    QWidget* m_snakeForwardHeadPullFactorRow = nullptr;
+    QLabel* m_snakeForwardHeadPullFactorLabel = nullptr;
+    QWidget* m_snakeForwardJawAmplitudeRow = nullptr;
+    QLabel* m_snakeForwardJawAmplitudeLabel = nullptr;
+    QWidget* m_snakeForwardJawFrequencyRow = nullptr;
+    QLabel* m_snakeForwardJawFrequencyLabel = nullptr;
+
     // Biped walk parameter sliders
     QSlider* m_sharedArmSwingSlider = nullptr;
     QSlider* m_sharedHipSwaySlider = nullptr;

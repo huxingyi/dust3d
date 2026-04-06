@@ -34,6 +34,7 @@
 #include <dust3d/animation/quadruped/die.h>
 #include <dust3d/animation/quadruped/run.h>
 #include <dust3d/animation/quadruped/walk.h>
+#include <dust3d/animation/snake/forward.h>
 #include <dust3d/animation/spider/walk.h>
 
 namespace dust3d {
@@ -60,6 +61,8 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
         return fish::forward(rigStructure, inverseBindMatrices, animationClip, parameters);
     if (animationType == "FishDie")
         return fish::die(rigStructure, inverseBindMatrices, animationClip, parameters);
+    if (animationType == "SnakeForward")
+        return snake::forward(rigStructure, inverseBindMatrices, animationClip, parameters);
     if (animationType == "BipedWalk")
         return biped::walk(rigStructure, inverseBindMatrices, animationClip, parameters);
     if (animationType == "BipedRun")
