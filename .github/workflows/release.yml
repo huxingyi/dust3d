@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - pipeline
     tags:
       - '*'
 
@@ -34,6 +35,27 @@ jobs:
           sudo apt-get install -y libfuse2
           cd ${GITHUB_WORKSPACE} && sh ./ci/appimage/bundle.sh
           mv Dust3D-x86_64.AppImage dust3d-${{ github.ref_name }}.AppImage
+      - name: Install screenshot dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb imagemagick
+      - name: Run AppImage and capture screenshot
+        run: |
+          chmod +x dust3d-${{ github.ref_name }}.AppImage
+          Xvfb :99 -screen 0 1280x720x24 &
+          XVFB_PID=$!
+          export DISPLAY=:99
+          ./dust3d-${{ github.ref_name }}.AppImage &
+          APP_PID=$!
+          sleep 12
+          import -silent -window root dust3d-${{ github.ref_name }}.png || true
+          kill $APP_PID || true
+          kill $XVFB_PID || true
+      - name: Upload AppImage screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: dust3d-${{ github.ref_name }}-screenshot
+          path: dust3d-${{ github.ref_name }}.png
       - name: Checkout Pages repository
         uses: actions/checkout@v4
         with:
