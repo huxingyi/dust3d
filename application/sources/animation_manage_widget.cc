@@ -143,28 +143,28 @@ void AnimationManageWidget::createParameterWidgets()
     parameterLayout->addRow(new QLabel(tr("Name:")), m_animationNameInput);
 
     // Common parameters (visible for all animation types)
-    m_durationSpinBox = new QDoubleSpinBox;
-    m_durationSpinBox->setRange(0.01, 59.99);
-    m_durationSpinBox->setDecimals(2);
-    m_durationSpinBox->setSingleStep(0.1);
-    m_durationSpinBox->setValue(1.0);
-    m_durationSpinBox->setSuffix(tr(" s"));
-    m_durationSpinBox->setToolTip(tr("Duration in seconds (0.01 – 60)"));
-    parameterLayout->addRow(new QLabel(tr("Duration:")), m_durationSpinBox);
+    m_sharedDurationSpinBox = new QDoubleSpinBox;
+    m_sharedDurationSpinBox->setRange(0.01, 59.99);
+    m_sharedDurationSpinBox->setDecimals(2);
+    m_sharedDurationSpinBox->setSingleStep(0.1);
+    m_sharedDurationSpinBox->setValue(3.0);
+    m_sharedDurationSpinBox->setSuffix(tr(" s"));
+    m_sharedDurationSpinBox->setToolTip(tr("Duration in seconds (0.01 – 60)"));
+    parameterLayout->addRow(new QLabel(tr("Duration:")), m_sharedDurationSpinBox);
 
-    m_frameCountSpinBox = new QSpinBox;
-    m_frameCountSpinBox->setRange(1, 4999);
-    m_frameCountSpinBox->setSingleStep(5);
-    m_frameCountSpinBox->setValue(30);
-    m_frameCountSpinBox->setToolTip(tr("Number of frames (1 – 4999)"));
-    parameterLayout->addRow(new QLabel(tr("Frame Count:")), m_frameCountSpinBox);
+    m_sharedFrameCountSpinBox = new QSpinBox;
+    m_sharedFrameCountSpinBox->setRange(1, 4999);
+    m_sharedFrameCountSpinBox->setSingleStep(5);
+    m_sharedFrameCountSpinBox->setValue(90);
+    m_sharedFrameCountSpinBox->setToolTip(tr("Number of frames (1 – 4999)"));
+    parameterLayout->addRow(new QLabel(tr("Frame Count:")), m_sharedFrameCountSpinBox);
 
-    m_stepLengthSlider = new QSlider;
-    m_stepHeightSlider = new QSlider;
-    m_bodyBobSlider = new QSlider;
-    m_gaitSpeedSlider = new QSlider;
-    m_rubForwardOffsetSlider = new QSlider;
-    m_rubUpOffsetSlider = new QSlider;
+    m_sharedStepLengthSlider = new QSlider;
+    m_sharedStepHeightSlider = new QSlider;
+    m_sharedBodyBobSlider = new QSlider;
+    m_sharedGaitSpeedSlider = new QSlider;
+    m_insectRubHandsRubForwardOffsetSlider = new QSlider;
+    m_insectRubHandsRubUpOffsetSlider = new QSlider;
 
     // Fish die parameter sliders
     m_fishDieHitIntensitySlider = new QSlider;
@@ -176,19 +176,19 @@ void AnimationManageWidget::createParameterWidgets()
     m_fishDieSpinDecaySlider = new QSlider;
 
     // Fish animation parameter sliders
-    m_swimSpeedSlider = new QSlider;
-    m_swimFrequencySlider = new QSlider;
-    m_spineAmplitudeSlider = new QSlider;
-    m_waveLengthSlider = new QSlider;
-    m_tailAmplitudeRatioSlider = new QSlider;
-    m_bodyRollSlider = new QSlider;
-    m_forwardThrustSlider = new QSlider;
-    m_pectoralFlapPowerSlider = new QSlider;
-    m_pelvicFlapPowerSlider = new QSlider;
-    m_dorsalSwayPowerSlider = new QSlider;
-    m_ventralSwayPowerSlider = new QSlider;
-    m_pectoralPhaseOffsetSlider = new QSlider;
-    m_pelvicPhaseOffsetSlider = new QSlider;
+    m_fishForwardSwimSpeedSlider = new QSlider;
+    m_fishForwardSwimFrequencySlider = new QSlider;
+    m_fishForwardSpineAmplitudeSlider = new QSlider;
+    m_fishForwardWaveLengthSlider = new QSlider;
+    m_fishForwardTailAmplitudeRatioSlider = new QSlider;
+    m_fishForwardBodyRollSlider = new QSlider;
+    m_fishForwardForwardThrustSlider = new QSlider;
+    m_fishForwardPectoralFlapPowerSlider = new QSlider;
+    m_fishForwardPelvicFlapPowerSlider = new QSlider;
+    m_fishForwardDorsalSwayPowerSlider = new QSlider;
+    m_fishForwardVentralSwayPowerSlider = new QSlider;
+    m_fishForwardPectoralPhaseOffsetSlider = new QSlider;
+    m_fishForwardPelvicPhaseOffsetSlider = new QSlider;
 
     auto makeSliderRow = [&](const QString& labelText, QSlider* slider, int value, int rangeMin = 25, int rangeMax = 200) {
         slider->setOrientation(Qt::Horizontal);
@@ -206,89 +206,89 @@ void AnimationManageWidget::createParameterWidgets()
         return std::pair<QWidget*, QLabel*>(rowWidget, label);
     };
 
-    auto stepLengthPair = makeSliderRow(tr("Step Length"), m_stepLengthSlider, 100);
-    m_stepLengthRow = stepLengthPair.first;
-    m_stepLengthLabel = stepLengthPair.second;
-    auto stepHeightPair = makeSliderRow(tr("Step Height"), m_stepHeightSlider, 100);
-    m_stepHeightRow = stepHeightPair.first;
-    m_stepHeightLabel = stepHeightPair.second;
-    auto bodyBobPair = makeSliderRow(tr("Body Bob"), m_bodyBobSlider, 100);
-    m_bodyBobRow = bodyBobPair.first;
-    m_bodyBobLabel = bodyBobPair.second;
-    auto gaitSpeedPair = makeSliderRow(tr("Gait Speed"), m_gaitSpeedSlider, 100);
-    m_gaitSpeedRow = gaitSpeedPair.first;
-    m_gaitSpeedLabel = gaitSpeedPair.second;
-    auto rubForwardOffsetPair = makeSliderRow(tr("Rub Forward Offset"), m_rubForwardOffsetSlider, 100);
-    m_rubForwardOffsetRow = rubForwardOffsetPair.first;
-    m_rubForwardOffsetLabel = rubForwardOffsetPair.second;
-    auto rubUpOffsetPair = makeSliderRow(tr("Rub Up Offset"), m_rubUpOffsetSlider, 100);
-    m_rubUpOffsetRow = rubUpOffsetPair.first;
-    m_rubUpOffsetLabel = rubUpOffsetPair.second;
+    auto stepLengthPair = makeSliderRow(tr("Step Length"), m_sharedStepLengthSlider, 100);
+    m_sharedStepLengthRow = stepLengthPair.first;
+    m_sharedStepLengthLabel = stepLengthPair.second;
+    auto stepHeightPair = makeSliderRow(tr("Step Height"), m_sharedStepHeightSlider, 100);
+    m_sharedStepHeightRow = stepHeightPair.first;
+    m_sharedStepHeightLabel = stepHeightPair.second;
+    auto bodyBobPair = makeSliderRow(tr("Body Bob"), m_sharedBodyBobSlider, 100);
+    m_sharedBodyBobRow = bodyBobPair.first;
+    m_sharedBodyBobLabel = bodyBobPair.second;
+    auto gaitSpeedPair = makeSliderRow(tr("Gait Speed"), m_sharedGaitSpeedSlider, 100);
+    m_sharedGaitSpeedRow = gaitSpeedPair.first;
+    m_sharedGaitSpeedLabel = gaitSpeedPair.second;
+    auto rubForwardOffsetPair = makeSliderRow(tr("Rub Forward Offset"), m_insectRubHandsRubForwardOffsetSlider, 100);
+    m_insectRubHandsRubForwardOffsetRow = rubForwardOffsetPair.first;
+    m_insectRubHandsRubForwardOffsetLabel = rubForwardOffsetPair.second;
+    auto rubUpOffsetPair = makeSliderRow(tr("Rub Up Offset"), m_insectRubHandsRubUpOffsetSlider, 100);
+    m_insectRubHandsRubUpOffsetRow = rubUpOffsetPair.first;
+    m_insectRubHandsRubUpOffsetLabel = rubUpOffsetPair.second;
 
     // Biped walk parameters
-    m_armSwingSlider = new QSlider;
-    m_hipSwaySlider = new QSlider;
-    m_hipRotateSlider = new QSlider;
-    m_bipedSpineFlexSlider = new QSlider;
-    m_headBobSlider = new QSlider;
-    m_kneeBendSlider = new QSlider;
-    m_leanForwardSlider = new QSlider;
-    m_bouncinessSlider = new QSlider;
+    m_sharedArmSwingSlider = new QSlider;
+    m_sharedHipSwaySlider = new QSlider;
+    m_sharedHipRotateSlider = new QSlider;
+    m_sharedBipedSpineFlexSlider = new QSlider;
+    m_sharedHeadBobSlider = new QSlider;
+    m_sharedKneeBendSlider = new QSlider;
+    m_sharedLeanForwardSlider = new QSlider;
+    m_sharedBouncinessSlider = new QSlider;
 
-    auto armSwingPair = makeSliderRow(tr("Arm Swing"), m_armSwingSlider, 100);
-    m_armSwingRow = armSwingPair.first;
-    m_armSwingLabel = armSwingPair.second;
-    auto hipSwayPair = makeSliderRow(tr("Hip Sway"), m_hipSwaySlider, 100);
-    m_hipSwayRow = hipSwayPair.first;
-    m_hipSwayLabel = hipSwayPair.second;
-    auto hipRotatePair = makeSliderRow(tr("Hip Rotate"), m_hipRotateSlider, 100);
-    m_hipRotateRow = hipRotatePair.first;
-    m_hipRotateLabel = hipRotatePair.second;
-    auto bipedSpineFlexPair = makeSliderRow(tr("Spine Counter"), m_bipedSpineFlexSlider, 100);
-    m_bipedSpineFlexRow = bipedSpineFlexPair.first;
-    m_bipedSpineFlexLabel = bipedSpineFlexPair.second;
-    auto headBobPair = makeSliderRow(tr("Head Stabilize"), m_headBobSlider, 100);
-    m_headBobRow = headBobPair.first;
-    m_headBobLabel = headBobPair.second;
-    auto kneeBendPair = makeSliderRow(tr("Knee Bend"), m_kneeBendSlider, 100);
-    m_kneeBendRow = kneeBendPair.first;
-    m_kneeBendLabel = kneeBendPair.second;
-    auto leanForwardPair = makeSliderRow(tr("Lean Forward"), m_leanForwardSlider, 100, 0, 200);
-    m_leanForwardRow = leanForwardPair.first;
-    m_leanForwardLabel = leanForwardPair.second;
-    auto bouncinessPair = makeSliderRow(tr("Bounciness"), m_bouncinessSlider, 100, 0, 300);
-    m_bouncinessRow = bouncinessPair.first;
-    m_bouncinessLabel = bouncinessPair.second;
+    auto armSwingPair = makeSliderRow(tr("Arm Swing"), m_sharedArmSwingSlider, 100);
+    m_sharedArmSwingRow = armSwingPair.first;
+    m_sharedArmSwingLabel = armSwingPair.second;
+    auto hipSwayPair = makeSliderRow(tr("Hip Sway"), m_sharedHipSwaySlider, 100);
+    m_sharedHipSwayRow = hipSwayPair.first;
+    m_sharedHipSwayLabel = hipSwayPair.second;
+    auto hipRotatePair = makeSliderRow(tr("Hip Rotate"), m_sharedHipRotateSlider, 100);
+    m_sharedHipRotateRow = hipRotatePair.first;
+    m_sharedHipRotateLabel = hipRotatePair.second;
+    auto bipedSpineFlexPair = makeSliderRow(tr("Spine Counter"), m_sharedBipedSpineFlexSlider, 100);
+    m_sharedBipedSpineFlexRow = bipedSpineFlexPair.first;
+    m_sharedBipedSpineFlexLabel = bipedSpineFlexPair.second;
+    auto headBobPair = makeSliderRow(tr("Head Stabilize"), m_sharedHeadBobSlider, 100);
+    m_sharedHeadBobRow = headBobPair.first;
+    m_sharedHeadBobLabel = headBobPair.second;
+    auto kneeBendPair = makeSliderRow(tr("Knee Bend"), m_sharedKneeBendSlider, 100);
+    m_sharedKneeBendRow = kneeBendPair.first;
+    m_sharedKneeBendLabel = kneeBendPair.second;
+    auto leanForwardPair = makeSliderRow(tr("Lean Forward"), m_sharedLeanForwardSlider, 100, 0, 200);
+    m_sharedLeanForwardRow = leanForwardPair.first;
+    m_sharedLeanForwardLabel = leanForwardPair.second;
+    auto bouncinessPair = makeSliderRow(tr("Bounciness"), m_sharedBouncinessSlider, 100, 0, 300);
+    m_sharedBouncinessRow = bouncinessPair.first;
+    m_sharedBouncinessLabel = bouncinessPair.second;
 
     // Quadruped walk parameters
-    m_spineFlexSlider = new QSlider;
-    m_tailSwaySlider = new QSlider;
+    m_sharedSpineFlexSlider = new QSlider;
+    m_sharedTailSwaySlider = new QSlider;
 
-    auto spineFlexPair = makeSliderRow(tr("Spine Flex"), m_spineFlexSlider, 100);
-    m_spineFlexRow = spineFlexPair.first;
-    m_spineFlexLabel = spineFlexPair.second;
-    auto tailSwayPair = makeSliderRow(tr("Tail Sway"), m_tailSwaySlider, 100);
-    m_tailSwayRow = tailSwayPair.first;
-    m_tailSwayLabel = tailSwayPair.second;
+    auto spineFlexPair = makeSliderRow(tr("Spine Flex"), m_sharedSpineFlexSlider, 100);
+    m_sharedSpineFlexRow = spineFlexPair.first;
+    m_sharedSpineFlexLabel = spineFlexPair.second;
+    auto tailSwayPair = makeSliderRow(tr("Tail Sway"), m_sharedTailSwaySlider, 100);
+    m_sharedTailSwayRow = tailSwayPair.first;
+    m_sharedTailSwayLabel = tailSwayPair.second;
 
     // Quadruped run parameters
-    m_suspensionSlider = new QSlider;
-    m_forwardLeanSlider = new QSlider;
-    m_strideFrequencySlider = new QSlider;
+    m_sharedSuspensionSlider = new QSlider;
+    m_quadrupedRunForwardLeanSlider = new QSlider;
+    m_sharedStrideFrequencySlider = new QSlider;
 
-    auto suspensionPair = makeSliderRow(tr("Suspension"), m_suspensionSlider, 100);
-    m_suspensionRow = suspensionPair.first;
-    m_suspensionLabel = suspensionPair.second;
-    auto forwardLeanPair = makeSliderRow(tr("Forward Lean"), m_forwardLeanSlider, 100);
-    m_forwardLeanRow = forwardLeanPair.first;
-    m_forwardLeanLabel = forwardLeanPair.second;
-    auto strideFrequencyPair = makeSliderRow(tr("Stride Frequency"), m_strideFrequencySlider, 100);
-    m_strideFrequencyRow = strideFrequencyPair.first;
-    m_strideFrequencyLabel = strideFrequencyPair.second;
-    m_boundSlider = new QSlider;
-    auto boundPair = makeSliderRow(tr("Bound"), m_boundSlider, 0, 0, 100);
-    m_boundRow = boundPair.first;
-    m_boundLabel = boundPair.second;
+    auto suspensionPair = makeSliderRow(tr("Suspension"), m_sharedSuspensionSlider, 100);
+    m_sharedSuspensionRow = suspensionPair.first;
+    m_sharedSuspensionLabel = suspensionPair.second;
+    auto forwardLeanPair = makeSliderRow(tr("Forward Lean"), m_quadrupedRunForwardLeanSlider, 100);
+    m_quadrupedRunForwardLeanRow = forwardLeanPair.first;
+    m_quadrupedRunForwardLeanLabel = forwardLeanPair.second;
+    auto strideFrequencyPair = makeSliderRow(tr("Stride Frequency"), m_sharedStrideFrequencySlider, 100);
+    m_sharedStrideFrequencyRow = strideFrequencyPair.first;
+    m_sharedStrideFrequencyLabel = strideFrequencyPair.second;
+    m_quadrupedRunBoundSlider = new QSlider;
+    auto boundPair = makeSliderRow(tr("Bound"), m_quadrupedRunBoundSlider, 0, 0, 100);
+    m_quadrupedRunBoundRow = boundPair.first;
+    m_quadrupedRunBoundLabel = boundPair.second;
 
     // Quadruped die parameters
     m_quadDieCollapseSpeedSlider = new QSlider;
@@ -327,11 +327,11 @@ void AnimationManageWidget::createParameterWidgets()
     m_spiderBodyYawLabel = spiderBodyYawPair.second;
 
     // Insect die parameters
-    m_dieLengthStiffnessSlider = new QSlider;
-    m_dieParentStiffnessSlider = new QSlider;
-    m_dieMaxJointAngleSlider = new QSlider;
-    m_dieDampingSlider = new QSlider;
-    m_dieGroundBounceSlider = new QSlider;
+    m_sharedDieLengthStiffnessSlider = new QSlider;
+    m_sharedDieParentStiffnessSlider = new QSlider;
+    m_sharedDieMaxJointAngleSlider = new QSlider;
+    m_sharedDieDampingSlider = new QSlider;
+    m_sharedDieGroundBounceSlider = new QSlider;
 
     auto fishDieHitIntensityPair = makeSliderRow(tr("Hit Intensity"), m_fishDieHitIntensitySlider, 100, 10, 300);
     m_fishDieHitIntensityRow = fishDieHitIntensityPair.first;
@@ -363,86 +363,86 @@ void AnimationManageWidget::createParameterWidgets()
     m_fishDieSpinDecayRow = fishDieSpinDecayPair.first;
     m_fishDieSpinDecayLabel = fishDieSpinDecayPair.second;
 
-    auto dieLengthStiffnessPair = makeSliderRow(tr("Length Stiffness"), m_dieLengthStiffnessSlider, 90, 10, 200);
-    m_dieLengthStiffnessRow = dieLengthStiffnessPair.first;
-    m_dieLengthStiffnessLabel = dieLengthStiffnessPair.second;
+    auto dieLengthStiffnessPair = makeSliderRow(tr("Length Stiffness"), m_sharedDieLengthStiffnessSlider, 90, 10, 200);
+    m_sharedDieLengthStiffnessRow = dieLengthStiffnessPair.first;
+    m_sharedDieLengthStiffnessLabel = dieLengthStiffnessPair.second;
 
-    auto dieParentStiffnessPair = makeSliderRow(tr("Parent Stiffness"), m_dieParentStiffnessSlider, 80, 10, 200);
-    m_dieParentStiffnessRow = dieParentStiffnessPair.first;
-    m_dieParentStiffnessLabel = dieParentStiffnessPair.second;
+    auto dieParentStiffnessPair = makeSliderRow(tr("Parent Stiffness"), m_sharedDieParentStiffnessSlider, 80, 10, 200);
+    m_sharedDieParentStiffnessRow = dieParentStiffnessPair.first;
+    m_sharedDieParentStiffnessLabel = dieParentStiffnessPair.second;
 
-    auto dieMaxJointAnglePair = makeSliderRow(tr("Max Joint Angle"), m_dieMaxJointAngleSlider, 120, 60, 180);
-    m_dieMaxJointAngleRow = dieMaxJointAnglePair.first;
-    m_dieMaxJointAngleLabel = dieMaxJointAnglePair.second;
+    auto dieMaxJointAnglePair = makeSliderRow(tr("Max Joint Angle"), m_sharedDieMaxJointAngleSlider, 120, 60, 180);
+    m_sharedDieMaxJointAngleRow = dieMaxJointAnglePair.first;
+    m_sharedDieMaxJointAngleLabel = dieMaxJointAnglePair.second;
 
-    auto dieDampingPair = makeSliderRow(tr("Damping"), m_dieDampingSlider, 95, 50, 99);
-    m_dieDampingRow = dieDampingPair.first;
-    m_dieDampingLabel = dieDampingPair.second;
+    auto dieDampingPair = makeSliderRow(tr("Damping"), m_sharedDieDampingSlider, 95, 50, 99);
+    m_sharedDieDampingRow = dieDampingPair.first;
+    m_sharedDieDampingLabel = dieDampingPair.second;
 
-    auto dieGroundBouncePair = makeSliderRow(tr("Ground Bounce"), m_dieGroundBounceSlider, 22, 0, 100);
-    m_dieGroundBounceRow = dieGroundBouncePair.first;
-    m_dieGroundBounceLabel = dieGroundBouncePair.second;
+    auto dieGroundBouncePair = makeSliderRow(tr("Ground Bounce"), m_sharedDieGroundBounceSlider, 22, 0, 100);
+    m_sharedDieGroundBounceRow = dieGroundBouncePair.first;
+    m_sharedDieGroundBounceLabel = dieGroundBouncePair.second;
 
     // Fish animation parameters
-    auto swimSpeedPair = makeSliderRow(tr("Swim Speed"), m_swimSpeedSlider, 100, 25, 300);
-    m_swimSpeedRow = swimSpeedPair.first;
-    m_swimSpeedLabel = swimSpeedPair.second;
+    auto swimSpeedPair = makeSliderRow(tr("Swim Speed"), m_fishForwardSwimSpeedSlider, 100, 25, 300);
+    m_fishForwardSwimSpeedRow = swimSpeedPair.first;
+    m_fishForwardSwimSpeedLabel = swimSpeedPair.second;
 
-    auto swimFrequencyPair = makeSliderRow(tr("Swim Frequency"), m_swimFrequencySlider, 100, 25, 400);
-    m_swimFrequencyRow = swimFrequencyPair.first;
-    m_swimFrequencyLabel = swimFrequencyPair.second;
+    auto swimFrequencyPair = makeSliderRow(tr("Swim Frequency"), m_fishForwardSwimFrequencySlider, 100, 25, 400);
+    m_fishForwardSwimFrequencyRow = swimFrequencyPair.first;
+    m_fishForwardSwimFrequencyLabel = swimFrequencyPair.second;
 
-    auto spineAmplitudePair = makeSliderRow(tr("Spine Amplitude"), m_spineAmplitudeSlider, 100, 10, 300);
-    m_spineAmplitudeRow = spineAmplitudePair.first;
-    m_spineAmplitudeLabel = spineAmplitudePair.second;
+    auto spineAmplitudePair = makeSliderRow(tr("Spine Amplitude"), m_fishForwardSpineAmplitudeSlider, 100, 10, 300);
+    m_fishForwardSpineAmplitudeRow = spineAmplitudePair.first;
+    m_fishForwardSpineAmplitudeLabel = spineAmplitudePair.second;
 
-    auto waveLengthPair = makeSliderRow(tr("Wave Length"), m_waveLengthSlider, 100, 50, 200);
-    m_waveLengthRow = waveLengthPair.first;
-    m_waveLengthLabel = waveLengthPair.second;
+    auto waveLengthPair = makeSliderRow(tr("Wave Length"), m_fishForwardWaveLengthSlider, 100, 50, 200);
+    m_fishForwardWaveLengthRow = waveLengthPair.first;
+    m_fishForwardWaveLengthLabel = waveLengthPair.second;
 
-    auto tailAmplitudeRatioPair = makeSliderRow(tr("Tail Amplitude Ratio"), m_tailAmplitudeRatioSlider, 100, 50, 500);
-    m_tailAmplitudeRatioRow = tailAmplitudeRatioPair.first;
-    m_tailAmplitudeRatioLabel = tailAmplitudeRatioPair.second;
+    auto tailAmplitudeRatioPair = makeSliderRow(tr("Tail Amplitude Ratio"), m_fishForwardTailAmplitudeRatioSlider, 100, 50, 500);
+    m_fishForwardTailAmplitudeRatioRow = tailAmplitudeRatioPair.first;
+    m_fishForwardTailAmplitudeRatioLabel = tailAmplitudeRatioPair.second;
 
-    auto bodyRollPair = makeSliderRow(tr("Body Roll"), m_bodyRollSlider, 100, 0, 300);
-    m_bodyRollRow = bodyRollPair.first;
-    m_bodyRollLabel = bodyRollPair.second;
+    auto bodyRollPair = makeSliderRow(tr("Body Roll"), m_fishForwardBodyRollSlider, 100, 0, 300);
+    m_fishForwardBodyRollRow = bodyRollPair.first;
+    m_fishForwardBodyRollLabel = bodyRollPair.second;
 
-    auto forwardThrustPair = makeSliderRow(tr("Forward Thrust"), m_forwardThrustSlider, 100, 0, 300);
-    m_forwardThrustRow = forwardThrustPair.first;
-    m_forwardThrustLabel = forwardThrustPair.second;
+    auto forwardThrustPair = makeSliderRow(tr("Forward Thrust"), m_fishForwardForwardThrustSlider, 100, 0, 300);
+    m_fishForwardForwardThrustRow = forwardThrustPair.first;
+    m_fishForwardForwardThrustLabel = forwardThrustPair.second;
 
-    auto pectoralFlapPowerPair = makeSliderRow(tr("Pectoral Flap Power"), m_pectoralFlapPowerSlider, 100, 0, 300);
-    m_pectoralFlapPowerRow = pectoralFlapPowerPair.first;
-    m_pectoralFlapPowerLabel = pectoralFlapPowerPair.second;
+    auto pectoralFlapPowerPair = makeSliderRow(tr("Pectoral Flap Power"), m_fishForwardPectoralFlapPowerSlider, 100, 0, 300);
+    m_fishForwardPectoralFlapPowerRow = pectoralFlapPowerPair.first;
+    m_fishForwardPectoralFlapPowerLabel = pectoralFlapPowerPair.second;
 
-    auto pelvicFlapPowerPair = makeSliderRow(tr("Pelvic Flap Power"), m_pelvicFlapPowerSlider, 100, 0, 300);
-    m_pelvicFlapPowerRow = pelvicFlapPowerPair.first;
-    m_pelvicFlapPowerLabel = pelvicFlapPowerPair.second;
+    auto pelvicFlapPowerPair = makeSliderRow(tr("Pelvic Flap Power"), m_fishForwardPelvicFlapPowerSlider, 100, 0, 300);
+    m_fishForwardPelvicFlapPowerRow = pelvicFlapPowerPair.first;
+    m_fishForwardPelvicFlapPowerLabel = pelvicFlapPowerPair.second;
 
-    auto dorsalSwayPowerPair = makeSliderRow(tr("Dorsal Sway Power"), m_dorsalSwayPowerSlider, 100, 0, 300);
-    m_dorsalSwayPowerRow = dorsalSwayPowerPair.first;
-    m_dorsalSwayPowerLabel = dorsalSwayPowerPair.second;
+    auto dorsalSwayPowerPair = makeSliderRow(tr("Dorsal Sway Power"), m_fishForwardDorsalSwayPowerSlider, 100, 0, 300);
+    m_fishForwardDorsalSwayPowerRow = dorsalSwayPowerPair.first;
+    m_fishForwardDorsalSwayPowerLabel = dorsalSwayPowerPair.second;
 
-    auto ventralSwayPowerPair = makeSliderRow(tr("Ventral Sway Power"), m_ventralSwayPowerSlider, 100, 0, 300);
-    m_ventralSwayPowerRow = ventralSwayPowerPair.first;
-    m_ventralSwayPowerLabel = ventralSwayPowerPair.second;
+    auto ventralSwayPowerPair = makeSliderRow(tr("Ventral Sway Power"), m_fishForwardVentralSwayPowerSlider, 100, 0, 300);
+    m_fishForwardVentralSwayPowerRow = ventralSwayPowerPair.first;
+    m_fishForwardVentralSwayPowerLabel = ventralSwayPowerPair.second;
 
-    auto pectoralPhaseOffsetPair = makeSliderRow(tr("Pectoral Phase Offset"), m_pectoralPhaseOffsetSlider, 0, -200, 200);
-    m_pectoralPhaseOffsetRow = pectoralPhaseOffsetPair.first;
-    m_pectoralPhaseOffsetLabel = pectoralPhaseOffsetPair.second;
+    auto pectoralPhaseOffsetPair = makeSliderRow(tr("Pectoral Phase Offset"), m_fishForwardPectoralPhaseOffsetSlider, 0, -200, 200);
+    m_fishForwardPectoralPhaseOffsetRow = pectoralPhaseOffsetPair.first;
+    m_fishForwardPectoralPhaseOffsetLabel = pectoralPhaseOffsetPair.second;
 
-    auto pelvicPhaseOffsetPair = makeSliderRow(tr("Pelvic Phase Offset"), m_pelvicPhaseOffsetSlider, 50, -200, 200);
-    m_pelvicPhaseOffsetRow = pelvicPhaseOffsetPair.first;
-    m_pelvicPhaseOffsetLabel = pelvicPhaseOffsetPair.second;
+    auto pelvicPhaseOffsetPair = makeSliderRow(tr("Pelvic Phase Offset"), m_fishForwardPelvicPhaseOffsetSlider, 50, -200, 200);
+    m_fishForwardPelvicPhaseOffsetRow = pelvicPhaseOffsetPair.first;
+    m_fishForwardPelvicPhaseOffsetLabel = pelvicPhaseOffsetPair.second;
 
-    m_useFabrikCheck = new QCheckBox("Use FABRIK IK");
-    m_useFabrikCheck->setChecked(true);
-    parameterLayout->addRow(m_useFabrikCheck);
+    m_sharedUseFabrikCheck = new QCheckBox("Use FABRIK IK");
+    m_sharedUseFabrikCheck->setChecked(true);
+    parameterLayout->addRow(m_sharedUseFabrikCheck);
 
-    m_planeStabilizationCheck = new QCheckBox("Plane Stabilization");
-    m_planeStabilizationCheck->setChecked(true);
-    parameterLayout->addRow(m_planeStabilizationCheck);
+    m_sharedPlaneStabilizationCheck = new QCheckBox("Plane Stabilization");
+    m_sharedPlaneStabilizationCheck->setChecked(true);
+    parameterLayout->addRow(m_sharedPlaneStabilizationCheck);
 
     // Add parameter layout to a scrollable area to prevent uncontrolled growth
     QWidget* scrollAreaWidget = new QWidget;
@@ -459,39 +459,39 @@ void AnimationManageWidget::createParameterWidgets()
     topLayout->addStretch();
 
     auto connectAll = [&]() {
-        connect(m_stepLengthSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
-        connect(m_stepHeightSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
-        connect(m_bodyBobSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
-        connect(m_gaitSpeedSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
-        connect(m_rubForwardOffsetSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
-        connect(m_rubUpOffsetSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_sharedStepLengthSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_sharedStepHeightSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_sharedBodyBobSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_sharedGaitSpeedSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_insectRubHandsRubForwardOffsetSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_insectRubHandsRubUpOffsetSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
 
         // Quadruped walk parameter connections
-        connect(m_spineFlexSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
-        connect(m_tailSwaySlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_sharedSpineFlexSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_sharedTailSwaySlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
 
         // Biped walk/run parameter connections
-        connect(m_armSwingSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
-        connect(m_hipSwaySlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
-        connect(m_hipRotateSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
-        connect(m_bipedSpineFlexSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
-        connect(m_headBobSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
-        connect(m_kneeBendSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
-        connect(m_leanForwardSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
-        connect(m_bouncinessSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_sharedArmSwingSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_sharedHipSwaySlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_sharedHipRotateSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_sharedBipedSpineFlexSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_sharedHeadBobSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_sharedKneeBendSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_sharedLeanForwardSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_sharedBouncinessSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
 
         // Quadruped run parameter connections
-        connect(m_suspensionSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
-        connect(m_forwardLeanSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
-        connect(m_strideFrequencySlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
-        connect(m_boundSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_sharedSuspensionSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_quadrupedRunForwardLeanSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_sharedStrideFrequencySlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_quadrupedRunBoundSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
 
         // Insect die parameter connections
-        connect(m_dieLengthStiffnessSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
-        connect(m_dieParentStiffnessSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
-        connect(m_dieMaxJointAngleSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
-        connect(m_dieDampingSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
-        connect(m_dieGroundBounceSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_sharedDieLengthStiffnessSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_sharedDieParentStiffnessSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_sharedDieMaxJointAngleSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_sharedDieDampingSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_sharedDieGroundBounceSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
 
         // Quadruped die parameter connections
         connect(m_quadDieCollapseSpeedSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
@@ -514,30 +514,30 @@ void AnimationManageWidget::createParameterWidgets()
         connect(m_fishDieSpinDecaySlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
 
         // Fish animation parameter connections
-        connect(m_swimSpeedSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
-        connect(m_swimFrequencySlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
-        connect(m_spineAmplitudeSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
-        connect(m_waveLengthSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
-        connect(m_tailAmplitudeRatioSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
-        connect(m_bodyRollSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
-        connect(m_forwardThrustSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
-        connect(m_pectoralFlapPowerSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
-        connect(m_pelvicFlapPowerSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
-        connect(m_dorsalSwayPowerSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
-        connect(m_ventralSwayPowerSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
-        connect(m_pectoralPhaseOffsetSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
-        connect(m_pelvicPhaseOffsetSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_fishForwardSwimSpeedSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_fishForwardSwimFrequencySlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_fishForwardSpineAmplitudeSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_fishForwardWaveLengthSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_fishForwardTailAmplitudeRatioSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_fishForwardBodyRollSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_fishForwardForwardThrustSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_fishForwardPectoralFlapPowerSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_fishForwardPelvicFlapPowerSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_fishForwardDorsalSwayPowerSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_fishForwardVentralSwayPowerSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_fishForwardPectoralPhaseOffsetSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_fishForwardPelvicPhaseOffsetSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
 
-        connect(m_useFabrikCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
-        connect(m_planeStabilizationCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_sharedUseFabrikCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_sharedPlaneStabilizationCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
         connect(m_hideBonesCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
         connect(m_hidePartsCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
         connect(m_hideWeightsCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
 
-        if (m_durationSpinBox)
-            connect(m_durationSpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &AnimationManageWidget::onParameterChanged);
-        if (m_frameCountSpinBox)
-            connect(m_frameCountSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &AnimationManageWidget::onParameterChanged);
+        if (m_sharedDurationSpinBox)
+            connect(m_sharedDurationSpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &AnimationManageWidget::onParameterChanged);
+        if (m_sharedFrameCountSpinBox)
+            connect(m_sharedFrameCountSpinBox, QOverload<int>::of(&QSpinBox::valueChanged), this, &AnimationManageWidget::onParameterChanged);
 
         if (m_animationFrameSlider) {
             connect(m_animationFrameSlider, &QSlider::sliderPressed, this, [this]() {
@@ -627,19 +627,19 @@ void AnimationManageWidget::displayCurrentFrame()
 void AnimationManageWidget::updateVisibleParameters(const QString& animationType)
 {
     // Hide all parameter rows first
-    setParameterRowVisible(m_stepLengthRow, m_stepLengthLabel, false);
-    setParameterRowVisible(m_stepHeightRow, m_stepHeightLabel, false);
-    setParameterRowVisible(m_bodyBobRow, m_bodyBobLabel, false);
-    setParameterRowVisible(m_gaitSpeedRow, m_gaitSpeedLabel, false);
-    setParameterRowVisible(m_rubForwardOffsetRow, m_rubForwardOffsetLabel, false);
-    setParameterRowVisible(m_rubUpOffsetRow, m_rubUpOffsetLabel, false);
+    setParameterRowVisible(m_sharedStepLengthRow, m_sharedStepLengthLabel, false);
+    setParameterRowVisible(m_sharedStepHeightRow, m_sharedStepHeightLabel, false);
+    setParameterRowVisible(m_sharedBodyBobRow, m_sharedBodyBobLabel, false);
+    setParameterRowVisible(m_sharedGaitSpeedRow, m_sharedGaitSpeedLabel, false);
+    setParameterRowVisible(m_insectRubHandsRubForwardOffsetRow, m_insectRubHandsRubForwardOffsetLabel, false);
+    setParameterRowVisible(m_insectRubHandsRubUpOffsetRow, m_insectRubHandsRubUpOffsetLabel, false);
 
     // Hide insect die parameter rows
-    setParameterRowVisible(m_dieLengthStiffnessRow, m_dieLengthStiffnessLabel, false);
-    setParameterRowVisible(m_dieParentStiffnessRow, m_dieParentStiffnessLabel, false);
-    setParameterRowVisible(m_dieMaxJointAngleRow, m_dieMaxJointAngleLabel, false);
-    setParameterRowVisible(m_dieDampingRow, m_dieDampingLabel, false);
-    setParameterRowVisible(m_dieGroundBounceRow, m_dieGroundBounceLabel, false);
+    setParameterRowVisible(m_sharedDieLengthStiffnessRow, m_sharedDieLengthStiffnessLabel, false);
+    setParameterRowVisible(m_sharedDieParentStiffnessRow, m_sharedDieParentStiffnessLabel, false);
+    setParameterRowVisible(m_sharedDieMaxJointAngleRow, m_sharedDieMaxJointAngleLabel, false);
+    setParameterRowVisible(m_sharedDieDampingRow, m_sharedDieDampingLabel, false);
+    setParameterRowVisible(m_sharedDieGroundBounceRow, m_sharedDieGroundBounceLabel, false);
 
     // Hide fish die parameter rows
     setParameterRowVisible(m_fishDieHitIntensityRow, m_fishDieHitIntensityLabel, false);
@@ -651,37 +651,37 @@ void AnimationManageWidget::updateVisibleParameters(const QString& animationType
     setParameterRowVisible(m_fishDieSpinDecayRow, m_fishDieSpinDecayLabel, false);
 
     // Hide fish parameter rows
-    setParameterRowVisible(m_swimSpeedRow, m_swimSpeedLabel, false);
-    setParameterRowVisible(m_swimFrequencyRow, m_swimFrequencyLabel, false);
-    setParameterRowVisible(m_spineAmplitudeRow, m_spineAmplitudeLabel, false);
-    setParameterRowVisible(m_waveLengthRow, m_waveLengthLabel, false);
-    setParameterRowVisible(m_tailAmplitudeRatioRow, m_tailAmplitudeRatioLabel, false);
-    setParameterRowVisible(m_bodyRollRow, m_bodyRollLabel, false);
-    setParameterRowVisible(m_forwardThrustRow, m_forwardThrustLabel, false);
-    setParameterRowVisible(m_pectoralFlapPowerRow, m_pectoralFlapPowerLabel, false);
-    setParameterRowVisible(m_pelvicFlapPowerRow, m_pelvicFlapPowerLabel, false);
-    setParameterRowVisible(m_dorsalSwayPowerRow, m_dorsalSwayPowerLabel, false);
-    setParameterRowVisible(m_ventralSwayPowerRow, m_ventralSwayPowerLabel, false);
-    setParameterRowVisible(m_pectoralPhaseOffsetRow, m_pectoralPhaseOffsetLabel, false);
-    setParameterRowVisible(m_pelvicPhaseOffsetRow, m_pelvicPhaseOffsetLabel, false);
+    setParameterRowVisible(m_fishForwardSwimSpeedRow, m_fishForwardSwimSpeedLabel, false);
+    setParameterRowVisible(m_fishForwardSwimFrequencyRow, m_fishForwardSwimFrequencyLabel, false);
+    setParameterRowVisible(m_fishForwardSpineAmplitudeRow, m_fishForwardSpineAmplitudeLabel, false);
+    setParameterRowVisible(m_fishForwardWaveLengthRow, m_fishForwardWaveLengthLabel, false);
+    setParameterRowVisible(m_fishForwardTailAmplitudeRatioRow, m_fishForwardTailAmplitudeRatioLabel, false);
+    setParameterRowVisible(m_fishForwardBodyRollRow, m_fishForwardBodyRollLabel, false);
+    setParameterRowVisible(m_fishForwardForwardThrustRow, m_fishForwardForwardThrustLabel, false);
+    setParameterRowVisible(m_fishForwardPectoralFlapPowerRow, m_fishForwardPectoralFlapPowerLabel, false);
+    setParameterRowVisible(m_fishForwardPelvicFlapPowerRow, m_fishForwardPelvicFlapPowerLabel, false);
+    setParameterRowVisible(m_fishForwardDorsalSwayPowerRow, m_fishForwardDorsalSwayPowerLabel, false);
+    setParameterRowVisible(m_fishForwardVentralSwayPowerRow, m_fishForwardVentralSwayPowerLabel, false);
+    setParameterRowVisible(m_fishForwardPectoralPhaseOffsetRow, m_fishForwardPectoralPhaseOffsetLabel, false);
+    setParameterRowVisible(m_fishForwardPelvicPhaseOffsetRow, m_fishForwardPelvicPhaseOffsetLabel, false);
 
     // Hide quadruped parameter rows
-    setParameterRowVisible(m_spineFlexRow, m_spineFlexLabel, false);
-    setParameterRowVisible(m_tailSwayRow, m_tailSwayLabel, false);
-    setParameterRowVisible(m_suspensionRow, m_suspensionLabel, false);
-    setParameterRowVisible(m_forwardLeanRow, m_forwardLeanLabel, false);
-    setParameterRowVisible(m_strideFrequencyRow, m_strideFrequencyLabel, false);
-    setParameterRowVisible(m_boundRow, m_boundLabel, false);
+    setParameterRowVisible(m_sharedSpineFlexRow, m_sharedSpineFlexLabel, false);
+    setParameterRowVisible(m_sharedTailSwayRow, m_sharedTailSwayLabel, false);
+    setParameterRowVisible(m_sharedSuspensionRow, m_sharedSuspensionLabel, false);
+    setParameterRowVisible(m_quadrupedRunForwardLeanRow, m_quadrupedRunForwardLeanLabel, false);
+    setParameterRowVisible(m_sharedStrideFrequencyRow, m_sharedStrideFrequencyLabel, false);
+    setParameterRowVisible(m_quadrupedRunBoundRow, m_quadrupedRunBoundLabel, false);
 
     // Hide biped walk parameter rows
-    setParameterRowVisible(m_armSwingRow, m_armSwingLabel, false);
-    setParameterRowVisible(m_hipSwayRow, m_hipSwayLabel, false);
-    setParameterRowVisible(m_hipRotateRow, m_hipRotateLabel, false);
-    setParameterRowVisible(m_bipedSpineFlexRow, m_bipedSpineFlexLabel, false);
-    setParameterRowVisible(m_headBobRow, m_headBobLabel, false);
-    setParameterRowVisible(m_kneeBendRow, m_kneeBendLabel, false);
-    setParameterRowVisible(m_leanForwardRow, m_leanForwardLabel, false);
-    setParameterRowVisible(m_bouncinessRow, m_bouncinessLabel, false);
+    setParameterRowVisible(m_sharedArmSwingRow, m_sharedArmSwingLabel, false);
+    setParameterRowVisible(m_sharedHipSwayRow, m_sharedHipSwayLabel, false);
+    setParameterRowVisible(m_sharedHipRotateRow, m_sharedHipRotateLabel, false);
+    setParameterRowVisible(m_sharedBipedSpineFlexRow, m_sharedBipedSpineFlexLabel, false);
+    setParameterRowVisible(m_sharedHeadBobRow, m_sharedHeadBobLabel, false);
+    setParameterRowVisible(m_sharedKneeBendRow, m_sharedKneeBendLabel, false);
+    setParameterRowVisible(m_sharedLeanForwardRow, m_sharedLeanForwardLabel, false);
+    setParameterRowVisible(m_sharedBouncinessRow, m_sharedBouncinessLabel, false);
 
     // Hide quadruped die parameter rows
     setParameterRowVisible(m_quadDieCollapseSpeedRow, m_quadDieCollapseSpeedLabel, false);
@@ -700,27 +700,27 @@ void AnimationManageWidget::updateVisibleParameters(const QString& animationType
         || animationType == "QuadrupedWalk" || animationType == "QuadrupedRun"
         || animationType == "BipedWalk" || animationType == "BipedRun"
         || animationType == "SpiderWalk");
-    if (m_useFabrikCheck)
-        m_useFabrikCheck->setVisible(showIkParams);
-    if (m_planeStabilizationCheck)
-        m_planeStabilizationCheck->setVisible(showIkParams);
+    if (m_sharedUseFabrikCheck)
+        m_sharedUseFabrikCheck->setVisible(showIkParams);
+    if (m_sharedPlaneStabilizationCheck)
+        m_sharedPlaneStabilizationCheck->setVisible(showIkParams);
 
     if (animationType == "InsectWalk" || animationType == "InsectForward" || animationType == "InsectAttack") {
-        setParameterRowVisible(m_stepLengthRow, m_stepLengthLabel, true);
-        setParameterRowVisible(m_stepHeightRow, m_stepHeightLabel, true);
-        setParameterRowVisible(m_bodyBobRow, m_bodyBobLabel, true);
-        setParameterRowVisible(m_gaitSpeedRow, m_gaitSpeedLabel, true);
+        setParameterRowVisible(m_sharedStepLengthRow, m_sharedStepLengthLabel, true);
+        setParameterRowVisible(m_sharedStepHeightRow, m_sharedStepHeightLabel, true);
+        setParameterRowVisible(m_sharedBodyBobRow, m_sharedBodyBobLabel, true);
+        setParameterRowVisible(m_sharedGaitSpeedRow, m_sharedGaitSpeedLabel, true);
     } else if (animationType == "InsectDie") {
-        setParameterRowVisible(m_dieLengthStiffnessRow, m_dieLengthStiffnessLabel, true);
-        setParameterRowVisible(m_dieParentStiffnessRow, m_dieParentStiffnessLabel, true);
-        setParameterRowVisible(m_dieMaxJointAngleRow, m_dieMaxJointAngleLabel, true);
-        setParameterRowVisible(m_dieDampingRow, m_dieDampingLabel, true);
-        setParameterRowVisible(m_dieGroundBounceRow, m_dieGroundBounceLabel, true);
+        setParameterRowVisible(m_sharedDieLengthStiffnessRow, m_sharedDieLengthStiffnessLabel, true);
+        setParameterRowVisible(m_sharedDieParentStiffnessRow, m_sharedDieParentStiffnessLabel, true);
+        setParameterRowVisible(m_sharedDieMaxJointAngleRow, m_sharedDieMaxJointAngleLabel, true);
+        setParameterRowVisible(m_sharedDieDampingRow, m_sharedDieDampingLabel, true);
+        setParameterRowVisible(m_sharedDieGroundBounceRow, m_sharedDieGroundBounceLabel, true);
     } else if (animationType == "BirdForward") {
-        setParameterRowVisible(m_stepLengthRow, m_stepLengthLabel, true);
-        setParameterRowVisible(m_stepHeightRow, m_stepHeightLabel, true);
-        setParameterRowVisible(m_bodyBobRow, m_bodyBobLabel, true);
-        setParameterRowVisible(m_gaitSpeedRow, m_gaitSpeedLabel, true);
+        setParameterRowVisible(m_sharedStepLengthRow, m_sharedStepLengthLabel, true);
+        setParameterRowVisible(m_sharedStepHeightRow, m_sharedStepHeightLabel, true);
+        setParameterRowVisible(m_sharedBodyBobRow, m_sharedBodyBobLabel, true);
+        setParameterRowVisible(m_sharedGaitSpeedRow, m_sharedGaitSpeedLabel, true);
     } else if (animationType == "FishDie") {
         setParameterRowVisible(m_fishDieHitIntensityRow, m_fishDieHitIntensityLabel, true);
         setParameterRowVisible(m_fishDieHitFrequencyRow, m_fishDieHitFrequencyLabel, true);
@@ -731,88 +731,88 @@ void AnimationManageWidget::updateVisibleParameters(const QString& animationType
         setParameterRowVisible(m_fishDieSpinDecayRow, m_fishDieSpinDecayLabel, true);
     } else if (animationType == "FishForward") {
         // Show fish-specific parameters
-        setParameterRowVisible(m_swimSpeedRow, m_swimSpeedLabel, true);
-        setParameterRowVisible(m_swimFrequencyRow, m_swimFrequencyLabel, true);
-        setParameterRowVisible(m_spineAmplitudeRow, m_spineAmplitudeLabel, true);
-        setParameterRowVisible(m_waveLengthRow, m_waveLengthLabel, true);
-        setParameterRowVisible(m_tailAmplitudeRatioRow, m_tailAmplitudeRatioLabel, true);
-        setParameterRowVisible(m_bodyRollRow, m_bodyRollLabel, true);
-        setParameterRowVisible(m_forwardThrustRow, m_forwardThrustLabel, true);
-        setParameterRowVisible(m_pectoralFlapPowerRow, m_pectoralFlapPowerLabel, true);
-        setParameterRowVisible(m_pelvicFlapPowerRow, m_pelvicFlapPowerLabel, true);
-        setParameterRowVisible(m_dorsalSwayPowerRow, m_dorsalSwayPowerLabel, true);
-        setParameterRowVisible(m_ventralSwayPowerRow, m_ventralSwayPowerLabel, true);
-        setParameterRowVisible(m_pectoralPhaseOffsetRow, m_pectoralPhaseOffsetLabel, true);
-        setParameterRowVisible(m_pelvicPhaseOffsetRow, m_pelvicPhaseOffsetLabel, true);
+        setParameterRowVisible(m_fishForwardSwimSpeedRow, m_fishForwardSwimSpeedLabel, true);
+        setParameterRowVisible(m_fishForwardSwimFrequencyRow, m_fishForwardSwimFrequencyLabel, true);
+        setParameterRowVisible(m_fishForwardSpineAmplitudeRow, m_fishForwardSpineAmplitudeLabel, true);
+        setParameterRowVisible(m_fishForwardWaveLengthRow, m_fishForwardWaveLengthLabel, true);
+        setParameterRowVisible(m_fishForwardTailAmplitudeRatioRow, m_fishForwardTailAmplitudeRatioLabel, true);
+        setParameterRowVisible(m_fishForwardBodyRollRow, m_fishForwardBodyRollLabel, true);
+        setParameterRowVisible(m_fishForwardForwardThrustRow, m_fishForwardForwardThrustLabel, true);
+        setParameterRowVisible(m_fishForwardPectoralFlapPowerRow, m_fishForwardPectoralFlapPowerLabel, true);
+        setParameterRowVisible(m_fishForwardPelvicFlapPowerRow, m_fishForwardPelvicFlapPowerLabel, true);
+        setParameterRowVisible(m_fishForwardDorsalSwayPowerRow, m_fishForwardDorsalSwayPowerLabel, true);
+        setParameterRowVisible(m_fishForwardVentralSwayPowerRow, m_fishForwardVentralSwayPowerLabel, true);
+        setParameterRowVisible(m_fishForwardPectoralPhaseOffsetRow, m_fishForwardPectoralPhaseOffsetLabel, true);
+        setParameterRowVisible(m_fishForwardPelvicPhaseOffsetRow, m_fishForwardPelvicPhaseOffsetLabel, true);
     } else if (animationType == "InsectRubHands") {
-        setParameterRowVisible(m_stepLengthRow, m_stepLengthLabel, true);
-        setParameterRowVisible(m_stepHeightRow, m_stepHeightLabel, true);
-        setParameterRowVisible(m_bodyBobRow, m_bodyBobLabel, true);
-        setParameterRowVisible(m_gaitSpeedRow, m_gaitSpeedLabel, true);
-        setParameterRowVisible(m_rubForwardOffsetRow, m_rubForwardOffsetLabel, true);
-        setParameterRowVisible(m_rubUpOffsetRow, m_rubUpOffsetLabel, true);
+        setParameterRowVisible(m_sharedStepLengthRow, m_sharedStepLengthLabel, true);
+        setParameterRowVisible(m_sharedStepHeightRow, m_sharedStepHeightLabel, true);
+        setParameterRowVisible(m_sharedBodyBobRow, m_sharedBodyBobLabel, true);
+        setParameterRowVisible(m_sharedGaitSpeedRow, m_sharedGaitSpeedLabel, true);
+        setParameterRowVisible(m_insectRubHandsRubForwardOffsetRow, m_insectRubHandsRubForwardOffsetLabel, true);
+        setParameterRowVisible(m_insectRubHandsRubUpOffsetRow, m_insectRubHandsRubUpOffsetLabel, true);
     } else if (animationType == "QuadrupedWalk") {
-        setParameterRowVisible(m_stepLengthRow, m_stepLengthLabel, true);
-        setParameterRowVisible(m_stepHeightRow, m_stepHeightLabel, true);
-        setParameterRowVisible(m_bodyBobRow, m_bodyBobLabel, true);
-        setParameterRowVisible(m_gaitSpeedRow, m_gaitSpeedLabel, true);
-        setParameterRowVisible(m_spineFlexRow, m_spineFlexLabel, true);
-        setParameterRowVisible(m_tailSwayRow, m_tailSwayLabel, true);
+        setParameterRowVisible(m_sharedStepLengthRow, m_sharedStepLengthLabel, true);
+        setParameterRowVisible(m_sharedStepHeightRow, m_sharedStepHeightLabel, true);
+        setParameterRowVisible(m_sharedBodyBobRow, m_sharedBodyBobLabel, true);
+        setParameterRowVisible(m_sharedGaitSpeedRow, m_sharedGaitSpeedLabel, true);
+        setParameterRowVisible(m_sharedSpineFlexRow, m_sharedSpineFlexLabel, true);
+        setParameterRowVisible(m_sharedTailSwayRow, m_sharedTailSwayLabel, true);
     } else if (animationType == "QuadrupedRun") {
-        setParameterRowVisible(m_stepLengthRow, m_stepLengthLabel, true);
-        setParameterRowVisible(m_stepHeightRow, m_stepHeightLabel, true);
-        setParameterRowVisible(m_bodyBobRow, m_bodyBobLabel, true);
-        setParameterRowVisible(m_gaitSpeedRow, m_gaitSpeedLabel, true);
-        setParameterRowVisible(m_spineFlexRow, m_spineFlexLabel, true);
-        setParameterRowVisible(m_tailSwayRow, m_tailSwayLabel, true);
-        setParameterRowVisible(m_suspensionRow, m_suspensionLabel, true);
-        setParameterRowVisible(m_forwardLeanRow, m_forwardLeanLabel, true);
-        setParameterRowVisible(m_strideFrequencyRow, m_strideFrequencyLabel, true);
-        setParameterRowVisible(m_boundRow, m_boundLabel, true);
+        setParameterRowVisible(m_sharedStepLengthRow, m_sharedStepLengthLabel, true);
+        setParameterRowVisible(m_sharedStepHeightRow, m_sharedStepHeightLabel, true);
+        setParameterRowVisible(m_sharedBodyBobRow, m_sharedBodyBobLabel, true);
+        setParameterRowVisible(m_sharedGaitSpeedRow, m_sharedGaitSpeedLabel, true);
+        setParameterRowVisible(m_sharedSpineFlexRow, m_sharedSpineFlexLabel, true);
+        setParameterRowVisible(m_sharedTailSwayRow, m_sharedTailSwayLabel, true);
+        setParameterRowVisible(m_sharedSuspensionRow, m_sharedSuspensionLabel, true);
+        setParameterRowVisible(m_quadrupedRunForwardLeanRow, m_quadrupedRunForwardLeanLabel, true);
+        setParameterRowVisible(m_sharedStrideFrequencyRow, m_sharedStrideFrequencyLabel, true);
+        setParameterRowVisible(m_quadrupedRunBoundRow, m_quadrupedRunBoundLabel, true);
     } else if (animationType == "BipedWalk") {
-        setParameterRowVisible(m_stepLengthRow, m_stepLengthLabel, true);
-        setParameterRowVisible(m_stepHeightRow, m_stepHeightLabel, true);
-        setParameterRowVisible(m_bodyBobRow, m_bodyBobLabel, true);
-        setParameterRowVisible(m_gaitSpeedRow, m_gaitSpeedLabel, true);
-        setParameterRowVisible(m_armSwingRow, m_armSwingLabel, true);
-        setParameterRowVisible(m_hipSwayRow, m_hipSwayLabel, true);
-        setParameterRowVisible(m_hipRotateRow, m_hipRotateLabel, true);
-        setParameterRowVisible(m_bipedSpineFlexRow, m_bipedSpineFlexLabel, true);
-        setParameterRowVisible(m_headBobRow, m_headBobLabel, true);
-        setParameterRowVisible(m_kneeBendRow, m_kneeBendLabel, true);
-        setParameterRowVisible(m_leanForwardRow, m_leanForwardLabel, true);
-        setParameterRowVisible(m_bouncinessRow, m_bouncinessLabel, true);
-        setParameterRowVisible(m_tailSwayRow, m_tailSwayLabel, true);
+        setParameterRowVisible(m_sharedStepLengthRow, m_sharedStepLengthLabel, true);
+        setParameterRowVisible(m_sharedStepHeightRow, m_sharedStepHeightLabel, true);
+        setParameterRowVisible(m_sharedBodyBobRow, m_sharedBodyBobLabel, true);
+        setParameterRowVisible(m_sharedGaitSpeedRow, m_sharedGaitSpeedLabel, true);
+        setParameterRowVisible(m_sharedArmSwingRow, m_sharedArmSwingLabel, true);
+        setParameterRowVisible(m_sharedHipSwayRow, m_sharedHipSwayLabel, true);
+        setParameterRowVisible(m_sharedHipRotateRow, m_sharedHipRotateLabel, true);
+        setParameterRowVisible(m_sharedBipedSpineFlexRow, m_sharedBipedSpineFlexLabel, true);
+        setParameterRowVisible(m_sharedHeadBobRow, m_sharedHeadBobLabel, true);
+        setParameterRowVisible(m_sharedKneeBendRow, m_sharedKneeBendLabel, true);
+        setParameterRowVisible(m_sharedLeanForwardRow, m_sharedLeanForwardLabel, true);
+        setParameterRowVisible(m_sharedBouncinessRow, m_sharedBouncinessLabel, true);
+        setParameterRowVisible(m_sharedTailSwayRow, m_sharedTailSwayLabel, true);
     } else if (animationType == "BipedRun") {
-        setParameterRowVisible(m_stepLengthRow, m_stepLengthLabel, true);
-        setParameterRowVisible(m_stepHeightRow, m_stepHeightLabel, true);
-        setParameterRowVisible(m_bodyBobRow, m_bodyBobLabel, true);
-        setParameterRowVisible(m_gaitSpeedRow, m_gaitSpeedLabel, true);
-        setParameterRowVisible(m_armSwingRow, m_armSwingLabel, true);
-        setParameterRowVisible(m_hipSwayRow, m_hipSwayLabel, true);
-        setParameterRowVisible(m_hipRotateRow, m_hipRotateLabel, true);
-        setParameterRowVisible(m_bipedSpineFlexRow, m_bipedSpineFlexLabel, true);
-        setParameterRowVisible(m_headBobRow, m_headBobLabel, true);
-        setParameterRowVisible(m_kneeBendRow, m_kneeBendLabel, true);
-        setParameterRowVisible(m_leanForwardRow, m_leanForwardLabel, true);
-        setParameterRowVisible(m_bouncinessRow, m_bouncinessLabel, true);
-        setParameterRowVisible(m_tailSwayRow, m_tailSwayLabel, true);
-        setParameterRowVisible(m_suspensionRow, m_suspensionLabel, true);
-        setParameterRowVisible(m_strideFrequencyRow, m_strideFrequencyLabel, true);
+        setParameterRowVisible(m_sharedStepLengthRow, m_sharedStepLengthLabel, true);
+        setParameterRowVisible(m_sharedStepHeightRow, m_sharedStepHeightLabel, true);
+        setParameterRowVisible(m_sharedBodyBobRow, m_sharedBodyBobLabel, true);
+        setParameterRowVisible(m_sharedGaitSpeedRow, m_sharedGaitSpeedLabel, true);
+        setParameterRowVisible(m_sharedArmSwingRow, m_sharedArmSwingLabel, true);
+        setParameterRowVisible(m_sharedHipSwayRow, m_sharedHipSwayLabel, true);
+        setParameterRowVisible(m_sharedHipRotateRow, m_sharedHipRotateLabel, true);
+        setParameterRowVisible(m_sharedBipedSpineFlexRow, m_sharedBipedSpineFlexLabel, true);
+        setParameterRowVisible(m_sharedHeadBobRow, m_sharedHeadBobLabel, true);
+        setParameterRowVisible(m_sharedKneeBendRow, m_sharedKneeBendLabel, true);
+        setParameterRowVisible(m_sharedLeanForwardRow, m_sharedLeanForwardLabel, true);
+        setParameterRowVisible(m_sharedBouncinessRow, m_sharedBouncinessLabel, true);
+        setParameterRowVisible(m_sharedTailSwayRow, m_sharedTailSwayLabel, true);
+        setParameterRowVisible(m_sharedSuspensionRow, m_sharedSuspensionLabel, true);
+        setParameterRowVisible(m_sharedStrideFrequencyRow, m_sharedStrideFrequencyLabel, true);
     } else if (animationType == "QuadrupedDie") {
         setParameterRowVisible(m_quadDieCollapseSpeedRow, m_quadDieCollapseSpeedLabel, true);
         setParameterRowVisible(m_quadDieLegSpreadRow, m_quadDieLegSpreadLabel, true);
         setParameterRowVisible(m_quadDieRollIntensityRow, m_quadDieRollIntensityLabel, true);
-        setParameterRowVisible(m_dieLengthStiffnessRow, m_dieLengthStiffnessLabel, true);
-        setParameterRowVisible(m_dieParentStiffnessRow, m_dieParentStiffnessLabel, true);
-        setParameterRowVisible(m_dieMaxJointAngleRow, m_dieMaxJointAngleLabel, true);
-        setParameterRowVisible(m_dieDampingRow, m_dieDampingLabel, true);
-        setParameterRowVisible(m_dieGroundBounceRow, m_dieGroundBounceLabel, true);
+        setParameterRowVisible(m_sharedDieLengthStiffnessRow, m_sharedDieLengthStiffnessLabel, true);
+        setParameterRowVisible(m_sharedDieParentStiffnessRow, m_sharedDieParentStiffnessLabel, true);
+        setParameterRowVisible(m_sharedDieMaxJointAngleRow, m_sharedDieMaxJointAngleLabel, true);
+        setParameterRowVisible(m_sharedDieDampingRow, m_sharedDieDampingLabel, true);
+        setParameterRowVisible(m_sharedDieGroundBounceRow, m_sharedDieGroundBounceLabel, true);
     } else if (animationType == "SpiderWalk") {
-        setParameterRowVisible(m_stepLengthRow, m_stepLengthLabel, true);
-        setParameterRowVisible(m_stepHeightRow, m_stepHeightLabel, true);
-        setParameterRowVisible(m_bodyBobRow, m_bodyBobLabel, true);
-        setParameterRowVisible(m_gaitSpeedRow, m_gaitSpeedLabel, true);
+        setParameterRowVisible(m_sharedStepLengthRow, m_sharedStepLengthLabel, true);
+        setParameterRowVisible(m_sharedStepHeightRow, m_sharedStepHeightLabel, true);
+        setParameterRowVisible(m_sharedBodyBobRow, m_sharedBodyBobLabel, true);
+        setParameterRowVisible(m_sharedGaitSpeedRow, m_sharedGaitSpeedLabel, true);
         setParameterRowVisible(m_spiderLegSpreadRow, m_spiderLegSpreadLabel, true);
         setParameterRowVisible(m_spiderAbdomenSwayRow, m_spiderAbdomenSwayLabel, true);
         setParameterRowVisible(m_spiderPedipalpSwayRow, m_spiderPedipalpSwayLabel, true);
@@ -873,70 +873,70 @@ void AnimationManageWidget::onRigTypeChanged(const QString& rigType)
 
 void AnimationManageWidget::updateAnimationParamsFromWidgets()
 {
-    if (!m_stepLengthSlider || !m_stepHeightSlider || !m_bodyBobSlider || !m_gaitSpeedSlider || !m_rubForwardOffsetSlider || !m_rubUpOffsetSlider || !m_useFabrikCheck || !m_planeStabilizationCheck)
+    if (!m_sharedStepLengthSlider || !m_sharedStepHeightSlider || !m_sharedBodyBobSlider || !m_sharedGaitSpeedSlider || !m_insectRubHandsRubForwardOffsetSlider || !m_insectRubHandsRubUpOffsetSlider || !m_sharedUseFabrikCheck || !m_sharedPlaneStabilizationCheck)
         return;
 
     // Standard parameters
-    m_animationParams.setValue("stepLengthFactor", m_stepLengthSlider->value() / 100.0);
-    m_animationParams.setValue("stepHeightFactor", m_stepHeightSlider->value() / 100.0);
-    m_animationParams.setValue("bodyBobFactor", m_bodyBobSlider->value() / 100.0);
-    m_animationParams.setValue("gaitSpeedFactor", m_gaitSpeedSlider->value() / 10.0);
-    m_animationParams.setValue("rubForwardOffsetFactor", m_rubForwardOffsetSlider->value() / 100.0);
-    m_animationParams.setValue("rubUpOffsetFactor", m_rubUpOffsetSlider->value() / 100.0);
-    m_animationParams.setBool("useFabrikIk", m_useFabrikCheck->isChecked());
-    m_animationParams.setBool("planeStabilization", m_planeStabilizationCheck->isChecked());
+    m_animationParams.setValue("stepLengthFactor", m_sharedStepLengthSlider->value() / 100.0);
+    m_animationParams.setValue("stepHeightFactor", m_sharedStepHeightSlider->value() / 100.0);
+    m_animationParams.setValue("bodyBobFactor", m_sharedBodyBobSlider->value() / 100.0);
+    m_animationParams.setValue("gaitSpeedFactor", m_sharedGaitSpeedSlider->value() / 10.0);
+    m_animationParams.setValue("rubForwardOffsetFactor", m_insectRubHandsRubForwardOffsetSlider->value() / 100.0);
+    m_animationParams.setValue("rubUpOffsetFactor", m_insectRubHandsRubUpOffsetSlider->value() / 100.0);
+    m_animationParams.setBool("useFabrikIk", m_sharedUseFabrikCheck->isChecked());
+    m_animationParams.setBool("planeStabilization", m_sharedPlaneStabilizationCheck->isChecked());
 
     // Quadruped walk parameters
-    if (m_spineFlexSlider)
-        m_animationParams.setValue("spineFlexFactor", m_spineFlexSlider->value() / 100.0);
-    if (m_tailSwaySlider)
-        m_animationParams.setValue("tailSwayFactor", m_tailSwaySlider->value() / 100.0);
+    if (m_sharedSpineFlexSlider)
+        m_animationParams.setValue("spineFlexFactor", m_sharedSpineFlexSlider->value() / 100.0);
+    if (m_sharedTailSwaySlider)
+        m_animationParams.setValue("tailSwayFactor", m_sharedTailSwaySlider->value() / 100.0);
 
     // Biped walk parameters
-    if (m_armSwingSlider)
-        m_animationParams.setValue("armSwingFactor", m_armSwingSlider->value() / 100.0);
-    if (m_hipSwaySlider)
-        m_animationParams.setValue("hipSwayFactor", m_hipSwaySlider->value() / 100.0);
-    if (m_hipRotateSlider)
-        m_animationParams.setValue("hipRotateFactor", m_hipRotateSlider->value() / 100.0);
-    if (m_bipedSpineFlexSlider)
-        m_animationParams.setValue("spineFlexFactor", m_bipedSpineFlexSlider->value() / 100.0);
-    if (m_headBobSlider)
-        m_animationParams.setValue("headBobFactor", m_headBobSlider->value() / 100.0);
-    if (m_kneeBendSlider)
-        m_animationParams.setValue("kneeBendFactor", m_kneeBendSlider->value() / 100.0);
-    if (m_leanForwardSlider)
-        m_animationParams.setValue("leanForwardFactor", m_leanForwardSlider->value() / 100.0);
-    if (m_bouncinessSlider)
-        m_animationParams.setValue("bouncinessFactor", m_bouncinessSlider->value() / 100.0);
+    if (m_sharedArmSwingSlider)
+        m_animationParams.setValue("armSwingFactor", m_sharedArmSwingSlider->value() / 100.0);
+    if (m_sharedHipSwaySlider)
+        m_animationParams.setValue("hipSwayFactor", m_sharedHipSwaySlider->value() / 100.0);
+    if (m_sharedHipRotateSlider)
+        m_animationParams.setValue("hipRotateFactor", m_sharedHipRotateSlider->value() / 100.0);
+    if (m_sharedBipedSpineFlexSlider)
+        m_animationParams.setValue("spineFlexFactor", m_sharedBipedSpineFlexSlider->value() / 100.0);
+    if (m_sharedHeadBobSlider)
+        m_animationParams.setValue("headBobFactor", m_sharedHeadBobSlider->value() / 100.0);
+    if (m_sharedKneeBendSlider)
+        m_animationParams.setValue("kneeBendFactor", m_sharedKneeBendSlider->value() / 100.0);
+    if (m_sharedLeanForwardSlider)
+        m_animationParams.setValue("leanForwardFactor", m_sharedLeanForwardSlider->value() / 100.0);
+    if (m_sharedBouncinessSlider)
+        m_animationParams.setValue("bouncinessFactor", m_sharedBouncinessSlider->value() / 100.0);
 
     // Quadruped run parameters
-    if (m_suspensionSlider)
-        m_animationParams.setValue("suspensionFactor", m_suspensionSlider->value() / 100.0);
-    if (m_forwardLeanSlider)
-        m_animationParams.setValue("forwardLeanFactor", m_forwardLeanSlider->value() / 100.0);
-    if (m_strideFrequencySlider)
-        m_animationParams.setValue("strideFrequencyFactor", m_strideFrequencySlider->value() / 100.0);
-    if (m_boundSlider)
-        m_animationParams.setValue("boundFactor", m_boundSlider->value() / 100.0);
+    if (m_sharedSuspensionSlider)
+        m_animationParams.setValue("suspensionFactor", m_sharedSuspensionSlider->value() / 100.0);
+    if (m_quadrupedRunForwardLeanSlider)
+        m_animationParams.setValue("forwardLeanFactor", m_quadrupedRunForwardLeanSlider->value() / 100.0);
+    if (m_sharedStrideFrequencySlider)
+        m_animationParams.setValue("strideFrequencyFactor", m_sharedStrideFrequencySlider->value() / 100.0);
+    if (m_quadrupedRunBoundSlider)
+        m_animationParams.setValue("boundFactor", m_quadrupedRunBoundSlider->value() / 100.0);
 
     // Common parameters
-    if (m_durationSpinBox)
-        m_animationParams.setValue("durationSeconds", m_durationSpinBox->value());
-    if (m_frameCountSpinBox)
-        m_animationParams.setValue("frameCount", m_frameCountSpinBox->value());
+    if (m_sharedDurationSpinBox)
+        m_animationParams.setValue("durationSeconds", m_sharedDurationSpinBox->value());
+    if (m_sharedFrameCountSpinBox)
+        m_animationParams.setValue("frameCount", m_sharedFrameCountSpinBox->value());
 
     // Insect die parameters
-    if (m_dieLengthStiffnessSlider)
-        m_animationParams.setValue("lengthStiffness", m_dieLengthStiffnessSlider->value() / 100.0);
-    if (m_dieParentStiffnessSlider)
-        m_animationParams.setValue("parentStiffness", m_dieParentStiffnessSlider->value() / 100.0);
-    if (m_dieMaxJointAngleSlider)
-        m_animationParams.setValue("maxJointAngleDeg", m_dieMaxJointAngleSlider->value());
-    if (m_dieDampingSlider)
-        m_animationParams.setValue("damping", m_dieDampingSlider->value() / 100.0);
-    if (m_dieGroundBounceSlider)
-        m_animationParams.setValue("groundBounce", m_dieGroundBounceSlider->value() / 100.0);
+    if (m_sharedDieLengthStiffnessSlider)
+        m_animationParams.setValue("lengthStiffness", m_sharedDieLengthStiffnessSlider->value() / 100.0);
+    if (m_sharedDieParentStiffnessSlider)
+        m_animationParams.setValue("parentStiffness", m_sharedDieParentStiffnessSlider->value() / 100.0);
+    if (m_sharedDieMaxJointAngleSlider)
+        m_animationParams.setValue("maxJointAngleDeg", m_sharedDieMaxJointAngleSlider->value());
+    if (m_sharedDieDampingSlider)
+        m_animationParams.setValue("damping", m_sharedDieDampingSlider->value() / 100.0);
+    if (m_sharedDieGroundBounceSlider)
+        m_animationParams.setValue("groundBounce", m_sharedDieGroundBounceSlider->value() / 100.0);
     // Quadruped die parameters
     if (m_quadDieCollapseSpeedSlider)
         m_animationParams.setValue("collapseSpeed", m_quadDieCollapseSpeedSlider->value() / 100.0);
@@ -954,32 +954,32 @@ void AnimationManageWidget::updateAnimationParamsFromWidgets()
     if (m_spiderBodyYawSlider)
         m_animationParams.setValue("bodyYawFactor", m_spiderBodyYawSlider->value() / 100.0);
     // Fish animation parameters - only save if sliders exist
-    if (m_swimSpeedSlider)
-        m_animationParams.setValue("swimSpeed", m_swimSpeedSlider->value() / 100.0);
-    if (m_swimFrequencySlider)
-        m_animationParams.setValue("swimFrequency", m_swimFrequencySlider->value() / 50.0);
-    if (m_spineAmplitudeSlider)
-        m_animationParams.setValue("spineAmplitude", m_spineAmplitudeSlider->value() / 667.0); // 0.15 at value 100
-    if (m_waveLengthSlider)
-        m_animationParams.setValue("waveLength", m_waveLengthSlider->value() / 100.0);
-    if (m_tailAmplitudeRatioSlider)
-        m_animationParams.setValue("tailAmplitudeRatio", m_tailAmplitudeRatioSlider->value() / 40.0); // 2.5 at value 100
-    if (m_bodyRollSlider)
-        m_animationParams.setValue("bodyRoll", m_bodyRollSlider->value() / 2000.0); // 0.05 at value 100
-    if (m_forwardThrustSlider)
-        m_animationParams.setValue("forwardThrust", m_forwardThrustSlider->value() / 1250.0); // 0.08 at value 100
-    if (m_pectoralFlapPowerSlider)
-        m_animationParams.setValue("pectoralFlapPower", m_pectoralFlapPowerSlider->value() / 250.0); // 0.4 at value 100
-    if (m_pelvicFlapPowerSlider)
-        m_animationParams.setValue("pelvicFlapPower", m_pelvicFlapPowerSlider->value() / 400.0); // 0.25 at value 100
-    if (m_dorsalSwayPowerSlider)
-        m_animationParams.setValue("dorsalSwayPower", m_dorsalSwayPowerSlider->value() / 500.0); // 0.2 at value 100
-    if (m_ventralSwayPowerSlider)
-        m_animationParams.setValue("ventralSwayPower", m_ventralSwayPowerSlider->value() / 500.0); // 0.2 at value 100
-    if (m_pectoralPhaseOffsetSlider)
-        m_animationParams.setValue("pectoralPhaseOffset", m_pectoralPhaseOffsetSlider->value() / 100.0);
-    if (m_pelvicPhaseOffsetSlider)
-        m_animationParams.setValue("pelvicPhaseOffset", m_pelvicPhaseOffsetSlider->value() / 100.0);
+    if (m_fishForwardSwimSpeedSlider)
+        m_animationParams.setValue("swimSpeed", m_fishForwardSwimSpeedSlider->value() / 100.0);
+    if (m_fishForwardSwimFrequencySlider)
+        m_animationParams.setValue("swimFrequency", m_fishForwardSwimFrequencySlider->value() / 50.0);
+    if (m_fishForwardSpineAmplitudeSlider)
+        m_animationParams.setValue("spineAmplitude", m_fishForwardSpineAmplitudeSlider->value() / 667.0); // 0.15 at value 100
+    if (m_fishForwardWaveLengthSlider)
+        m_animationParams.setValue("waveLength", m_fishForwardWaveLengthSlider->value() / 100.0);
+    if (m_fishForwardTailAmplitudeRatioSlider)
+        m_animationParams.setValue("tailAmplitudeRatio", m_fishForwardTailAmplitudeRatioSlider->value() / 40.0); // 2.5 at value 100
+    if (m_fishForwardBodyRollSlider)
+        m_animationParams.setValue("bodyRoll", m_fishForwardBodyRollSlider->value() / 2000.0); // 0.05 at value 100
+    if (m_fishForwardForwardThrustSlider)
+        m_animationParams.setValue("forwardThrust", m_fishForwardForwardThrustSlider->value() / 1250.0); // 0.08 at value 100
+    if (m_fishForwardPectoralFlapPowerSlider)
+        m_animationParams.setValue("pectoralFlapPower", m_fishForwardPectoralFlapPowerSlider->value() / 250.0); // 0.4 at value 100
+    if (m_fishForwardPelvicFlapPowerSlider)
+        m_animationParams.setValue("pelvicFlapPower", m_fishForwardPelvicFlapPowerSlider->value() / 400.0); // 0.25 at value 100
+    if (m_fishForwardDorsalSwayPowerSlider)
+        m_animationParams.setValue("dorsalSwayPower", m_fishForwardDorsalSwayPowerSlider->value() / 500.0); // 0.2 at value 100
+    if (m_fishForwardVentralSwayPowerSlider)
+        m_animationParams.setValue("ventralSwayPower", m_fishForwardVentralSwayPowerSlider->value() / 500.0); // 0.2 at value 100
+    if (m_fishForwardPectoralPhaseOffsetSlider)
+        m_animationParams.setValue("pectoralPhaseOffset", m_fishForwardPectoralPhaseOffsetSlider->value() / 100.0);
+    if (m_fishForwardPelvicPhaseOffsetSlider)
+        m_animationParams.setValue("pelvicPhaseOffset", m_fishForwardPelvicPhaseOffsetSlider->value() / 100.0);
     // Fish die parameters
     if (m_fishDieHitIntensitySlider)
         m_animationParams.setValue("hitIntensity", m_fishDieHitIntensitySlider->value() / 100.0);
@@ -999,7 +999,7 @@ void AnimationManageWidget::updateAnimationParamsFromWidgets()
 
 void AnimationManageWidget::triggerPreviewRegeneration()
 {
-    if (!m_stepLengthSlider || !m_stepHeightSlider || !m_bodyBobSlider || !m_gaitSpeedSlider || !m_rubForwardOffsetSlider || !m_rubUpOffsetSlider || !m_useFabrikCheck || !m_planeStabilizationCheck || !m_hideBonesCheck || !m_hidePartsCheck || !m_hideWeightsCheck)
+    if (!m_sharedStepLengthSlider || !m_sharedStepHeightSlider || !m_sharedBodyBobSlider || !m_sharedGaitSpeedSlider || !m_insectRubHandsRubForwardOffsetSlider || !m_insectRubHandsRubUpOffsetSlider || !m_sharedUseFabrikCheck || !m_sharedPlaneStabilizationCheck || !m_hideBonesCheck || !m_hidePartsCheck || !m_hideWeightsCheck)
         return;
 
     updateAnimationParamsFromWidgets();
@@ -1170,8 +1170,8 @@ void AnimationManageWidget::startAnimationLoop()
     if (!m_frameTimer)
         return;
 
-    double durationSeconds = m_durationSpinBox ? m_durationSpinBox->value() : 1.0;
-    int frameCount = m_frameCountSpinBox ? m_frameCountSpinBox->value() : 30;
+    double durationSeconds = m_sharedDurationSpinBox ? m_sharedDurationSpinBox->value() : 1.0;
+    int frameCount = m_sharedFrameCountSpinBox ? m_sharedFrameCountSpinBox->value() : 30;
     if (frameCount < 1)
         frameCount = 1;
     int intervalMs = std::max(1, static_cast<int>((durationSeconds * 1000.0) / frameCount));
@@ -1369,37 +1369,37 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
     params.values = anim->params;
 
     // Load parameters into UI
-    m_stepLengthSlider->blockSignals(true);
-    m_stepHeightSlider->blockSignals(true);
-    m_bodyBobSlider->blockSignals(true);
-    m_gaitSpeedSlider->blockSignals(true);
-    m_useFabrikCheck->blockSignals(true);
-    m_planeStabilizationCheck->blockSignals(true);
-    m_rubForwardOffsetSlider->blockSignals(true);
-    m_rubUpOffsetSlider->blockSignals(true);
+    m_sharedStepLengthSlider->blockSignals(true);
+    m_sharedStepHeightSlider->blockSignals(true);
+    m_sharedBodyBobSlider->blockSignals(true);
+    m_sharedGaitSpeedSlider->blockSignals(true);
+    m_sharedUseFabrikCheck->blockSignals(true);
+    m_sharedPlaneStabilizationCheck->blockSignals(true);
+    m_insectRubHandsRubForwardOffsetSlider->blockSignals(true);
+    m_insectRubHandsRubUpOffsetSlider->blockSignals(true);
 
     // Block signals for quadruped parameters
-    if (m_spineFlexSlider)
-        m_spineFlexSlider->blockSignals(true);
-    if (m_tailSwaySlider)
-        m_tailSwaySlider->blockSignals(true);
+    if (m_sharedSpineFlexSlider)
+        m_sharedSpineFlexSlider->blockSignals(true);
+    if (m_sharedTailSwaySlider)
+        m_sharedTailSwaySlider->blockSignals(true);
 
-    if (m_durationSpinBox)
-        m_durationSpinBox->blockSignals(true);
-    if (m_frameCountSpinBox)
-        m_frameCountSpinBox->blockSignals(true);
+    if (m_sharedDurationSpinBox)
+        m_sharedDurationSpinBox->blockSignals(true);
+    if (m_sharedFrameCountSpinBox)
+        m_sharedFrameCountSpinBox->blockSignals(true);
 
     // Block signals for insect die parameters
-    if (m_dieLengthStiffnessSlider)
-        m_dieLengthStiffnessSlider->blockSignals(true);
-    if (m_dieParentStiffnessSlider)
-        m_dieParentStiffnessSlider->blockSignals(true);
-    if (m_dieMaxJointAngleSlider)
-        m_dieMaxJointAngleSlider->blockSignals(true);
-    if (m_dieDampingSlider)
-        m_dieDampingSlider->blockSignals(true);
-    if (m_dieGroundBounceSlider)
-        m_dieGroundBounceSlider->blockSignals(true);
+    if (m_sharedDieLengthStiffnessSlider)
+        m_sharedDieLengthStiffnessSlider->blockSignals(true);
+    if (m_sharedDieParentStiffnessSlider)
+        m_sharedDieParentStiffnessSlider->blockSignals(true);
+    if (m_sharedDieMaxJointAngleSlider)
+        m_sharedDieMaxJointAngleSlider->blockSignals(true);
+    if (m_sharedDieDampingSlider)
+        m_sharedDieDampingSlider->blockSignals(true);
+    if (m_sharedDieGroundBounceSlider)
+        m_sharedDieGroundBounceSlider->blockSignals(true);
 
     // Block signals for quadruped die parameters
     if (m_quadDieCollapseSpeedSlider)
@@ -1410,74 +1410,74 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
         m_quadDieRollIntensitySlider->blockSignals(true);
 
     // Block signals for fish parameters
-    if (m_swimSpeedSlider)
-        m_swimSpeedSlider->blockSignals(true);
-    if (m_swimFrequencySlider)
-        m_swimFrequencySlider->blockSignals(true);
-    if (m_spineAmplitudeSlider)
-        m_spineAmplitudeSlider->blockSignals(true);
-    if (m_waveLengthSlider)
-        m_waveLengthSlider->blockSignals(true);
-    if (m_tailAmplitudeRatioSlider)
-        m_tailAmplitudeRatioSlider->blockSignals(true);
-    if (m_bodyRollSlider)
-        m_bodyRollSlider->blockSignals(true);
-    if (m_forwardThrustSlider)
-        m_forwardThrustSlider->blockSignals(true);
-    if (m_pectoralFlapPowerSlider)
-        m_pectoralFlapPowerSlider->blockSignals(true);
-    if (m_pelvicFlapPowerSlider)
-        m_pelvicFlapPowerSlider->blockSignals(true);
-    if (m_dorsalSwayPowerSlider)
-        m_dorsalSwayPowerSlider->blockSignals(true);
-    if (m_ventralSwayPowerSlider)
-        m_ventralSwayPowerSlider->blockSignals(true);
-    if (m_pectoralPhaseOffsetSlider)
-        m_pectoralPhaseOffsetSlider->blockSignals(true);
-    if (m_pelvicPhaseOffsetSlider)
-        m_pelvicPhaseOffsetSlider->blockSignals(true);
+    if (m_fishForwardSwimSpeedSlider)
+        m_fishForwardSwimSpeedSlider->blockSignals(true);
+    if (m_fishForwardSwimFrequencySlider)
+        m_fishForwardSwimFrequencySlider->blockSignals(true);
+    if (m_fishForwardSpineAmplitudeSlider)
+        m_fishForwardSpineAmplitudeSlider->blockSignals(true);
+    if (m_fishForwardWaveLengthSlider)
+        m_fishForwardWaveLengthSlider->blockSignals(true);
+    if (m_fishForwardTailAmplitudeRatioSlider)
+        m_fishForwardTailAmplitudeRatioSlider->blockSignals(true);
+    if (m_fishForwardBodyRollSlider)
+        m_fishForwardBodyRollSlider->blockSignals(true);
+    if (m_fishForwardForwardThrustSlider)
+        m_fishForwardForwardThrustSlider->blockSignals(true);
+    if (m_fishForwardPectoralFlapPowerSlider)
+        m_fishForwardPectoralFlapPowerSlider->blockSignals(true);
+    if (m_fishForwardPelvicFlapPowerSlider)
+        m_fishForwardPelvicFlapPowerSlider->blockSignals(true);
+    if (m_fishForwardDorsalSwayPowerSlider)
+        m_fishForwardDorsalSwayPowerSlider->blockSignals(true);
+    if (m_fishForwardVentralSwayPowerSlider)
+        m_fishForwardVentralSwayPowerSlider->blockSignals(true);
+    if (m_fishForwardPectoralPhaseOffsetSlider)
+        m_fishForwardPectoralPhaseOffsetSlider->blockSignals(true);
+    if (m_fishForwardPelvicPhaseOffsetSlider)
+        m_fishForwardPelvicPhaseOffsetSlider->blockSignals(true);
 
-    m_stepLengthSlider->setValue(static_cast<int>(params.getValue("stepLengthFactor", 1.0) * 100));
-    m_stepHeightSlider->setValue(static_cast<int>(params.getValue("stepHeightFactor", 1.0) * 100));
-    m_bodyBobSlider->setValue(static_cast<int>(params.getValue("bodyBobFactor", 1.0) * 100));
-    m_gaitSpeedSlider->setValue(static_cast<int>(params.getValue("gaitSpeedFactor", 1.0) * 10));
-    m_rubForwardOffsetSlider->setValue(static_cast<int>(params.getValue("rubForwardOffsetFactor", 1.0) * 100));
-    m_rubUpOffsetSlider->setValue(static_cast<int>(params.getValue("rubUpOffsetFactor", 1.0) * 100));
-    m_useFabrikCheck->setChecked(params.getBool("useFabrikIk", true));
-    m_planeStabilizationCheck->setChecked(params.getBool("planeStabilization", true));
+    m_sharedStepLengthSlider->setValue(static_cast<int>(params.getValue("stepLengthFactor", 1.0) * 100));
+    m_sharedStepHeightSlider->setValue(static_cast<int>(params.getValue("stepHeightFactor", 1.0) * 100));
+    m_sharedBodyBobSlider->setValue(static_cast<int>(params.getValue("bodyBobFactor", 1.0) * 100));
+    m_sharedGaitSpeedSlider->setValue(static_cast<int>(params.getValue("gaitSpeedFactor", 1.0) * 10));
+    m_insectRubHandsRubForwardOffsetSlider->setValue(static_cast<int>(params.getValue("rubForwardOffsetFactor", 1.0) * 100));
+    m_insectRubHandsRubUpOffsetSlider->setValue(static_cast<int>(params.getValue("rubUpOffsetFactor", 1.0) * 100));
+    m_sharedUseFabrikCheck->setChecked(params.getBool("useFabrikIk", true));
+    m_sharedPlaneStabilizationCheck->setChecked(params.getBool("planeStabilization", true));
 
     // Load quadruped walk parameters
-    if (m_spineFlexSlider)
-        m_spineFlexSlider->setValue(static_cast<int>(params.getValue("spineFlexFactor", 1.0) * 100));
-    if (m_tailSwaySlider)
-        m_tailSwaySlider->setValue(static_cast<int>(params.getValue("tailSwayFactor", 1.0) * 100));
+    if (m_sharedSpineFlexSlider)
+        m_sharedSpineFlexSlider->setValue(static_cast<int>(params.getValue("spineFlexFactor", 1.0) * 100));
+    if (m_sharedTailSwaySlider)
+        m_sharedTailSwaySlider->setValue(static_cast<int>(params.getValue("tailSwayFactor", 1.0) * 100));
 
     // Load quadruped run parameters
-    if (m_suspensionSlider)
-        m_suspensionSlider->setValue(static_cast<int>(params.getValue("suspensionFactor", 1.0) * 100));
-    if (m_forwardLeanSlider)
-        m_forwardLeanSlider->setValue(static_cast<int>(params.getValue("forwardLeanFactor", 1.0) * 100));
-    if (m_strideFrequencySlider)
-        m_strideFrequencySlider->setValue(static_cast<int>(params.getValue("strideFrequencyFactor", 1.0) * 100));
-    if (m_boundSlider)
-        m_boundSlider->setValue(static_cast<int>(params.getValue("boundFactor", 0.0) * 100));
+    if (m_sharedSuspensionSlider)
+        m_sharedSuspensionSlider->setValue(static_cast<int>(params.getValue("suspensionFactor", 1.0) * 100));
+    if (m_quadrupedRunForwardLeanSlider)
+        m_quadrupedRunForwardLeanSlider->setValue(static_cast<int>(params.getValue("forwardLeanFactor", 1.0) * 100));
+    if (m_sharedStrideFrequencySlider)
+        m_sharedStrideFrequencySlider->setValue(static_cast<int>(params.getValue("strideFrequencyFactor", 1.0) * 100));
+    if (m_quadrupedRunBoundSlider)
+        m_quadrupedRunBoundSlider->setValue(static_cast<int>(params.getValue("boundFactor", 0.0) * 100));
 
-    if (m_durationSpinBox)
-        m_durationSpinBox->setValue(params.getValue("durationSeconds", 1.0));
-    if (m_frameCountSpinBox)
-        m_frameCountSpinBox->setValue(static_cast<int>(params.getValue("frameCount", 30.0)));
+    if (m_sharedDurationSpinBox)
+        m_sharedDurationSpinBox->setValue(params.getValue("durationSeconds", 3.0));
+    if (m_sharedFrameCountSpinBox)
+        m_sharedFrameCountSpinBox->setValue(static_cast<int>(params.getValue("frameCount", 90.0)));
 
     // Load insect die parameters
-    if (m_dieLengthStiffnessSlider)
-        m_dieLengthStiffnessSlider->setValue(static_cast<int>(params.getValue("lengthStiffness", 0.9) * 100));
-    if (m_dieParentStiffnessSlider)
-        m_dieParentStiffnessSlider->setValue(static_cast<int>(params.getValue("parentStiffness", 0.8) * 100));
-    if (m_dieMaxJointAngleSlider)
-        m_dieMaxJointAngleSlider->setValue(static_cast<int>(params.getValue("maxJointAngleDeg", 120.0)));
-    if (m_dieDampingSlider)
-        m_dieDampingSlider->setValue(static_cast<int>(params.getValue("damping", 0.95) * 100));
-    if (m_dieGroundBounceSlider)
-        m_dieGroundBounceSlider->setValue(static_cast<int>(params.getValue("groundBounce", 0.22) * 100));
+    if (m_sharedDieLengthStiffnessSlider)
+        m_sharedDieLengthStiffnessSlider->setValue(static_cast<int>(params.getValue("lengthStiffness", 0.9) * 100));
+    if (m_sharedDieParentStiffnessSlider)
+        m_sharedDieParentStiffnessSlider->setValue(static_cast<int>(params.getValue("parentStiffness", 0.8) * 100));
+    if (m_sharedDieMaxJointAngleSlider)
+        m_sharedDieMaxJointAngleSlider->setValue(static_cast<int>(params.getValue("maxJointAngleDeg", 120.0)));
+    if (m_sharedDieDampingSlider)
+        m_sharedDieDampingSlider->setValue(static_cast<int>(params.getValue("damping", 0.95) * 100));
+    if (m_sharedDieGroundBounceSlider)
+        m_sharedDieGroundBounceSlider->setValue(static_cast<int>(params.getValue("groundBounce", 0.22) * 100));
 
     // Load quadruped die parameter values
     if (m_quadDieCollapseSpeedSlider)
@@ -1488,64 +1488,64 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
         m_quadDieRollIntensitySlider->setValue(static_cast<int>(params.getValue("rollIntensity", 1.0) * 100));
 
     // Load fish parameter values (using default values matching the animation implementation)
-    if (m_swimSpeedSlider)
-        m_swimSpeedSlider->setValue(static_cast<int>(params.getValue("swimSpeed", 1.0) * 100));
-    if (m_swimFrequencySlider)
-        m_swimFrequencySlider->setValue(static_cast<int>(params.getValue("swimFrequency", 2.0) * 50));
-    if (m_spineAmplitudeSlider)
-        m_spineAmplitudeSlider->setValue(static_cast<int>(params.getValue("spineAmplitude", 0.15) * 667));
-    if (m_waveLengthSlider)
-        m_waveLengthSlider->setValue(static_cast<int>(params.getValue("waveLength", 1.0) * 100));
-    if (m_tailAmplitudeRatioSlider)
-        m_tailAmplitudeRatioSlider->setValue(static_cast<int>(params.getValue("tailAmplitudeRatio", 2.5) * 40));
-    if (m_bodyRollSlider)
-        m_bodyRollSlider->setValue(static_cast<int>(params.getValue("bodyRoll", 0.05) * 2000));
-    if (m_forwardThrustSlider)
-        m_forwardThrustSlider->setValue(static_cast<int>(params.getValue("forwardThrust", 0.08) * 1250));
-    if (m_pectoralFlapPowerSlider)
-        m_pectoralFlapPowerSlider->setValue(static_cast<int>(params.getValue("pectoralFlapPower", 0.4) * 250));
-    if (m_pelvicFlapPowerSlider)
-        m_pelvicFlapPowerSlider->setValue(static_cast<int>(params.getValue("pelvicFlapPower", 0.25) * 400));
-    if (m_dorsalSwayPowerSlider)
-        m_dorsalSwayPowerSlider->setValue(static_cast<int>(params.getValue("dorsalSwayPower", 0.2) * 500));
-    if (m_ventralSwayPowerSlider)
-        m_ventralSwayPowerSlider->setValue(static_cast<int>(params.getValue("ventralSwayPower", 0.2) * 500));
-    if (m_pectoralPhaseOffsetSlider)
-        m_pectoralPhaseOffsetSlider->setValue(static_cast<int>(params.getValue("pectoralPhaseOffset", 0.0) * 100));
-    if (m_pelvicPhaseOffsetSlider)
-        m_pelvicPhaseOffsetSlider->setValue(static_cast<int>(params.getValue("pelvicPhaseOffset", 0.5) * 100));
+    if (m_fishForwardSwimSpeedSlider)
+        m_fishForwardSwimSpeedSlider->setValue(static_cast<int>(params.getValue("swimSpeed", 1.0) * 100));
+    if (m_fishForwardSwimFrequencySlider)
+        m_fishForwardSwimFrequencySlider->setValue(static_cast<int>(params.getValue("swimFrequency", 2.0) * 50));
+    if (m_fishForwardSpineAmplitudeSlider)
+        m_fishForwardSpineAmplitudeSlider->setValue(static_cast<int>(params.getValue("spineAmplitude", 0.15) * 667));
+    if (m_fishForwardWaveLengthSlider)
+        m_fishForwardWaveLengthSlider->setValue(static_cast<int>(params.getValue("waveLength", 1.0) * 100));
+    if (m_fishForwardTailAmplitudeRatioSlider)
+        m_fishForwardTailAmplitudeRatioSlider->setValue(static_cast<int>(params.getValue("tailAmplitudeRatio", 2.5) * 40));
+    if (m_fishForwardBodyRollSlider)
+        m_fishForwardBodyRollSlider->setValue(static_cast<int>(params.getValue("bodyRoll", 0.05) * 2000));
+    if (m_fishForwardForwardThrustSlider)
+        m_fishForwardForwardThrustSlider->setValue(static_cast<int>(params.getValue("forwardThrust", 0.08) * 1250));
+    if (m_fishForwardPectoralFlapPowerSlider)
+        m_fishForwardPectoralFlapPowerSlider->setValue(static_cast<int>(params.getValue("pectoralFlapPower", 0.4) * 250));
+    if (m_fishForwardPelvicFlapPowerSlider)
+        m_fishForwardPelvicFlapPowerSlider->setValue(static_cast<int>(params.getValue("pelvicFlapPower", 0.25) * 400));
+    if (m_fishForwardDorsalSwayPowerSlider)
+        m_fishForwardDorsalSwayPowerSlider->setValue(static_cast<int>(params.getValue("dorsalSwayPower", 0.2) * 500));
+    if (m_fishForwardVentralSwayPowerSlider)
+        m_fishForwardVentralSwayPowerSlider->setValue(static_cast<int>(params.getValue("ventralSwayPower", 0.2) * 500));
+    if (m_fishForwardPectoralPhaseOffsetSlider)
+        m_fishForwardPectoralPhaseOffsetSlider->setValue(static_cast<int>(params.getValue("pectoralPhaseOffset", 0.0) * 100));
+    if (m_fishForwardPelvicPhaseOffsetSlider)
+        m_fishForwardPelvicPhaseOffsetSlider->setValue(static_cast<int>(params.getValue("pelvicPhaseOffset", 0.5) * 100));
 
-    m_stepLengthSlider->blockSignals(false);
-    m_stepHeightSlider->blockSignals(false);
-    m_bodyBobSlider->blockSignals(false);
-    m_gaitSpeedSlider->blockSignals(false);
-    m_useFabrikCheck->blockSignals(false);
-    m_planeStabilizationCheck->blockSignals(false);
-    m_rubForwardOffsetSlider->blockSignals(false);
-    m_rubUpOffsetSlider->blockSignals(false);
+    m_sharedStepLengthSlider->blockSignals(false);
+    m_sharedStepHeightSlider->blockSignals(false);
+    m_sharedBodyBobSlider->blockSignals(false);
+    m_sharedGaitSpeedSlider->blockSignals(false);
+    m_sharedUseFabrikCheck->blockSignals(false);
+    m_sharedPlaneStabilizationCheck->blockSignals(false);
+    m_insectRubHandsRubForwardOffsetSlider->blockSignals(false);
+    m_insectRubHandsRubUpOffsetSlider->blockSignals(false);
 
     // Unblock signals for quadruped parameters
-    if (m_spineFlexSlider)
-        m_spineFlexSlider->blockSignals(false);
-    if (m_tailSwaySlider)
-        m_tailSwaySlider->blockSignals(false);
+    if (m_sharedSpineFlexSlider)
+        m_sharedSpineFlexSlider->blockSignals(false);
+    if (m_sharedTailSwaySlider)
+        m_sharedTailSwaySlider->blockSignals(false);
 
-    if (m_durationSpinBox)
-        m_durationSpinBox->blockSignals(false);
-    if (m_frameCountSpinBox)
-        m_frameCountSpinBox->blockSignals(false);
+    if (m_sharedDurationSpinBox)
+        m_sharedDurationSpinBox->blockSignals(false);
+    if (m_sharedFrameCountSpinBox)
+        m_sharedFrameCountSpinBox->blockSignals(false);
 
     // Unblock signals for insect die parameters
-    if (m_dieLengthStiffnessSlider)
-        m_dieLengthStiffnessSlider->blockSignals(false);
-    if (m_dieParentStiffnessSlider)
-        m_dieParentStiffnessSlider->blockSignals(false);
-    if (m_dieMaxJointAngleSlider)
-        m_dieMaxJointAngleSlider->blockSignals(false);
-    if (m_dieDampingSlider)
-        m_dieDampingSlider->blockSignals(false);
-    if (m_dieGroundBounceSlider)
-        m_dieGroundBounceSlider->blockSignals(false);
+    if (m_sharedDieLengthStiffnessSlider)
+        m_sharedDieLengthStiffnessSlider->blockSignals(false);
+    if (m_sharedDieParentStiffnessSlider)
+        m_sharedDieParentStiffnessSlider->blockSignals(false);
+    if (m_sharedDieMaxJointAngleSlider)
+        m_sharedDieMaxJointAngleSlider->blockSignals(false);
+    if (m_sharedDieDampingSlider)
+        m_sharedDieDampingSlider->blockSignals(false);
+    if (m_sharedDieGroundBounceSlider)
+        m_sharedDieGroundBounceSlider->blockSignals(false);
 
     // Unblock signals for quadruped die parameters
     if (m_quadDieCollapseSpeedSlider)
@@ -1556,32 +1556,32 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
         m_quadDieRollIntensitySlider->blockSignals(false);
 
     // Unblock signals for fish parameters
-    if (m_swimSpeedSlider)
-        m_swimSpeedSlider->blockSignals(false);
-    if (m_swimFrequencySlider)
-        m_swimFrequencySlider->blockSignals(false);
-    if (m_spineAmplitudeSlider)
-        m_spineAmplitudeSlider->blockSignals(false);
-    if (m_waveLengthSlider)
-        m_waveLengthSlider->blockSignals(false);
-    if (m_tailAmplitudeRatioSlider)
-        m_tailAmplitudeRatioSlider->blockSignals(false);
-    if (m_bodyRollSlider)
-        m_bodyRollSlider->blockSignals(false);
-    if (m_forwardThrustSlider)
-        m_forwardThrustSlider->blockSignals(false);
-    if (m_pectoralFlapPowerSlider)
-        m_pectoralFlapPowerSlider->blockSignals(false);
-    if (m_pelvicFlapPowerSlider)
-        m_pelvicFlapPowerSlider->blockSignals(false);
-    if (m_dorsalSwayPowerSlider)
-        m_dorsalSwayPowerSlider->blockSignals(false);
-    if (m_ventralSwayPowerSlider)
-        m_ventralSwayPowerSlider->blockSignals(false);
-    if (m_pectoralPhaseOffsetSlider)
-        m_pectoralPhaseOffsetSlider->blockSignals(false);
-    if (m_pelvicPhaseOffsetSlider)
-        m_pelvicPhaseOffsetSlider->blockSignals(false);
+    if (m_fishForwardSwimSpeedSlider)
+        m_fishForwardSwimSpeedSlider->blockSignals(false);
+    if (m_fishForwardSwimFrequencySlider)
+        m_fishForwardSwimFrequencySlider->blockSignals(false);
+    if (m_fishForwardSpineAmplitudeSlider)
+        m_fishForwardSpineAmplitudeSlider->blockSignals(false);
+    if (m_fishForwardWaveLengthSlider)
+        m_fishForwardWaveLengthSlider->blockSignals(false);
+    if (m_fishForwardTailAmplitudeRatioSlider)
+        m_fishForwardTailAmplitudeRatioSlider->blockSignals(false);
+    if (m_fishForwardBodyRollSlider)
+        m_fishForwardBodyRollSlider->blockSignals(false);
+    if (m_fishForwardForwardThrustSlider)
+        m_fishForwardForwardThrustSlider->blockSignals(false);
+    if (m_fishForwardPectoralFlapPowerSlider)
+        m_fishForwardPectoralFlapPowerSlider->blockSignals(false);
+    if (m_fishForwardPelvicFlapPowerSlider)
+        m_fishForwardPelvicFlapPowerSlider->blockSignals(false);
+    if (m_fishForwardDorsalSwayPowerSlider)
+        m_fishForwardDorsalSwayPowerSlider->blockSignals(false);
+    if (m_fishForwardVentralSwayPowerSlider)
+        m_fishForwardVentralSwayPowerSlider->blockSignals(false);
+    if (m_fishForwardPectoralPhaseOffsetSlider)
+        m_fishForwardPectoralPhaseOffsetSlider->blockSignals(false);
+    if (m_fishForwardPelvicPhaseOffsetSlider)
+        m_fishForwardPelvicPhaseOffsetSlider->blockSignals(false);
 
     // Update title and trigger preview
     m_parametersGroupBox->setTitle(tr("Parameters (") + anim->name + ")");

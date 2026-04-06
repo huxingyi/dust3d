@@ -60,19 +60,19 @@ private:
     Document* m_document = nullptr;
     WorldWidget* m_modelWidget = nullptr;
     QTimer* m_frameTimer = nullptr;
-    QSlider* m_stepLengthSlider = nullptr;
-    QSlider* m_stepHeightSlider = nullptr;
-    QSlider* m_bodyBobSlider = nullptr;
-    QSlider* m_gaitSpeedSlider = nullptr;
-    QSlider* m_rubForwardOffsetSlider = nullptr;
-    QSlider* m_rubUpOffsetSlider = nullptr;
+    QSlider* m_sharedStepLengthSlider = nullptr;
+    QSlider* m_sharedStepHeightSlider = nullptr;
+    QSlider* m_sharedBodyBobSlider = nullptr;
+    QSlider* m_sharedGaitSpeedSlider = nullptr;
+    QSlider* m_insectRubHandsRubForwardOffsetSlider = nullptr;
+    QSlider* m_insectRubHandsRubUpOffsetSlider = nullptr;
 
     // Insect die simulation parameter sliders
-    QSlider* m_dieLengthStiffnessSlider = nullptr;
-    QSlider* m_dieParentStiffnessSlider = nullptr;
-    QSlider* m_dieMaxJointAngleSlider = nullptr;
-    QSlider* m_dieDampingSlider = nullptr;
-    QSlider* m_dieGroundBounceSlider = nullptr;
+    QSlider* m_sharedDieLengthStiffnessSlider = nullptr;
+    QSlider* m_sharedDieParentStiffnessSlider = nullptr;
+    QSlider* m_sharedDieMaxJointAngleSlider = nullptr;
+    QSlider* m_sharedDieDampingSlider = nullptr;
+    QSlider* m_sharedDieGroundBounceSlider = nullptr;
 
     // Fish die parameter sliders
     QSlider* m_fishDieHitIntensitySlider = nullptr;
@@ -84,33 +84,33 @@ private:
     QSlider* m_fishDieSpinDecaySlider = nullptr;
 
     // Fish animation parameter sliders
-    QSlider* m_swimSpeedSlider = nullptr;
-    QSlider* m_swimFrequencySlider = nullptr;
-    QSlider* m_spineAmplitudeSlider = nullptr;
-    QSlider* m_waveLengthSlider = nullptr;
-    QSlider* m_tailAmplitudeRatioSlider = nullptr;
-    QSlider* m_bodyRollSlider = nullptr;
-    QSlider* m_forwardThrustSlider = nullptr;
-    QSlider* m_pectoralFlapPowerSlider = nullptr;
-    QSlider* m_pelvicFlapPowerSlider = nullptr;
-    QSlider* m_dorsalSwayPowerSlider = nullptr;
-    QSlider* m_ventralSwayPowerSlider = nullptr;
-    QSlider* m_pectoralPhaseOffsetSlider = nullptr;
-    QSlider* m_pelvicPhaseOffsetSlider = nullptr;
+    QSlider* m_fishForwardSwimSpeedSlider = nullptr;
+    QSlider* m_fishForwardSwimFrequencySlider = nullptr;
+    QSlider* m_fishForwardSpineAmplitudeSlider = nullptr;
+    QSlider* m_fishForwardWaveLengthSlider = nullptr;
+    QSlider* m_fishForwardTailAmplitudeRatioSlider = nullptr;
+    QSlider* m_fishForwardBodyRollSlider = nullptr;
+    QSlider* m_fishForwardForwardThrustSlider = nullptr;
+    QSlider* m_fishForwardPectoralFlapPowerSlider = nullptr;
+    QSlider* m_fishForwardPelvicFlapPowerSlider = nullptr;
+    QSlider* m_fishForwardDorsalSwayPowerSlider = nullptr;
+    QSlider* m_fishForwardVentralSwayPowerSlider = nullptr;
+    QSlider* m_fishForwardPectoralPhaseOffsetSlider = nullptr;
+    QSlider* m_fishForwardPelvicPhaseOffsetSlider = nullptr;
 
     QFormLayout* m_parameterLayout = nullptr;
-    QWidget* m_stepLengthRow = nullptr;
-    QLabel* m_stepLengthLabel = nullptr;
-    QWidget* m_stepHeightRow = nullptr;
-    QLabel* m_stepHeightLabel = nullptr;
-    QWidget* m_bodyBobRow = nullptr;
-    QLabel* m_bodyBobLabel = nullptr;
-    QWidget* m_gaitSpeedRow = nullptr;
-    QLabel* m_gaitSpeedLabel = nullptr;
-    QWidget* m_rubForwardOffsetRow = nullptr;
-    QLabel* m_rubForwardOffsetLabel = nullptr;
-    QWidget* m_rubUpOffsetRow = nullptr;
-    QLabel* m_rubUpOffsetLabel = nullptr;
+    QWidget* m_sharedStepLengthRow = nullptr;
+    QLabel* m_sharedStepLengthLabel = nullptr;
+    QWidget* m_sharedStepHeightRow = nullptr;
+    QLabel* m_sharedStepHeightLabel = nullptr;
+    QWidget* m_sharedBodyBobRow = nullptr;
+    QLabel* m_sharedBodyBobLabel = nullptr;
+    QWidget* m_sharedGaitSpeedRow = nullptr;
+    QLabel* m_sharedGaitSpeedLabel = nullptr;
+    QWidget* m_insectRubHandsRubForwardOffsetRow = nullptr;
+    QLabel* m_insectRubHandsRubForwardOffsetLabel = nullptr;
+    QWidget* m_insectRubHandsRubUpOffsetRow = nullptr;
+    QLabel* m_insectRubHandsRubUpOffsetLabel = nullptr;
 
     // Animation preview frame scrubber
     QSlider* m_animationFrameSlider = nullptr;
@@ -118,16 +118,16 @@ private:
     bool m_isScrubbing = false;
 
     // Insect die parameter rows and labels
-    QWidget* m_dieLengthStiffnessRow = nullptr;
-    QLabel* m_dieLengthStiffnessLabel = nullptr;
-    QWidget* m_dieParentStiffnessRow = nullptr;
-    QLabel* m_dieParentStiffnessLabel = nullptr;
-    QWidget* m_dieMaxJointAngleRow = nullptr;
-    QLabel* m_dieMaxJointAngleLabel = nullptr;
-    QWidget* m_dieDampingRow = nullptr;
-    QLabel* m_dieDampingLabel = nullptr;
-    QWidget* m_dieGroundBounceRow = nullptr;
-    QLabel* m_dieGroundBounceLabel = nullptr;
+    QWidget* m_sharedDieLengthStiffnessRow = nullptr;
+    QLabel* m_sharedDieLengthStiffnessLabel = nullptr;
+    QWidget* m_sharedDieParentStiffnessRow = nullptr;
+    QLabel* m_sharedDieParentStiffnessLabel = nullptr;
+    QWidget* m_sharedDieMaxJointAngleRow = nullptr;
+    QLabel* m_sharedDieMaxJointAngleLabel = nullptr;
+    QWidget* m_sharedDieDampingRow = nullptr;
+    QLabel* m_sharedDieDampingLabel = nullptr;
+    QWidget* m_sharedDieGroundBounceRow = nullptr;
+    QLabel* m_sharedDieGroundBounceLabel = nullptr;
 
     // Fish die parameter rows and labels
     QWidget* m_fishDieHitIntensityRow = nullptr;
@@ -146,85 +146,85 @@ private:
     QLabel* m_fishDieSpinDecayLabel = nullptr;
 
     // Fish animation parameter rows and labels
-    QWidget* m_swimSpeedRow = nullptr;
-    QLabel* m_swimSpeedLabel = nullptr;
-    QWidget* m_swimFrequencyRow = nullptr;
-    QLabel* m_swimFrequencyLabel = nullptr;
-    QWidget* m_spineAmplitudeRow = nullptr;
-    QLabel* m_spineAmplitudeLabel = nullptr;
-    QWidget* m_waveLengthRow = nullptr;
-    QLabel* m_waveLengthLabel = nullptr;
-    QWidget* m_tailAmplitudeRatioRow = nullptr;
-    QLabel* m_tailAmplitudeRatioLabel = nullptr;
-    QWidget* m_bodyRollRow = nullptr;
-    QLabel* m_bodyRollLabel = nullptr;
-    QWidget* m_forwardThrustRow = nullptr;
-    QLabel* m_forwardThrustLabel = nullptr;
-    QWidget* m_pectoralFlapPowerRow = nullptr;
-    QLabel* m_pectoralFlapPowerLabel = nullptr;
-    QWidget* m_pelvicFlapPowerRow = nullptr;
-    QLabel* m_pelvicFlapPowerLabel = nullptr;
-    QWidget* m_dorsalSwayPowerRow = nullptr;
-    QLabel* m_dorsalSwayPowerLabel = nullptr;
-    QWidget* m_ventralSwayPowerRow = nullptr;
-    QLabel* m_ventralSwayPowerLabel = nullptr;
-    QWidget* m_pectoralPhaseOffsetRow = nullptr;
-    QLabel* m_pectoralPhaseOffsetLabel = nullptr;
-    QWidget* m_pelvicPhaseOffsetRow = nullptr;
-    QLabel* m_pelvicPhaseOffsetLabel = nullptr;
+    QWidget* m_fishForwardSwimSpeedRow = nullptr;
+    QLabel* m_fishForwardSwimSpeedLabel = nullptr;
+    QWidget* m_fishForwardSwimFrequencyRow = nullptr;
+    QLabel* m_fishForwardSwimFrequencyLabel = nullptr;
+    QWidget* m_fishForwardSpineAmplitudeRow = nullptr;
+    QLabel* m_fishForwardSpineAmplitudeLabel = nullptr;
+    QWidget* m_fishForwardWaveLengthRow = nullptr;
+    QLabel* m_fishForwardWaveLengthLabel = nullptr;
+    QWidget* m_fishForwardTailAmplitudeRatioRow = nullptr;
+    QLabel* m_fishForwardTailAmplitudeRatioLabel = nullptr;
+    QWidget* m_fishForwardBodyRollRow = nullptr;
+    QLabel* m_fishForwardBodyRollLabel = nullptr;
+    QWidget* m_fishForwardForwardThrustRow = nullptr;
+    QLabel* m_fishForwardForwardThrustLabel = nullptr;
+    QWidget* m_fishForwardPectoralFlapPowerRow = nullptr;
+    QLabel* m_fishForwardPectoralFlapPowerLabel = nullptr;
+    QWidget* m_fishForwardPelvicFlapPowerRow = nullptr;
+    QLabel* m_fishForwardPelvicFlapPowerLabel = nullptr;
+    QWidget* m_fishForwardDorsalSwayPowerRow = nullptr;
+    QLabel* m_fishForwardDorsalSwayPowerLabel = nullptr;
+    QWidget* m_fishForwardVentralSwayPowerRow = nullptr;
+    QLabel* m_fishForwardVentralSwayPowerLabel = nullptr;
+    QWidget* m_fishForwardPectoralPhaseOffsetRow = nullptr;
+    QLabel* m_fishForwardPectoralPhaseOffsetLabel = nullptr;
+    QWidget* m_fishForwardPelvicPhaseOffsetRow = nullptr;
+    QLabel* m_fishForwardPelvicPhaseOffsetLabel = nullptr;
     // Biped walk parameter sliders
-    QSlider* m_armSwingSlider = nullptr;
-    QSlider* m_hipSwaySlider = nullptr;
-    QSlider* m_hipRotateSlider = nullptr;
-    QSlider* m_bipedSpineFlexSlider = nullptr;
-    QSlider* m_headBobSlider = nullptr;
-    QSlider* m_kneeBendSlider = nullptr;
-    QSlider* m_leanForwardSlider = nullptr;
-    QSlider* m_bouncinessSlider = nullptr;
+    QSlider* m_sharedArmSwingSlider = nullptr;
+    QSlider* m_sharedHipSwaySlider = nullptr;
+    QSlider* m_sharedHipRotateSlider = nullptr;
+    QSlider* m_sharedBipedSpineFlexSlider = nullptr;
+    QSlider* m_sharedHeadBobSlider = nullptr;
+    QSlider* m_sharedKneeBendSlider = nullptr;
+    QSlider* m_sharedLeanForwardSlider = nullptr;
+    QSlider* m_sharedBouncinessSlider = nullptr;
 
     // Biped walk parameter rows and labels
-    QWidget* m_armSwingRow = nullptr;
-    QLabel* m_armSwingLabel = nullptr;
-    QWidget* m_hipSwayRow = nullptr;
-    QLabel* m_hipSwayLabel = nullptr;
-    QWidget* m_hipRotateRow = nullptr;
-    QLabel* m_hipRotateLabel = nullptr;
-    QWidget* m_bipedSpineFlexRow = nullptr;
-    QLabel* m_bipedSpineFlexLabel = nullptr;
-    QWidget* m_headBobRow = nullptr;
-    QLabel* m_headBobLabel = nullptr;
-    QWidget* m_kneeBendRow = nullptr;
-    QLabel* m_kneeBendLabel = nullptr;
-    QWidget* m_leanForwardRow = nullptr;
-    QLabel* m_leanForwardLabel = nullptr;
-    QWidget* m_bouncinessRow = nullptr;
-    QLabel* m_bouncinessLabel = nullptr;
+    QWidget* m_sharedArmSwingRow = nullptr;
+    QLabel* m_sharedArmSwingLabel = nullptr;
+    QWidget* m_sharedHipSwayRow = nullptr;
+    QLabel* m_sharedHipSwayLabel = nullptr;
+    QWidget* m_sharedHipRotateRow = nullptr;
+    QLabel* m_sharedHipRotateLabel = nullptr;
+    QWidget* m_sharedBipedSpineFlexRow = nullptr;
+    QLabel* m_sharedBipedSpineFlexLabel = nullptr;
+    QWidget* m_sharedHeadBobRow = nullptr;
+    QLabel* m_sharedHeadBobLabel = nullptr;
+    QWidget* m_sharedKneeBendRow = nullptr;
+    QLabel* m_sharedKneeBendLabel = nullptr;
+    QWidget* m_sharedLeanForwardRow = nullptr;
+    QLabel* m_sharedLeanForwardLabel = nullptr;
+    QWidget* m_sharedBouncinessRow = nullptr;
+    QLabel* m_sharedBouncinessLabel = nullptr;
 
     // Quadruped walk parameter sliders
-    QSlider* m_spineFlexSlider = nullptr;
-    QSlider* m_tailSwaySlider = nullptr;
+    QSlider* m_sharedSpineFlexSlider = nullptr;
+    QSlider* m_sharedTailSwaySlider = nullptr;
 
     // Quadruped walk parameter rows and labels
-    QWidget* m_spineFlexRow = nullptr;
-    QLabel* m_spineFlexLabel = nullptr;
-    QWidget* m_tailSwayRow = nullptr;
-    QLabel* m_tailSwayLabel = nullptr;
+    QWidget* m_sharedSpineFlexRow = nullptr;
+    QLabel* m_sharedSpineFlexLabel = nullptr;
+    QWidget* m_sharedTailSwayRow = nullptr;
+    QLabel* m_sharedTailSwayLabel = nullptr;
 
     // Quadruped run parameter sliders
-    QSlider* m_suspensionSlider = nullptr;
-    QSlider* m_forwardLeanSlider = nullptr;
-    QSlider* m_strideFrequencySlider = nullptr;
-    QSlider* m_boundSlider = nullptr;
+    QSlider* m_sharedSuspensionSlider = nullptr;
+    QSlider* m_quadrupedRunForwardLeanSlider = nullptr;
+    QSlider* m_sharedStrideFrequencySlider = nullptr;
+    QSlider* m_quadrupedRunBoundSlider = nullptr;
 
     // Quadruped run parameter rows and labels
-    QWidget* m_suspensionRow = nullptr;
-    QLabel* m_suspensionLabel = nullptr;
-    QWidget* m_forwardLeanRow = nullptr;
-    QLabel* m_forwardLeanLabel = nullptr;
-    QWidget* m_strideFrequencyRow = nullptr;
-    QLabel* m_strideFrequencyLabel = nullptr;
-    QWidget* m_boundRow = nullptr;
-    QLabel* m_boundLabel = nullptr;
+    QWidget* m_sharedSuspensionRow = nullptr;
+    QLabel* m_sharedSuspensionLabel = nullptr;
+    QWidget* m_quadrupedRunForwardLeanRow = nullptr;
+    QLabel* m_quadrupedRunForwardLeanLabel = nullptr;
+    QWidget* m_sharedStrideFrequencyRow = nullptr;
+    QLabel* m_sharedStrideFrequencyLabel = nullptr;
+    QWidget* m_quadrupedRunBoundRow = nullptr;
+    QLabel* m_quadrupedRunBoundLabel = nullptr;
 
     // Quadruped die parameter sliders
     QSlider* m_quadDieCollapseSpeedSlider = nullptr;
@@ -255,14 +255,14 @@ private:
     QWidget* m_spiderBodyYawRow = nullptr;
     QLabel* m_spiderBodyYawLabel = nullptr;
 
-    QCheckBox* m_useFabrikCheck = nullptr;
-    QCheckBox* m_planeStabilizationCheck = nullptr;
+    QCheckBox* m_sharedUseFabrikCheck = nullptr;
+    QCheckBox* m_sharedPlaneStabilizationCheck = nullptr;
     QCheckBox* m_hideBonesCheck = nullptr;
     QCheckBox* m_hidePartsCheck = nullptr;
     QCheckBox* m_hideWeightsCheck = nullptr;
 
-    QDoubleSpinBox* m_durationSpinBox = nullptr;
-    QSpinBox* m_frameCountSpinBox = nullptr;
+    QDoubleSpinBox* m_sharedDurationSpinBox = nullptr;
+    QSpinBox* m_sharedFrameCountSpinBox = nullptr;
 
     QComboBox* m_animationNameCombo = nullptr;
     ToolbarButton* m_addAnimationButton = nullptr;
