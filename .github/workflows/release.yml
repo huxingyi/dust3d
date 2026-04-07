@@ -201,17 +201,25 @@ jobs:
           repository: huxingyi/dust3d-test-models
           ref: main
           path: dust3d-test-models
+      - name: Install create-dmg
+        run: |
+          brew install create-dmg
       - name: Generate DMG
         run: |
           # deploy Qt frameworks into the app bundle
           macdeployqt ${GITHUB_WORKSPACE}/application/dust3d.app
           # ad-hoc sign so Gatekeeper doesn't report the app as damaged
           codesign --force --deep --sign - ${GITHUB_WORKSPACE}/application/dust3d.app
-          # package into DMG
-          hdiutil create -volname "Dust3D" \
-            -srcfolder ${GITHUB_WORKSPACE}/application/dust3d.app \
-            -ov -format UDZO \
-            -o ${GITHUB_WORKSPACE}/application/dust3d-${{ github.ref_name }}.dmg
+          # package into drag-to-Applications DMG
+          create-dmg \
+            --volname "Dust3D" \
+            --format UDZO \
+            --app-drop-link \
+            --window-size 660 300 \
+            --icon "dust3d.app" 140 145 \
+            --icon "Applications" 520 145 \
+            "${GITHUB_WORKSPACE}/application/dust3d-${{ github.ref_name }}.dmg" \
+            "${GITHUB_WORKSPACE}/application/dust3d.app"
       - name: Run application and capture screenshot
         run: |
           open ${GITHUB_WORKSPACE}/application/dust3d.app --args ${GITHUB_WORKSPACE}/dust3d-test-models/fish/salmon.ds3
