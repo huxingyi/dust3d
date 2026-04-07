@@ -62,25 +62,7 @@ jobs:
         with:
           name: dust3d-${{ github.ref_name }}-ubuntu-22.04.png
           path: dust3d-${{ github.ref_name }}-ubuntu-22.04.png
-      - name: Checkout Pages repository
-        uses: actions/checkout@v4
-        with:
-          repository: huxingyi/huxingyi.github.io
-          token: ${{ secrets.UPDATE_REPO_TOKEN }}
-          path: gh-pages
-
-      - name: Publish latest build
-        env:
-          MY_EMAIL: ${{ secrets.MY_EMAIL }}
-        run: |
-          cd gh-pages
-          git config user.email "${{ env.MY_EMAIL }}"
-          git config user.name "huxingyi"
-          cp ../dust3d-${{ github.ref_name }}.AppImage download/dust3d-latest-preview.AppImage
-          git add download/dust3d-latest-preview.AppImage
-          git commit -m "Update latest build for linux" || true
-          git push origin HEAD:master
-      - name: Upload AppImage
+      - name: Upload Linux AppImage artifact
         uses: actions/upload-artifact@v4
         with:
           name: dust3d-${{ github.ref_name }}.AppImage
@@ -157,29 +139,11 @@ jobs:
         with:
           name: dust3d-${{ github.ref_name }}-windows-2022.png
           path: dust3d-${{ github.ref_name }}-windows-2022.png
-      - name: Checkout Pages repository
-        uses: actions/checkout@v4
-        with:
-          repository: huxingyi/huxingyi.github.io
-          token: ${{ secrets.UPDATE_REPO_TOKEN }}
-          path: gh-pages
-
-      - name: Publish latest build
-        env:
-          MY_EMAIL: ${{ secrets.MY_EMAIL }}
-        run: |
-          cd gh-pages
-          git config user.email "${{ env.MY_EMAIL }}"
-          git config user.name "huxingyi"
-          cp ../Dust3D-win32-x86_64.zip download/dust3d-latest-preview.zip
-          git add download/dust3d-latest-preview.zip
-          git commit -m "Update latest build for windows" || true
-          git push origin HEAD:master
-      - name: Upload zip
+      - name: Upload Windows zip artifact
         uses: actions/upload-artifact@v4
         with:
           name: dust3d-${{ github.ref_name }}
-          path: dust3d-${{ github.ref_name }}/
+          path: Dust3D-win32-x86_64.zip
   macos-upload:
     runs-on: macos-latest
     steps:
@@ -235,26 +199,56 @@ jobs:
         with:
           name: dust3d-${{ github.ref_name }}-macos-latest.png
           path: dust3d-${{ github.ref_name }}-macos-latest.png
+      - name: Upload macOS DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dust3d-${{ github.ref_name }}.dmg
+          path: application/dust3d-${{ github.ref_name }}.dmg
+
+  publish-gh-pages:
+    runs-on: ubuntu-22.04
+    needs:
+      - appimage-upload
+      - win32-msvc-upload
+      - macos-upload
+    steps:
+      - name: Download Linux AppImage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dust3d-${{ github.ref_name }}.AppImage
+          path: artifacts
+      - name: Download Windows zip artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dust3d-${{ github.ref_name }}
+          path: artifacts
+      - name: Download macOS DMG artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dust3d-${{ github.ref_name }}.dmg
+          path: artifacts
       - name: Checkout Pages repository
         uses: actions/checkout@v4
         with:
           repository: huxingyi/huxingyi.github.io
           token: ${{ secrets.UPDATE_REPO_TOKEN }}
           path: gh-pages
-
-      - name: Publish latest build
+      - name: Publish latest builds
         env:
           MY_EMAIL: ${{ secrets.MY_EMAIL }}
         run: |
           cd gh-pages
           git config user.email "${{ env.MY_EMAIL }}"
           git config user.name "huxingyi"
-          cp ${GITHUB_WORKSPACE}/application/dust3d-${{ github.ref_name }}.dmg download/dust3d-latest-preview.dmg
-          git add download/dust3d-latest-preview.dmg
-          git commit -m "Update latest build for macos" || true
-          git push origin HEAD:master
-      - name: Upload DMG
-        uses: actions/upload-artifact@v4
-        with:
-          name: dust3d-${{ github.ref_name }}.dmg
-          path: ${{ github.workspace }}/application/dust3d-${{ github.ref_name }}.dmg
+          for i in 1 2 3 4 5; do
+            git fetch origin master
+            git reset --hard origin/master
+            cp ../artifacts/dust3d-${{ github.ref_name }}.AppImage download/dust3d-latest-preview.AppImage
+            cp ../artifacts/Dust3D-win32-x86_64.zip download/dust3d-latest-preview.zip
+            cp ../artifacts/dust3d-${{ github.ref_name }}.dmg download/dust3d-latest-preview.dmg
+            git add download/dust3d-latest-preview.AppImage download/dust3d-latest-preview.zip download/dust3d-latest-preview.dmg
+            git commit -m "Update latest builds for linux/windows/macos" || true
+            git push origin HEAD:master && break
+            echo "Push failed due to concurrent update, retrying... ($i)"
+            sleep 5
+          done
