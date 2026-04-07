@@ -195,6 +195,7 @@ void AnimationManageWidget::createParameterWidgets()
         slider->setRange(rangeMin, rangeMax);
         slider->setValue(value);
         slider->setSingleStep(1);
+        slider->setFocusPolicy(Qt::NoFocus);
 
         QWidget* rowWidget = new QWidget;
         QHBoxLayout* rowLayout = new QHBoxLayout(rowWidget);
