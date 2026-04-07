@@ -46,6 +46,7 @@
 //   - kneeBendFactor:         additional knee flex at mid-stance (weight)
 //   - leanForwardFactor:      forward torso lean (heavier for fast/heavy creatures)
 //   - bouncinessFactor:       extra vertical bounce (cartoon style)
+//   - forearmPhaseOffset:     phase offset of lower arm swing relative to upper arm (0-1)
 //   - suspensionFactor:       aerial phase height (both feet off ground)
 //   - strideFrequencyFactor:  controls swing duty ratio
 //   - tailSwayFactor:         tail side-to-side sway amplitude (optional bones)
@@ -211,6 +212,7 @@ namespace biped {
         double bouncinessFactor = parameters.getValue("bouncinessFactor", 1.0);
         double suspensionFactor = parameters.getValue("suspensionFactor", 1.0);
         double strideFrequencyFactor = parameters.getValue("strideFrequencyFactor", 1.0);
+        double forearmPhaseOffset = parameters.getValue("forearmPhaseOffset", 0.5);
         double tailSwayFactor = parameters.getValue("tailSwayFactor", 1.0);
 
         // Run has longer strides than walk (~50% of leg length vs 35%)
@@ -423,6 +425,10 @@ namespace biped {
                 double armT = fmod(t + phase, 1.0);
                 double swingAngle = armSwingAngle * std::sin(armT * 2.0 * Math::Pi);
 
+                // Lower arm swings with a phase offset from the upper arm
+                double forearmT = fmod(t + phase + forearmPhaseOffset, 1.0);
+                double forearmSwingAngle = armSwingAngle * std::sin(forearmT * 2.0 * Math::Pi);
+
                 // Shoulder follows body
                 Vector3 shoulderPos = bodyTransform.transformPoint(rest.shoulderPos);
                 Vector3 shoulderEnd = bodyTransform.transformPoint(rest.shoulderEnd);
@@ -438,12 +444,12 @@ namespace biped {
                 Vector3 newUpperArmEnd = upperArmStart + swingMat.transformVector(armDir);
                 boneWorldTransforms[arm.upperArmName] = buildBoneWorldTransform(upperArmStart, newUpperArmEnd);
 
-                // Lower arm: arms bend more during run (sprinter form)
+                // Lower arm: swing with phase offset, arms bend more during run (sprinter form)
                 Vector3 lowerArmDir = bodyTransform.transformPoint(rest.lowerArmEnd) - bodyTransform.transformPoint(rest.upperArmEnd);
                 // Elbow stays bent throughout, with more bend on backswing
-                double elbowBend = -0.5 - std::abs(swingAngle) * 0.4;
+                double elbowBend = -0.5 - std::abs(forearmSwingAngle) * 0.4;
                 Matrix4x4 elbowMat;
-                elbowMat.rotate(right, swingAngle + elbowBend);
+                elbowMat.rotate(right, forearmSwingAngle + elbowBend);
                 Vector3 newLowerArmEnd = newUpperArmEnd + elbowMat.transformVector(lowerArmDir);
                 boneWorldTransforms[arm.lowerArmName] = buildBoneWorldTransform(newUpperArmEnd, newLowerArmEnd);
 

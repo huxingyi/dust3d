@@ -260,6 +260,11 @@ void AnimationManageWidget::createParameterWidgets()
     m_sharedBouncinessRow = bouncinessPair.first;
     m_sharedBouncinessLabel = bouncinessPair.second;
 
+    m_sharedForearmPhaseOffsetSlider = new QSlider;
+    auto forearmPhaseOffsetPair = makeSliderRow(tr("Forearm Phase Offset"), m_sharedForearmPhaseOffsetSlider, 50, 0, 100);
+    m_sharedForearmPhaseOffsetRow = forearmPhaseOffsetPair.first;
+    m_sharedForearmPhaseOffsetLabel = forearmPhaseOffsetPair.second;
+
     // Quadruped walk parameters
     m_sharedSpineFlexSlider = new QSlider;
     m_sharedTailSwaySlider = new QSlider;
@@ -716,6 +721,7 @@ void AnimationManageWidget::createParameterWidgets()
         connect(m_sharedKneeBendSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
         connect(m_sharedLeanForwardSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
         connect(m_sharedBouncinessSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
+        connect(m_sharedForearmPhaseOffsetSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
 
         // Quadruped run parameter connections
         connect(m_sharedSuspensionSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
@@ -989,6 +995,7 @@ void AnimationManageWidget::updateVisibleParameters(const QString& animationType
     setParameterRowVisible(m_sharedKneeBendRow, m_sharedKneeBendLabel, false);
     setParameterRowVisible(m_sharedLeanForwardRow, m_sharedLeanForwardLabel, false);
     setParameterRowVisible(m_sharedBouncinessRow, m_sharedBouncinessLabel, false);
+    setParameterRowVisible(m_sharedForearmPhaseOffsetRow, m_sharedForearmPhaseOffsetLabel, false);
 
     // Hide quadruped die parameter rows
     setParameterRowVisible(m_quadDieCollapseSpeedRow, m_quadDieCollapseSpeedLabel, false);
@@ -1149,6 +1156,7 @@ void AnimationManageWidget::updateVisibleParameters(const QString& animationType
         setParameterRowVisible(m_sharedKneeBendRow, m_sharedKneeBendLabel, true);
         setParameterRowVisible(m_sharedLeanForwardRow, m_sharedLeanForwardLabel, true);
         setParameterRowVisible(m_sharedBouncinessRow, m_sharedBouncinessLabel, true);
+        setParameterRowVisible(m_sharedForearmPhaseOffsetRow, m_sharedForearmPhaseOffsetLabel, true);
         setParameterRowVisible(m_sharedTailSwayRow, m_sharedTailSwayLabel, true);
     } else if (animationType == "BipedRun") {
         setParameterRowVisible(m_sharedStepLengthRow, m_sharedStepLengthLabel, true);
@@ -1163,6 +1171,7 @@ void AnimationManageWidget::updateVisibleParameters(const QString& animationType
         setParameterRowVisible(m_sharedKneeBendRow, m_sharedKneeBendLabel, true);
         setParameterRowVisible(m_sharedLeanForwardRow, m_sharedLeanForwardLabel, true);
         setParameterRowVisible(m_sharedBouncinessRow, m_sharedBouncinessLabel, true);
+        setParameterRowVisible(m_sharedForearmPhaseOffsetRow, m_sharedForearmPhaseOffsetLabel, true);
         setParameterRowVisible(m_sharedTailSwayRow, m_sharedTailSwayLabel, true);
         setParameterRowVisible(m_sharedSuspensionRow, m_sharedSuspensionLabel, true);
         setParameterRowVisible(m_sharedStrideFrequencyRow, m_sharedStrideFrequencyLabel, true);
@@ -1443,6 +1452,8 @@ void AnimationManageWidget::updateAnimationParamsFromWidgets()
             m_animationParams.setValue("leanForwardFactor", m_sharedLeanForwardSlider->value() / 100.0);
         if (m_sharedBouncinessSlider)
             m_animationParams.setValue("bouncinessFactor", m_sharedBouncinessSlider->value() / 100.0);
+        if (m_sharedForearmPhaseOffsetSlider)
+            m_animationParams.setValue("forearmPhaseOffset", m_sharedForearmPhaseOffsetSlider->value() / 100.0);
     }
 
     if (isQuadrupedWalk || isQuadrupedRun) {

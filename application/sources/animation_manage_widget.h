@@ -211,6 +211,7 @@ private:
     QSlider* m_sharedKneeBendSlider = nullptr;
     QSlider* m_sharedLeanForwardSlider = nullptr;
     QSlider* m_sharedBouncinessSlider = nullptr;
+    QSlider* m_sharedForearmPhaseOffsetSlider = nullptr;
 
     // Biped walk parameter rows and labels
     QWidget* m_sharedArmSwingRow = nullptr;
@@ -229,6 +230,8 @@ private:
     QLabel* m_sharedLeanForwardLabel = nullptr;
     QWidget* m_sharedBouncinessRow = nullptr;
     QLabel* m_sharedBouncinessLabel = nullptr;
+    QWidget* m_sharedForearmPhaseOffsetRow = nullptr;
+    QLabel* m_sharedForearmPhaseOffsetLabel = nullptr;
 
     // Quadruped walk parameter sliders
     QSlider* m_sharedSpineFlexSlider = nullptr;

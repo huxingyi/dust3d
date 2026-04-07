@@ -40,6 +40,7 @@
 //   - footRollFactor:      heel-strike to toe-off roll intensity
 //   - leanForwardFactor:   forward torso lean (heavy/fast creatures)
 //   - bouncinessFactory:   extra vertical bounce (cartoon style)
+//   - forearmPhaseOffset:  phase offset of lower arm swing relative to upper arm (0-1)
 //   - tailSwayFactor:      tail side-to-side sway amplitude
 //   - useFabrikIk:         use FABRIK IK solver (vs CCD)
 //   - planeStabilization:  constrain legs to their rest-pose sagittal plane
@@ -210,6 +211,7 @@ namespace biped {
         double kneeBendFactor = parameters.getValue("kneeBendFactor", 1.0);
         double leanForwardFactor = parameters.getValue("leanForwardFactor", 1.0);
         double bouncinessFactor = parameters.getValue("bouncinessFactor", 1.0);
+        double forearmPhaseOffset = parameters.getValue("forearmPhaseOffset", 0.5);
 
         double stepLength = avgLegLength * 0.35 * stepLengthFactor;
         double stepHeight = avgLegLength * 0.08 * stepHeightFactor;
@@ -412,6 +414,10 @@ namespace biped {
                 double armT = fmod(t + phase, 1.0);
                 double swingAngle = armSwingAngle * std::sin(armT * 2.0 * Math::Pi);
 
+                // Lower arm swings with a phase offset from the upper arm
+                double forearmT = fmod(t + phase + forearmPhaseOffset, 1.0);
+                double forearmSwingAngle = armSwingAngle * std::sin(forearmT * 2.0 * Math::Pi);
+
                 // Shoulder follows body
                 Vector3 shoulderPos = bodyTransform.transformPoint(rest.shoulderPos);
                 Vector3 shoulderEnd = bodyTransform.transformPoint(rest.shoulderEnd);
@@ -427,11 +433,11 @@ namespace biped {
                 Vector3 newUpperArmEnd = upperArmStart + swingMat.transformVector(armDir);
                 boneWorldTransforms[arm.upperArmName] = buildBoneWorldTransform(upperArmStart, newUpperArmEnd);
 
-                // Lower arm: slight additional bend during swing
+                // Lower arm: swing with phase offset plus additional bend
                 Vector3 lowerArmDir = bodyTransform.transformPoint(rest.lowerArmEnd) - bodyTransform.transformPoint(rest.upperArmEnd);
-                double elbowBend = -std::abs(swingAngle) * 0.3; // bend elbow more during swing
+                double elbowBend = -std::abs(forearmSwingAngle) * 0.3; // bend elbow more during swing
                 Matrix4x4 elbowMat;
-                elbowMat.rotate(right, swingAngle + elbowBend);
+                elbowMat.rotate(right, forearmSwingAngle + elbowBend);
                 Vector3 newLowerArmEnd = newUpperArmEnd + elbowMat.transformVector(lowerArmDir);
                 boneWorldTransforms[arm.lowerArmName] = buildBoneWorldTransform(newUpperArmEnd, newLowerArmEnd);
 
