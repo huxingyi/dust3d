@@ -679,14 +679,6 @@ void AnimationManageWidget::createParameterWidgets()
     m_snakeIdleTailTwitchRow = snakeIdleTailTwitchPair.first;
     m_snakeIdleTailTwitchLabel = snakeIdleTailTwitchPair.second;
 
-    m_sharedUseFabrikCheck = new QCheckBox("Use FABRIK IK");
-    m_sharedUseFabrikCheck->setChecked(true);
-    parameterLayout->addRow(m_sharedUseFabrikCheck);
-
-    m_sharedPlaneStabilizationCheck = new QCheckBox("Plane Stabilization");
-    m_sharedPlaneStabilizationCheck->setChecked(true);
-    parameterLayout->addRow(m_sharedPlaneStabilizationCheck);
-
     // Add parameter layout to a scrollable area to prevent uncontrolled growth
     QWidget* scrollAreaWidget = new QWidget;
     scrollAreaWidget->setLayout(parameterLayout);
@@ -831,8 +823,6 @@ void AnimationManageWidget::createParameterWidgets()
         connect(m_snakeIdleBodyUndulationSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
         connect(m_snakeIdleTailTwitchSlider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
 
-        connect(m_sharedUseFabrikCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
-        connect(m_sharedPlaneStabilizationCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
         connect(m_hideBonesCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
         connect(m_hidePartsCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
         connect(m_hideWeightsCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
@@ -1058,17 +1048,6 @@ void AnimationManageWidget::updateVisibleParameters(const QString& animationType
     setParameterRowVisible(m_snakeIdleTongueFlickRow, m_snakeIdleTongueFlickLabel, false);
     setParameterRowVisible(m_snakeIdleBodyUndulationRow, m_snakeIdleBodyUndulationLabel, false);
     setParameterRowVisible(m_snakeIdleTailTwitchRow, m_snakeIdleTailTwitchLabel, false);
-
-    // useFabrikIk and planeStabilization are only relevant for animation types that use IK
-    bool showIkParams = (animationType == "InsectWalk" || animationType == "InsectForward"
-        || animationType == "InsectAttack" || animationType == "InsectRubHands"
-        || animationType == "QuadrupedWalk" || animationType == "QuadrupedRun"
-        || animationType == "BipedWalk" || animationType == "BipedRun"
-        || animationType == "SpiderWalk");
-    if (m_sharedUseFabrikCheck)
-        m_sharedUseFabrikCheck->setVisible(showIkParams);
-    if (m_sharedPlaneStabilizationCheck)
-        m_sharedPlaneStabilizationCheck->setVisible(showIkParams);
 
     if (animationType == "InsectWalk" || animationType == "InsectForward" || animationType == "InsectAttack") {
         setParameterRowVisible(m_sharedStepLengthRow, m_sharedStepLengthLabel, true);
@@ -1349,7 +1328,7 @@ void AnimationManageWidget::onRigTypeChanged(const QString& rigType)
 
 void AnimationManageWidget::updateAnimationParamsFromWidgets()
 {
-    if (!m_sharedStepLengthSlider || !m_sharedStepHeightSlider || !m_sharedBodyBobSlider || !m_sharedGaitSpeedSlider || !m_insectRubHandsRubForwardOffsetSlider || !m_insectRubHandsRubUpOffsetSlider || !m_sharedUseFabrikCheck || !m_sharedPlaneStabilizationCheck)
+    if (!m_sharedStepLengthSlider || !m_sharedStepHeightSlider || !m_sharedBodyBobSlider || !m_sharedGaitSpeedSlider || !m_insectRubHandsRubForwardOffsetSlider || !m_insectRubHandsRubUpOffsetSlider)
         return;
 
     // Standard parameters
@@ -1359,8 +1338,6 @@ void AnimationManageWidget::updateAnimationParamsFromWidgets()
     m_animationParams.setValue("gaitSpeedFactor", m_sharedGaitSpeedSlider->value() / 10.0);
     m_animationParams.setValue("rubForwardOffsetFactor", m_insectRubHandsRubForwardOffsetSlider->value() / 100.0);
     m_animationParams.setValue("rubUpOffsetFactor", m_insectRubHandsRubUpOffsetSlider->value() / 100.0);
-    m_animationParams.setBool("useFabrikIk", m_sharedUseFabrikCheck->isChecked());
-    m_animationParams.setBool("planeStabilization", m_sharedPlaneStabilizationCheck->isChecked());
 
     // Quadruped walk parameters
     if (m_sharedSpineFlexSlider)
@@ -1419,7 +1396,6 @@ void AnimationManageWidget::updateAnimationParamsFromWidgets()
     const bool isSpiderWalk = animationType == "SpiderWalk";
     const bool isSpiderDie = animationType == "SpiderDie";
     const bool isDieAnimation = (animationType.endsWith("Die", Qt::CaseInsensitive) && animationType != "FishDie");
-    const bool isIkAnimation = isInsectWalk || isInsectRubHands || isBirdForward || isBipedWalkRun || isQuadrupedWalk || isQuadrupedRun || isSpiderWalk;
 
     if (isInsectWalk || isInsectRubHands || isBirdForward || isBipedWalkRun || isQuadrupedWalk || isQuadrupedRun || isSpiderWalk) {
         m_animationParams.setValue("stepLengthFactor", m_sharedStepLengthSlider->value() / 100.0);
@@ -1431,10 +1407,6 @@ void AnimationManageWidget::updateAnimationParamsFromWidgets()
         m_animationParams.setValue("rubForwardOffsetFactor", m_insectRubHandsRubForwardOffsetSlider->value() / 100.0);
     if (isInsectRubHands)
         m_animationParams.setValue("rubUpOffsetFactor", m_insectRubHandsRubUpOffsetSlider->value() / 100.0);
-    if (isIkAnimation) {
-        m_animationParams.setBool("useFabrikIk", m_sharedUseFabrikCheck->isChecked());
-        m_animationParams.setBool("planeStabilization", m_sharedPlaneStabilizationCheck->isChecked());
-    }
 
     if (isBipedWalkRun) {
         if (m_sharedArmSwingSlider)
@@ -1686,7 +1658,7 @@ void AnimationManageWidget::updateAnimationParamsFromWidgets()
 
 void AnimationManageWidget::triggerPreviewRegeneration()
 {
-    if (!m_sharedStepLengthSlider || !m_sharedStepHeightSlider || !m_sharedBodyBobSlider || !m_sharedGaitSpeedSlider || !m_insectRubHandsRubForwardOffsetSlider || !m_insectRubHandsRubUpOffsetSlider || !m_sharedUseFabrikCheck || !m_sharedPlaneStabilizationCheck || !m_hideBonesCheck || !m_hidePartsCheck || !m_hideWeightsCheck)
+    if (!m_sharedStepLengthSlider || !m_sharedStepHeightSlider || !m_sharedBodyBobSlider || !m_sharedGaitSpeedSlider || !m_insectRubHandsRubForwardOffsetSlider || !m_insectRubHandsRubUpOffsetSlider || !m_hideBonesCheck || !m_hidePartsCheck || !m_hideWeightsCheck)
         return;
 
     updateAnimationParamsFromWidgets();
@@ -2060,8 +2032,6 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
     m_sharedStepHeightSlider->blockSignals(true);
     m_sharedBodyBobSlider->blockSignals(true);
     m_sharedGaitSpeedSlider->blockSignals(true);
-    m_sharedUseFabrikCheck->blockSignals(true);
-    m_sharedPlaneStabilizationCheck->blockSignals(true);
     m_insectRubHandsRubForwardOffsetSlider->blockSignals(true);
     m_insectRubHandsRubUpOffsetSlider->blockSignals(true);
 
@@ -2172,8 +2142,6 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
     m_sharedGaitSpeedSlider->setValue(static_cast<int>(params.getValue("gaitSpeedFactor", 1.0) * 10));
     m_insectRubHandsRubForwardOffsetSlider->setValue(static_cast<int>(params.getValue("rubForwardOffsetFactor", 1.0) * 100));
     m_insectRubHandsRubUpOffsetSlider->setValue(static_cast<int>(params.getValue("rubUpOffsetFactor", 1.0) * 100));
-    m_sharedUseFabrikCheck->setChecked(params.getBool("useFabrikIk", true));
-    m_sharedPlaneStabilizationCheck->setChecked(params.getBool("planeStabilization", true));
 
     // Load quadruped walk parameters
     if (m_sharedSpineFlexSlider)
@@ -2297,8 +2265,6 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
     m_sharedStepHeightSlider->blockSignals(false);
     m_sharedBodyBobSlider->blockSignals(false);
     m_sharedGaitSpeedSlider->blockSignals(false);
-    m_sharedUseFabrikCheck->blockSignals(false);
-    m_sharedPlaneStabilizationCheck->blockSignals(false);
     m_insectRubHandsRubForwardOffsetSlider->blockSignals(false);
     m_insectRubHandsRubUpOffsetSlider->blockSignals(false);
 

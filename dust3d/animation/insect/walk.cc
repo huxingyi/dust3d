@@ -304,17 +304,9 @@ namespace insect {
                 // them during IK.  The 3-joint chain is [coxa-root, coxa-end, foot-tip].
                 std::vector<Vector3> chain = { hipPos, coxaEnd, tibiaEnd };
 
-                Vector3 preferPlane = Vector3::crossProduct(chain[1] - chain[0], chain[2] - chain[1]);
-                if (preferPlane.lengthSquared() < 1e-10)
-                    preferPlane = Vector3::crossProduct(chain[1] - chain[0], up);
-                bool useFabrikIk = parameters.getBool("useFabrikIk", true);
-                bool planeStabilization = parameters.getBool("planeStabilization", true);
-                if (useFabrikIk) {
-                    Vector3 plane = planeStabilization ? preferPlane : Vector3();
-                    insect::solveFabrikIk(chain, footTarget[i], 15, plane);
-                } else {
-                    insect::solveCcdIk(chain, footTarget[i], 15);
-                }
+                // Pole vector: insect legs bend upward
+                Vector3 poleVector = coxaEnd + up * 0.5;
+                insect::solveTwoBoneIk(chain, footTarget[i], poleVector);
 
                 // Reconstruct the femur-tibia junction by rotating the rest-pose femur
                 // offset vector (coxaEnd→femurEnd) by the same rotation that maps the

@@ -50,8 +50,6 @@
 //   - suspensionFactor:       aerial phase height (both feet off ground)
 //   - strideFrequencyFactor:  controls swing duty ratio
 //   - tailSwayFactor:         tail side-to-side sway amplitude (optional bones)
-//   - useFabrikIk:            use FABRIK IK solver (vs CCD)
-//   - planeStabilization:     constrain legs to their rest-pose sagittal plane
 
 #include <array>
 #include <cmath>
@@ -246,9 +244,6 @@ namespace biped {
         Vector3 leftFootHome = footHome(leftLegRest);
         Vector3 rightFootHome = footHome(rightLegRest);
 
-        bool useFabrikIk = parameters.getBool("useFabrikIk", true);
-        bool planeStabilization = parameters.getBool("planeStabilization", true);
-
         // ===================================================================
         // 4. Generate frames
         // ===================================================================
@@ -351,9 +346,12 @@ namespace biped {
                 if (legT < swingDuty) {
                     // Swing phase: arc from back to front with high lift
                     double legPhase = legT / swingDuty;
-                    double smoothSwing = smootherstep(legPhase);
-                    Vector3 groundPos = footBack + (footFront - footBack) * smoothSwing;
-                    double lift = stepHeight * std::sin(smoothSwing * Math::Pi);
+                    // Delay forward extension so leg stays bent in first half,
+                    // then gradually straightens as it reaches front
+                    double forwardProgress = legPhase * legPhase * (3.0 - 2.0 * legPhase);
+                    forwardProgress = forwardProgress * forwardProgress * (3.0 - 2.0 * forwardProgress);
+                    Vector3 groundPos = footBack + (footFront - footBack) * forwardProgress;
+                    double lift = stepHeight * std::sin(legPhase * Math::Pi);
                     return groundPos + upDir * lift;
                 } else {
                     // Stance phase: foot on ground, sliding front to back
@@ -372,32 +370,10 @@ namespace biped {
 
                 std::vector<Vector3> chain = { hipPos, upperLegEnd, footEndPt };
 
-                Vector3 preferPlane = Vector3::crossProduct(chain[1] - chain[0], chain[2] - chain[1]);
-                if (preferPlane.lengthSquared() < 1e-10)
-                    preferPlane = Vector3::crossProduct(chain[1] - chain[0], upDir);
-
-                if (useFabrikIk) {
-                    Vector3 plane = planeStabilization ? preferPlane : Vector3();
-                    solveFabrikIk(chain, target, 15, plane);
-                } else {
-                    solveCcdIk(chain, target, 15);
-                }
-
-                // Stabilize knee
-                Vector3 kneeOffset = chain[1] - hipPos;
-                double lateralDrift = Vector3::dotProduct(kneeOffset, right)
-                    - Vector3::dotProduct(upperLegEnd - hipPos, right);
-                chain[1] = chain[1] - right * lateralDrift;
-
-                // Re-enforce segment lengths
-                double len0 = (rest.upperLegEnd - rest.upperLegPos).length();
-                double len1 = (rest.footEnd - rest.upperLegEnd).length();
-                Vector3 dir0 = chain[1] - chain[0];
-                if (!dir0.isZero())
-                    chain[1] = chain[0] + dir0.normalized() * len0;
-                Vector3 dir1 = chain[2] - chain[1];
-                if (!dir1.isZero())
-                    chain[2] = chain[1] + dir1.normalized() * len1;
+                // Pole vector: knee should bend forward in the run direction
+                Vector3 kneeRestPos = upperLegEnd;
+                Vector3 poleVector = kneeRestPos + forward * 0.5;
+                solveTwoBoneIk(chain, target, poleVector);
 
                 // Reconstruct lower leg position
                 Vector3 newStickDir = (chain[2] - chain[1]);

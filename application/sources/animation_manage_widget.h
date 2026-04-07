@@ -442,8 +442,6 @@ private:
     QWidget* m_snakeIdleTailTwitchRow = nullptr;
     QLabel* m_snakeIdleTailTwitchLabel = nullptr;
 
-    QCheckBox* m_sharedUseFabrikCheck = nullptr;
-    QCheckBox* m_sharedPlaneStabilizationCheck = nullptr;
     QCheckBox* m_hideBonesCheck = nullptr;
     QCheckBox* m_hidePartsCheck = nullptr;
     QCheckBox* m_hideWeightsCheck = nullptr;

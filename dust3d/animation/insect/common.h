@@ -76,6 +76,7 @@ namespace insect {
     using animation::smoothstep;
     using animation::solveCcdIk;
     using animation::solveFabrikIk;
+    using animation::solveTwoBoneIk;
     using animation::validateRequiredBones;
 
 } // namespace insect

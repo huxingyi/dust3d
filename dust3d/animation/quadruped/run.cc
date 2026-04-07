@@ -40,8 +40,6 @@
 //   - forwardLeanFactor:      forward pitch of the torso during run
 //   - strideFrequencyFactor:  controls stride tempo (higher = more rapid turnover)
 //   - boundFactor:            0=trot (diagonal pairs), 1=bound (front/back pairs)
-//   - useFabrikIk:            use FABRIK IK solver (vs CCD)
-//   - planeStabilization:     constrain legs to their rest-pose plane
 
 #include <array>
 #include <cmath>
@@ -216,9 +214,6 @@ namespace quadruped {
         const double swingDuty = 0.40 * strideFrequencyFactor;
         const double clampedSwingDuty = std::min(swingDuty, 0.50);
 
-        bool useFabrikIk = parameters.getBool("useFabrikIk", true);
-        bool planeStabilization = parameters.getBool("planeStabilization", true);
-
         for (int frame = 0; frame < frameCount; ++frame) {
             double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
             double t = fmod(tNormalized * cycles, 1.0);
@@ -349,23 +344,18 @@ namespace quadruped {
 
                 std::vector<Vector3> chain = { hipPos, upperLegEnd, footEnd };
 
-                Vector3 preferPlane = Vector3::crossProduct(chain[1] - chain[0], chain[2] - chain[1]);
-                if (preferPlane.lengthSquared() < 1e-10)
-                    preferPlane = Vector3::crossProduct(chain[1] - chain[0], up);
+                // Use rest-pose knee position shifted forward/backward to control bend.
+                // The rest-pose knee already has the correct lateral placement.
+                bool isFrontLeg = (i == 0 || i == 2);
+                Vector3 poleVector = upperLegEnd + forward * (isFrontLeg ? -1.0 : 1.0);
+                solveTwoBoneIk(chain, footTarget[i], poleVector);
 
-                if (useFabrikIk) {
-                    Vector3 plane = planeStabilization ? preferPlane : Vector3();
-                    solveFabrikIk(chain, footTarget[i], 15, plane);
-                } else {
-                    solveCcdIk(chain, footTarget[i], 15);
-                }
-
-                // Stabilize knee
-                Vector3 legPlaneNormal = right;
-                Vector3 kneeOffset = chain[1] - hipPos;
-                double lateralDrift = Vector3::dotProduct(kneeOffset, legPlaneNormal)
-                    - Vector3::dotProduct(upperLegEnd - hipPos, legPlaneNormal);
-                chain[1] = chain[1] - legPlaneNormal * lateralDrift;
+                // Preserve rest-pose lateral position of the knee so it doesn't
+                // collapse inward. Project the drift along the right axis and
+                // snap it back to the rest-pose value.
+                double restLateral = Vector3::dotProduct(upperLegEnd, right);
+                double solvedLateral = Vector3::dotProduct(chain[1], right);
+                chain[1] = chain[1] + right * (restLateral - solvedLateral);
 
                 // Re-enforce segment lengths after lateral correction
                 double len0 = (legRest[i].upperLegEnd - legRest[i].upperLegPos).length();

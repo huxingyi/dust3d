@@ -30,8 +30,6 @@
 //   - gaitSpeedFactor:        number of gait cycles per clip (rounded to integer)
 //   - spineFlexFactor:        lateral spine undulation amplitude
 //   - tailSwayFactor:         tail lateral sway amplitude
-//   - useFabrikIk:            use FABRIK IK solver (vs CCD)
-//   - planeStabilization:     constrain legs to their rest-pose plane
 //
 // The default gait is a lateral walk (same-side legs move nearly together with
 // a phase offset).  Adjusting parameters allows approximating:
@@ -194,9 +192,6 @@ namespace quadruped {
         // For a walk, each leg swings for ~25% of the cycle
         const double swingDuty = 0.25;
 
-        bool useFabrikIk = parameters.getBool("useFabrikIk", true);
-        bool planeStabilization = parameters.getBool("planeStabilization", true);
-
         for (int frame = 0; frame < frameCount; ++frame) {
             double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
             double t = fmod(tNormalized * cycles, 1.0);
@@ -230,9 +225,10 @@ namespace quadruped {
                 if (legT < swingDuty) {
                     // Swing phase: arc from back to front
                     double legPhase = legT / swingDuty;
-                    double smoothSwing = smootherstep(legPhase);
-                    Vector3 groundPos = footBack + (footFront - footBack) * smoothSwing;
-                    double lift = stepHeight * std::sin(smoothSwing * Math::Pi);
+                    // Use linear interpolation for forward motion so the knee
+                    // Z-position moves monotonically without mid-swing reversal
+                    Vector3 groundPos = footBack + (footFront - footBack) * legPhase;
+                    double lift = stepHeight * std::sin(legPhase * Math::Pi);
                     footTarget[i] = groundPos + up * lift;
                 } else {
                     // Stance phase: foot on ground, sliding front to back
@@ -294,27 +290,18 @@ namespace quadruped {
                 // treating lower-leg+foot as one rigid segment for IK
                 std::vector<Vector3> chain = { hipPos, upperLegEnd, footEnd };
 
-                Vector3 preferPlane = Vector3::crossProduct(chain[1] - chain[0], chain[2] - chain[1]);
-                if (preferPlane.lengthSquared() < 1e-10)
-                    preferPlane = Vector3::crossProduct(chain[1] - chain[0], up);
+                // Use rest-pose knee position shifted forward/backward to control bend.
+                // The rest-pose knee already has the correct lateral placement.
+                bool isFrontLeg = (i == 0 || i == 2);
+                Vector3 poleVector = upperLegEnd + forward * (isFrontLeg ? -1.0 : 1.0);
+                solveTwoBoneIk(chain, footTarget[i], poleVector);
 
-                if (useFabrikIk) {
-                    Vector3 plane = planeStabilization ? preferPlane : Vector3();
-                    solveFabrikIk(chain, footTarget[i], 15, plane);
-                } else {
-                    solveCcdIk(chain, footTarget[i], 15);
-                }
-
-                // Stabilize knee: project it onto the leg's sagittal plane so
-                // the upper leg swings forward/backward naturally but doesn't
-                // drift laterally.  The plane is defined by the hip position
-                // and the rest-pose leg direction, with the "right" vector as
-                // the plane normal (lateral axis).
-                Vector3 legPlaneNormal = right; // lateral axis
-                Vector3 kneeOffset = chain[1] - hipPos;
-                double lateralDrift = Vector3::dotProduct(kneeOffset, legPlaneNormal)
-                    - Vector3::dotProduct(upperLegEnd - hipPos, legPlaneNormal);
-                chain[1] = chain[1] - legPlaneNormal * lateralDrift;
+                // Preserve rest-pose lateral position of the knee so it doesn't
+                // collapse inward. Project the drift along the right axis and
+                // snap it back to the rest-pose value.
+                double restLateral = Vector3::dotProduct(upperLegEnd, right);
+                double solvedLateral = Vector3::dotProduct(chain[1], right);
+                chain[1] = chain[1] + right * (restLateral - solvedLateral);
 
                 // Re-enforce segment lengths after lateral correction
                 double len0 = (legRest[i].upperLegEnd - legRest[i].upperLegPos).length();

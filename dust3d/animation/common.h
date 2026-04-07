@@ -186,6 +186,95 @@ namespace animation {
     }
 
     // =========================================================================
+    // ANALYTIC TWO-BONE IK SOLVER
+    // =========================================================================
+
+    // Analytic two-bone IK solver using the law of cosines.
+    // Computes the exact knee/elbow position for a two-bone chain (3 joints)
+    // given a pole vector that controls the bend direction.
+    // This produces smooth, deterministic results without iteration.
+    // @param joints: exactly 3 positions [root, mid, end]  (root stays fixed)
+    // @param target: desired end-effector position
+    // @param poleVector: world-space point that the mid joint should bend toward
+    inline void solveTwoBoneIk(std::vector<Vector3>& joints, const Vector3& target, const Vector3& poleVector,
+        double softness = 0.1)
+    {
+        if (joints.size() != 3)
+            return;
+
+        Vector3 root = joints[0];
+        double lenA = (joints[1] - joints[0]).length(); // upper bone
+        double lenB = (joints[2] - joints[1]).length(); // lower bone
+
+        Vector3 toTarget = target - root;
+        double distTarget = toTarget.length();
+
+        if (distTarget < 1e-12) {
+            // Target at root; just keep current pose
+            return;
+        }
+
+        double chainLength = lenA + lenB;
+        double minReach = std::abs(lenA - lenB) + 1e-6;
+
+        // Soft IK: exponential falloff near full extension to prevent
+        // the chain from ever fully straightening (eliminates knee pop).
+        // softDist is the distance at which softening begins.
+        double softDist = chainLength * softness;
+        double hardLimit = chainLength - softDist;
+
+        if (softDist > 1e-8 && distTarget > hardLimit) {
+            // Soft zone: asymptotically approach chainLength
+            // da = distTarget - hardLimit (how far into the soft zone)
+            double da = distTarget - hardLimit;
+            // Exponential ease: softDist * (1 - e^(-da/softDist))
+            // This maps [hardLimit, inf) -> [hardLimit, chainLength)
+            double softened = softDist * (1.0 - std::exp(-da / softDist));
+            distTarget = hardLimit + softened;
+        }
+
+        // Clamp to valid range
+        if (distTarget > chainLength - 1e-6)
+            distTarget = chainLength - 1e-6;
+        if (distTarget < minReach)
+            distTarget = minReach;
+
+        // Law of cosines: angle at root joint
+        double cosAngleA = (lenA * lenA + distTarget * distTarget - lenB * lenB) / (2.0 * lenA * distTarget);
+        cosAngleA = std::max(-1.0, std::min(1.0, cosAngleA));
+        double angleA = std::acos(cosAngleA);
+
+        // Build a coordinate frame along root->target with pole vector determining bend plane
+        Vector3 dirTarget = toTarget * (1.0 / distTarget);
+
+        // Project pole vector onto the plane perpendicular to dirTarget
+        Vector3 toPole = poleVector - root;
+        Vector3 poleOnPlane = toPole - dirTarget * Vector3::dotProduct(toPole, dirTarget);
+        double poleLen = poleOnPlane.length();
+
+        Vector3 bendDir;
+        if (poleLen < 1e-10) {
+            // Pole vector is aligned with target direction; pick an arbitrary perpendicular
+            Vector3 arbitrary = (std::abs(dirTarget.x()) < 0.9) ? Vector3(1, 0, 0) : Vector3(0, 1, 0);
+            bendDir = Vector3::crossProduct(dirTarget, arbitrary).normalized();
+        } else {
+            bendDir = poleOnPlane * (1.0 / poleLen);
+        }
+
+        // Mid joint position
+        joints[1] = root + dirTarget * (lenA * cosAngleA) + bendDir * (lenA * std::sin(angleA));
+
+        // End joint: place at target (clamped distance along root->target direction)
+        Vector3 clampedTarget = root + dirTarget * distTarget;
+        Vector3 dirB = clampedTarget - joints[1];
+        double dirBLen = dirB.length();
+        if (dirBLen > 1e-12)
+            joints[2] = joints[1] + dirB * (lenB / dirBLen);
+        else
+            joints[2] = clampedTarget;
+    }
+
+    // =========================================================================
     // BONE TRANSFORMS
     // =========================================================================
 

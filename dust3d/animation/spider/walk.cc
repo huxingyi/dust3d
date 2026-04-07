@@ -293,8 +293,6 @@ namespace spider {
             // -------------------------------------------------------
             // 4c. Leg IK
             // -------------------------------------------------------
-            bool useFabrikIk = parameters.getBool("useFabrikIk", true);
-            bool planeStabilization = parameters.getBool("planeStabilization", true);
 
             for (size_t i = 0; i < 8; ++i) {
                 Vector3 hipPos = bodyTransform.transformPoint(legRest[i].coxaPos);
@@ -303,16 +301,9 @@ namespace spider {
 
                 std::vector<Vector3> chain = { hipPos, coxaEnd, tibiaEnd };
 
-                Vector3 preferPlane = Vector3::crossProduct(chain[1] - chain[0], chain[2] - chain[1]);
-                if (preferPlane.lengthSquared() < 1e-10)
-                    preferPlane = Vector3::crossProduct(chain[1] - chain[0], up);
-
-                if (useFabrikIk) {
-                    Vector3 plane = planeStabilization ? preferPlane : Vector3();
-                    animation::solveFabrikIk(chain, footTarget[i], 15, plane);
-                } else {
-                    animation::solveCcdIk(chain, footTarget[i], 15);
-                }
+                // Pole vector: spider legs bend upward
+                Vector3 poleVector = coxaEnd + up * 0.5;
+                animation::solveTwoBoneIk(chain, footTarget[i], poleVector);
 
                 // Reconstruct femur-tibia junction
                 Vector3 newStickDir = (chain[2] - chain[1]);
