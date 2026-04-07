@@ -210,16 +210,20 @@ jobs:
           macdeployqt ${GITHUB_WORKSPACE}/application/dust3d.app
           # ad-hoc sign so Gatekeeper doesn't report the app as damaged
           codesign --force --deep --sign - ${GITHUB_WORKSPACE}/application/dust3d.app
+          # prepare a staging folder containing the app bundle
+          STAGING_DIR=$(mktemp -d)
+          cp -R "${GITHUB_WORKSPACE}/application/dust3d.app" "${STAGING_DIR}/"
           # package into drag-to-Applications DMG
           create-dmg \
             --volname "Dust3D" \
             --format UDZO \
-            --app-drop-link \
+            --app-drop-link 520 145 \
             --window-size 660 300 \
             --icon "dust3d.app" 140 145 \
             --icon "Applications" 520 145 \
             "${GITHUB_WORKSPACE}/application/dust3d-${{ github.ref_name }}.dmg" \
-            "${GITHUB_WORKSPACE}/application/dust3d.app"
+            "${STAGING_DIR}"
+          rm -rf "${STAGING_DIR}"
       - name: Run application and capture screenshot
         run: |
           open ${GITHUB_WORKSPACE}/application/dust3d.app --args ${GITHUB_WORKSPACE}/dust3d-test-models/fish/salmon.ds3
