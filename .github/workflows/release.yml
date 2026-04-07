@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-      - pipeline
     tags:
       - '*'
 
@@ -35,6 +34,12 @@ jobs:
           sudo apt-get install -y libfuse2
           cd ${GITHUB_WORKSPACE} && sh ./ci/appimage/bundle.sh
           mv Dust3D-x86_64.AppImage dust3d-${{ github.ref_name }}.AppImage
+      - name: Checkout test models
+        uses: actions/checkout@v4
+        with:
+          repository: huxingyi/dust3d-test-models
+          ref: main
+          path: dust3d-test-models
       - name: Install screenshot dependencies
         run: |
           sudo apt-get update
@@ -45,36 +50,18 @@ jobs:
           Xvfb :99 -screen 0 1280x720x24 &
           XVFB_PID=$!
           export DISPLAY=:99
-          ./dust3d-${{ github.ref_name }}.AppImage &
+          ./dust3d-${{ github.ref_name }}.AppImage dust3d-test-models/fish/salmon.ds3 &
           APP_PID=$!
           sleep 12
-          import -silent -window root dust3d-${{ github.ref_name }}.png || true
+          import -silent -window root dust3d-${{ github.ref_name }}-ubuntu-22.04.png || true
           kill $APP_PID || true
           kill $XVFB_PID || true
       - name: Upload AppImage screenshot
         uses: actions/upload-artifact@v4
         with:
-          name: dust3d-${{ github.ref_name }}-screenshot
-          path: dust3d-${{ github.ref_name }}.png
-      - name: Checkout Pages repository
-        uses: actions/checkout@v4
-        with:
-          repository: huxingyi/huxingyi.github.io
-          token: ${{ secrets.UPDATE_REPO_TOKEN }}
-          path: gh-pages
-
-      - name: Publish latest build
-        env:
-          MY_EMAIL: ${{ secrets.MY_EMAIL }}
-        run: |
-          cd gh-pages
-          git config user.email "${{ env.MY_EMAIL }}"
-          git config user.name "huxingyi"
-          cp ../dust3d-${{ github.ref_name }}.AppImage download/dust3d-latest-preview.AppImage
-          git add download/dust3d-latest-preview.AppImage
-          git commit -m "Update latest build for linux" || true
-          git push origin HEAD:master
-      - name: Upload AppImage
+          name: dust3d-${{ github.ref_name }}-ubuntu-22.04.png
+          path: dust3d-${{ github.ref_name }}-ubuntu-22.04.png
+      - name: Upload Linux AppImage artifact
         uses: actions/upload-artifact@v4
         with:
           name: dust3d-${{ github.ref_name }}.AppImage
@@ -128,29 +115,34 @@ jobs:
           7z a Dust3D-win32-x86_64.zip -r ${GITHUB_WORKSPACE}/imageformats/
           7z x Dust3D-win32-x86_64.zip -odust3d-${{ github.ref_name }}
         shell: bash
-      - name: Checkout Pages repository
+      - name: Checkout test models
         uses: actions/checkout@v4
         with:
-          repository: huxingyi/huxingyi.github.io
-          token: ${{ secrets.UPDATE_REPO_TOKEN }}
-          path: gh-pages
-
-      - name: Publish latest build
-        env:
-          MY_EMAIL: ${{ secrets.MY_EMAIL }}
+          repository: huxingyi/dust3d-test-models
+          ref: main
+          path: dust3d-test-models
+      - name: Run application and capture screenshot
         run: |
-          cd gh-pages
-          git config user.email "${{ env.MY_EMAIL }}"
-          git config user.name "huxingyi"
-          cp ../Dust3D-win32-x86_64.zip download/dust3d-latest-preview.zip
-          git add download/dust3d-latest-preview.zip
-          git commit -m "Update latest build for windows" || true
-          git push origin HEAD:master
-      - name: Upload zip
+          cd dust3d-${{ github.ref_name }}
+          Start-Process -FilePath .\dust3d.exe -ArgumentList "..\dust3d-test-models\fish\salmon.ds3"
+          Start-Sleep -Seconds 12
+          Add-Type -AssemblyName System.Windows.Forms
+          $bitmap = [System.Drawing.Bitmap]::new([System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Width, [System.Windows.Forms.Screen]::PrimaryScreen.Bounds.Height)
+          $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
+          $graphics.CopyFromScreen(0, 0, 0, 0, $bitmap.Size)
+          $bitmap.Save("$env:GITHUB_WORKSPACE\dust3d-${{ github.ref_name }}-windows-2022.png")
+          Stop-Process -Name dust3d -Force -ErrorAction SilentlyContinue
+        shell: powershell
+      - name: Upload Windows screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: dust3d-${{ github.ref_name }}-windows-2022.png
+          path: dust3d-${{ github.ref_name }}-windows-2022.png
+      - name: Upload Windows zip artifact
         uses: actions/upload-artifact@v4
         with:
           name: dust3d-${{ github.ref_name }}
-          path: dust3d-${{ github.ref_name }}/
+          path: Dust3D-win32-x86_64.zip
   macos-upload:
     runs-on: macos-latest
     steps:
@@ -166,37 +158,96 @@ jobs:
           qmake CONFIG+=sdk_no_version_check
           CPU_COUNT=$(sysctl -n hw.logicalcpu)
           make -j${CPU_COUNT}
+      - name: Checkout test models
+        uses: actions/checkout@v4
+        with:
+          repository: huxingyi/dust3d-test-models
+          ref: main
+          path: dust3d-test-models
+      - name: Install create-dmg
+        run: |
+          brew install create-dmg
       - name: Generate DMG
         run: |
           # deploy Qt frameworks into the app bundle
           macdeployqt ${GITHUB_WORKSPACE}/application/dust3d.app
           # ad-hoc sign so Gatekeeper doesn't report the app as damaged
           codesign --force --deep --sign - ${GITHUB_WORKSPACE}/application/dust3d.app
-          # package into DMG
-          hdiutil create -volname "Dust3D" \
-            -srcfolder ${GITHUB_WORKSPACE}/application/dust3d.app \
-            -ov -format UDZO \
-            -o ${GITHUB_WORKSPACE}/application/dust3d-${{ github.ref_name }}.dmg
+          # prepare a staging folder containing the app bundle
+          STAGING_DIR=$(mktemp -d)
+          cp -R "${GITHUB_WORKSPACE}/application/dust3d.app" "${STAGING_DIR}/"
+          # package into drag-to-Applications DMG
+          create-dmg \
+            --volname "Dust3D" \
+            --format UDZO \
+            --app-drop-link 520 145 \
+            --window-size 660 300 \
+            --icon "dust3d.app" 140 145 \
+            --icon "Applications" 520 145 \
+            "${GITHUB_WORKSPACE}/application/dust3d-${{ github.ref_name }}.dmg" \
+            "${STAGING_DIR}"
+          rm -rf "${STAGING_DIR}"
+      - name: Run application and capture screenshot
+        run: |
+          open ${GITHUB_WORKSPACE}/application/dust3d.app --args ${GITHUB_WORKSPACE}/dust3d-test-models/fish/salmon.ds3
+          sleep 12
+          screencapture dust3d-${{ github.ref_name }}-macos-latest.png || true
+          killall dust3d || true
+      - name: Upload macOS screenshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: dust3d-${{ github.ref_name }}-macos-latest.png
+          path: dust3d-${{ github.ref_name }}-macos-latest.png
+      - name: Upload macOS DMG artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dust3d-${{ github.ref_name }}.dmg
+          path: application/dust3d-${{ github.ref_name }}.dmg
+
+  publish-gh-pages:
+    runs-on: ubuntu-22.04
+    needs:
+      - appimage-upload
+      - win32-msvc-upload
+      - macos-upload
+    steps:
+      - name: Download Linux AppImage artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dust3d-${{ github.ref_name }}.AppImage
+          path: artifacts
+      - name: Download Windows zip artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dust3d-${{ github.ref_name }}
+          path: artifacts
+      - name: Download macOS DMG artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dust3d-${{ github.ref_name }}.dmg
+          path: artifacts
       - name: Checkout Pages repository
         uses: actions/checkout@v4
         with:
           repository: huxingyi/huxingyi.github.io
           token: ${{ secrets.UPDATE_REPO_TOKEN }}
           path: gh-pages
-
-      - name: Publish latest build
+      - name: Publish latest builds
         env:
           MY_EMAIL: ${{ secrets.MY_EMAIL }}
         run: |
           cd gh-pages
           git config user.email "${{ env.MY_EMAIL }}"
           git config user.name "huxingyi"
-          cp ${GITHUB_WORKSPACE}/application/dust3d-${{ github.ref_name }}.dmg download/dust3d-latest-preview.dmg
-          git add download/dust3d-latest-preview.dmg
-          git commit -m "Update latest build for macos" || true
-          git push origin HEAD:master
-      - name: Upload DMG
-        uses: actions/upload-artifact@v4
-        with:
-          name: dust3d-${{ github.ref_name }}.dmg
-          path: ${{ github.workspace }}/application/dust3d-${{ github.ref_name }}.dmg
+          for i in 1 2 3 4 5; do
+            git fetch origin master
+            git reset --hard origin/master
+            cp ../artifacts/dust3d-${{ github.ref_name }}.AppImage download/dust3d-latest-preview.AppImage
+            cp ../artifacts/Dust3D-win32-x86_64.zip download/dust3d-latest-preview.zip
+            cp ../artifacts/dust3d-${{ github.ref_name }}.dmg download/dust3d-latest-preview.dmg
+            git add download/dust3d-latest-preview.AppImage download/dust3d-latest-preview.zip download/dust3d-latest-preview.dmg
+            git commit -m "Update latest builds for linux/windows/macos" || true
+            git push origin HEAD:master && break
+            echo "Push failed due to concurrent update, retrying... ($i)"
+            sleep 5
+          done
