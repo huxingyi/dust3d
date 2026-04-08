@@ -156,7 +156,7 @@ namespace snake {
                 + axisNormalized * (Vector3::dotProduct(axisNormalized, vec) * (1.0 - c));
         };
 
-        double flipSpeed = parameters.getValue("flipSpeed", 1.0);
+        double flipSpeedFactor = parameters.getValue("flipSpeedFactor", 1.0);
         double flipAngleDeg = parameters.getValue("flipAngle", 180.0);
         double flipAngleMax = flipAngleDeg * (Math::Pi / 180.0);
         double jawOpenDeg = parameters.getValue("jawOpen", 63.0);
@@ -168,7 +168,7 @@ namespace snake {
         for (int frame = 0; frame < frameCount; ++frame) {
             double tNormalized = static_cast<double>(frame) / static_cast<double>(std::max(1, frameCount - 1));
             double ease = 1.0 - std::cos(tNormalized * Math::Pi * 0.5);
-            double rollT = std::min(tNormalized * flipSpeed, 1.0);
+            double rollT = std::min(tNormalized * flipSpeedFactor, 1.0);
             double smoothRollT = 1.0 - (1.0 - rollT) * (1.0 - rollT) * (1.0 - rollT);
             double bodyRotation = flipAngleMax * smoothRollT;
             double jawOpenAngle = jawOpenMax * ease;

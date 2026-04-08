@@ -90,7 +90,7 @@ namespace snake {
         right.normalize();
         Vector3 up = Vector3::crossProduct(right, forwardDir).normalized();
 
-        double waveSpeed = parameters.getValue("waveSpeed", 1.0);
+        double waveSpeedFactor = parameters.getValue("waveSpeedFactor", 1.0);
         double waveFrequency = parameters.getValue("waveFrequency", 2.0);
         double waveAmplitude = parameters.getValue("waveAmplitude", 0.15);
         double waveLength = std::max(0.001, parameters.getValue("waveLength", 1.0));
@@ -104,7 +104,7 @@ namespace snake {
         animationClip.durationSeconds = durationSeconds;
         animationClip.frames.resize(frameCount);
 
-        double totalCycles = waveSpeed * waveFrequency;
+        double totalCycles = waveSpeedFactor * waveFrequency;
         double completeCycles = std::round(totalCycles);
 
         for (int frame = 0; frame < frameCount; ++frame) {

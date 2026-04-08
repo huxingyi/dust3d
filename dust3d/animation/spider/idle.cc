@@ -28,8 +28,8 @@
 // eight-legged creature using the spider bone structure.
 //
 // Adjustable animation parameters:
-//   - breathingAmplitude:   body bob intensity
-//   - breathingSpeed:       breathing cycle speed multiplier
+//   - breathingAmplitudeFactor:   body bob intensity
+//   - breathingSpeedFactor:       breathing cycle speed multiplier
 //   - pedipalpSwayFactor:   pedipalp movement amplitude
 //   - legTwitchFactor:      subtle leg micro-movement
 //   - abdomenPulseFactor:   abdomen expansion/contraction
@@ -81,8 +81,8 @@ namespace spider {
         if (!validateRequiredBones(boneIdx, requiredBones, sizeof(requiredBones) / sizeof(requiredBones[0])))
             return false;
 
-        double breathingAmplitude = parameters.getValue("breathingAmplitude", 1.0);
-        double breathingSpeed = parameters.getValue("breathingSpeed", 1.0);
+        double breathingAmplitudeFactor = parameters.getValue("breathingAmplitudeFactor", 1.0);
+        double breathingSpeedFactor = parameters.getValue("breathingSpeedFactor", 1.0);
         double pedipalpSwayFactor = parameters.getValue("pedipalpSwayFactor", 1.0);
         double legTwitchFactor = parameters.getValue("legTwitchFactor", 1.0);
         double abdomenPulseFactor = parameters.getValue("abdomenPulseFactor", 1.0);
@@ -103,7 +103,7 @@ namespace spider {
         double bodySize = (headEnd - boneEnd("Abdomen")).length();
         if (bodySize < 1e-6)
             bodySize = 0.5;
-        double breathAmp = bodySize * 0.006 * breathingAmplitude;
+        double breathAmp = bodySize * 0.006 * breathingAmplitudeFactor;
         double swayAmp = bodySize * 0.005 * bodySwayFactor;
 
         animationClip.durationSeconds = durationSeconds;
@@ -112,7 +112,7 @@ namespace spider {
         for (int frame = 0; frame < frameCount; ++frame) {
             double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
 
-            double breathPhase = tNormalized * 2.0 * Math::Pi * breathingSpeed;
+            double breathPhase = tNormalized * 2.0 * Math::Pi * breathingSpeedFactor;
             double breathOffset = breathAmp * std::sin(breathPhase);
             double lateralSway = swayAmp * std::sin(tNormalized * 2.0 * Math::Pi * 0.4);
 

@@ -28,8 +28,8 @@
 // Works for snakes, worms, eels, and any legless serpentine creature.
 //
 // Adjustable animation parameters:
-//   - breathingAmplitude:   body pulse intensity
-//   - breathingSpeed:       breathing cycle speed multiplier
+//   - breathingAmplitudeFactor:   body pulse intensity
+//   - breathingSpeedFactor:       breathing cycle speed multiplier
 //   - headSwayFactor:       head lateral sway amplitude
 //   - headRaiseFactor:      head raise/lower amplitude
 //   - tongueFlickFactor:    jaw open/close simulating tongue flick
@@ -76,8 +76,8 @@ namespace snake {
         if (!validateRequiredBones(boneIdx, requiredBones, sizeof(requiredBones) / sizeof(requiredBones[0])))
             return false;
 
-        double breathingAmplitude = parameters.getValue("breathingAmplitude", 1.0);
-        double breathingSpeed = parameters.getValue("breathingSpeed", 1.0);
+        double breathingAmplitudeFactor = parameters.getValue("breathingAmplitudeFactor", 1.0);
+        double breathingSpeedFactor = parameters.getValue("breathingSpeedFactor", 1.0);
         double headSwayFactor = parameters.getValue("headSwayFactor", 1.0);
         double headRaiseFactor = parameters.getValue("headRaiseFactor", 1.0);
         double tongueFlickFactor = parameters.getValue("tongueFlickFactor", 1.0);
@@ -96,7 +96,7 @@ namespace snake {
         double bodyLength = (headPos - boneEnd("TailTip")).length();
         if (bodyLength < 1e-6)
             bodyLength = 1.0;
-        double breathAmp = bodyLength * 0.003 * breathingAmplitude;
+        double breathAmp = bodyLength * 0.003 * breathingAmplitudeFactor;
 
         animationClip.durationSeconds = durationSeconds;
         animationClip.frames.resize(frameCount);
@@ -104,7 +104,7 @@ namespace snake {
         for (int frame = 0; frame < frameCount; ++frame) {
             double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
 
-            double breathPhase = tNormalized * 2.0 * Math::Pi * breathingSpeed;
+            double breathPhase = tNormalized * 2.0 * Math::Pi * breathingSpeedFactor;
             double breathOffset = breathAmp * std::sin(breathPhase);
 
             Matrix4x4 bodyTransform;
@@ -144,7 +144,7 @@ namespace snake {
             // Jaw: tongue flick (periodic quick open/close)
             if (boneIdx.count("Jaw")) {
                 // Quick flick: a sharp pulse every ~2 seconds
-                double flickPhase = tNormalized * 2.0 * Math::Pi * 2.0 * breathingSpeed;
+                double flickPhase = tNormalized * 2.0 * Math::Pi * 2.0 * breathingSpeedFactor;
                 double flickPulse = std::max(0.0, std::sin(flickPhase));
                 flickPulse = flickPulse * flickPulse * flickPulse; // sharpen the pulse
                 double jawAngle = 0.04 * tongueFlickFactor * flickPulse;
@@ -153,7 +153,7 @@ namespace snake {
 
             // Spine: subtle undulation wave
             static const char* spineBones[] = { "Spine1", "Spine2", "Spine3", "Spine4", "Spine5", "Spine6" };
-            double undulationPhase = tNormalized * 2.0 * Math::Pi * breathingSpeed * 0.5;
+            double undulationPhase = tNormalized * 2.0 * Math::Pi * breathingSpeedFactor * 0.5;
             for (int si = 0; si < 6; ++si) {
                 double spineYaw = 0.015 * bodyUndulationFactor * std::sin(undulationPhase - si * 0.5);
                 computeBone(spineBones[si], spineYaw);

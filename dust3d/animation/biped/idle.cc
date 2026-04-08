@@ -28,10 +28,10 @@
 // and any creature using the biped bone structure.
 //
 // Adjustable animation parameters:
-//   - breathingAmplitude:   chest/torso rise-fall intensity
-//   - breathingSpeed:       breathing cycle speed multiplier
+//   - breathingAmplitudeFactor:   chest/torso rise-fall intensity
+//   - breathingSpeedFactor:       breathing cycle speed multiplier
 //   - weightShiftFactor:    lateral hip sway (weight shift side to side)
-//   - weightShiftSpeed:     speed of weight shifting cycle
+//   - weightShiftSpeedFactor:     speed of weight shifting cycle
 //   - headLookFactor:       subtle head turn/nod amplitude
 //   - armRestFactor:        slight arm sway while resting
 //   - spineSwayFactor:      subtle spine lateral sway
@@ -85,10 +85,10 @@ namespace biped {
         // ===================================================================
         // 1. Idle parameters
         // ===================================================================
-        double breathingAmplitude = parameters.getValue("breathingAmplitude", 1.0);
-        double breathingSpeed = parameters.getValue("breathingSpeed", 1.0);
+        double breathingAmplitudeFactor = parameters.getValue("breathingAmplitudeFactor", 1.0);
+        double breathingSpeedFactor = parameters.getValue("breathingSpeedFactor", 1.0);
         double weightShiftFactor = parameters.getValue("weightShiftFactor", 1.0);
-        double weightShiftSpeed = parameters.getValue("weightShiftSpeed", 1.0);
+        double weightShiftSpeedFactor = parameters.getValue("weightShiftSpeedFactor", 1.0);
         double headLookFactor = parameters.getValue("headLookFactor", 1.0);
         double armRestFactor = parameters.getValue("armRestFactor", 1.0);
         double spineSwayFactor = parameters.getValue("spineSwayFactor", 1.0);
@@ -126,7 +126,7 @@ namespace biped {
             avgLegLength = 1.0;
 
         // Breathing amplitudes scaled to body
-        double breathAmp = avgLegLength * 0.008 * breathingAmplitude;
+        double breathAmp = avgLegLength * 0.008 * breathingAmplitudeFactor;
         double weightShiftAmp = avgLegLength * 0.012 * weightShiftFactor;
 
         // ===================================================================
@@ -139,11 +139,11 @@ namespace biped {
             double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
 
             // Breathing: slow sine wave
-            double breathPhase = tNormalized * 2.0 * Math::Pi * breathingSpeed;
+            double breathPhase = tNormalized * 2.0 * Math::Pi * breathingSpeedFactor;
             double breathOffset = breathAmp * std::sin(breathPhase);
 
             // Weight shift: slower than breathing, lateral sway
-            double shiftPhase = tNormalized * 2.0 * Math::Pi * weightShiftSpeed * 0.5;
+            double shiftPhase = tNormalized * 2.0 * Math::Pi * weightShiftSpeedFactor * 0.5;
             double lateralShift = weightShiftAmp * std::sin(shiftPhase);
 
             // Subtle spine sway

@@ -153,9 +153,9 @@ namespace bird {
         if (groundLevel < -1e17)
             groundLevel = 0.0;
 
-        float collapseSpeed = static_cast<float>(parameters.getValue("collapseSpeed", 1.0));
-        float wingFlap = static_cast<float>(parameters.getValue("wingFlap", 1.0));
-        float rollIntensity = static_cast<float>(parameters.getValue("rollIntensity", 1.0));
+        float collapseSpeedFactor = static_cast<float>(parameters.getValue("collapseSpeedFactor", 1.0));
+        float wingFlapFactor = static_cast<float>(parameters.getValue("wingFlapFactor", 1.0));
+        float rollIntensityFactor = static_cast<float>(parameters.getValue("rollIntensityFactor", 1.0));
         float lengthStiffness = static_cast<float>(parameters.getValue("lengthStiffness", 0.92));
         float parentJointStiffness = static_cast<float>(parameters.getValue("parentStiffness", 0.78));
         float maxJointAngleDeg = static_cast<float>(parameters.getValue("maxJointAngleDeg", 120.0));
@@ -163,8 +163,8 @@ namespace bird {
         float damping = static_cast<float>(parameters.getValue("damping", 0.94));
         float groundBounce = static_cast<float>(parameters.getValue("groundBounce", 0.20));
 
-        const double bodyDropVel = 0.4 * collapseSpeed;
-        const double bodyRollVel = 0.8 * rollIntensity;
+        const double bodyDropVel = 0.4 * collapseSpeedFactor;
+        const double bodyRollVel = 0.8 * rollIntensityFactor;
 
         for (const char* bodyBone : { "Pelvis", "Spine", "Chest", "Neck", "Head" }) {
             auto it = ragdollBoneIdx.find(bodyBone);
@@ -185,16 +185,16 @@ namespace bird {
             auto it = ragdollBoneIdx.find(name);
             if (it != ragdollBoneIdx.end()) {
                 auto& b = bones[it->second];
-                b.headVel += sideDir * (0.7 * wingFlap) + gravityDir * (-0.2);
-                b.tailVel += sideDir * (1.1 * wingFlap) + gravityDir * (-0.25);
+                b.headVel += sideDir * (0.7 * wingFlapFactor) + gravityDir * (-0.2);
+                b.tailVel += sideDir * (1.1 * wingFlapFactor) + gravityDir * (-0.25);
             }
         }
         for (const auto& name : { std::string("RightWingShoulder"), std::string("RightWingElbow"), std::string("RightWingHand") }) {
             auto it = ragdollBoneIdx.find(name);
             if (it != ragdollBoneIdx.end()) {
                 auto& b = bones[it->second];
-                b.headVel += sideDir * (-0.7 * wingFlap) + gravityDir * (-0.2);
-                b.tailVel += sideDir * (-1.1 * wingFlap) + gravityDir * (-0.25);
+                b.headVel += sideDir * (-0.7 * wingFlapFactor) + gravityDir * (-0.2);
+                b.tailVel += sideDir * (-1.1 * wingFlapFactor) + gravityDir * (-0.25);
             }
         }
 
@@ -202,16 +202,16 @@ namespace bird {
             auto it = ragdollBoneIdx.find(name);
             if (it != ragdollBoneIdx.end()) {
                 auto& b = bones[it->second];
-                b.headVel += sideDir * 0.2 + gravityDir * (0.55f * collapseSpeed);
-                b.tailVel += sideDir * 0.2 + gravityDir * (0.65f * collapseSpeed);
+                b.headVel += sideDir * 0.2 + gravityDir * (0.55f * collapseSpeedFactor);
+                b.tailVel += sideDir * 0.2 + gravityDir * (0.65f * collapseSpeedFactor);
             }
         }
         for (const auto& name : { std::string("RightUpperLeg"), std::string("RightLowerLeg"), std::string("RightFoot") }) {
             auto it = ragdollBoneIdx.find(name);
             if (it != ragdollBoneIdx.end()) {
                 auto& b = bones[it->second];
-                b.headVel += sideDir * -0.2 + gravityDir * (0.55f * collapseSpeed);
-                b.tailVel += sideDir * -0.2 + gravityDir * (0.65f * collapseSpeed);
+                b.headVel += sideDir * -0.2 + gravityDir * (0.55f * collapseSpeedFactor);
+                b.tailVel += sideDir * -0.2 + gravityDir * (0.65f * collapseSpeedFactor);
             }
         }
 

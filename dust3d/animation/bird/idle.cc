@@ -28,8 +28,8 @@
 // parrots, and any bird using the bird bone structure.
 //
 // Adjustable animation parameters:
-//   - breathingAmplitude:   body rise-fall intensity
-//   - breathingSpeed:       breathing cycle speed multiplier
+//   - breathingAmplitudeFactor:   body rise-fall intensity
+//   - breathingSpeedFactor:       breathing cycle speed multiplier
 //   - headLookFactor:       head turn/peek amplitude
 //   - headPeckFactor:       head pecking motion intensity
 //   - wingFoldFactor:       wing micro-fold/unfold
@@ -78,8 +78,8 @@ namespace bird {
         if (!validateRequiredBones(boneIdx, requiredBones, sizeof(requiredBones) / sizeof(requiredBones[0])))
             return false;
 
-        double breathingAmplitude = parameters.getValue("breathingAmplitude", 1.0);
-        double breathingSpeed = parameters.getValue("breathingSpeed", 1.0);
+        double breathingAmplitudeFactor = parameters.getValue("breathingAmplitudeFactor", 1.0);
+        double breathingSpeedFactor = parameters.getValue("breathingSpeedFactor", 1.0);
         double headLookFactor = parameters.getValue("headLookFactor", 1.0);
         double headPeckFactor = parameters.getValue("headPeckFactor", 1.0);
         double wingFoldFactor = parameters.getValue("wingFoldFactor", 1.0);
@@ -102,7 +102,7 @@ namespace bird {
         double bodyHeight = (boneEnd("Head") - pelvisPos).length();
         if (bodyHeight < 1e-6)
             bodyHeight = 0.5;
-        double breathAmp = bodyHeight * 0.008 * breathingAmplitude;
+        double breathAmp = bodyHeight * 0.008 * breathingAmplitudeFactor;
         double shiftAmp = bodyHeight * 0.006 * weightShiftFactor;
 
         animationClip.durationSeconds = durationSeconds;
@@ -111,7 +111,7 @@ namespace bird {
         for (int frame = 0; frame < frameCount; ++frame) {
             double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
 
-            double breathPhase = tNormalized * 2.0 * Math::Pi * breathingSpeed;
+            double breathPhase = tNormalized * 2.0 * Math::Pi * breathingSpeedFactor;
             double breathOffset = breathAmp * std::sin(breathPhase);
             double lateralShift = shiftAmp * std::sin(tNormalized * 2.0 * Math::Pi * 0.4);
 

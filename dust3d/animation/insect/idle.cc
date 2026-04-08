@@ -28,8 +28,8 @@
 // and any six-legged creature using the insect bone structure.
 //
 // Adjustable animation parameters:
-//   - breathingAmplitude:   abdomen pulse intensity
-//   - breathingSpeed:       breathing cycle speed multiplier
+//   - breathingAmplitudeFactor:   abdomen pulse intensity
+//   - breathingSpeedFactor:       breathing cycle speed multiplier
 //   - antennaeSwayFactor:   antennae/head bobbing amplitude
 //   - legTwitchFactor:      subtle leg micro-movement
 //   - wingFoldFactor:       wing fold/unfold micro-movement (if wing bones exist)
@@ -79,8 +79,8 @@ namespace insect {
         if (!validateRequiredBones(boneIdx, requiredBones, sizeof(requiredBones) / sizeof(requiredBones[0])))
             return false;
 
-        double breathingAmplitude = parameters.getValue("breathingAmplitude", 1.0);
-        double breathingSpeed = parameters.getValue("breathingSpeed", 1.0);
+        double breathingAmplitudeFactor = parameters.getValue("breathingAmplitudeFactor", 1.0);
+        double breathingSpeedFactor = parameters.getValue("breathingSpeedFactor", 1.0);
         double antennaeSwayFactor = parameters.getValue("antennaeSwayFactor", 1.0);
         double legTwitchFactor = parameters.getValue("legTwitchFactor", 1.0);
         double wingFoldFactor = parameters.getValue("wingFoldFactor", 1.0);
@@ -102,7 +102,7 @@ namespace insect {
         double bodyLength = (headPos - abdomenEnd).length();
         if (bodyLength < 1e-6)
             bodyLength = 0.5;
-        double breathAmp = bodyLength * 0.008 * breathingAmplitude;
+        double breathAmp = bodyLength * 0.008 * breathingAmplitudeFactor;
 
         animationClip.durationSeconds = durationSeconds;
         animationClip.frames.resize(frameCount);
@@ -110,7 +110,7 @@ namespace insect {
         for (int frame = 0; frame < frameCount; ++frame) {
             double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
 
-            double breathPhase = tNormalized * 2.0 * Math::Pi * breathingSpeed;
+            double breathPhase = tNormalized * 2.0 * Math::Pi * breathingSpeedFactor;
             double breathOffset = breathAmp * std::sin(breathPhase);
 
             Matrix4x4 bodyTransform;
@@ -147,7 +147,7 @@ namespace insect {
 
             // Abdomen: breathing pulse + subtle lateral sway
             double abdomenSway = 0.02 * abdomenSwayFactor * std::sin(breathPhase * 0.5);
-            double abdomenPulse = 0.015 * breathingAmplitude * std::sin(breathPhase);
+            double abdomenPulse = 0.015 * breathingAmplitudeFactor * std::sin(breathPhase);
             computeBone("Abdomen", abdomenSway, abdomenPulse);
 
             // Wings: subtle fold/unfold

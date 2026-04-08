@@ -28,9 +28,9 @@
 //   - Initial impulse causes the body to collapse sideways
 //
 // Tunable parameters allow animating different quadruped animals dying:
-//   - collapseSpeed:     how quickly the animal drops (initial downward velocity)
+//   - collapseSpeedFactor:     how quickly the animal drops (initial downward velocity)
 //   - legSpreadFactor:   how much legs splay outward during collapse
-//   - rollIntensity:     sideways roll impulse on body/spine bones
+//   - rollIntensityFactor:     sideways roll impulse on body/spine bones
 //   - lengthStiffness:   bone length preservation (PBD constraint)
 //   - parentStiffness:   parent-child joint adherence
 //   - maxJointAngleDeg:  angular limit per joint
@@ -218,9 +218,9 @@ namespace quadruped {
         }
 
         // User-tunable parameters for controlling different animal death styles
-        float collapseSpeed = static_cast<float>(parameters.getValue("collapseSpeed", 1.0));
+        float collapseSpeedFactor = static_cast<float>(parameters.getValue("collapseSpeedFactor", 1.0));
         float legSpreadFactor = static_cast<float>(parameters.getValue("legSpreadFactor", 1.0));
-        float rollIntensity = static_cast<float>(parameters.getValue("rollIntensity", 1.0));
+        float rollIntensityFactor = static_cast<float>(parameters.getValue("rollIntensityFactor", 1.0));
         float lengthStiffness = static_cast<float>(parameters.getValue("lengthStiffness", 0.9));
         float parentJointStiffness = static_cast<float>(parameters.getValue("parentStiffness", 0.8));
         float maxJointAngleDeg = static_cast<float>(parameters.getValue("maxJointAngleDeg", 120.0));
@@ -231,8 +231,8 @@ namespace quadruped {
         // Apply initial death impulse: the quadruped collapses sideways,
         // legs buckle outward, head and tail droop.
         {
-            const double bodyRollVel = 1.5 * rollIntensity;
-            const double bodyDropVel = 0.5 * collapseSpeed;
+            const double bodyRollVel = 1.5 * rollIntensityFactor;
+            const double bodyDropVel = 0.5 * collapseSpeedFactor;
 
             // Spine chain collapses sideways
             for (const char* bodyBone : { "Pelvis", "Spine", "Chest", "Neck", "Head" }) {
@@ -249,7 +249,7 @@ namespace quadruped {
                 auto it = ragdollBoneIdx.find("Head");
                 if (it != ragdollBoneIdx.end()) {
                     auto& b = bones[it->second];
-                    b.tailVel += gravityDir * (1.0 * collapseSpeed) + forwardDir * 0.3;
+                    b.tailVel += gravityDir * (1.0 * collapseSpeedFactor) + forwardDir * 0.3;
                 }
             }
 
@@ -258,7 +258,7 @@ namespace quadruped {
                 auto it = ragdollBoneIdx.find("Jaw");
                 if (it != ragdollBoneIdx.end()) {
                     auto& b = bones[it->second];
-                    b.tailVel += gravityDir * (1.5 * collapseSpeed);
+                    b.tailVel += gravityDir * (1.5 * collapseSpeedFactor);
                 }
             }
 
@@ -267,8 +267,8 @@ namespace quadruped {
                 auto it = ragdollBoneIdx.find(tailBone);
                 if (it != ragdollBoneIdx.end()) {
                     auto& b = bones[it->second];
-                    b.headVel += gravityDir * (0.3 * collapseSpeed);
-                    b.tailVel += gravityDir * (0.6 * collapseSpeed) + sideDir * (0.3 * rollIntensity);
+                    b.headVel += gravityDir * (0.3 * collapseSpeedFactor);
+                    b.tailVel += gravityDir * (0.6 * collapseSpeedFactor) + sideDir * (0.3 * rollIntensityFactor);
                 }
             }
 
@@ -281,7 +281,7 @@ namespace quadruped {
                     continue;
                 double outerSide = (b.name.find("Left") != std::string::npos) ? 1.0 : -1.0;
                 double legOutwardVel = 0.8 * legSpreadFactor;
-                double legDropVel = 0.3 * collapseSpeed;
+                double legDropVel = 0.3 * collapseSpeedFactor;
 
                 // Lower legs and feet splay more than upper legs
                 if (b.name.find("LowerLeg") != std::string::npos || b.name.find("Foot") != std::string::npos) {

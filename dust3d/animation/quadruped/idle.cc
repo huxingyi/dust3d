@@ -28,8 +28,8 @@
 // four-legged creature using the quadruped bone structure.
 //
 // Adjustable animation parameters:
-//   - breathingAmplitude:   chest rise-fall intensity
-//   - breathingSpeed:       breathing cycle speed multiplier
+//   - breathingAmplitudeFactor:   chest rise-fall intensity
+//   - breathingSpeedFactor:       breathing cycle speed multiplier
 //   - tailIdleFactor:       tail gentle sway amplitude
 //   - headLookFactor:       subtle head turn/nod amplitude
 //   - earTwitchFactor:      ear twitch intensity (if ear bones exist)
@@ -79,8 +79,8 @@ namespace quadruped {
         if (!validateRequiredBones(boneIdx, requiredBones, sizeof(requiredBones) / sizeof(requiredBones[0])))
             return false;
 
-        double breathingAmplitude = parameters.getValue("breathingAmplitude", 1.0);
-        double breathingSpeed = parameters.getValue("breathingSpeed", 1.0);
+        double breathingAmplitudeFactor = parameters.getValue("breathingAmplitudeFactor", 1.0);
+        double breathingSpeedFactor = parameters.getValue("breathingSpeedFactor", 1.0);
         double tailIdleFactor = parameters.getValue("tailIdleFactor", 1.0);
         double headLookFactor = parameters.getValue("headLookFactor", 1.0);
         double weightShiftFactor = parameters.getValue("weightShiftFactor", 1.0);
@@ -104,7 +104,7 @@ namespace quadruped {
         double spineLength = (chestPos - pelvisPos).length();
         if (spineLength < 1e-6)
             spineLength = 1.0;
-        double breathAmp = spineLength * 0.01 * breathingAmplitude;
+        double breathAmp = spineLength * 0.01 * breathingAmplitudeFactor;
         double shiftAmp = spineLength * 0.008 * weightShiftFactor;
 
         animationClip.durationSeconds = durationSeconds;
@@ -113,9 +113,9 @@ namespace quadruped {
         for (int frame = 0; frame < frameCount; ++frame) {
             double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
 
-            double breathPhase = tNormalized * 2.0 * Math::Pi * breathingSpeed;
+            double breathPhase = tNormalized * 2.0 * Math::Pi * breathingSpeedFactor;
             double breathOffset = breathAmp * std::sin(breathPhase);
-            double lateralShift = shiftAmp * std::sin(tNormalized * 2.0 * Math::Pi * 0.5 * breathingSpeed);
+            double lateralShift = shiftAmp * std::sin(tNormalized * 2.0 * Math::Pi * 0.5 * breathingSpeedFactor);
 
             Matrix4x4 bodyTransform;
             bodyTransform.translate(upDir * breathOffset + right * lateralShift);

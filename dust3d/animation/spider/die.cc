@@ -158,7 +158,7 @@ namespace spider {
         if (groundLevel < -1e17)
             groundLevel = 0.0;
 
-        float collapseSpeed = static_cast<float>(parameters.getValue("collapseSpeed", 1.0));
+        float collapseSpeedFactor = static_cast<float>(parameters.getValue("collapseSpeedFactor", 1.0));
         float legSpreadFactor = static_cast<float>(parameters.getValue("legSpreadFactor", 1.0));
         float lengthStiffness = static_cast<float>(parameters.getValue("lengthStiffness", 0.92));
         float parentJointStiffness = static_cast<float>(parameters.getValue("parentStiffness", 0.8));
@@ -167,8 +167,8 @@ namespace spider {
         float damping = static_cast<float>(parameters.getValue("damping", 0.93));
         float groundBounce = static_cast<float>(parameters.getValue("groundBounce", 0.18));
 
-        const double bodyDropVel = 0.46 * collapseSpeed;
-        const double bodyRollVel = 0.7 * collapseSpeed;
+        const double bodyDropVel = 0.46 * collapseSpeedFactor;
+        const double bodyRollVel = 0.7 * collapseSpeedFactor;
 
         for (const auto& name : { std::string("Cephalothorax"), std::string("Head"), std::string("Abdomen") }) {
             auto it = ragdollBoneIdx.find(name);
@@ -183,64 +183,64 @@ namespace spider {
             auto it = ragdollBoneIdx.find(name);
             if (it != ragdollBoneIdx.end()) {
                 auto& b = bones[it->second];
-                b.headVel += sideDir * (0.6 * legSpreadFactor) + gravityDir * (0.5 * collapseSpeed);
-                b.tailVel += sideDir * (0.9 * legSpreadFactor) + gravityDir * (0.6 * collapseSpeed);
+                b.headVel += sideDir * (0.6 * legSpreadFactor) + gravityDir * (0.5 * collapseSpeedFactor);
+                b.tailVel += sideDir * (0.9 * legSpreadFactor) + gravityDir * (0.6 * collapseSpeedFactor);
             }
         }
         for (const auto& name : { std::string("FrontRightCoxa"), std::string("FrontRightFemur"), std::string("FrontRightTibia") }) {
             auto it = ragdollBoneIdx.find(name);
             if (it != ragdollBoneIdx.end()) {
                 auto& b = bones[it->second];
-                b.headVel += sideDir * (-0.6 * legSpreadFactor) + gravityDir * (0.5 * collapseSpeed);
-                b.tailVel += sideDir * (-0.9 * legSpreadFactor) + gravityDir * (0.6 * collapseSpeed);
+                b.headVel += sideDir * (-0.6 * legSpreadFactor) + gravityDir * (0.5 * collapseSpeedFactor);
+                b.tailVel += sideDir * (-0.9 * legSpreadFactor) + gravityDir * (0.6 * collapseSpeedFactor);
             }
         }
         for (const auto& name : { std::string("MidFrontLeftCoxa"), std::string("MidFrontLeftFemur"), std::string("MidFrontLeftTibia") }) {
             auto it = ragdollBoneIdx.find(name);
             if (it != ragdollBoneIdx.end()) {
                 auto& b = bones[it->second];
-                b.headVel += sideDir * (0.5 * legSpreadFactor) + gravityDir * (0.45 * collapseSpeed);
-                b.tailVel += sideDir * (0.8 * legSpreadFactor) + gravityDir * (0.55 * collapseSpeed);
+                b.headVel += sideDir * (0.5 * legSpreadFactor) + gravityDir * (0.45 * collapseSpeedFactor);
+                b.tailVel += sideDir * (0.8 * legSpreadFactor) + gravityDir * (0.55 * collapseSpeedFactor);
             }
         }
         for (const auto& name : { std::string("MidFrontRightCoxa"), std::string("MidFrontRightFemur"), std::string("MidFrontRightTibia") }) {
             auto it = ragdollBoneIdx.find(name);
             if (it != ragdollBoneIdx.end()) {
                 auto& b = bones[it->second];
-                b.headVel += sideDir * (-0.5 * legSpreadFactor) + gravityDir * (0.45 * collapseSpeed);
-                b.tailVel += sideDir * (-0.8 * legSpreadFactor) + gravityDir * (0.55 * collapseSpeed);
+                b.headVel += sideDir * (-0.5 * legSpreadFactor) + gravityDir * (0.45 * collapseSpeedFactor);
+                b.tailVel += sideDir * (-0.8 * legSpreadFactor) + gravityDir * (0.55 * collapseSpeedFactor);
             }
         }
         for (const auto& name : { std::string("MidBackLeftCoxa"), std::string("MidBackLeftFemur"), std::string("MidBackLeftTibia") }) {
             auto it = ragdollBoneIdx.find(name);
             if (it != ragdollBoneIdx.end()) {
                 auto& b = bones[it->second];
-                b.headVel += sideDir * (0.4 * legSpreadFactor) + gravityDir * (0.48 * collapseSpeed);
-                b.tailVel += sideDir * (0.7 * legSpreadFactor) + gravityDir * (0.58 * collapseSpeed);
+                b.headVel += sideDir * (0.4 * legSpreadFactor) + gravityDir * (0.48 * collapseSpeedFactor);
+                b.tailVel += sideDir * (0.7 * legSpreadFactor) + gravityDir * (0.58 * collapseSpeedFactor);
             }
         }
         for (const auto& name : { std::string("MidBackRightCoxa"), std::string("MidBackRightFemur"), std::string("MidBackRightTibia") }) {
             auto it = ragdollBoneIdx.find(name);
             if (it != ragdollBoneIdx.end()) {
                 auto& b = bones[it->second];
-                b.headVel += sideDir * (-0.4 * legSpreadFactor) + gravityDir * (0.48 * collapseSpeed);
-                b.tailVel += sideDir * (-0.7 * legSpreadFactor) + gravityDir * (0.58 * collapseSpeed);
+                b.headVel += sideDir * (-0.4 * legSpreadFactor) + gravityDir * (0.48 * collapseSpeedFactor);
+                b.tailVel += sideDir * (-0.7 * legSpreadFactor) + gravityDir * (0.58 * collapseSpeedFactor);
             }
         }
         for (const auto& name : { std::string("BackLeftCoxa"), std::string("BackLeftFemur"), std::string("BackLeftTibia") }) {
             auto it = ragdollBoneIdx.find(name);
             if (it != ragdollBoneIdx.end()) {
                 auto& b = bones[it->second];
-                b.headVel += sideDir * (0.5 * legSpreadFactor) + gravityDir * (0.5 * collapseSpeed);
-                b.tailVel += sideDir * (0.9 * legSpreadFactor) + gravityDir * (0.6 * collapseSpeed);
+                b.headVel += sideDir * (0.5 * legSpreadFactor) + gravityDir * (0.5 * collapseSpeedFactor);
+                b.tailVel += sideDir * (0.9 * legSpreadFactor) + gravityDir * (0.6 * collapseSpeedFactor);
             }
         }
         for (const auto& name : { std::string("BackRightCoxa"), std::string("BackRightFemur"), std::string("BackRightTibia") }) {
             auto it = ragdollBoneIdx.find(name);
             if (it != ragdollBoneIdx.end()) {
                 auto& b = bones[it->second];
-                b.headVel += sideDir * (-0.5 * legSpreadFactor) + gravityDir * (0.5 * collapseSpeed);
-                b.tailVel += sideDir * (-0.9 * legSpreadFactor) + gravityDir * (0.6 * collapseSpeed);
+                b.headVel += sideDir * (-0.5 * legSpreadFactor) + gravityDir * (0.5 * collapseSpeedFactor);
+                b.tailVel += sideDir * (-0.9 * legSpreadFactor) + gravityDir * (0.6 * collapseSpeedFactor);
             }
         }
 

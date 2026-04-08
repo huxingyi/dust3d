@@ -155,10 +155,10 @@ namespace biped {
         if (groundLevel < -1e17)
             groundLevel = 0.0;
 
-        float collapseSpeed = static_cast<float>(parameters.getValue("collapseSpeed", 1.0));
-        float armFlail = static_cast<float>(parameters.getValue("armFlail", 1.0));
-        float headDrop = static_cast<float>(parameters.getValue("headDrop", 1.0));
-        float rollIntensity = static_cast<float>(parameters.getValue("rollIntensity", 1.0));
+        float collapseSpeedFactor = static_cast<float>(parameters.getValue("collapseSpeedFactor", 1.0));
+        float armFlailFactor = static_cast<float>(parameters.getValue("armFlailFactor", 1.0));
+        float headDropFactor = static_cast<float>(parameters.getValue("headDropFactor", 1.0));
+        float rollIntensityFactor = static_cast<float>(parameters.getValue("rollIntensityFactor", 1.0));
         float lengthStiffness = static_cast<float>(parameters.getValue("lengthStiffness", 0.9));
         float parentJointStiffness = static_cast<float>(parameters.getValue("parentStiffness", 0.8));
         float maxJointAngleDeg = static_cast<float>(parameters.getValue("maxJointAngleDeg", 130.0));
@@ -166,8 +166,8 @@ namespace biped {
         float damping = static_cast<float>(parameters.getValue("damping", 0.95));
         float groundBounce = static_cast<float>(parameters.getValue("groundBounce", 0.18));
 
-        const double bodyDropVel = 0.45 * collapseSpeed;
-        const double bodyRollVel = 0.9 * rollIntensity;
+        const double bodyDropVel = 0.45 * collapseSpeedFactor;
+        const double bodyRollVel = 0.9 * rollIntensityFactor;
 
         for (const char* bodyBone : { "Hips", "Spine", "Chest", "Neck", "Head" }) {
             auto it = ragdollBoneIdx.find(bodyBone);
@@ -181,23 +181,23 @@ namespace biped {
         auto it = ragdollBoneIdx.find("Head");
         if (it != ragdollBoneIdx.end()) {
             auto& head = bones[it->second];
-            head.tailVel += forwardDir * 0.25f + gravityDir * (0.2f * collapseSpeed * headDrop);
+            head.tailVel += forwardDir * 0.25f + gravityDir * (0.2f * collapseSpeedFactor * headDropFactor);
         }
 
         for (const auto& name : { std::string("LeftUpperArm"), std::string("LeftLowerArm"), std::string("LeftHand") }) {
             auto it = ragdollBoneIdx.find(name);
             if (it != ragdollBoneIdx.end()) {
                 auto& b = bones[it->second];
-                b.headVel += sideDir * (0.7 * armFlail) + gravityDir * (0.25 * collapseSpeed);
-                b.tailVel += sideDir * (1.2 * armFlail) + gravityDir * (0.35 * collapseSpeed);
+                b.headVel += sideDir * (0.7 * armFlailFactor) + gravityDir * (0.25 * collapseSpeedFactor);
+                b.tailVel += sideDir * (1.2 * armFlailFactor) + gravityDir * (0.35 * collapseSpeedFactor);
             }
         }
         for (const auto& name : { std::string("RightUpperArm"), std::string("RightLowerArm"), std::string("RightHand") }) {
             auto it = ragdollBoneIdx.find(name);
             if (it != ragdollBoneIdx.end()) {
                 auto& b = bones[it->second];
-                b.headVel += sideDir * (-0.7 * armFlail) + gravityDir * (0.25 * collapseSpeed);
-                b.tailVel += sideDir * (-1.2 * armFlail) + gravityDir * (0.35 * collapseSpeed);
+                b.headVel += sideDir * (-0.7 * armFlailFactor) + gravityDir * (0.25 * collapseSpeedFactor);
+                b.tailVel += sideDir * (-1.2 * armFlailFactor) + gravityDir * (0.35 * collapseSpeedFactor);
             }
         }
 
@@ -207,8 +207,8 @@ namespace biped {
             if (it != ragdollBoneIdx.end()) {
                 auto& b = bones[it->second];
                 float side = (name.find("Left") != std::string::npos) ? 0.35f : -0.35f;
-                b.headVel += sideDir * side + gravityDir * (0.55f * collapseSpeed);
-                b.tailVel += sideDir * side + gravityDir * (0.65f * collapseSpeed);
+                b.headVel += sideDir * side + gravityDir * (0.55f * collapseSpeedFactor);
+                b.tailVel += sideDir * side + gravityDir * (0.65f * collapseSpeedFactor);
             }
         }
 

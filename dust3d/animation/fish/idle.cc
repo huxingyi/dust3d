@@ -28,8 +28,8 @@
 // to sharks, using the fish bone structure.
 //
 // Adjustable animation parameters:
-//   - breathingAmplitude:    gill/body pulse intensity
-//   - breathingSpeed:        breathing cycle speed multiplier
+//   - breathingAmplitudeFactor:    gill/body pulse intensity
+//   - breathingSpeedFactor:        breathing cycle speed multiplier
 //   - finScullFactor:        pectoral fin sculling amplitude
 //   - tailSwayFactor:        tail gentle sway amplitude
 //   - bodyUndulationFactor:  subtle body S-curve undulation
@@ -75,8 +75,8 @@ namespace fish {
         if (!validateRequiredBones(boneIdx, requiredBones, sizeof(requiredBones) / sizeof(requiredBones[0])))
             return false;
 
-        double breathingAmplitude = parameters.getValue("breathingAmplitude", 1.0);
-        double breathingSpeed = parameters.getValue("breathingSpeed", 1.0);
+        double breathingAmplitudeFactor = parameters.getValue("breathingAmplitudeFactor", 1.0);
+        double breathingSpeedFactor = parameters.getValue("breathingSpeedFactor", 1.0);
         double finScullFactor = parameters.getValue("finScullFactor", 1.0);
         double tailSwayFactor = parameters.getValue("tailSwayFactor", 1.0);
         double bodyUndulationFactor = parameters.getValue("bodyUndulationFactor", 1.0);
@@ -107,7 +107,7 @@ namespace fish {
         for (int frame = 0; frame < frameCount; ++frame) {
             double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
 
-            double breathPhase = tNormalized * 2.0 * Math::Pi * breathingSpeed;
+            double breathPhase = tNormalized * 2.0 * Math::Pi * breathingSpeedFactor;
             double vertDrift = driftAmp * std::sin(tNormalized * 2.0 * Math::Pi * 0.3);
 
             Matrix4x4 bodyTransform;
@@ -135,7 +135,7 @@ namespace fish {
             };
 
             // Body undulation: subtle S-curve that propagates backward
-            double undulationPhase = tNormalized * 2.0 * Math::Pi * breathingSpeed * 0.8;
+            double undulationPhase = tNormalized * 2.0 * Math::Pi * breathingSpeedFactor * 0.8;
             double headSway = 0.01 * bodyUndulationFactor * std::sin(undulationPhase);
             double frontSway = 0.015 * bodyUndulationFactor * std::sin(undulationPhase - 0.4);
             double midSway = 0.02 * bodyUndulationFactor * std::sin(undulationPhase - 0.8);

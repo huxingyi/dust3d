@@ -1,0 +1,302 @@
+#ifndef DUST3D_APPLICATION_ANIMATION_PARAMETER_TABLE_H_
+#define DUST3D_APPLICATION_ANIMATION_PARAMETER_TABLE_H_
+
+#include <functional>
+#include <string>
+#include <unordered_map>
+#include <vector>
+
+struct AnimationParameterDef {
+    std::string paramName;
+    std::string displayName;
+    int defaultSliderValue;
+    int sliderMin;
+    int sliderMax;
+    double defaultParamValue;
+    std::function<double(int)> toParam;
+    std::function<int(double)> fromParam;
+};
+
+inline AnimationParameterDef makeDiv100Param(const std::string& paramName, const std::string& displayName,
+    int defaultSlider, int sliderMin, int sliderMax, double defaultParam)
+{
+    return { paramName, displayName, defaultSlider, sliderMin, sliderMax, defaultParam,
+        [](int v) { return v / 100.0; },
+        [](double v) { return static_cast<int>(v * 100); } };
+}
+
+inline AnimationParameterDef makeLinearParam(const std::string& paramName, const std::string& displayName,
+    int defaultSlider, int sliderMin, int sliderMax, double defaultParam,
+    double sliderToParamFactor)
+{
+    return { paramName, displayName, defaultSlider, sliderMin, sliderMax, defaultParam,
+        [sliderToParamFactor](int v) { return v / sliderToParamFactor; },
+        [sliderToParamFactor](double v) { return static_cast<int>(v * sliderToParamFactor); } };
+}
+
+inline AnimationParameterDef makeDirectParam(const std::string& paramName, const std::string& displayName,
+    int defaultSlider, int sliderMin, int sliderMax, double defaultParam)
+{
+    return { paramName, displayName, defaultSlider, sliderMin, sliderMax, defaultParam,
+        [](int v) { return static_cast<double>(v); },
+        [](double v) { return static_cast<int>(v); } };
+}
+
+inline const std::vector<AnimationParameterDef>& getAnimationParameterDefs(const std::string& animationType)
+{
+    static const std::vector<AnimationParameterDef> empty;
+
+    static const std::unordered_map<std::string, std::vector<AnimationParameterDef>> table = {
+        { "InsectWalk", {
+                            makeDiv100Param("stepLengthFactor", "Step Length", 100, 25, 200, 1.0),
+                            makeDiv100Param("stepHeightFactor", "Step Height", 100, 25, 200, 1.0),
+                            makeDiv100Param("bodyBobFactor", "Body Bob", 100, 25, 200, 1.0),
+                            makeLinearParam("gaitSpeedFactor", "Gait Speed", 100, 25, 200, 1.0, 10.0),
+                        } },
+        { "InsectForward", {
+                               makeDiv100Param("stepLengthFactor", "Step Length", 100, 25, 200, 1.0),
+                               makeDiv100Param("stepHeightFactor", "Step Height", 100, 25, 200, 1.0),
+                               makeDiv100Param("bodyBobFactor", "Body Bob", 100, 25, 200, 1.0),
+                               makeLinearParam("gaitSpeedFactor", "Gait Speed", 100, 25, 200, 1.0, 10.0),
+                           } },
+        { "InsectAttack", {
+                              makeDiv100Param("attackSpeedFactor", "Attack Speed", 100, 25, 200, 1.0),
+                              makeDiv100Param("diveIntensityFactor", "Dive Intensity", 100, 25, 200, 1.0),
+                          } },
+        { "InsectRubHands", {
+                                makeDiv100Param("stepLengthFactor", "Step Length", 100, 25, 200, 1.0),
+                                makeDiv100Param("stepHeightFactor", "Step Height", 100, 25, 200, 1.0),
+                                makeDiv100Param("bodyBobFactor", "Body Bob", 100, 25, 200, 1.0),
+                                makeLinearParam("gaitSpeedFactor", "Gait Speed", 100, 25, 200, 1.0, 10.0),
+                                makeDiv100Param("rubForwardOffsetFactor", "Rub Forward Offset", 100, 25, 200, 1.0),
+                                makeDiv100Param("rubUpOffsetFactor", "Rub Up Offset", 100, 25, 200, 1.0),
+                            } },
+        { "InsectDie", {
+                           makeDiv100Param("lengthStiffness", "Length Stiffness", 90, 10, 200, 0.9),
+                           makeDiv100Param("parentStiffness", "Parent Stiffness", 80, 10, 200, 0.8),
+                           makeDirectParam("maxJointAngleDeg", "Max Joint Angle", 120, 60, 180, 120.0),
+                           makeDiv100Param("damping", "Damping", 95, 50, 99, 0.95),
+                           makeDiv100Param("groundBounce", "Ground Bounce", 22, 0, 100, 0.22),
+                       } },
+        { "BirdForward", {
+                             makeDiv100Param("stepLengthFactor", "Step Length", 100, 25, 200, 1.0),
+                             makeDiv100Param("stepHeightFactor", "Step Height", 100, 25, 200, 1.0),
+                             makeDiv100Param("bodyBobFactor", "Body Bob", 100, 25, 200, 1.0),
+                             makeLinearParam("gaitSpeedFactor", "Gait Speed", 100, 25, 200, 1.0, 10.0),
+                         } },
+        { "BirdDie", {
+                         makeDiv100Param("collapseSpeedFactor", "Collapse Speed", 100, 10, 300, 1.0),
+                         makeDiv100Param("wingFlapFactor", "Wing Flap", 100, 0, 300, 1.0),
+                         makeDiv100Param("rollIntensityFactor", "Roll Intensity", 100, 0, 300, 1.0),
+                         makeDiv100Param("lengthStiffness", "Length Stiffness", 90, 10, 200, 0.9),
+                         makeDiv100Param("parentStiffness", "Parent Stiffness", 80, 10, 200, 0.8),
+                         makeDirectParam("maxJointAngleDeg", "Max Joint Angle", 120, 60, 180, 120.0),
+                         makeDiv100Param("damping", "Damping", 95, 50, 99, 0.95),
+                         makeDiv100Param("groundBounce", "Ground Bounce", 22, 0, 100, 0.22),
+                     } },
+        { "FishForward", {
+                             makeLinearParam("bodyBob", "Body Bob", 100, 0, 300, 0.02, 5000.0),
+                             makeDiv100Param("swimSpeedFactor", "Swim Speed", 100, 25, 300, 1.0),
+                             makeLinearParam("swimFrequency", "Swim Frequency", 100, 25, 400, 2.0, 50.0),
+                             makeLinearParam("spineAmplitude", "Spine Amplitude", 100, 10, 300, 0.15, 667.0),
+                             makeDiv100Param("waveLength", "Wave Length", 100, 50, 200, 1.0),
+                             makeLinearParam("tailAmplitudeRatio", "Tail Amplitude Ratio", 100, 50, 500, 2.5, 40.0),
+                             makeLinearParam("bodyRoll", "Body Roll", 100, 0, 300, 0.05, 2000.0),
+                             makeLinearParam("forwardThrust", "Forward Thrust", 100, 0, 300, 0.08, 1250.0),
+                             makeLinearParam("pectoralFlapPower", "Pectoral Flap Power", 100, 0, 300, 0.4, 250.0),
+                             makeLinearParam("pelvicFlapPower", "Pelvic Flap Power", 100, 0, 300, 0.25, 400.0),
+                             makeLinearParam("dorsalSwayPower", "Dorsal Sway Power", 100, 0, 300, 0.2, 500.0),
+                             makeLinearParam("ventralSwayPower", "Ventral Sway Power", 100, 0, 300, 0.2, 500.0),
+                             makeDiv100Param("pectoralPhaseOffset", "Pectoral Phase Offset", 0, -200, 200, 0.0),
+                             makeDiv100Param("pelvicPhaseOffset", "Pelvic Phase Offset", 50, -200, 200, 0.5),
+                         } },
+        { "FishDie", {
+                         makeDiv100Param("hitIntensityFactor", "Hit Intensity", 100, 10, 300, 1.0),
+                         { "hitFrequency", "Hit Frequency", 100, 20, 300, 8.0, [](int v) { return v / 100.0 * 8.0; }, [](double v) { return static_cast<int>(v / 8.0 * 100); } },
+                         makeDiv100Param("flipSpeedFactor", "Flip Speed", 100, 25, 400, 1.0),
+                         makeDirectParam("flipAngle", "Flip Angle", 180, 0, 180, 180.0),
+                         makeDiv100Param("tilt", "Tilt", 0, -100, 100, 0.0),
+                         makeDiv100Param("finFlopFactor", "Fin Flop", 100, 0, 300, 1.0),
+                         { "spinDecay", "Spin Decay", 100, 10, 300, 4.0, [](int v) { return v / 100.0 * 4.0; }, [](double v) { return static_cast<int>(v / 4.0 * 100); } },
+                     } },
+        { "SnakeForward", {
+                              makeDiv100Param("waveSpeedFactor", "Wave Speed", 100, 25, 300, 1.0),
+                              makeLinearParam("waveFrequency", "Wave Frequency", 100, 25, 400, 2.0, 50.0),
+                              makeLinearParam("waveAmplitude", "Wave Amplitude", 100, 10, 300, 0.15, 667.0),
+                              makeDiv100Param("waveLength", "Wave Length", 100, 50, 200, 1.0),
+                              makeLinearParam("tailAmplitudeRatio", "Tail Amplitude Ratio", 100, 50, 500, 2.5, 40.0),
+                              makeLinearParam("headYawFactor", "Head Yaw", 100, 0, 200, 0.05, 2000.0),
+                              makeLinearParam("headPullFactor", "Head Pull", 100, 0, 300, 0.2, 200.0),
+                              makeLinearParam("jawAmplitude", "Jaw Amplitude", 200, 0, 600, 0.25, 500.0),
+                              makeDiv100Param("jawFrequency", "Jaw Frequency", 100, 0, 600, 1.0),
+                          } },
+        { "SnakeDie", {
+                          makeDiv100Param("flipSpeedFactor", "Flip Speed", 100, 25, 400, 1.0),
+                          makeDirectParam("flipAngle", "Flip Angle", 180, 0, 180, 180.0),
+                          makeDirectParam("jawOpen", "Jaw Open", 63, 0, 63, 63.0),
+                      } },
+        { "QuadrupedWalk", {
+                               makeDiv100Param("stepLengthFactor", "Step Length", 100, 25, 200, 1.0),
+                               makeDiv100Param("stepHeightFactor", "Step Height", 100, 25, 200, 1.0),
+                               makeDiv100Param("bodyBobFactor", "Body Bob", 100, 25, 200, 1.0),
+                               makeLinearParam("gaitSpeedFactor", "Gait Speed", 100, 25, 200, 1.0, 10.0),
+                               makeDiv100Param("spineFlexFactor", "Spine Flex", 100, 25, 200, 1.0),
+                               makeDiv100Param("tailSwayFactor", "Tail Sway", 100, 25, 200, 1.0),
+                           } },
+        { "QuadrupedRun", {
+                              makeDiv100Param("stepLengthFactor", "Step Length", 100, 25, 200, 1.0),
+                              makeDiv100Param("stepHeightFactor", "Step Height", 100, 25, 200, 1.0),
+                              makeDiv100Param("bodyBobFactor", "Body Bob", 100, 25, 200, 1.0),
+                              makeLinearParam("gaitSpeedFactor", "Gait Speed", 100, 25, 200, 1.0, 10.0),
+                              makeDiv100Param("spineFlexFactor", "Spine Flex", 100, 25, 200, 1.0),
+                              makeDiv100Param("tailSwayFactor", "Tail Sway", 100, 25, 200, 1.0),
+                              makeDiv100Param("suspensionFactor", "Suspension", 100, 25, 200, 1.0),
+                              makeDiv100Param("forwardLeanFactor", "Forward Lean", 100, 25, 200, 1.0),
+                              makeDiv100Param("strideFrequencyFactor", "Stride Frequency", 100, 25, 200, 1.0),
+                              makeDiv100Param("boundFactor", "Bound", 0, 0, 100, 0.0),
+                          } },
+        { "QuadrupedDie", {
+                              makeDiv100Param("collapseSpeedFactor", "Collapse Speed", 100, 10, 300, 1.0),
+                              makeDiv100Param("legSpreadFactor", "Leg Spread", 100, 10, 300, 1.0),
+                              makeDiv100Param("rollIntensityFactor", "Roll Intensity", 100, 0, 300, 1.0),
+                              makeDiv100Param("lengthStiffness", "Length Stiffness", 90, 10, 200, 0.9),
+                              makeDiv100Param("parentStiffness", "Parent Stiffness", 80, 10, 200, 0.8),
+                              makeDirectParam("maxJointAngleDeg", "Max Joint Angle", 120, 60, 180, 120.0),
+                              makeDiv100Param("damping", "Damping", 95, 50, 99, 0.95),
+                              makeDiv100Param("groundBounce", "Ground Bounce", 22, 0, 100, 0.22),
+                          } },
+        { "BipedWalk", {
+                           makeDiv100Param("stepLengthFactor", "Step Length", 100, 25, 200, 1.0),
+                           makeDiv100Param("stepHeightFactor", "Step Height", 100, 25, 200, 1.0),
+                           makeDiv100Param("bodyBobFactor", "Body Bob", 100, 25, 200, 1.0),
+                           makeLinearParam("gaitSpeedFactor", "Gait Speed", 100, 25, 200, 1.0, 10.0),
+                           makeDiv100Param("armSwingFactor", "Arm Swing", 100, 25, 200, 1.0),
+                           makeDiv100Param("hipSwayFactor", "Hip Sway", 100, 25, 200, 1.0),
+                           makeDiv100Param("hipRotateFactor", "Hip Rotate", 100, 25, 200, 1.0),
+                           makeDiv100Param("spineFlexFactor", "Spine Counter", 100, 25, 200, 1.0),
+                           makeDiv100Param("headBobFactor", "Head Stabilize", 100, 25, 200, 1.0),
+                           makeDiv100Param("kneeBendFactor", "Knee Bend", 100, 25, 200, 1.0),
+                           makeDiv100Param("leanForwardFactor", "Lean Forward", 100, 0, 200, 1.0),
+                           makeDiv100Param("bouncinessFactor", "Bounciness", 100, 0, 300, 1.0),
+                           makeDiv100Param("forearmPhaseOffset", "Forearm Phase Offset", 50, 0, 100, 0.5),
+                           makeDiv100Param("tailSwayFactor", "Tail Sway", 100, 25, 200, 1.0),
+                       } },
+        { "BipedRun", {
+                          makeDiv100Param("stepLengthFactor", "Step Length", 100, 25, 200, 1.0),
+                          makeDiv100Param("stepHeightFactor", "Step Height", 100, 25, 200, 1.0),
+                          makeDiv100Param("bodyBobFactor", "Body Bob", 100, 25, 200, 1.0),
+                          makeLinearParam("gaitSpeedFactor", "Gait Speed", 100, 25, 200, 1.0, 10.0),
+                          makeDiv100Param("armSwingFactor", "Arm Swing", 100, 25, 200, 1.0),
+                          makeDiv100Param("hipSwayFactor", "Hip Sway", 100, 25, 200, 1.0),
+                          makeDiv100Param("hipRotateFactor", "Hip Rotate", 100, 25, 200, 1.0),
+                          makeDiv100Param("spineFlexFactor", "Spine Counter", 100, 25, 200, 1.0),
+                          makeDiv100Param("headBobFactor", "Head Stabilize", 100, 25, 200, 1.0),
+                          makeDiv100Param("kneeBendFactor", "Knee Bend", 100, 25, 200, 1.0),
+                          makeDiv100Param("leanForwardFactor", "Lean Forward", 100, 0, 200, 1.0),
+                          makeDiv100Param("bouncinessFactor", "Bounciness", 100, 0, 300, 1.0),
+                          makeDiv100Param("forearmPhaseOffset", "Forearm Phase Offset", 50, 0, 100, 0.5),
+                          makeDiv100Param("tailSwayFactor", "Tail Sway", 100, 25, 200, 1.0),
+                          makeDiv100Param("suspensionFactor", "Suspension", 100, 25, 200, 1.0),
+                          makeDiv100Param("strideFrequencyFactor", "Stride Frequency", 100, 25, 200, 1.0),
+                      } },
+        { "BipedDie", {
+                          makeDiv100Param("collapseSpeedFactor", "Collapse Speed", 100, 10, 300, 1.0),
+                          makeDiv100Param("armFlailFactor", "Arm Flail", 100, 0, 300, 1.0),
+                          makeDiv100Param("headDropFactor", "Head Drop", 100, 0, 300, 1.0),
+                          makeDiv100Param("rollIntensityFactor", "Roll Intensity", 100, 0, 300, 1.0),
+                          makeDiv100Param("lengthStiffness", "Length Stiffness", 90, 10, 200, 0.9),
+                          makeDiv100Param("parentStiffness", "Parent Stiffness", 80, 10, 200, 0.8),
+                          makeDirectParam("maxJointAngleDeg", "Max Joint Angle", 120, 60, 180, 120.0),
+                          makeDiv100Param("damping", "Damping", 95, 50, 99, 0.95),
+                          makeDiv100Param("groundBounce", "Ground Bounce", 22, 0, 100, 0.22),
+                      } },
+        { "SpiderWalk", {
+                            makeDiv100Param("stepLengthFactor", "Step Length", 100, 25, 200, 1.0),
+                            makeDiv100Param("stepHeightFactor", "Step Height", 100, 25, 200, 1.0),
+                            makeDiv100Param("bodyBobFactor", "Body Bob", 100, 25, 200, 1.0),
+                            makeLinearParam("gaitSpeedFactor", "Gait Speed", 100, 25, 200, 1.0, 10.0),
+                            makeDiv100Param("legSpreadFactor", "Leg Spread", 100, 25, 200, 1.0),
+                            makeDiv100Param("abdomenSwayFactor", "Abdomen Sway", 100, 0, 300, 1.0),
+                            makeDiv100Param("pedipalpSwayFactor", "Pedipalp Sway", 100, 0, 300, 1.0),
+                            makeDiv100Param("bodyYawFactor", "Body Yaw", 100, 0, 300, 1.0),
+                        } },
+        { "SpiderDie", {
+                           makeDiv100Param("collapseSpeedFactor", "Collapse Speed", 100, 10, 300, 1.0),
+                           makeDiv100Param("legSpreadFactor", "Leg Spread", 100, 0, 300, 1.0),
+                           makeDiv100Param("lengthStiffness", "Length Stiffness", 90, 10, 200, 0.9),
+                           makeDiv100Param("parentStiffness", "Parent Stiffness", 80, 10, 200, 0.8),
+                           makeDirectParam("maxJointAngleDeg", "Max Joint Angle", 120, 60, 180, 120.0),
+                           makeDiv100Param("damping", "Damping", 95, 50, 99, 0.95),
+                           makeDiv100Param("groundBounce", "Ground Bounce", 22, 0, 100, 0.22),
+                       } },
+        { "BipedIdle", {
+                           makeDiv100Param("breathingAmplitudeFactor", "Breathing Amplitude", 100, 0, 300, 1.0),
+                           makeDiv100Param("breathingSpeedFactor", "Breathing Speed", 100, 25, 300, 1.0),
+                           makeDiv100Param("weightShiftFactor", "Weight Shift", 100, 0, 300, 1.0),
+                           makeDiv100Param("weightShiftSpeedFactor", "Weight Shift Speed", 100, 25, 300, 1.0),
+                           makeDiv100Param("headLookFactor", "Head Look", 100, 0, 300, 1.0),
+                           makeDiv100Param("spineSwayFactor", "Spine Sway", 100, 0, 300, 1.0),
+                           makeDiv100Param("tailIdleFactor", "Tail Idle", 100, 0, 300, 1.0),
+                           makeDiv100Param("armRestFactor", "Arm Rest Sway", 100, 0, 300, 1.0),
+                       } },
+        { "QuadrupedIdle", {
+                               makeDiv100Param("breathingAmplitudeFactor", "Breathing Amplitude", 100, 0, 300, 1.0),
+                               makeDiv100Param("breathingSpeedFactor", "Breathing Speed", 100, 25, 300, 1.0),
+                               makeDiv100Param("weightShiftFactor", "Weight Shift", 100, 0, 300, 1.0),
+                               makeDiv100Param("headLookFactor", "Head Look", 100, 0, 300, 1.0),
+                               makeDiv100Param("spineSwayFactor", "Spine Sway", 100, 0, 300, 1.0),
+                               makeDiv100Param("tailIdleFactor", "Tail Idle", 100, 0, 300, 1.0),
+                               makeDiv100Param("jawFactor", "Jaw Movement", 100, 0, 300, 1.0),
+                           } },
+        { "InsectIdle", {
+                            makeDiv100Param("breathingAmplitudeFactor", "Breathing Amplitude", 100, 0, 300, 1.0),
+                            makeDiv100Param("breathingSpeedFactor", "Breathing Speed", 100, 25, 300, 1.0),
+                            makeDiv100Param("antennaeSwayFactor", "Antennae Sway", 100, 0, 300, 1.0),
+                            makeDiv100Param("legTwitchFactor", "Leg Twitch", 100, 0, 300, 1.0),
+                            makeDiv100Param("wingFoldFactor", "Wing Fold", 100, 0, 300, 1.0),
+                            makeDiv100Param("abdomenSwayFactor", "Abdomen Sway", 100, 0, 300, 1.0),
+                        } },
+        { "SpiderIdle", {
+                            makeDiv100Param("breathingAmplitudeFactor", "Breathing Amplitude", 100, 0, 300, 1.0),
+                            makeDiv100Param("breathingSpeedFactor", "Breathing Speed", 100, 25, 300, 1.0),
+                            makeDiv100Param("pedipalpSwayFactor", "Pedipalp Sway", 100, 0, 300, 1.0),
+                            makeDiv100Param("legTwitchFactor", "Leg Twitch", 100, 0, 300, 1.0),
+                            makeDiv100Param("abdomenPulseFactor", "Abdomen Pulse", 100, 0, 300, 1.0),
+                            makeDiv100Param("bodySwayFactor", "Body Sway", 100, 0, 300, 1.0),
+                        } },
+        { "BirdIdle", {
+                          makeDiv100Param("breathingAmplitudeFactor", "Breathing Amplitude", 100, 0, 300, 1.0),
+                          makeDiv100Param("breathingSpeedFactor", "Breathing Speed", 100, 25, 300, 1.0),
+                          makeDiv100Param("weightShiftFactor", "Weight Shift", 100, 0, 300, 1.0),
+                          makeDiv100Param("headLookFactor", "Head Look", 100, 0, 300, 1.0),
+                          makeDiv100Param("headPeckFactor", "Head Peck", 100, 0, 300, 1.0),
+                          makeDiv100Param("wingFoldFactor", "Wing Fold", 100, 0, 300, 1.0),
+                          makeDiv100Param("tailFeatherFactor", "Tail Feather", 100, 0, 300, 1.0),
+                      } },
+        { "FishIdle", {
+                          makeDiv100Param("breathingAmplitudeFactor", "Breathing Amplitude", 100, 0, 300, 1.0),
+                          makeDiv100Param("breathingSpeedFactor", "Breathing Speed", 100, 25, 300, 1.0),
+                          makeDiv100Param("finScullFactor", "Fin Scull", 100, 0, 300, 1.0),
+                          makeDiv100Param("tailSwayFactor", "Tail Sway", 100, 0, 300, 1.0),
+                          makeDiv100Param("bodyUndulationFactor", "Body Undulation", 100, 0, 300, 1.0),
+                          makeDiv100Param("dorsalSwayFactor", "Dorsal Sway", 100, 0, 300, 1.0),
+                          makeDiv100Param("driftFactor", "Drift", 100, 0, 300, 1.0),
+                      } },
+        { "SnakeIdle", {
+                           makeDiv100Param("breathingAmplitudeFactor", "Breathing Amplitude", 100, 0, 300, 1.0),
+                           makeDiv100Param("breathingSpeedFactor", "Breathing Speed", 100, 25, 300, 1.0),
+                           makeDiv100Param("headSwayFactor", "Head Sway", 100, 0, 300, 1.0),
+                           makeDiv100Param("headRaiseFactor", "Head Raise", 100, 0, 300, 1.0),
+                           makeDiv100Param("tongueFlickFactor", "Tongue Flick", 100, 0, 300, 1.0),
+                           makeDiv100Param("bodyUndulationFactor", "Body Undulation", 100, 0, 300, 1.0),
+                           makeDiv100Param("tailTwitchFactor", "Tail Twitch", 100, 0, 300, 1.0),
+                       } },
+    };
+
+    auto it = table.find(animationType);
+    if (it != table.end())
+        return it->second;
+    return empty;
+}
+
+#endif

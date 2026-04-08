@@ -84,7 +84,7 @@ namespace fish {
         right.normalize();
         Vector3 up = Vector3::crossProduct(right, forwardDir).normalized();
 
-        double swimSpeed = parameters.getValue("swimSpeed", 1.0);
+        double swimSpeedFactor = parameters.getValue("swimSpeedFactor", 1.0);
         double swimFrequency = parameters.getValue("swimFrequency", 2.0);
         double spineAmplitude = parameters.getValue("spineAmplitude", 0.15);
         double waveLength = std::max(0.001, parameters.getValue("waveLength", 1.0));
@@ -116,7 +116,7 @@ namespace fish {
             // One-shot clips (e.g. die) use frameCount - 1 to reach exactly 1.0.
             double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
             // Ensure animation loops seamlessly by completing integer cycles
-            double totalCycles = swimSpeed * swimFrequency;
+            double totalCycles = swimSpeedFactor * swimFrequency;
             double completeCycles = std::round(totalCycles);
             double phase = tNormalized * completeCycles * 2.0 * Math::Pi;
 

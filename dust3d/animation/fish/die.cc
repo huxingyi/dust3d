@@ -88,16 +88,16 @@ namespace fish {
         double bodyLength = bodyVector.length();
 
         // User-exposed parameters
-        double hitIntensity = parameters.getValue("hitIntensity", 1.0);
+        double hitIntensityFactor = parameters.getValue("hitIntensityFactor", 1.0);
         double hitFrequency = parameters.getValue("hitFrequency", 8.0);
-        double flipSpeed = parameters.getValue("flipSpeed", 1.0);
+        double flipSpeedFactor = parameters.getValue("flipSpeedFactor", 1.0);
         // Max roll angle in degrees (0–180). Default 180 = fully belly-up.
         double flipAngleDeg = parameters.getValue("flipAngle", 180.0);
         double flipAngleMax = flipAngleDeg * (Math::Pi / 180.0);
         // Tilt: signed Y-axis height difference between head and tail at rest, as a
         // fraction of body length. Positive = head up, negative = head down.
         double tilt = parameters.getValue("tilt", 0.0);
-        double finFlop = parameters.getValue("finFlop", 1.0);
+        double finFlopFactor = parameters.getValue("finFlopFactor", 1.0);
         double spinDecay = parameters.getValue("spinDecay", 4.0);
 
         animationClip.durationSeconds = durationSeconds;
@@ -117,11 +117,11 @@ namespace fish {
                 : 0.0;
 
             // --- Body roll: smoothly rotate 180° (belly-up) around the spine axis ---
-            // Use a logistic-style curve shaped by flipSpeed so the roll accelerates
+            // Use a logistic-style curve shaped by flipSpeedFactor so the roll accelerates
             // early and eases into the final upside-down position.
             // At t=0: rollAngle=0; at t=1: rollAngle=Math::Pi.
             // We map t through a skewed sigmoid then scale to [0, Pi].
-            double rollT = std::min(t * flipSpeed, 1.0);
+            double rollT = std::min(t * flipSpeedFactor, 1.0);
             // Ease-in (fast start, slow settle): cubic ease-out curve
             double smoothT = 1.0 - (1.0 - rollT) * (1.0 - rollT) * (1.0 - rollT);
             // Clamp hard at exactly flipAngleMax — no overshoot, fish stays dead
@@ -142,7 +142,7 @@ namespace fish {
 
             // Body transform: combine the overall roll with impact jerk translation
             // The impact jerk is largest near t=0 and decays away
-            double jerkAmp = hitIntensity * bodyLength * 0.12 * thrashDecayFactor;
+            double jerkAmp = hitIntensityFactor * bodyLength * 0.12 * thrashDecayFactor;
             double jerkPhase = t * hitFrequency * 2.0 * Math::Pi;
 
             Matrix4x4 bodyRollMat;
@@ -239,17 +239,17 @@ namespace fish {
             double decayFlop = std::exp(-spinDecay * 0.6 * t);
             double decaySway = std::exp(-spinDecay * 0.4 * t);
 
-            applyFinSkinMat("DorsalFinFront", finFlop * 0.2 * decaySway * std::sin(jerkPhase + 0.1));
-            applyFinSkinMat("DorsalFinMid", finFlop * 0.2 * decaySway * std::sin(jerkPhase + 0.3));
-            applyFinSkinMat("DorsalFinRear", finFlop * 0.2 * decaySway * std::sin(jerkPhase + 0.6));
-            applyFinSkinMat("VentralFinFront", finFlop * 0.2 * decaySway * std::sin(jerkPhase + 0.1));
-            applyFinSkinMat("VentralFinMid", finFlop * 0.2 * decaySway * std::sin(jerkPhase + 0.3));
-            applyFinSkinMat("VentralFinRear", finFlop * 0.2 * decaySway * std::sin(jerkPhase + 0.6));
+            applyFinSkinMat("DorsalFinFront", finFlopFactor * 0.2 * decaySway * std::sin(jerkPhase + 0.1));
+            applyFinSkinMat("DorsalFinMid", finFlopFactor * 0.2 * decaySway * std::sin(jerkPhase + 0.3));
+            applyFinSkinMat("DorsalFinRear", finFlopFactor * 0.2 * decaySway * std::sin(jerkPhase + 0.6));
+            applyFinSkinMat("VentralFinFront", finFlopFactor * 0.2 * decaySway * std::sin(jerkPhase + 0.1));
+            applyFinSkinMat("VentralFinMid", finFlopFactor * 0.2 * decaySway * std::sin(jerkPhase + 0.3));
+            applyFinSkinMat("VentralFinRear", finFlopFactor * 0.2 * decaySway * std::sin(jerkPhase + 0.6));
 
-            applyFinSkinMat("LeftPectoralFin", finFlop * bodyLength * 0.3 * decayFlop * std::sin(jerkPhase + 0.0));
-            applyFinSkinMat("RightPectoralFin", finFlop * bodyLength * 0.3 * decayFlop * -std::sin(jerkPhase + 0.0));
-            applyFinSkinMat("LeftPelvicFin", finFlop * bodyLength * 0.3 * decayFlop * std::sin(jerkPhase + 0.5));
-            applyFinSkinMat("RightPelvicFin", finFlop * bodyLength * 0.3 * decayFlop * -std::sin(jerkPhase + 0.5));
+            applyFinSkinMat("LeftPectoralFin", finFlopFactor * bodyLength * 0.3 * decayFlop * std::sin(jerkPhase + 0.0));
+            applyFinSkinMat("RightPectoralFin", finFlopFactor * bodyLength * 0.3 * decayFlop * -std::sin(jerkPhase + 0.0));
+            applyFinSkinMat("LeftPelvicFin", finFlopFactor * bodyLength * 0.3 * decayFlop * std::sin(jerkPhase + 0.5));
+            applyFinSkinMat("RightPelvicFin", finFlopFactor * bodyLength * 0.3 * decayFlop * -std::sin(jerkPhase + 0.5));
 
             auto& animFrame = animationClip.frames[frame];
             animFrame.time = static_cast<float>(t) * durationSeconds;
