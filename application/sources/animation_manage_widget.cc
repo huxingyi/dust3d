@@ -659,8 +659,42 @@ void AnimationManageWidget::onAddAnimationClicked()
     m_currentAnimationId = dust3d::Uuid();
 
     QString type = m_animationNameCombo->currentText();
+
+    // Derive base name by stripping the rig type prefix and lowercasing
+    QString baseName = type;
+    if (m_document) {
+        QString rigType = m_document->getRigType();
+        if (!rigType.isEmpty() && type.startsWith(rigType, Qt::CaseInsensitive)) {
+            baseName = type.mid(rigType.length());
+        }
+    }
+    if (!baseName.isEmpty()) {
+        baseName[0] = baseName[0].toLower();
+    }
+
+    // Find a unique name by checking existing animations
+    QString candidateName = baseName;
+    int suffix = 2;
+    bool conflict = true;
+    while (conflict) {
+        conflict = false;
+        std::vector<dust3d::Uuid> animationIds;
+        m_document->getAllAnimationIds(animationIds);
+        for (const auto& id : animationIds) {
+            const auto* anim = m_document->findAnimation(id);
+            if (anim && anim->name.compare(candidateName, Qt::CaseInsensitive) == 0) {
+                conflict = true;
+                break;
+            }
+        }
+        if (conflict) {
+            candidateName = baseName + QString::number(suffix);
+            ++suffix;
+        }
+    }
+
     m_isUpdatingForm = true;
-    m_animationNameInput->setText(type);
+    m_animationNameInput->setText(candidateName);
     m_animationTypeInput->setText(type);
     m_isUpdatingForm = false;
 
@@ -719,7 +753,33 @@ void AnimationManageWidget::refreshAnimationList()
             sortedAnims.push_back({ anim->name, id });
         }
     }
-    std::sort(sortedAnims.begin(), sortedAnims.end());
+    std::sort(sortedAnims.begin(), sortedAnims.end(), [](const auto& a, const auto& b) {
+        const QString& sa = a.first;
+        const QString& sb = b.first;
+        int ia = 0, ib = 0;
+        while (ia < sa.size() && ib < sb.size()) {
+            QChar ca = sa[ia], cb = sb[ib];
+            if (ca.isDigit() && cb.isDigit()) {
+                // Compare numeric segments by value
+                int startA = ia, startB = ib;
+                while (ia < sa.size() && sa[ia].isDigit())
+                    ++ia;
+                while (ib < sb.size() && sb[ib].isDigit())
+                    ++ib;
+                int numA = sa.mid(startA, ia - startA).toInt();
+                int numB = sb.mid(startB, ib - startB).toInt();
+                if (numA != numB)
+                    return numA < numB;
+            } else {
+                int cmp = ca.toLower().unicode() - cb.toLower().unicode();
+                if (cmp != 0)
+                    return cmp < 0;
+                ++ia;
+                ++ib;
+            }
+        }
+        return sa.size() < sb.size();
+    });
 
     for (const auto& anim : sortedAnims) {
         QListWidgetItem* item = new QListWidgetItem(anim.first);
