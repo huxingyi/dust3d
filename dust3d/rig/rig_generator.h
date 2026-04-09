@@ -83,7 +83,8 @@ public:
 
     // Apply rig bindings to the generated mesh using the snapshot's edge bone assignments
     // This should be called after generate() to apply skeletal rig weights to vertices
-    bool applyRigBindings(Object* object, const Snapshot* snapshot);
+    // If actualRig is provided and has foot bones, the model is grounded so feet touch Y=0
+    bool applyRigBindings(Object* object, const Snapshot* snapshot, RigStructure* actualRig = nullptr);
 
     // Compute world transforms for each bone in rest pose
     // If a child bone begin position is different from parent end, it still uses its own rest position.

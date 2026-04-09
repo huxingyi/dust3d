@@ -924,7 +924,7 @@ std::string RigGenerator::getEdgeBoneName(const std::map<std::string, std::strin
     return String::valueOrEmpty(*edge, "boneName");
 }
 
-bool RigGenerator::applyRigBindings(Object* object, const Snapshot* snapshot)
+bool RigGenerator::applyRigBindings(Object* object, const Snapshot* snapshot, RigStructure* actualRig)
 {
     if (!object || !snapshot) {
         m_errorMessage = "Object or snapshot not initialized";
@@ -945,6 +945,42 @@ bool RigGenerator::applyRigBindings(Object* object, const Snapshot* snapshot)
     }
 
     dust3dDebug << "Applied rig bindings to" << object->vertices.size() << "vertices";
+
+    // Ground the model if the rig has ground contact bones:
+    // Find the lowest foot/tibia bone Y and translate so feet touch Y=0 (up = (0,1,0))
+    if (actualRig) {
+        auto isGroundContactBone = [](const std::string& name) -> bool {
+            return name.find("Foot") != std::string::npos
+                || name.find("Tibia") != std::string::npos;
+        };
+
+        float lowestFootY = std::numeric_limits<float>::max();
+        bool hasContactBone = false;
+        for (const auto& bone : actualRig->bones) {
+            if (isGroundContactBone(bone.name)) {
+                float tipY = std::min(bone.posY, bone.endY);
+                if (tipY < lowestFootY) {
+                    lowestFootY = tipY;
+                    hasContactBone = true;
+                }
+            }
+        }
+
+        if (hasContactBone) {
+            float offsetY = -lowestFootY - 1.0f;
+            dust3dDebug << "Grounding model: offsetY=" << offsetY;
+
+            for (auto& bone : actualRig->bones) {
+                bone.posY += offsetY;
+                bone.endY += offsetY;
+            }
+
+            for (auto& vertex : object->vertices) {
+                vertex.setY(vertex.y() + offsetY);
+            }
+        }
+    }
+
     return true;
 }
 
