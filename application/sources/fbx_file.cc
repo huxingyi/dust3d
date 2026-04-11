@@ -14,6 +14,7 @@
 static double normalizeFbxEulerAngle(double angle);
 static double shortestFbxEulerAngleDifference(double a, double b);
 static double wrapFbxEulerAngleToPrevious(double value, double previous);
+static std::vector<uint8_t> makeFbxTypedName(const QString& name, const char* typeName);
 
 using namespace fbx;
 
@@ -23,6 +24,22 @@ std::vector<double> FbxFileWriter::m_identityMatrix = {
     0.000000, 0.000000, 1.000000, 0.000000,
     0.000000, 0.000000, 0.000000, 1.000000
 };
+
+static std::vector<uint8_t> makeFbxTypedName(const QString& name, const char* typeName)
+{
+    QByteArray utf8Name = name.toUtf8();
+    std::vector<uint8_t> typedName;
+    typedName.reserve(utf8Name.size() + 2);
+    for (const auto& c : utf8Name)
+        typedName.push_back((uint8_t)c);
+    typedName.push_back(0);
+    typedName.push_back(1);
+    while (0 != *typeName) {
+        typedName.push_back((uint8_t)*typeName);
+        ++typeName;
+    }
+    return typedName;
+}
 
 void FbxFileWriter::createFbxHeader()
 {
@@ -2594,24 +2611,7 @@ FbxFileWriter::FbxFileWriter(dust3d::Object& object,
                 deformers.push_back(FBXNode("Deformer"));
                 FBXNode& deformer = deformers.back();
                 deformer.addProperty(clusterId);
-                std::vector<uint8_t> clusterNameBytes;
-                const QString clusterName = QString(APP_NAME) + ":" + bone.name;
-                for (const auto& c : clusterName)
-                    clusterNameBytes.push_back((uint8_t)c.toLatin1());
-                clusterNameBytes.push_back(0);
-                clusterNameBytes.push_back(1);
-                clusterNameBytes.push_back('S');
-                clusterNameBytes.push_back('u');
-                clusterNameBytes.push_back('b');
-                clusterNameBytes.push_back('D');
-                clusterNameBytes.push_back('e');
-                clusterNameBytes.push_back('f');
-                clusterNameBytes.push_back('o');
-                clusterNameBytes.push_back('r');
-                clusterNameBytes.push_back('m');
-                clusterNameBytes.push_back('e');
-                clusterNameBytes.push_back('r');
-                deformer.addProperty(clusterNameBytes, 'S');
+                deformer.addProperty(makeFbxTypedName(bone.name, "SubDeformer"), 'S');
                 deformer.addProperty("Cluster");
                 deformer.addPropertyNode("Version", (int32_t)100);
                 FBXNode userData("UserData");
@@ -2639,18 +2639,7 @@ FbxFileWriter::FbxFileWriter(dust3d::Object& object,
                 limbNodes.push_back(FBXNode("Model"));
                 FBXNode& limbNode = limbNodes.back();
                 limbNode.addProperty(limbNodeId);
-                std::vector<uint8_t> limbNameBytes;
-                const QString limbNodeName = QString(APP_NAME) + ":" + bone.name;
-                for (const auto& c : limbNodeName)
-                    limbNameBytes.push_back((uint8_t)c.toLatin1());
-                limbNameBytes.push_back(0);
-                limbNameBytes.push_back(1);
-                limbNameBytes.push_back('M');
-                limbNameBytes.push_back('o');
-                limbNameBytes.push_back('d');
-                limbNameBytes.push_back('e');
-                limbNameBytes.push_back('l');
-                limbNode.addProperty(limbNameBytes, 'S');
+                limbNode.addProperty(makeFbxTypedName(bone.name, "Model"), 'S');
                 limbNode.addProperty("LimbNode");
                 limbNode.addPropertyNode("Version", (int32_t)232);
                 {
@@ -2741,26 +2730,7 @@ FbxFileWriter::FbxFileWriter(dust3d::Object& object,
                 nodeAttributes.push_back(FBXNode("NodeAttribute"));
                 FBXNode& nodeAttribute = nodeAttributes.back();
                 nodeAttribute.addProperty(nodeAttributeId);
-                std::vector<uint8_t> attrNameBytes;
-                const QString nodeAttributeName = QString(APP_NAME) + ":" + bone.name;
-                for (const auto& c : nodeAttributeName)
-                    attrNameBytes.push_back((uint8_t)c.toLatin1());
-                attrNameBytes.push_back(0);
-                attrNameBytes.push_back(1);
-                attrNameBytes.push_back('N');
-                attrNameBytes.push_back('o');
-                attrNameBytes.push_back('d');
-                attrNameBytes.push_back('e');
-                attrNameBytes.push_back('A');
-                attrNameBytes.push_back('t');
-                attrNameBytes.push_back('t');
-                attrNameBytes.push_back('r');
-                attrNameBytes.push_back('i');
-                attrNameBytes.push_back('b');
-                attrNameBytes.push_back('u');
-                attrNameBytes.push_back('t');
-                attrNameBytes.push_back('e');
-                nodeAttribute.addProperty(attrNameBytes, 'S');
+                nodeAttribute.addProperty(makeFbxTypedName(bone.name, "NodeAttribute"), 'S');
                 nodeAttribute.addProperty("LimbNode");
                 nodeAttribute.addPropertyNode("TypeFlags", "Skeleton");
                 {
