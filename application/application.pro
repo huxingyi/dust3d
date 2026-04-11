@@ -1,4 +1,4 @@
-QT += core gui opengl widgets svg
+QT += core gui opengl widgets svg multimedia
 
 greaterThan(QT_MAJOR_VERSION, 5) {
     QT += openglwidgets svgwidgets
@@ -296,6 +296,10 @@ HEADERS += ../dust3d/animation/snake/die.h
 HEADERS += ../dust3d/animation/quadruped/walk.h
 HEADERS += ../dust3d/mesh/base_normal.h
 SOURCES += ../dust3d/animation/animation_generator.cc
+HEADERS += ../dust3d/animation/sound_generator.h
+SOURCES += ../dust3d/animation/sound_generator.cc
+HEADERS += ../dust3d/animation/sound_event_detector.h
+SOURCES += ../dust3d/animation/sound_event_detector.cc
 SOURCES += ../dust3d/animation/insect/walk.cc
 SOURCES += ../dust3d/animation/insect/rub_hands.cc
 SOURCES += ../dust3d/animation/insect/forward.cc

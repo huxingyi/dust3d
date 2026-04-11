@@ -62,6 +62,8 @@ public slots:
     void exportObjResult();
     void exportGlbResult();
     void exportFbxResult();
+    void exportGlbAndWavsResult();
+    void exportFbxAndWavsResult();
     void newWindow();
     void newDocument();
     void saveAs();
@@ -84,6 +86,7 @@ public slots:
     void exportObjToFilename(const QString& filename);
     void exportFbxToFilename(const QString& filename);
     void exportGlbToFilename(const QString& filename);
+    void exportModelAndWavs(const QString& directory, const QString& format);
     void toggleRotation();
     void generateComponentPreviewImages();
     void componentPreviewImagesReady();
@@ -144,6 +147,8 @@ private:
     QAction* m_exportAsObjAction = nullptr;
     QAction* m_exportAsGlbAction = nullptr;
     QAction* m_exportAsFbxAction = nullptr;
+    QAction* m_exportAsGlbAndWavsAction = nullptr;
+    QAction* m_exportAsFbxAndWavsAction = nullptr;
 
     QMenu* m_viewMenu = nullptr;
     QAction* m_toggleWireframeAction = nullptr;

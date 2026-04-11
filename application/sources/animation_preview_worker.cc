@@ -3,6 +3,8 @@
 #include <QDebug>
 #include <algorithm>
 #include <cstring>
+#include <dust3d/animation/sound_event_detector.h>
+#include <dust3d/animation/sound_generator.h>
 #include <dust3d/base/vector3.h>
 #include <dust3d/rig/rig_generator.h>
 
@@ -26,6 +28,16 @@ void AnimationPreviewWorker::process()
         qWarning() << "Animation preview: generate failed (only fly rig supported)";
         emit finished();
         return;
+    }
+
+    // Generate procedural sound from animation contact events
+    m_soundData = dust3d::AnimationSoundData();
+    if (m_soundEnabled) {
+        auto soundEvents = dust3d::SoundEventDetector::detect(animationClip, m_animationType);
+        if (!soundEvents.empty()) {
+            m_soundData = dust3d::SoundGenerator::generate(
+                soundEvents, animationClip.durationSeconds, m_surfaceMaterial);
+        }
     }
 
     // Generate a mesh for every frame

@@ -45,6 +45,9 @@
 #include <QVBoxLayout>
 #include <QWidgetAction>
 #include <QtCore/qbuffer.h>
+#include <dust3d/animation/animation_generator.h>
+#include <dust3d/animation/sound_event_detector.h>
+#include <dust3d/animation/sound_generator.h>
 #include <dust3d/base/debug.h>
 #include <dust3d/base/ds3_file.h>
 #include <dust3d/base/snapshot.h>
@@ -372,6 +375,19 @@ DocumentWindow::DocumentWindow()
     m_exportAsFbxAction = new QAction(tr("Export as FBX..."), this);
     connect(m_exportAsFbxAction, &QAction::triggered, this, &DocumentWindow::exportFbxResult, Qt::QueuedConnection);
     m_fileMenu->addAction(m_exportAsFbxAction);
+#endif
+
+    m_fileMenu->addSeparator();
+
+    m_exportAsGlbAndWavsAction = new QAction(tr("Export as GLB and WAVs..."), this);
+    connect(m_exportAsGlbAndWavsAction, &QAction::triggered, this, &DocumentWindow::exportGlbAndWavsResult, Qt::QueuedConnection);
+    m_fileMenu->addAction(m_exportAsGlbAndWavsAction);
+
+#if defined(Q_OS_WASM)
+#else
+    m_exportAsFbxAndWavsAction = new QAction(tr("Export as FBX and WAVs..."), this);
+    connect(m_exportAsFbxAndWavsAction, &QAction::triggered, this, &DocumentWindow::exportFbxAndWavsResult, Qt::QueuedConnection);
+    m_fileMenu->addAction(m_exportAsFbxAndWavsAction);
 #endif
 
     m_fileMenu->addSeparator();
@@ -1434,6 +1450,225 @@ void DocumentWindow::exportGlbToFilename(const QString& filename)
         delete ormImage;
         progressWidget->close();
         progressWidget->deleteLater();
+        worker->deleteLater();
+        thread->quit();
+    });
+    connect(thread, &QThread::finished, thread, &QThread::deleteLater);
+
+    thread->start();
+}
+
+void DocumentWindow::exportGlbAndWavsResult()
+{
+    QString directory = QFileDialog::getExistingDirectory(this, tr("Select Export Directory"));
+    if (directory.isEmpty())
+        return;
+    exportModelAndWavs(directory, "glb");
+}
+
+void DocumentWindow::exportFbxAndWavsResult()
+{
+    QString directory = QFileDialog::getExistingDirectory(this, tr("Select Export Directory"));
+    if (directory.isEmpty())
+        return;
+    exportModelAndWavs(directory, "fbx");
+}
+
+void DocumentWindow::exportModelAndWavs(const QString& directory, const QString& format)
+{
+    if (!m_document->isExportReady()) {
+        QMessageBox::warning(this, tr("Export"), tr("Document is not ready for export."));
+        return;
+    }
+
+    // Determine model name: ds3 filename stem > rigType > "model"
+    QString modelName;
+    if (!m_currentFilename.isEmpty()) {
+        QFileInfo fi(m_currentFilename);
+        modelName = fi.completeBaseName();
+    }
+    if (modelName.isEmpty()) {
+        QString rigType = m_document->getRigType();
+        if (!rigType.isEmpty() && rigType != "None")
+            modelName = rigType;
+        else
+            modelName = "model";
+    }
+
+    // Collect animations from the document
+    std::vector<Document::Animation> animations;
+    {
+        std::vector<dust3d::Uuid> animationIds;
+        m_document->getAllAnimationIds(animationIds);
+        for (const auto& id : animationIds) {
+            const Document::Animation* anim = m_document->findAnimation(id);
+            if (anim)
+                animations.push_back(*anim);
+        }
+    }
+
+    // Capture document data needed for model export on background thread
+    bool hasRig = m_document->hasRigWithBindings();
+    RigStructure rigStructure = m_document->getActualRigStructure();
+    dust3d::Object uvObject = m_document->currentUvMappedObject();
+
+    dust3d::Object rigObjectCopy;
+    if (hasRig) {
+        const dust3d::Object* rigObject = m_document->currentRigObject();
+        if (rigObject->meshId != uvObject.meshId) {
+            QMessageBox::warning(this, tr("Export"), tr("Rig generation is still in progress. Please wait and try again."));
+            return;
+        }
+        rigObjectCopy = *rigObject;
+        rigObjectCopy.copyUvFrom(uvObject);
+    }
+
+    // Copy texture images
+    QImage* textureImage = m_document->textureImage ? new QImage(*m_document->textureImage) : nullptr;
+    QImage* normalImage = m_document->textureNormalImage ? new QImage(*m_document->textureNormalImage) : nullptr;
+    QImage* metalnessImage = m_document->textureMetalnessImage ? new QImage(*m_document->textureMetalnessImage) : nullptr;
+    QImage* roughnessImage = m_document->textureRoughnessImage ? new QImage(*m_document->textureRoughnessImage) : nullptr;
+    QImage* aoImage = m_document->textureAmbientOcclusionImage ? new QImage(*m_document->textureAmbientOcclusionImage) : nullptr;
+    QImage* ormImage = UvMapGenerator::combineMetalnessRoughnessAmbientOcclusionImages(
+        m_document->textureMetalnessImage,
+        m_document->textureRoughnessImage,
+        m_document->textureAmbientOcclusionImage);
+
+    // Show progress dialog
+    ExportProgressWidget* progressWidget = new ExportProgressWidget(this);
+    progressWidget->show();
+    progressWidget->setStep(tr("Generating animations..."));
+
+    // Set up worker to generate animation clips in background thread
+    ExportAnimationWorker* worker = new ExportAnimationWorker;
+    worker->setParameters(rigStructure, animations);
+
+    QThread* thread = new QThread;
+    worker->moveToThread(thread);
+
+    // Capture animation type/name info for WAV generation
+    std::vector<std::string> animTypes;
+    std::vector<std::string> animNames;
+    for (const auto& anim : animations) {
+        animTypes.push_back(anim.type.toStdString());
+        animNames.push_back(anim.name.toStdString());
+    }
+
+    QString modelPath = directory + "/" + modelName + "." + format;
+
+    connect(thread, &QThread::started, worker, &ExportAnimationWorker::process);
+    connect(worker, &ExportAnimationWorker::progress, this, [progressWidget](int current, int total) {
+        progressWidget->updateProgress(tr("Generating animations..."), current, total);
+    });
+    connect(worker, &ExportAnimationWorker::finished, this, [=]() mutable {
+        progressWidget->setStep(tr("Writing model and WAV files..."));
+        QApplication::processEvents();
+
+        auto clips = worker->takeAnimationClips();
+        const auto& ibm = worker->inverseBindMatrices();
+
+        // Write model file
+        if (format == "glb") {
+            if (hasRig && !clips.empty()) {
+                GlbFileWriter glbFileWriter(rigObjectCopy, modelPath,
+                    textureImage, normalImage, ormImage,
+                    &rigStructure, &ibm, &clips);
+                glbFileWriter.save();
+            } else if (hasRig) {
+                GlbFileWriter glbFileWriter(rigObjectCopy, modelPath,
+                    textureImage, normalImage, ormImage,
+                    &rigStructure, &ibm, nullptr);
+                glbFileWriter.save();
+            } else {
+                GlbFileWriter glbFileWriter(uvObject, modelPath,
+                    textureImage, normalImage, ormImage);
+                glbFileWriter.save();
+            }
+        } else {
+            if (hasRig && !clips.empty()) {
+                FbxFileWriter fbxFileWriter(rigObjectCopy, modelPath,
+                    textureImage, normalImage, metalnessImage, roughnessImage, aoImage,
+                    &rigStructure, &ibm, &clips);
+                fbxFileWriter.save();
+            } else if (hasRig) {
+                FbxFileWriter fbxFileWriter(rigObjectCopy, modelPath,
+                    textureImage, normalImage, metalnessImage, roughnessImage, aoImage,
+                    &rigStructure, &ibm, nullptr);
+                fbxFileWriter.save();
+            } else {
+                FbxFileWriter fbxFileWriter(uvObject, modelPath,
+                    textureImage, normalImage, metalnessImage, roughnessImage, aoImage);
+                fbxFileWriter.save();
+            }
+        }
+
+        // All surface materials
+        std::vector<dust3d::SurfaceMaterial> materials = {
+            dust3d::SurfaceMaterial::Stone,
+            dust3d::SurfaceMaterial::Wood,
+            dust3d::SurfaceMaterial::Sand,
+            dust3d::SurfaceMaterial::Metal,
+            dust3d::SurfaceMaterial::Grass,
+            dust3d::SurfaceMaterial::Water,
+            dust3d::SurfaceMaterial::Dirt,
+            dust3d::SurfaceMaterial::Snow
+        };
+
+        // Run WAV generation in another thread
+        QThread* wavThread = new QThread;
+        auto wavWorker = new QObject;
+        wavWorker->moveToThread(wavThread);
+
+        connect(wavThread, &QThread::started, wavWorker, [=]() {
+            for (size_t i = 0; i < clips.size(); ++i) {
+                const auto& clip = clips[i];
+                if (clip.frames.empty())
+                    continue;
+
+                auto soundEvents = dust3d::SoundEventDetector::detect(clip, animTypes[i]);
+                if (soundEvents.empty())
+                    continue;
+
+                for (auto material : materials) {
+                    auto soundData = dust3d::SoundGenerator::generate(
+                        soundEvents, clip.durationSeconds, material);
+                    if (soundData.pcmSamples.empty())
+                        continue;
+
+                    auto wavData = dust3d::SoundGenerator::encodeWav(soundData);
+
+                    std::string materialName = dust3d::surfaceMaterialName(material);
+                    QString wavFilename = QString("%1/%2_%3_%4.wav")
+                                              .arg(directory)
+                                              .arg(modelName)
+                                              .arg(QString::fromStdString(animNames[i]))
+                                              .arg(QString::fromStdString(materialName));
+
+                    QFile file(wavFilename);
+                    if (file.open(QIODevice::WriteOnly)) {
+                        file.write(reinterpret_cast<const char*>(wavData.data()), static_cast<qint64>(wavData.size()));
+                        file.close();
+                    }
+                }
+            }
+
+            QMetaObject::invokeMethod(wavWorker, "deleteLater");
+        });
+        connect(wavWorker, &QObject::destroyed, this, [=]() {
+            delete textureImage;
+            delete normalImage;
+            delete metalnessImage;
+            delete roughnessImage;
+            delete aoImage;
+            delete ormImage;
+            progressWidget->close();
+            progressWidget->deleteLater();
+            wavThread->quit();
+        });
+        connect(wavThread, &QThread::finished, wavThread, &QThread::deleteLater);
+
+        wavThread->start();
+
         worker->deleteLater();
         thread->quit();
     });

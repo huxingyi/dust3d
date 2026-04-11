@@ -4,8 +4,13 @@
 #include "monochrome_mesh.h"
 #include "theme.h"
 #include "toolbar_button.h"
+#include <QAudioFormat>
+#include <QAudioSink>
+#include <QBuffer>
 #include <QComboBox>
 #include <QDebug>
+#include <QFile>
+#include <QFileDialog>
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
@@ -106,6 +111,36 @@ void AnimationManageWidget::createParameterWidgets()
     previewOptionLayout->addStretch();
     groupBoxLayout->addWidget(previewOptionWidget);
 
+    // Sound controls
+    QWidget* soundOptionWidget = new QWidget;
+    QHBoxLayout* soundOptionLayout = new QHBoxLayout(soundOptionWidget);
+    soundOptionLayout->setContentsMargins(0, 0, 0, 0);
+
+    m_playSoundCheck = new QCheckBox("Play Sound");
+    m_playSoundCheck->setChecked(false);
+    m_playSoundCheck->setToolTip(tr("Play procedural sound effects with animation preview"));
+    soundOptionLayout->addWidget(m_playSoundCheck);
+
+    m_surfaceMaterialCombo = new QComboBox;
+    m_surfaceMaterialCombo->addItem("Stone");
+    m_surfaceMaterialCombo->addItem("Wood");
+    m_surfaceMaterialCombo->addItem("Sand");
+    m_surfaceMaterialCombo->addItem("Metal");
+    m_surfaceMaterialCombo->addItem("Grass");
+    m_surfaceMaterialCombo->addItem("Water");
+    m_surfaceMaterialCombo->addItem("Dirt");
+    m_surfaceMaterialCombo->addItem("Snow");
+    m_surfaceMaterialCombo->setToolTip(tr("Surface material for sound generation"));
+    soundOptionLayout->addWidget(m_surfaceMaterialCombo);
+
+    m_exportAudioButton = new QPushButton(tr("Export WAV"));
+    m_exportAudioButton->setToolTip(tr("Export generated sound effect as WAV file"));
+    m_exportAudioButton->setEnabled(false);
+    soundOptionLayout->addWidget(m_exportAudioButton);
+
+    soundOptionLayout->addStretch();
+    groupBoxLayout->addWidget(soundOptionWidget);
+
     // Preview timeline slider
     m_animationFrameSlider = new QSlider(Qt::Horizontal);
     m_animationFrameSlider->setMinimum(0);
@@ -181,6 +216,10 @@ void AnimationManageWidget::createParameterWidgets()
     connect(m_hideBonesCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
     connect(m_hidePartsCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
     connect(m_hideWeightsCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
+
+    connect(m_playSoundCheck, &QCheckBox::toggled, this, &AnimationManageWidget::onParameterChanged);
+    connect(m_surfaceMaterialCombo, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &AnimationManageWidget::onParameterChanged);
+    connect(m_exportAudioButton, &QPushButton::clicked, this, &AnimationManageWidget::onExportAudioClicked);
 
     if (m_sharedDurationSpinBox)
         connect(m_sharedDurationSpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), this, &AnimationManageWidget::onParameterChanged);
@@ -380,6 +419,10 @@ void AnimationManageWidget::updateAnimationParamsFromWidgets()
     if (m_sharedFrameCountSpinBox)
         m_animationParams.setValue("frameCount", m_sharedFrameCountSpinBox->value());
 
+    // Surface material
+    if (m_surfaceMaterialCombo)
+        m_animationParams.values["surfaceMaterial"] = m_surfaceMaterialCombo->currentText().toStdString();
+
     // Dynamic parameters
     for (const auto& ctrl : m_dynamicControls) {
         if (ctrl.slider && ctrl.toParam)
@@ -399,6 +442,7 @@ void AnimationManageWidget::triggerPreviewRegeneration()
 
 AnimationManageWidget::~AnimationManageWidget()
 {
+    stopSoundPlayback();
     stopAnimationLoop();
 }
 
@@ -478,6 +522,14 @@ void AnimationManageWidget::onResultRigChanged()
     m_animationWorker->setSelectedBoneName(
         (m_hideWeightsCheck && m_hideWeightsCheck->isChecked()) ? QString() : m_selectedBoneName);
 
+    // Sound settings
+    bool soundEnabled = m_playSoundCheck && m_playSoundCheck->isChecked();
+    m_animationWorker->setSoundEnabled(soundEnabled);
+    if (soundEnabled && m_surfaceMaterialCombo) {
+        m_animationWorker->setSurfaceMaterial(
+            dust3d::surfaceMaterialFromName(m_surfaceMaterialCombo->currentText().toStdString()));
+    }
+
     dust3d::Object* rigObject = m_document->takeRigObject();
     m_animationWorker->setRigObject(std::unique_ptr<dust3d::Object>(rigObject));
 
@@ -502,7 +554,13 @@ void AnimationManageWidget::onAnimationPreviewReady()
         qWarning() << "AnimationManageWidget: preview worker finished but missing worker";
     } else {
         m_animationFrames = m_animationWorker->takePreviewMeshes();
+        m_soundData = m_animationWorker->takeSoundData();
         m_animationWorker.reset();
+    }
+
+    // Enable export button if we have sound data
+    if (m_exportAudioButton) {
+        m_exportAudioButton->setEnabled(!m_soundData.pcmSamples.empty());
     }
 
     if (m_animationFrames.empty()) {
@@ -570,6 +628,11 @@ void AnimationManageWidget::startAnimationLoop()
         m_frameTimer->start();
     }
 
+    // Start sound playback if enabled
+    if (m_playSoundCheck && m_playSoundCheck->isChecked() && !m_soundData.pcmSamples.empty()) {
+        startSoundPlayback();
+    }
+
     updatePlayPauseIcon();
 }
 
@@ -578,6 +641,7 @@ void AnimationManageWidget::stopAnimationLoop()
     if (m_frameTimer && m_frameTimer->isActive()) {
         m_frameTimer->stop();
     }
+    stopSoundPlayback();
     m_currentFrame = 0;
     updatePlayPauseIcon();
 }
@@ -845,6 +909,19 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
         ctrl.slider->blockSignals(false);
     }
 
+    // Load surface material
+    if (m_surfaceMaterialCombo) {
+        auto it = params.values.find("surfaceMaterial");
+        if (it != params.values.end()) {
+            int idx = m_surfaceMaterialCombo->findText(QString::fromStdString(it->second));
+            if (idx >= 0) {
+                m_surfaceMaterialCombo->blockSignals(true);
+                m_surfaceMaterialCombo->setCurrentIndex(idx);
+                m_surfaceMaterialCombo->blockSignals(false);
+            }
+        }
+    }
+
     m_isUpdatingForm = false;
 
     // Update title and trigger preview
@@ -858,4 +935,88 @@ void AnimationManageWidget::onSelectedBoneChanged(const QString& boneName)
 {
     m_selectedBoneName = boneName;
     triggerPreviewRegeneration();
+}
+
+void AnimationManageWidget::startSoundPlayback()
+{
+    stopSoundPlayback();
+
+    if (m_soundData.pcmSamples.empty())
+        return;
+
+    auto wavData = dust3d::SoundGenerator::encodeWav(m_soundData);
+    m_soundWavData = QByteArray(reinterpret_cast<const char*>(wavData.data()), static_cast<int>(wavData.size()));
+
+    QAudioFormat format;
+    format.setSampleRate(m_soundData.sampleRate);
+    format.setChannelCount(m_soundData.channels);
+    format.setSampleFormat(QAudioFormat::Int16);
+
+    auto* sink = new QAudioSink(format, this);
+    m_soundBuffer = new QBuffer(&m_soundWavData, this);
+    m_soundBuffer->open(QIODevice::ReadOnly);
+    // Skip WAV header (44 bytes) to feed raw PCM
+    m_soundBuffer->seek(44);
+
+    m_audioOutput = static_cast<QObject*>(sink);
+    sink->start(m_soundBuffer);
+
+    // Loop: when sound finishes, restart if animation is still playing
+    connect(sink, &QAudioSink::stateChanged, this, [this, sink](QAudio::State state) {
+        if (state == QAudio::IdleState && m_frameTimer && m_frameTimer->isActive()) {
+            if (m_soundBuffer) {
+                m_soundBuffer->seek(44);
+                sink->start(m_soundBuffer);
+            }
+        }
+    });
+}
+
+void AnimationManageWidget::stopSoundPlayback()
+{
+    if (m_audioOutput) {
+        auto* sink = qobject_cast<QAudioSink*>(static_cast<QObject*>(m_audioOutput));
+        if (sink) {
+            sink->stop();
+        }
+        m_audioOutput->deleteLater();
+        m_audioOutput = nullptr;
+    }
+    if (m_soundBuffer) {
+        m_soundBuffer->close();
+        m_soundBuffer->deleteLater();
+        m_soundBuffer = nullptr;
+    }
+    m_soundWavData.clear();
+}
+
+void AnimationManageWidget::onExportAudioClicked()
+{
+    if (m_soundData.pcmSamples.empty()) {
+        qWarning() << "No sound data to export";
+        return;
+    }
+
+    QString fileName = QFileDialog::getSaveFileName(this,
+        tr("Export Sound Effect"),
+        QString(),
+        tr("WAV Audio (*.wav)"));
+
+    if (fileName.isEmpty())
+        return;
+
+    if (!fileName.endsWith(".wav", Qt::CaseInsensitive))
+        fileName += ".wav";
+
+    auto wavData = dust3d::SoundGenerator::encodeWav(m_soundData);
+
+    QFile file(fileName);
+    if (!file.open(QIODevice::WriteOnly)) {
+        qWarning() << "Failed to open file for writing:" << fileName;
+        return;
+    }
+    file.write(reinterpret_cast<const char*>(wavData.data()), static_cast<qint64>(wavData.size()));
+    file.close();
+
+    qDebug() << "Exported audio to:" << fileName;
 }

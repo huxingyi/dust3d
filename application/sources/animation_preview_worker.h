@@ -6,6 +6,7 @@
 #include "rig_skeleton_mesh_generator.h"
 #include <QObject>
 #include <dust3d/animation/animation_generator.h>
+#include <dust3d/animation/sound_generator.h>
 #include <dust3d/rig/rig_generator.h>
 #include <map>
 #include <memory>
@@ -42,9 +43,24 @@ public:
         m_selectedBoneName = boneName;
     }
 
+    void setSurfaceMaterial(dust3d::SurfaceMaterial material)
+    {
+        m_surfaceMaterial = material;
+    }
+
+    void setSoundEnabled(bool enabled)
+    {
+        m_soundEnabled = enabled;
+    }
+
     std::vector<ModelMesh> takePreviewMeshes()
     {
         return std::move(m_previewMeshes);
+    }
+
+    dust3d::AnimationSoundData takeSoundData()
+    {
+        return std::move(m_soundData);
     }
 
 signals:
@@ -62,7 +78,10 @@ private:
     std::vector<ModelMesh> m_previewMeshes;
     bool m_hideBones = false;
     bool m_hideParts = false;
+    bool m_soundEnabled = false;
+    dust3d::SurfaceMaterial m_surfaceMaterial = dust3d::SurfaceMaterial::Stone;
     QString m_selectedBoneName;
+    dust3d::AnimationSoundData m_soundData;
 };
 
 #endif

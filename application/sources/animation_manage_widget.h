@@ -4,7 +4,9 @@
 #include "animation_preview_worker.h"
 #include "model_mesh.h"
 #include "world_widget.h"
+#include <QBuffer>
 #include <QCheckBox>
+#include <QComboBox>
 #include <QDoubleSpinBox>
 #include <QFormLayout>
 #include <QGroupBox>
@@ -17,6 +19,7 @@
 #include <QThread>
 #include <QTimer>
 #include <QWidget>
+#include <dust3d/animation/sound_generator.h>
 #include <vector>
 
 class Document;
@@ -84,6 +87,11 @@ private:
     QCheckBox* m_hidePartsCheck = nullptr;
     QCheckBox* m_hideWeightsCheck = nullptr;
 
+    // Sound controls
+    QCheckBox* m_playSoundCheck = nullptr;
+    QComboBox* m_surfaceMaterialCombo = nullptr;
+    QPushButton* m_exportAudioButton = nullptr;
+
     QDoubleSpinBox* m_sharedDurationSpinBox = nullptr;
     QSpinBox* m_sharedFrameCountSpinBox = nullptr;
 
@@ -114,6 +122,15 @@ private:
     dust3d::Uuid m_currentAnimationId;
     bool m_isUpdatingForm = false;
     QString m_selectedBoneName;
+
+    // Sound playback
+    dust3d::AnimationSoundData m_soundData;
+    QByteArray m_soundWavData;
+    QBuffer* m_soundBuffer = nullptr;
+    QObject* m_audioOutput = nullptr;
+    void startSoundPlayback();
+    void stopSoundPlayback();
+    void onExportAudioClicked();
 };
 
 #endif
