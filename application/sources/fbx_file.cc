@@ -2400,7 +2400,6 @@ FbxFileWriter::FbxFileWriter(dust3d::Object& object,
             p.addProperty((int32_t)1);
             properties.addChild(p);
         }
-        /*
         {
             FBXNode p("P");
             p.addProperty("currentUVSet");
@@ -2409,7 +2408,7 @@ FbxFileWriter::FbxFileWriter(dust3d::Object& object,
             p.addProperty("U");
             p.addProperty("default");
             properties.addChild(p);
-        }*/
+        }
         properties.addChild(FBXNode());
         model.addChild(properties);
     }
@@ -2804,10 +2803,90 @@ FbxFileWriter::FbxFileWriter(dust3d::Object& object,
     material.addProperty(std::vector<uint8_t>({ 'M', 'a', 't', 'e', 'r', 'i', 'a', 'l', 0, 1, 'S', 't', 'i', 'n', 'g', 'r', 'a', 'y', 'P', 'B', 'S' }), 'S');
     material.addProperty("");
     material.addPropertyNode("Version", (int32_t)102);
-    material.addPropertyNode("ShadingModel", "unknown");
+    material.addPropertyNode("ShadingModel", "Phong");
     material.addPropertyNode("MultiLayer", (int32_t)0);
     {
         FBXNode properties("Properties70");
+        {
+            FBXNode p("P");
+            p.addProperty("DiffuseColor");
+            p.addProperty("Color");
+            p.addProperty("");
+            p.addProperty("A");
+            p.addProperty((double)Theme::white.redF());
+            p.addProperty((double)Theme::white.greenF());
+            p.addProperty((double)Theme::white.blueF());
+            properties.addChild(p);
+        }
+        {
+            FBXNode p("P");
+            p.addProperty("DiffuseFactor");
+            p.addProperty("Number");
+            p.addProperty("");
+            p.addProperty("A");
+            p.addProperty((double)1.000000);
+            properties.addChild(p);
+        }
+        {
+            FBXNode p("P");
+            p.addProperty("TransparentColor");
+            p.addProperty("Color");
+            p.addProperty("");
+            p.addProperty("A");
+            p.addProperty((double)0.000000);
+            p.addProperty((double)0.000000);
+            p.addProperty((double)0.000000);
+            properties.addChild(p);
+        }
+        {
+            FBXNode p("P");
+            p.addProperty("TransparencyFactor");
+            p.addProperty("Number");
+            p.addProperty("");
+            p.addProperty("A");
+            p.addProperty((double)0.000000);
+            properties.addChild(p);
+        }
+        {
+            FBXNode p("P");
+            p.addProperty("Opacity");
+            p.addProperty("Number");
+            p.addProperty("");
+            p.addProperty("A");
+            p.addProperty((double)1.000000);
+            properties.addChild(p);
+        }
+        {
+            FBXNode p("P");
+            p.addProperty("NormalMap");
+            p.addProperty("Vector3D");
+            p.addProperty("Vector");
+            p.addProperty("");
+            p.addProperty((double)0.000000);
+            p.addProperty((double)0.000000);
+            p.addProperty((double)0.000000);
+            properties.addChild(p);
+        }
+        {
+            FBXNode p("P");
+            p.addProperty("Bump");
+            p.addProperty("Vector3D");
+            p.addProperty("Vector");
+            p.addProperty("");
+            p.addProperty((double)0.000000);
+            p.addProperty((double)0.000000);
+            p.addProperty((double)0.000000);
+            properties.addChild(p);
+        }
+        {
+            FBXNode p("P");
+            p.addProperty("BumpFactor");
+            p.addProperty("double");
+            p.addProperty("Number");
+            p.addProperty("");
+            p.addProperty(normalImage ? (double)1.000000 : (double)0.000000);
+            properties.addChild(p);
+        }
         {
             FBXNode p("P");
             p.addProperty("Maya");
@@ -3468,7 +3547,7 @@ FbxFileWriter::FbxFileWriter(dust3d::Object& object,
     }
     bindingTable.addChild(FBXNode());
 
-    auto addTexture = [&](const QImage* image, const std::vector<uint8_t>& clipName, const std::vector<uint8_t>& textureName, const QString& filename, const QString& propertyName) {
+    auto addTexture = [&](const QImage* image, const std::vector<uint8_t>& clipName, const std::vector<uint8_t>& textureName, const QString& filename, const std::initializer_list<QString>& propertyNames) {
         FBXNode video("Video");
         int64_t videoId = m_next64Id++;
         video.addProperty(videoId);
@@ -3504,7 +3583,7 @@ FbxFileWriter::FbxFileWriter(dust3d::Object& object,
         FBXNode texture("Texture");
         int64_t textureId = m_next64Id++;
         texture.addProperty(textureId);
-        texture.addProperty(clipName, 'S');
+        texture.addProperty(textureName, 'S');
         texture.addProperty("");
         texture.addPropertyNode("Type", "TextureVideoClip");
         texture.addPropertyNode("Version", (int32_t)202);
@@ -3567,7 +3646,7 @@ FbxFileWriter::FbxFileWriter(dust3d::Object& object,
             p.addProperty(textureId);
             connections.addChild(p);
         }
-        {
+        for (const auto& propertyName : propertyNames) {
             FBXNode p("C");
             p.addProperty("OP");
             p.addProperty(textureId);
@@ -3581,35 +3660,35 @@ FbxFileWriter::FbxFileWriter(dust3d::Object& object,
             std::vector<uint8_t>({ 'V', 'i', 'd', 'e', 'o', 0, 1, 'B', 'a', 's', 'e', 'C', 'o', 'l', 'o', 'r' }),
             std::vector<uint8_t>({ 'T', 'e', 'x', 't', 'u', 'r', 'e', 0, 1, 'B', 'a', 's', 'e', 'C', 'o', 'l', 'o', 'r' }),
             m_baseName + "_color.png",
-            "Maya|TEX_color_map");
+            { "Maya|TEX_color_map", "DiffuseColor" });
     }
     if (nullptr != normalImage) {
         addTexture(normalImage,
             std::vector<uint8_t>({ 'V', 'i', 'd', 'e', 'o', 0, 1, 'N', 'o', 'r', 'm', 'a', 'l' }),
             std::vector<uint8_t>({ 'T', 'e', 'x', 't', 'u', 'r', 'e', 0, 1, 'N', 'o', 'r', 'm', 'a', 'l' }),
             m_baseName + "_normal.png",
-            "Maya|TEX_normal_map");
+            { "Maya|TEX_normal_map", "NormalMap", "Bump" });
     }
     if (nullptr != metalnessImage) {
         addTexture(metalnessImage,
             std::vector<uint8_t>({ 'V', 'i', 'd', 'e', 'o', 0, 1, 'M', 'e', 't', 'a', 'l', 'l', 'i', 'c' }),
             std::vector<uint8_t>({ 'T', 'e', 'x', 't', 'u', 'r', 'e', 0, 1, 'M', 'e', 't', 'a', 'l', 'l', 'i', 'c' }),
             m_baseName + "_metallic.png",
-            "Maya|TEX_metallic_map");
+            { "Maya|TEX_metallic_map" });
     }
     if (nullptr != roughnessImage) {
         addTexture(roughnessImage,
             std::vector<uint8_t>({ 'V', 'i', 'd', 'e', 'o', 0, 1, 'R', 'o', 'u', 'g', 'h', 'n', 'e', 's', 's' }),
             std::vector<uint8_t>({ 'T', 'e', 'x', 't', 'u', 'r', 'e', 0, 1, 'R', 'o', 'u', 'g', 'h', 'n', 'e', 's', 's' }),
             m_baseName + "_roughness.png",
-            "Maya|TEX_roughness_map");
+            { "Maya|TEX_roughness_map" });
     }
     if (nullptr != ambientOcclusionImage) {
         addTexture(ambientOcclusionImage,
             std::vector<uint8_t>({ 'V', 'i', 'd', 'e', 'o', 0, 1, 'A', 'o' }),
             std::vector<uint8_t>({ 'T', 'e', 'x', 't', 'u', 'r', 'e', 0, 1, 'A', 'o' }),
             m_baseName + "_ao.png",
-            "Maya|TEX_ao_map");
+            { "Maya|TEX_ao_map" });
     }
 
     bool hasAnimation = animationClips && !animationClips->empty() && rigStructure && !rigStructure->bones.empty() && !limbNodeIds.empty();
