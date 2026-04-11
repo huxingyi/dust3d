@@ -2645,21 +2645,22 @@ FbxFileWriter::FbxFileWriter(dust3d::Object& object,
                     FBXNode properties("Properties70");
                     // Compute local translation from bind pose matrices
                     double localX = 0, localY = 0, localZ = 0;
+                    double localPitch = 0, localYaw = 0, localRoll = 0;
                     if (inverseBindMatrices->count(boneNameStr)) {
                         const auto& invBind = inverseBindMatrices->at(boneNameStr);
                         const auto worldBind = invBind.inverted();
                         const std::string parentNameStr = bone.parent.toStdString();
+                        dust3d::Matrix4x4 localMat;
                         if (!parentNameStr.empty() && inverseBindMatrices->count(parentNameStr)) {
-                            auto localMat = inverseBindMatrices->at(parentNameStr).inverted();
+                            localMat = inverseBindMatrices->at(parentNameStr).inverted();
                             localMat *= worldBind;
-                            localX = localMat.constData()[dust3d::Matrix4x4::M30];
-                            localY = localMat.constData()[dust3d::Matrix4x4::M31];
-                            localZ = localMat.constData()[dust3d::Matrix4x4::M32];
                         } else {
-                            localX = worldBind.constData()[dust3d::Matrix4x4::M30];
-                            localY = worldBind.constData()[dust3d::Matrix4x4::M31];
-                            localZ = worldBind.constData()[dust3d::Matrix4x4::M32];
+                            localMat = worldBind;
                         }
+                        localX = localMat.constData()[dust3d::Matrix4x4::M30];
+                        localY = localMat.constData()[dust3d::Matrix4x4::M31];
+                        localZ = localMat.constData()[dust3d::Matrix4x4::M32];
+                        matrixToFbxEulerAngles(localMat, &localPitch, &localYaw, &localRoll);
                     }
                     {
                         FBXNode p("P");
@@ -2678,9 +2679,9 @@ FbxFileWriter::FbxFileWriter(dust3d::Object& object,
                         p.addProperty("Lcl Rotation");
                         p.addProperty("");
                         p.addProperty("A");
-                        p.addProperty((double)0.000000);
-                        p.addProperty((double)0.000000);
-                        p.addProperty((double)0.000000);
+                        p.addProperty(localPitch);
+                        p.addProperty(localYaw);
+                        p.addProperty(localRoll);
                         properties.addChild(p);
                     }
                     {
