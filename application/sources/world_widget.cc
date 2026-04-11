@@ -319,7 +319,7 @@ void WorldWidget::paintGL()
     }
     if (!m_groundOpenGLObject) {
         m_groundOpenGLObject = std::make_unique<WorldGroundOpenGLObject>();
-        m_groundOpenGLObject->create(-1.0f, 5.0f);
+        m_groundOpenGLObject->create(0.0f, 10.0f);
     }
 
     // Model rotation and camera
@@ -437,6 +437,8 @@ void WorldWidget::drawGround()
         m_groundOpenGLProgram->getUniformLocationByName("projectionMatrix"), m_projection);
     m_groundOpenGLProgram->setUniformValue(
         m_groundOpenGLProgram->getUniformLocationByName("viewMatrix"), m_camera);
+    m_groundOpenGLProgram->setUniformValue(
+        m_groundOpenGLProgram->getUniformLocationByName("modelMatrix"), m_world);
     m_groundOpenGLProgram->setUniformValue(
         m_groundOpenGLProgram->getUniformLocationByName("lightSpaceMatrix"), m_lightSpaceMatrix);
 

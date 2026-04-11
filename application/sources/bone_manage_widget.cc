@@ -160,6 +160,7 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
     m_rigSkinningModelWidget->setMoveAndZoomByWindow(false);
     m_rigSkinningModelWidget->disableCullFace();
     m_rigSkinningModelWidget->toggleWireframe();
+    m_rigSkinningModelWidget->setMoveToPosition(QVector3D(0.0f, -0.5f, 0.0f));
 
     m_rigSkinningGroupBox = new QGroupBox(tr("Skinned"));
     QVBoxLayout* rigSkinningLayout = new QVBoxLayout;

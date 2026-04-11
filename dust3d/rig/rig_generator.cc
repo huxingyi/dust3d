@@ -966,8 +966,21 @@ bool RigGenerator::applyRigBindings(Object* object, const Snapshot* snapshot, Ri
             }
         }
 
+        if (!hasContactBone) {
+            // No explicit Foot bone available; use the lowest bone endpoint instead.
+            for (const auto& bone : actualRig->bones) {
+                if (bone.name.find("Root") != std::string::npos)
+                    continue;
+                float tipY = std::min(bone.posY, bone.endY);
+                if (tipY < lowestFootY) {
+                    lowestFootY = tipY;
+                    hasContactBone = true;
+                }
+            }
+        }
+
         if (hasContactBone) {
-            float offsetY = -lowestFootY - 1.0f;
+            float offsetY = -lowestFootY;
             dust3dDebug << "Grounding model: offsetY=" << offsetY;
 
             for (auto& bone : actualRig->bones) {
