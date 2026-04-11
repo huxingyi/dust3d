@@ -5,7 +5,11 @@
 #include "theme.h"
 #include "toolbar_button.h"
 #include <QAudioFormat>
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
 #include <QAudioSink>
+#else
+#include <QAudioOutput>
+#endif
 #include <QBuffer>
 #include <QComboBox>
 #include <QDebug>
@@ -950,9 +954,18 @@ void AnimationManageWidget::startSoundPlayback()
     QAudioFormat format;
     format.setSampleRate(m_soundData.sampleRate);
     format.setChannelCount(m_soundData.channels);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     format.setSampleFormat(QAudioFormat::Int16);
 
     auto* sink = new QAudioSink(format, this);
+#else
+    format.setSampleSize(16);
+    format.setCodec("audio/pcm");
+    format.setByteOrder(QAudioFormat::LittleEndian);
+    format.setSampleType(QAudioFormat::SignedInt);
+
+    auto* sink = new QAudioOutput(format, this);
+#endif
     m_soundBuffer = new QBuffer(&m_soundWavData, this);
     m_soundBuffer->open(QIODevice::ReadOnly);
     // Skip WAV header (44 bytes) to feed raw PCM
@@ -962,7 +975,11 @@ void AnimationManageWidget::startSoundPlayback()
     sink->start(m_soundBuffer);
 
     // Loop: when sound finishes, restart if animation is still playing
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
     connect(sink, &QAudioSink::stateChanged, this, [this, sink](QAudio::State state) {
+#else
+    connect(sink, &QAudioOutput::stateChanged, this, [this, sink](QAudio::State state) {
+#endif
         if (state == QAudio::IdleState && m_frameTimer && m_frameTimer->isActive()) {
             if (m_soundBuffer) {
                 m_soundBuffer->seek(44);
@@ -975,7 +992,11 @@ void AnimationManageWidget::startSoundPlayback()
 void AnimationManageWidget::stopSoundPlayback()
 {
     if (m_audioOutput) {
+#if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
         auto* sink = qobject_cast<QAudioSink*>(static_cast<QObject*>(m_audioOutput));
+#else
+        auto* sink = qobject_cast<QAudioOutput*>(static_cast<QObject*>(m_audioOutput));
+#endif
         if (sink) {
             sink->stop();
         }

@@ -23,7 +23,7 @@ jobs:
           version: '5.15.2'
           host: 'linux'
           target: 'desktop'
-          archives: 'qttools qtsvg qtimageformats qtbase icu'
+          archives: 'qttools qtsvg qtimageformats qtbase qtmultimedia icu'
       - name: Build application
         run: |
           cd ${GITHUB_WORKSPACE}/application
@@ -83,7 +83,7 @@ jobs:
           host: 'windows'
           target: 'desktop'
           arch: 'win64_msvc2019_64'
-          archives: 'qttools qtsvg qtimageformats qtbase opengl32sw'
+          archives: 'qttools qtsvg qtimageformats qtbase qtmultimedia opengl32sw'
       - name: Build application
         run: |
           cd $env:GITHUB_WORKSPACE/application
