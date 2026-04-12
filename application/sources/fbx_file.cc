@@ -4325,14 +4325,23 @@ static double wrapFbxEulerAngleToPrevious(double value, double previous)
 
 void FbxFileWriter::matrixToFbxEulerAngles(const dust3d::Matrix4x4& matrix, double* pitch, double* yaw, double* roll)
 {
-    // XYZ Euler convention matching the quaternion→euler in the reference fbxfile.cpp
+    // XYZ Euler convention (R = Rz * Ry * Rx)
     // Column-major layout: d[2]=M02, d[6]=M12, d[10]=M22, d[1]=M01, d[0]=M00
     const double* d = matrix.constData();
-    double radians[3];
-    radians[0] = std::atan2(d[6], d[10]);
-    radians[1] = std::asin(std::max(-1.0, std::min(1.0, -d[2])));
-    radians[2] = std::atan2(d[1], d[0]);
-    *pitch = qRadiansToDegrees(radians[0]);
-    *yaw = qRadiansToDegrees(radians[1]);
-    *roll = qRadiansToDegrees(radians[2]);
+    double sy = std::max(-1.0, std::min(1.0, -d[2]));
+    if (std::abs(sy) > 0.99999) {
+        // Gimbal lock: yaw near ±90°, pitch and roll become coupled.
+        // Set roll to 0 and absorb the combined rotation into pitch.
+        *yaw = qRadiansToDegrees(std::asin(sy));
+        *roll = 0.0;
+        if (sy > 0) {
+            *pitch = qRadiansToDegrees(std::atan2(d[4], d[5]));
+        } else {
+            *pitch = qRadiansToDegrees(std::atan2(-d[4], d[5]));
+        }
+    } else {
+        *pitch = qRadiansToDegrees(std::atan2(d[6], d[10]));
+        *yaw = qRadiansToDegrees(std::asin(sy));
+        *roll = qRadiansToDegrees(std::atan2(d[1], d[0]));
+    }
 }
