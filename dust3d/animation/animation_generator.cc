@@ -40,6 +40,7 @@
 #include <dust3d/animation/insect/walk.h>
 #include <dust3d/animation/quadruped/attack.h>
 #include <dust3d/animation/quadruped/die.h>
+#include <dust3d/animation/quadruped/hurt.h>
 #include <dust3d/animation/quadruped/idle.h>
 #include <dust3d/animation/quadruped/run.h>
 #include <dust3d/animation/quadruped/walk.h>
@@ -104,6 +105,8 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
         return quadruped::run(rigStructure, inverseBindMatrices, animationClip, parameters);
     if (animationType == "QuadrupedAttack")
         return quadruped::attack(rigStructure, inverseBindMatrices, animationClip, parameters);
+    if (animationType == "QuadrupedHurt")
+        return quadruped::hurt(rigStructure, inverseBindMatrices, animationClip, parameters);
     if (animationType == "QuadrupedDie")
         return quadruped::die(rigStructure, inverseBindMatrices, animationClip, parameters);
     if (animationType == "BirdDie")

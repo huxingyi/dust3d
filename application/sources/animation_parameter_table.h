@@ -168,6 +168,18 @@ inline const std::vector<AnimationParameterDef>& getAnimationParameterDefs(const
                                  makeDiv100Param("bodyMassFactor", "Body Mass", 100, 25, 300, 1.0),
                                  makeDiv100Param("recoverySpeed", "Recovery Speed", 100, 25, 300, 1.0),
                              } },
+        { "QuadrupedHurt", {
+                               makeDiv100Param("recoilIntensity", "Recoil Intensity", 100, 25, 300, 1.0),
+                               makeDiv100Param("staggerAmplitude", "Stagger Amplitude", 100, 25, 300, 1.0),
+                               makeLinearParam("hitDirection", "Hit Direction", 0, -100, 100, 0.0, 100.0),
+                               makeDiv100Param("headFlinchFactor", "Head Flinch", 100, 25, 300, 1.0),
+                               makeDiv100Param("spineBendFactor", "Spine Bend", 100, 25, 250, 1.0),
+                               makeDiv100Param("legBuckleFactor", "Leg Buckle", 100, 25, 300, 1.0),
+                               makeDiv100Param("tailTuckFactor", "Tail Tuck", 100, 0, 300, 1.0),
+                               makeDiv100Param("headShakeFactor", "Head Shake", 100, 0, 300, 1.0),
+                               makeDiv100Param("recoverySpeed", "Recovery Speed", 100, 25, 300, 1.0),
+                               makeDiv100Param("bodyMassFactor", "Body Mass", 100, 25, 300, 1.0),
+                           } },
         { "QuadrupedDie", {
                               makeDiv100Param("collapseSpeedFactor", "Collapse Speed", 100, 10, 300, 1.0),
                               makeDiv100Param("legSpreadFactor", "Leg Spread", 100, 10, 300, 1.0),
