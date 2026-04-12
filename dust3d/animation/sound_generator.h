@@ -45,6 +45,8 @@ struct SoundEvent {
     float intensity = 1.0f; // 0.0 – 1.0, derived from impact velocity
     std::string boneName;
     bool isUnderwater = false; // true for fish/aquatic creatures
+    bool isWhoosh = false; // true for air displacement whoosh (charge/swing)
+    float whooshDuration = 0.0f; // seconds — length of the whoosh event
 };
 
 struct SurfaceSynthParams {
@@ -144,6 +146,14 @@ private:
         int sampleRate,
         float eventTime,
         float intensity,
+        uint32_t seed);
+
+    static void synthesizeWhoosh(
+        std::vector<float>& buffer,
+        int sampleRate,
+        float eventTime,
+        float intensity,
+        float whooshDuration,
         uint32_t seed);
 };
 

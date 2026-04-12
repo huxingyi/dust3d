@@ -732,6 +732,124 @@ void SoundGenerator::synthesizeUnderwater(
     }
 }
 
+void SoundGenerator::synthesizeWhoosh(
+    std::vector<float>& buffer,
+    int sampleRate,
+    float eventTime,
+    float intensity,
+    float whooshDuration,
+    uint32_t seed)
+{
+    // Air displacement whoosh for fast-moving body parts (head charge, tail whip).
+    // Modeled after FMOD/Wwise whoosh design: bandpass-filtered noise with a
+    // velocity-driven pitch sweep.  Faster motion = higher center frequency
+    // and brighter spectrum.  The envelope follows an asymmetric bell: fast
+    // attack (leading edge of the moving object) and slower decay (turbulent
+    // wake trailing behind).
+    //
+    // Signal chain:
+    //   White noise → Bandpass (center sweeps with velocity) → Amplitude envelope → Output
+    //
+    // The bandpass center frequency rises from ~200 Hz to a peak proportional
+    // to intensity (up to ~2500 Hz for maximum velocity), then falls back.
+    // This creates the characteristic rising-then-falling pitch of a whoosh.
+
+    constexpr float PI = 3.14159265358979f;
+    uint32_t rng = seed;
+
+    float dt = 1.0f / sampleRate;
+    int startSample = static_cast<int>(eventTime * sampleRate);
+    if (startSample < 0)
+        startSample = 0;
+
+    if (whooshDuration < 0.02f)
+        whooshDuration = 0.15f;
+
+    int totalSamples = static_cast<int>(whooshDuration * sampleRate);
+    int endSample = std::min(startSample + totalSamples, static_cast<int>(buffer.size()));
+    if (endSample <= startSample)
+        return;
+
+    // Pitch variation for organic variation
+    float pitchMod = 1.0f + (static_cast<float>(xorshift32(rng)) / static_cast<float>(UINT32_MAX) - 0.5f) * 0.15f;
+
+    // Frequency range: scales with intensity (higher velocity = brighter whoosh)
+    float freqLow = 200.0f * pitchMod;
+    float freqPeak = (800.0f + intensity * 1700.0f) * pitchMod; // 800-2500 Hz at peak
+    float bandwidth = (300.0f + intensity * 500.0f) * pitchMod; // wider bandwidth at higher velocity
+
+    // Asymmetric envelope: attack is 30% of duration, decay is 70%
+    // This matches real aeroacoustics — the leading edge is sharp,
+    // the turbulent wake trails off.
+    float attackFraction = 0.3f;
+    int attackSamples = static_cast<int>(attackFraction * totalSamples);
+    int decaySamples = totalSamples - attackSamples;
+
+    // State-variable bandpass filter
+    float bpLow = 0.0f, bpBand = 0.0f;
+
+    // Second bandpass for wider, more natural sound
+    float bp2Low = 0.0f, bp2Band = 0.0f;
+
+    for (int i = startSample; i < endSample; ++i) {
+        int ls = i - startSample;
+        float phase = static_cast<float>(ls) / static_cast<float>(totalSamples);
+
+        // Amplitude envelope: asymmetric bell
+        float env;
+        if (ls < attackSamples) {
+            // Fast sine rise
+            float t = static_cast<float>(ls) / static_cast<float>(attackSamples);
+            env = sinf(t * PI * 0.5f);
+            env *= env; // sharpen the attack
+        } else {
+            // Slower exponential decay with cosine shaping
+            float t = static_cast<float>(ls - attackSamples) / static_cast<float>(std::max(1, decaySamples));
+            env = cosf(t * PI * 0.5f);
+            env *= expf(-t * 2.0f); // exponential falloff for natural turbulence decay
+        }
+
+        // Center frequency sweep: rises to peak during attack, falls during decay
+        // Uses a bell curve centered at attackFraction
+        float freqPhase = (phase - attackFraction) / (1.0f - attackFraction);
+        float freqEnv;
+        if (phase < attackFraction) {
+            float t = phase / attackFraction;
+            freqEnv = t * t; // quadratic rise
+        } else {
+            freqEnv = expf(-freqPhase * freqPhase * 4.0f); // Gaussian falloff
+        }
+        float centerFreq = freqLow + (freqPeak - freqLow) * freqEnv;
+
+        // SVF bandpass coefficients (recomputed per sample for sweep)
+        float bpF = 2.0f * sinf(PI * std::min(centerFreq, sampleRate * 0.49f) / sampleRate);
+        float bpQ = 1.0f / std::max(centerFreq / bandwidth, 0.5f);
+
+        // Second band offset higher for width
+        float centerFreq2 = centerFreq * 1.6f;
+        float bp2F = 2.0f * sinf(PI * std::min(centerFreq2, sampleRate * 0.49f) / sampleRate);
+        float bp2Q = 1.0f / std::max(centerFreq2 / (bandwidth * 1.3f), 0.5f);
+
+        // White noise source
+        float noise = static_cast<float>(xorshift32(rng)) / static_cast<float>(UINT32_MAX) * 2.0f - 1.0f;
+
+        // Primary bandpass
+        bpLow += bpF * bpBand;
+        float bpHigh = noise - bpLow - bpQ * bpBand;
+        bpBand += bpF * bpHigh;
+
+        // Secondary bandpass (higher octave, mixed quieter)
+        bp2Low += bp2F * bp2Band;
+        float bp2High = noise - bp2Low - bp2Q * bp2Band;
+        bp2Band += bp2F * bp2High;
+
+        float output = bpBand * 0.7f + bp2Band * 0.3f;
+        output *= env * intensity * 0.6f;
+
+        buffer[i] += output;
+    }
+}
+
 AnimationSoundData SoundGenerator::generate(
     const std::vector<SoundEvent>& events,
     float durationSeconds,
@@ -759,7 +877,10 @@ AnimationSoundData SoundGenerator::generate(
         if (seed == 0)
             seed = 1;
 
-        if (event.isUnderwater) {
+        if (event.isWhoosh) {
+            synthesizeWhoosh(floatBuffer, result.sampleRate, event.timeSeconds,
+                event.intensity, event.whooshDuration, seed);
+        } else if (event.isUnderwater) {
             synthesizeUnderwater(floatBuffer, result.sampleRate, event.timeSeconds,
                 event.intensity, seed);
         } else {
