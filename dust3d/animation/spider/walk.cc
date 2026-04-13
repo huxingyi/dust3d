@@ -49,9 +49,13 @@ namespace spider {
 
         struct LegDefWithGait : public LegDef {
             int gaitGroup;
-            constexpr LegDefWithGait(LegDef base, int g)
+            int sideSign;
+            double phaseOffset;
+            constexpr LegDefWithGait(LegDef base, int g, int s, double p)
                 : LegDef(base)
                 , gaitGroup(g)
+                , sideSign(s)
+                , phaseOffset(p)
             {
             }
         };
@@ -133,14 +137,14 @@ namespace spider {
         //   Group A: FrontLeft, MidFrontRight, MidBackLeft, BackRight
         //   Group B: FrontRight, MidFrontLeft, MidBackRight, BackLeft
         static const std::array<LegDefWithGait, 8> legs = { {
-            { { "FrontLeftCoxa", "FrontLeftFemur", "FrontLeftTibia" }, 0 },
-            { { "FrontRightCoxa", "FrontRightFemur", "FrontRightTibia" }, 1 },
-            { { "MidFrontLeftCoxa", "MidFrontLeftFemur", "MidFrontLeftTibia" }, 1 },
-            { { "MidFrontRightCoxa", "MidFrontRightFemur", "MidFrontRightTibia" }, 0 },
-            { { "MidBackLeftCoxa", "MidBackLeftFemur", "MidBackLeftTibia" }, 0 },
-            { { "MidBackRightCoxa", "MidBackRightFemur", "MidBackRightTibia" }, 1 },
-            { { "BackLeftCoxa", "BackLeftFemur", "BackLeftTibia" }, 1 },
-            { { "BackRightCoxa", "BackRightFemur", "BackRightTibia" }, 0 },
+            { { "FrontLeftCoxa", "FrontLeftFemur", "FrontLeftTibia" }, 0, +1, 0.05 },
+            { { "FrontRightCoxa", "FrontRightFemur", "FrontRightTibia" }, 1, -1, -0.05 },
+            { { "MidFrontLeftCoxa", "MidFrontLeftFemur", "MidFrontLeftTibia" }, 1, +1, 0.02 },
+            { { "MidFrontRightCoxa", "MidFrontRightFemur", "MidFrontRightTibia" }, 0, -1, -0.02 },
+            { { "MidBackLeftCoxa", "MidBackLeftFemur", "MidBackLeftTibia" }, 0, +1, -0.02 },
+            { { "MidBackRightCoxa", "MidBackRightFemur", "MidBackRightTibia" }, 1, -1, 0.02 },
+            { { "BackLeftCoxa", "BackLeftFemur", "BackLeftTibia" }, 1, +1, -0.05 },
+            { { "BackRightCoxa", "BackRightFemur", "BackRightTibia" }, 0, -1, 0.05 },
         } };
 
         // Gather rest-pose joint positions for every leg
@@ -190,6 +194,13 @@ namespace spider {
             // Apply leg spread factor: scale lateral (right-axis) component away from center
             double rightProj = Vector3::dotProduct(footHome[i], right);
             footHome[i] = footHome[i] + right * (rightProj * (legSpreadFactor - 1.0));
+
+            // Slightly bias front legs forward and back legs rearward so the gait
+            // looks more purposeful and the body feels balanced over the stance legs.
+            if (i == 0 || i == 1 || i == 2 || i == 3)
+                footHome[i] = footHome[i] + forward * (bodyLength * 0.02);
+            else
+                footHome[i] = footHome[i] - forward * (bodyLength * 0.02);
         }
 
         // ===================================================================
@@ -208,10 +219,12 @@ namespace spider {
             // Body oscillation
             double bodyBob = bodyBobAmp * std::sin(t * 4.0 * Math::Pi);
             double bodyPitch = 0.015 * bodyBobFactor * std::sin(t * 2.0 * Math::Pi);
+            double bodyRoll = 0.01 * bodyBobFactor * std::cos(t * 2.0 * Math::Pi);
             double bodyYaw = bodyYawAmp * std::sin(t * 2.0 * Math::Pi);
 
             Matrix4x4 bodyTransform;
             bodyTransform.translate(up * bodyBob);
+            bodyTransform.rotate(forward, bodyRoll);
             bodyTransform.rotate(right, bodyPitch);
             bodyTransform.rotate(up, bodyYaw);
 
@@ -225,21 +238,22 @@ namespace spider {
                 bool isSwing;
                 double legPhase;
 
+                double phase = std::fmod(t + legs[i].phaseOffset + 1.0, 1.0);
                 if (group == 0) {
-                    if (t < 0.5) {
+                    if (phase < 0.5) {
                         isSwing = true;
-                        legPhase = t / 0.5;
+                        legPhase = phase / 0.5;
                     } else {
                         isSwing = false;
-                        legPhase = (t - 0.5) / 0.5;
+                        legPhase = (phase - 0.5) / 0.5;
                     }
                 } else {
-                    if (t < 0.5) {
+                    if (phase < 0.5) {
                         isSwing = false;
-                        legPhase = t / 0.5;
+                        legPhase = phase / 0.5;
                     } else {
                         isSwing = true;
-                        legPhase = (t - 0.5) / 0.5;
+                        legPhase = (phase - 0.5) / 0.5;
                     }
                 }
 
@@ -250,9 +264,12 @@ namespace spider {
                     double smoothSwing = animation::smootherstep(legPhase);
                     Vector3 groundPos = footBack + (footFront - footBack) * smoothSwing;
                     double lift = stepHeight * std::sin(smoothSwing * Math::Pi);
-                    footTarget[i] = groundPos + up * lift;
+                    double lateralSwing = stepLength * 0.15 * legs[i].sideSign * std::sin(smoothSwing * Math::Pi);
+                    footTarget[i] = groundPos + up * lift + right * lateralSwing;
                 } else {
-                    footTarget[i] = footFront + (footBack - footFront) * animation::smoothstep(legPhase);
+                    double stanceEase = animation::smoothstep(legPhase);
+                    double lateralShift = stepLength * 0.05 * legs[i].sideSign * (1.0 - stanceEase);
+                    footTarget[i] = footFront + (footBack - footFront) * stanceEase + right * lateralShift;
                 }
             }
 

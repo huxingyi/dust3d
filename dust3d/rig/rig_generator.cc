@@ -76,6 +76,12 @@ static bool edgeBelongsToModelPart(const Snapshot* snapshot,
         && nodeBelongsToModelPart(snapshot, toId);
 }
 
+static bool boneUsesParentEndAsReference(const std::string& boneName)
+{
+    return boneName.find("Left") != std::string::npos
+        || boneName.find("Right") != std::string::npos;
+}
+
 RigGenerator::RigGenerator()
 {
 }
@@ -188,16 +194,24 @@ bool RigGenerator::generateRig(const Snapshot* snapshot, const RigStructure& tem
                 boneEdgeNodesMap[bone.name], allEdgeNodes, nodeChains);
         }
 
-        // Determine reference point from parent bone' position.
+        // Determine reference point from parent bone position.
+        // Leg, limb and arm bones should align against the parent's end
+        // position so the chain keeps its anatomical direction.
         // Root bones (no parent) use the origin.
         float refX = 0, refY = 0, refZ = 0;
         if (!bone.parent.empty()) {
             auto parentIt = boneNameToIndex.find(bone.parent);
             if (parentIt != boneNameToIndex.end()) {
                 const auto& parentBone = actualRig.bones[parentIt->second];
-                refX = parentBone.posX;
-                refY = parentBone.posY;
-                refZ = parentBone.posZ;
+                if (boneUsesParentEndAsReference(bone.name)) {
+                    refX = parentBone.endX;
+                    refY = parentBone.endY;
+                    refZ = parentBone.endZ;
+                } else {
+                    refX = parentBone.posX;
+                    refY = parentBone.posY;
+                    refZ = parentBone.posZ;
+                }
             }
         }
 
@@ -472,7 +486,106 @@ bool RigGenerator::computeBoneInverseBindMatrices(const RigStructure& rigStructu
     return true;
 }
 
+float RigGenerator::computeTwoBoneLerp(const RigStructure& rigStructure,
+    const std::string& bone1, const std::string& bone2,
+    const Snapshot* snapshot, const Uuid& nodeId)
+{
+    // Build parent lookup
+    std::map<std::string, std::string> parentOf;
+    for (const auto& bone : rigStructure.bones)
+        parentOf[bone.name] = bone.parent;
+
+    // Determine parent-child relationship between the two bones
+    bool bone1IsParentOfBone2 = (parentOf.count(bone2) && parentOf[bone2] == bone1);
+    bool bone2IsParentOfBone1 = (parentOf.count(bone1) && parentOf[bone1] == bone2);
+
+    if (!bone1IsParentOfBone2 && !bone2IsParentOfBone1) {
+        // Siblings or unrelated bones: equal weight
+        return 0.5f;
+    }
+
+    // Parent-child: we want to favor the child bone at joints for better deformation.
+    // The node at a joint (e.g. elbow, knee) should be weighted more toward the child
+    // bone so the joint bends cleanly.
+    //
+    // Convention: lerp=0 means fully bone1, lerp=1 means fully bone2.
+    // We compute based on node proximity to each bone's axis.
+
+    const std::string& parentBone = bone1IsParentOfBone2 ? bone1 : bone2;
+    const std::string& childBone = bone1IsParentOfBone2 ? bone2 : bone1;
+    // childLerp: the lerp value that means "fully child bone"
+    float childLerp = bone1IsParentOfBone2 ? 1.0f : 0.0f;
+
+    // Determine joint bias based on bone semantics and rig type
+    // Joints like elbows, knees, and articulation points benefit from
+    // stronger child influence (0.6-0.75 toward child)
+    float jointBias = 0.6f; // default: slight child preference
+
+    const std::string& rigType = rigStructure.type;
+
+    // Recognize limb joints that need stronger child bias for clean bending
+    auto isLimbJoint = [](const std::string& child) -> bool {
+        return child.find("LowerArm") != std::string::npos
+            || child.find("LowerLeg") != std::string::npos
+            || child.find("Hand") != std::string::npos
+            || child.find("Foot") != std::string::npos
+            || child.find("Femur") != std::string::npos
+            || child.find("Tibia") != std::string::npos
+            || child.find("Elbow") != std::string::npos;
+    };
+
+    auto isSpineJoint = [](const std::string& parent, const std::string& child) -> bool {
+        return (parent.find("Spine") != std::string::npos || parent.find("Chest") != std::string::npos
+                   || parent.find("Hips") != std::string::npos || parent.find("Pelvis") != std::string::npos)
+            && (child.find("Spine") != std::string::npos || child.find("Chest") != std::string::npos
+                || child.find("Neck") != std::string::npos);
+    };
+
+    auto isTailJoint = [](const std::string& child) -> bool {
+        return child.find("Tail") != std::string::npos;
+    };
+
+    auto isHeadNeckJoint = [](const std::string& parent, const std::string& child) -> bool {
+        return (parent.find("Neck") != std::string::npos && child.find("Head") != std::string::npos)
+            || (parent.find("Head") != std::string::npos && (child.find("Jaw") != std::string::npos || child.find("Beak") != std::string::npos));
+    };
+
+    if (isLimbJoint(childBone)) {
+        // Limb joints (elbows, knees): strong child bias for clean bending
+        jointBias = 0.7f;
+    } else if (isHeadNeckJoint(parentBone, childBone)) {
+        // Head/neck: moderate child bias
+        jointBias = 0.65f;
+    } else if (isSpineJoint(parentBone, childBone)) {
+        // Spine chain: gentler blend for organic deformation
+        jointBias = 0.55f;
+    } else if (isTailJoint(childBone)) {
+        // Tail segments: gentle blend
+        jointBias = 0.55f;
+    }
+
+    // Fish rigs: body segments should blend smoothly
+    if (rigType == "Fish") {
+        if (childBone.find("Body") != std::string::npos || childBone.find("Tail") != std::string::npos) {
+            jointBias = 0.5f; // equal blend for smooth fish undulation
+        } else if (childBone.find("Fin") != std::string::npos) {
+            jointBias = 0.7f; // fins should follow their own bone
+        }
+    }
+
+    // Snake: smooth sequential blending along spine
+    if (rigType == "Snake") {
+        jointBias = 0.5f;
+    }
+
+    // Return lerp: jointBias toward child bone
+    // childLerp=1 means bone2 is child, so lerp = jointBias
+    // childLerp=0 means bone1 is child, so lerp = 1 - jointBias
+    return (childLerp > 0.5f) ? jointBias : (1.0f - jointBias);
+}
+
 bool RigGenerator::computeNodeBoneInfluences(const Snapshot* snapshot,
+    const RigStructure& rigStructure,
     std::map<Uuid, NodeBoneInfluence>& nodeBoneInfluences)
 {
     if (!snapshot) {
@@ -485,7 +598,6 @@ bool RigGenerator::computeNodeBoneInfluences(const Snapshot* snapshot,
     // For each node in the snapshot, determine which bones influence it
     for (const auto& nodePair : snapshot->nodes) {
         const std::string& nodeIdString = nodePair.first;
-        const std::map<std::string, std::string>& nodeAttributes = nodePair.second;
         Uuid nodeId(nodeIdString);
 
         if (!nodeBelongsToModelPart(snapshot, nodeId))
@@ -563,9 +675,7 @@ bool RigGenerator::computeNodeBoneInfluences(const Snapshot* snapshot,
             std::string bone1 = *it;
             std::string bone2 = *(++it);
 
-            // For now, use equal weight (0.5 lerp)
-            // Could be refined based on edge positions or weights
-            float lerp = 0.5f;
+            float lerp = computeTwoBoneLerp(rigStructure, bone1, bone2, snapshot, nodeId);
             NodeBoneInfluence influence(bone1, bone2, lerp);
             nodeBoneInfluences[nodeId] = influence;
             dust3dDebug << "Node" << nodeIdString.c_str()
@@ -577,7 +687,7 @@ bool RigGenerator::computeNodeBoneInfluences(const Snapshot* snapshot,
             auto it = boneNames.begin();
             std::string bone1 = *it;
             std::string bone2 = *(++it);
-            float lerp = 0.5f;
+            float lerp = computeTwoBoneLerp(rigStructure, bone1, bone2, snapshot, nodeId);
             NodeBoneInfluence influence(bone1, bone2, lerp);
             nodeBoneInfluences[nodeId] = influence;
             dust3dDebug << "Node" << nodeIdString.c_str()
@@ -934,7 +1044,11 @@ bool RigGenerator::applyRigBindings(Object* object, const Snapshot* snapshot, Ri
     // Use RigGenerator to compute bone influences and bind vertices
     std::map<Uuid, NodeBoneInfluence> nodeBoneInfluences;
 
-    if (!computeNodeBoneInfluences(snapshot, nodeBoneInfluences)) {
+    // Build a default empty rig structure if no actual rig is provided
+    RigStructure emptyRig;
+    const RigStructure& rigForInfluences = actualRig ? *actualRig : emptyRig;
+
+    if (!computeNodeBoneInfluences(snapshot, rigForInfluences, nodeBoneInfluences)) {
         dust3dDebug << "Failed to compute node bone influences:" << getErrorMessage().c_str();
         return false;
     }

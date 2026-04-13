@@ -218,6 +218,8 @@ void Document::breakEdge(dust3d::Uuid edgeId)
     if (nullptr == secondNode) {
         return;
     }
+    auto edgeName = edge->name;
+    auto boneName = edge->boneName;
     QVector3D firstOrigin(firstNode->getX(), firstNode->getY(), firstNode->getZ());
     QVector3D secondOrigin(secondNode->getX(), secondNode->getY(), secondNode->getZ());
     QVector3D middleOrigin = (firstOrigin + secondOrigin) / 2;
@@ -254,6 +256,8 @@ void Document::breakEdge(dust3d::Uuid edgeId)
 
     Document::Edge newEdge(newEdgeId);
     newEdge.partId = partId;
+    newEdge.name = edgeName;
+    newEdge.boneName = boneName;
     newEdge.nodeIds.push_back(middleNodeId);
     newEdge.nodeIds.push_back(secondNodeId);
     edgeMap[newEdgeId] = newEdge;

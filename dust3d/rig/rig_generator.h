@@ -72,7 +72,9 @@ public:
 
     // Compute node-to-bone influences from snapshot edges
     // output: nodeBoneInfluences - maps node UUID -> bone influence
+    // rigStructure is used to determine parent-child relationships for lerp weights
     bool computeNodeBoneInfluences(const Snapshot* snapshot,
+        const RigStructure& rigStructure,
         std::map<Uuid, NodeBoneInfluence>& nodeBoneInfluences);
 
     // Compute vertex bone bindings for a generated mesh object
@@ -144,6 +146,12 @@ private:
 
     // Helper: Get bone name from edge (or empty string if not assigned)
     std::string getEdgeBoneName(const std::map<std::string, std::string>* edge);
+
+    // Helper: Compute lerp weight for a node influenced by two bones,
+    // using rig hierarchy and bone semantics
+    float computeTwoBoneLerp(const RigStructure& rigStructure,
+        const std::string& bone1, const std::string& bone2,
+        const Snapshot* snapshot, const Uuid& nodeId);
 
     // Helper: Find isolated nodes (no edges with any bone name) that are nearest
     // to the given bone's edge-connected nodes, and append them as single-node chains.
