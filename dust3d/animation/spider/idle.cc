@@ -35,12 +35,14 @@
 //   - abdomenPulseFactor:   abdomen expansion/contraction
 //   - bodySwayFactor:       subtle lateral body sway
 
+#include <array>
 #include <cmath>
 #include <dust3d/animation/animation_generator.h>
 #include <dust3d/animation/common.h>
 #include <dust3d/animation/spider/idle.h>
 #include <dust3d/base/math.h>
 #include <dust3d/base/matrix4x4.h>
+#include <dust3d/base/quaternion.h>
 #include <dust3d/base/vector3.h>
 #include <dust3d/rig/rig_generator.h>
 
@@ -106,6 +108,58 @@ namespace spider {
         double breathAmp = bodySize * 0.006 * breathingAmplitudeFactor;
         double swayAmp = bodySize * 0.005 * bodySwayFactor;
 
+        // Gather rest-pose leg data for IK
+        struct LegTriplet {
+            const char* coxa;
+            const char* femur;
+            const char* tibia;
+            double phaseOffset;
+        };
+        static const LegTriplet legs[] = {
+            { "FrontLeftCoxa", "FrontLeftFemur", "FrontLeftTibia", 0.0 },
+            { "FrontRightCoxa", "FrontRightFemur", "FrontRightTibia", 0.5 },
+            { "MidFrontLeftCoxa", "MidFrontLeftFemur", "MidFrontLeftTibia", 0.25 },
+            { "MidFrontRightCoxa", "MidFrontRightFemur", "MidFrontRightTibia", 0.75 },
+            { "MidBackLeftCoxa", "MidBackLeftFemur", "MidBackLeftTibia", 0.33 },
+            { "MidBackRightCoxa", "MidBackRightFemur", "MidBackRightTibia", 0.83 },
+            { "BackLeftCoxa", "BackLeftFemur", "BackLeftTibia", 0.5 },
+            { "BackRightCoxa", "BackRightFemur", "BackRightTibia", 1.0 },
+        };
+        static const size_t legCount = sizeof(legs) / sizeof(legs[0]);
+
+        struct LegRest {
+            Vector3 coxaPos, coxaEnd;
+            Vector3 femurEnd;
+            Vector3 tibiaEnd;
+            Vector3 restStickDir;
+            Vector3 restCoxaToFemurVec;
+        };
+        std::array<LegRest, 8> legRest;
+        for (size_t i = 0; i < legCount; ++i) {
+            legRest[i].coxaPos = bonePos(legs[i].coxa);
+            legRest[i].coxaEnd = boneEnd(legs[i].coxa);
+            legRest[i].femurEnd = boneEnd(legs[i].femur);
+            legRest[i].tibiaEnd = boneEnd(legs[i].tibia);
+            Vector3 chordVec = legRest[i].tibiaEnd - legRest[i].coxaEnd;
+            legRest[i].restStickDir = chordVec.isZero() ? Vector3(1, 0, 0) : chordVec.normalized();
+            legRest[i].restCoxaToFemurVec = legRest[i].femurEnd - legRest[i].coxaEnd;
+        }
+
+        // Ground level: lowest tibia end projected onto up axis
+        double minUpProj = Vector3::dotProduct(legRest[0].tibiaEnd, upDir);
+        for (size_t i = 1; i < legCount; ++i) {
+            double proj = Vector3::dotProduct(legRest[i].tibiaEnd, upDir);
+            if (proj < minUpProj)
+                minUpProj = proj;
+        }
+
+        // Foot home positions pinned to ground
+        std::array<Vector3, 8> footHome;
+        for (size_t i = 0; i < legCount; ++i) {
+            double proj = Vector3::dotProduct(legRest[i].tibiaEnd, upDir);
+            footHome[i] = legRest[i].tibiaEnd - upDir * (proj - minUpProj);
+        }
+
         animationClip.durationSeconds = durationSeconds;
         animationClip.frames.resize(frameCount);
 
@@ -158,30 +212,36 @@ namespace spider {
                 computeBone("RightPedipalp", palpAngle, palpAngle * 0.3);
             }
 
-            // Legs: subtle twitching
-            struct LegTriplet {
-                const char* coxa;
-                const char* femur;
-                const char* tibia;
-                double phaseOffset;
-            };
-            static const LegTriplet legs[] = {
-                { "FrontLeftCoxa", "FrontLeftFemur", "FrontLeftTibia", 0.0 },
-                { "FrontRightCoxa", "FrontRightFemur", "FrontRightTibia", 0.5 },
-                { "MidFrontLeftCoxa", "MidFrontLeftFemur", "MidFrontLeftTibia", 0.25 },
-                { "MidFrontRightCoxa", "MidFrontRightFemur", "MidFrontRightTibia", 0.75 },
-                { "MidBackLeftCoxa", "MidBackLeftFemur", "MidBackLeftTibia", 0.33 },
-                { "MidBackRightCoxa", "MidBackRightFemur", "MidBackRightTibia", 0.83 },
-                { "BackLeftCoxa", "BackLeftFemur", "BackLeftTibia", 0.5 },
-                { "BackRightCoxa", "BackRightFemur", "BackRightTibia", 1.0 },
-            };
-
-            for (const auto& leg : legs) {
-                double legPhase = tNormalized * 2.0 * Math::Pi * 0.3 + leg.phaseOffset * Math::Pi;
+            // Legs: use IK to keep feet grounded with subtle twitching
+            for (size_t i = 0; i < legCount; ++i) {
+                double legPhase = tNormalized * 2.0 * Math::Pi * 0.3 + legs[i].phaseOffset * Math::Pi;
                 double twitch = 0.006 * legTwitchFactor * std::sin(legPhase);
-                computeBone(leg.coxa, twitch);
-                computeBone(leg.femur, twitch * 0.4);
-                computeBone(leg.tibia);
+
+                // Foot stays on ground; only add tiny lateral twitch
+                Vector3 footTarget = footHome[i] + right * (twitch * bodySize * 0.5);
+
+                Vector3 hipPos = bodyTransform.transformPoint(legRest[i].coxaPos);
+                Vector3 coxaEndPos = bodyTransform.transformPoint(legRest[i].coxaEnd);
+                Vector3 tibiaEndPos = bodyTransform.transformPoint(legRest[i].tibiaEnd);
+
+                std::vector<Vector3> chain = { hipPos, coxaEndPos, tibiaEndPos };
+                Vector3 poleVector = coxaEndPos + upDir * 0.5;
+                animation::solveTwoBoneIk(chain, footTarget, poleVector, 0.02);
+
+                // Reconstruct femur-tibia junction
+                Vector3 newStickDir = (chain[2] - chain[1]);
+                if (newStickDir.isZero())
+                    newStickDir = legRest[i].restStickDir;
+                else
+                    newStickDir.normalize();
+                Quaternion stickRot = Quaternion::rotationTo(legRest[i].restStickDir, newStickDir);
+                Matrix4x4 stickRotMat;
+                stickRotMat.rotate(stickRot);
+                Vector3 femurEnd = chain[1] + stickRotMat.transformVector(legRest[i].restCoxaToFemurVec);
+
+                boneWorldTransforms[legs[i].coxa] = animation::buildBoneWorldTransform(chain[0], chain[1]);
+                boneWorldTransforms[legs[i].femur] = animation::buildBoneWorldTransform(chain[1], femurEnd);
+                boneWorldTransforms[legs[i].tibia] = animation::buildBoneWorldTransform(femurEnd, chain[2]);
             }
 
             // Skin matrices
