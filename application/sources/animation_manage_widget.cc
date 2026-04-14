@@ -238,6 +238,17 @@ void AnimationManageWidget::createParameterWidgets()
         connect(m_animationFrameSlider, &QSlider::sliderMoved, this, [this](int value) {
             if (value >= 0 && value < (int)m_animationFrames.size()) {
                 m_currentFrame = value;
+                // Update ground offset based on frame position
+                if (m_movementSpeed > 0.0f && m_modelWidget) {
+                    double durationSeconds = m_sharedDurationSpinBox ? m_sharedDurationSpinBox->value() : 1.0;
+                    int frameCount = (int)m_animationFrames.size();
+                    if (frameCount > 0 && durationSeconds > 0.0) {
+                        float timeAtFrame = (float)(durationSeconds * value / frameCount);
+                        m_groundOffsetX = m_movementDirectionX * m_movementSpeed * timeAtFrame;
+                        m_groundOffsetZ = m_movementDirectionZ * m_movementSpeed * timeAtFrame;
+                        m_modelWidget->setGroundOffset(m_groundOffsetX, m_groundOffsetZ);
+                    }
+                }
                 displayCurrentFrame();
             }
         });
@@ -562,6 +573,11 @@ void AnimationManageWidget::onAnimationPreviewReady()
     } else {
         m_animationFrames = m_animationWorker->takePreviewMeshes();
         m_soundData = m_animationWorker->takeSoundData();
+        m_movementSpeed = m_animationWorker->movementSpeed();
+        m_movementDirectionX = m_animationWorker->movementDirectionX();
+        m_movementDirectionZ = m_animationWorker->movementDirectionZ();
+        m_groundOffsetX = 0.0f;
+        m_groundOffsetZ = 0.0f;
         m_animationWorker.reset();
     }
 
@@ -613,6 +629,18 @@ void AnimationManageWidget::onAnimationFrameTimeout()
 
     if (m_animationFrames.empty() || !m_modelWidget)
         return;
+
+    // Accumulate ground offset in the inverse direction of movement
+    if (m_movementSpeed > 0.0f && !m_animationFrames.empty()) {
+        double durationSeconds = m_sharedDurationSpinBox ? m_sharedDurationSpinBox->value() : 1.0;
+        int frameCount = (int)m_animationFrames.size();
+        if (frameCount > 0 && durationSeconds > 0.0) {
+            float dt = (float)(durationSeconds / frameCount);
+            m_groundOffsetX += m_movementDirectionX * m_movementSpeed * dt;
+            m_groundOffsetZ += m_movementDirectionZ * m_movementSpeed * dt;
+        }
+        m_modelWidget->setGroundOffset(m_groundOffsetX, m_groundOffsetZ);
+    }
 
     displayCurrentFrame();
 

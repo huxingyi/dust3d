@@ -1,5 +1,6 @@
 #version 330
 uniform sampler2D shadowMap;
+uniform vec2 groundOffset;
 in vec3 pointPosition;
 in vec4 pointLightSpacePos;
 out vec4 fragColor;
@@ -27,8 +28,8 @@ float shadowCalculation(vec4 lightSpacePos)
 void main()
 {
     float scale = 2.0;
-    float checkerX = floor(pointPosition.x * scale);
-    float checkerZ = floor(pointPosition.z * scale);
+    float checkerX = floor((pointPosition.x + groundOffset.x) * scale);
+    float checkerZ = floor((pointPosition.z + groundOffset.y) * scale);
     float checker = mod(checkerX + checkerZ, 2.0);
     vec3 groundColor = mix(vec3(0.92, 0.92, 0.92), vec3(0.98, 0.98, 0.98), checker);
 

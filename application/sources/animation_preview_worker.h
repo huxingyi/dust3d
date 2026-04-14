@@ -63,6 +63,10 @@ public:
         return std::move(m_soundData);
     }
 
+    float movementSpeed() const { return m_movementSpeed; }
+    float movementDirectionX() const { return m_movementDirectionX; }
+    float movementDirectionZ() const { return m_movementDirectionZ; }
+
 signals:
     void finished();
 
@@ -82,6 +86,9 @@ private:
     dust3d::SurfaceMaterial m_surfaceMaterial = dust3d::SurfaceMaterial::Stone;
     QString m_selectedBoneName;
     dust3d::AnimationSoundData m_soundData;
+    float m_movementSpeed = 0.0f;
+    float m_movementDirectionX = 0.0f;
+    float m_movementDirectionZ = 0.0f;
 };
 
 #endif

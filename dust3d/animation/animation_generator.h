@@ -38,6 +38,9 @@ struct RigAnimationClip {
     std::string name;
     float durationSeconds = 1.0f;
     std::vector<BoneAnimationFrame> frames;
+    float movementSpeed = 0.0f;
+    float movementDirectionX = 0.0f;
+    float movementDirectionZ = 0.0f;
 };
 
 struct AnimationParams {

@@ -31,6 +31,7 @@ public:
     ~WorldWidget();
     void updateMesh(ModelMesh* mesh);
     void updateWireframeMesh(MonochromeMesh* mesh);
+    void setGroundOffset(float offsetX, float offsetZ);
     void toggleWireframe();
     void setWireframeVisible(bool visible);
     bool isWireframeVisible();
@@ -110,6 +111,9 @@ private:
     void drawWorldModel();
     void drawGround();
     void drawWireframe();
+
+    float m_groundOffsetX = 0.0f;
+    float m_groundOffsetZ = 0.0f;
 
 public:
     static int m_defaultXRotation;

@@ -125,6 +125,11 @@ private:
 
     // Sound playback
     dust3d::AnimationSoundData m_soundData;
+    float m_movementSpeed = 0.0f;
+    float m_movementDirectionX = 0.0f;
+    float m_movementDirectionZ = 0.0f;
+    float m_groundOffsetX = 0.0f;
+    float m_groundOffsetZ = 0.0f;
     QByteArray m_soundWavData;
     QBuffer* m_soundBuffer = nullptr;
     QObject* m_audioOutput = nullptr;

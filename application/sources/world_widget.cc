@@ -209,6 +209,12 @@ void WorldWidget::updateWireframeMesh(MonochromeMesh* mesh)
     update();
 }
 
+void WorldWidget::setGroundOffset(float offsetX, float offsetZ)
+{
+    m_groundOffsetX = offsetX;
+    m_groundOffsetZ = offsetZ;
+}
+
 void WorldWidget::toggleWireframe()
 {
     m_isWireframeVisible = !m_isWireframeVisible;
@@ -447,6 +453,16 @@ void WorldWidget::drawGround()
     f->glBindTexture(GL_TEXTURE_2D, m_shadowDepthTexture);
     m_groundOpenGLProgram->setUniformValue(
         m_groundOpenGLProgram->getUniformLocationByName("shadowMap"), 1);
+
+    // Rotate ground offset to match the model's world rotation so the
+    // checkerboard scrolls in the correct direction regardless of camera angle
+    QMatrix4x4 rot;
+    rot.rotate(m_xRot / 16.0f, 1, 0, 0);
+    rot.rotate(m_yRot / 16.0f, 0, 1, 0);
+    rot.rotate(m_zRot / 16.0f, 0, 0, 1);
+    QVector3D rotatedOffset = rot.map(QVector3D(m_groundOffsetX, 0.0f, m_groundOffsetZ));
+    m_groundOpenGLProgram->setUniformValue(
+        m_groundOpenGLProgram->getUniformLocationByName("groundOffset"), QVector2D(rotatedOffset.x(), rotatedOffset.z()));
 
     if (m_groundOpenGLObject)
         m_groundOpenGLObject->draw();
