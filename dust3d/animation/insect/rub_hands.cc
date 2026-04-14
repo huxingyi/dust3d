@@ -111,6 +111,22 @@ namespace insect {
         double bodyBobAmp = bodyLength * 0.01 * bodyBobFactor;
         double rubAmp = bodyLength * 0.05 * stepHeightFactor;
 
+        // Ground level: lowest tibia end projected onto up axis
+        Vector3 upDir(0.0, 1.0, 0.0);
+        double minUpProj = Vector3::dotProduct(legRest[0].tibiaEnd, upDir);
+        for (size_t i = 1; i < 6; ++i) {
+            double proj = Vector3::dotProduct(legRest[i].tibiaEnd, upDir);
+            if (proj < minUpProj)
+                minUpProj = proj;
+        }
+
+        // Foot home positions pinned to ground for non-rubbing legs
+        std::array<Vector3, 6> footHome;
+        for (size_t i = 0; i < 6; ++i) {
+            double proj = Vector3::dotProduct(legRest[i].tibiaEnd, upDir);
+            footHome[i] = legRest[i].tibiaEnd - upDir * (proj - minUpProj);
+        }
+
         animationClip.durationSeconds = durationSeconds;
         animationClip.frames.resize(frameCount);
 
@@ -139,7 +155,7 @@ namespace insect {
                     else // Right
                         footTarget[i] = rubCenter - right * (bodyLength * 0.02) - up * rubOffset;
                 } else {
-                    footTarget[i] = legRest[i].tibiaEnd;
+                    footTarget[i] = footHome[i];
                 }
             }
 
