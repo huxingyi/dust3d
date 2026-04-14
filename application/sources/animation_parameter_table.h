@@ -266,6 +266,8 @@ inline const std::vector<AnimationParameterDef>& getAnimationParameterDefs(const
                             makeDiv100Param("abdomenSwayFactor", "Abdomen Sway", 100, 0, 300, 1.0),
                             makeDiv100Param("pedipalpSwayFactor", "Pedipalp Sway", 100, 0, 300, 1.0),
                             makeDiv100Param("bodyYawFactor", "Body Yaw", 100, 0, 300, 1.0),
+                            makeDirectParam("springStiffness", "Spring Stiffness", 120, 30, 300, 120.0),
+                            makeDirectParam("springDamping", "Spring Damping", 12, 3, 30, 12.0),
                         } },
         { "SpiderDie", {
                            makeDiv100Param("collapseSpeedFactor", "Collapse Speed", 100, 10, 300, 1.0),

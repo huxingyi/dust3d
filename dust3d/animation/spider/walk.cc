@@ -47,19 +47,6 @@ namespace spider {
             const char* tibiaName;
         };
 
-        struct LegDefWithGait : public LegDef {
-            int gaitGroup;
-            int sideSign;
-            double phaseOffset;
-            constexpr LegDefWithGait(LegDef base, int g, int s, double p)
-                : LegDef(base)
-                , gaitGroup(g)
-                , sideSign(s)
-                , phaseOffset(p)
-            {
-            }
-        };
-
         struct LegRest {
             Vector3 coxaPos, coxaEnd;
             Vector3 femurEnd;
@@ -136,24 +123,64 @@ namespace spider {
         // Alternating tetrapod gait – the standard spider locomotion pattern:
         //   Group A: FrontLeft, MidFrontRight, MidBackLeft, BackRight
         //   Group B: FrontRight, MidFrontLeft, MidBackRight, BackLeft
-        static const std::array<LegDefWithGait, 8> legs = { {
-            { { "FrontLeftCoxa", "FrontLeftFemur", "FrontLeftTibia" }, 0, +1, 0.05 },
-            { { "FrontRightCoxa", "FrontRightFemur", "FrontRightTibia" }, 1, -1, -0.05 },
-            { { "MidFrontLeftCoxa", "MidFrontLeftFemur", "MidFrontLeftTibia" }, 1, +1, 0.02 },
-            { { "MidFrontRightCoxa", "MidFrontRightFemur", "MidFrontRightTibia" }, 0, -1, -0.02 },
-            { { "MidBackLeftCoxa", "MidBackLeftFemur", "MidBackLeftTibia" }, 0, +1, -0.02 },
-            { { "MidBackRightCoxa", "MidBackRightFemur", "MidBackRightTibia" }, 1, -1, 0.02 },
-            { { "BackLeftCoxa", "BackLeftFemur", "BackLeftTibia" }, 1, +1, -0.05 },
-            { { "BackRightCoxa", "BackRightFemur", "BackRightTibia" }, 0, -1, 0.05 },
+        //
+        // Phase offsets per leg (front-to-back ripple pattern).
+        // Front legs lead, back legs trail within each gait group.
+        // Left/right alternation is handled by the gait group assignment,
+        // so both sides of the same row get the SAME offset to preserve
+        // the front-to-back wave without disrupting the alternation.
+        static const double basePhaseOffsets[8] = {
+            // FrontLeft(A), FrontRight(B)
+            0.15, 0.15,
+            // MidFrontLeft(B), MidFrontRight(A)
+            0.05, 0.05,
+            // MidBackLeft(A), MidBackRight(B)
+            -0.05, -0.05,
+            // BackLeft(B), BackRight(A)
+            -0.15, -0.15
+        };
+
+        // Per-leg step length multiplier: real spiders reach their front
+        // legs much further forward than back legs.  These ratios produce
+        // the characteristic long-reach front stride where the leg is
+        // nearly fully stretched at the peak of the swing.
+        static const double legStepScale[8] = {
+            // FrontLeft, FrontRight
+            2.5, 2.5,
+            // MidFrontLeft, MidFrontRight
+            1.5, 1.5,
+            // MidBackLeft, MidBackRight
+            0.9, 0.9,
+            // BackLeft, BackRight
+            0.7, 0.7
+        };
+
+        struct LegRuntime {
+            LegDef def;
+            int gaitGroup;
+            int sideSign;
+            double phaseOffset;
+        };
+        std::array<LegRuntime, 8> legs = { {
+            { { "FrontLeftCoxa", "FrontLeftFemur", "FrontLeftTibia" }, 0, +1, 0.0 },
+            { { "FrontRightCoxa", "FrontRightFemur", "FrontRightTibia" }, 1, -1, 0.0 },
+            { { "MidFrontLeftCoxa", "MidFrontLeftFemur", "MidFrontLeftTibia" }, 1, +1, 0.0 },
+            { { "MidFrontRightCoxa", "MidFrontRightFemur", "MidFrontRightTibia" }, 0, -1, 0.0 },
+            { { "MidBackLeftCoxa", "MidBackLeftFemur", "MidBackLeftTibia" }, 0, +1, 0.0 },
+            { { "MidBackRightCoxa", "MidBackRightFemur", "MidBackRightTibia" }, 1, -1, 0.0 },
+            { { "BackLeftCoxa", "BackLeftFemur", "BackLeftTibia" }, 1, +1, 0.0 },
+            { { "BackRightCoxa", "BackRightFemur", "BackRightTibia" }, 0, -1, 0.0 },
         } };
+        for (size_t i = 0; i < 8; ++i)
+            legs[i].phaseOffset = basePhaseOffsets[i];
 
         // Gather rest-pose joint positions for every leg
         std::array<LegRest, 8> legRest;
         for (size_t i = 0; i < 8; ++i) {
-            legRest[i].coxaPos = getBonePos(legs[i].coxaName);
-            legRest[i].coxaEnd = getBoneEnd(legs[i].coxaName);
-            legRest[i].femurEnd = getBoneEnd(legs[i].femurName);
-            legRest[i].tibiaEnd = getBoneEnd(legs[i].tibiaName);
+            legRest[i].coxaPos = getBonePos(legs[i].def.coxaName);
+            legRest[i].coxaEnd = getBoneEnd(legs[i].def.coxaName);
+            legRest[i].femurEnd = getBoneEnd(legs[i].def.femurName);
+            legRest[i].tibiaEnd = getBoneEnd(legs[i].def.tibiaName);
             Vector3 chordVec = legRest[i].tibiaEnd - legRest[i].coxaEnd;
             legRest[i].restStickDir = chordVec.isZero() ? Vector3(1, 0, 0) : chordVec.normalized();
             legRest[i].restCoxaToFemurVec = legRest[i].femurEnd - legRest[i].coxaEnd;
@@ -171,8 +198,8 @@ namespace spider {
         double bodyYawFactor = parameters.getValue("bodyYawFactor", 1.0);
 
         double bodyLength = bodyVector.length();
-        double stepLength = bodyLength * 0.15 * stepLengthFactor;
-        double stepHeight = bodyLength * 0.06 * stepHeightFactor;
+        double stepLength = bodyLength * 0.22 * stepLengthFactor;
+        double stepHeight = bodyLength * 0.08 * stepHeightFactor;
         double bodyBobAmp = bodyLength * 0.015 * bodyBobFactor;
         double abdomenSwayAmp = 0.03 * abdomenSwayFactor;
         double pedipalpSwayAmp = 0.05 * pedipalpSwayFactor;
@@ -212,15 +239,58 @@ namespace spider {
         double gaitSpeedFactor = parameters.getValue("gaitSpeedFactor", 1.0);
         const double cycles = std::max(1.0, std::round(gaitSpeedFactor));
 
+        // ----- Spring-damper state for secondary dynamics -----
+        // These track current values and velocities that are integrated
+        // across frames, producing organic overshoot and settling instead
+        // of rigid sine-wave motion.
+        double dt = durationSeconds / static_cast<double>(frameCount);
+        double springStiffness = parameters.getValue("springStiffness", 120.0);
+        double springDamping = parameters.getValue("springDamping", 12.0);
+
+        double sdBodyBob = 0.0, sdBodyBobVel = 0.0;
+        double sdBodyPitch = 0.0, sdBodyPitchVel = 0.0;
+        double sdBodyRoll = 0.0, sdBodyRollVel = 0.0;
+        double sdBodyYaw = 0.0, sdBodyYawVel = 0.0;
+        double sdAbdomenYaw = 0.0, sdAbdomenYawVel = 0.0;
+        double sdPalpLeft = 0.0, sdPalpLeftVel = 0.0;
+        double sdPalpRight = 0.0, sdPalpRightVel = 0.0;
+
+        // ----- Foot locking state -----
+        // When a leg transitions from swing to stance, its world-space foot
+        // position is recorded. During the entire stance phase the foot stays
+        // pinned at that position, eliminating sliding.
+        std::array<Vector3, 8> plantedFootPos;
+        std::array<bool, 8> wasSwinging;
+        for (size_t i = 0; i < 8; ++i) {
+            plantedFootPos[i] = footHome[i];
+            wasSwinging[i] = false;
+        }
+
         for (int frame = 0; frame < frameCount; ++frame) {
             double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
             double t = fmod(tNormalized * cycles, 1.0);
 
-            // Body oscillation
-            double bodyBob = bodyBobAmp * std::sin(t * 4.0 * Math::Pi);
-            double bodyPitch = 0.015 * bodyBobFactor * std::sin(t * 2.0 * Math::Pi);
-            double bodyRoll = 0.01 * bodyBobFactor * std::cos(t * 2.0 * Math::Pi);
-            double bodyYaw = bodyYawAmp * std::sin(t * 2.0 * Math::Pi);
+            // Body oscillation — spring-damper targets
+            double targetBodyBob = bodyBobAmp * std::sin(t * 4.0 * Math::Pi);
+            double targetBodyPitch = 0.015 * bodyBobFactor * std::sin(t * 2.0 * Math::Pi);
+            double targetBodyRoll = 0.01 * bodyBobFactor * std::cos(t * 2.0 * Math::Pi);
+            double targetBodyYaw = bodyYawAmp * std::sin(t * 2.0 * Math::Pi);
+
+            // Step spring-damper for each body DOF
+            auto springStep = [&](double& cur, double& vel, double target) {
+                double accel = -springStiffness * (cur - target) - springDamping * vel;
+                vel += accel * dt;
+                cur += vel * dt;
+            };
+            springStep(sdBodyBob, sdBodyBobVel, targetBodyBob);
+            springStep(sdBodyPitch, sdBodyPitchVel, targetBodyPitch);
+            springStep(sdBodyRoll, sdBodyRollVel, targetBodyRoll);
+            springStep(sdBodyYaw, sdBodyYawVel, targetBodyYaw);
+
+            double bodyBob = sdBodyBob;
+            double bodyPitch = sdBodyPitch;
+            double bodyRoll = sdBodyRoll;
+            double bodyYaw = sdBodyYaw;
 
             Matrix4x4 bodyTransform;
             bodyTransform.translate(up * bodyBob);
@@ -257,19 +327,37 @@ namespace spider {
                     }
                 }
 
-                Vector3 footFront = footHome[i] + forward * stepLength;
-                Vector3 footBack = footHome[i] - forward * stepLength;
+                Vector3 footFront = footHome[i] + forward * stepLength * legStepScale[i];
+                Vector3 footBack = footHome[i] - forward * stepLength * legStepScale[i];
+
+                // Front legs also lift higher for a more dramatic reaching arc
+                double legLift = stepHeight * (legStepScale[i] > 1.0 ? legStepScale[i] : 1.0);
 
                 if (isSwing) {
                     double smoothSwing = animation::smootherstep(legPhase);
                     Vector3 groundPos = footBack + (footFront - footBack) * smoothSwing;
-                    double lift = stepHeight * std::sin(smoothSwing * Math::Pi);
+                    double lift = legLift * std::sin(smoothSwing * Math::Pi);
                     double lateralSwing = stepLength * 0.15 * legs[i].sideSign * std::sin(smoothSwing * Math::Pi);
                     footTarget[i] = groundPos + up * lift + right * lateralSwing;
+                    wasSwinging[i] = true;
                 } else {
-                    double stanceEase = animation::smoothstep(legPhase);
-                    double lateralShift = stepLength * 0.05 * legs[i].sideSign * (1.0 - stanceEase);
-                    footTarget[i] = footFront + (footBack - footFront) * stanceEase + right * lateralShift;
+                    // Foot locking: record foot position at the moment of landing
+                    if (wasSwinging[i]) {
+                        // Capture the actual ground position where the swing arc ended,
+                        // not a precomputed position — this keeps the foot exactly
+                        // where it visually touched down.
+                        Vector3 landingPos = footBack + (footFront - footBack) * 1.0; // end of swing
+                        // Apply the same lateral offset at landing (swing peak is at mid-swing,
+                        // so at legPhase=1.0 lateral is ~0, landing is near footFront)
+                        plantedFootPos[i] = landingPos;
+                        wasSwinging[i] = false;
+                    }
+                    // Slight backward drift during stance so the foot isn't perfectly
+                    // frozen — real spider feet shift subtly as the body advances.
+                    // This small motion (10% of step length) prevents the rigid
+                    // locked-foot look while still eliminating visible sliding.
+                    double stanceDrift = stepLength * 0.1 * animation::smoothstep(legPhase);
+                    footTarget[i] = plantedFootPos[i] - forward * stanceDrift;
                 }
             }
 
@@ -290,21 +378,30 @@ namespace spider {
             computeBodyBone("Cephalothorax", bodyTransform);
             computeBodyBone("Head", bodyTransform);
 
-            // Abdomen sways opposite to the body yaw for a natural trailing effect
+            // Abdomen sways opposite to the body yaw — spring-damper for trailing lag
+            double targetAbdomenYaw = -abdomenSwayAmp * std::sin(t * 2.0 * Math::Pi);
+            springStep(sdAbdomenYaw, sdAbdomenYawVel, targetAbdomenYaw);
             Matrix4x4 abdomenTransform = bodyTransform;
-            double abdomenYaw = -abdomenSwayAmp * std::sin(t * 2.0 * Math::Pi);
-            abdomenTransform.rotate(up, abdomenYaw);
+            abdomenTransform.rotate(up, sdAbdomenYaw);
             computeBodyBone("Abdomen", abdomenTransform);
 
             // Pedipalps: slight alternating sway synchronized with walk
-            for (const char* palpName : { "LeftPedipalp", "RightPedipalp" }) {
-                if (boneIdx.count(palpName) == 0)
-                    continue;
-                Matrix4x4 palpTransform = bodyTransform;
-                double sign = (std::string(palpName) == "LeftPedipalp") ? 1.0 : -1.0;
-                double palpAngle = pedipalpSwayAmp * sign * std::sin(t * 4.0 * Math::Pi);
-                palpTransform.rotate(up, palpAngle);
-                computeBodyBone(palpName, palpTransform);
+            // Pedipalps — spring-damper for organic sway
+            {
+                double targetLeft = pedipalpSwayAmp * std::sin(t * 4.0 * Math::Pi);
+                double targetRight = -pedipalpSwayAmp * std::sin(t * 4.0 * Math::Pi);
+                springStep(sdPalpLeft, sdPalpLeftVel, targetLeft);
+                springStep(sdPalpRight, sdPalpRightVel, targetRight);
+
+                double palpAngles[2] = { sdPalpLeft, sdPalpRight };
+                const char* palpNames[2] = { "LeftPedipalp", "RightPedipalp" };
+                for (int p = 0; p < 2; ++p) {
+                    if (boneIdx.count(palpNames[p]) == 0)
+                        continue;
+                    Matrix4x4 palpTransform = bodyTransform;
+                    palpTransform.rotate(up, palpAngles[p]);
+                    computeBodyBone(palpNames[p], palpTransform);
+                }
             }
 
             // -------------------------------------------------------
@@ -320,7 +417,10 @@ namespace spider {
 
                 // Pole vector: spider legs bend upward
                 Vector3 poleVector = coxaEnd + up * 0.5;
-                animation::solveTwoBoneIk(chain, footTarget[i], poleVector);
+                // Use very low softness (0.02) so legs can nearly fully
+                // straighten at maximum reach, matching real spider gait
+                // where the front legs extend almost straight when reaching.
+                animation::solveTwoBoneIk(chain, footTarget[i], poleVector, 0.02);
 
                 // Reconstruct femur-tibia junction
                 Vector3 newStickDir = (chain[2] - chain[1]);
@@ -333,9 +433,9 @@ namespace spider {
                 stickRotMat.rotate(stickRot);
                 Vector3 femurEnd = chain[1] + stickRotMat.transformVector(legRest[i].restCoxaToFemurVec);
 
-                boneWorldTransforms[legs[i].coxaName] = animation::buildBoneWorldTransform(chain[0], chain[1]);
-                boneWorldTransforms[legs[i].femurName] = animation::buildBoneWorldTransform(chain[1], femurEnd);
-                boneWorldTransforms[legs[i].tibiaName] = animation::buildBoneWorldTransform(femurEnd, chain[2]);
+                boneWorldTransforms[legs[i].def.coxaName] = animation::buildBoneWorldTransform(chain[0], chain[1]);
+                boneWorldTransforms[legs[i].def.femurName] = animation::buildBoneWorldTransform(chain[1], femurEnd);
+                boneWorldTransforms[legs[i].def.tibiaName] = animation::buildBoneWorldTransform(femurEnd, chain[2]);
             }
 
             // -------------------------------------------------------
