@@ -142,6 +142,7 @@ private:
     uint64_t m_id = 0;
 
     void collectParts();
+    void interpolateEdgesAroundJoints();
     void collectIncombinableMesh(const MeshState* mesh, const GeneratedComponent& componentCache);
     bool checkIsComponentDirty(const std::string& componentIdString);
     bool checkIsPartDirty(const std::string& partIdString);
