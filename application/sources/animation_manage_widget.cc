@@ -395,6 +395,7 @@ void AnimationManageWidget::updateAnimationNameForRigType(const QString& rigType
     } else if (rigType.compare("Spider", Qt::CaseInsensitive) == 0) {
         m_animationNameCombo->addItem("SpiderIdle");
         m_animationNameCombo->addItem("SpiderWalk");
+        m_animationNameCombo->addItem("SpiderRun");
         m_animationNameCombo->addItem("SpiderDie");
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);

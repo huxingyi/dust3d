@@ -286,7 +286,7 @@ std::vector<SoundEvent> SoundEventDetector::detect(
     }
 
     // Insect/Spider walk: detect leg contacts
-    if (animationType == "InsectWalk" || animationType == "InsectForward" || animationType == "SpiderWalk") {
+    if (animationType == "InsectWalk" || animationType == "InsectForward" || animationType == "SpiderWalk" || animationType == "SpiderRun") {
         // Collect all bones that might be leg tips
         std::vector<std::string> legBones;
         if (!clip.frames.empty()) {
