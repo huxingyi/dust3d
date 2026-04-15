@@ -1,6 +1,6 @@
 #include "preferences.h"
 
-#define MAX_RECENT_FILES 7
+#define MAX_RECENT_FILES 15
 
 Preferences& Preferences::instance()
 {
