@@ -40,6 +40,9 @@
 //   - forwardLeanFactor:      forward pitch of the torso during run
 //   - strideFrequencyFactor:  controls stride tempo (higher = more rapid turnover)
 //   - boundFactor:            0=trot (diagonal pairs), 1=bound (front/back pairs)
+//   - frontKneeBendFactor:    front leg knee bend intensity (1.0=default, 2.0=more bent)
+//   - backKneeBendFactor:     back leg knee bend intensity (1.0=default, 2.0=more bent)
+//   - crouchFactor:           body drop to force overall leg bend (0.0=none, 1.0=full)
 
 #include <array>
 #include <cmath>
@@ -170,6 +173,9 @@ namespace quadruped {
         double suspensionFactor = parameters.getValue("suspensionFactor", 1.0);
         double forwardLeanFactor = parameters.getValue("forwardLeanFactor", 1.0);
         double strideFrequencyFactor = parameters.getValue("strideFrequencyFactor", 1.0);
+        double frontKneeBendFactor = std::max(0.1, parameters.getValue("frontKneeBendFactor", 1.0));
+        double backKneeBendFactor = std::max(0.1, parameters.getValue("backKneeBendFactor", 1.0));
+        double crouchFactor = std::max(0.0, std::min(1.0, parameters.getValue("crouchFactor", 0.0)));
 
         double bodyLength = bodyVector.length();
         // Run has longer strides than walk
@@ -244,10 +250,19 @@ namespace quadruped {
             // Lateral sway: present in trot, vanishes in bound (symmetric gait)
             double bodySway = bodyBobAmp * 0.3 * std::sin(t * 2.0 * Math::Pi) * (1.0 - boundFactor);
 
+            // Natural stance crouch for visible knee flexion
+            double naturalDrop = bodyLength * 0.025;
+            double crouchDrop = -bodyLength * 0.15 * crouchFactor - naturalDrop;
+
+            // Hip counter-rotation: roll around forward axis
+            // Trot: alternating diagonal roll; bound: minimal (symmetric gait)
+            double hipRoll = 0.04 * bodyBobFactor * std::sin(t * 2.0 * Math::Pi) * (1.0 - boundFactor);
+
             Matrix4x4 bodyTransform;
-            bodyTransform.translate(up * (bodyBob + suspension) + right * bodySway);
+            bodyTransform.translate(up * (bodyBob + suspension + crouchDrop) + right * bodySway);
             // Forward lean: constant tilt plus dynamic pitch
             bodyTransform.rotate(right, forwardLeanAngle + bodyPitch);
+            bodyTransform.rotate(forward, hipRoll);
 
             // Spine flex:
             // Trot: mostly lateral undulation
@@ -270,11 +285,27 @@ namespace quadruped {
                 Vector3 footBack = footHome[i] - forward * stepLength;
 
                 if (legT < clampedSwingDuty) {
-                    // Swing phase: arc from back to front
+                    // Swing phase with fold-extend trajectory.
+                    // The leg folds up during early swing then extends to place.
                     double legPhase = legT / clampedSwingDuty;
-                    double smoothSwing = smootherstep(legPhase);
-                    Vector3 groundPos = footBack + (footFront - footBack) * smoothSwing;
-                    double lift = stepHeight * std::sin(smoothSwing * Math::Pi);
+
+                    // Forward progress: delayed start creates visible fold.
+                    // First 35% of swing the foot barely advances (folding),
+                    // then snaps forward in the remaining 65% (extending).
+                    double forwardPhase;
+                    if (legPhase < 0.35) {
+                        forwardPhase = smootherstep(legPhase / 0.35) * 0.2;
+                    } else {
+                        forwardPhase = 0.2 + smootherstep((legPhase - 0.35) / 0.65) * 0.8;
+                    }
+                    Vector3 groundPos = footBack + (footFront - footBack) * forwardPhase;
+
+                    // Asymmetric lift: peak at ~30% for run (even faster pickup)
+                    double liftCurve = std::sin(std::pow(legPhase, 0.55) * Math::Pi);
+                    // Stronger mid-swing fold lift for run
+                    double foldLift = std::sin(legPhase * Math::Pi) * bodyLength * 0.06;
+                    double lift = stepHeight * liftCurve + foldLift;
+
                     footTarget[i] = groundPos + up * lift;
                 } else {
                     // Stance phase: foot on ground, sliding front to back
@@ -288,7 +319,7 @@ namespace quadruped {
             // -------------------------------------------------------
             std::map<std::string, Matrix4x4> boneWorldTransforms;
 
-            auto computeBodyBone = [&](const std::string& name, double flexAngle = 0.0, double sagittalAngle = 0.0) {
+            auto computeBodyBone = [&](const std::string& name, double flexAngle = 0.0, double sagittalAngle = 0.0, double rollAngle = 0.0) {
                 Vector3 pos = bonePos(name);
                 Vector3 end = boneEnd(name);
                 Vector3 newPos = bodyTransform.transformPoint(pos);
@@ -305,17 +336,21 @@ namespace quadruped {
                     Vector3 offset = newEnd - newPos;
                     newEnd = newPos + sagMat.transformVector(offset);
                 }
+                if (std::abs(rollAngle) > 1e-6) {
+                    Matrix4x4 rollMat;
+                    rollMat.rotate(forward, rollAngle);
+                    Vector3 offset = newEnd - newPos;
+                    newEnd = newPos + rollMat.transformVector(offset);
+                }
                 boneWorldTransforms[name] = buildBoneWorldTransform(newPos, newEnd);
             };
 
             computeBodyBone("Root");
-            // In bound mode, pelvis and chest rotate more in opposition
-            // creating the characteristic cheetah spine coil/uncoil
             double pelvisSagittal = -spineExtend * (0.5 + boundFactor * 0.5);
             double chestSagittal = spineExtend * (0.5 + boundFactor * 0.5);
-            computeBodyBone("Pelvis", -spineBend * 0.3, pelvisSagittal);
+            computeBodyBone("Pelvis", -spineBend * 0.3, pelvisSagittal, hipRoll);
             computeBodyBone("Spine", spineBend, spineExtend);
-            computeBodyBone("Chest", spineBend * 0.3, chestSagittal);
+            computeBodyBone("Chest", spineBend * 0.3, chestSagittal, -hipRoll * 0.5);
             computeBodyBone("Neck");
             computeBodyBone("Head");
 
@@ -347,8 +382,12 @@ namespace quadruped {
                 // Use rest-pose knee position shifted forward/backward to control bend.
                 // The rest-pose knee already has the correct lateral placement.
                 bool isFrontLeg = (i == 0 || i == 2);
+                double bendFactor = isFrontLeg ? frontKneeBendFactor : backKneeBendFactor;
                 Vector3 poleVector = upperLegEnd + forward * (isFrontLeg ? -1.0 : 1.0);
-                solveTwoBoneIk(chain, footTarget[i], poleVector);
+                // Higher bend factor increases IK softness, causing the solver to
+                // bend the knee more even when the foot is within easy reach.
+                double ikSoftness = 0.1 * bendFactor;
+                solveTwoBoneIk(chain, footTarget[i], poleVector, ikSoftness);
 
                 // Preserve rest-pose lateral position of the knee so it doesn't
                 // collapse inward. Project the drift along the right axis and
@@ -366,6 +405,28 @@ namespace quadruped {
                 Vector3 dir1 = chain[2] - chain[1];
                 if (!dir1.isZero())
                     chain[2] = chain[1] + dir1.normalized() * len1;
+
+                // Enforce minimum knee bend angle
+                double minBendRad = 0.18 * bendFactor;
+                Vector3 toMid = (chain[1] - chain[0]).normalized();
+                Vector3 toEnd = (chain[2] - chain[1]).normalized();
+                double cosKnee = std::max(-1.0, std::min(1.0, Vector3::dotProduct(toMid, toEnd)));
+                double kneeAngle = std::acos(cosKnee);
+                if (kneeAngle > Math::Pi - minBendRad) {
+                    Vector3 toPole = poleVector - chain[1];
+                    toPole = toPole - toMid * Vector3::dotProduct(toPole, toMid);
+                    if (toPole.lengthSquared() > 1e-12) {
+                        toPole.normalize();
+                        double pushDist = len0 * std::sin(minBendRad);
+                        chain[1] = chain[1] + toPole * pushDist;
+                        dir0 = chain[1] - chain[0];
+                        if (!dir0.isZero())
+                            chain[1] = chain[0] + dir0.normalized() * len0;
+                        dir1 = chain[2] - chain[1];
+                        if (!dir1.isZero())
+                            chain[2] = chain[1] + dir1.normalized() * len1;
+                    }
+                }
 
                 // Reconstruct lower-leg position from IK result
                 Vector3 newStickDir = (chain[2] - chain[1]);

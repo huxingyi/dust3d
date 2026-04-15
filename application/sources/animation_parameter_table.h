@@ -142,6 +142,9 @@ inline const std::vector<AnimationParameterDef>& getAnimationParameterDefs(const
                                makeLinearParam("gaitSpeedFactor", "Gait Speed", 100, 25, 200, 1.0, 10.0),
                                makeDiv100Param("spineFlexFactor", "Spine Flex", 100, 25, 200, 1.0),
                                makeDiv100Param("tailSwayFactor", "Tail Sway", 100, 25, 200, 1.0),
+                               makeDiv100Param("frontKneeBendFactor", "Front Knee Bend", 100, 10, 400, 1.0),
+                               makeDiv100Param("backKneeBendFactor", "Back Knee Bend", 100, 10, 400, 1.0),
+                               makeDiv100Param("crouchFactor", "Crouch", 0, 0, 100, 0.0),
                            } },
         { "QuadrupedRun", {
                               makeDiv100Param("stepLengthFactor", "Step Length", 100, 25, 200, 1.0),
@@ -154,6 +157,9 @@ inline const std::vector<AnimationParameterDef>& getAnimationParameterDefs(const
                               makeDiv100Param("forwardLeanFactor", "Forward Lean", 100, 25, 200, 1.0),
                               makeDiv100Param("strideFrequencyFactor", "Stride Frequency", 100, 25, 200, 1.0),
                               makeDiv100Param("boundFactor", "Bound", 0, 0, 100, 0.0),
+                              makeDiv100Param("frontKneeBendFactor", "Front Knee Bend", 100, 10, 400, 1.0),
+                              makeDiv100Param("backKneeBendFactor", "Back Knee Bend", 100, 10, 400, 1.0),
+                              makeDiv100Param("crouchFactor", "Crouch", 0, 0, 100, 0.0),
                           } },
         { "QuadrupedAttack", {
                                  makeDiv100Param("chargeDistanceFactor", "Charge Distance", 100, 25, 300, 1.0),
