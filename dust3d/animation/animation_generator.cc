@@ -162,14 +162,34 @@ bool AnimationGenerator::generate(const RigStructure& rigStructure,
             return false;
         };
 
+        // Biped: use hips-to-feet direction (same as walk animation)
+        auto tryBipedForward = [&]() -> bool {
+            auto hipsIt = boneIdx.find("Hips");
+            auto leftFootIt = boneIdx.find("LeftFoot");
+            auto rightFootIt = boneIdx.find("RightFoot");
+            if (hipsIt == boneIdx.end() || leftFootIt == boneIdx.end() || rightFootIt == boneIdx.end())
+                return false;
+            const auto& hips = rigStructure.bones[hipsIt->second];
+            const auto& lf = rigStructure.bones[leftFootIt->second];
+            const auto& rf = rigStructure.bones[rightFootIt->second];
+            float avgEndX = (lf.endX + rf.endX) * 0.5f;
+            float avgEndZ = (lf.endZ + rf.endZ) * 0.5f;
+            Vector3 dir(avgEndX - hips.posX, 0.0f, avgEndZ - hips.posZ);
+            if (dir.lengthSquared() > 1e-8f) {
+                forward = dir.normalized();
+                return true;
+            }
+            return false;
+        };
+
         // Spider/Insect: Head -> Abdomen
         if (!tryForward("Head", "Abdomen"))
             // Quadruped/Bird: Head -> Tail or Head -> Hip
             if (!tryForward("Head", "Tail"))
                 if (!tryForward("Head", "Hip"))
-                    // Biped: Head -> Spine (forward is along Z typically)
-                    if (!tryForward("Head", "Spine"))
-                        // Fish/Snake: Head -> Tail
+                    // Biped: Hips -> average foot end position
+                    if (!tryBipedForward())
+                        // Fish/Snake: Head -> Body
                         tryForward("Head", "Body");
 
         // Compute body scale for speed normalization
