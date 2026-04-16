@@ -82,7 +82,7 @@ void AnimationPreviewWorker::process()
         RigSkeletonMeshGenerator meshGenerator;
         meshGenerator.setStartRadius(0.02);
         meshGenerator.setNormalizeRequired(false);
-        meshGenerator.generateMesh(poseRig, "");
+        meshGenerator.generateMesh(poseRig, m_selectedBoneName);
 
         const auto& vertices = meshGenerator.getVertices();
         const auto& faces = meshGenerator.getFaces();
