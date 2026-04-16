@@ -347,6 +347,75 @@ bool RigGenerator::generateRig(const Snapshot* snapshot, const RigStructure& tem
         }
     }
 
+    // Quadruped rig patch: ensure "Head" bone starts at Neck's end and
+    // points in the forward direction derived from the spine chain
+    // (Spine → Chest → Neck), not relying on any fixed axis assumption.
+    if (actualRig.type == "Quadruped") {
+        RigNode* headBone = nullptr;
+        RigNode* neckBone = nullptr;
+        RigNode* chestBone = nullptr;
+        RigNode* spineBone = nullptr;
+        for (auto& bone : actualRig.bones) {
+            if (bone.name == "Head")
+                headBone = &bone;
+            else if (bone.name == "Neck")
+                neckBone = &bone;
+            else if (bone.name == "Chest")
+                chestBone = &bone;
+            else if (bone.name == "Spine")
+                spineBone = &bone;
+        }
+        if (headBone && neckBone && chestBone && spineBone) {
+            // Determine forward direction from the spine chain:
+            // average of Spine→Chest and Chest→Neck directions
+            Vector3 spineDir(chestBone->posX - spineBone->posX,
+                chestBone->posY - spineBone->posY,
+                chestBone->posZ - spineBone->posZ);
+            Vector3 chestDir(neckBone->posX - chestBone->posX,
+                neckBone->posY - chestBone->posY,
+                neckBone->posZ - chestBone->posZ);
+            Vector3 forwardDir = spineDir + chestDir;
+            if (forwardDir.lengthSquared() < 1e-8f)
+                forwardDir = spineDir;
+            if (forwardDir.lengthSquared() > 1e-8f) {
+                forwardDir.normalize();
+
+                // Head bone must start at Neck's end position
+                Vector3 neckEnd(neckBone->endX, neckBone->endY, neckBone->endZ);
+
+                // Head bone's end should be the original endpoint that is
+                // farthest in the forward direction from the neck end
+                Vector3 origPos(headBone->posX, headBone->posY, headBone->posZ);
+                Vector3 origEnd(headBone->endX, headBone->endY, headBone->endZ);
+                float dotPos = Vector3::dotProduct(origPos - neckEnd, forwardDir);
+                float dotEnd = Vector3::dotProduct(origEnd - neckEnd, forwardDir);
+
+                // Pick the endpoint that is most forward as the head tip
+                Vector3 headTip = (dotEnd >= dotPos) ? origEnd : origPos;
+
+                // If both endpoints are behind the neck end, project the
+                // head length along the forward direction instead
+                float headLength = (origEnd - origPos).length();
+                if (headLength < 1e-6f)
+                    headLength = (neckEnd - Vector3(neckBone->posX, neckBone->posY, neckBone->posZ)).length() * 0.5f;
+                float tipForwardDist = Vector3::dotProduct(headTip - neckEnd, forwardDir);
+                if (tipForwardDist < headLength * 0.1f) {
+                    headTip = neckEnd + forwardDir * headLength;
+                }
+
+                headBone->posX = neckEnd.x();
+                headBone->posY = neckEnd.y();
+                headBone->posZ = neckEnd.z();
+                headBone->endX = headTip.x();
+                headBone->endY = headTip.y();
+                headBone->endZ = headTip.z();
+
+                dust3dDebug << "Quadruped rig patch: Head bone repositioned to start at Neck end,"
+                            << "pointing forward along spine direction";
+            }
+        }
+    }
+
     // Generate collision capsule radius for each bone in rig data
     for (auto& bone : actualRig.bones) {
         Vector3 start(bone.posX, bone.posY, bone.posZ);

@@ -401,6 +401,7 @@ void AnimationManageWidget::updateAnimationNameForRigType(const QString& rigType
         m_animationNameCombo->addItem("QuadrupedDie");
         m_animationNameCombo->addItem("QuadrupedAttack");
         m_animationNameCombo->addItem("QuadrupedHurt");
+        m_animationNameCombo->addItem("QuadrupedEat");
         m_animationNameCombo->setEnabled(true);
         m_addAnimationButton->setEnabled(true);
     } else if (rigType.compare("Spider", Qt::CaseInsensitive) == 0) {

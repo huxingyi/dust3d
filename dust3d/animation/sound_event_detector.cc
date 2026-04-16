@@ -262,6 +262,41 @@ std::vector<SoundEvent> SoundEventDetector::detect(
         return headEvents;
     }
 
+    // Quadruped eat: jaw chewing sounds detected from jaw bone movement
+    if (animationType == "QuadrupedEat") {
+        std::vector<SoundEvent> events;
+        // Detect jaw closing events (chewing/biting sounds)
+        bool hasJaw = !clip.frames.empty() && clip.frames[0].boneWorldTransforms.count("Jaw");
+        if (hasJaw && clip.frames.size() >= 2) {
+            for (size_t i = 1; i < clip.frames.size(); ++i) {
+                float y0 = getBoneY(clip.frames[i - 1], "Jaw");
+                float y1 = getBoneY(clip.frames[i], "Jaw");
+                float dt = clip.frames[i].time - clip.frames[i - 1].time;
+                if (dt < 1e-6f)
+                    continue;
+                // Jaw closing = jaw moving upward (positive Y velocity)
+                float velocity = (y1 - y0) / dt;
+                if (velocity > 0.01f) {
+                    SoundEvent e;
+                    e.timeSeconds = clip.frames[i].time;
+                    e.boneName = "Jaw";
+                    e.intensity = std::min(1.0f, velocity * 2.0f);
+                    events.push_back(e);
+                }
+            }
+        }
+        // Also detect front foot movements (weight shifting)
+        auto footEvents = detectFootContacts(clip, { "FrontLeftFoot", "FrontRightFoot" });
+        for (auto& e : footEvents)
+            e.intensity *= 0.3f; // subtle foot sounds
+        events.insert(events.end(), footEvents.begin(), footEvents.end());
+
+        std::sort(events.begin(), events.end(), [](const SoundEvent& a, const SoundEvent& b) {
+            return a.timeSeconds < b.timeSeconds;
+        });
+        return events;
+    }
+
     // Quadruped hurt: flesh impact at t=0, foot scramble, and body stagger
     if (animationType == "QuadrupedHurt") {
         std::vector<SoundEvent> events;
