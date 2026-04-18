@@ -153,13 +153,18 @@ private:
         const std::string& bone1, const std::string& bone2,
         const Snapshot* snapshot, const Uuid& nodeId);
 
-    // Helper: Find isolated nodes (no edges with any bone name) that are nearest
+    // Helper: Find truly isolated nodes (no edges at all) that are nearest
     // to the given bone's edge-connected nodes, and append them as single-node chains.
+    // Also records the mapping in m_singleNodeBoneMap for use by computeNodeBoneInfluences.
     void attachSingleNodesToBone(const Snapshot* snapshot,
         const std::string& boneName,
         const std::set<Uuid>& boneEdgeNodes,
         const std::set<Uuid>& allEdgeNodes,
+        const std::set<Uuid>& nodesWithAnyEdge,
         std::vector<std::vector<Uuid>>& nodeChains);
+
+    // Map from isolated node -> bone name, populated by attachSingleNodesToBone
+    std::map<Uuid, std::string> m_singleNodeBoneMap;
 };
 
 }

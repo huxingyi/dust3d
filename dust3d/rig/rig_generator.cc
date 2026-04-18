@@ -120,19 +120,26 @@ bool RigGenerator::generateRig(const Snapshot* snapshot, const RigStructure& tem
         boneNameToIndex[actualRig.bones[i].name] = i;
     }
 
-    // Pre-collect all nodes that appear in any edge with a bone name (across all bones).
-    // Used later to identify isolated single nodes.
+    // Pre-collect edge connectivity info in a single pass over edges:
+    // - allEdgeNodes: nodes that appear in any bone-assigned edge
+    // - boneEdgeNodesMap: bone name -> set of nodes in edges assigned to that bone
+    // - nodesWithAnyEdge: nodes that appear in ANY model edge (even without bone assignment)
     std::set<Uuid> allEdgeNodes;
     std::map<std::string, std::set<Uuid>> boneEdgeNodesMap;
+    std::set<Uuid> nodesWithAnyEdge;
     for (const auto& edgePair : snapshot->edges) {
         const auto& edgeAttributes = edgePair.second;
-        std::string edgeBoneName = String::valueOrEmpty(edgeAttributes, "boneName");
-        if (edgeBoneName.empty())
-            continue;
         if (!edgeBelongsToModelPart(snapshot, edgeAttributes))
             continue;
         std::string fromNode = String::valueOrEmpty(edgeAttributes, "from");
         std::string toNode = String::valueOrEmpty(edgeAttributes, "to");
+        if (!fromNode.empty())
+            nodesWithAnyEdge.insert(Uuid(fromNode));
+        if (!toNode.empty())
+            nodesWithAnyEdge.insert(Uuid(toNode));
+        std::string edgeBoneName = String::valueOrEmpty(edgeAttributes, "boneName");
+        if (edgeBoneName.empty())
+            continue;
         if (!fromNode.empty()) {
             Uuid id(fromNode);
             allEdgeNodes.insert(id);
@@ -144,6 +151,9 @@ bool RigGenerator::generateRig(const Snapshot* snapshot, const RigStructure& tem
             boneEdgeNodesMap[edgeBoneName].insert(id);
         }
     }
+
+    // Clear single node bone map before processing bones
+    m_singleNodeBoneMap.clear();
 
     // Process bones in topological order (parents before children)
     std::vector<size_t> processingOrder;
@@ -187,11 +197,11 @@ bool RigGenerator::generateRig(const Snapshot* snapshot, const RigStructure& tem
             continue;
         }
 
-        // Attach isolated single nodes (nodes with no edge-bone assignment) to
-        // this bone if they are nearest to this bone's edge-connected nodes.
+        // Attach truly isolated nodes (no edges at all) to this bone
+        // if they are nearest to this bone's edge-connected nodes.
         if (!boneEdgeNodesMap[bone.name].empty()) {
             attachSingleNodesToBone(snapshot, bone.name,
-                boneEdgeNodesMap[bone.name], allEdgeNodes, nodeChains);
+                boneEdgeNodesMap[bone.name], allEdgeNodes, nodesWithAnyEdge, nodeChains);
         }
 
         // Determine reference point from parent bone position.
@@ -664,6 +674,23 @@ bool RigGenerator::computeNodeBoneInfluences(const Snapshot* snapshot,
 
     nodeBoneInfluences.clear();
 
+    // Pre-build a map from node -> set of bone names from connected edges (single pass over edges)
+    std::map<std::string, std::set<std::string>> nodeToBoneNames;
+    for (const auto& edgePair : snapshot->edges) {
+        const auto& edgeAttributes = edgePair.second;
+        if (!edgeBelongsToModelPart(snapshot, edgeAttributes))
+            continue;
+        std::string boneName = String::valueOrEmpty(edgeAttributes, "boneName");
+        if (boneName.empty())
+            continue;
+        std::string fromNode = String::valueOrEmpty(edgeAttributes, "from");
+        std::string toNode = String::valueOrEmpty(edgeAttributes, "to");
+        if (!fromNode.empty())
+            nodeToBoneNames[fromNode].insert(boneName);
+        if (!toNode.empty())
+            nodeToBoneNames[toNode].insert(boneName);
+    }
+
     // For each node in the snapshot, determine which bones influence it
     for (const auto& nodePair : snapshot->nodes) {
         const std::string& nodeIdString = nodePair.first;
@@ -672,65 +699,21 @@ bool RigGenerator::computeNodeBoneInfluences(const Snapshot* snapshot,
         if (!nodeBelongsToModelPart(snapshot, nodeId))
             continue;
 
-        // Find all model edges connected to this node
-        std::set<std::string> boneNames;
-        for (const auto& edgePair : snapshot->edges) {
-            const std::map<std::string, std::string>& edgeAttributes = edgePair.second;
-            if (!edgeBelongsToModelPart(snapshot, edgeAttributes))
-                continue;
-
-            std::string fromNode = String::valueOrEmpty(edgeAttributes, "from");
-            std::string toNode = String::valueOrEmpty(edgeAttributes, "to");
-
-            if (fromNode == nodeIdString || toNode == nodeIdString) {
-                std::string boneName = String::valueOrEmpty(edgeAttributes, "boneName");
-                if (!boneName.empty()) {
-                    boneNames.insert(boneName);
-                }
-            }
-        }
-
-        if (boneNames.empty()) {
-            // Node has no assigned edges — find nearest node that has a bone assignment
-            // and inherit its bone influence.
-            float nx = 0, ny = 0, nz = 0;
-            if (!getNodePosition(snapshot, nodeId, nx, ny, nz))
-                continue;
-
-            float bestDist = std::numeric_limits<float>::max();
-            std::string nearestBone;
-            for (const auto& edgePair : snapshot->edges) {
-                const auto& edgeAttributes = edgePair.second;
-                if (!edgeBelongsToModelPart(snapshot, edgeAttributes))
-                    continue;
-                std::string edgeBoneName = String::valueOrEmpty(edgeAttributes, "boneName");
-                if (edgeBoneName.empty())
-                    continue;
-                for (const auto& key : { std::string("from"), std::string("to") }) {
-                    std::string candidateIdStr = String::valueOrEmpty(edgeAttributes, key);
-                    if (candidateIdStr.empty() || candidateIdStr == nodeIdString)
-                        continue;
-                    Uuid candidateId(candidateIdStr);
-                    float cx = 0, cy = 0, cz = 0;
-                    if (!getNodePosition(snapshot, candidateId, cx, cy, cz))
-                        continue;
-                    float dx = nx - cx, dy = ny - cy, dz = nz - cz;
-                    float dist = dx * dx + dy * dy + dz * dz;
-                    if (dist < bestDist) {
-                        bestDist = dist;
-                        nearestBone = edgeBoneName;
-                    }
-                }
-            }
-
-            if (!nearestBone.empty()) {
-                NodeBoneInfluence influence(nearestBone);
+        const auto& boneNamesIt = nodeToBoneNames.find(nodeIdString);
+        if (boneNamesIt == nodeToBoneNames.end() || boneNamesIt->second.empty()) {
+            // No bone-assigned edges for this node.
+            // Use m_singleNodeBoneMap (populated by attachSingleNodesToBone) for truly isolated nodes.
+            auto singleIt = m_singleNodeBoneMap.find(nodeId);
+            if (singleIt != m_singleNodeBoneMap.end()) {
+                NodeBoneInfluence influence(singleIt->second);
                 nodeBoneInfluences[nodeId] = influence;
                 dust3dDebug << "Single node" << nodeIdString.c_str()
-                            << "inherited bone from nearest edge node:" << nearestBone.c_str();
+                            << "inherited bone from attachSingleNodesToBone:" << singleIt->second.c_str();
             }
             continue;
         }
+
+        const std::set<std::string>& boneNames = boneNamesIt->second;
 
         if (boneNames.size() == 1) {
             // Single bone influence
@@ -822,25 +805,29 @@ void RigGenerator::attachSingleNodesToBone(const Snapshot* snapshot,
     const std::string& boneName,
     const std::set<Uuid>& boneEdgeNodes,
     const std::set<Uuid>& allEdgeNodes,
+    const std::set<Uuid>& nodesWithAnyEdge,
     std::vector<std::vector<Uuid>>& nodeChains)
 {
-    // Collect all nodes in the snapshot
     for (const auto& nodePair : snapshot->nodes) {
         Uuid nodeId(nodePair.first);
 
         if (!nodeBelongsToModelPart(snapshot, nodeId))
             continue;
 
-        // Skip nodes that already participate in any bone edge
-        if (allEdgeNodes.count(nodeId))
+        // Only attach nodes that have NO edges at all (truly isolated).
+        // If a node has edges (even without bone assignment), skip it.
+        if (nodesWithAnyEdge.count(nodeId))
             continue;
 
-        // This is an isolated node (no edge with any bone name).
-        // Find the nearest node among this bone's edge-connected nodes.
+        // Already claimed by another bone
+        if (m_singleNodeBoneMap.count(nodeId))
+            continue;
+
         float nx = 0, ny = 0, nz = 0;
         if (!getNodePosition(snapshot, nodeId, nx, ny, nz))
             continue;
 
+        // Find nearest node among this bone's edge-connected nodes
         float bestDist = std::numeric_limits<float>::max();
         bool foundNearest = false;
         for (const auto& candidateId : boneEdgeNodes) {
@@ -856,8 +843,7 @@ void RigGenerator::attachSingleNodesToBone(const Snapshot* snapshot,
         }
 
         if (foundNearest) {
-            // Also verify this bone is truly the nearest bone overall:
-            // compare bestDist against nearest node in allEdgeNodes minus boneEdgeNodes.
+            // Verify this bone is truly the nearest bone overall
             bool nearerBoneExists = false;
             for (const auto& candidateId : allEdgeNodes) {
                 if (boneEdgeNodes.count(candidateId))
@@ -876,6 +862,7 @@ void RigGenerator::attachSingleNodesToBone(const Snapshot* snapshot,
                 dust3dDebug << "Single node" << nodeId.toString().c_str()
                             << "attached to bone" << boneName.c_str();
                 nodeChains.push_back({ nodeId });
+                m_singleNodeBoneMap[nodeId] = boneName;
             }
         }
     }
