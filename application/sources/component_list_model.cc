@@ -135,8 +135,8 @@ QVariant ComponentListModel::data(const QModelIndex& index, int role) const
                         ? tr("Cut Face")
                         : tr("Stitch");
                     QColor badgeColor = dust3d::PartTarget::CutFace == part->target
-                        ? QColor(0xfc, 0x66, 0x21, 210)
-                        : QColor(0x0d, 0xa9, 0xf1, 210);
+                        ? QColor(Theme::red.red(), Theme::red.green(), Theme::red.blue(), 210)
+                        : QColor(Theme::blue.red(), Theme::blue.green(), Theme::blue.blue(), 210);
                     QFont font = painter.font();
                     font.setPixelSize(9);
                     font.setBold(true);

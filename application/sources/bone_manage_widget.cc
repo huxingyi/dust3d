@@ -140,8 +140,9 @@ BoneManageWidget::BoneManageWidget(Document* document, QWidget* parent)
     m_assignProgressBar->setFixedHeight(4);
     m_assignProgressBar->setTextVisible(false);
     m_assignProgressBar->setStyleSheet(
-        "QProgressBar { background-color: #333; border: none; }"
-        "QProgressBar::chunk { background-color: white; }");
+        "QProgressBar { background-color: " + Theme::gray.name() + "; border: none; }"
+                                                                   "QProgressBar::chunk { background-color: "
+        + Theme::white.name() + "; }");
     m_assignProgressBar->setAttribute(Qt::WA_Hover, true);
     m_assignProgressBar->installEventFilter(this);
     mainLayout->addWidget(m_assignProgressBar);
@@ -679,10 +680,10 @@ void BoneManageWidget::updateBoneTreeLabels()
 
         if (count > 0) {
             item->setText(QString("%1 (%2)").arg(boneName).arg(count));
-            item->setForeground(QBrush(Qt::white));
+            item->setForeground(QBrush(Theme::white));
         } else {
             item->setText(QString("%1 (none)").arg(boneName));
-            item->setForeground(QBrush(QColor(128, 128, 128)));
+            item->setForeground(QBrush(Theme::midGray));
         }
 
         for (int i = 0; i < item->rowCount(); ++i)

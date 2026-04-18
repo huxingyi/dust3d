@@ -11,6 +11,14 @@ QColor Theme::green = QColor(0xaa, 0xeb, 0xc4);
 QColor Theme::blue = QColor(0x0d, 0xa9, 0xf1);
 QColor Theme::black = QColor(25, 25, 25);
 QColor Theme::gray = QColor(0x32, 0x32, 0x32);
+QColor Theme::darkBackground = QColor(0x25, 0x25, 0x25);
+QColor Theme::altDarkBackground = QColor(53, 53, 53);
+QColor Theme::separator = QColor(0x4a, 0x4a, 0x4a);
+QColor Theme::link = QColor(42, 130, 218);
+QColor Theme::disabledIcon = QColor(0xcc, 0xcc, 0xcc);
+QColor Theme::buttonDimmed = QColor(0x52, 0x52, 0x52);
+QColor Theme::buttonDisabled = QColor(42, 42, 42);
+QColor Theme::midGray = QColor(128, 128, 128);
 float Theme::normalAlpha = 96.0 / 255;
 float Theme::checkedAlpha = 1.0;
 float Theme::edgeAlpha = 1.0;
@@ -30,18 +38,18 @@ void Theme::initialize()
     QApplication::setStyle(QStyleFactory::create("Fusion"));
 
     QPalette darkPalette;
-    darkPalette.setColor(QPalette::Window, QColor(0x25, 0x25, 0x25));
+    darkPalette.setColor(QPalette::Window, Theme::darkBackground);
     darkPalette.setColor(QPalette::WindowText, Theme::white);
-    darkPalette.setColor(QPalette::Base, QColor(25, 25, 25));
-    darkPalette.setColor(QPalette::AlternateBase, QColor(53, 53, 53));
+    darkPalette.setColor(QPalette::Base, Theme::black);
+    darkPalette.setColor(QPalette::AlternateBase, Theme::altDarkBackground);
     darkPalette.setColor(QPalette::Text, Theme::white);
-    darkPalette.setColor(QPalette::Disabled, QPalette::Text, QColor(0x25, 0x25, 0x25));
-    darkPalette.setColor(QPalette::Button, QColor(53, 53, 53));
+    darkPalette.setColor(QPalette::Disabled, QPalette::Text, Theme::darkBackground);
+    darkPalette.setColor(QPalette::Button, Theme::altDarkBackground);
     darkPalette.setColor(QPalette::ButtonText, Theme::white);
-    darkPalette.setColor(QPalette::BrightText, QColor(0xfc, 0x66, 0x21));
-    darkPalette.setColor(QPalette::Link, QColor(42, 130, 218));
-    darkPalette.setColor(QPalette::Highlight, QColor(0xfc, 0x66, 0x21));
-    darkPalette.setColor(QPalette::HighlightedText, QColor(0x25, 0x25, 0x25));
+    darkPalette.setColor(QPalette::BrightText, Theme::red);
+    darkPalette.setColor(QPalette::Link, Theme::link);
+    darkPalette.setColor(QPalette::Highlight, Theme::red);
+    darkPalette.setColor(QPalette::HighlightedText, Theme::darkBackground);
     QApplication::setPalette(darkPalette);
 
     QFont font;
@@ -62,8 +70,9 @@ void Theme::initialize()
 
     // Ensure disabled buttons are visually distinct and look unclickable.
     qApp->setStyleSheet(
-        "QPushButton:disabled { color: " + QColor(0x25, 0x25, 0x25).name() + "; }"
-                                                                             "QFrame#separatorLine { background-color: #4a4a4a; min-height: 1px; max-height: 1px; border: none; }");
+        "QPushButton:disabled { color: " + Theme::darkBackground.name() + "; }"
+                                                                          "QFrame#separatorLine { background-color: "
+        + Theme::separator.name() + "; min-height: 1px; max-height: 1px; border: none; }");
 
     Theme::awesome();
 }
@@ -75,7 +84,7 @@ QtAwesome* Theme::awesome()
         s_awesome = new QtAwesome();
         s_awesome->initFontAwesome();
         s_awesome->setDefaultOption("color", Theme::white);
-        s_awesome->setDefaultOption("color-disabled", QColor(0xcc, 0xcc, 0xcc));
+        s_awesome->setDefaultOption("color-disabled", Theme::disabledIcon);
         s_awesome->setDefaultOption("color-active", Theme::white);
         s_awesome->setDefaultOption("color-selected", Theme::white);
     }
@@ -116,7 +125,7 @@ void Theme::updateAwesomeMiniButton(QPushButton* button, QChar icon, bool highli
             color = Theme::white;
         }
     } else {
-        color = QColor("#525252");
+        color = Theme::buttonDimmed;
     }
 
     if (needDesaturation) {
@@ -126,7 +135,7 @@ void Theme::updateAwesomeMiniButton(QPushButton* button, QChar icon, bool highli
     }
 
     if (!enabled) {
-        color = QColor(42, 42, 42);
+        color = Theme::buttonDisabled;
     }
 
     button->setStyleSheet("QPushButton {border: none; background: none; color: " + color.name() + ";}");
@@ -170,5 +179,5 @@ void Theme::initIconButton(QPushButton* button)
 
 void Theme::initLineEdit(QLineEdit* edit)
 {
-    edit->setStyleSheet("QLineEdit { background-color: black }");
+    edit->setStyleSheet("QLineEdit { background-color: " + Theme::black.name() + " }");
 }

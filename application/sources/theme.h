@@ -17,6 +17,14 @@ public:
     static QColor blue;
     static QColor black;
     static QColor gray;
+    static QColor darkBackground;
+    static QColor altDarkBackground;
+    static QColor separator;
+    static QColor link;
+    static QColor disabledIcon;
+    static QColor buttonDimmed;
+    static QColor buttonDisabled;
+    static QColor midGray;
     static float normalAlpha;
     static float checkedAlpha;
     static float edgeAlpha;
