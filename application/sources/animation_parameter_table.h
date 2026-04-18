@@ -335,6 +335,8 @@ inline const std::vector<AnimationParameterDef>& getAnimationParameterDefs(const
                                makeDiv100Param("spineSwayFactor", "Spine Sway", 100, 0, 300, 1.0),
                                makeDiv100Param("tailIdleFactor", "Tail Idle", 100, 0, 300, 1.0),
                                makeDiv100Param("jawFactor", "Jaw Movement", 100, 0, 300, 1.0),
+                               makeDiv100Param("frontKneeBendFactor", "Front Knee Bend", 100, 10, 300, 1.0),
+                               makeDiv100Param("backKneeBendFactor", "Back Knee Bend", 100, 10, 300, 1.0),
                            } },
         { "InsectIdle", {
                             makeDiv100Param("breathingAmplitudeFactor", "Breathing Amplitude", 100, 0, 300, 1.0),
