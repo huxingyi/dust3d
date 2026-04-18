@@ -55,24 +55,38 @@ void Theme::initialize()
     QFont font;
     font.setWeight(QFont::Light);
     font.setBold(false);
+    font.setPixelSize(11);
     QApplication::setFont(font);
 
     QFontMetrics fontMetrics(QApplication::font());
     Theme::toolIconFontSize = fontMetrics.height();
     Theme::toolIconSize = (int)(Theme::toolIconFontSize * 1.5);
     Theme::miniIconFontSize = (int)(Theme::toolIconFontSize * 0.85);
-    Theme::miniIconSize = (int)(Theme::miniIconFontSize * 1.67);
+    Theme::miniIconSize = (int)(Theme::miniIconFontSize * 1.5);
     Theme::partPreviewImageSize = (Theme::miniIconSize * 2.3);
     Theme::sidebarPreferredWidth = Theme::partPreviewImageSize * 4.5;
     Theme::previewIconBorderSize = std::max(1, Theme::partPreviewImageSize / 20);
     Theme::previewIconMargin = std::max(1, Theme::previewIconBorderSize / 2);
     Theme::previewIconBorderRadius = std::max(3, Theme::partPreviewImageSize / 10);
 
-    // Ensure disabled buttons are visually distinct and look unclickable.
-    qApp->setStyleSheet(
-        "QPushButton:disabled { color: " + Theme::darkBackground.name() + "; }"
-                                                                          "QFrame#separatorLine { background-color: "
-        + Theme::separator.name() + "; min-height: 1px; max-height: 1px; border: none; }");
+    int controlHeight = Theme::toolIconSize;
+
+    // Minimal style: all controls share the same compact height
+    QString minimalStyle = QString(
+        "QPushButton { padding: 0px 4px; max-height: %1px; }"
+        "QPushButton:disabled { color: %2; }"
+        "QComboBox { padding: 0px 4px; max-height: %1px; }"
+        "QCheckBox { spacing: 4px; }"
+        "QLineEdit { padding: 0px 4px; max-height: %1px; }"
+        "QProgressBar { max-height: 4px; }"
+        "QLabel { padding: 0px; }"
+        "QSpinBox { padding: 0px 4px; max-height: %1px; }"
+        "QDoubleSpinBox { padding: 0px 4px; max-height: %1px; }"
+        "QFrame#separatorLine { background-color: %3; min-height: 1px; max-height: 1px; border: none; }")
+                               .arg(controlHeight)
+                               .arg(Theme::darkBackground.name())
+                               .arg(Theme::separator.name());
+    qApp->setStyleSheet(minimalStyle);
 
     Theme::awesome();
 }
@@ -143,13 +157,13 @@ void Theme::updateAwesomeMiniButton(QPushButton* button, QChar icon, bool highli
 
 void Theme::initAwesomeToolButtonWithoutFont(QPushButton* button)
 {
-    button->setFixedSize(Theme::toolIconSize * 0.75, Theme::toolIconSize * 0.75);
+    button->setFixedSize(Theme::miniIconSize, Theme::miniIconSize);
     button->setFocusPolicy(Qt::NoFocus);
 }
 
 void Theme::initAwesomeToolButton(QPushButton* button)
 {
-    button->setFont(Theme::awesome()->font(Theme::toolIconFontSize * 0.75));
+    button->setFont(Theme::awesome()->font(Theme::miniIconFontSize));
     Theme::initAwesomeToolButtonWithoutFont(button);
 }
 
@@ -159,7 +173,7 @@ void Theme::initToolButton(QPushButton* button)
     font.setWeight(QFont::Light);
     font.setBold(false);
     button->setFont(font);
-    button->setFixedHeight(Theme::toolIconSize * 0.75);
+    button->setFixedHeight(Theme::toolIconSize);
     button->setFocusPolicy(Qt::NoFocus);
 }
 

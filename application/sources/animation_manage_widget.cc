@@ -155,7 +155,7 @@ void AnimationManageWidget::createParameterWidgets()
     m_playPauseButton = new QPushButton;
     m_playPauseButton->setIcon(Theme::awesome()->icon(fa::play));
     m_playPauseButton->setToolTip(tr("Play/Pause animation"));
-    m_playPauseButton->setFixedSize(26, 26);
+    m_playPauseButton->setFixedSize(Theme::toolIconSize, Theme::toolIconSize);
     m_playPauseButton->setEnabled(false);
 
     QWidget* frameSliderWidget = new QWidget;
