@@ -174,10 +174,6 @@ void AnimationManageWidget::createParameterWidgets()
     parameterLayout->setContentsMargins(0, 0, 0, 0);
     parameterLayout->setSpacing(6);
 
-    m_animationTypeInput = new QLineEdit;
-    m_animationTypeInput->setReadOnly(true);
-    parameterLayout->addRow(new QLabel(tr("Type:")), m_animationTypeInput);
-
     m_animationNameInput = new QLineEdit;
     m_animationNameInput->setPlaceholderText(tr("Enter animation name"));
     parameterLayout->addRow(new QLabel(tr("Name:")), m_animationNameInput);
@@ -312,6 +308,13 @@ void AnimationManageWidget::rebuildDynamicControls(const QString& animationType)
         rowLayout->setContentsMargins(0, 0, 0, 0);
         rowLayout->addWidget(slider);
 
+        QLabel* valueLabel = new QLabel;
+        valueLabel->setFixedWidth(36);
+        valueLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+        if (def.toParam)
+            valueLabel->setText(QString::number(def.toParam(def.defaultSliderValue), 'f', 2));
+        rowLayout->addWidget(valueLabel);
+
         QLabel* label = new QLabel(QString::fromStdString(def.displayName));
         m_parameterLayout->addRow(label, rowWidget);
 
@@ -320,11 +323,16 @@ void AnimationManageWidget::rebuildDynamicControls(const QString& animationType)
         ctrl.slider = slider;
         ctrl.rowWidget = rowWidget;
         ctrl.rowLabel = label;
+        ctrl.valueLabel = valueLabel;
         ctrl.toParam = def.toParam;
         ctrl.fromParam = def.fromParam;
         ctrl.defaultParamValue = def.defaultParamValue;
         m_dynamicControls.push_back(ctrl);
 
+        connect(slider, &QSlider::valueChanged, this, [this, valueLabel, toParam = def.toParam](int value) {
+            if (valueLabel && toParam)
+                valueLabel->setText(QString::number(toParam(value), 'f', 2));
+        });
         connect(slider, &QSlider::valueChanged, this, &AnimationManageWidget::onParameterChanged);
     }
 }
@@ -469,6 +477,20 @@ void AnimationManageWidget::setWireframeVisible(bool visible)
 {
     if (m_modelWidget)
         m_modelWidget->setWireframeVisible(visible);
+}
+
+void AnimationManageWidget::updateParametersGroupBoxTitle()
+{
+    QString name = m_animationNameInput ? m_animationNameInput->text().trimmed() : QString();
+    QString type = m_currentAnimationType;
+    if (!name.isEmpty() && !type.isEmpty())
+        m_parametersGroupBox->setTitle(QString("%1 - %2").arg(name, type));
+    else if (!name.isEmpty())
+        m_parametersGroupBox->setTitle(name);
+    else if (!type.isEmpty())
+        m_parametersGroupBox->setTitle(type);
+    else
+        m_parametersGroupBox->setTitle(tr("Parameters"));
 }
 
 void AnimationManageWidget::updatePlayPauseIcon()
@@ -688,7 +710,7 @@ void AnimationManageWidget::autoSaveCurrentAnimation()
         return;
 
     QString animationName = m_animationNameInput->text().trimmed();
-    const QString animationType = m_animationTypeInput->text().trimmed();
+    const QString animationType = m_currentAnimationType;
 
     if (animationName.isEmpty() || animationType.isEmpty()) {
         return;
@@ -709,7 +731,7 @@ void AnimationManageWidget::autoSaveCurrentAnimation()
 
     m_document->setAnimationParams(m_currentAnimationId, paramsMap);
     m_document->saveSnapshot();
-    m_parametersGroupBox->setTitle(tr("Parameters (") + animationName + ")");
+    updateParametersGroupBoxTitle();
     refreshAnimationList();
 }
 
@@ -739,8 +761,8 @@ void AnimationManageWidget::onDeleteAnimationClicked()
     m_document->saveSnapshot();
     m_currentAnimationId = dust3d::Uuid();
     m_animationNameInput->clear();
-    m_animationTypeInput->clear();
-    m_parametersGroupBox->setTitle(tr("Parameters (New)"));
+    m_currentAnimationType.clear();
+    m_parametersGroupBox->setTitle(tr("Parameters"));
     m_parametersGroupBox->hide();
     m_bottomStretch->show();
 }
@@ -796,13 +818,13 @@ void AnimationManageWidget::onAddAnimationClicked()
 
     m_isUpdatingForm = true;
     m_animationNameInput->setText(candidateName);
-    m_animationTypeInput->setText(type);
+    m_currentAnimationType = type;
     m_isUpdatingForm = false;
 
-    m_parametersGroupBox->setTitle(tr("Parameters (New)"));
+    m_parametersGroupBox->setTitle(tr("Parameters"));
     m_parametersGroupBox->show();
     m_bottomStretch->hide();
-    m_animationTypeInput->setFocus();
+    m_animationNameInput->setFocus();
 
     rebuildDynamicControls(type);
 
@@ -817,8 +839,8 @@ void AnimationManageWidget::onAnimationListSelectionChanged()
     if (!currentItem) {
         m_currentAnimationId = dust3d::Uuid();
         m_animationNameInput->clear();
-        m_animationTypeInput->clear();
-        m_parametersGroupBox->setTitle(tr("Parameters (New)"));
+        m_currentAnimationType.clear();
+        m_parametersGroupBox->setTitle(tr("Parameters"));
         m_parametersGroupBox->hide();
         m_bottomStretch->show();
         m_deleteAnimationButton->setEnabled(false);
@@ -882,9 +904,13 @@ void AnimationManageWidget::refreshAnimationList()
         return sa.size() < sb.size();
     });
 
-    for (const auto& anim : sortedAnims) {
-        QListWidgetItem* item = new QListWidgetItem(anim.first);
-        item->setData(Qt::UserRole, QString::fromStdString(anim.second.toString()));
+    for (const auto& entry : sortedAnims) {
+        const auto* anim = m_document->findAnimation(entry.second);
+        QString displayText = entry.first;
+        if (anim && !anim->type.isEmpty())
+            displayText = QString("%1 (%2)").arg(entry.first, anim->type);
+        QListWidgetItem* item = new QListWidgetItem(displayText);
+        item->setData(Qt::UserRole, QString::fromStdString(entry.second.toString()));
         m_animationListWidget->addItem(item);
     }
 
@@ -906,15 +932,15 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
     const auto* anim = m_document->findAnimation(animationId);
     if (!anim) {
         m_animationNameInput->clear();
-        m_animationTypeInput->clear();
-        m_parametersGroupBox->setTitle(tr("Parameters (New)"));
+        m_currentAnimationType.clear();
+        m_parametersGroupBox->setTitle(tr("Parameters"));
         return;
     }
 
     m_isUpdatingForm = true;
 
     m_animationNameInput->setText(anim->name);
-    m_animationTypeInput->setText(anim->type);
+    m_currentAnimationType = anim->type;
 
     // Rebuild controls for this animation type
     rebuildDynamicControls(anim->type);
@@ -943,6 +969,8 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
         double paramValue = params.getValue(ctrl.paramName, ctrl.defaultParamValue);
         ctrl.slider->setValue(ctrl.fromParam(paramValue));
         ctrl.slider->blockSignals(false);
+        if (ctrl.valueLabel)
+            ctrl.valueLabel->setText(QString::number(paramValue, 'f', 2));
     }
 
     // Load surface material
@@ -961,7 +989,7 @@ void AnimationManageWidget::loadAnimationIntoForm(const dust3d::Uuid& animationI
     m_isUpdatingForm = false;
 
     // Update title and trigger preview
-    m_parametersGroupBox->setTitle(tr("Parameters (") + anim->name + ")");
+    updateParametersGroupBoxTitle();
 
     m_animationParams = params;
     triggerPreviewRegeneration();

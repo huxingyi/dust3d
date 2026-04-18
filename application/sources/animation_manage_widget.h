@@ -31,6 +31,7 @@ struct DynamicParameterControl {
     QSlider* slider = nullptr;
     QWidget* rowWidget = nullptr;
     QLabel* rowLabel = nullptr;
+    QLabel* valueLabel = nullptr;
     std::function<double(int)> toParam;
     std::function<int(double)> fromParam;
     double defaultParamValue = 1.0;
@@ -68,6 +69,7 @@ private:
     void autoSaveCurrentAnimation();
     void rebuildDynamicControls(const QString& animationType);
     void updatePlayPauseIcon();
+    void updateParametersGroupBoxTitle();
 
     Document* m_document = nullptr;
     WorldWidget* m_modelWidget = nullptr;
@@ -99,7 +101,7 @@ private:
     ToolbarButton* m_addAnimationButton = nullptr;
 
     QLineEdit* m_animationNameInput = nullptr;
-    QLineEdit* m_animationTypeInput = nullptr;
+    QString m_currentAnimationType;
     QListWidget* m_animationListWidget = nullptr;
     QPushButton* m_deleteAnimationButton = nullptr;
     QPushButton* m_duplicateAnimationButton = nullptr;
