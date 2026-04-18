@@ -50,7 +50,7 @@ namespace dust3d {
 namespace fish {
 
     bool idle(const RigStructure& rigStructure,
-        const std::map<std::string, Matrix4x4>& inverseBindMatrices,
+        const std::map<std::string, Matrix4x4>& /* inverseBindMatrices */,
         RigAnimationClip& animationClip,
         const AnimationParams& parameters)
     {
@@ -75,7 +75,6 @@ namespace fish {
         if (!validateRequiredBones(boneIdx, requiredBones, sizeof(requiredBones) / sizeof(requiredBones[0])))
             return false;
 
-        double breathingAmplitudeFactor = parameters.getValue("breathingAmplitudeFactor", 1.0);
         double breathingSpeedFactor = parameters.getValue("breathingSpeedFactor", 1.0);
         double finScullFactor = parameters.getValue("finScullFactor", 1.0);
         double tailSwayFactor = parameters.getValue("tailSwayFactor", 1.0);
@@ -83,17 +82,18 @@ namespace fish {
         double dorsalSwayFactor = parameters.getValue("dorsalSwayFactor", 1.0);
         double driftFactor = parameters.getValue("driftFactor", 1.0);
 
-        // Fish: forward is typically +Z (head toward +Z), up is +Y
-        // lateral is X axis
         Vector3 upDir(0.0, 1.0, 0.0);
         Vector3 headPos = bonePos("Head");
-        Vector3 tailEnd = boneEnd("TailEnd");
-        Vector3 bodyAxis = headPos - tailEnd;
-        Vector3 forward(bodyAxis.x(), 0.0, bodyAxis.z());
-        if (forward.lengthSquared() < 1e-8)
-            forward = Vector3(0.0, 0.0, 1.0);
-        forward.normalize();
-        Vector3 lateral(1.0, 0.0, 0.0); // fish sways laterally on X
+        Vector3 tailEndPos = boneEnd("TailEnd");
+        Vector3 bodyAxis = tailEndPos - headPos;
+        if (bodyAxis.isZero())
+            return false;
+
+        Vector3 forwardDir = bodyAxis.normalized();
+        Vector3 right = Vector3::crossProduct(forwardDir, upDir);
+        if (right.lengthSquared() < 1e-8)
+            right = Vector3::crossProduct(forwardDir, Vector3(0.0, 0.0, 1.0));
+        right.normalize();
 
         double bodyLength = bodyAxis.length();
         if (bodyLength < 1e-6)
@@ -108,69 +108,77 @@ namespace fish {
             double tNormalized = static_cast<double>(frame) / static_cast<double>(frameCount);
 
             double breathPhase = tNormalized * 2.0 * Math::Pi * breathingSpeedFactor;
-            double vertDrift = driftAmp * std::sin(tNormalized * 2.0 * Math::Pi * 0.3);
+            double vertDrift = driftAmp * std::sin(tNormalized * 2.0 * Math::Pi);
 
-            Matrix4x4 bodyTransform;
-            bodyTransform.translate(upDir * vertDrift);
+            // Body undulation: subtle S-curve that propagates backward
+            double undulationPhase = tNormalized * 2.0 * Math::Pi * breathingSpeedFactor;
 
             std::map<std::string, Matrix4x4> boneWorldTransforms;
 
-            auto computeBone = [&](const std::string& name,
-                                   double extraYaw = 0.0,
-                                   double extraPitch = 0.0) {
+            // Build skin matrix directly as a delta transform (no inverseBindMatrices).
+            // skinMat = T(vertDrift) * T(pivot) * R(yaw) * T(-pivot)
+            // where pivot is the bone position, and yaw rotates around upDir.
+            auto computeBoneSkinMat = [&](const std::string& name,
+                                          double yawAngle = 0.0,
+                                          double pitchAngle = 0.0) {
+                if (boneIdx.count(name) == 0)
+                    return;
                 Vector3 pos = bonePos(name);
                 Vector3 end = boneEnd(name);
-                Vector3 newPos = bodyTransform.transformPoint(pos);
-                Vector3 newEnd = bodyTransform.transformPoint(end);
-                if (std::abs(extraYaw) > 1e-6 || std::abs(extraPitch) > 1e-6) {
-                    Matrix4x4 extraRot;
-                    if (std::abs(extraYaw) > 1e-6)
-                        extraRot.rotate(upDir, extraYaw);
-                    if (std::abs(extraPitch) > 1e-6)
-                        extraRot.rotate(lateral, extraPitch);
-                    Vector3 offset = newEnd - newPos;
-                    newEnd = newPos + extraRot.transformVector(offset);
+
+                Matrix4x4 skinMat;
+                skinMat.translate(upDir * vertDrift);
+                if (std::abs(yawAngle) > 1e-6 || std::abs(pitchAngle) > 1e-6) {
+                    skinMat.translate(pos);
+                    if (std::abs(yawAngle) > 1e-6)
+                        skinMat.rotate(upDir, yawAngle);
+                    if (std::abs(pitchAngle) > 1e-6)
+                        skinMat.rotate(right, pitchAngle);
+                    skinMat.translate(-pos);
                 }
-                boneWorldTransforms[name] = buildBoneWorldTransform(newPos, newEnd);
+
+                animationClip.frames[frame].boneSkinMatrices[name] = skinMat;
+
+                Matrix4x4 animBoneTransform = skinMat;
+                animBoneTransform *= buildBoneWorldTransform(pos, end);
+                boneWorldTransforms[name] = animBoneTransform;
             };
 
-            // Body undulation: subtle S-curve that propagates backward
-            double undulationPhase = tNormalized * 2.0 * Math::Pi * breathingSpeedFactor * 0.8;
             double headSway = 0.01 * bodyUndulationFactor * std::sin(undulationPhase);
             double frontSway = 0.015 * bodyUndulationFactor * std::sin(undulationPhase - 0.4);
             double midSway = 0.02 * bodyUndulationFactor * std::sin(undulationPhase - 0.8);
             double rearSway = 0.03 * bodyUndulationFactor * std::sin(undulationPhase - 1.2);
 
-            computeBone("Root");
-            computeBone("Head", headSway);
-            computeBone("BodyFront", frontSway);
-            computeBone("BodyMid", midSway);
-            computeBone("BodyRear", rearSway);
+            computeBoneSkinMat("Root");
+            computeBoneSkinMat("Head", headSway);
+            computeBoneSkinMat("BodyFront", frontSway);
+            computeBoneSkinMat("BodyMid", midSway);
+            computeBoneSkinMat("BodyRear", rearSway);
 
             // Tail: gentle sway
             double tailSway1 = 0.04 * tailSwayFactor * std::sin(undulationPhase - 1.6);
             double tailSway2 = 0.06 * tailSwayFactor * std::sin(undulationPhase - 2.0);
-            computeBone("TailStart", tailSway1);
-            computeBone("TailEnd", tailSway2);
+            computeBoneSkinMat("TailStart", tailSway1);
+            computeBoneSkinMat("TailEnd", tailSway2);
 
             // Pectoral fins: sculling motion
             if (boneIdx.count("LeftPectoralFin")) {
-                double finAngle = 0.15 * finScullFactor * std::sin(breathPhase * 1.5);
-                computeBone("LeftPectoralFin", 0.0, finAngle);
+                double finAngle = 0.15 * finScullFactor * std::sin(breathPhase * 2.0);
+                computeBoneSkinMat("LeftPectoralFin", 0.0, finAngle);
             }
             if (boneIdx.count("RightPectoralFin")) {
-                double finAngle = 0.15 * finScullFactor * std::sin(breathPhase * 1.5 + Math::Pi);
-                computeBone("RightPectoralFin", 0.0, finAngle);
+                double finAngle = 0.15 * finScullFactor * std::sin(breathPhase * 2.0 + Math::Pi);
+                computeBoneSkinMat("RightPectoralFin", 0.0, finAngle);
             }
 
             // Pelvic fins
             if (boneIdx.count("LeftPelvicFin")) {
                 double finAngle = 0.08 * finScullFactor * std::sin(breathPhase + 0.5);
-                computeBone("LeftPelvicFin", 0.0, finAngle);
+                computeBoneSkinMat("LeftPelvicFin", 0.0, finAngle);
             }
             if (boneIdx.count("RightPelvicFin")) {
                 double finAngle = 0.08 * finScullFactor * std::sin(breathPhase + 0.5 + Math::Pi);
-                computeBone("RightPelvicFin", 0.0, finAngle);
+                computeBoneSkinMat("RightPelvicFin", 0.0, finAngle);
             }
 
             // Dorsal/ventral fins
@@ -178,28 +186,18 @@ namespace fish {
             static const char* ventralBones[] = { "VentralFinFront", "VentralFinMid", "VentralFinRear" };
             for (int fi = 0; fi < 3; ++fi) {
                 if (boneIdx.count(dorsalBones[fi])) {
-                    double sway = 0.03 * dorsalSwayFactor * std::sin(breathPhase * 0.7 - fi * 0.5);
-                    computeBone(dorsalBones[fi], sway);
+                    double sway = 0.03 * dorsalSwayFactor * std::sin(breathPhase - fi * 0.5);
+                    computeBoneSkinMat(dorsalBones[fi], sway);
                 }
                 if (boneIdx.count(ventralBones[fi])) {
-                    double sway = 0.03 * dorsalSwayFactor * std::sin(breathPhase * 0.7 - fi * 0.5);
-                    computeBone(ventralBones[fi], sway);
+                    double sway = 0.03 * dorsalSwayFactor * std::sin(breathPhase - fi * 0.5);
+                    computeBoneSkinMat(ventralBones[fi], sway);
                 }
             }
 
-            // Skin matrices
             auto& animFrame = animationClip.frames[frame];
             animFrame.time = static_cast<float>(tNormalized) * durationSeconds;
             animFrame.boneWorldTransforms = boneWorldTransforms;
-
-            for (const auto& pair : boneWorldTransforms) {
-                auto invIt = inverseBindMatrices.find(pair.first);
-                if (invIt != inverseBindMatrices.end()) {
-                    Matrix4x4 skinMat = pair.second;
-                    skinMat *= invIt->second;
-                    animFrame.boneSkinMatrices[pair.first] = skinMat;
-                }
-            }
         }
 
         return true;
