@@ -906,12 +906,25 @@ void AnimationManageWidget::refreshAnimationList()
 
     for (const auto& entry : sortedAnims) {
         const auto* anim = m_document->findAnimation(entry.second);
-        QString displayText = entry.first;
-        if (anim && !anim->type.isEmpty())
-            displayText = QString("%1 (%2)").arg(entry.first, anim->type);
-        QListWidgetItem* item = new QListWidgetItem(displayText);
+        QListWidgetItem* item = new QListWidgetItem();
         item->setData(Qt::UserRole, QString::fromStdString(entry.second.toString()));
         m_animationListWidget->addItem(item);
+
+        QWidget* widget = new QWidget;
+        QHBoxLayout* hLayout = new QHBoxLayout;
+        hLayout->setContentsMargins(2, 0, 2, 0);
+        hLayout->setSpacing(4);
+        QLabel* nameLabel = new QLabel(entry.first);
+        hLayout->addWidget(nameLabel);
+        if (anim && !anim->type.isEmpty()) {
+            QLabel* typeLabel = new QLabel(QString("(%1)").arg(anim->type));
+            typeLabel->setStyleSheet(QString("color: %1;").arg(Theme::gray.name()));
+            hLayout->addWidget(typeLabel);
+        }
+        hLayout->addStretch();
+        widget->setLayout(hLayout);
+        item->setSizeHint(widget->sizeHint());
+        m_animationListWidget->setItemWidget(item, widget);
     }
 
     if (!m_currentAnimationId.isNull()) {
